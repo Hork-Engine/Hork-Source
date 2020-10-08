@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "GraphicsDefs.h"
+#include "DeviceObject.h"
 #include "Framebuffer.h"
 
 namespace RenderCore {
@@ -140,6 +140,8 @@ inline SClearDepthStencilValue MakeClearDepthStencilValue( float Depth, uint32_t
 
 class IRenderPass : public IDeviceObject
 {
+public:
+    IRenderPass( IDevice * Device ) : IDeviceObject( Device ) {}
 };
 
 }

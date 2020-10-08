@@ -152,6 +152,6 @@ Float3 AAnalyticLightComponent::GetWorldDirection() const {
     return GetWorldForwardVector();
 }
 
-void AAnalyticLightComponent::PackLight( Float4x4 const & InViewMatrix, SClusterLight & Light ) {
+void AAnalyticLightComponent::PackLight( Float4x4 const & InViewMatrix, SLightParameters & Light ) {
 
 }

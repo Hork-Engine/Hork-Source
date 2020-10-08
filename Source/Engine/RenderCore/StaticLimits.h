@@ -30,43 +30,23 @@ SOFTWARE.
 
 #pragma once
 
-#include "AnalyticLightComponent.h"
+namespace RenderCore {
 
-class ASpotLightComponent : public AAnalyticLightComponent {
-    AN_COMPONENT( ASpotLightComponent, AAnalyticLightComponent )
+/**
 
-public:
-    void SetRadius( float _Radius );
-    float GetRadius() const;
+Static limits
 
-    void SetInnerConeAngle( float _Angle );
-    float GetInnerConeAngle() const;
-
-    void SetOuterConeAngle( float _Angle );
-    float GetOuterConeAngle() const;
-
-    void SetSpotExponent( float _Exponent );
-    float GetSpotExponent() const;
-
-    void PackLight( Float4x4 const & InViewMatrix, SLightParameters & Light ) override;
-
-protected:
-    ASpotLightComponent();
-
-    void OnTransformDirty() override;
-    void DrawDebug( ADebugRenderer * InRenderer ) override;
-
-private:
-    void UpdateWorldBounds();
-
-    BvSphere SphereWorldBounds;
-    BvOrientedBox OBBWorldBounds;
-
-    float Radius;
-    float InverseSquareRadius;
-    float InnerConeAngle;
-    float OuterConeAngle;
-    float CosHalfInnerConeAngle;
-    float CosHalfOuterConeAngle;
-    float SpotExponent;
+*/
+enum
+{
+    MAX_VERTEX_BUFFER_SLOTS = 32,
+    MAX_BUFFER_SLOTS        = 32,
+    MAX_SAMPLER_SLOTS       = 32, // MaxCombinedTextureImageUnits
+    MAX_IMAGE_SLOTS         = 32,
+    MAX_COLOR_ATTACHMENTS   = 8,
+    MAX_SUBPASS_COUNT       = 16,
+    MAX_VERTEX_BINDINGS     = 16,
+    MAX_VERTEX_ATTRIBS      = 16
 };
+
+}

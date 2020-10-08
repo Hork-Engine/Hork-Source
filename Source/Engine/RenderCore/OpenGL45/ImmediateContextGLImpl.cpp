@@ -57,7 +57,7 @@ namespace RenderCore {
 AImmediateContextGLImpl * AImmediateContextGLImpl::StateHead = nullptr, *AImmediateContextGLImpl::StateTail = nullptr;
 
 AResourceTableGLImpl::AResourceTableGLImpl( ADeviceGLImpl * _Device )
-    : pDevice( _Device )
+    : IResourceTable( _Device ), pDevice( _Device )
 {
     memset( TextureBindings, 0, sizeof( TextureBindings ) );
     memset( TextureBindingUIDs, 0, sizeof( TextureBindingUIDs ) );
@@ -302,7 +302,7 @@ AImmediateContextGLImpl::AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImme
     INTRUSIVE_ADD( this, Next, Prev, StateHead, StateTail );
 
     SFramebufferCreateInfo framebufferCI = {};
-    DefaultFramebuffer = new AFramebufferGLImpl( pDevice, framebufferCI, true );
+    DefaultFramebuffer = MakeRef< AFramebufferGLImpl >( pDevice, framebufferCI, true );
 
     Binding.ReadFramebufferUID = DefaultFramebuffer->GetUID();
     Binding.DrawFramebufferUID = DefaultFramebuffer->GetUID();
@@ -3196,12 +3196,16 @@ void AImmediateContextGLImpl::CopyTextureRect( ITexture const * _SrcTexture,
     GLuint dstId = _DstTexture->GetHandleNativeGL();
 
     if ( _SrcTexture->IsMultisample() ) {
-        if ( srcTarget == GL_TEXTURE_2D ) srcTarget = GL_TEXTURE_2D_MULTISAMPLE;
-        if ( srcTarget == GL_TEXTURE_2D_ARRAY ) srcTarget = GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
+        switch ( srcTarget ) {
+        case GL_TEXTURE_2D: srcTarget = GL_TEXTURE_2D_MULTISAMPLE; break;
+        case GL_TEXTURE_2D_ARRAY: srcTarget = GL_TEXTURE_2D_MULTISAMPLE_ARRAY; break;
+        }
     }
     if ( _DstTexture->IsMultisample() ) {
-        if ( dstTarget == GL_TEXTURE_2D ) dstTarget = GL_TEXTURE_2D_MULTISAMPLE;
-        if ( dstTarget == GL_TEXTURE_2D_ARRAY ) dstTarget = GL_TEXTURE_2D_MULTISAMPLE_ARRAY;
+        switch ( dstTarget ) {
+        case GL_TEXTURE_2D: dstTarget = GL_TEXTURE_2D_MULTISAMPLE; break;
+        case GL_TEXTURE_2D_ARRAY: dstTarget = GL_TEXTURE_2D_MULTISAMPLE_ARRAY; break;
+        }
     }
 
     for ( TextureCopy const * copy = Copies ; copy < &Copies[_NumCopies] ; copy++ ) {

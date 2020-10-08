@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include "AtmosphereRenderer.h"
+#include "RenderLocal.h"
 
 #include <Core/Public/PodArray.h>
 
@@ -40,14 +41,14 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
     SBufferCreateInfo bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
-    bufferCI.SizeInBytes = sizeof( SUniformBufferData );
-    GDevice->CreateBuffer( bufferCI, nullptr, &m_UniformBuffer );
+    bufferCI.SizeInBytes = sizeof( SConstantData );
+    GDevice->CreateBuffer( bufferCI, nullptr, &ConstantBuffer );
 
     Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
     Float4x4 projMat = Float4x4::PerspectiveRevCC( Math::_HALF_PI, 1.0f, 1.0f, 0.1f, 100.0f );
 
     for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
-        m_UniformBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
+        ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
     }
 
     SAttachmentInfo colorAttachment = {};
@@ -65,7 +66,7 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
     renderPassCI.pColorAttachments = &colorAttachment;
     renderPassCI.NumSubpasses = 1;
     renderPassCI.pSubpasses = &subpassInfo;
-    GDevice->CreateRenderPass( renderPassCI, &m_RP );
+    GDevice->CreateRenderPass( renderPassCI, &RP );
 
     SPipelineCreateInfo pipelineCI;
 
@@ -103,7 +104,7 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
     CreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
 
     SBufferInfo buffers[1];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM;
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBindings );
     pipelineCI.pVertexBindings = vertexBindings;
@@ -113,21 +114,21 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
     pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
 
-    GDevice->CreatePipeline( pipelineCI, &m_Pipeline );
+    GDevice->CreatePipeline( pipelineCI, &Pipeline );
 }
 
 void AAtmosphereRenderer::Render( int CubemapWidth, Float3 const & LightDir, TRef< RenderCore::ITexture > * ppTexture )
 {
     GDevice->CreateTexture( MakeTexture( TEX_FORMAT_SKY, STextureResolutionCubemap( CubemapWidth ) ), ppTexture );
 
-    m_UniformBufferData.LightDir = Float4( LightDir.Normalized(), 0.0f );
+    ConstantBufferData.LightDir = Float4( LightDir.Normalized(), 0.0f );
 
-    m_UniformBuffer->Write( &m_UniformBufferData );
+    ConstantBuffer->Write( &ConstantBufferData );
 
     TRef< IResourceTable > resourceTbl;
     GDevice->CreateResourceTable( &resourceTbl );
 
-    resourceTbl->BindBuffer( 0, m_UniformBuffer );
+    resourceTbl->BindBuffer( 0, ConstantBuffer );
 
     SViewport viewport = {};
     viewport.Width = CubemapWidth;
@@ -149,7 +150,7 @@ void AAtmosphereRenderer::Render( int CubemapWidth, Float3 const & LightDir, TRe
 
     SRenderPassBegin renderPassBegin = {};
     renderPassBegin.pFramebuffer = framebuffer;
-    renderPassBegin.pRenderPass = m_RP;
+    renderPassBegin.pRenderPass = RP;
     renderPassBegin.RenderArea.Width = CubemapWidth;
     renderPassBegin.RenderArea.Height = CubemapWidth;
 
@@ -158,7 +159,7 @@ void AAtmosphereRenderer::Render( int CubemapWidth, Float3 const & LightDir, TRe
     rcmd->BindResourceTable( resourceTbl );
 
     // Draw six faces in one draw call
-    DrawSphere( m_Pipeline, 6 );
+    DrawSphere( Pipeline, 6 );
 
     rcmd->EndRenderPass();
 }

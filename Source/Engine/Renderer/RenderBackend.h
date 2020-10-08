@@ -30,67 +30,46 @@ SOFTWARE.
 
 #pragma once
 
-#include "RenderCommon.h"
-#include "CanvasRenderer.h"
-#include "FrameRenderer.h"
-#include "GPUSync.h"
+#include "RenderDefs.h"
+
 #include "VT/VirtualTextureAnalyzer.h"
 #include "VT/VirtualTextureFeedback.h"
 #include "VT/VirtualTexturePhysCache.h"
 
-struct SVirtualTextureWorkflow : public RenderCore::IObjectInterface
-{
-    AVirtualTextureFeedbackAnalyzer FeedbackAnalyzer;
-    AVirtualTextureCache PhysCache;
+#include "VertexMemoryGPU.h"
+#include "CanvasRenderer.h"
+#include "FrameRenderer.h"
+#include "GPUSync.h"
 
-    SVirtualTextureWorkflow( SVirtualTextureCacheCreateInfo const & CreateInfo )
-        : PhysCache( CreateInfo )
-    {
-
-    }
-};
-
-class ARenderBackend : public IRenderBackend
+class ARenderBackend
 {
 public:
-    ARenderBackend() : IRenderBackend( "OpenGL 4.5" ) {}
+    ARenderBackend() {}
 
-    void Initialize( struct SVideoMode const & _VideoMode ) override;
-    void Deinitialize() override;
+    void Initialize( struct SVideoMode const & _VideoMode );
+    void Deinitialize();
 
-    void * GetMainWindow() override;
+    void * GetMainWindow();
+    RenderCore::IDevice * GetDevice();
 
-    void RenderFrame( SRenderFrame * pFrameData ) override;
-    void SwapBuffers() override;
-    void WaitGPU() override;
-    void * FenceSync() override;
-    void RemoveSync( void * _Sync ) override;
-    void WaitSync( void * _Sync ) override;
-    void ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) override;
+    void RenderFrame( SRenderFrame * pFrameData );
+    void SwapBuffers();
+    void WaitGPU();
+    void ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem );
 
-    void InitializeTexture1D( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) override;
-    void InitializeTexture1DArray( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) override;
-    void InitializeTexture2D( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) override;
-    void InitializeTexture2DArray( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) override;
-    void InitializeTexture3D( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) override;
-    void InitializeTextureCubemap( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width ) override;
-    void InitializeTextureCubemapArray( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) override;
-    void WriteTexture( RenderCore::ITexture * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, const void * _SysMem ) override;
-    void ReadTexture( RenderCore::ITexture * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem ) override;
+    void InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _Def );
 
-    void InitializeBuffer( TRef< RenderCore::IBuffer > * ppBuffer, size_t _SizeInBytes ) override;
-    void * InitializePersistentMappedBuffer( TRef< RenderCore::IBuffer > * ppBuffer, size_t _SizeInBytes ) override;
-    void WriteBuffer( RenderCore::IBuffer * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) override;
-    void ReadBuffer( RenderCore::IBuffer * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem ) override;
-    void OrphanBuffer( RenderCore::IBuffer * _Buffer ) override;
-
-    void InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _Def ) override;
+    AVertexMemoryGPU * GetVertexMemoryGPU() { return VertexMemoryGPU; }
+    AStreamedMemoryGPU * GetStreamedMemoryGPU() { return StreamedMemoryGPU; }
 
 private:
     void SetGPUEvent();
     void RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture );
-    void SetViewUniforms();
+    void SetViewConstants();
     void UploadShaderResources();
+
+    TRef< AVertexMemoryGPU > VertexMemoryGPU;
+    TRef< AStreamedMemoryGPU > StreamedMemoryGPU;
 
     TRef< AFrameGraph > FrameGraph;
     AFrameRenderer::SFrameGraphCaptured CapturedResources;
@@ -106,9 +85,12 @@ private:
     TRef< RenderCore::IQueryPool > TimeStamp2;
 
 public:
+    // TODO: Make private?
+    TRef< AVirtualTextureFeedbackAnalyzer > FeedbackAnalyzerVT;
+    TRef< AVirtualTextureCache > PhysCacheVT;
+
     // Just for test
-    TRef< SVirtualTextureWorkflow > VTWorkflow;
-    AVirtualTexture * TestVT;
+    TRef< AVirtualTexture > TestVT;
 };
 
-extern ARenderBackend GRenderBackendLocal;
+extern ARenderBackend GRenderBackend;

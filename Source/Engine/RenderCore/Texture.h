@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "GraphicsDefs.h"
+#include "DeviceObject.h"
 #include "Buffer.h"
 
 #include <memory.h>
@@ -580,13 +580,60 @@ struct STextureViewCreateInfo
     bool            bMultisample;
 };
 
+enum DATA_FORMAT : uint8_t
+{
+    FORMAT_BYTE1,
+    FORMAT_BYTE2,
+    FORMAT_BYTE3,
+    FORMAT_BYTE4,
+
+    FORMAT_UBYTE1,
+    FORMAT_UBYTE2,
+    FORMAT_UBYTE3,
+    FORMAT_UBYTE4,
+
+    FORMAT_SHORT1,
+    FORMAT_SHORT2,
+    FORMAT_SHORT3,
+    FORMAT_SHORT4,
+
+    FORMAT_USHORT1,
+    FORMAT_USHORT2,
+    FORMAT_USHORT3,
+    FORMAT_USHORT4,
+
+    FORMAT_INT1,
+    FORMAT_INT2,
+    FORMAT_INT3,
+    FORMAT_INT4,
+
+    FORMAT_UINT1,
+    FORMAT_UINT2,
+    FORMAT_UINT3,
+    FORMAT_UINT4,
+
+    FORMAT_HALF1,
+    FORMAT_HALF2,
+    FORMAT_HALF3,
+    FORMAT_HALF4,
+
+    FORMAT_FLOAT1,
+    FORMAT_FLOAT2,
+    FORMAT_FLOAT3,
+    FORMAT_FLOAT4
+};
+
 class ITextureBase : public IDeviceObject
 {
+public:
+    ITextureBase( IDevice * Device ) : IDeviceObject( Device ) {}
 };
 
 class ITexture : public ITextureBase
 {
 public:
+    ITexture( IDevice * Device ) : ITextureBase( Device ) {}
+
     TEXTURE_TYPE GetType() const { return Type; }
 
     uint32_t GetWidth() const;

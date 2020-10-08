@@ -30,12 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include "RenderCommon.h"
-
-struct SCubemapGeneratorUniformBuffer {
-    Float4x4 Transform[6];
-    Float4 Index;
-};
+#include <RenderCore/ImmediateContext.h>
+#include <Core/Public/CoreMath.h>
 
 class ACubemapGenerator {
 public:
@@ -45,8 +41,12 @@ public:
     void Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, RenderCore::ITexture * _Source, TRef< RenderCore::ITexture > * ppTexture );
 
 private:
-    TRef< RenderCore::IBuffer > m_UniformBuffer;
-    SCubemapGeneratorUniformBuffer m_UniformBufferData;
-    TRef< RenderCore::IPipeline > m_Pipeline;
-    TRef< RenderCore::IRenderPass > m_RP;
+    struct SConstantData {
+        Float4x4 Transform[6];
+        Float4 Index;
+    };
+    TRef< RenderCore::IBuffer > ConstantBuffer;
+    SConstantData ConstantBufferData;
+    TRef< RenderCore::IPipeline > Pipeline;
+    TRef< RenderCore::IRenderPass > RP;
 };

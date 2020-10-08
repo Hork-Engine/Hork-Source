@@ -69,12 +69,11 @@ void ABaseObject::AddRef() {
 
 void ABaseObject::RemoveRef() {
     AN_ASSERT_( RefCount != -666, "Calling RemoveRef() in destructor" );
-    if ( RefCount == 1 ) {
-        RefCount = 0;
+    if ( --RefCount == 0 ) {
         AGarbageCollector::AddObject( this );
-    } else if ( RefCount > 0 ) {
-        --RefCount;
+        return;
     }
+    AN_ASSERT( RefCount > 0 );
 }
 
 ABaseObject * ABaseObject::FindObject( uint64_t _Id ) {

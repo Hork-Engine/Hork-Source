@@ -145,7 +145,7 @@ ATextureGLImpl::ATextureGLImpl( ADeviceGLImpl * _Device, STextureCreateInfo cons
 #endif
 
 ATextureGLImpl::ATextureGLImpl( ADeviceGLImpl * _Device, STextureCreateInfo const & _CreateInfo )
-    : pDevice( _Device )
+    : ITexture( _Device ), pDevice( _Device )
 {
     GLuint id;
     GLenum target;
@@ -229,7 +229,7 @@ ATextureGLImpl::ATextureGLImpl( ADeviceGLImpl * _Device, STextureCreateInfo cons
 }
 
 ATextureGLImpl::ATextureGLImpl( ADeviceGLImpl * _Device, STextureViewCreateInfo const & _CreateInfo )
-    : pDevice( _Device )
+    : ITexture( _Device ), pDevice( _Device )
 {
     GLuint id;
     GLenum target = TextureTargetLUT[ _CreateInfo.Type ].Target;

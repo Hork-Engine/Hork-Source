@@ -28,8 +28,8 @@ SOFTWARE.
 
 */
 
+#include "RenderLocal.h"
 #include "FrameRenderer.h"
-#include "RenderBackend.h"
 #include "VT/VirtualTextureFeedback.h"
 
 #include <Runtime/Public/ScopedTimeCheck.h>
@@ -47,7 +47,7 @@ AFrameRenderer::AFrameRenderer()
     SPipelineResourceLayout resourceLayout;
 
     SBufferInfo bufferInfo;
-    bufferInfo.BufferBinding = BUFFER_BIND_UNIFORM;
+    bufferInfo.BufferBinding = BUFFER_BIND_CONSTANT;
 
     resourceLayout.NumBuffers = 1;
     resourceLayout.Buffers = &bufferInfo;
@@ -265,7 +265,7 @@ void AFrameRenderer::AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTextur
 
             BindTextures( instance->MaterialInstance, instance->Material->DepthPassTextureCount );
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-            BindInstanceUniforms( instance );
+            BindInstanceConstants( instance );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -337,13 +337,13 @@ void AFrameRenderer::AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGrap
     } );
 }
 
-void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow * VTWorkflow, SFrameGraphCaptured & CapturedResources )
+void AFrameRenderer::Render( AFrameGraph & FrameGraph, bool bVirtualTexturing, SFrameGraphCaptured & CapturedResources )
 {
     AScopedTimeCheck TimeCheck( "Framegraph build&fill" );
 
     FrameGraph.Clear();
 
-    if ( VTWorkflow ) {
+    if ( bVirtualTexturing ) {
         GRenderView->VTFeedback->AddPass( FrameGraph );
     }
 
@@ -352,7 +352,7 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow *
     for ( int lightIndex = 0 ; lightIndex < GRenderView->NumDirectionalLights ; lightIndex++ ) {
         int lightOffset = GRenderView->FirstDirectionalLight + lightIndex;
 
-        SDirectionalLightDef * dirLight = GFrameData->DirectionalLights[ lightOffset ];
+        SDirectionalLightInstance * dirLight = GFrameData->DirectionalLights[ lightOffset ];
 
         ShadowMapRenderer.AddPass( FrameGraph, dirLight, &ShadowMapDepth[lightIndex] );
     }
@@ -428,13 +428,13 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow *
         DebugDrawRenderer.AddPass( FrameGraph, FinalTexture, DepthTexture );
     }
 
-    if ( VTWorkflow ) {
+    if ( bVirtualTexturing ) {
         if ( r_ShowFeedbackVT ) {
             GRenderView->VTFeedback->DrawFeedback( FrameGraph, FinalTexture );
         }
 
         if ( r_ShowCacheVT.GetInteger() >= 0 ) {
-            VTWorkflow->PhysCache.Draw( FrameGraph, FinalTexture, r_ShowCacheVT.GetInteger() );
+            GRenderBackend.PhysCacheVT->Draw( FrameGraph, FinalTexture, r_ShowCacheVT.GetInteger() );
         }
     }
 

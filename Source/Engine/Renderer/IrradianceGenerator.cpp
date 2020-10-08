@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include "IrradianceGenerator.h"
+#include "RenderLocal.h"
 
 #include <Core/Public/PodArray.h>
 
@@ -41,14 +42,14 @@ AIrradianceGenerator::AIrradianceGenerator()
     SBufferCreateInfo bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
-    bufferCI.SizeInBytes = sizeof( SIrradianceGeneratorUniformBuffer );
-    GDevice->CreateBuffer( bufferCI, nullptr, &m_UniformBuffer );
+    bufferCI.SizeInBytes = sizeof( SConstantData );
+    GDevice->CreateBuffer( bufferCI, nullptr, &ConstantBuffer );
 
     Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
     Float4x4 projMat = Float4x4::PerspectiveRevCC( Math::_HALF_PI, 1.0f, 1.0f, 0.1f, 100.0f );
 
     for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
-        m_UniformBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
+        ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
     }
 
     SAttachmentInfo colorAttachment = {};
@@ -66,7 +67,7 @@ AIrradianceGenerator::AIrradianceGenerator()
     renderPassCI.pColorAttachments = &colorAttachment;
     renderPassCI.NumSubpasses = 1;
     renderPassCI.pSubpasses = &subpassInfo;
-    GDevice->CreateRenderPass( renderPassCI, &m_RP );
+    GDevice->CreateRenderPass( renderPassCI, &RP );
 
     SPipelineCreateInfo pipelineCI;
 
@@ -113,14 +114,14 @@ AIrradianceGenerator::AIrradianceGenerator()
     samplerCI.bCubemapSeamless = true;
 
     SBufferInfo buffers[1];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM;
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
     pipelineCI.ResourceLayout.Samplers = &samplerCI;
     pipelineCI.ResourceLayout.NumSamplers = 1;
     pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
 
-    GDevice->CreatePipeline( pipelineCI, &m_Pipeline );
+    GDevice->CreatePipeline( pipelineCI, &Pipeline );
 }
 
 void AIrradianceGenerator::GenerateArray( int _CubemapsCount, ITexture ** _Cubemaps, TRef< RenderCore::ITexture > * ppTextureArray )
@@ -138,7 +139,7 @@ void AIrradianceGenerator::GenerateArray( int _CubemapsCount, ITexture ** _Cubem
     TRef< IResourceTable > resourceTbl;
     GDevice->CreateResourceTable( &resourceTbl );
 
-    resourceTbl->BindBuffer( 0, m_UniformBuffer );
+    resourceTbl->BindBuffer( 0, ConstantBuffer );
 
     SViewport viewport = {};
     viewport.MaxDepth = 1;
@@ -158,7 +159,7 @@ void AIrradianceGenerator::GenerateArray( int _CubemapsCount, ITexture ** _Cubem
 
     SRenderPassBegin renderPassBegin = {};
     renderPassBegin.pFramebuffer = framebuffer;
-    renderPassBegin.pRenderPass = m_RP;
+    renderPassBegin.pRenderPass = RP;
     renderPassBegin.RenderArea.Width = size;
     renderPassBegin.RenderArea.Height = size;
 
@@ -171,14 +172,14 @@ void AIrradianceGenerator::GenerateArray( int _CubemapsCount, ITexture ** _Cubem
     rcmd->BindResourceTable( resourceTbl );
 
     for ( int cubemapIndex = 0 ; cubemapIndex < _CubemapsCount ; cubemapIndex++ ) {
-        m_UniformBufferData.Index.X = cubemapIndex * 6; // Offset for cubemap array layer
+        ConstantBufferData.Index.X = cubemapIndex * 6; // Offset for cubemap array layer
 
-        m_UniformBuffer->Write( &m_UniformBufferData );
+        ConstantBuffer->Write( &ConstantBufferData );
 
         resourceTbl->BindTexture( 0, _Cubemaps[cubemapIndex] );
 
         // Draw six faces in one draw call
-        DrawSphere( m_Pipeline, 6 );
+        DrawSphere( Pipeline, 6 );
     }
 
     rcmd->EndRenderPass();
@@ -198,7 +199,7 @@ void AIrradianceGenerator::Generate( ITexture * _SourceCubemap, TRef< RenderCore
     TRef< IResourceTable > resourceTbl;
     GDevice->CreateResourceTable( &resourceTbl );
 
-    resourceTbl->BindBuffer( 0, m_UniformBuffer );
+    resourceTbl->BindBuffer( 0, ConstantBuffer );
 
     SViewport viewport = {};
     viewport.MaxDepth = 1;
@@ -218,7 +219,7 @@ void AIrradianceGenerator::Generate( ITexture * _SourceCubemap, TRef< RenderCore
 
     SRenderPassBegin renderPassBegin = {};
     renderPassBegin.pFramebuffer = framebuffer;
-    renderPassBegin.pRenderPass = m_RP;
+    renderPassBegin.pRenderPass = RP;
     renderPassBegin.RenderArea.Width = size;
     renderPassBegin.RenderArea.Height = size;
 
@@ -229,16 +230,16 @@ void AIrradianceGenerator::Generate( ITexture * _SourceCubemap, TRef< RenderCore
 
     rcmd->SetViewport( viewport );
 
-    m_UniformBufferData.Index.X = 0;
+    ConstantBufferData.Index.X = 0;
 
-    m_UniformBuffer->Write( &m_UniformBufferData );
+    ConstantBuffer->Write( &ConstantBufferData );
 
     resourceTbl->BindTexture( 0, _SourceCubemap );
 
     rcmd->BindResourceTable( resourceTbl );
 
     // Draw six faces in one draw call
-    DrawSphere( m_Pipeline, 6 );
+    DrawSphere( Pipeline, 6 );
 
     rcmd->EndRenderPass();
 }

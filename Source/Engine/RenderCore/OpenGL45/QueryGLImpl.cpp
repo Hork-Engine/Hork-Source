@@ -39,7 +39,7 @@ SOFTWARE.
 namespace RenderCore {
 
 AQueryPoolGLImpl::AQueryPoolGLImpl( ADeviceGLImpl * _Device, SQueryPoolCreateInfo const & _CreateInfo )
-    : pDevice( _Device )
+    : IQueryPool( _Device ), pDevice( _Device )
 {
     AN_ASSERT( _CreateInfo.PoolSize > 0 );
 
@@ -60,6 +60,8 @@ AQueryPoolGLImpl::AQueryPoolGLImpl( ADeviceGLImpl * _Device, SQueryPoolCreateInf
     glCreateQueries( TableQueryTarget[QueryType], PoolSize, IdPool ); // 4.5
 
     pDevice->TotalQueryPools++;
+
+    SetHandleNativeGL( IdPool[0] );
 }
 
 AQueryPoolGLImpl::~AQueryPoolGLImpl()

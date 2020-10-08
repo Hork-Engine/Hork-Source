@@ -35,6 +35,7 @@ SOFTWARE.
 namespace RenderCore {
 
 class ADeviceGLImpl;
+struct SSamplerInfo;
 
 class ABindlessSamplerGLImpl final : public IBindlessSampler
 {

@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "SphereMesh.h"
-#include "RenderCommon.h"
+#include "RenderLocal.h"
 
 #include <Core/Public/PodArray.h>
 #include <Core/Public/CoreMath.h>
@@ -101,8 +101,12 @@ ASphereMesh::ASphereMesh( int _HDiv, int _VDiv )
     bufferCI.SizeInBytes = sizeof( Float3 ) * vertices.Size();
     GDevice->CreateBuffer( bufferCI, vertices.ToPtr(), &VertexBuffer );
 
+    VertexBuffer->SetDebugName( "Sphere mesh vertex buffer" );
+
     bufferCI.SizeInBytes = sizeof( unsigned short ) * indices.Size();
     GDevice->CreateBuffer( bufferCI, indices.ToPtr(), &IndexBuffer );
+
+    VertexBuffer->SetDebugName( "Sphere mesh index buffer" );
 
     IndexCount = indices.Size();
 }

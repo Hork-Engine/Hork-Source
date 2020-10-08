@@ -41,7 +41,7 @@ public:
 
     BvSphere const & GetSphereWorldBounds() const { return SphereWorldBounds; }
 
-    void PackLight( Float4x4 const & InViewMatrix, SClusterLight & Light ) override;
+    void PackLight( Float4x4 const & InViewMatrix, SLightParameters & Light ) override;
 
 protected:
     APointLightComponent();

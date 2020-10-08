@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#if 0
 #include <RenderCore/ImmediateContext.h>
 
 class AFrameConstantBuffer : public RenderCore::IObjectInterface {
@@ -65,3 +66,4 @@ private:
 
     unsigned int UniformBufferOffsetAlignment;
 };
+#endif

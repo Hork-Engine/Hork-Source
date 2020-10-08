@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "GraphicsDefs.h"
+#include "DeviceObject.h"
 
 namespace RenderCore {
 
@@ -61,9 +61,11 @@ struct SQueryPoolCreateInfo
     uint32_t PoolSize;
 };
 
-class IQueryPool : public IObjectInterface
+class IQueryPool : public IDeviceObject
 {
 public:
+    IQueryPool( IDevice * Device ) : IDeviceObject( Device ) {}
+
     virtual void GetResults( uint32_t _FirstQuery,
                              uint32_t _QueryCount,
                              size_t _DataSize,

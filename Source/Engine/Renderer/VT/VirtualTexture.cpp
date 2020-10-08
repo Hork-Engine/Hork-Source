@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "VirtualTexture.h"
 #include "QuadTree.h"
-#include "../RenderCommon.h"
+#include "../RenderLocal.h"
 
 #define USE_PBO
 
@@ -41,8 +41,6 @@ AVirtualTexture::AVirtualTexture( const char * FileName, AVirtualTextureCache * 
     pIndirectionData = nullptr;
     pCache = nullptr;
     NumLods = 0;
-    bPendingRemove = false;
-    RefCount = 0;
 
     if ( FileHandle.IsInvalid() ) {
         return;
@@ -76,6 +74,7 @@ AVirtualTexture::AVirtualTexture( const char * FileName, AVirtualTextureCache * 
         );
     bufferCI.SizeInBytes = sizeof( pIndirectionData[0] ) * AddressTable.TotalPages;
     GDevice->CreateBuffer( bufferCI, nullptr, &IndirectionData );
+    IndirectionData->SetDebugName( "Virtual texture indirection data" );
 #else
     pIndirectionData = (uint16_t *)GHeapMemory.ClearedAlloc( sizeof( pIndirectionData[0] ) * AddressTable.TotalPages );
 #endif
@@ -97,14 +96,14 @@ AVirtualTexture::AVirtualTexture( const char * FileName, AVirtualTextureCache * 
                                      RenderCore::TEXTURE_SWIZZLE_IDENTITY ),
                 NumLods ), &IndirectionTexture );
 
+        IndirectionTexture->SetDebugName( "Indirection texture" );
+
         const RenderCore::SClearValue clearValue[2] = { 0,0 };
 
         for ( int level = 0 ; level < NumLods ; level++ ) {
             rcmd->ClearTexture( IndirectionTexture, level, RenderCore::FORMAT_UBYTE2, clearValue );
         }
     }
-
-    AddRef();
 }
 
 AVirtualTexture::~AVirtualTexture()
@@ -299,7 +298,7 @@ void AVirtualTexture::UpdateLRU( uint32_t AbsIndex )
     PendingUpdateLRU.Append( AbsIndex );
 }
 
-void AVirtualTexture::MakePageResident( uint32_t AbsIndex, int CacheCellIndex )
+void AVirtualTexture::MakePageResident( uint32_t AbsIndex, int PhysPageIndex )
 {
     MapIndirectionData();
 
@@ -307,7 +306,7 @@ void AVirtualTexture::MakePageResident( uint32_t AbsIndex, int CacheCellIndex )
 
     PIT[AbsIndex] |= PF_CACHED;
 
-    uint16_t bits16 = CacheCellIndex | (lod << 12);
+    uint16_t bits16 = PhysPageIndex | (lod << 12);
     pIndirectionData[AbsIndex] = bits16;
 
     UpdateChildsBranch_r( lod,

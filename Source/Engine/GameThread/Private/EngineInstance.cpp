@@ -44,7 +44,7 @@ SOFTWARE.
 #include <World/Private/PrimitiveLinkPool.h>
 
 #include <Runtime/Public/Runtime.h>
-#include <Runtime/Public/VertexMemoryGPU.h>
+#include <Renderer/VertexMemoryGPU.h>
 
 #include <Core/Public/Logger.h>
 #include <Core/Public/CriticalError.h>
@@ -163,9 +163,6 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
 #endif
     GResourceManager.Initialize();
 
-    GVertexMemoryGPU.Initialize();
-    GStreamedMemoryGPU.Initialize();
-
     Renderer = CreateInstanceOf< ARenderFrontend >();
 
     GAudioSystem.Initialize();
@@ -205,6 +202,9 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
             return;
         }
 
+        // Wait for free streamed buffer
+        GRenderBackend.GetStreamedMemoryGPU()->Begin();
+
         // Set new frame, process game events
         GRuntime.NewFrame();
 
@@ -230,7 +230,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
 
         // Sync with GPU to prevent "input lag"
         if ( com_SyncGPU ) {
-            GRenderBackend->WaitGPU();
+            GRenderBackend.WaitGPU();
         }
 
         // Poll runtime events
@@ -250,16 +250,13 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
         Renderer->Render( &Canvas );
 
         // Generate GPU commands
-        GRenderBackend->RenderFrame( Renderer->GetFrameData() );
+        GRenderBackend.RenderFrame( Renderer->GetFrameData() );
 
         // Swap buffers for streamed memory
-        GStreamedMemoryGPU.SwapFrames();
+        GRenderBackend.GetStreamedMemoryGPU()->End();
 
         // Swap screen buffers
-        GRenderBackend->SwapBuffers();
-
-        // Wait for free streamed buffer
-        GStreamedMemoryGPU.WaitBuffer();
+        GRenderBackend.SwapBuffers();
 
     } while ( !GRuntime.IsPendingTerminate() );
 
@@ -293,8 +290,6 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
 
     AGarbageCollector::Deinitialize();
 
-    GVertexMemoryGPU.Deinitialize();
-    GStreamedMemoryGPU.Deinitialize();
     GPrimitiveLinkPool.Free();
 
     GAudioSystem.Deinitialize();
@@ -366,11 +361,14 @@ void AEngineInstance::ShowStats() {
 
         SRenderFrontendStat const & stat = Renderer->GetStat();
 
+        AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+        AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, GRuntime.GetMaxFrameMemoryUsage()/1024.0f ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage (GPU): %f KB / %d MB (Max %f KB)", GStreamedMemoryGPU.GetUsedMemoryPrev()/1024.0f, GStreamedMemoryGPU.GetAllocatedMemory()>>20, GStreamedMemoryGPU.GetMaxMemoryUsage()/1024.0f ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Vertex cache memory usage (GPU): %f KB / %d MB", GVertexMemoryGPU.GetUsedMemory()/1024.0f, GVertexMemoryGPU.GetAllocatedMemory()>>20 ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage (GPU): %f KB / %d MB (Max %f KB)", streamedMemory->GetUsedMemoryPrev()/1024.0f, streamedMemory->GetAllocatedMemory()>>20, streamedMemory->GetMaxMemoryUsage()/1024.0f ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Vertex cache memory usage (GPU): %f KB / %d MB", vertexMemory->GetUsedMemory()/1024.0f, vertexMemory->GetAllocatedMemory()>>20 ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f
         /*- GZoneMemory.GetZoneMemorySizeInMegabytes()*1024 - GMainHunkMemory.GetHunkMemorySizeInMegabytes()*1024 - 256*1024.0f*/ ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Visible instances: %d", frameData->Instances.Size() ) ); pos.Y += y_step;

@@ -38,7 +38,7 @@ SOFTWARE.
 namespace RenderCore {
 
 ABufferViewGLImpl::ABufferViewGLImpl( ADeviceGLImpl * Device, SBufferViewCreateInfo const & CreateInfo, ABufferGLImpl * pBuffer )
-    : pDevice( Device ), pSrcBuffer( pBuffer )
+    : IBufferView( Device ), pDevice( Device ), pSrcBuffer( pBuffer )
 {
     pSrcBuffer->AddRef();
 

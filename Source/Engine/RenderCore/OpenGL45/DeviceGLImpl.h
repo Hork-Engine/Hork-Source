@@ -61,9 +61,8 @@ public:
 
     void CreatePipeline( SPipelineCreateInfo const & _CreateInfo, TRef< IPipeline > * ppPipeline ) override;
 
-    void CreateShaderFromBinary( SShaderBinaryData const * _BinaryData, char ** _InfoLog, TRef< IShaderModule > * ppShaderModule ) override;
-    void CreateShaderFromCode( SHADER_TYPE _ShaderType, unsigned int _NumSources, const char * const * _Sources, char ** _InfoLog, TRef< IShaderModule > * ppShaderModule ) override;
-    void CreateShaderFromCode( SHADER_TYPE _ShaderType, const char * _Source, char ** _InfoLog, TRef< IShaderModule > * ppShaderModule ) override;
+    void CreateShaderFromBinary( SShaderBinaryData const * _BinaryData, TRef< IShaderModule > * ppShaderModule ) override;
+    void CreateShaderFromCode( SHADER_TYPE _ShaderType, unsigned int _NumSources, const char * const * _Sources, TRef< IShaderModule > * ppShaderModule ) override;
 
     void CreateBuffer( SBufferCreateInfo const & _CreateInfo, const void * _SysMem, TRef< IBuffer > * ppBuffer ) override;
 
@@ -86,7 +85,6 @@ public:
     bool CreateShaderBinaryData( SHADER_TYPE _ShaderType,
                                  unsigned int _NumSources,
                                  const char * const * _Sources,
-                                 /* optional */ char ** _InfoLog,
                                  SShaderBinaryData * _BinaryData ) override;
 
     void DestroyShaderBinaryData( SShaderBinaryData * _BinaryData ) override;
@@ -116,13 +114,6 @@ public:
     {
         return HashCB( _Data, _Size );
     }
-
-    unsigned int CreateShaderProgram( unsigned int _Type,
-                                      int _NumStrings,
-                                      const char * const * _Strings,
-                                      char ** _InfoLog = nullptr );
-
-    void DeleteShaderProgram( unsigned int _Program );
 
     SBlendingStateInfo const * CachedBlendingState( SBlendingStateInfo const & _BlendingState );
     SRasterizerStateInfo const * CachedRasterizerState( SRasterizerStateInfo const & _RasterizerState );

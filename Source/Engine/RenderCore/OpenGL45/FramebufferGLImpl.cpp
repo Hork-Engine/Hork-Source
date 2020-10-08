@@ -40,7 +40,7 @@ SOFTWARE.
 namespace RenderCore {
 
 AFramebufferGLImpl::AFramebufferGLImpl( ADeviceGLImpl * _Device, SFramebufferCreateInfo const & _CreateInfo, bool _Default )
-    : pDevice( _Device )
+    : IFramebuffer( _Device ), pDevice( _Device )
 {
     Width = 0;
     Height = 0;
@@ -187,7 +187,6 @@ bool AFramebufferGLImpl::ChooseReadBuffer( FRAMEBUFFER_ATTACHMENT _Attachment ) 
     GLuint framebufferId = GetHandleNativeGL();
 
     if ( _Attachment < FB_DEPTH_ATTACHMENT ) {
-
         if ( bDefault ) {
             return false;
         }
@@ -197,21 +196,17 @@ bool AFramebufferGLImpl::ChooseReadBuffer( FRAMEBUFFER_ATTACHMENT _Attachment ) 
         glNamedFramebufferReadBuffer( framebufferId, GL_COLOR_ATTACHMENT0 + _Attachment );
     }
     else if ( _Attachment <= FB_DEPTH_STENCIL_ATTACHMENT ) {
-
         if ( bDefault ) {
             return false;
         }
 
         // Depth and Stencil read directly from framebuffer
         // There is no need to select read buffer
-
     }
     else {
-
         if ( !bDefault ) {
             return false;
         }
-
         glNamedFramebufferReadBuffer( 0, FramebufferAttachmentLUT[ _Attachment - FB_DEPTH_ATTACHMENT ] );
     }
 

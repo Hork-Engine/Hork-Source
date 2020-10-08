@@ -118,8 +118,8 @@ struct SVirtualTextureLayer
 // Создает структуру виртуальной текстуры, на выходе _struct и binRects
 bool VT_MakeStructure( SVirtualTextureStructure & _struct,
                        int _PageWidthLog2,
-                       const std::vector< FRectangleBinPack::rectSize_t > & _textureRects,
-                       std::vector< FRectangleBinBack_RectNode > & _binRects,
+                       const std::vector< ARectangleBinPack::SRectSize > & _textureRects,
+                       std::vector< SRectangleBinBack_RectNode > & _binRects,
                        unsigned int & _binWidth,
                        unsigned int & _binHeight );
 
@@ -146,7 +146,7 @@ bool VT_DumpPageToDisk( const char * _path, unsigned int _absoluteIndex, const S
 // Режет входное изображение (_LayerData) на страницы и сохраняет в кеше
 void VT_PutImageIntoPages( SVirtualTextureStructure & _struct,
                            SVirtualTextureLayer & _cache,
-                           const FRectangleBinBack_RectNode & _rect,
+                           const SRectangleBinBack_RectNode & _rect,
                            const byte * _LayerData );
 
 // Загружает заданные четыре страницы для последующего лодирования
@@ -211,8 +211,8 @@ bool VT_CreateVirtualTexture( const SVirtualTextureLayerDesc * _Layers,
                               const char * _TempDir,
                               int _MaxLods,
                               int _PageWidthLog2,
-                              const std::vector< FRectangleBinPack::rectSize_t > & _TextureRects,
-                              std::vector< FRectangleBinBack_RectNode > & _BinRects,
+                              const std::vector< ARectangleBinPack::SRectSize > & _TextureRects,
+                              std::vector< SRectangleBinBack_RectNode > & _BinRects,
                               unsigned int & _BinWidth,
                               unsigned int & _BinHeight,
                               int _MaxCachedPages = 32768 );
@@ -220,6 +220,6 @@ bool VT_CreateVirtualTexture( const SVirtualTextureLayerDesc * _Layers,
 void VT_TransformTextureCoords( float * _TexCoord,
                                 unsigned int _NumVerts,
                                 int _VertexStride,
-                                const FRectangleBinBack_RectNode & _BinRect,
+                                const SRectangleBinBack_RectNode & _BinRect,
                                 unsigned int _BinWidth,
                                 unsigned int _BinHeight );

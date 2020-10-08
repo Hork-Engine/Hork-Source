@@ -51,14 +51,14 @@ AMaterial::~AMaterial() {
 
 void AMaterial::RebuildMaterials() {
     for ( AMaterial * material = GMaterials ; material ; material = material->pNext ) {
-        GRenderBackend->InitializeMaterial( &material->MaterialGPU, &material->Def );
+        GRenderBackend.InitializeMaterial( &material->MaterialGPU, &material->Def );
     }
 }
 
 void AMaterial::Initialize( MGMaterialGraph * Graph ) {
     CompileMaterialGraph( Graph, &Def );
 
-    GRenderBackend->InitializeMaterial( &MaterialGPU, &Def );
+    GRenderBackend.InitializeMaterial( &MaterialGPU, &Def );
 }
 
 void AMaterial::Purge() {
@@ -132,7 +132,7 @@ bool AMaterial::LoadResource( AString const & _Path ) {
         Def.AddShader( sourceName.CStr(), sourceCode );
     }
 
-    GRenderBackend->InitializeMaterial( &MaterialGPU, &Def );
+    GRenderBackend.InitializeMaterial( &MaterialGPU, &Def );
 
     return true;
 }

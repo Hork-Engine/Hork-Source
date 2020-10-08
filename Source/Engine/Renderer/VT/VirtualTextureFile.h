@@ -31,8 +31,9 @@ SOFTWARE.
 #pragma once
 
 #include "VT.h"
+#include <RenderCore/DeviceObject.h>
 
-class AVirtualTextureFile
+class AVirtualTextureFile : public ARefCounted
 {
 public:
     AVirtualTextureFile( const char * FileName );

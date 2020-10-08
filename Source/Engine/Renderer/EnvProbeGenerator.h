@@ -30,12 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include "RenderCommon.h"
-
-struct SRoughnessUniformBuffer {
-    Float4x4 Transform[6];
-    Float4 Roughness;
-};
+#include <RenderCore/ImmediateContext.h>
+#include <Core/Public/CoreMath.h>
 
 class AEnvProbeGenerator {
 public:
@@ -45,8 +41,12 @@ public:
     void Generate( int _MaxLod, RenderCore::ITexture * _SourceCubemap, TRef< RenderCore::ITexture > * ppTexture );
 
 private:
-    TRef< RenderCore::IBuffer > m_UniformBuffer;
-    SRoughnessUniformBuffer m_UniformBufferData;
-    TRef< RenderCore::IPipeline > m_Pipeline;
-    TRef< RenderCore::IRenderPass > m_RP;
+    struct SConstantData {
+        Float4x4 Transform[6];
+        Float4 Roughness;
+    };
+    TRef< RenderCore::IBuffer > ConstantBuffer;
+    SConstantData ConstantBufferData;
+    TRef< RenderCore::IPipeline > Pipeline;
+    TRef< RenderCore::IRenderPass > RP;
 };

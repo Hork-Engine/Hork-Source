@@ -46,16 +46,15 @@ void UnpackCluster( out uint numProbes, out uint numDecals, out uint numLights, 
     const float slice = max( 0.0, floor( log2( linearDepth ) * scale + bias ) );
     const ivec3 clusterIndex = ivec3( InNormalizedScreenCoord.x * 16, InNormalizedScreenCoord.y * 8, slice );
 
-    // Fetch packed data
-    const uvec2 cluster = texelFetch( ClusterLookup, clusterIndex, 0 ).xy;
+    // Fetch cluster header
+    const uvec2 header = texelFetch( ClusterLookup, clusterIndex, 0 ).xy;
 
-    // Unpack cluster data
-    numProbes = cluster.y & 0xff;
-    numDecals = ( cluster.y >> 8 ) & 0xff;
-    numLights = ( cluster.y >> 16 ) & 0xff;
-    //unused = ( cluster.y >> 24 ) & 0xff; // can be used in future
-
-    firstIndex = cluster.x;
+    // Unpack header data
+    firstIndex = header.x;
+    numProbes = header.y & 0xff;
+    numDecals = ( header.y >> 8 ) & 0xff;
+    numLights = ( header.y >> 16 ) & 0xff;
+    //unused = ( header.y >> 24 ) & 0xff; // can be used in future
 }
 
 #endif

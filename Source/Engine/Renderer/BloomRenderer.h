@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "RenderCommon.h"
+#include <RenderCore/FrameGraph/FrameGraph.h>
 
 class ABloomRenderer {
 public:

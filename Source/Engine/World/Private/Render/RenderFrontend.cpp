@@ -39,7 +39,7 @@ SOFTWARE.
 #include <World/Public/Widgets/WDesktop.h>
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/ScopedTimeCheck.h>
-#include <Runtime/Public/VertexMemoryGPU.h>
+#include <Renderer/VertexMemoryGPU.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 
 #include "VSD.h"
@@ -95,17 +95,17 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
 
     //RenderImgui();
 
-    FrameData.AllocSurfaceWidthP = FrameData.AllocSurfaceWidth;
-    FrameData.AllocSurfaceHeightP = FrameData.AllocSurfaceHeight;
-    FrameData.AllocSurfaceWidth = MaxViewportWidth;
-    FrameData.AllocSurfaceHeight = MaxViewportHeight;
+    FrameData.RenderTargetMaxWidthP = FrameData.RenderTargetMaxWidth;
+    FrameData.RenderTargetMaxHeightP = FrameData.RenderTargetMaxHeight;
+    FrameData.RenderTargetMaxWidth = MaxViewportWidth;
+    FrameData.RenderTargetMaxHeight = MaxViewportHeight;
 
     FrameData.CanvasWidth = InCanvas->Width;
     FrameData.CanvasHeight = InCanvas->Height;
 
     const Float2 orthoMins( 0.0f, (float)FrameData.CanvasHeight );
     const Float2 orthoMaxs( (float)FrameData.CanvasWidth, 0.0f );
-    FrameData.OrthoProjection = Float4x4::Ortho2DCC( orthoMins, orthoMaxs );
+    FrameData.CanvasOrthoProjection = Float4x4::Ortho2DCC( orthoMins, orthoMaxs );
 
     FrameData.Instances.Clear();
     FrameData.TranslucentInstances.Clear();
@@ -116,7 +116,6 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     FrameData.LightShadowmaps.Clear();
 
     //FrameData.ShadowCascadePoolSize = 0;
-    FrameData.StreamBuffer = GStreamedMemoryGPU.GetBufferGPU();
     DebugDraw.Reset();
 
     // Allocate views
@@ -141,9 +140,11 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, FrameData.Instances.Size() + FrameData.ShadowInstances.Size() );
 
     if ( DebugDraw.CommandsCount() > 0 ) {
+        AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+
         FrameData.DbgCmds = DebugDraw.GetCmds().ToPtr();
-        FrameData.DbgVertexStreamOffset = GStreamedMemoryGPU.AllocateVertex( DebugDraw.GetVertices().Size() * sizeof( SDebugVertex ), DebugDraw.GetVertices().ToPtr() );
-        FrameData.DbgIndexStreamOffset = GStreamedMemoryGPU.AllocateVertex( DebugDraw.GetIndices().Size() * sizeof( unsigned short ), DebugDraw.GetIndices().ToPtr() );
+        FrameData.DbgVertexStreamOffset = streamedMemory->AllocateVertex( DebugDraw.GetVertices().Size() * sizeof( SDebugVertex ), DebugDraw.GetVertices().ToPtr() );
+        FrameData.DbgIndexStreamOffset = streamedMemory->AllocateVertex( DebugDraw.GetIndices().Size() * sizeof( unsigned short ), DebugDraw.GetIndices().ToPtr() );
     }
 
     Stat.FrontendTime = GRuntime.SysMilliseconds() - Stat.FrontendTime;
@@ -155,6 +156,7 @@ void ARenderFrontend::RenderView( int _Index ) {
     ACameraComponent * camera = viewport->Camera;
     AWorld * world = camera->GetWorld();
     SRenderView * view = &FrameData.RenderViews[_Index];
+    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
 
     AN_ASSERT( RP ); // TODO: Don't allow <null> rendering parameters
 
@@ -242,19 +244,20 @@ void ARenderFrontend::RenderView( int _Index ) {
 
     view->CurrentExposure = RP->GetCurrentExposure()->GetGPUResource();
 
+    // TODO: light and depth texture must have size of render view, not render target max w/h
     // FIXME: Do not initialize light&depth textures if screen space reflections disabled
     ATexture * lightTexture = RP->GetLightTexture();
-    if ( lightTexture->GetDimensionX() != FrameData.AllocSurfaceWidth
-         || lightTexture->GetDimensionY() != FrameData.AllocSurfaceHeight )
+    if ( lightTexture->GetDimensionX() != FrameData.RenderTargetMaxWidth
+         || lightTexture->GetDimensionY() != FrameData.RenderTargetMaxHeight )
     {
-        lightTexture->Initialize2D( TEXTURE_PF_R11F_G11F_B10F, 1, FrameData.AllocSurfaceWidth, FrameData.AllocSurfaceHeight );
+        lightTexture->Initialize2D( TEXTURE_PF_R11F_G11F_B10F, 1, FrameData.RenderTargetMaxWidth, FrameData.RenderTargetMaxHeight );
     }
 
     ATexture * depthTexture = RP->GetDepthTexture();
-    if ( depthTexture->GetDimensionX() != FrameData.AllocSurfaceWidth
-         || depthTexture->GetDimensionY() != FrameData.AllocSurfaceHeight )
+    if ( depthTexture->GetDimensionX() != FrameData.RenderTargetMaxWidth
+         || depthTexture->GetDimensionY() != FrameData.RenderTargetMaxHeight )
     {
-        depthTexture->Initialize2D( TEXTURE_PF_R32F, 1, FrameData.AllocSurfaceWidth, FrameData.AllocSurfaceHeight );
+        depthTexture->Initialize2D( TEXTURE_PF_R32F, 1, FrameData.RenderTargetMaxWidth, FrameData.RenderTargetMaxHeight );
     }
 
     view->LightTexture = lightTexture->GetGPUResource();
@@ -280,6 +283,16 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->NumDirectionalLights = 0;
     view->FirstDebugDrawCommand = 0;
     view->DebugDrawCommandCount = 0;
+
+    size_t size = MAX_TOTAL_SHADOW_CASCADES_PER_VIEW * sizeof( Float4x4 );
+
+    view->ShadowMapMatricesStreamHandle = streamedMemory->AllocateConstant( size, nullptr );
+    view->ShadowMapMatrices = (Float4x4 *)streamedMemory->Map( view->ShadowMapMatricesStreamHandle );
+
+    size_t numFrustumClusters = MAX_FRUSTUM_CLUSTERS_X * MAX_FRUSTUM_CLUSTERS_Y * MAX_FRUSTUM_CLUSTERS_Z;
+
+    view->ClusterLookupStreamHandle = streamedMemory->AllocateConstant( numFrustumClusters * sizeof( SClusterHeader ), nullptr );
+    view->ClusterLookup = (SClusterHeader *)streamedMemory->Map( view->ClusterLookupStreamHandle );
 
     if ( !r_RenderView ) {
         return;
@@ -332,9 +345,11 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
         return;
     }
 
+    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+
     // Copy vertex data
-    drawList->VertexStreamOffset = GStreamedMemoryGPU.AllocateVertex( sizeof( SHUDDrawVert ) * srcList->VtxBuffer.Size, srcList->VtxBuffer.Data );
-    drawList->IndexStreamOffset = GStreamedMemoryGPU.AllocateIndex( sizeof( unsigned short ) * srcList->IdxBuffer.Size, srcList->IdxBuffer.Data );
+    drawList->VertexStreamOffset = streamedMemory->AllocateVertex( sizeof( SHUDDrawVert ) * srcList->VtxBuffer.Size, srcList->VtxBuffer.Data );
+    drawList->IndexStreamOffset = streamedMemory->AllocateIndex( sizeof( unsigned short ) * srcList->IdxBuffer.Size, srcList->IdxBuffer.Data );
 
     // Allocate commands
     drawList->Commands = ( SHUDDrawCmd * )GRuntime.AllocFrameMem( sizeof( SHUDDrawCmd ) * srcList->CmdBuffer.Size );
@@ -721,6 +736,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
     ADrawable * drawable;
     AAnalyticLightComponent * light;
     AIBLComponent * ibl;
+    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
 
     VisLights.Clear();
     VisIBLs.Clear();
@@ -789,23 +805,23 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
             continue;
         }
 
-        SDirectionalLightDef * lightDef = (SDirectionalLightDef *)GRuntime.AllocFrameMem( sizeof( SDirectionalLightDef ) );
-        if ( !lightDef ) {
+        SDirectionalLightInstance * instance = (SDirectionalLightInstance *)GRuntime.AllocFrameMem( sizeof( SDirectionalLightInstance ) );
+        if ( !instance ) {
             break;
         }
 
-        FrameData.DirectionalLights.Append( lightDef );
+        FrameData.DirectionalLights.Append( instance );
 
-        dirlight->AddShadowmapCascades( view, &lightDef->FirstCascade, &lightDef->NumCascades );
+        dirlight->AddShadowmapCascades( view, &instance->ViewProjStreamHandle, &instance->FirstCascade, &instance->NumCascades );
 
-        view->NumCascadedShadowMaps += lightDef->NumCascades > 0 ? 1 : 0;  // Just statistics
+        view->NumCascadedShadowMaps += instance->NumCascades > 0 ? 1 : 0;  // Just statistics
 
-        lightDef->ColorAndAmbientIntensity = dirlight->GetEffectiveColor();
-        lightDef->Matrix = dirlight->GetWorldRotation().ToMatrix();
-        lightDef->MaxShadowCascades = dirlight->GetMaxShadowCascades();
-        lightDef->RenderMask = ~0;//dirlight->RenderingGroup;
-        lightDef->ShadowmapIndex = -1;
-        lightDef->ShadowCascadeResolution = dirlight->GetShadowCascadeResolution();
+        instance->ColorAndAmbientIntensity = dirlight->GetEffectiveColor();
+        instance->Matrix = dirlight->GetWorldRotation().ToMatrix();
+        instance->MaxShadowCascades = dirlight->GetMaxShadowCascades();
+        instance->RenderMask = ~0;//dirlight->RenderingGroup;
+        instance->ShadowmapIndex = -1;
+        instance->ShadowCascadeResolution = dirlight->GetShadowCascadeResolution();
 
         view->NumDirectionalLights++;
     }
@@ -814,7 +830,11 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
 
     // Allocate lights
     view->NumPointLights = VisLights.Size();
-    view->PointLights = (SClusterLight *)GRuntime.AllocFrameMem( sizeof( SClusterLight ) * view->NumPointLights );
+    view->PointLightsStreamSize = sizeof( SLightParameters ) * view->NumPointLights;
+    view->PointLightsStreamHandle = view->PointLightsStreamSize > 0
+            ? streamedMemory->AllocateConstant( view->PointLightsStreamSize, nullptr ) : 0;
+    view->PointLights = (SLightParameters *)streamedMemory->Map( view->PointLightsStreamHandle );
+
     for ( int i = 0 ; i < view->NumPointLights ; i++ ) {
         light = VisLights[i];
 
@@ -844,7 +864,11 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
     
     // Allocate probes
     view->NumProbes = VisIBLs.Size();
-    view->Probes = (SClusterProbe *)GRuntime.AllocFrameMem( sizeof( SClusterProbe ) * view->NumProbes );
+    view->ProbeStreamSize = sizeof( SProbeParameters ) * view->NumProbes;
+    view->ProbeStreamHandle = view->ProbeStreamSize > 0 ?
+                streamedMemory->AllocateConstant( view->ProbeStreamSize, nullptr ) : 0;
+    view->Probes = (SProbeParameters *)streamedMemory->Map( view->ProbeStreamHandle );
+
     for ( int i = 0 ; i < view->NumProbes ; i++ ) {
         ibl = VisIBLs[i];
 
@@ -1379,6 +1403,8 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
         return;
     }
 
+    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+
     // Create shadow instances
 
     ShadowCasters.Clear();
@@ -1403,7 +1429,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
     for ( int lightIndex = 0 ; lightIndex < RenderDef.View->NumDirectionalLights ; lightIndex++ ) {
         int lightOffset = RenderDef.View->FirstDirectionalLight + lightIndex;
 
-        SDirectionalLightDef * lightDef = FrameData.DirectionalLights[ lightOffset ];
+        SDirectionalLightInstance * lightDef = FrameData.DirectionalLights[ lightOffset ];
 
         if ( lightDef->NumCascades == 0 ) {
             continue;
@@ -1418,12 +1444,13 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
         shadowMap->FirstLightPortal = FrameData.LightPortals.Size();
         shadowMap->LightPortalsCount = 0;
 
+        Float4x4 * lightViewProjectionMatrices = (Float4x4 *)streamedMemory->Map( lightDef->ViewProjStreamHandle );
+
         // Perform culling for each cascade
         // TODO: Do it parallel (jobs)
         for ( int cascadeIndex = 0 ; cascadeIndex < lightDef->NumCascades ; cascadeIndex++ ) {
-            int cascadeOffset = lightDef->FirstCascade + cascadeIndex;
 
-            frustum.FromMatrix( RenderDef.View->LightViewProjectionMatrices[cascadeOffset] );
+            frustum.FromMatrix( lightViewProjectionMatrices[cascadeIndex] );
 
             ShadowCasterCullResult.ZeroMem();
 
@@ -1578,15 +1605,17 @@ void ARenderFrontend::AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCo
         return;
     }
 
-    SurfaceStream.VertexAddr = GStreamedMemoryGPU.AllocateVertex( totalVerts * sizeof( SMeshVertex ), nullptr );
-    SurfaceStream.VertexLightAddr = GStreamedMemoryGPU.AllocateVertex( totalVerts * sizeof( SMeshVertexLight ), nullptr );
-    SurfaceStream.VertexUVAddr = GStreamedMemoryGPU.AllocateVertex( totalVerts * sizeof( SMeshVertexUV ), nullptr );
-    SurfaceStream.IndexAddr = GStreamedMemoryGPU.AllocateIndex( totalIndices * sizeof( unsigned int ), nullptr );
+    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
 
-    SMeshVertex * vertices = (SMeshVertex *)GStreamedMemoryGPU.Map( SurfaceStream.VertexAddr );
-    SMeshVertexLight * vertexLight = (SMeshVertexLight *)GStreamedMemoryGPU.Map( SurfaceStream.VertexLightAddr );
-    SMeshVertexUV * vertexUV = (SMeshVertexUV *)GStreamedMemoryGPU.Map( SurfaceStream.VertexUVAddr );
-    unsigned int * indices = (unsigned int *)GStreamedMemoryGPU.Map( SurfaceStream.IndexAddr );
+    SurfaceStream.VertexAddr = streamedMemory->AllocateVertex( totalVerts * sizeof( SMeshVertex ), nullptr );
+    SurfaceStream.VertexLightAddr = streamedMemory->AllocateVertex( totalVerts * sizeof( SMeshVertexLight ), nullptr );
+    SurfaceStream.VertexUVAddr = streamedMemory->AllocateVertex( totalVerts * sizeof( SMeshVertexUV ), nullptr );
+    SurfaceStream.IndexAddr = streamedMemory->AllocateIndex( totalIndices * sizeof( unsigned int ), nullptr );
+
+    SMeshVertex * vertices = (SMeshVertex *)streamedMemory->Map( SurfaceStream.VertexAddr );
+    SMeshVertexLight * vertexLight = (SMeshVertexLight *)streamedMemory->Map( SurfaceStream.VertexLightAddr );
+    SMeshVertexUV * vertexUV = (SMeshVertexUV *)streamedMemory->Map( SurfaceStream.VertexUVAddr );
+    unsigned int * indices = (unsigned int *)streamedMemory->Map( SurfaceStream.IndexAddr );
 
     int numVerts = 0;
     int numIndices = 0;
@@ -1670,11 +1699,13 @@ void ARenderFrontend::AddShadowmapSurfaces( SLightShadowmap * ShadowMap, SSurfac
         return;
     }
 
-    SurfaceStream.VertexAddr = GStreamedMemoryGPU.AllocateVertex( totalVerts * sizeof( SMeshVertex ), nullptr );
-    SurfaceStream.IndexAddr = GStreamedMemoryGPU.AllocateIndex( totalIndices * sizeof( unsigned int ), nullptr );
+    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
 
-    SMeshVertex * vertices = (SMeshVertex *)GStreamedMemoryGPU.Map( SurfaceStream.VertexAddr );
-    unsigned int * indices = (unsigned int *)GStreamedMemoryGPU.Map( SurfaceStream.IndexAddr );
+    SurfaceStream.VertexAddr = streamedMemory->AllocateVertex( totalVerts * sizeof( SMeshVertex ), nullptr );
+    SurfaceStream.IndexAddr = streamedMemory->AllocateIndex( totalIndices * sizeof( unsigned int ), nullptr );
+
+    SMeshVertex * vertices = (SMeshVertex *)streamedMemory->Map( SurfaceStream.VertexAddr );
+    unsigned int * indices = (unsigned int *)streamedMemory->Map( SurfaceStream.IndexAddr );
 
     int numVerts = 0;
     int numIndices = 0;
@@ -1766,8 +1797,10 @@ void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialIn
     instance->Material = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
 
-    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset );
-    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset );
+    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+
+    streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset );
+    streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset );
 
     instance->WeightsBuffer = nullptr;
 
@@ -1778,13 +1811,13 @@ void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialIn
     if ( _LightmapBlock >= 0 && _LightmapBlock < Level->Lightmaps.Size() ) {
         instance->Lightmap = Level->Lightmaps[ _LightmapBlock ]->GetGPUResource();
 
-        GStreamedMemoryGPU.GetPhysicalBufferAndOffset( SurfaceStream.VertexUVAddr, &instance->LightmapUVChannel, &instance->LightmapUVOffset );
+        streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.VertexUVAddr, &instance->LightmapUVChannel, &instance->LightmapUVOffset );
     } else {
         instance->Lightmap = nullptr;
         instance->LightmapUVChannel = nullptr;
     }
 
-    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( SurfaceStream.VertexLightAddr, &instance->VertexLightChannel, &instance->VertexLightOffset );
+    streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.VertexLightAddr, &instance->VertexLightChannel, &instance->VertexLightOffset );
 
     instance->IndexCount = _NumIndices;
     instance->StartIndexLocation = _FirstIndex;
@@ -1818,8 +1851,10 @@ void ARenderFrontend::AddShadowmapSurface( SLightShadowmap * ShadowMap, AMateria
     instance->Material = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
 
-    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset );
-    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset );
+    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+
+    streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset );
+    streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset );
 
     instance->WeightsBuffer = nullptr;
     instance->WeightsBufferOffset = 0;

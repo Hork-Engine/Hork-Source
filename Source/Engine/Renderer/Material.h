@@ -30,7 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include "RenderCommon.h"
+#include <RenderCore/ImmediateContext.h>
+
+#include "RenderDefs.h"
 
 void InitMaterialSamplers();
 

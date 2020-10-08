@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "PostprocessRenderer.h"
-#include "RenderBackend.h"
+#include "RenderLocal.h"
 #include "ExposureRenderer.h"
 
 using namespace RenderCore;
@@ -81,7 +81,7 @@ APostprocessRenderer::APostprocessRenderer()
     samplers[6].AddressW = SAMPLER_ADDRESS_CLAMP;
 
     SBufferInfo bufferInfo;
-    bufferInfo.BufferBinding = BUFFER_BIND_UNIFORM;
+    bufferInfo.BufferBinding = BUFFER_BIND_CONSTANT;
 
     SPipelineResourceLayout resourceLayout;
 

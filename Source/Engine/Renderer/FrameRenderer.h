@@ -45,7 +45,7 @@ SOFTWARE.
 
 struct SVirtualTextureWorkflow;
 
-class AFrameRenderer : public RenderCore::IObjectInterface
+class AFrameRenderer : public ARefCounted
 {
 public:
     AFrameRenderer();
@@ -55,7 +55,7 @@ public:
         AFrameGraphTexture * FinalTexture;
     };
 
-    void Render( AFrameGraph & FrameGraph, SVirtualTextureWorkflow * VTWorkflow, SFrameGraphCaptured & CapturedResources );
+    void Render( AFrameGraph & FrameGraph, bool bVirtualTexturing, SFrameGraphCaptured & CapturedResources );
 
 private:
     void AddLinearizeDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DepthTexture, AFrameGraphTexture ** ppLinearDepth );

@@ -33,11 +33,11 @@ SOFTWARE.
 AN_CLASS_META( AVirtualTextureResource )
 
 AVirtualTextureResource::AVirtualTextureResource() {
-    //TextureGPU = GRenderBackend->CreateTexture( this );
+    //TextureGPU = GRenderBackend.CreateTexture( this );
 }
 
 AVirtualTextureResource::~AVirtualTextureResource() {
-    //GRenderBackend->DestroyTexture( TextureGPU );
+    //GRenderBackend.DestroyTexture( TextureGPU );
 }
 
 void AVirtualTextureResource::LoadInternalResource( const char * _Path ) {

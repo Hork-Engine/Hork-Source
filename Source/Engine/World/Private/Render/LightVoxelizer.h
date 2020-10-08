@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Runtime/Public/RenderCore.h>
+#include <Renderer/RenderBackend.h>
 #include <World/Public/Base/DebugRenderer.h>
 
 class AAnalyticLightComponent;
@@ -140,7 +140,8 @@ private:
 
     alignas(16) SFrustumCluster ClusterData[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
 
-    SFrameLightData * pLightData;
+    SClusterHeader * pClusterHeaderData;
+    SClusterPackedIndex * pClusterPackedIndices;
 
     bool bUseSSE;
 };

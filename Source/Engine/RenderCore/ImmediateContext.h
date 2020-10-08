@@ -40,7 +40,7 @@ SOFTWARE.
 
 #include <Core/Public/Logger.h>
 
-#include <stddef.h>
+struct SDL_Window;
 
 namespace RenderCore {
 
@@ -417,6 +417,8 @@ struct SClearValue
 class IResourceTable : public IDeviceObject
 {
 public:
+    IResourceTable( IDevice * Device ) : IDeviceObject( Device ) {}
+
     virtual void BindTexture( unsigned int Slot, ITextureBase const * Texture ) = 0;
 
     virtual void BindImage( unsigned int Slot, ITextureBase const * Texture, uint16_t Lod = 0, bool bLayered = false, uint16_t LayerIndex = 0 ) = 0;
@@ -425,7 +427,7 @@ public:
 };
 
 /// Immediate render context
-class IImmediateContext : public IObjectInterface
+class IImmediateContext : public ARefCounted
 {
 public:
     virtual void MakeCurrent() = 0;

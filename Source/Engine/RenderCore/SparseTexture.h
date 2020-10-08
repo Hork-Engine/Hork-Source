@@ -176,6 +176,8 @@ inline SSparseTextureCreateInfo MakeSparseTexture(
 class ISparseTexture : public ITextureBase
 {
 public:
+    ISparseTexture( IDevice * Device ) : ITextureBase( Device ) {}
+
     SPARSE_TEXTURE_TYPE GetType() const { return Type; }
 
     uint32_t GetWidth() const;

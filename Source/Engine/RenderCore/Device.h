@@ -58,6 +58,7 @@ enum FEATURE_TYPE
     FEATURE_SWAP_CONTROL,
     FEATURE_SWAP_CONTROL_TEAR,
     FEATURE_GPU_MEMORY_INFO,
+    FEATURE_SPIR_V,
 
     FEATURE_MAX
 };
@@ -67,7 +68,7 @@ enum DEVICE_CAPS
     DEVICE_CAPS_BUFFER_VIEW_MAX_SIZE,
     DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT,
 
-    DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT,
+    DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT,
     DEVICE_CAPS_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT,
 
     DEVICE_CAPS_MAX_TEXTURE_SIZE,
@@ -78,20 +79,20 @@ enum DEVICE_CAPS
     DEVICE_CAPS_MAX_VERTEX_BUFFER_SLOTS,
     DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE,
     DEVICE_CAPS_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET,
-    DEVICE_CAPS_MAX_UNIFORM_BUFFER_BINDINGS,
+    DEVICE_CAPS_MAX_CONSTANT_BUFFER_BINDINGS,
     DEVICE_CAPS_MAX_SHADER_STORAGE_BUFFER_BINDINGS,
     DEVICE_CAPS_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS,
     DEVICE_CAPS_MAX_TRANSFORM_FEEDBACK_BUFFERS,
 
+    DEVICE_CAPS_CONSTANT_BUFFER_MAX_BLOCK_SIZE,
+
     DEVICE_CAPS_MAX
 };
 
-#define MAX_ERROR_LOG_LENGTH  2048
-
-class IDevice : public IObjectInterface
+class IDevice : public ARefCounted
 {
 public:
-    virtual void SwapBuffers( SDL_Window * WindowHandle, int SwapInterval ) = 0;
+    virtual void SwapBuffers( struct SDL_Window * WindowHandle, int SwapInterval ) = 0;
 
     virtual void GetImmediateContext( IImmediateContext ** ppImmediateContext ) = 0;
 
@@ -104,9 +105,8 @@ public:
 
     virtual void CreatePipeline( SPipelineCreateInfo const & _CreateInfo, TRef< IPipeline > * ppPipeline ) = 0;
 
-    virtual void CreateShaderFromBinary( SShaderBinaryData const * _BinaryData, char ** _InfoLog, TRef< IShaderModule > * ppShaderModule ) = 0;
-    virtual void CreateShaderFromCode( SHADER_TYPE _ShaderType, unsigned int _NumSources, const char * const * _Sources, char ** _InfoLog, TRef< IShaderModule > * ppShaderModule ) = 0;
-    virtual void CreateShaderFromCode( SHADER_TYPE _ShaderType, const char * _Source, char ** _InfoLog, TRef< IShaderModule > * ppShaderModule ) = 0;
+    virtual void CreateShaderFromBinary( SShaderBinaryData const * _BinaryData, TRef< IShaderModule > * ppShaderModule ) = 0;
+    virtual void CreateShaderFromCode( SHADER_TYPE _ShaderType, unsigned int _NumSources, const char * const * _Sources, TRef< IShaderModule > * ppShaderModule ) = 0;
 
     virtual void CreateBuffer( SBufferCreateInfo const & _CreateInfo, const void * _SysMem, TRef< IBuffer > * ppBuffer ) = 0;
 
@@ -131,7 +131,6 @@ public:
     virtual bool CreateShaderBinaryData( SHADER_TYPE _ShaderType,
                                          unsigned int _NumSources,
                                          const char * const * _Sources,
-                                         /* optional */ char ** _InfoLog,
                                          SShaderBinaryData * _BinaryData ) = 0;
 
     virtual void DestroyShaderBinaryData( SShaderBinaryData * _BinaryData ) = 0;
@@ -167,7 +166,27 @@ public:
     //unsigned int GetTotalFramebuffers() const { return TotalFramebuffers; }
     //unsigned int GetTotalTransformFeedbacks() const { return TotalTransformFeedbacks; }
     //unsigned int GetTotalQueryPools() const { return TotalQueryPools; }
+
+#ifdef AN_DEBUG
+    IDeviceObject * GetDeviceObjects_DEBUG() { return ListHead; }
+#endif
+
+private:
+#ifdef AN_DEBUG
+    IDeviceObject * ListHead = nullptr;
+    IDeviceObject * ListTail = nullptr;
+
+    friend class IDeviceObject;
+#endif
 };
+
+struct SAllocatorCallback
+{
+    void * ( *Allocate )( size_t _BytesCount );
+    void ( *Deallocate )( void * _Bytes );
+};
+
+typedef int ( *HashCallback )( const unsigned char * _Data, int _Size );
 
 void CreateLogicalDevice( SImmediateContextCreateInfo const & _CreateInfo,
                           SAllocatorCallback const * _Allocator,

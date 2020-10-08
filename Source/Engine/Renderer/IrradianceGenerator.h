@@ -30,13 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include "RenderCommon.h"
-
-struct SIrradianceGeneratorUniformBuffer
-{
-    Float4x4 Transform[6];
-    Float4 Index;
-};
+#include <RenderCore/ImmediateContext.h>
+#include <Core/Public/CoreMath.h>
 
 class AIrradianceGenerator
 {
@@ -47,8 +42,13 @@ public:
     void Generate( RenderCore::ITexture * _SourceCubemap, TRef< RenderCore::ITexture > * ppTexture );
 
 private:
-    TRef< RenderCore::IBuffer > m_UniformBuffer;
-    SIrradianceGeneratorUniformBuffer m_UniformBufferData;
-    TRef< RenderCore::IPipeline > m_Pipeline;
-    TRef< RenderCore::IRenderPass > m_RP;
+    struct SConstantData
+    {
+        Float4x4 Transform[6];
+        Float4 Index;
+    };
+    TRef< RenderCore::IBuffer > ConstantBuffer;
+    SConstantData ConstantBufferData;
+    TRef< RenderCore::IPipeline > Pipeline;
+    TRef< RenderCore::IRenderPass > RP;
 };

@@ -32,7 +32,7 @@ SOFTWARE.
 #include "VirtualTexture.h"
 #include "QuadTree.h"
 
-#include "../RenderCommon.h"
+#include "../RenderLocal.h"
 
 #include <Runtime/Public/Runtime.h>
 
@@ -59,14 +59,14 @@ AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const
         PageCacheCapacity = 4096;
     }
 
-    PageCacheInfo.Resize( PageCacheCapacity );
-    SortedCacheInfo.Resize( PageCacheCapacity );
+    PhysPageInfo.Resize( PageCacheCapacity );
+    PhysPageInfoSorted.Resize( PageCacheCapacity );
 
     for ( int i = 0 ; i < PageCacheCapacity ; i++ ) {
-        PageCacheInfo[i].Time = 0;
-        PageCacheInfo[i].PageIndex = 0;
-        PageCacheInfo[i].pTexture = 0;
-        SortedCacheInfo[i].pInfo = &PageCacheInfo[i];
+        PhysPageInfo[i].Time = 0;
+        PhysPageInfo[i].PageIndex = 0;
+        PhysPageInfo[i].pTexture = 0;
+        PhysPageInfoSorted[i].pInfo = &PhysPageInfo[i];
     }
 
     int physCacheWidth = PageCacheCapacityX * PageResolutionB;
@@ -79,6 +79,7 @@ AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const
     LayerInfo.resize( CreateInfo.NumLayers );
     for ( int i = 0 ; i < CreateInfo.NumLayers ; i++ ) {
         GDevice->CreateTexture( MakeTexture( CreateInfo.pLayers[i].TextureFormat, STextureResolution2D( physCacheWidth, physCacheHeight ) ), &PhysCacheLayers[i] );
+        PhysCacheLayers[i]->SetDebugName( "Virtual texture phys cache layer" );
         LayerInfo[i] = CreateInfo.pLayers[i];
 
         size_t size = LayerInfo[i].PageSizeInBytes;//RenderCore::ITexture::GetPixelFormatSize( PageResolutionB, PageResolutionB, LayerInfo[i].UploadFormat );
@@ -87,7 +88,7 @@ AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const
         AlignedSize += Align( size, 16 );
     }
 
-    FilledPages = 0;
+    TotalCachedPages = 0;
 
     LRUTime = 0;
 
@@ -123,6 +124,7 @@ AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const
     GLogger.Printf( "Virtual texture cache transfer buffer size: %d kb\n", bufferCI.SizeInBytes >> 10 );
 
     GDevice->CreateBuffer( bufferCI, nullptr, &TransferBuffer );
+    TransferBuffer->SetDebugName( "Virtual texture page transfer buffer" );
 
     pTransferData = (byte *)TransferBuffer->Map( RenderCore::MAP_TRANSFER_WRITE,
                                                  RenderCore::MAP_INVALIDATE_ENTIRE_BUFFER,
@@ -148,42 +150,52 @@ AVirtualTextureCache::~AVirtualTextureCache()
     TransferBuffer->Unmap();
 #endif
 
+    if ( LockTransfers() ) {
+        for ( SPageTransfer * transfer : Transfers ) {
+            transfer->pTexture->RemoveRef();
+        }
+        UnlockTransfers();
+    }
+
     for ( SPageTransfer * transfer = PageTransfer ; transfer < &PageTransfer[MAX_UPLOADS_PER_FRAME] ; transfer++ ) {
         rcmd->RemoveSync( transfer->Fence );
     }
 
     for ( AVirtualTexture * texture : VirtualTextures ) {
-        delete texture;
+        texture->RemoveRef();
     }
 }
 
-AVirtualTexture * AVirtualTextureCache::CreateVirtualTexture( const char * FileName )
+bool AVirtualTextureCache::CreateTexture( const char * FileName, TRef< AVirtualTexture > * ppTexture )
 {
-    AVirtualTexture * texture = new AVirtualTexture( FileName, this );
+    ppTexture->Reset();
 
-    if ( !texture->IsLoaded() ) {
-        delete texture;
-        return nullptr;
+    TRef< AVirtualTexture > pTexture = MakeRef< AVirtualTexture >( FileName, this );
+    if ( !pTexture->IsLoaded() ) {
+        return false;
     }
 
-    VirtualTextures.Append( texture );
+    *ppTexture = pTexture;
 
-    return texture;
+    pTexture->AddRef();
+
+    VirtualTextures.Append( pTexture.GetObject() );
+
+    return true;
 }
 
-void AVirtualTextureCache::RemoveVirtualTexture( AVirtualTexture * Texture ) {
-    AN_ASSERT( Texture->pCache == this );
+//void AVirtualTextureCache::DestroyTexture( TRef< AVirtualTexture > * ppTexture ) {
+//    AVirtualTexture * pTexture = *ppTexture;
 
-    if ( Texture->pCache != this ) {
-        GLogger.Printf( "AVirtualTextureCache::RemoveVirtualTexture: invalid texture\n" );
-        return;
-    }
+//    AN_ASSERT( pTexture && pTexture->pCache == this );
 
-    if ( !Texture->bPendingRemove ) {
-        Texture->bPendingRemove = true;
-        Texture->RemoveRef();
-    }
-}
+//    if ( !pTexture || pTexture->pCache != this ) {
+//        GLogger.Printf( "AVirtualTextureCache::DestroyTexture: invalid texture\n" );
+//        return;
+//    }
+
+//    pTexture->bPendingRemove = true;
+//}
 
 AVirtualTextureCache::SPageTransfer * AVirtualTextureCache::CreatePageTransfer()
 {
@@ -215,38 +227,38 @@ AVirtualTextureCache::SPageTransfer * AVirtualTextureCache::CreatePageTransfer()
 
 void AVirtualTextureCache::MakePageTransferVisible( SPageTransfer * Transfer )
 {
-    ASyncGuard criticalSection( UploadMutex );
-    Uploads.Append( Transfer );
+    ASyncGuard criticalSection( TransfersMutex );
+    Transfers.Append( Transfer );
 }
 
-bool AVirtualTextureCache::LockUploads()
+bool AVirtualTextureCache::LockTransfers()
 {
-    UploadMutex.BeginScope();
-    if ( Uploads.IsEmpty() ) {
-        UploadMutex.EndScope();
+    TransfersMutex.BeginScope();
+    if ( Transfers.IsEmpty() ) {
+        TransfersMutex.EndScope();
         return false;
     }
     return true;
 }
 
-void AVirtualTextureCache::UnlockUploads()
+void AVirtualTextureCache::UnlockTransfers()
 {
-    Uploads.Clear();
-    UploadMutex.EndScope();
+    Transfers.Clear();
+    TransfersMutex.EndScope();
 }
 
 void AVirtualTextureCache::ResetCache() {
-    FilledPages = 0;
+    TotalCachedPages = 0;
     LRUTime = 0;
 
     for ( int i = 0 ; i < PageCacheCapacity ; i++ ) {
-        if ( PageCacheInfo[i].pTexture ) {
-            PageCacheInfo[i].pTexture->MakePageNonResident( PageCacheInfo[i].PageIndex );
+        if ( PhysPageInfo[i].pTexture ) {
+            PhysPageInfo[i].pTexture->MakePageNonResident( PhysPageInfo[i].PageIndex );
         }
-        PageCacheInfo[i].Time = 0;
-        PageCacheInfo[i].PageIndex = 0;
-        PageCacheInfo[i].pTexture = 0;
-        SortedCacheInfo[i].pInfo = &PageCacheInfo[i];
+        PhysPageInfo[i].Time = 0;
+        PhysPageInfo[i].PageIndex = 0;
+        PhysPageInfo[i].pTexture = 0;
+        PhysPageInfoSorted[i].pInfo = &PhysPageInfo[i];
     }
 
     for ( AVirtualTexturePtr texture : VirtualTextures ) {
@@ -265,7 +277,7 @@ void AVirtualTextureCache::Update() {
 
     WaitForFences();
 
-    if ( !LockUploads() ) {
+    if ( !LockTransfers() ) {
         // no pages to upload
         for ( AVirtualTexturePtr texture : VirtualTextures ) {
             maxPendingLRUs = Math::Max( maxPendingLRUs, texture->PendingUpdateLRU.Size() );
@@ -289,7 +301,7 @@ void AVirtualTextureCache::Update() {
             const uint16_t * pageIndirection = texture->GetIndirectionData();
 
             int offset = pageIndirection[absIndex] & 0x0fff;
-            PageCacheInfo[offset].Time = time;
+            PhysPageInfo[offset].Time = time;
         }
         texture->PendingUpdateLRU.Clear();
     }
@@ -297,115 +309,119 @@ void AVirtualTextureCache::Update() {
     //GLogger.Printf( "maxPendingLRUs %d\n", maxPendingLRUs );
 
     int numFirstReservedPages = 0;//1;  // first lod always must be in cache
+    int currentCacheCapacity = Math::Min< int >( PageCacheCapacity - numFirstReservedPages, Transfers.Size() );
 
-    SSortedCacheInfo * sortedCachePtr = &SortedCacheInfo[numFirstReservedPages];
+    SPhysPageInfoSorted * pFirstPhysPage = &PhysPageInfoSorted[numFirstReservedPages];
 
-    if ( FilledPages < PageCacheCapacity ) {
-        sortedCachePtr = &SortedCacheInfo[FilledPages];
-    } else {
+    if ( TotalCachedPages < PageCacheCapacity ) {
+        pFirstPhysPage = &PhysPageInfoSorted[TotalCachedPages];
+    }
+    else {
         // Sort cache info by time to move outdated pages to begin of the array
         struct
         {
-            bool operator() ( SSortedCacheInfo const & a, SSortedCacheInfo const & b ) {
+            bool operator() ( SPhysPageInfoSorted const & a, SPhysPageInfoSorted const & b ) {
                 return a.pInfo->Time < b.pInfo->Time;
             }
-        } CacheInfoCompare;
-        std::sort( sortedCachePtr, SortedCacheInfo.End(), CacheInfoCompare );
+        } PhysicalPageTimeCompare;
+        std::sort( pFirstPhysPage, PhysPageInfoSorted.End(), PhysicalPageTimeCompare );
     }
 
-    int currentCacheCapacity = Math::Min< int >( PageCacheCapacity - numFirstReservedPages, Uploads.Size() );
-    int duplicates = 0; // Count of double streamed pages (just for debugging)
-    int uploaded = 0; // Count of uploaded pages (just for debugging)
-    int uploadIndex = 0;
+    SPhysPageInfoSorted * pLastPhysPage = pFirstPhysPage + currentCacheCapacity;
+
+    int d_duplicates = 0; // Count of double streamed pages (for debugging)
+    int d_uploaded = 0; // Count of uploaded pages (for debugging)
+
+    int fetchIndex = 0;
 
     int64_t uploadStartTime = GRuntime.SysMicroseconds();
 
-    for ( SSortedCacheInfo *si = sortedCachePtr ;
-          si < &sortedCachePtr[currentCacheCapacity] && uploadIndex < Uploads.Size() ; ++uploadIndex )
+    for ( SPhysPageInfoSorted * physPage = pFirstPhysPage ;
+          physPage < pLastPhysPage && fetchIndex < Transfers.Size() ; ++fetchIndex )
     {
-        SPageTransfer * transfer = Uploads[uploadIndex];
+        SPageTransfer * transfer = Transfers[fetchIndex];
 
         AVirtualTexture * pTexture = transfer->pTexture;
 
         if ( pTexture->PIT[transfer->PageIndex] & PF_CACHED ) {
             // Page is loaded twice.
-            duplicates++;
+            d_duplicates++;
             DiscardTransfers( &transfer, 1 );
             continue;
         }
 
         // Clear space for the page
-        if ( si->pInfo->pTexture ) {
-            if ( si->pInfo->Time + 4 >= time ) {
+        if ( physPage->pInfo->pTexture ) {
+            if ( physPage->pInfo->Time + 4 >= time ) {
                 GLogger.Printf( "AVirtualTextureCache::UploadPages: texture cache thrashing\n" );
                 // TODO: move uploaded pages to temporary memory for fast re-upload later
-                DiscardTransfers( &Uploads[uploadIndex], Uploads.Size() - uploadIndex );
+                DiscardTransfers( &Transfers[fetchIndex], Transfers.Size() - fetchIndex );
                 break;
             }
 
-            // debug: invalid case if cell reserved for lod0
+            // debug: invalid case if physical page reserved for lod0
             //if ( pageIndex == 0 ) {
             //    si++;
             //    continue;
             //}
 
-            si->pInfo->pTexture->MakePageNonResident( si->pInfo->PageIndex );
+            physPage->pInfo->pTexture->MakePageNonResident( physPage->pInfo->PageIndex );
         }
 
-        si->pInfo->Time = time;
-        si->pInfo->PageIndex = transfer->PageIndex;
-        si->pInfo->pTexture = pTexture;
+        physPage->pInfo->Time = time;
+        physPage->pInfo->PageIndex = transfer->PageIndex;
+        physPage->pInfo->pTexture = pTexture;
 
         // get new cached page index
-        int cacheCellIndex = si->pInfo - PageCacheInfo.ToPtr();
-        AN_ASSERT( cacheCellIndex < PageCacheCapacity );
+        int physPageIndex = physPage->pInfo - PhysPageInfo.ToPtr();
+        AN_ASSERT( physPageIndex < PageCacheCapacity );
 
-        TransferPageData( transfer, cacheCellIndex );
+        TransferPageData( transfer, physPageIndex );
         
-        pTexture->MakePageResident( transfer->PageIndex, cacheCellIndex );
+        pTexture->MakePageResident( transfer->PageIndex, physPageIndex );
         pTexture->RemoveRef();
 
-        si++;
-        uploaded++;
-        FilledPages++;
+        physPage++;
+        d_uploaded++;
+        TotalCachedPages++;
     }
 
-    if ( duplicates > 0 ) {
-        GLogger.Printf( "Double streamed %d times\n", duplicates );
+    if ( d_duplicates > 0 ) {
+        GLogger.Printf( "Double streamed %d times\n", d_duplicates );
     }
 
-    GLogger.Printf( "Streamed per frame %d, uploaded %d, time %d microsec\n", Uploads.Size(), uploaded, GRuntime.SysMicroseconds() - uploadStartTime );
+    GLogger.Printf( "Streamed per frame %d, uploaded %d, time %d microsec\n", Transfers.Size(), d_uploaded, GRuntime.SysMicroseconds() - uploadStartTime );
 
-    UnlockUploads();
+    UnlockTransfers();
 
     for ( int texIndex = VirtualTextures.Size() - 1 ; texIndex >= 0 ; texIndex-- ) {
         AVirtualTexturePtr texture = VirtualTextures[texIndex];
 
         texture->CommitPageResidency();
 
-        if ( texture->GetRefCount() == 0 ) {
+        if ( texture->GetRefCount() == 1 ) {
 
             // Remove texture from the cache
             for ( int i = 0 ; i < PageCacheCapacity ; i++ ) {
-                if ( PageCacheInfo[i].pTexture == texture ) {
-                    PageCacheInfo[i].pTexture->MakePageNonResident( PageCacheInfo[i].PageIndex );
+                if ( PhysPageInfo[i].pTexture == texture ) {
+                    PhysPageInfo[i].pTexture->MakePageNonResident( PhysPageInfo[i].PageIndex );
                 }
-                PageCacheInfo[i].Time = 0;
-                PageCacheInfo[i].PageIndex = 0;
-                PageCacheInfo[i].pTexture = 0;
+                PhysPageInfo[i].Time = 0;
+                PhysPageInfo[i].PageIndex = 0;
+                PhysPageInfo[i].pTexture = 0;
             }
 
-            delete texture;
+            texture->RemoveRef();
 
             VirtualTextures.Remove( texIndex );
         }
     }
 }
 
-void AVirtualTextureCache::TransferPageData( SPageTransfer * Transfer, int CacheCellIndex )
+void AVirtualTextureCache::TransferPageData( SPageTransfer * Transfer, int PhysPageIndex )
 {
-    int offsetX = CacheCellIndex & (PageCacheCapacityX-1);
-    int offsetY = CacheCellIndex / PageCacheCapacityX;
+    int offsetX = PhysPageIndex & (PageCacheCapacityX-1);
+    int offsetY = PhysPageIndex / PageCacheCapacityX;
 
     RenderCore::STextureRect rect;
 
@@ -439,14 +455,14 @@ void AVirtualTextureCache::TransferPageData( SPageTransfer * Transfer, int Cache
     Transfer->Fence = rcmd->FenceSync();
 }
 
-void AVirtualTextureCache::DiscardTransfers( SPageTransfer ** Transfers, int Count )
+void AVirtualTextureCache::DiscardTransfers( SPageTransfer ** InTransfers, int Count )
 {
     if ( Count > 0 ) {
         RenderCore::SyncObject Fence = rcmd->FenceSync();
 
         for ( int i = 0 ; i < Count ; i++ ) {
-            Transfers[i]->Fence = Fence;
-            Transfers[i]->pTexture->RemoveRef();
+            InTransfers[i]->Fence = Fence;
+            InTransfers[i]->pTexture->RemoveRef();
         }
     }
 }
@@ -470,7 +486,8 @@ void AVirtualTextureCache::WaitForFences()
             PageTransfer[freePoint].Fence = nullptr;
             freePoint = TransferFreePoint.Increment();
             PageTransferEvent.Signal();
-        } else {
+        }
+        else {
             break;
         }
     }

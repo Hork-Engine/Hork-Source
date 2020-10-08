@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <World/Public/Base/Resource.h>
-#include <Runtime/Public/RenderCore.h>
+#include <Renderer/RenderBackend.h>
 
 
 /**

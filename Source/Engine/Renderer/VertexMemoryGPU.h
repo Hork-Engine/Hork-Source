@@ -31,7 +31,8 @@ SOFTWARE.
 #pragma once
 
 #include <Core/Public/PoolAllocator.h>
-#include <Runtime/Public/RenderCore.h>
+#include <Core/Public/PodArray.h>
+#include <RenderCore/ImmediateContext.h>
 
 constexpr size_t VERTEX_MEMORY_GPU_BLOCK_SIZE = 32<<20; // 32 MB
 constexpr size_t VERTEX_MEMORY_GPU_BLOCK_COUNT = 256;   // max memory VERTEX_MEMORY_GPU_BLOCK_SIZE * VERTEX_MEMORY_GPU_BLOCK_COUNT = 8 GB
@@ -74,7 +75,7 @@ struct SVertexHandle
     bool IsHuge() const { return Size > VERTEX_MEMORY_GPU_BLOCK_SIZE; }
 };
 
-class AVertexMemoryGPU {
+class AVertexMemoryGPU : public ARefCounted {
     AN_FORBID_COPY( AVertexMemoryGPU )
 
 public:
@@ -90,10 +91,6 @@ public:
     AVertexMemoryGPU();
 
     ~AVertexMemoryGPU();
-
-    void Initialize();
-
-    void Deinitialize();
 
     /** Allocate vertex data */
     SVertexHandle * AllocateVertex( size_t _SizeInBytes, const void * _Data, SGetMemoryCallback _GetMemoryCB, void * _UserPointer );
@@ -137,10 +134,7 @@ public:
     /** Total block count */
     int GetBlocksCount() const { return Blocks.Size(); }
 
-protected:
-
 private:
-
     /** Find a free block */
     int FindBlock( size_t _RequiredSize );
 
@@ -183,7 +177,7 @@ private:
     size_t UsedMemoryHuge;
 };
 
-class AStreamedMemoryGPU {
+class AStreamedMemoryGPU : public ARefCounted {
     AN_FORBID_COPY( AStreamedMemoryGPU )
 
 public:
@@ -191,18 +185,20 @@ public:
 
     ~AStreamedMemoryGPU();
 
-    void Initialize();
-
-    void Deinitialize();
-
     /** Allocate vertex data. Return stream handle. Stream handle is actual during current frame. */
-    size_t AllocateVertex( size_t _SizeInBytes, const void * _Data );
+    size_t AllocateVertex( size_t _SizeInBytes, const void * _Data = nullptr );
 
     /** Allocate index data. Return stream handle. Stream handle is actual during current frame. */
-    size_t AllocateIndex( size_t _SizeInBytes, const void * _Data );
+    size_t AllocateIndex( size_t _SizeInBytes, const void * _Data = nullptr );
 
     /** Allocate joint data. Return stream handle. Stream handle is actual during current frame. */
-    size_t AllocateJoint( size_t _SizeInBytes, const void * _Data );
+    size_t AllocateJoint( size_t _SizeInBytes, const void * _Data = nullptr );
+
+    /** Allocate constant data. Return stream handle. Stream handle is actual during current frame. */
+    size_t AllocateConstant( size_t _SizeInBytes, const void * _Data = nullptr );
+
+    /** Change size of last allocated memory block */
+    void ShrinkLastAllocatedMemoryBlock( size_t _SizeInBytes );
 
     /** Map data. Mapped data is actual during current frame. */
     void * Map( size_t _StreamHandle );
@@ -214,19 +210,19 @@ public:
     RenderCore::IBuffer * GetBufferGPU();
 
     /** Internal. Wait buffer before filling. */
-    void WaitBuffer();
+    void Begin();
 
     /** Internal. Swap write buffers. */
-    void SwapFrames();
+    void End();
 
     /** Get total allocated memory */
     size_t GetAllocatedMemory() const { return STREAMED_MEMORY_GPU_BLOCK_SIZE; }
 
     /** Get total used memory */
-    size_t GetUsedMemory() const { return FrameData[FrameWrite].UsedMemory; }
+    size_t GetUsedMemory() const { return ChainBuffer[BufferIndex].UsedMemory; }
 
     /** Get total used memory on previous frame */
-    size_t GetUsedMemoryPrev() const { return FrameData[(FrameWrite+STREAMED_MEMORY_GPU_BUFFERS_COUNT-1)%STREAMED_MEMORY_GPU_BUFFERS_COUNT].UsedMemory; }
+    size_t GetUsedMemoryPrev() const { return ChainBuffer[(BufferIndex+STREAMED_MEMORY_GPU_BUFFERS_COUNT-1)%STREAMED_MEMORY_GPU_BUFFERS_COUNT].UsedMemory; }
 
     /** Get free memory */
     size_t GetUnusedMemory() const { return GetAllocatedMemory() - GetUsedMemory(); }
@@ -235,25 +231,26 @@ public:
     size_t GetMaxMemoryUsage() const { return MaxMemoryUsage; }
 
     /** Get stream handles count */
-    int GetHandlesCount() const { return FrameData[FrameWrite].HandlesCount; }
-
-protected:
+    int GetHandlesCount() const { return ChainBuffer[BufferIndex].HandlesCount; }
 
 private:
     size_t Allocate( size_t _SizeInBytes, int _Alignment, const void * _Data );
 
-    struct SFrameData {
+    void Wait( RenderCore::SyncObject Sync );
+
+    struct SChainBuffer {
         size_t UsedMemory;
         int HandlesCount;
-        void * Sync;
+        RenderCore::SyncObject Sync;
     };
 
-    SFrameData FrameData[STREAMED_MEMORY_GPU_BUFFERS_COUNT];
+    SChainBuffer ChainBuffer[STREAMED_MEMORY_GPU_BUFFERS_COUNT];
     TRef< RenderCore::IBuffer > Buffer;
     void * pMappedMemory;
-    int FrameWrite;
+    int BufferIndex;
     size_t MaxMemoryUsage;
+    size_t LastAllocatedBlockSize;
+    int VertexBufferAlignment;
+    int IndexBufferAlignment;
+    int ConstantBufferAlignment;
 };
-
-extern AVertexMemoryGPU GVertexMemoryGPU;
-extern AStreamedMemoryGPU GStreamedMemoryGPU;

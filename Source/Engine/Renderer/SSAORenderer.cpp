@@ -28,6 +28,7 @@ SOFTWARE.
 
 */
 
+#include "RenderLocal.h"
 #include "SSAORenderer.h"
 
 #include <Core/Public/Random.h>
@@ -66,8 +67,8 @@ ASSAORenderer::ASSAORenderer()
     pipeSamplers[2].AddressW = SAMPLER_ADDRESS_WRAP;
 
     SBufferInfo bufferInfo[2];
-    bufferInfo[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    bufferInfo[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
+    bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    bufferInfo[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
 
     resourceLayout.NumBuffers = 2;
     resourceLayout.Buffers = bufferInfo;
@@ -217,7 +218,7 @@ void ASSAORenderer::AddDeinterleaveDepthPass( AFrameGraph & FrameGraph, AFrameGr
             Float2 InvFullResolution;
         };
 
-        SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+        SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
         drawCall->UVOffset.X = 0.5f;
         drawCall->UVOffset.Y = 0.5f;
         drawCall->InvFullResolution.X = 1.0f / AOWidth;
@@ -253,7 +254,7 @@ void ASSAORenderer::AddDeinterleaveDepthPass( AFrameGraph & FrameGraph, AFrameGr
             Float2 InvFullResolution;
         };
 
-        SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+        SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
         drawCall->UVOffset.X = float( 8 % 4 ) + 0.5f;
         drawCall->UVOffset.Y = float( 8 / 4 ) + 0.5f;
         drawCall->InvFullResolution.X = 1.0f / AOWidth;
@@ -303,7 +304,7 @@ void ASSAORenderer::AddCacheAwareAOPass( AFrameGraph & FrameGraph, AFrameGraphTe
             Float2 InvQuarterResolution;
         };
 
-        SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+        SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
 
         float projScale;
 
@@ -399,7 +400,7 @@ void ASSAORenderer::AddSimpleAOPass( AFrameGraph & FrameGraph, AFrameGraphTextur
             Float2 InvQuarterResolution;
         };
 
-        SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+        SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
 
         float projScale;
 
@@ -459,7 +460,7 @@ void ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture 
             Float2 InvSize;
         };
 
-        SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+        SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
         drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
         drawCall->InvSize.Y = 0;
 
@@ -494,7 +495,7 @@ void ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture 
             Float2 InvSize;
         };
 
-        SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+        SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
         drawCall->InvSize.X = 0;
         drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
 
@@ -510,9 +511,9 @@ void ASSAORenderer::AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture 
 
 void ASSAORenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture * NormalTexture, AFrameGraphTexture ** ppSSAOTexture )
 {
-    ResizeAO( GFrameData->AllocSurfaceWidth, GFrameData->AllocSurfaceHeight );
+    ResizeAO( GFrameData->RenderTargetMaxWidth, GFrameData->RenderTargetMaxHeight );
 
-    if ( r_HBAODeinterleaved && GRenderView->Width == GFrameData->AllocSurfaceWidth && GRenderView->Height == GFrameData->AllocSurfaceHeight ) {
+    if ( r_HBAODeinterleaved && GRenderView->Width == GFrameData->RenderTargetMaxWidth && GRenderView->Height == GFrameData->RenderTargetMaxHeight ) {
         AFrameGraphTexture * DeinterleaveDepthArray, * SSAOTextureArray;
         
         AddDeinterleaveDepthPass( FrameGraph, LinearDepth, &DeinterleaveDepthArray );

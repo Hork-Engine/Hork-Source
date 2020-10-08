@@ -30,9 +30,13 @@ SOFTWARE.
 
 #pragma once
 
-#include "RenderCommon.h"
+#include "RenderDefs.h"
 
-class ACanvasRenderer : public RenderCore::IObjectInterface {
+#include <RenderCore/FrameGraph/FrameGraph.h>
+
+struct SRenderView;
+
+class ACanvasRenderer : public ARefCounted {
 public:
     ACanvasRenderer();
 

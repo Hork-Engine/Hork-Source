@@ -41,7 +41,7 @@ SOFTWARE.
 namespace RenderCore {
 
 ARenderPassGLImpl::ARenderPassGLImpl( ADeviceGLImpl * _Device, SRenderPassCreateInfo const & _CreateInfo )
-    : pDevice( _Device )
+    : IRenderPass( _Device ), pDevice( _Device )
 {
     AN_ASSERT( _CreateInfo.NumColorAttachments <= MAX_COLOR_ATTACHMENTS );
     AN_ASSERT( _CreateInfo.NumSubpasses <= MAX_SUBPASS_COUNT );

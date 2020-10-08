@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "BloomRenderer.h"
-#include "RenderBackend.h"
+#include "RenderLocal.h"
 
 ARuntimeVariable r_BloomTextureFormat( _CTS( "r_BloomTextureFormat" ), _CTS( "0" ), 0, _CTS( "0 - R11F_G11F_B10F, 1 - RGB16F, 2 - RGB8" ) );
 ARuntimeVariable r_BloomStart( _CTS( "r_BloomStart" ), _CTS( "1" ) );
@@ -48,8 +48,8 @@ ABloomRenderer::ABloomRenderer()
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
 
     SBufferInfo bufferInfo[2];
-    bufferInfo[0].BufferBinding = BUFFER_BIND_UNIFORM;
-    bufferInfo[1].BufferBinding = BUFFER_BIND_UNIFORM;
+    bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT;
+    bufferInfo[1].BufferBinding = BUFFER_BIND_CONSTANT;
 
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers = &samplerCI;
@@ -111,7 +111,7 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
                 Float4 BloomThreshold;
             };
 
-            SBrightPassDrawCall * drawCall = MapDrawCallUniforms< SBrightPassDrawCall >();
+            SBrightPassDrawCall * drawCall = MapDrawCallConstants< SBrightPassDrawCall >();
             drawCall->BloomStart = Float4( r_BloomStart.GetFloat() );
             drawCall->BloomThreshold = Float4( r_BloomThreshold.GetFloat() );
 
@@ -148,7 +148,7 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
                 Float2 InvSize;
             };
 
-            SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >( /*uniformBuffer*/ );
+            SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
             drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
             drawCall->InvSize.Y = 0;
 
@@ -180,7 +180,7 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
                 Float2 InvSize;
             };
 
-            SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+            SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
             drawCall->InvSize.X = 0;
             drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
 
@@ -239,7 +239,7 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
                 Float2 InvSize;
             };
 
-            SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+            SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
             drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
             drawCall->InvSize.Y = 0;
 
@@ -271,7 +271,7 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
                 Float2 InvSize;
             };
 
-            SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+            SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
             drawCall->InvSize.X = 0;
             drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
 
@@ -330,7 +330,7 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
                 Float2 InvSize;
             };
 
-            SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+            SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
             drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
             drawCall->InvSize.Y = 0;
 
@@ -362,7 +362,7 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
                 Float2 InvSize;
             };
 
-            SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+            SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
             drawCall->InvSize.X = 0;
             drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
 
@@ -421,7 +421,7 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
                 Float2 InvSize;
             };
 
-            SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+            SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
             drawCall->InvSize.X = 1.0f / RenderPass.GetRenderArea().Width;
             drawCall->InvSize.Y = 0;
 
@@ -453,7 +453,7 @@ void ABloomRenderer::AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * S
                 Float2 InvSize;
             };
 
-            SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+            SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
             drawCall->InvSize.X = 0;
             drawCall->InvSize.Y = 1.0f / RenderPass.GetRenderArea().Height;
 

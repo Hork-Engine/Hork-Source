@@ -47,7 +47,7 @@ public:
 
     BvSphere const & GetSphereWorldBounds() const { return SphereWorldBounds; }
 
-    void PackProbe( Float4x4 const & InViewMatrix, struct SClusterProbe & Probe );
+    void PackProbe( Float4x4 const & InViewMatrix, struct SProbeParameters & Probe );
 
 protected:
     AIBLComponent();

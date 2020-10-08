@@ -28,55 +28,76 @@ SOFTWARE.
 
 */
 
-#include "RenderCommon.h"
+#include "RenderLocal.h"
 
 #include <Core/Public/CriticalError.h>
 
-#ifdef AN_DEBUG
-ARuntimeVariable r_MaterialDebugMode( _CTS( "r_MaterialDebugMode" ), _CTS( "1" ), VAR_CHEAT );
-#else
-ARuntimeVariable r_MaterialDebugMode( _CTS( "r_MaterialDebugMode" ), _CTS( "0" ), VAR_CHEAT );
-#endif
+ARuntimeVariable r_MaterialDebugMode( _CTS( "r_MaterialDebugMode" ),
+                                      #ifdef AN_DEBUG
+                                      _CTS( "1" ),
+                                      #else
+                                      _CTS( "0" ),
+                                      #endif
+                                      VAR_CHEAT );
 
+/** Render device */
 TRef< RenderCore::IDevice > GDevice;
 
+/** Render context */
 RenderCore::IImmediateContext * rcmd;
+
+/** Render resource table */
 RenderCore::IResourceTable * rtbl;
 
-SRenderFrame *       GFrameData;
-SRenderView *        GRenderView;
-ARenderArea          GRenderViewArea;
+/** Render frame data */
+SRenderFrame * GFrameData;
 
+/** Render frame view */
+SRenderView * GRenderView;
+
+/** Render view area */
+ARenderArea GRenderViewArea;
+
+/** Stream buffer */
 RenderCore::IBuffer * GStreamBuffer;
 
-TRef< ACircularBuffer > GConstantBuffer;
-TRef< AFrameConstantBuffer > GFrameConstantBuffer;
+/** Circular buffer. Contains constant data for single draw call.
+Don't use to store long-live data. */
+TRef< ACircularBuffer > GCircularBuffer;
 
+/** Sphere mesh */
 TRef< ASphereMesh > GSphereMesh;
 
+/** Screen aligned quad mesh */
 TRef< RenderCore::IBuffer > GSaq;
 
+/** Simple white texture */
 TRef< RenderCore::ITexture > GWhiteTexture;
 
+/** Cluster lookcup 3D texture */
 TRef< RenderCore::ITexture > GClusterLookup;
-TRef< RenderCore::IBufferView > GClusterItemTBO;
+
+/** Cluster item references */
 TRef< RenderCore::IBuffer > GClusterItemBuffer;
 
+/** Cluster item references view */
+TRef< RenderCore::IBufferView > GClusterItemTBO;
+
+/** Irradiance texture array */
 TRef< RenderCore::ITexture > GIrradianceMap;
 TRef< RenderCore::IBindlessSampler > GIrradianceMapBindless;
 
+/** Reflections texture array */
 TRef< RenderCore::ITexture > GPrefilteredMap;
 TRef< RenderCore::IBindlessSampler > GPrefilteredMapBindless;
 
-size_t GViewUniformBufferBindingBindingOffset;
-size_t GViewUniformBufferBindingBindingSize;
-
-size_t GShadowMatrixBindingSize;
-size_t GShadowMatrixBindingOffset;
+/** View constant binding */
+size_t GViewConstantBufferBindingBindingOffset;
+size_t GViewConstantBufferBindingBindingSize;
 
 RenderCore::STextureResolution2D GetFrameResoultion()
 {
-    return RenderCore::STextureResolution2D( GFrameData->AllocSurfaceWidth, GFrameData->AllocSurfaceHeight );
+    return RenderCore::STextureResolution2D( GFrameData->RenderTargetMaxWidth, GFrameData->RenderTargetMaxHeight );
 }
 
 void DrawSAQ( RenderCore::IPipeline * Pipeline, unsigned int InstanceCount )
@@ -150,83 +171,76 @@ void BindSkeletonMotionBlur( size_t _Offset, size_t _Size )
     rtbl->BindBuffer( 7, GStreamBuffer, _Offset, _Size );
 }
 
-void BindInstanceUniforms( SRenderInstance const * Instance )
+void BindInstanceConstants( SRenderInstance const * Instance )
 {
-    size_t offset = GConstantBuffer->Allocate( sizeof( SInstanceUniformBuffer ) );
+    size_t offset = GCircularBuffer->Allocate( sizeof( SInstanceConstantBuffer ) );
 
-    SInstanceUniformBuffer * pUniformBuf = reinterpret_cast< SInstanceUniformBuffer * >(GConstantBuffer->GetMappedMemory() + offset);
+    SInstanceConstantBuffer * pConstantBuf = reinterpret_cast< SInstanceConstantBuffer * >(GCircularBuffer->GetMappedMemory() + offset);
 
-    Core::Memcpy( &pUniformBuf->TransformMatrix, &Instance->Matrix, sizeof( pUniformBuf->TransformMatrix ) );
-    Core::Memcpy( &pUniformBuf->TransformMatrixP, &Instance->MatrixP, sizeof( pUniformBuf->TransformMatrixP ) );
-    StoreFloat3x3AsFloat3x4Transposed( Instance->ModelNormalToViewSpace, pUniformBuf->ModelNormalToViewSpace );
-    Core::Memcpy( &pUniformBuf->LightmapOffset, &Instance->LightmapOffset, sizeof( pUniformBuf->LightmapOffset ) );
-    Core::Memcpy( &pUniformBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof( Float4 )*Instance->MaterialInstance->NumUniformVectors );
+    Core::Memcpy( &pConstantBuf->TransformMatrix, &Instance->Matrix, sizeof( pConstantBuf->TransformMatrix ) );
+    Core::Memcpy( &pConstantBuf->TransformMatrixP, &Instance->MatrixP, sizeof( pConstantBuf->TransformMatrixP ) );
+    StoreFloat3x3AsFloat3x4Transposed( Instance->ModelNormalToViewSpace, pConstantBuf->ModelNormalToViewSpace );
+    Core::Memcpy( &pConstantBuf->LightmapOffset, &Instance->LightmapOffset, sizeof( pConstantBuf->LightmapOffset ) );
+    Core::Memcpy( &pConstantBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof( Float4 )*Instance->MaterialInstance->NumUniformVectors );
 
     // TODO:
-    pUniformBuf->VTOffset = Float2( 0.0f );//Instance->VTOffset;
-    pUniformBuf->VTScale = Float2( 1.0f );//Instance->VTScale;
-    pUniformBuf->VTUnit = 0;//Instance->VTUnit;
+    pConstantBuf->VTOffset = Float2( 0.0f );//Instance->VTOffset;
+    pConstantBuf->VTScale = Float2( 1.0f );//Instance->VTScale;
+    pConstantBuf->VTUnit = 0;//Instance->VTUnit;
 
-    rtbl->BindBuffer( 1, GConstantBuffer->GetBuffer(), offset, sizeof( SInstanceUniformBuffer ) );
+    rtbl->BindBuffer( 1, GCircularBuffer->GetBuffer(), offset, sizeof( SInstanceConstantBuffer ) );
 }
 
-void BindInstanceUniformsFB( SRenderInstance const * Instance )
+void BindInstanceConstantsFB( SRenderInstance const * Instance )
 {
-    size_t offset = GConstantBuffer->Allocate( sizeof( SFeedbackUniformBuffer ) );
+    size_t offset = GCircularBuffer->Allocate( sizeof( SFeedbackConstantBuffer ) );
 
-    SFeedbackUniformBuffer * pUniformBuf = reinterpret_cast< SFeedbackUniformBuffer * >(GConstantBuffer->GetMappedMemory() + offset);
+    SFeedbackConstantBuffer * pConstantBuf = reinterpret_cast< SFeedbackConstantBuffer * >(GCircularBuffer->GetMappedMemory() + offset);
 
-    Core::Memcpy( &pUniformBuf->TransformMatrix, &Instance->Matrix, sizeof( pUniformBuf->TransformMatrix ) );
+    Core::Memcpy( &pConstantBuf->TransformMatrix, &Instance->Matrix, sizeof( pConstantBuf->TransformMatrix ) );
 
     // TODO:
-    pUniformBuf->VTOffset = Float2(0.0f);//Instance->VTOffset;
-    pUniformBuf->VTScale = Float2(1.0f);//Instance->VTScale;
-    pUniformBuf->VTUnit = 0;//Instance->VTUnit;
+    pConstantBuf->VTOffset = Float2(0.0f);//Instance->VTOffset;
+    pConstantBuf->VTScale = Float2(1.0f);//Instance->VTScale;
+    pConstantBuf->VTUnit = 0;//Instance->VTUnit;
 
-    rtbl->BindBuffer( 1, GConstantBuffer->GetBuffer(), offset, sizeof( SFeedbackUniformBuffer ) );
+    rtbl->BindBuffer( 1, GCircularBuffer->GetBuffer(), offset, sizeof( SFeedbackConstantBuffer ) );
 }
 
-void BindShadowInstanceUniforms( SShadowRenderInstance const * Instance )
+void BindShadowInstanceConstants( SShadowRenderInstance const * Instance )
 {
-    size_t offset = GConstantBuffer->Allocate( sizeof( SShadowInstanceUniformBuffer ) );
+    size_t offset = GCircularBuffer->Allocate( sizeof( SShadowInstanceConstantBuffer ) );
 
-    SShadowInstanceUniformBuffer * pUniformBuf = reinterpret_cast< SShadowInstanceUniformBuffer * >(GConstantBuffer->GetMappedMemory() + offset);
+    SShadowInstanceConstantBuffer * pConstantBuf = reinterpret_cast< SShadowInstanceConstantBuffer * >(GCircularBuffer->GetMappedMemory() + offset);
 
-    StoreFloat3x4AsFloat4x4Transposed( Instance->WorldTransformMatrix, pUniformBuf->TransformMatrix );
+    StoreFloat3x4AsFloat4x4Transposed( Instance->WorldTransformMatrix, pConstantBuf->TransformMatrix );
 
     if ( Instance->MaterialInstance ) {
-        Core::Memcpy( &pUniformBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof( Float4 )*Instance->MaterialInstance->NumUniformVectors );
+        Core::Memcpy( &pConstantBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof( Float4 )*Instance->MaterialInstance->NumUniformVectors );
     }
 
-    pUniformBuf->CascadeMask = Instance->CascadeMask;
+    pConstantBuf->CascadeMask = Instance->CascadeMask;
 
-    rtbl->BindBuffer( 1, GConstantBuffer->GetBuffer(), offset, sizeof( SShadowInstanceUniformBuffer ) );
+    rtbl->BindBuffer( 1, GCircularBuffer->GetBuffer(), offset, sizeof( SShadowInstanceConstantBuffer ) );
 }
 
-void * MapDrawCallUniforms( size_t SizeInBytes )
+void * MapDrawCallConstants( size_t SizeInBytes )
 {
-    size_t offset = GConstantBuffer->Allocate( SizeInBytes );
+    size_t offset = GCircularBuffer->Allocate( SizeInBytes );
 
-    rtbl->BindBuffer( 1, GConstantBuffer->GetBuffer(), offset, SizeInBytes );
+    rtbl->BindBuffer( 1, GCircularBuffer->GetBuffer(), offset, SizeInBytes );
 
-    return GConstantBuffer->GetMappedMemory() + offset;
+    return GCircularBuffer->GetMappedMemory() + offset;
 }
 
 void BindShadowMatrix()
 {
-    rtbl->BindBuffer( 3, GFrameConstantBuffer->GetBuffer(), GShadowMatrixBindingOffset, GShadowMatrixBindingSize );
+    rtbl->BindBuffer( 3, GStreamBuffer, GRenderView->ShadowMapMatricesStreamHandle, MAX_TOTAL_SHADOW_CASCADES_PER_VIEW * sizeof( Float4x4 ) );
 }
 
-void BindShadowCascades( int FirstCascade, int NumCascades )
+void BindShadowCascades( size_t StreamHandle )
 {
-    size_t size = MAX_SHADOW_CASCADES * sizeof( Float4x4 );
-    size_t offset = GFrameConstantBuffer->Allocate( size );
-
-    byte * pMemory = GFrameConstantBuffer->GetMappedMemory() + offset;
-
-    Core::Memcpy( pMemory, &GRenderView->LightViewProjectionMatrices[FirstCascade], NumCascades * sizeof( Float4x4 ) );
-
-    rtbl->BindBuffer( 3, GFrameConstantBuffer->GetBuffer(), offset, size );
+    rtbl->BindBuffer( 3, GStreamBuffer, StreamHandle, MAX_SHADOW_CASCADES * sizeof( Float4x4 ) );
 }
 
 void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * VertexShader, const char * FragmentShader, RenderCore::SPipelineResourceLayout const * pResourceLayout, RenderCore::BLENDING_PRESET BlendingPreset )
@@ -703,32 +717,7 @@ void CreateShader( RenderCore::SHADER_TYPE _ShaderType, TPodArray< const char * 
 
     using namespace RenderCore;
 
-    char * Log = nullptr;
-
-    GDevice->CreateShaderFromCode( _ShaderType, sources.Size(), sources.ToPtr(), &Log, &_Module );
-
-    if ( Log && *Log ) {
-        switch ( _ShaderType ) {
-        case VERTEX_SHADER:
-            GLogger.Printf( "VS: %s\n", Log );
-            break;
-        case FRAGMENT_SHADER:
-            GLogger.Printf( "FS: %s\n", Log );
-            break;
-        case TESS_CONTROL_SHADER:
-            GLogger.Printf( "TCS: %s\n", Log );
-            break;
-        case TESS_EVALUATION_SHADER:
-            GLogger.Printf( "TES: %s\n", Log );
-            break;
-        case GEOMETRY_SHADER:
-            GLogger.Printf( "GS: %s\n", Log );
-            break;
-        case COMPUTE_SHADER:
-            GLogger.Printf( "CS: %s\n", Log );
-            break;
-        }
-    }
+    GDevice->CreateShaderFromCode( _ShaderType, sources.Size(), sources.ToPtr(), &_Module );
 }
 
 void CreateShader( RenderCore::SHADER_TYPE _ShaderType, const char * _SourcePtr, TRef< RenderCore::IShaderModule > & _Module )

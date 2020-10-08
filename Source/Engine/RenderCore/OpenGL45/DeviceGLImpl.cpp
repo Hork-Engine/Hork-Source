@@ -75,7 +75,8 @@ static const char * FeatureName[] =
     "FEATURE_BINDLESS_TEXTURE",
     "FEATURE_SWAP_CONTROL",
     "FEATURE_SWAP_CONTROL_TEAR",
-    "FEATURE_GPU_MEMORY_INFO"
+    "FEATURE_GPU_MEMORY_INFO",
+    "FEATURE_SPIR_V"
 };
 
 static const char * DeviceCapName[] =
@@ -83,7 +84,7 @@ static const char * DeviceCapName[] =
     "DEVICE_CAPS_BUFFER_VIEW_MAX_SIZE",
     "DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT",
 
-    "DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT",
+    "DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT",
     "DEVICE_CAPS_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT",
 
     "DEVICE_CAPS_MAX_TEXTURE_SIZE",
@@ -94,10 +95,11 @@ static const char * DeviceCapName[] =
     "DEVICE_CAPS_MAX_VERTEX_BUFFER_SLOTS",
     "DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE",
     "DEVICE_CAPS_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET",
-    "DEVICE_CAPS_MAX_UNIFORM_BUFFER_BINDINGS",
+    "DEVICE_CAPS_MAX_CONSTANT_BUFFER_BINDINGS",
     "DEVICE_CAPS_MAX_SHADER_STORAGE_BUFFER_BINDINGS",
     "DEVICE_CAPS_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS",
     "DEVICE_CAPS_MAX_TRANSFORM_FEEDBACK_BUFFERS",
+    "DEVICE_CAPS_CONSTANT_BUFFER_MAX_BLOCK_SIZE"
 };
 
 static int GL_GetInteger( GLenum pname )
@@ -350,6 +352,8 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
 #endif
     FeatureSupport[FEATURE_GPU_MEMORY_INFO] = FindExtension( "GL_NVX_gpu_memory_info" );
 
+    FeatureSupport[FEATURE_SPIR_V] = FindExtension( "GL_ARB_gl_spirv" );
+
     if ( !FindExtension( "GL_EXT_texture_compression_s3tc" ) ) {
         GLogger.Printf( "Warning: required extension GL_EXT_texture_compression_s3tc isn't supported\n" );
     }
@@ -383,10 +387,10 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
         DeviceCaps[DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT] = 256;
     }
 
-    DeviceCaps[DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT] = GL_GetInteger( GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT );
-    if ( !DeviceCaps[DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT] ) {
-        GLogger.Printf( "Warning: UniformBufferOffsetAlignment == 0, using default alignment (256)\n" );
-        DeviceCaps[DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT] = 256;
+    DeviceCaps[DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT] = GL_GetInteger( GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT );
+    if ( !DeviceCaps[DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT] ) {
+        GLogger.Printf( "Warning: ConstantBufferOffsetAlignment == 0, using default alignment (256)\n" );
+        DeviceCaps[DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT] = 256;
     }
 
     DeviceCaps[DEVICE_CAPS_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT] = GL_GetInteger( GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT );
@@ -395,10 +399,12 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
         DeviceCaps[DEVICE_CAPS_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT] = 256;
     }
 
-    DeviceCaps[DEVICE_CAPS_MAX_UNIFORM_BUFFER_BINDINGS] = GL_GetInteger( GL_MAX_UNIFORM_BUFFER_BINDINGS );
+    DeviceCaps[DEVICE_CAPS_MAX_CONSTANT_BUFFER_BINDINGS] = GL_GetInteger( GL_MAX_UNIFORM_BUFFER_BINDINGS );
     DeviceCaps[DEVICE_CAPS_MAX_SHADER_STORAGE_BUFFER_BINDINGS] = GL_GetInteger( GL_MAX_SHADER_STORAGE_BUFFER_BINDINGS );
     DeviceCaps[DEVICE_CAPS_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS] = GL_GetInteger( GL_MAX_ATOMIC_COUNTER_BUFFER_BINDINGS );
     DeviceCaps[DEVICE_CAPS_MAX_TRANSFORM_FEEDBACK_BUFFERS] = GL_GetInteger( GL_MAX_TRANSFORM_FEEDBACK_BUFFERS );
+
+    DeviceCaps[DEVICE_CAPS_CONSTANT_BUFFER_MAX_BLOCK_SIZE] = GL_GetInteger( GL_MAX_UNIFORM_BLOCK_SIZE );
 
     if ( FeatureSupport[FEATURE_TEXTURE_ANISOTROPY] ) {
         DeviceCaps[DEVICE_CAPS_MAX_TEXTURE_ANISOTROPY] = (unsigned int)GL_GetFloat( GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT );
@@ -503,6 +509,14 @@ ADeviceGLImpl::~ADeviceGLImpl()
     ReleaseImmediateContext( pMainContext );
     pMainContext = nullptr;
 
+#ifdef AN_DEBUG
+    //SDL_SetRelativeMouseMode( SDL_FALSE );
+    IDeviceObject * deviceObjects = GetDeviceObjects_DEBUG();
+    for ( IDeviceObject * object = deviceObjects ; object ; object = object->GetNext_DEBUG() ) {
+        GLogger.Printf( "Not removed device object: \"%s\"\n", object->GetDebugName() );
+    }
+#endif
+
     AN_ASSERT( TotalContexts == 0 );
     AN_ASSERT( TotalBuffers == 0 );
     AN_ASSERT( TotalTextures == 0 );
@@ -542,8 +556,9 @@ void ADeviceGLImpl::CreateImmediateContext( SImmediateContextCreateInfo const & 
 void ADeviceGLImpl::ReleaseImmediateContext( IImmediateContext * pImmediateContext )
 {
     if ( pImmediateContext ) {
+        AN_ASSERT( pImmediateContext->GetRefCount() == 1 );
+        pImmediateContext->RemoveRef();
         TotalContexts--;
-        delete pImmediateContext;
     }
 }
 
@@ -562,19 +577,14 @@ void ADeviceGLImpl::CreatePipeline( SPipelineCreateInfo const & _CreateInfo, TRe
     *ppPipeline = MakeRef< APipelineGLImpl >( this, _CreateInfo );
 }
 
-void ADeviceGLImpl::CreateShaderFromBinary( SShaderBinaryData const * _BinaryData, char ** _InfoLog, TRef< IShaderModule > * ppShaderModule )
+void ADeviceGLImpl::CreateShaderFromBinary( SShaderBinaryData const * _BinaryData, TRef< IShaderModule > * ppShaderModule )
 {
-    *ppShaderModule = MakeRef< AShaderModuleGLImpl >( this, _BinaryData, _InfoLog );
+    *ppShaderModule = MakeRef< AShaderModuleGLImpl >( this, _BinaryData );
 }
 
-void ADeviceGLImpl::CreateShaderFromCode( SHADER_TYPE _ShaderType, unsigned int _NumSources, const char * const * _Sources, char ** _InfoLog, TRef< IShaderModule > * ppShaderModule )
+void ADeviceGLImpl::CreateShaderFromCode( SHADER_TYPE _ShaderType, unsigned int _NumSources, const char * const * _Sources, TRef< IShaderModule > * ppShaderModule )
 {
-    *ppShaderModule = MakeRef< AShaderModuleGLImpl >( this, _ShaderType, _NumSources, _Sources, _InfoLog );
-}
-
-void ADeviceGLImpl::CreateShaderFromCode( SHADER_TYPE _ShaderType, const char * _Source, char ** _InfoLog, TRef< IShaderModule > * ppShaderModule )
-{
-    *ppShaderModule = MakeRef< AShaderModuleGLImpl >( this, _ShaderType, _Source, _InfoLog );
+    *ppShaderModule = MakeRef< AShaderModuleGLImpl >( this, _ShaderType, _NumSources, _Sources );
 }
 
 void ADeviceGLImpl::CreateBuffer( SBufferCreateInfo const & _CreateInfo, const void * _SysMem, TRef< IBuffer > * ppBuffer )
@@ -622,142 +632,18 @@ void ADeviceGLImpl::CreateResourceTable( TRef< IResourceTable > * ppResourceTabl
     *ppResourceTable = MakeRef< AResourceTableGLImpl >( this );
 }
 
-unsigned int ADeviceGLImpl::CreateShaderProgram( unsigned int _Type,
-                                          int _NumStrings,
-                                          const char * const * _Strings,
-                                          char ** _InfoLog )
-{
-    static char ErrorLog[ MAX_ERROR_LOG_LENGTH ];
-    GLuint program;
-
-    ErrorLog[0] = 0;
-
-    if ( _InfoLog ) {
-        *_InfoLog = ErrorLog;
-    }
-
-#if 1
-    program = glCreateShaderProgramv( _Type, _NumStrings, _Strings );  // v 4.1
-    if ( program ) {
-        glProgramParameteri( program, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE );
-    }
-
-#else
-    // Other path
-    GLuint shader = glCreateShader( _Type );
-    if ( shader ) {
-        glShaderSource( shader, _NumStrings, _Strings, NULL );
-        glCompileShader( shader );
-        program = glCreateProgram();
-        if ( program ) {
-            GLint compiled = GL_FALSE;
-            glGetShaderiv( shader, GL_COMPILE_STATUS, &compiled );
-            glProgramParameteri( program, GL_PROGRAM_SEPARABLE, GL_TRUE );
-            glProgramParameteri( program, GL_PROGRAM_BINARY_RETRIEVABLE_HINT, GL_TRUE );
-            if ( compiled ) {
-                glAttachShader( program, shader );
-                glLinkProgram( program );
-                glDetachShader( program, shader );
-            }
-            /* append-shader-info-log-to-program-info-log */
-        }
-        glDeleteShader( shader );
-    } else {
-        program = 0;
-    }
-#endif
-
-    if ( !program ) {
-
-        if ( _InfoLog ) {
-            Core::Strcpy( ErrorLog, sizeof( ErrorLog ), "Failed to create shader program" );
-        }
-
-        return 0;
-    }
-
-    GLint linkStatus = 0;
-    glGetProgramiv( program, GL_LINK_STATUS, &linkStatus );
-    if ( !linkStatus ) {
-
-        if ( _InfoLog ) {
-            GLint infoLogLength = 0;
-            glGetProgramiv( program, GL_INFO_LOG_LENGTH, &infoLogLength );
-            glGetProgramInfoLog( program, sizeof( ErrorLog ), NULL, ErrorLog );
-
-            if ( (GLint)sizeof( ErrorLog ) < infoLogLength ) {
-                ErrorLog[ sizeof( ErrorLog ) - 4 ] = '.';
-                ErrorLog[ sizeof( ErrorLog ) - 3 ] = '.';
-                ErrorLog[ sizeof( ErrorLog ) - 2 ] = '.';
-            }
-        }
-
-        glDeleteProgram( program );
-
-        return 0;
-    }
-
-    return program;
-}
-
-void ADeviceGLImpl::DeleteShaderProgram( unsigned int _Program )
-{
-    glDeleteProgram( _Program );
-}
 
 bool ADeviceGLImpl::CreateShaderBinaryData( SHADER_TYPE _ShaderType,
                                             unsigned int _NumSources,
                                             const char * const * _Sources,
-                                            /* optional */ char ** _InfoLog,
                                             SShaderBinaryData * _BinaryData )
 {
-    GLuint id;
-    GLsizei binaryLength;
-    GLsizei length;
-    GLenum format;
-    uint8_t * binary;
-
-    Core::ZeroMem( _BinaryData, sizeof( *_BinaryData ) );
-
-    id = CreateShaderProgram( ShaderTypeLUT[ _ShaderType ], _NumSources, _Sources, _InfoLog );
-    if ( !id ) {
-        GLogger.Printf( "Device::CreateShaderBinaryData: couldn't create shader program\n" );
-        return false;
-    }
-
-    glGetProgramiv( id, GL_PROGRAM_BINARY_LENGTH, &binaryLength );
-    if ( binaryLength ) {
-        binary = ( uint8_t * )Allocator.Allocate( binaryLength );
-
-        glGetProgramBinary( id, binaryLength, &length, &format, binary );
-
-        _BinaryData->BinaryCode = binary;
-        _BinaryData->BinaryLength = length;
-        _BinaryData->BinaryFormat = format;
-        _BinaryData->ShaderType = _ShaderType;
-    } else {
-        if ( _InfoLog ) {
-            Core::Strcpy( *_InfoLog, MAX_ERROR_LOG_LENGTH, "Failed to retrieve shader program binary length" );
-        }
-
-        DeleteShaderProgram( id );
-        return false;
-    }
-
-    DeleteShaderProgram( id );
-    return true;
+    return AShaderModuleGLImpl::CreateShaderBinaryData( this, _ShaderType, _NumSources, _Sources, _BinaryData );
 }
 
 void ADeviceGLImpl::DestroyShaderBinaryData( SShaderBinaryData * _BinaryData )
 {
-    if ( !_BinaryData->BinaryCode ) {
-        return;
-    }
-
-    uint8_t * binary = ( uint8_t * )_BinaryData->BinaryCode;
-    Allocator.Deallocate( binary );
-
-    Core::ZeroMem( _BinaryData, sizeof( *_BinaryData ) );
+    AShaderModuleGLImpl::DestroyShaderBinaryData( this, _BinaryData );
 }
 
 SAllocatorCallback const & ADeviceGLImpl::GetAllocator() const

@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "CircularBuffer.h"
-#include "RenderCommon.h"
+#include "RenderLocal.h"
 #include <Core/Public/CriticalError.h>
 
 ACircularBuffer::ACircularBuffer( size_t InBufferSize )
@@ -43,6 +43,8 @@ ACircularBuffer::ACircularBuffer( size_t InBufferSize )
     bufferCI.bImmutableStorage = true;
 
     GDevice->CreateBuffer( bufferCI, nullptr, &Buffer );
+
+    Buffer->SetDebugName( "Circular buffer" );
 
     pMappedMemory = Buffer->Map( RenderCore::MAP_TRANSFER_WRITE,
                                  RenderCore::MAP_NO_INVALIDATE,//RenderCore::MAP_INVALIDATE_ENTIRE_BUFFER,
@@ -61,7 +63,7 @@ ACircularBuffer::ACircularBuffer( size_t InBufferSize )
 
     BufferIndex = 0;
 
-    UniformBufferOffsetAlignment = GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT );
+    ConstantBufferAlignment = GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT );
 }
 
 ACircularBuffer::~ACircularBuffer()
@@ -80,7 +82,7 @@ size_t ACircularBuffer::Allocate( size_t InSize )
 
     SChainBuffer * pChainBuffer = &ChainBuffer[BufferIndex];
 
-    size_t alignedOffset = Align( pChainBuffer->UsedMemory, UniformBufferOffsetAlignment );
+    size_t alignedOffset = Align( pChainBuffer->UsedMemory, ConstantBufferAlignment );
 
     if ( alignedOffset + InSize > BufferSize ) {
         pChainBuffer = Swap();

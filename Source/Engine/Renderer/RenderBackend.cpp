@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "RenderBackend.h"
+#include "RenderLocal.h"
 #include "GPUSync.h"
 #include "Material.h"
 #include "CanvasRenderer.h"
@@ -64,19 +64,16 @@ ARuntimeVariable r_ToneExposure( _CTS( "r_ToneExposure" ), _CTS( "0.4" ) );
 ARuntimeVariable r_Brightness( _CTS( "r_Brightness" ), _CTS( "1" ) );
 ARuntimeVariable r_TessellationLevel( _CTS( "r_TessellationLevel" ), _CTS( "0.05" ) );
 ARuntimeVariable r_MotionBlur( _CTS( "r_MotionBlur" ), _CTS( "1" ) );
-ARuntimeVariable r_SSLR( _CTS( "r_SSLR" ), _CTS( "1" ) );
+ARuntimeVariable r_SSLR( _CTS( "r_SSLR" ), _CTS( "1" ), 0, _CTS( "Required to rebuld materials to apply" ) );
 ARuntimeVariable r_SSLRMaxDist( _CTS( "r_SSLRMaxDist" ), _CTS( "10" ) );
 ARuntimeVariable r_SSLRSampleOffset( _CTS( "r_SSLRSampleOffset" ), _CTS( "0.1" ) );
-ARuntimeVariable r_HBAO( _CTS( "r_HBAO" ), _CTS( "1" ) );
+ARuntimeVariable r_HBAO( _CTS( "r_HBAO" ), _CTS( "1" ), 0, _CTS( "Required to rebuld materials to apply" ) );
 ARuntimeVariable r_FXAA( _CTS( "r_FXAA" ), _CTS( "1" ) );
 ARuntimeVariable r_ShowGPUTime( _CTS( "r_ShowGPUTime" ), _CTS( "0" ) );
 
 void TestVT();
 
-ARenderBackend GRenderBackendLocal;
-
-static RenderCore::DATA_FORMAT PixelFormatTable[256];
-static RenderCore::TEXTURE_FORMAT InternalPixelFormatTable[256];
+ARenderBackend GRenderBackend;
 
 static SDL_Window * WindowHandle;
 
@@ -157,6 +154,14 @@ static void DestroyGenericWindow( SDL_Window * Window )
     }
 }
 
+static void LoadSPIRV( void ** BinaryCode, size_t * BinarySize )
+{
+    // TODO
+
+    *BinaryCode = nullptr;
+    *BinarySize = 0;
+}
+
 void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
 {
     using namespace RenderCore;
@@ -202,115 +207,11 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
 
     rtbl = rcmd->GetRootResourceTable();
 
-    UniformBufferOffsetAlignment = GDevice->GetDeviceCaps( DEVICE_CAPS_UNIFORM_BUFFER_OFFSET_ALIGNMENT );
+    VertexMemoryGPU = MakeRef< AVertexMemoryGPU >();
+    StreamedMemoryGPU = MakeRef< AStreamedMemoryGPU >();
 
-    Core::ZeroMem( PixelFormatTable, sizeof( PixelFormatTable ) );
-    Core::ZeroMem( InternalPixelFormatTable, sizeof( InternalPixelFormatTable ) );
-
-    PixelFormatTable[TEXTURE_PF_R8_SNORM] = FORMAT_BYTE1;
-    PixelFormatTable[TEXTURE_PF_RG8_SNORM] = FORMAT_BYTE2;
-    PixelFormatTable[TEXTURE_PF_BGR8_SNORM] = FORMAT_BYTE3;
-    PixelFormatTable[TEXTURE_PF_BGRA8_SNORM] = FORMAT_BYTE4;
-
-    PixelFormatTable[TEXTURE_PF_R8_UNORM] = FORMAT_UBYTE1;
-    PixelFormatTable[TEXTURE_PF_RG8_UNORM] = FORMAT_UBYTE2;
-    PixelFormatTable[TEXTURE_PF_BGR8_UNORM] = FORMAT_UBYTE3;
-    PixelFormatTable[TEXTURE_PF_BGRA8_UNORM] = FORMAT_UBYTE4;
-
-    PixelFormatTable[TEXTURE_PF_BGR8_SRGB] = FORMAT_UBYTE3;
-    PixelFormatTable[TEXTURE_PF_BGRA8_SRGB] = FORMAT_UBYTE4;
-
-    PixelFormatTable[TEXTURE_PF_R16I] = FORMAT_SHORT1;
-    PixelFormatTable[TEXTURE_PF_RG16I] = FORMAT_SHORT2;
-    PixelFormatTable[TEXTURE_PF_BGR16I] = FORMAT_SHORT3;
-    PixelFormatTable[TEXTURE_PF_BGRA16I] = FORMAT_SHORT4;
-
-    PixelFormatTable[TEXTURE_PF_R16UI] = FORMAT_USHORT1;
-    PixelFormatTable[TEXTURE_PF_RG16UI] = FORMAT_USHORT2;
-    PixelFormatTable[TEXTURE_PF_BGR16UI] = FORMAT_USHORT3;
-    PixelFormatTable[TEXTURE_PF_BGRA16UI] = FORMAT_USHORT4;
-
-    PixelFormatTable[TEXTURE_PF_R32I] = FORMAT_INT1;
-    PixelFormatTable[TEXTURE_PF_RG32I] = FORMAT_INT2;
-    PixelFormatTable[TEXTURE_PF_BGR32I] = FORMAT_INT3;
-    PixelFormatTable[TEXTURE_PF_BGRA32I] = FORMAT_INT4;
-
-    PixelFormatTable[TEXTURE_PF_R32I] = FORMAT_UINT1;
-    PixelFormatTable[TEXTURE_PF_RG32UI] = FORMAT_UINT2;
-    PixelFormatTable[TEXTURE_PF_BGR32UI] = FORMAT_UINT3;
-    PixelFormatTable[TEXTURE_PF_BGRA32UI] = FORMAT_UINT4;
-
-    PixelFormatTable[TEXTURE_PF_R16F] = FORMAT_HALF1;
-    PixelFormatTable[TEXTURE_PF_RG16F] = FORMAT_HALF2;
-    PixelFormatTable[TEXTURE_PF_BGR16F] = FORMAT_HALF3;
-    PixelFormatTable[TEXTURE_PF_BGRA16F] = FORMAT_HALF4;
-
-    PixelFormatTable[TEXTURE_PF_R32F] = FORMAT_FLOAT1;
-    PixelFormatTable[TEXTURE_PF_RG32F] = FORMAT_FLOAT2;
-    PixelFormatTable[TEXTURE_PF_BGR32F] = FORMAT_FLOAT3;
-    PixelFormatTable[TEXTURE_PF_BGRA32F] = FORMAT_FLOAT4;
-
-    PixelFormatTable[TEXTURE_PF_R11F_G11F_B10F] = FORMAT_FLOAT3;
-
-    InternalPixelFormatTable[TEXTURE_PF_R8_SNORM] = TEXTURE_FORMAT_R8_SNORM;
-    InternalPixelFormatTable[TEXTURE_PF_RG8_SNORM] = TEXTURE_FORMAT_RG8_SNORM;
-    InternalPixelFormatTable[TEXTURE_PF_BGR8_SNORM] = TEXTURE_FORMAT_RGB8_SNORM;
-    InternalPixelFormatTable[TEXTURE_PF_BGRA8_SNORM] = TEXTURE_FORMAT_RGBA8_SNORM;
-
-    InternalPixelFormatTable[TEXTURE_PF_R8_UNORM] = TEXTURE_FORMAT_R8;
-    InternalPixelFormatTable[TEXTURE_PF_RG8_UNORM] = TEXTURE_FORMAT_RG8;
-    InternalPixelFormatTable[TEXTURE_PF_BGR8_UNORM] = TEXTURE_FORMAT_RGB8;
-    InternalPixelFormatTable[TEXTURE_PF_BGRA8_UNORM] = TEXTURE_FORMAT_RGBA8;
-
-    InternalPixelFormatTable[TEXTURE_PF_BGR8_SRGB] = TEXTURE_FORMAT_SRGB8;
-    InternalPixelFormatTable[TEXTURE_PF_BGRA8_SRGB] = TEXTURE_FORMAT_SRGB8_ALPHA8;
-
-    InternalPixelFormatTable[TEXTURE_PF_R16I] = TEXTURE_FORMAT_R16I;
-    InternalPixelFormatTable[TEXTURE_PF_RG16I] = TEXTURE_FORMAT_RG16I;
-    InternalPixelFormatTable[TEXTURE_PF_BGR16I] = TEXTURE_FORMAT_RGB16I;
-    InternalPixelFormatTable[TEXTURE_PF_BGRA16I] = TEXTURE_FORMAT_RGBA16I;
-
-    InternalPixelFormatTable[TEXTURE_PF_R16UI] = TEXTURE_FORMAT_R16UI;
-    InternalPixelFormatTable[TEXTURE_PF_RG16UI] = TEXTURE_FORMAT_RG16UI;
-    InternalPixelFormatTable[TEXTURE_PF_BGR16UI] = TEXTURE_FORMAT_RGB16UI;
-    InternalPixelFormatTable[TEXTURE_PF_BGRA16UI] = TEXTURE_FORMAT_RGBA16UI;
-
-    InternalPixelFormatTable[TEXTURE_PF_R32I] = TEXTURE_FORMAT_R32I;
-    InternalPixelFormatTable[TEXTURE_PF_RG32I] = TEXTURE_FORMAT_RG32I;
-    InternalPixelFormatTable[TEXTURE_PF_BGR32I] = TEXTURE_FORMAT_RGB32I;
-    InternalPixelFormatTable[TEXTURE_PF_BGRA32I] = TEXTURE_FORMAT_RGBA32I;
-
-    InternalPixelFormatTable[TEXTURE_PF_R32I] = TEXTURE_FORMAT_R32UI;
-    InternalPixelFormatTable[TEXTURE_PF_RG32UI] = TEXTURE_FORMAT_RG32UI;
-    InternalPixelFormatTable[TEXTURE_PF_BGR32UI] = TEXTURE_FORMAT_RGB32UI;
-    InternalPixelFormatTable[TEXTURE_PF_BGRA32UI] = TEXTURE_FORMAT_RGBA32UI;
-
-    InternalPixelFormatTable[TEXTURE_PF_R16F] = TEXTURE_FORMAT_R16F;
-    InternalPixelFormatTable[TEXTURE_PF_RG16F] = TEXTURE_FORMAT_RG16F;
-    InternalPixelFormatTable[TEXTURE_PF_BGR16F] = TEXTURE_FORMAT_RGB16F;
-    InternalPixelFormatTable[TEXTURE_PF_BGRA16F] = TEXTURE_FORMAT_RGBA16F;
-
-    InternalPixelFormatTable[TEXTURE_PF_R32F] = TEXTURE_FORMAT_R32F;
-    InternalPixelFormatTable[TEXTURE_PF_RG32F] = TEXTURE_FORMAT_RG32F;
-    InternalPixelFormatTable[TEXTURE_PF_BGR32F] = TEXTURE_FORMAT_RGB32F;
-    InternalPixelFormatTable[TEXTURE_PF_BGRA32F] = TEXTURE_FORMAT_RGBA32F;
-
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC1_RGB]        = TEXTURE_FORMAT_COMPRESSED_BC1_RGB;
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC1_SRGB]       = TEXTURE_FORMAT_COMPRESSED_BC1_SRGB;
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC2_RGBA]       = TEXTURE_FORMAT_COMPRESSED_BC2_RGBA;
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC2_SRGB_ALPHA] = TEXTURE_FORMAT_COMPRESSED_BC2_SRGB_ALPHA;
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC3_RGBA]       = TEXTURE_FORMAT_COMPRESSED_BC3_RGBA;
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC3_SRGB_ALPHA] = TEXTURE_FORMAT_COMPRESSED_BC3_SRGB_ALPHA;
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC4_R]          = TEXTURE_FORMAT_COMPRESSED_BC4_R;
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC4_R_SIGNED]   = TEXTURE_FORMAT_COMPRESSED_BC4_R_SIGNED;
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC5_RG]         = TEXTURE_FORMAT_COMPRESSED_BC5_RG;
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC5_RG_SIGNED]  = TEXTURE_FORMAT_COMPRESSED_BC5_RG_SIGNED;
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC6H]           = TEXTURE_FORMAT_COMPRESSED_BC6H;
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC6H_SIGNED]    = TEXTURE_FORMAT_COMPRESSED_BC6H_SIGNED;
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC7_RGBA]       = TEXTURE_FORMAT_COMPRESSED_BC7_RGBA;
-    InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC7_SRGB_ALPHA] = TEXTURE_FORMAT_COMPRESSED_BC7_SRGB_ALPHA;
-
-    InternalPixelFormatTable[TEXTURE_PF_R11F_G11F_B10F] = TEXTURE_FORMAT_R11F_G11F_B10F;
+    // Store in global pointers
+    GStreamBuffer = StreamedMemoryGPU->GetBufferGPU();
 
     InitMaterialSamplers();
 
@@ -318,8 +219,8 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
     FrameRenderer = MakeRef< AFrameRenderer >();
     CanvasRenderer = MakeRef< ACanvasRenderer >();
 
-    GConstantBuffer = MakeRef< ACircularBuffer >( 2 * 1024 * 1024 ); // 2MB
-    GFrameConstantBuffer = MakeRef< AFrameConstantBuffer >( 2 * 1024 * 1024 ); // 2MB
+    GCircularBuffer = MakeRef< ACircularBuffer >( 2 * 1024 * 1024 ); // 2MB
+    //GFrameConstantBuffer = MakeRef< AFrameConstantBuffer >( 2 * 1024 * 1024 ); // 2MB
 
 //#define QUERY_TIMESTAMP
 
@@ -351,6 +252,8 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
         bufferCI.bImmutableStorage = true;
         bufferCI.SizeInBytes = sizeof( saqVertices );
         GDevice->CreateBuffer( bufferCI, saqVertices, &GSaq );
+
+        GSaq->SetDebugName( "Screen aligned quad" );
     }
 
     // Create white texture
@@ -376,13 +279,17 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
         RenderCore::SBufferCreateInfo bufferCI = {};
         bufferCI.bImmutableStorage = true;
         bufferCI.ImmutableStorageFlags = RenderCore::IMMUTABLE_DYNAMIC_STORAGE;
-        bufferCI.SizeInBytes = sizeof( SFrameLightData::ItemBuffer );
+        bufferCI.SizeInBytes = MAX_TOTAL_CLUSTER_ITEMS * sizeof( SClusterPackedIndex );
         GDevice->CreateBuffer( bufferCI, nullptr, &GClusterItemBuffer );
+
+        GClusterItemBuffer->SetDebugName( "Cluster item buffer" );
 
         RenderCore::SBufferViewCreateInfo bufferViewCI = {};
         bufferViewCI.Format = RenderCore::BUFFER_VIEW_PIXEL_FORMAT_R32UI;
         GDevice->CreateBufferView( bufferViewCI, GClusterItemBuffer, &GClusterItemTBO );
     }
+
+    FeedbackAnalyzerVT = MakeRef< AVirtualTextureFeedbackAnalyzer >();
 
     /////////////////////////////////////////////////////////////////////
     // test
@@ -599,10 +506,10 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
     createInfo.PageResolutionB = 128;
     createInfo.NumLayers = 1;
     createInfo.pLayers = &layer;
-    VTWorkflow = MakeRef< SVirtualTextureWorkflow >( createInfo );
+    PhysCacheVT = MakeRef< AVirtualTextureCache >( createInfo );
 
-    //::TestVT();
-    TestVT = VTWorkflow->PhysCache.CreateVirtualTexture( "Test.vt3" );
+    ::TestVT();
+    PhysCacheVT->CreateTexture( "Test.vt3", &TestVT );
 
 //#define SPARSE_TEXTURE_TEST
 #ifdef SPARSE_TEXTURE_TEST
@@ -680,11 +587,22 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
     free(mem);
 #endif
 #endif
+
+    // Test SPIR-V
+    TRef< IShaderModule > shaderModule;
+    SShaderBinaryData binaryData;
+    binaryData.ShaderType = VERTEX_SHADER;
+    binaryData.BinaryFormat = SHADER_BINARY_FORMAT_SPIR_V_ARB;
+    LoadSPIRV( &binaryData.BinaryCode, &binaryData.BinarySize );
+    GDevice->CreateShaderFromBinary( &binaryData, &shaderModule );
 }
 
 void ARenderBackend::Deinitialize()
 {
     GLogger.Printf( "Deinitializing render backend...\n" );
+
+    VertexMemoryGPU.Reset();
+    StreamedMemoryGPU.Reset();
 
     TimeQuery.Reset();
     TimeStamp1.Reset();
@@ -692,10 +610,17 @@ void ARenderBackend::Deinitialize()
     CanvasRenderer.Reset();
     FrameRenderer.Reset();
     FrameGraph.Reset();
-    VTWorkflow.Reset();
 
-    GConstantBuffer.Reset();
-    GFrameConstantBuffer.Reset();
+    //SDL_SetRelativeMouseMode( SDL_FALSE );
+    AVirtualTexture * vt = TestVT.GetObject();
+    TestVT.Reset();
+    PhysCacheVT.Reset();
+    FeedbackAnalyzerVT.Reset();
+    GLogger.Printf( "VT ref count %d\n", vt->GetRefCount() );
+
+
+    GCircularBuffer.Reset();
+    //GFrameConstantBuffer.Reset();
     GWhiteTexture.Reset();
     GSphereMesh.Reset();
     GSaq.Reset();
@@ -722,6 +647,11 @@ void * ARenderBackend::GetMainWindow()
     return WindowHandle;
 }
 
+RenderCore::IDevice * ARenderBackend::GetDevice()
+{
+    return GDevice;
+}
+
 void ARenderBackend::WaitGPU()
 {
     GPUSync.Wait();
@@ -730,27 +660,6 @@ void ARenderBackend::WaitGPU()
 void ARenderBackend::SetGPUEvent()
 {
     GPUSync.SetEvent();
-}
-
-void * ARenderBackend::FenceSync()
-{
-    return rcmd->FenceSync();
-}
-
-void ARenderBackend::RemoveSync( void * _Sync )
-{
-    rcmd->RemoveSync( (RenderCore::SyncObject)_Sync );
-}
-
-void ARenderBackend::WaitSync( void * _Sync )
-{
-    const uint64_t timeOutNanoseconds = 1;
-    if ( _Sync ) {
-        RenderCore::CLIENT_WAIT_STATUS status;
-        do {
-            status = rcmd->ClientWait( (RenderCore::SyncObject)_Sync, timeOutNanoseconds );
-        } while ( status != RenderCore::CLIENT_WAIT_ALREADY_SIGNALED && status != RenderCore::CLIENT_WAIT_CONDITION_SATISFIED );
-    }
 }
 
 void ARenderBackend::ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem )
@@ -766,161 +675,7 @@ void ARenderBackend::ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width
     framebuffer->Read( RenderCore::FB_BACK_DEFAULT, rect, RenderCore::FB_CHANNEL_RGBA, RenderCore::FB_UBYTE, RenderCore::COLOR_CLAMP_ON, _SizeInBytes, _Alignment, _SysMem );
 }
 
-static void SetTextureSwizzle( ETexturePixelFormat _PixelFormat, RenderCore::STextureSwizzle & _Swizzle )
-{
-    switch ( STexturePixelFormat( _PixelFormat ).NumComponents() ) {
-    case 1:
-        // Apply texture swizzle for one channel textures
-        _Swizzle.R = RenderCore::TEXTURE_SWIZZLE_R;
-        _Swizzle.G = RenderCore::TEXTURE_SWIZZLE_R;
-        _Swizzle.B = RenderCore::TEXTURE_SWIZZLE_R;
-        _Swizzle.A = RenderCore::TEXTURE_SWIZZLE_R;
-        break;
 #if 0
-    case 2:
-        // Apply texture swizzle for two channel textures
-        _Swizzle.R = RenderCore::TEXTURE_SWIZZLE_R;
-        _Swizzle.G = RenderCore::TEXTURE_SWIZZLE_G;
-        _Swizzle.B = RenderCore::TEXTURE_SWIZZLE_R;
-        _Swizzle.A = RenderCore::TEXTURE_SWIZZLE_G;
-        break;
-    case 3:
-        // Apply texture swizzle for three channel textures
-        _Swizzle.R = RenderCore::TEXTURE_SWIZZLE_R;
-        _Swizzle.G = RenderCore::TEXTURE_SWIZZLE_G;
-        _Swizzle.B = RenderCore::TEXTURE_SWIZZLE_B;
-        _Swizzle.A = RenderCore::TEXTURE_SWIZZLE_ONE;
-        break;
-#endif
-    }
-}
-
-void ARenderBackend::InitializeTexture1D( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width )
-{
-    RenderCore::STextureCreateInfo textureCI = {};
-    textureCI.Type = RenderCore::TEXTURE_1D;
-    textureCI.Resolution.Tex1D.Width = _Width;
-    textureCI.Format = InternalPixelFormatTable[_PixelFormat];
-    textureCI.NumLods = _NumLods;
-
-    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
-
-    GDevice->CreateTexture( textureCI, ppTexture );
-}
-
-void ARenderBackend::InitializeTexture1DArray( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize )
-{
-    RenderCore::STextureCreateInfo textureCI = {};
-    textureCI.Type = RenderCore::TEXTURE_1D_ARRAY;
-    textureCI.Resolution.Tex1DArray.Width = _Width;
-    textureCI.Resolution.Tex1DArray.NumLayers = _ArraySize;
-    textureCI.Format = InternalPixelFormatTable[_PixelFormat];
-    textureCI.NumLods = _NumLods;
-
-    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
-
-    GDevice->CreateTexture( textureCI, ppTexture );
-}
-
-void ARenderBackend::InitializeTexture2D( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height )
-{
-    RenderCore::STextureCreateInfo textureCI = {};
-    textureCI.Type = RenderCore::TEXTURE_2D;
-    textureCI.Resolution.Tex2D.Width = _Width;
-    textureCI.Resolution.Tex2D.Height = _Height;
-    textureCI.Format = InternalPixelFormatTable[_PixelFormat];
-    textureCI.NumLods = _NumLods;
-
-    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
-
-    GDevice->CreateTexture( textureCI, ppTexture );
-}
-
-void ARenderBackend::InitializeTexture2DArray( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize )
-{
-    RenderCore::STextureCreateInfo textureCI = {};
-    textureCI.Type = RenderCore::TEXTURE_2D_ARRAY;
-    textureCI.Resolution.Tex2DArray.Width = _Width;
-    textureCI.Resolution.Tex2DArray.Height = _Height;
-    textureCI.Resolution.Tex2DArray.NumLayers = _ArraySize;
-    textureCI.Format = InternalPixelFormatTable[_PixelFormat];
-    textureCI.NumLods = _NumLods;
-
-    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
-
-    GDevice->CreateTexture( textureCI, ppTexture );
-}
-
-void ARenderBackend::InitializeTexture3D( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth )
-{
-    RenderCore::STextureCreateInfo textureCI = {};
-    textureCI.Type = RenderCore::TEXTURE_3D;
-    textureCI.Resolution.Tex3D.Width = _Width;
-    textureCI.Resolution.Tex3D.Height = _Height;
-    textureCI.Resolution.Tex3D.Depth = _Depth;
-    textureCI.Format = InternalPixelFormatTable[_PixelFormat];
-    textureCI.NumLods = _NumLods;
-
-    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
-
-    GDevice->CreateTexture( textureCI, ppTexture );
-}
-
-void ARenderBackend::InitializeTextureCubemap( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width )
-{
-    RenderCore::STextureCreateInfo textureCI = {};
-    textureCI.Type = RenderCore::TEXTURE_CUBE_MAP;
-    textureCI.Resolution.TexCubemap.Width = _Width;
-    textureCI.Format = InternalPixelFormatTable[_PixelFormat];
-    textureCI.NumLods = _NumLods;
-
-    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
-
-    GDevice->CreateTexture( textureCI, ppTexture );
-}
-
-void ARenderBackend::InitializeTextureCubemapArray( TRef< RenderCore::ITexture > * ppTexture, ETexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize )
-{
-    RenderCore::STextureCreateInfo textureCI = {};
-    textureCI.Type = RenderCore::TEXTURE_CUBE_MAP_ARRAY;
-    textureCI.Resolution.TexCubemapArray.Width = _Width;
-    textureCI.Resolution.TexCubemapArray.NumLayers = _ArraySize;
-    textureCI.Format = InternalPixelFormatTable[_PixelFormat];
-    textureCI.NumLods = _NumLods;
-
-    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
-
-    GDevice->CreateTexture( textureCI, ppTexture );
-}
-
-void ARenderBackend::WriteTexture( RenderCore::ITexture * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, const void * _SysMem )
-{
-    RenderCore::STextureRect rect;
-    rect.Offset.X = _Rectangle.Offset.X;
-    rect.Offset.Y = _Rectangle.Offset.Y;
-    rect.Offset.Z = _Rectangle.Offset.Z;
-    rect.Offset.Lod = _Rectangle.Offset.Lod;
-    rect.Dimension.X = _Rectangle.Dimension.X;
-    rect.Dimension.Y = _Rectangle.Dimension.Y;
-    rect.Dimension.Z = _Rectangle.Dimension.Z;
-
-    _Texture->WriteRect( rect, PixelFormatTable[_PixelFormat], _SizeInBytes, _Alignment, _SysMem );
-}
-
-void ARenderBackend::ReadTexture( RenderCore::ITexture * _Texture, STextureRect const & _Rectangle, ETexturePixelFormat _PixelFormat, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem )
-{
-    RenderCore::STextureRect rect;
-    rect.Offset.X = _Rectangle.Offset.X;
-    rect.Offset.Y = _Rectangle.Offset.Y;
-    rect.Offset.Z = _Rectangle.Offset.Z;
-    rect.Offset.Lod = _Rectangle.Offset.Lod;
-    rect.Dimension.X = _Rectangle.Dimension.X;
-    rect.Dimension.Y = _Rectangle.Dimension.Y;
-    rect.Dimension.Z = _Rectangle.Dimension.Z;
-
-    _Texture->ReadRect( rect, PixelFormatTable[_PixelFormat], _SizeInBytes, _Alignment, _SysMem );
-}
-
 void ARenderBackend::InitializeBuffer( TRef< RenderCore::IBuffer > * ppBuffer, size_t _SizeInBytes )
 {
     RenderCore::SBufferCreateInfo bufferCI = {};
@@ -957,47 +712,7 @@ void ARenderBackend::InitializeBuffer( TRef< RenderCore::IBuffer > * ppBuffer, s
         GDevice->CreateBuffer( bufferCI, nullptr, ppBuffer );
     }
 }
-
-void * ARenderBackend::InitializePersistentMappedBuffer( TRef< RenderCore::IBuffer > * ppBuffer, size_t _SizeInBytes )
-{
-    RenderCore::SBufferCreateInfo bufferCI = {};
-
-    bufferCI.SizeInBytes = _SizeInBytes;
-
-    bufferCI.ImmutableStorageFlags = (RenderCore::IMMUTABLE_STORAGE_FLAGS)
-            ( RenderCore::IMMUTABLE_MAP_WRITE | RenderCore::IMMUTABLE_MAP_PERSISTENT | RenderCore::IMMUTABLE_MAP_COHERENT );
-    bufferCI.bImmutableStorage = true;
-
-    GDevice->CreateBuffer( bufferCI, nullptr, ppBuffer );
-
-    void * pMappedMemory = (*ppBuffer)->Map( RenderCore::MAP_TRANSFER_WRITE,
-                                        RenderCore::MAP_NO_INVALIDATE,//RenderCore::MAP_INVALIDATE_ENTIRE_BUFFER,
-                                        RenderCore::MAP_PERSISTENT_COHERENT,
-                                        false, // flush explicit
-                                        false  // unsynchronized
-                                      );
-
-    if ( !pMappedMemory ) {
-        CriticalError( "ARenderBackend::InitializePersistentMappedBuffer: cannot initialize persistent mapped buffer size %d\n", _SizeInBytes );
-    }
-
-    return pMappedMemory;
-}
-
-void ARenderBackend::WriteBuffer( RenderCore::IBuffer * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem )
-{
-    _Buffer->WriteRange( _ByteOffset, _SizeInBytes, _SysMem );
-}
-
-void ARenderBackend::ReadBuffer( RenderCore::IBuffer * _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem )
-{
-    _Buffer->ReadRange( _ByteOffset, _SizeInBytes, _SysMem );
-}
-
-void ARenderBackend::OrphanBuffer( RenderCore::IBuffer * _Buffer )
-{
-    _Buffer->Orphan();
-}
+#endif
 
 void ARenderBackend::InitializeMaterial( AMaterialGPU * Material, SMaterialDef const * Def )
 {
@@ -1057,23 +772,7 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * Material, SMaterialDef c
 
 void ARenderBackend::RenderFrame( SRenderFrame * pFrameData )
 {
-    bool bRebuildMaterials = false;
-
-    if ( r_SSLR.IsModified() ) {
-        r_SSLR.UnmarkModified();
-        bRebuildMaterials = true;
-    }
-
-    if ( r_HBAO.IsModified() ) {
-        r_HBAO.UnmarkModified();
-        bRebuildMaterials = true;
-    }
-
-    if ( bRebuildMaterials ) {
-        GLogger.Printf( "Need to rebuild all materials\n" );
-    }
-
-    GFrameConstantBuffer->Begin();
+    //GFrameConstantBuffer->Begin();
 
     static int timeQueryFrame = 0;
 
@@ -1088,24 +787,23 @@ void ARenderBackend::RenderFrame( SRenderFrame * pFrameData )
     }
 
     GFrameData = pFrameData;
-    GStreamBuffer = GFrameData->StreamBuffer;
 
     rcmd->SetSwapChainResolution( GFrameData->CanvasWidth, GFrameData->CanvasHeight );
 
-    VTWorkflow->FeedbackAnalyzer.Begin();
+    // Update cache at beggining of the frame to give more time for stream thread
+    PhysCacheVT->Update();
+
+    FeedbackAnalyzerVT->Begin();
 
     // TODO: Bind virtual textures in one place
-    VTWorkflow->FeedbackAnalyzer.BindTexture( 0, TestVT );
+    FeedbackAnalyzerVT->BindTexture( 0, TestVT );
 
     CanvasRenderer->Render( [this]( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture )
     {
         RenderView( pRenderView, ppViewTexture );
     });
 
-    VTWorkflow->FeedbackAnalyzer.End();
-
-    // FIXME: Move it at beggining of the frame to give more time for stream thread?
-    VTWorkflow->PhysCache.Update();
+    FeedbackAnalyzerVT->End();
 
     if ( r_ShowGPUTime ) {
 #ifdef QUERY_TIMESTAMP
@@ -1133,165 +831,164 @@ void ARenderBackend::RenderFrame( SRenderFrame * pFrameData )
 
     r_RenderSnapshot = false;
 
-    GFrameConstantBuffer->End();
+    //GFrameConstantBuffer->End();
 }
 
-void ARenderBackend::SetViewUniforms()
+void ARenderBackend::SetViewConstants()
 {
-    size_t offset = GFrameConstantBuffer->Allocate( sizeof( SViewUniformBuffer ) );
+    size_t offset = StreamedMemoryGPU->AllocateConstant( sizeof( SViewConstantBuffer ) );
 
-    SViewUniformBuffer * uniformData = (SViewUniformBuffer *)(GFrameConstantBuffer->GetMappedMemory() + offset);
+    SViewConstantBuffer * pViewCBuf = (SViewConstantBuffer *)StreamedMemoryGPU->Map( offset );
 
-    uniformData->OrthoProjection = GFrameData->OrthoProjection;
-    uniformData->ViewProjection = GRenderView->ViewProjection;
-    uniformData->ProjectionMatrix = GRenderView->ProjectionMatrix;
-    uniformData->InverseProjectionMatrix = GRenderView->InverseProjectionMatrix;
+    pViewCBuf->OrthoProjection = GFrameData->CanvasOrthoProjection;
+    pViewCBuf->ViewProjection = GRenderView->ViewProjection;
+    pViewCBuf->ProjectionMatrix = GRenderView->ProjectionMatrix;
+    pViewCBuf->InverseProjectionMatrix = GRenderView->InverseProjectionMatrix;
 
-    uniformData->InverseViewMatrix = GRenderView->ViewSpaceToWorldSpace;
+    pViewCBuf->InverseViewMatrix = GRenderView->ViewSpaceToWorldSpace;
 
     // Reprojection from viewspace to previous frame viewspace coordinates:
     // ViewspaceReprojection = WorldspaceToViewspacePrevFrame * ViewspaceToWorldspace
-    uniformData->ViewspaceReprojection = GRenderView->ViewMatrixP * GRenderView->ViewSpaceToWorldSpace;
+    pViewCBuf->ViewspaceReprojection = GRenderView->ViewMatrixP * GRenderView->ViewSpaceToWorldSpace;
 
     // Reprojection from viewspace to previous frame projected coordinates:
     // ReprojectionMatrix = ProjectionMatrixPrevFrame * WorldspaceToViewspacePrevFrame * ViewspaceToWorldspace
-    uniformData->ReprojectionMatrix = GRenderView->ProjectionMatrixP * uniformData->ViewspaceReprojection;
+    pViewCBuf->ReprojectionMatrix = GRenderView->ProjectionMatrixP * pViewCBuf->ViewspaceReprojection;
 
-    uniformData->WorldNormalToViewSpace[0].X = GRenderView->NormalToViewMatrix[0][0];
-    uniformData->WorldNormalToViewSpace[0].Y = GRenderView->NormalToViewMatrix[1][0];
-    uniformData->WorldNormalToViewSpace[0].Z = GRenderView->NormalToViewMatrix[2][0];
-    uniformData->WorldNormalToViewSpace[0].W = 0;
+    pViewCBuf->WorldNormalToViewSpace[0].X = GRenderView->NormalToViewMatrix[0][0];
+    pViewCBuf->WorldNormalToViewSpace[0].Y = GRenderView->NormalToViewMatrix[1][0];
+    pViewCBuf->WorldNormalToViewSpace[0].Z = GRenderView->NormalToViewMatrix[2][0];
+    pViewCBuf->WorldNormalToViewSpace[0].W = 0;
 
-    uniformData->WorldNormalToViewSpace[1].X = GRenderView->NormalToViewMatrix[0][1];
-    uniformData->WorldNormalToViewSpace[1].Y = GRenderView->NormalToViewMatrix[1][1];
-    uniformData->WorldNormalToViewSpace[1].Z = GRenderView->NormalToViewMatrix[2][1];
-    uniformData->WorldNormalToViewSpace[1].W = 0;
+    pViewCBuf->WorldNormalToViewSpace[1].X = GRenderView->NormalToViewMatrix[0][1];
+    pViewCBuf->WorldNormalToViewSpace[1].Y = GRenderView->NormalToViewMatrix[1][1];
+    pViewCBuf->WorldNormalToViewSpace[1].Z = GRenderView->NormalToViewMatrix[2][1];
+    pViewCBuf->WorldNormalToViewSpace[1].W = 0;
 
-    uniformData->WorldNormalToViewSpace[2].X = GRenderView->NormalToViewMatrix[0][2];
-    uniformData->WorldNormalToViewSpace[2].Y = GRenderView->NormalToViewMatrix[1][2];
-    uniformData->WorldNormalToViewSpace[2].Z = GRenderView->NormalToViewMatrix[2][2];
-    uniformData->WorldNormalToViewSpace[2].W = 0;
+    pViewCBuf->WorldNormalToViewSpace[2].X = GRenderView->NormalToViewMatrix[0][2];
+    pViewCBuf->WorldNormalToViewSpace[2].Y = GRenderView->NormalToViewMatrix[1][2];
+    pViewCBuf->WorldNormalToViewSpace[2].Z = GRenderView->NormalToViewMatrix[2][2];
+    pViewCBuf->WorldNormalToViewSpace[2].W = 0;
 
-    uniformData->InvViewportSize.X = 1.0f / GRenderView->Width;
-    uniformData->InvViewportSize.Y = 1.0f / GRenderView->Height;
-    uniformData->ZNear = GRenderView->ViewZNear;
-    uniformData->ZFar = GRenderView->ViewZFar;
+    pViewCBuf->InvViewportSize.X = 1.0f / GRenderView->Width;
+    pViewCBuf->InvViewportSize.Y = 1.0f / GRenderView->Height;
+    pViewCBuf->ZNear = GRenderView->ViewZNear;
+    pViewCBuf->ZFar = GRenderView->ViewZFar;
 
     if ( GRenderView->bPerspective ) {
-        uniformData->ProjectionInfo.X = -2.0f / GRenderView->ProjectionMatrix[0][0]; // (x) * (R - L)/N
-        uniformData->ProjectionInfo.Y = 2.0f / GRenderView->ProjectionMatrix[1][1]; // (y) * (T - B)/N
-        uniformData->ProjectionInfo.Z = (1.0f - GRenderView->ProjectionMatrix[2][0]) / GRenderView->ProjectionMatrix[0][0]; // L/N
-        uniformData->ProjectionInfo.W = -(1.0f + GRenderView->ProjectionMatrix[2][1]) / GRenderView->ProjectionMatrix[1][1]; // B/N
+        pViewCBuf->ProjectionInfo.X = -2.0f / GRenderView->ProjectionMatrix[0][0]; // (x) * (R - L)/N
+        pViewCBuf->ProjectionInfo.Y = 2.0f / GRenderView->ProjectionMatrix[1][1]; // (y) * (T - B)/N
+        pViewCBuf->ProjectionInfo.Z = (1.0f - GRenderView->ProjectionMatrix[2][0]) / GRenderView->ProjectionMatrix[0][0]; // L/N
+        pViewCBuf->ProjectionInfo.W = -(1.0f + GRenderView->ProjectionMatrix[2][1]) / GRenderView->ProjectionMatrix[1][1]; // B/N
     }
     else {
-        uniformData->ProjectionInfo.X = 2.0f / GRenderView->ProjectionMatrix[0][0]; // (x) * R - L
-        uniformData->ProjectionInfo.Y = -2.0f / GRenderView->ProjectionMatrix[1][1]; // (y) * T - B
-        uniformData->ProjectionInfo.Z = -(1.0f + GRenderView->ProjectionMatrix[3][0]) / GRenderView->ProjectionMatrix[0][0]; // L
-        uniformData->ProjectionInfo.W = (1.0f - GRenderView->ProjectionMatrix[3][1]) / GRenderView->ProjectionMatrix[1][1]; // B
+        pViewCBuf->ProjectionInfo.X = 2.0f / GRenderView->ProjectionMatrix[0][0]; // (x) * R - L
+        pViewCBuf->ProjectionInfo.Y = -2.0f / GRenderView->ProjectionMatrix[1][1]; // (y) * T - B
+        pViewCBuf->ProjectionInfo.Z = -(1.0f + GRenderView->ProjectionMatrix[3][0]) / GRenderView->ProjectionMatrix[0][0]; // L
+        pViewCBuf->ProjectionInfo.W = (1.0f - GRenderView->ProjectionMatrix[3][1]) / GRenderView->ProjectionMatrix[1][1]; // B
     }
 
-    uniformData->GameRunningTimeSeconds = GRenderView->GameRunningTimeSeconds;
-    uniformData->GameplayTimeSeconds = GRenderView->GameplayTimeSeconds;
+    pViewCBuf->GameRunningTimeSeconds = GRenderView->GameRunningTimeSeconds;
+    pViewCBuf->GameplayTimeSeconds = GRenderView->GameplayTimeSeconds;
 
-    uniformData->DynamicResolutionRatioX = (float)GRenderView->Width / GFrameData->AllocSurfaceWidth;
-    uniformData->DynamicResolutionRatioY = (float)GRenderView->Height / GFrameData->AllocSurfaceHeight;
-    uniformData->DynamicResolutionRatioPX = (float)GRenderView->WidthP / GFrameData->AllocSurfaceWidthP;
-    uniformData->DynamicResolutionRatioPY = (float)GRenderView->HeightP / GFrameData->AllocSurfaceHeightP;
+    pViewCBuf->DynamicResolutionRatioX = (float)GRenderView->Width / GFrameData->RenderTargetMaxWidth;
+    pViewCBuf->DynamicResolutionRatioY = (float)GRenderView->Height / GFrameData->RenderTargetMaxHeight;
+    pViewCBuf->DynamicResolutionRatioPX = (float)GRenderView->WidthP / GFrameData->RenderTargetMaxWidthP;
+    pViewCBuf->DynamicResolutionRatioPY = (float)GRenderView->HeightP / GFrameData->RenderTargetMaxHeightP;
 
-    uniformData->FeedbackBufferResolutionRatio = GRenderView->VTFeedback->GetResolutionRatio();
-    uniformData->VTPageCacheCapacity.X = (float)GRenderBackendLocal.VTWorkflow->PhysCache.GetPageCacheCapacityX();
-    uniformData->VTPageCacheCapacity.Y = (float)GRenderBackendLocal.VTWorkflow->PhysCache.GetPageCacheCapacityY();
+    pViewCBuf->FeedbackBufferResolutionRatio = GRenderView->VTFeedback->GetResolutionRatio();
+    pViewCBuf->VTPageCacheCapacity.X = (float)PhysCacheVT->GetPageCacheCapacityX();
+    pViewCBuf->VTPageCacheCapacity.Y = (float)PhysCacheVT->GetPageCacheCapacityY();
 
-    uniformData->VTPageTranslationOffsetAndScale = GRenderBackendLocal.VTWorkflow->PhysCache.GetPageTranslationOffsetAndScale();
+    pViewCBuf->VTPageTranslationOffsetAndScale = PhysCacheVT->GetPageTranslationOffsetAndScale();
 
-    uniformData->ViewPosition = GRenderView->ViewPosition;
-    uniformData->TimeDelta = GRenderView->GameplayTimeStep;
+    pViewCBuf->ViewPosition = GRenderView->ViewPosition;
+    pViewCBuf->TimeDelta = GRenderView->GameplayTimeStep;
 
-    uniformData->PostprocessBloomMix = Float4( r_BloomParam0.GetFloat(),
+    pViewCBuf->PostprocessBloomMix = Float4( r_BloomParam0.GetFloat(),
                                                r_BloomParam1.GetFloat(),
                                                r_BloomParam2.GetFloat(),
                                                r_BloomParam3.GetFloat() ) * r_BloomScale.GetFloat();
 
-    uniformData->BloomEnabled = r_Bloom;  // TODO: Get from GRenderView
-    uniformData->ToneMappingExposure = r_ToneExposure.GetFloat();  // TODO: Get from GRenderView
-    uniformData->ColorGrading = GRenderView->CurrentColorGradingLUT ? 1.0f : 0.0f;
-    uniformData->FXAA = r_FXAA;
-    uniformData->VignetteColorIntensity = GRenderView->VignetteColorIntensity;
-    uniformData->VignetteOuterRadiusSqr = GRenderView->VignetteOuterRadiusSqr;
-    uniformData->VignetteInnerRadiusSqr = GRenderView->VignetteInnerRadiusSqr;
-    uniformData->ColorGradingAdaptationSpeed = GRenderView->ColorGradingAdaptationSpeed;
-    uniformData->ViewBrightness = Math::Saturate( r_Brightness.GetFloat() );
+    pViewCBuf->BloomEnabled = r_Bloom;  // TODO: Get from GRenderView
+    pViewCBuf->ToneMappingExposure = r_ToneExposure.GetFloat();  // TODO: Get from GRenderView
+    pViewCBuf->ColorGrading = GRenderView->CurrentColorGradingLUT ? 1.0f : 0.0f;
+    pViewCBuf->FXAA = r_FXAA;
+    pViewCBuf->VignetteColorIntensity = GRenderView->VignetteColorIntensity;
+    pViewCBuf->VignetteOuterRadiusSqr = GRenderView->VignetteOuterRadiusSqr;
+    pViewCBuf->VignetteInnerRadiusSqr = GRenderView->VignetteInnerRadiusSqr;
+    pViewCBuf->ColorGradingAdaptationSpeed = GRenderView->ColorGradingAdaptationSpeed;
+    pViewCBuf->ViewBrightness = Math::Saturate( r_Brightness.GetFloat() );
 
-    uniformData->SSLRSampleOffset = r_SSLRSampleOffset.GetFloat();
-    uniformData->SSLRMaxDist = r_SSLRMaxDist.GetFloat();
-    uniformData->IsPerspective = float( GRenderView->bPerspective );
-    uniformData->TessellationLevel = r_TessellationLevel.GetFloat() * Math::Lerp( (float)GRenderView->Width, (float)GRenderView->Height, 0.5f );
+    pViewCBuf->SSLRSampleOffset = r_SSLRSampleOffset.GetFloat();
+    pViewCBuf->SSLRMaxDist = r_SSLRMaxDist.GetFloat();
+    pViewCBuf->IsPerspective = float( GRenderView->bPerspective );
+    pViewCBuf->TessellationLevel = r_TessellationLevel.GetFloat() * Math::Lerp( (float)GRenderView->Width, (float)GRenderView->Height, 0.5f );
 
-    uniformData->PrefilteredMapSampler = (uint64_t)GPrefilteredMapBindless->GetHandle();
-    uniformData->IrradianceMapSampler = (uint64_t)GIrradianceMapBindless->GetHandle();
+    pViewCBuf->PrefilteredMapSampler = (uint64_t)GPrefilteredMapBindless->GetHandle();
+    pViewCBuf->IrradianceMapSampler = (uint64_t)GIrradianceMapBindless->GetHandle();
 
-    uniformData->DebugMode = r_DebugRenderMode.GetInteger();
+    pViewCBuf->DebugMode = r_DebugRenderMode.GetInteger();
 
-    uniformData->NumDirectionalLights = GRenderView->NumDirectionalLights;
+    pViewCBuf->NumDirectionalLights = GRenderView->NumDirectionalLights;
     //GLogger.Printf( "GRenderView->FirstDirectionalLight: %d\n", GRenderView->FirstDirectionalLight );
 
     for ( int i = 0 ; i < GRenderView->NumDirectionalLights ; i++ ) {
-        SDirectionalLightDef * light = GFrameData->DirectionalLights[GRenderView->FirstDirectionalLight + i];
+        SDirectionalLightInstance * light = GFrameData->DirectionalLights[GRenderView->FirstDirectionalLight + i];
 
-        uniformData->LightDirs[i] = Float4( GRenderView->NormalToViewMatrix * (light->Matrix[2]), 0.0f );
-        uniformData->LightColors[i] = light->ColorAndAmbientIntensity;
-        uniformData->LightParameters[i][0] = light->RenderMask;
-        uniformData->LightParameters[i][1] = light->FirstCascade;
-        uniformData->LightParameters[i][2] = light->NumCascades;
+        pViewCBuf->LightDirs[i] = Float4( GRenderView->NormalToViewMatrix * (light->Matrix[2]), 0.0f );
+        pViewCBuf->LightColors[i] = light->ColorAndAmbientIntensity;
+        pViewCBuf->LightParameters[i][0] = light->RenderMask;
+        pViewCBuf->LightParameters[i][1] = light->FirstCascade;
+        pViewCBuf->LightParameters[i][2] = light->NumCascades;
     }
 
-    GViewUniformBufferBindingBindingOffset = offset;
-    GViewUniformBufferBindingBindingSize = sizeof( *uniformData );
-    rtbl->BindBuffer( 0, GFrameConstantBuffer->GetBuffer(), GViewUniformBufferBindingBindingOffset, GViewUniformBufferBindingBindingSize );
+    GViewConstantBufferBindingBindingOffset = offset;
+    GViewConstantBufferBindingBindingSize = sizeof( *pViewCBuf );
+    rtbl->BindBuffer( 0, GStreamBuffer, GViewConstantBufferBindingBindingOffset, GViewConstantBufferBindingBindingSize );
 }
 
 void ARenderBackend::UploadShaderResources()
 {
-    SetViewUniforms();
+    SetViewConstants();
 
-    // Cascade matrices
-    GShadowMatrixBindingSize = MAX_TOTAL_SHADOW_CASCADES_PER_VIEW * sizeof( Float4x4 );
-    GShadowMatrixBindingOffset = GFrameConstantBuffer->Allocate( GShadowMatrixBindingSize );
+    // Bind light buffer
+    rtbl->BindBuffer( 4, GStreamBuffer, GRenderView->PointLightsStreamHandle, GRenderView->PointLightsStreamSize );
 
-    byte * pMemory = GFrameConstantBuffer->GetMappedMemory() + GShadowMatrixBindingOffset;
+    // Bind IBL buffer
+    rtbl->BindBuffer( 5, GStreamBuffer, GRenderView->ProbeStreamHandle, GRenderView->ProbeStreamSize );
 
-    Core::Memcpy( pMemory, GRenderView->ShadowMapMatrices, GRenderView->NumShadowMapCascades * sizeof( Float4x4 ) );
+    // Copy cluster data
 
-    // Light buffer
-    size_t LightBufferBindingBindingSize = GRenderView->NumPointLights * sizeof( SClusterLight );
-    size_t LightBufferBindingBindingOffset = GFrameConstantBuffer->Allocate( LightBufferBindingBindingSize );
-
-    rtbl->BindBuffer( 4, GFrameConstantBuffer->GetBuffer(), LightBufferBindingBindingOffset, LightBufferBindingBindingSize );
-
-    pMemory = GFrameConstantBuffer->GetMappedMemory() + LightBufferBindingBindingOffset;
-
-    Core::Memcpy( pMemory, GRenderView->PointLights, LightBufferBindingBindingSize );
-
-    // IBL buffer
-    size_t IBLBufferBindingBindingSize = GRenderView->NumProbes * sizeof( SClusterProbe );
-    size_t IBLBufferBindingBindingOffset = GFrameConstantBuffer->Allocate( IBLBufferBindingBindingSize );
-
-    rtbl->BindBuffer( 5, GFrameConstantBuffer->GetBuffer(), IBLBufferBindingBindingOffset, IBLBufferBindingBindingSize );
-
-    pMemory = GFrameConstantBuffer->GetMappedMemory() + IBLBufferBindingBindingOffset;
-
-    Core::Memcpy( pMemory, GRenderView->Probes, IBLBufferBindingBindingSize );
-
-    // Write cluster data
+#if 1
+    // Perform copy from stream buffer on GPU side
+    RenderCore::STextureRect rect = {};
+    rect.Dimension.X = MAX_FRUSTUM_CLUSTERS_X;
+    rect.Dimension.Y = MAX_FRUSTUM_CLUSTERS_Y;
+    rect.Dimension.Z = MAX_FRUSTUM_CLUSTERS_Z;
+    rcmd->CopyBufferToTexture( GStreamBuffer, GClusterLookup, rect, RenderCore::FORMAT_UINT2, 0, GRenderView->ClusterLookupStreamHandle, 1 );
+#else
     GClusterLookup->Write( 0,
                           RenderCore::FORMAT_UINT2,
-                          sizeof( SClusterData )*MAX_FRUSTUM_CLUSTERS_X*MAX_FRUSTUM_CLUSTERS_Y*MAX_FRUSTUM_CLUSTERS_Z,
+                          sizeof( SClusterHeader )*MAX_FRUSTUM_CLUSTERS_X*MAX_FRUSTUM_CLUSTERS_Y*MAX_FRUSTUM_CLUSTERS_Z,
                           1,
                           GRenderView->LightData.ClusterLookup );
+#endif
 
+#if 1
+    // Perform copy from stream buffer on GPU side
+    if ( GRenderView->ClusterPackedIndexCount > 0 ) {
+        RenderCore::SBufferCopy range;
+        range.SrcOffset = GRenderView->ClusterPackedIndicesStreamHandle;
+        range.DstOffset = 0;
+        range.SizeInBytes = sizeof( SClusterPackedIndex ) * GRenderView->ClusterPackedIndexCount;
+        rcmd->CopyBufferRange( GStreamBuffer, GClusterItemBuffer, 1, &range );
+    }
+#else
     GClusterItemBuffer->WriteRange( 0,
-                                   sizeof( SClusterItemBuffer )*GRenderView->LightData.TotalItems,
+                                   sizeof( SClusterItemOffset )*GRenderView->LightData.NumClusterItems,
                                    GRenderView->LightData.ItemBuffer );
+#endif
 }
 
 void ARenderBackend::RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture )
@@ -1306,14 +1003,14 @@ void ARenderBackend::RenderView( SRenderView * pRenderView, AFrameGraphTexture *
 
     rcmd->BindResourceTable( rtbl );
 
-    bool bVirtualTexturing = VTWorkflow->FeedbackAnalyzer.HasBindings();
+    bool bVirtualTexturing = FeedbackAnalyzerVT->HasBindings();
 
     if ( bVirtualTexturing ) {
         GRenderView->VTFeedback->Begin( GRenderView->Width, GRenderView->Height );
     }
 
     if ( r_UpdateFrameGraph ) {
-        FrameRenderer->Render( *FrameGraph, bVirtualTexturing ? VTWorkflow.GetObject() : nullptr, CapturedResources );
+        FrameRenderer->Render( *FrameGraph, bVirtualTexturing, CapturedResources );
     }
     
     FrameGraph->Execute( rcmd );
@@ -1329,7 +1026,7 @@ void ARenderBackend::RenderView( SRenderView * pRenderView, AFrameGraphTexture *
         const void * FeedbackData;
         GRenderView->VTFeedback->End( &FeedbackSize, &FeedbackData );
     
-        VTWorkflow->FeedbackAnalyzer.AddFeedbackData( FeedbackSize, FeedbackData );
+        FeedbackAnalyzerVT->AddFeedbackData( FeedbackSize, FeedbackData );
     }
 }
 

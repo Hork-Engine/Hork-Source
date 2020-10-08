@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "ExposureRenderer.h"
-#include "RenderCommon.h"
+#include "RenderLocal.h"
 
 #include <Runtime/Public/RuntimeVariable.h>
 
@@ -83,8 +83,7 @@ AExposureRenderer::AExposureRenderer()
     samplerCI.Filter = FILTER_LINEAR;
 
     SBufferInfo bufferInfo[1];
-    bufferInfo[0].BufferBinding = BUFFER_BIND_UNIFORM;
-    //bufferInfo[1].BufferType = UNIFORM_BUFFER;
+    bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
     SPipelineResourceLayout resourceLayout;
     resourceLayout.NumSamplers = 1;

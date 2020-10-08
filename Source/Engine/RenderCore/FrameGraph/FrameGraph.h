@@ -545,7 +545,7 @@ private:
     AConditionFunction ConditionFunction;
 };
 
-class AFrameGraph : public RenderCore::IObjectInterface
+class AFrameGraph : public ARefCounted
 {
 public:
     AFrameGraph( RenderCore::IDevice * InDevice )

@@ -30,7 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include "RenderCommon.h"
+#include <RenderCore/FrameGraph/FrameGraph.h>
+
+struct SRenderInstance;
 
 class ALightRenderer
 {

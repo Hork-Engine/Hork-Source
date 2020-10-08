@@ -54,7 +54,7 @@ static void SetSwizzleParams( GLuint _Id, STextureSwizzle const & _Swizzle ) {
 }
 
 ASparseTextureGLImpl::ASparseTextureGLImpl( ADeviceGLImpl * _Device, SSparseTextureCreateInfo const & _CreateInfo )
-    : pDevice( _Device )
+    : ISparseTexture( _Device ), pDevice( _Device )
 {
     GLuint id;
     GLenum target = SparseTextureTargetLUT[_CreateInfo.Type].Target;

@@ -46,6 +46,127 @@ static const char * TextureTypeName[] =
     "TEXTURE_CUBEMAP_ARRAY",
 };
 
+struct STextureFormatMapper
+{
+    RenderCore::DATA_FORMAT PixelFormatTable[256];
+    RenderCore::TEXTURE_FORMAT InternalPixelFormatTable[256];
+
+    STextureFormatMapper()
+    {
+        using namespace RenderCore;
+
+        Core::ZeroMem( PixelFormatTable, sizeof( PixelFormatTable ) );
+        Core::ZeroMem( InternalPixelFormatTable, sizeof( InternalPixelFormatTable ) );
+
+        PixelFormatTable[TEXTURE_PF_R8_SNORM] = FORMAT_BYTE1;
+        PixelFormatTable[TEXTURE_PF_RG8_SNORM] = FORMAT_BYTE2;
+        PixelFormatTable[TEXTURE_PF_BGR8_SNORM] = FORMAT_BYTE3;
+        PixelFormatTable[TEXTURE_PF_BGRA8_SNORM] = FORMAT_BYTE4;
+
+        PixelFormatTable[TEXTURE_PF_R8_UNORM] = FORMAT_UBYTE1;
+        PixelFormatTable[TEXTURE_PF_RG8_UNORM] = FORMAT_UBYTE2;
+        PixelFormatTable[TEXTURE_PF_BGR8_UNORM] = FORMAT_UBYTE3;
+        PixelFormatTable[TEXTURE_PF_BGRA8_UNORM] = FORMAT_UBYTE4;
+
+        PixelFormatTable[TEXTURE_PF_BGR8_SRGB] = FORMAT_UBYTE3;
+        PixelFormatTable[TEXTURE_PF_BGRA8_SRGB] = FORMAT_UBYTE4;
+
+        PixelFormatTable[TEXTURE_PF_R16I] = FORMAT_SHORT1;
+        PixelFormatTable[TEXTURE_PF_RG16I] = FORMAT_SHORT2;
+        PixelFormatTable[TEXTURE_PF_BGR16I] = FORMAT_SHORT3;
+        PixelFormatTable[TEXTURE_PF_BGRA16I] = FORMAT_SHORT4;
+
+        PixelFormatTable[TEXTURE_PF_R16UI] = FORMAT_USHORT1;
+        PixelFormatTable[TEXTURE_PF_RG16UI] = FORMAT_USHORT2;
+        PixelFormatTable[TEXTURE_PF_BGR16UI] = FORMAT_USHORT3;
+        PixelFormatTable[TEXTURE_PF_BGRA16UI] = FORMAT_USHORT4;
+
+        PixelFormatTable[TEXTURE_PF_R32I] = FORMAT_INT1;
+        PixelFormatTable[TEXTURE_PF_RG32I] = FORMAT_INT2;
+        PixelFormatTable[TEXTURE_PF_BGR32I] = FORMAT_INT3;
+        PixelFormatTable[TEXTURE_PF_BGRA32I] = FORMAT_INT4;
+
+        PixelFormatTable[TEXTURE_PF_R32I] = FORMAT_UINT1;
+        PixelFormatTable[TEXTURE_PF_RG32UI] = FORMAT_UINT2;
+        PixelFormatTable[TEXTURE_PF_BGR32UI] = FORMAT_UINT3;
+        PixelFormatTable[TEXTURE_PF_BGRA32UI] = FORMAT_UINT4;
+
+        PixelFormatTable[TEXTURE_PF_R16F] = FORMAT_HALF1;
+        PixelFormatTable[TEXTURE_PF_RG16F] = FORMAT_HALF2;
+        PixelFormatTable[TEXTURE_PF_BGR16F] = FORMAT_HALF3;
+        PixelFormatTable[TEXTURE_PF_BGRA16F] = FORMAT_HALF4;
+
+        PixelFormatTable[TEXTURE_PF_R32F] = FORMAT_FLOAT1;
+        PixelFormatTable[TEXTURE_PF_RG32F] = FORMAT_FLOAT2;
+        PixelFormatTable[TEXTURE_PF_BGR32F] = FORMAT_FLOAT3;
+        PixelFormatTable[TEXTURE_PF_BGRA32F] = FORMAT_FLOAT4;
+
+        PixelFormatTable[TEXTURE_PF_R11F_G11F_B10F] = FORMAT_FLOAT3;
+
+        InternalPixelFormatTable[TEXTURE_PF_R8_SNORM] = TEXTURE_FORMAT_R8_SNORM;
+        InternalPixelFormatTable[TEXTURE_PF_RG8_SNORM] = TEXTURE_FORMAT_RG8_SNORM;
+        InternalPixelFormatTable[TEXTURE_PF_BGR8_SNORM] = TEXTURE_FORMAT_RGB8_SNORM;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA8_SNORM] = TEXTURE_FORMAT_RGBA8_SNORM;
+
+        InternalPixelFormatTable[TEXTURE_PF_R8_UNORM] = TEXTURE_FORMAT_R8;
+        InternalPixelFormatTable[TEXTURE_PF_RG8_UNORM] = TEXTURE_FORMAT_RG8;
+        InternalPixelFormatTable[TEXTURE_PF_BGR8_UNORM] = TEXTURE_FORMAT_RGB8;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA8_UNORM] = TEXTURE_FORMAT_RGBA8;
+
+        InternalPixelFormatTable[TEXTURE_PF_BGR8_SRGB] = TEXTURE_FORMAT_SRGB8;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA8_SRGB] = TEXTURE_FORMAT_SRGB8_ALPHA8;
+
+        InternalPixelFormatTable[TEXTURE_PF_R16I] = TEXTURE_FORMAT_R16I;
+        InternalPixelFormatTable[TEXTURE_PF_RG16I] = TEXTURE_FORMAT_RG16I;
+        InternalPixelFormatTable[TEXTURE_PF_BGR16I] = TEXTURE_FORMAT_RGB16I;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA16I] = TEXTURE_FORMAT_RGBA16I;
+
+        InternalPixelFormatTable[TEXTURE_PF_R16UI] = TEXTURE_FORMAT_R16UI;
+        InternalPixelFormatTable[TEXTURE_PF_RG16UI] = TEXTURE_FORMAT_RG16UI;
+        InternalPixelFormatTable[TEXTURE_PF_BGR16UI] = TEXTURE_FORMAT_RGB16UI;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA16UI] = TEXTURE_FORMAT_RGBA16UI;
+
+        InternalPixelFormatTable[TEXTURE_PF_R32I] = TEXTURE_FORMAT_R32I;
+        InternalPixelFormatTable[TEXTURE_PF_RG32I] = TEXTURE_FORMAT_RG32I;
+        InternalPixelFormatTable[TEXTURE_PF_BGR32I] = TEXTURE_FORMAT_RGB32I;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA32I] = TEXTURE_FORMAT_RGBA32I;
+
+        InternalPixelFormatTable[TEXTURE_PF_R32I] = TEXTURE_FORMAT_R32UI;
+        InternalPixelFormatTable[TEXTURE_PF_RG32UI] = TEXTURE_FORMAT_RG32UI;
+        InternalPixelFormatTable[TEXTURE_PF_BGR32UI] = TEXTURE_FORMAT_RGB32UI;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA32UI] = TEXTURE_FORMAT_RGBA32UI;
+
+        InternalPixelFormatTable[TEXTURE_PF_R16F] = TEXTURE_FORMAT_R16F;
+        InternalPixelFormatTable[TEXTURE_PF_RG16F] = TEXTURE_FORMAT_RG16F;
+        InternalPixelFormatTable[TEXTURE_PF_BGR16F] = TEXTURE_FORMAT_RGB16F;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA16F] = TEXTURE_FORMAT_RGBA16F;
+
+        InternalPixelFormatTable[TEXTURE_PF_R32F] = TEXTURE_FORMAT_R32F;
+        InternalPixelFormatTable[TEXTURE_PF_RG32F] = TEXTURE_FORMAT_RG32F;
+        InternalPixelFormatTable[TEXTURE_PF_BGR32F] = TEXTURE_FORMAT_RGB32F;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA32F] = TEXTURE_FORMAT_RGBA32F;
+
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC1_RGB]        = TEXTURE_FORMAT_COMPRESSED_BC1_RGB;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC1_SRGB]       = TEXTURE_FORMAT_COMPRESSED_BC1_SRGB;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC2_RGBA]       = TEXTURE_FORMAT_COMPRESSED_BC2_RGBA;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC2_SRGB_ALPHA] = TEXTURE_FORMAT_COMPRESSED_BC2_SRGB_ALPHA;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC3_RGBA]       = TEXTURE_FORMAT_COMPRESSED_BC3_RGBA;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC3_SRGB_ALPHA] = TEXTURE_FORMAT_COMPRESSED_BC3_SRGB_ALPHA;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC4_R]          = TEXTURE_FORMAT_COMPRESSED_BC4_R;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC4_R_SIGNED]   = TEXTURE_FORMAT_COMPRESSED_BC4_R_SIGNED;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC5_RG]         = TEXTURE_FORMAT_COMPRESSED_BC5_RG;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC5_RG_SIGNED]  = TEXTURE_FORMAT_COMPRESSED_BC5_RG_SIGNED;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC6H]           = TEXTURE_FORMAT_COMPRESSED_BC6H;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC6H_SIGNED]    = TEXTURE_FORMAT_COMPRESSED_BC6H_SIGNED;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC7_RGBA]       = TEXTURE_FORMAT_COMPRESSED_BC7_RGBA;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC7_SRGB_ALPHA] = TEXTURE_FORMAT_COMPRESSED_BC7_SRGB_ALPHA;
+
+        InternalPixelFormatTable[TEXTURE_PF_R11F_G11F_B10F] = TEXTURE_FORMAT_R11F_G11F_B10F;
+    }
+};
+
+static STextureFormatMapper TextureFormatMapper;
+
 AN_CLASS_META( ATexture )
 
 ATexture::ATexture() {
@@ -549,6 +670,35 @@ size_t ATexture::TextureSizeInBytesCubemap( STexturePixelFormat _PixelFormat, in
     }
 }
 
+static void SetTextureSwizzle( STexturePixelFormat const & _PixelFormat, RenderCore::STextureSwizzle & _Swizzle )
+{
+    switch ( _PixelFormat.NumComponents() ) {
+    case 1:
+        // Apply texture swizzle for single channel textures
+        _Swizzle.R = RenderCore::TEXTURE_SWIZZLE_R;
+        _Swizzle.G = RenderCore::TEXTURE_SWIZZLE_R;
+        _Swizzle.B = RenderCore::TEXTURE_SWIZZLE_R;
+        _Swizzle.A = RenderCore::TEXTURE_SWIZZLE_R;
+        break;
+#if 0
+    case 2:
+        // Apply texture swizzle for two channel textures
+        _Swizzle.R = RenderCore::TEXTURE_SWIZZLE_R;
+        _Swizzle.G = RenderCore::TEXTURE_SWIZZLE_G;
+        _Swizzle.B = RenderCore::TEXTURE_SWIZZLE_R;
+        _Swizzle.A = RenderCore::TEXTURE_SWIZZLE_G;
+        break;
+    case 3:
+        // Apply texture swizzle for three channel textures
+        _Swizzle.R = RenderCore::TEXTURE_SWIZZLE_R;
+        _Swizzle.G = RenderCore::TEXTURE_SWIZZLE_G;
+        _Swizzle.B = RenderCore::TEXTURE_SWIZZLE_B;
+        _Swizzle.A = RenderCore::TEXTURE_SWIZZLE_ONE;
+        break;
+#endif
+    }
+}
+
 void ATexture::Initialize1D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width ) {
     Purge();
 
@@ -559,7 +709,15 @@ void ATexture::Initialize1D( STexturePixelFormat _PixelFormat, int _NumLods, int
     Depth = 1;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTexture1D( &TextureGPU, _PixelFormat.Data, _NumLods, _Width );
+    RenderCore::STextureCreateInfo textureCI = {};
+    textureCI.Type = RenderCore::TEXTURE_1D;
+    textureCI.Resolution.Tex1D.Width = _Width;
+    textureCI.Format = TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data];
+    textureCI.NumLods = _NumLods;
+
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
+
+    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 void ATexture::Initialize1DArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
@@ -572,7 +730,16 @@ void ATexture::Initialize1DArray( STexturePixelFormat _PixelFormat, int _NumLods
     Depth = 1;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTexture1DArray( &TextureGPU, _PixelFormat.Data, _NumLods, _Width, _ArraySize );
+    RenderCore::STextureCreateInfo textureCI = {};
+    textureCI.Type = RenderCore::TEXTURE_1D_ARRAY;
+    textureCI.Resolution.Tex1DArray.Width = _Width;
+    textureCI.Resolution.Tex1DArray.NumLayers = _ArraySize;
+    textureCI.Format = TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data];
+    textureCI.NumLods = _NumLods;
+
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
+
+    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 void ATexture::Initialize2D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
@@ -585,7 +752,16 @@ void ATexture::Initialize2D( STexturePixelFormat _PixelFormat, int _NumLods, int
     Depth = 1;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTexture2D( &TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height );
+    RenderCore::STextureCreateInfo textureCI = {};
+    textureCI.Type = RenderCore::TEXTURE_2D;
+    textureCI.Resolution.Tex2D.Width = _Width;
+    textureCI.Resolution.Tex2D.Height = _Height;
+    textureCI.Format = TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data];
+    textureCI.NumLods = _NumLods;
+
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
+
+    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 void ATexture::Initialize2DArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) {
@@ -598,7 +774,17 @@ void ATexture::Initialize2DArray( STexturePixelFormat _PixelFormat, int _NumLods
     Depth = _ArraySize;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTexture2DArray( &TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height, _ArraySize );
+    RenderCore::STextureCreateInfo textureCI = {};
+    textureCI.Type = RenderCore::TEXTURE_2D_ARRAY;
+    textureCI.Resolution.Tex2DArray.Width = _Width;
+    textureCI.Resolution.Tex2DArray.Height = _Height;
+    textureCI.Resolution.Tex2DArray.NumLayers = _ArraySize;
+    textureCI.Format = TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data];
+    textureCI.NumLods = _NumLods;
+
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
+
+    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 void ATexture::Initialize3D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) {
@@ -611,7 +797,17 @@ void ATexture::Initialize3D( STexturePixelFormat _PixelFormat, int _NumLods, int
     Depth = _Depth;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTexture3D( &TextureGPU, _PixelFormat.Data, _NumLods, _Width, _Height, _Depth );
+    RenderCore::STextureCreateInfo textureCI = {};
+    textureCI.Type = RenderCore::TEXTURE_3D;
+    textureCI.Resolution.Tex3D.Width = _Width;
+    textureCI.Resolution.Tex3D.Height = _Height;
+    textureCI.Resolution.Tex3D.Depth = _Depth;
+    textureCI.Format = TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data];
+    textureCI.NumLods = _NumLods;
+
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
+
+    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 void ATexture::InitializeColorGradingLUT( const char * _Path ) {
@@ -702,7 +898,15 @@ void ATexture::InitializeCubemap( STexturePixelFormat _PixelFormat, int _NumLods
     Depth = 1;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTextureCubemap( &TextureGPU, _PixelFormat.Data, _NumLods, _Width );
+    RenderCore::STextureCreateInfo textureCI = {};
+    textureCI.Type = RenderCore::TEXTURE_CUBE_MAP;
+    textureCI.Resolution.TexCubemap.Width = _Width;
+    textureCI.Format = TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data];
+    textureCI.NumLods = _NumLods;
+
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
+
+    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 void ATexture::InitializeCubemapArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
@@ -715,7 +919,16 @@ void ATexture::InitializeCubemapArray( STexturePixelFormat _PixelFormat, int _Nu
     Depth = _ArraySize;
     NumLods = _NumLods;
 
-    GRenderBackend->InitializeTextureCubemapArray( &TextureGPU, _PixelFormat.Data, _NumLods, _Width, _ArraySize );
+    RenderCore::STextureCreateInfo textureCI = {};
+    textureCI.Type = RenderCore::TEXTURE_CUBE_MAP_ARRAY;
+    textureCI.Resolution.TexCubemapArray.Width = _Width;
+    textureCI.Resolution.TexCubemapArray.NumLayers = _ArraySize;
+    textureCI.Format = TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data];
+    textureCI.NumLods = _NumLods;
+
+    SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
+
+    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 size_t ATexture::GetSizeInBytes() const {
@@ -821,8 +1034,9 @@ bool ATexture::WriteArbitraryData( int _LocationX, int _LocationY, int _Location
         sizeInBytes *= SizeInBytesUncompressed();
     }
 
-    STextureRect rect;
+    // TODO: bounds check?
 
+    RenderCore::STextureRect rect;
     rect.Offset.X = _LocationX;
     rect.Offset.Y = _LocationY;
     rect.Offset.Z = _LocationZ;
@@ -831,9 +1045,7 @@ bool ATexture::WriteArbitraryData( int _LocationX, int _LocationY, int _Location
     rect.Dimension.Y = _Height;
     rect.Dimension.Z = _Depth;
 
-    // TODO: bounds check?
-
-    GRenderBackend->WriteTexture( TextureGPU, rect, PixelFormat.Data, sizeInBytes, 1, _SysMem );
+    TextureGPU->WriteRect( rect, TextureFormatMapper.PixelFormatTable[PixelFormat.Data], sizeInBytes, 1, _SysMem );
 
     return true;
 }

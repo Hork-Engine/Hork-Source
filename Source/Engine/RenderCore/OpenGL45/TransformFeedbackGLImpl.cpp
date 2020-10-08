@@ -38,7 +38,7 @@ SOFTWARE.
 namespace RenderCore {
 
 ATransformFeedbackGLImpl::ATransformFeedbackGLImpl( ADeviceGLImpl * _Device, STransformFeedbackCreateInfo const & _CreateInfo )
-    : pDevice( _Device )
+    : ITransformFeedback( _Device ), pDevice( _Device )
 {
     // TODO: create transform feedback for each context
     GLuint id;
@@ -49,7 +49,8 @@ ATransformFeedbackGLImpl::ATransformFeedbackGLImpl( ADeviceGLImpl * _Device, STr
     pDevice->TotalTransformFeedbacks++;
 }
 
-ATransformFeedbackGLImpl::~ATransformFeedbackGLImpl() {
+ATransformFeedbackGLImpl::~ATransformFeedbackGLImpl()
+{
     GLuint id = GetHandleNativeGL();
     if ( id ) {
         glDeleteTransformFeedbacks( 1, &id );

@@ -167,7 +167,7 @@ void ASpotLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     }
 }
 
-void ASpotLightComponent::PackLight( Float4x4 const & InViewMatrix, SClusterLight & Light ) {
+void ASpotLightComponent::PackLight( Float4x4 const & InViewMatrix, SLightParameters & Light ) {
     Light.Position = Float3( InViewMatrix * GetWorldPosition() );
     Light.Radius = GetRadius();
     Light.CosHalfOuterConeAngle = CosHalfOuterConeAngle;

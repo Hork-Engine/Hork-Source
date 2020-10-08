@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "CanvasRenderer.h"
-#include "Material.h"
+#include "RenderLocal.h"
 
 using namespace RenderCore;
 
@@ -130,7 +130,7 @@ void ACanvasRenderer::CreatePresentViewPipeline()
     pipelineCI.ResourceLayout.Samplers = &samplerCI;
 
     SBufferInfo bufferInfo;
-    bufferInfo.BufferBinding = BUFFER_BIND_UNIFORM;
+    bufferInfo.BufferBinding = BUFFER_BIND_CONSTANT;
 
     pipelineCI.ResourceLayout.NumBuffers = 1;
     pipelineCI.ResourceLayout.Buffers = &bufferInfo;
@@ -223,7 +223,7 @@ void ACanvasRenderer::CreatePipelines()
     pipelineCI.ResourceLayout.Samplers = &samplerCI;
 
     SBufferInfo bufferInfo;
-    bufferInfo.BufferBinding = BUFFER_BIND_UNIFORM;
+    bufferInfo.BufferBinding = BUFFER_BIND_CONSTANT;
 
     pipelineCI.ResourceLayout.NumBuffers = 1;
     pipelineCI.ResourceLayout.Buffers = &bufferInfo;
@@ -289,7 +289,7 @@ void ACanvasRenderer::Render( std::function<void(SRenderView *, AFrameGraphTextu
     drawCmd.StartInstanceLocation = 0;
     drawCmd.BaseVertexLocation = 0;
 
-    struct SCanvasUniforms
+    struct SCanvasConstants
     {
         Float4x4 OrthoProjection;
     };
@@ -302,12 +302,14 @@ void ACanvasRenderer::Render( std::function<void(SRenderView *, AFrameGraphTextu
 
     SCanvasBinding canvasBinding;
 
-    canvasBinding.Size = sizeof( SCanvasUniforms );
-    canvasBinding.Offset = GFrameConstantBuffer->Allocate( canvasBinding.Size );
-    void * pMemory = GFrameConstantBuffer->GetMappedMemory() + canvasBinding.Offset;
-    SCanvasUniforms * pCanvasUniforms = (SCanvasUniforms *)pMemory;
+    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
 
-    pCanvasUniforms->OrthoProjection = GFrameData->OrthoProjection;
+    canvasBinding.Size = sizeof( SCanvasConstants );
+    canvasBinding.Offset = streamedMemory->AllocateConstant( canvasBinding.Size );
+    void * pMemory = streamedMemory->Map( canvasBinding.Offset );
+    SCanvasConstants * pCanvasCBuf = (SCanvasConstants *)pMemory;
+
+    pCanvasCBuf->OrthoProjection = GFrameData->CanvasOrthoProjection;
 
     rcmd->BindResourceTable( ResourceTable );
 
@@ -342,11 +344,11 @@ void ACanvasRenderer::Render( std::function<void(SRenderView *, AFrameGraphTextu
                     rcmd->BindVertexBuffer( 0, GStreamBuffer, drawList->VertexStreamOffset );
                     rcmd->BindIndexBuffer( GStreamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
-                    // Use uniform buffer from rendered view
+                    // Use constant buffer from rendered view
                     ResourceTable->BindBuffer( 0,
-                                               GFrameConstantBuffer->GetBuffer(),
-                                               GViewUniformBufferBindingBindingOffset,
-                                               GViewUniformBufferBindingBindingSize );
+                                               GStreamBuffer,
+                                               GViewConstantBufferBindingBindingOffset,
+                                               GViewConstantBufferBindingBindingSize );
 
                     // Set texture
                     ResourceTable->BindTexture( 0, viewTexture->Actual() );
@@ -376,15 +378,15 @@ void ACanvasRenderer::Render( std::function<void(SRenderView *, AFrameGraphTextu
                     rcmd->BindVertexBuffer( 0, GStreamBuffer, drawList->VertexStreamOffset );
                     rcmd->BindIndexBuffer( GStreamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
-                    // Set uniform buffer
+                    // Set constant buffer
                     ResourceTable->BindBuffer( 0,
-                                               GFrameConstantBuffer->GetBuffer(),
+                                               GStreamBuffer,
                                                canvasBinding.Offset,
                                                canvasBinding.Size );
 
                     BindTextures( ResourceTable, cmd->MaterialFrameData, cmd->MaterialFrameData->NumTextures );
 
-                    // FIXME: What about material uniforms?
+                    // FIXME: What about material constants?
 
                     scissorRect.X = cmd->ClipMins.X;
                     scissorRect.Y = cmd->ClipMins.Y;
@@ -407,9 +409,9 @@ void ACanvasRenderer::Render( std::function<void(SRenderView *, AFrameGraphTextu
                     rcmd->BindVertexBuffer( 0, GStreamBuffer, drawList->VertexStreamOffset );
                     rcmd->BindIndexBuffer( GStreamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset );
 
-                    // Set uniform buffer
+                    // Set constant buffer
                     ResourceTable->BindBuffer( 0,
-                                               GFrameConstantBuffer->GetBuffer(),
+                                               GStreamBuffer,
                                                canvasBinding.Offset,
                                                canvasBinding.Size );
 

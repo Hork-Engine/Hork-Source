@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include "Material.h"
+#include "RenderLocal.h"
 
 using namespace RenderCore;
 
@@ -542,9 +543,9 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
     // TODO: Specify only used buffers
     SBufferInfo buffers[3];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    buffers[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
-    buffers[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+    buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
 
     pipelineCI.ResourceLayout.NumBuffers = _Skinned ? 3 : 2;
     pipelineCI.ResourceLayout.Buffers = buffers;
@@ -639,14 +640,14 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
 
     // TODO: Specify only used buffers
     SBufferInfo buffers[8];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    buffers[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
-    buffers[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton
-    buffers[3].BufferBinding = BUFFER_BIND_UNIFORM; // shadow cascade
-    buffers[4].BufferBinding = BUFFER_BIND_UNIFORM; // light buffer
-    buffers[5].BufferBinding = BUFFER_BIND_UNIFORM; // IBL buffer
-    buffers[6].BufferBinding = BUFFER_BIND_UNIFORM; // VT buffer
-    buffers[7].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton for motion blur
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+    buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
+    buffers[3].BufferBinding = BUFFER_BIND_CONSTANT; // shadow cascade
+    buffers[4].BufferBinding = BUFFER_BIND_CONSTANT; // light buffer
+    buffers[5].BufferBinding = BUFFER_BIND_CONSTANT; // IBL buffer
+    buffers[6].BufferBinding = BUFFER_BIND_CONSTANT; // VT buffer
+    buffers[7].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton for motion blur
 
     pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
@@ -748,9 +749,9 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     pipelineCI.ResourceLayout.Samplers = samplers;
 
     SBufferInfo buffers[3];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    buffers[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
-    buffers[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+    buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
 
     pipelineCI.ResourceLayout.NumBuffers = _Skinned ? 3 : 2;
     pipelineCI.ResourceLayout.Buffers = buffers;
@@ -831,9 +832,9 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     pipelineCI.ResourceLayout.Samplers = samplers;
 
     SBufferInfo buffers[3];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    buffers[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
-    buffers[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+    buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
 
     pipelineCI.ResourceLayout.NumBuffers = _Skinned ? 3 : 2;
     pipelineCI.ResourceLayout.Buffers = buffers;
@@ -894,8 +895,8 @@ void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char *
     pipelineCI.ResourceLayout.Samplers = samplers;
 
     SBufferInfo buffers[2];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    buffers[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
     pipelineCI.ResourceLayout.NumBuffers = 2;
     pipelineCI.ResourceLayout.Buffers = buffers;
 
@@ -1058,13 +1059,13 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
     // TODO: Specify only used buffers
     SBufferInfo buffers[7];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    buffers[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
-    buffers[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton
-    buffers[3].BufferBinding = BUFFER_BIND_UNIFORM; // shadow cascade
-    buffers[4].BufferBinding = BUFFER_BIND_UNIFORM; // light buffer
-    buffers[5].BufferBinding = BUFFER_BIND_UNIFORM; // IBL buffer
-    buffers[6].BufferBinding = BUFFER_BIND_UNIFORM; // VT buffer
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+    buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
+    buffers[3].BufferBinding = BUFFER_BIND_CONSTANT; // shadow cascade
+    buffers[4].BufferBinding = BUFFER_BIND_CONSTANT; // light buffer
+    buffers[5].BufferBinding = BUFFER_BIND_CONSTANT; // IBL buffer
+    buffers[6].BufferBinding = BUFFER_BIND_CONSTANT; // VT buffer
 
     pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
@@ -1177,13 +1178,13 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
 
     // TODO: Specify only used buffers
     SBufferInfo buffers[7];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    buffers[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
-    buffers[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton
-    buffers[3].BufferBinding = BUFFER_BIND_UNIFORM; // shadow cascade
-    buffers[4].BufferBinding = BUFFER_BIND_UNIFORM; // light buffer
-    buffers[5].BufferBinding = BUFFER_BIND_UNIFORM; // IBL buffer
-    buffers[6].BufferBinding = BUFFER_BIND_UNIFORM; // VT buffer
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+    buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
+    buffers[3].BufferBinding = BUFFER_BIND_CONSTANT; // shadow cascade
+    buffers[4].BufferBinding = BUFFER_BIND_CONSTANT; // light buffer
+    buffers[5].BufferBinding = BUFFER_BIND_CONSTANT; // IBL buffer
+    buffers[6].BufferBinding = BUFFER_BIND_CONSTANT; // VT buffer
 
     pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
@@ -1296,13 +1297,13 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
 
     // TODO: Specify only used buffers
     SBufferInfo buffers[7];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    buffers[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
-    buffers[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton
-    buffers[3].BufferBinding = BUFFER_BIND_UNIFORM; // shadow cascade
-    buffers[4].BufferBinding = BUFFER_BIND_UNIFORM; // light buffer
-    buffers[5].BufferBinding = BUFFER_BIND_UNIFORM; // IBL buffer
-    buffers[6].BufferBinding = BUFFER_BIND_UNIFORM; // VT buffer
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+    buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
+    buffers[3].BufferBinding = BUFFER_BIND_CONSTANT; // shadow cascade
+    buffers[4].BufferBinding = BUFFER_BIND_CONSTANT; // light buffer
+    buffers[5].BufferBinding = BUFFER_BIND_CONSTANT; // IBL buffer
+    buffers[6].BufferBinding = BUFFER_BIND_CONSTANT; // VT buffer
 
     pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
@@ -1423,10 +1424,10 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 
     // TODO: Specify only used buffers
     SBufferInfo buffers[4];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    buffers[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
-    buffers[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton
-    buffers[3].BufferBinding = BUFFER_BIND_UNIFORM; // shadow cascade
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+    buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
+    buffers[3].BufferBinding = BUFFER_BIND_CONSTANT; // shadow cascade
 
     pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
@@ -1513,13 +1514,13 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
 
     // TODO: Specify only used buffers
     SBufferInfo buffers[7];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    buffers[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
-    buffers[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton
-    buffers[3].BufferBinding = BUFFER_BIND_UNIFORM; // shadow cascade
-    buffers[4].BufferBinding = BUFFER_BIND_UNIFORM; // light buffer
-    buffers[5].BufferBinding = BUFFER_BIND_UNIFORM; // IBL buffer
-    buffers[6].BufferBinding = BUFFER_BIND_UNIFORM; // VT buffer
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+    buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
+    buffers[3].BufferBinding = BUFFER_BIND_CONSTANT; // shadow cascade
+    buffers[4].BufferBinding = BUFFER_BIND_CONSTANT; // light buffer
+    buffers[5].BufferBinding = BUFFER_BIND_CONSTANT; // IBL buffer
+    buffers[6].BufferBinding = BUFFER_BIND_CONSTANT; // VT buffer
 
     pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
@@ -1618,9 +1619,9 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
 
     // TODO: Specify only used buffers
     SBufferInfo buffers[3];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    buffers[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
-    buffers[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+    buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
 
     pipelineCI.ResourceLayout.NumBuffers = _Skinned ? 3 : 2;
     pipelineCI.ResourceLayout.Buffers = buffers;

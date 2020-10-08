@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <RenderCore/ImmediateContext.h>
 
-class ACircularBuffer : public RenderCore::IObjectInterface {
+class ACircularBuffer : public ARefCounted {
 public:
     ACircularBuffer( size_t InBufferSize );
     virtual ~ACircularBuffer();
@@ -62,5 +62,5 @@ private:
     SChainBuffer ChainBuffer[SWAP_CHAIN_SIZE];
     size_t BufferSize;
 
-    unsigned int UniformBufferOffsetAlignment;
+    unsigned int ConstantBufferAlignment;
 };

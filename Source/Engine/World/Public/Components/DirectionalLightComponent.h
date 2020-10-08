@@ -83,7 +83,7 @@ public:
 
     Float4 const & GetEffectiveColor() const;
 
-    void AddShadowmapCascades( struct SRenderView * View, int * pFirstCascade, int * pNumCascades );
+    void AddShadowmapCascades( struct SRenderView * View, size_t * ViewProjStreamHandle, int * pFirstCascade, int * pNumCascades );
 
     ADirectionalLightComponent * GetNext() { return Next; }
     ADirectionalLightComponent * GetPrev() { return Prev; }

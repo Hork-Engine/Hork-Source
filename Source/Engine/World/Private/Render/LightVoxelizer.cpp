@@ -31,6 +31,7 @@ SOFTWARE.
 #include "LightVoxelizer.h"
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
+#include <Renderer/VertexMemoryGPU.h>
 
 #define LIGHT_ITEMS_OFFSET 0
 #define DECAL_ITEMS_OFFSET 256
@@ -386,9 +387,17 @@ void ALightVoxelizer::Voxelize( SRenderView * RV ) {
     ViewProj = RV->ClusterViewProjection;
     ViewProjInv = RV->ClusterViewProjectionInversed;
 
-    Core::ZeroMemSSE( ClusterData, sizeof( ClusterData ) );
+    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
 
-    pLightData = &RV->LightData;
+    // NOTE: we add MAX_CLUSTER_ITEMS*3 to resolve array overflow
+    int maxItems = MAX_TOTAL_CLUSTER_ITEMS + MAX_CLUSTER_ITEMS*3;
+    RV->ClusterPackedIndicesStreamHandle = streamedMemory->AllocateConstant( maxItems * sizeof( SClusterPackedIndex ), nullptr );
+    RV->ClusterPackedIndices = (SClusterPackedIndex *)streamedMemory->Map( RV->ClusterPackedIndicesStreamHandle );
+
+    pClusterHeaderData = RV->ClusterLookup;
+    pClusterPackedIndices = RV->ClusterPackedIndices;
+
+    Core::ZeroMemSSE( ClusterData, sizeof( ClusterData ) );
 
     // Calc min/max slices
     if ( bUseSSE ) {
@@ -409,13 +418,16 @@ void ALightVoxelizer::Voxelize( SRenderView * RV ) {
 
     GRenderFrontendJobList->SubmitAndWait();
 
-    pLightData->TotalItems = ItemCounter.Load();
+    RV->ClusterPackedIndexCount = ItemCounter.Load();
 
-    if ( pLightData->TotalItems > SFrameLightData::MAX_ITEM_BUFFER ) {
-        pLightData->TotalItems = SFrameLightData::MAX_ITEM_BUFFER;
+    if ( RV->ClusterPackedIndexCount > MAX_TOTAL_CLUSTER_ITEMS ) {
+        RV->ClusterPackedIndexCount = MAX_TOTAL_CLUSTER_ITEMS;
 
-        GLogger.Printf( "MAX_ITEM_BUFFER hit\n" );
+        GLogger.Printf( "MAX_TOTAL_CLUSTER_ITEMS hit\n" );
     }
+
+    // Shrink ClusterItems
+    streamedMemory->ShrinkLastAllocatedMemoryBlock( RV->ClusterPackedIndexCount * sizeof( SClusterPackedIndex ) );
 }
 
 void ALightVoxelizer::VoxelizeWork( void * _Data ) {
@@ -660,8 +672,8 @@ void ALightVoxelizer::VoxelizeWork( int SliceIndex ) {
     //    int i = 0;
     int NumClusterItems;
 
-    SClusterData * pBuffer = &pLightData->ClusterLookup[SliceIndex][0][0];
-    SClusterItemBuffer * pItem;
+    SClusterHeader * pClusterHeader = pClusterHeaderData + SliceIndex * ( MAX_FRUSTUM_CLUSTERS_X * MAX_FRUSTUM_CLUSTERS_Y );
+    SClusterPackedIndex * pItem;
     SItemInfo * pItemInfo;
 
     pCluster = &ClusterData[SliceIndex][0][0];
@@ -670,33 +682,33 @@ void ALightVoxelizer::VoxelizeWork( int SliceIndex ) {
     for ( int ClusterY = 0 ; ClusterY < MAX_FRUSTUM_CLUSTERS_Y ; ClusterY++ ) {
         for ( int ClusterX = 0 ; ClusterX < MAX_FRUSTUM_CLUSTERS_X ; ClusterX++ ) {
 
-            pBuffer->NumLights = Math::Min< unsigned short >( pCluster->LightsCount, MAX_CLUSTER_ITEMS );
-            pBuffer->NumDecals = Math::Min< unsigned short >( pCluster->DecalsCount, MAX_CLUSTER_ITEMS );
-            pBuffer->NumProbes = Math::Min< unsigned short >( pCluster->ProbesCount, MAX_CLUSTER_ITEMS );
+            pClusterHeader->NumLights = Math::Min< unsigned short >( pCluster->LightsCount, MAX_CLUSTER_ITEMS );
+            pClusterHeader->NumDecals = Math::Min< unsigned short >( pCluster->DecalsCount, MAX_CLUSTER_ITEMS );
+            pClusterHeader->NumProbes = Math::Min< unsigned short >( pCluster->ProbesCount, MAX_CLUSTER_ITEMS );
 
-            NumClusterItems = Math::Max3( pBuffer->NumLights, pBuffer->NumDecals, pBuffer->NumProbes );
+            NumClusterItems = Math::Max3( pClusterHeader->NumLights, pClusterHeader->NumDecals, pClusterHeader->NumProbes );
 
-            int ItemOffset = ItemCounter.FetchAdd( NumClusterItems );
+            int firstPackedIndex = ItemCounter.FetchAdd( NumClusterItems );
 
-            pBuffer->ItemOffset = ItemOffset & (SFrameLightData::MAX_ITEM_BUFFER - 1);
+            pClusterHeader->FirstPackedIndex = firstPackedIndex & (MAX_TOTAL_CLUSTER_ITEMS - 1);
 
-            pItem = &pLightData->ItemBuffer[pBuffer->ItemOffset];
+            pItem = &pClusterPackedIndices[pClusterHeader->FirstPackedIndex];
 
-            Core::ZeroMem( pItem, NumClusterItems * sizeof( SClusterItemBuffer ) );
+            Core::ZeroMem( pItem, NumClusterItems * sizeof( SClusterPackedIndex ) );
 
-            for ( int t = 0 ; t < pBuffer->NumLights ; t++ ) {
+            for ( int t = 0 ; t < pClusterHeader->NumLights ; t++ ) {
                 pItemInfo = ItemInfos + pClusterItem[LIGHT_ITEMS_OFFSET + t];
 
                 (pItem + t)->Indices |= pItemInfo->ListIndex;
             }
 
-            for ( int t = 0 ; t < pBuffer->NumProbes ; t++ ) {
+            for ( int t = 0 ; t < pClusterHeader->NumProbes ; t++ ) {
                 pItemInfo = ItemInfos + pClusterItem[PROBE_ITEMS_OFFSET + t];
 
                 (pItem + t)->Indices |= pItemInfo->ListIndex << 24;
             }
 
-            //for ( int t = 0 ; t < pBuffer->NumDecals ; t++ ) {
+            //for ( int t = 0 ; t < pClusterHeader->NumDecals ; t++ ) {
             //    i = DecalCounter.FetchIncrement() & 0x3ff;
 
             //    ( pItem + t )->Indices |= i << 12;
@@ -704,7 +716,7 @@ void ALightVoxelizer::VoxelizeWork( int SliceIndex ) {
             //    Decals[ i ].Position = pCluster->Decals[ t ]->Position;
             //}
 
-            //for ( int t = 0 ; t < pBuffer->NumProbes ; t++ ) {
+            //for ( int t = 0 ; t < pClusterHeader->NumProbes ; t++ ) {
             //    i = ProbeCounter.FetchIncrement() & 0xff;
 
             //    ( pItem + t )->Indices |= i << 24;
@@ -712,7 +724,7 @@ void ALightVoxelizer::VoxelizeWork( int SliceIndex ) {
             //    Probes[ i ].Position = pCluster->Probes[ t ]->Position;
             //}
 
-            pBuffer++;
+            pClusterHeader++;
             pCluster++;
             pClusterItem += MAX_CLUSTER_ITEMS * 3;
         }

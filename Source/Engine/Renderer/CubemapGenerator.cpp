@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include "CubemapGenerator.h"
+#include "RenderLocal.h"
 
 #include <Core/Public/PodArray.h>
 
@@ -40,14 +41,14 @@ ACubemapGenerator::ACubemapGenerator()
     bufferCI.bImmutableStorage = true;
 
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
-    bufferCI.SizeInBytes = sizeof( SCubemapGeneratorUniformBuffer );
-    GDevice->CreateBuffer( bufferCI, nullptr, &m_UniformBuffer );
+    bufferCI.SizeInBytes = sizeof( SConstantData );
+    GDevice->CreateBuffer( bufferCI, nullptr, &ConstantBuffer );
 
     Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
     Float4x4 projMat = Float4x4::PerspectiveRevCC( Math::_HALF_PI, 1.0f, 1.0f, 0.1f, 100.0f );
 
     for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
-        m_UniformBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
+        ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
     }
 
     SAttachmentInfo colorAttachment = {};
@@ -65,7 +66,7 @@ ACubemapGenerator::ACubemapGenerator()
     renderPassCI.pColorAttachments = &colorAttachment;
     renderPassCI.NumSubpasses = 1;
     renderPassCI.pSubpasses = &subpassInfo;
-    GDevice->CreateRenderPass( renderPassCI, &m_RP );
+    GDevice->CreateRenderPass( renderPassCI, &RP );
 
     SPipelineCreateInfo pipelineCI;
 
@@ -112,14 +113,14 @@ ACubemapGenerator::ACubemapGenerator()
     //samplerCI.bCubemapSeamless = true;
 
     SBufferInfo buffers[1];
-    buffers[0].BufferBinding = BUFFER_BIND_UNIFORM;
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
     pipelineCI.ResourceLayout.Samplers = &samplerCI;
     pipelineCI.ResourceLayout.NumSamplers = 1;
     pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
 
-    GDevice->CreatePipeline( pipelineCI, &m_Pipeline );
+    GDevice->CreatePipeline( pipelineCI, &Pipeline );
 }
 
 void ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, ITexture ** _Sources, TRef< RenderCore::ITexture > * ppTextureArray )
@@ -135,7 +136,7 @@ void ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _
     TRef< IResourceTable > resourceTbl;
     GDevice->CreateResourceTable( &resourceTbl );
 
-    resourceTbl->BindBuffer( 0, m_UniformBuffer );
+    resourceTbl->BindBuffer( 0, ConstantBuffer );
 
     SViewport viewport = {};
     viewport.MaxDepth = 1;
@@ -155,7 +156,7 @@ void ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _
 
     SRenderPassBegin renderPassBegin = {};
     renderPassBegin.pFramebuffer = framebuffer;
-    renderPassBegin.pRenderPass = m_RP;
+    renderPassBegin.pRenderPass = RP;
     renderPassBegin.RenderArea.Width = _Resolution;
     renderPassBegin.RenderArea.Height = _Resolution;
 
@@ -168,14 +169,14 @@ void ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _
     rcmd->BindResourceTable( resourceTbl );
 
     for ( int sourceIndex = 0 ; sourceIndex < _SourcesCount ; sourceIndex++ ) {
-        m_UniformBufferData.Index.X = sourceIndex * 6; // Offset for cubemap array layer
+        ConstantBufferData.Index.X = sourceIndex * 6; // Offset for cubemap array layer
 
-        m_UniformBuffer->Write( &m_UniformBufferData );
+        ConstantBuffer->Write( &ConstantBufferData );
 
         resourceTbl->BindTexture( 0, _Sources[sourceIndex] );
 
         // Draw six faces in one draw call
-        DrawSphere( m_Pipeline, 6 );
+        DrawSphere( Pipeline, 6 );
     }
 
     rcmd->EndRenderPass();
@@ -193,7 +194,7 @@ void ACubemapGenerator::Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resol
     TRef< IResourceTable > resourceTbl;
     GDevice->CreateResourceTable( &resourceTbl );
 
-    resourceTbl->BindBuffer( 0, m_UniformBuffer );
+    resourceTbl->BindBuffer( 0, ConstantBuffer );
 
     SViewport viewport = {};
     viewport.MaxDepth = 1;
@@ -213,7 +214,7 @@ void ACubemapGenerator::Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resol
 
     SRenderPassBegin renderPassBegin = {};
     renderPassBegin.pFramebuffer = framebuffer;
-    renderPassBegin.pRenderPass = m_RP;
+    renderPassBegin.pRenderPass = RP;
     renderPassBegin.RenderArea.Width = _Resolution;
     renderPassBegin.RenderArea.Height = _Resolution;
 
@@ -224,16 +225,16 @@ void ACubemapGenerator::Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resol
 
     rcmd->SetViewport( viewport );
 
-    m_UniformBufferData.Index.X = 0;
+    ConstantBufferData.Index.X = 0;
 
-    m_UniformBuffer->Write( &m_UniformBufferData );
+    ConstantBuffer->Write( &ConstantBufferData );
 
     resourceTbl->BindTexture( 0, _Source );
 
     rcmd->BindResourceTable( resourceTbl );
 
     // Draw six faces in one draw call
-    DrawSphere( m_Pipeline, 6 );
+    DrawSphere( Pipeline, 6 );
 
     rcmd->EndRenderPass();
 }

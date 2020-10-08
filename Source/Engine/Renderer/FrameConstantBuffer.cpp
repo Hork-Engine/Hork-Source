@@ -28,8 +28,9 @@ SOFTWARE.
 
 */
 
+#if 0
 #include "FrameConstantBuffer.h"
-#include "RenderCommon.h"
+#include "RenderLocal.h"
 #include <Core/Public/CriticalError.h>
 
 AFrameConstantBuffer::AFrameConstantBuffer( size_t InBufferSize )
@@ -126,3 +127,4 @@ void AFrameConstantBuffer::Wait( RenderCore::SyncObject Sync )
         } while ( status != RenderCore::CLIENT_WAIT_ALREADY_SIGNALED && status != RenderCore::CLIENT_WAIT_CONDITION_SATISFIED );
     }
 }
+#endif

@@ -36,6 +36,7 @@ SOFTWARE.
 
 #include <cmath>
 #include <cstdlib>
+#include <cstddef>
 #include <cassert>
 #include <ctype.h>
 #include <memory>

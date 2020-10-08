@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "FxaaRenderer.h"
-#include "RenderCommon.h"
+#include "RenderLocal.h"
 
 using namespace RenderCore;
 
@@ -42,7 +42,7 @@ AFxaaRenderer::AFxaaRenderer()
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
 
     SBufferInfo bufferInfo;
-    bufferInfo.BufferBinding = BUFFER_BIND_UNIFORM;
+    bufferInfo.BufferBinding = BUFFER_BIND_CONSTANT;
 
     SPipelineResourceLayout resourceLayout;
 

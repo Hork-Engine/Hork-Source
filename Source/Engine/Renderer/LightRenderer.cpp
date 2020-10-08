@@ -30,8 +30,7 @@ SOFTWARE.
 
 #include "LightRenderer.h"
 #include "ShadowMapRenderer.h"
-#include "Material.h"
-#include "RenderBackend.h"
+#include "RenderLocal.h"
 
 #include <Core/Public/Logger.h>
 
@@ -254,10 +253,10 @@ bool ALightRenderer::BindMaterialLightPass( SRenderInstance const * Instance )
     //if ( Instance->bUseVT ) // TODO
     {
         int textureUnit = 0; // TODO: Instance->VTUnit;
-        AVirtualTexture * pVirtualTex = GRenderBackendLocal.VTWorkflow->FeedbackAnalyzer.GetTexture( textureUnit );
+        AVirtualTexture * pVirtualTex = GRenderBackend.FeedbackAnalyzerVT->GetTexture( textureUnit );
         //AN_ASSERT( pVirtualTex != nullptr );
 
-        rtbl->BindTexture( 6, GRenderBackendLocal.VTWorkflow->PhysCache.GetLayers()[0] );
+        rtbl->BindTexture( 6, GRenderBackend.PhysCacheVT->GetLayers()[0] );
 
         if ( pVirtualTex ) {
             rtbl->BindTexture( 7, pVirtualTex->GetIndirectionTexture() );
@@ -364,7 +363,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
     {
         // Clearing don't work properly with dynamic resolution scale :(
 #if 0
-        if ( GRenderView->bClearBackground || RVRenderSnapshot ) {
+        if ( GRenderView->bClearBackground || r_RenderSnapshot ) {
             unsigned int attachment = 0;
             Cmd.ClearFramebufferAttachments( GRenderTarget.GetFramebuffer(), &attachment, 1, &clearValue, nullptr, nullptr );
         }
@@ -408,7 +407,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
 
             BindTextures( instance->MaterialInstance, instance->Material->LightPassTextureCount );
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-            BindInstanceUniforms( instance );
+            BindInstanceConstants( instance );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -416,7 +415,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
 
             rcmd->Draw( &drawCmd );
 
-            //if ( RVRenderSnapshot ) {
+            //if ( r_RenderSnapshot ) {
             //    SaveSnapshot();
             //}
         }
@@ -499,7 +498,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
 
                 BindTextures( instance->MaterialInstance, instance->Material->LightPassTextureCount );
                 BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-                BindInstanceUniforms( instance );
+                BindInstanceConstants( instance );
 
                 drawCmd.IndexCountPerInstance = instance->IndexCount;
                 drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -507,7 +506,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
 
                 rcmd->Draw( &drawCmd );
 
-                //if ( RVRenderSnapshot ) {
+                //if ( r_RenderSnapshot ) {
                 //    SaveSnapshot();
                 //}
             }

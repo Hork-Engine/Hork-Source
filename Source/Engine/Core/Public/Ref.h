@@ -32,6 +32,68 @@ SOFTWARE.
 
 #include "Std.h"
 
+struct SWeakRefCounter;
+
+class ARefCounted
+{
+public:
+    ARefCounted()
+        : RefCount( 1 )
+    {
+    }
+
+    virtual ~ARefCounted() {}
+
+    /** Non-copyable pattern */
+    ARefCounted( ARefCounted const & ) = delete;
+
+    /** Non-copyable pattern */
+    ARefCounted & operator=( ARefCounted const & ) = delete;
+
+    /** Add reference */
+    void AddRef();
+
+    /** Remove reference */
+    void RemoveRef();
+
+    int GetRefCount() const { return RefCount; }
+
+    /** Set weakref counter. Used by TWeakRef */
+    void SetWeakRefCounter( SWeakRefCounter * _RefCounter ) { WeakRefCounter = _RefCounter; }
+
+    /** Get weakref counter. Used by TWeakRef */
+    SWeakRefCounter * GetWeakRefCounter() { return WeakRefCounter; }
+
+    void * operator new( size_t size )
+    {
+        return GZoneMemory.Alloc( size );
+    }
+
+    void operator delete( void * p )
+    {
+        GZoneMemory.Free( p );
+    }
+
+private:
+    int RefCount;
+    SWeakRefCounter * WeakRefCounter = nullptr;
+};
+
+inline void ARefCounted::AddRef()
+{
+    ++RefCount;
+}
+
+inline void ARefCounted::RemoveRef()
+{
+    if ( --RefCount == 0 ) {
+        delete this;
+        return;
+    }
+
+    AN_ASSERT( RefCount > 0 );
+}
+
 /**
 
 TRef
@@ -293,5 +355,11 @@ AN_FORCEINLINE bool operator != ( TWeakRef< T > const & _Ref, TWeakRef< T > cons
 template< typename T, typename... _Args >
 inline TRef< T > MakeRef( _Args &&... __args )
 {
-    return TRef< T >( new T( StdForward< _Args >( __args )... ) );
+    // create object (refcount=1)
+    T * x = new T( StdForward< _Args >( __args )... );
+    // handle reference (refcount=2)
+    TRef< T > ref( x );
+    // keep refcount=1
+    x->RemoveRef();
+    return ref;
 }

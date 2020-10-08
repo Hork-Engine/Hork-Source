@@ -30,7 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include "GraphicsDefs.h"
+#include "DeviceObject.h"
+#include "StaticLimits.h"
 
 #include <Core/Public/Ref.h>
 
@@ -98,6 +99,16 @@ enum FRAMEBUFFER_ATTACHMENT_TYPE : uint8_t
     ATTACH_LAYER
 };
 
+enum COLOR_CLAMP : uint8_t
+{
+    /** Clamping is always off, no matter what the format​ or type​ parameters of the read pixels call. */
+    COLOR_CLAMP_OFF,
+    /** Clamping is always on, no matter what the format​ or type​ parameters of the read pixels call. */
+    COLOR_CLAMP_ON,
+    /** Clamping is only on if the type of the image being read is a normalized signed or unsigned value. */
+    COLOR_CLAMP_FIXED_ONLY
+};
+
 struct SFramebufferAttachmentInfo
 {
     ITexture * pTexture;
@@ -132,9 +143,19 @@ struct SFramebufferCreateInfo
     }
 };
 
+struct SRect2D
+{
+    uint16_t X;
+    uint16_t Y;
+    uint16_t Width;
+    uint16_t Height;
+};
+
 class IFramebuffer : public IDeviceObject
 {
 public:
+    IFramebuffer( IDevice * Device ) : IDeviceObject( Device ) {}
+
     uint16_t GetWidth() const { return Width; }
 
     uint16_t GetHeight() const { return Height; }

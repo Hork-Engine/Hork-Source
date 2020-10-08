@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "WireframeRenderer.h"
-#include "Material.h"
+#include "RenderLocal.h"
 
 using namespace RenderCore;
 
@@ -94,7 +94,7 @@ void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarg
 
             BindTextures( instance->MaterialInstance, instance->Material->WireframePassTextureCount );
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-            BindInstanceUniforms( instance );
+            BindInstanceConstants( instance );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -112,7 +112,7 @@ void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarg
 
             BindTextures( instance->MaterialInstance, instance->Material->WireframePassTextureCount );
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-            BindInstanceUniforms( instance );
+            BindInstanceConstants( instance );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;

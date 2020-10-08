@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <RenderCore/Buffer.h>
 
-class ASphereMesh : public RenderCore::IObjectInterface
+class ASphereMesh : public ARefCounted
 {
 public:
     ASphereMesh( int _HDiv = 128, int _VDiv = 128 );

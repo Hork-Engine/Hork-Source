@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Runtime/Public/RenderCore.h>
+#include <Renderer/RenderBackend.h>
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Core/Public/BV/BvAxisAlignedBox.h>
 #include <Core/Public/BV/BvOrientedBox.h>

@@ -82,6 +82,8 @@ struct SBufferViewCreateInfo
 class IBufferView : public ITextureBase
 {
 public:
+    IBufferView( IDevice * Device ) : ITextureBase( Device ) {}
+
     virtual size_t GetBufferOffset( uint16_t _Lod ) const = 0;
     virtual size_t GetBufferSizeInBytes( uint16_t _Lod ) const = 0;
 

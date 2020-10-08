@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "GraphicsDefs.h"
+#include "DeviceObject.h"
 
 namespace RenderCore {
 
@@ -44,10 +44,15 @@ enum SHADER_TYPE : uint8_t
     COMPUTE_SHADER
 };
 
+enum SHADER_BINARY_FORMAT : unsigned int
+{
+    SHADER_BINARY_FORMAT_SPIR_V_ARB = 0x9551
+};
+
 struct SShaderBinaryData
 {
     void *       BinaryCode;
-    size_t       BinaryLength;
+    size_t       BinarySize;
     unsigned int BinaryFormat;
     SHADER_TYPE  ShaderType;
 };
@@ -55,6 +60,8 @@ struct SShaderBinaryData
 class IShaderModule : public IDeviceObject
 {
 public:
+    IShaderModule( IDevice * Device ) : IDeviceObject( Device ) {}
+
     SHADER_TYPE GetType() const { return Type; }
 protected:
     SHADER_TYPE Type;

@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "DepthRenderer.h"
-#include "Material.h"
+#include "RenderLocal.h"
 
 using namespace RenderCore;
 
@@ -119,7 +119,7 @@ void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTextur
                 BindTextures( instance->MaterialInstance, instance->Material->DepthPassTextureCount );
                 BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
                 BindSkeletonMotionBlur( instance->SkeletonOffsetMB, instance->SkeletonSize );
-                BindInstanceUniforms( instance );
+                BindInstanceConstants( instance );
 
                 drawCmd.IndexCountPerInstance = instance->IndexCount;
                 drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -149,7 +149,7 @@ void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTextur
 
                 BindTextures( instance->MaterialInstance, instance->Material->DepthPassTextureCount );
                 BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-                BindInstanceUniforms( instance );
+                BindInstanceConstants( instance );
 
                 drawCmd.IndexCountPerInstance = instance->IndexCount;
                 drawCmd.StartIndexLocation = instance->StartIndexLocation;

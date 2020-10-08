@@ -30,7 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include "RenderCommon.h"
+#include <RenderCore/ImmediateContext.h>
+#include <Core/Public/CoreMath.h>
 
 class AAtmosphereRenderer {
 public:
@@ -39,13 +40,13 @@ public:
     void Render( int CubemapWidth, Float3 const & LightDir, TRef< RenderCore::ITexture > * ppTexture );
 
 private:
-    struct SUniformBufferData
+    struct SConstantData
     {
         Float4x4 Transform[6];
         Float4 LightDir;
     };
-    TRef< RenderCore::IBuffer > m_UniformBuffer;
-    SUniformBufferData m_UniformBufferData;
-    TRef< RenderCore::IPipeline > m_Pipeline;
-    TRef< RenderCore::IRenderPass > m_RP;
+    TRef< RenderCore::IBuffer > ConstantBuffer;
+    SConstantData ConstantBufferData;
+    TRef< RenderCore::IPipeline > Pipeline;
+    TRef< RenderCore::IRenderPass > RP;
 };

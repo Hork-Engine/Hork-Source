@@ -101,7 +101,7 @@ void AIBLComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     }
 }
 
-void AIBLComponent::PackProbe( Float4x4 const & InViewMatrix, SClusterProbe & Probe ) {
+void AIBLComponent::PackProbe( Float4x4 const & InViewMatrix, SProbeParameters & Probe ) {
     Probe.Position = Float3( InViewMatrix * GetWorldPosition() );
     Probe.Radius = Radius;
     Probe.IrradianceMap = IrradianceMap;

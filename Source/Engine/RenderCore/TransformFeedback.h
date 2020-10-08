@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "GraphicsDefs.h"
+#include "DeviceObject.h"
 
 namespace RenderCore {
 
@@ -40,6 +40,8 @@ struct STransformFeedbackCreateInfo
 
 class ITransformFeedback : public IDeviceObject
 {
+public:
+    ITransformFeedback( IDevice * Device ) : IDeviceObject( Device ) {}
 };
 
 }

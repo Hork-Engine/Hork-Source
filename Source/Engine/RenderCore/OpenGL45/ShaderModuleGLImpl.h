@@ -39,12 +39,27 @@ class ADeviceGLImpl;
 class AShaderModuleGLImpl final : public IShaderModule
 {
 public:
-    AShaderModuleGLImpl( ADeviceGLImpl * _Device, SShaderBinaryData const * _BinaryData, char ** _InfoLog );
-    AShaderModuleGLImpl( ADeviceGLImpl * _Device, SHADER_TYPE _ShaderType, unsigned int _NumSources, const char * const * _Sources, char ** _InfoLog );
-    AShaderModuleGLImpl( ADeviceGLImpl * _Device, SHADER_TYPE _ShaderType, const char * _Source, char ** _InfoLog );
+    AShaderModuleGLImpl( ADeviceGLImpl * _Device, SShaderBinaryData const * _BinaryData );
+    AShaderModuleGLImpl( ADeviceGLImpl * _Device, SHADER_TYPE _ShaderType, unsigned int _NumSources, const char * const * _Sources );
     ~AShaderModuleGLImpl();
 
+    static bool CreateShaderBinaryData( ADeviceGLImpl * _Device,
+                                        SHADER_TYPE _ShaderType,
+                                        unsigned int _NumSources,
+                                        const char * const * _Sources,
+                                        SShaderBinaryData * _BinaryData );
+
+    static void DestroyShaderBinaryData( ADeviceGLImpl * _Device,
+                                         SShaderBinaryData * _BinaryData );
+
 private:
+    static unsigned int CreateShaderProgram( SHADER_TYPE _ShaderType,
+                                             int _NumStrings,
+                                             const char * const * _Strings,
+                                             bool bBinaryRetrievable );
+
+    unsigned int CreateShaderProgramBin( SShaderBinaryData const * _BinaryData );
+
     ADeviceGLImpl * pDevice;
 };
 

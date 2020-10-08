@@ -36,7 +36,8 @@ SOFTWARE.
 
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/InputDefs.h>
-#include <Runtime/Public/RenderCore.h>
+
+#include <Renderer/RenderBackend.h>
 
 #include <Core/Public/Utf8.h>
 #include <Core/Public/Color.h>

@@ -32,6 +32,7 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
 #include <Core/Public/Logger.h>
+#include <Renderer/VertexMemoryGPU.h>
 
 ARuntimeVariable dd_DirectionalLights( _CTS( "dd_DirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable com_ShadowCascadeSplitLambda( _CTS( "com_ShadowCascadeSplitLambda" ), _CTS( "1.0" ) );
@@ -184,7 +185,7 @@ void ADirectionalLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     }
 }
 
-void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, int * pFirstCascade, int * pNumCascades ) {
+void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, size_t * ViewProjStreamHandle, int * pFirstCascade, int * pNumCascades ) {
     float cascadeSplits[MAX_CASCADE_SPLITS];
     int numSplits = MaxShadowCascades + 1;
     int numVisibleSplits;
@@ -279,6 +280,15 @@ void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, int *
     // but now it just a magic number big enough to enclose most scenes = 1km.
     const float lightDistance = 1000.0f;
 
+    Float4x4 * lightViewProjectionMatrices = nullptr;
+    if ( numVisibleCascades > 0 ) {
+        AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+
+        *ViewProjStreamHandle = streamedMemory->AllocateConstant( numVisibleCascades * sizeof( Float4x4 ), nullptr );
+
+        lightViewProjectionMatrices = (Float4x4 *)streamedMemory->Map( *ViewProjStreamHandle );
+    }
+
     for ( int i = 0 ; i < numVisibleCascades ; i++ ) {
         // Calc cascade bounding sphere
         cascadeSphere.FromPointsAverage( worldspaceVerts[i], 8 );
@@ -315,7 +325,7 @@ void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, int *
 
         int cascadeIndex = firstCascade + i;
 
-        View->LightViewProjectionMatrices[cascadeIndex] = cascadeMatrix;
+        lightViewProjectionMatrices[i] = cascadeMatrix;
         View->ShadowMapMatrices[cascadeIndex] = ShadowMapBias * cascadeMatrix * View->ClipSpaceToWorldSpace;
     }
 

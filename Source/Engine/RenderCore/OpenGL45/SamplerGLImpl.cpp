@@ -40,6 +40,7 @@ namespace RenderCore {
 static std::unordered_map< uint64_t, int > BindlessHandleRefCount;
 
 ABindlessSamplerGLImpl::ABindlessSamplerGLImpl( ADeviceGLImpl * _Device, ITexture * _Texture, SSamplerInfo const & _CreateInfo )
+    : IBindlessSampler( _Device )
 {
     Texture = _Texture;
     Texture->AddRef();

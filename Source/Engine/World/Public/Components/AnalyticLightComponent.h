@@ -76,7 +76,7 @@ public:
     Float3 GetWorldDirection() const;
 
     /** Internal */
-    virtual void PackLight( Float4x4 const & InViewMatrix, struct SClusterLight & Light );
+    virtual void PackLight( Float4x4 const & InViewMatrix, struct SLightParameters & Light );
 
 protected:
     AAnalyticLightComponent();

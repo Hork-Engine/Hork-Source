@@ -515,7 +515,8 @@ AN_INLINE void EncodeRGBE( byte * RGBE, const float * LinearRGB )
 
     if ( maxcomp < 1e-32f ) {
         RGBE[0] = RGBE[1] = RGBE[2] = RGBE[3] = 0;
-    } else {
+    }
+    else {
         int exponent;
         float normalize = frexp( maxcomp, &exponent ) * 256.0f/maxcomp;
 
@@ -533,7 +534,8 @@ AN_INLINE void DecodeRGBE( float * LinearRGB, const byte * RGBE )
         LinearRGB[0] = RGBE[0] * scale;
         LinearRGB[1] = RGBE[1] * scale;
         LinearRGB[2] = RGBE[2] * scale;
-    } else {
+    }
+    else {
         LinearRGB[0] = LinearRGB[1] = LinearRGB[2] = 0;
     }
 }

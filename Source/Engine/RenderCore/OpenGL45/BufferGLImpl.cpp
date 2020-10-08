@@ -70,7 +70,7 @@ static GLenum ChooseBufferUsageHint( MUTABLE_STORAGE_CLIENT_ACCESS _ClientAccess
 }
 
 ABufferGLImpl::ABufferGLImpl( ADeviceGLImpl * _Device, SBufferCreateInfo const & _CreateInfo, const void * _SysMem )
-    : pDevice( _Device )
+    : IBuffer( _Device ), pDevice( _Device )
 {
     GLuint id;
     GLint size;

@@ -42,7 +42,7 @@ SOFTWARE.
 #include <World/Public/Resource/Animation.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
-#include <Runtime/Public/VertexMemoryGPU.h>
+#include <Renderer/VertexMemoryGPU.h>
 
 #include <BulletSoftBody/btSoftBody.h>
 
@@ -479,12 +479,14 @@ void ASkinnedComponent::OnPreRenderUpdate( SRenderFrontendDef const * _Def ) {
 
     SkeletonSize = joints.Size() * sizeof( Float3x4 );
     if ( SkeletonSize > 0 ) {
+        AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+
         // Write joints from previous frame
-        SkeletonOffsetMB = GStreamedMemoryGPU.AllocateJoint( SkeletonSize, JointsBufferData );
+        SkeletonOffsetMB = streamedMemory->AllocateJoint( SkeletonSize, JointsBufferData );
 
         // Write joints from current frame
-        SkeletonOffset = GStreamedMemoryGPU.AllocateJoint( SkeletonSize, nullptr );
-        Float3x4 * data = (Float3x4 * )GStreamedMemoryGPU.Map( SkeletonOffset );
+        SkeletonOffset = streamedMemory->AllocateJoint( SkeletonSize, nullptr );
+        Float3x4 * data = (Float3x4 * )streamedMemory->Map( SkeletonOffset );
         for ( int j = 0 ; j < skin.JointIndices.Size() ; j++ ) {
             int jointIndex = skin.JointIndices[j];
             data[j] = JointsBufferData[j] = AbsoluteTransforms[jointIndex + 1] * skin.OffsetMatrices[j];

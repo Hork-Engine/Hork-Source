@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "NormalsRenderer.h"
-#include "Material.h"
+#include "RenderLocal.h"
 
 using namespace RenderCore;
 
@@ -93,7 +93,7 @@ void AddNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget
 
             BindTextures( instance->MaterialInstance, instance->Material->NormalsPassTextureCount );
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-            BindInstanceUniforms( instance );
+            BindInstanceConstants( instance );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;

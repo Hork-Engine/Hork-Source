@@ -2,7 +2,8 @@
 
 #include <vector>
 
-struct FRectangleBinBack_RectNode {
+struct SRectangleBinBack_RectNode
+{
     int         x;
     int         y;
     int         width;
@@ -12,11 +13,12 @@ struct FRectangleBinBack_RectNode {
     void *      userdata;
 };
 
-class FDisjointRectCollection {
+class ADisjointRectCollection
+{
 public:
-    std::vector<FRectangleBinBack_RectNode> rects;
+    std::vector<SRectangleBinBack_RectNode> rects;
 
-    bool Add( const FRectangleBinBack_RectNode &r ) {
+    bool Add( const SRectangleBinBack_RectNode &r ) {
         // Игнорируем вырожденные ректанглы
         if ( r.width == 0 || r.height == 0 ) {
             return true;
@@ -34,7 +36,7 @@ public:
         rects.clear();
     }
 
-    bool Disjoint( const FRectangleBinBack_RectNode & r ) const {
+    bool Disjoint( const SRectangleBinBack_RectNode & r ) const {
         // Игнорируем вырожденные ректанглы
         if ( r.width == 0 || r.height == 0 ) {
             return true;
@@ -48,7 +50,7 @@ public:
         return true;
     }
 
-    static bool Disjoint( const FRectangleBinBack_RectNode & a, const FRectangleBinBack_RectNode & b ) {
+    static bool Disjoint( const SRectangleBinBack_RectNode & a, const SRectangleBinBack_RectNode & b ) {
         if ( a.x + a.width <= b.x
              || b.x + b.width <= a.x
              || a.y + a.height <= b.y
@@ -59,19 +61,10 @@ public:
     }
 };
 
-/**
- * @brief The FRectangleBinPack class
- * Реализует различные алгоритмы запаковки ректанглов в прямоугольную область (bin)
- */
-class FRectangleBinPack {
+class ARectangleBinPack
+{
 public:
-    /**
-     * @brief FRectangleBinPack
-     * Создает новый bin заданного размера
-     * @param _Width - ширина
-     * @param _Height - высота
-     */
-                                        FRectangleBinPack( int _Width, int _Height );
+    ARectangleBinPack( int _Width, int _Height );
 
     /// Specifies the different choice heuristics that can be used when deciding which of the free subrectangles
     /// to place the to-be-packed rectangle into.
@@ -95,7 +88,7 @@ public:
         SplitinterAxis
     };
 
-    struct rectSize_t {
+    struct SRectSize {
         int         width;
         int         height;
 
@@ -109,7 +102,7 @@ public:
     ///		some extra time.
     /// @param rectChoice The free rectangle choice heuristic rule to use.
     /// @param splitMethod The free rectangle split heuristic rule to use.
-    FRectangleBinBack_RectNode                          Insert( int _Width, int _Height, bool _Merge, FreeRectChoiceHeuristic _RectChoice, SplitHeuristic _SplitMethod );
+    SRectangleBinBack_RectNode Insert( int _Width, int _Height, bool _Merge, FreeRectChoiceHeuristic _RectChoice, SplitHeuristic _SplitMethod );
 
     /// Inserts a list of rectangles into the bin.
     /// @param rects The list of rectangles to add. This list will be destroyed in the packing process.
@@ -117,42 +110,42 @@ public:
     /// @param merge If true, performs Rectangle Merge operations during the packing process.
     /// @param rectChoice The free rectangle choice heuristic rule to use.
     /// @param splitMethod The free rectangle split heuristic rule to use.
-    void                                Insert( std::vector<rectSize_t> & _Rects/*, std::vector<Rect> &dst*/, bool _Merge,
-                                                FreeRectChoiceHeuristic _RectChoice, SplitHeuristic _SplitMethod, bool _AllowFlip );
+    void Insert( std::vector<SRectSize> & _Rects/*, std::vector<Rect> &dst*/, bool _Merge,
+                 FreeRectChoiceHeuristic _RectChoice, SplitHeuristic _SplitMethod, bool _AllowFlip );
 
 // Implements GUILLOTINE-MAXFITTING, an experimental heuristic that's really cool but didn't quite work in practice.
 //	void InsertMaxFitting(std::vector<RectSize> &rects, std::vector<Rect> &dst, bool merge,
 //		FreeRectChoiceHeuristic rectChoice, SplitHeuristic splitMethod);
 
     /// Computes the ratio of used/total surface area. 0.00 means no space is yet used, 1.00 means the whole bin is used.
-    float                               Occupancy() const;
+    float Occupancy() const;
 
     /// Returns the internal list of disjoint rectangles that track the free area of the bin. You may alter this vector
     /// any way desired, as int as the end result still is a list of disjoint rectangles.
-    std::vector<FRectangleBinBack_RectNode> &           GetFreeRectangles() { return m_FreeRectangles; }
+    std::vector<SRectangleBinBack_RectNode> & GetFreeRectangles() { return m_FreeRectangles; }
 
     /// Returns the list of packed rectangles. You may alter this vector at will, for example, you can move a Rect from
     /// this list to the Free Rectangles list to free up space on-the-fly, but notice that this causes fragmentation.
-    std::vector<FRectangleBinBack_RectNode> &           GetUsedRectangles() { return m_UsedRectangles; }
+    std::vector<SRectangleBinBack_RectNode> & GetUsedRectangles() { return m_UsedRectangles; }
 
     /// Performs a Rectangle Merge operation. This procedure looks for adjacent free rectangles and merges them if they
     /// can be represented with a single rectangle. Takes up Theta(|freeRectangles|^2) time.
-    void                                MergeFreeList();
+    void MergeFreeList();
 
 private:
-    int                                 m_BinWidth;
-    int                                 m_BinHeight;
+    int m_BinWidth;
+    int m_BinHeight;
 
     /// Stores a list of all the rectangles that we have packed so far. This is used only to compute the Occupancy ratio,
     /// so if you want to have the packer consume less memory, this can be removed.
-    std::vector<FRectangleBinBack_RectNode>             m_UsedRectangles;
+    std::vector<SRectangleBinBack_RectNode> m_UsedRectangles;
 
     /// Stores a list of rectangles that represents the free area of the bin. This rectangles in this list are disjoint.
-    std::vector<FRectangleBinBack_RectNode>             m_FreeRectangles;
+    std::vector<SRectangleBinBack_RectNode> m_FreeRectangles;
 
 //#ifdef _DEBUG
     /// Used to track that the packer produces proper packings.
-    FDisjointRectCollection              m_DisjointRects;
+    ADisjointRectCollection m_DisjointRects;
 //#endif
 
     /// Goes through the list of free rectangles and finds the best one to place a rectangle of given size into.
@@ -160,12 +153,12 @@ private:
     /// @param nodeIndex [out] The index of the free rectangle in the freeRectangles array into which the new
     ///		rect was placed.
     /// @return A Rect structure that represents the placement of the new rect into the best free rectangle.
-    FRectangleBinBack_RectNode                          FindPositionForNewNode( int _Width, int _Height, FreeRectChoiceHeuristic _RectChoice, int * _NodeIndex );
+    SRectangleBinBack_RectNode FindPositionForNewNode( int _Width, int _Height, FreeRectChoiceHeuristic _RectChoice, int * _NodeIndex );
 
     /// Splits the given L-shaped free rectangle into two new free rectangles after placedRect has been placed into it.
     /// Determines the split axis by using the given heuristic.
-    void                                SplitFreeRectByHeuristic( const FRectangleBinBack_RectNode & _FreeRect, const FRectangleBinBack_RectNode & _PlacedRect, SplitHeuristic _Method );
+    void SplitFreeRectByHeuristic( const SRectangleBinBack_RectNode & _FreeRect, const SRectangleBinBack_RectNode & _PlacedRect, SplitHeuristic _Method );
 
     /// Splits the given L-shaped free rectangle into two new free rectangles aint the given fixed split axis.
-    void                                SplitFreeRectAintAxis( const FRectangleBinBack_RectNode & _FreeRect, const FRectangleBinBack_RectNode & _PlacedRect, bool _SplitHorizontal );
+    void SplitFreeRectAintAxis( const SRectangleBinBack_RectNode & _FreeRect, const SRectangleBinBack_RectNode & _PlacedRect, bool _SplitHorizontal );
 };

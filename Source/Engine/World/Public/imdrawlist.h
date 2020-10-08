@@ -32,8 +32,6 @@ SOFTWARE.
 
 #include <Core/Public/CoreMath.h>
 
-#include <stddef.h> // ptrdiff_t
-
 class AFont;
 
 #define IM_ALLOC(_SIZE)                     malloc(_SIZE)

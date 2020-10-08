@@ -65,7 +65,7 @@ struct SVirtualTextureUnit
     float Log2Size;
 };
 
-class AVirtualTextureFeedbackAnalyzer
+class AVirtualTextureFeedbackAnalyzer : public ARefCounted
 {
 public:
     AVirtualTextureFeedbackAnalyzer();
@@ -86,6 +86,7 @@ public:
 
 private:
     void DecodePages();
+    void ClearQueue();
     void SubmitPages( TPodArray< SPageDesc > const & Pages );
     void WaitForNewPages();
     void StreamThreadMain();
@@ -114,5 +115,6 @@ private:
     AThread StreamThread;
     AThreadSync EnqueLock;
     ASyncEvent PageSubmitEvent;
+    ASyncEvent StreamThreadStopped;
     AAtomicBool bStopStreamThread;
 };

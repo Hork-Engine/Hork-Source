@@ -1,5 +1,5 @@
 #include "ShadowMapRenderer.h"
-#include "Material.h"
+#include "RenderLocal.h"
 
 using namespace RenderCore;
 
@@ -89,10 +89,10 @@ void AShadowMapRenderer::CreatePipeline()
     }
 
     SBufferInfo bufferInfo[4];
-    bufferInfo[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    bufferInfo[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
-    bufferInfo[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton
-    bufferInfo[3].BufferBinding = BUFFER_BIND_UNIFORM; // cascade matrix
+    bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    bufferInfo[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+    bufferInfo[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
+    bufferInfo[3].BufferBinding = BUFFER_BIND_CONSTANT; // cascade matrix
 
     pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( bufferInfo );
     pipelineCI.ResourceLayout.Buffers = bufferInfo;
@@ -148,10 +148,10 @@ void AShadowMapRenderer::CreateLightPortalPipeline()
 #endif
 
     SBufferInfo bufferInfo[4];
-    bufferInfo[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms (unused)
-    bufferInfo[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms (unused)
-    bufferInfo[2].BufferBinding = BUFFER_BIND_UNIFORM; // skeleton (unused)
-    bufferInfo[3].BufferBinding = BUFFER_BIND_UNIFORM; // cascade matrix
+    bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants (unused)
+    bufferInfo[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants (unused)
+    bufferInfo[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton (unused)
+    bufferInfo[3].BufferBinding = BUFFER_BIND_CONSTANT; // cascade matrix
 
     pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( bufferInfo );
     pipelineCI.ResourceLayout.Buffers = bufferInfo;
@@ -250,21 +250,21 @@ void AShadowMapRenderer::AddDummyShadowMap( AFrameGraph & FrameGraph, AFrameGrap
     );
 }
 
-void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightDef const * LightDef, AFrameGraphTexture ** ppShadowMapDepth )
+void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightInstance const * Light, AFrameGraphTexture ** ppShadowMapDepth )
 {
-    if ( LightDef->ShadowmapIndex < 0 ) {
+    if ( Light->ShadowmapIndex < 0 ) {
         AddDummyShadowMap( FrameGraph, ppShadowMapDepth );
         return;
     }
 
-    SLightShadowmap const * shadowMap = &GFrameData->LightShadowmaps[ LightDef->ShadowmapIndex ];
+    SLightShadowmap const * shadowMap = &GFrameData->LightShadowmaps[ Light->ShadowmapIndex ];
     if ( shadowMap->ShadowInstanceCount == 0 ) {
         AddDummyShadowMap( FrameGraph, ppShadowMapDepth );
         return;
     }
 
-    int cascadeResolution = LightDef->ShadowCascadeResolution;
-    int totalCascades = LightDef->NumCascades;
+    int cascadeResolution = Light->ShadowCascadeResolution;
+    int totalCascades = Light->NumCascades;
 
     RenderCore::TEXTURE_FORMAT depthFormat;
     if ( r_ShadowCascadeBits.GetInteger() <= 16 ) {
@@ -329,7 +329,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightDef
     pass.AddSubpass( {}, // no color attachments
                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
     {
-        BindShadowCascades( LightDef->FirstCascade, LightDef->NumCascades );
+        BindShadowCascades( Light->ViewProjStreamHandle );
 
         SDrawIndexedCmd drawCmd;
         drawCmd.StartInstanceLocation = 0;
@@ -341,7 +341,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightDef
 
             BindVertexAndIndexBuffers( instance );
 
-            drawCmd.InstanceCount = LightDef->NumCascades;
+            drawCmd.InstanceCount = Light->NumCascades;
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
             drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
@@ -359,7 +359,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightDef
             }
 
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-            BindShadowInstanceUniforms( instance );
+            BindShadowInstanceConstants( instance );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
@@ -394,17 +394,17 @@ ARuntimeVariable r_ShadowmapResolution( _CTS( "r_ShadowmapResolution" ), _CTS( "
 ARuntimeVariable r_ShadowmapBits( _CTS( "r_ShadowmapBits" ), _CTS( "24" ) );
 #endif
 
-void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SClusterLight const * LightDef, AFrameGraphTexture ** ppShadowMapDepth )
+void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SLightParameters const * Light, AFrameGraphTexture ** ppShadowMapDepth )
 {
 #if 0
-    if ( LightDef->ShadowmapIndex < 0 ) {
+    if ( Light->ShadowmapIndex < 0 ) {
         AddDummyCubeShadowMap( FrameGraph, ppShadowMapDepth );
         return;
     }
 
     int totalInstanceCount = 0;
     for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
-        SLightShadowmap const * shadowMap = &GFrameData->LightShadowmaps[ LightDef->ShadowmapIndex ];
+        SLightShadowmap const * shadowMap = &GFrameData->LightShadowmaps[ Light->ShadowmapIndex ];
         totalInstanceCount += shadowMap->ShadowInstanceCount;
     }
 
@@ -427,7 +427,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SClusterLight const 
     int faceResolution = Math::ToClosestPowerOfTwo( r_ShadowmapResolution.GetInteger() );
 
     for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
-        SLightShadowmap const * shadowMap = &GFrameData->LightShadowmaps[ LightDef->ShadowmapIndex + faceIndex ];
+        SLightShadowmap const * shadowMap = &GFrameData->LightShadowmaps[ Light->ShadowmapIndex + faceIndex ];
 
         ARenderPass & pass = FrameGraph.AddTask< ARenderPass >( "Point Shadow Map Pass" );
 
@@ -464,8 +464,8 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SClusterLight const 
                 // Bind skeleton
                 BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
 
-                // Set instance uniforms
-                SetShadowInstanceUniforms( instance );
+                // Set instance constants
+                SetShadowInstanceConstants( instance );
 
                 drawCmd.IndexCountPerInstance = instance->IndexCount;
                 drawCmd.StartIndexLocation = instance->StartIndexLocation;

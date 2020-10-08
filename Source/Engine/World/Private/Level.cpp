@@ -118,17 +118,26 @@ void ALevel::Initialize() {
     }
 
     // FIXME: Use AVertexMemoryGPU?
-    GRenderBackend->InitializeBuffer( &ShadowCasterVB, ShadowCasterVerts.Size() * sizeof( Float3 ) );
-    GRenderBackend->InitializeBuffer( &ShadowCasterIB, ShadowCasterIndices.Size() * sizeof( unsigned int ) );
 
-    GRenderBackend->InitializeBuffer( &LightPortalsVB, LightPortalVertexBuffer.Size() * sizeof( Float3 ) );
-    GRenderBackend->InitializeBuffer( &LightPortalsIB, LightPortalIndexBuffer.Size() * sizeof( unsigned int ) );
+    RenderCore::SBufferCreateInfo bufferCI = {};
+    bufferCI.MutableClientAccess = RenderCore::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
+    bufferCI.MutableUsage = RenderCore::MUTABLE_STORAGE_STATIC;
 
-    GRenderBackend->WriteBuffer( ShadowCasterVB, 0, ShadowCasterVerts.Size() * sizeof( Float3 ), ShadowCasterVerts.ToPtr() );
-    GRenderBackend->WriteBuffer( ShadowCasterIB, 0, ShadowCasterIndices.Size() * sizeof( unsigned int ), ShadowCasterIndices.ToPtr() );
+    bufferCI.SizeInBytes = ShadowCasterVerts.Size() * sizeof( Float3 );
+    GRenderBackend.GetDevice()->CreateBuffer( bufferCI, ShadowCasterVerts.ToPtr(), &ShadowCasterVB );
+    ShadowCasterVB->SetDebugName( "ShadowCasterVB" );
 
-    GRenderBackend->WriteBuffer( LightPortalsVB, 0, LightPortalVertexBuffer.Size() * sizeof( Float3 ), LightPortalVertexBuffer.ToPtr() );
-    GRenderBackend->WriteBuffer( LightPortalsIB, 0, LightPortalIndexBuffer.Size() * sizeof( unsigned int ), LightPortalIndexBuffer.ToPtr() );
+    bufferCI.SizeInBytes = ShadowCasterIndices.Size() * sizeof( unsigned int );
+    GRenderBackend.GetDevice()->CreateBuffer( bufferCI, ShadowCasterIndices.ToPtr(), &ShadowCasterIB );
+    ShadowCasterIB->SetDebugName( "ShadowCasterIB" );
+
+    bufferCI.SizeInBytes = LightPortalVertexBuffer.Size() * sizeof( Float3 );
+    GRenderBackend.GetDevice()->CreateBuffer( bufferCI, LightPortalVertexBuffer.ToPtr(), &LightPortalsVB );
+    ShadowCasterIB->SetDebugName( "LightPortalVertexBuffer" );
+
+    bufferCI.SizeInBytes = LightPortalIndexBuffer.Size() * sizeof( unsigned int );
+    GRenderBackend.GetDevice()->CreateBuffer( bufferCI, LightPortalIndexBuffer.ToPtr(), &LightPortalsIB );
+    ShadowCasterIB->SetDebugName( "LightPortalIndexBuffer" );
 }
 
 void ALevel::Purge() {

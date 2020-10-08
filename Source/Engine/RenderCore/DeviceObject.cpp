@@ -28,45 +28,32 @@ SOFTWARE.
 
 */
 
-#pragma once
+#include "DeviceObject.h"
+#include "Device.h"
 
-#include "AnalyticLightComponent.h"
+#ifdef AN_DEBUG
+#include <Core/Public/IntrusiveLinkedListMacro.h>
+#endif
 
-class ASpotLightComponent : public AAnalyticLightComponent {
-    AN_COMPONENT( ASpotLightComponent, AAnalyticLightComponent )
+namespace RenderCore {
 
-public:
-    void SetRadius( float _Radius );
-    float GetRadius() const;
+IDeviceObject::IDeviceObject( IDevice * Device )
+    : Handle( nullptr )
+{
+    static uint32_t UnqiueIdGen = 0;
+    UID = ++UnqiueIdGen;
+#ifdef AN_DEBUG
+    pDevice = Device;
+    Next = Prev = nullptr;
+    INTRUSIVE_ADD( this, Next, Prev, pDevice->ListHead, pDevice->ListTail );
+#endif
+}
 
-    void SetInnerConeAngle( float _Angle );
-    float GetInnerConeAngle() const;
+IDeviceObject::~IDeviceObject()
+{
+#ifdef AN_DEBUG
+    INTRUSIVE_REMOVE( this, Next, Prev, pDevice->ListHead, pDevice->ListTail );
+#endif
+}
 
-    void SetOuterConeAngle( float _Angle );
-    float GetOuterConeAngle() const;
-
-    void SetSpotExponent( float _Exponent );
-    float GetSpotExponent() const;
-
-    void PackLight( Float4x4 const & InViewMatrix, SLightParameters & Light ) override;
-
-protected:
-    ASpotLightComponent();
-
-    void OnTransformDirty() override;
-    void DrawDebug( ADebugRenderer * InRenderer ) override;
-
-private:
-    void UpdateWorldBounds();
-
-    BvSphere SphereWorldBounds;
-    BvOrientedBox OBBWorldBounds;
-
-    float Radius;
-    float InverseSquareRadius;
-    float InnerConeAngle;
-    float OuterConeAngle;
-    float CosHalfInnerConeAngle;
-    float CosHalfOuterConeAngle;
-    float SpotExponent;
-};
+}

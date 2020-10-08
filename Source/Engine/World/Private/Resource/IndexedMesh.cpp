@@ -35,7 +35,7 @@ SOFTWARE.
 #include <World/Public/Base/ResourceManager.h>
 
 #include <Runtime/Public/ScopedTimeCheck.h>
-#include <Runtime/Public/VertexMemoryGPU.h>
+#include <Renderer/VertexMemoryGPU.h>
 
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
@@ -75,12 +75,14 @@ void AIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
     Vertices.ResizeInvalidate( _NumVertices );
     Indices.ResizeInvalidate( _NumIndices );
 
-    VertexHandle = GVertexMemoryGPU.AllocateVertex( Vertices.Size() * sizeof( SMeshVertex ), nullptr, GetVertexMemory, this );
-    IndexHandle = GVertexMemoryGPU.AllocateIndex( Indices.Size() * sizeof( unsigned int ), nullptr, GetIndexMemory, this );
+    AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+
+    VertexHandle = vertexMemory->AllocateVertex( Vertices.Size() * sizeof( SMeshVertex ), nullptr, GetVertexMemory, this );
+    IndexHandle = vertexMemory->AllocateIndex( Indices.Size() * sizeof( unsigned int ), nullptr, GetIndexMemory, this );
 
     if ( bSkinnedMesh ) {
         Weights.ResizeInvalidate( _NumVertices );
-        WeightsHandle = GVertexMemoryGPU.AllocateVertex( Weights.Size() * sizeof( SMeshVertexSkin ), nullptr, GetWeightMemory, this );
+        WeightsHandle = vertexMemory->AllocateVertex( Weights.Size() * sizeof( SMeshVertexSkin ), nullptr, GetWeightMemory, this );
     }
 
     _NumSubparts = _NumSubparts < 1 ? 1 : _NumSubparts;
@@ -129,13 +131,15 @@ void AIndexedMesh::Purge() {
     Weights.Free();
     Indices.Free();
 
-    GVertexMemoryGPU.Deallocate( VertexHandle );
+    AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+
+    vertexMemory->Deallocate( VertexHandle );
     VertexHandle = nullptr;
 
-    GVertexMemoryGPU.Deallocate( IndexHandle );
+    vertexMemory->Deallocate( IndexHandle );
     IndexHandle = nullptr;
 
-    GVertexMemoryGPU.Deallocate( WeightsHandle );
+    vertexMemory->Deallocate( WeightsHandle );
     WeightsHandle = nullptr;
 }
 
@@ -327,11 +331,13 @@ bool AIndexedMesh::LoadResource( AString const & _Path ) {
 
     SetSkeleton( GetOrCreateResource< ASkeleton >( skeleton.CStr() ) );
 
-    VertexHandle = GVertexMemoryGPU.AllocateVertex( Vertices.Size() * sizeof( SMeshVertex ), nullptr, GetVertexMemory, this );
-    IndexHandle = GVertexMemoryGPU.AllocateIndex( Indices.Size() * sizeof( unsigned int ), nullptr, GetIndexMemory, this );
+    AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+
+    VertexHandle = vertexMemory->AllocateVertex( Vertices.Size() * sizeof( SMeshVertex ), nullptr, GetVertexMemory, this );
+    IndexHandle = vertexMemory->AllocateIndex( Indices.Size() * sizeof( unsigned int ), nullptr, GetIndexMemory, this );
 
     if ( bSkinnedMesh ) {
-        WeightsHandle = GVertexMemoryGPU.AllocateVertex( Weights.Size() * sizeof( SMeshVertexSkin ), nullptr, GetWeightMemory, this );
+        WeightsHandle = vertexMemory->AllocateVertex( Weights.Size() * sizeof( SMeshVertexSkin ), nullptr, GetWeightMemory, this );
     }
 
     SendVertexDataToGPU( Vertices.Size(), 0 );
@@ -365,19 +371,22 @@ void *AIndexedMesh::GetWeightMemory( void * _This ) {
 
 void AIndexedMesh::GetVertexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     if ( VertexHandle ) {
-        GVertexMemoryGPU.GetPhysicalBufferAndOffset( VertexHandle, _Buffer, _Offset );
+        AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+        vertexMemory->GetPhysicalBufferAndOffset( VertexHandle, _Buffer, _Offset );
     }
 }
 
 void AIndexedMesh::GetIndexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     if ( IndexHandle ) {
-        GVertexMemoryGPU.GetPhysicalBufferAndOffset( IndexHandle, _Buffer, _Offset );
+        AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+        vertexMemory->GetPhysicalBufferAndOffset( IndexHandle, _Buffer, _Offset );
     }
 }
 
 void AIndexedMesh::GetWeightsBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     if ( WeightsHandle ) {
-        GVertexMemoryGPU.GetPhysicalBufferAndOffset( WeightsHandle, _Buffer, _Offset );
+        AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+        vertexMemory->GetPhysicalBufferAndOffset( WeightsHandle, _Buffer, _Offset );
     }
 }
 
@@ -465,7 +474,9 @@ bool AIndexedMesh::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLoca
         return false;
     }
 
-    GVertexMemoryGPU.Update( VertexHandle, _StartVertexLocation * sizeof( SMeshVertex ), _VerticesCount * sizeof( SMeshVertex ), Vertices.ToPtr() + _StartVertexLocation );
+    AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+
+    vertexMemory->Update( VertexHandle, _StartVertexLocation * sizeof( SMeshVertex ), _VerticesCount * sizeof( SMeshVertex ), Vertices.ToPtr() + _StartVertexLocation );
 
     return true;
 }
@@ -504,7 +515,9 @@ bool AIndexedMesh::SendJointWeightsToGPU( int _VerticesCount, int _StartVertexLo
         return false;
     }
 
-    GVertexMemoryGPU.Update( WeightsHandle, _StartVertexLocation * sizeof( SMeshVertexSkin ), _VerticesCount * sizeof( SMeshVertexSkin ), Weights.ToPtr() + _StartVertexLocation );
+    AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+
+    vertexMemory->Update( WeightsHandle, _StartVertexLocation * sizeof( SMeshVertexSkin ), _VerticesCount * sizeof( SMeshVertexSkin ), Weights.ToPtr() + _StartVertexLocation );
 
     return true;
 }
@@ -539,7 +552,9 @@ bool AIndexedMesh::SendIndexDataToGPU( int _IndexCount, int _StartIndexLocation 
         return false;
     }
 
-    GVertexMemoryGPU.Update( IndexHandle, _StartIndexLocation * sizeof( unsigned int ), _IndexCount * sizeof( unsigned int ), Indices.ToPtr() + _StartIndexLocation );
+    AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+
+    vertexMemory->Update( IndexHandle, _StartIndexLocation * sizeof( unsigned int ), _IndexCount * sizeof( unsigned int ), Indices.ToPtr() + _StartIndexLocation );
 
     return true;
 }
@@ -1225,7 +1240,9 @@ void ALightmapUV::Purge() {
 
     Vertices.Free();
 
-    GVertexMemoryGPU.Deallocate( VertexBufferGPU );
+    AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+
+    vertexMemory->Deallocate( VertexBufferGPU );
     VertexBufferGPU = nullptr;
 }
 
@@ -1241,7 +1258,9 @@ void ALightmapUV::Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingLe
 
     Vertices.ResizeInvalidate( InSourceMesh->GetVertexCount() );
 
-    VertexBufferGPU = GVertexMemoryGPU.AllocateVertex( Vertices.Size() * sizeof( SMeshVertexUV ), nullptr, GetVertexMemory, this );
+    AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+
+    VertexBufferGPU = vertexMemory->AllocateVertex( Vertices.Size() * sizeof( SMeshVertexUV ), nullptr, GetVertexMemory, this );
 }
 
 bool ALightmapUV::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
@@ -1254,7 +1273,9 @@ bool ALightmapUV::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocat
         return false;
     }
 
-    GVertexMemoryGPU.Update( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshVertexUV ), _VerticesCount * sizeof( SMeshVertexUV ), Vertices.ToPtr() + _StartVertexLocation );
+    AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+
+    vertexMemory->Update( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshVertexUV ), _VerticesCount * sizeof( SMeshVertexUV ), Vertices.ToPtr() + _StartVertexLocation );
 
     return true;
 }
@@ -1276,7 +1297,8 @@ bool ALightmapUV::WriteVertexData( SMeshVertexUV const * _Vertices, int _Vertice
 
 void ALightmapUV::GetVertexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     if ( VertexBufferGPU ) {
-        GVertexMemoryGPU.GetPhysicalBufferAndOffset( VertexBufferGPU, _Buffer, _Offset );
+        AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+        vertexMemory->GetPhysicalBufferAndOffset( VertexBufferGPU, _Buffer, _Offset );
     }
 }
 
@@ -1306,7 +1328,9 @@ void AVertexLight::Purge() {
 
     Vertices.Free();
 
-    GVertexMemoryGPU.Deallocate( VertexBufferGPU );
+    AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+
+    vertexMemory->Deallocate( VertexBufferGPU );
     VertexBufferGPU = nullptr;
 }
 
@@ -1322,7 +1346,9 @@ void AVertexLight::Initialize( AIndexedMesh * InSourceMesh, ALevel * InLightingL
 
     Vertices.ResizeInvalidate( InSourceMesh->GetVertexCount() );
 
-    VertexBufferGPU = GVertexMemoryGPU.AllocateVertex( Vertices.Size() * sizeof( SMeshVertexLight ), nullptr, GetVertexMemory, this );
+    AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+
+    VertexBufferGPU = vertexMemory->AllocateVertex( Vertices.Size() * sizeof( SMeshVertexLight ), nullptr, GetVertexMemory, this );
 }
 
 bool AVertexLight::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLocation ) {
@@ -1335,7 +1361,9 @@ bool AVertexLight::SendVertexDataToGPU( int _VerticesCount, int _StartVertexLoca
         return false;
     }
 
-    GVertexMemoryGPU.Update( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshVertexLight ), _VerticesCount * sizeof( SMeshVertexLight ), Vertices.ToPtr() + _StartVertexLocation );
+    AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+
+    vertexMemory->Update( VertexBufferGPU, _StartVertexLocation * sizeof( SMeshVertexLight ), _VerticesCount * sizeof( SMeshVertexLight ), Vertices.ToPtr() + _StartVertexLocation );
 
     return true;
 }
@@ -1357,7 +1385,8 @@ bool AVertexLight::WriteVertexData( SMeshVertexLight const * _Vertices, int _Ver
 
 void AVertexLight::GetVertexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
     if ( VertexBufferGPU ) {
-        GVertexMemoryGPU.GetPhysicalBufferAndOffset( VertexBufferGPU, _Buffer, _Offset );
+        AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
+        vertexMemory->GetPhysicalBufferAndOffset( VertexBufferGPU, _Buffer, _Offset );
     }
 }
 
@@ -1376,11 +1405,15 @@ AProceduralMesh::~AProceduralMesh() {
 }
 
 void AProceduralMesh::GetVertexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
-    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( VertexStream, _Buffer, _Offset );
+    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+
+    streamedMemory->GetPhysicalBufferAndOffset( VertexStream, _Buffer, _Offset );
 }
 
 void AProceduralMesh::GetIndexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset ) {
-    GStreamedMemoryGPU.GetPhysicalBufferAndOffset( IndexSteam, _Buffer, _Offset );
+    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+
+    streamedMemory->GetPhysicalBufferAndOffset( IndexSteam, _Buffer, _Offset );
 }
 
 void AProceduralMesh::PreRenderUpdate( SRenderFrontendDef const * _Def ) {
@@ -1391,8 +1424,10 @@ void AProceduralMesh::PreRenderUpdate( SRenderFrontendDef const * _Def ) {
     VisFrame = _Def->FrameNumber;
 
     if ( !VertexCache.IsEmpty() && !IndexCache.IsEmpty() ) {
-        VertexStream = GStreamedMemoryGPU.AllocateVertex( sizeof( SMeshVertex ) * VertexCache.Size(), VertexCache.ToPtr() );
-        IndexSteam = GStreamedMemoryGPU.AllocateIndex( sizeof( unsigned int ) * IndexCache.Size(), IndexCache.ToPtr() );
+        AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+
+        VertexStream = streamedMemory->AllocateVertex( sizeof( SMeshVertex ) * VertexCache.Size(), VertexCache.ToPtr() );
+        IndexSteam = streamedMemory->AllocateIndex( sizeof( unsigned int ) * IndexCache.Size(), IndexCache.ToPtr() );
     }
 }
 

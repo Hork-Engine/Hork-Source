@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "VirtualTextureAnalyzer.h"
 #include "QuadTree.h"
-#include "../RenderCommon.h"
+#include "../RenderLocal.h"
 #include <Runtime/Public/ScopedTimeCheck.h>
 
 AVirtualTextureFeedbackAnalyzer::AVirtualTextureFeedbackAnalyzer()
@@ -55,6 +55,19 @@ AVirtualTextureFeedbackAnalyzer::~AVirtualTextureFeedbackAnalyzer()
 
     // Awake stream thread
     PageSubmitEvent.Signal();
+
+    StreamThreadStopped.Wait();
+
+    ClearQueue();
+
+    for ( int i = 0 ; i < VT_MAX_TEXTURE_UNITS ; i++ ) {
+        for ( int j = 0 ; j < 2 ; j++ ) {
+            if ( Textures[j][i] ) {
+                Textures[j][i]->RemoveRef();
+                Textures[j][i] = nullptr;
+            }
+        }
+    }
 }
 
 void AVirtualTextureFeedbackAnalyzer::StreamThreadMain( void * pData )
@@ -111,12 +124,14 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
             if ( it->second + 1000 < time ) {
                 GLogger.Printf( "Re-load page\n" );
                 it->second = time;
-            } else {
+            }
+            else {
                 // Page already loaded. Fetch next page
                 GLogger.Printf( "Page already loaded\n" );
                 continue;
             }
-        } else {
+        }
+        else {
             streamedPages[quedPage.PageIndex] = time;
         }
 
@@ -142,15 +157,12 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
 
         pTexture->pCache->MakePageTransferVisible( transfer );
     }
+
+    StreamThreadStopped.Signal();
 }
 
-void AVirtualTextureFeedbackAnalyzer::SubmitPages( TPodArray< SPageDesc > const & Pages )
+void AVirtualTextureFeedbackAnalyzer::ClearQueue()
 {
-    AN_ASSERT( Pages.Size() < MAX_QUEUE_LENGTH );
-
-    ASyncGuard criticalSection( EnqueLock );
-
-    // Clear queue
     for ( int i = 0 ; i < MAX_QUEUE_LENGTH ; i++ ) {
         int p = ( QueueLoadPos + i ) & ( MAX_QUEUE_LENGTH - 1 );
         SPageDesc * quedPage = &QuedPages[p];
@@ -166,6 +178,15 @@ void AVirtualTextureFeedbackAnalyzer::SubmitPages( TPodArray< SPageDesc > const 
     }
 
     QueueLoadPos = 0;
+}
+
+void AVirtualTextureFeedbackAnalyzer::SubmitPages( TPodArray< SPageDesc > const & Pages )
+{
+    AN_ASSERT( Pages.Size() < MAX_QUEUE_LENGTH );
+
+    ASyncGuard criticalSection( EnqueLock );
+
+    ClearQueue();
 
     // Refresh queue
     Core::Memcpy( QuedPages, Pages.ToPtr(), Pages.Size() * sizeof( QuedPages[0] ) );
@@ -181,13 +202,20 @@ void AVirtualTextureFeedbackAnalyzer::SubmitPages( TPodArray< SPageDesc > const 
 
 void AVirtualTextureFeedbackAnalyzer::Begin()
 {
-    // NOTE: this must fit to Max uniform buffer size
+    unsigned int maxBlockSize = GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_CONSTANT_BUFFER_MAX_BLOCK_SIZE );;
+
     size_t size = VT_MAX_TEXTURE_UNITS * sizeof( SVirtualTextureUnit );
-    size_t offset = GFrameConstantBuffer->Allocate( size );
+    if ( size > maxBlockSize ) {
+        GLogger.Printf( "AVirtualTextureFeedbackAnalyzer::Begin: constant buffer max block size hit\n" );
+    }
 
-    rtbl->BindBuffer( 6, GFrameConstantBuffer->GetBuffer(), offset, size );
+    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
 
-    Bindings = (SVirtualTextureUnit *)(GFrameConstantBuffer->GetMappedMemory() + offset);
+    size_t offset = streamedMemory->AllocateConstant( size );
+
+    rtbl->BindBuffer( 6, GStreamBuffer, offset, size );
+
+    Bindings = (SVirtualTextureUnit *)streamedMemory->Map( offset );
     NumBindings = 0;
 
     for ( int i = 0 ; i < VT_MAX_TEXTURE_UNITS ; i++ ) {
@@ -205,7 +233,8 @@ void AVirtualTextureFeedbackAnalyzer::Begin()
 // X_low    Y_low    Lod  Yh  Xh Un
 AN_FORCEINLINE void VT_FeedbackUnpack_RGBA8_11LODS_256UNITS( SFeedbackData const *_Data,
                                                              int & _PageX, int & _PageY, int & _Lod,
-                                                             int & _TextureUnit ) {
+                                                             int & _TextureUnit )
+{
     _PageX = _Data->Byte3 | ((_Data->Byte1 & 3) << 8);
     _PageY = _Data->Byte2 | ((_Data->Byte1 & 12) << 6);
     _Lod = _Data->Byte1 >> 4;
@@ -428,11 +457,10 @@ void AVirtualTextureFeedbackAnalyzer::BindTexture( int Unit, AVirtualTexture * T
     AN_ASSERT( Unit >= 0 && Unit < VT_MAX_TEXTURE_UNITS );
     if ( Texture )
     {
+        Texture->AddRef();
         if ( Textures[SwapIndex][Unit] ) {
             Textures[SwapIndex][Unit]->RemoveRef();
         }
-
-        Texture->AddRef();
         Textures[SwapIndex][Unit] = Texture;
 
         Bindings[Unit].MaxLod = Texture->GetStoredLods() - 1;

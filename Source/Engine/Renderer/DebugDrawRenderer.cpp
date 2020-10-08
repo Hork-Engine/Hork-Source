@@ -28,6 +28,7 @@ SOFTWARE.
 
 */
 
+#include "RenderLocal.h"
 #include "DebugDrawRenderer.h"
 
 using namespace RenderCore;
@@ -88,7 +89,7 @@ ADebugDrawRenderer::ADebugDrawRenderer()
     pipelineCI.pVertexAttribs = vertexAttribs;
 
     SBufferInfo bufferInfo;
-    bufferInfo.BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
+    bufferInfo.BufferBinding = BUFFER_BIND_CONSTANT; // view constants
 
     pipelineCI.ResourceLayout.NumBuffers = 1;
     pipelineCI.ResourceLayout.Buffers = &bufferInfo;

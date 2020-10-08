@@ -30,14 +30,14 @@ SOFTWARE.
 
 #pragma once
 
-#include "GraphicsDefs.h"
+#include "DeviceObject.h"
 
 namespace RenderCore {
 
 /// Buffer bindings
 enum BUFFER_BINDING : uint8_t
 {
-    BUFFER_BIND_UNIFORM,
+    BUFFER_BIND_CONSTANT,
     BUFFER_BIND_STORAGE,
     BUFFER_BIND_FEEDBACK,
     BUFFER_BIND_ATOMIC_COUNTER
@@ -135,6 +135,8 @@ struct SBufferCreateInfo
 class IBuffer : public IDeviceObject
 {
 public:
+    IBuffer( IDevice * Device ) : IDeviceObject( Device ) {}
+
     bool IsImmutableStorage() const { return bImmutableStorage; }
 
     IMMUTABLE_STORAGE_FLAGS GetImmutableStorageFlags() const { return ImmutableStorageFlags; }

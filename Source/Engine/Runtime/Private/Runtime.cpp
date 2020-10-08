@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/EngineInterface.h>
 #include <Runtime/Public/InputDefs.h>
-#include <Runtime/Public/VertexMemoryGPU.h>
+#include <Renderer/RenderBackend.h>
 
 #include <Core/Public/Logger.h>
 #include <Core/Public/CriticalError.h>
@@ -275,7 +275,7 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl ) {
     Core::Strcpy( desiredMode.Backend, sizeof( desiredMode.Backend ), "OpenGL 4.5" );
     Core::Strcpy( desiredMode.Title, sizeof( desiredMode.Title ), _EntryDecl.GameTitle );
 
-    GRenderBackend->Initialize( desiredMode );
+    GRenderBackend.Initialize( desiredMode );
 
     SetVideoMode( desiredMode );
 
@@ -292,7 +292,7 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl ) {
         EmergencyExit();
     }
 
-    GRenderBackend->Deinitialize();
+    GRenderBackend.Deinitialize();
 
     WorkingDir.Free();
     RootPath.Free();
@@ -1515,7 +1515,7 @@ void ARuntime::PollEvents() {
                 break;
             // Window has been moved to data1, data2
             case SDL_WINDOWEVENT_MOVED:
-                VideoMode.DisplayIndex = SDL_GetWindowDisplayIndex( (SDL_Window *)GRenderBackend->GetMainWindow() );
+                VideoMode.DisplayIndex = SDL_GetWindowDisplayIndex( (SDL_Window *)GRenderBackend.GetMainWindow() );
                 VideoMode.X = event.window.data1;
                 VideoMode.Y = event.window.data2;
                 if ( !VideoMode.bFullscreen ) {
@@ -1529,7 +1529,7 @@ void ARuntime::PollEvents() {
             // a result of an API call or through the
             // system or user changing the window size.
             case SDL_WINDOWEVENT_SIZE_CHANGED: {
-                SDL_Window * wnd = (SDL_Window *)GRenderBackend->GetMainWindow();
+                SDL_Window * wnd = (SDL_Window *)GRenderBackend.GetMainWindow();
                 VideoMode.Width = event.window.data1;
                 VideoMode.Height = event.window.data2;
                 VideoMode.DisplayIndex = SDL_GetWindowDisplayIndex( wnd );
@@ -1962,7 +1962,7 @@ static void TestDisplays() {
 void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode ) {
     Core::Memcpy( &VideoMode, &_DesiredMode, sizeof( VideoMode ) );
 
-    SDL_Window * wnd = (SDL_Window *)GRenderBackend->GetMainWindow();
+    SDL_Window * wnd = (SDL_Window *)GRenderBackend.GetMainWindow();
 
     // Set refresh rate
     //SDL_DisplayMode mode = {};
@@ -2009,7 +2009,7 @@ void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode ) {
     VideoMode.RefreshRate = mode.refresh_rate;
 
     // Swap buffers to prevent flickering
-    GRenderBackend->SwapBuffers();
+    GRenderBackend.SwapBuffers();
 }
 
 void ARuntime::SetCursorEnabled( bool _Enabled ) {

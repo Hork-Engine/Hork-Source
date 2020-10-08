@@ -30,22 +30,20 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/FrameGraph/FrameGraph.h>
-#include <RenderCore/Sampler.h>
-
-#include <Runtime/Public/RenderCore.h>
 #include <Runtime/Public/RuntimeVariable.h>
 
+#include "RenderBackend.h"
 #include "CircularBuffer.h"
-#include "FrameConstantBuffer.h"
 #include "SphereMesh.h"
+
+//#include <RenderCore/FrameGraph/FrameGraph.h>
 
 #define SHADOWMAP_PCF
 //#define SHADOWMAP_PCSS
 //#define SHADOWMAP_VSM
 //#define SHADOWMAP_EVSM
 
-struct SViewUniformBuffer
+struct SViewConstantBuffer
 {
     Float4x4 OrthoProjection;
     Float4x4 ViewProjection;
@@ -122,9 +120,9 @@ struct SViewUniformBuffer
     uint32_t LightParameters[MAX_DIRECTIONAL_LIGHTS][4];      // RenderMask, FirstCascade, NumCascades, W-channel is not used
 };
 
-static_assert( sizeof( SViewUniformBuffer ) <= ( 16<<10 ), "sizeof SViewUniformBuffer > 16 kB" );
+static_assert( sizeof( SViewConstantBuffer ) <= ( 16<<10 ), "sizeof SViewConstantBuffer > 16 kB" );
 
-struct SInstanceUniformBuffer
+struct SInstanceConstantBuffer
 {
     Float4x4 TransformMatrix;
     Float4x4 TransformMatrixP;
@@ -142,7 +140,7 @@ struct SInstanceUniformBuffer
     uint32_t Pad2;
 };
 
-struct SFeedbackUniformBuffer
+struct SFeedbackConstantBuffer
 {
     Float4x4 TransformMatrix; // Instance MVP
     Float2 VTOffset;
@@ -151,7 +149,7 @@ struct SFeedbackUniformBuffer
     uint32_t Pad[3];
 };
 
-struct SShadowInstanceUniformBuffer
+struct SShadowInstanceConstantBuffer
 {
     Float4x4 TransformMatrix; // TODO: 3x4
     //Float4 ModelNormalToViewSpace0;
@@ -165,55 +163,80 @@ struct SShadowInstanceUniformBuffer
     uint32_t Pad[3];
 };
 
+
+//
+// Common variables
+//
+
 extern ARuntimeVariable r_RenderSnapshot;
 extern ARuntimeVariable r_MotionBlur;
 extern ARuntimeVariable r_SSLR;
 extern ARuntimeVariable r_HBAO;
 
+
 //
 // Globals
 //
 
+/** Render device */
 extern TRef< RenderCore::IDevice > GDevice;
 
+/** Render context */
 extern RenderCore::IImmediateContext * rcmd;
+
+/** Render resource table */
 extern RenderCore::IResourceTable * rtbl;
 
-extern SRenderFrame *       GFrameData;
-extern SRenderView *        GRenderView;
-extern ARenderArea          GRenderViewArea;
+/** Render frame data */
+extern SRenderFrame * GFrameData;
 
+/** Render frame view */
+extern SRenderView * GRenderView;
+
+/** Render view area */
+extern ARenderArea GRenderViewArea;
+
+/** Stream buffer */
 extern RenderCore::IBuffer * GStreamBuffer;
 
-// Contains constant data for single draw call.
-// Don't use to store long-live data.
-extern TRef< ACircularBuffer > GConstantBuffer;
+/** Circular buffer. Contains constant data for single draw call.
+Don't use to store long-live data. */
+extern TRef< ACircularBuffer > GCircularBuffer;
 
-// Contains constant data for single frame.
-// Use to store data actual during one frame.
-extern TRef< AFrameConstantBuffer > GFrameConstantBuffer;
-
+/** Sphere mesh */
 extern TRef< ASphereMesh > GSphereMesh;
 
+/** Screen aligned quad mesh */
 extern TRef< RenderCore::IBuffer > GSaq;
 
+/** Simple white texture */
 extern TRef< RenderCore::ITexture > GWhiteTexture;
 
+/** Cluster lookcup 3D texture */
 extern TRef< RenderCore::ITexture > GClusterLookup;
-extern TRef< RenderCore::IBufferView > GClusterItemTBO;
+
+/** Cluster item references */
 extern TRef< RenderCore::IBuffer > GClusterItemBuffer;
 
+/** Cluster item references view */
+extern TRef< RenderCore::IBufferView > GClusterItemTBO;
+
+/** Irradiance texture array */
 extern TRef< RenderCore::ITexture > GIrradianceMap;
 extern TRef< RenderCore::IBindlessSampler > GIrradianceMapBindless;
 
+/** Reflections texture array */
 extern TRef< RenderCore::ITexture > GPrefilteredMap;
 extern TRef< RenderCore::IBindlessSampler > GPrefilteredMapBindless;
 
-extern size_t GViewUniformBufferBindingBindingOffset;
-extern size_t GViewUniformBufferBindingBindingSize;
+/** View constant binding */
+extern size_t GViewConstantBufferBindingBindingOffset;
+extern size_t GViewConstantBufferBindingBindingSize;
 
-extern size_t GShadowMatrixBindingSize;
-extern size_t GShadowMatrixBindingOffset;
+
+//
+// Common functions
+//
 
 RenderCore::STextureResolution2D GetFrameResoultion();
 
@@ -233,21 +256,21 @@ void BindSkeletonMotionBlur( size_t _Offset, size_t _Size );
 void BindTextures( RenderCore::IResourceTable * Rtbl, SMaterialFrameData * Instance, int MaxTextures );
 void BindTextures( SMaterialFrameData * Instance, int MaxTextures );
 
-void BindInstanceUniforms( SRenderInstance const * Instance );
+void BindInstanceConstants( SRenderInstance const * Instance );
 
-void BindInstanceUniformsFB( SRenderInstance const * Instance );
+void BindInstanceConstantsFB( SRenderInstance const * Instance );
 
-void BindShadowInstanceUniforms( SShadowRenderInstance const * Instance );
+void BindShadowInstanceConstants( SShadowRenderInstance const * Instance );
 
-void * MapDrawCallUniforms( size_t SizeInBytes );
+void * MapDrawCallConstants( size_t SizeInBytes );
 
 template< typename T >
-T * MapDrawCallUniforms() {
-    return (T *)MapDrawCallUniforms( sizeof( T ) );
+T * MapDrawCallConstants() {
+    return (T *)MapDrawCallConstants( sizeof( T ) );
 }
 
 void BindShadowMatrix();
-void BindShadowCascades( int FirstCascade, int NumCascades );
+void BindShadowCascades( size_t StreamHandle );
 
 void SaveSnapshot( RenderCore::ITexture & _Texture );
 

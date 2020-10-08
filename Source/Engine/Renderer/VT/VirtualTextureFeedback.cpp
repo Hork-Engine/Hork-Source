@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "VirtualTextureFeedback.h"
-#include "../RenderCommon.h"
+#include "../RenderLocal.h"
 #include "../Material.h"
 
 #include <Runtime/Public/Runtime.h>
@@ -136,6 +136,7 @@ void AVirtualTextureFeedback::Begin( int Width, int Height )
         bufferCI.SizeInBytes = feedbackSizeInBytes;
 
         GDevice->CreateBuffer( bufferCI, nullptr, &PixelBufferObject[SwapIndex] );
+        PixelBufferObject[SwapIndex]->SetDebugName( "Virtual texture feedback PBO" );
     }
 }
 
@@ -263,8 +264,8 @@ void AVirtualTextureFeedback::AddPass( AFrameGraph & FrameGraph )
             // Bind skeleton
             BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
 
-            // Set instance uniforms
-            BindInstanceUniformsFB( instance );
+            // Set instance constants
+            BindInstanceConstantsFB( instance );
 
             drawCmd.IndexCountPerInstance = instance->IndexCount;
             drawCmd.StartIndexLocation = instance->StartIndexLocation;

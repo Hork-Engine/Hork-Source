@@ -371,6 +371,10 @@ public:
                                       /* optional */ SClearDepthStencilValue const * _DepthStencilClearValue,
                                       /* optional */ SRect2D const * _Rect ) override;
 
+    //
+    // Local
+    //
+
     void PackAlignment( unsigned int _Alignment );
 
     void UnpackAlignment( unsigned int _Alignment );

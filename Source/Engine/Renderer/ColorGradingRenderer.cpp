@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "ColorGradingRenderer.h"
-#include "RenderBackend.h"
+#include "RenderLocal.h"
 
 using namespace RenderCore;
 
@@ -46,8 +46,8 @@ AColorGradingRenderer::AColorGradingRenderer()
     resourceLayout.Samplers = &samplerCI;
 
     SBufferInfo bufferInfo[2];
-    bufferInfo[0].BufferBinding = BUFFER_BIND_UNIFORM; // view uniforms
-    bufferInfo[1].BufferBinding = BUFFER_BIND_UNIFORM; // drawcall uniforms
+    bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    bufferInfo[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
 
     resourceLayout.Buffers = bufferInfo;
 
@@ -128,7 +128,7 @@ void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTextur
                 Float4 LuminanceNormalization;
             };
 
-            SDrawCall * drawCall = MapDrawCallUniforms< SDrawCall >();
+            SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
 
             drawCall->TemperatureScale.X = GRenderView->ColorGradingTemperatureScale.X;
             drawCall->TemperatureScale.Y = GRenderView->ColorGradingTemperatureScale.Y;

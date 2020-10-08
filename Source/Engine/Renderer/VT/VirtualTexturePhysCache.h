@@ -62,14 +62,14 @@ struct SVirtualTextureCacheCreateInfo
 
 constexpr uint32_t MIN_PAGE_CACHE_CAPACITY = 8;
 
-class AVirtualTextureCache
+class AVirtualTextureCache : public ARefCounted
 {
 public:
     AVirtualTextureCache( SVirtualTextureCacheCreateInfo const & CreateInfo );
     virtual ~AVirtualTextureCache();
 
-    AVirtualTexture * CreateVirtualTexture( const char * FileName );
-    void RemoveVirtualTexture( AVirtualTexture * Texture );
+    bool CreateTexture( const char * FileName, TRef< AVirtualTexture > * ppTexture );
+    //void DestroyTexture( TRef< AVirtualTexture > * ppTexture );
 
     /** Cache horizontal capacity */
     uint32_t GetPageCacheCapacityX() const { return PageCacheCapacityX; }
@@ -109,12 +109,11 @@ public:
     void Draw( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget, int LayerIndex );
 
 private:
+    bool LockTransfers();
 
-    bool LockUploads();
+    void UnlockTransfers();
 
-    void UnlockUploads();
-
-    void TransferPageData( SPageTransfer * Transfer, int CacheCellIndex );
+    void TransferPageData( SPageTransfer * Transfer, int PhysPageIndex );
 
     void DiscardTransfers( SPageTransfer ** Transfers, int Count );
 
@@ -128,8 +127,8 @@ private:
 
     TPodArray< AVirtualTexturePtr > VirtualTextures;
 
-    /** Cell info */
-    struct SPageCacheInfo
+    /** Physical page info */
+    struct SPhysPageInfo
     {
         /** Time of last request */
         int64_t Time;
@@ -141,17 +140,17 @@ private:
         AVirtualTexture * pTexture;
     };
 
-    /** Sorted cells */
-    struct SSortedCacheInfo
+    /** Physical pages sorted by time */
+    struct SPhysPageInfoSorted
     {
-        SPageCacheInfo * pInfo;
+        SPhysPageInfo * pInfo;
     };
 
-    /** Cache ceil info */
-    TPodArray< SPageCacheInfo > PageCacheInfo;
+    /** Physical page infos */
+    TPodArray< SPhysPageInfo > PhysPageInfo;
 
-    /** Cache ceil info sorted by time */
-    TPodArray< SSortedCacheInfo > SortedCacheInfo;
+    /** Physical page infos sorted by time */
+    TPodArray< SPhysPageInfoSorted > PhysPageInfoSorted;
 
     uint32_t PageCacheCapacityX;
     uint32_t PageCacheCapacityY;
@@ -159,14 +158,14 @@ private:
     uint16_t PageResolutionB;
     size_t PageSizeInBytes;
     size_t AlignedSize;
-    int FilledPages;
+    int TotalCachedPages;
 
     Float4 PageTranslationOffsetAndScale;
 
     int64_t LRUTime;
 
-    TPodArray< SPageTransfer * > Uploads;
-    AThreadSync UploadMutex;
+    TPodArray< SPageTransfer * > Transfers;
+    AThreadSync TransfersMutex;
 
     enum { MAX_UPLOADS_PER_FRAME = 64 };
     TRef< RenderCore::IBuffer > TransferBuffer;

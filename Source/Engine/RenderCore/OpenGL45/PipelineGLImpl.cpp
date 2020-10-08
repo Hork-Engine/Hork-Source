@@ -41,7 +41,7 @@ SOFTWARE.
 namespace RenderCore {
 
 APipelineGLImpl::APipelineGLImpl( ADeviceGLImpl * _Device, SPipelineCreateInfo const & _CreateInfo )
-    : pDevice( _Device )
+    : IPipeline( _Device ), pDevice( _Device )
 {
     AImmediateContextGLImpl * ctx = AImmediateContextGLImpl::GetCurrent();
 

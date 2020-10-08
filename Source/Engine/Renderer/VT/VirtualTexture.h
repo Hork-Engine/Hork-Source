@@ -38,9 +38,12 @@ SOFTWARE.
 class AVirtualTexture : public AVirtualTextureFile
 {
 public:
+    AVirtualTexture( const char * FileName, AVirtualTextureCache * Cache );
+    ~AVirtualTexture();
+
     bool IsLoaded() const;
 
-    void MakePageResident( uint32_t AbsIndex, int CacheCellIndex );
+    void MakePageResident( uint32_t AbsIndex, int PhysPageIndex );
 
     void MakePageNonResident( uint32_t AbsIndex );
 
@@ -67,36 +70,7 @@ public:
     /** Total number of stored lods */
     uint32_t GetNumLods() const { return NumLods; }
 
-    void AddRef() {
-        ++RefCount;
-    }
-
-    void RemoveRef() {
-        --RefCount;
-    }
-
-    int GetRefCount() const {
-        return RefCount;
-    }
-
-    bool IsPendingRemove() const {
-        return bPendingRemove;
-    }
-
 private:
-    AVirtualTexture( const char * FileName, AVirtualTextureCache * Cache );
-    virtual ~AVirtualTexture();
-
-    void * operator new(size_t size)
-    {
-        return GZoneMemory.Alloc( size );
-    }
-
-    void operator delete(void * p)
-    {
-        GZoneMemory.Free( p );
-    }
-
     /** Recursively updates quadtree branch */
     void UpdateBranch_r( int Lod, uint32_t PageIndex, uint16_t Bits16, int MaxDeep );
 
@@ -150,9 +124,6 @@ private:
     std::unordered_map< uint32_t, int64_t > StreamedPages;
 
     AVirtualTextureCache * pCache;
-
-    int RefCount;
-    bool bPendingRemove;
 
     friend class AVirtualTextureCache;
     friend class AVirtualTextureFeedbackAnalyzer;

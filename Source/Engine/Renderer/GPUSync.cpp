@@ -30,6 +30,8 @@ SOFTWARE.
 
 #include "GPUSync.h"
 
+#include "RenderLocal.h"
+
 using namespace RenderCore;
 
 void AGPUSync::Wait()
