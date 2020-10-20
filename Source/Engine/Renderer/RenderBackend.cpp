@@ -52,7 +52,6 @@ SOFTWARE.
 ARuntimeVariable r_SwapInterval( _CTS( "r_SwapInterval" ), _CTS( "0" ), 0, _CTS( "1 - enable vsync, 0 - disable vsync, -1 - tearing" ) );
 ARuntimeVariable r_FrameGraphDebug( _CTS( "r_FrameGraphDebug" ), _CTS( "0" ) );
 ARuntimeVariable r_RenderSnapshot( _CTS( "r_RenderSnapshot" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable r_UpdateFrameGraph( _CTS( "r_UpdateFrameGraph" ), _CTS( "1" ) );
 ARuntimeVariable r_DebugRenderMode( _CTS( "r_DebugRenderMode" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable r_BloomScale( _CTS( "r_BloomScale" ), _CTS( "1" ) );
 ARuntimeVariable r_Bloom( _CTS( "r_Bloom" ), _CTS( "1" ) );
@@ -508,7 +507,7 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
     createInfo.pLayers = &layer;
     PhysCacheVT = MakeRef< AVirtualTextureCache >( createInfo );
 
-    ::TestVT();
+    //::TestVT();
     PhysCacheVT->CreateTexture( "Test.vt3", &TestVT );
 
 //#define SPARSE_TEXTURE_TEST
@@ -1009,10 +1008,7 @@ void ARenderBackend::RenderView( SRenderView * pRenderView, AFrameGraphTexture *
         GRenderView->VTFeedback->Begin( GRenderView->Width, GRenderView->Height );
     }
 
-    if ( r_UpdateFrameGraph ) {
-        FrameRenderer->Render( *FrameGraph, bVirtualTexturing, CapturedResources );
-    }
-    
+    FrameRenderer->Render( *FrameGraph, bVirtualTexturing, CapturedResources );
     FrameGraph->Execute( rcmd );
 
     if ( r_FrameGraphDebug ) {
