@@ -863,6 +863,12 @@ AN_FORCEINLINE void MinMax( double _A, double _B, double _C, double & _Min, doub
 }
 
 template< typename T >
+AN_FORCEINLINE T Square( T const & a )
+{
+    return a * a;
+}
+
+template< typename T >
 AN_FORCEINLINE T Sqrt( T const & _Value ) {
     return _Value > T(0) ? T(StdSqrt( _Value )) : T(0);
 }
