@@ -45,6 +45,7 @@ public:
     WWindow & SetWordWrap( bool _WordWrap );
     WWindow & SetTextOffset( Float2 const & _Offset );
     WWindow & SetCaptionColor( AColor4 const & _Color );
+    WWindow & SetCaptionColorNotActive( AColor4 const & _Color );
     WWindow & SetBorderColor( AColor4 const & _Color );
     WWindow & SetBorderThickness( float _Thickness );
     WWindow & SetBackgroundColor( AColor4 const & _Color );
@@ -74,6 +75,7 @@ private:
     EWidgetAlignment TextHorizontalAlignment;
     EWidgetAlignment TextVerticalAlignment;
     AColor4 CaptionColor;
+    AColor4 CaptionColorNotActive;
     AColor4 BorderColor;
     AColor4 BgColor;
     EDrawCornerFlags RoundingCorners;

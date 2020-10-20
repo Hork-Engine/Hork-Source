@@ -34,10 +34,11 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Public/Base/ResourceManager.h>
 #include <Core/Public/Logger.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
-ARuntimeVariable dd_MeshBounds( _CTS( "dd_MeshBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_BrushBounds( _CTS( "dd_BrushBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_IndexedMeshBVH( _CTS( "dd_IndexedMeshBVH" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawMeshBounds( _CTS( "com_DrawMeshBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawBrushBounds( _CTS( "com_DrawBrushBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawIndexedMeshBVH( _CTS( "com_DrawIndexedMeshBVH" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( AMeshComponent )
 
@@ -335,7 +336,7 @@ void AMeshComponent::NotifyMeshChanged() {
 void AMeshComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( dd_IndexedMeshBVH )
+    if ( com_DrawIndexedMeshBVH )
     {
         if ( Primitive.VisPass == InRenderer->GetVisPass() )
         {
@@ -343,7 +344,7 @@ void AMeshComponent::DrawDebug( ADebugRenderer * InRenderer ) {
         }
     }
 
-    if ( dd_MeshBounds )
+    if ( com_DrawMeshBounds )
     {
         if ( Primitive.VisPass == InRenderer->GetVisPass() )
         {
@@ -599,7 +600,7 @@ void AProceduralMeshComponent::SetAllowRaycast( bool _AllowRaycast ) {
 void AProceduralMeshComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( dd_MeshBounds )
+    if ( com_DrawMeshBounds )
     {
         if ( Primitive.VisPass == InRenderer->GetVisPass() )
         {

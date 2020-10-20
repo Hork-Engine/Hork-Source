@@ -375,9 +375,9 @@ void ADebugRenderer::DrawTriangleSoup( Float3 const * _Points, int _NumPoints, i
             verts->Color = CurrentColor;
 
             //#define VISUALIE_VERTICES
-    #ifdef VISUALIE_VERTICES
+#ifdef VISUALIE_VERTICES
             verts->Color = AColor4( Float4( i%255, i%255, i%255, 255 )/255.0f ).GetDWord();
-    #endif
+#endif
 
             pPoints += _Stride;
         }
@@ -457,6 +457,11 @@ void ADebugRenderer::DrawTriangles( Float3 const * _Triangles, int _NumTriangles
         cmd->NumVertices += numPoints;
         cmd->NumIndices += totalIndices;
     }
+}
+
+void ADebugRenderer::DrawQuad( Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, Float3 const & _P3, bool _TwoSided ) {
+    Float3 const Points[] = { _P0, _P1, _P2, _P3 };
+    DrawConvexPoly( Points, 4, _TwoSided );
 }
 
 void ADebugRenderer::DrawBox( Float3 const & _Position, Float3 const & _HalfExtents ) {

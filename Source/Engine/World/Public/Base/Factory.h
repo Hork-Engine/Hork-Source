@@ -42,10 +42,9 @@ class AClassMeta;
 class AAttributeMeta;
 //class APrecacheMeta;
 class ADummy;
-//class AResource;
-//class ABaseObject;
 
-class ANGIE_API AObjectFactory {
+class ANGIE_API AObjectFactory
+{
     AN_FORBID_COPY( AObjectFactory )
 
     friend class AClassMeta;
@@ -86,7 +85,8 @@ private:
     static AObjectFactory * FactoryList;
 };
 
-class ANGIE_API AClassMeta {
+class ANGIE_API AClassMeta
+{
     AN_FORBID_COPY( AClassMeta )
 
     friend class AObjectFactory;
@@ -104,7 +104,8 @@ public:
     AAttributeMeta const * GetAttribList() const { return AttributesHead; }
     //APrecacheMeta const * GetPrecacheList() const { return PrecacheHead; }
 
-    bool IsSubclassOf( AClassMeta const & _Superclass ) const {
+    bool IsSubclassOf( AClassMeta const & _Superclass ) const
+    {
         for ( AClassMeta const * meta = this ; meta ; meta = meta->SuperClass() ) {
             if ( meta->GetId() == _Superclass.GetId() ) {
                 return true;
@@ -114,7 +115,8 @@ public:
     }
 
     template< typename _Superclass >
-    bool IsSubclassOf() const {
+    bool IsSubclassOf() const
+    {
         return IsSubclassOf( _Superclass::ClassMeta() );
     }
 
@@ -160,110 +162,25 @@ private:
     //APrecacheMeta const * PrecacheTail;
 };
 
-AN_FORCEINLINE ADummy * AObjectFactory::CreateInstance( const char * _ClassName ) const {
+AN_FORCEINLINE ADummy * AObjectFactory::CreateInstance( const char * _ClassName ) const
+{
     AClassMeta const * classMeta = LookupClass( _ClassName );
     return classMeta ? classMeta->CreateInstance() : nullptr;
 }
 
-AN_FORCEINLINE ADummy * AObjectFactory::CreateInstance( uint64_t _ClassId ) const {
+AN_FORCEINLINE ADummy * AObjectFactory::CreateInstance( uint64_t _ClassId ) const
+{
     AClassMeta const * classMeta = LookupClass( _ClassId );
     return classMeta ? classMeta->CreateInstance() : nullptr;
 }
 
-AN_FORCEINLINE AClassMeta const * AObjectFactory::GetClassList() const {
+AN_FORCEINLINE AClassMeta const * AObjectFactory::GetClassList() const
+{
     return Classes;
 }
-#if 0
-enum class EAttributeType {
-    T_Byte,
-    T_Bool,
-    T_Int,
-    T_Float,
-    T_Float2,
-    T_Float3,
-    T_Float4,
-    T_Quat,
-    T_String,
-    T_Resource,
 
-    T_Max
-};
-
-template< typename T >
-/*AN_FORCEINLINE*/ EAttributeType GetAttributeType();
-
-template<>
-AN_FORCEINLINE EAttributeType GetAttributeType< byte >() { return EAttributeType::T_Byte; }
-
-template<>
-AN_FORCEINLINE EAttributeType GetAttributeType< bool >() { return EAttributeType::T_Bool; }
-
-template<>
-AN_FORCEINLINE EAttributeType GetAttributeType< int >() { return EAttributeType::T_Int; }
-
-template<>
-AN_FORCEINLINE EAttributeType GetAttributeType< float >() { return EAttributeType::T_Float; }
-
-template<>
-AN_FORCEINLINE EAttributeType GetAttributeType< Float2 >() { return EAttributeType::T_Float2; }
-
-template<>
-AN_FORCEINLINE EAttributeType GetAttributeType< Float3 >() { return EAttributeType::T_Float3; }
-
-template<>
-AN_FORCEINLINE EAttributeType GetAttributeType< Float4 >() { return EAttributeType::T_Float4; }
-
-template<>
-AN_FORCEINLINE EAttributeType GetAttributeType< Quat >() { return EAttributeType::T_Quat; }
-
-template<>
-AN_FORCEINLINE EAttributeType GetAttributeType< AString const & >() { return EAttributeType::T_String; }
-
-template<>
-AN_FORCEINLINE EAttributeType GetAttributeType< AString >() { return EAttributeType::T_String; }
-
-template<>
-AN_FORCEINLINE EAttributeType GetAttributeType< TRef< AResource > >() { return EAttributeType::T_Resource; }
-#endif
-//AN_FORCEINLINE AString AttrToString( byte const & v ) { return Math::ToString( v ); }
-//AN_FORCEINLINE AString AttrToString( bool const & v ) { return Math::ToString( v ); }
-//AN_FORCEINLINE AString AttrToString( int const & v ) { return Math::ToString( v ); }
-//AN_FORCEINLINE AString AttrToString( float const & v ) { return Math::ToString( *( (int *)&v ) ); }
-//AN_FORCEINLINE AString AttrToString( Float2 const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ); }
-//AN_FORCEINLINE AString AttrToString( Float3 const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ) + " " + Math::ToString( *( (int *)&v.Z ) ); }
-//AN_FORCEINLINE AString AttrToString( Float4 const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ) + " " + Math::ToString( *( (int *)&v.Z ) ) + " " + Math::ToString( *( (int *)&v.W ) ); }
-//AN_FORCEINLINE AString AttrToString( Quat const & v ) { return Math::ToString( *( (int *)&v.X ) ) + " " + Math::ToString( *( (int *)&v.Y ) ) + " " + Math::ToString( *( (int *)&v.Z ) ) + " " + Math::ToString( *( (int *)&v.W ) ); }
-//AN_FORCEINLINE AString AttrToString( AString const & v ) { return v; }
-//
-//AString AttrToString( AResource const * v );
-//
-//template< typename T >
-//AString AttrToString( TRef< T > const & v ) {
-//    return AttrToString( v.GetObject() );
-//}
-
-
-
-
-//template<>
-//AN_FORCEINLINE TRef< AResource > AttrFromString< TRef< AResource > >( AString const & v ) {
-//
-//}
-
-//template< typename T >
-//TRef< T > AttrFromString( AString const & v )
-//{
-//    return GetOrCreateResource< T::ReferencedType >( v.CStr() );
-//}
-
-//AString AttrToString( AResource const * v );
-//
-//template< typename T >
-//AString AttrToString( TRef< T > const & v ) {
-//    return AttrFromString( v.GetObject() );
-//}
-
-class ANGIE_API AAttributeMeta {
+class ANGIE_API AAttributeMeta
+{
     AN_FORBID_COPY( AAttributeMeta )
 
 public:
@@ -323,7 +240,8 @@ protected:
 };
 
 #if 0
-class ANGIE_API APrecacheMeta {
+class ANGIE_API APrecacheMeta
+{
     AN_FORBID_COPY( APrecacheMeta )
 
 public:
@@ -495,11 +413,11 @@ AN_FORCEINLINE void SetAttributeToString( AString const & Attribute, AString & S
 }
 
 template< typename ObjectType >
-class TAttributeMeta : public AAttributeMeta {
+class TAttributeMeta : public AAttributeMeta
+{
     AN_FORBID_COPY( TAttributeMeta )
 
 public:
-
     template< typename AttributeType >
     TAttributeMeta( AClassMeta const & _ClassMeta, const char * _Name,
                     void(ObjectType::*_Setter)( AttributeType ),
@@ -654,20 +572,25 @@ Base factory object class.
 Needs to resolve class meta data.
 
 */
-class ANGIE_API ADummy {
+class ANGIE_API ADummy
+{
     AN_FORBID_COPY( ADummy )
 
 public:
     typedef ADummy ThisClass;
     typedef AZoneAllocator Allocator;
-    class ThisClassMeta : public AClassMeta {
+    class ThisClassMeta : public AClassMeta
+    {
     public:
-        ThisClassMeta() : AClassMeta( AClassMeta::DummyFactory(), "ADummy", nullptr ) {
+        ThisClassMeta() : AClassMeta( AClassMeta::DummyFactory(), "ADummy", nullptr )
+        {
         }
-        ADummy * CreateInstance() const override {
+        ADummy * CreateInstance() const override
+        {
             return NewObject< ThisClass >();
         }
-        void DestroyInstance( ADummy * _Object ) const override {
+        void DestroyInstance( ADummy * _Object ) const override
+        {
             _Object->~ADummy();
             Allocator::Inst().Free( _Object );
         }
@@ -675,7 +598,8 @@ public:
         void RegisterAttributes();
     };
     template< typename T >
-    static T * NewObject() {
+    static T * NewObject()
+    {
         void * data = T::Allocator::Inst().ClearedAlloc( sizeof( T ) );
         ADummy * object = new (data) T;
         return static_cast< T * >( object );
@@ -686,12 +610,14 @@ protected:
     _AN_GENERATED_CLASS_BODY()
 };
 
-template< typename T > T * CreateInstanceOf() {
+template< typename T > T * CreateInstanceOf()
+{
     return static_cast< T * >( T::ClassMeta().CreateInstance() );
 }
 
 template< typename T >
-T * Upcast( ADummy * _Object ) {
+T * Upcast( ADummy * _Object )
+{
     if ( _Object && _Object->FinalClassMeta().IsSubclassOf< T >() ) {
         return static_cast< T * >( _Object );
     }

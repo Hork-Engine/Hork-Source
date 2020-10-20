@@ -474,13 +474,10 @@ void WTextEdit::DeleteCharsProxy( int _First, int _Count ) {
         _Count = CurTextLength - _First - 1;
     }
 
-    SWideChar * dst = TextData.ToPtr() + _First;
-    SWideChar const * src = TextData.ToPtr() + _First + _Count;
-
     CurTextLength -= _Count;
 
-    Core::Memmove( dst, src, ( CurTextLength - _First ) * sizeof( SWideChar ) );
-    dst[ CurTextLength ] = '\0';
+    Core::Memmove( &TextData[_First], &TextData[_First + _Count], ( CurTextLength - _First ) * sizeof( SWideChar ) );
+    TextData[CurTextLength] = '\0';
 
     UpdateWidgetSize();
 }
@@ -812,6 +809,42 @@ bool WTextEdit::Paste() {
     }
 
     return true;
+}
+
+WTextEdit & WTextEdit::SetText( const char * _Text ) {
+    int len = Core::UTF8StrLength( _Text );
+
+    TPodArray< SWideChar > wideStr;
+    wideStr.Resize( len + 1 );
+
+    SWideChar ch;
+    int i, byteLen;
+    i = 0;
+    while ( len-- > 0 ) {
+        byteLen = Core::WideCharDecodeUTF8( _Text, ch );
+        if ( !byteLen ) {
+            break;
+        }
+        _Text += byteLen;
+        if ( !FilterCharacter( ch ) ) {
+            continue;
+        }
+        wideStr[ i++ ] = ch;
+    }
+
+    wideStr[ i ] = 0;
+
+    return SetText( wideStr.ToPtr() );
+}
+
+WTextEdit & WTextEdit::SetText( const SWideChar * _Text ) {
+    int len = Core::WideStrLength( _Text );
+
+    SelectAll();
+
+    stb_textedit_paste( this, Stb, _Text, len );
+
+    return *this;
 }
 
 void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) {

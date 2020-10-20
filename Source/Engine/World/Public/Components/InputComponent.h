@@ -86,6 +86,60 @@ class AInputAction;
 class AInputMappings;
 class AInputComponent;
 
+#if 0
+class AInputDevice : public ARefCounted
+{
+public:
+    virtual void GetButtonsCount() = 0;
+    virtual int8_t * GetButtonState() = 0;
+};
+
+class AInputDeviceKeyboard
+{
+public:
+    AInputDeviceKeyboard()
+    {
+        Core::Memset( KeyboardButtonDown, 0xff, sizeof( KeyboardButtonDown ) );
+    }
+
+    void GetButtonsCount() override { return AN_ARRAY_SIZE( KeyboardButtonDown ); }
+    int8_t * GetButtonState() override { return KeyboardButtonDown; }
+
+private:
+    int8_t KeyboardButtonDown[ MAX_KEYBOARD_BUTTONS ];
+};
+
+class AInputDeviceMouse
+{
+public:
+    AInputDeviceMouse()
+    {
+        Core::Memset( MouseButtonDown, 0xff, sizeof( KeyboardButtonDown ) );
+    }
+
+    void GetButtonsCount() override { return AN_ARRAY_SIZE( MouseButtonDown ); }
+    int8_t * GetButtonState() override { return MouseButtonDown; }
+
+private:
+    int8_t MouseButtonDown[ MAX_MOUSE_BUTTONS ];
+};
+
+class AInputDeviceJoystick
+{
+public:
+    AInputDeviceJoystick()
+    {
+        Core::Memset( JoystickButtonDown, 0xff, sizeof( JoystickButtonDown ) );
+    }
+
+    void GetButtonsCount() override { return AN_ARRAY_SIZE( JoystickButtonDown ); }
+    int8_t * GetButtonState() override { return JoystickButtonDown; }
+
+private:
+    int8_t JoystickButtonDown[ MAX_JOYSTICK_BUTTONS ];
+};
+#endif
+
 class ANGIE_API AInputAxis final : public ABaseObject {
     AN_CLASS( AInputAxis, ABaseObject )
 
@@ -95,8 +149,8 @@ public:
 
     void Map( int _DevId, int _KeyToken, float _AxisScale, int _ControllerId );
 
-    uint8_t GetMouseAxes() const { return MappedMouseAxes; }
-    uint32_t GetJoystickAxes( int _Joystick ) const { return MappedJoystickAxes[ _Joystick ]; }
+    //uint8_t GetMouseAxes() const { return MappedMouseAxes; }
+    //uint32_t GetJoystickAxes( int _Joystick ) const { return MappedJoystickAxes[ _Joystick ]; }
 
 private:
     AInputAxis();
@@ -106,13 +160,13 @@ private:
     AInputMappings * Parent = nullptr;
 
     /** Keys mapped to this axis */
-    TPodArray< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
+    //TPodArray< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
 
     /** Mouse axes mapped to this axis */
-    uint8_t MappedMouseAxes = 0;
+    //uint8_t MappedMouseAxes = 0;
 
     /** Joystick axes mapped to this axis */
-    uint32_t MappedJoystickAxes[MAX_JOYSTICKS_COUNT];
+    //uint32_t MappedJoystickAxes[MAX_JOYSTICKS_COUNT];
 
     int IndexInArrayOfAxes = 0;
 };
@@ -134,7 +188,7 @@ private:
     AInputMappings * Parent = nullptr;
 
     /** Keys mapped to this action */
-    TPodArray< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
+    //TPodArray< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
 
     int IndexInArrayOfActions = 0;
 };
@@ -164,8 +218,11 @@ public:
     AInputAction * FindAction( const char * _ActionName );
 
     void MapAxis( const char * _AxisName, int _DevId, int _KeyToken, float _AxisScale, int _ControllerId );
+    void UnmapAxis( int _DevId, int _KeyToken );
+
     void MapAction( const char * _ActionName, int _DevId, int _KeyToken, int _ModMask, int _ControllerId );
-    void Unmap( int _DevId, int _KeyToken );
+    void UnmapAction( int _DevId, int _KeyToken, int _ModMask );
+
     void UnmapAll();
 
     const TPodArray< AInputAxis * > & GetAxes() const { return Axes; }
@@ -175,15 +232,18 @@ private:
     AInputMappings();
     ~AInputMappings();
 
-    struct SMapping {
-        int AxisOrActionIndex;      // -1 if not mapped
+    struct SMapping
+    {
+        int AxisOrActionIndex;
         float AxisScale;
         uint8_t ControllerId;
         bool bAxis;
         byte ModMask;
     };
 
-    SMapping * GetMapping( int _DevId, int _KeyToken );
+    using AArrayOfMappings = TPodArray< SMapping >;
+
+    AArrayOfMappings * GetKeyMappings( int _DevId, int _KeyToken );
 
     /** All known axes */
     TPodArray< AInputAxis * > Axes;
@@ -191,11 +251,11 @@ private:
     /** All known actions */
     TPodArray< AInputAction * > Actions;
 
-    SMapping KeyboardMappings[ MAX_KEYBOARD_BUTTONS ];
-    SMapping MouseMappings[ MAX_MOUSE_BUTTONS ];
-    SMapping MouseAxisMappings[ MAX_MOUSE_AXES ];
-    SMapping JoystickMappings[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_BUTTONS ];
-    SMapping JoystickAxisMappings[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
+    AArrayOfMappings KeyboardMappings[ MAX_KEYBOARD_BUTTONS ];
+    AArrayOfMappings MouseMappings[ MAX_MOUSE_BUTTONS ];
+    AArrayOfMappings MouseAxisMappings[ MAX_MOUSE_AXES ];
+    AArrayOfMappings JoystickMappings[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_BUTTONS ];
+    AArrayOfMappings JoystickAxisMappings[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
 };
 
 class ANGIE_API AInputComponent final : public AActorComponent {
@@ -300,7 +360,8 @@ public:
     static AInputComponent * GetInputComponents() { return InputComponents; }
 
 protected:
-    struct SAxisBinding {
+    struct SAxisBinding
+    {
         /** Axis name */
         AString Name;
         /** Binding callback */
@@ -311,7 +372,8 @@ protected:
         bool bExecuteEvenWhenPaused;
     };
 
-    struct SActionBinding {
+    struct SActionBinding
+    {
         /** Action name */
         AString Name;
         /** Binding callback */
@@ -320,7 +382,8 @@ protected:
         bool bExecuteEvenWhenPaused;
     };
 
-    struct SPressedKey {
+    struct SPressedKey
+    {
         unsigned short Key;
         short AxisBinding;
         short ActionBinding;
@@ -371,10 +434,12 @@ protected:
     int NumPressedKeys = 0;
 
     // Index to PressedKeys array or -1 if button is up
-    char * DeviceButtonDown[ MAX_INPUT_DEVICES ];
-    char KeyboardButtonDown[ MAX_KEYBOARD_BUTTONS ];
-    char MouseButtonDown[ MAX_MOUSE_BUTTONS ];
-    char JoystickButtonDown[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_BUTTONS ];
+    int8_t * DeviceButtonDown[ MAX_INPUT_DEVICES ];
+    int8_t KeyboardButtonDown[ MAX_KEYBOARD_BUTTONS ];
+    int8_t MouseButtonDown[ MAX_MOUSE_BUTTONS ];
+    int8_t JoystickButtonDown[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_BUTTONS ];
+
+    //TRef< AInputDevice > Devices[ MAX_INPUT_DEVICES ];
 
     float MouseAxisStateX = 0;
     float MouseAxisStateY = 0;
@@ -382,9 +447,9 @@ protected:
     TCallback< void( SWideChar, int, double ) > CharacterCallback;
     bool bCharacterCallbackExecuteEvenWhenPaused = false;
 
+    // Global list of input components
     AInputComponent * Next = nullptr;
     AInputComponent * Prev = nullptr;
-
     static AInputComponent * InputComponents;
     static AInputComponent * InputComponentsTail;
 };

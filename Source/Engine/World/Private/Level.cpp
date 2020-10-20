@@ -42,9 +42,9 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 #include "PrimitiveLinkPool.h"
 
-ARuntimeVariable dd_LevelAreaBounds( _CTS( "dd_LevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_LevelIndoorBounds( _CTS( "dd_LevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_LevelPortals( _CTS( "dd_LevelPortals" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawLevelAreaBounds( _CTS( "com_DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawLevelIndoorBounds( _CTS( "com_DrawLevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawLevelPortals( _CTS( "com_DrawLevelPortals" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ALevel )
 
@@ -549,7 +549,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
                                   sizeof(Float3), LightPortalIndexBuffer.ToPtr(), LightPortalIndexBuffer.Size() );
 #endif
 
-    if ( dd_LevelAreaBounds ) {
+    if ( com_DrawLevelAreaBounds ) {
         InRenderer->SetDepthTest( false );
         InRenderer->SetColor( AColor4( 0,1,0,0.5f) );
         for ( SVisArea & area : Areas ) {
@@ -557,7 +557,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
         }
     }
 
-    if ( dd_LevelPortals ) {
+    if ( com_DrawLevelPortals ) {
 //        InRenderer->SetDepthTest( false );
 //        InRenderer->SetColor(1,0,0,1);
 //        for ( ALevelPortal & portal : Portals ) {
@@ -618,7 +618,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
         }
     }
 
-    if ( dd_LevelIndoorBounds ) {
+    if ( com_DrawLevelIndoorBounds ) {
         InRenderer->SetDepthTest( false );
         InRenderer->DrawAABB( IndoorBounds );
     }

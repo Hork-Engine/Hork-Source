@@ -31,7 +31,6 @@ SOFTWARE.
 #pragma once
 
 #include <Renderer/RenderBackend.h>
-#include <Runtime/Public/RuntimeVariable.h>
 #include <Core/Public/BV/BvAxisAlignedBox.h>
 #include <Core/Public/BV/BvOrientedBox.h>
 
@@ -88,6 +87,8 @@ public:
     void DrawTriangle( Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, bool _TwoSided = false );
 
     void DrawTriangles( Float3 const * _Triangles, int _NumTriangles, int _Stride, bool _TwoSided = false );
+
+    void DrawQuad( Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, Float3 const & _P3, bool _TwoSided = false );
 
     void DrawBox( Float3 const & _Position, Float3 const & _HalfExtents );
 

@@ -98,6 +98,10 @@ public:
 
     void ScrollToCursor();
 
+    WTextEdit & SetText( const char * _Text );
+
+    WTextEdit & SetText( const SWideChar * _Text );
+
     SWideChar * GetText() { return TextData.ToPtr(); }
 
     SWideChar const * GetText() const { return TextData.ToPtr(); }

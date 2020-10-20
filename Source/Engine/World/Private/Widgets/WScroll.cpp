@@ -43,6 +43,9 @@ WScroll::WScroll() {
     ButtonWidth = 0.0f;
     SliderRounding = 0.0f;
     BackgroundColor = AColor4( 0.05f, 0.05f, 0.05f );
+    ButtonColor = AColor4( 1, 0, 1, 1 );
+    SliderBackgroundColor = AColor4( 0.4f, 0.4f, 0.4f );
+    SliderColor = AColor4( 1, 1, 1, 1 );
     Action = A_NONE;
     DragCursor = 0.0f;
     UpdateMargin();
@@ -161,6 +164,21 @@ WScroll & WScroll::SetSliderRounding( float _Rounding ) {
 
 WScroll & WScroll::SetBackgroundColor( AColor4 const & _Color ) {
     BackgroundColor = _Color;
+    return *this;
+}
+
+WScroll & WScroll::SetButtonColor( AColor4 const & _Color ) {
+    ButtonColor = _Color;
+    return *this;
+}
+
+WScroll & WScroll::SetSliderBackgroundColor( AColor4 const & _Color ) {
+    SliderBackgroundColor = _Color;
+    return *this;
+}
+
+WScroll & WScroll::SetSliderColor( AColor4 const & _Color ) {
+    SliderColor = _Color;
     return *this;
 }
 
@@ -565,23 +583,23 @@ void WScroll::OnDrawEvent( ACanvas & _Canvas ) {
         if ( bShowButtons ) {
             // Left button
             if ( geometry.LeftButtonMaxs.X > geometry.LeftButtonMins.X && geometry.LeftButtonMaxs.Y > geometry.LeftButtonMins.Y ) {
-                _Canvas.DrawRect( geometry.LeftButtonMins, geometry.LeftButtonMaxs, AColor4(1,0,1,1) );
+                _Canvas.DrawRect( geometry.LeftButtonMins, geometry.LeftButtonMaxs, ButtonColor );
             }
 
             // Right button
             if ( geometry.RightButtonMaxs.X > geometry.RightButtonMins.X && geometry.RightButtonMaxs.Y > geometry.RightButtonMins.Y ) {
-                _Canvas.DrawRect( geometry.RightButtonMins, geometry.RightButtonMaxs, AColor4(1,0,1,1) );
+                _Canvas.DrawRect( geometry.RightButtonMins, geometry.RightButtonMaxs, ButtonColor );
             }
         }
 
         // Draw slider background
         if ( geometry.HSliderBgMaxs.X > geometry.HSliderBgMins.X && geometry.HSliderBgMaxs.Y > geometry.HSliderBgMins.Y ) {
-            _Canvas.DrawRectFilled( geometry.HSliderBgMins, geometry.HSliderBgMaxs, AColor4(0.4f,0.4f,0.4f) );
+            _Canvas.DrawRectFilled( geometry.HSliderBgMins, geometry.HSliderBgMaxs, SliderBackgroundColor );
         }
 
         // Draw slider
         if ( geometry.HSliderMaxs.X > geometry.HSliderMins.X && geometry.HSliderMaxs.Y > geometry.HSliderMins.Y ) {
-            _Canvas.DrawRectFilled( geometry.HSliderMins, geometry.HSliderMaxs, AColor4(1,1,1,1), SliderRounding );
+            _Canvas.DrawRectFilled( geometry.HSliderMins, geometry.HSliderMaxs, SliderColor, SliderRounding );
         }
     }
 
@@ -589,23 +607,23 @@ void WScroll::OnDrawEvent( ACanvas & _Canvas ) {
         if ( bShowButtons ) {
             // Up button
             if ( geometry.UpButtonMaxs.X > geometry.UpButtonMins.X && geometry.UpButtonMaxs.Y > geometry.UpButtonMins.Y ) {
-                _Canvas.DrawRect( geometry.UpButtonMins, geometry.UpButtonMaxs, AColor4(1,0,1,1) );
+                _Canvas.DrawRect( geometry.UpButtonMins, geometry.UpButtonMaxs, ButtonColor );
             }
 
             // Down button
             if ( geometry.DownButtonMaxs.X > geometry.DownButtonMins.X && geometry.DownButtonMaxs.Y > geometry.DownButtonMins.Y ) {
-                _Canvas.DrawRect( geometry.DownButtonMins, geometry.DownButtonMaxs, AColor4(1,0,1,1) );
+                _Canvas.DrawRect( geometry.DownButtonMins, geometry.DownButtonMaxs, ButtonColor );
             }
         }
 
         // Draw slider background
         if ( geometry.VSliderBgMaxs.X > geometry.VSliderBgMins.X && geometry.VSliderBgMaxs.Y > geometry.VSliderBgMins.Y ) {
-            _Canvas.DrawRectFilled( geometry.VSliderBgMins, geometry.VSliderBgMaxs, AColor4(0.4f,0.4f,0.4f) );
+            _Canvas.DrawRectFilled( geometry.VSliderBgMins, geometry.VSliderBgMaxs, SliderBackgroundColor );
         }
 
         // Draw slider
         if ( geometry.VSliderMaxs.X > geometry.VSliderMins.X && geometry.VSliderMaxs.Y > geometry.VSliderMins.Y ) {
-            _Canvas.DrawRectFilled( geometry.VSliderMins, geometry.VSliderMaxs, AColor4(1,1,1,1), SliderRounding );
+            _Canvas.DrawRectFilled( geometry.VSliderMins, geometry.VSliderMaxs, SliderColor, SliderRounding );
         }
     }
 }

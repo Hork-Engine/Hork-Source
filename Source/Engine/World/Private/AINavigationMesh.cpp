@@ -33,6 +33,7 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Public/Components/MeshComponent.h>
 #include <Runtime/Public/Runtime.h>
+#include <Runtime/Public/RuntimeVariable.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/Compress.h>
 #include <Core/Public/BV/BvIntersect.h>
@@ -54,10 +55,10 @@ SOFTWARE.
 #include <DebugDraw.h>
 #include <float.h>
 
-ARuntimeVariable dd_NavMeshBVTree( _CTS( "dd_NavMeshBVTree" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_NavMeshNodes( _CTS( "dd_NavMeshNodes" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_NavMesh( _CTS( "dd_NavMesh" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_NavMeshTileBounds( _CTS( "dd_NavMeshTileBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawNavMeshBVTree( _CTS( "com_DrawNavMeshBVTree" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawNavMeshNodes( _CTS( "com_DrawNavMeshNodes" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawNavMesh( _CTS( "com_DrawNavMesh" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawNavMeshTileBounds( _CTS( "com_DrawNavMeshTileBounds" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_SIZEOF_STATIC_CHECK( SNavPolyRef, sizeof( dtPolyRef ) );
 
@@ -1326,15 +1327,15 @@ void AAINavigationMesh::DrawDebug( ADebugRenderer * InRenderer ) {
     SDebugDrawCallback callback;
     callback.DD = InRenderer;
 
-    if ( dd_NavMeshBVTree ) {
+    if ( com_DrawNavMeshBVTree ) {
         duDebugDrawNavMeshBVTree( &callback, *NavMesh );
     }
 
-    if ( dd_NavMeshNodes ) {
+    if ( com_DrawNavMeshNodes ) {
         duDebugDrawNavMeshNodes( &callback, *NavQuery );
     }
 
-    if ( dd_NavMesh ) {
+    if ( com_DrawNavMesh ) {
         duDebugDrawNavMeshWithClosedList( &callback, *NavMesh, *NavQuery, DU_DRAWNAVMESH_OFFMESHCONS|DU_DRAWNAVMESH_CLOSEDLIST|DU_DRAWNAVMESH_COLOR_TILES );
     }
     //duDebugDrawNavMeshPolysWithFlags( &callback, *NavMesh, AI_NAV_MESH_FLAGS_DISABLED/*AI_NAV_MESH_FLAGS_DISABLED*/, duRGBA(0,0,0,128));
@@ -1363,7 +1364,7 @@ void AAINavigationMesh::DrawDebug( ADebugRenderer * InRenderer ) {
     }
 #endif
 
-    if ( dd_NavMeshTileBounds ) {
+    if ( com_DrawNavMeshTileBounds ) {
         BvAxisAlignedBox boundingBox;
         InRenderer->SetDepthTest(false);
         InRenderer->SetColor( AColor4( 1,1,1,1 ) );

@@ -143,6 +143,9 @@ public:
 
     bool IsDuringConstruction() const { return bDuringConstruction; }
 
+    /** Actor spawned for editing */
+    bool IsInEditor() const { return bInEditor; }
+
 protected:
 
     bool bCanEverTick = false;
@@ -220,4 +223,5 @@ private:
 
     bool bPendingKill = false;
     bool bDuringConstruction = true;
+    bool bInEditor = false;
 };

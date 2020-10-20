@@ -31,6 +31,7 @@ SOFTWARE.
 #include <World/Public/Components/SpotLightComponent.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 static const float DEFAULT_RADIUS = 1.0f;
 static const float DEFAULT_INNER_CONE_ANGLE = 100.0f;
@@ -39,7 +40,7 @@ static const float DEFAULT_SPOT_EXPONENT = 1.0f;
 static const float MIN_CONE_ANGLE = 1.0f;
 static const float MIN_RADIUS = 0.01f;
 
-ARuntimeVariable dd_SpotLights( _CTS( "dd_SpotLights" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawSpotLights( _CTS( "com_DrawSpotLights" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ASpotLightComponent )
 
@@ -152,7 +153,7 @@ void ASpotLightComponent::UpdateWorldBounds() {
 void ASpotLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( dd_SpotLights )
+    if ( com_DrawSpotLights )
     {
         if ( Primitive.VisPass == InRenderer->GetVisPass() )
         {

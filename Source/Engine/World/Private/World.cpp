@@ -206,6 +206,8 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters ) {
     actor->Level->Actors.Append( actor );
     actor->IndexInLevelArrayOfActors = actor->Level->Actors.Size() - 1;
 
+    actor->bInEditor = _SpawnParameters.bInEditor;
+
     if ( templateActor ) {
         actor->Clone( templateActor );
     } else {
@@ -516,19 +518,19 @@ void AWorld::Tick( float _TimeStep ) {
     GameRunningTimeMicroAfterTick += frameDuration;
 }
 
-bool AWorld::Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter ) const {
+bool AWorld::Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const {
     return VSD_Raycast( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 
-bool AWorld::RaycastBounds( TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter ) const {
+bool AWorld::RaycastBounds( TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const {
     return VSD_RaycastBounds( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 
-bool AWorld::RaycastClosest( SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter ) const {
+bool AWorld::RaycastClosest( SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const {
     return VSD_RaycastClosest( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 
-bool AWorld::RaycastClosestBounds( SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter ) const {
+bool AWorld::RaycastClosestBounds( SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const {
     return VSD_RaycastClosestBounds( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 

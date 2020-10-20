@@ -41,6 +41,7 @@ WWindow::WWindow() {
     TextHorizontalAlignment = WIDGET_ALIGNMENT_CENTER;
     TextVerticalAlignment = WIDGET_ALIGNMENT_CENTER;
     CaptionColor = AColor4(0.1f,0.4f,0.8f);
+    CaptionColorNotActive = AColor4( 0.15f, 0.15f, 0.15f );
     BorderColor = AColor4(1,1,1,0.5f);
     RoundingCorners = CORNER_ROUND_TOP;
     BorderRounding = 8;
@@ -100,6 +101,11 @@ WWindow & WWindow::SetTextOffset( Float2 const & _Offset ) {
 
 WWindow & WWindow::SetCaptionColor( AColor4 const & _Color ) {
     CaptionColor = _Color;
+    return *this;
+}
+
+WWindow & WWindow::SetCaptionColorNotActive( AColor4 const & _Color ) {
+    CaptionColorNotActive = _Color;
     return *this;
 }
 
@@ -228,6 +234,8 @@ void WWindow::OnDrawEvent( ACanvas & _Canvas ) {
         }
     }
 
+    Super::OnDrawEvent( _Canvas );
+
     // Draw border
     if ( bWindowBorder ) {
 
@@ -262,7 +270,7 @@ void WWindow::OnDrawEvent( ACanvas & _Canvas ) {
         if ( focus ) {
             _Canvas.DrawRectFilled( mins, mins + captionSize, CaptionColor, BorderRounding, captionCorners );
         } else {
-            _Canvas.DrawRectFilled( mins, mins + captionSize, AColor4(0.3f,0.3f,0.3f)/*CaptionColor*/, BorderRounding, captionCorners );
+            _Canvas.DrawRectFilled( mins, mins + captionSize, CaptionColorNotActive, BorderRounding, captionCorners );
         }
 
         // Draw caption border

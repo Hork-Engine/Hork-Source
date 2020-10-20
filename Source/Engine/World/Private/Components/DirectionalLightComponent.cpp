@@ -33,8 +33,9 @@ SOFTWARE.
 #include <World/Public/Base/DebugRenderer.h>
 #include <Core/Public/Logger.h>
 #include <Renderer/VertexMemoryGPU.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
-ARuntimeVariable dd_DirectionalLights( _CTS( "dd_DirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawDirectionalLights( _CTS( "com_DrawDirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable com_ShadowCascadeSplitLambda( _CTS( "com_ShadowCascadeSplitLambda" ), _CTS( "1.0" ) );
 
 static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
@@ -177,7 +178,7 @@ Float4 const & ADirectionalLightComponent::GetEffectiveColor() const {
 void ADirectionalLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( dd_DirectionalLights ) {
+    if ( com_DrawDirectionalLights ) {
         Float3 pos = GetWorldPosition();
         InRenderer->SetDepthTest( false );
         InRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );

@@ -31,10 +31,11 @@ SOFTWARE.
 #include <World/Public/Components/IBLComponent.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 constexpr float DEFAULT_RADIUS = 1.0f;
 
-ARuntimeVariable dd_IBL( _CTS( "dd_IBL" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawIBL( _CTS( "com_DrawIBL" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( AIBLComponent )
 
@@ -88,7 +89,7 @@ void AIBLComponent::UpdateWorldBounds() {
 void AIBLComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( dd_IBL )
+    if ( com_DrawIBL )
     {
         if ( Primitive.VisPass == InRenderer->GetVisPass() )
         {

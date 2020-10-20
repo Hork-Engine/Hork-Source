@@ -55,12 +55,16 @@ struct SActorSpawnInfo
     /** Who spawn the actor */
     APawn * Instigator;
 
+    /** Actor spawned for editing */
+    bool bInEditor;
+
     SActorSpawnInfo() = delete;
 
     SActorSpawnInfo( AClassMeta const * _ActorTypeClassMeta )
         : SpawnTransform( Float3::Zero(), Quat::Identity() )
         , Level( nullptr )
         , Instigator( nullptr )
+        , bInEditor( false )
         , Template( nullptr )
         , ActorTypeClassMeta( _ActorTypeClassMeta )
     {
@@ -406,16 +410,16 @@ public:
     bool IsPendingKill() const { return bPendingKill; }
 
     /** Per-triangle raycast */
-    bool Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const;
+    bool Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr ) const;
 
     /** Per-bounds raycast */
-    bool RaycastBounds( TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const;
+    bool RaycastBounds( TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr ) const;
 
     /** Per-triangle raycast */
-    bool RaycastClosest( SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const;
+    bool RaycastClosest( SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr ) const;
 
     /** Per-bounds raycast */
-    bool RaycastClosestBounds( SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter * _Filter = nullptr ) const;
+    bool RaycastClosestBounds( SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr ) const;
 
     /** Trace collision bodies */
     bool Trace( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
@@ -771,7 +775,7 @@ struct TComponentIterator {
     }
 
 private:
-    TPodArray< AActorComponent * > const & Components;
+    AArrayOfActorComponents const & Components;
     T * Component;
     int i;
 };

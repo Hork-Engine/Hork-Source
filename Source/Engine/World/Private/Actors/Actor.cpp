@@ -34,10 +34,11 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Public/Timer.h>
 #include <Core/Public/Logger.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 AN_CLASS_META( AActor )
 
-ARuntimeVariable dd_RootComponentAxis( _CTS( "dd_RootComponentAxis" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawRootComponentAxis( _CTS( "com_DrawRootComponentAxis" ), _CTS( "0" ), VAR_CHEAT );
 
 static uint32_t UniqueName = 0;
 
@@ -343,7 +344,7 @@ void AActor::DrawDebug( ADebugRenderer * InRenderer ) {
         component->DrawDebug( InRenderer );
     }
 
-    if ( dd_RootComponentAxis ) {
+    if ( com_DrawRootComponentAxis ) {
         if ( RootComponent ) {
             InRenderer->SetDepthTest( false );
             InRenderer->DrawAxis( RootComponent->GetWorldTransformMatrix(), false );

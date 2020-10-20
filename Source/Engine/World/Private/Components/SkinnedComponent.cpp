@@ -43,12 +43,12 @@ SOFTWARE.
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Renderer/VertexMemoryGPU.h>
-
+#include <Runtime/Public/RuntimeVariable.h>
 #include <BulletSoftBody/btSoftBody.h>
 
 #include "../BulletCompatibility/BulletCompatibility.h"
 
-ARuntimeVariable dd_Skeleton( _CTS( "dd_Skeleton" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawSkeleton( _CTS( "com_DrawSkeleton" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ASkinnedComponent )
 
@@ -511,7 +511,7 @@ void ASkinnedComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
     // Draw skeleton
-    if ( dd_Skeleton ) {
+    if ( com_DrawSkeleton ) {
         InRenderer->SetColor( AColor4( 1,0,0,1 ) );
         InRenderer->SetDepthTest( false );
         TPodArray< SJoint > const & joints = Skeleton->GetJoints();

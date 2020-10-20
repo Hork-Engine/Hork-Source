@@ -32,6 +32,7 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
 #include <Core/Public/Logger.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 #include "../BulletCompatibility/BulletCompatibility.h"
 
@@ -42,12 +43,12 @@ SOFTWARE.
 #define MIN_MASS 0.001f
 #define MAX_MASS 1000.0f
 
-ARuntimeVariable dd_CollisionModel( _CTS( "dd_CollisionModel" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_StaticCollisionBounds( _CTS( "dd_StaticCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_DynamicCollisionBounds( _CTS( "dd_DynamicCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_KinematicCollisionBounds( _CTS( "dd_KinematicCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_TriggerBounds( _CTS( "dd_TriggerBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_CenterOfMass( _CTS( "dd_CenterOfMass" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawCollisionModel( _CTS( "com_DrawCollisionModel" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawStaticCollisionBounds( _CTS( "com_DrawStaticCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawDynamicCollisionBounds( _CTS( "com_DrawDynamicCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawKinematicCollisionBounds( _CTS( "com_DrawKinematicCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawTriggerBounds( _CTS( "com_DrawTriggerBounds" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawCenterOfMass( _CTS( "com_DrawCenterOfMass" ), _CTS( "0" ), VAR_CHEAT );
 
 static constexpr bool bUseInternalEdgeUtility = true;
 
@@ -234,6 +235,8 @@ void APhysicalBody::CreateRigidBody() {
     AN_ASSERT( RigidBody == nullptr );
     AN_ASSERT( CompoundShape == nullptr );
 
+    bool bInEditor = GetParentActor()->IsInEditor();
+
     CachedScale = GetWorldScale();
 
     MotionState = b3New( SPhysicalBodyMotionState );
@@ -244,11 +247,11 @@ void APhysicalBody::CreateRigidBody() {
     btVector3 localInertia( 0.0f, 0.0f, 0.0f );
 
     float mass = Math::Clamp( Mass, MIN_MASS, MAX_MASS );
-    if ( MotionBehavior == MB_SIMULATED ) {
+    if ( MotionBehavior == MB_SIMULATED && !bInEditor ) {
         CompoundShape->calculateLocalInertia( mass, localInertia );
     }
 
-    btRigidBody::btRigidBodyConstructionInfo constructInfo( MotionBehavior == MB_SIMULATED ? mass : 0.0f, MotionState, CompoundShape, localInertia );
+    btRigidBody::btRigidBodyConstructionInfo constructInfo( MotionBehavior == MB_SIMULATED && !bInEditor ? mass : 0.0f, MotionState, CompoundShape, localInertia );
 
     constructInfo.m_linearDamping = LinearDamping;
     constructInfo.m_angularDamping = AngularDamping;
@@ -262,7 +265,7 @@ void APhysicalBody::CreateRigidBody() {
     RigidBody = b3New( btRigidBody, constructInfo );
     RigidBody->setUserPointer( this );
 
-    UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, MotionBehavior );
+    UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, bInEditor ? MB_STATIC : MotionBehavior );
 
     // transform already setup in motion state
 #if 0
@@ -332,6 +335,8 @@ void APhysicalBody::UpdatePhysicsAttribs() {
 
     //btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->PhysicsWorld;
 
+    bool bInEditor = GetParentActor()->IsInEditor();
+
     btTransform const & centerOfMassTransform = RigidBody->getWorldTransform();
     Float3 position = btVectorToFloat3( centerOfMassTransform.getOrigin() - centerOfMassTransform.getBasis() * btVectorToFloat3( MotionState->CenterOfMass ) );
 
@@ -343,13 +348,13 @@ void APhysicalBody::UpdatePhysicsAttribs() {
     btVector3 localInertia( 0.0f, 0.0f, 0.0f );
 
     float mass = Math::Clamp( Mass, MIN_MASS, MAX_MASS );
-    if ( MotionBehavior == MB_SIMULATED ) {
+    if ( MotionBehavior == MB_SIMULATED && !bInEditor ) {
         CompoundShape->calculateLocalInertia( mass, localInertia );
     }
 
-    RigidBody->setMassProps( MotionBehavior == MB_SIMULATED ? mass : 0.0f, localInertia );
+    RigidBody->setMassProps( MotionBehavior == MB_SIMULATED && !bInEditor ? mass : 0.0f, localInertia );
 
-    UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, MotionBehavior );
+    UpdateRigidBodyCollisionShape( RigidBody, CompoundShape, bTrigger, bInEditor ? MB_STATIC : MotionBehavior );
 
     // Update position with new center of mass
     SetCenterOfMassPosition( position );
@@ -389,7 +394,9 @@ void APhysicalBody::OnTransformDirty() {
                     SetCenterOfMassPosition( position );
                 }
 
-                GLogger.Printf( "WARNING: Set transform for non-KINEMATIC body %s\n", GetObjectNameCStr() );
+                if ( !GetParentActor()->IsInEditor() ) {
+                    GLogger.Printf( "WARNING: Set transform for non-KINEMATIC body %s\n", GetObjectNameCStr() );
+                }
             }
         }
 
@@ -399,7 +406,7 @@ void APhysicalBody::OnTransformDirty() {
         }
     }
     else {
-        if ( MotionBehavior != MB_KINEMATIC && !GetParentActor()->IsDuringConstruction() ) {
+        if ( MotionBehavior != MB_KINEMATIC && !GetParentActor()->IsDuringConstruction() && !GetParentActor()->IsInEditor() ) {
             GLogger.Printf( "WARNING: Set transform for non-KINEMATIC body %s\n", GetObjectNameCStr() );
         }
     }
@@ -707,7 +714,7 @@ Float3 APhysicalBody::GetCenterOfMassWorldPosition() const {
 }
 
 void APhysicalBody::ActivatePhysics() {
-    if ( MotionBehavior == MB_SIMULATED ) {
+    if ( MotionBehavior == MB_SIMULATED && !GetParentActor()->IsInEditor() ) {
         if ( RigidBody ) {
             RigidBody->activate( true );
         }
@@ -1155,7 +1162,7 @@ void APhysicalBody::RemoveCollisionIgnoreActor( AActor * _Actor ) {
 void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( dd_CollisionModel ) {
+    if ( com_DrawCollisionModel ) {
         TPodArray< Float3 > collisionVertices;
         TPodArray< unsigned int > collisionIndices;
 
@@ -1179,7 +1186,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
         InRenderer->DrawTriangleSoupWireframe( collisionVertices.ToPtr(), sizeof(Float3), collisionIndices.ToPtr(), collisionIndices.Size() );
     }
 
-    if ( bTrigger && dd_TriggerBounds ) {
+    if ( bTrigger && com_DrawTriggerBounds ) {
         TPodArray< BvAxisAlignedBox > boundingBoxes;
 
         GetCollisionBodiesWorldBounds( boundingBoxes );
@@ -1190,7 +1197,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
             InRenderer->DrawAABB( bb );
         }
     } else {
-        if ( MotionBehavior == MB_STATIC && dd_StaticCollisionBounds ) {
+        if ( MotionBehavior == MB_STATIC && com_DrawStaticCollisionBounds ) {
             TPodArray< BvAxisAlignedBox > boundingBoxes;
 
             GetCollisionBodiesWorldBounds( boundingBoxes );
@@ -1202,7 +1209,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
             }
         }
 
-        if ( MotionBehavior == MB_SIMULATED && dd_DynamicCollisionBounds ) {
+        if ( MotionBehavior == MB_SIMULATED && com_DrawDynamicCollisionBounds ) {
             TPodArray< BvAxisAlignedBox > boundingBoxes;
 
             GetCollisionBodiesWorldBounds( boundingBoxes );
@@ -1214,7 +1221,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
             }
         }
 
-        if ( MotionBehavior == MB_KINEMATIC && dd_KinematicCollisionBounds ) {
+        if ( MotionBehavior == MB_KINEMATIC && com_DrawKinematicCollisionBounds ) {
             TPodArray< BvAxisAlignedBox > boundingBoxes;
 
             GetCollisionBodiesWorldBounds( boundingBoxes );
@@ -1227,7 +1234,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer ) {
         }
     }
 
-    if ( dd_CenterOfMass ) {
+    if ( com_DrawCenterOfMass ) {
         if ( RigidBody ) {
             Float3 centerOfMass = GetCenterOfMassWorldPosition();
 

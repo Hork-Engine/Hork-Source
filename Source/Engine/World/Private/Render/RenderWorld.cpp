@@ -36,9 +36,10 @@ SOFTWARE.
 #include <World/Public/Components/SpotLightComponent.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Runtime/Public/Runtime.h>
+#include <Runtime/Public/RuntimeVariable.h>
 #include "LightVoxelizer.h"
 
-ARuntimeVariable dd_FrustumClusters( _CTS( "dd_FrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawFrustumClusters( _CTS( "com_DrawFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
 
 ARenderWorld::ARenderWorld( AWorld * InOwnerWorld )
     : pOwnerWorld( InOwnerWorld )
@@ -71,7 +72,7 @@ void ARenderWorld::RemoveDirectionalLight( ADirectionalLightComponent * _Light )
 
 void ARenderWorld::DrawDebug( ADebugRenderer * InRenderer )
 {
-    if ( dd_FrustumClusters ) {
+    if ( com_DrawFrustumClusters ) {
         GLightVoxelizer.DrawVoxels( InRenderer );
     }
 }

@@ -34,10 +34,11 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/BV/BvIntersect.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 #include <algorithm>    // find
 
-ARuntimeVariable dd_Sockets( _CTS( "dd_Sockets" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawSockets( _CTS( "com_DrawSockets" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ASceneComponent )
 
@@ -900,7 +901,7 @@ void ASceneComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
     // Draw sockets
-    if ( dd_Sockets ) {
+    if ( com_DrawSockets ) {
         Float3x4 transform;
         Float3 worldScale;
         Quat worldRotation;

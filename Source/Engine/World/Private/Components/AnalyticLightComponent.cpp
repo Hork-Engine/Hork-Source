@@ -31,6 +31,7 @@ SOFTWARE.
 #include <World/Public/Components/AnalyticLightComponent.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 static const float DEFAULT_LUMENS = 3000.0f;
 static const float DEFAULT_TEMPERATURE = 6590.0f;

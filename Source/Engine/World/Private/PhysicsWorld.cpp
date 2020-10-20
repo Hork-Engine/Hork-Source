@@ -56,11 +56,11 @@ SOFTWARE.
 
 #define REF_AWARE
 
-ARuntimeVariable dd_CollisionShapeWireframe( _CTS( "dd_CollisionShapeWireframe" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_ContactPoints( _CTS( "dd_ContactPoints" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_Constraints( _CTS( "dd_Constraints" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable dd_ConstraintLimits( _CTS( "dd_ConstraintLimits" ), _CTS( "0" ), VAR_CHEAT );
-//ARuntimeVariable dd_CollisionShapeNormals( _CTS( "dd_CollisionShapeNormals" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawCollisionShapeWireframe( _CTS( "com_DrawCollisionShapeWireframe" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawContactPoints( _CTS( "com_DrawContactPoints" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawConstraints( _CTS( "com_DrawConstraints" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawConstraintLimits( _CTS( "com_DrawConstraintLimits" ), _CTS( "0" ), VAR_CHEAT );
+//ARuntimeVariable com_DrawCollisionShapeNormals( _CTS( "com_DrawCollisionShapeNormals" ), _CTS( "0" ), VAR_CHEAT );
 
 ARuntimeVariable com_NoPhysicsSimulation( _CTS( "com_NoPhysicsSimulation" ), _CTS( "0" ), VAR_CHEAT );
 
@@ -911,8 +911,7 @@ void APhysicsWorld::OnPostPhysics( btDynamicsWorld * _World, float _TimeStep ) {
 
 void APhysicsWorld::Simulate( float _TimeStep )
 {
-    if ( !com_NoPhysicsSimulation )
-    {
+    if ( !com_NoPhysicsSimulation ) {
         const float FixedTimeStep = 1.0f / PhysicsHertz;
 
         int numSimulationSteps = Math::Floor( _TimeStep * PhysicsHertz ) + 1.0f;
@@ -932,7 +931,8 @@ void APhysicsWorld::Simulate( float _TimeStep )
         if ( bEnablePhysicsInterpolation ) {
             TimeAccumulation = 0;
             DynamicsWorld->stepSimulation( _TimeStep, numSimulationSteps, FixedTimeStep );
-        } else {
+        }
+        else {
             TimeAccumulation += _TimeStep;
             while ( TimeAccumulation >= FixedTimeStep && numSimulationSteps > 0 ) {
                 DynamicsWorld->stepSimulation( FixedTimeStep, 0, FixedTimeStep );
@@ -949,22 +949,22 @@ void APhysicsWorld::Simulate( float _TimeStep )
 
 void APhysicsWorld::DrawDebug( ADebugRenderer * InRenderer ) {
     int Mode = 0;
-    if ( dd_CollisionShapeWireframe ) {
+    if ( com_DrawCollisionShapeWireframe ) {
         Mode |= APhysicsDebugDraw::DBG_DrawWireframe;
     }
     //if ( RVDrawCollisionShapeAABBs ) {
     //    Mode |= APhysicsDebugDraw::DBG_DrawAabb;
     //}
-    if ( dd_ContactPoints ) {
+    if ( com_DrawContactPoints ) {
         Mode |= APhysicsDebugDraw::DBG_DrawContactPoints;
     }
-    if ( dd_Constraints ) {
+    if ( com_DrawConstraints ) {
         Mode |= APhysicsDebugDraw::DBG_DrawConstraints;
     }
-    if ( dd_ConstraintLimits ) {
+    if ( com_DrawConstraintLimits ) {
         Mode |= APhysicsDebugDraw::DBG_DrawConstraintLimits;
     }
-    //if ( dd_CollisionShapeNormals ) {
+    //if ( com_DrawCollisionShapeNormals ) {
     //    Mode |= APhysicsDebugDraw::DBG_DrawNormals;
     //}
 

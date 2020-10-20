@@ -31,11 +31,12 @@ SOFTWARE.
 #include <World/Public/Components/PointLightComponent.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
+#include <Runtime/Public/RuntimeVariable.h>
 
 static const float DEFAULT_RADIUS = 1.0f;
 static const float MIN_RADIUS = 0.01f;
 
-ARuntimeVariable dd_PointLights( _CTS( "dd_PointLights" ), _CTS( "0" ), VAR_CHEAT );
+ARuntimeVariable com_DrawPointLights( _CTS( "com_DrawPointLights" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( APointLightComponent )
 
@@ -83,7 +84,7 @@ void APointLightComponent::UpdateWorldBounds() {
 void APointLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
-    if ( dd_PointLights )
+    if ( com_DrawPointLights )
     {
         if ( Primitive.VisPass == InRenderer->GetVisPass() )
         {
