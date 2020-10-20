@@ -246,6 +246,11 @@ static void DebugMessageCallback( GLenum source, GLenum type, GLuint id, GLenum 
         break;
     }
 
+    if ( type == GL_DEBUG_TYPE_OTHER && severity == GL_DEBUG_SEVERITY_NOTIFICATION ) {
+        // Do not print annoying notifications
+        return;
+    }
+
     GLogger.Printf( "-----------------------------------\n"
                     "%s %s\n"
                     "%s: %s (Id %d)\n"

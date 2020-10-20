@@ -169,6 +169,16 @@ public:
 
 #ifdef AN_DEBUG
     IDeviceObject * GetDeviceObjects_DEBUG() { return ListHead; }
+
+    IDeviceObject * FindDeviceObject_DEBUG( uint64_t UID )
+    {
+        for ( IDeviceObject * object = ListHead ; object ; object = object->GetNext_DEBUG() ) {
+            if ( object->GetUID() == UID ) {
+                return object;
+            }
+        }
+        return nullptr;
+    }
 #endif
 
 private:
