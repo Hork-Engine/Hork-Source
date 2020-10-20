@@ -1629,6 +1629,17 @@ AN_INLINE bool BvIsPointOnSegment( Float3 const & _Point, Float3 const & _Start,
     return v.DistSqr( ( dp1 / dp2 ) * dir ) < _Epsilon;
 }
 
+/** Project Point on Segment */
+AN_INLINE Float3 BvProjectPointOnLine( Float3 const & _Point, Float3 const & _Start, Float3 const & _End ) {
+    const Float3 dir = _End - _Start;
+    const Float3 v = _Point - _Start;
+
+    const float dp1 = Math::Dot( v, dir );
+    const float dp2 = Math::Dot( dir, dir );
+
+    return _Start + (dp1 / dp2) * dir;
+}
+
 /** Square of distance between Point and Segment (2D) */
 AN_INLINE float BvShortestDistanceSqr( Float2 const & _Point, Float2 const & _Start, Float2 const & _End ) {
     const Float2 dir = _End - _Start;
