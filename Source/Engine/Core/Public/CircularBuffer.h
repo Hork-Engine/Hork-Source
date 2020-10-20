@@ -30,6 +30,8 @@ SOFTWARE.
 
 #pragma once
 
+#include "Ref.h"
+
 template< typename T, int MAX_BUFFER_SIZE = 128 >
 class TPodCircularBuffer
 {
@@ -42,6 +44,8 @@ public:
         : Head(0)
         , Sz(0)
     {
+        static_assert( IsPowerOfTwo( MAX_BUFFER_SIZE ), "Circular buffer size must be power of two" );
+
         Core::ZeroMem( Data, sizeof( Data ) );
     }
 
@@ -50,9 +54,19 @@ public:
         return Sz == 0;
     }
 
+    bool IsFull() const
+    {
+        return Sz == MAX_BUFFER_SIZE;
+    }
+
     int Size() const
     {
         return Sz;
+    }
+
+    int Capacity() const
+    {
+        return MAX_BUFFER_SIZE;
     }
 
     T & operator[]( int Index )
@@ -86,6 +100,13 @@ public:
         }
 
         Data[offset] = Element;
+    }
+
+    void Clear()
+    {
+        Resize( 0 );
+
+        Head = 0;
     }
 
     void Resize( int NewSize )
@@ -161,6 +182,7 @@ public:
         : Head(0)
         , Sz(0)
     {
+        static_assert( IsPowerOfTwo( MAX_BUFFER_SIZE ), "Circular buffer size must be power of two" );
     }
 
     bool IsEmpty() const
@@ -168,9 +190,19 @@ public:
         return Sz == 0;
     }
 
+    bool IsFull() const
+    {
+        return Sz == MAX_BUFFER_SIZE;
+    }
+
     int Size() const
     {
         return Sz;
+    }
+
+    int Capacity() const
+    {
+        return MAX_BUFFER_SIZE;
     }
 
     TRef< T > & operator[]( int Index )
@@ -206,6 +238,13 @@ public:
         Data[offset] = Element;
     }
 
+    void Clear()
+    {
+        Resize( 0 );
+
+        Head = 0;
+    }
+
     void Resize( int NewSize )
     {
         AN_ASSERT( NewSize >= 0 && NewSize <= MAX_BUFFER_SIZE );
@@ -214,9 +253,7 @@ public:
             for ( int i = NewSize ; i < Sz ; i++ ) {
                 int offset = ( Head + i ) & ( MAX_BUFFER_SIZE - 1 );
 
-                if ( Data[offset] ) {
-                    Data[offset].Reset();
-                }
+                Data[offset].Reset();
             }
         }
 
@@ -269,4 +306,3 @@ public:
         Sz--;
     }
 };
-
