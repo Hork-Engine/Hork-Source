@@ -41,6 +41,13 @@ SOFTWARE.
 
 class AEngineCommands;
 
+enum ECursorMode
+{
+    CURSOR_MODE_AUTO,
+    CURSOR_MODE_FORCE_ENABLED,
+    CURSOR_MODE_FORCE_DISABLED
+};
+
 class ANGIE_API AEngineInstance : public IEngineInterface
 {
     AN_SINGLETON( AEngineInstance )
@@ -54,6 +61,8 @@ public:
 
     /** Allow to drop down the console */
     bool bAllowConsole = true;
+
+    ECursorMode CursorMode = CURSOR_MODE_AUTO;
 
     ACanvas Canvas;
 

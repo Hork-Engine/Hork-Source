@@ -115,7 +115,8 @@ static void ImguiModuleFree( void * _Bytes, void * ) {
 }
 #endif
 
-static IGameModule * CreateGameModule( AClassMeta const * _Meta ) {
+static IGameModule * CreateGameModule( AClassMeta const * _Meta )
+{
     if ( !_Meta->IsSubclassOf< IGameModule >() ) {
         CriticalError( "CreateGameModule: game module is not subclass of IGameModule\n" );
     }
@@ -127,7 +128,8 @@ AEngineCommands::AEngineCommands()
     CommandContext.AddCommand( "RebuildMaterials", { this, &AEngineCommands::RebuildMaterials }, "Rebuild materials" );
 }
 
-void AEngineCommands::RebuildMaterials( ARuntimeCommandProcessor const & _Proc ) {
+void AEngineCommands::RebuildMaterials( ARuntimeCommandProcessor const & _Proc )
+{
     AMaterial::RebuildMaterials();
 }
 
@@ -141,7 +143,8 @@ void AEngineInstance::RemoveCommand( const char * _Name )
     EngineCmd->CommandContext.RemoveCommand( _Name );
 }
 
-void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
+void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
+{
     GConsole.ReadStoryLines();
 
     InitializeFactories();
@@ -299,7 +302,8 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl ) {
     GConsole.WriteStoryLines();
 }
 
-void AEngineInstance::DrawCanvas() {
+void AEngineInstance::DrawCanvas()
+{
     SVideoMode const & videoMode = GRuntime.GetVideoMode();
 
     Canvas.Begin( videoMode.FramebufferWidth, videoMode.FramebufferHeight );
@@ -333,7 +337,8 @@ void AEngineInstance::DrawCanvas() {
     Canvas.End();
 }
 
-void AEngineInstance::ShowStats() {
+void AEngineInstance::ShowStats()
+{
     enum { FPS_BUF = 16 };
     static float fpsavg[FPS_BUF];
     static int n = 0;
@@ -387,11 +392,13 @@ void AEngineInstance::ShowStats() {
     }
 }
 
-void AEngineInstance::Print( const char * _Message ) {
+void AEngineInstance::Print( const char * _Message )
+{
     GConsole.Print( _Message );
 }
 
-void AEngineInstance::DeveloperKeys( SKeyEvent const & _Event ) {
+void AEngineInstance::DeveloperKeys( SKeyEvent const & _Event )
+{
 //    if ( _Event.Action == IE_Press ) {
 //        if ( _Event.Key == KEY_F1 ) {
 //            GLogger.Printf( "OpenGL Backend Test\n" );
@@ -409,7 +416,8 @@ void AEngineInstance::DeveloperKeys( SKeyEvent const & _Event ) {
 //    }
 }
 
-void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp ) {
+void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp )
+{
     if ( !bAllowInputEvents ) {
         return;
     }
@@ -446,7 +454,8 @@ void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp ) 
     }
 }
 
-void AEngineInstance::OnMouseButtonEvent( SMouseButtonEvent const & _Event, double _TimeStamp ) {
+void AEngineInstance::OnMouseButtonEvent( SMouseButtonEvent const & _Event, double _TimeStamp )
+{
     if ( !bAllowInputEvents ) {
         return;
     }
@@ -464,7 +473,8 @@ void AEngineInstance::OnMouseButtonEvent( SMouseButtonEvent const & _Event, doub
     }
 }
 
-void AEngineInstance::OnMouseWheelEvent( SMouseWheelEvent const & _Event, double _TimeStamp ) {
+void AEngineInstance::OnMouseWheelEvent( SMouseWheelEvent const & _Event, double _TimeStamp )
+{
     if ( !bAllowInputEvents ) {
         return;
     }
@@ -483,7 +493,8 @@ void AEngineInstance::OnMouseWheelEvent( SMouseWheelEvent const & _Event, double
     }
 }
 
-void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _TimeStamp ) {
+void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _TimeStamp )
+{
     if ( !bAllowInputEvents ) {
         return;
     }
@@ -525,7 +536,8 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
     }
 }
 
-void AEngineInstance::OnJoystickButtonEvent( SJoystickButtonEvent const & _Event, double _TimeStamp ) {
+void AEngineInstance::OnJoystickButtonEvent( SJoystickButtonEvent const & _Event, double _TimeStamp )
+{
     if ( !bAllowInputEvents ) {
         return;
     }
@@ -539,7 +551,8 @@ void AEngineInstance::OnJoystickButtonEvent( SJoystickButtonEvent const & _Event
     }
 }
 
-void AEngineInstance::OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Event, double _TimeStamp ) {
+void AEngineInstance::OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Event, double _TimeStamp )
+{
     if ( !bAllowInputEvents ) {
         return;
     }
@@ -549,7 +562,8 @@ void AEngineInstance::OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Ev
     }
 }
 
-void AEngineInstance::OnCharEvent( SCharEvent const & _Event, double _TimeStamp ) {
+void AEngineInstance::OnCharEvent( SCharEvent const & _Event, double _TimeStamp )
+{
     if ( !bAllowInputEvents ) {
         return;
     }
@@ -568,15 +582,18 @@ void AEngineInstance::OnCharEvent( SCharEvent const & _Event, double _TimeStamp 
     }
 }
 
-void AEngineInstance::OnWindowVisible( bool _Visible ) {
+void AEngineInstance::OnWindowVisible( bool _Visible )
+{
     bIsWindowVisible = _Visible;
 }
 
-void AEngineInstance::OnCloseEvent() {
+void AEngineInstance::OnCloseEvent()
+{
     GameModule->OnGameClose();
 }
 
-void AEngineInstance::OnResize() {
+void AEngineInstance::OnResize()
+{
     SVideoMode const & videoMode = GRuntime.GetVideoMode();
 
     RetinaScale = Float2( (float)videoMode.FramebufferWidth / videoMode.Width, (float)videoMode.FramebufferHeight / videoMode.Height );
@@ -592,13 +609,27 @@ void AEngineInstance::OnResize() {
     }
 }
 
-void AEngineInstance::UpdateInput() {
+void AEngineInstance::UpdateInput()
+{
     SVideoMode const & videoMode = GRuntime.GetVideoMode();
 
-    if ( !videoMode.bFullscreen && GConsole.IsActive() ) {
+    switch ( CursorMode ) {
+    case CURSOR_MODE_AUTO:
+        if ( !videoMode.bFullscreen && GConsole.IsActive() ) {
+            GRuntime.SetCursorEnabled( true );
+        }
+        else {
+            GRuntime.SetCursorEnabled( false );
+        }
+        break;
+    case CURSOR_MODE_FORCE_ENABLED:
         GRuntime.SetCursorEnabled( true );
-    } else {
+        break;
+    case CURSOR_MODE_FORCE_DISABLED:
         GRuntime.SetCursorEnabled( false );
+        break;
+    default:
+        AN_ASSERT( 0 );
     }
 
     for ( AInputComponent * component = AInputComponent::GetInputComponents() ; component ; component = component->GetNext() ) {
@@ -606,19 +637,22 @@ void AEngineInstance::UpdateInput() {
     }
 }
 
-void AEngineInstance::MapWindowCoordinate( float & InOutX, float & InOutY ) const {
+void AEngineInstance::MapWindowCoordinate( float & InOutX, float & InOutY ) const
+{
     SVideoMode const & videoMode = GRuntime.GetVideoMode();
     InOutX += videoMode.X;
     InOutY += videoMode.Y;
 }
 
-void AEngineInstance::UnmapWindowCoordinate( float & InOutX, float & InOutY ) const {
+void AEngineInstance::UnmapWindowCoordinate( float & InOutX, float & InOutY ) const
+{
     SVideoMode const & videoMode = GRuntime.GetVideoMode();
     InOutX -= videoMode.X;
     InOutY -= videoMode.Y;
 }
 
-void AEngineInstance::SetDesktop( WDesktop * _Desktop ) {
+void AEngineInstance::SetDesktop( WDesktop * _Desktop )
+{
     SVideoMode const & videoMode = GRuntime.GetVideoMode();
 
     Desktop = _Desktop;
@@ -631,7 +665,8 @@ void AEngineInstance::SetDesktop( WDesktop * _Desktop ) {
     }
 }
 
-IEngineInterface * GetEngineInstance() {
+IEngineInterface * GetEngineInstance()
+{
     return &GEngine;
 }
 
