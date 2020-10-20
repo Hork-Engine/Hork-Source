@@ -1309,6 +1309,28 @@ static AN_FORCEINLINE int FromKeymodSDL( Uint16 Mod ) {
         modMask |= KMOD_MASK_SUPER;
     }
 
+    return modMask;
+}
+
+static AN_FORCEINLINE int FromKeymodSDL_Char( Uint16 Mod ) {
+    int modMask = 0;
+
+    if ( Mod & (KMOD_LSHIFT|KMOD_RSHIFT) ) {
+        modMask |= KMOD_MASK_SHIFT;
+    }
+
+    if ( Mod & (KMOD_LCTRL|KMOD_RCTRL) ) {
+        modMask |= KMOD_MASK_CONTROL;
+    }
+
+    if ( Mod & (KMOD_LALT|KMOD_RALT) ) {
+        modMask |= KMOD_MASK_ALT;
+    }
+
+    if ( Mod & (KMOD_LGUI|KMOD_RGUI) ) {
+        modMask |= KMOD_MASK_SUPER;
+    }
+
     if ( Mod & KMOD_CAPS ) {
         modMask |= KMOD_MASK_CAPS_LOCK;
     }
@@ -1617,7 +1639,7 @@ void ARuntime::PollEvents() {
         // Keyboard text input
         case SDL_TEXTINPUT: {
             SCharEvent charEvent;
-            charEvent.ModMask = FromKeymodSDL( SDL_GetModState() );
+            charEvent.ModMask = FromKeymodSDL_Char( SDL_GetModState() );
 
             const char * unicode = event.text.text;
             while ( *unicode ) {
