@@ -205,7 +205,7 @@ void AHeapMemory::Free( void * _Bytes ) {
 
 #ifdef ENABLE_TRASH_TEST
         if ( *( TRASH_MARKER * )( bytes + heap->DataSize ) != TrashMarker ) {
-            MemLogger.Print( "AHeapMemory::HeapFree: Warning: memory was trashed\n" );
+            CriticalError( "AHeapMemory::HeapFree: Warning: memory was trashed\n" );
             // error()
         }
 #endif
@@ -251,7 +251,7 @@ void * AHeapMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
 
 #ifdef ENABLE_TRASH_TEST
     if ( *( TRASH_MARKER * )( bytes + heap->DataSize ) != TrashMarker ) {
-        MemLogger.Print( "AHeapMemory::Realloc: Warning: memory was trashed\n" );
+        CriticalError( "AHeapMemory::Realloc: Warning: memory was trashed\n" );
     }
 #endif
     if ( heap->DataSize >= _NewBytesCount ) {
@@ -277,7 +277,7 @@ void AHeapMemory::PointerTrashTest( void * _Bytes ) {
     SHeapChunk * heap = ( SHeapChunk * )( bytes )-1;
 
     if ( *( TRASH_MARKER * )( bytes + heap->DataSize ) != TrashMarker ) {
-        MemLogger.Print( "AHeapMemory::PointerTrashTest: Warning: memory was trashed\n" );
+        CriticalError( "AHeapMemory::PointerTrashTest: Warning: memory was trashed\n" );
     }
 #endif
 }
@@ -511,7 +511,7 @@ void AHunkMemory::ClearLastHunk() {
     if ( hunk ) {
         DecMemoryStatistics( hunk->Size, sizeof( SHunk ) );
         if ( HunkTrashTest( hunk ) ) {
-            MemLogger.Print( "AHunkMemory::ClearLastHunk: Warning: memory was trashed\n" );
+            CriticalError( "AHunkMemory::ClearLastHunk: Warning: memory was trashed\n" );
             // error()
         }
         hunk->Size += grow;
@@ -844,7 +844,7 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
     size_t oldSize = chunk->DataSize;
 
     if ( ChunkTrashTest( chunk ) ) {
-        MemLogger.Print( "AZoneMemory::Realloc: Warning: memory was trashed\n" );
+        CriticalError( "AZoneMemory::Realloc: Warning: memory was trashed\n" );
         // error()
     }
 
@@ -1052,7 +1052,7 @@ void AZoneMemory::Free( void * _Bytes ) {
     }
 
     if ( ChunkTrashTest( chunk ) ) {
-        MemLogger.Print( "AZoneMemory::Free: Warning: memory was trashed\n" );
+        CriticalError( "AZoneMemory::Free: Warning: memory was trashed\n" );
         // error()
     }
 
