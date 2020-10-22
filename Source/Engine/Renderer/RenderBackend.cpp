@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "RenderLocal.h"
-#include "GPUSync.h"
 #include "Material.h"
 #include "CanvasRenderer.h"
 #include "VT/VirtualTextureFeedback.h"
@@ -49,7 +48,6 @@ SOFTWARE.
 
 #include <SDL.h>
 
-ARuntimeVariable r_SwapInterval( _CTS( "r_SwapInterval" ), _CTS( "0" ), 0, _CTS( "1 - enable vsync, 0 - disable vsync, -1 - tearing" ) );
 ARuntimeVariable r_FrameGraphDebug( _CTS( "r_FrameGraphDebug" ), _CTS( "0" ) );
 ARuntimeVariable r_RenderSnapshot( _CTS( "r_RenderSnapshot" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable r_DebugRenderMode( _CTS( "r_DebugRenderMode" ), _CTS( "0" ), VAR_CHEAT );
@@ -72,87 +70,6 @@ ARuntimeVariable r_ShowGPUTime( _CTS( "r_ShowGPUTime" ), _CTS( "0" ) );
 
 void TestVT();
 
-ARenderBackend GRenderBackend;
-
-static SDL_Window * WindowHandle;
-
-static int TotalAllocatedRenderCore = 0;
-
-static SDL_Window * CreateGenericWindow( SVideoMode const & _VideoMode )
-{
-    int flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
-
-    bool bOpenGL = true;
-
-    SDL_InitSubSystem( SDL_INIT_VIDEO );
-
-    if ( bOpenGL ) {
-        flags |= SDL_WINDOW_OPENGL;
-
-        SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
-        SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 5 );
-        SDL_GL_SetAttribute( SDL_GL_CONTEXT_EGL, 0 );
-        SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, 0 );
-        SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS,
-                             SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
-#ifdef AN_DEBUG
-                             | SDL_GL_CONTEXT_DEBUG_FLAG
-#endif
-        );
-        //SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE | SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
-        SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
-        SDL_GL_SetAttribute( SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 0 );
-        SDL_GL_SetAttribute( SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1 );
-        //SDL_GL_SetAttribute( SDL_GL_CONTEXT_RELEASE_BEHAVIOR,  );
-        //SDL_GL_SetAttribute( SDL_GL_CONTEXT_RESET_NOTIFICATION,  );
-        //SDL_GL_SetAttribute( SDL_GL_CONTEXT_NO_ERROR,  );
-        SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
-        SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
-        SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
-        SDL_GL_SetAttribute( SDL_GL_ALPHA_SIZE, 8 );
-        SDL_GL_SetAttribute( SDL_GL_BUFFER_SIZE, 0 );
-        SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
-        SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 0 );
-        SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 0 );
-        SDL_GL_SetAttribute( SDL_GL_ACCUM_RED_SIZE, 0 );
-        SDL_GL_SetAttribute( SDL_GL_ACCUM_GREEN_SIZE, 0 );
-        SDL_GL_SetAttribute( SDL_GL_ACCUM_BLUE_SIZE, 0 );
-        SDL_GL_SetAttribute( SDL_GL_ACCUM_ALPHA_SIZE, 0 );
-        SDL_GL_SetAttribute( SDL_GL_STEREO, 0 );
-        SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 0 );
-        SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 0 );
-        //SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL,  );
-        //SDL_GL_SetAttribute( SDL_GL_RETAINED_BACKING,  );
-    }
-
-    int x, y;
-
-    if ( _VideoMode.bFullscreen ) {
-        flags |= SDL_WINDOW_FULLSCREEN;// | SDL_WINDOW_BORDERLESS;
-        x = y = 0;
-    }
-    else {
-        if ( _VideoMode.bCentrized ) {
-            x = SDL_WINDOWPOS_CENTERED;
-            y = SDL_WINDOWPOS_CENTERED;
-        }
-        else {
-            x = _VideoMode.WindowedX;
-            y = _VideoMode.WindowedY;
-        }
-    }
-
-    return SDL_CreateWindow( _VideoMode.Title, x, y, _VideoMode.Width, _VideoMode.Height, flags );
-}
-
-static void DestroyGenericWindow( SDL_Window * Window )
-{
-    if ( Window ) {
-        SDL_DestroyWindow( Window );
-        SDL_QuitSubSystem( SDL_INIT_VIDEO );
-    }
-}
-
 static void LoadSPIRV( void ** BinaryCode, size_t * BinarySize )
 {
     // TODO
@@ -161,56 +78,20 @@ static void LoadSPIRV( void ** BinaryCode, size_t * BinarySize )
     *BinarySize = 0;
 }
 
-void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
+ARenderBackend::ARenderBackend()
 {
     using namespace RenderCore;
 
     GLogger.Printf( "Initializing render backend...\n" );
 
-    WindowHandle = CreateGenericWindow( _VideoMode );
-    if ( !WindowHandle ) {
-        CriticalError( "Failed to create main window\n" );
-    }
-
-    SImmediateContextCreateInfo stateCreateInfo = {};
-    stateCreateInfo.ClipControl = CLIP_CONTROL_DIRECTX;
-    stateCreateInfo.ViewportOrigin = VIEWPORT_ORIGIN_TOP_LEFT;
-    stateCreateInfo.SwapInterval = r_SwapInterval.GetInteger();
-    stateCreateInfo.Window = WindowHandle;
-
-    SAllocatorCallback allocator;
-
-    allocator.Allocate =
-        []( size_t _BytesCount )
-        {
-            TotalAllocatedRenderCore++;
-            return GZoneMemory.Alloc( _BytesCount );
-        };
-
-    allocator.Deallocate =
-        []( void * _Bytes )
-        {
-            TotalAllocatedRenderCore--;
-            GZoneMemory.Free( _Bytes );
-        };
-
-    CreateLogicalDevice( stateCreateInfo,
-                         &allocator,
-                         []( const unsigned char * _Data, int _Size )
-                         {
-                             return Core::Hash( ( const char * )_Data, _Size );
-                         },
-                         &GDevice );
+    GDevice = GRuntime.GetRenderDevice();
 
     GDevice->GetImmediateContext( &rcmd );
 
     rtbl = rcmd->GetRootResourceTable();
 
-    VertexMemoryGPU = MakeRef< AVertexMemoryGPU >();
-    StreamedMemoryGPU = MakeRef< AStreamedMemoryGPU >();
-
     // Store in global pointers
-    GStreamBuffer = StreamedMemoryGPU->GetBufferGPU();
+    GStreamBuffer = GRuntime.GetStreamedMemoryGPU()->GetBufferGPU();
 
     InitMaterialSamplers();
 
@@ -289,6 +170,7 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
     }
 
     FeedbackAnalyzerVT = MakeRef< AVirtualTextureFeedbackAnalyzer >();
+    GFeedbackAnalyzerVT = FeedbackAnalyzerVT;
 
     /////////////////////////////////////////////////////////////////////
     // test
@@ -507,6 +389,8 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
     createInfo.pLayers = &layer;
     PhysCacheVT = MakeRef< AVirtualTextureCache >( createInfo );
 
+    GPhysCacheVT = PhysCacheVT;
+
     //::TestVT();
     PhysCacheVT->CreateTexture( "Test.vt3", &TestVT );
 
@@ -596,19 +480,9 @@ void ARenderBackend::Initialize( SVideoMode const & _VideoMode )
     GDevice->CreateShaderFromBinary( &binaryData, &shaderModule );
 }
 
-void ARenderBackend::Deinitialize()
+ARenderBackend::~ARenderBackend()
 {
     GLogger.Printf( "Deinitializing render backend...\n" );
-
-    VertexMemoryGPU.Reset();
-    StreamedMemoryGPU.Reset();
-
-    TimeQuery.Reset();
-    TimeStamp1.Reset();
-    TimeStamp2.Reset();
-    CanvasRenderer.Reset();
-    FrameRenderer.Reset();
-    FrameGraph.Reset();
 
     //SDL_SetRelativeMouseMode( SDL_FALSE );
     AVirtualTexture * vt = TestVT.GetObject();
@@ -617,9 +491,7 @@ void ARenderBackend::Deinitialize()
     FeedbackAnalyzerVT.Reset();
     GLogger.Printf( "VT ref count %d\n", vt->GetRefCount() );
 
-
     GCircularBuffer.Reset();
-    //GFrameConstantBuffer.Reset();
     GWhiteTexture.Reset();
     GSphereMesh.Reset();
     GSaq.Reset();
@@ -630,48 +502,6 @@ void ARenderBackend::Deinitialize()
     GIrradianceMapBindless.Reset();
     GPrefilteredMap.Reset();
     GIrradianceMap.Reset();
-
-    GPUSync.Release();
-
-    GDevice.Reset();
-
-    DestroyGenericWindow( WindowHandle );
-    WindowHandle = nullptr;
-
-    GLogger.Printf( "TotalAllocatedRenderCore: %d\n", TotalAllocatedRenderCore );
-}
-
-void * ARenderBackend::GetMainWindow()
-{
-    return WindowHandle;
-}
-
-RenderCore::IDevice * ARenderBackend::GetDevice()
-{
-    return GDevice;
-}
-
-void ARenderBackend::WaitGPU()
-{
-    GPUSync.Wait();
-}
-
-void ARenderBackend::SetGPUEvent()
-{
-    GPUSync.SetEvent();
-}
-
-void ARenderBackend::ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem )
-{
-    RenderCore::SRect2D rect;
-    rect.X = _X;
-    rect.Y = _Y;
-    rect.Width = _Width;
-    rect.Height = _Height;
-
-    RenderCore::IFramebuffer * framebuffer = rcmd->GetDefaultFramebuffer();
-
-    framebuffer->Read( RenderCore::FB_BACK_DEFAULT, rect, RenderCore::FB_CHANNEL_RGBA, RenderCore::FB_UBYTE, RenderCore::COLOR_CLAMP_ON, _SizeInBytes, _Alignment, _SysMem );
 }
 
 #if 0
@@ -771,8 +601,6 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * Material, SMaterialDef c
 
 void ARenderBackend::RenderFrame( SRenderFrame * pFrameData )
 {
-    //GFrameConstantBuffer->Begin();
-
     static int timeQueryFrame = 0;
 
     if ( r_ShowGPUTime ) {
@@ -826,18 +654,15 @@ void ARenderBackend::RenderFrame( SRenderFrame * pFrameData )
 #endif
     }
 
-    SetGPUEvent();
-
     r_RenderSnapshot = false;
-
-    //GFrameConstantBuffer->End();
 }
 
 void ARenderBackend::SetViewConstants()
 {
-    size_t offset = StreamedMemoryGPU->AllocateConstant( sizeof( SViewConstantBuffer ) );
+    AStreamedMemoryGPU * pStreamedMemory = GRuntime.GetStreamedMemoryGPU();
+    size_t offset = pStreamedMemory->AllocateConstant( sizeof( SViewConstantBuffer ) );
 
-    SViewConstantBuffer * pViewCBuf = (SViewConstantBuffer *)StreamedMemoryGPU->Map( offset );
+    SViewConstantBuffer * pViewCBuf = (SViewConstantBuffer *)pStreamedMemory->Map( offset );
 
     pViewCBuf->OrthoProjection = GFrameData->CanvasOrthoProjection;
     pViewCBuf->ViewProjection = GRenderView->ViewProjection;
@@ -1008,7 +833,7 @@ void ARenderBackend::RenderView( SRenderView * pRenderView, AFrameGraphTexture *
         GRenderView->VTFeedback->Begin( GRenderView->Width, GRenderView->Height );
     }
 
-    FrameRenderer->Render( *FrameGraph, bVirtualTexturing, CapturedResources );
+    FrameRenderer->Render( *FrameGraph, bVirtualTexturing, PhysCacheVT, CapturedResources );
     FrameGraph->Execute( rcmd );
 
     if ( r_FrameGraphDebug ) {
@@ -1024,9 +849,4 @@ void ARenderBackend::RenderView( SRenderView * pRenderView, AFrameGraphTexture *
     
         FeedbackAnalyzerVT->AddFeedbackData( FeedbackSize, FeedbackData );
     }
-}
-
-void ARenderBackend::SwapBuffers()
-{
-    GDevice->SwapBuffers( WindowHandle, r_SwapInterval.GetInteger() );
 }

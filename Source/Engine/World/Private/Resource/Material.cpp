@@ -35,6 +35,7 @@ SOFTWARE.
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Runtime/Public/Runtime.h>
+#include <GameThread/Public/EngineInstance.h>
 
 AN_CLASS_META( AMaterial )
 AN_CLASS_META( AMaterialInstance )
@@ -49,16 +50,21 @@ AMaterial::~AMaterial() {
     INTRUSIVE_REMOVE( this, pNext, pPrev, GMaterials, GMaterialsTail );
 }
 
+static void CreateMaterial( AMaterialGPU * Material, SMaterialDef const * Def )
+{
+    GEngine.GetRenderBackend()->InitializeMaterial( Material, Def );
+}
+
 void AMaterial::RebuildMaterials() {
     for ( AMaterial * material = GMaterials ; material ; material = material->pNext ) {
-        GRenderBackend.InitializeMaterial( &material->MaterialGPU, &material->Def );
+        CreateMaterial( &material->MaterialGPU, &material->Def );
     }
 }
 
 void AMaterial::Initialize( MGMaterialGraph * Graph ) {
     CompileMaterialGraph( Graph, &Def );
 
-    GRenderBackend.InitializeMaterial( &MaterialGPU, &Def );
+    CreateMaterial( &MaterialGPU, &Def );
 }
 
 void AMaterial::Purge() {
@@ -132,7 +138,7 @@ bool AMaterial::LoadResource( AString const & _Path ) {
         Def.AddShader( sourceName.CStr(), sourceCode );
     }
 
-    GRenderBackend.InitializeMaterial( &MaterialGPU, &Def );
+    CreateMaterial( &MaterialGPU, &Def );
 
     return true;
 }

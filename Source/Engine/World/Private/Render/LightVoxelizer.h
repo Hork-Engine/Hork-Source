@@ -30,7 +30,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <Renderer/RenderBackend.h>
 #include <World/Public/Base/DebugRenderer.h>
 
 class AAnalyticLightComponent;

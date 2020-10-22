@@ -44,7 +44,6 @@ SOFTWARE.
 #include <World/Private/PrimitiveLinkPool.h>
 
 #include <Runtime/Public/Runtime.h>
-#include <Renderer/VertexMemoryGPU.h>
 
 #include <Core/Public/Logger.h>
 #include <Core/Public/CriticalError.h>
@@ -61,7 +60,6 @@ SOFTWARE.
 
 //#define IMGUI_CONTEXT
 
-static ARuntimeVariable com_SyncGPU( _CTS( "com_SyncGPU" ), _CTS( "0" ) );
 static ARuntimeVariable com_ShowStat( _CTS( "com_ShowStat" ), _CTS( "0" ) );
 
 AN_CLASS_META( AEngineCommands )
@@ -168,6 +166,8 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
 
     Renderer = CreateInstanceOf< ARenderFrontend >();
 
+    RenderBackend = MakeRef< ARenderBackend >();
+
     GAudioSystem.Initialize();
     GAudioSystem.RegisterDecoder( "ogg", CreateInstanceOf< AOggVorbisDecoder >() );
     GAudioSystem.RegisterDecoder( "mp3", CreateInstanceOf< AMp3Decoder >() );
@@ -205,9 +205,6 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
             return;
         }
 
-        // Wait for free streamed buffer
-        GRenderBackend.GetStreamedMemoryGPU()->Begin();
-
         // Set new frame, process game events
         GRuntime.NewFrame();
 
@@ -231,11 +228,6 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
         // Update audio system
         GAudioSystem.Update( APlayerController::GetCurrentAudioListener(), FrameDurationInSeconds );
 
-        // Sync with GPU to prevent "input lag"
-        if ( com_SyncGPU ) {
-            GRenderBackend.WaitGPU();
-        }
-
         // Poll runtime events
         GRuntime.PollEvents();
 
@@ -253,13 +245,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
         Renderer->Render( &Canvas );
 
         // Generate GPU commands
-        GRenderBackend.RenderFrame( Renderer->GetFrameData() );
-
-        // Swap buffers for streamed memory
-        GRenderBackend.GetStreamedMemoryGPU()->End();
-
-        // Swap screen buffers
-        GRenderBackend.SwapBuffers();
+        RenderBackend->RenderFrame( Renderer->GetFrameData() );
 
     } while ( !GRuntime.IsPendingTerminate() );
 
@@ -283,6 +269,8 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     EngineCmd.Reset();
 
     Canvas.Deinitialize();
+
+    RenderBackend.Reset();
 
     Renderer.Reset();
 
@@ -366,8 +354,8 @@ void AEngineInstance::ShowStats()
 
         SRenderFrontendStat const & stat = Renderer->GetStat();
 
-        AVertexMemoryGPU * vertexMemory = GRenderBackend.GetVertexMemoryGPU();
-        AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+        AVertexMemoryGPU * vertexMemory = GRuntime.GetVertexMemoryGPU();
+        AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;

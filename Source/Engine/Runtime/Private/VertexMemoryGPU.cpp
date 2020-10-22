@@ -28,12 +28,12 @@ SOFTWARE.
 
 */
 
-#include <Renderer/VertexMemoryGPU.h>
+#include <Runtime/Public/VertexMemoryGPU.h>
 #include <Core/Public/CriticalError.h>
+#include <Core/Public/CoreMath.h>
 
-#include "RenderLocal.h"
-
-AVertexMemoryGPU::AVertexMemoryGPU()
+AVertexMemoryGPU::AVertexMemoryGPU( RenderCore::IDevice * Device )
+    : RenderDevice( Device )
 {
     UsedMemory = 0;
     UsedMemoryHuge = 0;
@@ -295,7 +295,7 @@ SVertexHandle * AVertexMemoryGPU::AllocateHuge( size_t _SizeInBytes, const void 
     bufferCI.MutableUsage = RenderCore::MUTABLE_STORAGE_STATIC;
 
     TRef< RenderCore::IBuffer > buffer;
-    GDevice->CreateBuffer( bufferCI, _Data, &buffer );
+    RenderDevice->CreateBuffer( bufferCI, _Data, &buffer );
     buffer->SetDebugName( "Vertex memory HUGE buffer" );
 
     RenderCore::IBuffer * pBuffer = buffer.GetObject();
@@ -356,7 +356,7 @@ void AVertexMemoryGPU::AddGPUBuffer()
     bufferCI.MutableUsage = RenderCore::MUTABLE_STORAGE_STATIC;
 
     TRef< RenderCore::IBuffer > buffer;
-    GDevice->CreateBuffer( bufferCI, nullptr, &buffer );
+    RenderDevice->CreateBuffer( bufferCI, nullptr, &buffer );
 
     buffer->SetDebugName( "Vertex memory block buffer" );
 
@@ -377,7 +377,8 @@ void AVertexMemoryGPU::CheckMemoryLeaks()
     }
 }
 
-AStreamedMemoryGPU::AStreamedMemoryGPU()
+AStreamedMemoryGPU::AStreamedMemoryGPU( RenderCore::IDevice * Device )
+    : RenderDevice( Device )
 {
     RenderCore::SBufferCreateInfo bufferCI = {};
 
@@ -387,7 +388,7 @@ AStreamedMemoryGPU::AStreamedMemoryGPU()
             ( RenderCore::IMMUTABLE_MAP_WRITE | RenderCore::IMMUTABLE_MAP_PERSISTENT | RenderCore::IMMUTABLE_MAP_COHERENT );
     bufferCI.bImmutableStorage = true;
 
-    GDevice->CreateBuffer( bufferCI, nullptr, &Buffer );
+    RenderDevice->CreateBuffer( bufferCI, nullptr, &Buffer );
 
     Buffer->SetDebugName( "Streamed memory buffer" );
 
@@ -410,7 +411,9 @@ AStreamedMemoryGPU::AStreamedMemoryGPU()
 
     VertexBufferAlignment = 32; // TODO: Get from driver!!!
     IndexBufferAlignment = 16; // TODO: Get from driver!!!
-    ConstantBufferAlignment = GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT );
+    ConstantBufferAlignment = RenderDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT );
+
+    RenderDevice->GetImmediateContext( &pImmediateContext );
 }
 
 AStreamedMemoryGPU::~AStreamedMemoryGPU()
@@ -419,7 +422,7 @@ AStreamedMemoryGPU::~AStreamedMemoryGPU()
         SChainBuffer * pChainBuffer = &ChainBuffer[i];
 
         Wait( pChainBuffer->Sync );
-        rcmd->RemoveSync( pChainBuffer->Sync );
+        pImmediateContext->RemoveSync( pChainBuffer->Sync );
     }
 
     if ( Buffer ) {
@@ -469,20 +472,20 @@ void AStreamedMemoryGPU::Wait( RenderCore::SyncObject Sync )
     if ( Sync ) {
         RenderCore::CLIENT_WAIT_STATUS status;
         do {
-            status = rcmd->ClientWait( Sync, timeOutNanoseconds );
+            status = pImmediateContext->ClientWait( Sync, timeOutNanoseconds );
         } while ( status != RenderCore::CLIENT_WAIT_ALREADY_SIGNALED && status != RenderCore::CLIENT_WAIT_CONDITION_SATISFIED );
     }
 }
 
-void AStreamedMemoryGPU::Begin()
+void AStreamedMemoryGPU::Wait()
 {
     Wait( ChainBuffer[BufferIndex].Sync );
 }
 
-void AStreamedMemoryGPU::End()
+void AStreamedMemoryGPU::Swap()
 {
-    rcmd->RemoveSync( ChainBuffer[BufferIndex].Sync );
-    ChainBuffer[BufferIndex].Sync = rcmd->FenceSync();
+    pImmediateContext->RemoveSync( ChainBuffer[BufferIndex].Sync );
+    ChainBuffer[BufferIndex].Sync = pImmediateContext->FenceSync();
 
     MaxMemoryUsage = Math::Max( MaxMemoryUsage, ChainBuffer[BufferIndex].UsedMemory );
     BufferIndex = ( BufferIndex + 1 ) % STREAMED_MEMORY_GPU_BUFFERS_COUNT;

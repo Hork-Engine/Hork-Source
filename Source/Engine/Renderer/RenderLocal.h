@@ -179,7 +179,7 @@ extern ARuntimeVariable r_HBAO;
 //
 
 /** Render device */
-extern TRef< RenderCore::IDevice > GDevice;
+extern RenderCore::IDevice * GDevice;
 
 /** Render context */
 extern RenderCore::IImmediateContext * rcmd;
@@ -232,6 +232,9 @@ extern TRef< RenderCore::IBindlessSampler > GPrefilteredMapBindless;
 /** View constant binding */
 extern size_t GViewConstantBufferBindingBindingOffset;
 extern size_t GViewConstantBufferBindingBindingSize;
+
+extern AVirtualTextureFeedbackAnalyzer * GFeedbackAnalyzerVT;
+extern AVirtualTextureCache * GPhysCacheVT;
 
 
 //

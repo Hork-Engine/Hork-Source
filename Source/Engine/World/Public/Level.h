@@ -34,7 +34,7 @@ SOFTWARE.
 #include "Resource/Material.h"
 #include "Audio/AudioClip.h"
 #include "HitTest.h"
-#include <Renderer/RenderBackend.h>
+#include <Renderer/RenderDefs.h>
 
 class AActor;
 class AWorld;

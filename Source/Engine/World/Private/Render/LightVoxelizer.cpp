@@ -31,7 +31,6 @@ SOFTWARE.
 #include "LightVoxelizer.h"
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
-#include <Renderer/VertexMemoryGPU.h>
 
 #define LIGHT_ITEMS_OFFSET 0
 #define DECAL_ITEMS_OFFSET 256
@@ -387,7 +386,7 @@ void ALightVoxelizer::Voxelize( SRenderView * RV ) {
     ViewProj = RV->ClusterViewProjection;
     ViewProjInv = RV->ClusterViewProjectionInversed;
 
-    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
     // NOTE: we add MAX_CLUSTER_ITEMS*3 to resolve array overflow
     int maxItems = MAX_TOTAL_CLUSTER_ITEMS + MAX_CLUSTER_ITEMS*3;

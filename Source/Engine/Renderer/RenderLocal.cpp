@@ -41,7 +41,7 @@ ARuntimeVariable r_MaterialDebugMode( _CTS( "r_MaterialDebugMode" ),
                                       VAR_CHEAT );
 
 /** Render device */
-TRef< RenderCore::IDevice > GDevice;
+RenderCore::IDevice * GDevice;
 
 /** Render context */
 RenderCore::IImmediateContext * rcmd;
@@ -94,6 +94,9 @@ TRef< RenderCore::IBindlessSampler > GPrefilteredMapBindless;
 /** View constant binding */
 size_t GViewConstantBufferBindingBindingOffset;
 size_t GViewConstantBufferBindingBindingSize;
+
+AVirtualTextureFeedbackAnalyzer * GFeedbackAnalyzerVT;
+AVirtualTextureCache * GPhysCacheVT;
 
 RenderCore::STextureResolution2D GetFrameResoultion()
 {

@@ -38,6 +38,7 @@ SOFTWARE.
 #include <World/Public/Widgets/WDesktop.h>
 #include <World/Public/World.h>
 #include <World/Public/Render/RenderFrontend.h>
+#include <Renderer/RenderBackend.h>
 
 class AEngineCommands;
 
@@ -103,6 +104,8 @@ public:
     WDesktop * GetDesktop() { return Desktop; }
 
     ARuntimeCommandProcessor & GetCommandProcessor() { return CommandProcessor; }
+
+    ARenderBackend * GetRenderBackend() { return RenderBackend; }
 
 private:
     /** IEngineInterface interface. Run the engine */
@@ -172,6 +175,7 @@ private:
     TRef< AEngineCommands > EngineCmd;
 
     TRef< ARenderFrontend > Renderer;
+    TRef< ARenderBackend > RenderBackend;
 
     bool bAllowInputEvents = false;
 };

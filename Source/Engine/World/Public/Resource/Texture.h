@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <World/Public/Base/Resource.h>
-#include <Renderer/RenderBackend.h>
+#include <Renderer/RenderDefs.h>
 
 class AImage;
 

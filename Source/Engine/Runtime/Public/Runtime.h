@@ -37,6 +37,7 @@ SOFTWARE.
 #include <Core/Public/Random.h>
 #include "AsyncJobManager.h"
 #include "GameModuleCallback.h"
+#include "VertexMemoryGPU.h"
 
 struct SVideoMode
 {
@@ -336,8 +337,14 @@ public:
 
     void GetCursorPosition( int * _X, int * _Y );
 
-private:
+    RenderCore::IDevice * GetRenderDevice();
 
+    AVertexMemoryGPU * GetVertexMemoryGPU() { return VertexMemoryGPU; }
+    AStreamedMemoryGPU * GetStreamedMemoryGPU() { return StreamedMemoryGPU; }
+
+    void ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem );
+
+private:
     int             NumArguments;
     char **         Arguments;
 
@@ -369,6 +376,12 @@ private:
     SVideoMode      VideoMode;
     SVideoMode      DesiredMode;
     bool            bResetVideoMode;
+
+    TRef< RenderCore::IDevice > RenderDevice;
+    RenderCore::IImmediateContext * pImmediateContext;
+
+    TRef< AVertexMemoryGPU > VertexMemoryGPU;
+    TRef< AStreamedMemoryGPU > StreamedMemoryGPU;
 
     bool            bTerminate;
 

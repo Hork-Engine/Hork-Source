@@ -337,7 +337,7 @@ void AFrameRenderer::AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGrap
     } );
 }
 
-void AFrameRenderer::Render( AFrameGraph & FrameGraph, bool bVirtualTexturing, SFrameGraphCaptured & CapturedResources )
+void AFrameRenderer::Render( AFrameGraph & FrameGraph, bool bVirtualTexturing, AVirtualTextureCache * PhysCacheVT, SFrameGraphCaptured & CapturedResources )
 {
     AScopedTimeCheck TimeCheck( "Framegraph build&fill" );
 
@@ -434,7 +434,7 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, bool bVirtualTexturing, S
         }
 
         if ( r_ShowCacheVT.GetInteger() >= 0 ) {
-            GRenderBackend.PhysCacheVT->Draw( FrameGraph, FinalTexture, r_ShowCacheVT.GetInteger() );
+            PhysCacheVT->Draw( FrameGraph, FinalTexture, r_ShowCacheVT.GetInteger() );
         }
     }
 

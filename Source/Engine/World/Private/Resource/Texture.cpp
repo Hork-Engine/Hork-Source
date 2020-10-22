@@ -717,7 +717,7 @@ void ATexture::Initialize1D( STexturePixelFormat _PixelFormat, int _NumLods, int
 
     SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
 
-    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
+    GRuntime.GetRenderDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 void ATexture::Initialize1DArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
@@ -739,7 +739,7 @@ void ATexture::Initialize1DArray( STexturePixelFormat _PixelFormat, int _NumLods
 
     SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
 
-    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
+    GRuntime.GetRenderDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 void ATexture::Initialize2D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height ) {
@@ -761,7 +761,7 @@ void ATexture::Initialize2D( STexturePixelFormat _PixelFormat, int _NumLods, int
 
     SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
 
-    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
+    GRuntime.GetRenderDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 void ATexture::Initialize2DArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize ) {
@@ -784,7 +784,7 @@ void ATexture::Initialize2DArray( STexturePixelFormat _PixelFormat, int _NumLods
 
     SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
 
-    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
+    GRuntime.GetRenderDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 void ATexture::Initialize3D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth ) {
@@ -807,7 +807,7 @@ void ATexture::Initialize3D( STexturePixelFormat _PixelFormat, int _NumLods, int
 
     SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
 
-    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
+    GRuntime.GetRenderDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 void ATexture::InitializeColorGradingLUT( const char * _Path ) {
@@ -906,7 +906,7 @@ void ATexture::InitializeCubemap( STexturePixelFormat _PixelFormat, int _NumLods
 
     SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
 
-    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
+    GRuntime.GetRenderDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 void ATexture::InitializeCubemapArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize ) {
@@ -928,7 +928,7 @@ void ATexture::InitializeCubemapArray( STexturePixelFormat _PixelFormat, int _Nu
 
     SetTextureSwizzle( _PixelFormat, textureCI.Swizzle );
 
-    GRenderBackend.GetDevice()->CreateTexture( textureCI, &TextureGPU );
+    GRuntime.GetRenderDevice()->CreateTexture( textureCI, &TextureGPU );
 }
 
 size_t ATexture::GetSizeInBytes() const {

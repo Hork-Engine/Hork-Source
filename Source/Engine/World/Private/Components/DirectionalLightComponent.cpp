@@ -32,7 +32,7 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
 #include <Core/Public/Logger.h>
-#include <Renderer/VertexMemoryGPU.h>
+#include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/RuntimeVariable.h>
 
 ARuntimeVariable com_DrawDirectionalLights( _CTS( "com_DrawDirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
@@ -283,7 +283,7 @@ void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, size_
 
     Float4x4 * lightViewProjectionMatrices = nullptr;
     if ( numVisibleCascades > 0 ) {
-        AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+        AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
         *ViewProjStreamHandle = streamedMemory->AllocateConstant( numVisibleCascades * sizeof( Float4x4 ), nullptr );
 

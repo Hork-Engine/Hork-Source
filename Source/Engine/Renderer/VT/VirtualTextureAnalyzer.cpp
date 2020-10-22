@@ -209,7 +209,7 @@ void AVirtualTextureFeedbackAnalyzer::Begin()
         GLogger.Printf( "AVirtualTextureFeedbackAnalyzer::Begin: constant buffer max block size hit\n" );
     }
 
-    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
     size_t offset = streamedMemory->AllocateConstant( size );
 

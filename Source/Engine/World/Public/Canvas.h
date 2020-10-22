@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Renderer/RenderBackend.h>
+#include <Renderer/RenderDefs.h>
 #include <Core/Public/PodArray.h>
 #include <World/Public/Resource/FontAtlas.h>
 #include "imdrawlist.h"

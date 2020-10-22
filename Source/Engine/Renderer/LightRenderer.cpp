@@ -253,10 +253,10 @@ bool ALightRenderer::BindMaterialLightPass( SRenderInstance const * Instance )
     //if ( Instance->bUseVT ) // TODO
     {
         int textureUnit = 0; // TODO: Instance->VTUnit;
-        AVirtualTexture * pVirtualTex = GRenderBackend.FeedbackAnalyzerVT->GetTexture( textureUnit );
+        AVirtualTexture * pVirtualTex = GFeedbackAnalyzerVT->GetTexture( textureUnit );
         //AN_ASSERT( pVirtualTex != nullptr );
 
-        rtbl->BindTexture( 6, GRenderBackend.PhysCacheVT->GetLayers()[0] );
+        rtbl->BindTexture( 6, GPhysCacheVT->GetLayers()[0] );
 
         if ( pVirtualTex ) {
             rtbl->BindTexture( 7, pVirtualTex->GetIndirectionTexture() );

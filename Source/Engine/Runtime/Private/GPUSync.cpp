@@ -30,34 +30,51 @@ SOFTWARE.
 
 #include "GPUSync.h"
 
-#include "RenderLocal.h"
+#include <RenderCore/Device.h>
 
 using namespace RenderCore;
 
+AGPUSync::AGPUSync( RenderCore::IImmediateContext * _pImmediateContext )
+    : pImmediateContext( _pImmediateContext )
+{
+
+}
+
+AGPUSync::~AGPUSync()
+{
+}
+
+void AGPUSync::SetEvent()
+{
+    if ( Texture ) {
+        Texture->GenerateLods();
+    }
+}
+
 void AGPUSync::Wait()
 {
-    if ( !bCreated ) {
-        bCreated = true;
-
+    if ( !Texture ) {
         byte data[2*2*4];
         Core::Memset( data, 128, sizeof( data ) );
 
-        GDevice->CreateTexture( MakeTexture( TEXTURE_FORMAT_RGBA8,
-                                             STextureResolution2D( 2, 2 ),
-                                             STextureMultisampleInfo(),
-                                             STextureSwizzle(),
-                                             2 ),
-                                &Texture );
+        IDevice * device = pImmediateContext->GetDevice();
+
+        device->CreateTexture( MakeTexture( TEXTURE_FORMAT_RGBA8,
+                                            STextureResolution2D( 2, 2 ),
+                                            STextureMultisampleInfo(),
+                                            STextureSwizzle(),
+                                            2 ),
+                               &Texture );
 
         Texture->Write( 0, FORMAT_UBYTE4, sizeof( data ), 1, data );
 
 
-        GDevice->CreateTexture( MakeTexture( TEXTURE_FORMAT_RGBA8,
-                                             STextureResolution2D( 1, 1 ),
-                                             STextureMultisampleInfo(),
-                                             STextureSwizzle(),
-                                             1 ),
-                                &Staging );
+        device->CreateTexture( MakeTexture( TEXTURE_FORMAT_RGBA8,
+                                            STextureResolution2D( 1, 1 ),
+                                            STextureMultisampleInfo(),
+                                            STextureSwizzle(),
+                                            1 ),
+                               &Staging );
     }
     else {
         TextureCopy copy = {};
@@ -74,26 +91,9 @@ void AGPUSync::Wait()
         copy.DstOffset.Y = 0;
         copy.DstOffset.Z = 0;
 
-        rcmd->CopyTextureRect( Texture, Staging, 1, &copy );
+        pImmediateContext->CopyTextureRect( Texture, Staging, 1, &copy );
 
         byte data[4];
         Staging->Read( 0, FORMAT_UBYTE4, 4, 1, data );
-    }
-}
-
-void AGPUSync::SetEvent()
-{
-    if ( bCreated ) {
-        Texture->GenerateLods();
-    }
-}
-
-void AGPUSync::Release()
-{
-    if ( bCreated ) {
-        bCreated = false;
-
-        Texture.Reset();
-        Staging.Reset();
     }
 }

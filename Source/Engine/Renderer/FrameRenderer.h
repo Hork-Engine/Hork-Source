@@ -55,7 +55,7 @@ public:
         AFrameGraphTexture * FinalTexture;
     };
 
-    void Render( AFrameGraph & FrameGraph, bool bVirtualTexturing, SFrameGraphCaptured & CapturedResources );
+    void Render( AFrameGraph & FrameGraph, bool bVirtualTexturing, class AVirtualTextureCache * PhysCacheVT, SFrameGraphCaptured & CapturedResources );
 
 private:
     void AddLinearizeDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DepthTexture, AFrameGraphTexture ** ppLinearDepth );

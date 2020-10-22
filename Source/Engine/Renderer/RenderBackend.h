@@ -36,40 +36,25 @@ SOFTWARE.
 #include "VT/VirtualTextureFeedback.h"
 #include "VT/VirtualTexturePhysCache.h"
 
-#include "VertexMemoryGPU.h"
 #include "CanvasRenderer.h"
 #include "FrameRenderer.h"
-#include "GPUSync.h"
 
-class ARenderBackend
+#include <Runtime/Public/VertexMemoryGPU.h>
+
+class ARenderBackend : public ARefCounted
 {
 public:
-    ARenderBackend() {}
-
-    void Initialize( struct SVideoMode const & _VideoMode );
-    void Deinitialize();
-
-    void * GetMainWindow();
-    RenderCore::IDevice * GetDevice();
+    ARenderBackend();
+    ~ARenderBackend();
 
     void RenderFrame( SRenderFrame * pFrameData );
-    void SwapBuffers();
-    void WaitGPU();
-    void ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem );
 
     void InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _Def );
 
-    AVertexMemoryGPU * GetVertexMemoryGPU() { return VertexMemoryGPU; }
-    AStreamedMemoryGPU * GetStreamedMemoryGPU() { return StreamedMemoryGPU; }
-
 private:
-    void SetGPUEvent();
     void RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture );
     void SetViewConstants();
     void UploadShaderResources();
-
-    TRef< AVertexMemoryGPU > VertexMemoryGPU;
-    TRef< AStreamedMemoryGPU > StreamedMemoryGPU;
 
     TRef< AFrameGraph > FrameGraph;
     AFrameRenderer::SFrameGraphCaptured CapturedResources;
@@ -77,20 +62,14 @@ private:
     TRef< ACanvasRenderer > CanvasRenderer;
     TRef< AFrameRenderer > FrameRenderer;
 
-    AGPUSync GPUSync;
-
     TRef< RenderCore::IQueryPool > TimeQuery;
 
     TRef< RenderCore::IQueryPool > TimeStamp1;
     TRef< RenderCore::IQueryPool > TimeStamp2;
 
-public:
-    // TODO: Make private?
     TRef< AVirtualTextureFeedbackAnalyzer > FeedbackAnalyzerVT;
     TRef< AVirtualTextureCache > PhysCacheVT;
 
     // Just for test
     TRef< AVirtualTexture > TestVT;
 };
-
-extern ARenderBackend GRenderBackend;

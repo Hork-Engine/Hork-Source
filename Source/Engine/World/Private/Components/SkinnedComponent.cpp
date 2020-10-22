@@ -42,7 +42,7 @@ SOFTWARE.
 #include <World/Public/Resource/Animation.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
-#include <Renderer/VertexMemoryGPU.h>
+#include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/RuntimeVariable.h>
 #include <BulletSoftBody/btSoftBody.h>
 
@@ -479,7 +479,7 @@ void ASkinnedComponent::OnPreRenderUpdate( SRenderFrontendDef const * _Def ) {
 
     SkeletonSize = joints.Size() * sizeof( Float3x4 );
     if ( SkeletonSize > 0 ) {
-        AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+        AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
         // Write joints from previous frame
         SkeletonOffsetMB = streamedMemory->AllocateJoint( SkeletonSize, JointsBufferData );

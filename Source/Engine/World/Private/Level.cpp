@@ -124,19 +124,19 @@ void ALevel::Initialize() {
     bufferCI.MutableUsage = RenderCore::MUTABLE_STORAGE_STATIC;
 
     bufferCI.SizeInBytes = ShadowCasterVerts.Size() * sizeof( Float3 );
-    GRenderBackend.GetDevice()->CreateBuffer( bufferCI, ShadowCasterVerts.ToPtr(), &ShadowCasterVB );
+    GRuntime.GetRenderDevice()->CreateBuffer( bufferCI, ShadowCasterVerts.ToPtr(), &ShadowCasterVB );
     ShadowCasterVB->SetDebugName( "ShadowCasterVB" );
 
     bufferCI.SizeInBytes = ShadowCasterIndices.Size() * sizeof( unsigned int );
-    GRenderBackend.GetDevice()->CreateBuffer( bufferCI, ShadowCasterIndices.ToPtr(), &ShadowCasterIB );
+    GRuntime.GetRenderDevice()->CreateBuffer( bufferCI, ShadowCasterIndices.ToPtr(), &ShadowCasterIB );
     ShadowCasterIB->SetDebugName( "ShadowCasterIB" );
 
     bufferCI.SizeInBytes = LightPortalVertexBuffer.Size() * sizeof( Float3 );
-    GRenderBackend.GetDevice()->CreateBuffer( bufferCI, LightPortalVertexBuffer.ToPtr(), &LightPortalsVB );
+    GRuntime.GetRenderDevice()->CreateBuffer( bufferCI, LightPortalVertexBuffer.ToPtr(), &LightPortalsVB );
     ShadowCasterIB->SetDebugName( "LightPortalVertexBuffer" );
 
     bufferCI.SizeInBytes = LightPortalIndexBuffer.Size() * sizeof( unsigned int );
-    GRenderBackend.GetDevice()->CreateBuffer( bufferCI, LightPortalIndexBuffer.ToPtr(), &LightPortalsIB );
+    GRuntime.GetRenderDevice()->CreateBuffer( bufferCI, LightPortalIndexBuffer.ToPtr(), &LightPortalsIB );
     ShadowCasterIB->SetDebugName( "LightPortalIndexBuffer" );
 }
 

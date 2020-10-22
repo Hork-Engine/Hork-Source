@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/Texture.h>
+#include <RenderCore/ImmediateContext.h>
 
 /*
 
@@ -39,14 +39,17 @@ AGPUSync
 Sync GPU and CPU. Used to reduce input lag.
 
 */
-struct AGPUSync {
-    void Wait();
-    void SetEvent();
+class AGPUSync : public ARefCounted
+{
+public:
+    AGPUSync( RenderCore::IImmediateContext * pImmediateContext );
+    ~AGPUSync();
 
-    void Release();
+    void SetEvent();
+    void Wait();
 
 private:
-    bool bCreated = false;
+    RenderCore::IImmediateContext *  pImmediateContext;
     TRef< RenderCore::ITexture > Texture;
     TRef< RenderCore::ITexture > Staging;
 };

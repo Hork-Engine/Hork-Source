@@ -39,7 +39,6 @@ SOFTWARE.
 #include <World/Public/Widgets/WDesktop.h>
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/ScopedTimeCheck.h>
-#include <Renderer/VertexMemoryGPU.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 
 #include "VSD.h"
@@ -140,7 +139,7 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, FrameData.Instances.Size() + FrameData.ShadowInstances.Size() );
 
     if ( DebugDraw.CommandsCount() > 0 ) {
-        AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+        AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
         FrameData.DbgCmds = DebugDraw.GetCmds().ToPtr();
         FrameData.DbgVertexStreamOffset = streamedMemory->AllocateVertex( DebugDraw.GetVertices().Size() * sizeof( SDebugVertex ), DebugDraw.GetVertices().ToPtr() );
@@ -156,7 +155,7 @@ void ARenderFrontend::RenderView( int _Index ) {
     ACameraComponent * camera = viewport->Camera;
     AWorld * world = camera->GetWorld();
     SRenderView * view = &FrameData.RenderViews[_Index];
-    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
     AN_ASSERT( RP ); // TODO: Don't allow <null> rendering parameters
 
@@ -345,7 +344,7 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
         return;
     }
 
-    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
     // Copy vertex data
     drawList->VertexStreamOffset = streamedMemory->AllocateVertex( sizeof( SHUDDrawVert ) * srcList->VtxBuffer.Size, srcList->VtxBuffer.Data );
@@ -736,7 +735,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
     ADrawable * drawable;
     AAnalyticLightComponent * light;
     AIBLComponent * ibl;
-    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
     VisLights.Clear();
     VisIBLs.Clear();
@@ -1403,7 +1402,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
         return;
     }
 
-    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
     // Create shadow instances
 
@@ -1605,7 +1604,7 @@ void ARenderFrontend::AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCo
         return;
     }
 
-    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
     SurfaceStream.VertexAddr = streamedMemory->AllocateVertex( totalVerts * sizeof( SMeshVertex ), nullptr );
     SurfaceStream.VertexLightAddr = streamedMemory->AllocateVertex( totalVerts * sizeof( SMeshVertexLight ), nullptr );
@@ -1699,7 +1698,7 @@ void ARenderFrontend::AddShadowmapSurfaces( SLightShadowmap * ShadowMap, SSurfac
         return;
     }
 
-    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
     SurfaceStream.VertexAddr = streamedMemory->AllocateVertex( totalVerts * sizeof( SMeshVertex ), nullptr );
     SurfaceStream.IndexAddr = streamedMemory->AllocateIndex( totalIndices * sizeof( unsigned int ), nullptr );
@@ -1797,7 +1796,7 @@ void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialIn
     instance->Material = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
 
-    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
     streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset );
     streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset );
@@ -1851,7 +1850,7 @@ void ARenderFrontend::AddShadowmapSurface( SLightShadowmap * ShadowMap, AMateria
     instance->Material = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
 
-    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
     streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset );
     streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset );

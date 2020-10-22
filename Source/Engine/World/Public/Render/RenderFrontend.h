@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Renderer/RenderBackend.h>
+#include <Renderer/RenderDefs.h>
 #include <World/Public/Base/DebugRenderer.h>
 #include <World/Public/Canvas.h>
 #include <World/Public/Resource/IndexedMesh.h>

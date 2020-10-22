@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Core/Public/PoolAllocator.h>
 #include <Core/Public/PodArray.h>
-#include <RenderCore/ImmediateContext.h>
+#include <RenderCore/Device.h>
 
 constexpr size_t VERTEX_MEMORY_GPU_BLOCK_SIZE = 32<<20; // 32 MB
 constexpr size_t VERTEX_MEMORY_GPU_BLOCK_COUNT = 256;   // max memory VERTEX_MEMORY_GPU_BLOCK_SIZE * VERTEX_MEMORY_GPU_BLOCK_COUNT = 8 GB
@@ -88,7 +88,7 @@ public:
     /** Max blocks count. */
     uint8_t MaxBlocks = 0;
 
-    AVertexMemoryGPU();
+    AVertexMemoryGPU( RenderCore::IDevice * Device );
 
     ~AVertexMemoryGPU();
 
@@ -167,6 +167,7 @@ private:
         size_t UsedMemory;
     };
 
+    TRef< RenderCore::IDevice > RenderDevice;
     TPodArray< SVertexHandle * > Handles;
     TPodArray< SVertexHandle * > HugeHandles;
     TPodArray< SBlock > Blocks;
@@ -181,7 +182,7 @@ class AStreamedMemoryGPU : public ARefCounted {
     AN_FORBID_COPY( AStreamedMemoryGPU )
 
 public:
-    AStreamedMemoryGPU();
+    AStreamedMemoryGPU( RenderCore::IDevice * Device );
 
     ~AStreamedMemoryGPU();
 
@@ -210,10 +211,10 @@ public:
     RenderCore::IBuffer * GetBufferGPU();
 
     /** Internal. Wait buffer before filling. */
-    void Begin();
+    void Wait();
 
     /** Internal. Swap write buffers. */
-    void End();
+    void Swap();
 
     /** Get total allocated memory */
     size_t GetAllocatedMemory() const { return STREAMED_MEMORY_GPU_BLOCK_SIZE; }
@@ -244,6 +245,8 @@ private:
         RenderCore::SyncObject Sync;
     };
 
+    TRef< RenderCore::IDevice > RenderDevice;
+    RenderCore::IImmediateContext * pImmediateContext;
     SChainBuffer ChainBuffer[STREAMED_MEMORY_GPU_BUFFERS_COUNT];
     TRef< RenderCore::IBuffer > Buffer;
     void * pMappedMemory;

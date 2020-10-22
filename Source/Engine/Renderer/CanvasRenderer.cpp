@@ -31,6 +31,8 @@ SOFTWARE.
 #include "CanvasRenderer.h"
 #include "RenderLocal.h"
 
+#include <Runtime/Public/Runtime.h>
+
 using namespace RenderCore;
 
 ACanvasRenderer::ACanvasRenderer()
@@ -302,7 +304,7 @@ void ACanvasRenderer::Render( std::function<void(SRenderView *, AFrameGraphTextu
 
     SCanvasBinding canvasBinding;
 
-    AStreamedMemoryGPU * streamedMemory = GRenderBackend.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
     canvasBinding.Size = sizeof( SCanvasConstants );
     canvasBinding.Offset = streamedMemory->AllocateConstant( canvasBinding.Size );

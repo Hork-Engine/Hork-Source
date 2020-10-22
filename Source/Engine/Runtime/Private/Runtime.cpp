@@ -33,7 +33,6 @@ SOFTWARE.
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/EngineInterface.h>
 #include <Runtime/Public/InputDefs.h>
-#include <Renderer/RenderBackend.h>
 
 #include <Core/Public/Logger.h>
 #include <Core/Public/CriticalError.h>
@@ -41,6 +40,7 @@ SOFTWARE.
 #include <Core/Public/WindowsDefs.h>
 
 #include "CPUInfo.h"
+#include "GPUSync.h"
 
 #include <SDL.h>
 
@@ -76,6 +76,13 @@ ARuntimeVariable rt_VidFullscreen( _CTS( "rt_VidFullscreen" ), _CTS( "0" ) );
 #else
 ARuntimeVariable rt_VidFullscreen( _CTS( "rt_VidFullscreen" ), _CTS( "1" ) );
 #endif
+ARuntimeVariable rt_SyncGPU( _CTS( "rt_SyncGPU" ), _CTS( "0" ) );
+
+ARuntimeVariable rt_SwapInterval( _CTS( "rt_SwapInterval" ), _CTS( "0" ), 0, _CTS( "1 - enable vsync, 0 - disable vsync, -1 - tearing" ) );
+
+static int TotalAllocatedRenderCore = 0;
+static SDL_Window * WindowHandle;
+static TRef< AGPUSync > GPUSync;
 
 static int PressedKeys[KEY_LAST+1];
 static bool PressedMouseButtons[MOUSE_BUTTON_8+1];
@@ -102,7 +109,8 @@ ARuntime::ARuntime()
     ProcessAttribute = 0;
 }
 
-void ARuntime::LoadConfigFile() {
+void ARuntime::LoadConfigFile()
+{
     AString configFile = GetRootPath() + "config.cfg";
     AFileStream f;
     if ( f.OpenRead( configFile ) ) {
@@ -137,8 +145,83 @@ void ARuntime::LoadConfigFile() {
     }
 }
 
-void ARuntime::Run( SEntryDecl const & _EntryDecl ) {
+static SDL_Window * CreateGenericWindow( SVideoMode const & _VideoMode )
+{
+    int flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
 
+    bool bOpenGL = true;
+
+    SDL_InitSubSystem( SDL_INIT_VIDEO );
+
+    if ( bOpenGL ) {
+        flags |= SDL_WINDOW_OPENGL;
+
+        SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 4 );
+        SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 5 );
+        SDL_GL_SetAttribute( SDL_GL_CONTEXT_EGL, 0 );
+        SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS, 0 );
+        SDL_GL_SetAttribute( SDL_GL_CONTEXT_FLAGS,
+                             SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
+#ifdef AN_DEBUG
+                             | SDL_GL_CONTEXT_DEBUG_FLAG
+#endif
+        );
+        //SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE | SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
+        SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
+        SDL_GL_SetAttribute( SDL_GL_SHARE_WITH_CURRENT_CONTEXT, 0 );
+        SDL_GL_SetAttribute( SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1 );
+        //SDL_GL_SetAttribute( SDL_GL_CONTEXT_RELEASE_BEHAVIOR,  );
+        //SDL_GL_SetAttribute( SDL_GL_CONTEXT_RESET_NOTIFICATION,  );
+        //SDL_GL_SetAttribute( SDL_GL_CONTEXT_NO_ERROR,  );
+        SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 8 );
+        SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 8 );
+        SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 8 );
+        SDL_GL_SetAttribute( SDL_GL_ALPHA_SIZE, 8 );
+        SDL_GL_SetAttribute( SDL_GL_BUFFER_SIZE, 0 );
+        SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+        SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 0 );
+        SDL_GL_SetAttribute( SDL_GL_STENCIL_SIZE, 0 );
+        SDL_GL_SetAttribute( SDL_GL_ACCUM_RED_SIZE, 0 );
+        SDL_GL_SetAttribute( SDL_GL_ACCUM_GREEN_SIZE, 0 );
+        SDL_GL_SetAttribute( SDL_GL_ACCUM_BLUE_SIZE, 0 );
+        SDL_GL_SetAttribute( SDL_GL_ACCUM_ALPHA_SIZE, 0 );
+        SDL_GL_SetAttribute( SDL_GL_STEREO, 0 );
+        SDL_GL_SetAttribute( SDL_GL_MULTISAMPLEBUFFERS, 0 );
+        SDL_GL_SetAttribute( SDL_GL_MULTISAMPLESAMPLES, 0 );
+        //SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL,  );
+        //SDL_GL_SetAttribute( SDL_GL_RETAINED_BACKING,  );
+    }
+
+    int x, y;
+
+    if ( _VideoMode.bFullscreen ) {
+        flags |= SDL_WINDOW_FULLSCREEN;// | SDL_WINDOW_BORDERLESS;
+        x = y = 0;
+    }
+    else {
+        if ( _VideoMode.bCentrized ) {
+            x = SDL_WINDOWPOS_CENTERED;
+            y = SDL_WINDOWPOS_CENTERED;
+        }
+        else {
+            x = _VideoMode.WindowedX;
+            y = _VideoMode.WindowedY;
+        }
+    }
+
+    return SDL_CreateWindow( _VideoMode.Title, x, y, _VideoMode.Width, _VideoMode.Height, flags );
+}
+
+static void DestroyGenericWindow( SDL_Window * Window )
+{
+    if ( Window ) {
+        SDL_DestroyWindow( Window );
+        SDL_QuitSubSystem( SDL_INIT_VIDEO );
+    }
+}
+
+void ARuntime::Run( SEntryDecl const & _EntryDecl )
+{
     // Synchronize SDL ticks with our start time
     (void)SDL_GetTicks();
 
@@ -275,7 +358,47 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl ) {
     Core::Strcpy( desiredMode.Backend, sizeof( desiredMode.Backend ), "OpenGL 4.5" );
     Core::Strcpy( desiredMode.Title, sizeof( desiredMode.Title ), _EntryDecl.GameTitle );
 
-    GRenderBackend.Initialize( desiredMode );
+    WindowHandle = CreateGenericWindow( desiredMode );
+    if ( !WindowHandle ) {
+        CriticalError( "Failed to create main window\n" );
+    }
+
+    RenderCore::SImmediateContextCreateInfo stateCreateInfo = {};
+    stateCreateInfo.ClipControl = RenderCore::CLIP_CONTROL_DIRECTX;
+    stateCreateInfo.ViewportOrigin = RenderCore::VIEWPORT_ORIGIN_TOP_LEFT;
+    stateCreateInfo.SwapInterval = rt_SwapInterval.GetInteger();
+    stateCreateInfo.Window = WindowHandle;
+
+    RenderCore::SAllocatorCallback allocator;
+
+    allocator.Allocate =
+        []( size_t _BytesCount )
+        {
+            TotalAllocatedRenderCore++;
+            return GZoneMemory.Alloc( _BytesCount );
+        };
+
+    allocator.Deallocate =
+        []( void * _Bytes )
+        {
+            TotalAllocatedRenderCore--;
+            GZoneMemory.Free( _Bytes );
+        };
+
+    CreateLogicalDevice( stateCreateInfo,
+                         &allocator,
+                         []( const unsigned char * _Data, int _Size )
+                         {
+                             return Core::Hash( ( const char * )_Data, _Size );
+                         },
+                         &RenderDevice );
+
+    VertexMemoryGPU = MakeRef< AVertexMemoryGPU >( RenderDevice );
+    StreamedMemoryGPU = MakeRef< AStreamedMemoryGPU >( RenderDevice );
+
+    RenderDevice->GetImmediateContext( &pImmediateContext );
+
+    GPUSync = MakeRef< AGPUSync >( pImmediateContext );
 
     SetVideoMode( desiredMode );
 
@@ -292,7 +415,17 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl ) {
         EmergencyExit();
     }
 
-    GRenderBackend.Deinitialize();
+    GPUSync.Reset();
+
+    VertexMemoryGPU.Reset();
+    StreamedMemoryGPU.Reset();
+
+    RenderDevice.Reset();
+
+    DestroyGenericWindow( WindowHandle );
+    WindowHandle = nullptr;
+
+    GLogger.Printf( "TotalAllocatedRenderCore: %d\n", TotalAllocatedRenderCore );
 
     WorkingDir.Free();
     RootPath.Free();
@@ -315,7 +448,8 @@ struct SProcessLog {
 static SProcessLog ProcessLog = {};
 static AThreadSync LoggerSync;
 
-static void LoggerMessageCallback( int _Level, const char * _Message ) {
+static void LoggerMessageCallback( int _Level, const char * _Message )
+{
     #if defined AN_DEBUG
         #if defined AN_COMPILER_MSVC
         {
@@ -350,7 +484,8 @@ static void LoggerMessageCallback( int _Level, const char * _Message ) {
 #ifdef AN_ALLOW_ASSERTS
 
 // Define global assert function
-void AssertFunction( const char * _File, int _Line, const char * _Function, const char * _Assertion, const char * _Comment ) {
+void AssertFunction( const char * _File, int _Line, const char * _Function, const char * _Assertion, const char * _Comment )
+{
     static thread_local bool bNestedFunctionCall = false;
 
     if ( bNestedFunctionCall ) {
@@ -387,7 +522,8 @@ void AssertFunction( const char * _File, int _Line, const char * _Function, cons
 static HANDLE ProcessMutex = NULL;
 #endif
 
-void ARuntime::InitializeProcess() {
+void ARuntime::InitializeProcess()
+{
     setlocale( LC_ALL, "C" );
     srand( ( unsigned )time( NULL ) );
 
@@ -471,7 +607,8 @@ void ARuntime::InitializeProcess() {
     }
 }
 
-void ARuntime::DeinitializeProcess() {
+void ARuntime::DeinitializeProcess()
+{
     if ( ProcessLog.File ) {
         fclose( ProcessLog.File );
         ProcessLog.File = nullptr;
@@ -496,7 +633,8 @@ struct SMemoryInfo {
     int CurrentAvailableMegabytes;
 };
 
-static SMemoryInfo GetPhysMemoryInfo() {
+static SMemoryInfo GetPhysMemoryInfo()
+{
     SMemoryInfo info;
 
     Core::ZeroMem( &info, sizeof( info ) );
@@ -521,7 +659,8 @@ static SMemoryInfo GetPhysMemoryInfo() {
 volatile int MemoryChecksum;
 static void * MemoryHeap;
 
-static void TouchMemoryPages( void * _MemoryPointer, int _MemorySize ) {
+static void TouchMemoryPages( void * _MemoryPointer, int _MemorySize )
+{
     GLogger.Printf( "Touching memory pages...\n" );
 
     byte * p = ( byte * )_MemoryPointer;
@@ -538,7 +677,8 @@ static void TouchMemoryPages( void * _MemoryPointer, int _MemorySize ) {
     //}
 }
 
-void ARuntime::InitializeMemory() {
+void ARuntime::InitializeMemory()
+{
     const size_t ZoneSizeInMegabytes = 256;
     const size_t HunkSizeInMegabytes = 32;
     const size_t FrameMemorySizeInMegabytes = 16;
@@ -592,14 +732,16 @@ void ARuntime::InitializeMemory() {
     FrameMemorySize = FrameMemorySizeInMegabytes << 20;
 }
 
-void ARuntime::DeinitializeMemory() {
+void ARuntime::DeinitializeMemory()
+{
     GZoneMemory.Deinitialize();
     GHunkMemory.Deinitialize();
     GHeapMemory.Free( MemoryHeap );
     GHeapMemory.Deinitialize();
 }
 
-void ARuntime::InitializeWorkingDirectory() {
+void ARuntime::InitializeWorkingDirectory()
+{
     WorkingDir = Executable;
     WorkingDir.StripFilename();
 
@@ -622,7 +764,8 @@ void ARuntime::InitializeWorkingDirectory() {
     }
 }
 
-void ARuntime::DisplayCriticalMessage( const char * _Message ) {
+void ARuntime::DisplayCriticalMessage( const char * _Message )
+{
 #if defined AN_OS_WIN32
     wchar_t wstr[1024];
     MultiByteToWideChar( CP_UTF8, 0, _Message, -1, wstr, AN_ARRAY_SIZE( wstr ) );
@@ -657,7 +800,8 @@ void ARuntime::DisplayCriticalMessage( const char * _Message ) {
 #endif
 }
 
-void ARuntime::EmergencyExit() {
+void ARuntime::EmergencyExit()
+{
     const char * msg = MapCriticalErrorMessage();
     DisplayCriticalMessage( msg );
     UnmapCriticalErrorMessage();
@@ -672,7 +816,8 @@ void ARuntime::EmergencyExit() {
     //std::abort();
 }
 
-int ARuntime::CheckArg( const char * _Arg ) {
+int ARuntime::CheckArg( const char * _Arg )
+{
     for ( int i = 0 ; i < NumArguments ; i++ ) {
         if ( !Core::Stricmp( Arguments[ i ], _Arg ) ) {
             return i;
@@ -681,7 +826,8 @@ int ARuntime::CheckArg( const char * _Arg ) {
     return -1;
 }
 
-static void AllocCommandLineArgs( char * _Buffer, int * _NumArguments, char *** _Arguments ) {
+static void AllocCommandLineArgs( char * _Buffer, int * _NumArguments, char *** _Arguments )
+{
     char ** args = nullptr;
     int count;
     char * s;
@@ -759,7 +905,8 @@ static void AllocCommandLineArgs( char * _Buffer, int * _NumArguments, char *** 
     *_Arguments = args;
 }
 
-static void FreeCommandLineArgs( char ** _Arguments ) {
+static void FreeCommandLineArgs( char ** _Arguments )
+{
     free( _Arguments );
 }
 
@@ -767,7 +914,8 @@ static void FreeCommandLineArgs( char ** _Arguments ) {
 static char CmdLineBuffer[ MAX_COMMAND_LINE_LENGTH ];
 static bool bApplicationRun = false;
 
-ANGIE_API void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl ) {
+ANGIE_API void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl )
+{
     if ( bApplicationRun ) {
         AN_ASSERT( 0 );
         return;
@@ -785,7 +933,8 @@ ANGIE_API void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl
     FreeCommandLineArgs( GRuntime.Arguments );
 }
 
-ANGIE_API void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl ) {
+ANGIE_API void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl )
+{
     if ( bApplicationRun ) {
         AN_ASSERT( 0 );
         return;
@@ -806,35 +955,41 @@ ANGIE_API void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl 
 BOOL WINAPI DllMain(
     _In_ HINSTANCE hinstDLL,
     _In_ DWORD     fdwReason,
-    _In_ LPVOID    lpvReserved
-) {
+    _In_ LPVOID    lpvReserved )
+{
     _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 
     return TRUE;
 }
 #endif
 
-int ARuntime::GetArgc() {
+int ARuntime::GetArgc()
+{
     return NumArguments;
 }
 
-const char * const *ARuntime::GetArgv() {
+const char * const *ARuntime::GetArgv()
+{
     return Arguments;
 }
 
-AString const & ARuntime::GetWorkingDir() {
+AString const & ARuntime::GetWorkingDir()
+{
     return WorkingDir;
 }
 
-AString const & ARuntime::GetRootPath() {
+AString const & ARuntime::GetRootPath()
+{
     return RootPath;
 }
 
-const char * ARuntime::GetExecutableName() {
+const char * ARuntime::GetExecutableName()
+{
     return Executable ? Executable : "";
 }
 
-void * ARuntime::AllocFrameMem( size_t _SizeInBytes ) {
+void * ARuntime::AllocFrameMem( size_t _SizeInBytes )
+{
     if ( FrameMemoryUsed + _SizeInBytes > FrameMemorySize ) {
         // TODO: Allocate new block
         GLogger.Printf( "AllocFrameMem: failed on allocation of %u bytes (available %u, total %u)\n", _SizeInBytes, FrameMemorySize - FrameMemoryUsed, FrameMemorySize );
@@ -853,23 +1008,28 @@ void * ARuntime::AllocFrameMem( size_t _SizeInBytes ) {
     return pMemory;
 }
 
-size_t ARuntime::GetFrameMemorySize() const {
+size_t ARuntime::GetFrameMemorySize() const
+{
     return FrameMemorySize;
 }
 
-size_t ARuntime::GetFrameMemoryUsed() const {
+size_t ARuntime::GetFrameMemoryUsed() const
+{
     return FrameMemoryUsed;
 }
 
-size_t ARuntime::GetFrameMemoryUsedPrev() const {
+size_t ARuntime::GetFrameMemoryUsedPrev() const
+{
     return FrameMemoryUsedPrev;
 }
 
-size_t ARuntime::GetMaxFrameMemoryUsage() const {
+size_t ARuntime::GetMaxFrameMemoryUsage() const
+{
     return MaxFrameMemoryUsage;
 }
 
-SCPUInfo const & ARuntime::GetCPUInfo() const {
+SCPUInfo const & ARuntime::GetCPUInfo() const
+{
     return CPUInfo;
 }
 
@@ -888,7 +1048,8 @@ static thread_local SWaitableTimer WaitableTimer;
 
 //#include <thread>
 
-static void WaitMicrosecondsWIN32( int _Microseconds ) {
+static void WaitMicrosecondsWIN32( int _Microseconds )
+{
 #if 0
     std::this_thread::sleep_for( StdChrono::microseconds( _Microseconds ) );
 #else
@@ -907,7 +1068,8 @@ static void WaitMicrosecondsWIN32( int _Microseconds ) {
 
 #endif
 
-void ARuntime::WaitSeconds( int _Seconds ) {
+void ARuntime::WaitSeconds( int _Seconds )
+{
 #ifdef AN_OS_WIN32
     //std::this_thread::sleep_for( StdChrono::seconds( _Seconds ) );
     WaitMicrosecondsWIN32( _Seconds * 1000000 );
@@ -917,7 +1079,8 @@ void ARuntime::WaitSeconds( int _Seconds ) {
 #endif
 }
 
-void ARuntime::WaitMilliseconds( int _Milliseconds ) {
+void ARuntime::WaitMilliseconds( int _Milliseconds )
+{
 #ifdef AN_OS_WIN32
     //std::this_thread::sleep_for( StdChrono::milliseconds( _Milliseconds ) );
     WaitMicrosecondsWIN32( _Milliseconds * 1000 );
@@ -932,7 +1095,8 @@ void ARuntime::WaitMilliseconds( int _Milliseconds ) {
 #endif
 }
 
-void ARuntime::WaitMicroseconds( int _Microseconds ) {
+void ARuntime::WaitMicroseconds( int _Microseconds )
+{
 #ifdef AN_OS_WIN32
     //std::this_thread::sleep_for( StdChrono::microseconds( _Microseconds ) );
     WaitMicrosecondsWIN32( _Microseconds );
@@ -947,43 +1111,53 @@ void ARuntime::WaitMicroseconds( int _Microseconds ) {
 #endif
 }
 
-int64_t ARuntime::SysSeconds() {
+int64_t ARuntime::SysSeconds()
+{
     return StdChrono::duration_cast< StdChrono::seconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - StartSeconds;
 }
 
-double ARuntime::SysSeconds_d() {
+double ARuntime::SysSeconds_d()
+{
     return SysMicroseconds() * 0.000001;
 }
 
-int64_t ARuntime::SysMilliseconds() {
+int64_t ARuntime::SysMilliseconds()
+{
     return StdChrono::duration_cast< StdChrono::milliseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - StartMilliseconds;
 }
 
-double ARuntime::SysMilliseconds_d() {
+double ARuntime::SysMilliseconds_d()
+{
     return SysMicroseconds() * 0.001;
 }
 
-int64_t ARuntime::SysMicroseconds() {
+int64_t ARuntime::SysMicroseconds()
+{
     return StdChrono::duration_cast< StdChrono::microseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - StartMicroseconds;
 }
 
-double ARuntime::SysMicroseconds_d() {
+double ARuntime::SysMicroseconds_d()
+{
     return static_cast< double >( SysMicroseconds() );
 }
 
-int64_t ARuntime::SysFrameTimeStamp() {
+int64_t ARuntime::SysFrameTimeStamp()
+{
     return FrameTimeStamp;
 }
 
-int64_t ARuntime::SysFrameDuration() {
+int64_t ARuntime::SysFrameDuration()
+{
     return FrameDuration;
 }
 
-int ARuntime::SysFrameNumber() const {
+int ARuntime::SysFrameNumber() const
+{
     return FrameNumber;
 }
 
-void * ARuntime::LoadDynamicLib( const char * _LibraryName ) {
+void * ARuntime::LoadDynamicLib( const char * _LibraryName )
+{
     AString name( _LibraryName );
 #if defined AN_OS_WIN32
     name.ReplaceExt( ".dll" );
@@ -993,19 +1167,23 @@ void * ARuntime::LoadDynamicLib( const char * _LibraryName ) {
     return SDL_LoadObject( name.CStr() );
 }
 
-void ARuntime::UnloadDynamicLib( void * _Handle ) {
+void ARuntime::UnloadDynamicLib( void * _Handle )
+{
     SDL_UnloadObject( _Handle );
 }
 
-void * ARuntime::GetProcAddress( void * _Handle, const char * _ProcName ) {
+void * ARuntime::GetProcAddress( void * _Handle, const char * _ProcName )
+{
     return _Handle ? SDL_LoadFunction( _Handle, _ProcName ) : nullptr;
 }
 
-void ARuntime::SetClipboard( const char * _Utf8String ) {
+void ARuntime::SetClipboard( const char * _Utf8String )
+{
     SDL_SetClipboardText( _Utf8String );
 }
 
-const char * ARuntime::GetClipboard() {
+const char * ARuntime::GetClipboard()
+{
     if ( Clipboard ) {
         SDL_free( Clipboard );
     }
@@ -1013,20 +1191,24 @@ const char * ARuntime::GetClipboard() {
     return Clipboard;
 }
 
-SVideoMode const & ARuntime::GetVideoMode() const {
+SVideoMode const & ARuntime::GetVideoMode() const
+{
     return VideoMode;
 }
 
-void ARuntime::PostChangeVideoMode( SVideoMode const & _DesiredMode ) {
+void ARuntime::PostChangeVideoMode( SVideoMode const & _DesiredMode )
+{
     DesiredMode = _DesiredMode;
     bResetVideoMode = true;
 }
 
-void ARuntime::PostTerminateEvent() {
+void ARuntime::PostTerminateEvent()
+{
     bTerminate = true;
 }
 
-bool ARuntime::IsPendingTerminate() {
+bool ARuntime::IsPendingTerminate()
+{
     return bTerminate;
 }
 
@@ -1043,7 +1225,8 @@ struct SKeyMappingsSDL {
 
 static SKeyMappingsSDL SDLKeyMappings;
 
-static void InitKeyMappingsSDL() {
+static void InitKeyMappingsSDL()
+{
     Core::ZeroMem( SDLKeyMappings.Table, sizeof( SDLKeyMappings.Table ) );
 
     SDLKeyMappings[ SDL_SCANCODE_A ] = KEY_A;
@@ -1290,7 +1473,8 @@ static void InitKeyMappingsSDL() {
     //SDLKeyMappings[ SDL_SCANCODE_AUDIOFASTFORWARD ] = 286;
 }
 
-static AN_FORCEINLINE int FromKeymodSDL( Uint16 Mod ) {
+static AN_FORCEINLINE int FromKeymodSDL( Uint16 Mod )
+{
     int modMask = 0;
 
     if ( Mod & (KMOD_LSHIFT|KMOD_RSHIFT) ) {
@@ -1312,7 +1496,8 @@ static AN_FORCEINLINE int FromKeymodSDL( Uint16 Mod ) {
     return modMask;
 }
 
-static AN_FORCEINLINE int FromKeymodSDL_Char( Uint16 Mod ) {
+static AN_FORCEINLINE int FromKeymodSDL_Char( Uint16 Mod )
+{
     int modMask = 0;
 
     if ( Mod & (KMOD_LSHIFT|KMOD_RSHIFT) ) {
@@ -1342,7 +1527,8 @@ static AN_FORCEINLINE int FromKeymodSDL_Char( Uint16 Mod ) {
     return modMask;
 }
 
-static void UnpressJoystickButtons( int _JoystickNum, double _TimeStamp ) {
+static void UnpressJoystickButtons( int _JoystickNum, double _TimeStamp )
+{
     SJoystickButtonEvent buttonEvent;
     buttonEvent.Joystick = _JoystickNum;
     buttonEvent.Action = IA_RELEASE;
@@ -1355,7 +1541,8 @@ static void UnpressJoystickButtons( int _JoystickNum, double _TimeStamp ) {
     }
 }
 
-static void ClearJoystickAxes( int _JoystickNum, double _TimeStamp ) {
+static void ClearJoystickAxes( int _JoystickNum, double _TimeStamp )
+{
     SJoystickAxisEvent axisEvent;
     axisEvent.Joystick = _JoystickNum;
     axisEvent.Value = 0;
@@ -1368,7 +1555,8 @@ static void ClearJoystickAxes( int _JoystickNum, double _TimeStamp ) {
     }
 }
 
-static void UnpressKeysAndButtons() {
+static void UnpressKeysAndButtons()
+{
     SKeyEvent keyEvent;
     SMouseButtonEvent mouseEvent;
 
@@ -1406,7 +1594,19 @@ static void UnpressKeysAndButtons() {
     }
 }
 
-void ARuntime::NewFrame() {
+void ARuntime::NewFrame()
+{
+    GPUSync->SetEvent();
+
+    // Swap buffers for streamed memory
+    StreamedMemoryGPU->Swap();
+
+    // Swap window
+    RenderDevice->SwapBuffers( WindowHandle, rt_SwapInterval.GetInteger() );
+
+    // Wait for free streamed buffer
+    StreamedMemoryGPU->Wait();
+
     int64_t prevTimeStamp = FrameTimeStamp;
     FrameTimeStamp = SysMicroseconds();
     if ( prevTimeStamp == StartMicroseconds ) {
@@ -1431,9 +1631,15 @@ void ARuntime::NewFrame() {
     }
 }
 
-void ARuntime::PollEvents() {
+void ARuntime::PollEvents()
+{
     // NOTE: Workaround of SDL bug with false mouse motion when a window gain keyboard focus.
     static bool bIgnoreFalseMouseMotionHack = false;
+
+    // Sync with GPU to prevent "input lag"
+    if ( rt_SyncGPU ) {
+        GPUSync->Wait();
+    }
 
     SDL_Event event;
     while ( SDL_PollEvent( &event ) ) {
@@ -1537,7 +1743,7 @@ void ARuntime::PollEvents() {
                 break;
             // Window has been moved to data1, data2
             case SDL_WINDOWEVENT_MOVED:
-                VideoMode.DisplayIndex = SDL_GetWindowDisplayIndex( (SDL_Window *)GRenderBackend.GetMainWindow() );
+                VideoMode.DisplayIndex = SDL_GetWindowDisplayIndex( SDL_GetWindowFromID( event.window.windowID ) );
                 VideoMode.X = event.window.data1;
                 VideoMode.Y = event.window.data2;
                 if ( !VideoMode.bFullscreen ) {
@@ -1551,7 +1757,7 @@ void ARuntime::PollEvents() {
             // a result of an API call or through the
             // system or user changing the window size.
             case SDL_WINDOWEVENT_SIZE_CHANGED: {
-                SDL_Window * wnd = (SDL_Window *)GRenderBackend.GetMainWindow();
+                SDL_Window * wnd = SDL_GetWindowFromID( event.window.windowID );
                 VideoMode.Width = event.window.data1;
                 VideoMode.Height = event.window.data2;
                 VideoMode.DisplayIndex = SDL_GetWindowDisplayIndex( wnd );
@@ -1931,7 +2137,8 @@ void ARuntime::PollEvents() {
     }
 }
 
-static void TestDisplays() {
+static void TestDisplays()
+{
     SDL_InitSubSystem(SDL_INIT_VIDEO);
     int displayCount = SDL_GetNumVideoDisplays();
     SDL_Rect rect;
@@ -1981,10 +2188,11 @@ static void TestDisplays() {
     //SDL_GetClosestDisplayMode
 }
 
-void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode ) {
+void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode )
+{
     Core::Memcpy( &VideoMode, &_DesiredMode, sizeof( VideoMode ) );
 
-    SDL_Window * wnd = (SDL_Window *)GRenderBackend.GetMainWindow();
+    SDL_Window * wnd = WindowHandle;
 
     // Set refresh rate
     //SDL_DisplayMode mode = {};
@@ -2031,18 +2239,39 @@ void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode ) {
     VideoMode.RefreshRate = mode.refresh_rate;
 
     // Swap buffers to prevent flickering
-    GRenderBackend.SwapBuffers();
+    RenderDevice->SwapBuffers( WindowHandle, rt_SwapInterval.GetInteger() );
 }
 
-void ARuntime::SetCursorEnabled( bool _Enabled ) {
+void ARuntime::SetCursorEnabled( bool _Enabled )
+{
     //SDL_SetWindowGrab( Wnd, (SDL_bool)!_Enabled ); // FIXME: Always grab in fullscreen?
     SDL_SetRelativeMouseMode( (SDL_bool)!_Enabled );
 }
 
-bool ARuntime::IsCursorEnabled() {
+bool ARuntime::IsCursorEnabled()
+{
     return !SDL_GetRelativeMouseMode();
 }
 
-void ARuntime::GetCursorPosition( int * _X, int * _Y ) {
+void ARuntime::GetCursorPosition( int * _X, int * _Y )
+{
     (void)SDL_GetMouseState( _X, _Y );
+}
+
+RenderCore::IDevice * ARuntime::GetRenderDevice()
+{
+    return RenderDevice;
+}
+
+void ARuntime::ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem )
+{
+    RenderCore::SRect2D rect;
+    rect.X = _X;
+    rect.Y = _Y;
+    rect.Width = _Width;
+    rect.Height = _Height;
+
+    RenderCore::IFramebuffer * framebuffer = pImmediateContext->GetDefaultFramebuffer();
+
+    framebuffer->Read( RenderCore::FB_BACK_DEFAULT, rect, RenderCore::FB_CHANNEL_RGBA, RenderCore::FB_UBYTE, RenderCore::COLOR_CLAMP_ON, _SizeInBytes, _Alignment, _SysMem );
 }
