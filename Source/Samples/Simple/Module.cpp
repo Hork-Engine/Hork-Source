@@ -41,7 +41,6 @@ class APlayer : public APawn
     AN_ACTOR( APlayer, APawn )
 
 protected:
-    //AMeshComponent * Skybox;
     AMeshComponent * Movable;
     ACameraComponent * Camera;
     ASceneComponent * Spin;
