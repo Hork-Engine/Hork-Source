@@ -180,13 +180,13 @@ private:
         ARenderingParameters * renderingParams = NewObject< ARenderingParameters >();
         renderingParams->bDrawDebug = true;
 
-        AWorld * World = AWorld::CreateWorld();
+        AWorld * world = AWorld::CreateWorld();
 
         // Spawn player
-        APlayer * player = World->SpawnActor< APlayer >( Float3( 0, 0.5f, 0 ), Quat::Identity() );
+        APlayer * player = world->SpawnActor< APlayer >( Float3( 0, 0.5f, 0 ), Quat::Identity() );
 
         // Spawn player controller
-        APlayerController * playerController = World->SpawnActor< APlayerController >();
+        APlayerController * playerController = world->SpawnActor< APlayerController >();
         playerController->SetPlayerIndex( CONTROLLER_PLAYER_1 );
         playerController->SetInputMappings( inputMappings );
         playerController->SetRenderingParameters( renderingParams );
@@ -194,7 +194,7 @@ private:
         playerController->SetPawn( player );
 
         // Spawn directional light
-        ADirectionalLight * dirlight = World->SpawnActor< ADirectionalLight >();
+        ADirectionalLight * dirlight = world->SpawnActor< ADirectionalLight >();
         dirlight->LightComponent->SetCastShadow( true );
         dirlight->LightComponent->SetDirection( Float3( 1, -1, -1 ) );
 
@@ -203,7 +203,7 @@ private:
         spawnTransform.Position = Float3( 0 );
         spawnTransform.Rotation = Quat::Identity();
         spawnTransform.Scale = Float3( 2,1,2 );
-        World->SpawnActor< AGround >( spawnTransform );
+        world->SpawnActor< AGround >( spawnTransform );
 
         WDesktop * desktop = NewObject< WDesktop >();
         GEngine.SetDesktop( desktop );
@@ -229,11 +229,6 @@ private:
         {
             AIndexedMesh * mesh = NewObject< AIndexedMesh >();
             mesh->InitializePlaneMeshXZ( 256, 256, 256 );
-            ACollisionBox * box = mesh->BodyComposition.AddCollisionBody< ACollisionBox >();
-            box->HalfExtents.X = 128;
-            box->HalfExtents.Y = 0.1f;
-            box->HalfExtents.Z = 128;
-            box->Position.Y -= box->HalfExtents.Y;
             RegisterResource( mesh, "DefaultShapePlane256x256x256" );
         }
 
