@@ -47,10 +47,9 @@ protected:
 
     APlayer()
     {
-        static TStaticResourceFinder< AIndexedMesh > BoxMesh( _CTS( "/Default/Meshes/Box" ) );
-
         Spin = CreateComponent< ASceneComponent >( "Spin" );
 
+        static TStaticResourceFinder< AIndexedMesh > BoxMesh( _CTS( "/Default/Meshes/Box" ) );
         static TStaticResourceFinder< AMaterialInstance > BoxMaterialInst( _CTS( "BoxMaterialInstance" ) );
         Movable = CreateComponent< AMeshComponent >( "Movable" );
         Movable->SetMesh( BoxMesh.GetObject() );
