@@ -64,17 +64,6 @@ protected:
         Camera->SetAngles( -60, 45, 0 );
         Camera->AttachTo( Spin );
 
-        //static TStaticResourceFinder< AIndexedMesh > SkyboxMesh( _CTS( "/Default/Meshes/Skybox" ) );
-        //static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "SkyboxMaterialInstance" ) );
-        //Skybox = CreateComponent< AMeshComponent >( "Skybox" );
-        //Skybox->SetMotionBehavior( MB_KINEMATIC );
-        //Skybox->SetMesh( SkyboxMesh.GetObject() );
-        //Skybox->SetMaterialInstance( SkyboxMaterialInst.GetObject() );
-        //Skybox->ForceOutdoor( true );
-        //Skybox->AttachTo( Camera );
-        //Skybox->SetAbsoluteRotation( true );
-        //Skybox->SetVisibilityGroup( VISIBILITY_GROUP_SKYBOX );
-
         RootComponent = Spin;
         PawnCamera = Camera;
     }
@@ -237,39 +226,6 @@ private:
 
     void CreateResources()
     {
-        // Create skybox texture
-        //{
-        //    const char * Cubemap[6] = {
-        //        "skyface0.hdr",
-        //        "skyface1.hdr",
-        //        "skyface2.hdr",
-        //        "skyface3.hdr",
-        //        "skyface4.hdr",
-        //        "skyface5.hdr"
-        //    };
-        //    AImage rt, lt, up, dn, bk, ft;
-        //    AImage const * cubeFaces[6] = { &rt,&lt,&up,&dn,&bk,&ft };
-        //    rt.Load( Cubemap[0], nullptr, IMAGE_PF_BGR32F );
-        //    lt.Load( Cubemap[1], nullptr, IMAGE_PF_BGR32F );
-        //    up.Load( Cubemap[2], nullptr, IMAGE_PF_BGR32F );
-        //    dn.Load( Cubemap[3], nullptr, IMAGE_PF_BGR32F );
-        //    bk.Load( Cubemap[4], nullptr, IMAGE_PF_BGR32F );
-        //    ft.Load( Cubemap[5], nullptr, IMAGE_PF_BGR32F );
-        //    ATexture * SkyboxTexture = NewObject< ATexture >();
-        //    SkyboxTexture->InitializeCubemapFromImages( cubeFaces );
-        //    RegisterResource( SkyboxTexture, "SkyboxTexture" );
-        //}
-
-        //// Create skybox material instance
-        //{
-        //    static TStaticResourceFinder< AMaterial > SkyboxMaterial( _CTS( "/Default/Materials/Skybox" ) );
-        //    static TStaticResourceFinder< ATexture > SkyboxTexture( _CTS( "SkyboxTexture" ) );
-        //    AMaterialInstance * SkyboxMaterialInstance = NewObject< AMaterialInstance >();
-        //    SkyboxMaterialInstance->SetMaterial( SkyboxMaterial.GetObject() );
-        //    SkyboxMaterialInstance->SetTexture( 0, SkyboxTexture.GetObject() );
-        //    RegisterResource( SkyboxMaterialInstance, "SkyboxMaterialInstance" );
-        //}
-
         // Create mesh for ground
         {
             AIndexedMesh * mesh = NewObject< AIndexedMesh >();
