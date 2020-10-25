@@ -295,6 +295,7 @@ AN_FORCEINLINE void STransform::TurnAroundAxis( float _DeltaAngleRad, Float3 con
     Math::SinCos( _DeltaAngleRad * 0.5f, s, c );
 
     Rotation = Quat( c, s * _NormalizedAxis.X, s * _NormalizedAxis.Y, s * _NormalizedAxis.Z ) * Rotation;
+    Rotation.NormalizeSelf();
 }
 
 AN_FORCEINLINE void STransform::TurnAroundVector( float _DeltaAngleRad, Float3 const & _Vector ) {
