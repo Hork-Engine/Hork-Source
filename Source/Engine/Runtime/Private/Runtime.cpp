@@ -104,7 +104,8 @@ ARuntime::ARuntime()
     FrameMemoryUsed = 0;
     FrameMemoryUsedPrev = 0;
     MaxFrameMemoryUsage = 0;
-    bTerminate = false;
+    bPostTerminateEvent = false;
+    bPostChangeVideoMode = false;
     Clipboard = nullptr;
     ProcessAttribute = 0;
 }
@@ -220,33 +221,8 @@ static void DestroyGenericWindow( SDL_Window * Window )
     }
 }
 
-void ARuntime::Run( SEntryDecl const & _EntryDecl )
+void ARuntime::PrintCPUFeatures()
 {
-    // Synchronize SDL ticks with our start time
-    (void)SDL_GetTicks();
-
-    StartMicroseconds = StdChrono::duration_cast< StdChrono::microseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count();
-    StartMilliseconds = StartMicroseconds * 0.001;
-    StartSeconds = StartMicroseconds * 0.000001;
-    FrameTimeStamp = StartMicroseconds;
-    FrameDuration = 1000000.0 / 60;
-    FrameNumber = 0;
-
-    pModuleDecl = &_EntryDecl;
-
-    Engine = GetEngineInstance();
-
-    if ( SetCriticalMark() ) {
-        // Critical error was emitted by this thread
-        EmergencyExit();
-    }
-
-    ::GetCPUInfo( CPUInfo );
-
-    InitializeProcess();
-
-    GLogger.SetMessageCallback( LoggerMessageCallback );
-
     GLogger.Printf( "CPU: %s\n", CPUInfo.Intel ? "Intel" : "AMD" );
     GLogger.Print( "CPU Features:" );
     if ( CPUInfo.MMX ) GLogger.Print( " MMX" );
@@ -295,9 +271,39 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl )
     if ( CPUInfo.OS_AVX512 ) GLogger.Print( " AVX512" );
     GLogger.Print( "\n" );
     GLogger.Print( "Endian: " AN_ENDIAN_STRING "\n" );
-#ifdef AN_DEBUG
+    #ifdef AN_DEBUG
     GLogger.Print( "Compiler: " AN_COMPILER_STRING "\n" );
-#endif
+    #endif
+}
+
+void ARuntime::Run( SEntryDecl const & _EntryDecl )
+{
+    // Synchronize SDL ticks with our start time
+    (void)SDL_GetTicks();
+
+    StartMicroseconds = StdChrono::duration_cast< StdChrono::microseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count();
+    StartMilliseconds = StartMicroseconds * 0.001;
+    StartSeconds = StartMicroseconds * 0.000001;
+    FrameTimeStamp = StartMicroseconds;
+    FrameDuration = 1000000.0 / 60;
+    FrameNumber = 0;
+
+    pModuleDecl = &_EntryDecl;
+
+    Engine = GetEngineInstance();
+
+    if ( SetCriticalMark() ) {
+        // Critical error was emitted by this thread
+        EmergencyExit();
+    }
+
+    ::GetCPUInfo( CPUInfo );
+
+    InitializeProcess();
+
+    GLogger.SetMessageCallback( LoggerMessageCallback );
+
+    PrintCPUFeatures();
 
     switch ( ProcessAttribute ) {
         case PROCESS_COULDNT_CHECK_UNIQUE:
@@ -1199,17 +1205,17 @@ SVideoMode const & ARuntime::GetVideoMode() const
 void ARuntime::PostChangeVideoMode( SVideoMode const & _DesiredMode )
 {
     DesiredMode = _DesiredMode;
-    bResetVideoMode = true;
+    bPostChangeVideoMode = true;
 }
 
 void ARuntime::PostTerminateEvent()
 {
-    bTerminate = true;
+    bPostTerminateEvent = true;
 }
 
 bool ARuntime::IsPendingTerminate()
 {
-    return bTerminate;
+    return bPostTerminateEvent;
 }
 
 #define FROM_SDL_TIMESTAMP(event) ( (event).timestamp * 0.001 )
@@ -1625,8 +1631,8 @@ void ARuntime::NewFrame()
     // Free frame memory for new frame
     FrameMemoryUsed = 0;
 
-    if ( bResetVideoMode ) {
-        bResetVideoMode = false;
+    if ( bPostChangeVideoMode ) {
+        bPostChangeVideoMode = false;
         SetVideoMode( DesiredMode );
     }
 }

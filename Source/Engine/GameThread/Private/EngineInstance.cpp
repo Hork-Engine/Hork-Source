@@ -61,6 +61,7 @@ SOFTWARE.
 //#define IMGUI_CONTEXT
 
 static ARuntimeVariable com_ShowStat( _CTS( "com_ShowStat" ), _CTS( "0" ) );
+static ARuntimeVariable com_ShowFPS( _CTS( "com_ShowFPS" ), _CTS( "1" ) );
 
 AN_CLASS_META( AEngineCommands )
 
@@ -296,15 +297,12 @@ void AEngineInstance::DrawCanvas()
 
     Canvas.Begin( videoMode.FramebufferWidth, videoMode.FramebufferHeight );
 
-    if ( IsWindowVisible() )
-    {
-        if ( Desktop )
-        {
+    if ( IsWindowVisible() ) {
+        if ( Desktop ) {
             // Draw desktop
             Desktop->GenerateWindowHoverEvents();
             Desktop->GenerateDrawEvents( Canvas );
-            if ( Desktop->IsCursorVisible() && !GRuntime.IsCursorEnabled() )
-            {
+            if ( Desktop->IsCursorVisible() && !GRuntime.IsCursorEnabled() ) {
                 Desktop->DrawCursor( Canvas );
             }
 
@@ -312,8 +310,7 @@ void AEngineInstance::DrawCanvas()
             GConsole.SetFullscreen( false );
             GConsole.Draw( &Canvas, FrameDurationInSeconds );
         }
-        else
-        {
+        else {
             // Draw fullscreen console
             GConsole.SetFullscreen( true );
             GConsole.Draw( &Canvas, FrameDurationInSeconds );
@@ -327,26 +324,8 @@ void AEngineInstance::DrawCanvas()
 
 void AEngineInstance::ShowStats()
 {
-    enum { FPS_BUF = 16 };
-    static float fpsavg[FPS_BUF];
-    static int n = 0;
-    fpsavg[n & (FPS_BUF-1)] = FrameDurationInSeconds;
-    n++;
-    float fps = 0;
-    for ( int i = 0 ; i < FPS_BUF ; i++ )
-        fps += fpsavg[i];
-    fps /= FPS_BUF;
-    fps = 1.0f / (fps > 0.0f ? fps : 1.0f);
-
-    if ( com_ShowStat )
-    {
+    if ( com_ShowStat ) {
         SRenderFrame * frameData = Renderer->GetFrameData();
-
-        Float2 pos( 8, 8 );
-        const float y_step = 22;
-        const int numLines = 14;
-
-        pos.Y = Canvas.Height - numLines * y_step;
 
         const size_t TotalMemorySizeInBytes = ( (GZoneMemory.GetZoneMemorySizeInMegabytes()<<20)
                                                 + (GHunkMemory.GetHunkMemorySizeInMegabytes()<<20)
@@ -357,13 +336,18 @@ void AEngineInstance::ShowStats()
         AVertexMemoryGPU * vertexMemory = GRuntime.GetVertexMemoryGPU();
         AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
+        const float y_step = 22;
+        const int numLines = 13;
+
+        Float2 pos( 8, 8 );
+        pos.Y = Canvas.Height - numLines * y_step;
+
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, GRuntime.GetMaxFrameMemoryUsage()/1024.0f ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage (GPU): %f KB / %d MB (Max %f KB)", streamedMemory->GetUsedMemoryPrev()/1024.0f, streamedMemory->GetAllocatedMemory()>>20, streamedMemory->GetMaxMemoryUsage()/1024.0f ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Vertex cache memory usage (GPU): %f KB / %d MB", vertexMemory->GetUsedMemory()/1024.0f, vertexMemory->GetAllocatedMemory()>>20 ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f
-        /*- GZoneMemory.GetZoneMemorySizeInMegabytes()*1024 - GMainHunkMemory.GetHunkMemorySizeInMegabytes()*1024 - 256*1024.0f*/ ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Visible instances: %d", frameData->Instances.Size() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Visible shadow instances: %d", frameData->ShadowInstances.Size() ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Visible dir lights: %d", frameData->DirectionalLights.Size() ) ); pos.Y += y_step;
@@ -371,11 +355,19 @@ void AEngineInstance::ShowStats()
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frontend time: %d msec", stat.FrontendTime ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos+Float2(1.0f), AColor4::White(), Core::Fmt("Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int(1.0f / FrameDurationInSeconds), int(fps+0.5f) ) );
-        Canvas.DrawTextUTF8( pos, AColor4::Blue(), Core::Fmt("Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int(1.0f / FrameDurationInSeconds), int(fps+0.5f) ) );
     }
-    else
-    {
+
+    if ( com_ShowFPS ) {
+        enum { FPS_BUF = 16 };
+        static float fpsavg[FPS_BUF];
+        static int n = 0;
+        fpsavg[n & (FPS_BUF-1)] = FrameDurationInSeconds;
+        n++;
+        float fps = 0;
+        for ( int i = 0 ; i < FPS_BUF ; i++ )
+            fps += fpsavg[i];
+        fps *= (1.0f/FPS_BUF);
+        fps = 1.0f / (fps > 0.0f ? fps : 1.0f);
         Canvas.DrawTextUTF8( Float2( 10, 10 ), AColor4::White(), Core::Fmt( "Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int( 1.0f / FrameDurationInSeconds ), int( fps+0.5f ) ) );
     }
 }
@@ -387,21 +379,6 @@ void AEngineInstance::Print( const char * _Message )
 
 void AEngineInstance::DeveloperKeys( SKeyEvent const & _Event )
 {
-//    if ( _Event.Action == IE_Press ) {
-//        if ( _Event.Key == KEY_F1 ) {
-//            GLogger.Printf( "OpenGL Backend Test\n" );
-//            Core::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "OpenGL 4.5" );
-//            ResetVideoMode();
-//        } else if ( _Event.Key == KEY_F2 ) {
-//            GLogger.Printf( "Vulkan Backend Test\n" );
-//            Core::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Vulkan" );
-//            ResetVideoMode();
-//        } else if ( _Event.Key == KEY_F3 ) {
-//            GLogger.Printf( "Null Backend Test\n" );
-//            Core::CopySafe( VideoMode.Backend, sizeof( VideoMode.Backend ), "Null" );
-//            ResetVideoMode();
-//        }
-//    }
 }
 
 void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp )
@@ -500,8 +477,8 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
             cursorPosition.Y = Math::Clamp( y, 0, videoMode.FramebufferHeight-1 );
 
             Desktop->SetCursorPosition( cursorPosition );
-        } else {
-
+        }
+        else {
             Float2 cursorPosition = Desktop->GetCursorPosition();
 
             // Simulate ballistics
@@ -584,7 +561,8 @@ void AEngineInstance::OnResize()
 {
     SVideoMode const & videoMode = GRuntime.GetVideoMode();
 
-    RetinaScale = Float2( (float)videoMode.FramebufferWidth / videoMode.Width, (float)videoMode.FramebufferHeight / videoMode.Height );
+    RetinaScale = Float2( (float)videoMode.FramebufferWidth / videoMode.Width,
+                          (float)videoMode.FramebufferHeight / videoMode.Height );
 
     GConsole.Resize( videoMode.FramebufferWidth );
 

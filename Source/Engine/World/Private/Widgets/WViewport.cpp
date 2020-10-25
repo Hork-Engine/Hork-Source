@@ -52,12 +52,13 @@ void WViewport::OnTransformDirty() {
 WViewport & WViewport::SetPlayerController( APlayerController * _PlayerController ) {
     // Unset old viewport
     if ( PlayerController ) {
-        if ( PlayerController->Viewport ) {
-            PlayerController->Viewport->PlayerController = nullptr;
-            PlayerController->Viewport = nullptr;
+        TRef< APlayerController > playerController( PlayerController ); // Keep reference
+        if ( playerController->Viewport ) {
+            playerController->Viewport->PlayerController.Reset();
+            playerController->Viewport.Reset();
         }
         if ( !_PlayerController ) {
-            PlayerController->OnViewportUpdate();
+            playerController->OnViewportUpdate();
         }
     }
 

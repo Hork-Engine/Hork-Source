@@ -375,7 +375,7 @@ private:
 
     SVideoMode      VideoMode;
     SVideoMode      DesiredMode;
-    bool            bResetVideoMode;
+    bool            bPostChangeVideoMode;
 
     TRef< RenderCore::IDevice > RenderDevice;
     RenderCore::IImmediateContext * pImmediateContext;
@@ -383,7 +383,7 @@ private:
     TRef< AVertexMemoryGPU > VertexMemoryGPU;
     TRef< AStreamedMemoryGPU > StreamedMemoryGPU;
 
-    bool            bTerminate;
+    bool            bPostTerminateEvent;
 
     int             ProcessAttribute;
 
@@ -406,6 +406,8 @@ private:
     void LoadConfigFile();
 
     void SetVideoMode( SVideoMode const & _DesiredMode );
+
+    void PrintCPUFeatures();
 
     friend void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl );
     friend void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl );

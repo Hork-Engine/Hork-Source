@@ -162,7 +162,8 @@ private:
     /** Check leaks */
     void CheckMemoryLeaks();
 
-    struct SBlock {
+    struct SBlock
+    {
         size_t AllocOffset;
         size_t UsedMemory;
     };
@@ -239,7 +240,8 @@ private:
 
     void Wait( RenderCore::SyncObject Sync );
 
-    struct SChainBuffer {
+    struct SChainBuffer
+    {
         size_t UsedMemory;
         int HandlesCount;
         RenderCore::SyncObject Sync;

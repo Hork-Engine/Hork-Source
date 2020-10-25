@@ -612,8 +612,8 @@ static void DrawCmdLine( ACanvas * _Canvas, int x, int y ) {
     }
 }
 
-void AConsole::Draw( ACanvas * _Canvas, float _TimeStep ) {
-
+void AConsole::Draw( ACanvas * _Canvas, float _TimeStep )
+{
     if ( !ConFullscreen ) {
         if ( ConDown ) {
             ConHeight += DropSpeed * _TimeStep;
