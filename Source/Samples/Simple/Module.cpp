@@ -112,7 +112,7 @@ protected:
         Movable->TurnRightFPS( Value * RotationSpeed );
     }
 
-    void DrawDebug( ADebugRenderer * Renderer )
+    void DrawDebug( ADebugRenderer * Renderer ) override
     {
         Float3 pos = Movable->GetWorldPosition();
         Float3 dir = Movable->GetWorldForwardVector();
