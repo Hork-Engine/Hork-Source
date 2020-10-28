@@ -49,6 +49,7 @@ public:
     AString();
     AString( const char * _Str );
     AString( AString const & _Str );
+    AString( const char * _Begin, const char * _End );
     ~AString();
 
     const char & operator[]( const int _Index ) const;
@@ -274,6 +275,13 @@ AN_FORCEINLINE AString::AString( AString const & _Str )
     GrowCapacity( newLen + 1, false );
     Core::Memcpy( Data, _Str.Data, newLen + 1 );
     Size = newLen;
+}
+
+AN_FORCEINLINE AString::AString( const char * _Begin, const char * _End )
+    : AString()
+{
+    Resize( _End - _Begin );
+    Core::Memcpy( Data, _Begin, Size );
 }
 
 AN_FORCEINLINE AString::~AString() {
