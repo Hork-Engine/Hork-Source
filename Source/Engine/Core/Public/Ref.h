@@ -34,27 +34,52 @@ SOFTWARE.
 
 struct SWeakRefCounter;
 
-class ARefCounted
+struct SZoneAllocator
+{
+    void * Allocate( std::size_t _SizeInBytes )
+    {
+        return GZoneMemory.Alloc( _SizeInBytes );
+    }
+
+    void Deallocate( void * _Bytes )
+    {
+        GZoneMemory.Free( _Bytes );
+    }
+};
+
+template< typename TAllocator >
+class TRefCounted
 {
 public:
-    ARefCounted()
+    TRefCounted()
         : RefCount( 1 )
     {
     }
 
-    virtual ~ARefCounted() {}
+    virtual ~TRefCounted() {}
 
     /** Non-copyable pattern */
-    ARefCounted( ARefCounted const & ) = delete;
+    TRefCounted( TRefCounted< TAllocator > const & ) = delete;
 
     /** Non-copyable pattern */
-    ARefCounted & operator=( ARefCounted const & ) = delete;
+    TRefCounted & operator=( TRefCounted< TAllocator > const & ) = delete;
 
     /** Add reference */
-    void AddRef();
+    inline void AddRef()
+    {
+        ++RefCount;
+    }
 
     /** Remove reference */
-    void RemoveRef();
+    inline void RemoveRef()
+    {
+        if ( --RefCount == 0 ) {
+            delete this;
+            return;
+        }
+
+        AN_ASSERT( RefCount > 0 );
+    }
 
     int GetRefCount() const { return RefCount; }
 
@@ -64,14 +89,14 @@ public:
     /** Get weakref counter. Used by TWeakRef */
     SWeakRefCounter * GetWeakRefCounter() { return WeakRefCounter; }
 
-    void * operator new( size_t size )
+    void * operator new( size_t _SizeInBytes )
     {
-        return GZoneMemory.Alloc( size );
+        return TAllocator().Allocate( _SizeInBytes );
     }
 
-    void operator delete( void * p )
+    void operator delete( void * _Ptr )
     {
-        GZoneMemory.Free( p );
+        TAllocator().Deallocate( _Ptr );
     }
 
 private:
@@ -79,20 +104,8 @@ private:
     SWeakRefCounter * WeakRefCounter = nullptr;
 };
 
-inline void ARefCounted::AddRef()
-{
-    ++RefCount;
-}
+using ARefCounted = TRefCounted< SZoneAllocator >;
 
-inline void ARefCounted::RemoveRef()
-{
-    if ( --RefCount == 0 ) {
-        delete this;
-        return;
-    }
-
-    AN_ASSERT( RefCount > 0 );
-}
 
 /**
 
@@ -183,6 +196,7 @@ public:
 private:
     T * Object;
 };
+
 
 /**
 
