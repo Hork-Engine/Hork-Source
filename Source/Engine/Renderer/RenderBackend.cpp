@@ -392,7 +392,7 @@ ARenderBackend::ARenderBackend()
     GPhysCacheVT = PhysCacheVT;
 
     //::TestVT();
-    PhysCacheVT->CreateTexture( "Test.vt3", &TestVT );
+    //PhysCacheVT->CreateTexture( "Test.vt3", &TestVT );
 
 //#define SPARSE_TEXTURE_TEST
 #ifdef SPARSE_TEXTURE_TEST
@@ -485,11 +485,11 @@ ARenderBackend::~ARenderBackend()
     GLogger.Printf( "Deinitializing render backend...\n" );
 
     //SDL_SetRelativeMouseMode( SDL_FALSE );
-    AVirtualTexture * vt = TestVT.GetObject();
-    TestVT.Reset();
+    //AVirtualTexture * vt = TestVT.GetObject();
+    //TestVT.Reset();
     PhysCacheVT.Reset();
     FeedbackAnalyzerVT.Reset();
-    GLogger.Printf( "VT ref count %d\n", vt->GetRefCount() );
+    //GLogger.Printf( "VT ref count %d\n", vt->GetRefCount() );
 
     GCircularBuffer.Reset();
     GWhiteTexture.Reset();
