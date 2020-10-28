@@ -201,15 +201,15 @@ class ANGIE_API AInputMappings final : public ABaseObject {
     friend class AInputComponent;
 
 public:
-    int Serialize( ADocument & _Doc ) override;
+    TRef< ADocObject > Serialize() override;
 
-    static AInputMappings * LoadMappings( ADocument const & _Document, int _FieldsHead );
+    static AInputMappings * LoadMappings( ADocObject const * pObject );
 
     // Load axes form document data
-    void LoadAxes( ADocument const & _Document, int _FieldsHead );
+    void LoadAxes( ADocMember const * ArrayOfAxes );
 
     // Load actions form document data
-    void LoadActions( ADocument const & _Document, int _FieldsHead );
+    void LoadActions( ADocMember const * ArrayOfActions );
 
     AInputAxis * AddAxis( const char * _Name );
     AInputAction * AddAction( const char * _Name );

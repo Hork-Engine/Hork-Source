@@ -988,28 +988,28 @@ AInputMappings::~AInputMappings() {
     }
 }
 
-int AInputMappings::Serialize( ADocument & _Doc ) {
-    return -1;
+TRef< ADocObject > AInputMappings::Serialize() {
+    return TRef< ADocObject >();
 #if 0
-    int object = Super::Serialize( _Doc );
+    TRef< ADocumentObject > object = Super::Serialize();
     if ( !Axes.IsEmpty() ) {
-        int axes = _Doc.AddArray( object, "Axes" );
+        int axes = pDocument->AddArray( object, "Axes" );
 
         for ( AInputAxis const * axis : Axes ) {
-            AString & axisName = _Doc.ProxyBuffer.NewString( axis->GetObjectName() );
+            AString const & axisName = axis->GetObjectName();
 
             for ( int deviceId = 0 ; deviceId < MAX_INPUT_DEVICES ; deviceId++ ) {
                 const char * deviceName = AInputHelper::TranslateDevice( deviceId );
                 for ( unsigned short key : axis->MappedKeys[ deviceId ] ) {
                     AArrayOfMappings * mappings = GetKeyMappings( deviceId, key );
                     for ( SMapping & mapping : *mappings ) {
-                        int axisObject = _Doc.CreateObjectValue();
-                        _Doc.AddStringField( axisObject, "Name", axisName.CStr() );
-                        _Doc.AddStringField( axisObject, "Device", deviceName );
-                        _Doc.AddStringField( axisObject, "Key", AInputHelper::TranslateDeviceKey( deviceId, key ) );
-                        _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( Math::ToString( mapping.AxisScale ) ).CStr() );
-                        _Doc.AddStringField( axisObject, "Owner", AInputHelper::TranslateController( mapping.ControllerId ) );
-                        _Doc.AddValueToField( axes, axisObject );
+                        TRef< ADocumentObject > axisObject = MakeRef< ADocumentObject >();
+                        axisObject->AddString( "Name", axisName );
+                        axisObject->AddString( "Device", deviceName );
+                        axisObject->AddString( "Key", AInputHelper::TranslateDeviceKey( deviceId, key ) );
+                        axisObject->AddString( "Scale", Math::ToString( mapping.AxisScale ) );
+                        axisObject->AddString( "Owner", AInputHelper::TranslateController( mapping.ControllerId ) );
+                        axes->AddValue( axisObject );
                     }
                 }
             }
@@ -1020,13 +1020,13 @@ int AInputMappings::Serialize( ADocument & _Doc ) {
                     if ( axis->MappedMouseAxes & ( 1 << i ) ) {
                         AArrayOfMappings * mappings = GetKeyMappings( ID_MOUSE, MOUSE_AXIS_BASE + i );
                         for ( SMapping & mapping : *mappings ) {
-                            int axisObject = _Doc.CreateObjectValue();
-                            _Doc.AddStringField( axisObject, "Name", axisName.CStr() );
-                            _Doc.AddStringField( axisObject, "Device", deviceName );
-                            _Doc.AddStringField( axisObject, "Key", AInputHelper::TranslateDeviceKey( ID_MOUSE, MOUSE_AXIS_BASE + i ) );
-                            _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( Math::ToString( mapping.AxisScale ) ).CStr() );
-                            _Doc.AddStringField( axisObject, "Owner", AInputHelper::TranslateController( mapping.ControllerId ) );
-                            _Doc.AddValueToField( axes, axisObject );
+                            TRef< ADocumentObject > axisObject = MakeRef< ADocumentObject >();
+                            axisObject->AddString( "Name", axisName );
+                            axisObject->AddString( "Device", deviceName );
+                            axisObject->AddString( "Key", AInputHelper::TranslateDeviceKey( ID_MOUSE, MOUSE_AXIS_BASE + i ) );
+                            axisObject->AddString( "Scale", Math::ToString( mapping.AxisScale ) );
+                            axisObject->AddString( "Owner", AInputHelper::TranslateController( mapping.ControllerId ) );
+                            axes->AddValue( axisObject );
                         }
                     }
                 }
@@ -1039,13 +1039,13 @@ int AInputMappings::Serialize( ADocument & _Doc ) {
                         if ( axis->MappedJoystickAxes[ joyId ] & ( 1 << i ) ) {
                             AArrayOfMappings * mappings = GetKeyMappings( ID_JOYSTICK_1 + joyId, JOY_AXIS_BASE + i );
                             for ( SMapping & mapping : *mappings ) {
-                                int axisObject = _Doc.CreateObjectValue();
-                                _Doc.AddStringField( axisObject, "Name", axisName.CStr() );
-                                _Doc.AddStringField( axisObject, "Device", deviceName );
-                                _Doc.AddStringField( axisObject, "Key", AInputHelper::TranslateDeviceKey( ID_JOYSTICK_1 + joyId, JOY_AXIS_BASE + i ) );
-                                _Doc.AddStringField( axisObject, "Scale", _Doc.ProxyBuffer.NewString( Math::ToString( mapping.AxisScale ) ).CStr() );
-                                _Doc.AddStringField( axisObject, "Owner", AInputHelper::TranslateController( mapping.ControllerId ) );
-                                _Doc.AddValueToField( axes, axisObject );
+                                TRef< ADocumentObject > axisObject = MakeRef< ADocumentObject >();
+                                axisObject->AddString( "Name", axisName );
+                                axisObject->AddString( "Device", deviceName );
+                                axisObject->AddString( "Key", AInputHelper::TranslateDeviceKey( ID_JOYSTICK_1 + joyId, JOY_AXIS_BASE + i ) );
+                                axisObject->AddString( "Scale", Math::ToString( mapping.AxisScale ) );
+                                axisObject->AddString( "Owner", AInputHelper::TranslateController( mapping.ControllerId ) );
+                                axes->AddValue( axisObject );
                             }
                         }
                     }
@@ -1055,11 +1055,11 @@ int AInputMappings::Serialize( ADocument & _Doc ) {
     }
 
     if ( !Actions.IsEmpty() ) {
-        int actions = _Doc.AddArray( object, "Actions" );
+        int actions = pDocument->AddArray( object, "Actions" );
 
         for ( AInputAction const * action : Actions ) {
 
-            AString & actionName = _Doc.ProxyBuffer.NewString( action->GetObjectName() );
+            AString const & actionName = action->GetObjectName();
 
             for ( int deviceId = 0 ; deviceId < MAX_INPUT_DEVICES ; deviceId++ ) {
                 if ( !action->MappedKeys[ deviceId ].IsEmpty() ) {
@@ -1067,15 +1067,15 @@ int AInputMappings::Serialize( ADocument & _Doc ) {
                     for ( unsigned short key : action->MappedKeys[ deviceId ] ) {
                         AArrayOfMappings * mappings = GetKeyMappings( deviceId, key );
                         for ( SMapping & mapping : *mappings ) {
-                            int actionObject = _Doc.CreateObjectValue();
-                            _Doc.AddStringField( actionObject, "Name", actionName.CStr() );
-                            _Doc.AddStringField( actionObject, "Device", deviceName );
-                            _Doc.AddStringField( actionObject, "Key", AInputHelper::TranslateDeviceKey( deviceId, key ) );
-                            _Doc.AddStringField( actionObject, "Owner", AInputHelper::TranslateController( mapping.ControllerId ) );
+                            TRef< ADocumentObject > actionObject = MakeRef< ADocumentObject >();
+                            actionObject->AddString( "Name", actionName );
+                            actionObject->AddString( "Device", deviceName );
+                            actionObject->AddString( "Key", AInputHelper::TranslateDeviceKey( deviceId, key ) );
+                            actionObject->AddString( "Owner", AInputHelper::TranslateController( mapping.ControllerId ) );
                             if ( mapping.ModMask ) {
-                                _Doc.AddStringField( actionObject, "ModMask", _Doc.ProxyBuffer.NewString( Math::ToString( mapping.ModMask ) ).CStr() );
+                                actionObject->AddString( "ModMask", Math::ToString( mapping.ModMask ) );
                             }
-                            _Doc.AddValueToField( actions, actionObject );
+                            actions->AddValue( actionObject );
                         }
                     }
                 }
@@ -1087,89 +1087,87 @@ int AInputMappings::Serialize( ADocument & _Doc ) {
 #endif
 }
 
-AInputMappings * AInputMappings::LoadMappings( ADocument const & _Document, int _FieldsHead ) {
-    SDocumentField * classNameField = _Document.FindField( _FieldsHead, "ClassName" );
+AInputMappings * AInputMappings::LoadMappings( ADocObject const * pObject ) {
+    ADocMember const * classNameField = pObject->FindMember( "ClassName" );
     if ( !classNameField ) {
         GLogger.Printf( "AInputMappings::LoadMappings: invalid class\n" );
         return nullptr;
     }
 
-    SDocumentValue * classNameValue = &_Document.Values[ classNameField->ValuesHead ];
+    AString className = classNameField->GetString();
 
     AObjectFactory const * factory = AInputMappings::ClassMeta().Factory();
 
-    AClassMeta const * classMeta = factory->LookupClass( classNameValue->Token.ToString().CStr() );
+    AClassMeta const * classMeta = factory->LookupClass( className.CStr() );
     if ( !classMeta ) {
-        GLogger.Printf( "AInputMappings::LoadMappings: invalid class \"%s\"\n", classNameValue->Token.ToString().CStr() );
+        GLogger.Printf( "AInputMappings::LoadMappings: invalid class \"%s\"\n", className.CStr() );
         return nullptr;
     }
 
     AInputMappings * inputMappings = static_cast< AInputMappings * >( classMeta->CreateInstance() );
 
     // Load attributes
-    inputMappings->LoadAttributes( _Document, _FieldsHead );
+    inputMappings->LoadAttributes( pObject );
 
     // Load axes
-    SDocumentField * axesArray = _Document.FindField( _FieldsHead, "Axes" );
+    ADocMember const * axesArray = pObject->FindMember( "Axes" );
     if ( axesArray ) {
-        inputMappings->LoadAxes( _Document, ( size_t )( axesArray - &_Document.Fields[0] ) );
+        inputMappings->LoadAxes( axesArray );
     }
 
     // Load actions
-    SDocumentField * actionsArray = _Document.FindField( _FieldsHead, "Actions" );
+    ADocMember const * actionsArray = pObject->FindMember( "Actions" );
     if ( actionsArray ) {
-        inputMappings->LoadActions( _Document, ( size_t )( actionsArray - &_Document.Fields[0] ) );
+        inputMappings->LoadActions( actionsArray );
     }
 
     return inputMappings;
 }
 
-void AInputMappings::LoadAxes( ADocument const & _Document, int _FieldsHead ) {
-    SDocumentField * field = &_Document.Fields[ _FieldsHead ];
-    for ( int i = field->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
-        SDocumentValue * value = &_Document.Values[ i ];
-        if ( value->Type != SDocumentValue::TYPE_OBJECT ) {
+void AInputMappings::LoadAxes( ADocMember const * ArrayOfAxes ) {
+    for ( ADocValue const * object = ArrayOfAxes->GetArrayValues() ; object ; object = object->GetNext() ) {
+        if ( !object->IsObject() ) {
             continue;
         }
 
-        SDocumentField * nameField = _Document.FindField( value->FieldsHead, "Name" );
+        ADocMember const * nameField = object->FindMember( "Name" );
         if ( !nameField ) {
             continue;
         }
 
-        SDocumentField * deviceField = _Document.FindField( value->FieldsHead, "Device" );
+        ADocMember const * deviceField = object->FindMember( "Device" );
         if ( !deviceField ) {
             continue;
         }
 
-        SDocumentField * keyField = _Document.FindField( value->FieldsHead, "Key" );
+        ADocMember const * keyField = object->FindMember( "Key" );
         if ( !keyField ) {
             continue;
         }
 
-        SDocumentField * scaleField = _Document.FindField( value->FieldsHead, "Scale" );
+        ADocMember const * scaleField = object->FindMember( "Scale" );
         if ( !scaleField ) {
             continue;
         }
 
-        SDocumentField * ownerField = _Document.FindField( value->FieldsHead, "Owner" );
+        ADocMember const * ownerField = object->FindMember( "Owner" );
         if ( !ownerField ) {
             continue;
         }
 
-        SToken const & name = _Document.Values[ nameField->ValuesHead ].Token;
-        SToken const & device = _Document.Values[ deviceField->ValuesHead ].Token;
-        SToken const & key = _Document.Values[ keyField->ValuesHead ].Token;
-        SToken const & scale = _Document.Values[ scaleField->ValuesHead ].Token;
-        SToken const & controller = _Document.Values[ ownerField->ValuesHead ].Token;
+        AString name = nameField->GetString();
+        AString device = deviceField->GetString();
+        AString key = keyField->GetString();
+        AString scale = scaleField->GetString();
+        AString controller = ownerField->GetString();
 
-        int deviceId = AInputHelper::LookupDevice( device.ToString().CStr() );
-        int deviceKey = AInputHelper::LookupDeviceKey( deviceId, key.ToString().CStr() );
-        int controllerId = AInputHelper::LookupController( controller.ToString().CStr() );
+        int deviceId = AInputHelper::LookupDevice( device.CStr() );
+        int deviceKey = AInputHelper::LookupDeviceKey( deviceId, key.CStr() );
+        int controllerId = AInputHelper::LookupController( controller.CStr() );
 
-        float scaleValue = Math::ToFloat( scale.ToString() );
+        float scaleValue = Math::ToFloat( scale.CStr() );
 
-        MapAxis( name.ToString().CStr(),
+        MapAxis( name.CStr(),
                  deviceId,
                  deviceKey,
                  scaleValue,
@@ -1177,50 +1175,48 @@ void AInputMappings::LoadAxes( ADocument const & _Document, int _FieldsHead ) {
     }
 }
 
-void AInputMappings::LoadActions( ADocument const & _Document, int _FieldsHead ) {
-    SDocumentField * field = &_Document.Fields[ _FieldsHead ];
-    for ( int i = field->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
-        SDocumentValue * value = &_Document.Values[ i ];
-        if ( value->Type != SDocumentValue::TYPE_OBJECT ) {
+void AInputMappings::LoadActions( ADocMember const * ArrayOfActions ) {
+    for ( ADocValue const * object = ArrayOfActions->GetArrayValues() ; object ; object = object->GetNext() ) {
+        if ( !object->IsObject() ) {
             continue;
         }
 
-        SDocumentField * nameField = _Document.FindField( value->FieldsHead, "Name" );
+        ADocMember const * nameField = object->FindMember( "Name" );
         if ( !nameField ) {
             continue;
         }
 
-        SDocumentField * deviceField = _Document.FindField( value->FieldsHead, "Device" );
+        ADocMember const * deviceField = object->FindMember( "Device" );
         if ( !deviceField ) {
             continue;
         }
 
-        SDocumentField * keyField = _Document.FindField( value->FieldsHead, "Key" );
+        ADocMember const * keyField = object->FindMember( "Key" );
         if ( !keyField ) {
             continue;
         }
 
-        SDocumentField * ownerField = _Document.FindField( value->FieldsHead, "Owner" );
+        ADocMember const * ownerField = object->FindMember( "Owner" );
         if ( !ownerField ) {
             continue;
         }
 
         int32_t modMask = 0;
-        SDocumentField * modMaskField = _Document.FindField( value->FieldsHead, "ModMask" );
+        ADocMember const * modMaskField = object->FindMember( "ModMask" );
         if ( modMaskField ) {
-            modMask = Math::ToInt< int32_t >( _Document.Values[ nameField->ValuesHead ].Token.ToString() );
+            modMask = Math::ToInt< int32_t >( modMaskField->GetString().CStr() );
         }
 
-        SToken const & name = _Document.Values[ nameField->ValuesHead ].Token;
-        SToken const & device = _Document.Values[ deviceField->ValuesHead ].Token;
-        SToken const & key = _Document.Values[ keyField->ValuesHead ].Token;
-        SToken const & controller = _Document.Values[ ownerField->ValuesHead ].Token;
+        AString name = nameField->GetString();
+        AString device = deviceField->GetString();
+        AString key = keyField->GetString();
+        AString controller = ownerField->GetString();
 
-        int deviceId = AInputHelper::LookupDevice( device.ToString().CStr() );
-        int deviceKey = AInputHelper::LookupDeviceKey( deviceId, key.ToString().CStr() );
-        int controllerId = AInputHelper::LookupController( controller.ToString().CStr() );
+        int deviceId = AInputHelper::LookupDevice( device.CStr() );
+        int deviceKey = AInputHelper::LookupDeviceKey( deviceId, key.CStr() );
+        int controllerId = AInputHelper::LookupController( controller.CStr() );
 
-        MapAction( name.ToString().CStr(),
+        MapAction( name.CStr(),
                    deviceId,
                    deviceKey,
                    modMask,

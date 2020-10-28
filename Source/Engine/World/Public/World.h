@@ -298,7 +298,7 @@ public:
     static TPodArray< AWorld * > const & GetWorlds() { return Worlds; }
 
     /** Tick the worlds */
-    static void UpdateWorlds( IGameModule * _GameModule, float _TimeStep );
+    static void UpdateWorlds( float _TimeStep );
 
     /** Remove worlds, marked pending kill */
     static void KickoffPendingKillWorlds();
@@ -344,13 +344,13 @@ public:
     }
 
     /** Load actor from the document */
-    AActor * LoadActor( ADocument const & _Document, int _FieldsHead, ALevel * _Level = nullptr );
+    AActor * LoadActor( ADocValue const * pObject, ALevel * _Level = nullptr, bool bInEditor = false );
 
     /** Get all actors in the world */
     TPodArray< AActor * > const & GetActors() const { return Actors; }
 
     /** Serialize world to the document */
-    int Serialize( ADocument & _Doc ) override;
+    TRef< ADocObject > Serialize() override;
 
     /** Destroy this world */
     void Destroy();

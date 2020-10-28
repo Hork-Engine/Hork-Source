@@ -56,10 +56,10 @@ public:
     const uint64_t Id;
 
     /** Serialize object to document data */
-    virtual int Serialize( ADocument & _Doc );
+    virtual TRef< ADocObject > Serialize();
 
     /** Load attributes form document data */
-    void LoadAttributes( ADocument const & Document, int ValuesHead );
+    void LoadAttributes( ADocValue const * pObject );
 
     void SetAttributes( THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes );
 
@@ -129,7 +129,7 @@ protected:
     virtual ~ABaseObject();
 
 private:
-    void LoadAttributes_r( AClassMeta const * Meta, ADocument const & Document, int FieldsHead );
+    void LoadAttributes_r( AClassMeta const * Meta, ADocValue const * pObject );
     void SetAttributes_r( AClassMeta const * Meta, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes );
 
     /** Total existing objects */

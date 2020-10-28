@@ -90,17 +90,17 @@ ABaseObject * ABaseObject::FindObject( uint64_t _Id ) {
     return nullptr;
 }
 
-int ABaseObject::Serialize( ADocument & _Doc ) {
-    int object = _Doc.CreateObjectValue();
+TRef< ADocObject > ABaseObject::Serialize() {
+    TRef< ADocObject > object = MakeRef< ADocObject >();
 
-    _Doc.AddStringField( object, "ClassName", FinalClassName() );
+    object->AddString( "ClassName", FinalClassName() );
 
     for ( AClassMeta const * Meta = &FinalClassMeta()
           ; Meta ; Meta = Meta->SuperClass() ) {
 
         AAttributeMeta const * attribs = Meta->GetAttribList();
         if ( attribs ) {
-            int attribArray = -1;
+            ADocMember * attribArray = nullptr;
 
             for ( AAttributeMeta const * attr = attribs ; attr ; attr = attr->Next() ) {
 
@@ -108,16 +108,16 @@ int ABaseObject::Serialize( ADocument & _Doc ) {
                     continue;
                 }
 
-                attribArray = ( attribArray == -1 ) ? _Doc.AddArray( object, Meta->GetName() ) : attribArray;
+                attribArray = ( attribArray == nullptr ) ? object->AddArray( Meta->GetName() ) : attribArray;
 
-                int attribObject = _Doc.CreateObjectValue();
+                TRef< ADocObject > attribObject = MakeRef< ADocObject >();
 
-                AString & s = _Doc.ProxyBuffer.NewString();
+                AString s;
                 attr->GetValue( this, s );
 
-                _Doc.AddStringField( attribObject, attr->GetName(), s.CStr() );
+                attribObject->AddString( attr->GetName(), s );
 
-                _Doc.AddValueToField( attribArray, attribObject );
+                attribArray->AddValue( attribObject );
             }
         }
     }
@@ -125,22 +125,21 @@ int ABaseObject::Serialize( ADocument & _Doc ) {
     return object;
 }
 
-void ABaseObject::LoadAttributes_r( AClassMeta const * Meta, ADocument const & Document, int FieldsHead ) {
+void ABaseObject::LoadAttributes_r( AClassMeta const * Meta, ADocValue const * pObject ) {
     if ( Meta ) {
-        LoadAttributes_r( Meta->SuperClass(), Document, FieldsHead );
+        LoadAttributes_r( Meta->SuperClass(), pObject );
 
         for ( AAttributeMeta const * attrib = Meta->GetAttribList() ; attrib ; attrib = attrib->Next() ) {
-            SDocumentField * attributeField = Document.FindField( FieldsHead, attrib->GetName() );
+            ADocMember const * attributeField = pObject->FindMember( attrib->GetName() );
             if ( attributeField ) {
-                SDocumentValue const * attributeValue = &Document.Values[ attributeField->ValuesHead ];
-                attrib->SetValue( this, attributeValue->Token.ToString() );
+                attrib->SetValue( this, attributeField->GetString() );
             }
         }
     }
 }
 
-void ABaseObject::LoadAttributes( ADocument const & Document, int FieldsHead ) {
-    LoadAttributes_r( &FinalClassMeta(), Document, FieldsHead );
+void ABaseObject::LoadAttributes( ADocValue const * pObject ) {
+    LoadAttributes_r( &FinalClassMeta(), pObject );
 }
 
 void ABaseObject::SetAttributes_r( AClassMeta const * Meta, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes ) {

@@ -29,197 +29,88 @@ SOFTWARE.
 */
 
 #include <Core/Public/Document.h>
-#include <Core/Public/Alloc.h>
 #include <Core/Public/Logger.h>
 
-ADocument::ADocument() {
-
-}
-
-ADocument::~ADocument() {
-    Allocator::Inst().Free( Fields );
-    Allocator::Inst().Free( Values );
-}
-
-void ADocument::Clear() {
-    FieldsHead = -1;
-    FieldsTail = -1;
-    FieldsCount = 0;
-    ValuesCount = 0;
-}
-
-int ADocument::AllocateField() {
-    if ( FieldsCount == FieldsMemReserved ) {
-        FieldsMemReserved = FieldsMemReserved ? FieldsMemReserved<<1 : 1024;
-        Fields = ( SDocumentField * )Allocator::Inst().Realloc( Fields, sizeof( SDocumentField ) * FieldsMemReserved, true );
-    }
-    SDocumentField * field = &Fields[ FieldsCount ];
-    field->ValuesHead = -1;
-    field->ValuesTail = -1;
-    field->Next = -1;
-    field->Prev = -1;
-    FieldsCount++;
-    return FieldsCount - 1;
-}
-
-int ADocument::AllocateValue() {
-    if ( ValuesCount == ValuesMemReserved ) {
-        ValuesMemReserved = ValuesMemReserved ? ValuesMemReserved<<1 : 1024;
-        Values = ( SDocumentValue * )Allocator::Inst().Realloc( Values, sizeof( SDocumentValue ) * ValuesMemReserved, true );
-    }
-    SDocumentValue * value = &Values[ ValuesCount ];
-    value->FieldsHead = -1;
-    value->FieldsTail = -1;
-    value->Next = -1;
-    value->Prev = -1;
-    ValuesCount++;
-    return ValuesCount - 1;
-}
-
-ATokenBuffer::ATokenBuffer() {
-    Cur = Start = (char *)"";
-    LineNumber = 1;
-    bInSitu = true;
-}
-
-ATokenBuffer::~ATokenBuffer() {
-    if ( !bInSitu ) {
-        Allocator::Inst().Free( Start );
-    }
-}
-
-void ATokenBuffer::Initialize( const char * _String, bool _InSitu ) {
-    Deinitialize();
-
-    bInSitu = _InSitu;
-    if ( bInSitu ) {
-        Start = const_cast< char * >( _String );
-    } else {
-        int n = Core::Strlen( _String ) + 1;
-        Start = ( char * )Allocator::Inst().Alloc( n );
-        Core::Memcpy( Start, _String, n );
-    }
-    Cur = Start;
-    LineNumber = 1;
-}
-
-void ATokenBuffer::Deinitialize() {
-    if ( !bInSitu ) {
-        Allocator::Inst().Free( Start );
-        Cur = Start = (char *)"";
-        LineNumber = 1;
-        bInSitu = true;
-    }
-}
-
-ADocumentProxyBuffer::ADocumentProxyBuffer()
-    : StringList( nullptr ) {
-
-}
-
-ADocumentProxyBuffer::~ADocumentProxyBuffer() {
-    AStringList * next;
-    for ( AStringList * node = StringList ; node ; node = next ) {
-        next = node->Next;
-        node->~AStringList();
-        Allocator::Inst().Free( node );
-    }
-}
-
-AString & ADocumentProxyBuffer::NewString() {
-    void * pMemory = Allocator::Inst().Alloc( sizeof( AStringList ) );
-    AStringList * node = new ( pMemory ) AStringList;
-    node->Next = StringList;
-    StringList = node;
-    return node->Str;
-}
-
-AString & ADocumentProxyBuffer::NewString( const char * _String ) {
-    void * pMemory = Allocator::Inst().Alloc( sizeof( AStringList ) );
-    AStringList * node = new ( pMemory ) AStringList( _String );
-    node->Next = StringList;
-    StringList = node;
-    return node->Str;
-}
-
-AString & ADocumentProxyBuffer::NewString( const AString & _String ) {
-    void * pMemory = Allocator::Inst().Alloc( sizeof( AStringList ) );
-    AStringList * node = new ( pMemory ) AStringList( _String );
-    node->Next = StringList;
-    StringList = node;
-    return node->Str;
-}
 
 static const char * TokenType[] = {
     "Unknown token",
     "EOF",
     "Bracket",
-    "Field",
+    "Member",
     "String"
 };
 
-bool SToken::CompareToString( const char * _Str ) const {
-    const char * p = Begin;
-    while ( *_Str && p < End ) {
-        if ( *_Str != *p ) {
-            return false;
-        }
-        _Str++;
-        p++;
-    }
-    return ( *_Str || p != End ) ? false : true;
-}
-
-void SToken::FromString( const char * _Str ) {
-    Begin = _Str;
-    End = Begin + Core::Strlen( _Str );
-}
-
-AString SToken::ToString() const {
-    AString str;
-    str.Resize( End - Begin );
-    Core::Memcpy( str.ToPtr(), Begin, str.Length() );
-    return str;
-}
-
-const char * SToken::NamedType() const {
+const char * SToken::NamedType() const
+{
     return TokenType[ Type ];
 }
 
-struct ATokenizer {
-    SToken CurToken;
 
-    const SToken & GetToken() const;
-    void NextToken( ATokenBuffer & buffer );
-};
+ADocumentTokenizer::ADocumentTokenizer()
+{
+    Cur = Start = (char *)"";
+    LineNumber = 1;
+    bInSitu = true;
+}
 
-static void SkipWhitespaces( ATokenBuffer & _Buffer ) {
-    const char *& s = _Buffer.Cur;
-start:
-    while ( *s == ' ' || *s == '\t' || *s == '\n' || *s == '\r' ) {
-        if ( *s == '\n' ) {
-            _Buffer.LineNumber++;
-        }
-        s++;
+ADocumentTokenizer::~ADocumentTokenizer()
+{
+    if ( !bInSitu ) {
+        GZoneMemory.Free( Start );
     }
-    if ( *s == '/' ) {
-        if ( *(s+1) == '/' ) {
-            s += 2;
+}
+
+void ADocumentTokenizer::Reset( const char * pDocumentData, bool InSitu )
+{
+    if ( !bInSitu ) {
+        GZoneMemory.Free( Start );
+        Cur = Start = (char *)"";
+        LineNumber = 1;
+        bInSitu = true;
+    }
+
+    bInSitu = InSitu;
+    if ( bInSitu ) {
+        Start = const_cast< char * >( pDocumentData );
+    } else {
+        int n = Core::Strlen( pDocumentData ) + 1;
+        Start = ( char * )GZoneMemory.Alloc( n );
+        Core::Memcpy( Start, pDocumentData, n );
+    }
+    Cur = Start;
+    LineNumber = 1;
+
+    // Go to first token
+    NextToken();
+}
+
+void ADocumentTokenizer::SkipWhitespaces()
+{
+start:
+    while ( *Cur == ' ' || *Cur == '\t' || *Cur == '\n' || *Cur == '\r' ) {
+        if ( *Cur == '\n' ) {
+            LineNumber++;
+        }
+        Cur++;
+    }
+    if ( *Cur == '/' ) {
+        if ( *(Cur+1) == '/' ) {
+            Cur += 2;
             // go to next line
-            while ( *s && *s != '\n' )
-                s++;
+            while ( *Cur && *Cur != '\n' )
+                Cur++;
             goto start;
         }
-        if ( *(s+1) == '*' ) {
-            s += 2;
-            while ( *s ) {
-                if ( *s == '\n' ) {
-                    _Buffer.LineNumber++;
-                } else if ( *s == '*' && *(s+1) == '/' ) {
-                    s += 2;
+        if ( *(Cur+1) == '*' ) {
+            Cur += 2;
+            while ( *Cur ) {
+                if ( *Cur == '\n' ) {
+                    LineNumber++;
+                } else if ( *Cur == '*' && *(Cur+1) == '/' ) {
+                    Cur += 2;
                     goto start;
                 }
-                s++;
+                Cur++;
             }
             GLogger( "Warning: unclosed comment /* */\n" );
             return;
@@ -227,60 +118,55 @@ start:
     }
 }
 
-const SToken & ATokenizer::GetToken() const {
-    return CurToken;
-}
-
-void ATokenizer::NextToken( ATokenBuffer & _Buffer ) {
+void ADocumentTokenizer::NextToken()
+{
     // Skip white spaces, tabs and comments
-    SkipWhitespaces( _Buffer );
-
-    const char *& s = _Buffer.Cur;
+    SkipWhitespaces();
 
     // Check string
-    if ( *s == '\"' ) {
-        s++;
-        CurToken.Begin = s;
+    if ( *Cur == '\"' ) {
+        Cur++;
+        CurToken.Begin = Cur;
         for (;;) {
-            if ( *s == '\"' && *(s-1) != '\\' ) {
+            if ( *Cur == '\"' && *(Cur-1) != '\\' ) {
                 break;
             }
 
-            if ( *s == 0 ) {
+            if ( *Cur == 0 ) {
                 // unexpected eof
                 CurToken.Begin = CurToken.End = "";
                 CurToken.Type = TOKEN_TYPE_UNKNOWN;
                 return;
             }
-            if ( *s == '\n' ) {
+            if ( *Cur == '\n' ) {
                 // unexpected eol
                 CurToken.Begin = CurToken.End = "";
                 CurToken.Type = TOKEN_TYPE_UNKNOWN;
                 return;
             }
-            s++;
+            Cur++;
         }
-        CurToken.End = s++;
+        CurToken.End = Cur++;
         CurToken.Type = TOKEN_TYPE_STRING;
         return;
     }
 
     // Check brackets
-    if ( *s == '{' || *s == '}' || *s == '[' || *s == ']' ) {
-        CurToken.Begin = s;
-        CurToken.End = ++s;
+    if ( *Cur == '{' || *Cur == '}' || *Cur == '[' || *Cur == ']' ) {
+        CurToken.Begin = Cur;
+        CurToken.End = ++Cur;
         CurToken.Type = TOKEN_TYPE_BRACKET;
         return;
     }
 
-    // Check field
-    CurToken.Begin = s;
-    while ( ( *s >= 'a' && *s <= 'z' ) || ( *s >= 'A' && *s <= 'Z' ) || ( *s >= '0' && *s <= '9' ) ) {
-        s++;
+    // Check member
+    CurToken.Begin = Cur;
+    while ( ( *Cur >= 'a' && *Cur <= 'z' ) || ( *Cur >= 'A' && *Cur <= 'Z' ) || ( *Cur >= '0' && *Cur <= '9' ) ) {
+        Cur++;
     }
-    CurToken.End = s;
+    CurToken.End = Cur;
     if ( CurToken.Begin == CurToken.End ) {
-        if ( *s ) {
+        if ( *Cur ) {
             GLogger.Print( "undefined symbols\n" );
             CurToken.Type = TOKEN_TYPE_UNKNOWN;
         } else {
@@ -288,373 +174,50 @@ void ATokenizer::NextToken( ATokenBuffer & _Buffer ) {
         }
         return;
     } else {
-        CurToken.Type = TOKEN_TYPE_FIELD;
+        CurToken.Type = TOKEN_TYPE_MEMBER;
     }
 }
 
-static bool Expect( int _Type, const SToken & _Token ) {
-    if ( _Token.Type != _Type ) {
-        GLogger.Printf( "unexpected %s found, expected %s\n", _Token.NamedType(), TokenType[_Type] );
-        return false;
-    }
-    return true;
-}
 
-static int ParseObject( ATokenizer & _Tokenizer, ADocument & _Doc );
-static int ParseField( ATokenizer & _Tokenizer, ADocument & _Doc, SToken & _FieldToken );
+struct ADocumentSerializer
+{
+    int DocumentStack = 0;
 
-static void ParseArray( ATokenizer & _Tokenizer, ADocument & _Doc, int & _ArrayHead, int & _ArrayTail ) {
-    _ArrayHead = -1;
-    _ArrayTail = -1;
+    AString InsertSpaces();
 
-    while ( 1 ) {
-        SToken token = _Tokenizer.GetToken();
+    AString SerializeValue( ADocValue const * Value );
+    AString SerializeMember( ADocMember const * Member );
+    AString SerializeObject( ADocMember const * Members, bool & bSingleMember );
 
-        if ( token.Type == TOKEN_TYPE_BRACKET ) {
-            if ( *token.Begin == ']' ) {
-                _Tokenizer.NextToken( _Doc.Buffer );
-                if ( _ArrayHead == -1 ) {
-                    GLogger.Print( "empty array\n" );
-                }
-                break;
-            }
-            if ( *token.Begin != '{' ) {
-                GLogger.Printf( "unexpected bracket %c\n", *token.Begin );
-                _ArrayHead = -1;
-                break;
-            }
+    AString SerializeValueCompact( ADocValue const * Value );
+    AString SerializeMemberCompact( ADocMember const * Member );
+    AString SerializeObjectCompact( ADocMember const * Members );
+};
 
-            _Tokenizer.NextToken( _Doc.Buffer );
-
-            // array element is object
-            int value = ParseObject( _Tokenizer, _Doc );
-            if ( value == -1 ) {
-                _ArrayHead = -1;
-                break;
-            }
-            _Doc.Values[ value ].Prev = _ArrayTail;
-            if ( _Doc.Values[ value ].Prev != -1 ) {
-                _Doc.Values[ _Doc.Values[ value ].Prev ].Next = value;
-            } else {
-                _ArrayHead = value;
-            }
-            _ArrayTail = value;
-            continue;
-        }
-
-        if ( token.Type == TOKEN_TYPE_STRING ) {
-            // array element is string
-
-            int value = _Doc.AllocateValue();
-            _Doc.Values[ value ].Type = SDocumentValue::TYPE_STRING;
-            _Doc.Values[ value ].Token = token;
-            _Doc.Values[ value ].Prev = _ArrayTail;
-            if ( _Doc.Values[ value ].Prev != -1 ) {
-                _Doc.Values[ _Doc.Values[ value ].Prev ].Next = value;
-            } else {
-                _ArrayHead = value;
-            }
-            _ArrayTail = value;
-
-            _Tokenizer.NextToken( _Doc.Buffer );
-
-            continue;
-        }
-
-        GLogger.Printf( "unexpected %s\n", token.NamedType() );
-        _ArrayHead = -1;
-        break;
-    }
-}
-
-static int ParseObject( ATokenizer & _Tokenizer, ADocument & _Doc ) {
-
-    int value = _Doc.AllocateValue();
-    _Doc.Values[ value ].Type = SDocumentValue::TYPE_OBJECT;
-
-    while ( 1 ) {
-        SToken token = _Tokenizer.GetToken();
-
-        if ( token.Type == TOKEN_TYPE_BRACKET ) {
-            if ( *token.Begin == '}' ) {
-                if ( _Doc.Values[ value ].FieldsTail == -1 ) {
-                    GLogger.Print( "empty object\n" );
-                    return -1;
-                }
-                _Tokenizer.NextToken( _Doc.Buffer );
-                return value;
-            }
-
-            GLogger.Printf( "unexpected bracket %c\n", *token.Begin );
-            return -1;
-        }
-
-        if ( !Expect( TOKEN_TYPE_FIELD, token ) ) {
-            //error
-            return -1;
-        }
-
-        _Tokenizer.NextToken( _Doc.Buffer );
-
-        int field = ParseField( _Tokenizer, _Doc, token );
-        if ( field == -1 ) {
-            return -1;
-        }
-        _Doc.Fields[ field ].Prev = _Doc.Values[ value ].FieldsTail;
-        if ( _Doc.Fields[ field ].Prev != -1 ) {
-            _Doc.Fields[ _Doc.Fields[ field ].Prev ].Next = field;
-        } else {
-            _Doc.Values[ value ].FieldsHead = field;
-        }
-        _Doc.Values[ value ].FieldsTail = field;
-    }
-
-    return -1;
-}
-
-static int ParseField( ATokenizer & _Tokenizer, ADocument & _Doc, SToken & _FieldToken ) {
-    SToken token = _Tokenizer.GetToken();
-
-    if ( token.Type == TOKEN_TYPE_BRACKET ) {
-        if ( *token.Begin == '[' ) {
-            // value is array
-            _Tokenizer.NextToken( _Doc.Buffer );
-
-            int arrayHead, arrayTail;
-            ParseArray( _Tokenizer, _Doc, arrayHead, arrayTail );
-            if ( arrayHead == -1 ) {
-                return -1;
-            }
-
-            int field = _Doc.AllocateField();
-            _Doc.Fields[ field ].Name = _FieldToken;
-            _Doc.Fields[ field ].ValuesHead = arrayHead;
-            _Doc.Fields[ field ].ValuesTail = arrayTail;
-            return field;
-        }
-        if ( *token.Begin == '{' ) {
-            // value is object
-            _Tokenizer.NextToken( _Doc.Buffer );
-
-            int value = ParseObject( _Tokenizer, _Doc );
-            if ( value == -1 ) {
-                return -1;
-            }
-
-            int field = _Doc.AllocateField();
-            _Doc.Fields[ field ].Name = _FieldToken;
-            _Doc.Fields[ field ].ValuesHead = _Doc.Fields[ field ].ValuesTail = value;
-            return field;
-        }
-        GLogger.Printf( "unexpected bracket %c\n", *token.Begin );
-        return -1;
-    }
-
-    if ( token.Type == TOKEN_TYPE_STRING ) {
-        _Tokenizer.NextToken( _Doc.Buffer );
-
-        // value is string
-        int value = _Doc.AllocateValue();
-        _Doc.Values[ value ].Type = SDocumentValue::TYPE_STRING;
-        _Doc.Values[ value ].Token = token;
-
-        int field = _Doc.AllocateField();
-        _Doc.Fields[ field ].Name = _FieldToken;
-        _Doc.Fields[ field ].ValuesHead = _Doc.Fields[ field ].ValuesTail = value;
-
-        return field;
-    }
-
-    GLogger.Printf( "expected field value, found %s\n", token.NamedType() );
-    return -1;
-}
-
-static void PrintField( const ADocument & _Doc, int i );
-
-static void PrintValue( const ADocument & _Doc, int i ) {
-    const SDocumentValue * value = &_Doc.Values[ i ];
-
-    GLogger.Printf( "Type: %s\n", value->Type == SDocumentValue::TYPE_STRING ? "STRING" : "OBJECT" );
-    if ( value->Type == SDocumentValue::TYPE_STRING ) {
-        GLogger.Printf( "%s\n", value->Token.ToString().CStr() );
-        return;
-    }
-
-    for ( i = value->FieldsHead ; i != -1 ; i = _Doc.Fields[ i ].Next ) {
-        PrintField( _Doc, i );
-    }
-}
-
-static void PrintField( const ADocument & _Doc, int i ) {
-    const SDocumentField * field = &_Doc.Fields[ i ];
-
-    GLogger.Printf( "Field: %s\n", field->Name.ToString().CStr() );
-
-    for ( i = field->ValuesHead ; i != -1 ; i = _Doc.Values[ i ].Next ) {
-        PrintValue( _Doc, i );
-    }
-}
-
-void PrintDocument( ADocument const & _Doc ) {
-    GLogger.Print( "-------------- Document ----------------\n" );
-
-    for ( int i = _Doc.FieldsHead ; i != -1 ; i = _Doc.Fields[ i ].Next ) {
-        PrintField( _Doc, i );
-    }
-
-    GLogger.Print( "----------------------------------------\n" );
-}
-
-void ADocument::FromString( const char * _Script, bool _InSitu ) {
-    ATokenizer tokenizer;
-
-    Clear();
-
-    Buffer.Initialize( _Script, _InSitu );
-
-    tokenizer.NextToken( Buffer );
-
-    while ( 1 ) {
-        SToken token = tokenizer.GetToken();
-        if ( token.Type == TOKEN_TYPE_EOF || token.Type == TOKEN_TYPE_UNKNOWN ) {
-            break;
-        }
-
-        if ( !Expect( TOKEN_TYPE_FIELD, token ) ) {
-            //error
-            Clear();
-            break;
-        }
-
-        tokenizer.NextToken( Buffer );
-
-        int field = ParseField( tokenizer, *this, token );
-        if ( field == -1 ) {
-            // error
-            Clear();
-            break;
-        }
-        Fields[ field ].Prev = FieldsTail;
-        if ( Fields[ field ].Prev != -1 ) {
-            Fields[ Fields[ field ].Prev ].Next = field;
-        } else {
-            FieldsHead = field;
-        }
-        FieldsTail = field;
-    }
-
-    //PrintDocument( *this );
-}
-
-SDocumentField * ADocument::FindField( int _FieldsHead, const char * _Name ) const {
-    for ( int i = _FieldsHead ; i != -1 ; i = Fields[ i ].Next ) {
-        SDocumentField * field = &Fields[ i ];
-        if ( field->Name.CompareToString( _Name ) ) {
-            return field;
-        }
-    }
-    return nullptr;
-}
-
-int ADocument::CreateField( const char * _FieldName ) {
-    int field = AllocateField();
-    Fields[ field ].Name.FromString( _FieldName );
-    return field;
-}
-
-int ADocument::CreateStringValue( const char * _Value ) {
-    int value = AllocateValue();
-    Values[ value ].Type = SDocumentValue::TYPE_STRING;
-    Values[ value ].Token.FromString( _Value );
-    return value;
-}
-
-int ADocument::CreateObjectValue() {
-    int value = AllocateValue();
-    Values[ value ].Type = SDocumentValue::TYPE_OBJECT;
-    return value;
-}
-
-void ADocument::AddValueToField( int _FieldOrArray, int _Value ) {
-    Values[ _Value ].Prev = Fields[ _FieldOrArray ].ValuesTail;
-    if ( Values[ _Value ].Prev != -1 ) {
-        Values[ Values[ _Value ].Prev ].Next = _Value;
-    } else {
-        Fields[ _FieldOrArray ].ValuesHead = _Value;
-    }
-    Fields[ _FieldOrArray ].ValuesTail = _Value;
-}
-
-int ADocument::CreateStringField( const char * _FieldName, const char * _FieldValue ) {
-    int field = CreateField( _FieldName );
-    int value = CreateStringValue( _FieldValue );
-    AddValueToField( field, value );
-    return field;
-}
-
-void ADocument::AddFieldToObject( int _Object, int _Field ) {
-    AN_ASSERT( Values[ _Object ].Type == SDocumentValue::TYPE_OBJECT );
-    Fields[ _Field ].Prev = Values[ _Object ].FieldsTail;
-    if ( Fields[ _Field ].Prev != -1 ) {
-        Fields[ Fields[ _Field ].Prev ].Next = _Field;
-    } else {
-        Values[ _Object ].FieldsHead = _Field;
-    }
-    Values[ _Object ].FieldsTail = _Field;
-}
-
-int ADocument::AddStringField( int _Object, const char * _FieldName, const char * _FieldValue ) {
-    int field = CreateStringField( _FieldName, _FieldValue );
-    AddFieldToObject(  _Object, field );
-    return field;
-}
-
-int ADocument::AddArray( int _Object, const char * _ArrayName ) {
-    int array = CreateField( _ArrayName );
-    AddFieldToObject( _Object, array );
-    return array;
-}
-
-void ADocument::AddField( int _Field ) {
-    Fields[ _Field ].Prev = FieldsTail;
-    if ( Fields[ _Field ].Prev != -1 ) {
-        Fields[ Fields[ _Field ].Prev ].Next = _Field;
-    } else {
-        FieldsHead = _Field;
-    }
-    FieldsTail = _Field;
-}
-
-
-static int DocumentStack = 0;
-static AString ObjectToString( const ADocument & _Doc, int _FieldsHead, bool & singleField );
-
-static AString InsertSpaces() {
+AString ADocumentSerializer::InsertSpaces()
+{
     AString s;
-    for ( int i = 0 ; i < DocumentStack ; i++ ) {
-        s += " ";
-    }
+    s.Resize( DocumentStack );
     return s;
 }
 
-static AString ValueToString( const ADocument & _Doc, int i ) {
-    const SDocumentValue * value = &_Doc.Values[ i ];
-
+AString ADocumentSerializer::SerializeValue( ADocValue const * Value )
+{
     AString s;
 
-    if ( value->Type == SDocumentValue::TYPE_STRING ) {
-        s += "\"" + value->Token.ToString() + "\"";
+    if ( Value->IsString() ) {
+        s += "\"" + Value->GetString() + "\"";
         return s;
     }
 
     s += "{";
 
     DocumentStack++;
-    bool singleField;
-    s += ObjectToString( _Doc, value->FieldsHead, singleField );
+    bool bSingleMember;
+    s += SerializeObject( Value->GetListOfMembers(), bSingleMember );
     DocumentStack--;
 
-    if ( !singleField ) {
+    if ( !bSingleMember ) {
         s += InsertSpaces();
     }
     s += "}";
@@ -662,39 +225,37 @@ static AString ValueToString( const ADocument & _Doc, int i ) {
     return s;
 }
 
-static AString FieldToString( const ADocument & _Doc, int i ) {
-    const SDocumentField * field = &_Doc.Fields[ i ];
-
+AString ADocumentSerializer::SerializeMember( ADocMember const * Member )
+{
     AString s;
 
-    //s += InserSpaces();
-    s += field->Name.ToString();
+    s += Member->GetName();
     s += " ";
 
-    bool singleValue = true;
+    bool bSingleValue = true;
 
-    for ( i = field->ValuesHead ; i != -1 ;  ) {
+    for ( ADocValue const * value = Member->GetArrayValues() ; value ;  ) {
 
-        int next = _Doc.Values[ i ].Next;
+        ADocValue const * next = value->GetNext();
 
-        if ( singleValue && next != -1 ) {
-            singleValue = false;
+        if ( bSingleValue && next != nullptr ) {
+            bSingleValue = false;
             s += /*"\n" + InserSpaces() + */"[\n";
             DocumentStack++;
         }
 
-        if ( !singleValue ) {
+        if ( !bSingleValue ) {
             s += InsertSpaces();
         }
-        s += ValueToString( _Doc, i );
-        if ( !singleValue ) {
+        s += SerializeValue( value );
+        if ( !bSingleValue ) {
             s += "\n";
         }
 
-        i = next;
+        value = next;
     }
 
-    if ( !singleValue ) {
+    if ( !bSingleValue ) {
         DocumentStack--;
         s += InsertSpaces() + "]";
     }
@@ -702,53 +263,55 @@ static AString FieldToString( const ADocument & _Doc, int i ) {
     return s;
 }
 
-static AString ObjectToString( const ADocument & _Doc, int _FieldsHead, bool & singleField ) {
+AString ADocumentSerializer::SerializeObject( ADocMember const * Members, bool & bSingleMember )
+{
     AString s;
-    singleField = true;
-    for ( int i = _FieldsHead ; i != -1 ; ) {
-        int next = _Doc.Fields[ i ].Next;
+    bSingleMember = true;
+    for ( ADocMember const * f = Members ; f ; ) {
+        ADocMember const * next = f->GetNext();
 
-        if ( singleField && next != -1 ) {
-            singleField = false;
+        if ( bSingleMember && next != nullptr ) {
+            bSingleMember = false;
             s += "\n";
         }
 
-        if ( !singleField ) {
+        if ( !bSingleMember ) {
             s += InsertSpaces();
         }
-        s += FieldToString( _Doc, i );
+        s += SerializeMember( f );
 
-        if ( !singleField ) {
+        if ( !bSingleMember ) {
             s += "\n";
         }
 
-        i = next;
+        f = next;
     }
     return s;
 }
 
-static AString ObjectToStringCompact( const ADocument & _Doc, int _FieldsHead );
-
-static AString ValueToStringCompact( const ADocument & _Doc, int i ) {
-    const SDocumentValue * value = &_Doc.Values[ i ];
-    if ( value->Type == SDocumentValue::TYPE_STRING ) {
-        return AString( "\"" ) + value->Token.ToString() + "\"";
+AString ADocumentSerializer::SerializeValueCompact( ADocValue const * Value )
+{
+    if ( Value->IsString() ) {
+        return AString( "\"" ) + Value->GetString() + "\"";
     }
-    return AString( "{" ) + ObjectToStringCompact( _Doc, value->FieldsHead ) + "}";
+    return AString( "{" ) + SerializeObjectCompact( Value->GetListOfMembers() ) + "}";
 }
 
-static AString FieldToStringCompact( const ADocument & _Doc, int i ) {
-    const SDocumentField * field = &_Doc.Fields[ i ];
-    AString s = field->Name.ToString();
+AString ADocumentSerializer::SerializeMemberCompact( ADocMember const * Member )
+{
+    AString s;
+
+    s += Member->GetName();
+
     bool singleValue = true;
-    for ( i = field->ValuesHead ; i != -1 ;  ) {
-        int next = _Doc.Values[ i ].Next;
-        if ( singleValue && next != -1 ) {
+    for ( ADocValue const * value = Member->GetArrayValues() ; value ;  ) {
+        ADocValue const * next = value->GetNext();
+        if ( singleValue && next != nullptr ) {
             singleValue = false;
             s += "[";
         }
-        s += ValueToStringCompact( _Doc, i );
-        i = next;
+        s += SerializeValueCompact( value );
+        value = next;
     }
     if ( !singleValue ) {
         s += "]";
@@ -756,34 +319,528 @@ static AString FieldToStringCompact( const ADocument & _Doc, int i ) {
     return s;
 }
 
-static AString ObjectToStringCompact( const ADocument & _Doc, int _FieldsHead ) {
+AString ADocumentSerializer::SerializeObjectCompact( ADocMember const * Members )
+{
     AString s;
-    for ( int i = _FieldsHead ; i != -1 ; i = _Doc.Fields[ i ].Next ) {
-        s += FieldToStringCompact( _Doc, i );
+    for ( ADocMember const * member = Members ; member ; member = member->GetNext() ) {
+        s += SerializeMemberCompact( member );
     }
     return s;
 }
 
-AString ADocument::ToString() const {
-    if ( bCompactStringConversion ) {
-        return ObjectToStringCompact( *this, FieldsHead );
-    }
 
-    DocumentStack = 0;
-    bool singleField;
-    return ::ObjectToString( *this, FieldsHead, singleField );
+ADocument::ADocument()
+{
 }
 
-AString ADocument::ObjectToString( int _Object ) const {
-    if ( _Object < 0 ) {
-        return "";
+ADocument::~ADocument()
+{
+    Clear();
+}
+
+void ADocument::Clear()
+{
+    for ( ADocMember * member = MembersHead ; member ;  ) {
+        ADocMember * next = member->Next;
+        member->RemoveRef();
+        member = next;
     }
 
-    if ( bCompactStringConversion ) {
-        return ::ObjectToStringCompact( *this, Values[ _Object ].FieldsHead );
+    MembersHead = nullptr;
+    MembersTail = nullptr;
+}
+
+void ADocument::ParseArray( ADocValue ** ppArrayHead, ADocValue ** ppArrayTail )
+{
+    bool bHasErrors = false;
+
+    *ppArrayHead = nullptr;
+    *ppArrayTail = nullptr;
+
+    while ( 1 ) {
+        SToken token = Tokenizer.GetToken();
+
+        if ( token.Type == TOKEN_TYPE_BRACKET ) {
+            if ( *token.Begin == ']' ) {
+                Tokenizer.NextToken();
+                if ( *ppArrayHead == nullptr ) {
+                    GLogger.Print( "empty array\n" );
+                }
+                break;
+            }
+            if ( *token.Begin != '{' ) {
+                GLogger.Printf( "unexpected bracket %c\n", *token.Begin );
+                bHasErrors = true;
+                break;
+            }
+
+            Tokenizer.NextToken();
+
+            // array element is object
+            TRef< ADocObject > object = ParseObject();
+            if ( object == nullptr ) {
+                bHasErrors = true;
+                break;
+            }
+
+            // add object to array
+            object->AddRef();
+            object->Prev = *ppArrayTail;
+            if ( object->Prev != nullptr ) {
+                object->Prev->Next = object;
+            } else {
+                *ppArrayHead = object;
+            }
+            *ppArrayTail = object;
+
+            continue;
+        }
+
+        if ( token.Type == TOKEN_TYPE_STRING ) {
+            // array element is string
+
+            TRef< ADocString > value = MakeRef< ADocString >();
+            value->SetStringInsitu( token.Begin, token.End );
+
+            // Add string to array
+            value->AddRef();            
+            value->Prev = *ppArrayTail;
+            if ( value->Prev != nullptr ) {
+                value->Prev->Next = value;
+            } else {
+                *ppArrayHead = value;
+            }
+            *ppArrayTail = value;
+
+            Tokenizer.NextToken();
+
+            continue;
+        }
+
+        GLogger.Printf( "unexpected %s\n", token.NamedType() );
+        bHasErrors = true;
+        break;
     }
 
-    DocumentStack = 0;
-    bool singleField;
-    return ::ObjectToString( *this, Values[ _Object ].FieldsHead, singleField );
+    if ( bHasErrors ) {
+        for ( ADocValue * value = *ppArrayHead ; value ; value = value->Next ) {
+            value->RemoveRef();
+        }
+
+        *ppArrayHead = *ppArrayTail = nullptr;
+    }
+}
+
+static bool Expect( int Type, SToken const & Token )
+{
+    if ( Token.Type != Type ) {
+        GLogger.Printf( "unexpected %s found, expected %s\n", Token.NamedType(), TokenType[Type] );
+        return false;
+    }
+    return true;
+}
+
+TRef< ADocObject > ADocument::ParseObject()
+{
+    TRef< ADocObject > value = MakeRef< ADocObject >();
+
+    while ( 1 ) {
+        SToken token = Tokenizer.GetToken();
+
+        if ( token.Type == TOKEN_TYPE_BRACKET ) {
+            if ( *token.Begin == '}' ) {
+                if ( value->MembersEnd == nullptr ) {
+                    GLogger.Print( "empty object\n" );
+                    break;
+                }
+                Tokenizer.NextToken();
+                return value;
+            }
+
+            GLogger.Printf( "unexpected bracket %c\n", *token.Begin );
+            break;
+        }
+
+        if ( !Expect( TOKEN_TYPE_MEMBER, token ) ) {
+            //error
+            break;
+        }
+
+        Tokenizer.NextToken();
+
+        TRef< ADocMember > member = ParseMember( token );
+        if ( member == nullptr ) {
+            break;
+        }
+
+        value->AddMember( member );
+    }
+
+    return TRef< ADocObject >();
+}
+
+TRef< ADocMember > ADocument::ParseMember( SToken const & MemberToken )
+{
+    SToken token = Tokenizer.GetToken();
+
+    if ( token.Type == TOKEN_TYPE_BRACKET ) {
+        if ( *token.Begin == '[' ) {
+            // value is array
+            Tokenizer.NextToken();
+
+            ADocValue * arrayHead, * arrayTail;
+            ParseArray( &arrayHead, &arrayTail );
+            if ( arrayHead == nullptr ) {
+                return TRef< ADocMember >();
+            }
+
+            TRef< ADocMember > member = MakeRef< ADocMember >();
+            member->NameBegin = MemberToken.Begin;
+            member->NameEnd = MemberToken.End;
+            member->Values = arrayHead;
+            member->ValuesEnd = arrayTail;
+            return member;
+        }
+        if ( *token.Begin == '{' ) {
+            // value is object
+            Tokenizer.NextToken();
+
+            TRef< ADocObject > object = ParseObject();
+            if ( object == nullptr ) {
+                return TRef< ADocMember >();
+            }
+
+            TRef< ADocMember > member = MakeRef< ADocMember >();
+            member->NameBegin = MemberToken.Begin;
+            member->NameEnd = MemberToken.End;
+            member->Values = member->ValuesEnd = object;
+
+            object->AddRef();
+
+            return member;
+        }
+        GLogger.Printf( "unexpected bracket %c\n", *token.Begin );
+        return TRef< ADocMember >();
+    }
+
+    if ( token.Type == TOKEN_TYPE_STRING ) {
+        Tokenizer.NextToken();
+
+        // value is string
+        TRef< ADocString > value = MakeRef< ADocString >();
+        value->SetStringInsitu( token.Begin, token.End );
+
+        TRef< ADocMember > member = MakeRef< ADocMember >();
+        member->NameBegin = MemberToken.Begin;
+        member->NameEnd = MemberToken.End;
+        member->Values = member->ValuesEnd = value;
+
+        value->AddRef();
+
+        return member;
+    }
+
+    GLogger.Printf( "expected value, found %s\n", token.NamedType() );
+    return TRef< ADocMember >();
+}
+
+void ADocument::Print() const
+{
+    GLogger.Print( "-------------- Document ----------------\n" );
+
+    for ( ADocMember const * member = MembersHead ; member ; member = member->Next ) {
+        member->Print();
+    }
+
+    GLogger.Print( "----------------------------------------\n" );
+}
+
+AString ADocument::SerializeToString( SDocumentSerializeInfo const & SerializeInfo ) const
+{
+    ADocumentSerializer serializer;
+
+    if ( SerializeInfo.bCompactStringConversion ) {
+        return serializer.SerializeObjectCompact( MembersHead );
+    }
+
+    bool bSingleMember;
+    return serializer.SerializeObject( MembersHead, bSingleMember );
+}
+
+void ADocument::DeserializeFromString( SDocumentDeserializeInfo const & DeserializeInfo )
+{
+    Clear();
+
+    Tokenizer.Reset( DeserializeInfo.pDocumentData, DeserializeInfo.bInsitu );
+
+    while ( 1 ) {
+        SToken token = Tokenizer.GetToken();
+        if ( token.Type == TOKEN_TYPE_EOF || token.Type == TOKEN_TYPE_UNKNOWN ) {
+            break;
+        }
+
+        if ( !Expect( TOKEN_TYPE_MEMBER, token ) ) {
+            //error
+            Clear();
+            break;
+        }
+
+        Tokenizer.NextToken();
+
+        TRef< ADocMember > member = ParseMember( token );
+        if ( member == nullptr ) {
+            // error
+            Clear();
+            break;
+        }
+
+        AddMember( member );
+    }
+}
+
+ADocMember * ADocument::AddString( const char * MemberName, const char * Str )
+{
+    // Create member
+    TRef< ADocMember > member = MakeRef< ADocMember >();
+    member->NameBegin = MemberName;
+    member->NameEnd = MemberName + Core::Strlen( MemberName );
+
+    // Create string
+    TRef< ADocString > value = MakeRef< ADocString >();
+
+    // Allocate string
+    value->SetString( Str );
+
+    member->AddValue( value );
+
+    AddMember( member );
+
+    return member;
+}
+
+ADocMember * ADocument::AddObject( const char * MemberName, ADocObject * Object )
+{
+    // Create member
+    TRef< ADocMember > member = MakeRef< ADocMember >();
+    member->NameBegin = MemberName;
+    member->NameEnd = MemberName + Core::Strlen( MemberName );
+
+    member->AddValue( Object );
+
+    AddMember( member );
+
+    return member;
+}
+
+ADocMember * ADocument::AddArray( const char * ArrayName )
+{
+    TRef< ADocMember > array = MakeRef< ADocMember >();
+    array->NameBegin = ArrayName;
+    array->NameEnd = ArrayName + Core::Strlen( ArrayName );
+
+    AddMember( array );
+
+    return array;
+}
+
+void ADocument::AddMember( ADocMember * Member )
+{
+    Member->AddRef();
+    Member->Prev = MembersTail;
+    if ( Member->Prev != nullptr ) {
+        Member->Prev->Next = Member;
+    } else {
+        MembersHead = Member;
+    }
+    MembersTail = Member;
+}
+
+static bool NameCmp( const char * Begin, const char * End, const char * Str )
+{
+    const char * p = Begin;
+    while ( *Str && p < End ) {
+        if ( *Str != *p ) {
+            return false;
+        }
+        Str++;
+        p++;
+    }
+    return ( *Str || p != End ) ? false : true;
+}
+
+ADocMember * ADocument::FindMember( const char * Name )
+{
+    for ( ADocMember * member = MembersHead ; member ; member = member->Next ) {
+        if ( NameCmp( member->NameBegin, member->NameEnd, Name ) ) {
+            return member;
+        }
+    }
+    return nullptr;
+}
+
+ADocMember const * ADocument::FindMember( const char * Name ) const
+{
+    return const_cast< ADocument * >( this )->FindMember( Name );
+}
+
+
+ADocValue::~ADocValue()
+{
+    for ( ADocMember * member = Members ; member ;  ) {
+        ADocMember * next = member->Next;
+        member->RemoveRef();
+        member = next;
+    }
+
+    if ( pTokenMemory ) {
+        GZoneMemory.Free( pTokenMemory );
+    }
+}
+
+ADocMember * ADocValue::FindMember( const char * Name )
+{
+    for ( ADocMember * member = GetListOfMembers() ; member ; member = member->GetNext() ) {
+        if ( NameCmp( member->NameBegin, member->NameEnd, Name ) ) {
+            return member;
+        }
+    }
+    return nullptr;
+}
+
+ADocMember const * ADocValue::FindMember( const char * Name ) const
+{
+    return const_cast< ADocValue * >( this )->FindMember( Name );
+}
+
+ADocMember * ADocValue::AddString( const char * MemberName, const char * Str )
+{
+    if ( !IsObject() ) {
+        GLogger.Printf( "ADocValue::AddString: called on non-object type\n" );
+        return nullptr;
+    }
+
+    // Create member
+    TRef< ADocMember > member = MakeRef< ADocMember >();
+    member->NameBegin = MemberName;
+    member->NameEnd = MemberName + Core::Strlen( MemberName );
+
+    // Create string
+    TRef< ADocString > value = MakeRef< ADocString >();
+
+    // Allocate string
+    value->SetString( Str );
+
+    member->AddValue( value );
+
+    AddMember( member );
+
+    return member;
+}
+
+ADocMember * ADocValue::AddObject( const char * MemberName, ADocObject * Object )
+{
+    if ( !IsObject() ) {
+        GLogger.Printf( "ADocValue::AddObject: called on non-object type\n" );
+        return nullptr;
+    }
+
+    // Create member
+    TRef< ADocMember > member = MakeRef< ADocMember >();
+    member->NameBegin = MemberName;
+    member->NameEnd = MemberName + Core::Strlen( MemberName );
+
+    member->AddValue( Object );
+
+    AddMember( member );
+
+    return member;
+}
+
+ADocMember * ADocValue::AddArray( const char * ArrayName )
+{
+    if ( !IsObject() ) {
+        GLogger.Printf( "ADocValue::AddArray: called on non-object type\n" );
+        return nullptr;
+    }
+
+    TRef< ADocMember > array = MakeRef< ADocMember >();
+    array->NameBegin = ArrayName;
+    array->NameEnd = ArrayName + Core::Strlen( ArrayName );
+
+    AddMember( array );
+
+    return array;
+}
+
+void ADocValue::AddMember( ADocMember * Member )
+{
+    AN_ASSERT( Type == ADocValue::TYPE_OBJECT );
+
+    Member->AddRef();
+
+    Member->Prev = MembersEnd;
+    if ( Member->Prev != nullptr ) {
+        Member->Prev->Next = Member;
+    } else {
+        Members = Member;
+    }
+    MembersEnd = Member;
+}
+
+void ADocValue::Print() const
+{
+    GLogger.Printf( "Type: %s\n", IsString() ? "STRING" : "OBJECT" );
+
+    if ( IsString() ) {
+        GLogger.Printf( "%s\n", GetString().CStr() );
+        return;
+    }
+
+    for ( ADocMember const * member = GetListOfMembers() ; member ; member = member->GetNext() ) {
+        member->Print();
+    }
+}
+
+AString ADocValue::SerializeToString( SDocumentSerializeInfo const & SerializeInfo ) const
+{
+    ADocumentSerializer serializer;
+
+    if ( SerializeInfo.bCompactStringConversion ) {
+        return serializer.SerializeObjectCompact( GetListOfMembers() );
+    }
+
+    bool bSingleMember;
+    return serializer.SerializeObject( GetListOfMembers(), bSingleMember );
+}
+
+
+ADocMember::~ADocMember()
+{
+    for ( ADocValue * value = Values ; value ;  ) {
+        ADocValue * next = value->Next;
+        value->RemoveRef();
+        value = next;
+    }
+}
+
+void ADocMember::AddValue( ADocValue * pValue )
+{
+    AN_ASSERT( pValue->Next == nullptr && pValue->Prev == nullptr );
+    pValue->AddRef();
+    pValue->Prev = ValuesEnd;
+    if ( pValue->Prev != nullptr ) {
+        pValue->Prev->Next = pValue;
+    } else {
+        Values = pValue;
+    }
+    ValuesEnd = pValue;
+}
+
+void ADocMember::Print() const
+{
+    GLogger.Printf( "Member: %s\n", GetName().CStr() );
+
+    for ( ADocValue const * value = GetArrayValues() ; value ; value = value->GetNext() ) {
+        value->Print();
+    }
 }

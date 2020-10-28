@@ -58,51 +58,63 @@ AWorld::AWorld()
     ArrayOfLevels.Append( PersistentLevel );
 }
 
-void AWorld::SetPaused( bool _Paused ) {
+void AWorld::SetPaused( bool _Paused )
+{
     bPauseRequest = _Paused;
     bUnpauseRequest = !_Paused;
 }
 
-bool AWorld::IsPaused() const {
+bool AWorld::IsPaused() const
+{
     return bPaused;
 }
 
-void AWorld::ResetGameplayTimer() {
+void AWorld::ResetGameplayTimer()
+{
     bResetGameplayTimer = true;
 }
 
-void AWorld::SetPhysicsHertz( int _Hertz ) {
+void AWorld::SetPhysicsHertz( int _Hertz )
+{
     PhysicsWorld.PhysicsHertz = _Hertz;
 }
 
-void AWorld::SetPhysicsInterpolation( bool _Interpolation ) {
+void AWorld::SetPhysicsInterpolation( bool _Interpolation )
+{
     PhysicsWorld.bEnablePhysicsInterpolation = _Interpolation;
 }
 
-void AWorld::SetContactSolverSplitImpulse( bool _SplitImpulse ) {
+void AWorld::SetContactSolverSplitImpulse( bool _SplitImpulse )
+{
     PhysicsWorld.bContactSolverSplitImpulse = _SplitImpulse;
 }
 
-void AWorld::SetContactSolverIterations( int _InterationsCount ) {
+void AWorld::SetContactSolverIterations( int _InterationsCount )
+{
     PhysicsWorld.NumContactSolverIterations = _InterationsCount;
 }
 
-void AWorld::SetGravityVector( Float3 const & _Gravity ) {
+void AWorld::SetGravityVector( Float3 const & _Gravity )
+{
     PhysicsWorld.GravityVector = _Gravity;
     PhysicsWorld.bGravityDirty = true;
 }
 
-Float3 const & AWorld::GetGravityVector() const {
+Float3 const & AWorld::GetGravityVector() const
+{
     return PhysicsWorld.GravityVector;
 }
 
-void AWorld::BeginPlay() {
+void AWorld::BeginPlay()
+{
 }
 
-void AWorld::EndPlay() {
+void AWorld::EndPlay()
+{
 }
 
-void AWorld::Destroy() {
+void AWorld::Destroy()
+{
     if ( bPendingKill ) {
         return;
     }
@@ -129,13 +141,15 @@ void AWorld::Destroy() {
     EndPlay();
 }
 
-void AWorld::DestroyActors() {
+void AWorld::DestroyActors()
+{
     for ( AActor * actor : Actors ) {
         actor->Destroy();
     }
 }
 
-void AWorld::BuildNavigation( SAINavigationConfig const & _NavigationConfig ) {
+void AWorld::BuildNavigation( SAINavigationConfig const & _NavigationConfig )
+{
     NavigationMesh.Initialize( _NavigationConfig );
     NavigationMesh.Build();
 }
@@ -169,7 +183,8 @@ void SActorSpawnInfo::_SetAttribute( AString const & AttributeName, AString cons
     Attributes.Append( std::make_pair( AttributeName, AttributeValue ) );
 }
 
-AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters ) {
+AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters )
+{
     AClassMeta const * classMeta = _SpawnParameters.ActorClassMeta();
 
     if ( !classMeta ) {
@@ -227,44 +242,45 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters ) {
     return actor;
 }
 
-static Float3 ReadFloat3( ADocument const & _Document, int _FieldsHead, const char * _FieldName, Float3 const & _Default ) {
-    SDocumentField * field = _Document.FindField( _FieldsHead, _FieldName );
+static Float3 ReadFloat3( ADocValue const * pObject, const char * _FieldName, Float3 const & _Default )
+{
+    ADocMember const * field = pObject->FindMember( _FieldName );
     if ( !field ) {
         return _Default;
     }
 
-    SDocumentValue * value = &_Document.Values[ field->ValuesHead ];
+    AString s = field->GetString();
 
     Float3 r;
-    sscanf( value->Token.ToString().CStr(), "%f %f %f", &r.X, &r.Y, &r.Z );
+    sscanf( s.CStr(), "%f %f %f", &r.X, &r.Y, &r.Z );
     return r;
 }
 
-static Quat ReadQuat( ADocument const & _Document, int _FieldsHead, const char * _FieldName, Quat const & _Default ) {
-    SDocumentField * field = _Document.FindField( _FieldsHead, _FieldName );
+static Quat ReadQuat( ADocValue const * pObject, const char * _FieldName, Quat const & _Default )
+{
+    ADocMember const * field = pObject->FindMember( _FieldName );
     if ( !field ) {
         return _Default;
     }
 
-    SDocumentValue * value = &_Document.Values[ field->ValuesHead ];
+    AString s = field->GetString();
 
     Quat r;
-    sscanf( value->Token.ToString().CStr(), "%f %f %f %f", &r.X, &r.Y, &r.Z, &r.W );
+    sscanf( s.CStr(), "%f %f %f %f", &r.X, &r.Y, &r.Z, &r.W );
     return r;
 }
 
-AActor * AWorld::LoadActor( ADocument const & _Document, int _FieldsHead, ALevel * _Level ) {
-    SDocumentField * classNameField = _Document.FindField( _FieldsHead, "ClassName" );
+AActor * AWorld::LoadActor( ADocValue const * pObject, ALevel * _Level, bool bInEditor )
+{
+    ADocMember const * classNameField = pObject->FindMember( "ClassName" );
     if ( !classNameField ) {
         GLogger.Printf( "AWorld::LoadActor: invalid actor class\n" );
         return nullptr;
     }
 
-    SDocumentValue * classNameValue = &_Document.Values[ classNameField->ValuesHead ];
-
-    AClassMeta const * classMeta = AActor::Factory().LookupClass( classNameValue->Token.ToString().CStr() );
+    AClassMeta const * classMeta = AActor::Factory().LookupClass( classNameField->GetString().CStr() );
     if ( !classMeta ) {
-        GLogger.Printf( "AWorld::LoadActor: invalid actor class \"%s\"\n", classNameValue->Token.ToString().CStr() );
+        GLogger.Printf( "AWorld::LoadActor: invalid actor class \"%s\"\n", classNameField->GetString().CStr() );
         return nullptr;
     }
 
@@ -280,14 +296,16 @@ AActor * AWorld::LoadActor( ADocument const & _Document, int _FieldsHead, ALevel
     actor->Level->Actors.Append( actor );
     actor->IndexInLevelArrayOfActors = actor->Level->Actors.Size() - 1;
 
+    actor->bInEditor = bInEditor;
+
     // Load actor attributes
-    actor->LoadAttributes( _Document, _FieldsHead );
+    actor->LoadAttributes( pObject );
 
 #if 0
     // Load components
-    SDocumentField * componentsArray = _Document.FindField( _FieldsHead, "Components" );
-    for ( int i = componentsArray->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
-        SDocumentValue const * componentObject = &_Document.Values[ i ];
+    SDocumentField * componentsArray = pObject->FindField( "Components" );
+    for ( int i = componentsArray->ValuesHead ; i != -1 ; i = pDocument->Values[ i ].Next ) {
+        SDocumentValue const * componentObject = &pDocument->Values[ i ];
         if ( componentObject->Type != SDocumentValue::T_Object ) {
             continue;
         }
@@ -295,9 +313,9 @@ AActor * AWorld::LoadActor( ADocument const & _Document, int _FieldsHead, ALevel
     }
 
     // Load root component
-    SDocumentField * rootField = _Document.FindField( _FieldsHead, "Root" );
+    SDocumentField * rootField = pObject->FindField( "Root" );
     if ( rootField ) {
-        SDocumentValue * rootValue = &_Document.Values[ rootField->ValuesHead ];
+        SDocumentValue * rootValue = &pDocument->Values[ rootField->ValuesHead ];
         ASceneComponent * root = dynamic_cast< ASceneComponent * >( actor->FindComponent( rootValue->Token.ToString().CStr() ) );
         if ( root ) {
             actor->RootComponent = root;
@@ -307,9 +325,9 @@ AActor * AWorld::LoadActor( ADocument const & _Document, int _FieldsHead, ALevel
 
     STransform spawnTransform;
 
-    spawnTransform.Position = ReadFloat3( _Document, _FieldsHead, "SpawnPosition", Float3(0.0f) );
-    spawnTransform.Rotation = ReadQuat( _Document, _FieldsHead, "SpawnRotation", Quat::Identity() );
-    spawnTransform.Scale    = ReadFloat3( _Document, _FieldsHead, "SpawnScale", Float3(1.0f) );
+    spawnTransform.Position = ReadFloat3( pObject, "SpawnPosition", Float3(0.0f) );
+    spawnTransform.Rotation = ReadQuat( pObject, "SpawnRotation", Quat::Identity() );
+    spawnTransform.Scale    = ReadFloat3( pObject, "SpawnScale", Float3(1.0f) );
 
     actor->Initialize( spawnTransform );
 
@@ -320,7 +338,8 @@ AActor * AWorld::LoadActor( ADocument const & _Document, int _FieldsHead, ALevel
     return actor;
 }
 
-//AString AWorld::GenerateActorUniqueName( const char * _Name ) {
+//AString AWorld::GenerateActorUniqueName( const char * _Name )
+//{
 //    // TODO: optimize!
 //    if ( !FindActor( _Name ) ) {
 //        return _Name;
@@ -335,7 +354,8 @@ AActor * AWorld::LoadActor( ADocument const & _Document, int _FieldsHead, ALevel
 //    return uniqueName;
 //}
 
-//AActor * AWorld::FindActor( const char * _UniqueName ) {
+//AActor * AWorld::FindActor( const char * _UniqueName )
+//{
 //    // TODO: Use hash!
 //    for ( AActor * actor : Actors ) {
 //        if ( !actor->GetName().Icmp( _UniqueName ) ) {
@@ -345,11 +365,13 @@ AActor * AWorld::LoadActor( ADocument const & _Document, int _FieldsHead, ALevel
 //    return nullptr;
 //}
 
-void AWorld::BroadcastActorSpawned( AActor * _SpawnedActor ) {    
+void AWorld::BroadcastActorSpawned( AActor * _SpawnedActor )
+{
     E_OnActorSpawned.Dispatch( _SpawnedActor );
 }
 
-void AWorld::UpdatePauseStatus() {
+void AWorld::UpdatePauseStatus()
+{
     if ( bPauseRequest ) {
         bPauseRequest = false;
         bPaused = true;
@@ -392,7 +414,8 @@ void AWorld::UpdateTimers( float _TimeStep )
     TimerCmd.Clear();
 }
 
-void AWorld::UpdateActors( float _TimeStep ) {
+void AWorld::UpdateActors( float _TimeStep )
+{
     for ( AActor * actor : Actors ) {
         if ( actor->IsPendingKill() ) {
             continue;
@@ -410,7 +433,8 @@ void AWorld::UpdateActors( float _TimeStep ) {
     }
 }
 
-void AWorld::UpdateActorsPrePhysics( float _TimeStep ) {
+void AWorld::UpdateActorsPrePhysics( float _TimeStep )
+{
     for ( AActor * actor : Actors ) {
         if ( actor->IsPendingKill() ) {
             continue;
@@ -423,7 +447,8 @@ void AWorld::UpdateActorsPrePhysics( float _TimeStep ) {
     }
 }
 
-void AWorld::UpdateActorsPostPhysics( float _TimeStep ) {
+void AWorld::UpdateActorsPostPhysics( float _TimeStep )
+{
     for ( AActor * actor : Actors ) {
         if ( actor->IsPendingKill() ) {
             continue;
@@ -442,28 +467,30 @@ void AWorld::UpdateActorsPostPhysics( float _TimeStep ) {
         if ( actor->LifeSpan > 0.0f ) {
             actor->LifeSpan -= _TimeStep;
 
-            if ( actor->LifeSpan < 0.0f ) {
+            if ( actor->LifeSpan <= 0.0f ) {
                 actor->Destroy();
             }
         }
     }
 }
 
-void AWorld::UpdateLevels( float _TimeStep ) {
+void AWorld::UpdateLevels( float _TimeStep )
+{
     for ( ALevel * level : ArrayOfLevels ) {
         level->Tick( _TimeStep );
     }
 }
 
-void AWorld::OnPrePhysics( float _TimeStep ) {
+void AWorld::OnPrePhysics( float _TimeStep )
+{
     GameplayTimeMicro = GameplayTimeMicroAfterTick;
 
     // Tick actors
     UpdateActorsPrePhysics( _TimeStep );
 }
 
-void AWorld::OnPostPhysics( float _TimeStep ) {
-
+void AWorld::OnPostPhysics( float _TimeStep )
+{
     UpdateActorsPostPhysics( _TimeStep );
 
     if ( bResetGameplayTimer ) {
@@ -474,7 +501,8 @@ void AWorld::OnPostPhysics( float _TimeStep ) {
     }
 }
 
-void AWorld::UpdatePhysics( float _TimeStep ) {
+void AWorld::UpdatePhysics( float _TimeStep )
+{
     if ( bPaused ) {
         return;
     }
@@ -482,13 +510,15 @@ void AWorld::UpdatePhysics( float _TimeStep ) {
     PhysicsWorld.Simulate( _TimeStep );
 }
 
-void AWorld::UpdateSkinning() {
+void AWorld::UpdateSkinning()
+{
     for ( ASkinnedComponent * skinnedMesh = RenderWorld.GetSkinnedMeshes() ; skinnedMesh ; skinnedMesh = skinnedMesh->GetNextSkinnedMesh() ) {
         skinnedMesh->UpdateBounds();
     }
 }
 
-void AWorld::Tick( float _TimeStep ) {
+void AWorld::Tick( float _TimeStep )
+{
     GameRunningTimeMicro = GameRunningTimeMicroAfterTick;
     GameplayTimeMicro = GameplayTimeMicroAfterTick;
 
@@ -518,27 +548,33 @@ void AWorld::Tick( float _TimeStep ) {
     GameRunningTimeMicroAfterTick += frameDuration;
 }
 
-bool AWorld::Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const {
+bool AWorld::Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const
+{
     return VSD_Raycast( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 
-bool AWorld::RaycastBounds( TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const {
+bool AWorld::RaycastBounds( TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const
+{
     return VSD_RaycastBounds( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 
-bool AWorld::RaycastClosest( SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const {
+bool AWorld::RaycastClosest( SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const
+{
     return VSD_RaycastClosest( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 
-bool AWorld::RaycastClosestBounds( SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const {
+bool AWorld::RaycastClosestBounds( SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const
+{
     return VSD_RaycastClosestBounds( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 
-void AWorld::QueryVisiblePrimitives( TPodArray< SPrimitiveDef * > & VisPrimitives, TPodArray< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery ) {
+void AWorld::QueryVisiblePrimitives( TPodArray< SPrimitiveDef * > & VisPrimitives, TPodArray< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery )
+{
     VSD_QueryVisiblePrimitives( this, VisPrimitives, VisSurfs, VisPass, InQuery );
 }
 
-void AWorld::ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) {
+void AWorld::ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter )
+{
     TPodArray< AActor * > damagedActors;
     QueryActors( damagedActors, _Position, _Radius, _QueryFilter );
     for ( AActor * damagedActor : damagedActors ) {
@@ -546,7 +582,8 @@ void AWorld::ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, f
     }
 }
 
-void AWorld::KickoffPendingKillObjects() {
+void AWorld::KickoffPendingKillObjects()
+{
     while ( PendingKillComponents ) {
         AActorComponent * component = PendingKillComponents;
         AActorComponent * nextComponent;
@@ -606,11 +643,12 @@ void AWorld::KickoffPendingKillObjects() {
     }
 }
 
-int AWorld::Serialize( ADocument & _Doc ) {
-    int object = Super::Serialize( _Doc );
+TRef< ADocObject > AWorld::Serialize()
+{
+    TRef< ADocObject > object = Super::Serialize();
 
     if ( !Actors.IsEmpty() ) {
-        int actors = _Doc.AddArray( object, "Actors" );
+        ADocMember * actors = object->AddArray( "Actors" );
 
 //        std::unordered_set< std::string > precacheStrs;
 
@@ -618,8 +656,8 @@ int AWorld::Serialize( ADocument & _Doc ) {
             if ( actor->IsPendingKill() ) {
                 continue;
             }
-            int actorObject = actor->Serialize( _Doc );
-            _Doc.AddValueToField( actors, actorObject );
+            TRef< ADocObject > actorObject = actor->Serialize();
+            actors->AddValue( actorObject );
 
 //            AClassMeta const & classMeta = actor->FinalClassMeta();
 
@@ -630,11 +668,11 @@ int AWorld::Serialize( ADocument & _Doc ) {
         }
 
 //        if ( !precacheStrs.empty() ) {
-//            int precache = _Doc.AddArray( object, "Precache" );
+//            int precache = pDocument->AddArray( object, "Precache" );
 //            for ( auto it : precacheStrs ) {
 //                const std::string & s = it;
 
-//                _Doc.AddValueToField( precache, _Doc.CreateStringValue( _Doc.ProxyBuffer.NewString( s.c_str() ).CStr() ) );
+//                pDocument->AddValueToField( precache, pDocument->CreateStringValue( s.c_str() ) );
 //            }
 //        }
     }
@@ -642,7 +680,8 @@ int AWorld::Serialize( ADocument & _Doc ) {
     return object;
 }
 
-void AWorld::AddLevel( ALevel * _Level ) {
+void AWorld::AddLevel( ALevel * _Level )
+{
     if ( _Level->IsPersistentLevel() ) {
         GLogger.Printf( "AWorld::AddLevel: Can't add persistent level\n" );
         return;
@@ -664,7 +703,8 @@ void AWorld::AddLevel( ALevel * _Level ) {
     ArrayOfLevels.Append( _Level );
 }
 
-void AWorld::RemoveLevel( ALevel * _Level ) {
+void AWorld::RemoveLevel( ALevel * _Level )
+{
     if ( !_Level ) {
         return;
     }
@@ -690,7 +730,8 @@ void AWorld::RemoveLevel( ALevel * _Level ) {
     _Level->RemoveRef();
 }
 
-void AWorld::AddTimer( ATimer * _Timer ) {
+void AWorld::AddTimer( ATimer * _Timer )
+{
     _Timer->AddRef();
     if ( bDuringTimerTick )
     {
@@ -704,7 +745,8 @@ void AWorld::AddTimer( ATimer * _Timer ) {
     }
 }
 
-void AWorld::RemoveTimer( ATimer * _Timer ) {
+void AWorld::RemoveTimer( ATimer * _Timer )
+{
     _Timer->RemoveRef();
     if ( bDuringTimerTick )
     {
@@ -718,7 +760,8 @@ void AWorld::RemoveTimer( ATimer * _Timer ) {
     }
 }
 
-void AWorld::DrawDebug( ADebugRenderer * InRenderer ) {
+void AWorld::DrawDebug( ADebugRenderer * InRenderer )
+{
     for ( ALevel * level : ArrayOfLevels ) {
         level->DrawDebug( InRenderer );
     }
@@ -736,7 +779,8 @@ void AWorld::DrawDebug( ADebugRenderer * InRenderer ) {
     NavigationMesh.DrawDebug( InRenderer );
 }
 
-AWorld * AWorld::CreateWorld() {
+AWorld * AWorld::CreateWorld()
+{
     AWorld * world = CreateInstanceOf< AWorld >();
 
     world->AddRef();
@@ -750,13 +794,15 @@ AWorld * AWorld::CreateWorld() {
     return world;
 }
 
-void AWorld::DestroyWorlds() {
+void AWorld::DestroyWorlds()
+{
     for ( AWorld * world : Worlds ) {
         world->Destroy();
     }
 }
 
-void AWorld::KickoffPendingKillWorlds() {
+void AWorld::KickoffPendingKillWorlds()
+{
     while ( PendingKillWorlds ) {
         AWorld * world = PendingKillWorlds;
         AWorld * nextWorld;
@@ -784,7 +830,8 @@ void AWorld::KickoffPendingKillWorlds() {
     }
 }
 
-void AWorld::UpdateWorlds( IGameModule * _GameModule, float _TimeStep ) {
+void AWorld::UpdateWorlds( float _TimeStep )
+{
     for ( AWorld * world : Worlds ) {
         if ( world->IsPendingKill() ) {
             continue;

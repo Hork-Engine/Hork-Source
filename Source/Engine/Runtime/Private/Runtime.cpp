@@ -38,6 +38,7 @@ SOFTWARE.
 #include <Core/Public/CriticalError.h>
 #include <Core/Public/HashFunc.h>
 #include <Core/Public/WindowsDefs.h>
+#include <Core/Public/Document.h>
 
 #include "CPUInfo.h"
 #include "GPUSync.h"
@@ -432,6 +433,9 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl )
     WindowHandle = nullptr;
 
     GLogger.Printf( "TotalAllocatedRenderCore: %d\n", TotalAllocatedRenderCore );
+
+    SDocumentAllocator< ADocValue >::FreeMemoryPool();
+    SDocumentAllocator< ADocMember >::FreeMemoryPool();
 
     WorkingDir.Free();
     RootPath.Free();

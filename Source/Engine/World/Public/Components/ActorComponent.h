@@ -75,7 +75,7 @@ public:
     AWorld * GetWorld() const;
 
     /** Serialize component to document data */
-    int Serialize( ADocument & _Doc ) override;
+    TRef< ADocObject > Serialize() override;
 
     /** Destroy this component */
     void Destroy();

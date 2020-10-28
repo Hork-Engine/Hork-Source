@@ -95,11 +95,9 @@ static FILE * OpenFile( const char * _FileName, const char * _Mode ) {
 }
 
 bool AFileStream::Open( const char * _FileName, int _Mode ) {
-    AString fn;
-
     Close();
 
-    fn = _FileName;
+    AString fn( _FileName );
     fn.FixPath();
     if ( fn.Length() && fn[ fn.Length() - 1 ] == '/' ) {
         GLogger.Printf( "Invalid file name %s\n", _FileName );

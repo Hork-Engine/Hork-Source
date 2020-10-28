@@ -101,11 +101,11 @@ void AActorComponent::Destroy() {
     bInitialized = false;
 }
 
-int AActorComponent::Serialize( ADocument & _Doc ) {
-    int object = Super::Serialize( _Doc );
+TRef< ADocObject > AActorComponent::Serialize() {
+    TRef< ADocObject > object = Super::Serialize();
 
-    _Doc.AddStringField( object, "Name", _Doc.ProxyBuffer.NewString( GetObjectName() ).CStr() );
-    //_Doc.AddStringField( object, "bCreatedDuringConstruction", bCreatedDuringConstruction ? "1" : "0" );
+    object->AddString( "Name", GetObjectName() );
+    //object->AddString( "bCreatedDuringConstruction", bCreatedDuringConstruction ? "1" : "0" );
 
     return object;
 }

@@ -224,7 +224,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
         CommandProcessor.Execute( EngineCmd->CommandContext );
 
         // Tick worlds
-        AWorld::UpdateWorlds( GameModule, FrameDurationInSeconds );
+        AWorld::UpdateWorlds( FrameDurationInSeconds );
 
         // Update audio system
         GAudioSystem.Update( APlayerController::GetCurrentAudioListener(), FrameDurationInSeconds );

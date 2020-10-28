@@ -31,137 +31,402 @@ SOFTWARE.
 #pragma once
 
 #include "String.h"
+#include "Ref.h"
+#include "PoolAllocator.h"
 
-struct ATokenBuffer final {
-    AN_FORBID_COPY( ATokenBuffer )
-
-    using Allocator = AZoneAllocator;
-
-    const char * GetBuffer() const { return Start; }
-    bool InSitu() const { return bInSitu; }
-
-    const char * Cur;
-    int LineNumber;
-
-    ATokenBuffer();
-    ~ATokenBuffer();
-
-    void Initialize( const char * _String, bool _InSitu );
-    void Deinitialize();
-
-private:
-    char * Start;
-    bool bInSitu;
-};
-
-enum ETokenType {
+enum ETokenType
+{
     TOKEN_TYPE_UNKNOWN,
     TOKEN_TYPE_EOF,
     TOKEN_TYPE_BRACKET,
-    TOKEN_TYPE_FIELD,
+    TOKEN_TYPE_MEMBER,
     TOKEN_TYPE_STRING
 };
 
-struct SToken final {
-    const char * Begin;
-    const char * End;
-    int Type;
+struct SToken
+{
+    const char * Begin = "";
+    const char * End = "";
+    int Type = TOKEN_TYPE_UNKNOWN;
 
-    void FromString( const char * _Str );
-    AString ToString() const;
-    bool CompareToString( const char * _Str ) const;
     const char * NamedType() const;
 };
 
-struct SDocumentField;
+class ADocumentTokenizer
+{
+    AN_FORBID_COPY( ADocumentTokenizer )
 
-struct SDocumentValue final {
-    enum { TYPE_STRING, TYPE_OBJECT };
-    int Type;
-    SToken Token;   // for T_String
-    int FieldsHead; // for T_Object list of fields
-    int FieldsTail; // for T_Object list of fields
-    int Next;       // next value
-    int Prev;       // prev value
-};
+public:
+    ADocumentTokenizer();
+    ~ADocumentTokenizer();
 
-struct SDocumentField final {
-    SToken Name;
-    int ValuesHead; // list of values
-    int ValuesTail; // list of values
-    int Next;       // next field
-    int Prev;       // prev field
-};
+    void Reset( const char * pDocumentData, bool InSitu );
 
-struct ADocumentProxyBuffer final {
-    AN_FORBID_COPY( ADocumentProxyBuffer )
+    const char * GetBuffer() const { return Start; }
 
-    using Allocator = AZoneAllocator;
+    bool InSitu() const { return bInSitu; }
 
-    AString & NewString();
-    AString & NewString( const char * _String );
-    AString & NewString( AString const & _String );
+    void NextToken();
 
-    ADocumentProxyBuffer();
-    ~ADocumentProxyBuffer();
+    SToken const & GetToken() const { return CurToken; }
 
 private:
-    struct AStringList {
-        AStringList() {}
-        AStringList( const char * _Str ) : Str( _Str ) {}
-        AStringList( AString const & _Str ) : Str( _Str ) {}
-        AString Str;
-        AStringList * Next;
-    };
+    void SkipWhitespaces();
 
-    AStringList * StringList;
+    char * Start;
+    const char * Cur;
+    int LineNumber;
+    bool bInSitu;
+    SToken CurToken;
 };
 
-struct ANGIE_API ADocument final {
-    AN_FORBID_COPY( ADocument )
+template< typename T >
+struct SDocumentAllocator
+{
+    static TPoolAllocator< T > & GetMemoryPool()
+    {
+        static TPoolAllocator< T > MemoryPool;
+        return MemoryPool;
+    }
 
+    static void FreeMemoryPool()
+    {
+        GetMemoryPool().Free();
+    }
+
+    void * Allocate( std::size_t _SizeInBytes )
+    {
+        AN_ASSERT( _SizeInBytes == sizeof( T ) );
+        return GetMemoryPool().Allocate();
+    }
+
+    void Deallocate( void * _Bytes )
+    {
+        GetMemoryPool().Deallocate( _Bytes );
+    }
+};
+
+struct SDocumentSerializeInfo
+{
+    bool bCompactStringConversion;
+};
+
+struct SDocumentDeserializeInfo
+{
+    const char * pDocumentData;
+    bool bInsitu;
+};
+
+class ADocMember;
+
+class ADocValue : public TRefCounted< SDocumentAllocator< ADocValue > >
+{
+public:
+    enum { TYPE_STRING, TYPE_OBJECT };
+
+    ADocValue( int InType )
+    {
+        Members = nullptr;
+        MembersEnd = nullptr;
+        Next = nullptr;
+        Prev = nullptr;
+        Type = InType;
+        StrBegin = StrEnd = "";
+        pTokenMemory = nullptr;
+    }
+
+    ~ADocValue();
+
+    AString SerializeToString( SDocumentSerializeInfo const & SerializeInfo ) const;
+
+    /** Find child member */
+    ADocMember * FindMember( const char * Name );
+    ADocMember const * FindMember( const char * Name ) const;
+
+    /** Add string member */
+    ADocMember * AddString( const char * MemberName, const char * Str );
+
+    ADocMember * AddString( const char * MemberName, AString const & Str )
+    {
+        return AddString( MemberName, Str.CStr() );
+    }
+
+    /** Add object member */
+    ADocMember * AddObject( const char* MemberName, class ADocObject * Object );
+
+    /** Add array member */
+    ADocMember * AddArray( const char * ArrayName );
+
+    /** Get next value inside array */
+    ADocValue * GetNext()
+    {
+        return Next;
+    }
+
+    /** Get next value inside array */
+    ADocValue const * GetNext() const
+    {
+        return Next;
+    }
+
+    /** Get prev value inside array */
+    ADocValue * GetPrev()
+    {
+        return Prev;
+    }
+
+    /** Get prev value inside array */
+    ADocValue const * GetPrev() const
+    {
+        return Prev;
+    }
+
+    /** Get members inside the object */
+    ADocMember * GetListOfMembers()
+    {
+        return Members;
+    }
+
+    /** Get members inside the object */
+    ADocMember const * GetListOfMembers() const
+    {
+        return Members;
+    }
+
+    /** Is string value */
+    bool IsString() const
+    {
+        return Type == TYPE_STRING;
+    }
+
+    /** Is object value */
+    bool IsObject() const
+    {
+        return Type == TYPE_OBJECT;
+    }
+
+    /** Set string value */
+    void SetString( const char * Str )
+    {
+        if ( pTokenMemory ) {
+            GZoneMemory.Free( pTokenMemory );
+        }
+
+        int len = Core::Strlen( Str );
+
+        pTokenMemory = GZoneMemory.Alloc( len + 1 );
+        Core::Memcpy( pTokenMemory, Str, len + 1 );
+
+        StrBegin = (const char *)pTokenMemory;
+        StrEnd = (const char *)pTokenMemory + len;
+    }
+
+    void SetStringInsitu( const char * Begin, const char * End )
+    {
+        StrBegin = Begin;
+        StrEnd = End;
+    }
+
+    /** Get string value */
+    AString GetString() const
+    {
+        return AString( StrBegin, StrEnd );
+    }
+
+    void Print() const;
+
+private:
+    void AddMember( ADocMember * Member );
+
+protected:
+    int Type;
+
+private:
+    const char * StrBegin;  // string data for TYPE_STRING
+    const char * StrEnd;    // string data for TYPE_STRING
+
+    void * pTokenMemory;
+
+    ADocMember * Members;    // for TYPE_OBJECT list of members
+    ADocMember * MembersEnd; // for TYPE_OBJECT list of members
+
+    ADocValue * Next;
+    ADocValue * Prev;
+
+    friend class ADocument;
+    friend class ADocMember;
+};
+
+class ADocString : public ADocValue
+{
+public:
+    ADocString()
+        : ADocValue( TYPE_STRING )
+    {
+    }
+};
+
+class ADocObject : public ADocValue
+{
+public:
+    ADocObject()
+        : ADocValue( TYPE_OBJECT )
+    {
+    }
+};
+
+class ADocMember: public TRefCounted< SDocumentAllocator< ADocMember > >
+{
+public:
+    ADocMember()
+    {
+        NameBegin = "";
+        NameEnd = "";
+        Values = nullptr;
+        ValuesEnd = nullptr;
+        Next = nullptr;
+        Prev = nullptr;
+    }
+
+    ~ADocMember();
+
+    /** Add value to array */
+    void AddValue( ADocValue * _Value );
+
+    /** Get member name */
+    AString GetName() const
+    {
+        return AString( NameBegin, NameEnd );
+    }
+
+    /** Get member value as string if possible */
+    AString GetString() const
+    {
+        if ( IsString() ) {
+            return AString( Values->StrBegin, Values->StrEnd );
+        }
+
+        return AString::NullString();
+    }
+
+    /** Is string member */
+    bool IsString() const
+    {
+        return !IsArray() && Values && Values->IsString();
+    }
+
+    /** Is object member */
+    bool IsObject() const
+    {
+        return !IsArray() && Values && Values->IsObject();
+    }
+
+    /** Is array member */
+    bool IsArray() const
+    {
+        return Values != ValuesEnd;
+    }
+
+    /** Get next member inside object */
+    ADocMember * GetNext()
+    {
+        return Next;
+    }
+
+    /** Get next member inside object */
+    ADocMember const * GetNext() const
+    {
+        return Next;
+    }
+
+    /** Get prev member inside object */
+    ADocMember * GetPrev()
+    {
+        return Prev;
+    }
+
+    /** Get prev member inside object */
+    ADocMember const * GetPrev() const
+    {
+        return Prev;
+    }
+
+    /** Get list of values */
+    ADocValue * GetArrayValues()
+    {
+        return Values;
+    }
+
+    /** Get list of values */
+    ADocValue const * GetArrayValues() const
+    {
+        return Values;
+    }
+
+    void Print() const;
+
+private:
+    const char * NameBegin;
+    const char * NameEnd;
+
+    ADocValue * Values;
+    ADocValue * ValuesEnd;
+
+    ADocMember * Next;
+    ADocMember * Prev;
+
+    friend class ADocument;
+    friend class ADocValue;
+};
+
+class ADocument : public ARefCounted
+{
+public:
     using Allocator = AZoneAllocator;
-
-    ATokenBuffer Buffer;
-    ADocumentProxyBuffer ProxyBuffer;
-
-    bool bCompactStringConversion = false;
-
-    int FieldsHead = -1;    // list of fields
-    int FieldsTail = -1;    // list of fields
-
-    SDocumentField * Fields = nullptr;
-    SDocumentValue * Values = nullptr;
 
     ADocument();
     ~ADocument();
 
-    int AllocateField();
-    int AllocateValue();
     void Clear();
 
-    void FromString( const char * _Script, bool _InSitu );
-    AString ToString() const;
+    AString SerializeToString( SDocumentSerializeInfo const & SerializeInfo ) const;
 
-    AString ObjectToString( int _Object ) const;
+    void DeserializeFromString( SDocumentDeserializeInfo const & DeserializeInfo );
 
-    SDocumentField * FindField( int _FieldsHead, const char * _Name ) const;
+    /** Find global member */
+    ADocMember * FindMember( const char * Name );
+    ADocMember const * FindMember( const char * Name ) const;
 
-    int CreateField( const char * _FieldName );
-    int CreateStringValue( const char * _Value );
-    int CreateObjectValue();
-    void AddField( int _Field );
-    void AddValueToField( int _FieldOrArray, int _Value );
-    int CreateStringField( const char * _FieldName, const char * _FieldValue );
-    void AddFieldToObject( int _Object, int _Field );
-    int AddStringField( int _Object, const char * _FieldName, const char * _FieldValue );
-    int AddArray( int _Object, const char * _ArrayName );
+    /** Add global string member */
+    ADocMember * AddString( const char * MemberName, const char * Str );
+
+    ADocMember * AddString( const char * MemberName, AString const & Str )
+    {
+        return AddString( MemberName, Str.CStr() );
+    }
+
+    /** Add global object member */
+    ADocMember * AddObject( const char* MemberName, ADocObject * Object );
+
+    /** Add global array member */
+    ADocMember * AddArray( const char * ArrayName );
+
+    void Print() const;
 
 private:
-    int FieldsMemReserved = 0;
-    int FieldsCount = 0;
-    int ValuesMemReserved = 0;
-    int ValuesCount = 0;
-};
+    TRef< ADocObject > ParseObject();
+    TRef< ADocMember > ParseMember( SToken const & MemberToken );
+    void ParseArray( ADocValue ** ppArrayHead, ADocValue ** ppArrayTail );
 
-void PrintDocument( ADocument const & _Doc );
+    /** Add global member */
+    void AddMember( ADocMember * Member );
+
+    ADocumentTokenizer Tokenizer;
+
+    /** Global members */
+    ADocMember * MembersHead = nullptr;
+    ADocMember * MembersTail = nullptr;
+
+    friend class ADocMember;
+    friend class ADocValue;
+};

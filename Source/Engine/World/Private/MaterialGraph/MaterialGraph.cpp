@@ -586,14 +586,14 @@ MGOutput * MGInput::GetConnection() {
     return Slot;
 }
 
-int MGInput::Serialize( ADocument & _Doc ) {
-    int object = _Doc.CreateObjectValue();
+TRef< ADocObject > MGInput::Serialize() {
+    TRef< ADocObject > object = MakeRef< ADocObject >();
 
-    _Doc.AddStringField( object, "Name", _Doc.ProxyBuffer.NewString( GetObjectName() ).CStr() );
+    object->AddString( "Name", GetObjectName() );
 
     //if ( GetOwner() ) {
-    //    _Doc.AddStringField( object, "Slot", _Doc.ProxyBuffer.NewString( Slot->GetObjectName() ).CStr() );
-    //    _Doc.AddStringField( object, "Node", _Doc.ProxyBuffer.NewString( Math::ToString( GetOwner()->GetId() ) ).CStr() );
+    //    object->AddString( "Slot", Slot->GetObjectName() );
+    //    object->AddString( "Node", Math::ToString( GetOwner()->GetId() ) );
     //}
 
     return object;
@@ -701,21 +701,21 @@ void MGNode::TouchConnections( AMaterialBuildContext const & _Context ) {
     }
 }
 
-int MGNode::Serialize( ADocument & _Doc ) {
+TRef< ADocObject > MGNode::Serialize() {
 #if 0
-    int object = _Doc.CreateObjectValue();
-    _Doc.AddStringField( object, "ClassName", FinalClassName() );
+    TRef< ADocumentObject > object = MakeRef< ADocumentObject >();
+    object->AddString( "ClassName", FinalClassName() );
 #else
-    int object = Super::Serialize(_Doc);
+    TRef< ADocObject > object = Super::Serialize();
 #endif
 
-    _Doc.AddStringField( object, "ID", _Doc.ProxyBuffer.NewString( Math::ToString( ID ) ).CStr() );
+    object->AddString( "ID", Math::ToString( ID ) );
 
     if ( !Inputs.IsEmpty() ) {
-        int array = _Doc.AddArray( object, "Inputs" );
+        ADocMember * array = object->AddArray( "Inputs" );
         for ( MGInput * in : Inputs ) {
-            int inputObject = in->Serialize( _Doc );
-            _Doc.AddValueToField( array, inputObject );
+            TRef< ADocObject > inputObject = in->Serialize();
+            array->AddValue( inputObject );
         }
     }
     return object;
@@ -2997,15 +2997,15 @@ void MGMaterialGraph::RegisterTextureSlot( MGTextureSlot * _Slot ) {
     TextureSlots.Append( _Slot );
 }
 
-int MGMaterialGraph::Serialize( ADocument & _Doc ) {
-    int object = _Doc.CreateObjectValue();
+TRef< ADocObject > MGMaterialGraph::Serialize() {
+    TRef< ADocObject > object = MakeRef< ADocObject >();
 
     if ( !Nodes.IsEmpty() ) {
-        int array = _Doc.AddArray( object, "Nodes" );
+        ADocMember * array = object->AddArray( "Nodes" );
 
         for ( MGNode * node : Nodes ) {
-            int nodeObject = node->Serialize( _Doc );
-            _Doc.AddValueToField( array, nodeObject );
+            TRef< ADocObject > nodeObject = node->Serialize();
+            array->AddValue( nodeObject );
         }
     }
 

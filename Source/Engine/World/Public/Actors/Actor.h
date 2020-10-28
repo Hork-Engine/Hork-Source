@@ -127,7 +127,7 @@ public:
     AArrayOfActorComponents const & GetComponents() const { return Components; }
 
     /** Serialize actor to document data */
-    int Serialize( ADocument & _Doc ) override;
+    TRef< ADocObject > Serialize() override;
 
     /** Destroy self */
     void Destroy();

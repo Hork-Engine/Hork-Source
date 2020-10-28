@@ -235,23 +235,23 @@ void AActor::TickComponents( float _TimeStep ) {
     }
 }
 
-int AActor::Serialize( ADocument & _Doc ) {
-    int object = Super::Serialize( _Doc );
+TRef< ADocObject > AActor::Serialize() {
+    TRef< ADocObject > object = Super::Serialize();
 
-    //_Doc.AddStringField( object, "GUID", _Doc.ProxyBuffer.NewString( GUID.ToString() ).CStr() );
+    //object->AddString( "GUID", GUID.ToString() );
 
     //if ( RootComponent ) {
-    //    _Doc.AddStringField( object, "Root", _Doc.ProxyBuffer.NewString( RootComponent->GetName() ).CStr() );
+    //    object->AddString( "Root", RootComponent->GetName() );
     //}
 
-    //int components = _Doc.AddArray( object, "Components" );
+    //TRef< ADocMember >  components = object->AddArray( "Components" );
 
     //for ( AActorComponent * component : Components ) {
     //    if ( component->IsPendingKill() ) {
     //        continue;
     //    }
-    //    int componentObject = component->Serialize( _Doc );
-    //    _Doc.AddValueToField( components, componentObject );
+    //    TRef< ADocumentObject > componentObject = component->Serialize();
+    //    components->AddValue( componentObject );
     //}
 
     return object;

@@ -96,7 +96,7 @@ public:
 
     MGNode * ConnectedNode() { return Slot ? Slot->GetOwner() : nullptr; }
 
-    int Serialize( ADocument & _Doc ) override;
+    TRef< ADocObject > Serialize() override;
 
 protected:
     TRef< MGOutput > Slot;
@@ -122,7 +122,7 @@ public:
     void ResetConnections( AMaterialBuildContext const & _Context );
     void TouchConnections( AMaterialBuildContext const & _Context );
 
-    int Serialize( ADocument & _Doc ) override;
+    TRef< ADocObject > Serialize() override;
 
 protected:
     MGNode( const char * _Name = "Node" );
@@ -859,7 +859,7 @@ public:
         return static_cast< T * >( node );
     }
 
-    int Serialize( ADocument & _Doc ) override;
+    TRef< ADocObject > Serialize() override;
 
     void RegisterTextureSlot( MGTextureSlot * _Slot );
 
