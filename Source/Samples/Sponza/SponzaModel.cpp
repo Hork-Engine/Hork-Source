@@ -48,7 +48,8 @@ AN_CLASS_META( ASponzaModel )
 
 ASponzaModel * GModule;
 
-void ASponzaModel::OnGameStart() {
+ASponzaModel::ASponzaModel()
+{
 
     GModule = this;
 
@@ -127,21 +128,21 @@ void ASponzaModel::OnGameStart() {
         //importer.ImportSkybox( importSettings );
 
 
-        //AAssetImporter importer;
-        //SAssetImportSettings importSettings;
-        //importSettings.OutputPath = "Skybox6";
-        //importSettings.ExplicitSkyboxFaces[0] = "cubemap_0.hdr";
-        //importSettings.ExplicitSkyboxFaces[1] = "cubemap_1.hdr";
-        //importSettings.ExplicitSkyboxFaces[2] = "cubemap_2.hdr";
-        //importSettings.ExplicitSkyboxFaces[3] = "cubemap_3.hdr";
-        //importSettings.ExplicitSkyboxFaces[4] = "cubemap_4.hdr";
-        //importSettings.ExplicitSkyboxFaces[5] = "cubemap_5.hdr";
-        //importSettings.bImportSkyboxExplicit = true;
-        //importSettings.bSkyboxHDRI = true;
-        //importSettings.SkyboxHDRIScale = 1.0f;
-        //importSettings.SkyboxHDRIPow = 1.0f;
-        //importSettings.bCreateSkyboxMaterialInstance = true;
-        //importer.ImportSkybox( importSettings );
+//        AAssetImporter importer;
+//        SAssetImportSettings importSettings;
+//        importSettings.OutputPath = "Skybox6";
+//        importSettings.ExplicitSkyboxFaces[0] = "cubemap_0.hdr";
+//        importSettings.ExplicitSkyboxFaces[1] = "cubemap_1.hdr";
+//        importSettings.ExplicitSkyboxFaces[2] = "cubemap_2.hdr";
+//        importSettings.ExplicitSkyboxFaces[3] = "cubemap_3.hdr";
+//        importSettings.ExplicitSkyboxFaces[4] = "cubemap_4.hdr";
+//        importSettings.ExplicitSkyboxFaces[5] = "cubemap_5.hdr";
+//        importSettings.bImportSkyboxExplicit = true;
+//        importSettings.bSkyboxHDRI = true;
+//        importSettings.SkyboxHDRIScale = 1.0f;
+//        importSettings.SkyboxHDRIPow = 1.0f;
+//        importSettings.bCreateSkyboxMaterialInstance = true;
+//        importer.ImportSkybox( importSettings );
 
 #endif
 
@@ -202,8 +203,11 @@ void ASponzaModel::OnGameStart() {
     
 #if 1
     // Spawn directional light
-    ADirectionalLight * dirlight = World->SpawnActor< ADirectionalLight >();
-    dirlight->LightComponent->bCastShadow = true;
+    TActorSpawnInfo< ADirectionalLight > spawnInfo;
+    spawnInfo.SetAttribute( "{ADirectionalLight.LightComponent}ADirectionalLightComponent.bCastShadow", false );
+
+    ADirectionalLight * dirlight = World->SpawnActor< ADirectionalLight >( spawnInfo );
+    dirlight->LightComponent->SetCastShadow( true );
     //dirlight->LightComponent->SetDirection( Float3( -0.5f, -2, -0.5f ) );
 
     dirlight->LightComponent->SetDirection( Float3( -0.75f, -2, -0.2f ) );
@@ -248,9 +252,6 @@ void ASponzaModel::OnGameStart() {
     );
 }
 
-void ASponzaModel::OnGameEnd() {
-}
-
 
 
 
@@ -287,6 +288,8 @@ ABrainStem::ABrainStem() {
 
     SkinnedComponent->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/BrainStem/BrainStem_Mesh.asset" ) );
     SkinnedComponent->CopyMaterialsFromMeshResource();
+
+    SkinnedComponent->bOutline = true;
 
     RootComponent = SkinnedComponent;
     bCanEverTick = true;
@@ -382,6 +385,8 @@ AGargoyle::AGargoyle() {
     //SkinnedComponent->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/sea_keep_lonely_watcher/scene_Mesh.asset" ) );
     SkinnedComponent->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/doom_hell_knight/scene_Mesh.asset" ) );
     SkinnedComponent->CopyMaterialsFromMeshResource();
+
+    SkinnedComponent->bOutline = true;
 
     RootComponent = SkinnedComponent;
     bCanEverTick = true;

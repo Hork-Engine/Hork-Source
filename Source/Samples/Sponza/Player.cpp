@@ -49,16 +49,16 @@ APlayer::APlayer() {
     bCanEverTick = true;
 
     // Create skybox
-    static TStaticResourceFinder< AIndexedMesh > UnitBox( _CTS( "/Default/Meshes/Skybox" ) );
-    //static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox3/Skybox_MaterialInstance.asset" ) );
-    //static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox2/Skybox_MaterialInstance.asset" ) );
-    static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox6/Skybox_MaterialInstance.asset" ) );
-    SkyboxComponent = CreateComponent< AMeshComponent >( "Skybox" );
-    SkyboxComponent->SetMesh( UnitBox.GetObject() );
-    SkyboxComponent->SetMaterialInstance( SkyboxMaterialInst.GetObject() );
-    SkyboxComponent->AttachTo( Camera );
-    SkyboxComponent->SetAbsoluteRotation( true );
-    SkyboxComponent->RenderingOrder = RENDER_ORDER_SKYBOX;
+//    static TStaticResourceFinder< AIndexedMesh > UnitBox( _CTS( "/Default/Meshes/Skybox" ) );
+//    //static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox3/Skybox_MaterialInstance.asset" ) );
+//    //static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox2/Skybox_MaterialInstance.asset" ) );
+//    static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox6/Skybox_MaterialInstance.asset" ) );
+//    SkyboxComponent = CreateComponent< AMeshComponent >( "Skybox" );
+//    SkyboxComponent->SetMesh( UnitBox.GetObject() );
+//    SkyboxComponent->SetMaterialInstance( SkyboxMaterialInst.GetObject() );
+//    SkyboxComponent->AttachTo( Camera );
+//    SkyboxComponent->SetAbsoluteRotation( true );
+//    SkyboxComponent->RenderingOrder = RENDER_ORDER_SKYBOX;
 
     Weapon = CreateComponent< AMeshComponent >( "Weapon" );
     Weapon->SetMesh( _CTS( "/Root/doom_plasma_rifle/scene_Mesh.asset" ) );
@@ -66,6 +66,7 @@ APlayer::APlayer() {
     Weapon->AttachTo( Camera );
     Weapon->SetPosition( 0.15f,-0.5f,-0.4f );
     Weapon->SetCollisionGroup( CM_NOCOLLISION );
+    Weapon->SetMotionBehavior( MB_KINEMATIC );
 }
 
 void APlayer::BeginPlay() {
@@ -200,14 +201,11 @@ static AMaterial * GetOrCreateSphereMaterial() {
     if ( !material )
     {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
-        MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
-        MGVertexStage * materialVertexStage = graph->AddNode< MGVertexStage >();
-        MGNextStageVariable * texCoord = materialVertexStage->AddNextStageVariable( "TexCoord", AT_Float2 );
-        texCoord->Connect( inTexCoordBlock, "Value" );
+        MGInTexCoord * texCoord = graph->AddNode< MGInTexCoord >();
         MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
         diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
         MGSampler * diffuseSampler = graph->AddNode< MGSampler >();
-        diffuseSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
+        diffuseSampler->TexCoord->Connect( texCoord, "Value" );
         diffuseSampler->TextureSlot->Connect( diffuseTexture, "Value" );
         MGUniformAddress * uniformAddress = graph->AddNode< MGUniformAddress >();
         uniformAddress->Address = 0;
@@ -215,8 +213,7 @@ static AMaterial * GetOrCreateSphereMaterial() {
         MGMulNode * mul = graph->AddNode< MGMulNode >();
         mul->ValueA->Connect( diffuseSampler, "RGBA" );
         mul->ValueB->Connect( uniformAddress, "Value" );
-        MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
-        materialFragmentStage->Color->Connect( mul, "Result" );
+        graph->Color->Connect( mul, "Result" );
 
         //MGFloat3Node * normal = graph->AddNode< MGFloat3Node >();
         //normal->Value = Float3(0,0,1);
@@ -225,21 +222,17 @@ static AMaterial * GetOrCreateSphereMaterial() {
         MGFloatNode * roughness = graph->AddNode< MGFloatNode >();
         roughness->Value = 0.1f;
 
-        //materialFragmentStage->Normal->Connect( normal, "Value" );
-        materialFragmentStage->Metallic->Connect( metallic, "Value" );
-        materialFragmentStage->Roughness->Connect( roughness, "Value" );
+        //graph->Normal->Connect( normal, "Value" );
+        graph->Metallic->Connect( metallic, "Value" );
+        graph->Roughness->Connect( roughness, "Value" );
 
-        //materialFragmentStage->Ambient->Connect( ambientSampler, "R" );
-        //materialFragmentStage->Emissive->Connect( emissiveSampler, "RGBA" );
+        //graph->Ambient->Connect( ambientSampler, "R" );
+        //graph->Emissive->Connect( emissiveSampler, "RGBA" );
 
-        graph->VertexStage = materialVertexStage;
-        graph->FragmentStage = materialFragmentStage;
         graph->MaterialType = MATERIAL_TYPE_PBR;
         graph->RegisterTextureSlot( diffuseTexture );
 
-        AMaterialBuilder * builder = CreateInstanceOf< AMaterialBuilder >();
-        builder->Graph = graph;
-        material = builder->Build();
+        material = CreateMaterial( graph );
         RegisterResource( material, "SphereMaterial" );
     }
     return material;
@@ -260,7 +253,7 @@ ASphereActor::ASphereActor() {
     // Create mesh component and set it as root component
     MeshComponent = CreateComponent< AMeshComponent >( "StaticMesh" );
     RootComponent = MeshComponent;
-    MeshComponent->SetPhysicsBehavior( PB_DYNAMIC );
+    MeshComponent->SetMotionBehavior( MB_SIMULATED );
     MeshComponent->bUseDefaultBodyComposition = true;
     MeshComponent->bDispatchContactEvents = true;
     MeshComponent->bGenerateContactPoints = true;

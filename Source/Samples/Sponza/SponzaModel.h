@@ -43,16 +43,9 @@ public:
     AWorld * World;
     APlayerController * PlayerController;
 
-    ASponzaModel() {}
+    ASponzaModel();
 
 private:
-    //
-    // Game module interface
-    //
-
-    void OnGameStart() override;
-    void OnGameEnd() override;
-
     void SetInputMappings();
     void LoadStaticMeshes();
 };

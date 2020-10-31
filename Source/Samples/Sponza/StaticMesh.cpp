@@ -37,7 +37,7 @@ AStaticMesh::AStaticMesh() {
     MeshComponent = CreateComponent< AMeshComponent >( "StaticMesh" );
     RootComponent = MeshComponent;
 
-    MeshComponent->SetPhysicsBehavior( PB_STATIC );
+    MeshComponent->SetMotionBehavior( MB_STATIC );
     MeshComponent->bUseDefaultBodyComposition = true;
     MeshComponent->SetRestitution( 10.0f );
 }
@@ -52,7 +52,7 @@ ASkinnedMesh::ASkinnedMesh() {
     MeshComponent = CreateComponent< ASkinnedComponent >( "SkinnedMesh" );
     RootComponent = MeshComponent;
 
-    MeshComponent->SetPhysicsBehavior( PB_STATIC );
+    MeshComponent->SetMotionBehavior( MB_STATIC );
     MeshComponent->bUseDefaultBodyComposition = true;
 }
 
