@@ -382,8 +382,6 @@ private:
 class ADocument : public ARefCounted
 {
 public:
-    using Allocator = AZoneAllocator;
-
     ADocument();
     ~ADocument();
 

@@ -161,13 +161,17 @@ void ADocumentTokenizer::NextToken()
 
     // Check member
     CurToken.Begin = Cur;
-    while ( ( *Cur >= 'a' && *Cur <= 'z' ) || ( *Cur >= 'A' && *Cur <= 'Z' ) || ( *Cur >= '0' && *Cur <= '9' ) ) {
+    while ( ( *Cur >= 'a' && *Cur <= 'z' )
+            || ( *Cur >= 'A' && *Cur <= 'Z' )
+            || ( *Cur >= '0' && *Cur <= '9' )
+            || *Cur == '_'
+            || *Cur == '.' ) {
         Cur++;
     }
     CurToken.End = Cur;
     if ( CurToken.Begin == CurToken.End ) {
         if ( *Cur ) {
-            GLogger.Print( "undefined symbols\n" );
+            GLogger.Print( "undefined symbols in token\n" );
             CurToken.Type = TOKEN_TYPE_UNKNOWN;
         } else {
             CurToken.Type = TOKEN_TYPE_EOF;
@@ -235,7 +239,6 @@ AString ADocumentSerializer::SerializeMember( ADocMember const * Member )
     bool bSingleValue = true;
 
     for ( ADocValue const * value = Member->GetArrayValues() ; value ;  ) {
-
         ADocValue const * next = value->GetNext();
 
         if ( bSingleValue && next != nullptr ) {
