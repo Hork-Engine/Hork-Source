@@ -154,7 +154,7 @@ static bool RaycastClosestCallback( SPrimitiveDef const * Self, Float3 const & I
 
     int subpartIndex;
 
-    if ( !resource->RaycastClosest( rayStartLocal, rayDirLocal, hitDistanceLocal, HitLocation, HitUV, HitDistance, Indices, subpartIndex ) ) {
+    if ( !resource->RaycastClosest( rayStartLocal, rayDirLocal, hitDistanceLocal, HitLocation, HitUV, hitDistanceLocal, Indices, subpartIndex ) ) {
         return false;
     }
 
@@ -163,7 +163,7 @@ static bool RaycastClosestCallback( SPrimitiveDef const * Self, Float3 const & I
     *pVertices = resource->GetVertices();
 
     // Transform hit location to world space
-    HitLocation = Self->Owner->GetWorldTransformMatrix() * HitLocation;
+    HitLocation = mesh->GetWorldTransformMatrix() * HitLocation;
 
     // Recalc hit distance in world space
     HitDistance = (HitLocation - InRayStart).Length();
@@ -542,7 +542,7 @@ static bool RaycastClosestCallback_Procedural( SPrimitiveDef const * Self, Float
         return false;
     }
 
-    if ( !resource->RaycastClosest( rayStartLocal, rayDirLocal, hitDistanceLocal, HitLocation, HitUV, HitDistance, Indices ) ) {
+    if ( !resource->RaycastClosest( rayStartLocal, rayDirLocal, hitDistanceLocal, HitLocation, HitUV, hitDistanceLocal, Indices ) ) {
         return false;
     }
 
@@ -551,7 +551,7 @@ static bool RaycastClosestCallback_Procedural( SPrimitiveDef const * Self, Float
     *pVertices = resource->VertexCache.ToPtr();
 
     // Transform hit location to world space
-    HitLocation = Self->Owner->GetWorldTransformMatrix() * HitLocation;
+    HitLocation = mesh->GetWorldTransformMatrix() * HitLocation;
 
     // Recalc hit distance in world space
     HitDistance = (HitLocation - InRayStart).Length();

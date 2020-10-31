@@ -1629,7 +1629,15 @@ static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
     {
         TRef< AMaterialInstance > material;
 
-        if ( Self->RaycastClosestCallback && Self->RaycastClosestCallback( Self, Raycast.RayStart, Raycast.HitLocation, Raycast.HitUV, Raycast.HitDistanceMin, &Raycast.pVertices, Raycast.Indices, material ) ) {
+        if ( Self->RaycastClosestCallback
+             && Self->RaycastClosestCallback( Self,
+                                              Raycast.RayStart,
+                                              Raycast.HitLocation,
+                                              Raycast.HitUV,
+                                              Raycast.HitDistanceMin,
+                                              &Raycast.pVertices,
+                                              Raycast.Indices,
+                                              material ) ) {
             Raycast.HitPrimitive = Self;
 
             Raycast.HitSurface = nullptr;
@@ -1649,7 +1657,12 @@ static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
     {
         int firstHit = pRaycastResult->Hits.Size();
         int closestHit;
-        if ( Self->RaycastCallback && Self->RaycastCallback( Self, Raycast.RayStart, Raycast.RayEnd, pRaycastResult->Hits, closestHit ) ) {
+        if ( Self->RaycastCallback
+             && Self->RaycastCallback( Self,
+                                       Raycast.RayStart,
+                                       Raycast.RayEnd,
+                                       pRaycastResult->Hits,
+                                       closestHit ) ) {
 
             SWorldRaycastPrimitive & rcPrimitive = pRaycastResult->Primitives.Append();
 

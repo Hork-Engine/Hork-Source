@@ -2303,7 +2303,7 @@ void CreateConeMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned i
         firstVertex += ( _NumSubdivs + 1 ) * 2;
     }
 
-    AN_ASSERT( pIndices == _Indices.ToPtr() + _Vertices.Size() );
+    AN_ASSERT( pIndices == _Indices.ToPtr() + _Indices.Size() );
 
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
