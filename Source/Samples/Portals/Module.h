@@ -44,15 +44,9 @@ public:
     AWorld * World;
     APlayerController * PlayerController;
 
-    AModule() {}
+    AModule();
 
 private:
-    //
-    // Game module interface
-    //
-
-    void OnGameStart() override;
-    void OnGameEnd() override {}
     void SetInputMappings();
     void CreateResources();
 };

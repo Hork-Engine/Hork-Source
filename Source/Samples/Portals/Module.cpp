@@ -45,7 +45,7 @@ AN_CLASS_META( AModule )
 
 AModule * GModule;
 
-void AModule::OnGameStart() {
+AModule::AModule() {
 
     GModule = this;
 
