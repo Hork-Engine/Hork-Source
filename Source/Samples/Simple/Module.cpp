@@ -156,10 +156,16 @@ class AModule final : public IGameModule
 private:
     AModule()
     {
-    }
+        // Create game resources
+        CreateResources();
 
-    void OnGameStart() override
-    {
+        // Create game world
+        AWorld * world = AWorld::CreateWorld();
+
+        // Spawn player
+        APlayer * player = world->SpawnActor< APlayer >( Float3( 0, 0.5f, 0 ), Quat::Identity() );
+
+        // Set input mappings
         AInputMappings * inputMappings = NewObject< AInputMappings >();
         inputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_W, 1.0f, CONTROLLER_PLAYER_1 );
         inputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_S, -1.0f, CONTROLLER_PLAYER_1 );
@@ -174,15 +180,9 @@ private:
         inputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_P, 0, CONTROLLER_PLAYER_1 );
         inputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_PAUSE, 0, CONTROLLER_PLAYER_1 );
 
-        CreateResources();
-
+        // Set rendering parameters
         ARenderingParameters * renderingParams = NewObject< ARenderingParameters >();
         renderingParams->bDrawDebug = true;
-
-        AWorld * world = AWorld::CreateWorld();
-
-        // Spawn player
-        APlayer * player = world->SpawnActor< APlayer >( Float3( 0, 0.5f, 0 ), Quat::Identity() );
 
         // Spawn player controller
         APlayerController * playerController = world->SpawnActor< APlayerController >();
@@ -204,11 +204,10 @@ private:
         spawnTransform.Scale = Float3( 2,1,2 );
         world->SpawnActor< AGround >( spawnTransform );
 
+        // Create UI desktop
         WDesktop * desktop = NewObject< WDesktop >();
-        GEngine.SetDesktop( desktop );
 
-        desktop->SetCursorVisible( false );
-
+        // Add viewport to desktop
         desktop->AddWidget(
             &WWidget::New< WViewport >()
             .SetPlayerController( playerController )
@@ -216,10 +215,12 @@ private:
             .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
             .SetFocus()
         );
-    }
 
-    void OnGameEnd() override
-    {
+        // Hide mouse cursor
+        desktop->SetCursorVisible( false );
+
+        // Set current desktop
+        GEngine.SetDesktop( desktop );
     }
 
     void CreateResources()
@@ -277,6 +278,10 @@ private:
     }
 };
 
+//
+// Declare game module
+//
+
 #include <Runtime/Public/EntryDecl.h>
 
 static SEntryDecl ModuleDecl = {
@@ -289,6 +294,11 @@ static SEntryDecl ModuleDecl = {
 };
 
 AN_ENTRY_DECL( ModuleDecl )
+
+//
+// Declare meta
+//
+
 AN_CLASS_META( APlayer )
 AN_CLASS_META( AGround )
 AN_CLASS_META( AModule )
