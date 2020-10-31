@@ -91,6 +91,7 @@ public:
 protected:
     ADirectionalLightComponent();
 
+    void OnCreateAvatar() override;
     void InitializeComponent() override;
     void DeinitializeComponent() override;
     void OnTransformDirty() override;

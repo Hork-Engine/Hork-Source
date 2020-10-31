@@ -40,41 +40,13 @@ SOFTWARE.
 #include <Core/Public/Utf8.h>
 #include <Core/Public/Color.h>
 
-static const int CON_IMAGE_SIZE = 1024*1024;
-static const int MAX_CMD_LINE_CHARS = 256;
-static const int MAX_STORY_LINES = 32;
-
 static const int Padding = 8;
 static const int CharacterWidth = 8;
 //static const int CharacterHeight = 16;
 static const float DropSpeed = 10;
 
-static SWideChar ImageData[2][CON_IMAGE_SIZE];
-static SWideChar * pImage = ImageData[0];
-static int MaxLineChars = 0;
-static int PrintLine = 0;
-static int CurWidth = 0;
-static int MaxLines = 0;
-static int NumLines = 0;
-static bool bInitialized = false;
-static AThreadSync ConSync;
-static int Scroll = 0;
-static bool ConDown = false;
-static bool ConFullscreen = false;
-static float ConHeight = 0;
-static SWideChar CmdLine[MAX_CMD_LINE_CHARS];
-static int CmdLineLength = 0;
-static int CmdLinePos = 0;
-static SWideChar StoryLines[MAX_STORY_LINES][MAX_CMD_LINE_CHARS];
-static int NumStoryLines = 0;
-static int CurStoryLine = 0;
-
-AConsole & GConsole = AConsole::Inst();
-
-AConsole::AConsole() {
-}
-
-void AConsole::Clear() {
+void AConsole::Clear()
+{
     ASyncGuard syncGuard( ConSync );
 
     Core::ZeroMem( pImage, sizeof( *pImage ) * CON_IMAGE_SIZE );
@@ -82,15 +54,18 @@ void AConsole::Clear() {
     Scroll = 0;
 }
 
-bool AConsole::IsActive() const {
-    return ConDown || ConFullscreen;
+bool AConsole::IsActive() const
+{
+    return bDown || bFullscreen;
 }
 
-void AConsole::SetFullscreen( bool _Fullscreen ) {
-    ConFullscreen = _Fullscreen;
+void AConsole::SetFullscreen( bool _Fullscreen )
+{
+    bFullscreen = _Fullscreen;
 }
 
-static void _Resize( int _VidWidth ) {
+void AConsole::_Resize( int _VidWidth )
+{
     int prevMaxLines = MaxLines;
     int prevMaxLineChars = MaxLineChars;
 
@@ -126,13 +101,15 @@ static void _Resize( int _VidWidth ) {
     Scroll = 0;
 }
 
-void AConsole::Resize( int _VidWidth ) {
+void AConsole::Resize( int _VidWidth )
+{
     ASyncGuard syncGuard( ConSync );
 
     _Resize( _VidWidth );
 }
 
-void AConsole::Print( const char * _Text ) {
+void AConsole::Print( const char * _Text )
+{
     const char * wordStr;
     int wordLength;
     SWideChar ch;
@@ -224,7 +201,8 @@ void AConsole::Print( const char * _Text ) {
     }
 }
 
-void AConsole::WidePrint( SWideChar const * _Text ) {
+void AConsole::WidePrint( SWideChar const * _Text )
+{
     SWideChar const * wordStr;
     int wordLength;
 
@@ -303,7 +281,8 @@ void AConsole::WidePrint( SWideChar const * _Text ) {
     }
 }
 
-static void CopyStoryLine( SWideChar const * _StoryLine ) {
+void AConsole::CopyStoryLine( SWideChar const * _StoryLine )
+{
     CmdLineLength = 0;
     while ( *_StoryLine && CmdLineLength < MAX_CMD_LINE_CHARS ) {
         CmdLine[ CmdLineLength++ ] = *_StoryLine++;
@@ -311,7 +290,8 @@ static void CopyStoryLine( SWideChar const * _StoryLine ) {
     CmdLinePos = CmdLineLength;
 }
 
-static void AddStoryLine( SWideChar * _Text, int _Length ) {
+void AConsole::AddStoryLine( SWideChar * _Text, int _Length )
+{
     SWideChar * storyLine = StoryLines[NumStoryLines++ & ( MAX_STORY_LINES - 1 )];
     Core::Memcpy( storyLine, _Text, sizeof( _Text[0] ) * Math::Min( _Length, MAX_CMD_LINE_CHARS ) );
     if ( _Length < MAX_CMD_LINE_CHARS ) {
@@ -320,7 +300,8 @@ static void AddStoryLine( SWideChar * _Text, int _Length ) {
     CurStoryLine = NumStoryLines;
 }
 
-static void InsertUTF8Text( const char * _Utf8 ) {
+void AConsole::InsertUTF8Text( const char * _Utf8 )
+{
     int len = Core::UTF8StrLength( _Utf8 );
     if ( CmdLineLength + len >= MAX_CMD_LINE_CHARS ) {
         GLogger.Print( "Text is too long to be copied to command line\n" );
@@ -345,13 +326,15 @@ static void InsertUTF8Text( const char * _Utf8 ) {
     }
 }
 
-static void InsertClipboardText() {
+void AConsole::InsertClipboardText()
+{
     AString const & clipboard = GRuntime.GetClipboard();
 
     InsertUTF8Text( clipboard.CStr() );
 }
 
-static void CompleteString( ACommandContext & _CommandCtx, const char * _Str ) {
+void AConsole::CompleteString( ACommandContext & _CommandCtx, const char * _Str )
+{
     AString completion;
     int count = _CommandCtx.CompleteString( _Str, strlen( _Str ), completion );
 
@@ -370,12 +353,13 @@ static void CompleteString( ACommandContext & _CommandCtx, const char * _Str ) {
     InsertUTF8Text( completion.CStr() );
 }
 
-void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx, ARuntimeCommandProcessor & _CommandProcessor ) {
+void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx, ARuntimeCommandProcessor & _CommandProcessor )
+{
     if ( _Event.Action == IA_PRESS ) {
-        if ( !ConFullscreen && _Event.Key == KEY_GRAVE_ACCENT ) {
-            ConDown = !ConDown;
+        if ( !bFullscreen && _Event.Key == KEY_GRAVE_ACCENT ) {
+            bDown = !bDown;
 
-            if ( !ConDown ) {
+            if ( !bDown ) {
                 CmdLineLength = CmdLinePos = 0;
                 CurStoryLine = NumStoryLines;
             }
@@ -532,7 +516,8 @@ void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx
     }
 }
 
-void AConsole::CharEvent( SCharEvent const & _Event ) {
+void AConsole::CharEvent( SCharEvent const & _Event )
+{
     if ( !IsActive() ) {
         return;
     }
@@ -551,7 +536,8 @@ void AConsole::CharEvent( SCharEvent const & _Event ) {
     }
 }
 
-void AConsole::MouseWheelEvent( SMouseWheelEvent const & _Event ) {
+void AConsole::MouseWheelEvent( SMouseWheelEvent const & _Event )
+{
     if ( !IsActive() ) {
         return;
     }
@@ -568,7 +554,8 @@ void AConsole::MouseWheelEvent( SMouseWheelEvent const & _Event ) {
     }
 }
 
-static void DrawCmdLine( ACanvas * _Canvas, int x, int y ) {
+void AConsole::DrawCmdLine( ACanvas * _Canvas, int x, int y )
+{
     AColor4 const & charColor = AColor4::White();
 
     AFont * font = _Canvas->GetCurrentFont();
@@ -586,7 +573,6 @@ static void DrawCmdLine( ACanvas * _Canvas, int x, int y ) {
         numDrawChars = MaxLineChars;
     }
     for ( int j = 0 ; j < numDrawChars ; j++ ) {
-
         int n = j + offset;
 
         if ( n >= CmdLineLength ) {
@@ -614,8 +600,8 @@ static void DrawCmdLine( ACanvas * _Canvas, int x, int y ) {
 
 void AConsole::Draw( ACanvas * _Canvas, float _TimeStep )
 {
-    if ( !ConFullscreen ) {
-        if ( ConDown ) {
+    if ( !bFullscreen ) {
+        if ( bDown ) {
             ConHeight += DropSpeed * _TimeStep;
         } else {
             ConHeight -= DropSpeed * _TimeStep;
@@ -645,7 +631,7 @@ void AConsole::Draw( ACanvas * _Canvas, float _TimeStep )
     const AColor4 c2(0,0,0,0.0f);
     const AColor4 charColor(1,1,1,1);
 
-    if ( ConFullscreen ) {
+    if ( bFullscreen ) {
         _Canvas->DrawRectFilled( Float2( 0, 0 ), Float2( _Canvas->Width, _Canvas->Height ), AColor4::Black() );
     } else {
         _Canvas->DrawRectFilledMultiColor( Float2( 0, 0 ), Float2( _Canvas->Width, halfVidHeight ), c1, c2, c2, c1 );
@@ -684,7 +670,8 @@ void AConsole::Draw( ACanvas * _Canvas, float _TimeStep )
     ConSync.EndScope();
 }
 
-void AConsole::WriteStoryLines() {
+void AConsole::WriteStoryLines()
+{
     if ( !NumStoryLines ) {
         return;
     }
@@ -709,7 +696,8 @@ void AConsole::WriteStoryLines() {
     }
 }
 
-void AConsole::ReadStoryLines() {
+void AConsole::ReadStoryLines()
+{
     SWideChar wideStr[ MAX_CMD_LINE_CHARS ];
     int wideStrLength;
     char buf[ MAX_CMD_LINE_CHARS * 3 + 2 ]; // In worst case SWideChar transforms to 3 bytes,

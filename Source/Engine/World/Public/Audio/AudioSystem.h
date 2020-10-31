@@ -38,7 +38,8 @@ class APawn;
 class ASceneComponent;
 class APlayerController;
 
-class AAudioControlCallback : public ABaseObject {
+class AAudioControlCallback : public ABaseObject
+{
     AN_CLASS( AAudioControlCallback, ABaseObject )
 
 public:
@@ -50,7 +51,8 @@ protected:
     AAudioControlCallback() {}
 };
 
-class AAudioGroup : public ABaseObject {
+class AAudioGroup : public ABaseObject
+{
     AN_CLASS( AAudioGroup, ABaseObject )
 
 public:
@@ -62,13 +64,15 @@ protected:
     AAudioGroup() {}
 };
 
-enum EAudioSourceType {
+enum EAudioSourceType
+{
     AUDIO_SOURCE_STATIC,
     AUDIO_SOURCE_BACKGROUND,
     AUDIO_SOURCE_FOLLOW_INSIGATOR
 };
 
-enum EAudioChannelPriority {
+enum EAudioChannelPriority
+{
     AUDIO_CHANNEL_PRIORITY_ONESHOT = 0,
     AUDIO_CHANNEL_PRIORITY_AMBIENT = 1,
     AUDIO_CHANNEL_PRIORITY_MUSIC   = 2,
@@ -77,7 +81,8 @@ enum EAudioChannelPriority {
     //AUDIO_CHANNEL_PRIORITY_MAX = 16
 };
 
-enum EAudioDistanceModel {
+enum EAudioDistanceModel
+{
     AUDIO_DIST_INVERSE           = 0,
     AUDIO_DIST_INVERSE_CLAMPED   = 1, // default
     AUDIO_DIST_LINEAR            = 2,
@@ -92,8 +97,8 @@ constexpr float AUDIO_DEFAULT_MAX_DISTANCE  = 100.0f;
 constexpr float AUDIO_DEFAULT_ROLLOFF_RATE  = 1.0f;
 constexpr float AUDIO_MAX_DISTANCE          = 1000.0f;
 
-struct SSoundAttenuationParameters {
-
+struct SSoundAttenuationParameters
+{
     /** Distance attenuation parameter
     Can be from AUDIO_MIN_REF_DISTANCE to AUDIO_MAX_DISTANCE */
     float        ReferenceDistance = AUDIO_DEFAULT_REF_DISTANCE;
@@ -107,8 +112,8 @@ struct SSoundAttenuationParameters {
     float        RolloffRate = AUDIO_DEFAULT_ROLLOFF_RATE;
 };
 
-struct SSoundSpawnParameters {
-
+struct SSoundSpawnParameters
+{
     /** Audio source type/behavior */
     EAudioSourceType SourceType = AUDIO_SOURCE_STATIC;
 
@@ -157,7 +162,7 @@ struct SSoundSpawnParameters {
     /** Directional sound outer cone angle in degrees. [0-360] */
     float       ConeOuterAngle = 360;
 
-    /** Direction of sound porpagation */
+    /** Direction of sound propagation */
     Float3      Direction = Float3::Zero();
 
     float       LifeSpan = 0;
@@ -165,63 +170,85 @@ struct SSoundSpawnParameters {
     AAudioControlCallback * ControlCallback = nullptr; // Reserved for future
 };
 
-class ANGIE_API AAudioSystem {
+class ANGIE_API AAudioSystem
+{
     AN_SINGLETON( AAudioSystem )
 
 public:
+    /** Initialize audio system */
     void Initialize();
 
+    /** Deinitialize audio system */
     void Deinitialize();
 
-    void PurgeChannels();
-
-    void RegisterDecoder( const char * _Extension, IAudioDecoderInterface * _Interface );
-
-    void UnregisterDecoder( const char * _Extension );
-
-    void UnregisterDecoders();
-
-    IAudioDecoderInterface * FindDecoder( const char * _FileName );
-
-    bool DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, /* optional */ short ** _PCM );
-
-    bool ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength );
-
-    void PlaySound( AAudioClip * _AudioClip, AActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
-
-    void PlaySoundAt( AAudioClip * _AudioClip, Float3 const & _SpawnPosition, AActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
-
-    void PlaySound( AAudioClip * _AudioClip, ASceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
-
-    void PlaySoundAt( AAudioClip * _AudioClip, Float3 const & _SpawnPosition, ASceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
-
-    void EnableHRTF( int _Index );
-
-    void EnableDefaultHRTF();
-
-    void DisableHRTF();
-
-    int GetNumHRTFs() const;
-
-    const char * GetHRTF( int _Index ) const;
-
-    Float3 const & GetListenerPosition() const;
-
+    /** Update audio system */
     void Update( APlayerController * _Controller, float _TimeStep );
 
+    /** Set up head related transfer function */
+    void EnableHRTF( int _Index );
+
+    /** Set default head related transfer function */
+    void EnableDefaultHRTF();
+
+    /** Disable head related transfer function */
+    void DisableHRTF();
+
+    /** Get head related transfer function count */
+    int GetNumHRTFs() const;
+
+    /** Get head related transfer function name */
+    const char * GetHRTF( int _Index ) const;
+
+    /** Purge audio channels */
+    void PurgeChannels();
+
+    /** Add audio format and decoder */
+    void AddAudioDecoder( const char * _Extension, IAudioDecoderInterface * _Interface );
+
+    /** Remove audio format and decoder */
+    void RemoveAudioDecoder( const char * _Extension );
+
+    /** Remove all audio decoders */
+    void RemoveAudioDecoders();
+
+    /** Find audio decoder by file name extension */
+    IAudioDecoderInterface * FindAudioDecoder( const char * _FileName );
+
+    /** Decode to PCM */
+    bool DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, /* optional */ short ** _PCM );
+
+    /** Read encoded audio data */
+    bool ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength );
+
+    /** Play audio clip */
+    void PlaySound( AAudioClip * _AudioClip, AActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
+
+    /** Play audio clip at spawn position */
+    void PlaySoundAt( AAudioClip * _AudioClip, Float3 const & _SpawnPosition, AActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
+
+    /** Play audio clip */
+    void PlaySound( AAudioClip * _AudioClip, ASceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
+
+    /** Play audio clip at spawn position */
+    void PlaySoundAt( AAudioClip * _AudioClip, Float3 const & _SpawnPosition, ASceneComponent * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
+
+    /** Get current active channels */
     int GetNumActiveChannels() const;
+
+    /** Get current audio listener position */
+    Float3 const & GetListenerPosition() const;
 
 private:
     ~AAudioSystem();
 
-    bool bInitialized = false;
-
-    struct Entry {
+    struct SAudioDecoderDef
+    {
         char Extension[16];
-        IAudioDecoderInterface * Decoder;
+        IAudioDecoderInterface * Interface;
     };
 
-    TPodArray< Entry > Decoders;
+    TPodArray< SAudioDecoderDef > Decoders;
+    bool bInitialized = false;
 };
 
 extern AAudioSystem & GAudioSystem;

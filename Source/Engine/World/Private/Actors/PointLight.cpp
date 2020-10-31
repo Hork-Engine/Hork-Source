@@ -32,7 +32,8 @@ SOFTWARE.
 
 AN_CLASS_META( APointLight )
 
-APointLight::APointLight() {
+APointLight::APointLight()
+{
     LightComponent = CreateComponent< APointLightComponent >( "PointLight" );
     RootComponent = LightComponent;
 }

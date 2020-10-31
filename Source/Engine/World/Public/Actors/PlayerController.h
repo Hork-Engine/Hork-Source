@@ -265,8 +265,6 @@ protected:
     void OnPawnChanged() override;
 
 private:
-    void Quit( ARuntimeCommandProcessor const & _Proc );
-
     void TogglePause();
     void TakeScreenshot();
     void ToggleWireframe();

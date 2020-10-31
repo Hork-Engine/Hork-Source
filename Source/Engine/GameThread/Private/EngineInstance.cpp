@@ -63,6 +63,8 @@ SOFTWARE.
 static ARuntimeVariable com_ShowStat( _CTS( "com_ShowStat" ), _CTS( "0" ) );
 static ARuntimeVariable com_ShowFPS( _CTS( "com_ShowFPS" ), _CTS( "1" ) );
 
+static AConsole Console;
+
 AN_CLASS_META( AEngineCommands )
 
 AEngineInstance & GEngine = AEngineInstance::Inst();
@@ -124,7 +126,13 @@ static IGameModule * CreateGameModule( AClassMeta const * _Meta )
 
 AEngineCommands::AEngineCommands()
 {
+    CommandContext.AddCommand( "quit", { this, &AEngineCommands::Quit }, "Quit from application" );
     CommandContext.AddCommand( "RebuildMaterials", { this, &AEngineCommands::RebuildMaterials }, "Rebuild materials" );
+}
+
+void AEngineCommands::Quit( ARuntimeCommandProcessor const & _Proc )
+{
+    GRuntime.PostTerminateEvent();
 }
 
 void AEngineCommands::RebuildMaterials( ARuntimeCommandProcessor const & _Proc )
@@ -144,7 +152,7 @@ void AEngineInstance::RemoveCommand( const char * _Name )
 
 void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
 {
-    GConsole.ReadStoryLines();
+    Console.ReadStoryLines();
 
     InitializeFactories();
 
@@ -170,9 +178,9 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     RenderBackend = MakeRef< ARenderBackend >();
 
     GAudioSystem.Initialize();
-    GAudioSystem.RegisterDecoder( "ogg", CreateInstanceOf< AOggVorbisDecoder >() );
-    GAudioSystem.RegisterDecoder( "mp3", CreateInstanceOf< AMp3Decoder >() );
-    GAudioSystem.RegisterDecoder( "wav", CreateInstanceOf< AWavDecoder >() );
+    GAudioSystem.AddAudioDecoder( "ogg", CreateInstanceOf< AOggVorbisDecoder >() );
+    GAudioSystem.AddAudioDecoder( "mp3", CreateInstanceOf< AMp3Decoder >() );
+    GAudioSystem.AddAudioDecoder( "wav", CreateInstanceOf< AWavDecoder >() );
 
     AFont::SetGlyphRanges( GLYPH_RANGE_CYRILLIC );
 
@@ -184,8 +192,6 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     GameModule->AddRef();
 
     GLogger.Printf( "Created game module: %s\n", GameModule->FinalClassName() );
-
-    GameModule->OnGameStart();
 
 #ifdef IMGUI_CONTEXT
     ImguiContext = CreateInstanceOf< AImguiContext >();
@@ -252,15 +258,13 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
 
     bAllowInputEvents = false;
 
-    GameModule->OnGameEnd();
+    GameModule->RemoveRef();
+    GameModule = nullptr;
 
     Desktop.Reset();
 
     AWorld::DestroyWorlds();
     AWorld::KickoffPendingKillWorlds();
-
-    GameModule->RemoveRef();
-    GameModule = nullptr;
 
 #ifdef IMGUI_CONTEXT
     ImguiContext->RemoveRef();
@@ -278,7 +282,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     GResourceManager.Deinitialize();
 
     GAudioSystem.PurgeChannels();
-    GAudioSystem.UnregisterDecoders();
+    GAudioSystem.RemoveAudioDecoders();
 
     AGarbageCollector::Deinitialize();
 
@@ -288,7 +292,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
 
     DeinitializeFactories();
 
-    GConsole.WriteStoryLines();
+    Console.WriteStoryLines();
 }
 
 void AEngineInstance::DrawCanvas()
@@ -307,13 +311,13 @@ void AEngineInstance::DrawCanvas()
             }
 
             // Draw halfscreen console
-            GConsole.SetFullscreen( false );
-            GConsole.Draw( &Canvas, FrameDurationInSeconds );
+            Console.SetFullscreen( false );
+            Console.Draw( &Canvas, FrameDurationInSeconds );
         }
         else {
             // Draw fullscreen console
-            GConsole.SetFullscreen( true );
-            GConsole.Draw( &Canvas, FrameDurationInSeconds );
+            Console.SetFullscreen( true );
+            Console.Draw( &Canvas, FrameDurationInSeconds );
         }
 
         ShowStats();
@@ -374,7 +378,7 @@ void AEngineInstance::ShowStats()
 
 void AEngineInstance::Print( const char * _Message )
 {
-    GConsole.Print( _Message );
+    Console.Print( _Message );
 }
 
 void AEngineInstance::DeveloperKeys( SKeyEvent const & _Event )
@@ -406,11 +410,11 @@ void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp )
 
     DeveloperKeys( _Event );
 
-    if ( GConsole.IsActive() || bAllowConsole ) {
-        GConsole.KeyEvent( _Event, EngineCmd->CommandContext, CommandProcessor );
+    if ( Console.IsActive() || bAllowConsole ) {
+        Console.KeyEvent( _Event, EngineCmd->CommandContext, CommandProcessor );
     }
 
-    if ( GConsole.IsActive() && _Event.Action != IA_RELEASE ) {
+    if ( Console.IsActive() && _Event.Action != IA_RELEASE ) {
         return;
     }
 
@@ -429,7 +433,7 @@ void AEngineInstance::OnMouseButtonEvent( SMouseButtonEvent const & _Event, doub
     ImguiContext->OnMouseButtonEvent( _Event );
 #endif
 
-    if ( GConsole.IsActive() && _Event.Action != IA_RELEASE ) {
+    if ( Console.IsActive() && _Event.Action != IA_RELEASE ) {
         return;
     }
 
@@ -448,8 +452,8 @@ void AEngineInstance::OnMouseWheelEvent( SMouseWheelEvent const & _Event, double
     ImguiContext->OnMouseWheelEvent( _Event );
 #endif
 
-    GConsole.MouseWheelEvent( _Event );
-    if ( GConsole.IsActive() ) {
+    Console.MouseWheelEvent( _Event );
+    if ( Console.IsActive() ) {
         return;
     }
 
@@ -495,7 +499,7 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
             Desktop->SetCursorPosition( cursorPosition );
         }
 
-        if ( !GConsole.IsActive() ) {
+        if ( !Console.IsActive() ) {
             Desktop->GenerateMouseMoveEvents( _Event, _TimeStamp );
         }
     }
@@ -507,7 +511,7 @@ void AEngineInstance::OnJoystickButtonEvent( SJoystickButtonEvent const & _Event
         return;
     }
 
-    if ( GConsole.IsActive() && _Event.Action != IA_RELEASE ) {
+    if ( Console.IsActive() && _Event.Action != IA_RELEASE ) {
         return;
     }
 
@@ -537,8 +541,8 @@ void AEngineInstance::OnCharEvent( SCharEvent const & _Event, double _TimeStamp 
     ImguiContext->OnCharEvent( _Event );
 #endif
 
-    GConsole.CharEvent( _Event );
-    if ( GConsole.IsActive() ) {
+    Console.CharEvent( _Event );
+    if ( Console.IsActive() ) {
         return;
     }
 
@@ -564,7 +568,7 @@ void AEngineInstance::OnResize()
     RetinaScale = Float2( (float)videoMode.FramebufferWidth / videoMode.Width,
                           (float)videoMode.FramebufferHeight / videoMode.Height );
 
-    GConsole.Resize( videoMode.FramebufferWidth );
+    Console.Resize( videoMode.FramebufferWidth );
 
     if ( Desktop ) {
         // Force update transform
@@ -581,7 +585,7 @@ void AEngineInstance::UpdateInput()
 
     switch ( CursorMode ) {
     case CURSOR_MODE_AUTO:
-        if ( !videoMode.bFullscreen && GConsole.IsActive() ) {
+        if ( !videoMode.bFullscreen && Console.IsActive() ) {
             GRuntime.SetCursorEnabled( true );
         }
         else {
@@ -619,14 +623,22 @@ void AEngineInstance::UnmapWindowCoordinate( float & InOutX, float & InOutY ) co
 
 void AEngineInstance::SetDesktop( WDesktop * _Desktop )
 {
-    SVideoMode const & videoMode = GRuntime.GetVideoMode();
+    if ( IsSame( Desktop, _Desktop ) ) {
+        return;
+    }
+
+    if ( Desktop ) {
+        Desktop->SetFocusWidget( nullptr );
+    }
 
     Desktop = _Desktop;
+
     if ( Desktop ) {
         // Force update transform
         Desktop->MarkTransformDirty();
 
         // Set size
+        SVideoMode const & videoMode = GRuntime.GetVideoMode();
         Desktop->SetSize( videoMode.FramebufferWidth, videoMode.FramebufferHeight );
     }
 }

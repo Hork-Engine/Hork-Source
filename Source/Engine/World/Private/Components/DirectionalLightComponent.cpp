@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include <World/Public/Components/DirectionalLightComponent.h>
+#include <World/Public/Components/MeshComponent.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
 #include <Core/Public/Logger.h>
@@ -67,6 +68,25 @@ ADirectionalLightComponent::ADirectionalLightComponent() {
     MaxShadowCascades = DEFAULT_MAX_SHADOW_CASCADES;
     ShadowCascadeResolution = 1024;
     Next = Prev = nullptr;
+}
+
+void ADirectionalLightComponent::OnCreateAvatar() {
+    Super::OnCreateAvatar();
+
+    // TODO: Create mesh or sprite for avatar
+    static TStaticResourceFinder< AIndexedMesh > Mesh( _CTS( "/Default/Meshes/Cylinder" ) );
+    static TStaticResourceFinder< AMaterialInstance > MaterialInstance( _CTS( "AvatarMaterialInstance" ) );
+    AMeshComponent * meshComponent = GetParentActor()->CreateComponent< AMeshComponent >( "DirectionalLightAvatar" );
+    meshComponent->SetMotionBehavior( MB_KINEMATIC );
+    meshComponent->SetCollisionGroup( CM_NOCOLLISION );
+    meshComponent->SetMesh( Mesh.GetObject() );
+    meshComponent->SetMaterialInstance( MaterialInstance.GetObject() );
+    meshComponent->SetCastShadow( false );
+    meshComponent->SetAbsoluteScale( true );
+    meshComponent->SetAngles( 90, 0, 0 );
+    meshComponent->SetPosition( 0, 0, -0.5f );
+    meshComponent->SetScale( 0.5f,1.0f,0.5f );
+    meshComponent->AttachTo( this );
 }
 
 void ADirectionalLightComponent::SetIlluminance( float _IlluminanceInLux ) {

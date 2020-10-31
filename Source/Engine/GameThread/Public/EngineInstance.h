@@ -187,6 +187,7 @@ class AEngineCommands : public ABaseObject
 public:
     ACommandContext CommandContext;
 
+    void Quit( ARuntimeCommandProcessor const & _Proc );
     void RebuildMaterials( ARuntimeCommandProcessor const & _Proc );
 
 public:

@@ -96,7 +96,7 @@ bool AAudioClip::LoadResource( AString const & _Path ) {
 
     FileName = _Path;
 
-    Decoder = GAudioSystem.FindDecoder( _Path.CStr() );
+    Decoder = GAudioSystem.FindAudioDecoder( _Path.CStr() );
     if ( !Decoder ) {
         return false;
     }

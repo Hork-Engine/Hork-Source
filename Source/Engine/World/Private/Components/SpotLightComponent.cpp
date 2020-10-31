@@ -29,11 +29,12 @@ SOFTWARE.
 */
 
 #include <World/Public/Components/SpotLightComponent.h>
+#include <World/Public/Components/MeshComponent.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
 #include <Runtime/Public/RuntimeVariable.h>
 
-static const float DEFAULT_RADIUS = 1.0f;
+static const float DEFAULT_RADIUS = 15;//1.0f;
 static const float DEFAULT_INNER_CONE_ANGLE = 100.0f;
 static const float DEFAULT_OUTER_CONE_ANGLE = 120.0f;
 static const float DEFAULT_SPOT_EXPONENT = 1.0f;
@@ -54,6 +55,24 @@ ASpotLightComponent::ASpotLightComponent() {
     SpotExponent = DEFAULT_SPOT_EXPONENT;
 
     UpdateWorldBounds();
+}
+
+void ASpotLightComponent::OnCreateAvatar() {
+    Super::OnCreateAvatar();
+
+    // TODO: Create mesh or sprite for avatar
+    static TStaticResourceFinder< AIndexedMesh > Mesh( _CTS( "/Default/Meshes/Cone" ) );
+    static TStaticResourceFinder< AMaterialInstance > MaterialInstance( _CTS( "AvatarMaterialInstance" ) );
+    AMeshComponent * meshComponent = GetParentActor()->CreateComponent< AMeshComponent >( "SpotLightAvatar" );
+    meshComponent->SetMotionBehavior( MB_KINEMATIC );
+    meshComponent->SetCollisionGroup( CM_NOCOLLISION );
+    meshComponent->SetMesh( Mesh.GetObject() );
+    meshComponent->SetMaterialInstance( MaterialInstance.GetObject() );
+    meshComponent->SetCastShadow( false );
+    meshComponent->SetAbsoluteScale( true );
+    meshComponent->SetAngles( 90, 0, 0 );
+    meshComponent->SetScale( 0.1f );
+    meshComponent->AttachTo( this );
 }
 
 void ASpotLightComponent::SetRadius( float _Radius ) {

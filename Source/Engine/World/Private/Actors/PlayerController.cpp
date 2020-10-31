@@ -51,12 +51,6 @@ APlayerController::APlayerController() {
     if ( !CurrentAudioListener ) {
         CurrentAudioListener = this;
     }
-
-    GEngine.AddCommand( "quit", { this, &APlayerController::Quit }, "Quit from application" );
-}
-
-void APlayerController::Quit( ARuntimeCommandProcessor const & _Proc ) {
-    GRuntime.PostTerminateEvent();
 }
 
 void APlayerController::EndPlay() {

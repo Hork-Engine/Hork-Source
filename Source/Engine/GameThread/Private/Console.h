@@ -38,22 +38,79 @@ struct SCharEvent;
 struct SMouseWheelEvent;
 class ACanvas;
 
-class AConsole {
-    AN_SINGLETON( AConsole )
+class AConsole
+{
+    AN_FORBID_COPY( AConsole )
 
 public:
-    void Clear();
-    bool IsActive() const;
-    void SetFullscreen( bool _Fullscreen );
-    void Resize( int _VidWidth );
-    void Print( const char * _Text );
-    void WidePrint( SWideChar const * _Text );
-    void KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx, ARuntimeCommandProcessor & _CommandProcessor );
-    void CharEvent( SCharEvent const & _Event );
-    void MouseWheelEvent( SMouseWheelEvent const & _Event );
-    void Draw( ACanvas * _Canvas, float _TimeStep );
-    void WriteStoryLines();
-    void ReadStoryLines();
-};
+    AConsole() {}
 
-extern AConsole & GConsole;
+    /** Clear console text */
+    void Clear();
+
+    /** Is console active */
+    bool IsActive() const;
+
+    /** Set console to fullscreen mode */
+    void SetFullscreen( bool _Fullscreen );
+
+    /** Set console width */
+    void Resize( int _VidWidth );
+
+    /** Print Utf8 text */
+    void Print( const char * _Text );
+
+    /** Print WideChar text */
+    void WidePrint( SWideChar const * _Text );
+
+    /** Process key event */
+    void KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx, ARuntimeCommandProcessor & _CommandProcessor );
+
+    /** Process char event */
+    void CharEvent( SCharEvent const & _Event );
+
+    /** Process mouse wheel event */
+    void MouseWheelEvent( SMouseWheelEvent const & _Event );
+
+    /** Draw console to canvas */
+    void Draw( ACanvas * _Canvas, float _TimeStep );
+
+    /** Write command line history */
+    void WriteStoryLines();
+
+    /** Read command line history */
+    void ReadStoryLines();
+
+private:
+    void _Resize( int _VidWidth );
+    void CopyStoryLine( SWideChar const * _StoryLine );
+    void AddStoryLine( SWideChar * _Text, int _Length );
+    void InsertUTF8Text( const char * _Utf8 );
+    void InsertClipboardText();
+    void CompleteString( ACommandContext & _CommandCtx, const char * _Str );
+    void DrawCmdLine( ACanvas * _Canvas, int x, int y );
+
+    static const int CON_IMAGE_SIZE = 1024*1024;
+    static const int MAX_CMD_LINE_CHARS = 256;
+    static const int MAX_STORY_LINES = 32;
+
+    SWideChar ImageData[2][CON_IMAGE_SIZE];
+    SWideChar * pImage = ImageData[0];
+    SWideChar CmdLine[MAX_CMD_LINE_CHARS];
+    SWideChar StoryLines[MAX_STORY_LINES][MAX_CMD_LINE_CHARS];
+    AThreadSync ConSync;
+    int MaxLineChars = 0;
+    int PrintLine = 0;
+    int CurWidth = 0;
+    int MaxLines = 0;
+    int NumLines = 0;
+    int Scroll = 0;
+    float ConHeight = 0;
+    int CmdLineLength = 0;
+    int CmdLinePos = 0;
+    int NumStoryLines = 0;
+    int CurStoryLine = 0;
+    bool bDown = false;
+    bool bFullscreen = false;
+    bool bInitialized = false;
+};

@@ -33,18 +33,11 @@ SOFTWARE.
 
 AN_CLASS_META( IGameModule )
 
-IGameModule::IGameModule() {
-
+IGameModule::IGameModule()
+{
 }
 
-void IGameModule::OnGameStart() {
-
-}
-
-void IGameModule::OnGameEnd() {
-
-}
-
-void IGameModule::OnGameClose() {
+void IGameModule::OnGameClose()
+{
     GRuntime.PostTerminateEvent();
 }

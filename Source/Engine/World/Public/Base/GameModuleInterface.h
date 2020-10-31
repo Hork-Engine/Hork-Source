@@ -32,13 +32,12 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
-class IGameModule : public ABaseObject {
+class IGameModule : public ABaseObject
+{
     AN_CLASS( IGameModule, ABaseObject )
 
 public:
     IGameModule();
 
-    virtual void OnGameStart();
-    virtual void OnGameEnd();
     virtual void OnGameClose();
 };

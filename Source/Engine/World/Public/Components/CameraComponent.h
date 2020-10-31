@@ -118,6 +118,8 @@ public:
 protected:
     ACameraComponent();
 
+    void OnCreateAvatar() override;
+
     void OnTransformDirty() override;
 
     void DrawDebug( ADebugRenderer * InRenderer ) override;

@@ -98,6 +98,8 @@ protected:
 
     AActorComponent();
 
+    virtual void OnCreateAvatar() {}
+
     /** Called from Actor's InitializeComponents() */
     virtual void InitializeComponent() {}
 

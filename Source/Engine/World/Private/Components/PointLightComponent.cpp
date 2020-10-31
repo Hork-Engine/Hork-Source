@@ -29,11 +29,12 @@ SOFTWARE.
 */
 
 #include <World/Public/Components/PointLightComponent.h>
+#include <World/Public/Components/MeshComponent.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
 #include <Runtime/Public/RuntimeVariable.h>
 
-static const float DEFAULT_RADIUS = 1.0f;
+static const float DEFAULT_RADIUS = 15;//1.0f;
 static const float MIN_RADIUS = 0.01f;
 
 ARuntimeVariable com_DrawPointLights( _CTS( "com_DrawPointLights" ), _CTS( "0" ), VAR_CHEAT );
@@ -45,6 +46,24 @@ APointLightComponent::APointLightComponent() {
     InverseSquareRadius = 1.0f / ( Radius * Radius );
 
     UpdateWorldBounds();
+}
+
+void APointLightComponent::OnCreateAvatar() {
+    Super::OnCreateAvatar();
+
+    // TODO: Create mesh or sprite for point light avatar
+    static TStaticResourceFinder< AIndexedMesh > Mesh( _CTS( "/Default/Meshes/Sphere" ) );
+    static TStaticResourceFinder< AMaterialInstance > MaterialInstance( _CTS( "AvatarMaterialInstance" ) );
+    AMeshComponent * meshComponent = GetParentActor()->CreateComponent< AMeshComponent >( "PointLightAvatar" );
+    meshComponent->SetMotionBehavior( MB_KINEMATIC );
+    meshComponent->SetCollisionGroup( CM_NOCOLLISION );
+    meshComponent->SetMesh( Mesh.GetObject() );
+    meshComponent->SetMaterialInstance( MaterialInstance.GetObject() );
+    meshComponent->SetCastShadow( false );
+    meshComponent->SetAbsoluteScale( true );
+    meshComponent->SetAbsoluteRotation( true );
+    meshComponent->SetScale( 0.1f );
+    meshComponent->AttachTo( this );
 }
 
 void APointLightComponent::SetRadius( float _Radius ) {

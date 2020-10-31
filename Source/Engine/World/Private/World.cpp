@@ -233,6 +233,13 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters )
         // FIXME: what about component attributes?
     }
 
+    if ( actor->bInEditor ) {
+        AArrayOfActorComponents tempArray = actor->Components;
+        for ( AActorComponent * component : tempArray ) {
+            component->OnCreateAvatar();
+        }
+    }
+
     actor->Initialize( _SpawnParameters.SpawnTransform );
 
     actor->bDuringConstruction = false;
@@ -322,6 +329,13 @@ AActor * AWorld::LoadActor( ADocValue const * pObject, ALevel * _Level, bool bIn
         }
     }
 #endif
+
+    if ( actor->bInEditor ) {
+        AArrayOfActorComponents tempArray = actor->Components;
+        for ( AActorComponent * component : tempArray ) {
+            component->OnCreateAvatar();
+        }
+    }
 
     STransform spawnTransform;
 

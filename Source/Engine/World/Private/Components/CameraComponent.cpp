@@ -29,6 +29,8 @@ SOFTWARE.
 */
 
 #include <World/Public/Components/CameraComponent.h>
+#include <World/Public/Components/MeshComponent.h>
+#include <World/Public/Actors/Actor.h>
 #include <World/Public/Base/DebugRenderer.h>
 
 //#include <Core/Public/Logger.h>
@@ -63,6 +65,23 @@ ACameraComponent::ACameraComponent() {
     bViewMatrixDirty = true;
     bProjectionDirty = true;
     bFrustumDirty = true;
+}
+
+void ACameraComponent::OnCreateAvatar() {
+    Super::OnCreateAvatar();
+
+    // TODO: Create mesh or sprite for avatar
+    static TStaticResourceFinder< AIndexedMesh > Mesh( _CTS( "/Default/Meshes/Box" ) );
+    static TStaticResourceFinder< AMaterialInstance > MaterialInstance( _CTS( "AvatarMaterialInstance" ) );
+    AMeshComponent * meshComponent = GetParentActor()->CreateComponent< AMeshComponent >( "CameraAvatar" );
+    meshComponent->SetMotionBehavior( MB_KINEMATIC );
+    meshComponent->SetCollisionGroup( CM_NOCOLLISION );
+    meshComponent->SetMesh( Mesh.GetObject() );
+    meshComponent->SetMaterialInstance( MaterialInstance.GetObject() );
+    meshComponent->SetCastShadow( false );
+    meshComponent->SetAbsoluteScale( true );
+    meshComponent->SetScale( 0.5f );
+    meshComponent->AttachTo( this );
 }
 
 void ACameraComponent::SetProjection( ECameraProjection _Projection ) {

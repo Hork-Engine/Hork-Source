@@ -553,7 +553,7 @@ void AAudioSystem::Initialize() {
 void AAudioSystem::Deinitialize() {
     GLogger.Printf( "Deinitializing audio system...\n" );
 
-    UnregisterDecoders();
+    RemoveAudioDecoders();
 
     ALC_SAFE( malcMakeContextCurrent( NULL ) );
     ALC_SAFE( malcDestroyContext( ALCContext ) );
@@ -672,52 +672,52 @@ const char * AAudioSystem::GetHRTF( int _Index ) const {
     return AString::NullCString();
 }
 
-void AAudioSystem::RegisterDecoder( const char * _Extension, IAudioDecoderInterface * _Interface ) {
-    for ( Entry & e : Decoders ) {
-        if ( !Core::Stricmp( _Extension, e.Extension ) ) {
-            e.Decoder->RemoveRef();
-            e.Decoder = _Interface;
+void AAudioSystem::AddAudioDecoder( const char * _Extension, IAudioDecoderInterface * _Interface ) {
+    for ( SAudioDecoderDef & def : Decoders ) {
+        if ( !Core::Stricmp( _Extension, def.Extension ) ) {
+            def.Interface->RemoveRef();
+            def.Interface = _Interface;
             _Interface->AddRef();
             return;
         }
     }
-    Entry e;
-    Core::Strcpy( e.Extension, sizeof( e.Extension ), _Extension );
-    e.Decoder = _Interface;
+    SAudioDecoderDef def;
+    Core::Strcpy( def.Extension, sizeof( def.Extension ), _Extension );
+    def.Interface = _Interface;
     _Interface->AddRef();
-    Decoders.Append( e );
+    Decoders.Append( def );
 }
 
-void AAudioSystem::UnregisterDecoder( const char * _Extension ) {
+void AAudioSystem::RemoveAudioDecoder( const char * _Extension ) {
     for ( int i = 0 ; i < Decoders.Size() ; i++ ) {
-        Entry & e =  Decoders[i];
-        if ( !Core::Stricmp( _Extension, e.Extension ) ) {
-            e.Decoder->RemoveRef();
+        SAudioDecoderDef & def =  Decoders[i];
+        if ( !Core::Stricmp( _Extension, def.Extension ) ) {
+            def.Interface->RemoveRef();
             Decoders.Remove( i );
             return;
         }
     }
 }
 
-void AAudioSystem::UnregisterDecoders() {
+void AAudioSystem::RemoveAudioDecoders() {
     for ( int i = 0; i < Decoders.Size(); i++ ) {
-        Decoders[ i ].Decoder->RemoveRef();
+        Decoders[ i ].Interface->RemoveRef();
     }
     Decoders.Free();
 }
 
-IAudioDecoderInterface * AAudioSystem::FindDecoder( const char * _FileName ) {
+IAudioDecoderInterface * AAudioSystem::FindAudioDecoder( const char * _FileName ) {
     int i = Core::FindExtWithoutDot( _FileName );
-    for ( Entry & e : Decoders ) {
-        if ( !Core::Stricmp( _FileName + i, e.Extension ) ) {
-            return e.Decoder;
+    for ( SAudioDecoderDef & def : Decoders ) {
+        if ( !Core::Stricmp( _FileName + i, def.Extension ) ) {
+            return def.Interface;
         }
     }
     return nullptr;
 }
 
 bool AAudioSystem::DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, /* optional */ short ** _PCM ) {
-    IAudioDecoderInterface * decoder = FindDecoder( _FileName );
+    IAudioDecoderInterface * decoder = FindAudioDecoder( _FileName );
     if ( !decoder ) {
         return false;
     }
@@ -725,7 +725,7 @@ bool AAudioSystem::DecodePCM( const char * _FileName, int * _SamplesCount, int *
 }
 
 bool AAudioSystem::ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
-    IAudioDecoderInterface * decoder = FindDecoder( _FileName );
+    IAudioDecoderInterface * decoder = FindAudioDecoder( _FileName );
     if ( !decoder ) {
         return false;
     }
@@ -1597,7 +1597,7 @@ static void UpdateChannel( SAudioChannel * InChannel, float InTimeStep ) {
     if ( InChannel->LifeSpan > 0 ) {
         InChannel->LifeSpan -= InTimeStep;
 
-        if ( InChannel->LifeSpan < 0 ) {
+        if ( InChannel->LifeSpan <= 0 ) {
             FreeChannel( InChannel );
             //DevirtualizeOneChannel();
             return;
