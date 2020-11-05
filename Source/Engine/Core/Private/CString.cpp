@@ -287,6 +287,21 @@ int Substring( const char * _Str, const char * _SubStr ) {
     return (int)(s - _Str);
 }
 
+int SubstringIcmp( const char * _Str, const char * _SubStr ) {
+    if ( !_Str || !_SubStr ) {
+        return -1;
+    }
+    const char * s = _Str;
+    int length = Strlen( _SubStr );
+    while ( *s ) {
+        if ( StricmpN( s, _SubStr, length ) == 0 ) {
+            return (int)(s - _Str);
+        }
+        ++s;
+    }
+    return -1;
+}
+
 uint32_t HexToUInt32( const char * _Str, int _Len ) {
     uint32_t value = 0;
 

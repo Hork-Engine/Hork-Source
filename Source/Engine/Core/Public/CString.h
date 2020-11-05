@@ -101,6 +101,9 @@ int StrContains( const char * _String, char _Ch );
 /** Find substring. Return -1 if substring wasn't found. Return substring offset on success. */
 int Substring( const char * _Str, const char * _SubStr );
 
+/** Find substring. Return -1 if substring wasn't found. Return substring offset on success. */
+int SubstringIcmp( const char * _Str, const char * _SubStr );
+
 /** Convert hex string to uint32 */
 uint32_t HexToUInt32( const char * _Str, int _Len );
 

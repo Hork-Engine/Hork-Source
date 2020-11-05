@@ -146,6 +146,9 @@ public:
     /** Find the substring. Return substring position in string or -1. */
     int Substring( const char * _Substring ) const;
 
+    /** Find the substring. Return substring position in string or -1. */
+    int SubstringIcmp( const char * _Substring ) const;
+
     /** Convert to lower case */
     void ToLower();
 

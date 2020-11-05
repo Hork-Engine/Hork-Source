@@ -408,9 +408,11 @@ void AString::FixPath() {
 }
 
 int AString::Substring( const char * _Substring ) const {
-    AN_ASSERT( _Substring < Data || _Substring > Data + Size + 1 );
-
     return Core::Substring( Data, _Substring );
+}
+
+int AString::SubstringIcmp( const char * _Substring ) const {
+    return Core::SubstringIcmp( Data, _Substring );
 }
 
 int AString::FindExt() const {

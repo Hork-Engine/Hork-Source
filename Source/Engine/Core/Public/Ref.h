@@ -177,13 +177,14 @@ public:
         }
     }
 
-    void operator=( TRef< T > const & _Ref ) {
+    TRef< T > & operator=( TRef< T > const & _Ref ) {
         this->operator =( _Ref.Object );
+        return *this;
     }
 
-    void operator=( T * _Object ) {
+    TRef< T > & operator=( T * _Object ) {
         if ( Object == _Object ) {
-            return;
+            return *this;
         }
         if ( Object ) {
             Object->RemoveRef();
@@ -192,6 +193,7 @@ public:
         if ( Object ) {
             Object->AddRef();
         }
+        return *this;
     }
 private:
     T * Object;
