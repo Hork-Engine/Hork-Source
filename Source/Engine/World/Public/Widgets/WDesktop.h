@@ -32,12 +32,44 @@ SOFTWARE.
 
 #include "WMenuPopup.h"
 
+struct SShortcutInfo
+{
+    int Key;
+    int ModMask;
+    TCallback< void() > Binding;
+};
+
+class AShortcutContainer : public ARefCounted
+{
+public:
+    void Clear()
+    {
+        Shortcuts.Clear();
+    }
+
+    void AddShortcut( int Key, int ModMask, TCallback< void() > Binding )
+    {
+        SShortcutInfo shortcut;
+        shortcut.Key = Key;
+        shortcut.ModMask = ModMask;
+        shortcut.Binding = Binding;
+        Shortcuts.Append( shortcut );
+    }
+
+    TStdVector< SShortcutInfo > const & GetShortcuts() const { return Shortcuts; }
+
+private:
+    TStdVector< SShortcutInfo > Shortcuts;
+};
+
 class ANGIE_API WDesktop : public ABaseObject {
     AN_CLASS( WDesktop, ABaseObject )
 
     friend class WWidget;
 
 public:
+    TEvent< struct SKeyEvent const & /*Event*/, double /*TimeStamp*/, bool & /*bOverride*/ > E_OnKeyEvent;
+
     template< typename T >
     T * AddWidget() {
         T * w = NewObject< T >();
@@ -135,6 +167,8 @@ public:
 
     void MarkTransformDirty();
 
+    void SetShortcuts( AShortcutContainer * ShortcutContainer );
+
     virtual void DrawCursor( ACanvas & _Canvas );
 
 protected:
@@ -158,6 +192,7 @@ private:
     TRef< WWidget > MouseClickWidget;
     TRef< WWidget > MouseFocusWidget;
     TWeakRef< WWidget > LastHoveredWidget;
+    TRef< AShortcutContainer > ShortcutContainer;
     uint64_t MouseClickTime;
     Float2 MouseClickPos;
     Float2 DraggingCursor;

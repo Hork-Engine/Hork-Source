@@ -493,7 +493,7 @@ public:
 #define _AN_GENERATED_CLASS_BODY() \
 public: \
     static AClassMeta const & ClassMeta() { \
-        static ThisClassMeta __Meta; \
+        static const ThisClassMeta __Meta; \
         return __Meta; \
     }\
     static AClassMeta const * SuperClass() { \

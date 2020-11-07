@@ -66,6 +66,6 @@ enum EWidgetLayout {
 
 enum EWidgetVisibility {
     WIDGET_VISIBILITY_VISIBLE,      // The widget will appear normally
-    WIDGET_VISIBILITY_INVISIBLE,    // The widget will not be visible, but will take up space in the layout
-    WIDGET_VISIBILITY_COLLAPSED     // The widget will not be visible and will take no space in the layout
+    WIDGET_VISIBILITY_INVISIBLE,    // The widget will be not visible, but will take up space in the layout
+    WIDGET_VISIBILITY_COLLAPSED     // The widget will be not visible and will take no space in the layout
 };

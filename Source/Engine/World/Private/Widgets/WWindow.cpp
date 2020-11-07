@@ -281,9 +281,11 @@ void WWindow::OnDrawEvent( ACanvas & _Canvas ) {
         // Draw caption text
         if ( !CaptionText.IsEmpty() ) {
             AFont const * font = GetFont();
+            _Canvas.PushFont( font );
             _Canvas.PushClipRect( mins, mins + captionSize, true );
-            _Canvas.DrawTextUTF8( font, font->GetFontSize(), mins + GetTextPositionWithAlignment( _Canvas ), TextColor, CaptionText.Begin(), CaptionText.End(), bWordWrap ? width : 0.0f );
+            _Canvas.DrawTextUTF8( font->GetFontSize(), mins + GetTextPositionWithAlignment( _Canvas ), TextColor, CaptionText.Begin(), CaptionText.End(), bWordWrap ? width : 0.0f );
             _Canvas.PopClipRect();
+            _Canvas.PopFont();
         }
     }
 }

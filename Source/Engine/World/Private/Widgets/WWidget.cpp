@@ -1533,7 +1533,7 @@ float WWidget::CalcContentHeight() {
 
 
 WWidget & ScrollTest2() {
-    return  WWidget::New< WWindow >()
+    return  WNew(WWindow)
             .SetCaptionText( "Test Scroll" )
             .SetCaptionHeight( 24 )
             .SetBackgroundColor( AColor4( 0.5f,0.5f,0.5f ) )
@@ -1551,28 +1551,28 @@ WWidget & ScrollTest2() {
             //.SetAutoHeight( true )
 #if 0
             [
-                WWidget::New()
+                WNew(WWidget)
                 .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
                 .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
                 .SetGridOffset( 0, 0 )
                 .SetLayout( WIDGET_LAYOUT_IMAGE )
                 .SetImageSize( 640, 480 )
                 [
-                    WDecorate::New< WBorderDecorate >()
+                    WNew(WBorderDecorate)
                     .SetColor( 0xff00ffff )
                     .SetFillBackground( true )
                     .SetBackgroundColor( 0xff00ff00 )
                     .SetThickness( 1 )
                 ]
                 [
-                    WDecorate::New< WTextDecorate >()
+                    WNew(WTextDecorate)
                     .SetText( "Content view" )
                     .SetColor( 0xff000000 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
                     .SetVerticalAlignment( WIDGET_ALIGNMENT_CENTER )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WNew(WButton)
                     .SetText( "1" )
                     .SetSize( 64, 64 )
                     .SetPosition( 640-64, 480-64 )
@@ -1582,7 +1582,7 @@ WWidget & ScrollTest2() {
                     .SetEnabled( false )
                 ]
                 [
-                    WWidget::New< WButton >()
+                    WNew(WButton)
                     .SetText( "2" )
                     .SetSize( 64, 64 )
                     .SetPosition( 640/2-64/2, 480/2-64/2 )
@@ -1594,7 +1594,7 @@ WWidget & ScrollTest2() {
 #endif
 #if 1
             [
-                WWidget::New()
+                WNew(WWidget)
                 //.SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
                 .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
                 .SetGridOffset( 0, 0 )
@@ -1604,21 +1604,21 @@ WWidget & ScrollTest2() {
                 .SetAutoWidth( true )
                 //.SetAutoHeight( true )
                 [
-                    WDecorate::New< WBorderDecorate >()
+                    WNew(WBorderDecorate)
                     .SetColor( AColor4( 1,1,0 ) )
                     .SetFillBackground( true )
                     .SetBackgroundColor( AColor4( 0,1,0 ) )
                     .SetThickness( 1 )
                 ]
                 [
-                    WDecorate::New< WTextDecorate >()
+                    WNew(WTextDecorate)
                     .SetText( "Content view" )
                     .SetColor( AColor4::Black() )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
                     .SetVerticalAlignment( WIDGET_ALIGNMENT_CENTER )
                 ]
                 [
-                    WWidget::New< WTextButton >()
+                    WNew(WTextButton)
                     .SetText( "1" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1626,7 +1626,7 @@ WWidget & ScrollTest2() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WTextButton >()
+                    WNew(WTextButton)
                     .SetText( "2" )
                     .SetSize( 200, 50 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1634,7 +1634,7 @@ WWidget & ScrollTest2() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WTextButton >()
+                    WNew(WTextButton)
                     .SetText( "3" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1643,7 +1643,7 @@ WWidget & ScrollTest2() {
                     //.SetCollapsed()
                 ]
                 [
-                    WWidget::New< WTextButton >()
+                    WNew(WTextButton)
                     .SetText( "4" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1651,7 +1651,7 @@ WWidget & ScrollTest2() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WTextButton >()
+                    WNew(WTextButton)
                     .SetText( "5" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1659,7 +1659,7 @@ WWidget & ScrollTest2() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WTextButton >()
+                    WNew(WTextButton)
                     .SetText( "6" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1667,7 +1667,7 @@ WWidget & ScrollTest2() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WTextButton >()
+                    WNew(WTextButton)
                     .SetText( "7" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1675,7 +1675,7 @@ WWidget & ScrollTest2() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WTextButton >()
+                    WNew(WTextButton)
                     .SetText( "8" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1683,7 +1683,7 @@ WWidget & ScrollTest2() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WTextButton >()
+                    WNew(WTextButton)
                     .SetText( "9" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1691,7 +1691,7 @@ WWidget & ScrollTest2() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WTextButton >()
+                    WNew(WTextButton)
                     .SetText( "10" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
@@ -1699,7 +1699,7 @@ WWidget & ScrollTest2() {
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                 ]
                 [
-                    WWidget::New< WTextButton >()
+                    WNew(WTextButton)
                     .SetText( "11" )
                     .SetSize( 100, 30 )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1709,7 +1709,7 @@ WWidget & ScrollTest2() {
             ]
 #endif
             [
-                WWidget::New()
+                WNew(WWidget)
                 .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
                 .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
                 .SetGridOffset( 1, 0 )
@@ -1722,14 +1722,14 @@ WWidget & ScrollTest2() {
                 .SetFitRows( true )
                 .SetLayout( WIDGET_LAYOUT_GRID )
                 [
-                    WDecorate::New< WBorderDecorate >()
+                    WNew(WBorderDecorate)
                     .SetColor( AColor4( 1,0,0 ) )
                     .SetFillBackground( true )
                     .SetBackgroundColor( AColor4( 1,0,1 ) )
                     .SetThickness( 1 )
                 ]
                 [
-                    WWidget::New< WTextButton >()
+                    WNew(WTextButton)
                     .SetText( "Up" )
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
@@ -1737,7 +1737,7 @@ WWidget & ScrollTest2() {
                     .SetGridOffset( 0, 0 )
                 ]
                 [
-                    WWidget::New< WTextButton >()
+                    WNew(WTextButton)
                     .SetText( "Down" )
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
@@ -1745,7 +1745,7 @@ WWidget & ScrollTest2() {
                     .SetGridOffset( 0, 2 )
                 ]
                 [
-                    WWidget::New()
+                    WNew(WWidget)
                     .SetStyle( WIDGET_STYLE_FOREGROUND )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
                     .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
@@ -1764,7 +1764,7 @@ WWidget & ScrollTest2() {
 WWidget & ScrollTest() {
 
     WWidget & contentWidget =
-            WWidget::New()
+            WNew(WWidget)
             .SetLayout( WIDGET_LAYOUT_VERTICAL )
             .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
             //.SetAutoWidth( true )
@@ -1772,7 +1772,7 @@ WWidget & ScrollTest() {
             //.SetMaxSize( 128, 128 )
             .SetPosition( 0, 0 )
             [
-                WDecorate::New< WBorderDecorate >()
+                WNew(WBorderDecorate)
                 .SetColor( AColor4( 0.5f,0.5f,0.5f,0.5f ) )
                 .SetFillBackground( true )
                 .SetBackgroundColor( AColor4( 0.3f,0.3f,0.3f ) )
@@ -1784,7 +1784,7 @@ WWidget & ScrollTest() {
     ;
 
     contentWidget[
-            WWidget::New< WSlider >()
+            WNew(WSlider)
             .SetMinValue( 30 )
             .SetMaxValue( 100 )
             .SetStep( 10 )
@@ -1796,7 +1796,7 @@ WWidget & ScrollTest() {
             ];
 
     contentWidget[
-        WWidget::New< WScroll >()
+        WNew(WScroll)
             
             .SetAutoScrollH( true )
             .SetAutoScrollV( true )
@@ -1806,7 +1806,7 @@ WWidget & ScrollTest() {
             .SetSliderRounding( 4 )
             .SetContentWidget
             (
-                WWidget::New< WTextEdit >()
+                WNew(WTextEdit)
                 //.SetSize( 0, 0 )
                 //.SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
                 .SetStyle( WIDGET_STYLE_BACKGROUND )
@@ -1819,7 +1819,7 @@ WWidget & ScrollTest() {
 
     for (int i =0;i<100;i++ ) {
         contentWidget[
-                WWidget::New< WTextButton >()
+                WNew(WTextButton)
                 .SetText( Core::Fmt( "test button %d", i ) )
                 .SetSize( 400, 32 )
                 .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
@@ -1827,7 +1827,7 @@ WWidget & ScrollTest() {
                 ];
     }
 
-    return WWidget::New< WWindow >()
+    return WNew(WWindow)
                 .SetCaptionText( "Test Scroll" )
                 .SetCaptionHeight( 24 )
                 .SetBackgroundColor( AColor4( 0.5f,0.5f,0.5f ) )
@@ -1838,7 +1838,7 @@ WWidget & ScrollTest() {
                 //.SetAutoWidth( true )
                 //.SetAutoHeight( true )
                 [
-                    WWidget::New< WScroll >()
+                    WNew(WScroll)
                     .SetAutoScrollH( true )
                     .SetAutoScrollV( true )
                     .SetScrollbarSize( 12 )
@@ -1857,7 +1857,7 @@ WWidget & ScrollTest() {
 #if 0
 
     WWidget & scrollView =
-            WWidget::New()
+            WNew(WWidget)
             .SetStyle( WIDGET_STYLE_TRANSPARENT )
             .SetLayout( WIDGET_LAYOUT_EXPLICIT )
             .SetSize( 300, 250 )
@@ -1870,7 +1870,7 @@ WWidget & ScrollTest() {
             ];
 
     WWidget & scrollBarV =
-            WWidget::New< WScrollBar >()
+            WNew(WScrollBar)
             .SetView( &scrollView )
             .SetContent( &contentWidget )
             .SetSliderRounding( 4 )
@@ -1884,7 +1884,7 @@ WWidget & ScrollTest() {
             .SetMargin(4,4,4,4);
 
     WWidget & scrollBarH =
-            WWidget::New< WScrollBar >()
+            WNew(WScrollBar)
             .SetView( &scrollView )
             .SetContent( &contentWidget )
             .SetSliderRounding( 4 )
@@ -1897,7 +1897,7 @@ WWidget & ScrollTest() {
             .SetVerticalAlignment( WIDGET_ALIGNMENT_BOTTOM )
             .SetMargin(4,4,4,4);
 
-    return WWidget::New< WWindow >()
+    return WNew(WWindow)
                 .SetCaptionText( "Test Scroll" )
                 .SetCaptionHeight( 24 )
                 .SetBackgroundColor( AColor4( 0.5f,0.5f,0.5f ) )
@@ -1909,7 +1909,7 @@ WWidget & ScrollTest() {
                     scrollView
                 ]
                 [
-                    WWidget::New()
+                    WNew(WWidget)
                     .SetStyle( WIDGET_STYLE_TRANSPARENT )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
                     .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
@@ -1919,7 +1919,7 @@ WWidget & ScrollTest() {
                     ]
                 ]
                 [
-                    WWidget::New()
+                    WNew(WWidget)
                     .SetStyle( WIDGET_STYLE_TRANSPARENT )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
                     .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )

@@ -458,6 +458,8 @@ bool WTextEdit::InsertCharsProxy( int _Offset, SWideChar const * _Text, int _Tex
 
     UpdateWidgetSize();
 
+    E_OnTyping.Dispatch( TextData.ToPtr() );
+
     return true;
 }
 
@@ -480,6 +482,8 @@ void WTextEdit::DeleteCharsProxy( int _First, int _Count ) {
     TextData[CurTextLength] = '\0';
 
     UpdateWidgetSize();
+
+    E_OnTyping.Dispatch( TextData.ToPtr() );
 }
 
 void WTextEdit::PressKey( int _Key ) {
@@ -993,7 +997,7 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
             const bool bCtrl = !!(_Event.ModMask & KMOD_MASK_CONTROL);
 
             if ( bSingleLine || ( bCtrlEnterForNewLine && !bCtrl ) || ( !bCtrlEnterForNewLine && bCtrl ) ) {
-                E_OnEnterPress.Dispatch();
+                E_OnEnterPress.Dispatch( TextData.ToPtr() );
             } else if ( !bReadOnly ) {
                 SWideChar ch = '\n';
                 if ( FilterCharacter( ch ) ) {
@@ -1264,7 +1268,9 @@ void WTextEdit::OnDrawEvent( ACanvas & _Canvas ) {
         }
     }
 
-    _Canvas.DrawTextUTF8( font, fontSize, pos, TextColor, TextData.ToPtr(), TextData.ToPtr() + CurTextLength, 0.0F );
+    _Canvas.PushFont( font );
+    _Canvas.DrawTextWChar( fontSize, pos, TextColor, TextData.ToPtr(), TextData.ToPtr() + CurTextLength, 0.0F );
+    _Canvas.PopFont();
 }
 
 void WTextEdit::UpdateWidgetSize() {

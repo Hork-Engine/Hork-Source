@@ -50,13 +50,6 @@ class WDecorate : public ABaseObject {
     friend class WWidget;
 
 public:
-
-    template< typename T /*= WDecorate*/ >
-    static T & New() {
-        WDecorate * d = CreateInstanceOf< T >(); // compile time check: T must be subclass of WDecorate
-        return *static_cast< T * >( d );
-    }
-
     WWidget * GetOwner() { return Owner; }
     WWidget const * GetOwner() const { return Owner; }
 

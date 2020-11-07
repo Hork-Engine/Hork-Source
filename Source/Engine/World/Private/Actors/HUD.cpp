@@ -63,6 +63,8 @@ void AHUD::DrawText( AFont * _Font, int x, int y, AColor4 const & color, const c
     SWideChar ch;
     int cx = x;
 
+    Canvas->PushFont( _Font );
+
     while ( *s ) {
         byteLen = Core::WideCharDecodeUTF8( s, ch );
         if ( !byteLen ) {
@@ -82,8 +84,10 @@ void AHUD::DrawText( AFont * _Font, int x, int y, AColor4 const & color, const c
             continue;
         }
 
-        Canvas->DrawWChar( _Font, ch, cx, y, scale, color );
+        Canvas->DrawWChar( ch, cx, y, scale, color );
 
         cx += CharacterWidth;
     }
+
+    Canvas->PopFont();
 }

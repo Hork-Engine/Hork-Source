@@ -164,7 +164,7 @@ public:
         return ((int)c < WideCharAdvanceX.Size()) ? WideCharAdvanceX[(int)c] : FallbackAdvanceX;
     }
 
-    ATexture * GetTexture() {
+    ATexture * GetTexture() const {
         return AtlasTexture;
     }
 

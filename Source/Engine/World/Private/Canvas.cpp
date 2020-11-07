@@ -46,7 +46,8 @@ ACanvas::ACanvas()
 }
 
 void ACanvas::Initialize() {
-    GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/DroidSansMono.ttf.16" );
+    GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/consolas.ttf.18" );
+    //GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/Cousine-Regular.ttf.18" );
     DrawList._Data = &DrawListSharedData;
 }
 
@@ -111,7 +112,7 @@ void ACanvas::PopBlendingState() {
     DrawList.PopBlendingState();
 }
 
-void ACanvas::SetCurrentFont( AFont * _Font ) {
+void ACanvas::SetCurrentFont( AFont const * _Font ) {
     if ( _Font ) {
         DrawListSharedData.TexUvWhitePixel = _Font->GetUVWhitePixel();
         DrawListSharedData.FontSize = _Font->GetFontSize();
@@ -123,7 +124,7 @@ void ACanvas::SetCurrentFont( AFont * _Font ) {
     }
 }
 
-void ACanvas::PushFont( AFont * _Font ) {
+void ACanvas::PushFont( AFont const * _Font ) {
     SetCurrentFont( _Font );
     FontStack.Append( _Font );
     DrawList.PushTextureID( _Font->GetTexture()->GetGPUResource() );
@@ -180,12 +181,10 @@ void ACanvas::DrawCircleFilled( Float2 const & centre, float radius, AColor4 con
 }
 
 void ACanvas::DrawTextUTF8( Float2 const & pos, AColor4 const & col, const char* _TextBegin, const char* _TextEnd ) {
-    DrawTextUTF8( GetCurrentFont(), DrawListSharedData.FontSize, pos, col, _TextBegin, _TextEnd );
+    DrawTextUTF8( DrawListSharedData.FontSize, pos, col, _TextBegin, _TextEnd );
 }
 
-void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
-    AN_ASSERT( _Font && _FontSize > 0.0f );
-
+void ACanvas::DrawTextUTF8( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
     if ( _Color.IsTransparent() ) {
         return;
     }
@@ -198,13 +197,15 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
         return;
     }
 
-    if ( !_Font->IsValid() ) {
+    AFont const * font = GetCurrentFont();
+
+    if ( !font->IsValid() ) {
         return;
     }
 
     uint32_t color = _Color.GetDWord();
 
-    AN_ASSERT( const_cast< AFont * >( _Font )->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back() );
+    AN_ASSERT( const_cast< AFont * >( font )->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back() );
 
     Float4 clipRect = DrawList._ClipRectStack.back();
     if ( _CPUFineClipRect ) {
@@ -214,9 +215,9 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
         clipRect.W = Math::Min( clipRect.W, _CPUFineClipRect->W );
     }
 
-    //_Font->RenderText( &DrawList, _FontSize, _Pos, _Color, clipRect, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect != NULL );
+    //font->RenderText( &DrawList, _FontSize, _Pos, _Color, clipRect, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect != NULL );
 
-    Float2 const & fontOffset = _Font->GetDrawOffset();
+    Float2 const & fontOffset = font->GetDrawOffset();
 
     // Align to be pixel perfect
     Float2 pos;
@@ -227,7 +228,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
     if (y > clipRect.W)
         return;
 
-    const float scale = _FontSize / _Font->GetFontSize();
+    const float scale = _FontSize / font->GetFontSize();
     const float lineHeight = _FontSize;
     const bool bWordWrap = (_WrapWidth > 0.0f);
     const char* wordWrapEOL = NULL;
@@ -272,7 +273,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
         if ( bWordWrap ) {
             // Calculate how far we can render. Requires two passes on the string data but keeps the code simple and not intrusive for what's essentially an uncommon feature.
             if ( !wordWrapEOL ) {
-                wordWrapEOL = _Font->CalcWordWrapPositionA(scale, s, _TextEnd, _WrapWidth - (x - pos.X));
+                wordWrapEOL = font->CalcWordWrapPositionA(scale, s, _TextEnd, _WrapWidth - (x - pos.X));
                 if ( wordWrapEOL == s ) // Wrap_width is too small to fit anything. Force displaying 1 character to minimize the height discontinuity.
                     wordWrapEOL++;      // +1 may not be a character start point in UTF-8 but it's ok because we use s >= word_wrap_eol below
             }
@@ -320,7 +321,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
                 continue;
         }
 
-        SFontGlyph const * glyph = _Font->GetGlyph( c );
+        SFontGlyph const * glyph = font->GetGlyph( c );
         float charWidth = glyph->AdvanceX * scale;
 
         // Arbitrarily assume that both space and tabs are empty glyphs as an optimization
@@ -405,9 +406,11 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
     DrawList._VtxCurrentIdx = (unsigned int)DrawList.VtxBuffer.Size;
 }
 
-void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
-    AN_ASSERT( _Font && _FontSize > 0.0f );
+void ACanvas::DrawTextWChar( Float2 const & pos, AColor4 const & col, SWideChar const * _TextBegin, SWideChar const * _TextEnd ) {
+    DrawTextWChar( DrawListSharedData.FontSize, pos, col, _TextBegin, _TextEnd );
+}
 
+void ACanvas::DrawTextWChar( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
     if ( _Color.IsTransparent() ) {
         return;
     }
@@ -420,13 +423,17 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
         return;
     }
 
-    if ( !_Font->IsValid() ) {
+    AFont const * font = GetCurrentFont();
+
+    AN_ASSERT( font && _FontSize > 0.0f );
+
+    if ( !font->IsValid() ) {
         return;
     }
 
     uint32_t color = _Color.GetDWord();
 
-    AN_ASSERT( const_cast< AFont * >( _Font )->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back() );
+    AN_ASSERT( const_cast< AFont * >( font )->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back() );
 
     Float4 clipRect = DrawList._ClipRectStack.back();
     if ( _CPUFineClipRect ) {
@@ -436,9 +443,9 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
         clipRect.W = Math::Min( clipRect.W, _CPUFineClipRect->W );
     }
 
-    //_Font->RenderText( &DrawList, _FontSize, _Pos, _Color, clipRect, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect != NULL );
+    //font->RenderText( &DrawList, _FontSize, _Pos, _Color, clipRect, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect != NULL );
 
-    Float2 const & fontOffset = _Font->GetDrawOffset();
+    Float2 const & fontOffset = font->GetDrawOffset();
 
     // Align to be pixel perfect
     Float2 pos;
@@ -449,7 +456,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
     if ( y > clipRect.W )
         return;
 
-    const float scale = _FontSize / _Font->GetFontSize();
+    const float scale = _FontSize / font->GetFontSize();
     const float lineHeight = _FontSize;
     const bool bWordWrap = ( _WrapWidth > 0.0f );
     SWideChar const * wordWrapEOL = NULL;
@@ -494,7 +501,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
         if ( bWordWrap ) {
             // Calculate how far we can render. Requires two passes on the string data but keeps the code simple and not intrusive for what's essentially an uncommon feature.
             if ( !wordWrapEOL ) {
-                wordWrapEOL = _Font->CalcWordWrapPositionW( scale, s, _TextEnd, _WrapWidth - ( x - pos.X ) );
+                wordWrapEOL = font->CalcWordWrapPositionW( scale, s, _TextEnd, _WrapWidth - ( x - pos.X ) );
                 if ( wordWrapEOL == s ) // Wrap_width is too small to fit anything. Force displaying 1 character to minimize the height discontinuity.
                     wordWrapEOL++;      // +1 may not be a character start point in UTF-8 but it's ok because we use s >= word_wrap_eol below
             }
@@ -544,7 +551,7 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
                 continue;
         }
 
-        SFontGlyph const * glyph = _Font->GetGlyph( c );
+        SFontGlyph const * glyph = font->GetGlyph( c );
         float charWidth = glyph->AdvanceX * scale;
 
         // Arbitrarily assume that both space and tabs are empty glyphs as an optimization
@@ -629,22 +636,24 @@ void ACanvas::DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const &
     DrawList._VtxCurrentIdx = ( unsigned int )DrawList.VtxBuffer.Size;
 }
 
-void ACanvas::DrawChar( AFont const * _Font, char _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color ) {
-    DrawWChar( _Font, _Ch, _X, _Y, _Scale, _Color );
+void ACanvas::DrawChar( char _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color ) {
+    DrawWChar( _Ch, _X, _Y, _Scale, _Color );
 }
 
-void ACanvas::DrawWChar( AFont const * _Font, SWideChar _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color ) {
+void ACanvas::DrawWChar( SWideChar _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color ) {
     if ( _Color.IsTransparent() ) {
         return;
     }
 
-    if ( !_Font->IsValid() ) {
+    AFont const * font = GetCurrentFont();
+
+    if ( !font->IsValid() ) {
         return;
     }
 
-    SFontGlyph const * glyph = _Font->GetGlyph( _Ch );
+    SFontGlyph const * glyph = font->GetGlyph( _Ch );
 
-    Float2 const & fontOffset = _Font->GetDrawOffset();
+    Float2 const & fontOffset = font->GetDrawOffset();
 
     const Float2 a( _X + glyph->X0 * _Scale + fontOffset.X, _Y + glyph->Y0 * _Scale + fontOffset.Y );
     const Float2 b( _X + glyph->X1 * _Scale + fontOffset.X, _Y + glyph->Y1 * _Scale + fontOffset.Y );
@@ -653,7 +662,7 @@ void ACanvas::DrawWChar( AFont const * _Font, SWideChar _Ch, int _X, int _Y, flo
     DrawList.PrimRectUV( a, b, Float2( glyph->U0, glyph->V0 ), Float2( glyph->U1, glyph->V1 ), _Color.GetDWord() );
 }
 
-void ACanvas::DrawCharUTF8( AFont const * _Font, const char * _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color ) {
+void ACanvas::DrawCharUTF8( const char * _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color ) {
     if ( _Color.IsTransparent() ) {
         return;
     }
@@ -664,7 +673,7 @@ void ACanvas::DrawCharUTF8( AFont const * _Font, const char * _Ch, int _X, int _
         return;
     }
 
-    DrawWChar( _Font, ch, _X, _Y, _Scale, _Color );
+    DrawWChar( ch, _X, _Y, _Scale, _Color );
 }
 
 void ACanvas::DrawTexture( ATexture * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, AColor4 const & _Color, EColorBlending _Blending, EHUDSamplerType _SamplerType ) {
@@ -732,7 +741,7 @@ void ACanvas::DrawViewport( ACameraComponent * _Camera, ARenderingParameters * _
 }
 
 void ACanvas::DrawCursor( EDrawCursor _Cursor, Float2 const & _Position, AColor4 const & _Color, AColor4 const & _BorderColor, AColor4 const & _ShadowColor, const float _Scale ) {
-    AFont * font = DrawList._Data->Font;
+    AFont const * font = DrawList._Data->Font;
     Float2 offset, size, uv[ 4 ];
 
     if ( font->GetMouseCursorTexData( _Cursor, &offset, &size, &uv[ 0 ], &uv[ 2 ] ) ) {

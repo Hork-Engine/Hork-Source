@@ -32,11 +32,18 @@ SOFTWARE.
 
 #include "WWidget.h"
 
+enum EWidgetButtonTextAlign
+{
+    WIDGET_BUTTON_TEXT_ALIGN_CENTER,
+    WIDGET_BUTTON_TEXT_ALIGN_LEFT,
+    WIDGET_BUTTON_TEXT_ALIGN_RIGHT
+};
+
 class ANGIE_API WButton : public WWidget {
     AN_CLASS( WButton, WWidget )
 
 public:
-    TWidgetEvent<> E_OnButtonClick;
+    TWidgetEvent< WButton * > E_OnButtonClick;
 
     template< typename T, typename... TArgs >
     WButton & SetOnClick( T * _Object, void ( T::*_Method )(TArgs...) ) {
@@ -44,8 +51,24 @@ public:
         return *this;
     }
 
+    WButton & SetToggleButton( bool _bToggleButton )
+    {
+        bToggleButton = _bToggleButton;
+        return *this;
+    }
+
+    WButton & SetPressed( bool bPressed )
+    {
+        if ( bToggleButton ) {
+            State = bPressed ? ST_PRESSED : ST_RELEASED;
+        }
+        return *this;
+    }
+
     bool IsPressed() const { return State == ST_PRESSED; }
     bool IsReleased() const { return State == ST_RELEASED; }
+
+    bool IsToggleButton() const { return bToggleButton; }
 
 protected:
     WButton();
@@ -55,6 +78,8 @@ protected:
 
     void OnDrawEvent( ACanvas & _Canvas ) override;
 
+    int GetDrawState() const;
+
 private:
     enum {
         ST_RELEASED = 0,
@@ -62,6 +87,7 @@ private:
     };
 
     int State;
+    bool bToggleButton;
 };
 
 class ANGIE_API WTextButton : public WButton {
@@ -77,6 +103,9 @@ public:
     WTextButton & SetRounding( float _Rounding );
     WTextButton & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
     WTextButton & SetBorderThickness( float _Thickness );
+    WTextButton & SetTextAlign( EWidgetButtonTextAlign _TextAlign );
+
+    AString const & GetText() const { return Text; }
 
 protected:
     WTextButton();
@@ -91,6 +120,7 @@ private:
     AColor4 TextColor;
     AColor4 BorderColor;
     EDrawCornerFlags RoundingCorners;
+    EWidgetButtonTextAlign TextAlign;
     AString Text;
     float Rounding;
     float BorderThickness;

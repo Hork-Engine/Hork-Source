@@ -41,7 +41,7 @@ SOFTWARE.
 #include <Core/Public/Color.h>
 
 static const int Padding = 8;
-static const int CharacterWidth = 8;
+static const int CharacterWidth = 10;//8;
 //static const int CharacterHeight = 16;
 static const float DropSpeed = 10;
 
@@ -558,7 +558,7 @@ void AConsole::DrawCmdLine( ACanvas * _Canvas, int x, int y )
 {
     AColor4 const & charColor = AColor4::White();
 
-    AFont * font = _Canvas->GetCurrentFont();
+    //AFont * font = _Canvas->GetCurrentFont();
 
     const float scale = 1;//(float)CharacterHeight / font->GetFontSize();
 
@@ -586,7 +586,7 @@ void AConsole::DrawCmdLine( ACanvas * _Canvas, int x, int y )
             continue;
         }
 
-        _Canvas->DrawWChar( font, ch, cx, y, scale, charColor );
+        _Canvas->DrawWChar( ch, cx, y, scale, charColor );
 
         cx += CharacterWidth;
     }
@@ -594,7 +594,7 @@ void AConsole::DrawCmdLine( ACanvas * _Canvas, int x, int y )
     if ( ( GRuntime.SysFrameTimeStamp() >> 18 ) & 1 ) {
         cx = x + ( CmdLinePos - offset ) * CharacterWidth;
 
-        _Canvas->DrawWChar( font, '_', cx, y, scale, charColor );
+        _Canvas->DrawWChar( '_', cx, y, scale, charColor );
     }
 }
 
@@ -619,7 +619,7 @@ void AConsole::Draw( ACanvas * _Canvas, float _TimeStep )
         ConHeight = 2;
     }
 
-    AFont * font = _Canvas->GetCurrentFont();
+    AFont const * font = _Canvas->GetCurrentFont();
 
     const int fontVStride = font->GetFontSize() + 4;
     //const int fontVStride = CharacterHeight + 4;
@@ -659,7 +659,7 @@ void AConsole::Draw( ACanvas * _Canvas, float _TimeStep )
         SWideChar * line = &pImage[ offset ];
 
         for ( int j = 0 ; j < MaxLineChars && *line ; j++ ) {
-            _Canvas->DrawWChar( font, *line++, x, y, scale, charColor );
+            _Canvas->DrawWChar( *line++, x, y, scale, charColor );
 
             x += CharacterWidth;
         }

@@ -94,11 +94,11 @@ public:
     void PopBlendingState();
 
     // Font
-    void PushFont( AFont * _Font );
+    void PushFont( AFont const * _Font );
     void PopFont();
 
     static AFont * GetDefaultFont();
-    AFont * GetCurrentFont() { return FontStack.Last(); }
+    AFont const * GetCurrentFont() { return FontStack.Last(); }
 
     // Primitives
     void DrawLine( Float2 const & a, Float2 const & b, AColor4 const & col, float thickness = 1.0f );
@@ -116,12 +116,13 @@ public:
     void DrawBezierCurve( Float2 const & pos0, Float2 const & cp0, Float2 const & cp1, Float2 const & pos1, AColor4 const & col, float thickness, int num_segments = 0 );
 
     // Text
-    void DrawTextUTF8( Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char* _TextEnd = nullptr );
-    void DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char* _TextEnd = nullptr, float _WrapWidth = 0.0f, Float4 const * _CPUFineClipRect = nullptr );
-    void DrawTextUTF8( AFont const * _Font, float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd = nullptr, float _WrapWidth = 0.0f, Float4 const * _CPUFineClipRect = nullptr );
-    void DrawChar( AFont const * _Font, char _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color );
-    void DrawWChar( AFont const * _Font, SWideChar _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color );
-    void DrawCharUTF8( AFont const * _Font, const char * _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color );
+    void DrawTextUTF8( Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char * _TextEnd = nullptr );
+    void DrawTextUTF8( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char * _TextEnd = nullptr, float _WrapWidth = 0.0f, Float4 const * _CPUFineClipRect = nullptr );
+    void DrawTextWChar( Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd = nullptr );
+    void DrawTextWChar( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd = nullptr, float _WrapWidth = 0.0f, Float4 const * _CPUFineClipRect = nullptr );
+    void DrawChar( char _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color );
+    void DrawWChar( SWideChar _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color );
+    void DrawCharUTF8( const char * _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color );
 
     // Texture
     void DrawTexture( ATexture * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0 = Float2(0,0), Float2 const & _UV1 = Float2(1,1), AColor4 const & _Color = AColor4(1.0F), EColorBlending _Blending = COLOR_BLENDING_ALPHA, EHUDSamplerType _SamplerType = HUD_SAMPLER_TILED_LINEAR );
@@ -155,11 +156,11 @@ public:
 //    void PathRect(Float2 const & rect_min, Float2 const & rect_max, float rounding = 0.0f, int rounding_corners_flags = ImDrawCornerFlags_All);
 
 private:
-    void SetCurrentFont( AFont * font );
+    void SetCurrentFont( AFont const * font );
 
     TPodArray< SViewport > Viewports;
 
     ImDrawListSharedData DrawListSharedData;
     ImDrawList DrawList;
-    TPodArray< AFont * > FontStack;
+    TPodArray< AFont const * > FontStack;
 };

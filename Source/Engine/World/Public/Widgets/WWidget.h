@@ -68,6 +68,9 @@ struct TWidgetEvent : TEvent< TArgs... > {};
 
 using AWidgetShape = TPodArray< Float2, 4 >;
 
+#define WNew(Type) (*CreateInstanceOf< Type >())
+#define WNewAssign(Val,Type) (*(Val = CreateInstanceOf< Type >()))
+
 class ANGIE_API WWidget : public ABaseObject {
     AN_CLASS( WWidget, ABaseObject )
 
@@ -109,12 +112,6 @@ public:
 
     /** Remove all widget decorations */
     WWidget & RemoveDecorates();
-
-    template< typename T = WWidget >
-    static T & New() {
-        WWidget * w = CreateInstanceOf< T >(); // compile time check: T must be subclass of WWidget
-        return *static_cast< T * >( w );
-    }
 
     /** Helper. Add child widget */
     WWidget & operator[]( WWidget & _Widget ) {
@@ -384,6 +381,8 @@ public:
 
     /** Set widget on top of other widgets */
     WWidget & BringOnTop( bool _RecursiveForParents = true );
+
+    virtual bool IsShortcutsAllowed() const { return true; }
 
 protected:
     WWidget();

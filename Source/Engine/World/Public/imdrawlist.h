@@ -163,7 +163,7 @@ typedef int ImDrawListFlags;        // -> enum ImDrawListFlags_      // Flags: f
 struct ImDrawListSharedData
 {
     ImVec2          TexUvWhitePixel;            // UV of white pixel in the atlas
-    AFont *         Font;                       // Current/default font (optional, for simplified AddText overload)
+    AFont const *   Font;                       // Current/default font (optional, for simplified AddText overload)
     float           FontSize;                   // Current/default font size (optional, for simplified AddText overload)
     float           CurveTessellationTol;       // Tessellation tolerance when using PathBezierCurveTo()
     float           CircleSegmentMaxError;      // Number of circle segments to use per pixel of radius for AddCircle() etc

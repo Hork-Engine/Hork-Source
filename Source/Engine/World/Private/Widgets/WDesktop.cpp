@@ -364,7 +364,29 @@ void WDesktop::GenerateKeyEvents( SKeyEvent const & _Event, double _TimeStamp ) 
         return;
     }
 
-    if ( FocusWidget && FocusWidget->IsVisible() && !FocusWidget->IsDisabled() ) {
+    if ( E_OnKeyEvent.HasCallbacks() ) {
+        bool bOverride = false;
+
+        E_OnKeyEvent.Dispatch( _Event, _TimeStamp, bOverride );
+        if ( bOverride ) {
+            return;
+        }
+    }
+
+    bool bPassFocusWidgetEvent = FocusWidget && FocusWidget->IsVisible() && !FocusWidget->IsDisabled();
+
+    if ( ShortcutContainer && _Event.Action == IA_PRESS ) {
+        if ( !bPassFocusWidgetEvent || FocusWidget->IsShortcutsAllowed() ) {
+            for ( SShortcutInfo const & shortcut : ShortcutContainer->GetShortcuts() ) {
+                if ( shortcut.Key == _Event.Key && shortcut.ModMask == _Event.ModMask ) {
+                    shortcut.Binding();
+                    return;
+                }
+            }
+        }
+    }
+
+    if ( bPassFocusWidgetEvent ) {
         FocusWidget->OnKeyEvent( _Event, _TimeStamp );
     }
 }
@@ -735,4 +757,8 @@ void WDesktop::OnDrawBackground( ACanvas & _Canvas ) {
 
 void WDesktop::DrawCursor( ACanvas & _Canvas ) {
     _Canvas.DrawCursor( Cursor, CursorPosition, AColor4::White(), AColor4( 0, 0, 0, 1 ), AColor4( 0, 0, 0, 0.3f ) );
+}
+
+void WDesktop::SetShortcuts( AShortcutContainer * _ShortcutContainer ) {
+    ShortcutContainer = _ShortcutContainer;
 }

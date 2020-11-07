@@ -61,7 +61,7 @@ SOFTWARE.
 //#define IMGUI_CONTEXT
 
 static ARuntimeVariable com_ShowStat( _CTS( "com_ShowStat" ), _CTS( "0" ) );
-static ARuntimeVariable com_ShowFPS( _CTS( "com_ShowFPS" ), _CTS( "1" ) );
+static ARuntimeVariable com_ShowFPS( _CTS( "com_ShowFPS" ), _CTS( "0" ) );
 
 static AConsole Console;
 
@@ -627,9 +627,9 @@ void AEngineInstance::SetDesktop( WDesktop * _Desktop )
         return;
     }
 
-    if ( Desktop ) {
-        Desktop->SetFocusWidget( nullptr );
-    }
+    //if ( Desktop ) {
+    //    Desktop->SetFocusWidget( nullptr );
+    //}
 
     Desktop = _Desktop;
 

@@ -94,6 +94,7 @@ TRef< ADocObject > ABaseObject::Serialize() {
     TRef< ADocObject > object = MakeRef< ADocObject >();
 
     object->AddString( "ClassName", FinalClassName() );
+    object->AddString( "ObjectName", GetObjectName() );
 
     for ( AClassMeta const * Meta = &FinalClassMeta()
           ; Meta ; Meta = Meta->SuperClass() ) {

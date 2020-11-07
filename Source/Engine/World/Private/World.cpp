@@ -294,6 +294,11 @@ AActor * AWorld::LoadActor( ADocValue const * pObject, ALevel * _Level, bool bIn
     AActor * actor = static_cast< AActor * >( classMeta->CreateInstance() );
     actor->AddRef();
 
+    ADocMember const * objectNameField = pObject->FindMember( "ObjectName" );
+    if ( objectNameField ) {
+        actor->SetObjectName( objectNameField->GetString() );
+    }
+
     // Add actor to world array of actors
     Actors.Append( actor );
     actor->IndexInWorldArrayOfActors = Actors.Size() - 1;

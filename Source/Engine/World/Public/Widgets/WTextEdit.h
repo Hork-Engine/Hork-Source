@@ -43,8 +43,9 @@ class ANGIE_API WTextEdit : public WWidget {
     friend class WTextEditProxy;
 
 public:
-    TWidgetEvent<> E_OnEnterPress;
+    TWidgetEvent< SWideChar const * > E_OnEnterPress;
     TWidgetEvent<> E_OnEscapePress;
+    TWidgetEvent< SWideChar const * > E_OnTyping;
 
     WTextEdit & SetFont( AFont * _Font );
     WTextEdit & SetMaxChars( int _MaxChars );
@@ -63,6 +64,27 @@ public:
     WTextEdit & SetAllowUndo( bool _Enabled );
     WTextEdit & SetSelectionColor( AColor4 const & _Color );
     WTextEdit & SetTextColor( AColor4 const & _Color );
+
+    template< typename T, typename... TArgs >
+    WTextEdit & SetOnEnterPress( T * _Object, void ( T::*_Method )(TArgs...) )
+    {
+        E_OnEnterPress.Add( _Object, _Method );
+        return *this;
+    }
+
+    template< typename T, typename... TArgs >
+    WTextEdit & SetOnEscapePress( T * _Object, void ( T::*_Method )(TArgs...) )
+    {
+        E_OnEscapePress.Add( _Object, _Method );
+        return *this;
+    }
+
+    template< typename T, typename... TArgs >
+    WTextEdit & SetOnTyping( T * _Object, void ( T::*_Method )(TArgs...) )
+    {
+        E_OnTyping.Add( _Object, _Method );
+        return *this;
+    }
 
     void ClearSelection();
 
@@ -122,6 +144,8 @@ public:
     // public:
     //     virtual AColor4 const & GetWordColor( SWideChar * _WordStart, SWideChar * _WordEnd ) = 0;
     // };
+
+    bool IsShortcutsAllowed() const override { return false; }
 
 protected:
     WTextEdit();
