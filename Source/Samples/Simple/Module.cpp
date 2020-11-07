@@ -209,7 +209,7 @@ private:
 
         // Add viewport to desktop
         desktop->AddWidget(
-            &WWidget::New< WViewport >()
+            &WNew(WViewport)
             .SetPlayerController( playerController )
             .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
             .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
