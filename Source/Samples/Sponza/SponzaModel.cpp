@@ -244,7 +244,7 @@ ASponzaModel::ASponzaModel()
     GEngine.SetDesktop( desktop );
 
     desktop->AddWidget(
-        &WWidget::New< WViewport >()
+        &WNew(WViewport)
         .SetPlayerController( PlayerController )
         .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
         .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
