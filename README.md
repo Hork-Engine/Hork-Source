@@ -92,7 +92,7 @@ PBR (physically based).
 * Photometric profiles (IES)
 
 ## Audio
-* Decoders ogg, mp3, wav
+* Decoders ogg, flac, mp3, wav
 * Streaming support
 * 2D and 3D
 * Unlimited audio sources
@@ -144,8 +144,8 @@ PBR (physically based).
 * MIT license
    
 ## Used third-party libraries
-* stb, cgltf, lwo2, tinyexr, fastlz, miniz, glew, sdl2, bullet, vhacd, recastnavigation, imgui, iesna, clipper, glutess
-* Dynamic loaded: openal, libmpg123
+* stb, cgltf, lwo2, tinyexr, fastlz, miniz, glew, sdl2, bullet, vhacd, recastnavigation, imgui, iesna, clipper, glutess, miniaudio
+* Dynamic loaded: openal
 
 ## Some architectural solutions
 * STL-less.
