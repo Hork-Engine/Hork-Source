@@ -114,7 +114,7 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
             }
         }
     }
-    
+if (NearestProbe==9999)NearestProbe=0; // FIXME: just for test
     if ( NearestProbe < 9999 ) {
         // Gather irradiance from cubemaps
         Irradiance += texture( IrradianceMap, vec4( Normal, Probes[NearestProbe].IrradianceAndReflectionMaps.x ) ).rgb;
@@ -135,7 +135,7 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
     return mad( kD, Diffuse, Specular ) * AO; 
 }
 
-vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessSqr, vec3 Normal, float NdV )
+vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessSqr, vec3 Normal, vec3 GeometryNormal, float NdV )
 {
     vec3 Light = vec3(0.0);
 
@@ -149,7 +149,7 @@ vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float Roughness
         float NdL = saturate( dot( Normal, L ) );
 
         if ( NdL > 0.0 ) {
-            float NdL_Vertex = saturate( dot( VS_N, L ) );
+            float NdL_Vertex = saturate( dot( GeometryNormal, L ) );
             #if 0
             // tan( acos( x ) ) = sqrt(1-x*x)/x
             float Bias = sqrt( 1.0 - NdL_Vertex*NdL_Vertex ) / max( NdL_Vertex, 0.001 );
@@ -241,7 +241,8 @@ vec3 CalcPointLightLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessS
 }
 
 void MaterialPBRShader( vec3 BaseColor,
-                        vec3 N,
+                        vec3 Normal,
+                        vec3 GeometryNormal,
                         float Metallic,
                         float Roughness,
                         vec3 Emissive,
@@ -254,13 +255,6 @@ void MaterialPBRShader( vec3 BaseColor,
     uint FirstIndex;
 
     UnpackCluster( NumProbes, NumDecals, NumLights, FirstIndex );
-
-    // Calc macro normal
-    #ifdef TWOSIDED
-    const vec3 Normal = normalize( N.x * VS_T + N.y * VS_B + N.z * VS_N ) * ( 1.0 - float(gl_FrontFacing) * 2.0 );
-    #else
-    const vec3 Normal = normalize( N.x * VS_T + N.y * VS_B + N.z * VS_N );
-    #endif
 
     // Lerp with metallic value to find the good diffuse and specular.
     const vec3 Albedo = BaseColor * ( 1.0 - Metallic );
@@ -299,7 +293,7 @@ void MaterialPBRShader( vec3 BaseColor,
     const float k = (Roughness + 1) * (Roughness + 1) * 0.125; // Direct light
     
     // Accumulate directional lights
-    Light += CalcDirectionalLightingPBR( Diffuse, F0, k, RoughnessSqrClamped, Normal, NdV );
+    Light += CalcDirectionalLightingPBR( Diffuse, F0, k, RoughnessSqrClamped, Normal, GeometryNormal, NdV );
     
     // Accumulate point and spot lights
     Light += CalcPointLightLightingPBR( Diffuse, F0, k, RoughnessSqrClamped, Normal, NdV, FirstIndex, NumLights );
@@ -309,27 +303,6 @@ void MaterialPBRShader( vec3 BaseColor,
     Light += Ambient;
 
     FS_FragColor = vec4( Light, Opacity );
-    
-    //FS_Normal = Normal*0.5+0.5;
-    //FS_Normal = normalize(VS_N)*0.5+0.5;
-    
-    //FS_FragColor = vec4(texture( LookupBRDF, InNormalizedScreenCoord ).rg,0.0,1.0);
-    
-    //FS_FragColor.rgb = BaseColor + FetchLocalReflection( R, 0 );
-    
-    //FS_FragColor.rgb = vec3(-VS_Position.z);
-    
-    //FS_FragColor.rgb = BaseColor+FetchLocalReflection( R, 0 );
-    
-    //FS_FragColor.rgb = vec3( gl_FragDepth );
-    
-    //FS_FragColor.rgb = vec3(ViewToUV( VS_Position ),0);
-    //FS_FragColor.rgb = vec3(InNormalizedScreenCoord,0);
-
-    //FS_FragColor.rgb = vec3(UVToView( InNormalizedScreenCoord, VS_Position.z ));
-    //FS_FragColor.rgb = VS_Position;
-    
-    //FS_FragColor.rgb = vec3(-VS_Position.z);
     
 #ifdef DEBUG_RENDER_MODE
     uint DebugMode = GetDebugMode();
@@ -375,7 +348,7 @@ void MaterialPBRShader( vec3 BaseColor,
 #endif
         break;
     case DEBUG_DIRLIGHT:
-        FS_FragColor = vec4( CalcDirectionalLightingPBR( vec3(0.5/PI), F0, k, RoughnessSqrClamped, Normal, NdV ), 1.0 );
+        FS_FragColor = vec4( CalcDirectionalLightingPBR( vec3(0.5/PI), F0, k, RoughnessSqrClamped, Normal, GeometryNormal, NdV ), 1.0 );
         break;
     case DEBUG_POINTLIGHT:
         FS_FragColor = vec4( CalcPointLightLightingPBR( vec3(0.5/PI), F0, k, RoughnessSqrClamped, Normal, NdV, FirstIndex, NumLights ), 1.0 );
@@ -384,17 +357,17 @@ void MaterialPBRShader( vec3 BaseColor,
     //    FS_FragColor = vec4( nsv_VS0_TexCoord.xy, 0.0, 1.0 );
     //    break;
     case DEBUG_TEXNORMAL:
-        FS_FragColor = vec4( N*0.5+0.5, 1.0 );
+//        FS_FragColor = vec4( N*0.5+0.5, 1.0 );
         break;
     case DEBUG_TBN_NORMAL:
-        FS_FragColor = vec4( VS_N*0.5+0.5, 1.0 );
+        FS_FragColor = vec4( GeometryNormal*0.5+0.5, 1.0 );
         break;
-    case DEBUG_TBN_TANGENT:
-        FS_FragColor = vec4( VS_T*0.5+0.5, 1.0 );
-        break;
-    case DEBUG_TBN_BINORMAL:
-        FS_FragColor = vec4( VS_B*0.5+0.5, 1.0 );
-        break;
+    //case DEBUG_TBN_TANGENT:
+    //    FS_FragColor = vec4( VS_T*0.5+0.5, 1.0 );
+    //    break;
+    //case DEBUG_TBN_BINORMAL:
+    //    FS_FragColor = vec4( VS_B*0.5+0.5, 1.0 );
+    //    break;
     case DEBUG_SPECULAR:
         FS_FragColor = vec4( F0, 1.0 );
         break;

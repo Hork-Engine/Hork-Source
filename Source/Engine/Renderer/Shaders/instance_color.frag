@@ -209,9 +209,19 @@ void main()
     // Built-in material code
 #   include "$COLOR_PASS_FRAGMENT_CODE$"
 
+    // Calc nomal
+#if defined( MATERIAL_TYPE_PBR ) || defined( MATERIAL_TYPE_BASELIGHT )
+    #ifdef TWOSIDED
+    const vec3 Normal = normalize( MaterialNormal.x * VS_T + MaterialNormal.y * VS_B + MaterialNormal.z * VS_N ) * ( 1.0 - float(gl_FrontFacing) * 2.0 );
+    #else
+    const vec3 Normal = normalize( MaterialNormal.x * VS_T + MaterialNormal.y * VS_B + MaterialNormal.z * VS_N );
+    #endif
+#endif
+
 #ifdef MATERIAL_TYPE_PBR
     MaterialPBRShader( BaseColor.xyz,
-                       MaterialNormal,
+                       Normal,
+                       VS_N,
                        MaterialMetallic,
                        MaterialRoughness,
                        MaterialEmissive,
@@ -222,7 +232,8 @@ void main()
 #ifdef MATERIAL_TYPE_BASELIGHT
     const float MaterialSpecularPower = 32; // TODO: Allow to set in the material
     MaterialBaseLightShader( BaseColor.xyz,
-                             MaterialNormal,
+                             Normal,
+                             VS_N,
                              MaterialSpecular,
                              MaterialSpecularPower,
                              MaterialAmbientLight,

@@ -35,7 +35,7 @@ SOFTWARE.
 
 #define SPECULAR_BRIGHTNESS 50.0
 
-vec3 CalcDirectionalLighting( vec3 Normal, vec3 Specular, float SpecularPower )
+vec3 CalcDirectionalLighting( vec3 Normal, vec3 GeometryNormal, vec3 Specular, float SpecularPower )
 {
     vec3 Light = vec3(0.0);
 
@@ -51,7 +51,7 @@ vec3 CalcDirectionalLighting( vec3 Normal, vec3 Specular, float SpecularPower )
         if ( NdL > 0.0 ) {
         
 #           ifdef ALLOW_SHADOW_RECEIVE
-            float NdL_Vertex = saturate( dot( VS_N, L ) );
+            float NdL_Vertex = saturate( dot( GeometryNormal, L ) );
             float Bias = (1.0 - NdL_Vertex);
             float Shadow = SampleLightShadow( i, LightParameters[ i ][ 1 ], LightParameters[ i ][ 2 ], Bias );
 #           else
@@ -149,7 +149,8 @@ vec3 CalcPointLightLighting( vec3 Normal, vec3 Specular, float SpecularPower )
 }
 
 void MaterialBaseLightShader( vec3 BaseColor,
-                              vec3 N,
+                              vec3 Normal,
+                              vec3 GeometryNormal,
                               vec3 Specular,
                               float SpecularPower,
                               vec3 AmbientLight,
@@ -169,14 +170,7 @@ void MaterialBaseLightShader( vec3 BaseColor,
     #endif
 #endif
 
-    // Compute macro normal
-    #ifdef TWOSIDED
-    const vec3 Normal = normalize( N.x * VS_T + N.y * VS_B + N.z * VS_N ) * ( 1.0 - float(gl_FrontFacing) * 2.0 );
-    #else
-    const vec3 Normal = normalize( N.x * VS_T + N.y * VS_B + N.z * VS_N );
-    #endif
-    
-    Light += CalcDirectionalLighting( Normal, Specular, SpecularPower );
+    Light += CalcDirectionalLighting( Normal, GeometryNormal, Specular, SpecularPower );
     Light += CalcPointLightLighting( Normal, Specular, SpecularPower );
     Light += AmbientLight;
     
@@ -206,7 +200,7 @@ void MaterialBaseLightShader( vec3 BaseColor,
     FS_FragColor = vec4( Light, Opacity );
     
     //FS_Normal = Normal*0.5+0.5;
-    //FS_Normal = normalize(VS_N)*0.5+0.5;
+    //FS_Normal = normalize(GeometryNormal)*0.5+0.5;
     
     //vec2 UV = vec2( InNormalizedScreenCoord.x, 1.0-InNormalizedScreenCoord.y );
     //FS_FragColor.rgb = vec3(UV,0);
@@ -250,7 +244,7 @@ void MaterialBaseLightShader( vec3 BaseColor,
 #endif
         break;
     case DEBUG_DIRLIGHT:
-        FS_FragColor = vec4( CalcDirectionalLighting( Normal, Specular, SpecularPower ), 1.0 );
+        FS_FragColor = vec4( CalcDirectionalLighting( Normal, GeometryNormal, Specular, SpecularPower ), 1.0 );
         break;
     case DEBUG_POINTLIGHT:
         FS_FragColor = vec4( CalcPointLightLighting( Normal, Specular, SpecularPower ), 1.0 );
@@ -259,16 +253,16 @@ void MaterialBaseLightShader( vec3 BaseColor,
     //    FS_FragColor = vec4( nsv_VS0_TexCoord.xy, 0.0, 1.0 );
     //    break;
     case DEBUG_TEXNORMAL:
-        FS_FragColor = vec4( N*0.5+0.5, 1.0 );
+//        FS_FragColor = vec4( N*0.5+0.5, 1.0 );
         break;
     case DEBUG_TBN_NORMAL:
-        FS_FragColor = vec4( VS_N*0.5+0.5, 1.0 );
+        FS_FragColor = vec4( GeometryNormal*0.5+0.5, 1.0 );
         break;
     case DEBUG_TBN_TANGENT:
-        FS_FragColor = vec4( VS_T*0.5+0.5, 1.0 );
+//        FS_FragColor = vec4( VS_T*0.5+0.5, 1.0 );
         break;
     case DEBUG_TBN_BINORMAL:
-        FS_FragColor = vec4( VS_B*0.5+0.5, 1.0 );
+//        FS_FragColor = vec4( VS_B*0.5+0.5, 1.0 );
         break;
     case DEBUG_SPECULAR:
         FS_FragColor = vec4( Specular, 1.0 );
