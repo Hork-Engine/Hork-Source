@@ -40,7 +40,6 @@ SOFTWARE.
 
 class AClassMeta;
 class AAttributeMeta;
-//class APrecacheMeta;
 class ADummy;
 
 class ANGIE_API AObjectFactory
@@ -91,7 +90,6 @@ class ANGIE_API AClassMeta
 
     friend class AObjectFactory;
     friend class AAttributeMeta;
-    //friend class APrecacheMeta;
 
 public:
     const uint64_t ClassId;
@@ -102,7 +100,6 @@ public:
     AClassMeta const * Next() const { return pNext; }
     AObjectFactory const * Factory() const { return pFactory; }
     AAttributeMeta const * GetAttribList() const { return AttributesHead; }
-    //APrecacheMeta const * GetPrecacheList() const { return PrecacheHead; }
 
     bool IsSubclassOf( AClassMeta const & _Superclass ) const
     {
@@ -142,8 +139,6 @@ protected:
         pSuperClass = _SuperClassMeta;
         AttributesHead = nullptr;
         AttributesTail = nullptr;
-        //PrecacheHead = nullptr;
-        //PrecacheTail = nullptr;
         _Factory.Classes = this;
         _Factory.NumClasses++;
         pFactory = &_Factory;
@@ -158,8 +153,6 @@ private:
     AObjectFactory const * pFactory;
     AAttributeMeta const * AttributesHead;
     AAttributeMeta const * AttributesTail;
-    //APrecacheMeta const * PrecacheHead;
-    //APrecacheMeta const * PrecacheTail;
 };
 
 AN_FORCEINLINE ADummy * AObjectFactory::CreateInstance( const char * _ClassName ) const
@@ -191,7 +184,7 @@ public:
     AAttributeMeta const * Next() const { return pNext; }
     AAttributeMeta const * Prev() const { return pPrev; }
 
-    AAttributeMeta( AClassMeta const & _ClassMeta, const char * _Name, /*EAttributeType _Type, */uint32_t _Flags )
+    AAttributeMeta( AClassMeta const & _ClassMeta, const char * _Name, uint32_t _Flags )
         : Name( std::string( _ClassMeta.GetName() ) + "." +  _Name )
         , NameHash( Core::Hash( Name.c_str(), Name.length() ) )
         , Flags( _Flags )
@@ -221,10 +214,6 @@ public:
         Copy( _Src, _Dst );
     }
 
-    //void SetSubmember( ADummy * _Object, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes ) const {
-    //    SetSubmemberCB( _Object, AttributeHash, Attributes );
-    //}
-
 private:
     std::string Name;
     int NameHash;
@@ -236,52 +225,12 @@ protected:
     TStdFunction< void( ADummy *, AString const & ) > FromString;
     TStdFunction< void( ADummy *, AString & ) > ToString;
     TStdFunction< void( ADummy const *, ADummy * ) > Copy;
-    //TStdFunction< void( ADummy *, THash<> const &, TStdVector< std::pair< AString, AString > > const & ) > SetSubmemberCB;
 };
 
-#if 0
-class ANGIE_API APrecacheMeta
-{
-    AN_FORBID_COPY( APrecacheMeta )
-
-public:
-    AClassMeta const & GetResourceClassMeta() const { return ResourceClassMeta; }
-    const char * GetResourcePath() const { return Path; }
-    int GetResourceHash() const { return Hash; }
-
-    APrecacheMeta const * Next() const { return pNext; }
-    APrecacheMeta const * Prev() const { return pPrev; }
-
-    APrecacheMeta( AClassMeta const & _ClassMeta, AClassMeta const & _ResourceClassMeta, const char * _Path )
-        : ResourceClassMeta( _ResourceClassMeta )
-        , Path( _Path )
-        , Hash( Core::HashCase( _Path, Core::Strlen( _Path ) ) )
-    {
-        AClassMeta & classMeta = const_cast< AClassMeta & >( _ClassMeta );
-        pNext = nullptr;
-        pPrev = classMeta.PrecacheTail;
-        if ( pPrev ) {
-            const_cast< APrecacheMeta * >( pPrev )->pNext = this;
-        } else {
-            classMeta.PrecacheHead = this;
-        }
-        classMeta.PrecacheTail = this;
-    }
-
-private:
-    AClassMeta const & ResourceClassMeta;
-    const char * Path;
-    int Hash;
-    APrecacheMeta const * pNext;
-    APrecacheMeta const * pPrev;
-};
-#endif
 
 template< typename AttributeType >
 void SetAttributeFromString( AttributeType & Attribute, AString const & String );
 
-//template< typename AttributeType >
-//void SetAttributeSubmember( AttributeType & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes );
 
 AN_FORCEINLINE void SetAttributeFromString( uint8_t & Attribute, AString const & String )
 {
@@ -345,24 +294,6 @@ AN_FORCEINLINE void SetAttributeFromString( AString & Attribute, AString const &
     Attribute = String;
 }
 
-//AN_FORCEINLINE void SetAttributeSubmember( uint8_t & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
-//{}
-//AN_FORCEINLINE void SetAttributeSubmember( bool & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
-//{}
-//AN_FORCEINLINE void SetAttributeSubmember( int32_t & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
-//{}
-//AN_FORCEINLINE void SetAttributeSubmember( float & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
-//{}
-//AN_FORCEINLINE void SetAttributeSubmember( Float2 & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
-//{}
-//AN_FORCEINLINE void SetAttributeSubmember( Float3 & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
-//{}
-//AN_FORCEINLINE void SetAttributeSubmember( Float4 & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
-//{}
-//AN_FORCEINLINE void SetAttributeSubmember( Quat & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
-//{}
-//AN_FORCEINLINE void SetAttributeSubmember( AString & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
-//{}
 
 template< typename AttributeType >
 void SetAttributeToString( AttributeType const & Attribute, AString & String );
@@ -412,36 +343,26 @@ AN_FORCEINLINE void SetAttributeToString( AString const & Attribute, AString & S
     String = Attribute;
 }
 
-template< typename ObjectType >
+template< typename ObjectType, typename AttributeType  >
 class TAttributeMeta : public AAttributeMeta
 {
     AN_FORBID_COPY( TAttributeMeta )
 
 public:
-    template< typename AttributeType >
+    template< typename AttributeSetterType >
     TAttributeMeta( AClassMeta const & _ClassMeta, const char * _Name,
-                    void(ObjectType::*_Setter)( AttributeType ),
-                    AttributeType(ObjectType::*_Getter)() const,
+                    void(ObjectType::*_Setter)(AttributeSetterType),
+                    AttributeSetterType(ObjectType::*_Getter)() const,
                     int _Flags )
-        : AAttributeMeta( _ClassMeta, _Name, /*GetAttributeType< AttributeType >(),*/ _Flags )
+        : AAttributeMeta( _ClassMeta, _Name, _Flags )
     {
-//        Setter = [_Setter]( ADummy * _Object, const void * _DataPtr ) {
-//            ObjectType * object = static_cast< ObjectType * >( _Object );
-//            (*object.*_Setter)( *(( AttributeType const * )_DataPtr) );
-//        };
-//        Getter = [_Getter]( ADummy * _Object, void * _DataPtr ) {
-//            ObjectType * object = static_cast< ObjectType * >( _Object );
-//            AttributeType Value = (*object.*_Getter)();
-//            Core::Memcpy( ( AttributeType * )_DataPtr, &Value, sizeof( Value ) );
-//        };
-
         FromString = [_Setter]( ADummy * _Object, AString const & _Value )
         {
-            AttributeType attribute;
+            AttributeType Attribute;
 
-            SetAttributeFromString( attribute, _Value );
+            SetAttributeFromString( Attribute, _Value );
 
-            (*static_cast< ObjectType * >( _Object ).*_Setter)( attribute );
+            (*static_cast< ObjectType * >( _Object ).*_Setter)( Attribute );
         };
 
         ToString = [_Getter]( ADummy * _Object, AString & _Value )
@@ -453,20 +374,10 @@ public:
         {
             (*static_cast< ObjectType * >( _Dst ).*_Setter)( (*static_cast< ObjectType const * >( _Src ).*_Getter)() );
         };
-
-//        SetSubmemberCB = [_Setter]( ADummy * _Object, AString const & _Value )
-//        {
-//            AttributeType attribute;
-
-//            SetAttributeFromString( attribute, _Value );
-
-//            (*static_cast< ObjectType * >( _Object ).*_Setter)( attribute );
-//        };
     }
 
-    template< typename AttributeType >
     TAttributeMeta( AClassMeta const & _ClassMeta, const char * _Name, AttributeType * _AttribPointer, int _Flags )
-        : AAttributeMeta( _ClassMeta, _Name, /*GetAttributeType< AttributeType >(),*/ _Flags )
+        : AAttributeMeta( _ClassMeta, _Name, _Flags )
     {
         FromString = [_AttribPointer]( ADummy * _Object, AString const & _Value )
         {
@@ -482,11 +393,6 @@ public:
         {
             *(AttributeType *)((byte *)static_cast<ObjectType *>(_Dst) + (size_t)_AttribPointer) = *(AttributeType const *)((byte const *)static_cast<ObjectType const *>(_Src) + (size_t)_AttribPointer);
         };
-
-        //SetSubmemberCB = [_AttribPointer]( ADummy * _Object, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
-        //{
-        //    SetAttributeSubmember( *(AttributeType *)((byte *)static_cast< ObjectType * >(_Object) + (size_t)_AttribPointer), AttributeHash, Attributes );
-        //};
     }
 };
 
@@ -552,13 +458,11 @@ void _Class::ThisClassMeta::RegisterAttributes() {
 
 #define AN_CLASS_META( _Class ) AN_BEGIN_CLASS_META( _Class ) AN_END_CLASS_META()
 
-#define AN_ATTRIBUTE( _Name, _Setter, _Getter, _Flags ) \
-    static TAttributeMeta< ThisClass > const _Name##Meta( *this, AN_STRINGIFY( _Name ), &ThisClass::_Setter, &ThisClass::_Getter, _Flags );
+#define AN_ATTRIBUTE( _Name, _Type, _Setter, _Getter, _Flags ) \
+    static TAttributeMeta< ThisClass, _Type > const _Name##Meta( *this, AN_STRINGIFY( _Name ), &ThisClass::_Setter, &ThisClass::_Getter, _Flags );
 
 #define AN_ATTRIBUTE_( _Name, _Flags ) \
-    static TAttributeMeta< ThisClass > const _Name##Meta( *this, AN_STRINGIFY( _Name ), (&(( ThisClass * )0)->_Name), _Flags );
-
-//#define AN_PRECACHE( _ResourceClass, _ResourceName, _Path ) static APrecacheMeta const _ResourceName##Precache( *this, _ResourceClass::ClassMeta(), _Path );
+    static TAttributeMeta< ThisClass, decltype( (( ThisClass * )0)->_Name ) > const _Name##Meta( *this, AN_STRINGIFY( _Name ), (&(( ThisClass * )0)->_Name), _Flags );
 
 /* Attribute flags */
 #define AF_DEFAULT              0
