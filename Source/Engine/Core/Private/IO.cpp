@@ -31,6 +31,7 @@ SOFTWARE.
 #include <Core/Public/IO.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/WindowsDefs.h>
+#include <Core/Public/BaseMath.h>
 
 #ifdef AN_OS_WIN32
 #include <direct.h>     // _mkdir
@@ -174,16 +175,16 @@ long AFileStream::Impl_Tell() {
     return ftell( ( FILE * )Handle );
 }
 
-int AFileStream::Impl_SeekSet( long _Offset ) {
-    return fseek( ( FILE * )Handle, _Offset, SEEK_SET );
+bool AFileStream::Impl_SeekSet( long _Offset ) {
+    return fseek( ( FILE * )Handle, _Offset, SEEK_SET ) == 0;
 }
 
-int AFileStream::Impl_SeekCur( long _Offset ) {
-    return fseek( ( FILE * )Handle, _Offset, SEEK_CUR );
+bool AFileStream::Impl_SeekCur( long _Offset ) {
+    return fseek( ( FILE * )Handle, _Offset, SEEK_CUR ) == 0;
 }
 
-int AFileStream::Impl_SeekEnd( long _Offset ) {
-    return fseek( ( FILE * )Handle, _Offset, SEEK_END );
+bool AFileStream::Impl_SeekEnd( long _Offset ) {
+    return fseek( ( FILE * )Handle, _Offset, SEEK_END ) == 0;
 }
 
 size_t AFileStream::Impl_SizeInBytes() {
@@ -310,17 +311,17 @@ int AMemoryStream::Impl_Read( void * _Buffer, int _SizeInBytes ) {
         return 0;
     }
 
-    int bytesCount = _SizeInBytes;
-    if ( MemoryBufferOffset + _SizeInBytes > MemoryBufferSize ) {
-        bytesCount = MemoryBufferSize - MemoryBufferOffset;
+    int bytesRemaining = MemoryBufferSize - MemoryBufferOffset;
+    if ( _SizeInBytes > bytesRemaining ) {
+        _SizeInBytes = bytesRemaining;
     }
 
-    if ( bytesCount > 0 ) {
-        Core::Memcpy( _Buffer, MemoryBuffer + MemoryBufferOffset, bytesCount );
-        MemoryBufferOffset += bytesCount;
+    if ( _SizeInBytes > 0 ) {
+        Core::Memcpy( _Buffer, MemoryBuffer + MemoryBufferOffset, _SizeInBytes );
+        MemoryBufferOffset += _SizeInBytes;
     }
 
-    return bytesCount;
+    return _SizeInBytes;
 }
 
 int AMemoryStream::Impl_Write( const void * _Buffer, int _SizeInBytes ) {
@@ -384,40 +385,46 @@ long AMemoryStream::Impl_Tell() {
     return static_cast< long >( MemoryBufferOffset );
 }
 
-int AMemoryStream::Impl_SeekSet( long _Offset ) {
+bool AMemoryStream::Impl_SeekSet( long _Offset ) {
     const int newOffset = _Offset;
 
+#if 0
     if ( newOffset < 0 || newOffset > MemoryBufferSize ) {
         GLogger.Printf( "Bad seek offset for %s\n", Name.CStr() );
-        return -1;
+        return false;
     }
+#endif
 
-    MemoryBufferOffset = newOffset;
-    return 0;
+    MemoryBufferOffset = Math::Clamp( newOffset, 0, MemoryBufferSize );
+    return true;
 }
 
-int AMemoryStream::Impl_SeekCur( long _Offset ) {
+bool AMemoryStream::Impl_SeekCur( long _Offset ) {
     const int newOffset = MemoryBufferOffset + _Offset;
 
+#if 0
     if ( newOffset < 0 || newOffset > MemoryBufferSize ) {
         GLogger.Printf( "Bad seek offset for %s\n", Name.CStr() );
-        return -1;
+        return false;
     }
+#endif
 
-    MemoryBufferOffset = newOffset;
-    return 0;
+    MemoryBufferOffset = Math::Clamp( newOffset, 0, MemoryBufferSize );
+    return true;
 }
 
-int AMemoryStream::Impl_SeekEnd( long _Offset ) {
+bool AMemoryStream::Impl_SeekEnd( long _Offset ) {
     const int newOffset = MemoryBufferSize + _Offset;
 
+#if 0
     if ( newOffset < 0 || newOffset > MemoryBufferSize ) {
         GLogger.Printf( "Bad seek offset for %s\n", Name.CStr() );
-        return -1;
+        return false;
     }
+#endif
 
-    MemoryBufferOffset = newOffset;
-    return 0;
+    MemoryBufferOffset = Math::Clamp( newOffset, 0, MemoryBufferSize );
+    return true;
 }
 
 size_t AMemoryStream::Impl_SizeInBytes() {

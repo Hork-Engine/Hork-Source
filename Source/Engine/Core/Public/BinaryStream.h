@@ -391,15 +391,15 @@ public:
         SeekSet( 0 );
     }
 
-    int SeekSet( long _Offset ) {
+    bool SeekSet( long _Offset ) {
         return Impl_SeekSet( _Offset );
     }
 
-    int SeekCur( long _Offset ) {
+    bool SeekCur( long _Offset ) {
         return Impl_SeekCur( _Offset );
     }
 
-    int SeekEnd( long _Offset ) {
+    bool SeekEnd( long _Offset ) {
         return Impl_SeekEnd( _Offset );
     }
 
@@ -433,9 +433,9 @@ protected:
     virtual char * Impl_Gets( char * _StrBuf, int _StrSz ) = 0;
     virtual void Impl_Flush() = 0;
     virtual long Impl_Tell() = 0;
-    virtual int Impl_SeekSet( long _Offset ) = 0;
-    virtual int Impl_SeekCur( long _Offset ) = 0;
-    virtual int Impl_SeekEnd( long _Offset ) = 0;
+    virtual bool Impl_SeekSet( long _Offset ) = 0;
+    virtual bool Impl_SeekCur( long _Offset ) = 0;
+    virtual bool Impl_SeekEnd( long _Offset ) = 0;
     virtual size_t Impl_SizeInBytes() = 0;
     virtual bool Impl_Eof() = 0;
 

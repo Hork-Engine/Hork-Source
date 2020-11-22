@@ -214,12 +214,6 @@ public:
     /** Find audio decoder by file name extension */
     IAudioDecoderInterface * FindAudioDecoder( const char * _FileName );
 
-    /** Decode to PCM */
-    bool DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, /* optional */ short ** _PCM );
-
-    /** Read encoded audio data */
-    bool ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength );
-
     /** Play audio clip */
     void PlaySound( AAudioClip * _AudioClip, AActor * _Instigator, SSoundSpawnParameters const * _SpawnParameters = nullptr );
 

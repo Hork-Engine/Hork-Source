@@ -42,54 +42,68 @@ static int ResourceSerialIdGen = 0;
 
 AN_CLASS_META( AAudioClip )
 
-AAudioClip::AAudioClip() {
+AAudioClip::AAudioClip()
+{
     BufferSize = DEFAULT_BUFFER_SIZE;
     SerialId = ++ResourceSerialIdGen;
+
+    Core::ZeroMem( &AudioFileInfo, sizeof( AudioFileInfo ) );
 }
 
-AAudioClip::~AAudioClip() {
+AAudioClip::~AAudioClip()
+{
     Purge();
 }
 
-int AAudioClip::GetFrequency() const {
-    return Frequency;
+int AAudioClip::GetFrequency() const
+{
+    return AudioFileInfo.SampleRate;
 }
 
-int AAudioClip::GetBitsPerSample() const {
-    return BitsPerSample;
+int AAudioClip::GetBitsPerSample() const
+{
+    return AudioFileInfo.BitsPerSample;
 }
 
-int AAudioClip::GetChannels() const {
-    return Channels;
+int AAudioClip::GetChannels() const
+{
+    return AudioFileInfo.Channels;
 }
 
-int AAudioClip::GetSamplesCount() const {
-    return SamplesCount;
+int AAudioClip::GetSamplesCount() const
+{
+    return AudioFileInfo.SamplesCount;
 }
 
-float AAudioClip::GetDurationInSecounds() const {
+float AAudioClip::GetDurationInSecounds() const
+{
     return DurationInSeconds;
 }
 
-ESoundStreamType AAudioClip::GetStreamType() const {
+ESoundStreamType AAudioClip::GetStreamType() const
+{
     return CurStreamType;
 }
 
-void AAudioClip::SetBufferSize( int _BufferSize ) {
+void AAudioClip::SetBufferSize( int _BufferSize )
+{
     BufferSize = Math::Clamp< int >( _BufferSize, AUDIO_MIN_PCM_BUFFER_SIZE, AUDIO_MAX_PCM_BUFFER_SIZE );
 }
 
-int AAudioClip::GetBufferSize() const {
+int AAudioClip::GetBufferSize() const
+{
     return BufferSize;
 }
 
-void AAudioClip::LoadInternalResource( const char * _Path ) {
+void AAudioClip::LoadInternalResource( const char * _Path )
+{
     Purge();
 
     // TODO: ...
 }
 
-bool AAudioClip::LoadResource( AString const & _Path ) {
+bool AAudioClip::LoadResource( AString const & _Path )
+{
     Purge();
 
     AN_ASSERT( BufferHandle == 0 );
@@ -106,36 +120,61 @@ bool AAudioClip::LoadResource( AString const & _Path ) {
     switch ( CurStreamType ) {
     case SOUND_STREAM_DISABLED:
     {
+        AFileStream f;
         short * PCM;
-        if ( !Decoder->DecodePCM( _Path.CStr(), &SamplesCount, &Channels, &Frequency, &BitsPerSample, &PCM ) ) {
+
+        if ( !f.OpenRead( _Path ) ) {
             return false;
         }
 
-        AN_ASSERT( SamplesCount > 0 );
+        if ( !Decoder->LoadFromFile( f, &AudioFileInfo, &PCM ) ) {
+            return false;
+        }
+
+        AN_ASSERT( AudioFileInfo.SamplesCount > 0 );
 
         SAudioBufferUpload upload = {};
-        upload.SamplesCount = SamplesCount;
-        upload.BitsPerSample = BitsPerSample;
-        upload.Frequency = Frequency;
+        upload.SamplesCount = AudioFileInfo.SamplesCount;
+        upload.BitsPerSample = AudioFileInfo.BitsPerSample;
+        upload.Frequency = AudioFileInfo.SampleRate;
         upload.PCM = PCM;
-        upload.bStereo = Channels == 2;
+        upload.bStereo = AudioFileInfo.Channels == 2;
         BufferHandle = CreateAudioBuffer( &upload );
 
-        GZoneMemory.Free( PCM );
+        GHeapMemory.Free( PCM );
         break;
     }
     case SOUND_STREAM_FILE:
     {
-        if ( !Decoder->DecodePCM( _Path.CStr(), &SamplesCount, &Channels, &Frequency, &BitsPerSample, nullptr ) ) {
+        AFileStream f;
+        if ( !f.OpenRead( _Path ) ) {
+            return false;
+        }
+        if ( !Decoder->GetAudioFileInfo( f, &AudioFileInfo ) ) {
             return false;
         }
         break;
     }
     case SOUND_STREAM_MEMORY:
     {
-        if ( !Decoder->ReadEncoded( _Path.CStr(), &SamplesCount, &Channels, &Frequency, &BitsPerSample, &EncodedData, &EncodedDataLength ) ) {
+        AFileStream f;
+
+        if ( !f.OpenRead( _Path ) ) {
             return false;
         }
+
+        if ( !Decoder->GetAudioFileInfo( f, &AudioFileInfo ) ) {
+            return false;
+        }
+
+        f.SeekEnd( 0 );
+
+        FileInMemorySize = f.Tell();
+        FileInMemory = (byte *)GHeapMemory.Alloc( FileInMemorySize );
+
+        f.Rewind();
+        f.ReadBuffer( FileInMemory, FileInMemorySize );
+
         break;
     }
     default:
@@ -144,13 +183,13 @@ bool AAudioClip::LoadResource( AString const & _Path ) {
     }
 
     bLoaded = true;
-    DurationInSeconds = (float)SamplesCount / Frequency;
+    DurationInSeconds = (float)AudioFileInfo.SamplesCount / AudioFileInfo.SampleRate;
 
     return true;
 }
 
-
-bool AAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface * _Decoder, const byte * _Data, size_t _DataLength ) {
+bool AAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface * _Decoder, const byte * _Data, size_t _DataLength )
+{
     Purge();
 
     AN_ASSERT( BufferHandle == 0 );
@@ -172,29 +211,50 @@ bool AAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface 
     switch ( CurStreamType ) {
     case SOUND_STREAM_DISABLED:
     {
+        AMemoryStream f;
         short * PCM;
-        if ( !Decoder->DecodePCM( _Path, _Data, _DataLength, &SamplesCount, &Channels, &Frequency, &BitsPerSample, &PCM ) ) {
+
+        if ( !f.OpenRead( _Path, _Data, _DataLength ) ) {
             return false;
         }
 
-        AN_ASSERT( SamplesCount > 0 );
+        if ( !Decoder->LoadFromFile( f, &AudioFileInfo, &PCM ) ) {
+            return false;
+        }
+
+        AN_ASSERT( AudioFileInfo.SamplesCount > 0 );
 
         SAudioBufferUpload upload = {};
-        upload.SamplesCount = SamplesCount;
-        upload.BitsPerSample = BitsPerSample;
-        upload.Frequency = Frequency;
+        upload.SamplesCount = AudioFileInfo.SamplesCount;
+        upload.BitsPerSample = AudioFileInfo.BitsPerSample;
+        upload.Frequency = AudioFileInfo.SampleRate;
         upload.PCM = PCM;
-        upload.bStereo = Channels == 2;
+        upload.bStereo = AudioFileInfo.Channels == 2;
         BufferHandle = CreateAudioBuffer( &upload );
 
-        GZoneMemory.Free( PCM );
+        GHeapMemory.Free( PCM );
         break;
     }
     case SOUND_STREAM_MEMORY:
     {
-        if ( !Decoder->ReadEncoded( _Path, _Data, _DataLength, &SamplesCount, &Channels, &Frequency, &BitsPerSample, &EncodedData, &EncodedDataLength ) ) {
+        AMemoryStream f;
+
+        if ( !f.OpenRead( _Path, _Data, _DataLength ) ) {
             return false;
         }
+
+        if ( !Decoder->GetAudioFileInfo( f, &AudioFileInfo ) ) {
+            return false;
+        }
+
+        f.SeekEnd( 0 );
+
+        FileInMemorySize = f.Tell();
+        FileInMemory = (byte *)GHeapMemory.Alloc( FileInMemorySize );
+
+        f.Rewind();
+        f.ReadBuffer( FileInMemory, FileInMemorySize );
+
         break;
     }
     default:
@@ -203,15 +263,16 @@ bool AAudioClip::InitializeFromData( const char * _Path, IAudioDecoderInterface 
     }
 
     bLoaded = true;
-    DurationInSeconds = (float)SamplesCount / Frequency;
+    DurationInSeconds = (float)AudioFileInfo.SamplesCount / AudioFileInfo.SampleRate;
 
     return true;
 }
 
-IAudioStreamInterface * AAudioClip::CreateAudioStreamInstance() {
+IAudioStreamInterface * AAudioClip::CreateAudioStreamInstance()
+{
     IAudioStreamInterface * streamInterface;
 
-    if ( CurStreamType == SOUND_STREAM_DISABLED ) {
+    if ( CurStreamType == SOUND_STREAM_DISABLED || !Decoder ) {
         return nullptr;
     }
 
@@ -223,7 +284,7 @@ IAudioStreamInterface * AAudioClip::CreateAudioStreamInstance() {
         if ( CurStreamType == SOUND_STREAM_FILE ) {
             bCreateResult = streamInterface->InitializeFileStream( GetFileName().CStr() );
         } else {
-            bCreateResult = streamInterface->InitializeMemoryStream( GetEncodedData(), GetEncodedDataLength() );
+            bCreateResult = streamInterface->InitializeMemoryStream( GetFileInMemory(), GetFileInMemorySize() );
         }
     }
 
@@ -234,16 +295,16 @@ IAudioStreamInterface * AAudioClip::CreateAudioStreamInstance() {
     return streamInterface;
 }
 
-void AAudioClip::Purge() {
+void AAudioClip::Purge()
+{
     if ( BufferHandle ) {
         DeleteAudioBuffer( BufferHandle );
         BufferHandle = 0;
     }
 
-    GZoneMemory.Free( EncodedData );
-    EncodedData = nullptr;
-
-    EncodedDataLength = 0;
+    GHeapMemory.Free( FileInMemory );
+    FileInMemory = nullptr;
+    FileInMemorySize = 0;
 
     bLoaded = false;
 

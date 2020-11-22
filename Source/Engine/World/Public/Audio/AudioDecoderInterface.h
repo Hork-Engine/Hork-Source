@@ -40,7 +40,7 @@ public:
     virtual bool InitializeFileStream( const char * _FileName );
 
     /** Initialize and use encoded data as source */
-    virtual bool InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength );
+    virtual bool InitializeMemoryStream( const byte * FileInMemory, size_t FileInMemorySize );
 
     /** Seek to first sample */
     void StreamRewind() { StreamSeek( 0 ); }
@@ -55,23 +55,26 @@ protected:
     IAudioStreamInterface() {}
 };
 
-class ANGIE_API IAudioDecoderInterface : public ABaseObject {
+struct SAudioFileInfo
+{
+    int SamplesCount;
+    int Channels;
+    int SampleRate;
+    int BitsPerSample;
+};
+
+class ANGIE_API IAudioDecoderInterface : public ABaseObject
+{
     AN_CLASS( IAudioDecoderInterface, ABaseObject )
 
 public:
     virtual IAudioStreamInterface * CreateAudioStream();
 
-    /** Decode file to memory */
-    virtual bool DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, /* optional */ short ** _PCM );
+    /** Open audio file and read info */
+    virtual bool GetAudioFileInfo( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo );
 
-    /** Decode from raw memory */
-    virtual bool DecodePCM( const char * _FileName, const byte * _Data, size_t _DataLength, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM );
-
-    /** Read encoded data from file */
-    virtual bool ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength );
-
-    /** Read encoded data from raw memory */
-    virtual bool ReadEncoded( const char * _FileName, const byte * _Data, size_t _DataLength, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength );
+    /** Open media file and read PCM frames to heap memory */
+    virtual bool LoadFromFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, short ** _PCM );
 
 protected:
     IAudioDecoderInterface() {}

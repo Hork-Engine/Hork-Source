@@ -32,9 +32,7 @@ SOFTWARE.
 #include <World/Public/Base/ResourceManager.h>
 #include <World/Public/Render/RenderFrontend.h>
 #include <World/Public/Audio/AudioSystem.h>
-#include <World/Public/Audio/AudioCodec/OggVorbisDecoder.h>
-#include <World/Public/Audio/AudioCodec/Mp3Decoder.h>
-#include <World/Public/Audio/AudioCodec/WavDecoder.h>
+#include <World/Public/Audio/AudioCodec/MiniaudioDecoder.h>
 #include <World/Public/Actors/Actor.h>
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/Components/InputComponent.h>
@@ -178,9 +176,15 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     RenderBackend = MakeRef< ARenderBackend >();
 
     GAudioSystem.Initialize();
-    GAudioSystem.AddAudioDecoder( "ogg", CreateInstanceOf< AOggVorbisDecoder >() );
-    GAudioSystem.AddAudioDecoder( "mp3", CreateInstanceOf< AMp3Decoder >() );
-    GAudioSystem.AddAudioDecoder( "wav", CreateInstanceOf< AWavDecoder >() );
+    //GAudioSystem.AddAudioDecoder( "ogg", CreateInstanceOf< AOggVorbisDecoder >() );
+    //GAudioSystem.AddAudioDecoder( "mp3", CreateInstanceOf< AMp3Decoder >() );
+    //GAudioSystem.AddAudioDecoder( "wav", CreateInstanceOf< AWavDecoder >() );
+
+    AMiniaudioDecoder * audioDecoder = CreateInstanceOf< AMiniaudioDecoder >();
+    GAudioSystem.AddAudioDecoder( "ogg", audioDecoder );
+    GAudioSystem.AddAudioDecoder( "mp3", audioDecoder );
+    GAudioSystem.AddAudioDecoder( "wav", audioDecoder );
+    GAudioSystem.AddAudioDecoder( "flac", audioDecoder );
 
     AFont::SetGlyphRanges( GLYPH_RANGE_CYRILLIC );
 

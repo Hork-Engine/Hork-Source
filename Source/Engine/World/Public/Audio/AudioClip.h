@@ -33,7 +33,8 @@ SOFTWARE.
 #include <World/Public/Base/Resource.h>
 #include <World/Public/Audio/AudioDecoderInterface.h>
 
-enum ESoundStreamType {
+enum ESoundStreamType
+{
     SOUND_STREAM_DISABLED,
     SOUND_STREAM_FILE,
     SOUND_STREAM_MEMORY
@@ -44,7 +45,8 @@ enum { AUDIO_MAX_PCM_BUFFER_SIZE = 1024 * 256 };
 
 using SAudioBufferHandle = unsigned int;
 
-class AAudioClip : public AResource {
+class AAudioClip : public AResource
+{
     AN_CLASS( AAudioClip, AResource )
 
 public:
@@ -78,8 +80,8 @@ public:
 
     IAudioDecoderInterface * GetDecoderInterface() { return Decoder; }
 
-    const byte * GetEncodedData() const { return EncodedData; }
-    size_t GetEncodedDataLength() const { return EncodedDataLength; }
+    const byte * GetFileInMemory() const { return FileInMemory; }
+    size_t GetFileInMemorySize() const { return FileInMemorySize; }
 
     AString const & GetFileName() const { return FileName; }
 
@@ -104,14 +106,11 @@ protected:
 private:
     SAudioBufferHandle BufferHandle = 0;
     ESoundStreamType CurStreamType = SOUND_STREAM_DISABLED;
-    int    Frequency = 0;
-    int    BitsPerSample = 0;
-    int    Channels = 0;
-    int    SamplesCount = 0;
+    SAudioFileInfo AudioFileInfo;
     float  DurationInSeconds = 0.0f;
     int    BufferSize = 0;
-    byte * EncodedData = nullptr;
-    size_t EncodedDataLength = 0;
+    byte * FileInMemory = nullptr;
+    size_t FileInMemorySize = 0;
     bool   bLoaded = false;
     TRef< IAudioDecoderInterface > Decoder;
     int    SerialId;

@@ -2409,11 +2409,11 @@ static int lwSeek( struct st_lwFile * _Stream, long _Offset, int _Origin ) {
 
     switch ( _Origin ) {
     case SEEK_CUR:
-        return stream->SeekCur( _Offset );
+        return stream->SeekCur( _Offset ) ? 0 : -1;
     case SEEK_SET:
-        return stream->SeekSet( _Offset );
+        return stream->SeekSet( _Offset ) ? 0 : -1;
     case SEEK_END:
-        return stream->SeekEnd( _Offset );
+        return stream->SeekEnd( _Offset ) ? 0 : -1;
     }
 
     return -1;

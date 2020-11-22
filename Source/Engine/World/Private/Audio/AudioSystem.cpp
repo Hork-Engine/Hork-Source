@@ -716,23 +716,6 @@ IAudioDecoderInterface * AAudioSystem::FindAudioDecoder( const char * _FileName 
     return nullptr;
 }
 
-bool AAudioSystem::DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, /* optional */ short ** _PCM ) {
-    IAudioDecoderInterface * decoder = FindAudioDecoder( _FileName );
-    if ( !decoder ) {
-        return false;
-    }
-    return decoder->DecodePCM( _FileName, _SamplesCount, _Channels, _SampleRate, _BitsPerSample, _PCM );
-}
-
-bool AAudioSystem::ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
-    IAudioDecoderInterface * decoder = FindAudioDecoder( _FileName );
-    if ( !decoder ) {
-        return false;
-    }
-    return decoder->ReadEncoded( _FileName, _SamplesCount, _Channels, _SampleRate, _BitsPerSample, _EncodedData, _EncodedDataLength );
-}
-
-
 // How to use:
 //AAudioClip * S_Player_Pain1 = GetOrCreateResource< AAudioClip >( "Sounds/Player/Pain1.ogg" );
 //GAudioSystem.PlaySound( S_Player_Pain1, this );

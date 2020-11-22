@@ -121,9 +121,9 @@ protected:
     char * Impl_Gets( char * _StrBuf, int _StrSz ) override;
     void Impl_Flush() override;
     long Impl_Tell() override;
-    int Impl_SeekSet( long _Offset ) override;
-    int Impl_SeekCur( long _Offset ) override;
-    int Impl_SeekEnd( long _Offset ) override;
+    bool Impl_SeekSet( long _Offset ) override;
+    bool Impl_SeekCur( long _Offset ) override;
+    bool Impl_SeekEnd( long _Offset ) override;
     size_t Impl_SizeInBytes() override;
     bool Impl_Eof() override;
 
@@ -195,9 +195,9 @@ protected:
     char * Impl_Gets( char * _StrBuf, int _StrSz ) override;
     void Impl_Flush() override;
     long Impl_Tell() override;
-    int Impl_SeekSet( long _Offset ) override;
-    int Impl_SeekCur( long _Offset ) override;
-    int Impl_SeekEnd( long _Offset ) override;
+    bool Impl_SeekSet( long _Offset ) override;
+    bool Impl_SeekCur( long _Offset ) override;
+    bool Impl_SeekEnd( long _Offset ) override;
     size_t Impl_SizeInBytes() override;
     bool Impl_Eof() override;
 

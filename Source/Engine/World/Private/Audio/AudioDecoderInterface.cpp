@@ -34,62 +34,40 @@ SOFTWARE.
 AN_CLASS_META( IAudioStreamInterface )
 AN_CLASS_META( IAudioDecoderInterface )
 
-bool IAudioStreamInterface::InitializeFileStream( const char * _FileName ) {
+bool IAudioStreamInterface::InitializeFileStream( const char * _FileName )
+{
     return false;
 }
 
-bool IAudioStreamInterface::InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength ) {
+bool IAudioStreamInterface::InitializeMemoryStream( const byte * FileInMemory, size_t FileInMemorySize )
+{
     return false;
 }
 
-void IAudioStreamInterface::StreamSeek( int _PositionInSamples ) {
-
+void IAudioStreamInterface::StreamSeek( int _PositionInSamples )
+{
 }
 
-int IAudioStreamInterface::StreamDecodePCM( short * _Buffer, int _NumShorts ) {
+int IAudioStreamInterface::StreamDecodePCM( short * _Buffer, int _NumShorts )
+{
     return 0;
 }
 
-IAudioStreamInterface * IAudioDecoderInterface::CreateAudioStream() {
+IAudioStreamInterface * IAudioDecoderInterface::CreateAudioStream()
+{
     return nullptr;
 }
 
-bool IAudioDecoderInterface::DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM ) {
-    *_SamplesCount = 0;
-    *_Channels = 0;
-    *_SampleRate = 0;
-    *_BitsPerSample = 0;
-    if ( _PCM ) *_PCM = NULL;
-    GLogger.Printf( "IAudioDecoderInterface::DecodePCM is not implemented\n" );
+bool IAudioDecoderInterface::GetAudioFileInfo( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo )
+{
+    GLogger.Printf( "IAudioDecoderInterface::GetAudioFileInfo is not implemented\n" );
     return false;
 }
 
-bool IAudioDecoderInterface::DecodePCM( const char * _FileName, const byte * _Data, size_t _DataLength, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM ) {
-    *_SamplesCount = 0;
-    *_Channels = 0;
-    *_SampleRate = 0;
-    *_BitsPerSample = 0;
-    if ( _PCM ) *_PCM = NULL;
-    GLogger.Printf( "IAudioDecoderInterface::DecodePCM is not implemented\n" );
-    return false;
-}
-
-bool IAudioDecoderInterface::ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
-    *_SamplesCount = 0;
-    *_Channels = 0;
-    *_SampleRate = 0;
-    *_EncodedData = NULL;
-    *_EncodedDataLength = 0;
-    GLogger.Printf( "IAudioDecoderInterface::ReadEncoded is not implemented\n" );
-    return false;
-}
-
-bool IAudioDecoderInterface::ReadEncoded( const char * _FileName, const byte * _Data, size_t _DataLength, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) {
-    *_SamplesCount = 0;
-    *_Channels = 0;
-    *_SampleRate = 0;
-    *_EncodedData = NULL;
-    *_EncodedDataLength = 0;
-    GLogger.Printf( "IAudioDecoderInterface::ReadEncoded is not implemented\n" );
+bool IAudioDecoderInterface::LoadFromFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, short ** _PCM )
+{
+    Core::ZeroMem( pAudioFileInfo, sizeof( *pAudioFileInfo ) );
+    *_PCM = nullptr;
+    GLogger.Printf( "IAudioDecoderInterface::LoadFromFile is not implemented\n" );
     return false;
 }

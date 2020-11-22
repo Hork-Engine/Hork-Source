@@ -30,9 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "AudioCodec/Mp3Decoder.h"
-#include "AudioCodec/OggVorbisDecoder.h"
-#include "AudioCodec/WavDecoder.h"
+#include "AudioCodec/MiniaudioDecoder.h"
 #include "AudioClip.h"
 #include "AudioDecoderInterface.h"
 #include "AudioSystem.h"

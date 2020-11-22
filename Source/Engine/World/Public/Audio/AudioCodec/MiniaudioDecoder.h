@@ -32,44 +32,45 @@ SOFTWARE.
 
 #include <World/Public/Audio/AudioDecoderInterface.h>
 
-extern "C" {
-
-struct mpg123_handle_struct;
-
-}
-
-class ANGIE_API AMp3AudioTrack : public IAudioStreamInterface {
-    AN_CLASS( AMp3AudioTrack, IAudioStreamInterface )
+class AMiniaudioTrack : public IAudioStreamInterface
+{
+    AN_CLASS( AMiniaudioTrack, IAudioStreamInterface )
 
 public:
     bool InitializeFileStream( const char * _FileName ) override;
 
-    bool InitializeMemoryStream( const byte * _EncodedData, int _EncodedDataLength ) override;
+    bool InitializeMemoryStream( const byte * FileInMemory, size_t FileInMemorySize ) override;
 
     void StreamSeek( int _PositionInSamples ) override;
 
     int StreamDecodePCM( short * _Buffer, int _NumShorts ) override;
 
 protected:
-    AMp3AudioTrack();
-    ~AMp3AudioTrack();
+    AMiniaudioTrack();
+    ~AMiniaudioTrack();
 
 private:
-    mpg123_handle_struct * Handle;
-    int BlockSize;
-    int NumChannels;
-    AMemoryStream MemoryStream;
+    void PurgeStream();
+
+    void * Handle;
+    AFileStream File;
+    AMemoryStream Memory;
+    bool bValid;
 };
 
-class ANGIE_API AMp3Decoder : public IAudioDecoderInterface {
-    AN_CLASS( AMp3Decoder, IAudioDecoderInterface )
+class AMiniaudioDecoder : public IAudioDecoderInterface
+{
+    AN_CLASS( AMiniaudioDecoder, IAudioDecoderInterface )
 
 public:
     IAudioStreamInterface * CreateAudioStream() override;
 
-    bool DecodePCM( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, short ** _PCM ) override;
-    bool ReadEncoded( const char * _FileName, int * _SamplesCount, int * _Channels, int * _SampleRate, int * _BitsPerSample, byte ** _EncodedData, size_t * _EncodedDataLength ) override;
+    /** Open audio file and read info */
+    bool GetAudioFileInfo( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo ) override;
+
+    /** Open media file and read PCM frames to heap memory */
+    bool LoadFromFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, short ** _PCM ) override;
 
 protected:
-    AMp3Decoder();
+    AMiniaudioDecoder();
 };
