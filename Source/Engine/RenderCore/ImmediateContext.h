@@ -528,14 +528,19 @@ public:
     /// Draw from transform feedback
     virtual void Draw( ITransformFeedback * _TransformFeedback, unsigned int _InstanceCount = 1, unsigned int _StreamIndex = 0 ) = 0;
 
+#if 0
     /// Draw non-indexed GPU-generated primitives. From client memory.
     virtual void DrawIndirect( SDrawIndirectCmd const * _Cmd ) = 0;
 
     /// Draw indexed GPU-generated primitives. From client memory.
     virtual void DrawIndirect( SDrawIndexedIndirectCmd const * _Cmd ) = 0;
+#endif
 
-    /// Draw GPU-generated primitives. From indirect buffer.
-    virtual void DrawIndirect( IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset, bool _Indexed ) = 0;
+    /// Draw non-indexed GPU-generated primitives. From indirect buffer.
+    virtual void DrawIndirect( IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset ) = 0;
+
+    /// Draw indexed GPU-generated primitives. From indirect buffer.
+    virtual void DrawIndexedIndirect( IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset ) = 0;
 
     /// Draw non-indexed, non-instanced primitives.
     virtual void MultiDraw( unsigned int _DrawCount, const unsigned int * _VertexCount, const unsigned int * _StartVertexLocations ) = 0;
@@ -543,25 +548,19 @@ public:
     /// Draw indexed, non-instanced primitives.
     virtual void MultiDraw( unsigned int _DrawCount, const unsigned int * _IndexCount, const void * const * _IndexByteOffsets, const int * _BaseVertexLocations = nullptr ) = 0;
 
+#if 0
     /// Draw instanced, GPU-generated primitives. From client memory.
     virtual void MultiDrawIndirect( unsigned int _DrawCount, SDrawIndirectCmd const * _Cmds, unsigned int _Stride ) = 0;
 
     /// Draw indexed, instanced, GPU-generated primitives. From client memory.
     virtual void MultiDrawIndirect( unsigned int _DrawCount, SDrawIndexedIndirectCmd const * _Cmds, unsigned int _Stride ) = 0;
+#endif
 
-    // TODO?
-    // Draw instanced, GPU-generated primitives. From indirect buffer.
-    //void MultiDrawIndirect( IBuffer * _DrawIndirectBuffer,
-    //                        unsigned int _DrawCount,
-    //                        const void * _Cmds,
-    //                        unsigned int _Stride ) = 0;
+    /// Draw non-indexed GPU-generated primitives. From indirect buffer.
+    virtual void MultiDrawIndirect( unsigned int _DrawCount, IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset, unsigned int _Stride ) = 0;
 
-    // TODO?
-    // Draw indexed, instanced, GPU-generated primitives. From indirect buffer.
-    //void MultiDrawIndirect( IBuffer * _DrawIndirectBuffer,
-    //                        unsigned int _DrawCount,
-    //                        unsigned int * _AlignedByteOffsets,
-    //                        unsigned int _Stride ) = 0;
+    /// Draw indexed GPU-generated primitives. From indirect buffer.
+    virtual void MultiDrawIndexedIndirect( unsigned int _DrawCount, IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset, unsigned int _Stride ) = 0;
 
     //
     // Dispatch compute

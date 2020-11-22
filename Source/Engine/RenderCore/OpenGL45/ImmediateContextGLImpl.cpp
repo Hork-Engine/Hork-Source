@@ -1836,6 +1836,7 @@ void AImmediateContextGLImpl::Draw( ITransformFeedback * _TransformFeedback, uns
     }
 }
 
+#if 0
 void AImmediateContextGLImpl::DrawIndirect( SDrawIndirectCmd const * _Cmd )
 {
     VerifyContext();
@@ -1871,8 +1872,9 @@ void AImmediateContextGLImpl::DrawIndirect( SDrawIndexedIndirectCmd const * _Cmd
     // This is similar glDrawElementsInstancedBaseVertexBaseInstance
     glDrawElementsIndirect( CurrentPipeline->PrimitiveTopology, IndexBufferType, _Cmd ); // Since 4.0 or GL_ARB_draw_indirect
 }
+#endif
 
-void AImmediateContextGLImpl::DrawIndirect( IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset, bool _Indexed )
+void AImmediateContextGLImpl::DrawIndirect( IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset )
 {
     VerifyContext();
 
@@ -1885,21 +1887,32 @@ void AImmediateContextGLImpl::DrawIndirect( IBuffer * _DrawIndirectBuffer, unsig
     }
 
     UpdateShaderBindings();
+    UpdateVertexBuffers();
 
-    if ( _Indexed ) {
-        UpdateVertexAndIndexBuffers();
+    // This is similar glDrawArraysInstancedBaseInstance, but with binded INDIRECT buffer
+    glDrawArraysIndirect( CurrentPipeline->PrimitiveTopology,
+                          reinterpret_cast< const GLubyte * >(0) + _AlignedByteOffset ); // Since 4.0 or GL_ARB_draw_indirect
+}
 
-        // This is similar glDrawElementsInstancedBaseVertexBaseInstance, but with binded INDIRECT buffer
-        glDrawElementsIndirect( CurrentPipeline->PrimitiveTopology,
-                                IndexBufferType,
-                                reinterpret_cast< const GLubyte * >(0) + _AlignedByteOffset ); // Since 4.0 or GL_ARB_draw_indirect
-    } else {
-        UpdateVertexBuffers();
+void AImmediateContextGLImpl::DrawIndexedIndirect( IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset )
+{
+    VerifyContext();
 
-        // This is similar glDrawArraysInstancedBaseInstance, but with binded INDIRECT buffer
-        glDrawArraysIndirect( CurrentPipeline->PrimitiveTopology,
-                              reinterpret_cast< const GLubyte * >(0) + _AlignedByteOffset ); // Since 4.0 or GL_ARB_draw_indirect
+    AN_ASSERT( CurrentPipeline != nullptr );
+
+    GLuint handle = _DrawIndirectBuffer->GetHandleNativeGL();
+    if ( Binding.DrawInderectBuffer != handle ) {
+        glBindBuffer( GL_DRAW_INDIRECT_BUFFER, handle );
+        Binding.DrawInderectBuffer = handle;
     }
+
+    UpdateShaderBindings();
+    UpdateVertexAndIndexBuffers();
+
+    // This is similar glDrawElementsInstancedBaseVertexBaseInstance, but with binded INDIRECT buffer
+    glDrawElementsIndirect( CurrentPipeline->PrimitiveTopology,
+                            IndexBufferType,
+                            reinterpret_cast< const GLubyte * >(0) + _AlignedByteOffset ); // Since 4.0 or GL_ARB_draw_indirect
 }
 
 void AImmediateContextGLImpl::MultiDraw( unsigned int _DrawCount, const unsigned int * _VertexCount, const unsigned int * _StartVertexLocations )
@@ -1959,6 +1972,7 @@ void AImmediateContextGLImpl::MultiDraw( unsigned int _DrawCount, const unsigned
     }
 }
 
+#if 0
 void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawIndirectCmd const * _Cmds, unsigned int _Stride )
 {
     VerifyContext();
@@ -1968,6 +1982,7 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
     UpdateVertexBuffers();
     UpdateShaderBindings();
 
+#if 0
     if ( Binding.DrawInderectBuffer != 0 ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, 0 );
         Binding.DrawInderectBuffer = 0;
@@ -1978,15 +1993,17 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
                                _Cmds,
                                _DrawCount,
                                _Stride ); // 4.3 or GL_ARB_multi_draw_indirect
-
-
-// Эквивалентный код:
-//    GLsizei n;
-//    for ( i = 0 ; i < _DrawCount ; i++ ) {
-//        SDrawIndirectCmd const *cmd = ( _Stride != 0 ) ?
-//              (SDrawIndirectCmd const *)((uintptr)indirect + i * _Stride) : ((SDrawIndirectCmd const *)indirect + i);
-//        glDrawArraysInstancedBaseInstance(mode, cmd->first, cmd->count, cmd->instanceCount, cmd->baseInstance);
-//    }
+#else
+    for ( unsigned int n = 0 ; n < _DrawCount ; n++ ) {
+        SDrawIndirectCmd const *cmd = ( _Stride != 0 ) ?
+                    (SDrawIndirectCmd const *)((uintptr_t)_Cmds + n * _Stride) : (_Cmds + n);
+        glDrawArraysInstancedBaseInstance( CurrentPipeline->PrimitiveTopology,
+                                           cmd->StartVertexLocation,
+                                           cmd->VertexCountPerInstance,
+                                           cmd->InstanceCount,
+                                           cmd->StartInstanceLocation );
+    }
+#endif
 }
 
 void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawIndexedIndirectCmd const * _Cmds, unsigned int _Stride )
@@ -1998,6 +2015,7 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
     UpdateVertexAndIndexBuffers();
     UpdateShaderBindings();
 
+#if 0
     if ( Binding.DrawInderectBuffer != 0 ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, 0 );
         Binding.DrawInderectBuffer = 0;
@@ -2008,20 +2026,63 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
                                  _Cmds,
                                  _DrawCount,
                                  _Stride ); // 4.3
+#else
+    for ( unsigned int n = 0 ; n < _DrawCount ; n++ ) {
+        SDrawIndexedIndirectCmd const *cmd = ( _Stride != 0 ) ?
+            (SDrawIndexedIndirectCmd const *)((uintptr_t)_Cmds + n * _Stride) : ( (SDrawIndexedIndirectCmd const *)_Cmds + n );
+        glDrawElementsInstancedBaseVertexBaseInstance(CurrentPipeline->PrimitiveTopology,
+                                                      cmd->IndexCountPerInstance,
+                                                      IndexBufferType,
+                                                      reinterpret_cast<const GLubyte *>( 0 ) + cmd->StartIndexLocation * IndexBufferTypeSizeOf + IndexBufferOffset,
+                                                      cmd->InstanceCount,
+                                                      cmd->BaseVertexLocation,
+                                                      cmd->StartInstanceLocation);
+    }
+#endif
+}
+#endif
 
-// Эквивалентный код:
-//    GLsizei n;
-//    for ( i = 0 ; n < _DrawCount ; i++ ) {
-//        SDrawIndexedIndirectCmd const *cmd = ( stride != 0 ) ?
-//            (SDrawIndexedIndirectCmd const *)((uintptr)indirect + n * stride) : ( (SDrawIndexedIndirectCmd const *)indirect + n );
-//        glDrawElementsInstancedBaseVertexBaseInstance(CurrentPipeline->PrimitiveTopology,
-//                                                      cmd->count,
-//                                                      IndexBufferType,
-//                                                      cmd->firstIndex + size-of-type,
-//                                                      cmd->instanceCount,
-//                                                      cmd->baseVertex,
-//                                                      cmd->baseInstance);
-//    }
+void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset, unsigned int _Stride )
+{
+    VerifyContext();
+
+    AN_ASSERT( CurrentPipeline != nullptr );
+
+    GLuint handle = _DrawIndirectBuffer->GetHandleNativeGL();
+    if ( Binding.DrawInderectBuffer != handle ) {
+        glBindBuffer( GL_DRAW_INDIRECT_BUFFER, handle );
+        Binding.DrawInderectBuffer = handle;
+    }
+
+    UpdateShaderBindings();
+    UpdateVertexBuffers();
+
+    glMultiDrawArraysIndirect( CurrentPipeline->PrimitiveTopology,
+                               reinterpret_cast< const GLubyte * >(0) + _AlignedByteOffset,
+                               _DrawCount,
+                               _Stride ); // 4.3 or GL_ARB_multi_draw_indirect
+}
+
+void AImmediateContextGLImpl::MultiDrawIndexedIndirect( unsigned int _DrawCount, IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset, unsigned int _Stride )
+{
+    VerifyContext();
+
+    AN_ASSERT( CurrentPipeline != nullptr );
+
+    GLuint handle = _DrawIndirectBuffer->GetHandleNativeGL();
+    if ( Binding.DrawInderectBuffer != handle ) {
+        glBindBuffer( GL_DRAW_INDIRECT_BUFFER, handle );
+        Binding.DrawInderectBuffer = handle;
+    }
+
+    UpdateShaderBindings();
+    UpdateVertexAndIndexBuffers();
+
+    glMultiDrawElementsIndirect( CurrentPipeline->PrimitiveTopology,
+                                 IndexBufferType,
+                                 reinterpret_cast< const GLubyte * >(0) + _AlignedByteOffset,
+                                 _DrawCount,
+                                 _Stride ); // 4.3
 }
 
 void AImmediateContextGLImpl::DispatchCompute( unsigned int _ThreadGroupCountX,

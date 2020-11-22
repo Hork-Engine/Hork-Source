@@ -196,20 +196,26 @@ public:
     void Draw( SDrawIndexedCmd const * _Cmd ) override;
 
     void Draw( ITransformFeedback * _TransformFeedback, unsigned int _InstanceCount = 1, unsigned int _StreamIndex = 0 ) override;
-
+#if 0
     void DrawIndirect( SDrawIndirectCmd const * _Cmd ) override;
 
     void DrawIndirect( SDrawIndexedIndirectCmd const * _Cmd ) override;
+#endif
+    void DrawIndirect( IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset ) override;
 
-    void DrawIndirect( IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset, bool _Indexed ) override;
+    void DrawIndexedIndirect( IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset ) override;
 
     void MultiDraw( unsigned int _DrawCount, const unsigned int * _VertexCount, const unsigned int * _StartVertexLocations ) override;
 
     void MultiDraw( unsigned int _DrawCount, const unsigned int * _IndexCount, const void * const * _IndexByteOffsets, const int * _BaseVertexLocations = nullptr ) override;
-
+#if 0
     void MultiDrawIndirect( unsigned int _DrawCount, SDrawIndirectCmd const * _Cmds, unsigned int _Stride ) override;
 
     void MultiDrawIndirect( unsigned int _DrawCount, SDrawIndexedIndirectCmd const * _Cmds, unsigned int _Stride ) override;
+#endif
+    void MultiDrawIndirect( unsigned int _DrawCount, IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset, unsigned int _Stride ) override;
+
+    void MultiDrawIndexedIndirect( unsigned int _DrawCount, IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset, unsigned int _Stride ) override;
 
     //
     // Dispatch compute
