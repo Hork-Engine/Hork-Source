@@ -450,6 +450,11 @@ size_t AStreamedMemoryGPU::AllocateConstant( size_t _SizeInBytes, const void * _
     return Allocate( _SizeInBytes, ConstantBufferAlignment, _Data );
 }
 
+size_t AStreamedMemoryGPU::AllocateWithCustomAlignment( size_t _SizeInBytes, int _Alignment, const void * _Data )
+{
+    return Allocate( _SizeInBytes, _Alignment, _Data );
+}
+
 void * AStreamedMemoryGPU::Map( size_t _StreamHandle )
 {
     return (byte *)pMappedMemory + _StreamHandle;

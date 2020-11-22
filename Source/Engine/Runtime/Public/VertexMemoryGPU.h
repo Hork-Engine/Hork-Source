@@ -199,6 +199,9 @@ public:
     /** Allocate constant data. Return stream handle. Stream handle is actual during current frame. */
     size_t AllocateConstant( size_t _SizeInBytes, const void * _Data = nullptr );
 
+    /** Allocate data with custum alignment. Return stream handle. Stream handle is actual during current frame. */
+    size_t AllocateWithCustomAlignment( size_t _SizeInBytes, int _Alignment, const void * _Data = nullptr );
+
     /** Change size of last allocated memory block */
     void ShrinkLastAllocatedMemoryBlock( size_t _SizeInBytes );
 
