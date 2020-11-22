@@ -643,3 +643,9 @@ void WScroll::ScrollEnd() {
 
     SetScrollPosition( ContentPos );
 }
+
+bool WScroll::IsVerticalScrollAllowed() const {
+    SScrollbarGeometry const & geometry = GetScrollbarGeometry();
+
+    return geometry.ContentSize.Y > geometry.ViewSize.Y;
+}

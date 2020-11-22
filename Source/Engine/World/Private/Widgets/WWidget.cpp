@@ -890,7 +890,7 @@ void WWidget::OnDblClickEvent( int _ButtonKey, Float2 const & _ClickPos, uint64_
 WScroll * WWidget::FindScrollWidget() {
     for ( WWidget * p = Parent ; p ; p = p->Parent ) {
         WScroll * scroll = Upcast< WScroll >( p );
-        if ( scroll ) {
+        if ( scroll && scroll->IsVerticalScrollAllowed() ) {
             return scroll;
         }
     }

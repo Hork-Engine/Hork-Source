@@ -287,6 +287,7 @@ WTextEdit::WTextEdit() {
     bAllowUndo = true;
     bCustomCharFilter = false;
     bStartDragging = false;
+    bShouldKeepSelection = false;
 
     CurTextLength = 0;
     MaxChars = 0;
@@ -407,6 +408,11 @@ WTextEdit & WTextEdit::SetSelectionColor( AColor4 const & _Color ) {
 
 WTextEdit & WTextEdit::SetTextColor( AColor4 const & _Color ) {
     TextColor = _Color;
+    return *this;
+}
+
+WTextEdit & WTextEdit::ShouldKeepSelection( bool _ShouldKeepSelection ) {
+    bShouldKeepSelection = _ShouldKeepSelection;
     return *this;
 }
 
@@ -1102,6 +1108,10 @@ void WTextEdit::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
 }
 
 void WTextEdit::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) {
+    if ( _Event.Button != MOUSE_BUTTON_1 && _Event.Button != MOUSE_BUTTON_2 ) {
+        return;
+    }
+
     if ( _Event.Action == IA_PRESS ) {
         Float2 CursorPos = GetDesktop()->GetCursorPosition();
 
@@ -1111,7 +1121,7 @@ void WTextEdit::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, dou
             TempCursor = Stb->cursor;
         }
 
-        if ( _Event.Button == 0 && ( _Event.ModMask & KMOD_MASK_SHIFT ) ) {
+        if ( _Event.Button == MOUSE_BUTTON_1 && ( _Event.ModMask & KMOD_MASK_SHIFT ) ) {
 
             stb_textedit_click( this, Stb, CursorPos.X, CursorPos.Y );
 
@@ -1129,7 +1139,7 @@ void WTextEdit::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, dou
         }
     }
 
-    bStartDragging = ( _Event.Action == IA_PRESS ) && _Event.Button == 0;
+    bStartDragging = ( _Event.Action == IA_PRESS ) && _Event.Button == MOUSE_BUTTON_1;
 }
 
 void WTextEdit::OnDblClickEvent( int _ButtonKey, Float2 const & _ClickPos, uint64_t _ClickTime ) {
@@ -1150,6 +1160,11 @@ void WTextEdit::OnDblClickEvent( int _ButtonKey, Float2 const & _ClickPos, uint6
 }
 
 void WTextEdit::OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp ) {
+    if ( bSingleLine ) {
+        Super::OnMouseWheelEvent( _Event, _TimeStamp );
+        return;
+    }
+
     if ( _Event.WheelY < 0 ) {
         ScrollLines( -2 );
     }
@@ -1195,7 +1210,9 @@ void WTextEdit::OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp
 }
 
 void WTextEdit::OnFocusLost() {
-
+    if ( !bShouldKeepSelection ) {
+        ClearSelection();
+    }
 }
 
 void WTextEdit::OnFocusReceive() {
