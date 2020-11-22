@@ -87,6 +87,7 @@ void ADirectionalLightComponent::OnCreateAvatar() {
     meshComponent->SetPosition( 0, 0, -0.5f );
     meshComponent->SetScale( 0.5f,1.0f,0.5f );
     meshComponent->AttachTo( this );
+    meshComponent->SetHideInEditor( true );
 }
 
 void ADirectionalLightComponent::SetIlluminance( float _IlluminanceInLux ) {

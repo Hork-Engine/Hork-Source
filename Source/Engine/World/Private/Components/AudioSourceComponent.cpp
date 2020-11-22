@@ -56,6 +56,7 @@ void AAudioSourceComponent::OnCreateAvatar()
     meshComponent->SetAbsoluteRotation( true );
     meshComponent->SetScale( 0.1f );
     meshComponent->AttachTo( this );
+    meshComponent->SetHideInEditor( true );
 }
 
 void AAudioSourceComponent::BeginPlay()

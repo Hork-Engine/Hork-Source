@@ -82,6 +82,7 @@ void ACameraComponent::OnCreateAvatar() {
     meshComponent->SetAbsoluteScale( true );
     meshComponent->SetScale( 0.5f );
     meshComponent->AttachTo( this );
+    meshComponent->SetHideInEditor( true );
 }
 
 void ACameraComponent::SetProjection( ECameraProjection _Projection ) {

@@ -99,7 +99,108 @@ void SPhysicalBodyMotionState::setWorldTransform( btTransform const & _CenterOfM
     }
 }
 
-AN_CLASS_META( APhysicalBody )
+AN_FORCEINLINE void SetAttributeFromString( EMotionBehavior & Attribute, AString const & String )
+{
+    if ( String == "STATIC" ) {
+        Attribute = MB_STATIC;
+    }
+    else if ( String == "SIMULATED" ) {
+        Attribute = MB_SIMULATED;
+    }
+    else {
+        Attribute = MB_KINEMATIC;
+    }
+}
+
+void SetAttributeToString( EMotionBehavior Attribute, AString & String )
+{
+    switch ( Attribute ) {
+    case MB_STATIC:
+        String = "STATIC";
+        break;
+    case MB_SIMULATED:
+        String = "SIMULATED";
+        break;
+    default:
+        String = "KINEMATIC";
+        break;
+    }
+}
+
+AN_FORCEINLINE void SetAttributeFromString( EAINavigationBehavior & Attribute, AString const & String )
+{
+    if ( String == "NONE" ) {
+        Attribute = AI_NAVIGATION_BEHAVIOR_NONE;
+    }
+    else if ( String == "STATIC" ) {
+        Attribute = AI_NAVIGATION_BEHAVIOR_STATIC;
+    }
+    else if ( String == "STATIC NON WALKABLE" ) {
+        Attribute = AI_NAVIGATION_BEHAVIOR_STATIC_NON_WALKABLE;
+    }
+    else if ( String == "DYNAMIC" ) {
+        Attribute = AI_NAVIGATION_BEHAVIOR_DYNAMIC;
+    }
+    else if ( String == "DYNAMIC NON WALKABLE" ) {
+        Attribute = AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE;
+    }
+    else {
+        Attribute = AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE;
+    }
+}
+
+void SetAttributeToString( EAINavigationBehavior Attribute, AString & String )
+{
+    switch ( Attribute ) {
+    case AI_NAVIGATION_BEHAVIOR_NONE:
+        String = "NONE";
+        break;
+    case AI_NAVIGATION_BEHAVIOR_STATIC:
+        String = "STATIC";
+        break;
+    case AI_NAVIGATION_BEHAVIOR_STATIC_NON_WALKABLE:
+        String = "STATIC_NON_WALKABLE";
+        break;
+    case AI_NAVIGATION_BEHAVIOR_DYNAMIC:
+        String = "DYNAMIC";
+        break;
+    case AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE:
+        String = "DYNAMIC_NON_WALKABLE";
+        break;
+    default:
+        String = "DYNAMIC_NON_WALKABLE";
+        break;
+    }
+}
+
+AN_BEGIN_CLASS_META( APhysicalBody )
+AN_ATTRIBUTE_( bDispatchContactEvents, AF_DEFAULT )
+AN_ATTRIBUTE_( bDispatchOverlapEvents, AF_DEFAULT )
+AN_ATTRIBUTE_( bGenerateContactPoints, AF_DEFAULT )
+AN_ATTRIBUTE_( bUseDefaultBodyComposition, AF_DEFAULT )
+AN_ATTRIBUTE( MotionBehavior, EMotionBehavior, SetMotionBehavior, GetMotionBehavior, AF_DEFAULT )
+AN_ATTRIBUTE( AINavigationBehavior, EAINavigationBehavior, SetAINavigationBehavior, GetAINavigationBehavior, AF_DEFAULT )
+AN_ATTRIBUTE( IsTrigger, bool, SetTrigger, IsTrigger, AF_DEFAULT )
+AN_ATTRIBUTE( DisableGravity, bool, SetDisableGravity, IsGravityDisabled, AF_DEFAULT )
+AN_ATTRIBUTE( OverrideWorldGravity, bool, SetOverrideWorldGravity, IsWorldGravityOverriden, AF_DEFAULT )
+AN_ATTRIBUTE( SelfGravity, Float3, SetSelfGravity, GetSelfGravity, AF_DEFAULT )
+AN_ATTRIBUTE( Mass, float, SetMass, GetMass, AF_DEFAULT )
+AN_ATTRIBUTE( CollisionGroup, int, SetCollisionGroup, GetCollisionGroup, AF_DEFAULT )
+AN_ATTRIBUTE( CollisionMask, int, SetCollisionMask, GetCollisionMask, AF_DEFAULT )
+AN_ATTRIBUTE( LinearSleepingThreshold, float, SetLinearSleepingThreshold, GetLinearSleepingThreshold, AF_DEFAULT )
+AN_ATTRIBUTE( LinearDamping, float, SetLinearDamping, GetLinearDamping, AF_DEFAULT )
+AN_ATTRIBUTE( AngularSleepingThreshold, float, SetAngularSleepingThreshold, GetAngularSleepingThreshold, AF_DEFAULT )
+AN_ATTRIBUTE( AngularDamping, float, SetAngularDamping, GetAngularDamping, AF_DEFAULT )
+AN_ATTRIBUTE( Friction, float, SetFriction, GetFriction, AF_DEFAULT )
+AN_ATTRIBUTE( AnisotropicFriction, Float3, SetAnisotropicFriction, GetAnisotropicFriction, AF_DEFAULT )
+AN_ATTRIBUTE( RollingFriction, float, SetRollingFriction, GetRollingFriction, AF_DEFAULT )
+AN_ATTRIBUTE( Restitution, float, SetRestitution, GetRestitution, AF_DEFAULT )
+AN_ATTRIBUTE( ContactProcessingThreshold, float, SetContactProcessingThreshold, GetContactProcessingThreshold, AF_DEFAULT )
+AN_ATTRIBUTE( CcdRadius, float, SetCcdRadius, GetCcdRadius, AF_DEFAULT )
+AN_ATTRIBUTE( CcdMotionThreshold, float, SetCcdMotionThreshold, GetCcdMotionThreshold, AF_DEFAULT )
+//ACollisionBodyComposition BodyComposition;
+//void AddCollisionIgnoreActor( AActor * _Actor );
+AN_END_CLASS_META()
 
 #define HasCollisionBody() ( !bSoftBodySimulation && GetBodyComposition().NumCollisionBodies() > 0 && ( /*PhysicsSimulation == PS_DYNAMIC || bTrigger || bKinematicBody || */CollisionGroup ) )
 

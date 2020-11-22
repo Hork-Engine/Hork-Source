@@ -43,7 +43,12 @@ static const float MIN_RADIUS = 0.01f;
 
 ARuntimeVariable com_DrawSpotLights( _CTS( "com_DrawSpotLights" ), _CTS( "0" ), VAR_CHEAT );
 
-AN_CLASS_META( ASpotLightComponent )
+AN_BEGIN_CLASS_META( ASpotLightComponent )
+AN_ATTRIBUTE( Radius, float, SetRadius, GetRadius, AF_DEFAULT )
+AN_ATTRIBUTE( InnerConeAngle, float, SetInnerConeAngle, GetInnerConeAngle, AF_DEFAULT )
+AN_ATTRIBUTE( OuterConeAngle, float, SetOuterConeAngle, GetOuterConeAngle, AF_DEFAULT )
+AN_ATTRIBUTE( SpotExponent, float, SetSpotExponent, GetSpotExponent, AF_DEFAULT )
+AN_END_CLASS_META()
 
 ASpotLightComponent::ASpotLightComponent() {
     Radius = DEFAULT_RADIUS;
@@ -73,6 +78,7 @@ void ASpotLightComponent::OnCreateAvatar() {
     meshComponent->SetAngles( 90, 0, 0 );
     meshComponent->SetScale( 0.1f );
     meshComponent->AttachTo( this );
+    meshComponent->SetHideInEditor( true );
 }
 
 void ASpotLightComponent::SetRadius( float _Radius ) {

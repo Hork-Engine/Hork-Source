@@ -36,7 +36,8 @@ SOFTWARE.
 #include <Core/Public/Logger.h>
 #include <Runtime/Public/RuntimeVariable.h>
 
-AN_CLASS_META( AActor )
+AN_BEGIN_CLASS_META( AActor )
+AN_END_CLASS_META()
 
 ARuntimeVariable com_DrawRootComponentAxis( _CTS( "com_DrawRootComponentAxis" ), _CTS( "0" ), VAR_CHEAT );
 

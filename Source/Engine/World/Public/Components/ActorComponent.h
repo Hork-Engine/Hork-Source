@@ -89,6 +89,11 @@ public:
     /** Is component was created during actor construction */
     bool IsDefault() const { return bCreatedDuringConstruction; }
 
+    /** Attributes of this component will not be visible in editor */
+    void SetHideInEditor( bool _HideInEditor ) { bHideInEditor = _HideInEditor; }
+
+    bool HiddenInEditor() const { return bHideInEditor; }
+
     /** Register component to initialize it at runtime */
     void RegisterComponent();
 
@@ -130,4 +135,5 @@ private:
     bool bInitialized : 1;
     bool bPendingKill : 1;
     bool bCreatedDuringConstruction : 1;
+    bool bHideInEditor : 1;
 };

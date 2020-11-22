@@ -33,7 +33,6 @@ SOFTWARE.
 #include <World/Public/World.h>
 
 AN_BEGIN_CLASS_META( AActorComponent )
-AN_ATTRIBUTE_( bCanEverTick, AF_DEFAULT )
 AN_END_CLASS_META()
 
 AActorComponent::AActorComponent() {
