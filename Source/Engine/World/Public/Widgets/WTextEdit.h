@@ -64,6 +64,7 @@ public:
     WTextEdit & SetAllowUndo( bool _Enabled );
     WTextEdit & SetSelectionColor( AColor4 const & _Color );
     WTextEdit & SetTextColor( AColor4 const & _Color );
+    WTextEdit & ShouldKeepSelection( bool bShouldKeepSelection );
 
     template< typename T, typename... TArgs >
     WTextEdit & SetOnEnterPress( T * _Object, void ( T::*_Method )(TArgs...) )
@@ -200,6 +201,7 @@ private:
     bool bAllowUndo;
     bool bCustomCharFilter;
     bool bStartDragging;
+    bool bShouldKeepSelection;
     STB_TexteditState * Stb;
     int TempCursor;
 };

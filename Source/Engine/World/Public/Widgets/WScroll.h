@@ -101,6 +101,8 @@ public:
 
     Float2 GetScrollPosition() const;
 
+    bool IsVerticalScrollAllowed() const;
+
 protected:
     WScroll();
     ~WScroll();
