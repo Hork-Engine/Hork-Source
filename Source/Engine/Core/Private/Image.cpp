@@ -984,10 +984,16 @@ void LinearToPremultipliedAlphaSRGB( const float * SourceImage,
 
 void ResizeImage( SImageResizeDesc const & InDesc, void * pScaledImage )
 {
+    AN_ASSERT( IMAGE_DATA_TYPE_UINT8  == STBIR_TYPE_UINT8  );
+    AN_ASSERT( IMAGE_DATA_TYPE_UINT16 == STBIR_TYPE_UINT16 );
+    AN_ASSERT( IMAGE_DATA_TYPE_UINT32 == STBIR_TYPE_UINT32 );
+    AN_ASSERT( IMAGE_DATA_TYPE_FLOAT  == STBIR_TYPE_FLOAT  );
+
     // NOTE: We assume that this function is called from main thread,
     // so we can use advantage of hunk memory allocator
     int hunkMark = GHunkMemory.SetHunkMark();
 
+    int result =
     stbir_resize( InDesc.pImage, InDesc.Width, InDesc.Height, InDesc.NumChannels * InDesc.Width,
                   pScaledImage, InDesc.ScaledWidth, InDesc.ScaledHeight, InDesc.NumChannels * InDesc.ScaledWidth,
                   (stbir_datatype)InDesc.DataType,
@@ -998,6 +1004,8 @@ void ResizeImage( SImageResizeDesc const & InDesc, void * pScaledImage )
                   (stbir_filter)InDesc.HorizontalFilter, (stbir_filter)InDesc.VerticalFilter,
                   InDesc.bLinearSpace ? STBIR_COLORSPACE_LINEAR : STBIR_COLORSPACE_SRGB,
                   NULL );
+
+    AN_ASSERT( result == 1 );
 
     GHunkMemory.ClearToMark( hunkMark );
 }
