@@ -38,6 +38,16 @@ SOFTWARE.
 
 #include <Bullet3Common/b3AlignedAllocator.h>
 
+#ifdef AN_COMPILER_MSVC
+#pragma warning( push )
+#pragma warning( disable : 4456 )
+#pragma warning( disable : 4305 )
+#endif
+#include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
+#ifdef AN_COMPILER_MSVC
+#pragma warning( pop )
+#endif
+
 AN_FORCEINLINE Float3 btVectorToFloat3( btVector3 const & _In ) {
     return Float3( _In.x(), _In.y(), _In.z() );
 }
