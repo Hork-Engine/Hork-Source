@@ -52,7 +52,7 @@ SOFTWARE.
 
 #ifdef AN_COMPILER_MSVC
 #pragma warning(push)
-#pragma warning( disable : 4456 )
+#pragma warning( disable : 4456 4828 )
 #endif
 #include <BulletCollision/Gimpact/btGImpactShape.h>
 #ifdef AN_COMPILER_MSVC
