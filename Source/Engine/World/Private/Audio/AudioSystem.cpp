@@ -37,6 +37,7 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Public/Actors/Actor.h>
 #include <World/Public/Actors/PlayerController.h>
+#include <World/Public/Components/PhysicalBody.h>
 
 #include <Core/Public/Logger.h>
 #include <Core/Public/CriticalError.h>

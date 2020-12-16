@@ -30,11 +30,6 @@ SOFTWARE.
 
 #include <World/Public/Audio/AudioCodec/MiniaudioDecoder.h>
 
-//#include <Core/Public/Alloc.h>
-//#include <Core/Public/Logger.h>
-//#include <Core/Public/IO.h>
-//#include <Runtime/Public/Runtime.h>
-
 #define STB_VORBIS_HEADER_ONLY
 #include "stb/stb_vorbis.h"
 
@@ -216,7 +211,7 @@ bool AMiniaudioDecoder::LoadFromFile( IBinaryStream & File, SAudioFileInfo * pAu
     ma_decoder decoder;
     ma_result result = ma_decoder_init( Read, Seek, &File, &config, &decoder );
     if ( result != MA_SUCCESS ) {
-        GLogger.Printf( "AMiniaudioDecoder::GetAudioFileInfo: failed on %s\n", File.GetFileName() );
+        GLogger.Printf( "AMiniaudioDecoder::LoadFromFile: failed on %s\n", File.GetFileName() );
         return false;
     }
 
@@ -236,14 +231,14 @@ bool AMiniaudioDecoder::LoadFromFile( IBinaryStream & File, SAudioFileInfo * pAu
         }
         if ( framesCapacity < totalFramesRead + framesJustRead ) {
             ma_uint64 newFramesBufferSize;
-            ma_uint64 oldFramesBufferSize;
+            //ma_uint64 oldFramesBufferSize;
             ma_uint64 newFramesCap;
             ma_int16* pNewFrames;
             newFramesCap = framesCapacity * 2;
             if ( newFramesCap < totalFramesRead + framesJustRead ) {
                 newFramesCap = totalFramesRead + framesJustRead;
             }
-            oldFramesBufferSize = framesCapacity * pAudioFileInfo->Channels * sizeof( ma_int16 );
+            //oldFramesBufferSize = framesCapacity * pAudioFileInfo->Channels * sizeof( ma_int16 );
             newFramesBufferSize = newFramesCap   * pAudioFileInfo->Channels * sizeof( ma_int16 );
             if ( newFramesBufferSize > MA_SIZE_MAX ) {
                 break;
