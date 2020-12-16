@@ -239,7 +239,7 @@ static float SampleIESAvg( IE_DATA const * iesData, float x, float y ) {
     return candelas * iesData->lamp.multiplier * iesData->elec.ball_factor * iesData->elec.blp_factor * attenuation;
 }
 
-static void TestIES( IE_Data & PhotoData )
+static void TestIES( IE_DATA & PhotoData )
 {
     int w = 512, h = 512;
     float scale = 1.0f;
@@ -321,9 +321,36 @@ bool APhotometricProfile::LoadResource( AString const & _Path ) {
     int extOffset = _Path.FindExt();
 
     if ( !Core::Stricmp( &_Path[extOffset], ".ies" ) ) {
+        AFileStream f;
+
+        if ( !f.OpenRead( _Path ) ) {
+            return false;
+        }
+
+        IE_Context context;
         IE_DATA photoData;
 
-        if ( !IE_ReadFile( _Path.CStr(), &photoData ) ) {
+        context.calloc = [](size_t n, size_t sz)
+        {
+            return GZoneMemory.ClearedAlloc( n * sz );
+        };
+        context.free = []( void * p )
+        {
+            GZoneMemory.Free( p );
+        };
+        context.rewind = []( void * userData )
+        {
+            AFileStream * f = (AFileStream *)userData;
+            f->Rewind();
+        };
+        context.fgets = []( char * pbuf, size_t size, void * userData )
+        {
+            AFileStream * f = (AFileStream *)userData;
+            return f->Gets( pbuf, size );
+        };
+        context.userData = &f;
+
+        if ( !IES_Load( &context, &photoData ) ) {
             return false;
         }
 
@@ -356,7 +383,7 @@ bool APhotometricProfile::LoadResource( AString const & _Path ) {
 
         TestIES( photoData );
 
-        IE_Flush( &photoData );
+        IES_Free( &context, &photoData );
     } else {
 
         AFileStream f;
