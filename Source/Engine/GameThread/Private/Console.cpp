@@ -118,7 +118,7 @@ void AConsole::Print( const char * _Text )
     ASyncGuard syncGuard( ConSync );
 
     if ( !bInitialized ) {
-        _Resize( 640 );
+        _Resize( 1024 );
         bInitialized = true;
     }
 

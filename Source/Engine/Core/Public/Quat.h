@@ -185,7 +185,7 @@ struct Quat {
     }
 
     void InverseSelf() {
-        const float DP = 1.0f / ( X * X + Y * Y + Z * Z );
+        const float DP = 1.0f / ( X * X + Y * Y + Z * Z + W * W );
 
         X = -X * DP;
         Y = -Y * DP;
@@ -197,7 +197,7 @@ struct Quat {
     }
 
     Quat Inversed() const {
-        return Conjugated() / ( X * X + Y * Y + Z * Z );
+        return Conjugated() / ( X * X + Y * Y + Z * Z + W * W );
     }
 
     void ConjugateSelf() {
@@ -285,17 +285,10 @@ struct Quat {
     }
 
     Float3 operator*( const Float3 & _Vec ) const {
-        const float xxzz = X*X - Z*Z;
-        const float wwyy = W*W - Y*Y;
-        const float xw2 = X*W*2.0f;
-        const float xy2 = X*Y*2.0f;
-        const float xz2 = X*Z*2.0f;
-        const float yw2 = Y*W*2.0f;
-        const float yz2 = Y*Z*2.0f;
-        const float zw2 = Z*W*2.0f;
-        return Float3( Math::Dot( _Vec, Float3( xxzz + wwyy, xy2 + zw2, xz2 - yw2 ) ),
-                       Math::Dot( _Vec, Float3( xy2 - zw2, Y*Y+W*W-X*X-Z*Z, yz2 + xw2 ) ),
-                       Math::Dot( _Vec, Float3( xz2 + yw2, yz2 - xw2, wwyy - xxzz ) ) );
+        Float3 c1( Math::Cross( *(Float3 *)&X, _Vec ) );
+        Float3 c2( Math::Cross( *(Float3 *)&X, c1 ) );
+
+        return _Vec + 2.0f * (c1 * W + c2);
     }
 
     void ToAngles( float & _PitchRad, float & _YawRad, float & _RollRad ) const {

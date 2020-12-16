@@ -328,8 +328,47 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
 
     int numExtensions = 0;
     glGetIntegerv( GL_NUM_EXTENSIONS, &numExtensions );
-    for ( int i = 0 ; i < numExtensions ; i++ ) {
-        GLogger.Printf( "\t%s\n", (const char *)glGetStringi( GL_EXTENSIONS, i ) );        
+
+#if 0
+    int w, h;
+    SDL_GetWindowSize( _CreateInfo.Window, &w, &h );
+    if ( w < 1024 ) {
+        for ( int i = 0 ; i < numExtensions ; i++ ) {
+            GLogger.Printf( "\t%s\n", (const char *)glGetStringi( GL_EXTENSIONS, i ) );
+        }
+    }
+    else
+#endif
+    {
+        char str[128];
+        const int MaxExtensionLength = 40;
+        for ( int i = 0 ; i < numExtensions ; ) {
+            const char * extName1 = (const char *)glGetStringi( GL_EXTENSIONS, i );
+
+            if ( i + 1 < numExtensions ) {
+                const char * extName2 = (const char *)glGetStringi( GL_EXTENSIONS, i+1 );
+
+                int strLen1 = Core::Strlen( extName1 );
+                int strLen2 = Core::Strlen( extName2 );
+
+                if ( strLen1 < MaxExtensionLength && strLen2 < MaxExtensionLength ) {
+                    Core::Memset( &str[strLen1], ' ', MaxExtensionLength-strLen1 );
+                    Core::Memcpy( str, extName1, strLen1 );
+                    Core::Memcpy( &str[MaxExtensionLength], extName2, strLen2 );
+                    str[ MaxExtensionLength + strLen2 ] = '\0';
+
+                    GLogger.Printf( " %s\n", str );
+
+                    i += 2;
+                    continue;
+                }
+
+                // long extension name
+            }
+
+            GLogger.Printf( " %s\n", extName1 );
+            i += 1;
+        }
     }
 
 #if 0
