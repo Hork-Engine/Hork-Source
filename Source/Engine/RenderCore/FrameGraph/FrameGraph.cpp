@@ -100,7 +100,7 @@ void AFrameGraph::Build()
 
     RegisterResources();
 
-    for ( std::unique_ptr< ARenderTask > & task : RenderTasks ) {
+    for ( StdUniquePtr< ARenderTask > & task : RenderTasks ) {
         task->ResourceRefs = task->ProducedResources.Size() + task->WriteResources.Size()
             + task->ReadWriteResources.Size();
     }
@@ -162,7 +162,7 @@ void AFrameGraph::Build()
 
     //resourcesRW.ReserveInvalidate( 1024 );
 
-    for ( std::unique_ptr< ARenderTask > & task : RenderTasks ) {
+    for ( StdUniquePtr< ARenderTask > & task : RenderTasks ) {
         if ( task->ResourceRefs == 0 && !task->bCulled ) {
             continue;
         }
@@ -193,9 +193,9 @@ void AFrameGraph::Build()
                 auto lastReader = std::find_if(
                     RenderTasks.begin(),
                     RenderTasks.end  (),
-                    [&resource]( std::unique_ptr< ARenderTask > const & iteratee )
+                    [&resource]( StdUniquePtr< ARenderTask > const & it )
                 {
-                    return iteratee.get() == resource->Readers.Last();
+                    return it.get() == resource->Readers.Last();
                 } );
                 if ( lastReader != RenderTasks.end() )
                 {
@@ -208,9 +208,9 @@ void AFrameGraph::Build()
                 auto lastWriter = std::find_if(
                     RenderTasks.begin(),
                     RenderTasks.end  (),
-                    [&resource]( std::unique_ptr< ARenderTask > const & iteratee )
+                    [&resource]( StdUniquePtr< ARenderTask > const & it )
                 {
-                    return iteratee.get() == resource->Writers.Last();
+                    return it.get() == resource->Writers.Last();
                 } );
                 if ( lastWriter != RenderTasks.end() )
                 {
@@ -312,23 +312,23 @@ void AFrameGraph::ExportGraphviz( const char * FileName )
     }
     f.Printf( "\n" );
 
-    for ( auto & render_task : RenderTasks ) {
+    for ( auto & task : RenderTasks ) {
         f.Printf( "\"%s\" [label=\"%s\\nRefs: %d\", style=filled, fillcolor=darkorange]\n",
-                  render_task->GetName(), render_task->GetName(), render_task->ResourceRefs );
+                  task->GetName(), task->GetName(), task->ResourceRefs );
 
-        if ( !render_task->ProducedResources.IsEmpty() )
+        if ( !task->ProducedResources.IsEmpty() )
         {
-            f.Printf( "\"%s\" -> { ", render_task->GetName() );
-            for ( auto & resource : render_task->ProducedResources ) {
+            f.Printf( "\"%s\" -> { ", task->GetName() );
+            for ( auto & resource : task->ProducedResources ) {
                 f.Printf( "\"%s\" ", resource->GetName() );
             }
             f.Printf( "} [color=seagreen]\n" );
         }
 
-        if ( !render_task->WriteResources.IsEmpty() )
+        if ( !task->WriteResources.IsEmpty() )
         {
-            f.Printf( "\"%s\" -> { ", render_task->GetName() );
-            for ( auto & resource : render_task->WriteResources ) {
+            f.Printf( "\"%s\" -> { ", task->GetName() );
+            for ( auto & resource : task->WriteResources ) {
                 f.Printf( "\"%s\" ", resource->GetName() );
             }
             f.Printf( "} [color=gold]\n" );
@@ -338,8 +338,8 @@ void AFrameGraph::ExportGraphviz( const char * FileName )
 
     for ( auto & resource : Resources ) {
         f.Printf( "\"%s\" -> { ", resource->GetName() );
-        for ( auto& render_task : resource->Readers ) {
-            f.Printf( "\"%s\" ", render_task->GetName() );
+        for ( auto& task : resource->Readers ) {
+            f.Printf( "\"%s\" ", task->GetName() );
         }
         f.Printf( "} [color=skyblue]\n" );
     }

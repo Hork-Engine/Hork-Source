@@ -229,7 +229,7 @@ public:
 
     const char * GetName() const { return Name; }
 
-    TStdVector< std::unique_ptr< AFrameGraphResourceProxy > > const & GetProducedResources() const
+    TStdVector< StdUniquePtr< AFrameGraphResourceProxy > > const & GetProducedResources() const
     {
         return ProducedResources;
     }
@@ -245,7 +245,7 @@ protected:
     {
         static_assert(std::is_same< typename TResourceDecl::CreateInfoType, TResourceCreateInfo >::value, "Invalid TResourceCreateInfo");
 
-        ProducedResources.emplace_back( std::make_unique< TResourceDecl >( *pFrameGraph, Name, this, CreateInfo ) );
+        ProducedResources.emplace_back( StdMakeUnique< TResourceDecl >( *pFrameGraph, Name, this, CreateInfo ) );
 
         if ( ppResource ) {
             *ppResource = static_cast< TResourceDecl * >(ProducedResources.back().get());
@@ -275,7 +275,7 @@ protected:
 
     AFrameGraph * pFrameGraph;
     const char * Name;
-    TStdVector< std::unique_ptr< AFrameGraphResourceProxy > > ProducedResources;
+    TStdVector< StdUniquePtr< AFrameGraphResourceProxy > > ProducedResources;
     TPodArray< AFrameGraphResourceProxy * > ReadResources;
     TPodArray< AFrameGraphResourceProxy * > WriteResources;
     TPodArray< AFrameGraphResourceProxy * > ReadWriteResources;
@@ -582,21 +582,21 @@ public:
     template< typename TTask >
     TTask & AddTask( const char * InName )
     {
-        RenderTasks.emplace_back( std::make_unique< TTask >( this, InName ) );
+        RenderTasks.emplace_back( StdMakeUnique< TTask >( this, InName ) );
         return *static_cast< TTask * >( RenderTasks.back().get() );
     }
 
     template< typename TResourceCreateInfo, typename TResource >
     TFrameGraphResourceProxy< TResourceCreateInfo, TResource > * AddExternalResource( const char * Name, TResourceCreateInfo const & CreateInfo, TResource * Resource = nullptr )
     {
-        ExternalResources.emplace_back( std::make_unique< TFrameGraphResourceProxy< TResourceCreateInfo, TResource > >( *this, Name, CreateInfo, Resource ) );
+        ExternalResources.emplace_back( StdMakeUnique< TFrameGraphResourceProxy< TResourceCreateInfo, TResource > >( *this, Name, CreateInfo, Resource ) );
         return static_cast< TFrameGraphResourceProxy< TResourceCreateInfo, TResource > * >(ExternalResources.back().get());
     }
 
     template< typename TResourceCreateInfo, typename TResource >
     TFrameGraphResourceProxy< TResourceCreateInfo, TResource > * AddExternalResource( const char * Name, TResourceCreateInfo const & CreateInfo, TRef< TResource > & Resource )
     {
-        ExternalResources.emplace_back( std::make_unique< TFrameGraphResourceProxy< TResourceCreateInfo, TResource > >( *this, Name, CreateInfo, Resource.GetObject() ) );
+        ExternalResources.emplace_back( StdMakeUnique< TFrameGraphResourceProxy< TResourceCreateInfo, TResource > >( *this, Name, CreateInfo, Resource.GetObject() ) );
         return static_cast< TFrameGraphResourceProxy< TResourceCreateInfo, TResource > * >(ExternalResources.back().get());
     }
 
@@ -622,7 +622,7 @@ private:
     {
         Resources.Clear();
 
-        for ( std::unique_ptr< ARenderTask > & task : RenderTasks ) {
+        for ( StdUniquePtr< ARenderTask > & task : RenderTasks ) {
             for ( auto & resourcePtr : task->GetProducedResources() ) {
                 Resources.Append( resourcePtr.get() );
             }
@@ -642,8 +642,8 @@ private:
 
     RenderCore::IDevice * pDevice;
 
-    TStdVector< std::unique_ptr< ARenderTask > > RenderTasks;
-    TStdVector< std::unique_ptr< AFrameGraphResourceProxy > > ExternalResources;
+    TStdVector< StdUniquePtr< ARenderTask > > RenderTasks;
+    TStdVector< StdUniquePtr< AFrameGraphResourceProxy > > ExternalResources;
     TPodArray< AFrameGraphResourceProxy * > Resources; // all resources
     TPodArray< AFrameGraphResourceProxy * > CapturedResources;
 
