@@ -268,7 +268,7 @@ void APhysicalBody::InitializeComponent()
         CreateRigidBody();
     }
 
-    UpdateBoneCollisions();
+    CreateBoneCollisions();
 
     if ( AINavigationBehavior != AI_NAVIGATION_BEHAVIOR_NONE )
     {
@@ -298,9 +298,7 @@ void APhysicalBody::SetMotionBehavior( EMotionBehavior _MotionBehavior )
 
     MotionBehavior = _MotionBehavior;
 
-    if ( IsInitialized() ) {
-        UpdatePhysicsAttribs();
-    }
+    UpdatePhysicsAttribs();
 }
 
 void APhysicalBody::SetAINavigationBehavior( EAINavigationBehavior _AINavigationBehavior )
@@ -375,6 +373,15 @@ void APhysicalBody::ClearBoneCollisions()
 
 void APhysicalBody::UpdateBoneCollisions()
 {
+    if ( !IsInitialized() ) {
+        return;
+    }
+
+    CreateBoneCollisions();
+}
+
+void APhysicalBody::CreateBoneCollisions()
+{
     btRigidBody::btRigidBodyConstructionInfo constructInfo( 0.0f, nullptr, nullptr );
     const btVector3 scaling = btVectorToFloat3( CachedScale );
 
@@ -433,10 +440,8 @@ void APhysicalBody::SetCollisionModel( ACollisionModel * _CollisionModel )
 
     CollisionModel = _CollisionModel;
 
-    if ( IsInitialized() ) {
-        UpdatePhysicsAttribs();
-        UpdateBoneCollisions();
-    }
+    UpdatePhysicsAttribs();
+    UpdateBoneCollisions();
 }
 
 ACollisionModel const * APhysicalBody::GetCollisionModel() const
@@ -453,10 +458,8 @@ void APhysicalBody::SetUseMeshCollision( bool _bUseMeshCollision )
 
     bUseMeshCollision = _bUseMeshCollision;
 
-    if ( IsInitialized() ) {
-        UpdatePhysicsAttribs();
-        UpdateBoneCollisions();
-    }
+    UpdatePhysicsAttribs();
+    UpdateBoneCollisions();
 }
 
 void APhysicalBody::SetCollisionFlags()
@@ -595,8 +598,7 @@ void APhysicalBody::DestroyRigidBody()
 
 void APhysicalBody::UpdatePhysicsAttribs()
 {
-    if ( !GetWorld() ) {
-        // Called before initialization
+    if ( !IsInitialized() ) {
         return;
     }
 
@@ -1212,10 +1214,7 @@ void APhysicalBody::SetTrigger( bool _Trigger )
 
     HitProxy->SetTrigger( _Trigger );
 
-    if ( IsInitialized() )
-    {
-        UpdatePhysicsAttribs();
-    }
+    UpdatePhysicsAttribs();
 }
 
 void APhysicalBody::SetDisableGravity( bool _DisableGravity )
@@ -1227,10 +1226,7 @@ void APhysicalBody::SetDisableGravity( bool _DisableGravity )
 
     bDisableGravity = _DisableGravity;
 
-    if ( IsInitialized() )
-    {
-        UpdatePhysicsAttribs();
-    }
+    UpdatePhysicsAttribs();
 }
 
 void APhysicalBody::SetOverrideWorldGravity( bool _OverrideWorldGravity )
@@ -1242,10 +1238,7 @@ void APhysicalBody::SetOverrideWorldGravity( bool _OverrideWorldGravity )
 
     bOverrideWorldGravity = _OverrideWorldGravity;
 
-    if ( IsInitialized() )
-    {
-        UpdatePhysicsAttribs();
-    }
+    UpdatePhysicsAttribs();
 }
 
 void APhysicalBody::SetSelfGravity( Float3 const & _SelfGravity )
@@ -1257,10 +1250,7 @@ void APhysicalBody::SetSelfGravity( Float3 const & _SelfGravity )
 
     SelfGravity = _SelfGravity;
 
-    if ( IsInitialized() )
-    {
-        UpdatePhysicsAttribs();
-    }
+    UpdatePhysicsAttribs();
 }
 
 void APhysicalBody::SetMass( float _Mass )
@@ -1272,10 +1262,7 @@ void APhysicalBody::SetMass( float _Mass )
 
     Mass = _Mass;
 
-    if ( IsInitialized() )
-    {
-        UpdatePhysicsAttribs();
-    }
+    UpdatePhysicsAttribs();
 }
 
 void APhysicalBody::SetCollisionGroup( int _CollisionGroup )

@@ -339,6 +339,8 @@ protected:
 
     void UpdateBoneCollisions();
 
+    void CreateBoneCollisions();
+
     void UpdatePhysicsAttribs();
 
     void DrawDebug( ADebugRenderer * InRenderer ) override;
