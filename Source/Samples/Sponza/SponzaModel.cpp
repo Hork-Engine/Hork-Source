@@ -53,7 +53,7 @@ ASponzaModel::ASponzaModel()
 
     GModule = this;
 
-    GEngine.bAllowConsole = true;
+    GEngine->bAllowConsole = true;
 
     //SVideoMode videoMode = GRuntime.GetVideoMode();
     //videoMode.Width = 1280;
@@ -193,6 +193,19 @@ ASponzaModel::ASponzaModel()
     //    RegisterResource( SkyboxMaterialInstance, "SkyboxMaterialInstance" );
     //}
 
+
+    AIndexedMesh * indexedMesh = GetOrCreateResource< AIndexedMesh >( "/Root/BrainStem/BrainStem_Mesh.asset" );
+    ACollisionModel * collisionModel = NewObject< ACollisionModel >();
+    int n = 0;
+    for ( SJoint const & j : indexedMesh->GetSkeleton()->GetJoints() )
+    {
+        AN_UNUSED(j);
+
+        ACollisionSphere * sphere = collisionModel->CreateBoneCollision< ACollisionSphere >( n++, CM_WORLD, CM_ALL );
+        sphere->Radius = 0.1f;
+    }
+    indexedMesh->SetCollisionModel( collisionModel );
+
     Quat r;
     //r.FromAngles( 0, Math::_HALF_PI, 0 );
     r.SetIdentity();
@@ -241,7 +254,7 @@ ASponzaModel::ASponzaModel()
     PlayerController->SetPawn( player );
 
     WDesktop * desktop = NewObject< WDesktop >();
-    GEngine.SetDesktop( desktop );
+    GEngine->SetDesktop( desktop );
 
     desktop->AddWidget(
         &WNew(WViewport)

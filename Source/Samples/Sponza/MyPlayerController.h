@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <World/Public/Actors/PlayerController.h>
 
-class ANGIE_API AMyPlayerController : public APlayerController {
+class AMyPlayerController : public APlayerController {
     AN_ACTOR( AMyPlayerController, APlayerController )
 
 protected:

@@ -254,9 +254,8 @@ ASphereActor::ASphereActor() {
     MeshComponent = CreateComponent< AMeshComponent >( "StaticMesh" );
     RootComponent = MeshComponent;
     MeshComponent->SetMotionBehavior( MB_SIMULATED );
-    MeshComponent->bUseDefaultBodyComposition = true;
-    MeshComponent->bDispatchContactEvents = true;
-    MeshComponent->bGenerateContactPoints = true;
+    MeshComponent->SetDispatchContactEvents( true );
+    MeshComponent->SetGenerateContactPoints( true );
     //MeshComponent->Mass = 0.3f;
     //MeshComponent->SetFriction( 1.0f );
     //MeshComponent->SetRestitution( 10 );

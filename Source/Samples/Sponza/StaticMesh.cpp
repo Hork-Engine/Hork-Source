@@ -38,13 +38,11 @@ AStaticMesh::AStaticMesh() {
     RootComponent = MeshComponent;
 
     MeshComponent->SetMotionBehavior( MB_STATIC );
-    MeshComponent->bUseDefaultBodyComposition = true;
     MeshComponent->SetRestitution( 10.0f );
 }
 
 void AStaticMesh::SetMesh( AIndexedMesh * _Mesh ) {
     MeshComponent->SetMesh( _Mesh );
-    MeshComponent->UpdatePhysicsAttribs();
     MeshComponent->CopyMaterialsFromMeshResource();
 }
 
@@ -53,11 +51,9 @@ ASkinnedMesh::ASkinnedMesh() {
     RootComponent = MeshComponent;
 
     MeshComponent->SetMotionBehavior( MB_STATIC );
-    MeshComponent->bUseDefaultBodyComposition = true;
 }
 
 void ASkinnedMesh::SetMesh( AIndexedMesh * _Mesh ) {
     MeshComponent->SetMesh( _Mesh );
-    MeshComponent->UpdatePhysicsAttribs();
     MeshComponent->CopyMaterialsFromMeshResource();
 }
