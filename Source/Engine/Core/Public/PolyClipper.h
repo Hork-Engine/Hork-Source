@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "CoreMath.h"
 #include "PodArray.h"
-#include "Std.h"
+#include "Ref.h"
 
 using AClipperContour = TPodArray< Double2 >;
 
@@ -92,7 +92,7 @@ public:
     bool Execute( EClipType _ClipType, TStdVector< AClipperContour > & _Contours );
 
 private:
-    std::unique_ptr< ClipperLib::Clipper > pClipper;
+    TUniqueRef< ClipperLib::Clipper > pClipper;
     Float3x3 Transform3D;
     Float3x3 InvTransform3D;
 };

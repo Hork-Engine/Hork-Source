@@ -368,14 +368,118 @@ AN_FORCEINLINE bool operator == ( TWeakRef< T > const & _Ref, TWeakRef< T > cons
 template< typename T >
 AN_FORCEINLINE bool operator != ( TWeakRef< T > const & _Ref, TWeakRef< T > const & _Ref2 ) { return _Ref.GetObject() != _Ref2.GetObject(); }
 
-template< typename T, typename... _Args >
-inline TRef< T > MakeRef( _Args &&... __args )
+template< typename T, typename... Args >
+inline TRef< T > MakeRef( Args && ... args )
 {
     // create object (refcount=1)
-    T * x = new T( StdForward< _Args >( __args )... );
+    T * x = new T( StdForward< Args >( args )... );
     // handle reference (refcount=2)
     TRef< T > ref( x );
     // keep refcount=1
     x->RemoveRef();
     return ref;
+}
+
+template< typename T >
+AN_FORCEINLINE void CheckedDelete( T * Ptr )
+{
+    using type_must_be_complete = char[sizeof(T) ? 1 : -1];
+    (void) sizeof( type_must_be_complete );
+    delete Ptr;
+}
+
+template< typename T >
+class TUniqueRef
+{
+public:
+    TUniqueRef()
+        : Object(nullptr)
+    {
+    }
+
+    explicit TUniqueRef( T * InPtr )
+        : Object( InPtr )
+    {
+    }
+
+    TUniqueRef( TUniqueRef< T > const & ) = delete;
+    TUniqueRef & operator=( TUniqueRef< T > const & ) = delete;
+
+    TUniqueRef( TUniqueRef && Up )
+        : Object( Up.Detach() )
+    {
+
+    }
+
+    ~TUniqueRef()
+    {
+        Reset();
+    }
+
+    TUniqueRef & operator=( TUniqueRef && Up )
+    {
+        Reset( Up.Detach() );
+        return *this;
+    }
+
+    T * operator->() const
+    {
+        AN_ASSERT( Object );
+        return Object;
+    }
+
+    T & operator*() const
+    {
+        AN_ASSERT( Object );
+        return *Object;
+    }
+
+    template< typename U >
+    bool operator==( TUniqueRef< U > const & Rhs )
+    {
+        return Object == Rhs.Object;
+    }
+
+    template< typename U >
+    bool operator!=( TUniqueRef< U > const & Rhs )
+    {
+        return Object != Rhs.Object;
+    }
+
+    operator bool() const
+    {
+        return Object != nullptr;
+    }
+
+//    void Swap( TUniqueRef & Up )
+//    {
+//        StdSwap( Object, Up.Object );
+//    }
+
+    T * Detach()
+    {
+        T * ptr = Object;
+        Object = nullptr;
+        return ptr;
+    }
+
+    T * GetObject() const
+    {
+        return Object;
+    }
+
+    void Reset( T * InPtr = nullptr )
+    {
+        CheckedDelete( Object );
+        Object = InPtr;
+    }
+
+private:
+    T * Object;
+};
+
+template< typename T, typename ... Args >
+TUniqueRef< T > MakeUnique( Args && ... args )
+{
+    return TUniqueRef< T >( new T( StdForward< Args >( args )... ) );
 }

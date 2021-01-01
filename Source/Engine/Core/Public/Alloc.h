@@ -108,7 +108,7 @@ AHeapMemory
 Allocates memory on heap
 
 */
-class ANGIE_API AHeapMemory final {
+class AHeapMemory final {
     AN_FORBID_COPY( AHeapMemory )
 
 public:
@@ -193,7 +193,7 @@ Allocated chunks are aligned at 16-byte boundary.
 If you need other alignment, do it on top of the allocator.
 
 */
-class ANGIE_API AHunkMemory final {
+class AHunkMemory final {
     AN_FORBID_COPY( AHunkMemory )
 
 public:
@@ -262,7 +262,7 @@ Allocated chunks are aligned at 16-byte boundary.
 If you need other alignment, do it on top of the allocator.
 
 */
-class ANGIE_API AZoneMemory final {
+class AZoneMemory final {
     AN_FORBID_COPY( AZoneMemory )
 
 public:
@@ -365,7 +365,7 @@ AZoneAllocator
 Use for small objects
 
 */
-class ANGIE_API AZoneAllocator final : public TTemplateAllocator< AZoneAllocator > {
+class AZoneAllocator final : public TTemplateAllocator< AZoneAllocator > {
     AN_FORBID_COPY( AZoneAllocator )
 
 public:
@@ -383,7 +383,7 @@ AHeapAllocator
 Use for huge data allocation
 
 */
-class ANGIE_API AHeapAllocator final : public TTemplateAllocator< AHeapAllocator > {
+class AHeapAllocator final : public TTemplateAllocator< AHeapAllocator > {
     AN_FORBID_COPY( AHeapAllocator )
 
 public:
@@ -404,6 +404,6 @@ Dynamic Stack Memory
 #define StackAlloc( _NumBytes ) alloca( _NumBytes )
 
 
-extern ANGIE_API AHeapMemory GHeapMemory;
-extern ANGIE_API AHunkMemory GHunkMemory;
-extern ANGIE_API AZoneMemory GZoneMemory;
+extern AHeapMemory GHeapMemory;
+extern AHunkMemory GHunkMemory;
+extern AZoneMemory GZoneMemory;

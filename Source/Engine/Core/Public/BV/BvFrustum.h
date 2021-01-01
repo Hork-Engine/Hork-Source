@@ -49,7 +49,7 @@ enum EFrustumPlane {
     FPL_NEAR
 };
 
-class ANGIE_API BvFrustum {
+class BvFrustum {
     AN_FORBID_COPY( BvFrustum )
 
 public:

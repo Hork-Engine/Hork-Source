@@ -46,7 +46,7 @@ static const double CLIPPER_TO_FLOAT_CONVERSION_NUMBER = 0.000000001;
 #define CLIPPER_LONG_TO_FLOAT(p)     ( ( p ) * CLIPPER_TO_FLOAT_CONVERSION_NUMBER )
 
 APolyClipper::APolyClipper()
-    : pClipper( std::make_unique< ClipperLib::Clipper >() )
+    : pClipper( MakeUnique< ClipperLib::Clipper >() )
     , Transform3D( Float3x3::Identity() )
     , InvTransform3D( Float3x3::Identity() )
 {

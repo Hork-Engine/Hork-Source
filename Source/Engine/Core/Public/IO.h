@@ -40,7 +40,7 @@ AArchive
 Read file from archive
 
 */
-class ANGIE_API AArchive final {
+class AArchive final {
     AN_FORBID_COPY( AArchive )
 
 public:
@@ -86,7 +86,7 @@ AFileStream
 Read/Write to file
 
 */
-class ANGIE_API AFileStream final : public IBinaryStream {
+class AFileStream final : public IBinaryStream {
     AN_FORBID_COPY( AFileStream )
 
 public:
@@ -150,7 +150,7 @@ AMemoryStream
 Read/Write to memory
 
 */
-class ANGIE_API AMemoryStream final : public IBinaryStream {
+class AMemoryStream final : public IBinaryStream {
     AN_FORBID_COPY( AMemoryStream )
 
 public:

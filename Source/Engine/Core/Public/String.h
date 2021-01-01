@@ -39,7 +39,7 @@ SOFTWARE.
 AString
 
 */
-class ANGIE_API AString final {
+class AString final {
     using Allocator = AZoneAllocator;
 
 public:

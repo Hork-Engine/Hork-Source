@@ -39,7 +39,7 @@ SOFTWARE.
 #include <atomic>
 #endif
 
-class ANGIE_API AAtomicBool {
+class AAtomicBool {
     AN_FORBID_COPY( AAtomicBool )
 
 public:
@@ -72,7 +72,7 @@ private:
 #endif
 };
 
-class ANGIE_API AAtomicShort {
+class AAtomicShort {
     AN_FORBID_COPY( AAtomicShort )
 
 public:
@@ -136,7 +136,7 @@ private:
 #endif
 };
 
-class ANGIE_API AAtomicInt {
+class AAtomicInt {
     AN_FORBID_COPY( AAtomicInt )
 
 public:
@@ -211,7 +211,7 @@ private:
 #endif
 };
 
-class ANGIE_API AAtomicLong {
+class AAtomicLong {
     AN_FORBID_COPY( AAtomicLong )
 
 public:
@@ -358,10 +358,10 @@ AN_FORCEINLINE void TAtomicPtr< Type >::StoreRelaxed( AtomicType _i ) {
 }
 
 #if defined AN_OS_WIN32 && !defined AN_STD_ATOMIC
-ANGIE_API volatile void * AtomicLoadAcquirePointer( volatile void *& _Ptr );
-ANGIE_API void AtomicStoreReleasePointer( volatile void *& _Dst, void * _Src );
-ANGIE_API void * AtomicExchangePointer( void *& _Ptr, void * _Exchange );
-ANGIE_API void * AtomicCompareExchangePointer( void *& _Ptr, void * _Desired, void * _Expected );
+volatile void * AtomicLoadAcquirePointer( volatile void *& _Ptr );
+void AtomicStoreReleasePointer( volatile void *& _Dst, void * _Src );
+void * AtomicExchangePointer( void *& _Ptr, void * _Exchange );
+void * AtomicCompareExchangePointer( void *& _Ptr, void * _Desired, void * _Expected );
 #endif
 
 template< typename Type >
