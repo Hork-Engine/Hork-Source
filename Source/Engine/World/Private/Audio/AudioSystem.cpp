@@ -1664,7 +1664,7 @@ void AAudioSystem::Update( APlayerController * _Controller, float _TimeStep ) {
 
         AL_SAFE( alListenerfv( AL_ORIENTATION, Orient ) );
 
-        AudioListenerId = audioListener->GetParentActor()->Id;
+        AudioListenerId = audioListener->GetOwnerActor()->Id;
 
     } else {
         ListenerPosition.Clear();

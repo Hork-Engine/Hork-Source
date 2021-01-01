@@ -201,7 +201,7 @@ enum
 struct SRenderFrame;
 
 /** Runtime public class */
-class ANGIE_API ARuntime
+class ARuntime
 {
     AN_SINGLETON( ARuntime )
 
@@ -369,7 +369,7 @@ private:
 
     struct SEntryDecl const * pModuleDecl;
 
-    class IEngineInterface * Engine;
+    static class IEngineInterface * Engine;
 
     SCPUInfo        CPUInfo;
 
@@ -409,11 +409,17 @@ private:
 
     void PrintCPUFeatures();
 
+    void ClearJoystickAxes( int _JoystickNum, double _TimeStamp );
+    void UnpressKeysAndButtons();
+    void UnpressJoystickButtons( int _JoystickNum, double _TimeStamp );
+
+    static void LoggerMessageCallback( int _Level, const char * _Message );
+
     friend void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl );
     friend void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl );
 };
 
-extern ANGIE_API ARuntime & GRuntime;
-extern ANGIE_API AAsyncJobManager GAsyncJobManager;
-extern ANGIE_API AAsyncJobList * GRenderFrontendJobList;
-extern ANGIE_API AAsyncJobList * GRenderBackendJobList;
+extern ARuntime & GRuntime;
+extern AAsyncJobManager GAsyncJobManager;
+extern AAsyncJobList * GRenderFrontendJobList;
+extern AAsyncJobList * GRenderBackendJobList;

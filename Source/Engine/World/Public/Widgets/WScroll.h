@@ -72,7 +72,7 @@ struct SScrollbarGeometry {
     Float2 ViewSize;
 };
 
-class ANGIE_API WScroll : public WWidget {
+class WScroll : public WWidget {
     AN_CLASS( WScroll, WWidget )
 
 public:

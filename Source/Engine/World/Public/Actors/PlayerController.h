@@ -35,11 +35,14 @@ SOFTWARE.
 #include <World/Public/CommandContext.h>
 #include <World/Public/Audio/AudioSystem.h>
 #include <World/Public/Widgets/WViewport.h>
+#include <World/Public/Terrain.h>
 #include <Renderer/VT/VirtualTextureFeedback.h> // TODO: Remove this!
+
+#include <unordered_map>
 
 class AInputMappings;
 
-class ANGIE_API ARenderingParameters final : public ABaseObject {
+class ARenderingParameters final : public ABaseObject {
     AN_CLASS( ARenderingParameters, ABaseObject )
 
 public:
@@ -56,6 +59,8 @@ public:
     float VignetteOuterRadiusSqr = 0.7f*0.7f;
     float VignetteInnerRadiusSqr = 0.6f*0.6f;
     int VisibilityMask = ~0;
+
+    std::unordered_map< uint64_t, ATerrainView * > TerrainViews; // TODO: Needs to be cleaned from time to time
 
     // TODO: TonemappingExposure, bTonemappingAutoExposure, TonemappingMethod:Disabled,Reinhard,Uncharted,etc
     // TODO: Wireframe color/line width
@@ -164,7 +169,7 @@ private:
     bool bColorGradingEnabled;
 };
 
-class ANGIE_API AAudioParameters final : public ABaseObject {
+class AAudioParameters final : public ABaseObject {
     AN_CLASS( AAudioParameters, ABaseObject )
 
 public:
@@ -188,7 +193,7 @@ APlayerController
 Base class for players
 
 */
-class ANGIE_API APlayerController : public AController {
+class APlayerController : public AController {
     AN_ACTOR( APlayerController, AController )
 
 public:

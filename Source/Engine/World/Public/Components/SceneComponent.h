@@ -56,7 +56,7 @@ ASceneComponent
 Base class for all actor components that have its position, rotation and scale
 
 */
-class ANGIE_API ASceneComponent : public AActorComponent {
+class ASceneComponent : public AActorComponent {
     AN_COMPONENT( ASceneComponent, AActorComponent )
 
 public:
@@ -117,9 +117,6 @@ public:
     /** Set local position */
     void SetPosition( float const & _X, float const & _Y, float const & _Z );
 
-    // /** Set local orient */
-    //void SetOrient( Float3x3 const & _Orient );
-
     /** Set local rotation */
     void SetRotation( Quat const & _Rotation );
 
@@ -176,9 +173,6 @@ public:
 
     /** Get local position */
     Float3 const & GetPosition() const;
-
-    // /** Get local orient
-    //Float3x3 GetOrient() const;
 
     /** Get local rotation */
     Quat const & GetRotation() const;
@@ -273,7 +267,6 @@ private:
     AArrayOfChildComponents Childs;
     ASceneComponent * AttachParent;
     int SocketIndex;
-    //bool bIgnoreLocalTransform;
     bool bAbsolutePosition : 1;
     bool bAbsoluteRotation : 1;
     bool bAbsoluteScale : 1;

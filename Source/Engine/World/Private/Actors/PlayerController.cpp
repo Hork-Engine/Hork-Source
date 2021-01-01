@@ -292,6 +292,9 @@ ARenderingParameters::ARenderingParameters() {
 }
 
 ARenderingParameters::~ARenderingParameters() {
+    for ( auto it : TerrainViews ) {
+        it.second->RemoveRef();
+    }
 }
 
 void ARenderingParameters::SetColorGradingEnabled( bool _ColorGradingEnabled ) {

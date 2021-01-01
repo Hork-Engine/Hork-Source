@@ -32,36 +32,14 @@ SOFTWARE.
 
 #include "SceneComponent.h"
 
-#include <World/Public/CollisionEvents.h>
+#include <World/Public/Collision.h>
 #include <World/Public/Resource/CollisionBody.h>
 
-class btRigidBody;
-class btSoftBody;
-class SPhysicalBodyMotionState;
+class APhysicalBodyMotionState;
+class ABoneCollisionInstance;
 
-enum ECollisionMask {
-    CM_NOCOLLISION   = 0,
-    CM_WORLD_STATIC  = 1,
-    CM_WORLD_DYNAMIC = 2,
-    CM_WORLD         = CM_WORLD_STATIC | CM_WORLD_DYNAMIC,
-    CM_PAWN          = 4,
-    CM_PROJECTILE    = 8,
-    CM_TRIGGER       = 16,
-    CM_UNUSED5       = 32,
-    CM_UNUSED6       = 64,
-    CM_UNUSED7       = 128,
-    CM_UNUSED8       = 256,
-    CM_UNUSED9       = 512,
-    CM_UNUSED10      = 1024,
-    CM_UNUSED11      = 1024,
-    CM_UNUSED12      = 2048,
-    CM_UNUSED13      = 4096,
-    CM_UNUSED14      = 8192,
-    CM_UNUSED15      = 16384,
-    CM_ALL           = 0xffff
-};
-
-enum EMotionBehavior {
+enum EMotionBehavior
+{
     /** Static non-movable object */
     MB_STATIC,
 
@@ -72,7 +50,8 @@ enum EMotionBehavior {
     MB_KINEMATIC
 };
 
-enum EAINavigationBehavior {
+enum EAINavigationBehavior
+{
     /** The body will not be used for navmesh generation */
     AI_NAVIGATION_BEHAVIOR_NONE,
 
@@ -89,38 +68,73 @@ enum EAINavigationBehavior {
     AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE     // TODO
 };
 
+struct SDebugDrawCache
+{
+    TPodArrayHeap< Float3 > Vertices;
+    TPodArrayHeap< unsigned int > Indices;
+    bool bDirty;
+};
+
 class APhysicalBody : public ASceneComponent {
     AN_COMPONENT( APhysicalBody, ASceneComponent )
 
     friend struct SCollisionFilterCallback;
-    friend class SPhysicalBodyMotionState;
+    friend class APhysicalBodyMotionState;
     friend class APhysicsWorld;
     friend class AAINavigationMesh;
 
 public:
-    // Component events
-    AContactDelegate E_OnBeginContact;
-    AContactDelegate E_OnEndContact;
-    AContactDelegate E_OnUpdateContact;
-    AOverlapDelegate E_OnBeginOverlap;
-    AOverlapDelegate E_OnEndOverlap;
-    AOverlapDelegate E_OnUpdateOverlap;
+    AHitProxy * GetHitProxy() const
+    {
+        return HitProxy;
+    }
 
     /** Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact) */
-    bool bDispatchContactEvents = false;
+    void SetDispatchContactEvents( bool bDispatch )
+    {
+        HitProxy->bDispatchContactEvents = bDispatch;
+    }
 
-    /** Dispatch contact events (OnBeginOverlap, OnUpdateOverlap, OnEndOverlap) */
-    bool bDispatchOverlapEvents = false;
+    bool ShouldDispatchContactEvents() const
+    {
+        return HitProxy->bDispatchContactEvents;
+    }
+
+    /** Dispatch overlap events (OnBeginOverlap, OnUpdateOverlap, OnEndOverlap) */
+    void SetDispatchOverlapEvents( bool bDispatch )
+    {
+        HitProxy->bDispatchOverlapEvents = bDispatch;
+    }
+
+    bool ShouldDispatchOverlapEvents() const
+    {
+        return HitProxy->bDispatchOverlapEvents;
+    }
 
     /** Generate contact points for contact events. Use with bDispatchContactEvents. */
-    bool bGenerateContactPoints = false;
+    void SetGenerateContactPoints( bool bGenerate )
+    {
+        HitProxy->bGenerateContactPoints = bGenerate;
+    }
 
-    /** Collision body composition. Set it before component initialization or call UpdatePhysicsAttribs() to apply property. */
-    ACollisionBodyComposition BodyComposition;
+    bool ShouldGenerateContactPoints() const
+    {
+        return HitProxy->bGenerateContactPoints;
+    }
 
-    /** Set to true if you want to use body composition from overrided method DefaultBodyComposition(). Set it before component initialization
-    or call UpdatePhysicsAttribs() to apply property. */
-    bool bUseDefaultBodyComposition = false;
+    /** Set to false if you want to use own collision model and discard collisions from the mesh */
+    void SetUseMeshCollision( bool bUseMeshCollision );
+
+    bool ShouldUseMeshCollision() const
+    {
+        return bUseMeshCollision;
+    }
+
+    /** Collision model. */
+    void SetCollisionModel( ACollisionModel * CollisionModel );
+
+    /** Get current collision model */
+    ACollisionModel const * GetCollisionModel() const;
 
     /** Set object motion behavior: static, simulated, kinematic */
     void SetMotionBehavior( EMotionBehavior _MotionBehavior );
@@ -138,43 +152,43 @@ public:
     void SetTrigger( bool _Trigger );
 
     /** Trigger can produce overlap events. */
-    bool IsTrigger() const { return bTrigger; }
+    bool IsTrigger() const { return HitProxy->IsTrigger(); }
 
-    /** Set to true to disable world gravity. Only for PS_DYNAMIC */
+    /** Set to true to disable world gravity. Only for MB_SIMULATED */
     void SetDisableGravity( bool _DisableGravity );
 
     /** Return true if gravity is disabled for the object. */
     bool IsGravityDisabled() const { return bDisableGravity; }
 
-    /** Set to true to override world gravity and use self gravity. Only for PS_DYNAMIC */
+    /** Set to true to override world gravity and use self gravity. Only for MB_SIMULATED */
     void SetOverrideWorldGravity( bool _OverrideWorldGravity );
 
     /** Return true if gravity is overriden for the object. */
     bool IsWorldGravityOverriden() const { return bOverrideWorldGravity; }
 
-    /** Object self gravity, use with bOverrideWorldGravity. Only for PS_DYNAMIC */
+    /** Object self gravity, use with bOverrideWorldGravity. Only for MB_SIMULATED */
     void SetSelfGravity( Float3 const & _SelfGravity );
 
-    /** Object self gravity, use with bOverrideWorldGravity. Only for PS_DYNAMIC */
+    /** Object self gravity, use with bOverrideWorldGravity. Only for MB_SIMULATED */
     Float3 const & GetSelfGravity() const { return SelfGravity; }
 
-    /** Object mass. Only for PS_DYNAMIC */
+    /** Object mass. Only for MB_SIMULATED */
     void SetMass( float _Mass );
 
-    /** Object mass. Only for PS_DYNAMIC */
+    /** Object mass. Only for MB_SIMULATED */
     float GetMass() const { return Mass; }
 
     /** Set collision group/layer. See ECollisionMask. */
     void SetCollisionGroup( int _CollisionGroup );
 
     /** Get collision group. See ECollisionMask. */
-    int GetCollisionGroup() const { return CollisionGroup; }
+    int GetCollisionGroup() const { return HitProxy->GetCollisionGroup(); }
 
     /** Set collision mask. See ECollisionMask. */
     void SetCollisionMask( int _CollisionMask );
 
     /** Get collision mask. See ECollisionMask. */
-    int GetCollisionMask() const { return CollisionMask; }
+    int GetCollisionMask() const { return HitProxy->GetCollisionMask(); }
 
     /** Set collision group and mask. See ECollisionMask. */
     void SetCollisionFilter( int _CollisionGroup, int _CollisionMask );
@@ -306,16 +320,12 @@ public:
 
     int GetCollisionBodiesCount() const;
 
-    ACollisionBodyComposition const & GetBodyComposition() const;
-
     /** Create 3d mesh model from collision body composition. Store coordinates in world space. */
-    void CreateCollisionModel( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices );
+    void GatherCollisionGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const;
 
-    void CollisionContactQuery( TPodArray< APhysicalBody * > & _Result ) const;
+    void CollisionContactQuery( TPodArray< AHitProxy * > & _Result ) const;
 
     void CollisionContactQueryActor( TPodArray< AActor * > & _Result ) const;
-
-    void UpdatePhysicsAttribs();
 
 protected:
     APhysicalBody();
@@ -323,30 +333,44 @@ protected:
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    void BeginPlay() override;
-    void EndPlay() override;
-
     void OnTransformDirty() override;
+
+    void ClearBoneCollisions();
+
+    void UpdateBoneCollisions();
+
+    void UpdatePhysicsAttribs();
 
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 
-    virtual ACollisionBodyComposition const & DefaultBodyComposition() const { return BodyComposition; }
+    virtual ACollisionModel const * GetMeshCollisionModel() const { return nullptr; }
+
+    friend class ABoneCollisionInstance;
+    virtual Float3x4 const & _GetJointTransform( int _JointIndex )
+    {
+        return Float3x4::Identity();
+    }
 
     bool bSoftBodySimulation = false;
-    btSoftBody * SoftBody = nullptr; // managed by ASoftMeshComponent
-    //Float3 PrevWorldPosition;
-    //Quat PrevWorldRotation;
-    //bool bUpdateSoftbodyTransform;
+    class btSoftBody * SoftBody = nullptr; // managed by ASoftMeshComponent
 
 private:
     void CreateRigidBody();
     void DestroyRigidBody();
     void SetCenterOfMassPosition( Float3 const & _Position );
     void SetCenterOfMassRotation( Quat const & _Rotation );
-    void AddPhysicalBodyToWorld();
-    void RemovePhysicalBodyFromWorld();
+    bool ShouldHaveCollisionBody() const;
+    void SetCollisionFlags();
+    void SetRigidBodyGravity();
+    void UpdateDebugDrawCache();
 
-    TPodArray< AActor *, 1 > CollisionIgnoreActors;
+    TRef< AHitProxy > HitProxy;
+    TRef< ACollisionModel > CollisionModel;
+    TRef< ACollisionInstance > CollisionInstance;
+    TPodArray< ABoneCollisionInstance * > BoneCollisionInst;
+    class btRigidBody * RigidBody = nullptr;
+    APhysicalBodyMotionState * MotionState = nullptr;
+    TUniqueRef< SDebugDrawCache > DebugDrawCache;
 
     float Mass = 1.0f;
     Float3 SelfGravity = Float3( 0.0f );
@@ -364,22 +388,12 @@ private:
     float AngularSleepingThreshold = 1.0f;
     float CcdRadius = 0.0f;
     float CcdMotionThreshold = 0.0f;
-    int CollisionGroup = CM_WORLD;
-    int CollisionMask = CM_ALL;
     EMotionBehavior MotionBehavior = MB_STATIC;
     EAINavigationBehavior AINavigationBehavior = AI_NAVIGATION_BEHAVIOR_NONE;
-    bool bTrigger = false;
     bool bDisableGravity = false;
     bool bOverrideWorldGravity = false;
-    bool bInWorld = false;
-
-    btRigidBody * RigidBody = nullptr;
-    btCompoundShape * CompoundShape = nullptr;
-    SPhysicalBodyMotionState * MotionState = nullptr;
+    bool bUseMeshCollision = false;
     Float3 CachedScale = Float3( 1.0f );
-
-    APhysicalBody * NextMarked = nullptr;
-    APhysicalBody * PrevMarked = nullptr;
 
     APhysicalBody * NextNavBody = nullptr;
     APhysicalBody * PrevNavBody = nullptr;

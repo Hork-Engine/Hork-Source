@@ -76,7 +76,7 @@ void ADirectionalLightComponent::OnCreateAvatar() {
     // TODO: Create mesh or sprite for avatar
     static TStaticResourceFinder< AIndexedMesh > Mesh( _CTS( "/Default/Meshes/Cylinder" ) );
     static TStaticResourceFinder< AMaterialInstance > MaterialInstance( _CTS( "AvatarMaterialInstance" ) );
-    AMeshComponent * meshComponent = GetParentActor()->CreateComponent< AMeshComponent >( "DirectionalLightAvatar" );
+    AMeshComponent * meshComponent = GetOwnerActor()->CreateComponent< AMeshComponent >( "DirectionalLightAvatar" );
     meshComponent->SetMotionBehavior( MB_KINEMATIC );
     meshComponent->SetCollisionGroup( CM_NOCOLLISION );
     meshComponent->SetMesh( Mesh.GetObject() );

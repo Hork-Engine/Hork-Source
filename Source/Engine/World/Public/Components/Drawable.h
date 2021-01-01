@@ -50,7 +50,7 @@ ADrawable
 Base class for drawing surfaces
 
 */
-class ANGIE_API ADrawable : public APhysicalBody {
+class ADrawable : public APhysicalBody {
     AN_COMPONENT( ADrawable, APhysicalBody )
 
     friend class ARenderWorld;
@@ -124,10 +124,10 @@ public:
     bool IsRaycastAllowed() const { return bAllowRaycast; }
 
     /** Raycast the drawable */
-    bool Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits, int & ClosestHit );
+    bool Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits ) const;
 
     /** Raycast the drawable */
-    bool RaycastClosest( Float3 const & InRayStart, Float3 const & InRayEnd, STriangleHitResult & Hit );
+    bool RaycastClosest( Float3 const & InRayStart, Float3 const & InRayEnd, STriangleHitResult & Hit ) const;
 
     SPrimitiveDef const * GetPrimitive() const { return &Primitive; }
 

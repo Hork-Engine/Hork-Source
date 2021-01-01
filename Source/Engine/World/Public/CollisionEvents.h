@@ -33,27 +33,30 @@ SOFTWARE.
 #include <World/Public/Base/BaseObject.h>
 
 class AActor;
-class APhysicalBody;
+class AHitProxy;
 
-struct SOverlapEvent {
+struct SOverlapEvent
+{
     AActor * SelfActor;
-    APhysicalBody * SelfBody;
+    AHitProxy * SelfBody;
     AActor * OtherActor;
-    APhysicalBody * OtherBody;
+    AHitProxy * OtherBody;
 };
 
-struct SContactPoint {
+struct SContactPoint
+{
     Float3 Position;
     Float3 Normal;
     float Distance;
     float Impulse;
 };
 
-struct SContactEvent {
+struct SContactEvent
+{
     AActor * SelfActor;
-    APhysicalBody * SelfBody;
+    AHitProxy * SelfBody;
     AActor * OtherActor;
-    APhysicalBody * OtherBody;
+    AHitProxy * OtherBody;
     SContactPoint const * Points;
     int NumPoints;
 };

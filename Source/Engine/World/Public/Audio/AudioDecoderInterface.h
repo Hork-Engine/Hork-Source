@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <World/Public/Base/BaseObject.h>
 
-class ANGIE_API IAudioStreamInterface : public ABaseObject {
+class IAudioStreamInterface : public ABaseObject {
     AN_CLASS( IAudioStreamInterface, ABaseObject )
 
 public:
@@ -63,7 +63,7 @@ struct SAudioFileInfo
     int BitsPerSample;
 };
 
-class ANGIE_API IAudioDecoderInterface : public ABaseObject
+class IAudioDecoderInterface : public ABaseObject
 {
     AN_CLASS( IAudioDecoderInterface, ABaseObject )
 

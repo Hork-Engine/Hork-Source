@@ -455,6 +455,57 @@ static const SVertexAttribInfo VertexAttribsHUD[] = {
     }
 };
 
+static const SVertexAttribInfo VertexAttribsTerrain[] = {
+    {
+        "InPosition",
+        0,              // location
+        0,              // buffer input slot
+        VAT_SHORT2,
+        VAM_INTEGER,
+        0,              // InstanceDataStepRate
+        AN_OFS( STerrainVertex, X )
+    }
+};
+
+static const SVertexAttribInfo VertexAttribsTerrainInstanced[] = {
+    {
+        "InPosition",
+        0,              // location
+        0,              // buffer input slot
+        VAT_SHORT2,
+        VAM_INTEGER,
+        0,              // InstanceDataStepRate
+        AN_OFS( STerrainVertex, X )
+    },
+    {
+        "VertexScaleAndTranslate",
+        1,              // location
+        1,              // buffer input slot
+        VAT_INT4,
+        VAM_INTEGER,
+        1,              // InstanceDataStepRate
+        AN_OFS( STerrainPatchInstance, VertexScale )
+    },
+    {
+        "TexcoordOffset",
+        2,              // location
+        1,              // buffer input slot
+        VAT_INT2,
+        VAM_INTEGER,
+        1,              // InstanceDataStepRate
+        AN_OFS( STerrainPatchInstance, TexcoordOffset )
+    },
+    {
+        "QuadColor",
+        3,              // location
+        1,              // buffer input slot
+        VAT_FLOAT4,
+        VAM_FLOAT,
+        1,              // InstanceDataStepRate
+        AN_OFS( STerrainPatchInstance, QuadColor )
+    }
+};
+
 void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
     SPipelineCreateInfo pipelineCI;
@@ -943,7 +994,6 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
 
-    // Depth pre-pass
     dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
     if ( _Translucent ) {
         dssd.DepthFunc = CMPFUNC_GREATER;
@@ -1624,6 +1674,194 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
 
     pipelineCI.ResourceLayout.NumBuffers = _Skinned ? 3 : 2;
+    pipelineCI.ResourceLayout.Buffers = buffers;
+
+    GDevice->CreatePipeline( pipelineCI, ppPipeline );
+}
+
+void CreateTerrainMaterialDepth( TRef< RenderCore::IPipeline > * ppPipeline )
+{
+    SPipelineCreateInfo pipelineCI;
+
+    SRasterizerStateInfo & rsd = pipelineCI.RS;
+    rsd.CullMode = POLYGON_CULL_FRONT;
+
+    SDepthStencilStateInfo & dssd = pipelineCI.DSS;
+    dssd.DepthFunc = CMPFUNC_GEQUAL;//CMPFUNC_GREATER;
+
+    SBlendingStateInfo & bs = pipelineCI.BS;
+    bs.RenderTargetSlots[0].ColorWriteMask = COLOR_WRITE_DISABLED;
+
+    SVertexBindingInfo vertexBinding[2] = {};
+
+    vertexBinding[0].InputSlot = 0;
+    vertexBinding[0].Stride = sizeof( STerrainVertex );
+    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
+
+    vertexBinding[1].InputSlot = 1;
+    vertexBinding[1].Stride = sizeof( STerrainPatchInstance );
+    vertexBinding[1].InputRate = INPUT_RATE_PER_INSTANCE;
+
+    pipelineCI.NumVertexBindings = 2;
+    pipelineCI.pVertexBindings = vertexBinding;
+
+    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsTerrainInstanced );
+    pipelineCI.pVertexAttribs = VertexAttribsTerrainInstanced;
+
+    CreateVertexShader( "terrain_depth.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
+
+    SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
+    inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
+    inputAssembly.bPrimitiveRestart = true;
+
+    SSamplerInfo clipmapSampler;
+    clipmapSampler.Filter = FILTER_NEAREST;
+
+    pipelineCI.ResourceLayout.NumSamplers = 1;
+    pipelineCI.ResourceLayout.Samplers = &clipmapSampler;
+
+    SBufferInfo buffers[2];
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+
+    pipelineCI.ResourceLayout.NumBuffers = 2;
+    pipelineCI.ResourceLayout.Buffers = buffers;
+
+    GDevice->CreatePipeline( pipelineCI, ppPipeline );
+}
+
+void CreateTerrainMaterialLight( TRef< RenderCore::IPipeline > * ppPipeline )
+{
+    SPipelineCreateInfo pipelineCI;
+
+    SRasterizerStateInfo & rsd = pipelineCI.RS;
+    rsd.CullMode = POLYGON_CULL_FRONT;
+
+    SDepthStencilStateInfo & dssd = pipelineCI.DSS;
+    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.DepthFunc = CMPFUNC_EQUAL;
+
+    SVertexBindingInfo vertexBinding[2] = {};
+
+    vertexBinding[0].InputSlot = 0;
+    vertexBinding[0].Stride = sizeof( STerrainVertex );
+    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
+
+    // TODO: second buffer for instancing
+    vertexBinding[1].InputSlot = 1;
+    vertexBinding[1].Stride = sizeof( STerrainPatchInstance );
+    vertexBinding[1].InputRate = INPUT_RATE_PER_INSTANCE;
+
+    pipelineCI.NumVertexBindings = 2;
+    pipelineCI.pVertexBindings = vertexBinding;
+
+    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsTerrainInstanced );
+    pipelineCI.pVertexAttribs = VertexAttribsTerrainInstanced;
+
+    CreateVertexShader( "terrain_color.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
+    CreateFragmentShader( "terrain_color.frag", pipelineCI.pFS );
+
+    SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
+    inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
+    inputAssembly.bPrimitiveRestart = true;
+
+    SSamplerInfo samplers[19];
+
+    SSamplerInfo & clipmapSampler = samplers[0];
+    clipmapSampler.Filter = FILTER_NEAREST;
+
+    SSamplerInfo & normalmapSampler = samplers[1];
+    normalmapSampler.Filter = FILTER_LINEAR;
+
+    // lightmap is in last sample
+    //samplers[NumSamplers] = LightmapSampler;
+
+    //if ( bUseVT ) { // TODO
+    //    samplers[6] = VirtualTextureSampler;
+    //    samplers[7] = VirtualTextureIndirectionSampler;
+    //}
+
+    //if ( AllowSSLR ) {
+        samplers[8] = ReflectDepthSampler;
+        samplers[9] = ReflectSampler;
+    //}
+    samplers[10] = IESSampler;
+    samplers[11] = LookupBRDFSampler;
+    samplers[12] = SSAOSampler;
+    samplers[13] = ClusterLookupSampler;
+    samplers[14] = ClusterLookupSampler;
+    samplers[15] =
+    samplers[16] =
+    samplers[17] =
+    samplers[18] = ShadowDepthSamplerPCF;
+
+    pipelineCI.ResourceLayout.NumSamplers = AN_ARRAY_SIZE( samplers );
+    pipelineCI.ResourceLayout.Samplers = samplers;
+
+    SBufferInfo buffers[7];
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+    buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
+    buffers[3].BufferBinding = BUFFER_BIND_CONSTANT; // shadow cascade
+    buffers[4].BufferBinding = BUFFER_BIND_CONSTANT; // light buffer
+    buffers[5].BufferBinding = BUFFER_BIND_CONSTANT; // IBL buffer
+    buffers[6].BufferBinding = BUFFER_BIND_CONSTANT; // VT buffer
+
+    pipelineCI.ResourceLayout.NumBuffers = 7;
+    pipelineCI.ResourceLayout.Buffers = buffers;
+
+    GDevice->CreatePipeline( pipelineCI, ppPipeline );
+}
+
+void CreateTerrainMaterialWireframe( TRef< RenderCore::IPipeline > * ppPipeline )
+{
+    SPipelineCreateInfo pipelineCI;
+
+    SRasterizerStateInfo & rsd = pipelineCI.RS;
+    rsd.CullMode = POLYGON_CULL_FRONT;
+
+    SDepthStencilStateInfo & dssd = pipelineCI.DSS;
+    dssd.bDepthEnable = false;
+    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+
+    SBlendingStateInfo & bsd = pipelineCI.BS;
+    bsd.RenderTargetSlots[0].SetBlendingPreset( BLENDING_ALPHA );
+
+    SVertexBindingInfo vertexBinding[2] = {};
+
+    vertexBinding[0].InputSlot = 0;
+    vertexBinding[0].Stride = sizeof( STerrainVertex );
+    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
+
+    vertexBinding[1].InputSlot = 1;
+    vertexBinding[1].Stride = sizeof( STerrainPatchInstance );
+    vertexBinding[1].InputRate = INPUT_RATE_PER_INSTANCE;
+
+    pipelineCI.NumVertexBindings = 2;
+    pipelineCI.pVertexBindings = vertexBinding;
+
+    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsTerrainInstanced );
+    pipelineCI.pVertexAttribs = VertexAttribsTerrainInstanced;
+
+    CreateVertexShader( "terrain_wireframe.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
+    CreateGeometryShader( "terrain_wireframe.geom", pipelineCI.pGS );
+    CreateFragmentShader( "terrain_wireframe.frag", pipelineCI.pFS );
+
+    SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
+    inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
+    inputAssembly.bPrimitiveRestart = true;
+
+    SSamplerInfo clipmapSampler;
+    clipmapSampler.Filter = FILTER_NEAREST;
+
+    pipelineCI.ResourceLayout.NumSamplers = 1;
+    pipelineCI.ResourceLayout.Samplers = &clipmapSampler;
+
+    SBufferInfo buffers[2];
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+
+    pipelineCI.ResourceLayout.NumBuffers = 2;
     pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );

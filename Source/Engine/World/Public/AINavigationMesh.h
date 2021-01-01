@@ -518,8 +518,8 @@ private:
 private:
     bool BuildTiles( Int2 const & _Mins, Int2 const & _Maxs );
     bool BuildTile( int _X, int _Z );
-    void GatherNavigationGeometry( TPodArray< Float3 > & _Vertices,
-                                   TPodArray< unsigned int > & _Indices,
+    void GatherNavigationGeometry( TPodArrayHeap< Float3 > & _Vertices,
+                                   TPodArrayHeap< unsigned int > & _Indices,
                                    TBitMask<> & _WalkableTriangles,
                                    BvAxisAlignedBox & _ResultBoundingBox,
                                    BvAxisAlignedBox const * _ClipBoundingBox );

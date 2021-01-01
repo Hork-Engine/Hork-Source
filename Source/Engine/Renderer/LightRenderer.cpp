@@ -369,10 +369,6 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         }
 #endif
 
-        SDrawIndexedCmd drawCmd;
-        drawCmd.InstanceCount = 1;
-        drawCmd.StartInstanceLocation = 0;
-
         BindShadowMatrix();
 
         if ( r_SSLR ) {
@@ -397,6 +393,32 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         rtbl->BindTexture( 16, ShadowMapDepth1->Actual() );
         rtbl->BindTexture( 17, ShadowMapDepth2->Actual() );
         rtbl->BindTexture( 18, ShadowMapDepth3->Actual() );
+
+        for ( int i = 0 ; i < GRenderView->TerrainInstanceCount ; i++ ) {
+            STerrainRenderInstance const * instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
+
+            STerrainInstanceConstantBuffer * drawCall = MapDrawCallConstants< STerrainInstanceConstantBuffer >();
+            drawCall->LocalViewProjection = instance->LocalViewProjection;
+            StoreFloat3x3AsFloat3x4Transposed( instance->ModelNormalToViewSpace, drawCall->ModelNormalToViewSpace );
+            drawCall->ViewPositionAndHeight = instance->ViewPositionAndHeight;
+            drawCall->TerrainClipMin = instance->ClipMin;
+            drawCall->TerrainClipMax = instance->ClipMax;
+
+            rtbl->BindTexture( 0, instance->Clipmaps );
+            rtbl->BindTexture( 1, instance->Normals );
+            rcmd->BindPipeline( GTerrainLightPipeline );
+            rcmd->BindVertexBuffer( 0, instance->VertexBuffer );
+            rcmd->BindVertexBuffer( 1, GStreamBuffer, instance->InstanceBufferStreamHandle );
+            rcmd->BindIndexBuffer( instance->IndexBuffer, INDEX_TYPE_UINT16 );
+            rcmd->MultiDrawIndexedIndirect( instance->IndirectBufferDrawCount,
+                                            GStreamBuffer,
+                                            instance->IndirectBufferStreamHandle,
+                                            sizeof( SDrawIndexedIndirectCmd ) );
+        }
+
+        SDrawIndexedCmd drawCmd;
+        drawCmd.InstanceCount = 1;
+        drawCmd.StartInstanceLocation = 0;
 
         for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
             SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];

@@ -30,23 +30,17 @@ SOFTWARE.
 
 #pragma once
 
-#include "CollisionEvents.h"
-#include "Components/PhysicalBody.h"
+#include "Collision.h"
 
 class ADebugRenderer;
-
-class btBroadphaseInterface;
-class btDefaultCollisionConfiguration;
-class btCollisionDispatcher;
-class btSequentialImpulseConstraintSolver;
-class btSoftRigidDynamicsWorld;
-struct btSoftBodyWorldInfo;
+class APhysicalBody;
+class ATerrainComponent;
 
 /** Collision trace result */
 struct SCollisionTraceResult
 {
     /** Colliding body */
-    APhysicalBody * Body;
+    AHitProxy * HitProxy;
     /** Contact position */
     Float3 Position;
     /** Contact normal */
@@ -61,13 +55,6 @@ struct SCollisionTraceResult
     {
         Core::ZeroMem( this, sizeof( *this ) );
     }
-};
-
-enum
-{
-    COLLISION_TRIANGLE_CULL_NONE = 0,
-    COLLISION_TRIANGLE_CULL_BACKFACE = 1,
-    COLLISION_TRIANGLE_CULL_FRONTFACE = 2,
 };
 
 /** Collision query filter */
@@ -85,7 +72,7 @@ struct SCollisionQueryFilter
     int CollisionMask;
 
     /** Ignore triangle frontface, backface and edges */
-    int TriangleFaceCulling;
+    bool bCullBackFace;
 
     /** Sort result by the distance */
     bool bSortByDistance;
@@ -100,7 +87,7 @@ struct SCollisionQueryFilter
 
         CollisionMask = CM_ALL;
 
-        TriangleFaceCulling = COLLISION_TRIANGLE_CULL_BACKFACE;
+        bCullBackFace = true;
 
         bSortByDistance = true;
     }
@@ -126,13 +113,14 @@ struct SConvexSweepTest
 };
 
 /** Collision contact */
-struct SCollisionContact {
+struct SCollisionContact
+{
     class btPersistentManifold * Manifold;
 
     AActor * ActorA;
     AActor * ActorB;
-    APhysicalBody * ComponentA;
-    APhysicalBody * ComponentB;
+    AHitProxy * ComponentA;
+    AHitProxy * ComponentB;
 
     bool bActorADispatchContactEvents;
     bool bActorBDispatchContactEvents;
@@ -144,14 +132,16 @@ struct SCollisionContact {
     bool bComponentADispatchOverlapEvents;
     bool bComponentBDispatchOverlapEvents;
 
-    int Hash() const {
+    int Hash() const
+    {
         uint32_t hash = Core::PHHash64( ComponentA->Id );
         hash = Core::PHHash64( ComponentB->Id, hash );
         return hash;
     }
 };
 
-class IPhysicsWorldInterface {
+class IPhysicsWorldInterface
+{
 public:
     virtual void OnPrePhysics( float _TimeStep ) {}
     virtual void OnPostPhysics( float _TimeStep ) {}
@@ -160,7 +150,7 @@ public:
 struct SCollisionQueryResult
 {
     /** Colliding body */
-    APhysicalBody * Body;
+    AHitProxy * HitProxy;
     /** Contact position */
     Float3 Position;
     /** Contact normal */
@@ -199,9 +189,9 @@ public:
 
     bool bDuringPhysicsUpdate = false;
 
-    btSoftBodyWorldInfo * SoftBodyWorldInfo;
+    struct btSoftBodyWorldInfo * SoftBodyWorldInfo;
 
-    btSoftRigidDynamicsWorld * DynamicsWorld;
+    class btDiscreteDynamicsWorld * DynamicsWorld;
 
     explicit APhysicsWorld( IPhysicsWorldInterface * InOwnerWorld );
     ~APhysicsWorld();
@@ -225,21 +215,19 @@ public:
     bool TraceCylinder( SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     /** Trace collision bodies */
-    bool TraceCapsule( SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
+    bool TraceCapsule( SCollisionTraceResult & _Result, float _CapsuleHeight, float CapsuleRadius, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     /** Trace collision bodies */
     bool TraceConvex( SCollisionTraceResult & _Result, SConvexSweepTest const & _SweepTest ) const;
 
     /** Query objects in sphere */
-    void QueryPhysicalBodies_Sphere( TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
+    void QueryHitProxies_Sphere( TPodArray< AHitProxy * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     /** Query objects in box */
-    void QueryPhysicalBodies_Box( TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
-
-    void QueryPhysicalBodies_Box2( TPodArray< SCollisionQueryResult > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) const;
+    void QueryHitProxies_Box( TPodArray< AHitProxy * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     /** Query objects in AABB */
-    void QueryPhysicalBodies( TPodArray< APhysicalBody * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
+    void QueryHitProxies( TPodArray< AHitProxy * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
     /** Query objects in sphere */
     void QueryActors_Sphere( TPodArray< AActor * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
@@ -250,27 +238,32 @@ public:
     /** Query objects in AABB */
     void QueryActors( TPodArray< AActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
 
+    void QueryCollision_Sphere( TPodArray< SCollisionQueryResult > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) const;
+
+    void QueryCollision_Box( TPodArray< SCollisionQueryResult > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) const;
+
+    void QueryCollision( TPodArray< SCollisionQueryResult > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter ) const;
+
     /** Simulate the physics */
     void Simulate( float _TimeStep );
 
     void DrawDebug( ADebugRenderer * InRenderer );
 
 private:
-    // Allow physical body to register self in PhysicsWorld
-    friend class APhysicalBody;
+    friend class AHitProxy;
 
     /** Add or re-add physical body to the world */
-    void AddPhysicalBody( APhysicalBody * InPhysicalBody );
+    void AddHitProxy( AHitProxy * HitProxy );
 
     /** Remove physical body from the world */
-    void RemovePhysicalBody( APhysicalBody * InPhysicalBody );
+    void RemoveHitProxy( AHitProxy * HitProxy );
 
 private:
     /** Add physical body to pending list */
-    void AddPendingBody( APhysicalBody * InPhysicalBody );
+    void AddPendingBody( AHitProxy * InPhysicalBody );
 
     /** Remove physical body from pending list */
-    void RemovePendingBody( APhysicalBody * InPhysicalBody );
+    void RemovePendingBody( AHitProxy * InPhysicalBody );
 
     /** Add physical bodies in pending list to physics world */
     void AddPendingBodies();
@@ -285,15 +278,16 @@ private:
     static void OnPostPhysics( class btDynamicsWorld * _World, float _TimeStep );
 
     IPhysicsWorldInterface * pOwnerWorld;
-    btBroadphaseInterface * PhysicsBroadphase;
-    btDefaultCollisionConfiguration * CollisionConfiguration;
-    btCollisionDispatcher * CollisionDispatcher;
-    btSequentialImpulseConstraintSolver * ConstraintSolver;
+    class btBroadphaseInterface * BroadphaseInterface;
+    class btDefaultCollisionConfiguration * CollisionConfiguration;
+    class btCollisionDispatcher * CollisionDispatcher;
+    class btSequentialImpulseConstraintSolver * ConstraintSolver;
+    class btGhostPairCallback * GhostPairCallback;
     TPodArray< SCollisionContact > CollisionContacts[ 2 ];
     THash<> ContactHash[ 2 ];
     TPodArray< SContactPoint > ContactPoints;
-    APhysicalBody * PendingAddToWorldHead = nullptr;
-    APhysicalBody * PendingAddToWorldTail = nullptr;
+    AHitProxy * PendingAddToWorldHead = nullptr;
+    AHitProxy * PendingAddToWorldTail = nullptr;
     float TimeAccumulation = 0.0f;
     int FixedTickNumber = 0;
 };

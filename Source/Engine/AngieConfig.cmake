@@ -101,6 +101,7 @@ if(UNIX)
         -Wno-sign-compare               # Don't warn about about mixed signed/unsigned type comparisons
         -Wno-strict-aliasing            # Don't warn about strict-aliasing rules
         -Wno-maybe-uninitialized
+        -Wno-enum-compare
         )
     set( AN_COMPILER_DEFINES "" )
 	

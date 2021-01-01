@@ -94,6 +94,8 @@ static bool JoystickAdded[ MAX_JOYSTICKS_COUNT ];
 static void InitKeyMappingsSDL();
 static void LoggerMessageCallback( int _Level, const char * _Message );
 
+IEngineInterface * ARuntime::Engine = nullptr;
+
 ARuntime::ARuntime()
     : Rand( Core::RandomSeed() )
 {
@@ -291,8 +293,6 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl )
 
     pModuleDecl = &_EntryDecl;
 
-    Engine = GetEngineInstance();
-
     if ( SetCriticalMark() ) {
         // Critical error was emitted by this thread
         EmergencyExit();
@@ -301,6 +301,8 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl )
     ::GetCPUInfo( CPUInfo );
 
     InitializeProcess();
+
+    Engine = CreateEngineInstance();
 
     GLogger.SetMessageCallback( LoggerMessageCallback );
 
@@ -414,6 +416,9 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl )
 
     Engine->Run( _EntryDecl );
 
+    DestroyEngineInstance();
+    Engine = nullptr;
+
     ARuntimeVariable::FreeVariables();
 
     GAsyncJobManager.Deinitialize();
@@ -458,7 +463,7 @@ struct SProcessLog {
 static SProcessLog ProcessLog = {};
 static AThreadSync LoggerSync;
 
-static void LoggerMessageCallback( int _Level, const char * _Message )
+void ARuntime::LoggerMessageCallback( int _Level, const char * _Message )
 {
     #if defined AN_DEBUG
         #if defined AN_COMPILER_MSVC
@@ -482,7 +487,9 @@ static void LoggerMessageCallback( int _Level, const char * _Message )
         #endif
     #endif
 
-    GetEngineInstance()->Print( _Message );
+    if ( Engine ) {
+        Engine->Print( _Message );
+    }
 
     if ( ProcessLog.File ) {
         ASyncGuard syncGuard( LoggerSync );
@@ -638,7 +645,8 @@ void ARuntime::DeinitializeProcess()
 #endif
 }
 
-struct SMemoryInfo {
+struct SMemoryInfo
+{
     int TotalAvailableMegabytes;
     int CurrentAvailableMegabytes;
 };
@@ -924,7 +932,7 @@ static void FreeCommandLineArgs( char ** _Arguments )
 static char CmdLineBuffer[ MAX_COMMAND_LINE_LENGTH ];
 static bool bApplicationRun = false;
 
-ANGIE_API void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl )
+void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl )
 {
     if ( bApplicationRun ) {
         AN_ASSERT( 0 );
@@ -943,7 +951,7 @@ ANGIE_API void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl
     FreeCommandLineArgs( GRuntime.Arguments );
 }
 
-ANGIE_API void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl )
+void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl )
 {
     if ( bApplicationRun ) {
         AN_ASSERT( 0 );
@@ -1537,7 +1545,7 @@ static AN_FORCEINLINE int FromKeymodSDL_Char( Uint16 Mod )
     return modMask;
 }
 
-static void UnpressJoystickButtons( int _JoystickNum, double _TimeStamp )
+void ARuntime::UnpressJoystickButtons( int _JoystickNum, double _TimeStamp )
 {
     SJoystickButtonEvent buttonEvent;
     buttonEvent.Joystick = _JoystickNum;
@@ -1546,12 +1554,12 @@ static void UnpressJoystickButtons( int _JoystickNum, double _TimeStamp )
         if ( JoystickButtonState[_JoystickNum][i] ) {
             JoystickButtonState[_JoystickNum][i] = SDL_RELEASED;
             buttonEvent.Button = JOY_BUTTON_1 + i;
-            GetEngineInstance()->OnJoystickButtonEvent( buttonEvent, _TimeStamp );
+            Engine->OnJoystickButtonEvent( buttonEvent, _TimeStamp );
         }
     }
 }
 
-static void ClearJoystickAxes( int _JoystickNum, double _TimeStamp )
+void ARuntime::ClearJoystickAxes( int _JoystickNum, double _TimeStamp )
 {
     SJoystickAxisEvent axisEvent;
     axisEvent.Joystick = _JoystickNum;
@@ -1560,12 +1568,12 @@ static void ClearJoystickAxes( int _JoystickNum, double _TimeStamp )
         if ( JoystickAxisState[_JoystickNum][i] != 0 ) {
             JoystickAxisState[_JoystickNum][i] = 0;
             axisEvent.Axis = JOY_AXIS_1 + i;
-            GetEngineInstance()->OnJoystickAxisEvent( axisEvent, _TimeStamp );
+            Engine->OnJoystickAxisEvent( axisEvent, _TimeStamp );
         }
     }
 }
 
-static void UnpressKeysAndButtons()
+void ARuntime::UnpressKeysAndButtons()
 {
     SKeyEvent keyEvent;
     SMouseButtonEvent mouseEvent;
@@ -1585,7 +1593,7 @@ static void UnpressKeysAndButtons()
 
             PressedKeys[i] = 0;
 
-            GetEngineInstance()->OnKeyEvent( keyEvent, timeStamp );
+            Engine->OnKeyEvent( keyEvent, timeStamp );
         }
     }
     for ( int i = MOUSE_BUTTON_1 ; i <= MOUSE_BUTTON_8 ; i++ ) {
@@ -1594,7 +1602,7 @@ static void UnpressKeysAndButtons()
 
             PressedMouseButtons[i] = 0;
 
-            GetEngineInstance()->OnMouseButtonEvent( mouseEvent, timeStamp );
+            Engine->OnMouseButtonEvent( mouseEvent, timeStamp );
         }
     }
 

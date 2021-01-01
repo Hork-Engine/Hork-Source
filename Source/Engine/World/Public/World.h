@@ -158,7 +158,8 @@ struct SBoxHitResult
     //float FractionMin;
     //float FractionMax;
 
-    void Clear() {
+    void Clear()
+    {
         Core::ZeroMem( this, sizeof( *this ) );
     }
 };
@@ -166,7 +167,7 @@ struct SBoxHitResult
 /** Raycast primitive */
 struct SWorldRaycastPrimitive
 {
-    /** Primitive owner. Null for the surfaces. */
+    /** Primitive owner. Null for surfaces. */
     ASceneComponent * Object;
 
     /** First hit in array of hits */
@@ -189,10 +190,10 @@ struct SWorldRaycastResult
     TPodArray< SWorldRaycastPrimitive > Primitives;
 
     /** Sort raycast result by hit distance */
-    void Sort() {
-
-        struct ASortPrimitives {
-
+    void Sort()
+    {
+        struct ASortPrimitives
+        {
             TPodArray< STriangleHitResult > const & Hits;
 
             ASortPrimitives( TPodArray< STriangleHitResult > const & _Hits ) : Hits(_Hits) {}
@@ -208,7 +209,8 @@ struct SWorldRaycastResult
         // Sort by primitives distance
         StdSort( Primitives.ToPtr(), Primitives.ToPtr() + Primitives.Size(), SortPrimitives );
 
-        struct ASortHit {
+        struct ASortHit
+        {
             bool operator() ( STriangleHitResult const & _A, STriangleHitResult const & _B ) {
                 return ( _A.Distance < _B.Distance );
             }
@@ -222,7 +224,8 @@ struct SWorldRaycastResult
     }
 
     /** Clear raycast result */
-    void Clear() {
+    void Clear()
+    {
         Hits.Clear();
         Primitives.Clear();
     }
@@ -231,7 +234,7 @@ struct SWorldRaycastResult
 /** Closest hit result */
 struct SWorldRaycastClosestResult
 {
-    /** Primitive owner. Null for the surfaces. */
+    /** Primitive owner. Null for surfaces. */
     ASceneComponent * Object;
 
     /** Hit */
@@ -264,7 +267,8 @@ struct SWorldRaycastFilter
     /** Sort result by the distance */
     bool bSortByDistance;
 
-    SWorldRaycastFilter() {
+    SWorldRaycastFilter()
+    {
         VisibilityMask = ~0;
         QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
         bSortByDistance = true;
@@ -272,7 +276,7 @@ struct SWorldRaycastFilter
 };
 
 /** AWorld. Defines a game map or editor/tool scene */
-class ANGIE_API AWorld : public ABaseObject, public IPhysicsWorldInterface
+class AWorld : public ABaseObject, public IPhysicsWorldInterface
 {
     AN_CLASS( AWorld, ABaseObject )
 
@@ -283,6 +287,9 @@ public:
     /** Delegate to notify when any actor spawned */
     using AOnActorSpawned = TEvent< AActor * >;
     AOnActorSpawned E_OnActorSpawned;
+
+    using AOnPostPhysicsUpdate = TEvent<>;
+    AOnPostPhysicsUpdate E_OnPostPhysicsUpdate;
 
     /** Delegate to prepare for rendering */
     using AOnPrepareRenderFrontend = TEvent< ACameraComponent *, int >;
@@ -311,14 +318,16 @@ public:
 
     /** Spawn a new actor */
     template< typename ActorType >
-    ActorType * SpawnActor( TActorSpawnInfo< ActorType > const & _SpawnParameters ) {
+    ActorType * SpawnActor( TActorSpawnInfo< ActorType > const & _SpawnParameters )
+    {
         SActorSpawnInfo const & spawnParameters = _SpawnParameters;
         return static_cast< ActorType * >( SpawnActor( spawnParameters ) );
     }
 
     /** Spawn a new actor */
     template< typename ActorType >
-    ActorType * SpawnActor( ALevel * _Level = nullptr ) {
+    ActorType * SpawnActor( ALevel * _Level = nullptr )
+    {
         TActorSpawnInfo< ActorType > spawnParameters;
         spawnParameters.Level = _Level;
         return static_cast< ActorType * >( SpawnActor( spawnParameters ) );
@@ -326,7 +335,8 @@ public:
 
     /** Spawn a new actor */
     template< typename ActorType >
-    ActorType * SpawnActor( STransform const & _SpawnTransform, ALevel * _Level = nullptr ) {
+    ActorType * SpawnActor( STransform const & _SpawnTransform, ALevel * _Level = nullptr )
+    {
         TActorSpawnInfo< ActorType > spawnParameters;
         spawnParameters.SpawnTransform = _SpawnTransform;
         spawnParameters.Level = _Level;
@@ -335,7 +345,8 @@ public:
 
     /** Spawn a new actor */
     template< typename ActorType >
-    ActorType * SpawnActor( Float3 const & _Position, Quat const & _Rotation, ALevel * _Level = nullptr ) {
+    ActorType * SpawnActor( Float3 const & _Position, Quat const & _Rotation, ALevel * _Level = nullptr )
+    {
         TActorSpawnInfo< ActorType > spawnParameters;
         spawnParameters.SpawnTransform.Position = _Position;
         spawnParameters.SpawnTransform.Rotation = _Rotation;
@@ -409,6 +420,12 @@ public:
     /** Is world destroyed, but not removed yet. */
     bool IsPendingKill() const { return bPendingKill; }
 
+    void SetGlobalIrradianceMap( int Index );
+    int GetGlobalIrradianceMap() const { return GlobalIrradianceMap; }
+
+    void SetGlobalReflectionMap( int Index );
+    int GetGlobalReflectionMap() const { return GlobalReflectionMap; }
+
     /** Per-triangle raycast */
     bool Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr ) const;
 
@@ -422,73 +439,105 @@ public:
     bool RaycastClosestBounds( SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr ) const;
 
     /** Trace collision bodies */
-    bool Trace( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
+    bool Trace( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    {
         return PhysicsWorld.Trace( _Result, _RayStart, _RayEnd, _QueryFilter );
     }
 
     /** Trace collision bodies */
-    bool TraceClosest( SCollisionTraceResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
+    bool TraceClosest( SCollisionTraceResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    {
         return PhysicsWorld.TraceClosest( _Result, _RayStart, _RayEnd, _QueryFilter );
     }
 
     /** Trace collision bodies */
-    bool TraceSphere( SCollisionTraceResult & _Result, float _Radius, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
+    bool TraceSphere( SCollisionTraceResult & _Result, float _Radius, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    {
         return PhysicsWorld.TraceSphere( _Result, _Radius, _RayStart, _RayEnd, _QueryFilter );
     }
 
     /** Trace collision bodies */
-    bool TraceBox( SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
+    bool TraceBox( SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    {
         return PhysicsWorld.TraceBox( _Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter );
     }
 
     /** Trace collision bodies */
-    bool TraceBox2( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
+    bool TraceBox2( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    {
         return PhysicsWorld.TraceBox2( _Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter );
     }
 
     /** Trace collision bodies */
-    bool TraceCylinder( SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
+    bool TraceCylinder( SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    {
         return PhysicsWorld.TraceCylinder( _Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter );
     }
 
     /** Trace collision bodies */
-    bool TraceCapsule( SCollisionTraceResult & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        return PhysicsWorld.TraceCapsule( _Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter );
+    bool TraceCapsule( SCollisionTraceResult & _Result, float _CapsuleHeight, float CapsuleRadius, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    {
+        return PhysicsWorld.TraceCapsule( _Result, _CapsuleHeight, CapsuleRadius, _RayStart, _RayEnd, _QueryFilter );
     }
 
     /** Trace collision bodies */
-    bool TraceConvex( SCollisionTraceResult & _Result, SConvexSweepTest const & _SweepTest ) const {
+    bool TraceConvex( SCollisionTraceResult & _Result, SConvexSweepTest const & _SweepTest ) const
+    {
         return PhysicsWorld.TraceConvex( _Result, _SweepTest );
     }
 
     /** Query objects in sphere */
-    void QueryPhysicalBodies( TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        PhysicsWorld.QueryPhysicalBodies_Sphere( _Result, _Position, _Radius, _QueryFilter );
+    void QueryHitProxies( TPodArray< AHitProxy * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    {
+        PhysicsWorld.QueryHitProxies_Sphere( _Result, _Position, _Radius, _QueryFilter );
     }
 
     /** Query objects in box */
-    void QueryPhysicalBodies( TPodArray< APhysicalBody * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        PhysicsWorld.QueryPhysicalBodies_Box( _Result, _Position, _HalfExtents, _QueryFilter );
+    void QueryHitProxies( TPodArray< AHitProxy * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    {
+        PhysicsWorld.QueryHitProxies_Box( _Result, _Position, _HalfExtents, _QueryFilter );
     }
 
     /** Query objects in AABB */
-    void QueryPhysicalBodies( TPodArray< APhysicalBody * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
-        PhysicsWorld.QueryPhysicalBodies( _Result, _BoundingBox, _QueryFilter );
+    void QueryHitProxies( TPodArray< AHitProxy * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    {
+        PhysicsWorld.QueryHitProxies( _Result, _BoundingBox, _QueryFilter );
     }
 
-    /** Query objects in sphere */
-    void QueryActors( TPodArray< AActor * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
+    /** Query actors in sphere */
+    void QueryActors( TPodArray< AActor * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    {
         PhysicsWorld.QueryActors_Sphere( _Result, _Position, _Radius, _QueryFilter );
     }
 
-    /** Query objects in box */
-    void QueryActors( TPodArray< AActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
+    /** Query actors in box */
+    void QueryActors( TPodArray< AActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    {
         PhysicsWorld.QueryActors_Box( _Result, _Position, _HalfExtents, _QueryFilter );
     }
 
-    /** Query objects in AABB */
-    void QueryActors( TPodArray< AActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const {
+    /** Query actors in AABB */
+    void QueryActors( TPodArray< AActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    {
         PhysicsWorld.QueryActors( _Result, _BoundingBox, _QueryFilter );
+    }
+
+    /** Query collisions with sphere */
+    void QueryCollision_Sphere( TPodArray< SCollisionQueryResult > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) const
+    {
+        PhysicsWorld.QueryCollision_Sphere( _Result, _Position, _Radius, _QueryFilter );
+    }
+
+    /** Query collisions with box */
+    void QueryCollision_Box( TPodArray< SCollisionQueryResult > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) const
+    {
+        PhysicsWorld.QueryCollision_Box( _Result, _Position, _HalfExtents, _QueryFilter );
+    }
+
+    /** Query collisions with AABB */
+    void QueryCollision( TPodArray< SCollisionQueryResult > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter ) const
+    {
+        PhysicsWorld.QueryCollision( _Result, _BoundingBox, _QueryFilter );
     }
 
     /** Query visible primitives */
@@ -501,16 +550,30 @@ public:
     // Internal
     //
 
-    APhysicsWorld & GetPhysicsWorld() { return PhysicsWorld; }
+    APhysicsWorld & GetPhysicsWorld()
+    {
+        return PhysicsWorld;
+    }
 
-    ARenderWorld & GetRenderWorld() { return RenderWorld; }
+    ARenderWorld & GetRenderWorld()
+    {
+        return RenderWorld;
+    }
 
-    AAINavigationMesh & GetNavigationMesh() { return NavigationMesh; }
+    AAINavigationMesh & GetNavigationMesh()
+    {
+        return NavigationMesh;
+    }
 
-    btSoftRigidDynamicsWorld * GetDynamicsWorld() { return PhysicsWorld.DynamicsWorld; }
-    btSoftRigidDynamicsWorld const * GetDynamicsWorld() const { return PhysicsWorld.DynamicsWorld; }
+    btDiscreteDynamicsWorld * GetDynamicsWorld() const
+    {
+        return PhysicsWorld.DynamicsWorld;
+    }
 
-    btSoftBodyWorldInfo * GetSoftBodyWorldInfo() { return PhysicsWorld.SoftBodyWorldInfo; }
+    btSoftBodyWorldInfo * GetSoftBodyWorldInfo()
+    {
+        return PhysicsWorld.SoftBodyWorldInfo;
+    }
 
     void DrawDebug( ADebugRenderer * InRenderer );
 
@@ -522,6 +585,7 @@ protected:
     void Tick( float _TimeStep );
 
     AWorld();
+    ~AWorld();
 
 private:
     // Allow timer to register itself in the world
@@ -572,7 +636,8 @@ private:
     int64_t GameplayTimeMicro = 0;
     int64_t GameplayTimeMicroAfterTick = 0;
 
-    struct STimerCmd {
+    struct STimerCmd
+    {
         enum { ADD, REMOVE } Command;
         ATimer * TimerCb;
     };
@@ -597,6 +662,9 @@ private:
     TRef< ALevel > PersistentLevel;
     TPodArray< ALevel * > ArrayOfLevels;
 
+    int GlobalIrradianceMap = 0;
+    int GlobalReflectionMap = 0;
+
     APhysicsWorld PhysicsWorld;
     ARenderWorld RenderWorld;
     AAINavigationMesh NavigationMesh;
@@ -619,37 +687,44 @@ for ( TActorIterator< AMyActor > it( GetWorld() ) ; it ; ++it ) {
 
 */
 template< typename T >
-struct TActorIterator {
+struct TActorIterator
+{
     explicit TActorIterator( AWorld * _World )
         : Actors( _World->GetActors() ), i(0)
     {
         Next();
     }
 
-    operator bool() const {
+    operator bool() const
+    {
         return Actor != nullptr;
     }
 
-    T * operator++() {
+    T * operator++()
+    {
         Next();
         return Actor;
     }
 
-    T * operator++(int) {
+    T * operator++(int)
+    {
         T * a = Actor;
         Next();
         return a;
     }
 
-    T * operator*() const {
+    T * operator*() const
+    {
         return Actor;
     }
 
-    T * operator->() const {
+    T * operator->() const
+    {
         return Actor;
     }
 
-    void Next() {
+    void Next()
+    {
         AActor * a;
         while ( i < Actors.Size() ) {
             a = Actors[i++];
@@ -691,12 +766,14 @@ struct TActorIterator2 {
     {
     }
 
-    T * First() {
+    T * First()
+    {
         i = 0;
         return Next();
     }
 
-    T * Next() {
+    T * Next()
+    {
         AActor * a;
         while ( i < Actors.Size() ) {
             a = Actors[i++];
@@ -736,30 +813,36 @@ struct TComponentIterator {
         Next();
     }
 
-    operator bool() const {
+    operator bool() const
+    {
         return Component != nullptr;
     }
 
-    T * operator++() {
+    T * operator++()
+    {
         Next();
         return Component;
     }
 
-    T * operator++(int) {
+    T * operator++(int)
+    {
         T * a = Component;
         Next();
         return a;
     }
 
-    T * operator*() const {
+    T * operator*() const
+    {
         return Component;
     }
 
-    T * operator->() const {
+    T * operator->() const
+    {
         return Component;
     }
 
-    void Next() {
+    void Next()
+    {
         AActorComponent * a;
         while ( i < Components.Size() ) {
             a = Components[i++];
@@ -795,18 +878,21 @@ for ( AMyComponent * component = it.First() ; component ; component = it.Next() 
 
 */
 template< typename T >
-struct TComponentIterator2 {
+struct TComponentIterator2
+{
     explicit TComponentIterator2( AActor * _Actor )
         : Components( _Actor->GetComponents() ), i( 0 )
     {
     }
 
-    T * First() {
+    T * First()
+    {
         i = 0;
         return Next();
     }
 
-    T * Next() {
+    T * Next()
+    {
         AActorComponent * a;
         while ( i < Components.Size() ) {
             a = Components[i++];

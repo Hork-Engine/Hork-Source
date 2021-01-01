@@ -42,7 +42,7 @@ class AClassMeta;
 class AAttributeMeta;
 class ADummy;
 
-class ANGIE_API AObjectFactory
+class AObjectFactory
 {
     AN_FORBID_COPY( AObjectFactory )
 
@@ -84,7 +84,7 @@ private:
     static AObjectFactory * FactoryList;
 };
 
-class ANGIE_API AClassMeta
+class AClassMeta
 {
     AN_FORBID_COPY( AClassMeta )
 
@@ -172,7 +172,7 @@ AN_FORCEINLINE AClassMeta const * AObjectFactory::GetClassList() const
     return Classes;
 }
 
-class ANGIE_API AAttributeMeta
+class AAttributeMeta
 {
     AN_FORBID_COPY( AAttributeMeta )
 
@@ -476,7 +476,7 @@ Base factory object class.
 Needs to resolve class meta data.
 
 */
-class ANGIE_API ADummy
+class ADummy
 {
     AN_FORBID_COPY( ADummy )
 

@@ -105,7 +105,8 @@ enum VSD_QUERY_MASK
 enum VISIBILITY_GROUP
 {
     VISIBILITY_GROUP_DEFAULT = 1,
-    VISIBILITY_GROUP_SKYBOX  = 2
+    VISIBILITY_GROUP_SKYBOX  = 2,
+    VISIBILITY_GROUP_TERRAIN = 4
 };
 
 constexpr int MAX_AMBIENT_SOUNDS_IN_AREA = 4;
@@ -289,18 +290,26 @@ struct SPrimitiveDef
     bool (*RaycastCallback)( SPrimitiveDef const * Self,
                              Float3 const & InRayStart,
                              Float3 const & InRayEnd,
-                             TPodArray< STriangleHitResult > & Hits,
-                             int & ClosestHit );
+                             TPodArray< STriangleHitResult > & Hits );
 
     /** Callback for closest local raycast */
     bool (*RaycastClosestCallback)( SPrimitiveDef const * Self,
                                     Float3 const & InRayStart,
-                                    Float3 & HitLocation,
-                                    Float2 & HitUV,
-                                    float & HitDistance,
-                                    SMeshVertex const ** pVertices,
-                                    unsigned int Indices[3],
-                                    TRef< AMaterialInstance > & Material );
+                                    Float3 const & InRayEnd,
+                                    STriangleHitResult & Hit,
+                                    SMeshVertex const ** pVertices );
+
+    void (*EvaluateRaycastResult)( SPrimitiveDef * Self,
+                                   ALevel const * LightingLevel,
+                                   SMeshVertex const * pVertices,
+                                   SMeshVertexUV const * pLightmapVerts,
+                                   int LightmapBlock,
+                                   unsigned int const * pIndices,
+                                   Float3 const & HitLocation,
+                                   Float2 const & HitUV,
+                                   Float3 * Vertices,
+                                   Float2 & TexCoord,
+                                   Float3 & LightmapSample );
 
     /** Primitive type */
     VSD_PRIMITIVE Type;
@@ -462,7 +471,7 @@ public:
     TStdVector< TRef< AMaterialInstance > > SurfaceMaterials;
 
     /** Baked collision data */
-    ACollisionBodyComposition BodyComposition;
+    TRef< ACollisionModel > CollisionModel;
 
     /** Lighting data will be used from that level. */
     TWeakRef< ALevel > ParentLevel;
@@ -475,7 +484,8 @@ protected:
 };
 
 
-enum ELightmapFormat {
+enum ELightmapFormat
+{
     LIGHTMAP_GRAYSCALED_HALF,
     LIGHTMAP_BGR_HALF
 };

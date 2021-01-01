@@ -15,6 +15,8 @@ SET(BulletDynamics_SRCS
 	ConstraintSolver/btHingeConstraint.cpp
 	ConstraintSolver/btPoint2PointConstraint.cpp
 	ConstraintSolver/btSequentialImpulseConstraintSolver.cpp
+	ConstraintSolver/btSequentialImpulseConstraintSolverMt.cpp
+	ConstraintSolver/btBatchedConstraints.cpp
 	ConstraintSolver/btNNCGConstraintSolver.cpp
 	ConstraintSolver/btSliderConstraint.cpp
 	ConstraintSolver/btSolve2LinearConstraint.cpp
@@ -29,14 +31,17 @@ SET(BulletDynamics_SRCS
 	Vehicle/btRaycastVehicle.cpp
 	Vehicle/btWheelInfo.cpp
 	Featherstone/btMultiBody.cpp
+	Featherstone/btMultiBodyConstraint.cpp
 	Featherstone/btMultiBodyConstraintSolver.cpp
 	Featherstone/btMultiBodyDynamicsWorld.cpp
-	Featherstone/btMultiBodyJointLimitConstraint.cpp
-	Featherstone/btMultiBodyConstraint.cpp
-	Featherstone/btMultiBodyPoint2Point.cpp
 	Featherstone/btMultiBodyFixedConstraint.cpp
-	Featherstone/btMultiBodySliderConstraint.cpp
+	Featherstone/btMultiBodyGearConstraint.cpp
+	Featherstone/btMultiBodyJointLimitConstraint.cpp
 	Featherstone/btMultiBodyJointMotor.cpp
+	Featherstone/btMultiBodyMLCPConstraintSolver.cpp
+	Featherstone/btMultiBodyPoint2Point.cpp
+	Featherstone/btMultiBodySliderConstraint.cpp
+	Featherstone/btMultiBodySphericalJointMotor.cpp
 	MLCPSolvers/btDantzigLCP.cpp
 	MLCPSolvers/btMLCPSolver.cpp
 	MLCPSolvers/btLemkeAlgorithm.cpp
@@ -61,6 +66,7 @@ SET(ConstraintSolver_HDRS
 	ConstraintSolver/btJacobianEntry.h
 	ConstraintSolver/btPoint2PointConstraint.h
 	ConstraintSolver/btSequentialImpulseConstraintSolver.h
+	ConstraintSolver/btSequentialImpulseConstraintSolverMt.h
 	ConstraintSolver/btNNCGConstraintSolver.h
 	ConstraintSolver/btSliderConstraint.h
 	ConstraintSolver/btSolve2LinearConstraint.h
@@ -86,18 +92,19 @@ SET(Vehicle_HDRS
 
 SET(Featherstone_HDRS
 	Featherstone/btMultiBody.h
+	Featherstone/btMultiBodyConstraint.h
 	Featherstone/btMultiBodyConstraintSolver.h
 	Featherstone/btMultiBodyDynamicsWorld.h
+	Featherstone/btMultiBodyFixedConstraint.h
+	Featherstone/btMultiBodyGearConstraint.h
+	Featherstone/btMultiBodyJointLimitConstraint.h
+	Featherstone/btMultiBodyJointMotor.h
 	Featherstone/btMultiBodyLink.h
 	Featherstone/btMultiBodyLinkCollider.h
-	Featherstone/btMultiBodySolverConstraint.h
-	Featherstone/btMultiBodyConstraint.h
-	Featherstone/btMultiBodyJointLimitConstraint.h
-	Featherstone/btMultiBodyConstraint.h
+	Featherstone/btMultiBodyMLCPConstraintSolver.h
 	Featherstone/btMultiBodyPoint2Point.h
-	Featherstone/btMultiBodyFixedConstraint.h
 	Featherstone/btMultiBodySliderConstraint.h
-	Featherstone/btMultiBodyJointMotor.h
+	Featherstone/btMultiBodySolverConstraint.h
 )
 
 SET(MLCPSolvers_HDRS
@@ -132,9 +139,9 @@ SET(BulletDynamics_HDRS
 ADD_LIBRARY(BulletDynamics ${BulletDynamics_SRCS} ${BulletDynamics_HDRS})
 SET_TARGET_PROPERTIES(BulletDynamics PROPERTIES VERSION ${BULLET_VERSION})
 SET_TARGET_PROPERTIES(BulletDynamics PROPERTIES SOVERSION ${BULLET_VERSION})
-#IF (BUILD_SHARED_LIBS)
+IF (BUILD_SHARED_LIBS)
 	TARGET_LINK_LIBRARIES(BulletDynamics BulletCollision LinearMath)
-#ENDIF (BUILD_SHARED_LIBS)
+ENDIF (BUILD_SHARED_LIBS)
 
 IF (INSTALL_LIBS)
 	IF (NOT INTERNAL_CREATE_DISTRIBUTABLE_MSVC_PROJECTFILES)

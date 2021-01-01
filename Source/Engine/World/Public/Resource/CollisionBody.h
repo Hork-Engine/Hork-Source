@@ -33,18 +33,10 @@ SOFTWARE.
 #include <World/Public/Base/BaseObject.h>
 #include <Core/Public/BV/BvAxisAlignedBox.h>
 
-class btCollisionShape;
-class btCompoundShape;
-class btBvhTriangleMeshShape;
-struct btTriangleInfoMap;
-class ACollisionBodyComposition;
 class AIndexedMeshSubpart;
 
 class ACollisionBody : public ABaseObject {
     AN_CLASS( ACollisionBody, ABaseObject )
-
-    friend class APhysicsWorld;
-    friend void CreateCollisionShape( ACollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass );
 
 public:
     Float3 Position;
@@ -55,7 +47,7 @@ public:
 
     virtual bool IsConvex() const { return false; }
 
-    virtual void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {}
+    virtual void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {}
 
 protected:
     ACollisionBody()
@@ -65,8 +57,8 @@ protected:
     {
     }
 
-    // Only APhysicsWorld and CreateCollisionShape can call Create()
-    virtual btCollisionShape * Create() { AN_ASSERT( 0 ); return nullptr; }
+public:
+    virtual class btCollisionShape * Create() { AN_ASSERT( 0 ); return nullptr; }
 };
 
 class ACollisionSphere : public ACollisionBody {
@@ -78,12 +70,12 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionSphere() {}
 
-private:
+public:
     btCollisionShape * Create() override;
 };
 
@@ -95,12 +87,12 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionSphereRadii() {}
 
-private:
+public:
     btCollisionShape * Create() override;
 };
 
@@ -112,12 +104,12 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionBox() {}
 
-private:
+public:
     btCollisionShape * Create() override;
 };
 
@@ -130,12 +122,12 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionCylinder() {}
 
-private:
+public:
     btCollisionShape * Create() override;
 };
 
@@ -149,12 +141,12 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionCone() {}
 
-private:
+public:
     btCollisionShape * Create() override;
 };
 
@@ -175,12 +167,12 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionCapsule() {}
 
-private:
+public:
     btCollisionShape * Create() override;
 };
 
@@ -197,7 +189,7 @@ private:
 
 //    bool IsConvex() const override { return true; }
 
-//    void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
+//    void GatherGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
 
 //protected:
 //    ACollisionConvexHull() {}
@@ -229,9 +221,9 @@ protected:
     ACollisionConvexHullData();
     ~ACollisionConvexHullData();
 
-    TPodArray< Float3 > Vertices;
-    TPodArray< unsigned int > Indices;
-    class btVector3 * Data = nullptr;
+    TPodArrayHeap< Float3 > Vertices;
+    TPodArrayHeap< unsigned int > Indices;
+    //class btVector3 * Data = nullptr;
 };
 
 class ACollisionConvexHull : public ACollisionBody {
@@ -242,12 +234,12 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionConvexHull() {}
 
-private:
+public:
     btCollisionShape * Create() override;
 };
 
@@ -262,9 +254,9 @@ public:
         int IndexCount;
     };
 
-    TPodArray< Float3 > Vertices;
-    TPodArray< unsigned int > Indices;
-    TPodArray< SSubpart > Subparts;
+    TPodArrayHeap< Float3 > Vertices;
+    TPodArrayHeap< unsigned int > Indices;
+    TPodArrayHeap< SSubpart > Subparts;
     BvAxisAlignedBox BoundingBox;
 
     /** Initialize collision triangle soup from indexed mesh */
@@ -296,17 +288,16 @@ public:
 
     bool UsedQuantizedAabbCompression() const;
 
-    btBvhTriangleMeshShape * GetData() { return Data; }
+    class btBvhTriangleMeshShape * GetData() { return Data.GetObject(); }
 
 protected:
     ACollisionTriangleSoupBVHData();
     ~ACollisionTriangleSoupBVHData();
 
 private:
-    btBvhTriangleMeshShape * Data = nullptr; // TODO: Try btMultimaterialTriangleMeshShape
-    btTriangleInfoMap * TriangleInfoMap = nullptr;
- 
-    class AStridingMeshInterface * Interface;
+    TUniqueRef< btBvhTriangleMeshShape > Data; // TODO: Try btMultimaterialTriangleMeshShape
+    TUniqueRef< struct btTriangleInfoMap > TriangleInfoMap;
+    TUniqueRef< class AStridingMeshInterface > Interface;
 
     bool bUsedQuantizedAabbCompression = false;
 };
@@ -319,12 +310,12 @@ public:
     /** BVH data for static or kinematic objects */
     TRef< ACollisionTriangleSoupBVHData > BvhData;
 
-    void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionTriangleSoupBVH() {}
 
-private:
+public:
     btCollisionShape * Create() override;
 };
 
@@ -334,70 +325,92 @@ class ACollisionTriangleSoupGimpact : public ACollisionBody {
 public:
     TRef< ACollisionTriangleSoupData > TrisData;
 
-    void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionTriangleSoupGimpact();
     ~ACollisionTriangleSoupGimpact();
 
-private:
+public:
     btCollisionShape * Create() override;
 
-    class AStridingMeshInterface * Interface;
+private:
+    TUniqueRef< class AStridingMeshInterface > Interface;
 };
 
-class ACollisionBodyComposition {
-    AN_FORBID_COPY( ACollisionBodyComposition )
+struct SBoneCollision
+{
+    int JointIndex;
+
+    int CollisionGroup;// = CM_WORLD;
+    int CollisionMask;// = CM_ALL;
+
+    TRef< ACollisionBody > CollisionBody;
+};
+
+class ACollisionModel : public ABaseObject // TODO: AResource
+{
+    AN_CLASS( ACollisionModel, ABaseObject )
 
 public:
-    ACollisionBodyComposition() {
+    ACollisionModel()
+    {
         CenterOfMass.Clear();
     }
 
-    ~ACollisionBodyComposition() {
+    ~ACollisionModel()
+    {
         Clear();
     }
 
-    void Clear() {
+    void Clear()
+    {
         for ( ACollisionBody * body : CollisionBodies ) {
             body->RemoveRef();
         }
         CollisionBodies.Clear();
         CenterOfMass.Clear();
+        BoneCollisions.Clear();
     }
 
     template< typename T >
-    T * AddCollisionBody() {
-        T * body = CreateInstanceOf< T >();
-        AddCollisionBody( body );
+    T * CreateBody()
+    {
+        T * body = NewObject< T >();
+        CollisionBodies.Append( body );
+        body->AddRef();
         return body;
     }
 
-    void AddCollisionBody( ACollisionBody * _Body ) {
-        AN_ASSERT( CollisionBodies.Find( _Body ) == CollisionBodies.End() );
-        CollisionBodies.Append( _Body );
-        _Body->AddRef();
-    }
+//    void AddBody( ACollisionBody * _Body )
+//    {
+//        AN_ASSERT( CollisionBodies.Find( _Body ) == CollisionBodies.End() );
+//        CollisionBodies.Append( _Body );
+//        _Body->AddRef();
+//    }
 
-    void RemoveCollisionBody( ACollisionBody * _Body ) {
-        auto it = CollisionBodies.Find( _Body );
-        if ( it == CollisionBodies.End() ) {
-            return;
-        }
-        _Body->RemoveRef();
-        CollisionBodies.Erase( it );
-    }
+//    void RemoveCollisionBody( ACollisionBody * _Body )
+//    {
+//        auto it = CollisionBodies.Find( _Body );
+//        if ( it == CollisionBodies.End() ) {
+//            return;
+//        }
+//        _Body->RemoveRef();
+//        CollisionBodies.Erase( it );
+//    }
 
-    void Duplicate( ACollisionBodyComposition & _Composition ) const {
-        _Composition.Clear();
-        _Composition.CollisionBodies = CollisionBodies;
-        for ( ACollisionBody * body : CollisionBodies ) {
-            body->AddRef();
-        }
-        _Composition.CenterOfMass = CenterOfMass;
-    }
+//    void Duplicate( ACollisionModel * _CollisionModel ) const
+//    {
+//        _CollisionModel->Clear();
+//        _CollisionModel->CollisionBodies = CollisionBodies;
+//        for ( ACollisionBody * body : CollisionBodies ) {
+//            body->AddRef();
+//        }
+//        _CollisionModel->CenterOfMass = CenterOfMass;
+//    }
 
-    void ComputeCenterOfMassAvg() {
+    void ComputeCenterOfMassAvg()
+    {
         CenterOfMass.Clear();
         if ( !CollisionBodies.IsEmpty() ) {
             for ( ACollisionBody * body : CollisionBodies ) {
@@ -407,11 +420,84 @@ public:
         }
     }
 
-    int NumCollisionBodies() const { return CollisionBodies.Size(); }
+    void SetCenterOfMass( Float3 const & _CenterOfMass )
+    {
+        CenterOfMass = _CenterOfMass;
+    }
 
-    void CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const;
+    Float3 const & GetCenterOfMass() const
+    {
+        return CenterOfMass;
+    }
 
+    int NumCollisionBodies() const
+    {
+        return CollisionBodies.Size();
+    }
+
+    TPodArray< ACollisionBody *, 2 > const & GetCollisionBodies() const { return CollisionBodies; }
+
+    template< typename T >
+    T * CreateBoneCollision( int JointIndex, int CollisionGroup, int CollisionMask )
+    {
+        SBoneCollision boneCol;
+        boneCol.JointIndex = JointIndex;
+        boneCol.CollisionGroup = CollisionGroup;
+        boneCol.CollisionMask = CollisionMask;
+        boneCol.CollisionBody = NewObject< T >();
+        BoneCollisions.Append( boneCol );
+        return static_cast< T * >( boneCol.CollisionBody.GetObject() );
+    }
+
+    TStdVector< SBoneCollision > const & GetBoneCollisions() const { return BoneCollisions; }
+
+    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const;
+
+    void PerformConvexDecomposition( Float3 const * _Vertices,
+                                     int _VerticesCount,
+                                     int _VertexStride,
+                                     unsigned int const * _Indices,
+                                     int _IndicesCount );
+
+    void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
+                                          int _VerticesCount,
+                                          int _VertexStride,
+                                          unsigned int const * _Indices,
+                                          int _IndicesCount );
+
+private:
     TPodArray< ACollisionBody *, 2 > CollisionBodies;
+    TStdVector< SBoneCollision > BoneCollisions;
+    Float3 CenterOfMass;
+};
+
+class ACollisionInstance : public ARefCounted
+{
+public:
+    ACollisionInstance( ACollisionModel const * CollisionModel, Float3 const & Scale );
+    ~ACollisionInstance();
+
+    Float3 CalculateLocalInertia( float Mass ) const;
+
+    Float3 const & GetCenterOfMass() const { return CenterOfMass; }
+
+    void GetCollisionBodiesWorldBounds( Float3 const & WorldPosition, Quat const & WorldRotation, TPodArray< BvAxisAlignedBox > & _BoundingBoxes ) const;
+
+    void GetCollisionWorldBounds( Float3 const & WorldPosition, Quat const & WorldRotation, BvAxisAlignedBox & _BoundingBox ) const;
+
+    void GetCollisionBodyWorldBounds( int _Index, Float3 const & WorldPosition, Quat const & WorldRotation, BvAxisAlignedBox & _BoundingBox ) const;
+
+    void GetCollisionBodyLocalBounds( int _Index, BvAxisAlignedBox & _BoundingBox ) const;
+
+    float GetCollisionBodyMargin( int _Index ) const;
+
+    int GetCollisionBodiesCount() const;
+
+    btCollisionShape * GetCollisionShape() const { return CollisionShape; }
+
+private:
+    TUniqueRef< class btCompoundShape > CompoundShape;
+    btCollisionShape * CollisionShape;
     Float3 CenterOfMass;
 };
 
@@ -442,13 +528,6 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
                                  TPodArray< unsigned int > & _OutIndices,
                                  TPodArray< SConvexHullDesc > & _OutHulls );
 
-void PerformConvexDecomposition( Float3 const * _Vertices,
-                                 int _VerticesCount,
-                                 int _VertexStride,
-                                 unsigned int const * _Indices,
-                                 int _IndicesCount,
-                                 ACollisionBodyComposition & _BodyComposition );
-
 void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
                                       int _VerticesCount,
                                       int _VertexStride,
@@ -459,15 +538,4 @@ void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
                                       TPodArray< SConvexHullDesc > & _OutHulls,
                                       Float3 & _CenterOfMass );
 
-void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
-                                      int _VerticesCount,
-                                      int _VertexStride,
-                                      unsigned int const * _Indices,
-                                      int _IndicesCount,
-                                      ACollisionBodyComposition & _BodyComposition );
-
 void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodArray< Float3 > & _Vertices );
-
-void CreateCollisionShape( ACollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass );
-
-void DestroyCollisionShape( btCompoundShape * _CompoundShape );

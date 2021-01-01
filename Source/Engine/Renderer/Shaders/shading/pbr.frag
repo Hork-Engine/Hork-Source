@@ -114,13 +114,20 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
             }
         }
     }
-//if (NearestProbe==9999)NearestProbe=0; // FIXME: just for test
+
     if ( NearestProbe < 9999 ) {
         // Gather irradiance from cubemaps
         Irradiance += texture( IrradianceMap, vec4( Normal, Probes[NearestProbe].IrradianceAndReflectionMaps.x ) ).rgb;
         
         // Gather prefiltered maps from cubemaps
         PrefilteredColor += textureLod( PrefilteredMap, vec4( ReflectionVector, Probes[NearestProbe].IrradianceAndReflectionMaps.y ), MipIndex ).rgb;   
+    }
+    else {
+        // Gather irradiance from cubemaps
+        Irradiance += texture( IrradianceMap, vec4( Normal, GlobalIrradianceAndReflection.x ) ).rgb;
+        
+        // Gather prefiltered maps from cubemaps
+        PrefilteredColor += textureLod( PrefilteredMap, vec4( ReflectionVector, GlobalIrradianceAndReflection.y ), MipIndex ).rgb;   
     }
     
     //Irradiance += vec3(0.01); // just for test

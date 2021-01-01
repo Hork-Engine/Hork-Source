@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "WWidget.h"
 
-class ANGIE_API WWindow : public WWidget {
+class WWindow : public WWidget {
     AN_CLASS( WWindow, WWidget )
 
 public:

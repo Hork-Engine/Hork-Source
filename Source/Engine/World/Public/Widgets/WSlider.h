@@ -40,7 +40,7 @@ struct SSliderGeometry {
     Float2 BgMaxs;
 };
 
-class ANGIE_API WSlider : public WWidget {
+class WSlider : public WWidget {
     AN_CLASS( WSlider, WWidget )
 
 public:

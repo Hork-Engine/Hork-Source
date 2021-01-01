@@ -38,7 +38,7 @@ SOFTWARE.
 AVirtualTextureResource
 
 */
-class ANGIE_API AVirtualTextureResource : public AResource {
+class AVirtualTextureResource : public AResource {
     AN_CLASS( AVirtualTextureResource, AResource )
 
 public:

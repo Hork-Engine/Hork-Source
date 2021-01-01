@@ -43,13 +43,15 @@ ARuntimeVariable com_DrawRootComponentAxis( _CTS( "com_DrawRootComponentAxis" ),
 
 static uint32_t UniqueName = 0;
 
-AActor::AActor() {
+AActor::AActor()
+{
     //GUID.Generate();
     SetObjectName( "Actor" + Math::ToString( UniqueName ) );
     UniqueName++;
 }
 
-//void AActor::SetName( AString const & _Name ) {
+//void AActor::SetName( AString const & _Name )
+//{
 //    if ( !ParentWorld ) {
 //        // In constructor
 //        Name = _Name;
@@ -65,7 +67,8 @@ AActor::AActor() {
 //    Name = ParentWorld->GenerateActorUniqueName( newName.CStr() );
 //}
 
-void AActor::Destroy() {
+void AActor::Destroy()
+{
     if ( bPendingKill ) {
         return;
     }
@@ -74,6 +77,8 @@ void AActor::Destroy() {
     bPendingKill = true;
     NextPendingKillActor = ParentWorld->PendingKillActors;
     ParentWorld->PendingKillActors = this;
+
+    // FIXME: do next code at end of the frame?
 
     DestroyComponents();
 
@@ -93,20 +98,23 @@ void AActor::Destroy() {
     Level = nullptr;
 }
 
-void AActor::DestroyComponents() {
+void AActor::DestroyComponents()
+{
     for ( AActorComponent * component : Components ) {
         component->Destroy();
     }
 }
 
-void AActor::AddComponent( AActorComponent * _Component ) {
+void AActor::AddComponent( AActorComponent * _Component )
+{
     Components.Append( _Component );
     _Component->ComponentIndex = Components.Size() - 1;
-    _Component->ParentActor = this;
+    _Component->OwnerActor = this;
     _Component->bCreatedDuringConstruction = bDuringConstruction;
 }
 
-//AString AActor::GenerateComponentUniqueName( const char * _Name ) {
+//AString AActor::GenerateComponentUniqueName( const char * _Name )
+//{
 //    if ( !FindComponent( _Name ) ) {
 //        return _Name;
 //    }
@@ -120,7 +128,8 @@ void AActor::AddComponent( AActorComponent * _Component ) {
 //    return uniqueName;
 //}
 
-AActorComponent * AActor::CreateComponent( uint64_t _ClassId, const char * _Name ) {
+AActorComponent * AActor::CreateComponent( uint64_t _ClassId, const char * _Name )
+{
     AActorComponent * component = static_cast< AActorComponent * >( AActorComponent::Factory().CreateInstance( _ClassId ) );
     if ( !component ) {
         return nullptr;
@@ -131,7 +140,8 @@ AActorComponent * AActor::CreateComponent( uint64_t _ClassId, const char * _Name
     return component;
 }
 
-AActorComponent * AActor::CreateComponent( const char * _ClassName, const char * _Name ) {
+AActorComponent * AActor::CreateComponent( const char * _ClassName, const char * _Name )
+{
     AActorComponent * component = static_cast< AActorComponent * >( AActorComponent::Factory().CreateInstance( _ClassName ) );
     if ( !component ) {
         return nullptr;
@@ -142,7 +152,8 @@ AActorComponent * AActor::CreateComponent( const char * _ClassName, const char *
     return component;
 }
 
-AActorComponent * AActor::CreateComponent( AClassMeta const * _ClassMeta, const char * _Name ) {
+AActorComponent * AActor::CreateComponent( AClassMeta const * _ClassMeta, const char * _Name )
+{
     AN_ASSERT( _ClassMeta->Factory() == &AActorComponent::Factory() );
     AActorComponent * component = static_cast< AActorComponent * >( _ClassMeta->CreateInstance() );
     if ( !component ) {
@@ -154,7 +165,8 @@ AActorComponent * AActor::CreateComponent( AClassMeta const * _ClassMeta, const 
     return component;
 }
 
-AActorComponent * AActor::GetComponent( uint64_t _ClassId ) {
+AActorComponent * AActor::GetComponent( uint64_t _ClassId )
+{
     for ( AActorComponent * component : Components ) {
         if ( component->FinalClassId() == _ClassId ) {
             return component;
@@ -163,7 +175,8 @@ AActorComponent * AActor::GetComponent( uint64_t _ClassId ) {
     return nullptr;
 }
 
-AActorComponent * AActor::GetComponent( const char * _ClassName ) {
+AActorComponent * AActor::GetComponent( const char * _ClassName )
+{
     for ( AActorComponent * component : Components ) {
         if ( !Core::Strcmp( component->FinalClassName(), _ClassName ) ) {
             return component;
@@ -172,7 +185,8 @@ AActorComponent * AActor::GetComponent( const char * _ClassName ) {
     return nullptr;
 }
 
-AActorComponent * AActor::GetComponent( AClassMeta const * _ClassMeta ) {
+AActorComponent * AActor::GetComponent( AClassMeta const * _ClassMeta )
+{
     AN_ASSERT( _ClassMeta->Factory() == &AActorComponent::Factory() );
     for ( AActorComponent * component : Components ) {
         if ( &component->FinalClassMeta() == _ClassMeta ) {
@@ -182,7 +196,8 @@ AActorComponent * AActor::GetComponent( AClassMeta const * _ClassMeta ) {
     return nullptr;
 }
 
-//AActorComponent * AActor::FindComponent( const char * _UniqueName ) {
+//AActorComponent * AActor::FindComponent( const char * _UniqueName )
+//{
 //    for ( AActorComponent * component : Components ) {
 //        if ( !component->GetName().Icmp( _UniqueName ) ) {
 //            return component;
@@ -191,7 +206,8 @@ AActorComponent * AActor::GetComponent( AClassMeta const * _ClassMeta ) {
 //    return nullptr;
 //}
 
-//AActorComponent * AActor::FindComponentGUID( AGUID const & _GUID ) {
+//AActorComponent * AActor::FindComponentGUID( AGUID const & _GUID )
+//{
 //    for ( AActorComponent * component : Components ) {
 //        if ( component->GUID == _GUID ) {
 //            return component;
@@ -200,7 +216,8 @@ AActorComponent * AActor::GetComponent( AClassMeta const * _ClassMeta ) {
 //    return nullptr;
 //}
 
-void AActor::Initialize( STransform const & _SpawnTransform ) {
+void AActor::Initialize( STransform const & _SpawnTransform )
+{
     if ( RootComponent ) {
         RootComponent->SetTransform( _SpawnTransform );
     }
@@ -213,14 +230,16 @@ void AActor::Initialize( STransform const & _SpawnTransform ) {
     BeginPlay();
 }
 
-void AActor::InitializeComponents() {
+void AActor::InitializeComponents()
+{
     for ( AActorComponent * component : Components ) {
         component->InitializeComponent();
         component->bInitialized = true;
     }
 }
 
-void AActor::BeginPlayComponents() {
+void AActor::BeginPlayComponents()
+{
     for ( AActorComponent * component : Components ) {
         if ( !component->IsPendingKill() ) {
             component->BeginPlay();
@@ -228,7 +247,8 @@ void AActor::BeginPlayComponents() {
     }
 }
 
-void AActor::TickComponents( float _TimeStep ) {
+void AActor::TickComponents( float _TimeStep )
+{
     for ( AActorComponent * component : Components ) {
         if ( component->bCanEverTick && !component->IsPendingKill() ) {
             component->TickComponent( _TimeStep );
@@ -236,7 +256,8 @@ void AActor::TickComponents( float _TimeStep ) {
     }
 }
 
-TRef< ADocObject > AActor::Serialize() {
+TRef< ADocObject > AActor::Serialize()
+{
     TRef< ADocObject > object = Super::Serialize();
 
     //object->AddString( "GUID", GUID.ToString() );
@@ -258,39 +279,9 @@ TRef< ADocObject > AActor::Serialize() {
     return object;
 }
 
-void AActor::Clone( AActor const * _TemplateActor ) {
-    // Clone attributes
-    AClassMeta::CloneAttributes( _TemplateActor, this );
-
-    // FIXME: How about to clone components?
-
-//    for ( AActorComponent const * templateComponent : _TemplateActor->Components ) {
-//        if ( templateComponent->IsPendingKill() ) {
-//            continue;
-//        }
-
-//        AActorComponent * component;
-//        if ( templateComponent->bCreatedDuringConstruction ) {
-//            component = FindComponentGUID( templateComponent->GetGUID() );
-//        } else {
-//            component = AddComponent( &templateComponent->FinalClassMeta(), templateComponent->GetObjectName().CStr() );
-//        }
-
-//        if ( component ) {
-
-//            if ( templateComponent == _TemplateActor->RootComponent ) {
-//                RootComponent = dynamic_cast< ASceneComponent * >( component );
-//            }
-
-//            AClassMeta::CloneAttributes( templateComponent, component );
-//        }
-//    }
-
-    // TODO: Clone components hierarchy, etc
-}
-
 #if 0
-AActorComponent * AActor::LoadComponent( ADocument const & _Document, int _FieldsHead ) {
+AActorComponent * AActor::LoadComponent( ADocument const & _Document, int _FieldsHead )
+{
     SDocumentField const * classNameField = _Document.FindField( _FieldsHead, "ClassName" );
     if ( !classNameField ) {
         GLogger.Printf( "AActor::LoadComponent: invalid component class\n" );
@@ -340,7 +331,8 @@ AActorComponent * AActor::LoadComponent( ADocument const & _Document, int _Field
 }
 #endif
 
-void AActor::DrawDebug( ADebugRenderer * InRenderer ) {
+void AActor::DrawDebug( ADebugRenderer * InRenderer )
+{
     for ( AActorComponent * component : Components ) {
         component->DrawDebug( InRenderer );
     }
@@ -353,12 +345,14 @@ void AActor::DrawDebug( ADebugRenderer * InRenderer ) {
     }
 }
 
-void AActor::BeginPlay() {
+void AActor::BeginPlay()
+{
 }
 
-void AActor::EndPlay() {
+void AActor::EndPlay()
+{
 }
 
-void AActor::ApplyDamage( float _DamageAmount, Float3 const & _Position, AActor * _DamageCauser ) {
-
+void AActor::ApplyDamage( SActorDamage const & Damage )
+{
 }

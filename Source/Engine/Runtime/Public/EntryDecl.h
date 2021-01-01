@@ -42,10 +42,10 @@ struct SEntryDecl
 };
 
 /** Runtime entry point */
-ANGIE_API void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl );
+void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl );
 
 /** Runtime entry point */
-ANGIE_API void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl );
+void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl );
 
 #ifdef AN_OS_WIN32
 #include <Core/Public/WindowsDefs.h>

@@ -39,7 +39,7 @@ class ATexture;
 APhotometricProfile
 
 */
-class ANGIE_API APhotometricProfile : public AResource {
+class APhotometricProfile : public AResource {
     AN_CLASS( APhotometricProfile, AResource )
 
 public:

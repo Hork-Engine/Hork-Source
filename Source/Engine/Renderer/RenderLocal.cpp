@@ -98,6 +98,10 @@ size_t GViewConstantBufferBindingBindingSize;
 AVirtualTextureFeedbackAnalyzer * GFeedbackAnalyzerVT;
 AVirtualTextureCache * GPhysCacheVT;
 
+RenderCore::IPipeline * GTerrainDepthPipeline;
+RenderCore::IPipeline * GTerrainLightPipeline;
+RenderCore::IPipeline * GTerrainWireframePipeline;
+
 RenderCore::STextureResolution2D GetFrameResoultion()
 {
     return RenderCore::STextureResolution2D( GFrameData->RenderTargetMaxWidth, GFrameData->RenderTargetMaxHeight );

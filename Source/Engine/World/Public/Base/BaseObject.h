@@ -45,7 +45,7 @@ Base object class.
 Cares of reference counting, garbage collecting and little basic functionality.
 
 */
-class ANGIE_API ABaseObject : public ADummy {
+class ABaseObject : public ADummy {
     AN_CLASS( ABaseObject, ADummy )
 
     friend class AGarbageCollector;

@@ -170,7 +170,7 @@ struct SSoundSpawnParameters
     AAudioControlCallback * ControlCallback = nullptr; // Reserved for future
 };
 
-class ANGIE_API AAudioSystem
+class AAudioSystem
 {
     AN_SINGLETON( AAudioSystem )
 

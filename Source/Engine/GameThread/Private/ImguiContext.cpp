@@ -154,7 +154,7 @@ void AImguiContext::BeginFrame( float _TimeStep ) {
 
     IO.DisplaySize.x = videoMode.Width;
     IO.DisplaySize.y = videoMode.Height;
-    IO.DisplayFramebufferScale = GEngine.GetRetinaScale();
+    IO.DisplayFramebufferScale = GEngine->GetRetinaScale();
     IO.DeltaTime = _TimeStep;
     IO.MousePos.x = cursorPosition.X;
     IO.MousePos.y = cursorPosition.Y;

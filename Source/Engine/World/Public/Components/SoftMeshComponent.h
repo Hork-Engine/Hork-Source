@@ -40,7 +40,7 @@ ASoftMeshComponent
 Mesh with softbody physics simulation
 
 */
-class ANGIE_API ASoftMeshComponent : public ASkinnedComponent {
+class ASoftMeshComponent : public ASkinnedComponent {
     AN_COMPONENT( ASoftMeshComponent, ASkinnedComponent )
 
 public:

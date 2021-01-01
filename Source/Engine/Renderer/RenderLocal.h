@@ -72,8 +72,8 @@ struct SViewConstantBuffer
     float GameRunningTimeSeconds;
     float GameplayTimeSeconds;
 
-    float Pad0;
-    float Pad1;
+    float GlobalIrradianceMap;
+    float GlobalReflectionMap;
 
     float DynamicResolutionRatioX;
     float DynamicResolutionRatioY;
@@ -87,6 +87,9 @@ struct SViewConstantBuffer
 
     Float3 ViewPosition;
     float TimeDelta;
+
+    //float ViewHeight;
+    //float Pad[3];
 
     Float4 PostprocessBloomMix;
 
@@ -163,6 +166,15 @@ struct SShadowInstanceConstantBuffer
     uint32_t Pad[3];
 };
 
+struct STerrainInstanceConstantBuffer
+{
+    Float4x4 LocalViewProjection;
+    Float3x4 ModelNormalToViewSpace;
+    Float4 ViewPositionAndHeight;
+    Int2 TerrainClipMin;
+    Int2 TerrainClipMax;
+};
+
 
 //
 // Common variables
@@ -235,6 +247,10 @@ extern size_t GViewConstantBufferBindingBindingSize;
 
 extern AVirtualTextureFeedbackAnalyzer * GFeedbackAnalyzerVT;
 extern AVirtualTextureCache * GPhysCacheVT;
+
+extern RenderCore::IPipeline * GTerrainDepthPipeline;
+extern RenderCore::IPipeline * GTerrainLightPipeline;
+extern RenderCore::IPipeline * GTerrainWireframePipeline;
 
 
 //

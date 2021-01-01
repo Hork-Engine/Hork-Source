@@ -140,7 +140,7 @@ private:
 };
 #endif
 
-class ANGIE_API AInputAxis final : public ABaseObject {
+class AInputAxis final : public ABaseObject {
     AN_CLASS( AInputAxis, ABaseObject )
 
     friend class AInputMappings;
@@ -171,7 +171,7 @@ private:
     int IndexInArrayOfAxes = 0;
 };
 
-class ANGIE_API AInputAction final : public ABaseObject {
+class AInputAction final : public ABaseObject {
     AN_CLASS( AInputAction, ABaseObject )
 
     friend class AInputMappings;
@@ -193,7 +193,7 @@ private:
     int IndexInArrayOfActions = 0;
 };
 
-class ANGIE_API AInputMappings final : public ABaseObject {
+class AInputMappings final : public ABaseObject {
     AN_CLASS( AInputMappings, ABaseObject )
 
     friend class AInputAxis;
@@ -258,7 +258,7 @@ private:
     AArrayOfMappings JoystickAxisMappings[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
 };
 
-class ANGIE_API AInputComponent final : public AActorComponent {
+class AInputComponent final : public AActorComponent {
     AN_COMPONENT( AInputComponent, AActorComponent )
 
 public:
@@ -454,7 +454,7 @@ protected:
     static AInputComponent * InputComponentsTail;
 };
 
-class ANGIE_API AInputHelper final {
+class AInputHelper final {
 public:
     /** Translate device to string */
     static const char * TranslateDevice( int _DevId );

@@ -1306,6 +1306,13 @@ static void VSD_SubmitCullingJobs( SCullJobSubmit & InSubmit ) {
 
 //#define CLOSE_ENOUGH_EARLY_OUT
 
+enum EHitProxyType
+{
+    HIT_PROXY_TYPE_UNKNOWN,
+    HIT_PROXY_TYPE_PRIMITIVE,
+    HIT_PROXY_TYPE_SURFACE
+};
+
 struct SRaycast
 {
     Float3 RayStart;
@@ -1317,16 +1324,22 @@ struct SRaycast
     float HitDistanceMax; // only for bounds test
 
     // For closest raycast
-    SPrimitiveDef * HitPrimitive;
-    SSurfaceDef * HitSurface;
+    EHitProxyType HitProxyType;
+    union
+    {
+        SPrimitiveDef * HitPrimitive;
+        SSurfaceDef * HitSurface;
+    };
     Float3 HitLocation;
     Float2 HitUV;
+    Float3 HitNormal;
     SMeshVertex const * pVertices;
     SMeshVertexUV const * pLightmapVerts;
     int LightmapBlock;
     ALevel const * LightingLevel;
     unsigned int Indices[3];
     AMaterialInstance * Material;
+    int NumHits; // For debug
 
     bool bClosest;
 };
@@ -1461,7 +1474,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                 Float3 const & v2 = pVertices[triangleIndices[2]].Position;
 
                 if ( RayIntersectTriangleFast( Raycast.RayStart, Raycast.RayDir, v0, v1, v2, u, v ) ) {
-                    Raycast.HitPrimitive = nullptr;
+                    Raycast.HitProxyType = HIT_PROXY_TYPE_SURFACE;
                     Raycast.HitSurface = Self;
                     Raycast.HitLocation = Raycast.RayStart + Raycast.RayDir * d;
                     Raycast.HitDistanceMin = d;
@@ -1475,6 +1488,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                     Raycast.Indices[1] = Self->FirstVertex + triangleIndices[1];
                     Raycast.Indices[2] = Self->FirstVertex + triangleIndices[2];
                     Raycast.Material = brushModel->SurfaceMaterials[Self->MaterialIndex];
+                    Raycast.NumHits++;
 
                     // Mark as visible
                     Self->VisPass = VisQueryMarker;
@@ -1551,7 +1565,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
                 if ( BvRayIntersectTriangle( Raycast.RayStart, Raycast.RayDir, v0, v1, v2, d, u, v, cullBackFaces ) ) {
                     if ( Raycast.HitDistanceMin > d ) {
 
-                        Raycast.HitPrimitive = nullptr;
+                        Raycast.HitProxyType = HIT_PROXY_TYPE_SURFACE;
                         Raycast.HitSurface = Self;
                         Raycast.HitLocation = Raycast.RayStart + Raycast.RayDir * d;
                         Raycast.HitDistanceMin = d;
@@ -1627,22 +1641,25 @@ static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
 
     if ( Raycast.bClosest )
     {
-        TRef< AMaterialInstance > material;
+        STriangleHitResult hit;
 
         if ( Self->RaycastClosestCallback
              && Self->RaycastClosestCallback( Self,
                                               Raycast.RayStart,
                                               Raycast.HitLocation,
-                                              Raycast.HitUV,
-                                              Raycast.HitDistanceMin,
-                                              &Raycast.pVertices,
-                                              Raycast.Indices,
-                                              material ) ) {
+                                              hit,
+                                              &Raycast.pVertices ) )
+        {
+            Raycast.HitProxyType = HIT_PROXY_TYPE_PRIMITIVE;
             Raycast.HitPrimitive = Self;
-
-            Raycast.HitSurface = nullptr;
-
-            Raycast.Material = material;
+            Raycast.HitLocation = hit.Location;
+            Raycast.HitNormal = hit.Normal;
+            Raycast.HitUV = hit.UV;
+            Raycast.HitDistanceMin = hit.Distance;
+            Raycast.Indices[0] = hit.Indices[0];
+            Raycast.Indices[1] = hit.Indices[1];
+            Raycast.Indices[2] = hit.Indices[2];
+            Raycast.Material = hit.Material;
 
             // TODO:
             //Raycast.pLightmapVerts = Self->Owner->LightmapUVChannel->GetVertices();
@@ -1656,13 +1673,25 @@ static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
     else
     {
         int firstHit = pRaycastResult->Hits.Size();
-        int closestHit;
         if ( Self->RaycastCallback
              && Self->RaycastCallback( Self,
                                        Raycast.RayStart,
                                        Raycast.RayEnd,
-                                       pRaycastResult->Hits,
-                                       closestHit ) ) {
+                                       pRaycastResult->Hits ) )
+        {
+
+            int numHits = pRaycastResult->Hits.Size() - firstHit;
+
+            // Find closest hit
+            int closestHit = firstHit;
+            for ( int i = 0 ; i < numHits ; i++ ) {
+                int hitNum = firstHit + i;
+                STriangleHitResult & hitResult = pRaycastResult->Hits[hitNum];
+
+                if ( hitResult.Distance < pRaycastResult->Hits[closestHit].Distance ) {
+                    closestHit = hitNum;
+                }
+            }
 
             SWorldRaycastPrimitive & rcPrimitive = pRaycastResult->Primitives.Append();
 
@@ -1677,7 +1706,6 @@ static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
     }
 }
 
-
 static void VSD_RaycastArea( SVisArea * InArea )
 {
     float boxMin, boxMax;
@@ -1691,7 +1719,7 @@ static void VSD_RaycastArea( SVisArea * InArea )
 
     // Mark area raycast processed
     InArea->VisMark = VisQueryMarker;
-
+    
     if ( InArea->NumSurfaces > 0 )
     {
         ABrushModel * model = CurLevel->Model;
@@ -1882,7 +1910,7 @@ static void VSD_RaycastPrimitiveBounds( SVisArea * InArea )
 
             if ( Raycast.bClosest )
             {
-                Raycast.HitPrimitive = nullptr;
+                Raycast.HitProxyType = HIT_PROXY_TYPE_SURFACE;
                 Raycast.HitSurface = surf;
                 Raycast.HitDistanceMin = boxMin;
                 Raycast.HitDistanceMax = boxMax;
@@ -1972,8 +2000,8 @@ static void VSD_RaycastPrimitiveBounds( SVisArea * InArea )
 
         if ( Raycast.bClosest )
         {
+            Raycast.HitProxyType = HIT_PROXY_TYPE_PRIMITIVE;
             Raycast.HitPrimitive = primitive;
-            Raycast.HitSurface = nullptr;
             Raycast.HitDistanceMin = boxMin;
             Raycast.HitDistanceMax = boxMax;
 
@@ -2042,7 +2070,7 @@ static void VSD_LevelRaycast_r( int InNodeIndex ) {
 
     SBinarySpaceLeaf const * pleaf = static_cast< SBinarySpaceLeaf const * >( node );
 
-    VSD_RaycastPrimitives( pleaf->Area );
+    VSD_RaycastArea( pleaf->Area );
 }
 #else
 static bool VSD_LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Float3 const & InRayEnd ) {
@@ -2065,11 +2093,13 @@ static bool VSD_LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Flo
 
         VSD_RaycastArea( leaf->Area );
 
+#if 0
         if ( Raycast.RayLength > Raycast.HitDistanceMin ) {
         //if ( d >= Raycast.HitDistanceMin ) {
             // stop raycasting
             return true;
         }
+#endif
 
         // continue raycasting
         return false;
@@ -2423,6 +2453,9 @@ static void VSD_ProcessLevelRaycast( ALevel * InLevel ) {
         VSD_LevelRaycast_r( 0 );
 #else
         VSD_LevelRaycast2_r( 0, Raycast.RayStart, Raycast.RayEnd );
+
+
+        //InLevel-
 #endif
     }
     else
@@ -2534,13 +2567,13 @@ bool VSD_RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result, 
     Raycast.InvRayDir.X = 1.0f / Raycast.RayDir.X;
     Raycast.InvRayDir.Y = 1.0f / Raycast.RayDir.Y;
     Raycast.InvRayDir.Z = 1.0f / Raycast.RayDir.Z;
-    Raycast.HitPrimitive = nullptr;
-    Raycast.HitSurface = nullptr;
+    Raycast.HitProxyType = HIT_PROXY_TYPE_UNKNOWN;
     Raycast.HitLocation = InRayEnd;
     Raycast.HitDistanceMin = Raycast.RayLength;
     Raycast.bClosest = true;
     Raycast.pVertices = nullptr;
     Raycast.pLightmapVerts = nullptr;
+    Raycast.NumHits = 0;
 
     // Set view position for face culling
     ViewPosition = Raycast.RayStart;
@@ -2556,44 +2589,70 @@ bool VSD_RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result, 
 #endif
     }
 
-    if ( !Raycast.HitPrimitive && !Raycast.HitSurface ) {
-        return false;
-    }
+    //GLogger.Printf( "NumHits %d\n", Raycast.NumHits );
 
-    SMeshVertex const * vertices = Raycast.pVertices;
-
-    Float3 const & v0 = vertices[Raycast.Indices[0]].Position;
-    Float3 const & v1 = vertices[Raycast.Indices[1]].Position;
-    Float3 const & v2 = vertices[Raycast.Indices[2]].Position;
-
-    if ( Raycast.HitPrimitive )
+    if ( Raycast.HitProxyType == HIT_PROXY_TYPE_PRIMITIVE )
     {
-        Float3x4 const & transform = Raycast.HitPrimitive->Owner->GetWorldTransformMatrix();
-
-        // calc triangle vertices
-        Result.Vertices[0] = transform * v0;
-        Result.Vertices[1] = transform * v1;
-        Result.Vertices[2] = transform * v2;
+        Raycast.HitPrimitive->EvaluateRaycastResult( Raycast.HitPrimitive,
+                                                     Raycast.LightingLevel,
+                                                     Raycast.pVertices,
+                                                     Raycast.pLightmapVerts,
+                                                     Raycast.LightmapBlock,
+                                                     Raycast.Indices,
+                                                     Raycast.HitLocation,
+                                                     Raycast.HitUV,
+                                                     Result.Vertices,
+                                                     Result.Texcoord,
+                                                     Result.LightmapSample_Experimental );
 
         Result.Object = Raycast.HitPrimitive->Owner;
     }
-    else
+    else if ( Raycast.HitProxyType == HIT_PROXY_TYPE_SURFACE )
     {
+        SMeshVertex const * vertices = Raycast.pVertices;
+
+        Float3 const & v0 = vertices[Raycast.Indices[0]].Position;
+        Float3 const & v1 = vertices[Raycast.Indices[1]].Position;
+        Float3 const & v2 = vertices[Raycast.Indices[2]].Position;
+
+        // surface vertices already in world space, so there is no need to transform them
         Result.Vertices[0] = v0;
         Result.Vertices[1] = v1;
         Result.Vertices[2] = v2;
 
         Result.Object = nullptr; // surfaces has no parent objects
+
+        Raycast.HitNormal = Math::Cross( Result.Vertices[1]-Result.Vertices[0], Result.Vertices[2]-Result.Vertices[0] );
+        Raycast.HitNormal.NormalizeSelf();
+
+        const float hitW = 1.0f - Raycast.HitUV[0] - Raycast.HitUV[1];
+
+        Float2 uv0 = vertices[Raycast.Indices[0]].GetTexCoord();
+        Float2 uv1 = vertices[Raycast.Indices[1]].GetTexCoord();
+        Float2 uv2 = vertices[Raycast.Indices[2]].GetTexCoord();
+        Result.Texcoord = uv0 * hitW + uv1 * Raycast.HitUV[0] + uv2 * Raycast.HitUV[1];
+
+        if ( Raycast.pLightmapVerts && Raycast.LightingLevel && Raycast.LightmapBlock >= 0 ) {
+            Float2 const & lm0 = Raycast.pLightmapVerts[Raycast.Indices[0]].TexCoord;
+            Float2 const & lm1 = Raycast.pLightmapVerts[Raycast.Indices[1]].TexCoord;
+            Float2 const & lm2 = Raycast.pLightmapVerts[Raycast.Indices[2]].TexCoord;
+            Float2 lighmapTexcoord = lm0 * hitW + lm1 * Raycast.HitUV[0] + lm2 * Raycast.HitUV[1];
+
+            ALevel const * level = Raycast.LightingLevel;
+
+            Result.LightmapSample_Experimental = level->SampleLight( Raycast.LightmapBlock, lighmapTexcoord );
+        }
+    }
+    else
+    {
+        // No intersection
+        return false;
     }
 
+    Result.Fraction = Raycast.HitDistanceMin / Raycast.RayLength;
+
     STriangleHitResult & triangleHit = Result.TriangleHit;
-#if 1
-    triangleHit.Normal = Math::Cross( Result.Vertices[1]-Result.Vertices[0], Result.Vertices[2]-Result.Vertices[0] ).Normalized();
-#else
-    Float3x3 normalMat;
-    transform.DecomposeNormalMatrix( normalMat );
-    triangleHit.Normal = (normalMat * Math::Cross(v1-v0,v2-v0)).Normalized();
-#endif
+    triangleHit.Normal = Raycast.HitNormal;
     triangleHit.Location = Raycast.HitLocation;
     triangleHit.Distance = Raycast.HitDistanceMin;
     triangleHit.Indices[0] = Raycast.Indices[0];
@@ -2601,29 +2660,6 @@ bool VSD_RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result, 
     triangleHit.Indices[2] = Raycast.Indices[2];
     triangleHit.Material = Raycast.Material;
     triangleHit.UV = Raycast.HitUV;
-
-    Result.Fraction = Raycast.HitDistanceMin / Raycast.RayLength;
-
-    const float hitW = 1.0f - Raycast.HitUV[0] - Raycast.HitUV[1];
-
-    // calc texcoord
-    Float2 uv0 = vertices[Raycast.Indices[0]].GetTexCoord();
-    Float2 uv1 = vertices[Raycast.Indices[1]].GetTexCoord();
-    Float2 uv2 = vertices[Raycast.Indices[2]].GetTexCoord();
-    Result.Texcoord = uv0 * hitW + uv1 * Raycast.HitUV[0] + uv2 * Raycast.HitUV[1];
-
-    if ( Raycast.pLightmapVerts && Raycast.LightingLevel && Raycast.LightmapBlock >= 0 ) {
-        Float2 const & lm0 = Raycast.pLightmapVerts[Raycast.Indices[0]].TexCoord;
-        Float2 const & lm1 = Raycast.pLightmapVerts[Raycast.Indices[1]].TexCoord;
-        Float2 const & lm2 = Raycast.pLightmapVerts[Raycast.Indices[2]].TexCoord;
-        Float2 lighmapTexcoord = lm0 * hitW + lm1 * Raycast.HitUV[0] + lm2 * Raycast.HitUV[1];
-
-        ALevel const * level = Raycast.LightingLevel;
-
-        Result.LightmapSample_Experimental = level->SampleLight( Raycast.LightmapBlock, lighmapTexcoord );
-    } else {
-        Result.LightmapSample_Experimental.Clear();
-    }
 
     return true;
 }
@@ -2703,8 +2739,7 @@ bool VSD_RaycastClosestBounds( AWorld * InWorld, SBoxHitResult & Result, Float3 
     Raycast.InvRayDir.X = 1.0f / Raycast.RayDir.X;
     Raycast.InvRayDir.Y = 1.0f / Raycast.RayDir.Y;
     Raycast.InvRayDir.Z = 1.0f / Raycast.RayDir.Z;
-    Raycast.HitPrimitive = nullptr;
-    Raycast.HitSurface = nullptr;
+    Raycast.HitProxyType = HIT_PROXY_TYPE_UNKNOWN;
     //Raycast.HitLocation is unused
     Raycast.HitDistanceMin = Raycast.RayLength;
     Raycast.HitDistanceMax = Raycast.RayLength;
@@ -2721,11 +2756,16 @@ bool VSD_RaycastClosestBounds( AWorld * InWorld, SBoxHitResult & Result, Float3 
 #endif
     }
 
-    if ( !Raycast.HitPrimitive && !Raycast.HitSurface ) {
+    if ( Raycast.HitProxyType == HIT_PROXY_TYPE_PRIMITIVE ) {
+        Result.Object = Raycast.HitPrimitive->Owner;
+    }
+    else if ( Raycast.HitProxyType == HIT_PROXY_TYPE_SURFACE ) {
+        Result.Object = nullptr;
+    }
+    else {
         return false;
     }
 
-    Result.Object = Raycast.HitPrimitive ? Raycast.HitPrimitive->Owner : nullptr;
     Result.LocationMin = InRayStart + Raycast.RayDir * Raycast.HitDistanceMin;
     Result.LocationMax = InRayStart + Raycast.RayDir * Raycast.HitDistanceMax;
     Result.DistanceMin = Raycast.HitDistanceMin;

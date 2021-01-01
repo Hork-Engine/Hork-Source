@@ -44,7 +44,7 @@ APawn
 Base class for players and monsters
 
 */
-class ANGIE_API APawn : public AActor {
+class APawn : public AActor {
     AN_ACTOR( APawn, AActor )
 
     friend class AController;

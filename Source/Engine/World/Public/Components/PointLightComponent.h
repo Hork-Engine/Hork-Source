@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "AnalyticLightComponent.h"
 
-class ANGIE_API APointLightComponent : public AAnalyticLightComponent {
+class APointLightComponent : public AAnalyticLightComponent {
     AN_COMPONENT( APointLightComponent, AAnalyticLightComponent )
 
 public:

@@ -35,6 +35,7 @@ SOFTWARE.
 #include <World/Public/Components/DirectionalLightComponent.h>
 #include <World/Public/Components/AnalyticLightComponent.h>
 #include <World/Public/Components/IBLComponent.h>
+#include <World/Public/Components/TerrainComponent.h>
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/Widgets/WDesktop.h>
 #include <Runtime/Public/Runtime.h>
@@ -48,20 +49,27 @@ ARuntimeVariable r_FixFrustumClusters( _CTS( "r_FixFrustumClusters" ), _CTS( "0"
 ARuntimeVariable r_RenderView( _CTS( "r_RenderView" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable r_RenderSurfaces( _CTS( "r_RenderSurfaces" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable r_RenderMeshes( _CTS( "r_RenderMeshes" ), _CTS( "1" ), VAR_CHEAT );
+ARuntimeVariable r_RenderTerrain( _CTS( "r_RenderTerrain" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable r_ResolutionScaleX( _CTS( "r_ResolutionScaleX" ), _CTS( "1" ) );
 ARuntimeVariable r_ResolutionScaleY( _CTS( "r_ResolutionScaleY" ), _CTS( "1" ) );
 ARuntimeVariable r_RenderLightPortals( _CTS( "r_RenderLightPortals" ), _CTS( "1" ) );
 
 AN_CLASS_META( ARenderFrontend )
 
-ARenderFrontend::ARenderFrontend() {
+static constexpr int TerrainTileSize = 256;//32;//256;
+
+ARenderFrontend::ARenderFrontend()
+{
     VSD_Initialize();
+
+    TerrainMesh = MakeRef< ATerrainMesh >( TerrainTileSize );
 
     PhotometricProfiles = NewObject< ATexture >();
     PhotometricProfiles->Initialize1DArray( TEXTURE_PF_R8_UNORM, 1, 256, 256 );
 }
 
-ARenderFrontend::~ARenderFrontend() {
+ARenderFrontend::~ARenderFrontend()
+{
     VSD_Deinitialize();
 }
 
@@ -113,6 +121,7 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     FrameData.LightPortals.Clear();
     FrameData.DirectionalLights.Clear();
     FrameData.LightShadowmaps.Clear();
+    FrameData.TerrainInstances.Clear();
 
     //FrameData.ShadowCascadePoolSize = 0;
     DebugDraw.Reset();
@@ -293,41 +302,51 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->ClusterLookupStreamHandle = streamedMemory->AllocateConstant( numFrustumClusters * sizeof( SClusterHeader ), nullptr );
     view->ClusterLookup = (SClusterHeader *)streamedMemory->Map( view->ClusterLookupStreamHandle );
 
-    if ( !r_RenderView ) {
+    view->FirstTerrainInstance = FrameData.TerrainInstances.Size();
+    view->TerrainInstanceCount = 0;
+
+    if ( !r_RenderView || !camera ) {
         return;
     }
 
-    if ( camera )
-    {
-        world->E_OnPrepareRenderFrontend.Dispatch( camera, FrameNumber );
+    world->E_OnPrepareRenderFrontend.Dispatch( camera, FrameNumber );
 
-        RenderDef.FrameNumber = FrameNumber;
-        RenderDef.View = view;
-        RenderDef.Frustum = &camera->GetFrustum();
-        RenderDef.VisibilityMask = RP ? RP->VisibilityMask : ~0;
-        RenderDef.PolyCount = 0;
-        RenderDef.ShadowMapPolyCount = 0;
+    RenderDef.FrameNumber = FrameNumber;
+    RenderDef.View = view;
+    RenderDef.Frustum = &camera->GetFrustum();
+    RenderDef.VisibilityMask = RP ? RP->VisibilityMask : ~0;
+    RenderDef.PolyCount = 0;
+    RenderDef.ShadowMapPolyCount = 0;
 
-        ARenderWorld & renderWorld = world->GetRenderWorld();
+    ViewRP = RP;
 
-        QueryVisiblePrimitives( &renderWorld );
+    ARenderWorld & renderWorld = world->GetRenderWorld();
 
-        // Generate debug draw commands
-        if ( RP && RP->bDrawDebug ) {
-            DebugDraw.BeginRenderView( view, VisPass );
-            world->DrawDebug( &DebugDraw );
+    QueryVisiblePrimitives( &renderWorld );
+
+    view->GlobalIrradianceMap = world->GetGlobalIrradianceMap();
+    view->GlobalReflectionMap = world->GetGlobalReflectionMap();
+
+    // Generate debug draw commands
+    if ( RP && RP->bDrawDebug ) {
+        DebugDraw.BeginRenderView( view, VisPass );
+        world->DrawDebug( &DebugDraw );
+    }
+
+    AddRenderInstances( &renderWorld );
+
+    AddDirectionalShadowmapInstances( &renderWorld );
+
+    Stat.PolyCount += RenderDef.PolyCount;
+    Stat.ShadowMapPolyCount += RenderDef.ShadowMapPolyCount;
+
+    if ( RP && RP->bDrawDebug ) {
+
+        for ( auto it : RP->TerrainViews ) {
+            it.second->DrawDebug( &DebugDraw, TerrainMesh );
         }
 
-        AddRenderInstances( &renderWorld );
-
-        AddDirectionalShadowmapInstances( &renderWorld );
-
-        Stat.PolyCount += RenderDef.PolyCount;
-        Stat.ShadowMapPolyCount += RenderDef.ShadowMapPolyCount;
-
-        if ( RP && RP->bDrawDebug ) {
-            DebugDraw.EndRenderView();
-        }
+        DebugDraw.EndRenderView();
     }
 }
 
@@ -340,9 +359,6 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
 
     // Allocate draw list
     SHUDDrawList * drawList = ( SHUDDrawList * )GRuntime.AllocFrameMem( sizeof( SHUDDrawList ) );
-    if ( !drawList ) {
-        return;
-    }
 
     AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
 
@@ -352,9 +368,6 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
 
     // Allocate commands
     drawList->Commands = ( SHUDDrawCmd * )GRuntime.AllocFrameMem( sizeof( SHUDDrawCmd ) * srcList->CmdBuffer.Size );
-    if ( !drawList->Commands ) {
-        return;
-    }
 
     drawList->CommandsCount = 0;
 
@@ -519,9 +532,6 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
     }
 
     SHUDDrawList * drawList = ( SHUDDrawList * )GRuntime.AllocFrameMem( sizeof( SHUDDrawList ) );
-    if ( !drawList ) {
-        return;
-    }
 
     drawList->VerticesCount = srcList->VtxBuffer.size();
     drawList->IndicesCount = srcList->IdxBuffer.size();
@@ -529,24 +539,16 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
 
     int bytesCount = sizeof( SHUDDrawVert ) * drawList->VerticesCount;
     drawList->Vertices = ( SHUDDrawVert * )GRuntime.AllocFrameMem( bytesCount );
-    if ( !drawList->Vertices ) {
-        return;
-    }
+
     Core::Memcpy( drawList->Vertices, srcList->VtxBuffer.Data, bytesCount );
 
     bytesCount = sizeof( unsigned short ) * drawList->IndicesCount;
     drawList->Indices = ( unsigned short * )GRuntime.AllocFrameMem( bytesCount );
-    if ( !drawList->Indices ) {
-        return;
-    }
 
     Core::Memcpy( drawList->Indices, srcList->IdxBuffer.Data, bytesCount );
 
     bytesCount = sizeof( SHUDDrawCmd ) * drawList->CommandsCount;
     drawList->Commands = ( SHUDDrawCmd * )GRuntime.AllocFrameMem( bytesCount );
-    if ( !drawList->Commands ) {
-        return;
-    }
 
     int startIndexLocation = 0;
 
@@ -733,6 +735,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
 
     SRenderView * view = RenderDef.View;
     ADrawable * drawable;
+    ATerrainComponent * terrain;
     AAnalyticLightComponent * light;
     AIBLComponent * ibl;
     AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
@@ -746,6 +749,11 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
 
         if ( nullptr != (drawable = Upcast< ADrawable >( primitive->Owner )) ) {
             AddDrawable( drawable );
+            continue;
+        }
+
+        if ( nullptr != (terrain = Upcast< ATerrainComponent >( primitive->Owner )) ) {
+            AddTerrain( terrain );
             continue;
         }
 
@@ -805,9 +813,6 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
         }
 
         SDirectionalLightInstance * instance = (SDirectionalLightInstance *)GRuntime.AllocFrameMem( sizeof( SDirectionalLightInstance ) );
-        if ( !instance ) {
-            break;
-        }
 
         FrameData.DirectionalLights.Append( instance );
 
@@ -909,6 +914,94 @@ void ARenderFrontend::AddDrawable( ADrawable * InComponent ) {
     }
 }
 
+void ARenderFrontend::AddTerrain( ATerrainComponent * InComponent ) {
+    SRenderView * view = RenderDef.View;
+
+    if ( !r_RenderTerrain )
+    {
+        return;
+    }
+
+    ATerrain * terrainResource = InComponent->GetTerrain();
+    if ( !terrainResource )
+    {
+        return;
+    }
+
+    ATerrainView * terrainView;
+
+    auto it = ViewRP->TerrainViews.find( terrainResource->Id );
+    if ( it == ViewRP->TerrainViews.end() )
+    {
+        terrainView = new ATerrainView( TerrainTileSize );
+        ViewRP->TerrainViews[terrainResource->Id] = terrainView;
+    }
+    else
+    {
+        terrainView = it->second;
+    }
+
+    // Terrain world rotation
+    Float3x3 rotation;
+    rotation = InComponent->GetWorldRotation().ToMatrix();
+
+    // Terrain inversed transform
+    Float3x4 const & terrainWorldTransformInv = InComponent->GetTerrainWorldTransformInversed();
+
+    // Camera position in terrain space
+    Float3 localViewPosition = terrainWorldTransformInv * view->ViewPosition;
+
+    // Camera rotation in terrain space
+    Float3x3 localRotation = rotation.Transposed() * view->ViewRotation.ToMatrix();
+
+    Float3x3 basis = localRotation.Transposed();
+    Float3 origin = basis * (-localViewPosition);
+
+    Float4x4 localViewMatrix;
+    localViewMatrix[0] = Float4( basis[0], 0.0f );
+    localViewMatrix[1] = Float4( basis[1], 0.0f );
+    localViewMatrix[2] = Float4( basis[2], 0.0f );
+    localViewMatrix[3] = Float4( origin, 1.0f );
+
+    Float4x4 localMVP = view->ProjectionMatrix * localViewMatrix;
+
+    BvFrustum localFrustum;
+    localFrustum.FromMatrix( localMVP, true );
+
+    // Update resource
+    terrainView->SetTerrain( terrainResource );
+    // Update view
+    terrainView->Update( TerrainMesh, localViewPosition, localFrustum );
+
+    if ( terrainView->GetIndirectBufferDrawCount() == 0 )
+    {
+        // Everything was culled
+        return;
+    }
+
+    STerrainRenderInstance * instance = (STerrainRenderInstance *)GRuntime.AllocFrameMem( sizeof( STerrainRenderInstance ) );
+
+    FrameData.TerrainInstances.Append( instance );
+
+    instance->VertexBuffer = TerrainMesh->GetVertexBufferGPU();
+    instance->IndexBuffer = TerrainMesh->GetIndexBufferGPU();
+    instance->InstanceBufferStreamHandle = terrainView->GetInstanceBufferStreamHandle();
+    instance->IndirectBufferStreamHandle = terrainView->GetIndirectBufferStreamHandle();
+    instance->IndirectBufferDrawCount = terrainView->GetIndirectBufferDrawCount();
+    instance->Clipmaps = terrainView->GetClipmapArray();
+    instance->Normals = terrainView->GetNormalMapArray();
+    instance->ViewPositionAndHeight.X = localViewPosition.X;
+    instance->ViewPositionAndHeight.Y = localViewPosition.Y;
+    instance->ViewPositionAndHeight.Z = localViewPosition.Z;
+    instance->ViewPositionAndHeight.W = terrainView->GetViewHeight();
+    instance->LocalViewProjection = localMVP;
+    instance->ModelNormalToViewSpace = view->NormalToViewMatrix * rotation;
+    instance->ClipMin = terrainResource->GetClipMin();
+    instance->ClipMax = terrainResource->GetClipMax();
+
+    view->TerrainInstanceCount++;
+}
+
 void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
     AIndexedMesh * mesh = InComponent->GetMesh();
 
@@ -949,9 +1042,6 @@ void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
 
         // Add render instance
         SRenderInstance * instance = (SRenderInstance *)GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
-        if ( !instance ) {
-            return;
-        }
 
         if ( material->IsTranslucent() ) {
             FrameData.TranslucentInstances.Append( instance );
@@ -1050,9 +1140,6 @@ void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
 
         // Add render instance
         SRenderInstance * instance = (SRenderInstance *)GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
-        if ( !instance ) {
-            return;
-        }
 
         if ( material->IsTranslucent() ) {
             FrameData.TranslucentInstances.Append( instance );
@@ -1136,9 +1223,6 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
 
     // Add render instance
     SRenderInstance * instance = (SRenderInstance *)GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
-    if ( !instance ) {
-        return;
-    }
 
     if ( material->IsTranslucent() ) {
         FrameData.TranslucentInstances.Append( instance );
@@ -1218,9 +1302,6 @@ void ARenderFrontend::AddShadowmap_StaticMesh( SLightShadowmap * ShadowMap, AMes
 
         // Add render instance
         SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
-        if ( !instance ) {
-            break;
-        }
 
         FrameData.ShadowInstances.Append( instance );
 
@@ -1293,9 +1374,6 @@ void ARenderFrontend::AddShadowmap_SkinnedMesh( SLightShadowmap * ShadowMap, ASk
 
         // Add render instance
         SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
-        if ( !instance ) {
-            break;
-        }
 
         FrameData.ShadowInstances.Append( instance );
 
@@ -1360,9 +1438,6 @@ void ARenderFrontend::AddShadowmap_ProceduralMesh( SLightShadowmap * ShadowMap, 
 
     // Add render instance
     SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
-    if ( !instance ) {
-        return;
-    }
 
     FrameData.ShadowInstances.Append( instance );
 
@@ -1501,9 +1576,6 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
 
             // Add render instance
             SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
-            if ( !instance ) {
-                break;
-            }
 
             FrameData.ShadowInstances.Append( instance );
 
@@ -1549,9 +1621,6 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
                     // NOTE: We can precompute visible geometry for static light and meshes from every light portal
 
                     SLightPortalRenderInstance * instance = (SLightPortalRenderInstance *)GRuntime.AllocFrameMem( sizeof( SLightPortalRenderInstance ) );
-                    if ( !instance ) {
-                        break;
-                    }
 
                     FrameData.LightPortals.Append( instance );
 
@@ -1776,9 +1845,6 @@ void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialIn
 
     // Add render instance
     SRenderInstance * instance = ( SRenderInstance * )GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
-    if ( !instance ) {
-        return;
-    }
 
     if ( material->IsTranslucent() ) {
         FrameData.TranslucentInstances.Append( instance );
@@ -1841,9 +1907,6 @@ void ARenderFrontend::AddShadowmapSurface( SLightShadowmap * ShadowMap, AMateria
 
     // Add render instance
     SShadowRenderInstance * instance = ( SShadowRenderInstance * )GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
-    if ( !instance ) {
-        return;
-    }
 
     FrameData.ShadowInstances.Append( instance );
 
@@ -1968,5 +2031,5 @@ void ARenderFrontend::AddLightShadowmap( AAnalyticLightComponent * Light, float 
         totalInstances += shadowMap->ShadowInstanceCount;
     }
 
-    GLogger.Printf( "Total Instances %d, surfaces %d\n", totalInstances, totalSurfaces );
+    //GLogger.Printf( "Total Instances %d, surfaces %d\n", totalInstances, totalSurfaces );
 }

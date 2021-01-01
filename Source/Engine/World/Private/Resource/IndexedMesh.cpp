@@ -124,7 +124,7 @@ void AIndexedMesh::Purge() {
     Skin.JointIndices.Clear();
     Skin.OffsetMatrices.Clear();
 
-    BodyComposition.Clear();
+    CollisionModel.Reset();
 
     Vertices.Free();
     Weights.Free();
@@ -442,6 +442,11 @@ void AIndexedMesh::SetSkin( int32_t const * _JointIndices, Float3x4 const * _Off
     Core::Memcpy( Skin.OffsetMatrices.ToPtr(), _OffsetMatrices, _JointsCount * sizeof(*_OffsetMatrices) );
 }
 
+void AIndexedMesh::SetCollisionModel( ACollisionModel * _CollisionModel )
+{
+    CollisionModel = _CollisionModel;
+}
+
 void AIndexedMesh::SetMaterialInstance( int _SubpartIndex, AMaterialInstance * _MaterialInstance ) {
     if ( _SubpartIndex < 0 || _SubpartIndex >= Subparts.Size() ) {
         return;
@@ -741,28 +746,36 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
 
     if ( !Core::Stricmp( _Path, "/Default/Meshes/Box" ) ) {
         InitializeBoxMesh( Float3(1), 1 );
-        ACollisionBox * collisionBody = BodyComposition.AddCollisionBody< ACollisionBox >();
+
+        CollisionModel = NewObject< ACollisionModel >();
+        ACollisionBox * collisionBody = CollisionModel->CreateBody< ACollisionBox >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Meshes/Sphere" ) ) {
         InitializeSphereMesh( 0.5f, 1 );
-        ACollisionSphere * collisionBody = BodyComposition.AddCollisionBody< ACollisionSphere >();
+
+        CollisionModel = NewObject< ACollisionModel >();
+        ACollisionSphere * collisionBody = CollisionModel->CreateBody< ACollisionSphere >();
         collisionBody->Radius = 0.5f;
         return;
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Meshes/Cylinder" ) ) {
         InitializeCylinderMesh( 0.5f, 1, 1 );
-        ACollisionCylinder * collisionBody = BodyComposition.AddCollisionBody< ACollisionCylinder >();
+
+        CollisionModel = NewObject< ACollisionModel >();
+        ACollisionCylinder * collisionBody = CollisionModel->CreateBody< ACollisionCylinder >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Meshes/Cone" ) ) {
         InitializeConeMesh( 0.5f, 1, 1 );
-        ACollisionCone * collisionBody = BodyComposition.AddCollisionBody< ACollisionCone >();
+
+        CollisionModel = NewObject< ACollisionModel >();
+        ACollisionCone * collisionBody = CollisionModel->CreateBody< ACollisionCone >();
         collisionBody->Radius = 0.5f;
         collisionBody->Height = 1.0f;
         return;
@@ -770,7 +783,9 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
 
     if ( !Core::Stricmp( _Path, "/Default/Meshes/Capsule" ) ) {
         InitializeCapsuleMesh( 0.5f, 1.0f, 1 );
-        ACollisionCapsule * collisionBody = BodyComposition.AddCollisionBody< ACollisionCapsule >();
+
+        CollisionModel = NewObject< ACollisionModel >();
+        ACollisionCapsule * collisionBody = CollisionModel->CreateBody< ACollisionCapsule >();
         collisionBody->Radius = 0.5f;
         collisionBody->Height = 1;
         return;
@@ -778,7 +793,9 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
 
     if ( !Core::Stricmp( _Path, "/Default/Meshes/PlaneXZ") ) {
         InitializePlaneMeshXZ( 256, 256, 256 );
-        ACollisionBox * box = BodyComposition.AddCollisionBody< ACollisionBox >();
+
+        CollisionModel = NewObject< ACollisionModel >();
+        ACollisionBox * box = CollisionModel->CreateBody< ACollisionBox >();
         box->HalfExtents.X = 128;
         box->HalfExtents.Y = 0.1f;
         box->HalfExtents.Z = 128;
@@ -788,7 +805,9 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
 
     if ( !Core::Stricmp( _Path, "/Default/Meshes/PlaneXY" ) ) {
         InitializePlaneMeshXY( 256, 256, 256 );
-        ACollisionBox * box = BodyComposition.AddCollisionBody< ACollisionBox >();
+
+        CollisionModel = NewObject< ACollisionModel >();
+        ACollisionBox * box = CollisionModel->CreateBody< ACollisionBox >();
         box->HalfExtents.X = 128;
         box->HalfExtents.Y = 128;
         box->HalfExtents.Z = 0.1f;
@@ -827,8 +846,8 @@ void AIndexedMesh::GenerateRigidbodyCollisions() {
     bvh->TrisData = tris;
     bvh->BuildBVH();
 
-    BodyComposition.Clear();
-    ACollisionTriangleSoupBVH * CollisionBody = BodyComposition.AddCollisionBody< ACollisionTriangleSoupBVH >();
+    CollisionModel = NewObject< ACollisionModel >();
+    ACollisionTriangleSoupBVH * CollisionBody = CollisionModel->CreateBody< ACollisionTriangleSoupBVH >();
     CollisionBody->BvhData = bvh;
 }
 
@@ -894,7 +913,7 @@ void AIndexedMesh::GenerateSoftbodyLinksFromFaces() {
     }
 }
 
-bool AIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const {
+bool AIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, bool bCullBackFace, TPodArray< STriangleHitResult > & _HitResult ) const {
     bool ret = false;
 
     float boxMin, boxMax;
@@ -911,12 +930,12 @@ bool AIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, fl
 
     for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
         AIndexedMeshSubpart * subpart = Subparts[i];
-        ret |= subpart->Raycast( _RayStart, _RayDir, invRayDir, _Distance, _HitResult );
+        ret |= subpart->Raycast( _RayStart, _RayDir, invRayDir, _Distance, bCullBackFace, _HitResult );
     }
     return ret;
 }
 
-bool AIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], int & _SubpartIndex ) const {
+bool AIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, bool bCullBackFace, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], int & _SubpartIndex ) const {
     bool ret = false;
 
     float boxMin, boxMax;
@@ -927,13 +946,13 @@ bool AIndexedMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _Ray
     invRayDir.Y = 1.0f / _RayDir.Y;
     invRayDir.Z = 1.0f / _RayDir.Z;
 
-    if ( !BvRayIntersectBox( _RayStart, invRayDir, GetBoundingBox(), boxMin, boxMax ) || boxMin >= _HitDistance ) {
+    if ( !BvRayIntersectBox( _RayStart, invRayDir, GetBoundingBox(), boxMin, boxMax ) || boxMin >= _Distance ) {
         return false;
     }
 
     for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
         AIndexedMeshSubpart * subpart = Subparts[i];
-        if ( subpart->RaycastClosest( _RayStart, _RayDir, invRayDir, _Distance, _HitLocation, _HitUV, _HitDistance, _Indices ) ) {
+        if ( subpart->RaycastClosest( _RayStart, _RayDir, invRayDir, _Distance, bCullBackFace, _HitLocation, _HitUV, _HitDistance, _Indices ) ) {
             _SubpartIndex = i;
             _Distance = _HitDistance;
             ret = true;
@@ -1013,7 +1032,7 @@ void AIndexedMeshSubpart::SetBVH( ATreeAABB * BVH ) {
     bAABBTreeDirty = false;
 }
 
-bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const {
+bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, bool bCullBackFace, TPodArray< STriangleHitResult > & _HitResult ) const {
     bool ret = false;
     float d, u, v;
     unsigned int const * indices = OwnerMesh->GetIndices() + FirstIndex;
@@ -1050,11 +1069,11 @@ bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
                     Float3 const & v0 = vertices[i0].Position;
                     Float3 const & v1 = vertices[i1].Position;
                     Float3 const & v2 = vertices[i2].Position;
-                    if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
+                    if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v, bCullBackFace ) ) {
                         if ( _Distance > d ) {
                             STriangleHitResult & hitResult = _HitResult.Append();
                             hitResult.Location = _RayStart + _RayDir * d;
-                            hitResult.Normal = Math::Cross( v1 - v0, v2-v0 ).Normalized();
+                            hitResult.Normal = Math::Cross( v1 - v0, v2 - v0 ).Normalized();
                             hitResult.Distance = d;
                             hitResult.UV.X = u;
                             hitResult.UV.Y = v;
@@ -1088,11 +1107,11 @@ bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
             Float3 const & v1 = vertices[i1].Position;
             Float3 const & v2 = vertices[i2].Position;
 
-            if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
+            if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v, bCullBackFace ) ) {
                 if ( _Distance > d ) {
                     STriangleHitResult & hitResult = _HitResult.Append();
                     hitResult.Location = _RayStart + _RayDir * d;
-                    hitResult.Normal = Math::Cross( v1 - v0, v2-v0 ).Normalized();
+                    hitResult.Normal = Math::Cross( v1 - v0, v2 - v0 ).Normalized();
                     hitResult.Distance = d;
                     hitResult.UV.X = u;
                     hitResult.UV.Y = v;
@@ -1108,7 +1127,7 @@ bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
     return ret;
 }
 
-bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const {
+bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, bool bCullBackFace, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const {
     bool ret = false;
     float d, u, v;
     unsigned int const * indices = OwnerMesh->GetIndices() + FirstIndex;
@@ -1145,7 +1164,7 @@ bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
                     Float3 const & v0 = vertices[i0].Position;
                     Float3 const & v1 = vertices[i1].Position;
                     Float3 const & v2 = vertices[i2].Position;
-                    if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
+                    if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v, bCullBackFace ) ) {
                         if ( _Distance > d ) {
                             _Distance = d;
                             _HitDistance = d;
@@ -1181,7 +1200,7 @@ bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
             Float3 const & v1 = vertices[i1].Position;
             Float3 const & v2 = vertices[i2].Position;
 
-            if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
+            if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v, bCullBackFace ) ) {
                 if ( _Distance > d ) {
                     _Distance = d;
                     _HitDistance = d;
@@ -1430,7 +1449,7 @@ void AProceduralMesh::PreRenderUpdate( SRenderFrontendDef const * _Def ) {
     }
 }
 
-bool AProceduralMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const {
+bool AProceduralMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, bool bCullBackFace, TPodArray< STriangleHitResult > & _HitResult ) const {
     if ( _Distance < 0.0001f ) {
         return false;
     }
@@ -1466,11 +1485,11 @@ bool AProceduralMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir,
         Float3 const & v1 = vertices[i1].Position;
         Float3 const & v2 = vertices[i2].Position;
 
-        if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
+        if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v, bCullBackFace ) ) {
             if ( _Distance > d ) {
                 STriangleHitResult & hitResult = _HitResult.Append();
                 hitResult.Location = _RayStart + _RayDir * d;
-                hitResult.Normal = Math::Cross( v1 - v0, v2-v0 ).Normalized();
+                hitResult.Normal = Math::Cross( v1 - v0, v2 - v0 ).Normalized();
                 hitResult.Distance = d;
                 hitResult.UV.X = u;
                 hitResult.UV.Y = v;
@@ -1486,7 +1505,7 @@ bool AProceduralMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir,
     return ret;
 }
 
-bool AProceduralMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const {
+bool AProceduralMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, bool bCullBackFace, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const {
     if ( _Distance < 0.0001f ) {
         return false;
     }
@@ -1522,7 +1541,7 @@ bool AProceduralMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _
         Float3 const & v1 = vertices[i1].Position;
         Float3 const & v2 = vertices[i2].Position;
 
-        if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v ) ) {
+        if ( BvRayIntersectTriangle( _RayStart, _RayDir, v0, v1, v2, d, u, v, bCullBackFace ) ) {
             if ( _Distance > d ) {
                 _Distance = d;
                 _HitLocation = _RayStart + _RayDir * d;

@@ -44,7 +44,6 @@ SOFTWARE.
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/RuntimeVariable.h>
-#include <BulletSoftBody/btSoftBody.h>
 
 #include "../BulletCompatibility/BulletCompatibility.h"
 

@@ -52,7 +52,7 @@ AActorComponent
 Base class for all actor components
 
 */
-class ANGIE_API AActorComponent : public ABaseObject {
+class AActorComponent : public ABaseObject {
     AN_COMPONENT( AActorComponent, ABaseObject )
 
     friend class AActor;
@@ -65,8 +65,8 @@ public:
     /** Get component GUID */
     //AGUID const & GetGUID() const { return GUID; }
 
-    /** Component parent actor */
-    AActor * GetParentActor() const { return ParentActor; }
+    /** Component owner */
+    AActor * GetOwnerActor() const { return OwnerActor; }
 
     /** Component parent level */
     ALevel * GetLevel() const;
@@ -93,6 +93,9 @@ public:
     void SetHideInEditor( bool _HideInEditor ) { bHideInEditor = _HideInEditor; }
 
     bool HiddenInEditor() const { return bHideInEditor; }
+
+    /** Spawned for editing */
+    bool IsInEditor() const;
 
     /** Register component to initialize it at runtime */
     void RegisterComponent();
@@ -122,11 +125,9 @@ protected:
 
 private:
 
-    void Clone( AActorComponent const * _TemplateComponent );
-
     //AGUID GUID;
 
-    AActor * ParentActor = nullptr;
+    AActor * OwnerActor = nullptr;
 
     AActorComponent * NextPendingKillComponent = nullptr;
 

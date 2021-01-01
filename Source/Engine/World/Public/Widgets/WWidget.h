@@ -71,7 +71,7 @@ using AWidgetShape = TPodArray< Float2, 4 >;
 #define WNew(Type) (*CreateInstanceOf< Type >())
 #define WNewAssign(Val,Type) (*(Val = CreateInstanceOf< Type >()))
 
-class ANGIE_API WWidget : public ABaseObject {
+class WWidget : public ABaseObject {
     AN_CLASS( WWidget, ABaseObject )
 
     friend class WDesktop;
@@ -506,7 +506,7 @@ private:
 };
 
 #if 0
-class ANGIE_API WMenuItem : public WWidget {
+class WMenuItem : public WWidget {
     AN_CLASS( WMenuItem, WWidget )
 
 public:

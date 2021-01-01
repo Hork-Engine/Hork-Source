@@ -32,7 +32,8 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <Core/Public/Logger.h>
 
-enum ETimerState {
+enum ETimerState
+{
     TIMER_STATE_FINISHED = 1,
     TIMER_STATE_PULSE = 2,
     TIMER_STATE_TRIGGERED_ON_FIRST_DELAY = 4

@@ -52,7 +52,7 @@ AMaterial::~AMaterial() {
 
 static void CreateMaterial( AMaterialGPU * Material, SMaterialDef const * Def )
 {
-    GEngine.GetRenderBackend()->InitializeMaterial( Material, Def );
+    GEngine->GetRenderBackend()->InitializeMaterial( Material, Def );
 }
 
 void AMaterial::RebuildMaterials() {
@@ -1021,9 +1021,6 @@ SMaterialFrameData * AMaterialInstance::PreRenderUpdate( int _FrameNumber ) {
     VisFrame = _FrameNumber;
 
     FrameData = ( SMaterialFrameData * )GRuntime.AllocFrameMem( sizeof( SMaterialFrameData ) );
-    if ( !FrameData ) {
-        return nullptr;
-    }
 
     FrameData->Material = Material->GetGPUResource();
 

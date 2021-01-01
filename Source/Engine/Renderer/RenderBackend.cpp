@@ -478,6 +478,17 @@ ARenderBackend::ARenderBackend()
     binaryData.BinaryFormat = SHADER_BINARY_FORMAT_SPIR_V_ARB;
     LoadSPIRV( &binaryData.BinaryCode, &binaryData.BinarySize );
     GDevice->CreateShaderFromBinary( &binaryData, &shaderModule );
+
+
+
+    CreateTerrainMaterialDepth( &TerrainDepthPipeline );
+    GTerrainDepthPipeline = TerrainDepthPipeline;
+
+    CreateTerrainMaterialLight( &TerrainLightPipeline );
+    GTerrainLightPipeline = TerrainLightPipeline;
+
+    CreateTerrainMaterialWireframe( &TerrainWireframePipeline );
+    GTerrainWireframePipeline = TerrainWireframePipeline;
 }
 
 ARenderBackend::~ARenderBackend()
@@ -714,6 +725,9 @@ void ARenderBackend::SetViewConstants()
 
     pViewCBuf->GameRunningTimeSeconds = GRenderView->GameRunningTimeSeconds;
     pViewCBuf->GameplayTimeSeconds = GRenderView->GameplayTimeSeconds;
+
+    pViewCBuf->GlobalIrradianceMap = GRenderView->GlobalIrradianceMap;
+    pViewCBuf->GlobalReflectionMap = GRenderView->GlobalReflectionMap;
 
     pViewCBuf->DynamicResolutionRatioX = (float)GRenderView->Width / GFrameData->RenderTargetMaxWidth;
     pViewCBuf->DynamicResolutionRatioY = (float)GRenderView->Height / GFrameData->RenderTargetMaxHeight;

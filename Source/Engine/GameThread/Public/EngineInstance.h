@@ -49,9 +49,9 @@ enum ECursorMode
     CURSOR_MODE_FORCE_DISABLED
 };
 
-class ANGIE_API AEngineInstance : public IEngineInterface
+class AEngineInstance : public IEngineInterface
 {
-    AN_SINGLETON( AEngineInstance )
+    AN_FORBID_COPY( AEngineInstance )
 
 public:
     /** Quit when user press ESCAPE */
@@ -66,6 +66,8 @@ public:
     ECursorMode CursorMode = CURSOR_MODE_AUTO;
 
     ACanvas Canvas;
+
+    AEngineInstance();
 
     /** Add global console command */
     void AddCommand( const char * _Name, TCallback< void( ARuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment = "" );
@@ -94,7 +96,7 @@ public:
     /** Map coordinate from monitor space to window space */
     void UnmapWindowCoordinate( float & InOutX, float & InOutY ) const;
 
-    /** Set game module */
+    /** Get game module */
     IGameModule * GetGameModule() { return GameModule; }
 
     /** Set hud desktop */
@@ -194,4 +196,4 @@ public:
     AEngineCommands();
 };
 
-extern ANGIE_API AEngineInstance & GEngine;
+extern AEngineInstance * GEngine;

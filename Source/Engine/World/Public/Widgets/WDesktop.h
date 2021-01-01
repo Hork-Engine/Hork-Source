@@ -62,7 +62,7 @@ private:
     TStdVector< SShortcutInfo > Shortcuts;
 };
 
-class ANGIE_API WDesktop : public ABaseObject {
+class WDesktop : public ABaseObject {
     AN_CLASS( WDesktop, ABaseObject )
 
     friend class WWidget;

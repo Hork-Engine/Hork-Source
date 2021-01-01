@@ -67,4 +67,5 @@ public:
     virtual void OnResize() = 0;
 };
 
-extern IEngineInterface * GetEngineInstance();
+extern IEngineInterface * CreateEngineInstance();
+extern void DestroyEngineInstance();

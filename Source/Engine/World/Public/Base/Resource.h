@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
-class ANGIE_API AResource : public ABaseObject {
+class AResource : public ABaseObject {
     AN_CLASS( AResource, ABaseObject )
 
     friend class AResourceManager;

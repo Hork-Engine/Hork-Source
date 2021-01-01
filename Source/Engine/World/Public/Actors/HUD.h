@@ -52,6 +52,8 @@ public:
     int GetViewportW() const { return ViewportW; }
     int GetViewportH() const { return ViewportH; }
 
+    APawn * GetOwnerPawn() const { return OwnerPawn; }
+
 protected:
     AHUD();
 

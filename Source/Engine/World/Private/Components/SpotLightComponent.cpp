@@ -68,7 +68,7 @@ void ASpotLightComponent::OnCreateAvatar() {
     // TODO: Create mesh or sprite for avatar
     static TStaticResourceFinder< AIndexedMesh > Mesh( _CTS( "/Default/Meshes/Cone" ) );
     static TStaticResourceFinder< AMaterialInstance > MaterialInstance( _CTS( "AvatarMaterialInstance" ) );
-    AMeshComponent * meshComponent = GetParentActor()->CreateComponent< AMeshComponent >( "SpotLightAvatar" );
+    AMeshComponent * meshComponent = GetOwnerActor()->CreateComponent< AMeshComponent >( "SpotLightAvatar" );
     meshComponent->SetMotionBehavior( MB_KINEMATIC );
     meshComponent->SetCollisionGroup( CM_NOCOLLISION );
     meshComponent->SetMesh( Mesh.GetObject() );

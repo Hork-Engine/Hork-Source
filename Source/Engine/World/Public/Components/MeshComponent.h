@@ -46,7 +46,7 @@ AMeshComponent
 Mesh component without skinning
 
 */
-class ANGIE_API AMeshComponent : public ADrawable {
+class AMeshComponent : public ADrawable {
     AN_COMPONENT( AMeshComponent, ADrawable )
 
 public:
@@ -126,7 +126,7 @@ protected:
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    ACollisionBodyComposition const & DefaultBodyComposition() const override;
+    ACollisionModel const * GetMeshCollisionModel() const override;
 
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 
@@ -198,8 +198,6 @@ public:
 
 protected:
     ABrushComponent();
-
-    //ACollisionBodyComposition const & DefaultBodyComposition() const override { return Model ? Model->BodyComposition : BodyComposition; }
 
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 

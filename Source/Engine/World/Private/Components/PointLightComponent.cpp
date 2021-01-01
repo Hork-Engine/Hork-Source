@@ -54,7 +54,7 @@ void APointLightComponent::OnCreateAvatar() {
     // TODO: Create mesh or sprite for point light avatar
     static TStaticResourceFinder< AIndexedMesh > Mesh( _CTS( "/Default/Meshes/Sphere" ) );
     static TStaticResourceFinder< AMaterialInstance > MaterialInstance( _CTS( "AvatarMaterialInstance" ) );
-    AMeshComponent * meshComponent = GetParentActor()->CreateComponent< AMeshComponent >( "PointLightAvatar" );
+    AMeshComponent * meshComponent = GetOwnerActor()->CreateComponent< AMeshComponent >( "PointLightAvatar" );
     meshComponent->SetMotionBehavior( MB_KINEMATIC );
     meshComponent->SetCollisionGroup( CM_NOCOLLISION );
     meshComponent->SetMesh( Mesh.GetObject() );

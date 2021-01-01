@@ -32,8 +32,6 @@ SOFTWARE.
 
 #include "SceneComponent.h"
 
-class btRigidBody;
-
 /*
 
 AAnchorComponent
@@ -41,7 +39,7 @@ AAnchorComponent
 Anchors is used to attach softbodies
 
 */
-class ANGIE_API AAnchorComponent : public ASceneComponent {
+class AAnchorComponent : public ASceneComponent {
     AN_COMPONENT( AAnchorComponent, ASceneComponent )
 
     friend class ASoftMeshComponent;
@@ -61,6 +59,6 @@ protected:
 
 private:
 
-    btRigidBody * Anchor = nullptr;
+    class btRigidBody * Anchor = nullptr;
     int AttachCount = 0;
 };

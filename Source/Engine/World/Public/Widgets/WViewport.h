@@ -34,7 +34,7 @@ SOFTWARE.
 
 class APlayerController;
 
-class ANGIE_API WViewport : public WWidget {
+class WViewport : public WWidget {
     AN_CLASS( WViewport, WWidget )
 
 public:

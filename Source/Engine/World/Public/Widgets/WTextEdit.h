@@ -37,7 +37,7 @@ class WScroll;
 struct STB_TexteditState_s;
 typedef STB_TexteditState_s STB_TexteditState;
 
-class ANGIE_API WTextEdit : public WWidget {
+class WTextEdit : public WWidget {
     AN_CLASS( WTextEdit, WWidget )
 
     friend class WTextEditProxy;

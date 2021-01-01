@@ -50,7 +50,7 @@ struct SColorGradingPreset {
 ATexture
 
 */
-class ANGIE_API ATexture : public AResource {
+class ATexture : public AResource {
     AN_CLASS( ATexture, AResource )
 
 public:

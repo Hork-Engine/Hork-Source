@@ -66,6 +66,7 @@ option( USE_GLUT "Use Glut" OFF )
 option( BUILD_OPENGL3_DEMOS "Set when you want to build the OpenGL3+ demos" OFF )
 option( BUILD_BULLET2_DEMOS "Set when you want to build the Bullet 2 demos" OFF )
 option( BUILD_UNIT_TESTS "Build Unit Tests" OFF )
+option( BUILD_BULLET3 "Set when you want to build Bullet 3" OFF)
 
 include_directories( ThirdParty/bullet3/src )
 
@@ -87,12 +88,30 @@ set_target_properties( BulletInverseDynamics PROPERTIES FOLDER "ThirdParty/Physi
 set_target_properties( BulletInverseDynamicsUtils PROPERTIES FOLDER "ThirdParty/Physics" )
 set_target_properties( BulletSoftBody PROPERTIES FOLDER "ThirdParty/Physics" )
 set_target_properties( BulletWorldImporter PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( BulletXmlWorldImporter PROPERTIES FOLDER "ThirdParty/Physics" )
+#set_target_properties( BulletXmlWorldImporter PROPERTIES FOLDER "ThirdParty/Physics" )
 set_target_properties( ConvexDecomposition PROPERTIES FOLDER "ThirdParty/Physics" )
 set_target_properties( GIMPACTUtils PROPERTIES FOLDER "ThirdParty/Physics" )
 set_target_properties( HACD PROPERTIES FOLDER "ThirdParty/Physics" )
 
-set( AN_BULLET_LIBS LinearMath Bullet2FileLoader BulletFileLoader Bullet3Collision Bullet3Common Bullet3Dynamics Bullet3Geometry Bullet3OpenCL_clew BulletCollision BulletDynamics BulletInverseDynamics BulletInverseDynamicsUtils BulletSoftBody BulletWorldImporter BulletXmlWorldImporter ConvexDecomposition GIMPACTUtils HACD )
+set( AN_BULLET_LIBS
+BulletSoftBody
+BulletDynamics
+BulletCollision
+LinearMath
+#Bullet2FileLoader
+#BulletFileLoader
+#Bullet3Collision
+Bullet3Common
+#Bullet3Dynamics
+#Bullet3Geometry
+#Bullet3OpenCL_clew
+BulletInverseDynamics
+BulletInverseDynamicsUtils
+BulletWorldImporter
+#BulletXmlWorldImporter
+ConvexDecomposition
+GIMPACTUtils
+HACD )
 #########################################################################################
 
 #########################################################################################

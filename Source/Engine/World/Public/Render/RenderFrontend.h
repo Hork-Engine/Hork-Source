@@ -35,6 +35,7 @@ SOFTWARE.
 #include <World/Public/Canvas.h>
 #include <World/Public/Resource/IndexedMesh.h>
 #include <World/Public/World.h>
+#include <World/Public/Terrain.h>
 
 class AAnalyticLightComponent;
 class AIBLComponent;
@@ -72,6 +73,7 @@ private:
                              TPodArray< SPrimitiveDef * > & Primitives, TPodArray< SSurfaceDef * > & Surfaces );
     void AddRenderInstances( ARenderWorld * InWorld );
     void AddDrawable( ADrawable * InComponent );
+    void AddTerrain( ATerrainComponent * InComponent );
     void AddStaticMesh( AMeshComponent * InComponent );
     void AddSkinnedMesh( ASkinnedComponent * InComponent );
     void AddProceduralMesh( AProceduralMeshComponent * InComponent );
@@ -102,6 +104,7 @@ private:
     TPodArray< SSurfaceDef * > VisSurfaces;
     TPodArray< AAnalyticLightComponent * > VisLights;
     TPodArray< AIBLComponent * > VisIBLs;
+
     int VisPass = 0;
 
     // TODO: We can keep ready shadowCasters[] and boxes[]
@@ -119,6 +122,9 @@ private:
     SSurfaceStream SurfaceStream;
 
     SRenderFrontendDef RenderDef;
+    ARenderingParameters * ViewRP;
 
     TRef< ATexture > PhotometricProfiles;
+
+    TRef< ATerrainMesh > TerrainMesh;
 };

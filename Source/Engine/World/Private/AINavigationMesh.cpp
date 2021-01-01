@@ -567,8 +567,8 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
         tileWorldBoundsWithPadding.Maxs[i] = config.bmax[i];
     }
 
-    TPodArray< Float3 > vertices;
-    TPodArray< unsigned int > indices;
+    TPodArrayHeap< Float3 > vertices;
+    TPodArrayHeap< unsigned int > indices;
     BvAxisAlignedBox boundingBox;
     TBitMask<> walkableMask;
 
@@ -1949,14 +1949,14 @@ void AAINavigationMesh::RemoveNavigationGeometry( APhysicalBody * InPhysicalBody
     INTRUSIVE_REMOVE( InPhysicalBody, NextNavBody, PrevNavBody, NavigationGeometryList, NavigationGeometryListTail );
 }
 
-void AAINavigationMesh::GatherNavigationGeometry( TPodArray< Float3 > & _Vertices,
-                                                  TPodArray< unsigned int > & _Indices,
+void AAINavigationMesh::GatherNavigationGeometry( TPodArrayHeap< Float3 > & _Vertices,
+                                                  TPodArrayHeap< unsigned int > & _Indices,
                                                   TBitMask<> & _WalkableTriangles,
                                                   BvAxisAlignedBox & _ResultBoundingBox,
                                                   BvAxisAlignedBox const * _ClipBoundingBox ) {
     BvAxisAlignedBox clippedBounds;
-    TPodArray< Float3 > collisionVertices;
-    TPodArray< unsigned int > collisionIndices;
+    TPodArrayHeap< Float3 > collisionVertices;
+    TPodArrayHeap< unsigned int > collisionIndices;
     BvAxisAlignedBox worldBounds;
     const Float3 padding(0.001f);
 
@@ -2007,7 +2007,7 @@ void AAINavigationMesh::GatherNavigationGeometry( TPodArray< Float3 > & _Vertice
         collisionVertices.Clear();
         collisionIndices.Clear();
 
-        body->CreateCollisionModel( collisionVertices, collisionIndices );
+        body->GatherCollisionGeometry( collisionVertices, collisionIndices );
 
         if ( collisionIndices.IsEmpty() ) {
 

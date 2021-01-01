@@ -39,7 +39,7 @@ enum EWidgetButtonTextAlign
     WIDGET_BUTTON_TEXT_ALIGN_RIGHT
 };
 
-class ANGIE_API WButton : public WWidget {
+class WButton : public WWidget {
     AN_CLASS( WButton, WWidget )
 
 public:
@@ -90,7 +90,7 @@ private:
     bool bToggleButton;
 };
 
-class ANGIE_API WTextButton : public WButton {
+class WTextButton : public WButton {
     AN_CLASS( WTextButton, WButton )
 
 public:
@@ -126,7 +126,7 @@ private:
     float BorderThickness;
 };
 
-class ANGIE_API WImageButton : public WButton {
+class WImageButton : public WButton {
     AN_CLASS( WImageButton, WButton )
 
 public:

@@ -56,6 +56,11 @@ AWorld::AWorld()
     PersistentLevel->bIsPersistent = true;
     PersistentLevel->IndexInArrayOfLevels = ArrayOfLevels.Size();
     ArrayOfLevels.Append( PersistentLevel );
+    PersistentLevel->OnAddLevelToWorld();
+}
+
+AWorld::~AWorld()
+{
 }
 
 void AWorld::SetPaused( bool _Paused )
@@ -129,9 +134,9 @@ void AWorld::Destroy()
 
     // Remove all levels from world including persistent level
     for ( ALevel * level : ArrayOfLevels ) {
-        if ( !level->bIsPersistent ) {
+        //if ( !level->bIsPersistent ) {
             level->OnRemoveLevelFromWorld();
-        }
+        //}
         level->IndexInArrayOfLevels = -1;
         level->OwnerWorld = nullptr;
         level->RemoveRef();
@@ -224,7 +229,36 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters )
     actor->bInEditor = _SpawnParameters.bInEditor;
 
     if ( templateActor ) {
-        actor->Clone( templateActor );
+
+        // Clone attributes
+        AClassMeta::CloneAttributes( templateActor, actor );
+
+        // FIXME: How about to clone components?
+
+    //    for ( AActorComponent const * templateComponent : templateActor->Components ) {
+    //        if ( templateComponent->IsPendingKill() ) {
+    //            continue;
+    //        }
+
+    //        AActorComponent * component;
+    //        if ( templateComponent->bCreatedDuringConstruction ) {
+    //            component = actor->FindComponentGUID( templateComponent->GetGUID() );
+    //        } else {
+    //            component = actor->AddComponent( &templateComponent->FinalClassMeta(), templateComponent->GetObjectName().CStr() );
+    //        }
+
+    //        if ( component ) {
+
+    //            if ( templateComponent == templateActor->RootComponent ) {
+    //                RootComponent = dynamic_cast< ASceneComponent * >( component );
+    //            }
+
+    //            AClassMeta::CloneAttributes( templateComponent, component );
+    //        }
+    //    }
+
+        // TODO: Clone components hierarchy, etc
+
     } else {
         // TODO: Here create components added from the editor
         // TODO: Copy actor/component properties from the actor spawn parameters
@@ -527,6 +561,8 @@ void AWorld::UpdatePhysics( float _TimeStep )
     }
 
     PhysicsWorld.Simulate( _TimeStep );
+
+    E_OnPostPhysicsUpdate.Dispatch();
 }
 
 void AWorld::UpdateSkinning()
@@ -595,9 +631,17 @@ void AWorld::QueryVisiblePrimitives( TPodArray< SPrimitiveDef * > & VisPrimitive
 void AWorld::ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter )
 {
     TPodArray< AActor * > damagedActors;
+    SActorDamage damage;
+
     QueryActors( damagedActors, _Position, _Radius, _QueryFilter );
+
+    damage.Amount = _DamageAmount;
+    damage.Position = _Position;
+    damage.Radius = _Radius;
+    damage.DamageCauser = nullptr;
+
     for ( AActor * damagedActor : damagedActors ) {
-        damagedActor->ApplyDamage( _DamageAmount, _Position, nullptr );
+        damagedActor->ApplyDamage( damage );
     }
 }
 
@@ -615,14 +659,14 @@ void AWorld::KickoffPendingKillObjects()
             // FIXME: Call component->EndPlay here?
 
             // Remove component from actor array of components
-            AActor * parent = component->ParentActor;
+            AActor * parent = component->OwnerActor;
             if ( parent /*&& !parent->IsPendingKill()*/ ) {
                 parent->Components[ component->ComponentIndex ] = parent->Components[ parent->Components.Size() - 1 ];
                 parent->Components[ component->ComponentIndex ]->ComponentIndex = component->ComponentIndex;
                 parent->Components.RemoveLast();
             }
             component->ComponentIndex = -1;
-            component->ParentActor = nullptr;
+            component->OwnerActor = nullptr;
             component->RemoveRef();
 
             component = nextComponent;
@@ -861,4 +905,14 @@ void AWorld::UpdateWorlds( float _TimeStep )
     KickoffPendingKillWorlds();
 
     GPrimitiveLinkPool.CleanupEmptyBlocks();
+}
+
+void AWorld::SetGlobalIrradianceMap( int Index )
+{
+    GlobalIrradianceMap = Index;
+}
+
+void AWorld::SetGlobalReflectionMap( int Index )
+{
+    GlobalReflectionMap = Index;
 }

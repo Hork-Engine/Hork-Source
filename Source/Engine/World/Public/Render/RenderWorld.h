@@ -63,18 +63,18 @@ public:
 
 private:
     friend class ADrawable;
-    void AddShadowCaster( ADrawable * _Mesh );
-    void RemoveShadowCaster( ADrawable * _Mesh );
+    void AddShadowCaster( ADrawable * InMesh );
+    void RemoveShadowCaster( ADrawable * InMesh );
 
 private:
     friend class ASkinnedComponent;
-    void AddSkinnedMesh( ASkinnedComponent * _Skeleton );
-    void RemoveSkinnedMesh( ASkinnedComponent * _Skeleton );
+    void AddSkinnedMesh( ASkinnedComponent * InSkeleton );
+    void RemoveSkinnedMesh( ASkinnedComponent * InSkeleton );
 
 private:
     friend class ADirectionalLightComponent;
-    void AddDirectionalLight( ADirectionalLightComponent * _Light );
-    void RemoveDirectionalLight( ADirectionalLightComponent * _Light );
+    void AddDirectionalLight( ADirectionalLightComponent * InLight );
+    void RemoveDirectionalLight( ADirectionalLightComponent * InLight );
 
 private:
     AWorld * pOwnerWorld;

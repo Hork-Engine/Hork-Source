@@ -57,3 +57,7 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, STextureSampler const * Samplers, int NumSamplers );
 
 void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers );
+
+void CreateTerrainMaterialDepth( TRef< RenderCore::IPipeline > * ppPipeline );
+void CreateTerrainMaterialLight( TRef< RenderCore::IPipeline > * ppPipeline );
+void CreateTerrainMaterialWireframe( TRef< RenderCore::IPipeline > * ppPipeline );

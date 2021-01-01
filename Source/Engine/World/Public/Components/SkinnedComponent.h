@@ -97,6 +97,11 @@ protected:
 
     void OnPreRenderUpdate( SRenderFrontendDef const * _Def ) override;
 
+    Float3x4 const & _GetJointTransform( int _JointIndex ) override
+    {
+        return GetJointTransform( _JointIndex );
+    }
+
 private:
     void UpdateControllersIfDirty();
     void UpdateControllers();

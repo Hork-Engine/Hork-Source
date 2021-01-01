@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <Core/Public/CoreMath.h>
 
+#include <World/Public/Base/DebugRenderer.h>
+
 #include <LinearMath/btVector3.h>
 #include <LinearMath/btMatrix3x3.h>
 #include <LinearMath/btQuaternion.h>
@@ -84,7 +86,6 @@ AN_FORCEINLINE btMatrix3x3 btMatrixToFloat3x3( Float3x3 const & _In ) {
                         _In[2][0], _In[2][1], _In[2][2] );
 }
 
-#define b3New( _ClassName, ... ) new (b3AlignedAlloc(sizeof(_ClassName),16)) _ClassName( __VA_ARGS__ )
-#define b3Destroy( _Object ) { dtor( _Object ); b3AlignedFree( _Object ); }
+void btDrawCollisionShape( ADebugRenderer * InRenderer, btTransform const & Transform, btCollisionShape const * Shape );
 
-template< typename T > AN_FORCEINLINE void dtor( T * object ) { object->~T(); }
+void btDrawCollisionObject( ADebugRenderer * InRenderer, btCollisionObject * CollisionObject );

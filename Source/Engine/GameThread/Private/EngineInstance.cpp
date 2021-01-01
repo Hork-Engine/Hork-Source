@@ -48,6 +48,7 @@ SOFTWARE.
 
 #include <Bullet3Common/b3Logging.h>
 #include <Bullet3Common/b3AlignedAllocator.h>
+#include <LinearMath/btAlignedAllocator.h>
 
 #include <DetourAlloc.h>
 
@@ -65,7 +66,20 @@ static AConsole Console;
 
 AN_CLASS_META( AEngineCommands )
 
-AEngineInstance & GEngine = AEngineInstance::Inst();
+AEngineInstance * GEngine = nullptr;
+
+IEngineInterface * CreateEngineInstance()
+{
+    AN_ASSERT( GEngine == nullptr );
+    GEngine = new AEngineInstance;
+    return GEngine;
+}
+
+void DestroyEngineInstance()
+{
+    delete GEngine;
+    GEngine = nullptr;
+}
 
 AEngineInstance::AEngineInstance() {
     RetinaScale = Float2( 1.0f );
@@ -162,6 +176,8 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     b3SetCustomErrorMessageFunc( PhysModuleErrorFunction );
     b3AlignedAllocSetCustom( PhysModuleAlloc, PhysModuleFree );
     b3AlignedAllocSetCustomAligned( PhysModuleAlignedAlloc, PhysModuleFree );
+    btAlignedAllocSetCustom( PhysModuleAlloc, PhysModuleFree );
+    btAlignedAllocSetCustomAligned( PhysModuleAlignedAlloc, PhysModuleFree );
 
     // Init recast navigation module
     dtAllocSetCustom( NavModuleAlloc, NavModuleFree );
@@ -647,10 +663,7 @@ void AEngineInstance::SetDesktop( WDesktop * _Desktop )
     }
 }
 
-IEngineInterface * GetEngineInstance()
-{
-    return &GEngine;
-}
+
 
 
 #ifdef IMGUI_CONTEXT

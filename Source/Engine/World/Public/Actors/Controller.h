@@ -40,7 +40,7 @@ AController
 Base class for controllers
 
 */
-class ANGIE_API AController : public AActor {
+class AController : public AActor {
     AN_ACTOR( AController, AActor )
 
 public:

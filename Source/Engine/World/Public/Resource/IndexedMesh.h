@@ -48,7 +48,8 @@ ASocketDef
 Socket for attaching
 
 */
-class ASocketDef : public ABaseObject {
+class ASocketDef : public ABaseObject
+{
     AN_CLASS( ASocketDef, ABaseObject )
 
 public:
@@ -68,7 +69,8 @@ protected:
 SNodeAABB
 
 */
-struct SNodeAABB {
+struct SNodeAABB
+{
     BvAxisAlignedBox Bounds;
     int32_t Index;          // First primitive in leaf (Index >= 0), next node index (Index < 0)
     int32_t PrimitiveCount;
@@ -166,10 +168,10 @@ public:
     void SetBVH( ATreeAABB * BVH );
 
     /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const;
+    bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, bool bCullBackFace, TPodArray< STriangleHitResult > & _HitResult ) const;
 
     /** Check ray intersection */
-    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const;
+    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, bool bCullBackFace, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const;
 
     void DrawBVH( ADebugRenderer * InRenderer, Float3x4 const & _TransformMatrix );
 
@@ -285,11 +287,13 @@ using ALightmapUVChannels = TPodArray< ALightmapUV *, 1 >;
 using AVertexLightChannels = TPodArray< AVertexLight *, 1 >;
 using AIndexedMeshSubpartArray = TPodArray< AIndexedMeshSubpart *, 1 >;
 
-struct SSoftbodyLink {
+struct SSoftbodyLink
+{
     unsigned int Indices[2];
 };
 
-struct SSoftbodyFace {
+struct SSoftbodyFace
+{
     unsigned int Indices[3];
 };
 
@@ -324,13 +328,6 @@ class AIndexedMesh : public AResource {
     friend class AIndexedMeshSubpart;
 
 public:
-    /** Rigid body collision model */
-    ACollisionBodyComposition BodyComposition; // TODO: StaticBody, DynamicBody???
-
-    /** Soft body collision model */
-    TPodArray< SSoftbodyLink > SoftbodyLinks;
-    TPodArray< SSoftbodyFace > SoftbodyFaces;
-
     /** Allocate mesh */
     void Initialize( int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh = false );
 
@@ -387,13 +384,24 @@ public:
     void SetSkeleton( ASkeleton * _Skeleton );
 
     /** Skeleton for the mesh. Never return null. */
-    ASkeleton * GetSkeleton() { return Skeleton; }
+    ASkeleton * GetSkeleton() const { return Skeleton; }
 
     /** Set mesh skin */
     void SetSkin( int32_t const * _JointIndices, Float3x4 const * _OffsetMatrices, int _JointsCount );
 
     /** Get mesh skin */
     ASkin const & GetSkin() const { return Skin; }
+
+    /** Collision model for the mesh. */
+    void SetCollisionModel( ACollisionModel * _CollisionModel );
+
+    /** Collision model for the mesh. */
+    ACollisionModel * GetCollisionModel() const { return CollisionModel; }
+
+    /** Soft body collision model */
+    TPodArray< SSoftbodyLink > /*const*/ & GetSoftbodyLinks() /*const*/ { return SoftbodyLinks; }
+    /** Soft body collision model */
+    TPodArray< SSoftbodyFace > /*const*/ & GetSoftbodyFaces() /*const*/ { return SoftbodyFaces; }
 
     /** Set subpart material */
     void SetMaterialInstance( int _SubpartIndex, AMaterialInstance * _MaterialInstance );
@@ -465,10 +473,10 @@ public:
     void GetWeightsBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset );
 
     /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const;
+    bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, bool bCullBackFace, TPodArray< STriangleHitResult > & _HitResult ) const;
 
     /** Check ray intersection */
-    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], int & _SubpartIndex ) const;
+    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, bool bCullBackFace, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3], int & _SubpartIndex ) const;
 
     /** Create BVH for raycast optimization */
     void GenerateBVH( unsigned int PrimitivesPerLeaf = 16 );
@@ -476,8 +484,10 @@ public:
     /** Generate static collisions */
     void GenerateRigidbodyCollisions();
 
+    /** Generate soft body collisions */
     void GenerateSoftbodyFacesFromMeshIndices();
 
+    /** Generate soft body collisions */
     void GenerateSoftbodyLinksFromFaces();
 
     void DrawBVH( ADebugRenderer * InRenderer, Float3x4 const & _TransformMatrix );
@@ -512,6 +522,9 @@ private:
     TPodArrayHeap< unsigned int > Indices;
     TPodArray< ASocketDef * > Sockets;
     TRef< ASkeleton > Skeleton;
+    TRef< ACollisionModel > CollisionModel;
+    TPodArray< SSoftbodyLink > SoftbodyLinks;
+    TPodArray< SSoftbodyFace > SoftbodyFaces;
     ASkin Skin;
     BvAxisAlignedBox BoundingBox;
     uint16_t RaycastPrimitivesPerLeaf = 16;
@@ -547,10 +560,10 @@ public:
     void GetIndexBufferGPU( RenderCore::IBuffer ** _Buffer, size_t * _Offset );
 
     /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, TPodArray< STriangleHitResult > & _HitResult ) const;
+    bool Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, bool bCullBackFace, TPodArray< STriangleHitResult > & _HitResult ) const;
 
     /** Check ray intersection */
-    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const;
+    bool RaycastClosest( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, bool bCullBackFace, Float3 & _HitLocation, Float2 & _HitUV, float & _HitDistance, unsigned int _Indices[3] ) const;
 
     /** Called before rendering. Don't call directly. */
     void PreRenderUpdate( SRenderFrontendDef const * _Def );

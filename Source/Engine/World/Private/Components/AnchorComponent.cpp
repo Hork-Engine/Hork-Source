@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include <World/Public/Components/AnchorComponent.h>
-#include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 
 #include "../BulletCompatibility/BulletCompatibility.h"
 
@@ -47,10 +46,11 @@ void AAnchorComponent::InitializeComponent() {
 void AAnchorComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
-    if ( Anchor ) {
-        b3Destroy( Anchor );
-        Anchor = nullptr;
-    }
+    btCollisionShape * shape = Anchor->getCollisionShape();
+    delete Anchor;
+    Anchor = nullptr;
+    delete shape;
+    shape = nullptr;
 }
 
 void AAnchorComponent::OnTransformDirty() {

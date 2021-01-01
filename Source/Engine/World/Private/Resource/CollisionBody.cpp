@@ -77,96 +77,96 @@ AN_CLASS_META( ACollisionTriangleSoupBVHData )
 
 btCollisionShape * ACollisionSphere::Create() {
     if ( bProportionalScale ) {
-        return b3New( btSphereShape, Radius );
+        return new btSphereShape( Radius );
     } else {
         btVector3 pos(0,0,0);
-        return b3New( btMultiSphereShape, &pos, &Radius, 1 );
+        return new btMultiSphereShape( &pos, &Radius, 1 );
     }
 }
 
 btCollisionShape * ACollisionSphereRadii::Create() {
     btVector3 pos(0,0,0);
     float radius = 1.0f;
-    btMultiSphereShape * shape = b3New( btMultiSphereShape, &pos, &radius, 1 );
+    btMultiSphereShape * shape = new btMultiSphereShape( &pos, &radius, 1 );
     shape->setLocalScaling( btVectorToFloat3( Radius ) );
     return shape;
 }
 
 btCollisionShape * ACollisionBox::Create() {
-    return b3New( btBoxShape, btVectorToFloat3( HalfExtents ) );
+    return new btBoxShape( btVectorToFloat3( HalfExtents ) );
 }
 
 btCollisionShape * ACollisionCylinder::Create() {
     switch ( Axial ) {
     case AXIAL_X:
-        return b3New( btCylinderShapeX, btVectorToFloat3( HalfExtents ) );
+        return new btCylinderShapeX( btVectorToFloat3( HalfExtents ) );
     case AXIAL_Y:
-        return b3New( btCylinderShape, btVectorToFloat3( HalfExtents ) );
+        return new btCylinderShape( btVectorToFloat3( HalfExtents ) );
     case AXIAL_Z:
-        return b3New( btCylinderShapeZ, btVectorToFloat3( HalfExtents ) );
+        return new btCylinderShapeZ( btVectorToFloat3( HalfExtents ) );
     }
-    return b3New( btCylinderShape, btVectorToFloat3( HalfExtents ) );
+    return new btCylinderShape( btVectorToFloat3( HalfExtents ) );
 }
 
 btCollisionShape * ACollisionCone::Create() {
     switch ( Axial ) {
     case AXIAL_X:
-        return b3New( btConeShapeX, Radius, Height );
+        return new btConeShapeX( Radius, Height );
     case AXIAL_Y:
-        return b3New( btConeShape, Radius, Height );
+        return new btConeShape( Radius, Height );
     case AXIAL_Z:
-        return b3New( btConeShapeZ, Radius, Height );
+        return new btConeShapeZ( Radius, Height );
     }
-    return b3New( btConeShape, Radius, Height );
+    return new btConeShape( Radius, Height );
 }
 
 btCollisionShape * ACollisionCapsule::Create() {
     switch ( Axial ) {
     case AXIAL_X:
-        return b3New( btCapsuleShapeX, Radius, Height );
+        return new btCapsuleShapeX( Radius, Height );
     case AXIAL_Y:
-        return b3New( btCapsuleShape, Radius, Height );
+        return new btCapsuleShape( Radius, Height );
     case AXIAL_Z:
-        return b3New( btCapsuleShapeZ, Radius, Height );
+        return new btCapsuleShapeZ( Radius, Height );
     }
-    return b3New( btCapsuleShape, Radius, Height );
+    return new btCapsuleShape( Radius, Height );
 }
 
 ACollisionConvexHullData::ACollisionConvexHullData() {
 }
 
 ACollisionConvexHullData::~ACollisionConvexHullData() {
-    GZoneMemory.Free( Data );
+//    GZoneMemory.Free( Data );
 }
 
 void ACollisionConvexHullData::Initialize( Float3 const * _Vertices, int _VertexCount, unsigned int * _Indices, int _IndexCount ) {
+    AN_ASSERT( _VertexCount > 0 && _IndexCount > 0 );
+
     Vertices.Resize( _VertexCount );
     Indices.Resize( _IndexCount );
 
     Core::Memcpy( Vertices.ToPtr(), _Vertices, _VertexCount * sizeof( Float3 ) );
     Core::Memcpy( Indices.ToPtr(), _Indices, _IndexCount * sizeof( unsigned int ) );
 
-    GZoneMemory.Free( Data );
+//    GZoneMemory.Free( Data );
 
-    Data = ( btVector3 * )GZoneMemory.Alloc( sizeof( btVector3 ) * _VertexCount );
-    for ( int i = 0 ; i < _VertexCount ; i++ ) {
-        Data[i] = btVectorToFloat3( _Vertices[i] );
-    }
+//    Data = ( btVector3 * )GZoneMemory.Alloc( sizeof( btVector3 ) * _VertexCount );
+//    for ( int i = 0 ; i < _VertexCount ; i++ ) {
+//        Data[i] = btVectorToFloat3( _Vertices[i] );
+//    }
 }
 
-//btCollisionShape * ACollisionConvexHull::Create() {
-//    return b3New( btConvexHullShape, ( btScalar const * )Vertices.ToPtr(), Vertices.Length(), sizeof( Float3 ) );
-//}
-
 btCollisionShape * ACollisionConvexHull::Create() {
+#if 0
     constexpr bool bComputeAabb = false; // FIXME: Нужно ли сейчас считать aabb?
-    return b3New( btConvexPointCloudShape, HullData->Data, HullData->GetVertexCount(), btVector3(1.f,1.f,1.f), bComputeAabb );
-
-    //return b3New( btConvexHullShape, ( btScalar const * )HullData->Vertices.ToPtr(), HullData->Vertices.Length(), sizeof( Float3 ) );
+    return new btConvexPointCloudShape( HullData->Data, HullData->GetVertexCount(), btVector3(1.f,1.f,1.f), bComputeAabb );
+#else
+    return new btConvexHullShape( &HullData->GetVertices()[0][0], HullData->GetVertexCount(), sizeof( Float3 ) );
+#endif
 }
 
 btCollisionShape * ACollisionTriangleSoupBVH::Create() {
-    return b3New( btScaledBvhTriangleMeshShape, BvhData->GetData(), btVector3(1.f,1.f,1.f) );
+    return new btScaledBvhTriangleMeshShape( BvhData->GetData(), btVector3(1.f,1.f,1.f) );
 
     // TODO: Create GImpact mesh shape for dynamic objects
 }
@@ -276,19 +276,10 @@ public:
 };
 
 ACollisionTriangleSoupBVHData::ACollisionTriangleSoupBVHData() {
-    Interface = b3New( AStridingMeshInterface );
+    Interface = MakeUnique< AStridingMeshInterface >();
 }
 
 ACollisionTriangleSoupBVHData::~ACollisionTriangleSoupBVHData() {
-    b3Destroy( Interface );
-
-    if ( Data ) {
-        b3Destroy( Data );
-    }
-
-    if ( TriangleInfoMap ) {
-        b3Destroy( TriangleInfoMap );
-    }
 }
 
 bool ACollisionTriangleSoupBVHData::UsedQuantizedAabbCompression() const {
@@ -315,22 +306,14 @@ void ACollisionTriangleSoupBVHData::BuildBVH( bool bForceQuantizedAabbCompressio
         bUsedQuantizedAabbCompression = true;
     }
 
-    if ( Data ) {
-        b3Destroy( Data );
-    }
+    Data.Reset( new btBvhTriangleMeshShape( Interface.GetObject(),
+                                            UsedQuantizedAabbCompression(),
+                                            btVectorToFloat3( TrisData->BoundingBox.Mins ),
+                                            btVectorToFloat3( TrisData->BoundingBox.Maxs ),
+                                            true ) );
 
-    if ( TriangleInfoMap ) {
-        b3Destroy( TriangleInfoMap );
-    }
-
-    Data = b3New( btBvhTriangleMeshShape, Interface,
-                                          UsedQuantizedAabbCompression(),
-                                          btVectorToFloat3( TrisData->BoundingBox.Mins ),
-                                          btVectorToFloat3( TrisData->BoundingBox.Maxs ),
-                                          true );
-
-    TriangleInfoMap = b3New( btTriangleInfoMap );
-    btGenerateInternalEdgeInfo( Data, TriangleInfoMap );
+    TriangleInfoMap.Reset( new btTriangleInfoMap );
+    btGenerateInternalEdgeInfo( Data.GetObject(), TriangleInfoMap.GetObject() );
 }
 
 #if 0
@@ -369,11 +352,10 @@ void ACollisionTriangleSoupBVHData::Write( IBinaryStream & _Stream ) const {
 #endif
 
 ACollisionTriangleSoupGimpact::ACollisionTriangleSoupGimpact() {
-    Interface = b3New( AStridingMeshInterface );
+    Interface = MakeUnique< AStridingMeshInterface >();
 }
 
 ACollisionTriangleSoupGimpact::~ACollisionTriangleSoupGimpact() {
-    b3Destroy( Interface );
 }
 
 btCollisionShape * ACollisionTriangleSoupGimpact::Create() {
@@ -382,7 +364,7 @@ btCollisionShape * ACollisionTriangleSoupGimpact::Create() {
     Interface->Indices = TrisData->Indices.ToPtr();
     Interface->Subparts = TrisData->Subparts.ToPtr();
     Interface->SubpartCount = TrisData->Subparts.Size();
-    return b3New( btGImpactMeshShape, Interface );
+    return new btGImpactMeshShape( Interface.GetObject() );
 }
 
 void ACollisionTriangleSoupData::Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, AIndexedMeshSubpart * const * _Subparts, int _SubpartsCount ) {
@@ -462,7 +444,7 @@ void ACollisionTriangleSoupData::Initialize( float const * _Vertices, int _Verte
     Subparts[0].IndexCount  = _IndexCount;
 }
 
-void ACollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionSphere::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
     float sinTheta, cosTheta, sinPhi, cosPhi;
 
     const float detail = Math::Floor( Math::Max( 1.0f, Radius ) + 0.5f );
@@ -514,7 +496,7 @@ void ACollisionSphere::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArra
     }
 }
 
-void ACollisionSphereRadii::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionSphereRadii::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
     float sinTheta, cosTheta, sinPhi, cosPhi;
 
     const float detail = Math::Floor( Math::Max( 1.0f, Radius.Max() ) + 0.5f );
@@ -562,7 +544,7 @@ void ACollisionSphereRadii::CreateGeometry( TPodArray< Float3 > & _Vertices, TPo
     }
 }
 
-void ACollisionBox::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionBox::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
     unsigned int const indices[36] = { 0,3,2, 2,1,0, 7,4,5, 5,6,7, 3,7,6, 6,2,3, 2,6,5, 5,1,2, 1,5,4, 4,0,1, 0,4,7, 7,3,0 };
 
     const int firstVertex = _Vertices.Size();
@@ -588,7 +570,7 @@ void ACollisionBox::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< 
     }
 }
 
-void ACollisionCylinder::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionCylinder::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
     float sinPhi, cosPhi;
 
     int idxRadius, idxRadius2, idxHeight;
@@ -672,7 +654,7 @@ void ACollisionCylinder::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodAr
     }
 }
 
-void ACollisionCone::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionCone::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
     float sinPhi, cosPhi;
 
     int idxRadius, idxRadius2, idxHeight;
@@ -748,7 +730,7 @@ void ACollisionCone::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray<
     }
 }
 
-void ACollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionCapsule::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
 
     int idxRadius, idxRadius2, idxHeight;
     switch ( Axial ) {
@@ -921,7 +903,7 @@ void ACollisionCapsule::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArr
 #endif
 }
 
-void ACollisionConvexHull::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionConvexHull::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
 
     if ( !HullData ) {
         return;
@@ -945,7 +927,7 @@ void ACollisionConvexHull::CreateGeometry( TPodArray< Float3 > & _Vertices, TPod
     }
 }
 
-void ACollisionTriangleSoupBVH::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionTriangleSoupBVH::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
 
     if ( BvhData ) {
 
@@ -1007,7 +989,7 @@ void ACollisionTriangleSoupBVH::CreateGeometry( TPodArray< Float3 > & _Vertices,
 #endif
 }
 
-void ACollisionTriangleSoupGimpact::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+void ACollisionTriangleSoupGimpact::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
     ACollisionTriangleSoupData * trisData = TrisData;
     if ( !trisData ) {
         return;
@@ -1040,12 +1022,96 @@ void ACollisionTriangleSoupGimpact::CreateGeometry( TPodArray< Float3 > & _Verti
     }
 }
 
-void ACollisionBodyComposition::CreateGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const {
+AN_CLASS_META( ACollisionModel )
+void ACollisionModel::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const
+{
     for ( ACollisionBody * collisionBody : CollisionBodies ) {
-        collisionBody->CreateGeometry( _Vertices, _Indices );
+        collisionBody->GatherGeometry( _Vertices, _Indices );
     }
 }
 
+void ACollisionModel::PerformConvexDecomposition( Float3 const * _Vertices,
+                                                  int _VerticesCount,
+                                                  int _VertexStride,
+                                                  unsigned int const * _Indices,
+                                                  int _IndicesCount ) {
+
+    TPodArray< Float3 > HullVertices;
+    TPodArray< unsigned int > HullIndices;
+    TPodArray< SConvexHullDesc > Hulls;
+
+    Clear();
+
+    ::PerformConvexDecomposition( _Vertices,
+                                _VerticesCount,
+                                _VertexStride,
+                                _Indices,
+                                _IndicesCount,
+                                HullVertices,
+                                HullIndices,
+                                Hulls );
+
+    for ( SConvexHullDesc const & hull : Hulls ) {
+
+        ACollisionConvexHullData * hullData = CreateInstanceOf< ACollisionConvexHullData >();
+
+#if 0
+        BakeCollisionMarginConvexHull( HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount, hullData->Vertices );
+#else
+        hullData->Initialize( HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount, HullIndices.ToPtr() + hull.FirstIndex, hull.IndexCount );
+        //hullData->Vertices.Resize( hull.VertexCount );
+        //Core::Memcpy( hullData->Vertices.ToPtr(), HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount * sizeof( Float3 ) );
+#endif
+
+        ACollisionConvexHull * collisionBody = CreateBody< ACollisionConvexHull >();
+        collisionBody->Position = hull.Centroid;
+        collisionBody->Margin = 0.01f;
+        collisionBody->HullData = hullData;
+    }
+
+    ComputeCenterOfMassAvg();
+}
+
+void ACollisionModel::PerformConvexDecompositionVHACD( Float3 const * _Vertices,
+                                                       int _VerticesCount,
+                                                       int _VertexStride,
+                                                       unsigned int const * _Indices,
+                                                       int _IndicesCount ) {
+
+    TPodArray< Float3 > HullVertices;
+    TPodArray< unsigned int > HullIndices;
+    TPodArray< SConvexHullDesc > Hulls;
+
+    Clear();
+
+    ::PerformConvexDecompositionVHACD( _Vertices,
+                                     _VerticesCount,
+                                     _VertexStride,
+                                     _Indices,
+                                     _IndicesCount,
+                                     HullVertices,
+                                     HullIndices,
+                                     Hulls,
+                                     CenterOfMass );
+
+    for ( SConvexHullDesc const & hull : Hulls ) {
+
+        ACollisionConvexHullData * hullData = CreateInstanceOf< ACollisionConvexHullData >();
+
+#if 0
+        BakeCollisionMarginConvexHull( HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount, hullData->Vertices );
+#else
+        hullData->Initialize( HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount, HullIndices.ToPtr() + hull.FirstIndex, hull.IndexCount );
+        //hullData->Vertices.Resize( hull.VertexCount );
+        //Core::Memcpy( hullData->Vertices.ToPtr(), HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount * sizeof( Float3 ) );
+#endif
+
+        ACollisionConvexHull * collisionBody = CreateBody< ACollisionConvexHull >();
+        collisionBody->Position = hull.Centroid;
+        collisionBody->Margin = 0.01f;
+        collisionBody->HullData = hullData;
+    }
+}
 
 AN_FORCEINLINE bool IsPointInsideConvexHull( Float3 const & _Point, PlaneF const * _Planes, int _NumPlanes, float _Margin ) {
     for ( int i = 0 ; i < _NumPlanes ; i++ ) {
@@ -1391,47 +1457,6 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
     GHunkMemory.ClearToMark( hunkMark );
 }
 
-void PerformConvexDecomposition( Float3 const * _Vertices,
-                                 int _VerticesCount,
-                                 int _VertexStride,
-                                 unsigned int const * _Indices,
-                                 int _IndicesCount,
-                                 ACollisionBodyComposition & _BodyComposition ) {
-
-    TPodArray< Float3 > HullVertices;
-    TPodArray< unsigned int > HullIndices;
-    TPodArray< SConvexHullDesc > Hulls;
-
-    PerformConvexDecomposition( _Vertices,
-                                _VerticesCount,
-                                _VertexStride,
-                                _Indices,
-                                _IndicesCount,
-                                HullVertices,
-                                HullIndices,
-                                Hulls );
-
-    _BodyComposition.Clear();
-
-    for ( SConvexHullDesc const & hull : Hulls ) {
-
-        ACollisionConvexHullData * hullData = CreateInstanceOf< ACollisionConvexHullData >();
-
-#if 0
-        BakeCollisionMarginConvexHull( HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount, hullData->Vertices );
-#else
-        hullData->Initialize( HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount, HullIndices.ToPtr() + hull.FirstIndex, hull.IndexCount );
-        //hullData->Vertices.Resize( hull.VertexCount );
-        //Core::Memcpy( hullData->Vertices.ToPtr(), HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount * sizeof( Float3 ) );
-#endif
-
-        ACollisionConvexHull * collisionBody = _BodyComposition.AddCollisionBody< ACollisionConvexHull >();
-        collisionBody->Position = hull.Centroid;
-        collisionBody->Margin = 0.01f;
-        collisionBody->HullData = hullData;
-    }
-}
-
 #include <VHACD.h>
 
 enum EVHACDMode {
@@ -1585,82 +1610,162 @@ params.m_convexhullDownsampling = 1;
     GHunkMemory.ClearToMark( hunkMark );
 }
 
-void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
-                                 int _VerticesCount,
-                                 int _VertexStride,
-                                 unsigned int const * _Indices,
-                                 int _IndicesCount,
-                                 ACollisionBodyComposition & _BodyComposition ) {
+#define PHYS_COMPARE_EPSILON 0.0001f
 
-    TPodArray< Float3 > HullVertices;
-    TPodArray< unsigned int > HullIndices;
-    TPodArray< SConvexHullDesc > Hulls;
-    Float3 CenterOfMass;
+ACollisionInstance::ACollisionInstance( ACollisionModel const * CollisionModel, Float3 const & Scale )
+{
+    CompoundShape = MakeUnique< btCompoundShape >();
+    CenterOfMass = Scale * CollisionModel->GetCenterOfMass();
 
-    PerformConvexDecompositionVHACD( _Vertices,
-                                     _VerticesCount,
-                                     _VertexStride,
-                                     _Indices,
-                                     _IndicesCount,
-                                     HullVertices,
-                                     HullIndices,
-                                     Hulls,
-                                     CenterOfMass );
-
-    _BodyComposition.Clear();
-
-    for ( SConvexHullDesc const & hull : Hulls ) {
-
-        ACollisionConvexHullData * hullData = CreateInstanceOf< ACollisionConvexHullData >();
-
-#if 0
-        BakeCollisionMarginConvexHull( HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount, hullData->Vertices );
-#else
-        hullData->Initialize( HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount, HullIndices.ToPtr() + hull.FirstIndex, hull.IndexCount );
-        //hullData->Vertices.Resize( hull.VertexCount );
-        //Core::Memcpy( hullData->Vertices.ToPtr(), HullVertices.ToPtr() + hull.FirstVertex, hull.VertexCount * sizeof( Float3 ) );
-#endif
-
-        ACollisionConvexHull * collisionBody = _BodyComposition.AddCollisionBody< ACollisionConvexHull >();
-        collisionBody->Position = hull.Centroid;
-        collisionBody->Margin = 0.01f;
-        collisionBody->HullData = hullData;
-    }
-
-    _BodyComposition.CenterOfMass = CenterOfMass;
-}
-
-void CreateCollisionShape( ACollisionBodyComposition const & BodyComposition, Float3 const & _Scale, btCompoundShape ** _CompoundShape, Float3 * _CenterOfMass ) {
-    *_CompoundShape = b3New( btCompoundShape );
-    *_CenterOfMass = _Scale * BodyComposition.CenterOfMass;
-
-    if ( !BodyComposition.CollisionBodies.IsEmpty() ) {
-        const btVector3 scaling = btVectorToFloat3( _Scale );
+    if ( !CollisionModel->GetCollisionBodies().IsEmpty() ) {
+        const btVector3 scaling = btVectorToFloat3( Scale );
         btTransform shapeTransform;
 
-        for ( ACollisionBody * collisionBody : BodyComposition.CollisionBodies ) {
+        for ( ACollisionBody * collisionBody : CollisionModel->GetCollisionBodies() ) {
             btCollisionShape * shape = collisionBody->Create();
 
             shape->setMargin( collisionBody->Margin );
-            shape->setUserPointer( collisionBody );
+            //shape->setUserPointer( collisionBody );
             shape->setLocalScaling( shape->getLocalScaling() * scaling );
 
-            shapeTransform.setOrigin( btVectorToFloat3( _Scale * collisionBody->Position - *_CenterOfMass ) );
+            shapeTransform.setOrigin( btVectorToFloat3( Scale * collisionBody->Position - CenterOfMass ) );
             shapeTransform.setRotation( btQuaternionToQuat( collisionBody->Rotation ) );
 
-            (*_CompoundShape)->addChildShape( shapeTransform, shape );
+            CompoundShape->addChildShape( shapeTransform, shape );
 
-            collisionBody->AddRef();
+            //collisionBody->AddRef();
         }
+    }
+
+    int numShapes = CompoundShape->getNumChildShapes();
+    bool bUseCompound = !numShapes || numShapes > 1;
+    if ( !bUseCompound ) {
+        btTransform const & childTransform = CompoundShape->getChildTransform( 0 );
+
+        if ( !btVectorToFloat3( childTransform.getOrigin() ).CompareEps( Float3::Zero(), PHYS_COMPARE_EPSILON )
+             || !btQuaternionToQuat( childTransform.getRotation() ).Compare( Quat::Identity() ) ) {
+            bUseCompound = true;
+        }
+    }
+
+    CollisionShape = bUseCompound ? CompoundShape.GetObject() : CompoundShape->getChildShape( 0 );
+}
+
+ACollisionInstance::~ACollisionInstance()
+{
+    int numShapes = CompoundShape->getNumChildShapes();
+    for ( int i = numShapes-1 ; i >= 0 ; i-- ) {
+        btCollisionShape * shape = CompoundShape->getChildShape( i );
+        //static_cast< ACollisionBody * >( shape->getUserPointer() )->RemoveRef();
+        delete shape;
     }
 }
 
-void DestroyCollisionShape( btCompoundShape * _CompoundShape ) {
-    int numShapes = _CompoundShape->getNumChildShapes();
-    for ( int i = numShapes-1 ; i >= 0 ; i-- ) {
-        btCollisionShape * shape = _CompoundShape->getChildShape( i );
-        static_cast< ACollisionBody * >( shape->getUserPointer() )->RemoveRef();
-        b3Destroy( shape );
+Float3 ACollisionInstance::CalculateLocalInertia( float Mass ) const
+{
+    btVector3 localInertia;
+    CollisionShape->calculateLocalInertia( Mass, localInertia );
+    return btVectorToFloat3( localInertia );
+}
+
+void ACollisionInstance::GetCollisionBodiesWorldBounds( Float3 const & WorldPosition, Quat const & WorldRotation, TPodArray< BvAxisAlignedBox > & _BoundingBoxes ) const
+{
+    btVector3 mins, maxs;
+
+    btTransform transform;
+    transform.setOrigin( btVectorToFloat3( WorldPosition ) );
+    transform.setRotation( btQuaternionToQuat( WorldRotation ) );
+
+    int numShapes = CompoundShape->getNumChildShapes();
+    _BoundingBoxes.ResizeInvalidate( numShapes );
+
+    for ( int i = 0 ; i < numShapes ; i++ ) {
+        btCompoundShapeChild & shape = CompoundShape->getChildList()[ i ];
+
+        shape.m_childShape->getAabb( transform * shape.m_transform, mins, maxs );
+
+        _BoundingBoxes[i].Mins = btVectorToFloat3( mins );
+        _BoundingBoxes[i].Maxs = btVectorToFloat3( maxs );
     }
-    b3Destroy( _CompoundShape );
+}
+
+void ACollisionInstance::GetCollisionWorldBounds( Float3 const & WorldPosition, Quat const & WorldRotation, BvAxisAlignedBox & _BoundingBox ) const
+{
+    btVector3 mins, maxs;
+
+    btTransform transform;
+    transform.setOrigin( btVectorToFloat3( WorldPosition ) );
+    transform.setRotation( btQuaternionToQuat( WorldRotation ) );
+
+    _BoundingBox.Clear();
+
+    int numShapes = CompoundShape->getNumChildShapes();
+
+    for ( int i = 0 ; i < numShapes ; i++ ) {
+        btCompoundShapeChild & shape = CompoundShape->getChildList()[ i ];
+
+        shape.m_childShape->getAabb( transform * shape.m_transform, mins, maxs );
+
+        _BoundingBox.AddAABB( btVectorToFloat3( mins ), btVectorToFloat3( maxs ) );
+    }
+}
+
+void ACollisionInstance::GetCollisionBodyWorldBounds( int _Index, Float3 const & WorldPosition, Quat const & WorldRotation, BvAxisAlignedBox & _BoundingBox ) const
+{
+    if ( _Index < 0 || _Index >= CompoundShape->getNumChildShapes() ) {
+        GLogger.Printf( "ACollisionInstance::GetCollisionBodyWorldBounds: invalid index\n" );
+
+        _BoundingBox.Clear();
+        return;
+    }
+
+    btVector3 mins, maxs;
+
+    btTransform transform;
+    transform.setOrigin( btVectorToFloat3( WorldPosition ) );
+    transform.setRotation( btQuaternionToQuat( WorldRotation ) );
+
+    btCompoundShapeChild & shape = CompoundShape->getChildList()[ _Index ];
+
+    shape.m_childShape->getAabb( transform * shape.m_transform, mins, maxs );
+
+    _BoundingBox.Mins = btVectorToFloat3( mins );
+    _BoundingBox.Maxs = btVectorToFloat3( maxs );
+}
+
+void ACollisionInstance::GetCollisionBodyLocalBounds( int _Index, BvAxisAlignedBox & _BoundingBox ) const
+{
+    if ( _Index < 0 || _Index >= CompoundShape->getNumChildShapes() ) {
+        GLogger.Printf( "ACollisionInstance::GetCollisionBodyLocalBounds: invalid index\n" );
+
+        _BoundingBox.Clear();
+        return;
+    }
+
+    btVector3 mins, maxs;
+
+    btCompoundShapeChild & shape = CompoundShape->getChildList()[ _Index ];
+
+    shape.m_childShape->getAabb( shape.m_transform, mins, maxs );
+
+    _BoundingBox.Mins = btVectorToFloat3( mins );
+    _BoundingBox.Maxs = btVectorToFloat3( maxs );
+}
+
+float ACollisionInstance::GetCollisionBodyMargin( int _Index ) const
+{
+    if ( _Index < 0 || _Index >= CompoundShape->getNumChildShapes() ) {
+        GLogger.Printf( "ACollisionInstance::GetCollisionBodyMargin: invalid index\n" );
+
+        return 0;
+    }
+
+    btCompoundShapeChild & shape = CompoundShape->getChildList()[ _Index ];
+
+    return shape.m_childShape->getMargin();
+}
+
+int ACollisionInstance::GetCollisionBodiesCount() const
+{
+    return CompoundShape->getNumChildShapes();
 }

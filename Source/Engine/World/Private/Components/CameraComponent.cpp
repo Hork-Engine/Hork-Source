@@ -73,7 +73,7 @@ void ACameraComponent::OnCreateAvatar() {
     // TODO: Create mesh or sprite for avatar
     static TStaticResourceFinder< AIndexedMesh > Mesh( _CTS( "/Default/Meshes/Box" ) );
     static TStaticResourceFinder< AMaterialInstance > MaterialInstance( _CTS( "AvatarMaterialInstance" ) );
-    AMeshComponent * meshComponent = GetParentActor()->CreateComponent< AMeshComponent >( "CameraAvatar" );
+    AMeshComponent * meshComponent = GetOwnerActor()->CreateComponent< AMeshComponent >( "CameraAvatar" );
     meshComponent->SetMotionBehavior( MB_KINEMATIC );
     meshComponent->SetCollisionGroup( CM_NOCOLLISION );
     meshComponent->SetMesh( Mesh.GetObject() );

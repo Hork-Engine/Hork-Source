@@ -34,6 +34,50 @@ SOFTWARE.
 
 AN_CLASS_META( ADrawable )
 
+static void EvaluateRaycastResult( SPrimitiveDef * Self,
+                                   ALevel const * LightingLevel,
+                                   SMeshVertex const * pVertices,
+                                   SMeshVertexUV const * pLightmapVerts,
+                                   int LightmapBlock,
+                                   unsigned int const * pIndices,
+                                   Float3 const & HitLocation,
+                                   Float2 const & HitUV,
+                                   Float3 * Vertices,
+                                   Float2 & TexCoord,
+                                   Float3 & LightmapSample )
+{
+    ASceneComponent * primitiveOwner = Self->Owner;
+    Float3x4 const & transform = primitiveOwner->GetWorldTransformMatrix();
+
+    Float3 const & v0 = pVertices[pIndices[0]].Position;
+    Float3 const & v1 = pVertices[pIndices[1]].Position;
+    Float3 const & v2 = pVertices[pIndices[2]].Position;
+
+    // transform triangle vertices to worldspace
+    Vertices[0] = transform * v0;
+    Vertices[1] = transform * v1;
+    Vertices[2] = transform * v2;
+
+    const float hitW = 1.0f - HitUV[0] - HitUV[1];
+
+    Float2 uv0 = pVertices[pIndices[0]].GetTexCoord();
+    Float2 uv1 = pVertices[pIndices[1]].GetTexCoord();
+    Float2 uv2 = pVertices[pIndices[2]].GetTexCoord();
+    TexCoord = uv0 * hitW + uv1 * HitUV[0] + uv2 * HitUV[1];
+
+    if ( pLightmapVerts && LightingLevel && LightmapBlock >= 0 ) {
+        Float2 const & lm0 = pLightmapVerts[pIndices[0]].TexCoord;
+        Float2 const & lm1 = pLightmapVerts[pIndices[1]].TexCoord;
+        Float2 const & lm2 = pLightmapVerts[pIndices[2]].TexCoord;
+        Float2 lighmapTexcoord = lm0 * hitW + lm1 * HitUV[0] + lm2 * HitUV[1];
+
+        LightmapSample = LightingLevel->SampleLight( LightmapBlock, lighmapTexcoord );
+    }
+    else {
+        LightmapSample = Float3(0.0f);
+    }
+}
+
 ADrawable::ADrawable() {
     Bounds.Clear();
     WorldBounds.Clear();
@@ -44,13 +88,12 @@ ADrawable::ADrawable() {
     Primitive.Type = VSD_PRIMITIVE_BOX;
     Primitive.VisGroup = VISIBILITY_GROUP_DEFAULT;
     Primitive.QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS | VSD_QUERY_MASK_SHADOW_CAST;
+    Primitive.EvaluateRaycastResult = EvaluateRaycastResult;
 
     bOverrideBounds = false;
     bSkinnedMesh = false;
     bCastShadow = true;
     bAllowRaycast = false;
-
-    //Primitive.bMovable = true;
 }
 
 void ADrawable::SetVisibilityGroup( int InVisibilityGroup ) {
@@ -236,46 +279,22 @@ void ADrawable::PreRenderUpdate( SRenderFrontendDef const * _Def ) {
     }
 }
 
-bool ADrawable::Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits, int & ClosestHit ) {
+bool ADrawable::Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits ) const {
     if ( !Primitive.RaycastCallback ) {
         return false;
     }
 
     Hits.Clear();
 
-    return Primitive.RaycastCallback( &Primitive, InRayStart, InRayEnd, Hits, ClosestHit );
+    return Primitive.RaycastCallback( &Primitive, InRayStart, InRayEnd, Hits );
 }
 
-bool ADrawable::RaycastClosest( Float3 const & InRayStart, Float3 const & InRayEnd, STriangleHitResult & Hit ) {
+bool ADrawable::RaycastClosest( Float3 const & InRayStart, Float3 const & InRayEnd, STriangleHitResult & Hit ) const {
     if ( !Primitive.RaycastClosestCallback ) {
         return false;
     }
 
-    Hit.Location = InRayEnd;
-    Hit.Distance = ( InRayStart - InRayEnd ).Length();
-
     SMeshVertex const * pVertices;
-    TRef< AMaterialInstance > material;
 
-    if ( !Primitive.RaycastClosestCallback( &Primitive, InRayStart, Hit.Location, Hit.UV, Hit.Distance, &pVertices, Hit.Indices, material ) ) {
-        return false;
-    }
-
-    Hit.Material = material;
-
-    Float3 const & v0 = pVertices[Hit.Indices[0]].Position;
-    Float3 const & v1 = pVertices[Hit.Indices[1]].Position;
-    Float3 const & v2 = pVertices[Hit.Indices[2]].Position;
-
-    Float3x4 const & transform = GetWorldTransformMatrix();
-
-    // calc triangle vertices
-    Float3 tv0 = transform * v0;
-    Float3 tv1 = transform * v1;
-    Float3 tv2 = transform * v2;
-
-    // calc normal
-    Hit.Normal = Math::Cross( tv1-tv0, tv2-tv0 ).Normalized();
-
-    return true;
+    return Primitive.RaycastClosestCallback( &Primitive, InRayStart, InRayEnd, Hit, &pVertices );
 }

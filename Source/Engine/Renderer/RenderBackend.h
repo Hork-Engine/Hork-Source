@@ -70,6 +70,10 @@ private:
     TRef< AVirtualTextureFeedbackAnalyzer > FeedbackAnalyzerVT;
     TRef< AVirtualTextureCache > PhysCacheVT;
 
+    TRef< RenderCore::IPipeline > TerrainDepthPipeline;
+    TRef< RenderCore::IPipeline > TerrainLightPipeline;
+    TRef< RenderCore::IPipeline > TerrainWireframePipeline;
+
     // Just for test
     TRef< AVirtualTexture > TestVT;
 };

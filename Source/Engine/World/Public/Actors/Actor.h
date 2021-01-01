@@ -48,6 +48,15 @@ protected: \
 private:
 
 
+struct SActorDamage
+{
+    float Amount;
+    Float3 Position;
+    float Radius;
+    AActor * DamageCauser;
+};
+
+
 /**
 
 AActor
@@ -55,7 +64,7 @@ AActor
 Base class for all actors
 
 */
-class ANGIE_API AActor : public ABaseObject {
+class AActor : public ABaseObject {
     AN_ACTOR( AActor, ABaseObject )
 
     friend class AWorld;
@@ -139,7 +148,7 @@ public:
     APawn * GetInstigator() { return Instigator; }
 
     /** Apply damage to the actor */
-    virtual void ApplyDamage( float _DamageAmount, Float3 const & _Position, AActor * _DamageCauser );
+    virtual void ApplyDamage( SActorDamage const & Damage );
 
     bool IsDuringConstruction() const { return bDuringConstruction; }
 
@@ -192,8 +201,6 @@ private:
     void TickComponents( float _TimeStep );
 
     void DestroyComponents();
-
-    void Clone( AActor const * _TemplateActor );
 
     void AddComponent( AActorComponent * _Component );
 

@@ -36,13 +36,15 @@ ATriggerBox::ATriggerBox() {
     TriggerBody = CreateComponent< APhysicalBody >( "TriggerBody" );
     RootComponent = TriggerBody;
 
-    TriggerBody->bUseDefaultBodyComposition = false;
-    TriggerBody->bDispatchOverlapEvents = true;
+    TriggerBody->SetDispatchOverlapEvents( true );
     TriggerBody->SetTrigger( true );
     TriggerBody->SetMotionBehavior( MB_STATIC );
-    TriggerBody->SetCollisionMask( CM_PAWN );
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
-    TriggerBody->BodyComposition.AddCollisionBody< ACollisionBox >();
+    TriggerBody->SetCollisionMask( CM_PAWN );
+
+    ACollisionModel * collisionModel = NewObject< ACollisionModel >();
+    collisionModel->CreateBody< ACollisionBox >();
+    TriggerBody->SetCollisionModel( collisionModel );
 }
 
 AN_CLASS_META( ATriggerSphere )
@@ -51,13 +53,15 @@ ATriggerSphere::ATriggerSphere() {
     TriggerBody = CreateComponent< APhysicalBody >( "TriggerBody" );
     RootComponent = TriggerBody;
 
-    TriggerBody->bUseDefaultBodyComposition = false;
-    TriggerBody->bDispatchOverlapEvents = true;
+    TriggerBody->SetDispatchOverlapEvents( true );
     TriggerBody->SetTrigger( true );
     TriggerBody->SetMotionBehavior( MB_STATIC );
-    TriggerBody->SetCollisionMask( CM_PAWN );
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
-    TriggerBody->BodyComposition.AddCollisionBody< ACollisionSphere >();
+    TriggerBody->SetCollisionMask( CM_PAWN );
+
+    ACollisionModel * collisionModel = NewObject< ACollisionModel >();
+    collisionModel->CreateBody< ACollisionSphere >();
+    TriggerBody->SetCollisionModel( collisionModel );
 }
 
 AN_CLASS_META( ATriggerCylinder )
@@ -66,13 +70,15 @@ ATriggerCylinder::ATriggerCylinder() {
     TriggerBody = CreateComponent< APhysicalBody >( "TriggerBody" );
     RootComponent = TriggerBody;
 
-    TriggerBody->bUseDefaultBodyComposition = false;
-    TriggerBody->bDispatchOverlapEvents = true;
+    TriggerBody->SetDispatchOverlapEvents( true );
     TriggerBody->SetTrigger( true );
     TriggerBody->SetMotionBehavior( MB_STATIC );
-    TriggerBody->SetCollisionMask( CM_PAWN );
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
-    TriggerBody->BodyComposition.AddCollisionBody< ACollisionCylinder >();
+    TriggerBody->SetCollisionMask( CM_PAWN );
+
+    ACollisionModel * collisionModel = NewObject< ACollisionModel >();
+    collisionModel->CreateBody< ACollisionCylinder >();
+    TriggerBody->SetCollisionModel( collisionModel );
 }
 
 AN_CLASS_META( ATriggerCone )
@@ -81,13 +87,15 @@ ATriggerCone::ATriggerCone() {
     TriggerBody = CreateComponent< APhysicalBody >( "TriggerBody" );
     RootComponent = TriggerBody;
 
-    TriggerBody->bUseDefaultBodyComposition = false;
-    TriggerBody->bDispatchOverlapEvents = true;
+    TriggerBody->SetDispatchOverlapEvents( true );
     TriggerBody->SetTrigger( true );
     TriggerBody->SetMotionBehavior( MB_STATIC );
-    TriggerBody->SetCollisionMask( CM_PAWN );
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
-    TriggerBody->BodyComposition.AddCollisionBody< ACollisionCone >();
+    TriggerBody->SetCollisionMask( CM_PAWN );
+
+    ACollisionModel * collisionModel = NewObject< ACollisionModel >();
+    collisionModel->CreateBody< ACollisionCone >();
+    TriggerBody->SetCollisionModel( collisionModel );
 }
 
 AN_CLASS_META( ATriggerCapsule )
@@ -96,11 +104,13 @@ ATriggerCapsule::ATriggerCapsule() {
     TriggerBody = CreateComponent< APhysicalBody >( "TriggerBody" );
     RootComponent = TriggerBody;
 
-    TriggerBody->bUseDefaultBodyComposition = false;
-    TriggerBody->bDispatchOverlapEvents = true;
+    TriggerBody->SetDispatchOverlapEvents( true );
     TriggerBody->SetTrigger( true );
     TriggerBody->SetMotionBehavior( MB_STATIC );
-    TriggerBody->SetCollisionMask( CM_PAWN );
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
-    TriggerBody->BodyComposition.AddCollisionBody< ACollisionCapsule >();
+    TriggerBody->SetCollisionMask( CM_PAWN );
+
+    ACollisionModel * collisionModel = NewObject< ACollisionModel >();
+    collisionModel->CreateBody< ACollisionCapsule >();
+    TriggerBody->SetCollisionModel( collisionModel );
 }

@@ -35,21 +35,31 @@ SOFTWARE.
 AN_BEGIN_CLASS_META( AActorComponent )
 AN_END_CLASS_META()
 
-AActorComponent::AActorComponent() {
+AActorComponent::AActorComponent()
+{
     //GUID.Generate();
 }
 
-AWorld * AActorComponent::GetWorld() const {
-    AN_ASSERT( ParentActor != nullptr );
-    return ParentActor->GetWorld();
+AWorld * AActorComponent::GetWorld() const
+{
+    AN_ASSERT( OwnerActor );
+    return OwnerActor ? OwnerActor->GetWorld() : nullptr;
 }
 
-ALevel * AActorComponent::GetLevel() const {
-    AN_ASSERT( ParentActor != nullptr );
-    return ParentActor->GetLevel();
+ALevel * AActorComponent::GetLevel() const
+{
+    AN_ASSERT( OwnerActor );
+    return OwnerActor ? OwnerActor->GetLevel() : nullptr;
 }
 
-//void AActorComponent::SetName( AString const & _Name ) {
+bool AActorComponent::IsInEditor() const
+{
+    AN_ASSERT( OwnerActor );
+    return OwnerActor ? OwnerActor->IsInEditor() : false;
+}
+
+//void AActorComponent::SetName( AString const & _Name )
+//{
 //    if ( !ParentActor ) {
 //        // In constructor
 //        Name = _Name;
@@ -65,7 +75,8 @@ ALevel * AActorComponent::GetLevel() const {
 //    Name = ParentActor->GenerateComponentUniqueName( newName.CStr() );
 //}
 
-void AActorComponent::RegisterComponent() {
+void AActorComponent::RegisterComponent()
+{
     if ( bPendingKill ) {
         return;
     }
@@ -81,8 +92,8 @@ void AActorComponent::RegisterComponent() {
     BeginPlay();
 }
 
-void AActorComponent::Destroy() {
-
+void AActorComponent::Destroy()
+{
     if ( bPendingKill ) {
         return;
     }
@@ -100,15 +111,12 @@ void AActorComponent::Destroy() {
     bInitialized = false;
 }
 
-TRef< ADocObject > AActorComponent::Serialize() {
+TRef< ADocObject > AActorComponent::Serialize()
+{
     TRef< ADocObject > object = Super::Serialize();
 
     object->AddString( "Name", GetObjectName() );
     //object->AddString( "bCreatedDuringConstruction", bCreatedDuringConstruction ? "1" : "0" );
 
     return object;
-}
-
-void AActorComponent::Clone( AActorComponent const * _TemplateComponent ) {
-    AClassMeta::CloneAttributes( _TemplateComponent, this );
 }

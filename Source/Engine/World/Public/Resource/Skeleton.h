@@ -41,7 +41,8 @@ SJoint
 Joint properties
 
 */
-struct SJoint {
+struct SJoint
+{
     /** Parent node index. For root = -1 */
     int32_t  Parent;
 

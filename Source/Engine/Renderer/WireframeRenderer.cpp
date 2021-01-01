@@ -81,6 +81,27 @@ void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarg
                               [=]( ARenderPass const & RenderPass, int SubpassIndex )
 
     {
+        for ( int i = 0 ; i < GRenderView->TerrainInstanceCount ; i++ ) {
+            STerrainRenderInstance const * instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
+
+            STerrainInstanceConstantBuffer * drawCall = MapDrawCallConstants< STerrainInstanceConstantBuffer >();
+            drawCall->LocalViewProjection = instance->LocalViewProjection;
+            StoreFloat3x3AsFloat3x4Transposed( instance->ModelNormalToViewSpace, drawCall->ModelNormalToViewSpace );
+            drawCall->ViewPositionAndHeight = instance->ViewPositionAndHeight;
+            drawCall->TerrainClipMin = instance->ClipMin;
+            drawCall->TerrainClipMax = instance->ClipMax;
+
+            rtbl->BindTexture( 0, instance->Clipmaps );
+            rcmd->BindPipeline( GTerrainWireframePipeline );
+            rcmd->BindVertexBuffer( 0, instance->VertexBuffer );
+            rcmd->BindVertexBuffer( 1, GStreamBuffer, instance->InstanceBufferStreamHandle );
+            rcmd->BindIndexBuffer( instance->IndexBuffer, INDEX_TYPE_UINT16 );
+            rcmd->MultiDrawIndexedIndirect( instance->IndirectBufferDrawCount,
+                                            GStreamBuffer,
+                                            instance->IndirectBufferStreamHandle,
+                                            sizeof( SDrawIndexedIndirectCmd ) );
+        }
+
         SDrawIndexedCmd drawCmd;
         drawCmd.InstanceCount = 1;
         drawCmd.StartInstanceLocation = 0;

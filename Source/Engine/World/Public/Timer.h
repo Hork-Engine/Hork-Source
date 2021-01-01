@@ -34,7 +34,8 @@ SOFTWARE.
 
 class AWorld;
 
-class ATimer : public ABaseObject {
+class ATimer : public ABaseObject
+{
     AN_CLASS( ATimer, ABaseObject )
 
     friend class AWorld;

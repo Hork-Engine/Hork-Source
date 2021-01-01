@@ -41,7 +41,8 @@ STriangleHitResult
 Raycast hit result
 
 */
-struct STriangleHitResult {
+struct STriangleHitResult
+{
     Float3 Location;
     Float3 Normal;
     Float2 UV;

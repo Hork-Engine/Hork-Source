@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "PunctualLightComponent.h"
 
-class ANGIE_API AIBLComponent : public APunctualLightComponent {
+class AIBLComponent : public APunctualLightComponent {
     AN_COMPONENT( AIBLComponent, APunctualLightComponent )
 
 public:

@@ -55,22 +55,42 @@ ASceneComponent::ASceneComponent()
 {
 }
 
-void ASceneComponent::DeinitializeComponent() {
+void ASceneComponent::DeinitializeComponent()
+{
     Super::DeinitializeComponent();
 
-    if ( GetParentActor() && !GetParentActor()->IsPendingKill() ) {
+    AActor * owner = GetOwnerActor();
+
+    AN_ASSERT( owner );
+
+    if ( !owner ) {
+        return;
+    }
+
+    if ( !owner->IsPendingKill() ) {
         Detach();
         DetachChilds();
     }
-
-    if ( GetParentActor() ) {
-        if ( GetParentActor()->RootComponent == this ) {
-            GetParentActor()->RootComponent = nullptr;
+    else {
+        // Detach only other actors
+        for ( ASceneComponent ** childIt = Childs.Begin() ; childIt != Childs.End() ; ) {
+            ASceneComponent * child = *childIt;
+            if ( child->GetOwnerActor() != owner ) {
+                child->Detach( true );
+            }
+            else {
+                childIt++;
+            }
         }
+    }
+
+    if ( owner->RootComponent == this ) {
+        owner->RootComponent = nullptr;
     }
 }
 
-void ASceneComponent::AttachTo( ASceneComponent * _Parent, const char * _Socket, bool _KeepWorldTransform ) {
+void ASceneComponent::AttachTo( ASceneComponent * _Parent, const char * _Socket, bool _KeepWorldTransform )
+{
     _AttachTo( _Parent, _KeepWorldTransform );
 
     if ( _Socket && AttachParent ) {
@@ -82,7 +102,8 @@ void ASceneComponent::AttachTo( ASceneComponent * _Parent, const char * _Socket,
     }
 }
 
-void ASceneComponent::_AttachTo( ASceneComponent * _Parent, bool _KeepWorldTransform ) {
+void ASceneComponent::_AttachTo( ASceneComponent * _Parent, bool _KeepWorldTransform )
+{
     if ( IsSame( AttachParent, _Parent ) ) {
         // Already attached
         return;
@@ -99,10 +120,12 @@ void ASceneComponent::_AttachTo( ASceneComponent * _Parent, bool _KeepWorldTrans
         return;
     }
 
+#if 0
     if ( !IsSame( _Parent->GetParentActor(), GetParentActor() ) ) {
         GLogger.Printf( "ASceneComponent::Attach: Parent and child are in different actors\n" );
         return;
     }
+#endif
 
     if ( IsChild( _Parent, true ) ) {
         // Object have desired parent in childs
@@ -110,18 +133,14 @@ void ASceneComponent::_AttachTo( ASceneComponent * _Parent, bool _KeepWorldTrans
         return;
     }
 
+    Float3 worldPosition = GetWorldPosition();
+    Quat worldRotation = GetWorldRotation();
+    Float3 worldScale = GetWorldScale();
+
     if ( AttachParent ) {
         auto it = StdFind( AttachParent->Childs.Begin(), AttachParent->Childs.End(), this );
         if ( it != AttachParent->Childs.End() ) {
             AttachParent->Childs.Erase( it );
-
-            if ( _KeepWorldTransform ) {
-#ifdef FUTURE
-                SetTransform( AttachParent->GetWorldTransformMatrix() * GetPosition(),
-                              AttachParent->GetWorldRotation() * GetRotation(),
-                              AttachParent->GetWorldScale() * GetScale() );
-#endif
-            }
         }
     }
 
@@ -129,38 +148,39 @@ void ASceneComponent::_AttachTo( ASceneComponent * _Parent, bool _KeepWorldTrans
     AttachParent = _Parent;
 
     if ( _KeepWorldTransform ) {
-#ifdef FUTURE
-        SetTransform( AttachParent->ComputeWorldTransformInverse() * GetPosition(),
-                      AttachParent->ComputeWorldRotationInverse() * GetRotation(),
-                      GetScale() / AttachParent->GetWorldScale() );
-#endif
+        SetWorldTransform( worldPosition, worldRotation, worldScale );
     } else {
         MarkTransformDirty();
     }
 }
 
-void ASceneComponent::Detach( bool _KeepWorldTransform ) {
+void ASceneComponent::Detach( bool _KeepWorldTransform )
+{
     if ( !AttachParent ) {
         return;
     }
+
+    Float3 worldPosition = GetWorldPosition();
+    Quat worldRotation = GetWorldRotation();
+    Float3 worldScale = GetWorldScale();
+
     auto it = StdFind( AttachParent->Childs.Begin(), AttachParent->Childs.End(), this );
     if ( it != AttachParent->Childs.End() ) {
         AttachParent->Childs.Erase( it );
-
-        if ( _KeepWorldTransform ) {
-#ifdef FUTURE
-            SetTransform( AttachParent->GetWorldTransformMatrix() * GetPosition(),
-                          AttachParent->GetWorldRotation() * GetRotation(),
-                          AttachParent->GetWorldScale() * GetScale() );
-#endif
-        }
     }
     AttachParent = nullptr;
     SocketIndex = -1;
-    MarkTransformDirty();
+
+    if ( _KeepWorldTransform ) {
+        SetWorldTransform( worldPosition, worldRotation, worldScale );
+    }
+    else {
+        MarkTransformDirty();
+    }
 }
 
-void ASceneComponent::DetachChilds( bool _bRecursive, bool _KeepWorldTransform ) {
+void ASceneComponent::DetachChilds( bool _bRecursive, bool _KeepWorldTransform )
+{
     while ( !Childs.IsEmpty() ) {
         ASceneComponent * child = Childs.Last();
         child->Detach( _KeepWorldTransform );
@@ -170,7 +190,8 @@ void ASceneComponent::DetachChilds( bool _bRecursive, bool _KeepWorldTransform )
     }
 }
 
-bool ASceneComponent::IsChild( ASceneComponent * _Child, bool _Recursive ) const {
+bool ASceneComponent::IsChild( ASceneComponent * _Child, bool _Recursive ) const
+{
     for ( ASceneComponent * child : Childs ) {
         if ( IsSame( child, _Child ) || ( _Recursive && child->IsChild( _Child, true ) ) ) {
             return true;
@@ -179,11 +200,14 @@ bool ASceneComponent::IsChild( ASceneComponent * _Child, bool _Recursive ) const
     return false;
 }
 
-bool ASceneComponent::IsRoot() const {
-    return GetParentActor()->RootComponent == this;
+bool ASceneComponent::IsRoot() const
+{
+    AActor * owner = GetOwnerActor();
+    return owner && owner->RootComponent == this;
 }
 
-ASceneComponent * ASceneComponent::FindChild( const char * _UniqueName, bool _Recursive ) {
+ASceneComponent * ASceneComponent::FindChild( const char * _UniqueName, bool _Recursive )
+{
     for ( ASceneComponent * child : Childs ) {
         if ( !child->GetObjectName().Icmp( _UniqueName ) ) {
             return child;
@@ -201,7 +225,8 @@ ASceneComponent * ASceneComponent::FindChild( const char * _UniqueName, bool _Re
     return nullptr;
 }
 
-int ASceneComponent::FindSocket( const char * _Name ) const {
+int ASceneComponent::FindSocket( const char * _Name ) const
+{
     for ( int socketIndex = 0 ; socketIndex < Sockets.Size() ; socketIndex++ ) {
         if ( !Sockets[socketIndex].SocketDef->GetObjectName().Icmp( _Name ) ) {
             return socketIndex;
@@ -211,7 +236,8 @@ int ASceneComponent::FindSocket( const char * _Name ) const {
     return -1;
 }
 
-void ASceneComponent::MarkTransformDirty() {
+void ASceneComponent::MarkTransformDirty()
+{
     ASceneComponent * node = this;
     ASceneComponent * nextNode;
     int numChilds;
@@ -256,7 +282,8 @@ void ASceneComponent::MarkTransformDirty() {
     }
 }
 
-void ASceneComponent::SetAbsolutePosition( bool _AbsolutePosition ) {
+void ASceneComponent::SetAbsolutePosition( bool _AbsolutePosition )
+{
     if ( bAbsolutePosition != _AbsolutePosition ) {
         bAbsolutePosition = _AbsolutePosition;
 
@@ -264,7 +291,8 @@ void ASceneComponent::SetAbsolutePosition( bool _AbsolutePosition ) {
     }
 }
 
-void ASceneComponent::SetAbsoluteRotation( bool _AbsoluteRotation ) {
+void ASceneComponent::SetAbsoluteRotation( bool _AbsoluteRotation )
+{
     if ( bAbsoluteRotation != _AbsoluteRotation ) {
         bAbsoluteRotation = _AbsoluteRotation;
 
@@ -272,7 +300,8 @@ void ASceneComponent::SetAbsoluteRotation( bool _AbsoluteRotation ) {
     }
 }
 
-void ASceneComponent::SetAbsoluteScale( bool _AbsoluteScale ) {
+void ASceneComponent::SetAbsoluteScale( bool _AbsoluteScale )
+{
     if ( bAbsoluteScale != _AbsoluteScale ) {
         bAbsoluteScale = _AbsoluteScale;
 
@@ -280,15 +309,15 @@ void ASceneComponent::SetAbsoluteScale( bool _AbsoluteScale ) {
     }
 }
 
-void ASceneComponent::SetPosition( Float3 const & _Position ) {
-
+void ASceneComponent::SetPosition( Float3 const & _Position )
+{
     Position = _Position;
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetPosition( float const & _X, float const & _Y, float const & _Z ) {
-
+void ASceneComponent::SetPosition( float const & _X, float const & _Y, float const & _Z )
+{
     Position.X = _X;
     Position.Y = _Y;
     Position.Z = _Z;
@@ -296,34 +325,36 @@ void ASceneComponent::SetPosition( float const & _X, float const & _Y, float con
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetRotation( Quat const & _Rotation ) {
-
+void ASceneComponent::SetRotation( Quat const & _Rotation )
+{
     Rotation = _Rotation;
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetAngles( Angl const & _Angles ) {
+void ASceneComponent::SetAngles( Angl const & _Angles )
+{
     Rotation = _Angles.ToQuat();
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetAngles( float const & _Pitch, float const & _Yaw, float const & _Roll ) {
+void ASceneComponent::SetAngles( float const & _Pitch, float const & _Yaw, float const & _Roll )
+{
     Rotation = Angl( _Pitch, _Yaw, _Roll ).ToQuat();
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetScale( Float3 const & _Scale ) {
-
+void ASceneComponent::SetScale( Float3 const & _Scale )
+{
     Scale = _Scale;
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetScale( float const & _X, float const & _Y, float const & _Z ) {
-
+void ASceneComponent::SetScale( float const & _X, float const & _Y, float const & _Z )
+{
     Scale.X = _X;
     Scale.Y = _Y;
     Scale.Z = _Z;
@@ -331,23 +362,23 @@ void ASceneComponent::SetScale( float const & _X, float const & _Y, float const 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetScale( float const & _ScaleXYZ ) {
-
+void ASceneComponent::SetScale( float const & _ScaleXYZ )
+{
     Scale.X = Scale.Y = Scale.Z = _ScaleXYZ;
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetTransform( Float3 const & _Position, Quat const & _Rotation ) {
-
+void ASceneComponent::SetTransform( Float3 const & _Position, Quat const & _Rotation )
+{
     Position = _Position;
     Rotation = _Rotation;
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale ) {
-
+void ASceneComponent::SetTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale )
+{
     Position = _Position;
     Rotation = _Rotation;
     Scale = _Scale;
@@ -355,12 +386,13 @@ void ASceneComponent::SetTransform( Float3 const & _Position, Quat const & _Rota
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetTransform( STransform const & _Transform ) {
+void ASceneComponent::SetTransform( STransform const & _Transform )
+{
     SetTransform( _Transform.Position, _Transform.Rotation, _Transform.Scale );
 }
 
-void ASceneComponent::SetTransform( ASceneComponent const * _Transform ) {
-
+void ASceneComponent::SetTransform( ASceneComponent const * _Transform )
+{
     Position = _Transform->Position;
     Rotation = _Transform->Rotation;
     Scale = _Transform->Scale;
@@ -368,8 +400,9 @@ void ASceneComponent::SetTransform( ASceneComponent const * _Transform ) {
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetWorldPosition( Float3 const & _Position ) {
-    if ( AttachParent ) {
+void ASceneComponent::SetWorldPosition( Float3 const & _Position )
+{
+    if ( AttachParent && !bAbsolutePosition ) {
         Float3x4 ParentTransformInverse = AttachParent->ComputeWorldTransformInverse();
 
         SetPosition( ParentTransformInverse * _Position );  // TODO: check
@@ -378,29 +411,31 @@ void ASceneComponent::SetWorldPosition( Float3 const & _Position ) {
     }
 }
 
-void ASceneComponent::SetWorldPosition( float const & _X, float const & _Y, float const & _Z ) {
+void ASceneComponent::SetWorldPosition( float const & _X, float const & _Y, float const & _Z )
+{
     SetWorldPosition( Float3( _X, _Y, _Z ) );
 }
 
-void ASceneComponent::SetWorldRotation( Quat const & _Rotation ) {
-    SetRotation( AttachParent ? AttachParent->ComputeWorldRotationInverse() * _Rotation : _Rotation );
+void ASceneComponent::SetWorldRotation( Quat const & _Rotation )
+{
+    SetRotation( AttachParent && !bAbsoluteRotation ? AttachParent->ComputeWorldRotationInverse() * _Rotation : _Rotation );
 }
 
-void ASceneComponent::SetWorldScale( Float3 const & _Scale ) {
-    SetScale( AttachParent ? _Scale / AttachParent->GetWorldScale() : _Scale );
+void ASceneComponent::SetWorldScale( Float3 const & _Scale )
+{
+    SetScale( AttachParent && !bAbsoluteScale ? _Scale / AttachParent->GetWorldScale() : _Scale );
 }
 
-void ASceneComponent::SetWorldScale( float const & _X, float const & _Y, float const & _Z ) {
+void ASceneComponent::SetWorldScale( float const & _X, float const & _Y, float const & _Z )
+{
     SetWorldScale( Float3( _X, _Y, _Z ) );
 }
 
-void ASceneComponent::SetWorldTransform( Float3 const & _Position, Quat const & _Rotation ) {
-
+void ASceneComponent::SetWorldTransform( Float3 const & _Position, Quat const & _Rotation )
+{
     if ( AttachParent ) {
-        Float3x4 ParentTransformInverse = AttachParent->ComputeWorldTransformInverse();
-
-        Position = ParentTransformInverse * _Position;  // TODO: check
-        Rotation = AttachParent->ComputeWorldRotationInverse() * _Rotation;
+        Position = bAbsolutePosition ? _Position : AttachParent->ComputeWorldTransformInverse() * _Position;  // TODO: check
+        Rotation = bAbsoluteRotation ? _Rotation : AttachParent->ComputeWorldRotationInverse() * _Rotation;
     } else {
         Position = _Position;
         Rotation = _Rotation;
@@ -410,14 +445,12 @@ void ASceneComponent::SetWorldTransform( Float3 const & _Position, Quat const & 
 
 }
 
-void ASceneComponent::SetWorldTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale ) {
-
+void ASceneComponent::SetWorldTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale )
+{
     if ( AttachParent ) {
-        Float3x4 ParentTransformInverse = AttachParent->ComputeWorldTransformInverse();
-
-        Position = ParentTransformInverse * _Position;  // TODO: check
-        Rotation = AttachParent->ComputeWorldRotationInverse() * _Rotation;
-        Scale =  _Scale / AttachParent->GetWorldScale();
+        Position = bAbsolutePosition ? _Position : AttachParent->ComputeWorldTransformInverse() * _Position;  // TODO: check
+        Rotation = bAbsoluteRotation ? _Rotation : AttachParent->ComputeWorldRotationInverse() * _Rotation;
+        Scale = bAbsoluteScale ? _Scale : _Scale / AttachParent->GetWorldScale();
     } else {
         Position = _Position;
         Rotation = _Rotation;
@@ -428,23 +461,23 @@ void ASceneComponent::SetWorldTransform( Float3 const & _Position, Quat const & 
 
 }
 
-void ASceneComponent::SetWorldTransform( STransform const & _Transform ) {
+void ASceneComponent::SetWorldTransform( STransform const & _Transform )
+{
     SetWorldTransform( _Transform.Position, _Transform.Rotation, _Transform.Scale );
 }
 
-Float3 const & ASceneComponent::GetPosition() const {
-
+Float3 const & ASceneComponent::GetPosition() const
+{
     return Position;
-
 }
 
-Quat const & ASceneComponent::GetRotation() const {
-
+Quat const & ASceneComponent::GetRotation() const
+{
     return Rotation;
-
 }
 
-Angl ASceneComponent::GetAngles() const {
+Angl ASceneComponent::GetAngles() const
+{
     Angl Angles;
     Rotation.ToAngles( Angles.Pitch, Angles.Yaw, Angles.Roll );
     Angles.Pitch = Math::Degrees( Angles.Pitch );
@@ -453,102 +486,53 @@ Angl ASceneComponent::GetAngles() const {
     return Angles;
 }
 
-float ASceneComponent::GetPitch() const {
+float ASceneComponent::GetPitch() const
+{
     return Math::Degrees( Rotation.Pitch() );
 }
 
-float ASceneComponent::GetYaw() const {
+float ASceneComponent::GetYaw() const
+{
     return Math::Degrees( Rotation.Yaw() );
 }
 
-float ASceneComponent::GetRoll() const {
+float ASceneComponent::GetRoll() const
+{
     return Math::Degrees( Rotation.Roll() );
 }
 
-Float3 ASceneComponent::GetRightVector() const {
-    //return Math::ToMat3(Rotation)[0];
-
-    float qyy(Rotation.Y * Rotation.Y);
-    float qzz(Rotation.Z * Rotation.Z);
-    float qxz(Rotation.X * Rotation.Z);
-    float qxy(Rotation.X * Rotation.Y);
-    float qwy(Rotation.W * Rotation.Y);
-    float qwz(Rotation.W * Rotation.Z);
-
-    return Float3( 1 - 2 * (qyy +  qzz), 2 * (qxy + qwz), 2 * (qxz - qwy) );
+Float3 ASceneComponent::GetRightVector() const
+{
+    return Rotation.XAxis();
 }
 
-Float3 ASceneComponent::GetLeftVector() const {
-    //return -Math::ToMat3(Rotation)[0];
-
-    float qyy(Rotation.Y * Rotation.Y);
-    float qzz(Rotation.Z * Rotation.Z);
-    float qxz(Rotation.X * Rotation.Z);
-    float qxy(Rotation.X * Rotation.Y);
-    float qwy(Rotation.W * Rotation.Y);
-    float qwz(Rotation.W * Rotation.Z);
-
-    return Float3( -1 + 2 * (qyy +  qzz), -2 * (qxy + qwz), -2 * (qxz - qwy) );
+Float3 ASceneComponent::GetLeftVector() const
+{
+    return -Rotation.XAxis();
 }
 
-Float3 ASceneComponent::GetUpVector() const {
-    //return Math::ToMat3(Rotation)[1];
-
-    float qxx(Rotation.X * Rotation.X);
-    float qzz(Rotation.Z * Rotation.Z);
-    float qxy(Rotation.X * Rotation.Y);
-    float qyz(Rotation.Y * Rotation.Z);
-    float qwx(Rotation.W * Rotation.X);
-    float qwz(Rotation.W * Rotation.Z);
-
-    return Float3( 2 * (qxy - qwz), 1 - 2 * (qxx +  qzz), 2 * (qyz + qwx) );
+Float3 ASceneComponent::GetUpVector() const
+{
+    return Rotation.YAxis();
 }
 
-Float3 ASceneComponent::GetDownVector() const {
-    //return -Math::ToMat3(Rotation)[1];
-
-    float qxx(Rotation.X * Rotation.X);
-    float qzz(Rotation.Z * Rotation.Z);
-    float qxy(Rotation.X * Rotation.Y);
-    float qyz(Rotation.Y * Rotation.Z);
-    float qwx(Rotation.W * Rotation.X);
-    float qwz(Rotation.W * Rotation.Z);
-
-    return Float3( -2 * (qxy - qwz), -1 + 2 * (qxx +  qzz), -2 * (qyz + qwx) );
+Float3 ASceneComponent::GetDownVector() const
+{
+    return -Rotation.YAxis();
 }
 
-Float3 ASceneComponent::GetBackVector() const {
-    //return Math::ToMat3(Rotation)[2];
-
-    float qxx(Rotation.X * Rotation.X);
-    float qyy(Rotation.Y * Rotation.Y);
-    float qxz(Rotation.X * Rotation.Z);
-    float qyz(Rotation.Y * Rotation.Z);
-    float qwx(Rotation.W * Rotation.X);
-    float qwy(Rotation.W * Rotation.Y);
-
-    return Float3( 2 * (qxz + qwy), 2 * (qyz - qwx), 1 - 2 * (qxx +  qyy) );
+Float3 ASceneComponent::GetBackVector() const
+{
+    return Rotation.ZAxis();
 }
 
-Float3 ASceneComponent::GetForwardVector() const {
-    //return -Math::ToMat3(Rotation)[2];
-
-    float qxx(Rotation.X * Rotation.X);
-    float qyy(Rotation.Y * Rotation.Y);
-    float qxz(Rotation.X * Rotation.Z);
-    float qyz(Rotation.Y * Rotation.Z);
-    float qwx(Rotation.W * Rotation.X);
-    float qwy(Rotation.W * Rotation.Y);
-
-    return Float3( -2 * (qxz + qwy), -2 * (qyz - qwx), -1 + 2 * (qxx +  qyy) );
+Float3 ASceneComponent::GetForwardVector() const
+{
+    return -Rotation.ZAxis();
 }
 
-void ASceneComponent::GetVectors( Float3 * _Right, Float3 * _Up, Float3 * _Back ) const {
-    //if ( _Right ) *_Right = Math::ToMat3(Rotation)[0];
-    //if ( _Up ) *_Up = Math::ToMat3(Rotation)[1];
-    //if ( _Back ) *_Back = Math::ToMat3(Rotation)[2];
-    //return;
-
+void ASceneComponent::GetVectors( Float3 * _Right, Float3 * _Up, Float3 * _Back ) const
+{
     float qxx(Rotation.X * Rotation.X);
     float qyy(Rotation.Y * Rotation.Y);
     float qzz(Rotation.Z * Rotation.Z);
@@ -578,85 +562,38 @@ void ASceneComponent::GetVectors( Float3 * _Right, Float3 * _Up, Float3 * _Back 
     }
 }
 
-Float3 ASceneComponent::GetWorldRightVector() const {
-    const Quat & R = GetWorldRotation();
-
-    float qyy(R.Y * R.Y);
-    float qzz(R.Z * R.Z);
-    float qxz(R.X * R.Z);
-    float qxy(R.X * R.Y);
-    float qwy(R.W * R.Y);
-    float qwz(R.W * R.Z);
-
-    return Float3( 1 - 2 * (qyy +  qzz), 2 * (qxy + qwz), 2 * (qxz - qwy) );
+Float3 ASceneComponent::GetWorldRightVector() const
+{
+    return GetWorldRotation().XAxis();
 }
 
-Float3 ASceneComponent::GetWorldLeftVector() const {
-    const Quat & R = GetWorldRotation();
-
-    float qyy(R.Y * R.Y);
-    float qzz(R.Z * R.Z);
-    float qxz(R.X * R.Z);
-    float qxy(R.X * R.Y);
-    float qwy(R.W * R.Y);
-    float qwz(R.W * R.Z);
-
-    return Float3( -1 + 2 * (qyy +  qzz), -2 * (qxy + qwz), -2 * (qxz - qwy) );
+Float3 ASceneComponent::GetWorldLeftVector() const
+{
+    return -GetWorldRotation().XAxis();
 }
 
-Float3 ASceneComponent::GetWorldUpVector() const {
-    const Quat & R = GetWorldRotation();
-
-    float qxx(R.X * R.X);
-    float qzz(R.Z * R.Z);
-    float qxy(R.X * R.Y);
-    float qyz(R.Y * R.Z);
-    float qwx(R.W * R.X);
-    float qwz(R.W * R.Z);
-
-    return Float3( 2 * (qxy - qwz), 1 - 2 * (qxx +  qzz), 2 * (qyz + qwx) );
+Float3 ASceneComponent::GetWorldUpVector() const
+{
+    return GetWorldRotation().YAxis();
 }
 
-Float3 ASceneComponent::GetWorldDownVector() const {
-    const Quat & R = GetWorldRotation();
-
-    float qxx(R.X * R.X);
-    float qzz(R.Z * R.Z);
-    float qxy(R.X * R.Y);
-    float qyz(R.Y * R.Z);
-    float qwx(R.W * R.X);
-    float qwz(R.W * R.Z);
-
-    return Float3( -2 * (qxy - qwz), -1 + 2 * (qxx +  qzz), -2 * (qyz + qwx) );
+Float3 ASceneComponent::GetWorldDownVector() const
+{
+    return -GetWorldRotation().YAxis();
 }
 
-Float3 ASceneComponent::GetWorldBackVector() const {
-    const Quat & R = GetWorldRotation();
-
-    float qxx(R.X * R.X);
-    float qyy(R.Y * R.Y);
-    float qxz(R.X * R.Z);
-    float qyz(R.Y * R.Z);
-    float qwx(R.W * R.X);
-    float qwy(R.W * R.Y);
-
-    return Float3( 2 * (qxz + qwy), 2 * (qyz - qwx), 1 - 2 * (qxx +  qyy) );
+Float3 ASceneComponent::GetWorldBackVector() const
+{
+    return GetWorldRotation().ZAxis();
 }
 
-Float3 ASceneComponent::GetWorldForwardVector() const {
-    const Quat & R = GetWorldRotation();
-
-    float qxx(R.X * R.X);
-    float qyy(R.Y * R.Y);
-    float qxz(R.X * R.Z);
-    float qyz(R.Y * R.Z);
-    float qwx(R.W * R.X);
-    float qwy(R.W * R.Y);
-
-    return Float3( -2 * (qxz + qwy), -2 * (qyz - qwx), -1 + 2 * (qxx +  qyy) );
+Float3 ASceneComponent::GetWorldForwardVector() const
+{
+    return -GetWorldRotation().ZAxis();
 }
 
-void ASceneComponent::GetWorldVectors( Float3 * _Right, Float3 * _Up, Float3 * _Back ) const {
+void ASceneComponent::GetWorldVectors( Float3 * _Right, Float3 * _Up, Float3 * _Back ) const
+{
     const Quat & R = GetWorldRotation();
 
     float qxx(R.X * R.X);
@@ -688,14 +625,13 @@ void ASceneComponent::GetWorldVectors( Float3 * _Right, Float3 * _Up, Float3 * _
     }
 }
 
-Float3 const & ASceneComponent::GetScale() const {
-
+Float3 const & ASceneComponent::GetScale() const
+{
     return Scale;
-
 }
 
-Float3 ASceneComponent::GetWorldPosition() const {
-
+Float3 ASceneComponent::GetWorldPosition() const
+{
     if ( bTransformDirty ) {
         ComputeWorldTransform();
     }
@@ -703,8 +639,8 @@ Float3 ASceneComponent::GetWorldPosition() const {
     return WorldTransformMatrix.DecomposeTranslation();
 }
 
-Quat const & ASceneComponent::GetWorldRotation() const {
-
+Quat const & ASceneComponent::GetWorldRotation() const
+{
     if ( bTransformDirty ) {
         ComputeWorldTransform();
     }
@@ -712,8 +648,8 @@ Quat const & ASceneComponent::GetWorldRotation() const {
     return WorldRotation;
 }
 
-Float3 ASceneComponent::GetWorldScale() const {
-
+Float3 ASceneComponent::GetWorldScale() const
+{
     if ( bTransformDirty ) {
         ComputeWorldTransform();
     }
@@ -721,8 +657,8 @@ Float3 ASceneComponent::GetWorldScale() const {
     return WorldTransformMatrix.DecomposeScale();
 }
 
-Float3x4 const & ASceneComponent::GetWorldTransformMatrix() const {
-
+Float3x4 const & ASceneComponent::GetWorldTransformMatrix() const
+{
     if ( bTransformDirty ) {
         ComputeWorldTransform();
     }
@@ -730,11 +666,13 @@ Float3x4 const & ASceneComponent::GetWorldTransformMatrix() const {
     return WorldTransformMatrix;
 }
 
-void ASceneComponent::ComputeLocalTransformMatrix( Float3x4 & _LocalTransformMatrix ) const {
+void ASceneComponent::ComputeLocalTransformMatrix( Float3x4 & _LocalTransformMatrix ) const
+{
     _LocalTransformMatrix.Compose( Position, Rotation.ToMatrix(), Scale );
 }
 
-Float3x4 SSocket::EvaluateTransform() const {
+Float3x4 SSocket::EvaluateTransform() const
+{
     Float3x4 transform;
 
     if ( SkinnedMesh )
@@ -758,7 +696,8 @@ Float3x4 SSocket::EvaluateTransform() const {
     return transform;
 }
 
-Float3x4 ASceneComponent::GetSocketTransform( int _SocketIndex ) const {
+Float3x4 ASceneComponent::GetSocketTransform( int _SocketIndex ) const
+{
     if ( SocketIndex < 0 || SocketIndex >= AttachParent->Sockets.Size() )
     {
         return Float3x4::Identity();
@@ -767,7 +706,8 @@ Float3x4 ASceneComponent::GetSocketTransform( int _SocketIndex ) const {
     return Sockets[_SocketIndex].EvaluateTransform();
 }
 
-void ASceneComponent::ComputeWorldTransform() const {
+void ASceneComponent::ComputeWorldTransform() const
+{
     // TODO: optimize
 
     if ( AttachParent ) {
@@ -827,33 +767,40 @@ void ASceneComponent::ComputeWorldTransform() const {
     bTransformDirty = false;
 }
 
-Float3x4 ASceneComponent::ComputeWorldTransformInverse() const {
+Float3x4 ASceneComponent::ComputeWorldTransformInverse() const
+{
     Float3x4 const & WorldTransform = GetWorldTransformMatrix();
 
     return WorldTransform.Inversed();
 }
 
-Quat ASceneComponent::ComputeWorldRotationInverse() const {
+Quat ASceneComponent::ComputeWorldRotationInverse() const
+{
     return GetWorldRotation().Inversed();
 }
 
-void ASceneComponent::TurnRightFPS( float _DeltaAngleRad ) {
+void ASceneComponent::TurnRightFPS( float _DeltaAngleRad )
+{
     TurnLeftFPS( -_DeltaAngleRad );
 }
 
-void ASceneComponent::TurnLeftFPS( float _DeltaAngleRad ) {
+void ASceneComponent::TurnLeftFPS( float _DeltaAngleRad )
+{
     TurnAroundAxis( _DeltaAngleRad, Float3( 0,1,0 ) );
 }
 
-void ASceneComponent::TurnUpFPS( float _DeltaAngleRad ) {
+void ASceneComponent::TurnUpFPS( float _DeltaAngleRad )
+{
     TurnAroundAxis( _DeltaAngleRad, GetRightVector() );
 }
 
-void ASceneComponent::TurnDownFPS( float _DeltaAngleRad ) {
+void ASceneComponent::TurnDownFPS( float _DeltaAngleRad )
+{
     TurnUpFPS( -_DeltaAngleRad );
 }
 
-void ASceneComponent::TurnAroundAxis( float _DeltaAngleRad, Float3 const & _NormalizedAxis ) {
+void ASceneComponent::TurnAroundAxis( float _DeltaAngleRad, Float3 const & _NormalizedAxis )
+{
     float s, c;
 
     Math::SinCos( _DeltaAngleRad * 0.5f, s, c );
@@ -864,41 +811,50 @@ void ASceneComponent::TurnAroundAxis( float _DeltaAngleRad, Float3 const & _Norm
     MarkTransformDirty();
 }
 
-void ASceneComponent::TurnAroundVector( float _DeltaAngleRad, Float3 const & _Vector ) {
+void ASceneComponent::TurnAroundVector( float _DeltaAngleRad, Float3 const & _Vector )
+{
     TurnAroundAxis( _DeltaAngleRad, _Vector.Normalized() );
 }
 
-void ASceneComponent::StepRight( float _Units ) {
+void ASceneComponent::StepRight( float _Units )
+{
     Step( GetRightVector() * _Units );
 }
 
-void ASceneComponent::StepLeft( float _Units ) {
+void ASceneComponent::StepLeft( float _Units )
+{
     Step( GetLeftVector() * _Units );
 }
 
-void ASceneComponent::StepUp( float _Units ) {
+void ASceneComponent::StepUp( float _Units )
+{
     Step( GetUpVector() * _Units );
 }
 
-void ASceneComponent::StepDown( float _Units ) {
+void ASceneComponent::StepDown( float _Units )
+{
     Step( GetDownVector() * _Units );
 }
 
-void ASceneComponent::StepBack( float _Units ) {
+void ASceneComponent::StepBack( float _Units )
+{
     Step( GetBackVector() * _Units );
 }
 
-void ASceneComponent::StepForward( float _Units ) {
+void ASceneComponent::StepForward( float _Units )
+{
     Step( GetForwardVector() * _Units );
 }
 
-void ASceneComponent::Step( Float3 const & _Vector ) {
+void ASceneComponent::Step( Float3 const & _Vector )
+{
     Position += _Vector;
 
     MarkTransformDirty();
 }
 
-void ASceneComponent::DrawDebug( ADebugRenderer * InRenderer ) {
+void ASceneComponent::DrawDebug( ADebugRenderer * InRenderer )
+{
     Super::DrawDebug( InRenderer );
 
     // Draw sockets

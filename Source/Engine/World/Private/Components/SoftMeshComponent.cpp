@@ -36,8 +36,6 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/RuntimeVariable.h>
 
-#include <BulletSoftBody/btSoftBody.h>
-#include <BulletSoftBody/btSoftRigidDynamicsWorld.h>
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 #include <BulletCollision/CollisionShapes/btSphereShape.h>
 //#include <BulletSoftBody/btSoftBodyHelpers.h>
@@ -69,9 +67,9 @@ void ASoftMeshComponent::DeinitializeComponent() {
     DetachAllVertices();
 
     if ( SoftBody ) {
-        btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->GetDynamicsWorld();
+        btSoftRigidDynamicsWorld * physicsWorld = static_cast< btSoftRigidDynamicsWorld * >( GetWorld()->GetDynamicsWorld() );
         physicsWorld->removeSoftBody( SoftBody );
-        b3Destroy( SoftBody );
+        delete SoftBody;
         SoftBody = nullptr;
     }
 }
@@ -79,18 +77,24 @@ void ASoftMeshComponent::DeinitializeComponent() {
 void ASoftMeshComponent::RecreateSoftBody() {
 
     AIndexedMesh * sourceMesh = GetMesh();
-    //ASkeleton * skel = GetSkeleton();
 
-    if ( !sourceMesh /*|| !skel*/ || sourceMesh->SoftbodyFaces.IsEmpty() || sourceMesh->SoftbodyLinks.IsEmpty() ) {
+    if ( !sourceMesh ) {
+        return;
+    }
+
+    TPodArray< SSoftbodyLink > const & softbodyLinks = sourceMesh->GetSoftbodyLinks();
+    TPodArray< SSoftbodyFace > const & softbodyFaces = sourceMesh->GetSoftbodyFaces();
+
+    if ( softbodyFaces.IsEmpty() || softbodyLinks.IsEmpty() ) {
         // TODO: Warning?
         return;
     }
 
-    btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->GetDynamicsWorld();
+    btSoftRigidDynamicsWorld * physicsWorld = static_cast< btSoftRigidDynamicsWorld * >( GetWorld()->GetDynamicsWorld() );
 
     if ( SoftBody ) {
         physicsWorld->removeSoftBody( SoftBody );
-        b3Destroy( SoftBody );
+        delete SoftBody;
         SoftBody = nullptr;
         //PrevTransformBasis.SetIdentity();
         //PrevTransformOrigin.Clear();
@@ -111,11 +115,11 @@ void ASoftMeshComponent::RecreateSoftBody() {
         vtx[ i ] = btVectorToFloat3( skin.OffsetMatrices[i].DecomposeTranslation() );
     }
 
-    SoftBody = b3New( btSoftBody, GetWorld()->GetSoftBodyWorldInfo(), vtx.size(), &vtx[ 0 ], 0 );
-    for ( SSoftbodyLink & link : sourceMesh->SoftbodyLinks ) {
+    SoftBody = new btSoftBody( GetWorld()->GetSoftBodyWorldInfo(), vtx.size(), &vtx[ 0 ], 0 );
+    for ( SSoftbodyLink const & link : softbodyLinks ) {
         SoftBody->appendLink( link.Indices[0], link.Indices[1] );
     }
-    for ( SSoftbodyFace & face : sourceMesh->SoftbodyFaces ) {
+    for ( SSoftbodyFace const & face : softbodyFaces ) {
         SoftBody->appendFace( face.Indices[0], face.Indices[1], face.Indices[2] );
     }
     btSoftBody::Material * pm = SoftBody->appendMaterial();
@@ -285,7 +289,7 @@ void ASoftMeshComponent::UpdateAnchorPoints() {
 
     if ( bUpdateAnchors ) {
 
-        btSoftRigidDynamicsWorld * physicsWorld = GetWorld()->GetDynamicsWorld();
+        auto * physicsWorld = GetWorld()->GetDynamicsWorld();
 
         // Remove old anchors. FIXME: is it correct?
         SoftBody->m_collisionDisabledObjects.clear();
@@ -304,7 +308,8 @@ void ASoftMeshComponent::UpdateAnchorPoints() {
 
                 // create rigid body
 
-                anchorBody = b3New( btRigidBody, 0.0f, NULL, b3New( btSphereShape, 0.5f ) );
+                btSphereShape * shape = new btSphereShape( 0.5f );
+                anchorBody = new btRigidBody( 0.0f, NULL, shape );
 
                 physicsWorld->addRigidBody( anchorBody, 0, 0 );
 

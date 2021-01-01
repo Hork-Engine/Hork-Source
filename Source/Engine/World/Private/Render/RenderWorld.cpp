@@ -31,6 +31,7 @@ SOFTWARE.
 #include <World/Public/Render/RenderWorld.h>
 #include <World/Public/World.h>
 #include <World/Public/Components/SkinnedComponent.h>
+#include <World/Public/Components/TerrainComponent.h>
 #include <World/Public/Components/DirectionalLightComponent.h>
 #include <World/Public/Components/PointLightComponent.h>
 #include <World/Public/Components/SpotLightComponent.h>
@@ -46,28 +47,28 @@ ARenderWorld::ARenderWorld( AWorld * InOwnerWorld )
 {
 }
 
-void ARenderWorld::AddSkinnedMesh( ASkinnedComponent * _Skeleton ) {
-    INTRUSIVE_ADD_UNIQUE( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
+void ARenderWorld::AddSkinnedMesh( ASkinnedComponent * InSkeleton ) {
+    INTRUSIVE_ADD_UNIQUE( InSkeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
 }
 
-void ARenderWorld::RemoveSkinnedMesh( ASkinnedComponent * _Skeleton ) {
-    INTRUSIVE_REMOVE( _Skeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
+void ARenderWorld::RemoveSkinnedMesh( ASkinnedComponent * InSkeleton ) {
+    INTRUSIVE_REMOVE( InSkeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
 }
 
-void ARenderWorld::AddShadowCaster( ADrawable * _Mesh ) {
-    INTRUSIVE_ADD_UNIQUE( _Mesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
+void ARenderWorld::AddShadowCaster( ADrawable * InMesh ) {
+    INTRUSIVE_ADD_UNIQUE( InMesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
 }
 
-void ARenderWorld::RemoveShadowCaster( ADrawable * _Mesh ) {
-    INTRUSIVE_REMOVE( _Mesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
+void ARenderWorld::RemoveShadowCaster( ADrawable * InMesh ) {
+    INTRUSIVE_REMOVE( InMesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
 }
 
-void ARenderWorld::AddDirectionalLight( ADirectionalLightComponent * _Light ) {
-    INTRUSIVE_ADD_UNIQUE( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail );
+void ARenderWorld::AddDirectionalLight( ADirectionalLightComponent * InLight ) {
+    INTRUSIVE_ADD_UNIQUE( InLight, Next, Prev, DirectionalLightList, DirectionalLightListTail );
 }
 
-void ARenderWorld::RemoveDirectionalLight( ADirectionalLightComponent * _Light ) {
-    INTRUSIVE_REMOVE( _Light, Next, Prev, DirectionalLightList, DirectionalLightListTail );
+void ARenderWorld::RemoveDirectionalLight( ADirectionalLightComponent * InLight ) {
+    INTRUSIVE_REMOVE( InLight, Next, Prev, DirectionalLightList, DirectionalLightListTail );
 }
 
 void ARenderWorld::DrawDebug( ADebugRenderer * InRenderer )

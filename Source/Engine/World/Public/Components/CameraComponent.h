@@ -34,7 +34,8 @@ SOFTWARE.
 
 #include <Core/Public/BV/BvFrustum.h>
 
-enum ECameraProjection : uint8_t {
+enum ECameraProjection : uint8_t
+{
     CAMERA_PROJ_ORTHO_RECT,
     CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO,
     CAMERA_PROJ_PERSPECTIVE_FOV_X_FOV_Y,
@@ -42,7 +43,7 @@ enum ECameraProjection : uint8_t {
     CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO
 };
 
-class ANGIE_API ACameraComponent : public ASceneComponent {
+class ACameraComponent : public ASceneComponent {
     AN_COMPONENT( ACameraComponent, ASceneComponent )
 
 public:

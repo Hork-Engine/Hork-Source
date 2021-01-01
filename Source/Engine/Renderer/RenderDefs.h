@@ -325,6 +325,12 @@ struct SMeshVertexSkin
     }
 };
 
+struct STerrainVertex
+{
+    /*unsigned*/ short X;
+    /*unsigned*/ short Y;
+};
+
 struct SHUDDrawVert
 {
     Float2   Position;
@@ -1165,6 +1171,42 @@ struct SProbeParameters
 
 /**
 
+Terrain patch parameters
+
+*/
+struct STerrainPatchInstance
+{
+    Int2 VertexScale;
+    Int2 VertexTranslate;
+    Int2 TexcoordOffset;
+    AColor4 QuadColor; // Just for debug. Will be removed later
+};
+
+
+/**
+
+Terrain render instance
+
+*/
+struct STerrainRenderInstance
+{
+    RenderCore::IBuffer * VertexBuffer;
+    RenderCore::IBuffer * IndexBuffer;
+    size_t InstanceBufferStreamHandle;
+    size_t IndirectBufferStreamHandle;
+    int IndirectBufferDrawCount;
+    RenderCore::ITexture * Clipmaps;
+    RenderCore::ITexture * Normals;
+    Float4 ViewPositionAndHeight;
+    Float4x4 LocalViewProjection;
+    Float3x3 ModelNormalToViewSpace;
+    Int2 ClipMin;
+    Int2 ClipMax;
+};
+
+
+/**
+
 Rendering data for one view
 Keep it POD
 
@@ -1314,6 +1356,14 @@ struct SRenderView
     SClusterPackedIndex * ClusterPackedIndices;
     size_t ClusterPackedIndicesStreamHandle;
     int ClusterPackedIndexCount;
+
+    /** Terrain instances */
+    int FirstTerrainInstance;
+    int TerrainInstanceCount;
+
+    /** Global reflection & irradiance */
+    int GlobalIrradianceMap;
+    int GlobalReflectionMap;
 };
 
 
@@ -1362,6 +1412,8 @@ struct SRenderFrame
     TPodArray< SDirectionalLightInstance * > DirectionalLights;
     /** Shadow maps */
     TPodArray< SLightShadowmap > LightShadowmaps;
+    /** Terrain instances */
+    TPodArray< STerrainRenderInstance * > TerrainInstances;
 
     /** Hud draw commands */
     SHUDDrawList * DrawListHead;
@@ -1373,6 +1425,7 @@ struct SRenderFrame
     size_t DbgIndexStreamOffset;
 };
 
+// TODO: Move this structure declaration to World/...
 struct SRenderFrontendDef
 {
     SRenderView * View;
@@ -1382,4 +1435,5 @@ struct SRenderFrontendDef
     int PolyCount;
     int ShadowMapPolyCount;
     //int LightPortalPolyCount;
+    //int TerrainPolyCount;
 };

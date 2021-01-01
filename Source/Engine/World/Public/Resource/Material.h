@@ -44,7 +44,7 @@ class MGMaterialGraph;
 Material
 
 */
-class ANGIE_API AMaterial : public AResource {
+class AMaterial : public AResource {
     AN_CLASS( AMaterial, AResource )
 
 public:

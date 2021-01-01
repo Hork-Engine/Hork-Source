@@ -48,7 +48,7 @@ ARuntimeVariable com_DrawLevelPortals( _CTS( "com_DrawLevelPortals" ), _CTS( "0"
 
 AN_CLASS_META( ALevel )
 
-class ANGIE_API AWorldspawn : public AActor {
+class AWorldspawn : public AActor {
     AN_ACTOR( AWorldspawn, AActor )
 
 public:
@@ -866,6 +866,8 @@ void ALevel::UnlinkPrimitive( SPrimitiveDef * InPrimitive ) {
     SPrimitiveLink * link = InPrimitive->Links;
 
     while ( link ) {
+        AN_ASSERT( link->Area );
+
         SPrimitiveLink ** prev = &link->Area->Links;
         while ( 1 ) {
             SPrimitiveLink * walk = *prev;
@@ -1003,7 +1005,6 @@ void ALevel::MarkPrimitive( SPrimitiveDef * InPrimitive ) {
     INTRUSIVE_ADD_UNIQUE( InPrimitive, NextUpd, PrevUpd, PrimitiveUpdateList, PrimitiveUpdateListTail );
 }
 
-
 AN_CLASS_META( ABrushModel )
 
 void ABrushModel::Purge() {
@@ -1019,7 +1020,7 @@ void ABrushModel::Purge() {
 
     SurfaceMaterials.Free();
 
-    BodyComposition.Clear();
+    CollisionModel.Reset();
 }
 
 AN_CLASS_META( AWorldspawn )
@@ -1043,7 +1044,7 @@ void AWorldspawn::PreInitializeComponents() {
 
     // Setup world collision
     if ( level->Model ) {
-        level->Model->BodyComposition.Duplicate( WorldCollision->BodyComposition );
+        WorldCollision->SetCollisionModel( level->Model->CollisionModel );
     }
 
     // Create ambient control
