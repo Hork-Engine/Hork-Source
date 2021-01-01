@@ -54,6 +54,10 @@ AZoneMemory GZoneMemory;
 
 #define ENABLE_TRASH_TEST
 
+// Uncomment the following two lines to check for a memory leak
+//#define ZONE_MEMORY_LEAK_ADDRESS <local address>
+//#define ZONE_MEMORY_LEAK_SIZE <size>
+
 #ifdef AN_MULTITHREADED_ALLOC
 #define SYNC_GUARD ASyncGuard syncGuard( Sync );
 #else
@@ -755,6 +759,20 @@ void * AZoneMemory::Alloc( size_t _BytesCount ) {
     cur->Size = -cur->Size; // Set size to negative to mark chunk used
     cur->DataSize = _BytesCount;
     MemoryBuffer->Rover = cur->pNext;
+
+#if defined ZONE_MEMORY_LEAK_ADDRESS && defined AN_DEBUG
+    size_t localAddr = (size_t)( cur + 1 ) - (size_t)GetZoneMemoryAddress();
+    size_t size =  (-cur->Size);
+    if ( localAddr == ZONE_MEMORY_LEAK_ADDRESS && size == ZONE_MEMORY_LEAK_SIZE ) {
+        GLogger.Printf("Problem alloc\n");
+#ifdef AN_OS_WIN32
+        DebugBreak();
+#else
+        //__asm__( "int $3" );
+        raise( SIGTRAP );
+#endif
+    }
+#endif
 
     SetTrashMarker( cur );
 
