@@ -220,7 +220,7 @@ private:
         desktop->SetCursorVisible( false );
 
         // Set current desktop
-        GEngine.SetDesktop( desktop );
+        GEngine->SetDesktop( desktop );
     }
 
     void CreateResources()
