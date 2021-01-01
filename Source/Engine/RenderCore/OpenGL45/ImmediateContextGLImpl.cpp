@@ -262,6 +262,15 @@ AImmediateContextGLImpl::AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImme
     glStencilOpSeparate( GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP );
     glStencilFuncSeparate( GL_FRONT_AND_BACK, GL_ALWAYS, StencilRef, DEFAULT_STENCIL_READ_MASK );
 
+    // Enable clip distances by default
+    // FIXME: make it as pipeline state?
+    glEnable( GL_CLIP_DISTANCE0 );
+    glEnable( GL_CLIP_DISTANCE1 );
+    glEnable( GL_CLIP_DISTANCE2 );
+    glEnable( GL_CLIP_DISTANCE3 );
+    glEnable( GL_CLIP_DISTANCE4 );
+    glEnable( GL_CLIP_DISTANCE5 );
+
     ColorClamp = COLOR_CLAMP_OFF;
     glClampColor( GL_CLAMP_READ_COLOR, GL_FALSE );
 
