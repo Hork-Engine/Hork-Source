@@ -55,15 +55,16 @@ APlayer::APlayer() {
 
     bCanEverTick = true;
 
-    //static TStaticResourceFinder< AIndexedMesh > UnitBox( _CTS( "/Default/Meshes/Box" ) );
-    //static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "SkyboxMaterialInstance" ) );
-    //Skybox = CreateComponent< AMeshComponent >( "Skybox" );
-    //Skybox->SetMesh( UnitBox.GetObject() );
-    //Skybox->SetMaterialInstance( SkyboxMaterialInst.GetObject() );
-    //Skybox->ForceOutdoor( true );
-    //Skybox->AttachTo( Camera );
-    //Skybox->SetAbsoluteRotation( true );
-    //Skybox->RenderingOrder = RENDER_ORDER_SKYBOX;
+    static TStaticResourceFinder< AIndexedMesh > UnitBox( _CTS( "/Default/Meshes/Skybox" ) );
+    static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "SkyboxMaterialInstance" ) );
+    Skybox = CreateComponent< AMeshComponent >( "Skybox" );
+    Skybox->SetMotionBehavior( MB_KINEMATIC );
+    Skybox->SetMesh( UnitBox.GetObject() );
+    Skybox->SetMaterialInstance( SkyboxMaterialInst.GetObject() );
+    Skybox->ForceOutdoor( true );
+    Skybox->AttachTo( Camera );
+    Skybox->SetAbsoluteRotation( true );
+    Skybox->SetVisibilityGroup( VISIBILITY_GROUP_SKYBOX );
 }
 
 void APlayer::BeginPlay() {
@@ -126,6 +127,7 @@ void APlayer::Tick( float _TimeStep ) {
     SWorldRaycastFilter filter;
 
     filter.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+    filter.VisibilityMask = VISIBILITY_GROUP_DEFAULT | VISIBILITY_GROUP_TERRAIN;
 
     SWorldRaycastClosestResult result;
     if ( GetWorld()->RaycastClosest( result, RootComponent->GetPosition(), RootComponent->GetPosition() + RootComponent->GetForwardVector()*99999.0f, &filter ) ) {

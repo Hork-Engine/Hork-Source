@@ -34,6 +34,8 @@ SOFTWARE.
 
 #include <World/Public/World.h>
 #include <World/Public/Components/InputComponent.h>
+#include <World/Public/Actors/TerrainActor.h>
+#include <World/Public/Actors/DirectionalLight.h>
 #include <World/Public/Canvas.h>
 #include <World/Public/Base/ResourceManager.h>
 #include <World/Public/Widgets/WViewport.h>
@@ -62,6 +64,8 @@ AModule::AModule() {
     ALevel * level = NewObject< ALevel >();
     World->AddLevel( level );
     //ALevel * level = World->GetPersistentLevel();
+
+
 
     Float3 position;
     Float3 halfExtents;
@@ -181,6 +185,14 @@ AModule::AModule() {
     t.Scale = Float3(0.1f,0.1f,3);
     World->SpawnActor< AChecker >( t, level );
 
+
+    World->SpawnActor< ATerrainActor >( Float3( 0, -20, 0 ), Quat::Identity(), level );
+
+    // Spawn directional light
+    ADirectionalLight * dirlight = World->SpawnActor< ADirectionalLight >( level );
+    dirlight->LightComponent->SetCastShadow( true );
+    dirlight->LightComponent->SetDirection( Float3( -0.5f, -2, -2 ) );
+
     APlayer * player = World->SpawnActor< APlayer >( Float3(0,0.2f,1), Quat::Identity(), level );
 
     //World->SpawnActor< FAtmosphere >();
@@ -197,7 +209,7 @@ AModule::AModule() {
     PlayerController->SetPawn( player );
 
     WDesktop * desktop = NewObject< WDesktop >();
-    GEngine.SetDesktop( desktop );
+    GEngine->SetDesktop( desktop );
 
     desktop->AddWidget(
         &WNew(WViewport)
