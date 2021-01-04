@@ -174,9 +174,6 @@ public:
     /** Physics refresh rate */
     int PhysicsHertz = 60;
 
-    /** Enable interpolation during physics simulation */
-    bool bEnablePhysicsInterpolation = true;
-
     /** Contact solver split impulse. Disabled by default for performance */
     bool bContactSolverSplitImpulse = false;
 
@@ -288,6 +285,5 @@ private:
     TPodArray< SContactPoint > ContactPoints;
     AHitProxy * PendingAddToWorldHead = nullptr;
     AHitProxy * PendingAddToWorldTail = nullptr;
-    float TimeAccumulation = 0.0f;
     int FixedTickNumber = 0;
 };

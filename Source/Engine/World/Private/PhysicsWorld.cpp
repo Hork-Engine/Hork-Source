@@ -874,33 +874,22 @@ void APhysicsWorld::Simulate( float _TimeStep )
 
     const float FixedTimeStep = 1.0f / PhysicsHertz;
 
-    int numSimulationSteps = Math::Floor( _TimeStep * PhysicsHertz ) + 1.0f;
-    //numSimulationSteps = Math::Min( numSimulationSteps, MAX_SIMULATION_STEPS );
+    int maxSubSteps = Math::ToIntFast( Math::Floor( _TimeStep * PhysicsHertz ) ) + 1;
+    //maxSubSteps = Math::Min( maxSubSteps, MAX_SIMULATION_SUB_STEPS );
 
     btContactSolverInfo & contactSolverInfo = DynamicsWorld->getSolverInfo();
     contactSolverInfo.m_numIterations = Math::Clamp( NumContactSolverIterations, 1, 256 );
     contactSolverInfo.m_splitImpulse = bContactSolverSplitImpulse;
 
+    // Update world gravity
     if ( bGravityDirty ) {
         DynamicsWorld->setGravity( btVectorToFloat3( GravityVector ) );
         bGravityDirty = false;
     }
 
+    // Simulation
     bDuringPhysicsUpdate = true;
-
-    if ( bEnablePhysicsInterpolation ) {
-        TimeAccumulation = 0;
-        DynamicsWorld->stepSimulation( _TimeStep, numSimulationSteps, FixedTimeStep );
-    }
-    else {
-        TimeAccumulation += _TimeStep;
-        while ( TimeAccumulation >= FixedTimeStep && numSimulationSteps > 0 ) {
-            DynamicsWorld->stepSimulation( FixedTimeStep, 0, FixedTimeStep );
-            TimeAccumulation -= FixedTimeStep;
-            --numSimulationSteps;
-        }
-    }
-
+    DynamicsWorld->stepSimulation( _TimeStep, maxSubSteps, FixedTimeStep );
     bDuringPhysicsUpdate = false;
 
 #ifdef SOFT_BODY_WORLD
