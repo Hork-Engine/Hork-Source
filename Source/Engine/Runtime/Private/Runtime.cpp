@@ -470,11 +470,23 @@ void ARuntime::LoggerMessageCallback( int _Level, const char * _Message )
         {
             int n = MultiByteToWideChar( CP_UTF8, 0, _Message, -1, NULL, 0 );
             if ( 0 != n ) {
-                wchar_t * chars = (wchar_t *)StackAlloc( n * sizeof( wchar_t ) );
+                // Try to alloc on stack
+                if ( n < 4096 ) {
+                    wchar_t * chars = (wchar_t *)StackAlloc( n * sizeof( wchar_t ) );
 
-                MultiByteToWideChar( CP_UTF8, 0, _Message, -1, chars, n );
+                    MultiByteToWideChar( CP_UTF8, 0, _Message, -1, chars, n );
 
-                OutputDebugString( chars );
+                    OutputDebugString( chars );
+                }
+                else {
+                    wchar_t * chars = (wchar_t *)malloc( n * sizeof( wchar_t ) );
+
+                    MultiByteToWideChar( CP_UTF8, 0, _Message, -1, chars, n );
+
+                    OutputDebugString( chars );
+
+                    free( chars );
+                }
             }
         }
         #else
