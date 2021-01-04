@@ -209,17 +209,5 @@ struct TPlane {
     }
 };
 
-namespace Math {
-
-// Plane D = 0
-template< typename T >
-AN_FORCEINLINE TVector3< T > ProjectPointOnPlane( TVector3< T > const & _Point, TVector3< T > const & _Normal ) {
-    const T OneOverLengthSqr = T(1) / _Normal.LengthSqr();
-    const TVector3< T > N = _Normal * OneOverLengthSqr;
-    return _Point - ( Math::Dot( _Normal, _Point ) * OneOverLengthSqr ) * N;
-}
-
-}
-
 using PlaneF = TPlane< float >;
 using PlaneD = TPlane< double >;

@@ -100,6 +100,16 @@ AN_FORCEINLINE TVector3< T > Refract( TVector3< T > const & _IncidentVector, TVe
     return _IncidentVector * _Eta - _Normal * (_Eta * NdotI + sqrt(k));
 }
 
+template< typename T, typename = TStdEnableIf< Math::IsReal<T>() > >
+TVector3< T > ProjectVector( TVector3< T > const & _Vector, TVector3< T > const & _Normal, T _Overbounce ) {
+    return _Vector - _Normal * Dot( _Vector, _Normal ) * _Overbounce;
+}
+
+template< typename T, typename = TStdEnableIf< Math::IsReal<T>() > >
+TVector3< T > ProjectVector( TVector3< T > const & _Vector, TVector3< T > const & _Normal ) {
+    return _Vector - _Normal * Dot( _Vector, _Normal );
+}
+
 template< typename T >
 constexpr TVector2< T > Lerp( TVector2< T > const & _From, TVector2< T > const & _To, T const & _Mix ) {
     return _From + _Mix * (_To - _From);
