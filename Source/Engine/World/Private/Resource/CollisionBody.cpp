@@ -139,7 +139,7 @@ ACollisionConvexHullData::~ACollisionConvexHullData() {
 //    GZoneMemory.Free( Data );
 }
 
-void ACollisionConvexHullData::Initialize( Float3 const * _Vertices, int _VertexCount, unsigned int * _Indices, int _IndexCount ) {
+void ACollisionConvexHullData::Initialize( Float3 const * _Vertices, int _VertexCount, unsigned int const * _Indices, int _IndexCount ) {
     AN_ASSERT( _VertexCount > 0 && _IndexCount > 0 );
 
     Vertices.Resize( _VertexCount );

@@ -204,7 +204,7 @@ class ACollisionConvexHullData : public ABaseObject {
     friend class ACollisionConvexHull;
 
 public:
-    void Initialize( Float3 const * _Vertices, int _VertexCount, unsigned int * _Indices, int _IndexCount );
+    void Initialize( Float3 const * _Vertices, int _VertexCount, unsigned int const * _Indices, int _IndexCount );
 
     Float3 const * GetVertices() const { return Vertices.ToPtr(); }
     int GetVertexCount() const { return Vertices.Size(); }
