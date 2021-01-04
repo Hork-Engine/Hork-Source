@@ -145,7 +145,7 @@ private:
     ASceneComponent * OwnerComponent = nullptr;
     btCollisionObject * CollisionObject = nullptr;
 
-    int CollisionGroup = CM_WORLD;
+    int CollisionGroup = CM_WORLD_STATIC;
     int CollisionMask = CM_ALL;
 
     int JointIndex = 0;

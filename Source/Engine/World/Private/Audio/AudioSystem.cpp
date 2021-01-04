@@ -1578,7 +1578,7 @@ static void UpdateChannel( SAudioChannel * InChannel, float InTimeStep ) {
         return;
     }
 
-    if ( InChannel->LifeSpan > 0 ) {
+    if ( InChannel->LifeSpan != 0 ) {
         InChannel->LifeSpan -= InTimeStep;
 
         if ( InChannel->LifeSpan <= 0 ) {

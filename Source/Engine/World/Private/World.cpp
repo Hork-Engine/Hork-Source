@@ -35,6 +35,7 @@ SOFTWARE.
 #include <World/Public/Components/SkinnedComponent.h>
 #include <World/Public/Components/PointLightComponent.h>
 #include <World/Private/Render/VSD.h>
+#include <GameThread/Public/EngineInstance.h>
 #include <Runtime/Public/Runtime.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
@@ -82,11 +83,6 @@ void AWorld::ResetGameplayTimer()
 void AWorld::SetPhysicsHertz( int _Hertz )
 {
     PhysicsWorld.PhysicsHertz = _Hertz;
-}
-
-void AWorld::SetPhysicsInterpolation( bool _Interpolation )
-{
-    PhysicsWorld.bEnablePhysicsInterpolation = _Interpolation;
 }
 
 void AWorld::SetContactSolverSplitImpulse( bool _SplitImpulse )
@@ -517,7 +513,7 @@ void AWorld::UpdateActorsPostPhysics( float _TimeStep )
         // Update actor life span
         actor->LifeTime += _TimeStep;
 
-        if ( actor->LifeSpan > 0.0f ) {
+        if ( actor->LifeSpan != 0.0f ) {
             actor->LifeSpan -= _TimeStep;
 
             if ( actor->LifeSpan <= 0.0f ) {
@@ -562,7 +558,7 @@ void AWorld::UpdatePhysics( float _TimeStep )
 
     PhysicsWorld.Simulate( _TimeStep );
 
-    E_OnPostPhysicsUpdate.Dispatch();
+    E_OnPostPhysicsUpdate.Dispatch( _TimeStep );
 }
 
 void AWorld::UpdateSkinning()
@@ -605,27 +601,27 @@ void AWorld::Tick( float _TimeStep )
 
 bool AWorld::Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const
 {
-    return VSD_Raycast( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
+    return GEngine->GetVSD()->RaycastTriangles( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 
 bool AWorld::RaycastBounds( TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const
 {
-    return VSD_RaycastBounds( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
+    return GEngine->GetVSD()->RaycastBounds( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 
 bool AWorld::RaycastClosest( SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const
 {
-    return VSD_RaycastClosest( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
+    return GEngine->GetVSD()->RaycastClosest( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 
 bool AWorld::RaycastClosestBounds( SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const
 {
-    return VSD_RaycastClosestBounds( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
+    return GEngine->GetVSD()->RaycastClosestBounds( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 
 void AWorld::QueryVisiblePrimitives( TPodArray< SPrimitiveDef * > & VisPrimitives, TPodArray< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery )
 {
-    VSD_QueryVisiblePrimitives( this, VisPrimitives, VisSurfs, VisPass, InQuery );
+    GEngine->GetVSD()->QueryVisiblePrimitives( this, VisPrimitives, VisSurfs, VisPass, InQuery );
 }
 
 void AWorld::ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter )
@@ -829,7 +825,7 @@ void AWorld::DrawDebug( ADebugRenderer * InRenderer )
         level->DrawDebug( InRenderer );
     }
 
-    VSD_DrawDebug( InRenderer );
+    GEngine->GetVSD()->DrawDebug( InRenderer );
 
     for ( AActor * actor : Actors ) {
         actor->DrawDebug( InRenderer );

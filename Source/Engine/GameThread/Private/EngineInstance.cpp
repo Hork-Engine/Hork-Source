@@ -54,6 +54,7 @@ SOFTWARE.
 
 #include "Console.h"
 #include "ImguiContext.h"
+#include "../../World/Private/Render/VSD.h" // FIXME: Move VSD to other location
 
 #include <Runtime/Public/EntryDecl.h>
 
@@ -83,6 +84,8 @@ void DestroyEngineInstance()
 
 AEngineInstance::AEngineInstance() {
     RetinaScale = Float2( 1.0f );
+
+    Vsd = MakeUnique< AVSD >();
 }
 
 static void PhysModulePrintFunction( const char * _Message ) {
@@ -298,6 +301,8 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     RenderBackend.Reset();
 
     Renderer.Reset();
+
+    Vsd.Reset();
 
     GResourceManager.Deinitialize();
 

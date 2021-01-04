@@ -1198,9 +1198,9 @@ void APhysicalBody::GatherCollisionGeometry( TPodArrayHeap< Float3 > & _Vertices
     {
         Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
 
-        Float3x4 const & worldTransofrm = GetWorldTransformMatrix();
+        Float3x4 const & worldTransform = GetWorldTransformMatrix();
         for ( int i = 0 ; i < numVertices ; i++, pVertices++ ) {
-            *pVertices = worldTransofrm * (*pVertices);
+            *pVertices = worldTransform * (*pVertices);
         }
     }
 }

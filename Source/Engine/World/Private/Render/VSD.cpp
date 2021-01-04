@@ -42,7 +42,6 @@ SOFTWARE.
 #include <World/Public/Render/RenderWorld.h>
 #include <World/Public/World.h>
 #include <World/Public/Level.h>
-#include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/ScopedTimeCheck.h>
 
 ARuntimeVariable vsd_FrustumCullingMT( _CTS( "vsd_FrustumCullingMT" ), _CTS( "1" ) );
@@ -55,165 +54,7 @@ enum EFrustumCullingType {
     CULLING_TYPE_SIMPLE
 };
 
-//
-// Portal stack
-//
-
-#define MAX_PORTAL_STACK 128// 64
-#define MAX_CULL_PLANES 5//4
-
-struct SPortalScissor {
-    float MinX;
-    float MinY;
-    float MaxX;
-    float MaxY;
-};
-
-struct SPortalStack {
-    PlaneF AreaFrustum[ MAX_CULL_PLANES ];
-    int PlanesCount;
-    SPortalLink const * Portal;
-    SPortalScissor Scissor;
-};
-
-static SPortalStack PortalStack[ MAX_PORTAL_STACK ];
-static int PortalStackPos;
-
-//
-// Portal hull
-//
-
-#define MAX_HULL_POINTS 128
-
-struct SPortalHull {
-    int NumPoints;
-    Float3 Points[ MAX_HULL_POINTS ];
-};
-
-//
-// Portal viewer
-//
-
-static Float3 ViewPosition;
-static Float3 ViewRightVec;
-static Float3 ViewUpVec;
-static PlaneF ViewPlane;
-static float  ViewZNear;
-static Float3 ViewCenter;
-static PlaneF * ViewFrustum;
-static int ViewFrustumPlanes;
-static int CachedSignBits[MAX_CULL_PLANES]; // sign bits of ViewFrustum planes
-
-static int VisQueryMarker = 0;
-static int VisQueryMask = 0;
-static int VisibilityMask = 0;
-static ALevel * CurLevel;
-static int NodeViewMark;
-
-//
-// Visibility result
-//
-
-static TPodArray< SPrimitiveDef * > * pVisPrimitives;
-static TPodArray< SSurfaceDef * > * pVisSurfs;
-
-//
-// Portal scissors debug
-//
-
-//#define DEBUG_PORTAL_SCISSORS
-#ifdef DEBUG_PORTAL_SCISSORS
-static TStdVector< SPortalScissor > DebugScissors;
-#endif
-
-//
-// Debugging counters
-//
-
-//#define DEBUG_TRAVERSING_COUNTERS
-
-#ifdef DEBUG_TRAVERSING_COUNTERS
-static int Dbg_SkippedByVisFrame;
-static int Dbg_SkippedByPlaneOffset;
-static int Dbg_CulledSubpartsCount;
-static int Dbg_CulledByDotProduct;
-static int Dbg_CulledByEnvCaptureBounds;
-static int Dbg_ClippedPortals;
-static int Dbg_PassedPortals;
-static int Dbg_StackDeep;
-static int Dbg_CullMiss;
-#endif
-static int Dbg_CulledBySurfaceBounds;
-static int Dbg_CulledByPrimitiveBounds;
-static int Dbg_TotalPrimitiveBounds;
-
-//
-// Culling, SSE, multithreading
-//
-
-struct SCullThreadData {
-    int FirstObject;
-    int NumObjects;
-    PlaneF * JobCullPlanes;
-    int JobCullPlanesCount;
-};
-
-struct SCullJobSubmit {
-    int First;
-    int NumObjects;
-    PlaneF JobCullPlanes[MAX_CULL_PLANES];
-    int JobCullPlanesCount;
-    SCullThreadData ThreadData[AAsyncJobManager::MAX_WORKER_THREADS];
-};
-
-static TPodArray< SCullJobSubmit > CullSubmits;
-static TPodArray< SPrimitiveDef * > BoxPrimitives;
-using AArrayOfBoundingBoxesSSE = TPodArray< BvAxisAlignedBoxSSE, 32, 32, AHeapAllocator >;
-static AArrayOfBoundingBoxesSSE BoundingBoxesSSE;
-static TPodArray< int32_t, 32, 32, AHeapAllocator > CullingResult;
-
-
-//
-// Forward declaration
-//
-
-static void VSD_FlowThroughPortals_r( SVisArea const * InArea );
-static bool VSD_CalcPortalStack( SPortalStack * OutStack, SPortalStack const * InPrevStack, SPortalLink const * InPortal );
-static bool VSD_ClipPolygonFast( Float3 const * InPoints, const int InNumPoints, SPortalHull * Out, PlaneF const & _Plane, const float InEpsilon );
-static SPortalHull * VSD_CalcPortalWinding( SPortalLink const * InPortal, SPortalStack const * InStack );
-static void VSD_CalcPortalScissor( SPortalScissor & OutScissor, SPortalHull const * InHull, SPortalStack const * InStack );
-static void VSD_LevelTraverse_r( int InNodeIndex, int InCullBits );
-AN_INLINE bool VSD_FaceCull( SPrimitiveDef const * InPrimitive );
-AN_INLINE bool VSD_FaceCull( SSurfaceDef const * InSurface );
-static bool VSD_CullNode( PlaneF const InFrustum[MAX_CULL_PLANES], int const InCachedSignBits[MAX_CULL_PLANES], BvAxisAlignedBox const & InBounds, int & InCullBits );
-static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPlanes, const int InCullPlanesCount );
-AN_INLINE bool VSD_CullBoxSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBox const & InBounds );
-AN_INLINE bool VSD_CullSphereSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvSphere const & InBounds );
-static void VSD_CullBoxGeneric( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBoxSSE const * InBounds, const int InNumObjects, int * Result );
-static void VSD_CullBoxSSE( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBoxSSE const * InBounds, const int InNumObjects, int * Result );
-static void VSD_CullBoxAsync( void * InData );
-static void VSD_SubmitCullingJobs( SCullJobSubmit & InSubmit );
-
-
-//
-// Implementation
-//
-
-void VSD_Initialize() {
-
-}
-
-void VSD_Deinitialize() {
-    CullSubmits.Free();
-    BoxPrimitives.Free();
-    BoundingBoxesSSE.Free();
-    CullingResult.Free();
-#ifdef DEBUG_PORTAL_SCISSORS
-    DebugScissors.Free();
-#endif
-}
-
-static void VSD_ProcessLevelVisibility( ALevel * InLevel ) {
+void AVSD::ProcessLevelVisibility( ALevel * InLevel ) {
     CurLevel = InLevel;
 
     ViewFrustum = PortalStack[ 0 ].AreaFrustum;
@@ -227,7 +68,7 @@ static void VSD_ProcessLevelVisibility( ALevel * InLevel ) {
         cullBits |= 1 << i;
     }
 
-    if ( InLevel->Visdata )
+    if ( InLevel->VisibilityMethod == LEVEL_VISIBILITY_PVS )
     {
         // Level has PVS
 
@@ -235,17 +76,21 @@ static void VSD_ProcessLevelVisibility( ALevel * InLevel ) {
 
         NodeViewMark = InLevel->MarkLeafs( leaf );
 
-        VSD_LevelTraverse_r( 0, cullBits );
+        //GLogger.Printf( "NodeViewMark %d\n", NodeViewMark );
+
+        //AN_ASSERT( NodeViewMark != 0 );
+
+        LevelTraverse_r( 0, cullBits );
     }
-    else
+    else if ( InLevel->VisibilityMethod == LEVEL_VISIBILITY_PORTAL )
     {
         SVisArea * area = InLevel->FindArea( ViewPosition );
 
-        VSD_FlowThroughPortals_r( area );
+        FlowThroughPortals_r( area );
     }
 }
 
-void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > & VisPrimitives, TPodArray< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery ) {
+void AVSD::QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > & VisPrimitives, TPodArray< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery ) {
     //int QueryVisiblePrimitivesTime = GRuntime.SysMicroseconds();
 
     ++VisQueryMarker;
@@ -320,14 +165,14 @@ void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > 
     PortalStack[ 0 ].Scissor.MaxY = -y;
 
     for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
-        VSD_ProcessLevelVisibility( level );
+        ProcessLevelVisibility( level );
     }
 
     if ( vsd_FrustumCullingType.GetInteger() == CULLING_TYPE_COMBINED ) {
         CullingResult.ResizeInvalidate( Align( BoundingBoxesSSE.Size(), 4 ) );
 
         for ( SCullJobSubmit & submit : CullSubmits ) {
-            VSD_SubmitCullingJobs( submit );
+            SubmitCullingJobs( submit );
 
             Dbg_TotalPrimitiveBounds += submit.NumObjects;
         }
@@ -387,11 +232,11 @@ void VSD_QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > 
     //GLogger.Printf( "Frustum culling time %d microsec. Culled %d from %d primitives. Submits %d\n", Dbg_FrustumCullingTime, Dbg_CulledByPrimitiveBounds, Dbg_TotalPrimitiveBounds, CullSubmits.Size() );
 }
 
-static void VSD_FlowThroughPortals_r( SVisArea const * InArea ) {
+void AVSD::FlowThroughPortals_r( SVisArea const * InArea ) {
     SPortalStack * prevStack = &PortalStack[ PortalStackPos ];
     SPortalStack * stack = prevStack + 1;
 
-    VSD_CullPrimitives( InArea, prevStack->AreaFrustum, prevStack->PlanesCount );
+    CullPrimitives( InArea, prevStack->AreaFrustum, prevStack->PlanesCount );
 
     if ( PortalStackPos == ( MAX_PORTAL_STACK - 1 ) ) {
         GLogger.Printf( "MAX_PORTAL_STACK hit\n" );
@@ -418,20 +263,20 @@ static void VSD_FlowThroughPortals_r( SVisArea const * InArea ) {
             continue;
         }
 
-        if ( !VSD_CalcPortalStack( stack, prevStack, portal ) ) {
+        if ( !CalcPortalStack( stack, prevStack, portal ) ) {
             continue;
         }
 
         // Mark visited
         portal->Portal->VisMark = VisQueryMarker;
 
-        VSD_FlowThroughPortals_r( portal->ToArea );
+        FlowThroughPortals_r( portal->ToArea );
     }
 
     --PortalStackPos;
 }
 
-static bool VSD_CalcPortalStack( SPortalStack * OutStack, SPortalStack const * InPrevStack, SPortalLink const * InPortal ) {
+bool AVSD::CalcPortalStack( SPortalStack * OutStack, SPortalStack const * InPrevStack, SPortalLink const * InPortal ) {
     const float d = InPortal->Plane.Dist( ViewPosition );
     if ( d <= 0.0f ) {
         #ifdef DEBUG_TRAVERSING_COUNTERS
@@ -457,7 +302,7 @@ static bool VSD_CalcPortalStack( SPortalStack * OutStack, SPortalStack const * I
         //    }
         //}
 
-        SPortalHull * portalWinding = VSD_CalcPortalWinding( InPortal, InPrevStack );
+        SPortalHull * portalWinding = CalcPortalWinding( InPortal, InPrevStack );
 
         if ( portalWinding->NumPoints < 3 ) {
             // Invisible
@@ -467,7 +312,7 @@ static bool VSD_CalcPortalStack( SPortalStack * OutStack, SPortalStack const * I
             return false;
         }
 
-        VSD_CalcPortalScissor( OutStack->Scissor, portalWinding, InPrevStack );
+        CalcPortalScissor( OutStack->Scissor, portalWinding, InPrevStack );
 
         if ( OutStack->Scissor.MinX >= OutStack->Scissor.MaxX || OutStack->Scissor.MinY >= OutStack->Scissor.MaxY ) {
             // invisible
@@ -557,7 +402,7 @@ static bool VSD_CalcPortalStack( SPortalStack * OutStack, SPortalStack const * I
 static float ClipDistances[ MAX_HULL_POINTS ];
 static EPlaneSide ClipSides[ MAX_HULL_POINTS ];
 
-static bool VSD_ClipPolygonFast( Float3 const * InPoints, const int InNumPoints, SPortalHull * Out, PlaneF const & InClipPlane, const float InEpsilon ) {
+bool AVSD::ClipPolygonFast( Float3 const * InPoints, const int InNumPoints, SPortalHull * Out, PlaneF const & InClipPlane, const float InEpsilon ) {
     int front = 0;
     int back = 0;
     int i;
@@ -628,13 +473,13 @@ static bool VSD_ClipPolygonFast( Float3 const * InPoints, const int InNumPoints,
     return true;
 }
 
-static SPortalHull * VSD_CalcPortalWinding( SPortalLink const * InPortal, SPortalStack const * InStack ) {
+AVSD::SPortalHull * AVSD::CalcPortalWinding( SPortalLink const * InPortal, SPortalStack const * InStack ) {
     static SPortalHull PortalHull[ 2 ];
 
     int flip = 0;
 
     // Clip portal hull by view plane
-    if ( !VSD_ClipPolygonFast( InPortal->Hull->Points, InPortal->Hull->NumPoints, &PortalHull[ flip ], ViewPlane, 0.0f ) ) {
+    if ( !ClipPolygonFast( InPortal->Hull->Points, InPortal->Hull->NumPoints, &PortalHull[ flip ], ViewPlane, 0.0f ) ) {
 
         AN_ASSERT( InPortal->Hull->NumPoints <= MAX_HULL_POINTS );
 
@@ -644,7 +489,7 @@ static SPortalHull * VSD_CalcPortalWinding( SPortalLink const * InPortal, SPorta
 
     if ( PortalHull[ flip ].NumPoints >= 3 ) {
         for ( int i = 0; i < InStack->PlanesCount; i++ ) {
-            if ( VSD_ClipPolygonFast( PortalHull[ flip ].Points, PortalHull[ flip ].NumPoints, &PortalHull[ ( flip + 1 ) & 1 ], InStack->AreaFrustum[ i ], 0.0f ) ) {
+            if ( ClipPolygonFast( PortalHull[ flip ].Points, PortalHull[ flip ].NumPoints, &PortalHull[ ( flip + 1 ) & 1 ], InStack->AreaFrustum[ i ], 0.0f ) ) {
                 flip = ( flip + 1 ) & 1;
 
                 if ( PortalHull[ flip ].NumPoints < 3 ) {
@@ -657,7 +502,7 @@ static SPortalHull * VSD_CalcPortalWinding( SPortalLink const * InPortal, SPorta
     return &PortalHull[ flip ];
 }
 
-static void VSD_CalcPortalScissor( SPortalScissor & OutScissor, SPortalHull const * InHull, SPortalStack const * InStack ) {
+void AVSD::CalcPortalScissor( SPortalScissor & OutScissor, SPortalHull const * InHull, SPortalStack const * InStack ) {
     OutScissor.MinX = 99999999.0f;
     OutScissor.MinY = 99999999.0f;
     OutScissor.MaxX = -99999999.0f;
@@ -695,15 +540,54 @@ static void VSD_CalcPortalScissor( SPortalScissor & OutScissor, SPortalHull cons
     OutScissor.MaxY = Math::Min( InStack->Scissor.MaxY, OutScissor.MaxY );
 }
 
-AN_FORCEINLINE bool VSD_FaceCull( SPrimitiveDef const * InPrimitive ) {
+AN_FORCEINLINE bool AVSD::FaceCull( SPrimitiveDef const * InPrimitive ) {
     return InPrimitive->Face.Dist( ViewPosition ) < 0.0f;
 }
 
-AN_FORCEINLINE bool VSD_FaceCull( SSurfaceDef const * InSurface ) {
+AN_FORCEINLINE bool AVSD::FaceCull( SSurfaceDef const * InSurface ) {
     return InSurface->Face.Dist( ViewPosition ) < 0.0f;
 }
 
-static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPlanes, const int InCullPlanesCount )
+AN_INLINE bool VSD_CullBoxSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBox const & InBounds ) {
+    bool inside = true;
+
+    for ( int i = 0 ; i < InCullPlanesCount ; i++ ) {
+
+        PlaneF const * p = &InCullPlanes[i];
+
+        inside &= (Math::Max( InBounds.Mins.X * p->Normal.X, InBounds.Maxs.X * p->Normal.X )
+                    + Math::Max( InBounds.Mins.Y * p->Normal.Y, InBounds.Maxs.Y * p->Normal.Y )
+                    + Math::Max( InBounds.Mins.Z * p->Normal.Z, InBounds.Maxs.Z * p->Normal.Z ) + p->D) > 0.0f;
+    }
+
+    return !inside;
+}
+
+AN_INLINE bool VSD_CullSphereSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvSphere const & InBounds ) {
+#if 0
+    bool cull = false;
+    for ( int i = 0 ; i < InCullPlanesCount ; i++ ) {
+
+        PlaneF const * p = &InCullPlanes[i];
+
+        if ( Math::Dot( p->Normal, InBounds->Center ) + p->D <= -InBounds->Radius ) {
+            cull = true;
+        }
+    }
+    return cull;
+#endif
+
+    bool inside = true;
+    for ( int i = 0 ; i < InCullPlanesCount ; i++ ) {
+
+        PlaneF const * p = &InCullPlanes[i];
+
+        inside &= (Math::Dot( p->Normal, InBounds.Center ) + p->D > -InBounds.Radius);
+    }
+    return !inside;
+}
+
+void AVSD::CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPlanes, const int InCullPlanesCount )
 {
     if ( vsd_FrustumCullingType.GetInteger() != CULLING_TYPE_COMBINED )
     {
@@ -747,7 +631,7 @@ static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPl
             }
 
             // Perform face culling
-            if ( ( surf->Flags & SURF_PLANAR_TWOSIDED_MASK ) == SURF_PLANAR && VSD_FaceCull( surf ) )
+            if ( ( surf->Flags & SURF_PLANAR_TWOSIDED_MASK ) == SURF_PLANAR && FaceCull( surf ) )
             {
                 continue;
             }
@@ -799,7 +683,7 @@ static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPl
         if ( ( primitive->Flags & SURF_PLANAR_TWOSIDED_MASK ) == SURF_PLANAR )
         {
             // Perform face culling
-            if ( VSD_FaceCull( primitive ) )
+            if ( FaceCull( primitive ) )
             {
                 // Face successfully culled
                 primitive->VisMark = VisQueryMarker;
@@ -882,7 +766,7 @@ static void VSD_CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPl
 
         if ( vsd_FrustumCullingType.GetInteger() == CULLING_TYPE_SEPARATE )
         {
-            VSD_SubmitCullingJobs( submit );
+            SubmitCullingJobs( submit );
 
             // Wait when it's done
             GRenderFrontendJobList->Wait();
@@ -930,7 +814,7 @@ static constexpr int CullIndices[ 8 ][ 6 ] = {
         { 3, 1, 2, 0, 4, 5 }
 };
 
-static bool VSD_CullNode( PlaneF const InFrustum[MAX_CULL_PLANES], int const InCachedSignBits[MAX_CULL_PLANES], BvAxisAlignedBox const & InBounds, int & InCullBits ) {
+bool AVSD::CullNode( PlaneF const InFrustum[MAX_CULL_PLANES], int const InCachedSignBits[MAX_CULL_PLANES], BvAxisAlignedBox const & InBounds, int & InCullBits ) {
     Float3 p;
 
     float const * pBounds = InBounds.ToPtr();
@@ -1038,7 +922,7 @@ static bool VSD_CullNode( PlaneF const InFrustum[MAX_CULL_PLANES], int const InC
     return false;
 }
 
-static void VSD_LevelTraverse_r( int InNodeIndex, int InCullBits ) {
+void AVSD::LevelTraverse_r( int InNodeIndex, int InCullBits ) {
     SNodeBase const * node;
 
     while ( 1 ) {
@@ -1051,7 +935,7 @@ static void VSD_LevelTraverse_r( int InNodeIndex, int InCullBits ) {
         if ( node->ViewMark != NodeViewMark )
             return;
 
-        if ( VSD_CullNode( ViewFrustum, CachedSignBits, node->Bounds, InCullBits ) ) {
+        if ( CullNode( ViewFrustum, CachedSignBits, node->Bounds, InCullBits ) ) {
             //TotalCulled++;
             return;
         }
@@ -1067,56 +951,17 @@ static void VSD_LevelTraverse_r( int InNodeIndex, int InCullBits ) {
             break;
         }
 
-        VSD_LevelTraverse_r( static_cast< SBinarySpaceNode const * >( node )->ChildrenIdx[0], InCullBits );
+        LevelTraverse_r( static_cast< SBinarySpaceNode const * >( node )->ChildrenIdx[0], InCullBits );
 
         InNodeIndex = static_cast< SBinarySpaceNode const * >( node )->ChildrenIdx[1];
     }
 
     SBinarySpaceLeaf const * pleaf = static_cast< SBinarySpaceLeaf const * >( node );
 
-    VSD_CullPrimitives( pleaf->Area, ViewFrustum, ViewFrustumPlanes );
+    CullPrimitives( pleaf->Area, ViewFrustum, ViewFrustumPlanes );
 }
 
-AN_INLINE bool VSD_CullBoxSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBox const & InBounds ) {
-    bool inside = true;
-
-    for ( int i = 0 ; i < InCullPlanesCount ; i++ ) {
-
-        PlaneF const * p = &InCullPlanes[i];
-
-        inside &= (Math::Max( InBounds.Mins.X * p->Normal.X, InBounds.Maxs.X * p->Normal.X )
-                 + Math::Max( InBounds.Mins.Y * p->Normal.Y, InBounds.Maxs.Y * p->Normal.Y )
-                 + Math::Max( InBounds.Mins.Z * p->Normal.Z, InBounds.Maxs.Z * p->Normal.Z ) + p->D) > 0.0f;
-    }
-
-    return !inside;
-}
-
-AN_INLINE bool VSD_CullSphereSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvSphere const & InBounds ) {
-#if 0
-    bool cull = false;
-    for ( int i = 0 ; i < InCullPlanesCount ; i++ ) {
-
-        PlaneF const * p = &InCullPlanes[i];
-
-        if ( Math::Dot( p->Normal, InBounds->Center ) + p->D <= -InBounds->Radius ) {
-            cull = true;
-        }
-    }
-    return cull;
-#endif
-
-    bool inside = true;
-    for ( int i = 0 ; i < InCullPlanesCount ; i++ ) {
-
-        PlaneF const * p = &InCullPlanes[i];
-
-        inside &= ( Math::Dot( p->Normal, InBounds.Center ) + p->D > -InBounds.Radius );
-    }
-    return !inside;
-}
-
-static void VSD_CullBoxGeneric( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBoxSSE const * InBounds, const int InNumObjects, int * Result ) {
+void AVSD::CullBoxGeneric( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBoxSSE const * InBounds, const int InNumObjects, int * Result ) {
     for ( BvAxisAlignedBoxSSE const * Last = InBounds + InNumObjects ; InBounds < Last ; InBounds++ ) {
 
         bool inside = true;
@@ -1134,7 +979,7 @@ static void VSD_CullBoxGeneric( PlaneF const * InCullPlanes, const int InCullPla
     }
 }
 
-static void VSD_CullBoxSSE( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBoxSSE const * InBounds, const int InNumObjects, int * Result ) {
+void AVSD::CullBoxSSE( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBoxSSE const * InBounds, const int InNumObjects, int * Result ) {
     const float * pBoundingBoxData = reinterpret_cast< const float * >(&InBounds->Mins.X);
     int * pCullingResult = &Result[0];
     int i, j;
@@ -1217,19 +1062,17 @@ static void VSD_CullBoxSSE( PlaneF const * InCullPlanes, const int InCullPlanesC
     }
 }
 
-static void VSD_CullBoxAsync( void * InData ) {
+void AVSD::CullBoxAsync( void * InData ) {
     SCullThreadData & threadData = *(SCullThreadData *)InData;
-    BvAxisAlignedBoxSSE const * boundingBoxes = BoundingBoxesSSE.ToPtr() + threadData.FirstObject;
-    int * cullResult = CullingResult.ToPtr() + threadData.FirstObject;
 
     if ( vsd_FrustumCullingSSE ) {
-        VSD_CullBoxSSE( threadData.JobCullPlanes, threadData.JobCullPlanesCount, boundingBoxes, threadData.NumObjects, cullResult );
+        CullBoxSSE( threadData.JobCullPlanes, threadData.JobCullPlanesCount, threadData.BoundingBoxes, threadData.NumObjects, threadData.CullResult );
     } else {
-        VSD_CullBoxGeneric( threadData.JobCullPlanes, threadData.JobCullPlanesCount, boundingBoxes, threadData.NumObjects, cullResult );
+        CullBoxGeneric( threadData.JobCullPlanes, threadData.JobCullPlanesCount, threadData.BoundingBoxes, threadData.NumObjects, threadData.CullResult );
     }
 }
 
-static void VSD_SubmitCullingJobs( SCullJobSubmit & InSubmit ) {
+void AVSD::SubmitCullingJobs( SCullJobSubmit & InSubmit ) {
     int i, firstObject;
 
     const int threasCount = vsd_FrustumCullingMT ? GAsyncJobManager.GetNumWorkerThreads() : 1;
@@ -1250,30 +1093,31 @@ static void VSD_SubmitCullingJobs( SCullJobSubmit & InSubmit ) {
         // Multithreading is disabled or too few objects
 
         if ( vsd_FrustumCullingSSE ) {
-            VSD_CullBoxSSE( InSubmit.JobCullPlanes,
+            CullBoxSSE( InSubmit.JobCullPlanes,
+                        InSubmit.JobCullPlanesCount,
+                        BoundingBoxesSSE.ToPtr() + InSubmit.First,
+                        Align( InSubmit.NumObjects, 4 ),
+                        CullingResult.ToPtr() + InSubmit.First );
+        } else {
+            CullBoxGeneric( InSubmit.JobCullPlanes,
                             InSubmit.JobCullPlanesCount,
                             BoundingBoxesSSE.ToPtr() + InSubmit.First,
-                            Align( InSubmit.NumObjects, 4 ),
+                            InSubmit.NumObjects,
                             CullingResult.ToPtr() + InSubmit.First );
-        } else {
-            VSD_CullBoxGeneric( InSubmit.JobCullPlanes,
-                                InSubmit.JobCullPlanesCount,
-                                BoundingBoxesSSE.ToPtr() + InSubmit.First,
-                                InSubmit.NumObjects,
-                                CullingResult.ToPtr() + InSubmit.First );
         }
         return;
     }
 
     // Configure jobs
     for ( i = 0, firstObject = 0 ; i < threasCount ; i++, firstObject += cullObjectsPerThread ) {
-
-        InSubmit.ThreadData[i].FirstObject = InSubmit.First + firstObject;
+        int first = InSubmit.First + firstObject;
+        InSubmit.ThreadData[i].BoundingBoxes = BoundingBoxesSSE.ToPtr() + first;
+        InSubmit.ThreadData[i].CullResult = CullingResult.ToPtr() + first;
         InSubmit.ThreadData[i].NumObjects = cullObjectsPerThread;
         InSubmit.ThreadData[i].JobCullPlanes = InSubmit.JobCullPlanes;
         InSubmit.ThreadData[i].JobCullPlanesCount = InSubmit.JobCullPlanesCount;
 
-        GRenderFrontendJobList->AddJob( VSD_CullBoxAsync, &InSubmit.ThreadData[i] );
+        GRenderFrontendJobList->AddJob( CullBoxAsync, &InSubmit.ThreadData[i] );
     }
 
     // Do jobs
@@ -1283,89 +1127,20 @@ static void VSD_SubmitCullingJobs( SCullJobSubmit & InSubmit ) {
     const int Residual = InSubmit.NumObjects - firstObject;
     if ( Residual > 0 ) {
         if ( vsd_FrustumCullingSSE ) {
-            VSD_CullBoxSSE( InSubmit.JobCullPlanes,
+            CullBoxSSE( InSubmit.JobCullPlanes,
+                        InSubmit.JobCullPlanesCount,
+                        BoundingBoxesSSE.ToPtr() + InSubmit.First + firstObject,
+                        Align( Residual, 4 ),
+                        CullingResult.ToPtr() + InSubmit.First + firstObject );
+        } else {
+            CullBoxGeneric( InSubmit.JobCullPlanes,
                             InSubmit.JobCullPlanesCount,
                             BoundingBoxesSSE.ToPtr() + InSubmit.First + firstObject,
-                            Align( Residual, 4 ),
+                            Residual,
                             CullingResult.ToPtr() + InSubmit.First + firstObject );
-        } else {
-            VSD_CullBoxGeneric( InSubmit.JobCullPlanes,
-                                InSubmit.JobCullPlanesCount,
-                                BoundingBoxesSSE.ToPtr() + InSubmit.First + firstObject,
-                                Residual,
-                                CullingResult.ToPtr() + InSubmit.First + firstObject );
         }
     }
 }
-
-
-
-//
-// Raycasting
-//
-
-//#define CLOSE_ENOUGH_EARLY_OUT
-
-enum EHitProxyType
-{
-    HIT_PROXY_TYPE_UNKNOWN,
-    HIT_PROXY_TYPE_PRIMITIVE,
-    HIT_PROXY_TYPE_SURFACE
-};
-
-struct SRaycast
-{
-    Float3 RayStart;
-    Float3 RayEnd;
-    Float3 RayDir;
-    Float3 InvRayDir;
-    float RayLength;
-    float HitDistanceMin;
-    float HitDistanceMax; // only for bounds test
-
-    // For closest raycast
-    EHitProxyType HitProxyType;
-    union
-    {
-        SPrimitiveDef * HitPrimitive;
-        SSurfaceDef * HitSurface;
-    };
-    Float3 HitLocation;
-    Float2 HitUV;
-    Float3 HitNormal;
-    SMeshVertex const * pVertices;
-    SMeshVertexUV const * pLightmapVerts;
-    int LightmapBlock;
-    ALevel const * LightingLevel;
-    unsigned int Indices[3];
-    AMaterialInstance * Material;
-    int NumHits; // For debug
-
-    bool bClosest;
-};
-
-static SRaycast Raycast;
-static SWorldRaycastResult * pRaycastResult;
-static TPodArray< SBoxHitResult > * pBoundsRaycastResult;
-static const SWorldRaycastFilter DefaultRaycastFilter;
-
-//
-// Forward declaration
-//
-AN_INLINE bool RayIntersectTriangleFast( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, float & _U, float & _V );
-static void VSD_RaycastSurface( SSurfaceDef * Self );
-static void VSD_RaycastPrimitive( SPrimitiveDef * Self );
-static void VSD_RaycastArea( SVisArea * InArea );
-static void VSD_RaycastPrimitiveBounds( SVisArea * InArea );
-static void VSD_LevelRaycast_r( int InNodeIndex );
-static bool VSD_LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Float3 const & InRayEnd );
-static void VSD_LevelRaycastBounds_r( int InNodeIndex );
-static bool VSD_LevelRaycastBounds2_r( int InNodeIndex, Float3 const & InRayStart, Float3 const & InRayEnd );
-static void VSD_LevelRaycastPortals_r( SVisArea * InArea );
-static void VSD_LevelRaycastBoundsPortals_r( SVisArea * InArea );
-static void VSD_ProcessLevelRaycast( ALevel * InLevel );
-static void VSD_ProcessLevelRaycastBounds( ALevel * InLevel );
-
 
 AN_INLINE bool RayIntersectTriangleFast( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _P0, Float3 const & _P1, Float3 const & _P2, float & _U, float & _V ) {
     const Float3 e1 = _P1 - _P0;
@@ -1403,7 +1178,7 @@ AN_INLINE bool RayIntersectTriangleFast( Float3 const & _RayStart, Float3 const 
     return true;
 }
 
-static void VSD_RaycastSurface( SSurfaceDef * Self )
+void AVSD::RaycastSurface( SSurfaceDef * Self )
 {
     float d, u, v;
     float boxMin, boxMax;
@@ -1635,7 +1410,7 @@ static void VSD_RaycastSurface( SSurfaceDef * Self )
     }
 }
 
-static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
+void AVSD::RaycastPrimitive( SPrimitiveDef * Self )
 {
     // FIXME: What about two sided primitives? Use TwoSided flag directly from material or from primitive?
 
@@ -1706,7 +1481,7 @@ static void VSD_RaycastPrimitive( SPrimitiveDef * Self )
     }
 }
 
-static void VSD_RaycastArea( SVisArea * InArea )
+void AVSD::RaycastArea( SVisArea * InArea )
 {
     float boxMin, boxMax;
 
@@ -1751,7 +1526,7 @@ static void VSD_RaycastArea( SVisArea * InArea )
                 continue;
             }
 
-            VSD_RaycastSurface( surf );
+            RaycastSurface( surf );
 
 #ifdef CLOSE_ENOUGH_EARLY_OUT
             // hit is close enough to stop ray casting?
@@ -1790,7 +1565,7 @@ static void VSD_RaycastArea( SVisArea * InArea )
         if ( ( primitive->Flags & SURF_PLANAR_TWOSIDED_MASK ) == SURF_PLANAR )
         {
             // Perform face culling
-            if ( VSD_FaceCull( primitive ) )
+            if ( FaceCull( primitive ) )
             {
                 // Face successfully culled
                 primitive->VisMark = VisQueryMarker;
@@ -1833,7 +1608,7 @@ static void VSD_RaycastArea( SVisArea * InArea )
         // Mark primitive raycast processed
         primitive->VisMark = VisQueryMarker;
 
-        VSD_RaycastPrimitive( primitive );
+        RaycastPrimitive( primitive );
 
 #ifdef CLOSE_ENOUGH_EARLY_OUT
         // hit is close enough to stop ray casting?
@@ -1844,7 +1619,7 @@ static void VSD_RaycastArea( SVisArea * InArea )
     }
 }
 
-static void VSD_RaycastPrimitiveBounds( SVisArea * InArea )
+void AVSD::RaycastPrimitiveBounds( SVisArea * InArea )
 {
     float boxMin, boxMax;
 
@@ -2026,7 +1801,7 @@ static void VSD_RaycastPrimitiveBounds( SVisArea * InArea )
 }
 
 #if 0
-static void VSD_LevelRaycast_r( int InNodeIndex ) {
+void AVSD::LevelRaycast_r( int InNodeIndex ) {
     SNodeBase const * node;
     float boxMin, boxMax;
 
@@ -2056,7 +1831,7 @@ static void VSD_LevelRaycast_r( int InNodeIndex ) {
 
         SBinarySpaceNode const * n = static_cast< SBinarySpaceNode const * >( node );
 
-        VSD_LevelRaycast_r( n->ChildrenIdx[0] );
+        LevelRaycast_r( n->ChildrenIdx[0] );
 
 #ifdef CLOSE_ENOUGH_EARLY_OUT
         // hit is close enough to stop ray casting?
@@ -2070,10 +1845,10 @@ static void VSD_LevelRaycast_r( int InNodeIndex ) {
 
     SBinarySpaceLeaf const * pleaf = static_cast< SBinarySpaceLeaf const * >( node );
 
-    VSD_RaycastArea( pleaf->Area );
+    RaycastArea( pleaf->Area );
 }
 #else
-static bool VSD_LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Float3 const & InRayEnd ) {
+bool AVSD::LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Float3 const & InRayEnd ) {
 
     if ( InNodeIndex < 0 ) {
 
@@ -2091,7 +1866,7 @@ static bool VSD_LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Flo
         }
 #endif
 
-        VSD_RaycastArea( leaf->Area );
+        RaycastArea( leaf->Area );
 
 #if 0
         if ( Raycast.RayLength > Raycast.HitDistanceMin ) {
@@ -2137,7 +1912,7 @@ static bool VSD_LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Flo
             return false;
         }
 
-        return VSD_LevelRaycast2_r( front, InRayStart, InRayEnd );
+        return LevelRaycast2_r( front, InRayStart, InRayEnd );
     }
 
     // Calc intersection point
@@ -2157,7 +1932,7 @@ static bool VSD_LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Flo
     Float3 mid = InRayStart + ( InRayEnd - InRayStart ) * hitFraction;
 
     // Traverse front side first
-    if ( front != 0 && VSD_LevelRaycast2_r( front, InRayStart, mid ) )
+    if ( front != 0 && LevelRaycast2_r( front, InRayStart, mid ) )
     {
         // Found closest ray intersection
         return true;
@@ -2165,12 +1940,12 @@ static bool VSD_LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Flo
 
     // Traverse back side
     int back = node->ChildrenIdx[ side ^ 1 ];
-    return back != 0 && VSD_LevelRaycast2_r( back, mid, InRayEnd );
+    return back != 0 && LevelRaycast2_r( back, mid, InRayEnd );
 }
 #endif
 
 #if 0
-static void VSD_LevelRaycastBounds_r( int InNodeIndex ) {
+void AVSD::LevelRaycastBounds_r( int InNodeIndex ) {
     SNodeBase const * node;
     float boxMin, boxMax;
 
@@ -2200,7 +1975,7 @@ static void VSD_LevelRaycastBounds_r( int InNodeIndex ) {
 
         SBinarySpaceNode const * n = static_cast< SBinarySpaceNode const * >( node );
 
-        VSD_LevelRaycastBounds_r( n->ChildrenIdx[0] );
+        LevelRaycastBounds_r( n->ChildrenIdx[0] );
 
 #ifdef CLOSE_ENOUGH_EARLY_OUT
         // hit is close enough to stop ray casting?
@@ -2214,10 +1989,10 @@ static void VSD_LevelRaycastBounds_r( int InNodeIndex ) {
 
     SBinarySpaceLeaf const * pleaf = static_cast< SBinarySpaceLeaf const * >( node );
 
-    VSD_RaycastPrimitiveBounds( pleaf->Area );
+    RaycastPrimitiveBounds( pleaf->Area );
 }
 #else
-static bool VSD_LevelRaycastBounds2_r( int InNodeIndex, Float3 const & InRayStart, Float3 const & InRayEnd ) {
+bool AVSD::LevelRaycastBounds2_r( int InNodeIndex, Float3 const & InRayStart, Float3 const & InRayEnd ) {
 
     if ( InNodeIndex < 0 ) {
 
@@ -2235,7 +2010,7 @@ static bool VSD_LevelRaycastBounds2_r( int InNodeIndex, Float3 const & InRayStar
         }
 #endif
 
-        VSD_RaycastPrimitiveBounds( leaf->Area );
+        RaycastPrimitiveBounds( leaf->Area );
 
         if ( Raycast.RayLength > Raycast.HitDistanceMin ) {
         //if ( d >= Raycast.HitDistanceMin ) {
@@ -2279,7 +2054,7 @@ static bool VSD_LevelRaycastBounds2_r( int InNodeIndex, Float3 const & InRayStar
             return false;
         }
 
-        return VSD_LevelRaycastBounds2_r( front, InRayStart, InRayEnd );
+        return LevelRaycastBounds2_r( front, InRayStart, InRayEnd );
     }
 
     // Calc intersection point
@@ -2299,7 +2074,7 @@ static bool VSD_LevelRaycastBounds2_r( int InNodeIndex, Float3 const & InRayStar
     Float3 mid = InRayStart + ( InRayEnd - InRayStart ) * hitFraction;
 
     // Traverse front side first
-    if ( front != 0 && VSD_LevelRaycastBounds2_r( front, InRayStart, mid ) )
+    if ( front != 0 && LevelRaycastBounds2_r( front, InRayStart, mid ) )
     {
         // Found closest ray intersection
         return true;
@@ -2307,13 +2082,13 @@ static bool VSD_LevelRaycastBounds2_r( int InNodeIndex, Float3 const & InRayStar
 
     // Traverse back side
     int back = node->ChildrenIdx[ side ^ 1 ];
-    return back != 0 && VSD_LevelRaycastBounds2_r( back, mid, InRayEnd );
+    return back != 0 && LevelRaycastBounds2_r( back, mid, InRayEnd );
 }
 #endif
 
-static void VSD_LevelRaycastPortals_r( SVisArea * InArea ) {
+void AVSD::LevelRaycastPortals_r( SVisArea * InArea ) {
 
-    VSD_RaycastArea( InArea );
+    RaycastArea( InArea );
 
     for ( SPortalLink const * portal = InArea->PortalList; portal; portal = portal->Next ) {
 
@@ -2369,13 +2144,13 @@ static void VSD_LevelRaycastPortals_r( SVisArea * InArea ) {
             continue;
         }
 
-        VSD_LevelRaycastPortals_r( portal->ToArea );
+        LevelRaycastPortals_r( portal->ToArea );
     }
 }
 
-static void VSD_LevelRaycastBoundsPortals_r( SVisArea * InArea ) {
+void AVSD::LevelRaycastBoundsPortals_r( SVisArea * InArea ) {
 
-    VSD_RaycastPrimitiveBounds( InArea );
+    RaycastPrimitiveBounds( InArea );
 
     for ( SPortalLink const * portal = InArea->PortalList; portal; portal = portal->Next ) {
 
@@ -2432,16 +2207,16 @@ static void VSD_LevelRaycastBoundsPortals_r( SVisArea * InArea ) {
             continue;
         }
 
-        VSD_LevelRaycastBoundsPortals_r( portal->ToArea );
+        LevelRaycastBoundsPortals_r( portal->ToArea );
     }
 }
 
-static void VSD_ProcessLevelRaycast( ALevel * InLevel ) {
+void AVSD::ProcessLevelRaycast( ALevel * InLevel ) {
     CurLevel = InLevel;
 
     // TODO: check level bounds (ray/aabb overlap)?
 
-    if ( InLevel->Visdata )
+    if ( InLevel->VisibilityMethod == LEVEL_VISIBILITY_PVS )
     {
         // Level has precomputed visibility
 
@@ -2450,28 +2225,28 @@ static void VSD_ProcessLevelRaycast( ALevel * InLevel ) {
 
         NodeViewMark = InLevel->MarkLeafs( leaf );
 
-        VSD_LevelRaycast_r( 0 );
+        LevelRaycast_r( 0 );
 #else
-        VSD_LevelRaycast2_r( 0, Raycast.RayStart, Raycast.RayEnd );
+        LevelRaycast2_r( 0, Raycast.RayStart, Raycast.RayEnd );
 
 
         //InLevel-
 #endif
     }
-    else
+    else if ( InLevel->VisibilityMethod == LEVEL_VISIBILITY_PORTAL )
     {
         SVisArea * area = InLevel->FindArea( Raycast.RayStart );
 
-        VSD_LevelRaycastPortals_r( area );
+        LevelRaycastPortals_r( area );
     }
 }
 
-static void VSD_ProcessLevelRaycastBounds( ALevel * InLevel ) {
+void AVSD::ProcessLevelRaycastBounds( ALevel * InLevel ) {
     CurLevel = InLevel;
 
     // TODO: check level bounds (ray/aabb overlap)?
 
-    if ( InLevel->Visdata )
+    if ( InLevel->VisibilityMethod == LEVEL_VISIBILITY_PVS )
     {
         // Level has precomputed visibility
 
@@ -2480,20 +2255,20 @@ static void VSD_ProcessLevelRaycastBounds( ALevel * InLevel ) {
 
         NodeViewMark = InLevel->MarkLeafs( leaf );
 
-        VSD_LevelRaycastBounds_r( 0 );
+        LevelRaycastBounds_r( 0 );
 #else
-        VSD_LevelRaycastBounds2_r( 0, Raycast.RayStart, Raycast.RayEnd );
+        LevelRaycastBounds2_r( 0, Raycast.RayStart, Raycast.RayEnd );
 #endif
     }
-    else
+    else if ( InLevel->VisibilityMethod == LEVEL_VISIBILITY_PORTAL )
     {
         SVisArea * area = InLevel->FindArea( Raycast.RayStart );
 
-        VSD_LevelRaycastBoundsPortals_r( area );
+        LevelRaycastBoundsPortals_r( area );
     }
 }
 
-bool VSD_Raycast( AWorld * InWorld, SWorldRaycastResult & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter ) {
+bool AVSD::RaycastTriangles( AWorld * InWorld, SWorldRaycastResult & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter ) {
     ++VisQueryMarker;
 
     InFilter = InFilter ? InFilter : &DefaultRaycastFilter;
@@ -2527,7 +2302,7 @@ bool VSD_Raycast( AWorld * InWorld, SWorldRaycastResult & Result, Float3 const &
     ViewPosition = Raycast.RayStart;
 
     for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
-        VSD_ProcessLevelRaycast( level );
+        ProcessLevelRaycast( level );
     }
 
     if ( Result.Primitives.IsEmpty() ) {
@@ -2541,7 +2316,7 @@ bool VSD_Raycast( AWorld * InWorld, SWorldRaycastResult & Result, Float3 const &
     return true;
 }
 
-bool VSD_RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter ) {
+bool AVSD::RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter ) {
     ++VisQueryMarker;
 
     InFilter = InFilter ? InFilter : &DefaultRaycastFilter;
@@ -2579,7 +2354,7 @@ bool VSD_RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result, 
     ViewPosition = Raycast.RayStart;
 
     for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
-        VSD_ProcessLevelRaycast( level );
+        ProcessLevelRaycast( level );
 
 #ifdef CLOSE_ENOUGH_EARLY_OUT
         // hit is close enough to stop ray casting?
@@ -2664,7 +2439,7 @@ bool VSD_RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result, 
     return true;
 }
 
-bool VSD_RaycastBounds( AWorld * InWorld, TPodArray< SBoxHitResult > & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter ) {
+bool AVSD::RaycastBounds( AWorld * InWorld, TPodArray< SBoxHitResult > & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter ) {
     ++VisQueryMarker;
 
     InFilter = InFilter ? InFilter : &DefaultRaycastFilter;
@@ -2695,7 +2470,7 @@ bool VSD_RaycastBounds( AWorld * InWorld, TPodArray< SBoxHitResult > & Result, F
     Raycast.bClosest = false;
 
     for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
-        VSD_ProcessLevelRaycastBounds( level );
+        ProcessLevelRaycastBounds( level );
     }
 
     if ( Result.IsEmpty() ) {
@@ -2715,7 +2490,7 @@ bool VSD_RaycastBounds( AWorld * InWorld, TPodArray< SBoxHitResult > & Result, F
     return true;
 }
 
-bool VSD_RaycastClosestBounds( AWorld * InWorld, SBoxHitResult & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter ) {
+bool AVSD::RaycastClosestBounds( AWorld * InWorld, SBoxHitResult & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter ) {
     ++VisQueryMarker;
 
     InFilter = InFilter ? InFilter : &DefaultRaycastFilter;
@@ -2746,7 +2521,7 @@ bool VSD_RaycastClosestBounds( AWorld * InWorld, SBoxHitResult & Result, Float3 
     Raycast.bClosest = true;
 
     for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
-        VSD_ProcessLevelRaycastBounds( level );
+        ProcessLevelRaycastBounds( level );
 
 #ifdef CLOSE_ENOUGH_EARLY_OUT
         // hit is close enough to stop ray casting?
@@ -2776,7 +2551,7 @@ bool VSD_RaycastClosestBounds( AWorld * InWorld, SBoxHitResult & Result, Float3 
     return true;
 }
 
-void VSD_DrawDebug( ADebugRenderer * InRenderer ) {
+void AVSD::DrawDebug( ADebugRenderer * InRenderer ) {
 #ifdef DEBUG_PORTAL_SCISSORS
     InRenderer->SetDepthTest( false );
     InRenderer->SetColor( AColor4( 0, 1, 0 ) );

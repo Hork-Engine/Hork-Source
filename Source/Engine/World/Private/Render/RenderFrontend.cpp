@@ -38,6 +38,7 @@ SOFTWARE.
 #include <World/Public/Components/TerrainComponent.h>
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/Widgets/WDesktop.h>
+#include <GameThread/Public/EngineInstance.h>
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/ScopedTimeCheck.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
@@ -60,8 +61,6 @@ static constexpr int TerrainTileSize = 256;//32;//256;
 
 ARenderFrontend::ARenderFrontend()
 {
-    VSD_Initialize();
-
     TerrainMesh = MakeRef< ATerrainMesh >( TerrainTileSize );
 
     PhotometricProfiles = NewObject< ATexture >();
@@ -70,7 +69,6 @@ ARenderFrontend::ARenderFrontend()
 
 ARenderFrontend::~ARenderFrontend()
 {
-    VSD_Deinitialize();
 }
 
 struct SInstanceSortFunction {
@@ -630,7 +628,7 @@ void ARenderFrontend::QueryVisiblePrimitives( ARenderWorld * InWorld ) {
     query.VisibilityMask = RenderDef.VisibilityMask;
     query.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;// | VSD_QUERY_MASK_SHADOW_CAST;
 
-    VSD_QueryVisiblePrimitives( InWorld->GetOwnerWorld(), VisPrimitives, VisSurfaces, &VisPass, query );
+    GEngine->GetVSD()->QueryVisiblePrimitives( InWorld->GetOwnerWorld(), VisPrimitives, VisSurfaces, &VisPass, query );
 }
 
 void ARenderFrontend::QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis,
@@ -649,7 +647,7 @@ void ARenderFrontend::QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const
     query.ViewUpVec = LightBasis[1];
     query.VisibilityMask = RenderDef.VisibilityMask;
     query.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_SHADOW_CAST;
-#if 1
+#if 0
 #if 0
     Float3 clipBox[8] =
     {
@@ -726,7 +724,7 @@ void ARenderFrontend::QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const
     DebugDraw.DrawConvexPoly( v, 4, false );
 #endif
 #endif
-    VSD_QueryVisiblePrimitives( InWorld->GetOwnerWorld(), Primitives, Surfaces, nullptr, query );
+    GEngine->GetVSD()->QueryVisiblePrimitives( InWorld->GetOwnerWorld(), Primitives, Surfaces, nullptr, query );
 }
 
 void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
@@ -1806,12 +1804,14 @@ void ARenderFrontend::AddShadowmapSurfaces( SLightShadowmap * ShadowMap, SSurfac
         SMeshVertex const * srcVerts = model->Vertices.ToPtr() + surfDef->FirstVertex;
         unsigned int const * srcIndices = model->Indices.ToPtr() + surfDef->FirstIndex;
 
+#if 0
         DebugDraw.SetDepthTest( false );
         DebugDraw.SetColor( AColor4( 1, 1, 0, 1 ) );
         DebugDraw.DrawTriangleSoupWireframe( &srcVerts->Position, sizeof( SMeshVertex ),
                                              srcIndices, surfDef->NumIndices );
         //DebugDraw.SetColor( AColor4( 0, 1, 0, 1 ) );
         //DebugDraw.DrawAABB( surfDef->Bounds );
+#endif
 
         // NOTE: Here we can perform CPU transformation for surfaces (modify texCoord, color, or vertex position)
 
@@ -2002,9 +2002,11 @@ void ARenderFrontend::AddLightShadowmap( AAnalyticLightComponent * Light, float 
                     break;
                 }
 
+#if 0
                 DebugDraw.SetDepthTest( false );
                 DebugDraw.SetColor( AColor4( 0, 1, 0, 1 ) );
                 DebugDraw.DrawAABB( drawable->GetWorldBounds() );
+#endif
 
                 drawable->CascadeMask = 0;
             }

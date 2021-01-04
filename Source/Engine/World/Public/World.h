@@ -288,7 +288,7 @@ public:
     using AOnActorSpawned = TEvent< AActor * >;
     AOnActorSpawned E_OnActorSpawned;
 
-    using AOnPostPhysicsUpdate = TEvent<>;
+    using AOnPostPhysicsUpdate = TEvent< float >;
     AOnPostPhysicsUpdate E_OnPostPhysicsUpdate;
 
     /** Delegate to prepare for rendering */
@@ -398,9 +398,6 @@ public:
 
     /** Physics simulation refresh rate */
     void SetPhysicsHertz( int _Hertz );
-
-    /** Enable interpolation during physics simulation */
-    void SetPhysicsInterpolation( bool _Interpolation );
 
     /** Contact solver split impulse. Disabled by default for performance */
     void SetContactSolverSplitImpulse( bool _SplitImpulse );

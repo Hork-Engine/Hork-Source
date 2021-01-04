@@ -32,9 +32,6 @@ SOFTWARE.
 
 #include <World/Public/Base/DebugRenderer.h>
 
-class AAnalyticLightComponent;
-class AIBLComponent;
-
 enum EItemType
 {
     ITEM_TYPE_LIGHT,

@@ -490,6 +490,12 @@ enum ELightmapFormat
     LIGHTMAP_BGR_HALF
 };
 
+enum ELevelVisibilityMethod
+{
+    LEVEL_VISIBILITY_PVS,
+    LEVEL_VISIBILITY_PORTAL
+};
+
 
 /**
 
@@ -522,6 +528,9 @@ public:
 
     /** Level outdoor area */
     SVisArea OutdoorArea;
+
+    /** Visibility method */
+    ELevelVisibilityMethod VisibilityMethod = LEVEL_VISIBILITY_PORTAL;
 
     /** Lightmap pixel format */
     ELightmapFormat LightmapFormat = LIGHTMAP_GRAYSCALED_HALF;

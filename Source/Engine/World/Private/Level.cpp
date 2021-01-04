@@ -384,11 +384,16 @@ byte const * ALevel::LeafPVS( SBinarySpaceLeaf const * InLeaf ) {
 }
 
 int ALevel::MarkLeafs( int InViewLeaf ) {
+    if ( VisibilityMethod != LEVEL_VISIBILITY_PVS ) {
+        GLogger.Printf( "ALevel::MarkLeafs: expect LEVEL_VISIBILITY_PVS\n" );
+        return ViewMark;
+    }
+
     if ( InViewLeaf < 0 ) {
         return ViewMark;
     }
 
-    SBinarySpaceLeaf * pLeaf = &Leafs[ InViewLeaf ];
+    SBinarySpaceLeaf * pLeaf = &Leafs[InViewLeaf];
 
     if ( ViewCluster == pLeaf->PVSCluster ) {
         return ViewMark;
@@ -425,12 +430,12 @@ int ALevel::MarkLeafs( int InViewLeaf ) {
     else
     {
         // Mark all
-        int cluster;
+        //int cluster;
         for ( SBinarySpaceLeaf & leaf : Leafs ) {
-            cluster = leaf.PVSCluster;
-            if ( cluster < 0 || cluster >= PVSClustersCount ) {
-                continue;
-            }
+            //cluster = leaf.PVSCluster;
+            //if ( cluster < 0 || cluster >= PVSClustersCount ) {
+            //    continue;
+            //}
 
             SNodeBase * parent = &leaf;
             do {
