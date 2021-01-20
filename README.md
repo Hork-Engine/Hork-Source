@@ -155,6 +155,7 @@ PBR (physically based).
 * lwo2 (public domain?)
 * miniaudio (public domain or MIT-0)
 * miniz (public domain)
+* mufft (MIT license)
 * recastnavigation (zlib License)
 * sdl2 (zlib license)
 * stb (public domain)
