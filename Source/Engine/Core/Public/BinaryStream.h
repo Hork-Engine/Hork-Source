@@ -74,7 +74,11 @@ public:
     void ReadArrayInt8( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
-        ReadBuffer( _Array.ToPtr(), _Array.Size() );
+        ReadInt8ToBuffer( _Array.ToPtr(), _Array.Size() );
+    }
+
+    void ReadInt8ToBuffer( int8_t * _Buffer, int _Count ) {
+        ReadBuffer( _Buffer, _Count );
     }
 
     uint8_t ReadUInt8() {
@@ -87,7 +91,11 @@ public:
     void ReadArrayUInt8( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
-        ReadBuffer( _Array.ToPtr(), _Array.Size() );
+        ReadUInt8ToBuffer( _Array.ToPtr(), _Array.Size() );
+    }
+
+    void ReadUInt8ToBuffer( uint8_t * _Buffer, int _Count ) {
+        ReadBuffer( _Buffer, _Count );
     }
 
     int16_t ReadInt16() {
@@ -100,8 +108,13 @@ public:
     void ReadArrayInt16( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadInt16();
+        ReadInt16ToBuffer( _Array.ToPtr(), _Array.Size() );
+    }
+
+    void ReadInt16ToBuffer( int16_t * _Buffer, int _Count ) {
+        ReadBuffer( _Buffer, _Count * sizeof( _Buffer[0] ) );
+        for ( int i = 0 ; i < _Count ; i++ ) {
+            _Buffer[i] = Core::LittleWord( _Buffer[i] );
         }
     }
 
@@ -115,8 +128,13 @@ public:
     void ReadArrayUInt16( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadUInt16();
+        ReadUInt16ToBuffer( _Array.ToPtr(), _Array.Size() );
+    }
+
+    void ReadUInt16ToBuffer( uint16_t * _Buffer, int _Count ) {
+        ReadBuffer( _Buffer, _Count * sizeof( _Buffer[0] ) );
+        for ( int i = 0 ; i < _Count ; i++ ) {
+            _Buffer[i] = Core::LittleWord( _Buffer[i] );
         }
     }
 
@@ -130,8 +148,13 @@ public:
     void ReadArrayInt32( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadInt32();
+        ReadInt32ToBuffer( _Array.ToPtr(), _Array.Size() );
+    }
+
+    void ReadInt32ToBuffer( int32_t * _Buffer, int _Count ) {
+        ReadBuffer( _Buffer, _Count * sizeof( _Buffer[0] ) );
+        for ( int i = 0 ; i < _Count ; i++ ) {
+            _Buffer[i] = Core::LittleDWord( _Buffer[i] );
         }
     }
 
@@ -145,8 +168,13 @@ public:
     void ReadArrayUInt32( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadUInt32();
+        ReadUInt32ToBuffer( _Array.ToPtr(), _Array.Size() );
+    }
+
+    void ReadUInt32ToBuffer( uint32_t * _Buffer, int _Count ) {
+        ReadBuffer( _Buffer, _Count * sizeof( _Buffer[0] ) );
+        for ( int i = 0 ; i < _Count ; i++ ) {
+            _Buffer[i] = Core::LittleDWord( _Buffer[i] );
         }
     }
 
@@ -160,8 +188,13 @@ public:
     void ReadArrayInt64( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadInt64();
+        ReadInt64ToBuffer( _Array.ToPtr(), _Array.Size() );
+    }
+
+    void ReadInt64ToBuffer( int64_t * _Buffer, int _Count ) {
+        ReadBuffer( _Buffer, _Count * sizeof( _Buffer[0] ) );
+        for ( int i = 0 ; i < _Count ; i++ ) {
+            _Buffer[i] = Core::LittleDDWord( _Buffer[i] );
         }
     }
 
@@ -175,8 +208,13 @@ public:
     void ReadArrayUInt64( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadUInt64();
+        ReadUInt64ToBuffer( _Array.ToPtr(), _Array.Size() );
+    }
+
+    void ReadUInt64ToBuffer( uint64_t * _Buffer, int _Count ) {
+        ReadBuffer( _Buffer, _Count * sizeof( _Buffer[0] ) );
+        for ( int i = 0 ; i < _Count ; i++ ) {
+            _Buffer[i] = Core::LittleDDWord( _Buffer[i] );
         }
     }
 
@@ -189,8 +227,13 @@ public:
     void ReadArrayFloat( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadFloat();
+        ReadFloatToBuffer( _Array.ToPtr(), _Array.Size() );
+    }
+
+    void ReadFloatToBuffer( float * _Buffer, int _Count ) {
+        ReadBuffer( _Buffer, _Count * sizeof( _Buffer[0] ) );
+        for ( int i = 0 ; i < _Count ; i++ ) {
+            _Buffer[i] = Core::LittleFloat( _Buffer[i] );
         }
     }
 
@@ -203,8 +246,13 @@ public:
     void ReadArrayDouble( T & _Array ) {
         uint32_t size = ReadUInt32();
         _Array.ResizeInvalidate( size );
-        for ( int i = 0 ; i < _Array.Size() ; i++ ) {
-            _Array[i] = ReadDouble();
+        ReadDoubleToBuffer( _Array.ToPtr(), _Array.Size() );
+    }
+
+    void ReadDoubleToBuffer( double * _Buffer, int _Count ) {
+        ReadBuffer( _Buffer, _Count * sizeof( _Buffer[0] ) );
+        for ( int i = 0 ; i < _Count ; i++ ) {
+            _Buffer[i] = Core::LittleDouble( _Buffer[i] );
         }
     }
 
