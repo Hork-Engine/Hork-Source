@@ -36,6 +36,7 @@ SOFTWARE.
 #include "Color.h"
 #include "ConvexHull.h"
 #include "VectorMath.h"
+#include "Complex.h"
 #include "Float.h"
 #include "Plane.h"
 #include "Quat.h"
