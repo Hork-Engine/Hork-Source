@@ -144,8 +144,22 @@ PBR (physically based).
 * MIT license
    
 ## Used third-party libraries
-* stb, cgltf, lwo2, tinyexr, fastlz, miniz, glew, sdl2, bullet, vhacd, recastnavigation, imgui, iesna, clipper, glutess, miniaudio
-* Dynamic loaded: openal
+* bullet (zlib license)
+* cgltf (MIT license)
+* clipper (Boost Software License 1.0)
+* fastlz (MIT license)
+* glew (Modified BSD License, the Mesa 3-D License (MIT) and the Khronos License (MIT))
+* glutess (SGI FREE SOFTWARE LICENSE B Ver 2.0)
+* iesna (public domain)
+* imgui (MIT License)
+* lwo2 (public domain?)
+* miniaudio (public domain or MIT-0)
+* miniz (public domain)
+* recastnavigation (zlib License)
+* sdl2 (zlib license)
+* stb (public domain)
+* tinyexr (BSD 3-Clause)
+* vhacd (BSD 3-Clause)
 
 ## Some architectural solutions
 * STL-less.
