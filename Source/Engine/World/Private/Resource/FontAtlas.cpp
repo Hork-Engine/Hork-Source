@@ -569,20 +569,16 @@ void AFont::LoadInternalResource( const char * _Path ) {
     LoadInternalResource( "/Default/Fonts/Default" );
 }
 
-bool AFont::LoadResource( AString const & _Path ) {
+bool AFont::LoadResource( IBinaryStream & Stream ) {
     Purge();
 
-    int i = _Path.FindExtWithoutDot();
-    const char * n = &_Path[i];
+//    int i = _Path.FindExtWithoutDot();
+//    const char * n = &_Path[i];
 
-    AString fn = _Path;
-    fn.StripExt();
+//    AString fn = _Path;
+//    fn.StripExt();
 
-    AFileStream f;
-    if ( !f.OpenRead( fn.CStr() ) )
-        return false;
-
-    size_t sizeInBytes = f.SizeInBytes();
+    size_t sizeInBytes = Stream.SizeInBytes();
     if ( !sizeInBytes ) {
         return false;
     }
@@ -590,17 +586,18 @@ bool AFont::LoadResource( AString const & _Path ) {
     int hunkMark = GHunkMemory.SetHunkMark();
 
     void * data = GHunkMemory.Alloc( sizeInBytes );
-    f.ReadBuffer( data, sizeInBytes );
-    if ( f.GetReadBytesCount() != sizeInBytes ) {
+    Stream.ReadBuffer( data, sizeInBytes );
+    if ( Stream.GetReadBytesCount() != sizeInBytes ) {
         GHunkMemory.ClearToMark( hunkMark );
         return false;
     }
 
-    uint32_t sizePixels;
-    sizePixels = Math::ToInt< uint32_t >( n );
-    if ( sizePixels < 8 ) {
-        sizePixels = 8;
-    }
+    uint32_t sizePixels = 18; // FIXME: How to deal with font size?
+//    uint32_t sizePixels;
+//    sizePixels = Math::ToInt< uint32_t >( n );
+//    if ( sizePixels < 8 ) {
+//        sizePixels = 8;
+//    }
 
     SFontCreateInfo createInfo = {};
     createInfo.FontNum = 0;

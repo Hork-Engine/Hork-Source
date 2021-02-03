@@ -65,10 +65,18 @@ int APIENTRY wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCm
     RunEngineWin32( _EntryDecl ); \
     return 0; \
 }
+#define AN_NO_RUNTIME_MAIN( _MainFunc ) \
+int APIENTRY wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow ) { \
+    return _MainFunc(); \
+}
 #else
 #define AN_ENTRY_DECL( _EntryDecl ) \
 int main( int argc, char *argv[] ) { \
     Runtime( argc, argv, _EntryDecl ); \
     return 0; \
+}
+#define AN_NO_RUNTIME_MAIN( _MainFunc ) \
+int main( int argc, char *argv[] ) { \
+    return _MainFunc(); \
 }
 #endif

@@ -31,6 +31,7 @@ SOFTWARE.
 #include "RenderLocal.h"
 
 #include <Core/Public/CriticalError.h>
+#include <Runtime/Public/Runtime.h>
 
 ARuntimeVariable r_MaterialDebugMode( _CTS( "r_MaterialDebugMode" ),
                                       #ifdef AN_DEBUG
@@ -405,9 +406,6 @@ struct SIncludeCtx
     /** Callback for file loading */
     bool ( *LoadFile )( const char * FileName, AString & Source );
 
-    /** Root path for includes */
-    const char * PathToIncludes;
-
     /** Predefined shaders */
     SMaterialShader const * Predefined;
 };
@@ -569,11 +567,10 @@ static bool LoadShaderFromString( SIncludeCtx * Ctx, const char * FileName, AStr
         }
         else {
             Out.Concat( "#line 1 \"" );
-            Out.Concat( Ctx->PathToIncludes );
             Out.ConcatN( includeInfo->filename, includeInfo->len );
             Out.Concat( "\"\n" );
 
-            Core::Strcpy( temp, sizeof( temp ), Ctx->PathToIncludes );
+            temp[0] = 0;
             Core::StrcatN( temp, sizeof( temp ), includeInfo->filename, includeInfo->len );
             if ( !LoadShaderWithInclude( Ctx, temp, Out ) ) {
                 FreeIncludes( includeList );
@@ -607,32 +604,44 @@ static bool LoadShaderWithInclude( SIncludeCtx * Ctx, const char * FileName, ASt
     return LoadShaderFromString( Ctx, FileName, source, Out );
 }
 
+ARuntimeVariable r_EmbeddedShaders( _CTS("r_EmbeddedShaders"), _CTS("1") );
+
 static bool GetShaderSource( const char * FileName, AString & Source )
 {
-    AFileStream f;
-    if ( !f.OpenRead( FileName ) ) {
-        return false;
+    if ( r_EmbeddedShaders ) {
+        AMemoryStream f;
+        if ( !f.OpenRead( AString("Shaders/") + FileName, GetEmbeddedResources() ) ) {
+            return false;
+        }
+        Source.FromFile( f );
     }
-    Source.FromFile( f );
+    else {
+        // Load shaders from sources
+        AString fn = __FILE__;
+        fn.StripFilename();
+        fn += "/../Embedded/Shaders/";
+        fn += FileName;
+        fn.FixPath();
+        AFileStream f;
+        if ( !f.OpenRead( fn.CStr() ) ) {
+            return false;
+        }
+        Source.FromFile( f );
+    }
+
     return true;
 }
 
 AString LoadShader( const char * FileName, SMaterialShader const * Predefined )
 {
-    AString path = __FILE__;
-    path.StripFilename();
-    path.FixPath();
-    path += "/Shaders/";
-
     SIncludeCtx ctx;
     ctx.LoadFile = GetShaderSource;
-    ctx.PathToIncludes = path.CStr();
     ctx.Predefined = Predefined;
 
     AString result;
     result.Concat( Core::Fmt( "#line 1 \"%s\"\n", FileName ) );
 
-    if ( !LoadShaderWithInclude( &ctx, (path + FileName).CStr(), result ) ) {
+    if ( !LoadShaderWithInclude( &ctx, FileName/*(path + FileName).CStr()*/, result ) ) {
         CriticalError( "LoadShader: failed to open %s\n", FileName );
     }
 
@@ -641,14 +650,8 @@ AString LoadShader( const char * FileName, SMaterialShader const * Predefined )
 
 AString LoadShaderFromString( const char * FileName, const char * Source, SMaterialShader const * Predefined )
 {
-    AString path = __FILE__;
-    path.StripFilename();
-    path.FixPath();
-    path += "/Shaders/";
-
     SIncludeCtx ctx;
     ctx.LoadFile = GetShaderSource;
-    ctx.PathToIncludes = path.CStr();
     ctx.Predefined = Predefined;
 
     AString result;
@@ -658,7 +661,7 @@ AString LoadShaderFromString( const char * FileName, const char * Source, SMater
 
     CleanComments( source.ToPtr() );
 
-    if ( !LoadShaderFromString( &ctx, (path + FileName).CStr(), source, result ) ) {
+    if ( !LoadShaderFromString( &ctx, FileName/*(path + FileName).CStr()*/, source, result ) ) {
         CriticalError( "LoadShader: failed to open %s\n", FileName );
     }
 
@@ -741,6 +744,8 @@ void CreateShader( RenderCore::SHADER_TYPE _ShaderType, AString const & _SourceP
 
 void CreateVertexShader( const char * FileName, RenderCore::SVertexAttribInfo const * _VertexAttribs, int _NumVertexAttribs, TRef< RenderCore::IShaderModule > & _Module )
 {
+    // TODO: here check if the shader binary is cached. Load from cache if so.
+
     AString vertexAttribsShaderString = RenderCore::ShaderStringForVertexAttribs< AString >( _VertexAttribs, _NumVertexAttribs );
     AString source = LoadShader( FileName );
 
@@ -750,6 +755,8 @@ void CreateVertexShader( const char * FileName, RenderCore::SVertexAttribInfo co
     sources.Append( source.CStr() );
 
     CreateShader( RenderCore::VERTEX_SHADER, sources, _Module );
+
+    // TODO: Write shader binary to cache
 }
 
 void CreateTessControlShader( const char * FileName, TRef< RenderCore::IShaderModule > & _Module )

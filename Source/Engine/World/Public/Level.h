@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "Resource/CollisionBody.h"
 #include "Resource/Material.h"
-#include "Audio/AudioClip.h"
+#include "Resource/SoundResource.h"
 #include "HitTest.h"
 #include <Renderer/RenderDefs.h>
 
@@ -559,8 +559,8 @@ public:
     /** Baked audio */
     TPodArray< SAudioArea > AudioAreas;
 
-    /** Audio clips */
-    TStdVector< TRef< AAudioClip > > AudioClips;
+    /** Ambient sounds */
+    TStdVector< TRef< ASoundResource > > AmbientSounds;
 
     /** Baked surface data */
     TRef< ABrushModel > Model;

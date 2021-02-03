@@ -34,9 +34,6 @@ SOFTWARE.
 
 #define STB_SPRINTF_IMPLEMENTATION
 #define STB_SPRINTF_STATIC
-#ifdef AN_COMPILER_GCC
-#pragma GCC diagnostic ignored "-Wmisleading-indentation"
-#endif
 #include "stb/stb_sprintf.h"
 
 namespace Core {

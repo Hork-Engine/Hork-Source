@@ -33,7 +33,7 @@ SOFTWARE.
 #include "Controller.h"
 #include "HUD.h"
 #include <World/Public/CommandContext.h>
-#include <World/Public/Audio/AudioSystem.h>
+#include <World/Public/AudioSystem.h>
 #include <World/Public/Widgets/WViewport.h>
 #include <World/Public/Terrain.h>
 #include <Renderer/VT/VirtualTextureFeedback.h> // TODO: Remove this!
@@ -173,13 +173,15 @@ class AAudioParameters final : public ABaseObject {
     AN_CLASS( AAudioParameters, ABaseObject )
 
 public:
-    Float3 Velocity;
+    //Float3 Velocity;
 
-    float DopplerFactor = 1;
-    float DopplerVelocity = 1;
-    float SpeedOfSound = 343.3f;
-    EAudioDistanceModel DistanceModel = AUDIO_DIST_INVERSE_CLAMPED;
+    //float DopplerFactor = 1;
+    //float DopplerVelocity = 1;
+    //float SpeedOfSound = 343.3f;
+    //EAudioDistanceModel DistanceModel = AUDIO_DIST_LINEAR_CLAMPED;//AUDIO_DIST_INVERSE_CLAMPED;
     float Volume = 1.0f;
+
+    uint32_t ListenerMask = ~0u;
 
 private:
     AAudioParameters() {}

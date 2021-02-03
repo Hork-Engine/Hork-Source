@@ -54,7 +54,7 @@ protected:
     AResource() {}
 
     /** Load resource from file */
-    virtual bool LoadResource( AString const & _Path ) { return false; }
+    virtual bool LoadResource( IBinaryStream & _Stream ) { return false; }
 
     /** Create internal resource */
     virtual void LoadInternalResource( const char * _Path ) {}
@@ -62,6 +62,8 @@ protected:
     virtual const char * GetDefaultResourcePath() const { return "/Default/UnknownResource"; }
 
 private:
+    bool LoadFromPath( const char * _Path );
+
     void SetResourceAlias( const char * _ResourceAlias ) { ResourceAlias = _ResourceAlias; }
 
     void SetResourceAlias( AString const &  _ResourceAlias ) { ResourceAlias = _ResourceAlias; }

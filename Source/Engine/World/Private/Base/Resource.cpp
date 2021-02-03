@@ -35,47 +35,87 @@ SOFTWARE.
 
 AN_CLASS_META( AResource )
 
-void AResource::InitializeDefaultObject() {
+void AResource::InitializeDefaultObject()
+{
     InitializeFromFile( GetDefaultResourcePath() );
 }
 
-void AResource::InitializeFromFile( const char * _Path ) {
+void AResource::InitializeFromFile( const char * _Path )
+{
+    if ( !LoadFromPath( _Path ) ) {
+        InitializeDefaultObject();
+    }
+}
+
+bool AResource::LoadFromPath( const char * _Path )
+{
     if ( !Core::StricmpN( _Path, "/Default/", 9 ) ) {
         LoadInternalResource( _Path );
-        return;
+        return true;
     }
 
     if ( !Core::StricmpN( _Path, "/Root/", 6 ) ) {
         _Path += 6;
 
+        // try to load from resource pack
+        AMemoryStream mem;
+        if ( mem.OpenRead( _Path, *GResourceManager.GetGameResources() ) ) {
+            return LoadResource( mem );
+        }
+
+        // try to load from file system
         AString fileSystemPath = GRuntime.GetRootPath() + _Path;
 
-        if ( !LoadResource( fileSystemPath ) ) {
-            InitializeDefaultObject();
+        AFileStream f;
+        if ( f.OpenRead( fileSystemPath ) ) {
+            return LoadResource( f );
         }
 
-        return;
+        return false;
+    }
 
-    } else if ( !Core::StricmpN( _Path, "/Common/", 6 ) ) {
+    if ( !Core::StricmpN( _Path, "/Common/", 8 ) ) {
         _Path += 1;
 
-        if ( !LoadResource( _Path ) ) {
-            InitializeDefaultObject();
+        // try to load from resource pack
+        AMemoryStream mem;
+        if ( mem.OpenRead( _Path + 7, *GResourceManager.GetCommonResources() ) ) {
+            return LoadResource( mem );
         }
 
-        return;
+        // try to load from file system
+        AFileStream f;
+        if ( f.OpenRead( _Path ) ) {
+            return LoadResource( f );
+        }
 
-    } else if ( !Core::StricmpN( _Path, "/FS/", 4 ) ) {
+        return false;
+    }
+
+    if ( !Core::StricmpN( _Path, "/FS/", 4 ) ) {
         _Path += 4;
 
-        if ( !LoadResource( _Path ) ) {
-            InitializeDefaultObject();
+        AFileStream f;
+        if ( !f.OpenRead( _Path ) ) {
+            return false;
         }
 
-        return;
+        return LoadResource( f );
+    }
+
+    if ( !Core::StricmpN( _Path, "/Embedded/", 10 ) ) {
+        _Path += 10;
+
+        AMemoryStream f;
+        if ( !f.OpenRead( _Path, GetEmbeddedResources() ) ) {
+            GLogger.Printf( "Failed to open /Embedded/%s\n", _Path );
+            return false;
+        }
+
+        return LoadResource( f );
     }
 
     // Invalid path
     GLogger.Printf( "Invalid path \"%s\"\n", _Path );
-    InitializeDefaultObject();
+    return false;
 }

@@ -35,6 +35,7 @@ SOFTWARE.
 #include <World/Public/Components/SkinnedComponent.h>
 #include <World/Public/Components/CameraComponent.h>
 #include <World/Public/Components/PointLightComponent.h>
+#include <World/Public/Components/SoundEmitter.h>
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/Resource/Texture.h>
 #include <Core/Public/BV/BvIntersect.h>
@@ -64,8 +65,8 @@ protected:
 private:
     void UpdateAmbientVolume( float _TimeStep );
 
-    TStdVector< TRef< AAudioControlCallback > > AmbientControl;
-    ASceneComponent * AudioInstigator;
+    TPodArray< ASoundEmitter * > AmbientSound;
+
     APhysicalBody * WorldCollision;
 };
 
@@ -87,11 +88,9 @@ ALevel::~ALevel() {
 }
 
 void ALevel::OnAddLevelToWorld() {
-    GLogger.Printf( "OnAddLevelToWorld\n" );
 }
 
 void ALevel::OnRemoveLevelFromWorld() {
-    GLogger.Printf( "OnRemoveLevelFromWorld\n" );
 }
 
 void ALevel::Initialize() {
@@ -176,7 +175,7 @@ void ALevel::Purge() {
     Model.Reset();
 
     AudioAreas.Free();
-    AudioClips.Free();
+    AmbientSounds.Free();
 
     Lightmaps.Free();
 
@@ -1031,8 +1030,6 @@ void ABrushModel::Purge() {
 AN_CLASS_META( AWorldspawn )
 
 AWorldspawn::AWorldspawn() {
-    AudioInstigator = CreateComponent< ASceneComponent >( "AudioInstigator" );
-
     WorldCollision = CreateComponent< APhysicalBody >( "WorldCollision" );
     WorldCollision->SetMotionBehavior( MB_STATIC );
     WorldCollision->SetCollisionGroup( CM_WORLD_STATIC );
@@ -1053,11 +1050,13 @@ void AWorldspawn::PreInitializeComponents() {
     }
 
     // Create ambient control
-    int ambientCount = level->AudioClips.Size();
-    AmbientControl.Resize( ambientCount );
+    int ambientCount = level->AmbientSounds.Size();
+    AmbientSound.Resize( ambientCount );
     for ( int i = 0 ; i < ambientCount ; i++ ) {
-        AmbientControl[i] = NewObject< AAudioControlCallback >();
-        AmbientControl[i]->VolumeScale = 0;
+        AmbientSound[i] = CreateComponent< ASoundEmitter >( "Ambient" );
+        AmbientSound[i]->SetEmitterType( SOUND_EMITTER_BACKGROUND );
+        AmbientSound[i]->SetVirtualizeWhenSilent( true );
+        AmbientSound[i]->SetVolume( 0.0f );
     }
 }
 
@@ -1070,21 +1069,10 @@ void AWorldspawn::BeginPlay() {
 
     ALevel * level = GetLevel();
 
-    SSoundSpawnParameters ambient;
-
-    ambient.SourceType = AUDIO_SOURCE_BACKGROUND;
-    ambient.Priority = AUDIO_CHANNEL_PRIORITY_AMBIENT;
-    ambient.bVirtualizeWhenSilent = true;
-    ambient.Volume = 0.1f;// 0.02f;
-    ambient.Pitch = 1;
-    ambient.bLooping = true;
-    ambient.bStopWhenInstigatorDead = true;
-
-    int ambientCount = level->AudioClips.Size();
+    int ambientCount = level->AmbientSounds.Size();
 
     for ( int i = 0 ; i < ambientCount ; i++ ) {
-        ambient.ControlCallback = AmbientControl[i];
-        GAudioSystem.PlaySound( level->AudioClips[i], AudioInstigator, &ambient );
+        AmbientSound[i]->PlaySound( level->AmbientSounds[i], 0, 0 );
     }
 }
 
@@ -1097,13 +1085,13 @@ void AWorldspawn::Tick( float _TimeStep ) {
 void AWorldspawn::UpdateAmbientVolume( float _TimeStep ) {
     ALevel * level = GetLevel();
 
-    int leaf = level->FindLeaf( GAudioSystem.GetListenerPosition() );
+    int leaf = level->FindLeaf( GAudioSystem.GetListener().Position );
 
     if ( leaf < 0 ) {
-        int ambientCount = AmbientControl.Size();
+        int ambientCount = AmbientSound.Size();
 
         for ( int i = 0 ; i < ambientCount ; i++ ) {
-            AmbientControl[i]->VolumeScale = 0.0f;
+            AmbientSound[i]->SetVolume( 0.0f );
         }
         return;
     }
@@ -1112,25 +1100,30 @@ void AWorldspawn::UpdateAmbientVolume( float _TimeStep ) {
 
     SAudioArea const * audioArea = &level->AudioAreas[audioAreaNum];
 
-    const float step = _TimeStep;
+    const float scale = 0.1f;
+    const float step = _TimeStep * scale;
     for ( int i = 0 ; i < MAX_AMBIENT_SOUNDS_IN_AREA ; i++ ) {
         uint16_t soundIndex = audioArea->AmbientSound[i];
-        float volume = (float)audioArea->AmbientVolume[i]/255.0f;
+        float volume = (float)audioArea->AmbientVolume[i]/255.0f * scale;
 
-        AAudioControlCallback * control = AmbientControl[soundIndex];
+        ASoundEmitter * emitter = AmbientSound[soundIndex];
 
-        if ( control->VolumeScale < volume ) {
-            control->VolumeScale += step;
+        float vol = emitter->GetVolume();
 
-            if ( control->VolumeScale > volume ) {
-                control->VolumeScale = volume;
+        if ( vol < volume ) {
+            vol += step;
+
+            if ( vol > volume ) {
+                vol = volume;
             }
-        } else if ( control->VolumeScale > volume ) {
-            control->VolumeScale -= step;
+        } else if ( vol > volume ) {
+            vol -= step;
 
-            if ( control->VolumeScale < 0 ) {
-                control->VolumeScale = 0;
+            if ( vol < 0 ) {
+                vol = 0;
             }
         }
+
+        emitter->SetVolume( vol );
     }
 }

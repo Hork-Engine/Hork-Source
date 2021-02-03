@@ -39,6 +39,13 @@ AResourceManager::AResourceManager() {}
 
 void AResourceManager::Initialize() {
     LoadResourceGUID();
+
+    // TODO: Scan root directory for game resources
+    GameResources = MakeUnique< AArchive >();
+    GameResources->Open( ( GRuntime.GetRootPath() + "game.resources" ).CStr(), true );
+
+    CommonResources = MakeUnique< AArchive >();
+    CommonResources->Open( ( GRuntime.GetRootPath() + "common.resources" ).CStr(), true );
 }
 
 void AResourceManager::Deinitialize() {
@@ -52,6 +59,9 @@ void AResourceManager::Deinitialize() {
 
     ResourceGUID.clear();
     ResourceGUIDHash.Free();
+
+    GameResources.Reset();
+    CommonResources.Reset();
 }
 
 void AResourceManager::LoadResourceGUID() {

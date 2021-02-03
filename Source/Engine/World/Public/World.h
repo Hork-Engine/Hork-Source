@@ -281,9 +281,6 @@ class AWorld : public ABaseObject, public IPhysicsWorldInterface
     AN_CLASS( AWorld, ABaseObject )
 
 public:
-    /** Scale audio volume in the entire world */
-    float AudioVolume = 1.0f;
-
     /** Delegate to notify when any actor spawned */
     using AOnActorSpawned = TEvent< AActor * >;
     AOnActorSpawned E_OnActorSpawned;
@@ -314,44 +311,44 @@ public:
     void BuildNavigation( SAINavigationConfig const & _NavigationConfig );
 
     /** Spawn a new actor */
-    AActor * SpawnActor( SActorSpawnInfo const & _SpawnParameters );
+    AActor * SpawnActor( SActorSpawnInfo const & _SpawnInfo );
 
     /** Spawn a new actor */
     template< typename ActorType >
-    ActorType * SpawnActor( TActorSpawnInfo< ActorType > const & _SpawnParameters )
+    ActorType * SpawnActor( TActorSpawnInfo< ActorType > const & _SpawnInfo )
     {
-        SActorSpawnInfo const & spawnParameters = _SpawnParameters;
-        return static_cast< ActorType * >( SpawnActor( spawnParameters ) );
+        SActorSpawnInfo const & spawnInfo = _SpawnInfo;
+        return static_cast< ActorType * >( SpawnActor( spawnInfo ) );
     }
 
     /** Spawn a new actor */
     template< typename ActorType >
     ActorType * SpawnActor( ALevel * _Level = nullptr )
     {
-        TActorSpawnInfo< ActorType > spawnParameters;
-        spawnParameters.Level = _Level;
-        return static_cast< ActorType * >( SpawnActor( spawnParameters ) );
+        TActorSpawnInfo< ActorType > spawnInfo;
+        spawnInfo.Level = _Level;
+        return static_cast< ActorType * >( SpawnActor( spawnInfo ) );
     }
 
     /** Spawn a new actor */
     template< typename ActorType >
     ActorType * SpawnActor( STransform const & _SpawnTransform, ALevel * _Level = nullptr )
     {
-        TActorSpawnInfo< ActorType > spawnParameters;
-        spawnParameters.SpawnTransform = _SpawnTransform;
-        spawnParameters.Level = _Level;
-        return static_cast< ActorType * >( SpawnActor( spawnParameters ) );
+        TActorSpawnInfo< ActorType > spawnInfo;
+        spawnInfo.SpawnTransform = _SpawnTransform;
+        spawnInfo.Level = _Level;
+        return static_cast< ActorType * >( SpawnActor( spawnInfo ) );
     }
 
     /** Spawn a new actor */
     template< typename ActorType >
     ActorType * SpawnActor( Float3 const & _Position, Quat const & _Rotation, ALevel * _Level = nullptr )
     {
-        TActorSpawnInfo< ActorType > spawnParameters;
-        spawnParameters.SpawnTransform.Position = _Position;
-        spawnParameters.SpawnTransform.Rotation = _Rotation;
-        spawnParameters.Level = _Level;
-        return static_cast< ActorType * >( SpawnActor( spawnParameters ) );
+        TActorSpawnInfo< ActorType > spawnInfo;
+        spawnInfo.SpawnTransform.Position = _Position;
+        spawnInfo.SpawnTransform.Rotation = _Rotation;
+        spawnInfo.Level = _Level;
+        return static_cast< ActorType * >( SpawnActor( spawnInfo ) );
     }
 
     /** Load actor from the document */
@@ -416,6 +413,15 @@ public:
 
     /** Is world destroyed, but not removed yet. */
     bool IsPendingKill() const { return bPendingKill; }
+
+    /** Scale audio volume in the entire world */
+    void SetAudioVolume( float Volume )
+    {
+        AudioVolume = Math::Saturate( Volume );
+    }
+
+    /** Scale audio volume in the entire world */
+    float GetAudioVolume() const { return AudioVolume; }
 
     void SetGlobalIrradianceMap( int Index );
     int GetGlobalIrradianceMap() const { return GlobalIrradianceMap; }
@@ -658,6 +664,9 @@ private:
 
     TRef< ALevel > PersistentLevel;
     TPodArray< ALevel * > ArrayOfLevels;
+
+    /** Scale audio volume in the entire world */
+    float AudioVolume = 1.0f;
 
     int GlobalIrradianceMap = 0;
     int GlobalReflectionMap = 0;

@@ -31,15 +31,16 @@ SOFTWARE.
 #include <GameThread/Public/EngineInstance.h>
 #include <World/Public/Base/ResourceManager.h>
 #include <World/Public/Render/RenderFrontend.h>
-#include <World/Public/Audio/AudioSystem.h>
-#include <World/Public/Audio/AudioCodec/MiniaudioDecoder.h>
+#include <World/Public/AudioSystem.h>
 #include <World/Public/Actors/Actor.h>
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/Components/InputComponent.h>
 #include <World/Public/Canvas.h>
 #include <World/Public/World.h>
-
 #include <World/Private/PrimitiveLinkPool.h>
+
+#include <Audio/Codec/MiniaudioDecoder.h>
+#include <World/Public/AudioMixer.h>
 
 #include <Runtime/Public/Runtime.h>
 
@@ -199,7 +200,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     //GAudioSystem.AddAudioDecoder( "mp3", CreateInstanceOf< AMp3Decoder >() );
     //GAudioSystem.AddAudioDecoder( "wav", CreateInstanceOf< AWavDecoder >() );
 
-    AMiniaudioDecoder * audioDecoder = CreateInstanceOf< AMiniaudioDecoder >();
+    TRef< AMiniaudioDecoder > audioDecoder = MakeRef< AMiniaudioDecoder >();
     GAudioSystem.AddAudioDecoder( "ogg", audioDecoder );
     GAudioSystem.AddAudioDecoder( "mp3", audioDecoder );
     GAudioSystem.AddAudioDecoder( "wav", audioDecoder );
@@ -289,6 +290,8 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     AWorld::DestroyWorlds();
     AWorld::KickoffPendingKillWorlds();
 
+    ASoundEmitter::ClearOneShotSounds();
+
 #ifdef IMGUI_CONTEXT
     ImguiContext->RemoveRef();
     ImguiContext = nullptr;
@@ -306,7 +309,6 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
 
     GResourceManager.Deinitialize();
 
-    GAudioSystem.PurgeChannels();
     GAudioSystem.RemoveAudioDecoders();
 
     AGarbageCollector::Deinitialize();
@@ -383,7 +385,7 @@ void AEngineInstance::ShowStats()
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Polycount: %d", stat.PolyCount ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount ) ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frontend time: %d msec", stat.FrontendTime ) ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Active audio channels: %d", GAudioSystem.GetNumActiveChannels() ) ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Audio channels: %d active, %d virtual", GAudioSystem.GetMixer()->GetNumActiveChannels(), GAudioSystem.GetMixer()->GetNumVirtualChannels() ) ); pos.Y += y_step;
     }
 
     if ( com_ShowFPS ) {
@@ -667,380 +669,3 @@ void AEngineInstance::SetDesktop( WDesktop * _Desktop )
         Desktop->SetSize( videoMode.FramebufferWidth, videoMode.FramebufferHeight );
     }
 }
-
-
-
-
-#ifdef IMGUI_CONTEXT
-
-///////////////////////////////////////////////////////////////////////////////////////////
-// IMGUI test
-///////////////////////////////////////////////////////////////////////////////////////////
-
-static AActor * SelectedActor = nullptr;
-static ASceneComponent * SelectedComponent = nullptr;
-
-static void ShowAttribute( ADummy * a, AAttributeMeta const * attr ) {
-    switch ( attr->GetType() ) {
-        case EAttributeType::T_Byte: {
-            byte v = attr->GetBoolValue( a );
-
-            ImGui::Text( "%s (%s) : %d", attr->GetName(), attr->GetTypeName(), v );
-
-            break;
-        }
-
-        case EAttributeType::T_Bool: {
-            bool v = attr->GetBoolValue( a );
-
-            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v ? "true" : "false" );
-
-            break;
-        }
-
-        case EAttributeType::T_Int: {
-            int v = attr->GetIntValue( a );
-
-            ImGui::Text( "%s (%s) : %d", attr->GetName(), attr->GetTypeName(), v );
-
-            break;
-        }
-
-        case EAttributeType::T_Float: {
-            float v = attr->GetFloatValue( a );
-
-            ImGui::Text( "%s (%s) : %f", attr->GetName(), attr->GetTypeName(), v );
-
-            break;
-        }
-
-        case EAttributeType::T_Float2: {
-            Float2 v = attr->GetFloat2Value( a );
-
-            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().CStr() );
-
-            break;
-        }
-
-        case EAttributeType::T_Float3: {
-            Float3 v = attr->GetFloat3Value( a );
-
-            AString s;
-            attr->GetValue( a, s );
-
-            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().CStr() );
-
-            break;
-        }
-
-        case EAttributeType::T_Float4: {
-            Float4 v = attr->GetFloat4Value( a );
-
-            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().CStr() );
-
-            break;
-        }
-
-        case EAttributeType::T_Quat: {
-            Quat v = attr->GetQuatValue( a );
-
-            ImGui::Text( "%s (%s) : %s", attr->GetName(), attr->GetTypeName(), v.ToString().CStr() );
-
-            break;
-        }
-
-        case EAttributeType::T_String: {
-            AString v;
-            attr->GetValue( a, v );
-
-            ImGui::InputText( attr->GetName(), (char*)v.CStr(), v.Length(), ImGuiInputTextFlags_ReadOnly );
-
-            break;
-        }
-
-        default:
-            break;
-    }
-}
-
-static void ShowComponentHierarchy( ASceneComponent * component ) {
-    if ( ImGui::TreeNodeEx( component, component == SelectedComponent ? ImGuiTreeNodeFlags_Selected : 0, "%s (%s)", component->GetNameConstChar(), component->FinalClassName() ) ) {
-
-        if ( ImGui::IsItemClicked() ) {
-            SelectedComponent = component;
-            SelectedActor = component->GetParentActor();
-        }
-
-        AArrayOfChildComponents const & childs = component->GetChilds();
-        for ( ASceneComponent * child : childs ) {
-            ShowComponentHierarchy( child );
-        }
-
-        ImGui::TreePop();
-    }
-}
-
-void AEngineInstance::UpdateImgui() {
-    ImguiContext->BeginFrame( FrameDurationInSeconds );
-
-    //ImGui::ShowDemoWindow();
-
-    if ( ImGui::Begin( "Test" ) ) {
-        TPodArray< AAttributeMeta const * > attributes;
-
-        static char buf[ 1024 ];
-        ImGui::InputTextMultiline( "textedit", buf, sizeof( buf ) );
-
-        TPodArray< AWorld * > const & Worlds = AWorld::GetWorlds();
-
-        for ( int i = 0 ; i < Worlds.Size() ; i++ ) {
-            if ( ImGui::CollapsingHeader( "World" ) ) {
-
-                static uint8_t childFrameId;
-                ImVec2 contentRegion = ImGui::GetContentRegionAvail();
-                contentRegion.y *= 0.5f;
-                if ( ImGui::BeginChildFrame( ( ImGuiID )( size_t )&childFrameId, contentRegion ) ) {
-
-                    AWorld * w = Worlds[ i ];
-
-                    TPodArray< AActor * > const & actors = w->GetActors();
-
-                    ImGui::Text( "Actors" );
-                    for ( int j = 0 ; j < actors.Size() ; j++ ) {
-                        AActor * a = actors[ j ];
-
-                        if ( ImGui::TreeNodeEx( a, a == SelectedActor ? ImGuiTreeNodeFlags_Selected : 0, "%s (%s)", a->GetNameConstChar(), a->FinalClassName() ) ) {
-
-                            if ( ImGui::IsItemClicked() ) {
-                                SelectedActor = a;
-                            }
-
-                            if ( a->RootComponent ) {
-                                ShowComponentHierarchy( a->RootComponent );
-                            }
-
-                            ImGui::TreePop();
-                        }
-                    }
-                }
-                ImGui::EndChildFrame();
-
-                ImGui::Text( "Inspector" );
-                static uint8_t childFrameId2;
-                contentRegion = ImGui::GetContentRegionAvail();
-                if ( ImGui::BeginChildFrame( ( ImGuiID )( size_t )&childFrameId2, contentRegion ) ) {
-
-                    if ( SelectedActor ) {
-                        AActor * a = SelectedActor;
-
-                        AClassMeta const & meta = a->FinalClassMeta();
-
-                        attributes.Clear();
-                        meta.GetAttributes( attributes );
-
-                        for ( AAttributeMeta const * attr : attributes ) {
-                            ShowAttribute( a, attr );
-                        }
-
-                        for ( int k = 0 ; k < a->GetComponents().Size() ; k++ ) {
-
-                            AActorComponent * component = a->GetComponents()[ k ];
-
-                            if ( ImGui::CollapsingHeader( Core::Fmt( "%s (%s)", component->GetNameConstChar(), component->FinalClassName() ) ) ) {
-
-                                AClassMeta const & componentMeta = component->FinalClassMeta();
-
-                                attributes.Clear();
-                                componentMeta.GetAttributes( attributes );
-
-                                for ( AAttributeMeta const * attr : attributes ) {
-                                    ShowAttribute( component, attr );
-                                }
-                            }
-                        }
-                    }
-                }
-                ImGui::EndChildFrame();
-
-
-                //ImGui::Text( "Levels" );
-                //for( int j = 0 ; j < w->ArrayOfLevels.Length() ; j++ ) {
-                //    ALevel * lev = w->ArrayOfLevels[j];
-
-                //    if ( ImGui::TreeNode( lev, "%s (%s)", lev->GetNameConstChar(), lev->FinalClassName() ) ) {
-
-                //        ImGui::TreePop();
-                //    }
-                //}
-
-
-            }
-        }
-    }
-    ImGui::End();
-
-
-    ImguiContext->EndFrame();
-}
-#endif
-
-
-
-#if 0
-static void PrecacheResources( AClassMeta const & _ClassMeta ) {
-    for ( APrecacheMeta const * precache = _ClassMeta.GetPrecacheList() ; precache ; precache = precache->Next() ) {
-        GLogger.Printf( "---------- Precache -----------\n"
-                        "Resource Class: \"%s\"\n"
-                        "Resource Path: \"%s\"\n",
-                        precache->GetResourceClassMeta().GetName(),
-                        precache->GetResourcePath() );
-
-        //GResourceManager.LoadResource( precache->GetResourceClassMeta(), precache->GetResourcePath() );
-    }
-}
-
-static AClassMeta const * GetActorClassMeta( ADocument const & _Document, int _Object ) {
-    SDocumentField * classNameField = _Document.FindField( _Object, "ClassName" );
-    if ( !classNameField ) {
-        GLogger.Printf( "AWorld::LoadActor: invalid actor class\n" );
-        return nullptr;
-    }
-
-    SDocumentValue * classNameValue = &_Document.Values[ classNameField->ValuesHead ];
-
-    AClassMeta const * classMeta = AActor::Factory().LookupClass( classNameValue->Token.ToString().CStr() );
-    if ( !classMeta ) {
-        GLogger.Printf( "AWorld::LoadActor: invalid actor class \"%s\"\n", classNameValue->Token.ToString().CStr() );
-        return nullptr;
-    }
-
-    return classMeta;
-}
-
-AWorld * AEngineInstance::SpawnWorld( FWorldSpawnParameters const & _SpawnParameters ) {
-
-    GLogger.Printf( "==== Spawn World ====\n" );
-
-    AClassMeta const * classMeta = _SpawnParameters.WorldClassMeta();
-
-    if ( !classMeta ) {
-        GLogger.Printf( "AEngineInstance::SpawnWorld: invalid world class\n" );
-        return nullptr;
-    }
-
-    if ( classMeta->Factory() != &AWorld::Factory() ) {
-        GLogger.Printf( "AEngineInstance::SpawnWorld: not an world class\n" );
-        return nullptr;
-    }
-
-    AWorld const * templateWorld = _SpawnParameters.GetTemplate();
-
-    if ( templateWorld && classMeta != &templateWorld->ClassMeta() ) {
-        GLogger.Printf( "AEngineInstance::SpawnWorld: FWorldSpawnParameters::Template class doesn't match meta data\n" );
-        return nullptr;
-    }
-
-    AWorld * world = static_cast< AWorld * >( classMeta->CreateInstance() );
-
-    world->AddRef();
-
-    // Add world to game array of worlds
-    Worlds.Append( world );
-    world->IndexInGameArrayOfWorlds = Worlds.Size() - 1;
-
-    if ( templateWorld ) {
-        // Clone attributes
-        AClassMeta::CloneAttributes( templateWorld, world );
-
-        // Precache world resources
-        for ( AActor const * templateActor : templateWorld->GetActors() ) {
-            PrecacheResources( templateActor->FinalClassMeta() );
-        }
-
-        // Clone actors
-        for ( AActor const * templateActor : templateWorld->GetActors() ) {
-            if ( templateActor->IsPendingKill() ) {
-                continue;
-            }
-
-            SActorSpawnInfo spawnParameters( &templateActor->FinalClassMeta() );
-            spawnParameters.SetTemplate( templateActor );
-            //spawnParameters->SpawnTransform = templateActor->GetTransform();
-            world->SpawnActor( spawnParameters );
-        }
-    }
-
-    world->BeginPlay();
-
-    GLogger.Printf( "=====================\n" );
-    return world;
-}
-
-AWorld * AEngineInstance::LoadWorld( ADocument const & _Document, int _FieldsHead ) {
-
-    GLogger.Printf( "==== Load World ====\n" );
-
-    SDocumentField * classNameField = _Document.FindField( _FieldsHead, "ClassName" );
-    if ( !classNameField ) {
-        GLogger.Printf( "AEngineInstance::LoadWorld: invalid world class\n" );
-        return nullptr;
-    }
-
-    SDocumentValue * classNameValue = &_Document.Values[ classNameField->ValuesHead ];
-
-    AClassMeta const * classMeta = AWorld::Factory().LookupClass( classNameValue->Token.ToString().CStr() );
-    if ( !classMeta ) {
-        GLogger.Printf( "AEngineInstance::LoadWorld: invalid world class \"%s\"\n", classNameValue->Token.ToString().CStr() );
-        return nullptr;
-    }
-
-    AWorld * world = static_cast< AWorld * >( classMeta->CreateInstance() );
-
-    world->AddRef();
-    //world->bDuringConstruction = false;
-
-    // Add world to game array of worlds
-    Worlds.Append( world );
-    world->IndexInGameArrayOfWorlds = Worlds.Size() - 1;
-
-    // Load world attributes
-    world->LoadAttributes( _Document, _FieldsHead );
-
-    // Load actors
-    SDocumentField * actorsField = _Document.FindField( _FieldsHead, "Actors" );
-    if ( actorsField ) {
-
-        // First pass. Precache resources
-        for ( int i = actorsField->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
-            if ( _Document.Values[ i ].Type != SDocumentValue::T_Object ) {
-                continue;
-            }
-
-            int actorObject = _Document.Values[ i ].FieldsHead;
-
-            AClassMeta const * actorClassMeta = GetActorClassMeta( _Document, actorObject );
-            if ( !actorClassMeta ) {
-                continue;
-            }
-
-            PrecacheResources( *actorClassMeta );
-        }
-
-        // Second pass. Load actors
-        for ( int i = actorsField->ValuesHead ; i != -1 ; i = _Document.Values[ i ].Next ) {
-            if ( _Document.Values[ i ].Type != SDocumentValue::T_Object ) {
-                continue;
-            }
-
-            int actorObject = _Document.Values[ i ].FieldsHead;
-
-            world->LoadActor( _Document, actorObject );
-        }
-    }
-
-    world->BeginPlay();
-
-    GLogger.Printf( "=====================\n" );
-    return world;
-}
-#endif

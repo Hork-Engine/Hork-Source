@@ -71,21 +71,15 @@ void AMaterial::Purge() {
     Def.RemoveShaders();
 }
 
-bool AMaterial::LoadResource( AString const & _Path ) {
-    AFileStream f;
-
-    if ( !f.OpenRead( _Path ) ) {
-        return false;
-    }
-
-    uint32_t fileFormat = f.ReadUInt32();
+bool AMaterial::LoadResource( IBinaryStream & Stream ) {
+    uint32_t fileFormat = Stream.ReadUInt32();
 
     if ( fileFormat != FMT_VERSION_MATERIAL ) {
         GLogger.Printf( "Expected file format %d\n", FMT_VERSION_MATERIAL );
         return false;
     }
 
-    uint32_t fileVersion = f.ReadUInt32();
+    uint32_t fileVersion = Stream.ReadUInt32();
 
     if ( fileVersion != FMT_VERSION_MATERIAL ) {
         GLogger.Printf( "Expected file version %d\n", FMT_VERSION_MATERIAL );
@@ -96,45 +90,45 @@ bool AMaterial::LoadResource( AString const & _Path ) {
 
     AString guid;
 
-    f.ReadObject( guid );
+    Stream.ReadObject( guid );
 
-    Def.Type = (EMaterialType)f.ReadUInt8();
-    Def.Blending = (EColorBlending)f.ReadUInt8();
-    Def.TessellationMethod = (ETessellationMethod)f.ReadUInt8();
-    Def.RenderingPriority = (ERenderingPriority)f.ReadUInt8();
-    Def.LightmapSlot = (ETessellationMethod)f.ReadUInt16();
-    Def.DepthPassTextureCount = f.ReadUInt8();
-    Def.LightPassTextureCount = f.ReadUInt8();
-    Def.WireframePassTextureCount = f.ReadUInt8();
-    Def.NormalsPassTextureCount = f.ReadUInt8();
-    Def.ShadowMapPassTextureCount = f.ReadUInt8();
-    Def.bHasVertexDeform = f.ReadBool();
-    Def.bDepthTest_EXPERIMENTAL = f.ReadBool();
-    Def.bNoCastShadow = f.ReadBool();
-    Def.bAlphaMasking = f.ReadBool();
-    Def.bShadowMapMasking = f.ReadBool();
-    Def.bDisplacementAffectShadow = f.ReadBool();
-    Def.bTranslucent = f.ReadBool();
-    Def.bTwoSided = f.ReadBool();
-    Def.NumUniformVectors = f.ReadUInt8();
-    Def.NumSamplers = f.ReadUInt8();
+    Def.Type = (EMaterialType)Stream.ReadUInt8();
+    Def.Blending = (EColorBlending)Stream.ReadUInt8();
+    Def.TessellationMethod = (ETessellationMethod)Stream.ReadUInt8();
+    Def.RenderingPriority = (ERenderingPriority)Stream.ReadUInt8();
+    Def.LightmapSlot = (ETessellationMethod)Stream.ReadUInt16();
+    Def.DepthPassTextureCount = Stream.ReadUInt8();
+    Def.LightPassTextureCount = Stream.ReadUInt8();
+    Def.WireframePassTextureCount = Stream.ReadUInt8();
+    Def.NormalsPassTextureCount = Stream.ReadUInt8();
+    Def.ShadowMapPassTextureCount = Stream.ReadUInt8();
+    Def.bHasVertexDeform = Stream.ReadBool();
+    Def.bDepthTest_EXPERIMENTAL = Stream.ReadBool();
+    Def.bNoCastShadow = Stream.ReadBool();
+    Def.bAlphaMasking = Stream.ReadBool();
+    Def.bShadowMapMasking = Stream.ReadBool();
+    Def.bDisplacementAffectShadow = Stream.ReadBool();
+    Def.bTranslucent = Stream.ReadBool();
+    Def.bTwoSided = Stream.ReadBool();
+    Def.NumUniformVectors = Stream.ReadUInt8();
+    Def.NumSamplers = Stream.ReadUInt8();
     for ( int i = 0 ; i < Def.NumSamplers ; i++ ) {
-        Def.Samplers[i].TextureType = (ETextureType)f.ReadUInt8();
-        Def.Samplers[i].Filter = (ETextureFilter)f.ReadUInt8();
-        Def.Samplers[i].AddressU = (ETextureAddress)f.ReadUInt8();
-        Def.Samplers[i].AddressV = (ETextureAddress)f.ReadUInt8();
-        Def.Samplers[i].AddressW = (ETextureAddress)f.ReadUInt8();
-        Def.Samplers[i].MipLODBias = f.ReadFloat();
-        Def.Samplers[i].Anisotropy = f.ReadFloat();
-        Def.Samplers[i].MinLod = f.ReadFloat();
-        Def.Samplers[i].MaxLod = f.ReadFloat();
+        Def.Samplers[i].TextureType = (ETextureType)Stream.ReadUInt8();
+        Def.Samplers[i].Filter = (ETextureFilter)Stream.ReadUInt8();
+        Def.Samplers[i].AddressU = (ETextureAddress)Stream.ReadUInt8();
+        Def.Samplers[i].AddressV = (ETextureAddress)Stream.ReadUInt8();
+        Def.Samplers[i].AddressW = (ETextureAddress)Stream.ReadUInt8();
+        Def.Samplers[i].MipLODBias = Stream.ReadFloat();
+        Def.Samplers[i].Anisotropy = Stream.ReadFloat();
+        Def.Samplers[i].MinLod = Stream.ReadFloat();
+        Def.Samplers[i].MaxLod = Stream.ReadFloat();
     }
 
-    int numShaders = f.ReadUInt16();
+    int numShaders = Stream.ReadUInt16();
     AString sourceName, sourceCode;
     for ( int i = 0 ; i < numShaders ; i++ ) {
-        f.ReadObject( sourceName );
-        f.ReadObject( sourceCode );
+        Stream.ReadObject( sourceName );
+        Stream.ReadObject( sourceCode );
         Def.AddShader( sourceName.CStr(), sourceCode );
     }
 
@@ -933,24 +927,18 @@ void AMaterialInstance::LoadInternalResource( const char * _Path ) {
     LoadInternalResource( "/Default/MaterialInstance/Default" );
 }
 
-bool AMaterialInstance::LoadResource( AString const & _Path ) {
-    AFileStream f;
-
-    if ( !f.OpenRead( _Path ) ) {
-        return false;
-    }
-
+bool AMaterialInstance::LoadResource( IBinaryStream & Stream ) {
     uint32_t fileFormat;
     uint32_t fileVersion;
 
-    fileFormat = f.ReadUInt32();
+    fileFormat = Stream.ReadUInt32();
 
     if ( fileFormat != FMT_FILE_TYPE_MATERIAL_INSTANCE ) {
         GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_MATERIAL_INSTANCE );
         return false;
     }
 
-    fileVersion = f.ReadUInt32();
+    fileVersion = Stream.ReadUInt32();
 
     if ( fileVersion != FMT_VERSION_MATERIAL_INSTANCE ) {
         GLogger.Printf( "Expected file version %d\n", FMT_VERSION_MATERIAL_INSTANCE );
@@ -961,12 +949,12 @@ bool AMaterialInstance::LoadResource( AString const & _Path ) {
     AString materialGUID;
     AString textureGUID;
 
-    f.ReadObject( guidStr );
-    f.ReadObject( materialGUID );
+    Stream.ReadObject( guidStr );
+    Stream.ReadObject( materialGUID );
 
-    int texCount = f.ReadUInt32();
+    int texCount = Stream.ReadUInt32();
     for ( int i = 0 ; i < texCount ; i++ ) {
-        f.ReadObject( textureGUID );
+        Stream.ReadObject( textureGUID );
 
         SetTexture( i, GetOrCreateResource< ATexture >( textureGUID.CStr() ) );
     }
@@ -976,7 +964,7 @@ bool AMaterialInstance::LoadResource( AString const & _Path ) {
     }
 
     for ( int i = 0 ; i < MAX_MATERIAL_UNIFORMS ; i++ ) {
-        Uniforms[i] = f.ReadFloat();
+        Uniforms[i] = Stream.ReadFloat();
     }
 
     SetMaterial( GetOrCreateResource< AMaterial >( materialGUID.CStr() ) );

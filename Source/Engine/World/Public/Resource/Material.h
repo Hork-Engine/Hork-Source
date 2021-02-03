@@ -75,7 +75,7 @@ protected:
     ~AMaterial();
 
     /** Load resource from file */
-    bool LoadResource( AString const & _Path );
+    bool LoadResource( IBinaryStream & Stream ) override;
 
     /** Create internal resource */
     void LoadInternalResource( const char * _Path ) override;
@@ -157,7 +157,7 @@ protected:
     ~AMaterialInstance() {}
 
     /** Load resource from file */
-    bool LoadResource( AString const & _Path ) override;
+    bool LoadResource( IBinaryStream & _Stream ) override;
 
     /** Create internal resource */
     void LoadInternalResource( const char * _Path ) override;

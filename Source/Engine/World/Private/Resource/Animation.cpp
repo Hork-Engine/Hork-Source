@@ -109,40 +109,34 @@ void ASkeletalAnimation::LoadInternalResource( const char * _Path ) {
     Purge();
 }
 
-bool ASkeletalAnimation::LoadResource( AString const & _Path ) {
-    AFileStream f;
-
-    if ( !f.OpenRead( _Path ) ) {
-        return false;
-    }
-
+bool ASkeletalAnimation::LoadResource( IBinaryStream & Stream ) {
     AString guid;
 
     TPodArray< SAnimationChannel > channels;
     TPodArray< STransform > transforms;
     TPodArray< BvAxisAlignedBox > bounds;
 
-    uint32_t fileFormat = f.ReadUInt32();
+    uint32_t fileFormat = Stream.ReadUInt32();
 
     if ( fileFormat != FMT_FILE_TYPE_ANIMATION ) {
         GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_ANIMATION );
         return false;
     }
 
-    uint32_t fileVersion = f.ReadUInt32();
+    uint32_t fileVersion = Stream.ReadUInt32();
 
     if ( fileVersion != FMT_VERSION_ANIMATION ) {
         GLogger.Printf( "Expected file version %d\n", FMT_VERSION_ANIMATION );
         return false;
     }
 
-    f.ReadObject( guid );
+    Stream.ReadObject( guid );
 
-    float frameDelta = f.ReadFloat();
-    uint32_t frameCount = f.ReadUInt32();
-    f.ReadArrayOfStructs( channels );
-    f.ReadArrayOfStructs( transforms );
-    f.ReadArrayOfStructs( bounds );
+    float frameDelta = Stream.ReadFloat();
+    uint32_t frameCount = Stream.ReadUInt32();
+    Stream.ReadArrayOfStructs( channels );
+    Stream.ReadArrayOfStructs( transforms );
+    Stream.ReadArrayOfStructs( bounds );
 
     Initialize( frameCount, frameDelta,
                 transforms.ToPtr(), transforms.Size(),

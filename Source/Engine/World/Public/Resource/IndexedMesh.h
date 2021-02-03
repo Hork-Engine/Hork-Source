@@ -497,7 +497,7 @@ protected:
     ~AIndexedMesh();
 
     /** Load resource from file */
-    bool LoadResource( AString const & _Path ) override;
+    bool LoadResource( IBinaryStream & Stream ) override;
 
     /** Create internal resource */
     void LoadInternalResource( const char * _Path ) override;

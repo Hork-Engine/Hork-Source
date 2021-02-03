@@ -47,8 +47,11 @@ public:
     AArchive();
     ~AArchive();
 
-    /** Open archive */
-    bool Open( const char * _ArchiveName );
+    /** Open archive from file */
+    bool Open( const char * _ArchiveName, bool bResourcePack = false );
+
+    /** Open archive from memory */
+    bool OpenFromMemory( const void * pMemory, size_t SizeInBytes );
 
     /** Close archive */
     void Close();
@@ -60,19 +63,19 @@ public:
     int GetNumFiles() const;
 
     /** Get file index. Return -1 if file wasn't found */
-    int LocateFile( const char * _FileName );
+    int LocateFile( const char * _FileName ) const;
 
     /** Get file compressed and uncompressed size */
-    bool GetFileSize( int _FileIndex, size_t * _CompressedSize, size_t * _UncompressedSize );
+    bool GetFileSize( int _FileIndex, size_t * _CompressedSize, size_t * _UncompressedSize ) const;
 
     /** Decompress file to memory buffer */
-    bool ExtractFileToMemory( int _FileIndex, void * _MemoryBuffer, size_t _SizeInBytes );
+    bool ExtractFileToMemory( int _FileIndex, void * _MemoryBuffer, size_t _SizeInBytes ) const;
 
     /** Decompress file to heap memory */
-    bool ExtractFileToHeapMemory( const char * _FileName, byte ** _HeapMemoryPtr, int * _SizeInBytes );
+    bool ExtractFileToHeapMemory( const char * _FileName, byte ** _HeapMemoryPtr, int * _SizeInBytes ) const;
 
     /** Decompress file to hunk memory */
-    bool ExtractFileToHunkMemory( const char * _FileName, byte ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark );
+    bool ExtractFileToHunkMemory( const char * _FileName, byte ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark ) const;
 
 private:
     void * Handle;
@@ -163,9 +166,9 @@ public:
     bool OpenRead( AString const & _FileName, const byte * _MemoryBuffer, size_t _SizeInBytes );
 
     /** Read file from archive */
-    bool OpenRead( const char * _FileName, AArchive & _Archive );
+    bool OpenRead( const char * _FileName, AArchive const & _Archive );
     /** Read file from archive */
-    bool OpenRead( AString const & _FileName, AArchive & _Archive );
+    bool OpenRead( AString const & _FileName, AArchive const & _Archive );
 
     /** Write to specified memory buffer */
     bool OpenWrite( const char * _FileName, byte * _MemoryBuffer, size_t _SizeInBytes );

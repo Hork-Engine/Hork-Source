@@ -434,24 +434,26 @@ void ATexture::LoadInternalResource( const char * _Path ) {
     LoadInternalResource( "/Default/Textures/Default2D" );
 }
 
-bool ATexture::LoadResource( AString const & _Path ) {
-    AScopedTimeCheck ScopedTime( _Path.CStr() );
+bool ATexture::LoadResource( IBinaryStream & Stream ) {
+    const char * fn = Stream.GetFileName();
+
+    AScopedTimeCheck ScopedTime( fn );
 
     AImage image;
 
-    int i = _Path.FindExt();
-    if ( !Core::Stricmp( &_Path[i], ".jpg" )
-         || !Core::Stricmp( &_Path[i], ".jpeg" )
-         || !Core::Stricmp( &_Path[i], ".png" )
-         || !Core::Stricmp( &_Path[i], ".tga" )
-         || !Core::Stricmp( &_Path[i], ".psd" )
-         || !Core::Stricmp( &_Path[i], ".gif" )
-         || !Core::Stricmp( &_Path[i], ".hdr" )
-         || !Core::Stricmp( &_Path[i], ".exr" )
-         || !Core::Stricmp( &_Path[i], ".pic" )
-         || !Core::Stricmp( &_Path[i], ".pnm" )
-         || !Core::Stricmp( &_Path[i], ".ppm" )
-         || !Core::Stricmp( &_Path[i], ".pgm" ) ) {
+    int i = Core::FindExt( fn );
+    if ( !Core::Stricmp( &fn[i], ".jpg" )
+         || !Core::Stricmp( &fn[i], ".jpeg" )
+         || !Core::Stricmp( &fn[i], ".png" )
+         || !Core::Stricmp( &fn[i], ".tga" )
+         || !Core::Stricmp( &fn[i], ".psd" )
+         || !Core::Stricmp( &fn[i], ".gif" )
+         || !Core::Stricmp( &fn[i], ".hdr" )
+         || !Core::Stricmp( &fn[i], ".exr" )
+         || !Core::Stricmp( &fn[i], ".pic" )
+         || !Core::Stricmp( &fn[i], ".pnm" )
+         || !Core::Stricmp( &fn[i], ".ppm" )
+         || !Core::Stricmp( &fn[i], ".pgm" ) ) {
 
 
         //AN_ASSERT( 0 ); 
@@ -461,12 +463,12 @@ bool ATexture::LoadResource( AString const & _Path ) {
         mipmapGen.Filter = MIPMAP_FILTER_MITCHELL;
         mipmapGen.bPremultipliedAlpha = false;
 
-        if ( !Core::Stricmp( &_Path[i], ".hdr" ) || !Core::Stricmp( &_Path[i], ".exr" ) ) {
-            if ( !image.Load( _Path.CStr(), &mipmapGen, IMAGE_PF_AUTO_16F ) ) {
+        if ( !Core::Stricmp( &fn[i], ".hdr" ) || !Core::Stricmp( &fn[i], ".exr" ) ) {
+            if ( !image.Load( Stream, &mipmapGen, IMAGE_PF_AUTO_16F ) ) {
                 return false;
             }
         } else {
-            if ( !image.Load( _Path.CStr(), &mipmapGen, IMAGE_PF_AUTO_GAMMA2 ) ) {
+            if ( !image.Load( Stream, &mipmapGen, IMAGE_PF_AUTO_GAMMA2 ) ) {
                 return false;
             }
         }
@@ -476,23 +478,17 @@ bool ATexture::LoadResource( AString const & _Path ) {
         }
     } else {
 
-        AFileStream f;
-
-        if ( !f.OpenRead( _Path ) ) {
-            return false;
-        }
-
         uint32_t fileFormat;
         uint32_t fileVersion;
 
-        fileFormat = f.ReadUInt32();
+        fileFormat = Stream.ReadUInt32();
 
         if ( fileFormat != FMT_FILE_TYPE_TEXTURE ) {
             GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_TEXTURE );
             return false;
         }
 
-        fileVersion = f.ReadUInt32();
+        fileVersion = Stream.ReadUInt32();
 
         if ( fileVersion != FMT_VERSION_TEXTURE ) {
             GLogger.Printf( "Expected file version %d\n", FMT_VERSION_TEXTURE );
@@ -504,13 +500,13 @@ bool ATexture::LoadResource( AString const & _Path ) {
         STexturePixelFormat texturePixelFormat;
         uint32_t w, h, d, numLods;
 
-        f.ReadObject( guid );
-        textureType = f.ReadUInt32();
-        f.ReadObject( texturePixelFormat );
-        w = f.ReadUInt32();
-        h = f.ReadUInt32();
-        d = f.ReadUInt32();
-        numLods = f.ReadUInt32();
+        Stream.ReadObject( guid );
+        textureType = Stream.ReadUInt32();
+        Stream.ReadObject( texturePixelFormat );
+        w = Stream.ReadUInt32();
+        h = Stream.ReadUInt32();
+        d = Stream.ReadUInt32();
+        numLods = Stream.ReadUInt32();
 
         switch ( textureType ) {
         case TEXTURE_1D:
@@ -555,18 +551,18 @@ bool ATexture::LoadResource( AString const & _Path ) {
         //
         //for ( int layerNum = 0 ; layerNum < numLayers ; layerNum++ ) {
             for ( int n = 0 ; n < numLods ; n++ ) {
-                lodWidth = f.ReadUInt32();
-                lodHeight = f.ReadUInt32();
-                lodDepth = f.ReadUInt32();
+                lodWidth = Stream.ReadUInt32();
+                lodHeight = Stream.ReadUInt32();
+                lodDepth = Stream.ReadUInt32();
 
                 size_t size = lodWidth * lodHeight * lodDepth * pixelSize;
 
                 if ( size > maxSize ) {
-                    GLogger.Printf( "ATexture: invalid image %s\n", _Path.CStr() );
+                    GLogger.Printf( "ATexture: invalid image %s\n", fn );
                     break;
                 }
 
-                f.ReadBuffer( lodData, size );
+                Stream.ReadBuffer( lodData, size );
 
                 WriteArbitraryData( 0, 0, /*layerNum*/0, lodWidth, lodHeight, lodDepth, n, lodData );
             }
@@ -578,7 +574,7 @@ bool ATexture::LoadResource( AString const & _Path ) {
 #if 0
         byte * buf = (byte *)GHeapMemory.Alloc( size );
 
-        f.Read( buf, size );
+        Stream.Read( buf, size );
 
         AMemoryStream ms;
 

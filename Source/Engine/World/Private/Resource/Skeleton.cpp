@@ -80,21 +80,15 @@ void ASkeleton::LoadInternalResource( const char * _Path ) {
     LoadInternalResource( "/Default/Skeleton/Default" );
 }
 
-bool ASkeleton::LoadResource( AString const & _Path ) {
-    AFileStream f;
-
-    if ( !f.OpenRead( _Path ) ) {
-        return false;
-    }
-
-    uint32_t fileFormat = f.ReadUInt32();
+bool ASkeleton::LoadResource( IBinaryStream & Stream ) {
+    uint32_t fileFormat = Stream.ReadUInt32();
 
     if ( fileFormat != FMT_FILE_TYPE_SKELETON ) {
         GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_SKELETON );
         return false;
     }
 
-    uint32_t fileVersion = f.ReadUInt32();
+    uint32_t fileVersion = Stream.ReadUInt32();
 
     if ( fileVersion != FMT_VERSION_SKELETON ) {
         GLogger.Printf( "Expected file version %d\n", FMT_VERSION_SKELETON );
@@ -105,9 +99,9 @@ bool ASkeleton::LoadResource( AString const & _Path ) {
 
     AString guid;
 
-    f.ReadObject( guid );
-    f.ReadArrayOfStructs( Joints );
-    f.ReadObject( BindposeBounds );
+    Stream.ReadObject( guid );
+    Stream.ReadArrayOfStructs( Joints );
+    Stream.ReadObject( BindposeBounds );
 
     return true;
 }

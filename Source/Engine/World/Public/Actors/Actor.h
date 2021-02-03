@@ -56,6 +56,9 @@ struct SActorDamage
     AActor * DamageCauser;
 };
 
+#define LIFESPAN_ALIVE      (0)
+#define LIFESPAN_DEAD       (-1)
+
 
 /**
 
@@ -82,7 +85,7 @@ public:
     /** Root component keeps component hierarchy and transform for the actor */
     ASceneComponent * RootComponent = nullptr;
 
-    float LifeSpan = 0.0f;
+    float LifeSpan = LIFESPAN_ALIVE;
 
     bool bTickEvenWhenPaused = false;
 

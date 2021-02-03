@@ -23,8 +23,11 @@ include_directories( ${Vulkan_INCLUDE_DIRS} )
 # SDL2
 message( "========== SDL2 ==========" )
 set(SDL_RENDER OFF)
+#set(SDL_AUDIO OFF)
 add_subdirectory( ThirdParty/SDL2 )
-set_target_properties( SDL2-static PROPERTIES FOLDER "ThirdParty" )
+set_target_properties( SDL2-static PROPERTIES FOLDER "ThirdParty/SDL" )
+set_target_properties( SDL2main PROPERTIES FOLDER "ThirdParty/SDL" )
+set_target_properties( uninstall PROPERTIES FOLDER "ThirdParty/SDL" )
 #########################################################################################
 
 #########################################################################################
@@ -76,12 +79,12 @@ add_subdirectory( ThirdParty/bullet3 )
 
 set_target_properties( LinearMath PROPERTIES FOLDER "ThirdParty/Physics" )
 set_target_properties( BulletFileLoader PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( Bullet2FileLoader PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( Bullet3Collision PROPERTIES FOLDER "ThirdParty/Physics" )
+#set_target_properties( Bullet2FileLoader PROPERTIES FOLDER "ThirdParty/Physics" )
+#set_target_properties( Bullet3Collision PROPERTIES FOLDER "ThirdParty/Physics" )
 set_target_properties( Bullet3Common PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( Bullet3Dynamics PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( Bullet3Geometry PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( Bullet3OpenCL_clew PROPERTIES FOLDER "ThirdParty/Physics" )
+#set_target_properties( Bullet3Dynamics PROPERTIES FOLDER "ThirdParty/Physics" )
+#set_target_properties( Bullet3Geometry PROPERTIES FOLDER "ThirdParty/Physics" )
+#set_target_properties( Bullet3OpenCL_clew PROPERTIES FOLDER "ThirdParty/Physics" )
 set_target_properties( BulletCollision PROPERTIES FOLDER "ThirdParty/Physics" )
 set_target_properties( BulletDynamics PROPERTIES FOLDER "ThirdParty/Physics" )
 set_target_properties( BulletInverseDynamics PROPERTIES FOLDER "ThirdParty/Physics" )
@@ -146,7 +149,19 @@ include_directories( ThirdParty/recastnavigation/DetourCrowd/Include )
 include_directories( ThirdParty/recastnavigation/DetourTileCache/Include )
 include_directories( ThirdParty/recastnavigation/Recast/Include )
 add_subdirectory( ThirdParty/recastnavigation )
-set_target_properties( Recast PROPERTIES FOLDER "ThirdParty/Physics" )
+set_target_properties( Recast PROPERTIES FOLDER "ThirdParty/PathFinding" )
+#########################################################################################
+
+#########################################################################################
+# muFFT
+message( "========== muFFT ==========" )
+option( MUFFT_ENABLE_FFTW "Enable FFTW support" OFF )
+include_directories( ThirdParty )
+add_subdirectory( ThirdParty/muFFT )
+set_target_properties( muFFT PROPERTIES FOLDER "ThirdParty/Misc" )
+set_target_properties( muFFT-avx PROPERTIES FOLDER "ThirdParty/Misc" )
+set_target_properties( muFFT-sse PROPERTIES FOLDER "ThirdParty/Misc" )
+set_target_properties( muFFT-sse3 PROPERTIES FOLDER "ThirdParty/Misc" )
 #########################################################################################
 
 #---------------------------------------------------------------------
@@ -198,6 +213,14 @@ source_group( "Runtime\\Public" FILES ${RuntimePublic} )
 source_group( "Runtime\\Private" FILES ${RuntimePrivate} )
 
 #---------------------------------------------------------------------
+# Audio module
+file( GLOB Audio Audio/*.h Audio/*.cpp )
+file( GLOB AudioCodec Audio/Codec/*.h Audio/Codec/*.cpp )
+
+source_group( "Audio" FILES ${Audio} )
+source_group( "Audio\\Codec" FILES ${AudioCodec} )
+
+#---------------------------------------------------------------------
 # Renderer module
 file( GLOB Renderer Renderer/*.h Renderer/*.cpp )
 file( GLOB RendererVT Renderer/VT/*.h Renderer/VT/*.cpp )
@@ -216,8 +239,6 @@ source_group( "Renderer\\VT" FILES ${RendererVT} )
 file( GLOB WorldPublicBase World/Public/Base/*.h World/Public/Base/*.cpp )
 file( GLOB WorldPublicResource World/Public/Resource/*.h World/Public/Resource/*.cpp )
 file( GLOB WorldPublicMaterialGraph World/Public/MaterialGraph/*.h World/Public/MaterialGraph/*.cpp )
-file( GLOB WorldPublicAudio World/Public/Audio/*.h World/Public/Audio/*.cpp )
-file( GLOB WorldPublicAudioAudioCodec World/Public/Audio/AudioCodec/*.h World/Public/Audio/AudioCodec/*.cpp )
 file( GLOB WorldPublicRender World/Public/Render/*.h World/Public/Render/*.cpp )
 file( GLOB WorldPublicActors World/Public/Actors/*.h World/Public/Actors/*.cpp )
 file( GLOB WorldPublicComponents World/Public/Components/*.h World/Public/Components/*.cpp )
@@ -227,8 +248,6 @@ file( GLOB WorldPublic World/Public/*.h World/Public/*.cpp )
 source_group( "World\\Public\\Base" FILES ${WorldPublicBase} )
 source_group( "World\\Public\\Resource" FILES ${WorldPublicResource} )
 source_group( "World\\Public\\MaterialGraph" FILES ${WorldPublicMaterialGraph} )
-source_group( "World\\Public\\Audio" FILES ${WorldPublicAudio} )
-source_group( "World\\Public\\Audio\\AudioCodec" FILES ${WorldPublicAudioAudioCodec} )
 source_group( "World\\Public\\Render" FILES ${WorldPublicRender} )
 source_group( "World\\Public\\Actors" FILES ${WorldPublicActors} )
 source_group( "World\\Public\\Components" FILES ${WorldPublicComponents} )
@@ -243,11 +262,6 @@ file( GLOB WorldPrivateResourceGLTF World/Private/Resource/gltf/*.h )
 file( GLOB WorldPrivateResourceLWO World/Private/Resource/lwo/*.h World/Private/Resource/lwo/*.c )
 file( GLOB WorldPrivateResourceIESNA World/Private/Resource/iesna/*.h World/Private/Resource/iesna/*.c )
 file( GLOB WorldPrivateMaterialGraph World/Private/MaterialGraph/*.h World/Private/MaterialGraph/*.cpp )
-file( GLOB WorldPrivateAudio World/Private/Audio/*.h World/Private/Audio/*.cpp World/Private/Audio/*.c )
-file( GLOB WorldPrivateAudioAudioCodec World/Private/Audio/AudioCodec/*.h World/Private/Audio/AudioCodec/*.cpp )
-file( GLOB WorldPrivateAudioAudioCodecLibmpg123 World/Private/Audio/AudioCodec/libmpg123/*.h )
-file( GLOB WorldPrivateAudioAudioCodecSTB World/Private/Audio/AudioCodec/stb/*.h )
-file( GLOB WorldPrivateAudioAL World/Private/Audio/AL/*.h )
 file( GLOB WorldPrivateRender World/Private/Render/*.h World/Private/Render/*.cpp )
 file( GLOB WorldPrivateActors World/Private/Actors/*.h World/Private/Actors/*.cpp )
 file( GLOB WorldPrivateComponents World/Private/Components/*.h World/Private/Components/*.cpp )
@@ -261,11 +275,6 @@ source_group( "World\\Private\\Resource\\gltf" FILES ${WorldPrivateResourceGLTF}
 source_group( "World\\Private\\Resource\\lwo" FILES ${WorldPrivateResourceLWO} )
 source_group( "World\\Private\\Resource\\iesna" FILES ${WorldPrivateResourceIESNA} )
 source_group( "World\\Private\\MaterialGraph" FILES ${WorldPrivateMaterialGraph} )
-source_group( "World\\Private\\Audio" FILES ${WorldPrivateAudio} )
-source_group( "World\\Private\\Audio\\AudioCodec" FILES ${WorldPrivateAudioAudioCodec} )
-source_group( "World\\Private\\Audio\\AudioCodec\\libmpg123" FILES ${WorldPrivateAudioAudioCodecLibmpg123} )
-source_group( "World\\Private\\Audio\\AudioCodec\\stb" FILES ${WorldPrivateAudioAudioCodecSTB} )
-source_group( "World\\Private\\Audio\\AL" FILES ${WorldPrivateAudioAL} )
 source_group( "World\\Private\\Render" FILES ${WorldPrivateRender} )
 source_group( "World\\Private\\Actors" FILES ${WorldPrivateActors} )
 source_group( "World\\Private\\Components" FILES ${WorldPrivateComponents} )
@@ -283,11 +292,28 @@ source_group( "GameThread\\Private" FILES ${GameThreadPrivate} )
 
 #---------------------------------------------------------------------
 
+add_executable( EmbedTool Util/EmbedTool.cpp Util/miniz/miniz.c )
+
+message( ${CMAKE_CURRENT_BINARY_DIR} )
+
+file(GLOB_RECURSE EmbeddedFiles Embedded/*)
+
+add_custom_command(
+OUTPUT EmbeddedResources.c
+WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/Embedded
+COMMAND EmbedTool ./ ${CMAKE_CURRENT_BINARY_DIR}/EmbeddedResources.c
+DEPENDS ${EmbeddedFiles}
+)
+
+source_group( "Generated" FILES ${CMAKE_CURRENT_BINARY_DIR}/EmbeddedResources.c )
+
 add_library(
 
 ${PROJECT}
 
 #SHARED
+
+${CMAKE_CURRENT_BINARY_DIR}/EmbeddedResources.c
 
 ${CorePublic}
 ${CorePublicBV}
@@ -307,6 +333,9 @@ ${RenderCoreFrameGraph}
 ${RuntimePublic}
 ${RuntimePrivate}
 
+${Audio}
+${AudioCodec}
+
 ${Renderer}
 ${RendererVT}
 
@@ -315,8 +344,6 @@ ${Imgui}
 ${WorldPublicBase}
 ${WorldPublicResource}
 ${WorldPublicMaterialGraph}
-${WorldPublicAudio}
-${WorldPublicAudioAudioCodec}
 ${WorldPublicRender}
 ${WorldPublicActors}
 ${WorldPublicComponents}
@@ -328,11 +355,6 @@ ${WorldPrivateResourceGLTF}
 ${WorldPrivateResourceLWO}
 ${WorldPrivateResourceIESNA}
 ${WorldPrivateMaterialGraph}
-${WorldPrivateAudio}
-${WorldPrivateAudioAudioCodec}
-${WorldPrivateAudioAudioCodecLibmpg123}
-${WorldPrivateAudioAudioCodecSTB}
-${WorldPrivateAudioAL}
 ${WorldPrivateRender}
 ${WorldPrivateActors}
 ${WorldPrivateComponents}
@@ -354,6 +376,7 @@ set( LIBRARIES
         vhacd
         Recast
         SDL2-static
+        muFFT
 #    poly2tri Clipper glutess Box2D
 )
 

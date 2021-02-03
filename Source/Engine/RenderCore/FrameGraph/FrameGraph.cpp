@@ -57,7 +57,7 @@ RenderCore::ITexture * RealizeResource( AFrameGraph & InFrameGraph, RenderCore::
     }
 
     // Create new texture
-    GLogger.Printf( "Create new texture ( in use %d, free %d )\n", InFrameGraph.Textures.Size()+1, InFrameGraph.FreeTextures.Size() );
+    //GLogger.Printf( "Create new texture ( in use %d, free %d )\n", InFrameGraph.Textures.Size()+1, InFrameGraph.FreeTextures.Size() );
     TRef< RenderCore::ITexture > texture;
     InFrameGraph.GetDevice()->CreateTexture( Info, &texture );
     InFrameGraph.Textures.Append( texture );
@@ -474,7 +474,7 @@ RenderCore::IFramebuffer * AFrameGraph::GetFramebuffer( const char * RenderPassN
     FramebufferCache.push_back( framebuffer );
     FramebufferHashes.Append( hash );
 
-    GLogger.Printf( "Total framebuffers %d for %s hash 0x%08x\n", FramebufferCache.Size(), RenderPassName, hash );
+    //GLogger.Printf( "Total framebuffers %d for %s hash 0x%08x\n", FramebufferCache.Size(), RenderPassName, hash );
 
     return framebuffer;
 }

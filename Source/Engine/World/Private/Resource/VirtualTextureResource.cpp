@@ -41,8 +41,7 @@ AVirtualTextureResource::~AVirtualTextureResource() {
 void AVirtualTextureResource::LoadInternalResource( const char * _Path ) {
 }
 
-bool AVirtualTextureResource::LoadResource( AString const & _Path ) {
-
+bool AVirtualTextureResource::LoadResource( IBinaryStream & _Stream ) {
     // TODO:...
 
     return true;

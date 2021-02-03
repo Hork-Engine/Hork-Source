@@ -91,6 +91,9 @@ public:
 
     void RestorePhysicalPathFromAlias( const char * _Alias, AString & _PhysicalPath ) const;
 
+    AArchive const * GetGameResources() const { return GameResources.GetObject(); }
+    AArchive const * GetCommonResources() const { return CommonResources.GetObject(); }
+
 private:
     void LoadResourceGUID();
 
@@ -100,6 +103,8 @@ private:
     THash<> ResourceHash;
     TStdVectorDefault< std::pair< std::string, std::string > > ResourceGUID;
     THash<> ResourceGUIDHash;
+    TUniqueRef< AArchive > GameResources;
+    TUniqueRef< AArchive > CommonResources;
 };
 
 extern AResourceManager & GResourceManager;

@@ -200,8 +200,8 @@ static ASocketDef * ReadSocket( IBinaryStream & f ) {
     return socket;
 }
 
-bool AIndexedMesh::LoadResource( AString const & _Path ) {
-    AScopedTimeCheck ScopedTime( _Path.CStr() );
+bool AIndexedMesh::LoadResource( IBinaryStream & Stream ) {
+    AScopedTimeCheck ScopedTime( Stream.GetFileName() );
 
 #if 0
     int i = _Path.FindExt();
@@ -258,20 +258,14 @@ bool AIndexedMesh::LoadResource( AString const & _Path ) {
     }
 #endif
 
-    AFileStream f;
-
-    if ( !f.OpenRead( _Path ) ) {
-        return false;
-    }
-
-    uint32_t fileFormat = f.ReadUInt32();
+    uint32_t fileFormat = Stream.ReadUInt32();
 
     if ( fileFormat != FMT_FILE_TYPE_MESH ) {
         GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_MESH );
         return false;
     }
 
-    uint32_t fileVersion = f.ReadUInt32();
+    uint32_t fileVersion = Stream.ReadUInt32();
 
     if ( fileVersion != FMT_VERSION_MESH ) {
         GLogger.Printf( "Expected file version %d\n", FMT_VERSION_MESH );
@@ -283,45 +277,45 @@ bool AIndexedMesh::LoadResource( AString const & _Path ) {
     bool bRaycastBVH;
 
     AString guidStr;
-    f.ReadObject( guidStr );
+    Stream.ReadObject( guidStr );
 
-    bSkinnedMesh = f.ReadBool();
-    f.ReadBool(); // dummy (TODO: remove in the future)
-    f.ReadObject( BoundingBox );
-    f.ReadArrayUInt32( Indices );
-    f.ReadArrayOfStructs( Vertices );
-    f.ReadArrayOfStructs( Weights );
-    bRaycastBVH = f.ReadBool();
-    RaycastPrimitivesPerLeaf = f.ReadUInt16();
+    bSkinnedMesh = Stream.ReadBool();
+    Stream.ReadBool(); // dummy (TODO: remove in the future)
+    Stream.ReadObject( BoundingBox );
+    Stream.ReadArrayUInt32( Indices );
+    Stream.ReadArrayOfStructs( Vertices );
+    Stream.ReadArrayOfStructs( Weights );
+    bRaycastBVH = Stream.ReadBool();
+    RaycastPrimitivesPerLeaf = Stream.ReadUInt16();
 
-    uint32_t subpartsCount = f.ReadUInt32();
+    uint32_t subpartsCount = Stream.ReadUInt32();
     Subparts.ResizeInvalidate( subpartsCount );
     for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
-        Subparts[i] = ReadIndexedMeshSubpart( f );
+        Subparts[i] = ReadIndexedMeshSubpart( Stream );
     }
 
     if ( bRaycastBVH ) {
         for ( AIndexedMeshSubpart * subpart : Subparts ) {
             ATreeAABB * bvh = NewObject< ATreeAABB >();
 
-            bvh->Read( f );
+            bvh->Read( Stream );
 
             subpart->SetBVH( bvh );
         }
     }
 
-    uint32_t socketsCount = f.ReadUInt32();
+    uint32_t socketsCount = Stream.ReadUInt32();
     Sockets.ResizeInvalidate( socketsCount );
     for ( int i = 0 ; i < Sockets.Size() ; i++ ) {
-        Sockets[i] = ReadSocket( f );
+        Sockets[i] = ReadSocket( Stream );
     }
 
     AString skeleton;
-    f.ReadObject( skeleton );
+    Stream.ReadObject( skeleton );
 
     if ( bSkinnedMesh ) {
-        f.ReadArrayInt32( Skin.JointIndices );
-        f.ReadArrayOfStructs( Skin.OffsetMatrices );
+        Stream.ReadArrayInt32( Skin.JointIndices );
+        Stream.ReadArrayOfStructs( Skin.OffsetMatrices );
     }
 
     for ( AIndexedMeshSubpart * subpart : Subparts ) {

@@ -34,7 +34,7 @@ SOFTWARE.
 #include <World/Public/Base/GameModuleInterface.h>
 #include <World/Public/Components/SkinnedComponent.h>
 #include <World/Public/Components/PointLightComponent.h>
-#include <World/Private/Render/VSD.h>
+#include <World/Private/Render/VSD.h> // TODO: remove
 #include <GameThread/Public/EngineInstance.h>
 #include <Runtime/Public/Runtime.h>
 #include <Core/Public/Logger.h>
@@ -126,18 +126,6 @@ void AWorld::Destroy()
     PendingKillWorlds = this;
 
     DestroyActors();
-    KickoffPendingKillObjects();
-
-    // Remove all levels from world including persistent level
-    for ( ALevel * level : ArrayOfLevels ) {
-        //if ( !level->bIsPersistent ) {
-            level->OnRemoveLevelFromWorld();
-        //}
-        level->IndexInArrayOfLevels = -1;
-        level->OwnerWorld = nullptr;
-        level->RemoveRef();
-    }
-    ArrayOfLevels.Clear();
 
     EndPlay();
 }
@@ -184,9 +172,9 @@ void SActorSpawnInfo::_SetAttribute( AString const & AttributeName, AString cons
     Attributes.Append( std::make_pair( AttributeName, AttributeValue ) );
 }
 
-AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters )
+AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnInfo )
 {
-    AClassMeta const * classMeta = _SpawnParameters.ActorClassMeta();
+    AClassMeta const * classMeta = _SpawnInfo.ActorClassMeta();
 
     if ( !classMeta ) {
         GLogger.Printf( "AWorld::SpawnActor: invalid actor class\n" );
@@ -198,7 +186,7 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters )
         return nullptr;
     }
 
-    AActor const * templateActor = _SpawnParameters.GetTemplate();
+    AActor const * templateActor = _SpawnInfo.GetTemplate();
 
     if ( templateActor && classMeta != &templateActor->FinalClassMeta() ) {
         GLogger.Printf( "AWorld::SpawnActor: SActorSpawnInfo::Template class doesn't match meta data\n" );
@@ -208,8 +196,8 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters )
     AActor * actor = static_cast< AActor * >( classMeta->CreateInstance() );
     actor->AddRef();
 
-    if ( _SpawnParameters.Instigator ) {
-        actor->Instigator = _SpawnParameters.Instigator;
+    if ( _SpawnInfo.Instigator ) {
+        actor->Instigator = _SpawnInfo.Instigator;
         actor->Instigator->AddRef();
     }
 
@@ -218,11 +206,11 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters )
     actor->IndexInWorldArrayOfActors = Actors.Size() - 1;
     actor->ParentWorld = this;
 
-    actor->Level = _SpawnParameters.Level ? _SpawnParameters.Level : PersistentLevel;
+    actor->Level = _SpawnInfo.Level ? _SpawnInfo.Level : PersistentLevel;
     actor->Level->Actors.Append( actor );
     actor->IndexInLevelArrayOfActors = actor->Level->Actors.Size() - 1;
 
-    actor->bInEditor = _SpawnParameters.bInEditor;
+    actor->bInEditor = _SpawnInfo.bInEditor;
 
     if ( templateActor ) {
 
@@ -259,7 +247,7 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters )
         // TODO: Here create components added from the editor
         // TODO: Copy actor/component properties from the actor spawn parameters
 
-        actor->SetAttributes( _SpawnParameters.GetAttributeHash(), _SpawnParameters.GetAttributes() );
+        actor->SetAttributes( _SpawnInfo.GetAttributeHash(), _SpawnInfo.GetAttributes() );
         // FIXME: what about component attributes?
     }
 
@@ -270,7 +258,7 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnParameters )
         }
     }
 
-    actor->Initialize( _SpawnParameters.SpawnTransform );
+    actor->Initialize( _SpawnInfo.SpawnTransform );
 
     actor->bDuringConstruction = false;
 
@@ -513,10 +501,10 @@ void AWorld::UpdateActorsPostPhysics( float _TimeStep )
         // Update actor life span
         actor->LifeTime += _TimeStep;
 
-        if ( actor->LifeSpan != 0.0f ) {
+        if ( actor->LifeSpan != LIFESPAN_ALIVE ) {
             actor->LifeSpan -= _TimeStep;
 
-            if ( actor->LifeSpan <= 0.0f ) {
+            if ( actor->LifeSpan <= LIFESPAN_ALIVE ) {
                 actor->Destroy();
             }
         }
@@ -870,6 +858,19 @@ void AWorld::KickoffPendingKillWorlds()
 
         while ( world ) {
             nextWorld = world->NextPendingKillWorld;
+
+            world->KickoffPendingKillObjects();
+
+            // Remove all levels from world including persistent level
+            for ( ALevel * level : world->ArrayOfLevels ) {
+                //if ( !level->bIsPersistent ) {
+                level->OnRemoveLevelFromWorld();
+                //}
+                level->IndexInArrayOfLevels = -1;
+                level->OwnerWorld = nullptr;
+                level->RemoveRef();
+            }
+            world->ArrayOfLevels.Clear();
 
             // FIXME: Call world->EndPlay here?
 

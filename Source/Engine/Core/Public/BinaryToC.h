@@ -30,9 +30,17 @@ SOFTWARE.
 
 #pragma once
 
+#include <Core/Public/BinaryStream.h>
+
 namespace Core {
 
 /** Convert binary file to .c */
+bool BinaryToC( const char * _SourceFile, const char * _DestFile, const char * _SymName, bool _EncodeBase85 );
+
+/** Compress and convert binary file to .c */
 bool BinaryToCompressedC( const char * _SourceFile, const char * _DestFile, const char * _SymName, bool _EncodeBase85 );
+
+/** Write binary date to .c */
+void WriteBinaryToC( IBinaryStream & Stream, const char * _SymName, const void * pData, size_t SizeInBytes, bool bEncodeBase85 );
 
 }

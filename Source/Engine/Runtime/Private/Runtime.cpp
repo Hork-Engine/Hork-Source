@@ -279,6 +279,22 @@ void ARuntime::PrintCPUFeatures()
     #endif
 }
 
+static TUniqueRef< AArchive > GEmbeddedResourcesArch;
+
+extern "C" const size_t EmbeddedResources_Size;
+extern "C" const uint64_t EmbeddedResources_Data[];
+
+AArchive const & GetEmbeddedResources()
+{
+    if ( !GEmbeddedResourcesArch ) {
+        GEmbeddedResourcesArch = MakeUnique< AArchive >();
+        if ( !GEmbeddedResourcesArch->OpenFromMemory( EmbeddedResources_Data, EmbeddedResources_Size ) ) {
+            GLogger.Printf( "Failed to open embedded resources\n" );
+        }
+    }
+    return *GEmbeddedResourcesArch.GetObject();
+}
+
 void ARuntime::Run( SEntryDecl const & _EntryDecl )
 {
     // Synchronize SDL ticks with our start time
@@ -441,6 +457,8 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl )
 
     SDocumentAllocator< ADocValue >::FreeMemoryPool();
     SDocumentAllocator< ADocMember >::FreeMemoryPool();
+
+    GEmbeddedResourcesArch.Reset();
 
     WorkingDir.Free();
     RootPath.Free();

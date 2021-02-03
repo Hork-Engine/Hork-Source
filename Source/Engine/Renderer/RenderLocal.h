@@ -252,7 +252,6 @@ extern RenderCore::IPipeline * GTerrainDepthPipeline;
 extern RenderCore::IPipeline * GTerrainLightPipeline;
 extern RenderCore::IPipeline * GTerrainWireframePipeline;
 
-
 //
 // Common functions
 //

@@ -423,3 +423,5 @@ extern ARuntime & GRuntime;
 extern AAsyncJobManager GAsyncJobManager;
 extern AAsyncJobList * GRenderFrontendJobList;
 extern AAsyncJobList * GRenderBackendJobList;
+
+AArchive const & GetEmbeddedResources();

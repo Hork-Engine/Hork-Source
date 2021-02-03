@@ -31,72 +31,92 @@ SOFTWARE.
 #pragma once
 
 #include <World/Public/Base/Resource.h>
-#include <World/Public/Audio/AudioDecoderInterface.h>
+#include <Audio/AudioDecoder.h>
 
 enum ESoundStreamType
 {
+    /** Short sound effects. Most used. */
     SOUND_STREAM_DISABLED,
-    SOUND_STREAM_FILE,
-    SOUND_STREAM_MEMORY
+
+    /** Decode audio data with small chunks during playback. Use it for music. */
+    SOUND_STREAM_MEMORY,
+
+    /** Load and decode audio data with small chunks from the hard drive during playback.
+    Only use it for very large audio tracks or don't use it at all.
+    NOTE: Streaming from hard drive still needs to be implemented asynchronously.
+    */
+    SOUND_STREAM_FILE
 };
 
-enum { AUDIO_MIN_PCM_BUFFER_SIZE = 1024 * 24 };
-enum { AUDIO_MAX_PCM_BUFFER_SIZE = 1024 * 256 };
-
-using SAudioBufferHandle = unsigned int;
-
-class AAudioClip : public AResource
+class ASoundResource : public AResource
 {
-    AN_CLASS( AAudioClip, AResource )
+    AN_CLASS( ASoundResource, AResource )
 
 public:
     ESoundStreamType StreamType = SOUND_STREAM_DISABLED;
+    bool bForce8Bit = false;
+    bool bForceMono = false;
 
     /** Initialize object from data */
-    bool InitializeFromData( const char * _Path, IAudioDecoderInterface * _Decoder, const byte * _Data, size_t _DataLength );
+    bool InitializeFromData( const char * _Path, IAudioDecoder * _Decoder, const byte * _Data, size_t SizeInBytes );
 
-    IAudioStreamInterface * CreateAudioStreamInstance();
+    bool CreateAudioStreamInstance( TRef< IAudioStream > * ppInterface );
 
     /** Purge audio data */
     void Purge();
 
+    /** Sample rate in hertz */
     int GetFrequency() const;
 
-    int GetBitsPerSample() const;
+    /** Bits per sample (8 or 16) */
+    int GetSampleBits() const;
 
+    /** Sample size in bytes */
+    int GetSampleWidth() const;
+
+    /** Stride between frames. In bytes */
+    int GetSampleStride() const;
+
+    /** 1 for mono, 2 for stereo */
     int GetChannels() const;
 
-    int GetSamplesCount() const;
+    /** Is mono track */
+    bool IsMono() const { return GetChannels() == 1; }
 
+    /** Is stereo track */
+    bool IsStereo() const { return GetChannels() == 2; }
+
+    /** Audio length in frames */
+    int GetFrameCount() const;
+
+    /** Audio duration in seconds */
     float GetDurationInSecounds() const;
 
     ESoundStreamType GetStreamType() const;
 
-    /** Set buffer size in samples for streamed audio */
-    void SetBufferSize( int _BufferSizeInSamples );
+    IAudioDecoder * GetDecoderInterface() { return Decoder; }
 
-    /** Get current buffer size in samples for streamed audio */
-    int GetBufferSize() const;
-
-    IAudioDecoderInterface * GetDecoderInterface() { return Decoder; }
-
+    /** File data for streaming */
     const byte * GetFileInMemory() const { return FileInMemory; }
+
+    /** File data size in bytes */
     size_t GetFileInMemorySize() const { return FileInMemorySize; }
 
+    /** File name */
     AString const & GetFileName() const { return FileName; }
 
-    /** Internal. Used by audio system to switch a buffer. */
-    SAudioBufferHandle GetBufferHandle() const { return BufferHandle; }
+    /** File samples. Null for streamed audio */
+    void const * GetRawSamples() const { return RawSamples; }
 
-    /** Internal. Used by audio system to determine when audio data changed. */
-    int GetSerialId() const { return SerialId; }
+    /** Internal. Used by audio system to determine that audio data changed. */
+    int GetRevision() const { return Revision; }
 
 protected:
-    AAudioClip();
-    ~AAudioClip();
+    ASoundResource();
+    ~ASoundResource();
 
     /** Load resource from file */
-    bool LoadResource( AString const & _Path ) override;
+    bool LoadResource( IBinaryStream & _Stream ) override;
 
     /** Create internal resource */
     void LoadInternalResource( const char * _Path ) override;
@@ -104,15 +124,14 @@ protected:
     const char * GetDefaultResourcePath() const override { return "/Default/Sound/Default"; }
 
 private:
-    SAudioBufferHandle BufferHandle = 0;
+    void * RawSamples = nullptr;
     ESoundStreamType CurStreamType = SOUND_STREAM_DISABLED;
     SAudioFileInfo AudioFileInfo;
     float  DurationInSeconds = 0.0f;
-    int    BufferSize = 0;
     byte * FileInMemory = nullptr;
     size_t FileInMemorySize = 0;
     bool   bLoaded = false;
-    TRef< IAudioDecoderInterface > Decoder;
-    int    SerialId;
+    TRef< IAudioDecoder > Decoder;
+    int    Revision;
     AString FileName;
 };

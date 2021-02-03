@@ -317,16 +317,12 @@ static void TestIES( IE_DATA & PhotoData )
     GHeapMemory.Free( data );
 }
 
-bool APhotometricProfile::LoadResource( AString const & _Path ) {
-    int extOffset = _Path.FindExt();
+bool APhotometricProfile::LoadResource( IBinaryStream & Stream ) {
+    const char * fn = Stream.GetFileName();
 
-    if ( !Core::Stricmp( &_Path[extOffset], ".ies" ) ) {
-        AFileStream f;
+    int extOffset = Core::FindExt( fn );
 
-        if ( !f.OpenRead( _Path ) ) {
-            return false;
-        }
-
+    if ( !Core::Stricmp( &fn[extOffset], ".ies" ) ) {
         IE_Context context;
         IE_DATA photoData;
 
@@ -348,7 +344,7 @@ bool APhotometricProfile::LoadResource( AString const & _Path ) {
             AFileStream * f = (AFileStream *)userData;
             return f->Gets( pbuf, size );
         };
-        context.userData = &f;
+        context.userData = &Stream;
 
         if ( !IES_Load( &context, &photoData ) ) {
             return false;
@@ -386,23 +382,17 @@ bool APhotometricProfile::LoadResource( AString const & _Path ) {
         IES_Free( &context, &photoData );
     } else {
 
-        AFileStream f;
-
-        if ( !f.OpenRead( _Path ) ) {
-            return false;
-        }
-
         uint32_t fileFormat;
         uint32_t fileVersion;
 
-        fileFormat = f.ReadUInt32();
+        fileFormat = Stream.ReadUInt32();
 
         if ( fileFormat != FMT_FILE_TYPE_PHOTOMETRIC_PROFILE ) {
             GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_PHOTOMETRIC_PROFILE );
             return false;
         }
 
-        fileVersion = f.ReadUInt32();
+        fileVersion = Stream.ReadUInt32();
 
         if ( fileVersion != FMT_VERSION_PHOTOMETRIC_PROFILE ) {
             GLogger.Printf( "Expected file version %d\n", FMT_VERSION_PHOTOMETRIC_PROFILE );
@@ -411,10 +401,10 @@ bool APhotometricProfile::LoadResource( AString const & _Path ) {
 
         AString guid;
 
-        f.ReadObject( guid );
+        Stream.ReadObject( guid );
 
-        Intensity = f.ReadFloat();
-        f.ReadBuffer( Data, sizeof( Data ) );
+        Intensity = Stream.ReadFloat();
+        Stream.ReadBuffer( Data, sizeof( Data ) );
     }
 
     return true;
