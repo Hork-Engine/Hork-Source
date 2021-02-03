@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 #include <World/Public/Base/ResourceManager.h>
 #include <World/Public/Components/InputComponent.h>
-#include <World/Public/Audio/AudioClip.h>
+#include <World/Public/Resource/SoundResource.h>
 
 AN_BEGIN_CLASS_META( APlayer )
 AN_END_CLASS_META()
@@ -277,10 +277,11 @@ void ASphereActor::BeginPlay() {
 }
 
 void ASphereActor::OnContact( SContactEvent const & Contact ) {
-    //static TStaticResourceFinder< AAudioClip > AudioClip( _CTS( "/Root/Audio/qubodup.wav" ) );
-    static TStaticResourceFinder< AAudioClip > AudioClip( _CTS( "/Root/Audio/bounce.wav" ) );
+    //static TStaticResourceFinder< ASoundResource > Sound( _CTS( "/Root/Audio/qubodup.wav" ) );
+    static TStaticResourceFinder< ASoundResource > Sound( _CTS( "/Root/Audio/bounce.wav" ) );
 
-    GAudioSystem.PlaySoundAt( AudioClip.GetObject(), Contact.Points[0].Position/*RootComponent->GetPosition()*/, this );
+    Float3 pos = Contact.Points[0].Position/*RootComponent->GetPosition()*/;
+    ASoundEmitter::PlaySoundAt( GetWorld(), Sound.GetObject(), nullptr, pos );
 }
 
 void APlayer::AttackPress() {

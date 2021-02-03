@@ -201,7 +201,7 @@ ASponzaModel::ASponzaModel()
     {
         AN_UNUSED(j);
 
-        ACollisionSphere * sphere = collisionModel->CreateBoneCollision< ACollisionSphere >( n++, CM_WORLD, CM_ALL );
+        ACollisionSphere * sphere = collisionModel->CreateBoneCollision< ACollisionSphere >( n++, CM_WORLD_DYNAMIC, CM_ALL );
         sphere->Radius = 0.1f;
     }
     indexedMesh->SetCollisionModel( collisionModel );
