@@ -35,17 +35,17 @@ SOFTWARE.
 
 thread_local jmp_buf CriticalErrorMark;
 static AAtomicBool bCriticalError( false );
-static AThreadSync CriticalErrorMutex;
+static AMutex CriticalErrorMutex;
 
 static char CriticalErrorMessage[ 4096 ] = { 0 };
 
 const char * MapCriticalErrorMessage() {
-    CriticalErrorMutex.BeginScope();
+    CriticalErrorMutex.Lock();
     return CriticalErrorMessage;
 }
 
 void UnmapCriticalErrorMessage() {
-    CriticalErrorMutex.EndScope();
+    CriticalErrorMutex.Unlock();
 }
 
 bool IsCriticalError() {
@@ -55,7 +55,7 @@ bool IsCriticalError() {
 void CriticalError( const char * _Format, ... ) {
     bCriticalError.Store( true );
 
-    CriticalErrorMutex.BeginScope();
+    CriticalErrorMutex.Lock();
 
     int criticalErrorMessageLength = Core::Strlen( CriticalErrorMessage );
 
@@ -67,7 +67,7 @@ void CriticalError( const char * _Format, ... ) {
                      VaList );
     va_end( VaList );
 
-    CriticalErrorMutex.EndScope();
+    CriticalErrorMutex.Unlock();
 
     longjmp( CriticalErrorMark, 1 );
 }

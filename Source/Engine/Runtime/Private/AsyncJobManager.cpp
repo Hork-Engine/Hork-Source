@@ -133,7 +133,7 @@ void AAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
 
                 // fetch job
                 {
-                    ASyncGuard syncGuard( jobList->SubmitSync );
+                    AMutexGurad syncGuard( jobList->SubmitSync );
 
                     //if ( jobList->FetchLock.Increment() == 1 )
                     //{
@@ -156,7 +156,7 @@ void AAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
 
                     // Check if this was last processed job in the list
                     if ( jobList->SubmittedJobsCount.Decrement() == 0 ) {
-                        ASyncGuard syncGuard( jobList->SubmitSync );
+                        AMutexGurad syncGuard( jobList->SubmitSync );
 
                         // Check for new submits
                         if ( !jobList->SubmittedJobs && jobList->SubmittedJobsCount.Load() == 0 ) {
@@ -231,7 +231,7 @@ void AAsyncJobManager::SubmitJobList( AAsyncJobList * InJobList ) {
 
     // lock section
     {
-        ASyncGuard syncGuard( InJobList->SubmitSync );
+        AMutexGurad syncGuard( InJobList->SubmitSync );
 
         headJob->Next = InJobList->SubmittedJobs;
         InJobList->SubmittedJobs = InJobList->JobList;

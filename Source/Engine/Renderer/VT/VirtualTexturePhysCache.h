@@ -165,7 +165,7 @@ private:
     int64_t LRUTime;
 
     TPodArray< SPageTransfer * > Transfers;
-    AThreadSync TransfersMutex;
+    AMutex TransfersMutex;
 
     enum { MAX_UPLOADS_PER_FRAME = 64 };
     TRef< RenderCore::IBuffer > TransferBuffer;

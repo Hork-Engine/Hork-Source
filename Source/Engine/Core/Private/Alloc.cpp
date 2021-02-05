@@ -177,7 +177,7 @@ void * AHeapMemory::Alloc( size_t _BytesCount, int _Alignment ) {
         heap->AlignOffset = aligned - bytes;
 
         {
-            SYNC_GUARD
+            ASpinLockGuard lockGuard( Mutex );
             heap->pNext = HeapChain.pNext;
             heap->pPrev = &HeapChain;
             HeapChain.pNext->pPrev = heap;
@@ -217,7 +217,7 @@ void AHeapMemory::Free( void * _Bytes ) {
         bytes -= heap->AlignOffset;
 
         {
-            SYNC_GUARD
+            ASpinLockGuard lockGuard( Mutex );
             heap->pPrev->pNext = heap->pNext;
             heap->pNext->pPrev = heap->pPrev;
         }

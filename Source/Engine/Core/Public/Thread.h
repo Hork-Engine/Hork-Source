@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "BaseTypes.h"
+#include "Atomic.h"
 
 /**
 
@@ -73,27 +73,28 @@ private:
     static void EmptyRoutine( void * ) {}
 };
 
+
 /**
 
-AThreadSync
+AMutex
 
 Thread mutex.
 
 */
-class AThreadSync final {
-    AN_FORBID_COPY( AThreadSync )
+class AMutex final {
+    AN_FORBID_COPY( AMutex )
 
     friend class ASyncEvent;
 
 public:
-    AThreadSync();
-    ~AThreadSync();
+    AMutex();
+    ~AMutex();
 
-    void BeginScope();
+    void Lock();
 
-    bool TryBeginScope();
+    bool TryLock();
 
-    void EndScope();
+    void Unlock();
 
 private:
 #ifdef AN_OS_WIN32
@@ -103,65 +104,147 @@ private:
 #endif
 };
 
+
+AN_FORCEINLINE void YieldCPU() // Unfortunately, the name Yield is already used by the macro defined in WinBase.h.
+{
+#if defined(__i386) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64)
+    /* x86/x64 */
+    #if (defined(_MSC_VER) || defined(__WATCOMC__) || defined(__DMC__)) && !defined(__clang__)
+        #if _MSC_VER >= 1400
+            _mm_pause();
+        #else
+            #if defined(__DMC__)
+                /* Digital Mars does not recognize the PAUSE opcode. Fall back to NOP. */
+                __asm nop;
+            #else
+                __asm pause;
+            #endif
+        #endif
+    #else
+        __asm__ __volatile__ ("pause");
+    #endif
+#elif (defined(__arm__) && defined(__ARM_ARCH) && __ARM_ARCH >= 7) || (defined(_M_ARM) && _M_ARM >= 7) || defined(__ARM_ARCH_6K__) || defined(__ARM_ARCH_6T2__)
+    /* ARM */
+    #if defined(_MSC_VER)
+        /* Apparently there is a __yield() intrinsic that's compatible with ARM, but I cannot find documentation for it nor can I find where it's declared. */
+        __yield();
+    #else
+        __asm__ __volatile__ ("yield"); /* ARMv6K/ARMv6T2 and above. */
+    #endif
+#else
+    /* Unknown or unsupported architecture. No-op. */
+#endif
+}
+
+
 /**
 
-ASyncGuard
+ASpinLock
 
-A ASyncGuard controls mutex ownership within a scope, releasing
+*/
+class ASpinLock final {
+    AN_FORBID_COPY( ASpinLock )
+
+public:
+    ASpinLock() : LockVar( false ) {}
+
+    AN_FORCEINLINE void Lock() noexcept
+    {
+        // https://rigtorp.se/spinlock/
+
+        for ( ;; ) {
+            // Optimistically assume the lock is free on the first try
+            if ( !LockVar.Exchange( true ) ) {
+                return;
+            }
+            // Wait for lock to be released without generating cache misses
+            while ( LockVar.LoadRelaxed() ) {
+                // Issue X86 PAUSE or ARM YIELD instruction to reduce contention between hyper-threads
+                YieldCPU();
+            }
+        }
+    }
+
+    AN_FORCEINLINE bool TryLock() noexcept
+    {
+        // First do a relaxed load to check if lock is free in order to prevent
+        // unnecessary cache misses if someone does while(!TryLock())
+        return !LockVar.LoadRelaxed() && !LockVar.Exchange( true );
+    }
+
+    AN_FORCEINLINE void Unlock() noexcept
+    {
+        LockVar.Store( false );
+    }
+
+private:
+    AAtomicBool LockVar;
+};
+
+
+/**
+
+TLockGuard
+
+Controls a synchronization primitive ownership within a scope, releasing
 ownership in the destructor.
 
 */
-class ASyncGuard final {
-    AN_FORBID_COPY( ASyncGuard )
+template< typename T >
+class TLockGuard
+{
+    AN_FORBID_COPY( TLockGuard )
 public:
-    explicit ASyncGuard( AThreadSync & _Sync );
-    ~ASyncGuard();
+    AN_FORCEINLINE explicit TLockGuard( T & _Primitive )
+      : Primitive( _Primitive )
+    {
+        Primitive.Lock();
+    }
+
+    AN_FORCEINLINE ~TLockGuard() {
+        Primitive.Unlock();
+    }
 private:
-    AThreadSync & Sync;
+    T & Primitive;
 };
 
-AN_FORCEINLINE ASyncGuard::ASyncGuard( AThreadSync & _Sync )
-  : Sync( _Sync )
-{
-    Sync.BeginScope();
-}
-
-AN_FORCEINLINE ASyncGuard::~ASyncGuard() {
-    Sync.EndScope();
-}
 
 /**
 
-ASyncGuardCond
+TLockGuardCond
 
-A ASyncGuard controls mutex ownership within a scope, releasing
+Controls a synchronization primitive ownership within a scope, releasing
 ownership in the destructor. Checks condition.
 
 */
-class ASyncGuardCond final {
-    AN_FORBID_COPY( ASyncGuardCond )
+template< typename T >
+class TLockGuardCond
+{
+    AN_FORBID_COPY( TLockGuardCond )
 public:
-    explicit ASyncGuardCond( AThreadSync & _Sync, const bool _Cond = true );
-    ~ASyncGuardCond();
+    AN_FORCEINLINE explicit TLockGuardCond( T & _Primitive, const bool _Cond = true )
+      : Primitive( _Primitive )
+      , Cond( _Cond )
+    {
+        if ( Cond ) {
+            Primitive.Lock();
+        }
+    }
+
+    AN_FORCEINLINE ~TLockGuardCond() {
+        if ( Cond ) {
+            Primitive.Unlock();
+        }
+    }
 private:
-    AThreadSync & Sync;
+    T & Primitive;
     const bool Cond;
 };
 
-AN_FORCEINLINE ASyncGuardCond::ASyncGuardCond( AThreadSync & _Sync, const bool _Cond )
-  : Sync( _Sync )
-  , Cond( _Cond )
-{
-    if ( Cond ) {
-        Sync.BeginScope();
-    }
-}
 
-AN_FORCEINLINE ASyncGuardCond::~ASyncGuardCond() {
-    if ( Cond ) {
-        Sync.EndScope();
-    }
-}
+using AMutexGurad = TLockGuard< AMutex >;
+using ASpinLockGuard = TLockGuard< ASpinLock >;
+
 
 /**
 
@@ -194,7 +277,7 @@ private:
     void SingalWIN32();
     void * Internal;
 #else
-    AThreadSync Sync;
+    AMutex Sync;
     pthread_cond_t Internal = PTHREAD_COND_INITIALIZER;
     bool bSignaled;
 #endif
@@ -218,7 +301,7 @@ AN_FORCEINLINE void ASyncEvent::Wait() {
 #ifdef AN_OS_WIN32
     WaitWIN32();
 #else
-    ASyncGuard syncGuard( Sync );
+    AMutexGurad syncGuard( Sync );
     while ( !bSignaled ) {
         pthread_cond_wait( &Internal, &Sync.Internal );
     }
@@ -231,7 +314,7 @@ AN_FORCEINLINE void ASyncEvent::Signal() {
     SingalWIN32();
 #else
     {
-        ASyncGuard syncGuard( Sync );
+        AMutexGurad syncGuard( Sync );
         bSignaled = true;
     }
     pthread_cond_signal( &Internal );

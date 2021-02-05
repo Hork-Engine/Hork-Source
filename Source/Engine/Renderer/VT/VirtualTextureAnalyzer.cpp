@@ -88,7 +88,7 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
     while ( !bStopStreamThread.Load() ) {
         // Fetch page
         {
-            ASyncGuard criticalSection( EnqueLock );
+            AMutexGurad criticalSection( EnqueLock );
 
             GLogger.Printf( "Fetch page\n" );
 
@@ -184,7 +184,7 @@ void AVirtualTextureFeedbackAnalyzer::SubmitPages( TPodArray< SPageDesc > const 
 {
     AN_ASSERT( Pages.Size() < MAX_QUEUE_LENGTH );
 
-    ASyncGuard criticalSection( EnqueLock );
+    AMutexGurad criticalSection( EnqueLock );
 
     ClearQueue();
 

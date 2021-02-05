@@ -84,7 +84,7 @@ private:
     int NumPendingJobs;
 
     SAsyncJob * SubmittedJobs;
-    AThreadSync SubmitSync;
+    AMutex SubmitSync;
 
     AAtomicInt SubmittedJobsCount;
     AAtomicInt FetchCount;

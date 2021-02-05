@@ -227,15 +227,15 @@ AVirtualTextureCache::SPageTransfer * AVirtualTextureCache::CreatePageTransfer()
 
 void AVirtualTextureCache::MakePageTransferVisible( SPageTransfer * Transfer )
 {
-    ASyncGuard criticalSection( TransfersMutex );
+    AMutexGurad criticalSection( TransfersMutex );
     Transfers.Append( Transfer );
 }
 
 bool AVirtualTextureCache::LockTransfers()
 {
-    TransfersMutex.BeginScope();
+    TransfersMutex.Lock();
     if ( Transfers.IsEmpty() ) {
-        TransfersMutex.EndScope();
+        TransfersMutex.Unlock();
         return false;
     }
     return true;
@@ -244,7 +244,7 @@ bool AVirtualTextureCache::LockTransfers()
 void AVirtualTextureCache::UnlockTransfers()
 {
     Transfers.Clear();
-    TransfersMutex.EndScope();
+    TransfersMutex.Unlock();
 }
 
 void AVirtualTextureCache::ResetCache() {

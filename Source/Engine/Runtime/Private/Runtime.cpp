@@ -479,7 +479,7 @@ struct SProcessLog {
 };
 
 static SProcessLog ProcessLog = {};
-static AThreadSync LoggerSync;
+static AMutex LoggerSync;
 
 void ARuntime::LoggerMessageCallback( int _Level, const char * _Message )
 {
@@ -522,7 +522,7 @@ void ARuntime::LoggerMessageCallback( int _Level, const char * _Message )
     }
 
     if ( ProcessLog.File ) {
-        ASyncGuard syncGuard( LoggerSync );
+        AMutexGurad syncGuard( LoggerSync );
         fprintf( ProcessLog.File, "%s", _Message );
         fflush( ProcessLog.File );
     }

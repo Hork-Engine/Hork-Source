@@ -98,7 +98,7 @@ private:
     SWideChar * pImage = ImageData[0];
     SWideChar CmdLine[MAX_CMD_LINE_CHARS];
     SWideChar StoryLines[MAX_STORY_LINES][MAX_CMD_LINE_CHARS];
-    AThreadSync ConSync;
+    AMutex ConSync;
     int MaxLineChars = 0;
     int PrintLine = 0;
     int CurWidth = 0;

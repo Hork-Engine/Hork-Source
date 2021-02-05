@@ -47,7 +47,7 @@ static const float DropSpeed = 10;
 
 void AConsole::Clear()
 {
-    ASyncGuard syncGuard( ConSync );
+    AMutexGurad syncGuard( ConSync );
 
     Core::ZeroMem( pImage, sizeof( *pImage ) * CON_IMAGE_SIZE );
 
@@ -103,7 +103,7 @@ void AConsole::_Resize( int _VidWidth )
 
 void AConsole::Resize( int _VidWidth )
 {
-    ASyncGuard syncGuard( ConSync );
+    AMutexGurad syncGuard( ConSync );
 
     _Resize( _VidWidth );
 }
@@ -115,7 +115,7 @@ void AConsole::Print( const char * _Text )
     SWideChar ch;
     int byteLen;
 
-    ASyncGuard syncGuard( ConSync );
+    AMutexGurad syncGuard( ConSync );
 
     if ( !bInitialized ) {
         _Resize( 1024 );
@@ -206,7 +206,7 @@ void AConsole::WidePrint( SWideChar const * _Text )
     SWideChar const * wordStr;
     int wordLength;
 
-    ASyncGuard syncGuard( ConSync );
+    AMutexGurad syncGuard( ConSync );
 
     if ( !bInitialized ) {
         _Resize( 640 );
@@ -370,7 +370,7 @@ void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx
 
         // Scrolling (protected by mutex)
         {
-            ASyncGuard syncGuard( ConSync );
+            AMutexGurad syncGuard( ConSync );
 
             int scrollDelta = 1;
             if ( _Event.ModMask & KMOD_MASK_CONTROL ) {
@@ -542,7 +542,7 @@ void AConsole::MouseWheelEvent( SMouseWheelEvent const & _Event )
         return;
     }
 
-    ASyncGuard syncGuard( ConSync );
+    AMutexGurad syncGuard( ConSync );
 
     if ( _Event.WheelY < 0.0 ) {
         Scroll--;
@@ -643,7 +643,7 @@ void AConsole::Draw( ACanvas * _Canvas, float _TimeStep )
 
     const float scale = 1;//(float)CharacterHeight / font->GetFontSize();
 
-    ConSync.BeginScope();
+    ConSync.Lock();
 
     DrawCmdLine( _Canvas, x, y );
 
@@ -667,7 +667,7 @@ void AConsole::Draw( ACanvas * _Canvas, float _TimeStep )
         y -= fontVStride;
     }
 
-    ConSync.EndScope();
+    ConSync.Unlock();
 }
 
 void AConsole::WriteStoryLines()

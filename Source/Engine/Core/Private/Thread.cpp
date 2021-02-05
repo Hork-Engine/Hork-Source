@@ -98,20 +98,20 @@ void * AThread::StartRoutine( void * _Thread ) {
 constexpr int INTERNAL_SIZEOF = sizeof( CRITICAL_SECTION );
 #endif
 
-AThreadSync::AThreadSync() {
+AMutex::AMutex() {
 #ifdef AN_OS_WIN32
     AN_SIZEOF_STATIC_CHECK( Internal, INTERNAL_SIZEOF );
     InitializeCriticalSection( ( CRITICAL_SECTION * )&Internal[0] );
 #endif
 }
 
-AThreadSync::~AThreadSync() {
+AMutex::~AMutex() {
 #ifdef AN_OS_WIN32
     DeleteCriticalSection( (CRITICAL_SECTION *)&Internal[0] );
 #endif
 }
 
-void AThreadSync::BeginScope() {
+void AMutex::Lock() {
 #ifdef AN_OS_WIN32
     EnterCriticalSection( (CRITICAL_SECTION *)&Internal[0] );
 #else
@@ -119,7 +119,7 @@ void AThreadSync::BeginScope() {
 #endif
 }
 
-bool AThreadSync::TryBeginScope() {
+bool AMutex::TryLock() {
 #ifdef AN_OS_WIN32
     return TryEnterCriticalSection( (CRITICAL_SECTION *)&Internal[0] ) != FALSE;
 #else
@@ -127,7 +127,7 @@ bool AThreadSync::TryBeginScope() {
 #endif
 }
 
-void AThreadSync::EndScope() {
+void AMutex::Unlock() {
 #ifdef AN_OS_WIN32
     LeaveCriticalSection( (CRITICAL_SECTION *)&Internal[0] );
 #else
@@ -172,7 +172,7 @@ void ASyncEvent::WaitTimeout( int _Milliseconds, bool & _TimedOut ) {
         nanoseconds
     };
 
-    ASyncGuard syncGuard( Sync );
+    AMutexGurad syncGuard( Sync );
     while ( !bSignaled ) {
         if ( pthread_cond_timedwait( &Internal, &Sync.Internal, &ts ) == ETIMEDOUT ) {
             _TimedOut = true;

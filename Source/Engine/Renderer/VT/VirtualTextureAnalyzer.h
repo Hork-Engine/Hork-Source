@@ -113,7 +113,7 @@ private:
     int QueueLoadPos; // pointer to a page that will be loaded first
 
     AThread StreamThread;
-    AThreadSync EnqueLock;
+    AMutex EnqueLock;
     ASyncEvent PageSubmitEvent;
     ASyncEvent StreamThreadStopped;
     AAtomicBool bStopStreamThread;

@@ -30,7 +30,6 @@ SOFTWARE.
 
 #pragma once
 
-#include "Atomic.h"
 #include "Thread.h"
 
 /*
@@ -127,7 +126,7 @@ public:
     /** Heap memory allocation (thread safe) */
     void * ClearedAlloc( size_t _BytesCount, int _Alignment = 16 );
 
-    /** Tries to realloc existing buffer */
+    /** Tries to realloc existing buffer (thread safe) */
     void * Realloc( void * _Data, int _NewBytesCount, bool _KeepOld );
 
     /** Heap memory deallocation (thread safe) */
@@ -162,9 +161,7 @@ private:
 
     SHeapChunk HeapChain;
 
-#ifdef AN_MULTITHREADED_ALLOC
-    AThreadSync Sync;
-#endif
+    ASpinLock Mutex;
 };
 
 AN_FORCEINLINE void * AHeapMemory::ClearedAlloc( size_t _BytesCount, int _Alignment ) {
@@ -191,6 +188,8 @@ HunkMemory.ClearToMark( Mark ); // here all buffers allocated after SetHunkMark 
 
 Allocated chunks are aligned at 16-byte boundary.
 If you need other alignment, do it on top of the allocator.
+
+Only for main thread.
 
 */
 class AHunkMemory final {
@@ -260,6 +259,8 @@ AZoneMemory
 For small blocks, objects or strings.
 Allocated chunks are aligned at 16-byte boundary.
 If you need other alignment, do it on top of the allocator.
+
+Only for main thread.
 
 */
 class AZoneMemory final {
