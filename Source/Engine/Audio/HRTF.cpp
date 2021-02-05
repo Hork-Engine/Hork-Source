@@ -300,7 +300,8 @@ void AAudioHRTF::SampleHRTF( Float3 const & Dir, SComplex * pLeftHRTF, SComplex 
 
 void AAudioHRTF::ApplyHRTF( Float3 const & CurDir, Float3 const & NewDir, const float * pFrames, int InFrameCount, float * pStream, Float3 & Dir )
 {
-    AN_ASSERT( InFrameCount > 0 && ( InFrameCount % HRTF_BLOCK_LENGTH ) == 0 );
+    AN_ASSERT( InFrameCount > 0 );
+    AN_ASSERT( ( InFrameCount % HRTF_BLOCK_LENGTH ) == 0 );
 
     const int numBlocks = InFrameCount / HRTF_BLOCK_LENGTH;
     const int hrtfLen = FrameCount - 1;
