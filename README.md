@@ -94,7 +94,7 @@ PBR (physically based).
 ## Audio
 * Decoders ogg, flac, mp3, wav
 * Streaming support
-* 2D and 3D
+* 2D and 3D / HRTF
 * Unlimited audio sources
 
 ## Fast scene raycasting
