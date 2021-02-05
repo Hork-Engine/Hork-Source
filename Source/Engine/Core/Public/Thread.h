@@ -105,7 +105,9 @@ private:
 };
 
 
-AN_FORCEINLINE void YieldCPU() // Unfortunately, the name Yield is already used by the macro defined in WinBase.h.
+// Unfortunately, the name Yield is already used by the macro defined in WinBase.h.
+// This great function was taken from miniaudio
+AN_FORCEINLINE void YieldCPU()
 {
 #if defined(__i386) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64)
     /* x86/x64 */
