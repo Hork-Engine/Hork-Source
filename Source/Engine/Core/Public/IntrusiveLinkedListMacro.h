@@ -79,5 +79,20 @@ Intrusive linked list macro
     } \
 }
 
+#define INTRUSIVE_MERGE( _next, _prev, _head1, _tail1, _head2, _tail2 ) \
+{ \
+    if ( _head2 ) { \
+        if ( _tail1 ) { \
+            _tail1->_next = (_head2); \
+        } \
+        _head2->_prev = _tail1; \
+        _tail1 = _tail2; \
+        if ( !_head1 ) { \
+            _head1 = _head2; \
+        } \
+        _head2 = _tail2 = nullptr; \
+    } \
+}
+
 #define INTRUSIVE_FOREACH( object, head_or_tail, next_or_prev ) \
     for ( auto * object = head_or_tail ; object ; object = object->next_or_prev )
