@@ -72,10 +72,10 @@ public:
     bool ExtractFileToMemory( int _FileIndex, void * _MemoryBuffer, size_t _SizeInBytes ) const;
 
     /** Decompress file to heap memory */
-    bool ExtractFileToHeapMemory( const char * _FileName, byte ** _HeapMemoryPtr, int * _SizeInBytes ) const;
+    bool ExtractFileToHeapMemory( const char * _FileName, void ** _HeapMemoryPtr, int * _SizeInBytes ) const;
 
     /** Decompress file to hunk memory */
-    bool ExtractFileToHunkMemory( const char * _FileName, byte ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark ) const;
+    bool ExtractFileToHunkMemory( const char * _FileName, void ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark ) const;
 
 private:
     void * Handle;
@@ -161,9 +161,9 @@ public:
     ~AMemoryStream();
 
     /** Read from specified memory buffer */
-    bool OpenRead( const char * _FileName, const byte * _MemoryBuffer, size_t _SizeInBytes );
+    bool OpenRead( const char * _FileName, const void * _MemoryBuffer, size_t _SizeInBytes );
     /** Read from specified memory buffer */
-    bool OpenRead( AString const & _FileName, const byte * _MemoryBuffer, size_t _SizeInBytes );
+    bool OpenRead( AString const & _FileName, const void * _MemoryBuffer, size_t _SizeInBytes );
 
     /** Read file from archive */
     bool OpenRead( const char * _FileName, AArchive const & _Archive );
@@ -171,9 +171,9 @@ public:
     bool OpenRead( AString const & _FileName, AArchive const & _Archive );
 
     /** Write to specified memory buffer */
-    bool OpenWrite( const char * _FileName, byte * _MemoryBuffer, size_t _SizeInBytes );
+    bool OpenWrite( const char * _FileName, void * _MemoryBuffer, size_t _SizeInBytes );
     /** Write to specified memory buffer */
-    bool OpenWrite( AString const & _FileName, byte * _MemoryBuffer, size_t _SizeInBytes );
+    bool OpenWrite( AString const & _FileName, void * _MemoryBuffer, size_t _SizeInBytes );
 
     /** Write to inner memory buffer */
     bool OpenWrite( const char * _FileName, size_t _ReservedSize = 32 );
@@ -187,7 +187,7 @@ public:
     bool IsOpened() const { return Mode != M_Closed; }
 
     /** Grab memory buffer */
-    byte * GrabMemory();
+    void * GrabMemory();
 
     void SetGrowGranularity( int _Granularity ) { Granularity = _Granularity; }
 

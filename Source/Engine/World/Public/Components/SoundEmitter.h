@@ -31,9 +31,10 @@ SOFTWARE.
 #pragma once
 
 #include <World/Public/Resource/SoundResource.h>
-#include <World/Public/AudioMixer.h>
 #include <World/Public/Actors/Pawn.h>
 #include <World/Public/World.h>
+
+#include <Audio/AudioChannel.h>
 
 #include <Core/Public/PodQueue.h>
 
@@ -205,13 +206,14 @@ public:
     TRef< AWorld > World;
     TRef< ASoundGroup > Group;
     TRef< ASceneComponent > Instigator;
-    TRef< IAudioStream > StreamInterface;
     TRef< ASoundResource > Resource;
     uint64_t    InstigatorId;
     int         ResourceRevision;
     Float3      SoundPosition;
     Float3      SoundDirection;
     float       Volume;
+    int         ChanVolume[2];
+    Float3      LocalDir;
     float       ReferenceDistance;
     float       MaxDistance;
     float       RolloffRate;
@@ -221,8 +223,9 @@ public:
     bool        bStopWhenInstigatorDead : 1;
     bool        bVirtualizeWhenSilent : 1;
     bool        bFollowInstigator : 1;
+    bool        bSpatializedStereo : 1;
 
-    SAudioChannel Channel;
+    SAudioChannel * Channel;
 
     ASoundOneShot * Next;
     ASoundOneShot * Prev;
@@ -238,6 +241,9 @@ public:
         SoundPosition.Clear();
         SoundDirection.Clear();
         Volume = 0;
+        ChanVolume[0] = 0;
+        ChanVolume[1] = 0;
+        LocalDir.Clear();
         ReferenceDistance = 0;
         MaxDistance = 0;
         RolloffRate = 0;
@@ -247,14 +253,17 @@ public:
         bStopWhenInstigatorDead = false;
         bVirtualizeWhenSilent = false;
         bFollowInstigator = false;
+        bSpatializedStereo = false;
         Next = nullptr;
         Prev = nullptr;
-        Core::ZeroMem( &Channel, sizeof( Channel ) );
+        Channel = nullptr;
     }
 
     virtual ~ASoundOneShot() {}
 
     void Spatialize();
+
+    bool IsPaused() const;
 };
 
 class ASoundEmitter : public ASceneComponent
@@ -384,10 +393,12 @@ public:
     bool IsMuted() const;
 
     /** Is sound is virtualized (culled) */
-    bool IsVirtual() const;
+    //bool IsVirtual() const;
 
     /** Return true if no sound plays */
     bool IsSilent() const;
+
+    bool IsPaused() const;
 
     /** Next sound emitter from global list */
     ASoundEmitter * GetNext() { return Next; }
@@ -428,13 +439,8 @@ private:
 
     void Spatialize();
 
-    void Virtualize();
-    void Devirtualize();
-
-    static void Update( ASoundOneShot * Sound );
+    static void UpdateSound( ASoundOneShot * Sound );
     static void FreeSound( ASoundOneShot * Sound );
-    static void Virtualize( ASoundOneShot * Sound );
-    static void Devirtualize( ASoundOneShot * Sound );
 
     using AQueue = TPodQueue< ASoundResource *, 1, false, AZoneAllocator >;
 
@@ -446,14 +452,16 @@ private:
     ESoundEmitterType EmitterType;
     TRef< ASoundResource > Resource;
     int ResourceRevision;
-    TRef< IAudioStream > StreamInterface;
-    SAudioChannel Channel;
+    SAudioChannel * Channel;
     float Volume;
     float ReferenceDistance;
     float MaxDistance;
     float RolloffRate;
     float ConeInnerAngle;
     float ConeOuterAngle;
+    int ChanVolume[2];
+    Float3 LocalDir;
+    bool bSpatializedStereo;
     bool bEmitterPaused : 1;
     bool bVirtualizeWhenSilent : 1;
     bool bMuted : 1;

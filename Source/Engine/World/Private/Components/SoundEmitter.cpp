@@ -41,18 +41,7 @@ ASoundEmitter * ASoundEmitter::SoundEmittersTail;
 ASoundOneShot * ASoundEmitter::OneShots = nullptr;
 ASoundOneShot * ASoundEmitter::OneShotsTail = nullptr;
 
-static void AddChannel( SAudioChannel * Channel )
-{
-    INTRUSIVE_ADD_UNIQUE( Channel, Next, Prev, SAudioChannel::Channels, SAudioChannel::ChannelsTail );
-}
-
-static void RemoveChannel( SAudioChannel * Channel )
-{
-    INTRUSIVE_REMOVE( Channel, Next, Prev, SAudioChannel::Channels, SAudioChannel::ChannelsTail );
-}
-
 AN_CLASS_META( ASoundGroup )
-
 AN_CLASS_META( ASoundEmitter )
 
 ASoundEmitter::ASoundEmitter()
@@ -60,6 +49,8 @@ ASoundEmitter::ASoundEmitter()
     ListenerMask = ~0u;
     EmitterType = SOUND_EMITTER_POINT;
     Volume = 1.0f;
+    ChanVolume[0] = 0;
+    ChanVolume[1] = 0;
     ReferenceDistance = SOUND_REF_DISTANCE_DEFAULT;
     MaxDistance = SOUND_DISTANCE_DEFAULT;
     RolloffRate = SOUND_ROLLOFF_RATE_DEFAULT;
@@ -68,10 +59,7 @@ ASoundEmitter::ASoundEmitter()
     bEmitterPaused = false;
     bVirtualizeWhenSilent = false;
     ResourceRevision = 0;
-
-    Core::ZeroMem( &Channel, sizeof( Channel ) );
-    Channel.LoopStart = -1;
-
+    Channel = nullptr;
     bCanEverTick = true;
 }
 
@@ -115,6 +103,8 @@ void ASoundEmitter::OnCreateAvatar()
 void ASoundEmitter::BeginPlay()
 {
     INTRUSIVE_ADD( this, Next, Prev, SoundEmitters, SoundEmittersTail );
+
+    Spatialize();
 
     if ( IsSilent() ) {
         SelectNextSound();
@@ -163,14 +153,9 @@ void ASoundEmitter::PlaySound( ASoundResource * SoundResource, int StartFrame, i
 
     Spatialize();
 
-    if ( Channel.NewVol[0] == 0 && Channel.NewVol[1] == 0 ) {
-        if ( !bShouldVirtualizeWhenSilent ) {
-            // Don't even start
-            return;
-        }
-
-        // Start virtualized
-        Virtualize();
+    if ( !bShouldVirtualizeWhenSilent && ChanVolume[0] == 0 && ChanVolume[1] == 0 ) {
+        // Don't even start
+        return;
     }
 
     StartPlay( SoundResource, StartFrame, _LoopStart );
@@ -270,7 +255,7 @@ bool ASoundEmitter::StartPlay( ASoundResource * SoundResource, int StartFrame, i
         loopsCount++;
     }
 
-    TRef< IAudioStream > streamInterface;
+    TRef< SAudioStream > streamInterface;
 
     // Initialize audio stream instance
     if ( SoundResource->GetStreamType() != SOUND_STREAM_DISABLED ) {
@@ -279,27 +264,28 @@ bool ASoundEmitter::StartPlay( ASoundResource * SoundResource, int StartFrame, i
             return false;
         }
     }
+    else {
+        if ( !SoundResource->GetAudioBuffer() ) {
+            GLogger.Printf( "ASoundEmitter::StartPlay: Resource has no audio buffer\n" );
+            return false;
+        }
+    }
 
     Resource = SoundResource;
     ResourceRevision = Resource->GetRevision();
-    StreamInterface = streamInterface;
 
-    Channel.LoopStart = LoopStart;
-    Channel.PlaybackPos = StartFrame;
-    Channel.PlaybackEnd = 0; // Will be calculated by mixer
-    Channel.LoopsCount = loopsCount;
-    Channel.StreamInterface = StreamInterface.GetObject();    
-    Channel.pRawSamples = SoundResource->GetRawSamples();
-    Channel.FrameCount = SoundResource->GetFrameCount();
-    Channel.Ch = SoundResource->GetChannels();
-    Channel.SampleBits = SoundResource->GetSampleBits();
-    Channel.SampleStride = SoundResource->GetSampleStride();
+    Channel = new SAudioChannel( StartFrame,
+                                 LoopStart,
+                                 loopsCount,
+                                 SoundResource->GetAudioBuffer(),
+                                 streamInterface,
+                                 bVirtualizeWhenSilent,
+                                 ChanVolume,
+                                 LocalDir,
+                                 bSpatializedStereo,
+                                 IsPaused() );
 
-    if ( StreamInterface && !Channel.bVirtual ) {
-        StreamInterface->SeekToFrame( StartFrame );
-    }
-
-    AddChannel( &Channel );
+    GAudioSystem.GetMixer()->SubmitChannel( Channel );
 
     return true;
 }
@@ -308,21 +294,26 @@ bool ASoundEmitter::RestartSound()
 {
     TRef< ASoundResource > newSound = Resource;
 
-    RemoveChannel( &Channel );
+    int loopStart = Channel ? Channel->GetLoopStart() : -1;
+
+    if ( Channel ) {
+        Channel->RemoveRef();
+        Channel = nullptr;
+    }
 
     Resource.Reset();
-    StreamInterface.Reset();
 
-    return StartPlay( newSound.GetObject(), 0, Channel.LoopStart );
+    return StartPlay( newSound.GetObject(), 0, loopStart );
 }
 
 void ASoundEmitter::ClearSound()
 {
-    RemoveChannel( &Channel );
-    Core::ZeroMem( &Channel, sizeof( Channel ) );
+    if ( Channel ) {
+        Channel->RemoveRef();
+        Channel = nullptr;
+    }
 
     Resource.Reset();
-    StreamInterface.Reset();
 
     ClearQueue();
 }
@@ -358,10 +349,12 @@ bool ASoundEmitter::SelectNextSound()
 {
     bool bSelected = false;
 
-    RemoveChannel( &Channel );
+    if ( Channel ) {
+        Channel->RemoveRef();
+        Channel = nullptr;
+    }
 
     Resource.Reset();
-    StreamInterface.Reset();
 
     while ( !AudioQueue.IsEmpty() && !bSelected ) {
         ASoundResource * playSound = *AudioQueue.Pop();
@@ -382,28 +375,21 @@ void ASoundEmitter::ClearQueue()
     }
 }
 
-void ASoundEmitter::Virtualize()
+bool ASoundEmitter::IsPaused() const
 {
-    if ( Channel.bVirtual ) {
-        return;
+    bool paused = bEmitterPaused;
+
+    bool bPlayEvenWhenPaused = Group ? Group->ShouldPlayEvenWhenPaused() : false;
+
+    if ( !bPlayEvenWhenPaused ) {
+        paused = paused || GetWorld()->IsPaused();
     }
 
-    // ... do something here ...
-
-    Channel.bVirtual = true;
-}
-
-void ASoundEmitter::Devirtualize()
-{
-    if ( !Channel.bVirtual ) {
-        return;
+    if ( Group ) {
+        paused = paused || Group->IsPaused();
     }
 
-    if ( StreamInterface ) {
-        StreamInterface->SeekToFrame( Channel.PlaybackPos );
-    }
-
-    Channel.bVirtual = false;
+    return paused;
 }
 
 void ASoundEmitter::Update()
@@ -422,84 +408,24 @@ void ASoundEmitter::Update()
     }
 
     // Select next sound from queue if playback position is reached the end
-    if ( Channel.PlaybackPos >= Resource->GetFrameCount() ) {
+    if ( Channel->GetPlaybackPos() >= Channel->FrameCount ) {
         if ( !SelectNextSound() ) {
             return;
         }
     }
 
-    bool paused = bEmitterPaused;
-
-    bool bPlayEvenWhenPaused = Group ? Group->ShouldPlayEvenWhenPaused() : false;
-
-    if ( !bPlayEvenWhenPaused ) {
-        paused = paused || GetWorld()->IsPaused();
+    if ( Channel->IsStopped() ) {
+        ClearSound();
+        return;
     }
 
-    if ( Group ) {
-        paused = paused || Group->IsPaused();
-    }
+    bool paused = IsPaused();
 
-    // Check unpaused
-    if ( !paused && Channel.bPaused ) {
-        // fade out
-        Channel.CurVol[0] = 0;
-        Channel.CurVol[1] = 0;
-    }
-
-    Channel.bPaused = paused;
-
-    if ( Channel.bPaused ) {
-        // fade in
-        Channel.NewVol[0] = 0;
-        Channel.NewVol[1] = 0;
-
-        // Channel is really paused if current volume is zero
-        if ( Channel.CurVol[0] == 0 && Channel.CurVol[1] == 0 ) {
-            Virtualize();
-            return;
-        }
-    }
-
-    if ( !Channel.bPaused ) {
+    if ( !paused ) {
         Spatialize();
     }
 
-    if ( Channel.NewVol[0] == 0 && Channel.NewVol[1] == 0
-         && Channel.CurVol[0] == 0 && Channel.CurVol[1] == 0 ) {
-        if ( !Channel.bVirtual ) {
-            bool bLooped = Channel.LoopStart >= 0;
-            if ( bVirtualizeWhenSilent || bLooped ) {
-                Virtualize();
-            }
-            else {
-                ClearSound();
-                return;
-            }
-        }
-    }
-    else {
-        Devirtualize();
-    }
-
-#if 0
-    if ( IsVirtual() ) {
-        // Update playback position
-        VirtualTime += TimeStep;
-
-        if ( VirtualTime >= Clip->GetDurationInSecounds() ) {
-            if ( Channel.LoopStart >= 0 ) {
-                VirtualTime = Channel.LoopStart / GAudioSystem.pPlaybackDevice->GetSampleRate(); //Clip->GetFrequency();
-                Channel.LoopsCount++;
-            }
-            else {
-                // Stopped
-                FreeChannel( Chan );
-                return;
-            }
-        }
-    }
-#endif
+    Channel->Commit( ChanVolume, LocalDir, bSpatializedStereo, paused );
 }
 
 static void CalcAttenuation( ESoundEmitterType EmitterType,
@@ -569,8 +495,8 @@ void ASoundEmitter::Spatialize()
 {
     SAudioListener const & listener = GAudioSystem.GetListener();
 
-    Channel.NewVol[0] = 0;
-    Channel.NewVol[1] = 0;
+    ChanVolume[0] = 0;
+    ChanVolume[1] = 0;
 
     // Cull if muted
     if ( bMuted ) {
@@ -604,17 +530,17 @@ void ASoundEmitter::Spatialize()
         volume = 1.0f;
     }
 
-    const float VolumeFtoI = 65536;
+    const float VolumeFtoI = 65535;
 
     volume *= VolumeFtoI;
 
     // If the sound is played from the listener, consider it as background
     if ( EmitterType == SOUND_EMITTER_BACKGROUND || GetOwnerActor()->Id == listener.Id ) {
         // Use full volume without attenuation
-        Channel.NewVol[0] = Channel.NewVol[1] = (int)volume;
+        ChanVolume[0] = ChanVolume[1] = (int)volume;
 
         // Don't spatialize stereo sounds
-        Channel.bSpatializedStereo = false;
+        bSpatializedStereo = false;
         return;
     }
 
@@ -624,23 +550,28 @@ void ASoundEmitter::Spatialize()
 
     CalcAttenuation( EmitterType, soundPosition, GetWorldForwardVector(), listener.Position, listener.RightVec, ReferenceDistance, MaxDistance, RolloffRate, ConeInnerAngle, ConeOuterAngle, &leftVol, &rightVol );
 
-    Channel.NewVol[0] = (int)(volume * leftVol);
-    Channel.NewVol[1] = (int)(volume * rightVol);
+    ChanVolume[0] = (int)(volume * leftVol);
+    ChanVolume[1] = (int)(volume * rightVol);
 
     // Should never happen, but just in case
-    if ( Channel.NewVol[0] < 0 )
-        Channel.NewVol[0] = 0;
-    if ( Channel.NewVol[1] < 0 )
-        Channel.NewVol[1] = 0;
-    if ( Channel.NewVol[0] > 65536 )
-        Channel.NewVol[0] = 65536;
-    if ( Channel.NewVol[1] > 65536 )
-        Channel.NewVol[1] = 65536;
+    if ( ChanVolume[0] < 0 )
+        ChanVolume[0] = 0;
+    if ( ChanVolume[1] < 0 )
+        ChanVolume[1] = 0;
+    if ( ChanVolume[0] > 65535 )
+        ChanVolume[0] = 65535;
+    if ( ChanVolume[1] > 65535 )
+        ChanVolume[1] = 65535;
 
-    Channel.bSpatializedStereo = !GAudioSystem.IsMono();
+    bSpatializedStereo = !GAudioSystem.IsMono();
 
     if ( Snd_HRTF ) {
-        Channel.NewDir = (listener.TransformInv * soundPosition).Normalized();
+        LocalDir = listener.TransformInv * soundPosition;
+        float d = LocalDir.NormalizeSelf();
+        if ( d < 0.0001f ) {
+            // Sound has same position as listener
+            LocalDir = Float3( 0, 1, 0 );
+        }
     }
 }
 
@@ -706,24 +637,20 @@ void ASoundEmitter::SetPaused( bool _bPaused )
 
 void ASoundEmitter::SetPlaybackPosition( int FrameNum )
 {
-    if ( !Resource ) {
+    if ( !Channel ) {
         return;
     }
 
-    if ( Channel.PlaybackPos == FrameNum ) {
+    if ( Channel->GetPlaybackPos() == FrameNum ) {
         return;
     }
 
-    Channel.PlaybackPos = Math::Clamp( FrameNum, 0, Resource->GetFrameCount() );
-
-    if ( StreamInterface && !Channel.bVirtual ) {
-        StreamInterface->SeekToFrame( Channel.PlaybackPos );
-    }
+    Channel->ChangePlaybackPosition( Math::Clamp( FrameNum, 0, Channel->FrameCount ) );
 }
 
 int ASoundEmitter::GetPlaybackPosition() const
 {
-    return Channel.PlaybackPos;
+    return Channel->GetPlaybackPos();
 }
 
 void ASoundEmitter::SetPlaybackTime( float Time )
@@ -739,7 +666,7 @@ float ASoundEmitter::GetPlaybackTime() const
 {
     AAudioDevice * device = GAudioSystem.GetPlaybackDevice();
 
-    return (float)Channel.PlaybackPos / device->GetSampleRate();
+    return (float)Channel->GetPlaybackPos() / device->GetSampleRate();
 }
 
 void ASoundEmitter::SetMuted( bool _bMuted )
@@ -752,10 +679,10 @@ bool ASoundEmitter::IsMuted() const
     return bMuted;
 }
 
-bool ASoundEmitter::IsVirtual() const
-{
-    return Channel.bVirtual;
-}
+//bool ASoundEmitter::IsVirtual() const
+//{
+//    return Channel->bVirtual; // TODO: Needs synchronization
+//}
 
 bool ASoundEmitter::IsSilent() const
 {
@@ -810,17 +737,23 @@ void ASoundEmitter::SpawnSound( ASoundResource * SoundResource, Float3 const & S
         }
     }
 
-    TRef< IAudioStream > streamInterface;
+    TRef< SAudioStream > streamInterface;
 
     // Initialize audio stream instance
     if ( SoundResource->GetStreamType() != SOUND_STREAM_DISABLED ) {
         if ( !SoundResource->CreateAudioStreamInstance( &streamInterface ) ) {
-            GLogger.Printf( "Couldn't create audio stream instance\n" );
+            GLogger.Printf( "ASoundEmitter::SpawnSound: Couldn't create audio stream instance\n" );
+            return;
+        }
+    }
+    else {
+        if ( !SoundResource->GetAudioBuffer() ) {
+            GLogger.Printf( "ASoundEmitter::SpawnSound: Resource has no audio buffer\n" );
             return;
         }
     }
 
-    auto & pool = GAudioSystem.GetChannelPool();
+    auto & pool = GAudioSystem.GetOneShotPool();
 
     ASoundOneShot * sound = new ( pool.Allocate() ) ASoundOneShot;
     sound->Volume = Math::Saturate( SpawnInfo->Volume );
@@ -831,7 +764,6 @@ void ASoundEmitter::SpawnSound( ASoundResource * SoundResource, Float3 const & S
     sound->EmitterType = SpawnInfo->EmitterType;
     sound->Resource = SoundResource;
     sound->ResourceRevision = SoundResource->GetRevision();
-    sound->StreamInterface = streamInterface;
     sound->Priority = SpawnInfo->Priority;
     sound->bFollowInstigator = SpawnInfo->bFollowInstigator;
     if ( SpawnInfo->EmitterType == SOUND_EMITTER_DIRECTIONAL ) {
@@ -852,29 +784,28 @@ void ASoundEmitter::SpawnSound( ASoundResource * SoundResource, Float3 const & S
     sound->World = World;
     sound->SoundPosition = SpawnPosition;
     sound->bVirtualizeWhenSilent = SpawnInfo->bVirtualizeWhenSilent;
-    sound->Channel.PlaybackPos = startFrame;
-    sound->Channel.LoopStart = -1;
-    sound->Channel.StreamInterface = streamInterface.GetObject();
-    sound->Channel.pRawSamples = SoundResource->GetRawSamples();
-    sound->Channel.FrameCount = SoundResource->GetFrameCount();
-    sound->Channel.Ch = SoundResource->GetChannels();
-    sound->Channel.SampleBits = SoundResource->GetSampleBits();
-    sound->Channel.SampleStride = SoundResource->GetSampleStride();
-    sound->Channel.bPaused = false;
-
     sound->Spatialize();
 
-    if ( sound->Channel.NewVol[0] == 0 && sound->Channel.NewVol[1] == 0 ) {
-        Virtualize( sound );
-    }
-
-    if ( sound->StreamInterface && !sound->Channel.bVirtual ) {
-        sound->StreamInterface->SeekToFrame( sound->Channel.PlaybackPos );
+    if ( !sound->bVirtualizeWhenSilent && sound->ChanVolume[0] == 0 && sound->ChanVolume[1] == 0 ) {
+        // Don't even start
+        FreeSound( sound );
+        return;
     }
 
     INTRUSIVE_ADD( sound, Next, Prev, OneShots, OneShotsTail );
 
-    AddChannel( &sound->Channel );
+    sound->Channel = new SAudioChannel( startFrame,
+                                        -1,
+                                        0,
+                                        SoundResource->GetAudioBuffer(),
+                                        streamInterface.GetObject(),
+                                        sound->bVirtualizeWhenSilent,
+                                        sound->ChanVolume,
+                                        sound->LocalDir,
+                                        sound->bSpatializedStereo,
+                                        sound->IsPaused() );
+
+    GAudioSystem.GetMixer()->SubmitChannel( sound->Channel );
 }
 
 void ASoundEmitter::ClearOneShotSounds()
@@ -892,41 +823,21 @@ void ASoundEmitter::ClearOneShotSounds()
 
 void ASoundEmitter::FreeSound( ASoundOneShot * Sound )
 {
-    RemoveChannel( &Sound->Channel );
+    if ( Sound->Channel ) {
+        Sound->Channel->RemoveRef();
+    }
 
     INTRUSIVE_REMOVE( Sound, Next, Prev, OneShots, OneShotsTail );
 
     Sound->~ASoundOneShot();
 
-    auto & pool = GAudioSystem.GetChannelPool();
+    auto & pool = GAudioSystem.GetOneShotPool();
     pool.Deallocate( Sound );
 }
 
-void ASoundEmitter::Virtualize( ASoundOneShot * Sound )
+void ASoundEmitter::UpdateSound( ASoundOneShot * Sound )
 {
-    if ( Sound->Channel.bVirtual ) {
-        return;
-    }
-
-    Sound->Channel.bVirtual = true;
-}
-
-void ASoundEmitter::Devirtualize( ASoundOneShot * Sound )
-{
-    if ( !Sound->Channel.bVirtual ) {
-        return;
-    }
-
-    Sound->Channel.bVirtual = false;
-
-    if ( Sound->StreamInterface ) {
-        Sound->StreamInterface->SeekToFrame( Sound->Channel.PlaybackPos );
-    }
-}
-
-void ASoundEmitter::Update( ASoundOneShot * Sound )
-{
-    SAudioChannel * chan = &Sound->Channel;
+    SAudioChannel * chan = Sound->Channel;
 
     // Check if the instigator is still alive
     if ( Sound->bStopWhenInstigatorDead && Sound->Instigator && Sound->Instigator->IsPendingKill() ) {
@@ -941,7 +852,7 @@ void ASoundEmitter::Update( ASoundOneShot * Sound )
     }
 
     // Free the channel if the sound stops
-    if ( chan->PlaybackPos >= chan->FrameCount ) {
+    if ( chan->GetPlaybackPos() >= chan->FrameCount || chan->IsStopped() ) {
         FreeSound( Sound );
         return;
     }
@@ -955,80 +866,21 @@ void ASoundEmitter::Update( ASoundOneShot * Sound )
         }
     }
 
+    bool paused = Sound->IsPaused();
 
-    AWorld * world = Sound->World;
-
-    bool bPlayEvenWhenPaused = Sound->Group ? Sound->Group->ShouldPlayEvenWhenPaused() : false;
-
-    bool paused = false;
-    if ( world && !bPlayEvenWhenPaused ) {
-        paused = world->IsPaused();
-    }
-    if ( Sound->Group ) {
-        paused = paused || Sound->Group->IsPaused();
-    }
-
-    // Check unpaused
-    if ( !paused && chan->bPaused ) {
-        // fade out
-        chan->CurVol[0] = 0;
-        chan->CurVol[1] = 0;
-    }
-
-    chan->bPaused = paused;
-
-    if ( chan->bPaused ) {
-        // fade in
-        chan->NewVol[0] = 0;
-        chan->NewVol[1] = 0;
-
-        // Channel is really paused if current volume is zero
-        if ( chan->CurVol[0] == 0 && chan->CurVol[1] == 0 ) {
-            Virtualize( Sound );
-            return;
-        }
-    }
-    
-    if ( !chan->bPaused ) {
+    if ( !paused ) {
         Sound->Spatialize();
     }
 
-    if ( chan->NewVol[0] == 0 && chan->NewVol[1] == 0
-         && chan->CurVol[0] == 0 && chan->CurVol[1] == 0 ) {
-        if ( !chan->bVirtual ) {
-            if ( Sound->bVirtualizeWhenSilent ) {
-                Virtualize( Sound );
-            }
-            else {
-                FreeSound( Sound );
-                return;
-            }
-        }
-    }
-    else {
-        Devirtualize( Sound );
-    }
-
-#if 0
-    if ( Sound->IsVirtual() ) {
-        // Update playback position
-        Sound->VirtualTime += TimeStep;
-
-        if ( Sound->VirtualTime >= chan->Clip->GetDurationInSecounds() ) {
-            // Stopped
-            FreeSound( Sound );
-            return;
-        }
-    }
-#endif
+    chan->Commit( Sound->ChanVolume, Sound->LocalDir, Sound->bSpatializedStereo, paused );
 }
 
 void ASoundOneShot::Spatialize()
 {
     SAudioListener const & listener = GAudioSystem.GetListener();
 
-    Channel.NewVol[0] = 0;
-    Channel.NewVol[1] = 0;
+    ChanVolume[0] = 0;
+    ChanVolume[1] = 0;
 
     // Cull by client
     if ( AudioClient && listener.Id != AudioClient ) {
@@ -1059,17 +911,17 @@ void ASoundOneShot::Spatialize()
         volume = 1.0f;
     }
 
-    const float VolumeFtoI = 65536;
+    const float VolumeFtoI = 65535;
 
     volume *= VolumeFtoI;
 
     // If the sound is played from the listener, consider it as background
     if ( EmitterType == SOUND_EMITTER_BACKGROUND || ( bFollowInstigator && InstigatorId == listener.Id ) ) {
         // Use full volume without attenuation
-        Channel.NewVol[0] = Channel.NewVol[1] = (int)volume;
+        ChanVolume[0] = ChanVolume[1] = (int)volume;
 
         // Don't spatialize stereo sounds
-        Channel.bSpatializedStereo = false;
+        bSpatializedStereo = false;
         return;
     }
 
@@ -1077,24 +929,44 @@ void ASoundOneShot::Spatialize()
 
     CalcAttenuation( EmitterType, SoundPosition, SoundDirection, listener.Position, listener.RightVec, ReferenceDistance, MaxDistance, RolloffRate, ConeInnerAngle, ConeOuterAngle, &leftVol, &rightVol );
 
-    Channel.NewVol[0] = (int)(volume * leftVol);
-    Channel.NewVol[1] = (int)(volume * rightVol);
+    ChanVolume[0] = (int)(volume * leftVol);
+    ChanVolume[1] = (int)(volume * rightVol);
 
     // Should never happen, but just in case
-    if ( Channel.NewVol[0] < 0 )
-        Channel.NewVol[0] = 0;
-    if ( Channel.NewVol[1] < 0 )
-        Channel.NewVol[1] = 0;
-    if ( Channel.NewVol[0] > 65536 )
-        Channel.NewVol[0] = 65536;
-    if ( Channel.NewVol[1] > 65536 )
-        Channel.NewVol[1] = 65536;
+    if ( ChanVolume[0] < 0 )
+        ChanVolume[0] = 0;
+    if ( ChanVolume[1] < 0 )
+        ChanVolume[1] = 0;
+    if ( ChanVolume[0] > 65535 )
+        ChanVolume[0] = 65535;
+    if ( ChanVolume[1] > 65535 )
+        ChanVolume[1] = 65535;
 
-    Channel.bSpatializedStereo = !GAudioSystem.IsMono();
+    bSpatializedStereo = !GAudioSystem.IsMono();
 
     if ( Snd_HRTF ) {
-        Channel.NewDir = (listener.TransformInv * SoundPosition).Normalized();
+        LocalDir = listener.TransformInv * SoundPosition;
+        float d = LocalDir.NormalizeSelf();
+        if ( d < 0.0001f ) {
+            // Sound has same position as listener
+            LocalDir = Float3(0,1,0);
+        }
     }
+}
+
+bool ASoundOneShot::IsPaused() const
+{
+    bool bPlayEvenWhenPaused = Group ? Group->ShouldPlayEvenWhenPaused() : false;
+
+    bool paused = false;
+    if ( World && !bPlayEvenWhenPaused ) {
+        paused = World->IsPaused();
+    }
+    if ( Group ) {
+        paused = paused || Group->IsPaused();
+    }
+
+    return paused;
 }
 
 void ASoundEmitter::UpdateSounds()
@@ -1103,7 +975,7 @@ void ASoundEmitter::UpdateSounds()
 
     for ( ASoundOneShot * sound = OneShots ; sound ; sound = next ) {
         next = sound->Next;
-        Update( sound );
+        UpdateSound( sound );
     }
 
     for ( ASoundEmitter * e = SoundEmitters ; e ; e = e->GetNext() ) {

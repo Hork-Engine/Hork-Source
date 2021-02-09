@@ -48,15 +48,32 @@ struct SZoneAllocator
 };
 
 template< typename TAllocator >
-class TRefCounted
+struct TRefCounted
 {
+private:
+    int RefCount;
+
+    SWeakRefCounter * WeakRefCounter = nullptr;
+
 public:
+    void * operator new( size_t _SizeInBytes )
+    {
+        return TAllocator().Allocate( _SizeInBytes );
+    }
+
+    void operator delete( void * _Ptr )
+    {
+        TAllocator().Deallocate( _Ptr );
+    }
+
     TRefCounted()
         : RefCount( 1 )
     {
     }
 
-    virtual ~TRefCounted() {}
+    virtual ~TRefCounted()
+    {
+    }
 
     /** Non-copyable pattern */
     TRefCounted( TRefCounted< TAllocator > const & ) = delete;
@@ -81,30 +98,84 @@ public:
         AN_ASSERT( RefCount > 0 );
     }
 
-    int GetRefCount() const { return RefCount; }
+    /** Reference count */
+    int GetRefCount() const
+    {
+        return RefCount;
+    }
 
     /** Set weakref counter. Used by TWeakRef */
-    void SetWeakRefCounter( SWeakRefCounter * _RefCounter ) { WeakRefCounter = _RefCounter; }
+    void SetWeakRefCounter( SWeakRefCounter * _RefCounter )
+    {
+        WeakRefCounter = _RefCounter;
+    }
 
     /** Get weakref counter. Used by TWeakRef */
-    SWeakRefCounter * GetWeakRefCounter() { return WeakRefCounter; }
+    SWeakRefCounter * GetWeakRefCounter()
+    {
+        return WeakRefCounter;
+    }
+};
 
+using ARefCounted = TRefCounted< SZoneAllocator >;
+
+
+/**
+
+SInterlockedRef
+
+Uses heap memory allocator because it's thread safe.
+Reference counter is interlocked variable.
+
+*/
+struct SInterlockedRef
+{
+    AN_FORBID_COPY( SInterlockedRef )
+
+private:
+    /** Reference counter */
+    AAtomicInt RefCount;
+
+public:
     void * operator new( size_t _SizeInBytes )
     {
-        return TAllocator().Allocate( _SizeInBytes );
+        return GHeapMemory.Alloc( _SizeInBytes );
     }
 
     void operator delete( void * _Ptr )
     {
-        TAllocator().Deallocate( _Ptr );
+        GHeapMemory.Free( _Ptr );
     }
 
-private:
-    int RefCount;
-    SWeakRefCounter * WeakRefCounter = nullptr;
-};
+    SInterlockedRef()
+        : RefCount( 1 )
+    {
+    }
 
-using ARefCounted = TRefCounted< SZoneAllocator >;
+    virtual ~SInterlockedRef()
+    {
+    }
+
+    /** Add reference. */
+    AN_FORCEINLINE void AddRef()
+    {
+        RefCount.Increment();
+    }
+
+    /** Remove reference. */
+    AN_FORCEINLINE void RemoveRef()
+    {
+        if ( RefCount.Decrement() == 0 ) {
+            delete this;
+        }
+    }
+
+    /** Reference count */
+    AN_FORCEINLINE int GetRefCount() const
+    {
+        return RefCount.Load();
+    }
+};
 
 
 /**
@@ -115,11 +186,15 @@ Shared pointer
 
 */
 template< typename T >
-class TRef final {
+class TRef final
+{
 public:
     using ReferencedType = T;
 
-    TRef() : Object( nullptr ) {}
+    TRef()
+        : Object( nullptr )
+    {
+    }
 
     TRef( TRef< T > const & _Ref )
         : Object( _Ref.Object )
@@ -137,52 +212,67 @@ public:
         }
     }
 
-    ~TRef() {
+    ~TRef()
+    {
         if ( Object ) {
             Object->RemoveRef();
         }
     }
 
-    T * GetObject() { return Object; }
-
-    T const * GetObject() const { return Object; }
-
-//    operator bool() const {
-//        return Object != nullptr;
-//    }
-
-    operator T*() const {
+    T * GetObject()
+    {
         return Object;
     }
 
-    T & operator *() const {
+    T const * GetObject() const
+    {
+        return Object;
+    }
+
+//    operator bool() const
+//    {
+//        return Object != nullptr;
+//    }
+
+    operator T*() const
+    {
+        return Object;
+    }
+
+    T & operator *() const
+    {
         AN_ASSERT_( Object, "TRef" );
         return *Object;
     }
 
-    T * operator->() {
+    T * operator->()
+    {
         AN_ASSERT_( Object, "TRef" );
         return Object;
     }
 
-    T const * operator->() const {
+    T const * operator->() const
+    {
         AN_ASSERT_( Object, "TRef" );
         return Object;
     }
 
-    void Reset() {
+    void Reset()
+    {
         if ( Object ) {
             Object->RemoveRef();
             Object = nullptr;
         }
     }
 
-    TRef< T > & operator=( TRef< T > const & _Ref ) {
+    TRef< T > & operator=( TRef< T > const & _Ref )
+    {
         this->operator =( _Ref.Object );
         return *this;
     }
 
-    TRef< T > & operator=( T * _Object ) {
+    TRef< T > & operator=( T * _Object )
+    {
         if ( Object == _Object ) {
             return *this;
         }
@@ -195,6 +285,7 @@ public:
         }
         return *this;
     }
+
 private:
     T * Object;
 };
@@ -208,21 +299,23 @@ Weak pointer
 
 */
 
-struct SWeakRefCounter {
+struct SWeakRefCounter
+{
     void * Object;
     int RefCount;
 };
 
-class AWeakReference {
+class AWeakReference
+{
 protected:
-    AWeakReference() : WeakRefCounter( nullptr ) {}
-
-//    void ResetWeakRef( ABaseObject * _Object );
-
-//    void RemoveWeakRef();
+    AWeakReference()
+        : WeakRefCounter( nullptr )
+    {
+    }
 
     template< typename T >
-    void ResetWeakRef( T * _Object ) {
+    void ResetWeakRef( T * _Object )
+    {
         T * Cur = WeakRefCounter ? (T*)WeakRefCounter->Object : nullptr;
 
         if ( Cur == _Object ) {
@@ -247,7 +340,8 @@ protected:
     }
 
     template< typename T >
-    void RemoveWeakRef() {
+    void RemoveWeakRef()
+    {
         if ( WeakRefCounter ) {
             if ( --WeakRefCounter->RefCount == 0 ) {
                 if ( WeakRefCounter->Object ) {
@@ -268,78 +362,96 @@ private:
 };
 
 template< typename T >
-class TWeakRef final : public AWeakReference {
+class TWeakRef final : public AWeakReference
+{
 public:
     TWeakRef() {}
 
-    TWeakRef( TWeakRef< T > const & _Ref ) {
+    TWeakRef( TWeakRef< T > const & _Ref )
+    {
         ResetWeakRef( const_cast< T * >( _Ref.GetObject() ) );
     }
 
-    TWeakRef( TRef< T > const & _Ref ) {
+    TWeakRef( TRef< T > const & _Ref )
+    {
         ResetWeakRef( const_cast< T * >( _Ref.GetObject() ) );
     }
 
-    explicit TWeakRef( T * _Object ) {
+    explicit TWeakRef( T * _Object )
+    {
         ResetWeakRef( _Object );
     }
 
-    ~TWeakRef() {
+    ~TWeakRef()
+    {
         RemoveWeakRef< T >();
     }
 
-    TRef< T > ToStrongRef() const {
+    TRef< T > ToStrongRef() const
+    {
         return TRef< T >( const_cast< T * >( GetObject() ) );
     }
 
-    T * GetObject() {
+    T * GetObject()
+    {
         return WeakRefCounter ? static_cast< T * >( WeakRefCounter->Object ) : nullptr;
     }
 
-    T const * GetObject() const {
+    T const * GetObject() const
+    {
         return WeakRefCounter ? static_cast< T * >( WeakRefCounter->Object ) : nullptr;
     }
 
-//    operator bool() const {
+//    operator bool() const
+//    {
 //        return !IsExpired();
 //    }
 
-    operator T*() const {
+    operator T*() const
+    {
         return const_cast< T * >( GetObject() );
     }
 
-    T & operator *() const {
+    T & operator *() const
+    {
         AN_ASSERT_( !IsExpired(), "TWeakRef" );
         return *GetObject();
     }
 
-    T * operator->() {
+    T * operator->()
+    {
         AN_ASSERT_( !IsExpired(), "TWeakRef" );
         return GetObject();
     }
 
-    T const * operator->() const {
+    T const * operator->() const
+    {
         AN_ASSERT_( !IsExpired(), "TWeakRef" );
         return GetObject();
     }
 
-    bool IsExpired() const {
+    bool IsExpired() const
+    {
         return !WeakRefCounter || static_cast< T * >( WeakRefCounter->Object ) == nullptr;
     }
 
-    void Reset() {
+    void Reset()
+    {
         RemoveWeakRef< T >();
     }
 
-    void operator=( T * _Object ) {
+    void operator=( T * _Object )
+    {
         ResetWeakRef( _Object );
     }
 
-    void operator=( TRef< T > const & _Ref ) {
+    void operator=( TRef< T > const & _Ref )
+    {
         ResetWeakRef( const_cast< T * >( _Ref.GetObject() ) );
     }
 
-    void operator=( TWeakRef< T > const & _Ref ) {
+    void operator=( TWeakRef< T > const & _Ref )
+    {
         ResetWeakRef( const_cast< T * >( _Ref.GetObject() ) );
     }
 };

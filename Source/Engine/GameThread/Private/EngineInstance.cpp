@@ -40,7 +40,7 @@ SOFTWARE.
 #include <World/Private/PrimitiveLinkPool.h>
 
 #include <Audio/Codec/MiniaudioDecoder.h>
-#include <World/Public/AudioMixer.h>
+#include <Audio/AudioMixer.h>
 
 #include <Runtime/Public/Runtime.h>
 

@@ -471,7 +471,7 @@ public:
     TStdVector< TRef< AMaterialInstance > > SurfaceMaterials;
 
     /** Baked collision data */
-    TRef< ACollisionModel > CollisionModel;
+    //TRef< ACollisionModel > CollisionModel;
 
     /** Lighting data will be used from that level. */
     TWeakRef< ALevel > ParentLevel;
@@ -737,8 +737,6 @@ private:
     TPodArray< AActor * > Actors;
 
     BvAxisAlignedBox IndoorBounds;
-
-    class AWorldspawn * Worldspawn = nullptr;
 
     TPodArray< ALightmapUV * > LightmapUVs;
     TPodArray< AVertexLight * > VertexLightChannels;

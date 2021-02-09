@@ -29,11 +29,7 @@ SOFTWARE.
 */
 
 #include <World/Public/AudioSystem.h>
-#include <World/Public/AudioMixer.h>
-#include <World/Public/World.h>
 #include <World/Public/Actors/PlayerController.h>
-#include <World/Public/Components/PhysicalBody.h>
-#include <World/Public/Components/SoundEmitter.h>
 
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
@@ -41,6 +37,7 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 
 #include <Audio/AudioDevice.h>
+#include <Audio/AudioMixer.h>
 
 ARuntimeVariable Snd_MasterVolume( _CTS("Snd_MasterVolume"), _CTS("1") );
 ARuntimeVariable Snd_RefreshRate( _CTS("Snd_RefreshRate"), _CTS("16") );
@@ -61,8 +58,9 @@ void AAudioSystem::Initialize()
 
     pPlaybackDevice = MakeUnique< AAudioDevice >( 44100 );
     pMixer = MakeUnique< AAudioMixer >( pPlaybackDevice.GetObject() );
-
     bMono = pPlaybackDevice->IsMono();
+
+    pMixer->StartAsync();
 }
 
 void AAudioSystem::Deinitialize()
@@ -73,7 +71,7 @@ void AAudioSystem::Deinitialize()
 
     pMixer.Reset();
     pPlaybackDevice.Reset();
-    ChannelPool.Free();
+    OneShotPool.Free();
 }
 
 void AAudioSystem::AddAudioDecoder( const char * _Extension, IAudioDecoder * _Interface )
@@ -169,5 +167,5 @@ void AAudioSystem::Update( APlayerController * _Controller, float _TimeStep )
         ASoundEmitter::UpdateSounds();
     }
 
-    pMixer->Update();
+//    pMixer->Update();
 }

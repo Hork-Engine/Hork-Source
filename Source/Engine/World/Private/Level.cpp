@@ -35,7 +35,6 @@ SOFTWARE.
 #include <World/Public/Components/SkinnedComponent.h>
 #include <World/Public/Components/CameraComponent.h>
 #include <World/Public/Components/PointLightComponent.h>
-#include <World/Public/Components/SoundEmitter.h>
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/Resource/Texture.h>
 #include <Core/Public/BV/BvIntersect.h>
@@ -48,27 +47,6 @@ ARuntimeVariable com_DrawLevelIndoorBounds( _CTS( "com_DrawLevelIndoorBounds" ),
 ARuntimeVariable com_DrawLevelPortals( _CTS( "com_DrawLevelPortals" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ALevel )
-
-class AWorldspawn : public AActor {
-    AN_ACTOR( AWorldspawn, AActor )
-
-public:
-
-protected:
-    AWorldspawn();
-
-    void PreInitializeComponents() override;
-    void PostInitializeComponents() override;
-    void BeginPlay() override;
-    void Tick( float _TimeStep ) override;
-
-private:
-    void UpdateAmbientVolume( float _TimeStep );
-
-    TPodArray< ASoundEmitter * > AmbientSound;
-
-    APhysicalBody * WorldCollision;
-};
 
 ALevel::ALevel() {
     ViewCluster = -1;
@@ -91,6 +69,7 @@ void ALevel::OnAddLevelToWorld() {
 }
 
 void ALevel::OnRemoveLevelFromWorld() {
+    DestroyActors();
 }
 
 void ALevel::Initialize() {
@@ -99,13 +78,6 @@ void ALevel::Initialize() {
     for ( SVisArea & area : Areas ) {
         IndoorBounds.AddAABB( area.Bounds );
     }
-
-    if ( Worldspawn )
-    {
-        Worldspawn->Destroy();
-    }
-
-    Worldspawn = OwnerWorld->SpawnActor< AWorldspawn >( this );
 
     ViewMark = 0;
     ViewCluster = -1;
@@ -193,7 +165,6 @@ void ALevel::DestroyActors() {
         AActor * actor = Actors.Last();
         actor->Destroy();
     }
-    Worldspawn = nullptr;
 }
 
 void ALevel::PurgePortals() {
@@ -1024,106 +995,5 @@ void ABrushModel::Purge() {
 
     SurfaceMaterials.Free();
 
-    CollisionModel.Reset();
-}
-
-AN_CLASS_META( AWorldspawn )
-
-AWorldspawn::AWorldspawn() {
-    WorldCollision = CreateComponent< APhysicalBody >( "WorldCollision" );
-    WorldCollision->SetMotionBehavior( MB_STATIC );
-    WorldCollision->SetCollisionGroup( CM_WORLD_STATIC );
-    WorldCollision->SetCollisionMask( CM_ALL );
-    WorldCollision->SetAINavigationBehavior( AI_NAVIGATION_BEHAVIOR_STATIC );
-
-    bCanEverTick = true;
-}
-
-void AWorldspawn::PreInitializeComponents() {
-    Super::PreInitializeComponents();
-
-    ALevel * level = GetLevel();
-
-    // Setup world collision
-    if ( level->Model ) {
-        WorldCollision->SetCollisionModel( level->Model->CollisionModel );
-    }
-
-    // Create ambient control
-    int ambientCount = level->AmbientSounds.Size();
-    AmbientSound.Resize( ambientCount );
-    for ( int i = 0 ; i < ambientCount ; i++ ) {
-        AmbientSound[i] = CreateComponent< ASoundEmitter >( "Ambient" );
-        AmbientSound[i]->SetEmitterType( SOUND_EMITTER_BACKGROUND );
-        AmbientSound[i]->SetVirtualizeWhenSilent( true );
-        AmbientSound[i]->SetVolume( 0.0f );
-    }
-}
-
-void AWorldspawn::PostInitializeComponents() {
-    Super::PostInitializeComponents();
-}
-
-void AWorldspawn::BeginPlay() {
-    Super::BeginPlay();
-
-    ALevel * level = GetLevel();
-
-    int ambientCount = level->AmbientSounds.Size();
-
-    for ( int i = 0 ; i < ambientCount ; i++ ) {
-        AmbientSound[i]->PlaySound( level->AmbientSounds[i], 0, 0 );
-    }
-}
-
-void AWorldspawn::Tick( float _TimeStep ) {
-    Super::Tick( _TimeStep );
-
-    UpdateAmbientVolume( _TimeStep );
-}
-
-void AWorldspawn::UpdateAmbientVolume( float _TimeStep ) {
-    ALevel * level = GetLevel();
-
-    int leaf = level->FindLeaf( GAudioSystem.GetListener().Position );
-
-    if ( leaf < 0 ) {
-        int ambientCount = AmbientSound.Size();
-
-        for ( int i = 0 ; i < ambientCount ; i++ ) {
-            AmbientSound[i]->SetVolume( 0.0f );
-        }
-        return;
-    }
-
-    int audioAreaNum = level->Leafs[leaf].AudioArea;
-
-    SAudioArea const * audioArea = &level->AudioAreas[audioAreaNum];
-
-    const float scale = 0.1f;
-    const float step = _TimeStep * scale;
-    for ( int i = 0 ; i < MAX_AMBIENT_SOUNDS_IN_AREA ; i++ ) {
-        uint16_t soundIndex = audioArea->AmbientSound[i];
-        float volume = (float)audioArea->AmbientVolume[i]/255.0f * scale;
-
-        ASoundEmitter * emitter = AmbientSound[soundIndex];
-
-        float vol = emitter->GetVolume();
-
-        if ( vol < volume ) {
-            vol += step;
-
-            if ( vol > volume ) {
-                vol = volume;
-            }
-        } else if ( vol > volume ) {
-            vol -= step;
-
-            if ( vol < 0 ) {
-                vol = 0;
-            }
-        }
-
-        emitter->SetVolume( vol );
-    }
+    //CollisionModel.Reset();
 }

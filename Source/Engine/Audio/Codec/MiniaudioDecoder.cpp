@@ -246,9 +246,9 @@ bool AMiniaudioDecoder::LoadFromFile( IBinaryStream & File, SAudioFileInfo * pAu
         ma_uint64 framesCapacity = 0;
         void* pFrames = NULL;
         byte temp[8192];
-        int stride = ( pAudioFileInfo->SampleBits >> 3 ) * pAudioFileInfo->Channels;
+        const int stride = ( pAudioFileInfo->SampleBits >> 3 ) * pAudioFileInfo->Channels;
+        const ma_uint64 framesToReadRightNow = AN_ARRAY_SIZE( temp ) / stride;
         for ( ;; ) {
-            ma_uint64 framesToReadRightNow = AN_ARRAY_SIZE( temp ) / stride;
             ma_uint64 framesJustRead = ma_decoder_read_pcm_frames( &decoder, temp, framesToReadRightNow );
             if ( framesJustRead == 0 ) {
                 break;
@@ -281,15 +281,38 @@ bool AMiniaudioDecoder::LoadFromFile( IBinaryStream & File, SAudioFileInfo * pAu
             }
         }
 
-        pAudioFileInfo->NumFrames = totalFramesRead;
+        pAudioFileInfo->FrameCount = totalFramesRead;
 
         *ppFrames = pFrames;
     }
     else {
-        pAudioFileInfo->NumFrames = ma_decoder_get_length_in_pcm_frames( &decoder ); // For MP3's, this will decode the entire file
+        pAudioFileInfo->FrameCount = ma_decoder_get_length_in_pcm_frames( &decoder ); // For MP3's, this will decode the entire file
+
+        // ma_decoder_get_length_in_pcm_frames will always return 0 for Vorbis decoders.
+        // This is due to a limitation with stb_vorbis in push mode which is what miniaudio
+        // uses internally.
+        if ( pAudioFileInfo->FrameCount == 0 ) { // stb_vorbis :(
+            ma_uint64 totalFramesRead = 0;
+            byte temp[8192];
+            const int stride = (pAudioFileInfo->SampleBits >> 3) * pAudioFileInfo->Channels;
+            const ma_uint64 framesToReadRightNow = AN_ARRAY_SIZE( temp ) / stride;
+            for ( ;; ) {
+                ma_uint64 framesJustRead = ma_decoder_read_pcm_frames( &decoder, temp, framesToReadRightNow );
+                if ( framesJustRead == 0 ) {
+                    break;
+                }
+                totalFramesRead += framesJustRead;
+                // Check EOF
+                if ( framesJustRead != framesToReadRightNow ) {
+                    break;
+                }
+            }
+
+            pAudioFileInfo->FrameCount = totalFramesRead;
+        }
     }
 
     ma_decoder_uninit( &decoder );
 
-    return pAudioFileInfo->NumFrames > 0;
+    return pAudioFileInfo->FrameCount > 0;
 }

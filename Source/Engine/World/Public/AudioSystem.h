@@ -78,9 +78,9 @@ public:
         return pMixer.GetObject();
     }
 
-    TPoolAllocator< ASoundOneShot, 128 > & GetChannelPool()
+    TPoolAllocator< ASoundOneShot, 128 > & GetOneShotPool()
     {
-        return ChannelPool;
+        return OneShotPool;
     }
 
     bool IsMono() const
@@ -126,7 +126,7 @@ private:
 
     TUniqueRef< AAudioDevice > pPlaybackDevice;
     TUniqueRef< AAudioMixer > pMixer;
-    TPoolAllocator< ASoundOneShot, 128 > ChannelPool;
+    TPoolAllocator< ASoundOneShot, 128 > OneShotPool;
     SAudioListener Listener;
     bool bMono;
 };

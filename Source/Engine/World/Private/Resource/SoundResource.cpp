@@ -81,7 +81,7 @@ int ASoundResource::GetChannels() const
 
 int ASoundResource::GetFrameCount() const
 {
-    return AudioFileInfo.NumFrames;
+    return AudioFileInfo.FrameCount;
 }
 
 float ASoundResource::GetDurationInSecounds() const
@@ -107,7 +107,7 @@ bool ASoundResource::LoadResource( IBinaryStream & Stream )
 
     Purge();
 
-    AN_ASSERT( !RawSamples );
+    AN_ASSERT( !pBuffer );
 
     FileName = Stream.GetFileName();
 
@@ -124,7 +124,7 @@ bool ASoundResource::LoadResource( IBinaryStream & Stream )
     switch ( CurStreamType ) {
     case SOUND_STREAM_DISABLED:
     {
-        if ( !Decoder->LoadFromFile( Stream, &AudioFileInfo, deviceSampleRate, mono, bForce8Bit, &RawSamples ) ) {
+        if ( !Decoder->CreateBuffer( Stream, &AudioFileInfo, deviceSampleRate, mono, bForce8Bit, &pBuffer ) ) {
             return false;
         }
 
@@ -146,11 +146,13 @@ bool ASoundResource::LoadResource( IBinaryStream & Stream )
 
         Stream.SeekEnd( 0 );
 
-        FileInMemorySize = Stream.Tell();
-        FileInMemory = (byte *)GHeapMemory.Alloc( FileInMemorySize );
+        size_t sizeInBytes = Stream.Tell();
+        void * pHeapPtr = (byte *)GHeapMemory.Alloc( sizeInBytes );
 
         Stream.Rewind();
-        Stream.ReadBuffer( FileInMemory, FileInMemorySize );
+        Stream.ReadBuffer( pHeapPtr, sizeInBytes );
+
+        pFileInMemory = MakeRef< SFileInMemory >( pHeapPtr, sizeInBytes );
 
         break;
     }
@@ -159,19 +161,18 @@ bool ASoundResource::LoadResource( IBinaryStream & Stream )
         return false;
     }
 
-    bLoaded = true;
     DurationInSeconds = (float)GetFrameCount() / GetFrequency();
 
     return true;
 }
 
-bool ASoundResource::InitializeFromData( const char * _Path, IAudioDecoder * _Decoder, const byte * _Data, size_t SizeInBytes )
+bool ASoundResource::InitializeFromMemory( const char * _Path, IAudioDecoder * _Decoder, const void * _SysMem, size_t _SizeInBytes )
 {
     AAudioDevice * device = GAudioSystem.GetPlaybackDevice();
 
     Purge();
 
-    AN_ASSERT( !RawSamples );
+    AN_ASSERT( !pBuffer );
 
     FileName = _Path;
 
@@ -195,11 +196,11 @@ bool ASoundResource::InitializeFromData( const char * _Path, IAudioDecoder * _De
     {
         AMemoryStream f;
 
-        if ( !f.OpenRead( _Path, _Data, SizeInBytes ) ) {
+        if ( !f.OpenRead( _Path, _SysMem, _SizeInBytes ) ) {
             return false;
         }
 
-        if ( !Decoder->LoadFromFile( f, &AudioFileInfo, deviceSampleRate, mono, bForce8Bit, &RawSamples ) ) {
+        if ( !Decoder->CreateBuffer( f, &AudioFileInfo, deviceSampleRate, mono, bForce8Bit, &pBuffer ) ) {
             return false;
         }
 
@@ -209,7 +210,7 @@ bool ASoundResource::InitializeFromData( const char * _Path, IAudioDecoder * _De
     {
         AMemoryStream f;
 
-        if ( !f.OpenRead( _Path, _Data, SizeInBytes ) ) {
+        if ( !f.OpenRead( _Path, _SysMem, _SizeInBytes ) ) {
             return false;
         }
 
@@ -219,11 +220,13 @@ bool ASoundResource::InitializeFromData( const char * _Path, IAudioDecoder * _De
 
         f.SeekEnd( 0 );
 
-        FileInMemorySize = f.Tell();
-        FileInMemory = (byte *)GHeapMemory.Alloc( FileInMemorySize );
+        size_t sizeInBytes = f.Tell();
+        void * pHeapPtr = GHeapMemory.Alloc( sizeInBytes );
 
         f.Rewind();
-        f.ReadBuffer( FileInMemory, FileInMemorySize );
+        f.ReadBuffer( pHeapPtr, sizeInBytes );
+
+        pFileInMemory = MakeRef< SFileInMemory >( pHeapPtr, sizeInBytes );
 
         break;
     }
@@ -232,12 +235,12 @@ bool ASoundResource::InitializeFromData( const char * _Path, IAudioDecoder * _De
         return false;
     }
 
-    bLoaded = true;
     DurationInSeconds = (float)GetFrameCount() / GetFrequency();
 
     return true;
 }
 
+#if 0
 bool ASoundResource::CreateAudioStreamInstance( TRef< IAudioStream > * ppInterface )
 {
     if ( CurStreamType == SOUND_STREAM_DISABLED || !Decoder ) {
@@ -271,20 +274,23 @@ bool ASoundResource::CreateAudioStreamInstance( TRef< IAudioStream > * ppInterfa
 
     return (*ppInterface) != nullptr;
 }
+#endif
+
+bool ASoundResource::CreateAudioStreamInstance( TRef< SAudioStream > * ppInterface )
+{
+    if ( CurStreamType != SOUND_STREAM_MEMORY || !pFileInMemory ) {
+        return false;
+    }
+
+    *ppInterface = MakeRef< SAudioStream >( pFileInMemory, GetFrameCount(), GetFrequency(), GetSampleBits(), GetChannels() );
+    return true;
+}
 
 void ASoundResource::Purge()
 {
-    GHeapMemory.Free( RawSamples );
-    RawSamples = nullptr;
-
-    GHeapMemory.Free( FileInMemory );
-    FileInMemory = nullptr;
-    FileInMemorySize = 0;
-
-    bLoaded = false;
-
+    pBuffer.Reset();
+    pFileInMemory.Reset();
     DurationInSeconds = 0;
-
     Decoder = nullptr;
 
     // Mark resource was changed

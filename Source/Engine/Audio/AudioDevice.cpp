@@ -175,15 +175,35 @@ AAudioDevice::~AAudioDevice()
     GHeapMemory.Free( pTransferBuffer );
 }
 
+void AAudioDevice::SetMixerCallback( std::function< void( uint8_t * pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender ) > _MixerCallback )
+{
+    SDL_LockAudioDevice( AudioDeviceId );
+
+    MixerCallback = _MixerCallback;
+
+    SDL_UnlockAudioDevice( AudioDeviceId );
+}
+
 void AAudioDevice::RenderAudio( uint8_t * pStream, int StreamLength )
 {
+    int sampleWidth = SampleBits / 8;
+
     if ( !pTransferBuffer ) {
         // Should never happen
         Core::ZeroMem( pStream, StreamLength );
         return;
     }
 
-    int sampleWidth = SampleBits / 8;
+    if ( MixerCallback ) {
+        if ( TransferOffset < PrevTransferOffset ) {
+            BufferWraps++;
+        }
+        PrevTransferOffset = TransferOffset;
+
+        int frameNum = BufferWraps * NumFrames + ( TransferOffset >> (Channels - 1) );
+
+        MixerCallback( pTransferBuffer, NumFrames, frameNum, StreamLength / sampleWidth );
+    }
 
     int offset = TransferOffset * sampleWidth;
     if ( offset >= TransferBufferSizeInBytes ) {

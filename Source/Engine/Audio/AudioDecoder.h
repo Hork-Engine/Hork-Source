@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Core/Public/Ref.h>
 #include <Core/Public/BinaryStream.h>
 
+#include "AudioBuffer.h"
+
 class IAudioStream : public ARefCounted
 {
 public:
@@ -51,7 +53,7 @@ public:
 
 struct SAudioFileInfo
 {
-    int NumFrames;
+    int FrameCount;
     int Channels;
     int SampleBits;
 };
@@ -63,4 +65,6 @@ public:
 
     /** Open audio file and read PCM frames to heap memory */
     virtual bool LoadFromFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void ** ppFrames = nullptr ) = 0;
+
+    bool CreateBuffer( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, TRef< SAudioBuffer > * ppBuffer );
 };

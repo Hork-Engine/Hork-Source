@@ -225,7 +225,7 @@ void AMemoryStream::Free( void * _Data ) {
     GHeapMemory.Free( _Data );
 }
 
-bool AMemoryStream::OpenRead( AString const & _FileName, const byte * _MemoryBuffer, size_t _SizeInBytes ) {
+bool AMemoryStream::OpenRead( AString const & _FileName, const void * _MemoryBuffer, size_t _SizeInBytes ) {
     return OpenRead( _FileName.CStr(), _MemoryBuffer, _SizeInBytes );
 }
 
@@ -233,7 +233,7 @@ bool AMemoryStream::OpenRead( AString const & _FileName, AArchive const & _Archi
     return OpenRead( _FileName.CStr(), _Archive );
 }
 
-bool AMemoryStream::OpenWrite( AString const & _FileName, byte * _MemoryBuffer, size_t _SizeInBytes ) {
+bool AMemoryStream::OpenWrite( AString const & _FileName, void * _MemoryBuffer, size_t _SizeInBytes ) {
     return OpenWrite( _FileName.CStr(), _MemoryBuffer, _SizeInBytes );
 }
 
@@ -241,10 +241,10 @@ bool AMemoryStream::OpenWrite( AString const & _FileName, size_t _ReservedSize )
     return OpenWrite( _FileName.CStr(), _ReservedSize );
 }
 
-bool AMemoryStream::OpenRead( const char * _FileName, const byte * _MemoryBuffer, size_t _SizeInBytes ) {
+bool AMemoryStream::OpenRead( const char * _FileName, const void * _MemoryBuffer, size_t _SizeInBytes ) {
     Close();
     Name = _FileName;
-    MemoryBuffer = const_cast< byte * >( _MemoryBuffer );
+    MemoryBuffer = reinterpret_cast< byte * >( const_cast< void * >( _MemoryBuffer ) );
     MemoryBufferSize = _SizeInBytes;
     bMemoryBufferOwner = false;
     MemoryBufferOffset = 0;
@@ -255,7 +255,7 @@ bool AMemoryStream::OpenRead( const char * _FileName, const byte * _MemoryBuffer
 bool AMemoryStream::OpenRead( const char * _FileName, AArchive const & _Archive ) {
     Close();
 
-    if ( !_Archive.ExtractFileToHeapMemory( _FileName, &MemoryBuffer, &MemoryBufferSize ) ) {
+    if ( !_Archive.ExtractFileToHeapMemory( _FileName, (void **)&MemoryBuffer, &MemoryBufferSize ) ) {
         return false;
     }
 
@@ -266,10 +266,10 @@ bool AMemoryStream::OpenRead( const char * _FileName, AArchive const & _Archive 
     return true;
 }
 
-bool AMemoryStream::OpenWrite( const char * _FileName, byte * _MemoryBuffer, size_t _SizeInBytes ) {
+bool AMemoryStream::OpenWrite( const char * _FileName, void * _MemoryBuffer, size_t _SizeInBytes ) {
     Close();
     Name = _FileName;
-    MemoryBuffer = _MemoryBuffer;
+    MemoryBuffer = reinterpret_cast< byte * >( _MemoryBuffer );
     MemoryBufferSize = _SizeInBytes;
     bMemoryBufferOwner = false;
     MemoryBufferOffset = 0;
@@ -435,7 +435,7 @@ bool AMemoryStream::Impl_Eof() {
     return MemoryBufferOffset >= MemoryBufferSize;
 }
 
-byte * AMemoryStream::GrabMemory() {
+void * AMemoryStream::GrabMemory() {
     return MemoryBuffer;
 }
 
@@ -557,7 +557,7 @@ bool AArchive::ExtractFileToMemory( int _FileIndex, void * _MemoryBuffer, size_t
     return !!mz_zip_reader_extract_to_mem( (mz_zip_archive *)Handle, _FileIndex, _MemoryBuffer, _SizeInBytes, 0 );
 }
 
-bool AArchive::ExtractFileToHeapMemory( const char * _FileName, byte ** _HeapMemoryPtr, int * _SizeInBytes ) const {
+bool AArchive::ExtractFileToHeapMemory( const char * _FileName, void ** _HeapMemoryPtr, int * _SizeInBytes ) const {
     size_t uncompSize;
 
     *_HeapMemoryPtr = nullptr;
@@ -579,13 +579,13 @@ bool AArchive::ExtractFileToHeapMemory( const char * _FileName, byte ** _HeapMem
         return false;
     }
 
-    *_HeapMemoryPtr = (byte *)pBuf;
+    *_HeapMemoryPtr = pBuf;
     *_SizeInBytes = uncompSize;
 
     return true;
 }
 
-bool AArchive::ExtractFileToHunkMemory( const char * _FileName, byte ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark ) const {
+bool AArchive::ExtractFileToHunkMemory( const char * _FileName, void ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark ) const {
     size_t uncompSize;
 
     *_HunkMark = GHunkMemory.SetHunkMark();
@@ -609,7 +609,7 @@ bool AArchive::ExtractFileToHunkMemory( const char * _FileName, byte ** _HunkMem
         return false;
     }
 
-    *_HunkMemoryPtr = (byte *)pBuf;
+    *_HunkMemoryPtr = pBuf;
     *_SizeInBytes = uncompSize;
 
     return true;

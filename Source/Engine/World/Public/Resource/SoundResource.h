@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <World/Public/Base/Resource.h>
 #include <Audio/AudioDecoder.h>
+#include <Audio/AudioMixer.h>
 
 enum ESoundStreamType
 {
@@ -57,10 +58,11 @@ public:
     bool bForce8Bit = false;
     bool bForceMono = false;
 
-    /** Initialize object from data */
-    bool InitializeFromData( const char * _Path, IAudioDecoder * _Decoder, const byte * _Data, size_t SizeInBytes );
+    /** Initialize from memory */
+    bool InitializeFromMemory( const char * _Path, IAudioDecoder * _Decoder, const void * _SysMem, size_t SizeInBytes );
 
-    bool CreateAudioStreamInstance( TRef< IAudioStream > * ppInterface );
+    //bool CreateAudioStreamInstance( TRef< IAudioStream > * ppInterface );
+    bool CreateAudioStreamInstance( TRef< SAudioStream > * ppInterface );
 
     /** Purge audio data */
     void Purge();
@@ -96,17 +98,14 @@ public:
 
     IAudioDecoder * GetDecoderInterface() { return Decoder; }
 
-    /** File data for streaming */
-    const byte * GetFileInMemory() const { return FileInMemory; }
-
-    /** File data size in bytes */
-    size_t GetFileInMemorySize() const { return FileInMemorySize; }
-
     /** File name */
     AString const & GetFileName() const { return FileName; }
 
-    /** File samples. Null for streamed audio */
-    void const * GetRawSamples() const { return RawSamples; }
+    /** Audio buffer. Null for streamed audio */
+    SAudioBuffer * GetAudioBuffer() { return pBuffer.GetObject(); }
+
+    /** File data for streaming */
+    SFileInMemory * GetFileInMemory() { return pFileInMemory.GetObject(); }
 
     /** Internal. Used by audio system to determine that audio data changed. */
     int GetRevision() const { return Revision; }
@@ -124,14 +123,12 @@ protected:
     const char * GetDefaultResourcePath() const override { return "/Default/Sound/Default"; }
 
 private:
-    void * RawSamples = nullptr;
+    TRef< SAudioBuffer > pBuffer;
+    TRef< SFileInMemory > pFileInMemory;
     ESoundStreamType CurStreamType = SOUND_STREAM_DISABLED;
     SAudioFileInfo AudioFileInfo;
-    float  DurationInSeconds = 0.0f;
-    byte * FileInMemory = nullptr;
-    size_t FileInMemorySize = 0;
-    bool   bLoaded = false;
+    float DurationInSeconds = 0.0f;
     TRef< IAudioDecoder > Decoder;
-    int    Revision;
+    int Revision;
     AString FileName;
 };

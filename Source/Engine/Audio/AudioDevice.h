@@ -99,6 +99,9 @@ public:
     /** Submit changes and unlock the buffer. */
     void UnmapTransferBuffer();
 
+    /** Pass MixerCallback for async mixing */
+    void SetMixerCallback( std::function< void( uint8_t * pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender ) > MixerCallback );
+
 private:
     void RenderAudio( uint8_t * pStream, int StreamLength );
 
@@ -126,4 +129,6 @@ private:
     int Channels;
     // Is signed 8bit audio (desired is unsigned)
     bool bSigned8;
+    // Callback for async mixing
+    std::function< void( uint8_t * pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender ) > MixerCallback;
 };

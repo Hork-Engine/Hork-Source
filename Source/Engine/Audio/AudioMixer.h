@@ -31,71 +31,11 @@ SOFTWARE.
 #pragma once
 
 #include <Audio/AudioDevice.h>
+#include <Audio/AudioChannel.h>
 
-#include <Core/Public/CoreMath.h>
-#include <Core/Public/Ref.h>
+#include <Core/Public/PodArray.h>
 
 #include <Runtime/Public/RuntimeVariable.h>
-
-struct SAudioChannel
-{
-    /** Playback position in frames */
-    int PlaybackPos;
-
-    /** Playback end timestamp in frames */
-    int64_t PlaybackEnd;
-
-    /** Loop start in frames */
-    int LoopStart;
-
-    /** Repeats counter */
-    int LoopsCount;
-
-    /** Current playing volume */
-    int CurVol[2];
-
-    /** Desired volume */
-    int NewVol[2];
-
-    /** Direction from listener to audio source (for HRTF lookup) */
-    Float3 CurDir;
-
-    /** Desired direction from listener to audio source (for HRTF lookup) */
-    Float3 NewDir;
-
-    /** Channel is playing, but mixer skip the samples from this channel */
-    bool bVirtual : 1;
-
-    /** Channel is paused */
-    bool bPaused : 1;
-
-    /** If channel is has stereo samples, it will be combined to mono and spatialized for 3D */
-    bool bSpatializedStereo : 1;
-
-    /** Stream interface for partial audio streaming */
-    class IAudioStream * StreamInterface;
-
-    /** Audio data */
-    const void * pRawSamples;
-
-    /** Frame count */
-    int FrameCount;
-
-    /** Channels count */
-    int Ch;
-
-    /** Bits per sample */
-    int SampleBits;
-
-    /** Stride between frames in bytes */
-    int SampleStride;
-
-    SAudioChannel * Next;
-    SAudioChannel * Prev;
-
-    static SAudioChannel * Channels;
-    static SAudioChannel * ChannelsTail;
-};
 
 class AAudioMixer
 {
@@ -103,23 +43,34 @@ public:
     AAudioMixer( AAudioDevice * _Device );
     virtual ~AAudioMixer();
 
-    int64_t GetRenderFrame() const
-    {
-        return RenderFrame;
-    }
+    /** Make channel visible for mixer thread */
+    void SubmitChannel( SAudioChannel * Channel );
 
     /** Get current active channels */
     int GetNumActiveChannels() const
     {
-        return NumActiveChannels;
+        return NumActiveChannels.Load();
     }
 
     /** Get number of not active (virtual) channels */
     int GetNumVirtualChannels() const
     {
-        return NumVirtualChannels;
+        return TotalChannels.Load() - NumActiveChannels.Load();
     }
 
+    /** Get total count of channels */
+    int GetTotalChannels() const
+    {
+        return TotalChannels.Load();
+    }
+
+    /** Start async mixing */
+    void StartAsync();
+
+    /** Stop async mixing */
+    void StopAsync();
+
+    /** Perform mixing in main thread */
     void Update();
 
 private:
@@ -132,6 +83,11 @@ private:
         };
     };
 
+    void UpdateAsync( uint8_t * pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender );
+
+    // This fuction adds pending channels to list
+    void AddPendingChannels();
+    void RejectChannel( SAudioChannel * Channel );
     void RenderChannels( int64_t EndFrame );
     void RenderChannel( SAudioChannel * Chan, int64_t EndFrame );
     void RenderStream( SAudioChannel * Chan, int64_t EndFrame );
@@ -139,6 +95,7 @@ private:
     void RenderFrames( SAudioChannel * Chan, const void * pFrames, int FrameCount, SSamplePair * pBuffer );
     void WriteToTransferBuffer( int const * pSamples, int64_t EndFrame );
     void MakeVolumeRamp( const int CurVol[2], const int NewVol[2], int FrameCount, int Scale );
+    void ReadFramesF32( SAudioChannel * Chan, int FramesToRead, int HistoryExtraFrames, float * pFrames );
 
     TUniqueRef< class AAudioHRTF > Hrtf;
     TUniqueRef< class AFreeverb > ReverbFilter;
@@ -148,15 +105,31 @@ private:
 
     AAudioDevice * pDevice;
     uint8_t * pTransferBuffer;
-    void * pTempFrames;
+    bool bAsync;
+    int64_t RenderFrame;
+    AAtomicInt NumActiveChannels;
+    AAtomicInt TotalChannels;
+
+    SAudioChannel * Channels;
+    SAudioChannel * ChannelsTail;
+    SAudioChannel * PendingList;
+    SAudioChannel * PendingListTail;
+
+    ASpinLock SubmitLock;
+
+    // For current mixing channel
+    int NewVol[2];
+    Float3 NewDir;
+    bool bSpatializedChannel;
+    bool bChannelPaused;
+    int PlaybackPos;
     int VolumeRampL[1024];
     int VolumeRampR[1024];
     int VolumeRampSize;
-    int64_t RenderFrame;
-    float * pFramesF32 = nullptr;
-    SSamplePair * StreamF32 = nullptr;
-    int NumActiveChannels;
-    int NumVirtualChannels;
+
+    TPodArrayHeap< uint8_t > TempFrames;
+    TPodArrayHeap< float > FramesF32;
+    TPodArrayHeap< SSamplePair > StreamF32;
 };
 
 extern ARuntimeVariable Snd_HRTF;
