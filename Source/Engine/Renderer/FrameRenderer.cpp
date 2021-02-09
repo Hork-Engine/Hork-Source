@@ -370,14 +370,21 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, bool bVirtualTexturing, A
 
     AFrameGraphTexture * ShadowMapDepth[MAX_DIRECTIONAL_LIGHTS] = {};
 
-    for ( int lightIndex = 0 ; lightIndex < GRenderView->NumDirectionalLights ; lightIndex++ ) {
+    int numDirLights = GRenderView->NumDirectionalLights;
+    if ( numDirLights > MAX_DIRECTIONAL_LIGHTS ) {
+        GLogger.Printf( "GRenderView->NumDirectionalLights > MAX_DIRECTIONAL_LIGHTS\n" );
+
+        numDirLights = MAX_DIRECTIONAL_LIGHTS;
+    }
+
+    for ( int lightIndex = 0 ; lightIndex < numDirLights ; lightIndex++ ) {
         int lightOffset = GRenderView->FirstDirectionalLight + lightIndex;
 
         SDirectionalLightInstance * dirLight = GFrameData->DirectionalLights[ lightOffset ];
 
         ShadowMapRenderer.AddPass( FrameGraph, dirLight, &ShadowMapDepth[lightIndex] );
     }
-    for ( int lightIndex = GRenderView->NumDirectionalLights ; lightIndex < MAX_DIRECTIONAL_LIGHTS ; lightIndex++ ) {
+    for ( int lightIndex = numDirLights ; lightIndex < MAX_DIRECTIONAL_LIGHTS ; lightIndex++ ) {
         ShadowMapRenderer.AddDummyShadowMap( FrameGraph, &ShadowMapDepth[lightIndex] );
     }
 

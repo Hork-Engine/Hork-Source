@@ -801,7 +801,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
     view->NumCascadedShadowMaps = 0;
     for ( ADirectionalLightComponent * dirlight = InWorld->GetDirectionalLights() ; dirlight ; dirlight = dirlight->GetNext() ) {
 
-        if ( view->NumDirectionalLights > MAX_DIRECTIONAL_LIGHTS ) {
+        if ( view->NumDirectionalLights >= MAX_DIRECTIONAL_LIGHTS ) {
             GLogger.Printf( "MAX_DIRECTIONAL_LIGHTS hit\n" );
             break;
         }
