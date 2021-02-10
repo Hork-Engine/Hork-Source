@@ -33,12 +33,12 @@ SOFTWARE.
 #include <Core/Public/Ref.h>
 
 /** SAudioBuffer
-Designed as immutable structure, so we can use it from several threads. */
+Designed as immutable structure, so we can use it from several threads. Owns the heap pointer. */
 struct SAudioBuffer : SInterlockedRef
 {
 private:
     /** Audio data */
-    void * pRawSamplesHeapPtr;
+    void * pFramesHeapPtr;
 
     /** Frame count */
     int FrameCount;
@@ -53,9 +53,9 @@ private:
     int SampleStride;
 
 public:
-    SAudioBuffer( int _FrameCount, int _Channels, int _SampleBits, void * _pRawSamplesHeapPtr )
+    SAudioBuffer( int _FrameCount, int _Channels, int _SampleBits, void * _pFramesHeapPtr )
     {
-        pRawSamplesHeapPtr = _pRawSamplesHeapPtr;
+        pFramesHeapPtr = _pFramesHeapPtr;
         FrameCount = _FrameCount;
         Channels = _Channels;
         SampleBits = _SampleBits;
@@ -64,13 +64,13 @@ public:
 
     ~SAudioBuffer()
     {
-        GHeapMemory.Free( pRawSamplesHeapPtr );
+        GHeapMemory.Free( pFramesHeapPtr );
     }
 
     /** Audio data */
-    AN_FORCEINLINE const void * GetRawSamples() const
+    AN_FORCEINLINE const void * GetFrames() const
     {
-        return pRawSamplesHeapPtr;
+        return pFramesHeapPtr;
     }
 
     /** Frame count */

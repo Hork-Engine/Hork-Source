@@ -45,18 +45,19 @@ class AThread final {
 public:
     static const int NumHardwareThreads;
 
-    AThread() {
-
+    AThread()
+    {
     }
 
-    ~AThread() {
+    ~AThread()
+    {
         Join();
     }
 
     void ( *Routine )( void * _Data ) = EmptyRoutine;
     void * Data;
 
-    void Start();
+    void Start( int IdealProcessor = -1 );
 
     void Join();
 
@@ -64,10 +65,8 @@ public:
 
 private:
 #ifdef AN_OS_WIN32
-    static unsigned __stdcall StartRoutine( void * _Thread );
     void * Internal = nullptr;
 #else
-    static void *StartRoutine( void * _Thread );
     pthread_t Internal = 0;
 #endif
     static void EmptyRoutine( void * ) {}

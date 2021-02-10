@@ -28,10 +28,10 @@ SOFTWARE.
 
 */
 
-#include <Audio/AudioMixer.h>
-#include <Audio/HRTF.h>
-#include <Audio/Freeverb.h>
-#include <Audio/AudioDecoder.h>
+#include <Audio/Public/AudioMixer.h>
+#include <Audio/Public/HRTF.h>
+#include <Audio/Public/Freeverb.h>
+#include <Audio/Public/AudioDecoder.h>
 
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
@@ -53,13 +53,19 @@ struct SSampleLookup8Bit
 {
     int Data[32][256];
 
+    int16_t ToShort[256];
+
     SSampleLookup8Bit()
     {
         for ( int v = 0; v < 32; v++ ) {
             int vol = v * 8 * 256;
             for ( int s = 0; s < 256; s++ ) {
-                Data[ v ][ ( s + 128 ) & 0xff ] = ( ( s < 128 ) ? s : s - 256) * vol;
+                Data[ v ][ ( s + 128 ) & 0xff ] = ( ( s < 128 ) ? s : s - 256 ) * vol;
             }
+        }
+
+        for ( int s = 0; s < 256; s++ ) {
+            ToShort[ ( s + 128 ) & 0xff ] = ( ( s < 128 ) ? s : s - 256 ) * 255;
         }
     }
 };
@@ -87,7 +93,7 @@ AAudioMixer::~AAudioMixer()
 {
     StopAsync();
 
-    // Add pending (if any)
+    // Add pendings (if any)
     AddPendingChannels();
 
     // Free channels
@@ -230,8 +236,10 @@ void AAudioMixer::UpdateAsync( uint8_t * _pTransferBuffer, int TransferBufferSiz
 
 void AAudioMixer::RenderChannels( int64_t EndFrame )
 {
+    int numActiveChan = NumActiveChannels.Load();
+
     if ( RenderFrame < EndFrame ) {
-        NumActiveChannels.Store( 0 );
+        numActiveChan = 0;
     }
 
     AddPendingChannels();
@@ -301,7 +309,7 @@ void AAudioMixer::RenderChannels( int64_t EndFrame )
             }
 
             if ( !chan->bVirtual ) {
-                NumActiveChannels.Increment();
+                numActiveChan++;
             }
 
             if ( bChannelPaused && chan->bVirtual ) {
@@ -328,6 +336,8 @@ void AAudioMixer::RenderChannels( int64_t EndFrame )
         WriteToTransferBuffer( (int const *)RenderBuffer, end );
         RenderFrame = end;
     }
+
+    NumActiveChannels.Store( numActiveChan );
 }
 
 static void ConvertFramesToMonoF32( const void * pFramesIn, int FrameCount, int SampleBits, int Channels, float * pFramesOut )
@@ -401,7 +411,7 @@ static void ConvertFramesToMonoF32( const void * pFramesIn, int FrameCount, int 
 void AAudioMixer::ReadFramesF32( SAudioChannel * Chan, int FramesToRead, int HistoryExtraFrames, float * pFrames )
 {
     int frameCount = Chan->FrameCount;
-    const byte * pRawSamples = (const byte *)Chan->GetRawSamples();
+    const byte * pRawSamples = (const byte *)Chan->GetFrames();
     int stride = Chan->SampleStride;
     int sampleBits = Chan->SampleBits;
     int channels = Chan->Channels;
@@ -463,7 +473,7 @@ void AAudioMixer::RenderChannel( SAudioChannel * Chan, int64_t EndFrame )
 {
     int64_t frameNum = RenderFrame;
     int clipFrameCount = Chan->FrameCount;
-    byte const * pRawSamples = (byte const *)Chan->GetRawSamples();
+    byte const * pRawSamples = (byte const *)Chan->GetFrames();
     int stride = Chan->SampleStride;
 
     while ( frameNum < EndFrame ) {
@@ -697,21 +707,22 @@ void AAudioMixer::RenderFrames( SAudioChannel * Chan, const void * pFrames, int 
 
     // Render 8bit audio
     if ( sampleBits == 8 ) {
+        uint8_t const * frames = (uint8_t const *)pFrames;
+
+#if 0
         int lvol = Math::Min( NewVol[0] / 256, 255 );
         int rvol = Math::Min( NewVol[1] / 256, 255 );
 
         int const * ls = SampleLookup8Bit.Data[lvol >> 3];
         int const * rs = SampleLookup8Bit.Data[rvol >> 3];
 
-        uint8_t const * frames = (uint8_t const *)pFrames;
-
         // Mono
         if ( channels == 1 ) {
             MakeVolumeRamp( Chan->Volume, NewVol, FrameCount, 256 );
 
             for ( int i = 0; i < VolumeRampSize; i++ ) {
-                pBuffer[i].Chan[0] += ls[frames[i]] * VolumeRampL[i];
-                pBuffer[i].Chan[1] += rs[frames[i]] * VolumeRampR[i];
+                pBuffer[i].Chan[0] += ls[frames[i]]*VolumeRampL[i];
+                pBuffer[i].Chan[1] += rs[frames[i]]*VolumeRampR[i];
             }
 
             for ( int i = VolumeRampSize ; i < FrameCount; i++ ) {
@@ -720,10 +731,35 @@ void AAudioMixer::RenderFrames( SAudioChannel * Chan, const void * pFrames, int 
             }
             return;
         }
+#else
+        int lvol = NewVol[0];
+        int rvol = NewVol[1];
+
+        // Mono
+        if ( channels == 1 ) {
+            lvol /= 256;
+            rvol /= 256;
+
+            MakeVolumeRamp( Chan->Volume, NewVol, FrameCount, 256 );
+
+            for ( int i = 0; i < VolumeRampSize; i++ ) {
+                pBuffer[i].Chan[0] += SampleLookup8Bit.ToShort[frames[i]]*VolumeRampL[i];
+                pBuffer[i].Chan[1] += SampleLookup8Bit.ToShort[frames[i]]*VolumeRampR[i];
+            }
+
+            for ( int i = VolumeRampSize ; i < FrameCount; i++ ) {
+                pBuffer[i].Chan[0] += SampleLookup8Bit.ToShort[frames[i]] * lvol;
+                pBuffer[i].Chan[1] += SampleLookup8Bit.ToShort[frames[i]] * rvol;
+            }
+            return;
+        }
+#endif
 
         // Spatialized stereo
         if ( bSpatializedChannel ) {
             // Combine stereo channels
+
+#if 0
 
             MakeVolumeRamp( Chan->Volume, NewVol, FrameCount, 512 );
 
@@ -740,10 +776,34 @@ void AAudioMixer::RenderFrames( SAudioChannel * Chan, const void * pFrames, int 
 
                 frames += 2;
             }
+
+#else
+
+            lvol /= 512;
+            rvol /= 512;
+
+            MakeVolumeRamp( Chan->Volume, NewVol, FrameCount, 512 );
+
+            for ( int i = 0; i < VolumeRampSize; i++ ) {
+                pBuffer[i].Chan[0] += (SampleLookup8Bit.ToShort[frames[0]] + SampleLookup8Bit.ToShort[frames[1]]) * VolumeRampL[i];
+                pBuffer[i].Chan[1] += (SampleLookup8Bit.ToShort[frames[0]] + SampleLookup8Bit.ToShort[frames[1]]) * VolumeRampR[i];
+
+                frames += 2;
+            }
+
+            for ( int i = VolumeRampSize ; i < FrameCount; i++ ) {
+                pBuffer[i].Chan[0] += (SampleLookup8Bit.ToShort[frames[0]] + SampleLookup8Bit.ToShort[frames[1]]) * lvol;
+                pBuffer[i].Chan[1] += (SampleLookup8Bit.ToShort[frames[0]] + SampleLookup8Bit.ToShort[frames[1]]) * rvol;
+
+                frames += 2;
+            }
+#endif
+
             return;
         }
 
         // Background music/etc
+#if 0
         MakeVolumeRamp( Chan->Volume, NewVol, FrameCount, 256 );
         for ( int i = 0; i < VolumeRampSize; i++ ) {
             pBuffer[i].Chan[0] += ls[frames[0]] * VolumeRampL[i];
@@ -757,6 +817,24 @@ void AAudioMixer::RenderFrames( SAudioChannel * Chan, const void * pFrames, int 
 
             frames += 2;
         }
+#else
+        lvol /= 256;
+        rvol /= 256;
+
+        MakeVolumeRamp( Chan->Volume, NewVol, FrameCount, 256 );
+        for ( int i = 0; i < VolumeRampSize; i++ ) {
+            pBuffer[i].Chan[0] += SampleLookup8Bit.ToShort[frames[0]] * VolumeRampL[i];
+            pBuffer[i].Chan[1] += SampleLookup8Bit.ToShort[frames[1]] * VolumeRampR[i];
+
+            frames += 2;
+        }
+        for ( int i = VolumeRampSize ; i < FrameCount; i++ ) {
+            pBuffer[i].Chan[0] += SampleLookup8Bit.ToShort[frames[0]] * lvol;
+            pBuffer[i].Chan[1] += SampleLookup8Bit.ToShort[frames[1]] * rvol;
+
+            frames += 2;
+        }
+#endif
         return;
     }
 

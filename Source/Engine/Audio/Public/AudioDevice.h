@@ -34,9 +34,11 @@ SOFTWARE.
 
 class AAudioDevice
 {
+    AN_FORBID_COPY( AAudioDevice )
+
 public:
     AAudioDevice( int InSampleRate );
-    ~AAudioDevice();
+    virtual ~AAudioDevice();
 
     /** Playback frequency */
     int GetSampleRate() const

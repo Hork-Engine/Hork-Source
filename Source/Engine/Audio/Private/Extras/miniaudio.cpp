@@ -28,16 +28,27 @@ SOFTWARE.
 
 */
 
-#include "AudioDecoder.h"
+#include <Core/Public/BaseTypes.h>
 
-bool IAudioDecoder::CreateBuffer( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, TRef< SAudioBuffer > * ppBuffer )
-{
-    void * pFrames;
-    if ( !LoadFromFile( File, pAudioFileInfo, SampleRate, bForceMono, bForce8Bit, &pFrames ) ) {
-        return false;
-    }
+#define STB_VORBIS_HEADER_ONLY
+#include "stb_vorbis.h"
 
-    *ppBuffer = MakeRef< SAudioBuffer >( pAudioFileInfo->FrameCount, pAudioFileInfo->Channels, pAudioFileInfo->SampleBits, pFrames );
+#define MINIAUDIO_IMPLEMENTATION
+//#define MA_PREFER_SSE2
+#include "miniaudio.h"
 
-    return true;
-}
+// The stb_vorbis implementation must come after the implementation of miniaudio.
+#ifdef AN_COMPILER_MSVC
+#pragma warning( push )
+#pragma warning( disable : 4245 )
+#pragma warning( disable : 4456 )
+#pragma warning( disable : 4457 )
+#pragma warning( disable : 4701 )
+#endif
+
+#undef STB_VORBIS_HEADER_ONLY
+#include "stb_vorbis.h"
+
+#ifdef AN_COMPILER_MSVC
+#pragma warning( pop )
+#endif

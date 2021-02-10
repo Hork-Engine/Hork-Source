@@ -41,20 +41,37 @@ SOFTWARE.
 
 const int AThread::NumHardwareThreads = AStdThread::hardware_concurrency();
 
-void AThread::Start() {
+void AThread::Start( int IdealProcessor ) {
 #ifdef AN_OS_WIN32
     unsigned threadId;
     Internal = (HANDLE)_beginthreadex(
         NULL,            // security
         0,               // stack size
-        &StartRoutine,   // callback address
+        []( void * _Thread ) -> unsigned
+        {
+            ( (AThread *)_Thread )->Routine( ( (AThread *)_Thread )->Data );
+            _endthreadex( 0 );
+            return 0;
+        },
         this,            // arg
         0,               // init flag
         &threadId );     // thread address
 
     //SetThreadPriority( Internal, THREAD_PRIORITY_HIGHEST );
+
+    if ( IdealProcessor >= 0 ) {
+        SetThreadIdealProcessor( Internal, IdealProcessor );
+    }
 #else
-    pthread_create( &Internal, NULL, &StartRoutine, this );
+    pthread_create( &Internal,
+                    nullptr,
+                    []( void * _Thread ) -> void *
+                    {
+                        ( (AThread *)_Thread )->Routine( ( (AThread *)_Thread )->Data );
+                        return nullptr;
+                    },
+                    this );
+    AN_UNUSED( IdealProcessor );
 #endif
 }
 
@@ -80,19 +97,6 @@ size_t AThread::ThisThreadId() {
     return pthread_self();
 #endif
 }
-
-#ifdef AN_OS_WIN32
-unsigned __stdcall AThread::StartRoutine( void * _Thread ) {
-    static_cast< AThread * >( _Thread )->Routine( static_cast< AThread * >( _Thread )->Data );
-    _endthreadex( 0 );
-    return 0;
-}
-#else
-void * AThread::StartRoutine( void * _Thread ) {
-    static_cast< AThread * >( _Thread )->Routine( static_cast< AThread * >( _Thread )->Data );
-    return 0;
-}
-#endif
 
 #ifdef AN_OS_WIN32
 constexpr int INTERNAL_SIZEOF = sizeof( CRITICAL_SECTION );
@@ -123,7 +127,7 @@ bool AMutex::TryLock() {
 #ifdef AN_OS_WIN32
     return TryEnterCriticalSection( (CRITICAL_SECTION *)&Internal[0] ) != FALSE;
 #else
-    return !pthread_mutex_trylock( &Internal );
+    return pthread_mutex_trylock( &Internal ) == 0;
 #endif
 }
 

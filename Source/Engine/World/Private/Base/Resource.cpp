@@ -119,3 +119,41 @@ bool AResource::LoadFromPath( const char * _Path )
     GLogger.Printf( "Invalid path \"%s\"\n", _Path );
     return false;
 }
+
+AN_CLASS_META( ABinaryResource )
+
+ABinaryResource::ABinaryResource()
+{
+}
+
+ABinaryResource::~ABinaryResource()
+{
+    Purge();
+}
+
+void ABinaryResource::Purge()
+{
+    GHeapMemory.Free( pBinaryData );
+    pBinaryData = nullptr;
+
+    SizeInBytes = 0;
+}
+
+bool ABinaryResource::LoadResource( IBinaryStream & _Stream )
+{
+    SizeInBytes = _Stream.SizeInBytes();
+    if ( !SizeInBytes ) {
+        GLogger.Printf( "ABinaryResource::LoadResource: empty file\n" );
+        return false;
+    }
+
+    pBinaryData = GHeapMemory.Alloc( SizeInBytes );
+    _Stream.ReadBuffer( pBinaryData, SizeInBytes );
+
+    return true;
+}
+
+void ABinaryResource::LoadInternalResource( const char * _Path )
+{
+    Purge();
+}

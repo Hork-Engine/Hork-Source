@@ -32,7 +32,7 @@ SOFTWARE.
 #include <World/Public/Components/MeshComponent.h>
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/World.h>
-#include <Audio/AudioDevice.h>
+#include <Audio/Public/AudioMixer.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 
 ASoundEmitter * ASoundEmitter::SoundEmitters;
@@ -259,7 +259,7 @@ bool ASoundEmitter::StartPlay( ASoundResource * SoundResource, int StartFrame, i
 
     // Initialize audio stream instance
     if ( SoundResource->GetStreamType() != SOUND_STREAM_DISABLED ) {
-        if ( !SoundResource->CreateAudioStreamInstance( &streamInterface ) ) {
+        if ( !SoundResource->CreateStreamInstance( &streamInterface ) ) {
             GLogger.Printf( "ASoundEmitter::StartPlay: Couldn't create audio stream instance\n" );
             return false;
         }
@@ -741,7 +741,7 @@ void ASoundEmitter::SpawnSound( ASoundResource * SoundResource, Float3 const & S
 
     // Initialize audio stream instance
     if ( SoundResource->GetStreamType() != SOUND_STREAM_DISABLED ) {
-        if ( !SoundResource->CreateAudioStreamInstance( &streamInterface ) ) {
+        if ( !SoundResource->CreateStreamInstance( &streamInterface ) ) {
             GLogger.Printf( "ASoundEmitter::SpawnSound: Couldn't create audio stream instance\n" );
             return;
         }

@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Audio/AudioDevice.h>
-#include <Audio/AudioChannel.h>
+#include "AudioDevice.h"
+#include "AudioChannel.h"
 
 #include <Core/Public/PodArray.h>
 
@@ -39,6 +39,8 @@ SOFTWARE.
 
 class AAudioMixer
 {
+    AN_FORBID_COPY( AAudioMixer )
+
 public:
     AAudioMixer( AAudioDevice * _Device );
     virtual ~AAudioMixer();

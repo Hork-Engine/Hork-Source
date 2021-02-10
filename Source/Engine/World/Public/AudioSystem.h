@@ -88,18 +88,6 @@ public:
         return bMono;
     }
 
-    /** Add audio format and decoder */
-    void AddAudioDecoder( const char * _Extension, IAudioDecoder * _Interface );
-
-    /** Remove audio format and decoder */
-    void RemoveAudioDecoder( const char * _Extension );
-
-    /** Remove all audio decoders */
-    void RemoveAudioDecoders();
-
-    /** Find audio decoder by file name extension */
-    IAudioDecoder * FindAudioDecoder( const char * _FileName );
-
     ///** Get current audio listener position */
     //Float3 const & GetListenerPosition() const
     //{
@@ -115,14 +103,6 @@ public:
 
 private:
     ~AAudioSystem();
-
-    struct SAudioDecoderDef
-    {
-        char Extension[16];
-        IAudioDecoder * Interface;
-    };
-
-    TPodArray< SAudioDecoderDef > Decoders;
 
     TUniqueRef< AAudioDevice > pPlaybackDevice;
     TUniqueRef< AAudioMixer > pMixer;

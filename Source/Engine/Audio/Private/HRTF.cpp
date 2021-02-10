@@ -34,10 +34,10 @@ SOFTWARE.
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
 
-#include "HRTF.h"
+#include <Audio/Public/HRTF.h>
 
 // Use miniaudio for resampling
-#include "Codec/miniaudio.h"
+#include "Extras/miniaudio.h"
 
 #include <muFFT/fft.h>
 

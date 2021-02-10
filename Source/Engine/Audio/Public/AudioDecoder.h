@@ -30,41 +30,18 @@ SOFTWARE.
 
 #pragma once
 
-#include <Audio/AudioDecoder.h>
-#include <Core/Public/IO.h>
+#include <Core/Public/BinaryStream.h>
 
-class AMiniaudioTrack : public IAudioStream
+#include "AudioBuffer.h"
+
+struct SAudioFileInfo
 {
-public:
-    AMiniaudioTrack();
-    ~AMiniaudioTrack();
-
-    bool InitializeFileStream( const char * FileName, int SampleRate, int SampleBits, int Channels ) override;
-
-    bool InitializeMemoryStream( const char * FileName, const byte * FileInMemory, size_t FileInMemorySize, int SampleRate, int SampleBits, int Channels ) override;
-
-    void SeekToFrame( int FrameNum ) override;
-
-    int ReadFrames( void * pFrames, int FrameCount, size_t SizeInBytes ) override;
-
-private:
-    void PurgeStream();
-
-    void * Handle;
-    AFileStream File;
-    AMemoryStream Memory;
-    int SampleBits;
+    int FrameCount;
     int Channels;
-    bool bValid;
+    int SampleBits;
 };
 
-class AMiniaudioDecoder : public IAudioDecoder
-{
-public:
-    AMiniaudioDecoder();
+/** Open audio file and read PCM frames to heap memory */
+bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void ** ppFrames = nullptr );
 
-    void CreateAudioStream( TRef< IAudioStream > * ppInterface ) override;
-
-    /** Open media file and read PCM frames to heap memory */
-    bool LoadFromFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void ** pFrames = nullptr ) override;
-};
+bool CreateAudioBuffer( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, TRef< SAudioBuffer > * ppBuffer );

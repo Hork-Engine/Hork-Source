@@ -28,11 +28,11 @@ SOFTWARE.
 
 */
 
-#include <Audio/AudioStream.h>
+#include <Audio/Public/AudioStream.h>
 #include <Core/Public/CriticalError.h>
 #include <Core/Public/CoreMath.h>
 
-#include "Codec/miniaudio.h"
+#include "Extras/miniaudio.h"
 
 SAudioStream::SAudioStream( SFileInMemory * _pFileInMemory, int _FrameCount, int _SampleRate, int _SampleBits, int _Channels )
 {

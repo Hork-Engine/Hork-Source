@@ -77,3 +77,34 @@ private:
     AString ResourceAlias;
     AString ResourcePath;
 };
+
+class ABinaryResource : public AResource {
+    AN_CLASS( ABinaryResource, AResource )
+
+public:
+    void * GetBinaryData()
+    {
+        return pBinaryData;
+    }
+
+    size_t GetSizeInBytes() const
+    {
+        return SizeInBytes;
+    }
+
+protected:
+    ABinaryResource();
+    ~ABinaryResource();
+
+    void Purge();
+
+    /** Load resource from file */
+    bool LoadResource( IBinaryStream & _Stream ) override;
+
+    /** Create internal resource */
+    void LoadInternalResource( const char * _Path ) override;
+
+private:
+    void * pBinaryData = nullptr;
+    size_t SizeInBytes = 0;
+};

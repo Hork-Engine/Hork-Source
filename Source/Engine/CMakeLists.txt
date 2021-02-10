@@ -214,11 +214,13 @@ source_group( "Runtime\\Private" FILES ${RuntimePrivate} )
 
 #---------------------------------------------------------------------
 # Audio module
-file( GLOB Audio Audio/*.h Audio/*.cpp )
-file( GLOB AudioCodec Audio/Codec/*.h Audio/Codec/*.cpp )
+file( GLOB AudioPublic Audio/Public/*.h Audio/Public/*.cpp )
+file( GLOB AudioPrivate Audio/Private/*.h Audio/Private/*.cpp )
+file( GLOB AudioPrivateExtras Audio/Private/Extras/*.h Audio/Private/Extras/*.cpp Audio/Private/Extras/*.c )
 
-source_group( "Audio" FILES ${Audio} )
-source_group( "Audio\\Codec" FILES ${AudioCodec} )
+source_group( "Audio\\Public" FILES ${AudioPublic} )
+source_group( "Audio\\Private" FILES ${AudioPrivate} )
+source_group( "Audio\\Private\\Extras" FILES ${AudioPrivateExtras} )
 
 #---------------------------------------------------------------------
 # Renderer module
@@ -333,8 +335,9 @@ ${RenderCoreFrameGraph}
 ${RuntimePublic}
 ${RuntimePrivate}
 
-${Audio}
-${AudioCodec}
+${AudioPublic}
+${AudioPrivate}
+${AudioPrivateExtras}
 
 ${Renderer}
 ${RendererVT}

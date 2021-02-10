@@ -34,7 +34,7 @@ SOFTWARE.
 #include <World/Public/Actors/Pawn.h>
 #include <World/Public/World.h>
 
-#include <Audio/AudioChannel.h>
+#include <Audio/Public/AudioChannel.h>
 
 #include <Core/Public/PodQueue.h>
 

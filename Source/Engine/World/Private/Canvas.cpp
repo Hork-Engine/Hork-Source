@@ -46,8 +46,10 @@ ACanvas::ACanvas()
 }
 
 void ACanvas::Initialize() {
-    GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/consolas.ttf.18" );
-    //GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/Cousine-Regular.ttf.18" );
+
+    GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/DejaVuSansMono.font" );
+    //GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/consolas.font" );
+    //GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/Cousine-Regular.font" );
     DrawList._Data = &DrawListSharedData;
 }
 

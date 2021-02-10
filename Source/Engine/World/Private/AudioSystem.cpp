@@ -36,8 +36,8 @@ SOFTWARE.
 
 #include <Runtime/Public/Runtime.h>
 
-#include <Audio/AudioDevice.h>
-#include <Audio/AudioMixer.h>
+#include <Audio/Public/AudioDevice.h>
+#include <Audio/Public/AudioMixer.h>
 
 ARuntimeVariable Snd_MasterVolume( _CTS("Snd_MasterVolume"), _CTS("1") );
 ARuntimeVariable Snd_RefreshRate( _CTS("Snd_RefreshRate"), _CTS("16") );
@@ -67,59 +67,9 @@ void AAudioSystem::Deinitialize()
 {
     GLogger.Printf( "Deinitializing audio system...\n" );
 
-    RemoveAudioDecoders();
-
     pMixer.Reset();
     pPlaybackDevice.Reset();
     OneShotPool.Free();
-}
-
-void AAudioSystem::AddAudioDecoder( const char * _Extension, IAudioDecoder * _Interface )
-{
-    for ( SAudioDecoderDef & def : Decoders ) {
-        if ( !Core::Stricmp( _Extension, def.Extension ) ) {
-            def.Interface->RemoveRef();
-            def.Interface = _Interface;
-            _Interface->AddRef();
-            return;
-        }
-    }
-    SAudioDecoderDef def;
-    Core::Strcpy( def.Extension, sizeof( def.Extension ), _Extension );
-    def.Interface = _Interface;
-    _Interface->AddRef();
-    Decoders.Append( def );
-}
-
-void AAudioSystem::RemoveAudioDecoder( const char * _Extension )
-{
-    for ( int i = 0 ; i < Decoders.Size() ; i++ ) {
-        SAudioDecoderDef & def =  Decoders[i];
-        if ( !Core::Stricmp( _Extension, def.Extension ) ) {
-            def.Interface->RemoveRef();
-            Decoders.Remove( i );
-            return;
-        }
-    }
-}
-
-void AAudioSystem::RemoveAudioDecoders()
-{
-    for ( int i = 0; i < Decoders.Size(); i++ ) {
-        Decoders[ i ].Interface->RemoveRef();
-    }
-    Decoders.Free();
-}
-
-IAudioDecoder * AAudioSystem::FindAudioDecoder( const char * _FileName )
-{
-    int i = Core::FindExtWithoutDot( _FileName );
-    for ( SAudioDecoderDef & def : Decoders ) {
-        if ( !Core::Stricmp( _FileName + i, def.Extension ) ) {
-            return def.Interface;
-        }
-    }
-    return nullptr;
 }
 
 void AAudioSystem::Update( APlayerController * _Controller, float _TimeStep )

@@ -39,8 +39,7 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Private/PrimitiveLinkPool.h>
 
-#include <Audio/Codec/MiniaudioDecoder.h>
-#include <Audio/AudioMixer.h>
+#include <Audio/Public/AudioMixer.h>
 
 #include <Runtime/Public/Runtime.h>
 
@@ -196,15 +195,6 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     RenderBackend = MakeRef< ARenderBackend >();
 
     GAudioSystem.Initialize();
-    //GAudioSystem.AddAudioDecoder( "ogg", CreateInstanceOf< AOggVorbisDecoder >() );
-    //GAudioSystem.AddAudioDecoder( "mp3", CreateInstanceOf< AMp3Decoder >() );
-    //GAudioSystem.AddAudioDecoder( "wav", CreateInstanceOf< AWavDecoder >() );
-
-    TRef< AMiniaudioDecoder > audioDecoder = MakeRef< AMiniaudioDecoder >();
-    GAudioSystem.AddAudioDecoder( "ogg", audioDecoder );
-    GAudioSystem.AddAudioDecoder( "mp3", audioDecoder );
-    GAudioSystem.AddAudioDecoder( "wav", audioDecoder );
-    GAudioSystem.AddAudioDecoder( "flac", audioDecoder );
 
     AFont::SetGlyphRanges( GLYPH_RANGE_CYRILLIC );
 
@@ -308,8 +298,6 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     Vsd.Reset();
 
     GResourceManager.Deinitialize();
-
-    GAudioSystem.RemoveAudioDecoders();
 
     AGarbageCollector::Deinitialize();
 

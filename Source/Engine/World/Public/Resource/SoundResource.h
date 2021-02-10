@@ -31,8 +31,9 @@ SOFTWARE.
 #pragma once
 
 #include <World/Public/Base/Resource.h>
-#include <Audio/AudioDecoder.h>
-#include <Audio/AudioMixer.h>
+#include <Audio/Public/AudioStream.h>
+#include <Audio/Public/AudioBuffer.h>
+#include <Audio/Public/AudioDecoder.h>
 
 enum ESoundStreamType
 {
@@ -44,9 +45,16 @@ enum ESoundStreamType
 
     /** Load and decode audio data with small chunks from the hard drive during playback.
     Only use it for very large audio tracks or don't use it at all.
-    NOTE: Streaming from hard drive still needs to be implemented asynchronously.
+    NOTE: Not supported now. Reserved for future.
     */
     SOUND_STREAM_FILE
+};
+
+struct SSoundCreateInfo
+{
+    ESoundStreamType StreamType = SOUND_STREAM_DISABLED;
+    bool bForce8Bit = false;
+    bool bForceMono = false;
 };
 
 class ASoundResource : public AResource
@@ -54,15 +62,11 @@ class ASoundResource : public AResource
     AN_CLASS( ASoundResource, AResource )
 
 public:
-    ESoundStreamType StreamType = SOUND_STREAM_DISABLED;
-    bool bForce8Bit = false;
-    bool bForceMono = false;
-
     /** Initialize from memory */
-    bool InitializeFromMemory( const char * _Path, IAudioDecoder * _Decoder, const void * _SysMem, size_t SizeInBytes );
+    bool InitializeFromMemory( const char * _Path, const void * _SysMem, size_t _SizeInBytes, SSoundCreateInfo const * _pCreateInfo = nullptr );
 
-    //bool CreateAudioStreamInstance( TRef< IAudioStream > * ppInterface );
-    bool CreateAudioStreamInstance( TRef< SAudioStream > * ppInterface );
+    /** Create streaming instance */
+    bool CreateStreamInstance( TRef< SAudioStream > * ppInterface );
 
     /** Purge audio data */
     void Purge();
@@ -96,8 +100,6 @@ public:
 
     ESoundStreamType GetStreamType() const;
 
-    IAudioDecoder * GetDecoderInterface() { return Decoder; }
-
     /** File name */
     AString const & GetFileName() const { return FileName; }
 
@@ -128,7 +130,6 @@ private:
     ESoundStreamType CurStreamType = SOUND_STREAM_DISABLED;
     SAudioFileInfo AudioFileInfo;
     float DurationInSeconds = 0.0f;
-    TRef< IAudioDecoder > Decoder;
     int Revision;
     AString FileName;
 };

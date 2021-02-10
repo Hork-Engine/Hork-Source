@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Audio/AudioChannel.h>
+#include <Audio/Public/AudioChannel.h>
 
 TPoolAllocator< SAudioChannel > SAudioChannel::ChannelPool;
 AMutex SAudioChannel::PoolMutex;
@@ -43,8 +43,8 @@ SAudioChannel::SAudioChannel( int _StartFrame,
                               Float3 const & _LocalDir,
                               bool _bSpatializedStereo,
                               bool _bPaused )
-    : RefCount( 1 )
-    , Stopped( false )
+    : Stopped( false )
+    , RefCount( 1 )
 {
     pBuffer = nullptr;
     pStream = nullptr;

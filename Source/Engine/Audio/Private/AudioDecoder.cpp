@@ -28,46 +28,12 @@ SOFTWARE.
 
 */
 
-#include "MiniaudioDecoder.h"
+#include <Audio/Public/AudioDecoder.h>
 
 #include <Core/Public/Logger.h>
 #include <Core/Public/BaseMath.h>
 
-#define STB_VORBIS_HEADER_ONLY
-#include "stb/stb_vorbis.h"
-
-#define MINIAUDIO_IMPLEMENTATION
-//#define MA_PREFER_SSE2
-#include "miniaudio.h"
-
-// The stb_vorbis implementation must come after the implementation of miniaudio.
-#ifdef AN_COMPILER_MSVC
-#pragma warning( push )
-#pragma warning( disable : 4245 )
-#pragma warning( disable : 4456 )
-#pragma warning( disable : 4457 )
-#pragma warning( disable : 4701 )
-#endif
-
-#undef STB_VORBIS_HEADER_ONLY
-#include "stb/stb_vorbis.h"
-
-#ifdef AN_COMPILER_MSVC
-#pragma warning( pop )
-#endif
-
-AMiniaudioTrack::AMiniaudioTrack()
-{
-    Handle = (ma_decoder *)GZoneMemory.Alloc( sizeof( ma_decoder ) );
-    bValid = false;
-}
-
-AMiniaudioTrack::~AMiniaudioTrack()
-{
-    PurgeStream();
-
-    GZoneMemory.Free( Handle );
-}
+#include "Extras/miniaudio.h"
 
 static size_t Read( ma_decoder * pDecoder, void* pBufferOut, size_t bytesToRead )
 {
@@ -77,7 +43,7 @@ static size_t Read( ma_decoder * pDecoder, void* pBufferOut, size_t bytesToRead 
     return file->GetReadBytesCount();
 }
 
-static ma_bool32 Seek( ma_decoder* pDecoder, int byteOffset, ma_seek_origin origin )
+static ma_bool32 Seek( ma_decoder * pDecoder, int byteOffset, ma_seek_origin origin )
 {
     IBinaryStream * file = (IBinaryStream *)pDecoder->pUserData;
     bool result = false;
@@ -98,131 +64,7 @@ static ma_bool32 Seek( ma_decoder* pDecoder, int byteOffset, ma_seek_origin orig
     return result;
 }
 
-void AMiniaudioTrack::PurgeStream()
-{
-    if ( bValid ) {
-        ma_decoder_uninit( (ma_decoder *)Handle );
-        bValid = false;
-    }
-
-    File.Close();
-    Memory.Close();
-}
-
-bool AMiniaudioTrack::InitializeFileStream( const char * FileName, int InSampleRate, int InSampleBits, int InChannels )
-{
-    PurgeStream();
-
-    ma_format format;
-    switch ( InSampleBits ) {
-    case 8:
-        format = ma_format_u8;
-        break;
-    case 16:
-        format = ma_format_s16;
-        break;
-    case 32:
-        format = ma_format_f32;
-        break;
-    default:
-        GLogger.Printf( "AMiniaudioTrack::InitializeFileStream: expected 8, 16 or 32 sample bits\n" );
-        return false;
-    }
-
-    if ( !File.OpenRead( FileName ) ) {
-        GLogger.Printf( "Failed to open %s\n", FileName );
-        return false;
-    }
-
-    ma_decoder_config config = ma_decoder_config_init( format, InChannels, InSampleRate );
-
-    ma_result result = ma_decoder_init( Read, Seek, &File, &config, (ma_decoder *)Handle );
-    if ( result != MA_SUCCESS ) {
-        GLogger.Printf( "AMiniaudioTrack::InitializeFileStream: failed on %s\n", File.GetFileName() );
-        return false;
-    }
-
-    SampleBits = InSampleBits;
-    Channels = InChannels;
-
-    bValid = true;
-
-    return true;
-}
-
-bool AMiniaudioTrack::InitializeMemoryStream( const char * FileName, const byte * FileInMemory, size_t FileInMemorySize, int InSampleRate, int InSampleBits, int InChannels )
-{
-    PurgeStream();
-
-    ma_format format;
-    switch ( InSampleBits ) {
-    case 8:
-        format = ma_format_u8;
-        break;
-    case 16:
-        format = ma_format_s16;
-        break;
-    case 32:
-        format = ma_format_f32;
-        break;
-    default:
-        GLogger.Printf( "AMiniaudioTrack::InitializeMemoryStream: expected 8, 16 or 32 sample bits\n" );
-        return false;
-    }
-
-    if ( !Memory.OpenRead( FileName, FileInMemory, FileInMemorySize ) ) {
-        GLogger.Printf( "AMiniaudioTrack::InitializeMemoryStream: failed on %s\n", Memory.GetFileName() );
-        return false;
-    }
-
-    ma_decoder_config config = ma_decoder_config_init( format, InChannels, InSampleRate );
-
-    ma_result result = ma_decoder_init( Read, Seek, &Memory, &config, (ma_decoder *)Handle );
-    if ( result != MA_SUCCESS ) {
-        GLogger.Printf( "AMiniaudioTrack::InitializeMemoryStream: failed on %s\n", Memory.GetFileName() );
-        return false;
-    }
-
-    SampleBits = InSampleBits;
-    Channels = InChannels;
-
-    bValid = true;
-
-    return true;
-}
-
-void AMiniaudioTrack::SeekToFrame( int FrameNum )
-{
-    if ( bValid ) {
-        ma_decoder_seek_to_pcm_frame( (ma_decoder *)Handle, Math::Max( 0, FrameNum ) );
-    }
-}
-
-int AMiniaudioTrack::ReadFrames( void * pFrames, int FrameCount, size_t SizeInBytes )
-{
-    if ( !bValid || FrameCount <= 0 ) {
-        return 0;
-    }
-
-    int stride = ( SampleBits >> 3 ) << ( Channels - 1 );
-
-    if ( (size_t)FrameCount * stride > SizeInBytes ) {
-        FrameCount = SizeInBytes / stride;
-    }
-
-    return ma_decoder_read_pcm_frames( (ma_decoder *)Handle, pFrames, FrameCount );
-}
-
-AMiniaudioDecoder::AMiniaudioDecoder()
-{
-}
-
-void AMiniaudioDecoder::CreateAudioStream( TRef< IAudioStream > * ppInterface )
-{
-    *ppInterface = MakeRef< AMiniaudioTrack >();
-}
-
-bool AMiniaudioDecoder::LoadFromFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void ** ppFrames )
+bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void ** ppFrames )
 {
     Core::ZeroMem( pAudioFileInfo, sizeof( *pAudioFileInfo ) );
     if ( ppFrames ) {
@@ -315,4 +157,17 @@ bool AMiniaudioDecoder::LoadFromFile( IBinaryStream & File, SAudioFileInfo * pAu
     ma_decoder_uninit( &decoder );
 
     return pAudioFileInfo->FrameCount > 0;
+}
+
+bool CreateAudioBuffer( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, TRef< SAudioBuffer > * ppBuffer )
+{
+    void * pFrames;
+
+    if ( !LoadAudioFile( File, pAudioFileInfo, SampleRate, bForceMono, bForce8Bit, &pFrames ) ) {
+        return false;
+    }
+
+    *ppBuffer = MakeRef< SAudioBuffer >( pAudioFileInfo->FrameCount, pAudioFileInfo->Channels, pAudioFileInfo->SampleBits, pFrames );
+
+    return true;
 }

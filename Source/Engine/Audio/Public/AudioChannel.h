@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Audio/AudioBuffer.h>
-#include <Audio/AudioStream.h>
+#include "AudioBuffer.h"
+#include "AudioStream.h"
 
 #include <Core/Public/CoreMath.h>
 #include <Core/Public/PoolAllocator.h>
@@ -126,9 +126,9 @@ struct SAudioChannel final
     int SampleStride;
 
     /** Audio data. Just a wrapper to simplify access to audio buffer */
-    AN_FORCEINLINE const void * GetRawSamples() const
+    AN_FORCEINLINE const void * GetFrames() const
     {
-        return pBuffer->GetRawSamples();
+        return pBuffer->GetFrames();
     }
 
     AN_FORCEINLINE int GetLoopStart() const
