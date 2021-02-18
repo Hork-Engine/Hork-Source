@@ -121,11 +121,10 @@ void ALexer::AddOperator( const char * _String ) {
 }
 
 int ALexer::CheckOperator( const char * _Ptr ) const {
-    int NumOperators = Operators.Size();
-    if ( NumOperators > 0 ) {
-        for ( const SOperator * op = &Operators[0] ; op < &Operators[NumOperators] ; op++ ) {
-            if ( !Core::StrcmpN( _Ptr, op->Str, op->Len ) ) {
-                return op->Len;
+    if ( !Operators.IsEmpty() ) {
+        for ( SOperator const & op : Operators ) {
+            if ( !Core::StrcmpN( _Ptr, op.Str, op.Len ) ) {
+                return op.Len;
             }
         }
         return 0;
