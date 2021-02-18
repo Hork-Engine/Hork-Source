@@ -92,7 +92,7 @@ private:
 
     static const int CON_IMAGE_SIZE = 1024*1024;
     static const int MAX_CMD_LINE_CHARS = 256;
-    static const int MAX_STORY_LINES = 32;
+    static const int MAX_STORY_LINES = 64;
 
     SWideChar ImageData[2][CON_IMAGE_SIZE];
     SWideChar * pImage = ImageData[0];
