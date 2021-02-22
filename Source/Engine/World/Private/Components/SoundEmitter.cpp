@@ -60,7 +60,6 @@ ASoundEmitter::ASoundEmitter()
     bVirtualizeWhenSilent = false;
     ResourceRevision = 0;
     Channel = nullptr;
-    bCanEverTick = true;
 }
 
 void ASoundEmitter::InitializeComponent()
