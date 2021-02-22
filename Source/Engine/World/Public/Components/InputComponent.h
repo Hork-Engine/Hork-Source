@@ -275,7 +275,7 @@ public:
     bool bIgnoreCharEvents = false;
 
     /** Mouse sensitivity factor */
-    float MouseSensitivity = 1.0f;
+    float MouseSensitivityScale = 1.0f;
 
     int ControllerId = 0;
 
@@ -339,8 +339,8 @@ public:
 
     void SetMouseAxisState( float _X, float _Y );
 
-    float GetMouseMoveX() const { return MouseAxisStateX; }
-    float GetMouseMoveY() const { return MouseAxisStateY; }
+    float GetMouseMoveX() const { return MouseAxisState[MouseIndex].X; }
+    float GetMouseMoveY() const { return MouseAxisState[MouseIndex].Y; }
 
     float GetMouseAxisState( int _Axis );
 
@@ -441,8 +441,8 @@ protected:
 
     //TRef< AInputDevice > Devices[ MAX_INPUT_DEVICES ];
 
-    float MouseAxisStateX = 0;
-    float MouseAxisStateY = 0;
+    Float2 MouseAxisState[2];
+    int MouseIndex = 0;
 
     TCallback< void( SWideChar, int, double ) > CharacterCallback;
     bool bCharacterCallbackExecuteEvenWhenPaused = false;

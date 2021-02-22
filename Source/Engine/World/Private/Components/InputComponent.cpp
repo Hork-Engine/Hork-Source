@@ -31,10 +31,15 @@ SOFTWARE.
 #include <World/Public/Components/InputComponent.h>
 #include <World/Public/World.h>
 #include <Runtime/Public/Runtime.h>
+#include <Runtime/Public/RuntimeVariable.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/HashFunc.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Core/Public/CriticalError.h>
+
+ARuntimeVariable MouseSensitivity( _CTS( "MouseSensitivity" ), _CTS( "0.15" ) );
+ARuntimeVariable MouseFilter( _CTS( "MouseFilter" ), _CTS( "1" ) );
+ARuntimeVariable MouseAccel( _CTS( "MouseAccel" ), _CTS( "0" ) );
 
 AN_CLASS_META( AInputAxis )
 AN_CLASS_META( AInputAction )
@@ -532,6 +537,18 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
         }
     }
 
+    Float2 mouseDelta;
+
+    if ( MouseFilter ) {
+        mouseDelta = (MouseAxisState[0] + MouseAxisState[1]) * 0.5f;
+    } else {
+        mouseDelta = MouseAxisState[MouseIndex];
+    }
+
+    float timeStepMsec = Math::Max( _TimeStep * 1000, 200 );
+    float mouseInputRate = mouseDelta.Length() / timeStepMsec;
+    float mouseCurrentSens = MouseSensitivityScale * ( MouseSensitivity.GetFloat() + mouseInputRate * MouseAccel.GetFloat() );
+
     TPodArray< AInputAxis * > const & inputAxes = InputMappings->GetAxes();
     for ( int i = 0 ; i < inputAxes.Size() ; i++ ) {
         AInputAxis * inputAxis = inputAxes[i];
@@ -571,7 +588,9 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
 
                 for ( AInputMappings::SMapping & mapping : mappings ) {
                     if ( mapping.AxisOrActionIndex == i && mapping.ControllerId == ControllerId ) {
-                        binding.AxisScale += (&MouseAxisStateX)[ mouseAxis ] * mapping.AxisScale;
+                        //binding.AxisScale += MouseAxisState[MouseIndex][ mouseAxis ] * mapping.AxisScale;
+
+                        binding.AxisScale += mouseDelta[mouseAxis] * mapping.AxisScale * mouseCurrentSens;
                     }
                 }
             }
@@ -581,8 +600,8 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
     }
 
     // Reset mouse axes
-    MouseAxisStateX = 0;
-    MouseAxisStateY = 0;
+    MouseIndex ^= 1;
+    MouseAxisState[MouseIndex].Clear();
 }
 
 void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp ) {
@@ -801,12 +820,12 @@ void AInputComponent::SetMouseAxisState( float _X, float _Y ) {
         return;
     }
 
-    MouseAxisStateX += _X * MouseSensitivity;
-    MouseAxisStateY += _Y * MouseSensitivity;
+    MouseAxisState[MouseIndex].X += _X;
+    MouseAxisState[MouseIndex].Y += _Y;
 }
 
 float AInputComponent::GetMouseAxisState( int _Axis ) {
-    return (&MouseAxisStateX)[_Axis];
+    return MouseAxisState[MouseIndex][_Axis];
 }
 
 //void AInputComponent::SetJoystickState( int _Joystick, int _NumAxes, int _NumButtons, bool _bGamePad, bool _bConnected ) {
