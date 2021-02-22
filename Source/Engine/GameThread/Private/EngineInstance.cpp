@@ -114,11 +114,13 @@ static void PhysModuleFree( void * _Bytes ) {
 }
 
 static void * NavModuleAlloc( size_t _BytesCount, dtAllocHint _Hint ) {
-    return GZoneMemory.Alloc( _BytesCount );
+    return GHeapMemory.Alloc( _BytesCount );
+    //return GZoneMemory.Alloc( _BytesCount );
 }
 
 static void NavModuleFree( void * _Bytes ) {
-    GZoneMemory.Free( _Bytes );
+    GHeapMemory.Free( _Bytes );
+    //GZoneMemory.Free( _Bytes );
 }
 
 #if 0
@@ -427,6 +429,11 @@ void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp )
 
     if ( Console.IsActive() || bAllowConsole ) {
         Console.KeyEvent( _Event, EngineCmd->CommandContext, CommandProcessor );
+
+        if ( !Console.IsActive() && _Event.Key == KEY_GRAVE_ACCENT ) {
+            // Console just closed
+            return;
+        }
     }
 
     if ( Console.IsActive() && _Event.Action != IA_RELEASE ) {
