@@ -1694,7 +1694,7 @@ bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndP
 
     NavQuery->findStraightPath( (const float *)_StartPos.ToPtr(), (const float *)ClosestLocalEnd.ToPtr(), TmpPolys, NumPolys, (float *)TmpPathPoints[0].ToPtr(), TmpPathFlags, TmpPathPolys, &PathLength, MAX_POLYS );
 
-    _PathPoints.Resize( PathLength );
+    _PathPoints.ResizeInvalidate( PathLength );
 
     for ( int i = 0 ; i < PathLength ; ++i ) {
         _PathPoints[ i ].Position = TmpPathPoints[i];
@@ -1740,7 +1740,7 @@ bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndP
 
     NavQuery->findStraightPath( (const float *)_StartPos.ToPtr(), (const float *)ClosestLocalEnd.ToPtr(), TmpPolys, NumPolys, (float *)TmpPathPoints[0].ToPtr(), TmpPathFlags, TmpPathPolys, &PathLength, MAX_POLYS );
 
-    _PathPoints.Resize( PathLength );
+    _PathPoints.ResizeInvalidate( PathLength );
 
     Core::MemcpySSE( _PathPoints.ToPtr(), TmpPathPoints, sizeof( Float3 ) * PathLength );
 
