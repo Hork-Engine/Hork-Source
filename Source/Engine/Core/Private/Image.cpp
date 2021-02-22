@@ -566,7 +566,7 @@ void AImage::FromRawData( const void * _Source, int _Width, int _Height, SImageM
         Core::Memcpy( pRawData, _Source, sizeInBytes );
     }
 
-    if ( _MipmapGen ) {
+    if ( _MipmapGen && !(Width == 1 && Height == 1) ) {
         SSoftwareMipmapGenerator mipmapGen;
 
         mipmapGen.SourceImage = pRawData;
@@ -768,6 +768,10 @@ static void GenerateMipmaps( const byte * ImageData, int ImageWidth, int ImageHe
 
     int AlphaChannel = NumChannels == 4 ? 3 : -1;
 
+    if ( ImageWidth == 1 && ImageHeight == 1 ) {
+        return;
+    }
+
     for ( int i = 1 ; ; i++ ) {
         int LodWidth = Math::Max( 1, ImageWidth >> i );
         int LodHeight = Math::Max( 1, ImageHeight >> i );
@@ -814,6 +818,10 @@ static void GenerateMipmapsHDRI( const float * ImageData, int ImageWidth, int Im
 
     int CurWidth = ImageWidth;
     int CurHeight = ImageHeight;
+
+    if ( ImageWidth == 1 && ImageHeight == 1 ) {
+        return;
+    }
 
     for ( int i = 1 ; ; i++ ) {
         int LodWidth = Math::Max( 1, ImageWidth >> i );
