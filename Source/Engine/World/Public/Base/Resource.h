@@ -92,6 +92,11 @@ public:
         return SizeInBytes;
     }
 
+    const char * GetAsString() const
+    {
+        return pBinaryData ? (const char *)pBinaryData : "";
+    }
+
 protected:
     ABinaryResource();
     ~ABinaryResource();
