@@ -204,7 +204,6 @@ AModule::AModule() {
     PlayerController->SetInputMappings( InputMappings );
     PlayerController->SetRenderingParameters( RenderingParams );
     //PlayerController->SetHUD( hud );
-    PlayerController->GetInputComponent()->MouseSensitivity = 0.3f;
 
     PlayerController->SetPawn( player );
 
