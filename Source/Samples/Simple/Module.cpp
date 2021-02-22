@@ -189,7 +189,6 @@ private:
         playerController->SetPlayerIndex( CONTROLLER_PLAYER_1 );
         playerController->SetInputMappings( inputMappings );
         playerController->SetRenderingParameters( renderingParams );
-        playerController->GetInputComponent()->MouseSensitivity = 0.3f;
         playerController->SetPawn( player );
 
         // Spawn directional light
