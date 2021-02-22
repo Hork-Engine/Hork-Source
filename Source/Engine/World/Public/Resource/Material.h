@@ -164,6 +164,8 @@ protected:
 
     const char * GetDefaultResourcePath() const override { return "/Default/MaterialInstance/Default"; }
 
+    bool LoadTextVersion( IBinaryStream & Stream );
+
 private:
     TRef< AMaterial > Material;
     SMaterialFrameData * FrameData = nullptr;

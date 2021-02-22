@@ -934,8 +934,10 @@ bool AMaterialInstance::LoadResource( IBinaryStream & Stream ) {
     fileFormat = Stream.ReadUInt32();
 
     if ( fileFormat != FMT_FILE_TYPE_MATERIAL_INSTANCE ) {
-        GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_MATERIAL_INSTANCE );
-        return false;
+        //GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_MATERIAL_INSTANCE );
+
+        Stream.Rewind();
+        return LoadTextVersion( Stream );
     }
 
     fileVersion = Stream.ReadUInt32();
@@ -968,6 +970,43 @@ bool AMaterialInstance::LoadResource( IBinaryStream & Stream ) {
     }
 
     SetMaterial( GetOrCreateResource< AMaterial >( materialGUID.CStr() ) );
+
+    return true;
+}
+
+bool AMaterialInstance::LoadTextVersion( IBinaryStream & Stream ) {
+    AString text;
+    text.FromFile( Stream );
+
+    SDocumentDeserializeInfo deserializeInfo;
+    deserializeInfo.pDocumentData = text.CStr();
+    deserializeInfo.bInsitu = true;
+
+    ADocument doc;
+    doc.DeserializeFromString( deserializeInfo );
+
+    ADocMember * member;
+
+    member = doc.FindMember( "Textures" );
+    if ( member && member->IsArray() ) {
+        ADocValue * values = member->GetArrayValues();
+        int texSlot = 0;
+        for ( ADocValue * v = values ; v && texSlot < MAX_MATERIAL_TEXTURES ; v = v->GetNext() ) {
+            SetTexture( texSlot++, GetOrCreateResource< ATexture >( v->GetString().CStr() ) );
+        }
+    }
+
+    member = doc.FindMember( "Uniforms" );
+    if ( member && member->IsArray() ) {
+        ADocValue * values = member->GetArrayValues();
+        int uniformNum = 0;
+        for ( ADocValue * v = values ; v && uniformNum < MAX_MATERIAL_UNIFORMS ; v = v->GetNext() ) {
+            Uniforms[uniformNum++] = Math::ToFloat( v->GetString() );
+        }
+    }
+
+    member = doc.FindMember( "Material" );
+    SetMaterial( GetOrCreateResource< AMaterial >( member ? member->GetString().CStr() : "/Default/Materials/Unlit" ) );
 
     return true;
 }
