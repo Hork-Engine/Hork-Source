@@ -38,6 +38,7 @@ SOFTWARE.
 #include <io.h>         // access
 #endif
 #ifdef AN_OS_LINUX
+#include <dirent.h>
 #include <sys/stat.h>   // _mkdir
 #include <unistd.h>     // access
 #endif
@@ -453,6 +454,7 @@ AArchive::~AArchive() {
 bool AArchive::Open( const char * _ArchiveName, bool bResourcePack ) {
     mz_zip_archive arch;
     mz_uint64 fileStartOffset = 0;
+    mz_uint64 archiveSize = 0;
 
     Close();
 
@@ -470,11 +472,12 @@ bool AArchive::Open( const char * _ArchiveName, bool bResourcePack ) {
         }
 
         fileStartOffset += sizeof( magic );
+        archiveSize = f.SizeInBytes() - fileStartOffset;
     }
 
     Core::ZeroMem( &arch, sizeof( arch ) );
 
-    mz_bool status = mz_zip_reader_init_file_v2( &arch, _ArchiveName, 0, fileStartOffset, 0 );
+    mz_bool status = mz_zip_reader_init_file_v2( &arch, _ArchiveName, 0, fileStartOffset, archiveSize );
     if ( !status ) {
         GLogger.Printf( "Couldn't open archive %s\n", _ArchiveName );
         return false;
@@ -618,7 +621,8 @@ bool AArchive::ExtractFileToHunkMemory( const char * _FileName, void ** _HunkMem
 
 namespace Core {
 
-void MakeDir( const char * _Directory, bool _FileName ) {
+void MakeDir( const char * _Directory, bool _FileName )
+{
     size_t len = Core::Strlen( _Directory );
     if ( !len ) {
         return;
@@ -653,13 +657,15 @@ void MakeDir( const char * _Directory, bool _FileName ) {
     GZoneMemory.Free( tmpStr );
 }
 
-bool IsFileExists( const char * _FileName ) {
+bool IsFileExists( const char * _FileName )
+{
     AString s = _FileName;
     s.FixSeparator();
     return access( s.CStr(), 0 ) == 0;
 }
 
-void RemoveFile( const char * _FileName ) {
+void RemoveFile( const char * _FileName )
+{
     AString s = _FileName;
     s.FixPath();
 #if defined AN_OS_LINUX
@@ -676,6 +682,137 @@ void RemoveFile( const char * _FileName ) {
 #else
     static_assert( 0, "TODO: Implement RemoveFile for current build settings" );
 #endif
+}
+
+#ifdef AN_OS_LINUX
+void TraverseDirectory( AString const & Path, bool bSubDirs, STraverseDirectoryCB Callback )
+{
+    AString fn;
+    DIR * dir = opendir( Path.CStr() );
+    if ( dir ) {
+        while ( 1 ) {
+            dirent * entry = readdir( dir );
+            if ( !entry ) {
+                break;
+            }
+
+            fn = Path;
+            int len = Path.Length();
+            if ( len > 1 && Path[len-1] != '/' ) {
+                fn += "/";
+            }
+            fn += entry->d_name;
+
+            struct stat statInfo;
+            lstat( fn.CStr(), &statInfo );
+
+            if ( S_ISDIR( statInfo.st_mode ) ) {
+                if ( bSubDirs ) {
+                    if ( !strcmp( ".", entry->d_name )
+                         || !strcmp( "..", entry->d_name ) ) {
+                        continue;
+                    }
+                    TraverseDirectory( fn.CStr(), bSubDirs, Callback );
+                }
+                Callback( fn, true );
+            } else {
+                Callback( Path + "/" + entry->d_name, false );
+            }
+        }
+        closedir( dir );
+    }
+}
+#endif
+
+#ifdef AN_OS_WIN32
+//#pragma warning( disable : 4996 )
+void TraverseDirectory( AString const & Path, bool bSubDirs, STraverseDirectoryCB Callback )
+{
+    AString fn;
+
+    HANDLE fh;
+    WIN32_FIND_DATAA fd;
+
+    if ( (fh = FindFirstFileA( (Path +  "/*.*").CStr(), &fd )) != INVALID_HANDLE_VALUE ) {
+        do {
+            fn = Path;
+            int len = (int)Path.Length();
+            if ( len > 1 && Path[len-1] != '/' ) {
+                fn += "/";
+            }
+            fn += fd.cFileName;
+
+            if ( fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY ) {
+                if ( bSubDirs ) {
+                    if ( !strcmp( ".", fd.cFileName )
+                         || !strcmp( "..", fd.cFileName ) ) {
+                        continue;
+                    }
+                    TraverseDirectory( fn.CStr(), bSubDirs, Callback );
+                }
+                Callback( fn, true );
+            } else {
+                Callback( Path + "/" + fd.cFileName, false );
+            }
+        } while ( FindNextFileA( fh, &fd ) );
+
+        FindClose( fh );
+    }
+}
+#endif
+
+bool WriteResourcePack( const char * SourcePath, const char * ResultFile )
+{
+    AString path = SourcePath;
+
+    path.FixSeparator();
+
+    GLogger.Printf( "==== WriteResourcePack ====\n"
+                    "Source '%s'\n"
+                    "Destination: '%s'\n", SourcePath, ResultFile );
+
+    FILE * file = OpenFile( ResultFile, "wb" );
+    if ( !file ) {
+        return false;
+    }
+
+    uint64_t magic;
+    memcpy( &magic, "ARESPACK", sizeof( magic ) );
+    magic = Core::LittleDDWord( magic );
+    fwrite( &magic, 1, sizeof( magic ), file );
+
+    mz_zip_archive zip;
+    memset( &zip, 0, sizeof( zip ) );
+
+    if ( mz_zip_writer_init_cfile( &zip, file, 0 ) ) {
+        TraverseDirectory( path, true,
+                 [&zip, &path]( AString const & FileName, bool bIsDirectory )
+        {
+            if ( bIsDirectory ) {
+                return;
+            }
+
+            if ( !Core::Stricmp( &FileName[FileName.FindExt()], ".resources" ) ) {
+                return;
+            }
+
+            GLogger.Printf( "Writing '%s'\n", &FileName[path.Length() + 1] );
+
+            mz_bool status = mz_zip_writer_add_file( &zip, &FileName[path.Length() + 1], FileName.CStr(), nullptr, 0, MZ_UBER_COMPRESSION );
+            if ( !status ) {
+                GLogger.Printf( "Failed to archive %s\n", FileName.CStr() );
+            }
+        } );
+
+        mz_zip_writer_finalize_archive( &zip );
+        mz_zip_writer_end( &zip );
+    }
+
+    fclose( file );
+
+    GLogger.Printf( "===========================\n" );
+
+    return true;
 }
 
 }

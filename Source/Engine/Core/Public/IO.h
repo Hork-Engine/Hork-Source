@@ -236,4 +236,11 @@ bool IsFileExists( const char * _FileName );
 /** Remove file from disk */
 void RemoveFile( const char * _FileName );
 
+using STraverseDirectoryCB = std::function< void( AString const & FileName, bool bIsDirectory ) >;
+/** Traverse the directory */
+void TraverseDirectory( AString const & Path, bool bSubDirs, STraverseDirectoryCB Callback );
+
+/** Write game resource pack */
+bool WriteResourcePack( const char * SourcePath, const char * ResultFile );
+
 }
