@@ -549,7 +549,7 @@ static bool LoadShaderFromString( SIncludeCtx * Ctx, const char * FileName, AStr
 
         if ( Ctx->Predefined && includeInfo->filename[0] == '$' ) {
             // predefined source
-            Out.Concat( "#line 1 \"" );
+            Out.Concat( "#line 1 //\"" );
             Out.ConcatN( includeInfo->filename, includeInfo->len );
             Out.Concat( "\"\n" );
 
@@ -566,7 +566,7 @@ static bool LoadShaderFromString( SIncludeCtx * Ctx, const char * FileName, AStr
             }
         }
         else {
-            Out.Concat( "#line 1 \"" );
+            Out.Concat( "#line 1 //\"" );
             Out.ConcatN( includeInfo->filename, includeInfo->len );
             Out.Concat( "\"\n" );
 
@@ -578,7 +578,7 @@ static bool LoadShaderFromString( SIncludeCtx * Ctx, const char * FileName, AStr
             }
         }        
 
-        Core::Sprintf( temp, sizeof( temp ), "\n#line %d \"%s\"", includeInfo->next_line_after, FileName ? FileName : "source-file" );
+        Core::Sprintf( temp, sizeof( temp ), "\n#line %d //\"%s\"", includeInfo->next_line_after, FileName ? FileName : "source-file" );
         Out.Concat( temp );
 
         sourceOffset = includeInfo->end;
@@ -639,7 +639,7 @@ AString LoadShader( const char * FileName, SMaterialShader const * Predefined )
     ctx.Predefined = Predefined;
 
     AString result;
-    result.Concat( Core::Fmt( "#line 1 \"%s\"\n", FileName ) );
+    result.Concat( Core::Fmt( "#line 1 //\"%s\"\n", FileName ) );
 
     if ( !LoadShaderWithInclude( &ctx, FileName/*(path + FileName).CStr()*/, result ) ) {
         CriticalError( "LoadShader: failed to open %s\n", FileName );
@@ -655,7 +655,7 @@ AString LoadShaderFromString( const char * FileName, const char * Source, SMater
     ctx.Predefined = Predefined;
 
     AString result;
-    result.Concat( Core::Fmt( "#line 1 \"%s\"\n", FileName ) );
+    result.Concat( Core::Fmt( "#line 1 //\"%s\"\n", FileName ) );
 
     AString source = Source;
 
