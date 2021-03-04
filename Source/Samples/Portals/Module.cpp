@@ -239,15 +239,10 @@ void AModule::SetInputMappings() {
 }
 
 void AModule::CreateResources() {
-    // Texture Blank512
-    {
-        GetOrCreateResource< ATexture >( "Blank512", "/Common/blank512.png" );
-    }
-
     // CheckerMaterialInstance
     {
         static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
-        static TStaticResourceFinder< ATexture > TextureResource( _CTS( "Blank512" ) );
+        static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/blank512.png" ) );
         AMaterialInstance * CheckerMaterialInstance = NewObject< AMaterialInstance >();
         CheckerMaterialInstance->SetMaterial( MaterialResource.GetObject() );
         CheckerMaterialInstance->SetTexture( 0, TextureResource.GetObject() );
