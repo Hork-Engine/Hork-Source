@@ -262,13 +262,10 @@ private:
             RegisterResource( material, "BoxMaterial" );
         }
 
-        // Create texture for box
-        GetOrCreateResource< ATexture >( "TexGrid8", "/Common/grid8.png" );
-
         // Create material instance for box
         {
             static TStaticResourceFinder< AMaterial > BoxMaterial( _CTS( "BoxMaterial" ) );
-            static TStaticResourceFinder< ATexture > GroundTexture( _CTS( "TexGrid8" ) );
+            static TStaticResourceFinder< ATexture > GroundTexture( _CTS( "/Common/grid8.png" ) );
             AMaterialInstance * BoxMaterialInstance = NewObject< AMaterialInstance >();
             BoxMaterialInstance->SetMaterial( BoxMaterial.GetObject() );
             BoxMaterialInstance->SetTexture( 0, GroundTexture.GetObject() );
