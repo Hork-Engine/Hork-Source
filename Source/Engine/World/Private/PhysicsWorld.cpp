@@ -486,7 +486,7 @@ void APhysicsWorld::DispatchContactAndOverlapEvents() {
                 contactHash.Insert( hash, currentContacts.Size() - 1 );
             }
             else {
-                GLogger.Printf( "Assertion failed: bUnique\n" );
+                //GLogger.Printf( "Assertion failed: bUnique\n" );
             }
         }
     }
