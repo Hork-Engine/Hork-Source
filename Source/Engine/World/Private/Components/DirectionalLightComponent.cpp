@@ -37,7 +37,6 @@ SOFTWARE.
 #include <Runtime/Public/RuntimeVariable.h>
 
 ARuntimeVariable com_DrawDirectionalLights( _CTS( "com_DrawDirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_ShadowCascadeSplitLambda( _CTS( "com_ShadowCascadeSplitLambda" ), _CTS( "1.0" ) );
 
 static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
 
@@ -67,6 +66,7 @@ ADirectionalLightComponent::ADirectionalLightComponent() {
     ShadowCascadeOffset = 3;
     MaxShadowCascades = DEFAULT_MAX_SHADOW_CASCADES;
     ShadowCascadeResolution = 1024;
+    ShadowCascadeSplitLambda = 0.5f;
     Next = Prev = nullptr;
 }
 
@@ -239,7 +239,7 @@ void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, size_
     const float offset = ShadowCascadeOffset;
     const float a = (shadowMaxDistance - offset) / View->ViewZNear;
     const float b = (shadowMaxDistance - offset) - View->ViewZNear;
-    const float lambda = com_ShadowCascadeSplitLambda.GetFloat();
+    const float lambda = ShadowCascadeSplitLambda;
 
     // Calc splits
     cascadeSplits[0] = View->ViewZNear;

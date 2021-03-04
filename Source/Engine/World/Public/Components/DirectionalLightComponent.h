@@ -78,6 +78,9 @@ public:
     void SetShadowCascadeOffset( float Offset ) { ShadowCascadeOffset = Offset; }
     int GetShadowCascadeOffset() const { return ShadowCascadeOffset; }
 
+    void SetShadowCascadeSplitLambda( float SplitLambda ) { ShadowCascadeSplitLambda = SplitLambda; }
+    float GetShadowCascadeSplitLambda() const { return ShadowCascadeSplitLambda; }
+
     void SetMaxShadowCascades( int _MaxShadowCascades );
     int GetMaxShadowCascades() const;
 
@@ -107,6 +110,7 @@ private:
     float ShadowCascadeOffset;
     int MaxShadowCascades;
     int ShadowCascadeResolution;
+    float ShadowCascadeSplitLambda;
     ADirectionalLightComponent * Next;
     ADirectionalLightComponent * Prev;
 };
