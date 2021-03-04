@@ -190,7 +190,8 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     // Init Imgui allocators
     ImGui::SetAllocatorFunctions( ImguiModuleAlloc, ImguiModuleFree, NULL );
 #endif
-    GResourceManager.Initialize();
+    ResourceManager = MakeUnique< AResourceManager >();
+    GResourceManager = ResourceManager.GetObject();
 
     Renderer = CreateInstanceOf< ARenderFrontend >();
 
@@ -299,7 +300,8 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
 
     Vsd.Reset();
 
-    GResourceManager.Deinitialize();
+    ResourceManager.Reset();
+    GResourceManager = nullptr;
 
     AGarbageCollector::Deinitialize();
 

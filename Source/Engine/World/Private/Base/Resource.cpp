@@ -57,39 +57,49 @@ bool AResource::LoadFromPath( const char * _Path )
     if ( !Core::StricmpN( _Path, "/Root/", 6 ) ) {
         _Path += 6;
 
-        // try to load from resource pack
-        AMemoryStream mem;
-        if ( mem.OpenRead( _Path, *GResourceManager.GetGameResources() ) ) {
-            return LoadResource( mem );
-        }
-
         // try to load from file system
         AString fileSystemPath = GRuntime.GetRootPath() + _Path;
-
-        AFileStream f;
-        if ( f.OpenRead( fileSystemPath ) ) {
+        if ( Core::IsFileExists( fileSystemPath.CStr() ) ) {
+            AFileStream f;
+            if ( !f.OpenRead( fileSystemPath ) ) {
+                return false;
+            }
             return LoadResource( f );
         }
 
+        // try to load from resource pack
+        AArchive * resourcePack;
+        int fileIndex;
+        if ( GResourceManager->FindFile( _Path, &resourcePack, &fileIndex ) ) {
+            AMemoryStream f;
+            if ( !f.OpenRead( fileIndex, *resourcePack ) ) {
+                return false;
+            }
+            return LoadResource( f );
+        }
+
+        GLogger.Printf( "File not found /Root/%s\n", _Path );
         return false;
     }
 
     if ( !Core::StricmpN( _Path, "/Common/", 8 ) ) {
         _Path += 1;
 
-        // try to load from resource pack
-        AMemoryStream mem;
-        if ( mem.OpenRead( _Path + 7, *GResourceManager.GetCommonResources() ) ) {
-            return LoadResource( mem );
-        }
-
         // try to load from file system
-        AFileStream f;
-        if ( f.OpenRead( _Path ) ) {
+        if ( Core::IsFileExists( _Path ) ) {
+            AFileStream f;
+            if ( !f.OpenRead( _Path ) ) {
+                return false;
+            }
             return LoadResource( f );
         }
 
-        return false;
+        // try to load from resource pack
+        AMemoryStream f;
+        if ( !f.OpenRead( _Path + 7, *GResourceManager->GetCommonResources() ) ) {
+            return false;
+        }
+        return LoadResource( f );
     }
 
     if ( !Core::StricmpN( _Path, "/FS/", 4 ) ) {
@@ -108,7 +118,7 @@ bool AResource::LoadFromPath( const char * _Path )
 
         AMemoryStream f;
         if ( !f.OpenRead( _Path, GetEmbeddedResources() ) ) {
-            GLogger.Printf( "Failed to open /Embedded/%s\n", _Path );
+            //GLogger.Printf( "Failed to open /Embedded/%s\n", _Path );
             return false;
         }
 
@@ -141,6 +151,8 @@ void ABinaryResource::Purge()
 
 bool ABinaryResource::LoadResource( IBinaryStream & _Stream )
 {
+    Purge();
+
     SizeInBytes = _Stream.SizeInBytes();
     if ( !SizeInBytes ) {
         GLogger.Printf( "ABinaryResource::LoadResource: empty file\n" );

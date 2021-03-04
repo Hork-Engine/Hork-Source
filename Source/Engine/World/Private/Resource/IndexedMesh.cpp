@@ -158,7 +158,7 @@ static AIndexedMeshSubpart * ReadIndexedMeshSubpart( IBinaryStream & f ) {
     uint32_t firstIndex;
     uint32_t vertexCount;
     uint32_t indexCount;
-    AString materialInstance;
+    //AString dummy;
     BvAxisAlignedBox boundingBox;
 
     f.ReadObject( name );
@@ -166,7 +166,7 @@ static AIndexedMeshSubpart * ReadIndexedMeshSubpart( IBinaryStream & f ) {
     firstIndex = f.ReadUInt32();
     vertexCount = f.ReadUInt32();
     indexCount = f.ReadUInt32();
-    f.ReadObject( materialInstance );
+    //f.ReadObject( dummy ); // deprecated field
     f.ReadObject( boundingBox );
 
     AIndexedMeshSubpart * subpart = CreateInstanceOf< AIndexedMeshSubpart >();
@@ -176,7 +176,7 @@ static AIndexedMeshSubpart * ReadIndexedMeshSubpart( IBinaryStream & f ) {
     subpart->SetFirstIndex( firstIndex );
     subpart->SetVertexCount( vertexCount );
     subpart->SetIndexCount( indexCount );
-    subpart->SetMaterialInstance( GetOrCreateResource< AMaterialInstance >( materialInstance.CStr() ) );
+    //subpart->SetMaterialInstance( GetOrCreateResource< AMaterialInstance >( materialInstance.CStr() ) );
     subpart->SetBoundingBox( boundingBox );
     return subpart;
 }
@@ -202,6 +202,155 @@ static ASocketDef * ReadSocket( IBinaryStream & f ) {
 
 bool AIndexedMesh::LoadResource( IBinaryStream & Stream ) {
     AScopedTimeCheck ScopedTime( Stream.GetFileName() );
+
+    Purge();
+
+    AString text;
+    text.FromFile( Stream );
+
+    SDocumentDeserializeInfo deserializeInfo;
+    deserializeInfo.pDocumentData = text.CStr();
+    deserializeInfo.bInsitu = true;
+
+    ADocument doc;
+    doc.DeserializeFromString( deserializeInfo );
+
+    ADocMember * member;
+
+    member = doc.FindMember( "Mesh" );
+    if ( !member ) {
+        GLogger.Printf( "AIndexedMesh::LoadResource: invalid mesh\n" );
+        return false;
+    }
+
+    AString meshFile = member->GetString();
+    if ( meshFile.IsEmpty() ) {
+        GLogger.Printf( "AIndexedMesh::LoadResource: invalid mesh\n" );
+        return false;
+    }
+
+    ABinaryResource * meshBinary = NewObject< ABinaryResource >();
+    meshBinary->InitializeFromFile( meshFile.CStr() );
+
+    if ( !meshBinary->GetSizeInBytes() ) {
+        GLogger.Printf( "AIndexedMesh::LoadResource: invalid mesh\n" );
+        return false;
+    }
+
+    AMemoryStream meshData;
+    if ( !meshData.OpenRead( meshFile.CStr(), meshBinary->GetBinaryData(), meshBinary->GetSizeInBytes() ) ) {
+        GLogger.Printf( "AIndexedMesh::LoadResource: invalid mesh\n" );
+        return false;
+    }
+
+    uint32_t fileFormat = meshData.ReadUInt32();
+
+    if ( fileFormat != FMT_FILE_TYPE_MESH ) {
+        GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_MESH );
+        return false;
+    }
+
+    uint32_t fileVersion = meshData.ReadUInt32();
+
+    if ( fileVersion != FMT_VERSION_MESH ) {
+        GLogger.Printf( "Expected file version %d\n", FMT_VERSION_MESH );
+        return false;
+    }
+
+    bool bRaycastBVH;
+
+    AString guidStr;
+    meshData.ReadObject( guidStr );
+
+    bSkinnedMesh = meshData.ReadBool();
+    //meshData.ReadBool(); // dummy (TODO: remove in the future)
+    meshData.ReadObject( BoundingBox );
+    meshData.ReadArrayUInt32( Indices );
+    meshData.ReadArrayOfStructs( Vertices );
+    meshData.ReadArrayOfStructs( Weights );
+    bRaycastBVH = meshData.ReadBool();
+    RaycastPrimitivesPerLeaf = meshData.ReadUInt16();
+
+    uint32_t subpartsCount = meshData.ReadUInt32();
+    Subparts.ResizeInvalidate( subpartsCount );
+    for ( int i = 0 ; i < Subparts.Size() ; i++ ) {
+        Subparts[i] = ReadIndexedMeshSubpart( meshData );
+    }
+
+    member = doc.FindMember( "Subparts" );
+    if ( member ) {
+        ADocValue * values = member->GetArrayValues();
+        int subpartIndex = 0;
+        for ( ADocValue * v = values ; v && subpartIndex < Subparts.Size() ; v = v->GetNext() ) {
+            Subparts[subpartIndex]->SetMaterialInstance( GetOrCreateResource< AMaterialInstance >( v->GetString().CStr() ) );
+            subpartIndex++;
+        }
+    }
+
+    if ( bRaycastBVH ) {
+        for ( AIndexedMeshSubpart * subpart : Subparts ) {
+            ATreeAABB * bvh = NewObject< ATreeAABB >();
+
+            bvh->Read( meshData );
+
+            subpart->SetBVH( bvh );
+        }
+    }
+
+    uint32_t socketsCount = meshData.ReadUInt32();
+    Sockets.ResizeInvalidate( socketsCount );
+    for ( int i = 0 ; i < Sockets.Size() ; i++ ) {
+        Sockets[i] = ReadSocket( meshData );
+    }
+
+    //AString dummy;
+    //meshData.ReadObject( dummy ); // deprecated field
+
+    if ( bSkinnedMesh ) {
+        meshData.ReadArrayInt32( Skin.JointIndices );
+        meshData.ReadArrayOfStructs( Skin.OffsetMatrices );
+    }
+
+    for ( AIndexedMeshSubpart * subpart : Subparts ) {
+        subpart->OwnerMesh = this;
+    }
+
+    member = doc.FindMember( "Skeleton" );
+    SetSkeleton( GetOrCreateResource< ASkeleton >( member ? member->GetString().CStr() : "/Default/Skeleton/Default" ) );
+
+    AVertexMemoryGPU * vertexMemory = GRuntime.GetVertexMemoryGPU();
+
+    VertexHandle = vertexMemory->AllocateVertex( Vertices.Size() * sizeof( SMeshVertex ), nullptr, GetVertexMemory, this );
+    IndexHandle = vertexMemory->AllocateIndex( Indices.Size() * sizeof( unsigned int ), nullptr, GetIndexMemory, this );
+
+    if ( bSkinnedMesh ) {
+        WeightsHandle = vertexMemory->AllocateVertex( Weights.Size() * sizeof( SMeshVertexSkin ), nullptr, GetWeightMemory, this );
+    }
+
+    SendVertexDataToGPU( Vertices.Size(), 0 );
+    SendIndexDataToGPU( Indices.Size(), 0 );
+    if ( bSkinnedMesh ) {
+        SendJointWeightsToGPU( Weights.Size(), 0 );
+    }
+
+    bBoundingBoxDirty = false;
+
+    InvalidateChannels();
+
+    if ( !bSkinnedMesh ) {
+        GenerateRigidbodyCollisions();   // TODO: load collision from file
+    }
+    
+
+
+
+
+
+
+
+
+
+    
 
 #if 0
     int i = _Path.FindExt();
@@ -258,6 +407,7 @@ bool AIndexedMesh::LoadResource( IBinaryStream & Stream ) {
     }
 #endif
 
+#if 0
     uint32_t fileFormat = Stream.ReadUInt32();
 
     if ( fileFormat != FMT_FILE_TYPE_MESH ) {
@@ -346,7 +496,7 @@ bool AIndexedMesh::LoadResource( IBinaryStream & Stream ) {
     if ( !bSkinnedMesh ) {
         GenerateRigidbodyCollisions();   // TODO: load collision from file
     }
-
+#endif
     return true;
 }
 

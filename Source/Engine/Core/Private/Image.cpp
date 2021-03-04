@@ -573,6 +573,7 @@ void AImage::FromRawData( const void * _Source, int _Width, int _Height, SImageM
         mipmapGen.Width = Width;
         mipmapGen.Height = Height;
         mipmapGen.NumChannels = numChannels;
+        mipmapGen.AlphaChannel = numChannels == 4 ? 3 : -1;
         mipmapGen.bLinearSpace = bLinearSpace;
         mipmapGen.EdgeMode = _MipmapGen->EdgeMode;
         mipmapGen.Filter = _MipmapGen->Filter;
@@ -758,15 +759,13 @@ static void DownscaleSimpleAverageHDRI( int _CurWidth, int _CurHeight, int _NewW
     }
 }
 
-static void GenerateMipmaps( const byte * ImageData, int ImageWidth, int ImageHeight, int NumChannels, EMipmapEdgeMode EdgeMode, EMipmapFilter Filter, bool bLinearSpace, bool bPremultipliedAlpha, byte * Dest ) {
+static void GenerateMipmaps( const byte * ImageData, int ImageWidth, int ImageHeight, int NumChannels, int AlphaChannel, EMipmapEdgeMode EdgeMode, EMipmapFilter Filter, bool bLinearSpace, bool bPremultipliedAlpha, byte * Dest ) {
     Core::Memcpy( Dest, ImageData, ImageWidth * ImageHeight * NumChannels );
 
     int MemoryOffset = ImageWidth * ImageHeight * NumChannels;
 
     int CurWidth = ImageWidth;
     int CurHeight = ImageHeight;
-
-    int AlphaChannel = NumChannels == 4 ? 3 : -1;
 
     if ( ImageWidth == 1 && ImageHeight == 1 ) {
         return;
@@ -887,7 +886,7 @@ void GenerateMipmaps( SSoftwareMipmapGenerator const & _Config, void * _Data ) {
     if ( _Config.bHDRI ) {
         ::GenerateMipmapsHDRI( (const float *)_Config.SourceImage, _Config.Width, _Config.Height, _Config.NumChannels, _Config.EdgeMode, _Config.Filter, _Config.bPremultipliedAlpha, (float *)_Data );
     } else {
-        ::GenerateMipmaps( (const byte *)_Config.SourceImage, _Config.Width, _Config.Height, _Config.NumChannels, _Config.EdgeMode, _Config.Filter, _Config.bLinearSpace, _Config.bPremultipliedAlpha, (byte *)_Data );
+        ::GenerateMipmaps( (const byte *)_Config.SourceImage, _Config.Width, _Config.Height, _Config.NumChannels, _Config.AlphaChannel, _Config.EdgeMode, _Config.Filter, _Config.bLinearSpace, _Config.bPremultipliedAlpha, (byte *)_Data );
     }
 }
 

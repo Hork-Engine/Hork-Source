@@ -47,7 +47,8 @@ ACanvas::ACanvas()
 
 void ACanvas::Initialize() {
 
-    GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/DejaVuSansMono.font" );
+    //GetOrCreateResource< AFont >( "/Common/Fonts/DejaVuSansMono.font" );
+    //GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/DejaVuSansMono.font" );
     //GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/consolas.font" );
     //GetOrCreateResource< AFont >( "CanvasFont", "/Common/Fonts/Cousine-Regular.font" );
     DrawList._Data = &DrawListSharedData;
@@ -60,7 +61,8 @@ void ACanvas::Deinitialize() {
 
 AFont * ACanvas::GetDefaultFont() {
 #if 1
-    static TStaticResourceFinder< AFont > FontResource( _CTS( "CanvasFont" ) );
+    //static TStaticResourceFinder< AFont > FontResource( _CTS( "CanvasFont" ) );
+    static TStaticResourceFinder< AFont > FontResource( _CTS( "/Common/Fonts/DejaVuSansMono.font"  ) );
 #else
     static TStaticResourceFinder< AFont > Resource( _CTS( "/Default/Fonts/Default" ) );
 #endif

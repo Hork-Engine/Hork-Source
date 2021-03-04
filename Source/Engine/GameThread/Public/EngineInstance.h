@@ -181,6 +181,8 @@ private:
     TRef< ARenderFrontend > Renderer;
     TRef< ARenderBackend > RenderBackend;
 
+    TUniqueRef< AResourceManager > ResourceManager;
+
     TUniqueRef< AVSD > Vsd;
 
     bool bAllowInputEvents = false;

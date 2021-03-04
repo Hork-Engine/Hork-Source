@@ -988,7 +988,7 @@ bool AMaterialInstance::LoadTextVersion( IBinaryStream & Stream ) {
     ADocMember * member;
 
     member = doc.FindMember( "Textures" );
-    if ( member && member->IsArray() ) {
+    if ( member ) {
         ADocValue * values = member->GetArrayValues();
         int texSlot = 0;
         for ( ADocValue * v = values ; v && texSlot < MAX_MATERIAL_TEXTURES ; v = v->GetNext() ) {
@@ -997,7 +997,7 @@ bool AMaterialInstance::LoadTextVersion( IBinaryStream & Stream ) {
     }
 
     member = doc.FindMember( "Uniforms" );
-    if ( member && member->IsArray() ) {
+    if ( member ) {
         ADocValue * values = member->GetArrayValues();
         int uniformNum = 0;
         for ( ADocValue * v = values ; v && uniformNum < MAX_MATERIAL_UNIFORMS ; v = v->GetNext() ) {

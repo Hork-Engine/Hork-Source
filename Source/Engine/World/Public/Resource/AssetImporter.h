@@ -34,6 +34,8 @@ SOFTWARE.
 #include "Skeleton.h"
 #include "IndexedMesh.h"
 
+#include <unordered_map>
+
 struct SAssetImportSettings
 {
     SAssetImportSettings()
@@ -169,7 +171,7 @@ private:
     void ReadSkeleton( struct cgltf_node * node, int parentIndex = -1 );
     void WriteAssets();
     void WriteTextures();
-    void WriteTexture( TextureInfo const & tex );
+    void WriteTexture( TextureInfo & tex );
     void WriteMaterials();
     void WriteMaterial( MaterialInfo const & m );
     void WriteSkeleton();
@@ -179,10 +181,12 @@ private:
     void WriteMeshes();
     void WriteMesh( MeshInfo const & Mesh );
     void WriteSkyboxMaterial( AGUID const & SkyboxTextureGUID );
-    AString GeneratePhysicalPath( const char * DesiredName );
+    AString GeneratePhysicalPath( const char * DesiredName, const char * Extension );
     AString GetMaterialGUID( cgltf_material * Material );
     TextureInfo * FindTextureImage( struct cgltf_texture const * Texture );
     void SetTextureProps( TextureInfo * Info, const char * Name, bool SRGB );
+
+    std::unordered_map< std::string, AString > GuidMap; // Guid -> file name
 
     SAssetImportSettings m_Settings;
     AString m_Path;

@@ -45,6 +45,9 @@ class AArchive final {
 
 public:
     AArchive();
+    AArchive( const char * _ArchiveName, bool bResourcePack = false );
+    AArchive( const void * pMemory, size_t SizeInBytes );
+
     ~AArchive();
 
     /** Open archive from file */
@@ -68,11 +71,16 @@ public:
     /** Get file compressed and uncompressed size */
     bool GetFileSize( int _FileIndex, size_t * _CompressedSize, size_t * _UncompressedSize ) const;
 
+    /** Get file name by index */
+    bool GetFileName( int _FileIndex, AString & FileName ) const;
+
     /** Decompress file to memory buffer */
     bool ExtractFileToMemory( int _FileIndex, void * _MemoryBuffer, size_t _SizeInBytes ) const;
 
     /** Decompress file to heap memory */
     bool ExtractFileToHeapMemory( const char * _FileName, void ** _HeapMemoryPtr, int * _SizeInBytes ) const;
+    /** Decompress file to heap memory */
+    bool ExtractFileToHeapMemory( int _FileIndex, void ** _HeapMemoryPtr, int * _SizeInBytes ) const;
 
     /** Decompress file to hunk memory */
     bool ExtractFileToHunkMemory( const char * _FileName, void ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark ) const;
@@ -169,6 +177,8 @@ public:
     bool OpenRead( const char * _FileName, AArchive const & _Archive );
     /** Read file from archive */
     bool OpenRead( AString const & _FileName, AArchive const & _Archive );
+    /** Read file from archive */
+    bool OpenRead( int _FileIndex, AArchive const & _Archive );
 
     /** Write to specified memory buffer */
     bool OpenWrite( const char * _FileName, void * _MemoryBuffer, size_t _SizeInBytes );

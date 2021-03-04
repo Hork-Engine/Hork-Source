@@ -97,29 +97,30 @@ static FILE * OpenFile( const char * _FileName, const char * _Mode ) {
 }
 
 bool AFileStream::Open( const char * _FileName, int _Mode ) {
+    AN_ASSERT( _Mode >= 0 && _Mode < 3 );
+
     Close();
 
-    AString fn( _FileName );
-    fn.FixPath();
-    if ( fn.Length() && fn[ fn.Length() - 1 ] == '/' ) {
+    Name = _FileName;
+    Name.FixPath();
+    if ( Name.Length() && Name[ Name.Length() - 1 ] == '/' ) {
         GLogger.Printf( "Invalid file name %s\n", _FileName );
+        Name.Clear();
         return false;
     }
 
-    AN_ASSERT( _Mode >= 0 && _Mode < 3 );
-
     if ( _Mode == M_Write || _Mode == M_Append ) {
-        Core::MakeDir( fn.CStr(), true );
+        Core::MakeDir( Name.CStr(), true );
     }
 
     constexpr const char * fopen_mode[3] = { "rb", "wb", "ab" };
-    FILE * f = OpenFile( fn.CStr(), fopen_mode[ _Mode ] );
+    FILE * f = OpenFile( Name.CStr(), fopen_mode[ _Mode ] );
     if ( !f ) {
-        GLogger.Printf( "Couldn't open %s\n", fn.CStr() );
+        GLogger.Printf( "Couldn't open %s\n", Name.CStr() );
+        Name.Clear();
         return false;
     }
 
-    Name = fn;
     Handle = f;
     Mode = _Mode;
 
@@ -257,10 +258,28 @@ bool AMemoryStream::OpenRead( const char * _FileName, AArchive const & _Archive 
     Close();
 
     if ( !_Archive.ExtractFileToHeapMemory( _FileName, (void **)&MemoryBuffer, &MemoryBufferSize ) ) {
+        GLogger.Printf( "Couldn't open %s\n", _FileName );
         return false;
     }
 
     Name = _FileName;
+    bMemoryBufferOwner = true;
+    MemoryBufferOffset = 0;
+    Mode = M_Read;
+    return true;
+}
+
+bool AMemoryStream::OpenRead( int _FileIndex, AArchive const & _Archive ) {
+    Close();
+
+    _Archive.GetFileName( _FileIndex, Name );
+
+    if ( !_Archive.ExtractFileToHeapMemory( _FileIndex, (void **)&MemoryBuffer, &MemoryBufferSize ) ) {
+        GLogger.Printf( "Couldn't open %s\n", Name.CStr() );
+        Name.Clear();
+        return false;
+    }
+
     bMemoryBufferOwner = true;
     MemoryBufferOffset = 0;
     Mode = M_Read;
@@ -442,16 +461,30 @@ void * AMemoryStream::GrabMemory() {
 
 
 AArchive::AArchive()
- : Handle( nullptr )
+    : Handle( nullptr )
 {
 
 }
 
-AArchive::~AArchive() {
+AArchive::AArchive( const char * _ArchiveName, bool bResourcePack )
+    : AArchive()
+{
+    Open( _ArchiveName, bResourcePack );
+}
+
+AArchive::AArchive( const void * pMemory, size_t SizeInBytes )
+    : AArchive()
+{
+    OpenFromMemory( pMemory, SizeInBytes );
+}
+
+AArchive::~AArchive()
+{
     Close();
 }
 
-bool AArchive::Open( const char * _ArchiveName, bool bResourcePack ) {
+bool AArchive::Open( const char * _ArchiveName, bool bResourcePack )
+{
     mz_zip_archive arch;
     mz_uint64 fileStartOffset = 0;
     mz_uint64 archiveSize = 0;
@@ -492,7 +525,8 @@ bool AArchive::Open( const char * _ArchiveName, bool bResourcePack ) {
     return true;
 }
 
-bool AArchive::OpenFromMemory( const void * pMemory, size_t SizeInBytes ) {
+bool AArchive::OpenFromMemory( const void * pMemory, size_t SizeInBytes )
+{
     Close();
 
     mz_zip_archive arch;
@@ -514,7 +548,8 @@ bool AArchive::OpenFromMemory( const void * pMemory, size_t SizeInBytes ) {
     return true;
 }
 
-void AArchive::Close() {
+void AArchive::Close()
+{
     if ( !Handle ) {
         return;
     }
@@ -525,20 +560,25 @@ void AArchive::Close() {
     Handle = nullptr;
 }
 
-int AArchive::GetNumFiles() const {
+int AArchive::GetNumFiles() const
+{
     return mz_zip_reader_get_num_files( (mz_zip_archive *)Handle );
 }
 
-int AArchive::LocateFile( const char * _FileName ) const {
+int AArchive::LocateFile( const char * _FileName ) const
+{
     return mz_zip_reader_locate_file( (mz_zip_archive *)Handle, _FileName, NULL, 0 );
 }
 
-#define MZ_ZIP_CDH_COMPRESSED_SIZE_OFS 20
-#define MZ_ZIP_CDH_DECOMPRESSED_SIZE_OFS 24
+#define MZ_ZIP_CDH_COMPRESSED_SIZE_OFS      20
+#define MZ_ZIP_CDH_DECOMPRESSED_SIZE_OFS    24
+#define MZ_ZIP_CDH_FILENAME_LEN_OFS         28
+#define MZ_ZIP_CENTRAL_DIR_HEADER_SIZE      46
 
 extern "C" const mz_uint8 *mz_zip_get_cdh( mz_zip_archive *pZip, mz_uint file_index );
 
-bool AArchive::GetFileSize( int _FileIndex, size_t * _CompressedSize, size_t * _UncompressedSize ) const {
+bool AArchive::GetFileSize( int _FileIndex, size_t * _CompressedSize, size_t * _UncompressedSize ) const
+{
     // All checks are processd in mz_zip_get_cdh
     const mz_uint8 *p = mz_zip_get_cdh( (mz_zip_archive *)Handle, _FileIndex );
     if ( !p ) {
@@ -555,12 +595,35 @@ bool AArchive::GetFileSize( int _FileIndex, size_t * _CompressedSize, size_t * _
     return true;
 }
 
-bool AArchive::ExtractFileToMemory( int _FileIndex, void * _MemoryBuffer, size_t _SizeInBytes ) const {
+bool AArchive::GetFileName( int _FileIndex, AString & FileName ) const
+{
+    // All checks are processd in mz_zip_get_cdh
+    const mz_uint8 *p = mz_zip_get_cdh( (mz_zip_archive *)Handle, _FileIndex );
+    if ( !p ) {
+        return false;
+    }
+
+    mz_uint filename_len = MZ_READ_LE16(p + MZ_ZIP_CDH_FILENAME_LEN_OFS);
+    const char *pFilename = (const char *)p + MZ_ZIP_CENTRAL_DIR_HEADER_SIZE;
+
+    if ( filename_len < 1 ) {
+        return false;
+    }
+
+    FileName.Resize( filename_len );
+    Core::Memcpy( FileName.ToPtr(), pFilename, filename_len );
+
+    return true;
+}
+
+bool AArchive::ExtractFileToMemory( int _FileIndex, void * _MemoryBuffer, size_t _SizeInBytes ) const
+{
     // All checks are processd in mz_zip_reader_extract_to_mem
     return !!mz_zip_reader_extract_to_mem( (mz_zip_archive *)Handle, _FileIndex, _MemoryBuffer, _SizeInBytes, 0 );
 }
 
-bool AArchive::ExtractFileToHeapMemory( const char * _FileName, void ** _HeapMemoryPtr, int * _SizeInBytes ) const {
+bool AArchive::ExtractFileToHeapMemory( const char * _FileName, void ** _HeapMemoryPtr, int * _SizeInBytes ) const
+{
     size_t uncompSize;
 
     *_HeapMemoryPtr = nullptr;
@@ -588,7 +651,36 @@ bool AArchive::ExtractFileToHeapMemory( const char * _FileName, void ** _HeapMem
     return true;
 }
 
-bool AArchive::ExtractFileToHunkMemory( const char * _FileName, void ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark ) const {
+bool AArchive::ExtractFileToHeapMemory( int FileIndex, void ** _HeapMemoryPtr, int * _SizeInBytes ) const
+{
+    size_t uncompSize;
+
+    *_HeapMemoryPtr = nullptr;
+    *_SizeInBytes = 0;
+
+    if ( FileIndex < 0 ) {
+        return false;
+    }
+
+    if ( !GetFileSize( FileIndex, NULL, &uncompSize ) ) {
+        return false;
+    }
+
+    void * pBuf = GHeapMemory.Alloc( uncompSize );
+
+    if ( !ExtractFileToMemory( FileIndex, pBuf, uncompSize ) ) {
+        GHeapMemory.Free( pBuf );
+        return false;
+    }
+
+    *_HeapMemoryPtr = pBuf;
+    *_SizeInBytes = uncompSize;
+
+    return true;
+}
+
+bool AArchive::ExtractFileToHunkMemory( const char * _FileName, void ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark ) const
+{
     size_t uncompSize;
 
     *_HunkMark = GHunkMemory.SetHunkMark();

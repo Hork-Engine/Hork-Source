@@ -61,6 +61,7 @@ struct SSoftwareMipmapGenerator
     int Width = 0;
     int Height = 0;
     int NumChannels = 0;
+    int AlphaChannel = -1;
     EMipmapEdgeMode EdgeMode = MIPMAP_EDGE_WRAP;
     EMipmapFilter Filter = MIPMAP_FILTER_MITCHELL;
     bool bLinearSpace = false;

@@ -103,7 +103,7 @@ public:
     /** Get raw pointer */
     char * ToPtr() const;
 
-    /** Build from c-string */
+    /** Build from c-string. _Str must be 0-terminated. */
     void FromCStr( const char * _Str, int _Num );
 
     /** Append the string */

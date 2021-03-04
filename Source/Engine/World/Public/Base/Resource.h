@@ -44,9 +44,6 @@ public:
     /** Initialize object from file */
     void InitializeFromFile( const char * _Path );
 
-    /** Get resource alias/guid */
-    AString const & GetResourceAlias() const { return ResourceAlias; }
-
     /** Get physical resource path */
     AString const & GetResourcePath() const { return ResourcePath; }
 
@@ -63,10 +60,6 @@ protected:
 
 private:
     bool LoadFromPath( const char * _Path );
-
-    void SetResourceAlias( const char * _ResourceAlias ) { ResourceAlias = _ResourceAlias; }
-
-    void SetResourceAlias( AString const &  _ResourceAlias ) { ResourceAlias = _ResourceAlias; }
 
     /** Set physical resource path */
     void SetResourcePath( const char * _ResourcePath ) { ResourcePath = _ResourcePath; }

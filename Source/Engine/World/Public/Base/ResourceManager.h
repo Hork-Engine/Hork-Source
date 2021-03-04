@@ -35,16 +35,19 @@ SOFTWARE.
 #include <Core/Public/Guid.h>
 
 class AResourceManager {
-    AN_SINGLETON( AResourceManager )
-
 public:
-    void Initialize();
-    void Deinitialize();
+    AResourceManager();
+    virtual ~AResourceManager();
+
+    void AddResourcePack( const char * FileName );
+
+    /** Find file in resource packs */
+    bool FindFile( const char * FileName, AArchive ** ppResourcePack, int * pFileIndex );
 
     /** Get or create resource. Return default object if fails. */
     template< typename T >
-    AN_FORCEINLINE T * GetOrCreateResource( const char * _Alias, const char * _PhysicalPath = nullptr ) {
-        return static_cast< T * >( GetOrCreateResource( T::ClassMeta(), _Alias, _PhysicalPath ) );
+    AN_FORCEINLINE T * GetOrCreateResource( const char * _Path ) {
+        return static_cast< T * >( GetOrCreateResource( T::ClassMeta(), _Path ) );
     }
 
     /** Get resource. Return default object if fails. */
@@ -54,13 +57,19 @@ public:
     }
 
     /** Get or create resource. Return default object if fails. */
-    AResource * GetOrCreateResource( AClassMeta const &  _ClassMeta, const char * _Alias, const char * _PhysicalPath = nullptr );
+    AResource * GetOrCreateResource( AClassMeta const &  _ClassMeta, const char * _Path );
 
     /** Get resource. Return default object if fails. */
     AResource * GetResource( AClassMeta const & _ClassMeta, const char * _Alias, bool * _bResourceFoundResult = nullptr, bool * _bMetadataMismatch = nullptr );
 
     /** Get resource meta. Return null if fails. */
     AClassMeta const * GetResourceInfo( const char * _Alias );
+
+    /** Find resource in cache. Return null if fails. */
+    template< typename T >
+    T * FindResource( const char * _Alias, bool & _bMetadataMismatch, int & _Hash ) {
+        return static_cast< T * >( FindResource( T::ClassMeta(), _Alias, _bMetadataMismatch, _Hash ) );
+    }
 
     /** Find resource in cache. Return null if fails. */
     AResource * FindResource( AClassMeta const & _ClassMeta, const char * _Alias, bool & _bMetadataMismatch, int & _Hash );
@@ -86,28 +95,16 @@ public:
     /** Unregister all resources. */
     void UnregisterResources();
 
-    void SetResourceGUID( AGUID const & _GUID, const char * _PhysicalPath );
-    void SetResourceGUID( AString const & _GUID, const char * _PhysicalPath );
-
-    void RestorePhysicalPathFromAlias( const char * _Alias, AString & _PhysicalPath ) const;
-
-    AArchive const * GetGameResources() const { return GameResources.GetObject(); }
     AArchive const * GetCommonResources() const { return CommonResources.GetObject(); }
 
 private:
-    void LoadResourceGUID();
-
-    void SaveResourceGUID();
-
     TPodArray< AResource * > ResourceCache;
     THash<> ResourceHash;
-    TStdVectorDefault< std::pair< std::string, std::string > > ResourceGUID;
-    THash<> ResourceGUIDHash;
-    TUniqueRef< AArchive > GameResources;
+    TStdVector< TUniqueRef< AArchive > > ResourcePacks;
     TUniqueRef< AArchive > CommonResources;
 };
 
-extern AResourceManager & GResourceManager;
+extern AResourceManager * GResourceManager;
 
 /*
 
@@ -117,50 +114,56 @@ Helpers
 
 /** Get or create resource. Return default object if fails. */
 template< typename T >
-AN_FORCEINLINE T * GetOrCreateResource( const char * _Alias, const char * _PhysicalPath = nullptr ) {
-    return GResourceManager.GetOrCreateResource< T >( _Alias, _PhysicalPath );
+AN_FORCEINLINE T * GetOrCreateResource( const char * _Path ) {
+    return GResourceManager->GetOrCreateResource< T >( _Path );
 }
 
 /** Get resource. Return default object if fails. */
 template< typename T >
 AN_FORCEINLINE T * GetResource( const char * _Alias, bool * _bResourceFoundResult = nullptr, bool * _bMetadataMismatch = nullptr ) {
-    return GResourceManager.GetResource< T >( _Alias, _bResourceFoundResult, _bMetadataMismatch );
+    return GResourceManager->GetResource< T >( _Alias, _bResourceFoundResult, _bMetadataMismatch );
 }
 
 /** Get resource meta. Return null if fails. */
 AN_FORCEINLINE AClassMeta const * GetResourceInfo( const char * _Alias ) {
-    return GResourceManager.GetResourceInfo( _Alias );
+    return GResourceManager->GetResourceInfo( _Alias );
 }
 
 /** Find resource in cache. Return null if fails. */
 AN_FORCEINLINE AResource * FindResource( AClassMeta const & _ClassMeta, const char * _Alias, bool & _bMetadataMismatch, int & _Hash ) {
-    return GResourceManager.FindResource( _ClassMeta, _Alias, _bMetadataMismatch, _Hash );
+    return GResourceManager->FindResource( _ClassMeta, _Alias, _bMetadataMismatch, _Hash );
+}
+
+/** Find resource in cache. Return null if fails. */
+template< typename T >
+AN_FORCEINLINE T * FindResource( const char * _Alias, bool & _bMetadataMismatch, int & _Hash ) {
+    return static_cast< T * >( FindResource( T::ClassMeta(), _Alias, _bMetadataMismatch, _Hash ) );
 }
 
 /** Find resource in cache. Return null if fails. */
 AN_FORCEINLINE AResource * FindResourceByAlias( const char * _Alias ) {
-    return GResourceManager.FindResourceByAlias( _Alias );
+    return GResourceManager->FindResourceByAlias( _Alias );
 }
 
 /** Register object as resource. */
 AN_FORCEINLINE bool RegisterResource( AResource * _Resource, const char * _Alias ) {
-    return GResourceManager.RegisterResource( _Resource, _Alias );
+    return GResourceManager->RegisterResource( _Resource, _Alias );
 }
 
 /** Unregister object as resource. */
 AN_FORCEINLINE bool UnregisterResource( AResource * _Resource ) {
-    return GResourceManager.UnregisterResource( _Resource );
+    return GResourceManager->UnregisterResource( _Resource );
 }
 
 /** Unregister all resources by type. */
 template< typename T >
 AN_FORCEINLINE void UnregisterResources() {
-    GResourceManager.UnregisterResources< T >();
+    GResourceManager->UnregisterResources< T >();
 }
 
 /** Unregister all resources. */
 AN_FORCEINLINE void UnregisterResources() {
-    GResourceManager.UnregisterResources();
+    GResourceManager->UnregisterResources();
 }
 
 /**
@@ -176,26 +179,26 @@ template< typename T >
 struct TStaticResourceFinder {
 
     template< char... Chars >
-    TStaticResourceFinder( TCompileTimeString<Chars...> const & _Alias )
-        : ResourceName( _Alias.CStr() )
+    TStaticResourceFinder( TCompileTimeString<Chars...> const & _Path )
+        : ResourcePath( _Path.CStr() )
     {
-        Object = GetOrCreateResource< T >( ResourceName );
+        Object = GetOrCreateResource< T >( ResourcePath );
     }
 
     TStaticResourceFinder( const char * _Alias )
-        : ResourceName( _Alias )
+        : ResourcePath( _Alias )
     {
-        Object = GetOrCreateResource< T >( ResourceName );
+        Object = GetOrCreateResource< T >( ResourcePath );
     }
 
     T * GetObject() {
         if ( Object.IsExpired() ) {
-            Object = GetOrCreateResource< T >( ResourceName );
+            Object = GetOrCreateResource< T >( ResourcePath );
         }
         return Object;
     }
 
 private:
-    const char * ResourceName;
+    const char * ResourcePath;
     TWeakRef< T > Object;
 };

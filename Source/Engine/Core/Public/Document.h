@@ -312,19 +312,22 @@ public:
     /** Is string member */
     bool IsString() const
     {
-        return !IsArray() && Values && Values->IsString();
+        return HasSingleValue() && Values->IsString();
     }
 
     /** Is object member */
     bool IsObject() const
     {
-        return !IsArray() && Values && Values->IsObject();
+        return HasSingleValue() && Values->IsObject();
     }
 
     /** Is array member */
-    bool IsArray() const
+    bool HasSingleValue() const
     {
-        return Values != ValuesEnd;
+        if ( !Values || Values->Next ) {
+            return false;
+        }
+        return true;
     }
 
     /** Get next member inside object */

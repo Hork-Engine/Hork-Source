@@ -1599,9 +1599,9 @@ void AAssetImporter::WriteTextures() {
     }
 }
 
-void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
+void AAssetImporter::WriteTexture( TextureInfo & tex ) {
     AFileStream f;
-    AString fileName = GeneratePhysicalPath( tex.Image->name && *tex.Image->name ? tex.Image->name : "Texture" );
+    AString fileName = GeneratePhysicalPath( tex.Image->name && *tex.Image->name ? tex.Image->name : "texture", ".texture" );
     AString sourceFileName = m_Path + tex.Image->uri;
     AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
@@ -1624,7 +1624,7 @@ void AAssetImporter::WriteTexture( TextureInfo const & tex ) {
         return;
     }
 
-    GResourceManager.SetResourceGUID( tex.GUID, ("/Root/" + fileName).CStr() );
+    GuidMap[tex.GUID.ToString().CStr()] = "/Root/" + fileName;
 
     uint32_t textureType = TEXTURE_2D;
     uint32_t w = image.GetWidth(), h = image.GetHeight(), d = 1, numLods = image.GetNumLods();
@@ -1720,7 +1720,7 @@ void AAssetImporter::WriteMaterials() {
 
 void AAssetImporter::WriteMaterial( MaterialInfo const & m ) {
     AFileStream f;
-    AString fileName = GeneratePhysicalPath( "MaterialInstance" );
+    AString fileName = GeneratePhysicalPath( "matinst", ".minst" );
     AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
@@ -1728,8 +1728,9 @@ void AAssetImporter::WriteMaterial( MaterialInfo const & m ) {
         return;
     }
 
-    GResourceManager.SetResourceGUID( m.GUID, ( "/Root/" + fileName ).CStr() );
+    GuidMap[ m.GUID.CStr() ] = "/Root/" + fileName;
 
+#if 0
     f.WriteUInt32( FMT_FILE_TYPE_MATERIAL_INSTANCE );
     f.WriteUInt32( FMT_VERSION_MATERIAL_INSTANCE );
     f.WriteCString( m.GUID.CStr() );
@@ -1749,6 +1750,24 @@ void AAssetImporter::WriteMaterial( MaterialInfo const & m ) {
     for ( int i = 0 ; i < 16 ; i++ ) {
         f.WriteFloat( m.Uniforms[i] );
     }
+#else
+    f.Printf( "Material \"%s\"\n", m.DefaultMaterial );
+    f.Printf( "Textures [\n" );
+    for ( int i = 0 ; i < m.NumTextures ; i++ ) {
+        if ( m.Textures[i] ) {
+            f.Printf( "\"%s\"\n", GuidMap[m.Textures[i]->GUID.CStr()].CStr() );
+        } else {
+            f.Printf( "\"%s\"\n", m.DefaultTexture[i] );
+        }
+    }
+    f.Printf( "]\n" );
+    f.Printf( "Uniforms [\n" );
+    for ( int i = 0 ; i < MAX_MATERIAL_UNIFORMS ; i++ ) {
+        f.Printf( "\"%s\"\n", Math::ToString( m.Uniforms[i] ).CStr() );
+    }
+    f.Printf( "]\n" );
+#endif
+
 #if 0
     //
     // Write meta file
@@ -1797,6 +1816,7 @@ static AString ValidateFileName( const char * FileName ) {
         case '@':
         case '$':
         case '*':
+        case '|':
             Ch = '_';
             break;
         }
@@ -1805,7 +1825,7 @@ static AString ValidateFileName( const char * FileName ) {
     return ValidatedName;
 }
 
-AString AAssetImporter::GeneratePhysicalPath( const char * DesiredName ) {
+AString AAssetImporter::GeneratePhysicalPath( const char * DesiredName, const char * Extension ) {
     AString sourceName = m_Settings.ImportFile;
 
     sourceName.StripPath();
@@ -1813,13 +1833,16 @@ AString AAssetImporter::GeneratePhysicalPath( const char * DesiredName ) {
 
     AString validatedName = ValidateFileName( DesiredName );
 
+    sourceName.ToLower();
+    validatedName.ToLower();
+
     AString path = m_Settings.OutputPath + "/" + sourceName + "_" + validatedName;
-    AString result = path + ".asset";
+    AString result = path + Extension;
 
     int uniqueNumber = 0;
 
     while ( Core::IsFileExists( (GRuntime.GetRootPath() + result ).CStr() ) ) {
-        result = path + "_" + Math::ToString( ++uniqueNumber ) + ".asset";
+        result = path + "_" + Math::ToString( ++uniqueNumber ) + Extension;
     }
 
     return result;
@@ -1838,7 +1861,7 @@ void AAssetImporter::WriteSkeleton() {
 
     if ( !m_Joints.IsEmpty() ) {
         AFileStream f;
-        AString fileName = GeneratePhysicalPath( "Skeleton" );
+        AString fileName = GeneratePhysicalPath( "skeleton", ".skeleton" );
         AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
         if ( !f.OpenWrite( fileSystemPath ) ) {
@@ -1846,7 +1869,7 @@ void AAssetImporter::WriteSkeleton() {
             return;
         }
 
-        GResourceManager.SetResourceGUID( m_SkeletonGUID, ("/Root/" + fileName).CStr() );
+        GuidMap[m_SkeletonGUID.CStr()] = "/Root/" + fileName;
 
         f.WriteUInt32( FMT_FILE_TYPE_SKELETON );
         f.WriteUInt32( FMT_VERSION_SKELETON );
@@ -1881,15 +1904,13 @@ void AAssetImporter::WriteAnimations() {
 
 void AAssetImporter::WriteAnimation( AnimationInfo const & Animation ) {
     AFileStream f;
-    AString fileName = GeneratePhysicalPath( Animation.Name.CStr() );
+    AString fileName = GeneratePhysicalPath( Animation.Name.CStr(), ".animation" );
     AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
         return;
     }
-
-    GResourceManager.SetResourceGUID( Animation.GUID, ("/Root/" + fileName).CStr() );
 
     f.WriteUInt32( FMT_FILE_TYPE_ANIMATION );
     f.WriteUInt32( FMT_VERSION_ANIMATION );
@@ -1925,7 +1946,7 @@ void AAssetImporter::WriteSingleModel() {
     }
 
     AFileStream f;
-    AString fileName = GeneratePhysicalPath( "Mesh" );
+    AString fileName = GeneratePhysicalPath( "mesh", ".mesh_data" );
     AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
@@ -1936,7 +1957,7 @@ void AAssetImporter::WriteSingleModel() {
     AGUID GUID;
     GUID.Generate();
 
-    GResourceManager.SetResourceGUID( GUID, ("/Root/" + fileName).CStr() );
+    GuidMap[GUID.CStr()] = "/Root/" + fileName;
 
     bool bSkinnedMesh = m_bSkeletal;
 
@@ -1952,7 +1973,7 @@ void AAssetImporter::WriteSingleModel() {
     f.WriteUInt32( FMT_VERSION_MESH );
     f.WriteCString( GUID.CStr() );
     f.WriteBool(bSkinnedMesh );
-    f.WriteBool( false );         // dynamic storage
+    //f.WriteBool( false );         // dynamic storage
     f.WriteObject( BoundingBox );
     f.WriteArrayUInt32( m_Indices );
     f.WriteArrayOfStructs( m_Vertices );
@@ -1978,7 +1999,7 @@ void AAssetImporter::WriteSingleModel() {
         f.WriteUInt32( meshInfo.FirstIndex );
         f.WriteUInt32( meshInfo.VertexCount );
         f.WriteUInt32( meshInfo.IndexCount );
-        GetMaterialGUID( meshInfo.Material ).Write( f );
+        //GetMaterialGUID( meshInfo.Material ).Write( f );
         f.WriteObject( meshInfo.BoundingBox );
 
         n++;
@@ -2001,11 +2022,11 @@ void AAssetImporter::WriteSingleModel() {
     f.WriteUInt32( 0 ); // sockets count
 
     if ( bSkinnedMesh ) {
-        f.WriteCString( m_SkeletonGUID.CStr() );
+        //f.WriteCString( m_SkeletonGUID.CStr() );
         f.WriteArrayInt32( m_Skin.JointIndices );
         f.WriteArrayOfStructs( m_Skin.OffsetMatrices );
     } else {
-        f.WriteCString( "/Default/Skeleton/Default" );
+        //f.WriteCString( "/Default/Skeleton/Default" );
     }
 
     //if ( m_Settings.bGenerateStaticCollisions ) {
@@ -2029,6 +2050,28 @@ void AAssetImporter::WriteSingleModel() {
         //bvh->BuildBVH();
         //bvh->Write( f );
     //}
+
+
+    fileName = GeneratePhysicalPath( "mesh", ".mesh" );
+    fileSystemPath = GRuntime.GetRootPath() + fileName;
+
+    if ( !f.OpenWrite( fileSystemPath ) ) {
+        GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
+        return;
+    }
+
+    f.Printf( "Mesh \"%s\"\n", GuidMap[GUID.CStr()].CStr() );
+
+    if ( bSkinnedMesh ) {
+        f.Printf( "Skeleton \"%s\"\n", GuidMap[m_SkeletonGUID.ToString().CStr()].CStr() );
+    } else {
+        f.Printf( "Skeleton \"%s\"\n", "/Default/Skeleton/Default" );
+    }
+    f.Printf( "Subparts [\n" );
+    for ( MeshInfo const & meshInfo : m_Meshes ) {
+        f.Printf( "\"%s\"\n", GuidMap[GetMaterialGUID( meshInfo.Material ).CStr()].CStr() );
+    }
+    f.Printf( "]\n" );
 
 #if 0
     //
@@ -2068,7 +2111,7 @@ void AAssetImporter::WriteMeshes() {
 
 void AAssetImporter::WriteMesh( MeshInfo const & Mesh ) {
     AFileStream f;
-    AString fileName = GeneratePhysicalPath( Mesh.Mesh->name ? Mesh.Mesh->name : "Mesh" );
+    AString fileName = GeneratePhysicalPath( Mesh.Mesh->name ? Mesh.Mesh->name : "mesh", ".mesh_data" );
     AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
@@ -2079,7 +2122,7 @@ void AAssetImporter::WriteMesh( MeshInfo const & Mesh ) {
     bool bSkinnedMesh = m_bSkeletal;
     AN_ASSERT( bSkinnedMesh == false );
 
-    GResourceManager.SetResourceGUID( Mesh.GUID, ("/Root/" + fileName).CStr() );
+    GuidMap[Mesh.GUID.CStr()] = "/Root/" + fileName;
 
     bool bRaycastBVH = m_Settings.bGenerateRaycastBVH;
 
@@ -2087,7 +2130,7 @@ void AAssetImporter::WriteMesh( MeshInfo const & Mesh ) {
     f.WriteUInt32( FMT_VERSION_MESH );
     f.WriteCString( Mesh.GUID.CStr() );
     f.WriteBool( bSkinnedMesh );
-    f.WriteBool( false );         // dynamic storage
+    //f.WriteBool( false );         // dynamic storage
     f.WriteObject( Mesh.BoundingBox );
 
     f.WriteUInt32( Mesh.IndexCount );
@@ -2126,7 +2169,7 @@ void AAssetImporter::WriteMesh( MeshInfo const & Mesh ) {
     f.WriteUInt32( 0 ); // first index
     f.WriteUInt32( Mesh.VertexCount );
     f.WriteUInt32( Mesh.IndexCount );
-    GetMaterialGUID( Mesh.Material ).Write( f );
+    //GetMaterialGUID( Mesh.Material ).Write( f );
     f.WriteObject( Mesh.BoundingBox );
 
     if ( bRaycastBVH ) {
@@ -2145,12 +2188,32 @@ void AAssetImporter::WriteMesh( MeshInfo const & Mesh ) {
     f.WriteUInt32( 0 ); // sockets count
 
     if ( bSkinnedMesh ) {
-        f.WriteCString( m_SkeletonGUID.CStr() );
+        //f.WriteCString( m_SkeletonGUID.CStr() );
         f.WriteArrayInt32( m_Skin.JointIndices );
         f.WriteArrayOfStructs( m_Skin.OffsetMatrices );
     } else {
-        f.WriteCString( "/Default/Skeleton/Default" );
+        //f.WriteCString( "/Default/Skeleton/Default" );
     }
+
+    fileName = GeneratePhysicalPath( "mesh", ".mesh" );
+    fileSystemPath = GRuntime.GetRootPath() + fileName;
+
+    if ( !f.OpenWrite( fileSystemPath ) ) {
+        GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
+        return;
+    }
+
+    f.Printf( "Mesh \"%s\"\n", GuidMap[Mesh.GUID.CStr()].CStr() );
+
+    if ( bSkinnedMesh ) {
+        f.Printf( "Skeleton \"%s\"\n", GuidMap[m_SkeletonGUID.ToString().CStr()].CStr() );
+    } else {
+        f.Printf( "Skeleton \"%s\"\n", "/Default/Skeleton/Default" );
+    }
+    f.Printf( "Subparts [\n" );
+    f.Printf( "\"%s\"\n", GuidMap[GetMaterialGUID( Mesh.Material ).CStr()].CStr() );
+    f.Printf( "]\n" );
+
 #if 0
     //
     // Write meta file
@@ -2243,7 +2306,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
     }
 
     AFileStream f;
-    AString fileName = GeneratePhysicalPath( "Texture" );
+    AString fileName = GeneratePhysicalPath( "texture", ".texture" );
     AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
@@ -2254,7 +2317,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
     AGUID TextureGUID;
     TextureGUID.Generate();
 
-    GResourceManager.SetResourceGUID( TextureGUID, ("/Root/" + fileName).CStr() );
+    GuidMap[TextureGUID.ToString().CStr()] = "/Root/" + fileName;
 
     uint32_t textureType = TEXTURE_CUBEMAP;
     uint32_t w = width, h = width, d = 6, numLods = 1;
@@ -2323,7 +2386,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
 
 void AAssetImporter::WriteSkyboxMaterial( AGUID const & SkyboxTextureGUID ) {
     AFileStream f;
-    AString fileName = GeneratePhysicalPath( "MaterialInstance" );
+    AString fileName = GeneratePhysicalPath( "matinst", ".minst" );
     AString fileSystemPath = GRuntime.GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
@@ -2334,8 +2397,9 @@ void AAssetImporter::WriteSkyboxMaterial( AGUID const & SkyboxTextureGUID ) {
     AGUID GUID;
     GUID.Generate();
 
-    GResourceManager.SetResourceGUID( GUID, ("/Root/" + fileName).CStr() );
+    GuidMap[GUID.ToString().CStr()] = "/Root/" + fileName;
 
+#if 0
     f.WriteUInt32( FMT_FILE_TYPE_MATERIAL_INSTANCE );
     f.WriteUInt32( FMT_VERSION_MATERIAL_INSTANCE );
     f.WriteCString( GUID.CStr() );
@@ -2350,6 +2414,12 @@ void AAssetImporter::WriteSkyboxMaterial( AGUID const & SkyboxTextureGUID ) {
     for ( int i = 0 ; i < MAX_MATERIAL_UNIFORMS ; i++ ) {
         f.WriteFloat( 0.0f );
     }
+#else
+    f.Printf( "Material \"/Default/Materials/Skybox\"\n" );
+    f.Printf( "Textures [\n" );
+    f.Printf( "\"%s\"\n", GuidMap[SkyboxTextureGUID.CStr()].CStr() );
+    f.Printf( "]\n" );
+#endif
 
 #if 0
     //

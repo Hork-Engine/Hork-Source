@@ -33,104 +33,61 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 #include <Core/Public/Logger.h>
 
-AResourceManager & GResourceManager = AResourceManager::Inst();
+AResourceManager * GResourceManager = nullptr;
 
-AResourceManager::AResourceManager() {}
+AResourceManager::AResourceManager()
+{
+    Core::TraverseDirectory( GRuntime.GetRootPath(), false,
+                             [this]( AString const & FileName, bool bIsDirectory )
+    {
+        if ( bIsDirectory ) {
+            return;
+        }
 
-void AResourceManager::Initialize() {
-    LoadResourceGUID();
-
-    // TODO: Scan root directory for game resources
-    GameResources = MakeUnique< AArchive >();
-    GameResources->Open( ( GRuntime.GetRootPath() + "game.resources" ).CStr(), true );
+        if ( !Core::Stricmp( &FileName[FileName.FindExt()], ".resources" ) ) {
+            AddResourcePack( FileName.CStr() );
+        }
+    }
+    );
 
     CommonResources = MakeUnique< AArchive >();
-    CommonResources->Open( ( GRuntime.GetRootPath() + "common.resources" ).CStr(), true );
+    CommonResources->Open( "common.resources", true );
 }
 
-void AResourceManager::Deinitialize() {
-    SaveResourceGUID();
-
+AResourceManager::~AResourceManager()
+{
     for ( int i = ResourceCache.Size() - 1; i >= 0; i-- ) {
         ResourceCache[ i ]->RemoveRef();
     }
     ResourceCache.Free();
     ResourceHash.Free();
 
-    ResourceGUID.clear();
-    ResourceGUIDHash.Free();
+    ResourcePacks.Clear();
 
-    GameResources.Reset();
     CommonResources.Reset();
 }
 
-void AResourceManager::LoadResourceGUID() {
-    AFileStream f;
-
-    if ( f.OpenRead( GRuntime.GetRootPath() + "ResourceGUID.bin" ) )
-    {
-        char buf[8192];
-        char * path;
-        int pathLength;
-
-        while ( f.Gets( buf, sizeof( buf ) ) )
-        {
-            if ( Core::Strlen( buf ) < 36 )
-            {
-                // Invalid GUID
-                continue;
-            }
-
-            buf[36] = 0;
-            path = &buf[37];
-
-            pathLength = Core::Strlen( path );
-            if ( !pathLength )
-            {
-                // Path is empty
-                continue;
-            }
-
-            if ( path[pathLength-1] == '\n' )
-            {
-                // Skip trailing 'newline'
-                path[--pathLength] = 0;
-            }
-
-            if ( !*path )
-            {
-                // Path is empty
-                continue;
-            }
-
-            SetResourceGUID( buf, path );
-        }
-
-#if 0
-        uint32_t count = f.ReadUInt32();
-
-        ResourceGUID.reserve( count );
-
-        AString guid, path;
-        for ( uint32_t i = 0 ; i < count ; i++ ) {
-            f.ReadString( guid );
-            f.ReadString( path );
-
-            SetResourceGUID( guid, path.CStr() );
-        }
-#endif
-    }
+void AResourceManager::AddResourcePack( const char * FileName )
+{
+    ResourcePacks.emplace_back< TUniqueRef< AArchive > >( MakeUnique< AArchive >( FileName, true ) );
 }
 
-void AResourceManager::SaveResourceGUID() {
-    AFileStream f;
-    if ( f.OpenWrite( GRuntime.GetRootPath() + "ResourceGUID.bin" ) ) {
-        int count = ResourceGUID.size();
+bool AResourceManager::FindFile( const char * FileName, AArchive ** ppResourcePack, int * pFileIndex )
+{
+    *ppResourcePack = nullptr;
+    *pFileIndex = -1;
 
-        for ( int i = 0 ; i < count ; i++ ) {
-            f.Printf( "%s:%s\n", ResourceGUID[i].first.c_str(), ResourceGUID[i].second.c_str() );
+    for ( int i = ResourcePacks.Size() - 1 ; i >= 0 ; i-- ) {
+        TUniqueRef< AArchive > & pack = ResourcePacks[i];
+
+        int index = pack->LocateFile( FileName );
+        if ( index != -1 ) {
+            *ppResourcePack = pack.GetObject();
+            *pFileIndex = index;
+            return true;
         }
     }
+    return false;
 }
 
 AResource * AResourceManager::FindResource( AClassMeta const & _ClassMeta, const char * _Alias, bool & _bMetadataMismatch, int & _Hash ) {
@@ -139,7 +96,7 @@ AResource * AResourceManager::FindResource( AClassMeta const & _ClassMeta, const
     _bMetadataMismatch = false;
 
     for ( int i = ResourceHash.First( _Hash ) ; i != -1 ; i = ResourceHash.Next( i ) ) {
-        if ( !ResourceCache[i]->GetResourceAlias().Icmp( _Alias ) ) {
+        if ( !ResourceCache[i]->GetResourcePath().Icmp( _Alias ) ) {
             if ( &ResourceCache[i]->FinalClassMeta() != &_ClassMeta ) {
                 GLogger.Printf( "FindResource: %s class doesn't match meta data (%s vs %s)\n", _Alias, ResourceCache[i]->FinalClassName(), _ClassMeta.GetName() );
                 _bMetadataMismatch = true;
@@ -155,7 +112,7 @@ AResource * AResourceManager::FindResourceByAlias( const char * _Alias ) {
     int hash = Core::HashCase( _Alias, Core::Strlen( _Alias ) );
 
     for ( int i = ResourceHash.First( hash ) ; i != -1 ; i = ResourceHash.Next( i ) ) {
-        if ( !ResourceCache[i]->GetResourceAlias().Icmp( _Alias ) ) {
+        if ( !ResourceCache[i]->GetResourcePath().Icmp( _Alias ) ) {
             return ResourceCache[i];
         }
     }
@@ -175,7 +132,7 @@ AResource * AResourceManager::GetResource( AClassMeta const & _ClassMeta, const 
     }
 
     for ( int i = ResourceHash.First( hash ) ; i != -1 ; i = ResourceHash.Next( i ) ) {
-        if ( !ResourceCache[i]->GetResourceAlias().Icmp( _Alias ) ) {
+        if ( !ResourceCache[i]->GetResourcePath().Icmp( _Alias ) ) {
             if ( &ResourceCache[i]->FinalClassMeta() != &_ClassMeta ) {
                 GLogger.Printf( "GetResource: %s class doesn't match meta data (%s vs %s)\n", _Alias, ResourceCache[i]->FinalClassName(), _ClassMeta.GetName() );
 
@@ -205,7 +162,7 @@ AClassMeta const * AResourceManager::GetResourceInfo( const char * _Alias ) {
     int hash = Core::HashCase( _Alias, Core::Strlen( _Alias ) );
 
     for ( int i = ResourceHash.First( hash ) ; i != -1 ; i = ResourceHash.Next( i ) ) {
-        if ( !ResourceCache[i]->GetResourceAlias().Icmp( _Alias ) ) {
+        if ( !ResourceCache[i]->GetResourcePath().Icmp( _Alias ) ) {
             return &ResourceCache[i]->FinalClassMeta();
         }
     }
@@ -213,22 +170,11 @@ AClassMeta const * AResourceManager::GetResourceInfo( const char * _Alias ) {
     return nullptr;
 }
 
-AResource * AResourceManager::GetOrCreateResource( AClassMeta const &  _ClassMeta, const char * _Alias, const char * _PhysicalPath ) {
+AResource * AResourceManager::GetOrCreateResource( AClassMeta const &  _ClassMeta, const char * _Path ) {
     int hash;
     bool bMetadataMismatch;
-    AString alias = _Alias;
 
-    if ( *_Alias == '/' && Core::StricmpN( _Alias, "/Default/", 9 ) ) {
-        // Used physical path, try to find alias. TODO: Use hash?
-        for ( std::pair< std::string, std::string > const & p : ResourceGUID ) {
-            if ( !Core::Stricmp( _Alias, p.second.c_str() ) ) {
-                alias = p.first.c_str();
-                break;
-            }
-        }
-    }
-
-    AResource * resource = FindResource( _ClassMeta, alias.CStr(), bMetadataMismatch, hash );
+    AResource * resource = FindResource( _ClassMeta, _Path, bMetadataMismatch, hash );
     if ( bMetadataMismatch ) {
 
         // Never return null
@@ -240,25 +186,16 @@ AResource * AResourceManager::GetOrCreateResource( AClassMeta const &  _ClassMet
     }
 
     if ( resource ) {
-        //GLogger.Printf( "CACHING %s: Name %s, Physical path: \"%s\", Alias: \"%s\"\n", resource->GetObjectNameCStr(), resource->FinalClassName(), resource->GetResourcePath().CStr(), resource->GetResourceAlias().CStr() );
+        //GLogger.Printf( "CACHING %s: Name %s, Path: \"%s\"\n", resource->GetObjectNameCStr(), resource->FinalClassName(), resource->GetResourcePath().CStr() );
 
         return resource;
     }
 
-    AString path;
-
-    if ( !_PhysicalPath || !*_PhysicalPath ) {
-        RestorePhysicalPathFromAlias( alias.CStr(), path );
-    } else {
-        path = _PhysicalPath;
-    }
-
     resource = static_cast< AResource * >( _ClassMeta.CreateInstance() );
     resource->AddRef();
-    resource->SetResourcePath( path );
-    resource->SetResourceAlias( alias );
-    resource->SetObjectName( alias );
-    resource->InitializeFromFile( path.CStr() );
+    resource->SetResourcePath( _Path );
+    resource->SetObjectName( _Path );
+    resource->InitializeFromFile( _Path );
 
     ResourceHash.Insert( hash, ResourceCache.Size() );
     ResourceCache.Append( resource );
@@ -270,6 +207,12 @@ bool AResourceManager::RegisterResource( AResource * _Resource, const char * _Al
     int hash;
     bool bMetadataMismatch;
 
+    if ( !_Resource->GetResourcePath().IsEmpty() ) {
+        GLogger.Printf( "RegisterResource: Resource already registered (%s)\n", _Resource->GetResourcePath().CStr() );
+        return false;
+
+    }
+
     AResource * resource = FindResource( _Resource->FinalClassMeta(), _Alias, bMetadataMismatch, hash );
     if ( resource || bMetadataMismatch ) {
         GLogger.Printf( "RegisterResource: Resource with same alias already exists (%s)\n", _Alias );
@@ -277,7 +220,7 @@ bool AResourceManager::RegisterResource( AResource * _Resource, const char * _Al
     }
 
     _Resource->AddRef();
-    _Resource->SetResourceAlias( _Alias );
+    _Resource->SetResourcePath( _Alias );
     ResourceHash.Insert( hash, ResourceCache.Size() );
     ResourceCache.Append( _Resource );
 
@@ -285,13 +228,13 @@ bool AResourceManager::RegisterResource( AResource * _Resource, const char * _Al
 }
 
 bool AResourceManager::UnregisterResource( AResource * _Resource ) {
-    int hash = _Resource->GetResourceAlias().HashCase();
+    int hash = _Resource->GetResourcePath().HashCase();
     int i;
 
     for ( i = ResourceHash.First( hash ) ; i != -1 ; i = ResourceHash.Next( i ) ) {
-        if ( !ResourceCache[i]->GetResourceAlias().Icmp( _Resource->GetResourceAlias() ) ) {
+        if ( !ResourceCache[i]->GetResourcePath().Icmp( _Resource->GetResourcePath() ) ) {
             if ( &ResourceCache[i]->FinalClassMeta() != &_Resource->FinalClassMeta() ) {
-                GLogger.Printf( "UnregisterResource: %s class doesn't match meta data (%s vs %s)\n", _Resource->GetResourceAlias().CStr(), ResourceCache[i]->FinalClassName(), _Resource->FinalClassMeta().GetName() );
+                GLogger.Printf( "UnregisterResource: %s class doesn't match meta data (%s vs %s)\n", _Resource->GetResourcePath().CStr(), ResourceCache[i]->FinalClassName(), _Resource->FinalClassMeta().GetName() );
                 return false;
             }
             break;
@@ -299,10 +242,11 @@ bool AResourceManager::UnregisterResource( AResource * _Resource ) {
     }
 
     if ( i == -1 ) {
-        GLogger.Printf( "UnregisterResource: resource %s is not found\n", _Resource->GetResourceAlias().CStr() );
+        GLogger.Printf( "UnregisterResource: resource %s is not found\n", _Resource->GetResourcePath().CStr() );
         return false;
     }
 
+    _Resource->SetResourcePath( "" );
     _Resource->RemoveRef();
     ResourceHash.RemoveIndex( hash, i );
     ResourceCache.Remove( i );
@@ -314,7 +258,7 @@ void AResourceManager::UnregisterResources( AClassMeta const & _ClassMeta ) {
         if ( ResourceCache[i]->FinalClassId() == _ClassMeta.GetId() ) {
             AResource * resource = ResourceCache[i];
 
-            ResourceHash.RemoveIndex( resource->GetResourceAlias().HashCase(), i );
+            ResourceHash.RemoveIndex( resource->GetResourcePath().HashCase(), i );
             ResourceCache.Remove( i );
 
             resource->RemoveRef();
@@ -328,46 +272,4 @@ void AResourceManager::UnregisterResources() {
     }
     ResourceHash.Clear();
     ResourceCache.Clear();
-}
-
-void AResourceManager::SetResourceGUID( AGUID const & _GUID, const char * _PhysicalPath ) {
-    SetResourceGUID( _GUID.ToString(), _PhysicalPath );
-}
-
-void AResourceManager::SetResourceGUID( AString const & _GUID, const char * _PhysicalPath ) {
-    int hash = _GUID.HashCase();
-    int i;
-
-    for ( i = ResourceGUIDHash.First( hash ) ; i != -1 ; i = ResourceGUIDHash.Next( i ) ) {
-        if ( !Core::Stricmp( ResourceGUID[i].first.c_str(), _GUID.CStr() ) ) {
-            break;
-        }
-    }
-
-    if ( i != -1 ) {
-        ResourceGUID[i].second = _PhysicalPath;
-        return;
-    }
-
-    ResourceGUIDHash.Insert( hash, ResourceGUID.size() );
-    ResourceGUID.push_back( std::make_pair( _GUID.CStr(), _PhysicalPath ) );
-}
-
-void AResourceManager::RestorePhysicalPathFromAlias( const char * _Alias, AString & _PhysicalPath ) const {
-    if ( *_Alias == '/' ) {
-        _PhysicalPath = _Alias;
-        return;
-    }
-
-    int hash = Core::HashCase( _Alias, Core::Strlen( _Alias ) );
-    int i;
-
-    for ( i = ResourceGUIDHash.First( hash ) ; i != -1 ; i = ResourceGUIDHash.Next( i ) ) {
-        if ( !Core::Stricmp( ResourceGUID[i].first.c_str(), _Alias ) ) {
-            _PhysicalPath = ResourceGUID[i].second.c_str();
-            return;
-        }
-    }
-
-    _PhysicalPath = _Alias;
 }
