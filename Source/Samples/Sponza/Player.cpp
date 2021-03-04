@@ -48,20 +48,19 @@ APlayer::APlayer() {
 
     bCanEverTick = true;
 
-    // Create skybox
-//    static TStaticResourceFinder< AIndexedMesh > UnitBox( _CTS( "/Default/Meshes/Skybox" ) );
-//    //static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox3/Skybox_MaterialInstance.asset" ) );
-//    //static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox2/Skybox_MaterialInstance.asset" ) );
-//    static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox6/Skybox_MaterialInstance.asset" ) );
-//    SkyboxComponent = CreateComponent< AMeshComponent >( "Skybox" );
-//    SkyboxComponent->SetMesh( UnitBox.GetObject() );
-//    SkyboxComponent->SetMaterialInstance( SkyboxMaterialInst.GetObject() );
-//    SkyboxComponent->AttachTo( Camera );
-//    SkyboxComponent->SetAbsoluteRotation( true );
-//    SkyboxComponent->RenderingOrder = RENDER_ORDER_SKYBOX;
+    static TStaticResourceFinder< AMaterialInstance > SkyboxMaterialInst( _CTS( "/Root/Skybox/skybox_matinst.minst" ) );
+    static TStaticResourceFinder< AIndexedMesh > SkyboxMesh( _CTS( "/Default/Meshes/Skybox" ) );
+    SkyboxComponent = CreateComponent< AMeshComponent >( "Skybox" );
+    SkyboxComponent->SetMotionBehavior( MB_KINEMATIC );
+    SkyboxComponent->SetMesh( SkyboxMesh.GetObject() );
+    SkyboxComponent->SetMaterialInstance( SkyboxMaterialInst.GetObject() );
+    SkyboxComponent->ForceOutdoor( true );
+    SkyboxComponent->AttachTo( Camera );
+    SkyboxComponent->SetAbsoluteRotation( true );
+    SkyboxComponent->SetVisibilityGroup( VISIBILITY_GROUP_SKYBOX );
 
     Weapon = CreateComponent< AMeshComponent >( "Weapon" );
-    Weapon->SetMesh( _CTS( "/Root/doom_plasma_rifle/scene_Mesh.asset" ) );
+    Weapon->SetMesh( _CTS( "/Root/doom_plasma_rifle/scene_mesh.mesh" ) );
     Weapon->CopyMaterialsFromMeshResource();
     Weapon->AttachTo( Camera );
     Weapon->SetPosition( 0.15f,-0.5f,-0.4f );

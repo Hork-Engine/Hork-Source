@@ -128,21 +128,21 @@ ASponzaModel::ASponzaModel()
         //importer.ImportSkybox( importSettings );
 
 
-//        AAssetImporter importer;
-//        SAssetImportSettings importSettings;
-//        importSettings.OutputPath = "Skybox6";
-//        importSettings.ExplicitSkyboxFaces[0] = "cubemap_0.hdr";
-//        importSettings.ExplicitSkyboxFaces[1] = "cubemap_1.hdr";
-//        importSettings.ExplicitSkyboxFaces[2] = "cubemap_2.hdr";
-//        importSettings.ExplicitSkyboxFaces[3] = "cubemap_3.hdr";
-//        importSettings.ExplicitSkyboxFaces[4] = "cubemap_4.hdr";
-//        importSettings.ExplicitSkyboxFaces[5] = "cubemap_5.hdr";
-//        importSettings.bImportSkyboxExplicit = true;
-//        importSettings.bSkyboxHDRI = true;
-//        importSettings.SkyboxHDRIScale = 1.0f;
-//        importSettings.SkyboxHDRIPow = 1.0f;
-//        importSettings.bCreateSkyboxMaterialInstance = true;
-//        importer.ImportSkybox( importSettings );
+        //AAssetImporter importer;
+        //SAssetImportSettings importSettings;
+        //importSettings.OutputPath = "Skybox";
+        //importSettings.ExplicitSkyboxFaces[0] = "cubemap_0.hdr";
+        //importSettings.ExplicitSkyboxFaces[1] = "cubemap_1.hdr";
+        //importSettings.ExplicitSkyboxFaces[2] = "cubemap_2.hdr";
+        //importSettings.ExplicitSkyboxFaces[3] = "cubemap_3.hdr";
+        //importSettings.ExplicitSkyboxFaces[4] = "cubemap_4.hdr";
+        //importSettings.ExplicitSkyboxFaces[5] = "cubemap_5.hdr";
+        //importSettings.bImportSkyboxExplicit = true;
+        //importSettings.bSkyboxHDRI = true;
+        //importSettings.SkyboxHDRIScale = 1.0f;
+        //importSettings.SkyboxHDRIPow = 1.0f;
+        //importSettings.bCreateSkyboxMaterialInstance = true;
+        //importer.ImportSkybox( importSettings );
 
 #endif
 
@@ -249,7 +249,6 @@ ASponzaModel::ASponzaModel()
     PlayerController->SetInputMappings( InputMappings );
     PlayerController->SetRenderingParameters( RenderingParams );
     //PlayerController->SetHUD( hud );
-    PlayerController->GetInputComponent()->MouseSensitivity = 0.3f;
 
     PlayerController->SetPawn( player );
 
@@ -291,16 +290,89 @@ private:
 
 AN_CLASS_META( ABrainStem )
 
+#include <World/Public/MaterialGraph/MaterialGraph.h>
+
 ABrainStem::ABrainStem() {
     SkinnedComponent = CreateComponent< ASkinnedComponent >( "Skin" );
 
     AAnimationController * controller = NewObject< AAnimationController >();
-    controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/BrainStem/BrainStem_Animation.asset" ) );
+    //controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/BrainStem/BrainStem_Animation.asset" ) );
+    //controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/BrainStem/fire_elemental BLEND_Attack3.asset" ) );
+    //controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/Golem1/golem_armature_idle_baselayer.animation" ) );
+    controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/Golem1/golem_armature_animation_baselayer.animation" ) );
+    
     controller->SetPlayMode( ANIMATION_PLAY_WRAP );
     SkinnedComponent->AddAnimationController( controller );
 
-    SkinnedComponent->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/BrainStem/BrainStem_Mesh.asset" ) );
+    MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
+
+    //matInst->SetTexture( 0, GetOrCreateResource< ATexture >( "/Root/Textures/Albedo FireElemental.png" ) );
+    //matInst->SetTexture( 1, GetOrCreateResource< ATexture >( "/Root/Textures/Emission FireElemental.png" ) );
+    //matInst->SetTexture( 2, GetOrCreateResource< ATexture >( "/Root/Textures/Normal FireElemental.png" ) );
+    //matInst->SetTexture( 3, GetOrCreateResource< ATexture >( "/Root/Textures/Rougness FireElemental.png" ) );
+
+    MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
+    MGTextureSlot * diffuseTexture = graph->AddNode< MGTextureSlot >();
+    diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+    MGTextureSlot * emissionTexture = graph->AddNode< MGTextureSlot >();
+    emissionTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+    MGTextureSlot * normalTexture = graph->AddNode< MGTextureSlot >();
+    normalTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+    MGTextureSlot * roughnessTexture = graph->AddNode< MGTextureSlot >();
+    roughnessTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+
+    MGSampler * diffuseSampler = graph->AddNode< MGSampler >();
+    diffuseSampler->TexCoord->Connect( inTexCoord->Value );
+    diffuseSampler->TextureSlot->Connect( diffuseTexture->Value );
+    MGSampler * emissionSampler = graph->AddNode< MGSampler >();
+    emissionSampler->TexCoord->Connect( inTexCoord->Value );
+    emissionSampler->TextureSlot->Connect( emissionTexture->Value );
+    MGNormalSampler * normalSampler = graph->AddNode< MGNormalSampler >();
+    normalSampler->TexCoord->Connect( inTexCoord->Value );
+    normalSampler->TextureSlot->Connect( normalTexture->Value );
+    MGSampler * roughnessSampler = graph->AddNode< MGSampler >();
+    roughnessSampler->TexCoord->Connect( inTexCoord->Value );
+    roughnessSampler->TextureSlot->Connect( roughnessTexture->Value );
+
+    graph->Color->Connect( diffuseSampler->RGB );
+    graph->Emissive->Connect( emissionSampler->RGB );
+    graph->Normal->Connect( normalSampler->XYZ );
+    graph->Roughness->Connect( roughnessSampler->R );
+#if 0
+    MGFloat3Node * ambient = graph->AddNode< MGFloat3Node >();
+    ambient->Value = Float3( 0.1f );
+    graph->AmbientLight->Connect( ambient->OutValue );
+
+    MGFloat3Node * spec = graph->AddNode< MGFloat3Node >();
+    spec->Value = Float3( 0.0f );
+    graph->Specular->Connect( spec->OutValue );
+#endif
+    graph->MaterialType = MATERIAL_TYPE_PBR;//BASELIGHT;
+    graph->RegisterTextureSlot( diffuseTexture );
+    graph->RegisterTextureSlot( emissionTexture );
+    graph->RegisterTextureSlot( normalTexture );
+    graph->RegisterTextureSlot( roughnessTexture );
+
+    AMaterial * material = CreateMaterial( graph );
+
+    AImage image;
+    SImageMipmapConfig mipmapCfg;
+    image.Load( "Samples/Sponza/Textures/Normal FireElemental.png", &mipmapCfg, IMAGE_PF_BGR );
+    ATexture * normalTextureRes = CreateInstanceOf< ATexture >();
+    normalTextureRes->InitializeFromImage( image );
+
+    AMaterialInstance * matInst = NewObject< AMaterialInstance >();
+    matInst->SetMaterial( material );
+    matInst->SetTexture( 0, GetOrCreateResource< ATexture >( "/Root/Textures/Albedo FireElemental.png" ) );
+    matInst->SetTexture( 1, GetOrCreateResource< ATexture >( "/Root/Textures/Emission FireElemental.png" ) );
+    matInst->SetTexture( 2, normalTextureRes );
+    matInst->SetTexture( 3, GetOrCreateResource< ATexture >( "/Root/Textures/Rougness FireElemental.png" ) );
+
+    SkinnedComponent->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/Golem1/golem_Mesh.mesh" ) );
+    //SkinnedComponent->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/BrainStem/fire_elemental BLEND_Mesh.asset" ) );    
+    //SkinnedComponent->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/BrainStem/BrainStem_Mesh.asset" ) );
     SkinnedComponent->CopyMaterialsFromMeshResource();
+    //SkinnedComponent->SetMaterialInstance( matInst );
 
     SkinnedComponent->bOutline = true;
 
@@ -314,6 +386,7 @@ void ABrainStem::Tick( float _TimeStep ) {
     float time = GetWorld()->GetGameplayTimeMicro()*0.000001;
 
     SkinnedComponent->SetTimeBroadcast( time );
+    //SkinnedComponent->SetScale(0.1f);
 }
 
 
@@ -383,7 +456,7 @@ AGargoyle::AGargoyle() {
     SkinnedComponent = CreateComponent< ASkinnedComponent >( "Skin" );
 
     AAnimationController * controller = NewObject< AAnimationController >();
-    controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/doom_hell_knight/scene_CINEMA_4D_Main.asset" ) );
+    controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/doom_hell_knight/scene_cinema_4d_main.animation" ) );
     //controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/gargoyle/scene_Animation.asset" ) ); // jump
     //controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/gargoyle/scene_Animation_1.asset" ) ); // attack
     //controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/gargoyle/scene_Animation_2.asset" ) ); // attack
@@ -396,7 +469,7 @@ AGargoyle::AGargoyle() {
 
     //SkinnedComponent->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/gargoyle/scene_Mesh.asset" ) );
     //SkinnedComponent->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/sea_keep_lonely_watcher/scene_Mesh.asset" ) );
-    SkinnedComponent->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/doom_hell_knight/scene_Mesh.asset" ) );
+    SkinnedComponent->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/doom_hell_knight/scene_mesh.mesh" ) );
     SkinnedComponent->CopyMaterialsFromMeshResource();
 
     SkinnedComponent->bOutline = true;
@@ -852,7 +925,6 @@ void ASponzaModel::LoadStaticMeshes() {
     }
 
 
-
         {
             AAssetImporter importer;
             SAssetImportSettings importSettings;
@@ -983,6 +1055,40 @@ void ASponzaModel::LoadStaticMeshes() {
         importer.ImportGLTF( importSettings );
     }
 #endif
+
+    //{
+    //    AAssetImporter importer;
+    //    SAssetImportSettings importSettings;
+    //    importSettings.ImportFile = "Import/Monster2/fire_elemental BLEND.gltf";
+    //    importSettings.OutputPath = "BrainStem";
+    //    importSettings.bImportMeshes = true;
+    //    importSettings.bImportMaterials = true;
+    //    importSettings.bImportSkinning = true;
+    //    importSettings.bImportSkeleton = true;
+    //    importSettings.bImportAnimations = true;
+    //    importSettings.bImportTextures = true;
+    //    importSettings.bSingleModel = true;
+    //    importSettings.bMergePrimitives = true;
+    //    //importSettings.Rotation.FromAngles(-Math::_HALF_PI,0,0);
+    //    importer.ImportGLTF( importSettings );
+    //}
+
+    //{
+    //    AAssetImporter importer;
+    //    SAssetImportSettings importSettings;
+    //    importSettings.ImportFile = "Import/Golem/golem.gltf";
+    //    importSettings.OutputPath = "Golem1";
+    //    importSettings.bImportMeshes = true;
+    //    importSettings.bImportMaterials = true;
+    //    importSettings.bImportSkinning = true;
+    //    importSettings.bImportSkeleton = true;
+    //    importSettings.bImportAnimations = true;
+    //    importSettings.bImportTextures = true;
+    //    importSettings.bSingleModel = true;
+    //    importSettings.bMergePrimitives = true;
+    //    //importSettings.Rotation.FromAngles(-Math::_HALF_PI,0,0);
+    //    importer.ImportGLTF( importSettings );
+    //}
 
     Quat q;
     q.SetIdentity();
@@ -1148,10 +1254,10 @@ void ASponzaModel::LoadStaticMeshes() {
     {
         AStaticMesh * actor;
         actor = World->SpawnActor< AStaticMesh >();
-        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/Sponza2/Sponza_Mesh.asset" ) );
+        actor->SetMesh( GetOrCreateResource< AIndexedMesh >( "/Root/Sponza2/Sponza_Mesh.mesh" ) );
         for ( int i = 1; i <= 24; i++ ) {
             actor = World->SpawnActor< AStaticMesh >();
-            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( ( AString("/Root/Sponza2/Sponza_Mesh_") + Math::ToString(i) + ".asset" ).CStr() ) );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( ( AString("/Root/Sponza2/sponza_mesh_") + Math::ToString(i) + ".mesh" ).CStr() ) );
         }
     }
 
