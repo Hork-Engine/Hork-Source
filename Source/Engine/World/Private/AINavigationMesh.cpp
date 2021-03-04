@@ -38,6 +38,7 @@ SOFTWARE.
 #include <Core/Public/Compress.h>
 #include <Core/Public/BV/BvIntersect.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
+#include <Core/Public/LinearAllocator.h>
 
 #undef malloc
 #undef free
@@ -113,41 +114,37 @@ struct STileCompressorCallback : public dtTileCacheCompressor {
 
 static STileCompressorCallback TileCompressorCallback;
 
-struct ADetourLinearAllocator : public dtTileCacheAlloc {
-    byte * Data;
-    int Capacity;
-    int Top;
-    int High;
+struct ADetourLinearAllocator : public dtTileCacheAlloc
+{
+    TLinearAllocator<> Allocator;
 
-    ADetourLinearAllocator( const int _Capacity ) : Data(0), Capacity(0), Top(0), High(0) {
-        Data = ( byte * )GZoneMemory.Alloc( _Capacity );
-        Capacity = _Capacity;
+    void * operator new( size_t _SizeInBytes )
+    {
+        return GZoneMemory.Alloc( _SizeInBytes );
     }
 
-    ~ADetourLinearAllocator() {
-        GZoneMemory.Free( Data );
+    void operator delete( void * _Ptr )
+    {
+        GZoneMemory.Free( _Ptr );
     }
 
-    void reset() override {
-        High = Math::Max( High, Top );
-        Top = 0;
+    void reset() override
+    {
+        Allocator.Reset();
     }
 
-    void * alloc( const size_t _Size ) override {
-        if ( Top + _Size > Capacity ) {
-            GLogger.Printf( "ADetourLinearAllocator: overflowed\n" );
-            return 0;
-        }
-        byte * ptr = Data + Top;
-        Top += _Size;
-        return ptr;
+    void * alloc( const size_t _Size ) override
+    {
+        return Allocator.Allocate( _Size );
     }
 
-    void free( void * ) override {
+    void free( void * ) override
+    {
     }
 };
 
-struct ADetourMeshProcess : public dtTileCacheMeshProcess {
+struct ADetourMeshProcess : public dtTileCacheMeshProcess
+{
     // NavMesh connections
     TPodArray< Float3 >         OffMeshConVerts;
     TPodArray< float >          OffMeshConRads;
@@ -157,6 +154,16 @@ struct ADetourMeshProcess : public dtTileCacheMeshProcess {
     TPodArray< unsigned int >   OffMeshConId;
     int                         OffMeshConCount;
     AAINavigationMesh *         NavMesh;
+
+    void * operator new( size_t _SizeInBytes )
+    {
+        return GZoneMemory.Alloc( _SizeInBytes );
+    }
+
+    void operator delete( void * _Ptr )
+    {
+        GZoneMemory.Free( _Ptr );
+    }
 
     void process( struct dtNavMeshCreateParams * _Params, unsigned char * _PolyAreas, unsigned short * _PolyFlags ) override {
 
@@ -268,8 +275,6 @@ AAINavigationMesh::AAINavigationMesh( AWorld * InOwnerWorld )
     NavMesh = nullptr;
     //Crowd = nullptr;
     TileCache = nullptr;
-    LinearAllocator = nullptr;
-    MeshProcess = nullptr;
     NumTilesX = 0;
     NumTilesZ = 0;
     TileWidth = 1.0f;
@@ -390,14 +395,12 @@ bool AAINavigationMesh::Initialize( SAINavigationConfig const & _NavigationConfi
             return false;
         }
 
-        const size_t MaxLinearAllocatorCapacity = 32 << 10; // 32 KB
+        LinearAllocator = MakeUnique< ADetourLinearAllocator >();
 
-        LinearAllocator = new ( GZoneMemory.Alloc( sizeof( ADetourLinearAllocator ) ) ) ADetourLinearAllocator( MaxLinearAllocatorCapacity );
-
-        MeshProcess = new ( GZoneMemory.Alloc( sizeof( ADetourMeshProcess ) ) ) ADetourMeshProcess();
+        MeshProcess = MakeUnique< ADetourMeshProcess >();
         MeshProcess->NavMesh = this;
 
-        status = TileCache->init( &tileCacheParams, LinearAllocator, &TileCompressorCallback, MeshProcess );
+        status = TileCache->init( &tileCacheParams, LinearAllocator.GetObject(), &TileCompressorCallback, MeshProcess.GetObject() );
         if ( dtStatusFailed( status ) ) {
             Purge();
             GLogger.Printf( "Could not initialize tile cache\n" );
@@ -1228,17 +1231,8 @@ void AAINavigationMesh::Purge() {
     dtFreeTileCache( TileCache );
     TileCache = nullptr;
 
-    if ( LinearAllocator ) {
-        LinearAllocator->~ADetourLinearAllocator();
-        GZoneMemory.Free( LinearAllocator );
-        LinearAllocator = nullptr;
-    }
-
-    if ( MeshProcess ) {
-        MeshProcess->~ADetourMeshProcess();
-        GZoneMemory.Free( MeshProcess );
-        MeshProcess = nullptr;
-    }
+    LinearAllocator.Reset();
+    MeshProcess.Reset();
 
     NumTilesX = 0;
     NumTilesZ = 0;
@@ -1394,13 +1388,27 @@ void AAINavigationMesh::DrawDebug( ADebugRenderer * InRenderer ) {
 #endif
 }
 
-ANavQueryFilter::ANavQueryFilter() {
-    Filter = new ( GZoneMemory.Alloc( sizeof( dtQueryFilter ) ) ) dtQueryFilter();
+class ANavQueryFilterPrivate : public dtQueryFilter
+{
+public:
+    void * operator new( size_t _SizeInBytes )
+    {
+        return GZoneMemory.Alloc( _SizeInBytes );
+    }
+
+    void operator delete( void * _Ptr )
+    {
+        GZoneMemory.Free( _Ptr );
+    }
+};
+
+ANavQueryFilter::ANavQueryFilter()
+{
+    Filter = MakeUnique< ANavQueryFilterPrivate >();
 }
 
-ANavQueryFilter::~ANavQueryFilter() {
-    Filter->~dtQueryFilter();
-    GZoneMemory.Free( Filter );
+ANavQueryFilter::~ANavQueryFilter()
+{
 }
 
 void ANavQueryFilter::SetAreaCost( int _AreaId, float _Cost ) {
@@ -1439,7 +1447,7 @@ bool AAINavigationMesh::Trace( SAINavigationTraceResult & _Result, Float3 const 
 
     _Result.HitFraction = Math::MaxValue< float >();
 
-    NavQuery->raycast( StartRef, (const float *)_RayStart.ToPtr(), (const float *)_RayEnd.ToPtr(), _Filter.Filter, &_Result.HitFraction, (float *)_Result.Normal.ToPtr(), TmpPolys, &NumPolys, MAX_POLYS );
+    NavQuery->raycast( StartRef, (const float *)_RayStart.ToPtr(), (const float *)_RayEnd.ToPtr(), _Filter.Filter.GetObject(), &_Result.HitFraction, (float *)_Result.Normal.ToPtr(), TmpPolys, &NumPolys, MAX_POLYS );
 
     bool bHasHit = _Result.HitFraction != Math::MaxValue< float >();
     if ( !bHasHit ) {
@@ -1474,7 +1482,7 @@ bool AAINavigationMesh::QueryNearestPoly( Float3 const & _Position, Float3 const
         return false;
     }
 
-    dtStatus Status = NavQuery->findNearestPoly( (const float *)_Position.ToPtr(), (const float *)_Extents.ToPtr(), _Filter.Filter, _NearestPolyRef, NULL );
+    dtStatus Status = NavQuery->findNearestPoly( (const float *)_Position.ToPtr(), (const float *)_Extents.ToPtr(), _Filter.Filter.GetObject(), _NearestPolyRef, NULL );
     if ( dtStatusFailed( Status ) ) {
         return false;
     }
@@ -1494,7 +1502,7 @@ bool AAINavigationMesh::QueryNearestPoint( Float3 const & _Position, Float3 cons
         return false;
     }
 
-    dtStatus Status = NavQuery->findNearestPoly( (const float *)_Position.ToPtr(), (const float *)_Extents.ToPtr(), _Filter.Filter, &_NearestPointRef->PolyRef, ( float * )_NearestPointRef->Position.ToPtr() );
+    dtStatus Status = NavQuery->findNearestPoly( (const float *)_Position.ToPtr(), (const float *)_Extents.ToPtr(), _Filter.Filter.GetObject(), &_NearestPointRef->PolyRef, ( float * )_NearestPointRef->Position.ToPtr() );
     if ( dtStatusFailed( Status ) ) {
         return false;
     }
@@ -1520,7 +1528,7 @@ bool AAINavigationMesh::QueryRandomPoint( ANavQueryFilter const & _Filter, SNavP
         return false;
     }
 
-    dtStatus Status = NavQuery->findRandomPoint( _Filter.Filter, NavRandom, &_RandomPointRef->PolyRef, ( float * )_RandomPointRef->Position.ToPtr() );
+    dtStatus Status = NavQuery->findRandomPoint( _Filter.Filter.GetObject(), NavRandom, &_RandomPointRef->PolyRef, ( float * )_RandomPointRef->Position.ToPtr() );
     if ( dtStatusFailed( Status ) ) {
         return false;
     }
@@ -1556,7 +1564,7 @@ bool AAINavigationMesh::QueryRandomPointAroundCircle( SNavPointRef const & _Star
         return false;
     }
 
-    dtStatus Status = NavQuery->findRandomPointAroundCircle( _StartRef.PolyRef, (const float *)_StartRef.Position.ToPtr(), _Radius, _Filter.Filter, NavRandom, &_RandomPointRef->PolyRef, (float *)_RandomPointRef->Position.ToPtr() );
+    dtStatus Status = NavQuery->findRandomPointAroundCircle( _StartRef.PolyRef, (const float *)_StartRef.Position.ToPtr(), _Radius, _Filter.Filter.GetObject(), NavRandom, &_RandomPointRef->PolyRef, (float *)_RandomPointRef->Position.ToPtr() );
     if ( dtStatusFailed( Status ) ) {
         return false;
     }
@@ -1601,7 +1609,7 @@ bool AAINavigationMesh::MoveAlongSurface( SNavPointRef const & _StartRef, Float3
 
     _MaxVisitedSize = Math::Max( _MaxVisitedSize, 0 );
 
-    dtStatus Status = NavQuery->moveAlongSurface( _StartRef.PolyRef, (const float *)_StartRef.Position.ToPtr(), (const float *)_Destination.ToPtr(), _Filter.Filter, (float *)_ResultPos.ToPtr(), _Visited, _VisitedCount, _MaxVisitedSize );
+    dtStatus Status = NavQuery->moveAlongSurface( _StartRef.PolyRef, (const float *)_StartRef.Position.ToPtr(), (const float *)_Destination.ToPtr(), _Filter.Filter.GetObject(), (float *)_ResultPos.ToPtr(), _Visited, _VisitedCount, _MaxVisitedSize );
     if ( dtStatusFailed( Status ) ) {
         return false;
     }
@@ -1649,7 +1657,7 @@ bool AAINavigationMesh::FindPath( SNavPointRef const & _StartRef, SNavPointRef c
         return false;
     }
 
-    dtStatus Status = NavQuery->findPath( _StartRef.PolyRef, _EndRef.PolyRef, ( const float * )_StartRef.Position.ToPtr(), ( const float * )_EndRef.Position.ToPtr(), _Filter.Filter, _Path, _PathCount, _MaxPath );
+    dtStatus Status = NavQuery->findPath( _StartRef.PolyRef, _EndRef.PolyRef, ( const float * )_StartRef.Position.ToPtr(), ( const float * )_EndRef.Position.ToPtr(), _Filter.Filter.GetObject(), _Path, _PathCount, _MaxPath );
     if ( dtStatusFailed( Status ) ) {
         *_PathCount = 0;
         return false;
@@ -1765,7 +1773,7 @@ bool AAINavigationMesh::FindStraightPath( Float3 const & _StartPos, Float3 const
 }
 
 bool AAINavigationMesh::CalcDistanceToWall( SNavPointRef const & _StartRef, float _Radius, ANavQueryFilter const & _Filter, SAINavigationHitResult & _HitResult ) const {
-    dtStatus Status = NavQuery->findDistanceToWall( _StartRef.PolyRef, (const float *)_StartRef.Position.ToPtr(), _Radius, _Filter.Filter, &_HitResult.Distance, (float *)_HitResult.Position.ToPtr(), (float *)_HitResult.Normal.ToPtr() );
+    dtStatus Status = NavQuery->findDistanceToWall( _StartRef.PolyRef, (const float *)_StartRef.Position.ToPtr(), _Radius, _Filter.Filter.GetObject(), &_HitResult.Distance, (float *)_HitResult.Position.ToPtr(), (float *)_HitResult.Normal.ToPtr() );
     if ( dtStatusFailed( Status ) ) {
         return false;
     }

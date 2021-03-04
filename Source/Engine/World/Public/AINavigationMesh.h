@@ -238,7 +238,7 @@ public:
 };
 
 struct ANavQueryFilter {
-    AN_FORBID_COPY( ANavQueryFilter  )
+    AN_FORBID_COPY( ANavQueryFilter )
 
     friend class AAINavigationMesh;
 
@@ -266,7 +266,7 @@ struct ANavQueryFilter {
     unsigned short GetExcludeFlags() const;
 
 private:
-    class dtQueryFilter * Filter;
+    TUniqueRef< class ANavQueryFilterPrivate > Filter;
 };
 
 struct SAINavigationConfig {
@@ -538,8 +538,8 @@ private:
     class dtTileCache * TileCache;
 
     // For tile cache
-    struct ADetourLinearAllocator * LinearAllocator;
-    struct ADetourMeshProcess * MeshProcess;
+    TUniqueRef< struct ADetourLinearAllocator > LinearAllocator;
+    TUniqueRef< struct ADetourMeshProcess > MeshProcess;
 
     APhysicalBody * NavigationGeometryList;
     APhysicalBody * NavigationGeometryListTail;
