@@ -48,6 +48,10 @@ public:
 
     AAnimationPattern * GetAnimation() { return Animation; }
 
+    void SetAnimationTime( float _Time );
+
+    float GetAnimationTime() const { return AnimTime; }
+
 protected:
     ALightComponent();
 

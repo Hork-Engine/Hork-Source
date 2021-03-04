@@ -53,16 +53,24 @@ void ALightComponent::SetAnimation( AAnimationPattern * _Animation ) {
     }
 
     Animation = _Animation;
-    AnimTime = 0;
     AnimationBrightness = 1;
 
     if ( Animation ) {
-        AnimationBrightness = Animation->Calculate( 0.0f );
+        AnimationBrightness = Animation->Calculate( AnimTime );
     }
 
     bCanEverTick = ( _Animation != nullptr );
 
     bEffectiveColorDirty = true;
+}
+
+void ALightComponent::SetAnimationTime( float _Time )
+{
+    AnimTime = _Time;
+
+    if ( Animation ) {
+        AnimationBrightness = Animation->Calculate( AnimTime );
+    }
 }
 
 void ALightComponent::TickComponent( float _TimeStep ) {
