@@ -318,9 +318,7 @@ void ARenderFrontend::RenderView( int _Index ) {
 
     ViewRP = RP;
 
-    ARenderWorld & renderWorld = world->GetRenderWorld();
-
-    QueryVisiblePrimitives( &renderWorld );
+    QueryVisiblePrimitives( world );
 
     view->GlobalIrradianceMap = world->GetGlobalIrradianceMap();
     view->GlobalReflectionMap = world->GetGlobalReflectionMap();
@@ -331,9 +329,9 @@ void ARenderFrontend::RenderView( int _Index ) {
         world->DrawDebug( &DebugDraw );
     }
 
-    AddRenderInstances( &renderWorld );
+    AddRenderInstances( world );
 
-    AddDirectionalShadowmapInstances( &renderWorld );
+    AddDirectionalShadowmapInstances( world );
 
     Stat.PolyCount += RenderDef.PolyCount;
     Stat.ShadowMapPolyCount += RenderDef.ShadowMapPolyCount;
@@ -616,7 +614,7 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
 
 #endif
 
-void ARenderFrontend::QueryVisiblePrimitives( ARenderWorld * InWorld ) {
+void ARenderFrontend::QueryVisiblePrimitives( AWorld * InWorld ) {
     SVisibilityQuery query;
 
     for ( int i = 0 ; i < 6 ; i++ ) {
@@ -628,10 +626,10 @@ void ARenderFrontend::QueryVisiblePrimitives( ARenderWorld * InWorld ) {
     query.VisibilityMask = RenderDef.VisibilityMask;
     query.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;// | VSD_QUERY_MASK_SHADOW_CAST;
 
-    GEngine->GetVSD()->QueryVisiblePrimitives( InWorld->GetOwnerWorld(), VisPrimitives, VisSurfaces, &VisPass, query );
+    GEngine->GetVSD()->QueryVisiblePrimitives( InWorld, VisPrimitives, VisSurfaces, &VisPass, query );
 }
 
-void ARenderFrontend::QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis,
+void ARenderFrontend::QueryShadowCasters( AWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis,
                                           TPodArray< SPrimitiveDef * > & Primitives, TPodArray< SSurfaceDef * > & Surfaces )
 {
     SVisibilityQuery query;
@@ -724,10 +722,10 @@ void ARenderFrontend::QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const
     DebugDraw.DrawConvexPoly( v, 4, false );
 #endif
 #endif
-    GEngine->GetVSD()->QueryVisiblePrimitives( InWorld->GetOwnerWorld(), Primitives, Surfaces, nullptr, query );
+    GEngine->GetVSD()->QueryVisiblePrimitives( InWorld, Primitives, Surfaces, nullptr, query );
 }
 
-void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
+void ARenderFrontend::AddRenderInstances( AWorld * InWorld )
 {
     AScopedTimeCheck TimeCheck( "AddRenderInstances" );
 
@@ -737,6 +735,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
     AAnalyticLightComponent * light;
     AIBLComponent * ibl;
     AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+    ARenderWorld & renderWorld = InWorld->GetRender();
 
     VisLights.Clear();
     VisIBLs.Clear();
@@ -799,7 +798,7 @@ void ARenderFrontend::AddRenderInstances( ARenderWorld * InWorld )
     // Add directional lights
     view->NumShadowMapCascades = 0;
     view->NumCascadedShadowMaps = 0;
-    for ( ADirectionalLightComponent * dirlight = InWorld->GetDirectionalLights() ; dirlight ; dirlight = dirlight->GetNext() ) {
+    for ( ADirectionalLightComponent * dirlight = renderWorld.GetDirectionalLights() ; dirlight ; dirlight = dirlight->GetNext() ) {
 
         if ( view->NumDirectionalLights >= MAX_DIRECTIONAL_LIGHTS ) {
             GLogger.Printf( "MAX_DIRECTIONAL_LIGHTS hit\n" );
@@ -1470,7 +1469,7 @@ void ARenderFrontend::AddShadowmap_ProceduralMesh( SLightShadowmap * ShadowMap, 
     RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
 }
 
-void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld ) {
+void ARenderFrontend::AddDirectionalShadowmapInstances( AWorld * InWorld ) {
     if ( !RenderDef.View->NumShadowMapCascades ) {
         return;
     }
@@ -1482,7 +1481,9 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
     ShadowCasters.Clear();
     ShadowBoxes.Clear();
 
-    for ( ADrawable * component = InWorld->GetShadowCasters() ; component ; component = component->GetNextShadowCaster() ) {
+    ARenderWorld & renderWorld = InWorld->GetRender();
+
+    for ( ADrawable * component = renderWorld.GetShadowCasters() ; component ; component = component->GetNextShadowCaster() ) {
         if ( (component->GetVisibilityGroup() & RenderDef.VisibilityMask) == 0 ) {
             continue;
         }
@@ -1563,8 +1564,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
         }
 
         // Add static shadow casters
-        AWorld * world = InWorld->GetOwnerWorld();
-        for ( ALevel * level : world->GetArrayOfLevels() ) {
+        for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
 
             // TODO: Perform culling for each shadow cascade, set CascadeMask
 
@@ -1605,7 +1605,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( ARenderWorld * InWorld )
 
         if ( r_RenderLightPortals ) {
             // Add light portals
-            for ( ALevel * level : world->GetArrayOfLevels() ) {
+            for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
 
                 TPodArray< SLightPortalDef > const & lightPortals = level->GetLightPortals();
 
@@ -1944,7 +1944,7 @@ void ARenderFrontend::AddLightShadowmap( AAnalyticLightComponent * Light, float 
         return;
     }
 
-    ARenderWorld & world = Light->GetWorld()->GetRenderWorld();
+    AWorld * world = Light->GetWorld();
 
     Float4x4 const * cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
     Float4x4 projMat = Float4x4::PerspectiveRevCC( Math::_HALF_PI, Math::_HALF_PI, 0.1f, Radius );
@@ -1971,7 +1971,7 @@ void ARenderFrontend::AddLightShadowmap( AAnalyticLightComponent * Light, float 
         lightViewProjection = projMat * lightViewMatrix;
 
         // TODO: VSD не учитывает FarPlane для кулинга - исправить это
-        QueryShadowCasters( &world, lightViewProjection, lightPos, Float3x3( cubeFaceMatrices[faceIndex] ), VisPrimitives, VisSurfaces );
+        QueryShadowCasters( world, lightViewProjection, lightPos, Float3x3( cubeFaceMatrices[faceIndex] ), VisPrimitives, VisSurfaces );
 
         SLightShadowmap * shadowMap = &FrameData.LightShadowmaps.Append();
 

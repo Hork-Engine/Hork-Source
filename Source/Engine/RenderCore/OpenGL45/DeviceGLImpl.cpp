@@ -326,6 +326,16 @@ ADeviceGLImpl::ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
     GLogger.Printf( "Graphics adapter: %s\n", adapterString );
     GLogger.Printf( "Driver version: %s\n", driverVersion );
 
+    if ( Core::SubstringIcmp( vendorString, "NVIDIA" ) != -1 ) {
+        GraphicsVendor = VENDOR_NVIDIA;
+    }
+    else if ( Core::SubstringIcmp( vendorString, "ATI" ) != -1 ) {
+        GraphicsVendor = VENDOR_ATI;
+    }
+    else if ( Core::SubstringIcmp( vendorString, "Intel" ) != -1 ) {
+        GraphicsVendor = VENDOR_INTEL;
+    }
+
     int numExtensions = 0;
     glGetIntegerv( GL_NUM_EXTENSIONS, &numExtensions );
 

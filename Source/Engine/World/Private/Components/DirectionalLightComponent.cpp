@@ -102,13 +102,13 @@ float ADirectionalLightComponent::GetIlluminance() const {
 void ADirectionalLightComponent::InitializeComponent() {
     Super::InitializeComponent();
 
-    GetWorld()->GetRenderWorld().AddDirectionalLight( this );
+    GetWorld()->GetRender().AddDirectionalLight( this );
 }
 
 void ADirectionalLightComponent::DeinitializeComponent() {
     Super::DeinitializeComponent();
 
-    GetWorld()->GetRenderWorld().RemoveDirectionalLight( this );
+    GetWorld()->GetRender().RemoveDirectionalLight( this );
 }
 
 void ADirectionalLightComponent::SetDirection( Float3 const & _Direction ) {

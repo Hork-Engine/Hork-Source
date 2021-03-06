@@ -33,6 +33,9 @@ SOFTWARE.
 #include <Core/Public/CriticalError.h>
 #include <Runtime/Public/Runtime.h>
 
+// NOTE: supported by NVidia, but not supported on AMD
+//#define CSTYLE_LINE_DIRECTIVE
+
 ARuntimeVariable r_MaterialDebugMode( _CTS( "r_MaterialDebugMode" ),
                                       #ifdef AN_DEBUG
                                       _CTS( "1" ),
@@ -549,10 +552,13 @@ static bool LoadShaderFromString( SIncludeCtx * Ctx, const char * FileName, AStr
 
         if ( Ctx->Predefined && includeInfo->filename[0] == '$' ) {
             // predefined source
-            Out.Concat( "#line 1 //\"" );
+#ifdef CSTYLE_LINE_DIRECTIVE
+            Out.Concat( "#line 1 \"" );
             Out.ConcatN( includeInfo->filename, includeInfo->len );
             Out.Concat( "\"\n" );
-
+#else
+            Out.Concat( "#line 1\n" );
+#endif
             SMaterialShader const * s;
             for ( s = Ctx->Predefined ; s ; s = s->Next ) {
                 if ( !Core::StricmpN( s->SourceName, includeInfo->filename, includeInfo->len ) ) {
@@ -566,10 +572,13 @@ static bool LoadShaderFromString( SIncludeCtx * Ctx, const char * FileName, AStr
             }
         }
         else {
-            Out.Concat( "#line 1 //\"" );
+#ifdef CSTYLE_LINE_DIRECTIVE
+            Out.Concat( "#line 1 \"" );
             Out.ConcatN( includeInfo->filename, includeInfo->len );
             Out.Concat( "\"\n" );
-
+#else
+            Out.Concat( "#line 1\n" );
+#endif
             temp[0] = 0;
             Core::StrcatN( temp, sizeof( temp ), includeInfo->filename, includeInfo->len );
             if ( !LoadShaderWithInclude( Ctx, temp, Out ) ) {
@@ -578,7 +587,11 @@ static bool LoadShaderFromString( SIncludeCtx * Ctx, const char * FileName, AStr
             }
         }        
 
-        Core::Sprintf( temp, sizeof( temp ), "\n#line %d //\"%s\"", includeInfo->next_line_after, FileName ? FileName : "source-file" );
+#ifdef CSTYLE_LINE_DIRECTIVE
+        Core::Sprintf( temp, sizeof( temp ), "\n#line %d \"%s\"", includeInfo->next_line_after, FileName ? FileName : "source-file" );
+#else
+        Core::Sprintf( temp, sizeof( temp ), "\n#line %d", includeInfo->next_line_after );
+#endif
         Out.Concat( temp );
 
         sourceOffset = includeInfo->end;
@@ -639,7 +652,11 @@ AString LoadShader( const char * FileName, SMaterialShader const * Predefined )
     ctx.Predefined = Predefined;
 
     AString result;
-    result.Concat( Core::Fmt( "#line 1 //\"%s\"\n", FileName ) );
+#ifdef CSTYLE_LINE_DIRECTIVE
+    result.Concat( Core::Fmt( "#line 1 \"%s\"\n", FileName ) );
+#else
+    result.Concat( "#line 1\n" );
+#endif
 
     if ( !LoadShaderWithInclude( &ctx, FileName/*(path + FileName).CStr()*/, result ) ) {
         CriticalError( "LoadShader: failed to open %s\n", FileName );
@@ -655,7 +672,11 @@ AString LoadShaderFromString( const char * FileName, const char * Source, SMater
     ctx.Predefined = Predefined;
 
     AString result;
-    result.Concat( Core::Fmt( "#line 1 //\"%s\"\n", FileName ) );
+#ifdef CSTYLE_LINE_DIRECTIVE
+    result.Concat( Core::Fmt( "#line 1 \"%s\"\n", FileName ) );
+#else
+    result.Concat( "#line 1\n" );
+#endif
 
     AString source = Source;
 
@@ -682,6 +703,19 @@ void CreateShader( RenderCore::SHADER_TYPE _ShaderType, TPodArray< const char * 
     };
 
     AString predefines = predefine[_ShaderType];
+
+    switch ( GDevice->GetGraphicsVendor() ) {
+    case RenderCore::VENDOR_NVIDIA:
+        predefines += "#define NVIDIA\n";
+        break;
+    case RenderCore::VENDOR_ATI:
+        predefines += "#define ATI\n";
+        break;
+    case RenderCore::VENDOR_INTEL:
+        predefines += "#define INTEL\n";
+        break;
+    }
+
     predefines += "#define MAX_DIRECTIONAL_LIGHTS " + Math::ToString( MAX_DIRECTIONAL_LIGHTS ) + "\n";
     predefines += "#define MAX_SHADOW_CASCADES " + Math::ToString( MAX_SHADOW_CASCADES ) + "\n";
     predefines += "#define MAX_TOTAL_SHADOW_CASCADES_PER_VIEW " + Math::ToString( MAX_TOTAL_SHADOW_CASCADES_PER_VIEW ) + "\n";

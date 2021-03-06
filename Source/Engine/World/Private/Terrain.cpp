@@ -51,14 +51,14 @@ Future:
 */
 
 #include <World/Public/Terrain.h>
+#include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
 
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include "BulletCompatibility/BulletCompatibility.h"
-#include <World/Public/World.h>
-#include <World/Public/PhysicsWorld.h>
+
 
 static const unsigned short RESET_INDEX = 0xffff;
 

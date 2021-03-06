@@ -268,8 +268,7 @@ protected:
 
 static ARecastContext RecastContext;
 
-AAINavigationMesh::AAINavigationMesh( AWorld * InOwnerWorld )
-    : pOwnerWorld(InOwnerWorld)
+AAINavigationMesh::AAINavigationMesh()
 {
     NavQuery = nullptr;
     NavMesh = nullptr;
@@ -283,11 +282,13 @@ AAINavigationMesh::AAINavigationMesh( AWorld * InOwnerWorld )
     NavigationGeometryListTail = nullptr;
 }
 
-AAINavigationMesh::~AAINavigationMesh() {
+AAINavigationMesh::~AAINavigationMesh()
+{
     Purge();
 }
 
-bool AAINavigationMesh::Initialize( SAINavigationConfig const & _NavigationConfig ) {
+bool AAINavigationMesh::Initialize( SAINavigationConfig const & _NavigationConfig )
+{
     dtStatus status;
 
     Purge();

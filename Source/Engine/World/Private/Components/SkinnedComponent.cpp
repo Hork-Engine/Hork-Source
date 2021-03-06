@@ -72,7 +72,7 @@ ASkinnedComponent::ASkinnedComponent() {
 void ASkinnedComponent::InitializeComponent() {
     Super::InitializeComponent();
 
-    GetWorld()->GetRenderWorld().AddSkinnedMesh( this );
+    GetWorld()->GetRender().AddSkinnedMesh( this );
 }
 
 void ASkinnedComponent::DeinitializeComponent() {
@@ -80,7 +80,7 @@ void ASkinnedComponent::DeinitializeComponent() {
 
     RemoveAnimationControllers();
 
-    GetWorld()->GetRenderWorld().RemoveSkinnedMesh( this );
+    GetWorld()->GetRender().RemoveSkinnedMesh( this );
 }
 
 void ASkinnedComponent::OnMeshChanged() {

@@ -103,7 +103,7 @@ void ACharacterControllerBase::InitializeComponent()
 
     bNeedToUpdateCapsule = false;
 
-    World = GetWorld()->GetPhysicsWorld().DynamicsWorld;
+    World = GetWorld()->GetPhysics().GetInternal();
 
     GhostObject = new btPairCachingGhostObject;
     GhostObject->setUserPointer( HitProxy.GetObject() );
@@ -132,6 +132,8 @@ void ACharacterControllerBase::DeinitializeComponent()
 
 void ACharacterControllerBase::BeginPlay()
 {
+    Super::BeginPlay();
+
     CalcYawAndPitch( AngleYaw, AnglePitch );
 
     // Set angles without roll
@@ -181,7 +183,8 @@ void ACharacterControllerBase::SetCharacterPitch( float _Pitch )
     SetWorldRotation( GetAngleQuaternion() );
 }
 
-Quat ACharacterControllerBase::GetAngleQuaternion() const {
+Quat ACharacterControllerBase::GetAngleQuaternion() const
+{
     float sx, sy, cx, cy;
 
     Math::DegSinCos( AnglePitch * 0.5f, sx, cx );
@@ -426,25 +429,20 @@ void ACharacterControllerBase::TraceSelf( Float3 const & Start, Float3 const & E
     btTransform transformStart, transformEnd;
 
     transformStart.setOrigin( btVectorToFloat3( Start + Float3( 0, GetCharacterHeight()*0.5f, 0 ) ) );
-    transformStart.setRotation( btQuaternion::getIdentity() );
+    transformStart.setBasis( btMatrix3x3::getIdentity() );
 
     transformEnd.setOrigin( btVectorToFloat3( End + Float3( 0, GetCharacterHeight()*0.5f, 0 ) ) );
-    transformEnd.setRotation( btQuaternion::getIdentity() );
+    transformEnd.setBasis( btMatrix3x3::getIdentity() );
+//bCylinder=true;
+    btConvexShape * shape = bCylinder ? CylinderShape : ConvexShape;
 
-    if ( bCylinder )
+    if ( com_UseGhostObjectSweepTest )
     {
-        World->convexSweepTest( CylinderShape, transformStart, transformEnd, callback, ccdPenetration );
+        GhostObject->convexSweepTest( shape, transformStart, transformEnd, callback, ccdPenetration );
     }
     else
     {
-        if ( com_UseGhostObjectSweepTest )
-        {
-            GhostObject->convexSweepTest( ConvexShape, transformStart, transformEnd, callback, ccdPenetration );
-        }
-        else
-        {
-            World->convexSweepTest( ConvexShape, transformStart, transformEnd, callback, ccdPenetration );
-        }
+        World->convexSweepTest( shape, transformStart, transformEnd, callback, ccdPenetration );
     }
 
     Trace.HitProxy = callback.HitProxy;
@@ -464,25 +462,20 @@ void ACharacterControllerBase::TraceSelf( Float3 const & Start, Float3 const & E
     btTransform transformStart, transformEnd;
 
     transformStart.setOrigin( btVectorToFloat3( Start + Float3( 0, GetCharacterHeight()*0.5f, 0 ) ) );
-    transformStart.setRotation( btQuaternion::getIdentity() );
+    transformStart.setBasis( btMatrix3x3::getIdentity() );
 
     transformEnd.setOrigin( btVectorToFloat3( End + Float3( 0, GetCharacterHeight()*0.5f, 0 ) ) );
-    transformEnd.setRotation( btQuaternion::getIdentity() );
+    transformEnd.setBasis( btMatrix3x3::getIdentity() );
+//bCylinder=true;
+    btConvexShape * shape = bCylinder ? CylinderShape : ConvexShape;
 
-    if ( bCylinder )
+    if ( com_UseGhostObjectSweepTest )
     {
-        World->convexSweepTest( CylinderShape, transformStart, transformEnd, callback, ccdPenetration );
+        GhostObject->convexSweepTest( shape, transformStart, transformEnd, callback, ccdPenetration );
     }
     else
     {
-        if ( com_UseGhostObjectSweepTest )
-        {
-            GhostObject->convexSweepTest( ConvexShape, transformStart, transformEnd, callback, ccdPenetration );
-        }
-        else
-        {
-            World->convexSweepTest( ConvexShape, transformStart, transformEnd, callback, ccdPenetration );
-        }
+        World->convexSweepTest( shape, transformStart, transformEnd, callback, ccdPenetration );
     }
 
     Trace.HitProxy = callback.HitProxy;
@@ -633,7 +626,7 @@ bool ACharacterControllerBase::ClipVelocityByContactNormals( Float3 const * Cont
     int i, j;
 
     for ( i = 0 ; i < NumContacts ; i++ ) {
-        ClipVelocity( Velocity, ContactNormals[i], Velocity, 1.0003f );
+        ClipVelocity( Velocity, ContactNormals[i], Velocity );
 
         for ( j = 0 ; j < NumContacts ; j++ ) {
             if ( j != i && Math::Dot( Velocity, ContactNormals[j] ) < 0 ) {
@@ -646,7 +639,6 @@ bool ACharacterControllerBase::ClipVelocityByContactNormals( Float3 const * Cont
     }
 
     if ( NumContacts != 2 ) {
-        Velocity.Clear();
         return false;
     }
 
@@ -722,6 +714,7 @@ void ACharacterControllerBase::SlideMove( Float3 const & StartPos, Float3 const 
 
         // Clip the velocity
         if ( !ClipVelocityByContactNormals( contactNormals, numContacts, currentVelocity ) ) {
+            currentVelocity.Clear();
             clipped = true;
             break;
         }
@@ -744,9 +737,8 @@ void ACharacterControllerBase::SlideMove( Float3 const & StartPos, Float3 const 
 
 void ACharacterControllerBase::ClipVelocity( Float3 const & InVelocity, Float3 const & InNormal, Float3 & OutVelocity, float Overbounce )
 {
-    float backoff = Math::Dot( InVelocity, InNormal ) * Overbounce;
+    OutVelocity = Math::ProjectVector( InVelocity, InNormal, Overbounce );
 
-    OutVelocity = InVelocity - InNormal * backoff;
     for ( int i = 0 ; i < 3 ; i++ ) {
         if ( Math::Abs( OutVelocity[i] ) < 0.003f ) {
             OutVelocity[i] = 0;
@@ -763,4 +755,481 @@ void ACharacterControllerBase::DrawDebug( ADebugRenderer * InRenderer )
         InRenderer->SetColor( AColor4::White() );
         btDrawCollisionShape( InRenderer, GhostObject->getWorldTransform(), GhostObject->getCollisionShape() );
     }
+}
+
+
+
+
+
+
+ATTRIBUTE_ALIGNED16( class )
+AProjectileActionInterface : public btActionInterface
+{
+public:
+    BT_DECLARE_ALIGNED_ALLOCATOR();
+
+    AProjectileExperimental * Projectile;
+
+    //btManifoldArray ManifoldArray;
+
+    // btActionInterface interface
+    void updateAction( btCollisionWorld * collisionWorld, btScalar deltaTime ) override
+    {
+        Projectile->_Update( deltaTime );
+    }
+
+    // btActionInterface interface
+    void debugDraw( btIDebugDraw * debugDrawer ) override
+    {
+    }
+};
+
+
+AN_CLASS_META( AProjectileExperimental )
+
+AProjectileExperimental::AProjectileExperimental()
+{
+    HitProxy = NewObject< AHitProxy >();
+    HitProxy->SetCollisionGroup( CM_PROJECTILE );
+    HitProxy->SetCollisionMask( CM_ALL );
+}
+
+void AProjectileExperimental::InitializeComponent()
+{
+    Super::InitializeComponent();
+
+    btTransform startTransform;
+    startTransform.setOrigin( btVectorToFloat3( GetWorldPosition() ) );
+    startTransform.setRotation( btQuaternionToQuat( GetWorldRotation() ) );
+
+    // Just a bridge between the projectile and btActionInterface
+    ActionInterface = new AProjectileActionInterface;
+    ActionInterface->Projectile = this;
+
+    ConvexShape = new btCapsuleShapeZ( 0.1f, 0.35f );
+
+    World = GetWorld()->GetPhysics().GetInternal();
+
+    //GhostObject = new btPairCachingGhostObject;
+    GhostObject = new btGhostObject;
+    GhostObject->setUserPointer( HitProxy.GetObject() );
+    GhostObject->setCollisionFlags( btCollisionObject::CF_CHARACTER_OBJECT );
+    GhostObject->setWorldTransform( startTransform );
+    GhostObject->setCollisionShape( ConvexShape );
+
+    World->addAction( ActionInterface );
+
+    HitProxy->Initialize( this, GhostObject );
+}
+
+void AProjectileExperimental::DeinitializeComponent()
+{
+    HitProxy->Deinitialize();
+
+    World->removeAction( ActionInterface );
+
+    delete ActionInterface;
+    delete GhostObject;
+    delete ConvexShape;
+
+    Super::DeinitializeComponent();
+}
+
+void AProjectileExperimental::BeginPlay()
+{
+    Super::BeginPlay();
+
+    GetWorld()->E_OnPostPhysicsUpdate.Add( this, &AProjectileExperimental::HandlePostPhysicsUpdate );
+}
+
+void AProjectileExperimental::EndPlay()
+{
+    GetWorld()->E_OnPostPhysicsUpdate.Remove( this );
+}
+
+void AProjectileExperimental::HandlePostPhysicsUpdate( float TimeStep )
+{
+    ClearForces();
+}
+
+void AProjectileExperimental::ClearForces()
+{
+    m_totalForce.Clear();
+    m_totalTorque.Clear();
+}
+
+void AProjectileExperimental::OnTransformDirty()
+{
+    Super::OnTransformDirty();
+
+    if ( IsInitialized() && !bInsideUpdate )
+    {
+//        SetCapsuleWorldPosition( GetWorldPosition() );
+        btTransform transform = GhostObject->getWorldTransform();
+        transform.setOrigin( btVectorToFloat3( GetWorldPosition() ) );
+        transform.setRotation( btQuaternionToQuat( GetWorldRotation() ) );
+        GhostObject->setWorldTransform( transform );
+    }
+}
+
+void AProjectileExperimental::SetCollisionGroup( int _CollisionGroup )
+{
+    HitProxy->SetCollisionGroup( _CollisionGroup );
+}
+
+void AProjectileExperimental::SetCollisionMask( int _CollisionMask )
+{
+    HitProxy->SetCollisionMask( _CollisionMask );
+}
+
+void AProjectileExperimental::SetCollisionFilter( int _CollisionGroup, int _CollisionMask )
+{
+    HitProxy->SetCollisionFilter( _CollisionGroup, _CollisionMask );
+}
+
+void AProjectileExperimental::AddCollisionIgnoreActor( AActor * _Actor )
+{
+    HitProxy->AddCollisionIgnoreActor( _Actor );
+}
+
+void AProjectileExperimental::RemoveCollisionIgnoreActor( AActor * _Actor )
+{
+    HitProxy->RemoveCollisionIgnoreActor( _Actor );
+}
+
+//void AProjectileExperimental::UpdateCapsuleShape()
+//{
+//    if ( !bNeedToUpdateCapsule )
+//    {
+//        return;
+//    }
+//
+//    delete ConvexShape;
+//
+//    // TODO: Test this
+//    ConvexShape = new btCapsuleShape( CapsuleRadius, CapsuleHeight );
+//    GhostObject->setCollisionShape( ConvexShape );
+//
+//    bNeedToUpdateCapsule = false;
+//}
+
+//void AProjectileExperimental::SetCapsuleWorldPosition( Float3 const & InPosition )
+//{
+//    btTransform transform = GhostObject->getWorldTransform();
+//    btVector3 position = btVectorToFloat3( InPosition + Float3( 0, GetCharacterHeight()*0.5f, 0 ) );
+//    if ( (transform.getOrigin() - position).length2() > FLT_EPSILON ) {
+//        transform.setOrigin( position );
+//        GhostObject->setWorldTransform( transform );
+//    }
+//}
+
+void AProjectileExperimental::_Update( float _TimeStep )
+{
+    bInsideUpdate = true;
+
+    //UpdateCapsuleShape();
+
+    Update( _TimeStep );
+
+    bInsideUpdate = false;
+}
+
+class AProjectileTraceCallback : public btCollisionWorld::ConvexResultCallback
+{
+    using Super = btCollisionWorld::ConvexResultCallback;
+
+public:
+    AProjectileTraceCallback( btCollisionObject * _Self )
+        : HitProxy( nullptr )
+        , Self( _Self )
+    {
+        m_collisionFilterGroup = _Self->getBroadphaseHandle()->m_collisionFilterGroup;
+        m_collisionFilterMask = _Self->getBroadphaseHandle()->m_collisionFilterMask;
+    }
+
+    bool needsCollision( btBroadphaseProxy* proxy0 ) const override
+    {
+        if ( !Super::needsCollision( proxy0 ) ) {
+            return false;
+        }
+
+        AHitProxy const * hitProxy0 = static_cast< AHitProxy const * >(Self->getUserPointer());
+        AHitProxy const * hitProxy1 = static_cast< AHitProxy const * >(static_cast< btCollisionObject const * >(proxy0->m_clientObject)->getUserPointer());
+
+        if ( !hitProxy0 || !hitProxy1 ) {
+            return true;
+        }
+
+        AActor * actor0 = hitProxy0->GetOwnerActor();
+        AActor * actor1 = hitProxy1->GetOwnerActor();
+
+        if ( hitProxy0->GetCollisionIgnoreActors().Find( actor1 ) != hitProxy0->GetCollisionIgnoreActors().End() ) {
+            return false;
+        }
+
+        if ( hitProxy1->GetCollisionIgnoreActors().Find( actor0 ) != hitProxy1->GetCollisionIgnoreActors().End() ) {
+            return false;
+        }
+
+        return true;
+    }
+
+    btScalar addSingleResult( btCollisionWorld::LocalConvexResult & result, bool normalInWorldSpace ) override
+    {
+        if ( result.m_hitCollisionObject == Self )
+        {
+            return 1;
+        }
+
+        if ( !result.m_hitCollisionObject->hasContactResponse() )
+        {
+            return 1;
+        }
+
+        btVector3 hitNormalWorld = normalInWorldSpace
+            ? result.m_hitNormalLocal
+            : result.m_hitCollisionObject->getWorldTransform().getBasis() * result.m_hitNormalLocal;
+
+        AN_ASSERT( result.m_hitFraction <= m_closestHitFraction );
+
+        m_closestHitFraction = result.m_hitFraction;
+        HitNormalWorld = hitNormalWorld;
+        HitPointWorld = result.m_hitPointLocal;
+        HitProxy = static_cast< AHitProxy * >(result.m_hitCollisionObject->getUserPointer());
+
+        return result.m_hitFraction;
+    }
+
+    btVector3 HitNormalWorld;
+    btVector3 HitPointWorld;
+    AHitProxy * HitProxy;
+
+protected:
+    btCollisionObject * Self;
+};
+
+void AProjectileExperimental::TraceSelf( Float3 const & Start, Float3 const & End, SProjectileTrace & Trace ) const
+{
+    AProjectileTraceCallback callback( GhostObject );
+
+    const float ccdPenetration = 0.0f;
+
+    btTransform transformStart, transformEnd;
+
+    btTransform const & transform = GhostObject->getWorldTransform();
+
+    transformStart.setOrigin( btVectorToFloat3( Start ) );
+    transformStart.setBasis( transform.getBasis() );
+
+    transformEnd.setOrigin( btVectorToFloat3( End ) );
+    transformEnd.setBasis( transform.getBasis() );
+
+    if ( com_UseGhostObjectSweepTest )
+    {
+        GhostObject->convexSweepTest( ConvexShape, transformStart, transformEnd, callback, ccdPenetration );
+    }
+    else
+    {
+        World->convexSweepTest( ConvexShape, transformStart, transformEnd, callback, ccdPenetration );
+    }
+
+    Trace.HitProxy = callback.HitProxy;
+    Trace.Position = btVectorToFloat3( callback.HitPointWorld );
+    Trace.Normal = btVectorToFloat3( callback.HitNormalWorld );
+    Trace.Fraction = callback.m_closestHitFraction;
+
+    AN_ASSERT( GhostObject->hasContactResponse() );
+}
+
+void AProjectileExperimental::TraceSelf( Float3 const & Start, Quat const & StartRot, Float3 const & End, Quat const & EndRot, SProjectileTrace & Trace ) const
+{
+    AProjectileTraceCallback callback( GhostObject );
+
+    const float ccdPenetration = 0.0f;
+
+    btTransform transformStart, transformEnd;
+
+    transformStart.setOrigin( btVectorToFloat3( Start ) );
+    transformStart.setRotation( btQuaternionToQuat( StartRot ) );
+
+    transformEnd.setOrigin( btVectorToFloat3( End ) );
+    transformEnd.setRotation( btQuaternionToQuat( EndRot ) );
+
+    if ( com_UseGhostObjectSweepTest )
+    {
+        GhostObject->convexSweepTest( ConvexShape, transformStart, transformEnd, callback, ccdPenetration );
+    }
+    else
+    {
+        World->convexSweepTest( ConvexShape, transformStart, transformEnd, callback, ccdPenetration );
+    }
+
+    Trace.HitProxy = callback.HitProxy;
+    Trace.Position = btVectorToFloat3( callback.HitPointWorld );
+    Trace.Normal = btVectorToFloat3( callback.HitNormalWorld );
+    Trace.Fraction = callback.m_closestHitFraction;
+
+    AN_ASSERT( GhostObject->hasContactResponse() );
+}
+
+void AProjectileExperimental::DrawDebug( ADebugRenderer * InRenderer )
+{
+    Super::DrawDebug( InRenderer );
+
+    //if ( com_DrawCharacterControllerCapsule ) {
+        InRenderer->SetDepthTest( false );
+        InRenderer->SetColor( AColor4::White() );
+        btDrawCollisionShape( InRenderer, GhostObject->getWorldTransform(), GhostObject->getCollisionShape() );
+    //}
+}
+
+void AProjectileExperimental::ApplyForce( Float3 const & force, Float3 const & rel_pos )
+{
+    ApplyCentralForce( force );
+    ApplyTorque( Math::Cross( rel_pos, force/* * m_linearFactor*/ ) );
+}
+
+void AProjectileExperimental::ApplyTorque( Float3 const & torque )
+{
+    m_totalTorque += torque;// * m_angularFactor;
+//#if defined(BT_CLAMP_VELOCITY_TO) && BT_CLAMP_VELOCITY_TO > 0
+//    clampVelocity( m_totalTorque );
+//#endif
+}
+
+void AProjectileExperimental::ApplyCentralForce( Float3 const & force )
+{
+    m_totalForce += force;// * m_linearFactor;
+}
+
+void AProjectileExperimental::Update( float _TimeStep ) {
+#if 1
+    if ( LinearVelocity.LengthSqr() > 0.001f ) {
+        Float3 currentPosition = GetWorldPosition();
+
+        Float3 targetPosition = currentPosition + LinearVelocity * _TimeStep;
+
+        SProjectileTrace trace;
+        TraceSelf( currentPosition, targetPosition, trace );
+
+        currentPosition = Math::Lerp( currentPosition, targetPosition, trace.Fraction );
+
+        SetWorldPosition( currentPosition );
+
+        btTransform transform = GhostObject->getWorldTransform();
+        transform.setOrigin( btVectorToFloat3( currentPosition ) );
+        GhostObject->setWorldTransform( transform );
+
+        if ( trace.HasHit() ) {
+
+            OnHit.Dispatch( trace.Position, trace.Normal );
+
+            LinearVelocity.Clear();
+        
+            //AHitProxy * HitProxy;
+            //Float3 Position;
+            //Float3 Normal;
+            //float Fraction;
+        }
+    }
+    else {
+        LinearVelocity.Clear();
+    }
+#else
+
+    float Gravity = 9.8f;
+
+    float fallVelocity = Gravity * _TimeStep;
+
+    btVector3 inertia;
+    ConvexShape->calculateLocalInertia( 1.0f, inertia );
+    btVector3 m_invInertiaLocal;
+    m_invInertiaLocal.setValue( inertia.x() != btScalar( 0.0 ) ? btScalar( 1.0 ) / inertia.x() : btScalar( 0.0 ),
+                                inertia.y() != btScalar( 0.0 ) ? btScalar( 1.0 ) / inertia.y() : btScalar( 0.0 ),
+                                inertia.z() != btScalar( 0.0 ) ? btScalar( 1.0 ) / inertia.z() : btScalar( 0.0 ) );
+    btTransform m_worldTransform = GhostObject->getWorldTransform();
+    btMatrix3x3 m_invInertiaTensorWorld = m_worldTransform.getBasis().scaled( m_invInertiaLocal ) * m_worldTransform.getBasis().transpose();
+
+    //LinearVelocity += m_totalForce * (/*m_inverseMass * */_TimeStep);
+    //AngularVelocity += btVectorToFloat3( m_invInertiaTensorWorld * btVectorToFloat3( m_totalTorque ) * _TimeStep );
+
+    LinearVelocity[1] -= fallVelocity;
+
+    if ( LinearVelocity.LengthSqr() > 0.0001f ) {
+        Float3 currentPosition = GetWorldPosition();
+        Quat currentRotation = GetWorldRotation();
+
+        Float3 vel = AngularVelocity;
+        float len = vel.NormalizeSelf();
+
+        Quat q = Quat::RotationAroundNormal( len * _TimeStep, vel );
+
+        Float3 targetPosition = currentPosition + LinearVelocity * _TimeStep;
+        Quat targetRotation = q * GetWorldRotation();
+        targetRotation.NormalizeSelf();
+
+        SProjectileTrace trace;
+        TraceSelf( currentPosition, currentRotation, targetPosition, targetRotation, trace );
+//currentRotation = targetRotation;
+        if ( !trace.HasHit() ) {
+            currentPosition = targetPosition;
+            currentRotation = targetRotation;
+        }
+        else {
+            currentPosition = Math::Lerp( currentPosition, targetPosition, trace.Fraction );
+            currentRotation = Quat::Slerp( currentRotation, targetRotation, trace.Fraction );
+            currentRotation.NormalizeSelf();
+
+            //Float3 v = Math::Reflect( LinearVelocity, trace.Normal );
+
+            float backoff = Math::Dot( LinearVelocity, trace.Normal ) * (1.5f);
+            LinearVelocity = LinearVelocity - trace.Normal * backoff;
+            for ( int i = 0 ; i < 3 ; i++ ) {
+                if ( Math::Abs( LinearVelocity[i] ) < 0.003f ) {
+                    LinearVelocity[i] = 0;
+                }
+            }
+
+            //Float3 velocityDelta = LinearVelocity;
+
+            //LinearVelocity = v * 0.5f;
+            //AngularVelocity = AngularVelocity * 0.5f;
+
+            //velocityDelta = LinearVelocity - velocityDelta;
+
+            
+
+            Float3 force = LinearVelocity / (/*m_inverseMass * */_TimeStep);
+            Float3 rel_pos = trace.Position - currentPosition;
+            Float3 torque = Math::Cross( rel_pos, force/* * m_linearFactor*/ );// * m_angularFactor;
+
+            AngularVelocity = btVectorToFloat3( m_invInertiaTensorWorld * btVectorToFloat3( torque ) * _TimeStep );
+
+
+
+            //float backoff = Math::Dot( LinearVelocity, trace.Normal ) * (1.5f);
+
+            //LinearVelocity = LinearVelocity - trace.Normal * backoff;
+            //for ( int i = 0 ; i < 3 ; i++ ) {
+            //    if ( Math::Abs( LinearVelocity[i] ) < 0.003f ) {
+            //        LinearVelocity[i] = 0;
+            //    }
+            //}
+
+            //if ( trace.Normal[1] > 0.7f && LinearVelocity[1] < 0.1f ) {
+            //    LinearVelocity.Clear();
+            //    //AngularVelocity.Clear();
+            //}
+        }
+        //btRigidBody
+
+        SetWorldPosition( currentPosition );
+        SetWorldRotation( currentRotation );
+
+        btTransform transform = GhostObject->getWorldTransform();
+        transform.setOrigin( btVectorToFloat3( currentPosition ) );
+        transform.setRotation( btQuaternionToQuat( currentRotation ) );
+        GhostObject->setWorldTransform( transform );
+    }
+#endif
 }

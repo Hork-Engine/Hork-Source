@@ -68,16 +68,16 @@ private:
     void RenderCanvas( ACanvas * InCanvas );
     void RenderView( int _Index );
 
-    void QueryVisiblePrimitives( ARenderWorld * InWorld );
-    void QueryShadowCasters( ARenderWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis,
+    void QueryVisiblePrimitives( AWorld * InWorld );
+    void QueryShadowCasters( AWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis,
                              TPodArray< SPrimitiveDef * > & Primitives, TPodArray< SSurfaceDef * > & Surfaces );
-    void AddRenderInstances( ARenderWorld * InWorld );
+    void AddRenderInstances( AWorld * InWorld );
     void AddDrawable( ADrawable * InComponent );
     void AddTerrain( ATerrainComponent * InComponent );
     void AddStaticMesh( AMeshComponent * InComponent );
     void AddSkinnedMesh( ASkinnedComponent * InComponent );
     void AddProceduralMesh( AProceduralMeshComponent * InComponent );
-    void AddDirectionalShadowmapInstances( ARenderWorld * InWorld );
+    void AddDirectionalShadowmapInstances( AWorld * InWorld );
     void AddShadowmap_StaticMesh( SLightShadowmap * ShadowMap, AMeshComponent * InComponent );
     void AddShadowmap_SkinnedMesh( SLightShadowmap * ShadowMap, ASkinnedComponent * InComponent );
     void AddShadowmap_ProceduralMesh( SLightShadowmap * ShadowMap, AProceduralMeshComponent * InComponent );

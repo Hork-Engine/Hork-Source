@@ -45,10 +45,8 @@ class ARenderWorld
     AN_FORBID_COPY( ARenderWorld )
 
 public:
-    explicit ARenderWorld( AWorld * InOwnerWorld );
-    ~ARenderWorld() {}
-
-    AWorld * GetOwnerWorld() { return pOwnerWorld; }
+    ARenderWorld();
+    virtual ~ARenderWorld() {}
 
     /** Get skinned meshes in the world */
     ASkinnedComponent * GetSkinnedMeshes() { return SkinnedMeshList; }
@@ -77,8 +75,6 @@ private:
     void RemoveDirectionalLight( ADirectionalLightComponent * InLight );
 
 private:
-    AWorld * pOwnerWorld;
-
     ASkinnedComponent * SkinnedMeshList = nullptr;
     ASkinnedComponent * SkinnedMeshListTail = nullptr;
     ADrawable * ShadowCasters = nullptr;

@@ -54,7 +54,7 @@ void AHitProxy::Initialize( ASceneComponent * _OwnerComponent, btCollisionObject
     CollisionObject = _CollisionObject;
 
     AWorld * world = OwnerComponent->GetWorld();
-    world->GetPhysicsWorld().AddHitProxy( this );
+    world->GetPhysics().AddHitProxy( this );
 }
 
 void AHitProxy::Deinitialize()
@@ -62,7 +62,7 @@ void AHitProxy::Deinitialize()
     if ( OwnerComponent )
     {
         AWorld * world = OwnerComponent->GetWorld();
-        world->GetPhysicsWorld().RemoveHitProxy( this );
+        world->GetPhysics().RemoveHitProxy( this );
 
         OwnerComponent = nullptr;
         CollisionObject = nullptr;
@@ -74,7 +74,7 @@ void AHitProxy::UpdateBroadphase()
     // Re-add collision object to physics world
     if ( bInWorld )
     {
-        GetWorld()->GetPhysicsWorld().AddHitProxy( this );
+        GetWorld()->GetPhysics().AddHitProxy( this );
     }
 }
 
@@ -242,7 +242,7 @@ void AHitProxy::CollisionContactQuery( TPodArray< AHitProxy * > & _Result ) cons
         return;
     }
 
-    GetWorld()->GetDynamicsWorld()->contactTest( CollisionObject, callback );
+    GetWorld()->GetPhysics().GetInternal()->contactTest( CollisionObject, callback );
 }
 
 void AHitProxy::CollisionContactQueryActor( TPodArray< AActor * > & _Result ) const
@@ -261,7 +261,7 @@ void AHitProxy::CollisionContactQueryActor( TPodArray< AActor * > & _Result ) co
         return;
     }
 
-    GetWorld()->GetDynamicsWorld()->contactTest( CollisionObject, callback );
+    GetWorld()->GetPhysics().GetInternal()->contactTest( CollisionObject, callback );
 }
 
 void AHitProxy::DrawCollisionShape( ADebugRenderer * InRenderer )

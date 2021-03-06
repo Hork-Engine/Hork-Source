@@ -211,7 +211,7 @@ protected:
 
     virtual void Update( float _TimeStep ) {}
 
-    void ClipVelocity( Float3 const & InVelocity, Float3 const & InNormal, Float3 & OutVelocity, float Overbounce );
+    void ClipVelocity( Float3 const & InVelocity, Float3 const & InNormal, Float3 & OutVelocity, float Overbounce = 1.001f );
 
 private:
 
@@ -243,5 +243,164 @@ private:
     float CapsuleHeight = 0.9f;
 
     bool bNeedToUpdateCapsule = false;
+    bool bInsideUpdate = false;
+};
+
+
+
+
+
+
+
+struct SProjectileTrace
+{
+    AHitProxy * HitProxy;
+    Float3 Position;
+    Float3 Normal;
+    float Fraction;
+
+    SProjectileTrace()
+        : HitProxy( nullptr )
+        , Position( 0, 0, 0 )
+        , Normal( 0, 1, 0 )
+        , Fraction( 1 )
+    {
+    }
+
+    void Clear()
+    {
+        HitProxy = nullptr;
+        Position.Clear();
+        Normal = Float3( 0, 1, 0 );
+        Fraction = 1;
+    }
+
+    bool HasHit() const
+    {
+        return Fraction < 1.0f;
+    }
+};
+
+class AProjectileExperimental : public ASceneComponent
+{
+    AN_COMPONENT( AProjectileExperimental, ASceneComponent )
+
+public:
+    TEvent< Float3 const &, Float3 const & > OnHit;
+
+    AHitProxy * GetHitProxy() const
+    {
+        return HitProxy;
+    }
+
+    /** Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact) */
+    void SetDispatchContactEvents( bool bDispatch )
+    {
+        HitProxy->bDispatchContactEvents = bDispatch;
+    }
+
+    bool ShouldDispatchContactEvents() const
+    {
+        return HitProxy->bDispatchContactEvents;
+    }
+
+    /** Dispatch overlap events (OnBeginOverlap, OnUpdateOverlap, OnEndOverlap) */
+    void SetDispatchOverlapEvents( bool bDispatch )
+    {
+        HitProxy->bDispatchOverlapEvents = bDispatch;
+    }
+
+    bool ShouldDispatchOverlapEvents() const
+    {
+        return HitProxy->bDispatchOverlapEvents;
+    }
+
+    /** Generate contact points for contact events. Use with bDispatchContactEvents. */
+    void SetGenerateContactPoints( bool bGenerate )
+    {
+        HitProxy->bGenerateContactPoints = bGenerate;
+    }
+
+    bool ShouldGenerateContactPoints() const
+    {
+        return HitProxy->bGenerateContactPoints;
+    }
+
+    /** Set collision group/layer. See ECollisionMask. */
+    void SetCollisionGroup( int _CollisionGroup );
+
+    /** Get collision group. See ECollisionMask. */
+    int GetCollisionGroup() const { return HitProxy->GetCollisionGroup(); }
+
+    /** Set collision mask. See ECollisionMask. */
+    void SetCollisionMask( int _CollisionMask );
+
+    /** Get collision mask. See ECollisionMask. */
+    int GetCollisionMask() const { return HitProxy->GetCollisionMask(); }
+
+    /** Set collision group and mask. See ECollisionMask. */
+    void SetCollisionFilter( int _CollisionGroup, int _CollisionMask );
+
+    /** Set actor to ignore collisions with this component */
+    void AddCollisionIgnoreActor( AActor * _Actor );
+
+    /** Unset actor to ignore collisions with this component */
+    void RemoveCollisionIgnoreActor( AActor * _Actor );
+
+    void TraceSelf( Float3 const & Start, Float3 const & End, SProjectileTrace & Trace ) const;
+    void TraceSelf( Float3 const & Start, Quat const & StartRot, Float3 const & End, Quat const & EndRot, SProjectileTrace & Trace ) const;
+
+    Float3 LinearVelocity = Float3( 0.0f );
+    Float3 AngularVelocity = Float3( 0.0f );
+
+    void ApplyForce( Float3 const & force, Float3 const & rel_pos );
+
+    void ApplyTorque( Float3 const & torque );
+
+    void ApplyCentralForce( Float3 const & force );
+
+    Float3 m_totalTorque = Float3( 0.0f );
+    Float3 m_totalForce = Float3( 0.0f );
+
+    void ClearForces();
+
+protected:
+    AProjectileExperimental();
+
+    void InitializeComponent() override;
+
+    void DeinitializeComponent() override;
+
+    void BeginPlay() override;
+    void EndPlay() override;
+
+    void OnTransformDirty() override;
+
+    void DrawDebug( ADebugRenderer * InRenderer ) override;
+
+    //void UpdateCapsuleShape();
+
+    //void SetCapsuleWorldPosition( Float3 const & Position );
+
+    virtual void Update( float _TimeStep );// {}
+
+    //void ClipVelocity( Float3 const & InVelocity, Float3 const & InNormal, Float3 & OutVelocity, float Overbounce );
+
+private:
+
+    friend class AProjectileActionInterface;
+    void _Update( float _TimeStep );
+
+    void HandlePostPhysicsUpdate( float TimeStep );
+
+    // Collision hit proxy
+    TRef< AHitProxy > HitProxy;
+
+    class AProjectileActionInterface * ActionInterface;
+    //class btPairCachingGhostObject * GhostObject;
+    class btGhostObject * GhostObject;
+    class btConvexShape * ConvexShape;
+    class btDiscreteDynamicsWorld * World;
+
     bool bInsideUpdate = false;
 };

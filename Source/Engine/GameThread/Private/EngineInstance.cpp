@@ -88,47 +88,57 @@ AEngineInstance::AEngineInstance() {
     Vsd = MakeUnique< AVSD >();
 }
 
-static void PhysModulePrintFunction( const char * _Message ) {
+static void PhysModulePrintFunction( const char * _Message )
+{
     GLogger.Printf( "PhysModule: %s", _Message );
 }
 
-static void PhysModuleWarningFunction( const char * _Message ) {
+static void PhysModuleWarningFunction( const char * _Message )
+{
     GLogger.Warning( "PhysModule: %s", _Message );
 }
 
-static void PhysModuleErrorFunction( const char * _Message ) {
+static void PhysModuleErrorFunction( const char * _Message )
+{
     GLogger.Error( "PhysModule: %s", _Message );
 }
 
-static void *PhysModuleAlignedAlloc( size_t _BytesCount, int _Alignment ) {
+static void *PhysModuleAlignedAlloc( size_t _BytesCount, int _Alignment )
+{
     AN_ASSERT( _Alignment <= 16 );
     return GZoneMemory.Alloc( _BytesCount );
 }
 
-static void *PhysModuleAlloc( size_t _BytesCount ) {
+static void *PhysModuleAlloc( size_t _BytesCount )
+{
     return GZoneMemory.Alloc( _BytesCount );
 }
 
-static void PhysModuleFree( void * _Bytes ) {
+static void PhysModuleFree( void * _Bytes )
+{
     GZoneMemory.Free( _Bytes );
 }
 
-static void * NavModuleAlloc( size_t _BytesCount, dtAllocHint _Hint ) {
+static void * NavModuleAlloc( size_t _BytesCount, dtAllocHint _Hint )
+{
     return GHeapMemory.Alloc( _BytesCount );
     //return GZoneMemory.Alloc( _BytesCount );
 }
 
-static void NavModuleFree( void * _Bytes ) {
+static void NavModuleFree( void * _Bytes )
+{
     GHeapMemory.Free( _Bytes );
     //GZoneMemory.Free( _Bytes );
 }
 
 #if 0
-static void *ImguiModuleAlloc( size_t _BytesCount, void * ) {
+static void *ImguiModuleAlloc( size_t _BytesCount, void * )
+{
     return GZoneMemory.Alloc( _BytesCount );
 }
 
-static void ImguiModuleFree( void * _Bytes, void * ) {
+static void ImguiModuleFree( void * _Bytes, void * )
+{
     GZoneMemory.Free( _Bytes );
 }
 #endif

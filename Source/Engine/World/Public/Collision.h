@@ -66,7 +66,7 @@ class AHitProxy : public ABaseObject
 {
     AN_CLASS( AHitProxy, ABaseObject )
 
-    friend class APhysicsWorld;
+    friend class AWorldPhysics;
 
 public:
     // Component events

@@ -89,6 +89,14 @@ enum DEVICE_CAPS
     DEVICE_CAPS_MAX
 };
 
+enum GRAPHICS_VENDOR
+{
+    VENDOR_UNKNOWN,
+    VENDOR_NVIDIA,
+    VENDOR_ATI,
+    VENDOR_INTEL
+};
+
 class IDevice : public ARefCounted
 {
 public:
@@ -153,6 +161,8 @@ public:
 
     virtual const char * LookupImageFormatQualifier( TEXTURE_FORMAT _Format ) = 0;
 
+    GRAPHICS_VENDOR GetGraphicsVendor() const { return GraphicsVendor; }
+
     //unsigned int GetTotalImmediateContexts() const { return TotalContexts; }
     //unsigned int GetTotalBuffers() const { return TotalBuffers; }
     //unsigned int GetTotalTextures() const { return TotalTextures; }
@@ -180,6 +190,9 @@ public:
         return nullptr;
     }
 #endif
+
+protected:
+    GRAPHICS_VENDOR GraphicsVendor = VENDOR_UNKNOWN;
 
 private:
 #ifdef AN_DEBUG

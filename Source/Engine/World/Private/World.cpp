@@ -47,9 +47,6 @@ AWorld * AWorld::PendingKillWorlds = nullptr;
 TPodArray< AWorld * > AWorld::Worlds;
 
 AWorld::AWorld()
-    : PhysicsWorld( this )
-    , RenderWorld( this )
-    , NavigationMesh( this )
 {
     PersistentLevel = NewObject< ALevel >();
     PersistentLevel->AddRef();
@@ -58,6 +55,9 @@ AWorld::AWorld()
     PersistentLevel->IndexInArrayOfLevels = ArrayOfLevels.Size();
     ArrayOfLevels.Append( PersistentLevel );
     PersistentLevel->OnAddLevelToWorld();
+
+    WorldPhysics.PrePhysicsCallback.Set( this, &AWorld::HandlePrePhysics );
+    WorldPhysics.PostPhysicsCallback.Set( this, &AWorld::HandlePostPhysics );
 }
 
 AWorld::~AWorld()
@@ -82,28 +82,28 @@ void AWorld::ResetGameplayTimer()
 
 void AWorld::SetPhysicsHertz( int _Hertz )
 {
-    PhysicsWorld.PhysicsHertz = _Hertz;
+    WorldPhysics.PhysicsHertz = _Hertz;
 }
 
 void AWorld::SetContactSolverSplitImpulse( bool _SplitImpulse )
 {
-    PhysicsWorld.bContactSolverSplitImpulse = _SplitImpulse;
+    WorldPhysics.bContactSolverSplitImpulse = _SplitImpulse;
 }
 
 void AWorld::SetContactSolverIterations( int _InterationsCount )
 {
-    PhysicsWorld.NumContactSolverIterations = _InterationsCount;
+    WorldPhysics.NumContactSolverIterations = _InterationsCount;
 }
 
 void AWorld::SetGravityVector( Float3 const & _Gravity )
 {
-    PhysicsWorld.GravityVector = _Gravity;
-    PhysicsWorld.bGravityDirty = true;
+    WorldPhysics.GravityVector = _Gravity;
+    WorldPhysics.bGravityDirty = true;
 }
 
 Float3 const & AWorld::GetGravityVector() const
 {
-    return PhysicsWorld.GravityVector;
+    return WorldPhysics.GravityVector;
 }
 
 void AWorld::BeginPlay()
@@ -518,7 +518,7 @@ void AWorld::UpdateLevels( float _TimeStep )
     }
 }
 
-void AWorld::OnPrePhysics( float _TimeStep )
+void AWorld::HandlePrePhysics( float _TimeStep )
 {
     GameplayTimeMicro = GameplayTimeMicroAfterTick;
 
@@ -526,7 +526,7 @@ void AWorld::OnPrePhysics( float _TimeStep )
     UpdateActorsPrePhysics( _TimeStep );
 }
 
-void AWorld::OnPostPhysics( float _TimeStep )
+void AWorld::HandlePostPhysics( float _TimeStep )
 {
     UpdateActorsPostPhysics( _TimeStep );
 
@@ -544,14 +544,14 @@ void AWorld::UpdatePhysics( float _TimeStep )
         return;
     }
 
-    PhysicsWorld.Simulate( _TimeStep );
+    WorldPhysics.Simulate( _TimeStep );
 
     E_OnPostPhysicsUpdate.Dispatch( _TimeStep );
 }
 
 void AWorld::UpdateSkinning()
 {
-    for ( ASkinnedComponent * skinnedMesh = RenderWorld.GetSkinnedMeshes() ; skinnedMesh ; skinnedMesh = skinnedMesh->GetNextSkinnedMesh() ) {
+    for ( ASkinnedComponent * skinnedMesh = WorldRender.GetSkinnedMeshes() ; skinnedMesh ; skinnedMesh = skinnedMesh->GetNextSkinnedMesh() ) {
         skinnedMesh->UpdateBounds();
     }
 }
@@ -819,9 +819,9 @@ void AWorld::DrawDebug( ADebugRenderer * InRenderer )
         actor->DrawDebug( InRenderer );
     }
 
-    RenderWorld.DrawDebug( InRenderer );
+    WorldRender.DrawDebug( InRenderer );
 
-    PhysicsWorld.DrawDebug( InRenderer );
+    WorldPhysics.DrawDebug( InRenderer );
 
     NavigationMesh.DrawDebug( InRenderer );
 }

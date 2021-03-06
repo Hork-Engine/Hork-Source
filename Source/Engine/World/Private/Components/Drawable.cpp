@@ -193,7 +193,7 @@ void ADrawable::InitializeComponent() {
 
     if ( bCastShadow )
     {
-        GetWorld()->GetRenderWorld().AddShadowCaster( this );
+        GetWorld()->GetRender().AddShadowCaster( this );
     }
 }
 
@@ -204,7 +204,7 @@ void ADrawable::DeinitializeComponent() {
 
     if ( bCastShadow )
     {
-        GetWorld()->GetRenderWorld().RemoveShadowCaster( this );
+        GetWorld()->GetRender().RemoveShadowCaster( this );
     }
 }
 
@@ -229,7 +229,7 @@ void ADrawable::SetCastShadow( bool _CastShadow ) {
 
     if ( IsInitialized() )
     {
-        ARenderWorld & RenderWorld = GetWorld()->GetRenderWorld();
+        ARenderWorld & RenderWorld = GetWorld()->GetRender();
 
         if ( bCastShadow )
         {

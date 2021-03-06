@@ -46,17 +46,20 @@ typedef unsigned int SNavPolyRef;
 class AWorld;
 class APhysicalBody;
 
-struct SNavPointRef {
+struct SNavPointRef
+{
     SNavPolyRef PolyRef;
     Float3 Position;
 };
 
-struct SAINavigationPathPoint {
+struct SAINavigationPathPoint
+{
     Float3 Position;
     int Flags;
 };
 
-struct SAINavigationTraceResult {
+struct SAINavigationTraceResult
+{
     Float3 Position;
     Float3 Normal;
     float Distance;
@@ -67,17 +70,20 @@ struct SAINavigationTraceResult {
     }
 };
 
-struct SAINavigationHitResult {
+struct SAINavigationHitResult
+{
     Float3 Position;
     Float3 Normal;
     float Distance;
 
-    void Clear() {
+    void Clear()
+    {
         Core::ZeroMem( this, sizeof( *this ) );
     }
 };
 
-enum EAINavMeshPartition {
+enum EAINavMeshPartition
+{
     /** Best choice if you precompute the navmesh, use this if you have large open areas (default) */
     AI_NAV_MESH_PARTITION_WATERSHED,
     /** Use this if you want fast navmesh generation */
@@ -86,7 +92,8 @@ enum EAINavMeshPartition {
     AI_NAV_MESH_PARTITION_LAYERS
 };
 
-enum EAINavMeshArea {
+enum EAINavMeshArea
+{
     AI_NAV_MESH_AREA_WATER  = 0,
     AI_NAV_MESH_AREA_ROAD   = 1,
     AI_NAV_MESH_AREA_DOOR   = 2,
@@ -101,7 +108,8 @@ enum EAINavMeshArea {
     AI_NAV_MESH_AREA_MAX = 64
 };
 
-enum EAINavMeshAreaFlags {
+enum EAINavMeshAreaFlags
+{
     /** Ability to walk (ground, grass, road) */
     AI_NAV_MESH_FLAGS_WALK      = 0x01,
     /** Ability to swim (water) */
@@ -116,7 +124,8 @@ enum EAINavMeshAreaFlags {
     AI_NAV_MESH_FLAGS_ALL       = 0xffff
 };
 
-enum EAINavMeshStraightFlags {
+enum EAINavMeshStraightFlags
+{
     /** The vertex is the start position in the path. */
     AI_NAV_MESH_STRAIGHTPATH_START = 0x01,
     /** The vertex is the end position in the path. */
@@ -125,7 +134,8 @@ enum EAINavMeshStraightFlags {
     AI_NAV_MESH_STRAIGHTPATH_OFFMESH_CONNECTION = 0x04
 };
 
-enum EAINavMeshStraightPathCrossing {
+enum EAINavMeshStraightPathCrossing
+{
     AI_NAV_MESH_STRAIGHTPATH_DEFAULT         = 0,
     /** Add a vertex at every polygon edge crossing where area changes */
     AI_NAV_MESH_STRAIGHTPATH_AREA_CROSSINGS  = 0x01,
@@ -133,7 +143,8 @@ enum EAINavMeshStraightPathCrossing {
     AI_NAV_MESH_STRAIGHTPATH_ALL_CROSSINGS   = 0x02,
 };
 
-struct SAINavMeshConnection {
+struct SAINavMeshConnection
+{
     /** Connection start position */
     Float3          StartPosition;
 
@@ -162,12 +173,14 @@ struct SAINavMeshConnection {
     }
 };
 
-enum EAINavigationAreaShape {
+enum EAINavigationAreaShape
+{
     AI_NAV_MESH_AREA_SHAPE_BOX,
     AI_NAV_MESH_AREA_SHAPE_CONVEX_VOLUME
 };
 
-struct SAINavigationArea {
+struct SAINavigationArea
+{
     enum { MAX_VERTS = 32 };
 
     /** Area ID (see EAINavMeshArea) */
@@ -186,7 +199,8 @@ struct SAINavigationArea {
     Float3              BoxMins;
     Float3              BoxMaxs;
 
-    void CalcBoundingBoxFromVerts( BvAxisAlignedBox & _BoundingBox ) const {
+    void CalcBoundingBoxFromVerts( BvAxisAlignedBox & _BoundingBox ) const
+    {
         if ( !NumConvexVolumeVerts ) {
             _BoundingBox.Mins = _BoundingBox.Maxs = Float3(0.0f);
             return;
@@ -206,7 +220,8 @@ struct SAINavigationArea {
         _BoundingBox.Maxs[1] = ConvexVolumeMaxY;
     }
 
-    void CalcBoundingBox( BvAxisAlignedBox & _BoundingBox ) const {
+    void CalcBoundingBox( BvAxisAlignedBox & _BoundingBox ) const
+    {
         if ( Shape == AI_NAV_MESH_AREA_SHAPE_BOX ) {
             _BoundingBox.Mins = BoxMins;
             _BoundingBox.Maxs = BoxMaxs;
@@ -216,12 +231,14 @@ struct SAINavigationArea {
     }
 };
 
-enum ENavMeshObstacleShape {
+enum ENavMeshObstacleShape
+{
     AI_NAV_MESH_OBSTACLE_BOX,
     AI_NAV_MESH_OBSTACLE_CYLINDER
 };
 
-class AAINavMeshObstacle {
+class AAINavMeshObstacle
+{
 public:
     ENavMeshObstacleShape Shape;
 
@@ -237,7 +254,8 @@ public:
     unsigned int ObstacleRef;
 };
 
-struct ANavQueryFilter {
+struct ANavQueryFilter
+{
     AN_FORBID_COPY( ANavQueryFilter )
 
     friend class AAINavigationMesh;
@@ -269,7 +287,8 @@ private:
     TUniqueRef< class ANavQueryFilterPrivate > Filter;
 };
 
-struct SAINavigationConfig {
+struct SAINavigationConfig
+{
     //unsigned int NavTrianglesPerChunk = 256;
 
     /** The walkable height */
@@ -330,8 +349,8 @@ class AAINavigationMesh
     AN_FORBID_COPY( AAINavigationMesh )
 
 public:
-    explicit AAINavigationMesh( AWorld * InOwnerWorld );
-    ~AAINavigationMesh();
+    AAINavigationMesh();
+    virtual ~AAINavigationMesh();
 
     /** Default query filter */
     ANavQueryFilter QueryFilter;
@@ -543,8 +562,6 @@ private:
 
     APhysicalBody * NavigationGeometryList;
     APhysicalBody * NavigationGeometryListTail;
-
-    AWorld * pOwnerWorld;
 
     //bool bNavigationDirty;
 

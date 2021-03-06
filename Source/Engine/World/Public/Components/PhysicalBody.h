@@ -80,7 +80,7 @@ class APhysicalBody : public ASceneComponent {
 
     friend struct SCollisionFilterCallback;
     friend class APhysicalBodyMotionState;
-    friend class APhysicsWorld;
+    friend class AWorldPhysics;
     friend class AAINavigationMesh;
 
 public:

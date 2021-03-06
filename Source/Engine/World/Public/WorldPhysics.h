@@ -140,13 +140,6 @@ struct SCollisionContact
     }
 };
 
-class IPhysicsWorldInterface
-{
-public:
-    virtual void OnPrePhysics( float _TimeStep ) {}
-    virtual void OnPostPhysics( float _TimeStep ) {}
-};
-
 struct SCollisionQueryResult
 {
     /** Colliding body */
@@ -167,12 +160,16 @@ struct SCollisionQueryResult
     }
 };
 
-class APhysicsWorld {
-    AN_FORBID_COPY( APhysicsWorld )
+class AWorldPhysics
+{
+    AN_FORBID_COPY( AWorldPhysics )
 
 public:
     /** Physics refresh rate */
     int PhysicsHertz = 60;
+
+    TCallback< void( float ) > PrePhysicsCallback;
+    TCallback< void( float ) > PostPhysicsCallback;
 
     /** Contact solver split impulse. Disabled by default for performance */
     bool bContactSolverSplitImpulse = false;
@@ -186,12 +183,8 @@ public:
 
     bool bDuringPhysicsUpdate = false;
 
-    struct btSoftBodyWorldInfo * SoftBodyWorldInfo;
-
-    class btDiscreteDynamicsWorld * DynamicsWorld;
-
-    explicit APhysicsWorld( IPhysicsWorldInterface * InOwnerWorld );
-    ~APhysicsWorld();
+    AWorldPhysics();
+    virtual ~AWorldPhysics();
 
     /** Trace collision bodies */
     bool Trace( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const;
@@ -246,6 +239,11 @@ public:
 
     void DrawDebug( ADebugRenderer * InRenderer );
 
+    // Internal
+    class btSoftRigidDynamicsWorld * GetInternal() const { return DynamicsWorld.GetObject(); }
+
+    struct btSoftBodyWorldInfo * GetSoftBodyWorldInfo() { return SoftBodyWorldInfo; }
+
 private:
     friend class AHitProxy;
 
@@ -274,16 +272,18 @@ private:
     static void OnPrePhysics( class btDynamicsWorld * _World, float _TimeStep );
     static void OnPostPhysics( class btDynamicsWorld * _World, float _TimeStep );
 
-    IPhysicsWorldInterface * pOwnerWorld;
-    class btBroadphaseInterface * BroadphaseInterface;
-    class btDefaultCollisionConfiguration * CollisionConfiguration;
-    class btCollisionDispatcher * CollisionDispatcher;
-    class btSequentialImpulseConstraintSolver * ConstraintSolver;
-    class btGhostPairCallback * GhostPairCallback;
+    TUniqueRef< class btSoftRigidDynamicsWorld > DynamicsWorld;
+    TUniqueRef< struct btDbvtBroadphase > BroadphaseInterface;
+    TUniqueRef< class btSoftBodyRigidBodyCollisionConfiguration > CollisionConfiguration;
+    TUniqueRef< class btCollisionDispatcher > CollisionDispatcher;
+    TUniqueRef< class btSequentialImpulseConstraintSolver > ConstraintSolver;
+    TUniqueRef< class btGhostPairCallback > GhostPairCallback;
+    struct btSoftBodyWorldInfo * SoftBodyWorldInfo;
     TPodArray< SCollisionContact > CollisionContacts[ 2 ];
     THash<> ContactHash[ 2 ];
     TPodArray< SContactPoint > ContactPoints;
     AHitProxy * PendingAddToWorldHead = nullptr;
     AHitProxy * PendingAddToWorldTail = nullptr;
     int FixedTickNumber = 0;
+    int CacheContactPoints = -1;
 };
