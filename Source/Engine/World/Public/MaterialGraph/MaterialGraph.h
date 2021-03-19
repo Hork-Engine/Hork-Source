@@ -634,7 +634,7 @@ public:
     MGInput * TextureSlot;
     MGInput * TexCoord;
     MGInput * DisplacementScale;
-    MGInput * SelfShadowing;
+    //MGInput * SelfShadowing;
     MGOutput * Result;
 
 protected:
@@ -808,22 +808,48 @@ class MGMaterialGraph : public MGNode {
     MG_CLASS( MGMaterialGraph, MGNode )
 
 public:
-    EMaterialType       MaterialType;
+    /** Material type (Unlit,baselight,pbr,etc) */
+    EMaterialType MaterialType;
+
+    /** Tessellation type */
     ETessellationMethod TessellationMethod = TESSELLATION_DISABLED;
-    EColorBlending      Blending = COLOR_BLENDING_DISABLED;
-    EParallaxTechnique  ParallaxTechnique = PARALLAX_TECHNIQUE_RPM;
-    EMaterialDepthHack  DepthHack = MATERIAL_DEPTH_HACK_NONE;
-    float               MotionBlurScale = 1.0f;
-    bool                bDepthTest = true; // Experimental
-    bool                bTranslucent = false;
-    bool                bTwoSided = false;
-    bool                bNoLightmap = false;
-    bool                bAllowScreenSpaceReflections = true;
-    bool                bAllowScreenAmbientOcclusion = true;
-    bool                bAllowShadowReceive = true;
-    bool                bDisplacementAffectShadow = true;
-    bool                bPerBoneMotionBlur = true;
-    bool                bUseVirtualTexture = false;
+
+    /** Blending mode (FIXME: only for UNLIT materials?) */
+    EColorBlending Blending = COLOR_BLENDING_DISABLED;
+
+    /** Parallax rendering technique */
+    EParallaxTechnique ParallaxTechnique = PARALLAX_TECHNIQUE_RPM;
+
+    /** Some materials require depth modification (e.g. first person weapon or skybox) */
+    EMaterialDepthHack DepthHack = MATERIAL_DEPTH_HACK_NONE;
+
+    float MotionBlurScale = 1.0f;
+
+    bool bDepthTest = true; // Experimental
+
+    /** Translusent materials with alpha test */
+    bool bTranslucent = false;
+
+    /** Disable backface culling */
+    bool bTwoSided = false;
+
+    bool bNoLightmap = false;
+
+    bool bAllowScreenSpaceReflections = true;
+
+    bool bAllowScreenAmbientOcclusion = true;
+
+    bool bAllowShadowReceive = true;
+
+    /** Use tessellation for shadow maps */
+    bool bDisplacementAffectShadow = true;
+
+    /** Apply fake shadows. Used with parallax technique */
+    bool bParallaxMappingSelfShadowing = true;
+
+    bool bPerBoneMotionBlur = true;
+
+    bool bUseVirtualTexture = false;
 
     //
     // Inputs

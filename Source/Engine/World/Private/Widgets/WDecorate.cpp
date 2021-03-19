@@ -116,6 +116,10 @@ void WTextDecorate::OnDrawEvent( ACanvas & _Canvas ) {
         pos.X = center - size.X * 0.5f;
     } else {
         pos.X = Offset.X;
+
+        if ( GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE ) {
+            pos.X = Math::Round( pos.X / GetOwner()->GetImageSize().X * ownerSize.X );
+        }
     }
 
     if ( VerticalAlignment == WIDGET_ALIGNMENT_TOP ) {
@@ -127,6 +131,10 @@ void WTextDecorate::OnDrawEvent( ACanvas & _Canvas ) {
         pos.Y = center - size.Y * 0.5f;
     } else {
         pos.Y = Offset.Y;
+
+        if ( GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE ) {
+            pos.Y = Math::Round( pos.Y / GetOwner()->GetImageSize().Y * ownerSize.Y );
+        }
     }
 
     // WIDGET_ALIGNMENT_STRETCH is not handled for text
@@ -293,6 +301,13 @@ void WImageDecorate::OnDrawEvent( ACanvas & _Canvas ) {
         size.Y = Texture->GetDimensionY();
     }
 
+    Float2 const & imageSize = GetOwner()->GetImageSize();
+    Float2 scale = ownerSize / imageSize;
+
+    if ( GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE ) {
+        size = (size * scale + 0.5f).Floor();
+    }
+
     if ( HorizontalAlignment == WIDGET_ALIGNMENT_STRETCH ) {
         pos.X = 0;
         size.X = ownerSize.X;
@@ -305,6 +320,10 @@ void WImageDecorate::OnDrawEvent( ACanvas & _Canvas ) {
         pos.X = center - size.X * 0.5f;
     } else {
         pos.X = Offset.X;
+
+        if ( GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE ) {
+            pos.X = Math::Round( pos.X * scale.X );
+        }
     }
 
     if ( VerticalAlignment == WIDGET_ALIGNMENT_STRETCH ) {
@@ -319,6 +338,10 @@ void WImageDecorate::OnDrawEvent( ACanvas & _Canvas ) {
         pos.Y = center - size.Y * 0.5f;
     } else {
         pos.Y = Offset.Y;
+
+        if ( GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE ) {
+            pos.Y = Math::Round( pos.Y * scale.Y );
+        }
     }
 
     pos += GetOwner()->GetDesktopPosition();

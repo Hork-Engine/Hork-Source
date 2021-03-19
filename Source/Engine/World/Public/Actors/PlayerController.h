@@ -32,7 +32,6 @@ SOFTWARE.
 
 #include "Controller.h"
 #include "HUD.h"
-#include <World/Public/CommandContext.h>
 #include <World/Public/AudioSystem.h>
 #include <World/Public/Widgets/WViewport.h>
 #include <World/Public/Terrain.h>

@@ -253,4 +253,3 @@ void main()
     FS_FragColor = BaseColor;
 #endif
 }
-

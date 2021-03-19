@@ -117,7 +117,7 @@ bool AResource::LoadFromPath( const char * _Path )
         _Path += 10;
 
         AMemoryStream f;
-        if ( !f.OpenRead( _Path, GetEmbeddedResources() ) ) {
+        if ( !f.OpenRead( _Path, GRuntime.GetEmbeddedResources() ) ) {
             //GLogger.Printf( "Failed to open /Embedded/%s\n", _Path );
             return false;
         }

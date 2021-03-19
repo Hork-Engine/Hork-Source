@@ -40,6 +40,7 @@ SOFTWARE.
 #include <Core/Public/BV/BvIntersect.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Runtime/Public/Runtime.h>
+#include <Runtime/Public/RuntimeVariable.h>
 #include "PrimitiveLinkPool.h"
 
 ARuntimeVariable com_DrawLevelAreaBounds( _CTS( "com_DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );

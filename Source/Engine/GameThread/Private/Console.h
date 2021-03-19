@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Core/Public/Utf8.h>
-#include <World/Public/CommandContext.h>
+#include <World/Public/Base/CommandContext.h>
 
 struct SKeyEvent;
 struct SCharEvent;

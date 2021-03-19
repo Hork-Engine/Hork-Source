@@ -108,6 +108,7 @@ bool AMaterial::LoadResource( IBinaryStream & Stream ) {
     Def.bAlphaMasking = Stream.ReadBool();
     Def.bShadowMapMasking = Stream.ReadBool();
     Def.bDisplacementAffectShadow = Stream.ReadBool();
+    //Def.bParallaxMappingSelfShadowing = Stream.ReadBool(); // TODO
     Def.bTranslucent = Stream.ReadBool();
     Def.bTwoSided = Stream.ReadBool();
     Def.NumUniformVectors = Stream.ReadUInt8();
@@ -167,6 +168,7 @@ bool WriteMaterial( AString const & _Path, SMaterialDef const * pDef ) {
     f.WriteBool( pDef->bAlphaMasking );
     f.WriteBool( pDef->bShadowMapMasking );
     f.WriteBool( pDef->bDisplacementAffectShadow );
+    //f.WriteBool( pDef->bParallaxMappingSelfShadowing ); // TODO
     f.WriteBool( pDef->bTranslucent );
     f.WriteBool( pDef->bTwoSided );
     f.WriteUInt8( pDef->NumUniformVectors );

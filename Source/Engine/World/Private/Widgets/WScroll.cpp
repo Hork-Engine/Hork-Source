@@ -88,14 +88,20 @@ void WScroll::UpdateMargin() {
     Float2 contentSize = Content ? Content->GetCurrentSize() : Float2(0.0f);
 
     Float2 viewSize = GetCurrentSize();
-    viewSize.X -= ScrollbarSize;
-    viewSize.Y -= ScrollbarSize;
+
+    if ( !bAutoScrollH ) {
+        viewSize.Y -= ScrollbarSize;
+    }
+    if ( !bAutoScrollV ) {
+        viewSize.X -= ScrollbarSize;
+    }
 
     Float4 newMargin(0.0f);
 
     if ( bAutoScrollH ) {
         if ( contentSize.X > viewSize.X ) {
             newMargin.W = ScrollbarSize;
+            viewSize.Y -= ScrollbarSize;
         }
     } else {
         newMargin.W = ScrollbarSize;
@@ -104,6 +110,12 @@ void WScroll::UpdateMargin() {
     if ( bAutoScrollV ) {
         if ( contentSize.Y > viewSize.Y ) {
             newMargin.Z = ScrollbarSize;
+            viewSize.X -= ScrollbarSize;
+            if ( bAutoScrollH ) {
+                if ( contentSize.X > viewSize.X ) {
+                    newMargin.W = ScrollbarSize;
+                }
+            }
         }
     } else {
         newMargin.Z = ScrollbarSize;

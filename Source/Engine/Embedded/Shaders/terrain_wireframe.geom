@@ -34,7 +34,7 @@ in gl_PerVertex
 {
     vec4 gl_Position;
 #ifdef TERRAIN_CLIP_BOUNDS
-    float gl_ClipDistance[];
+    float gl_ClipDistance[4];
 #endif
 } gl_in[];
 
@@ -42,7 +42,7 @@ out gl_PerVertex
 {
     vec4 gl_Position;
 #ifdef TERRAIN_CLIP_BOUNDS
-    float gl_ClipDistance[];
+    float gl_ClipDistance[4];
 #endif
 };
 

@@ -1083,11 +1083,15 @@ void AImmediateContextGLImpl::BindPipeline( IPipeline * _Pipeline, int _Subpass 
     // Set sampler state
     //
 
-    glBindSamplers( 0, CurrentPipeline->NumSamplerObjects, CurrentPipeline->SamplerObjects ); // 4.4 or GL_ARB_multi_bind
-
-    //for ( int i = 0 ; i < CurrentPipeline->NumSamplerObjects ; i++ ) {
-    //    glBindSampler( i, CurrentPipeline->SamplerObjects[i] ); // 3.2 or GL_ARB_sampler_objects
-    //}
+#if 1
+    if ( CurrentPipeline->NumSamplerObjects > 0 ) {
+        glBindSamplers( 0, CurrentPipeline->NumSamplerObjects, CurrentPipeline->SamplerObjects ); // 4.4 or GL_ARB_multi_bind
+    }
+#else
+    for ( int i = 0 ; i < CurrentPipeline->NumSamplerObjects ; i++ ) {
+        glBindSampler( i, CurrentPipeline->SamplerObjects[i] ); // 3.2 or GL_ARB_sampler_objects
+    }
+#endif
 }
 
 void AImmediateContextGLImpl::BindRenderPassSubPass( ARenderPassGLImpl const * _RenderPass, int _Subpass )

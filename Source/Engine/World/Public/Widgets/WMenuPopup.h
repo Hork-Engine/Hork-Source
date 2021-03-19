@@ -41,7 +41,7 @@ public:
 
     /** Add child widget */
     WMenuPopup & AddWidget( WWidget * _Widget ) {
-        Self->AddWidget( _Widget );
+        ContentWidget->AddWidget( _Widget );
         return *this;
     }
 
@@ -56,6 +56,24 @@ public:
         return *this;
     }
 
+    /** Add widget decoration */
+    WMenuPopup & AddDecorate( WDecorate * _Decorate ) {
+        Self->AddDecorate( _Decorate );
+        return *this;
+    }
+
+    /** Remove widget decoration */
+    WMenuPopup & RemoveDecorate( WDecorate * _Decorate ) {
+        Self->RemoveDecorate( _Decorate );
+        return *this;
+    }
+
+    /** Remove all widget decorations */
+    WMenuPopup & RemoveDecorates() {
+        Self->RemoveDecorates();
+        return *this;
+    }
+
     void SelectFirstItem();
     void SelectLastItem();
     void SelectNextItem();
@@ -63,12 +81,22 @@ public:
     void SelectNextSubMenu();
     void SelectPrevSubMenu();
 
+    /** Determines the padding of the client area within the widget */
+    void SetMargin( float _Left, float _Top, float _Right, float _Bottom );
+
+    /** Determines the padding of the client area within the widget */
+    void SetMargin( Float4 const & _Margin );
+
+    /** Vertical padding */
+    void SetVerticalPadding( float _Padding );
+
 protected:
     WMenuPopup();
     ~WMenuPopup();
 
 private:
     TRef< WWidget > Self;
+    TRef< WWidget > ContentWidget;
     //float CurWidth;
     //float CurHeight;
 };

@@ -45,7 +45,7 @@ WWidget::WWidget() {
     Size = Float2( 32, 32 );
     MinSize = Float2( 0.0f );
     MaxSize = Float2( 0.0f );
-    ImageSize = Float2( 0.0f );
+    ImageSize = Float2( 1920.0f, 1080.0f );
     ActualPosition = Float2( 0.0f );
     ActualSize = Float2( 0.0f );
     Margin = Float4(2,2,2,2);
@@ -1401,40 +1401,13 @@ float WWidget::CalcContentWidth() {
         }
     }
     else {
-        contentWidth = 0;
-
-        float offsetX = 0;
-
-        for ( WWidget * child : LayoutSlots ) {
-            if ( child->IsCollapsed() ) {
-                continue;
-            }
-
-            float w = child->CalcContentWidth();
-
-            float x;
-
-            switch ( Layout ) {
-            case WIDGET_LAYOUT_HORIZONTAL:
-            case WIDGET_LAYOUT_HORIZONTAL_WRAP:
-                x = offsetX;
-                offsetX += w + HorizontalPadding;
-                break;
-
-            default:
-                if ( child->HorizontalAlignment == WIDGET_ALIGNMENT_NONE ) {
-                    x = child->Position.X;
-                } else {
-                    x = 0;
-                }
-                break;
-            }
-
-            contentWidth = Math::Max( contentWidth, x + w );
-        }
+        contentWidth = CalcAutoWidth();        
     }
 
-    return contentWidth + Margin.X + Margin.Z;
+    contentWidth += Margin.X;
+    contentWidth += Margin.Z;
+
+    return contentWidth;
 }
 
 float WWidget::CalcContentHeight() {
@@ -1482,41 +1455,135 @@ float WWidget::CalcContentHeight() {
         }
     }
     else {
-        contentHeight = 0;
-
-        float offsetY = 0;
-        for ( WWidget * child : LayoutSlots ) {
-            if ( child->IsCollapsed() ) {
-                continue;
-            }
-
-            float h = child->CalcContentHeight();
-
-            float y;
-
-            switch ( Layout ) {
-            case WIDGET_LAYOUT_VERTICAL:
-            case WIDGET_LAYOUT_VERTICAL_WRAP:
-                y = offsetY;
-                offsetY += h + VerticalPadding;
-                break;
-
-            default:
-                if ( child->VerticalAlignment == WIDGET_ALIGNMENT_NONE ) {
-                    y = child->Position.Y;
-                } else {
-                    y = 0;
-                }
-                break;
-            }
-
-            contentHeight = Math::Max( contentHeight, y + h );
-        }
+        contentHeight = CalcAutoHeight();
     }
 
-    return contentHeight + Margin.Y + Margin.W;
+    contentHeight += Margin.Y;
+    contentHeight += Margin.W;
+
+    return contentHeight;
 }
 
+float WWidget::CalcAutoWidth() {
+    float contentWidth = 0;
+
+    float offsetX = 0;
+
+    for ( WWidget * child : LayoutSlots ) {
+        if ( child->IsCollapsed() ) {
+            continue;
+        }
+
+        // Looks like child is a scroll widget
+        if ( child->HorizontalAlignment == WIDGET_ALIGNMENT_STRETCH ) {
+            // Let's upcast it
+            WScroll * scroll = Upcast< WScroll >( child );
+            if ( scroll ) {
+                WWidget * scrollContent = scroll->GetContentWidget();
+                if ( scrollContent ) {
+                    if ( scrollContent->bAutoWidth ) {
+                        contentWidth = scrollContent->CalcAutoWidth();
+                    }
+                    else {
+                        contentWidth = scrollContent->GetCurrentSize().X;
+                    }
+                    contentWidth += scrollContent->Margin.X;
+                    contentWidth += scrollContent->Margin.Z;
+                }
+                else {
+                    contentWidth = 0;
+                }
+                contentWidth += scroll->Margin.X;
+                contentWidth += scroll->Margin.Z;
+                //contentWidth += scroll->GetScrollbarSize();
+                return contentWidth;
+            }
+        }
+
+        float w = child->CalcContentWidth();
+
+        float x;
+
+        switch ( Layout ) {
+        case WIDGET_LAYOUT_HORIZONTAL:
+        case WIDGET_LAYOUT_HORIZONTAL_WRAP:
+            x = offsetX;
+            offsetX += w + HorizontalPadding;
+            break;
+
+        default:
+            if ( child->HorizontalAlignment == WIDGET_ALIGNMENT_NONE ) {
+                x = child->Position.X;
+            } else {
+                x = 0;
+            }
+            break;
+        }
+
+        contentWidth = Math::Max( contentWidth, x + w );
+    }
+    return contentWidth;
+}
+
+float WWidget::CalcAutoHeight() {
+    float contentHeight = 0;
+
+    float offsetY = 0;
+    for ( WWidget * child : LayoutSlots ) {
+        if ( child->IsCollapsed() ) {
+            continue;
+        }
+
+        // Looks like child is a scroll widget
+        if ( child->VerticalAlignment == WIDGET_ALIGNMENT_STRETCH ) {
+            // Let's upcast it
+            WScroll * scroll = Upcast< WScroll >( child );
+            if ( scroll ) {
+                WWidget * scrollContent = scroll->GetContentWidget();
+                if ( scrollContent ) {
+                    if ( scrollContent->bAutoHeight ) {
+                        contentHeight = scrollContent->CalcAutoHeight();
+                    }
+                    else {
+                        contentHeight = scrollContent->GetCurrentSize().Y;
+                    }
+                    contentHeight += scrollContent->Margin.Y;
+                    contentHeight += scrollContent->Margin.W;
+                }
+                else {
+                    contentHeight = 0;
+                }
+                contentHeight += scroll->Margin.Y;
+                contentHeight += scroll->Margin.W;
+                //contentHeight += scroll->GetScrollbarSize();
+                return contentHeight;
+            }
+        }
+
+        float h = child->CalcContentHeight();
+
+        float y;
+
+        switch ( Layout ) {
+        case WIDGET_LAYOUT_VERTICAL:
+        case WIDGET_LAYOUT_VERTICAL_WRAP:
+            y = offsetY;
+            offsetY += h + VerticalPadding;
+            break;
+
+        default:
+            if ( child->VerticalAlignment == WIDGET_ALIGNMENT_NONE ) {
+                y = child->Position.Y;
+            } else {
+                y = 0;
+            }
+            break;
+        }
+
+        contentHeight = Math::Max( contentHeight, y + h );
+    }
+    return contentHeight;
+}
 
 
 

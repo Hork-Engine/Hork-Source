@@ -95,6 +95,7 @@ class WTextButton : public WButton {
 
 public:
     WTextButton & SetText( const char * _Text );
+    WTextButton & SetText( AString const & _Text );
     WTextButton & SetColor( AColor4 const & _Color );
     WTextButton & SetHoverColor( AColor4 const & _Color );
     WTextButton & SetPressedColor( AColor4 const & _Color );
@@ -104,6 +105,7 @@ public:
     WTextButton & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
     WTextButton & SetBorderThickness( float _Thickness );
     WTextButton & SetTextAlign( EWidgetButtonTextAlign _TextAlign );
+    WTextButton & SetFont( AFont * _Font );
 
     AString const & GetText() const { return Text; }
 
@@ -124,6 +126,7 @@ private:
     AString Text;
     float Rounding;
     float BorderThickness;
+    TRef< AFont > Font;
 };
 
 class WImageButton : public WButton {

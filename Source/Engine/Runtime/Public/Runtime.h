@@ -58,7 +58,7 @@ struct SVideoMode
     /** Video mode framebuffer width (for Retina displays, read only) */
     int FramebufferHeight;
     /** Physical monitor (read only) */
-    int DisplayIndex;
+    int DisplayId;
     /** Display refresh rate (read only) */
     int RefreshRate;
     /** Display dots per inch (read only) */
@@ -79,7 +79,64 @@ struct SVideoMode
     char Title[128];
 };
 
-//struct SJoystick {
+enum EDisplayOrient
+{
+    /** The display orientation can't be determined */
+    DISPLAY_ORIENTATION_UNKNOWN,
+    /** The display is in landscape mode, with the right side up, relative to portrait mode */
+    DISPLAY_ORIENTATION_LANDSCAPE,
+    /** The display is in landscape mode, with the left side up, relative to portrait mode */
+    DISPLAY_ORIENTATION_LANDSCAPE_FLIPPED,
+    /** The display is in portrait mode */
+    DISPLAY_ORIENTATION_PORTRAIT,
+    /** The display is in portrait mode, upside down */
+    DISPLAY_ORIENTATION_PORTRAIT_FLIPPED
+};
+
+struct SDisplayMode
+{
+    /** Width, in screen coordinates */
+    int Width;
+    /** Height, in screen coordinates */
+    int Height;
+    /** Refresh rate */
+    int RefreshRate;
+};
+
+struct SDisplayInfo
+{
+    /** Internal identifier */
+    int Id;
+    /** Display name */
+    const char * Name;
+    /** Display bounds */
+    int DisplayX;
+    /** Display bounds */
+    int DisplayY;
+    /** Display bounds */
+    int DisplayW;
+    /** Display bounds */
+    int DisplayH;
+    /** Display usable bounds */
+    int DisplayUsableX;
+    /** Display usable bounds */
+    int DisplayUsableY;
+    /** Display usable bounds */
+    int DisplayUsableW;
+    /** Display usable bounds */
+    int DisplayUsableH;
+    /** Display orientation */
+    EDisplayOrient Orientation;
+    /** Diagonal DPI */
+    float ddpi;
+    /** Horizontal DPI */
+    float hdpi;
+    /** Vertical DPI */
+    float vdpi;
+};
+
+//struct SJoystick
+//{
 //    int NumAxes;
 //    int NumButtons;
 //    bool bGamePad;
@@ -88,7 +145,8 @@ struct SVideoMode
 //};
 
 /** CPU features */
-struct SCPUInfo {
+struct SCPUInfo
+{
     bool OS_AVX : 1;
     bool OS_AVX512 : 1;
     bool OS_64bit : 1;
@@ -137,48 +195,56 @@ struct SCPUInfo {
     bool PREFETCHWT1 : 1;
 };
 
-enum EInputAction {
+enum EInputAction
+{
     IA_RELEASE,
     IA_PRESS,
     IA_REPEAT
 };
 
-struct SKeyEvent {
+struct SKeyEvent
+{
     int Key;
     int Scancode;       // Not used, reserved for future
     int ModMask;
     int Action;         // EInputAction
 };
 
-struct SMouseButtonEvent {
+struct SMouseButtonEvent
+{
     int Button;
     int ModMask;
     int Action;         // EInputAction
 };
 
-struct SMouseWheelEvent {
+struct SMouseWheelEvent
+{
     double WheelX;
     double WheelY;
 };
 
-struct SMouseMoveEvent {
+struct SMouseMoveEvent
+{
     float X;
     float Y;
 };
 
-struct SJoystickAxisEvent {
+struct SJoystickAxisEvent
+{
     int Joystick;
     int Axis;
     float Value;
 };
 
-struct SJoystickButtonEvent {
+struct SJoystickButtonEvent
+{
     int Joystick;
     int Button;
     int Action;         // EInputAction
 };
 
-//struct SJoystickStateEvent {
+//struct SJoystickStateEvent
+//{
 //    int Joystick;
 //    int NumAxes;
 //    int NumButtons;
@@ -186,7 +252,8 @@ struct SJoystickButtonEvent {
 //    bool bConnected;
 //};
 
-struct SCharEvent {
+struct SCharEvent
+{
     SWideChar UnicodeCharacter;
     int ModMask;
 };
@@ -344,6 +411,24 @@ public:
 
     void ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem );
 
+    /** Get list of displays */
+    void GetDisplays( TPodArray< SDisplayInfo > & Displays );
+
+    /** Get list of display modes */
+    void GetDisplayModes( SDisplayInfo const & Display, TPodArray< SDisplayMode > & Modes );
+
+    /** Get information about the desktop display mode */
+    void GetDesktopDisplayMode( SDisplayInfo const & Display, SDisplayMode & Mode );
+
+    /** Get information about the current display mode */
+    void GetCurrentDisplayMode( SDisplayInfo const & Display, SDisplayMode & Mode );
+
+    /** Get the closest match to the requested display mode */
+    bool GetClosestDisplayMode( SDisplayInfo const & Display, int Width, int Height, int RefreshRate, SDisplayMode & Mode );
+
+    /** Zip archive of embedded content */
+    AArchive const & GetEmbeddedResources();
+
 private:
     int             NumArguments;
     char **         Arguments;
@@ -423,5 +508,3 @@ extern ARuntime & GRuntime;
 extern AAsyncJobManager GAsyncJobManager;
 extern AAsyncJobList * GRenderFrontendJobList;
 extern AAsyncJobList * GRenderBackendJobList;
-
-AArchive const & GetEmbeddedResources();

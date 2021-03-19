@@ -623,7 +623,7 @@ static bool GetShaderSource( const char * FileName, AString & Source )
 {
     if ( r_EmbeddedShaders ) {
         AMemoryStream f;
-        if ( !f.OpenRead( AString("Shaders/") + FileName, GetEmbeddedResources() ) ) {
+        if ( !f.OpenRead( AString("Shaders/") + FileName, GRuntime.GetEmbeddedResources() ) ) {
             return false;
         }
         Source.FromFile( f );
@@ -713,6 +713,9 @@ void CreateShader( RenderCore::SHADER_TYPE _ShaderType, TPodArray< const char * 
         break;
     case RenderCore::VENDOR_INTEL:
         predefines += "#define INTEL\n";
+        break;
+    default:
+        // skip "not handled enumeration" warning
         break;
     }
 

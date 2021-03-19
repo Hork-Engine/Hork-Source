@@ -30,14 +30,44 @@ SOFTWARE.
 
 #pragma once
 
-#include "BaseObject.h"
+#include "CommandContext.h"
+
+enum ECursorMode
+{
+    CURSOR_MODE_AUTO,
+    CURSOR_MODE_FORCE_ENABLED,
+    CURSOR_MODE_FORCE_DISABLED
+};
 
 class IGameModule : public ABaseObject
 {
     AN_CLASS( IGameModule, ABaseObject )
 
 public:
+    /** Quit when user press ESCAPE */
+    bool bQuitOnEscape = true;
+
+    /** Toggle fullscreen on ALT+ENTER */
+    bool bToggleFullscreenAltEnter = true;
+
+    /** Allow to drop down the console */
+    bool bAllowConsole = true;
+
+    ECursorMode CursorMode = CURSOR_MODE_AUTO;
+
+    ACommandContext CommandContext;
+
     IGameModule();
 
     virtual void OnGameClose();
+
+    /** Add global console command */
+    void AddCommand( const char * _Name, TCallback< void( ARuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment = "" );
+
+    /** Remove global console command */
+    void RemoveCommand( const char * _Name );
+
+private:
+    void Quit( ARuntimeCommandProcessor const & _Proc );
+    void RebuildMaterials( ARuntimeCommandProcessor const & _Proc );
 };

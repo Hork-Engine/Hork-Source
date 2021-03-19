@@ -29,15 +29,38 @@ SOFTWARE.
 */
 
 #include <World/Public/Base/GameModuleInterface.h>
+#include <World/Public/Resource/Material.h>
 #include <Runtime/Public/Runtime.h>
 
 AN_CLASS_META( IGameModule )
 
 IGameModule::IGameModule()
 {
+    AddCommand( "quit", { this, &IGameModule::Quit }, "Quit from application" );
+    AddCommand( "RebuildMaterials", { this, &IGameModule::RebuildMaterials }, "Rebuild materials" );
 }
 
 void IGameModule::OnGameClose()
 {
     GRuntime.PostTerminateEvent();
+}
+
+void IGameModule::AddCommand( const char * _Name, TCallback< void( ARuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment )
+{
+    CommandContext.AddCommand( _Name, _Callback, _Comment );
+}
+
+void IGameModule::RemoveCommand( const char * _Name )
+{
+    CommandContext.RemoveCommand( _Name );
+}
+
+void IGameModule::Quit( ARuntimeCommandProcessor const & _Proc )
+{
+    GRuntime.PostTerminateEvent();
+}
+
+void IGameModule::RebuildMaterials( ARuntimeCommandProcessor const & _Proc )
+{
+    AMaterial::RebuildMaterials();
 }

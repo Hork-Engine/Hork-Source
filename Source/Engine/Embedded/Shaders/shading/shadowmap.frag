@@ -120,22 +120,45 @@ float PCSS_Shadow( sampler2DArray _ShadowMap, sampler2DArrayShadow _ShadowMapSha
 #endif
 
 float PCF_3x3( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
-    return ( textureOffset( _ShadowMap, _TexCoord, ivec2(-1,-1) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0,-1) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1,-1) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 0) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 0) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 0) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 1) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 1) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 1) ) ) / 9.0;
+#ifdef ATI
+    const float invSize = 1.0 / textureSize(_ShadowMap,0).x; // NOTE: shadow maps has equal width and height
+
+    return ( texture( _ShadowMap, _TexCoord + vec4(-invSize,-invSize, 0, 0 ) )
+           + texture( _ShadowMap, _TexCoord + vec4( 0,      -invSize, 0, 0 ) )
+           + texture( _ShadowMap, _TexCoord + vec4( invSize,-invSize, 0, 0 ) )
+           + texture( _ShadowMap, _TexCoord + vec4(-invSize,       0, 0, 0 ) )
+           + texture( _ShadowMap, _TexCoord + vec4( 0,             0, 0, 0 ) )
+           + texture( _ShadowMap, _TexCoord + vec4( invSize,       0, 0, 0 ) )
+           + texture( _ShadowMap, _TexCoord + vec4(-invSize, invSize, 0, 0 ) )
+           + texture( _ShadowMap, _TexCoord + vec4( 0,       invSize, 0, 0 ) )
+           + texture( _ShadowMap, _TexCoord + vec4( invSize, invSize, 0, 0 ) ) ) / 9.0;
+#else
+    return ( textureOffset( _ShadowMap, _TexCoord, ivec2(-1,-1 ) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0,-1 ) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1,-1 ) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 0 ) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 0 ) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 0 ) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 1 ) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 1 ) )
+           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 1 ) ) ) / 9.0;
+#endif
 }
 
 float PCF_5x5( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
+#ifdef ATI
+    const float invSize = 1.0 / textureSize(_ShadowMap,0).x; // NOTE: shadow maps has equal width and height
+
+    float Shadow = 0;
+    for ( float i = -2 ; i <= 2 ; i++ )
+        for ( float j = -2 ; j <= 2 ; j++ )
+            Shadow += texture( _ShadowMap, _TexCoord + vec4(i,j,0,0)*invSize );
+#else
     float Shadow = 0;
     for ( int i = -2 ; i <= 2 ; i++ )
         for ( int j = -2 ; j <= 2 ; j++ )
-            Shadow += textureOffset( _ShadowMap, _TexCoord, ivec2(i,j) );
+            Shadow += textureOffset( _ShadowMap, _TexCoord, ivec2( i, j ) );
+#endif
     return Shadow * (1.0f/25.0f);
 }
 

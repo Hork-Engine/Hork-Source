@@ -64,7 +64,7 @@ public:
     AString SourceCode;
     int MaxTextureSlot;
     int MaxUniformAddress;
-    bool bParallaxSampler;
+    int ParallaxSampler;
     bool bHasVertexDeform;
     bool bHasDisplacement;
     bool bHasAlphaMask;
@@ -78,7 +78,7 @@ public:
         Stage = _Stage;
         MaxTextureSlot = -1;
         MaxUniformAddress = -1;
-        bParallaxSampler = false;
+        ParallaxSampler = -1;
         bHasVertexDeform = false;
         bHasDisplacement = false;
         bHasAlphaMask = false;
@@ -2008,7 +2008,7 @@ MGParallaxMapSampler::MGParallaxMapSampler() : Super( "Parallax Map Sampler" ) {
     TextureSlot = AddInput( "TextureSlot" );
     TexCoord = AddInput( "TexCoord" );
     DisplacementScale = AddInput( "DisplacementScale" );
-    SelfShadowing = AddInput( "SelfShadowing" );
+    //SelfShadowing = AddInput( "SelfShadowing" );
     Result = AddOutput( "Result", AT_Float2 );
 }
 
@@ -2042,21 +2042,21 @@ void MGParallaxMapSampler::Compute( AMaterialBuildContext & _Context ) {
                             displacementScale = "0.05";
                         }
 
-                        AString selfShadowing;
-                        MGOutput * selfShadowingCon = SelfShadowing->GetConnection();
-                        if ( selfShadowingCon && SelfShadowing->ConnectedNode()->Build( _Context ) ) {
-                            selfShadowing = MakeVectorCast( selfShadowingCon->Expression, selfShadowingCon->Type, AT_Bool1 );
-                        } else {
-                            selfShadowing = MakeEmptyVector( AT_Bool1 );
-                        }
+                        //AString selfShadowing;
+                        //MGOutput * selfShadowingCon = SelfShadowing->GetConnection();
+                        //if ( selfShadowingCon && SelfShadowing->ConnectedNode()->Build( _Context ) ) {
+                        //    selfShadowing = MakeVectorCast( selfShadowingCon->Expression, selfShadowingCon->Type, AT_Bool1 );
+                        //} else {
+                        //    selfShadowing = MakeEmptyVector( AT_Bool1 );
+                        //}
 
                         Result->Expression = _Context.GenerateVariableName();
                         _Context.SourceCode += "const vec2 " + Result->Expression +
-                            " = ParallaxMapping( " + sampler + ", " + texCoord + ", " + displacementScale + ", " + selfShadowing + " );\n";
+                            " = ParallaxMapping( " + texCoord + ", " + displacementScale + " );\n";
 
                         bValid = true;
 
-                        _Context.bParallaxSampler = true;
+                        _Context.ParallaxSampler = slotIndex;
                     }
                 }
             }
@@ -3022,6 +3022,7 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
     pDef->RenderingPriority = RENDERING_PRIORITY_DEFAULT;
     pDef->bDepthTest_EXPERIMENTAL = InGraph->bDepthTest;
     pDef->bDisplacementAffectShadow = InGraph->bDisplacementAffectShadow;
+    //pDef->bParallaxMappingSelfShadowing = InGraph->bParallaxMappingSelfShadowing;
     pDef->bTranslucent = InGraph->bTranslucent;
     pDef->bTwoSided = InGraph->bTwoSided;
     pDef->bAlphaMasking = false;
@@ -3100,6 +3101,11 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
     if ( InGraph->bDisplacementAffectShadow ) {
         predefines += "#define DISPLACEMENT_AFFECT_SHADOW\n";
     }
+
+    if ( InGraph->bParallaxMappingSelfShadowing ) {
+        predefines += "#define PARALLAX_SELF_SHADOW\n";
+    }
+
     if ( InGraph->bPerBoneMotionBlur ) {
         predefines += "#define PER_BONE_MOTION_BLUR\n";
     }
@@ -3295,7 +3301,7 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
 
         predefines += "#define COLOR_PASS_TEXTURE_LIGHTMAP " + Math::ToString( pDef->LightmapSlot ) + "\n";
 
-        if ( lightCtx.bParallaxSampler ) {
+        if ( lightCtx.ParallaxSampler != -1 ) {
             switch ( InGraph->ParallaxTechnique ) {
             case PARALLAX_TECHNIQUE_POM:
                 predefines += "#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_POM\n";
@@ -3311,6 +3317,8 @@ void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
                 AN_ASSERT( 0 );
                 break;
             }
+
+            predefines += "#define PARALLAX_SAMPLER tslot_" + Math::ToString( lightCtx.ParallaxSampler ) + "\n";
         } else {
             predefines += "#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_DISABLED\n";
         }

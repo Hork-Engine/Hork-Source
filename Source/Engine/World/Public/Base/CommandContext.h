@@ -30,9 +30,10 @@ SOFTWARE.
 
 #pragma once
 
+#include "BaseObject.h"
+
 #include <Runtime/Public/RuntimeCommandProcessor.h>
 #include <Runtime/Public/RuntimeVariable.h>
-#include <World/Public/Base/BaseObject.h>
 
 class ACommandContext : public IRuntimeCommandContext {
     AN_FORBID_COPY( ACommandContext )

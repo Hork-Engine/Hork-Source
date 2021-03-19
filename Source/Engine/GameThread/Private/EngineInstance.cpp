@@ -65,8 +65,6 @@ static ARuntimeVariable com_ShowFPS( _CTS( "com_ShowFPS" ), _CTS( "0" ) );
 
 static AConsole Console;
 
-AN_CLASS_META( AEngineCommands )
-
 AEngineInstance * GEngine = nullptr;
 
 IEngineInterface * CreateEngineInstance()
@@ -151,32 +149,6 @@ static IGameModule * CreateGameModule( AClassMeta const * _Meta )
     return static_cast< IGameModule * >(_Meta->CreateInstance());
 }
 
-AEngineCommands::AEngineCommands()
-{
-    CommandContext.AddCommand( "quit", { this, &AEngineCommands::Quit }, "Quit from application" );
-    CommandContext.AddCommand( "RebuildMaterials", { this, &AEngineCommands::RebuildMaterials }, "Rebuild materials" );
-}
-
-void AEngineCommands::Quit( ARuntimeCommandProcessor const & _Proc )
-{
-    GRuntime.PostTerminateEvent();
-}
-
-void AEngineCommands::RebuildMaterials( ARuntimeCommandProcessor const & _Proc )
-{
-    AMaterial::RebuildMaterials();
-}
-
-void AEngineInstance::AddCommand( const char * _Name, TCallback< void( ARuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment )
-{
-    EngineCmd->CommandContext.AddCommand( _Name, _Callback, _Comment );
-}
-
-void AEngineInstance::RemoveCommand( const char * _Name )
-{
-    EngineCmd->CommandContext.RemoveCommand( _Name );
-}
-
 void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
 {
     Console.ReadStoryLines();
@@ -212,8 +184,6 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     AFont::SetGlyphRanges( GLYPH_RANGE_CYRILLIC );
 
     Canvas.Initialize();
-
-    EngineCmd = CreateInstanceOf< AEngineCommands >();
 
     GameModule = CreateGameModule( _EntryDecl.ModuleClass );
     GameModule->AddRef();
@@ -254,7 +224,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
         AGarbageCollector::DeallocateObjects();
 
         // Execute console commands
-        CommandProcessor.Execute( EngineCmd->CommandContext );
+        CommandProcessor.Execute( GameModule->CommandContext );
 
         // Tick worlds
         AWorld::UpdateWorlds( FrameDurationInSeconds );
@@ -299,8 +269,6 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     ImguiContext->RemoveRef();
     ImguiContext = nullptr;
 #endif
-
-    EngineCmd.Reset();
 
     Canvas.Deinitialize();
 
@@ -420,12 +388,12 @@ void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp )
         return;
     }
 
-    if ( bQuitOnEscape && _Event.Action == IA_PRESS && _Event.Key == KEY_ESCAPE ) {
+    if ( GameModule->bQuitOnEscape && _Event.Action == IA_PRESS && _Event.Key == KEY_ESCAPE ) {
         GameModule->OnGameClose();
     }
 
     // Check Alt+Enter to toggle fullscreen/windowed mode
-    if ( bToggleFullscreenAltEnter ) {
+    if ( GameModule->bToggleFullscreenAltEnter ) {
         if ( _Event.Action == IA_PRESS && _Event.Key == KEY_ENTER && ( HAS_MODIFIER( _Event.ModMask, KMOD_ALT ) ) ) {
             SVideoMode videoMode = GRuntime.GetVideoMode();
             videoMode.bFullscreen = !videoMode.bFullscreen;
@@ -439,8 +407,8 @@ void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp )
 
     DeveloperKeys( _Event );
 
-    if ( Console.IsActive() || bAllowConsole ) {
-        Console.KeyEvent( _Event, EngineCmd->CommandContext, CommandProcessor );
+    if ( Console.IsActive() || GameModule->bAllowConsole ) {
+        Console.KeyEvent( _Event, GameModule->CommandContext, CommandProcessor );
 
         if ( !Console.IsActive() && _Event.Key == KEY_GRAVE_ACCENT ) {
             // Console just closed
@@ -617,7 +585,7 @@ void AEngineInstance::UpdateInput()
 {
     SVideoMode const & videoMode = GRuntime.GetVideoMode();
 
-    switch ( CursorMode ) {
+    switch ( GameModule->CursorMode ) {
     case CURSOR_MODE_AUTO:
         if ( !videoMode.bFullscreen && Console.IsActive() ) {
             GRuntime.SetCursorEnabled( true );

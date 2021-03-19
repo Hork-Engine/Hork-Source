@@ -161,12 +161,18 @@ WTextButton::WTextButton() {
     RoundingCorners = CORNER_ROUND_ALL;
     BorderThickness = 1;
     TextAlign = WIDGET_BUTTON_TEXT_ALIGN_CENTER;
+    Font = ACanvas::GetDefaultFont();
 }
 
 WTextButton::~WTextButton() {
 }
 
 WTextButton & WTextButton::SetText( const char * _Text ) {
+    Text = _Text;
+    return *this;
+}
+
+WTextButton & WTextButton::SetText( AString const & _Text ) {
     Text = _Text;
     return *this;
 }
@@ -216,6 +222,11 @@ WTextButton & WTextButton::SetTextAlign( EWidgetButtonTextAlign _TextAlign ) {
     return *this;
 }
 
+WTextButton & WTextButton::SetFont( AFont * _Font ) {
+    Font = _Font ? _Font : ACanvas::GetDefaultFont();
+    return *this;
+}
+
 void WTextButton::OnDrawEvent( ACanvas & _Canvas ) {
     AColor4 bgColor;
 
@@ -238,8 +249,6 @@ void WTextButton::OnDrawEvent( ACanvas & _Canvas ) {
 
     GetDesktopRect( mins, maxs, true );
 
-    AFont * font = ACanvas::GetDefaultFont();
-
     float width = GetAvailableWidth();
     float height = GetAvailableHeight();
 
@@ -248,7 +257,7 @@ void WTextButton::OnDrawEvent( ACanvas & _Canvas ) {
         _Canvas.DrawRect( mins, maxs, BorderColor, Rounding, RoundingCorners, BorderThickness );
     }
 
-    Float2 size = font->CalcTextSizeA( font->GetFontSize(), width, 0, Text.Begin(), Text.End() );
+    Float2 size = Font->CalcTextSizeA( Font->GetFontSize(), width, 0, Text.Begin(), Text.End() );
 
     Float2 pos = mins;
     pos.Y += (height - size.Y) * 0.5f;
@@ -271,7 +280,9 @@ void WTextButton::OnDrawEvent( ACanvas & _Canvas ) {
         }
     }
 
+    _Canvas.PushFont( Font );
     _Canvas.DrawTextUTF8( pos, TextColor, Text.Begin(), Text.End() );
+    _Canvas.PopFont();
 }
 
 

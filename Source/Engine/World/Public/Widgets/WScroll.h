@@ -91,6 +91,10 @@ public:
 
     WWidget * GetContentWidget();
 
+    float GetScrollbarSize() const {
+        return ScrollbarSize;
+    }
+
     void ScrollHome();
 
     void ScrollEnd();

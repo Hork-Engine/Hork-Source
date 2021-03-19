@@ -32,7 +32,6 @@ SOFTWARE.
 
 #include <Runtime/Public/EngineInterface.h>
 #include <Runtime/Public/RuntimeCommandProcessor.h>
-#include <World/Public/CommandContext.h>
 #include <World/Public/Base/GameModuleInterface.h>
 #include <World/Public/Resource/FontAtlas.h>
 #include <World/Public/Widgets/WDesktop.h>
@@ -40,40 +39,14 @@ SOFTWARE.
 #include <World/Public/Render/RenderFrontend.h>
 #include <Renderer/RenderBackend.h>
 
-class AEngineCommands;
-
-enum ECursorMode
-{
-    CURSOR_MODE_AUTO,
-    CURSOR_MODE_FORCE_ENABLED,
-    CURSOR_MODE_FORCE_DISABLED
-};
-
 class AEngineInstance : public IEngineInterface
 {
     AN_FORBID_COPY( AEngineInstance )
 
 public:
-    /** Quit when user press ESCAPE */
-    bool bQuitOnEscape = true;
-
-    /** Toggle fullscreen on ALT+ENTER */
-    bool bToggleFullscreenAltEnter = true;
-
-    /** Allow to drop down the console */
-    bool bAllowConsole = true;
-
-    ECursorMode CursorMode = CURSOR_MODE_AUTO;
-
     ACanvas Canvas;
 
     AEngineInstance();
-
-    /** Add global console command */
-    void AddCommand( const char * _Name, TCallback< void( ARuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment = "" );
-
-    /** Remove global console command */
-    void RemoveCommand( const char * _Name );
 
     /** Helper. Create a new world */
     AWorld * CreateWorld() { return AWorld::CreateWorld(); }
@@ -95,9 +68,6 @@ public:
 
     /** Map coordinate from monitor space to window space */
     void UnmapWindowCoordinate( float & InOutX, float & InOutY ) const;
-
-    /** Get game module */
-    IGameModule * GetGameModule() { return GameModule; }
 
     /** Set hud desktop */
     void SetDesktop( WDesktop * _Desktop );
@@ -176,8 +146,6 @@ private:
 
     ARuntimeCommandProcessor CommandProcessor;
 
-    TRef< AEngineCommands > EngineCmd;
-
     TRef< ARenderFrontend > Renderer;
     TRef< ARenderBackend > RenderBackend;
 
@@ -186,20 +154,6 @@ private:
     TUniqueRef< AVSD > Vsd;
 
     bool bAllowInputEvents = false;
-};
-
-class AEngineCommands : public ABaseObject
-{
-    AN_CLASS( AEngineCommands, ABaseObject )
-
-public:
-    ACommandContext CommandContext;
-
-    void Quit( ARuntimeCommandProcessor const & _Proc );
-    void RebuildMaterials( ARuntimeCommandProcessor const & _Proc );
-
-public:
-    AEngineCommands();
 };
 
 extern AEngineInstance * GEngine;

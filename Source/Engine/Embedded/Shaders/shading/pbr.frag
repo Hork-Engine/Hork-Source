@@ -60,7 +60,7 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
     aotc.y = 1.0 - aotc.y;
     AO *= textureLod( AOLookup, aotc, 0.0 ).x;
 #endif
-    
+
     // Calc fresnel
     const vec3 F = FresnelSchlick_Roughness( F0, NdV, Roughness );
     //const vec3 F = InNormalizedScreenCoord.x > 0.5 ? FresnelSchlick_Roughness( F0, NdV, Roughness )
@@ -88,11 +88,11 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
     //const float MipIndex = InNormalizedScreenCoord.x > 0.5 ? Roughness * ENV_MAP_MAX_LOD
     //                                                       : Roughness * Roughness * ENV_MAP_MAX_LOD;
     
-    samplerCubeArray IrradianceMap = samplerCubeArray(IrradianceMapSampler); // TODO: Stop using bindless
-    samplerCubeArray PrefilteredMap = samplerCubeArray(PrefilteredMapSampler); // TODO: Stop using bindless
-    
     vec3 Irradiance = vec3( 0.0 );
     vec3 PrefilteredColor = vec3( 0.0 );
+#if 0
+    samplerCubeArray IrradianceMap = samplerCubeArray(IrradianceMapSampler); // TODO: Stop using bindless
+    samplerCubeArray PrefilteredMap = samplerCubeArray(PrefilteredMapSampler); // TODO: Stop using bindless
     
     float MinDist = 9999;
     uint NearestProbe = 9999;
@@ -129,8 +129,9 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
         // Gather prefiltered maps from cubemaps
         PrefilteredColor += textureLod( PrefilteredMap, vec4( ReflectionVector, GlobalIrradianceAndReflection.y ), MipIndex ).rgb;   
     }
-    
-    //Irradiance += vec3(0.01); // just for test
+#else
+    Irradiance += vec3(0.01); // just for test
+#endif
     
 #if defined WITH_SSLR && defined ALLOW_SSLR
     PrefilteredColor += FetchLocalReflection( R, Roughness );
@@ -139,7 +140,7 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
     const vec3 Diffuse = Irradiance * Albedo;
     const vec3 Specular = PrefilteredColor * ( F * EnvBRDF.x + EnvBRDF.y );
     
-    return mad( kD, Diffuse, Specular ) * AO; 
+    return mad( kD, Diffuse, Specular ) * AO;
 }
 
 vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessSqr, vec3 Normal, vec3 GeometryNormal, float NdV )
@@ -237,6 +238,8 @@ vec3 CalcPointLightLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessS
             float NdL = saturate( dot( Normal, L ) );
 
             Attenuation *= NdL * Shadow;
+			
+//Attenuation = floor(Attenuation * 256)/256;
 
             Light += LightBRDF( Diffuse, F0, RoughnessSqr, Normal, L, NdL, NdV, k ) * GetLightColor( lightIndex ) * Attenuation;
             
@@ -307,10 +310,11 @@ void MaterialPBRShader( vec3 BaseColor,
 
     // Apply ambient
     const vec3 Ambient = CalcAmbient( Albedo, R, Normal, NdV, F0, Roughness, AO, FirstIndex, NumProbes );
+
     Light += Ambient;
 
     FS_FragColor = vec4( Light, Opacity );
-    
+
 #ifdef DEBUG_RENDER_MODE
     uint DebugMode = GetDebugMode();
 

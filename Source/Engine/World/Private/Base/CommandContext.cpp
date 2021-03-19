@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 
-#include <World/Public/CommandContext.h>
+#include <World/Public/Base/CommandContext.h>
 #include <Core/Public/Logger.h>
 
 ACommandContext::ACommandContext() {

@@ -70,8 +70,8 @@ AAsyncJobManager GAsyncJobManager;
 AAsyncJobList * GRenderFrontendJobList;
 AAsyncJobList * GRenderBackendJobList;
 
-ARuntimeVariable rt_VidWidth( _CTS( "rt_VidWidth" ), _CTS( "1600" ) );
-ARuntimeVariable rt_VidHeight( _CTS( "rt_VidHeight" ), _CTS( "900" ) );
+ARuntimeVariable rt_VidWidth( _CTS( "rt_VidWidth" ), _CTS( "0" ) );
+ARuntimeVariable rt_VidHeight( _CTS( "rt_VidHeight" ), _CTS( "0" ) );
 #ifdef AN_DEBUG
 ARuntimeVariable rt_VidFullscreen( _CTS( "rt_VidFullscreen" ), _CTS( "0" ) );
 #else
@@ -155,8 +155,6 @@ static SDL_Window * CreateGenericWindow( SVideoMode const & _VideoMode )
 
     bool bOpenGL = true;
 
-    SDL_InitSubSystem( SDL_INIT_VIDEO );
-
     if ( bOpenGL ) {
         flags |= SDL_WINDOW_OPENGL;
 
@@ -220,7 +218,6 @@ static void DestroyGenericWindow( SDL_Window * Window )
 {
     if ( Window ) {
         SDL_DestroyWindow( Window );
-        SDL_QuitSubSystem( SDL_INIT_VIDEO );
     }
 }
 
@@ -284,7 +281,7 @@ static TUniqueRef< AArchive > GEmbeddedResourcesArch;
 extern "C" const size_t EmbeddedResources_Size;
 extern "C" const uint64_t EmbeddedResources_Data[];
 
-AArchive const & GetEmbeddedResources()
+AArchive const & ARuntime::GetEmbeddedResources()
 {
     if ( !GEmbeddedResourcesArch ) {
         GEmbeddedResourcesArch = MakeUnique< AArchive >();
@@ -351,7 +348,7 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl )
                 },
                 NULL );
 
-    SDL_InitSubSystem( SDL_INIT_SENSOR | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER | SDL_INIT_EVENTS );
+    SDL_InitSubSystem( SDL_INIT_VIDEO | SDL_INIT_SENSOR | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER | SDL_INIT_EVENTS );
 
     if ( AThread::NumHardwareThreads ) {
         GLogger.Printf( "Num hardware threads: %d\n", AThread::NumHardwareThreads );
@@ -373,6 +370,15 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl )
     Core::ZeroMem( JoystickAdded, sizeof( JoystickAdded ) );
 
     LoadConfigFile();
+
+    if ( rt_VidWidth.GetInteger() <= 0
+         || rt_VidHeight.GetInteger() <= 0 ) {
+        SDL_DisplayMode mode;
+        SDL_GetDesktopDisplayMode( 0, &mode );
+
+        rt_VidWidth.ForceInteger( mode.w );
+        rt_VidHeight.ForceInteger( mode.h );
+    }
 
     SVideoMode desiredMode = {};
     desiredMode.Width = rt_VidWidth.GetInteger();
@@ -1791,7 +1797,7 @@ void ARuntime::PollEvents()
                 break;
             // Window has been moved to data1, data2
             case SDL_WINDOWEVENT_MOVED:
-                VideoMode.DisplayIndex = SDL_GetWindowDisplayIndex( SDL_GetWindowFromID( event.window.windowID ) );
+                VideoMode.DisplayId = SDL_GetWindowDisplayIndex( SDL_GetWindowFromID( event.window.windowID ) );
                 VideoMode.X = event.window.data1;
                 VideoMode.Y = event.window.data2;
                 if ( !VideoMode.bFullscreen ) {
@@ -1808,11 +1814,11 @@ void ARuntime::PollEvents()
                 SDL_Window * wnd = SDL_GetWindowFromID( event.window.windowID );
                 VideoMode.Width = event.window.data1;
                 VideoMode.Height = event.window.data2;
-                VideoMode.DisplayIndex = SDL_GetWindowDisplayIndex( wnd );
+                VideoMode.DisplayId = SDL_GetWindowDisplayIndex( wnd );
                 SDL_GL_GetDrawableSize( wnd, &VideoMode.FramebufferWidth, &VideoMode.FramebufferHeight );
                 if ( VideoMode.bFullscreen ) {
                     SDL_DisplayMode mode;
-                    SDL_GetDesktopDisplayMode( VideoMode.DisplayIndex, &mode );
+                    SDL_GetDesktopDisplayMode( VideoMode.DisplayId, &mode );
                     float sx = (float)mode.w / VideoMode.FramebufferWidth;
                     float sy = (float)mode.h / VideoMode.FramebufferHeight;
                     VideoMode.AspectScale = (sx / sy);
@@ -2185,9 +2191,105 @@ void ARuntime::PollEvents()
     }
 }
 
+void ARuntime::GetDisplays( TPodArray< SDisplayInfo > & Displays )
+{
+    SDL_Rect rect;
+    int displayCount = SDL_GetNumVideoDisplays();
+
+    Displays.ResizeInvalidate( displayCount );
+
+    for ( int i = 0 ; i < displayCount ; i++ ) {
+        SDisplayInfo & d = Displays[i];
+
+        d.Id = i;
+        d.Name = SDL_GetDisplayName( i );
+
+        SDL_GetDisplayBounds( i, &rect );
+
+        d.DisplayX = rect.x;
+        d.DisplayY = rect.y;
+        d.DisplayW = rect.w;
+        d.DisplayH = rect.h;
+
+        SDL_GetDisplayUsableBounds( i, &rect );
+
+        d.DisplayUsableX = rect.x;
+        d.DisplayUsableY = rect.y;
+        d.DisplayUsableW = rect.w;
+        d.DisplayUsableH = rect.h;
+
+        d.Orientation = (EDisplayOrient)SDL_GetDisplayOrientation( i );
+
+        SDL_GetDisplayDPI( i, &d.ddpi, &d.hdpi, &d.vdpi );
+    }
+}
+
+void ARuntime::GetDisplayModes( SDisplayInfo const & Display, TPodArray< SDisplayMode > & Modes )
+{
+    SDL_DisplayMode modeSDL;
+
+    int numModes = SDL_GetNumDisplayModes( Display.Id );
+
+    Modes.Clear();
+    for ( int i = 0 ; i < numModes ; i++ ) {
+        SDL_GetDisplayMode( Display.Id, i, &modeSDL );
+
+        if ( modeSDL.format == SDL_PIXELFORMAT_RGB888 ) {
+            SDisplayMode & mode = Modes.Append();
+
+            mode.Width = modeSDL.w;
+            mode.Height = modeSDL.h;
+            mode.RefreshRate = modeSDL.refresh_rate;
+            //GLogger.Printf( "Mode %d: %d %d %d hz\n", m, mode.w, mode.h, mode.refresh_rate );
+        }
+    }
+}
+
+void ARuntime::GetDesktopDisplayMode( SDisplayInfo const & Display, SDisplayMode & Mode )
+{
+    SDL_DisplayMode modeSDL;
+    SDL_GetDesktopDisplayMode( Display.Id, &modeSDL );
+
+    Mode.Width = modeSDL.w;
+    Mode.Height = modeSDL.h;
+    Mode.RefreshRate = modeSDL.refresh_rate;
+}
+
+void ARuntime::GetCurrentDisplayMode( SDisplayInfo const & Display, SDisplayMode & Mode )
+{
+    SDL_DisplayMode modeSDL;
+    SDL_GetCurrentDisplayMode( Display.Id, &modeSDL );
+
+    Mode.Width = modeSDL.w;
+    Mode.Height = modeSDL.h;
+    Mode.RefreshRate = modeSDL.refresh_rate;
+}
+
+bool ARuntime::GetClosestDisplayMode( SDisplayInfo const & Display, int Width, int Height, int RefreshRate, SDisplayMode & Mode )
+{
+    SDL_DisplayMode modeSDL, closestSDL;
+
+    modeSDL.w = Width;
+    modeSDL.h = Height;
+    modeSDL.refresh_rate = RefreshRate;
+    modeSDL.format = SDL_PIXELFORMAT_RGB888;
+    modeSDL.driverdata = nullptr;
+    if ( !SDL_GetClosestDisplayMode( Display.Id, &modeSDL, &closestSDL ) || closestSDL.format != modeSDL.format ) {
+        GLogger.Printf( "Couldn't find closest display mode to %d x %d %dHz\n", Width, Height, RefreshRate );
+        Core::ZeroMem( &Mode, sizeof( Mode ) );
+        return false;
+    }
+
+    Mode.Width = closestSDL.w;
+    Mode.Height = closestSDL.h;
+    Mode.RefreshRate = closestSDL.refresh_rate;
+
+    return true;
+}
+
+#if 0
 static void TestDisplays()
 {
-    SDL_InitSubSystem(SDL_INIT_VIDEO);
     int displayCount = SDL_GetNumVideoDisplays();
     SDL_Rect rect;
     SDL_Rect usableRect;
@@ -2231,10 +2333,13 @@ static void TestDisplays()
         }
     }
 
-    //SDL_GetDesktopDisplayMode
-    //SDL_GetCurrentDisplayMode
-    //SDL_GetClosestDisplayMode
+
+
+    //extern DECLSPEC int SDLCALL SDL_GetDesktopDisplayMode(int displayIndex, SDL_DisplayMode * mode);
+    //extern DECLSPEC int SDLCALL SDL_GetCurrentDisplayMode(int displayIndex, SDL_DisplayMode * mode);
+    //extern DECLSPEC SDL_DisplayMode * SDLCALL SDL_GetClosestDisplayMode(int displayIndex, const SDL_DisplayMode * mode, SDL_DisplayMode * closest);
 }
+#endif
 
 void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode )
 {
@@ -2272,14 +2377,14 @@ void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode )
         SDL_SetWindowOpacity( wnd, VideoMode.Opacity );
     }
 
-    VideoMode.DisplayIndex = SDL_GetWindowDisplayIndex( wnd );
+    VideoMode.DisplayId = SDL_GetWindowDisplayIndex( wnd );
     /*if ( VideoMode.bFullscreen ) {
         const float MM_To_Inch = 0.0393701f;
         VideoMode.DPI_X = (float)VideoMode.Width / (monitor->PhysicalWidthMM*MM_To_Inch);
         VideoMode.DPI_Y = (float)VideoMode.Height / (monitor->PhysicalHeightMM*MM_To_Inch);
 
     } else */ {
-        SDL_GetDisplayDPI( VideoMode.DisplayIndex, NULL, &VideoMode.DPI_X, &VideoMode.DPI_Y );
+        SDL_GetDisplayDPI( VideoMode.DisplayId, NULL, &VideoMode.DPI_X, &VideoMode.DPI_Y );
     }
 
     SDL_DisplayMode mode;

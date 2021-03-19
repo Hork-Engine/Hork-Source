@@ -253,6 +253,11 @@ void ACharacterControllerBase::SetCapsuleWorldPosition( Float3 const & InPositio
 
 void ACharacterControllerBase::_Update( float _TimeStep )
 {
+    if ( !GhostObject->getBroadphaseHandle() ) {
+        // Collision object was not added to the world yet
+        return;
+    }
+
     bInsideUpdate = true;
 
     UpdateCapsuleShape();
@@ -925,6 +930,11 @@ void AProjectileExperimental::RemoveCollisionIgnoreActor( AActor * _Actor )
 
 void AProjectileExperimental::_Update( float _TimeStep )
 {
+    if ( !GhostObject->getBroadphaseHandle() ) {
+        // Collision object was not added to the world yet
+        return;
+    }
+
     bInsideUpdate = true;
 
     //UpdateCapsuleShape();
@@ -1122,7 +1132,7 @@ void AProjectileExperimental::Update( float _TimeStep ) {
 
         if ( trace.HasHit() ) {
 
-            OnHit.Dispatch( trace.Position, trace.Normal );
+            OnHit.Dispatch( trace.HitProxy, trace.Position, trace.Normal );
 
             LinearVelocity.Clear();
         

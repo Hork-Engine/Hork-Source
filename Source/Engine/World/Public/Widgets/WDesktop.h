@@ -107,6 +107,8 @@ public:
 
     void OpenPopupMenu( WMenuPopup * _PopupMenu );
 
+    void OpenPopupMenuAt( WMenuPopup * _PopupMenu, Float2 const & Position );
+
     void ClosePopupMenu();
 
     void CancelDragging();

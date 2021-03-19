@@ -286,7 +286,7 @@ class AProjectileExperimental : public ASceneComponent
     AN_COMPONENT( AProjectileExperimental, ASceneComponent )
 
 public:
-    TEvent< Float3 const &, Float3 const & > OnHit;
+    TEvent< AHitProxy *, Float3 const &, Float3 const & > OnHit;
 
     AHitProxy * GetHitProxy() const
     {

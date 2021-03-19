@@ -153,9 +153,9 @@ private:
     enum { N = 624 };       // length of state vector
     enum { M = 397 };
 
-    uint32_t State[N];	// internal state
-    uint32_t * Next;	// next value to get from state
-    int Left;		        // number of values left before reload needed		
+    uint32_t State[N]; // internal state
+    uint32_t * Next;   // next value to get from state
+    int Left;          // number of values left before reload needed
 };
 
 namespace Core {

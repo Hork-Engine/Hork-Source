@@ -456,6 +456,9 @@ private:
     float CalcContentWidth();
     float CalcContentHeight();
 
+    float CalcAutoWidth();
+    float CalcAutoHeight();
+
     struct SCell {
         float Size;
         float ActualSize;

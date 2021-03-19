@@ -31,6 +31,7 @@ SOFTWARE.
 #include <World/Public/Widgets/WSlider.h>
 #include <World/Public/Widgets/WDesktop.h>
 #include <Runtime/Public/Runtime.h>
+#include <Runtime/Public/InputDefs.h>
 
 AN_CLASS_META( WSlider )
 
@@ -44,6 +45,9 @@ WSlider::WSlider() {
     SliderWidth = 12;
     bVerticalOrientation = false;
     bUpdateGeometry = true;
+    BackgroundColor = AColor4(0.4f, 0.4f, 0.4f, 1.0f);
+    SliderColor = AColor4::White();
+    LineColor = AColor4::White();
 }
 
 WSlider::~WSlider() {
@@ -58,8 +62,6 @@ WSlider & WSlider::SetValue( float _Value ) {
         bUpdateGeometry = true;
 
         E_OnUpdateValue.Dispatch( Value );
-
-        GLogger.Printf("Value %f\n",Value);
     }
 
     return *this;
@@ -109,6 +111,21 @@ WSlider & WSlider::SetVerticalOrientation( bool _VerticalOrientation ) {
         bVerticalOrientation = _VerticalOrientation;
         bUpdateGeometry = true;
     }
+    return *this;
+}
+
+WSlider & WSlider::SetBackgroundColor( AColor4 const & _Color ) {
+    BackgroundColor = _Color;
+    return *this;
+}
+
+WSlider & WSlider::SetSliderColor( AColor4 const & _Color ) {
+    SliderColor = _Color;
+    return *this;
+}
+
+WSlider & WSlider::SetLineColor( AColor4 const & _Color ) {
+    LineColor = _Color;
     return *this;
 }
 
@@ -197,7 +214,8 @@ AN_FORCEINLINE bool InRect( Float2 const & _Mins, Float2 const & _Maxs, Float2 c
 void WSlider::OnMouseButtonEvent( SMouseButtonEvent const & _Event, double _TimeStamp ) {
     Action = A_NONE;
 
-    if ( _Event.Action != IA_PRESS ) {
+    
+    if ( _Event.Button != MOUSE_BUTTON_LEFT || _Event.Action != IA_PRESS ) {
         return;
     }
 
@@ -244,7 +262,7 @@ void WSlider::OnDrawEvent( ACanvas & _Canvas ) {
     Float2 mins, maxs;
     GetDesktopRect( mins, maxs, false );
 
-    _Canvas.DrawRectFilled( mins, maxs, AColor4( 0.4f, 0.4f, 0.4f ) );
+    _Canvas.DrawRectFilled( mins, maxs, BackgroundColor );
 
     // Draw slider background
     if ( geometry.BgMaxs.X > geometry.BgMins.X && geometry.BgMaxs.Y > geometry.BgMins.Y ) {
@@ -253,12 +271,12 @@ void WSlider::OnDrawEvent( ACanvas & _Canvas ) {
         Float2 h = bVerticalOrientation ? Float2( ( geometry.BgMaxs.X - geometry.BgMins.X ) * 0.5f, 0.0f )
                                         : Float2( 0.0f, ( geometry.BgMaxs.Y - geometry.BgMins.Y ) * 0.5f );
 
-        _Canvas.DrawLine( geometry.BgMins + h, geometry.BgMaxs - h, AColor4(1.0f), 2.0f );
+        _Canvas.DrawLine( geometry.BgMins + h, geometry.BgMaxs - h, LineColor, 2.0f );
     }
 
     // Draw slider
     if ( geometry.SliderMaxs.X > geometry.SliderMins.X && geometry.SliderMaxs.Y > geometry.SliderMins.Y ) {
         const float SliderRounding = 4.0f;
-        _Canvas.DrawRectFilled( geometry.SliderMins, geometry.SliderMaxs, AColor4(1,1,1,1), SliderRounding );
+        _Canvas.DrawRectFilled( geometry.SliderMins, geometry.SliderMaxs, SliderColor, SliderRounding );
     }
 }

@@ -114,13 +114,22 @@ WDesktop & WDesktop::SetCursorVisible( bool _Visible ) {
 }
 
 void WDesktop::OpenPopupMenu( WMenuPopup * _PopupMenu ) {
+    OpenPopupMenuAt( _PopupMenu, CursorPosition );
+}
+
+void WDesktop::OpenPopupMenuAt( WMenuPopup * _PopupMenu, Float2 const & Position )
+{
     CancelDragging();
     ClosePopupMenu();
 
     Popup = _PopupMenu;
     if ( Popup ) {
         AddWidget( Popup->Self );
-        Popup->Self->SetPosition( CursorPosition );
+
+        //Popup->Self->SetMaxSize( Root->GetWidth(), Math::Max( 1.0f, (Root->GetHeight()*0.9f - Position.Y) ) );
+        Popup->Self->SetMaxSize( Root->GetWidth(), Math::Max( 1.0f, (Root->GetHeight() - Position.Y) ) );
+
+        Popup->Self->SetPosition( Position );
         Popup->Self->SetVisible();
         Popup->Self->SetFocus();
         Popup->Self->BringOnTop();
@@ -328,6 +337,7 @@ void WDesktop::SetFocusWidget( WWidget * _Focus ) {
     }
 
     FocusWidget = _Focus;
+    MouseFocusWidget = _Focus; // TODO: Check
 
     if ( FocusWidget ) {
         FocusWidget->bFocus = true;

@@ -11,12 +11,12 @@ add_definitions( -DGLEW_NO_GLU )
 
 #########################################################################################
 # Vulkan
-message( "========== VULKAN ==========" )
-find_package(Vulkan)
-if (NOT Vulkan_FOUND)
-    message(ERROR " Vulkan not found!")
-endif(NOT Vulkan_FOUND)
-include_directories( ${Vulkan_INCLUDE_DIRS} )
+#message( "========== VULKAN ==========" )
+#find_package(Vulkan)
+#if (NOT Vulkan_FOUND)
+#    message(ERROR " Vulkan not found!")
+#endif(NOT Vulkan_FOUND)
+#include_directories( ${Vulkan_INCLUDE_DIRS} )
 #########################################################################################
 
 #########################################################################################
@@ -375,7 +375,7 @@ set_property( TARGET ${PROJECT} PROPERTY POSITION_INDEPENDENT_CODE ON )
 set( LIBRARIES
         ${AN_BULLET_LIBS}
         ${OPENGL_gl_LIBRARY}
-        ${Vulkan_LIBRARIES}
+#        ${Vulkan_LIBRARIES}
         vhacd
         Recast
         SDL2-static

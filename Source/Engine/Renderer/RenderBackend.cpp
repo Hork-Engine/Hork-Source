@@ -217,12 +217,12 @@ ARenderBackend::ARenderBackend()
     TRef< RenderCore::ITexture > cubemap2;
     {
         const char * Cubemap[6] = {
-            "ClearSky/rt.bmp",
-            "ClearSky/lt.bmp",
-            "ClearSky/up.bmp",
-            "ClearSky/dn.bmp",
-            "ClearSky/bk.bmp",
-            "ClearSky/ft.bmp"
+            "DarkSky/rt.tga",
+            "DarkSky/lt.tga",
+            "DarkSky/up.tga",
+            "DarkSky/dn.tga",
+            "DarkSky/bk.tga",
+            "DarkSky/ft.tga"
         };
         const char * Cubemap2[6] = {
             "DarkSky/rt.tga",
@@ -254,6 +254,9 @@ ARenderBackend::ARenderBackend()
                 HDRI[j] = Math::Pow( HDRI[j + 0] * HDRI_Scale, HDRI_Pow );
                 HDRI[j + 1] = Math::Pow( HDRI[j + 1] * HDRI_Scale, HDRI_Pow );
                 HDRI[j + 2] = Math::Pow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
+
+
+//HDRI[j + 2]= HDRI[j + 1]= HDRI[j]=0.01f;
             }
         }
         int w = cubeFaces[0]->GetWidth();
@@ -287,6 +290,11 @@ ARenderBackend::ARenderBackend()
         for ( int face = 0 ; face < 6 ; face++ ) {
             float * pSrc = (float *)cubeFaces[face]->GetData();
 
+//Core::Memset(pSrc,0, w*w*3*sizeof( float ) );
+            for ( int y=0;y<w;y++ )
+                for ( int x=0;x<w;x++ )
+                    pSrc[y*w*3 + x*3 + 0 ] = pSrc[y*w*3 + x*3 + 1] = pSrc[y*w*3 + x*3 + 2] = 0.02f;
+
             RenderCore::STextureRect rect = {};
             rect.Offset.Z = face;
             rect.Dimension.X = w;
@@ -297,7 +305,7 @@ ARenderBackend::ARenderBackend()
         }
     }
 
-    RenderCore::ITexture * cubemaps[2] = { /*cubemap*/skybox, cubemap2 };
+    RenderCore::ITexture * cubemaps[2] = { cubemap2,cubemap/*skybox*/ };
 #else
 
     Texture cubemap;

@@ -45,18 +45,16 @@ SOFTWARE.
 #if PARALLAX_TECHNIQUE == PARALLAX_TECHNIQUE_DISABLED
 
 #define InitParallaxTechnique()
-#define ParallaxMapping(displacementMap, texCoord, bSelfShadowing) (texCoord)
+#define ParallaxMapping(texCoord,displacementScale) (texCoord)
 #define GetParallaxSelfShadow(LightDir) 1.0
 
 #else
 
 mat3  InTBN;
 vec3  InParallaxViewDir;
-sampler2D InDisplacementMap;
 float InParallaxDepth = 0;
 vec2  InParallaxTexCoord = vec2( 0.0 );
 vec2  InParallaxTexCoordSource = vec2( 0.0 );
-bool  InParallaxSelfShadowing = false;
 float InParallaxDisplacementScale = 0.05;
 
 void InitParallaxTechnique()
@@ -65,12 +63,8 @@ void InitParallaxTechnique()
     InParallaxViewDir = InTBN * normalize( InViewspaceToEyeVec - VS_Position );
 }
 
+#ifdef PARALLAX_SELF_SHADOW
 float GetParallaxSelfShadow( vec3 LightDir ) {
-//return 1.0;
-    if ( !InParallaxSelfShadowing ) {
-        return 1.0;
-    }
-
     if ( InParallaxDisplacementScale < 0.001 ) {
         return 1.0;
     }
@@ -107,7 +101,7 @@ float GetParallaxSelfShadow( vec3 LightDir ) {
         float currentLayerDepth = InParallaxDepth - depthStep;
         vec2 currentTexCoords = InParallaxTexCoord + deltaTexCoords;
 
-        float currentDepthValue = 1.0-texture( InDisplacementMap, currentTexCoords ).r;
+        float currentDepthValue = 1.0-texture( PARALLAX_SAMPLER, currentTexCoords ).r;
 
         // номер текущего шага
         float stepIndex = 1.0;
@@ -125,7 +119,7 @@ float GetParallaxSelfShadow( vec3 LightDir ) {
             stepIndex++;
             currentLayerDepth -= depthStep;
             currentTexCoords += deltaTexCoords;
-            currentDepthValue = 1.0-texture( InDisplacementMap, currentTexCoords ).r;
+            currentDepthValue = 1.0-texture( PARALLAX_SAMPLER, currentTexCoords ).r;
         }
         // если точек под поверхностью не было, то точка 
         // считается освещенной и коэффициент оставим 1
@@ -139,13 +133,14 @@ float GetParallaxSelfShadow( vec3 LightDir ) {
 
     return pow( shadowMultiplier, 32.0 );
 }
+#else
+#define GetParallaxSelfShadow(LightDir) 1.0
+#endif
 
-vec2 ParallaxMapping( sampler2D displacementMap, vec2 texCoord, float DisplacementScale, bool bSelfShadowing )
+vec2 ParallaxMapping( vec2 texCoord, float DisplacementScale )
 {
     InParallaxTexCoordSource = texCoord;
     InParallaxDisplacementScale = DisplacementScale * 0.01;
-    InParallaxSelfShadowing = bSelfShadowing;
-    InDisplacementMap = displacementMap;
     InParallaxDepth = 0;
     InParallaxTexCoord = texCoord;
 
@@ -171,7 +166,7 @@ vec2 ParallaxMapping( sampler2D displacementMap, vec2 texCoord, float Displaceme
 
     // начальная инициализация
     vec2  currentTexCoords = texCoord;
-    float currentDepthMapValue = 1.0-texture( displacementMap, currentTexCoords ).r;
+    float currentDepthMapValue = 1.0-texture( PARALLAX_SAMPLER, currentTexCoords ).r;
 
     for( int i = 0; i < numLayers; i++ ) {
         if ( currentLayerDepth > currentDepthMapValue ) {
@@ -181,7 +176,7 @@ vec2 ParallaxMapping( sampler2D displacementMap, vec2 texCoord, float Displaceme
         // смещаем текстурные координаты вдоль вектора P
         currentTexCoords -= deltaTexCoords;
         // делаем выборку из карты глубин в текущих текстурных координатах 
-        currentDepthMapValue = 1.0-texture( displacementMap, currentTexCoords ).r;
+        currentDepthMapValue = 1.0-texture( PARALLAX_SAMPLER, currentTexCoords ).r;
         // рассчитываем глубину следующего слоя
         currentLayerDepth += layerDepth;
     }
@@ -200,7 +195,7 @@ vec2 ParallaxMapping( sampler2D displacementMap, vec2 texCoord, float Displaceme
     // находим значения глубин до и после нахождения пересечения 
     // для использования в линейной интерполяции
     float afterDepth = currentDepthMapValue - currentLayerDepth;
-    float beforeDepth = (1.0-texture( displacementMap, prevTexCoords ).r) - currentLayerDepth + layerDepth;
+    float beforeDepth = (1.0-texture( PARALLAX_SAMPLER, prevTexCoords ).r) - currentLayerDepth + layerDepth;
 
     // интерполяция текстурных координат 
     float weight = ( afterDepth / (afterDepth - beforeDepth) );
@@ -228,7 +223,7 @@ vec2 ParallaxMapping( sampler2D displacementMap, vec2 texCoord, float Displaceme
     const int reliefSteps = 5;
     int currentStep = reliefSteps;
     while ( currentStep > 0 ) {
-        currentDepthMapValue = 1.0-texture( displacementMap, currentTexCoords ).r;
+        currentDepthMapValue = 1.0-texture( PARALLAX_SAMPLER, currentTexCoords ).r;
         deltaTexCoords *= 0.5;
         layerDepth *= 0.5;
         // если выборка глубины больше текущей глубины слоя, 

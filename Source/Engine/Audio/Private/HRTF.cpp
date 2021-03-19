@@ -48,7 +48,7 @@ ARuntimeVariable Snd_LerpHRTF( _CTS("Snd_LerpHRTF"), _CTS("1") );
 AAudioHRTF::AAudioHRTF( int SampleRate )
 {
     AMemoryStream f;
-    if ( !f.OpenRead( "HRTF/IRC_1002_C.bin", GetEmbeddedResources() ) ) {
+    if ( !f.OpenRead( "HRTF/IRC_1002_C.bin", GRuntime.GetEmbeddedResources() ) ) {
         // An error occurred...
         CriticalError( "Failed to open HRTF data\n" );
     }
