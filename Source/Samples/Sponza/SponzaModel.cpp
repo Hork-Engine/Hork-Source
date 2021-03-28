@@ -53,7 +53,7 @@ ASponzaModel::ASponzaModel()
 
     GModule = this;
 
-    GEngine->bAllowConsole = true;
+    bAllowConsole = true;
 
     //SVideoMode videoMode = GRuntime.GetVideoMode();
     //videoMode.Width = 1280;
