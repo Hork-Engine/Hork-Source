@@ -62,6 +62,7 @@ SOFTWARE.
 
 static ARuntimeVariable com_ShowStat( _CTS( "com_ShowStat" ), _CTS( "0" ) );
 static ARuntimeVariable com_ShowFPS( _CTS( "com_ShowFPS" ), _CTS( "0" ) );
+static ARuntimeVariable com_SimulateCursorBallistics( _CTS( "com_SimulateCursorBallistics" ), _CTS( "1" ) );
 
 static AConsole Console;
 
@@ -488,8 +489,7 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
             Float2 cursorPosition = Desktop->GetCursorPosition();
 
             // Simulate ballistics
-            const bool bSimulateCursorBallistics = true;
-            if ( bSimulateCursorBallistics ) {
+            if ( com_SimulateCursorBallistics ) {
                 cursorPosition.X += _Event.X / videoMode.RefreshRate * videoMode.DPI_X;
                 cursorPosition.Y -= _Event.Y / videoMode.RefreshRate * videoMode.DPI_Y;
             } else {

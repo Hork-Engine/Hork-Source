@@ -155,6 +155,7 @@ ARenderBackend::ARenderBackend()
                                                                                        MAX_FRUSTUM_CLUSTERS_Z ) ), &GClusterLookup );
     // Create item buffer
     {
+#if 0
         // FIXME: Use SSBO?
         RenderCore::SBufferCreateInfo bufferCI = {};
         bufferCI.bImmutableStorage = true;
@@ -167,6 +168,12 @@ ARenderBackend::ARenderBackend()
         RenderCore::SBufferViewCreateInfo bufferViewCI = {};
         bufferViewCI.Format = RenderCore::BUFFER_VIEW_PIXEL_FORMAT_R32UI;
         GDevice->CreateBufferView( bufferViewCI, GClusterItemBuffer, &GClusterItemTBO );
+#else
+        RenderCore::SBufferViewCreateInfo bufferViewCI = {};
+        bufferViewCI.Format = RenderCore::BUFFER_VIEW_PIXEL_FORMAT_R32UI;
+        TRef< RenderCore::IBuffer > buffer( GStreamBuffer );
+        GDevice->CreateBufferView( bufferViewCI, buffer, &GClusterItemTBO );
+#endif
     }
 
     FeedbackAnalyzerVT = MakeRef< AVirtualTextureFeedbackAnalyzer >();
@@ -562,6 +569,11 @@ void ARenderBackend::InitializeBuffer( TRef< RenderCore::IBuffer > * ppBuffer, s
 }
 #endif
 
+int ARenderBackend::ClusterPackedIndicesAlignment() const
+{
+    return GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT );
+}
+
 void ARenderBackend::InitializeMaterial( AMaterialGPU * Material, SMaterialDef const * Def )
 {
     Material->MaterialType = Def->Type;
@@ -824,11 +836,17 @@ void ARenderBackend::UploadShaderResources()
 #if 1
     // Perform copy from stream buffer on GPU side
     if ( GRenderView->ClusterPackedIndexCount > 0 ) {
+#if 0
         RenderCore::SBufferCopy range;
         range.SrcOffset = GRenderView->ClusterPackedIndicesStreamHandle;
         range.DstOffset = 0;
         range.SizeInBytes = sizeof( SClusterPackedIndex ) * GRenderView->ClusterPackedIndexCount;
         rcmd->CopyBufferRange( GStreamBuffer, GClusterItemBuffer, 1, &range );
+#else
+        size_t offset = GRenderView->ClusterPackedIndicesStreamHandle;
+        size_t sizeInBytes = sizeof( SClusterPackedIndex ) * GRenderView->ClusterPackedIndexCount;
+        GClusterItemTBO->UpdateRange( offset, sizeInBytes );
+#endif
     }
 #else
     GClusterItemBuffer->WriteRange( 0,

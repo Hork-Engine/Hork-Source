@@ -31,6 +31,8 @@ SOFTWARE.
 #include "LightVoxelizer.h"
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
+//#include <Renderer/RenderBackend.h>
+#include <GameThread/Public/EngineInstance.h>
 
 #define LIGHT_ITEMS_OFFSET 0
 #define DECAL_ITEMS_OFFSET 256
@@ -390,7 +392,10 @@ void ALightVoxelizer::Voxelize( SRenderView * RV ) {
 
     // NOTE: we add MAX_CLUSTER_ITEMS*3 to resolve array overflow
     int maxItems = MAX_TOTAL_CLUSTER_ITEMS + MAX_CLUSTER_ITEMS*3;
-    RV->ClusterPackedIndicesStreamHandle = streamedMemory->AllocateConstant( maxItems * sizeof( SClusterPackedIndex ), nullptr );
+    int alignment = GEngine->GetRenderBackend()->ClusterPackedIndicesAlignment();
+    RV->ClusterPackedIndicesStreamHandle = streamedMemory->AllocateWithCustomAlignment( maxItems * sizeof( SClusterPackedIndex ),
+                                                                                        alignment,
+                                                                                        nullptr );
     RV->ClusterPackedIndices = (SClusterPackedIndex *)streamedMemory->Map( RV->ClusterPackedIndicesStreamHandle );
 
     pClusterHeaderData = RV->ClusterLookup;

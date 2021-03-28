@@ -51,6 +51,8 @@ public:
 
     void InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _Def );
 
+    int ClusterPackedIndicesAlignment() const;
+
 private:
     void RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture );
     void SetViewConstants();
