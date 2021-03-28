@@ -44,12 +44,15 @@ public:
     ABufferViewGLImpl( ADeviceGLImpl * Device, SBufferViewCreateInfo const & CreateInfo, ABufferGLImpl * pBuffer );
     ~ABufferViewGLImpl();
 
+    void UpdateRange( size_t Offset, size_t SizeInBytes ) override;
+
     size_t GetBufferOffset( uint16_t _Lod ) const override;
     size_t GetBufferSizeInBytes( uint16_t _Lod ) const override;
 
 private:
     ADeviceGLImpl * pDevice;
     ABufferGLImpl * pSrcBuffer;
+    int InternalFormat;
 };
 
 }

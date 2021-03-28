@@ -73,10 +73,12 @@ ABufferViewGLImpl::ABufferViewGLImpl( ADeviceGLImpl * Device, SBufferViewCreateI
 
     TableInternalPixelFormat const * format = &InternalFormatLUT[ CreateInfo.Format ];
 
+    InternalFormat = format->InternalFormat;
+
     if ( bViewRange ) {
-        glTextureBufferRange( textureId, format->InternalFormat, bufferId, offset, sizeInBytes );
+        glTextureBufferRange( textureId, InternalFormat, bufferId, offset, sizeInBytes );
     } else {
-        glTextureBuffer( textureId, format->InternalFormat, bufferId );
+        glTextureBuffer( textureId, InternalFormat, bufferId );
     }
 
     SetHandleNativeGL( textureId );
@@ -95,6 +97,25 @@ ABufferViewGLImpl::~ABufferViewGLImpl()
     }
 
     pSrcBuffer->RemoveRef();
+}
+
+void ABufferViewGLImpl::UpdateRange( size_t Offset, size_t SizeInBytes ) {
+    if ( !IsAligned( Offset, pDevice->GetDeviceCaps( DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT ) ) ) {
+        GLogger.Printf( "ABufferViewGLImpl::ctor: buffer offset is not aligned\n" );
+        return;
+    }
+
+    if ( Offset + SizeInBytes > pSrcBuffer->GetSizeInBytes() ) {
+        GLogger.Printf( "ABufferViewGLImpl::ctor: invalid buffer range\n" );
+        return;
+    }
+
+    if ( SizeInBytes > pDevice->GetDeviceCaps( DEVICE_CAPS_BUFFER_VIEW_MAX_SIZE ) ) {
+        GLogger.Printf( "ABufferViewGLImpl::ctor: buffer view size > BUFFER_VIEW_MAX_SIZE\n" );
+        return;
+    }
+
+    glTextureBufferRange( GetHandleNativeGL(), InternalFormat, pSrcBuffer->GetHandleNativeGL(), Offset, SizeInBytes );
 }
 
 size_t ABufferViewGLImpl::GetBufferOffset( uint16_t _Lod ) const {

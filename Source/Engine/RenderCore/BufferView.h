@@ -84,6 +84,8 @@ class IBufferView : public ITextureBase
 public:
     IBufferView( IDevice * Device ) : ITextureBase( Device ) {}
 
+    virtual void UpdateRange( size_t Offset, size_t SizeInBytes ) = 0;
+
     virtual size_t GetBufferOffset( uint16_t _Lod ) const = 0;
     virtual size_t GetBufferSizeInBytes( uint16_t _Lod ) const = 0;
 
