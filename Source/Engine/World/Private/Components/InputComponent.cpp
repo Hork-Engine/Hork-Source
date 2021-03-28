@@ -37,7 +37,7 @@ SOFTWARE.
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Core/Public/CriticalError.h>
 
-ARuntimeVariable MouseSensitivity( _CTS( "MouseSensitivity" ), _CTS( "0.15" ) );
+ARuntimeVariable MouseSensitivity( _CTS( "MouseSensitivity" ), _CTS( "6.8" ) );
 ARuntimeVariable MouseFilter( _CTS( "MouseFilter" ), _CTS( "1" ) );
 ARuntimeVariable MouseAccel( _CTS( "MouseAccel" ), _CTS( "0" ) );
 
@@ -69,11 +69,12 @@ struct AInputComponentStatic {
 
     AInputComponentStatic() {
         #define InitKey( _Key ) KeyNames[ _Key ] = AN_STRINGIFY( _Key ) + 4
-        #define InitButton( _Button ) MouseButtonNames[ _Button ] = AN_STRINGIFY( _Button ) + 6
-        #define InitMouseAxis( _Axis ) MouseAxisNames[ _Axis - MOUSE_AXIS_BASE ] = AN_STRINGIFY( _Axis ) + 6
+        #define InitKey2( _Key, _Name ) KeyNames[ _Key ] = _Name
+        #define InitButton( _Button, _Name ) MouseButtonNames[ _Button ] = _Name
+        #define InitMouseAxis( _Axis, _Name ) MouseAxisNames[ _Axis - MOUSE_AXIS_BASE ] = _Name
         #define InitDevice( _DevId ) DeviceNames[ _DevId ] = AN_STRINGIFY( _DevId ) + 3
-        #define InitJoyButton( _Button ) JoystickButtonNames[ _Button - JOY_BUTTON_BASE ] = AN_STRINGIFY( _Button ) + 4
-        #define InitJoyAxis( _Axis ) JoystickAxisNames[ _Axis - JOY_AXIS_BASE ] = AN_STRINGIFY( _Axis ) + 4
+        #define InitJoyButton( _Button, _Name ) JoystickButtonNames[ _Button - JOY_BUTTON_BASE ] = _Name
+        #define InitJoyAxis( _Axis, _Name ) JoystickAxisNames[ _Axis - JOY_AXIS_BASE ] = _Name
         #define InitModifier( _Modifier ) ModifierNames[ _Modifier ] = AN_STRINGIFY( _Modifier ) + 4
         #define InitController( _Controller ) ControllerNames[ _Controller ] = AN_STRINGIFY( _Controller ) + 11
 
@@ -107,12 +108,12 @@ struct AInputComponentStatic {
             JoystickAxisNames[ i ] = "";
         }
 
-        InitKey( KEY_SPACE );
-        InitKey( KEY_APOSTROPHE );
-        InitKey( KEY_COMMA );
-        InitKey( KEY_MINUS );
-        InitKey( KEY_PERIOD );
-        InitKey( KEY_SLASH );
+        InitKey2( KEY_SPACE, "Space" );
+        InitKey2( KEY_APOSTROPHE, "'" );
+        InitKey2( KEY_COMMA, "," );
+        InitKey2( KEY_MINUS, "-" );
+        InitKey2( KEY_PERIOD, "Period" );
+        InitKey2( KEY_SLASH, "/" );
         InitKey( KEY_0 );
         InitKey( KEY_1 );
         InitKey( KEY_2 );
@@ -123,8 +124,8 @@ struct AInputComponentStatic {
         InitKey( KEY_7 );
         InitKey( KEY_8 );
         InitKey( KEY_9 );
-        InitKey( KEY_SEMICOLON );
-        InitKey( KEY_EQUAL );
+        InitKey2( KEY_SEMICOLON, ";" );
+        InitKey2( KEY_EQUAL, "=" );
         InitKey( KEY_A );
         InitKey( KEY_B );
         InitKey( KEY_C );
@@ -151,29 +152,29 @@ struct AInputComponentStatic {
         InitKey( KEY_X );
         InitKey( KEY_Y );
         InitKey( KEY_Z );
-        InitKey( KEY_LEFT_BRACKET );
-        InitKey( KEY_BACKSLASH );
-        InitKey( KEY_RIGHT_BRACKET );
-        InitKey( KEY_GRAVE_ACCENT );
-        InitKey( KEY_ESCAPE );
-        InitKey( KEY_ENTER );
-        InitKey( KEY_TAB );
-        InitKey( KEY_BACKSPACE );
-        InitKey( KEY_INSERT );
-        InitKey( KEY_DELETE );
-        InitKey( KEY_RIGHT );
-        InitKey( KEY_LEFT );
-        InitKey( KEY_DOWN );
-        InitKey( KEY_UP );
-        InitKey( KEY_PAGE_UP );
-        InitKey( KEY_PAGE_DOWN );
-        InitKey( KEY_HOME );
-        InitKey( KEY_END );
-        InitKey( KEY_CAPS_LOCK );
-        InitKey( KEY_SCROLL_LOCK );
-        InitKey( KEY_NUM_LOCK );
-        InitKey( KEY_PRINT_SCREEN );
-        InitKey( KEY_PAUSE );
+        InitKey2( KEY_LEFT_BRACKET, "{" );
+        InitKey2( KEY_BACKSLASH, "\\" );
+        InitKey2( KEY_RIGHT_BRACKET, "}" );
+        InitKey2( KEY_GRAVE_ACCENT, "`" );
+        InitKey2( KEY_ESCAPE, "Escape" );
+        InitKey2( KEY_ENTER, "Enter" );
+        InitKey2( KEY_TAB, "Tab" );
+        InitKey2( KEY_BACKSPACE, "Backspace" );
+        InitKey2( KEY_INSERT, "Insert" );
+        InitKey2( KEY_DELETE, "Del" );
+        InitKey2( KEY_RIGHT, "Right" );
+        InitKey2( KEY_LEFT, "Left" );
+        InitKey2( KEY_DOWN, "Down" );
+        InitKey2( KEY_UP, "Up" );
+        InitKey2( KEY_PAGE_UP, "Page Up" );
+        InitKey2( KEY_PAGE_DOWN, "Page Down" );
+        InitKey2( KEY_HOME, "Home" );
+        InitKey2( KEY_END, "End" );
+        InitKey2( KEY_CAPS_LOCK, "Caps Lock" );
+        InitKey2( KEY_SCROLL_LOCK, "Scroll Lock" );
+        InitKey2( KEY_NUM_LOCK, "Num Lock" );
+        InitKey2( KEY_PRINT_SCREEN, "Print Screen" );
+        InitKey2( KEY_PAUSE, "Pause" );
         InitKey( KEY_F1 );
         InitKey( KEY_F2 );
         InitKey( KEY_F3 );
@@ -198,49 +199,49 @@ struct AInputComponentStatic {
         InitKey( KEY_F22 );
         InitKey( KEY_F23 );
         InitKey( KEY_F24 );
-        InitKey( KEY_KP_0 );
-        InitKey( KEY_KP_1 );
-        InitKey( KEY_KP_2 );
-        InitKey( KEY_KP_3 );
-        InitKey( KEY_KP_4 );
-        InitKey( KEY_KP_5 );
-        InitKey( KEY_KP_6 );
-        InitKey( KEY_KP_7 );
-        InitKey( KEY_KP_8 );
-        InitKey( KEY_KP_9 );
-        InitKey( KEY_KP_DECIMAL );
-        InitKey( KEY_KP_DIVIDE );
-        InitKey( KEY_KP_MULTIPLY );
-        InitKey( KEY_KP_SUBTRACT );
-        InitKey( KEY_KP_ADD );
-        InitKey( KEY_KP_ENTER );
-        InitKey( KEY_KP_EQUAL );
-        InitKey( KEY_LEFT_SHIFT );
-        InitKey( KEY_LEFT_CONTROL );
-        InitKey( KEY_LEFT_ALT );
-        InitKey( KEY_LEFT_SUPER );
-        InitKey( KEY_RIGHT_SHIFT );
-        InitKey( KEY_RIGHT_CONTROL );
-        InitKey( KEY_RIGHT_ALT );
-        InitKey( KEY_RIGHT_SUPER );
-        InitKey( KEY_MENU );
+        InitKey2( KEY_KP_0, "Num 0" );
+        InitKey2( KEY_KP_1, "Num 1" );
+        InitKey2( KEY_KP_2, "Num 2" );
+        InitKey2( KEY_KP_3, "Num 3" );
+        InitKey2( KEY_KP_4, "Num 4" );
+        InitKey2( KEY_KP_5, "Num 5" );
+        InitKey2( KEY_KP_6, "Num 6" );
+        InitKey2( KEY_KP_7, "Num 7" );
+        InitKey2( KEY_KP_8, "Num 8" );
+        InitKey2( KEY_KP_9, "Num 9" );
+        InitKey2( KEY_KP_DECIMAL, "Num Decimal" );
+        InitKey2( KEY_KP_DIVIDE, "Num /" );
+        InitKey2( KEY_KP_MULTIPLY, "Num *" );
+        InitKey2( KEY_KP_SUBTRACT, "Num -" );
+        InitKey2( KEY_KP_ADD, "Num +" );
+        InitKey2( KEY_KP_ENTER, "Num Enter" );
+        InitKey2( KEY_KP_EQUAL, "Num =" );
+        InitKey2( KEY_LEFT_SHIFT, "L. Shift" );
+        InitKey2( KEY_LEFT_CONTROL, "L. Ctrl" );
+        InitKey2( KEY_LEFT_ALT, "L. Alt" );
+        InitKey2( KEY_LEFT_SUPER, "L. Super" );
+        InitKey2( KEY_RIGHT_SHIFT, "R. Shift" );
+        InitKey2( KEY_RIGHT_CONTROL, "R. Ctrl" );
+        InitKey2( KEY_RIGHT_ALT, "R. Alt" );
+        InitKey2( KEY_RIGHT_SUPER, "R. Super" );
+        InitKey2( KEY_MENU, "Menu" );
 
-        InitButton( MOUSE_BUTTON_LEFT );
-        InitButton( MOUSE_BUTTON_RIGHT );
-        InitButton( MOUSE_BUTTON_MIDDLE );
-        InitButton( MOUSE_BUTTON_4 );
-        InitButton( MOUSE_BUTTON_5 );
-        InitButton( MOUSE_BUTTON_6 );
-        InitButton( MOUSE_BUTTON_7 );
-        InitButton( MOUSE_BUTTON_8 );
+        InitButton( MOUSE_BUTTON_LEFT, "LBM" );
+        InitButton( MOUSE_BUTTON_RIGHT, "RBM" );
+        InitButton( MOUSE_BUTTON_MIDDLE, "MBM" );
+        InitButton( MOUSE_BUTTON_4, "MB4" );
+        InitButton( MOUSE_BUTTON_5, "MB5" );
+        InitButton( MOUSE_BUTTON_6, "MB6" );
+        InitButton( MOUSE_BUTTON_7, "MB7" );
+        InitButton( MOUSE_BUTTON_8, "MB8" );
 
-        InitButton( MOUSE_WHEEL_UP );
-        InitButton( MOUSE_WHEEL_DOWN );
-        InitButton( MOUSE_WHEEL_LEFT );
-        InitButton( MOUSE_WHEEL_RIGHT );
+        InitButton( MOUSE_WHEEL_UP, "Wheel Up" );
+        InitButton( MOUSE_WHEEL_DOWN, "Wheel Down" );
+        InitButton( MOUSE_WHEEL_LEFT, "Wheel Left" );
+        InitButton( MOUSE_WHEEL_RIGHT, "Wheel Right" );
 
-        InitMouseAxis( MOUSE_AXIS_X );
-        InitMouseAxis( MOUSE_AXIS_Y );
+        InitMouseAxis( MOUSE_AXIS_X, "Mouse Axis X" );
+        InitMouseAxis( MOUSE_AXIS_Y, "Mouse Axis Y" );
 
         InitDevice( ID_KEYBOARD );
         InitDevice( ID_MOUSE );
@@ -261,71 +262,71 @@ struct AInputComponentStatic {
         InitDevice( ID_JOYSTICK_15 );
         InitDevice( ID_JOYSTICK_16 );
 
-        InitJoyButton( JOY_BUTTON_1 );
-        InitJoyButton( JOY_BUTTON_2 );
-        InitJoyButton( JOY_BUTTON_3 );
-        InitJoyButton( JOY_BUTTON_4 );
-        InitJoyButton( JOY_BUTTON_5 );
-        InitJoyButton( JOY_BUTTON_6 );
-        InitJoyButton( JOY_BUTTON_7 );
-        InitJoyButton( JOY_BUTTON_8 );
-        InitJoyButton( JOY_BUTTON_9 );
-        InitJoyButton( JOY_BUTTON_10 );
-        InitJoyButton( JOY_BUTTON_11 );
-        InitJoyButton( JOY_BUTTON_12 );
-        InitJoyButton( JOY_BUTTON_13 );
-        InitJoyButton( JOY_BUTTON_14 );
-        InitJoyButton( JOY_BUTTON_15 );
-        InitJoyButton( JOY_BUTTON_16 );
-        InitJoyButton( JOY_BUTTON_17 );
-        InitJoyButton( JOY_BUTTON_18 );
-        InitJoyButton( JOY_BUTTON_19 );
-        InitJoyButton( JOY_BUTTON_20 );
-        InitJoyButton( JOY_BUTTON_21 );
-        InitJoyButton( JOY_BUTTON_22 );
-        InitJoyButton( JOY_BUTTON_23 );
-        InitJoyButton( JOY_BUTTON_24 );
-        InitJoyButton( JOY_BUTTON_25 );
-        InitJoyButton( JOY_BUTTON_26 );
-        InitJoyButton( JOY_BUTTON_27 );
-        InitJoyButton( JOY_BUTTON_28 );
-        InitJoyButton( JOY_BUTTON_29 );
-        InitJoyButton( JOY_BUTTON_30 );
-        InitJoyButton( JOY_BUTTON_31 );
-        InitJoyButton( JOY_BUTTON_32 );
+        InitJoyButton( JOY_BUTTON_1, "Joy Btn 1" );
+        InitJoyButton( JOY_BUTTON_2, "Joy Btn 2" );
+        InitJoyButton( JOY_BUTTON_3, "Joy Btn 3" );
+        InitJoyButton( JOY_BUTTON_4, "Joy Btn 4" );
+        InitJoyButton( JOY_BUTTON_5, "Joy Btn 5" );
+        InitJoyButton( JOY_BUTTON_6, "Joy Btn 6" );
+        InitJoyButton( JOY_BUTTON_7, "Joy Btn 7" );
+        InitJoyButton( JOY_BUTTON_8, "Joy Btn 8" );
+        InitJoyButton( JOY_BUTTON_9, "Joy Btn 9" );
+        InitJoyButton( JOY_BUTTON_10, "Joy Btn 10" );
+        InitJoyButton( JOY_BUTTON_11, "Joy Btn 11" );
+        InitJoyButton( JOY_BUTTON_12, "Joy Btn 12" );
+        InitJoyButton( JOY_BUTTON_13, "Joy Btn 13" );
+        InitJoyButton( JOY_BUTTON_14, "Joy Btn 14" );
+        InitJoyButton( JOY_BUTTON_15, "Joy Btn 15" );
+        InitJoyButton( JOY_BUTTON_16, "Joy Btn 16" );
+        InitJoyButton( JOY_BUTTON_17, "Joy Btn 17" );
+        InitJoyButton( JOY_BUTTON_18, "Joy Btn 18" );
+        InitJoyButton( JOY_BUTTON_19, "Joy Btn 19" );
+        InitJoyButton( JOY_BUTTON_20, "Joy Btn 20" );
+        InitJoyButton( JOY_BUTTON_21, "Joy Btn 21" );
+        InitJoyButton( JOY_BUTTON_22, "Joy Btn 22" );
+        InitJoyButton( JOY_BUTTON_23, "Joy Btn 23" );
+        InitJoyButton( JOY_BUTTON_24, "Joy Btn 24" );
+        InitJoyButton( JOY_BUTTON_25, "Joy Btn 25" );
+        InitJoyButton( JOY_BUTTON_26, "Joy Btn 26" );
+        InitJoyButton( JOY_BUTTON_27, "Joy Btn 27" );
+        InitJoyButton( JOY_BUTTON_28, "Joy Btn 28" );
+        InitJoyButton( JOY_BUTTON_29, "Joy Btn 29" );
+        InitJoyButton( JOY_BUTTON_30, "Joy Btn 30" );
+        InitJoyButton( JOY_BUTTON_31, "Joy Btn 31" );
+        InitJoyButton( JOY_BUTTON_32, "Joy Btn 32" );
 
-        InitJoyAxis( JOY_AXIS_1 );
-        InitJoyAxis( JOY_AXIS_2 );
-        InitJoyAxis( JOY_AXIS_3 );
-        InitJoyAxis( JOY_AXIS_4 );
-        InitJoyAxis( JOY_AXIS_5 );
-        InitJoyAxis( JOY_AXIS_6 );
-        InitJoyAxis( JOY_AXIS_7 );
-        InitJoyAxis( JOY_AXIS_8 );
-        InitJoyAxis( JOY_AXIS_9 );
-        InitJoyAxis( JOY_AXIS_10 );
-        InitJoyAxis( JOY_AXIS_11 );
-        InitJoyAxis( JOY_AXIS_12 );
-        InitJoyAxis( JOY_AXIS_13 );
-        InitJoyAxis( JOY_AXIS_14 );
-        InitJoyAxis( JOY_AXIS_15 );
-        InitJoyAxis( JOY_AXIS_16 );
-        InitJoyAxis( JOY_AXIS_17 );
-        InitJoyAxis( JOY_AXIS_18 );
-        InitJoyAxis( JOY_AXIS_19 );
-        InitJoyAxis( JOY_AXIS_20 );
-        InitJoyAxis( JOY_AXIS_21 );
-        InitJoyAxis( JOY_AXIS_22 );
-        InitJoyAxis( JOY_AXIS_23 );
-        InitJoyAxis( JOY_AXIS_24 );
-        InitJoyAxis( JOY_AXIS_25 );
-        InitJoyAxis( JOY_AXIS_26 );
-        InitJoyAxis( JOY_AXIS_27 );
-        InitJoyAxis( JOY_AXIS_28 );
-        InitJoyAxis( JOY_AXIS_29 );
-        InitJoyAxis( JOY_AXIS_30 );
-        InitJoyAxis( JOY_AXIS_31 );
-        InitJoyAxis( JOY_AXIS_32 );
+        InitJoyAxis( JOY_AXIS_1, "Joy Axis 1" );
+        InitJoyAxis( JOY_AXIS_2, "Joy Axis 2" );
+        InitJoyAxis( JOY_AXIS_3, "Joy Axis 3" );
+        InitJoyAxis( JOY_AXIS_4, "Joy Axis 4" );
+        InitJoyAxis( JOY_AXIS_5, "Joy Axis 5" );
+        InitJoyAxis( JOY_AXIS_6, "Joy Axis 6" );
+        InitJoyAxis( JOY_AXIS_7, "Joy Axis 7" );
+        InitJoyAxis( JOY_AXIS_8, "Joy Axis 8" );
+        InitJoyAxis( JOY_AXIS_9, "Joy Axis 9" );
+        InitJoyAxis( JOY_AXIS_10, "Joy Axis 10" );
+        InitJoyAxis( JOY_AXIS_11, "Joy Axis 11" );
+        InitJoyAxis( JOY_AXIS_12, "Joy Axis 12" );
+        InitJoyAxis( JOY_AXIS_13, "Joy Axis 13" );
+        InitJoyAxis( JOY_AXIS_14, "Joy Axis 14" );
+        InitJoyAxis( JOY_AXIS_15, "Joy Axis 15" );
+        InitJoyAxis( JOY_AXIS_16, "Joy Axis 16" );
+        InitJoyAxis( JOY_AXIS_17, "Joy Axis 17" );
+        InitJoyAxis( JOY_AXIS_18, "Joy Axis 18" );
+        InitJoyAxis( JOY_AXIS_19, "Joy Axis 19" );
+        InitJoyAxis( JOY_AXIS_20, "Joy Axis 20" );
+        InitJoyAxis( JOY_AXIS_21, "Joy Axis 21" );
+        InitJoyAxis( JOY_AXIS_22, "Joy Axis 22" );
+        InitJoyAxis( JOY_AXIS_23, "Joy Axis 23" );
+        InitJoyAxis( JOY_AXIS_24, "Joy Axis 24" );
+        InitJoyAxis( JOY_AXIS_25, "Joy Axis 25" );
+        InitJoyAxis( JOY_AXIS_26, "Joy Axis 26" );
+        InitJoyAxis( JOY_AXIS_27, "Joy Axis 27" );
+        InitJoyAxis( JOY_AXIS_28, "Joy Axis 28" );
+        InitJoyAxis( JOY_AXIS_29, "Joy Axis 29" );
+        InitJoyAxis( JOY_AXIS_30, "Joy Axis 30" );
+        InitJoyAxis( JOY_AXIS_31, "Joy Axis 31" );
+        InitJoyAxis( JOY_AXIS_32, "Joy Axis 32" );
 
         InitModifier( KMOD_SHIFT );
         InitModifier( KMOD_CONTROL );
@@ -590,7 +591,7 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
                     if ( mapping.AxisOrActionIndex == i && mapping.ControllerId == ControllerId ) {
                         //binding.AxisScale += MouseAxisState[MouseIndex][ mouseAxis ] * mapping.AxisScale;
 
-                        binding.AxisScale += mouseDelta[mouseAxis] * mapping.AxisScale * mouseCurrentSens;
+                        binding.AxisScale += mouseDelta[mouseAxis] * (mapping.AxisScale * mouseCurrentSens);
                     }
                 }
             }
