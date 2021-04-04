@@ -32,10 +32,10 @@ SOFTWARE.
 #include <World/Public/Resource/Asset.h>
 #include <World/Public/Base/ResourceManager.h>
 #include <World/Public/MaterialGraph/MaterialGraph.h>
+#include <World/Public/EngineInstance.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Runtime/Public/Runtime.h>
-#include <GameThread/Public/EngineInstance.h>
 
 AN_CLASS_META( AMaterial )
 AN_CLASS_META( AMaterialInstance )
@@ -851,7 +851,8 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
 
     GLogger.Printf( "Unknown internal material %s\n", _Path );
 
-    LoadInternalResource( "/Default/Materials/Unlit" );
+    //LoadInternalResource( "/Default/Materials/Unlit" );
+    LoadInternalResource( "/Default/Materials/BaseLight" );
 }
 
 AMaterialInstance::AMaterialInstance() {
@@ -867,6 +868,7 @@ AMaterialInstance::AMaterialInstance() {
 }
 
 void AMaterialInstance::LoadInternalResource( const char * _Path ) {
+#if 0
     if ( !Core::Stricmp( _Path, "/Default/MaterialInstance/Default" ) )
     {
         static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
@@ -880,7 +882,8 @@ void AMaterialInstance::LoadInternalResource( const char * _Path ) {
         SetTexture( 0, TextureResource.GetObject() );
         return;
     }
-    if ( !Core::Stricmp( _Path, "/Default/MaterialInstance/BaseLight" ) ) {
+#endif
+    if ( !Core::Stricmp( _Path, "/Default/MaterialInstance/BaseLight" ) || !Core::Stricmp( _Path, "/Default/MaterialInstance/Default" ) ) {
         static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/BaseLight" ) );
         //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
         //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );

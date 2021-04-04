@@ -130,7 +130,7 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
         PrefilteredColor += textureLod( PrefilteredMap, vec4( ReflectionVector, GlobalIrradianceAndReflection.y ), MipIndex ).rgb;   
     }
 #else
-    Irradiance += vec3(0.01); // just for test
+    //Irradiance += vec3(0.01); // just for test
 #endif
     
 #if defined WITH_SSLR && defined ALLOW_SSLR

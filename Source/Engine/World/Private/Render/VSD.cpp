@@ -37,12 +37,13 @@ SOFTWARE.
 
 // FIXME: Replace AABB culling to OBB culling?
 
-#include "VSD.h"
-
-#include <World/Public/Render/RenderWorld.h>
 #include <World/Public/World.h>
+#include <World/Public/Render/vsd.h>
+#include <World/Public/Render/RenderWorld.h>
 #include <World/Public/Level.h>
 #include <Runtime/Public/ScopedTimeCheck.h>
+
+static const SWorldRaycastFilter DefaultRaycastFilter;
 
 ARuntimeVariable vsd_FrustumCullingMT( _CTS( "vsd_FrustumCullingMT" ), _CTS( "1" ) );
 ARuntimeVariable vsd_FrustumCullingSSE( _CTS( "vsd_FrustumCullingSSE" ), _CTS( "1" ) );

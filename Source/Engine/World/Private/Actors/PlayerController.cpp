@@ -34,8 +34,8 @@ SOFTWARE.
 #include <World/Public/World.h>
 #include <World/Public/Widgets/WViewport.h>
 #include <World/Public/Widgets/WDesktop.h>
+#include <World/Public/EngineInstance.h>
 #include <Runtime/Public/Runtime.h>
-#include <GameThread/Public/EngineInstance.h>
 #include <Core/Public/Image.h>
 
 AN_CLASS_META( APlayerController )

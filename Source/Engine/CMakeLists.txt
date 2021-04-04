@@ -285,14 +285,6 @@ source_group( "World\\Private\\BulletCompatibility" FILES ${WorldPrivateBulletCo
 source_group( "World\\Private" FILES ${WorldPrivate} )
 
 #---------------------------------------------------------------------
-# Game thread module
-file( GLOB GameThreadPublic GameThread/Public/*.h GameThread/Public/*.cpp )
-file( GLOB GameThreadPrivate GameThread/Private/*.h GameThread/Private/*.cpp )
-
-source_group( "GameThread\\Public" FILES ${GameThreadPublic} )
-source_group( "GameThread\\Private" FILES ${GameThreadPrivate} )
-
-#---------------------------------------------------------------------
 
 add_executable( EmbedTool Util/EmbedTool.cpp Util/miniz/miniz.c )
 
@@ -364,9 +356,6 @@ ${WorldPrivateComponents}
 ${WorldPrivateWidgets}
 ${WorldPrivateBulletCompatibility}
 ${WorldPrivate}
-
-${GameThreadPublic}
-${GameThreadPrivate}
 )
 
 # if shared

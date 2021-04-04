@@ -184,11 +184,18 @@ void ACanvas::DrawCircleFilled( Float2 const & centre, float radius, AColor4 con
     DrawList.AddCircleFilled( centre, radius, col.GetDWord(), num_segments );
 }
 
-void ACanvas::DrawTextUTF8( Float2 const & pos, AColor4 const & col, const char* _TextBegin, const char* _TextEnd ) {
-    DrawTextUTF8( DrawListSharedData.FontSize, pos, col, _TextBegin, _TextEnd );
+void ACanvas::DrawTextUTF8( Float2 const & pos, AColor4 const & col, const char* _TextBegin, const char* _TextEnd, bool bShadow ) {
+    DrawTextUTF8( DrawListSharedData.FontSize, pos, col, _TextBegin, _TextEnd, 0, nullptr, bShadow );
 }
 
-void ACanvas::DrawTextUTF8( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
+void ACanvas::DrawTextUTF8( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect, bool bShadow ) {
+    if ( bShadow ) {
+        _DrawTextUTF8( _FontSize, _Pos + Float2( 1, 1 ), AColor4::Black(), _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect );
+    }
+    _DrawTextUTF8( _FontSize, _Pos, _Color, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect );
+}
+
+void ACanvas::_DrawTextUTF8( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
     if ( _Color.IsTransparent() ) {
         return;
     }
@@ -410,11 +417,18 @@ void ACanvas::DrawTextUTF8( float _FontSize, Float2 const & _Pos, AColor4 const 
     DrawList._VtxCurrentIdx = (unsigned int)DrawList.VtxBuffer.Size;
 }
 
-void ACanvas::DrawTextWChar( Float2 const & pos, AColor4 const & col, SWideChar const * _TextBegin, SWideChar const * _TextEnd ) {
-    DrawTextWChar( DrawListSharedData.FontSize, pos, col, _TextBegin, _TextEnd );
+void ACanvas::DrawTextWChar( Float2 const & pos, AColor4 const & col, SWideChar const * _TextBegin, SWideChar const * _TextEnd, bool bShadow ) {
+    DrawTextWChar( DrawListSharedData.FontSize, pos, col, _TextBegin, _TextEnd, 0, nullptr, bShadow );
 }
 
-void ACanvas::DrawTextWChar( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
+void ACanvas::DrawTextWChar( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect, bool bShadow ) {
+    if ( bShadow ) {
+        _DrawTextWChar( _FontSize, _Pos + Float2(1,1), AColor4::Black(), _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect );
+    }
+    _DrawTextWChar( _FontSize, _Pos, _Color, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect );
+}
+
+void ACanvas::_DrawTextWChar( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
     if ( _Color.IsTransparent() ) {
         return;
     }

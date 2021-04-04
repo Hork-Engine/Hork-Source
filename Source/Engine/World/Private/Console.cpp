@@ -30,8 +30,7 @@ SOFTWARE.
 
 #include "Console.h"
 
-#include <GameThread/Public/EngineInstance.h>
-
+#include <World/Public/EngineInstance.h>
 #include <World/Public/Canvas.h>
 
 #include <Runtime/Public/Runtime.h>

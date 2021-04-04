@@ -31,15 +31,16 @@ SOFTWARE.
 #include <World/Public/Components/InputComponent.h>
 #include <World/Public/World.h>
 #include <Runtime/Public/Runtime.h>
-#include <Runtime/Public/RuntimeVariable.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/HashFunc.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Core/Public/CriticalError.h>
 
-ARuntimeVariable MouseSensitivity( _CTS( "MouseSensitivity" ), _CTS( "6.8" ) );
-ARuntimeVariable MouseFilter( _CTS( "MouseFilter" ), _CTS( "1" ) );
-ARuntimeVariable MouseAccel( _CTS( "MouseAccel" ), _CTS( "0" ) );
+ARuntimeVariable in_MouseSensitivity( _CTS( "in_MouseSensitivity" ), _CTS( "6.8" ) );
+ARuntimeVariable in_MouseSensX( _CTS( "in_MouseSensX" ), _CTS( "0.022" ) );
+ARuntimeVariable in_MouseSensY( _CTS( "in_MouseSensY" ), _CTS( "0.022" ) );
+ARuntimeVariable in_MouseFilter( _CTS( "in_MouseFilter" ), _CTS( "1" ) );
+ARuntimeVariable in_MouseAccel( _CTS( "in_MouseAccel" ), _CTS( "0" ) );
 
 AN_CLASS_META( AInputAxis )
 AN_CLASS_META( AInputAction )
@@ -540,7 +541,7 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
 
     Float2 mouseDelta;
 
-    if ( MouseFilter ) {
+    if ( in_MouseFilter ) {
         mouseDelta = (MouseAxisState[0] + MouseAxisState[1]) * 0.5f;
     } else {
         mouseDelta = MouseAxisState[MouseIndex];
@@ -548,7 +549,8 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
 
     float timeStepMsec = Math::Max( _TimeStep * 1000, 200 );
     float mouseInputRate = mouseDelta.Length() / timeStepMsec;
-    float mouseCurrentSens = MouseSensitivityScale * ( MouseSensitivity.GetFloat() + mouseInputRate * MouseAccel.GetFloat() );
+    float mouseCurrentSens = in_MouseSensitivity.GetFloat() + mouseInputRate * in_MouseAccel.GetFloat();
+    float mouseSens[2] = { in_MouseSensX.GetFloat() * mouseCurrentSens, in_MouseSensY.GetFloat() * mouseCurrentSens };
 
     TPodArray< AInputAxis * > const & inputAxes = InputMappings->GetAxes();
     for ( int i = 0 ; i < inputAxes.Size() ; i++ ) {
@@ -591,7 +593,7 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
                     if ( mapping.AxisOrActionIndex == i && mapping.ControllerId == ControllerId ) {
                         //binding.AxisScale += MouseAxisState[MouseIndex][ mouseAxis ] * mapping.AxisScale;
 
-                        binding.AxisScale += mouseDelta[mouseAxis] * (mapping.AxisScale * mouseCurrentSens);
+                        binding.AxisScale += mouseDelta[mouseAxis] * (mapping.AxisScale * mouseSens[mouseAxis]);
                     }
                 }
             }

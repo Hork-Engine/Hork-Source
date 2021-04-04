@@ -79,8 +79,6 @@ public:
 
     ARenderBackend * GetRenderBackend() { return RenderBackend; }
 
-    class AVSD * GetVSD() { return Vsd.GetObject(); }
-
 private:
     /** IEngineInterface interface. Run the engine */
     void Run( SEntryDecl const & _EntryDecl ) override;
@@ -150,8 +148,6 @@ private:
     TRef< ARenderBackend > RenderBackend;
 
     TUniqueRef< AResourceManager > ResourceManager;
-
-    TUniqueRef< AVSD > Vsd;
 
     bool bAllowInputEvents = false;
 };

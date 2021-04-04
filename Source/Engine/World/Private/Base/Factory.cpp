@@ -35,11 +35,6 @@ SOFTWARE.
 
 AN_CLASS_META( ADummy )
 
-//const char * AAttributeMeta::TypeNames[ (int)EAttributeType::T_Max ] =
-//{
-//    "Byte", "Bool", "Int", "Float", "Float2", "Float3", "Float4", "Quat", "String", "Resource"
-//};
-
 AObjectFactory * AObjectFactory::FactoryList = nullptr;
 
 void InitializeFactories() {

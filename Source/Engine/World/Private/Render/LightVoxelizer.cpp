@@ -32,7 +32,7 @@ SOFTWARE.
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
 //#include <Renderer/RenderBackend.h>
-#include <GameThread/Public/EngineInstance.h>
+#include <World/Public/EngineInstance.h>
 
 #define LIGHT_ITEMS_OFFSET 0
 #define DECAL_ITEMS_OFFSET 256

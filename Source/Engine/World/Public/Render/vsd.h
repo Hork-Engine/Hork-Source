@@ -30,8 +30,15 @@ SOFTWARE.
 
 #pragma once
 
-#include <World/Public/World.h>
+//#include <World/Public/World.h>
 #include <Runtime/Public/Runtime.h>
+
+class AWorld;
+struct SVisibilityQuery;
+struct SBoxHitResult;
+struct SWorldRaycastClosestResult;
+struct SWorldRaycastResult;
+struct SWorldRaycastFilter;
 
 class AVSD
 {
@@ -236,7 +243,6 @@ private:
     SRaycast Raycast;
     SWorldRaycastResult * pRaycastResult;
     TPodArray< SBoxHitResult > * pBoundsRaycastResult;
-    const SWorldRaycastFilter DefaultRaycastFilter;
 
     void RaycastSurface( SSurfaceDef * Self );
     void RaycastPrimitive( SPrimitiveDef * Self );

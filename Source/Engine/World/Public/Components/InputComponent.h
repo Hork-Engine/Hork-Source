@@ -33,6 +33,8 @@ SOFTWARE.
 #include <World/Public/Components/ActorComponent.h>
 
 #include <Runtime/Public/InputDefs.h>
+#include <Runtime/Public/RuntimeVariable.h>
+
 #include <Core/Public/Utf8.h>
 
 #define MAX_PRESSED_KEYS       128
@@ -274,9 +276,6 @@ public:
     /** Filter character events */
     bool bIgnoreCharEvents = false;
 
-    /** Mouse sensitivity factor */
-    float MouseSensitivityScale = 1.0f;
-
     int ControllerId = 0;
 
     /** Set input mappings config */
@@ -480,3 +479,9 @@ public:
     /** Lookup key owner player from string */
     static int LookupController( const char * _ControllerId );
 };
+
+extern ARuntimeVariable in_MouseSensitivity;
+extern ARuntimeVariable in_MouseSensX;
+extern ARuntimeVariable in_MouseSensY;
+extern ARuntimeVariable in_MouseFilter;
+extern ARuntimeVariable in_MouseAccel;

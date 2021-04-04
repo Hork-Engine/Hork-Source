@@ -38,12 +38,11 @@ SOFTWARE.
 #include <World/Public/Components/TerrainComponent.h>
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/Widgets/WDesktop.h>
-#include <GameThread/Public/EngineInstance.h>
+#include <World/Public/EngineInstance.h>
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/ScopedTimeCheck.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 
-#include "VSD.h"
 #include "LightVoxelizer.h"
 
 ARuntimeVariable r_FixFrustumClusters( _CTS( "r_FixFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
@@ -626,7 +625,7 @@ void ARenderFrontend::QueryVisiblePrimitives( AWorld * InWorld ) {
     query.VisibilityMask = RenderDef.VisibilityMask;
     query.QueryMask = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;// | VSD_QUERY_MASK_SHADOW_CAST;
 
-    GEngine->GetVSD()->QueryVisiblePrimitives( InWorld, VisPrimitives, VisSurfaces, &VisPass, query );
+    InWorld->QueryVisiblePrimitives( VisPrimitives, VisSurfaces, &VisPass, query );
 }
 
 void ARenderFrontend::QueryShadowCasters( AWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis,
@@ -722,7 +721,7 @@ void ARenderFrontend::QueryShadowCasters( AWorld * InWorld, Float4x4 const & Lig
     DebugDraw.DrawConvexPoly( v, 4, false );
 #endif
 #endif
-    GEngine->GetVSD()->QueryVisiblePrimitives( InWorld, Primitives, Surfaces, nullptr, query );
+    InWorld->QueryVisiblePrimitives( Primitives, Surfaces, nullptr, query );
 }
 
 void ARenderFrontend::AddRenderInstances( AWorld * InWorld )

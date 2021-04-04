@@ -30,7 +30,7 @@ SOFTWARE.
 #if 0
 #include "ImguiContext.h"
 
-#include <GameThread/Public/EngineInstance.h>
+#include <World/Public/EngineInstance.h>
 #include <Runtime/Public/InputDefs.h>
 #include <World/Public/Components/InputComponent.h>
 

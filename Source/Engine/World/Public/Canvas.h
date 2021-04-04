@@ -116,10 +116,10 @@ public:
     void DrawBezierCurve( Float2 const & pos0, Float2 const & cp0, Float2 const & cp1, Float2 const & pos1, AColor4 const & col, float thickness, int num_segments = 0 );
 
     // Text
-    void DrawTextUTF8( Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char * _TextEnd = nullptr );
-    void DrawTextUTF8( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char * _TextEnd = nullptr, float _WrapWidth = 0.0f, Float4 const * _CPUFineClipRect = nullptr );
-    void DrawTextWChar( Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd = nullptr );
-    void DrawTextWChar( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd = nullptr, float _WrapWidth = 0.0f, Float4 const * _CPUFineClipRect = nullptr );
+    void DrawTextUTF8( Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char * _TextEnd = nullptr, bool bShadow = false );
+    void DrawTextUTF8( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char * _TextEnd = nullptr, float _WrapWidth = 0.0f, Float4 const * _CPUFineClipRect = nullptr, bool bShadow = false );
+    void DrawTextWChar( Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd = nullptr, bool bShadow = false );
+    void DrawTextWChar( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd = nullptr, float _WrapWidth = 0.0f, Float4 const * _CPUFineClipRect = nullptr, bool bShadow = false );
     void DrawChar( char _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color );
     void DrawWChar( SWideChar _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color );
     void DrawCharUTF8( const char * _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color );
@@ -157,6 +157,8 @@ public:
 
 private:
     void SetCurrentFont( AFont const * font );
+    void _DrawTextUTF8( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect );
+    void _DrawTextWChar( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect );
 
     TPodArray< SViewport > Viewports;
 

@@ -34,6 +34,7 @@ SOFTWARE.
 #include "AINavigationMesh.h"
 #include "Level.h"
 #include "Render/RenderWorld.h"
+#include "Render/VSD.h"
 
 class AActor;
 class APawn;
@@ -669,6 +670,8 @@ private:
     ARenderWorld WorldRender;
     // Path finding extension
     AAINavigationMesh NavigationMesh;
+    // Visible surface determinition
+    AVSD Vsd;
 };
 
 #include "Actors/Actor.h"
