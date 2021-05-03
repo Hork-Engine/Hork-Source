@@ -48,7 +48,7 @@ WDesktop::WDesktop()
     , bCursorVisible( true )
     , bDrawBackground( false )
 {
-    Root = NewObject< WWidget >();
+    Root = CreateInstanceOf< WWidget >();
     Root->Desktop = this;
     Root->SetMargin(0,0,0,0);
 }

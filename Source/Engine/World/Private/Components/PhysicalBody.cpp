@@ -230,7 +230,7 @@ AN_END_CLASS_META()
 
 APhysicalBody::APhysicalBody()
 {
-    HitProxy = NewObject< AHitProxy >();
+    HitProxy = CreateInstanceOf< AHitProxy >();
 }
 
 bool APhysicalBody::ShouldHaveCollisionBody() const
@@ -402,7 +402,7 @@ void APhysicalBody::CreateBoneCollisions()
 
         boneCollision->Self = this;
         boneCollision->CollisionBody = collisionBody;
-        boneCollision->HitProxy = NewObject< AHitProxy >();
+        boneCollision->HitProxy = CreateInstanceOf< AHitProxy >();
         boneCollision->HitProxy->SetCollisionMask( boneCollisions[i].CollisionMask );
         boneCollision->HitProxy->SetCollisionGroup( boneCollisions[i].CollisionGroup );
         boneCollision->HitProxy->SetJointIndex( boneCollisions[i].JointIndex );

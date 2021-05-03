@@ -670,6 +670,10 @@ public:
 
     TPodArray< SLightPortalDef > const & GetLightPortals() const { return LightPortals; }
 
+    using APrimitiveLinkPool = TPoolAllocator< SPrimitiveLink >;
+
+    static APrimitiveLinkPool PrimitiveLinkPool;
+
 protected:
     ALevel();
     ~ALevel();
@@ -714,6 +718,8 @@ private:
     void PurgePortals();
 
     void UpdatePrimitiveLinks();
+
+    void AddPrimitiveToArea( SVisArea * Area, SPrimitiveDef * Primitive );
 
     /** Parent world */
     AWorld * OwnerWorld = nullptr;

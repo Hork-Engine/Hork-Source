@@ -40,6 +40,7 @@ ARuntimeVariable in_MouseSensitivity( _CTS( "in_MouseSensitivity" ), _CTS( "6.8"
 ARuntimeVariable in_MouseSensX( _CTS( "in_MouseSensX" ), _CTS( "0.022" ) );
 ARuntimeVariable in_MouseSensY( _CTS( "in_MouseSensY" ), _CTS( "0.022" ) );
 ARuntimeVariable in_MouseFilter( _CTS( "in_MouseFilter" ), _CTS( "1" ) );
+ARuntimeVariable in_MouseInvertY( _CTS( "in_MouseInvertY" ), _CTS( "0" ) );
 ARuntimeVariable in_MouseAccel( _CTS( "in_MouseAccel" ), _CTS( "0" ) );
 
 AN_CLASS_META( AInputAxis )
@@ -545,6 +546,10 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
         mouseDelta = (MouseAxisState[0] + MouseAxisState[1]) * 0.5f;
     } else {
         mouseDelta = MouseAxisState[MouseIndex];
+    }
+
+    if ( in_MouseInvertY ) {
+        mouseDelta.Y = -mouseDelta.Y;
     }
 
     float timeStepMsec = Math::Max( _TimeStep * 1000, 200 );
@@ -1247,7 +1252,7 @@ void AInputMappings::LoadActions( ADocMember const * ArrayOfActions ) {
 }
 
 AInputAxis * AInputMappings::AddAxis( const char * _Name ) {
-    AInputAxis * axis = NewObject< AInputAxis >();
+    AInputAxis * axis = CreateInstanceOf< AInputAxis >();
     axis->AddRef();
     axis->Parent = this;
     axis->IndexInArrayOfAxes = Axes.Size();
@@ -1258,7 +1263,7 @@ AInputAxis * AInputMappings::AddAxis( const char * _Name ) {
 }
 
 AInputAction * AInputMappings::AddAction( const char * _Name ) {
-    AInputAction * action = NewObject< AInputAction >();
+    AInputAction * action = CreateInstanceOf< AInputAction >();
     action->AddRef();
     action->Parent = this;
     action->IndexInArrayOfActions = Actions.Size();

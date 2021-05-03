@@ -35,7 +35,7 @@ SOFTWARE.
 AN_CLASS_META( WMenuPopup )
 
 WMenuPopup::WMenuPopup() {
-    Self = NewObject< WWidget >();
+    Self = CreateInstanceOf< WWidget >();
     Self->SetStyle( WIDGET_STYLE_POPUP );
     Self->SetLayout( WIDGET_LAYOUT_EXPLICIT );
     Self->SetAutoWidth( true );

@@ -41,13 +41,14 @@ SOFTWARE.
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/RuntimeVariable.h>
-#include "PrimitiveLinkPool.h"
 
 ARuntimeVariable com_DrawLevelAreaBounds( _CTS( "com_DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable com_DrawLevelIndoorBounds( _CTS( "com_DrawLevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable com_DrawLevelPortals( _CTS( "com_DrawLevelPortals" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ALevel )
+
+ALevel::APrimitiveLinkPool ALevel::PrimitiveLinkPool;
 
 ALevel::ALevel() {
     ViewCluster = -1;
@@ -688,12 +689,12 @@ static AN_FORCEINLINE bool IsPrimitiveInArea( SPrimitiveDef const * InPrimitive,
     return false;
 }
 
-static void AddPrimitiveToArea( SVisArea * Area, SPrimitiveDef * Primitive ) {
+void ALevel::AddPrimitiveToArea( SVisArea * Area, SPrimitiveDef * Primitive ) {
     if ( IsPrimitiveInArea( Primitive, Area ) ) {
         return;
     }
 
-    SPrimitiveLink * link = GPrimitiveLinkPool.Allocate();
+    SPrimitiveLink * link = PrimitiveLinkPool.Allocate();
     if ( !link ) {
         return;
     }
@@ -864,14 +865,14 @@ void ALevel::UnlinkPrimitive( SPrimitiveDef * InPrimitive ) {
         SPrimitiveLink * free = link;
         link = link->Next;
 
-        GPrimitiveLinkPool.Deallocate( free );
+        PrimitiveLinkPool.Deallocate( free );
     }
 
     InPrimitive->Links = nullptr;
 }
 
 ALightmapUV * ALevel::CreateLightmapUVChannel( AIndexedMesh * InSourceMesh ) {
-    ALightmapUV * lightmapUV = NewObject< ALightmapUV >();
+    ALightmapUV * lightmapUV = CreateInstanceOf< ALightmapUV >();
     lightmapUV->AddRef();
     lightmapUV->Initialize( InSourceMesh, this );
     LightmapUVs.Append( lightmapUV );
@@ -887,7 +888,7 @@ void ALevel::RemoveLightmapUVChannels() {
 }
 
 AVertexLight * ALevel::CreateVertexLightChannel( AIndexedMesh * InSourceMesh ) {
-    AVertexLight * vertexLight = NewObject< AVertexLight >();
+    AVertexLight * vertexLight = CreateInstanceOf< AVertexLight >();
     vertexLight->AddRef();
     vertexLight->Initialize( InSourceMesh, this );
     VertexLightChannels.Append( vertexLight );

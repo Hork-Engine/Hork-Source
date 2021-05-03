@@ -202,7 +202,7 @@ bool WriteMaterial( AString const & _Path, SMaterialDef const * pDef ) {
 
 void AMaterial::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Materials/Unlit" ) ) {
-        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
@@ -223,7 +223,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Materials/UnlitMask" ) ) {
-        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
@@ -246,7 +246,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Materials/UnlitOpacity" ) ) {
-        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
@@ -268,7 +268,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Materials/BaseLight" ) ) {
-        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
@@ -289,7 +289,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Materials/DefaultPBR" ) ) {
-        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
@@ -338,7 +338,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughness" ) ) {
-        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
@@ -397,7 +397,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessMask" ) ) {
-        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
@@ -458,7 +458,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessOpacity" ) ) {
-        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
@@ -518,7 +518,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactor" ) ) {
-        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
@@ -609,7 +609,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactorMask" ) ) {
-        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
@@ -702,7 +702,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactorOpacity" ) ) {
-        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
 
@@ -794,7 +794,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessNoTex" ) ) {
-        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGUniformAddress * baseColorFactor = graph->AddNode< MGUniformAddress >();
         baseColorFactor->Type = AT_Float4;
@@ -824,7 +824,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Materials/Skybox" ) ) {
-        MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInPosition * inPosition = graph->AddNode< MGInPosition >();
 

@@ -174,38 +174,27 @@ void ABaseObject::SetAttributes( THash<> const & AttributeHash, TStdVector< std:
 ABaseObject * AGarbageCollector::GarbageObjects = nullptr;
 ABaseObject * AGarbageCollector::GarbageObjectsTail = nullptr;
 
-void AGarbageCollector::Initialize() {
-
+void AGarbageCollector::Initialize()
+{
 }
 
-void AGarbageCollector::Deinitialize() {
+void AGarbageCollector::Deinitialize()
+{
     DeallocateObjects();
 }
 
-void AGarbageCollector::AddObject( ABaseObject * _Object ) {
+void AGarbageCollector::AddObject( ABaseObject * _Object )
+{
     INTRUSIVE_ADD( _Object, NextGarbageObject, PrevGarbageObject, GarbageObjects, GarbageObjectsTail )
 }
 
-void AGarbageCollector::RemoveObject( ABaseObject * _Object ) {
+void AGarbageCollector::RemoveObject( ABaseObject * _Object )
+{
     INTRUSIVE_REMOVE( _Object, NextGarbageObject, PrevGarbageObject, GarbageObjects, GarbageObjectsTail )
 }
 
-void AGarbageCollector::DeallocateObjects() {
-#if 0
-    while ( GarbageObjects ) {
-        ABaseObject * object = GarbageObjects;
-        ABaseObject * nextObject;
-
-        GarbageObjects = nullptr;
-
-        while ( object ) {
-            nextObject = object->NextGarbageObject;
-            const AClassMeta & classMeta = object->FinalClassMeta();
-            classMeta.DestroyInstance( object );
-            object = nextObject;
-        }
-    }
-#endif
+void AGarbageCollector::DeallocateObjects()
+{
     while ( GarbageObjects ) {
         ABaseObject * object = GarbageObjects;
 
@@ -214,8 +203,7 @@ void AGarbageCollector::DeallocateObjects() {
 
         RemoveObject( object );
 
-        const AClassMeta & classMeta = object->FinalClassMeta();
-        classMeta.DestroyInstance( object );
+        delete object;
     }
 
     GarbageObjectsTail = nullptr;

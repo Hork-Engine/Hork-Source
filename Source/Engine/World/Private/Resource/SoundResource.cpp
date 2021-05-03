@@ -130,7 +130,7 @@ bool ASoundResource::LoadResource( IBinaryStream & Stream )
             return false;
         }
 
-        ABinaryResource * soundBinary = NewObject< ABinaryResource >();
+        ABinaryResource * soundBinary = CreateInstanceOf< ABinaryResource >();
         soundBinary->InitializeFromFile( fontFile.CStr() );
 
         if ( !soundBinary->GetSizeInBytes() ) {

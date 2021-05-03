@@ -623,7 +623,7 @@ void AConsole::Draw( ACanvas * _Canvas, float _TimeStep )
     const int fontVStride = font->GetFontSize() + 4;
     //const int fontVStride = CharacterHeight + 4;
     const int cmdLineH = fontVStride;
-    const float halfVidHeight = ( _Canvas->Height >> 1 ) * ConHeight;
+    const float halfVidHeight = ( _Canvas->GetHeight() >> 1 ) * ConHeight;
     const int numVisLines = Math::Ceil( ( halfVidHeight - cmdLineH ) / fontVStride );
 
     const AColor4 c1(0,0,0,1.0f);
@@ -631,11 +631,11 @@ void AConsole::Draw( ACanvas * _Canvas, float _TimeStep )
     const AColor4 charColor(1,1,1,1);
 
     if ( bFullscreen ) {
-        _Canvas->DrawRectFilled( Float2( 0, 0 ), Float2( _Canvas->Width, _Canvas->Height ), AColor4::Black() );
+        _Canvas->DrawRectFilled( Float2( 0, 0 ), Float2( _Canvas->GetWidth(), _Canvas->GetHeight() ), AColor4::Black() );
     } else {
-        _Canvas->DrawRectFilledMultiColor( Float2( 0, 0 ), Float2( _Canvas->Width, halfVidHeight ), c1, c2, c2, c1 );
+        _Canvas->DrawRectFilledMultiColor( Float2( 0, 0 ), Float2( _Canvas->GetWidth(), halfVidHeight ), c1, c2, c2, c1 );
     }
-    _Canvas->DrawLine( Float2( 0, halfVidHeight ), Float2( _Canvas->Width, halfVidHeight ), AColor4::White(), 2.0f );
+    _Canvas->DrawLine( Float2( 0, halfVidHeight ), Float2( _Canvas->GetWidth(), halfVidHeight ), AColor4::White(), 2.0f );
 
     int x = Padding;
     int y = halfVidHeight - fontVStride;

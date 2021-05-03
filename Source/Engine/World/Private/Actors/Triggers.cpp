@@ -42,7 +42,7 @@ ATriggerBox::ATriggerBox() {
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
     TriggerBody->SetCollisionMask( CM_PAWN );
 
-    ACollisionModel * collisionModel = NewObject< ACollisionModel >();
+    ACollisionModel * collisionModel = CreateInstanceOf< ACollisionModel >();
     collisionModel->CreateBody< ACollisionBox >();
     TriggerBody->SetCollisionModel( collisionModel );
 }
@@ -59,7 +59,7 @@ ATriggerSphere::ATriggerSphere() {
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
     TriggerBody->SetCollisionMask( CM_PAWN );
 
-    ACollisionModel * collisionModel = NewObject< ACollisionModel >();
+    ACollisionModel * collisionModel = CreateInstanceOf< ACollisionModel >();
     collisionModel->CreateBody< ACollisionSphere >();
     TriggerBody->SetCollisionModel( collisionModel );
 }
@@ -76,7 +76,7 @@ ATriggerCylinder::ATriggerCylinder() {
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
     TriggerBody->SetCollisionMask( CM_PAWN );
 
-    ACollisionModel * collisionModel = NewObject< ACollisionModel >();
+    ACollisionModel * collisionModel = CreateInstanceOf< ACollisionModel >();
     collisionModel->CreateBody< ACollisionCylinder >();
     TriggerBody->SetCollisionModel( collisionModel );
 }
@@ -93,7 +93,7 @@ ATriggerCone::ATriggerCone() {
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
     TriggerBody->SetCollisionMask( CM_PAWN );
 
-    ACollisionModel * collisionModel = NewObject< ACollisionModel >();
+    ACollisionModel * collisionModel = CreateInstanceOf< ACollisionModel >();
     collisionModel->CreateBody< ACollisionCone >();
     TriggerBody->SetCollisionModel( collisionModel );
 }
@@ -110,7 +110,7 @@ ATriggerCapsule::ATriggerCapsule() {
     TriggerBody->SetCollisionGroup( CM_TRIGGER );
     TriggerBody->SetCollisionMask( CM_PAWN );
 
-    ACollisionModel * collisionModel = NewObject< ACollisionModel >();
+    ACollisionModel * collisionModel = CreateInstanceOf< ACollisionModel >();
     collisionModel->CreateBody< ACollisionCapsule >();
     TriggerBody->SetCollisionModel( collisionModel );
 }

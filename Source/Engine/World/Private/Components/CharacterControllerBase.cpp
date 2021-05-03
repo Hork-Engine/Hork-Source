@@ -72,7 +72,7 @@ AN_CLASS_META( ACharacterControllerBase )
 
 ACharacterControllerBase::ACharacterControllerBase()
 {
-    HitProxy = NewObject< AHitProxy >();
+    HitProxy = CreateInstanceOf< AHitProxy >();
     HitProxy->SetCollisionGroup( CM_CHARACTER_CONTROLLER );
     HitProxy->SetCollisionMask( CM_ALL );
 
@@ -794,7 +794,7 @@ AN_CLASS_META( AProjectileExperimental )
 
 AProjectileExperimental::AProjectileExperimental()
 {
-    HitProxy = NewObject< AHitProxy >();
+    HitProxy = CreateInstanceOf< AHitProxy >();
     HitProxy->SetCollisionGroup( CM_PROJECTILE );
     HitProxy->SetCollisionMask( CM_ALL );
 }

@@ -626,7 +626,7 @@ MGNode::~MGNode() {
 }
 
 MGInput * MGNode::AddInput( const char * _Name ) {
-    MGInput * In = NewObject< MGInput >();
+    MGInput * In = CreateInstanceOf< MGInput >();
     In->AddRef();
     In->SetObjectName( _Name );
     Inputs.Append( In );
@@ -634,7 +634,7 @@ MGInput * MGNode::AddInput( const char * _Name ) {
 }
 
 MGOutput * MGNode::AddOutput( const char * _Name, EMGNodeType _Type ) {
-    MGOutput * Out = NewObject< MGOutput >();
+    MGOutput * Out = CreateInstanceOf< MGOutput >();
     Out->AddRef();
     Out->SetObjectName( _Name );
     Out->Type = _Type;

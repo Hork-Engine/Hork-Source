@@ -41,7 +41,7 @@ SOFTWARE.
 
 class AInputMappings;
 
-class ARenderingParameters final : public ABaseObject {
+class ARenderingParameters : public ABaseObject {
     AN_CLASS( ARenderingParameters, ABaseObject )
 
 public:
@@ -65,6 +65,9 @@ public:
     // TODO: Wireframe color/line width
     // TODO: bBloomEnabled, BloomParams[4]
     // TODO: Render mode: Polygons,Triangles,Solid,Solid+Triangles,Solid+Polygons,etc (for editor)
+
+    ARenderingParameters();
+    ~ARenderingParameters();
 
     ATexture * GetCurrentExposure() { return CurrentExposure; }
 
@@ -147,10 +150,6 @@ public:
     ATexture * GetDepthTexture() { return DepthTexture; }
 
 private:
-    ARenderingParameters();
-
-    ~ARenderingParameters();
-
     TRef< ATexture > ColorGradingLUT;
     TRef< ATexture > CurrentColorGradingLUT;
     TRef< ATexture > CurrentExposure;
@@ -168,7 +167,7 @@ private:
     bool bColorGradingEnabled;
 };
 
-class AAudioParameters final : public ABaseObject {
+class AAudioParameters : public ABaseObject {
     AN_CLASS( AAudioParameters, ABaseObject )
 
 public:
@@ -182,7 +181,6 @@ public:
 
     uint32_t ListenerMask = ~0u;
 
-private:
     AAudioParameters() {}
     ~AAudioParameters() {}
 };

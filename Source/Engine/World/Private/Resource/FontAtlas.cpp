@@ -385,7 +385,7 @@ void AFont::InitializeFromMemoryTTF( const void * _SysMem, size_t _SizeInBytes, 
     }
 
     // Create atlas texture
-    AtlasTexture = NewObject< ATexture >();
+    AtlasTexture = CreateInstanceOf< ATexture >();
     AtlasTexture->Initialize2D( TEXTURE_PF_R8_UNORM, 1, TexWidth, TexHeight );
     AtlasTexture->WriteTextureData2D( 0, 0, TexWidth, TexHeight, 0, TexPixelsAlpha8 );
 }
@@ -456,7 +456,7 @@ bool AFont::LoadResource( IBinaryStream & Stream ) {
         return false;
     }
 
-    ABinaryResource * fontBinary = NewObject< ABinaryResource >();
+    ABinaryResource * fontBinary = CreateInstanceOf< ABinaryResource >();
     fontBinary->InitializeFromFile( fontFile.CStr() );
 
     if ( !fontBinary->GetSizeInBytes() ) {

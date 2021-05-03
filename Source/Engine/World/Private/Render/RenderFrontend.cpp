@@ -62,7 +62,7 @@ ARenderFrontend::ARenderFrontend()
 {
     TerrainMesh = MakeRef< ATerrainMesh >( TerrainTileSize );
 
-    PhotometricProfiles = NewObject< ATexture >();
+    PhotometricProfiles = CreateInstanceOf< ATexture >();
     PhotometricProfiles->Initialize1DArray( TEXTURE_PF_R8_UNORM, 1, 256, 256 );
 }
 
@@ -104,8 +104,8 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     FrameData.RenderTargetMaxWidth = MaxViewportWidth;
     FrameData.RenderTargetMaxHeight = MaxViewportHeight;
 
-    FrameData.CanvasWidth = InCanvas->Width;
-    FrameData.CanvasHeight = InCanvas->Height;
+    FrameData.CanvasWidth = InCanvas->GetWidth();
+    FrameData.CanvasHeight = InCanvas->GetHeight();
 
     const Float2 orthoMins( 0.0f, (float)FrameData.CanvasHeight );
     const Float2 orthoMaxs( (float)FrameData.CanvasWidth, 0.0f );

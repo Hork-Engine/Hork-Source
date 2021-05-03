@@ -36,10 +36,11 @@ SOFTWARE.
 #include <World/Public/Components/PointLightComponent.h>
 #include <World/Public/Render/vsd.h>
 #include <World/Public/EngineInstance.h>
-#include <Runtime/Public/Runtime.h>
+
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
-#include "PrimitiveLinkPool.h"
+
+#include <Runtime/Public/Runtime.h>
 
 AN_CLASS_META( AWorld )
 
@@ -48,7 +49,7 @@ TPodArray< AWorld * > AWorld::Worlds;
 
 AWorld::AWorld()
 {
-    PersistentLevel = NewObject< ALevel >();
+    PersistentLevel = CreateInstanceOf< ALevel >();
     PersistentLevel->AddRef();
     PersistentLevel->OwnerWorld = this;
     PersistentLevel->bIsPersistent = true;
@@ -906,7 +907,7 @@ void AWorld::UpdateWorlds( float _TimeStep )
 
     KickoffPendingKillWorlds();
 
-    GPrimitiveLinkPool.CleanupEmptyBlocks();
+    ALevel::PrimitiveLinkPool.CleanupEmptyBlocks();
 }
 
 void AWorld::SetGlobalIrradianceMap( int Index )

@@ -44,7 +44,7 @@ protected:
     ATerrainActor()
     {
         TerrainComponent = CreateComponent< ATerrainComponent >( "TerrainComponent" );
-        TerrainComponent->SetTerrain( NewObject< ATerrain >() );
+        TerrainComponent->SetTerrain( CreateInstanceOf< ATerrain >() );
 
         RootComponent = TerrainComponent;
     }

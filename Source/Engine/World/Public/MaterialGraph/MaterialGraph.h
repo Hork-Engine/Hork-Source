@@ -878,7 +878,7 @@ public:
                 }
             }
         }
-        MGNode * node = NewObject< T >();
+        MGNode * node = CreateInstanceOf< T >();
         Nodes.Append( node );
         node->AddRef();
         node->ID = ++NodeIdGen;

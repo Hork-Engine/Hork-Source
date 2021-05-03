@@ -211,7 +211,7 @@ bool ATexture::InitializeFromImage( AImage const & _Image ) {
     return true;
 }
 
-bool ATexture::InitializeCubemapFromImages( AImage const * _Faces[6] ) {
+bool ATexture::InitializeCubemapFromImages( std::array< AImage const *, 6 > const & _Faces ) {
     const void * faces[6];
 
     int width = _Faces[0]->GetWidth();
@@ -238,10 +238,10 @@ bool ATexture::InitializeCubemapFromImages( AImage const * _Faces[6] ) {
         return false;
     }
 
-    for ( int i = 1 ; i < 6 ; i++ ) {
+    for ( AImage const * faceImage : _Faces ) {
         STexturePixelFormat facePF;
 
-        if ( !STexturePixelFormat::GetAppropriatePixelFormat( _Faces[i]->GetPixelFormat(), facePF ) ) {
+        if ( !STexturePixelFormat::GetAppropriatePixelFormat( faceImage->GetPixelFormat(), facePF ) ) {
             return false;
         }
 

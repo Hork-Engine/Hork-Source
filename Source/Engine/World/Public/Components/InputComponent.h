@@ -142,11 +142,14 @@ private:
 };
 #endif
 
-class AInputAxis final : public ABaseObject {
+class AInputAxis : public ABaseObject {
     AN_CLASS( AInputAxis, ABaseObject )
 
     friend class AInputMappings;
+
 public:
+    AInputAxis();
+
     int GetNameHash() const { return NameHash; }
 
     void Map( int _DevId, int _KeyToken, float _AxisScale, int _ControllerId );
@@ -155,8 +158,6 @@ public:
     //uint32_t GetJoystickAxes( int _Joystick ) const { return MappedJoystickAxes[ _Joystick ]; }
 
 private:
-    AInputAxis();
-
     int NameHash = 0;
 
     AInputMappings * Parent = nullptr;
@@ -173,18 +174,19 @@ private:
     int IndexInArrayOfAxes = 0;
 };
 
-class AInputAction final : public ABaseObject {
+class AInputAction : public ABaseObject {
     AN_CLASS( AInputAction, ABaseObject )
 
     friend class AInputMappings;
+
 public:
+    AInputAction() {}
+
     int GetNameHash() const { return NameHash; }
 
     void Map( int _DevId, int _KeyToken, int _ModMask, int _ControllerId );
 
 private:
-    AInputAction() {}
-
     int NameHash = 0;
 
     AInputMappings * Parent = nullptr;
@@ -195,7 +197,7 @@ private:
     int IndexInArrayOfActions = 0;
 };
 
-class AInputMappings final : public ABaseObject {
+class AInputMappings : public ABaseObject {
     AN_CLASS( AInputMappings, ABaseObject )
 
     friend class AInputAxis;
@@ -203,6 +205,9 @@ class AInputMappings final : public ABaseObject {
     friend class AInputComponent;
 
 public:
+    AInputMappings();
+    ~AInputMappings();
+
     TRef< ADocObject > Serialize() override;
 
     static AInputMappings * LoadMappings( ADocObject const * pObject );
@@ -231,9 +236,6 @@ public:
     const TPodArray< AInputAction * > & GetActions() const { return Actions; }
 
 private:
-    AInputMappings();
-    ~AInputMappings();
-
     struct SMapping
     {
         int AxisOrActionIndex;
@@ -260,7 +262,7 @@ private:
     AArrayOfMappings JoystickAxisMappings[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
 };
 
-class AInputComponent final : public AActorComponent {
+class AInputComponent : public AActorComponent {
     AN_COMPONENT( AInputComponent, AActorComponent )
 
 public:
@@ -484,4 +486,5 @@ extern ARuntimeVariable in_MouseSensitivity;
 extern ARuntimeVariable in_MouseSensX;
 extern ARuntimeVariable in_MouseSensY;
 extern ARuntimeVariable in_MouseFilter;
+extern ARuntimeVariable in_MouseInvertY;
 extern ARuntimeVariable in_MouseAccel;

@@ -54,6 +54,9 @@ class ARenderFrontend : public ABaseObject
     AN_CLASS( ARenderFrontend, ABaseObject )
 
 public:
+    ARenderFrontend();
+    ~ARenderFrontend();
+
     void Render( ACanvas * InCanvas );
 
     /** Get render frame data */
@@ -62,9 +65,6 @@ public:
     SRenderFrontendStat const & GetStat() const { return Stat; }
 
 private:
-    ARenderFrontend();
-    ~ARenderFrontend();
-
     void RenderCanvas( ACanvas * InCanvas );
     void RenderView( int _Index );
 

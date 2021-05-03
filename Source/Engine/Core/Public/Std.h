@@ -33,6 +33,7 @@ SOFTWARE.
 #include "Alloc.h"
 
 #include <thread>
+#include <array>
 
 #ifdef AN_CPP20
 #define AN_NODISCARD [[nodiscard]]

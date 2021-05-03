@@ -83,7 +83,7 @@ public:
     /** Add child widget */
     template< typename T >
     T * AddWidget() {
-        T * w = NewObject< T >();
+        T * w = CreateInstanceOf< T >();
         w->SetParent( this );
         return w;
     }
@@ -100,7 +100,7 @@ public:
     /** Add widget decoration */
     template< typename T >
     WWidget & AddDecorate() {
-        WDecorate * d = NewObject< T >();
+        WDecorate * d = CreateInstanceOf< T >();
         return AddDecorate( d );
     }
 

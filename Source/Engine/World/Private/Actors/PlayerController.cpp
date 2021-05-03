@@ -276,17 +276,15 @@ ARenderingParameters::ARenderingParameters() {
         dataInit = true;
     }
 
-    CurrentColorGradingLUT = NewObject< ATexture >();
-    CurrentColorGradingLUT->Initialize3D( TEXTURE_PF_BGR16F, 1, 16, 16, 16 );
+    CurrentColorGradingLUT = CreateInstanceOf< ATexture >( STexture3D{}, TEXTURE_PF_BGR16F, 1, 16, 16, 16 );
     CurrentColorGradingLUT->WriteTextureData3D( 0, 0, 0, 16, 16, 16, 0, data );
 
     const float initialExposure[2] = { 30.0f / 255.0f, 30.0f / 255.0f };
-    CurrentExposure = NewObject< ATexture >();
-    CurrentExposure->Initialize2D( TEXTURE_PF_RG32F, 1, 1, 1 );
+    CurrentExposure = CreateInstanceOf< ATexture >( STexture2D{}, TEXTURE_PF_RG32F, 1, 1, 1 );
     CurrentExposure->WriteTextureData2D( 0, 0, 1, 1, 0, initialExposure );
 
-    LightTexture = NewObject< ATexture >();
-    DepthTexture = NewObject< ATexture >();
+    LightTexture = CreateInstanceOf< ATexture >();
+    DepthTexture = CreateInstanceOf< ATexture >();
 
     SetColorGradingDefaults();
 }

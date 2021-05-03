@@ -376,7 +376,7 @@ public:
     template< typename T >
     T * CreateBody()
     {
-        T * body = NewObject< T >();
+        T * body = CreateInstanceOf< T >();
         CollisionBodies.Append( body );
         body->AddRef();
         return body;
@@ -444,7 +444,7 @@ public:
         boneCol.JointIndex = JointIndex;
         boneCol.CollisionGroup = CollisionGroup;
         boneCol.CollisionMask = CollisionMask;
-        boneCol.CollisionBody = NewObject< T >();
+        boneCol.CollisionBody = CreateInstanceOf< T >();
         BoneCollisions.Append( boneCol );
         return static_cast< T * >( boneCol.CollisionBody.GetObject() );
     }

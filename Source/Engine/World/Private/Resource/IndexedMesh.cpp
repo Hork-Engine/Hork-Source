@@ -88,7 +88,7 @@ void AIndexedMesh::Initialize( int _NumVertices, int _NumIndices, int _NumSubpar
 
     Subparts.ResizeInvalidate( _NumSubparts );
     for ( int i = 0 ; i < _NumSubparts ; i++ ) {
-        AIndexedMeshSubpart * subpart = NewObject< AIndexedMeshSubpart >();
+        AIndexedMeshSubpart * subpart = CreateInstanceOf< AIndexedMeshSubpart >();
         subpart->AddRef();
         subpart->OwnerMesh = this;
         Subparts[i] = subpart;
@@ -229,7 +229,7 @@ bool AIndexedMesh::LoadResource( IBinaryStream & Stream ) {
         return false;
     }
 
-    ABinaryResource * meshBinary = NewObject< ABinaryResource >();
+    ABinaryResource * meshBinary = CreateInstanceOf< ABinaryResource >();
     meshBinary->InitializeFromFile( meshFile.CStr() );
 
     if ( !meshBinary->GetSizeInBytes() ) {
@@ -289,7 +289,7 @@ bool AIndexedMesh::LoadResource( IBinaryStream & Stream ) {
 
     if ( bRaycastBVH ) {
         for ( AIndexedMeshSubpart * subpart : Subparts ) {
-            ATreeAABB * bvh = NewObject< ATreeAABB >();
+            ATreeAABB * bvh = CreateInstanceOf< ATreeAABB >();
 
             bvh->Read( meshData );
 
@@ -375,7 +375,7 @@ bool AIndexedMesh::LoadResource( IBinaryStream & Stream ) {
         TPodArray< AMaterialInstance * > matInstances;
         matInstances.Resize( asset.Materials.Size() );
         for ( int j = 0; j < asset.Materials.Size(); j++ ) {
-            AMaterialInstance * matInst = NewObject< AMaterialInstance >();
+            AMaterialInstance * matInst = CreateInstanceOf< AMaterialInstance >();
             matInstances[j] = matInst;
             matInst->SetMaterial( MaterialResource.GetObject() );
             SMeshMaterial const & material = asset.Materials[j];
@@ -446,7 +446,7 @@ bool AIndexedMesh::LoadResource( IBinaryStream & Stream ) {
 
     if ( bRaycastBVH ) {
         for ( AIndexedMeshSubpart * subpart : Subparts ) {
-            ATreeAABB * bvh = NewObject< ATreeAABB >();
+            ATreeAABB * bvh = CreateInstanceOf< ATreeAABB >();
 
             bvh->Read( Stream );
 
@@ -891,7 +891,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Meshes/Box" ) ) {
         InitializeBoxMesh( Float3(1), 1 );
 
-        CollisionModel = NewObject< ACollisionModel >();
+        CollisionModel = CreateInstanceOf< ACollisionModel >();
         ACollisionBox * collisionBody = CollisionModel->CreateBody< ACollisionBox >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
@@ -900,7 +900,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Meshes/Sphere" ) ) {
         InitializeSphereMesh( 0.5f, 1 );
 
-        CollisionModel = NewObject< ACollisionModel >();
+        CollisionModel = CreateInstanceOf< ACollisionModel >();
         ACollisionSphere * collisionBody = CollisionModel->CreateBody< ACollisionSphere >();
         collisionBody->Radius = 0.5f;
         return;
@@ -909,7 +909,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Meshes/Cylinder" ) ) {
         InitializeCylinderMesh( 0.5f, 1, 1 );
 
-        CollisionModel = NewObject< ACollisionModel >();
+        CollisionModel = CreateInstanceOf< ACollisionModel >();
         ACollisionCylinder * collisionBody = CollisionModel->CreateBody< ACollisionCylinder >();
         collisionBody->HalfExtents = Float3(0.5f);
         return;
@@ -918,7 +918,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Meshes/Cone" ) ) {
         InitializeConeMesh( 0.5f, 1, 1 );
 
-        CollisionModel = NewObject< ACollisionModel >();
+        CollisionModel = CreateInstanceOf< ACollisionModel >();
         ACollisionCone * collisionBody = CollisionModel->CreateBody< ACollisionCone >();
         collisionBody->Radius = 0.5f;
         collisionBody->Height = 1.0f;
@@ -928,7 +928,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Meshes/Capsule" ) ) {
         InitializeCapsuleMesh( 0.5f, 1.0f, 1 );
 
-        CollisionModel = NewObject< ACollisionModel >();
+        CollisionModel = CreateInstanceOf< ACollisionModel >();
         ACollisionCapsule * collisionBody = CollisionModel->CreateBody< ACollisionCapsule >();
         collisionBody->Radius = 0.5f;
         collisionBody->Height = 1;
@@ -938,7 +938,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Meshes/PlaneXZ") ) {
         InitializePlaneMeshXZ( 256, 256, 256 );
 
-        CollisionModel = NewObject< ACollisionModel >();
+        CollisionModel = CreateInstanceOf< ACollisionModel >();
         ACollisionBox * box = CollisionModel->CreateBody< ACollisionBox >();
         box->HalfExtents.X = 128;
         box->HalfExtents.Y = 0.1f;
@@ -950,7 +950,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Meshes/PlaneXY" ) ) {
         InitializePlaneMeshXY( 256, 256, 256 );
 
-        CollisionModel = NewObject< ACollisionModel >();
+        CollisionModel = CreateInstanceOf< ACollisionModel >();
         ACollisionBox * box = CollisionModel->CreateBody< ACollisionBox >();
         box->HalfExtents.X = 128;
         box->HalfExtents.Y = 128;
@@ -982,15 +982,15 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
 void AIndexedMesh::GenerateRigidbodyCollisions() {
     AScopedTimeCheck ScopedTime( "GenerateRigidbodyCollisions" );
 
-    ACollisionTriangleSoupData * tris = NewObject< ACollisionTriangleSoupData >();
+    ACollisionTriangleSoupData * tris = CreateInstanceOf< ACollisionTriangleSoupData >();
     tris->Initialize( (float *)&Vertices.ToPtr()->Position, sizeof( Vertices[0] ), Vertices.Size(),
         Indices.ToPtr(), Indices.Size(), Subparts.ToPtr(), Subparts.Size() );
 
-    ACollisionTriangleSoupBVHData * bvh = NewObject< ACollisionTriangleSoupBVHData >();
+    ACollisionTriangleSoupBVHData * bvh = CreateInstanceOf< ACollisionTriangleSoupBVHData >();
     bvh->TrisData = tris;
     bvh->BuildBVH();
 
-    CollisionModel = NewObject< ACollisionModel >();
+    CollisionModel = CreateInstanceOf< ACollisionModel >();
     ACollisionTriangleSoupBVH * CollisionBody = CollisionModel->CreateBody< ACollisionTriangleSoupBVH >();
     CollisionBody->BvhData = bvh;
 }
@@ -1165,7 +1165,7 @@ void AIndexedMeshSubpart::GenerateBVH( unsigned int PrimitivesPerLeaf ) {
 
     if ( OwnerMesh )
     {
-        AABBTree = NewObject< ATreeAABB >();
+        AABBTree = CreateInstanceOf< ATreeAABB >();
         AABBTree->InitializeTriangleSoup( OwnerMesh->Vertices.ToPtr(), OwnerMesh->Indices.ToPtr() + FirstIndex, IndexCount, BaseVertex, PrimitivesPerLeaf );
         bAABBTreeDirty = false;
     }

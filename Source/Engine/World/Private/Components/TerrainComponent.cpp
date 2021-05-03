@@ -177,7 +177,7 @@ static void EvaluateRaycastResult( SPrimitiveDef * Self,
 ATerrainComponent::ATerrainComponent()
     : RigidBody( nullptr )
 {
-    HitProxy = NewObject< AHitProxy >();
+    HitProxy = CreateInstanceOf< AHitProxy >();
 
     Core::ZeroMem( &Primitive, sizeof( Primitive ) );
     Primitive.Owner = this;

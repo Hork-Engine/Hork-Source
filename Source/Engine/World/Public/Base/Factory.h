@@ -59,9 +59,6 @@ public:
     ADummy * CreateInstance( const char * _ClassName ) const;
     ADummy * CreateInstance( uint64_t _ClassId ) const;
 
-    template< typename T >
-    T * CreateInstance() const { return static_cast< T * >( CreateInstance( T::ClassId() ) ); }
-
     AClassMeta const * GetClassList() const;
 
     AClassMeta const * FindClass( const char * _ClassName ) const;
@@ -120,7 +117,6 @@ public:
     // TODO: class flags?
 
     virtual ADummy * CreateInstance() const = 0;
-    virtual void DestroyInstance( ADummy * _Object ) const = 0;
 
     static void CloneAttributes( ADummy const * _Template, ADummy * _Destination );
 
@@ -398,23 +394,76 @@ public:
 
 #define _AN_GENERATED_CLASS_BODY() \
 public: \
-    static AClassMeta const & ClassMeta() { \
+    static ThisClassMeta const & ClassMeta() \
+    { \
         static const ThisClassMeta __Meta; \
         return __Meta; \
-    }\
-    static AClassMeta const * SuperClass() { \
+    } \
+    static AClassMeta const * SuperClass() \
+    { \
         return ClassMeta().SuperClass(); \
     } \
-    static const char * ClassName() { \
+    static const char * ClassName() \
+    { \
         return ClassMeta().GetName(); \
     } \
-    static uint64_t ClassId() { \
+    static uint64_t ClassId() \
+    { \
         return ClassMeta().GetId(); \
     } \
-    virtual AClassMeta const & FinalClassMeta() const { return ClassMeta(); } \
-    virtual const char * FinalClassName() const { return ClassName(); } \
-    virtual uint64_t FinalClassId() const { return ClassId(); }
+    virtual AClassMeta const & FinalClassMeta() const \
+    { \
+        return ClassMeta(); \
+    } \
+    virtual const char * FinalClassName() const \
+    { \
+        return ClassName(); \
+    } \
+    virtual uint64_t FinalClassId() const \
+    { \
+        return ClassId(); \
+    } \
+    void * operator new( size_t _SizeInBytes ) \
+    { \
+        return Allocator::Inst().Alloc( _SizeInBytes ); \
+    } \
+    void operator delete( void * _Ptr ) \
+    { \
+        Allocator::Inst().Free( _Ptr ); \
+    }
 
+
+template< typename T >
+using EnableIfDerivedFromDummy = typename std::enable_if< std::is_base_of< class ADummy, T >::value, T >::type;
+
+template< typename T, EnableIfDerivedFromDummy<T>* = nullptr > class TObjectCreator
+{
+public:
+    template< typename... TArgs >
+    static T* CreateInstance( TArgs &&..._Args )
+    {
+        return new FinalClass( StdForward< TArgs >( _Args )... );
+    }
+private:
+    class FinalClass : private T
+    {
+        template< typename... TArgs >
+        FinalClass( TArgs &&..._Args )
+            : T( StdForward< TArgs >( _Args )... )
+        {
+        }
+        ~FinalClass()
+        {
+        }
+        virtual void FactoryImpl( typename T::SFactoryImplKey && ) override {}
+        friend class TObjectCreator;
+    };
+};
+
+template< typename T, typename... TArgs > T * CreateInstanceOf( TArgs &&... _Args )
+{
+    return TObjectCreator< T >::CreateInstance( StdForward< TArgs >( _Args )... );
+}
 
 #define AN_CLASS( _Class, _SuperClass ) \
     AN_FACTORY_CLASS( AClassMeta::DummyFactory(), _Class, _SuperClass )
@@ -431,15 +480,13 @@ public:\
     typedef _Allocator Allocator; \
     class ThisClassMeta : public AClassMeta { \
     public: \
-        ThisClassMeta() : AClassMeta( _Factory, AN_STRINGIFY( _Class ), &Super::ClassMeta() ) { \
+        ThisClassMeta() : AClassMeta( _Factory, AN_STRINGIFY( _Class ), &Super::ClassMeta() ) \
+        { \
             RegisterAttributes(); \
         } \
-        ADummy * CreateInstance() const override { \
-            return NewObject< ThisClass >(); \
-        } \
-        void DestroyInstance( ADummy * _Object ) const override { \
-            _Object->~ADummy(); \
-            _Allocator::Inst().Free( _Object ); \
+        ADummy * CreateInstance() const override \
+        { \
+            return CreateInstanceOf< ThisClass >(); \
         } \
     private: \
         void RegisterAttributes(); \
@@ -468,7 +515,8 @@ void _Class::ThisClassMeta::RegisterAttributes() {
 #define AF_DEFAULT              0
 #define AF_NON_SERIALIZABLE     1
 
-/*
+
+/**
 
 ADummy
 
@@ -489,35 +537,26 @@ public:
         ThisClassMeta() : AClassMeta( AClassMeta::DummyFactory(), "ADummy", nullptr )
         {
         }
+
         ADummy * CreateInstance() const override
         {
-            return NewObject< ThisClass >();
+            return CreateInstanceOf< ThisClass >();
         }
-        void DestroyInstance( ADummy * _Object ) const override
-        {
-            _Object->~ADummy();
-            Allocator::Inst().Free( _Object );
-        }
+
     private:
         void RegisterAttributes();
     };
-    template< typename T >
-    static T * NewObject()
-    {
-        void * data = T::Allocator::Inst().ClearedAlloc( sizeof( T ) );
-        ADummy * object = new (data) T;
-        return static_cast< T * >( object );
-    }
-    virtual ~ADummy() {}
-protected:
-    ADummy() {}
-    _AN_GENERATED_CLASS_BODY()
-};
 
-template< typename T > T * CreateInstanceOf()
-{
-    return static_cast< T * >( T::ClassMeta().CreateInstance() );
-}
+    ADummy() {}
+    virtual ~ADummy() {}
+    
+    _AN_GENERATED_CLASS_BODY()
+
+private:
+    struct SFactoryImplKey;
+    virtual void FactoryImpl( SFactoryImplKey&& ) = 0;
+    template< typename T, EnableIfDerivedFromDummy< T > * > friend class TObjectCreator; // Allow TObjectCreator to access to SFactoryImplKey
+};
 
 template< typename T >
 T * Upcast( ADummy * _Object )

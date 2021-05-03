@@ -45,6 +45,14 @@ struct SColorGradingPreset {
     float ColorTemperatureBrightnessNormalization;
 };
 
+struct STexture1D {};
+struct STexture1DArray {};
+struct STexture2D {};
+struct STexture2DArray {};
+struct STexture3D {};
+struct STextureCubemap {};
+struct STextureCubemapArray {};
+
 /**
 
 ATexture
@@ -54,6 +62,64 @@ class ATexture : public AResource {
     AN_CLASS( ATexture, AResource )
 
 public:
+    ATexture();
+    ~ATexture();
+
+    ATexture( STexture1D const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width )
+    {
+        Initialize1D( _PixelFormat, _NumLods, _Width );
+    }
+
+    ATexture( STexture1DArray const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize )
+    {
+        Initialize1DArray( _PixelFormat, _NumLods, _Width, _ArraySize );
+    }
+
+    ATexture( STexture2D const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height )
+    {
+        Initialize2D( _PixelFormat, _NumLods, _Width, _Height );
+    }
+
+    ATexture( AImage const & _Image )
+    {
+        InitializeFromImage( _Image );
+    }
+
+    ATexture( STexture2DArray const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize )
+    {
+        Initialize2DArray( _PixelFormat, _NumLods, _Width, _Height, _ArraySize );
+    }
+
+    ATexture( STexture3D const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth )
+    {
+        Initialize3D( _PixelFormat, _NumLods, _Width, _Height, _Depth );
+    }
+
+    ATexture( const char * _Path )
+    {
+        InitializeColorGradingLUT( _Path );
+    }
+
+    ATexture( SColorGradingPreset const & _Preset )
+    {
+        InitializeColorGradingLUT( _Preset );
+    }
+
+    ATexture( STextureCubemap const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width )
+    {
+        InitializeCubemap( _PixelFormat, _NumLods, _Width );
+    }
+
+    ATexture( std::array< AImage const *, 6 > const & _Faces )
+    {
+        InitializeCubemapFromImages( _Faces );
+    }
+
+    ATexture( STextureCubemapArray const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize )
+    {
+        InitializeCubemapArray( _PixelFormat, _NumLods, _Width, _ArraySize );
+    }
+
     /** Create empty 1D texture */
     void Initialize1D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width );
 
@@ -82,7 +148,7 @@ public:
     void InitializeCubemap( STexturePixelFormat _PixelFormat, int _NumLods, int _Width );
 
     /** Create cubemap texture */
-    bool InitializeCubemapFromImages( AImage const * _Faces[6] );
+    bool InitializeCubemapFromImages( std::array< AImage const *, 6 > const & _Faces );
 
     /** Create empty cubemap array texture */
     void InitializeCubemapArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
@@ -150,9 +216,6 @@ public:
     void Purge();
 
 protected:
-    ATexture();
-    ~ATexture();
-
     /** Load resource from file */
     bool LoadResource( IBinaryStream & Stream ) override;
 

@@ -70,13 +70,11 @@ class ACanvas {
     AN_FORBID_COPY( ACanvas )
 
 public:
-    int Width = 0;
-    int Height = 0;
-
     ACanvas();
+    virtual ~ACanvas();
 
-    void Initialize();
-    void Deinitialize();
+    int GetWidth() const { return Width; }
+    int GetHeight() const { return Height; }
 
     void Begin( int _Width, int _Height );
     void End();
@@ -159,6 +157,9 @@ private:
     void SetCurrentFont( AFont const * font );
     void _DrawTextUTF8( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect );
     void _DrawTextWChar( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect );
+
+    int Width = 0;
+    int Height = 0;
 
     TPodArray< SViewport > Viewports;
 

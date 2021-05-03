@@ -40,7 +40,7 @@ void ALightComponent::SetEnabled( bool _Enabled ) {
 }
 
 void ALightComponent::SetAnimation( const char * _Pattern, float _Speed, float _Quantizer ) {
-    AAnimationPattern * anim = NewObject< AAnimationPattern >();
+    AAnimationPattern * anim = CreateInstanceOf< AAnimationPattern >();
     anim->Pattern = _Pattern;
     anim->Speed = _Speed;
     anim->Quantizer = _Quantizer;

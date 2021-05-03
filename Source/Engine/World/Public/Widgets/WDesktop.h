@@ -72,7 +72,7 @@ public:
 
     template< typename T >
     T * AddWidget() {
-        T * w = NewObject< T >();
+        T * w = CreateInstanceOf< T >();
         AddWidget( w );
         return w;
     }

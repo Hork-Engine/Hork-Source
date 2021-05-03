@@ -37,6 +37,10 @@ AN_END_CLASS_META()
 
 AActorComponent::AActorComponent()
 {
+    bInitialized = false;
+    bPendingKill = false;
+    bCreatedDuringConstruction = false;
+    bHideInEditor = false;
     //GUID.Generate();
 }
 

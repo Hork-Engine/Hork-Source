@@ -37,7 +37,6 @@ SOFTWARE.
 #include <World/Public/Components/InputComponent.h>
 #include <World/Public/Canvas.h>
 #include <World/Public/World.h>
-#include <World/Private/PrimitiveLinkPool.h>
 
 #include <Audio/Public/AudioMixer.h>
 
@@ -80,7 +79,8 @@ void DestroyEngineInstance()
     GEngine = nullptr;
 }
 
-AEngineInstance::AEngineInstance() {
+AEngineInstance::AEngineInstance()
+{
     RetinaScale = Float2( 1.0f );
 }
 
@@ -181,8 +181,6 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
 
     AFont::SetGlyphRanges( GLYPH_RANGE_CYRILLIC );
 
-    Canvas.Initialize();
-
     GameModule = CreateGameModule( _EntryDecl.ModuleClass );
     GameModule->AddRef();
 
@@ -268,8 +266,6 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     ImguiContext = nullptr;
 #endif
 
-    Canvas.Deinitialize();
-
     RenderBackend.Reset();
 
     Renderer.Reset();
@@ -279,7 +275,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
 
     AGarbageCollector::Deinitialize();
 
-    GPrimitiveLinkPool.Free();
+    ALevel::PrimitiveLinkPool.Free();
 
     GAudioSystem.Deinitialize();
 
@@ -340,7 +336,7 @@ void AEngineInstance::ShowStats()
         const int numLines = 13;
 
         Float2 pos( 8, 8 );
-        pos.Y = Canvas.Height - numLines * y_step;
+        pos.Y = Canvas.GetHeight() - numLines * y_step;
 
         Canvas.PushFont( font );
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ), nullptr, true ); pos.Y += y_step;
