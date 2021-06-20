@@ -35,7 +35,6 @@ SOFTWARE.
 #include <Runtime/Public/InputDefs.h>
 
 #include <Core/Public/Logger.h>
-#include <Core/Public/CriticalError.h>
 #include <Core/Public/HashFunc.h>
 #include <Core/Public/WindowsDefs.h>
 #include <Core/Public/Document.h>

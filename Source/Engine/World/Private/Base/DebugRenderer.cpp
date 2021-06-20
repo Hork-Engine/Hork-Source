@@ -30,7 +30,6 @@ SOFTWARE.
 
 #include <World/Public/Base/DebugRenderer.h>
 #include <Core/Public/Color.h>
-#include <Core/Public/CriticalError.h>
 #include <Runtime/Public/Runtime.h>
 
 //#define PRIMITIVE_RESTART_INDEX    0xffffffff

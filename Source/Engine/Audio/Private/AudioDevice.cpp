@@ -31,7 +31,6 @@ SOFTWARE.
 #include <Audio/Public/AudioDevice.h>
 
 #include <Runtime/Public/Runtime.h>
-#include <Core/Public/CriticalError.h>
 #include <Core/Public/Core.h>
 
 #include <SDL.h>

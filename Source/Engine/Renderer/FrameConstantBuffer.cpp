@@ -31,7 +31,6 @@ SOFTWARE.
 #if 0
 #include "FrameConstantBuffer.h"
 #include "RenderLocal.h"
-#include <Core/Public/CriticalError.h>
 
 AFrameConstantBuffer::AFrameConstantBuffer( size_t InBufferSize )
     : BufferSize( InBufferSize )

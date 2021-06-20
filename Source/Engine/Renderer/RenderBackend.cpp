@@ -43,7 +43,6 @@ SOFTWARE.
 #include <Runtime/Public/ScopedTimeCheck.h>
 
 #include <Core/Public/WindowsDefs.h>
-#include <Core/Public/CriticalError.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/Image.h>
 

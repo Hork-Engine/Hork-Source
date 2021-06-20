@@ -30,7 +30,6 @@ SOFTWARE.
 
 #include <World/Public/MaterialGraph/MaterialGraph.h>
 #include <Core/Public/Logger.h>
-#include <Core/Public/CriticalError.h>
 
 enum EMaterialStage
 {

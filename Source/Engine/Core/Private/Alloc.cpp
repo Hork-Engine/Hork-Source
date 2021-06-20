@@ -30,7 +30,6 @@ SOFTWARE.
 
 #include <Core/Public/Alloc.h>
 #include <Core/Public/Logger.h>
-#include <Core/Public/CriticalError.h>
 #include <Core/Public/Core.h>
 
 #include <malloc.h>
