@@ -33,11 +33,9 @@ SOFTWARE.
 SWeakRefCounter * AWeakReference::AllocateWeakRefCounter() {
     // Own allocator couldn't handle destruction of static objects :(
     return new SWeakRefCounter;
-    //return ( SWeakRefCounter * )GZoneMemory.Alloc( sizeof( SWeakRefCounter ), 1 );
 }
 
 void AWeakReference::DeallocateWeakRefCounter( SWeakRefCounter * _RefCounter ) {
     // Own allocator couldn't handle destruction of static objects :(
     delete _RefCounter;
-    //GZoneMemory.Free( _RefCounter );
 }

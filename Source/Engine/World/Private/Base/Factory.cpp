@@ -123,7 +123,7 @@ AAttributeMeta const * AClassMeta::FindAttribute( const char * _Name, bool _Recu
     return nullptr;
 }
 
-void AClassMeta::GetAttributes( TPodArray< AAttributeMeta const * > & _Attributes, bool _Recursive ) const {
+void AClassMeta::GetAttributes( TPodVector< AAttributeMeta const * > & _Attributes, bool _Recursive ) const {
     if ( _Recursive && pSuperClass ) {
         pSuperClass->GetAttributes( _Attributes, true );
     }

@@ -34,7 +34,7 @@ SOFTWARE.
 
 class ASceneComponent;
 
-using AArrayOfChildComponents = TPodArray< ASceneComponent *, 8 >;
+using AArrayOfChildComponents = TPodVector< ASceneComponent *, 8 >;
 
 class ASocketDef;
 class ASkinnedComponent;
@@ -250,7 +250,7 @@ protected:
 
     virtual void OnTransformDirty() {}
 
-    using AArrayOfSockets = TPodArray< SSocket, 1 >;
+    using AArrayOfSockets = TPodVector< SSocket, 1 >;
     AArrayOfSockets Sockets;
 
 private:

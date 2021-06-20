@@ -47,7 +47,7 @@ public:
 
     virtual bool IsConvex() const { return false; }
 
-    virtual void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {}
+    virtual void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const {}
 
 protected:
     ACollisionBody()
@@ -70,7 +70,7 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionSphere() {}
@@ -87,7 +87,7 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionSphereRadii() {}
@@ -104,7 +104,7 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionBox() {}
@@ -122,7 +122,7 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionCylinder() {}
@@ -141,7 +141,7 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionCone() {}
@@ -167,7 +167,7 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionCapsule() {}
@@ -180,7 +180,7 @@ public:
 //    AN_CLASS( ACollisionConvexHull, ACollisionBody )
 
 //public:
-//    TPodArray< Float3 > Vertices;
+//    TPodVector< Float3 > Vertices;
 
 //    void InitializeFromPlanes( PlaneF const * _Planes, int _NumPlanes ) {
 //        Vertices.Clear();
@@ -189,7 +189,7 @@ public:
 
 //    bool IsConvex() const override { return true; }
 
-//    void GatherGeometry( TPodArray< Float3 > & _Vertices, TPodArray< unsigned int > & _Indices ) const override;
+//    void GatherGeometry( TPodVector< Float3 > & _Vertices, TPodVector< unsigned int > & _Indices ) const override;
 
 //protected:
 //    ACollisionConvexHull() {}
@@ -221,8 +221,8 @@ protected:
     ACollisionConvexHullData();
     ~ACollisionConvexHullData();
 
-    TPodArrayHeap< Float3 > Vertices;
-    TPodArrayHeap< unsigned int > Indices;
+    TPodVectorHeap< Float3 > Vertices;
+    TPodVectorHeap< unsigned int > Indices;
     //class btVector3 * Data = nullptr;
 };
 
@@ -234,7 +234,7 @@ public:
 
     bool IsConvex() const override { return true; }
 
-    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionConvexHull() {}
@@ -254,9 +254,9 @@ public:
         int IndexCount;
     };
 
-    TPodArrayHeap< Float3 > Vertices;
-    TPodArrayHeap< unsigned int > Indices;
-    TPodArrayHeap< SSubpart > Subparts;
+    TPodVectorHeap< Float3 > Vertices;
+    TPodVectorHeap< unsigned int > Indices;
+    TPodVectorHeap< SSubpart > Subparts;
     BvAxisAlignedBox BoundingBox;
 
     /** Initialize collision triangle soup from indexed mesh */
@@ -310,7 +310,7 @@ public:
     /** BVH data for static or kinematic objects */
     TRef< ACollisionTriangleSoupBVHData > BvhData;
 
-    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionTriangleSoupBVH() {}
@@ -325,7 +325,7 @@ class ACollisionTriangleSoupGimpact : public ACollisionBody {
 public:
     TRef< ACollisionTriangleSoupData > TrisData;
 
-    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const override;
+    void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
 protected:
     ACollisionTriangleSoupGimpact();
@@ -435,7 +435,7 @@ public:
         return CollisionBodies.Size();
     }
 
-    TPodArray< ACollisionBody *, 2 > const & GetCollisionBodies() const { return CollisionBodies; }
+    TPodVector< ACollisionBody *, 2 > const & GetCollisionBodies() const { return CollisionBodies; }
 
     template< typename T >
     T * CreateBoneCollision( int JointIndex, int CollisionGroup, int CollisionMask )
@@ -451,7 +451,7 @@ public:
 
     TStdVector< SBoneCollision > const & GetBoneCollisions() const { return BoneCollisions; }
 
-    void GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const;
+    void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const;
 
     void PerformConvexDecomposition( Float3 const * _Vertices,
                                      int _VerticesCount,
@@ -466,7 +466,7 @@ public:
                                           int _IndicesCount );
 
 private:
-    TPodArray< ACollisionBody *, 2 > CollisionBodies;
+    TPodVector< ACollisionBody *, 2 > CollisionBodies;
     TStdVector< SBoneCollision > BoneCollisions;
     Float3 CenterOfMass;
 };
@@ -481,7 +481,7 @@ public:
 
     Float3 const & GetCenterOfMass() const { return CenterOfMass; }
 
-    void GetCollisionBodiesWorldBounds( Float3 const & WorldPosition, Quat const & WorldRotation, TPodArray< BvAxisAlignedBox > & _BoundingBoxes ) const;
+    void GetCollisionBodiesWorldBounds( Float3 const & WorldPosition, Quat const & WorldRotation, TPodVector< BvAxisAlignedBox > & _BoundingBoxes ) const;
 
     void GetCollisionWorldBounds( Float3 const & WorldPosition, Quat const & WorldRotation, BvAxisAlignedBox & _BoundingBox ) const;
 
@@ -517,25 +517,25 @@ struct SConvexHullDesc {
     Float3 Centroid;
 };
 
-void BakeCollisionMarginConvexHull( Float3 const * _InVertices, int _VertexCount, TPodArray< Float3 > & _OutVertices, float _Margin = 0.01f );
+void BakeCollisionMarginConvexHull( Float3 const * _InVertices, int _VertexCount, TPodVector< Float3 > & _OutVertices, float _Margin = 0.01f );
 
 void PerformConvexDecomposition( Float3 const * _Vertices,
                                  int _VerticesCount,
                                  int _VertexStride,
                                  unsigned int const * _Indices,
                                  int _IndicesCount,
-                                 TPodArray< Float3 > & _OutVertices,
-                                 TPodArray< unsigned int > & _OutIndices,
-                                 TPodArray< SConvexHullDesc > & _OutHulls );
+                                 TPodVector< Float3 > & _OutVertices,
+                                 TPodVector< unsigned int > & _OutIndices,
+                                 TPodVector< SConvexHullDesc > & _OutHulls );
 
 void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
                                       int _VerticesCount,
                                       int _VertexStride,
                                       unsigned int const * _Indices,
                                       int _IndicesCount,
-                                      TPodArray< Float3 > & _OutVertices,
-                                      TPodArray< unsigned int > & _OutIndices,
-                                      TPodArray< SConvexHullDesc > & _OutHulls,
+                                      TPodVector< Float3 > & _OutVertices,
+                                      TPodVector< unsigned int > & _OutIndices,
+                                      TPodVector< SConvexHullDesc > & _OutHulls,
                                       Float3 & _CenterOfMass );
 
-void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodArray< Float3 > & _Vertices );
+void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodVector< Float3 > & _Vertices );

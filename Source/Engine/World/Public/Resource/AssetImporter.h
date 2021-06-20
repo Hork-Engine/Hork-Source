@@ -156,9 +156,9 @@ private:
         AString Name;
         float FrameDelta;       // fixed time delta between frames
         uint32_t FrameCount;         // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
-        TPodArray< SAnimationChannel > Channels;
-        TPodArray< STransform > Transforms;
-        TPodArray< BvAxisAlignedBox > Bounds;
+        TPodVector< SAnimationChannel > Channels;
+        TPodVector< STransform > Transforms;
+        TPodVector< BvAxisAlignedBox > Bounds;
     };
 
     bool ReadGLTF( struct cgltf_data * Data );
@@ -192,14 +192,14 @@ private:
     AString m_Path;
     struct cgltf_data * m_Data;
     bool m_bSkeletal;
-    TPodArray< SMeshVertex > m_Vertices;
-    TPodArray< SMeshVertexSkin > m_Weights;
-    TPodArray< unsigned int > m_Indices;
-    TPodArray< MeshInfo > m_Meshes;
-    TPodArray< TextureInfo > m_Textures;
+    TPodVector< SMeshVertex > m_Vertices;
+    TPodVector< SMeshVertexSkin > m_Weights;
+    TPodVector< unsigned int > m_Indices;
+    TPodVector< MeshInfo > m_Meshes;
+    TPodVector< TextureInfo > m_Textures;
     TStdVector< MaterialInfo > m_Materials;
     TStdVector< AnimationInfo > m_Animations;
-    TPodArray< SJoint > m_Joints;
+    TPodVector< SJoint > m_Joints;
     ASkin m_Skin;
     BvAxisAlignedBox m_BindposeBounds;
     AGUID m_SkeletonGUID;

@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Core/Public/BaseTypes.h>
-#include <Core/Public/PodArray.h>
+#include <Core/Public/PodVector.h>
 #include <Core/Public/Plane.h>
 
 class AWorld;

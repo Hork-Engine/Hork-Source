@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "RenderLocal.h"
 
-#include <Core/Public/CriticalError.h>
+#include <Core/Public/Core.h>
 #include <Runtime/Public/Runtime.h>
 
 // NOTE: supported by NVidia, but not supported on AMD
@@ -254,7 +254,7 @@ void BindShadowCascades( size_t StreamHandle )
     rtbl->BindBuffer( 3, GStreamBuffer, StreamHandle, MAX_SHADOW_CASCADES * sizeof( Float4x4 ) );
 }
 
-void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * VertexShader, const char * FragmentShader, RenderCore::SPipelineResourceLayout const * pResourceLayout, RenderCore::BLENDING_PRESET BlendingPreset )
+void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline, AStringView VertexShader, AStringView FragmentShader, RenderCore::SPipelineResourceLayout const * pResourceLayout, RenderCore::BLENDING_PRESET BlendingPreset )
 {
     using namespace RenderCore;
 
@@ -312,7 +312,7 @@ void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline, c
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateFullscreenQuadPipelineGS( TRef< RenderCore::IPipeline > * ppPipeline, const char * VertexShader, const char * FragmentShader, const char * GeometryShader, RenderCore::SPipelineResourceLayout const * pResourceLayout, RenderCore::BLENDING_PRESET BlendingPreset )
+void CreateFullscreenQuadPipelineGS( TRef< RenderCore::IPipeline > * ppPipeline, AStringView VertexShader, AStringView FragmentShader, AStringView GeometryShader, RenderCore::SPipelineResourceLayout const * pResourceLayout, RenderCore::BLENDING_PRESET BlendingPreset )
 {
     using namespace RenderCore;
 
@@ -407,7 +407,7 @@ void SaveSnapshot( RenderCore::ITexture & _Texture )
 struct SIncludeCtx
 {
     /** Callback for file loading */
-    bool ( *LoadFile )( const char * FileName, AString & Source );
+    bool ( *LoadFile )( AStringView FileName, AString & Source );
 
     /** Predefined shaders */
     SMaterialShader const * Predefined;
@@ -458,44 +458,45 @@ static AN_FORCEINLINE int IsSpace( int ch )
 }
 
 // find location of all #include
-static SIncludeInfo * FindIncludes( const char * text )
+static SIncludeInfo * FindIncludes( AStringView text )
 {
     int line_count = 1;
-    const char *s = text, *start;
+    const char *s = text.Begin(), *start;
+    const char *e = text.End();
     SIncludeInfo *list = NULL, *prev = NULL;
-    while ( *s ) {
+    while ( s < e ) {
         // parse is always at start of line when we reach here
         start = s;
-        while ( *s == ' ' || *s == '\t' ) {
+        while ( ( *s == ' ' || *s == '\t' ) && s < e ) {
             ++s;
         }
-        if ( *s == '#' ) {
+        if ( s < e && *s == '#' ) {
             ++s;
-            while ( *s == ' ' || *s == '\t' )
+            while ( ( *s == ' ' || *s == '\t' ) && s < e )
                 ++s;
-            if ( !Core::StrcmpN( s, "include", 7 ) && IsSpace( s[7] ) ) {
+            if ( e-s > 7 && !Core::StrcmpN( s, "include", 7 ) && IsSpace( s[7] ) ) {
                 s += 7;
-                while ( *s == ' ' || *s == '\t' )
+                while ( ( *s == ' ' || *s == '\t' ) && s < e )
                     ++s;
-                if ( *s == '"' ) {
+                if ( *s == '"' && s < e ) {
                     const char *t = ++s;
-                    while ( *t != '"' && *t != '\n' && *t != '\r' && *t != 0 )
+                    while ( *t != '"' && *t != '\n' && *t != '\r' && t < e )
                         ++t;
-                    if ( *t == '"' ) {
+                    if ( *t == '"' && t < e ) {
                         int len = t - s;
                         const char * filename = s;
                         s = t;
-                        while ( *s != '\r' && *s != '\n' && *s != 0 )
+                        while ( *s != '\r' && *s != '\n' && s < e )
                             ++s;
                         // s points to the newline, so s-start is everything except the newline
-                        AddInclude( list, prev, start-text, s-text, filename, len, line_count+1 );
+                        AddInclude( list, prev, start-text.Begin(), s-text.Begin(), filename, len, line_count+1 );
                     }
                 }
             }
         }
-        while ( *s != '\r' && *s != '\n' && *s != 0 )
+        while ( *s != '\r' && *s != '\n' && s < e )
             ++s;
-        if ( *s == '\r' || *s == '\n' ) {
+        if ( ( *s == '\r' || *s == '\n' ) && s < e ) {
             s = s + (s[0] + s[1] == '\r' + '\n' ? 2 : 1);
         }
         ++line_count;
@@ -539,25 +540,25 @@ start:
     }
 }
 
-static bool LoadShaderWithInclude( SIncludeCtx * Ctx, const char * FileName, AString & Out );
+static bool LoadShaderWithInclude( SIncludeCtx * Ctx, AStringView FileName, AString & Out );
 
-static bool LoadShaderFromString( SIncludeCtx * Ctx, const char * FileName, AString const & Source, AString & Out )
+static bool LoadShaderFromString( SIncludeCtx * Ctx, AStringView FileName, AStringView Source, AString & Out )
 {
     char temp[4096];
-    SIncludeInfo * includeList = FindIncludes( Source.CStr() );
+    SIncludeInfo * includeList = FindIncludes( Source );
     size_t sourceOffset = 0;
 
     for ( SIncludeInfo * includeInfo = includeList ; includeInfo ; includeInfo = includeInfo->next ) {
-        Out.ConcatN( &Source[sourceOffset], includeInfo->offset - sourceOffset );
+        Out += AStringView( &Source[sourceOffset], includeInfo->offset - sourceOffset );
 
         if ( Ctx->Predefined && includeInfo->filename[0] == '$' ) {
             // predefined source
 #ifdef CSTYLE_LINE_DIRECTIVE
-            Out.Concat( "#line 1 \"" );
-            Out.ConcatN( includeInfo->filename, includeInfo->len );
-            Out.Concat( "\"\n" );
+            Out += "#line 1 \"";
+            Out += AStringView( includeInfo->filename, includeInfo->len );
+            Out += "\"\n";
 #else
-            Out.Concat( "#line 1\n" );
+            Out += "#line 1\n";
 #endif
             SMaterialShader const * s;
             for ( s = Ctx->Predefined ; s ; s = s->Next ) {
@@ -566,18 +567,18 @@ static bool LoadShaderFromString( SIncludeCtx * Ctx, const char * FileName, AStr
                 }
             }
 
-            if ( !s || !LoadShaderFromString( Ctx, FileName, s->Code, Out ) ) {
+            if ( !s || !LoadShaderFromString( Ctx, FileName, AStringView(s->Code), Out ) ) {
                 FreeIncludes( includeList );
                 return false;
             }
         }
         else {
 #ifdef CSTYLE_LINE_DIRECTIVE
-            Out.Concat( "#line 1 \"" );
-            Out.ConcatN( includeInfo->filename, includeInfo->len );
-            Out.Concat( "\"\n" );
+            Out += "#line 1 \"";
+            Out += AStringView( includeInfo->filename, includeInfo->len );
+            Out += "\"\n";
 #else
-            Out.Concat( "#line 1\n" );
+            Out += "#line 1\n";
 #endif
             temp[0] = 0;
             Core::StrcatN( temp, sizeof( temp ), includeInfo->filename, includeInfo->len );
@@ -592,23 +593,23 @@ static bool LoadShaderFromString( SIncludeCtx * Ctx, const char * FileName, AStr
 #else
         Core::Sprintf( temp, sizeof( temp ), "\n#line %d", includeInfo->next_line_after );
 #endif
-        Out.Concat( temp );
+        Out += temp;
 
         sourceOffset = includeInfo->end;
     }
 
-    Out.ConcatN( &Source[sourceOffset], Source.Length() - sourceOffset + 1 );
+    Out += AStringView( &Source[sourceOffset], Source.Length() - sourceOffset );
     FreeIncludes( includeList );
 
     return true;
 }
 
-static bool LoadShaderWithInclude( SIncludeCtx * Ctx, const char * FileName, AString & Out )
+static bool LoadShaderWithInclude( SIncludeCtx * Ctx, AStringView FileName, AString & Out )
 {
     AString source;
 
     if ( !Ctx->LoadFile( FileName, source ) ) {
-        GLogger.Printf( "Couldn't load %s\n", FileName );
+        GLogger.Printf( "Couldn't load %s\n", FileName.ToString().CStr() );
         return false;
     }
 
@@ -619,11 +620,11 @@ static bool LoadShaderWithInclude( SIncludeCtx * Ctx, const char * FileName, ASt
 
 ARuntimeVariable r_EmbeddedShaders( _CTS("r_EmbeddedShaders"), _CTS("1") );
 
-static bool GetShaderSource( const char * FileName, AString & Source )
+static bool GetShaderSource( AStringView FileName, AString & Source )
 {
     if ( r_EmbeddedShaders ) {
         AMemoryStream f;
-        if ( !f.OpenRead( AString("Shaders/") + FileName, GRuntime.GetEmbeddedResources() ) ) {
+        if ( !f.OpenRead( "Shaders/" + FileName, GRuntime.GetEmbeddedResources() ) ) {
             return false;
         }
         Source.FromFile( f );
@@ -631,7 +632,7 @@ static bool GetShaderSource( const char * FileName, AString & Source )
     else {
         // Load shaders from sources
         AString fn = __FILE__;
-        fn.StripFilename();
+        fn.ClipFilename();
         fn += "/../Embedded/Shaders/";
         fn += FileName;
         fn.FixPath();
@@ -645,7 +646,7 @@ static bool GetShaderSource( const char * FileName, AString & Source )
     return true;
 }
 
-AString LoadShader( const char * FileName, SMaterialShader const * Predefined )
+AString LoadShader( AStringView FileName, SMaterialShader const * Predefined )
 {
     SIncludeCtx ctx;
     ctx.LoadFile = GetShaderSource;
@@ -653,19 +654,21 @@ AString LoadShader( const char * FileName, SMaterialShader const * Predefined )
 
     AString result;
 #ifdef CSTYLE_LINE_DIRECTIVE
-    result.Concat( Core::Fmt( "#line 1 \"%s\"\n", FileName ) );
+    result += "#line 1 \"";
+    result += FileName;
+    result += "\"\n";
 #else
-    result.Concat( "#line 1\n" );
+    result += "#line 1\n";
 #endif
 
-    if ( !LoadShaderWithInclude( &ctx, FileName/*(path + FileName).CStr()*/, result ) ) {
-        CriticalError( "LoadShader: failed to open %s\n", FileName );
+    if ( !LoadShaderWithInclude( &ctx, FileName, result ) ) {
+        CriticalError( "LoadShader: failed to open %s\n", FileName.ToString().CStr() );
     }
 
     return result;
 }
 
-AString LoadShaderFromString( const char * FileName, const char * Source, SMaterialShader const * Predefined )
+AString LoadShaderFromString( AStringView FileName, AStringView Source, SMaterialShader const * Predefined )
 {
     SIncludeCtx ctx;
     ctx.LoadFile = GetShaderSource;
@@ -673,25 +676,27 @@ AString LoadShaderFromString( const char * FileName, const char * Source, SMater
 
     AString result;
 #ifdef CSTYLE_LINE_DIRECTIVE
-    result.Concat( Core::Fmt( "#line 1 \"%s\"\n", FileName ) );
+    result += "#line 1 \"";
+    result += FileName;
+    result += "\"\n";
 #else
-    result.Concat( "#line 1\n" );
+    result += "#line 1\n";
 #endif
 
     AString source = Source;
 
     CleanComments( source.ToPtr() );
 
-    if ( !LoadShaderFromString( &ctx, FileName/*(path + FileName).CStr()*/, source, result ) ) {
-        CriticalError( "LoadShader: failed to open %s\n", FileName );
+    if ( !LoadShaderFromString( &ctx, FileName, source, result ) ) {
+        CriticalError( "LoadShader: failed to open %s\n", FileName.ToString().CStr() );
     }
 
     return result;
 }
 
-void CreateShader( RenderCore::SHADER_TYPE _ShaderType, TPodArray< const char * > _SourcePtrs, TRef< RenderCore::IShaderModule > & _Module )
+void CreateShader( RenderCore::SHADER_TYPE _ShaderType, TPodVector< const char * > _SourcePtrs, TRef< RenderCore::IShaderModule > & _Module )
 {
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
 
     const char * predefine[] = {
         "#define VERTEX_SHADER\n",
@@ -769,7 +774,7 @@ void CreateShader( RenderCore::SHADER_TYPE _ShaderType, TPodArray< const char * 
 
 void CreateShader( RenderCore::SHADER_TYPE _ShaderType, const char * _SourcePtr, TRef< RenderCore::IShaderModule > & _Module )
 {
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
     sources.Append( _SourcePtr );
     CreateShader( _ShaderType, sources, _Module );
 }
@@ -779,14 +784,14 @@ void CreateShader( RenderCore::SHADER_TYPE _ShaderType, AString const & _SourceP
     CreateShader( _ShaderType, _SourcePtr.CStr(), _Module );
 }
 
-void CreateVertexShader( const char * FileName, RenderCore::SVertexAttribInfo const * _VertexAttribs, int _NumVertexAttribs, TRef< RenderCore::IShaderModule > & _Module )
+void CreateVertexShader( AStringView FileName, RenderCore::SVertexAttribInfo const * _VertexAttribs, int _NumVertexAttribs, TRef< RenderCore::IShaderModule > & _Module )
 {
     // TODO: here check if the shader binary is cached. Load from cache if so.
 
     AString vertexAttribsShaderString = RenderCore::ShaderStringForVertexAttribs< AString >( _VertexAttribs, _NumVertexAttribs );
     AString source = LoadShader( FileName );
 
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
 
     sources.Append( vertexAttribsShaderString.CStr() );
     sources.Append( source.CStr() );
@@ -796,25 +801,25 @@ void CreateVertexShader( const char * FileName, RenderCore::SVertexAttribInfo co
     // TODO: Write shader binary to cache
 }
 
-void CreateTessControlShader( const char * FileName, TRef< RenderCore::IShaderModule > & _Module )
+void CreateTessControlShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module )
 {
     AString source = LoadShader( FileName );
     CreateShader( RenderCore::TESS_CONTROL_SHADER, source, _Module );
 }
 
-void CreateTessEvalShader( const char * FileName, TRef< RenderCore::IShaderModule > & _Module )
+void CreateTessEvalShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module )
 {
     AString source = LoadShader( FileName );
     CreateShader( RenderCore::TESS_EVALUATION_SHADER, source, _Module );
 }
 
-void CreateGeometryShader( const char * FileName, TRef< RenderCore::IShaderModule > & _Module )
+void CreateGeometryShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module )
 {
     AString source = LoadShader( FileName );
     CreateShader( RenderCore::GEOMETRY_SHADER, source, _Module );
 }
 
-void CreateFragmentShader( const char * FileName, TRef< RenderCore::IShaderModule > & _Module )
+void CreateFragmentShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module )
 {
     AString source = LoadShader( FileName );
     CreateShader( RenderCore::FRAGMENT_SHADER, source, _Module );

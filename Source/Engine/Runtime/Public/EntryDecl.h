@@ -41,42 +41,36 @@ struct SEntryDecl
     AClassMeta const * ModuleClass;
 };
 
-/** Runtime entry point */
-void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl );
-
-/** Runtime entry point */
-void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl );
-
 #ifdef AN_OS_WIN32
+
 #include <Core/Public/WindowsDefs.h>
-#include <shellapi.h>
-static void RunEngineWin32( SEntryDecl const & _EntryDecl ) {
-#if defined( AN_DEBUG ) && defined( AN_COMPILER_MSVC )
-    _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
-#endif
-    //int argc;
-    //LPWSTR * argv = ::CommandLineToArgvW( ::GetCommandLineW(), &argc );
-    Runtime( ::GetCommandLineA(), _EntryDecl );
-    //Runtime( argc, argv, _CreateGameModule );
-    //LocalFree( argv );
-}
+
+/** Runtime entry point */
+void RunEngine( SEntryDecl const & _EntryDecl );
+
 #define AN_ENTRY_DECL( _EntryDecl ) \
 int APIENTRY wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow ) { \
-    RunEngineWin32( _EntryDecl ); \
+    RunEngine( _EntryDecl ); \
     return 0; \
 }
 #define AN_NO_RUNTIME_MAIN( _MainFunc ) \
 int APIENTRY wWinMain( HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow ) { \
     return _MainFunc(); \
 }
+
 #else
+
+/** Runtime entry point */
+void RunEngine( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl );
+
 #define AN_ENTRY_DECL( _EntryDecl ) \
 int main( int argc, char *argv[] ) { \
-    Runtime( argc, argv, _EntryDecl ); \
+    RunEngine( argc, argv, _EntryDecl ); \
     return 0; \
 }
 #define AN_NO_RUNTIME_MAIN( _MainFunc ) \
 int main( int argc, char *argv[] ) { \
     return _MainFunc(); \
 }
+
 #endif

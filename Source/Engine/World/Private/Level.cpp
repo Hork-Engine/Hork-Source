@@ -503,7 +503,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
     //hull->Destroy();
 
 #if 0
-    TPodArray< BvAxisAlignedBox > clusters;
+    TPodVector< BvAxisAlignedBox > clusters;
     clusters.Resize( PVSClustersCount );
     for ( BvAxisAlignedBox & box : clusters ) {
         box.Clear();
@@ -601,7 +601,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
     }
 }
 
-void ALevel::QueryOverplapAreas_r( int InNodeIndex, BvAxisAlignedBox const & InBounds, TPodArray< SVisArea * > & OutAreas ) {
+void ALevel::QueryOverplapAreas_r( int InNodeIndex, BvAxisAlignedBox const & InBounds, TPodVector< SVisArea * > & OutAreas ) {
     do {
         if ( InNodeIndex < 0 ) {
             // leaf
@@ -630,7 +630,7 @@ void ALevel::QueryOverplapAreas_r( int InNodeIndex, BvAxisAlignedBox const & InB
     } while ( InNodeIndex != 0 );
 }
 
-void ALevel::QueryOverplapAreas_r( int InNodeIndex, BvSphere const & InBounds, TPodArray< SVisArea * > & OutAreas ) {
+void ALevel::QueryOverplapAreas_r( int InNodeIndex, BvSphere const & InBounds, TPodVector< SVisArea * > & OutAreas ) {
     do {
         if ( InNodeIndex < 0 ) {
             // leaf
@@ -658,7 +658,7 @@ void ALevel::QueryOverplapAreas_r( int InNodeIndex, BvSphere const & InBounds, T
     } while ( InNodeIndex != 0 );
 }
 
-void ALevel::QueryOverplapAreas( BvAxisAlignedBox const & InBounds, TPodArray< SVisArea * > & OutAreas ) {
+void ALevel::QueryOverplapAreas( BvAxisAlignedBox const & InBounds, TPodVector< SVisArea * > & OutAreas ) {
     OutAreas.Clear();
 
     if ( Nodes.IsEmpty() ) {
@@ -668,7 +668,7 @@ void ALevel::QueryOverplapAreas( BvAxisAlignedBox const & InBounds, TPodArray< S
     QueryOverplapAreas_r( 0, InBounds, OutAreas );
 }
 
-void ALevel::QueryOverplapAreas( BvSphere const & InBounds, TPodArray< SVisArea * > & OutAreas ) {
+void ALevel::QueryOverplapAreas( BvSphere const & InBounds, TPodVector< SVisArea * > & OutAreas ) {
     OutAreas.Clear();
 
     if ( Nodes.IsEmpty() ) {

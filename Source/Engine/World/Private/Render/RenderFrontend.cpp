@@ -43,8 +43,6 @@ SOFTWARE.
 #include <Runtime/Public/ScopedTimeCheck.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 
-#include "LightVoxelizer.h"
-
 ARuntimeVariable r_FixFrustumClusters( _CTS( "r_FixFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable r_RenderView( _CTS( "r_RenderView" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable r_RenderSurfaces( _CTS( "r_RenderSurfaces" ), _CTS( "1" ), VAR_CHEAT );
@@ -53,6 +51,8 @@ ARuntimeVariable r_RenderTerrain( _CTS( "r_RenderTerrain" ), _CTS( "1" ), VAR_CH
 ARuntimeVariable r_ResolutionScaleX( _CTS( "r_ResolutionScaleX" ), _CTS( "1" ) );
 ARuntimeVariable r_ResolutionScaleY( _CTS( "r_ResolutionScaleY" ), _CTS( "1" ) );
 ARuntimeVariable r_RenderLightPortals( _CTS( "r_RenderLightPortals" ), _CTS( "1" ) );
+
+ARuntimeVariable com_DrawFrustumClusters( _CTS( "com_DrawFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
 
 AN_CLASS_META( ARenderFrontend )
 
@@ -87,7 +87,7 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     FrameData.DrawListHead = nullptr;
     FrameData.DrawListTail = nullptr;
 
-    Stat.FrontendTime = GRuntime.SysMilliseconds();
+    Stat.FrontendTime = Core::SysMilliseconds();
     Stat.PolyCount = 0;
     Stat.ShadowMapPolyCount = 0;
 
@@ -152,7 +152,7 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
         FrameData.DbgIndexStreamOffset = streamedMemory->AllocateVertex( DebugDraw.GetIndices().Size() * sizeof( unsigned short ), DebugDraw.GetIndices().ToPtr() );
     }
 
-    Stat.FrontendTime = GRuntime.SysMilliseconds() - Stat.FrontendTime;
+    Stat.FrontendTime = Core::SysMilliseconds() - Stat.FrontendTime;
 }
 
 void ARenderFrontend::RenderView( int _Index ) {
@@ -326,6 +326,10 @@ void ARenderFrontend::RenderView( int _Index ) {
     if ( RP && RP->bDrawDebug ) {
         DebugDraw.BeginRenderView( view, VisPass );
         world->DrawDebug( &DebugDraw );
+
+        if ( com_DrawFrustumClusters ) {
+            LightVoxelizer.DrawVoxels( &DebugDraw );
+        }
     }
 
     AddRenderInstances( world );
@@ -629,7 +633,7 @@ void ARenderFrontend::QueryVisiblePrimitives( AWorld * InWorld ) {
 }
 
 void ARenderFrontend::QueryShadowCasters( AWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis,
-                                          TPodArray< SPrimitiveDef * > & Primitives, TPodArray< SSurfaceDef * > & Surfaces )
+                                          TPodVector< SPrimitiveDef * > & Primitives, TPodVector< SSurfaceDef * > & Surfaces )
 {
     SVisibilityQuery query;
     BvFrustum frustum;
@@ -826,7 +830,7 @@ void ARenderFrontend::AddRenderInstances( AWorld * InWorld )
         view->NumDirectionalLights++;
     }
 
-    GLightVoxelizer.Reset();
+    LightVoxelizer.Reset();
 
     // Allocate lights
     view->NumPointLights = VisLights.Size();
@@ -847,7 +851,7 @@ void ARenderFrontend::AddRenderInstances( AWorld * InWorld )
             profile->WritePhotometricData( PhotometricProfiles, FrameNumber );
         }
 
-        SItemInfo * info = GLightVoxelizer.AllocItem();
+        SItemInfo * info = LightVoxelizer.AllocItem();
         info->Type = ITEM_TYPE_LIGHT;
         info->ListIndex = i;
 
@@ -855,7 +859,7 @@ void ARenderFrontend::AddRenderInstances( AWorld * InWorld )
         info->Mins = AABB.Mins;
         info->Maxs = AABB.Maxs;
 
-        if ( GLightVoxelizer.IsSSE() ) {
+        if ( LightVoxelizer.IsSSE() ) {
             info->ClipToBoxMatSSE = light->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
         } else {
             info->ClipToBoxMat = light->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
@@ -874,7 +878,7 @@ void ARenderFrontend::AddRenderInstances( AWorld * InWorld )
 
         ibl->PackProbe( view->ViewMatrix, view->Probes[i] );
 
-        SItemInfo * info = GLightVoxelizer.AllocItem();
+        SItemInfo * info = LightVoxelizer.AllocItem();
         info->Type = ITEM_TYPE_PROBE;
         info->ListIndex = i;
 
@@ -882,7 +886,7 @@ void ARenderFrontend::AddRenderInstances( AWorld * InWorld )
         info->Mins = AABB.Mins;
         info->Maxs = AABB.Maxs;
 
-        if ( GLightVoxelizer.IsSSE() )  {
+        if ( LightVoxelizer.IsSSE() )  {
             info->ClipToBoxMatSSE = ibl->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
         } else  {
             info->ClipToBoxMat = ibl->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
@@ -890,7 +894,7 @@ void ARenderFrontend::AddRenderInstances( AWorld * InWorld )
     }
 
     if ( !r_FixFrustumClusters ) {
-        GLightVoxelizer.Voxelize( view );
+        LightVoxelizer.Voxelize( view );
     }
 }
 
@@ -1606,7 +1610,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( AWorld * InWorld ) {
             // Add light portals
             for ( ALevel * level : InWorld->GetArrayOfLevels() ) {
 
-                TPodArray< SLightPortalDef > const & lightPortals = level->GetLightPortals();
+                TPodVector< SLightPortalDef > const & lightPortals = level->GetLightPortals();
 
                 if ( lightPortals.IsEmpty() ) {
                     continue;

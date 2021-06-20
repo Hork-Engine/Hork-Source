@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Core/Public/CoreMath.h>
-#include <Core/Public/PodArray.h>
+#include <Core/Public/PodVector.h>
 
 constexpr int HRTF_BLOCK_LENGTH = 128; // Keep it to a power of two
 
@@ -51,10 +51,10 @@ public:
     void ApplyHRTF( Float3 const & CurDir, Float3 const & NewDir, const float * pFrames, int FrameCount, float * pStream, Float3 & Dir );
 
     /** Sphere geometry vertics */
-    TPodArrayHeap< Float3 > const & GetVertices() const { return Vertices; }
+    TPodVectorHeap< Float3 > const & GetVertices() const { return Vertices; }
 
     /** Sphere geometry indices */
-    TPodArrayHeap< uint32_t > const & GetIndices() const { return Indices; }
+    TPodVectorHeap< uint32_t > const & GetIndices() const { return Indices; }
 
     /** Length of Head-Related Impulse Response (HRIR) */
     int GetFrameCount() const
@@ -84,10 +84,10 @@ private:
     /** HRTF FFT filter size in frames */
     int FilterSize = 0;
 
-    TPodArrayHeap< uint32_t > Indices;
-    TPodArrayHeap< Float3 > Vertices;
-    TPodArrayHeap< SComplex > hrtfL;
-    TPodArrayHeap< SComplex > hrtfR;
+    TPodVectorHeap< uint32_t > Indices;
+    TPodVectorHeap< Float3 > Vertices;
+    TPodVectorHeap< SComplex > hrtfL;
+    TPodVectorHeap< SComplex > hrtfR;
 
     void * ForwardFFT = nullptr;
     void * InverseFFT = nullptr;

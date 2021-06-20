@@ -35,7 +35,7 @@ SOFTWARE.
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Core/Public/Base85.h>
 #include <Core/Public/Compress.h>
-#include <Core/Public/CriticalError.h>
+#include <Core/Public/Core.h>
 #include <Runtime/Public/Runtime.h>
 
 // Padding between glyphs within texture in pixels. Defaults to 1. If your rendering method doesn't rely on bilinear filtering you may set this to 0.
@@ -877,7 +877,7 @@ static void ImFontAtlasBuildMultiplyRectAlpha8( const unsigned char table[256], 
 // Store 1-bit per value. Note that Resize() currently clears the whole vector.
 struct ImBoolVector
 {
-    TPodArray<int>   Storage;
+    TPodVector<int>   Storage;
     ImBoolVector() { }
     void            Resize( int sz ) { Storage.ResizeInvalidate( (sz + 31) >> 5 ); Storage.ZeroMem(); }
     void            Clear() { Storage.Clear(); }
@@ -943,7 +943,7 @@ bool AFont::Build( const void * _SysMem, size_t _SizeInBytes, SFontCreateInfo co
     }
 
     // 3. Unpack our bit map into a flat list (we now have all the Unicode points that we know are requested _and_ available _and_ not overlapping another)
-    TPodArray< int > glyphsList;
+    TPodVector< int > glyphsList;
     glyphsList.Reserve( totalGlyphsCount );
     const int* it_begin = glyphsSet.Storage.begin();
     const int* it_end = glyphsSet.Storage.end();
@@ -958,12 +958,12 @@ bool AFont::Build( const void * _SysMem, size_t _SizeInBytes, SFontCreateInfo co
     // (We technically don't need to zero-clear rects, but let's do it for the sake of sanity)
 
     // Rectangle to pack. We first fill in their size and the packer will give us their position.
-    TPodArray< stbrp_rect > rects;
+    TPodVector< stbrp_rect > rects;
     rects.Resize( totalGlyphsCount );
     rects.ZeroMem();
 
     // Output glyphs
-    TPodArray< stbtt_packedchar > packedChars;
+    TPodVector< stbtt_packedchar > packedChars;
     packedChars.Resize( totalGlyphsCount );
     packedChars.ZeroMem();
 
@@ -1010,7 +1010,7 @@ bool AFont::Build( const void * _SysMem, size_t _SizeInBytes, SFontCreateInfo co
 
     AN_ASSERT( CustomRects.Size() >= 1 ); // We expect at least the default custom rects to be registered, else something went wrong.
 
-    TPodArray< stbrp_rect > pack_rects;
+    TPodVector< stbrp_rect > pack_rects;
     pack_rects.Resize( CustomRects.Size() );
     pack_rects.ZeroMem();
     for ( int i = 0; i < CustomRects.Size(); i++ ) {

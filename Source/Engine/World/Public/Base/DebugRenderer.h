@@ -35,9 +35,9 @@ SOFTWARE.
 #include <Core/Public/BV/BvAxisAlignedBox.h>
 #include <Core/Public/BV/BvOrientedBox.h>
 
-using AArrayOfDebugVertices = TPodArrayHeap< SDebugVertex, 1024, 1024 >;
-using AArrayOfDebugIndices = TPodArrayHeap< unsigned short, 1024, 1024 >;
-using AArrayOfDebugDrawCmds = TPodArrayHeap< SDebugDrawCmd >;
+using AArrayOfDebugVertices = TPodVectorHeap< SDebugVertex, 1024, 1024 >;
+using AArrayOfDebugIndices = TPodVectorHeap< unsigned short, 1024, 1024 >;
+using AArrayOfDebugDrawCmds = TPodVectorHeap< SDebugDrawCmd >;
 
 class ADebugRenderer {
     AN_FORBID_COPY( ADebugRenderer )

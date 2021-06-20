@@ -33,6 +33,7 @@ SOFTWARE.
 #include "BaseTypes.h"
 #include "Std.h"
 #include "IO.h"
+#include "Array.h"
 
 #include <emmintrin.h>
 
@@ -84,32 +85,32 @@ constexpr int FloatingPointPrecision< double >() {
 }
 
 template< typename T, typename = TStdEnableIf< IsIntegral<T>() > >
-T Abs( T const & Value ) {
+T Abs( T Value ) {
     const T Mask = Value >> ( BitsCount< T >() - 1 );
     return ( ( Value ^ Mask ) - Mask );
 }
 
 template< typename T, typename = TStdEnableIf< IsIntegral<T>() > >
-constexpr T Dist( T const & A, T const & B ) {
+constexpr T Dist( T A, T B ) {
     // NOTE: We don't use Abs() to control value overflow
     return ( B > A ) ? ( B - A ) : ( A - B );
 }
 
-AN_FORCEINLINE float Abs( float const & Value ) {
+AN_FORCEINLINE float Abs( float Value ) {
     int32_t i = *reinterpret_cast< const int32_t * >( &Value ) & 0x7FFFFFFF;
     return *reinterpret_cast< const float * >( &i );
 }
 
-AN_FORCEINLINE double Abs( double const & Value ) {
+AN_FORCEINLINE double Abs( double Value ) {
     int64_t i = *reinterpret_cast< const int64_t * >( &Value ) & 0x7FFFFFFFFFFFFFFFLL;
     return *reinterpret_cast< const double * >( &i );
 }
 
-AN_FORCEINLINE float Dist( float const & A, float const & B ) {
+AN_FORCEINLINE float Dist( float A, float B ) {
     return Abs( A - B );
 }
 
-AN_FORCEINLINE double Dist( double const & A, double const & B ) {
+AN_FORCEINLINE double Dist( double A, double B ) {
     return Abs( A - B );
 }
 
@@ -120,21 +121,21 @@ template< typename T >
 constexpr T MaxValue() { return TStdNumericLimits< T >::max(); }
 
 template< typename T, typename = TStdEnableIf< IsIntegral<T>() > >
-constexpr int SignBits( T const & Value ) {
+constexpr int SignBits( T Value ) {
     return IsSigned< T >() ? static_cast< uint64_t >( Value ) >> ( BitsCount< T >() - 1 ) : 0;
 }
 
-constexpr int SignBits( float const & Value ) {
+AN_FORCEINLINE int SignBits( float Value ) {
     return *reinterpret_cast< const uint32_t * >(&Value) >> 31;
 }
 
-constexpr int SignBits( double const & Value ) {
+AN_FORCEINLINE int SignBits( double Value ) {
     return *reinterpret_cast< const uint64_t * >(&Value) >> 63;
 }
 
 /** Return 1 if value is greater than 0, -1 if value is less than 0, 0 if value equal to 0 */
 template< typename T >
-constexpr T Sign( T const & Value ) {
+AN_FORCEINLINE T Sign( T Value ) {
     return Value > 0 ? 1 : -SignBits( Value );
 }
 
@@ -153,22 +154,22 @@ constexpr T MinPowerOfTwo() {
     return T(1);
 }
 
-constexpr int32_t ToIntFast( float const & Value ) {
+constexpr int32_t ToIntFast( float Value ) {
     return static_cast< int32_t >(Value);
 }
 
-constexpr int64_t ToLongFast( float const & Value ) {
+constexpr int64_t ToLongFast( float Value ) {
     return static_cast< int64_t >(Value);
 }
 
 template< typename T >
-T ToGreaterPowerOfTwo( T const & Value );
+T ToGreaterPowerOfTwo( T Value );
 
 template< typename T >
-T ToLessPowerOfTwo( T const & Value );
+T ToLessPowerOfTwo( T Value );
 
 template<>
-AN_FORCEINLINE int8_t ToGreaterPowerOfTwo< int8_t >( int8_t const & Value ) {
+AN_FORCEINLINE int8_t ToGreaterPowerOfTwo< int8_t >( int8_t Value ) {
     using T = int8_t;
     if ( Value >= MaxPowerOfTwo< T >() ) {
         return MaxPowerOfTwo< T >();
@@ -184,7 +185,7 @@ AN_FORCEINLINE int8_t ToGreaterPowerOfTwo< int8_t >( int8_t const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE uint8_t ToGreaterPowerOfTwo< uint8_t >( uint8_t const & Value ) {
+AN_FORCEINLINE uint8_t ToGreaterPowerOfTwo< uint8_t >( uint8_t Value ) {
     using T = uint8_t;
     if ( Value >= MaxPowerOfTwo< T >() ) {
         return MaxPowerOfTwo< T >();
@@ -200,7 +201,7 @@ AN_FORCEINLINE uint8_t ToGreaterPowerOfTwo< uint8_t >( uint8_t const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE int16_t ToGreaterPowerOfTwo< int16_t >( int16_t const & Value ) {
+AN_FORCEINLINE int16_t ToGreaterPowerOfTwo< int16_t >( int16_t Value ) {
     using T = int16_t;
     if ( Value >= MaxPowerOfTwo< T >() ) {
         return MaxPowerOfTwo< T >();
@@ -217,7 +218,7 @@ AN_FORCEINLINE int16_t ToGreaterPowerOfTwo< int16_t >( int16_t const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE uint16_t ToGreaterPowerOfTwo< uint16_t >( uint16_t const & Value ) {
+AN_FORCEINLINE uint16_t ToGreaterPowerOfTwo< uint16_t >( uint16_t Value ) {
     using T = uint16_t;
     if ( Value >= MaxPowerOfTwo< T >() ) {
         return MaxPowerOfTwo< T >();
@@ -234,7 +235,7 @@ AN_FORCEINLINE uint16_t ToGreaterPowerOfTwo< uint16_t >( uint16_t const & Value 
 }
 
 template<>
-AN_FORCEINLINE int32_t ToGreaterPowerOfTwo< int32_t >( int32_t const & Value ) {
+AN_FORCEINLINE int32_t ToGreaterPowerOfTwo< int32_t >( int32_t Value ) {
     using T = int32_t;
     if ( Value >= MaxPowerOfTwo< T >() ) {
         return MaxPowerOfTwo< T >();
@@ -252,7 +253,7 @@ AN_FORCEINLINE int32_t ToGreaterPowerOfTwo< int32_t >( int32_t const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE uint32_t ToGreaterPowerOfTwo< uint32_t >( uint32_t const & Value ) {
+AN_FORCEINLINE uint32_t ToGreaterPowerOfTwo< uint32_t >( uint32_t Value ) {
     using T = uint32_t;
     if ( Value >= MaxPowerOfTwo< T >() ) {
         return MaxPowerOfTwo< T >();
@@ -270,7 +271,7 @@ AN_FORCEINLINE uint32_t ToGreaterPowerOfTwo< uint32_t >( uint32_t const & Value 
 }
 
 template<>
-AN_FORCEINLINE int64_t ToGreaterPowerOfTwo< int64_t >( int64_t const & Value ) {
+AN_FORCEINLINE int64_t ToGreaterPowerOfTwo< int64_t >( int64_t Value ) {
     using T = int64_t;
     if ( Value >= MaxPowerOfTwo< T >() ) {
         return MaxPowerOfTwo< T >();
@@ -289,7 +290,7 @@ AN_FORCEINLINE int64_t ToGreaterPowerOfTwo< int64_t >( int64_t const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE uint64_t ToGreaterPowerOfTwo< uint64_t >( uint64_t const & Value ) {
+AN_FORCEINLINE uint64_t ToGreaterPowerOfTwo< uint64_t >( uint64_t Value ) {
     using T = uint64_t;
     if ( Value >= MaxPowerOfTwo< T >() ) {
         return MaxPowerOfTwo< T >();
@@ -308,7 +309,7 @@ AN_FORCEINLINE uint64_t ToGreaterPowerOfTwo< uint64_t >( uint64_t const & Value 
 }
 
 template<>
-AN_FORCEINLINE float ToGreaterPowerOfTwo( float const & Value ) {
+AN_FORCEINLINE float ToGreaterPowerOfTwo( float Value ) {
     using T = float;
     if ( Value >= MaxPowerOfTwo< T >() ) {
         return MaxPowerOfTwo< T >();
@@ -326,7 +327,7 @@ AN_FORCEINLINE float ToGreaterPowerOfTwo( float const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE int8_t ToLessPowerOfTwo< int8_t >( int8_t const & Value ) {
+AN_FORCEINLINE int8_t ToLessPowerOfTwo< int8_t >( int8_t Value ) {
     using T = int8_t;
     T Val = Value;
     if ( Val < MinPowerOfTwo< T >() ) {
@@ -339,7 +340,7 @@ AN_FORCEINLINE int8_t ToLessPowerOfTwo< int8_t >( int8_t const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE uint8_t ToLessPowerOfTwo< uint8_t >( uint8_t const & Value ) {
+AN_FORCEINLINE uint8_t ToLessPowerOfTwo< uint8_t >( uint8_t Value ) {
     using T = uint8_t;
     T Val = Value;
     if ( Val < MinPowerOfTwo< T >() ) {
@@ -352,7 +353,7 @@ AN_FORCEINLINE uint8_t ToLessPowerOfTwo< uint8_t >( uint8_t const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE int16_t ToLessPowerOfTwo< int16_t >( int16_t const & Value ) {
+AN_FORCEINLINE int16_t ToLessPowerOfTwo< int16_t >( int16_t Value ) {
     using T = int16_t;
     T Val = Value;
     if ( Val < MinPowerOfTwo< T >() ) {
@@ -366,7 +367,7 @@ AN_FORCEINLINE int16_t ToLessPowerOfTwo< int16_t >( int16_t const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE uint16_t ToLessPowerOfTwo< uint16_t >( uint16_t const & Value ) {
+AN_FORCEINLINE uint16_t ToLessPowerOfTwo< uint16_t >( uint16_t Value ) {
     using T = uint16_t;
     T Val = Value;
     if ( Val < MinPowerOfTwo< T >() ) {
@@ -380,7 +381,7 @@ AN_FORCEINLINE uint16_t ToLessPowerOfTwo< uint16_t >( uint16_t const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE int32_t ToLessPowerOfTwo< int32_t >( int32_t const & Value ) {
+AN_FORCEINLINE int32_t ToLessPowerOfTwo< int32_t >( int32_t Value ) {
     using T = int32_t;
     T Val = Value;
     if ( Val < MinPowerOfTwo< T >() ) {
@@ -395,7 +396,7 @@ AN_FORCEINLINE int32_t ToLessPowerOfTwo< int32_t >( int32_t const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE uint32_t ToLessPowerOfTwo< uint32_t >( uint32_t const & Value ) {
+AN_FORCEINLINE uint32_t ToLessPowerOfTwo< uint32_t >( uint32_t Value ) {
     using T = uint32_t;
     T Val = Value;
     if ( Val < MinPowerOfTwo< T >() ) {
@@ -410,7 +411,7 @@ AN_FORCEINLINE uint32_t ToLessPowerOfTwo< uint32_t >( uint32_t const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE int64_t ToLessPowerOfTwo< int64_t >( int64_t const & Value ) {
+AN_FORCEINLINE int64_t ToLessPowerOfTwo< int64_t >( int64_t Value ) {
     using T = int64_t;
     T Val = Value;
     if ( Val < MinPowerOfTwo< T >() ) {
@@ -426,7 +427,7 @@ AN_FORCEINLINE int64_t ToLessPowerOfTwo< int64_t >( int64_t const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE uint64_t ToLessPowerOfTwo< uint64_t >( uint64_t const & Value ) {
+AN_FORCEINLINE uint64_t ToLessPowerOfTwo< uint64_t >( uint64_t Value ) {
     using T = uint64_t;
     T Val = Value;
     if ( Val < MinPowerOfTwo< T >() ) {
@@ -442,7 +443,7 @@ AN_FORCEINLINE uint64_t ToLessPowerOfTwo< uint64_t >( uint64_t const & Value ) {
 }
 
 template<>
-AN_FORCEINLINE float ToLessPowerOfTwo( float const & Value ) {
+AN_FORCEINLINE float ToLessPowerOfTwo( float Value ) {
     using T = float;
     if ( Value >= MaxPowerOfTwo< T >() ) {
         return MaxPowerOfTwo< T >();
@@ -460,7 +461,7 @@ AN_FORCEINLINE float ToLessPowerOfTwo( float const & Value ) {
 }
 
 template< typename T >
-AN_FORCEINLINE T ToClosestPowerOfTwo( T const & Value ) {
+AN_FORCEINLINE T ToClosestPowerOfTwo( T Value ) {
     T GreaterPow = ToGreaterPowerOfTwo( Value );
     T LessPow = ToLessPowerOfTwo( Value );
     return Dist( GreaterPow, Value ) < Dist( LessPow, Value ) ? GreaterPow : LessPow;
@@ -500,17 +501,17 @@ AN_FORCEINLINE int Log2( uint64_t value ) {
 }
 
 /** Return half float sign bit */
-constexpr int HalfFloatSignBits( uint16_t const & Value ) {
+constexpr int HalfFloatSignBits( uint16_t Value ) {
     return Value >> 15;
 }
 
 /** Return half float exponent */
-constexpr int HalfFloatExponent( uint16_t const & Value ) {
+constexpr int HalfFloatExponent( uint16_t Value ) {
     return (Value >> 10) & 0x1f;
 }
 
 /** Return half float mantissa */
-constexpr int HalfFloatMantissa( uint16_t const & Value ) {
+constexpr int HalfFloatMantissa( uint16_t Value ) {
     return Value & 0x3ff;
 }
 
@@ -522,7 +523,7 @@ void FloatToHalf( const float * _In, uint16_t * _Out, int _Count );
 
 void HalfToFloat( const uint16_t * _In, float * _Out, int _Count );
 
-AN_FORCEINLINE uint16_t FloatToHalf( float const & Value ) {
+AN_FORCEINLINE uint16_t FloatToHalf( float Value ) {
     return _FloatToHalf( *reinterpret_cast< const uint32_t * >( &Value ) );
 }
 
@@ -533,60 +534,60 @@ AN_FORCEINLINE float HalfToFloat( const uint16_t & Value ) {
 }
 
 /** Return floating point exponent */
-constexpr int Exponent( float const & Value ) {
+AN_FORCEINLINE int Exponent( float Value ) {
     return ( *reinterpret_cast< const uint32_t * >( &Value ) >> 23 ) & 0xff;
 }
 
 /** Return floating point mantissa */
-constexpr int Mantissa( float const & Value ) {
+AN_FORCEINLINE int Mantissa( float Value ) {
     return *reinterpret_cast< const uint32_t * >( &Value ) & 0x7fffff;
 }
 
 /** Return floating point exponent */
-constexpr int Exponent( double const & Value ) {
+AN_FORCEINLINE int Exponent( double Value ) {
     return ( *reinterpret_cast< const uint64_t * >( &Value ) >> 52 ) & 0x7ff;
 }
 
 /** Return floating point mantissa */
-constexpr int64_t Mantissa( double const & Value ) {
+AN_FORCEINLINE int64_t Mantissa( double Value ) {
     return *reinterpret_cast< const uint64_t * >( &Value ) & 0xfffffffffffff;
 }
 
-constexpr bool IsInfinite( float const & Value ) {
+AN_FORCEINLINE bool IsInfinite( float Value ) {
     //return std::isinf( Self );
     return ( *reinterpret_cast< const uint32_t * >( &Value ) & 0x7fffffff ) == 0x7f800000;
 }
 
-constexpr bool IsNan( float const & Value ) {
+AN_FORCEINLINE bool IsNan( float Value ) {
     //return std::isnan( Self );
     return ( *reinterpret_cast< const uint32_t * >( &Value ) & 0x7f800000 ) == 0x7f800000;
 }
 
-AN_FORCEINLINE/*constexpr*/ bool IsNormal( float const & Value ) {
+AN_FORCEINLINE bool IsNormal( float Value ) {
     return std::isnormal( Value );
 }
 
-constexpr bool IsDenormal( float const & Value ) {
+AN_FORCEINLINE bool IsDenormal( float Value ) {
     return ( *reinterpret_cast< const uint32_t * >( &Value ) & 0x7f800000 ) == 0x00000000
         && ( *reinterpret_cast< const uint32_t * >( &Value ) & 0x007fffff ) != 0x00000000;
 }
 
 // Floating point specific
-constexpr bool IsInfinite( double const & Value ) {
+AN_FORCEINLINE bool IsInfinite( double Value ) {
     //return std::isinf( Value );
     return ( *reinterpret_cast< const uint64_t * >( &Value ) & uint64_t(0x7fffffffffffffffULL) ) == uint64_t( 0x7f80000000000000ULL );
 }
 
-constexpr bool IsNan( double const & Value ) {
+AN_FORCEINLINE bool IsNan( double Value ) {
     //return std::isnan( Value );
     return ( *reinterpret_cast< const uint64_t * >( &Value ) & uint64_t(0x7f80000000000000ULL) ) == uint64_t( 0x7f80000000000000ULL );
 }
 
-AN_FORCEINLINE/*constexpr*/ bool IsNormal( double const & Value ) {
+AN_FORCEINLINE bool IsNormal( double Value ) {
     return std::isnormal( Value );
 }
 
-constexpr bool IsDenormal( double const & Value ) {
+AN_FORCEINLINE bool IsDenormal( double Value ) {
     return ( *reinterpret_cast< const uint64_t * >( &Value ) & uint64_t(0x7f80000000000000ULL) ) == uint64_t( 0x0000000000000000ULL )
         && ( *reinterpret_cast< const uint64_t * >( &Value ) & uint64_t(0x007fffffffffffffULL) ) != uint64_t( 0x0000000000000000ULL );
 }
@@ -601,27 +602,27 @@ template<>
 constexpr int MaxExponent< double >() { return 1023; }
 
 template< typename T >
-AN_FORCEINLINE T Floor( T const & Value ) {
+AN_FORCEINLINE T Floor( T Value ) {
     return std::floor( Value );
 }
 
 template< typename T >
-AN_FORCEINLINE T Ceil( T const & Value ) {
+AN_FORCEINLINE T Ceil( T Value ) {
     return std::ceil( Value );
 }
 
 template< typename T >
-AN_FORCEINLINE T Fract( T const & Value ) {
+AN_FORCEINLINE T Fract( T Value ) {
     return Value - std::floor( Value );
 }
 
 //template< typename T >
-//AN_FORCEINLINE T Clamp( T const & _Value, T const & _Min, T const & _Max ) {
+//AN_FORCEINLINE T Clamp( T _Value, T _Min, T _Max ) {
 //    return StdMin( StdMax( _Value, _Min ), _Max );
 //}
 
 //template< typename T >
-//AN_FORCEINLINE T Saturate( T const & Value ) {
+//AN_FORCEINLINE T Saturate( T Value ) {
 //    return Clamp( Value, T(0), T(1) );
 //}
 
@@ -648,7 +649,7 @@ AN_FORCEINLINE T Round( T const & Value ) {
 
 template< typename T >
 AN_FORCEINLINE T RoundN( T const & Value, T const & _N ) {
-    return Floor( Value * _N + 0.5f ) / _N;
+    return Floor( Value * _N + T(0.5) ) / _N;
 }
 
 template< typename T >
@@ -1173,8 +1174,7 @@ AN_FORCEINLINE AString ToString( T const & _Value, int _Precision = FloatingPoin
 }
 
 AN_FORCEINLINE AString ToString( bool _Value ) {
-    constexpr const char * s[2] = { "false", "true" };
-    return s[ _Value ];
+    return TArray< const char *, 2 >{ "false", "true" }[ _Value ];
 }
 
 constexpr int32_t INT64_HIGH_INT( uint64_t i64 ) {

@@ -112,9 +112,9 @@ void ASkeletalAnimation::LoadInternalResource( const char * _Path ) {
 bool ASkeletalAnimation::LoadResource( IBinaryStream & Stream ) {
     AString guid;
 
-    TPodArray< SAnimationChannel > channels;
-    TPodArray< STransform > transforms;
-    TPodArray< BvAxisAlignedBox > bounds;
+    TPodVector< SAnimationChannel > channels;
+    TPodVector< STransform > transforms;
+    TPodVector< BvAxisAlignedBox > bounds;
 
     uint32_t fileFormat = Stream.ReadUInt32();
 

@@ -39,7 +39,7 @@ ARuntimeVariable com_DrawTerrainBounds( _CTS( "com_DrawTerrainBounds" ), _CTS( "
 
 AN_CLASS_META( ATerrainComponent )
 
-static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits )
+static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< STriangleHitResult > & Hits )
 {
     ATerrainComponent const * terrain = static_cast< ATerrainComponent const * >(Self->Owner);
     bool bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
@@ -351,7 +351,7 @@ void ATerrainComponent::SetAllowRaycast( bool _AllowRaycast )
     bAllowRaycast = _AllowRaycast;
 }
 
-bool ATerrainComponent::Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits ) const
+bool ATerrainComponent::Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< STriangleHitResult > & Hits ) const
 {
     if ( !Primitive.RaycastCallback ) {
         return false;

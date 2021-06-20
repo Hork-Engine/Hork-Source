@@ -39,7 +39,7 @@ SOFTWARE.
 struct SContextGLTF {
     cgltf_data * Data;
     bool bSkeletal;
-    TPodArray< cgltf_node * > NodeToJoint;
+    TPodVector< cgltf_node * > NodeToJoint;
 };
 
 #define MAX_MEMORY_GLTF     (16<<20) // enough?
@@ -1016,7 +1016,7 @@ bool LoadGLTF( const char * FileName, SMeshAsset & MeshAsset, SSkeletonAsset & S
     Animations.Clear();
 
     AString path = FileName;
-    path.StripFilename();
+    path.ClipFilename();
     path += "/";
 
     if ( !f.OpenRead( FileName ) ) {
@@ -1078,7 +1078,7 @@ bool LoadGeometryGLTF( const char * FileName, SMeshAsset & MeshAsset ) {
     MeshAsset.Clear();
 
     AString path = FileName;
-    path.StripFilename();
+    path.ClipFilename();
     path += "/";
 
     if ( !f.OpenRead( FileName ) ) {

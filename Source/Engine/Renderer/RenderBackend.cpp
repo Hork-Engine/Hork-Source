@@ -36,6 +36,7 @@ SOFTWARE.
 #include "EnvProbeGenerator.h"
 #include "CubemapGenerator.h"
 #include "AtmosphereRenderer.h"
+#include "VXGIVoxelizer.h"
 
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
@@ -182,6 +183,11 @@ ARenderBackend::ARenderBackend()
     /////////////////////////////////////////////////////////////////////
     // test
     /////////////////////////////////////////////////////////////////////
+
+    {
+        VXGIVoxelizer vox;
+        vox.Render();
+    }
 
     TRef< RenderCore::ITexture > skybox;
     {
@@ -430,9 +436,9 @@ ARenderBackend::ARenderBackend()
     {
     int numPageSizes = 0;
     GDevice->EnumerateSparseTexturePageSize( SPARSE_TEXTURE_2D_ARRAY, TEXTURE_FORMAT_RGBA8, &numPageSizes, nullptr, nullptr, nullptr );
-    TPodArray<int> pageSizeX; pageSizeX.Resize( numPageSizes );
-    TPodArray<int> pageSizeY; pageSizeY.Resize( numPageSizes );
-    TPodArray<int> pageSizeZ; pageSizeZ.Resize( numPageSizes );
+    TPodVector<int> pageSizeX; pageSizeX.Resize( numPageSizes );
+    TPodVector<int> pageSizeY; pageSizeY.Resize( numPageSizes );
+    TPodVector<int> pageSizeZ; pageSizeZ.Resize( numPageSizes );
     GDevice->EnumerateSparseTexturePageSize( SPARSE_TEXTURE_2D_ARRAY, TEXTURE_FORMAT_RGBA8, &numPageSizes, pageSizeX.ToPtr(), pageSizeY.ToPtr(), pageSizeZ.ToPtr() );
     for ( int i = 0 ; i < numPageSizes ; i++ ) {
         GLogger.Printf( "Sparse page size %d %d %d\n", pageSizeX[i], pageSizeY[i], pageSizeZ[i] );

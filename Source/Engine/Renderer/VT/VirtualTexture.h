@@ -118,7 +118,7 @@ private:
     byte * PIT;
 
     // Used only by cache to update page LRU
-    TPodArray< uint32_t > PendingUpdateLRU;
+    TPodVector< uint32_t > PendingUpdateLRU;
 
     // Used only from stream thread to mark streamed pages
     std::unordered_map< uint32_t, int64_t > StreamedPages;

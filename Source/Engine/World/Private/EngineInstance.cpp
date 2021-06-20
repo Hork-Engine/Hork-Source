@@ -43,7 +43,7 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 
 #include <Core/Public/Logger.h>
-#include <Core/Public/CriticalError.h>
+#include <Core/Public/Core.h>
 
 #include <Bullet3Common/b3Logging.h>
 #include <Bullet3Common/b3AlignedAllocator.h>
@@ -194,17 +194,8 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
 
     bAllowInputEvents = true;
 
-    if ( SetCriticalMark() ) {
-        return;
-    }
-
     do
     {
-        if ( IsCriticalError() ) {
-            // Critical error in other thread was occured
-            return;
-        }
-
         // Set new frame, process game events
         GRuntime.NewFrame();
 

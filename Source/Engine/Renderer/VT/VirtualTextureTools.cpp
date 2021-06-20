@@ -75,7 +75,7 @@ bool SVirtualTextureImage::WriteImage( const char * FileName ) const {
 
 void SVirtualTextureImage::CreateEmpty( int InWidth, int InHeight, int InNumChannels ) {
     if ( Data == NULL || Width * Height * NumChannels != InWidth * InHeight * InNumChannels ) {
-        Data = ( byte * )GHeapMemory.Realloc( Data, InWidth * InHeight * InNumChannels, false );
+        Data = ( byte * )GHeapMemory.Realloc( Data, InWidth * InHeight * InNumChannels, 16, false );
     }
 
     Width = InWidth;

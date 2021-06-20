@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include <Core/Public/Logger.h>
-#include <Core/Public/CriticalError.h>
+#include <Core/Public/Core.h>
 
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
@@ -105,7 +105,7 @@ AAudioHRTF::AAudioHRTF( int SampleRate )
     if ( sampleRateHRIR == SampleRate ) {
         // There is no need for resampling, so we just read it as is
 
-        TPodArrayHeap< float > framesIn;
+        TPodVectorHeap< float > framesIn;
         framesIn.Resize( FrameCount );
 
         FilterSize = FrameCount - 1 + HRTF_BLOCK_LENGTH; // M - 1 + L
@@ -140,10 +140,10 @@ AAudioHRTF::AAudioHRTF( int SampleRate )
         ma_uint64 frameCountIn = FrameCount;
         ma_uint64 frameCountOut = ma_resampler_get_expected_output_frame_count( &resampler, FrameCount );
 
-        TPodArrayHeap< float > framesIn;
+        TPodVectorHeap< float > framesIn;
         framesIn.Resize( frameCountIn );
 
-        TPodArrayHeap< float > framesOut;
+        TPodVectorHeap< float > framesOut;
         framesOut.Resize( frameCountOut );
 
         FrameCount = frameCountOut;
@@ -405,8 +405,8 @@ void AAudioHRTF::ApplyHRTF( Float3 const & CurDir, Float3 const & NewDir, const 
 void DrawHRTF( ADebugRenderer * InRenderer )
 {
     static bool binit = false;
-    static TPodArrayHeap< Float3 > sphereVerts;
-    static TPodArrayHeap< uint32_t > sphereIndices;
+    static TPodVectorHeap< Float3 > sphereVerts;
+    static TPodVectorHeap< uint32_t > sphereIndices;
     if ( !binit ) {
         binit = true;
 

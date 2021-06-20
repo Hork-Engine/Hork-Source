@@ -91,7 +91,7 @@ void AVSD::ProcessLevelVisibility( ALevel * InLevel ) {
     }
 }
 
-void AVSD::QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > & VisPrimitives, TPodArray< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery ) {
+void AVSD::QueryVisiblePrimitives( AWorld * InWorld, TPodVector< SPrimitiveDef * > & VisPrimitives, TPodVector< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery ) {
     //int QueryVisiblePrimitivesTime = GRuntime.SysMicroseconds();
 
     ++VisQueryMarker;
@@ -2440,7 +2440,7 @@ bool AVSD::RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result
     return true;
 }
 
-bool AVSD::RaycastBounds( AWorld * InWorld, TPodArray< SBoxHitResult > & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter ) {
+bool AVSD::RaycastBounds( AWorld * InWorld, TPodVector< SBoxHitResult > & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter ) {
     ++VisQueryMarker;
 
     InFilter = InFilter ? InFilter : &DefaultRaycastFilter;

@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "CoreMath.h"
-#include "PodArray.h"
+#include "PodVector.h"
 #include "Std.h"
 #include "LinearAllocator.h"
 
@@ -100,7 +100,7 @@ public:
         Double3 Normal;
     };
 
-    TTriangulator( TStdVector< TriangleVertex > * pOutputStreamVertices, TPodArray< unsigned int > * pOutputStreamIndices );
+    TTriangulator( TStdVector< TriangleVertex > * pOutputStreamVertices, TPodVector< unsigned int > * pOutputStreamIndices );
 
     void Triangulate( SPolygon const * Polygon );
 
@@ -114,7 +114,7 @@ private:
     unsigned int FindOrCreateVertex( TriangleVertex *  _Vertex );
 
     // Output indices pointer
-    TPodArray< unsigned int > * pIndexStream;
+    TPodVector< unsigned int > * pIndexStream;
 
     // Output vertices pointer
     TStdVector< TriangleVertex > * pVertexStream;
@@ -123,19 +123,19 @@ private:
     int VertexOffset;
 
     // Current filling contour
-    TPodArray< TriangleVertex * > PrimitiveIndices;
+    TPodVector< TriangleVertex * > PrimitiveIndices;
     int CurrentTopology;
 
     // Vertex cache
-    TPodArray< TriangleVertex * > VertexCache;
+    TPodVector< TriangleVertex * > VertexCache;
 
     // Temporary allocated verts
     TLinearAllocator< Align( sizeof( TriangleVertex ), 16 ) * 1024 > VertexAllocator;
-    TPodArray< TriangleVertex * > AllocatedVerts;
+    TPodVector< TriangleVertex * > AllocatedVerts;
 };
 
 template< typename ContourVertex, typename TriangleVertex >
-TTriangulator< ContourVertex, TriangleVertex >::TTriangulator( TStdVector< TriangleVertex > * pOutputStreamVertices, TPodArray< unsigned int > * pOutputStreamIndices )
+TTriangulator< ContourVertex, TriangleVertex >::TTriangulator( TStdVector< TriangleVertex > * pOutputStreamVertices, TPodVector< unsigned int > * pOutputStreamIndices )
     : pIndexStream( pOutputStreamIndices )
     , pVertexStream( pOutputStreamVertices )
 {

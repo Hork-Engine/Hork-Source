@@ -43,7 +43,7 @@ SOFTWARE.
 #include "RenderPass.h"
 
 #include <Core/Public/Hash.h>
-#include <Core/Public/PodArray.h>
+#include <Core/Public/PodVector.h>
 #include <Core/Public/Ref.h>
 
 namespace RenderCore {

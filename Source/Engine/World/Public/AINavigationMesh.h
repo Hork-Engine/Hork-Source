@@ -356,10 +356,10 @@ public:
     ANavQueryFilter QueryFilter;
 
     /** Navigation mesh connections. You must rebuild navigation mesh if you change connections. */
-    TPodArray< SAINavMeshConnection > NavMeshConnections; // TODO: Components?
+    TPodVector< SAINavMeshConnection > NavMeshConnections; // TODO: Components?
 
     /** Navigation areas. You must rebuild navigation mesh if you change areas. */
-    TPodArray< SAINavigationArea > NavigationAreas; // TODO: Components?
+    TPodVector< SAINavigationArea > NavigationAreas; // TODO: Components?
 
     //
     // Public methods
@@ -475,7 +475,7 @@ public:
     bool MoveAlongSurface( Float3 const & _Position, Float3 const & _Destination, Float3 const & _Extents, int _MaxVisitedSize, Float3 & _ResultPos ) const;
 
     /** Last visited polys from MoveAlongSurface */
-    TPodArray< SNavPolyRef > const & GetLastVisitedPolys() const { return LastVisitedPolys; }
+    TPodVector< SNavPolyRef > const & GetLastVisitedPolys() const { return LastVisitedPolys; }
 
     /** Finds a path from the start polygon to the end polygon. */
     bool FindPath( SNavPointRef const & _StartRef, SNavPointRef const & _EndRef, ANavQueryFilter const & _Filter, SNavPolyRef * _Path, int * _PathCount, const int _MaxPath ) const;
@@ -484,16 +484,16 @@ public:
     bool FindPath( SNavPointRef const & _StartRef, SNavPointRef const & _EndRef, SNavPolyRef * _Path, int * _PathCount, const int _MaxPath ) const;
 
     /** Finds a path from the start position to the end position. */
-    bool FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, ANavQueryFilter const & _Filter, TPodArray< SAINavigationPathPoint > & _PathPoints ) const;
+    bool FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, ANavQueryFilter const & _Filter, TPodVector< SAINavigationPathPoint > & _PathPoints ) const;
 
     /** Finds a path from the start position to the end position. */
-    bool FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, TPodArray< SAINavigationPathPoint > & _PathPoints ) const;
+    bool FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, TPodVector< SAINavigationPathPoint > & _PathPoints ) const;
 
     /** Finds a path from the start position to the end position. */
-    bool FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, ANavQueryFilter const & _Filter, TPodArray< Float3 > & _PathPoints ) const;
+    bool FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, ANavQueryFilter const & _Filter, TPodVector< Float3 > & _PathPoints ) const;
 
     /** Finds a path from the start position to the end position. */
-    bool FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, TPodArray< Float3 > & _PathPoints ) const;
+    bool FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, TPodVector< Float3 > & _PathPoints ) const;
 
     /** Finds the straight path from the start to the end position within the polygon corridor. */
     bool FindStraightPath( Float3 const & _StartPos, Float3 const & _EndPos, SNavPolyRef const * _Path, int _PathSize, Float3 * _StraightPath, unsigned char * _StraightPathFlags, SNavPolyRef * _StraightPathRefs, int * _StraightPathCount, int _MaxStraightPath, EAINavMeshStraightPathCrossing _StraightPathCrossing = AI_NAV_MESH_STRAIGHTPATH_DEFAULT ) const;
@@ -537,8 +537,8 @@ private:
 private:
     bool BuildTiles( Int2 const & _Mins, Int2 const & _Maxs );
     bool BuildTile( int _X, int _Z );
-    void GatherNavigationGeometry( TPodArrayHeap< Float3 > & _Vertices,
-                                   TPodArrayHeap< unsigned int > & _Indices,
+    void GatherNavigationGeometry( TPodVectorHeap< Float3 > & _Vertices,
+                                   TPodVectorHeap< unsigned int > & _Indices,
                                    TBitMask<> & _WalkableTriangles,
                                    BvAxisAlignedBox & _ResultBoundingBox,
                                    BvAxisAlignedBox const * _ClipBoundingBox );
@@ -566,8 +566,8 @@ private:
     //bool bNavigationDirty;
 
     // NavMesh areas
-    //TPodArray< SAINavigationArea > Areas;
+    //TPodVector< SAINavigationArea > Areas;
 
     // Temp array to reduce memory allocations during MoveAlongSurface
-    mutable TPodArray< SNavPolyRef > LastVisitedPolys;
+    mutable TPodVector< SNavPolyRef > LastVisitedPolys;
 };

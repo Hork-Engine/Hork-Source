@@ -35,7 +35,7 @@ SOFTWARE.
 #include <Core/Public/HashFunc.h>
 #include <Core/Public/String.h>
 #include <Core/Public/CoreMath.h>
-#include <Core/Public/PodArray.h>
+#include <Core/Public/PodVector.h>
 #include <Core/Public/Ref.h>
 
 class AClassMeta;
@@ -124,7 +124,7 @@ public:
 
     // Utilites
     AAttributeMeta const * FindAttribute( const char * _Name, bool _Recursive ) const;
-    void GetAttributes( TPodArray< AAttributeMeta const * > & _Attributes, bool _Recursive = true ) const;
+    void GetAttributes( TPodVector< AAttributeMeta const * > & _Attributes, bool _Recursive = true ) const;
 
 protected:
     AClassMeta( AObjectFactory & _Factory, const char * _ClassName, AClassMeta const * _SuperClassMeta )

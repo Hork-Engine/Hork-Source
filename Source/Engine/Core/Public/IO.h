@@ -45,13 +45,13 @@ class AArchive final {
 
 public:
     AArchive();
-    AArchive( const char * _ArchiveName, bool bResourcePack = false );
+    AArchive( AStringView _ArchiveName, bool bResourcePack = false );
     AArchive( const void * pMemory, size_t SizeInBytes );
 
     ~AArchive();
 
     /** Open archive from file */
-    bool Open( const char * _ArchiveName, bool bResourcePack = false );
+    bool Open( AStringView _ArchiveName, bool bResourcePack = false );
 
     /** Open archive from memory */
     bool OpenFromMemory( const void * pMemory, size_t SizeInBytes );
@@ -66,7 +66,7 @@ public:
     int GetNumFiles() const;
 
     /** Get file index. Return -1 if file wasn't found */
-    int LocateFile( const char * _FileName ) const;
+    int LocateFile( AStringView _FileName ) const;
 
     /** Get file compressed and uncompressed size */
     bool GetFileSize( int _FileIndex, size_t * _CompressedSize, size_t * _UncompressedSize ) const;
@@ -78,12 +78,12 @@ public:
     bool ExtractFileToMemory( int _FileIndex, void * _MemoryBuffer, size_t _SizeInBytes ) const;
 
     /** Decompress file to heap memory */
-    bool ExtractFileToHeapMemory( const char * _FileName, void ** _HeapMemoryPtr, int * _SizeInBytes ) const;
+    bool ExtractFileToHeapMemory( AStringView _FileName, void ** _HeapMemoryPtr, int * _SizeInBytes ) const;
     /** Decompress file to heap memory */
     bool ExtractFileToHeapMemory( int _FileIndex, void ** _HeapMemoryPtr, int * _SizeInBytes ) const;
 
     /** Decompress file to hunk memory */
-    bool ExtractFileToHunkMemory( const char * _FileName, void ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark ) const;
+    bool ExtractFileToHunkMemory( AStringView _FileName, void ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark ) const;
 
 private:
     void * Handle;
@@ -105,19 +105,13 @@ public:
     ~AFileStream();
 
     /** Open file for read form specified path */
-    bool OpenRead( const char * _FileName );
-    /** Open file for read form specified path */
-    bool OpenRead( AString const & _FileName ) { return OpenRead( _FileName.CStr() ); }
+    bool OpenRead( AStringView _FileName );
 
     /** Open file for write */
-    bool OpenWrite( const char * _FileName );
-    /** Open file for write */
-    bool OpenWrite( AString const & _FileName ) { return OpenWrite( _FileName.CStr() ); }
+    bool OpenWrite( AStringView _FileName );
 
     /** Open file for append */
-    bool OpenAppend( const char * _FileName );
-    /** Open file for append */
-    bool OpenAppend( AString const & _FileName ) { return OpenAppend( _FileName.CStr() ); }
+    bool OpenAppend( AStringView _FileName );
 
     /** Close file */
     void Close();
@@ -139,7 +133,7 @@ protected:
     bool Impl_Eof() override;
 
 private:
-    bool Open( const char * _FileName, int _Mode );
+    bool Open( AStringView _FileName, int _Mode );
 
     enum EMode {
         M_Read,
@@ -169,26 +163,19 @@ public:
     ~AMemoryStream();
 
     /** Read from specified memory buffer */
-    bool OpenRead( const char * _FileName, const void * _MemoryBuffer, size_t _SizeInBytes );
-    /** Read from specified memory buffer */
-    bool OpenRead( AString const & _FileName, const void * _MemoryBuffer, size_t _SizeInBytes );
+    bool OpenRead( AStringView _FileName, const void * _MemoryBuffer, size_t _SizeInBytes );
 
     /** Read file from archive */
-    bool OpenRead( const char * _FileName, AArchive const & _Archive );
-    /** Read file from archive */
-    bool OpenRead( AString const & _FileName, AArchive const & _Archive );
+    bool OpenRead( AStringView _FileName, AArchive const & _Archive );
+
     /** Read file from archive */
     bool OpenRead( int _FileIndex, AArchive const & _Archive );
 
     /** Write to specified memory buffer */
-    bool OpenWrite( const char * _FileName, void * _MemoryBuffer, size_t _SizeInBytes );
-    /** Write to specified memory buffer */
-    bool OpenWrite( AString const & _FileName, void * _MemoryBuffer, size_t _SizeInBytes );
+    bool OpenWrite( AStringView _FileName, void * _MemoryBuffer, size_t _SizeInBytes );
 
     /** Write to inner memory buffer */
-    bool OpenWrite( const char * _FileName, size_t _ReservedSize = 32 );
-    /** Write to inner memory buffer */
-    bool OpenWrite( AString const & _FileName, size_t _ReservedSize = 32 );
+    bool OpenWrite( AStringView _FileName, size_t _ReservedSize = 32 );
 
     /** Close file */
     void Close();
@@ -246,9 +233,9 @@ bool IsFileExists( const char * _FileName );
 /** Remove file from disk */
 void RemoveFile( const char * _FileName );
 
-using STraverseDirectoryCB = std::function< void( AString const & FileName, bool bIsDirectory ) >;
+using STraverseDirectoryCB = std::function< void( AStringView FileName, bool bIsDirectory ) >;
 /** Traverse the directory */
-void TraverseDirectory( AString const & Path, bool bSubDirs, STraverseDirectoryCB Callback );
+void TraverseDirectory( AStringView Path, bool bSubDirs, STraverseDirectoryCB Callback );
 
 /** Write game resource pack */
 bool WriteResourcePack( const char * SourcePath, const char * ResultFile );

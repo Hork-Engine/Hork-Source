@@ -290,7 +290,7 @@ struct SPrimitiveDef
     bool (*RaycastCallback)( SPrimitiveDef const * Self,
                              Float3 const & InRayStart,
                              Float3 const & InRayEnd,
-                             TPodArray< STriangleHitResult > & Hits );
+                             TPodVector< STriangleHitResult > & Hits );
 
     /** Callback for closest local raycast */
     bool (*RaycastClosestCallback)( SPrimitiveDef const * Self,
@@ -453,19 +453,19 @@ class ABrushModel : public ABaseObject {
 
 public:
     /** Baked surface definitions */
-    TPodArrayHeap< SSurfaceDef > Surfaces;
+    TPodVectorHeap< SSurfaceDef > Surfaces;
 
     /** Baked surface vertex data */
-    TPodArrayHeap< SMeshVertex > Vertices;
+    TPodVectorHeap< SMeshVertex > Vertices;
 
     /** Baked surface vertex data */
-    TPodArrayHeap< SMeshVertexUV > LightmapVerts;
+    TPodVectorHeap< SMeshVertexUV > LightmapVerts;
 
     /** Baked surface vertex data */
-    TPodArrayHeap< SMeshVertexLight > VertexLight;
+    TPodVectorHeap< SMeshVertexLight > VertexLight;
 
     /** Baked surface triangle index data */
-    TPodArrayHeap< unsigned int > Indices;
+    TPodVectorHeap< unsigned int > Indices;
 
     /** Surface materials */
     TStdVector< TRef< AMaterialInstance > > SurfaceMaterials;
@@ -511,8 +511,8 @@ class ALevel : public ABaseObject {
     friend class AActor;
 
 public:
-    using AArrayOfNodes = TPodArray< SBinarySpaceNode >;
-    using AArrayOfLeafs = TPodArray< SBinarySpaceLeaf >;
+    using AArrayOfNodes = TPodVector< SBinarySpaceNode >;
+    using AArrayOfLeafs = TPodVector< SBinarySpaceLeaf >;
 
     /** BSP nodes */
     AArrayOfNodes Nodes;
@@ -521,10 +521,10 @@ public:
     AArrayOfLeafs Leafs;
 
     /** Node split planes */
-    TPodArray< SBinarySpacePlane > SplitPlanes;
+    TPodVector< SBinarySpacePlane > SplitPlanes;
 
     /** Level indoor areas */
-    TPodArray< SVisArea > Areas;
+    TPodVector< SVisArea > Areas;
 
     /** Level outdoor area */
     SVisArea OutdoorArea;
@@ -554,10 +554,10 @@ public:
     int PVSClustersCount = 0;
 
     /** Surface to area attachments */
-    TPodArray< int > AreaSurfaces;
+    TPodVector< int > AreaSurfaces;
 
     /** Baked audio */
-    TPodArray< SAudioArea > AudioAreas;
+    TPodVector< SAudioArea > AudioAreas;
 
     /** Ambient sounds */
     TStdVector< TRef< ASoundResource > > AmbientSounds;
@@ -571,13 +571,13 @@ public:
     /** Vertex buffer for baked static shadow casters
     FUTURE: split to chunks for culling
     */
-    TPodArrayHeap< Float3 > ShadowCasterVerts;
+    TPodVectorHeap< Float3 > ShadowCasterVerts;
 
     /** Index buffer for baked static shadow casters */
-    TPodArrayHeap< unsigned int > ShadowCasterIndices;
+    TPodVectorHeap< unsigned int > ShadowCasterIndices;
 
     /** Not movable primitives */
-    //TPodArray< SPrimitiveDef * > BakedPrimitives;
+    //TPodVector< SPrimitiveDef * > BakedPrimitives;
 
     // TODO: Keep here static navigation geometry
     // TODO: Octree/AABBtree for outdoor area
@@ -601,13 +601,13 @@ public:
     AWorld * GetOwnerWorld() const { return OwnerWorld; }
 
     /** Get actors in level */
-    TPodArray< AActor * > const & GetActors() const { return Actors; }
+    TPodVector< AActor * > const & GetActors() const { return Actors; }
 
     /** Get level indoor bounding box */
     BvAxisAlignedBox const & GetIndoorBounds() const { return IndoorBounds; }
 
     /** Get level areas */
-    TPodArray< SVisArea > const & GetAreas() const { return Areas; }
+    TPodVector< SVisArea > const & GetAreas() const { return Areas; }
 
     /** Get level outdoor area */
     SVisArea const * GetOutdoorArea() const { return &OutdoorArea; }
@@ -637,19 +637,19 @@ public:
     void RemoveVertexLightChannels();
 
     /** Get all lightmap channels inside the level */
-    TPodArray< ALightmapUV * > const & GetLightmapUVChannels() const { return LightmapUVs; }
+    TPodVector< ALightmapUV * > const & GetLightmapUVChannels() const { return LightmapUVs; }
 
     /** Get all vertex light channels inside the level */
-    TPodArray< AVertexLight * > const & GetVertexLightChannels() const { return VertexLightChannels; }
+    TPodVector< AVertexLight * > const & GetVertexLightChannels() const { return VertexLightChannels; }
 
     /** Sample lightmap by texture coordinate */
     Float3 SampleLight( int InLightmapBlock, Float2 const & InLighmapTexcoord ) const;
 
     /** Query vis areas by bounding box */
-    void QueryOverplapAreas( BvAxisAlignedBox const & InBounds, TPodArray< SVisArea * > & Areas );
+    void QueryOverplapAreas( BvAxisAlignedBox const & InBounds, TPodVector< SVisArea * > & Areas );
 
     /** Query vis areas by bounding sphere */
-    void QueryOverplapAreas( BvSphere const & InBounds, TPodArray< SVisArea * > & Areas );
+    void QueryOverplapAreas( BvSphere const & InBounds, TPodVector< SVisArea * > & Areas );
 
     /** Add primitive to the level */
     void AddPrimitive( SPrimitiveDef * InPrimitive );
@@ -668,7 +668,7 @@ public:
     RenderCore::IBuffer * GetLightPortalsVB() { return LightPortalsVB; }
     RenderCore::IBuffer * GetLightPortalsIB() { return LightPortalsIB; }
 
-    TPodArray< SLightPortalDef > const & GetLightPortals() const { return LightPortals; }
+    TPodVector< SLightPortalDef > const & GetLightPortals() const { return LightPortals; }
 
     using APrimitiveLinkPool = TPoolAllocator< SPrimitiveLink >;
 
@@ -691,8 +691,8 @@ private:
     /** Callback on remove level from world. Called by owner world. */
     void OnRemoveLevelFromWorld();
 
-    void QueryOverplapAreas_r( int InNodeIndex, BvAxisAlignedBox const & InBounds, TPodArray< SVisArea * > & Areas );
-    void QueryOverplapAreas_r( int InNodeIndex, BvSphere const & InBounds, TPodArray< SVisArea * > & Areas );
+    void QueryOverplapAreas_r( int InNodeIndex, BvAxisAlignedBox const & InBounds, TPodVector< SVisArea * > & Areas );
+    void QueryOverplapAreas_r( int InNodeIndex, BvSphere const & InBounds, TPodVector< SVisArea * > & Areas );
 
     void AddBoxRecursive( int InNodeIndex, SPrimitiveDef * InPrimitive );
     void AddSphereRecursive( int InNodeIndex, SPrimitiveDef * InPrimitive );
@@ -729,23 +729,23 @@ private:
     bool bIsPersistent = false;
 
     /** Level portals */
-    TPodArray< SVisPortal > Portals;
+    TPodVector< SVisPortal > Portals;
 
     /** Links between the portals and areas */
-    TPodArray< SPortalLink > AreaLinks;
+    TPodVector< SPortalLink > AreaLinks;
 
     /** Light portals */
-    TPodArray< SLightPortalDef > LightPortals;
-    TPodArrayHeap< Float3 > LightPortalVertexBuffer;
-    TPodArrayHeap< unsigned int > LightPortalIndexBuffer;
+    TPodVector< SLightPortalDef > LightPortals;
+    TPodVectorHeap< Float3 > LightPortalVertexBuffer;
+    TPodVectorHeap< unsigned int > LightPortalIndexBuffer;
 
     /** Array of actors */
-    TPodArray< AActor * > Actors;
+    TPodVector< AActor * > Actors;
 
     BvAxisAlignedBox IndoorBounds;
 
-    TPodArray< ALightmapUV * > LightmapUVs;
-    TPodArray< AVertexLight * > VertexLightChannels;
+    TPodVector< ALightmapUV * > LightmapUVs;
+    TPodVector< AVertexLight * > VertexLightChannels;
 
     byte * DecompressedVisData = nullptr;
 

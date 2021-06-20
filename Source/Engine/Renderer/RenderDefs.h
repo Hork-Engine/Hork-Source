@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Core/Public/CoreMath.h>
 #include <Core/Public/Image.h>
-#include <Core/Public/PodArray.h>
+#include <Core/Public/PodVector.h>
 
 #include <RenderCore/Device.h>
 
@@ -764,6 +764,9 @@ struct SMaterialDef
     /** Use tessellation for shadow maps */
     bool bDisplacementAffectShadow : 1;
 
+    /** Apply fake shadows. Used with parallax technique */
+    //bool bParallaxMappingSelfShadowing : 1;
+
     /** Translusent materials with alpha test */
     bool bTranslucent : 1;
 
@@ -1399,21 +1402,21 @@ struct SRenderFrame
     int NumViews;
 
     /** Opaque instances */
-    TPodArray< SRenderInstance *, 1024 > Instances;
+    TPodVector< SRenderInstance *, 1024 > Instances;
     /** Translucent instances */
-    TPodArray< SRenderInstance *, 1024 > TranslucentInstances;
+    TPodVector< SRenderInstance *, 1024 > TranslucentInstances;
     /** Outline instances */
-    TPodArray< SRenderInstance * > OutlineInstances;
+    TPodVector< SRenderInstance * > OutlineInstances;
     /** Shadowmap instances */
-    TPodArray< SShadowRenderInstance *, 1024 > ShadowInstances;
+    TPodVector< SShadowRenderInstance *, 1024 > ShadowInstances;
     /** Light portal instances */
-    TPodArray< SLightPortalRenderInstance *, 1024 > LightPortals;
+    TPodVector< SLightPortalRenderInstance *, 1024 > LightPortals;
     /** Directional light instances */
-    TPodArray< SDirectionalLightInstance * > DirectionalLights;
+    TPodVector< SDirectionalLightInstance * > DirectionalLights;
     /** Shadow maps */
-    TPodArray< SLightShadowmap > LightShadowmaps;
+    TPodVector< SLightShadowmap > LightShadowmaps;
     /** Terrain instances */
-    TPodArray< STerrainRenderInstance * > TerrainInstances;
+    TPodVector< STerrainRenderInstance * > TerrainInstances;
 
     /** Hud draw commands */
     SHUDDrawList * DrawListHead;

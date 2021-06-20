@@ -28,11 +28,12 @@ SOFTWARE.
 
 */
 
-#include "LightVoxelizer.h"
+#include <World/Public/Render/LightVoxelizer.h>
+#include <World/Public/EngineInstance.h>
+
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
-//#include <Renderer/RenderBackend.h>
-#include <World/Public/EngineInstance.h>
+
 
 #define LIGHT_ITEMS_OFFSET 0
 #define DECAL_ITEMS_OFFSET 256
@@ -42,9 +43,7 @@ ARuntimeVariable com_ClusterSSE( _CTS( "com_ClusterSSE" ), _CTS( "1" ), VAR_CHEA
 ARuntimeVariable com_ReverseNegativeZ( _CTS( "com_ReverseNegativeZ" ), _CTS( "1" ), VAR_CHEAT );
 ARuntimeVariable com_FreezeFrustumClusters( _CTS( "com_FreezeFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
 
-ALightVoxelizer & GLightVoxelizer = ALightVoxelizer::Inst();
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////
+ //////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 // SSE Math
 //
@@ -98,9 +97,6 @@ AN_FORCEINLINE Float4x4SSE operator*( Float4x4SSE const & m1, Float4x4SSE const 
 #define sum_ps_3( a, b, c ) _mm_add_ps( _mm_add_ps( a, b ), c )
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-
-ALightVoxelizer::ALightVoxelizer() {
-}
 
 void ALightVoxelizer::TransformItemsSSE() {
     Float4x4SSE ViewProjSSE;
@@ -735,7 +731,7 @@ void ALightVoxelizer::VoxelizeWork( int SliceIndex ) {
     }
 }
 
-void ALightVoxelizer::GatherVoxelGeometry( TStdVectorDefault< Float3 > & LinePoints, Float4x4 const & ViewProjectionInversed )
+void ALightVoxelizer::GatherVoxelGeometry( TStdVectorHeap< Float3 > & LinePoints, Float4x4 const & ViewProjectionInversed )
 {
     Float3 clusterMins;
     Float3 clusterMaxs;
@@ -787,8 +783,6 @@ void ALightVoxelizer::GatherVoxelGeometry( TStdVectorDefault< Float3 > & LinePoi
 
 void ALightVoxelizer::DrawVoxels( ADebugRenderer * InRenderer )
 {
-    static TStdVectorDefault< Float3 > LinePoints;
-
     if ( !com_FreezeFrustumClusters )
     {
         SRenderView const * view = InRenderer->GetRenderView();
@@ -796,7 +790,7 @@ void ALightVoxelizer::DrawVoxels( ADebugRenderer * InRenderer )
         const Float4x4 viewProjInv = ( view->ClusterProjectionMatrix * view->ViewMatrix ).Inversed();
         // TODO: try to optimize with ViewMatrix.ViewInverseFast() * ProjectionMatrix.ProjectionInverseFast()
 
-        GatherVoxelGeometry( LinePoints, viewProjInv );
+        GatherVoxelGeometry( DebugLinePoints, viewProjInv );
     }
 
     if ( bUseSSE )
@@ -805,7 +799,7 @@ void ALightVoxelizer::DrawVoxels( ADebugRenderer * InRenderer )
         InRenderer->SetColor( AColor4( 1, 0, 0 ) );
 
     int n = 0;
-    for ( Float3 * lineP = LinePoints.data() ; n < LinePoints.size() ; lineP += 8, n += 8 )
+    for ( Float3 * lineP = DebugLinePoints.data() ; n < DebugLinePoints.size() ; lineP += 8, n += 8 )
     {
         InRenderer->DrawLine( lineP, 4, true );
         InRenderer->DrawLine( lineP + 4, 4, true );

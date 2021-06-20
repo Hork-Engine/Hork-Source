@@ -39,7 +39,7 @@ SOFTWARE.
 #include "VertexArrayObjectGL.h"
 #include "LUT.h"
 
-#include <Core/Public/CriticalError.h>
+#include <Core/Public/Core.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Core/Public/CoreMath.h>
 #include <Core/Public/Logger.h>

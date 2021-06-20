@@ -38,4 +38,5 @@ SOFTWARE.
 #undef CriticalError
 #undef FindResource
 #undef GetObject
+#undef GetCommandLine
 #endif

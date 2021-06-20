@@ -134,7 +134,7 @@ bool ZDecompressToHeap( byte const * pCompressedData, size_t CompressedSize, byt
     unsigned char chunk[1024];
 
     size_t allocated = Align( CompressedSize<<2, 16 );
-    byte * data = ( byte * )GHeapMemory.Alloc( allocated );
+    byte * data = ( byte * )GHeapMemory.Alloc( allocated, 16 );
     size_t size = 0;
 
     while ( status == MZ_OK ) {
@@ -144,7 +144,7 @@ bool ZDecompressToHeap( byte const * pCompressedData, size_t CompressedSize, byt
         if ( status == MZ_STREAM_END || status == MZ_OK ) {
             if ( stream.total_out > allocated ) {
                 allocated <<= 1;
-                data = ( byte * )GHeapMemory.Realloc( data, allocated, true );
+                data = ( byte * )GHeapMemory.Realloc( data, allocated, 16, true );
             }
             Memcpy( data + size, chunk, stream.total_out - size );
         }

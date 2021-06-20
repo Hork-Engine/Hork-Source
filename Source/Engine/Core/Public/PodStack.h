@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "PodArray.h"
+#include "PodVector.h"
 
 /**
 
@@ -147,7 +147,7 @@ public:
     }
 
 private:
-    TPodArray< T, BASE_CAPACITY, GRANULARITY, Allocator > Array;
+    TPodVector< T, BASE_CAPACITY, GRANULARITY, Allocator > Array;
 };
 
 template< typename T, typename Allocator = AZoneAllocator >

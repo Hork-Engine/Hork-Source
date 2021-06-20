@@ -31,10 +31,12 @@ SOFTWARE.
 #include <Core/Public/Alloc.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/CriticalError.h>
+#include <Core/Public/Core.h>
 
 #include <malloc.h>
 #include <memory.h>
 #include <xmmintrin.h>
+#include <immintrin.h>
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -52,7 +54,7 @@ AZoneMemory GZoneMemory;
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-#define ENABLE_TRASH_TEST
+#define MEMORY_TRASH_TEST
 
 // Uncomment the following two lines to check for a memory leak
 //#define ZONE_MEMORY_LEAK_ADDRESS <local address>
@@ -91,25 +93,29 @@ AN_FORCEINLINE void DecMemoryStatisticsOnHeap( size_t _MemoryUsage, size_t _Over
     HeapTotalMemoryOverhead.FetchSub( _Overhead );
 }
 
-AHeapMemory::AHeapMemory() {
+AHeapMemory::AHeapMemory()
+{
     HeapChain.pNext = HeapChain.pPrev = &HeapChain;
 
     AN_SIZEOF_STATIC_CHECK( SHeapChunk, 32 );
 }
 
-AHeapMemory::~AHeapMemory() {
+AHeapMemory::~AHeapMemory()
+{
 }
 
-void AHeapMemory::Initialize() {
-
+void AHeapMemory::Initialize()
+{
 }
 
-void AHeapMemory::Deinitialize() {
+void AHeapMemory::Deinitialize()
+{
     CheckMemoryLeaks();
     Clear();
 }
 
-void AHeapMemory::Clear() {
+void AHeapMemory::Clear()
+{
     SHeapChunk * nextHeap;
     for ( SHeapChunk * heap = HeapChain.pNext ; heap != &HeapChain ; heap = nextHeap ) {
         nextHeap = heap->pNext;
@@ -117,15 +123,42 @@ void AHeapMemory::Clear() {
     }
 }
 
-AN_FORCEINLINE void * SysAlloc( size_t _SizeInBytes, int _Alignment ) {
+namespace Core
+{
+
+void * SysAlloc( size_t _SizeInBytes, int _Alignment )
+{
+    void * ptr;
 #ifdef AN_COMPILER_MSVC
-    return _aligned_malloc( _SizeInBytes, _Alignment );
+    ptr = _aligned_malloc( _SizeInBytes, _Alignment );
 #else
-    return aligned_alloc( _Alignment, _SizeInBytes );
+    ptr = aligned_alloc( _Alignment, _SizeInBytes );
 #endif
+    if (!ptr)
+    {
+        CriticalError( "SysAlloc: Failed on allocation of %u bytes\n", _SizeInBytes );
+    }
+    return ptr;
 }
 
-AN_FORCEINLINE void SysFree( void * _Bytes ) {
+void * SysRealloc( void * _Bytes, size_t _SizeInBytes, int _Alignment )
+{
+    void * ptr;
+#ifdef AN_COMPILER_MSVC
+    ptr = _aligned_realloc( _Bytes, _SizeInBytes, _Alignment );
+#else
+    ptr = aligned_realloc( _Bytes, _SizeInBytes, _Alignment );
+#endif
+    if (!ptr)
+    {
+        CriticalError( "SysRealloc: Failed on allocation of %u bytes\n", _SizeInBytes );
+    }
+    return ptr;
+}
+
+
+void SysFree( void * _Bytes )
+{
     if ( _Bytes ) {
 #ifdef AN_COMPILER_MSVC
         _aligned_free( _Bytes );
@@ -135,84 +168,130 @@ AN_FORCEINLINE void SysFree( void * _Bytes ) {
     }
 }
 
-void * AHeapMemory::Alloc( size_t _BytesCount, int _Alignment ) {
-#if 0
-    return SysAlloc( Align(_BytesCount,16), 16 );
+}
+
+namespace
+{
+
+#ifdef AN_DEBUG
+static constexpr bool HeapDebug()
+{
+    return true;
+}
 #else
+static bool HeapDebug()
+{
+    static bool bHeapDebug = Core::HasArg( "-bHeapDebug" );
+    return bHeapDebug;
+}
+#endif
+
+#ifdef AN_DEBUG
+static constexpr bool MemoryTrashTest()
+{
+#ifdef MEMORY_TRASH_TEST
+    return true;
+#else
+    return false;
+#endif
+}
+#else
+static bool MemoryTrashTest()
+{
+    static bool bMemoryTrashTest = Core::HasArg( "-bMemoryTrashTest" );
+    return bMemoryTrashTest;
+}
+#endif
+
+
+
+}
+
+void * AHeapMemory::Alloc( size_t _BytesCount, int _Alignment )
+{
+    AN_ASSERT( _Alignment <= 128 && IsPowerOfTwo( _Alignment ) );
+
+    if ( _Alignment < 16 ) {
+        _Alignment = 16;
+    }
+
     if ( _BytesCount == 0 ) {
         // invalid bytes count
         CriticalError( "AHeapMemory::Alloc: Invalid bytes count\n" );
     }
 
+    if (!HeapDebug())
+    {
+        return Core::SysAlloc( Align(_BytesCount,_Alignment), _Alignment );
+    }
+
     size_t chunkSizeInBytes = _BytesCount + sizeof( SHeapChunk );
 
-#ifdef ENABLE_TRASH_TEST
-    chunkSizeInBytes += sizeof( TRASH_MARKER );
-#endif
+    if (MemoryTrashTest())
+    {
+        chunkSizeInBytes += sizeof( TRASH_MARKER );
+    }
 
     byte * bytes;
     byte * aligned;
 
-    AN_ASSERT( _Alignment <= 128 && IsPowerOfTwo( _Alignment ) );
-
-    if ( _Alignment <= 16 ) {
-        _Alignment = 16;
+    if ( _Alignment == 16 ) {
         chunkSizeInBytes = Align( chunkSizeInBytes, 16 );
-        bytes = ( byte * )SysAlloc( chunkSizeInBytes, 16 );
+        bytes = ( byte * )Core::SysAlloc( chunkSizeInBytes, 16 );
         aligned = bytes + sizeof( SHeapChunk );
-    } else {
+    }
+    else {
         chunkSizeInBytes += _Alignment - 1;
         chunkSizeInBytes = Align( chunkSizeInBytes, sizeof(void *) );
-        bytes = ( byte * )SysAlloc( chunkSizeInBytes, sizeof(void *) );
+        bytes = ( byte * )Core::SysAlloc( chunkSizeInBytes, sizeof(void *) );
         aligned = ( byte * )AlignPtr( bytes + sizeof( SHeapChunk ), _Alignment );
     }
 
     AN_ASSERT( IsAlignedPtr( aligned, 16 ) );
 
-    if ( bytes ) {
-        SHeapChunk * heap = ( SHeapChunk * )( aligned ) - 1;
-        heap->Size = chunkSizeInBytes;
-        heap->DataSize = _BytesCount;
-        heap->Alignment = _Alignment;
-        heap->AlignOffset = aligned - bytes;
+    SHeapChunk * heap = ( SHeapChunk * )( aligned ) - 1;
+    heap->Size = chunkSizeInBytes;
+    heap->DataSize = _BytesCount;
+    heap->Alignment = _Alignment;
+    heap->AlignOffset = aligned - bytes;
 
-        {
-            ASpinLockGuard lockGuard( Mutex );
-            heap->pNext = HeapChain.pNext;
-            heap->pPrev = &HeapChain;
-            HeapChain.pNext->pPrev = heap;
-            HeapChain.pNext = heap;
-        }
-
-#ifdef ENABLE_TRASH_TEST
-        *( TRASH_MARKER * )( aligned + heap->DataSize ) = TrashMarker;
-#endif
-
-        IncMemoryStatisticsOnHeap( heap->Size, heap->Size - heap->DataSize );
-
-        return aligned;
+    {
+        ASpinLockGuard lockGuard( Mutex );
+        heap->pNext = HeapChain.pNext;
+        heap->pPrev = &HeapChain;
+        HeapChain.pNext->pPrev = heap;
+        HeapChain.pNext = heap;
     }
 
-    CriticalError( "AHeapMemory::Alloc: Failed on allocation of %u bytes\n", _BytesCount );
-    return nullptr;
-#endif
+    if (MemoryTrashTest())
+    {
+        *( TRASH_MARKER * )( aligned + heap->DataSize ) = TrashMarker;
+    }
+
+    IncMemoryStatisticsOnHeap( heap->Size, heap->Size - heap->DataSize );
+
+    return aligned;
 }
 
-void AHeapMemory::Free( void * _Bytes ) {
-#if 0
-    return SysFree( _Bytes );
-#else
+void AHeapMemory::Free( void * _Bytes )
+{
+    if (!HeapDebug())
+    {
+        return Core::SysFree( _Bytes );
+    }
+
     if ( _Bytes ) {
         byte * bytes = ( byte * )_Bytes;
 
         SHeapChunk * heap = ( SHeapChunk * )( bytes ) - 1;
 
-#ifdef ENABLE_TRASH_TEST
-        if ( *( TRASH_MARKER * )( bytes + heap->DataSize ) != TrashMarker ) {
-            CriticalError( "AHeapMemory::HeapFree: Warning: memory was trashed\n" );
-            // error()
+        if (MemoryTrashTest())
+        {
+            if ( *( TRASH_MARKER * )( bytes + heap->DataSize ) != TrashMarker ) {
+                CriticalError( "AHeapMemory::HeapFree: Warning: memory was trashed\n" );
+                // error()
+            }
         }
-#endif
 
         bytes -= heap->AlignOffset;
 
@@ -224,27 +303,30 @@ void AHeapMemory::Free( void * _Bytes ) {
 
         DecMemoryStatisticsOnHeap( heap->Size, heap->Size - heap->DataSize );
 
-        SysFree( bytes );
+        Core::SysFree( bytes );
     }
-#endif
 }
 
-void * AHeapMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
-#if 0
-    void * bytes;
-    if ( _KeepOld ) {
-        bytes = SysAlloc( Align(_NewBytesCount,16), 16 );
-        Core::Memcpy( bytes, _Data, _NewBytesCount );
-        SysFree( _Data );
-    } else {
-        SysFree( _Data );
-        bytes = SysAlloc( Align(_NewBytesCount,16), 16 );
+void * AHeapMemory::Realloc( void * _Data, int _NewBytesCount, int _NewAlignment, bool _KeepOld )
+{
+    AN_ASSERT( _NewAlignment <= 128 && IsPowerOfTwo( _NewAlignment ) );
+
+    if ( _NewAlignment < 16 ) {
+        _NewAlignment = 16;
     }
-    return bytes;
-#else
+
+    if ( _NewBytesCount == 0 ) {
+        // invalid bytes count
+        CriticalError( "AHeapMemory::Realloc: Invalid bytes count\n" );
+    }
+
+    if (!HeapDebug())
+    {
+        return Core::SysRealloc( _Data, Align(_NewBytesCount,_NewAlignment), _NewAlignment );
+    }
+
     if ( !_Data ) {
-        // first alloc, use default alignment
-        return Alloc( _NewBytesCount, 16 );
+        return Alloc( _NewBytesCount, _NewAlignment );
     }
 
     byte * bytes = ( byte * )_Data;
@@ -253,55 +335,67 @@ void * AHeapMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
 
     int alignment = heap->Alignment;
 
-#ifdef ENABLE_TRASH_TEST
-    if ( *( TRASH_MARKER * )( bytes + heap->DataSize ) != TrashMarker ) {
-        CriticalError( "AHeapMemory::Realloc: Warning: memory was trashed\n" );
+    if (MemoryTrashTest())
+    {
+        if ( *( TRASH_MARKER * )( bytes + heap->DataSize ) != TrashMarker ) {
+            CriticalError( "AHeapMemory::Realloc: Warning: memory was trashed\n" );
+        }
     }
-#endif
-    if ( heap->DataSize >= _NewBytesCount ) {
+
+    if ( heap->DataSize >= _NewBytesCount && alignment == _NewAlignment ) {
         // big enough
         return _Data;
     }
     // reallocate
     if ( _KeepOld ) {
-        bytes = ( byte * )Alloc( _NewBytesCount, alignment );
+        bytes = ( byte * )Alloc( _NewBytesCount, _NewAlignment );
         Core::MemcpySSE( bytes, _Data, heap->DataSize );
         Free( _Data );
         return bytes;
     }
     Free( _Data );
-    return Alloc( _NewBytesCount, alignment );
-#endif
+    return Alloc( _NewBytesCount, _NewAlignment );
 }
 
-void AHeapMemory::PointerTrashTest( void * _Bytes ) {
-#ifdef ENABLE_TRASH_TEST
-    byte * bytes = (byte *)_Bytes;
-
-    SHeapChunk * heap = ( SHeapChunk * )( bytes )-1;
-
-    if ( *( TRASH_MARKER * )( bytes + heap->DataSize ) != TrashMarker ) {
-        CriticalError( "AHeapMemory::PointerTrashTest: Warning: memory was trashed\n" );
+void AHeapMemory::PointerTrashTest( void * _Bytes )
+{
+    if (!HeapDebug())
+    {
+        return;
     }
-#endif
+
+    if (MemoryTrashTest())
+    {
+        byte * bytes = (byte *)_Bytes;
+
+        SHeapChunk * heap = ( SHeapChunk * )( bytes )-1;
+
+        if ( *( TRASH_MARKER * )( bytes + heap->DataSize ) != TrashMarker ) {
+            CriticalError( "AHeapMemory::PointerTrashTest: Warning: memory was trashed\n" );
+        }
+    }
 }
 
-void AHeapMemory::CheckMemoryLeaks() {
+void AHeapMemory::CheckMemoryLeaks()
+{
     for ( SHeapChunk * heap = HeapChain.pNext ; heap != &HeapChain ; heap = heap->pNext ) {
         MemLogger.Print( "==== Heap Memory Leak ====\n" );
         MemLogger.Printf( "Heap Address: %u Size: %d\n", (size_t)( heap + 1 ), heap->DataSize );
     }
 }
 
-size_t AHeapMemory::GetTotalMemoryUsage() {
+size_t AHeapMemory::GetTotalMemoryUsage()
+{
     return HeapTotalMemoryUsage.Load();
 }
 
-size_t AHeapMemory::GetTotalMemoryOverhead() {
+size_t AHeapMemory::GetTotalMemoryOverhead()
+{
     return HeapTotalMemoryOverhead.Load();
 }
 
-size_t AHeapMemory::GetMaxMemoryUsage() {
+size_t AHeapMemory::GetMaxMemoryUsage()
+{
     return HeapMaxMemoryUsage.Load();
 }
 
@@ -383,18 +477,24 @@ int AHunkMemory::SetHunkMark() {
     return ++MemoryBuffer->Mark;
 }
 
-AN_FORCEINLINE void SetTrashMarker( SHunk * _Hunk ) {
-#ifdef ENABLE_TRASH_TEST
-    *( TRASH_MARKER * )( ( byte * )( _Hunk ) + _Hunk->Size - sizeof( TRASH_MARKER ) ) = TrashMarker;
-#endif
+AN_FORCEINLINE void SetTrashMarker( SHunk * _Hunk )
+{
+    if (MemoryTrashTest())
+    {
+        *( TRASH_MARKER * )( ( byte * )( _Hunk ) + _Hunk->Size - sizeof( TRASH_MARKER ) ) = TrashMarker;
+    }
 }
 
-AN_FORCEINLINE bool HunkTrashTest( const SHunk * _Hunk ) {
-#ifdef ENABLE_TRASH_TEST
-    return *( const TRASH_MARKER * )( ( const byte * )( _Hunk ) + _Hunk->Size - sizeof( TRASH_MARKER ) ) != TrashMarker;
-#else
-    return false;
-#endif
+AN_FORCEINLINE bool HunkTrashTest( const SHunk * _Hunk )
+{
+    if (MemoryTrashTest())
+    {
+        return *( const TRASH_MARKER * )( ( const byte * )( _Hunk ) + _Hunk->Size - sizeof( TRASH_MARKER ) ) != TrashMarker;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 void * AHunkMemory::Alloc( size_t _BytesCount ) {
@@ -425,9 +525,10 @@ void * AHunkMemory::Alloc( size_t _BytesCount ) {
     requiredSize += sizeof( SHunk );
 
     // Add trash marker
-#ifdef ENABLE_TRASH_TEST
-    requiredSize += sizeof( TRASH_MARKER );
-#endif
+    if (MemoryTrashTest())
+    {
+        requiredSize += sizeof( TRASH_MARKER );
+    }
 
     // Align chunk to 16-byte boundary
     requiredSize = Align( requiredSize, 16 );
@@ -589,9 +690,10 @@ AN_FORCEINLINE size_t AdjustChunkSize( size_t _BytesCount ) {
     _BytesCount += ChunkHeaderLength;
 
     // Add trash marker
-#ifdef ENABLE_TRASH_TEST
-    _BytesCount += sizeof( TRASH_MARKER );
-#endif
+    if (MemoryTrashTest())
+    {
+        _BytesCount += sizeof( TRASH_MARKER );
+    }
 
     // Align chunk to 16-byte boundary
     _BytesCount = Align( _BytesCount, 16 );
@@ -599,18 +701,24 @@ AN_FORCEINLINE size_t AdjustChunkSize( size_t _BytesCount ) {
     return _BytesCount;
 }
 
-AN_FORCEINLINE void SetTrashMarker( SZoneChunk * _Chunk ) {
-#ifdef ENABLE_TRASH_TEST
-    *( TRASH_MARKER * )( ( byte * )( _Chunk ) + ( -_Chunk->Size ) - sizeof( TRASH_MARKER ) ) = TrashMarker;
-#endif
+AN_FORCEINLINE void SetTrashMarker( SZoneChunk * _Chunk )
+{
+    if (MemoryTrashTest())
+    {
+        *( TRASH_MARKER * )( ( byte * )( _Chunk ) + ( -_Chunk->Size ) - sizeof( TRASH_MARKER ) ) = TrashMarker;
+    }
 }
 
-AN_FORCEINLINE bool ChunkTrashTest( const SZoneChunk * _Chunk ) {
-#ifdef ENABLE_TRASH_TEST
-    return *( const TRASH_MARKER * )( ( const byte * )( _Chunk ) + ( -_Chunk->Size ) - sizeof( TRASH_MARKER ) ) != TrashMarker;
-#else
-    return false;
-#endif
+AN_FORCEINLINE bool ChunkTrashTest( const SZoneChunk * _Chunk )
+{
+    if (MemoryTrashTest())
+    {
+        return *( const TRASH_MARKER * )( ( const byte * )( _Chunk ) + ( -_Chunk->Size ) - sizeof( TRASH_MARKER ) ) != TrashMarker;
+    }
+    else
+    {
+        return false;
+    }
 }
 
 void * AZoneMemory::GetZoneMemoryAddress() const {
@@ -1150,48 +1258,6 @@ template< typename T >
 static void PrintMemoryStatistics( T & _Manager, const char * _Message ) {
     MemLogger.Printf( "%s: MaxMemoryUsage %d TotalMemoryUsage %d TotalMemoryOverhead %d\n",
             _Message, _Manager.GetMaxMemoryUsage(), _Manager.GetTotalMemoryUsage(), _Manager.GetTotalMemoryOverhead() );
-}
-
-//
-// Zone allocator
-//
-
-void * AZoneAllocator::ImplAlloc( size_t _BytesCount ) {
-    void * bytes = GZoneMemory.Alloc( _BytesCount );
-    //PrintMemoryStatistics( GZoneMemory, "Alloc" );
-    return bytes;
-}
-
-void * AZoneAllocator::ImplRealloc( void * _Data, size_t _NewBytesCount, bool _KeepOld ) {
-    void * bytes = GZoneMemory.Realloc( _Data, _NewBytesCount, _KeepOld );
-    //PrintMemoryStatistics( GZoneMemory, "Realloc" );
-    return bytes;
-}
-
-void AZoneAllocator::ImplFree( void * _Bytes ) {
-    GZoneMemory.Free( _Bytes );
-    //PrintMemoryStatistics( GZoneMemory, "Free" );
-}
-
-//
-// Heap allocator
-//
-
-void * AHeapAllocator::ImplAlloc( size_t _BytesCount ) {
-    void * bytes = GHeapMemory.Alloc( _BytesCount, 16 );
-    //PrintMemoryStatistics( GHeapMemory, "Alloc" );
-    return bytes;
-}
-
-void * AHeapAllocator::ImplRealloc( void * _Data, size_t _NewBytesCount, bool _KeepOld ) {
-    void * bytes = GHeapMemory.Realloc( _Data, _NewBytesCount, _KeepOld );
-    //PrintMemoryStatistics( GHeapMemory, "Realloc" );
-    return bytes;
-}
-
-void AHeapAllocator::ImplFree( void * _Bytes ) {
-    GHeapMemory.Free( _Bytes );
-    //PrintMemoryStatistics( GHeapMemory, "Free" );
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

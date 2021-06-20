@@ -188,7 +188,7 @@ private:
 
     TRef< AFont > Font;
 
-    TPodArray< SWideChar > TextData;
+    TPodVector< SWideChar > TextData;
     int CurTextLength;
     int MaxChars;
     int CharacterFilter;

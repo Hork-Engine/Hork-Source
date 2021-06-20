@@ -72,7 +72,7 @@ public:
     int GetRefCount() const { return RefCount; }
 
     /** Set object debug/editor or ingame name */
-    void SetObjectName( AString const & _Name ) { Name = _Name; }
+    void SetObjectName( AStringView _Name ) { Name = _Name; }
 
     /** Get object debug/editor or ingame name */
     AString const & GetObjectName() const { return Name; }

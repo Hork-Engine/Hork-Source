@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <Core/Public/ConvexHull.h>
 #include <Core/Public/Logger.h>
-#include <Core/Public/CriticalError.h>
+#include <Core/Public/Core.h>
 
 //#define CONVEX_HULL_CW
 

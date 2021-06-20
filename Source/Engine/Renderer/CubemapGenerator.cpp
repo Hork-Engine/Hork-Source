@@ -31,7 +31,7 @@ SOFTWARE.
 #include "CubemapGenerator.h"
 #include "RenderLocal.h"
 
-#include <Core/Public/PodArray.h>
+#include <Core/Public/PodVector.h>
 
 using namespace RenderCore;
 

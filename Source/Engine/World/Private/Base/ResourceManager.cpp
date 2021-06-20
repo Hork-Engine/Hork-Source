@@ -38,14 +38,14 @@ AResourceManager * GResourceManager = nullptr;
 AResourceManager::AResourceManager()
 {
     Core::TraverseDirectory( GRuntime.GetRootPath(), false,
-                             [this]( AString const & FileName, bool bIsDirectory )
+                             [this]( AStringView FileName, bool bIsDirectory )
     {
         if ( bIsDirectory ) {
             return;
         }
 
-        if ( !Core::Stricmp( &FileName[FileName.FindExt()], ".resources" ) ) {
-            AddResourcePack( FileName.CStr() );
+        if ( FileName.CompareExt( ".resources" ) ) {
+            AddResourcePack( FileName );
         }
     }
     );
@@ -67,12 +67,12 @@ AResourceManager::~AResourceManager()
     CommonResources.Reset();
 }
 
-void AResourceManager::AddResourcePack( const char * FileName )
+void AResourceManager::AddResourcePack( AStringView FileName )
 {
     ResourcePacks.emplace_back< TUniqueRef< AArchive > >( MakeUnique< AArchive >( FileName, true ) );
 }
 
-bool AResourceManager::FindFile( const char * FileName, AArchive ** ppResourcePack, int * pFileIndex )
+bool AResourceManager::FindFile( AStringView FileName, AArchive ** ppResourcePack, int * pFileIndex )
 {
     *ppResourcePack = nullptr;
     *pFileIndex = -1;

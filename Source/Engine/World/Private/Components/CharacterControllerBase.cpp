@@ -607,7 +607,7 @@ bool ACharacterControllerBase::_RecoverFromPenetration( float MaxPenetrationDept
     return penetration;
 }
 
-void ACharacterControllerBase::SlideMove( Float3 const & StartPos, Float3 const & TargetPos, float TimeStep, Float3 & FinalPos, bool * bClipped, TPodArray< SCharacterControllerContact > * pContacts )
+void ACharacterControllerBase::SlideMove( Float3 const & StartPos, Float3 const & TargetPos, float TimeStep, Float3 & FinalPos, bool * bClipped, TPodVector< SCharacterControllerContact > * pContacts )
 {
     Float3 linearVelocity = ( TargetPos - StartPos ) / TimeStep;
     Float3 finalVelocity;
@@ -654,7 +654,7 @@ bool ACharacterControllerBase::ClipVelocityByContactNormals( Float3 const * Cont
     return true;
 }
 
-void ACharacterControllerBase::SlideMove( Float3 const & StartPos, Float3 const & LinearVelocity, float _TimeStep, Float3 & FinalPos, Float3 & FinalVelocity, bool * bClipped, TPodArray< SCharacterControllerContact > * pContacts )
+void ACharacterControllerBase::SlideMove( Float3 const & StartPos, Float3 const & LinearVelocity, float _TimeStep, Float3 & FinalPos, Float3 & FinalVelocity, bool * bClipped, TPodVector< SCharacterControllerContact > * pContacts )
 {
     const int MAX_CONTACTS = 5;
     Float3 contactNormals[MAX_CONTACTS];

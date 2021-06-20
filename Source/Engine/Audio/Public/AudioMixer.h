@@ -33,7 +33,7 @@ SOFTWARE.
 #include "AudioDevice.h"
 #include "AudioChannel.h"
 
-#include <Core/Public/PodArray.h>
+#include <Core/Public/PodVector.h>
 
 #include <Runtime/Public/RuntimeVariable.h>
 
@@ -129,9 +129,9 @@ private:
     int VolumeRampR[1024];
     int VolumeRampSize;
 
-    TPodArrayHeap< uint8_t > TempFrames;
-    TPodArrayHeap< float > FramesF32;
-    TPodArrayHeap< SSamplePair > StreamF32;
+    TPodVectorHeap< uint8_t > TempFrames;
+    TPodVectorHeap< float > FramesF32;
+    TPodVectorHeap< SSamplePair > StreamF32;
 };
 
 extern ARuntimeVariable Snd_HRTF;

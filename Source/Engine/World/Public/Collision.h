@@ -124,11 +124,11 @@ public:
 
     int GetJointIndex() const { return JointIndex; }
 
-    TPodArray< AActor *, 1 > const & GetCollisionIgnoreActors() const { return CollisionIgnoreActors; }
+    TPodVector< AActor *, 1 > const & GetCollisionIgnoreActors() const { return CollisionIgnoreActors; }
 
-    void CollisionContactQuery( TPodArray< AHitProxy * > & _Result ) const;
+    void CollisionContactQuery( TPodVector< AHitProxy * > & _Result ) const;
 
-    void CollisionContactQueryActor( TPodArray< AActor * > & _Result ) const;
+    void CollisionContactQueryActor( TPodVector< AActor * > & _Result ) const;
 
     class btCollisionObject * GetCollisionObject() const { return CollisionObject; }
 
@@ -154,7 +154,7 @@ private:
 
     bool bInWorld = false;
 
-    TPodArray< AActor *, 1 > CollisionIgnoreActors;
+    TPodVector< AActor *, 1 > CollisionIgnoreActors;
 
     AHitProxy * NextMarked = nullptr;
     AHitProxy * PrevMarked = nullptr;

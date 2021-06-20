@@ -363,7 +363,7 @@ void ARenderPass::Create( AFrameGraph & FrameGraph )
     renderPassCI.pDepthStencilAttachment = bHasDepthStencilAttachment ? &DepthStencilAttachment.Info : nullptr;
     renderPassCI.NumSubpasses = Subpasses.Size();
 
-    TPodArray< RenderCore::SSubpassInfo > subpassesTemp;
+    TPodVector< RenderCore::SSubpassInfo > subpassesTemp;
     subpassesTemp.Resize( renderPassCI.NumSubpasses );
 
     for ( int i = 0 ; i < renderPassCI.NumSubpasses ; i++ ) {

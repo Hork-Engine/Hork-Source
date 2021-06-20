@@ -34,7 +34,7 @@ SOFTWARE.
 #include <Core/Public/Logger.h>
 #include <Core/Public/HashFunc.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
-#include <Core/Public/CriticalError.h>
+#include <Core/Public/Core.h>
 
 ARuntimeVariable in_MouseSensitivity( _CTS( "in_MouseSensitivity" ), _CTS( "6.8" ) );
 ARuntimeVariable in_MouseSensX( _CTS( "in_MouseSensX" ), _CTS( "0.022" ) );
@@ -557,7 +557,7 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
     float mouseCurrentSens = in_MouseSensitivity.GetFloat() + mouseInputRate * in_MouseAccel.GetFloat();
     float mouseSens[2] = { in_MouseSensX.GetFloat() * mouseCurrentSens, in_MouseSensY.GetFloat() * mouseCurrentSens };
 
-    TPodArray< AInputAxis * > const & inputAxes = InputMappings->GetAxes();
+    TPodVector< AInputAxis * > const & inputAxes = InputMappings->GetAxes();
     for ( int i = 0 ; i < inputAxes.Size() ; i++ ) {
         AInputAxis * inputAxis = inputAxes[i];
 
@@ -785,7 +785,7 @@ bool AInputComponent::GetButtonState( int _DevId, int _Button ) const {
 }
 
 void AInputComponent::UnpressButtons() {
-    double timeStamp = GRuntime.SysSeconds_d();
+    double timeStamp = Core::SysSeconds_d();
     for ( int i = 0 ; i < MAX_KEYBOARD_BUTTONS ; i++ ) {
         SetButtonState( ID_KEYBOARD, i, IA_RELEASE, 0, timeStamp );
     }

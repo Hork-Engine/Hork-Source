@@ -66,7 +66,7 @@ ARuntimeVariable com_TerrainMinLod(_CTS("com_TerrainMinLod"),_CTS("0"));
 ARuntimeVariable com_TerrainMaxLod(_CTS("com_TerrainMaxLod"),_CTS("5"));
 ARuntimeVariable com_ShowTerrainMemoryUsage(_CTS("com_ShowTerrainMemoryUsage"),_CTS("0"));
 
-void CreateTriangleStripPatch( int NumQuadsX, int NumQuadsY, TPodArray< STerrainVertex > & Vertices, TPodArray< unsigned short > & Indices )
+void CreateTriangleStripPatch( int NumQuadsX, int NumQuadsY, TPodVector< STerrainVertex > & Vertices, TPodVector< unsigned short > & Indices )
 {
     int numVertsX = NumQuadsX + 1;
     int numVertsY = NumQuadsY + 1;
@@ -101,24 +101,24 @@ AN_FORCEINLINE STerrainVertex MakeVertex( short X, short Y )
 
 ATerrainMesh::ATerrainMesh( int InTextureSize )
 {
-    TPodArray< STerrainVertex > blockVerts;
-    TPodArray< unsigned short > blockIndices;
-    TPodArray< STerrainVertex > horGapVertices;
-    TPodArray< unsigned short > horGapIndices;
-    TPodArray< STerrainVertex > vertGapVertices;
-    TPodArray< unsigned short > vertGapIndices;
-    TPodArray< STerrainVertex > interiorTLVertices;
-    TPodArray< STerrainVertex > interiorTRVertices;
-    TPodArray< STerrainVertex > interiorBLVertices;
-    TPodArray< STerrainVertex > interiorBRVertices;
-    TPodArray< STerrainVertex > interiorFinestVertices;
-    TPodArray< unsigned short > interiorTLIndices;
-    TPodArray< unsigned short > interiorTRIndices;
-    TPodArray< unsigned short > interiorBLIndices;
-    TPodArray< unsigned short > interiorBRIndices;
-    TPodArray< unsigned short > interiorFinestIndices;
-    TPodArray< STerrainVertex > crackVertices;
-    TPodArray< unsigned short > crackIndices;
+    TPodVector< STerrainVertex > blockVerts;
+    TPodVector< unsigned short > blockIndices;
+    TPodVector< STerrainVertex > horGapVertices;
+    TPodVector< unsigned short > horGapIndices;
+    TPodVector< STerrainVertex > vertGapVertices;
+    TPodVector< unsigned short > vertGapIndices;
+    TPodVector< STerrainVertex > interiorTLVertices;
+    TPodVector< STerrainVertex > interiorTRVertices;
+    TPodVector< STerrainVertex > interiorBLVertices;
+    TPodVector< STerrainVertex > interiorBRVertices;
+    TPodVector< STerrainVertex > interiorFinestVertices;
+    TPodVector< unsigned short > interiorTLIndices;
+    TPodVector< unsigned short > interiorTRIndices;
+    TPodVector< unsigned short > interiorBLIndices;
+    TPodVector< unsigned short > interiorBRIndices;
+    TPodVector< unsigned short > interiorFinestIndices;
+    TPodVector< STerrainVertex > crackVertices;
+    TPodVector< unsigned short > crackIndices;
 
     AN_ASSERT( IsPowerOfTwo( InTextureSize ) );
 
@@ -363,7 +363,7 @@ ATerrainMesh::ATerrainMesh( int InTextureSize )
     int firstVert = 0;
     int firstIndex = 0;
 
-    auto AddPatch = [&]( STerrainPatch & Patch, TPodArray< STerrainVertex > const & VB, TPodArray< unsigned short > const & IB )
+    auto AddPatch = [&]( STerrainPatch & Patch, TPodVector< STerrainVertex > const & VB, TPodVector< unsigned short > const & IB )
     {
         Patch.BaseVertex = firstVert;
         Patch.StartIndex = firstIndex;
@@ -1613,7 +1613,7 @@ float ATerrain::Height( int X, int Z, int Lod ) const
     return Heightmap[Lod][sampleY*lodResoultion + sampleX];
 }
 
-bool ATerrain::Raycast( Float3 const & RayStart, Float3 const & RayDir, float Distance, bool bCullBackFace, TPodArray< STriangleHitResult > & HitResult ) const
+bool ATerrain::Raycast( Float3 const & RayStart, Float3 const & RayDir, float Distance, bool bCullBackFace, TPodVector< STriangleHitResult > & HitResult ) const
 {
     class ATriangleRaycastCallback : public btTriangleCallback
     {
@@ -1623,7 +1623,7 @@ bool ATerrain::Raycast( Float3 const & RayStart, Float3 const & RayDir, float Di
         bool bCullBackFace;
         int IntersectionCount = 0;
 
-        TPodArray< STriangleHitResult > * Result;
+        TPodVector< STriangleHitResult > * Result;
 
         void processTriangle( btVector3 * triangle, int partId, int triangleIndex ) override
         {

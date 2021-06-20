@@ -94,8 +94,7 @@ class WTextButton : public WButton {
     AN_CLASS( WTextButton, WButton )
 
 public:
-    WTextButton & SetText( const char * _Text );
-    WTextButton & SetText( AString const & _Text );
+    WTextButton & SetText( AStringView _Text );
     WTextButton & SetColor( AColor4 const & _Color );
     WTextButton & SetHoverColor( AColor4 const & _Color );
     WTextButton & SetPressedColor( AColor4 const & _Color );

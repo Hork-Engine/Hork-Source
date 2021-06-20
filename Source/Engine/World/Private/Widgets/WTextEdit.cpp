@@ -31,6 +31,7 @@ SOFTWARE.
 #include <World/Public/Widgets/WTextEdit.h>
 #include <World/Public/Widgets/WScroll.h>
 #include <World/Public/Widgets/WDesktop.h>
+#include <Core/Public/Core.h>
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/InputDefs.h>
 #include <World/Public/Base/ResourceManager.h>
@@ -777,7 +778,7 @@ bool WTextEdit::Copy() {
 
     Core::WideStrEncodeUTF8( pClipboardData, clipboardDataLen, start, end );
 
-    GRuntime.SetClipboard( pClipboardData );
+    Core::SetClipboard( pClipboardData );
 
     GZoneMemory.Free( pClipboardData );
 
@@ -790,13 +791,11 @@ bool WTextEdit::Paste() {
         return false;
     }
 
-    AString const & clipboard = GRuntime.GetClipboard();
-
-    const char * s = clipboard.CStr();
+    const char * s = Core::GetClipboard();
 
     int len = Core::UTF8StrLength( s );
 
-    TPodArray< SWideChar > wideStr;
+    TPodVector< SWideChar > wideStr;
     wideStr.Resize( len );
 
     SWideChar ch;
@@ -824,7 +823,7 @@ bool WTextEdit::Paste() {
 WTextEdit & WTextEdit::SetText( const char * _Text ) {
     int len = Core::UTF8StrLength( _Text );
 
-    TPodArray< SWideChar > wideStr;
+    TPodVector< SWideChar > wideStr;
     wideStr.Resize( len + 1 );
 
     SWideChar ch;

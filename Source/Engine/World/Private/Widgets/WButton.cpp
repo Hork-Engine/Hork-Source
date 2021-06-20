@@ -167,12 +167,7 @@ WTextButton::WTextButton() {
 WTextButton::~WTextButton() {
 }
 
-WTextButton & WTextButton::SetText( const char * _Text ) {
-    Text = _Text;
-    return *this;
-}
-
-WTextButton & WTextButton::SetText( AString const & _Text ) {
+WTextButton & WTextButton::SetText( AStringView _Text ) {
     Text = _Text;
     return *this;
 }

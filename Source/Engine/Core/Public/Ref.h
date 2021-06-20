@@ -73,6 +73,9 @@ public:
 
     virtual ~TRefCounted()
     {
+        if ( WeakRefCounter ) {
+            WeakRefCounter->Object = nullptr;
+        }
     }
 
     /** Non-copyable pattern */
@@ -369,7 +372,7 @@ public:
 
     TWeakRef( TWeakRef< T > const & _Ref )
     {
-        ResetWeakRef( const_cast< T * >( _Ref.GetObject() ) );
+        ResetWeakRef( _Ref.IsExpired() ? nullptr : const_cast< T * >( _Ref.GetObject() ) );
     }
 
     TWeakRef( TRef< T > const & _Ref )
@@ -452,7 +455,7 @@ public:
 
     void operator=( TWeakRef< T > const & _Ref )
     {
-        ResetWeakRef( const_cast< T * >( _Ref.GetObject() ) );
+        ResetWeakRef( _Ref.IsExpired() ? nullptr : const_cast< T * >( _Ref.GetObject() ) );
     }
 };
 

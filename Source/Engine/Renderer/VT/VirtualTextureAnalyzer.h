@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "VirtualTexture.h"
 
-#include <Core/Public/PodArray.h>
+#include <Core/Public/PodVector.h>
 
 constexpr int VT_MAX_TEXTURE_UNITS = 256;
 
@@ -87,7 +87,7 @@ public:
 private:
     void DecodePages();
     void ClearQueue();
-    void SubmitPages( TPodArray< SPageDesc > const & Pages );
+    void SubmitPages( TPodVector< SPageDesc > const & Pages );
     void WaitForNewPages();
     void StreamThreadMain();
     static void StreamThreadMain( void * pData );
@@ -101,10 +101,10 @@ private:
     int NumBindings;
 
     // Actually feedback data is from previous frame
-    TPodArray< SFeedbackChain > Feedbacks;
+    TPodVector< SFeedbackChain > Feedbacks;
 
     // Unique pages from feedback
-    TPodArray< SPageDesc > PendingPages;
+    TPodVector< SPageDesc > PendingPages;
     THash<> PendingPagesHash;
 
     // Page queue for async loading

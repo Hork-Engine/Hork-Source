@@ -138,6 +138,6 @@ private:
         AAnchorComponent * Anchor;
         int VertexIndex;
     };
-    TPodArray< SAnchorBinding > Anchors;
+    TPodVector< SAnchorBinding > Anchors;
     bool bUpdateAnchors = false;
 };

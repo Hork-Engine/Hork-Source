@@ -1123,7 +1123,7 @@ void APhysicalBody::ApplyTorqueImpulse( Float3 const & _Torque )
     }
 }
 
-void APhysicalBody::GetCollisionBodiesWorldBounds( TPodArray< BvAxisAlignedBox > & _BoundingBoxes ) const
+void APhysicalBody::GetCollisionBodiesWorldBounds( TPodVector< BvAxisAlignedBox > & _BoundingBoxes ) const
 {
     if ( !CollisionInstance ) {
         _BoundingBoxes.Clear();
@@ -1181,7 +1181,7 @@ int APhysicalBody::GetCollisionBodiesCount() const
     return CollisionInstance->GetCollisionBodiesCount();
 }
 
-void APhysicalBody::GatherCollisionGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const
+void APhysicalBody::GatherCollisionGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const
 {
     ACollisionModel const * collisionModel = GetCollisionModel();
     if ( !collisionModel ) {
@@ -1290,12 +1290,12 @@ void APhysicalBody::RemoveCollisionIgnoreActor( AActor * _Actor )
     HitProxy->RemoveCollisionIgnoreActor( _Actor );
 }
 
-void APhysicalBody::CollisionContactQuery( TPodArray< AHitProxy * > & _Result ) const
+void APhysicalBody::CollisionContactQuery( TPodVector< AHitProxy * > & _Result ) const
 {
     HitProxy->CollisionContactQuery( _Result );
 }
 
-void APhysicalBody::CollisionContactQueryActor( TPodArray< AActor * > & _Result ) const
+void APhysicalBody::CollisionContactQueryActor( TPodVector< AActor * > & _Result ) const
 {
     HitProxy->CollisionContactQueryActor( _Result );
 }
@@ -1366,7 +1366,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer )
     }
 
     if ( HitProxy->IsTrigger() && com_DrawTriggerBounds ) {
-        TPodArray< BvAxisAlignedBox > boundingBoxes;
+        TPodVector< BvAxisAlignedBox > boundingBoxes;
 
         GetCollisionBodiesWorldBounds( boundingBoxes );
 
@@ -1378,7 +1378,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer )
     }
     else {
         if ( MotionBehavior == MB_STATIC && com_DrawStaticCollisionBounds ) {
-            TPodArray< BvAxisAlignedBox > boundingBoxes;
+            TPodVector< BvAxisAlignedBox > boundingBoxes;
 
             GetCollisionBodiesWorldBounds( boundingBoxes );
 
@@ -1390,7 +1390,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer )
         }
 
         if ( MotionBehavior == MB_SIMULATED && com_DrawSimulatedCollisionBounds ) {
-            TPodArray< BvAxisAlignedBox > boundingBoxes;
+            TPodVector< BvAxisAlignedBox > boundingBoxes;
 
             GetCollisionBodiesWorldBounds( boundingBoxes );
 
@@ -1402,7 +1402,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer )
         }
 
         if ( MotionBehavior == MB_KINEMATIC && com_DrawKinematicCollisionBounds ) {
-            TPodArray< BvAxisAlignedBox > boundingBoxes;
+            TPodVector< BvAxisAlignedBox > boundingBoxes;
 
             GetCollisionBodiesWorldBounds( boundingBoxes );
 

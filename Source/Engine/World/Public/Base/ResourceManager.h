@@ -39,10 +39,10 @@ public:
     AResourceManager();
     virtual ~AResourceManager();
 
-    void AddResourcePack( const char * FileName );
+    void AddResourcePack( AStringView FileName );
 
     /** Find file in resource packs */
-    bool FindFile( const char * FileName, AArchive ** ppResourcePack, int * pFileIndex );
+    bool FindFile( AStringView FileName, AArchive ** ppResourcePack, int * pFileIndex );
 
     /** Get or create resource. Return default object if fails. */
     template< typename T >
@@ -98,7 +98,7 @@ public:
     AArchive const * GetCommonResources() const { return CommonResources.GetObject(); }
 
 private:
-    TPodArray< AResource * > ResourceCache;
+    TPodVector< AResource * > ResourceCache;
     THash<> ResourceHash;
     TStdVector< TUniqueRef< AArchive > > ResourcePacks;
     TUniqueRef< AArchive > CommonResources;

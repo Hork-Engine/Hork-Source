@@ -124,9 +124,9 @@ private:
     TRef< RenderCore::IBuffer > IndexBufferGPU;
 
     /** Vertex buffer in CPU. We keep it only for debug draw */
-    TPodArray< STerrainVertex > VertexBuffer;
+    TPodVector< STerrainVertex > VertexBuffer;
     /** Index buffer in CPU. We keep it only for debug draw */
-    TPodArray< unsigned short > IndexBuffer;
+    TPodVector< unsigned short > IndexBuffer;
 };
 
 struct STerrainTriangle
@@ -156,7 +156,7 @@ public:
     BvAxisAlignedBox const & GetBoundingBox() const { return BoundingBox; }
 
     /** Check ray intersection. Result is unordered by distance to save performance */
-    bool Raycast( Float3 const & RayStart, Float3 const & RayDir, float Distance, bool bCullBackFace, TPodArray< STriangleHitResult > & HitResult ) const;
+    bool Raycast( Float3 const & RayStart, Float3 const & RayDir, float Distance, bool bCullBackFace, TPodVector< STriangleHitResult > & HitResult ) const;
     /** Check ray intersection */
     bool RaycastClosest( Float3 const & RayStart, Float3 const & RayDir, float Distance, bool bCullBackFace, STriangleHitResult & HitResult ) const;
 
@@ -173,7 +173,7 @@ public:
 private:
     int HeightmapResolution;
     int HeightmapLods;
-    TPodArray< float * > Heightmap;
+    TPodVector< float * > Heightmap;
     float MinHeight;
     float MaxHeight;
     TUniqueRef< btHeightfieldTerrainShape > HeightfieldShape;
@@ -294,8 +294,8 @@ private:
     /** Height above the terrain */
     float ViewHeight;
 
-    TPodArray< STerrainPatchInstance > InstanceBuffer;
-    TPodArray< RenderCore::SDrawIndexedIndirectCmd > IndirectBuffer;
+    TPodVector< STerrainPatchInstance > InstanceBuffer;
+    TPodVector< RenderCore::SDrawIndexedIndirectCmd > IndirectBuffer;
 
     TRef< RenderCore::ITexture > ClipmapArray;
     TRef< RenderCore::ITexture > NormalMapArray;
@@ -311,5 +311,5 @@ private:
     Float3 VertexShader( STerrainVertex const & v );
     ADebugRenderer * TerrainRenderer;
     STerrainPatchInstance const * pDrawCallUniformData;
-    TPodArray< BvAxisAlignedBox > BoundingBoxes;
+    TPodVector< BvAxisAlignedBox > BoundingBoxes;
 };

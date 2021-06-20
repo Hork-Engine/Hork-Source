@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Angl.h"
-#include "PodArray.h"
+#include "PodVector.h"
 
 class ALexer {
     AN_FORBID_COPY( ALexer )
@@ -174,7 +174,7 @@ private:
     };
 
     AString BufferName;
-    TPodArray< SOperator > Operators;
+    TPodVector< SOperator > Operators;
     char CurToken[ MAX_TOKEN_LENGTH ];
     const char * Ptr;
     int CurrentLine;

@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "PodArray.h"
+#include "PodVector.h"
 
 /**
 
@@ -154,6 +154,6 @@ public:
     }
 
 private:
-    TPodArray< T, BaseCapacityInBytes, BaseGranularityInBytes, Allocator > Bits;
+    TPodVector< T, BaseCapacityInBytes, BaseGranularityInBytes, Allocator > Bits;
     int NumBits;
 };

@@ -144,57 +144,6 @@ struct SDisplayInfo
 //    int Id;
 //};
 
-/** CPU features */
-struct SCPUInfo
-{
-    bool OS_AVX : 1;
-    bool OS_AVX512 : 1;
-    bool OS_64bit : 1;
-
-    bool Intel : 1;
-    bool AMD : 1;
-
-    // Simd 128 bit
-    bool SSE : 1;
-    bool SSE2 : 1;
-    bool SSE3 : 1;
-    bool SSSE3 : 1;
-    bool SSE41 : 1;
-    bool SSE42 : 1;
-    bool SSE4a : 1;
-    bool AES : 1;
-    bool SHA : 1;
-
-    // Simd 256 bit
-    bool AVX : 1;
-    bool XOP : 1;
-    bool FMA3 : 1;
-    bool FMA4 : 1;
-    bool AVX2 : 1;
-
-    // Simd 512 bit
-    bool AVX512_F : 1;
-    bool AVX512_CD : 1;
-    bool AVX512_PF : 1;
-    bool AVX512_ER : 1;
-    bool AVX512_VL : 1;
-    bool AVX512_BW : 1;
-    bool AVX512_DQ : 1;
-    bool AVX512_IFMA : 1;
-    bool AVX512_VBMI : 1;
-
-    // Features
-    bool x64 : 1;
-    bool ABM : 1;
-    bool MMX : 1;
-    bool RDRAND : 1;
-    bool BMI1 : 1;
-    bool BMI2 : 1;
-    bool ADX : 1;
-    bool MPX : 1;
-    bool PREFETCHWT1 : 1;
-};
-
 enum EInputAction
 {
     IA_RELEASE,
@@ -285,15 +234,6 @@ public:
     /** Global random number generator */
     AMersenneTwisterRand Rand;
 
-    /** Application command line args count */
-    int GetArgc();
-
-    /** Application command line args */
-    const char * const *GetArgv();
-
-    /** Check is argument exists in application command line. Return argument index or -1 if argument was not found. */
-    int CheckArg( const char * _Arg );
-
     /** Return application working directory */
     AString const & GetWorkingDir();
 
@@ -318,36 +258,6 @@ public:
     /** Return max frame memory usage since application start */
     size_t GetMaxFrameMemoryUsage() const;
 
-    /** Get CPU info */
-    SCPUInfo const & GetCPUInfo() const;
-
-    /** Sleep current thread */
-    void WaitSeconds( int _Seconds );
-
-    /** Sleep current thread */
-    void WaitMilliseconds( int _Milliseconds );
-
-    /** Sleep current thread */
-    void WaitMicroseconds( int _Microseconds );
-
-    /** Get current time in seconds since application start */
-    int64_t SysSeconds();
-
-    /** Get current time in seconds since application start */
-    double SysSeconds_d();
-
-    /** Get current time in milliseconds since application start */
-    int64_t SysMilliseconds();
-
-    /** Get current time in milliseconds since application start */
-    double SysMilliseconds_d();
-
-    /** Get current time in microseconds since application start */
-    int64_t SysMicroseconds();
-
-    /** Get current time in microseconds since application start */
-    double SysMicroseconds_d();
-
     /** Get time stamp at beggining of the frame */
     int64_t SysFrameTimeStamp();
 
@@ -356,30 +266,6 @@ public:
 
     /** Get current frame update number */
     int SysFrameNumber() const;
-
-    /** Load dynamic library (.dll or .so) */
-    void * LoadDynamicLib( const char * _LibraryName );
-
-    /** Unload dynamic library (.dll or .so) */
-    void UnloadDynamicLib( void * _Handle );
-
-    /** Get address of procedure in dynamic library */
-    void * GetProcAddress( void * _Handle, const char * _ProcName );
-
-    /** Helper. Get address of procedure in dynamic library */
-    template< typename T >
-    bool GetProcAddress( void * _Handle, T ** _ProcPtr, const char * _ProcName ) {
-        return nullptr != ( (*_ProcPtr) = (T *)GetProcAddress( _Handle, _ProcName ) );
-    }
-
-    /** Set clipboard text */
-    void SetClipboard( const char * _Utf8String );
-
-    /** Set clipboard text */
-    void SetClipboard( AString const & _Clipboard ) { SetClipboard( _Clipboard.CStr() ); }
-
-    /** Get clipboard text */
-    const char * GetClipboard();
 
     /** Current video mode */
     SVideoMode const & GetVideoMode() const;
@@ -412,10 +298,10 @@ public:
     void ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem );
 
     /** Get list of displays */
-    void GetDisplays( TPodArray< SDisplayInfo > & Displays );
+    void GetDisplays( TPodVector< SDisplayInfo > & Displays );
 
     /** Get list of display modes */
-    void GetDisplayModes( SDisplayInfo const & Display, TPodArray< SDisplayMode > & Modes );
+    void GetDisplayModes( SDisplayInfo const & Display, TPodVector< SDisplayMode > & Modes );
 
     /** Get information about the desktop display mode */
     void GetDesktopDisplayMode( SDisplayInfo const & Display, SDisplayMode & Mode );
@@ -430,33 +316,21 @@ public:
     AArchive const & GetEmbeddedResources();
 
 private:
-    int             NumArguments;
-    char **         Arguments;
-
     AString         WorkingDir;
     AString         RootPath;
     char *          Executable;
 
-    int64_t         StartSeconds;
-    int64_t         StartMilliseconds;
-    int64_t         StartMicroseconds;
     int64_t         FrameTimeStamp;
     int64_t         FrameDuration;
     int             FrameNumber;
 
-    void *          FrameMemoryAddress;
-    size_t          FrameMemorySize;
     size_t          FrameMemoryUsed;
     size_t          FrameMemoryUsedPrev;
     size_t          MaxFrameMemoryUsage;
 
-    char *          Clipboard;
-
     struct SEntryDecl const * pModuleDecl;
 
     static class IEngineInterface * Engine;
-
-    SCPUInfo        CPUInfo;
 
     SVideoMode      VideoMode;
     SVideoMode      DesiredMode;
@@ -470,21 +344,7 @@ private:
 
     bool            bPostTerminateEvent;
 
-    int             ProcessAttribute;
-
     void Run( struct SEntryDecl const & _EntryDecl );
-
-    void EmergencyExit();
-
-    void DisplayCriticalMessage( const char * _Message );
-
-    void InitializeProcess();
-
-    void DeinitializeProcess();
-
-    void InitializeMemory();
-
-    void DeinitializeMemory();
 
     void InitializeWorkingDirectory();
 
@@ -492,16 +352,17 @@ private:
 
     void SetVideoMode( SVideoMode const & _DesiredMode );
 
-    void PrintCPUFeatures();
-
     void ClearJoystickAxes( int _JoystickNum, double _TimeStamp );
     void UnpressKeysAndButtons();
     void UnpressJoystickButtons( int _JoystickNum, double _TimeStamp );
 
     static void LoggerMessageCallback( int _Level, const char * _Message );
 
-    friend void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl );
-    friend void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl );
+#ifdef AN_OS_WIN32
+    friend void RunEngine( SEntryDecl const & _EntryDecl );
+#else
+    friend void RunEngine( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl );
+#endif
 };
 
 extern ARuntime & GRuntime;

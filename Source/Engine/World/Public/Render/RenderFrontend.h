@@ -36,6 +36,7 @@ SOFTWARE.
 #include <World/Public/Resource/IndexedMesh.h>
 #include <World/Public/World.h>
 #include <World/Public/Terrain.h>
+#include <World/Public/Render/LightVoxelizer.h>
 
 class AAnalyticLightComponent;
 class AIBLComponent;
@@ -70,7 +71,7 @@ private:
 
     void QueryVisiblePrimitives( AWorld * InWorld );
     void QueryShadowCasters( AWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis,
-                             TPodArray< SPrimitiveDef * > & Primitives, TPodArray< SSurfaceDef * > & Surfaces );
+                             TPodVector< SPrimitiveDef * > & Primitives, TPodVector< SSurfaceDef * > & Surfaces );
     void AddRenderInstances( AWorld * InWorld );
     void AddDrawable( ADrawable * InComponent );
     void AddTerrain( ATerrainComponent * InComponent );
@@ -96,21 +97,21 @@ private:
 
     SRenderFrontendStat Stat;
 
-    TPodArray< SViewport const * > Viewports;
+    TPodVector< SViewport const * > Viewports;
     int MaxViewportWidth = 0;
     int MaxViewportHeight = 0;
 
-    TPodArray< SPrimitiveDef * > VisPrimitives;
-    TPodArray< SSurfaceDef * > VisSurfaces;
-    TPodArray< AAnalyticLightComponent * > VisLights;
-    TPodArray< AIBLComponent * > VisIBLs;
+    TPodVector< SPrimitiveDef * > VisPrimitives;
+    TPodVector< SSurfaceDef * > VisSurfaces;
+    TPodVector< AAnalyticLightComponent * > VisLights;
+    TPodVector< AIBLComponent * > VisIBLs;
 
     int VisPass = 0;
 
     // TODO: We can keep ready shadowCasters[] and boxes[]
-    TPodArray< ADrawable * > ShadowCasters;
-    TPodArray< BvAxisAlignedBoxSSE > ShadowBoxes;
-    TPodArray< int > ShadowCasterCullResult;
+    TPodVector< ADrawable * > ShadowCasters;
+    TPodVector< BvAxisAlignedBoxSSE > ShadowBoxes;
+    TPodVector< int > ShadowCasterCullResult;
 
     struct SSurfaceStream {
         size_t VertexAddr;
@@ -127,4 +128,6 @@ private:
     TRef< ATexture > PhotometricProfiles;
 
     TRef< ATerrainMesh > TerrainMesh;
+
+    ALightVoxelizer LightVoxelizer;
 };

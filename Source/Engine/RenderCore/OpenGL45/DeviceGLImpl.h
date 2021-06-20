@@ -141,16 +141,16 @@ private:
     HashCallback HashCB;
 
     THash<> SamplerHash;
-    TPodArray< struct SamplerInfo * > SamplerCache;
+    TPodVector< struct SamplerInfo * > SamplerCache;
 
     THash<> BlendingHash;
-    TPodArray< SBlendingStateInfo * > BlendingStateCache;
+    TPodVector< SBlendingStateInfo * > BlendingStateCache;
 
     THash<> RasterizerHash;
-    TPodArray< SRasterizerStateInfo * > RasterizerStateCache;
+    TPodVector< SRasterizerStateInfo * > RasterizerStateCache;
 
     THash<> DepthStencilHash;
-    TPodArray< SDepthStencilStateInfo * > DepthStencilStateCache;
+    TPodVector< SDepthStencilStateInfo * > DepthStencilStateCache;
 
     unsigned int DeviceCaps[DEVICE_CAPS_MAX];
 

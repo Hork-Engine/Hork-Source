@@ -279,7 +279,7 @@ void ADrawable::PreRenderUpdate( SRenderFrontendDef const * _Def ) {
     }
 }
 
-bool ADrawable::Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits ) const {
+bool ADrawable::Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< STriangleHitResult > & Hits ) const {
     if ( !Primitive.RaycastCallback ) {
         return false;
     }

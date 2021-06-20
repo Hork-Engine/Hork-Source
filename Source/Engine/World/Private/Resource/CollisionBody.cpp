@@ -444,7 +444,7 @@ void ACollisionTriangleSoupData::Initialize( float const * _Vertices, int _Verte
     Subparts[0].IndexCount  = _IndexCount;
 }
 
-void ACollisionSphere::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
+void ACollisionSphere::GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const {
     float sinTheta, cosTheta, sinPhi, cosPhi;
 
     const float detail = Math::Floor( Math::Max( 1.0f, Radius ) + 0.5f );
@@ -496,7 +496,7 @@ void ACollisionSphere::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPod
     }
 }
 
-void ACollisionSphereRadii::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
+void ACollisionSphereRadii::GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const {
     float sinTheta, cosTheta, sinPhi, cosPhi;
 
     const float detail = Math::Floor( Math::Max( 1.0f, Radius.Max() ) + 0.5f );
@@ -544,7 +544,7 @@ void ACollisionSphereRadii::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices,
     }
 }
 
-void ACollisionBox::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
+void ACollisionBox::GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const {
     unsigned int const indices[36] = { 0,3,2, 2,1,0, 7,4,5, 5,6,7, 3,7,6, 6,2,3, 2,6,5, 5,1,2, 1,5,4, 4,0,1, 0,4,7, 7,3,0 };
 
     const int firstVertex = _Vertices.Size();
@@ -570,7 +570,7 @@ void ACollisionBox::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArr
     }
 }
 
-void ACollisionCylinder::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
+void ACollisionCylinder::GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const {
     float sinPhi, cosPhi;
 
     int idxRadius, idxRadius2, idxHeight;
@@ -654,7 +654,7 @@ void ACollisionCylinder::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TP
     }
 }
 
-void ACollisionCone::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
+void ACollisionCone::GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const {
     float sinPhi, cosPhi;
 
     int idxRadius, idxRadius2, idxHeight;
@@ -730,7 +730,7 @@ void ACollisionCone::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodAr
     }
 }
 
-void ACollisionCapsule::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
+void ACollisionCapsule::GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const {
 
     int idxRadius, idxRadius2, idxHeight;
     switch ( Axial ) {
@@ -903,7 +903,7 @@ void ACollisionCapsule::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPo
 #endif
 }
 
-void ACollisionConvexHull::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
+void ACollisionConvexHull::GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const {
 
     if ( !HullData ) {
         return;
@@ -927,7 +927,7 @@ void ACollisionConvexHull::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, 
     }
 }
 
-void ACollisionTriangleSoupBVH::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
+void ACollisionTriangleSoupBVH::GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const {
 
     if ( BvhData ) {
 
@@ -989,7 +989,7 @@ void ACollisionTriangleSoupBVH::GatherGeometry( TPodArrayHeap< Float3 > & _Verti
 #endif
 }
 
-void ACollisionTriangleSoupGimpact::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const {
+void ACollisionTriangleSoupGimpact::GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const {
     ACollisionTriangleSoupData * trisData = TrisData;
     if ( !trisData ) {
         return;
@@ -1023,7 +1023,7 @@ void ACollisionTriangleSoupGimpact::GatherGeometry( TPodArrayHeap< Float3 > & _V
 }
 
 AN_CLASS_META( ACollisionModel )
-void ACollisionModel::GatherGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const
+void ACollisionModel::GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const
 {
     for ( ACollisionBody * collisionBody : CollisionBodies ) {
         collisionBody->GatherGeometry( _Vertices, _Indices );
@@ -1036,9 +1036,9 @@ void ACollisionModel::PerformConvexDecomposition( Float3 const * _Vertices,
                                                   unsigned int const * _Indices,
                                                   int _IndicesCount ) {
 
-    TPodArray< Float3 > HullVertices;
-    TPodArray< unsigned int > HullIndices;
-    TPodArray< SConvexHullDesc > Hulls;
+    TPodVector< Float3 > HullVertices;
+    TPodVector< unsigned int > HullIndices;
+    TPodVector< SConvexHullDesc > Hulls;
 
     Clear();
 
@@ -1078,9 +1078,9 @@ void ACollisionModel::PerformConvexDecompositionVHACD( Float3 const * _Vertices,
                                                        unsigned int const * _Indices,
                                                        int _IndicesCount ) {
 
-    TPodArray< Float3 > HullVertices;
-    TPodArray< unsigned int > HullIndices;
-    TPodArray< SConvexHullDesc > Hulls;
+    TPodVector< Float3 > HullVertices;
+    TPodVector< unsigned int > HullIndices;
+    TPodVector< SConvexHullDesc > Hulls;
 
     Clear();
 
@@ -1141,7 +1141,7 @@ static bool AreVerticesBehindPlane( PlaneF const & _Plane, Float3 const * _Verti
     return true;
 }
 
-void ConvexHullPlanesFromVertices( Float3 const * _Vertices, int _NumVertices, TPodArray< PlaneF > & _Planes ) {
+void ConvexHullPlanesFromVertices( Float3 const * _Vertices, int _NumVertices, TPodVector< PlaneF > & _Planes ) {
     PlaneF plane;
     Float3 edge0, edge1;
 
@@ -1185,7 +1185,7 @@ void ConvexHullPlanesFromVertices( Float3 const * _Vertices, int _NumVertices, T
     }
 }
 
-void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodArray< Float3 > & _Vertices ) {
+void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodVector< Float3 > & _Vertices ) {
     constexpr float tolerance = 0.0001f;
     constexpr float quotientTolerance = 0.000001f;
 
@@ -1305,14 +1305,14 @@ void ConvexHullVerticesFromPlanes( PlaneF const * _Planes, int _NumPlanes, TPodA
 //#endif
 //    };
 
-//    TPodArray< Float3 > Vertices;
-//    TPodArray< unsigned int > Indices;
-//    TPodArray< SConvexHullDesc > Hulls;
+//    TPodVector< Float3 > Vertices;
+//    TPodVector< unsigned int > Indices;
+//    TPodVector< SConvexHullDesc > Hulls;
 //};
 // TODO: try ConvexBuilder
 
-void BakeCollisionMarginConvexHull( Float3 const * _InVertices, int _VertexCount, TPodArray< Float3 > & _OutVertices, float _Margin ) {
-    TPodArray< PlaneF > planes;
+void BakeCollisionMarginConvexHull( Float3 const * _InVertices, int _VertexCount, TPodVector< Float3 > & _OutVertices, float _Margin ) {
+    TPodVector< PlaneF > planes;
 
     ConvexHullPlanesFromVertices( _InVertices, _VertexCount, planes );
 
@@ -1330,9 +1330,9 @@ void PerformConvexDecomposition( Float3 const * _Vertices,
                                  int _VertexStride,
                                  unsigned int const * _Indices,
                                  int _IndicesCount,
-                                 TPodArray< Float3 > & _OutVertices,
-                                 TPodArray< unsigned int > & _OutIndices,
-                                 TPodArray< SConvexHullDesc > & _OutHulls )
+                                 TPodVector< Float3 > & _OutVertices,
+                                 TPodVector< unsigned int > & _OutIndices,
+                                 TPodVector< SConvexHullDesc > & _OutHulls )
 {
     int hunkMark = GHunkMemory.SetHunkMark();
 
@@ -1469,9 +1469,9 @@ void PerformConvexDecompositionVHACD( Float3 const * _Vertices,
                                       int _VertexStride,
                                       unsigned int const * _Indices,
                                       int _IndicesCount,
-                                      TPodArray< Float3 > & _OutVertices,
-                                      TPodArray< unsigned int > & _OutIndices,
-                                      TPodArray< SConvexHullDesc > & _OutHulls,
+                                      TPodVector< Float3 > & _OutVertices,
+                                      TPodVector< unsigned int > & _OutIndices,
+                                      TPodVector< SConvexHullDesc > & _OutHulls,
                                       Float3 & _CenterOfMass ) {
 
 
@@ -1668,7 +1668,7 @@ Float3 ACollisionInstance::CalculateLocalInertia( float Mass ) const
     return btVectorToFloat3( localInertia );
 }
 
-void ACollisionInstance::GetCollisionBodiesWorldBounds( Float3 const & WorldPosition, Quat const & WorldRotation, TPodArray< BvAxisAlignedBox > & _BoundingBoxes ) const
+void ACollisionInstance::GetCollisionBodiesWorldBounds( Float3 const & WorldPosition, Quat const & WorldRotation, TPodVector< BvAxisAlignedBox > & _BoundingBoxes ) const
 {
     btVector3 mins, maxs;
 

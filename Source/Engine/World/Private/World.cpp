@@ -45,7 +45,7 @@ SOFTWARE.
 AN_CLASS_META( AWorld )
 
 AWorld * AWorld::PendingKillWorlds = nullptr;
-TPodArray< AWorld * > AWorld::Worlds;
+TPodVector< AWorld * > AWorld::Worlds;
 
 AWorld::AWorld()
 {
@@ -160,7 +160,7 @@ void SActorSpawnInfo::SetTemplate( AActor const * _Template )
     Template = _Template;
 }
 
-void SActorSpawnInfo::_SetAttribute( AString const & AttributeName, AString const & AttributeValue )
+void SActorSpawnInfo::_SetAttribute( AStringView AttributeName, AString const & AttributeValue )
 {
     int hash = AttributeName.Hash();
     for ( int i = AttributeHash.First( hash ) ; i != -1 ; i = AttributeHash.Next( i ) ) {
@@ -594,7 +594,7 @@ bool AWorld::Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, F
     return vsd.RaycastTriangles( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 
-bool AWorld::RaycastBounds( TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const
+bool AWorld::RaycastBounds( TPodVector< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter ) const
 {
     AVSD & vsd = const_cast< AVSD & >(Vsd);
     return vsd.RaycastBounds( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
@@ -612,7 +612,7 @@ bool AWorld::RaycastClosestBounds( SBoxHitResult & _Result, Float3 const & _RayS
     return vsd.RaycastClosestBounds( const_cast< AWorld * >( this ), _Result, _RayStart, _RayEnd, _Filter );
 }
 
-void AWorld::QueryVisiblePrimitives( TPodArray< SPrimitiveDef * > & VisPrimitives, TPodArray< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery )
+void AWorld::QueryVisiblePrimitives( TPodVector< SPrimitiveDef * > & VisPrimitives, TPodVector< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery )
 {
     AVSD & vsd = const_cast< AVSD & >(Vsd);
     vsd.QueryVisiblePrimitives( this, VisPrimitives, VisSurfs, VisPass, InQuery );
@@ -620,7 +620,7 @@ void AWorld::QueryVisiblePrimitives( TPodArray< SPrimitiveDef * > & VisPrimitive
 
 void AWorld::ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter )
 {
-    TPodArray< AActor * > damagedActors;
+    TPodVector< AActor * > damagedActors;
     SActorDamage damage;
 
     QueryActors( damagedActors, _Position, _Radius, _QueryFilter );

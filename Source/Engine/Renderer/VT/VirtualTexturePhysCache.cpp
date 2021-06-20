@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include "../RenderLocal.h"
 
+#include <Core/Public/Core.h>
 #include <Runtime/Public/Runtime.h>
 
 #define PAGE_STREAM_PBO
@@ -334,7 +335,7 @@ void AVirtualTextureCache::Update() {
 
     int fetchIndex = 0;
 
-    int64_t uploadStartTime = GRuntime.SysMicroseconds();
+    int64_t uploadStartTime = Core::SysMicroseconds();
 
     for ( SPhysPageInfoSorted * physPage = pFirstPhysPage ;
           physPage < pLastPhysPage && fetchIndex < Transfers.Size() ; ++fetchIndex )
@@ -390,7 +391,7 @@ void AVirtualTextureCache::Update() {
         GLogger.Printf( "Double streamed %d times\n", d_duplicates );
     }
 
-    GLogger.Printf( "Streamed per frame %d, uploaded %d, time %d microsec\n", Transfers.Size(), d_uploaded, GRuntime.SysMicroseconds() - uploadStartTime );
+    GLogger.Printf( "Streamed per frame %d, uploaded %d, time %d microsec\n", Transfers.Size(), d_uploaded, Core::SysMicroseconds() - uploadStartTime );
 
     UnlockTransfers();
 
@@ -509,7 +510,7 @@ void AVirtualTextureCache::Draw( AFrameGraph & FrameGraph, AFrameGraphTexture * 
 
     ARenderPass & pass = FrameGraph.AddTask< ARenderPass >( "VT Draw Cache" );
 
-    float scale = (float)GRenderView->Width / texture->GetWidth();
+    float scale = texture->GetWidth() != 0 ? (float)GRenderView->Width / texture->GetWidth() : 0.0f;
     
     pass.SetRenderArea( (float)texture->GetWidth()*scale*0.5f,
                         (float)texture->GetHeight()*scale*0.5f );

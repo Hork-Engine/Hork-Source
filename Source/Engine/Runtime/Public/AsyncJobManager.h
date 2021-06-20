@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/PodArray.h>
+#include <Core/Public/PodVector.h>
 
 //#define AN_ACTIVE_THREADS_COUNTERS
 
@@ -79,7 +79,7 @@ private:
 
     AAsyncJobManager * JobManager;
 
-    TPodArray< SAsyncJob, 1024 > JobPool;
+    TPodVector< SAsyncJob, 1024 > JobPool;
     SAsyncJob * JobList;
     int NumPendingJobs;
 

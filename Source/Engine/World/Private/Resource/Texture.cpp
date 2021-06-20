@@ -31,6 +31,7 @@ SOFTWARE.
 #include <World/Public/Resource/Texture.h>
 #include <World/Public/Resource/Asset.h>
 #include <Runtime/Public/ScopedTimeCheck.h>
+#include <Runtime/Public/Runtime.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Core/Public/Image.h>
@@ -211,7 +212,7 @@ bool ATexture::InitializeFromImage( AImage const & _Image ) {
     return true;
 }
 
-bool ATexture::InitializeCubemapFromImages( std::array< AImage const *, 6 > const & _Faces ) {
+bool ATexture::InitializeCubemapFromImages( TArray< AImage const *, 6 > const & _Faces ) {
     const void * faces[6];
 
     int width = _Faces[0]->GetWidth();

@@ -66,7 +66,7 @@ class WScroll;
 template< typename... TArgs >
 struct TWidgetEvent : TEvent< TArgs... > {};
 
-using AWidgetShape = TPodArray< Float2, 4 >;
+using AWidgetShape = TPodVector< Float2, 4 >;
 
 #define WNew(Type) (*CreateInstanceOf< Type >())
 #define WNewAssign(Val,Type) (*(Val = CreateInstanceOf< Type >()))
@@ -136,7 +136,7 @@ public:
     WWidget * GetParent() { return Parent; }
 
     /** Get childs */
-    TPodArray< WWidget * > const & GetChilds() const { return Childs; }
+    TPodVector< WWidget * > const & GetChilds() const { return Childs; }
 
     /** Set input focus */
     WWidget & SetFocus();
@@ -467,9 +467,9 @@ private:
 
     WDesktop * Desktop;
     WWidget * Parent;
-    TPodArray< WWidget * > Childs;
-    TPodArray< WDecorate *, 2 > Decorates;
-    TPodArray< WWidget * > LayoutSlots;
+    TPodVector< WWidget * > Childs;
+    TPodVector< WDecorate *, 2 > Decorates;
+    TPodVector< WWidget * > LayoutSlots;
     AWidgetShape Shape;
     AWidgetShape DragShape;
     Float2 Position;
@@ -492,8 +492,8 @@ private:
     float VerticalPadding;
     int ColumnsCount;
     int RowsCount;
-    TPodArray< SCell, 1 > Columns;
-    TPodArray< SCell, 1 > Rows;
+    TPodVector< SCell, 1 > Columns;
+    TPodVector< SCell, 1 > Rows;
     bool bFitColumns;
     bool bFitRows;
     bool bAutoWidth;

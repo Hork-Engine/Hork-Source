@@ -65,7 +65,7 @@ public:
     void RemoveAnimationControllers();
 
     /** Get animation controllers */
-    TPodArray< AAnimationController * > const & GetAnimationControllers() const { return AnimControllers; }
+    TPodVector< AAnimationController * > const & GetAnimationControllers() const { return AnimControllers; }
 
     /** Set position on all animation tracks */
     void SetTimeBroadcast( float _Time );
@@ -115,10 +115,10 @@ private:
 
     TRef< ASkeleton > Skeleton;
 
-    TPodArray< AAnimationController * > AnimControllers;
+    TPodVector< AAnimationController * > AnimControllers;
 
-    TPodArray< Float3x4 > AbsoluteTransforms;
-    TPodArray< Float3x4 > RelativeTransforms;
+    TPodVector< Float3x4 > AbsoluteTransforms;
+    TPodVector< Float3x4 > RelativeTransforms;
 
     alignas( 16 ) Float3x4 JointsBufferData[ASkeleton::MAX_JOINTS];
 

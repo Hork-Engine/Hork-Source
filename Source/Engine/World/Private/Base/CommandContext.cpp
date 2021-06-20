@@ -159,8 +159,8 @@ int ACommandContext::CompleteString( const char * _Str, int _StrLen, AString & _
 }
 
 void ACommandContext::Print( const char * _Str, int _StrLen ) {
-    TPodArray< ARuntimeCommand * > cmds;
-    TPodArray< ARuntimeVariable * > vars;
+    TPodVector< ARuntimeCommand * > cmds;
+    TPodVector< ARuntimeVariable * > vars;
 
     if ( _StrLen > 0 ) {
         for ( ARuntimeCommand & cmd : Commands ) {

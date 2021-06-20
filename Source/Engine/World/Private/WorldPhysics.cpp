@@ -255,7 +255,7 @@ void AWorldPhysics::RemoveCollisionContacts()
 {
 #ifdef REF_AWARE
     for ( int i = 0 ; i < 2 ; i++ ) {
-        TPodArray< SCollisionContact > & currentContacts = CollisionContacts[ i ];
+        TPodVector< SCollisionContact > & currentContacts = CollisionContacts[ i ];
         THash<> & contactHash = ContactHash[ i ];
 
         for ( SCollisionContact & contact : currentContacts ) {
@@ -357,8 +357,8 @@ void AWorldPhysics::DispatchContactAndOverlapEvents()
     int curTickNumber = FixedTickNumber & 1;
     int prevTickNumber = ( FixedTickNumber + 1 ) & 1;
 
-    TPodArray< SCollisionContact > & currentContacts = CollisionContacts[ curTickNumber ];
-    TPodArray< SCollisionContact > & prevContacts = CollisionContacts[ prevTickNumber ];
+    TPodVector< SCollisionContact > & currentContacts = CollisionContacts[ curTickNumber ];
+    TPodVector< SCollisionContact > & prevContacts = CollisionContacts[ prevTickNumber ];
 
     THash<> & contactHash = ContactHash[ curTickNumber ];
     THash<> & prevContactHash = ContactHash[ prevTickNumber ];
@@ -1090,7 +1090,7 @@ static bool CullTriangle( btCollisionObject const * Object, btCollisionWorld::Lo
 
 struct STraceRayResultCallback : btCollisionWorld::RayResultCallback
 {
-    STraceRayResultCallback( SCollisionQueryFilter const * _QueryFilter, Float3 const & _RayStart, Float3 const & _RayDir, TPodArray< SCollisionTraceResult > & _Result )
+    STraceRayResultCallback( SCollisionQueryFilter const * _QueryFilter, Float3 const & _RayStart, Float3 const & _RayDir, TPodVector< SCollisionTraceResult > & _Result )
         : RayLength( _RayDir.Length() )
         , RayStart( _RayStart )
         , RayDir( _RayDir )
@@ -1149,7 +1149,7 @@ struct STraceRayResultCallback : btCollisionWorld::RayResultCallback
     Float3 RayStart;
     Float3 RayDir;
     SCollisionQueryFilter const & QueryFilter;
-    TPodArray< SCollisionTraceResult > & Result;
+    TPodVector< SCollisionTraceResult > & Result;
 };
 
 struct STraceClosestRayResultCallback : btCollisionWorld::RayResultCallback
@@ -1248,7 +1248,7 @@ struct STraceClosestConvexResultCallback : btCollisionWorld::ConvexResultCallbac
 
 struct STraceConvexResultCallback : btCollisionWorld::ConvexResultCallback
 {
-    STraceConvexResultCallback( SCollisionQueryFilter const * _QueryFilter, float _RayLength, TPodArray< SCollisionTraceResult > & _Result )
+    STraceConvexResultCallback( SCollisionQueryFilter const * _QueryFilter, float _RayLength, TPodVector< SCollisionTraceResult > & _Result )
         : RayLength( _RayLength )
         , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
         , Result( _Result )
@@ -1286,10 +1286,10 @@ struct STraceConvexResultCallback : btCollisionWorld::ConvexResultCallback
 
     float RayLength;
     SCollisionQueryFilter const & QueryFilter;
-    TPodArray< SCollisionTraceResult > & Result;
+    TPodVector< SCollisionTraceResult > & Result;
 };
 
-bool AWorldPhysics::Trace( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter ) const
+bool AWorldPhysics::Trace( TPodVector< SCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter ) const
 {
     if ( !_QueryFilter ) {
         _QueryFilter = &DefaultCollisionQueryFilter;
@@ -1386,7 +1386,7 @@ bool AWorldPhysics::TraceBox( SCollisionTraceResult & _Result, Float3 const & _M
 }
 
 // TODO: Check TraceBox2 and add TraceSphere2, TraceCylinder2 etc
-bool AWorldPhysics::TraceBox2( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter ) const
+bool AWorldPhysics::TraceBox2( TPodVector< SCollisionTraceResult > & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter ) const
 {
     Float3 boxPosition = ( _Maxs + _Mins ) * 0.5f;
     Float3 halfExtents = ( _Maxs - _Mins ) * 0.5f;
@@ -1507,7 +1507,7 @@ bool AWorldPhysics::TraceConvex( SCollisionTraceResult & _Result, SConvexSweepTe
 
 struct SQueryCollisionObjectsCallback : public btCollisionWorld::ContactResultCallback
 {
-    SQueryCollisionObjectsCallback( TPodArray< AHitProxy * > & _Result, SCollisionQueryFilter const * _QueryFilter )
+    SQueryCollisionObjectsCallback( TPodVector< AHitProxy * > & _Result, SCollisionQueryFilter const * _QueryFilter )
         : Result( _Result )
         , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
     {
@@ -1549,13 +1549,13 @@ struct SQueryCollisionObjectsCallback : public btCollisionWorld::ContactResultCa
         Result.Append( HitProxy );
     }
 
-    TPodArray< AHitProxy * > & Result;
+    TPodVector< AHitProxy * > & Result;
     SCollisionQueryFilter const & QueryFilter;
 };
 
 struct SQueryCollisionCallback : public btCollisionWorld::ContactResultCallback
 {
-    SQueryCollisionCallback( TPodArray< SCollisionQueryResult > & _Result, SCollisionQueryFilter const * _QueryFilter )
+    SQueryCollisionCallback( TPodVector< SCollisionQueryResult > & _Result, SCollisionQueryFilter const * _QueryFilter )
         : Result( _Result )
         , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
     {
@@ -1602,13 +1602,13 @@ struct SQueryCollisionCallback : public btCollisionWorld::ContactResultCallback
         //contact.Impulse = cp.m_appliedImpulse;
     }
 
-    TPodArray< SCollisionQueryResult > & Result;
+    TPodVector< SCollisionQueryResult > & Result;
     SCollisionQueryFilter const & QueryFilter;
 };
 
 struct SQueryActorsCallback : public btCollisionWorld::ContactResultCallback
 {
-    SQueryActorsCallback( TPodArray< AActor * > & _Result, SCollisionQueryFilter const * _QueryFilter )
+    SQueryActorsCallback( TPodVector< AActor * > & _Result, SCollisionQueryFilter const * _QueryFilter )
         : Result( _Result )
         , QueryFilter( _QueryFilter ? *_QueryFilter : DefaultCollisionQueryFilter )
     {
@@ -1647,7 +1647,7 @@ struct SQueryActorsCallback : public btCollisionWorld::ContactResultCallback
         }
     }
 
-    TPodArray< AActor * > & Result;
+    TPodVector< AActor * > & Result;
     SCollisionQueryFilter const & QueryFilter;
 };
 
@@ -1662,7 +1662,7 @@ static void CollisionShapeContactTest( btDiscreteDynamicsWorld const * InWorld, 
 //    physWorld->removeRigidBody( tempBody );
 }
 
-void AWorldPhysics::QueryHitProxies_Sphere( TPodArray< AHitProxy * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) const
+void AWorldPhysics::QueryHitProxies_Sphere( TPodVector< AHitProxy * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) const
 {
     SQueryCollisionObjectsCallback callback( _Result, _QueryFilter );
     btSphereShape shape( _Radius );
@@ -1670,7 +1670,7 @@ void AWorldPhysics::QueryHitProxies_Sphere( TPodArray< AHitProxy * > & _Result, 
     CollisionShapeContactTest( DynamicsWorld.GetObject(), _Position, &shape, callback );
 }
 
-void AWorldPhysics::QueryHitProxies_Box( TPodArray< AHitProxy * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) const
+void AWorldPhysics::QueryHitProxies_Box( TPodVector< AHitProxy * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) const
 {
     SQueryCollisionObjectsCallback callback( _Result, _QueryFilter );
     btBoxShape shape( btVectorToFloat3( _HalfExtents ) );
@@ -1678,12 +1678,12 @@ void AWorldPhysics::QueryHitProxies_Box( TPodArray< AHitProxy * > & _Result, Flo
     CollisionShapeContactTest( DynamicsWorld.GetObject(), _Position, &shape, callback );
 }
 
-void AWorldPhysics::QueryHitProxies( TPodArray< AHitProxy * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter ) const
+void AWorldPhysics::QueryHitProxies( TPodVector< AHitProxy * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter ) const
 {
     QueryHitProxies_Box( _Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter );
 }
 
-void AWorldPhysics::QueryActors_Sphere( TPodArray< AActor * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) const
+void AWorldPhysics::QueryActors_Sphere( TPodVector< AActor * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) const
 {
     SQueryActorsCallback callback( _Result, _QueryFilter );
     btSphereShape shape( _Radius );
@@ -1691,7 +1691,7 @@ void AWorldPhysics::QueryActors_Sphere( TPodArray< AActor * > & _Result, Float3 
     CollisionShapeContactTest( DynamicsWorld.GetObject(), _Position, &shape, callback );
 }
 
-void AWorldPhysics::QueryActors_Box( TPodArray< AActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) const
+void AWorldPhysics::QueryActors_Box( TPodVector< AActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) const
 {
     SQueryActorsCallback callback( _Result, _QueryFilter );
     btBoxShape shape( btVectorToFloat3( _HalfExtents ) );
@@ -1699,12 +1699,12 @@ void AWorldPhysics::QueryActors_Box( TPodArray< AActor * > & _Result, Float3 con
     CollisionShapeContactTest( DynamicsWorld.GetObject(), _Position, &shape, callback );
 }
 
-void AWorldPhysics::QueryActors( TPodArray< AActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter ) const
+void AWorldPhysics::QueryActors( TPodVector< AActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter ) const
 {
     QueryActors_Box( _Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter );
 }
 
-void AWorldPhysics::QueryCollision_Sphere( TPodArray< SCollisionQueryResult > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) const
+void AWorldPhysics::QueryCollision_Sphere( TPodVector< SCollisionQueryResult > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) const
 {
     SQueryCollisionCallback callback( _Result, _QueryFilter );
     btSphereShape shape( _Radius );
@@ -1712,7 +1712,7 @@ void AWorldPhysics::QueryCollision_Sphere( TPodArray< SCollisionQueryResult > & 
     CollisionShapeContactTest( DynamicsWorld.GetObject(), _Position, &shape, callback );
 }
 
-void AWorldPhysics::QueryCollision_Box( TPodArray< SCollisionQueryResult > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) const
+void AWorldPhysics::QueryCollision_Box( TPodVector< SCollisionQueryResult > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) const
 {
     SQueryCollisionCallback callback( _Result, _QueryFilter );
     btBoxShape shape( btVectorToFloat3( _HalfExtents ) );
@@ -1720,7 +1720,7 @@ void AWorldPhysics::QueryCollision_Box( TPodArray< SCollisionQueryResult > & _Re
     CollisionShapeContactTest( DynamicsWorld.GetObject(), _Position, &shape, callback );
 }
 
-void AWorldPhysics::QueryCollision( TPodArray< SCollisionQueryResult > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter ) const
+void AWorldPhysics::QueryCollision( TPodVector< SCollisionQueryResult > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter ) const
 {
     QueryCollision_Box( _Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter );
 }

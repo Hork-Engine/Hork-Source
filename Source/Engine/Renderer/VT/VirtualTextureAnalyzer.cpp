@@ -32,6 +32,7 @@ SOFTWARE.
 #include "QuadTree.h"
 #include "../RenderLocal.h"
 #include <Runtime/Public/ScopedTimeCheck.h>
+#include <Runtime/Public/Runtime.h>
 
 AVirtualTextureFeedbackAnalyzer::AVirtualTextureFeedbackAnalyzer()
     : SwapIndex( 0 )
@@ -114,7 +115,7 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
         //    continue;
         //}
 
-        int64_t time = GRuntime.SysMilliseconds();
+        int64_t time = Core::SysMilliseconds();
 
         // NOTE: We can't use THash now becouse our allocators are not support multithreading
         // for better performance.
@@ -180,7 +181,7 @@ void AVirtualTextureFeedbackAnalyzer::ClearQueue()
     QueueLoadPos = 0;
 }
 
-void AVirtualTextureFeedbackAnalyzer::SubmitPages( TPodArray< SPageDesc > const & Pages )
+void AVirtualTextureFeedbackAnalyzer::SubmitPages( TPodVector< SPageDesc > const & Pages )
 {
     AN_ASSERT( Pages.Size() < MAX_QUEUE_LENGTH );
 

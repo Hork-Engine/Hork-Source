@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Core/Public/PoolAllocator.h>
-#include <Core/Public/PodArray.h>
+#include <Core/Public/PodVector.h>
 #include <RenderCore/Device.h>
 
 constexpr size_t VERTEX_MEMORY_GPU_BLOCK_SIZE = 32<<20; // 32 MB
@@ -169,9 +169,9 @@ private:
     };
 
     TRef< RenderCore::IDevice > RenderDevice;
-    TPodArray< SVertexHandle * > Handles;
-    TPodArray< SVertexHandle * > HugeHandles;
-    TPodArray< SBlock > Blocks;
+    TPodVector< SVertexHandle * > Handles;
+    TPodVector< SVertexHandle * > HugeHandles;
+    TPodVector< SBlock > Blocks;
     TStdVector< TRef< RenderCore::IBuffer > > BufferHandles;
     TPoolAllocator< SVertexHandle > HandlePool;
 

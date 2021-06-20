@@ -82,8 +82,8 @@ void ASoftMeshComponent::RecreateSoftBody() {
         return;
     }
 
-    TPodArray< SSoftbodyLink > const & softbodyLinks = sourceMesh->GetSoftbodyLinks();
-    TPodArray< SSoftbodyFace > const & softbodyFaces = sourceMesh->GetSoftbodyFaces();
+    TPodVector< SSoftbodyLink > const & softbodyLinks = sourceMesh->GetSoftbodyLinks();
+    TPodVector< SSoftbodyFace > const & softbodyFaces = sourceMesh->GetSoftbodyFaces();
 
     if ( softbodyFaces.IsEmpty() || softbodyLinks.IsEmpty() ) {
         // TODO: Warning?

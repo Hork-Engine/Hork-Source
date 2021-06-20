@@ -266,8 +266,16 @@ Forbid to copy object
 
 */
 #define AN_FORBID_COPY( _Class ) \
-    _Class( const _Class & ) = delete; \
-    _Class & operator=( const _Class & ) = delete;
+    _Class( _Class const & ) = delete; \
+    _Class & operator=( _Class const & ) = delete;
+
+class ANoncopyable
+{
+    AN_FORBID_COPY( ANoncopyable )
+
+public:
+    ANoncopyable() {}
+};
 
 
 /*

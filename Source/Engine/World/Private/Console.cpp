@@ -36,6 +36,7 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/InputDefs.h>
 
+#include <Core/Public/Core.h>
 #include <Core/Public/Utf8.h>
 #include <Core/Public/Color.h>
 
@@ -327,9 +328,7 @@ void AConsole::InsertUTF8Text( const char * _Utf8 )
 
 void AConsole::InsertClipboardText()
 {
-    AString const & clipboard = GRuntime.GetClipboard();
-
-    InsertUTF8Text( clipboard.CStr() );
+    InsertUTF8Text( Core::GetClipboard() );
 }
 
 void AConsole::CompleteString( ACommandContext & _CommandCtx, const char * _Str )

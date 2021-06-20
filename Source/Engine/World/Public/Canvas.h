@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Renderer/RenderDefs.h>
-#include <Core/Public/PodArray.h>
+#include <Core/Public/PodVector.h>
 #include <World/Public/Resource/FontAtlas.h>
 #include "imdrawlist.h"
 
@@ -138,7 +138,7 @@ public:
     // Cursor
     void DrawCursor( EDrawCursor _Cursor, Float2 const & _Position, AColor4 const & _Color, AColor4 const & _BorderColor, AColor4 const & _ShadowColor, const float _Scale = 1.0f );
 
-    TPodArray< SViewport > const & GetViewports() { return Viewports; }
+    TPodVector< SViewport > const & GetViewports() { return Viewports; }
 
     ImDrawList const & GetDrawList() const { return DrawList; }
 
@@ -161,9 +161,9 @@ private:
     int Width = 0;
     int Height = 0;
 
-    TPodArray< SViewport > Viewports;
+    TPodVector< SViewport > Viewports;
 
     ImDrawListSharedData DrawListSharedData;
     ImDrawList DrawList;
-    TPodArray< AFont const * > FontStack;
+    TPodVector< AFont const * > FontStack;
 };

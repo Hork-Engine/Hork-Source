@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Core/Public/CriticalError.h>
+#include <Core/Public/Core.h>
 #include <Core/Public/WindowsDefs.h>
 #include <Core/Public/CoreMath.h>
 #include <Core/Public/Logger.h>

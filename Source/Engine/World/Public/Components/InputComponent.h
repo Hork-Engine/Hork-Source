@@ -163,7 +163,7 @@ private:
     AInputMappings * Parent = nullptr;
 
     /** Keys mapped to this axis */
-    //TPodArray< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
+    //TPodVector< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
 
     /** Mouse axes mapped to this axis */
     //uint8_t MappedMouseAxes = 0;
@@ -192,7 +192,7 @@ private:
     AInputMappings * Parent = nullptr;
 
     /** Keys mapped to this action */
-    //TPodArray< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
+    //TPodVector< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
 
     int IndexInArrayOfActions = 0;
 };
@@ -232,8 +232,8 @@ public:
 
     void UnmapAll();
 
-    const TPodArray< AInputAxis * > & GetAxes() const { return Axes; }
-    const TPodArray< AInputAction * > & GetActions() const { return Actions; }
+    const TPodVector< AInputAxis * > & GetAxes() const { return Axes; }
+    const TPodVector< AInputAction * > & GetActions() const { return Actions; }
 
 private:
     struct SMapping
@@ -245,15 +245,15 @@ private:
         byte ModMask;
     };
 
-    using AArrayOfMappings = TPodArray< SMapping >;
+    using AArrayOfMappings = TPodVector< SMapping >;
 
     AArrayOfMappings * GetKeyMappings( int _DevId, int _KeyToken );
 
     /** All known axes */
-    TPodArray< AInputAxis * > Axes;
+    TPodVector< AInputAxis * > Axes;
 
     /** All known actions */
-    TPodArray< AInputAction * > Actions;
+    TPodVector< AInputAction * > Actions;
 
     AArrayOfMappings KeyboardMappings[ MAX_KEYBOARD_BUTTONS ];
     AArrayOfMappings MouseMappings[ MAX_MOUSE_BUTTONS ];

@@ -87,8 +87,8 @@ public:
 
     void Purge();
 
-    TPodArray< SAnimationChannel > const & GetChannels() const { return Channels; }
-    TPodArray< STransform > const & GetTransforms() const { return Transforms; }
+    TPodVector< SAnimationChannel > const & GetChannels() const { return Channels; }
+    TPodVector< STransform > const & GetTransforms() const { return Transforms; }
 
     unsigned short GetChannelIndex( int _JointIndex ) const;
 
@@ -97,7 +97,7 @@ public:
     float GetFrameRate() const { return FrameRate; }
     float GetDurationInSeconds() const { return DurationInSeconds; }
     float GetDurationNormalizer() const { return DurationNormalizer; }
-    TPodArray< BvAxisAlignedBox > const & GetBoundingBoxes() const { return Bounds; }
+    TPodVector< BvAxisAlignedBox > const & GetBoundingBoxes() const { return Bounds; }
     bool IsValid() const { return bIsAnimationValid; }
 
 protected:
@@ -113,10 +113,10 @@ protected:
     const char * GetDefaultResourcePath() const override { return "/Default/Animation/Default"; }
 
 private:
-    TPodArray< SAnimationChannel > Channels;
-    TPodArray< STransform > Transforms;
-    TPodArray< unsigned short > ChannelsMap;
-    TPodArray< BvAxisAlignedBox > Bounds;
+    TPodVector< SAnimationChannel > Channels;
+    TPodVector< STransform > Transforms;
+    TPodVector< unsigned short > ChannelsMap;
+    TPodVector< BvAxisAlignedBox > Bounds;
     int     MinNodeIndex = 0;
     int     MaxNodeIndex = 0;
     int     FrameCount = 0;     // frames count

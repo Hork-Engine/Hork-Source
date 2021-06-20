@@ -292,29 +292,29 @@ void BindShadowCascades( size_t StreamHandle );
 
 void SaveSnapshot( RenderCore::ITexture & _Texture );
 
-AString LoadShader( const char * FileName, SMaterialShader const * Predefined = nullptr );
-AString LoadShaderFromString( const char * FileName, const char * Source, SMaterialShader const * Predefined = nullptr );
+AString LoadShader( AStringView FileName, SMaterialShader const * Predefined = nullptr );
+AString LoadShaderFromString( AStringView FileName, AStringView Source, SMaterialShader const * Predefined = nullptr );
 
-void CreateShader( RenderCore::SHADER_TYPE _ShaderType, TPodArray< const char * > _SourcePtrs, TRef< RenderCore::IShaderModule > & _Module );
+void CreateShader( RenderCore::SHADER_TYPE _ShaderType, TPodVector< const char * > _SourcePtrs, TRef< RenderCore::IShaderModule > & _Module );
 void CreateShader( RenderCore::SHADER_TYPE _ShaderType, const char * _SourcePtr, TRef< RenderCore::IShaderModule > & _Module );
 void CreateShader( RenderCore::SHADER_TYPE _ShaderType, AString const & _SourcePtr, TRef< RenderCore::IShaderModule > & _Module );
 
-void CreateVertexShader( const char * FileName, RenderCore::SVertexAttribInfo const * _VertexAttribs, int _NumVertexAttribs, TRef< RenderCore::IShaderModule > & _Module );
-void CreateTessControlShader( const char * FileName, TRef< RenderCore::IShaderModule > & _Module );
-void CreateTessEvalShader( const char * FileName, TRef< RenderCore::IShaderModule > & _Module );
-void CreateGeometryShader( const char * FileName, TRef< RenderCore::IShaderModule > & _Module );
-void CreateFragmentShader( const char * FileName, TRef< RenderCore::IShaderModule > & _Module );
+void CreateVertexShader( AStringView FileName, RenderCore::SVertexAttribInfo const * _VertexAttribs, int _NumVertexAttribs, TRef< RenderCore::IShaderModule > & _Module );
+void CreateTessControlShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module );
+void CreateTessEvalShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module );
+void CreateGeometryShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module );
+void CreateFragmentShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module );
 
 void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline,
-                                   const char * VertexShader,
-                                   const char * FragmentShader,
+                                   AStringView VertexShader,
+                                   AStringView FragmentShader,
                                    RenderCore::SPipelineResourceLayout const * pResourceLayout = nullptr,
                                    RenderCore::BLENDING_PRESET BlendingPreset = RenderCore::BLENDING_NO_BLEND );
 
 void CreateFullscreenQuadPipelineGS( TRef< RenderCore::IPipeline > * ppPipeline,
-                                     const char * VertexShader,
-                                     const char * FragmentShader,
-                                     const char * GeometryShader,
+                                     AStringView VertexShader,
+                                     AStringView FragmentShader,
+                                     AStringView GeometryShader,
                                      RenderCore::SPipelineResourceLayout const * pResourceLayout = nullptr,
                                      RenderCore::BLENDING_PRESET BlendingPreset = RenderCore::BLENDING_NO_BLEND );
 

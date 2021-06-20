@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include <Runtime/Public/VertexMemoryGPU.h>
-#include <Core/Public/CriticalError.h>
+#include <Core/Public/Core.h>
 #include <Core/Public/CoreMath.h>
 
 AVertexMemoryGPU::AVertexMemoryGPU( RenderCore::IDevice * Device )

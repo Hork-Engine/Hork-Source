@@ -31,10 +31,10 @@ SOFTWARE.
 #pragma once
 
 #include "CoreMath.h"
-#include "PodArray.h"
+#include "PodVector.h"
 #include "Ref.h"
 
-using AClipperContour = TPodArray< Double2 >;
+using AClipperContour = TPodVector< Double2 >;
 
 struct SClipperPolygon
 {

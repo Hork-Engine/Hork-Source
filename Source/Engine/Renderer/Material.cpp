@@ -509,7 +509,7 @@ static const SVertexAttribInfo VertexAttribsTerrainInstanced[] = {
 void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
     SPipelineCreateInfo pipelineCI;
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
@@ -607,7 +607,7 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
     SPipelineCreateInfo pipelineCI;
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
@@ -709,7 +709,7 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
 void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
     SPipelineCreateInfo pipelineCI;
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
@@ -813,7 +813,7 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _Skinned, STextureSampler const * Samplers, int NumSamplers )
 {
     SPipelineCreateInfo pipelineCI;
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
 
     SBlendingStateInfo & bsd = pipelineCI.BS;
     bsd.RenderTargetSlots[0].SetBlendingPreset( BLENDING_ALPHA );
@@ -896,7 +896,7 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
 void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, STextureSampler const * Samplers, int NumSamplers )
 {
     SPipelineCreateInfo pipelineCI;
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = POLYGON_CULL_DISABLED;
@@ -982,7 +982,7 @@ static RenderCore::BLENDING_PRESET GetBlendingPreset( EColorBlending _Blending )
 void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
     SPipelineCreateInfo pipelineCI;
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
@@ -1126,7 +1126,7 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
     SPipelineCreateInfo pipelineCI;
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
@@ -1245,7 +1245,7 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
 void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
     SPipelineCreateInfo pipelineCI;
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
@@ -1364,7 +1364,7 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
 void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
     SPipelineCreateInfo pipelineCI;
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
 #if defined SHADOWMAP_VSM
@@ -1488,7 +1488,7 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, STextureSampler const * Samplers, int NumSamplers )
 {
     SPipelineCreateInfo pipelineCI;
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;
@@ -1581,7 +1581,7 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
 void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
     SPipelineCreateInfo pipelineCI;
-    TPodArray< const char * > sources;
+    TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = _CullMode;

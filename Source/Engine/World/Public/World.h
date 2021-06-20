@@ -85,7 +85,7 @@ struct SActorSpawnInfo
     AClassMeta const * ActorClassMeta() const { return ActorTypeClassMeta; }
 
     template< typename AttributeType >
-    void SetAttribute( AString const & AttributeName, AttributeType const & AttributeValue )
+    void SetAttribute( AStringView AttributeName, AttributeType const & AttributeValue )
     {
         AString s;
 
@@ -98,7 +98,7 @@ struct SActorSpawnInfo
 
 private:
 
-    void _SetAttribute( AString const & AttributeName, AString const & AttributeValue );
+    void _SetAttribute( AStringView AttributeName, AString const & AttributeValue );
 
 protected:
 
@@ -185,19 +185,19 @@ struct SWorldRaycastPrimitive
 struct SWorldRaycastResult
 {
     /** Array of hits */
-    TPodArray< STriangleHitResult > Hits;
+    TPodVector< STriangleHitResult > Hits;
 
     /** Array of primitives and surfaces */
-    TPodArray< SWorldRaycastPrimitive > Primitives;
+    TPodVector< SWorldRaycastPrimitive > Primitives;
 
     /** Sort raycast result by hit distance */
     void Sort()
     {
         struct ASortPrimitives
         {
-            TPodArray< STriangleHitResult > const & Hits;
+            TPodVector< STriangleHitResult > const & Hits;
 
-            ASortPrimitives( TPodArray< STriangleHitResult > const & _Hits ) : Hits(_Hits) {}
+            ASortPrimitives( TPodVector< STriangleHitResult > const & _Hits ) : Hits(_Hits) {}
 
             bool operator() ( SWorldRaycastPrimitive const & _A, SWorldRaycastPrimitive const & _B ) {
                 const float hitDistanceA = Hits[_A.ClosestHit].Distance;
@@ -302,7 +302,7 @@ public:
     static void DestroyWorlds();
 
     /** Get array of worlds */
-    static TPodArray< AWorld * > const & GetWorlds() { return Worlds; }
+    static TPodVector< AWorld * > const & GetWorlds() { return Worlds; }
 
     /** Tick the worlds */
     static void UpdateWorlds( float _TimeStep );
@@ -358,7 +358,7 @@ public:
     AActor * LoadActor( ADocValue const * pObject, ALevel * _Level = nullptr, bool bInEditor = false );
 
     /** Get all actors in the world */
-    TPodArray< AActor * > const & GetActors() const { return Actors; }
+    TPodVector< AActor * > const & GetActors() const { return Actors; }
 
     /** Serialize world to the document */
     TRef< ADocObject > Serialize() override;
@@ -379,7 +379,7 @@ public:
     ALevel * GetPersistentLevel() { return PersistentLevel; }
 
     /** Get all levels in the world */
-    TPodArray< ALevel * > const & GetArrayOfLevels() const { return ArrayOfLevels; }
+    TPodVector< ALevel * > const & GetArrayOfLevels() const { return ArrayOfLevels; }
 
     /** Pause the game. Freezes world and actor ticking since the next game tick. */
     void SetPaused( bool _Paused );
@@ -436,7 +436,7 @@ public:
     bool Raycast( SWorldRaycastResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr ) const;
 
     /** Per-bounds raycast */
-    bool RaycastBounds( TPodArray< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr ) const;
+    bool RaycastBounds( TPodVector< SBoxHitResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr ) const;
 
     /** Per-triangle raycast */
     bool RaycastClosest( SWorldRaycastClosestResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr ) const;
@@ -445,7 +445,7 @@ public:
     bool RaycastClosestBounds( SBoxHitResult & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SWorldRaycastFilter const * _Filter = nullptr ) const;
 
     /** Trace collision bodies */
-    bool Trace( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    bool Trace( TPodVector< SCollisionTraceResult > & _Result, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
     {
         return WorldPhysics.Trace( _Result, _RayStart, _RayEnd, _QueryFilter );
     }
@@ -469,7 +469,7 @@ public:
     }
 
     /** Trace collision bodies */
-    bool TraceBox2( TPodArray< SCollisionTraceResult > & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    bool TraceBox2( TPodVector< SCollisionTraceResult > & _Result, Float3 const & _Mins, Float3 const & _Maxs, Float3 const & _RayStart, Float3 const & _RayEnd, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
     {
         return WorldPhysics.TraceBox2( _Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter );
     }
@@ -493,61 +493,61 @@ public:
     }
 
     /** Query objects in sphere */
-    void QueryHitProxies( TPodArray< AHitProxy * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    void QueryHitProxies( TPodVector< AHitProxy * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
     {
         WorldPhysics.QueryHitProxies_Sphere( _Result, _Position, _Radius, _QueryFilter );
     }
 
     /** Query objects in box */
-    void QueryHitProxies( TPodArray< AHitProxy * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    void QueryHitProxies( TPodVector< AHitProxy * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
     {
         WorldPhysics.QueryHitProxies_Box( _Result, _Position, _HalfExtents, _QueryFilter );
     }
 
     /** Query objects in AABB */
-    void QueryHitProxies( TPodArray< AHitProxy * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    void QueryHitProxies( TPodVector< AHitProxy * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
     {
         WorldPhysics.QueryHitProxies( _Result, _BoundingBox, _QueryFilter );
     }
 
     /** Query actors in sphere */
-    void QueryActors( TPodArray< AActor * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    void QueryActors( TPodVector< AActor * > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
     {
         WorldPhysics.QueryActors_Sphere( _Result, _Position, _Radius, _QueryFilter );
     }
 
     /** Query actors in box */
-    void QueryActors( TPodArray< AActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    void QueryActors( TPodVector< AActor * > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
     {
         WorldPhysics.QueryActors_Box( _Result, _Position, _HalfExtents, _QueryFilter );
     }
 
     /** Query actors in AABB */
-    void QueryActors( TPodArray< AActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
+    void QueryActors( TPodVector< AActor * > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter = nullptr ) const
     {
         WorldPhysics.QueryActors( _Result, _BoundingBox, _QueryFilter );
     }
 
     /** Query collisions with sphere */
-    void QueryCollision_Sphere( TPodArray< SCollisionQueryResult > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) const
+    void QueryCollision_Sphere( TPodVector< SCollisionQueryResult > & _Result, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter ) const
     {
         WorldPhysics.QueryCollision_Sphere( _Result, _Position, _Radius, _QueryFilter );
     }
 
     /** Query collisions with box */
-    void QueryCollision_Box( TPodArray< SCollisionQueryResult > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) const
+    void QueryCollision_Box( TPodVector< SCollisionQueryResult > & _Result, Float3 const & _Position, Float3 const & _HalfExtents, SCollisionQueryFilter const * _QueryFilter ) const
     {
         WorldPhysics.QueryCollision_Box( _Result, _Position, _HalfExtents, _QueryFilter );
     }
 
     /** Query collisions with AABB */
-    void QueryCollision( TPodArray< SCollisionQueryResult > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter ) const
+    void QueryCollision( TPodVector< SCollisionQueryResult > & _Result, BvAxisAlignedBox const & _BoundingBox, SCollisionQueryFilter const * _QueryFilter ) const
     {
         WorldPhysics.QueryCollision( _Result, _BoundingBox, _QueryFilter );
     }
 
     /** Query visible primitives */
-    void QueryVisiblePrimitives( TPodArray< SPrimitiveDef * > & VisPrimitives, TPodArray< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery );
+    void QueryVisiblePrimitives( TPodVector< SPrimitiveDef * > & VisPrimitives, TPodVector< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery );
 
     /** Apply amount of damage in specified radius */
     void ApplyRadialDamage( float _DamageAmount, Float3 const & _Position, float _Radius, SCollisionQueryFilter const * _QueryFilter = nullptr );
@@ -617,7 +617,7 @@ private:
     void HandlePrePhysics( float _TimeStep );
     void HandlePostPhysics( float _TimeStep );
 
-    TPodArray< AActor * > Actors;
+    TPodVector< AActor * > Actors;
 
     bool bPauseRequest = false;
     bool bUnpauseRequest = false;
@@ -638,7 +638,7 @@ private:
         ATimer * TimerCb;
     };
 
-    TPodArray< STimerCmd > TimerCmd;
+    TPodVector< STimerCmd > TimerCmd;
 
     ATimer * TimerList = nullptr;
     ATimer * TimerListTail = nullptr;
@@ -653,10 +653,10 @@ private:
     static AWorld * PendingKillWorlds;
 
     // All existing worlds
-    static TPodArray< AWorld * > Worlds;
+    static TPodVector< AWorld * > Worlds;
 
     TRef< ALevel > PersistentLevel;
-    TPodArray< ALevel * > ArrayOfLevels;
+    TPodVector< ALevel * > ArrayOfLevels;
 
     /** Scale audio volume in the entire world */
     float AudioVolume = 1.0f;
@@ -744,7 +744,7 @@ struct TActorIterator
     }
 
 private:
-    TPodArray< AActor * > const & Actors;
+    TPodVector< AActor * > const & Actors;
     T * Actor;
     int i;
 };
@@ -792,7 +792,7 @@ struct TActorIterator2 {
     }
 
 private:
-    TPodArray< AActor * > const & Actors;
+    TPodVector< AActor * > const & Actors;
     int i;
 };
 
@@ -911,6 +911,6 @@ struct TComponentIterator2
     }
 
 private:
-    TPodArray< AActorComponent * > const & Components;
+    TPodVector< AActorComponent * > const & Components;
     int i;
 };

@@ -31,7 +31,7 @@ SOFTWARE.
 #include "SphereMesh.h"
 #include "RenderLocal.h"
 
-#include <Core/Public/PodArray.h>
+#include <Core/Public/PodVector.h>
 #include <Core/Public/CoreMath.h>
 
 using namespace RenderCore;
@@ -45,8 +45,8 @@ ASphereMesh::ASphereMesh( int _HDiv, int _VDiv )
 
     AN_ASSERT_( numVerts < 65536, "Too many vertices" );
 
-    TPodArray< Float3 > vertices;
-    TPodArray< unsigned short > indices;
+    TPodVector< Float3 > vertices;
+    TPodVector< unsigned short > indices;
 
     vertices.Resize( numVerts );
     indices.Resize( numIndices );

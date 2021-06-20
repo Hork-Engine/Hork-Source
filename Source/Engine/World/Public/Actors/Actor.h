@@ -39,7 +39,7 @@ class APawn;
 class AActorComponent;
 class ASceneComponent;
 
-using AArrayOfActorComponents = TPodArray< AActorComponent *, 8 >;
+using AArrayOfActorComponents = TPodVector< AActorComponent *, 8 >;
 
 #define AN_ACTOR( _Class, _SuperClass ) \
     AN_FACTORY_CLASS( AActor::Factory(), _Class, _SuperClass ) \

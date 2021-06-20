@@ -30,7 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Runtime/Public/Runtime.h>
+#include <Core/Public/Core.h>
+#include <Core/Public/Logger.h>
 #include <Runtime/Public/RuntimeVariable.h>
 
 /**
@@ -49,7 +50,7 @@ struct AScopedTimeCheck
 
         if ( rt_ScopedTimeCheck )
         {
-            Milliseconds = GRuntime.SysMilliseconds();
+            Milliseconds = Core::SysMilliseconds();
         }
     }
 
@@ -59,7 +60,7 @@ struct AScopedTimeCheck
 
         if ( rt_ScopedTimeCheck )
         {
-            GLogger.Printf( "SCOPED_TIME_CHECK: %s : %d ms\n", Name, GRuntime.SysMilliseconds() - Milliseconds );
+            GLogger.Printf( "SCOPED_TIME_CHECK: %s : %d ms\n", Name, Core::SysMilliseconds() - Milliseconds );
         }
     }
 };

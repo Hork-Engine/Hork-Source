@@ -192,13 +192,13 @@ private:
     int AddCustomRect( unsigned int id, int width, int height );
 
     // Cache-friendly glyph advanceX
-    TPodArray< float > WideCharAdvanceX;
+    TPodVector< float > WideCharAdvanceX;
     // AdvanceX for fallback character
     float FallbackAdvanceX = 0.0f;
     // Indexed by widechar, holds indices for corresponding glyphs
-    TPodArray< unsigned short > WideCharToGlyph;
+    TPodVector< unsigned short > WideCharToGlyph;
     // Font glyphs
-    TPodArray< SFontGlyph > Glyphs;
+    TPodVector< SFontGlyph > Glyphs;
     // Glyph for fallback character
     SFontGlyph const * FallbackGlyph = nullptr;
     // Font size in pixels
@@ -218,5 +218,5 @@ private:
     // Texture object
     TRef< ATexture > AtlasTexture;
     // Rectangles for packing custom texture data into the atlas.
-    TPodArray< SFontCustomRect > CustomRects;
+    TPodVector< SFontCustomRect > CustomRects;
 };

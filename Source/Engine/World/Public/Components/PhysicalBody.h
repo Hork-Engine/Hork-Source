@@ -70,8 +70,8 @@ enum EAINavigationBehavior
 
 struct SDebugDrawCache
 {
-    TPodArrayHeap< Float3 > Vertices;
-    TPodArrayHeap< unsigned int > Indices;
+    TPodVectorHeap< Float3 > Vertices;
+    TPodVectorHeap< unsigned int > Indices;
     bool bDirty;
 };
 
@@ -308,7 +308,7 @@ public:
 
     void ApplyTorqueImpulse( Float3 const & _Torque );
 
-    void GetCollisionBodiesWorldBounds( TPodArray< BvAxisAlignedBox > & _BoundingBoxes ) const;
+    void GetCollisionBodiesWorldBounds( TPodVector< BvAxisAlignedBox > & _BoundingBoxes ) const;
 
     void GetCollisionWorldBounds( BvAxisAlignedBox & _BoundingBox ) const;
 
@@ -321,11 +321,11 @@ public:
     int GetCollisionBodiesCount() const;
 
     /** Create 3d mesh model from collision body composition. Store coordinates in world space. */
-    void GatherCollisionGeometry( TPodArrayHeap< Float3 > & _Vertices, TPodArrayHeap< unsigned int > & _Indices ) const;
+    void GatherCollisionGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const;
 
-    void CollisionContactQuery( TPodArray< AHitProxy * > & _Result ) const;
+    void CollisionContactQuery( TPodVector< AHitProxy * > & _Result ) const;
 
-    void CollisionContactQueryActor( TPodArray< AActor * > & _Result ) const;
+    void CollisionContactQueryActor( TPodVector< AActor * > & _Result ) const;
 
 protected:
     APhysicalBody();
@@ -369,7 +369,7 @@ private:
     TRef< AHitProxy > HitProxy;
     TRef< ACollisionModel > CollisionModel;
     TRef< ACollisionInstance > CollisionInstance;
-    TPodArray< ABoneCollisionInstance * > BoneCollisionInst;
+    TPodVector< ABoneCollisionInstance * > BoneCollisionInst;
     class btRigidBody * RigidBody = nullptr;
     APhysicalBodyMotionState * MotionState = nullptr;
     TUniqueRef< SDebugDrawCache > DebugDrawCache;

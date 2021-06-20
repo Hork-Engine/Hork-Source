@@ -147,7 +147,7 @@ void AHitProxy::RemoveCollisionIgnoreActor( AActor * _Actor )
 
 struct SContactQueryCallback : public btCollisionWorld::ContactResultCallback
 {
-    SContactQueryCallback( TPodArray< AHitProxy * > & _Result, int _CollisionGroup, int _CollisionMask, AHitProxy const * _Self )
+    SContactQueryCallback( TPodVector< AHitProxy * > & _Result, int _CollisionGroup, int _CollisionMask, AHitProxy const * _Self )
         : Result( _Result )
         , Self( _Self )
     {
@@ -181,13 +181,13 @@ struct SContactQueryCallback : public btCollisionWorld::ContactResultCallback
         }
     }
 
-    TPodArray< AHitProxy * > & Result;
+    TPodVector< AHitProxy * > & Result;
     AHitProxy const * Self;
 };
 
 struct SContactQueryActorCallback : public btCollisionWorld::ContactResultCallback
 {
-    SContactQueryActorCallback( TPodArray< AActor * > & _Result, int _CollisionGroup, int _CollisionMask, AActor const * _Self )
+    SContactQueryActorCallback( TPodVector< AActor * > & _Result, int _CollisionGroup, int _CollisionMask, AActor const * _Self )
         : Result( _Result )
         , Self( _Self )
     {
@@ -221,12 +221,12 @@ struct SContactQueryActorCallback : public btCollisionWorld::ContactResultCallba
         }
     }
 
-    TPodArray< AActor * > & Result;
+    TPodVector< AActor * > & Result;
     AActor const * Self;
 };
 
 
-void AHitProxy::CollisionContactQuery( TPodArray< AHitProxy * > & _Result ) const
+void AHitProxy::CollisionContactQuery( TPodVector< AHitProxy * > & _Result ) const
 {
     SContactQueryCallback callback( _Result, CollisionGroup, CollisionMask, this );
 
@@ -245,7 +245,7 @@ void AHitProxy::CollisionContactQuery( TPodArray< AHitProxy * > & _Result ) cons
     GetWorld()->GetPhysics().GetInternal()->contactTest( CollisionObject, callback );
 }
 
-void AHitProxy::CollisionContactQueryActor( TPodArray< AActor * > & _Result ) const
+void AHitProxy::CollisionContactQueryActor( TPodVector< AActor * > & _Result ) const
 {
     SContactQueryActorCallback callback( _Result, CollisionGroup, CollisionMask, GetOwnerActor() );
 

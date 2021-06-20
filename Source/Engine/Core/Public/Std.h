@@ -33,7 +33,7 @@ SOFTWARE.
 #include "Alloc.h"
 
 #include <thread>
-#include <array>
+//#include <array>
 
 #ifdef AN_CPP20
 #define AN_NODISCARD [[nodiscard]]
@@ -42,16 +42,15 @@ SOFTWARE.
 #endif
 
 template< typename T >
-struct TStdAllocator {
+struct TStdZoneAllocator {
     typedef T value_type;
 
-    TStdAllocator() = default;
-    template< typename U > constexpr TStdAllocator( TStdAllocator< U > const & ) noexcept {}
+    TStdZoneAllocator() = default;
+    template< typename U > constexpr TStdZoneAllocator( TStdZoneAllocator< U > const & ) noexcept {}
 
     AN_NODISCARD T * allocate( std::size_t _Count ) noexcept {
-        //if ( _Count > TStdNumericLimits< std::size_t >::max() / sizeof( T ) ) {
-        //    CriticalError( "TStdAllocator: Invalid size\n" );
-        //}
+        AN_ASSERT( _Count <= TStdNumericLimits< std::size_t >::max() / sizeof( T ) );
+        
         return static_cast< T * >( GZoneMemory.Alloc( _Count * sizeof( T ) ) );
     }
 
@@ -59,15 +58,35 @@ struct TStdAllocator {
         GZoneMemory.Free( _Bytes );
     }
 };
-template< typename T, typename U > bool operator==( TStdAllocator< T > const &, TStdAllocator< U > const & ) { return true; }
-template< typename T, typename U > bool operator!=( TStdAllocator< T > const &, TStdAllocator< U > const & ) { return false; }
+template< typename T, typename U > bool operator==( TStdZoneAllocator< T > const &, TStdZoneAllocator< U > const & ) { return true; }
+template< typename T, typename U > bool operator!=( TStdZoneAllocator< T > const &, TStdZoneAllocator< U > const & ) { return false; }
 
-using AStdString = std::basic_string< char, std::char_traits< char >, TStdAllocator< char > >;
+template< typename T >
+struct TStdHeapAllocator {
+    typedef T value_type;
 
-template< typename T > class TStdVector : public std::vector< T, TStdAllocator< T > >
+    TStdHeapAllocator() = default;
+    template< typename U > constexpr TStdHeapAllocator( TStdHeapAllocator< U > const & ) noexcept {}
+
+    AN_NODISCARD T * allocate( std::size_t _Count ) noexcept {
+        AN_ASSERT( _Count <= TStdNumericLimits< std::size_t >::max() / sizeof( T ) );
+
+        return static_cast< T * >( GHeapMemory.Alloc( _Count * sizeof( T ) ) );
+    }
+
+    void deallocate( T * _Bytes, std::size_t _Count ) noexcept {
+        GHeapMemory.Free( _Bytes );
+    }
+};
+template< typename T, typename U > bool operator==( TStdHeapAllocator< T > const &, TStdHeapAllocator< U > const & ) { return true; }
+template< typename T, typename U > bool operator!=( TStdHeapAllocator< T > const &, TStdHeapAllocator< U > const & ) { return false; }
+
+using AStdString = std::basic_string< char, std::char_traits< char >, TStdZoneAllocator< char > >;
+
+template< typename T > class TStdVector : public std::vector< T, TStdZoneAllocator< T > >
 {
 public:
-    using Super = std::vector< T, TStdAllocator< T > >;
+    using Super = std::vector< T, TStdZoneAllocator< T > >;
 
     TStdVector()
     {
@@ -96,12 +115,17 @@ public:
     void ShrinkToFit() { Super::shrink_to_fit(); }
 };
 
-//template< typename T > using TStdVector = std::vector< T, TStdAllocator< T > >;
+//template< typename T > using TStdVector = std::vector< T, TStdZoneAllocator< T > >;
 template< typename T > using TStdVectorDefault = std::vector< T >;
+template< typename T > using TStdVectorZone = std::vector< T, TStdZoneAllocator< T > >;
+template< typename T > using TStdVectorHeap = std::vector< T, TStdHeapAllocator< T > >;
 
 template< typename T > using TStdNumericLimits = std::numeric_limits< T >;
 
 using AStdThread = std::thread;
+
+//template< typename T, size_t Sz >
+//using TStdArray = std::array< T, Sz >;
 
 // Type wrap
 #define TStdFunction   std::function

@@ -34,62 +34,71 @@ SOFTWARE.
 
 /**
 
-TPodArray
+TPodVector
 
 Array for POD types
 
 */
 template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator = AZoneAllocator >
-class TPodArray final {
+class TPodVector final {
 public:
     typedef T * Iterator;
     typedef const T * ConstIterator;
 
     enum { TYPE_SIZEOF = sizeof( T ) };
 
-    TPodArray()
+    TPodVector()
         : ArrayData( StaticData ), ArraySize( 0 ), ArrayCapacity( BASE_CAPACITY )
     {
-        static_assert( BASE_CAPACITY > 0, "TPodArray: Invalid BASE_CAPACITY" );
+        static_assert( BASE_CAPACITY > 0, "TPodVector: Invalid BASE_CAPACITY" );
         AN_ASSERT( IsAlignedPtr( StaticData, 16 ) );
     }
 
-    TPodArray( TPodArray const & _Array ) {
-        ArraySize = _Array.ArraySize;
-        if ( _Array.ArrayCapacity > BASE_CAPACITY ) {
-            ArrayCapacity = _Array.ArrayCapacity;
-            ArrayData = ( T * )Allocator::Inst().ClearedAlloc( TYPE_SIZEOF * ArrayCapacity );
+    TPodVector( int _Size )
+        : ArraySize( _Size )
+    {
+        AN_ASSERT( _Size >= 0 );
+        if ( _Size > BASE_CAPACITY ) {
+            ArrayCapacity = _Size;
+            ArrayData = (T *)Allocator::Inst().Alloc( TYPE_SIZEOF * ArrayCapacity );
         } else {
             ArrayCapacity = BASE_CAPACITY;
             ArrayData = StaticData;
         }
+    }
+
+    TPodVector( TPodVector const & _Array )
+        : TPodVector( _Array.ArraySize )
+    {
         Core::MemcpySSE( ArrayData, _Array.ArrayData, TYPE_SIZEOF * ArraySize );
+    }    
+
+    TPodVector( T const * _Data, int _Size )
+        : TPodVector( _Size )
+    {
+        Core::Memcpy( ArrayData, _Data, TYPE_SIZEOF * ArraySize );
     }
 
-    TPodArray( T const * _Elements, int _NumElements ) {
-        ArraySize = _NumElements;
-        if ( _NumElements > BASE_CAPACITY ) {
-            const int mod = _NumElements % GRANULARITY;
-            ArrayCapacity = mod ? _NumElements + GRANULARITY - mod : _NumElements;
-            ArrayData = ( T * )Allocator::Inst().Alloc( TYPE_SIZEOF * ArrayCapacity );
-        } else {
-            ArrayCapacity = BASE_CAPACITY;
-            ArrayData = StaticData;
-        }
-        Core::Memcpy( ArrayData, _Elements, TYPE_SIZEOF * ArraySize );
+    TPodVector( std::initializer_list< T > InitializerList )
+        : TPodVector( InitializerList.size() )
+    {
+        std::copy( InitializerList.begin(), InitializerList.end(), ArrayData );
     }
 
-    ~TPodArray() {
+    ~TPodVector()
+    {
         if ( ArrayData != StaticData ) {
             Allocator::Inst().Free( ArrayData );
         }
     }
 
-    void Clear() {
+    void Clear()
+    {
         ArraySize = 0;
     }
 
-    void Free() {
+    void Free()
+    {
         if ( ArrayData != StaticData ) {
             Allocator::Inst().Free( ArrayData );
             ArrayData = StaticData;
@@ -98,7 +107,8 @@ public:
         ArrayCapacity = BASE_CAPACITY;
     }
 
-    void ShrinkToFit() {
+    void ShrinkToFit()
+    {
         if ( ArrayData == StaticData || ArrayCapacity == ArraySize ) {
             return;
         }
@@ -120,7 +130,8 @@ public:
         ArrayCapacity = ArraySize;
     }
 
-    void Reserve( int _NewCapacity ) {
+    void Reserve( int _NewCapacity )
+    {
         if ( _NewCapacity <= ArrayCapacity ) {
             return;
         }
@@ -133,7 +144,8 @@ public:
         ArrayCapacity = _NewCapacity;
     }
 
-    void ReserveInvalidate( int _NewCapacity ) {
+    void ReserveInvalidate( int _NewCapacity )
+    {
         if ( _NewCapacity <= ArrayCapacity ) {
             return;
         }
@@ -145,40 +157,46 @@ public:
         ArrayCapacity = _NewCapacity;
     }
 
-    void Resize( int _NumElements ) {
-        if ( _NumElements > ArrayCapacity ) {
-            const int mod = _NumElements % GRANULARITY;
-            const int capacity = mod ? _NumElements + GRANULARITY - mod : _NumElements;
+    void Resize( int _Size )
+    {
+        AN_ASSERT( _Size >= 0 );
+        if ( _Size > ArrayCapacity ) {
+            const int capacity = GrowCapacity( _Size );
             Reserve( capacity );
         }
-        ArraySize = _NumElements;
+        ArraySize = _Size;
     }
 
-    void ResizeInvalidate( int _NumElements ) {
-        if ( _NumElements > ArrayCapacity ) {
-            const int mod = _NumElements % GRANULARITY;
-            const int capacity = mod ? _NumElements + GRANULARITY - mod : _NumElements;
+    void ResizeInvalidate( int _Size )
+    {
+        AN_ASSERT( _Size >= 0 );
+        if ( _Size > ArrayCapacity ) {
+            const int capacity = GrowCapacity( _Size );
             ReserveInvalidate( capacity );
         }
-        ArraySize = _NumElements;
+        ArraySize = _Size;
     }
 
-    void Memset( const int _Value ) {
+    void Memset( const int _Value )
+    {
         Core::MemsetSSE( ArrayData, _Value, TYPE_SIZEOF * ArraySize );
     }
 
-    void ZeroMem() {
+    void ZeroMem()
+    {
         Core::ZeroMemSSE( ArrayData, TYPE_SIZEOF * ArraySize );
     }
 
     /** Swap elements */
-    void Swap( int _Index1, int _Index2 ) {
+    void Swap( int _Index1, int _Index2 )
+    {
         const T tmp = (*this)[ _Index1 ];
         (*this)[ _Index1 ] = (*this)[ _Index2 ];
         (*this)[ _Index2 ] = tmp;
     }
 
-    void Reverse() {
+    void Reverse()
+    {
         const int HalfArrayLength = ArraySize >> 1;
         const int ArrayLengthMinusOne = ArraySize - 1;
         T tmp;
@@ -190,10 +208,11 @@ public:
     }
 
     /** Reverse elements order in range [ _FirstIndex ; _LastIndex ) */
-    void Reverse( int _FirstIndex, int _LastIndex ) {
-        AN_ASSERT_( _FirstIndex >= 0 && _FirstIndex < ArraySize, "TPodArray::Reverse: array index is out of bounds" );
-        AN_ASSERT_( _LastIndex >= 0 && _LastIndex <= ArraySize, "TPodArray::Reverse: array index is out of bounds" );
-        AN_ASSERT_( _FirstIndex < _LastIndex, "TPodArray::Reverse: invalid order" );
+    void Reverse( int _FirstIndex, int _LastIndex )
+    {
+        AN_ASSERT_( _FirstIndex >= 0 && _FirstIndex < ArraySize, "TPodVector::Reverse: array index is out of bounds" );
+        AN_ASSERT_( _LastIndex >= 0 && _LastIndex <= ArraySize, "TPodVector::Reverse: array index is out of bounds" );
+        AN_ASSERT_( _FirstIndex < _LastIndex, "TPodVector::Reverse: invalid order" );
 
         const int HalfRangeLength = ( _LastIndex - _FirstIndex ) >> 1;
         const int LastIndexMinusOne = _LastIndex - 1;
@@ -206,17 +225,17 @@ public:
         }
     }
 
-    void Insert( int _Index, const T & _Element ) {
+    void Insert( int _Index, const T & _Element )
+    {
         if ( _Index == ArraySize ) {
             Append( _Element );
             return;
         }
 
-        AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodArray::Insert: array index is out of bounds" );
+        AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodVector::Insert: array index is out of bounds" );
 
         const int newLength = ArraySize + 1;
-        const int mod = newLength % GRANULARITY;
-        const int capacity = mod ? newLength + GRANULARITY - mod : newLength;
+        const int capacity = GrowCapacity( newLength );
 
         if ( capacity > ArrayCapacity ) {
             T * data = ( T * )Allocator::Inst().Alloc( TYPE_SIZEOF * capacity );
@@ -240,42 +259,49 @@ public:
         ArraySize = newLength;
     }
 
-    void Append( T const & _Element ) {
+    void Append( T const & _Element )
+    {
         Resize( ArraySize + 1 );
         ArrayData[ ArraySize - 1 ] = _Element;
     }
 
-    void Append( TPodArray< T, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array ) {
+    void Append( TPodVector< T, BASE_CAPACITY, GRANULARITY, Allocator > const & _Array )
+    {
         Append( _Array.ArrayData, _Array.ArraySize );
     }
 
-    void Append( T const * _Elements, int _NumElements ) {
+    void Append( T const * _Data, int _Size )
+    {
         int length = ArraySize;
 
-        Resize( ArraySize + _NumElements );
-        Core::Memcpy( &ArrayData[ length ], _Elements, TYPE_SIZEOF * _NumElements );
+        Resize( ArraySize + _Size );
+        Core::Memcpy( &ArrayData[ length ], _Data, TYPE_SIZEOF * _Size );
     }
 
-    T & Append() {
+    T & Append()
+    {
         Resize( ArraySize + 1 );
         return ArrayData[ ArraySize - 1 ];
     }
 
-    void Remove( int _Index ) {
-        AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodArray::Remove: array index is out of bounds" );
+    void Remove( int _Index )
+    {
+        AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodVector::Remove: array index is out of bounds" );
 
         Core::Memmove( ArrayData + _Index, ArrayData + _Index + 1, TYPE_SIZEOF * ( ArraySize - _Index - 1 ) );
 
         ArraySize--;
     }
 
-    void RemoveLast() {
+    void RemoveLast()
+    {
         if ( ArraySize > 0 ) {
             ArraySize--;
         }
     }
 
-    void RemoveDuplicates() {
+    void RemoveDuplicates()
+    {
         for ( int i = 0 ; i < ArraySize ; i++ ) {
             for ( int j = ArraySize-1 ; j > i ; j-- ) {
 
@@ -290,8 +316,9 @@ public:
     }
 
     /** An optimized removing of array element without memory moves. Just swaps last element with removed element. */
-    void RemoveSwap( int _Index ) {
-        AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodArray::RemoveSwap: array index is out of bounds" );
+    void RemoveSwap( int _Index )
+    {
+        AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodVector::RemoveSwap: array index is out of bounds" );
 
         if ( ArraySize > 0 ) {
             ArrayData[ _Index ] = ArrayData[ ArraySize - 1 ];
@@ -300,62 +327,74 @@ public:
     }
 
     /** Remove elements in range [ _FirstIndex ; _LastIndex ) */
-    void Remove( int _FirstIndex, int _LastIndex ) {
-        AN_ASSERT_( _FirstIndex >= 0 && _FirstIndex < ArraySize, "TPodArray::Remove: array index is out of bounds" );
-        AN_ASSERT_( _LastIndex >= 0 && _LastIndex <= ArraySize, "TPodArray::Remove: array index is out of bounds" );
-        AN_ASSERT_( _FirstIndex < _LastIndex, "TPodArray::Remove: invalid order" );
+    void Remove( int _FirstIndex, int _LastIndex )
+    {
+        AN_ASSERT_( _FirstIndex >= 0 && _FirstIndex < ArraySize, "TPodVector::Remove: array index is out of bounds" );
+        AN_ASSERT_( _LastIndex >= 0 && _LastIndex <= ArraySize, "TPodVector::Remove: array index is out of bounds" );
+        AN_ASSERT_( _FirstIndex < _LastIndex, "TPodVector::Remove: invalid order" );
 
         Core::Memmove( ArrayData + _FirstIndex, ArrayData + _LastIndex, TYPE_SIZEOF * ( ArraySize - _LastIndex ) );
         ArraySize -= _LastIndex - _FirstIndex;
     }
 
-    bool IsEmpty() const {
+    bool IsEmpty() const
+    {
         return ArraySize == 0;
     }
 
-    T & operator[]( const int _Index ) {
-        AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodArray::operator[]" );
+    T & operator[]( const int _Index )
+    {
+        AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodVector::operator[]" );
         return ArrayData[ _Index ];
     }
 
-    T const & operator[]( const int _Index ) const {
-        AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodArray::operator[]" );
+    T const & operator[]( const int _Index ) const
+    {
+        AN_ASSERT_( _Index >= 0 && _Index < ArraySize, "TPodVector::operator[]" );
         return ArrayData[ _Index ];
     }
 
-    T & Last() {
-        AN_ASSERT_( ArraySize > 0, "TPodArray::Last" );
+    T & Last()
+    {
+        AN_ASSERT_( ArraySize > 0, "TPodVector::Last" );
         return ArrayData[ ArraySize - 1 ];
     }
 
-    T const & Last() const {
-        AN_ASSERT_( ArraySize > 0, "TPodArray::Last" );
+    T const & Last() const
+    {
+        AN_ASSERT_( ArraySize > 0, "TPodVector::Last" );
         return ArrayData[ ArraySize - 1 ];
     }
 
-    T & First() {
-        AN_ASSERT_( ArraySize > 0, "TPodArray::First" );
+    T & First()
+    {
+        AN_ASSERT_( ArraySize > 0, "TPodVector::First" );
         return ArrayData[ 0 ];
     }
 
-    T const & First() const {
-        AN_ASSERT_( ArraySize > 0, "TPodArray::First" );
+    T const & First() const
+    {
+        AN_ASSERT_( ArraySize > 0, "TPodVector::First" );
         return ArrayData[ 0 ];
     }
 
-    Iterator Begin() {
+    Iterator Begin()
+    {
         return ArrayData;
     }
 
-    ConstIterator Begin() const {
+    ConstIterator Begin() const
+    {
         return ArrayData;
     }
 
-    Iterator End() {
+    Iterator End()
+    {
         return ArrayData + ArraySize;
     }
 
-    ConstIterator End() const {
+    ConstIterator End() const
+    {
         return ArrayData + ArraySize;
     }
 
@@ -371,34 +410,39 @@ public:
     /** foreach compatibility */
     ConstIterator end() const { return End(); }
 
-    Iterator Erase( ConstIterator _Iterator ) {
-        AN_ASSERT_( _Iterator >= ArrayData && _Iterator < ArrayData + ArraySize, "TPodArray::Erase" );
+    Iterator Erase( ConstIterator _Iterator )
+    {
+        AN_ASSERT_( _Iterator >= ArrayData && _Iterator < ArrayData + ArraySize, "TPodVector::Erase" );
         int Index = _Iterator - ArrayData;
         Core::Memmove( ArrayData + Index, ArrayData + Index + 1, TYPE_SIZEOF * ( ArraySize - Index - 1 ) );
         ArraySize--;
         return ArrayData + Index;
     }
 
-    Iterator EraseSwap( ConstIterator _Iterator ) {
-        AN_ASSERT_( _Iterator >= ArrayData && _Iterator < ArrayData + ArraySize, "TPodArray::Erase" );
+    Iterator EraseSwap( ConstIterator _Iterator )
+    {
+        AN_ASSERT_( _Iterator >= ArrayData && _Iterator < ArrayData + ArraySize, "TPodVector::Erase" );
         int Index = _Iterator - ArrayData;
         ArrayData[ Index ] = ArrayData[ ArraySize - 1 ];
         ArraySize--;
         return ArrayData + Index;
     }
 
-    Iterator Insert( ConstIterator _Iterator, const T & _Element ) {
-        AN_ASSERT_( _Iterator >= ArrayData && _Iterator <= ArrayData + ArraySize, "TPodArray::Insert" );
+    Iterator Insert( ConstIterator _Iterator, const T & _Element )
+    {
+        AN_ASSERT_( _Iterator >= ArrayData && _Iterator <= ArrayData + ArraySize, "TPodVector::Insert" );
         int Index = _Iterator - ArrayData;
         Insert( Index, _Element );
         return ArrayData + Index;
     }
 
-    ConstIterator Find( T const & _Element ) const {
+    ConstIterator Find( T const & _Element ) const
+    {
         return Find( Begin(), End(), _Element );
     }
 
-    ConstIterator Find( ConstIterator _Begin, ConstIterator _End, const T & _Element ) const {
+    ConstIterator Find( ConstIterator _Begin, ConstIterator _End, const T & _Element ) const
+    {
         for ( auto It = _Begin ; It != _End ; It++ ) {
             if ( *It == _Element ) {
                 return It;
@@ -407,7 +451,8 @@ public:
         return End();
     }
 
-    bool IsExist( T const & _Element ) const {
+    bool IsExist( T const & _Element ) const
+    {
         for ( int i = 0 ; i < ArraySize ; i++ ) {
             if ( ArrayData[i] == _Element ) {
                 return true;
@@ -416,7 +461,8 @@ public:
         return false;
     }
 
-    int IndexOf( T const & _Element ) const {
+    int IndexOf( T const & _Element ) const
+    {
         for ( int i = 0 ; i < ArraySize ; i++ ) {
             if ( ArrayData[i] == _Element ) {
                 return i;
@@ -425,30 +471,49 @@ public:
         return -1;
     }
 
-    T * ToPtr() {
+    T * ToPtr()
+    {
         return ArrayData;
     }
 
-    T const * ToPtr() const {
+    T const * ToPtr() const
+    {
         return ArrayData;
     }
 
-    int Size() const {
+    int Size() const
+    {
         return ArraySize;
     }
 
-    int Capacity() const {
+    int Capacity() const
+    {
         return ArrayCapacity;
     }
 
-    TPodArray & operator=( TPodArray const & _Array ) {
+    TPodVector & operator=( TPodVector const & _Array )
+    {
         Set( _Array.ArrayData, _Array.ArraySize );
         return *this;
     }
 
-    void Set( T const * _Elements, int _NumElements ) {
-        ResizeInvalidate( _NumElements );
-        Core::Memcpy( ArrayData, _Elements, TYPE_SIZEOF * _NumElements );
+    TPodVector & operator=( std::initializer_list< T > InitializerList )
+    {
+        ResizeInvalidate( InitializerList.size() );
+        std::copy( InitializerList.begin(), InitializerList.end(), ArrayData );
+        return *this;
+    }
+
+    void Set( T const * _Data, int _Size )
+    {
+        ResizeInvalidate( _Size );
+        Core::Memcpy( ArrayData, _Data, TYPE_SIZEOF * _Size );
+    }
+
+    int GrowCapacity( int _Size ) const
+    {
+        const int mod = _Size % GRANULARITY;
+        return mod ? _Size + GRANULARITY - mod : _Size;
     }
 
 private:
@@ -462,7 +527,7 @@ private:
 };
 
 template< typename T, typename Allocator = AZoneAllocator >
-using TPodArrayLite = TPodArray< T, 1, 32, Allocator >;
+using TPodVectorLite = TPodVector< T, 1, 32, Allocator >;
 
 template< typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32 >
-using TPodArrayHeap = TPodArray< T, BASE_CAPACITY, GRANULARITY, AHeapAllocator >;
+using TPodVectorHeap = TPodVector< T, BASE_CAPACITY, GRANULARITY, AHeapAllocator<16> >;

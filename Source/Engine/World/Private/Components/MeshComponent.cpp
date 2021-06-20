@@ -42,7 +42,7 @@ ARuntimeVariable com_DrawIndexedMeshBVH( _CTS( "com_DrawIndexedMeshBVH" ), _CTS(
 
 AN_CLASS_META( AMeshComponent )
 
-static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits ) {
+static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< STriangleHitResult > & Hits ) {
     AMeshComponent const * mesh = static_cast< AMeshComponent const * >( Self->Owner );
     bool bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
 
@@ -239,7 +239,7 @@ void AMeshComponent::SetMesh( AIndexedMesh * _Mesh ) {
     Bounds = Mesh->GetBoundingBox();
 
     // Update sockets
-    TPodArray< ASocketDef * > const & socketDef = Mesh->GetSockets();
+    TPodVector< ASocketDef * > const & socketDef = Mesh->GetSockets();
     Sockets.ResizeInvalidate( socketDef.Size() );
     for ( int i = 0 ; i < socketDef.Size() ; i++ ) {
         socketDef[i]->AddRef();
@@ -383,7 +383,7 @@ void AMeshComponent::DrawDebug( ADebugRenderer * InRenderer ) {
 #if 0
 AN_CLASS_META( ABrushComponent )
 
-static bool BrushRaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits ) {
+static bool BrushRaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< STriangleHitResult > & Hits ) {
     ABrushComponent const * brush = static_cast< ABrushComponent const * >(Self->Owner);
 
 #if 0
@@ -475,7 +475,7 @@ void ABrushComponent::DrawDebug( ADebugRenderer * InRenderer ) {
 
 AN_CLASS_META( AProceduralMeshComponent )
 
-static bool RaycastCallback_Procedural( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits ) {
+static bool RaycastCallback_Procedural( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< STriangleHitResult > & Hits ) {
     AProceduralMeshComponent const * mesh = static_cast< AProceduralMeshComponent const * >( Self->Owner );
     bool bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
 

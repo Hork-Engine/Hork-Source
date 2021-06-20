@@ -85,7 +85,7 @@ public:
 
     int FindJoint( const char * _Name ) const;
 
-    TPodArray< SJoint > const & GetJoints() const { return Joints; }
+    TPodVector< SJoint > const & GetJoints() const { return Joints; }
 
     BvAxisAlignedBox const & GetBindposeBounds() const { return BindposeBounds; }
 
@@ -102,6 +102,6 @@ protected:
     const char * GetDefaultResourcePath() const override { return "/Default/Skeleton/Default"; }
 
 private:
-    TPodArray< SJoint > Joints;
+    TPodVector< SJoint > Joints;
     BvAxisAlignedBox BindposeBounds;
 };

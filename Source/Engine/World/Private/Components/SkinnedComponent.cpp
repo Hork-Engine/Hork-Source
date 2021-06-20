@@ -94,7 +94,7 @@ void ASkinnedComponent::OnMeshChanged() {
 
     Skeleton = newSkeleton;
 
-    TPodArray< SJoint > const & joints = Skeleton->GetJoints();
+    TPodVector< SJoint > const & joints = Skeleton->GetJoints();
 
     int numJoints = joints.Size();
 
@@ -176,7 +176,7 @@ void ASkinnedComponent::MergeJointAnimations() {
         if ( SoftBody && bUpdateAbsoluteTransforms ) {
 
             //GLogger.Printf("Update abs matrices\n");
-            TPodArray< SJoint > const & joints = Skeleton->GetJoints();
+            TPodVector< SJoint > const & joints = Skeleton->GetJoints();
             for ( int j = 0 ; j < joints.Size() ; j++ ) {
                 // TODO: joint rotation from normal?
                 AbsoluteTransforms[ j + 1 ].Compose( btVectorToFloat3( SoftBody->m_nodes[ j ].m_x ), Float3x3::Identity() );
@@ -204,8 +204,8 @@ void ASkinnedComponent::UpdateTransforms() {
     SJoint const * joints = Skeleton->GetJoints().ToPtr();
     int jointsCount = Skeleton->GetJoints().Size();
 
-    TPodArray< STransform > tempTransforms;
-    TPodArray< float > weights;
+    TPodVector< STransform > tempTransforms;
+    TPodVector< float > weights;
 
     tempTransforms.Resize( AnimControllers.Size() );
     weights.Resize( AnimControllers.Size() );
@@ -234,11 +234,11 @@ void ASkinnedComponent::UpdateTransforms() {
                 continue;
             }
 
-            TPodArray< SAnimationChannel > const & animJoints = animation->GetChannels();
+            TPodVector< SAnimationChannel > const & animJoints = animation->GetChannels();
 
             SAnimationChannel const & jointAnim = animJoints[ channelIndex ];
 
-            TPodArray< STransform > const & transforms = animation->GetTransforms();
+            TPodVector< STransform > const & transforms = animation->GetTransforms();
 
             STransform & transform = tempTransforms[ n ];
             weights[ n ] = controller->Weight;
@@ -288,7 +288,7 @@ void ASkinnedComponent::UpdateAbsoluteTransformsIfDirty() {
         return;
     }
 
-    TPodArray< SJoint > const & joints = Skeleton->GetJoints();
+    TPodVector< SJoint > const & joints = Skeleton->GetJoints();
 
     for ( int j = 0 ; j < joints.Size() ; j++ ) {
         SJoint const & joint = joints[ j ];
@@ -474,7 +474,7 @@ void ASkinnedComponent::OnPreRenderUpdate( SRenderFrontendDef const * _Def ) {
     MergeJointAnimations();
 
     ASkin const & skin = GetMesh()->GetSkin();
-    TPodArray< SJoint > const & joints = Skeleton->GetJoints();
+    TPodVector< SJoint > const & joints = Skeleton->GetJoints();
 
     SkeletonSize = joints.Size() * sizeof( Float3x4 );
     if ( SkeletonSize > 0 ) {
@@ -513,7 +513,7 @@ void ASkinnedComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     if ( com_DrawSkeleton ) {
         InRenderer->SetColor( AColor4( 1,0,0,1 ) );
         InRenderer->SetDepthTest( false );
-        TPodArray< SJoint > const & joints = Skeleton->GetJoints();
+        TPodVector< SJoint > const & joints = Skeleton->GetJoints();
 
         for ( int i = 0 ; i < joints.Size() ; i++ ) {
             SJoint const & joint = joints[i];

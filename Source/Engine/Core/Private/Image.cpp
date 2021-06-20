@@ -33,9 +33,9 @@ SOFTWARE.
 #include <Core/Public/Logger.h>
 #include <Core/Public/Compress.h>
 
-#define STBI_MALLOC(sz)                     GHeapMemory.Alloc( sz )
+#define STBI_MALLOC(sz)                     GHeapMemory.Alloc( sz, 16 )
 #define STBI_FREE(p)                        GHeapMemory.Free( p )
-#define STBI_REALLOC(p,newsz)               GHeapMemory.Realloc( p, newsz, true )
+#define STBI_REALLOC(p,newsz)               GHeapMemory.Realloc( p, newsz, 16, true )
 #define STBI_REALLOC_SIZED(p,oldsz,newsz)   STBI_REALLOC( p, newsz )
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
@@ -43,9 +43,9 @@ SOFTWARE.
 #define STBI_NO_GIF  // Maybe in future gif will be used, but not now
 #include "stb/stb_image.h"
 
-#define STBIW_MALLOC(sz)                    GHeapMemory.Alloc( sz )
+#define STBIW_MALLOC(sz)                    GHeapMemory.Alloc( sz, 16 )
 #define STBIW_FREE(p)                       GHeapMemory.Free( p )
-#define STBIW_REALLOC(p,newsz)              GHeapMemory.Realloc( p, newsz, true )
+#define STBIW_REALLOC(p,newsz)              GHeapMemory.Realloc( p, newsz, 16, true )
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_STATIC
 #define STBI_WRITE_NO_STDIO
@@ -279,9 +279,16 @@ bool AImage::Load( const char * _Path, SImageMipmapConfig const * _MipmapGen, EI
 
 #define TINYEXR_IMPLEMENTATION
 #define MINIZ_HEADER_FILE_ONLY
+#ifdef AN_COMPILER_MSVC
+#pragma warning(push)
+#pragma warning(disable : 5208)
+#endif
 #include "tinyexr/tinyexr.h"
+#ifdef AN_COMPILER_MSVC
+#pragma warning(pop)
+#endif
 
-AN_FORCEINLINE static byte FloatToByte( const float & _Color ) {
+AN_FORCEINLINE static byte FloatToByte( float _Color ) {
     return Math::Floor( Math::Saturate( _Color ) * 255.0f + 0.5f );
 }
 

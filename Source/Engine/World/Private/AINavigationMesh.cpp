@@ -146,12 +146,12 @@ struct ADetourLinearAllocator : public dtTileCacheAlloc
 struct ADetourMeshProcess : public dtTileCacheMeshProcess
 {
     // NavMesh connections
-    TPodArray< Float3 >         OffMeshConVerts;
-    TPodArray< float >          OffMeshConRads;
-    TPodArray< unsigned char >  OffMeshConDirs;
-    TPodArray< unsigned char >  OffMeshConAreas;
-    TPodArray< unsigned short > OffMeshConFlags;
-    TPodArray< unsigned int >   OffMeshConId;
+    TPodVector< Float3 >         OffMeshConVerts;
+    TPodVector< float >          OffMeshConRads;
+    TPodVector< unsigned char >  OffMeshConDirs;
+    TPodVector< unsigned char >  OffMeshConAreas;
+    TPodVector< unsigned short > OffMeshConFlags;
+    TPodVector< unsigned int >   OffMeshConId;
     int                         OffMeshConCount;
     AAINavigationMesh *         NavMesh;
 
@@ -571,8 +571,8 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
         tileWorldBoundsWithPadding.Maxs[i] = config.bmax[i];
     }
 
-    TPodArrayHeap< Float3 > vertices;
-    TPodArrayHeap< unsigned int > indices;
+    TPodVectorHeap< Float3 > vertices;
+    TPodVectorHeap< unsigned int > indices;
     BvAxisAlignedBox boundingBox;
     TBitMask<> walkableMask;
 
@@ -971,12 +971,12 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
 
         BvAxisAlignedBox conBoundingBox;
         const float margin = 0.2f;
-        TPodArray< Float3 > offMeshConVerts;
-        TPodArray< float > offMeshConRads;
-        TPodArray< unsigned char > offMeshConDirs;
-        TPodArray< unsigned char > offMeshConAreas;
-        TPodArray< unsigned short > offMeshConFlags;
-        TPodArray< unsigned int > offMeshConId;
+        TPodVector< Float3 > offMeshConVerts;
+        TPodVector< float > offMeshConRads;
+        TPodVector< unsigned char > offMeshConDirs;
+        TPodVector< unsigned char > offMeshConAreas;
+        TPodVector< unsigned short > offMeshConFlags;
+        TPodVector< unsigned int > offMeshConId;
         int offMeshConCount = 0;
         for ( int i = 0 ; i < NavMeshConnections.Size() ; i++ ) {
             SAINavMeshConnection const & con = NavMeshConnections[i];
@@ -1375,8 +1375,8 @@ void AAINavigationMesh::DrawDebug( ADebugRenderer * InRenderer ) {
     }
 
 #if 0
-    static TPodArray< Float3 > vertices;
-    static TPodArray< unsigned int > indices;
+    static TPodVector< Float3 > vertices;
+    static TPodVector< unsigned int > indices;
     static BvAxisAlignedBox dummyBoundingBox;
     static TBitMask<> walkableMask;
     static bool gen=false;
@@ -1671,7 +1671,7 @@ bool AAINavigationMesh::FindPath( SNavPointRef const & _StartRef, SNavPointRef c
     return FindPath( _StartRef, _EndRef, QueryFilter, _Path, _PathCount, _MaxPath );
 }
 
-bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, ANavQueryFilter const & _Filter, TPodArray< SAINavigationPathPoint > & _PathPoints ) const {
+bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, ANavQueryFilter const & _Filter, TPodVector< SAINavigationPathPoint > & _PathPoints ) const {
     SNavPointRef StartRef;
     SNavPointRef EndRef;
 
@@ -1713,11 +1713,11 @@ bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndP
     return true;
 }
 
-bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, TPodArray< SAINavigationPathPoint > & _PathPoints ) const {
+bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, TPodVector< SAINavigationPathPoint > & _PathPoints ) const {
     return FindPath( _StartPos, _EndPos, _Extents, QueryFilter, _PathPoints );
 }
 
-bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, ANavQueryFilter const & _Filter, TPodArray< Float3 > & _PathPoints ) const {
+bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, ANavQueryFilter const & _Filter, TPodVector< Float3 > & _PathPoints ) const {
     SNavPointRef StartRef;
     SNavPointRef EndRef;
 
@@ -1756,7 +1756,7 @@ bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndP
     return true;
 }
 
-bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, TPodArray< Float3 > & _PathPoints ) const {
+bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndPos, Float3 const & _Extents, TPodVector< Float3 > & _PathPoints ) const {
     return FindPath( _StartPos, _EndPos, _Extents, QueryFilter, _PathPoints );
 }
 
@@ -1958,14 +1958,14 @@ void AAINavigationMesh::RemoveNavigationGeometry( APhysicalBody * InPhysicalBody
     INTRUSIVE_REMOVE( InPhysicalBody, NextNavBody, PrevNavBody, NavigationGeometryList, NavigationGeometryListTail );
 }
 
-void AAINavigationMesh::GatherNavigationGeometry( TPodArrayHeap< Float3 > & _Vertices,
-                                                  TPodArrayHeap< unsigned int > & _Indices,
+void AAINavigationMesh::GatherNavigationGeometry( TPodVectorHeap< Float3 > & _Vertices,
+                                                  TPodVectorHeap< unsigned int > & _Indices,
                                                   TBitMask<> & _WalkableTriangles,
                                                   BvAxisAlignedBox & _ResultBoundingBox,
                                                   BvAxisAlignedBox const * _ClipBoundingBox ) {
     BvAxisAlignedBox clippedBounds;
-    TPodArrayHeap< Float3 > collisionVertices;
-    TPodArrayHeap< unsigned int > collisionIndices;
+    TPodVectorHeap< Float3 > collisionVertices;
+    TPodVectorHeap< unsigned int > collisionIndices;
     BvAxisAlignedBox worldBounds;
     const Float3 padding(0.001f);
 

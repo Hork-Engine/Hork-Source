@@ -517,7 +517,7 @@ private:
     int                       SwapChainHeight;
 
     THash<>                   VAOHash;
-    TPodArray< struct SVertexArrayObject * > VAOCache;
+    TPodVector< struct SVertexArrayObject * > VAOCache;
 
     AImmediateContextGLImpl * Next;
     AImmediateContextGLImpl * Prev;

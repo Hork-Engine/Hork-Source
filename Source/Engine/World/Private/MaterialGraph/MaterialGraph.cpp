@@ -88,7 +88,7 @@ public:
     int GetBuildSerial() const { return Serial; }
 
     AString GenerateVariableName() const;
-    void GenerateSourceCode( MGOutput * _Slot, AString const & _Expression, bool _AddBrackets );
+    void GenerateSourceCode( MGOutput * _Slot, AStringView _Expression, bool _AddBrackets );
 
     EMaterialStage GetStage() const { return Stage; }
 
@@ -527,7 +527,7 @@ AString AMaterialBuildContext::GenerateVariableName() const {
     return AString( "v" ) + Math::ToString( VariableName++ );
 }
 
-void AMaterialBuildContext::GenerateSourceCode( MGOutput * _Slot, AString const & _Expression, bool _AddBrackets ) {
+void AMaterialBuildContext::GenerateSourceCode( MGOutput * _Slot, AStringView _Expression, bool _AddBrackets ) {
     if ( _Slot->Usages > 1 ) {
         _Slot->Expression = GenerateVariableName();
         SourceCode += "const " + AString( VariableTypeStr[ _Slot->Type ] ) + " " + _Slot->Expression + " = " + _Expression + ";\n";
@@ -723,7 +723,7 @@ TRef< ADocObject > MGNode::Serialize() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-static AString MakeExpression( AMaterialBuildContext & _Context, MGInput * Input, EMGNodeType DesiredType, AString const & DefaultExpression, int VectorCastFlags = 0 )
+static AString MakeExpression( AMaterialBuildContext & _Context, MGInput * Input, EMGNodeType DesiredType, AStringView DefaultExpression, int VectorCastFlags = 0 )
 {
     MGOutput * connection = Input->GetConnection();
 
@@ -1141,7 +1141,7 @@ void MGMakeVectorNode::Compute( AMaterialBuildContext & _Context ) {
     Result->Type = EMGNodeType( resultType + numComponents - 1 );
 
     AString resultTypeStr;
-    const char * defaultVal = "0";
+    AString defaultVal = "0";
     switch ( resultType ) {
     case AT_Float1:
         resultTypeStr = "float";

@@ -39,8 +39,8 @@ SOFTWARE.
 #include <Core/Public/HashFunc.h>
 #include <Core/Public/WindowsDefs.h>
 #include <Core/Public/Document.h>
+#include <Core/Public/Core.h>
 
-#include "CPUInfo.h"
 #include "GPUSync.h"
 
 #include <SDL.h>
@@ -59,10 +59,6 @@ SOFTWARE.
 #endif
 
 #include <Runtime/Public/EntryDecl.h>
-
-#define PROCESS_COULDNT_CHECK_UNIQUE 1
-#define PROCESS_ALREADY_EXISTS       2
-#define PROCESS_UNIQUE               3
 
 ARuntime & GRuntime = ARuntime::Inst();
 
@@ -92,30 +88,23 @@ static short JoystickAxisState[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
 static bool JoystickAdded[ MAX_JOYSTICKS_COUNT ];
 
 static void InitKeyMappingsSDL();
-static void LoggerMessageCallback( int _Level, const char * _Message );
 
 IEngineInterface * ARuntime::Engine = nullptr;
 
 ARuntime::ARuntime()
     : Rand( Core::RandomSeed() )
 {
-    NumArguments = 0;
-    Arguments = nullptr;
-    Executable = nullptr;
-    FrameMemoryAddress = nullptr;
-    FrameMemorySize = 0;
     FrameMemoryUsed = 0;
     FrameMemoryUsedPrev = 0;
     MaxFrameMemoryUsage = 0;
     bPostTerminateEvent = false;
     bPostChangeVideoMode = false;
-    Clipboard = nullptr;
-    ProcessAttribute = 0;
 }
 
 void ARuntime::LoadConfigFile()
 {
     AString configFile = GetRootPath() + "config.cfg";
+
     AFileStream f;
     if ( f.OpenRead( configFile ) ) {
         AString data;
@@ -221,61 +210,6 @@ static void DestroyGenericWindow( SDL_Window * Window )
     }
 }
 
-void ARuntime::PrintCPUFeatures()
-{
-    GLogger.Printf( "CPU: %s\n", CPUInfo.Intel ? "Intel" : "AMD" );
-    GLogger.Print( "CPU Features:" );
-    if ( CPUInfo.MMX ) GLogger.Print( " MMX" );
-    if ( CPUInfo.x64 ) GLogger.Print( " x64" );
-    if ( CPUInfo.ABM ) GLogger.Print( " ABM" );
-    if ( CPUInfo.RDRAND ) GLogger.Print( " RDRAND" );
-    if ( CPUInfo.BMI1 ) GLogger.Print( " BMI1" );
-    if ( CPUInfo.BMI2 ) GLogger.Print( " BMI2" );
-    if ( CPUInfo.ADX ) GLogger.Print( " ADX" );
-    if ( CPUInfo.MPX ) GLogger.Print( " MPX" );
-    if ( CPUInfo.PREFETCHWT1 ) GLogger.Print( " PREFETCHWT1" );
-    GLogger.Print( "\n" );
-    GLogger.Print( "Simd 128 bit:" );
-    if ( CPUInfo.SSE ) GLogger.Print( " SSE" );
-    if ( CPUInfo.SSE2 ) GLogger.Print( " SSE2" );
-    if ( CPUInfo.SSE3 ) GLogger.Print( " SSE3" );
-    if ( CPUInfo.SSSE3 ) GLogger.Print( " SSSE3" );
-    if ( CPUInfo.SSE4a ) GLogger.Print( " SSE4a" );
-    if ( CPUInfo.SSE41 ) GLogger.Print( " SSE4.1" );
-    if ( CPUInfo.SSE42 ) GLogger.Print( " SSE4.2" );
-    if ( CPUInfo.AES ) GLogger.Print( " AES-NI" );
-    if ( CPUInfo.SHA ) GLogger.Print( " SHA" );
-    GLogger.Print( "\n" );
-    GLogger.Print( "Simd 256 bit:" );
-    if ( CPUInfo.AVX ) GLogger.Print( " AVX" );
-    if ( CPUInfo.XOP ) GLogger.Print( " XOP" );
-    if ( CPUInfo.FMA3 ) GLogger.Print( " FMA3" );
-    if ( CPUInfo.FMA4 ) GLogger.Print( " FMA4" );
-    if ( CPUInfo.AVX2 ) GLogger.Print( " AVX2" );
-    GLogger.Print( "\n" );
-    GLogger.Print( "Simd 512 bit:" );
-    if ( CPUInfo.AVX512_F ) GLogger.Print( " AVX512-F" );
-    if ( CPUInfo.AVX512_CD ) GLogger.Print( " AVX512-CD" );
-    if ( CPUInfo.AVX512_PF ) GLogger.Print( " AVX512-PF" );
-    if ( CPUInfo.AVX512_ER ) GLogger.Print( " AVX512-ER" );
-    if ( CPUInfo.AVX512_VL ) GLogger.Print( " AVX512-VL" );
-    if ( CPUInfo.AVX512_BW ) GLogger.Print( " AVX512-BW" );
-    if ( CPUInfo.AVX512_DQ ) GLogger.Print( " AVX512-DQ" );
-    if ( CPUInfo.AVX512_IFMA ) GLogger.Print( " AVX512-IFMA" );
-    if ( CPUInfo.AVX512_VBMI ) GLogger.Print( " AVX512-VBMI" );
-    GLogger.Print( "\n" );
-    GLogger.Print( "OS: " AN_OS_STRING "\n" );
-    GLogger.Print( "OS Features:" );
-    if ( CPUInfo.OS_64bit ) GLogger.Print( " 64bit" );
-    if ( CPUInfo.OS_AVX ) GLogger.Print( " AVX" );
-    if ( CPUInfo.OS_AVX512 ) GLogger.Print( " AVX512" );
-    GLogger.Print( "\n" );
-    GLogger.Print( "Endian: " AN_ENDIAN_STRING "\n" );
-    #ifdef AN_DEBUG
-    GLogger.Print( "Compiler: " AN_COMPILER_STRING "\n" );
-    #endif
-}
-
 static TUniqueRef< AArchive > GEmbeddedResourcesArch;
 
 extern "C" const size_t EmbeddedResources_Size;
@@ -294,53 +228,23 @@ AArchive const & ARuntime::GetEmbeddedResources()
 
 void ARuntime::Run( SEntryDecl const & _EntryDecl )
 {
-    // Synchronize SDL ticks with our start time
-    (void)SDL_GetTicks();
-
-    StartMicroseconds = StdChrono::duration_cast< StdChrono::microseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count();
-    StartMilliseconds = StartMicroseconds * 0.001;
-    StartSeconds = StartMicroseconds * 0.000001;
-    FrameTimeStamp = StartMicroseconds;
+    FrameTimeStamp = Core::SysStartMicroseconds();
     FrameDuration = 1000000.0 / 60;
     FrameNumber = 0;
 
     pModuleDecl = &_EntryDecl;
 
-    if ( SetCriticalMark() ) {
-        // Critical error was emitted by this thread
-        EmergencyExit();
-    }
-
-    ::GetCPUInfo( CPUInfo );
-
-    InitializeProcess();
-
     Engine = CreateEngineInstance();
 
     GLogger.SetMessageCallback( LoggerMessageCallback );
 
-    PrintCPUFeatures();
-
-    switch ( ProcessAttribute ) {
-        case PROCESS_COULDNT_CHECK_UNIQUE:
-            CriticalError( "Couldn't check unique instance\n" );
-            break;
-        case PROCESS_ALREADY_EXISTS:
-            CriticalError( "Process already exists\n" );
-            break;
-        case PROCESS_UNIQUE:
-            break;
-    }
-
-    InitializeMemory();
+    ARuntimeVariable::AllocateVariables();
 
     InitializeWorkingDirectory();
 
-    ARuntimeVariable::AllocateVariables();
-
     GLogger.Printf( "Working directory: %s\n", WorkingDir.CStr() );
     GLogger.Printf( "Root path: %s\n", RootPath.CStr() );
-    GLogger.Printf( "Executable: %s\n", Executable );
+    GLogger.Printf( "Executable: %s\n", Core::GetProcessInfo().Executable );
 
     SDL_LogSetOutputFunction(
                 [](void *userdata, int category, SDL_LogPriority priority, const char *message) {
@@ -445,10 +349,6 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl )
 
     GAsyncJobManager.Deinitialize();
 
-    if ( IsCriticalError() ) {
-        EmergencyExit();
-    }
-
     GPUSync.Reset();
 
     VertexMemoryGPU.Reset();
@@ -461,31 +361,11 @@ void ARuntime::Run( SEntryDecl const & _EntryDecl )
 
     GLogger.Printf( "TotalAllocatedRenderCore: %d\n", TotalAllocatedRenderCore );
 
-    SDocumentAllocator< ADocValue >::FreeMemoryPool();
-    SDocumentAllocator< ADocMember >::FreeMemoryPool();
-
     GEmbeddedResourcesArch.Reset();
 
     WorkingDir.Free();
     RootPath.Free();
-
-    if ( Clipboard ) {
-        SDL_free( Clipboard );
-    }
-
-    SDL_Quit();
-
-    DeinitializeMemory();
-
-    DeinitializeProcess();
 }
-
-struct SProcessLog {
-    FILE * File;
-};
-
-static SProcessLog ProcessLog = {};
-static AMutex LoggerSync;
 
 void ARuntime::LoggerMessageCallback( int _Level, const char * _Message )
 {
@@ -524,280 +404,23 @@ void ARuntime::LoggerMessageCallback( int _Level, const char * _Message )
     #endif
 
     if ( Engine ) {
+        std::string & messageBuffer = Core::GetMessageBuffer();
+        if ( !messageBuffer.empty() ) {
+            Engine->Print( messageBuffer.c_str() );
+            messageBuffer.clear();
+        }
         Engine->Print( _Message );
     }
 
-    if ( ProcessLog.File ) {
-        AMutexGurad syncGuard( LoggerSync );
-        fprintf( ProcessLog.File, "%s", _Message );
-        fflush( ProcessLog.File );
-    }
-}
-
-#ifdef AN_ALLOW_ASSERTS
-
-// Define global assert function
-void AssertFunction( const char * _File, int _Line, const char * _Function, const char * _Assertion, const char * _Comment )
-{
-    static thread_local bool bNestedFunctionCall = false;
-
-    if ( bNestedFunctionCall ) {
-        // Assertion occurs in logger's print function
-        return;
-    }
-
-    bNestedFunctionCall = true;
-
-    // Printf is thread-safe function so we don't need to wrap it by a critical section
-    GLogger.Printf( "===== Assertion failed =====\n"
-                    "At file %s, line %d\n"
-                    "Function: %s\n"
-                    "Assertion: %s\n"
-                    "%s%s"
-                    "============================\n",
-                    _File, _Line, _Function, _Assertion, _Comment ? _Comment : "", _Comment ? "\n" : "" );
-
-    SDL_SetRelativeMouseMode( SDL_FALSE ); // FIXME: Is it threadsafe?
-
-#ifdef AN_OS_WIN32
-    DebugBreak();
-#else
-    //__asm__( "int $3" );
-    raise( SIGTRAP );
-#endif
-
-    bNestedFunctionCall = false;
-}
-
-#endif
-
-#ifdef AN_OS_WIN32
-static HANDLE ProcessMutex = NULL;
-#endif
-
-void ARuntime::InitializeProcess()
-{
-    setlocale( LC_ALL, "C" );
-    srand( ( unsigned )time( NULL ) );
-
-#if defined( AN_OS_WIN32 )
-    SetErrorMode( SEM_FAILCRITICALERRORS );
-#endif
-
-#ifdef AN_OS_WIN32
-    int curLen = 1024;
-    int len = 0;
-
-    Executable = nullptr;
-    while ( 1 ) {
-        Executable = ( char * )realloc( Executable, curLen + 1 );
-        len = GetModuleFileNameA( NULL, Executable, curLen );
-        if ( len < curLen && len != 0 ) {
-            break;
-        }
-        if ( GetLastError() == ERROR_INSUFFICIENT_BUFFER ) {
-            curLen <<= 1;
-        } else {
-            CriticalError( "InitializeProcess: Failed on GetModuleFileName\n" );
-            len = 0;
-            break;
-        }
-    }
-    Executable[ len ] = 0;
-
-    Core::FixSeparator( Executable );
-
-    uint32_t appHash = Core::SDBMHash( Executable, len );
-
-    ProcessMutex = CreateMutexA( NULL, FALSE, Core::Fmt( "angie_%u", appHash ) );
-    if ( !ProcessMutex ) {
-        ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
-    } else if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
-        ProcessAttribute = PROCESS_ALREADY_EXISTS;
-    } else {
-        ProcessAttribute = PROCESS_UNIQUE;
-    }
-#elif defined AN_OS_LINUX
-    int curLen = 1024;
-    int len = 0;
-
-    Executable = nullptr;
-    while ( 1 ) {
-        Executable = ( char * )realloc( Executable, curLen + 1 );
-        len = readlink( "/proc/self/exe", Executable, curLen );
-        if ( len == -1 ) {
-            CriticalError( "InitializeProcess: Failed on readlink\n" );
-            len = 0;
-            break;
-        }
-        if ( len < curLen ) {
-            break;
-        }
-        curLen <<= 1;
-    }
-    Executable[ len ] = 0;
-
-    uint32_t appHash = Core::SDBMHash( Executable, len );
-    int f = open( Core::Fmt( "/tmp/angie_%u.pid", appHash ), O_RDWR | O_CREAT, 0666 );
-    int locked = flock( f, LOCK_EX | LOCK_NB );
-    if ( locked ) {
-        if ( errno == EWOULDBLOCK ) {
-            ProcessAttribute = PROCESS_ALREADY_EXISTS;
-        } else {
-            ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
-        }
-    } else {
-        ProcessAttribute = PROCESS_UNIQUE;
-    }
-#else
-#   error "Not implemented under current platform"
-#endif
-
-    ProcessLog.File = nullptr;
-    if ( CheckArg( "-enableLog" ) != -1 ) {
-        // TODO: Set correct path for log file
-        ProcessLog.File = fopen( "log.txt", "ab" );
-    }
-}
-
-void ARuntime::DeinitializeProcess()
-{
-    if ( ProcessLog.File ) {
-        fclose( ProcessLog.File );
-        ProcessLog.File = nullptr;
-    }
-
-    if ( Executable ) {
-        free( Executable );
-        Executable = nullptr;
-    }
-
-#ifdef AN_OS_WIN32
-    if ( ProcessMutex ) {
-        ReleaseMutex( ProcessMutex );
-        CloseHandle( ProcessMutex );
-        ProcessMutex = NULL;
-    }
-#endif
-}
-
-struct SMemoryInfo
-{
-    int TotalAvailableMegabytes;
-    int CurrentAvailableMegabytes;
-};
-
-static SMemoryInfo GetPhysMemoryInfo()
-{
-    SMemoryInfo info;
-
-    Core::ZeroMem( &info, sizeof( info ) );
-
-#if defined AN_OS_WIN32
-    MEMORYSTATUS memstat;
-    GlobalMemoryStatus( &memstat );
-    info.TotalAvailableMegabytes = memstat.dwTotalPhys >> 20;
-    info.CurrentAvailableMegabytes = memstat.dwAvailPhys >> 20;
-#elif defined AN_OS_LINUX
-    long long TotalPages = sysconf( _SC_PHYS_PAGES );
-    long long AvailPages = sysconf( _SC_AVPHYS_PAGES );
-    long long PageSize = sysconf( _SC_PAGE_SIZE );
-    info.TotalAvailableMegabytes = ( TotalPages * PageSize ) >> 20;
-    info.CurrentAvailableMegabytes = ( AvailPages * PageSize ) >> 20;
-#else
-#   error "GetPhysMemoryInfo not implemented under current platform"
-#endif
-    return info;
-}
-
-volatile int MemoryChecksum;
-static void * MemoryHeap;
-
-static void TouchMemoryPages( void * _MemoryPointer, int _MemorySize )
-{
-    GLogger.Printf( "Touching memory pages...\n" );
-
-    byte * p = ( byte * )_MemoryPointer;
-    for ( int n = 0 ; n < 4 ; n++ ) {
-        for ( int m = 0 ; m < ( _MemorySize - 16 * 0x1000 ) ; m += 4 ) {
-            MemoryChecksum += *( int32_t * )&p[ m ];
-            MemoryChecksum += *( int32_t * )&p[ m + 16 * 0x1000 ];
-        }
-    }
-
-    //int j = _MemorySize >> 2;
-    //for ( int i = 0 ; i < j ; i += 64 ) {
-    //    MemoryChecksum += ( ( int32_t * )_MemoryPointer )[ i ];
-    //}
-}
-
-void ARuntime::InitializeMemory()
-{
-    const size_t ZoneSizeInMegabytes = 256;
-    const size_t HunkSizeInMegabytes = 32;
-    const size_t FrameMemorySizeInMegabytes = 16;
-
-    const size_t TotalMemorySizeInBytes = ( ZoneSizeInMegabytes + HunkSizeInMegabytes + FrameMemorySizeInMegabytes ) << 20;
-
-#ifdef AN_OS_WIN32
-    if ( !SetProcessWorkingSetSize( GetCurrentProcess(), TotalMemorySizeInBytes, 1024 << 20 ) ) {
-        GLogger.Printf( "Failed on SetProcessWorkingSetSize\n" );
-    }
-#endif
-
-    int pageSize;
-#ifdef AN_OS_WIN32
-    SYSTEM_INFO systemInfo;
-    GetSystemInfo( &systemInfo );
-    pageSize = systemInfo.dwPageSize;
-#elif defined AN_OS_LINUX
-    pageSize = sysconf( _SC_PAGE_SIZE );
-#else
-#   error "GetPageSize not implemented under current platform"
-#endif
-
-    GLogger.Printf( "Memory page size: %d bytes\n", pageSize );
-
-    SMemoryInfo physMemoryInfo = GetPhysMemoryInfo();
-    if ( physMemoryInfo.TotalAvailableMegabytes > 0 && physMemoryInfo.CurrentAvailableMegabytes > 0 ) {
-        GLogger.Printf( "Total available phys memory: %d Megs\n", physMemoryInfo.TotalAvailableMegabytes );
-        GLogger.Printf( "Current available phys memory: %d Megs\n", physMemoryInfo.CurrentAvailableMegabytes );
-    }
-
-    GLogger.Printf( "Zone memory size: %d Megs\n"
-                    "Hunk memory size: %d Megs\n"
-                    "Frame memory size: %d Megs\n",
-                    ZoneSizeInMegabytes, HunkSizeInMegabytes, FrameMemorySizeInMegabytes );
-
-    GHeapMemory.Initialize();
-
-    MemoryHeap = GHeapMemory.Alloc( TotalMemorySizeInBytes, 16 );
-    Core::ZeroMemSSE( MemoryHeap, TotalMemorySizeInBytes );
-
-    //TouchMemoryPages( MemoryHeap, TotalMemorySizeInBytes );
-
-    void * ZoneMemory = MemoryHeap;
-    GZoneMemory.Initialize( ZoneMemory, ZoneSizeInMegabytes );
-
-    void * HunkMemory = ( byte * )MemoryHeap + ( ZoneSizeInMegabytes << 20 );
-    GHunkMemory.Initialize( HunkMemory, HunkSizeInMegabytes );
-
-    FrameMemoryAddress = ( byte * )MemoryHeap + ( ( ZoneSizeInMegabytes + HunkSizeInMegabytes ) << 20 );
-    FrameMemorySize = FrameMemorySizeInMegabytes << 20;
-}
-
-void ARuntime::DeinitializeMemory()
-{
-    GZoneMemory.Deinitialize();
-    GHunkMemory.Deinitialize();
-    GHeapMemory.Free( MemoryHeap );
-    GHeapMemory.Deinitialize();
+    Core::WriteLog( _Message );
 }
 
 void ARuntime::InitializeWorkingDirectory()
 {
-    WorkingDir = Executable;
-    WorkingDir.StripFilename();
+    SProcessInfo const & processInfo = Core::GetProcessInfo();
+
+    WorkingDir = processInfo.Executable;
+    WorkingDir.ClipFilename();
 
 #if defined AN_OS_WIN32
     SetCurrentDirectoryA( WorkingDir.CStr() );
@@ -818,191 +441,35 @@ void ARuntime::InitializeWorkingDirectory()
     }
 }
 
-void ARuntime::DisplayCriticalMessage( const char * _Message )
-{
-#if defined AN_OS_WIN32
-    wchar_t wstr[1024];
-    MultiByteToWideChar( CP_UTF8, 0, _Message, -1, wstr, AN_ARRAY_SIZE( wstr ) );
-    MessageBox( NULL, wstr, L"Critical Error", MB_OK | MB_ICONERROR | MB_SETFOREGROUND | MB_TOPMOST );
+#ifdef AN_OS_WIN32
+void RunEngine( SEntryDecl const & _EntryDecl )
 #else
-    SDL_MessageBoxData data = {};
-    SDL_MessageBoxButtonData button = {};
-    const SDL_MessageBoxColorScheme scheme =
-    {
-        {
-            { 56,  54,  53  }, /* SDL_MESSAGEBOX_COLOR_BACKGROUND, */
-            { 209, 207, 205 }, /* SDL_MESSAGEBOX_COLOR_TEXT, */
-            { 140, 135, 129 }, /* SDL_MESSAGEBOX_COLOR_BUTTON_BORDER, */
-            { 105, 102, 99  }, /* SDL_MESSAGEBOX_COLOR_BUTTON_BACKGROUND, */
-            { 205, 202, 53  }, /* SDL_MESSAGEBOX_COLOR_BUTTON_SELECTED, */
-        }
-    };
-
-    data.flags = SDL_MESSAGEBOX_ERROR;
-    data.title = "Critical Error";
-    data.message = _Message;
-    data.numbuttons = 1;
-    data.buttons = &button;
-    data.window = NULL;
-    data.colorScheme = &scheme;
-
-    button.flags |= SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
-    button.flags |= SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
-    button.text = "OK";
-
-    SDL_ShowMessageBox( &data, NULL );
+void RunEngine( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl )
 #endif
-}
-
-void ARuntime::EmergencyExit()
 {
-    const char * msg = MapCriticalErrorMessage();
-    DisplayCriticalMessage( msg );
-    UnmapCriticalErrorMessage();
+    static bool bApplicationRun = false;
 
-    SDL_Quit();
-
-    GHeapMemory.Clear();
-
-    DeinitializeProcess();
-
-    std::quick_exit( 0 );
-    //std::abort();
-}
-
-int ARuntime::CheckArg( const char * _Arg )
-{
-    for ( int i = 0 ; i < NumArguments ; i++ ) {
-        if ( !Core::Stricmp( Arguments[ i ], _Arg ) ) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-static void AllocCommandLineArgs( char * _Buffer, int * _NumArguments, char *** _Arguments )
-{
-    char ** args = nullptr;
-    int count;
-    char * s;
-
-    // Parse command line
-    s = _Buffer;
-    count = 0;
-
-    // get argc
-    while ( *s ) {
-        while ( *s && ( ( *s <= 32 && *s > 0 ) || *s > 126 ) ) {
-            s++;
-        }
-        if ( *s ) {
-            bool q = false;
-            while ( *s ) {
-                if ( *s == '\"' ) {
-                    q = !q;
-                    if ( !q ) {
-                        s++;
-                        break;
-                    } else {
-                        s++;
-                        continue;
-                    }
-                }
-                if ( !q && ( ( *s <= 32 && *s > 0 ) || *s > 126 ) ) {
-                    break;
-                }
-                s++;
-            }
-            count++;
-        }
-    }
-
-    if ( count > 0 ) {
-        args = ( char ** )calloc( count, sizeof( char * ) );
-
-        s = _Buffer;
-        count = 0;
-
-        while ( *s ) {
-            while ( *s && ( ( *s <= 32 && *s > 0 ) || *s > 126 ) ) {
-                s++;
-            }
-            if ( *s ) {
-                bool q = false;
-                args[ count ] = s;
-                while ( *s ) {
-                    if ( *s == '\"' ) {
-                        q = !q;
-                        if ( !q ) {
-                            s++;
-                            break;
-                        } else {
-                            args[ count ] = ++s;
-                            continue;
-                        }
-                    }
-                    if ( !q && ( ( *s <= 32 && *s > 0 ) || *s > 126 ) ) {
-                        break;
-                    }
-                    s++;
-                }
-                if ( *s ) {
-                    *s = 0;
-                    s++;
-                }
-                count++;
-            }
-        }
-    }
-
-    *_NumArguments = count;
-    *_Arguments = args;
-}
-
-static void FreeCommandLineArgs( char ** _Arguments )
-{
-    free( _Arguments );
-}
-
-#define MAX_COMMAND_LINE_LENGTH 1024
-static char CmdLineBuffer[ MAX_COMMAND_LINE_LENGTH ];
-static bool bApplicationRun = false;
-
-void Runtime( const char * _CommandLine, SEntryDecl const & _EntryDecl )
-{
     if ( bApplicationRun ) {
         AN_ASSERT( 0 );
         return;
     }
-    bApplicationRun = true;
-    Core::Strcpy( CmdLineBuffer, sizeof( CmdLineBuffer ), _CommandLine );
-    AllocCommandLineArgs( CmdLineBuffer, &GRuntime.NumArguments, &GRuntime.Arguments );
-    if ( GRuntime.NumArguments < 1 ) {
-        AN_ASSERT( 0 );
-        return;
-    }
-    // Fix executable path separator
-    Core::FixSeparator( GRuntime.Arguments[ 0 ] );
-    GRuntime.Run( _EntryDecl );
-    FreeCommandLineArgs( GRuntime.Arguments );
-}
 
-void Runtime( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl )
-{
-    if ( bApplicationRun ) {
-        AN_ASSERT( 0 );
-        return;
-    }
     bApplicationRun = true;
-    GRuntime.NumArguments = _Argc;
-    GRuntime.Arguments = _Argv;
-    if ( GRuntime.NumArguments < 1 ) {
-        AN_ASSERT( 0 );
-        return;
-    }
-    // Fix executable path separator
-    Core::FixSeparator( GRuntime.Arguments[ 0 ] );
+
+    SCoreInitialize init;
+#ifdef AN_OS_WIN32
+    init.pCommandLine = ::GetCommandLineA();
+#else
+    init.Argc = _Argc;
+    init.Argv = _Argv;
+#endif
+    init.bAllowMultipleInstances = false;
+    init.ZoneSizeInMegabytes = 256;
+    init.HunkSizeInMegabytes = 32;
+    init.FrameMemorySizeInMegabytes = 16;
+    Core::Initialize( init );
     GRuntime.Run( _EntryDecl );
+    Core::Deinitialize();
 }
 
 #if defined( AN_DEBUG ) && defined( AN_COMPILER_MSVC )
@@ -1017,16 +484,6 @@ BOOL WINAPI DllMain(
 }
 #endif
 
-int ARuntime::GetArgc()
-{
-    return NumArguments;
-}
-
-const char * const *ARuntime::GetArgv()
-{
-    return Arguments;
-}
-
 AString const & ARuntime::GetWorkingDir()
 {
     return WorkingDir;
@@ -1039,18 +496,21 @@ AString const & ARuntime::GetRootPath()
 
 const char * ARuntime::GetExecutableName()
 {
-    return Executable ? Executable : "";
+    SProcessInfo const & processInfo = Core::GetProcessInfo();
+    return processInfo.Executable ? processInfo.Executable : "";
 }
 
 void * ARuntime::AllocFrameMem( size_t _SizeInBytes )
 {
-    if ( FrameMemoryUsed + _SizeInBytes > FrameMemorySize ) {
+    const size_t frameMemorySize = Core::GetFrameMemorySize();
+
+    if ( FrameMemoryUsed + _SizeInBytes > frameMemorySize ) {
         // TODO: Allocate new block
-        CriticalError( "AllocFrameMem: failed on allocation of %u bytes (available %u, total %u)\n", _SizeInBytes, FrameMemorySize - FrameMemoryUsed, FrameMemorySize );
+        CriticalError( "AllocFrameMem: failed on allocation of %u bytes (available %u, total %u)\n", _SizeInBytes, frameMemorySize - FrameMemoryUsed, frameMemorySize );
         return nullptr;
     }
 
-    void * pMemory = (byte *)FrameMemoryAddress + FrameMemoryUsed;
+    void * pMemory = (byte *)Core::GetFrameMemoryAddress() + FrameMemoryUsed;
 
     FrameMemoryUsed += _SizeInBytes;
     FrameMemoryUsed = Align( FrameMemoryUsed, 16 );
@@ -1064,7 +524,7 @@ void * ARuntime::AllocFrameMem( size_t _SizeInBytes )
 
 size_t ARuntime::GetFrameMemorySize() const
 {
-    return FrameMemorySize;
+    return Core::GetFrameMemorySize();
 }
 
 size_t ARuntime::GetFrameMemoryUsed() const
@@ -1082,119 +542,6 @@ size_t ARuntime::GetMaxFrameMemoryUsage() const
     return MaxFrameMemoryUsage;
 }
 
-SCPUInfo const & ARuntime::GetCPUInfo() const
-{
-    return CPUInfo;
-}
-
-#ifdef AN_OS_WIN32
-
-struct SWaitableTimer {
-    HANDLE Handle = nullptr;
-    ~SWaitableTimer() {
-        if ( Handle ) {
-            CloseHandle( Handle );
-        }
-    }
-};
-
-static thread_local SWaitableTimer WaitableTimer;
-
-//#include <thread>
-
-static void WaitMicrosecondsWIN32( int _Microseconds )
-{
-#if 0
-    std::this_thread::sleep_for( StdChrono::microseconds( _Microseconds ) );
-#else
-    LARGE_INTEGER WaitTime;
-
-    WaitTime.QuadPart = -10 * _Microseconds;
-
-    if ( !WaitableTimer.Handle ) {
-        WaitableTimer.Handle = CreateWaitableTimer( NULL, TRUE, NULL );
-    }
-
-    SetWaitableTimer( WaitableTimer.Handle, &WaitTime, 0, NULL, NULL, FALSE );
-    WaitForSingleObject( WaitableTimer.Handle, INFINITE );
-#endif
-}
-
-#endif
-
-void ARuntime::WaitSeconds( int _Seconds )
-{
-#ifdef AN_OS_WIN32
-    //std::this_thread::sleep_for( StdChrono::seconds( _Seconds ) );
-    WaitMicrosecondsWIN32( _Seconds * 1000000 );
-#else
-    struct timespec ts = { _Seconds, 0 };
-    while ( ::nanosleep( &ts, &ts ) == -1 && errno == EINTR ) {}
-#endif
-}
-
-void ARuntime::WaitMilliseconds( int _Milliseconds )
-{
-#ifdef AN_OS_WIN32
-    //std::this_thread::sleep_for( StdChrono::milliseconds( _Milliseconds ) );
-    WaitMicrosecondsWIN32( _Milliseconds * 1000 );
-#else
-    int64_t seconds = _Milliseconds / 1000;
-    int64_t nanoseconds = ( _Milliseconds - seconds * 1000 ) * 1000000;
-    struct timespec ts = {
-        seconds,
-        nanoseconds
-    };
-    while ( ::nanosleep( &ts, &ts ) == -1 && errno == EINTR ) {}
-#endif
-}
-
-void ARuntime::WaitMicroseconds( int _Microseconds )
-{
-#ifdef AN_OS_WIN32
-    //std::this_thread::sleep_for( StdChrono::microseconds( _Microseconds ) );
-    WaitMicrosecondsWIN32( _Microseconds );
-#else
-    int64_t seconds = _Microseconds / 1000000;
-    int64_t nanoseconds = ( _Microseconds - seconds * 1000000 ) * 1000;
-    struct timespec ts = {
-        seconds,
-        nanoseconds
-    };
-    while ( ::nanosleep( &ts, &ts ) == -1 && errno == EINTR ) {}
-#endif
-}
-
-int64_t ARuntime::SysSeconds()
-{
-    return StdChrono::duration_cast< StdChrono::seconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - StartSeconds;
-}
-
-double ARuntime::SysSeconds_d()
-{
-    return SysMicroseconds() * 0.000001;
-}
-
-int64_t ARuntime::SysMilliseconds()
-{
-    return StdChrono::duration_cast< StdChrono::milliseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - StartMilliseconds;
-}
-
-double ARuntime::SysMilliseconds_d()
-{
-    return SysMicroseconds() * 0.001;
-}
-
-int64_t ARuntime::SysMicroseconds()
-{
-    return StdChrono::duration_cast< StdChrono::microseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count() - StartMicroseconds;
-}
-
-double ARuntime::SysMicroseconds_d()
-{
-    return static_cast< double >( SysMicroseconds() );
-}
-
 int64_t ARuntime::SysFrameTimeStamp()
 {
     return FrameTimeStamp;
@@ -1208,41 +555,6 @@ int64_t ARuntime::SysFrameDuration()
 int ARuntime::SysFrameNumber() const
 {
     return FrameNumber;
-}
-
-void * ARuntime::LoadDynamicLib( const char * _LibraryName )
-{
-    AString name( _LibraryName );
-#if defined AN_OS_WIN32
-    name.ReplaceExt( ".dll" );
-#else
-    name.ReplaceExt( ".so" );
-#endif
-    return SDL_LoadObject( name.CStr() );
-}
-
-void ARuntime::UnloadDynamicLib( void * _Handle )
-{
-    SDL_UnloadObject( _Handle );
-}
-
-void * ARuntime::GetProcAddress( void * _Handle, const char * _ProcName )
-{
-    return _Handle ? SDL_LoadFunction( _Handle, _ProcName ) : nullptr;
-}
-
-void ARuntime::SetClipboard( const char * _Utf8String )
-{
-    SDL_SetClipboardText( _Utf8String );
-}
-
-const char * ARuntime::GetClipboard()
-{
-    if ( Clipboard ) {
-        SDL_free( Clipboard );
-    }
-    Clipboard = SDL_GetClipboardText();
-    return Clipboard;
 }
 
 SVideoMode const & ARuntime::GetVideoMode() const
@@ -1620,7 +932,7 @@ void ARuntime::UnpressKeysAndButtons()
     mouseEvent.Action = IA_RELEASE;
     mouseEvent.ModMask = 0;
 
-    double timeStamp = GRuntime.SysSeconds_d();
+    double timeStamp = Core::SysSeconds_d();
 
     for ( int i = 0 ; i <= KEY_LAST ; i++ ) {
         if ( PressedKeys[i] ) {
@@ -1662,8 +974,8 @@ void ARuntime::NewFrame()
     StreamedMemoryGPU->Wait();
 
     int64_t prevTimeStamp = FrameTimeStamp;
-    FrameTimeStamp = SysMicroseconds();
-    if ( prevTimeStamp == StartMicroseconds ) {
+    FrameTimeStamp = Core::SysMicroseconds();
+    if ( prevTimeStamp == Core::SysStartMicroseconds() ) {
         // First frame
         FrameDuration = 1000000.0 / 60;
     } else {
@@ -2191,7 +1503,7 @@ void ARuntime::PollEvents()
     }
 }
 
-void ARuntime::GetDisplays( TPodArray< SDisplayInfo > & Displays )
+void ARuntime::GetDisplays( TPodVector< SDisplayInfo > & Displays )
 {
     SDL_Rect rect;
     int displayCount = SDL_GetNumVideoDisplays();
@@ -2224,7 +1536,7 @@ void ARuntime::GetDisplays( TPodArray< SDisplayInfo > & Displays )
     }
 }
 
-void ARuntime::GetDisplayModes( SDisplayInfo const & Display, TPodArray< SDisplayMode > & Modes )
+void ARuntime::GetDisplayModes( SDisplayInfo const & Display, TPodVector< SDisplayMode > & Modes )
 {
     SDL_DisplayMode modeSDL;
 
@@ -2240,7 +1552,6 @@ void ARuntime::GetDisplayModes( SDisplayInfo const & Display, TPodArray< SDispla
             mode.Width = modeSDL.w;
             mode.Height = modeSDL.h;
             mode.RefreshRate = modeSDL.refresh_rate;
-            //GLogger.Printf( "Mode %d: %d %d %d hz\n", m, mode.w, mode.h, mode.refresh_rate );
         }
     }
 }

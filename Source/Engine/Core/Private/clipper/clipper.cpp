@@ -1,4 +1,4 @@
-#include <Core/Public/CriticalError.h>
+#include <Core/Public/Core.h>
 
 /*******************************************************************************
 *                                                                              *

@@ -43,13 +43,13 @@ struct SWorldRaycastFilter;
 class AVSD
 {
 public:
-    void QueryVisiblePrimitives( AWorld * InWorld, TPodArray< SPrimitiveDef * > & VisPrimitives, TPodArray< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery );
+    void QueryVisiblePrimitives( AWorld * InWorld, TPodVector< SPrimitiveDef * > & VisPrimitives, TPodVector< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery );
 
     bool RaycastTriangles( AWorld * InWorld, SWorldRaycastResult & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter );
 
     bool RaycastClosest( AWorld * InWorld, SWorldRaycastClosestResult & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter );
 
-    bool RaycastBounds( AWorld * InWorld, TPodArray< SBoxHitResult > & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter );
+    bool RaycastBounds( AWorld * InWorld, TPodVector< SBoxHitResult > & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter );
 
     bool RaycastClosestBounds( AWorld * InWorld, SBoxHitResult & Result, Float3 const & InRayStart, Float3 const & InRayEnd, SWorldRaycastFilter const * InFilter );
 
@@ -118,8 +118,8 @@ private:
     // Visibility result
     //
 
-    TPodArray< SPrimitiveDef * > * pVisPrimitives;
-    TPodArray< SSurfaceDef * > * pVisSurfs;
+    TPodVector< SPrimitiveDef * > * pVisPrimitives;
+    TPodVector< SSurfaceDef * > * pVisSurfs;
 
     //
     // Portal scissors debug
@@ -171,11 +171,11 @@ private:
         SCullThreadData ThreadData[AAsyncJobManager::MAX_WORKER_THREADS];
     };
 
-    TPodArray< SCullJobSubmit > CullSubmits;
-    TPodArray< SPrimitiveDef * > BoxPrimitives;
-    using AArrayOfBoundingBoxesSSE = TPodArray< BvAxisAlignedBoxSSE, 32, 32, AHeapAllocator >;
+    TPodVector< SCullJobSubmit > CullSubmits;
+    TPodVector< SPrimitiveDef * > BoxPrimitives;
+    using AArrayOfBoundingBoxesSSE = TPodVector< BvAxisAlignedBoxSSE, 32, 32, AHeapAllocator<16> >;
     AArrayOfBoundingBoxesSSE BoundingBoxesSSE;
-    TPodArray< int32_t, 32, 32, AHeapAllocator > CullingResult;
+    TPodVector< int32_t, 32, 32, AHeapAllocator<16> > CullingResult;
 
     void ProcessLevelVisibility( ALevel * InLevel );
     void FlowThroughPortals_r( SVisArea const * InArea );
@@ -242,7 +242,7 @@ private:
 
     SRaycast Raycast;
     SWorldRaycastResult * pRaycastResult;
-    TPodArray< SBoxHitResult > * pBoundsRaycastResult;
+    TPodVector< SBoxHitResult > * pBoundsRaycastResult;
 
     void RaycastSurface( SSurfaceDef * Self );
     void RaycastPrimitive( SPrimitiveDef * Self );

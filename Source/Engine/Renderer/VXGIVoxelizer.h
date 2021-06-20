@@ -30,6 +30,43 @@ SOFTWARE.
 
 #pragma once
 
-#include <Runtime/Public/Runtime.h>
+#include <RenderCore/ImmediateContext.h>
+#include <Core/Public/CoreMath.h>
 
-void GetCPUInfo( SCPUInfo & _Info );
+class VXGIVoxelizer {
+public:
+    VXGIVoxelizer();
+
+    void Render();
+
+private:
+    struct DrawElementsIndirectCommand {
+        uint32_t vertexCount;
+        uint32_t instanceCount;
+        uint32_t firstVertex;
+        uint32_t baseVertex;
+        uint32_t baseInstance;
+    };
+    struct ComputeIndirectCommand {
+        uint32_t workGroupSizeX;
+        uint32_t workGroupSizeY;
+        uint32_t workGroupSizeZ;
+    };
+
+    void CreatePipeline();
+    //struct SConstantData
+    //{
+    //    Float4x4 Transform[6];
+    //    Float4 LightDir;
+    //};
+    //TRef< RenderCore::IBuffer > ConstantBuffer;
+    //SConstantData ConstantBufferData;
+    TRef< RenderCore::IPipeline > Pipeline;
+    TRef< RenderCore::IRenderPass > RP;
+
+    TRef< RenderCore::IFramebuffer > voxelFBO;
+    TRef< RenderCore::ITexture > voxel2DTex;
+    TRef< RenderCore::ITexture > voxelTex;
+    TRef< RenderCore::IBuffer > drawIndBuffer;
+    TRef< RenderCore::IBuffer > compIndBuffer;
+};

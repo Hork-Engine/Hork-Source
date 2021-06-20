@@ -137,8 +137,8 @@ protected:
 private:
     //AGUID GUID;
     uint32_t ID;
-    TPodArray< MGInput *, 4 > Inputs;
-    TPodArray< MGOutput *, 1 > Outputs;
+    TPodVector< MGInput *, 4 > Inputs;
+    TPodVector< MGOutput *, 1 > Outputs;
     int Serial;
     bool bTouched;
     bool bSingleton;
@@ -889,7 +889,7 @@ public:
 
     void RegisterTextureSlot( MGTextureSlot * _Slot );
 
-    TPodArray< MGTextureSlot * > const & GetTextureSlots() const { return TextureSlots; }
+    TPodVector< MGTextureSlot * > const & GetTextureSlots() const { return TextureSlots; }
 
     void CompileStage( class AMaterialBuildContext & ctx );
 
@@ -901,8 +901,8 @@ public:
                                  AMaterialBuildContext const * FragmentStage );
 
 protected:
-    TPodArray< MGNode * > Nodes;
-    TPodArray< MGTextureSlot * > TextureSlots;
+    TPodVector< MGNode * > Nodes;
+    TPodVector< MGTextureSlot * > TextureSlots;
     uint32_t NodeIdGen;
 
     MGMaterialGraph();

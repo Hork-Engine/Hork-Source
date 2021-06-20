@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Runtime/Public/Runtime.h>
 #include <Core/Public/CriticalError.h>
+#include <Core/Public/Core.h>
 
 #include <SDL.h>
 
@@ -41,9 +42,9 @@ AAudioDevice::AAudioDevice( int InSampleRate )
 
     const char * driver = NULL;
 
-    int n = GRuntime.CheckArg( "-AudioDrv" );
+    int n = Core::CheckArg( "-AudioDrv" );
     if ( n != -1 ) {
-        driver = GRuntime.GetArgv()[n];
+        driver = Core::GetArgv()[n];
         SDL_setenv( "SDL_AUDIODRIVER", driver, SDL_TRUE );
     }
 

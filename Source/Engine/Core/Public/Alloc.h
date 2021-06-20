@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Thread.h"
+#include <malloc.h>
 
 /*
 
@@ -98,6 +99,12 @@ AN_FORCEINLINE void ZeroMemSSE( void * _Dst, size_t _SizeInBytes ) {
     _ZeroMemSSE( ( byte * )_Dst, _SizeInBytes );
 }
 
+void * SysAlloc( size_t _SizeInBytes, int _Alignment = 16 );
+
+void * SysRealloc( void * _Bytes, size_t _SizeInBytes, int _Alignment = 16 );
+
+void SysFree( void * _Bytes );
+
 }
 
 /**
@@ -127,7 +134,7 @@ public:
     void * ClearedAlloc( size_t _BytesCount, int _Alignment = 16 );
 
     /** Tries to realloc existing buffer (thread safe) */
-    void * Realloc( void * _Data, int _NewBytesCount, bool _KeepOld );
+    void * Realloc( void * _Data, int _NewBytesCount, int _NewAlignment, bool _KeepOld );
 
     /** Heap memory deallocation (thread safe) */
     void Free( void * _Bytes );
@@ -324,11 +331,16 @@ private:
 #endif
 };
 
-AN_FORCEINLINE void * AZoneMemory::ClearedAlloc( size_t _BytesCount ) {
+AN_FORCEINLINE void * AZoneMemory::ClearedAlloc( size_t _BytesCount )
+{
     void * bytes = Alloc( _BytesCount );
     Core::ZeroMemSSE( bytes, _BytesCount );
     return bytes;
 }
+
+extern AHeapMemory GHeapMemory;
+extern AHunkMemory GHunkMemory;
+extern AZoneMemory GZoneMemory;
 
 /**
 
@@ -338,23 +350,28 @@ Allocator base interface
 
 */
 template< typename T >
-class TTemplateAllocator {
+class TTemplateAllocator : public ANoncopyable
+{
 public:
-    void * Alloc( size_t _BytesCount ) {
+    void * Alloc( size_t _BytesCount )
+    {
         return static_cast< T * >( this )->ImplAlloc( _BytesCount );
     }
 
-    void * ClearedAlloc( size_t _BytesCount ) {
+    void * ClearedAlloc( size_t _BytesCount )
+    {
         void * bytes = static_cast< T * >( this )->ImplAlloc( _BytesCount );
         Core::ZeroMemSSE( bytes, _BytesCount );
         return bytes;
     }
 
-    void * Realloc( void * _Data, size_t _NewBytesCount, bool _KeepOld ) {
+    void * Realloc( void * _Data, size_t _NewBytesCount, bool _KeepOld )
+    {
         return static_cast< T * >( this )->ImplRealloc( _Data, _NewBytesCount, _KeepOld );
     }
 
-    void Free( void * _Bytes ) {
+    void Free( void * _Bytes )
+    {
         static_cast< T * >( this )->ImplFree( _Bytes );
     }
 };
@@ -366,15 +383,27 @@ AZoneAllocator
 Use for small objects
 
 */
-class AZoneAllocator final : public TTemplateAllocator< AZoneAllocator > {
-    AN_FORBID_COPY( AZoneAllocator )
-
+class AZoneAllocator final : public TTemplateAllocator< AZoneAllocator >
+{
 public:
     AZoneAllocator() {}
+
     static AZoneAllocator & Inst() { static AZoneAllocator inst; return inst; }
-    void * ImplAlloc( size_t _BytesCount );
-    void * ImplRealloc( void * _Data, size_t _NewBytesCount, bool _KeepOld );
-    void ImplFree( void * _Bytes );
+
+    void * ImplAlloc( size_t _BytesCount )
+    {
+        return GZoneMemory.Alloc( _BytesCount );
+    }
+
+    void * ImplRealloc( void * _Data, size_t _NewBytesCount, bool _KeepOld )
+    {
+        return GZoneMemory.Realloc( _Data, _NewBytesCount, _KeepOld );
+    }
+
+    void ImplFree( void * _Bytes )
+    {
+        GZoneMemory.Free( _Bytes );
+    }
 };
 
 /**
@@ -384,15 +413,28 @@ AHeapAllocator
 Use for huge data allocation
 
 */
-class AHeapAllocator final : public TTemplateAllocator< AHeapAllocator > {
-    AN_FORBID_COPY( AHeapAllocator )
-
+template< int Alignment >
+class AHeapAllocator final : public TTemplateAllocator< AHeapAllocator<Alignment> >
+{
 public:
     AHeapAllocator() {}
-    static AHeapAllocator & Inst() { static AHeapAllocator inst; return inst; }
-    void * ImplAlloc( size_t _BytesCount );
-    void * ImplRealloc( void * _Data, size_t _NewBytesCount, bool _KeepOld );
-    void ImplFree( void * _Bytes );
+
+    static AHeapAllocator<Alignment> & Inst() { static AHeapAllocator<Alignment> inst; return inst; }
+
+    void * ImplAlloc( size_t _BytesCount )
+    {
+        return GHeapMemory.Alloc( _BytesCount, Alignment );
+    }
+
+    void * ImplRealloc( void * _Data, size_t _NewBytesCount, bool _KeepOld )
+    {
+        return GHeapMemory.Realloc( _Data, _NewBytesCount, Alignment, _KeepOld );
+    }
+
+    void ImplFree( void * _Bytes )
+    {
+        GHeapMemory.Free( _Bytes );
+    }
 };
 
 
@@ -403,8 +445,3 @@ Dynamic Stack Memory
 */
 
 #define StackAlloc( _NumBytes ) alloca( _NumBytes )
-
-
-extern AHeapMemory GHeapMemory;
-extern AHunkMemory GHunkMemory;
-extern AZoneMemory GZoneMemory;

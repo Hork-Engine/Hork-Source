@@ -139,7 +139,7 @@ bool IsPathSeparator( char _Char ) {
     return _Char == '/' || _Char == '\\';
 }
 
-void StripFilename( std::string & s ) {
+void ClipFilename( std::string & s ) {
     int len = (int)s.length();
     while ( --len > 0 && !IsPathSeparator( s[len] ) ) {
         ;

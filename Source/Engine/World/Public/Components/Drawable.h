@@ -124,7 +124,7 @@ public:
     bool IsRaycastAllowed() const { return bAllowRaycast; }
 
     /** Raycast the drawable */
-    bool Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodArray< STriangleHitResult > & Hits ) const;
+    bool Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< STriangleHitResult > & Hits ) const;
 
     /** Raycast the drawable */
     bool RaycastClosest( Float3 const & InRayStart, Float3 const & InRayEnd, STriangleHitResult & Hit ) const;

@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Core/Public/CoreMath.h>
-#include <Core/Public/PodArray.h>
+#include <Core/Public/PodVector.h>
 
 #include <RenderCore/FrameGraph/FrameGraph.h>
 
@@ -125,7 +125,7 @@ private:
 
     using AVirtualTexturePtr = AVirtualTexture *;
 
-    TPodArray< AVirtualTexturePtr > VirtualTextures;
+    TPodVector< AVirtualTexturePtr > VirtualTextures;
 
     /** Physical page info */
     struct SPhysPageInfo
@@ -147,10 +147,10 @@ private:
     };
 
     /** Physical page infos */
-    TPodArray< SPhysPageInfo > PhysPageInfo;
+    TPodVector< SPhysPageInfo > PhysPageInfo;
 
     /** Physical page infos sorted by time */
-    TPodArray< SPhysPageInfoSorted > PhysPageInfoSorted;
+    TPodVector< SPhysPageInfoSorted > PhysPageInfoSorted;
 
     uint32_t PageCacheCapacityX;
     uint32_t PageCacheCapacityY;
@@ -164,7 +164,7 @@ private:
 
     int64_t LRUTime;
 
-    TPodArray< SPageTransfer * > Transfers;
+    TPodVector< SPageTransfer * > Transfers;
     AMutex TransfersMutex;
 
     enum { MAX_UPLOADS_PER_FRAME = 64 };

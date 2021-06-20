@@ -108,7 +108,7 @@ bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int S
                 if ( newFramesBufferSize > MA_SIZE_MAX ) {
                     break;
                 }
-                pFrames = GHeapMemory.Realloc( pFrames, (size_t)newFramesBufferSize, true );
+                pFrames = GHeapMemory.Realloc( pFrames, (size_t)newFramesBufferSize, 16, true );
                 framesCapacity = newFramesCap;
             }
 

@@ -63,6 +63,15 @@ public:
 
     static size_t ThisThreadId();
 
+    /** Sleep current thread */
+    static void WaitSeconds( int _Seconds );
+
+    /** Sleep current thread */
+    static void WaitMilliseconds( int _Milliseconds );
+
+    /** Sleep current thread */
+    static void WaitMicroseconds( int _Microseconds );
+
 private:
 #ifdef AN_OS_WIN32
     void * Internal = nullptr;

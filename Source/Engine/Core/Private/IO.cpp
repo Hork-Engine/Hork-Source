@@ -51,23 +51,28 @@ AFileStream::AFileStream()
 {
 }
 
-AFileStream::~AFileStream() {
+AFileStream::~AFileStream()
+{
     Close();
 }
 
-bool AFileStream::OpenRead( const char * _FileName ) {
+bool AFileStream::OpenRead( AStringView _FileName )
+{
     return Open( _FileName, M_Read );
 }
 
-bool AFileStream::OpenWrite( const char * _FileName ) {
+bool AFileStream::OpenWrite( AStringView _FileName )
+{
     return Open( _FileName, M_Write );
 }
 
-bool AFileStream::OpenAppend( const char * _FileName ) {
+bool AFileStream::OpenAppend( AStringView _FileName )
+{
     return Open( _FileName, M_Append );
 }
 
-static FILE * OpenFile( const char * _FileName, const char * _Mode ) {
+static FILE * OpenFile( const char * _FileName, const char * _Mode )
+{
     FILE *f;
 #if defined(_MSC_VER)
     wchar_t wMode[64];
@@ -96,7 +101,8 @@ static FILE * OpenFile( const char * _FileName, const char * _Mode ) {
     return f;
 }
 
-bool AFileStream::Open( const char * _FileName, int _Mode ) {
+bool AFileStream::Open( AStringView _FileName, int _Mode )
+{
     AN_ASSERT( _Mode >= 0 && _Mode < 3 );
 
     Close();
@@ -104,7 +110,7 @@ bool AFileStream::Open( const char * _FileName, int _Mode ) {
     Name = _FileName;
     Name.FixPath();
     if ( Name.Length() && Name[ Name.Length() - 1 ] == '/' ) {
-        GLogger.Printf( "Invalid file name %s\n", _FileName );
+        GLogger.Printf( "Invalid file name %s\n", AString(_FileName).CStr() );
         Name.Clear();
         return false;
     }
@@ -127,7 +133,8 @@ bool AFileStream::Open( const char * _FileName, int _Mode ) {
     return true;
 }
 
-void AFileStream::Close() {
+void AFileStream::Close()
+{
     if ( Mode == M_Closed ) {
         return;
     }
@@ -139,11 +146,13 @@ void AFileStream::Close() {
     Handle = nullptr;
 }
 
-const char * AFileStream::Impl_GetFileName() const {
+const char * AFileStream::Impl_GetFileName() const
+{
     return Name.CStr();
 }
 
-int AFileStream::Impl_Read( void * _Buffer, int _SizeInBytes ) {
+int AFileStream::Impl_Read( void * _Buffer, int _SizeInBytes )
+{
     if ( Mode != M_Read ) {
         GLogger.Printf( "Failed to read from %s (wrong mode)\n", Name.CStr() );
         return 0;
@@ -151,7 +160,8 @@ int AFileStream::Impl_Read( void * _Buffer, int _SizeInBytes ) {
     return fread( _Buffer, 1, _SizeInBytes, ( FILE * )Handle );
 }
 
-int AFileStream::Impl_Write( const void * _Buffer, int _SizeInBytes ) {
+int AFileStream::Impl_Write( const void * _Buffer, int _SizeInBytes )
+{
     if ( Mode != M_Write && Mode != M_Append ) {
         GLogger.Printf( "Failed to write %s (wrong mode)\n", Name.CStr() );
         return 0;
@@ -160,7 +170,8 @@ int AFileStream::Impl_Write( const void * _Buffer, int _SizeInBytes ) {
     return fwrite( _Buffer, 1, _SizeInBytes, ( FILE * )Handle );
 }
 
-char * AFileStream::Impl_Gets( char * _StrBuf, int _StrSz ) {
+char * AFileStream::Impl_Gets( char * _StrBuf, int _StrSz )
+{
     if ( Mode != M_Read ) {
         GLogger.Printf( "Failed to read from %s (wrong mode)\n", Name.CStr() );
         return nullptr;
@@ -169,27 +180,33 @@ char * AFileStream::Impl_Gets( char * _StrBuf, int _StrSz ) {
     return fgets( _StrBuf, _StrSz, ( FILE * )Handle );
 }
 
-void AFileStream::Impl_Flush() {
+void AFileStream::Impl_Flush()
+{
     fflush( ( FILE * )Handle );
 }
 
-long AFileStream::Impl_Tell() {
+long AFileStream::Impl_Tell()
+{
     return ftell( ( FILE * )Handle );
 }
 
-bool AFileStream::Impl_SeekSet( long _Offset ) {
+bool AFileStream::Impl_SeekSet( long _Offset )
+{
     return fseek( ( FILE * )Handle, _Offset, SEEK_SET ) == 0;
 }
 
-bool AFileStream::Impl_SeekCur( long _Offset ) {
+bool AFileStream::Impl_SeekCur( long _Offset )
+{
     return fseek( ( FILE * )Handle, _Offset, SEEK_CUR ) == 0;
 }
 
-bool AFileStream::Impl_SeekEnd( long _Offset ) {
+bool AFileStream::Impl_SeekEnd( long _Offset )
+{
     return fseek( ( FILE * )Handle, _Offset, SEEK_END ) == 0;
 }
 
-size_t AFileStream::Impl_SizeInBytes() {
+size_t AFileStream::Impl_SizeInBytes()
+{
     long offset = Tell();
     SeekEnd( 0 );
     long sizeInBytes = Tell();
@@ -197,7 +214,8 @@ size_t AFileStream::Impl_SizeInBytes() {
     return (size_t)sizeInBytes;
 }
 
-bool AFileStream::Impl_Eof() {
+bool AFileStream::Impl_Eof()
+{
     return feof( ( FILE * )Handle ) != 0;
 }
 
@@ -211,39 +229,28 @@ AMemoryStream::AMemoryStream()
 {
 }
 
-AMemoryStream::~AMemoryStream() {
+AMemoryStream::~AMemoryStream()
+{
     Close();
 }
 
-void * AMemoryStream::Alloc( size_t _SizeInBytes ) {
-    return GHeapMemory.Alloc( _SizeInBytes );
+void * AMemoryStream::Alloc( size_t _SizeInBytes )
+{
+    return GHeapMemory.Alloc( _SizeInBytes, 16 );
 }
 
-void * AMemoryStream::Realloc( void * _Data, size_t _SizeInBytes ) {
-    return GHeapMemory.Realloc( _Data, _SizeInBytes, true );
+void * AMemoryStream::Realloc( void * _Data, size_t _SizeInBytes )
+{
+    return GHeapMemory.Realloc( _Data, _SizeInBytes, 16, true );
 }
 
-void AMemoryStream::Free( void * _Data ) {
+void AMemoryStream::Free( void * _Data )
+{
     GHeapMemory.Free( _Data );
 }
 
-bool AMemoryStream::OpenRead( AString const & _FileName, const void * _MemoryBuffer, size_t _SizeInBytes ) {
-    return OpenRead( _FileName.CStr(), _MemoryBuffer, _SizeInBytes );
-}
-
-bool AMemoryStream::OpenRead( AString const & _FileName, AArchive const & _Archive ) {
-    return OpenRead( _FileName.CStr(), _Archive );
-}
-
-bool AMemoryStream::OpenWrite( AString const & _FileName, void * _MemoryBuffer, size_t _SizeInBytes ) {
-    return OpenWrite( _FileName.CStr(), _MemoryBuffer, _SizeInBytes );
-}
-
-bool AMemoryStream::OpenWrite( AString const & _FileName, size_t _ReservedSize ) {
-    return OpenWrite( _FileName.CStr(), _ReservedSize );
-}
-
-bool AMemoryStream::OpenRead( const char * _FileName, const void * _MemoryBuffer, size_t _SizeInBytes ) {
+bool AMemoryStream::OpenRead( AStringView _FileName, const void * _MemoryBuffer, size_t _SizeInBytes )
+{
     Close();
     Name = _FileName;
     MemoryBuffer = reinterpret_cast< byte * >( const_cast< void * >( _MemoryBuffer ) );
@@ -254,11 +261,12 @@ bool AMemoryStream::OpenRead( const char * _FileName, const void * _MemoryBuffer
     return true;
 }
 
-bool AMemoryStream::OpenRead( const char * _FileName, AArchive const & _Archive ) {
+bool AMemoryStream::OpenRead( AStringView _FileName, AArchive const & _Archive )
+{
     Close();
 
     if ( !_Archive.ExtractFileToHeapMemory( _FileName, (void **)&MemoryBuffer, &MemoryBufferSize ) ) {
-        GLogger.Printf( "Couldn't open %s\n", _FileName );
+        GLogger.Printf( "Couldn't open %s\n", AString(_FileName).CStr() );
         return false;
     }
 
@@ -269,7 +277,8 @@ bool AMemoryStream::OpenRead( const char * _FileName, AArchive const & _Archive 
     return true;
 }
 
-bool AMemoryStream::OpenRead( int _FileIndex, AArchive const & _Archive ) {
+bool AMemoryStream::OpenRead( int _FileIndex, AArchive const & _Archive )
+{
     Close();
 
     _Archive.GetFileName( _FileIndex, Name );
@@ -286,7 +295,8 @@ bool AMemoryStream::OpenRead( int _FileIndex, AArchive const & _Archive ) {
     return true;
 }
 
-bool AMemoryStream::OpenWrite( const char * _FileName, void * _MemoryBuffer, size_t _SizeInBytes ) {
+bool AMemoryStream::OpenWrite( AStringView _FileName, void * _MemoryBuffer, size_t _SizeInBytes )
+{
     Close();
     Name = _FileName;
     MemoryBuffer = reinterpret_cast< byte * >( _MemoryBuffer );
@@ -297,7 +307,8 @@ bool AMemoryStream::OpenWrite( const char * _FileName, void * _MemoryBuffer, siz
     return true;
 }
 
-bool AMemoryStream::OpenWrite( const char * _FileName, size_t _ReservedSize ) {
+bool AMemoryStream::OpenWrite( AStringView _FileName, size_t _ReservedSize )
+{
     Close();
     Name = _FileName;
     MemoryBuffer = ( byte * )Alloc( _ReservedSize );
@@ -308,7 +319,8 @@ bool AMemoryStream::OpenWrite( const char * _FileName, size_t _ReservedSize ) {
     return true;
 }
 
-void AMemoryStream::Close() {
+void AMemoryStream::Close()
+{
     if ( Mode == M_Closed ) {
         return;
     }
@@ -325,7 +337,8 @@ const char * AMemoryStream::Impl_GetFileName() const {
     return Name.CStr();
 }
 
-int AMemoryStream::Impl_Read( void * _Buffer, int _SizeInBytes ) {
+int AMemoryStream::Impl_Read( void * _Buffer, int _SizeInBytes )
+{
     if ( Mode != M_Read ) {
         GLogger.Printf( "Failed to read from %s (wrong mode)\n", Name.CStr() );
         return 0;
@@ -344,7 +357,8 @@ int AMemoryStream::Impl_Read( void * _Buffer, int _SizeInBytes ) {
     return _SizeInBytes;
 }
 
-int AMemoryStream::Impl_Write( const void * _Buffer, int _SizeInBytes ) {
+int AMemoryStream::Impl_Write( const void * _Buffer, int _SizeInBytes )
+{
     if ( Mode != M_Write ) {
         GLogger.Printf( "Failed to write %s (wrong mode)\n", Name.CStr() );
         return 0;
@@ -366,7 +380,8 @@ int AMemoryStream::Impl_Write( const void * _Buffer, int _SizeInBytes ) {
     return _SizeInBytes;
 }
 
-char * AMemoryStream::Impl_Gets( char * _StrBuf, int _StrSz ) {
+char * AMemoryStream::Impl_Gets( char * _StrBuf, int _StrSz )
+{
     if ( Mode != M_Read ) {
         GLogger.Printf( "Failed to read from %s (wrong mode)\n", Name.CStr() );
         return nullptr;
@@ -398,14 +413,17 @@ char * AMemoryStream::Impl_Gets( char * _StrBuf, int _StrSz ) {
     return _StrBuf;
 }
 
-void AMemoryStream::Impl_Flush() {
+void AMemoryStream::Impl_Flush()
+{
 }
 
-long AMemoryStream::Impl_Tell() {
+long AMemoryStream::Impl_Tell()
+{
     return static_cast< long >( MemoryBufferOffset );
 }
 
-bool AMemoryStream::Impl_SeekSet( long _Offset ) {
+bool AMemoryStream::Impl_SeekSet( long _Offset )
+{
     const int newOffset = _Offset;
 
 #if 0
@@ -419,7 +437,8 @@ bool AMemoryStream::Impl_SeekSet( long _Offset ) {
     return true;
 }
 
-bool AMemoryStream::Impl_SeekCur( long _Offset ) {
+bool AMemoryStream::Impl_SeekCur( long _Offset )
+{
     const int newOffset = MemoryBufferOffset + _Offset;
 
 #if 0
@@ -433,7 +452,8 @@ bool AMemoryStream::Impl_SeekCur( long _Offset ) {
     return true;
 }
 
-bool AMemoryStream::Impl_SeekEnd( long _Offset ) {
+bool AMemoryStream::Impl_SeekEnd( long _Offset )
+{
     const int newOffset = MemoryBufferSize + _Offset;
 
 #if 0
@@ -447,15 +467,18 @@ bool AMemoryStream::Impl_SeekEnd( long _Offset ) {
     return true;
 }
 
-size_t AMemoryStream::Impl_SizeInBytes() {
+size_t AMemoryStream::Impl_SizeInBytes()
+{
     return static_cast< size_t >(MemoryBufferSize);
 }
 
-bool AMemoryStream::Impl_Eof() {
+bool AMemoryStream::Impl_Eof()
+{
     return MemoryBufferOffset >= MemoryBufferSize;
 }
 
-void * AMemoryStream::GrabMemory() {
+void * AMemoryStream::GrabMemory()
+{
     return MemoryBuffer;
 }
 
@@ -466,7 +489,7 @@ AArchive::AArchive()
 
 }
 
-AArchive::AArchive( const char * _ArchiveName, bool bResourcePack )
+AArchive::AArchive( AStringView _ArchiveName, bool bResourcePack )
     : AArchive()
 {
     Open( _ArchiveName, bResourcePack );
@@ -483,7 +506,7 @@ AArchive::~AArchive()
     Close();
 }
 
-bool AArchive::Open( const char * _ArchiveName, bool bResourcePack )
+bool AArchive::Open( AStringView _ArchiveName, bool bResourcePack )
 {
     mz_zip_archive arch;
     mz_uint64 fileStartOffset = 0;
@@ -510,9 +533,9 @@ bool AArchive::Open( const char * _ArchiveName, bool bResourcePack )
 
     Core::ZeroMem( &arch, sizeof( arch ) );
 
-    mz_bool status = mz_zip_reader_init_file_v2( &arch, _ArchiveName, 0, fileStartOffset, archiveSize );
+    mz_bool status = mz_zip_reader_init_file_v2( &arch, AString( _ArchiveName ).CStr(), 0, fileStartOffset, archiveSize );
     if ( !status ) {
-        GLogger.Printf( "Couldn't open archive %s\n", _ArchiveName );
+        GLogger.Printf( "Couldn't open archive %s\n", AString( _ArchiveName ).CStr() );
         return false;
     }
 
@@ -565,9 +588,9 @@ int AArchive::GetNumFiles() const
     return mz_zip_reader_get_num_files( (mz_zip_archive *)Handle );
 }
 
-int AArchive::LocateFile( const char * _FileName ) const
+int AArchive::LocateFile( AStringView _FileName ) const
 {
-    return mz_zip_reader_locate_file( (mz_zip_archive *)Handle, _FileName, NULL, 0 );
+    return mz_zip_reader_locate_file( (mz_zip_archive *)Handle, AString(_FileName).CStr(), NULL, 0 );
 }
 
 #define MZ_ZIP_CDH_COMPRESSED_SIZE_OFS      20
@@ -622,7 +645,7 @@ bool AArchive::ExtractFileToMemory( int _FileIndex, void * _MemoryBuffer, size_t
     return !!mz_zip_reader_extract_to_mem( (mz_zip_archive *)Handle, _FileIndex, _MemoryBuffer, _SizeInBytes, 0 );
 }
 
-bool AArchive::ExtractFileToHeapMemory( const char * _FileName, void ** _HeapMemoryPtr, int * _SizeInBytes ) const
+bool AArchive::ExtractFileToHeapMemory( AStringView _FileName, void ** _HeapMemoryPtr, int * _SizeInBytes ) const
 {
     size_t uncompSize;
 
@@ -679,7 +702,7 @@ bool AArchive::ExtractFileToHeapMemory( int FileIndex, void ** _HeapMemoryPtr, i
     return true;
 }
 
-bool AArchive::ExtractFileToHunkMemory( const char * _FileName, void ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark ) const
+bool AArchive::ExtractFileToHunkMemory( AStringView _FileName, void ** _HunkMemoryPtr, int * _SizeInBytes, int * _HunkMark ) const
 {
     size_t uncompSize;
 
@@ -777,7 +800,7 @@ void RemoveFile( const char * _FileName )
 }
 
 #ifdef AN_OS_LINUX
-void TraverseDirectory( AString const & Path, bool bSubDirs, STraverseDirectoryCB Callback )
+void TraverseDirectory( AStringView Path, bool bSubDirs, STraverseDirectoryCB Callback )
 {
     AString fn;
     DIR * dir = opendir( Path.CStr() );
@@ -804,7 +827,7 @@ void TraverseDirectory( AString const & Path, bool bSubDirs, STraverseDirectoryC
                          || !strcmp( "..", entry->d_name ) ) {
                         continue;
                     }
-                    TraverseDirectory( fn.CStr(), bSubDirs, Callback );
+                    TraverseDirectory( fn, bSubDirs, Callback );
                 }
                 Callback( fn, true );
             } else {
@@ -817,8 +840,7 @@ void TraverseDirectory( AString const & Path, bool bSubDirs, STraverseDirectoryC
 #endif
 
 #ifdef AN_OS_WIN32
-//#pragma warning( disable : 4996 )
-void TraverseDirectory( AString const & Path, bool bSubDirs, STraverseDirectoryCB Callback )
+void TraverseDirectory( AStringView Path, bool bSubDirs, STraverseDirectoryCB Callback )
 {
     AString fn;
 
@@ -840,7 +862,7 @@ void TraverseDirectory( AString const & Path, bool bSubDirs, STraverseDirectoryC
                          || !strcmp( "..", fd.cFileName ) ) {
                         continue;
                     }
-                    TraverseDirectory( fn.CStr(), bSubDirs, Callback );
+                    TraverseDirectory( fn, bSubDirs, Callback );
                 }
                 Callback( fn, true );
             } else {
@@ -878,21 +900,23 @@ bool WriteResourcePack( const char * SourcePath, const char * ResultFile )
 
     if ( mz_zip_writer_init_cfile( &zip, file, 0 ) ) {
         TraverseDirectory( path, true,
-                 [&zip, &path]( AString const & FileName, bool bIsDirectory )
+                 [&zip, &path]( AStringView FileName, bool bIsDirectory )
         {
             if ( bIsDirectory ) {
                 return;
             }
 
-            if ( !Core::Stricmp( &FileName[FileName.FindExt()], ".resources" ) ) {
+            if ( FileName.CompareExt( ".resources", true ) ) {
                 return;
             }
 
-            GLogger.Printf( "Writing '%s'\n", &FileName[path.Length() + 1] );
+            AString fn = FileName.TruncateHead( path.Length() + 1 );
 
-            mz_bool status = mz_zip_writer_add_file( &zip, &FileName[path.Length() + 1], FileName.CStr(), nullptr, 0, MZ_UBER_COMPRESSION );
+            GLogger.Printf( "Writing '%s'\n", fn.CStr() );
+
+            mz_bool status = mz_zip_writer_add_file( &zip, fn.CStr(), AString(FileName).CStr(), nullptr, 0, MZ_UBER_COMPRESSION );
             if ( !status ) {
-                GLogger.Printf( "Failed to archive %s\n", FileName.CStr() );
+                GLogger.Printf( "Failed to archive %s\n", AString( FileName ).CStr() );
             }
         } );
 

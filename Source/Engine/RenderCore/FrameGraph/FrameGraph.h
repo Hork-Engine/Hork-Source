@@ -106,8 +106,8 @@ protected:
     std::size_t Id;
     const char * Name;
     ARenderTask const * Creator;
-    TPodArray< ARenderTask const * > Readers;
-    TPodArray< ARenderTask const * > Writers;
+    TPodVector< ARenderTask const * > Readers;
+    TPodVector< ARenderTask const * > Writers;
     std::size_t ResourceRefs;
     bool bCaptured;
 };
@@ -276,9 +276,9 @@ protected:
     AFrameGraph * pFrameGraph;
     const char * Name;
     TStdVector< StdUniquePtr< AFrameGraphResourceProxy > > ProducedResources;
-    TPodArray< AFrameGraphResourceProxy * > ReadResources;
-    TPodArray< AFrameGraphResourceProxy * > WriteResources;
-    TPodArray< AFrameGraphResourceProxy * > ReadWriteResources;
+    TPodVector< AFrameGraphResourceProxy * > ReadResources;
+    TPodVector< AFrameGraphResourceProxy * > WriteResources;
+    TPodVector< AFrameGraphResourceProxy * > ReadWriteResources;
     std::size_t ResourceRefs;
     bool bCulled;
 };
@@ -615,7 +615,7 @@ public:
     }
 
     TStdVector< TRef< RenderCore::ITexture > > Textures; // All textures
-    TPodArray< RenderCore::ITexture * > FreeTextures; // Free list
+    TPodVector< RenderCore::ITexture * > FreeTextures; // Free list
 
 private:
     void RegisterResources()
@@ -644,8 +644,8 @@ private:
 
     TStdVector< StdUniquePtr< ARenderTask > > RenderTasks;
     TStdVector< StdUniquePtr< AFrameGraphResourceProxy > > ExternalResources;
-    TPodArray< AFrameGraphResourceProxy * > Resources; // all resources
-    TPodArray< AFrameGraphResourceProxy * > CapturedResources;
+    TPodVector< AFrameGraphResourceProxy * > Resources; // all resources
+    TPodVector< AFrameGraphResourceProxy * > CapturedResources;
 
     struct STimelineStep
     {
@@ -656,16 +656,16 @@ private:
         int NumDerealizedResources;
     };
 
-    TPodArray< STimelineStep > Timeline;
-    TPodArray< AFrameGraphResourceProxy * > RealizedResources, DerealizedResources;
+    TPodVector< STimelineStep > Timeline;
+    TPodVector< AFrameGraphResourceProxy * > RealizedResources, DerealizedResources;
 
     THash<> FramebufferHash;
     TStdVector< TRef< RenderCore::IFramebuffer > > FramebufferCache;
-    TPodArray< int > FramebufferHashes;
+    TPodVector< int > FramebufferHashes;
 
     // Temporary data. Used for building
     TPodStack< AFrameGraphResourceProxy * > UnreferencedResources;
-    TPodArray< AFrameGraphResourceProxy * > ResourcesRW;
+    TPodVector< AFrameGraphResourceProxy * > ResourcesRW;
 
     mutable std::size_t IdGenerator = 0;
 };

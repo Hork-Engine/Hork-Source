@@ -35,6 +35,7 @@ SOFTWARE.
 #include <World/Public/Base/ResourceManager.h>
 
 #include <Runtime/Public/ScopedTimeCheck.h>
+#include <Runtime/Public/Runtime.h>
 
 #include <Core/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
@@ -372,7 +373,7 @@ bool AIndexedMesh::LoadResource( IBinaryStream & Stream ) {
             WriteJointWeights( asset.Weights.ToPtr(), asset.Weights.Size(), 0 );
         }
 
-        TPodArray< AMaterialInstance * > matInstances;
+        TPodVector< AMaterialInstance * > matInstances;
         matInstances.Resize( asset.Materials.Size() );
         for ( int j = 0; j < asset.Materials.Size(); j++ ) {
             AMaterialInstance * matInst = CreateInstanceOf< AMaterialInstance >();
@@ -746,8 +747,8 @@ BvAxisAlignedBox const & AIndexedMesh::GetBoundingBox() const {
 }
 
 void AIndexedMesh::InitializeBoxMesh( const Float3 & _Size, float _TexCoordScale ) {
-    TPodArray< SMeshVertex > vertices;
-    TPodArray< unsigned int > indices;
+    TPodVector< SMeshVertex > vertices;
+    TPodVector< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
     CreateBoxMesh( vertices, indices, bounds, _Size, _TexCoordScale );
@@ -760,8 +761,8 @@ void AIndexedMesh::InitializeBoxMesh( const Float3 & _Size, float _TexCoordScale
 }
 
 void AIndexedMesh::InitializeSphereMesh( float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
-    TPodArray< SMeshVertex > vertices;
-    TPodArray< unsigned int > indices;
+    TPodVector< SMeshVertex > vertices;
+    TPodVector< unsigned int > indices;
     BvAxisAlignedBox bounds;
     
     CreateSphereMesh( vertices, indices, bounds, _Radius, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs );
@@ -774,8 +775,8 @@ void AIndexedMesh::InitializeSphereMesh( float _Radius, float _TexCoordScale, in
 }
 
 void AIndexedMesh::InitializePlaneMeshXZ( float _Width, float _Height, float _TexCoordScale ) {
-    TPodArray< SMeshVertex > vertices;
-    TPodArray< unsigned int > indices;
+    TPodVector< SMeshVertex > vertices;
+    TPodVector< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
     CreatePlaneMeshXZ( vertices, indices, bounds, _Width, _Height, _TexCoordScale );
@@ -788,8 +789,8 @@ void AIndexedMesh::InitializePlaneMeshXZ( float _Width, float _Height, float _Te
 }
 
 void AIndexedMesh::InitializePlaneMeshXY( float _Width, float _Height, float _TexCoordScale ) {
-    TPodArray< SMeshVertex > vertices;
-    TPodArray< unsigned int > indices;
+    TPodVector< SMeshVertex > vertices;
+    TPodVector< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
     CreatePlaneMeshXY( vertices, indices, bounds, _Width, _Height, _TexCoordScale );
@@ -802,8 +803,8 @@ void AIndexedMesh::InitializePlaneMeshXY( float _Width, float _Height, float _Te
 }
 
 void AIndexedMesh::InitializePatchMesh( Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
-    TPodArray< SMeshVertex > vertices;
-    TPodArray< unsigned int > indices;
+    TPodVector< SMeshVertex > vertices;
+    TPodVector< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
     CreatePatchMesh( vertices, indices, bounds,
@@ -817,8 +818,8 @@ void AIndexedMesh::InitializePatchMesh( Float3 const & Corner00, Float3 const & 
 }
 
 void AIndexedMesh::InitializeCylinderMesh( float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
-    TPodArray< SMeshVertex > vertices;
-    TPodArray< unsigned int > indices;
+    TPodVector< SMeshVertex > vertices;
+    TPodVector< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
     CreateCylinderMesh( vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumSubdivs );
@@ -831,8 +832,8 @@ void AIndexedMesh::InitializeCylinderMesh( float _Radius, float _Height, float _
 }
 
 void AIndexedMesh::InitializeConeMesh( float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
-    TPodArray< SMeshVertex > vertices;
-    TPodArray< unsigned int > indices;
+    TPodVector< SMeshVertex > vertices;
+    TPodVector< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
     CreateConeMesh( vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumSubdivs );
@@ -845,8 +846,8 @@ void AIndexedMesh::InitializeConeMesh( float _Radius, float _Height, float _TexC
 }
 
 void AIndexedMesh::InitializeCapsuleMesh( float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
-    TPodArray< SMeshVertex > vertices;
-    TPodArray< unsigned int > indices;
+    TPodVector< SMeshVertex > vertices;
+    TPodVector< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
     CreateCapsuleMesh( vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs );
@@ -859,8 +860,8 @@ void AIndexedMesh::InitializeCapsuleMesh( float _Radius, float _Height, float _T
 }
 
 void AIndexedMesh::InitializeSkyboxMesh( const Float3 & _Size, float _TexCoordScale ) {
-    TPodArray< SMeshVertex > vertices;
-    TPodArray< unsigned int > indices;
+    TPodVector< SMeshVertex > vertices;
+    TPodVector< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
     CreateSkyboxMesh( vertices, indices, bounds, _Size, _TexCoordScale );
@@ -873,8 +874,8 @@ void AIndexedMesh::InitializeSkyboxMesh( const Float3 & _Size, float _TexCoordSc
 }
 
 void AIndexedMesh::InitializeSkydomeMesh( float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs, bool _Hemisphere ) {
-    TPodArray< SMeshVertex > vertices;
-    TPodArray< unsigned int > indices;
+    TPodVector< SMeshVertex > vertices;
+    TPodVector< unsigned int > indices;
     BvAxisAlignedBox bounds;
 
     CreateSkydomeMesh( vertices, indices, bounds, _Radius, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs, _Hemisphere );
@@ -1024,7 +1025,7 @@ void AIndexedMesh::GenerateSoftbodyFacesFromMeshIndices() {
 void AIndexedMesh::GenerateSoftbodyLinksFromFaces() {
     AScopedTimeCheck ScopedTime( "GenerateSoftbodyLinksFromFaces" );
 
-    TPodArray< bool > checks;
+    TPodVector< bool > checks;
     unsigned int * indices;
 
     checks.Resize( Vertices.Size()*Vertices.Size() );
@@ -1057,7 +1058,7 @@ void AIndexedMesh::GenerateSoftbodyLinksFromFaces() {
     }
 }
 
-bool AIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, bool bCullBackFace, TPodArray< STriangleHitResult > & _HitResult ) const {
+bool AIndexedMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, bool bCullBackFace, TPodVector< STriangleHitResult > & _HitResult ) const {
     bool ret = false;
 
     float boxMin, boxMax;
@@ -1176,7 +1177,7 @@ void AIndexedMeshSubpart::SetBVH( ATreeAABB * BVH ) {
     bAABBTreeDirty = false;
 }
 
-bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, bool bCullBackFace, TPodArray< STriangleHitResult > & _HitResult ) const {
+bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, Float3 const & _InvRayDir, float _Distance, bool bCullBackFace, TPodVector< STriangleHitResult > & _HitResult ) const {
     bool ret = false;
     float d, u, v;
     unsigned int const * indices = OwnerMesh->GetIndices() + FirstIndex;
@@ -1192,7 +1193,7 @@ bool AIndexedMeshSubpart::Raycast( Float3 const & _RayStart, Float3 const & _Ray
             return false;
         }
 
-        TPodArray< SNodeAABB > const & nodes = AABBTree->GetNodes();
+        TPodVector< SNodeAABB > const & nodes = AABBTree->GetNodes();
         unsigned int const * indirection = AABBTree->GetIndirection();
 
         float hitMin, hitMax;
@@ -1287,7 +1288,7 @@ bool AIndexedMeshSubpart::RaycastClosest( Float3 const & _RayStart, Float3 const
             return false;
         }
 
-        TPodArray< SNodeAABB > const & nodes = AABBTree->GetNodes();
+        TPodVector< SNodeAABB > const & nodes = AABBTree->GetNodes();
         unsigned int const * indirection = AABBTree->GetIndirection();
 
         float hitMin, hitMax;
@@ -1593,7 +1594,7 @@ void AProceduralMesh::PreRenderUpdate( SRenderFrontendDef const * _Def ) {
     }
 }
 
-bool AProceduralMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, bool bCullBackFace, TPodArray< STriangleHitResult > & _HitResult ) const {
+bool AProceduralMesh::Raycast( Float3 const & _RayStart, Float3 const & _RayDir, float _Distance, bool bCullBackFace, TPodVector< STriangleHitResult > & _HitResult ) const {
     if ( _Distance < 0.0001f ) {
         return false;
     }
@@ -1708,11 +1709,11 @@ bool AProceduralMesh::RaycastClosest( Float3 const & _RayStart, Float3 const & _
 void CalcTangentSpace( SMeshVertex * _VertexArray, unsigned int _NumVerts, unsigned int const * _IndexArray, unsigned int _NumIndices ) {
     Float3 binormal, tangent;
 
-    TPodArray< Float3 > binormals;
+    TPodVector< Float3 > binormals;
     binormals.ResizeInvalidate( _NumVerts );
     binormals.ZeroMem();
 
-    TPodArray< Float3 > tangents;
+    TPodVector< Float3 > tangents;
     tangents.ResizeInvalidate( _NumVerts );
     tangents.ZeroMem();
 
@@ -1814,10 +1815,10 @@ void CalcBoundingBoxes( SMeshVertex const * InVertices,
                         SAnimationChannel const * InChannels,
                         int InChannelsCount,
                         STransform const * InTransforms,
-                        TPodArray< BvAxisAlignedBox > & Bounds )
+                        TPodVector< BvAxisAlignedBox > & Bounds )
 {
     Float3x4 absoluteTransforms[ASkeleton::MAX_JOINTS+1];
-    TPodArray< Float3x4 > relativeTransforms[ASkeleton::MAX_JOINTS];
+    TPodVector< Float3x4 > relativeTransforms[ASkeleton::MAX_JOINTS];
     Float3x4 vertexTransforms[ASkeleton::MAX_JOINTS];
 
     Bounds.ResizeInvalidate( FrameCount );
@@ -1887,7 +1888,7 @@ void CalcBoundingBoxes( SMeshVertex const * InVertices,
     }
 }
 
-void CreateBoxMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, const Float3 & _Size, float _TexCoordScale ) {
+void CreateBoxMesh( TPodVector< SMeshVertex > & _Vertices, TPodVector< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, const Float3 & _Size, float _TexCoordScale ) {
     constexpr unsigned int indices[ 6 * 6 ] =
     {
         0, 1, 2, 2, 3, 0, // front face
@@ -2021,7 +2022,7 @@ void CreateBoxMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned in
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
-void CreateSphereMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
+void CreateSphereMesh( TPodVector< SMeshVertex > & _Vertices, TPodVector< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
     int x, y;
     float verticalAngle, horizontalAngle;
     unsigned int quad[ 4 ];
@@ -2082,7 +2083,7 @@ void CreateSphereMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
-void CreatePlaneMeshXZ( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale ) {
+void CreatePlaneMeshXZ( TPodVector< SMeshVertex > & _Vertices, TPodVector< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale ) {
     _Vertices.ResizeInvalidate( 4 );
     _Indices.ResizeInvalidate( 6 );
 
@@ -2111,7 +2112,7 @@ void CreatePlaneMeshXZ( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigne
     _Bounds.Maxs.Z = halfHeight;
 }
 
-void CreatePlaneMeshXY( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale ) {
+void CreatePlaneMeshXY( TPodVector< SMeshVertex > & _Vertices, TPodVector< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Width, float _Height, float _TexCoordScale ) {
     _Vertices.ResizeInvalidate( 4 );
     _Indices.ResizeInvalidate( 6 );
 
@@ -2140,7 +2141,7 @@ void CreatePlaneMeshXY( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigne
     _Bounds.Maxs.Z = 0.0f;
 }
 
-void CreatePatchMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds,
+void CreatePatchMesh( TPodVector< SMeshVertex > & _Vertices, TPodVector< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds,
     Float3 const & Corner00, Float3 const & Corner10, Float3 const & Corner01, Float3 const & Corner11,
     float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
 
@@ -2263,7 +2264,7 @@ void CreatePatchMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned 
     _Bounds.AddPoint( Corner11 );
 }
 
-void CreateCylinderMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
+void CreateCylinderMesh( TPodVector< SMeshVertex > & _Vertices, TPodVector< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
     int i, j;
     float angle;
     unsigned int quad[ 4 ];
@@ -2371,7 +2372,7 @@ void CreateCylinderMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsign
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
-void CreateConeMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
+void CreateConeMesh( TPodVector< SMeshVertex > & _Vertices, TPodVector< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs ) {
     int i, j;
     float angle;
     unsigned int quad[ 4 ];
@@ -2471,7 +2472,7 @@ void CreateConeMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned i
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
-void CreateCapsuleMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
+void CreateCapsuleMesh( TPodVector< SMeshVertex > & _Vertices, TPodVector< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs ) {
     int x, y, tcY;
     float verticalAngle, horizontalAngle;
     const float halfHeight = _Height * 0.5f;
@@ -2564,7 +2565,7 @@ void CreateCapsuleMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigne
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
-void CreateSkyboxMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, const Float3 & _Size, float _TexCoordScale ) {
+void CreateSkyboxMesh( TPodVector< SMeshVertex > & _Vertices, TPodVector< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, const Float3 & _Size, float _TexCoordScale ) {
     constexpr unsigned int indices[6 * 6] =
     {
         0, 1, 2, 2, 3, 0, // front face
@@ -2703,7 +2704,7 @@ void CreateSkyboxMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 }
 
-void CreateSkydomeMesh( TPodArray< SMeshVertex > & _Vertices, TPodArray< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs, bool _Hemisphere ) {
+void CreateSkydomeMesh( TPodVector< SMeshVertex > & _Vertices, TPodVector< unsigned int > & _Indices, BvAxisAlignedBox & _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs, bool _Hemisphere ) {
     int x, y;
     float verticalAngle, horizontalAngle;
     unsigned int quad[4];
@@ -2778,8 +2779,8 @@ struct SBestSplitResult {
 };
 
 struct SAABBTreeBuild {
-    TPodArray< BvAxisAlignedBox > RightBounds;
-    TPodArray< SPrimitiveBounds > Primitives[3];
+    TPodVector< BvAxisAlignedBox > RightBounds;
+    TPodVector< SPrimitiveBounds > Primitives[3];
 };
 
 static void CalcNodeBounds( SPrimitiveBounds const * _Primitives, int _PrimCount, BvAxisAlignedBox & _Bounds ) {

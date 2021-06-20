@@ -69,12 +69,12 @@ int StricmpN( const char * _S1, const char * _S2, int _Num ) {
     AN_ASSERT( _S1 && _S2 && _Num >= 0 );
 
     do {
-        c1 = *_S1++;
-        c2 = *_S2++;
-
         if ( !_Num-- ) {
             return 0;
         }
+
+        c1 = *_S1++;
+        c2 = *_S2++;
 
         if ( c1 != c2 ) {
             if ( c1 >= 'a' && c1 <= 'z' ) {
@@ -111,12 +111,12 @@ int StrcmpN( const char * _S1, const char * _S2, int _Num ) {
     AN_ASSERT( _S1 && _S2 && _Num >= 0 );
 
     do {
-        c1 = *_S1++;
-        c2 = *_S2++;
-
         if ( !_Num-- ) {
             return 0;
         }
+
+        c1 = *_S1++;
+        c2 = *_S2++;
 
         if ( c1 != c2 ) {
             return (int)((uint8_t)c1 - (uint8_t)c2);
@@ -386,12 +386,12 @@ int CmpPathN( const char * _Path1, const char * _Path2, int _Num ) {
     AN_ASSERT( _Path1 && _Path2 && _Num >= 0 );
 
     do {
-        c1 = *_Path1++;
-        c2 = *_Path2++;
-
         if ( !_Num-- ) {
             return 0;
         }
+
+        c1 = *_Path1++;
+        c2 = *_Path2++;
 
         if ( c1 != c2 ) {
             if ( c1 >= 'a' && c1 <= 'z' ) {

@@ -513,7 +513,7 @@ bool AAssetImporter::ImportGLTF( SAssetImportSettings const & InSettings ) {
     m_Settings = InSettings;
 
     m_Path = InSettings.ImportFile;
-    m_Path.StripFilename();
+    m_Path.ClipFilename();
     m_Path += "/";
 
     AFileStream f;
@@ -1667,7 +1667,7 @@ void AAssetImporter::WriteTexture( TextureInfo & tex ) {
 
     AString metaFilePath = fileSystemPath;
 
-    metaFilePath.StripExt();
+    metaFilePath.ClipExt();
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
@@ -1775,7 +1775,7 @@ void AAssetImporter::WriteMaterial( MaterialInfo const & m ) {
 
     AString metaFilePath = fileSystemPath;
 
-    metaFilePath.StripExt();
+    metaFilePath.ClipExt();
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
@@ -1828,8 +1828,8 @@ static AString ValidateFileName( const char * FileName ) {
 AString AAssetImporter::GeneratePhysicalPath( const char * DesiredName, const char * Extension ) {
     AString sourceName = m_Settings.ImportFile;
 
-    sourceName.StripPath();
-    sourceName.StripExt();
+    sourceName.ClipPath();
+    sourceName.ClipExt();
 
     AString validatedName = ValidateFileName( DesiredName );
 
@@ -1883,7 +1883,7 @@ void AAssetImporter::WriteSkeleton() {
 
         AString metaFilePath = fileSystemPath;
 
-        metaFilePath.StripExt();
+        metaFilePath.ClipExt();
         metaFilePath += ".asset_meta";
 
         if ( !f.OpenWrite( metaFilePath ) ) {
@@ -1927,7 +1927,7 @@ void AAssetImporter::WriteAnimation( AnimationInfo const & Animation ) {
 
     AString metaFilePath = fileSystemPath;
 
-    metaFilePath.StripExt();
+    metaFilePath.ClipExt();
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
@@ -2030,7 +2030,7 @@ void AAssetImporter::WriteSingleModel() {
     }
 
     //if ( m_Settings.bGenerateStaticCollisions ) {
-        //TPodArray< ACollisionTriangleSoupData::SSubpart > subparts;
+        //TPodVector< ACollisionTriangleSoupData::SSubpart > subparts;
 
         //subparts.Resize( m_Meshes.Size() );
         //for ( int i = 0 ; i < subparts.Size() ; i++ ) {
@@ -2080,7 +2080,7 @@ void AAssetImporter::WriteSingleModel() {
 
     AString metaFilePath = fileSystemPath;
 
-    metaFilePath.StripExt();
+    metaFilePath.ClipExt();
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
@@ -2221,7 +2221,7 @@ void AAssetImporter::WriteMesh( MeshInfo const & Mesh ) {
 
     AString metaFilePath = fileSystemPath;
 
-    metaFilePath.StripExt();
+    metaFilePath.ClipExt();
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
@@ -2360,7 +2360,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
 
     AString metaFilePath = fileSystemPath;
 
-    metaFilePath.StripExt();
+    metaFilePath.ClipExt();
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
@@ -2428,7 +2428,7 @@ void AAssetImporter::WriteSkyboxMaterial( AGUID const & SkyboxTextureGUID ) {
 
     AString metaFilePath = fileSystemPath;
 
-    metaFilePath.StripExt();
+    metaFilePath.ClipExt();
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
@@ -2530,7 +2530,7 @@ static bool CreateIndexedMeshFromSurfaces( SFace const * InSurfaces, int InSurfa
         return false;
     }
 
-    TPodArray< SFace const * > surfaces;
+    TPodVector< SFace const * > surfaces;
     for ( int j = 0 ; j < InSurfaceCount ; j++ ) {
         surfaces.Append( &InSurfaces[j] );
     }
@@ -2663,7 +2663,7 @@ static bool CreateLWOMesh( lwObject * lwo, float InScale, AMaterialInstance * (*
         return false;
     }
 
-    TPodArray< Float3 > verts;
+    TPodVector< Float3 > verts;
 
     verts.Resize( layer->point.count );
     for ( j = 0; j < layer->point.count; j++ ) {
@@ -2681,7 +2681,7 @@ static bool CreateLWOMesh( lwObject * lwo, float InScale, AMaterialInstance * (*
         }
     }
 
-    TPodArray< Float2 > texCoors;
+    TPodVector< Float2 > texCoors;
     texCoors.Resize( numUVs );
     int offset = 0;
     for ( lwVMap *vm = layer->vmap; vm; vm = vm->next ) {
@@ -2700,8 +2700,8 @@ static bool CreateLWOMesh( lwObject * lwo, float InScale, AMaterialInstance * (*
         numUVs = 1;
     }
 
-    TPodArray< int > vertexMap;
-    TPodArray< int > texcoordMap;
+    TPodVector< int > vertexMap;
+    TPodVector< int > texcoordMap;
 
     vertexMap.Resize( layer->point.count );
     for ( j = 0; j < layer->point.count; j++ ) {
@@ -2723,13 +2723,13 @@ static bool CreateLWOMesh( lwObject * lwo, float InScale, AMaterialInstance * (*
         SMatchVert * next;
     };
 
-    TPodArray< SMatchVert * > matchHash;
-    TPodArray< SMatchVert > tempVertices;
+    TPodVector< SMatchVert * > matchHash;
+    TPodVector< SMatchVert > tempVertices;
     SMatchVert * lastmv, *mv;
 
-    TPodArray< SFace > faces;
-    TPodArray< SMeshVertex > modelVertices;
-    TPodArray< unsigned int > modelIndices;
+    TPodVector< SFace > faces;
+    TPodVector< SMeshVertex > modelVertices;
+    TPodVector< unsigned int > modelIndices;
 
     int numFaces = 0;
     for ( lwoSurf = lwo->surf ; lwoSurf; lwoSurf = lwoSurf->next ) {

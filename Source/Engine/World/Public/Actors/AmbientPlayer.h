@@ -49,5 +49,5 @@ protected:
 private:
     void UpdateAmbientVolume( float _TimeStep );
 
-    TPodArray< ASoundEmitter * > AmbientSound;
+    TPodVector< ASoundEmitter * > AmbientSound;
 };

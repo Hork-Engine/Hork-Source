@@ -33,9 +33,6 @@ SOFTWARE.
 #include <World/Public/Components/DirectionalLightComponent.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Runtime/Public/RuntimeVariable.h>
-#include "LightVoxelizer.h"
-
-ARuntimeVariable com_DrawFrustumClusters( _CTS( "com_DrawFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
 
 ARenderWorld::ARenderWorld()
 {
@@ -73,7 +70,4 @@ void ARenderWorld::RemoveDirectionalLight( ADirectionalLightComponent * InLight 
 
 void ARenderWorld::DrawDebug( ADebugRenderer * InRenderer )
 {
-    if ( com_DrawFrustumClusters ) {
-        GLightVoxelizer.DrawVoxels( InRenderer );
-    }
 }

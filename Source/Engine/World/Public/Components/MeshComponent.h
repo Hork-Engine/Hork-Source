@@ -138,7 +138,7 @@ private:
     AMaterialInstance * GetMaterialInstanceUnsafe( int _SubpartIndex ) const;
 
     TRef< AIndexedMesh > Mesh;
-    TPodArray< AMaterialInstance *, 1 > Materials;
+    TPodVector< AMaterialInstance *, 1 > Materials;
 };
 
 class AProceduralMeshComponent : public ADrawable {

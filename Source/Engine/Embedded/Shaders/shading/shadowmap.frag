@@ -120,7 +120,7 @@ float PCSS_Shadow( sampler2DArray _ShadowMap, sampler2DArrayShadow _ShadowMapSha
 #endif
 
 float PCF_3x3( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
-#ifdef ATI
+//#ifdef ATI
     const float invSize = 1.0 / textureSize(_ShadowMap,0).x; // NOTE: shadow maps has equal width and height
 
     return ( texture( _ShadowMap, _TexCoord + vec4(-invSize,-invSize, 0, 0 ) )
@@ -132,17 +132,17 @@ float PCF_3x3( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
            + texture( _ShadowMap, _TexCoord + vec4(-invSize, invSize, 0, 0 ) )
            + texture( _ShadowMap, _TexCoord + vec4( 0,       invSize, 0, 0 ) )
            + texture( _ShadowMap, _TexCoord + vec4( invSize, invSize, 0, 0 ) ) ) / 9.0;
-#else
-    return ( textureOffset( _ShadowMap, _TexCoord, ivec2(-1,-1 ) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0,-1 ) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1,-1 ) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 0 ) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 0 ) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 0 ) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 1 ) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 1 ) )
-           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 1 ) ) ) / 9.0;
-#endif
+//#else
+//    return ( textureOffset( _ShadowMap, _TexCoord, ivec2(-1,-1 ) )
+//           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0,-1 ) )
+//           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1,-1 ) )
+//           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 0 ) )
+//           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 0 ) )
+//           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 0 ) )
+//           + textureOffset( _ShadowMap, _TexCoord, ivec2(-1, 1 ) )
+//           + textureOffset( _ShadowMap, _TexCoord, ivec2( 0, 1 ) )
+//           + textureOffset( _ShadowMap, _TexCoord, ivec2( 1, 1 ) ) ) / 9.0;
+//#endif
 }
 
 float PCF_5x5( sampler2DArrayShadow _ShadowMap, vec4 _TexCoord ) {
