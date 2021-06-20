@@ -38,17 +38,17 @@ class TLinearAllocator {
     AN_FORBID_COPY( TLinearAllocator )
 
 public:
-    TLinearAllocator() {
-        Blocks = nullptr;
-        TotalAllocs = 0;
+    TLinearAllocator()
+    {
     }
 
-    ~TLinearAllocator() {
-        //GLogger.Printf( "TLinearAllocator: total allocs %d\n", TotalAllocs );
+    ~TLinearAllocator()
+    {
         Free();
     }
 
-    void * Allocate( size_t _SizeInBytes ) {
+    void * Allocate( size_t _SizeInBytes )
+    {
         SBlock * block = FindBlock( _SizeInBytes );
 
         if ( !block ) {
@@ -65,12 +65,15 @@ public:
         block->TotalAllocated += _SizeInBytes;
         block->TotalAllocated = Align( block->TotalAllocated, 16 );
 
+        TotalMemoryUsage += _SizeInBytes;
+
         AN_ASSERT( IsAlignedPtr( ptr, 16 ) );
 
         return ptr;
     }
 
-    void Free() {
+    void Free()
+    {
         for ( SBlock * block = Blocks ; block ; ) {
             SBlock * next = block->Next;
             GHeapMemory.Free( block );
@@ -78,22 +81,46 @@ public:
         }
         Blocks = nullptr;
         TotalAllocs = 0;
+        TotalMemoryUsage = 0;
     }
 
-    void Reset() {
+    void Reset()
+    {
         for ( SBlock * block = Blocks ; block ; block = block->Next ) {
             block->TotalAllocated = 0;
         }
+        TotalMemoryUsage = 0;
     }
 
+    size_t GetBlockCount() const
+    {
+        return TotalAllocs;
+    }
+
+    size_t GetTotalMemoryUsage() const
+    {
+        return TotalMemoryUsage;
+    }
+
+    size_t GetBlockMemoryUsage() const
+    {
+        size_t blockMemoryUsage = 0;
+        for ( SBlock * block = Blocks ; block ; block = block->Next ) {
+            blockMemoryUsage += block->Size;
+        }
+        return blockMemoryUsage;
+    }
+    
 private:
-    struct alignas( 16 ) SBlock {
+    struct alignas( 16 ) SBlock
+    {
         size_t TotalAllocated;
         size_t Size;
         SBlock * Next;
     };
-    SBlock * Blocks;
-    size_t TotalAllocs;
+    SBlock * Blocks = nullptr;
+    size_t TotalAllocs = 0;
+    size_t TotalMemoryUsage = 0;
 
     AN_SIZEOF_STATIC_CHECK( SBlock, 32 );
 

@@ -304,7 +304,7 @@ void ACanvasRenderer::Render( std::function<void(SRenderView *, AFrameGraphTextu
 
     SCanvasBinding canvasBinding;
 
-    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
     canvasBinding.Size = sizeof( SCanvasConstants );
     canvasBinding.Offset = streamedMemory->AllocateConstant( canvasBinding.Size );

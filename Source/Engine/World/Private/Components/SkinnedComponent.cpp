@@ -478,7 +478,7 @@ void ASkinnedComponent::OnPreRenderUpdate( SRenderFrontendDef const * _Def ) {
 
     SkeletonSize = joints.Size() * sizeof( Float3x4 );
     if ( SkeletonSize > 0 ) {
-        AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+        AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
         // Write joints from previous frame
         SkeletonOffsetMB = streamedMemory->AllocateJoint( SkeletonSize, JointsBufferData );

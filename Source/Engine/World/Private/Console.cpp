@@ -589,7 +589,7 @@ void AConsole::DrawCmdLine( ACanvas * _Canvas, int x, int y )
         cx += CharacterWidth;
     }
 
-    if ( ( GRuntime.SysFrameTimeStamp() >> 18 ) & 1 ) {
+    if ( ( GRuntime->SysFrameTimeStamp() >> 18 ) & 1 ) {
         cx = x + ( CmdLinePos - offset ) * CharacterWidth;
 
         _Canvas->DrawWChar( '_', cx, y, scale, charColor );

@@ -624,7 +624,7 @@ static bool GetShaderSource( AStringView FileName, AString & Source )
 {
     if ( r_EmbeddedShaders ) {
         AMemoryStream f;
-        if ( !f.OpenRead( "Shaders/" + FileName, GRuntime.GetEmbeddedResources() ) ) {
+        if ( !f.OpenRead( "Shaders/" + FileName, GRuntime->GetEmbeddedResources() ) ) {
             return false;
         }
         Source.FromFile( f );

@@ -105,17 +105,17 @@ bool ARuntimeVariable::CanChangeValue() const {
         return false;
     }
 
-    if ( ( Flags & VAR_CHEAT ) && !GRuntime.bCheatsAllowed ) {
+    if ( ( Flags & VAR_CHEAT ) && !GRuntime->bCheatsAllowed ) {
         GLogger.Printf( "%s is cheat protected\n", Name );
         return false;
     }
 
-    if ( ( Flags & VAR_SERVERONLY ) && !GRuntime.bServerActive ) {
+    if ( ( Flags & VAR_SERVERONLY ) && !GRuntime->bServerActive ) {
         GLogger.Printf( "%s can be changed by server only\n", Name );
         return false;
     }
 
-    if ( ( Flags & VAR_NOINGAME ) && GRuntime.bInGameStatus ) {
+    if ( ( Flags & VAR_NOINGAME ) && GRuntime->bInGameStatus ) {
         GLogger.Printf( "%s can't be changed in game\n", Name );
         return false;
     }

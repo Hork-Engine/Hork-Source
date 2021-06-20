@@ -1228,7 +1228,7 @@ void WTextEdit::OnWindowHovered( bool _Hovered ) {
 
 void WTextEdit::OnDrawEvent( ACanvas & _Canvas ) {
 
-    //Stb->insert_mode = true;//GRuntime.GlobalInsertMode(); // TODO
+    //Stb->insert_mode = true;//GRuntime->GlobalInsertMode(); // TODO
 
     DrawDecorates( _Canvas );
 
@@ -1271,7 +1271,7 @@ void WTextEdit::OnDrawEvent( ACanvas & _Canvas ) {
     }
 
     if ( IsFocus() ) {
-        if ( ( GRuntime.SysFrameTimeStamp() >> 18 ) & 1 ) {
+        if ( ( GRuntime->SysFrameTimeStamp() >> 18 ) & 1 ) {
             Float2 cursor = mins + CalcCursorOffset( font, TextData.ToPtr(), Stb->cursor, nullptr );
 
             if ( Stb->insert_mode ) {

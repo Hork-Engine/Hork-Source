@@ -197,10 +197,10 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
     do
     {
         // Set new frame, process game events
-        GRuntime.NewFrame();
+        GRuntime->NewFrame();
 
         // Take current frame duration
-        FrameDurationInSeconds = GRuntime.SysFrameDuration() * 0.000001;
+        FrameDurationInSeconds = GRuntime->SysFrameDuration() * 0.000001;
 
         // Don't allow very slow frames
         if ( FrameDurationInSeconds > 0.5f ) {
@@ -220,7 +220,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
         GAudioSystem.Update( APlayerController::GetCurrentAudioListener(), FrameDurationInSeconds );
 
         // Poll runtime events
-        GRuntime.PollEvents();
+        GRuntime->PollEvents();
 
         // Update input
         UpdateInput();
@@ -238,7 +238,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
         // Generate GPU commands
         RenderBackend->RenderFrame( Renderer->GetFrameData() );
 
-    } while ( !GRuntime.IsPendingTerminate() );
+    } while ( !GRuntime->IsPendingTerminate() );
 
     bAllowInputEvents = false;
 
@@ -277,7 +277,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
 
 void AEngineInstance::DrawCanvas()
 {
-    SVideoMode const & videoMode = GRuntime.GetVideoMode();
+    SVideoMode const & videoMode = GRuntime->GetVideoMode();
 
     Canvas.Begin( videoMode.FramebufferWidth, videoMode.FramebufferHeight );
 
@@ -286,7 +286,7 @@ void AEngineInstance::DrawCanvas()
             // Draw desktop
             Desktop->GenerateWindowHoverEvents();
             Desktop->GenerateDrawEvents( Canvas );
-            if ( Desktop->IsCursorVisible() && !GRuntime.IsCursorEnabled() ) {
+            if ( Desktop->IsCursorVisible() && !GRuntime->IsCursorEnabled() ) {
                 Desktop->DrawCursor( Canvas );
             }
 
@@ -316,12 +316,12 @@ void AEngineInstance::ShowStats()
 
         const size_t TotalMemorySizeInBytes = ( (GZoneMemory.GetZoneMemorySizeInMegabytes()<<20)
                                                 + (GHunkMemory.GetHunkMemorySizeInMegabytes()<<20)
-                                                + GRuntime.GetFrameMemorySize() );
+                                                + GRuntime->GetFrameMemorySize() );
 
         SRenderFrontendStat const & stat = Renderer->GetStat();
 
-        AVertexMemoryGPU * vertexMemory = GRuntime.GetVertexMemoryGPU();
-        AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+        AVertexMemoryGPU * vertexMemory = GRuntime->GetVertexMemoryGPU();
+        AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
         const float y_step = 22;
         const int numLines = 13;
@@ -332,7 +332,7 @@ void AEngineInstance::ShowStats()
         Canvas.PushFont( font );
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ), nullptr, true ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ), nullptr, true ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, GRuntime.GetMaxFrameMemoryUsage()/1024.0f ), nullptr, true ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime->GetFrameMemoryUsedPrev()/1024.0f, GRuntime->GetFrameMemorySize()>>20, GRuntime->GetMaxFrameMemoryUsage()/1024.0f ), nullptr, true ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage (GPU): %f KB / %d MB (Max %f KB)", streamedMemory->GetUsedMemoryPrev()/1024.0f, streamedMemory->GetAllocatedMemory()>>20, streamedMemory->GetMaxMemoryUsage()/1024.0f ), nullptr, true ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Vertex cache memory usage (GPU): %f KB / %d MB", vertexMemory->GetUsedMemory()/1024.0f, vertexMemory->GetAllocatedMemory()>>20 ), nullptr, true ); pos.Y += y_step;
         if ( GHeapMemory.GetTotalMemoryUsage() > 0 ) {
@@ -387,9 +387,9 @@ void AEngineInstance::OnKeyEvent( SKeyEvent const & _Event, double _TimeStamp )
     // Check Alt+Enter to toggle fullscreen/windowed mode
     if ( GameModule->bToggleFullscreenAltEnter ) {
         if ( _Event.Action == IA_PRESS && _Event.Key == KEY_ENTER && ( HAS_MODIFIER( _Event.ModMask, KMOD_ALT ) ) ) {
-            SVideoMode videoMode = GRuntime.GetVideoMode();
+            SVideoMode videoMode = GRuntime->GetVideoMode();
             videoMode.bFullscreen = !videoMode.bFullscreen;
-            GRuntime.PostChangeVideoMode( videoMode );
+            GRuntime->PostChangeVideoMode( videoMode );
         }
     }
 
@@ -463,13 +463,13 @@ void AEngineInstance::OnMouseMoveEvent( SMouseMoveEvent const & _Event, double _
     }
 
     if ( Desktop ) {
-        SVideoMode const & videoMode = GRuntime.GetVideoMode();
+        SVideoMode const & videoMode = GRuntime->GetVideoMode();
 
-        if ( GRuntime.IsCursorEnabled() ) {
+        if ( GRuntime->IsCursorEnabled() ) {
             Float2 cursorPosition;
             int x, y;
 
-            GRuntime.GetCursorPosition( &x, &y );
+            GRuntime->GetCursorPosition( &x, &y );
 
             cursorPosition.X = Math::Clamp( x, 0, videoMode.FramebufferWidth-1 );
             cursorPosition.Y = Math::Clamp( y, 0, videoMode.FramebufferHeight-1 );
@@ -556,7 +556,7 @@ void AEngineInstance::OnCloseEvent()
 
 void AEngineInstance::OnResize()
 {
-    SVideoMode const & videoMode = GRuntime.GetVideoMode();
+    SVideoMode const & videoMode = GRuntime->GetVideoMode();
 
     RetinaScale = Float2( (float)videoMode.FramebufferWidth / videoMode.Width,
                           (float)videoMode.FramebufferHeight / videoMode.Height );
@@ -574,22 +574,22 @@ void AEngineInstance::OnResize()
 
 void AEngineInstance::UpdateInput()
 {
-    SVideoMode const & videoMode = GRuntime.GetVideoMode();
+    SVideoMode const & videoMode = GRuntime->GetVideoMode();
 
     switch ( GameModule->CursorMode ) {
     case CURSOR_MODE_AUTO:
         if ( !videoMode.bFullscreen && Console.IsActive() ) {
-            GRuntime.SetCursorEnabled( true );
+            GRuntime->SetCursorEnabled( true );
         }
         else {
-            GRuntime.SetCursorEnabled( false );
+            GRuntime->SetCursorEnabled( false );
         }
         break;
     case CURSOR_MODE_FORCE_ENABLED:
-        GRuntime.SetCursorEnabled( true );
+        GRuntime->SetCursorEnabled( true );
         break;
     case CURSOR_MODE_FORCE_DISABLED:
-        GRuntime.SetCursorEnabled( false );
+        GRuntime->SetCursorEnabled( false );
         break;
     default:
         AN_ASSERT( 0 );
@@ -602,14 +602,14 @@ void AEngineInstance::UpdateInput()
 
 void AEngineInstance::MapWindowCoordinate( float & InOutX, float & InOutY ) const
 {
-    SVideoMode const & videoMode = GRuntime.GetVideoMode();
+    SVideoMode const & videoMode = GRuntime->GetVideoMode();
     InOutX += videoMode.X;
     InOutY += videoMode.Y;
 }
 
 void AEngineInstance::UnmapWindowCoordinate( float & InOutX, float & InOutY ) const
 {
-    SVideoMode const & videoMode = GRuntime.GetVideoMode();
+    SVideoMode const & videoMode = GRuntime->GetVideoMode();
     InOutX -= videoMode.X;
     InOutY -= videoMode.Y;
 }
@@ -631,7 +631,7 @@ void AEngineInstance::SetDesktop( WDesktop * _Desktop )
         Desktop->MarkTransformDirty();
 
         // Set size
-        SVideoMode const & videoMode = GRuntime.GetVideoMode();
+        SVideoMode const & videoMode = GRuntime->GetVideoMode();
         Desktop->SetSize( videoMode.FramebufferWidth, videoMode.FramebufferHeight );
     }
 }

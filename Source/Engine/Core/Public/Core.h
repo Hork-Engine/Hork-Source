@@ -154,7 +154,6 @@ struct SCoreInitialize
     bool bAllowMultipleInstances;
     size_t ZoneSizeInMegabytes = 256;
     size_t HunkSizeInMegabytes = 32;
-    size_t FrameMemorySizeInMegabytes = 16;
 };
 
 namespace Core
@@ -247,10 +246,6 @@ AN_FORCEINLINE void SetClipboard( AString const & _Clipboard ) { SetClipboard( _
 const char * GetClipboard();
 
 SMemoryInfo GetPhysMemoryInfo();
-
-void * GetFrameMemoryAddress();
-
-size_t GetFrameMemorySize();
 
 }
 

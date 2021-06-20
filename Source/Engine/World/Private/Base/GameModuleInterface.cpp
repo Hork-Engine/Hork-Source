@@ -42,7 +42,7 @@ IGameModule::IGameModule()
 
 void IGameModule::OnGameClose()
 {
-    GRuntime.PostTerminateEvent();
+    GRuntime->PostTerminateEvent();
 }
 
 void IGameModule::AddCommand( const char * _Name, TCallback< void( ARuntimeCommandProcessor const & ) > const & _Callback, const char * _Comment )
@@ -57,7 +57,7 @@ void IGameModule::RemoveCommand( const char * _Name )
 
 void IGameModule::Quit( ARuntimeCommandProcessor const & _Proc )
 {
-    GRuntime.PostTerminateEvent();
+    GRuntime->PostTerminateEvent();
 }
 
 void IGameModule::RebuildMaterials( ARuntimeCommandProcessor const & _Proc )

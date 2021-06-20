@@ -92,7 +92,7 @@ void AVSD::ProcessLevelVisibility( ALevel * InLevel ) {
 }
 
 void AVSD::QueryVisiblePrimitives( AWorld * InWorld, TPodVector< SPrimitiveDef * > & VisPrimitives, TPodVector< SSurfaceDef * > & VisSurfs, int * VisPass, SVisibilityQuery const & InQuery ) {
-    //int QueryVisiblePrimitivesTime = GRuntime.SysMicroseconds();
+    //int QueryVisiblePrimitivesTime = GRuntime->SysMicroseconds();
 
     ++VisQueryMarker;
 
@@ -226,7 +226,7 @@ void AVSD::QueryVisiblePrimitives( AWorld * InWorld, TPodVector< SPrimitiveDef *
     GLogger.Printf( "VSD: CullMiss: %d\n", Dbg_CullMiss );
 #endif
 
-    //QueryVisiblePrimitivesTime = GRuntime.SysMicroseconds() - QueryVisiblePrimitivesTime;
+    //QueryVisiblePrimitivesTime = GRuntime->SysMicroseconds() - QueryVisiblePrimitivesTime;
 
     //GLogger.Printf( "QueryVisiblePrimitivesTime: %d microsec\n", QueryVisiblePrimitivesTime );
 

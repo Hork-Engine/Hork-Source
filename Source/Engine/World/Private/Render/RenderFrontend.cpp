@@ -83,7 +83,7 @@ struct SShadowInstanceSortFunction {
 } ShadowInstanceSortFunction;
 
 void ARenderFrontend::Render( ACanvas * InCanvas ) {
-    FrameData.FrameNumber = FrameNumber = GRuntime.SysFrameNumber();
+    FrameData.FrameNumber = FrameNumber = GRuntime->SysFrameNumber();
     FrameData.DrawListHead = nullptr;
     FrameData.DrawListTail = nullptr;
 
@@ -125,13 +125,13 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
 
     // Allocate views
     FrameData.NumViews = Viewports.Size();
-    FrameData.RenderViews = (SRenderView *)GRuntime.AllocFrameMem( sizeof( SRenderView ) * FrameData.NumViews );
+    FrameData.RenderViews = (SRenderView *)GRuntime->AllocFrameMem( sizeof( SRenderView ) * FrameData.NumViews );
 
     for ( int i = 0 ; i < FrameData.NumViews ; i++ ) {
         RenderView( i );
     }
 
-    //int64_t t = GRuntime.SysMilliseconds();
+    //int64_t t = GRuntime->SysMilliseconds();
 
     for ( SRenderView * view = FrameData.RenderViews ; view < &FrameData.RenderViews[FrameData.NumViews] ; view++ ) {
         StdSort( FrameData.Instances.Begin() + view->FirstInstance,
@@ -142,10 +142,10 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
                  FrameData.TranslucentInstances.Begin() + (view->FirstTranslucentInstance + view->TranslucentInstanceCount),
                  InstanceSortFunction );
     }
-    //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime.SysMilliseconds() - t, FrameData.Instances.Size() + FrameData.ShadowInstances.Size() );
+    //GLogger.Printf( "Sort instances time %d instances count %d\n", GRuntime->SysMilliseconds() - t, FrameData.Instances.Size() + FrameData.ShadowInstances.Size() );
 
     if ( DebugDraw.CommandsCount() > 0 ) {
-        AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+        AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
         FrameData.DbgCmds = DebugDraw.GetCmds().ToPtr();
         FrameData.DbgVertexStreamOffset = streamedMemory->AllocateVertex( DebugDraw.GetVertices().Size() * sizeof( SDebugVertex ), DebugDraw.GetVertices().ToPtr() );
@@ -161,13 +161,13 @@ void ARenderFrontend::RenderView( int _Index ) {
     ACameraComponent * camera = viewport->Camera;
     AWorld * world = camera->GetWorld();
     SRenderView * view = &FrameData.RenderViews[_Index];
-    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
     AN_ASSERT( RP ); // TODO: Don't allow <null> rendering parameters
 
     view->GameRunningTimeSeconds = world->GetRunningTimeMicro() * 0.000001;
     view->GameplayTimeSeconds = world->GetGameplayTimeMicro() * 0.000001;
-    view->GameplayTimeStep = world->IsPaused() ? 0.0f : Math::Max( GRuntime.SysFrameDuration() * 0.000001f, 0.0001f );
+    view->GameplayTimeStep = world->IsPaused() ? 0.0f : Math::Max( GRuntime->SysFrameDuration() * 0.000001f, 0.0001f );
     view->ViewIndex = _Index;
     //view->Width = Align( (size_t)(viewport->Width * r_ResolutionScaleX.GetFloat()), 2 );
     //view->Height = Align( (size_t)(viewport->Height * r_ResolutionScaleY.GetFloat()), 2 );
@@ -357,16 +357,16 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
     }
 
     // Allocate draw list
-    SHUDDrawList * drawList = ( SHUDDrawList * )GRuntime.AllocFrameMem( sizeof( SHUDDrawList ) );
+    SHUDDrawList * drawList = ( SHUDDrawList * )GRuntime->AllocFrameMem( sizeof( SHUDDrawList ) );
 
-    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
     // Copy vertex data
     drawList->VertexStreamOffset = streamedMemory->AllocateVertex( sizeof( SHUDDrawVert ) * srcList->VtxBuffer.Size, srcList->VtxBuffer.Data );
     drawList->IndexStreamOffset = streamedMemory->AllocateIndex( sizeof( unsigned short ) * srcList->IdxBuffer.Size, srcList->IdxBuffer.Data );
 
     // Allocate commands
-    drawList->Commands = ( SHUDDrawCmd * )GRuntime.AllocFrameMem( sizeof( SHUDDrawCmd ) * srcList->CmdBuffer.Size );
+    drawList->Commands = ( SHUDDrawCmd * )GRuntime->AllocFrameMem( sizeof( SHUDDrawCmd ) * srcList->CmdBuffer.Size );
 
     drawList->CommandsCount = 0;
 
@@ -530,24 +530,24 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
         return;
     }
 
-    SHUDDrawList * drawList = ( SHUDDrawList * )GRuntime.AllocFrameMem( sizeof( SHUDDrawList ) );
+    SHUDDrawList * drawList = ( SHUDDrawList * )GRuntime->AllocFrameMem( sizeof( SHUDDrawList ) );
 
     drawList->VerticesCount = srcList->VtxBuffer.size();
     drawList->IndicesCount = srcList->IdxBuffer.size();
     drawList->CommandsCount = srcList->CmdBuffer.size();
 
     int bytesCount = sizeof( SHUDDrawVert ) * drawList->VerticesCount;
-    drawList->Vertices = ( SHUDDrawVert * )GRuntime.AllocFrameMem( bytesCount );
+    drawList->Vertices = ( SHUDDrawVert * )GRuntime->AllocFrameMem( bytesCount );
 
     Core::Memcpy( drawList->Vertices, srcList->VtxBuffer.Data, bytesCount );
 
     bytesCount = sizeof( unsigned short ) * drawList->IndicesCount;
-    drawList->Indices = ( unsigned short * )GRuntime.AllocFrameMem( bytesCount );
+    drawList->Indices = ( unsigned short * )GRuntime->AllocFrameMem( bytesCount );
 
     Core::Memcpy( drawList->Indices, srcList->IdxBuffer.Data, bytesCount );
 
     bytesCount = sizeof( SHUDDrawCmd ) * drawList->CommandsCount;
-    drawList->Commands = ( SHUDDrawCmd * )GRuntime.AllocFrameMem( bytesCount );
+    drawList->Commands = ( SHUDDrawCmd * )GRuntime->AllocFrameMem( bytesCount );
 
     int startIndexLocation = 0;
 
@@ -737,7 +737,7 @@ void ARenderFrontend::AddRenderInstances( AWorld * InWorld )
     ATerrainComponent * terrain;
     AAnalyticLightComponent * light;
     AIBLComponent * ibl;
-    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
     ARenderWorld & renderWorld = InWorld->GetRender();
 
     VisLights.Clear();
@@ -812,7 +812,7 @@ void ARenderFrontend::AddRenderInstances( AWorld * InWorld )
             continue;
         }
 
-        SDirectionalLightInstance * instance = (SDirectionalLightInstance *)GRuntime.AllocFrameMem( sizeof( SDirectionalLightInstance ) );
+        SDirectionalLightInstance * instance = (SDirectionalLightInstance *)GRuntime->AllocFrameMem( sizeof( SDirectionalLightInstance ) );
 
         FrameData.DirectionalLights.Append( instance );
 
@@ -979,7 +979,7 @@ void ARenderFrontend::AddTerrain( ATerrainComponent * InComponent ) {
         return;
     }
 
-    STerrainRenderInstance * instance = (STerrainRenderInstance *)GRuntime.AllocFrameMem( sizeof( STerrainRenderInstance ) );
+    STerrainRenderInstance * instance = (STerrainRenderInstance *)GRuntime->AllocFrameMem( sizeof( STerrainRenderInstance ) );
 
     FrameData.TerrainInstances.Append( instance );
 
@@ -1041,7 +1041,7 @@ void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
         SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
 
         // Add render instance
-        SRenderInstance * instance = (SRenderInstance *)GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
+        SRenderInstance * instance = (SRenderInstance *)GRuntime->AllocFrameMem( sizeof( SRenderInstance ) );
 
         if ( material->IsTranslucent() ) {
             FrameData.TranslucentInstances.Append( instance );
@@ -1139,7 +1139,7 @@ void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
         SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
 
         // Add render instance
-        SRenderInstance * instance = (SRenderInstance *)GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
+        SRenderInstance * instance = (SRenderInstance *)GRuntime->AllocFrameMem( sizeof( SRenderInstance ) );
 
         if ( material->IsTranslucent() ) {
             FrameData.TranslucentInstances.Append( instance );
@@ -1222,7 +1222,7 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
     SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
 
     // Add render instance
-    SRenderInstance * instance = (SRenderInstance *)GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
+    SRenderInstance * instance = (SRenderInstance *)GRuntime->AllocFrameMem( sizeof( SRenderInstance ) );
 
     if ( material->IsTranslucent() ) {
         FrameData.TranslucentInstances.Append( instance );
@@ -1301,7 +1301,7 @@ void ARenderFrontend::AddShadowmap_StaticMesh( SLightShadowmap * ShadowMap, AMes
         SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
 
         // Add render instance
-        SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
+        SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime->AllocFrameMem( sizeof( SShadowRenderInstance ) );
 
         FrameData.ShadowInstances.Append( instance );
 
@@ -1373,7 +1373,7 @@ void ARenderFrontend::AddShadowmap_SkinnedMesh( SLightShadowmap * ShadowMap, ASk
         SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
 
         // Add render instance
-        SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
+        SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime->AllocFrameMem( sizeof( SShadowRenderInstance ) );
 
         FrameData.ShadowInstances.Append( instance );
 
@@ -1437,7 +1437,7 @@ void ARenderFrontend::AddShadowmap_ProceduralMesh( SLightShadowmap * ShadowMap, 
     SMaterialFrameData * materialInstanceFrameData = materialInstance->PreRenderUpdate( FrameNumber );
 
     // Add render instance
-    SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
+    SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime->AllocFrameMem( sizeof( SShadowRenderInstance ) );
 
     FrameData.ShadowInstances.Append( instance );
 
@@ -1477,7 +1477,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( AWorld * InWorld ) {
         return;
     }
 
-    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
     // Create shadow instances
 
@@ -1576,7 +1576,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( AWorld * InWorld ) {
             }
 
             // Add render instance
-            SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
+            SShadowRenderInstance * instance = (SShadowRenderInstance *)GRuntime->AllocFrameMem( sizeof( SShadowRenderInstance ) );
 
             FrameData.ShadowInstances.Append( instance );
 
@@ -1621,7 +1621,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( AWorld * InWorld ) {
                     // TODO: Perform culling for each light portal
                     // NOTE: We can precompute visible geometry for static light and meshes from every light portal
 
-                    SLightPortalRenderInstance * instance = (SLightPortalRenderInstance *)GRuntime.AllocFrameMem( sizeof( SLightPortalRenderInstance ) );
+                    SLightPortalRenderInstance * instance = (SLightPortalRenderInstance *)GRuntime->AllocFrameMem( sizeof( SLightPortalRenderInstance ) );
 
                     FrameData.LightPortals.Append( instance );
 
@@ -1674,7 +1674,7 @@ void ARenderFrontend::AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCo
         return;
     }
 
-    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
     SurfaceStream.VertexAddr = streamedMemory->AllocateVertex( totalVerts * sizeof( SMeshVertex ), nullptr );
     SurfaceStream.VertexLightAddr = streamedMemory->AllocateVertex( totalVerts * sizeof( SMeshVertexLight ), nullptr );
@@ -1768,7 +1768,7 @@ void ARenderFrontend::AddShadowmapSurfaces( SLightShadowmap * ShadowMap, SSurfac
         return;
     }
 
-    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
     SurfaceStream.VertexAddr = streamedMemory->AllocateVertex( totalVerts * sizeof( SMeshVertex ), nullptr );
     SurfaceStream.IndexAddr = streamedMemory->AllocateIndex( totalIndices * sizeof( unsigned int ), nullptr );
@@ -1847,7 +1847,7 @@ void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialIn
     SMaterialFrameData * materialInstanceFrameData = MaterialInstance->PreRenderUpdate( FrameNumber );
 
     // Add render instance
-    SRenderInstance * instance = ( SRenderInstance * )GRuntime.AllocFrameMem( sizeof( SRenderInstance ) );
+    SRenderInstance * instance = ( SRenderInstance * )GRuntime->AllocFrameMem( sizeof( SRenderInstance ) );
 
     if ( material->IsTranslucent() ) {
         FrameData.TranslucentInstances.Append( instance );
@@ -1865,7 +1865,7 @@ void ARenderFrontend::AddSurface( ALevel * Level, AMaterialInstance * MaterialIn
     instance->Material = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
 
-    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
     streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset );
     streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset );
@@ -1909,14 +1909,14 @@ void ARenderFrontend::AddShadowmapSurface( SLightShadowmap * ShadowMap, AMateria
     SMaterialFrameData * materialInstanceFrameData = MaterialInstance->PreRenderUpdate( FrameNumber );
 
     // Add render instance
-    SShadowRenderInstance * instance = ( SShadowRenderInstance * )GRuntime.AllocFrameMem( sizeof( SShadowRenderInstance ) );
+    SShadowRenderInstance * instance = ( SShadowRenderInstance * )GRuntime->AllocFrameMem( sizeof( SShadowRenderInstance ) );
 
     FrameData.ShadowInstances.Append( instance );
 
     instance->Material = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
 
-    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
     streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.VertexAddr, &instance->VertexBuffer, &instance->VertexBufferOffset );
     streamedMemory->GetPhysicalBufferAndOffset( SurfaceStream.IndexAddr, &instance->IndexBuffer, &instance->IndexBufferOffset );

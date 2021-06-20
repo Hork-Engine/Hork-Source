@@ -35,6 +35,7 @@ SOFTWARE.
 #include <Core/Public/PodQueue.h>
 #include <Core/Public/Utf8.h>
 #include <Core/Public/Random.h>
+#include <Core/Public/LinearAllocator.h>
 #include "AsyncJobManager.h"
 #include "GameModuleCallback.h"
 #include "VertexMemoryGPU.h"
@@ -219,8 +220,6 @@ struct SRenderFrame;
 /** Runtime public class */
 class ARuntime
 {
-    AN_SINGLETON( ARuntime )
-
 public:
     /** Is cheats allowed for the game. This allow to change runtime variables with flag VAR_CHEAT */
     bool bCheatsAllowed = true;
@@ -233,6 +232,10 @@ public:
 
     /** Global random number generator */
     AMersenneTwisterRand Rand;
+
+    ARuntime( struct SEntryDecl const & _EntryDecl );
+
+    ~ARuntime();
 
     /** Return application working directory */
     AString const & GetWorkingDir();
@@ -324,13 +327,13 @@ private:
     int64_t         FrameDuration;
     int             FrameNumber;
 
-    size_t          FrameMemoryUsed;
+    TLinearAllocator<> FrameMemory;
     size_t          FrameMemoryUsedPrev;
     size_t          MaxFrameMemoryUsage;
 
     struct SEntryDecl const * pModuleDecl;
 
-    static class IEngineInterface * Engine;
+    class IEngineInterface * Engine;
 
     SVideoMode      VideoMode;
     SVideoMode      DesiredMode;
@@ -344,7 +347,9 @@ private:
 
     bool            bPostTerminateEvent;
 
-    void Run( struct SEntryDecl const & _EntryDecl );
+    TUniqueRef< AArchive > EmbeddedResourcesArch;
+
+    void Run();
 
     void InitializeWorkingDirectory();
 
@@ -356,8 +361,6 @@ private:
     void UnpressKeysAndButtons();
     void UnpressJoystickButtons( int _JoystickNum, double _TimeStamp );
 
-    static void LoggerMessageCallback( int _Level, const char * _Message );
-
 #ifdef AN_OS_WIN32
     friend void RunEngine( SEntryDecl const & _EntryDecl );
 #else
@@ -365,7 +368,7 @@ private:
 #endif
 };
 
-extern ARuntime & GRuntime;
+extern ARuntime * GRuntime;
 extern AAsyncJobManager GAsyncJobManager;
 extern AAsyncJobList * GRenderFrontendJobList;
 extern AAsyncJobList * GRenderBackendJobList;

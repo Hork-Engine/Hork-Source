@@ -39,11 +39,11 @@ SOFTWARE.
 AN_CLASS_META( AImguiContext )
 
 static void SetClipboardText( void *, const char * _Text ) {
-    GRuntime.SetClipboard( _Text );
+    GRuntime->SetClipboard( _Text );
 }
 
 static const char * GetClipboardText( void * ) {
-    return GRuntime.GetClipboard();
+    return GRuntime->GetClipboard();
 }
 
 AImguiContext::AImguiContext() {
@@ -146,7 +146,7 @@ void AImguiContext::SetFont( AFont * _Font ) {
 }
 
 void AImguiContext::BeginFrame( float _TimeStep ) {
-    SVideoMode const & videoMode = GRuntime.GetVideoMode();
+    SVideoMode const & videoMode = GRuntime->GetVideoMode();
     //Float2 const & cursorPosition = AInputComponent::GetCursorPosition();
     Float2 cursorPosition(0); // TODO: = Desktop->GetCursorPosition();
 

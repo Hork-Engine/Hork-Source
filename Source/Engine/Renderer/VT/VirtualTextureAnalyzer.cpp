@@ -149,12 +149,12 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
 
         pTexture->ReadPage( physAddress, transfer->Layers );
 
-        //int32_t pagePayLoad = GRuntime.SysMilliseconds() - time;
+        //int32_t pagePayLoad = GRuntime->SysMilliseconds() - time;
 
         //GLogger.Printf( "pagePayLoad %d msec\n", pagePayLoad );
 
-        //GRuntime.WaitSeconds( 1 );
-        //GRuntime.WaitMilliseconds(500);
+        //GRuntime->WaitSeconds( 1 );
+        //GRuntime->WaitMilliseconds(500);
 
         pTexture->pCache->MakePageTransferVisible( transfer );
     }
@@ -210,7 +210,7 @@ void AVirtualTextureFeedbackAnalyzer::Begin()
         GLogger.Printf( "AVirtualTextureFeedbackAnalyzer::Begin: constant buffer max block size hit\n" );
     }
 
-    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
     size_t offset = streamedMemory->AllocateConstant( size );
 

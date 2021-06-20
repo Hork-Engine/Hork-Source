@@ -1518,7 +1518,7 @@ bool AAINavigationMesh::QueryNearestPoint( Float3 const & _Position, Float3 cons
 // Function returning a random number [0..1).
 static float NavRandom() {
     const float range = 1.0f - FLT_EPSILON;
-    return GRuntime.Rand.GetFloat() * range;
+    return GRuntime->Rand.GetFloat() * range;
 }
 
 bool AAINavigationMesh::QueryRandomPoint( ANavQueryFilter const & _Filter, SNavPointRef * _RandomPointRef ) const {

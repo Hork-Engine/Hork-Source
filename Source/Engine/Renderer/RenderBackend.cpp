@@ -84,14 +84,14 @@ ARenderBackend::ARenderBackend()
 
     GLogger.Printf( "Initializing render backend...\n" );
 
-    GDevice = GRuntime.GetRenderDevice();
+    GDevice = GRuntime->GetRenderDevice();
 
     GDevice->GetImmediateContext( &rcmd );
 
     rtbl = rcmd->GetRootResourceTable();
 
     // Store in global pointers
-    GStreamBuffer = GRuntime.GetStreamedMemoryGPU()->GetBufferGPU();
+    GStreamBuffer = GRuntime->GetStreamedMemoryGPU()->GetBufferGPU();
 
     InitMaterialSamplers();
 
@@ -695,7 +695,7 @@ void ARenderBackend::RenderFrame( SRenderFrame * pFrameData )
 
 void ARenderBackend::SetViewConstants()
 {
-    AStreamedMemoryGPU * pStreamedMemory = GRuntime.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * pStreamedMemory = GRuntime->GetStreamedMemoryGPU();
     size_t offset = pStreamedMemory->AllocateConstant( sizeof( SViewConstantBuffer ) );
 
     SViewConstantBuffer * pViewCBuf = (SViewConstantBuffer *)pStreamedMemory->Map( offset );

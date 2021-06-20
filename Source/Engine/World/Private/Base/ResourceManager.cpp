@@ -37,7 +37,7 @@ AResourceManager * GResourceManager = nullptr;
 
 AResourceManager::AResourceManager()
 {
-    Core::TraverseDirectory( GRuntime.GetRootPath(), false,
+    Core::TraverseDirectory( GRuntime->GetRootPath(), false,
                              [this]( AStringView FileName, bool bIsDirectory )
     {
         if ( bIsDirectory ) {

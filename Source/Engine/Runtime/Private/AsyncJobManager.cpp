@@ -287,14 +287,14 @@ void AAsyncJobList::SubmitAndWait() {
 //void FirstJob( void * _Data ) {
 //    for ( int i = 0 ; i < 32 ; i++ ) {
 //        GLogger.Printf( "FirstJob: Processing %d (%d) th %d\n", (size_t)_Data&0xf, i, (size_t)_Data>>16 );
-//        GRuntime.WaitMilliseconds(1);
+//        GRuntime->WaitMilliseconds(1);
 //    }
 //}
 
 //void SecondJob( void * _Data ) {
 //    for ( int i = 0 ; i < 32 ; i++ ) {
 //        GLogger.Printf( "SecondJob: Processing %d (%d) th %d\n", (size_t)_Data&0xf, i, (size_t)_Data>>16 );
-//        GRuntime.WaitMilliseconds(1);
+//        GRuntime->WaitMilliseconds(1);
 //    }
 //}
 

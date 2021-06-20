@@ -1603,7 +1603,7 @@ void AAssetImporter::WriteTexture( TextureInfo & tex ) {
     AFileStream f;
     AString fileName = GeneratePhysicalPath( tex.Image->name && *tex.Image->name ? tex.Image->name : "texture", ".texture" );
     AString sourceFileName = m_Path + tex.Image->uri;
-    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime->GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -1721,7 +1721,7 @@ void AAssetImporter::WriteMaterials() {
 void AAssetImporter::WriteMaterial( MaterialInfo const & m ) {
     AFileStream f;
     AString fileName = GeneratePhysicalPath( "matinst", ".minst" );
-    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime->GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -1841,7 +1841,7 @@ AString AAssetImporter::GeneratePhysicalPath( const char * DesiredName, const ch
 
     int uniqueNumber = 0;
 
-    while ( Core::IsFileExists( (GRuntime.GetRootPath() + result ).CStr() ) ) {
+    while ( Core::IsFileExists( (GRuntime->GetRootPath() + result ).CStr() ) ) {
         result = path + "_" + Math::ToString( ++uniqueNumber ) + Extension;
     }
 
@@ -1862,7 +1862,7 @@ void AAssetImporter::WriteSkeleton() {
     if ( !m_Joints.IsEmpty() ) {
         AFileStream f;
         AString fileName = GeneratePhysicalPath( "skeleton", ".skeleton" );
-        AString fileSystemPath = GRuntime.GetRootPath() + fileName;
+        AString fileSystemPath = GRuntime->GetRootPath() + fileName;
 
         if ( !f.OpenWrite( fileSystemPath ) ) {
             GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -1905,7 +1905,7 @@ void AAssetImporter::WriteAnimations() {
 void AAssetImporter::WriteAnimation( AnimationInfo const & Animation ) {
     AFileStream f;
     AString fileName = GeneratePhysicalPath( Animation.Name.CStr(), ".animation" );
-    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime->GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -1947,7 +1947,7 @@ void AAssetImporter::WriteSingleModel() {
 
     AFileStream f;
     AString fileName = GeneratePhysicalPath( "mesh", ".mesh_data" );
-    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime->GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -2053,7 +2053,7 @@ void AAssetImporter::WriteSingleModel() {
 
 
     fileName = GeneratePhysicalPath( "mesh", ".mesh" );
-    fileSystemPath = GRuntime.GetRootPath() + fileName;
+    fileSystemPath = GRuntime->GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -2112,7 +2112,7 @@ void AAssetImporter::WriteMeshes() {
 void AAssetImporter::WriteMesh( MeshInfo const & Mesh ) {
     AFileStream f;
     AString fileName = GeneratePhysicalPath( Mesh.Mesh->name ? Mesh.Mesh->name : "mesh", ".mesh_data" );
-    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime->GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -2196,7 +2196,7 @@ void AAssetImporter::WriteMesh( MeshInfo const & Mesh ) {
     }
 
     fileName = GeneratePhysicalPath( "mesh", ".mesh" );
-    fileSystemPath = GRuntime.GetRootPath() + fileName;
+    fileSystemPath = GRuntime->GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -2307,7 +2307,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
 
     AFileStream f;
     AString fileName = GeneratePhysicalPath( "texture", ".texture" );
-    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime->GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );
@@ -2387,7 +2387,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
 void AAssetImporter::WriteSkyboxMaterial( AGUID const & SkyboxTextureGUID ) {
     AFileStream f;
     AString fileName = GeneratePhysicalPath( "matinst", ".minst" );
-    AString fileSystemPath = GRuntime.GetRootPath() + fileName;
+    AString fileSystemPath = GRuntime->GetRootPath() + fileName;
 
     if ( !f.OpenWrite( fileSystemPath ) ) {
         GLogger.Printf( "Failed to write %s\n", fileName.CStr() );

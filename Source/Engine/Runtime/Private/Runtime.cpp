@@ -47,19 +47,12 @@ SOFTWARE.
 #include <chrono>
 
 #ifdef AN_OS_LINUX
-#include <unistd.h>
-#include <sys/file.h>
-#include <signal.h>
-#include <dlfcn.h>
-#endif
-
-#ifdef AN_OS_ANDROID
-#include <android/log.h>
+#include <unistd.h> // chdir
 #endif
 
 #include <Runtime/Public/EntryDecl.h>
 
-ARuntime & GRuntime = ARuntime::Inst();
+ARuntime * GRuntime;
 
 AAsyncJobManager GAsyncJobManager;
 AAsyncJobList * GRenderFrontendJobList;
@@ -88,16 +81,165 @@ static bool JoystickAdded[ MAX_JOYSTICKS_COUNT ];
 
 static void InitKeyMappingsSDL();
 
-IEngineInterface * ARuntime::Engine = nullptr;
+static SDL_Window * CreateGenericWindow( SVideoMode const & _VideoMode );
+static void DestroyGenericWindow( SDL_Window * Window );
 
-ARuntime::ARuntime()
+ARuntime::ARuntime( struct SEntryDecl const & _EntryDecl )
     : Rand( Core::RandomSeed() )
 {
-    FrameMemoryUsed = 0;
+    GRuntime = this;
+
+    ARuntimeVariable::AllocateVariables();
+
     FrameMemoryUsedPrev = 0;
     MaxFrameMemoryUsage = 0;
     bPostTerminateEvent = false;
     bPostChangeVideoMode = false;
+
+    FrameTimeStamp = Core::SysStartMicroseconds();
+    FrameDuration = 1000000.0 / 60;
+    FrameNumber = 0;
+
+    pModuleDecl = &_EntryDecl;
+
+    Engine = CreateEngineInstance();
+
+    GLogger.SetMessageCallback( []( int _Level, const char * _Message )
+    {
+        Core::WriteDebugString( _Message );
+        Core::WriteLog( _Message );
+
+        if ( GRuntime->Engine ) {
+            std::string & messageBuffer = Core::GetMessageBuffer();
+            if ( !messageBuffer.empty() ) {
+                GRuntime->Engine->Print( messageBuffer.c_str() );
+                messageBuffer.clear();
+            }
+            GRuntime->Engine->Print( _Message );
+        }
+    } );
+
+    InitializeWorkingDirectory();
+
+    GLogger.Printf( "Working directory: %s\n", WorkingDir.CStr() );
+    GLogger.Printf( "Root path: %s\n", RootPath.CStr() );
+    GLogger.Printf( "Executable: %s\n", Core::GetProcessInfo().Executable );
+
+    SDL_LogSetOutputFunction(
+                [](void *userdata, int category, SDL_LogPriority priority, const char *message) {
+                    GLogger.Printf( "SDL: %d : %s\n", category, message );
+                },
+                NULL );
+
+    SDL_InitSubSystem( SDL_INIT_VIDEO | SDL_INIT_SENSOR | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER | SDL_INIT_EVENTS );
+
+    if ( AThread::NumHardwareThreads ) {
+        GLogger.Printf( "Num hardware threads: %d\n", AThread::NumHardwareThreads );
+    }
+
+    int jobManagerThreadCount = AThread::NumHardwareThreads ? Math::Min( AThread::NumHardwareThreads, GAsyncJobManager.MAX_WORKER_THREADS )
+        : GAsyncJobManager.MAX_WORKER_THREADS;
+    GAsyncJobManager.Initialize( jobManagerThreadCount, MAX_RUNTIME_JOB_LISTS );
+
+    GRenderFrontendJobList = GAsyncJobManager.GetAsyncJobList( RENDER_FRONTEND_JOB_LIST );
+    GRenderBackendJobList = GAsyncJobManager.GetAsyncJobList( RENDER_BACKEND_JOB_LIST );
+
+    InitKeyMappingsSDL();
+
+    Core::ZeroMem( PressedKeys, sizeof( PressedKeys ) );
+    Core::ZeroMem( PressedMouseButtons, sizeof( PressedMouseButtons ) );
+    Core::ZeroMem( JoystickButtonState, sizeof( JoystickButtonState ) );
+    Core::ZeroMem( JoystickAxisState, sizeof( JoystickAxisState ) );
+    Core::ZeroMem( JoystickAdded, sizeof( JoystickAdded ) );
+
+    LoadConfigFile();
+
+    if ( rt_VidWidth.GetInteger() <= 0
+         || rt_VidHeight.GetInteger() <= 0 ) {
+        SDL_DisplayMode mode;
+        SDL_GetDesktopDisplayMode( 0, &mode );
+
+        rt_VidWidth.ForceInteger( mode.w );
+        rt_VidHeight.ForceInteger( mode.h );
+    }
+
+    SVideoMode desiredMode = {};
+    desiredMode.Width = rt_VidWidth.GetInteger();
+    desiredMode.Height = rt_VidHeight.GetInteger();
+    desiredMode.Opacity = 1;
+    desiredMode.bFullscreen = rt_VidFullscreen;
+    desiredMode.bCentrized = true;
+    Core::Strcpy( desiredMode.Backend, sizeof( desiredMode.Backend ), "OpenGL 4.5" );
+    Core::Strcpy( desiredMode.Title, sizeof( desiredMode.Title ), _EntryDecl.GameTitle );
+
+    WindowHandle = CreateGenericWindow( desiredMode );
+    if ( !WindowHandle ) {
+        CriticalError( "Failed to create main window\n" );
+    }
+
+    RenderCore::SImmediateContextCreateInfo stateCreateInfo = {};
+    stateCreateInfo.ClipControl = RenderCore::CLIP_CONTROL_DIRECTX;
+    stateCreateInfo.ViewportOrigin = RenderCore::VIEWPORT_ORIGIN_TOP_LEFT;
+    stateCreateInfo.SwapInterval = rt_SwapInterval.GetInteger();
+    stateCreateInfo.Window = WindowHandle;
+
+    RenderCore::SAllocatorCallback allocator;
+
+    allocator.Allocate =
+        []( size_t _BytesCount )
+        {
+            TotalAllocatedRenderCore++;
+            return GZoneMemory.Alloc( _BytesCount );
+        };
+
+    allocator.Deallocate =
+        []( void * _Bytes )
+        {
+            TotalAllocatedRenderCore--;
+            GZoneMemory.Free( _Bytes );
+        };
+
+    CreateLogicalDevice( stateCreateInfo,
+                         &allocator,
+                         []( const unsigned char * _Data, int _Size )
+                         {
+                             return Core::Hash( ( const char * )_Data, _Size );
+                         },
+                         &RenderDevice );
+
+    VertexMemoryGPU = MakeRef< AVertexMemoryGPU >( RenderDevice );
+    StreamedMemoryGPU = MakeRef< AStreamedMemoryGPU >( RenderDevice );
+
+    RenderDevice->GetImmediateContext( &pImmediateContext );
+
+    GPUSync = MakeRef< AGPUSync >( pImmediateContext );
+
+    SetVideoMode( desiredMode );
+
+    // Process initial events
+    PollEvents();
+}
+
+ARuntime::~ARuntime()
+{
+    DestroyEngineInstance();
+    Engine = nullptr;
+
+    GAsyncJobManager.Deinitialize();
+
+    GPUSync.Reset();
+
+    VertexMemoryGPU.Reset();
+    StreamedMemoryGPU.Reset();
+
+    RenderDevice.Reset();
+
+    DestroyGenericWindow( WindowHandle );
+    WindowHandle = nullptr;
+
+    GLogger.Printf( "TotalAllocatedRenderCore: %d\n", TotalAllocatedRenderCore );
+
+    ARuntimeVariable::FreeVariables();
 }
 
 void ARuntime::LoadConfigFile()
@@ -209,209 +351,23 @@ static void DestroyGenericWindow( SDL_Window * Window )
     }
 }
 
-static TUniqueRef< AArchive > GEmbeddedResourcesArch;
-
 extern "C" const size_t EmbeddedResources_Size;
 extern "C" const uint64_t EmbeddedResources_Data[];
 
 AArchive const & ARuntime::GetEmbeddedResources()
 {
-    if ( !GEmbeddedResourcesArch ) {
-        GEmbeddedResourcesArch = MakeUnique< AArchive >();
-        if ( !GEmbeddedResourcesArch->OpenFromMemory( EmbeddedResources_Data, EmbeddedResources_Size ) ) {
+    if ( !EmbeddedResourcesArch ) {
+        EmbeddedResourcesArch = MakeUnique< AArchive >();
+        if ( !EmbeddedResourcesArch->OpenFromMemory( EmbeddedResources_Data, EmbeddedResources_Size ) ) {
             GLogger.Printf( "Failed to open embedded resources\n" );
         }
     }
-    return *GEmbeddedResourcesArch.GetObject();
+    return *EmbeddedResourcesArch.GetObject();
 }
 
-void ARuntime::Run( SEntryDecl const & _EntryDecl )
+void ARuntime::Run()
 {
-    FrameTimeStamp = Core::SysStartMicroseconds();
-    FrameDuration = 1000000.0 / 60;
-    FrameNumber = 0;
-
-    pModuleDecl = &_EntryDecl;
-
-    Engine = CreateEngineInstance();
-
-    GLogger.SetMessageCallback( LoggerMessageCallback );
-
-    ARuntimeVariable::AllocateVariables();
-
-    InitializeWorkingDirectory();
-
-    GLogger.Printf( "Working directory: %s\n", WorkingDir.CStr() );
-    GLogger.Printf( "Root path: %s\n", RootPath.CStr() );
-    GLogger.Printf( "Executable: %s\n", Core::GetProcessInfo().Executable );
-
-    SDL_LogSetOutputFunction(
-                [](void *userdata, int category, SDL_LogPriority priority, const char *message) {
-                    GLogger.Printf( "SDL: %d : %s\n", category, message );
-                },
-                NULL );
-
-    SDL_InitSubSystem( SDL_INIT_VIDEO | SDL_INIT_SENSOR | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER | SDL_INIT_EVENTS );
-
-    if ( AThread::NumHardwareThreads ) {
-        GLogger.Printf( "Num hardware threads: %d\n", AThread::NumHardwareThreads );
-    }
-
-    int jobManagerThreadCount = AThread::NumHardwareThreads ? Math::Min( AThread::NumHardwareThreads, GAsyncJobManager.MAX_WORKER_THREADS )
-        : GAsyncJobManager.MAX_WORKER_THREADS;
-    GAsyncJobManager.Initialize( jobManagerThreadCount, MAX_RUNTIME_JOB_LISTS );
-
-    GRenderFrontendJobList = GAsyncJobManager.GetAsyncJobList( RENDER_FRONTEND_JOB_LIST );
-    GRenderBackendJobList = GAsyncJobManager.GetAsyncJobList( RENDER_BACKEND_JOB_LIST );
-
-    InitKeyMappingsSDL();
-
-    Core::ZeroMem( PressedKeys, sizeof( PressedKeys ) );
-    Core::ZeroMem( PressedMouseButtons, sizeof( PressedMouseButtons ) );
-    Core::ZeroMem( JoystickButtonState, sizeof( JoystickButtonState ) );
-    Core::ZeroMem( JoystickAxisState, sizeof( JoystickAxisState ) );
-    Core::ZeroMem( JoystickAdded, sizeof( JoystickAdded ) );
-
-    LoadConfigFile();
-
-    if ( rt_VidWidth.GetInteger() <= 0
-         || rt_VidHeight.GetInteger() <= 0 ) {
-        SDL_DisplayMode mode;
-        SDL_GetDesktopDisplayMode( 0, &mode );
-
-        rt_VidWidth.ForceInteger( mode.w );
-        rt_VidHeight.ForceInteger( mode.h );
-    }
-
-    SVideoMode desiredMode = {};
-    desiredMode.Width = rt_VidWidth.GetInteger();
-    desiredMode.Height = rt_VidHeight.GetInteger();
-    desiredMode.Opacity = 1;
-    desiredMode.bFullscreen = rt_VidFullscreen;
-    desiredMode.bCentrized = true;
-    Core::Strcpy( desiredMode.Backend, sizeof( desiredMode.Backend ), "OpenGL 4.5" );
-    Core::Strcpy( desiredMode.Title, sizeof( desiredMode.Title ), _EntryDecl.GameTitle );
-
-    WindowHandle = CreateGenericWindow( desiredMode );
-    if ( !WindowHandle ) {
-        CriticalError( "Failed to create main window\n" );
-    }
-
-    RenderCore::SImmediateContextCreateInfo stateCreateInfo = {};
-    stateCreateInfo.ClipControl = RenderCore::CLIP_CONTROL_DIRECTX;
-    stateCreateInfo.ViewportOrigin = RenderCore::VIEWPORT_ORIGIN_TOP_LEFT;
-    stateCreateInfo.SwapInterval = rt_SwapInterval.GetInteger();
-    stateCreateInfo.Window = WindowHandle;
-
-    RenderCore::SAllocatorCallback allocator;
-
-    allocator.Allocate =
-        []( size_t _BytesCount )
-        {
-            TotalAllocatedRenderCore++;
-            return GZoneMemory.Alloc( _BytesCount );
-        };
-
-    allocator.Deallocate =
-        []( void * _Bytes )
-        {
-            TotalAllocatedRenderCore--;
-            GZoneMemory.Free( _Bytes );
-        };
-
-    CreateLogicalDevice( stateCreateInfo,
-                         &allocator,
-                         []( const unsigned char * _Data, int _Size )
-                         {
-                             return Core::Hash( ( const char * )_Data, _Size );
-                         },
-                         &RenderDevice );
-
-    VertexMemoryGPU = MakeRef< AVertexMemoryGPU >( RenderDevice );
-    StreamedMemoryGPU = MakeRef< AStreamedMemoryGPU >( RenderDevice );
-
-    RenderDevice->GetImmediateContext( &pImmediateContext );
-
-    GPUSync = MakeRef< AGPUSync >( pImmediateContext );
-
-    SetVideoMode( desiredMode );
-
-    // Process initial events
-    GRuntime.PollEvents();
-
-    Engine->Run( _EntryDecl );
-
-    DestroyEngineInstance();
-    Engine = nullptr;
-
-    ARuntimeVariable::FreeVariables();
-
-    GAsyncJobManager.Deinitialize();
-
-    GPUSync.Reset();
-
-    VertexMemoryGPU.Reset();
-    StreamedMemoryGPU.Reset();
-
-    RenderDevice.Reset();
-
-    DestroyGenericWindow( WindowHandle );
-    WindowHandle = nullptr;
-
-    GLogger.Printf( "TotalAllocatedRenderCore: %d\n", TotalAllocatedRenderCore );
-
-    GEmbeddedResourcesArch.Reset();
-
-    WorkingDir.Free();
-    RootPath.Free();
-}
-
-void ARuntime::LoggerMessageCallback( int _Level, const char * _Message )
-{
-    #if defined AN_DEBUG
-        #if defined AN_COMPILER_MSVC
-        {
-            int n = MultiByteToWideChar( CP_UTF8, 0, _Message, -1, NULL, 0 );
-            if ( 0 != n ) {
-                // Try to alloc on stack
-                if ( n < 4096 ) {
-                    wchar_t * chars = (wchar_t *)StackAlloc( n * sizeof( wchar_t ) );
-
-                    MultiByteToWideChar( CP_UTF8, 0, _Message, -1, chars, n );
-
-                    OutputDebugString( chars );
-                }
-                else {
-                    wchar_t * chars = (wchar_t *)malloc( n * sizeof( wchar_t ) );
-
-                    MultiByteToWideChar( CP_UTF8, 0, _Message, -1, chars, n );
-
-                    OutputDebugString( chars );
-
-                    free( chars );
-                }
-            }
-        }
-        #else
-            #ifdef AN_OS_ANDROID
-                __android_log_print( ANDROID_LOG_INFO, "Angie Engine", _Message );
-            #else
-                fprintf( stdout, "%s", _Message );
-                fflush( stdout );
-            #endif
-        #endif
-    #endif
-
-    if ( Engine ) {
-        std::string & messageBuffer = Core::GetMessageBuffer();
-        if ( !messageBuffer.empty() ) {
-            Engine->Print( messageBuffer.c_str() );
-            messageBuffer.clear();
-        }
-        Engine->Print( _Message );
-    }
-
-    Core::WriteLog( _Message );
+    Engine->Run( *pModuleDecl );
 }
 
 void ARuntime::InitializeWorkingDirectory()
@@ -465,9 +421,11 @@ void RunEngine( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl )
     init.bAllowMultipleInstances = false;
     init.ZoneSizeInMegabytes = 256;
     init.HunkSizeInMegabytes = 32;
-    init.FrameMemorySizeInMegabytes = 16;
     Core::Initialize( init );
-    GRuntime.Run( _EntryDecl );
+    {
+        ARuntime runtime( _EntryDecl );
+        runtime.Run();
+    }
     Core::Deinitialize();
 }
 
@@ -501,34 +459,17 @@ const char * ARuntime::GetExecutableName()
 
 void * ARuntime::AllocFrameMem( size_t _SizeInBytes )
 {
-    const size_t frameMemorySize = Core::GetFrameMemorySize();
-
-    if ( FrameMemoryUsed + _SizeInBytes > frameMemorySize ) {
-        // TODO: Allocate new block
-        CriticalError( "AllocFrameMem: failed on allocation of %u bytes (available %u, total %u)\n", _SizeInBytes, frameMemorySize - FrameMemoryUsed, frameMemorySize );
-        return nullptr;
-    }
-
-    void * pMemory = (byte *)Core::GetFrameMemoryAddress() + FrameMemoryUsed;
-
-    FrameMemoryUsed += _SizeInBytes;
-    FrameMemoryUsed = Align( FrameMemoryUsed, 16 );
-
-    AN_ASSERT( IsAlignedPtr( pMemory, 16 ) );
-
-    //GLogger.Printf( "Allocated %u, Used %u\n", _SizeInBytes, FrameMemoryUsed );
-
-    return pMemory;
+    return FrameMemory.Allocate( _SizeInBytes );
 }
 
 size_t ARuntime::GetFrameMemorySize() const
 {
-    return Core::GetFrameMemorySize();
+    return FrameMemory.GetBlockMemoryUsage();
 }
 
 size_t ARuntime::GetFrameMemoryUsed() const
 {
-    return FrameMemoryUsed;
+    return FrameMemory.GetTotalMemoryUsage();
 }
 
 size_t ARuntime::GetFrameMemoryUsedPrev() const
@@ -984,11 +925,11 @@ void ARuntime::NewFrame()
     FrameNumber++;
 
     // Keep memory statistics
-    MaxFrameMemoryUsage = Math::Max( MaxFrameMemoryUsage, FrameMemoryUsed );
-    FrameMemoryUsedPrev = FrameMemoryUsed;
+    MaxFrameMemoryUsage = Math::Max( MaxFrameMemoryUsage, FrameMemory.GetTotalMemoryUsage() );
+    FrameMemoryUsedPrev = FrameMemory.GetTotalMemoryUsage();
 
     // Free frame memory for new frame
-    FrameMemoryUsed = 0;
+    FrameMemory.Reset();
 
     if ( bPostChangeVideoMode ) {
         bPostChangeVideoMode = false;
@@ -1479,11 +1420,11 @@ void ARuntime::PollEvents()
 
         // A new audio device is available
         case SDL_AUDIODEVICEADDED:
-            GLogger.Printf( "PollEvent: Audio device added\n" );
+            GLogger.Printf( "Audio %s device added: %s\n", event.adevice.iscapture ? "capture" : "playback", SDL_GetAudioDeviceName(event.adevice.which, event.adevice.iscapture));
             break;
         // An audio device has been removed
         case SDL_AUDIODEVICEREMOVED:
-            GLogger.Printf( "PollEvent: Audio device removed\n" );
+            GLogger.Printf( "Audio %s device removed: %s\n", event.adevice.iscapture ? "capture" : "playback", SDL_GetAudioDeviceName(event.adevice.which, event.adevice.iscapture));
             break;
 
         // A sensor was updated

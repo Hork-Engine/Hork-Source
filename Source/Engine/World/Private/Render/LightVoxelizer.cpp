@@ -384,7 +384,7 @@ void ALightVoxelizer::Voxelize( SRenderView * RV ) {
     ViewProj = RV->ClusterViewProjection;
     ViewProjInv = RV->ClusterViewProjectionInversed;
 
-    AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
     // NOTE: we add MAX_CLUSTER_ITEMS*3 to resolve array overflow
     int maxItems = MAX_TOTAL_CLUSTER_ITEMS + MAX_CLUSTER_ITEMS*3;

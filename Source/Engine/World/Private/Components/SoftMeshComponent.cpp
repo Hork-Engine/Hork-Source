@@ -360,7 +360,7 @@ void ASoftMeshComponent::TickComponent( float _TimeStep ) {
 
         btVector3 vel = btVectorToFloat3(WindVelocity*_TimeStep);
 
-        AMersenneTwisterRand & rng = GRuntime.Rand;
+        AMersenneTwisterRand & rng = GRuntime->Rand;
 
         for(int i=0,ni=SoftBody->m_nodes.size();i<ni;++i) SoftBody->addVelocity(vel*(rng.GetFloat()*0.5f+0.5f),i);
     }

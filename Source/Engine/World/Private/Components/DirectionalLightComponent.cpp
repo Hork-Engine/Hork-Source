@@ -304,7 +304,7 @@ void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, size_
 
     Float4x4 * lightViewProjectionMatrices = nullptr;
     if ( numVisibleCascades > 0 ) {
-        AStreamedMemoryGPU * streamedMemory = GRuntime.GetStreamedMemoryGPU();
+        AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
 
         *ViewProjStreamHandle = streamedMemory->AllocateConstant( numVisibleCascades * sizeof( Float4x4 ), nullptr );
 

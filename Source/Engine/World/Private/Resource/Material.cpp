@@ -1052,7 +1052,7 @@ SMaterialFrameData * AMaterialInstance::PreRenderUpdate( int _FrameNumber ) {
 
     VisFrame = _FrameNumber;
 
-    FrameData = ( SMaterialFrameData * )GRuntime.AllocFrameMem( sizeof( SMaterialFrameData ) );
+    FrameData = ( SMaterialFrameData * )GRuntime->AllocFrameMem( sizeof( SMaterialFrameData ) );
 
     FrameData->Material = Material->GetGPUResource();
 

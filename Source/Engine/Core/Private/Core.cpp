@@ -36,6 +36,17 @@ SOFTWARE.
 #include <Core/Public/Document.h>
 #include <SDL.h>
 
+#ifdef AN_OS_LINUX
+#include <unistd.h>
+#include <sys/file.h>
+#include <signal.h>
+#include <dlfcn.h>
+#endif
+
+#ifdef AN_OS_ANDROID
+#include <android/log.h>
+#endif
+
 namespace
 {
 
@@ -461,12 +472,9 @@ static void TouchMemoryPages( void * _MemoryPointer, int _MemorySize )
     //}
 }
 
-static void * FrameMemoryAddress = nullptr;
-static size_t FrameMemorySize = 0;
-
-static void InitializeMemory( size_t ZoneSizeInMegabytes, size_t HunkSizeInMegabytes, size_t FrameMemorySizeInMegabytes )
+static void InitializeMemory( size_t ZoneSizeInMegabytes, size_t HunkSizeInMegabytes )
 {
-    const size_t TotalMemorySizeInBytes = ( ZoneSizeInMegabytes + HunkSizeInMegabytes + FrameMemorySizeInMegabytes ) << 20;
+    const size_t TotalMemorySizeInBytes = ( ZoneSizeInMegabytes + HunkSizeInMegabytes ) << 20;
 
 #ifdef AN_OS_WIN32
     SIZE_T dwMinimumWorkingSetSize = TotalMemorySizeInBytes;
@@ -484,9 +492,8 @@ static void InitializeMemory( size_t ZoneSizeInMegabytes, size_t HunkSizeInMegab
     }
 
     GLogger.Printf( "Zone memory size: %d Megs\n"
-                    "Hunk memory size: %d Megs\n"
-                    "Frame memory size: %d Megs\n",
-                    ZoneSizeInMegabytes, HunkSizeInMegabytes, FrameMemorySizeInMegabytes );
+                    "Hunk memory size: %d Megs\n",
+                    ZoneSizeInMegabytes, HunkSizeInMegabytes );
 
     GHeapMemory.Initialize();
 
@@ -500,9 +507,6 @@ static void InitializeMemory( size_t ZoneSizeInMegabytes, size_t HunkSizeInMegab
 
     void * HunkMemory = ( byte * )MemoryHeap + ( ZoneSizeInMegabytes << 20 );
     GHunkMemory.Initialize( HunkMemory, HunkSizeInMegabytes );
-
-    FrameMemoryAddress = ( byte * )MemoryHeap + ( ( ZoneSizeInMegabytes + HunkSizeInMegabytes ) << 20 );
-    FrameMemorySize = FrameMemorySizeInMegabytes << 20;
 }
 
 static void DeinitializeMemory()
@@ -606,11 +610,6 @@ static char * Clipboard = nullptr;
 
 static std::string MessageBuffer;
 
-static void MessageCallback( int Level, const char * Message )
-{
-    MessageBuffer += Message;
-}
-
 namespace Core
 {
 
@@ -631,7 +630,13 @@ void Initialize( SCoreInitialize const & CoreInitialize )
         pCommandLine = &cmdLine;
     }
 
-    GLogger.SetMessageCallback( MessageCallback );
+    GLogger.SetMessageCallback( []( int Level, const char * Message )
+    {
+        WriteDebugString( Message );
+        WriteLog( Message );
+
+        MessageBuffer += Message;
+    });
 
     // Synchronize SDL ticks with our start time
     (void)SDL_GetTicks();
@@ -659,7 +664,7 @@ void Initialize( SCoreInitialize const & CoreInitialize )
 
     PrintCPUFeatures();
 
-    InitializeMemory( CoreInitialize.ZoneSizeInMegabytes, CoreInitialize.HunkSizeInMegabytes, CoreInitialize.FrameMemorySizeInMegabytes );
+    InitializeMemory( CoreInitialize.ZoneSizeInMegabytes, CoreInitialize.HunkSizeInMegabytes );
 }
 
 void Deinitialize()
@@ -1042,16 +1047,6 @@ SMemoryInfo GetPhysMemoryInfo()
 #endif
 
     return info;
-}
-
-void * GetFrameMemoryAddress()
-{
-    return FrameMemoryAddress;
-}
-
-size_t GetFrameMemorySize()
-{
-    return FrameMemorySize;
 }
 
 }

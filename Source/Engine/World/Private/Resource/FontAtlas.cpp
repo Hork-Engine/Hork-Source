@@ -416,7 +416,7 @@ void AFont::LoadInternalResource( const char * _Path ) {
 
         AMemoryStream f;
 
-        if ( !f.OpenRead( "Fonts/ProggyClean.ttf", GRuntime.GetEmbeddedResources() ) ) {
+        if ( !f.OpenRead( "Fonts/ProggyClean.ttf", GRuntime->GetEmbeddedResources() ) ) {
             CriticalError( "Failed to create default font\n" );
         }
 

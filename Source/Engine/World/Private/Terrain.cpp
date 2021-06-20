@@ -387,7 +387,7 @@ ATerrainMesh::ATerrainMesh( int InTextureSize )
     AN_ASSERT( firstVert == VertexBuffer.Size() );
     AN_ASSERT( firstIndex == IndexBuffer.Size() );
 
-    RenderCore::IDevice * device = GRuntime.GetRenderDevice();
+    RenderCore::IDevice * device = GRuntime->GetRenderDevice();
 
     RenderCore::SBufferCreateInfo ci = {};
     ci.bImmutableStorage = true;
@@ -431,13 +431,13 @@ ATerrainView::ATerrainView( int InTextureSize )
                                                   RenderCore::STextureResolution2DArray( TextureSize,
                                                                                          TextureSize,
                                                                                          MAX_TERRAIN_LODS ) );
-    GRuntime.GetRenderDevice()->CreateTexture( textureFormat, &ClipmapArray );
+    GRuntime->GetRenderDevice()->CreateTexture( textureFormat, &ClipmapArray );
 
     auto normalMapFormat = RenderCore::MakeTexture( RenderCore::TEXTURE_FORMAT_RGBA8,
                                                     RenderCore::STextureResolution2DArray( TextureSize,
                                                                                            TextureSize,
                                                                                            MAX_TERRAIN_LODS ) );
-    GRuntime.GetRenderDevice()->CreateTexture( normalMapFormat, &NormalMapArray );
+    GRuntime->GetRenderDevice()->CreateTexture( normalMapFormat, &NormalMapArray );
 }
 
 ATerrainView::~ATerrainView()
@@ -477,7 +477,7 @@ void ATerrainView::Update( ATerrainMesh * TerrainMesh, Float3 const & ViewPositi
 
     MakeView( TerrainMesh, ViewPosition, ViewFrustum );
 
-    AStreamedMemoryGPU * pStreamedMemory = GRuntime.GetStreamedMemoryGPU();
+    AStreamedMemoryGPU * pStreamedMemory = GRuntime->GetStreamedMemoryGPU();
 
     InstanceBufferStreamHandle = pStreamedMemory->AllocateVertex( InstanceBuffer.Size() * sizeof( STerrainPatchInstance ),
                                                                   InstanceBuffer.ToPtr() );
@@ -1317,7 +1317,7 @@ void ATerrainView::DrawDebug( ADebugRenderer * InRenderer, ATerrainMesh * Terrai
     static int64_t currentDrawCall = 0;
 
     static int64_t prev = 0;
-    int64_t cur = GRuntime.SysMilliseconds();
+    int64_t cur = GRuntime->SysMilliseconds();
     int64_t delta = prev ? cur - prev : 0;
     prev = cur;
 
@@ -1512,7 +1512,7 @@ ATerrain::ATerrain()
     Core::ZeroMem( Heightmap[0], HeightmapResolution*HeightmapResolution*sizeof( float ) );
     AImage image;
     if ( !image.Load( "swiss2min.png", nullptr, IMAGE_PF_R32F ) ) {
-        GRuntime.PostTerminateEvent();
+        GRuntime->PostTerminateEvent();
     }
     for ( int y = 0 ; y < HeightmapResolution ; y++ ) {
         for ( int x = 0 ; x < HeightmapResolution ; x++ ) {
