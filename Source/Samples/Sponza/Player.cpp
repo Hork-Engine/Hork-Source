@@ -241,7 +241,7 @@ ASphereActor::ASphereActor() {
     static TStaticResourceFinder< AIndexedMesh > MeshResource( _CTS( "/Default/Meshes/Sphere" ) );
     static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/mipmapchecker.png" ) );
 
-    AMersenneTwisterRand & rng = GRuntime.Rand;
+    AMersenneTwisterRand & rng = GRuntime->Rand;
 
     // Create material instance for mesh component
     AMaterialInstance * matInst = CreateInstanceOf< AMaterialInstance >();

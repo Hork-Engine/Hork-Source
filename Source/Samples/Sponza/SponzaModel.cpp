@@ -55,7 +55,7 @@ ASponzaModel::ASponzaModel()
 
     bAllowConsole = true;
 
-    //SVideoMode videoMode = GRuntime.GetVideoMode();
+    //SVideoMode videoMode = GRuntime->GetVideoMode();
     //videoMode.Width = 1280;
     //videoMode.Height = 720;
     //videoMode.RefreshRate = 60;
@@ -63,7 +63,7 @@ ASponzaModel::ASponzaModel()
     //videoMode.bFullscreen = false;
     //Core::Strcpy( videoMode.Backend, sizeof( videoMode.Backend ), "OpenGL 4.5" );
     //Core::Strcpy( videoMode.Title, sizeof( videoMode.Title ), "AngieEngine: Sponza" );
-    //GRuntime.PostChangeVideoMode( videoMode );
+    //GRuntime->PostChangeVideoMode( videoMode );
 
     SetInputMappings();
 
@@ -1270,16 +1270,16 @@ void ASponzaModel::LoadStaticMeshes() {
 
     float lightTemperature = 5000;
 
-    //status = IE_ReadFile( "E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/area-light.ies", &PhotoData );
-    //status = IE_ReadFile( "E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/bollard.ies", &PhotoData );
-    //status = IE_ReadFile( "E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/display.ies", &PhotoData );
-    //status = IE_ReadFile( "E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/three-lobe-vee.ies", &PhotoData );
+    //status = IE_ReadFile( "D:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/area-light.ies", &PhotoData );
+    //status = IE_ReadFile( "D:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/bollard.ies", &PhotoData );
+    //status = IE_ReadFile( "D:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/display.ies", &PhotoData );
+    //status = IE_ReadFile( "D:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/three-lobe-vee.ies", &PhotoData );
 
     APhotometricProfile * profile = CreateInstanceOf< APhotometricProfile >();
-    profile->InitializeFromFile( "/FS/E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/three-lobe-vee.ies" );
+    profile->InitializeFromFile( "/FS/D:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/three-lobe-vee.ies" );
 
     APhotometricProfile * profile2 = CreateInstanceOf< APhotometricProfile >();
-    profile2->InitializeFromFile( "/FS/E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/bollard.ies" );
+    profile2->InitializeFromFile( "/FS/D:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/bollard.ies" );
 
     {
         APointLight * pointLight = World->SpawnActor< APointLight >( Float3( 3.9f, 1, 1.15f ), Quat::Identity() );
