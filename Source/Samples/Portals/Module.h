@@ -30,12 +30,12 @@ SOFTWARE.
 
 #pragma once
 
-#include <GameThread/Public/EngineInstance.h>
+#include <World/Public/EngineInstance.h>
 #include <World/Public/Resource/IndexedMesh.h>
 #include <World/Public/Resource/Material.h>
 #include "MyPlayerController.h"
 
-class AModule final : public IGameModule {
+class AModule : public IGameModule {
     AN_CLASS( AModule, IGameModule )
 
 public:

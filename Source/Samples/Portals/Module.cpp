@@ -56,12 +56,12 @@ AModule::AModule() {
 
     World = AWorld::CreateWorld();
 
-    TPodArray< SPortalDef > portals;
-    TPodArray< Float3 > hullVerts;
+    TPodVector< SPortalDef > portals;
+    TPodVector< Float3 > hullVerts;
 
     portals.Resize( 5 );
 
-    ALevel * level = NewObject< ALevel >();
+    ALevel * level = CreateInstanceOf< ALevel >();
     World->AddLevel( level );
     //ALevel * level = World->GetPersistentLevel();
 
@@ -151,7 +151,7 @@ AModule::AModule() {
     // Spawn HUD
     //AHUD * hud = World->SpawnActor< AMyHUD >();
 
-    RenderingParams = NewObject< ARenderingParameters >();
+    RenderingParams = CreateInstanceOf< ARenderingParameters >();
     RenderingParams->BackgroundColor = AColor4::Black();
     RenderingParams->bClearBackground = true;
     RenderingParams->bWireframe = false;
@@ -207,7 +207,7 @@ AModule::AModule() {
 
     PlayerController->SetPawn( player );
 
-    WDesktop * desktop = NewObject< WDesktop >();
+    WDesktop * desktop = CreateInstanceOf< WDesktop >();
     GEngine->SetDesktop( desktop );
 
     desktop->AddWidget(
@@ -220,7 +220,7 @@ AModule::AModule() {
 }
 
 void AModule::SetInputMappings() {
-    InputMappings = NewObject< AInputMappings >();
+    InputMappings = CreateInstanceOf< AInputMappings >();
 
     InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_W, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_S, -1.0f, CONTROLLER_PLAYER_1 );
@@ -243,7 +243,7 @@ void AModule::CreateResources() {
     {
         static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
         static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/blank512.png" ) );
-        AMaterialInstance * CheckerMaterialInstance = NewObject< AMaterialInstance >();
+        AMaterialInstance * CheckerMaterialInstance = CreateInstanceOf< AMaterialInstance >();
         CheckerMaterialInstance->SetMaterial( MaterialResource.GetObject() );
         CheckerMaterialInstance->SetTexture( 0, TextureResource.GetObject() );
         RegisterResource( CheckerMaterialInstance, "CheckerMaterialInstance" );
@@ -252,7 +252,7 @@ void AModule::CreateResources() {
     // Checker mesh
     {
         static TStaticResourceFinder< AMaterialInstance > MaterialInst( _CTS( "CheckerMaterialInstance" ) );
-        AIndexedMesh * CheckerMesh = NewObject< AIndexedMesh >();
+        AIndexedMesh * CheckerMesh = CreateInstanceOf< AIndexedMesh >();
         CheckerMesh->InitializeFromFile( "/Default/Meshes/Sphere" );
         CheckerMesh->SetMaterialInstance( 0, MaterialInst.GetObject() );
         RegisterResource( CheckerMesh, "CheckerMesh" );
@@ -269,7 +269,7 @@ void AModule::CreateResources() {
             "DarkSky/ft.tga"
         };
         AImage rt, lt, up, dn, bk, ft;
-        AImage const * cubeFaces[6] = { &rt,&lt,&up,&dn,&bk,&ft };
+        TArray< AImage const *, 6 > cubeFaces = { &rt,&lt,&up,&dn,&bk,&ft };
         rt.Load( Cubemap[0], nullptr, IMAGE_PF_BGR16F );
         lt.Load( Cubemap[1], nullptr, IMAGE_PF_BGR16F );
         up.Load( Cubemap[2], nullptr, IMAGE_PF_BGR16F );
@@ -288,7 +288,7 @@ void AModule::CreateResources() {
         //        HDRI[j + 2] = Math::Pow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
         //    }
         //}
-        ATexture * SkyboxTexture = NewObject< ATexture >();
+        ATexture * SkyboxTexture = CreateInstanceOf< ATexture >();
         SkyboxTexture->InitializeCubemapFromImages( cubeFaces );
         RegisterResource( SkyboxTexture, "SkyboxTexture" );
     }
@@ -297,7 +297,7 @@ void AModule::CreateResources() {
     {
         static TStaticResourceFinder< AMaterial > SkyboxMaterial( _CTS( "/Default/Materials/Skybox" ) );
         static TStaticResourceFinder< ATexture > SkyboxTexture( _CTS( "SkyboxTexture" ) );
-        AMaterialInstance * SkyboxMaterialInstance = NewObject< AMaterialInstance >();
+        AMaterialInstance * SkyboxMaterialInstance = CreateInstanceOf< AMaterialInstance >();
         SkyboxMaterialInstance->SetMaterial( SkyboxMaterial.GetObject() );
         SkyboxMaterialInstance->SetTexture( 0, SkyboxTexture.GetObject() );
         RegisterResource( SkyboxMaterialInstance, "SkyboxMaterialInstance" );

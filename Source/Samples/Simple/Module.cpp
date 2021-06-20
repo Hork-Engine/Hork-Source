@@ -34,7 +34,7 @@ SOFTWARE.
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/MaterialGraph/MaterialGraph.h>
 #include <World/Public/Widgets/WDesktop.h>
-#include <GameThread/Public/EngineInstance.h>
+#include <World/Public/EngineInstance.h>
 
 class APlayer : public APawn
 {
@@ -149,11 +149,11 @@ protected:
     }
 };
 
-class AModule final : public IGameModule
+class AModule : public IGameModule
 {
     AN_CLASS( AModule, IGameModule )
 
-private:
+public:
     AModule()
     {
         // Create game resources
@@ -166,7 +166,7 @@ private:
         APlayer * player = world->SpawnActor< APlayer >( Float3( 0, 0.5f, 0 ), Quat::Identity() );
 
         // Set input mappings
-        AInputMappings * inputMappings = NewObject< AInputMappings >();
+        AInputMappings * inputMappings = CreateInstanceOf< AInputMappings >();
         inputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_W, 1.0f, CONTROLLER_PLAYER_1 );
         inputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_S, -1.0f, CONTROLLER_PLAYER_1 );
         inputMappings->MapAxis( "MoveRight", ID_KEYBOARD, KEY_A, -1.0f, CONTROLLER_PLAYER_1 );
@@ -181,7 +181,7 @@ private:
         inputMappings->MapAction( "Pause", ID_KEYBOARD, KEY_PAUSE, 0, CONTROLLER_PLAYER_1 );
 
         // Set rendering parameters
-        ARenderingParameters * renderingParams = NewObject< ARenderingParameters >();
+        ARenderingParameters * renderingParams = CreateInstanceOf< ARenderingParameters >();
         renderingParams->bDrawDebug = true;
 
         // Spawn player controller
@@ -204,7 +204,7 @@ private:
         world->SpawnActor< AGround >( spawnTransform );
 
         // Create UI desktop
-        WDesktop * desktop = NewObject< WDesktop >();
+        WDesktop * desktop = CreateInstanceOf< WDesktop >();
 
         // Add viewport to desktop
         desktop->AddWidget(
@@ -226,14 +226,14 @@ private:
     {
         // Create mesh for ground
         {
-            AIndexedMesh * mesh = NewObject< AIndexedMesh >();
+            AIndexedMesh * mesh = CreateInstanceOf< AIndexedMesh >();
             mesh->InitializePlaneMeshXZ( 256, 256, 256 );
             RegisterResource( mesh, "DefaultShapePlane256x256x256" );
         }
 
         // Create material for box
         {
-            MGMaterialGraph * graph = NewObject< MGMaterialGraph >();
+            MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
             graph->MaterialType = MATERIAL_TYPE_PBR;
             graph->bAllowScreenSpaceReflections = false;
@@ -266,7 +266,7 @@ private:
         {
             static TStaticResourceFinder< AMaterial > BoxMaterial( _CTS( "BoxMaterial" ) );
             static TStaticResourceFinder< ATexture > GroundTexture( _CTS( "/Common/grid8.png" ) );
-            AMaterialInstance * BoxMaterialInstance = NewObject< AMaterialInstance >();
+            AMaterialInstance * BoxMaterialInstance = CreateInstanceOf< AMaterialInstance >();
             BoxMaterialInstance->SetMaterial( BoxMaterial.GetObject() );
             BoxMaterialInstance->SetTexture( 0, GroundTexture.GetObject() );
             RegisterResource( BoxMaterialInstance, "BoxMaterialInstance" );

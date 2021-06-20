@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "MyPlayerController.h"
 
-#include <GameThread/Public/EngineInstance.h>
+#include <World/Public/EngineInstance.h>
 
 AN_CLASS_META( AMyPlayerController )
 

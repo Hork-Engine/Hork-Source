@@ -72,7 +72,7 @@ ASponzaModel::ASponzaModel()
     // Spawn HUD
     //AHUD * hud = World->SpawnActor< AMyHUD >();
 
-    RenderingParams = NewObject< ARenderingParameters >();
+    RenderingParams = CreateInstanceOf< ARenderingParameters >();
     RenderingParams->BackgroundColor = AColor4(0.5f);
     RenderingParams->bWireframe = false;
     RenderingParams->bDrawDebug = true;
@@ -177,7 +177,7 @@ ASponzaModel::ASponzaModel()
                 HDRI[j + 2] = Math::Pow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
             }
         }
-        ATexture* SkyboxTexture = NewObject< ATexture >();
+        ATexture* SkyboxTexture = CreateInstanceOf< ATexture >();
         SkyboxTexture->InitializeCubemapFromImages( cubeFaces );
         RegisterResource( SkyboxTexture, "SkyboxTexture" );
 #endif
@@ -187,7 +187,7 @@ ASponzaModel::ASponzaModel()
     //{
     //    static TStaticResourceFinder< AMaterial > SkyboxMaterial( _CTS( "/Default/Materials/Skybox" ) );
     //    static TStaticResourceFinder< ATexture > SkyboxTexture( _CTS( "SkyboxTexture" ) );
-    //    AMaterialInstance * SkyboxMaterialInstance = NewObject< AMaterialInstance >();
+    //    AMaterialInstance * SkyboxMaterialInstance = CreateInstanceOf< AMaterialInstance >();
     //    SkyboxMaterialInstance->SetMaterial( SkyboxMaterial.GetObject() );
     //    SkyboxMaterialInstance->SetTexture( 0, SkyboxTexture.GetObject() );
     //    RegisterResource( SkyboxMaterialInstance, "SkyboxMaterialInstance" );
@@ -195,7 +195,7 @@ ASponzaModel::ASponzaModel()
 
 
     AIndexedMesh * indexedMesh = GetOrCreateResource< AIndexedMesh >( "/Root/BrainStem/BrainStem_Mesh.asset" );
-    ACollisionModel * collisionModel = NewObject< ACollisionModel >();
+    ACollisionModel * collisionModel = CreateInstanceOf< ACollisionModel >();
     int n = 0;
     for ( SJoint const & j : indexedMesh->GetSkeleton()->GetJoints() )
     {
@@ -229,6 +229,13 @@ ASponzaModel::ASponzaModel()
 
     //dirlight->LightComponent->SetColor( 1,0.3f,0.2f );
     dirlight->LightComponent->SetTemperature( 6500 );
+
+
+    //dirlight->LightComponent->SetIlluminance( 20000.0f );
+    dirlight->LightComponent->SetShadowMaxDistance( 40 );
+    dirlight->LightComponent->SetShadowCascadeResolution( 2048 );
+    //dirlight->LightComponent->SetShadowCascadeOffset( 1.0f );
+    dirlight->LightComponent->SetShadowCascadeOffset( 6.0f );
 #endif
 
     //AImageBasedLight * ibl = World->SpawnActor< AImageBasedLight >();
@@ -252,7 +259,7 @@ ASponzaModel::ASponzaModel()
 
     PlayerController->SetPawn( player );
 
-    WDesktop * desktop = NewObject< WDesktop >();
+    WDesktop * desktop = CreateInstanceOf< WDesktop >();
     GEngine->SetDesktop( desktop );
 
     desktop->AddWidget(
@@ -295,7 +302,7 @@ AN_CLASS_META( ABrainStem )
 ABrainStem::ABrainStem() {
     SkinnedComponent = CreateComponent< ASkinnedComponent >( "Skin" );
 
-    AAnimationController * controller = NewObject< AAnimationController >();
+    AAnimationController * controller = CreateInstanceOf< AAnimationController >();
     //controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/BrainStem/BrainStem_Animation.asset" ) );
     //controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/BrainStem/fire_elemental BLEND_Attack3.asset" ) );
     //controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/Golem1/golem_armature_idle_baselayer.animation" ) );
@@ -361,7 +368,7 @@ ABrainStem::ABrainStem() {
     ATexture * normalTextureRes = CreateInstanceOf< ATexture >();
     normalTextureRes->InitializeFromImage( image );
 
-    AMaterialInstance * matInst = NewObject< AMaterialInstance >();
+    AMaterialInstance * matInst = CreateInstanceOf< AMaterialInstance >();
     matInst->SetMaterial( material );
     matInst->SetTexture( 0, GetOrCreateResource< ATexture >( "/Root/Textures/Albedo FireElemental.png" ) );
     matInst->SetTexture( 1, GetOrCreateResource< ATexture >( "/Root/Textures/Emission FireElemental.png" ) );
@@ -408,7 +415,7 @@ AN_CLASS_META( AMonster )
 AMonster::AMonster() {
     SkinnedComponent = CreateComponent< ASkinnedComponent >( "Skin" );
 
-//    AAnimationController * controller = NewObject< AAnimationController >();
+//    AAnimationController * controller = CreateInstanceOf< AAnimationController >();
 //    controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/Monster/Monster_Animation.asset" ) );
 //    controller->SetPlayMode( ANIMATION_PLAY_WRAP );
 //    SkinnedComponent->AddAnimationController( controller );
@@ -455,7 +462,7 @@ AN_CLASS_META( AGargoyle )
 AGargoyle::AGargoyle() {
     SkinnedComponent = CreateComponent< ASkinnedComponent >( "Skin" );
 
-    AAnimationController * controller = NewObject< AAnimationController >();
+    AAnimationController * controller = CreateInstanceOf< AAnimationController >();
     controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/doom_hell_knight/scene_cinema_4d_main.animation" ) );
     //controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/gargoyle/scene_Animation.asset" ) ); // jump
     //controller->SetAnimation( GetOrCreateResource< ASkeletalAnimation >( "/Root/gargoyle/scene_Animation_1.asset" ) ); // attack
@@ -1268,10 +1275,10 @@ void ASponzaModel::LoadStaticMeshes() {
     //status = IE_ReadFile( "E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/display.ies", &PhotoData );
     //status = IE_ReadFile( "E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/three-lobe-vee.ies", &PhotoData );
 
-    APhotometricProfile * profile = NewObject< APhotometricProfile >();
+    APhotometricProfile * profile = CreateInstanceOf< APhotometricProfile >();
     profile->InitializeFromFile( "/FS/E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/three-lobe-vee.ies" );
 
-    APhotometricProfile * profile2 = NewObject< APhotometricProfile >();
+    APhotometricProfile * profile2 = CreateInstanceOf< APhotometricProfile >();
     profile2->InitializeFromFile( "/FS/E:/IES/leomoon-dot-com_ies-lights-pack/ies-lights-pack/bollard.ies" );
 
     {
@@ -1512,7 +1519,7 @@ void ASponzaModel::LoadStaticMeshes() {
 }
 
 void ASponzaModel::SetInputMappings() {
-    InputMappings = NewObject< AInputMappings >();
+    InputMappings = CreateInstanceOf< AInputMappings >();
 
     InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_W, 1.0f, CONTROLLER_PLAYER_1 );
     InputMappings->MapAxis( "MoveForward", ID_KEYBOARD, KEY_S, -1.0f, CONTROLLER_PLAYER_1 );

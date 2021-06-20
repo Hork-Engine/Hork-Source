@@ -244,7 +244,7 @@ ASphereActor::ASphereActor() {
     AMersenneTwisterRand & rng = GRuntime.Rand;
 
     // Create material instance for mesh component
-    AMaterialInstance * matInst = NewObject< AMaterialInstance >();
+    AMaterialInstance * matInst = CreateInstanceOf< AMaterialInstance >();
     matInst->SetMaterial( GetOrCreateSphereMaterial() );
     matInst->SetTexture( 0, TextureResource.GetObject() );
     matInst->UniformVectors[0] = Float4( rng.GetFloat(), rng.GetFloat(), rng.GetFloat(), 1.0f );
