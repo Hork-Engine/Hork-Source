@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Audio/Public/Freeverb.h>
 
-#include <Core/Public/Alloc.h>
+#include <Core/Public/Memory.h>
 
 AFreeverb::AFreeverb( int SampleRate )
 {

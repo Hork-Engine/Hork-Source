@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include <Core/Public/CString.h>
-#include <Core/Public/Alloc.h>
+#include <Core/Public/Memory.h>
 
 static AN_FORCEINLINE unsigned int Decode85Byte( const char c ) {
     return c >= '\\' ? c - 36 : c - 35;

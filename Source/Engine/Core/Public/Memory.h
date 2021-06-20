@@ -146,16 +146,24 @@ public:
     void Clear();
 
     /** Statistics: current memory usage */
-    static size_t GetTotalMemoryUsage();
+    size_t GetTotalMemoryUsage();
 
     /** Statistics: current memory usage overhead */
-    static size_t GetTotalMemoryOverhead();
+    size_t GetTotalMemoryOverhead();
 
     /** Statistics: max memory usage during memory using */
-    static size_t GetMaxMemoryUsage();
+    size_t GetMaxMemoryUsage();
 
 private:
     void CheckMemoryLeaks();
+
+    void IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead );
+    void DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead );
+
+    mutable ASpinLock StatisticLock;
+    size_t TotalMemoryUsage;
+    size_t TotalMemoryOverhead;
+    size_t MaxMemoryUsage;
 
     struct SHeapChunk {
         SHeapChunk * pNext;
@@ -322,11 +330,12 @@ private:
 
     struct SZoneBuffer * MemoryBuffer = nullptr;
 
-    AAtomicLong TotalMemoryUsage;
-    AAtomicLong TotalMemoryOverhead;
-    AAtomicLong MaxMemoryUsage;
+    mutable ASpinLock StatisticLock;
+    size_t TotalMemoryUsage;
+    size_t TotalMemoryOverhead;
+    size_t MaxMemoryUsage;
 
-#ifdef AN_MULTITHREADED_ALLOC
+#ifdef AN_ZONE_MULTITHREADED_ALLOC
     AThreadSync Sync;
 #endif
 };

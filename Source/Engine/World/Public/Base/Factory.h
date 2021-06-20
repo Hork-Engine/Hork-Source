@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/Alloc.h>
+#include <Core/Public/Memory.h>
 #include <Core/Public/Hash.h>
 #include <Core/Public/HashFunc.h>
 #include <Core/Public/String.h>

@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include <Core/Public/BinaryToC.h>
-#include <Core/Public/Alloc.h>
+#include <Core/Public/Memory.h>
 #include <Core/Public/Compress.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/BaseMath.h>

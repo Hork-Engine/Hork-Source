@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "Alloc.h"
+#include "Memory.h"
 
 #include <thread>
 //#include <array>

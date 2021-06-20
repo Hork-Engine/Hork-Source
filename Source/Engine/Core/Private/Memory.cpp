@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Core/Public/Alloc.h>
+#include <Core/Public/Memory.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/Core.h>
 
@@ -59,10 +59,12 @@ AZoneMemory GZoneMemory;
 //#define ZONE_MEMORY_LEAK_ADDRESS <local address>
 //#define ZONE_MEMORY_LEAK_SIZE <size>
 
-#ifdef AN_MULTITHREADED_ALLOC
-#define SYNC_GUARD ASyncGuard syncGuard( Sync );
+#ifdef AN_ZONE_MULTITHREADED_ALLOC
+#define ZONE_SYNC_GUARD ASyncGuard syncGuard( Sync );
+#define ZONE_SYNC_GUARD_STAT ASpinLockGuard lockGuard(StatisticLock);
 #else
-#define SYNC_GUARD
+#define ZONE_SYNC_GUARD
+#define ZONE_SYNC_GUARD_STAT
 #endif
 
 typedef uint16_t TRASH_MARKER;
@@ -77,24 +79,13 @@ static ALogger MemLogger;
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-static AAtomicLong HeapTotalMemoryUsage( 0 );
-static AAtomicLong HeapTotalMemoryOverhead( 0 );
-static AAtomicLong HeapMaxMemoryUsage( 0 );
-
-AN_FORCEINLINE void IncMemoryStatisticsOnHeap( size_t _MemoryUsage, size_t _Overhead ) {
-    HeapTotalMemoryUsage.FetchAdd( _MemoryUsage );
-    HeapTotalMemoryOverhead.FetchAdd( _Overhead );
-    HeapMaxMemoryUsage.Store( StdMax( HeapMaxMemoryUsage.Load(), HeapTotalMemoryUsage.Load() ) );
-}
-
-AN_FORCEINLINE void DecMemoryStatisticsOnHeap( size_t _MemoryUsage, size_t _Overhead ) {
-    HeapTotalMemoryUsage.FetchSub( _MemoryUsage );
-    HeapTotalMemoryOverhead.FetchSub( _Overhead );
-}
-
 AHeapMemory::AHeapMemory()
 {
     HeapChain.pNext = HeapChain.pPrev = &HeapChain;
+
+    TotalMemoryUsage = 0;
+    TotalMemoryOverhead = 0;
+    MaxMemoryUsage = 0;
 
     AN_SIZEOF_STATIC_CHECK( SHeapChunk, 32 );
 }
@@ -120,6 +111,19 @@ void AHeapMemory::Clear()
         nextHeap = heap->pNext;
         Free( heap + 1 );
     }
+}
+
+void AHeapMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
+    ASpinLockGuard lockGuard(StatisticLock);
+    TotalMemoryUsage += _MemoryUsage;
+    TotalMemoryOverhead += _Overhead;
+    MaxMemoryUsage = StdMax( MaxMemoryUsage, TotalMemoryUsage );
+}
+
+void AHeapMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
+    ASpinLockGuard lockGuard(StatisticLock);
+    TotalMemoryUsage -= _MemoryUsage;
+    TotalMemoryOverhead -= _Overhead;
 }
 
 namespace Core
@@ -202,8 +206,6 @@ static bool MemoryTrashTest()
 }
 #endif
 
-
-
 }
 
 void * AHeapMemory::Alloc( size_t _BytesCount, int _Alignment )
@@ -267,7 +269,7 @@ void * AHeapMemory::Alloc( size_t _BytesCount, int _Alignment )
         *( TRASH_MARKER * )( aligned + heap->DataSize ) = TrashMarker;
     }
 
-    IncMemoryStatisticsOnHeap( heap->Size, heap->Size - heap->DataSize );
+    IncMemoryStatistics( heap->Size, heap->Size - heap->DataSize );
 
     return aligned;
 }
@@ -300,7 +302,7 @@ void AHeapMemory::Free( void * _Bytes )
             heap->pNext->pPrev = heap->pPrev;
         }
 
-        DecMemoryStatisticsOnHeap( heap->Size, heap->Size - heap->DataSize );
+        DecMemoryStatistics( heap->Size, heap->Size - heap->DataSize );
 
         Core::SysFree( bytes );
     }
@@ -377,6 +379,7 @@ void AHeapMemory::PointerTrashTest( void * _Bytes )
 
 void AHeapMemory::CheckMemoryLeaks()
 {
+    ASpinLockGuard lockGuard( Mutex );
     for ( SHeapChunk * heap = HeapChain.pNext ; heap != &HeapChain ; heap = heap->pNext ) {
         MemLogger.Print( "==== Heap Memory Leak ====\n" );
         MemLogger.Printf( "Heap Address: %u Size: %d\n", (size_t)( heap + 1 ), heap->DataSize );
@@ -385,17 +388,20 @@ void AHeapMemory::CheckMemoryLeaks()
 
 size_t AHeapMemory::GetTotalMemoryUsage()
 {
-    return HeapTotalMemoryUsage.Load();
+    ASpinLockGuard lockGuard(StatisticLock);
+    return TotalMemoryUsage;
 }
 
 size_t AHeapMemory::GetTotalMemoryOverhead()
 {
-    return HeapTotalMemoryOverhead.Load();
+    ASpinLockGuard lockGuard(StatisticLock);
+    return TotalMemoryOverhead;
 }
 
 size_t AHeapMemory::GetMaxMemoryUsage()
 {
-    return HeapMaxMemoryUsage.Load();
+    ASpinLockGuard lockGuard(StatisticLock);
+    return MaxMemoryUsage;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -729,19 +735,23 @@ int AZoneMemory::GetZoneMemorySizeInMegabytes() const {
 }
 
 size_t AZoneMemory::GetTotalMemoryUsage() const {
-    return TotalMemoryUsage.Load();
+    ZONE_SYNC_GUARD_STAT
+    return TotalMemoryUsage;
 }
 
 size_t AZoneMemory::GetTotalMemoryOverhead() const {
-    return TotalMemoryOverhead.Load();
+    ZONE_SYNC_GUARD_STAT
+    return TotalMemoryOverhead;
 }
 
 size_t AZoneMemory::GetTotalFreeMemory() const {
-    return MemoryBuffer ? MemoryBuffer->Size - TotalMemoryUsage.Load() : 0;
+    ZONE_SYNC_GUARD_STAT
+    return MemoryBuffer ? MemoryBuffer->Size - TotalMemoryUsage : 0;
 }
 
 size_t AZoneMemory::GetMaxMemoryUsage() const {
-    return MaxMemoryUsage.Load();
+    ZONE_SYNC_GUARD_STAT
+    return MaxMemoryUsage;
 }
 
 void AZoneMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
@@ -759,9 +769,9 @@ void AZoneMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
         CriticalError( "AZoneMemory::Initialize: chunk must be at 16 byte boundary\n" );
     }
 
-    TotalMemoryUsage.StoreRelaxed( 0 );
-    TotalMemoryOverhead.StoreRelaxed( 0 );
-    MaxMemoryUsage.StoreRelaxed( 0 );
+    TotalMemoryUsage = 0;
+    TotalMemoryOverhead = 0;
+    MaxMemoryUsage = 0;
 }
 
 void AZoneMemory::Deinitialize() {
@@ -769,9 +779,9 @@ void AZoneMemory::Deinitialize() {
 
     MemoryBuffer = nullptr;
 
-    TotalMemoryUsage.StoreRelaxed( 0 );
-    TotalMemoryOverhead.StoreRelaxed( 0 );
-    MaxMemoryUsage.StoreRelaxed( 0 );
+    TotalMemoryUsage = 0;
+    TotalMemoryOverhead = 0;
+    MaxMemoryUsage = 0;
 }
 
 void AZoneMemory::Clear() {
@@ -779,7 +789,7 @@ void AZoneMemory::Clear() {
         return;
     }
 
-    SYNC_GUARD
+    ZONE_SYNC_GUARD
 
     MemoryBuffer->ChunkList.pPrev = MemoryBuffer->ChunkList.pNext = MemoryBuffer->Rover = ( SZoneChunk * )( MemoryBuffer + 1 );
     MemoryBuffer->ChunkList.Size = 0;
@@ -787,22 +797,27 @@ void AZoneMemory::Clear() {
     MemoryBuffer->Rover->pNext = &MemoryBuffer->ChunkList;
     MemoryBuffer->Rover->pPrev = &MemoryBuffer->ChunkList;
 
-    TotalMemoryUsage.Store( 0 );
-    TotalMemoryOverhead.Store( 0 );
-    MaxMemoryUsage.Store( 0 );
+    {
+        ZONE_SYNC_GUARD_STAT
+        TotalMemoryUsage = 0;
+        TotalMemoryOverhead = 0;
+        MaxMemoryUsage = 0;
+    }
 
     // Allocated "on heap" memory is still present
 }
 
 void AZoneMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
-    TotalMemoryUsage.FetchAdd( _MemoryUsage );
-    TotalMemoryOverhead.FetchAdd( _Overhead );
-    MaxMemoryUsage.Store( StdMax( MaxMemoryUsage.Load(), TotalMemoryUsage.Load() ) );
+    ZONE_SYNC_GUARD_STAT
+    TotalMemoryUsage += _MemoryUsage;
+    TotalMemoryOverhead += _Overhead;
+    MaxMemoryUsage = StdMax( MaxMemoryUsage, TotalMemoryUsage );
 }
 
 void AZoneMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
-    TotalMemoryUsage.FetchSub( _MemoryUsage );
-    TotalMemoryOverhead.FetchSub( _Overhead );
+    ZONE_SYNC_GUARD_STAT
+    TotalMemoryUsage -= _MemoryUsage;
+    TotalMemoryOverhead -= _Overhead;
 }
 
 SZoneChunk * AZoneMemory::FindFreeChunk( int _RequiredSize ) {
@@ -834,7 +849,7 @@ void * AZoneMemory::Alloc( size_t _BytesCount ) {
         CriticalError( "AZoneMemory::Alloc: Invalid bytes count\n" );
     }
 
-    SYNC_GUARD
+    ZONE_SYNC_GUARD
 
     size_t requiredSize = AdjustChunkSize( _BytesCount );
 
@@ -964,7 +979,7 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
         return Alloc( _NewBytesCount );
     }
 
-    SYNC_GUARD
+    ZONE_SYNC_GUARD
 
     size_t oldSize = chunk->DataSize;
 
@@ -1167,7 +1182,7 @@ void AZoneMemory::Free( void * _Bytes ) {
         return;
     }
 
-    SYNC_GUARD
+    ZONE_SYNC_GUARD
 
     SZoneChunk * chunk = ( SZoneChunk * )( _Bytes ) - 1;
 
@@ -1216,9 +1231,15 @@ void AZoneMemory::Free( void * _Bytes ) {
 }
 
 void AZoneMemory::CheckMemoryLeaks() {
-    SYNC_GUARD
+    ZONE_SYNC_GUARD
 
-    if ( TotalMemoryUsage.Load() > 0 ) {
+    size_t totalMemoryUsage;
+    {
+        ZONE_SYNC_GUARD_STAT
+        totalMemoryUsage = TotalMemoryUsage;
+    }
+
+    if ( totalMemoryUsage > 0 ) {
         SZoneChunk * rover = MemoryBuffer->Rover;
         SZoneChunk * start = rover->pPrev;
         SZoneChunk * cur;
@@ -1244,19 +1265,6 @@ void AZoneMemory::CheckMemoryLeaks() {
 
         } while ( 1 );
     }
-}
-
-
-//////////////////////////////////////////////////////////////////////////////////////////
-//
-// Allocators
-//
-//////////////////////////////////////////////////////////////////////////////////////////
-
-template< typename T >
-static void PrintMemoryStatistics( T & _Manager, const char * _Message ) {
-    MemLogger.Printf( "%s: MaxMemoryUsage %d TotalMemoryUsage %d TotalMemoryOverhead %d\n",
-            _Message, _Manager.GetMaxMemoryUsage(), _Manager.GetTotalMemoryUsage(), _Manager.GetTotalMemoryOverhead() );
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////

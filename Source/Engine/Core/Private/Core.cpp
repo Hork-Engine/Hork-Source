@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include <Core/Public/Core.h>
-#include <Core/Public/Alloc.h>
+#include <Core/Public/Memory.h>
 #include <Core/Public/Logger.h>
 #include <Core/Public/WindowsDefs.h>
 #include <Core/Public/CoreMath.h>
@@ -357,7 +357,6 @@ static void InitializeProcess()
             curLen <<= 1;
         } else {
             CriticalError( "InitializeProcess: Failed on GetModuleFileName\n" );
-            len = 0;
             break;
         }
     }

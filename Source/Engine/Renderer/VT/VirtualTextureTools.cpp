@@ -1752,14 +1752,14 @@ void TestVT() {
     int NumTextures = AN_ARRAY_SIZE( TextureLayers );
 
 #ifdef AN_OS_LINUX
-    TextureLayers[0].Diffuse = "vt_test.jpg";//"E:/portret.png";
+    TextureLayers[0].Diffuse = "vt_test.jpg";//"D:/portret.png";
     //TextureLayers[0].Ambient = "";
     //TextureLayers[0].Specular = "";
     //TextureLayers[0].Normal = "normal.png";
     TextureLayers[0].Width = 1920;//1240;
     TextureLayers[0].Height = 1080;//1416;
 #else
-    TextureLayers[0].Diffuse = "E:/portret.png";
+    TextureLayers[0].Diffuse = "D:/portret.png";
     TextureLayers[0].Width = 1240;
     TextureLayers[0].Height = 1416;
 #endif

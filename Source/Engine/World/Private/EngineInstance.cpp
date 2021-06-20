@@ -335,7 +335,9 @@ void AEngineInstance::ShowStats()
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime.GetFrameMemoryUsedPrev()/1024.0f, GRuntime.GetFrameMemorySize()>>20, GRuntime.GetMaxFrameMemoryUsage()/1024.0f ), nullptr, true ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage (GPU): %f KB / %d MB (Max %f KB)", streamedMemory->GetUsedMemoryPrev()/1024.0f, streamedMemory->GetAllocatedMemory()>>20, streamedMemory->GetMaxMemoryUsage()/1024.0f ), nullptr, true ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Vertex cache memory usage (GPU): %f KB / %d MB", vertexMemory->GetUsedMemory()/1024.0f, vertexMemory->GetAllocatedMemory()>>20 ), nullptr, true ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f ), nullptr, true ); pos.Y += y_step;
+        if ( GHeapMemory.GetTotalMemoryUsage() > 0 ) {
+            Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f ), nullptr, true ); pos.Y += y_step;
+        }
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Visible instances: %d", frameData->Instances.Size() ), nullptr, true ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Visible shadow instances: %d", frameData->ShadowInstances.Size() ), nullptr, true ); pos.Y += y_step;
         Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Visible dir lights: %d", frameData->DirectionalLights.Size() ), nullptr, true ); pos.Y += y_step;

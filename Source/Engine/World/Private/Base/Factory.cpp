@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include <World/Public/Base/Factory.h>
-#include <Core/Public/Alloc.h>
+#include <Core/Public/Memory.h>
 #include <Core/Public/HashFunc.h>
 #include <Core/Public/Logger.h>
 
