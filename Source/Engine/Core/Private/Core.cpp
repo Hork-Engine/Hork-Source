@@ -47,6 +47,12 @@ SOFTWARE.
 #include <android/log.h>
 #endif
 
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+// Command line
+//
+//////////////////////////////////////////////////////////////////////////////////////////
+
 namespace
 {
 
@@ -335,6 +341,15 @@ bool SCommandLine::HasArg( AStringView _Arg ) const
     return CheckArg( _Arg ) != -1;
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+// Main process
+//
+//////////////////////////////////////////////////////////////////////////////////////////
+
+namespace
+{
+
 #ifdef AN_OS_WIN32
 static HANDLE ProcessMutex = nullptr;
 #endif
@@ -344,8 +359,6 @@ static SProcessInfo ProcessInfo;
 
 static void InitializeProcess()
 {
-    using namespace Core;
-
     setlocale( LC_ALL, "C" );
     srand( ( unsigned )time( NULL ) );
 
@@ -430,8 +443,6 @@ static void InitializeProcess()
 
 static void DeinitializeProcess()
 {
-    using namespace Core;
-
     if ( ProcessLogFile ) {
         fclose( ProcessLogFile );
         ProcessLogFile = nullptr;
@@ -450,6 +461,17 @@ static void DeinitializeProcess()
     }
 #endif
 }
+
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+// Memory
+//
+//////////////////////////////////////////////////////////////////////////////////////////
+
+namespace
+{
 
 volatile int MemoryChecksum;
 static void * MemoryHeap;
@@ -517,54 +539,33 @@ static void DeinitializeMemory()
     GHeapMemory.Deinitialize();
 }
 
-static void DisplayCriticalMessage( const char * _Message )
-{
-#if defined AN_OS_WIN32
-    wchar_t wstr[1024];
-    MultiByteToWideChar( CP_UTF8, 0, _Message, -1, wstr, AN_ARRAY_SIZE( wstr ) );
-    MessageBox( NULL, wstr, L"Critical Error", MB_OK | MB_ICONERROR | MB_SETFOREGROUND | MB_TOPMOST );
-#else
-    SDL_MessageBoxData data = {};
-    SDL_MessageBoxButtonData button = {};
-    const SDL_MessageBoxColorScheme scheme =
-    {
-        {
-            { 56,  54,  53  }, /* SDL_MESSAGEBOX_COLOR_BACKGROUND, */
-        { 209, 207, 205 }, /* SDL_MESSAGEBOX_COLOR_TEXT, */
-        { 140, 135, 129 }, /* SDL_MESSAGEBOX_COLOR_BUTTON_BORDER, */
-        { 105, 102, 99  }, /* SDL_MESSAGEBOX_COLOR_BUTTON_BACKGROUND, */
-        { 205, 202, 53  }, /* SDL_MESSAGEBOX_COLOR_BUTTON_SELECTED, */
-        }
-    };
-
-    data.flags = SDL_MESSAGEBOX_ERROR;
-    data.title = "Critical Error";
-    data.message = _Message;
-    data.numbuttons = 1;
-    data.buttons = &button;
-    data.window = NULL;
-    data.colorScheme = &scheme;
-
-    button.flags |= SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
-    button.flags |= SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
-    button.text = "OK";
-
-    SDL_ShowMessageBox( &data, NULL );
-#endif
 }
+
+//////////////////////////////////////////////////////////////////////////////////////////
+//
+// CPU Info
+//
+//////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef AN_OS_LINUX
 
 #include <cpuid.h>
 
-static void CPUID( int32_t out[4], int32_t x ) {
+namespace
+{
+
+static void CPUID( int32_t out[4], int32_t x )
+{
     __cpuid_count( x, 0, out[0], out[1], out[2], out[3] );
 }
 
-static uint64_t xgetbv( unsigned int index ) {
+static uint64_t xgetbv( unsigned int index )
+{
     uint32_t eax, edx;
     __asm__ __volatile__("xgetbv" : "=a"(eax), "=d"(edx) : "c"(index));
     return ((uint64_t)edx << 32) | eax;
+}
+
 }
 
 #define _XCR_XFEATURE_ENABLED_MASK 0
@@ -575,15 +576,21 @@ static uint64_t xgetbv( unsigned int index ) {
 
 #include <immintrin.h>
 
-static void CPUID( int32_t out[4], int32_t x ) {
+namespace
+{
+
+static void CPUID( int32_t out[4], int32_t x )
+{
     __cpuidex( out, x, 0 );
 }
 
-static __int64 xgetbv( unsigned int index ) {
+static __int64 xgetbv( unsigned int index )
+{
     return _xgetbv( index );
 }
 
-static BOOL IsWow64() {
+static BOOL IsWow64()
+{
     BOOL bIsWow64 = FALSE;
 
     typedef BOOL ( WINAPI *LPFN_ISWOW64PROCESS ) ( HANDLE, PBOOL );
@@ -598,7 +605,13 @@ static BOOL IsWow64() {
     return bIsWow64;
 }
 
+}
+
 #endif
+
+
+
+
 
 static SCommandLine const * pCommandLine;
 
@@ -1017,15 +1030,15 @@ const char * GetClipboard()
 
 SMemoryInfo GetPhysMemoryInfo()
 {
-    SMemoryInfo info;
-
-    Core::ZeroMem( &info, sizeof( info ) );
+    SMemoryInfo info = {};
 
 #if defined AN_OS_WIN32
-    MEMORYSTATUS memstat;
-    GlobalMemoryStatus( &memstat );
-    info.TotalAvailableMegabytes = memstat.dwTotalPhys >> 20;
-    info.CurrentAvailableMegabytes = memstat.dwAvailPhys >> 20;
+    MEMORYSTATUSEX memstat = {};
+    memstat.dwLength = sizeof(memstat);
+    if ( GlobalMemoryStatusEx( &memstat ) ) {
+        info.TotalAvailableMegabytes = memstat.ullTotalPhys >> 20;
+        info.CurrentAvailableMegabytes = memstat.ullAvailPhys >> 20;
+    }
 #elif defined AN_OS_LINUX
     long long TotalPages = sysconf( _SC_PHYS_PAGES );
     long long AvailPages = sysconf( _SC_AVPHYS_PAGES );
@@ -1047,6 +1060,47 @@ SMemoryInfo GetPhysMemoryInfo()
 #endif
 
     return info;
+}
+
+}
+
+namespace
+{
+
+static void DisplayCriticalMessage( const char * _Message )
+{
+#if defined AN_OS_WIN32
+    wchar_t wstr[1024];
+    MultiByteToWideChar( CP_UTF8, 0, _Message, -1, wstr, AN_ARRAY_SIZE( wstr ) );
+    MessageBox( NULL, wstr, L"Critical Error", MB_OK | MB_ICONERROR | MB_SETFOREGROUND | MB_TOPMOST );
+#else
+    SDL_MessageBoxData data = {};
+    SDL_MessageBoxButtonData button = {};
+    const SDL_MessageBoxColorScheme scheme =
+    {
+        {
+            { 56,  54,  53  }, /* SDL_MESSAGEBOX_COLOR_BACKGROUND, */
+        { 209, 207, 205 }, /* SDL_MESSAGEBOX_COLOR_TEXT, */
+        { 140, 135, 129 }, /* SDL_MESSAGEBOX_COLOR_BUTTON_BORDER, */
+        { 105, 102, 99  }, /* SDL_MESSAGEBOX_COLOR_BUTTON_BACKGROUND, */
+        { 205, 202, 53  }, /* SDL_MESSAGEBOX_COLOR_BUTTON_SELECTED, */
+        }
+    };
+
+    data.flags = SDL_MESSAGEBOX_ERROR;
+    data.title = "Critical Error";
+    data.message = _Message;
+    data.numbuttons = 1;
+    data.buttons = &button;
+    data.window = NULL;
+    data.colorScheme = &scheme;
+
+    button.flags |= SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
+    button.flags |= SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT;
+    button.text = "OK";
+
+    SDL_ShowMessageBox( &data, NULL );
+#endif
 }
 
 }

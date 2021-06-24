@@ -67,7 +67,7 @@ AZoneMemory GZoneMemory;
 #define ZONE_SYNC_GUARD_STAT
 #endif
 
-typedef uint16_t TRASH_MARKER;
+using TRASH_MARKER = uint16_t;
 
 static const TRASH_MARKER TrashMarker = 0xfeee;
 
@@ -113,14 +113,16 @@ void AHeapMemory::Clear()
     }
 }
 
-void AHeapMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
+void AHeapMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead )
+{
     ASpinLockGuard lockGuard(StatisticLock);
     TotalMemoryUsage += _MemoryUsage;
     TotalMemoryOverhead += _Overhead;
     MaxMemoryUsage = StdMax( MaxMemoryUsage, TotalMemoryUsage );
 }
 
-void AHeapMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
+void AHeapMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead )
+{
     ASpinLockGuard lockGuard(StatisticLock);
     TotalMemoryUsage -= _MemoryUsage;
     TotalMemoryOverhead -= _Overhead;
@@ -412,13 +414,15 @@ size_t AHeapMemory::GetMaxMemoryUsage()
 
 static const int MinHunkFragmentLength = 64; // Must be > sizeof( SHunk )
 
-struct SHunk {
+struct SHunk
+{
     int32_t Size;
     int32_t Mark;
     SHunk * pPrev;
 };
 
-struct SHunkMemory {
+struct SHunkMemory
+{
     size_t Size;
     SHunk * Hunk; // pointer to next hunk
     SHunk * Cur; // pointer to current hunk
@@ -433,7 +437,8 @@ size_t AHunkMemory::GetTotalMemoryOverhead() const { return TotalMemoryOverhead;
 size_t AHunkMemory::GetTotalFreeMemory() const { return MemoryBuffer ? MemoryBuffer->Size - TotalMemoryUsage : 0; }
 size_t AHunkMemory::GetMaxMemoryUsage() const { return MaxMemoryUsage; }
 
-void AHunkMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
+void AHunkMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes )
+{
     size_t sizeInBytes = _SizeInMegabytes << 20;
 
     MemoryBuffer = ( SHunkMemory * )_MemoryAddress;
@@ -456,7 +461,8 @@ void AHunkMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     }
 }
 
-void AHunkMemory::Deinitialize() {
+void AHunkMemory::Deinitialize()
+{
     CheckMemoryLeaks();
 
     MemoryBuffer = nullptr;
@@ -466,7 +472,8 @@ void AHunkMemory::Deinitialize() {
     TotalMemoryOverhead = 0;
 }
 
-void AHunkMemory::Clear() {
+void AHunkMemory::Clear()
+{
     MemoryBuffer->Mark = 0;
     MemoryBuffer->Hunk = ( SHunk * )( MemoryBuffer + 1 );
     MemoryBuffer->Hunk->Size = MemoryBuffer->Size - sizeof( SHunkMemory );
@@ -478,7 +485,8 @@ void AHunkMemory::Clear() {
     TotalMemoryOverhead = 0;
 }
 
-int AHunkMemory::SetHunkMark() {
+int AHunkMemory::SetHunkMark()
+{
     return ++MemoryBuffer->Mark;
 }
 
@@ -502,7 +510,8 @@ AN_FORCEINLINE bool HunkTrashTest( const SHunk * _Hunk )
     }
 }
 
-void * AHunkMemory::Alloc( size_t _BytesCount ) {
+void * AHunkMemory::Alloc( size_t _BytesCount )
+{
     if ( !MemoryBuffer ) {
         CriticalError( "AHunkMemory::Alloc: Not initialized\n" );
     }
@@ -568,7 +577,8 @@ void * AHunkMemory::Alloc( size_t _BytesCount ) {
     return aligned;
 }
 
-void AHunkMemory::ClearToMark( int _Mark ) {
+void AHunkMemory::ClearToMark( int _Mark )
+{
     if ( MemoryBuffer->Mark < _Mark ) {
         return;
     }
@@ -608,7 +618,8 @@ void AHunkMemory::ClearToMark( int _Mark ) {
     MemoryBuffer->Mark = _Mark;
 }
 
-void AHunkMemory::ClearLastHunk() {
+void AHunkMemory::ClearLastHunk()
+{
     int grow = 0;
 
     SHunk * hunk = MemoryBuffer->Hunk;
@@ -631,7 +642,8 @@ void AHunkMemory::ClearLastHunk() {
     }
 }
 
-void AHunkMemory::CheckMemoryLeaks() {
+void AHunkMemory::CheckMemoryLeaks()
+{
     if ( TotalMemoryUsage > 0 ) {
         // check memory trash
         if ( MemoryBuffer->Cur && HunkTrashTest( MemoryBuffer->Cur ) ) {
@@ -651,13 +663,15 @@ void AHunkMemory::CheckMemoryLeaks() {
     }
 }
 
-void AHunkMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
+void AHunkMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead )
+{
     TotalMemoryUsage += _MemoryUsage;
     TotalMemoryOverhead += _Overhead;
     MaxMemoryUsage = StdMax( MaxMemoryUsage, TotalMemoryUsage );
 }
 
-void AHunkMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
+void AHunkMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead )
+{
     TotalMemoryUsage -= _MemoryUsage;
     TotalMemoryOverhead -= _Overhead;
 }
@@ -668,7 +682,8 @@ void AHunkMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-struct SZoneChunk {
+struct SZoneChunk
+{
     SZoneChunk * pNext; // NOTE: We can remove next, becouse next = (SZoneChunk*)(((byte*)chunk) + chunk->size)
     SZoneChunk * pPrev;
     int32_t Size;
@@ -676,7 +691,8 @@ struct SZoneChunk {
     byte Pad[8];
 };
 
-struct SZoneBuffer {
+struct SZoneBuffer
+{
     SZoneChunk * Rover;
     SZoneChunk ChunkList;
     int32_t Size;
@@ -689,7 +705,8 @@ AN_SIZEOF_STATIC_CHECK( SZoneBuffer, 64 );
 static const int ChunkHeaderLength = sizeof( SZoneChunk );
 static const int MinZoneFragmentLength = 64; // Must be > ChunkHeaderLength
 
-AN_FORCEINLINE size_t AdjustChunkSize( size_t _BytesCount ) {
+AN_FORCEINLINE size_t AdjustChunkSize( size_t _BytesCount )
+{
 
     // Add chunk header
     _BytesCount += ChunkHeaderLength;
@@ -726,35 +743,42 @@ AN_FORCEINLINE bool ChunkTrashTest( const SZoneChunk * _Chunk )
     }
 }
 
-void * AZoneMemory::GetZoneMemoryAddress() const {
+void * AZoneMemory::GetZoneMemoryAddress() const
+{
     return MemoryBuffer;
 }
 
-int AZoneMemory::GetZoneMemorySizeInMegabytes() const {
+int AZoneMemory::GetZoneMemorySizeInMegabytes() const
+{
     return MemoryBuffer ? MemoryBuffer->Size >> 10 >> 10 : 0;
 }
 
-size_t AZoneMemory::GetTotalMemoryUsage() const {
+size_t AZoneMemory::GetTotalMemoryUsage() const
+{
     ZONE_SYNC_GUARD_STAT
     return TotalMemoryUsage;
 }
 
-size_t AZoneMemory::GetTotalMemoryOverhead() const {
+size_t AZoneMemory::GetTotalMemoryOverhead() const
+{
     ZONE_SYNC_GUARD_STAT
     return TotalMemoryOverhead;
 }
 
-size_t AZoneMemory::GetTotalFreeMemory() const {
+size_t AZoneMemory::GetTotalFreeMemory() const
+{
     ZONE_SYNC_GUARD_STAT
     return MemoryBuffer ? MemoryBuffer->Size - TotalMemoryUsage : 0;
 }
 
-size_t AZoneMemory::GetMaxMemoryUsage() const {
+size_t AZoneMemory::GetMaxMemoryUsage() const
+{
     ZONE_SYNC_GUARD_STAT
     return MaxMemoryUsage;
 }
 
-void AZoneMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
+void AZoneMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes )
+{
     size_t sizeInBytes = _SizeInMegabytes << 20;
 
     MemoryBuffer = ( SZoneBuffer * )_MemoryAddress;
@@ -774,7 +798,8 @@ void AZoneMemory::Initialize( void * _MemoryAddress, int _SizeInMegabytes ) {
     MaxMemoryUsage = 0;
 }
 
-void AZoneMemory::Deinitialize() {
+void AZoneMemory::Deinitialize()
+{
     CheckMemoryLeaks();
 
     MemoryBuffer = nullptr;
@@ -784,7 +809,8 @@ void AZoneMemory::Deinitialize() {
     MaxMemoryUsage = 0;
 }
 
-void AZoneMemory::Clear() {
+void AZoneMemory::Clear()
+{
     if ( !MemoryBuffer ) {
         return;
     }
@@ -807,20 +833,23 @@ void AZoneMemory::Clear() {
     // Allocated "on heap" memory is still present
 }
 
-void AZoneMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
+void AZoneMemory::IncMemoryStatistics( size_t _MemoryUsage, size_t _Overhead )
+{
     ZONE_SYNC_GUARD_STAT
     TotalMemoryUsage += _MemoryUsage;
     TotalMemoryOverhead += _Overhead;
     MaxMemoryUsage = StdMax( MaxMemoryUsage, TotalMemoryUsage );
 }
 
-void AZoneMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead ) {
+void AZoneMemory::DecMemoryStatistics( size_t _MemoryUsage, size_t _Overhead )
+{
     ZONE_SYNC_GUARD_STAT
     TotalMemoryUsage -= _MemoryUsage;
     TotalMemoryOverhead -= _Overhead;
 }
 
-SZoneChunk * AZoneMemory::FindFreeChunk( int _RequiredSize ) {
+SZoneChunk * AZoneMemory::FindFreeChunk( int _RequiredSize )
+{
     SZoneChunk * rover = MemoryBuffer->Rover;
     SZoneChunk * start = rover->pPrev;
     SZoneChunk * cur;
@@ -836,7 +865,8 @@ SZoneChunk * AZoneMemory::FindFreeChunk( int _RequiredSize ) {
     return cur;
 }
 
-void * AZoneMemory::Alloc( size_t _BytesCount ) {
+void * AZoneMemory::Alloc( size_t _BytesCount )
+{
 #if 0
     return SysAlloc( Align(_BytesCount,16), 16 );
 #else
@@ -902,7 +932,8 @@ void * AZoneMemory::Alloc( size_t _BytesCount ) {
 #endif
 }
 //#pragma warning(disable:4702)
-void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
+void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld )
+{
 #if 1
 
 #if 0
@@ -1170,7 +1201,8 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld ) {
 #endif
 }
 
-void AZoneMemory::Free( void * _Bytes ) {
+void AZoneMemory::Free( void * _Bytes )
+{
 #if 0
     SysFree( _Bytes );
 #else
@@ -1230,7 +1262,8 @@ void AZoneMemory::Free( void * _Bytes ) {
 #endif
 }
 
-void AZoneMemory::CheckMemoryLeaks() {
+void AZoneMemory::CheckMemoryLeaks()
+{
     ZONE_SYNC_GUARD
 
     size_t totalMemoryUsage;
@@ -1275,7 +1308,8 @@ void AZoneMemory::CheckMemoryLeaks() {
 
 namespace Core {
 
-void _MemcpySSE( byte * _Dst, const byte * _Src, size_t _SizeInBytes ) {
+void _MemcpySSE( byte * _Dst, const byte * _Src, size_t _SizeInBytes )
+{
 #if 0
     memcpy(_Dst,_Src,_SizeInBytes);
 #else
@@ -1360,7 +1394,8 @@ void _MemcpySSE( byte * _Dst, const byte * _Src, size_t _SizeInBytes ) {
 #endif
 }
 
-void _ZeroMemSSE( byte * _Dst, size_t _SizeInBytes ) {
+void _ZeroMemSSE( byte * _Dst, size_t _SizeInBytes )
+{
 #if 0
     ZeroMem( _Dst, _SizeInBytes );
 #else
@@ -1421,7 +1456,8 @@ void _ZeroMemSSE( byte * _Dst, size_t _SizeInBytes ) {
 #endif
 }
 
-void _MemsetSSE( byte * _Dst, int _Val, size_t _SizeInBytes ) {
+void _MemsetSSE( byte * _Dst, int _Val, size_t _SizeInBytes )
+{
     AN_ASSERT( IsSSEAligned( (size_t)_Dst ) );
 
 #if 0

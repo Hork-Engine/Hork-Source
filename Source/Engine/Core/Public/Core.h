@@ -114,9 +114,9 @@ struct SCPUInfo
 
 struct SMemoryInfo
 {
-    int TotalAvailableMegabytes;
-    int CurrentAvailableMegabytes;
-    int PageSize;
+    size_t TotalAvailableMegabytes;
+    size_t CurrentAvailableMegabytes;
+    size_t PageSize;
 };
 
 enum PROCESS_ATTRIBUTE
@@ -128,30 +128,16 @@ enum PROCESS_ATTRIBUTE
 
 struct SProcessInfo
 {
-    SProcessInfo()
-        : ProcessAttribute(0)
-        , Executable(nullptr)
-    {
-    }
-
-    int ProcessAttribute;
-    char * Executable;
+    int ProcessAttribute = 0;
+    char * Executable = nullptr;
 };
 
 struct SCoreInitialize
 {
-    SCoreInitialize()
-        : Argv(nullptr)
-        , Argc(0)
-        , pCommandLine(nullptr)
-        , bAllowMultipleInstances(true)
-    {
-    }
-
-    char ** Argv;
-    int Argc;
-    const char * pCommandLine;
-    bool bAllowMultipleInstances;
+    char ** Argv = nullptr;
+    int Argc = 0;
+    const char * pCommandLine = nullptr;
+    bool bAllowMultipleInstances = true;
     size_t ZoneSizeInMegabytes = 256;
     size_t HunkSizeInMegabytes = 32;
 };
@@ -159,10 +145,13 @@ struct SCoreInitialize
 namespace Core
 {
 
+/** Initialize core library */
 void Initialize( SCoreInitialize const & CoreInitialize );
 
+/** Deinitialize core library */
 void Deinitialize();
 
+/** Get dump of global logger */
 std::string & GetMessageBuffer();
 
 /** Application command line args count */
@@ -177,10 +166,14 @@ int CheckArg( AStringView _Arg );
 /** Check is argument exists in application command line. Return false if argument was not found. */
 bool HasArg( AStringView _Arg );
 
+/** Get command line pointer */
 SCommandLine const * GetCommandLine();
 
 /** Get CPU info */
 SCPUInfo const * CPUInfo();
+
+/** Get total/available memory status */
+SMemoryInfo GetPhysMemoryInfo();
 
 /** Get process info */
 SProcessInfo const & GetProcessInfo();
@@ -244,8 +237,6 @@ AN_FORCEINLINE void SetClipboard( AString const & _Clipboard ) { SetClipboard( _
 
 /** Get clipboard text */
 const char * GetClipboard();
-
-SMemoryInfo GetPhysMemoryInfo();
 
 }
 

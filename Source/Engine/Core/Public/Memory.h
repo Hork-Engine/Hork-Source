@@ -42,12 +42,14 @@ Memory utilites
 namespace Core {
 
 /** Built-in memcpy function replacement */
-AN_FORCEINLINE void Memcpy( void * _Dst, const void * _Src, size_t _SizeInBytes ) {
+AN_FORCEINLINE void Memcpy( void * _Dst, const void * _Src, size_t _SizeInBytes )
+{
     memcpy( _Dst, _Src, _SizeInBytes );
 }
 
 /** Built-in memset function replacement */
-AN_FORCEINLINE void Memset( void * _Dst, int _Val, size_t _SizeInBytes ) {
+AN_FORCEINLINE void Memset( void * _Dst, int _Val, size_t _SizeInBytes )
+{
 #if 1
     memset( _Dst, _Val, _SizeInBytes );
 #else
@@ -59,7 +61,8 @@ AN_FORCEINLINE void Memset( void * _Dst, int _Val, size_t _SizeInBytes ) {
 }
 
 /** Built-in memset function replacement */
-AN_FORCEINLINE void ZeroMem( void * _Dst, size_t _SizeInBytes ) {
+AN_FORCEINLINE void ZeroMem( void * _Dst, size_t _SizeInBytes )
+{
 #if 1
     memset( _Dst, 0, _SizeInBytes );
 #else
@@ -71,7 +74,8 @@ AN_FORCEINLINE void ZeroMem( void * _Dst, size_t _SizeInBytes ) {
 }
 
 /** Built-in memmove function replacement */
-AN_FORCEINLINE void * Memmove( void * _Dst, const void * _Src, size_t _SizeInBytes ) {
+AN_FORCEINLINE void * Memmove( void * _Dst, const void * _Src, size_t _SizeInBytes )
+{
     return memmove( _Dst, _Src, _SizeInBytes );
 }
 
@@ -85,12 +89,14 @@ void _MemsetSSE( byte * _Dst, int _Val, size_t _SizeInBytes );
 void _ZeroMemSSE( byte * _Dst, size_t _SizeInBytes );
 
 /** Built-in memcpy function replacement */
-AN_FORCEINLINE void MemcpySSE( void * _Dst, const void * _Src, size_t _SizeInBytes ) {
+AN_FORCEINLINE void MemcpySSE( void * _Dst, const void * _Src, size_t _SizeInBytes )
+{
     _MemcpySSE( ( byte * )_Dst, ( const byte * )_Src, _SizeInBytes );
 }
 
 /** Built-in memset function replacement */
-AN_FORCEINLINE void MemsetSSE( void * _Dst, int  _Val, size_t _SizeInBytes ) {
+AN_FORCEINLINE void MemsetSSE( void * _Dst, int  _Val, size_t _SizeInBytes )
+{
     _MemsetSSE( ( byte * )_Dst, _Val, _SizeInBytes );
 }
 
@@ -114,7 +120,8 @@ AHeapMemory
 Allocates memory on heap
 
 */
-class AHeapMemory final {
+class AHeapMemory final
+{
     AN_FORBID_COPY( AHeapMemory )
 
 public:
@@ -165,7 +172,8 @@ private:
     size_t TotalMemoryOverhead;
     size_t MaxMemoryUsage;
 
-    struct SHeapChunk {
+    struct SHeapChunk
+    {
         SHeapChunk * pNext;
         SHeapChunk * pPrev;
         uint32_t Size;
@@ -179,7 +187,8 @@ private:
     ASpinLock Mutex;
 };
 
-AN_FORCEINLINE void * AHeapMemory::ClearedAlloc( size_t _BytesCount, int _Alignment ) {
+AN_FORCEINLINE void * AHeapMemory::ClearedAlloc( size_t _BytesCount, int _Alignment )
+{
     void * bytes = Alloc( _BytesCount, _Alignment );
     Core::ZeroMemSSE( bytes, _BytesCount );
     return bytes;
@@ -207,7 +216,8 @@ If you need other alignment, do it on top of the allocator.
 Only for main thread.
 
 */
-class AHunkMemory final {
+class AHunkMemory final
+{
     AN_FORBID_COPY( AHunkMemory )
 
 public:
@@ -261,7 +271,8 @@ private:
     size_t MaxMemoryUsage = 0;
 };
 
-AN_FORCEINLINE void * AHunkMemory::ClearedAlloc( size_t _BytesCount ) {
+AN_FORCEINLINE void * AHunkMemory::ClearedAlloc( size_t _BytesCount )
+{
     void * bytes = Alloc( _BytesCount );
     Core::ZeroMemSSE( bytes, _BytesCount );
     return bytes;
@@ -278,7 +289,8 @@ If you need other alignment, do it on top of the allocator.
 Only for main thread.
 
 */
-class AZoneMemory final {
+class AZoneMemory final
+{
     AN_FORBID_COPY( AZoneMemory )
 
 public:
