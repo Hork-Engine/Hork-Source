@@ -37,7 +37,7 @@ Resource embedding tool program
 #include <string>
 #include <functional>
 #include <algorithm>
-#include "miniz/miniz.h"
+#include <miniz/miniz.h>
 
 using byte = uint8_t;
 

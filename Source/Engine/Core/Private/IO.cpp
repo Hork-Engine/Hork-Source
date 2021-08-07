@@ -43,7 +43,7 @@ SOFTWARE.
 #    include <unistd.h>   // access
 #endif
 
-#include "miniz/miniz.h"
+#include <miniz/miniz.h>
 
 AFileStream::~AFileStream()
 {

@@ -31,8 +31,8 @@ SOFTWARE.
 #include <Core/Public/Compress.h>
 #include <Core/Public/BaseMath.h>
 #include <Core/Public/Logger.h>
-#include "fastlz/fastlz.h"
-#include "miniz/miniz.h"
+#include <fastlz/fastlz.h>
+#include <miniz/miniz.h>
 
 namespace Core {
 
