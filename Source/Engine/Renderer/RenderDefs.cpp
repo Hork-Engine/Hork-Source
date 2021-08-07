@@ -85,88 +85,94 @@ int STexturePixelFormat::NumComponents() const
 bool STexturePixelFormat::GetAppropriatePixelFormat( EImagePixelFormat const & _ImagePixelFormat, STexturePixelFormat & _PixelFormat )
 {
     switch ( _ImagePixelFormat ) {
-    case IMAGE_PF_R:
-        _PixelFormat = TEXTURE_PF_R8_UNORM;
-        break;
-    case IMAGE_PF_R16F:
-        _PixelFormat = TEXTURE_PF_R16F;
-        break;
-    case IMAGE_PF_R32F:
-        _PixelFormat = TEXTURE_PF_R32F;
-        break;
-    case IMAGE_PF_RG:
-        _PixelFormat = TEXTURE_PF_RG8_UNORM;
-        break;
-    case IMAGE_PF_RG16F:
-        _PixelFormat = TEXTURE_PF_RG16F;
-        break;
-    case IMAGE_PF_RG32F:
-        _PixelFormat = TEXTURE_PF_RG32F;
-        break;
-    case IMAGE_PF_RGB:
-        _PixelFormat = TEXTURE_PF_BGR8_UNORM;
-        GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
-        break;
-    case IMAGE_PF_RGB_GAMMA2:
-        _PixelFormat = TEXTURE_PF_BGR8_SRGB;
-        GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
-        break;
-    case IMAGE_PF_RGB16F:
-        _PixelFormat = TEXTURE_PF_BGR16F;
-        GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
-        break;
-    case IMAGE_PF_RGB32F:
-        _PixelFormat = TEXTURE_PF_BGR32F;
-        GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
-        break;
-    case IMAGE_PF_RGBA:
-        _PixelFormat = TEXTURE_PF_BGRA8_UNORM;
-        GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
-        break;
-    case IMAGE_PF_RGBA_GAMMA2:
-        _PixelFormat = TEXTURE_PF_BGRA8_SRGB;
-        GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
-        break;
-    case IMAGE_PF_RGBA16F:
-        _PixelFormat = TEXTURE_PF_BGRA16F;
-        GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
-        break;
-    case IMAGE_PF_RGBA32F:
-        _PixelFormat = TEXTURE_PF_BGRA32F;
-        GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
-        break;
-    case IMAGE_PF_BGR:
-        _PixelFormat = TEXTURE_PF_BGR8_UNORM;
-        break;
-    case IMAGE_PF_BGR_GAMMA2:
-        _PixelFormat = TEXTURE_PF_BGR8_SRGB;
-        break;
-    case IMAGE_PF_BGR16F:
-        _PixelFormat = TEXTURE_PF_BGR16F;
-        break;
-    case IMAGE_PF_BGR32F:
-        _PixelFormat = TEXTURE_PF_BGR32F;
-        break;
-    case IMAGE_PF_BGRA:
-        _PixelFormat = TEXTURE_PF_BGRA8_UNORM;
-        break;
-    case IMAGE_PF_BGRA_GAMMA2:
-        _PixelFormat = TEXTURE_PF_BGRA8_SRGB;
-        break;
-    case IMAGE_PF_BGRA16F:
-        _PixelFormat = TEXTURE_PF_BGRA16F;
-        break;
-    case IMAGE_PF_BGRA32F:
-        _PixelFormat = TEXTURE_PF_BGRA32F;
-        break;
+        case IMAGE_PF_R:
+            _PixelFormat = TEXTURE_PF_R8_UNORM;
+            break;
+        case IMAGE_PF_R16F:
+            _PixelFormat = TEXTURE_PF_R16F;
+            break;
+        case IMAGE_PF_R32F:
+            _PixelFormat = TEXTURE_PF_R32F;
+            break;
+        case IMAGE_PF_RG:
+            _PixelFormat = TEXTURE_PF_RG8_UNORM;
+            break;
+        case IMAGE_PF_RG16F:
+            _PixelFormat = TEXTURE_PF_RG16F;
+            break;
+        case IMAGE_PF_RG32F:
+            _PixelFormat = TEXTURE_PF_RG32F;
+            break;
+        //case IMAGE_PF_RGB:
+        //    _PixelFormat = TEXTURE_PF_BGRA8_UNORM;
+        //    bNeedToAddAlpha = true;
+        //    GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+        //    break;
+        //case IMAGE_PF_RGB_GAMMA2:
+        //    _PixelFormat = TEXTURE_PF_BGRA8_SRGB;
+        //    bNeedToAddAlpha = true;
+        //    GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+        //    break;
+        //case IMAGE_PF_RGB16F:
+        //    _PixelFormat = TEXTURE_PF_BGRA16F;
+        //    bNeedToAddAlpha = true;
+        //    GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+        //    break;
+        case IMAGE_PF_RGB32F:
+            _PixelFormat = TEXTURE_PF_BGR32F;
+            GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+            break;
+        case IMAGE_PF_RGBA:
+            _PixelFormat = TEXTURE_PF_BGRA8_UNORM;
+            GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+            break;
+        case IMAGE_PF_RGBA_GAMMA2:
+            _PixelFormat = TEXTURE_PF_BGRA8_SRGB;
+            GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+            break;
+        case IMAGE_PF_RGBA16F:
+            _PixelFormat = TEXTURE_PF_BGRA16F;
+            GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+            break;
+        case IMAGE_PF_RGBA32F:
+            _PixelFormat = TEXTURE_PF_BGRA32F;
+            GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+            break;
+        //case IMAGE_PF_BGR:
+        //    _PixelFormat = TEXTURE_PF_BGRA8_UNORM;
+        //    bNeedToAddAlpha = true;
+        //    break;
+        //case IMAGE_PF_BGR_GAMMA2:
+        //    _PixelFormat = TEXTURE_PF_BGRA8_SRGB;
+        //    bNeedToAddAlpha = true;
+        //    break;
+        //case IMAGE_PF_BGR16F:
+        //    _PixelFormat = TEXTURE_PF_BGRA16F;
+        //    bNeedToAddAlpha = true;
+        //    break;
+        case IMAGE_PF_BGR32F:
+            _PixelFormat = TEXTURE_PF_BGR32F;
+            break;
+        case IMAGE_PF_BGRA:
+            _PixelFormat = TEXTURE_PF_BGRA8_UNORM;
+            break;
+        case IMAGE_PF_BGRA_GAMMA2:
+            _PixelFormat = TEXTURE_PF_BGRA8_SRGB;
+            break;
+        case IMAGE_PF_BGRA16F:
+            _PixelFormat = TEXTURE_PF_BGRA16F;
+            break;
+        case IMAGE_PF_BGRA32F:
+            _PixelFormat = TEXTURE_PF_BGRA32F;
+            break;
 
-    case IMAGE_PF_AUTO:
-    case IMAGE_PF_AUTO_GAMMA2:
-    case IMAGE_PF_AUTO_16F:
-    case IMAGE_PF_AUTO_32F:
-    default:
-        GLogger.Printf( "GetAppropriatePixelFormat: invalid image\n" );
-        return false;
+        case IMAGE_PF_AUTO:
+        case IMAGE_PF_AUTO_GAMMA2:
+        case IMAGE_PF_AUTO_16F:
+        case IMAGE_PF_AUTO_32F:
+        default:
+            GLogger.Printf( "GetAppropriatePixelFormat: invalid image\n" );
+            return false;
     }
 
     return true;

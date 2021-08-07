@@ -42,44 +42,6 @@ Memory utilites
 namespace Core {
 
 /** Built-in memcpy function replacement */
-AN_FORCEINLINE void Memcpy( void * _Dst, const void * _Src, size_t _SizeInBytes )
-{
-    memcpy( _Dst, _Src, _SizeInBytes );
-}
-
-/** Built-in memset function replacement */
-AN_FORCEINLINE void Memset( void * _Dst, int _Val, size_t _SizeInBytes )
-{
-#if 1
-    memset( _Dst, _Val, _SizeInBytes );
-#else
-    byte * p = ( byte * )_Dst;
-    while ( _SizeInBytes-- ) {
-        *p++ = _Val;
-    }
-#endif
-}
-
-/** Built-in memset function replacement */
-AN_FORCEINLINE void ZeroMem( void * _Dst, size_t _SizeInBytes )
-{
-#if 1
-    memset( _Dst, 0, _SizeInBytes );
-#else
-    byte * p = ( byte * )_Dst;
-    while ( _SizeInBytes-- ) {
-        *p++ = 0;
-    }
-#endif
-}
-
-/** Built-in memmove function replacement */
-AN_FORCEINLINE void * Memmove( void * _Dst, const void * _Src, size_t _SizeInBytes )
-{
-    return memmove( _Dst, _Src, _SizeInBytes );
-}
-
-/** Built-in memcpy function replacement */
 void _MemcpySSE( byte * _Dst, const byte * _Src, size_t _SizeInBytes );
 
 /** Built-in memset function replacement */
@@ -89,21 +51,44 @@ void _MemsetSSE( byte * _Dst, int _Val, size_t _SizeInBytes );
 void _ZeroMemSSE( byte * _Dst, size_t _SizeInBytes );
 
 /** Built-in memcpy function replacement */
-AN_FORCEINLINE void MemcpySSE( void * _Dst, const void * _Src, size_t _SizeInBytes )
+AN_FORCEINLINE void Memcpy( void * _Dst, const void * _Src, size_t _SizeInBytes )
 {
-    _MemcpySSE( ( byte * )_Dst, ( const byte * )_Src, _SizeInBytes );
+    if ( IsSSEAligned( (size_t)_Dst ) && IsSSEAligned( (size_t)_Src ) ) {
+        _MemcpySSE( (byte *)_Dst, (const byte *)_Src, _SizeInBytes );
+    }
+    else {
+        std::memcpy( _Dst, _Src, _SizeInBytes );
+    }
 }
 
 /** Built-in memset function replacement */
-AN_FORCEINLINE void MemsetSSE( void * _Dst, int  _Val, size_t _SizeInBytes )
+AN_FORCEINLINE void Memset( void * _Dst, int _Val, size_t _SizeInBytes )
 {
-    _MemsetSSE( ( byte * )_Dst, _Val, _SizeInBytes );
+    if ( IsSSEAligned( (size_t)_Dst ) ) {
+        _MemsetSSE( (byte *)_Dst, _Val, _SizeInBytes );
+    }
+    else {
+        std::memset( _Dst, _Val, _SizeInBytes );
+    }
 }
 
 /** Built-in memset function replacement */
-AN_FORCEINLINE void ZeroMemSSE( void * _Dst, size_t _SizeInBytes ) {
-    _ZeroMemSSE( ( byte * )_Dst, _SizeInBytes );
+AN_FORCEINLINE void ZeroMem( void * _Dst, size_t _SizeInBytes )
+{
+    if ( IsSSEAligned( (size_t)_Dst ) ) {
+        _ZeroMemSSE( (byte *)_Dst, _SizeInBytes );
+    }
+    else {
+        std::memset( _Dst, 0, _SizeInBytes );
+    }
 }
+
+/** Built-in memmove function replacement */
+AN_FORCEINLINE void * Memmove( void * _Dst, const void * _Src, size_t _SizeInBytes )
+{
+    return std::memmove( _Dst, _Src, _SizeInBytes );
+}
+
 
 void * SysAlloc( size_t _SizeInBytes, int _Alignment = 16 );
 
@@ -190,7 +175,7 @@ private:
 AN_FORCEINLINE void * AHeapMemory::ClearedAlloc( size_t _BytesCount, int _Alignment )
 {
     void * bytes = Alloc( _BytesCount, _Alignment );
-    Core::ZeroMemSSE( bytes, _BytesCount );
+    Core::ZeroMem( bytes, _BytesCount );
     return bytes;
 }
 
@@ -274,7 +259,7 @@ private:
 AN_FORCEINLINE void * AHunkMemory::ClearedAlloc( size_t _BytesCount )
 {
     void * bytes = Alloc( _BytesCount );
-    Core::ZeroMemSSE( bytes, _BytesCount );
+    Core::ZeroMem( bytes, _BytesCount );
     return bytes;
 }
 
@@ -355,7 +340,7 @@ private:
 AN_FORCEINLINE void * AZoneMemory::ClearedAlloc( size_t _BytesCount )
 {
     void * bytes = Alloc( _BytesCount );
-    Core::ZeroMemSSE( bytes, _BytesCount );
+    Core::ZeroMem( bytes, _BytesCount );
     return bytes;
 }
 
@@ -382,7 +367,7 @@ public:
     void * ClearedAlloc( size_t _BytesCount )
     {
         void * bytes = static_cast< T * >( this )->ImplAlloc( _BytesCount );
-        Core::ZeroMemSSE( bytes, _BytesCount );
+        Core::ZeroMem( bytes, _BytesCount );
         return bytes;
     }
 

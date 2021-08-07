@@ -193,7 +193,7 @@ void SVirtualTexturePIT::Create( unsigned int InNumPages ) {
 
 void SVirtualTexturePIT::Clear() {
     AN_ASSERT_( Data != NULL, "SVirtualTexturePIT::clear" );
-    Core::ZeroMemSSE( Data, sizeof( Data[0] ) * NumPages );
+    Core::ZeroMem( Data, sizeof( Data[0] ) * NumPages );
 }
 
 void SVirtualTexturePIT::Generate( APageBitfield const & BitField, int & StoredLods ) {
@@ -304,9 +304,9 @@ void SVirtualTextureAddressTable::Create( int _NumLods ) {
 void SVirtualTextureAddressTable::Clear() {
     AN_ASSERT_( ByteOffsets != NULL, "SVirtualTextureAddressTable::clear" );
 
-    Core::ZeroMemSSE( ByteOffsets, sizeof( ByteOffsets[0] ) * TotalPages );
+    Core::ZeroMem( ByteOffsets, sizeof( ByteOffsets[0] ) * TotalPages );
     if ( Table ) {
-        Core::ZeroMemSSE( Table, sizeof( Table[0] ) * TableSize );
+        Core::ZeroMem( Table, sizeof( Table[0] ) * TableSize );
     }
 }
 

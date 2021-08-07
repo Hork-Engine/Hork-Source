@@ -177,18 +177,6 @@ ANGIE_TEMPLATE       - Export or Import class template
 
 /*
 
-Microsoft Visual Studio versions
-
-*/
-#define AN_MSVC_2003   1310    // Visual Studio 2003
-#define AN_MSVC_2005   1400    // Visual Studio 2005
-#define AN_MSVC_2008   1500    // Visual Studio 2008
-#define AN_MSVC_2010   1600    // Visual Studio 2010
-#define AN_MSVC_2012   1700    // Visual Studio 2012
-#define AN_MSVC_2013   1800    // Visual Studio 2013
-
-/*
-
 Inline defines
 
 */
@@ -349,6 +337,24 @@ AN_SIZEOF_STATIC_CHECK( ddword, 8 )
 #endif
 
 static_assert( (char)-1 < 0, "signed char mismatch" );
+
+
+/*
+
+Flag enum operators
+
+*/
+template< typename EnumType >
+using _UNDERLYING_ENUM_T = typename std::underlying_type< EnumType >::type;
+
+#define AN_FLAG_ENUM_OPERATORS( ENUMTYPE )                                                                                                                                                                                         \
+    inline ENUMTYPE &         operator|=( ENUMTYPE & a, ENUMTYPE b ) { return reinterpret_cast< ENUMTYPE & >( reinterpret_cast< _UNDERLYING_ENUM_T< ENUMTYPE > & >( a ) |= static_cast< _UNDERLYING_ENUM_T< ENUMTYPE > >( b ) ); } \
+    inline ENUMTYPE &         operator&=( ENUMTYPE & a, ENUMTYPE b ) { return reinterpret_cast< ENUMTYPE & >( reinterpret_cast< _UNDERLYING_ENUM_T< ENUMTYPE > & >( a ) &= static_cast< _UNDERLYING_ENUM_T< ENUMTYPE > >( b ) ); } \
+    inline ENUMTYPE &         operator^=( ENUMTYPE & a, ENUMTYPE b ) { return reinterpret_cast< ENUMTYPE & >( reinterpret_cast< _UNDERLYING_ENUM_T< ENUMTYPE > & >( a ) ^= static_cast< _UNDERLYING_ENUM_T< ENUMTYPE > >( b ) ); } \
+    inline constexpr ENUMTYPE operator|( ENUMTYPE a, ENUMTYPE b ) { return static_cast< ENUMTYPE >( static_cast< _UNDERLYING_ENUM_T< ENUMTYPE > >( a ) | static_cast< _UNDERLYING_ENUM_T< ENUMTYPE > >( b ) ); }                   \
+    inline constexpr ENUMTYPE operator&( ENUMTYPE a, ENUMTYPE b ) { return static_cast< ENUMTYPE >( static_cast< _UNDERLYING_ENUM_T< ENUMTYPE > >( a ) & static_cast< _UNDERLYING_ENUM_T< ENUMTYPE > >( b ) ); }                   \
+    inline constexpr ENUMTYPE operator^( ENUMTYPE a, ENUMTYPE b ) { return static_cast< ENUMTYPE >( static_cast< _UNDERLYING_ENUM_T< ENUMTYPE > >( a ) ^ static_cast< _UNDERLYING_ENUM_T< ENUMTYPE > >( b ) ); }                   \
+    inline constexpr ENUMTYPE operator~( ENUMTYPE a ) { return static_cast< ENUMTYPE >( ~static_cast< _UNDERLYING_ENUM_T< ENUMTYPE > >( a ) ); }                                                                                   \
 
 /*
 

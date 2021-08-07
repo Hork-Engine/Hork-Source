@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Core/Public/Float.h>
+#include <Core/Public/BaseMath.h>
 
 #ifdef AN_COMPILER_MSVC
 #pragma warning( disable : 4756 ) // overlow

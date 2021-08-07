@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/Float.h>
+#include <Core/Public/VectorMath.h>
 
 class AMaterialInstance;
 

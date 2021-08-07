@@ -1666,19 +1666,19 @@ void * LoadDiffuseImage( void * _RectUserData, int Width, int Height ) {
 
     AImage image;
 
-    if ( !image.Load( layers->Diffuse, nullptr, IMAGE_PF_RGB_GAMMA2 ) ) {
+    if ( !image.Load( layers->Diffuse, nullptr, IMAGE_PF_RGBA_GAMMA2 ) ) {
         return nullptr;
     }
 
-    void * pScaledImage = GHeapMemory.Alloc( Width * Height * 3 );
+    void * pScaledImage = GHeapMemory.Alloc( Width * Height * 4 );
 
     // Scale source image to match required width and height
     SImageResizeDesc desc;
     desc.pImage = image.GetData();
     desc.Width = image.GetWidth();
     desc.Height = image.GetHeight();
-    desc.NumChannels = 3;
-    desc.AlphaChannel = -1;
+    desc.NumChannels = 4;
+    desc.AlphaChannel = 3;
     desc.DataType = IMAGE_DATA_TYPE_UINT8;
     desc.bPremultipliedAlpha = false;
     desc.bLinearSpace = false;
@@ -1692,7 +1692,7 @@ void * LoadDiffuseImage( void * _RectUserData, int Width, int Height ) {
 
     //AFileStream f;
     //f.OpenWrite("test.bmp");
-    //WriteBMP( f, Width, Height, 3, pScaledImage );
+    //WriteBMP( f, Width, Height, 4, pScaledImage );
 
     return pScaledImage;
 }
@@ -1705,21 +1705,21 @@ void FreeImage( void * ImageData ) {
 #define VT_PAGE_SIZE_B ( 1 << VT_PAGE_SIZE_LOG2 )
 
 void CompressDiffusePage( const void * _InputData, void * _OutputData ) {
-    Core::Memcpy( _OutputData, _InputData, VT_PAGE_SIZE_B * VT_PAGE_SIZE_B * 3 );
+    Core::Memcpy( _OutputData, _InputData, VT_PAGE_SIZE_B * VT_PAGE_SIZE_B * 4 );
 }
 
 enum EVirtualTexturePageFormat
 {
-    VIRTUAL_TEXTURE_PAGE_FORMAT_RGB
+    VIRTUAL_TEXTURE_PAGE_FORMAT_RGBA
 };
 
 void TestVT() {
     SVirtualTextureLayerDesc Layers[1];
 
     // Diffuse layer
-    Layers[0].SizeInBytes = VT_PAGE_SIZE_B * VT_PAGE_SIZE_B * 3;
-    Layers[0].PageDataFormat = VIRTUAL_TEXTURE_PAGE_FORMAT_RGB;
-    Layers[0].NumChannels = 3;
+    Layers[0].SizeInBytes = VT_PAGE_SIZE_B * VT_PAGE_SIZE_B * 4;
+    Layers[0].PageDataFormat = VIRTUAL_TEXTURE_PAGE_FORMAT_RGBA;
+    Layers[0].NumChannels = 4;
     Layers[0].LoadLayerImage = LoadDiffuseImage;
     Layers[0].FreeLayerImage = FreeImage;
     Layers[0].PageCompressionMethod = CompressDiffusePage;

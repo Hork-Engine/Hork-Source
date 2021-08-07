@@ -151,9 +151,9 @@ static AN_FORCEINLINE int GetNumChannels( EImagePixelFormat _PixelFormat ) {
     case IMAGE_PF_RG16F:
     case IMAGE_PF_RG32F:
         return 2;
-    case IMAGE_PF_RGB:
-    case IMAGE_PF_RGB_GAMMA2:
-    case IMAGE_PF_RGB16F:
+    //case IMAGE_PF_RGB:
+    //case IMAGE_PF_RGB_GAMMA2:
+    //case IMAGE_PF_RGB16F:
     case IMAGE_PF_RGB32F:
         return 3;
     case IMAGE_PF_RGBA:
@@ -161,9 +161,9 @@ static AN_FORCEINLINE int GetNumChannels( EImagePixelFormat _PixelFormat ) {
     case IMAGE_PF_RGBA16F:
     case IMAGE_PF_RGBA32F:
         return 4;
-    case IMAGE_PF_BGR:
-    case IMAGE_PF_BGR_GAMMA2:
-    case IMAGE_PF_BGR16F:
+    //case IMAGE_PF_BGR:
+    //case IMAGE_PF_BGR_GAMMA2:
+    //case IMAGE_PF_BGR16F:
     case IMAGE_PF_BGR32F:
         return 3;
     case IMAGE_PF_BGRA:
@@ -181,9 +181,9 @@ static AN_FORCEINLINE bool IsHalfFloat( EImagePixelFormat _PixelFormat ) {
     case IMAGE_PF_AUTO_16F:
     case IMAGE_PF_R16F:
     case IMAGE_PF_RG16F:
-    case IMAGE_PF_RGB16F:
+    //case IMAGE_PF_RGB16F:
     case IMAGE_PF_RGBA16F:
-    case IMAGE_PF_BGR16F:
+    //case IMAGE_PF_BGR16F:
     case IMAGE_PF_BGRA16F:
         return true;
     default:
@@ -215,9 +215,9 @@ static AN_FORCEINLINE bool IsHDRI( EImagePixelFormat _PixelFormat ) {
 static AN_FORCEINLINE int IsGamma2( EImagePixelFormat _PixelFormat ) {
     switch ( _PixelFormat ) {
     case IMAGE_PF_AUTO_GAMMA2:
-    case IMAGE_PF_RGB_GAMMA2:
+    //case IMAGE_PF_RGB_GAMMA2:
     case IMAGE_PF_RGBA_GAMMA2:
-    case IMAGE_PF_BGR_GAMMA2:
+    //case IMAGE_PF_BGR_GAMMA2:
     case IMAGE_PF_BGRA_GAMMA2:
         return true;
     default:
@@ -240,18 +240,18 @@ static AN_FORCEINLINE bool IsBGR( EImagePixelFormat _PixelFormat ) {
     case IMAGE_PF_RG:
     case IMAGE_PF_RG16F:
     case IMAGE_PF_RG32F:
-    case IMAGE_PF_RGB:
-    case IMAGE_PF_RGB_GAMMA2:
-    case IMAGE_PF_RGB16F:
+    //case IMAGE_PF_RGB:
+    //case IMAGE_PF_RGB_GAMMA2:
+    //case IMAGE_PF_RGB16F:
     case IMAGE_PF_RGB32F:
     case IMAGE_PF_RGBA:
     case IMAGE_PF_RGBA_GAMMA2:
     case IMAGE_PF_RGBA16F:
     case IMAGE_PF_RGBA32F:
         return false;
-    case IMAGE_PF_BGR:
-    case IMAGE_PF_BGR_GAMMA2:
-    case IMAGE_PF_BGR16F:
+    //case IMAGE_PF_BGR:
+    //case IMAGE_PF_BGR_GAMMA2:
+    //case IMAGE_PF_BGR16F:
     case IMAGE_PF_BGR32F:
     case IMAGE_PF_BGRA:
     case IMAGE_PF_BGRA_GAMMA2:
@@ -277,16 +277,7 @@ bool AImage::Load( const char * _Path, SImageMipmapConfig const * _MipmapGen, EI
 
 #ifdef SUPPORT_EXR
 
-#define TINYEXR_IMPLEMENTATION
-#define MINIZ_HEADER_FILE_ONLY
-#ifdef AN_COMPILER_MSVC
-#pragma warning(push)
-#pragma warning(disable : 5208)
-#endif
-#include "tinyexr/tinyexr.h"
-#ifdef AN_COMPILER_MSVC
-#pragma warning(pop)
-#endif
+#include <tinyexr/tinyexr.h>
 
 AN_FORCEINLINE static byte FloatToByte( float _Color ) {
     return Math::Floor( Math::Saturate( _Color ) * 255.0f + 0.5f );
@@ -425,7 +416,7 @@ bool AImage::Load( IBinaryStream & _Stream, SImageMipmapConfig const * _MipmapGe
     } else {
         source = stbi_load_from_callbacks( &callbacks, &_Stream, &w, &h, &numChannels, numRequiredChannels );
     }
-
+    
     if ( !source ) {
         _Stream.SeekSet( streamOffset );
 
@@ -442,6 +433,8 @@ bool AImage::Load( IBinaryStream & _Stream, SImageMipmapConfig const * _MipmapGe
 
     numChannels = numRequiredChannels ? numRequiredChannels : numChannels;
 
+    bool bAddAlphaChannel = false;
+
     switch ( _PixelFormat ) {
     case IMAGE_PF_AUTO:
         switch ( numChannels ) {
@@ -452,7 +445,8 @@ bool AImage::Load( IBinaryStream & _Stream, SImageMipmapConfig const * _MipmapGe
             _PixelFormat = IMAGE_PF_RG;
             break;
         case 3:
-            _PixelFormat = IMAGE_PF_BGR;
+            bAddAlphaChannel = true;
+            _PixelFormat = IMAGE_PF_BGRA;
             break;
         case 4:
             _PixelFormat = IMAGE_PF_BGRA;
@@ -472,7 +466,8 @@ bool AImage::Load( IBinaryStream & _Stream, SImageMipmapConfig const * _MipmapGe
             _PixelFormat = IMAGE_PF_RG; // FIXME: support RG_GAMMA?
             break;
         case 3:
-            _PixelFormat = IMAGE_PF_BGR_GAMMA2;
+            bAddAlphaChannel = true;
+            _PixelFormat = IMAGE_PF_BGRA_GAMMA2;
             break;
         case 4:
             _PixelFormat = IMAGE_PF_BGRA_GAMMA2;
@@ -492,7 +487,8 @@ bool AImage::Load( IBinaryStream & _Stream, SImageMipmapConfig const * _MipmapGe
             _PixelFormat = IMAGE_PF_RG16F;
             break;
         case 3:
-            _PixelFormat = IMAGE_PF_BGR16F;
+            bAddAlphaChannel = true;
+            _PixelFormat = IMAGE_PF_BGRA16F;
             break;
         case 4:
             _PixelFormat = IMAGE_PF_BGRA16F;
@@ -540,6 +536,54 @@ bool AImage::Load( IBinaryStream & _Stream, SImageMipmapConfig const * _MipmapGe
             for ( int i = 0 ; i < count ; i += numChannels ) {
                 StdSwap( pSource[i], pSource[i+2] );
             }
+        }
+    }
+
+    if ( bAddAlphaChannel ) {
+        if ( _PixelFormat == IMAGE_PF_BGRA || _PixelFormat == IMAGE_PF_BGRA_GAMMA2 ) {
+            int numPixels = w * h;
+
+            void * newSource = stbi__malloc( numPixels * 4 );
+            
+            byte * pSource    = (byte *)source;
+            byte * pNewSource = (byte *)newSource;
+
+            for ( int i = 0; i < numPixels; ++i ) {
+                pNewSource[0] = pSource[0];
+                pNewSource[1] = pSource[1];
+                pNewSource[2] = pSource[2];
+                pNewSource[3] = 255;
+
+                pNewSource += 4;
+                pSource += 3;
+            }
+
+            stbi_image_free(source);
+            source = newSource;
+        }
+        else if ( _PixelFormat == IMAGE_PF_BGRA16F ) {
+            int numPixels = w * h;
+
+            void * newSource = stbi__malloc( numPixels * 4 * sizeof( float ) );
+
+            float * pSource    = (float *)source;
+            float * pNewSource = (float *)newSource;
+
+            for ( int i = 0; i < numPixels; ++i ) {
+                pNewSource[0] = pSource[0];
+                pNewSource[1] = pSource[1];
+                pNewSource[2] = pSource[2];
+                pNewSource[3] = 1.0f;
+
+                pNewSource += 4;
+                pSource += 3;
+            }
+
+            stbi_image_free( source );
+            source = newSource;
+        }
+        else {
+            AN_ASSERT( 0 );
         }
     }
 

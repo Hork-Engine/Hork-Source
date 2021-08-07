@@ -62,7 +62,7 @@ public:
 
     void Clear() {
         if ( HashBuckets != InvalidHashIndex ) {
-            Core::MemsetSSE( HashBuckets, 0xff, HashBucketsCount * sizeof( *HashBuckets ) );
+            Core::Memset( HashBuckets, 0xff, HashBucketsCount * sizeof( *HashBuckets ) );
         }
     }
 
@@ -87,7 +87,7 @@ public:
             // first allocation
             //HashBuckets = ( int * )Allocator::Inst().AllocCleared1( HashBucketsCount * sizeof( *HashBuckets ), 0xffffffffffffffff );
             HashBuckets = (int *)Allocator::Inst().Alloc( HashBucketsCount * sizeof( *HashBuckets ) );
-            Core::MemsetSSE( HashBuckets, 0xff, HashBucketsCount * sizeof( *HashBuckets ) );
+            Core::Memset( HashBuckets, 0xff, HashBucketsCount * sizeof( *HashBuckets ) );
             LookupMask = ~0;
         }
 
@@ -209,16 +209,12 @@ private:
     void GrowIndexChain( int _NewIndexChainLength ) {
         if ( IndexChain == InvalidHashIndex ) {
             IndexChain = (int *)Allocator::Inst().Alloc( _NewIndexChainLength * sizeof( *IndexChain ) );
-            Core::MemsetSSE( IndexChain, 0xff, _NewIndexChainLength * sizeof( *IndexChain ) );
+            Core::Memset( IndexChain, 0xff, _NewIndexChainLength * sizeof( *IndexChain ) );
         } else {
             IndexChain = (int *)Allocator::Inst().Realloc( IndexChain, _NewIndexChainLength * sizeof( *IndexChain ), true );
 
             int * pIndexChain = IndexChain + IndexChainLength * sizeof( *IndexChain );
-            if ( IsAlignedPtr( pIndexChain, 16 ) ) {
-                Core::MemsetSSE( pIndexChain, 0xff, (_NewIndexChainLength-IndexChainLength) * sizeof( *IndexChain ) );
-            } else {
-                Core::Memset( pIndexChain, 0xff, (_NewIndexChainLength-IndexChainLength) * sizeof( *IndexChain ) );
-            }
+            Core::Memset( pIndexChain, 0xff, (_NewIndexChainLength-IndexChainLength) * sizeof( *IndexChain ) );
         }
         IndexChainLength = _NewIndexChainLength;
     }

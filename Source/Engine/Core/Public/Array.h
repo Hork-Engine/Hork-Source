@@ -40,7 +40,7 @@ C array replacement
 
 */
 template< typename T, size_t ArraySize >
-class TArray final {
+class TArray /*final*/ {
 public:
     typedef T * Iterator;
     typedef const T * ConstIterator;

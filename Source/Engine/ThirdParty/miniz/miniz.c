@@ -4023,11 +4023,16 @@ mz_bool mz_zip_reader_init_cfile(mz_zip_archive *pZip, MZ_FILE *pFile, mz_uint64
 
 #endif /* #ifndef MINIZ_NO_STDIO */
 
-/*static MZ_FORCEINLINE */const mz_uint8 *mz_zip_get_cdh(mz_zip_archive *pZip, mz_uint file_index)
+static MZ_FORCEINLINE const mz_uint8 *mz_zip_get_cdh(mz_zip_archive *pZip, mz_uint file_index)
 {
     if ((!pZip) || (!pZip->m_pState) || (file_index >= pZip->m_total_files))
         return NULL;
     return &MZ_ZIP_ARRAY_ELEMENT(&pZip->m_pState->m_central_dir, mz_uint8, MZ_ZIP_ARRAY_ELEMENT(&pZip->m_pState->m_central_dir_offsets, mz_uint32, file_index));
+}
+
+const mz_uint8 *mz_zip_get_cdh_public(mz_zip_archive *pZip, mz_uint file_index)
+{
+    return mz_zip_get_cdh(pZip, file_index);
 }
 
 mz_bool mz_zip_reader_is_file_encrypted(mz_zip_archive *pZip, mz_uint file_index)

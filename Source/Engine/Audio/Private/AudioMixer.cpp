@@ -252,7 +252,7 @@ void AAudioMixer::RenderChannels( int64_t EndFrame )
 
         int frameCount = end - RenderFrame;
 
-        Core::ZeroMemSSE( RenderBuffer, frameCount * sizeof( SSamplePair ) );
+        Core::ZeroMem( RenderBuffer, frameCount * sizeof( SSamplePair ) );
 
         SAudioChannel * next;
         for ( SAudioChannel * chan = Channels ; chan ; chan = next ) {

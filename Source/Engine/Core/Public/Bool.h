@@ -32,39 +32,47 @@ SOFTWARE.
 
 #include "BaseMath.h"
 
-struct Bool2 {
+struct Bool2
+{
     bool X;
     bool Y;
 
     Bool2() = default;
-    explicit constexpr Bool2( const bool & _Value ) : X( _Value ), Y( _Value ) {}
-    constexpr Bool2( const bool & _X, const bool & _Y ) : X( _X ), Y( _Y ) {}
+    explicit constexpr Bool2( bool _Value ) :
+        X( _Value ), Y( _Value ) {}
+    constexpr Bool2( bool _X, bool _Y ) :
+        X( _X ), Y( _Y ) {}
 
-    bool * ToPtr() {
+    bool * ToPtr()
+    {
         return &X;
     }
 
-    const bool * ToPtr() const {
+    const bool * ToPtr() const
+    {
         return &X;
     }
 
-    Bool2 & operator=( const Bool2 & _Other ) {
+    Bool2 & operator=( Bool2 const & _Other )
+    {
         X = _Other.X;
         Y = _Other.Y;
         return *this;
     }
 
-    bool & operator[]( const int & _Index ) {
+    bool & operator[]( int _Index )
+    {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
-        return (&X)[ _Index ];
+        return ( &X )[_Index];
     }
-    const bool & operator[]( const int & _Index ) const {
+    bool operator[]( int _Index ) const
+    {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
-        return (&X)[ _Index ];
+        return ( &X )[_Index];
     }
 
-    constexpr bool operator==( const Bool2 & _Other ) const { return X == _Other.X && Y == _Other.Y; }
-    constexpr bool operator!=( const Bool2 & _Other ) const { return X != _Other.X || Y != _Other.Y; }
+    constexpr bool operator==( Bool2 const & _Other ) const { return X == _Other.X && Y == _Other.Y; }
+    constexpr bool operator!=( Bool2 const & _Other ) const { return X != _Other.X || Y != _Other.Y; }
 
     //constexpr bool Any() const { return ( X || Y ); }
     //constexpr bool All() const { return ( X && Y ); }
@@ -73,70 +81,83 @@ struct Bool2 {
     constexpr bool All() const { return ( X & Y ); }
 
     // String conversions
-    AString ToString() const {
+    AString ToString() const
+    {
         return AString( "( " ) + Math::ToString( X ) + " " + Math::ToString( Y ) + " )";
     }
 
-    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const
+    {
         return AString( "( " ) + Math::ToHexString( X, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Y, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    void Write( IBinaryStream & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const
+    {
         _Stream.WriteBool( X );
         _Stream.WriteBool( Y );
     }
 
-    void Read( IBinaryStream & _Stream ) {
+    void Read( IBinaryStream & _Stream )
+    {
         X = _Stream.ReadBool();
         Y = _Stream.ReadBool();
     }
 
     // Static methods
-    static constexpr int NumComponents() { return 2; }
+    static constexpr int   NumComponents() { return 2; }
     static constexpr Bool2 MinValue() { return Bool2( TStdNumericLimits< bool >::min() ); }
     static constexpr Bool2 MaxValue() { return Bool2( TStdNumericLimits< bool >::max() ); }
-    static const Bool2 & Zero() {
-        static constexpr Bool2 ZeroVec(false);
+    static Bool2 const &   Zero()
+    {
+        static constexpr Bool2 ZeroVec( false );
         return ZeroVec;
     }
 };
 
-struct Bool3 {
+struct Bool3
+{
     bool X;
     bool Y;
     bool Z;
 
     Bool3() = default;
-    explicit constexpr Bool3( const bool & _Value ) : X( _Value ), Y( _Value ), Z( _Value ) {}
-    constexpr Bool3( const bool & _X, const bool & _Y, const bool & _Z ) : X( _X ), Y( _Y ), Z( _Z ) {}
+    explicit constexpr Bool3( bool _Value ) :
+        X( _Value ), Y( _Value ), Z( _Value ) {}
+    constexpr Bool3( bool _X, bool _Y, bool _Z ) :
+        X( _X ), Y( _Y ), Z( _Z ) {}
 
-    bool * ToPtr() {
+    bool * ToPtr()
+    {
         return &X;
     }
 
-    const bool * ToPtr() const {
+    const bool * ToPtr() const
+    {
         return &X;
     }
 
-    Bool3 & operator=( const Bool3 & _Other ) {
+    Bool3 & operator=( Bool3 const & _Other )
+    {
         X = _Other.X;
         Y = _Other.Y;
         Z = _Other.Z;
         return *this;
     }
 
-    bool & operator[]( const int & _Index ) {
+    bool & operator[]( int _Index )
+    {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
-        return (&X)[ _Index ];
+        return ( &X )[_Index];
     }
-    const bool & operator[]( const int & _Index ) const {
+    bool operator[]( int _Index ) const
+    {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
-        return (&X)[ _Index ];
+        return ( &X )[_Index];
     }
 
-    constexpr bool operator==( const Bool3 & _Other ) const { return X == _Other.X && Y == _Other.Y && Z == _Other.Z; }
-    constexpr bool operator!=( const Bool3 & _Other ) const { return X != _Other.X || Y != _Other.Y || Z != _Other.Z; }
+    constexpr bool operator==( Bool3 const & _Other ) const { return X == _Other.X && Y == _Other.Y && Z == _Other.Z; }
+    constexpr bool operator!=( Bool3 const & _Other ) const { return X != _Other.X || Y != _Other.Y || Z != _Other.Z; }
 
     //constexpr bool Any() const { return ( X || Y || Z ); }
     //constexpr bool All() const { return ( X && Y && Z ); }
@@ -145,22 +166,26 @@ struct Bool3 {
     constexpr bool All() const { return ( X & Y & Z ); }
 
     // String conversions
-    AString ToString() const {
+    AString ToString() const
+    {
         return AString( "( " ) + Math::ToString( X ) + " " + Math::ToString( Y ) + " " + Math::ToString( Z ) + " )";
     }
 
-    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const
+    {
         return AString( "( " ) + Math::ToHexString( X, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Y, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Z, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    void Write( IBinaryStream & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const
+    {
         _Stream.WriteBool( X );
         _Stream.WriteBool( Y );
         _Stream.WriteBool( Z );
     }
 
-    void Read( IBinaryStream & _Stream ) {
+    void Read( IBinaryStream & _Stream )
+    {
         X = _Stream.ReadBool();
         Y = _Stream.ReadBool();
         Z = _Stream.ReadBool();
@@ -168,31 +193,38 @@ struct Bool3 {
 
     // Static methods
     static constexpr int NumComponents() { return 3; }
-    static const Bool3 & Zero() {
-        static constexpr Bool3 ZeroVec(false);
+    static Bool3 const & Zero()
+    {
+        static constexpr Bool3 ZeroVec( false );
         return ZeroVec;
     }
 };
 
-struct Bool4 {
+struct Bool4
+{
     bool X;
     bool Y;
     bool Z;
     bool W;
 
     Bool4() = default;
-    explicit constexpr Bool4( const bool & _Value ) : X( _Value ), Y( _Value ), Z( _Value ), W( _Value ) {}
-    constexpr Bool4( const bool & _X, const bool & _Y, const bool & _Z, const bool & _W ) : X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
+    explicit constexpr Bool4( bool _Value ) :
+        X( _Value ), Y( _Value ), Z( _Value ), W( _Value ) {}
+    constexpr Bool4( bool _X, bool _Y, bool _Z, bool _W ) :
+        X( _X ), Y( _Y ), Z( _Z ), W( _W ) {}
 
-    bool * ToPtr() {
+    bool * ToPtr()
+    {
         return &X;
     }
 
-    const bool * ToPtr() const {
+    const bool * ToPtr() const
+    {
         return &X;
     }
 
-    Bool4 & operator=( const Bool4 & _Other ) {
+    Bool4 & operator=( Bool4 const & _Other )
+    {
         X = _Other.X;
         Y = _Other.Y;
         Z = _Other.Z;
@@ -200,17 +232,19 @@ struct Bool4 {
         return *this;
     }
 
-    bool & operator[]( const int & _Index ) {
+    bool & operator[]( int _Index )
+    {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
-        return (&X)[ _Index ];
+        return ( &X )[_Index];
     }
-    const bool & operator[]( const int & _Index ) const {
+    bool operator[]( int _Index ) const
+    {
         AN_ASSERT_( _Index >= 0 && _Index < NumComponents(), "Index out of range" );
-        return (&X)[ _Index ];
+        return ( &X )[_Index];
     }
 
-    constexpr bool operator==( const Bool4 & _Other ) const { return X == _Other.X && Y == _Other.Y && Z == _Other.Z && W == _Other.W; }
-    constexpr bool operator!=( const Bool4 & _Other ) const { return X != _Other.X || Y != _Other.Y || Z != _Other.Z || W != _Other.W; }
+    constexpr bool operator==( Bool4 const & _Other ) const { return X == _Other.X && Y == _Other.Y && Z == _Other.Z && W == _Other.W; }
+    constexpr bool operator!=( Bool4 const & _Other ) const { return X != _Other.X || Y != _Other.Y || Z != _Other.Z || W != _Other.W; }
 
     //constexpr bool Any() const { return ( X || Y || Z || W ); }
     //constexpr bool All() const { return ( X && Y && Z && W ); }
@@ -218,23 +252,27 @@ struct Bool4 {
     constexpr bool All() const { return ( X & Y & Z & W ); }
 
     // String conversions
-    AString ToString() const {
+    AString ToString() const
+    {
         return AString( "( " ) + Math::ToString( X ) + " " + Math::ToString( Y ) + " " + Math::ToString( Z ) + " " + Math::ToString( W ) + " )";
     }
 
-    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const {
+    AString ToHexString( bool _LeadingZeros = false, bool _Prefix = false ) const
+    {
         return AString( "( " ) + Math::ToHexString( X, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Y, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( Z, _LeadingZeros, _Prefix ) + " " + Math::ToHexString( W, _LeadingZeros, _Prefix ) + " )";
     }
 
     // Byte serialization
-    void Write( IBinaryStream & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const
+    {
         _Stream.WriteBool( X );
         _Stream.WriteBool( Y );
         _Stream.WriteBool( Z );
         _Stream.WriteBool( W );
     }
 
-    void Read( IBinaryStream & _Stream ) {
+    void Read( IBinaryStream & _Stream )
+    {
         X = _Stream.ReadBool();
         Y = _Stream.ReadBool();
         Z = _Stream.ReadBool();
@@ -243,8 +281,9 @@ struct Bool4 {
 
     // Static methods
     static constexpr int NumComponents() { return 4; }
-    static const Bool4 & Zero() {
-        static constexpr Bool4 ZeroVec(false);
+    static Bool4 const & Zero()
+    {
+        static constexpr Bool4 ZeroVec( false );
         return ZeroVec;
     }
 };

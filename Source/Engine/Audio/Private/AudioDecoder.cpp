@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Core/Public/Logger.h>
 #include <Core/Public/BaseMath.h>
 
-#include "Extras/miniaudio.h"
+#include <miniaudio/miniaudio.h>
 
 static size_t Read( ma_decoder * pDecoder, void* pBufferOut, size_t bytesToRead )
 {

@@ -525,7 +525,7 @@ size_t AStreamedMemoryGPU::Allocate( size_t _SizeInBytes, int _Alignment, const 
     alignedOffset += BufferIndex * STREAMED_MEMORY_GPU_BLOCK_SIZE;
 
     if ( _Data ) {
-        Core::MemcpySSE( (byte *)pMappedMemory + alignedOffset, _Data, _SizeInBytes );
+        Core::Memcpy( (byte *)pMappedMemory + alignedOffset, _Data, _SizeInBytes );
     }
 
     return alignedOffset;

@@ -34,17 +34,17 @@ SOFTWARE.
 
 struct SCommandLine
 {
-    AN_FORBID_COPY(SCommandLine)
+    AN_FORBID_COPY( SCommandLine )
 
-    SCommandLine( const char * _CommandLine );
-    SCommandLine( int _Argc, char ** _Argv );
+    SCommandLine( const char* _CommandLine );
+    SCommandLine( int _Argc, char** _Argv );
     ~SCommandLine();
 
     /** Application command line args count */
     int GetArgc() const { return NumArguments; }
 
     /** Application command line args */
-    const char * const *GetArgv() const { return Arguments; }
+    const char* const* GetArgv() const { return Arguments; }
 
     /** Check is argument exists in application command line. Return argument index or -1 if argument was not found. */
     int CheckArg( AStringView _Arg ) const;
@@ -55,10 +55,10 @@ struct SCommandLine
 private:
     void Validate();
 
-    int     NumArguments = 0;
-    char ** Arguments = nullptr;
+    int    NumArguments = 0;
+    char** Arguments    = nullptr;
 
-    bool    bNeedFree = false;
+    bool bNeedFree = false;
 };
 
 /** CPU features */
@@ -128,37 +128,37 @@ enum PROCESS_ATTRIBUTE
 
 struct SProcessInfo
 {
-    int ProcessAttribute = 0;
-    char * Executable = nullptr;
+    int   ProcessAttribute = 0;
+    char* Executable       = nullptr;
 };
 
 struct SCoreInitialize
 {
-    char ** Argv = nullptr;
-    int Argc = 0;
-    const char * pCommandLine = nullptr;
-    bool bAllowMultipleInstances = true;
-    size_t ZoneSizeInMegabytes = 256;
-    size_t HunkSizeInMegabytes = 32;
+    char**      Argv                    = nullptr;
+    int         Argc                    = 0;
+    const char* pCommandLine            = nullptr;
+    bool        bAllowMultipleInstances = true;
+    size_t      ZoneSizeInMegabytes     = 256;
+    size_t      HunkSizeInMegabytes     = 32;
 };
 
 namespace Core
 {
 
 /** Initialize core library */
-void Initialize( SCoreInitialize const & CoreInitialize );
+void Initialize( SCoreInitialize const& CoreInitialize );
 
 /** Deinitialize core library */
 void Deinitialize();
 
 /** Get dump of global logger */
-std::string & GetMessageBuffer();
+std::string& GetMessageBuffer();
 
 /** Application command line args count */
 int GetArgc();
 
 /** Application command line args */
-const char * const *GetArgv();
+const char* const* GetArgv();
 
 /** Check is argument exists in application command line. Return argument index or -1 if argument was not found. */
 int CheckArg( AStringView _Arg );
@@ -167,22 +167,22 @@ int CheckArg( AStringView _Arg );
 bool HasArg( AStringView _Arg );
 
 /** Get command line pointer */
-SCommandLine const * GetCommandLine();
+SCommandLine const* GetCommandLine();
 
 /** Get CPU info */
-SCPUInfo const * CPUInfo();
+SCPUInfo const* CPUInfo();
 
 /** Get total/available memory status */
 SMemoryInfo GetPhysMemoryInfo();
 
 /** Get process info */
-SProcessInfo const & GetProcessInfo();
+SProcessInfo const& GetProcessInfo();
 
 /** Write message to log file */
-void WriteLog( const char * _Message );
+void WriteLog( const char* _Message );
 
 /** Write message to debug console */
-void WriteDebugString( const char * _Message );
+void WriteDebugString( const char* _Message );
 
 /** Print CPU features using global logger */
 void PrintCPUFeatures();
@@ -215,30 +215,31 @@ int64_t SysMicroseconds();
 double SysMicroseconds_d();
 
 /** Load dynamic library (.dll or .so) */
-void * LoadDynamicLib( AStringView _LibraryName );
+void* LoadDynamicLib( AStringView _LibraryName );
 
 /** Unload dynamic library (.dll or .so) */
-void UnloadDynamicLib( void * _Handle );
+void UnloadDynamicLib( void* _Handle );
 
 /** Get address of procedure in dynamic library */
-void * GetProcAddress( void * _Handle, const char * _ProcName );
+void* GetProcAddress( void* _Handle, const char* _ProcName );
 
 /** Helper. Get address of procedure in dynamic library */
 template< typename T >
-bool GetProcAddress( void * _Handle, T ** _ProcPtr, const char * _ProcName ) {
-    return nullptr != ( (*_ProcPtr) = (T *)GetProcAddress( _Handle, _ProcName ) );
+bool GetProcAddress( void* _Handle, T** _ProcPtr, const char* _ProcName )
+{
+    return nullptr != ( ( *_ProcPtr ) = (T*)GetProcAddress( _Handle, _ProcName ) );
 }
 
 /** Set clipboard text */
-void SetClipboard( const char * _Utf8String );
+void SetClipboard( const char* _Utf8String );
 
 /** Set clipboard text */
-AN_FORCEINLINE void SetClipboard( AString const & _Clipboard ) { SetClipboard( _Clipboard.CStr() ); }
+AN_FORCEINLINE void SetClipboard( AString const& _Clipboard ) { SetClipboard( _Clipboard.CStr() ); }
 
 /** Get clipboard text */
-const char * GetClipboard();
+const char* GetClipboard();
 
-}
+} // namespace Core
 
 /** Show critical error and exit */
-void CriticalError( const char * _Format, ... );
+void CriticalError( const char* _Format, ... );

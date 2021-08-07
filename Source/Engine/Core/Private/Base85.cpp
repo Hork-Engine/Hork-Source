@@ -31,33 +31,40 @@ SOFTWARE.
 #include <Core/Public/CString.h>
 #include <Core/Public/Memory.h>
 
-static AN_FORCEINLINE unsigned int Decode85Byte( const char c ) {
+static AN_FORCEINLINE unsigned int Decode85Byte(const char c)
+{
     return c >= '\\' ? c - 36 : c - 35;
 }
 
-static AN_FORCEINLINE char Encode85Byte( unsigned int x ) {
-    x = ( x % 85 ) + 35;
-    return ( x >= '\\' ) ? x+1 : x;
+static AN_FORCEINLINE char Encode85Byte(unsigned int x)
+{
+    x = (x % 85) + 35;
+    return (x >= '\\') ? x + 1 : x;
 }
 
-namespace Core {
+namespace Core
+{
 
-size_t DecodeBase85( byte const * _Base85, byte * _Dst ) {
-    size_t size = ((Strlen( (const char *)_Base85 ) + 4) / 5) * 4;
+size_t DecodeBase85(byte const* _Base85, byte* _Dst)
+{
+    size_t size = ((Strlen((const char*)_Base85) + 4) / 5) * 4;
 
-    if ( _Dst ) {
-        while ( *_Base85 ) {
+    if (_Dst)
+    {
+        while (*_Base85)
+        {
             uint32_t d = 0;
-        
-            d += Decode85Byte( _Base85[4] );
+
+            d += Decode85Byte(_Base85[4]);
             d *= 85;
-            d += Decode85Byte( _Base85[3] );
+            d += Decode85Byte(_Base85[3]);
             d *= 85;
-            d += Decode85Byte( _Base85[2] );
+            d += Decode85Byte(_Base85[2]);
             d *= 85;
-            d += Decode85Byte( _Base85[1] );
+            d += Decode85Byte(_Base85[1]);
             d *= 85;
-            d += Decode85Byte( _Base85[0] );
+            d += Decode85Byte(_Base85[0]);
+
 
             _Dst[0] = d & 0xff;
             _Dst[1] = (d >> 8) & 0xff;
@@ -72,40 +79,44 @@ size_t DecodeBase85( byte const * _Base85, byte * _Dst ) {
     return size;
 }
 
-size_t EncodeBase85( byte const * _Source, size_t _SourceSize, byte * _Base85 ) {
-    size_t size = ( ( _SourceSize + 3 ) / 4 ) * 5 + 1;
+size_t EncodeBase85(byte const* _Source, size_t _SourceSize, byte* _Base85)
+{
+    size_t size = ((_SourceSize + 3) / 4) * 5 + 1;
 
-    if ( _Base85 ) {
+    if (_Base85)
+    {
         size_t chunks = _SourceSize / 4;
-        for ( size_t chunk = 0 ; chunk < chunks ; chunk++ ) {
-            uint32_t d = ( ( uint32_t * )_Source )[ chunk ];
+        for (size_t chunk = 0; chunk < chunks; chunk++)
+        {
+            uint32_t d = ((uint32_t*)_Source)[chunk];
 
-            *_Base85++ = Encode85Byte( d );
+            *_Base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte( d );
+            *_Base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte( d );
+            *_Base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte( d );
+            *_Base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte( d );
+            *_Base85++ = Encode85Byte(d);
             d /= 85;
         }
         int residual = _SourceSize - chunks * 4;
-        if ( residual > 0 ) {
+        if (residual > 0)
+        {
             uint32_t d = 0;
 
-            Memcpy( &d, ( ( uint32_t * )_Source ) + chunks, residual );
+            Memcpy(&d, ((uint32_t*)_Source) + chunks, residual);
 
-            *_Base85++ = Encode85Byte( d );
+            *_Base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte( d );
+            *_Base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte( d );
+            *_Base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte( d );
+            *_Base85++ = Encode85Byte(d);
             d /= 85;
-            *_Base85++ = Encode85Byte( d );
+            *_Base85++ = Encode85Byte(d);
             d /= 85;
         }
         *_Base85 = 0;

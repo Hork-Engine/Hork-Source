@@ -54,7 +54,7 @@ public:
         AN_ASSERT( IsAlignedPtr( StaticData, 16 ) );
     }
 
-    TPodVector( int _Size )
+    explicit TPodVector( int _Size )
         : ArraySize( _Size )
     {
         AN_ASSERT( _Size >= 0 );
@@ -70,7 +70,7 @@ public:
     TPodVector( TPodVector const & _Array )
         : TPodVector( _Array.ArraySize )
     {
-        Core::MemcpySSE( ArrayData, _Array.ArrayData, TYPE_SIZEOF * ArraySize );
+        Core::Memcpy( ArrayData, _Array.ArrayData, TYPE_SIZEOF * ArraySize );
     }    
 
     TPodVector( T const * _Data, int _Size )
@@ -115,7 +115,7 @@ public:
 
         if ( ArraySize <= BASE_CAPACITY ) {
             if ( ArraySize > 0 ) {
-                Core::MemcpySSE( StaticData, ArrayData, TYPE_SIZEOF * ArraySize );
+                Core::Memcpy( StaticData, ArrayData, TYPE_SIZEOF * ArraySize );
             }
             Allocator::Inst().Free( ArrayData );
             ArrayData = StaticData;
@@ -124,7 +124,7 @@ public:
         }
 
         T * data = ( T * )Allocator::Inst().Alloc( TYPE_SIZEOF * ArraySize );
-        Core::MemcpySSE( data, ArrayData, TYPE_SIZEOF * ArraySize );
+        Core::Memcpy( data, ArrayData, TYPE_SIZEOF * ArraySize );
         Allocator::Inst().Free( ArrayData );
         ArrayData = data;
         ArrayCapacity = ArraySize;
@@ -137,7 +137,7 @@ public:
         }
         if ( ArrayData == StaticData ) {
             ArrayData = ( T * )Allocator::Inst().Alloc( TYPE_SIZEOF * _NewCapacity );
-            Core::MemcpySSE( ArrayData, StaticData, TYPE_SIZEOF * ArraySize );
+            Core::Memcpy( ArrayData, StaticData, TYPE_SIZEOF * ArraySize );
         } else {
             ArrayData = ( T * )Allocator::Inst().Realloc( ArrayData, TYPE_SIZEOF * _NewCapacity, true );
         }
@@ -179,12 +179,12 @@ public:
 
     void Memset( const int _Value )
     {
-        Core::MemsetSSE( ArrayData, _Value, TYPE_SIZEOF * ArraySize );
+        Core::Memset( ArrayData, _Value, TYPE_SIZEOF * ArraySize );
     }
 
     void ZeroMem()
     {
-        Core::ZeroMemSSE( ArrayData, TYPE_SIZEOF * ArraySize );
+        Core::ZeroMem( ArrayData, TYPE_SIZEOF * ArraySize );
     }
 
     /** Swap elements */
@@ -240,7 +240,7 @@ public:
         if ( capacity > ArrayCapacity ) {
             T * data = ( T * )Allocator::Inst().Alloc( TYPE_SIZEOF * capacity );
 
-            Core::MemcpySSE( data, ArrayData, TYPE_SIZEOF * _Index );
+            Core::Memcpy( data, ArrayData, TYPE_SIZEOF * _Index );
             data[ _Index ] = _Element;
             const int elementsToMove = ArraySize - _Index;
             Core::Memcpy( &data[ _Index + 1 ], &ArrayData[ _Index ], TYPE_SIZEOF * elementsToMove );

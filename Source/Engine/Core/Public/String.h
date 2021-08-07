@@ -372,6 +372,7 @@ public:
 
     AString();
     AString( AString const & _Str );
+    AString( AString && _Str );
     AString( AStringView _Str );
     AString( const char * _Begin, const char * _End );
     ~AString();
@@ -380,6 +381,7 @@ public:
     char & operator[]( const int _Index );
 
     AString & operator=( AString const & _Str );
+    AString & operator=( AString && _Str );
     AString & operator=( AStringView _Str );
 
     friend AString operator+( AStringView _Str1, AStringView _Str2 );
@@ -653,6 +655,27 @@ AN_FORCEINLINE AString::AString( AString const & _Str )
     Size = newLen;
 }
 
+AN_FORCEINLINE AString::AString( AString && _Str )
+{
+    if ( _Str.Data == &_Str.Base[0] ) {
+        Core::Memcpy( Base, _Str.Base, _Str.Size );
+        Data       = Base;
+        Capacity   = _Str.Capacity;
+        Size       = _Str.Size;
+        Base[Size] = 0;
+    }
+    else {
+        Data     = _Str.Data;
+        Capacity = _Str.Capacity;
+        Size     = _Str.Size;
+
+        _Str.Data     = _Str.Base;
+        _Str.Capacity = BASE_CAPACITY;
+    }
+    _Str.Size    = 0;
+    _Str.Data[0] = '\0';
+}
+
 AN_FORCEINLINE AString::AString( AStringView _Str )
     : AString()
 {
@@ -699,6 +722,31 @@ AN_FORCEINLINE AString & AString::operator=( AString const & _Str )
     Core::Memcpy( Data, _Str.ToPtr(), newLen );
     Data[newLen] = 0;
     Size = newLen;
+    return *this;
+}
+
+AN_FORCEINLINE AString & AString::operator=( AString && _Str )
+{
+    Free();
+
+    if ( _Str.Data == &_Str.Base[0] ) {
+        Core::Memcpy( Base, _Str.Base, _Str.Size );
+        Data       = Base;
+        Capacity   = _Str.Capacity;
+        Size       = _Str.Size;
+        Base[Size] = 0;
+    }
+    else {
+        Data     = _Str.Data;
+        Capacity = _Str.Capacity;
+        Size     = _Str.Size;
+
+        _Str.Data     = _Str.Base;
+        _Str.Capacity = BASE_CAPACITY;
+    }
+    _Str.Size    = 0;
+    _Str.Data[0] = '\0';
+
     return *this;
 }
 

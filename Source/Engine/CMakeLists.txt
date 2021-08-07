@@ -5,59 +5,47 @@ project( ${PROJECT} )
 setup_msvc_runtime_library()
 
 add_definitions( -DANGIE_ENGINE_EXPORTS )
+
+
+set_property(GLOBAL PROPERTY USE_FOLDERS TRUE)
+
+function(get_all_targets _result _dir)
+    get_property(_subdirs DIRECTORY "${_dir}" PROPERTY SUBDIRECTORIES)
+    foreach(_subdir IN LISTS _subdirs)
+        get_all_targets(${_result} "${_subdir}")
+    endforeach()
+    get_property(_sub_targets DIRECTORY "${_dir}" PROPERTY BUILDSYSTEM_TARGETS)
+    set(${_result} ${${_result}} ${_sub_targets} PARENT_SCOPE)
+endfunction()
+
+function(add_subdirectory_with_folder _folder_name _folder)
+    add_subdirectory(${_folder} ${ARGN})
+    get_all_targets(_targets "${_folder}")
+    foreach(_target IN LISTS _targets)
+        set_target_properties(
+            ${_target}
+            PROPERTIES FOLDER "${_folder_name}"
+        )
+    endforeach()
+endfunction()
+
+include_directories( ThirdParty )
+
+#
+# GLEW
+#
 add_definitions( -DGLEW_STATIC )
 add_definitions( -DGLEW_NO_GLU )
 
-
-#########################################################################################
-# Vulkan
-#message( "========== VULKAN ==========" )
-#find_package(Vulkan)
-#if (NOT Vulkan_FOUND)
-#    message(ERROR " Vulkan not found!")
-#endif(NOT Vulkan_FOUND)
-#include_directories( ${Vulkan_INCLUDE_DIRS} )
-#########################################################################################
-
-#########################################################################################
+#
 # SDL2
-message( "========== SDL2 ==========" )
+#
 set(SDL_RENDER OFF)
-#set(SDL_AUDIO OFF)
-add_subdirectory( ThirdParty/SDL2 )
-set_target_properties( SDL2-static PROPERTIES FOLDER "ThirdParty/SDL" )
-set_target_properties( SDL2main PROPERTIES FOLDER "ThirdParty/SDL" )
-set_target_properties( uninstall PROPERTIES FOLDER "ThirdParty/SDL" )
-#########################################################################################
+add_subdirectory_with_folder( "ThirdParty/SDL" ThirdParty/SDL2 )
 
-#########################################################################################
-# NVIDIA TEXTURE TOOLS
-#if ( AN_USE_NVTT )
-#message( "========== NVIDIA TEXTURE TOOLS ==========" )
-#option( NVTT_TOOLS "Nvtt Tools" OFF )
-#option( NVTT_TESTS "Nvtt Tests" OFF )
-#include_directories( ThirdParty/nvidia-texture-tools/src )
-#include_directories( ThirdParty/nvidia-texture-tools/src/nvtt/squish )
-#include_directories( ThirdParty/nvidia-texture-tools/extern/poshlib )
-#include_directories( "${CMAKE_CURRENT_BINARY_DIR}/ThirdParty/nvidia-texture-tools/src" )
-#add_subdirectory( ThirdParty/nvidia-texture-tools )
-#set_target_properties( bc6h PROPERTIES FOLDER "ThirdParty/NvTextureTools" )
-#set_target_properties( bc7 PROPERTIES FOLDER "ThirdParty/NvTextureTools" )
-#set_target_properties( nvcore PROPERTIES FOLDER "ThirdParty/NvTextureTools" )
-#set_target_properties( nvimage PROPERTIES FOLDER "ThirdParty/NvTextureTools" )
-#set_target_properties( nvmath PROPERTIES FOLDER "ThirdParty/NvTextureTools" )
-#set_target_properties( nvthread PROPERTIES FOLDER "ThirdParty/NvTextureTools" )
-#set_target_properties( nvtt PROPERTIES FOLDER "ThirdParty/NvTextureTools" )
-#set_target_properties( posh PROPERTIES FOLDER "ThirdParty/NvTextureTools" )
-#set_target_properties( squish PROPERTIES FOLDER "ThirdParty/NvTextureTools" )
-#set( NvTextureToolsLibs bc6h bc7 nvcore nvimage nvmath nvthread nvtt posh squish )
-#set( AN_TOOLCHAIN_LIBS ${AN_TOOLCHAIN_LIBS} ${NvTextureToolsLibs} )
-#endif()
-#########################################################################################
-
-#########################################################################################
-# BULLET PHYSICS
-message( "========== BULLET PHYSICS ==========" )
+#
+# Bullet Physics
+#
 option( USE_DOUBLE_PRECISION "Use double precision" OFF )
 option( USE_GRAPHICAL_BENCHMARK "Use Graphical Benchmark" ON )
 option( USE_SOFT_BODY_MULTI_BODY_DYNAMICS_WORLD "Use btSoftMultiBodyDynamicsWorld" OFF )
@@ -72,29 +60,7 @@ option( BUILD_UNIT_TESTS "Build Unit Tests" OFF )
 option( BUILD_BULLET3 "Set when you want to build Bullet 3" OFF)
 
 include_directories( ThirdParty/bullet3/src )
-
-#set(BUILD_SHARED_LIBS ON)
-add_subdirectory( ThirdParty/bullet3 )
-#set(BUILD_SHARED_LIBS OFF)
-
-set_target_properties( LinearMath PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( BulletFileLoader PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( Bullet2FileLoader PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( Bullet3Collision PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( Bullet3Common PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( Bullet3Dynamics PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( Bullet3Geometry PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( Bullet3OpenCL_clew PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( BulletCollision PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( BulletDynamics PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( BulletInverseDynamics PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( BulletInverseDynamicsUtils PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( BulletSoftBody PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( BulletWorldImporter PROPERTIES FOLDER "ThirdParty/Physics" )
-#set_target_properties( BulletXmlWorldImporter PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( ConvexDecomposition PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( GIMPACTUtils PROPERTIES FOLDER "ThirdParty/Physics" )
-set_target_properties( HACD PROPERTIES FOLDER "ThirdParty/Physics" )
+add_subdirectory_with_folder( "ThirdParty/BulletPhysics" ThirdParty/bullet3 )
 
 set( AN_BULLET_LIBS
 BulletSoftBody
@@ -115,54 +81,71 @@ BulletWorldImporter
 ConvexDecomposition
 GIMPACTUtils
 HACD )
-#########################################################################################
 
-#########################################################################################
+#
 # VHACD
-message( "========== VHACD ==========" )
+#
 include_directories( ThirdParty/VHACD )
-add_subdirectory( ThirdParty/VHACD )
 include_directories( ThirdParty/VHACD/public )
-set_target_properties( vhacd PROPERTIES FOLDER "ThirdParty/Physics" )
-#########################################################################################
+add_subdirectory_with_folder( "ThirdParty/VHACD" ThirdParty/VHACD )
 
-#########################################################################################
-# BOX2D
-#message( "========== BOX2D ==========" )
-#option(BOX2D_INSTALL "Install Box2D libs, includes, and CMake scripts" OFF)
-#option(BOX2D_INSTALL_DOC "Install Box2D documentation" OFF)
-#option(BOX2D_BUILD_SHARED "Build Box2D shared libraries" OFF)
-#option(BOX2D_BUILD_STATIC "Build Box2D static libraries" ON)
-#option(BOX2D_BUILD_EXAMPLES "Build Box2D examples" OFF)
-##include_directories( ThirdParty/Box2D/Box2D/Box2D )
-#include_directories( ThirdParty/Box2D/Box2D )
-#add_subdirectory( ThirdParty/Box2D/Box2D )
-#set_target_properties(Box2D PROPERTIES FOLDER "ThirdParty/Physics")
-#########################################################################################
-
-#########################################################################################
-# RECAST NAVIGATION
-message( "========== RECAST NAVIGATION ==========" )
+#
+# Recast&Detour
+#
 include_directories( ThirdParty/recastnavigation/DebugUtils/Include )
 include_directories( ThirdParty/recastnavigation/Detour/Include )
 include_directories( ThirdParty/recastnavigation/DetourCrowd/Include )
 include_directories( ThirdParty/recastnavigation/DetourTileCache/Include )
 include_directories( ThirdParty/recastnavigation/Recast/Include )
-add_subdirectory( ThirdParty/recastnavigation )
-set_target_properties( Recast PROPERTIES FOLDER "ThirdParty/PathFinding" )
-#########################################################################################
+add_subdirectory_with_folder( "ThirdParty/recastnavigation" ThirdParty/recastnavigation )
 
-#########################################################################################
+#
 # muFFT
-message( "========== muFFT ==========" )
-option( MUFFT_ENABLE_FFTW "Enable FFTW support" OFF )
-include_directories( ThirdParty )
-add_subdirectory( ThirdParty/muFFT )
-set_target_properties( muFFT PROPERTIES FOLDER "ThirdParty/Misc" )
-set_target_properties( muFFT-avx PROPERTIES FOLDER "ThirdParty/Misc" )
-set_target_properties( muFFT-sse PROPERTIES FOLDER "ThirdParty/Misc" )
-set_target_properties( muFFT-sse3 PROPERTIES FOLDER "ThirdParty/Misc" )
-#########################################################################################
+#
+add_subdirectory_with_folder( "ThirdParty/muFFT" ThirdParty/muFFT )
+
+#
+# miniaudio
+#
+add_subdirectory_with_folder( "ThirdParty/miniaudio" ThirdParty/miniaudio )
+
+#
+# miniz
+#
+add_subdirectory_with_folder( "ThirdParty/miniz" ThirdParty/miniz )
+
+#
+# fastlz
+#
+add_subdirectory_with_folder( "ThirdParty/fastlz" ThirdParty/fastlz )
+
+#
+# glutess
+#
+add_subdirectory_with_folder( "ThirdParty/glutess" ThirdParty/glutess )
+
+#
+# clipper
+#
+add_subdirectory_with_folder( "ThirdParty/clipper" ThirdParty/clipper )
+
+#
+# tinyexr
+#
+add_subdirectory_with_folder( "ThirdParty/tinyexr" ThirdParty/tinyexr )
+
+#
+# cgltf
+#
+add_subdirectory_with_folder( "ThirdParty/cgltf" ThirdParty/cgltf )
+
+
+#
+# DiligentCore
+#
+#include_directories(${PROJECT} PRIVATE "DiligentCore")
+#add_subdirectory_with_folder("ThirdParty/DiligentCore" ThirdParty/DiligentCore)
+
 
 #---------------------------------------------------------------------
 # Core module
@@ -170,39 +153,27 @@ file( GLOB CorePublic Core/Public/*.h Core/Public/*.cpp )
 file( GLOB CorePublicBV Core/Public/BV/*.h Core/Public/BV/*.cpp )
 file( GLOB CorePrivate Core/Private/*.h Core/Private/*.cpp )
 file( GLOB CorePrivateBV Core/Private/BV/*.h Core/Private/BV/*.cpp )
-file( GLOB CorePrivateSTB Core/Private/stb/*.h Core/Private/stb/*.c )
-file( GLOB CorePrivateFastLZ Core/Private/fastlz/*.h Core/Private/fastlz/*.c )
-file( GLOB CorePrivateMiniZ Core/Private/miniz/*.h Core/Private/miniz/*.c )
-file( GLOB CorePrivateClipper Core/Private/clipper/*.hpp Core/Private/clipper/*.cpp )
-file( GLOB CorePrivateGlutess Core/Private/glutess/*.h Core/Private/glutess/*.c )
+file( GLOB CorePrivateSTB Core/Private/stb/*.h )
 
 source_group( "Core\\Public" FILES ${CorePublic} )
 source_group( "Core\\Public\\BV" FILES ${CorePublicBV} )
 source_group( "Core\\Private" FILES ${CorePrivate} )
 source_group( "Core\\Private\\BV" FILES ${CorePrivateBV} )
 source_group( "Core\\Private\\stb" FILES ${CorePrivateSTB} )
-source_group( "Core\\Private\\fastlz" FILES ${CorePrivateFastLZ} )
-source_group( "Core\\Private\\miniz" FILES ${CorePrivateMiniZ} )
-source_group( "Core\\Private\\clipper" FILES ${CorePrivateClipper} )
-source_group( "Core\\Private\\glutess" FILES ${CorePrivateGlutess} )
 
 #---------------------------------------------------------------------
 # Render core module
 file( GLOB RenderCore RenderCore/*.h RenderCore/*.cpp )
 file( GLOB RenderCoreOpenGL45 RenderCore/OpenGL45/*.h RenderCore/OpenGL45/*.cpp )
 file( GLOB RenderCoreOpenGL45GL RenderCore/OpenGL45/GL/*.h RenderCore/OpenGL45/GL/*.c )
+#file( GLOB RenderCoreDiligent RenderCore/Diligent/*.h RenderCore/Diligent/*.cpp )
 file( GLOB RenderCoreFrameGraph RenderCore/FrameGraph/*.h RenderCore/FrameGraph/*.cpp )
-
-#file( GLOB RenderCorePublic RenderCore/Public/*.h RenderCore/Public/*.cpp )
-#file( GLOB RenderCorePrivate RenderCore/Private/*.h RenderCore/Private/*.cpp )
 
 source_group( "RenderCore" FILES ${RenderCore} )
 source_group( "RenderCore\\OpenGL45" FILES ${RenderCoreOpenGL45} )
 source_group( "RenderCore\\OpenGL45\\GL" FILES ${RenderCoreOpenGL45GL} )
+#source_group( "RenderCore\\Diligent" FILES ${RenderCoreDiligent} )
 source_group( "RenderCore\\FrameGraph" FILES ${RenderCoreFrameGraph} )
-
-#source_group( "RenderCore\\Public" FILES ${RenderCorePublic} )
-#source_group( "RenderCore\\Private" FILES ${RenderCorePrivate} )
 
 #---------------------------------------------------------------------
 # Runtime module
@@ -216,11 +187,9 @@ source_group( "Runtime\\Private" FILES ${RuntimePrivate} )
 # Audio module
 file( GLOB AudioPublic Audio/Public/*.h Audio/Public/*.cpp )
 file( GLOB AudioPrivate Audio/Private/*.h Audio/Private/*.cpp )
-file( GLOB AudioPrivateExtras Audio/Private/Extras/*.h Audio/Private/Extras/*.cpp Audio/Private/Extras/*.c )
 
 source_group( "Audio\\Public" FILES ${AudioPublic} )
 source_group( "Audio\\Private" FILES ${AudioPrivate} )
-source_group( "Audio\\Private\\Extras" FILES ${AudioPrivateExtras} )
 
 #---------------------------------------------------------------------
 # Renderer module
@@ -229,12 +198,6 @@ file( GLOB RendererVT Renderer/VT/*.h Renderer/VT/*.cpp )
 
 source_group( "Renderer" FILES ${Renderer} )
 source_group( "Renderer\\VT" FILES ${RendererVT} )
-
-#---------------------------------------------------------------------
-# Imgui third party library
-#file( GLOB Imgui imgui/*.h imgui/*.cpp )
-
-#source_group( "imgui" FILES ${Imgui} )
 
 #---------------------------------------------------------------------
 # World public
@@ -260,7 +223,6 @@ source_group( "World\\Public" FILES ${WorldPublic} )
 # World private
 file( GLOB WorldPrivateBase World/Private/Base/*.h World/Private/Base/*.cpp )
 file( GLOB WorldPrivateResource World/Private/Resource/*.h World/Private/Resource/*.cpp )
-file( GLOB WorldPrivateResourceGLTF World/Private/Resource/gltf/*.h )
 file( GLOB WorldPrivateResourceLWO World/Private/Resource/lwo/*.h World/Private/Resource/lwo/*.c )
 file( GLOB WorldPrivateResourceIESNA World/Private/Resource/iesna/*.h World/Private/Resource/iesna/*.c )
 file( GLOB WorldPrivateMaterialGraph World/Private/MaterialGraph/*.h World/Private/MaterialGraph/*.cpp )
@@ -273,7 +235,6 @@ file( GLOB WorldPrivate World/Private/*.h World/Private/*.cpp )
 
 source_group( "World\\Private\\Base" FILES ${WorldPrivateBase} )
 source_group( "World\\Private\\Resource" FILES ${WorldPrivateResource} )
-source_group( "World\\Private\\Resource\\gltf" FILES ${WorldPrivateResourceGLTF} )
 source_group( "World\\Private\\Resource\\lwo" FILES ${WorldPrivateResourceLWO} )
 source_group( "World\\Private\\Resource\\iesna" FILES ${WorldPrivateResourceIESNA} )
 source_group( "World\\Private\\MaterialGraph" FILES ${WorldPrivateMaterialGraph} )
@@ -286,7 +247,8 @@ source_group( "World\\Private" FILES ${WorldPrivate} )
 
 #---------------------------------------------------------------------
 
-add_executable( EmbedTool Util/EmbedTool.cpp Util/miniz/miniz.c )
+add_executable( EmbedTool Util/EmbedTool.cpp )
+target_link_libraries( EmbedTool miniz )
 
 message( ${CMAKE_CURRENT_BINARY_DIR} )
 
@@ -314,14 +276,11 @@ ${CorePublicBV}
 ${CorePrivate}
 ${CorePrivateBV}
 ${CorePrivateSTB}
-${CorePrivateFastLZ}
-${CorePrivateMiniZ}
-${CorePrivateClipper}
-${CorePrivateGlutess}
 
 ${RenderCore}
 ${RenderCoreOpenGL45}
 ${RenderCoreOpenGL45GL}
+#${RenderCoreDiligent}
 ${RenderCoreFrameGraph}
 
 ${RuntimePublic}
@@ -329,7 +288,6 @@ ${RuntimePrivate}
 
 ${AudioPublic}
 ${AudioPrivate}
-${AudioPrivateExtras}
 
 ${Renderer}
 ${RendererVT}
@@ -346,7 +304,6 @@ ${WorldPublicWidgets}
 ${WorldPublic}
 ${WorldPrivateBase}
 ${WorldPrivateResource}
-${WorldPrivateResourceGLTF}
 ${WorldPrivateResourceLWO}
 ${WorldPrivateResourceIESNA}
 ${WorldPrivateMaterialGraph}
@@ -364,12 +321,22 @@ set_property( TARGET ${PROJECT} PROPERTY POSITION_INDEPENDENT_CODE ON )
 set( LIBRARIES
         ${AN_BULLET_LIBS}
         ${OPENGL_gl_LIBRARY}
-#        ${Vulkan_LIBRARIES}
         vhacd
         Recast
         SDL2-static
         muFFT
-#    poly2tri Clipper glutess Box2D
+		miniaudio
+		miniz
+		fastlz
+        glutess
+        polyclipping
+        tinyexr
+        cgltf
+
+#    Diligent-GraphicsEngineD3D11-static
+#    Diligent-GraphicsEngineOpenGL-static
+#    Diligent-GraphicsEngineD3D12-static
+#    Diligent-GraphicsEngineVk-static
 )
 
 if(UNIX)
@@ -385,4 +352,3 @@ set_target_properties( ${PROJECT}
 
 target_compile_definitions(${PROJECT} PUBLIC ${AN_COMPILER_DEFINES})
 target_compile_options(${PROJECT} PUBLIC ${AN_COMPILER_FLAGS})
-

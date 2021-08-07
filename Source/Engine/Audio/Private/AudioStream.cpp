@@ -32,7 +32,7 @@ SOFTWARE.
 #include <Core/Public/Core.h>
 #include <Core/Public/CoreMath.h>
 
-#include "Extras/miniaudio.h"
+#include <miniaudio/miniaudio.h>
 
 SAudioStream::SAudioStream( SFileInMemory * _pFileInMemory, int _FrameCount, int _SampleRate, int _SampleBits, int _Channels )
 {

@@ -37,7 +37,7 @@ SOFTWARE.
 #include <Audio/Public/HRTF.h>
 
 // Use miniaudio for resampling
-#include "Extras/miniaudio.h"
+#include <miniaudio/miniaudio.h>
 
 #include <muFFT/fft.h>
 

@@ -39,7 +39,7 @@ namespace Core {
 bool BinaryToC( const char * _SourceFile, const char * _DestFile, const char * _SymName, bool _EncodeBase85 )
 {
     AFileStream source, dest;
-
+    
     if ( !source.OpenRead( _SourceFile ) ) {
         GLogger.Printf( "Failed to open %s\n", _SourceFile );
         return false;

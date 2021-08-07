@@ -2273,7 +2273,7 @@ bool AAssetImporter::ImportSkybox( SAssetImportSettings const & _Settings ) {
         // TODO: Convert to 16F
     } else {
         for ( int i = 0 ; i < 6 ; i++ ) {
-            if ( !cubeFaces[i].Load( _Settings.ExplicitSkyboxFaces[i], nullptr, IMAGE_PF_BGR_GAMMA2 ) ) {
+            if ( !cubeFaces[i].Load( _Settings.ExplicitSkyboxFaces[i], nullptr, IMAGE_PF_BGRA_GAMMA2 ) ) {
                 return false;
             }
         }

@@ -151,7 +151,7 @@ AAudioDevice::AAudioDevice( int InSampleRate )
     NumFrames = Samples >> ( Channels - 1 );
     TransferBufferSizeInBytes = Samples * (SampleBits / 8);
     pTransferBuffer = (uint8_t *)GHeapMemory.Alloc( TransferBufferSizeInBytes );
-    Core::MemsetSSE( pTransferBuffer, SampleBits == 8 && !bSigned8 ? 0x80 : 0, TransferBufferSizeInBytes );
+    Core::Memset( pTransferBuffer, SampleBits == 8 && !bSigned8 ? 0x80 : 0, TransferBufferSizeInBytes );
     TransferOffset = 0;
     PrevTransferOffset = 0;
     BufferWraps = 0;
@@ -264,6 +264,6 @@ void AAudioDevice::UnblockSound()
 void AAudioDevice::ClearBuffer()
 {
     MapTransferBuffer();
-    Core::MemsetSSE( pTransferBuffer, SampleBits == 8 && !bSigned8 ? 0x80 : 0, TransferBufferSizeInBytes );
+    Core::Memset( pTransferBuffer, SampleBits == 8 && !bSigned8 ? 0x80 : 0, TransferBufferSizeInBytes );
     UnmapTransferBuffer();
 }

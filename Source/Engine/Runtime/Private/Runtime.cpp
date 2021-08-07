@@ -73,13 +73,11 @@ static int TotalAllocatedRenderCore = 0;
 static SDL_Window * WindowHandle;
 static TRef< AGPUSync > GPUSync;
 
-static int PressedKeys[KEY_LAST+1];
-static bool PressedMouseButtons[MOUSE_BUTTON_8+1];
-static unsigned char JoystickButtonState[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_BUTTONS ];
-static short JoystickAxisState[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
-static bool JoystickAdded[ MAX_JOYSTICKS_COUNT ];
-
-static void InitKeyMappingsSDL();
+static TArray< int, KEY_LAST+1 > PressedKeys;
+static TArray< bool, MOUSE_BUTTON_8+1 > PressedMouseButtons;
+static TArray< TArray< unsigned char, MAX_JOYSTICK_BUTTONS >, MAX_JOYSTICKS_COUNT > JoystickButtonState;
+static TArray< TArray< short, MAX_JOYSTICK_AXES >, MAX_JOYSTICKS_COUNT > JoystickAxisState;
+static TArray< bool, MAX_JOYSTICKS_COUNT > JoystickAdded;
 
 static SDL_Window * CreateGenericWindow( SVideoMode const & _VideoMode );
 static void DestroyGenericWindow( SDL_Window * Window );
@@ -144,13 +142,11 @@ ARuntime::ARuntime( struct SEntryDecl const & _EntryDecl )
     GRenderFrontendJobList = GAsyncJobManager.GetAsyncJobList( RENDER_FRONTEND_JOB_LIST );
     GRenderBackendJobList = GAsyncJobManager.GetAsyncJobList( RENDER_BACKEND_JOB_LIST );
 
-    InitKeyMappingsSDL();
-
-    Core::ZeroMem( PressedKeys, sizeof( PressedKeys ) );
-    Core::ZeroMem( PressedMouseButtons, sizeof( PressedMouseButtons ) );
-    Core::ZeroMem( JoystickButtonState, sizeof( JoystickButtonState ) );
-    Core::ZeroMem( JoystickAxisState, sizeof( JoystickAxisState ) );
-    Core::ZeroMem( JoystickAdded, sizeof( JoystickAdded ) );
+    Core::ZeroMem( PressedKeys.ToPtr(), sizeof( PressedKeys ) );
+    Core::ZeroMem( PressedMouseButtons.ToPtr(), sizeof( PressedMouseButtons ) );
+    Core::ZeroMem( JoystickButtonState.ToPtr(), sizeof( JoystickButtonState ) );
+    Core::ZeroMem( JoystickAxisState.ToPtr(), sizeof( JoystickAxisState ) );
+    Core::ZeroMem( JoystickAdded.ToPtr(), sizeof( JoystickAdded ) );
 
     LoadConfigFile();
 
@@ -252,9 +248,9 @@ void ARuntime::LoadConfigFile()
 
         data.FromFile( f );
 
-        ARuntimeCommandProcessor cmdProcessor;
+        StdUniquePtr<ARuntimeCommandProcessor> cmdProcessor = StdMakeUnique<ARuntimeCommandProcessor>();
 
-        cmdProcessor.Add( data.CStr() );
+        cmdProcessor->Add( data.CStr() );
 
         class CommandContext : public IRuntimeCommandContext {
         public:
@@ -275,7 +271,7 @@ void ARuntime::LoadConfigFile()
 
         CommandContext context;
 
-        cmdProcessor.Execute( context );
+        cmdProcessor->Execute( context );
     }
 }
 
@@ -520,264 +516,135 @@ bool ARuntime::IsPendingTerminate()
 
 #define FROM_SDL_TIMESTAMP(event) ( (event).timestamp * 0.001 )
 
-struct SKeyMappingsSDL {
-    unsigned short & operator[]( const int i ) {
-        AN_ASSERT( i >= 0 && i < SDL_NUM_SCANCODES );
-        return Table[i];
-    }
+struct SKeyMappingsSDL : public TArray<unsigned short, SDL_NUM_SCANCODES>
+{
+    SKeyMappingsSDL()
+    {
+        SKeyMappingsSDL & self = *this;
 
-    unsigned short Table[SDL_NUM_SCANCODES];
+        Core::ZeroMem( ToPtr(), sizeof(*this) );
+
+        self[SDL_SCANCODE_A]            = KEY_A;
+        self[SDL_SCANCODE_B]            = KEY_B;
+        self[SDL_SCANCODE_C]            = KEY_C;
+        self[SDL_SCANCODE_D]            = KEY_D;
+        self[SDL_SCANCODE_E]            = KEY_E;
+        self[SDL_SCANCODE_F]            = KEY_F;
+        self[SDL_SCANCODE_G]            = KEY_G;
+        self[SDL_SCANCODE_H]            = KEY_H;
+        self[SDL_SCANCODE_I]            = KEY_I;
+        self[SDL_SCANCODE_J]            = KEY_J;
+        self[SDL_SCANCODE_K]            = KEY_K;
+        self[SDL_SCANCODE_L]            = KEY_L;
+        self[SDL_SCANCODE_M]            = KEY_M;
+        self[SDL_SCANCODE_N]            = KEY_N;
+        self[SDL_SCANCODE_O]            = KEY_O;
+        self[SDL_SCANCODE_P]            = KEY_P;
+        self[SDL_SCANCODE_Q]            = KEY_Q;
+        self[SDL_SCANCODE_R]            = KEY_R;
+        self[SDL_SCANCODE_S]            = KEY_S;
+        self[SDL_SCANCODE_T]            = KEY_T;
+        self[SDL_SCANCODE_U]            = KEY_U;
+        self[SDL_SCANCODE_V]            = KEY_V;
+        self[SDL_SCANCODE_W]            = KEY_W;
+        self[SDL_SCANCODE_X]            = KEY_X;
+        self[SDL_SCANCODE_Y]            = KEY_Y;
+        self[SDL_SCANCODE_Z]            = KEY_Z;
+        self[SDL_SCANCODE_1]            = KEY_1;
+        self[SDL_SCANCODE_2]            = KEY_2;
+        self[SDL_SCANCODE_3]            = KEY_3;
+        self[SDL_SCANCODE_4]            = KEY_4;
+        self[SDL_SCANCODE_5]            = KEY_5;
+        self[SDL_SCANCODE_6]            = KEY_6;
+        self[SDL_SCANCODE_7]            = KEY_7;
+        self[SDL_SCANCODE_8]            = KEY_8;
+        self[SDL_SCANCODE_9]            = KEY_9;
+        self[SDL_SCANCODE_0]            = KEY_0;
+        self[SDL_SCANCODE_RETURN]       = KEY_ENTER;
+        self[SDL_SCANCODE_ESCAPE]       = KEY_ESCAPE;
+        self[SDL_SCANCODE_BACKSPACE]    = KEY_BACKSPACE;
+        self[SDL_SCANCODE_TAB]          = KEY_TAB;
+        self[SDL_SCANCODE_SPACE]        = KEY_SPACE;
+        self[SDL_SCANCODE_MINUS]        = KEY_MINUS;
+        self[SDL_SCANCODE_EQUALS]       = KEY_EQUAL;
+        self[SDL_SCANCODE_LEFTBRACKET]  = KEY_LEFT_BRACKET;
+        self[SDL_SCANCODE_RIGHTBRACKET] = KEY_RIGHT_BRACKET;
+        self[SDL_SCANCODE_BACKSLASH]    = KEY_BACKSLASH;
+        self[SDL_SCANCODE_SEMICOLON]    = KEY_SEMICOLON;
+        self[SDL_SCANCODE_APOSTROPHE]   = KEY_APOSTROPHE;
+        self[SDL_SCANCODE_GRAVE]        = KEY_GRAVE_ACCENT;
+        self[SDL_SCANCODE_COMMA]        = KEY_COMMA;
+        self[SDL_SCANCODE_PERIOD]       = KEY_PERIOD;
+        self[SDL_SCANCODE_SLASH]        = KEY_SLASH;
+        self[SDL_SCANCODE_CAPSLOCK]     = KEY_CAPS_LOCK;
+        self[SDL_SCANCODE_F1]           = KEY_F1;
+        self[SDL_SCANCODE_F2]           = KEY_F2;
+        self[SDL_SCANCODE_F3]           = KEY_F3;
+        self[SDL_SCANCODE_F4]           = KEY_F4;
+        self[SDL_SCANCODE_F5]           = KEY_F5;
+        self[SDL_SCANCODE_F6]           = KEY_F6;
+        self[SDL_SCANCODE_F7]           = KEY_F7;
+        self[SDL_SCANCODE_F8]           = KEY_F8;
+        self[SDL_SCANCODE_F9]           = KEY_F9;
+        self[SDL_SCANCODE_F10]          = KEY_F10;
+        self[SDL_SCANCODE_F11]          = KEY_F11;
+        self[SDL_SCANCODE_F12]          = KEY_F12;
+        self[SDL_SCANCODE_PRINTSCREEN]  = KEY_PRINT_SCREEN;
+        self[SDL_SCANCODE_SCROLLLOCK]   = KEY_SCROLL_LOCK;
+        self[SDL_SCANCODE_PAUSE]        = KEY_PAUSE;
+        self[SDL_SCANCODE_INSERT]       = KEY_INSERT;
+        self[SDL_SCANCODE_HOME]         = KEY_HOME;
+        self[SDL_SCANCODE_PAGEUP]       = KEY_PAGE_UP;
+        self[SDL_SCANCODE_DELETE]       = KEY_DELETE;
+        self[SDL_SCANCODE_END]          = KEY_END;
+        self[SDL_SCANCODE_PAGEDOWN]     = KEY_PAGE_DOWN;
+        self[SDL_SCANCODE_RIGHT]        = KEY_RIGHT;
+        self[SDL_SCANCODE_LEFT]         = KEY_LEFT;
+        self[SDL_SCANCODE_DOWN]         = KEY_DOWN;
+        self[SDL_SCANCODE_UP]           = KEY_UP;
+        self[SDL_SCANCODE_NUMLOCKCLEAR] = KEY_NUM_LOCK;
+        self[SDL_SCANCODE_KP_DIVIDE]    = KEY_KP_DIVIDE;
+        self[SDL_SCANCODE_KP_MULTIPLY]  = KEY_KP_MULTIPLY;
+        self[SDL_SCANCODE_KP_MINUS]     = KEY_KP_SUBTRACT;
+        self[SDL_SCANCODE_KP_PLUS]      = KEY_KP_ADD;
+        self[SDL_SCANCODE_KP_ENTER]     = KEY_KP_ENTER;
+        self[SDL_SCANCODE_KP_1]         = KEY_KP_1;
+        self[SDL_SCANCODE_KP_2]         = KEY_KP_2;
+        self[SDL_SCANCODE_KP_3]         = KEY_KP_3;
+        self[SDL_SCANCODE_KP_4]         = KEY_KP_4;
+        self[SDL_SCANCODE_KP_5]         = KEY_KP_5;
+        self[SDL_SCANCODE_KP_6]         = KEY_KP_6;
+        self[SDL_SCANCODE_KP_7]         = KEY_KP_7;
+        self[SDL_SCANCODE_KP_8]         = KEY_KP_8;
+        self[SDL_SCANCODE_KP_9]         = KEY_KP_9;
+        self[SDL_SCANCODE_KP_0]         = KEY_KP_0;
+        self[SDL_SCANCODE_KP_PERIOD]    = KEY_KP_DECIMAL;
+        self[SDL_SCANCODE_KP_EQUALS]    = KEY_KP_EQUAL;
+        self[SDL_SCANCODE_F13]          = KEY_F13;
+        self[SDL_SCANCODE_F14]          = KEY_F14;
+        self[SDL_SCANCODE_F15]          = KEY_F15;
+        self[SDL_SCANCODE_F16]          = KEY_F16;
+        self[SDL_SCANCODE_F17]          = KEY_F17;
+        self[SDL_SCANCODE_F18]          = KEY_F18;
+        self[SDL_SCANCODE_F19]          = KEY_F19;
+        self[SDL_SCANCODE_F20]          = KEY_F20;
+        self[SDL_SCANCODE_F21]          = KEY_F21;
+        self[SDL_SCANCODE_F22]          = KEY_F22;
+        self[SDL_SCANCODE_F23]          = KEY_F23;
+        self[SDL_SCANCODE_F24]          = KEY_F24;
+        self[SDL_SCANCODE_MENU]         = KEY_MENU;
+        self[SDL_SCANCODE_LCTRL]        = KEY_LEFT_CONTROL;
+        self[SDL_SCANCODE_LSHIFT]       = KEY_LEFT_SHIFT;
+        self[SDL_SCANCODE_LALT]         = KEY_LEFT_ALT;
+        self[SDL_SCANCODE_LGUI]         = KEY_LEFT_SUPER;
+        self[SDL_SCANCODE_RCTRL]        = KEY_RIGHT_CONTROL;
+        self[SDL_SCANCODE_RSHIFT]       = KEY_RIGHT_SHIFT;
+        self[SDL_SCANCODE_RALT]         = KEY_RIGHT_ALT;
+        self[SDL_SCANCODE_RGUI]         = KEY_RIGHT_SUPER;
+    }
 };
 
-static SKeyMappingsSDL SDLKeyMappings;
-
-static void InitKeyMappingsSDL()
-{
-    Core::ZeroMem( SDLKeyMappings.Table, sizeof( SDLKeyMappings.Table ) );
-
-    SDLKeyMappings[ SDL_SCANCODE_A ] = KEY_A;
-    SDLKeyMappings[ SDL_SCANCODE_B ] = KEY_B;
-    SDLKeyMappings[ SDL_SCANCODE_C ] = KEY_C;
-    SDLKeyMappings[ SDL_SCANCODE_D ] = KEY_D;
-    SDLKeyMappings[ SDL_SCANCODE_E ] = KEY_E;
-    SDLKeyMappings[ SDL_SCANCODE_F ] = KEY_F;
-    SDLKeyMappings[ SDL_SCANCODE_G ] = KEY_G;
-    SDLKeyMappings[ SDL_SCANCODE_H ] = KEY_H;
-    SDLKeyMappings[ SDL_SCANCODE_I ] = KEY_I;
-    SDLKeyMappings[ SDL_SCANCODE_J ] = KEY_J;
-    SDLKeyMappings[ SDL_SCANCODE_K ] = KEY_K;
-    SDLKeyMappings[ SDL_SCANCODE_L ] = KEY_L;
-    SDLKeyMappings[ SDL_SCANCODE_M ] = KEY_M;
-    SDLKeyMappings[ SDL_SCANCODE_N ] = KEY_N;
-    SDLKeyMappings[ SDL_SCANCODE_O ] = KEY_O;
-    SDLKeyMappings[ SDL_SCANCODE_P ] = KEY_P;
-    SDLKeyMappings[ SDL_SCANCODE_Q ] = KEY_Q;
-    SDLKeyMappings[ SDL_SCANCODE_R ] = KEY_R;
-    SDLKeyMappings[ SDL_SCANCODE_S ] = KEY_S;
-    SDLKeyMappings[ SDL_SCANCODE_T ] = KEY_T;
-    SDLKeyMappings[ SDL_SCANCODE_U ] = KEY_U;
-    SDLKeyMappings[ SDL_SCANCODE_V ] = KEY_V;
-    SDLKeyMappings[ SDL_SCANCODE_W ] = KEY_W;
-    SDLKeyMappings[ SDL_SCANCODE_X ] = KEY_X;
-    SDLKeyMappings[ SDL_SCANCODE_Y ] = KEY_Y;
-    SDLKeyMappings[ SDL_SCANCODE_Z ] = KEY_Z;
-    SDLKeyMappings[ SDL_SCANCODE_1 ] = KEY_1;
-    SDLKeyMappings[ SDL_SCANCODE_2 ] = KEY_2;
-    SDLKeyMappings[ SDL_SCANCODE_3 ] = KEY_3;
-    SDLKeyMappings[ SDL_SCANCODE_4 ] = KEY_4;
-    SDLKeyMappings[ SDL_SCANCODE_5 ] = KEY_5;
-    SDLKeyMappings[ SDL_SCANCODE_6 ] = KEY_6;
-    SDLKeyMappings[ SDL_SCANCODE_7 ] = KEY_7;
-    SDLKeyMappings[ SDL_SCANCODE_8 ] = KEY_8;
-    SDLKeyMappings[ SDL_SCANCODE_9 ] = KEY_9;
-    SDLKeyMappings[ SDL_SCANCODE_0 ] = KEY_0;
-    SDLKeyMappings[ SDL_SCANCODE_RETURN ] = KEY_ENTER;
-    SDLKeyMappings[ SDL_SCANCODE_ESCAPE ] = KEY_ESCAPE;
-    SDLKeyMappings[ SDL_SCANCODE_BACKSPACE ] = KEY_BACKSPACE;
-    SDLKeyMappings[ SDL_SCANCODE_TAB ] = KEY_TAB;
-    SDLKeyMappings[ SDL_SCANCODE_SPACE ] = KEY_SPACE;
-    SDLKeyMappings[ SDL_SCANCODE_MINUS ] = KEY_MINUS;
-    SDLKeyMappings[ SDL_SCANCODE_EQUALS ] = KEY_EQUAL;
-    SDLKeyMappings[ SDL_SCANCODE_LEFTBRACKET ] = KEY_LEFT_BRACKET;
-    SDLKeyMappings[ SDL_SCANCODE_RIGHTBRACKET ] = KEY_RIGHT_BRACKET;
-    SDLKeyMappings[ SDL_SCANCODE_BACKSLASH ] = KEY_BACKSLASH;
-    //SDLKeyMappings[ SDL_SCANCODE_NONUSHASH ] = 50;
-    SDLKeyMappings[ SDL_SCANCODE_SEMICOLON ] = KEY_SEMICOLON;
-    SDLKeyMappings[ SDL_SCANCODE_APOSTROPHE ] = KEY_APOSTROPHE;
-    SDLKeyMappings[ SDL_SCANCODE_GRAVE ] = KEY_GRAVE_ACCENT;
-    SDLKeyMappings[ SDL_SCANCODE_COMMA ] = KEY_COMMA;
-    SDLKeyMappings[ SDL_SCANCODE_PERIOD ] = KEY_PERIOD;
-    SDLKeyMappings[ SDL_SCANCODE_SLASH ] = KEY_SLASH;
-    SDLKeyMappings[ SDL_SCANCODE_CAPSLOCK ] = KEY_CAPS_LOCK;
-    SDLKeyMappings[ SDL_SCANCODE_F1 ] = KEY_F1;
-    SDLKeyMappings[ SDL_SCANCODE_F2 ] = KEY_F2;
-    SDLKeyMappings[ SDL_SCANCODE_F3 ] = KEY_F3;
-    SDLKeyMappings[ SDL_SCANCODE_F4 ] = KEY_F4;
-    SDLKeyMappings[ SDL_SCANCODE_F5 ] = KEY_F5;
-    SDLKeyMappings[ SDL_SCANCODE_F6 ] = KEY_F6;
-    SDLKeyMappings[ SDL_SCANCODE_F7 ] = KEY_F7;
-    SDLKeyMappings[ SDL_SCANCODE_F8 ] = KEY_F8;
-    SDLKeyMappings[ SDL_SCANCODE_F9 ] = KEY_F9;
-    SDLKeyMappings[ SDL_SCANCODE_F10 ] = KEY_F10;
-    SDLKeyMappings[ SDL_SCANCODE_F11 ] = KEY_F11;
-    SDLKeyMappings[ SDL_SCANCODE_F12 ] = KEY_F12;
-    SDLKeyMappings[ SDL_SCANCODE_PRINTSCREEN ] = KEY_PRINT_SCREEN;
-    SDLKeyMappings[ SDL_SCANCODE_SCROLLLOCK ] = KEY_SCROLL_LOCK;
-    SDLKeyMappings[ SDL_SCANCODE_PAUSE ] = KEY_PAUSE;
-    SDLKeyMappings[ SDL_SCANCODE_INSERT ] = KEY_INSERT;
-    SDLKeyMappings[ SDL_SCANCODE_HOME ] = KEY_HOME;
-    SDLKeyMappings[ SDL_SCANCODE_PAGEUP ] = KEY_PAGE_UP;
-    SDLKeyMappings[ SDL_SCANCODE_DELETE ] = KEY_DELETE;
-    SDLKeyMappings[ SDL_SCANCODE_END ] = KEY_END;
-    SDLKeyMappings[ SDL_SCANCODE_PAGEDOWN ] = KEY_PAGE_DOWN;
-    SDLKeyMappings[ SDL_SCANCODE_RIGHT ] = KEY_RIGHT;
-    SDLKeyMappings[ SDL_SCANCODE_LEFT ] = KEY_LEFT;
-    SDLKeyMappings[ SDL_SCANCODE_DOWN ] = KEY_DOWN;
-    SDLKeyMappings[ SDL_SCANCODE_UP ] = KEY_UP;
-    SDLKeyMappings[ SDL_SCANCODE_NUMLOCKCLEAR ] = KEY_NUM_LOCK;
-    SDLKeyMappings[ SDL_SCANCODE_KP_DIVIDE ] = KEY_KP_DIVIDE;
-    SDLKeyMappings[ SDL_SCANCODE_KP_MULTIPLY ] = KEY_KP_MULTIPLY;
-    SDLKeyMappings[ SDL_SCANCODE_KP_MINUS ] = KEY_KP_SUBTRACT;
-    SDLKeyMappings[ SDL_SCANCODE_KP_PLUS ] = KEY_KP_ADD;
-    SDLKeyMappings[ SDL_SCANCODE_KP_ENTER ] = KEY_KP_ENTER;
-    SDLKeyMappings[ SDL_SCANCODE_KP_1 ] = KEY_KP_1;
-    SDLKeyMappings[ SDL_SCANCODE_KP_2 ] = KEY_KP_2;
-    SDLKeyMappings[ SDL_SCANCODE_KP_3 ] = KEY_KP_3;
-    SDLKeyMappings[ SDL_SCANCODE_KP_4 ] = KEY_KP_4;
-    SDLKeyMappings[ SDL_SCANCODE_KP_5 ] = KEY_KP_5;
-    SDLKeyMappings[ SDL_SCANCODE_KP_6 ] = KEY_KP_6;
-    SDLKeyMappings[ SDL_SCANCODE_KP_7 ] = KEY_KP_7;
-    SDLKeyMappings[ SDL_SCANCODE_KP_8 ] = KEY_KP_8;
-    SDLKeyMappings[ SDL_SCANCODE_KP_9 ] = KEY_KP_9;
-    SDLKeyMappings[ SDL_SCANCODE_KP_0 ] = KEY_KP_0;
-    SDLKeyMappings[ SDL_SCANCODE_KP_PERIOD ] = KEY_KP_DECIMAL;
-    //SDLKeyMappings[ SDL_SCANCODE_NONUSBACKSLASH ] = 100;
-    //SDLKeyMappings[ SDL_SCANCODE_APPLICATION ] = 101;
-    //SDLKeyMappings[ SDL_SCANCODE_POWER ] = 102;
-    SDLKeyMappings[ SDL_SCANCODE_KP_EQUALS ] = KEY_KP_EQUAL;
-    SDLKeyMappings[ SDL_SCANCODE_F13 ] = KEY_F13;
-    SDLKeyMappings[ SDL_SCANCODE_F14 ] = KEY_F14;
-    SDLKeyMappings[ SDL_SCANCODE_F15 ] = KEY_F15;
-    SDLKeyMappings[ SDL_SCANCODE_F16 ] = KEY_F16;
-    SDLKeyMappings[ SDL_SCANCODE_F17 ] = KEY_F17;
-    SDLKeyMappings[ SDL_SCANCODE_F18 ] = KEY_F18;
-    SDLKeyMappings[ SDL_SCANCODE_F19 ] = KEY_F19;
-    SDLKeyMappings[ SDL_SCANCODE_F20 ] = KEY_F20;
-    SDLKeyMappings[ SDL_SCANCODE_F21 ] = KEY_F21;
-    SDLKeyMappings[ SDL_SCANCODE_F22 ] = KEY_F22;
-    SDLKeyMappings[ SDL_SCANCODE_F23 ] = KEY_F23;
-    SDLKeyMappings[ SDL_SCANCODE_F24 ] = KEY_F24;
-    //SDLKeyMappings[ SDL_SCANCODE_EXECUTE ] = 116;
-    //SDLKeyMappings[ SDL_SCANCODE_HELP ] = 117;
-    SDLKeyMappings[ SDL_SCANCODE_MENU ] = KEY_MENU;
-    //SDLKeyMappings[ SDL_SCANCODE_SELECT ] = 119;
-    //SDLKeyMappings[ SDL_SCANCODE_STOP ] = 120;
-    //SDLKeyMappings[ SDL_SCANCODE_AGAIN ] = 121;   /**< redo */
-    //SDLKeyMappings[ SDL_SCANCODE_UNDO ] = 122;
-    //SDLKeyMappings[ SDL_SCANCODE_CUT ] = 123;
-    //SDLKeyMappings[ SDL_SCANCODE_COPY ] = 124;
-    //SDLKeyMappings[ SDL_SCANCODE_PASTE ] = 125;
-    //SDLKeyMappings[ SDL_SCANCODE_FIND ] = 126;
-    //SDLKeyMappings[ SDL_SCANCODE_MUTE ] = 127;
-    //SDLKeyMappings[ SDL_SCANCODE_VOLUMEUP ] = 128;
-    //SDLKeyMappings[ SDL_SCANCODE_VOLUMEDOWN ] = 129;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_COMMA ] = 133;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_EQUALSAS400 ] = 134;
-    //SDLKeyMappings[ SDL_SCANCODE_INTERNATIONAL1 ] = 135;
-    //SDLKeyMappings[ SDL_SCANCODE_INTERNATIONAL2 ] = 136;
-    //SDLKeyMappings[ SDL_SCANCODE_INTERNATIONAL3 ] = 137; /**< Yen */
-    //SDLKeyMappings[ SDL_SCANCODE_INTERNATIONAL4 ] = 138;
-    //SDLKeyMappings[ SDL_SCANCODE_INTERNATIONAL5 ] = 139;
-    //SDLKeyMappings[ SDL_SCANCODE_INTERNATIONAL6 ] = 140;
-    //SDLKeyMappings[ SDL_SCANCODE_INTERNATIONAL7 ] = 141;
-    //SDLKeyMappings[ SDL_SCANCODE_INTERNATIONAL8 ] = 142;
-    //SDLKeyMappings[ SDL_SCANCODE_INTERNATIONAL9 ] = 143;
-    //SDLKeyMappings[ SDL_SCANCODE_LANG1 ] = 144; /**< Hangul/English toggle */
-    //SDLKeyMappings[ SDL_SCANCODE_LANG2 ] = 145; /**< Hanja conversion */
-    //SDLKeyMappings[ SDL_SCANCODE_LANG3 ] = 146; /**< Katakana */
-    //SDLKeyMappings[ SDL_SCANCODE_LANG4 ] = 147; /**< Hiragana */
-    //SDLKeyMappings[ SDL_SCANCODE_LANG5 ] = 148; /**< Zenkaku/Hankaku */
-    //SDLKeyMappings[ SDL_SCANCODE_LANG6 ] = 149; /**< reserved */
-    //SDLKeyMappings[ SDL_SCANCODE_LANG7 ] = 150; /**< reserved */
-    //SDLKeyMappings[ SDL_SCANCODE_LANG8 ] = 151; /**< reserved */
-    //SDLKeyMappings[ SDL_SCANCODE_LANG9 ] = 152; /**< reserved */
-    //SDLKeyMappings[ SDL_SCANCODE_ALTERASE ] = 153; /**< Erase-Eaze */
-    //SDLKeyMappings[ SDL_SCANCODE_SYSREQ ] = 154;
-    //SDLKeyMappings[ SDL_SCANCODE_CANCEL ] = 155;
-    //SDLKeyMappings[ SDL_SCANCODE_CLEAR ] = 156;
-    //SDLKeyMappings[ SDL_SCANCODE_PRIOR ] = 157;
-    //SDLKeyMappings[ SDL_SCANCODE_RETURN2 ] = 158;
-    //SDLKeyMappings[ SDL_SCANCODE_SEPARATOR ] = 159;
-    //SDLKeyMappings[ SDL_SCANCODE_OUT ] = 160;
-    //SDLKeyMappings[ SDL_SCANCODE_OPER ] = 161;
-    //SDLKeyMappings[ SDL_SCANCODE_CLEARAGAIN ] = 162;
-    //SDLKeyMappings[ SDL_SCANCODE_CRSEL ] = 163;
-    //SDLKeyMappings[ SDL_SCANCODE_EXSEL ] = 164;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_00 ] = 176;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_000 ] = 177;
-    //SDLKeyMappings[ SDL_SCANCODE_THOUSANDSSEPARATOR ] = 178;
-    //SDLKeyMappings[ SDL_SCANCODE_DECIMALSEPARATOR ] = 179;
-    //SDLKeyMappings[ SDL_SCANCODE_CURRENCYUNIT ] = 180;
-    //SDLKeyMappings[ SDL_SCANCODE_CURRENCYSUBUNIT ] = 181;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_LEFTPAREN ] = 182;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_RIGHTPAREN ] = 183;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_LEFTBRACE ] = 184;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_RIGHTBRACE ] = 185;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_TAB ] = 186;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_BACKSPACE ] = 187;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_A ] = 188;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_B ] = 189;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_C ] = 190;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_D ] = 191;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_E ] = 192;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_F ] = 193;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_XOR ] = 194;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_POWER ] = 195;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_PERCENT ] = 196;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_LESS ] = 197;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_GREATER ] = 198;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_AMPERSAND ] = 199;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_DBLAMPERSAND ] = 200;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_VERTICALBAR ] = 201;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_DBLVERTICALBAR ] = 202;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_COLON ] = 203;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_HASH ] = 204;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_SPACE ] = 205;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_AT ] = 206;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_EXCLAM ] = 207;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_MEMSTORE ] = 208;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_MEMRECALL ] = 209;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_MEMCLEAR ] = 210;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_MEMADD ] = 211;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_MEMSUBTRACT ] = 212;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_MEMMULTIPLY ] = 213;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_MEMDIVIDE ] = 214;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_PLUSMINUS ] = 215;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_CLEAR ] = 216;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_CLEARENTRY ] = 217;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_BINARY ] = 218;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_OCTAL ] = 219;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_DECIMAL ] = 220;
-    //SDLKeyMappings[ SDL_SCANCODE_KP_HEXADECIMAL ] = 221;
-    SDLKeyMappings[ SDL_SCANCODE_LCTRL ] = KEY_LEFT_CONTROL;
-    SDLKeyMappings[ SDL_SCANCODE_LSHIFT ] = KEY_LEFT_SHIFT;
-    SDLKeyMappings[ SDL_SCANCODE_LALT ] = KEY_LEFT_ALT;
-    SDLKeyMappings[ SDL_SCANCODE_LGUI ] = KEY_LEFT_SUPER;
-    SDLKeyMappings[ SDL_SCANCODE_RCTRL ] = KEY_RIGHT_CONTROL;
-    SDLKeyMappings[ SDL_SCANCODE_RSHIFT ] = KEY_RIGHT_SHIFT;
-    SDLKeyMappings[ SDL_SCANCODE_RALT ] = KEY_RIGHT_ALT;
-    SDLKeyMappings[ SDL_SCANCODE_RGUI ] = KEY_RIGHT_SUPER;
-    //SDLKeyMappings[ SDL_SCANCODE_MODE ] = 257;
-    //SDLKeyMappings[ SDL_SCANCODE_AUDIONEXT ] = 258;
-    //SDLKeyMappings[ SDL_SCANCODE_AUDIOPREV ] = 259;
-    //SDLKeyMappings[ SDL_SCANCODE_AUDIOSTOP ] = 260;
-    //SDLKeyMappings[ SDL_SCANCODE_AUDIOPLAY ] = 261;
-    //SDLKeyMappings[ SDL_SCANCODE_AUDIOMUTE ] = 262;
-    //SDLKeyMappings[ SDL_SCANCODE_MEDIASELECT ] = 263;
-    //SDLKeyMappings[ SDL_SCANCODE_WWW ] = 264;
-    //SDLKeyMappings[ SDL_SCANCODE_MAIL ] = 265;
-    //SDLKeyMappings[ SDL_SCANCODE_CALCULATOR ] = 266;
-    //SDLKeyMappings[ SDL_SCANCODE_COMPUTER ] = 267;
-    //SDLKeyMappings[ SDL_SCANCODE_AC_SEARCH ] = 268;
-    //SDLKeyMappings[ SDL_SCANCODE_AC_HOME ] = 269;
-    //SDLKeyMappings[ SDL_SCANCODE_AC_BACK ] = 270;
-    //SDLKeyMappings[ SDL_SCANCODE_AC_FORWARD ] = 271;
-    //SDLKeyMappings[ SDL_SCANCODE_AC_STOP ] = 272;
-    //SDLKeyMappings[ SDL_SCANCODE_AC_REFRESH ] = 273;
-    //SDLKeyMappings[ SDL_SCANCODE_AC_BOOKMARKS ] = 274;
-    //SDLKeyMappings[ SDL_SCANCODE_BRIGHTNESSDOWN ] = 275;
-    //SDLKeyMappings[ SDL_SCANCODE_BRIGHTNESSUP ] = 276;
-    //SDLKeyMappings[ SDL_SCANCODE_DISPLAYSWITCH ] = 277; 
-    //SDLKeyMappings[ SDL_SCANCODE_KBDILLUMTOGGLE ] = 278;
-    //SDLKeyMappings[ SDL_SCANCODE_KBDILLUMDOWN ] = 279;
-    //SDLKeyMappings[ SDL_SCANCODE_KBDILLUMUP ] = 280;
-    //SDLKeyMappings[ SDL_SCANCODE_EJECT ] = 281;
-    //SDLKeyMappings[ SDL_SCANCODE_SLEEP ] = 282;
-    //SDLKeyMappings[ SDL_SCANCODE_APP1 ] = 283;
-    //SDLKeyMappings[ SDL_SCANCODE_APP2 ] = 284;
-    //SDLKeyMappings[ SDL_SCANCODE_AUDIOREWIND ] = 285;
-    //SDLKeyMappings[ SDL_SCANCODE_AUDIOFASTFORWARD ] = 286;
-}
+static const SKeyMappingsSDL SDLKeyMappings;
 
 static AN_FORCEINLINE int FromKeymodSDL( Uint16 Mod )
 {
@@ -1323,8 +1190,8 @@ void ARuntime::PollEvents()
                 AN_ASSERT( !JoystickAdded[event.jdevice.which] );
                 JoystickAdded[event.jdevice.which] = true;
 
-                Core::ZeroMem( JoystickButtonState[event.jdevice.which], sizeof( JoystickButtonState[0] ) );
-                Core::ZeroMem( JoystickAxisState[event.jdevice.which], sizeof( JoystickAxisState[0] ) );
+                Core::ZeroMem( JoystickButtonState[event.jdevice.which].ToPtr(), sizeof( JoystickButtonState[0] ) );
+                Core::ZeroMem( JoystickAxisState[event.jdevice.which].ToPtr(), sizeof( JoystickAxisState[0] ) );
             } else {
                 AN_ASSERT_( 0, "Invalid joystick id" );
             }
@@ -1443,168 +1310,11 @@ void ARuntime::PollEvents()
     }
 }
 
-void ARuntime::GetDisplays( TPodVector< SDisplayInfo > & Displays )
-{
-    SDL_Rect rect;
-    int displayCount = SDL_GetNumVideoDisplays();
-
-    Displays.ResizeInvalidate( displayCount );
-
-    for ( int i = 0 ; i < displayCount ; i++ ) {
-        SDisplayInfo & d = Displays[i];
-
-        d.Id = i;
-        d.Name = SDL_GetDisplayName( i );
-
-        SDL_GetDisplayBounds( i, &rect );
-
-        d.DisplayX = rect.x;
-        d.DisplayY = rect.y;
-        d.DisplayW = rect.w;
-        d.DisplayH = rect.h;
-
-        SDL_GetDisplayUsableBounds( i, &rect );
-
-        d.DisplayUsableX = rect.x;
-        d.DisplayUsableY = rect.y;
-        d.DisplayUsableW = rect.w;
-        d.DisplayUsableH = rect.h;
-
-        d.Orientation = (EDisplayOrient)SDL_GetDisplayOrientation( i );
-
-        SDL_GetDisplayDPI( i, &d.ddpi, &d.hdpi, &d.vdpi );
-    }
-}
-
-void ARuntime::GetDisplayModes( SDisplayInfo const & Display, TPodVector< SDisplayMode > & Modes )
-{
-    SDL_DisplayMode modeSDL;
-
-    int numModes = SDL_GetNumDisplayModes( Display.Id );
-
-    Modes.Clear();
-    for ( int i = 0 ; i < numModes ; i++ ) {
-        SDL_GetDisplayMode( Display.Id, i, &modeSDL );
-
-        if ( modeSDL.format == SDL_PIXELFORMAT_RGB888 ) {
-            SDisplayMode & mode = Modes.Append();
-
-            mode.Width = modeSDL.w;
-            mode.Height = modeSDL.h;
-            mode.RefreshRate = modeSDL.refresh_rate;
-        }
-    }
-}
-
-void ARuntime::GetDesktopDisplayMode( SDisplayInfo const & Display, SDisplayMode & Mode )
-{
-    SDL_DisplayMode modeSDL;
-    SDL_GetDesktopDisplayMode( Display.Id, &modeSDL );
-
-    Mode.Width = modeSDL.w;
-    Mode.Height = modeSDL.h;
-    Mode.RefreshRate = modeSDL.refresh_rate;
-}
-
-void ARuntime::GetCurrentDisplayMode( SDisplayInfo const & Display, SDisplayMode & Mode )
-{
-    SDL_DisplayMode modeSDL;
-    SDL_GetCurrentDisplayMode( Display.Id, &modeSDL );
-
-    Mode.Width = modeSDL.w;
-    Mode.Height = modeSDL.h;
-    Mode.RefreshRate = modeSDL.refresh_rate;
-}
-
-bool ARuntime::GetClosestDisplayMode( SDisplayInfo const & Display, int Width, int Height, int RefreshRate, SDisplayMode & Mode )
-{
-    SDL_DisplayMode modeSDL, closestSDL;
-
-    modeSDL.w = Width;
-    modeSDL.h = Height;
-    modeSDL.refresh_rate = RefreshRate;
-    modeSDL.format = SDL_PIXELFORMAT_RGB888;
-    modeSDL.driverdata = nullptr;
-    if ( !SDL_GetClosestDisplayMode( Display.Id, &modeSDL, &closestSDL ) || closestSDL.format != modeSDL.format ) {
-        GLogger.Printf( "Couldn't find closest display mode to %d x %d %dHz\n", Width, Height, RefreshRate );
-        Core::ZeroMem( &Mode, sizeof( Mode ) );
-        return false;
-    }
-
-    Mode.Width = closestSDL.w;
-    Mode.Height = closestSDL.h;
-    Mode.RefreshRate = closestSDL.refresh_rate;
-
-    return true;
-}
-
-#if 0
-static void TestDisplays()
-{
-    int displayCount = SDL_GetNumVideoDisplays();
-    SDL_Rect rect;
-    SDL_Rect usableRect;
-    for ( int i = 0 ; i < displayCount ; i++ ) {
-        const char * name = SDL_GetDisplayName( i );
-
-        SDL_GetDisplayBounds( i, &rect );
-        SDL_GetDisplayUsableBounds( i, &usableRect );
-        SDL_DisplayOrientation orient = SDL_GetDisplayOrientation( i );
-
-        const char * orientName;
-        switch ( orient ) {
-        case SDL_ORIENTATION_LANDSCAPE:
-            orientName = "Landscape";
-            break;
-        case SDL_ORIENTATION_LANDSCAPE_FLIPPED:
-            orientName = "Landscape (Flipped)";
-            break;
-        case SDL_ORIENTATION_PORTRAIT:
-            orientName = "Portrait";
-            break;
-        case SDL_ORIENTATION_PORTRAIT_FLIPPED:
-            orientName = "Portrait (Flipped)";
-            break;
-        case SDL_ORIENTATION_UNKNOWN:
-        default:
-            orientName = "Undetermined";
-            break;
-        }
-
-        GLogger.Printf( "Found display %s (%d %d %d %d, usable %d %d %d %d) %s\n", name, rect.x, rect.y, rect.w, rect.h, usableRect.x, usableRect.y, usableRect.w, usableRect.h, orientName );
-
-        int numModes = SDL_GetNumDisplayModes( i );
-        SDL_DisplayMode mode;
-        for ( int m = 0 ; m < numModes ; m++ ) {
-            SDL_GetDisplayMode( i, m, &mode );
-
-            if ( mode.format == SDL_PIXELFORMAT_RGB888 ) {
-                GLogger.Printf( "Mode %d: %d %d %d hz\n", m, mode.w, mode.h, mode.refresh_rate );
-            }
-        }
-    }
-
-
-
-    //extern DECLSPEC int SDLCALL SDL_GetDesktopDisplayMode(int displayIndex, SDL_DisplayMode * mode);
-    //extern DECLSPEC int SDLCALL SDL_GetCurrentDisplayMode(int displayIndex, SDL_DisplayMode * mode);
-    //extern DECLSPEC SDL_DisplayMode * SDLCALL SDL_GetClosestDisplayMode(int displayIndex, const SDL_DisplayMode * mode, SDL_DisplayMode * closest);
-}
-#endif
-
 void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode )
 {
     Core::Memcpy( &VideoMode, &_DesiredMode, sizeof( VideoMode ) );
 
     SDL_Window * wnd = WindowHandle;
-
-    // Set refresh rate
-    //SDL_DisplayMode mode = {};
-    //mode.format = SDL_PIXELFORMAT_RGB888;
-    //mode.w = _DesiredMode.Width;
-    //mode.h = _DesiredMode.Height;
-    //mode.refresh_rate = _DesiredMode.RefreshRate;
-    //SDL_SetWindowDisplayMode( wnd, &mode );
 
     SDL_SetWindowFullscreen( wnd, _DesiredMode.bFullscreen ? SDL_WINDOW_FULLSCREEN : 0 );
     SDL_SetWindowSize( wnd, _DesiredMode.Width, _DesiredMode.Height );

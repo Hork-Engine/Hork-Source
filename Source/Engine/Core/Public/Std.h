@@ -92,8 +92,13 @@ public:
     {
     }
 
-    TStdVector( std::initializer_list< T > const & _InitializerList )
-    : Super( _InitializerList )
+    explicit TStdVector( int _Size ) :
+        Super( _Size )
+    {
+    }
+
+    TStdVector( std::initializer_list< T > const & _InitializerList ) :
+        Super( _InitializerList )
     {
     }
 

@@ -397,7 +397,7 @@ void ALightVoxelizer::Voxelize( SRenderView * RV ) {
     pClusterHeaderData = RV->ClusterLookup;
     pClusterPackedIndices = RV->ClusterPackedIndices;
 
-    Core::ZeroMemSSE( ClusterData, sizeof( ClusterData ) );
+    Core::ZeroMem( ClusterData, sizeof( ClusterData ) );
 
     // Calc min/max slices
     if ( bUseSSE ) {

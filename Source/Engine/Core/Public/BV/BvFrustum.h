@@ -40,7 +40,8 @@ SOFTWARE.
 
 #define AN_FRUSTUM_USE_SSE
 
-enum EFrustumPlane {
+enum EFrustumPlane
+{
     FPL_RIGHT,
     FPL_LEFT,
     FPL_TOP,
@@ -49,7 +50,8 @@ enum EFrustumPlane {
     FPL_NEAR
 };
 
-class BvFrustum {
+class BvFrustum
+{
     AN_FORBID_COPY( BvFrustum )
 
 public:
@@ -101,11 +103,12 @@ public:
 
 private:
 #ifdef AN_FRUSTUM_USE_SSE
-    struct sse_t {
-        __m128 x[ 6 ];
-        __m128 y[ 6 ];
-        __m128 z[ 6 ];
-        __m128 d[ 6 ];
+    struct sse_t
+    {
+        __m128 x[6];
+        __m128 y[6];
+        __m128 z[6];
+        __m128 d[6];
     };
     mutable sse_t * PlanesSSE;
 #endif
@@ -113,52 +116,60 @@ private:
     PlaneF Planes[6];
 };
 
-AN_FORCEINLINE PlaneF const & BvFrustum::operator[]( const int _Index ) const {
+AN_FORCEINLINE PlaneF const & BvFrustum::operator[]( const int _Index ) const
+{
     AN_ASSERT_( (unsigned)_Index < 6, "BvFrustum[]" );
     return Planes[_Index];
 }
 
-AN_FORCEINLINE bool BvFrustum::IsPointVisible( Float3 const & _Point ) const {
+AN_FORCEINLINE bool BvFrustum::IsPointVisible( Float3 const & _Point ) const
+{
     bool inside = true;
-    for ( PlaneF const * p = Planes ; p < Planes + 6 ; p++ ) {
-        inside &= ( Math::Dot( p->Normal, _Point ) + p->D > 0.0f );
+    for ( PlaneF const * p = Planes; p < Planes + 6; p++ ) {
+        inside &= ( Math::Dot( *p, _Point ) > 0.0f );
     }
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsPointVisible_IgnoreZ( Float3 const & _Point ) const {
+AN_FORCEINLINE bool BvFrustum::IsPointVisible_IgnoreZ( Float3 const & _Point ) const
+{
     bool inside = true;
-    for ( PlaneF const * p = Planes ; p < Planes + 4 ; p++ ) {
-        inside &= ( Math::Dot( p->Normal, _Point ) + p->D > 0.0f );
+    for ( PlaneF const * p = Planes; p < Planes + 4; p++ ) {
+        inside &= ( Math::Dot( *p, _Point ) > 0.0f );
     }
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsSphereVisible( BvSphere const & _Sphere ) const {
+AN_FORCEINLINE bool BvFrustum::IsSphereVisible( BvSphere const & _Sphere ) const
+{
     return IsSphereVisible( _Sphere.Center, _Sphere.Radius );
 }
 
-AN_FORCEINLINE bool BvFrustum::IsSphereVisible( Float3 const & _Point, const float _Radius ) const {
+AN_FORCEINLINE bool BvFrustum::IsSphereVisible( Float3 const & _Point, const float _Radius ) const
+{
     bool inside = true;
-    for ( PlaneF const * p = Planes ; p < Planes + 6 ; p++ ) {
-        inside &= ( Math::Dot( p->Normal, _Point ) + p->D > -_Radius );
+    for ( PlaneF const * p = Planes; p < Planes + 6; p++ ) {
+        inside &= ( Math::Dot( *p, _Point ) > -_Radius );
     }
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsSphereVisible_IgnoreZ( BvSphere const & _Sphere ) const {
+AN_FORCEINLINE bool BvFrustum::IsSphereVisible_IgnoreZ( BvSphere const & _Sphere ) const
+{
     return IsSphereVisible_IgnoreZ( _Sphere.Center, _Sphere.Radius );
 }
 
-AN_FORCEINLINE bool BvFrustum::IsSphereVisible_IgnoreZ( Float3 const & _Point, const float _Radius ) const {
+AN_FORCEINLINE bool BvFrustum::IsSphereVisible_IgnoreZ( Float3 const & _Point, const float _Radius ) const
+{
     bool inside = true;
-    for ( PlaneF const * p = Planes ; p < Planes + 4 ; p++ ) {
-        inside &= ( Math::Dot( p->Normal, _Point ) + p->D > -_Radius );
+    for ( PlaneF const * p = Planes; p < Planes + 4; p++ ) {
+        inside &= ( Math::Dot( *p, _Point ) > -_Radius );
     }
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsBoxVisible( Float3 const & _Mins, Float3 const & _Maxs ) const {
+AN_FORCEINLINE bool BvFrustum::IsBoxVisible( Float3 const & _Mins, Float3 const & _Maxs ) const
+{
     bool inside = true;
 
     PlaneF const * p = Planes;
@@ -182,7 +193,8 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible( Float3 const & _Mins, Float3 const 
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsBoxVisible( Float4 const & _Mins, Float4 const & _Maxs ) const {
+AN_FORCEINLINE bool BvFrustum::IsBoxVisible( Float4 const & _Mins, Float4 const & _Maxs ) const
+{
     bool inside = true;
 
     PlaneF const * p = Planes;
@@ -206,11 +218,13 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible( Float4 const & _Mins, Float4 const 
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsBoxVisible( BvAxisAlignedBox const & b ) const {
+AN_FORCEINLINE bool BvFrustum::IsBoxVisible( BvAxisAlignedBox const & b ) const
+{
     return IsBoxVisible( b.Mins, b.Maxs );
 }
 
-AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( Float3 const & _Mins, Float3 const & _Maxs ) const {
+AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( Float3 const & _Mins, Float3 const & _Maxs ) const
+{
     bool inside = true;
 
     PlaneF const * p = Planes;
@@ -228,7 +242,8 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( Float3 const & _Mins, Float
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( Float4 const & _Mins, Float4 const & _Maxs ) const {
+AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( Float4 const & _Mins, Float4 const & _Maxs ) const
+{
     bool inside = true;
 
     PlaneF const * p = Planes;
@@ -246,21 +261,23 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( Float4 const & _Mins, Float
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( BvAxisAlignedBox const & b ) const {
+AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ( BvAxisAlignedBox const & b ) const
+{
     return IsBoxVisible_IgnoreZ( b.Mins, b.Maxs );
 }
 
-AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible( BvOrientedBox const & b ) const {
+AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible( BvOrientedBox const & b ) const
+{
     Float3 point;
 
     for ( PlaneF const * p = Planes; p < Planes + 6; p++ ) {
-        const float x = Math::Dot( b.Orient[ 0 ], p->Normal ) >= 0.0f ? -b.HalfSize[ 0 ] : b.HalfSize[ 0 ];
-        const float y = Math::Dot( b.Orient[ 1 ], p->Normal ) >= 0.0f ? -b.HalfSize[ 1 ] : b.HalfSize[ 1 ];
-        const float z = Math::Dot( b.Orient[ 2 ], p->Normal ) >= 0.0f ? -b.HalfSize[ 2 ] : b.HalfSize[ 2 ];
+        const float x = Math::Dot( b.Orient[0], p->Normal ) >= 0.0f ? -b.HalfSize[0] : b.HalfSize[0];
+        const float y = Math::Dot( b.Orient[1], p->Normal ) >= 0.0f ? -b.HalfSize[1] : b.HalfSize[1];
+        const float z = Math::Dot( b.Orient[2], p->Normal ) >= 0.0f ? -b.HalfSize[2] : b.HalfSize[2];
 
-        point = b.Center + ( x*b.Orient[ 0 ] + y*b.Orient[ 1 ] + z*b.Orient[ 2 ] );
+        point = b.Center + ( x * b.Orient[0] + y * b.Orient[1] + z * b.Orient[2] );
 
-        if ( Math::Dot( point, p->Normal ) + p->D >= 0.0f ) {
+        if ( Math::Dot( point, *p ) >= 0.0f ) {
             return false;
         }
     }
@@ -268,17 +285,18 @@ AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible( BvOrientedBox const & b ) c
     return true;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible_IgnoreZ( BvOrientedBox const & b ) const {
+AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible_IgnoreZ( BvOrientedBox const & b ) const
+{
     Float3 point;
 
     for ( PlaneF const * p = Planes; p < Planes + 4; p++ ) {
-        const float x = Math::Dot( b.Orient[ 0 ], p->Normal ) >= 0.0f ? -b.HalfSize[ 0 ] : b.HalfSize[ 0 ];
-        const float y = Math::Dot( b.Orient[ 1 ], p->Normal ) >= 0.0f ? -b.HalfSize[ 1 ] : b.HalfSize[ 1 ];
-        const float z = Math::Dot( b.Orient[ 2 ], p->Normal ) >= 0.0f ? -b.HalfSize[ 2 ] : b.HalfSize[ 2 ];
+        const float x = Math::Dot( b.Orient[0], p->Normal ) >= 0.0f ? -b.HalfSize[0] : b.HalfSize[0];
+        const float y = Math::Dot( b.Orient[1], p->Normal ) >= 0.0f ? -b.HalfSize[1] : b.HalfSize[1];
+        const float z = Math::Dot( b.Orient[2], p->Normal ) >= 0.0f ? -b.HalfSize[2] : b.HalfSize[2];
 
-        point = b.Center + ( x*b.Orient[ 0 ] + y*b.Orient[ 1 ] + z*b.Orient[ 2 ] );
+        point = b.Center + ( x * b.Orient[0] + y * b.Orient[1] + z * b.Orient[2] );
 
-        if ( Math::Dot( point, p->Normal ) + p->D >= 0.0f ) {
+        if ( Math::Dot( point, *p ) >= 0.0f ) {
             return false;
         }
     }

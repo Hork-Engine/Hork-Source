@@ -1751,7 +1751,7 @@ bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndP
 
     _PathPoints.ResizeInvalidate( PathLength );
 
-    Core::MemcpySSE( _PathPoints.ToPtr(), TmpPathPoints, sizeof( Float3 ) * PathLength );
+    Core::Memcpy( _PathPoints.ToPtr(), TmpPathPoints, sizeof( Float3 ) * PathLength );
 
     return true;
 }

@@ -352,7 +352,7 @@ void * AHeapMemory::Realloc( void * _Data, int _NewBytesCount, int _NewAlignment
     // reallocate
     if ( _KeepOld ) {
         bytes = ( byte * )Alloc( _NewBytesCount, _NewAlignment );
-        Core::MemcpySSE( bytes, _Data, heap->DataSize );
+        Core::Memcpy( bytes, _Data, heap->DataSize );
         Free( _Data );
         return bytes;
     }
@@ -939,7 +939,7 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld )
 #if 0
     if ( _Data ) {
         void * d = SysAlloc( _NewBytesCount, 16 );
-        Core::MemcpySSE(d,_Data,_NewBytesCount);
+        Core::Memcpy(d,_Data,_NewBytesCount);
         SysFree(_Data);
         return d;
     }
@@ -972,11 +972,11 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld )
 
     int sz = chunk->DataSize;
     void * temp = GHunkMemory.Alloc( sz );
-    Core::MemcpySSE( temp, _Data, sz );
+    Core::Memcpy( temp, _Data, sz );
     Free( _Data );
     void * pNewData = Alloc( _NewBytesCount );
     if ( pNewData != _Data ) {
-        Core::MemcpySSE( pNewData, temp, sz );
+        Core::Memcpy( pNewData, temp, sz );
     } else {
         //MemLogger.Printf( "Caching memcpy\n" );
     }
@@ -1160,7 +1160,7 @@ void * AZoneMemory::Realloc( void * _Data, int _NewBytesCount, bool _KeepOld )
         SetTrashMarker( cur );
 
         if ( _KeepOld ) {
-            Core::MemcpySSE( pointer, _Data, oldSize );
+            Core::Memcpy( pointer, _Data, oldSize );
         }
 
         // Deallocate old chunk

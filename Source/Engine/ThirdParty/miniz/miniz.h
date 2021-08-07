@@ -1150,6 +1150,9 @@ const char *mz_zip_get_error_string(mz_zip_error mz_err);
 /* MZ_TRUE if the archive file entry is a directory entry. */
 mz_bool mz_zip_reader_is_file_a_directory(mz_zip_archive *pZip, mz_uint file_index);
 
+/* 0xc0de: Add mz_zip_get_cdh_public to public API */
+const mz_uint8 *mz_zip_get_cdh_public(mz_zip_archive *pZip, mz_uint file_index);
+
 /* MZ_TRUE if the file is encrypted/strong encrypted. */
 mz_bool mz_zip_reader_is_file_encrypted(mz_zip_archive *pZip, mz_uint file_index);
 

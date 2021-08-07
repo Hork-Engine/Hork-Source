@@ -40,7 +40,8 @@ AArchive
 Read file from archive
 
 */
-class AArchive final {
+class AArchive final
+{
     AN_FORBID_COPY( AArchive )
 
 public:
@@ -97,11 +98,45 @@ AFileStream
 Read/Write to file
 
 */
-class AFileStream final : public IBinaryStream {
+class AFileStream final : public IBinaryStream
+{
     AN_FORBID_COPY( AFileStream )
 
 public:
-    AFileStream();
+    AFileStream()
+    {}
+
+    AFileStream( AFileStream && BinaryStream ) noexcept :
+        Name( std::move( BinaryStream.Name ) ), Handle( BinaryStream.Handle ), Mode( BinaryStream.Mode )
+    {
+        ReadBytesCount  = BinaryStream.ReadBytesCount;
+        WriteBytesCount = BinaryStream.WriteBytesCount;
+
+        BinaryStream.ReadBytesCount  = 0;
+        BinaryStream.WriteBytesCount = 0;
+
+        BinaryStream.Handle = nullptr;
+        BinaryStream.Mode   = FILE_OPEN_MODE_CLOSED;
+    }
+
+    AFileStream & operator=( AFileStream && BinaryStream ) noexcept
+    {
+        Close();
+
+        ReadBytesCount  = BinaryStream.ReadBytesCount;
+        WriteBytesCount = BinaryStream.WriteBytesCount;
+        Name            = std::move( BinaryStream.Name );
+        Handle          = BinaryStream.Handle;
+        Mode            = BinaryStream.Mode;
+
+        BinaryStream.ReadBytesCount  = 0;
+        BinaryStream.WriteBytesCount = 0;
+        BinaryStream.Handle          = nullptr;
+        BinaryStream.Mode            = FILE_OPEN_MODE_CLOSED;
+
+        return *this;
+    }
+
     ~AFileStream();
 
     /** Open file for read form specified path */
@@ -117,34 +152,35 @@ public:
     void Close();
 
     /** Check is file opened */
-    bool IsOpened() const { return Mode != M_Closed; }
+    bool IsOpened() const { return Mode != FILE_OPEN_MODE_CLOSED; }
 
 protected:
     const char * Impl_GetFileName() const override;
-    int Impl_Read( void * _Buffer, int _SizeInBytes ) override;
-    int	Impl_Write( const void *_Buffer, int _SizeInBytes ) override;
-    char * Impl_Gets( char * _StrBuf, int _StrSz ) override;
-    void Impl_Flush() override;
-    long Impl_Tell() override;
-    bool Impl_SeekSet( long _Offset ) override;
-    bool Impl_SeekCur( long _Offset ) override;
-    bool Impl_SeekEnd( long _Offset ) override;
-    size_t Impl_SizeInBytes() override;
-    bool Impl_Eof() override;
+    int          Impl_Read( void * _Buffer, int _SizeInBytes ) override;
+    int          Impl_Write( const void * _Buffer, int _SizeInBytes ) override;
+    char *       Impl_Gets( char * _StrBuf, int _StrSz ) override;
+    void         Impl_Flush() override;
+    long         Impl_Tell() override;
+    bool         Impl_SeekSet( long _Offset ) override;
+    bool         Impl_SeekCur( long _Offset ) override;
+    bool         Impl_SeekEnd( long _Offset ) override;
+    size_t       Impl_SizeInBytes() override;
+    bool         Impl_Eof() override;
 
 private:
     bool Open( AStringView _FileName, int _Mode );
 
-    enum EMode {
-        M_Read,
-        M_Write,
-        M_Append,
-        M_Closed
+    enum FILE_OPEN_MODE
+    {
+        FILE_OPEN_MODE_CLOSED,
+        FILE_OPEN_MODE_READ,
+        FILE_OPEN_MODE_WRITE,
+        FILE_OPEN_MODE_APPEND
     };
 
     AString Name;
-    void *  Handle;
-    int     Mode;
+    void *  Handle = nullptr;
+    int     Mode   = FILE_OPEN_MODE_CLOSED;
 };
 
 
@@ -155,12 +191,63 @@ AMemoryStream
 Read/Write to memory
 
 */
-class AMemoryStream final : public IBinaryStream {
+class AMemoryStream final : public IBinaryStream
+{
     AN_FORBID_COPY( AMemoryStream )
 
 public:
-    AMemoryStream();
+    AMemoryStream()
+    {}
+
+    AMemoryStream( AMemoryStream && BinaryStream ) noexcept :
+        Name( std::move( BinaryStream.Name ) ),
+        Mode( BinaryStream.Mode ),
+        MemoryBuffer( BinaryStream.MemoryBuffer ),
+        MemoryBufferSize( BinaryStream.MemoryBufferSize ),
+        bMemoryBufferOwner( BinaryStream.bMemoryBufferOwner ),
+        MemoryBufferOffset( BinaryStream.MemoryBufferOffset ),
+        Granularity( BinaryStream.Granularity )
+    {
+        ReadBytesCount  = BinaryStream.ReadBytesCount;
+        WriteBytesCount = BinaryStream.WriteBytesCount;
+
+        BinaryStream.ReadBytesCount     = 0;
+        BinaryStream.WriteBytesCount    = 0;
+        BinaryStream.Mode               = FILE_OPEN_MODE_CLOSED;
+        BinaryStream.MemoryBuffer       = nullptr;
+        BinaryStream.MemoryBufferSize   = 0;
+        BinaryStream.bMemoryBufferOwner = false;
+        BinaryStream.MemoryBufferOffset = 0;
+        BinaryStream.Granularity        = 0;
+    }
+
     ~AMemoryStream();
+
+    AMemoryStream & operator=( AMemoryStream && BinaryStream ) noexcept
+    {
+        Close();
+
+        ReadBytesCount     = BinaryStream.ReadBytesCount;
+        WriteBytesCount    = BinaryStream.WriteBytesCount;
+        Name               = std::move( BinaryStream.Name );
+        Mode               = BinaryStream.Mode;
+        MemoryBuffer       = BinaryStream.MemoryBuffer;
+        MemoryBufferSize   = BinaryStream.MemoryBufferSize;
+        bMemoryBufferOwner = BinaryStream.bMemoryBufferOwner;
+        MemoryBufferOffset = BinaryStream.MemoryBufferOffset;
+        Granularity        = BinaryStream.Granularity;
+
+        BinaryStream.ReadBytesCount     = 0;
+        BinaryStream.WriteBytesCount    = 0;
+        BinaryStream.Mode               = FILE_OPEN_MODE_CLOSED;
+        BinaryStream.MemoryBuffer       = nullptr;
+        BinaryStream.MemoryBufferSize   = 0;
+        BinaryStream.bMemoryBufferOwner = false;
+        BinaryStream.MemoryBufferOffset = 0;
+        BinaryStream.Granularity        = 0;
+
+        return *this;
+    }
 
     /** Read from specified memory buffer */
     bool OpenRead( AStringView _FileName, const void * _MemoryBuffer, size_t _SizeInBytes );
@@ -181,7 +268,7 @@ public:
     void Close();
 
     /** Check is file opened */
-    bool IsOpened() const { return Mode != M_Closed; }
+    bool IsOpened() const { return Mode != FILE_OPEN_MODE_CLOSED; }
 
     /** Grab memory buffer */
     void * GrabMemory();
@@ -190,39 +277,41 @@ public:
 
 protected:
     const char * Impl_GetFileName() const override;
-    int Impl_Read( void * _Buffer, int _SizeInBytes ) override;
-    int	Impl_Write( const void *_Buffer, int _SizeInBytes ) override;
-    char * Impl_Gets( char * _StrBuf, int _StrSz ) override;
-    void Impl_Flush() override;
-    long Impl_Tell() override;
-    bool Impl_SeekSet( long _Offset ) override;
-    bool Impl_SeekCur( long _Offset ) override;
-    bool Impl_SeekEnd( long _Offset ) override;
-    size_t Impl_SizeInBytes() override;
-    bool Impl_Eof() override;
+    int          Impl_Read( void * _Buffer, int _SizeInBytes ) override;
+    int          Impl_Write( const void * _Buffer, int _SizeInBytes ) override;
+    char *       Impl_Gets( char * _StrBuf, int _StrSz ) override;
+    void         Impl_Flush() override;
+    long         Impl_Tell() override;
+    bool         Impl_SeekSet( long _Offset ) override;
+    bool         Impl_SeekCur( long _Offset ) override;
+    bool         Impl_SeekEnd( long _Offset ) override;
+    size_t       Impl_SizeInBytes() override;
+    bool         Impl_Eof() override;
 
 private:
-    enum EMode {
-        M_Read,
-        M_Write,
-        M_Closed
+    enum FILE_OPEN_MODE
+    {
+        FILE_OPEN_MODE_CLOSED,
+        FILE_OPEN_MODE_READ,
+        FILE_OPEN_MODE_WRITE
     };
 
     void * Alloc( size_t _SizeInBytes );
     void * Realloc( void * _Data, size_t _SizeInBytes );
-    void Free( void * _Data );
+    void   Free( void * _Data );
 
     AString Name;
-    int     Mode;
-    byte *  MemoryBuffer;
-    int     MemoryBufferSize;
-    bool    bMemoryBufferOwner;
-    int     MemoryBufferOffset;
-    int     Granularity;
+    int     Mode               = FILE_OPEN_MODE_CLOSED;
+    byte *  MemoryBuffer       = nullptr;
+    int     MemoryBufferSize   = 0;
+    bool    bMemoryBufferOwner = false;
+    int     MemoryBufferOffset = 0;
+    int     Granularity        = 1024;
 };
 
 
-namespace Core {
+namespace Core
+{
 
 /** Make file system directory */
 void MakeDir( const char * _Directory, bool _FileName );
@@ -240,4 +329,4 @@ void TraverseDirectory( AStringView Path, bool bSubDirs, STraverseDirectoryCB Ca
 /** Write game resource pack */
 bool WriteResourcePack( const char * SourcePath, const char * ResultFile );
 
-}
+} // namespace Core

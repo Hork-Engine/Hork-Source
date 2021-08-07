@@ -810,19 +810,19 @@ void ATexture::Initialize3D( STexturePixelFormat _PixelFormat, int _NumLods, int
 void ATexture::InitializeColorGradingLUT( const char * _Path ) {
     AImage image;
 
-    if ( image.Load( _Path, nullptr, IMAGE_PF_BGR_GAMMA2 ) ) {
-        byte data[ 16 ][ 16 ][ 16 ][ 3 ];
+    if ( image.Load( _Path, nullptr, IMAGE_PF_BGRA_GAMMA2 ) ) {
+        byte data[ 16 ][ 16 ][ 16 ][ 4 ];
 
         const byte * p = static_cast< const byte * >(image.GetData());
 
         for ( int y = 0 ; y < 16 ; y++ ) {
            for ( int z = 0 ; z < 16 ; z++ ) {
-                Core::Memcpy( &data[ z ][ y ][ 0 ][ 0 ], p, 16 * 3 );
-                p += 16 * 3;
+                Core::Memcpy( &data[ z ][ y ][ 0 ][ 0 ], p, 16 * 4 );
+                p += 16 * 4;
             }
         }
 
-        Initialize3D( TEXTURE_PF_BGR8_SRGB, 1, 16, 16, 16 );
+        Initialize3D( TEXTURE_PF_BGRA8_SRGB, 1, 16, 16, 16 );
         WriteArbitraryData( 0, 0, 0, 16, 16, 16, 0, data );
 
         return;

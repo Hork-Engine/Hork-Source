@@ -31,7 +31,8 @@
 *                                                                              *
 *******************************************************************************/
 
-#pragma once
+#ifndef clipper_hpp
+#define clipper_hpp
 
 #define CLIPPER_VERSION "6.4.2"
 
@@ -399,3 +400,7 @@ class clipperException : public std::exception
 //------------------------------------------------------------------------------
 
 } //ClipperLib namespace
+
+#endif //clipper_hpp
+
+

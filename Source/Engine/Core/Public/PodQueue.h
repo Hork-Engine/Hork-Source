@@ -62,7 +62,7 @@ public:
 
         const int queueLength = _Queue.Size();
         if ( queueLength == _Queue.MaxQueueLength || _Queue.QueueTail == 0 ) {
-            Core::MemcpySSE( pQueue, _Queue.pQueue, TYPE_SIZEOF * queueLength );
+            Core::Memcpy( pQueue, _Queue.pQueue, TYPE_SIZEOF * queueLength );
             QueueHead = _Queue.QueueHead;
             QueueTail = _Queue.QueueTail;
         } else {
@@ -116,7 +116,7 @@ public:
         if ( QueueTail == 0 ) {
             if ( pQueue == StaticData ) {
                 pQueue = ( T * )Allocator::Inst().Alloc( TYPE_SIZEOF * MaxQueueLength );
-                Core::MemcpySSE( pQueue, StaticData, TYPE_SIZEOF * queueLength );
+                Core::Memcpy( pQueue, StaticData, TYPE_SIZEOF * queueLength );
             } else {
                 pQueue = ( T * )Allocator::Inst().Realloc( pQueue, TYPE_SIZEOF * MaxQueueLength, true );
             }
@@ -196,7 +196,7 @@ public:
         // Copy
         const int queueLength = _Queue.Size();
         if ( queueLength == _Queue.MaxQueueLength || _Queue.QueueTail == 0 ) {
-            Core::MemcpySSE( pQueue, _Queue.pQueue, TYPE_SIZEOF * queueLength );
+            Core::Memcpy( pQueue, _Queue.pQueue, TYPE_SIZEOF * queueLength );
             QueueHead = _Queue.QueueHead;
             QueueTail = _Queue.QueueTail;
         } else {

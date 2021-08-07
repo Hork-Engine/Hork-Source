@@ -290,46 +290,43 @@ static char ** CommandLineToArgvA(const char * lpCmdline, int* numargs)
     return argv;
 }
 
-}
+} // namespace
 
-SCommandLine::SCommandLine( const char * _CommandLine )
+SCommandLine::SCommandLine( const char* _CommandLine )
 {
-    Arguments = CommandLineToArgvA(_CommandLine, &NumArguments);
+    Arguments = CommandLineToArgvA( _CommandLine, &NumArguments );
     bNeedFree = true;
 
     Validate();
 }
 
-SCommandLine::SCommandLine( int _Argc, char ** _Argv )
-    : NumArguments(_Argc)
-    , Arguments(_Argv)
+SCommandLine::SCommandLine( int _Argc, char** _Argv ) :
+    NumArguments( _Argc ), Arguments( _Argv )
 {
     Validate();
 }
 
 SCommandLine::~SCommandLine()
 {
-    if (bNeedFree)
-    {
-        free(Arguments);
+    if ( bNeedFree ) {
+        free( Arguments );
     }
 }
 
 void SCommandLine::Validate()
 {
-    if (NumArguments < 1)
-    {
+    if ( NumArguments < 1 ) {
         AN_ASSERT( 0 );
         return;
     }
     // Fix executable path separator
-    Core::FixSeparator( Arguments[ 0 ] );
+    Core::FixSeparator( Arguments[0] );
 }
 
 int SCommandLine::CheckArg( AStringView _Arg ) const
 {
-    for ( int i = 0 ; i < NumArguments ; i++ ) {
-        if ( !_Arg.Icmp( Arguments[ i ] ) ) {
+    for ( int i = 0; i < NumArguments; i++ ) {
+        if ( !_Arg.Icmp( Arguments[i] ) ) {
             return i;
         }
     }
@@ -353,14 +350,14 @@ namespace
 #ifdef AN_OS_WIN32
 static HANDLE ProcessMutex = nullptr;
 #endif
-static FILE * ProcessLogFile = nullptr;
-static AMutex ProcessLogWriterSync;
+static FILE*        ProcessLogFile = nullptr;
+static AMutex       ProcessLogWriterSync;
 static SProcessInfo ProcessInfo;
 
 static void InitializeProcess()
 {
     setlocale( LC_ALL, "C" );
-    srand( ( unsigned )time( NULL ) );
+    srand( (unsigned)time( NULL ) );
 
 #if defined( AN_OS_WIN32 )
     SetErrorMode( SEM_FAILCRITICALERRORS );
@@ -368,23 +365,25 @@ static void InitializeProcess()
 
 #ifdef AN_OS_WIN32
     int curLen = 1024;
-    int len = 0;
+    int len    = 0;
 
     ProcessInfo.Executable = nullptr;
     while ( 1 ) {
-        ProcessInfo.Executable = ( char * )realloc( ProcessInfo.Executable, curLen + 1 );
+        ProcessInfo.Executable = (char*)realloc( ProcessInfo.Executable, curLen + 1 );
+
         len = GetModuleFileNameA( NULL, ProcessInfo.Executable, curLen );
         if ( len < curLen && len != 0 ) {
             break;
         }
         if ( GetLastError() == ERROR_INSUFFICIENT_BUFFER ) {
             curLen <<= 1;
-        } else {
+        }
+        else {
             CriticalError( "InitializeProcess: Failed on GetModuleFileName\n" );
             break;
         }
     }
-    ProcessInfo.Executable[ len ] = 0;
+    ProcessInfo.Executable[len] = 0;
 
     Core::FixSeparator( ProcessInfo.Executable );
 
@@ -393,19 +392,21 @@ static void InitializeProcess()
     ProcessMutex = CreateMutexA( NULL, FALSE, Core::Fmt( "angie_%u", appHash ) );
     if ( !ProcessMutex ) {
         ProcessInfo.ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
-    } else if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
+    }
+    else if ( GetLastError() == ERROR_ALREADY_EXISTS ) {
         ProcessInfo.ProcessAttribute = PROCESS_ALREADY_EXISTS;
-    } else {
+    }
+    else {
         ProcessInfo.ProcessAttribute = PROCESS_UNIQUE;
     }
 #elif defined AN_OS_LINUX
     int curLen = 1024;
-    int len = 0;
+    int len    = 0;
 
     ProcessInfo.Executable = nullptr;
     while ( 1 ) {
-        ProcessInfo.Executable = ( char * )realloc( ProcessInfo.Executable, curLen + 1 );
-        len = readlink( "/proc/self/exe", ProcessInfo.Executable, curLen );
+        ProcessInfo.Executable = (char*)realloc( ProcessInfo.Executable, curLen + 1 );
+        len                    = readlink( "/proc/self/exe", ProcessInfo.Executable, curLen );
         if ( len == -1 ) {
             CriticalError( "InitializeProcess: Failed on readlink\n" );
             len = 0;
@@ -416,22 +417,24 @@ static void InitializeProcess()
         }
         curLen <<= 1;
     }
-    ProcessInfo.Executable[ len ] = 0;
+    ProcessInfo.Executable[len] = 0;
 
     uint32_t appHash = Core::SDBMHash( ProcessInfo.Executable, len );
-    int f = open( Core::Fmt( "/tmp/angie_%u.pid", appHash ), O_RDWR | O_CREAT, 0666 );
-    int locked = flock( f, LOCK_EX | LOCK_NB );
+    int      f       = open( Core::Fmt( "/tmp/angie_%u.pid", appHash ), O_RDWR | O_CREAT, 0666 );
+    int      locked  = flock( f, LOCK_EX | LOCK_NB );
     if ( locked ) {
         if ( errno == EWOULDBLOCK ) {
             ProcessInfo.ProcessAttribute = PROCESS_ALREADY_EXISTS;
-        } else {
+        }
+        else {
             ProcessInfo.ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
         }
-    } else {
+    }
+    else {
         ProcessInfo.ProcessAttribute = PROCESS_UNIQUE;
     }
 #else
-#   error "Not implemented under current platform"
+#    error "Not implemented under current platform"
 #endif
 
     ProcessLogFile = nullptr;
@@ -462,7 +465,7 @@ static void DeinitializeProcess()
 #endif
 }
 
-}
+} // namespace
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -474,17 +477,17 @@ namespace
 {
 
 volatile int MemoryChecksum;
-static void * MemoryHeap;
+static void* MemoryHeap;
 
-static void TouchMemoryPages( void * _MemoryPointer, int _MemorySize )
+static void TouchMemoryPages( void* _MemoryPointer, int _MemorySize )
 {
     GLogger.Printf( "Touching memory pages...\n" );
 
-    byte * p = ( byte * )_MemoryPointer;
-    for ( int n = 0 ; n < 4 ; n++ ) {
-        for ( int m = 0 ; m < ( _MemorySize - 16 * 0x1000 ) ; m += 4 ) {
-            MemoryChecksum += *( int32_t * )&p[ m ];
-            MemoryChecksum += *( int32_t * )&p[ m + 16 * 0x1000 ];
+    byte* p = (byte*)_MemoryPointer;
+    for ( int n = 0; n < 4; n++ ) {
+        for ( int m = 0; m < ( _MemorySize - 16 * 0x1000 ); m += 4 ) {
+            MemoryChecksum += *(int32_t*)&p[m];
+            MemoryChecksum += *(int32_t*)&p[m + 16 * 0x1000];
         }
     }
 
@@ -500,7 +503,7 @@ static void InitializeMemory( size_t ZoneSizeInMegabytes, size_t HunkSizeInMegab
 
 #ifdef AN_OS_WIN32
     SIZE_T dwMinimumWorkingSetSize = TotalMemorySizeInBytes;
-    SIZE_T dwMaximumWorkingSetSize = Math::Max( TotalMemorySizeInBytes, size_t(1024 << 20) );
+    SIZE_T dwMaximumWorkingSetSize = Math::Max( TotalMemorySizeInBytes, size_t( 1024 << 20 ) );
     if ( !SetProcessWorkingSetSize( GetCurrentProcess(), dwMinimumWorkingSetSize, dwMaximumWorkingSetSize ) ) {
         GLogger.Printf( "Failed on SetProcessWorkingSetSize\n" );
     }
@@ -520,14 +523,14 @@ static void InitializeMemory( size_t ZoneSizeInMegabytes, size_t HunkSizeInMegab
     GHeapMemory.Initialize();
 
     MemoryHeap = GHeapMemory.Alloc( TotalMemorySizeInBytes, 16 );
-    Core::ZeroMemSSE( MemoryHeap, TotalMemorySizeInBytes );
+    Core::ZeroMem( MemoryHeap, TotalMemorySizeInBytes );
 
     //TouchMemoryPages( MemoryHeap, TotalMemorySizeInBytes );
 
-    void * ZoneMemory = MemoryHeap;
+    void* ZoneMemory = MemoryHeap;
     GZoneMemory.Initialize( ZoneMemory, ZoneSizeInMegabytes );
 
-    void * HunkMemory = ( byte * )MemoryHeap + ( ZoneSizeInMegabytes << 20 );
+    void* HunkMemory = (byte*)MemoryHeap + ( ZoneSizeInMegabytes << 20 );
     GHunkMemory.Initialize( HunkMemory, HunkSizeInMegabytes );
 }
 
@@ -539,7 +542,7 @@ static void DeinitializeMemory()
     GHeapMemory.Deinitialize();
 }
 
-}
+} // namespace
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -549,7 +552,7 @@ static void DeinitializeMemory()
 
 #ifdef AN_OS_LINUX
 
-#include <cpuid.h>
+#    include <cpuid.h>
 
 namespace
 {
@@ -562,19 +565,21 @@ static void CPUID( int32_t out[4], int32_t x )
 static uint64_t xgetbv( unsigned int index )
 {
     uint32_t eax, edx;
-    __asm__ __volatile__("xgetbv" : "=a"(eax), "=d"(edx) : "c"(index));
-    return ((uint64_t)edx << 32) | eax;
+    __asm__ __volatile__( "xgetbv"
+                          : "=a"( eax ), "=d"( edx )
+                          : "c"( index ) );
+    return ( (uint64_t)edx << 32 ) | eax;
 }
 
-}
+} // namespace
 
-#define _XCR_XFEATURE_ENABLED_MASK 0
+#    define _XCR_XFEATURE_ENABLED_MASK 0
 
 #endif
 
 #ifdef AN_OS_WIN32
 
-#include <immintrin.h>
+#    include <immintrin.h>
 
 namespace
 {
@@ -593,9 +598,9 @@ static BOOL IsWow64()
 {
     BOOL bIsWow64 = FALSE;
 
-    typedef BOOL ( WINAPI *LPFN_ISWOW64PROCESS ) ( HANDLE, PBOOL );
-    LPFN_ISWOW64PROCESS fnIsWow64Process = (LPFN_ISWOW64PROCESS) GetProcAddress(
-        GetModuleHandle(TEXT("kernel32")), "IsWow64Process");
+    typedef BOOL( WINAPI * LPFN_ISWOW64PROCESS )( HANDLE, PBOOL );
+    LPFN_ISWOW64PROCESS fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(
+        GetModuleHandle( TEXT( "kernel32" ) ), "IsWow64Process" );
 
     if ( NULL != fnIsWow64Process ) {
         if ( !fnIsWow64Process( GetCurrentProcess(), &bIsWow64 ) ) {
@@ -605,7 +610,7 @@ static BOOL IsWow64()
     return bIsWow64;
 }
 
-}
+} // namespace
 
 #endif
 
@@ -613,54 +618,52 @@ static BOOL IsWow64()
 
 
 
-static SCommandLine const * pCommandLine;
+static SCommandLine const* pCommandLine;
 
 static int64_t StartSeconds;
 static int64_t StartMilliseconds;
 static int64_t StartMicroseconds;
 
-static char * Clipboard = nullptr;
+static char* Clipboard = nullptr;
 
 static std::string MessageBuffer;
 
 namespace Core
 {
 
-void Initialize( SCoreInitialize const & CoreInitialize )
+void Initialize( SCoreInitialize const& CoreInitialize )
 {
 #if defined( AN_DEBUG ) && defined( AN_COMPILER_MSVC )
     _CrtSetDbgFlag( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
 #endif
 
-    if ( CoreInitialize.pCommandLine )
-    {
+    if ( CoreInitialize.pCommandLine ) {
         static SCommandLine cmdLine( CoreInitialize.pCommandLine );
         pCommandLine = &cmdLine;
     }
-    else
-    {
+    else {
         static SCommandLine cmdLine( CoreInitialize.Argc, CoreInitialize.Argv );
         pCommandLine = &cmdLine;
     }
 
-    GLogger.SetMessageCallback( []( int Level, const char * Message )
-    {
-        WriteDebugString( Message );
-        WriteLog( Message );
+    GLogger.SetMessageCallback( []( int Level, const char* Message )
+                                {
+                                    WriteDebugString( Message );
+                                    WriteLog( Message );
 
-        MessageBuffer += Message;
-    });
+                                    MessageBuffer += Message;
+                                } );
 
     // Synchronize SDL ticks with our start time
     (void)SDL_GetTicks();
 
     StartMicroseconds = StdChrono::duration_cast< StdChrono::microseconds >( StdChrono::high_resolution_clock::now().time_since_epoch() ).count();
     StartMilliseconds = StartMicroseconds * 0.001;
-    StartSeconds = StartMicroseconds * 0.000001;
+    StartSeconds      = StartMicroseconds * 0.000001;
 
     InitializeProcess();
 
-    SProcessInfo const & processInfo = Core::GetProcessInfo();
+    SProcessInfo const& processInfo = Core::GetProcessInfo();
 
     if ( !CoreInitialize.bAllowMultipleInstances && !pCommandLine->HasArg( "-bAllowMultipleInstances" ) ) {
         switch ( processInfo.ProcessAttribute ) {
@@ -696,7 +699,7 @@ void Deinitialize()
     SDL_Quit();
 }
 
-std::string & GetMessageBuffer()
+std::string& GetMessageBuffer()
 {
     return MessageBuffer;
 }
@@ -706,66 +709,65 @@ int GetArgc()
     return pCommandLine->GetArgc();
 }
 
-const char * const *GetArgv()
+const char* const* GetArgv()
 {
     return pCommandLine->GetArgv();
 }
 
 int CheckArg( AStringView _Arg )
 {
-    return pCommandLine->CheckArg(_Arg);
+    return pCommandLine->CheckArg( _Arg );
 }
 
 bool HasArg( AStringView _Arg )
 {
-    return pCommandLine->HasArg(_Arg);
+    return pCommandLine->HasArg( _Arg );
 }
 
-SCommandLine const * GetCommandLine()
+SCommandLine const* GetCommandLine()
 {
     return pCommandLine;
 }
 
-SCPUInfo const * CPUInfo()
+SCPUInfo const* CPUInfo()
 {
-    static SCPUInfo *pCPUInfo = nullptr;
-    static SCPUInfo info;
+    static SCPUInfo* pCPUInfo = nullptr;
+    static SCPUInfo  info;
 
-    if (pCPUInfo)
-    {
+    if ( pCPUInfo ) {
         return pCPUInfo;
     }
 
     pCPUInfo = &info;
 
     int32_t cpuInfo[4];
-    char vendor[13];
+    char    vendor[13];
 
     Core::ZeroMem( &info, sizeof( info ) );
 
 #ifdef AN_OS_WIN32
-#ifdef _M_X64
+#    ifdef _M_X64
     info.OS_64bit = true;
-#else
+#    else
     info.OS_64bit = IsWow64() != 0;
-#endif
+#    endif
 #else
     info.OS_64bit = true;
 #endif
 
     CPUID( cpuInfo, 1 );
 
-    bool osUsesXSAVE_XRSTORE = (cpuInfo[2] & (1 << 27)) != 0;
-    bool cpuAVXSuport = (cpuInfo[2] & (1 << 28)) != 0;
+    bool osUsesXSAVE_XRSTORE = ( cpuInfo[2] & ( 1 << 27 ) ) != 0;
+    bool cpuAVXSuport        = ( cpuInfo[2] & ( 1 << 28 ) ) != 0;
 
     if ( osUsesXSAVE_XRSTORE && cpuAVXSuport ) {
-        uint64_t xcrFeatureMask = xgetbv(_XCR_XFEATURE_ENABLED_MASK);
-        info.OS_AVX = (xcrFeatureMask & 0x6) == 0x6;
+        uint64_t xcrFeatureMask = xgetbv( _XCR_XFEATURE_ENABLED_MASK );
+        info.OS_AVX             = ( xcrFeatureMask & 0x6 ) == 0x6;
     }
 
     if ( info.OS_AVX ) {
-        uint64_t xcrFeatureMask = xgetbv(_XCR_XFEATURE_ENABLED_MASK);
-        info.OS_AVX512 = (xcrFeatureMask & 0xe6) == 0xe6;
+        uint64_t xcrFeatureMask = xgetbv( _XCR_XFEATURE_ENABLED_MASK );
+        info.OS_AVX512          = ( xcrFeatureMask & 0xe6 ) == 0xe6;
     }
 
     CPUID( cpuInfo, 0 );
@@ -774,9 +776,10 @@ SCPUInfo const * CPUInfo()
     Core::Memcpy( vendor + 8, &cpuInfo[2], 4 );
     vendor[12] = '\0';
 
-    if ( !Core::Strcmp( vendor, "GenuineIntel" ) ){
+    if ( !Core::Strcmp( vendor, "GenuineIntel" ) ) {
         info.Intel = true;
-    } else if ( !Core::Strcmp( vendor, "AuthenticAMD" ) ){
+    }
+    else if ( !Core::Strcmp( vendor, "AuthenticAMD" ) ) {
         info.AMD = true;
     }
 
@@ -789,58 +792,58 @@ SCPUInfo const * CPUInfo()
     if ( nIds >= 0x00000001 ) {
         CPUID( cpuInfo, 0x00000001 );
 
-        info.MMX    = (cpuInfo[3] & (1 << 23)) != 0;
-        info.SSE    = (cpuInfo[3] & (1 << 25)) != 0;
-        info.SSE2   = (cpuInfo[3] & (1 << 26)) != 0;
-        info.SSE3   = (cpuInfo[2] & (1 <<  0)) != 0;
+        info.MMX  = ( cpuInfo[3] & ( 1 << 23 ) ) != 0;
+        info.SSE  = ( cpuInfo[3] & ( 1 << 25 ) ) != 0;
+        info.SSE2 = ( cpuInfo[3] & ( 1 << 26 ) ) != 0;
+        info.SSE3 = ( cpuInfo[2] & ( 1 << 0 ) ) != 0;
 
-        info.SSSE3  = (cpuInfo[2] & (1 <<  9)) != 0;
-        info.SSE41  = (cpuInfo[2] & (1 << 19)) != 0;
-        info.SSE42  = (cpuInfo[2] & (1 << 20)) != 0;
-        info.AES    = (cpuInfo[2] & (1 << 25)) != 0;
+        info.SSSE3 = ( cpuInfo[2] & ( 1 << 9 ) ) != 0;
+        info.SSE41 = ( cpuInfo[2] & ( 1 << 19 ) ) != 0;
+        info.SSE42 = ( cpuInfo[2] & ( 1 << 20 ) ) != 0;
+        info.AES   = ( cpuInfo[2] & ( 1 << 25 ) ) != 0;
 
-        info.AVX    = (cpuInfo[2] & (1 << 28)) != 0;
-        info.FMA3   = (cpuInfo[2] & (1 << 12)) != 0;
+        info.AVX  = ( cpuInfo[2] & ( 1 << 28 ) ) != 0;
+        info.FMA3 = ( cpuInfo[2] & ( 1 << 12 ) ) != 0;
 
-        info.RDRAND = (cpuInfo[2] & (1 << 30)) != 0;
+        info.RDRAND = ( cpuInfo[2] & ( 1 << 30 ) ) != 0;
     }
 
     if ( nIds >= 0x00000007 ) {
         CPUID( cpuInfo, 0x00000007 );
 
-        info.AVX2         = (cpuInfo[1] & (1 <<  5)) != 0;
+        info.AVX2 = ( cpuInfo[1] & ( 1 << 5 ) ) != 0;
 
-        info.BMI1         = (cpuInfo[1] & (1 <<  3)) != 0;
-        info.BMI2         = (cpuInfo[1] & (1 <<  8)) != 0;
-        info.ADX          = (cpuInfo[1] & (1 << 19)) != 0;
-        info.MPX          = (cpuInfo[1] & (1 << 14)) != 0;
-        info.SHA          = (cpuInfo[1] & (1 << 29)) != 0;
-        info.PREFETCHWT1  = (cpuInfo[2] & (1 <<  0)) != 0;
+        info.BMI1        = ( cpuInfo[1] & ( 1 << 3 ) ) != 0;
+        info.BMI2        = ( cpuInfo[1] & ( 1 << 8 ) ) != 0;
+        info.ADX         = ( cpuInfo[1] & ( 1 << 19 ) ) != 0;
+        info.MPX         = ( cpuInfo[1] & ( 1 << 14 ) ) != 0;
+        info.SHA         = ( cpuInfo[1] & ( 1 << 29 ) ) != 0;
+        info.PREFETCHWT1 = ( cpuInfo[2] & ( 1 << 0 ) ) != 0;
 
-        info.AVX512_F     = (cpuInfo[1] & (1 << 16)) != 0;
-        info.AVX512_CD    = (cpuInfo[1] & (1 << 28)) != 0;
-        info.AVX512_PF    = (cpuInfo[1] & (1 << 26)) != 0;
-        info.AVX512_ER    = (cpuInfo[1] & (1 << 27)) != 0;
-        info.AVX512_VL    = (cpuInfo[1] & (1 << 31)) != 0;
-        info.AVX512_BW    = (cpuInfo[1] & (1 << 30)) != 0;
-        info.AVX512_DQ    = (cpuInfo[1] & (1 << 17)) != 0;
-        info.AVX512_IFMA  = (cpuInfo[1] & (1 << 21)) != 0;
-        info.AVX512_VBMI  = (cpuInfo[2] & (1 <<  1)) != 0;
+        info.AVX512_F    = ( cpuInfo[1] & ( 1 << 16 ) ) != 0;
+        info.AVX512_CD   = ( cpuInfo[1] & ( 1 << 28 ) ) != 0;
+        info.AVX512_PF   = ( cpuInfo[1] & ( 1 << 26 ) ) != 0;
+        info.AVX512_ER   = ( cpuInfo[1] & ( 1 << 27 ) ) != 0;
+        info.AVX512_VL   = ( cpuInfo[1] & ( 1 << 31 ) ) != 0;
+        info.AVX512_BW   = ( cpuInfo[1] & ( 1 << 30 ) ) != 0;
+        info.AVX512_DQ   = ( cpuInfo[1] & ( 1 << 17 ) ) != 0;
+        info.AVX512_IFMA = ( cpuInfo[1] & ( 1 << 21 ) ) != 0;
+        info.AVX512_VBMI = ( cpuInfo[2] & ( 1 << 1 ) ) != 0;
     }
 
     if ( nExIds >= 0x80000001 ) {
         CPUID( cpuInfo, 0x80000001 );
-        info.x64   = (cpuInfo[3] & (1 << 29)) != 0;
-        info.ABM   = (cpuInfo[2] & (1 <<  5)) != 0;
-        info.SSE4a = (cpuInfo[2] & (1 <<  6)) != 0;
-        info.FMA4  = (cpuInfo[2] & (1 << 16)) != 0;
-        info.XOP   = (cpuInfo[2] & (1 << 11)) != 0;
+        info.x64   = ( cpuInfo[3] & ( 1 << 29 ) ) != 0;
+        info.ABM   = ( cpuInfo[2] & ( 1 << 5 ) ) != 0;
+        info.SSE4a = ( cpuInfo[2] & ( 1 << 6 ) ) != 0;
+        info.FMA4  = ( cpuInfo[2] & ( 1 << 16 ) ) != 0;
+        info.XOP   = ( cpuInfo[2] & ( 1 << 11 ) ) != 0;
     }
 
     return pCPUInfo;
 }
 
-SProcessInfo const & GetProcessInfo()
+SProcessInfo const& GetProcessInfo()
 {
     return ProcessInfo;
 }
@@ -892,7 +895,7 @@ double SysMicroseconds_d()
 
 void PrintCPUFeatures()
 {
-    SCPUInfo const * pCPUInfo = Core::CPUInfo();
+    SCPUInfo const* pCPUInfo = Core::CPUInfo();
 
     GLogger.Printf( "CPU: %s\n", pCPUInfo->Intel ? "Intel" : "AMD" );
     GLogger.Print( "CPU Features:" );
@@ -942,12 +945,12 @@ void PrintCPUFeatures()
     if ( pCPUInfo->OS_AVX512 ) GLogger.Print( " AVX512" );
     GLogger.Print( "\n" );
     GLogger.Print( "Endian: " AN_ENDIAN_STRING "\n" );
-    #ifdef AN_DEBUG
+#ifdef AN_DEBUG
     GLogger.Print( "Compiler: " AN_COMPILER_STRING "\n" );
-    #endif
+#endif
 }
 
-void WriteLog( const char * _Message )
+void WriteLog( const char* _Message )
 {
     if ( ProcessLogFile ) {
         AMutexGurad syncGuard( ProcessLogWriterSync );
@@ -956,44 +959,44 @@ void WriteLog( const char * _Message )
     }
 }
 
-void WriteDebugString( const char * _Message )
+void WriteDebugString( const char* _Message )
 {
-    #if defined AN_DEBUG
-        #if defined AN_COMPILER_MSVC
-        {
-            int n = MultiByteToWideChar( CP_UTF8, 0, _Message, -1, NULL, 0 );
-            if ( 0 != n ) {
-                // Try to alloc on stack
-                if ( n < 4096 ) {
-                    wchar_t * chars = (wchar_t *)StackAlloc( n * sizeof( wchar_t ) );
+#if defined AN_DEBUG
+#    if defined AN_COMPILER_MSVC
+    {
+        int n = MultiByteToWideChar( CP_UTF8, 0, _Message, -1, NULL, 0 );
+        if ( 0 != n ) {
+            // Try to alloc on stack
+            if ( n < 4096 ) {
+                wchar_t* chars = (wchar_t*)StackAlloc( n * sizeof( wchar_t ) );
 
-                    MultiByteToWideChar( CP_UTF8, 0, _Message, -1, chars, n );
+                MultiByteToWideChar( CP_UTF8, 0, _Message, -1, chars, n );
 
-                    OutputDebugString( chars );
-                }
-                else {
-                    wchar_t * chars = (wchar_t *)malloc( n * sizeof( wchar_t ) );
+                OutputDebugString( chars );
+            }
+            else {
+                wchar_t* chars = (wchar_t*)malloc( n * sizeof( wchar_t ) );
 
-                    MultiByteToWideChar( CP_UTF8, 0, _Message, -1, chars, n );
+                MultiByteToWideChar( CP_UTF8, 0, _Message, -1, chars, n );
 
-                    OutputDebugString( chars );
+                OutputDebugString( chars );
 
-                    free( chars );
-                }
+                free( chars );
             }
         }
-        #else
-            #ifdef AN_OS_ANDROID
-                __android_log_print( ANDROID_LOG_INFO, "Angie Engine", _Message );
-            #else
-                fprintf( stdout, "%s", _Message );
-                fflush( stdout );
-            #endif
-        #endif
-    #endif
+    }
+#    else
+#        ifdef AN_OS_ANDROID
+    __android_log_print( ANDROID_LOG_INFO, "Angie Engine", _Message );
+#        else
+    fprintf( stdout, "%s", _Message );
+    fflush( stdout );
+#        endif
+#    endif
+#endif
 }
 
-void * LoadDynamicLib( AStringView _LibraryName )
+void* LoadDynamicLib( AStringView _LibraryName )
 {
     AString name( _LibraryName );
 #if defined AN_OS_WIN32
@@ -1004,22 +1007,22 @@ void * LoadDynamicLib( AStringView _LibraryName )
     return SDL_LoadObject( name.CStr() );
 }
 
-void UnloadDynamicLib( void * _Handle )
+void UnloadDynamicLib( void* _Handle )
 {
     SDL_UnloadObject( _Handle );
 }
 
-void * GetProcAddress( void * _Handle, const char * _ProcName )
+void* GetProcAddress( void* _Handle, const char* _ProcName )
 {
     return _Handle ? SDL_LoadFunction( _Handle, _ProcName ) : nullptr;
 }
 
-void SetClipboard( const char * _Utf8String )
+void SetClipboard( const char* _Utf8String )
 {
     SDL_SetClipboardText( _Utf8String );
 }
 
-const char * GetClipboard()
+const char* GetClipboard()
 {
     if ( Clipboard ) {
         SDL_free( Clipboard );
@@ -1034,19 +1037,19 @@ SMemoryInfo GetPhysMemoryInfo()
 
 #if defined AN_OS_WIN32
     MEMORYSTATUSEX memstat = {};
-    memstat.dwLength = sizeof(memstat);
+    memstat.dwLength       = sizeof( memstat );
     if ( GlobalMemoryStatusEx( &memstat ) ) {
-        info.TotalAvailableMegabytes = memstat.ullTotalPhys >> 20;
+        info.TotalAvailableMegabytes   = memstat.ullTotalPhys >> 20;
         info.CurrentAvailableMegabytes = memstat.ullAvailPhys >> 20;
     }
 #elif defined AN_OS_LINUX
-    long long TotalPages = sysconf( _SC_PHYS_PAGES );
-    long long AvailPages = sysconf( _SC_AVPHYS_PAGES );
-    long long PageSize = sysconf( _SC_PAGE_SIZE );
-    info.TotalAvailableMegabytes = ( TotalPages * PageSize ) >> 20;
+    long long TotalPages           = sysconf( _SC_PHYS_PAGES );
+    long long AvailPages           = sysconf( _SC_AVPHYS_PAGES );
+    long long PageSize             = sysconf( _SC_PAGE_SIZE );
+    info.TotalAvailableMegabytes   = ( TotalPages * PageSize ) >> 20;
     info.CurrentAvailableMegabytes = ( AvailPages * PageSize ) >> 20;
 #else
-#   error "GetPhysMemoryInfo not implemented under current platform"
+#    error "GetPhysMemoryInfo not implemented under current platform"
 #endif
 
 #ifdef AN_OS_WIN32
@@ -1056,43 +1059,42 @@ SMemoryInfo GetPhysMemoryInfo()
 #elif defined AN_OS_LINUX
     info.PageSize = sysconf( _SC_PAGE_SIZE );
 #else
-#   error "GetPageSize not implemented under current platform"
+#    error "GetPageSize not implemented under current platform"
 #endif
 
     return info;
 }
 
-}
+} // namespace Core
 
 namespace
 {
 
-static void DisplayCriticalMessage( const char * _Message )
+static void DisplayCriticalMessage( const char* _Message )
 {
 #if defined AN_OS_WIN32
     wchar_t wstr[1024];
     MultiByteToWideChar( CP_UTF8, 0, _Message, -1, wstr, AN_ARRAY_SIZE( wstr ) );
     MessageBox( NULL, wstr, L"Critical Error", MB_OK | MB_ICONERROR | MB_SETFOREGROUND | MB_TOPMOST );
 #else
-    SDL_MessageBoxData data = {};
-    SDL_MessageBoxButtonData button = {};
+    SDL_MessageBoxData              data   = {};
+    SDL_MessageBoxButtonData        button = {};
     const SDL_MessageBoxColorScheme scheme =
-    {
         {
-            { 56,  54,  53  }, /* SDL_MESSAGEBOX_COLOR_BACKGROUND, */
-        { 209, 207, 205 }, /* SDL_MESSAGEBOX_COLOR_TEXT, */
-        { 140, 135, 129 }, /* SDL_MESSAGEBOX_COLOR_BUTTON_BORDER, */
-        { 105, 102, 99  }, /* SDL_MESSAGEBOX_COLOR_BUTTON_BACKGROUND, */
-        { 205, 202, 53  }, /* SDL_MESSAGEBOX_COLOR_BUTTON_SELECTED, */
-        }
-    };
+            {
+                { 56, 54, 53 },    /* SDL_MESSAGEBOX_COLOR_BACKGROUND, */
+                { 209, 207, 205 }, /* SDL_MESSAGEBOX_COLOR_TEXT, */
+                { 140, 135, 129 }, /* SDL_MESSAGEBOX_COLOR_BUTTON_BORDER, */
+                { 105, 102, 99 },  /* SDL_MESSAGEBOX_COLOR_BUTTON_BACKGROUND, */
+                { 205, 202, 53 },  /* SDL_MESSAGEBOX_COLOR_BUTTON_SELECTED, */
+            } };
 
-    data.flags = SDL_MESSAGEBOX_ERROR;
-    data.title = "Critical Error";
-    data.message = _Message;
-    data.numbuttons = 1;
-    data.buttons = &button;
-    data.window = NULL;
+    data.flags       = SDL_MESSAGEBOX_ERROR;
+    data.title       = "Critical Error";
+    data.message     = _Message;
+    data.numbuttons  = 1;
+    data.buttons     = &button;
+    data.window      = NULL;
     data.colorScheme = &scheme;
 
     button.flags |= SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT;
@@ -1103,10 +1105,11 @@ static void DisplayCriticalMessage( const char * _Message )
 #endif
 }
 
-}
+} // namespace
 
-void CriticalError( const char * _Format, ... ) {
-    char CriticalErrorMessage[ 4096 ];
+void CriticalError( const char* _Format, ... )
+{
+    char CriticalErrorMessage[4096];
 
     va_list VaList;
     va_start( VaList, _Format );
@@ -1130,7 +1133,7 @@ void CriticalError( const char * _Format, ... ) {
 #ifdef AN_ALLOW_ASSERTS
 
 // Define global assert function
-void AssertFunction( const char * _File, int _Line, const char * _Function, const char * _Assertion, const char * _Comment )
+void AssertFunction( const char* _File, int _Line, const char* _Function, const char* _Assertion, const char* _Comment )
 {
     static thread_local bool bNestedFunctionCall = false;
 
@@ -1152,12 +1155,12 @@ void AssertFunction( const char * _File, int _Line, const char * _Function, cons
 
     SDL_SetRelativeMouseMode( SDL_FALSE ); // FIXME: Is it threadsafe?
 
-#ifdef AN_OS_WIN32
+#    ifdef AN_OS_WIN32
     DebugBreak();
-#else
+#    else
     //__asm__( "int $3" );
     raise( SIGTRAP );
-#endif
+#    endif
 
     bNestedFunctionCall = false;
 }
