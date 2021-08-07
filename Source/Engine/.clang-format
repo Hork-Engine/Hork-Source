@@ -479,6 +479,7 @@ SpacesInSquareBrackets: false
 # false:
 # int a[5];
 
+SpacesInConditionalStatement: true
 
 Standard:        Latest
 
