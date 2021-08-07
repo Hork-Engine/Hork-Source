@@ -195,6 +195,11 @@ public:
         ADirectionalLight * dirlight = world->SpawnActor< ADirectionalLight >();
         dirlight->LightComponent->SetCastShadow( true );
         dirlight->LightComponent->SetDirection( Float3( 1, -1, -1 ) );
+        dirlight->LightComponent->SetIlluminance( 20000.0f );
+        dirlight->LightComponent->SetShadowMaxDistance( 40 );
+        dirlight->LightComponent->SetShadowCascadeResolution( 2048 );
+        dirlight->LightComponent->SetShadowCascadeOffset( 0.0f );
+        dirlight->LightComponent->SetShadowCascadeSplitLambda( 0.8f );
 
         // Spawn ground
         STransform spawnTransform;
