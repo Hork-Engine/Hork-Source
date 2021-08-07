@@ -49,37 +49,34 @@ static const char * TextureTypeName[] =
 
 struct STextureFormatMapper
 {
-    RenderCore::DATA_FORMAT PixelFormatTable[256];
-    RenderCore::TEXTURE_FORMAT InternalPixelFormatTable[256];
+    TArray< RenderCore::DATA_FORMAT, TEXTURE_PF_MAX >    PixelFormatTable;
+    TArray< RenderCore::TEXTURE_FORMAT, TEXTURE_PF_MAX > InternalPixelFormatTable;
 
     STextureFormatMapper()
     {
         using namespace RenderCore;
 
-        Core::ZeroMem( PixelFormatTable, sizeof( PixelFormatTable ) );
-        Core::ZeroMem( InternalPixelFormatTable, sizeof( InternalPixelFormatTable ) );
-
         PixelFormatTable[TEXTURE_PF_R8_SNORM] = FORMAT_BYTE1;
         PixelFormatTable[TEXTURE_PF_RG8_SNORM] = FORMAT_BYTE2;
-        PixelFormatTable[TEXTURE_PF_BGR8_SNORM] = FORMAT_BYTE3;
+        //PixelFormatTable[TEXTURE_PF_BGR8_SNORM] = FORMAT_BYTE3;
         PixelFormatTable[TEXTURE_PF_BGRA8_SNORM] = FORMAT_BYTE4;
 
         PixelFormatTable[TEXTURE_PF_R8_UNORM] = FORMAT_UBYTE1;
         PixelFormatTable[TEXTURE_PF_RG8_UNORM] = FORMAT_UBYTE2;
-        PixelFormatTable[TEXTURE_PF_BGR8_UNORM] = FORMAT_UBYTE3;
+        //PixelFormatTable[TEXTURE_PF_BGR8_UNORM] = FORMAT_UBYTE3;
         PixelFormatTable[TEXTURE_PF_BGRA8_UNORM] = FORMAT_UBYTE4;
 
-        PixelFormatTable[TEXTURE_PF_BGR8_SRGB] = FORMAT_UBYTE3;
+        //PixelFormatTable[TEXTURE_PF_BGR8_SRGB] = FORMAT_UBYTE3;
         PixelFormatTable[TEXTURE_PF_BGRA8_SRGB] = FORMAT_UBYTE4;
 
         PixelFormatTable[TEXTURE_PF_R16I] = FORMAT_SHORT1;
         PixelFormatTable[TEXTURE_PF_RG16I] = FORMAT_SHORT2;
-        PixelFormatTable[TEXTURE_PF_BGR16I] = FORMAT_SHORT3;
+        //PixelFormatTable[TEXTURE_PF_BGR16I] = FORMAT_SHORT3;
         PixelFormatTable[TEXTURE_PF_BGRA16I] = FORMAT_SHORT4;
 
         PixelFormatTable[TEXTURE_PF_R16UI] = FORMAT_USHORT1;
         PixelFormatTable[TEXTURE_PF_RG16UI] = FORMAT_USHORT2;
-        PixelFormatTable[TEXTURE_PF_BGR16UI] = FORMAT_USHORT3;
+        //PixelFormatTable[TEXTURE_PF_BGR16UI] = FORMAT_USHORT3;
         PixelFormatTable[TEXTURE_PF_BGRA16UI] = FORMAT_USHORT4;
 
         PixelFormatTable[TEXTURE_PF_R32I] = FORMAT_INT1;
@@ -94,7 +91,7 @@ struct STextureFormatMapper
 
         PixelFormatTable[TEXTURE_PF_R16F] = FORMAT_HALF1;
         PixelFormatTable[TEXTURE_PF_RG16F] = FORMAT_HALF2;
-        PixelFormatTable[TEXTURE_PF_BGR16F] = FORMAT_HALF3;
+        //PixelFormatTable[TEXTURE_PF_BGR16F] = FORMAT_HALF3;
         PixelFormatTable[TEXTURE_PF_BGRA16F] = FORMAT_HALF4;
 
         PixelFormatTable[TEXTURE_PF_R32F] = FORMAT_FLOAT1;
@@ -106,25 +103,25 @@ struct STextureFormatMapper
 
         InternalPixelFormatTable[TEXTURE_PF_R8_SNORM] = TEXTURE_FORMAT_R8_SNORM;
         InternalPixelFormatTable[TEXTURE_PF_RG8_SNORM] = TEXTURE_FORMAT_RG8_SNORM;
-        InternalPixelFormatTable[TEXTURE_PF_BGR8_SNORM] = TEXTURE_FORMAT_RGB8_SNORM;
+        //InternalPixelFormatTable[TEXTURE_PF_BGR8_SNORM] = TEXTURE_FORMAT_RGB8_SNORM;
         InternalPixelFormatTable[TEXTURE_PF_BGRA8_SNORM] = TEXTURE_FORMAT_RGBA8_SNORM;
 
         InternalPixelFormatTable[TEXTURE_PF_R8_UNORM] = TEXTURE_FORMAT_R8;
         InternalPixelFormatTable[TEXTURE_PF_RG8_UNORM] = TEXTURE_FORMAT_RG8;
-        InternalPixelFormatTable[TEXTURE_PF_BGR8_UNORM] = TEXTURE_FORMAT_RGB8;
+        //InternalPixelFormatTable[TEXTURE_PF_BGR8_UNORM] = TEXTURE_FORMAT_RGB8;
         InternalPixelFormatTable[TEXTURE_PF_BGRA8_UNORM] = TEXTURE_FORMAT_RGBA8;
 
-        InternalPixelFormatTable[TEXTURE_PF_BGR8_SRGB] = TEXTURE_FORMAT_SRGB8;
+        //InternalPixelFormatTable[TEXTURE_PF_BGR8_SRGB] = TEXTURE_FORMAT_SRGB8;
         InternalPixelFormatTable[TEXTURE_PF_BGRA8_SRGB] = TEXTURE_FORMAT_SRGB8_ALPHA8;
 
         InternalPixelFormatTable[TEXTURE_PF_R16I] = TEXTURE_FORMAT_R16I;
         InternalPixelFormatTable[TEXTURE_PF_RG16I] = TEXTURE_FORMAT_RG16I;
-        InternalPixelFormatTable[TEXTURE_PF_BGR16I] = TEXTURE_FORMAT_RGB16I;
+        //InternalPixelFormatTable[TEXTURE_PF_BGR16I] = TEXTURE_FORMAT_RGB16I;
         InternalPixelFormatTable[TEXTURE_PF_BGRA16I] = TEXTURE_FORMAT_RGBA16I;
 
         InternalPixelFormatTable[TEXTURE_PF_R16UI] = TEXTURE_FORMAT_R16UI;
         InternalPixelFormatTable[TEXTURE_PF_RG16UI] = TEXTURE_FORMAT_RG16UI;
-        InternalPixelFormatTable[TEXTURE_PF_BGR16UI] = TEXTURE_FORMAT_RGB16UI;
+        //InternalPixelFormatTable[TEXTURE_PF_BGR16UI] = TEXTURE_FORMAT_RGB16UI;
         InternalPixelFormatTable[TEXTURE_PF_BGRA16UI] = TEXTURE_FORMAT_RGBA16UI;
 
         InternalPixelFormatTable[TEXTURE_PF_R32I] = TEXTURE_FORMAT_R32I;
@@ -139,7 +136,7 @@ struct STextureFormatMapper
 
         InternalPixelFormatTable[TEXTURE_PF_R16F] = TEXTURE_FORMAT_R16F;
         InternalPixelFormatTable[TEXTURE_PF_RG16F] = TEXTURE_FORMAT_RG16F;
-        InternalPixelFormatTable[TEXTURE_PF_BGR16F] = TEXTURE_FORMAT_RGB16F;
+        //InternalPixelFormatTable[TEXTURE_PF_BGR16F] = TEXTURE_FORMAT_RGB16F;
         InternalPixelFormatTable[TEXTURE_PF_BGRA16F] = TEXTURE_FORMAT_RGBA16F;
 
         InternalPixelFormatTable[TEXTURE_PF_R32F] = TEXTURE_FORMAT_R32F;
@@ -263,63 +260,54 @@ bool ATexture::InitializeCubemapFromImages( TArray< AImage const *, 6 > const & 
 
 void ATexture::LoadInternalResource( const char * _Path ) {
     if ( !Core::Stricmp( _Path, "/Default/Textures/White" ) ) {
-        byte data[ 1 * 1 * 3 ];
-        Core::Memset( data, 0xff, sizeof( data ) );
+        const byte data[4] = { 255, 255, 255, 255 };
 
-        Initialize2D( TEXTURE_PF_BGR8_UNORM, 1, 1, 1 );
+        Initialize2D( TEXTURE_PF_BGRA8_UNORM, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
 
         return;
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Textures/Black" ) ) {
-        byte data[ 1 * 1 * 3 ];
-        Core::ZeroMem( data, sizeof( data ) );
+        const byte data[4] = { 0, 0, 0, 255 };
 
-        Initialize2D( TEXTURE_PF_BGR8_UNORM, 1, 1, 1 );
+        Initialize2D( TEXTURE_PF_BGRA8_UNORM, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
 
         return;
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Textures/Gray" ) ) {
-        byte data[ 1 * 1 * 3 ];
-        Core::Memset( data, 127, sizeof( data ) );
+        const byte data[4] = { 127, 127, 127, 255 };
 
-        Initialize2D( TEXTURE_PF_BGR8_UNORM, 1, 1, 1 );
+        Initialize2D( TEXTURE_PF_BGRA8_UNORM, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
 
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Textures/BaseColorWhite" )
-         || !Core::Stricmp( _Path, "/Default/Textures/Default2D" ) ) {
-        byte data[ 1 * 1 * 3 ];
-        Core::Memset( data, 240, sizeof( data ) );
+    if ( !Core::Stricmp( _Path, "/Default/Textures/BaseColorWhite" ) || !Core::Stricmp( _Path, "/Default/Textures/Default2D" ) ) {
+        const byte data[4] = { 240, 240, 240, 255 };
 
-        Initialize2D( TEXTURE_PF_BGR8_UNORM, 1, 1, 1 );
+        Initialize2D( TEXTURE_PF_BGRA8_UNORM, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
 
         return;
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Textures/BaseColorBlack" ) ) {
-        byte data[ 1 * 1 * 3 ];
-        Core::Memset( data, 30, sizeof( data ) );
+        const byte data[4] = { 30, 30, 30, 255 };
 
-        Initialize2D( TEXTURE_PF_BGR8_UNORM, 1, 1, 1 );
+        Initialize2D( TEXTURE_PF_BGRA8_UNORM, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
 
         return;
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Textures/Normal" ) ) {
-        byte data[ 1 * 1 * 3 ];
-        data[ 0 ] = 255; // z
-        data[ 1 ] = 127; // y
-        data[ 2 ] = 127; // x
+        const byte data[4] = { 255, 127, 127, 255 }; // Z Y X Alpha
 
-        Initialize2D( TEXTURE_PF_BGR8_UNORM, 1, 1, 1 );
+        Initialize2D( TEXTURE_PF_BGRA8_UNORM, 1, 1, 1 );
         WriteTextureData2D( 0, 0, 1, 1, 0, data );
 
         return;
@@ -327,24 +315,24 @@ void ATexture::LoadInternalResource( const char * _Path ) {
 
     if ( !Core::Stricmp( _Path, "/Default/Textures/DefaultCubemap" ) ) {
         constexpr Float3 dirs[6] = {
-            Float3( 1,0,0 ),
-            Float3( -1,0,0 ),
-            Float3( 0,1,0 ),
-            Float3( 0,-1,0 ),
-            Float3( 0,0,1 ),
-            Float3( 0,0,-1 )
-        };
+            Float3( 1, 0, 0 ),
+            Float3( -1, 0, 0 ),
+            Float3( 0, 1, 0 ),
+            Float3( 0, -1, 0 ),
+            Float3( 0, 0, 1 ),
+            Float3( 0, 0, -1 ) };
 
-        byte data[6][3];
-        for ( int i = 0 ; i < 6 ; i++ ) {
-            data[i][0] = (dirs[i].Z + 1.0f) * 127.5f;
-            data[i][1] = (dirs[i].Y + 1.0f) * 127.5f;
-            data[i][2] = (dirs[i].X + 1.0f) * 127.5f;
+        byte data[6][4];
+        for ( int i = 0; i < 6; i++ ) {
+            data[i][0] = ( dirs[i].Z + 1.0f ) * 127.5f;
+            data[i][1] = ( dirs[i].Y + 1.0f ) * 127.5f;
+            data[i][2] = ( dirs[i].X + 1.0f ) * 127.5f;
+            data[i][3] = 255;
         }
 
-        InitializeCubemap( TEXTURE_PF_BGR8_UNORM, 1, 1 );
+        InitializeCubemap( TEXTURE_PF_BGRA8_UNORM, 1, 1 );
 
-        for ( int face = 0 ; face < 6 ; face++ ) {
+        for ( int face = 0; face < 6; face++ ) {
             WriteTextureDataCubemap( 0, 0, 1, 1, face, 0, data[face] );
         }
         return;
@@ -352,7 +340,7 @@ void ATexture::LoadInternalResource( const char * _Path ) {
 
 #if 0
     if ( !Core::Stricmp( _Path, "/Default/Textures/BlackCubemap" ) ) {
-        byte data[1] = {};
+        const byte data[1] = {};
 
         InitializeCubemap( TEXTURE_PF_R8, 1, 1 );
 
@@ -363,17 +351,16 @@ void ATexture::LoadInternalResource( const char * _Path ) {
     }
 #endif
 
-    if ( !Core::Stricmp( _Path, "/Default/Textures/LUT1" )
-        || !Core::Stricmp( _Path, "/Default/Textures/Default3D" ) ) {
+    if ( !Core::Stricmp( _Path, "/Default/Textures/LUT1" ) || !Core::Stricmp( _Path, "/Default/Textures/Default3D" ) ) {
 
         constexpr SColorGradingPreset ColorGradingPreset1 = {
-            Float3( 0.5f ),   // Gain
-            Float3( 0.5f ),   // Gamma
-            Float3( 0.5f ),   // Lift
-            Float3( 1.0f ),   // Presaturation
-            Float3( 0.0f ),   // Color temperature strength
-            6500.0f,          // Color temperature (in K)
-            0.0f              // Color temperature brightness normalization factor
+            Float3( 0.5f ), // Gain
+            Float3( 0.5f ), // Gamma
+            Float3( 0.5f ), // Lift
+            Float3( 1.0f ), // Presaturation
+            Float3( 0.0f ), // Color temperature strength
+            6500.0f,        // Color temperature (in K)
+            0.0f            // Color temperature brightness normalization factor
         };
 
         InitializeColorGradingLUT( ColorGradingPreset1 );
@@ -383,13 +370,13 @@ void ATexture::LoadInternalResource( const char * _Path ) {
 
     if ( !Core::Stricmp( _Path, "/Default/Textures/LUT2" ) ) {
         constexpr SColorGradingPreset ColorGradingPreset2 = {
-            Float3( 0.5f ),   // Gain
-            Float3( 0.5f ),   // Gamma
-            Float3( 0.5f ),   // Lift
-            Float3( 1.0f ),   // Presaturation
-            Float3( 1.0f ),   // Color temperature strength
-            3500.0f,          // Color temperature (in K)
-            1.0f              // Color temperature brightness normalization factor
+            Float3( 0.5f ), // Gain
+            Float3( 0.5f ), // Gamma
+            Float3( 0.5f ), // Lift
+            Float3( 1.0f ), // Presaturation
+            Float3( 1.0f ), // Color temperature strength
+            3500.0f,        // Color temperature (in K)
+            1.0f            // Color temperature brightness normalization factor
         };
 
         InitializeColorGradingLUT( ColorGradingPreset2 );
@@ -401,9 +388,9 @@ void ATexture::LoadInternalResource( const char * _Path ) {
         constexpr SColorGradingPreset ColorGradingPreset3 = {
             Float3( 0.51f, 0.55f, 0.53f ), // Gain
             Float3( 0.45f, 0.57f, 0.55f ), // Gamma
-            Float3( 0.5f,  0.4f,  0.6f ),  // Lift
-            Float3( 1.0f,  0.9f,  0.8f ),  // Presaturation
-            Float3( 1.0f,  1.0f,  1.0f ),  // Color temperature strength
+            Float3( 0.5f, 0.4f, 0.6f ),    // Lift
+            Float3( 1.0f, 0.9f, 0.8f ),    // Presaturation
+            Float3( 1.0f, 1.0f, 1.0f ),    // Color temperature strength
             6500.0,                        // Color temperature (in K)
             0.0                            // Color temperature brightness normalization factor
         };
@@ -414,18 +401,22 @@ void ATexture::LoadInternalResource( const char * _Path ) {
     }
 
     if ( !Core::Stricmp( _Path, "/Default/Textures/LUT_Luminance" ) ) {
-        byte data[ 16 ][ 16 ][ 16 ][ 3 ];
-        for ( int z = 0 ; z < 16 ; z++ ) {
-            for ( int y = 0 ; y < 16 ; y++ ) {
-                for ( int x = 0 ; x < 16 ; x++ ) {
-                    data[ z ][ y ][ x ][ 0 ] =
-                    data[ z ][ y ][ x ][ 1 ] =
-                    data[ z ][ y ][ x ][ 2 ] = Math::Clamp( x * ( 0.2126f / 15.0f * 255.0f ) + y * ( 0.7152f / 15.0f * 255.0f ) + z * ( 0.0722f / 15.0f * 255.0f ), 0.0f, 255.0f );
+        byte * data = (byte *)GHunkMemory.Alloc( 16 * 16 * 16 * 4 );
+        for ( int z = 0; z < 16; z++ ) {
+            byte * depth = data + (size_t)z * ( 16 * 16 * 4 );
+            for ( int y = 0; y < 16; y++ ) {
+                byte * row = depth + (size_t)y * ( 16 * 4 );
+                for ( int x = 0; x < 16; x++ ) {
+                    byte * pixel = row + (size_t)x * 4;
+                    pixel[0] = pixel[1] = pixel[2] = Math::Clamp( x * ( 0.2126f / 15.0f * 255.0f ) + y * ( 0.7152f / 15.0f * 255.0f ) + z * ( 0.0722f / 15.0f * 255.0f ), 0.0f, 255.0f );
+                    pixel[3]                       = 255;
                 }
             }
         }
-        Initialize3D( TEXTURE_PF_BGR8_SRGB, 1, 16, 16, 16 );
+        Initialize3D( TEXTURE_PF_BGRA8_SRGB, 1, 16, 16, 16 );
         WriteArbitraryData( 0, 0, 0, 16, 16, 16, 0, data );
+
+        GHunkMemory.ClearLastHunk();
 
         return;
     }
@@ -538,7 +529,7 @@ bool ATexture::LoadResource( IBinaryStream & Stream ) {
 
         uint32_t lodWidth, lodHeight, lodDepth;
         size_t pixelSize = texturePixelFormat.SizeInBytesUncompressed();
-        size_t maxSize = w * h * d * pixelSize;
+        size_t   maxSize   = (size_t)w * h * d * pixelSize;
         //byte * lodData = (byte *)GHunkMemory.HunkMemory( maxSize, 1 );
         byte * lodData = (byte *)GHeapMemory.Alloc( maxSize, 1 );
 
@@ -556,7 +547,7 @@ bool ATexture::LoadResource( IBinaryStream & Stream ) {
                 lodHeight = Stream.ReadUInt32();
                 lodDepth = Stream.ReadUInt32();
 
-                size_t size = lodWidth * lodHeight * lodDepth * pixelSize;
+                size_t size = (size_t)lodWidth * lodHeight * lodDepth * pixelSize;
 
                 if ( size > maxSize ) {
                     GLogger.Printf( "ATexture: invalid image %s\n", fn );
@@ -627,7 +618,7 @@ size_t ATexture::TextureSizeInBytes2D( STexturePixelFormat _PixelFormat, int _Nu
     } else {
         size_t sum = 0;
         for ( int i = 0 ; i < _NumLods ; i++ ) {
-            sum += Math::Max( 1, _Width ) * Math::Max( 1, _Height );
+            sum += (size_t)Math::Max( 1, _Width ) * Math::Max( 1, _Height );
             _Width >>= 1;
             _Height >>= 1;
         }
@@ -643,7 +634,7 @@ size_t ATexture::TextureSizeInBytes3D( STexturePixelFormat _PixelFormat, int _Nu
     } else {
         size_t sum = 0;
         for ( int i = 0 ; i < _NumLods ; i++ ) {
-            sum += Math::Max( 1, _Width ) * Math::Max( 1, _Height ) * Math::Max( 1, _Depth );
+            sum += (size_t)Math::Max( 1, _Width ) * Math::Max( 1, _Height ) * Math::Max( 1, _Depth );
             _Width >>= 1;
             _Height >>= 1;
             _Depth >>= 1;
@@ -660,7 +651,7 @@ size_t ATexture::TextureSizeInBytesCubemap( STexturePixelFormat _PixelFormat, in
     } else {
         size_t sum = 0;
         for ( int i = 0 ; i < _NumLods ; i++ ) {
-            sum += Math::Max( 1, _Width ) * Math::Max( 1, _Width );
+            sum += (size_t)Math::Max( 1, _Width ) * Math::Max( 1, _Width );
             _Width >>= 1;
         }
         return _PixelFormat.SizeInBytesUncompressed() * sum * 6 * Math::Max( _ArraySize, 1 );
@@ -811,19 +802,23 @@ void ATexture::InitializeColorGradingLUT( const char * _Path ) {
     AImage image;
 
     if ( image.Load( _Path, nullptr, IMAGE_PF_BGRA_GAMMA2 ) ) {
-        byte data[ 16 ][ 16 ][ 16 ][ 4 ];
+        const byte * p = static_cast< const byte * >( image.GetData() );
 
-        const byte * p = static_cast< const byte * >(image.GetData());
+        byte * data = (byte *)GHunkMemory.Alloc( 16 * 16 * 16 * 4 );
 
-        for ( int y = 0 ; y < 16 ; y++ ) {
-           for ( int z = 0 ; z < 16 ; z++ ) {
-                Core::Memcpy( &data[ z ][ y ][ 0 ][ 0 ], p, 16 * 4 );
+        for ( int y = 0; y < 16; y++ ) {
+            for ( int z = 0; z < 16; z++ ) {
+                byte * row = data + (size_t)z * ( 16 * 16 * 4 ) + y * ( 16 * 4 );
+
+                Core::Memcpy( row, p, 16 * 4 );
                 p += 16 * 4;
             }
         }
 
         Initialize3D( TEXTURE_PF_BGRA8_SRGB, 1, 16, 16, 16 );
         WriteArbitraryData( 0, 0, 0, 16, 16, 16, 0, data );
+
+        GHunkMemory.ClearLastHunk();
 
         return;
     }
@@ -856,33 +851,38 @@ static Float3 ApplyColorGrading( SColorGradingPreset const & p, AColor4 const & 
 }
 
 void ATexture::InitializeColorGradingLUT( SColorGradingPreset const & _Preset ) {
-    byte data[ 16 ][ 16 ][ 16 ][ 3 ];
     AColor4 color;
-    Float3 result;
+    Float3  result;
 
-    Initialize3D( TEXTURE_PF_BGR8_SRGB, 1, 16, 16, 16 );
+    Initialize3D( TEXTURE_PF_BGRA8_SRGB, 1, 16, 16, 16 );
 
     const float scale = 1.0f / 15.0f;
 
-    for ( int z = 0 ; z < 16 ; z++ ) {
-        color.Z = scale * z;
+    byte * data = (byte *)GHunkMemory.Alloc( 16 * 16 * 16 * 4 );
 
-        for ( int y = 0 ; y < 16 ; y++ ) {
-            color.Y = scale * y;
-
-            for ( int x = 0 ; x < 16 ; x++ ) {
+    for ( int z = 0; z < 16; z++ ) {
+        color.Z      = scale * z;
+        byte * depth = data + (size_t)z * ( 16 * 16 * 4 );
+        for ( int y = 0; y < 16; y++ ) {
+            color.Y    = scale * y;
+            byte * row = depth + (size_t)y * ( 16 * 4 );
+            for ( int x = 0; x < 16; x++ ) {
                 color.X = scale * x;
 
                 result = ApplyColorGrading( _Preset, color ) * 255.0f;
 
-                data[ z ][ y ][ x ][ 0 ] = Math::Clamp( result.Z, 0.0f, 255.0f );
-                data[ z ][ y ][ x ][ 1 ] = Math::Clamp( result.Y, 0.0f, 255.0f );
-                data[ z ][ y ][ x ][ 2 ] = Math::Clamp( result.X, 0.0f, 255.0f );
+                byte * pixel = row + (size_t)x * 4;
+                pixel[0]     = Math::Clamp( result.Z, 0.0f, 255.0f );
+                pixel[1]     = Math::Clamp( result.Y, 0.0f, 255.0f );
+                pixel[2]     = Math::Clamp( result.X, 0.0f, 255.0f );
+                pixel[3]     = 255;
             }
         }
     }
 
     WriteArbitraryData( 0, 0, 0, 16, 16, 16, 0, data );
+
+    GHunkMemory.ClearLastHunk();
 }
 
 void ATexture::InitializeCubemap( STexturePixelFormat _PixelFormat, int _NumLods, int _Width ) {
@@ -1021,7 +1021,7 @@ bool ATexture::WriteArbitraryData( int _LocationX, int _LocationY, int _Location
         return false;
     }
 
-    size_t sizeInBytes = _Width * _Height * _Depth;
+    size_t sizeInBytes = (size_t)_Width * _Height * _Depth;
 
     if ( IsCompressed() ) {
         // TODO

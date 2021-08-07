@@ -416,134 +416,107 @@ struct STextureSampler
 };
 
 /**
- Texture pixel format
- Bits:
-    1xxxxxxx - signed uncompressed,
-    00xxxxxx - unsigned uncompressed,
-    01xxxxxx - compressed,
-    11xxxxxx - non-trivial format
- For uncompressed formats:
-    7 - signed
-    6 - always zero
-    5 - float point
-    4 - srgb
-    3+2 - num components (0 - 1, 1 - 2, 2 - 3, 3 - 4)
-    1+0 - bytes per channel (0 - 1, 1 - 2, 2 - 4)
- For compressed formats
-    7 - always zero
-    6 - always one
-    5 - signed
-    4 - srgb
-    3+2 - num components (0 - 1, 1 - 2, 2 - 3, 3 - 4)
- For non-trivial formats
-    Just enum 192 + 0..63
+Texture pixel format
 */
 enum ETexturePixelFormat : uint8_t
 {
-    TEXTURE_PF_R8_SNORM  = ( 1<<7 ) | ( 0<<2 ) | ( 0 ),
-    TEXTURE_PF_RG8_SNORM = ( 1<<7 ) | ( 1<<2 ) | ( 0 ),
-    TEXTURE_PF_BGR8_SNORM = ( 1<<7 ) | ( 2<<2 ) | ( 0 ),
-    TEXTURE_PF_BGRA8_SNORM = ( 1<<7 ) | ( 3<<2 ) | ( 0 ),
+    TEXTURE_PF_R8_SNORM,
+    TEXTURE_PF_RG8_SNORM,
+    //TEXTURE_PF_BGR8_SNORM,
+    TEXTURE_PF_BGRA8_SNORM,
 
-    TEXTURE_PF_R8_UNORM = ( 0<<2 ) | ( 0 ),
-    TEXTURE_PF_RG8_UNORM = ( 1<<2 ) | ( 0 ),
-    TEXTURE_PF_BGR8_UNORM = ( 2<<2 ) | ( 0 ),
-    TEXTURE_PF_BGRA8_UNORM = ( 3<<2 ) | ( 0 ),
+    TEXTURE_PF_R8_UNORM,
+    TEXTURE_PF_RG8_UNORM,
+    //TEXTURE_PF_BGR8_UNORM,
+    TEXTURE_PF_BGRA8_UNORM,
 
-    TEXTURE_PF_BGR8_SRGB = ( 1<<4 ) | ( 2<<2 ) | ( 0 ),
-    TEXTURE_PF_BGRA8_SRGB = ( 1<<4 ) | ( 3<<2 ) | ( 0 ),
+    //TEXTURE_PF_BGR8_SRGB,
+    TEXTURE_PF_BGRA8_SRGB,
 
-    TEXTURE_PF_R16I = ( 1<<7 ) | ( 0<<2 ) | ( 1 ),
-    TEXTURE_PF_RG16I = ( 1<<7 ) | ( 1<<2 ) | ( 1 ),
-    TEXTURE_PF_BGR16I = ( 1<<7 ) | ( 2<<2 ) | ( 1 ),
-    TEXTURE_PF_BGRA16I = ( 1<<7 ) | ( 3<<2 ) | ( 1 ),
+    TEXTURE_PF_R16I,
+    TEXTURE_PF_RG16I,
+    //TEXTURE_PF_BGR16I,
+    TEXTURE_PF_BGRA16I,
 
-    TEXTURE_PF_R16UI = ( 0<<2 ) | ( 1 ),
-    TEXTURE_PF_RG16UI = ( 1<<2 ) | ( 1 ),
-    TEXTURE_PF_BGR16UI = ( 2<<2 ) | ( 1 ),
-    TEXTURE_PF_BGRA16UI = ( 3<<2 ) | ( 1 ),
+    TEXTURE_PF_R16UI,
+    TEXTURE_PF_RG16UI,
+    //TEXTURE_PF_BGR16UI,
+    TEXTURE_PF_BGRA16UI,
 
-    TEXTURE_PF_R32I = ( 1<<7 ) | ( 0<<2 ) | ( 2 ),
-    TEXTURE_PF_RG32I = ( 1<<7 ) | ( 1<<2 ) | ( 2 ),
-    TEXTURE_PF_BGR32I = ( 1<<7 ) | ( 2<<2 ) | ( 2 ),
-    TEXTURE_PF_BGRA32I = ( 1<<7 ) | ( 3<<2 ) | ( 2 ),
+    TEXTURE_PF_R32I,
+    TEXTURE_PF_RG32I,
+    TEXTURE_PF_BGR32I,
+    TEXTURE_PF_BGRA32I,
 
-    TEXTURE_PF_R32UI = ( 0<<2 ) | ( 2 ),
-    TEXTURE_PF_RG32UI = ( 1<<2 ) | ( 2 ),
-    TEXTURE_PF_BGR32UI = ( 2<<2 ) | ( 2 ),
-    TEXTURE_PF_BGRA32UI = ( 3<<2 ) | ( 2 ),
+    TEXTURE_PF_R32UI,
+    TEXTURE_PF_RG32UI,
+    TEXTURE_PF_BGR32UI,
+    TEXTURE_PF_BGRA32UI,
 
-    TEXTURE_PF_R16F = ( 1<<7 ) | ( 1<<5 ) | ( 0<<2 ) | ( 1 ),
-    TEXTURE_PF_RG16F = ( 1<<7 ) | ( 1<<5 ) | ( 1<<2 ) | ( 1 ),
-    TEXTURE_PF_BGR16F = ( 1<<7 ) | ( 1<<5 ) | ( 2<<2 ) | ( 1 ),
-    TEXTURE_PF_BGRA16F = ( 1<<7 ) | ( 1<<5 ) | ( 3<<2 ) | ( 1 ),
+    TEXTURE_PF_R16F,
+    TEXTURE_PF_RG16F,
+    //TEXTURE_PF_BGR16F,
+    TEXTURE_PF_BGRA16F,
 
-    TEXTURE_PF_R32F = ( 1<<7 ) | ( 1<<5 ) | ( 0<<2 ) | ( 2 ),
-    TEXTURE_PF_RG32F = ( 1<<7 ) | ( 1<<5 ) | ( 1<<2 ) | ( 2 ),
-    TEXTURE_PF_BGR32F = ( 1<<7 ) | ( 1<<5 ) | ( 2<<2 ) | ( 2 ),
-    TEXTURE_PF_BGRA32F = ( 1<<7 ) | ( 1<<5 ) | ( 3<<2 ) | ( 2 ),
+    TEXTURE_PF_R32F,
+    TEXTURE_PF_RG32F,
+    TEXTURE_PF_BGR32F,
+    TEXTURE_PF_BGRA32F,
+
+    TEXTURE_PF_R11F_G11F_B10F,
 
     // Compressed formats
 
     // RGB
-    TEXTURE_PF_COMPRESSED_BC1_RGB = ( 1<<6 ) | ( 2<<2 ),
-    TEXTURE_PF_COMPRESSED_BC1_SRGB = ( 1<<6 ) | ( 1<<4 ) | ( 2<<2 ),
+    TEXTURE_PF_COMPRESSED_BC1_RGB,
+    TEXTURE_PF_COMPRESSED_BC1_SRGB,
 
     // RGB A-4bit / RGB (not the best quality, it is better to use BC3)
-    TEXTURE_PF_COMPRESSED_BC2_RGBA = ( 1<<6 ) | ( 3<<2 ),
-    TEXTURE_PF_COMPRESSED_BC2_SRGB_ALPHA = ( 1<<6 ) | ( 1<<4 ) | ( 3<<2 ),
+    TEXTURE_PF_COMPRESSED_BC2_RGBA,
+    TEXTURE_PF_COMPRESSED_BC2_SRGB_ALPHA,
 
     // RGB A-8bit
-    TEXTURE_PF_COMPRESSED_BC3_RGBA = ( 1<<6 ) | ( 3<<2 ),
-    TEXTURE_PF_COMPRESSED_BC3_SRGB_ALPHA = ( 1<<6 ) | ( 1<<4 ) | ( 3<<2 ),
+    TEXTURE_PF_COMPRESSED_BC3_RGBA,
+    TEXTURE_PF_COMPRESSED_BC3_SRGB_ALPHA,
 
     // R single channel texture (use for metalmap, glossmap, etc)
-    TEXTURE_PF_COMPRESSED_BC4_R = ( 1<<6 ) | ( 0<<2 ),
-    TEXTURE_PF_COMPRESSED_BC4_R_SIGNED = ( 1<<6 ) | ( 1<<5 ) | ( 0<<2 ),
+    TEXTURE_PF_COMPRESSED_BC4_R,
+    TEXTURE_PF_COMPRESSED_BC4_R_SIGNED,
 
     // RG two channel texture (use for normal map or two grayscale maps)
-    TEXTURE_PF_COMPRESSED_BC5_RG = ( 1<<6 ) | ( 1<<2 ),
-    TEXTURE_PF_COMPRESSED_BC5_RG_SIGNED = ( 1<<6 ) | ( 1<<5 ) | ( 1<<2 ),
+    TEXTURE_PF_COMPRESSED_BC5_RG,
+    TEXTURE_PF_COMPRESSED_BC5_RG_SIGNED,
 
     // RGB half float HDR
-    TEXTURE_PF_COMPRESSED_BC6H = ( 1<<6 ) | ( 2<<2 ),
-    TEXTURE_PF_COMPRESSED_BC6H_SIGNED = ( 1<<6 ) | ( 1<<5 ) | ( 2<<2 ),
+    TEXTURE_PF_COMPRESSED_BC6H,
+    TEXTURE_PF_COMPRESSED_BC6H_SIGNED,
 
     // RGB[A], best quality, every block is compressed different
-    TEXTURE_PF_COMPRESSED_BC7_RGBA = ( 1<<6 ) | ( 3<<2 ),
-    TEXTURE_PF_COMPRESSED_BC7_SRGB_ALPHA = ( 1<<6 ) | ( 1<<4 ) | ( 3<<2 ),
+    TEXTURE_PF_COMPRESSED_BC7_RGBA,
+    TEXTURE_PF_COMPRESSED_BC7_SRGB_ALPHA,
 
-    // Non-trivial formats
-
-    TEXTURE_PF_R11F_G11F_B10F = ( 3<<6 ) | 0,
-    // TEXTURE_PF_<name> = ( 3<<6 ) | n,
+    TEXTURE_PF_MAX
 };
 
 struct STexturePixelFormat
 {
     ETexturePixelFormat Data;
 
-    STexturePixelFormat() : Data( TEXTURE_PF_BGRA8_SRGB ) {}
-    STexturePixelFormat( ETexturePixelFormat _PixelFormat ) : Data( _PixelFormat ) {}
+    STexturePixelFormat() :
+        Data( TEXTURE_PF_BGRA8_SRGB ) {}
+    STexturePixelFormat( ETexturePixelFormat _PixelFormat ) :
+        Data( _PixelFormat ) {}
 
-    void operator = ( ETexturePixelFormat _PixelFormat ) { Data = _PixelFormat; }
+    void operator=( ETexturePixelFormat _PixelFormat ) { Data = _PixelFormat; }
 
     bool operator==( ETexturePixelFormat _PixelFormat ) const { return Data == _PixelFormat; }
     bool operator==( STexturePixelFormat _PixelFormat ) const { return Data == _PixelFormat.Data; }
     bool operator!=( ETexturePixelFormat _PixelFormat ) const { return Data != _PixelFormat; }
     bool operator!=( STexturePixelFormat _PixelFormat ) const { return Data != _PixelFormat.Data; }
 
-    bool IsCompressed() const {
-        return ( ( Data >> 6 ) & 3 ) == 1;
-    }
+    bool IsCompressed() const;
 
-    bool IsSRGB() const {
-        return ( ( Data >> 4 ) & 1 ) && !IsNonTrivial();
-    }
-
-    bool IsNonTrivial() const {
-        return ( Data >> 6 ) == 3;
-    }
+    bool IsSRGB() const;
 
     int SizeInBytesUncompressed() const;
 
@@ -551,11 +524,13 @@ struct STexturePixelFormat
 
     int NumComponents() const;
 
-    void Read( IBinaryStream & _Stream ) {
+    void Read( IBinaryStream & _Stream )
+    {
         Data = (ETexturePixelFormat)_Stream.ReadUInt8();
     }
 
-    void Write( IBinaryStream & _Stream ) const {
+    void Write( IBinaryStream & _Stream ) const
+    {
         _Stream.WriteUInt8( (uint8_t)Data );
     }
 

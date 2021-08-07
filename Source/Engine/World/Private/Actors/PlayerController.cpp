@@ -261,22 +261,23 @@ void APlayerController::UpdatePawnCamera() {
 
 
 ARenderingParameters::ARenderingParameters() {
-    static uint16_t data[16][16][16][3];
-    static bool dataInit = false;
+    static uint16_t data[16][16][16][4];
+    static bool     dataInit = false;
     if ( !dataInit ) {
-        for ( int z = 0 ; z < 16 ; z++ ) {
-            for ( int y = 0 ; y < 16 ; y++ ) {
-                for ( int x = 0 ; x < 16 ; x++ ) {
-                    data[z][y][x][2] = Math::FloatToHalf( (float)x / 15.0f * 255.0f );
-                    data[z][y][x][1] = Math::FloatToHalf( (float)y / 15.0f * 255.0f );
+        for ( int z = 0; z < 16; z++ ) {
+            for ( int y = 0; y < 16; y++ ) {
+                for ( int x = 0; x < 16; x++ ) {
                     data[z][y][x][0] = Math::FloatToHalf( (float)z / 15.0f * 255.0f );
+                    data[z][y][x][1] = Math::FloatToHalf( (float)y / 15.0f * 255.0f );
+                    data[z][y][x][2] = Math::FloatToHalf( (float)x / 15.0f * 255.0f );
+                    data[z][y][x][3] = 255;
                 }
             }
         }
         dataInit = true;
     }
 
-    CurrentColorGradingLUT = CreateInstanceOf< ATexture >( STexture3D{}, TEXTURE_PF_BGR16F, 1, 16, 16, 16 );
+    CurrentColorGradingLUT = CreateInstanceOf< ATexture >( STexture3D{}, TEXTURE_PF_BGRA16F, 1, 16, 16, 16 );
     CurrentColorGradingLUT->WriteTextureData3D( 0, 0, 0, 16, 16, 16, 0, data );
 
     const float initialExposure[2] = { 30.0f / 255.0f, 30.0f / 255.0f };
