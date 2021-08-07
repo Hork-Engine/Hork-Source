@@ -115,7 +115,7 @@ public:
     void SetPosition( Float3 const & _Position );
 
     /** Set local position */
-    void SetPosition( float const & _X, float const & _Y, float const & _Z );
+    void SetPosition( float _X, float _Y, float _Z );
 
     /** Set local rotation */
     void SetRotation( Quat const & _Rotation );
@@ -124,16 +124,16 @@ public:
     void SetAngles( Angl const & _Angles );
 
     /** Set local rotation */
-    void SetAngles( float const & _Pitch, float const & _Yaw, float const & _Roll );
+    void SetAngles( float _Pitch, float _Yaw, float _Roll );
 
     /** Set scale */
     void SetScale( Float3 const & _Scale );
 
     /** Set scale */
-    void SetScale( float const & _X, float const & _Y, float const & _Z );
+    void SetScale( float _X, float _Y, float _Z );
 
     /** Set scale */
-    void SetScale( float const & _ScaleXYZ );
+    void SetScale( float _ScaleXYZ );
 
     /** Set local transform */
     void SetTransform( Float3 const & _Position, Quat const & _Rotation );
@@ -151,7 +151,7 @@ public:
     void SetWorldPosition( Float3 const & _Position );
 
     /** Set world position */
-    void SetWorldPosition( float const & _X, float const & _Y, float const & _Z );
+    void SetWorldPosition( float _X, float _Y, float _Z );
 
     /** Set world rotation */
     void SetWorldRotation( Quat const & _Rotation );
@@ -160,7 +160,7 @@ public:
     void SetWorldScale( Float3 const & _Scale );
 
     /** Set world scale */
-    void SetWorldScale( float const & _X, float const & _Y, float const & _Z );
+    void SetWorldScale( float _X, float _Y, float _Z );
 
     /** Set world transform */
     void SetWorldTransform( Float3 const & _Position, Quat const & _Rotation );
@@ -258,16 +258,16 @@ private:
 
     void ComputeWorldTransform() const;
 
-    Float3 Position;
-    Quat Rotation;
-    Float3 Scale;
-    mutable Float3x4 WorldTransformMatrix;   // Transposed world transform matrix
-    mutable Quat WorldRotation;
-    mutable bool bTransformDirty;
+    Float3                  Position{ 0, 0, 0 };
+    Quat                    Rotation{ 1, 0, 0, 0 };
+    Float3                  Scale{ 1, 1, 1 };
+    mutable Float3x4        WorldTransformMatrix; // Transposed world transform matrix
+    mutable Quat            WorldRotation{ 1, 0, 0, 0 };
+    mutable bool            bTransformDirty{true};
     AArrayOfChildComponents Childs;
-    ASceneComponent * AttachParent;
-    int SocketIndex;
-    bool bAbsolutePosition : 1;
-    bool bAbsoluteRotation : 1;
-    bool bAbsoluteScale : 1;
+    ASceneComponent *       AttachParent{nullptr};
+    int                     SocketIndex{0};
+    bool                    bAbsolutePosition : 1;
+    bool                    bAbsoluteRotation : 1;
+    bool                    bAbsoluteScale : 1;
 };

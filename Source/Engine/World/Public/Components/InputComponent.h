@@ -37,50 +37,54 @@ SOFTWARE.
 
 #include <Core/Public/Utf8.h>
 
-#define MAX_PRESSED_KEYS       128
-#define MAX_AXIS_BINDINGS      1024
-#define MAX_ACTION_BINDINGS    1024
-#define MAX_INPUT_CONTROLLERS  16
+constexpr int MAX_PRESSED_KEYS      = 128;
+constexpr int MAX_AXIS_BINDINGS     = 1024;
+constexpr int MAX_ACTION_BINDINGS   = 1024;
+constexpr int MAX_INPUT_CONTROLLERS = 16;
 
-enum {
+enum INPUT_DEVICE
+{
     /* Input devices */
-    ID_KEYBOARD         = 0,
-    ID_MOUSE            = 1,
-    ID_JOYSTICK_1       = 2,
-    ID_JOYSTICK_2       = 3,
-    ID_JOYSTICK_3       = 4,
-    ID_JOYSTICK_4       = 5,
-    ID_JOYSTICK_5       = 6,
-    ID_JOYSTICK_6       = 7,
-    ID_JOYSTICK_7       = 8,
-    ID_JOYSTICK_8       = 9,
-    ID_JOYSTICK_9       = 10,
-    ID_JOYSTICK_10      = 11,
-    ID_JOYSTICK_11      = 12,
-    ID_JOYSTICK_12      = 13,
-    ID_JOYSTICK_13      = 14,
-    ID_JOYSTICK_14      = 15,
-    ID_JOYSTICK_15      = 16,
-    ID_JOYSTICK_16      = 17,
-    MAX_INPUT_DEVICES   = 18,
+    ID_KEYBOARD       = 0,
+    ID_MOUSE          = 1,
+    ID_JOYSTICK_1     = 2,
+    ID_JOYSTICK_2     = 3,
+    ID_JOYSTICK_3     = 4,
+    ID_JOYSTICK_4     = 5,
+    ID_JOYSTICK_5     = 6,
+    ID_JOYSTICK_6     = 7,
+    ID_JOYSTICK_7     = 8,
+    ID_JOYSTICK_8     = 9,
+    ID_JOYSTICK_9     = 10,
+    ID_JOYSTICK_10    = 11,
+    ID_JOYSTICK_11    = 12,
+    ID_JOYSTICK_12    = 13,
+    ID_JOYSTICK_13    = 14,
+    ID_JOYSTICK_14    = 15,
+    ID_JOYSTICK_15    = 16,
+    ID_JOYSTICK_16    = 17,
+    MAX_INPUT_DEVICES = 18,
+};
 
-    /* Player controllers */
-    CONTROLLER_PLAYER_1        = 0,
-    CONTROLLER_PLAYER_2        = 1,
-    CONTROLLER_PLAYER_3        = 2,
-    CONTROLLER_PLAYER_4        = 3,
-    CONTROLLER_PLAYER_5        = 4,
-    CONTROLLER_PLAYER_6        = 5,
-    CONTROLLER_PLAYER_7        = 6,
-    CONTROLLER_PLAYER_8        = 7,
-    CONTROLLER_PLAYER_9        = 8,
-    CONTROLLER_PLAYER_10       = 9,
-    CONTROLLER_PLAYER_11       = 10,
-    CONTROLLER_PLAYER_12       = 11,
-    CONTROLLER_PLAYER_13       = 12,
-    CONTROLLER_PLAYER_14       = 13,
-    CONTROLLER_PLAYER_15       = 14,
-    CONTROLLER_PLAYER_16       = 15
+/* Player controllers */
+enum CONTROLLER
+{
+    CONTROLLER_PLAYER_1  = 0,
+    CONTROLLER_PLAYER_2  = 1,
+    CONTROLLER_PLAYER_3  = 2,
+    CONTROLLER_PLAYER_4  = 3,
+    CONTROLLER_PLAYER_5  = 4,
+    CONTROLLER_PLAYER_6  = 5,
+    CONTROLLER_PLAYER_7  = 6,
+    CONTROLLER_PLAYER_8  = 7,
+    CONTROLLER_PLAYER_9  = 8,
+    CONTROLLER_PLAYER_10 = 9,
+    CONTROLLER_PLAYER_11 = 10,
+    CONTROLLER_PLAYER_12 = 11,
+    CONTROLLER_PLAYER_13 = 12,
+    CONTROLLER_PLAYER_14 = 13,
+    CONTROLLER_PLAYER_15 = 14,
+    CONTROLLER_PLAYER_16 = 15
 };
 
 class AInputAxis;
@@ -88,61 +92,8 @@ class AInputAction;
 class AInputMappings;
 class AInputComponent;
 
-#if 0
-class AInputDevice : public ARefCounted
+class AInputAxis : public ABaseObject
 {
-public:
-    virtual void GetButtonsCount() = 0;
-    virtual int8_t * GetButtonState() = 0;
-};
-
-class AInputDeviceKeyboard
-{
-public:
-    AInputDeviceKeyboard()
-    {
-        Core::Memset( KeyboardButtonDown, 0xff, sizeof( KeyboardButtonDown ) );
-    }
-
-    void GetButtonsCount() override { return AN_ARRAY_SIZE( KeyboardButtonDown ); }
-    int8_t * GetButtonState() override { return KeyboardButtonDown; }
-
-private:
-    int8_t KeyboardButtonDown[ MAX_KEYBOARD_BUTTONS ];
-};
-
-class AInputDeviceMouse
-{
-public:
-    AInputDeviceMouse()
-    {
-        Core::Memset( MouseButtonDown, 0xff, sizeof( KeyboardButtonDown ) );
-    }
-
-    void GetButtonsCount() override { return AN_ARRAY_SIZE( MouseButtonDown ); }
-    int8_t * GetButtonState() override { return MouseButtonDown; }
-
-private:
-    int8_t MouseButtonDown[ MAX_MOUSE_BUTTONS ];
-};
-
-class AInputDeviceJoystick
-{
-public:
-    AInputDeviceJoystick()
-    {
-        Core::Memset( JoystickButtonDown, 0xff, sizeof( JoystickButtonDown ) );
-    }
-
-    void GetButtonsCount() override { return AN_ARRAY_SIZE( JoystickButtonDown ); }
-    int8_t * GetButtonState() override { return JoystickButtonDown; }
-
-private:
-    int8_t JoystickButtonDown[ MAX_JOYSTICK_BUTTONS ];
-};
-#endif
-
-class AInputAxis : public ABaseObject {
     AN_CLASS( AInputAxis, ABaseObject )
 
     friend class AInputMappings;
@@ -174,7 +125,8 @@ private:
     int IndexInArrayOfAxes = 0;
 };
 
-class AInputAction : public ABaseObject {
+class AInputAction : public ABaseObject
+{
     AN_CLASS( AInputAction, ABaseObject )
 
     friend class AInputMappings;
@@ -197,7 +149,8 @@ private:
     int IndexInArrayOfActions = 0;
 };
 
-class AInputMappings : public ABaseObject {
+class AInputMappings : public ABaseObject
+{
     AN_CLASS( AInputMappings, ABaseObject )
 
     friend class AInputAxis;
@@ -218,10 +171,10 @@ public:
     // Load actions form document data
     void LoadActions( ADocMember const * ArrayOfActions );
 
-    AInputAxis * AddAxis( const char * _Name );
+    AInputAxis *   AddAxis( const char * _Name );
     AInputAction * AddAction( const char * _Name );
 
-    AInputAxis * FindAxis( const char * _AxisName );
+    AInputAxis *   FindAxis( const char * _AxisName );
     AInputAction * FindAction( const char * _ActionName );
 
     void MapAxis( const char * _AxisName, int _DevId, int _KeyToken, float _AxisScale, int _ControllerId );
@@ -232,17 +185,17 @@ public:
 
     void UnmapAll();
 
-    const TPodVector< AInputAxis * > & GetAxes() const { return Axes; }
-    const TPodVector< AInputAction * > & GetActions() const { return Actions; }
+    const TStdVector< TRef< AInputAxis > > &   GetAxes() const { return Axes; }
+    const TStdVector< TRef< AInputAction > > & GetActions() const { return Actions; }
 
 private:
     struct SMapping
     {
-        int AxisOrActionIndex;
-        float AxisScale;
+        int     AxisOrActionIndex;
+        float   AxisScale;
         uint8_t ControllerId;
-        bool bAxis;
-        byte ModMask;
+        bool    bAxis;
+        byte    ModMask;
     };
 
     using AArrayOfMappings = TPodVector< SMapping >;
@@ -250,19 +203,26 @@ private:
     AArrayOfMappings * GetKeyMappings( int _DevId, int _KeyToken );
 
     /** All known axes */
-    TPodVector< AInputAxis * > Axes;
+    TStdVector< TRef<AInputAxis> > Axes;
 
     /** All known actions */
-    TPodVector< AInputAction * > Actions;
+    TStdVector< TRef<AInputAction> > Actions;
 
-    AArrayOfMappings KeyboardMappings[ MAX_KEYBOARD_BUTTONS ];
-    AArrayOfMappings MouseMappings[ MAX_MOUSE_BUTTONS ];
-    AArrayOfMappings MouseAxisMappings[ MAX_MOUSE_AXES ];
-    AArrayOfMappings JoystickMappings[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_BUTTONS ];
-    AArrayOfMappings JoystickAxisMappings[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
+    TArray< AArrayOfMappings, MAX_KEYBOARD_BUTTONS > KeyboardMappings;
+    TArray< AArrayOfMappings, MAX_MOUSE_BUTTONS >    MouseMappings;
+    TArray< AArrayOfMappings, MAX_MOUSE_AXES >       MouseAxisMappings;
+
+    struct SJoystickMappings
+    {
+        TArray< AArrayOfMappings, MAX_JOYSTICK_BUTTONS > ButtonMappings;
+        TArray< AArrayOfMappings, MAX_JOYSTICK_AXES >    AxisMappings;
+    };
+
+    TArray< SJoystickMappings, MAX_JOYSTICKS_COUNT > JoystickMappings;
 };
 
-class AInputComponent : public AActorComponent {
+class AInputComponent : public AActorComponent
+{
     AN_COMPONENT( AInputComponent, AActorComponent )
 
 public:
@@ -288,7 +248,8 @@ public:
 
     /** Bind axis to class method */
     template< typename T >
-    void BindAxis( const char * _Axis, T * _Object, void (T::*_Method)( float ), bool _ExecuteEvenWhenPaused = false ) {
+    void BindAxis( const char * _Axis, T * _Object, void ( T::*_Method )( float ), bool _ExecuteEvenWhenPaused = false )
+    {
         BindAxis( _Axis, { _Object, _Method }, _ExecuteEvenWhenPaused );
     }
 
@@ -300,7 +261,8 @@ public:
 
     /** Bind action to class method */
     template< typename T >
-    void BindAction( const char * _Action, int _Event, T * _Object, void (T::*_Method)(), bool _ExecuteEvenWhenPaused = false ) {
+    void BindAction( const char * _Action, int _Event, T * _Object, void ( T::*_Method )(), bool _ExecuteEvenWhenPaused = false )
+    {
         BindAction( _Action, _Event, { _Object, _Method }, _ExecuteEvenWhenPaused );
     }
 
@@ -315,7 +277,8 @@ public:
 
     /** Set callback for input characters */
     template< typename T >
-    void SetCharacterCallback( T * _Object, void (T::*_Method)( SWideChar, int, double ), bool _ExecuteEvenWhenPaused = false ) {
+    void SetCharacterCallback( T * _Object, void ( T::*_Method )( SWideChar, int, double ), bool _ExecuteEvenWhenPaused = false )
+    {
         SetCharacterCallback( { _Object, _Method }, _ExecuteEvenWhenPaused );
     }
 
@@ -386,16 +349,18 @@ protected:
     struct SPressedKey
     {
         unsigned short Key;
-        short AxisBinding;
-        short ActionBinding;
-        float AxisScale;
-        uint8_t DevId;
+        short          AxisBinding;
+        short          ActionBinding;
+        float          AxisScale;
+        uint8_t        DevId;
 
-        bool HasAxis() const {
+        bool HasAxis() const
+        {
             return AxisBinding != -1;
         }
 
-        bool HasAction() const {
+        bool HasAction() const
+        {
             return ActionBinding != -1;
         }
     };
@@ -424,38 +389,37 @@ protected:
 
     TRef< AInputMappings > InputMappings;
 
-    THash<> AxisBindingsHash;
+    THash<>                    AxisBindingsHash;
     TStdVector< SAxisBinding > AxisBindings;
 
-    THash<> ActionBindingsHash;
+    THash<>                      ActionBindingsHash;
     TStdVector< SActionBinding > ActionBindings;
 
     /** Array of pressed keys */
-    SPressedKey PressedKeys[ MAX_PRESSED_KEYS ];
-    int NumPressedKeys = 0;
+    TArray< SPressedKey, MAX_PRESSED_KEYS > PressedKeys = {};
+    int                                     NumPressedKeys = 0;
 
     // Index to PressedKeys array or -1 if button is up
-    int8_t * DeviceButtonDown[ MAX_INPUT_DEVICES ];
-    int8_t KeyboardButtonDown[ MAX_KEYBOARD_BUTTONS ];
-    int8_t MouseButtonDown[ MAX_MOUSE_BUTTONS ];
-    int8_t JoystickButtonDown[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_BUTTONS ];
+    TArray< int8_t *, MAX_INPUT_DEVICES >                                 DeviceButtonDown;
+    TArray< int8_t, MAX_KEYBOARD_BUTTONS >                                KeyboardButtonDown;
+    TArray< int8_t, MAX_MOUSE_BUTTONS >                                   MouseButtonDown;
+    TArray< TArray< int8_t, MAX_JOYSTICK_BUTTONS >, MAX_JOYSTICKS_COUNT > JoystickButtonDown;
 
-    //TRef< AInputDevice > Devices[ MAX_INPUT_DEVICES ];
-
-    Float2 MouseAxisState[2];
-    int MouseIndex = 0;
+    TArray< Float2, 2 > MouseAxisState;
+    int                 MouseIndex = 0;
 
     TCallback< void( SWideChar, int, double ) > CharacterCallback;
-    bool bCharacterCallbackExecuteEvenWhenPaused = false;
+    bool                                        bCharacterCallbackExecuteEvenWhenPaused = false;
 
     // Global list of input components
-    AInputComponent * Next = nullptr;
-    AInputComponent * Prev = nullptr;
+    AInputComponent *        Next = nullptr;
+    AInputComponent *        Prev = nullptr;
     static AInputComponent * InputComponents;
     static AInputComponent * InputComponentsTail;
 };
 
-class AInputHelper final {
+class AInputHelper final
+{
 public:
     /** Translate device to string */
     static const char * TranslateDevice( int _DevId );

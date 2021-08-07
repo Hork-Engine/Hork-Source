@@ -55,59 +55,61 @@ AN_ATTRIBUTE_( bIgnoreCharEvents, AF_DEFAULT )
 AN_ATTRIBUTE_( ControllerId, AF_DEFAULT )
 AN_END_CLASS_META()
 
-struct AInputComponentStatic {
-    const char * KeyNames[ MAX_KEYBOARD_BUTTONS ];
-    const char * MouseButtonNames[ MAX_MOUSE_BUTTONS ];
-    const char * MouseAxisNames[ MAX_MOUSE_AXES ];
-    const char * DeviceNames[ MAX_INPUT_DEVICES ];
-    const char * JoystickButtonNames[ MAX_JOYSTICK_BUTTONS ];
-    const char * JoystickAxisNames[ MAX_JOYSTICK_AXES ];
-    const char * ModifierNames[ MAX_MODIFIERS ];
-    const char * ControllerNames[ MAX_INPUT_CONTROLLERS ];
+struct AInputComponentStatic
+{
+    TArray< const char *, MAX_KEYBOARD_BUTTONS >  KeyNames;
+    TArray< const char *, MAX_MOUSE_BUTTONS >     MouseButtonNames;
+    TArray< const char *, MAX_MOUSE_AXES >        MouseAxisNames;
+    TArray< const char *, MAX_INPUT_DEVICES >     DeviceNames;
+    TArray< const char *, MAX_JOYSTICK_BUTTONS >  JoystickButtonNames;
+    TArray< const char *, MAX_JOYSTICK_AXES >     JoystickAxisNames;
+    TArray< const char *, MAX_MODIFIERS >         ModifierNames;
+    TArray< const char *, MAX_INPUT_CONTROLLERS > ControllerNames;
 
-    int DeviceButtonLimits[ MAX_INPUT_DEVICES ];
-    //SJoystick Joysticks[ MAX_JOYSTICKS_COUNT ];
-    float JoystickAxisState[ MAX_JOYSTICKS_COUNT ][ MAX_JOYSTICK_AXES ];
+    TArray< int, MAX_INPUT_DEVICES > DeviceButtonLimits;
+    //TArray< SJoystick, MAX_JOYSTICKS_COUNT > Joysticks;
+    TArray< TArray< float, MAX_JOYSTICK_AXES >, MAX_JOYSTICKS_COUNT > JoystickAxisState;
 
-    AInputComponentStatic() {
-        #define InitKey( _Key ) KeyNames[ _Key ] = AN_STRINGIFY( _Key ) + 4
-        #define InitKey2( _Key, _Name ) KeyNames[ _Key ] = _Name
-        #define InitButton( _Button, _Name ) MouseButtonNames[ _Button ] = _Name
-        #define InitMouseAxis( _Axis, _Name ) MouseAxisNames[ _Axis - MOUSE_AXIS_BASE ] = _Name
-        #define InitDevice( _DevId ) DeviceNames[ _DevId ] = AN_STRINGIFY( _DevId ) + 3
-        #define InitJoyButton( _Button, _Name ) JoystickButtonNames[ _Button - JOY_BUTTON_BASE ] = _Name
-        #define InitJoyAxis( _Axis, _Name ) JoystickAxisNames[ _Axis - JOY_AXIS_BASE ] = _Name
-        #define InitModifier( _Modifier ) ModifierNames[ _Modifier ] = AN_STRINGIFY( _Modifier ) + 4
-        #define InitController( _Controller ) ControllerNames[ _Controller ] = AN_STRINGIFY( _Controller ) + 11
+    AInputComponentStatic()
+    {
+#define InitKey( _Key )                 KeyNames[_Key] = AN_STRINGIFY( _Key ) + 4
+#define InitKey2( _Key, _Name )         KeyNames[_Key] = _Name
+#define InitButton( _Button, _Name )    MouseButtonNames[_Button] = _Name
+#define InitMouseAxis( _Axis, _Name )   MouseAxisNames[_Axis - MOUSE_AXIS_BASE] = _Name
+#define InitDevice( _DevId )            DeviceNames[_DevId] = AN_STRINGIFY( _DevId ) + 3
+#define InitJoyButton( _Button, _Name ) JoystickButtonNames[_Button - JOY_BUTTON_BASE] = _Name
+#define InitJoyAxis( _Axis, _Name )     JoystickAxisNames[_Axis - JOY_AXIS_BASE] = _Name
+#define InitModifier( _Modifier )       ModifierNames[_Modifier] = AN_STRINGIFY( _Modifier ) + 4
+#define InitController( _Controller )   ControllerNames[_Controller] = AN_STRINGIFY( _Controller ) + 11
 
-        DeviceButtonLimits[ ID_KEYBOARD ] = MAX_KEYBOARD_BUTTONS;
-        DeviceButtonLimits[ ID_MOUSE ] = MAX_MOUSE_BUTTONS + MAX_MOUSE_AXES;
-        for ( int i = ID_JOYSTICK_1 ; i <= ID_JOYSTICK_16 ; i++ ) {
-            DeviceButtonLimits[ i ] = MAX_JOYSTICK_BUTTONS + MAX_JOYSTICK_AXES;
+        DeviceButtonLimits[ID_KEYBOARD] = MAX_KEYBOARD_BUTTONS;
+        DeviceButtonLimits[ID_MOUSE]    = MAX_MOUSE_BUTTONS + MAX_MOUSE_AXES;
+        for ( int i = ID_JOYSTICK_1; i <= ID_JOYSTICK_16; i++ ) {
+            DeviceButtonLimits[i] = MAX_JOYSTICK_BUTTONS + MAX_JOYSTICK_AXES;
         }
 
-        for ( int i = 0 ; i < MAX_KEYBOARD_BUTTONS ; i++ ) {
-            KeyNames[ i ] = "";
+        for ( int i = 0; i < KeyNames.Size(); i++ ) {
+            KeyNames[i] = "";
         }
 
-        for ( int i = 0 ; i < MAX_MOUSE_BUTTONS ; i++ ) {
-            MouseButtonNames[ i ] = "";
+        for ( int i = 0; i < MouseButtonNames.Size(); i++ ) {
+            MouseButtonNames[i] = "";
         }
 
-        for ( int i = 0 ; i < MAX_MOUSE_AXES ; i++ ) {
-            MouseAxisNames[ i ] = "";
+        for ( int i = 0; i < MouseAxisNames.Size(); i++ ) {
+            MouseAxisNames[i] = "";
         }
 
-        for ( int i = 0 ; i < MAX_INPUT_DEVICES ; i++ ) {
-            DeviceNames[ i ] = "";
+        for ( int i = 0; i < DeviceNames.Size(); i++ ) {
+            DeviceNames[i] = "";
         }
 
-        for ( int i = 0 ; i < MAX_JOYSTICK_BUTTONS ; i++ ) {
-            JoystickButtonNames[ i ] = "";
+        for ( int i = 0; i < JoystickButtonNames.Size(); i++ ) {
+            JoystickButtonNames[i] = "";
         }
 
-        for ( int i = 0 ; i < MAX_JOYSTICK_AXES ; i++ ) {
-            JoystickAxisNames[ i ] = "";
+        for ( int i = 0; i < JoystickAxisNames.Size(); i++ ) {
+            JoystickAxisNames[i] = "";
         }
 
         InitKey2( KEY_SPACE, "Space" );
@@ -354,8 +356,8 @@ struct AInputComponentStatic {
         InitController( CONTROLLER_PLAYER_15 );
         InitController( CONTROLLER_PLAYER_16 );
 
-        //Core::ZeroMem( Joysticks, sizeof( Joysticks ) );
-        Core::ZeroMem( JoystickAxisState, sizeof( JoystickAxisState ) );
+        //Core::ZeroMem( Joysticks.ToPtr(), sizeof( Joysticks ) );
+        Core::ZeroMem( JoystickAxisState.ToPtr(), sizeof( JoystickAxisState ) );
 
         //for ( int i = 0 ; i < MAX_JOYSTICKS_COUNT ; i++ ) {
         //    Joysticks[i].Id = i;
@@ -365,67 +367,72 @@ struct AInputComponentStatic {
 
 static AInputComponentStatic Static;
 
-AInputComponent * AInputComponent::InputComponents = nullptr;
+AInputComponent * AInputComponent::InputComponents     = nullptr;
 AInputComponent * AInputComponent::InputComponentsTail = nullptr;
 
-const char * AInputHelper::TranslateDevice( int _DevId ) {
+const char * AInputHelper::TranslateDevice( int _DevId )
+{
     if ( _DevId < 0 || _DevId >= MAX_INPUT_DEVICES ) {
         return "UNKNOWN";
     }
-    return Static.DeviceNames[ _DevId ];
+    return Static.DeviceNames[_DevId];
 }
 
-const char * AInputHelper::TranslateModifier( int _Modifier ) {
+const char * AInputHelper::TranslateModifier( int _Modifier )
+{
     if ( _Modifier < 0 || _Modifier > KMOD_LAST ) {
         return "UNKNOWN";
     }
-    return Static.ModifierNames[ _Modifier ];
+    return Static.ModifierNames[_Modifier];
 }
 
-const char * AInputHelper::TranslateDeviceKey( int _DevId, int _Key ) {
+const char * AInputHelper::TranslateDeviceKey( int _DevId, int _Key )
+{
     switch ( _DevId ) {
-    case ID_KEYBOARD:
-        if ( _Key < 0 || _Key > KEY_LAST ) {
-            return "UNKNOWN";
-        }
-        return Static.KeyNames[ _Key ];
-    case ID_MOUSE:
-        if ( _Key >= MOUSE_AXIS_BASE ) {
-            if ( _Key > MOUSE_AXIS_LAST ) {
+        case ID_KEYBOARD:
+            if ( _Key < 0 || _Key > KEY_LAST ) {
                 return "UNKNOWN";
             }
-            return Static.MouseAxisNames[ _Key - MOUSE_AXIS_BASE ];
-        }
-        if ( _Key < MOUSE_BUTTON_BASE || _Key > MOUSE_BUTTON_LAST ) {
-            return "UNKNOWN";
-        }
-        return Static.MouseButtonNames[ _Key - MOUSE_BUTTON_BASE ];
+            return Static.KeyNames[_Key];
+        case ID_MOUSE:
+            if ( _Key >= MOUSE_AXIS_BASE ) {
+                if ( _Key > MOUSE_AXIS_LAST ) {
+                    return "UNKNOWN";
+                }
+                return Static.MouseAxisNames[_Key - MOUSE_AXIS_BASE];
+            }
+            if ( _Key < MOUSE_BUTTON_BASE || _Key > MOUSE_BUTTON_LAST ) {
+                return "UNKNOWN";
+            }
+            return Static.MouseButtonNames[_Key - MOUSE_BUTTON_BASE];
     }
     if ( _DevId >= ID_JOYSTICK_1 && _DevId <= ID_JOYSTICK_16 ) {
         if ( _Key >= JOY_AXIS_BASE ) {
             if ( _Key > JOY_AXIS_LAST ) {
                 return "UNKNOWN";
             }
-            return Static.JoystickAxisNames[ _Key - JOY_AXIS_BASE ];
+            return Static.JoystickAxisNames[_Key - JOY_AXIS_BASE];
         }
 
         if ( _Key < JOY_BUTTON_BASE || _Key > JOY_BUTTON_LAST ) {
             return "UNKNOWN";
         }
-        return Static.JoystickButtonNames[ _Key - JOY_BUTTON_BASE ];
+        return Static.JoystickButtonNames[_Key - JOY_BUTTON_BASE];
     }
     return "UNKNOWN";
 }
 
-const char * AInputHelper::TranslateController( int _ControllerId ) {
+const char * AInputHelper::TranslateController( int _ControllerId )
+{
     if ( _ControllerId < 0 || _ControllerId >= MAX_INPUT_CONTROLLERS ) {
         return "UNKNOWN";
     }
-    return Static.ControllerNames[ _ControllerId ];
+    return Static.ControllerNames[_ControllerId];
 }
 
-int AInputHelper::LookupDevice( const char * _Device ) {
-    for ( int i = 0 ; i < MAX_INPUT_DEVICES ; i++ ) {
+int AInputHelper::LookupDevice( const char * _Device )
+{
+    for ( int i = 0; i < MAX_INPUT_DEVICES; i++ ) {
         if ( !Core::Stricmp( Static.DeviceNames[i], _Device ) ) {
             return i;
         }
@@ -433,8 +440,9 @@ int AInputHelper::LookupDevice( const char * _Device ) {
     return -1;
 }
 
-int AInputHelper::LookupModifier( const char * _Modifier ) {
-    for ( int i = 0 ; i < MAX_MODIFIERS ; i++ ) {
+int AInputHelper::LookupModifier( const char * _Modifier )
+{
+    for ( int i = 0; i < MAX_MODIFIERS; i++ ) {
         if ( !Core::Stricmp( Static.ModifierNames[i], _Modifier ) ) {
             return i;
         }
@@ -442,35 +450,36 @@ int AInputHelper::LookupModifier( const char * _Modifier ) {
     return -1;
 }
 
-int AInputHelper::LookupDeviceKey( int _DevId, const char * _Key ) {
+int AInputHelper::LookupDeviceKey( int _DevId, const char * _Key )
+{
     switch ( _DevId ) {
-    case ID_KEYBOARD:
-        for ( int i = 0 ; i < MAX_KEYBOARD_BUTTONS ; i++ ) {
-            if ( !Core::Stricmp( Static.KeyNames[i], _Key ) ) {
-                return i;
+        case ID_KEYBOARD:
+            for ( int i = 0; i < MAX_KEYBOARD_BUTTONS; i++ ) {
+                if ( !Core::Stricmp( Static.KeyNames[i], _Key ) ) {
+                    return i;
+                }
             }
-        }
-        return -1;
-    case ID_MOUSE:
-        for ( int i = 0 ; i < MAX_MOUSE_BUTTONS ; i++ ) {
-            if ( !Core::Stricmp( Static.MouseButtonNames[i], _Key ) ) {
-                return MOUSE_BUTTON_BASE + i;
+            return -1;
+        case ID_MOUSE:
+            for ( int i = 0; i < MAX_MOUSE_BUTTONS; i++ ) {
+                if ( !Core::Stricmp( Static.MouseButtonNames[i], _Key ) ) {
+                    return MOUSE_BUTTON_BASE + i;
+                }
             }
-        }
-        for ( int i = 0 ; i < MAX_MOUSE_AXES ; i++ ) {
-            if ( !Core::Stricmp( Static.MouseAxisNames[i], _Key ) ) {
-                return MOUSE_AXIS_BASE + i;
+            for ( int i = 0; i < MAX_MOUSE_AXES; i++ ) {
+                if ( !Core::Stricmp( Static.MouseAxisNames[i], _Key ) ) {
+                    return MOUSE_AXIS_BASE + i;
+                }
             }
-        }
-        return -1;
+            return -1;
     }
     if ( _DevId >= ID_JOYSTICK_1 && _DevId <= ID_JOYSTICK_16 ) {
-        for ( int i = 0 ; i < MAX_JOYSTICK_BUTTONS ; i++ ) {
+        for ( int i = 0; i < MAX_JOYSTICK_BUTTONS; i++ ) {
             if ( !Core::Stricmp( Static.JoystickButtonNames[i], _Key ) ) {
                 return JOY_BUTTON_BASE + i;
             }
         }
-        for ( int i = 0 ; i < MAX_JOYSTICK_AXES ; i++ ) {
+        for ( int i = 0; i < MAX_JOYSTICK_AXES; i++ ) {
             if ( !Core::Stricmp( Static.JoystickAxisNames[i], _Key ) ) {
                 return JOY_AXIS_BASE + i;
             }
@@ -479,8 +488,9 @@ int AInputHelper::LookupDeviceKey( int _DevId, const char * _Key ) {
     return -1;
 }
 
-int AInputHelper::LookupController( const char * _Controller ) {
-    for ( int i = 0 ; i < MAX_INPUT_CONTROLLERS ; i++ ) {
+int AInputHelper::LookupController( const char * _Controller )
+{
+    for ( int i = 0; i < MAX_INPUT_CONTROLLERS; i++ ) {
         if ( !Core::Stricmp( Static.ControllerNames[i], _Controller ) ) {
             return i;
         }
@@ -488,26 +498,29 @@ int AInputHelper::LookupController( const char * _Controller ) {
     return -1;
 }
 
-AInputComponent::AInputComponent() {
-
-    //Devices[ ID_KEYBOARD ] = MakeRef< AInputDeviceKeyboard >();
-    //Devices[ ID_MOUSE ] = MakeRef< AInputDeviceMouse >();
-
-    DeviceButtonDown[ ID_KEYBOARD ] = KeyboardButtonDown;
-    DeviceButtonDown[ ID_MOUSE ] = MouseButtonDown;
-    for ( int i = 0 ; i < MAX_JOYSTICKS_COUNT ; i++ ) {
-        DeviceButtonDown[ ID_JOYSTICK_1 + i ] = JoystickButtonDown[ i ];
+AInputComponent::AInputComponent()
+{
+    DeviceButtonDown[ID_KEYBOARD] = KeyboardButtonDown.ToPtr();
+    DeviceButtonDown[ID_MOUSE]    = MouseButtonDown.ToPtr();
+    for ( int i = 0; i < MAX_JOYSTICKS_COUNT; i++ ) {
+        DeviceButtonDown[ID_JOYSTICK_1 + i] = JoystickButtonDown[i].ToPtr();
 
         //Devices[ ID_JOYSTICK_1 + i ] = MakeRef< AInputDeviceJoystick >();
+
+        Core::Memset( JoystickButtonDown[i].ToPtr(), 0xff, sizeof( JoystickButtonDown[0] ) );
     }
-    Core::Memset( KeyboardButtonDown, 0xff, sizeof( KeyboardButtonDown ) );
-    Core::Memset( MouseButtonDown, 0xff, sizeof( MouseButtonDown ) );
-    Core::Memset( JoystickButtonDown, 0xff, sizeof( JoystickButtonDown ) );
+
+    Core::Memset( KeyboardButtonDown.ToPtr(), 0xff, sizeof( KeyboardButtonDown ) );
+    Core::Memset( MouseButtonDown.ToPtr(), 0xff, sizeof( MouseButtonDown ) );
+
+    MouseAxisState[0].Clear();
+    MouseAxisState[1].Clear();
 
     INTRUSIVE_ADD( this, Next, Prev, InputComponents, InputComponentsTail );
 }
 
-void AInputComponent::DeinitializeComponent() {
+void AInputComponent::DeinitializeComponent()
+{
     Super::DeinitializeComponent();
 
     INTRUSIVE_REMOVE( this, Next, Prev, InputComponents, InputComponentsTail );
@@ -515,15 +528,18 @@ void AInputComponent::DeinitializeComponent() {
     InputMappings = nullptr;
 }
 
-void AInputComponent::SetInputMappings( AInputMappings * _InputMappings ) {
+void AInputComponent::SetInputMappings( AInputMappings * _InputMappings )
+{
     InputMappings = _InputMappings;
 }
 
-AInputMappings * AInputComponent::GetInputMappings() {
+AInputMappings * AInputComponent::GetInputMappings()
+{
     return InputMappings;
 }
 
-void AInputComponent::UpdateAxes( float _TimeStep ) {
+void AInputComponent::UpdateAxes( float _TimeStep )
+{
     if ( !InputMappings ) {
         return;
     }
@@ -534,17 +550,18 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
         binding.AxisScale = 0.0f;
     }
 
-    for ( SPressedKey * key = PressedKeys ; key < &PressedKeys[ NumPressedKeys ] ; key++ ) {
+    for ( SPressedKey * key = PressedKeys.ToPtr(); key < &PressedKeys[NumPressedKeys]; key++ ) {
         if ( key->HasAxis() ) {
-            AxisBindings[ key->AxisBinding ].AxisScale += key->AxisScale * _TimeStep;
+            AxisBindings[key->AxisBinding].AxisScale += key->AxisScale * _TimeStep;
         }
     }
 
     Float2 mouseDelta;
 
     if ( in_MouseFilter ) {
-        mouseDelta = (MouseAxisState[0] + MouseAxisState[1]) * 0.5f;
-    } else {
+        mouseDelta = ( MouseAxisState[0] + MouseAxisState[1] ) * 0.5f;
+    }
+    else {
         mouseDelta = MouseAxisState[MouseIndex];
     }
 
@@ -552,13 +569,13 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
         mouseDelta.Y = -mouseDelta.Y;
     }
 
-    float timeStepMsec = Math::Max( _TimeStep * 1000, 200 );
-    float mouseInputRate = mouseDelta.Length() / timeStepMsec;
+    float timeStepMsec     = Math::Max( _TimeStep * 1000, 200 );
+    float mouseInputRate   = mouseDelta.Length() / timeStepMsec;
     float mouseCurrentSens = in_MouseSensitivity.GetFloat() + mouseInputRate * in_MouseAccel.GetFloat();
-    float mouseSens[2] = { in_MouseSensX.GetFloat() * mouseCurrentSens, in_MouseSensY.GetFloat() * mouseCurrentSens };
+    float mouseSens[2]     = { in_MouseSensX.GetFloat() * mouseCurrentSens, in_MouseSensY.GetFloat() * mouseCurrentSens };
 
-    TPodVector< AInputAxis * > const & inputAxes = InputMappings->GetAxes();
-    for ( int i = 0 ; i < inputAxes.Size() ; i++ ) {
+    TStdVector< TRef<AInputAxis> > const & inputAxes = InputMappings->GetAxes();
+    for ( int i = 0; i < inputAxes.Size(); i++ ) {
         AInputAxis * inputAxis = inputAxes[i];
 
         int axisBinding = GetAxisBinding( inputAxis );
@@ -567,23 +584,23 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
             continue;
         }
 
-        SAxisBinding & binding = AxisBindings[ axisBinding ];
+        SAxisBinding & binding = AxisBindings[axisBinding];
         if ( bPaused && !binding.bExecuteEvenWhenPaused ) {
             continue;
         }
 
         if ( !bIgnoreJoystickEvents ) {
-            for ( int joyNum = 0 ; joyNum < MAX_JOYSTICKS_COUNT ; joyNum++ ) {
+            for ( int joyNum = 0; joyNum < MAX_JOYSTICKS_COUNT; joyNum++ ) {
                 //if ( !Static.Joysticks[joyNum].bConnected ) {
                 //    continue;
                 //}
 
-                for ( int joystickAxis = 0 ; joystickAxis < MAX_JOYSTICK_AXES ; joystickAxis++ ) {
-                    AInputMappings::AArrayOfMappings & mappings = InputMappings->JoystickAxisMappings[ joyNum ][ joystickAxis ];
+                for ( int joystickAxis = 0; joystickAxis < MAX_JOYSTICK_AXES; joystickAxis++ ) {
+                    AInputMappings::AArrayOfMappings & mappings = InputMappings->JoystickMappings[joyNum].AxisMappings[joystickAxis];
 
                     for ( AInputMappings::SMapping & mapping : mappings ) {
                         if ( mapping.AxisOrActionIndex == i && mapping.ControllerId == ControllerId ) {
-                            binding.AxisScale += Static.JoystickAxisState[ joyNum ][ joystickAxis ] * mapping.AxisScale * _TimeStep;
+                            binding.AxisScale += Static.JoystickAxisState[joyNum][joystickAxis] * mapping.AxisScale * _TimeStep;
                         }
                     }
                 }
@@ -591,14 +608,14 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
         }
 
         if ( !bIgnoreMouseEvents ) {
-            for ( int mouseAxis = 0 ; mouseAxis < MAX_MOUSE_AXES ; mouseAxis++ ) {
-                AInputMappings::AArrayOfMappings & mappings = InputMappings->MouseAxisMappings[ mouseAxis ];
+            for ( int mouseAxis = 0; mouseAxis < MAX_MOUSE_AXES; mouseAxis++ ) {
+                AInputMappings::AArrayOfMappings & mappings = InputMappings->MouseAxisMappings[mouseAxis];
 
                 for ( AInputMappings::SMapping & mapping : mappings ) {
                     if ( mapping.AxisOrActionIndex == i && mapping.ControllerId == ControllerId ) {
                         //binding.AxisScale += MouseAxisState[MouseIndex][ mouseAxis ] * mapping.AxisScale;
 
-                        binding.AxisScale += mouseDelta[mouseAxis] * (mapping.AxisScale * mouseSens[mouseAxis]);
+                        binding.AxisScale += mouseDelta[mouseAxis] * ( mapping.AxisScale * mouseSens[mouseAxis] );
                     }
                 }
             }
@@ -612,7 +629,8 @@ void AInputComponent::UpdateAxes( float _TimeStep ) {
     MouseAxisState[MouseIndex].Clear();
 }
 
-void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp ) {
+void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp )
+{
     AN_ASSERT( _DevId >= 0 && _DevId < MAX_INPUT_DEVICES );
 
     if ( _DevId == ID_KEYBOARD && bIgnoreKeyboardEvents ) {
@@ -629,40 +647,42 @@ void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
 
     //int8_t * ButtonIndex = device->GetButtonState();
 
-    int8_t * ButtonIndex = DeviceButtonDown[ _DevId ];
+    int8_t * ButtonIndex = DeviceButtonDown[_DevId];
 
 #ifdef AN_DEBUG
     switch ( _DevId ) {
-    case ID_KEYBOARD:
-        AN_ASSERT( _Button < MAX_KEYBOARD_BUTTONS );
-        break;
-    case ID_MOUSE:
-        AN_ASSERT( _Button < MAX_MOUSE_BUTTONS );
-        break;
-    default:
-        AN_ASSERT( _Button < MAX_JOYSTICK_BUTTONS );
-        break;
+        case ID_KEYBOARD:
+            AN_ASSERT( _Button < MAX_KEYBOARD_BUTTONS );
+            break;
+        case ID_MOUSE:
+            AN_ASSERT( _Button < MAX_MOUSE_BUTTONS );
+            break;
+        default:
+            AN_ASSERT( _Button < MAX_JOYSTICK_BUTTONS );
+            break;
     }
 #endif
 
     if ( _Action == IA_PRESS ) {
-        if ( ButtonIndex[ _Button ] == -1 ) {
+        if ( ButtonIndex[_Button] == -1 ) {
             if ( NumPressedKeys < MAX_PRESSED_KEYS ) {
-                SPressedKey & pressedKey = PressedKeys[ NumPressedKeys ];
-                pressedKey.DevId = _DevId;
-                pressedKey.Key = _Button;
-                pressedKey.AxisBinding = -1;
+                SPressedKey & pressedKey = PressedKeys[NumPressedKeys];
+                pressedKey.DevId         = _DevId;
+                pressedKey.Key           = _Button;
+                pressedKey.AxisBinding   = -1;
                 pressedKey.ActionBinding = -1;
-                pressedKey.AxisScale = 0;
+                pressedKey.AxisScale     = 0;
 
                 if ( InputMappings ) {
                     const AInputMappings::AArrayOfMappings * keyMappings;
                     if ( _DevId == ID_KEYBOARD ) {
-                        keyMappings = &InputMappings->KeyboardMappings[ _Button ];
-                    } else if ( _DevId == ID_MOUSE ) {
-                        keyMappings = &InputMappings->MouseMappings[ _Button ];
-                    } else {
-                        keyMappings = &InputMappings->JoystickMappings[ _DevId - ID_JOYSTICK_1 ][ _Button ];
+                        keyMappings = &InputMappings->KeyboardMappings[_Button];
+                    }
+                    else if ( _DevId == ID_MOUSE ) {
+                        keyMappings = &InputMappings->MouseMappings[_Button];
+                    }
+                    else {
+                        keyMappings = &InputMappings->JoystickMappings[_DevId - ID_JOYSTICK_1].ButtonMappings[_Button];
                     }
 
                     bool bUseActionMapping = false;
@@ -680,9 +700,9 @@ void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
                             continue;
                         }
 
-                        AInputAction * inputAction = InputMappings->GetActions()[ mapping.AxisOrActionIndex ];
-                        pressedKey.ActionBinding = GetActionBinding( inputAction );
-                        bUseActionMapping = true;
+                        AInputAction * inputAction = InputMappings->GetActions()[mapping.AxisOrActionIndex];
+                        pressedKey.ActionBinding   = GetActionBinding( inputAction );
+                        bUseActionMapping          = true;
                         break;
                     }
 
@@ -700,9 +720,9 @@ void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
                                 continue;
                             }
 
-                            AInputAction * inputAction = InputMappings->GetActions()[ mapping.AxisOrActionIndex ];
-                            pressedKey.ActionBinding = GetActionBinding( inputAction );
-                            bUseActionMapping = true;
+                            AInputAction * inputAction = InputMappings->GetActions()[mapping.AxisOrActionIndex];
+                            pressedKey.ActionBinding   = GetActionBinding( inputAction );
+                            bUseActionMapping          = true;
                             break;
                         }
                     }
@@ -717,53 +737,55 @@ void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
                                 continue;
                             }
 
-                            AInputAxis * inputAxis = InputMappings->GetAxes()[ mapping.AxisOrActionIndex ];
-                            pressedKey.AxisScale = mapping.AxisScale;
+                            AInputAxis * inputAxis = InputMappings->GetAxes()[mapping.AxisOrActionIndex];
+                            pressedKey.AxisScale   = mapping.AxisScale;
                             pressedKey.AxisBinding = GetAxisBinding( inputAxis );
                             break;
                         }
                     }
                 }
 
-                ButtonIndex[ _Button ] = NumPressedKeys;
+                ButtonIndex[_Button] = NumPressedKeys;
 
                 NumPressedKeys++;
 
                 if ( pressedKey.ActionBinding != -1 ) {
-                    SActionBinding & binding = ActionBindings[ pressedKey.ActionBinding ];
+                    SActionBinding & binding = ActionBindings[pressedKey.ActionBinding];
 
                     if ( GetWorld()->IsPaused() && !binding.bExecuteEvenWhenPaused ) {
                         pressedKey.ActionBinding = -1;
-                    } else {
-                        binding.Callback[ IA_PRESS ]();
+                    }
+                    else {
+                        binding.Callback[IA_PRESS]();
                     }
                 }
-
-            } else {
+            }
+            else {
                 GLogger.Printf( "MAX_PRESSED_KEYS hit\n" );
             }
-        } else {
+        }
+        else {
 
             // Button is repressed
 
             //AN_ASSERT( 0 );
-
         }
-    } else if ( _Action == IA_RELEASE ) {
-        if ( ButtonIndex[ _Button ] != -1 ) {
+    }
+    else if ( _Action == IA_RELEASE ) {
+        if ( ButtonIndex[_Button] != -1 ) {
 
-            int index = ButtonIndex[ _Button ];
+            int index = ButtonIndex[_Button];
 
-            int actionBinding = PressedKeys[ index ].ActionBinding;
+            int actionBinding = PressedKeys[index].ActionBinding;
 
-            DeviceButtonDown[ PressedKeys[ index ].DevId ][ PressedKeys[ index ].Key ] = -1;
+            DeviceButtonDown[PressedKeys[index].DevId][PressedKeys[index].Key] = -1;
 
             if ( index != NumPressedKeys - 1 ) {
                 // Move last array element to position "index"
-                PressedKeys[ index ] = PressedKeys[ NumPressedKeys - 1 ];
+                PressedKeys[index] = PressedKeys[NumPressedKeys - 1];
 
                 // Refresh index of moved element
-                DeviceButtonDown[ PressedKeys[ index ].DevId ][ PressedKeys[ index ].Key ] = index;
+                DeviceButtonDown[PressedKeys[index].DevId][PressedKeys[index].Key] = index;
             }
 
             // Pop back
@@ -771,29 +793,31 @@ void AInputComponent::SetButtonState( int _DevId, int _Button, int _Action, int 
             AN_ASSERT( NumPressedKeys >= 0 );
 
             if ( actionBinding != -1 /*&& !PressedKeys[ index ].bMarkedReleased*/ ) {
-                ActionBindings[ actionBinding ].Callback[ IA_RELEASE ]();
+                ActionBindings[actionBinding].Callback[IA_RELEASE]();
             }
         }
     }
 }
 
-bool AInputComponent::GetButtonState( int _DevId, int _Button ) const {
+bool AInputComponent::GetButtonState( int _DevId, int _Button ) const
+{
     AN_ASSERT( _DevId >= 0 && _DevId < MAX_INPUT_DEVICES );
 
     //return Devices[ _DevId ]->GetButtonState()[ _Button ] != -1;
-    return DeviceButtonDown[ _DevId ][ _Button ] != -1;
+    return DeviceButtonDown[_DevId][_Button] != -1;
 }
 
-void AInputComponent::UnpressButtons() {
+void AInputComponent::UnpressButtons()
+{
     double timeStamp = Core::SysSeconds_d();
-    for ( int i = 0 ; i < MAX_KEYBOARD_BUTTONS ; i++ ) {
+    for ( int i = 0; i < MAX_KEYBOARD_BUTTONS; i++ ) {
         SetButtonState( ID_KEYBOARD, i, IA_RELEASE, 0, timeStamp );
     }
-    for ( int i = 0 ; i < MAX_MOUSE_BUTTONS ; i++ ) {
+    for ( int i = 0; i < MAX_MOUSE_BUTTONS; i++ ) {
         SetButtonState( ID_MOUSE, i, IA_RELEASE, 0, timeStamp );
     }
-    for ( int j = 0 ; j < MAX_JOYSTICKS_COUNT ; j++ ) {
-        for ( int i = 0 ; i < MAX_JOYSTICK_BUTTONS ; i++ ) {
+    for ( int j = 0; j < MAX_JOYSTICKS_COUNT; j++ ) {
+        for ( int i = 0; i < MAX_JOYSTICK_BUTTONS; i++ ) {
             SetButtonState( ID_JOYSTICK_1 + j, i, IA_RELEASE, 0, timeStamp );
         }
     }
@@ -803,11 +827,13 @@ void AInputComponent::UnpressButtons() {
 //    return GetButtonState( ID_JOYSTICK_1 + _Joystick->Id, _Button );
 //}
 
-bool AInputComponent::IsJoyDown( int _JoystickId, int _Button ) const {
+bool AInputComponent::IsJoyDown( int _JoystickId, int _Button ) const
+{
     return GetButtonState( ID_JOYSTICK_1 + _JoystickId, _Button );
 }
 
-void AInputComponent::NotifyUnicodeCharacter( SWideChar _UnicodeCharacter, int _ModMask, double _TimeStamp ) {
+void AInputComponent::NotifyUnicodeCharacter( SWideChar _UnicodeCharacter, int _ModMask, double _TimeStamp )
+{
     if ( bIgnoreCharEvents ) {
         return;
     }
@@ -823,7 +849,8 @@ void AInputComponent::NotifyUnicodeCharacter( SWideChar _UnicodeCharacter, int _
     CharacterCallback( _UnicodeCharacter, _ModMask, _TimeStamp );
 }
 
-void AInputComponent::SetMouseAxisState( float _X, float _Y ) {
+void AInputComponent::SetMouseAxisState( float _X, float _Y )
+{
     if ( bIgnoreMouseEvents ) {
         return;
     }
@@ -832,7 +859,8 @@ void AInputComponent::SetMouseAxisState( float _X, float _Y ) {
     MouseAxisState[MouseIndex].Y += _Y;
 }
 
-float AInputComponent::GetMouseAxisState( int _Axis ) {
+float AInputComponent::GetMouseAxisState( int _Axis )
+{
     return MouseAxisState[MouseIndex][_Axis];
 }
 
@@ -843,11 +871,13 @@ float AInputComponent::GetMouseAxisState( int _Axis ) {
 //    Static.Joysticks[_Joystick].bConnected = _bConnected;
 //}
 
-void AInputComponent::SetJoystickAxisState( int _Joystick, int _Axis, float _Value ) {
+void AInputComponent::SetJoystickAxisState( int _Joystick, int _Axis, float _Value )
+{
     Static.JoystickAxisState[_Joystick][_Axis] = _Value;
 }
 
-float AInputComponent::GetJoystickAxisState( int _Joystick, int _Axis ) {
+float AInputComponent::GetJoystickAxisState( int _Joystick, int _Axis )
+{
     return Static.JoystickAxisState[_Joystick][_Axis];
 }
 
@@ -855,10 +885,11 @@ float AInputComponent::GetJoystickAxisState( int _Joystick, int _Axis ) {
 //    return Static.Joysticks;
 //}
 
-void AInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > const & _Callback, bool _ExecuteEvenWhenPaused ) {
+void AInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > const & _Callback, bool _ExecuteEvenWhenPaused )
+{
     int hash = Core::HashCase( _Axis, Core::Strlen( _Axis ) );
 
-    for ( int i = AxisBindingsHash.First( hash ) ; i != -1 ; i = AxisBindingsHash.Next( i ) ) {
+    for ( int i = AxisBindingsHash.First( hash ); i != -1; i = AxisBindingsHash.Next( i ) ) {
         if ( !AxisBindings[i].Name.Icmp( _Axis ) ) {
             AxisBindings[i].Callback = _Callback;
             return;
@@ -872,23 +903,24 @@ void AInputComponent::BindAxis( const char * _Axis, TCallback< void( float ) > c
 
     AxisBindingsHash.Insert( hash, AxisBindings.size() );
     SAxisBinding binding;
-    binding.Name = _Axis;
-    binding.Callback = _Callback;
-    binding.AxisScale = 0.0f;
+    binding.Name                   = _Axis;
+    binding.Callback               = _Callback;
+    binding.AxisScale              = 0.0f;
     binding.bExecuteEvenWhenPaused = _ExecuteEvenWhenPaused;
     AxisBindings.Append( binding );
 }
 
-void AInputComponent::UnbindAxis( const char * _Axis ) {
+void AInputComponent::UnbindAxis( const char * _Axis )
+{
     int hash = Core::HashCase( _Axis, Core::Strlen( _Axis ) );
 
-    for ( int i = AxisBindingsHash.First( hash ) ; i != -1 ; i = AxisBindingsHash.Next( i ) ) {
+    for ( int i = AxisBindingsHash.First( hash ); i != -1; i = AxisBindingsHash.Next( i ) ) {
         if ( !AxisBindings[i].Name.Icmp( _Axis ) ) {
             AxisBindingsHash.RemoveIndex( hash, i );
             auto it = AxisBindings.begin() + i;
             AxisBindings.erase( it );
 
-            for ( SPressedKey * pressedKey = PressedKeys ; pressedKey < &PressedKeys[ NumPressedKeys ] ; pressedKey++ ) {
+            for ( SPressedKey * pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++ ) {
                 if ( pressedKey->AxisBinding == i ) {
                     pressedKey->AxisBinding = -1;
                 }
@@ -899,7 +931,8 @@ void AInputComponent::UnbindAxis( const char * _Axis ) {
     }
 }
 
-void AInputComponent::BindAction( const char * _Action, int _Event, TCallback< void() > const & _Callback, bool _ExecuteEvenWhenPaused ) {
+void AInputComponent::BindAction( const char * _Action, int _Event, TCallback< void() > const & _Callback, bool _ExecuteEvenWhenPaused )
+{
     if ( _Event != IA_PRESS && _Event != IA_RELEASE ) {
         GLogger.Printf( "AInputComponent::BindAction: expected IE_Press or IE_Release event\n" );
         return;
@@ -907,9 +940,9 @@ void AInputComponent::BindAction( const char * _Action, int _Event, TCallback< v
 
     int hash = Core::HashCase( _Action, Core::Strlen( _Action ) );
 
-    for ( int i = ActionBindingsHash.First( hash ) ; i != -1 ; i = ActionBindingsHash.Next( i ) ) {
+    for ( int i = ActionBindingsHash.First( hash ); i != -1; i = ActionBindingsHash.Next( i ) ) {
         if ( !ActionBindings[i].Name.Icmp( _Action ) ) {
-            ActionBindings[ i ].Callback[ _Event ] = _Callback;
+            ActionBindings[i].Callback[_Event] = _Callback;
             return;
         }
     }
@@ -921,22 +954,23 @@ void AInputComponent::BindAction( const char * _Action, int _Event, TCallback< v
 
     ActionBindingsHash.Insert( hash, ActionBindings.size() );
     SActionBinding binding;
-    binding.Name = _Action;
-    binding.Callback[ _Event ] = _Callback;
+    binding.Name                   = _Action;
+    binding.Callback[_Event]       = _Callback;
     binding.bExecuteEvenWhenPaused = _ExecuteEvenWhenPaused;
     ActionBindings.Append( binding );
 }
 
-void AInputComponent::UnbindAction( const char * _Action ) {
+void AInputComponent::UnbindAction( const char * _Action )
+{
     int hash = Core::HashCase( _Action, Core::Strlen( _Action ) );
 
-    for ( int i = ActionBindingsHash.First( hash ) ; i != -1 ; i = ActionBindingsHash.Next( i ) ) {
+    for ( int i = ActionBindingsHash.First( hash ); i != -1; i = ActionBindingsHash.Next( i ) ) {
         if ( !ActionBindings[i].Name.Icmp( _Action ) ) {
             ActionBindingsHash.RemoveIndex( hash, i );
             auto it = ActionBindings.begin() + i;
             ActionBindings.erase( it );
 
-            for ( SPressedKey * pressedKey = PressedKeys ; pressedKey < &PressedKeys[ NumPressedKeys ] ; pressedKey++ ) {
+            for ( SPressedKey * pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++ ) {
                 if ( pressedKey->ActionBinding == i ) {
                     pressedKey->ActionBinding = -1;
                 }
@@ -947,38 +981,44 @@ void AInputComponent::UnbindAction( const char * _Action ) {
     }
 }
 
-void AInputComponent::UnbindAll() {
+void AInputComponent::UnbindAll()
+{
     AxisBindingsHash.Clear();
     AxisBindings.Clear();
 
     ActionBindingsHash.Clear();
     ActionBindings.Clear();
 
-    for ( SPressedKey * pressedKey = PressedKeys ; pressedKey < &PressedKeys[ NumPressedKeys ] ; pressedKey++ ) {
-        pressedKey->AxisBinding = -1;
+    for ( SPressedKey * pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++ ) {
+        pressedKey->AxisBinding   = -1;
         pressedKey->ActionBinding = -1;
     }
 }
 
-void AInputComponent::SetCharacterCallback( TCallback< void( SWideChar, int, double ) > const & _Callback, bool _ExecuteEvenWhenPaused ) {
-    CharacterCallback = _Callback;
+void AInputComponent::SetCharacterCallback( TCallback< void( SWideChar, int, double ) > const & _Callback, bool _ExecuteEvenWhenPaused )
+{
+    CharacterCallback                       = _Callback;
     bCharacterCallbackExecuteEvenWhenPaused = _ExecuteEvenWhenPaused;
 }
 
-void AInputComponent::UnsetCharacterCallback() {
+void AInputComponent::UnsetCharacterCallback()
+{
     CharacterCallback.Clear();
 }
 
-int AInputComponent::GetAxisBinding( const char * _Axis ) const {
+int AInputComponent::GetAxisBinding( const char * _Axis ) const
+{
     return GetAxisBindingHash( _Axis, Core::HashCase( _Axis, Core::Strlen( _Axis ) ) );
 }
 
-int AInputComponent::GetAxisBinding( const AInputAxis * _Axis ) const {
+int AInputComponent::GetAxisBinding( const AInputAxis * _Axis ) const
+{
     return GetAxisBindingHash( _Axis->GetObjectName().CStr(), _Axis->GetNameHash() );
 }
 
-int AInputComponent::GetAxisBindingHash( const char * _Axis, int _Hash ) const {
-    for ( int i = AxisBindingsHash.First( _Hash ) ; i != -1 ; i = AxisBindingsHash.Next( i ) ) {
+int AInputComponent::GetAxisBindingHash( const char * _Axis, int _Hash ) const
+{
+    for ( int i = AxisBindingsHash.First( _Hash ); i != -1; i = AxisBindingsHash.Next( i ) ) {
         if ( !AxisBindings[i].Name.Icmp( _Axis ) ) {
             return i;
         }
@@ -986,16 +1026,19 @@ int AInputComponent::GetAxisBindingHash( const char * _Axis, int _Hash ) const {
     return -1;
 }
 
-int AInputComponent::GetActionBinding( const char * _Action ) const {
+int AInputComponent::GetActionBinding( const char * _Action ) const
+{
     return GetActionBindingHash( _Action, Core::HashCase( _Action, Core::Strlen( _Action ) ) );
 }
 
-int AInputComponent::GetActionBinding( const AInputAction * _Action ) const {
+int AInputComponent::GetActionBinding( const AInputAction * _Action ) const
+{
     return GetActionBindingHash( _Action->GetObjectName().CStr(), _Action->GetNameHash() );
 }
 
-int AInputComponent::GetActionBindingHash( const char * _Action, int _Hash ) const {
-    for ( int i = ActionBindingsHash.First( _Hash ) ; i != -1 ; i = ActionBindingsHash.Next( i ) ) {
+int AInputComponent::GetActionBindingHash( const char * _Action, int _Hash ) const
+{
+    for ( int i = ActionBindingsHash.First( _Hash ); i != -1; i = ActionBindingsHash.Next( i ) ) {
         if ( !ActionBindings[i].Name.Icmp( _Action ) ) {
             return i;
         }
@@ -1003,19 +1046,16 @@ int AInputComponent::GetActionBindingHash( const char * _Action, int _Hash ) con
     return -1;
 }
 
-AInputMappings::AInputMappings() {
+AInputMappings::AInputMappings()
+{
 }
 
-AInputMappings::~AInputMappings() {
-    for ( int i = 0 ; i < Axes.Size() ; i++ ) {
-        Axes[i]->RemoveRef();
-    }
-    for ( int i = 0 ; i < Actions.Size() ; i++ ) {
-        Actions[i]->RemoveRef();
-    }
+AInputMappings::~AInputMappings()
+{
 }
 
-TRef< ADocObject > AInputMappings::Serialize() {
+TRef< ADocObject > AInputMappings::Serialize()
+{
     return TRef< ADocObject >();
 #if 0
     TRef< ADocumentObject > object = Super::Serialize();
@@ -1114,7 +1154,8 @@ TRef< ADocObject > AInputMappings::Serialize() {
 #endif
 }
 
-AInputMappings * AInputMappings::LoadMappings( ADocObject const * pObject ) {
+AInputMappings * AInputMappings::LoadMappings( ADocObject const * pObject )
+{
     ADocMember const * classNameField = pObject->FindMember( "ClassName" );
     if ( !classNameField ) {
         GLogger.Printf( "AInputMappings::LoadMappings: invalid class\n" );
@@ -1151,8 +1192,9 @@ AInputMappings * AInputMappings::LoadMappings( ADocObject const * pObject ) {
     return inputMappings;
 }
 
-void AInputMappings::LoadAxes( ADocMember const * ArrayOfAxes ) {
-    for ( ADocValue const * object = ArrayOfAxes->GetArrayValues() ; object ; object = object->GetNext() ) {
+void AInputMappings::LoadAxes( ADocMember const * ArrayOfAxes )
+{
+    for ( ADocValue const * object = ArrayOfAxes->GetArrayValues(); object; object = object->GetNext() ) {
         if ( !object->IsObject() ) {
             continue;
         }
@@ -1182,14 +1224,14 @@ void AInputMappings::LoadAxes( ADocMember const * ArrayOfAxes ) {
             continue;
         }
 
-        AString name = nameField->GetString();
-        AString device = deviceField->GetString();
-        AString key = keyField->GetString();
-        AString scale = scaleField->GetString();
+        AString name       = nameField->GetString();
+        AString device     = deviceField->GetString();
+        AString key        = keyField->GetString();
+        AString scale      = scaleField->GetString();
         AString controller = ownerField->GetString();
 
-        int deviceId = AInputHelper::LookupDevice( device.CStr() );
-        int deviceKey = AInputHelper::LookupDeviceKey( deviceId, key.CStr() );
+        int deviceId     = AInputHelper::LookupDevice( device.CStr() );
+        int deviceKey    = AInputHelper::LookupDeviceKey( deviceId, key.CStr() );
         int controllerId = AInputHelper::LookupController( controller.CStr() );
 
         float scaleValue = Math::ToFloat( scale.CStr() );
@@ -1202,8 +1244,9 @@ void AInputMappings::LoadAxes( ADocMember const * ArrayOfAxes ) {
     }
 }
 
-void AInputMappings::LoadActions( ADocMember const * ArrayOfActions ) {
-    for ( ADocValue const * object = ArrayOfActions->GetArrayValues() ; object ; object = object->GetNext() ) {
+void AInputMappings::LoadActions( ADocMember const * ArrayOfActions )
+{
+    for ( ADocValue const * object = ArrayOfActions->GetArrayValues(); object; object = object->GetNext() ) {
         if ( !object->IsObject() ) {
             continue;
         }
@@ -1228,19 +1271,19 @@ void AInputMappings::LoadActions( ADocMember const * ArrayOfActions ) {
             continue;
         }
 
-        int32_t modMask = 0;
+        int32_t            modMask      = 0;
         ADocMember const * modMaskField = object->FindMember( "ModMask" );
         if ( modMaskField ) {
             modMask = Math::ToInt< int32_t >( modMaskField->GetString().CStr() );
         }
 
-        AString name = nameField->GetString();
-        AString device = deviceField->GetString();
-        AString key = keyField->GetString();
+        AString name       = nameField->GetString();
+        AString device     = deviceField->GetString();
+        AString key        = keyField->GetString();
         AString controller = ownerField->GetString();
 
-        int deviceId = AInputHelper::LookupDevice( device.CStr() );
-        int deviceKey = AInputHelper::LookupDeviceKey( deviceId, key.CStr() );
+        int deviceId     = AInputHelper::LookupDevice( device.CStr() );
+        int deviceKey    = AInputHelper::LookupDeviceKey( deviceId, key.CStr() );
         int controllerId = AInputHelper::LookupController( controller.CStr() );
 
         MapAction( name.CStr(),
@@ -1251,30 +1294,31 @@ void AInputMappings::LoadActions( ADocMember const * ArrayOfActions ) {
     }
 }
 
-AInputAxis * AInputMappings::AddAxis( const char * _Name ) {
+AInputAxis * AInputMappings::AddAxis( const char * _Name )
+{
     AInputAxis * axis = CreateInstanceOf< AInputAxis >();
-    axis->AddRef();
-    axis->Parent = this;
+    axis->Parent             = this;
     axis->IndexInArrayOfAxes = Axes.Size();
     axis->SetObjectName( _Name );
     axis->NameHash = axis->GetObjectName().HashCase();
-    Axes.Append( axis );
+    Axes.Append( TRef<AInputAxis>(axis) );
     return axis;
 }
 
-AInputAction * AInputMappings::AddAction( const char * _Name ) {
+AInputAction * AInputMappings::AddAction( const char * _Name )
+{
     AInputAction * action = CreateInstanceOf< AInputAction >();
-    action->AddRef();
-    action->Parent = this;
+    action->Parent                = this;
     action->IndexInArrayOfActions = Actions.Size();
     action->SetObjectName( _Name );
     action->NameHash = action->GetObjectName().HashCase();
-    Actions.Append( action );
+    Actions.Append( TRef<AInputAction>(action) );
     return action;
 }
 
-AInputAxis * AInputMappings::FindAxis( const char * _AxisName ) {
-    for ( AInputAxis * axis : Axes ) {
+AInputAxis * AInputMappings::FindAxis( const char * _AxisName )
+{
+    for ( TRef<AInputAxis> & axis : Axes ) {
         if ( !axis->GetObjectName().Icmp( _AxisName ) ) {
             return axis;
         }
@@ -1282,8 +1326,9 @@ AInputAxis * AInputMappings::FindAxis( const char * _AxisName ) {
     return nullptr;
 }
 
-AInputAction * AInputMappings::FindAction( const char * _ActionName ) {
-    for ( AInputAction * action : Actions ) {
+AInputAction * AInputMappings::FindAction( const char * _ActionName )
+{
+    for ( TRef<AInputAction> & action : Actions ) {
         if ( !action->GetObjectName().Icmp( _ActionName ) ) {
             return action;
         }
@@ -1291,7 +1336,8 @@ AInputAction * AInputMappings::FindAction( const char * _ActionName ) {
     return nullptr;
 }
 
-void AInputMappings::MapAxis( const char * _AxisName, int _DevId, int _KeyToken, float _AxisScale, int _ControllerId ) {
+void AInputMappings::MapAxis( const char * _AxisName, int _DevId, int _KeyToken, float _AxisScale, int _ControllerId )
+{
     UnmapAxis( _DevId, _KeyToken );
 
     AInputAxis * axis = FindAxis( _AxisName );
@@ -1303,20 +1349,21 @@ void AInputMappings::MapAxis( const char * _AxisName, int _DevId, int _KeyToken,
         return;
     }
 
-    SMapping & mapping = keyMappings->Append();
+    SMapping & mapping        = keyMappings->Append();
     mapping.AxisOrActionIndex = axis->IndexInArrayOfAxes;
-    mapping.bAxis = true;
-    mapping.AxisScale = _AxisScale;
-    mapping.ControllerId = _ControllerId;
+    mapping.bAxis             = true;
+    mapping.AxisScale         = _AxisScale;
+    mapping.ControllerId      = _ControllerId;
 }
 
-void AInputMappings::UnmapAxis( int _DevId, int _KeyToken ) {
+void AInputMappings::UnmapAxis( int _DevId, int _KeyToken )
+{
     AArrayOfMappings * keyMappings = GetKeyMappings( _DevId, _KeyToken );
     if ( !keyMappings ) {
         return;
     }
 
-    for ( auto it = keyMappings->Begin() ; it != keyMappings->End() ; ) {
+    for ( auto it = keyMappings->Begin(); it != keyMappings->End(); ) {
         SMapping & mapping = *it;
 
         if ( mapping.bAxis ) {
@@ -1328,12 +1375,13 @@ void AInputMappings::UnmapAxis( int _DevId, int _KeyToken ) {
     }
 }
 
-void AInputMappings::MapAction( const char * _ActionName, int _DevId, int _KeyToken, int _ModMask, int _ControllerId ) {
+void AInputMappings::MapAction( const char * _ActionName, int _DevId, int _KeyToken, int _ModMask, int _ControllerId )
+{
     if ( _DevId < 0 || _DevId >= MAX_INPUT_DEVICES ) {
         return;
     }
 
-    if ( _KeyToken < 0 || _KeyToken >= Static.DeviceButtonLimits[ _DevId ] ) {
+    if ( _KeyToken < 0 || _KeyToken >= Static.DeviceButtonLimits[_DevId] ) {
         return;
     }
 
@@ -1356,36 +1404,35 @@ void AInputMappings::MapAction( const char * _ActionName, int _DevId, int _KeyTo
     AArrayOfMappings * keyMappings;
 
     switch ( _DevId ) {
-    case ID_KEYBOARD:
-        keyMappings = &KeyboardMappings[ _KeyToken ];
-        break;
-    case ID_MOUSE:
-        keyMappings = &MouseMappings[ _KeyToken ];
-        break;
-    case ID_JOYSTICK_1:
-    case ID_JOYSTICK_2:
-    case ID_JOYSTICK_3:
-    case ID_JOYSTICK_4:
-    case ID_JOYSTICK_5:
-    case ID_JOYSTICK_6:
-    case ID_JOYSTICK_7:
-    case ID_JOYSTICK_8:
-    case ID_JOYSTICK_9:
-    case ID_JOYSTICK_10:
-    case ID_JOYSTICK_11:
-    case ID_JOYSTICK_12:
-    case ID_JOYSTICK_13:
-    case ID_JOYSTICK_14:
-    case ID_JOYSTICK_15:
-    case ID_JOYSTICK_16:
-    {
-        int joystickId = _DevId - ID_JOYSTICK_1;
-        keyMappings = &JoystickMappings[ joystickId ][ _KeyToken ];
-        break;
-    }
-    default:
-        AN_ASSERT(0);
-        return;
+        case ID_KEYBOARD:
+            keyMappings = &KeyboardMappings[_KeyToken];
+            break;
+        case ID_MOUSE:
+            keyMappings = &MouseMappings[_KeyToken];
+            break;
+        case ID_JOYSTICK_1:
+        case ID_JOYSTICK_2:
+        case ID_JOYSTICK_3:
+        case ID_JOYSTICK_4:
+        case ID_JOYSTICK_5:
+        case ID_JOYSTICK_6:
+        case ID_JOYSTICK_7:
+        case ID_JOYSTICK_8:
+        case ID_JOYSTICK_9:
+        case ID_JOYSTICK_10:
+        case ID_JOYSTICK_11:
+        case ID_JOYSTICK_12:
+        case ID_JOYSTICK_13:
+        case ID_JOYSTICK_14:
+        case ID_JOYSTICK_15:
+        case ID_JOYSTICK_16: {
+            int joystickId = _DevId - ID_JOYSTICK_1;
+            keyMappings    = &JoystickMappings[joystickId].ButtonMappings[_KeyToken];
+            break;
+        }
+        default:
+            AN_ASSERT( 0 );
+            return;
     }
 
     //action->MappedKeys[_DevId].Append( _KeyToken );
@@ -1393,57 +1440,57 @@ void AInputMappings::MapAction( const char * _ActionName, int _DevId, int _KeyTo
     SMapping & mapping = keyMappings->Append();
 
     mapping.AxisOrActionIndex = action->IndexInArrayOfActions;
-    mapping.bAxis = false;
-    mapping.AxisScale = 0;
-    mapping.ControllerId = _ControllerId;
-    mapping.ModMask = _ModMask & 0xff;
+    mapping.bAxis             = false;
+    mapping.AxisScale         = 0;
+    mapping.ControllerId      = _ControllerId;
+    mapping.ModMask           = _ModMask & 0xff;
 }
 
-void AInputMappings::UnmapAction( int _DevId, int _KeyToken, int _ModMask ) {
+void AInputMappings::UnmapAction( int _DevId, int _KeyToken, int _ModMask )
+{
     if ( _DevId < 0 || _DevId >= MAX_INPUT_DEVICES ) {
         return;
     }
 
-    if ( _KeyToken < 0 || _KeyToken >= Static.DeviceButtonLimits[ _DevId ] ) {
+    if ( _KeyToken < 0 || _KeyToken >= Static.DeviceButtonLimits[_DevId] ) {
         return;
     }
 
     AArrayOfMappings * keyMappings;
 
     switch ( _DevId ) {
-    case ID_KEYBOARD:
-        keyMappings = &KeyboardMappings[ _KeyToken ];
-        break;
-    case ID_MOUSE:
-        keyMappings = &MouseMappings[ _KeyToken ];
-        break;
-    case ID_JOYSTICK_1:
-    case ID_JOYSTICK_2:
-    case ID_JOYSTICK_3:
-    case ID_JOYSTICK_4:
-    case ID_JOYSTICK_5:
-    case ID_JOYSTICK_6:
-    case ID_JOYSTICK_7:
-    case ID_JOYSTICK_8:
-    case ID_JOYSTICK_9:
-    case ID_JOYSTICK_10:
-    case ID_JOYSTICK_11:
-    case ID_JOYSTICK_12:
-    case ID_JOYSTICK_13:
-    case ID_JOYSTICK_14:
-    case ID_JOYSTICK_15:
-    case ID_JOYSTICK_16:
-    {
-        int joystickId = _DevId - ID_JOYSTICK_1;
-        keyMappings = &JoystickMappings[ joystickId ][ _KeyToken ];
-        break;
-    }
-    default:
-        AN_ASSERT(0);
-        return;
+        case ID_KEYBOARD:
+            keyMappings = &KeyboardMappings[_KeyToken];
+            break;
+        case ID_MOUSE:
+            keyMappings = &MouseMappings[_KeyToken];
+            break;
+        case ID_JOYSTICK_1:
+        case ID_JOYSTICK_2:
+        case ID_JOYSTICK_3:
+        case ID_JOYSTICK_4:
+        case ID_JOYSTICK_5:
+        case ID_JOYSTICK_6:
+        case ID_JOYSTICK_7:
+        case ID_JOYSTICK_8:
+        case ID_JOYSTICK_9:
+        case ID_JOYSTICK_10:
+        case ID_JOYSTICK_11:
+        case ID_JOYSTICK_12:
+        case ID_JOYSTICK_13:
+        case ID_JOYSTICK_14:
+        case ID_JOYSTICK_15:
+        case ID_JOYSTICK_16: {
+            int joystickId = _DevId - ID_JOYSTICK_1;
+            keyMappings    = &JoystickMappings[joystickId].ButtonMappings[_KeyToken];
+            break;
+        }
+        default:
+            AN_ASSERT( 0 );
+            return;
     }
 
-    for ( auto it = keyMappings->Begin() ; it != keyMappings->End() ; ) {
+    for ( auto it = keyMappings->Begin(); it != keyMappings->End(); ) {
         SMapping & mapping = *it;
 
         if ( !mapping.bAxis && mapping.ModMask == _ModMask ) {
@@ -1455,51 +1502,45 @@ void AInputMappings::UnmapAction( int _DevId, int _KeyToken, int _ModMask ) {
     }
 }
 
-void AInputMappings::UnmapAll() {
-    for ( int i = 0 ; i < Axes.Size() ; i++ ) {
-        Axes[i]->RemoveRef();
-    }
-    for ( int i = 0 ; i < Actions.Size() ; i++ ) {
-        Actions[i]->RemoveRef();
-    }
+void AInputMappings::UnmapAll()
+{
     Axes.Clear();
     Actions.Clear();
-    for ( int i = 0 ; i < MAX_KEYBOARD_BUTTONS ; i++ ) {
+    for ( int i = 0; i < MAX_KEYBOARD_BUTTONS; i++ ) {
         KeyboardMappings[i].Clear();
     }
-    for ( int i = 0 ; i < MAX_MOUSE_BUTTONS ; i++ ) {
+    for ( int i = 0; i < MAX_MOUSE_BUTTONS; i++ ) {
         MouseMappings[i].Clear();
     }
-    for ( int i = 0 ; i < MAX_MOUSE_AXES ; i++ ) {
+    for ( int i = 0; i < MAX_MOUSE_AXES; i++ ) {
         MouseAxisMappings[i].Clear();
     }
-    for ( int i = 0 ; i < MAX_JOYSTICKS_COUNT ; i++ ) {
-        for ( int j = 0 ; j < MAX_JOYSTICK_BUTTONS ; j++ ) {
-            JoystickMappings[i][j].Clear();
+    for ( int i = 0; i < MAX_JOYSTICKS_COUNT; i++ ) {
+        for ( int j = 0; j < MAX_JOYSTICK_BUTTONS; j++ ) {
+            JoystickMappings[i].ButtonMappings[j].Clear();
         }
-        for ( int j = 0 ; j < MAX_JOYSTICK_AXES ; j++ ) {
-            JoystickAxisMappings[i][j].Clear();
+        for ( int j = 0; j < MAX_JOYSTICK_AXES; j++ ) {
+            JoystickMappings[i].AxisMappings[j].Clear();
         }
     }
 }
 
-AInputMappings::AArrayOfMappings * AInputMappings::GetKeyMappings( int _DevId, int _KeyToken ) {
-    if ( _KeyToken < 0 || _KeyToken >= Static.DeviceButtonLimits[ _DevId ] ) {
+AInputMappings::AArrayOfMappings * AInputMappings::GetKeyMappings( int _DevId, int _KeyToken )
+{
+    if ( _KeyToken < 0 || _KeyToken >= Static.DeviceButtonLimits[_DevId] ) {
         CriticalError( "AInputMappings::GetKeyMappings: invalid key token\n" );
     }
 
     switch ( _DevId ) {
-    case ID_KEYBOARD:
-        return &KeyboardMappings[ _KeyToken ];
-    case ID_MOUSE:
-        return _KeyToken >= MOUSE_AXIS_BASE ? &MouseAxisMappings[ _KeyToken - MOUSE_AXIS_BASE ]
-                : &MouseMappings[ _KeyToken ];
+        case ID_KEYBOARD:
+            return &KeyboardMappings[_KeyToken];
+        case ID_MOUSE:
+            return _KeyToken >= MOUSE_AXIS_BASE ? &MouseAxisMappings[_KeyToken - MOUSE_AXIS_BASE] : &MouseMappings[_KeyToken];
     }
 
     if ( _DevId >= ID_JOYSTICK_1 && _DevId <= ID_JOYSTICK_16 ) {
         int joystickId = _DevId - ID_JOYSTICK_1;
-        return _KeyToken >= JOY_AXIS_BASE ? &JoystickAxisMappings[ joystickId ][ _KeyToken - JOY_AXIS_BASE ]
-                    : &JoystickMappings[ joystickId ][ _KeyToken ];
+        return _KeyToken >= JOY_AXIS_BASE ? &JoystickMappings[joystickId].AxisMappings[_KeyToken - JOY_AXIS_BASE] : &JoystickMappings[joystickId].ButtonMappings[_KeyToken];
     }
 
     CriticalError( "AInputMappings::GetKeyMappings: invalid device ID\n" );
@@ -1507,15 +1548,18 @@ AInputMappings::AArrayOfMappings * AInputMappings::GetKeyMappings( int _DevId, i
     return nullptr;
 }
 
-AInputAxis::AInputAxis() {
+AInputAxis::AInputAxis()
+{
     //MappedMouseAxes = 0;
     //Core::ZeroMem( MappedJoystickAxes,  sizeof( MappedJoystickAxes ) );
 }
 
-void AInputAxis::Map( int _DevId, int _KeyToken, float _AxisScale, int _ControllerId ) {
+void AInputAxis::Map( int _DevId, int _KeyToken, float _AxisScale, int _ControllerId )
+{
     Parent->MapAxis( GetObjectNameCStr(), _DevId, _KeyToken, _AxisScale, _ControllerId );
 }
 
-void AInputAction::Map( int _DevId, int _KeyToken, int _ModMask, int _ControllerId ) {
+void AInputAction::Map( int _DevId, int _KeyToken, int _ModMask, int _ControllerId )
+{
     Parent->MapAction( GetObjectNameCStr(), _DevId, _KeyToken, _ModMask, _ControllerId );
 }

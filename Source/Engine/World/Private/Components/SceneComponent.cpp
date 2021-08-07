@@ -43,13 +43,7 @@ ARuntimeVariable com_DrawSockets( _CTS( "com_DrawSockets" ), _CTS( "0" ), VAR_CH
 AN_CLASS_META( ASceneComponent )
 
 ASceneComponent::ASceneComponent()
-    : Position( 0 )
-    , Rotation( 1,0,0,0 )
-    , Scale( 1 )
-    , bTransformDirty( true )
-    , AttachParent( nullptr )
-    , SocketIndex( 0 )
-    , bAbsolutePosition( false )
+    : bAbsolutePosition( false )
     , bAbsoluteRotation( false )
     , bAbsoluteScale( false )
 {
@@ -316,7 +310,7 @@ void ASceneComponent::SetPosition( Float3 const & _Position )
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetPosition( float const & _X, float const & _Y, float const & _Z )
+void ASceneComponent::SetPosition( float _X, float _Y, float _Z )
 {
     Position.X = _X;
     Position.Y = _Y;
@@ -339,7 +333,7 @@ void ASceneComponent::SetAngles( Angl const & _Angles )
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetAngles( float const & _Pitch, float const & _Yaw, float const & _Roll )
+void ASceneComponent::SetAngles( float _Pitch, float _Yaw, float _Roll )
 {
     Rotation = Angl( _Pitch, _Yaw, _Roll ).ToQuat();
 
@@ -353,7 +347,7 @@ void ASceneComponent::SetScale( Float3 const & _Scale )
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetScale( float const & _X, float const & _Y, float const & _Z )
+void ASceneComponent::SetScale( float _X, float _Y, float _Z )
 {
     Scale.X = _X;
     Scale.Y = _Y;
@@ -362,7 +356,7 @@ void ASceneComponent::SetScale( float const & _X, float const & _Y, float const 
     MarkTransformDirty();
 }
 
-void ASceneComponent::SetScale( float const & _ScaleXYZ )
+void ASceneComponent::SetScale( float _ScaleXYZ )
 {
     Scale.X = Scale.Y = Scale.Z = _ScaleXYZ;
 
@@ -411,7 +405,7 @@ void ASceneComponent::SetWorldPosition( Float3 const & _Position )
     }
 }
 
-void ASceneComponent::SetWorldPosition( float const & _X, float const & _Y, float const & _Z )
+void ASceneComponent::SetWorldPosition( float _X, float _Y, float _Z )
 {
     SetWorldPosition( Float3( _X, _Y, _Z ) );
 }
@@ -426,7 +420,7 @@ void ASceneComponent::SetWorldScale( Float3 const & _Scale )
     SetScale( AttachParent && !bAbsoluteScale ? _Scale / AttachParent->GetWorldScale() : _Scale );
 }
 
-void ASceneComponent::SetWorldScale( float const & _X, float const & _Y, float const & _Z )
+void ASceneComponent::SetWorldScale( float _X, float _Y, float _Z )
 {
     SetWorldScale( Float3( _X, _Y, _Z ) );
 }

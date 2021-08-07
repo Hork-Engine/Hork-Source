@@ -434,7 +434,7 @@ Float3 ALevel::SampleLight( int InLightmapBlock, Float2 const & InLighmapTexcoor
 
     AN_ASSERT( InLightmapBlock >= 0 && InLightmapBlock < Lightmaps.Size() );
 
-    int numChannels = ( LightmapFormat == LIGHTMAP_GRAYSCALED_HALF ) ? 1 : 3;
+    int numChannels = ( LightmapFormat == LIGHTMAP_GRAYSCALED_HALF ) ? 1 : 4;
     int blockSize = LightmapBlockWidth * LightmapBlockHeight * numChannels;
 
     const unsigned short * src = (const unsigned short *)LightData + InLightmapBlock * blockSize;

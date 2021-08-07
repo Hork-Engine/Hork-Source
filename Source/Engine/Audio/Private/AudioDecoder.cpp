@@ -83,11 +83,12 @@ bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int S
     pAudioFileInfo->Channels = decoder.outputChannels;
     pAudioFileInfo->SampleBits = bForce8Bit ? 8 : 16;
 
+    byte temp[8192];
+
     if ( ppFrames ) {
         ma_uint64 totalFramesRead = 0;
         ma_uint64 framesCapacity = 0;
         void* pFrames = NULL;
-        byte temp[8192];
         const int stride = ( pAudioFileInfo->SampleBits >> 3 ) * pAudioFileInfo->Channels;
         const ma_uint64 framesToReadRightNow = AN_ARRAY_SIZE( temp ) / stride;
         for ( ;; ) {
@@ -135,7 +136,6 @@ bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int S
         // uses internally.
         if ( pAudioFileInfo->FrameCount == 0 ) { // stb_vorbis :(
             ma_uint64 totalFramesRead = 0;
-            byte temp[8192];
             const int stride = (pAudioFileInfo->SampleBits >> 3) * pAudioFileInfo->Channels;
             const ma_uint64 framesToReadRightNow = AN_ARRAY_SIZE( temp ) / stride;
             for ( ;; ) {

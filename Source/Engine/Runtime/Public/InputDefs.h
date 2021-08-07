@@ -31,13 +31,13 @@ SOFTWARE.
 #pragma once
 
 /* Input limits */
-#define MAX_KEYBOARD_BUTTONS   349
-#define MAX_MODIFIERS          6
-#define MAX_MOUSE_BUTTONS      12
-#define MAX_MOUSE_AXES         2
-#define MAX_JOYSTICKS_COUNT    16
-#define MAX_JOYSTICK_BUTTONS   32
-#define MAX_JOYSTICK_AXES      32
+constexpr int MAX_KEYBOARD_BUTTONS = 349;
+constexpr int MAX_MODIFIERS        = 6;
+constexpr int MAX_MOUSE_BUTTONS    = 12;
+constexpr int MAX_MOUSE_AXES       = 2;
+constexpr int MAX_JOYSTICKS_COUNT  = 16;
+constexpr int MAX_JOYSTICK_BUTTONS = 32;
+constexpr int MAX_JOYSTICK_AXES    = 32;
 
 enum {
     /* The unknown key */
