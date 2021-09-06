@@ -1447,7 +1447,7 @@ struct TVector4
 
     template< typename T2 >
     constexpr explicit TVector4< T >( TVector4< T2 > const & _Value ) :
-        X( _Value.X ), Y( _Value.Y ), Z( _Value.Z ) {}
+        X( _Value.X ), Y( _Value.Y ), Z( _Value.Z ), W( _Value.W ) {}
 
     T * ToPtr()
     {
