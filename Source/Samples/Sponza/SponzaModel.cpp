@@ -364,7 +364,7 @@ ABrainStem::ABrainStem() {
 
     AImage image;
     SImageMipmapConfig mipmapCfg;
-    image.Load( "Samples/Sponza/Textures/Normal FireElemental.png", &mipmapCfg, IMAGE_PF_BGR );
+    image.Load( "Samples/Sponza/Textures/Normal FireElemental.png", &mipmapCfg, IMAGE_PF_BGRA );
     ATexture * normalTextureRes = CreateInstanceOf< ATexture >();
     normalTextureRes->InitializeFromImage( image );
 
