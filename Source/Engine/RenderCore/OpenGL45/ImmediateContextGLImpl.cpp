@@ -35,14 +35,12 @@ SOFTWARE.
 #include "PipelineGLImpl.h"
 #include "TransformFeedbackGLImpl.h"
 #include "QueryGLImpl.h"
-#include "RenderPassGLImpl.h"
 #include "VertexArrayObjectGL.h"
 #include "LUT.h"
 
+#include "../FrameGraph.h"
+
 #include <Core/Public/Core.h>
-#include <Core/Public/IntrusiveLinkedListMacro.h>
-#include <Core/Public/CoreMath.h>
-#include <Core/Public/Logger.h>
 
 #include "GL/glew.h"
 
@@ -50,106 +48,298 @@ SOFTWARE.
 
 #define DEFAULT_STENCIL_REF 0
 
-#define VerifyContext() AN_ASSERT( AImmediateContextGLImpl::Current == this );
+#define VerifyContext() AN_ASSERT(AImmediateContextGLImpl::Current == this);
 
-namespace RenderCore {
-
-AImmediateContextGLImpl * AImmediateContextGLImpl::StateHead = nullptr, *AImmediateContextGLImpl::StateTail = nullptr;
-
-AResourceTableGLImpl::AResourceTableGLImpl( ADeviceGLImpl * _Device )
-    : IResourceTable( _Device ), pDevice( _Device )
+namespace RenderCore
 {
-    memset( TextureBindings, 0, sizeof( TextureBindings ) );
-    memset( TextureBindingUIDs, 0, sizeof( TextureBindingUIDs ) );
-    memset( ImageBindings, 0, sizeof( ImageBindings ) );
-    memset( ImageBindingUIDs, 0, sizeof( ImageBindingUIDs ) );
-    memset( ImageLod, 0, sizeof( ImageLod ) );
-    memset( ImageLayerIndex, 0, sizeof( ImageLayerIndex ) );
-    memset( ImageLayered, 0, sizeof( ImageLayered ) );
-    memset( BufferBindings, 0, sizeof( BufferBindings ) );
-    memset( BufferBindingUIDs, 0, sizeof( BufferBindingUIDs ) );
-    memset( BufferBindingOffsets, 0, sizeof( BufferBindingOffsets ) );
-    memset( BufferBindingSizes, 0, sizeof( BufferBindingSizes ) );
+
+AResourceTableGLImpl::AResourceTableGLImpl(ADeviceGLImpl* pDevice) :
+    IResourceTable(pDevice)
+{
+    memset(TextureBindings, 0, sizeof(TextureBindings));
+    memset(TextureBindingUIDs, 0, sizeof(TextureBindingUIDs));
+    memset(ImageBindings, 0, sizeof(ImageBindings));
+    memset(ImageBindingUIDs, 0, sizeof(ImageBindingUIDs));
+    memset(ImageMipLevel, 0, sizeof(ImageMipLevel));
+    memset(ImageLayerIndex, 0, sizeof(ImageLayerIndex));
+    memset(ImageLayered, 0, sizeof(ImageLayered));
+    memset(BufferBindings, 0, sizeof(BufferBindings));
+    memset(BufferBindingUIDs, 0, sizeof(BufferBindingUIDs));
+    memset(BufferBindingOffsets, 0, sizeof(BufferBindingOffsets));
+    memset(BufferBindingSizes, 0, sizeof(BufferBindingSizes));
 }
 
 AResourceTableGLImpl::~AResourceTableGLImpl()
 {
 }
 
-void AResourceTableGLImpl::BindTexture( unsigned int Slot, ITextureBase const * Texture )
+void AResourceTableGLImpl::BindTexture(unsigned int Slot, ITextureView* pShaderResourceView)
 {
-    AN_ASSERT( Slot < MAX_SAMPLER_SLOTS );
+    AN_ASSERT(Slot < MAX_SAMPLER_SLOTS);
 
     // Slot must be < pDevice->MaxCombinedTextureImageUnits
 
-    if ( Texture ) {
-        TextureBindings[Slot] = Texture->GetHandleNativeGL();
-        TextureBindingUIDs[Slot] = Texture->GetUID();
+    if (pShaderResourceView)
+    {
+        AN_ASSERT(pShaderResourceView->GetDesc().ViewType == TEXTURE_VIEW_SHADER_RESOURCE);
+        TextureBindings[Slot]    = pShaderResourceView->GetHandleNativeGL();
+        TextureBindingUIDs[Slot] = pShaderResourceView->GetUID();
     }
-    else {
-        TextureBindings[Slot] = 0;
+    else
+    {
+        TextureBindings[Slot]    = 0;
         TextureBindingUIDs[Slot] = 0;
     }
 }
 
-void AResourceTableGLImpl::BindImage( unsigned int Slot, ITextureBase const * Texture, uint16_t Lod, bool bLayered, uint16_t LayerIndex )
+void AResourceTableGLImpl::BindTexture(unsigned int Slot, IBufferView* pShaderResourceView)
 {
-    AN_ASSERT( Slot < MAX_IMAGE_SLOTS );
+    AN_ASSERT(Slot < MAX_SAMPLER_SLOTS);
+
+    // Slot must be < pDevice->MaxCombinedTextureImageUnits
+
+    if (pShaderResourceView)
+    {
+        TextureBindings[Slot]    = pShaderResourceView->GetHandleNativeGL();
+        TextureBindingUIDs[Slot] = pShaderResourceView->GetUID();
+    }
+    else
+    {
+        TextureBindings[Slot]    = 0;
+        TextureBindingUIDs[Slot] = 0;
+    }
+}
+
+ void AResourceTableGLImpl::BindImage(unsigned int Slot, ITextureView* pUnorderedAccessView)
+{
+    AN_ASSERT(Slot < MAX_IMAGE_SLOTS);
 
     // _Slot must be < pDevice->MaxCombinedTextureImageUnits
 
-    if ( Texture ) {
-        ImageBindings[Slot] = Texture->GetHandleNativeGL();
-        ImageBindingUIDs[Slot] = Texture->GetUID();
-        ImageLod[Slot] = Lod;
-        ImageLayerIndex[Slot] = LayerIndex;
-        ImageLayered[Slot] = bLayered;
+    if (pUnorderedAccessView)
+    {
+        STextureViewDesc const& desc = pUnorderedAccessView->GetDesc();
+
+        AN_ASSERT(desc.ViewType == TEXTURE_VIEW_UNORDERED_ACCESS);
+
+        bool bLayered = desc.FirstSlice != 0 || desc.NumSlices != pUnorderedAccessView->GetTexture()->GetSliceCount(desc.FirstMipLevel);
+
+        ImageBindings[Slot]    = pUnorderedAccessView->GetHandleNativeGL();
+        ImageBindingUIDs[Slot] = pUnorderedAccessView->GetUID();
+        ImageMipLevel[Slot]    = desc.FirstMipLevel;
+        ImageLayerIndex[Slot]  = desc.FirstSlice;
+        ImageLayered[Slot]     = bLayered;
     }
-    else {
-        ImageBindings[Slot] = 0;
+    else
+    {
+        ImageBindings[Slot]    = 0;
         ImageBindingUIDs[Slot] = 0;
-        ImageLod[Slot] = 0;
-        ImageLayerIndex[Slot] = 0;
-        ImageLayered[Slot] = false;
+        ImageMipLevel[Slot]    = 0;
+        ImageLayerIndex[Slot]  = 0;
+        ImageLayered[Slot]     = false;
     }
 }
 
-void AResourceTableGLImpl::BindBuffer( int Slot, IBuffer const * Buffer, size_t Offset, size_t Size )
+void AResourceTableGLImpl::BindBuffer(int Slot, IBuffer const* pBuffer, size_t Offset, size_t Size)
 {
-    AN_ASSERT( Slot < MAX_BUFFER_SLOTS );
+    AN_ASSERT(Slot < MAX_BUFFER_SLOTS);
 
-    if ( Buffer ) {
-        BufferBindings[Slot] = Buffer->GetHandleNativeGL();
-        BufferBindingUIDs[Slot] = Buffer->GetUID();
+    if (pBuffer)
+    {
+        BufferBindings[Slot]       = pBuffer->GetHandleNativeGL();
+        BufferBindingUIDs[Slot]    = pBuffer->GetUID();
         BufferBindingOffsets[Slot] = Offset;
-        BufferBindingSizes[Slot] = Size;
+        BufferBindingSizes[Slot]   = Size;
     }
-    else {
-        BufferBindings[Slot] = 0;
-        BufferBindingUIDs[Slot] = 0;
+    else
+    {
+        BufferBindings[Slot]       = 0;
+        BufferBindingUIDs[Slot]    = 0;
         BufferBindingOffsets[Slot] = 0;
-        BufferBindingSizes[Slot] = 0;
+        BufferBindingSizes[Slot]   = 0;
     }
 }
 
-AImmediateContextGLImpl::AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImmediateContextCreateInfo const & _CreateInfo, void * _Context )
-    : pDevice( _Device )
-{
-    pWindow = _CreateInfo.Window;
-    pContextGL = _Context;
 
-    if ( !pContextGL ) {
-        pContextGL = SDL_GL_CreateContext( pWindow );
-        if ( !pContextGL ) {
-            CriticalError( "Failed to initialize OpenGL context\n" );
+
+void AFramebufferCacheGLImpl::CleanupOutdatedFramebuffers()
+{
+    // Remove outdated framebuffers
+    for (int i = 0; i < FramebufferCache.Size();)
+    {
+        if (FramebufferCache[i]->IsAttachmentsOutdated())
+        {
+            FramebufferCache.erase(FramebufferCache.begin() + i);
+            FramebufferHash.RemoveIndex(FramebufferHashes[i], i);
+            FramebufferHashes.Erase(FramebufferHashes.begin() + i);
+            continue;
+        }
+        i++;
+    }
+}
+
+//static int MakeHash(TArray<ITextureView*, MAX_COLOR_ATTACHMENTS> const& ColorAttachments,
+//                    int                                                 NumColorAttachments,
+//                    ITextureView*                                       pDepthStencilAttachment)
+//{
+//    uint32_t hash{0};
+//    for (int a = 0 ; a < NumColorAttachments ; a++)
+//    {
+//        hash = Core::MurMur3Hash32(ColorAttachments[a]->GetUID(), hash);
+//    }
+//    if (pDepthStencilAttachment)
+//    {
+//        hash = Core::MurMur3Hash32(pDepthStencilAttachment->GetUID(), hash);
+//    }
+//    return hash;
+//}
+
+AFramebufferGLImpl* AFramebufferCacheGLImpl::GetFramebuffer(const char*                     RenderPassName,
+                                                            TStdVector<STextureAttachment>& ColorAttachments,
+                                                            STextureAttachment*             pDepthStencilAttachment)
+{
+    SFramebufferDesc                             framebufferDesc;
+    TArray<ITextureView*, MAX_COLOR_ATTACHMENTS> colorAttachments;
+ 
+    AN_ASSERT(ColorAttachments.Size() <= MAX_COLOR_ATTACHMENTS);
+
+    framebufferDesc.NumColorAttachments = ColorAttachments.Size();
+    framebufferDesc.pColorAttachments   = colorAttachments.ToPtr();
+
+    STextureViewDesc viewDesc;
+    viewDesc.ViewType      = TEXTURE_VIEW_RENDER_TARGET;
+    viewDesc.Type          = TEXTURE_2D;
+    viewDesc.Format        = TEXTURE_FORMAT_RGBA8;
+    viewDesc.FirstMipLevel = 0;
+    viewDesc.NumMipLevels  = 1;
+    viewDesc.FirstSlice    = 0;
+    viewDesc.NumSlices     = 0;
+
+    uint32_t hash{0};
+
+    int rt = 0;
+    for (STextureAttachment& attachment : ColorAttachments)
+    {
+        ITexture* texture = attachment.GetTexture();
+
+        viewDesc.Type          = texture->GetDesc().Type;
+        viewDesc.Format        = texture->GetDesc().Format;
+        viewDesc.FirstMipLevel = attachment.MipLevel;
+
+        if (attachment.bSingleSlice)
+        {
+            viewDesc.FirstSlice = attachment.SliceNum;
+            viewDesc.NumSlices = 1;
+        }
+        else
+        {
+            viewDesc.FirstSlice = 0;
+            viewDesc.NumSlices  = texture->GetSliceCount(attachment.MipLevel);
         }
 
-        SDL_GL_MakeCurrent( pWindow, pContextGL );
+        ITextureView* textureView = texture->GetTextureView(viewDesc);
+
+        if (rt == 0)
+        {
+            framebufferDesc.Width = textureView->GetWidth();
+            framebufferDesc.Height = textureView->GetHeight();
+        }
+        else
+        {
+            AN_ASSERT(framebufferDesc.Width == textureView->GetWidth());
+            AN_ASSERT(framebufferDesc.Height == textureView->GetHeight());
+        }
+
+        colorAttachments[rt++] = textureView;
+
+        hash = Core::MurMur3Hash32(textureView->GetUID(), hash);
+    }
+
+    if (pDepthStencilAttachment)
+    {
+        ITexture* texture = pDepthStencilAttachment->GetTexture();
+
+        viewDesc.ViewType      = TEXTURE_VIEW_DEPTH_STENCIL;
+        viewDesc.Type          = texture->GetDesc().Type;
+        viewDesc.Format        = texture->GetDesc().Format;
+        viewDesc.FirstMipLevel = pDepthStencilAttachment->MipLevel;
+
+        if (pDepthStencilAttachment->bSingleSlice)
+        {
+            viewDesc.FirstSlice = pDepthStencilAttachment->SliceNum;
+            viewDesc.NumSlices  = 1;
+        }
+        else
+        {
+            viewDesc.FirstSlice = 0;
+            viewDesc.NumSlices  = texture->GetSliceCount(pDepthStencilAttachment->MipLevel);
+        }
+
+        ITextureView* textureView = texture->GetTextureView(viewDesc);
+
+        if (rt == 0)
+        {
+            framebufferDesc.Width  = textureView->GetWidth();
+            framebufferDesc.Height = textureView->GetHeight();
+        }
+        else
+        {
+            AN_ASSERT(framebufferDesc.Width == textureView->GetWidth());
+            AN_ASSERT(framebufferDesc.Height == textureView->GetHeight());
+        }
+
+        framebufferDesc.pDepthStencilAttachment = textureView;
+
+        hash = Core::MurMur3Hash32(textureView->GetUID(), hash);
+    }
+
+    //int hash = MakeHash(ColorAttachments, pDepthStencilAttachment);
+
+    for (int i = FramebufferHash.First(hash); i != -1; i = FramebufferHash.Next(i))
+    {
+        AFramebufferGLImpl* framebuffer = FramebufferCache[i];
+
+        if (framebuffer->CompareWith(framebufferDesc))
+        {
+            return framebuffer;
+        }
+    }
+
+    // create new framebuffer
+
+    TRef<AFramebufferGLImpl> framebuffer;
+    framebuffer = MakeRef<AFramebufferGLImpl>(pDevice, framebufferDesc);
+
+    FramebufferHash.Insert(hash, FramebufferCache.Size());
+    FramebufferCache.push_back(framebuffer);
+    FramebufferHashes.Append(hash);
+
+    //GLogger.Printf( "Total framebuffers %d for %s hash 0x%08x\n", FramebufferCache.Size(), RenderPassName, hash );
+
+    return framebuffer;
+}
+
+AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmediateContextDesc const& Desc, void* _Context) :
+    IImmediateContext(pDevice)
+{
+    pWindow    = Desc.Window;
+    pContextGL = _Context;
+
+    if (!pContextGL)
+    {
+        pContextGL = SDL_GL_CreateContext(pWindow);
+        if (!pContextGL)
+        {
+            CriticalError("Failed to initialize OpenGL context\n");
+        }
+
+        SDL_GL_MakeCurrent(pWindow, pContextGL);
 
         glewExperimental = true;
-        GLenum result = glewInit();
-        if ( result != GLEW_OK ) {
-            CriticalError( "Failed to load OpenGL functions\n" );
+        GLenum result    = glewInit();
+        if (result != GLEW_OK)
+        {
+            CriticalError("Failed to load OpenGL functions\n");
         }
 
         // GLEW has a long-existing bug where calling glewInit() always sets the GL_INVALID_ENUM error flag and
@@ -160,170 +350,162 @@ AImmediateContextGLImpl::AImmediateContextGLImpl( ADeviceGLImpl * _Device, SImme
 
     Current = this;
 
-    memset( BufferBindingUIDs, 0, sizeof( BufferBindingUIDs ) );
-    memset( BufferBindingOffsets, 0, sizeof( BufferBindingOffsets ) );
-    memset( BufferBindingSizes, 0, sizeof( BufferBindingSizes ) );
+    memset(BufferBindingUIDs, 0, sizeof(BufferBindingUIDs));
+    memset(BufferBindingOffsets, 0, sizeof(BufferBindingOffsets));
+    memset(BufferBindingSizes, 0, sizeof(BufferBindingSizes));
 
-    CurrentPipeline = nullptr;
-    CurrentVAO = nullptr;
-    NumPatchVertices = 0;
-    IndexBufferType = 0;
+    CurrentPipeline       = nullptr;
+    CurrentVAO            = nullptr;
+    NumPatchVertices      = 0;
+    IndexBufferType       = 0;
     IndexBufferTypeSizeOf = 0;
-    IndexBufferOffset = 0;
-    IndexBufferUID = 0;
-    IndexBufferHandle = 0;
-    memset( VertexBufferUIDs, 0, sizeof( VertexBufferUIDs ) );
-    memset( VertexBufferHandles, 0, sizeof( VertexBufferHandles ) );    
-    memset( VertexBufferOffsets, 0, sizeof( VertexBufferOffsets ) );
+    IndexBufferOffset     = 0;
+    IndexBufferUID        = 0;
+    IndexBufferHandle     = 0;
+    memset(VertexBufferUIDs, 0, sizeof(VertexBufferUIDs));
+    memset(VertexBufferHandles, 0, sizeof(VertexBufferHandles));
+    memset(VertexBufferOffsets, 0, sizeof(VertexBufferOffsets));
 
     //CurrentQueryTarget = 0;
     //CurrentQueryObject = 0;
-    memset( CurrentQueryUID, 0, sizeof( CurrentQueryUID ) );
+    memset(CurrentQueryUID, 0, sizeof(CurrentQueryUID));
 
     // GL_NICEST, GL_FASTEST and GL_DONT_CARE
 
     // Sampling quality of antialiased lines during rasterization stage
-    glHint( GL_LINE_SMOOTH_HINT, GL_NICEST );
+    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 
     // Sampling quality of antialiased polygons during rasterization stage
-    glHint( GL_POLYGON_SMOOTH_HINT, GL_NICEST );
+    glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 
     // Quality and performance of the compressing texture images
-    glHint( GL_TEXTURE_COMPRESSION_HINT, GL_NICEST );
+    glHint(GL_TEXTURE_COMPRESSION_HINT, GL_NICEST);
 
     // Accuracy of the derivative calculation for the GLSL fragment processing built-in functions: dFdx, dFdy, and fwidth.
-    glHint( GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST );
+    glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT, GL_NICEST);
 
     // If enabled, cubemap textures are sampled such that when linearly sampling from the border between two adjacent faces,
     // texels from both faces are used to generate the final sample value.
     // When disabled, texels from only a single face are used to construct the final sample value.
-    glEnable( GL_TEXTURE_CUBE_MAP_SEAMLESS );
+    glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 
     PixelStore.PackAlignment = 4;
-    glPixelStorei( GL_PACK_ALIGNMENT, PixelStore.PackAlignment );
+    glPixelStorei(GL_PACK_ALIGNMENT, PixelStore.PackAlignment);
     PixelStore.UnpackAlignment = 4;
-    glPixelStorei( GL_UNPACK_ALIGNMENT, PixelStore.UnpackAlignment );
+    glPixelStorei(GL_UNPACK_ALIGNMENT, PixelStore.UnpackAlignment);
 
-    memset( &Binding, 0, sizeof( Binding ) );
+    memset(&Binding, 0, sizeof(Binding));
 
     // Init default blending state
     bLogicOpEnabled = false;
-    glColorMask( 1,1,1,1 );
-    glDisable( GL_BLEND );
-    glDisable( GL_SAMPLE_ALPHA_TO_COVERAGE );
-    glBlendFunc( GL_ONE, GL_ZERO );
-    glBlendEquation( GL_FUNC_ADD );
-    glBlendColor( 0, 0, 0, 0 );
-    glDisable( GL_COLOR_LOGIC_OP );
-    glLogicOp( GL_COPY );
-    memset( BlendColor, 0, sizeof( BlendColor ) );
+    glColorMask(1, 1, 1, 1);
+    glDisable(GL_BLEND);
+    glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+    glBlendFunc(GL_ONE, GL_ZERO);
+    glBlendEquation(GL_FUNC_ADD);
+    glBlendColor(0, 0, 0, 0);
+    glDisable(GL_COLOR_LOGIC_OP);
+    glLogicOp(GL_COPY);
+    memset(BlendColor, 0, sizeof(BlendColor));
 
     GLint maxSampleMaskWords = 0;
-    glGetIntegerv( GL_MAX_SAMPLE_MASK_WORDS, &maxSampleMaskWords );
-    if ( maxSampleMaskWords > 4 ) {
+    glGetIntegerv(GL_MAX_SAMPLE_MASK_WORDS, &maxSampleMaskWords);
+    if (maxSampleMaskWords > 4)
+    {
         maxSampleMaskWords = 4;
-    }    
-    SampleMask[ 0 ] = 0xffffffff;
-    SampleMask[ 1 ] = 0;
-    SampleMask[ 2 ] = 0;
-    SampleMask[ 3 ] = 0;
-    for ( int i = 0 ; i < maxSampleMaskWords ; i++ ) {
-        glSampleMaski( i, SampleMask[ i ] );
+    }
+    SampleMask[0] = 0xffffffff;
+    SampleMask[1] = 0;
+    SampleMask[2] = 0;
+    SampleMask[3] = 0;
+    for (int i = 0; i < maxSampleMaskWords; i++)
+    {
+        glSampleMaski(i, SampleMask[i]);
     }
     bSampleMaskEnabled = false;
-    glDisable( GL_SAMPLE_MASK );
+    glDisable(GL_SAMPLE_MASK);
 
     // Init default rasterizer state
-    glDisable( GL_POLYGON_OFFSET_FILL );
-    PolygonOffsetClampSafe( 0, 0, 0 );
-    glDisable( GL_DEPTH_CLAMP );
-    glDisable( GL_LINE_SMOOTH );
-    glDisable( GL_RASTERIZER_DISCARD );
-    glDisable( GL_MULTISAMPLE );
-    glDisable( GL_SCISSOR_TEST );
-    glEnable( GL_CULL_FACE );
+    glDisable(GL_POLYGON_OFFSET_FILL);
+    PolygonOffsetClampSafe(0, 0, 0);
+    glDisable(GL_DEPTH_CLAMP);
+    glDisable(GL_LINE_SMOOTH);
+    glDisable(GL_RASTERIZER_DISCARD);
+    glDisable(GL_MULTISAMPLE);
+    glDisable(GL_SCISSOR_TEST);
+    glEnable(GL_CULL_FACE);
     CullFace = GL_BACK;
-    glCullFace( CullFace );
-    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-    glFrontFace( GL_CCW );
+    glCullFace(CullFace);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glFrontFace(GL_CCW);
     // GL_POLYGON_SMOOTH
     // If enabled, draw polygons with proper filtering. Otherwise, draw aliased polygons.
     // For correct antialiased polygons, an alpha buffer is needed and the polygons must be sorted front to back.
-    glDisable( GL_POLYGON_SMOOTH ); // Smooth polygons have some artifacts
+    glDisable(GL_POLYGON_SMOOTH); // Smooth polygons have some artifacts
     bPolygonOffsetEnabled = false;
 
     // Init default depth-stencil state
     StencilRef = DEFAULT_STENCIL_REF;
-    glEnable( GL_DEPTH_TEST );
-    glDepthMask( 1 );
-    glDepthFunc( GL_LESS );
-    glDisable( GL_STENCIL_TEST );
-    glStencilMask( DEFAULT_STENCIL_WRITE_MASK );
-    glStencilOpSeparate( GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP );
-    glStencilFuncSeparate( GL_FRONT_AND_BACK, GL_ALWAYS, StencilRef, DEFAULT_STENCIL_READ_MASK );
+    glEnable(GL_DEPTH_TEST);
+    glDepthMask(1);
+    glDepthFunc(GL_LESS);
+    glDisable(GL_STENCIL_TEST);
+    glStencilMask(DEFAULT_STENCIL_WRITE_MASK);
+    glStencilOpSeparate(GL_FRONT_AND_BACK, GL_KEEP, GL_KEEP, GL_KEEP);
+    glStencilFuncSeparate(GL_FRONT_AND_BACK, GL_ALWAYS, StencilRef, DEFAULT_STENCIL_READ_MASK);
 
     // Enable clip distances by default
     // FIXME: make it as pipeline state?
-    glEnable( GL_CLIP_DISTANCE0 );
-    glEnable( GL_CLIP_DISTANCE1 );
-    glEnable( GL_CLIP_DISTANCE2 );
-    glEnable( GL_CLIP_DISTANCE3 );
-    glEnable( GL_CLIP_DISTANCE4 );
-    glEnable( GL_CLIP_DISTANCE5 );
+    glEnable(GL_CLIP_DISTANCE0);
+    glEnable(GL_CLIP_DISTANCE1);
+    glEnable(GL_CLIP_DISTANCE2);
+    glEnable(GL_CLIP_DISTANCE3);
+    glEnable(GL_CLIP_DISTANCE4);
+    glEnable(GL_CLIP_DISTANCE5);
 
     ColorClamp = COLOR_CLAMP_OFF;
-    glClampColor( GL_CLAMP_READ_COLOR, GL_FALSE );
+    glClampColor(GL_CLAMP_READ_COLOR, GL_FALSE);
 
-    glEnable( GL_FRAMEBUFFER_SRGB );
+    glEnable(GL_FRAMEBUFFER_SRGB);
 
     bPrimitiveRestartEnabled = false;
 
-    CurrentRenderPass = nullptr;
+    CurrentRenderPass  = nullptr;
+    CurrentFramebuffer = nullptr;
 
-    SwapChainWidth = 512;
-    SwapChainHeight = 512;
-
-    CurrentViewport[0] = Math::MaxValue< float >();
-    CurrentViewport[1] = Math::MaxValue< float >();
-    CurrentViewport[2] = Math::MaxValue< float >();
-    CurrentViewport[3] = Math::MaxValue< float >();
+    CurrentViewport[0] = Math::MaxValue<float>();
+    CurrentViewport[1] = Math::MaxValue<float>();
+    CurrentViewport[2] = Math::MaxValue<float>();
+    CurrentViewport[3] = Math::MaxValue<float>();
 
     CurrentDepthRange[0] = 0;
     CurrentDepthRange[1] = 1;
-    glDepthRangef( CurrentDepthRange[0], CurrentDepthRange[1] ); // Since GL v4.1
+    glDepthRangef(CurrentDepthRange[0], CurrentDepthRange[1]); // Since GL v4.1
 
-    CurrentScissor.X = 0;
-    CurrentScissor.Y = 0;
-    CurrentScissor.Width = 0;
+    CurrentScissor.X      = 0;
+    CurrentScissor.Y      = 0;
+    CurrentScissor.Width  = 0;
     CurrentScissor.Height = 0;
 
-    if ( _CreateInfo.ClipControl == CLIP_CONTROL_OPENGL ) {
-        // OpenGL Classic ndc_z -1,-1, lower-left corner
-        glClipControl( GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE ); // Zw = ( ( f - n ) / 2 ) * Zd + ( n + f ) / 2
-    } else {
-        // DirectX ndc_z 0,1, upper-left corner
-        glClipControl( GL_UPPER_LEFT, GL_ZERO_TO_ONE );         // Zw = ( f - n ) * Zd + n
-    }
+    // OpenGL Classic ndc_z -1,-1, lower-left corner
+    //glClipControl( GL_LOWER_LEFT, GL_NEGATIVE_ONE_TO_ONE ); // Zw = ( ( f - n ) / 2 ) * Zd + ( n + f ) / 2
 
-    ClipControl = _CreateInfo.ClipControl;
-    ViewportOrigin = _CreateInfo.ViewportOrigin;
+    // DirectX ndc_z 0,1, upper-left corner
+    glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE); // Zw = ( f - n ) * Zd + n
 
-    INTRUSIVE_ADD( this, Next, Prev, StateHead, StateTail );
+    Binding.ReadFramebuffer = ~0u;
+    Binding.DrawFramebuffer = ~0u;
 
-    SFramebufferCreateInfo framebufferCI = {};
-    DefaultFramebuffer = MakeRef< AFramebufferGLImpl >( pDevice, framebufferCI, true );
+    pDevice->CreateResourceTable(&RootResourceTable);
 
-    Binding.ReadFramebufferUID = DefaultFramebuffer->GetUID();
-    Binding.DrawFramebufferUID = DefaultFramebuffer->GetUID();
+    CurrentResourceTable = static_cast<AResourceTableGLImpl*>(RootResourceTable.GetObject());
 
-    pDevice->CreateResourceTable( &RootResourceTable );
-
-    CurrentResourceTable = static_cast< AResourceTableGLImpl *>( RootResourceTable.GetObject() );
+    pFramebufferCache = MakeRef<AFramebufferCacheGLImpl>(pDevice);
 }
 
 void AImmediateContextGLImpl::MakeCurrent()
 {
-    SDL_GL_MakeCurrent( pWindow, pContextGL );
+    SDL_GL_MakeCurrent(pWindow, pContextGL);
     Current = this;
 }
 
@@ -331,441 +513,476 @@ AImmediateContextGLImpl::~AImmediateContextGLImpl()
 {
     VerifyContext();
 
+    pFramebufferCache.Reset();
     CurrentResourceTable.Reset();
     RootResourceTable.Reset();
 
-    DefaultFramebuffer.Reset();
+    SAllocatorCallback const& allocator = GetDevice()->GetAllocator();
 
-    SAllocatorCallback const & allocator = pDevice->GetAllocator();
-
-    glBindVertexArray( 0 );
-    for ( SVertexArrayObject * vao : VAOCache ) {
-        glDeleteVertexArrays( 1, &vao->Handle );
-        allocator.Deallocate( vao );
+    glBindVertexArray(0);
+    for (SVertexArrayObject* vao : VAOCache)
+    {
+        glDeleteVertexArrays(1, &vao->Handle);
+        allocator.Deallocate(vao);
     }
     VAOCache.Free();
     VAOHash.Free();
 
-    INTRUSIVE_REMOVE( this, Next, Prev, StateHead, StateTail );
-
-    SDL_GL_DeleteContext( pContextGL );
-    if ( Current == this ) {
+    SDL_GL_DeleteContext(pContextGL);
+    if (Current == this)
+    {
         Current = nullptr;
     }
 }
 
-void AImmediateContextGLImpl::SetSwapChainResolution( int _Width, int _Height )
-{
-    SwapChainWidth = _Width;
-    SwapChainHeight = _Height;
-
-    if ( Binding.DrawFramebufferUID == DefaultFramebuffer->GetUID() ) {
-        Binding.DrawFramebufferWidth = ( unsigned short )SwapChainWidth;
-        Binding.DrawFramebufferHeight = ( unsigned short )SwapChainHeight;
-    }
-}
-
-void AImmediateContextGLImpl::PolygonOffsetClampSafe( float _Slope, int _Bias, float _Clamp )
+void AImmediateContextGLImpl::PolygonOffsetClampSafe(float _Slope, int _Bias, float _Clamp)
 {
     VerifyContext();
 
     const float DepthBiasTolerance = 0.00001f;
 
-    if ( std::fabs( _Slope ) < DepthBiasTolerance
-        && std::fabs( _Clamp ) < DepthBiasTolerance
-        && _Bias == 0 ) {
+    if (std::fabs(_Slope) < DepthBiasTolerance && std::fabs(_Clamp) < DepthBiasTolerance && _Bias == 0)
+    {
 
         // FIXME: GL_POLYGON_OFFSET_LINE,GL_POLYGON_OFFSET_POINT тоже enable/disable?
 
-        if ( bPolygonOffsetEnabled ) {
-            glDisable( GL_POLYGON_OFFSET_FILL );
+        if (bPolygonOffsetEnabled)
+        {
+            glDisable(GL_POLYGON_OFFSET_FILL);
             bPolygonOffsetEnabled = false;
         }
-    } else {
-        if ( !bPolygonOffsetEnabled ) {
-            glEnable( GL_POLYGON_OFFSET_FILL );
+    }
+    else
+    {
+        if (!bPolygonOffsetEnabled)
+        {
+            glEnable(GL_POLYGON_OFFSET_FILL);
             bPolygonOffsetEnabled = true;
         }
     }
 
-    if ( glPolygonOffsetClampEXT ) {
-        glPolygonOffsetClampEXT( _Slope, static_cast< float >( _Bias ), _Clamp );
-    } else {
-        glPolygonOffset( _Slope, static_cast< float >( _Bias ) );
+    if (glPolygonOffsetClampEXT)
+    {
+        glPolygonOffsetClampEXT(_Slope, static_cast<float>(_Bias), _Clamp);
+    }
+    else
+    {
+        glPolygonOffset(_Slope, static_cast<float>(_Bias));
     }
 }
 
-void AImmediateContextGLImpl::PackAlignment( unsigned int _Alignment )
+void AImmediateContextGLImpl::PackAlignment(unsigned int _Alignment)
 {
     VerifyContext();
 
-    if ( PixelStore.PackAlignment != _Alignment ) {
-        glPixelStorei( GL_PACK_ALIGNMENT, _Alignment );
+    if (PixelStore.PackAlignment != _Alignment)
+    {
+        glPixelStorei(GL_PACK_ALIGNMENT, _Alignment);
         PixelStore.PackAlignment = _Alignment;
     }
 }
 
-void AImmediateContextGLImpl::UnpackAlignment( unsigned int _Alignment )
+void AImmediateContextGLImpl::UnpackAlignment(unsigned int _Alignment)
 {
     VerifyContext();
 
-    if ( PixelStore.UnpackAlignment != _Alignment ) {
-        glPixelStorei( GL_UNPACK_ALIGNMENT, _Alignment );
+    if (PixelStore.UnpackAlignment != _Alignment)
+    {
+        glPixelStorei(GL_UNPACK_ALIGNMENT, _Alignment);
         PixelStore.UnpackAlignment = _Alignment;
     }
 }
 
-void AImmediateContextGLImpl::ClampReadColor( COLOR_CLAMP _ColorClamp )
+void AImmediateContextGLImpl::ClampReadColor(COLOR_CLAMP _ColorClamp)
 {
     VerifyContext();
 
-    if ( ColorClamp != _ColorClamp ) {
-        glClampColor( GL_CLAMP_READ_COLOR, ColorClampLUT[ _ColorClamp ] );
+    if (ColorClamp != _ColorClamp)
+    {
+        glClampColor(GL_CLAMP_READ_COLOR, ColorClampLUT[_ColorClamp]);
         ColorClamp = _ColorClamp;
     }
 }
 
-SVertexArrayObject * AImmediateContextGLImpl::CachedVAO( SVertexBindingInfo const * pVertexBindings,
-                                                         uint32_t NumVertexBindings,
-                                                         SVertexAttribInfo const * pVertexAttribs,
-                                                         uint32_t NumVertexAttribs )
+SVertexArrayObject* AImmediateContextGLImpl::CachedVAO(SVertexBindingInfo const* pVertexBindings,
+                                                       uint32_t                  NumVertexBindings,
+                                                       SVertexAttribInfo const*  pVertexAttribs,
+                                                       uint32_t                  NumVertexAttribs)
 {
     VerifyContext();
 
     SVertexArrayObjectHashedData hashed;
 
-    memset( &hashed, 0, sizeof( hashed ) );
+    memset(&hashed, 0, sizeof(hashed));
 
     hashed.NumVertexBindings = NumVertexBindings;
-    if ( hashed.NumVertexBindings > MAX_VERTEX_BINDINGS ) {
+    if (hashed.NumVertexBindings > MAX_VERTEX_BINDINGS)
+    {
         hashed.NumVertexBindings = MAX_VERTEX_BINDINGS;
 
-        GLogger.Printf( "AImmediateContextGLImpl::CachedVAO: NumVertexBindings > MAX_VERTEX_BINDINGS\n" );
+        GLogger.Printf("AImmediateContextGLImpl::CachedVAO: NumVertexBindings > MAX_VERTEX_BINDINGS\n");
     }
-    memcpy( hashed.VertexBindings, pVertexBindings, sizeof( hashed.VertexBindings[0] ) * hashed.NumVertexBindings );
+    memcpy(hashed.VertexBindings, pVertexBindings, sizeof(hashed.VertexBindings[0]) * hashed.NumVertexBindings);
 
     hashed.NumVertexAttribs = NumVertexAttribs;
-    if ( hashed.NumVertexAttribs > MAX_VERTEX_ATTRIBS ) {
+    if (hashed.NumVertexAttribs > MAX_VERTEX_ATTRIBS)
+    {
         hashed.NumVertexAttribs = MAX_VERTEX_ATTRIBS;
 
-        GLogger.Printf( "AImmediateContextGLImpl::CachedVAO: NumVertexAttribs > MAX_VERTEX_ATTRIBS\n" );
+        GLogger.Printf("AImmediateContextGLImpl::CachedVAO: NumVertexAttribs > MAX_VERTEX_ATTRIBS\n");
     }
-    memcpy( hashed.VertexAttribs, pVertexAttribs, sizeof( hashed.VertexAttribs[0] ) * hashed.NumVertexAttribs );
+    memcpy(hashed.VertexAttribs, pVertexAttribs, sizeof(hashed.VertexAttribs[0]) * hashed.NumVertexAttribs);
 
     // Clear semantic name to have proper hash key
-    for ( int i = 0 ; i < hashed.NumVertexAttribs ; i++ ) {
+    for (int i = 0; i < hashed.NumVertexAttribs; i++)
+    {
         hashed.VertexAttribs[i].SemanticName = nullptr;
     }
 
-    int hash = pDevice->Hash( ( unsigned char * )&hashed, sizeof( hashed ) );
+    int hash = static_cast<ADeviceGLImpl*>(GetDevice())->Hash((unsigned char*)&hashed, sizeof(hashed));
 
-    int i = VAOHash.First( hash );
-    for ( ; i != -1 ; i = VAOHash.Next( i ) ) {
-        SVertexArrayObject * vao = VAOCache[ i ];
+    int i = VAOHash.First(hash);
+    for (; i != -1; i = VAOHash.Next(i))
+    {
+        SVertexArrayObject* vao = VAOCache[i];
 
-        if ( memcmp( &vao->Hashed, &hashed, sizeof( vao->Hashed ) ) == 0 ) {
+        if (memcmp(&vao->Hashed, &hashed, sizeof(vao->Hashed)) == 0)
+        {
             //GLogger.Printf( "Caching VAO\n" );
             return vao;
         }
     }
 
-    SAllocatorCallback const & allocator = pDevice->GetAllocator();
+    SAllocatorCallback const& allocator = GetDevice()->GetAllocator();
 
-    SVertexArrayObject * vao = static_cast< SVertexArrayObject * >( allocator.Allocate( sizeof( SVertexArrayObject ) ) );
+    SVertexArrayObject* vao = static_cast<SVertexArrayObject*>(allocator.Allocate(sizeof(SVertexArrayObject)));
 
-    memcpy( &vao->Hashed, &hashed, sizeof( vao->Hashed ) );
+    memcpy(&vao->Hashed, &hashed, sizeof(vao->Hashed));
 
     vao->IndexBufferUID = 0;
 
-    memset( vao->VertexBufferUIDs, 0, sizeof( vao->VertexBufferUIDs ) );
-    memset( vao->VertexBufferOffsets, 0, sizeof( vao->VertexBufferOffsets ) );
+    memset(vao->VertexBufferUIDs, 0, sizeof(vao->VertexBufferUIDs));
+    memset(vao->VertexBufferOffsets, 0, sizeof(vao->VertexBufferOffsets));
 
     i = VAOCache.Size();
 
-    VAOHash.Insert( hash, i );
-    VAOCache.Append( vao );
+    VAOHash.Insert(hash, i);
+    VAOCache.Append(vao);
 
     //GLogger.Printf( "Total VAOs %d\n", i+1 );
 
     // TODO: For each context create VAO
-    glCreateVertexArrays( 1, &vao->Handle );
-    if ( !vao->Handle ) {
-        GLogger.Printf( "AImmediateContextGLImpl::CachedVAO: couldn't create vertex array object\n" );
+    glCreateVertexArrays(1, &vao->Handle);
+    if (!vao->Handle)
+    {
+        GLogger.Printf("AImmediateContextGLImpl::CachedVAO: couldn't create vertex array object\n");
         //return nullptr;
     }
 
-    memset( vao->VertexBindingsStrides, 0, sizeof( vao->VertexBindingsStrides ) );
-    for ( SVertexBindingInfo const * binding = hashed.VertexBindings ; binding < &hashed.VertexBindings[hashed.NumVertexBindings] ; binding++ ) {
-        AN_ASSERT( binding->InputSlot < MAX_VERTEX_BUFFER_SLOTS );
+    memset(vao->VertexBindingsStrides, 0, sizeof(vao->VertexBindingsStrides));
+    for (SVertexBindingInfo const* binding = hashed.VertexBindings; binding < &hashed.VertexBindings[hashed.NumVertexBindings]; binding++)
+    {
+        AN_ASSERT(binding->InputSlot < MAX_VERTEX_BUFFER_SLOTS);
 
-        if ( binding->InputSlot >= pDevice->GetDeviceCaps( DEVICE_CAPS_MAX_VERTEX_BUFFER_SLOTS ) ) {
-            GLogger.Printf( "AImmediateContextGLImpl::CachedVAO: binding->InputSlot >= MaxVertexBufferSlots\n" );
+        if (binding->InputSlot >= GetDevice()->GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_BUFFER_SLOTS))
+        {
+            GLogger.Printf("AImmediateContextGLImpl::CachedVAO: binding->InputSlot >= MaxVertexBufferSlots\n");
         }
 
-        if ( binding->Stride > pDevice->GetDeviceCaps( DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE ) ) {
-            GLogger.Printf( "AImmediateContextGLImpl::CachedVAO: binding->Stride > MaxVertexAttribStride\n" );
+        if (binding->Stride > GetDevice()->GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE))
+        {
+            GLogger.Printf("AImmediateContextGLImpl::CachedVAO: binding->Stride > MaxVertexAttribStride\n");
         }
 
-        vao->VertexBindingsStrides[ binding->InputSlot ] = binding->Stride;
+        vao->VertexBindingsStrides[binding->InputSlot] = binding->Stride;
     }
 
-    for ( SVertexAttribInfo const * attrib = hashed.VertexAttribs ; attrib < &hashed.VertexAttribs[hashed.NumVertexAttribs] ; attrib++ ) {
+    for (SVertexAttribInfo const* attrib = hashed.VertexAttribs; attrib < &hashed.VertexAttribs[hashed.NumVertexAttribs]; attrib++)
+    {
 
         // glVertexAttribFormat, glVertexAttribBinding, glVertexBindingDivisor - v4.3 or GL_ARB_vertex_attrib_binding
 
-        if ( attrib->Offset > pDevice->GetDeviceCaps( DEVICE_CAPS_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET ) ) {
-            GLogger.Printf( "AImmediateContextGLImpl::CachedVAO: attrib offset > MaxVertexAttribRelativeOffset\n" );
+        if (attrib->Offset > GetDevice()->GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET))
+        {
+            GLogger.Printf("AImmediateContextGLImpl::CachedVAO: attrib offset > MaxVertexAttribRelativeOffset\n");
         }
 
-        switch ( attrib->Mode ) {
-        case VAM_FLOAT:
-            glVertexArrayAttribFormat( vao->Handle,
-                                       attrib->Location,
-                                       attrib->NumComponents(),
-                                       VertexAttribTypeLUT[ attrib->TypeOfComponent() ],
-                                       attrib->IsNormalized(),
-                                       attrib->Offset );
-            break;
-        case VAM_DOUBLE:
-            glVertexArrayAttribLFormat( vao->Handle,
-                                        attrib->Location,
-                                        attrib->NumComponents(),
-                                        VertexAttribTypeLUT[ attrib->TypeOfComponent() ],
-                                        attrib->Offset );
-            break;
-        case VAM_INTEGER:
-            glVertexArrayAttribIFormat( vao->Handle,
-                                        attrib->Location,
-                                        attrib->NumComponents(),
-                                        VertexAttribTypeLUT[ attrib->TypeOfComponent() ],
-                                        attrib->Offset );
-            break;
+        switch (attrib->Mode)
+        {
+            case VAM_FLOAT:
+                glVertexArrayAttribFormat(vao->Handle,
+                                          attrib->Location,
+                                          attrib->NumComponents(),
+                                          VertexAttribTypeLUT[attrib->TypeOfComponent()],
+                                          attrib->IsNormalized(),
+                                          attrib->Offset);
+                break;
+            case VAM_DOUBLE:
+                glVertexArrayAttribLFormat(vao->Handle,
+                                           attrib->Location,
+                                           attrib->NumComponents(),
+                                           VertexAttribTypeLUT[attrib->TypeOfComponent()],
+                                           attrib->Offset);
+                break;
+            case VAM_INTEGER:
+                glVertexArrayAttribIFormat(vao->Handle,
+                                           attrib->Location,
+                                           attrib->NumComponents(),
+                                           VertexAttribTypeLUT[attrib->TypeOfComponent()],
+                                           attrib->Offset);
+                break;
         }
 
-        glVertexArrayAttribBinding( vao->Handle, attrib->Location, attrib->InputSlot );
+        glVertexArrayAttribBinding(vao->Handle, attrib->Location, attrib->InputSlot);
 
-        for ( SVertexBindingInfo const * binding = hashed.VertexBindings ; binding < &hashed.VertexBindings[hashed.NumVertexBindings] ; binding++ ) {
-            if ( binding->InputSlot == attrib->InputSlot ) {
-                if ( binding->InputRate == INPUT_RATE_PER_INSTANCE ) {
+        for (SVertexBindingInfo const* binding = hashed.VertexBindings; binding < &hashed.VertexBindings[hashed.NumVertexBindings]; binding++)
+        {
+            if (binding->InputSlot == attrib->InputSlot)
+            {
+                if (binding->InputRate == INPUT_RATE_PER_INSTANCE)
+                {
                     //glVertexAttribDivisor( ) // тоже самое, что и glVertexBindingDivisor если attrib->Location==InputSlot
-                    glVertexArrayBindingDivisor( vao->Handle, attrib->InputSlot, attrib->InstanceDataStepRate );   // Since GL v4.3
-                } else {
-                    glVertexArrayBindingDivisor( vao->Handle, attrib->InputSlot, 0 );   // Since GL v4.3
+                    glVertexArrayBindingDivisor(vao->Handle, attrib->InputSlot, attrib->InstanceDataStepRate); // Since GL v4.3
+                }
+                else
+                {
+                    glVertexArrayBindingDivisor(vao->Handle, attrib->InputSlot, 0); // Since GL v4.3
                 }
                 break;
             }
         }
 
-        glEnableVertexArrayAttrib( vao->Handle, attrib->Location );
+        glEnableVertexArrayAttrib(vao->Handle, attrib->Location);
     }
 
     return vao;
 }
 
 
-static GLenum Attachments[ MAX_COLOR_ATTACHMENTS ];
+static GLenum Attachments[MAX_COLOR_ATTACHMENTS];
 
-static bool BlendCompareEquation( SRenderTargetBlendingInfo::Operation const & _Mode1,
-                                  SRenderTargetBlendingInfo::Operation const & _Mode2 )
+static bool BlendCompareEquation(SRenderTargetBlendingInfo::Operation const& _Mode1,
+                                 SRenderTargetBlendingInfo::Operation const& _Mode2)
 {
     return _Mode1.ColorRGB == _Mode2.ColorRGB && _Mode1.Alpha == _Mode2.Alpha;
 }
 
-static bool BlendCompareFunction( SRenderTargetBlendingInfo::Function const & _Func1,
-                                  SRenderTargetBlendingInfo::Function const & _Func2 )
+static bool BlendCompareFunction(SRenderTargetBlendingInfo::Function const& _Func1,
+                                 SRenderTargetBlendingInfo::Function const& _Func2)
 {
-    return _Func1.SrcFactorRGB == _Func2.SrcFactorRGB
-            && _Func1.DstFactorRGB == _Func2.DstFactorRGB
-            && _Func1.SrcFactorAlpha == _Func2.SrcFactorAlpha
-            && _Func1.DstFactorAlpha == _Func2.DstFactorAlpha;
+    return _Func1.SrcFactorRGB == _Func2.SrcFactorRGB && _Func1.DstFactorRGB == _Func2.DstFactorRGB && _Func1.SrcFactorAlpha == _Func2.SrcFactorAlpha && _Func1.DstFactorAlpha == _Func2.DstFactorAlpha;
 }
 
-static bool BlendCompareColor( const float _Color1[4], const float _Color2[4] )
+static bool BlendCompareColor(const float _Color1[4], const float _Color2[4])
 {
-    return     std::fabs( _Color1[0] - _Color2[0] ) < 0.000001f
-            && std::fabs( _Color1[1] - _Color2[1] ) < 0.000001f
-            && std::fabs( _Color1[2] - _Color2[2] ) < 0.000001f
-            && std::fabs( _Color1[3] - _Color2[3] ) < 0.000001f;
+    return _Color1[0] == _Color2[0] && _Color1[1] == _Color2[1] && _Color1[2] == _Color2[2] && _Color1[3] == _Color2[3];
 }
 
 // Compare render target blending at specified slot and change if different
-static void SetRenderTargetSlotBlending( int _Slot,
-                                         SRenderTargetBlendingInfo const & _CurrentState,
-                                         SRenderTargetBlendingInfo const & _RequiredState )
+static void SetRenderTargetSlotBlending(int                              _Slot,
+                                        SRenderTargetBlendingInfo const& _CurrentState,
+                                        SRenderTargetBlendingInfo const& _RequiredState)
 {
 
-    bool isEquationChanged = !BlendCompareEquation( _RequiredState.Op, _CurrentState.Op );
-    bool isFunctionChanged = !BlendCompareFunction( _RequiredState.Func, _CurrentState.Func );
+    bool isEquationChanged = !BlendCompareEquation(_RequiredState.Op, _CurrentState.Op);
+    bool isFunctionChanged = !BlendCompareFunction(_RequiredState.Func, _CurrentState.Func);
 
     // Change only modified blending states
 
-    if ( _CurrentState.bBlendEnable != _RequiredState.bBlendEnable ) {
-        if ( _RequiredState.bBlendEnable ) {
-            glEnablei( GL_BLEND, _Slot );
-        } else {
-            glDisablei( GL_BLEND, _Slot );
+    if (_CurrentState.bBlendEnable != _RequiredState.bBlendEnable)
+    {
+        if (_RequiredState.bBlendEnable)
+        {
+            glEnablei(GL_BLEND, _Slot);
+        }
+        else
+        {
+            glDisablei(GL_BLEND, _Slot);
         }
     }
 
-    if ( _CurrentState.ColorWriteMask != _RequiredState.ColorWriteMask ) {
-        if ( _RequiredState.ColorWriteMask == COLOR_WRITE_RGBA ) {
-            glColorMaski( _Slot, 1, 1, 1, 1 );
-        } else if ( _RequiredState.ColorWriteMask == COLOR_WRITE_DISABLED ) {
-            glColorMaski( _Slot, 0, 0, 0, 0 );
-        } else {
-            glColorMaski( _Slot,
-                          !!(_RequiredState.ColorWriteMask & COLOR_WRITE_R_BIT),
-                          !!(_RequiredState.ColorWriteMask & COLOR_WRITE_G_BIT),
-                          !!(_RequiredState.ColorWriteMask & COLOR_WRITE_B_BIT),
-                          !!(_RequiredState.ColorWriteMask & COLOR_WRITE_A_BIT) );
+    if (_CurrentState.ColorWriteMask != _RequiredState.ColorWriteMask)
+    {
+        if (_RequiredState.ColorWriteMask == COLOR_WRITE_RGBA)
+        {
+            glColorMaski(_Slot, 1, 1, 1, 1);
+        }
+        else if (_RequiredState.ColorWriteMask == COLOR_WRITE_DISABLED)
+        {
+            glColorMaski(_Slot, 0, 0, 0, 0);
+        }
+        else
+        {
+            glColorMaski(_Slot,
+                         !!(_RequiredState.ColorWriteMask & COLOR_WRITE_R_BIT),
+                         !!(_RequiredState.ColorWriteMask & COLOR_WRITE_G_BIT),
+                         !!(_RequiredState.ColorWriteMask & COLOR_WRITE_B_BIT),
+                         !!(_RequiredState.ColorWriteMask & COLOR_WRITE_A_BIT));
         }
     }
 
-    if ( isEquationChanged ) {
+    if (isEquationChanged)
+    {
 
         bool equationSeparate = _RequiredState.Op.ColorRGB != _RequiredState.Op.Alpha;
 
-        if ( equationSeparate ) {
-            glBlendEquationSeparatei( _Slot,
-                                      BlendEquationConvertionLUT[ _RequiredState.Op.ColorRGB ],
-                                      BlendEquationConvertionLUT[ _RequiredState.Op.Alpha ] );
-        } else {
-            glBlendEquationi( _Slot,
-                              BlendEquationConvertionLUT[ _RequiredState.Op.ColorRGB ] );
+        if (equationSeparate)
+        {
+            glBlendEquationSeparatei(_Slot,
+                                     BlendEquationConvertionLUT[_RequiredState.Op.ColorRGB],
+                                     BlendEquationConvertionLUT[_RequiredState.Op.Alpha]);
+        }
+        else
+        {
+            glBlendEquationi(_Slot,
+                             BlendEquationConvertionLUT[_RequiredState.Op.ColorRGB]);
         }
     }
 
-    if ( isFunctionChanged ) {
+    if (isFunctionChanged)
+    {
 
-        bool funcSeparate = _RequiredState.Func.SrcFactorRGB != _RequiredState.Func.SrcFactorAlpha
-            || _RequiredState.Func.DstFactorRGB != _RequiredState.Func.DstFactorAlpha;
+        bool funcSeparate = _RequiredState.Func.SrcFactorRGB != _RequiredState.Func.SrcFactorAlpha || _RequiredState.Func.DstFactorRGB != _RequiredState.Func.DstFactorAlpha;
 
-        if ( funcSeparate ) {
-            glBlendFuncSeparatei( _Slot,
-                                  BlendFuncConvertionLUT[ _RequiredState.Func.SrcFactorRGB ],
-                                  BlendFuncConvertionLUT[ _RequiredState.Func.DstFactorRGB ],
-                                  BlendFuncConvertionLUT[ _RequiredState.Func.SrcFactorAlpha ],
-                                  BlendFuncConvertionLUT[ _RequiredState.Func.DstFactorAlpha ] );
-        } else {
-            glBlendFunci( _Slot,
-                          BlendFuncConvertionLUT[ _RequiredState.Func.SrcFactorRGB ],
-                          BlendFuncConvertionLUT[ _RequiredState.Func.DstFactorRGB ] );
+        if (funcSeparate)
+        {
+            glBlendFuncSeparatei(_Slot,
+                                 BlendFuncConvertionLUT[_RequiredState.Func.SrcFactorRGB],
+                                 BlendFuncConvertionLUT[_RequiredState.Func.DstFactorRGB],
+                                 BlendFuncConvertionLUT[_RequiredState.Func.SrcFactorAlpha],
+                                 BlendFuncConvertionLUT[_RequiredState.Func.DstFactorAlpha]);
+        }
+        else
+        {
+            glBlendFunci(_Slot,
+                         BlendFuncConvertionLUT[_RequiredState.Func.SrcFactorRGB],
+                         BlendFuncConvertionLUT[_RequiredState.Func.DstFactorRGB]);
         }
     }
 }
 
 // Compare render target blending and change all slots if different
-static void SetRenderTargetSlotsBlending( SRenderTargetBlendingInfo const & _CurrentState,
-                                          SRenderTargetBlendingInfo const & _RequiredState,
-                                          bool _NeedReset )
+static void SetRenderTargetSlotsBlending(SRenderTargetBlendingInfo const& _CurrentState,
+                                         SRenderTargetBlendingInfo const& _RequiredState,
+                                         bool                             _NeedReset)
 {
-    bool isEquationChanged = _NeedReset || !BlendCompareEquation( _RequiredState.Op, _CurrentState.Op );
-    bool isFunctionChanged = _NeedReset || !BlendCompareFunction( _RequiredState.Func, _CurrentState.Func );
+    bool isEquationChanged = _NeedReset || !BlendCompareEquation(_RequiredState.Op, _CurrentState.Op);
+    bool isFunctionChanged = _NeedReset || !BlendCompareFunction(_RequiredState.Func, _CurrentState.Func);
 
     // Change only modified blending states
 
-    if ( _NeedReset || _CurrentState.bBlendEnable != _RequiredState.bBlendEnable ) {
-        if ( _RequiredState.bBlendEnable ) {
-            glEnable( GL_BLEND );
-        } else {
-            glDisable( GL_BLEND );
+    if (_NeedReset || _CurrentState.bBlendEnable != _RequiredState.bBlendEnable)
+    {
+        if (_RequiredState.bBlendEnable)
+        {
+            glEnable(GL_BLEND);
+        }
+        else
+        {
+            glDisable(GL_BLEND);
         }
     }
 
-    if ( _NeedReset || _CurrentState.ColorWriteMask != _RequiredState.ColorWriteMask ) {
-        if ( _RequiredState.ColorWriteMask == COLOR_WRITE_RGBA ) {
-            glColorMask( 1, 1, 1, 1 );
-        } else if ( _RequiredState.ColorWriteMask == COLOR_WRITE_DISABLED ) {
-            glColorMask( 0, 0, 0, 0 );
-        } else {
-            glColorMask( !!(_RequiredState.ColorWriteMask & COLOR_WRITE_R_BIT),
-                         !!(_RequiredState.ColorWriteMask & COLOR_WRITE_G_BIT),
-                         !!(_RequiredState.ColorWriteMask & COLOR_WRITE_B_BIT),
-                         !!(_RequiredState.ColorWriteMask & COLOR_WRITE_A_BIT) );
+    if (_NeedReset || _CurrentState.ColorWriteMask != _RequiredState.ColorWriteMask)
+    {
+        if (_RequiredState.ColorWriteMask == COLOR_WRITE_RGBA)
+        {
+            glColorMask(1, 1, 1, 1);
+        }
+        else if (_RequiredState.ColorWriteMask == COLOR_WRITE_DISABLED)
+        {
+            glColorMask(0, 0, 0, 0);
+        }
+        else
+        {
+            glColorMask(!!(_RequiredState.ColorWriteMask & COLOR_WRITE_R_BIT),
+                        !!(_RequiredState.ColorWriteMask & COLOR_WRITE_G_BIT),
+                        !!(_RequiredState.ColorWriteMask & COLOR_WRITE_B_BIT),
+                        !!(_RequiredState.ColorWriteMask & COLOR_WRITE_A_BIT));
         }
     }
 
-    if ( isEquationChanged ) {
+    if (isEquationChanged)
+    {
 
         bool equationSeparate = _RequiredState.Op.ColorRGB != _RequiredState.Op.Alpha;
 
-        if ( equationSeparate ) {
-            glBlendEquationSeparate( BlendEquationConvertionLUT[ _RequiredState.Op.ColorRGB ],
-                                     BlendEquationConvertionLUT[ _RequiredState.Op.Alpha ] );
-        } else {
-            glBlendEquation( BlendEquationConvertionLUT[ _RequiredState.Op.ColorRGB ] );
+        if (equationSeparate)
+        {
+            glBlendEquationSeparate(BlendEquationConvertionLUT[_RequiredState.Op.ColorRGB],
+                                    BlendEquationConvertionLUT[_RequiredState.Op.Alpha]);
+        }
+        else
+        {
+            glBlendEquation(BlendEquationConvertionLUT[_RequiredState.Op.ColorRGB]);
         }
     }
 
-    if ( isFunctionChanged ) {
+    if (isFunctionChanged)
+    {
 
-        bool funcSeparate = _RequiredState.Func.SrcFactorRGB != _RequiredState.Func.SrcFactorAlpha
-            || _RequiredState.Func.DstFactorRGB != _RequiredState.Func.DstFactorAlpha;
+        bool funcSeparate = _RequiredState.Func.SrcFactorRGB != _RequiredState.Func.SrcFactorAlpha || _RequiredState.Func.DstFactorRGB != _RequiredState.Func.DstFactorAlpha;
 
-        if ( funcSeparate ) {
-            glBlendFuncSeparate( BlendFuncConvertionLUT[ _RequiredState.Func.SrcFactorRGB ],
-                                 BlendFuncConvertionLUT[ _RequiredState.Func.DstFactorRGB ],
-                                 BlendFuncConvertionLUT[ _RequiredState.Func.SrcFactorAlpha ],
-                                 BlendFuncConvertionLUT[ _RequiredState.Func.DstFactorAlpha ] );
-        } else {
-            glBlendFunc( BlendFuncConvertionLUT[ _RequiredState.Func.SrcFactorRGB ],
-                         BlendFuncConvertionLUT[ _RequiredState.Func.DstFactorRGB ] );
+        if (funcSeparate)
+        {
+            glBlendFuncSeparate(BlendFuncConvertionLUT[_RequiredState.Func.SrcFactorRGB],
+                                BlendFuncConvertionLUT[_RequiredState.Func.DstFactorRGB],
+                                BlendFuncConvertionLUT[_RequiredState.Func.SrcFactorAlpha],
+                                BlendFuncConvertionLUT[_RequiredState.Func.DstFactorAlpha]);
+        }
+        else
+        {
+            glBlendFunc(BlendFuncConvertionLUT[_RequiredState.Func.SrcFactorRGB],
+                        BlendFuncConvertionLUT[_RequiredState.Func.DstFactorRGB]);
         }
     }
 }
 
-void AImmediateContextGLImpl::BindPipeline( IPipeline * _Pipeline, int _Subpass )
+void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
 {
     VerifyContext();
 
-    AN_ASSERT( _Pipeline != nullptr );
+    AN_ASSERT(_Pipeline != nullptr);
 
-    if ( CurrentPipeline == _Pipeline ) {
-        // TODO: cache drawbuffers
-        if ( CurrentSubpass != _Subpass ) {
-            CurrentSubpass = _Subpass;
-            BindRenderPassSubPass( /*_Pipeline->pRenderPass*/CurrentRenderPass, _Subpass );
-        }
+    if (CurrentPipeline == _Pipeline)
+    {
         return;
     }
 
-    CurrentPipeline = static_cast< APipelineGLImpl * >( _Pipeline );
+    CurrentPipeline = static_cast<APipelineGLImpl*>(_Pipeline);
 
     GLuint pipelineId = CurrentPipeline->GetHandleNativeGL();
 
-    glBindProgramPipeline( pipelineId );
+    glBindProgramPipeline(pipelineId);
 
-    if ( CurrentVAO != CurrentPipeline->VAO ) {
+    if (CurrentVAO != CurrentPipeline->VAO)
+    {
         CurrentVAO = CurrentPipeline->VAO;
-        glBindVertexArray( CurrentVAO->Handle );
+        glBindVertexArray(CurrentVAO->Handle);
         //GLogger.Printf( "Binding vao %d\n", CurrentVAO->Handle );
-        
-    } else {
-        //GLogger.Printf( "caching vao binding %d\n", CurrentVAO->Handle );
     }
-
-    //
-    // Set render pass
-    //
-
-    if ( CurrentSubpass != _Subpass ) {
-        CurrentSubpass = _Subpass;
-        BindRenderPassSubPass( /*CurrentPipeline->pRenderPass*/CurrentRenderPass, _Subpass );
+    else
+    {
+        //GLogger.Printf( "caching vao binding %d\n", CurrentVAO->Handle );
     }
 
     //
     // Set input assembly
     //
 
-    if ( CurrentPipeline->PrimitiveTopology == GL_PATCHES ) {
-        if ( NumPatchVertices != CurrentPipeline->NumPatchVertices ) {
-            glPatchParameteri( GL_PATCH_VERTICES, CurrentPipeline->NumPatchVertices );   // Sinse GL v4.0
-            NumPatchVertices = ( uint8_t )CurrentPipeline->NumPatchVertices;
+    if (CurrentPipeline->PrimitiveTopology == GL_PATCHES)
+    {
+        if (NumPatchVertices != CurrentPipeline->NumPatchVertices)
+        {
+            glPatchParameteri(GL_PATCH_VERTICES, CurrentPipeline->NumPatchVertices); // Sinse GL v4.0
+            NumPatchVertices = (uint8_t)CurrentPipeline->NumPatchVertices;
         }
     }
 
-    if ( bPrimitiveRestartEnabled != CurrentPipeline->bPrimitiveRestartEnabled ) {
-        if ( CurrentPipeline->bPrimitiveRestartEnabled ) {
+    if (bPrimitiveRestartEnabled != CurrentPipeline->bPrimitiveRestartEnabled)
+    {
+        if (CurrentPipeline->bPrimitiveRestartEnabled)
+        {
             // GL_PRIMITIVE_RESTART_FIXED_INDEX if from GL_ARB_ES3_compatibility
             // Enables primitive restarting with a fixed index.
             // If enabled, any one of the draw commands which transfers a set of generic attribute array elements
@@ -773,9 +990,11 @@ void AImmediateContextGLImpl::BindPipeline( IPipeline * _Pipeline, int _Subpass 
             // for the specified index type.
             // The fixed index is equal to 2n−1 where n is equal to 8 for GL_UNSIGNED_BYTE,
             // 16 for GL_UNSIGNED_SHORT and 32 for GL_UNSIGNED_INT.
-            glEnable( GL_PRIMITIVE_RESTART_FIXED_INDEX );
-        } else {
-            glDisable( GL_PRIMITIVE_RESTART_FIXED_INDEX );
+            glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+        }
+        else
+        {
+            glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
         }
 
         bPrimitiveRestartEnabled = CurrentPipeline->bPrimitiveRestartEnabled;
@@ -786,48 +1005,64 @@ void AImmediateContextGLImpl::BindPipeline( IPipeline * _Pipeline, int _Subpass 
     //
 
     // Compare blending states
-    if ( Binding.BlendState != CurrentPipeline->BlendingState ) {
-        SBlendingStateInfo const & desc = *CurrentPipeline->BlendingState;
+    if (Binding.BlendState != CurrentPipeline->BlendingState)
+    {
+        SBlendingStateInfo const& desc = *CurrentPipeline->BlendingState;
 
-        if ( desc.bIndependentBlendEnable ) {
-            for ( int i = 0 ; i < MAX_COLOR_ATTACHMENTS ; i++ ) {
-                SRenderTargetBlendingInfo const & rtDesc = desc.RenderTargetSlots[ i ];
-                SetRenderTargetSlotBlending( i, BlendState.RenderTargetSlots[ i ], rtDesc );
-                memcpy( &BlendState.RenderTargetSlots[ i ], &rtDesc, sizeof( rtDesc ) );
+        if (desc.bIndependentBlendEnable)
+        {
+            for (int i = 0; i < MAX_COLOR_ATTACHMENTS; i++)
+            {
+                SRenderTargetBlendingInfo const& rtDesc = desc.RenderTargetSlots[i];
+                SetRenderTargetSlotBlending(i, BlendState.RenderTargetSlots[i], rtDesc);
+                memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
             }
-        } else {
-            SRenderTargetBlendingInfo const & rtDesc = desc.RenderTargetSlots[ 0 ];
-            bool needReset = BlendState.bIndependentBlendEnable;
-            SetRenderTargetSlotsBlending( BlendState.RenderTargetSlots[ 0 ], rtDesc, needReset );
-            for ( int i = 0 ; i < MAX_COLOR_ATTACHMENTS ; i++ ) {
-                memcpy( &BlendState.RenderTargetSlots[ i ], &rtDesc, sizeof( rtDesc ) );
+        }
+        else
+        {
+            SRenderTargetBlendingInfo const& rtDesc    = desc.RenderTargetSlots[0];
+            bool                             needReset = BlendState.bIndependentBlendEnable;
+            SetRenderTargetSlotsBlending(BlendState.RenderTargetSlots[0], rtDesc, needReset);
+            for (int i = 0; i < MAX_COLOR_ATTACHMENTS; i++)
+            {
+                memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
             }
         }
 
         BlendState.bIndependentBlendEnable = desc.bIndependentBlendEnable;
 
-        if ( BlendState.bSampleAlphaToCoverage != desc.bSampleAlphaToCoverage ) {
-            if ( desc.bSampleAlphaToCoverage ) {
-                glEnable( GL_SAMPLE_ALPHA_TO_COVERAGE );
-            } else {
-                glDisable( GL_SAMPLE_ALPHA_TO_COVERAGE );
+        if (BlendState.bSampleAlphaToCoverage != desc.bSampleAlphaToCoverage)
+        {
+            if (desc.bSampleAlphaToCoverage)
+            {
+                glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+            }
+            else
+            {
+                glDisable(GL_SAMPLE_ALPHA_TO_COVERAGE);
             }
 
             BlendState.bSampleAlphaToCoverage = desc.bSampleAlphaToCoverage;
         }
 
-        if ( BlendState.LogicOp != desc.LogicOp ) {
-            if ( desc.LogicOp == LOGIC_OP_COPY ) {
-                if ( bLogicOpEnabled ) {
-                    glDisable( GL_COLOR_LOGIC_OP );
+        if (BlendState.LogicOp != desc.LogicOp)
+        {
+            if (desc.LogicOp == LOGIC_OP_COPY)
+            {
+                if (bLogicOpEnabled)
+                {
+                    glDisable(GL_COLOR_LOGIC_OP);
                     bLogicOpEnabled = false;
                 }
-            } else {
-                if ( !bLogicOpEnabled ) {
-                    glEnable( GL_COLOR_LOGIC_OP );
+            }
+            else
+            {
+                if (!bLogicOpEnabled)
+                {
+                    glEnable(GL_COLOR_LOGIC_OP);
                     bLogicOpEnabled = true;
                 }
-                glLogicOp( LogicOpLUT[ desc.LogicOp ] );
+                glLogicOp(LogicOpLUT[desc.LogicOp]);
             }
 
             BlendState.LogicOp = desc.LogicOp;
@@ -840,87 +1075,115 @@ void AImmediateContextGLImpl::BindPipeline( IPipeline * _Pipeline, int _Subpass 
     // Set rasterizer state
     //
 
-    if ( Binding.RasterizerState != CurrentPipeline->RasterizerState ) {
-        SRasterizerStateInfo const & desc = *CurrentPipeline->RasterizerState;
+    if (Binding.RasterizerState != CurrentPipeline->RasterizerState)
+    {
+        SRasterizerStateInfo const& desc = *CurrentPipeline->RasterizerState;
 
-        if ( RasterizerState.FillMode != desc.FillMode ) {
-            glPolygonMode( GL_FRONT_AND_BACK, FillModeLUT[ desc.FillMode ] );
+        if (RasterizerState.FillMode != desc.FillMode)
+        {
+            glPolygonMode(GL_FRONT_AND_BACK, FillModeLUT[desc.FillMode]);
             RasterizerState.FillMode = desc.FillMode;
         }
 
-        if ( RasterizerState.CullMode != desc.CullMode ) {
-            if ( desc.CullMode == POLYGON_CULL_DISABLED ) {
-                glDisable( GL_CULL_FACE );
-            } else {
-                if ( RasterizerState.CullMode == POLYGON_CULL_DISABLED ) {
-                    glEnable( GL_CULL_FACE );
+        if (RasterizerState.CullMode != desc.CullMode)
+        {
+            if (desc.CullMode == POLYGON_CULL_DISABLED)
+            {
+                glDisable(GL_CULL_FACE);
+            }
+            else
+            {
+                if (RasterizerState.CullMode == POLYGON_CULL_DISABLED)
+                {
+                    glEnable(GL_CULL_FACE);
                 }
-                if ( CullFace != CullModeLUT[desc.CullMode] ) {
+                if (CullFace != CullModeLUT[desc.CullMode])
+                {
                     CullFace = CullModeLUT[desc.CullMode];
-                    glCullFace( CullFace );
+                    glCullFace(CullFace);
                 }
             }
             RasterizerState.CullMode = desc.CullMode;
         }
 
-        if ( RasterizerState.bScissorEnable != desc.bScissorEnable ) {
-            if ( desc.bScissorEnable ) {
-                glEnable( GL_SCISSOR_TEST );
-            } else {
-                glDisable( GL_SCISSOR_TEST );
+        if (RasterizerState.bScissorEnable != desc.bScissorEnable)
+        {
+            if (desc.bScissorEnable)
+            {
+                glEnable(GL_SCISSOR_TEST);
+            }
+            else
+            {
+                glDisable(GL_SCISSOR_TEST);
             }
             RasterizerState.bScissorEnable = desc.bScissorEnable;
         }
 
-        if ( RasterizerState.bMultisampleEnable != desc.bMultisampleEnable ) {
-            if ( desc.bMultisampleEnable ) {
-                glEnable( GL_MULTISAMPLE );
-            } else {
-                glDisable( GL_MULTISAMPLE );
+        if (RasterizerState.bMultisampleEnable != desc.bMultisampleEnable)
+        {
+            if (desc.bMultisampleEnable)
+            {
+                glEnable(GL_MULTISAMPLE);
+            }
+            else
+            {
+                glDisable(GL_MULTISAMPLE);
             }
             RasterizerState.bMultisampleEnable = desc.bMultisampleEnable;
         }
 
-        if ( RasterizerState.bRasterizerDiscard != desc.bRasterizerDiscard ) {
-            if ( desc.bRasterizerDiscard ) {
-                glEnable( GL_RASTERIZER_DISCARD );
-            } else {
-                glDisable( GL_RASTERIZER_DISCARD );
+        if (RasterizerState.bRasterizerDiscard != desc.bRasterizerDiscard)
+        {
+            if (desc.bRasterizerDiscard)
+            {
+                glEnable(GL_RASTERIZER_DISCARD);
+            }
+            else
+            {
+                glDisable(GL_RASTERIZER_DISCARD);
             }
             RasterizerState.bRasterizerDiscard = desc.bRasterizerDiscard;
         }
 
-        if ( RasterizerState.bAntialiasedLineEnable != desc.bAntialiasedLineEnable ) {
-            if ( desc.bAntialiasedLineEnable ) {
-                glEnable( GL_LINE_SMOOTH );
-            } else {
-                glDisable( GL_LINE_SMOOTH );
+        if (RasterizerState.bAntialiasedLineEnable != desc.bAntialiasedLineEnable)
+        {
+            if (desc.bAntialiasedLineEnable)
+            {
+                glEnable(GL_LINE_SMOOTH);
+            }
+            else
+            {
+                glDisable(GL_LINE_SMOOTH);
             }
             RasterizerState.bAntialiasedLineEnable = desc.bAntialiasedLineEnable;
         }
 
-        if ( RasterizerState.bDepthClampEnable != desc.bDepthClampEnable ) {
-            if ( desc.bDepthClampEnable ) {
-                glEnable( GL_DEPTH_CLAMP );
-            } else {
-                glDisable( GL_DEPTH_CLAMP );
+        if (RasterizerState.bDepthClampEnable != desc.bDepthClampEnable)
+        {
+            if (desc.bDepthClampEnable)
+            {
+                glEnable(GL_DEPTH_CLAMP);
+            }
+            else
+            {
+                glDisable(GL_DEPTH_CLAMP);
             }
             RasterizerState.bDepthClampEnable = desc.bDepthClampEnable;
         }
 
-        if ( RasterizerState.DepthOffset.Slope != desc.DepthOffset.Slope
-            || RasterizerState.DepthOffset.Bias != desc.DepthOffset.Bias
-            || RasterizerState.DepthOffset.Clamp != desc.DepthOffset.Clamp ) {
+        if (RasterizerState.DepthOffset.Slope != desc.DepthOffset.Slope || RasterizerState.DepthOffset.Bias != desc.DepthOffset.Bias || RasterizerState.DepthOffset.Clamp != desc.DepthOffset.Clamp)
+        {
 
-            PolygonOffsetClampSafe( desc.DepthOffset.Slope, desc.DepthOffset.Bias, desc.DepthOffset.Clamp );
+            PolygonOffsetClampSafe(desc.DepthOffset.Slope, desc.DepthOffset.Bias, desc.DepthOffset.Clamp);
 
             RasterizerState.DepthOffset.Slope = desc.DepthOffset.Slope;
-            RasterizerState.DepthOffset.Bias = desc.DepthOffset.Bias;
+            RasterizerState.DepthOffset.Bias  = desc.DepthOffset.Bias;
             RasterizerState.DepthOffset.Clamp = desc.DepthOffset.Clamp;
         }
 
-        if ( RasterizerState.bFrontClockwise != desc.bFrontClockwise ) {
-            glFrontFace( desc.bFrontClockwise ? GL_CW : GL_CCW );
+        if (RasterizerState.bFrontClockwise != desc.bFrontClockwise)
+        {
+            glFrontFace(desc.bFrontClockwise ? GL_CW : GL_CCW);
             RasterizerState.bFrontClockwise = desc.bFrontClockwise;
         }
 
@@ -958,48 +1221,59 @@ void AImmediateContextGLImpl::BindPipeline( IPipeline * _Pipeline, int _Subpass 
     }
 #endif
 
-    if ( Binding.DepthStencilState != CurrentPipeline->DepthStencilState ) {
-        SDepthStencilStateInfo const & desc = *CurrentPipeline->DepthStencilState;
+    if (Binding.DepthStencilState != CurrentPipeline->DepthStencilState)
+    {
+        SDepthStencilStateInfo const& desc = *CurrentPipeline->DepthStencilState;
 
-        if ( DepthStencilState.bDepthEnable != desc.bDepthEnable ) {
-            if ( desc.bDepthEnable ) {
-                glEnable( GL_DEPTH_TEST );
-            } else {
-                glDisable( GL_DEPTH_TEST );
+        if (DepthStencilState.bDepthEnable != desc.bDepthEnable)
+        {
+            if (desc.bDepthEnable)
+            {
+                glEnable(GL_DEPTH_TEST);
+            }
+            else
+            {
+                glDisable(GL_DEPTH_TEST);
             }
 
             DepthStencilState.bDepthEnable = desc.bDepthEnable;
         }
 
-        if ( DepthStencilState.DepthWriteMask != desc.DepthWriteMask ) {
-            glDepthMask( desc.DepthWriteMask );
+        if (DepthStencilState.DepthWriteMask != desc.DepthWriteMask)
+        {
+            glDepthMask(desc.DepthWriteMask);
             DepthStencilState.DepthWriteMask = desc.DepthWriteMask;
         }
 
-        if ( DepthStencilState.DepthFunc != desc.DepthFunc ) {
-            glDepthFunc( ComparisonFuncLUT[ desc.DepthFunc ] );
+        if (DepthStencilState.DepthFunc != desc.DepthFunc)
+        {
+            glDepthFunc(ComparisonFuncLUT[desc.DepthFunc]);
             DepthStencilState.DepthFunc = desc.DepthFunc;
         }
 
-        if ( DepthStencilState.bStencilEnable != desc.bStencilEnable ) {
-            if ( desc.bStencilEnable ) {
-                glEnable( GL_STENCIL_TEST );
-            } else {
-                glDisable( GL_STENCIL_TEST );
+        if (DepthStencilState.bStencilEnable != desc.bStencilEnable)
+        {
+            if (desc.bStencilEnable)
+            {
+                glEnable(GL_STENCIL_TEST);
+            }
+            else
+            {
+                glDisable(GL_STENCIL_TEST);
             }
 
             DepthStencilState.bStencilEnable = desc.bStencilEnable;
         }
 
-        if ( DepthStencilState.StencilWriteMask != desc.StencilWriteMask ) {
-            glStencilMask( desc.StencilWriteMask );
+        if (DepthStencilState.StencilWriteMask != desc.StencilWriteMask)
+        {
+            glStencilMask(desc.StencilWriteMask);
             DepthStencilState.StencilWriteMask = desc.StencilWriteMask;
         }
 
-        if ( DepthStencilState.StencilReadMask != desc.StencilReadMask
-             || DepthStencilState.FrontFace.StencilFunc != desc.FrontFace.StencilFunc
-             || DepthStencilState.BackFace.StencilFunc != desc.BackFace.StencilFunc
-             /*|| StencilRef != _StencilRef*/ ) {
+        if (DepthStencilState.StencilReadMask != desc.StencilReadMask || DepthStencilState.FrontFace.StencilFunc != desc.FrontFace.StencilFunc || DepthStencilState.BackFace.StencilFunc != desc.BackFace.StencilFunc
+            /*|| StencilRef != _StencilRef*/)
+        {
 
 #if 0
             if ( desc.FrontFace.StencilFunc == desc.BackFace.StencilFunc ) {
@@ -1009,69 +1283,72 @@ void AImmediateContextGLImpl::BindPipeline( IPipeline * _Pipeline, int _Subpass 
             } else
 #endif
             {
-                if ( desc.FrontFace.StencilFunc == desc.BackFace.StencilFunc ) {
-                    glStencilFuncSeparate( GL_FRONT_AND_BACK,
-                                           ComparisonFuncLUT[desc.FrontFace.StencilFunc],
-                                           StencilRef,//_StencilRef,
-                                           desc.StencilReadMask );
-                } else {
-                    glStencilFuncSeparate( GL_FRONT,
-                                           ComparisonFuncLUT[desc.FrontFace.StencilFunc],
-                                           StencilRef,//_StencilRef,
-                                           desc.StencilReadMask );
+                if (desc.FrontFace.StencilFunc == desc.BackFace.StencilFunc)
+                {
+                    glStencilFuncSeparate(GL_FRONT_AND_BACK,
+                                          ComparisonFuncLUT[desc.FrontFace.StencilFunc],
+                                          StencilRef, //_StencilRef,
+                                          desc.StencilReadMask);
+                }
+                else
+                {
+                    glStencilFuncSeparate(GL_FRONT,
+                                          ComparisonFuncLUT[desc.FrontFace.StencilFunc],
+                                          StencilRef, //_StencilRef,
+                                          desc.StencilReadMask);
 
-                    glStencilFuncSeparate( GL_BACK,
-                                           ComparisonFuncLUT[ desc.BackFace.StencilFunc ],
-                                           StencilRef,//_StencilRef,
-                                           desc.StencilReadMask );
+                    glStencilFuncSeparate(GL_BACK,
+                                          ComparisonFuncLUT[desc.BackFace.StencilFunc],
+                                          StencilRef, //_StencilRef,
+                                          desc.StencilReadMask);
                 }
             }
 
-            DepthStencilState.StencilReadMask = desc.StencilReadMask;
+            DepthStencilState.StencilReadMask       = desc.StencilReadMask;
             DepthStencilState.FrontFace.StencilFunc = desc.FrontFace.StencilFunc;
-            DepthStencilState.BackFace.StencilFunc = desc.BackFace.StencilFunc;
+            DepthStencilState.BackFace.StencilFunc  = desc.BackFace.StencilFunc;
             //StencilRef = _StencilRef;
         }
 
-        bool frontStencilChanged = ( DepthStencilState.FrontFace.StencilFailOp != desc.FrontFace.StencilFailOp
-                                     || DepthStencilState.FrontFace.DepthFailOp != desc.FrontFace.DepthFailOp
-                                     || DepthStencilState.FrontFace.DepthPassOp != desc.FrontFace.DepthPassOp );
+        bool frontStencilChanged = (DepthStencilState.FrontFace.StencilFailOp != desc.FrontFace.StencilFailOp || DepthStencilState.FrontFace.DepthFailOp != desc.FrontFace.DepthFailOp || DepthStencilState.FrontFace.DepthPassOp != desc.FrontFace.DepthPassOp);
 
-        bool backStencilChanged = ( DepthStencilState.BackFace.StencilFailOp != desc.BackFace.StencilFailOp
-                                     || DepthStencilState.BackFace.DepthFailOp != desc.BackFace.DepthFailOp
-                                     || DepthStencilState.BackFace.DepthPassOp != desc.BackFace.DepthPassOp );
+        bool backStencilChanged = (DepthStencilState.BackFace.StencilFailOp != desc.BackFace.StencilFailOp || DepthStencilState.BackFace.DepthFailOp != desc.BackFace.DepthFailOp || DepthStencilState.BackFace.DepthPassOp != desc.BackFace.DepthPassOp);
 
-        if ( frontStencilChanged || backStencilChanged ) {
-            bool isSame = desc.FrontFace.StencilFailOp == desc.BackFace.StencilFailOp
-                       && desc.FrontFace.DepthFailOp == desc.BackFace.DepthFailOp
-                       && desc.FrontFace.DepthPassOp == desc.BackFace.DepthPassOp;
+        if (frontStencilChanged || backStencilChanged)
+        {
+            bool isSame = desc.FrontFace.StencilFailOp == desc.BackFace.StencilFailOp && desc.FrontFace.DepthFailOp == desc.BackFace.DepthFailOp && desc.FrontFace.DepthPassOp == desc.BackFace.DepthPassOp;
 
-            if ( isSame ) {
-                glStencilOpSeparate( GL_FRONT_AND_BACK,
-                                     StencilOpLUT[ desc.FrontFace.StencilFailOp ],
-                                     StencilOpLUT[ desc.FrontFace.DepthFailOp ],
-                                     StencilOpLUT[ desc.FrontFace.DepthPassOp ] );
+            if (isSame)
+            {
+                glStencilOpSeparate(GL_FRONT_AND_BACK,
+                                    StencilOpLUT[desc.FrontFace.StencilFailOp],
+                                    StencilOpLUT[desc.FrontFace.DepthFailOp],
+                                    StencilOpLUT[desc.FrontFace.DepthPassOp]);
 
-                memcpy( &DepthStencilState.FrontFace, &desc.FrontFace, sizeof( desc.FrontFace ) );
-                memcpy( &DepthStencilState.BackFace, &desc.BackFace, sizeof( desc.FrontFace ) );
-            } else {
+                memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
+                memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
+            }
+            else
+            {
 
-                if ( frontStencilChanged ) {
-                    glStencilOpSeparate( GL_FRONT,
-                                         StencilOpLUT[ desc.FrontFace.StencilFailOp ],
-                                         StencilOpLUT[ desc.FrontFace.DepthFailOp ],
-                                         StencilOpLUT[ desc.FrontFace.DepthPassOp ] );
+                if (frontStencilChanged)
+                {
+                    glStencilOpSeparate(GL_FRONT,
+                                        StencilOpLUT[desc.FrontFace.StencilFailOp],
+                                        StencilOpLUT[desc.FrontFace.DepthFailOp],
+                                        StencilOpLUT[desc.FrontFace.DepthPassOp]);
 
-                    memcpy( &DepthStencilState.FrontFace, &desc.FrontFace, sizeof( desc.FrontFace ) );
+                    memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
                 }
 
-                if ( backStencilChanged ) {
-                    glStencilOpSeparate( GL_BACK,
-                                         StencilOpLUT[ desc.BackFace.StencilFailOp ],
-                                         StencilOpLUT[ desc.BackFace.DepthFailOp ],
-                                         StencilOpLUT[ desc.BackFace.DepthPassOp ] );
+                if (backStencilChanged)
+                {
+                    glStencilOpSeparate(GL_BACK,
+                                        StencilOpLUT[desc.BackFace.StencilFailOp],
+                                        StencilOpLUT[desc.BackFace.DepthFailOp],
+                                        StencilOpLUT[desc.BackFace.DepthPassOp]);
 
-                    memcpy( &DepthStencilState.BackFace, &desc.BackFace, sizeof( desc.FrontFace ) );
+                    memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
                 }
             }
         }
@@ -1084,76 +1361,54 @@ void AImmediateContextGLImpl::BindPipeline( IPipeline * _Pipeline, int _Subpass 
     //
 
 #if 1
-    if ( CurrentPipeline->NumSamplerObjects > 0 ) {
-        glBindSamplers( 0, CurrentPipeline->NumSamplerObjects, CurrentPipeline->SamplerObjects ); // 4.4 or GL_ARB_multi_bind
+    if (CurrentPipeline->NumSamplerObjects > 0)
+    {
+        glBindSamplers(0, CurrentPipeline->NumSamplerObjects, CurrentPipeline->SamplerObjects); // 4.4 or GL_ARB_multi_bind
     }
 #else
-    for ( int i = 0 ; i < CurrentPipeline->NumSamplerObjects ; i++ ) {
-        glBindSampler( i, CurrentPipeline->SamplerObjects[i] ); // 3.2 or GL_ARB_sampler_objects
+    for (int i = 0; i < CurrentPipeline->NumSamplerObjects; i++)
+    {
+        glBindSampler(i, CurrentPipeline->SamplerObjects[i]); // 3.2 or GL_ARB_sampler_objects
     }
 #endif
 }
 
-void AImmediateContextGLImpl::BindRenderPassSubPass( ARenderPassGLImpl const * _RenderPass, int _Subpass )
+void AImmediateContextGLImpl::BindVertexBuffer(unsigned int   _InputSlot,
+                                               IBuffer const* _VertexBuffer,
+                                               unsigned int   _Offset)
 {
-    VerifyContext();
+    AN_ASSERT(_InputSlot < MAX_VERTEX_BUFFER_SLOTS);
 
-    if ( Binding.DrawFramebufferUID == DefaultFramebuffer->GetUID() ) {
-        //glDrawBuffer(GL_BACK);
-        //glNamedFramebufferDrawBuffer( 0, GL_BACK );
-        return;
-    }
-
-    const GLuint framebufferId = Binding.DrawFramebuffer;
-
-    AN_ASSERT( _RenderPass != nullptr );
-    AN_ASSERT( _Subpass < _RenderPass->NumSubpasses );
-
-    SRenderSubpass const * subpass = &_RenderPass->Subpasses[_Subpass];
-
-    if ( subpass->NumColorAttachments > 0 ) {
-        for ( uint32_t i = 0 ; i < subpass->NumColorAttachments ; i++ ) {
-            Attachments[ i ] = GL_COLOR_ATTACHMENT0 + subpass->ColorAttachmentRefs[i].Attachment;
-        }
-
-        glNamedFramebufferDrawBuffers( framebufferId, subpass->NumColorAttachments, Attachments );
-    } else {
-        glNamedFramebufferDrawBuffer( framebufferId, GL_NONE );
-    }
-}
-
-void AImmediateContextGLImpl::BindVertexBuffer( unsigned int _InputSlot,
-                                                IBuffer const * _VertexBuffer,
-                                                unsigned int _Offset )
-{
-    AN_ASSERT( _InputSlot < MAX_VERTEX_BUFFER_SLOTS );
-
-    VertexBufferUIDs[_InputSlot] = _VertexBuffer ? _VertexBuffer->GetUID() : 0;
+    VertexBufferUIDs[_InputSlot]    = _VertexBuffer ? _VertexBuffer->GetUID() : 0;
     VertexBufferHandles[_InputSlot] = _VertexBuffer ? _VertexBuffer->GetHandleNativeGL() : 0;
     VertexBufferOffsets[_InputSlot] = _Offset;
 }
 
-void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
-                                                 unsigned int _NumBuffers,
-                                                 IBuffer * const * _VertexBuffers,
-                                                 uint32_t const * _Offsets )
+void AImmediateContextGLImpl::BindVertexBuffers(unsigned int    _StartSlot,
+                                                unsigned int    _NumBuffers,
+                                                IBuffer* const* _VertexBuffers,
+                                                uint32_t const* _Offsets)
 {
-    AN_ASSERT( _StartSlot + _NumBuffers <= MAX_VERTEX_BUFFER_SLOTS );
+    AN_ASSERT(_StartSlot + _NumBuffers <= MAX_VERTEX_BUFFER_SLOTS);
 
-    if ( _VertexBuffers ) {
-        for ( int i = 0 ; i < _NumBuffers ; i++ ) {
+    if (_VertexBuffers)
+    {
+        for (int i = 0; i < _NumBuffers; i++)
+        {
             int slot = _StartSlot + i;
 
-            VertexBufferUIDs[slot] = _VertexBuffers[i] ? _VertexBuffers[i]->GetUID() : 0;
+            VertexBufferUIDs[slot]    = _VertexBuffers[i] ? _VertexBuffers[i]->GetUID() : 0;
             VertexBufferHandles[slot] = _VertexBuffers[i] ? _VertexBuffers[i]->GetHandleNativeGL() : 0;
             VertexBufferOffsets[slot] = _Offsets ? _Offsets[i] : 0;
         }
     }
-    else {
-        for ( int i = 0 ; i < _NumBuffers ; i++ ) {
+    else
+    {
+        for (int i = 0; i < _NumBuffers; i++)
+        {
             int slot = _StartSlot + i;
 
-            VertexBufferUIDs[slot] = 0;
+            VertexBufferUIDs[slot]    = 0;
             VertexBufferHandles[slot] = 0;
             VertexBufferOffsets[slot] = 0;
         }
@@ -1178,7 +1433,7 @@ void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
 
     static_assert( sizeof( CurrentVAO->VertexBindingsStrides[0] ) == sizeof( GLsizei ), "Wrong type size" );
 
-    if ( _StartSlot + _NumBuffers > pDevice->MaxVertexBufferSlots ) {
+    if ( _StartSlot + _NumBuffers > GetDevice()->MaxVertexBufferSlots ) {
         GLogger.Printf( "BindVertexBuffers: StartSlot + NumBuffers > MaxVertexBufferSlots\n" );
         return;
     }
@@ -1244,27 +1499,27 @@ void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
 }
 #endif
 
-void AImmediateContextGLImpl::BindIndexBuffer( IBuffer const * _IndexBuffer,
-                                               INDEX_TYPE _Type,
-                                               unsigned int _Offset )
+void AImmediateContextGLImpl::BindIndexBuffer(IBuffer const* _IndexBuffer,
+                                              INDEX_TYPE     _Type,
+                                              unsigned int   _Offset)
 {
-    IndexBufferType = IndexTypeLUT[ _Type ];
-    IndexBufferOffset = _Offset;
-    IndexBufferTypeSizeOf = IndexTypeSizeOfLUT[ _Type ];
-    IndexBufferUID = _IndexBuffer ? _IndexBuffer->GetUID() : 0;
-    IndexBufferHandle = _IndexBuffer ? _IndexBuffer->GetHandleNativeGL() : 0;
+    IndexBufferType       = IndexTypeLUT[_Type];
+    IndexBufferOffset     = _Offset;
+    IndexBufferTypeSizeOf = IndexTypeSizeOfLUT[_Type];
+    IndexBufferUID        = _IndexBuffer ? _IndexBuffer->GetUID() : 0;
+    IndexBufferHandle     = _IndexBuffer ? _IndexBuffer->GetHandleNativeGL() : 0;
 }
 
-IResourceTable * AImmediateContextGLImpl::GetRootResourceTable()
+IResourceTable* AImmediateContextGLImpl::GetRootResourceTable()
 {
     return RootResourceTable;
 }
 
-void AImmediateContextGLImpl::BindResourceTable( IResourceTable * _ResourceTable )
+void AImmediateContextGLImpl::BindResourceTable(IResourceTable* _ResourceTable)
 {
-    IResourceTable * tbl = _ResourceTable ? _ResourceTable : RootResourceTable.GetObject();
+    IResourceTable* tbl = _ResourceTable ? _ResourceTable : RootResourceTable.GetObject();
 
-    CurrentResourceTable = static_cast< AResourceTableGLImpl * >( tbl );
+    CurrentResourceTable = static_cast<AResourceTableGLImpl*>(tbl);
 }
 
 #if 0
@@ -1300,7 +1555,7 @@ void AImmediateContextGLImpl::BindResourceTable( SResourceTable const * _Resourc
             }
         }
     }
-#if 0
+#    if 0
     slot = 0;
     for ( SResourceTextureBinding const * binding = textures ; binding < &textures[numTextures] ; binding++, slot++ ) {
         GLuint textureId;
@@ -1331,13 +1586,13 @@ void AImmediateContextGLImpl::BindResourceTable( SResourceTable const * _Resourc
 
         glBindImageTexture( slot,
                             id,
-                            binding->Lod,
+                            binding->MipLevel,
                             binding->bLayered,
                             binding->LayerIndex,
                             ImageAccessModeLUT[ binding->AccessMode ],
                             InternalFormatLUT[ binding->TextureFormat ].InternalFormat ); // 4.2
     }
-#endif
+#    endif
 }
 #endif
 
@@ -1345,9 +1600,9 @@ void AImmediateContextGLImpl::BindResourceTable( SResourceTable const * _Resourc
 void ImmediateContext::SetBuffers( BUFFER_TYPE _BufferType,
                                 unsigned int _StartSlot,
                                 unsigned int _NumBuffers,
-                                /* optional */ IBuffer * const * _Buffers,
-                                /* optional */ unsigned int * _RangeOffsets,
-                                /* optional */ unsigned int * _RangeSizes )
+                                IBuffer * const * _Buffers,
+                                unsigned int * _RangeOffsets,
+                                unsigned int * _RangeSizes )
 {
     VerifyContext();
 
@@ -1405,7 +1660,7 @@ void ImmediateContext::SetBuffers( BUFFER_TYPE _BufferType,
     }
 }
 
-void ImmediateContext::SetTextureUnit( unsigned int _Unit, /* optional */ Texture const * _Texture )
+void ImmediateContext::SetTextureUnit( unsigned int _Unit, Texture const * _Texture )
 {
     VerifyContext();
 
@@ -1434,7 +1689,7 @@ void ImmediateContext::SetTextureUnit( unsigned int _Unit, /* optional */ Textur
 
 void ImmediateContext::SetTextureUnits( unsigned int _FirstUnit,
                                         unsigned int _NumUnits,
-                                        /* optional */ Texture * const * _Textures )
+                                        Texture * const * _Textures )
 {
     VerifyContext();
 
@@ -1474,8 +1729,8 @@ void ImmediateContext::SetTextureUnits( unsigned int _FirstUnit,
 }
 
 bool ImmediateContext::SetImageUnit( unsigned int _Unit,
-                                  /* optional */ Texture * _Texture,
-                                  unsigned int _Lod,
+                                  Texture * _Texture,
+                                  unsigned int _MipLevel,
                                   bool _AllLayers,
                                   unsigned int _LayerIndex,  // Array index for texture arrays, depth for 3D textures or cube face for cubemaps
                                   // For cubemap arrays: arrayLength = floor( _LayerIndex / 6 ), face = _LayerIndex % 6
@@ -1491,7 +1746,7 @@ bool ImmediateContext::SetImageUnit( unsigned int _Unit,
     // Unit must be < ResourceStoragesPtr->MaxImageUnits
     glBindImageTexture( _Unit,
                         ( size_t )_Texture->GetHandle(),
-                        _Lod,
+                        _MipLevel,
                         _AllLayers,
                         _LayerIndex,
                         ImageAccessModeLUT[ _AccessMode ],
@@ -1502,7 +1757,7 @@ bool ImmediateContext::SetImageUnit( unsigned int _Unit,
 
 void ImmediateContext::SetImageUnits( unsigned int _FirstUnit,
                                       unsigned int _NumUnits,
-                                      /* optional */ Texture * const * _Textures )
+                                      Texture * const * _Textures )
 {
     VerifyContext();
 
@@ -1532,142 +1787,154 @@ void ImmediateContext::SetImageUnits( unsigned int _FirstUnit,
 
 #endif
 
-#define INVERT_VIEWPORT_Y(Viewport) ( Binding.DrawFramebufferHeight - (Viewport)->Y - (Viewport)->Height )
+#define INVERT_VIEWPORT_Y(Viewport) (Binding.DrawFramebufferHeight - (Viewport)->Y - (Viewport)->Height)
 
-void AImmediateContextGLImpl::SetViewport( SViewport const & _Viewport )
+void AImmediateContextGLImpl::SetViewport(SViewport const& _Viewport)
 {
     VerifyContext();
 
-    if ( memcmp( CurrentViewport, &_Viewport, sizeof( CurrentViewport ) ) != 0 ) {
-        if ( ViewportOrigin == VIEWPORT_ORIGIN_TOP_LEFT ) {
-            glViewport( (GLint)_Viewport.X,
-                        (GLint)INVERT_VIEWPORT_Y(&_Viewport),
-                        (GLsizei)_Viewport.Width,
-                        (GLsizei)_Viewport.Height );
-        } else {
-            glViewport( (GLint)_Viewport.X,
-                        (GLint)_Viewport.Y,
-                        (GLsizei)_Viewport.Width,
-                        (GLsizei)_Viewport.Height );
-        }
-        memcpy( CurrentViewport, &_Viewport, sizeof( CurrentViewport ) );
+    AN_ASSERT(CurrentRenderPass != nullptr);
+
+    if (memcmp(CurrentViewport, &_Viewport, sizeof(CurrentViewport)) != 0)
+    {
+        glViewport((GLint)_Viewport.X,
+                   (GLint)INVERT_VIEWPORT_Y(&_Viewport),
+                   (GLsizei)_Viewport.Width,
+                   (GLsizei)_Viewport.Height);
+        memcpy(CurrentViewport, &_Viewport, sizeof(CurrentViewport));
     }
 
-    if ( memcmp( CurrentDepthRange, &_Viewport.MinDepth, sizeof( CurrentDepthRange ) ) != 0 ) {
-        glDepthRangef( _Viewport.MinDepth, _Viewport.MaxDepth ); // Since GL v4.1
+    if (memcmp(CurrentDepthRange, &_Viewport.MinDepth, sizeof(CurrentDepthRange)) != 0)
+    {
+        glDepthRangef(_Viewport.MinDepth, _Viewport.MaxDepth); // Since GL v4.1
 
-        memcpy( CurrentDepthRange, &_Viewport.MinDepth, sizeof( CurrentDepthRange ) );
+        memcpy(CurrentDepthRange, &_Viewport.MinDepth, sizeof(CurrentDepthRange));
     }
 }
 
-void AImmediateContextGLImpl::SetViewportArray( uint32_t _NumViewports, SViewport const * _Viewports )
+void AImmediateContextGLImpl::SetViewportArray(uint32_t _NumViewports, SViewport const* _Viewports)
 {
-    SetViewportArray( 0, _NumViewports, _Viewports );
+    SetViewportArray(0, _NumViewports, _Viewports);
 }
 
-void AImmediateContextGLImpl::SetViewportArray( uint32_t _FirstIndex, uint32_t _NumViewports, SViewport const * _Viewports )
+void AImmediateContextGLImpl::SetViewportArray(uint32_t _FirstIndex, uint32_t _NumViewports, SViewport const* _Viewports)
 {
     VerifyContext();
 
-    #define MAX_VIEWPORT_DATA 1024
-    static_assert( sizeof( float ) * 2 == sizeof( double ), "ImmediateContext::SetViewportArray type check" );
+    AN_ASSERT(CurrentRenderPass != nullptr);
+
+#define MAX_VIEWPORT_DATA 1024
+    static_assert(sizeof(float) * 2 == sizeof(double), "ImmediateContext::SetViewportArray type check");
     constexpr uint32_t MAX_VIEWPORTS = MAX_VIEWPORT_DATA >> 2;
-    float viewportData[ MAX_VIEWPORT_DATA ];
+    float              viewportData[MAX_VIEWPORT_DATA];
 
-    _NumViewports = std::min( MAX_VIEWPORTS, _NumViewports );
+    _NumViewports = std::min(MAX_VIEWPORTS, _NumViewports);
 
-    bool bInvertY = ViewportOrigin == VIEWPORT_ORIGIN_TOP_LEFT;
+    const bool bInvertY = true;
 
-    float * pViewportData = viewportData;
-    for ( SViewport const * viewport = _Viewports ; viewport < &_Viewports[_NumViewports] ; viewport++, pViewportData += 4 ) {
-        pViewportData[ 0 ] = viewport->X;
-        pViewportData[ 1 ] = bInvertY ? INVERT_VIEWPORT_Y( viewport ) : viewport->Y;
-        pViewportData[ 2 ] = viewport->Width;
-        pViewportData[ 3 ] = viewport->Height;
+    float* pViewportData = viewportData;
+    for (SViewport const* viewport = _Viewports; viewport < &_Viewports[_NumViewports]; viewport++, pViewportData += 4)
+    {
+        pViewportData[0] = viewport->X;
+        pViewportData[1] = bInvertY ? INVERT_VIEWPORT_Y(viewport) : viewport->Y;
+        pViewportData[2] = viewport->Width;
+        pViewportData[3] = viewport->Height;
     }
-    glViewportArrayv( _FirstIndex, _NumViewports, viewportData );
+    glViewportArrayv(_FirstIndex, _NumViewports, viewportData);
 
-    double * pDepthRangeData = reinterpret_cast< double * >( &viewportData[0] );
-    for ( SViewport const * viewport = _Viewports ; viewport < &_Viewports[_NumViewports] ; viewport++, pDepthRangeData += 2 ) {
-        pDepthRangeData[ 0 ] = viewport->MinDepth;
-        pDepthRangeData[ 1 ] = viewport->MaxDepth;
+    double* pDepthRangeData = reinterpret_cast<double*>(&viewportData[0]);
+    for (SViewport const* viewport = _Viewports; viewport < &_Viewports[_NumViewports]; viewport++, pDepthRangeData += 2)
+    {
+        pDepthRangeData[0] = viewport->MinDepth;
+        pDepthRangeData[1] = viewport->MaxDepth;
     }
-    glDepthRangeArrayv( _FirstIndex, _NumViewports, reinterpret_cast< double * >( &viewportData[0] ) );
+    glDepthRangeArrayv(_FirstIndex, _NumViewports, reinterpret_cast<double*>(&viewportData[0]));
 }
 
-void AImmediateContextGLImpl::SetViewportIndexed( uint32_t _Index, SViewport const & _Viewport )
+void AImmediateContextGLImpl::SetViewportIndexed(uint32_t _Index, SViewport const& _Viewport)
 {
     VerifyContext();
 
-    bool bInvertY = ViewportOrigin == VIEWPORT_ORIGIN_TOP_LEFT;
-    float viewportData[4] = { _Viewport.X, bInvertY ? INVERT_VIEWPORT_Y(&_Viewport) : _Viewport.Y, _Viewport.Width, _Viewport.Height };
-    glViewportIndexedfv( _Index, viewportData );
-    glDepthRangeIndexed( _Index, _Viewport.MinDepth, _Viewport.MaxDepth );
+    AN_ASSERT(CurrentRenderPass != nullptr);
+
+    const bool bInvertY        = true;
+    float      viewportData[4] = {_Viewport.X, bInvertY ? INVERT_VIEWPORT_Y(&_Viewport) : _Viewport.Y, _Viewport.Width, _Viewport.Height};
+    glViewportIndexedfv(_Index, viewportData);
+    glDepthRangeIndexed(_Index, _Viewport.MinDepth, _Viewport.MaxDepth);
 }
 
-void AImmediateContextGLImpl::SetScissor( /* optional */ SRect2D const & _Scissor )
+void AImmediateContextGLImpl::SetScissor(SRect2D const& _Scissor)
 {
     VerifyContext();
 
     CurrentScissor = _Scissor;
 
-    bool bInvertY = ViewportOrigin == VIEWPORT_ORIGIN_TOP_LEFT;
+    const bool bInvertY = true;
 
-    glScissor( CurrentScissor.X,
-               bInvertY ? Binding.DrawFramebufferHeight - CurrentScissor.Y - CurrentScissor.Height : CurrentScissor.Y,
-               CurrentScissor.Width,
-               CurrentScissor.Height );
+    glScissor(CurrentScissor.X,
+              bInvertY ? Binding.DrawFramebufferHeight - CurrentScissor.Y - CurrentScissor.Height : CurrentScissor.Y,
+              CurrentScissor.Width,
+              CurrentScissor.Height);
 }
 
-void AImmediateContextGLImpl::SetScissorArray( uint32_t _NumScissors, SRect2D const * _Scissors )
+void AImmediateContextGLImpl::SetScissorArray(uint32_t _NumScissors, SRect2D const* _Scissors)
 {
-    SetScissorArray( 0, _NumScissors, _Scissors );
+    SetScissorArray(0, _NumScissors, _Scissors);
 }
 
-void AImmediateContextGLImpl::SetScissorArray( uint32_t _FirstIndex, uint32_t _NumScissors, SRect2D const * _Scissors )
+void AImmediateContextGLImpl::SetScissorArray(uint32_t _FirstIndex, uint32_t _NumScissors, SRect2D const* _Scissors)
 {
     VerifyContext();
 
-    #define MAX_SCISSOR_DATA 1024
+    AN_ASSERT(CurrentRenderPass != nullptr);
+
+#define MAX_SCISSOR_DATA 1024
     constexpr uint32_t MAX_SCISSORS = MAX_VIEWPORT_DATA >> 2;
-    GLint scissorData[ MAX_SCISSOR_DATA ];
+    GLint              scissorData[MAX_SCISSOR_DATA];
 
-    _NumScissors = std::min( MAX_SCISSORS, _NumScissors );
+    _NumScissors = std::min(MAX_SCISSORS, _NumScissors);
 
-    bool bInvertY = ViewportOrigin == VIEWPORT_ORIGIN_TOP_LEFT;
+    const bool bInvertY = true;
 
-    GLint * pScissorData = scissorData;
-    for ( SRect2D const * scissor = _Scissors ; scissor < &_Scissors[_NumScissors] ; scissor++, pScissorData += 4 ) {
-        pScissorData[ 0 ] = scissor->X;
-        pScissorData[ 1 ] = bInvertY ? INVERT_VIEWPORT_Y( scissor ) : scissor->Y;
-        pScissorData[ 2 ] = scissor->Width;
-        pScissorData[ 3 ] = scissor->Height;
+    GLint* pScissorData = scissorData;
+    for (SRect2D const* scissor = _Scissors; scissor < &_Scissors[_NumScissors]; scissor++, pScissorData += 4)
+    {
+        pScissorData[0] = scissor->X;
+        pScissorData[1] = bInvertY ? INVERT_VIEWPORT_Y(scissor) : scissor->Y;
+        pScissorData[2] = scissor->Width;
+        pScissorData[3] = scissor->Height;
     }
-    glScissorArrayv( _FirstIndex, _NumScissors, scissorData );
+    glScissorArrayv(_FirstIndex, _NumScissors, scissorData);
 }
 
-void AImmediateContextGLImpl::SetScissorIndexed( uint32_t _Index, SRect2D const & _Scissor )
+void AImmediateContextGLImpl::SetScissorIndexed(uint32_t _Index, SRect2D const& _Scissor)
 {
     VerifyContext();
 
-    bool bInvertY = ViewportOrigin == VIEWPORT_ORIGIN_TOP_LEFT;
+    AN_ASSERT(CurrentRenderPass != nullptr);
 
-    int scissorData[4] = { _Scissor.X, bInvertY ? INVERT_VIEWPORT_Y(&_Scissor) : _Scissor.Y, _Scissor.Width, _Scissor.Height };
-    glScissorIndexedv( _Index, scissorData );
+    const bool bInvertY = true;
+
+    int scissorData[4] = {_Scissor.X, bInvertY ? INVERT_VIEWPORT_Y(&_Scissor) : _Scissor.Y, _Scissor.Width, _Scissor.Height};
+    glScissorIndexedv(_Index, scissorData);
 }
 
 void AImmediateContextGLImpl::UpdateVertexBuffers()
 {
-    for ( SVertexBindingInfo const * binding = CurrentVAO->Hashed.VertexBindings ; binding < &CurrentVAO->Hashed.VertexBindings[CurrentVAO->Hashed.NumVertexBindings] ; binding++ ) {
+    for (SVertexBindingInfo const* binding = CurrentVAO->Hashed.VertexBindings; binding < &CurrentVAO->Hashed.VertexBindings[CurrentVAO->Hashed.NumVertexBindings]; binding++)
+    {
         int slot = binding->InputSlot;
 
-        if ( CurrentVAO->VertexBufferUIDs[slot] != VertexBufferUIDs[slot] || CurrentVAO->VertexBufferOffsets[slot] != VertexBufferOffsets[slot] ) {
+        if (CurrentVAO->VertexBufferUIDs[slot] != VertexBufferUIDs[slot] || CurrentVAO->VertexBufferOffsets[slot] != VertexBufferOffsets[slot])
+        {
 
-            glVertexArrayVertexBuffer( CurrentVAO->Handle, slot, VertexBufferHandles[slot], VertexBufferOffsets[slot], CurrentVAO->VertexBindingsStrides[slot] );
+            glVertexArrayVertexBuffer(CurrentVAO->Handle, slot, VertexBufferHandles[slot], VertexBufferOffsets[slot], CurrentVAO->VertexBindingsStrides[slot]);
 
-            CurrentVAO->VertexBufferUIDs[slot] = VertexBufferUIDs[slot];
+            CurrentVAO->VertexBufferUIDs[slot]    = VertexBufferUIDs[slot];
             CurrentVAO->VertexBufferOffsets[slot] = VertexBufferOffsets[slot];
-        } else {
+        }
+        else
+        {
             //GLogger.Printf( "Caching BindVertexBuffer %d\n", vertexBufferId );
         }
     }
@@ -1677,12 +1944,15 @@ void AImmediateContextGLImpl::UpdateVertexAndIndexBuffers()
 {
     UpdateVertexBuffers();
 
-    if ( CurrentVAO->IndexBufferUID != IndexBufferUID ) {
-        glVertexArrayElementBuffer( CurrentVAO->Handle, IndexBufferHandle );
+    if (CurrentVAO->IndexBufferUID != IndexBufferUID)
+    {
+        glVertexArrayElementBuffer(CurrentVAO->Handle, IndexBufferHandle);
         CurrentVAO->IndexBufferUID = IndexBufferUID;
 
         //GLogger.Printf( "BindIndexBuffer %d\n", indexBufferId );
-    } else {
+    }
+    else
+    {
         //GLogger.Printf( "Caching BindIndexBuffer %d\n", indexBufferId );
     }
 }
@@ -1691,160 +1961,194 @@ void AImmediateContextGLImpl::UpdateShaderBindings()
 {
     // TODO: memcmp CurrentPipeline->TextureBindings, CurrentResourceTable->TextureBindings2
 
-    glBindTextures(	0, CurrentPipeline->NumSamplerObjects, CurrentResourceTable->GetTextureBindings() ); // 4.4
+    glBindTextures(0, CurrentPipeline->NumSamplerObjects, CurrentResourceTable->GetTextureBindings()); // 4.4
 
 #if 1
-    for ( int i = 0 ; i < CurrentPipeline->NumImages ; i++ ) {
+    for (int i = 0; i < CurrentPipeline->NumImages; i++)
+    {
         // TODO: cache image bindings (memcmp?)
-        glBindImageTexture( i,
-                            CurrentResourceTable->GetImageBindings()[i],
-                            CurrentResourceTable->GetImageLod()[i],
-                            CurrentResourceTable->GetImageLayered()[i],
-                            CurrentResourceTable->GetImageLayerIndex()[i],
-                            CurrentPipeline->Images[i].AccessMode,
-                            CurrentPipeline->Images[i].InternalFormat ); // 4.2
+        glBindImageTexture(i,
+                           CurrentResourceTable->GetImageBindings()[i],
+                           CurrentResourceTable->GetImageMipLevel()[i],
+                           CurrentResourceTable->GetImageLayered()[i],
+                           CurrentResourceTable->GetImageLayerIndex()[i],
+                           CurrentPipeline->Images[i].AccessMode,
+                           CurrentPipeline->Images[i].InternalFormat); // 4.2
     }
 #else
-    glBindImageTextures( 0, CurrentPipeline->NumImages, CurrentResourceTable->ImageBindings ); // 4.4
+    glBindImageTextures(0, CurrentPipeline->NumImages, CurrentResourceTable->ImageBindings); // 4.4
 #endif
 
-    for ( int i = 0 ; i < CurrentPipeline->NumBuffers ; i++ ) {
-        if ( BufferBindingUIDs[ i ] != CurrentResourceTable->GetBufferBindingUIDs()[i]
-             || BufferBindingOffsets[ i ] != CurrentResourceTable->GetBufferBindingOffsets()[i]
-             || BufferBindingSizes[ i ] != CurrentResourceTable->GetBufferBindingSizes()[i] ) {
+    for (int i = 0; i < CurrentPipeline->NumBuffers; i++)
+    {
+        if (BufferBindingUIDs[i] != CurrentResourceTable->GetBufferBindingUIDs()[i] || BufferBindingOffsets[i] != CurrentResourceTable->GetBufferBindingOffsets()[i] || BufferBindingSizes[i] != CurrentResourceTable->GetBufferBindingSizes()[i])
+        {
 
-            BufferBindingUIDs[ i ] = CurrentResourceTable->GetBufferBindingUIDs()[i];
-            BufferBindingOffsets[ i ] = CurrentResourceTable->GetBufferBindingOffsets()[i];
-            BufferBindingSizes[ i ] = CurrentResourceTable->GetBufferBindingSizes()[i];
+            BufferBindingUIDs[i]    = CurrentResourceTable->GetBufferBindingUIDs()[i];
+            BufferBindingOffsets[i] = CurrentResourceTable->GetBufferBindingOffsets()[i];
+            BufferBindingSizes[i]   = CurrentResourceTable->GetBufferBindingSizes()[i];
 
-            if ( BufferBindingUIDs[ i ] && BufferBindingSizes[ i ] > 0 ) {
-                glBindBufferRange( CurrentPipeline->Buffers[i].BufferType, i, CurrentResourceTable->GetBufferBindings()[i], BufferBindingOffsets[ i ], BufferBindingSizes[ i ] ); // 3.0 or GL_ARB_uniform_buffer_object
-            } else {
-                glBindBufferBase( CurrentPipeline->Buffers[i].BufferType, i, CurrentResourceTable->GetBufferBindings()[i] ); // 3.0 or GL_ARB_uniform_buffer_object
+            if (BufferBindingUIDs[i] && BufferBindingSizes[i] > 0)
+            {
+                glBindBufferRange(CurrentPipeline->Buffers[i].BufferType, i, CurrentResourceTable->GetBufferBindings()[i], BufferBindingOffsets[i], BufferBindingSizes[i]); // 3.0 or GL_ARB_uniform_buffer_object
+            }
+            else
+            {
+                glBindBufferBase(CurrentPipeline->Buffers[i].BufferType, i, CurrentResourceTable->GetBufferBindings()[i]); // 3.0 or GL_ARB_uniform_buffer_object
             }
         }
     }
 }
 
-void AImmediateContextGLImpl::Draw( SDrawCmd const * _Cmd )
+void AImmediateContextGLImpl::Draw(SDrawCmd const* _Cmd)
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    AN_ASSERT(CurrentPipeline != nullptr);
 
-    if ( _Cmd->InstanceCount == 0 || _Cmd->VertexCountPerInstance == 0 ) {
+    if (_Cmd->InstanceCount == 0 || _Cmd->VertexCountPerInstance == 0)
+    {
         return;
     }
 
     UpdateVertexBuffers();
     UpdateShaderBindings();
 
-    if ( _Cmd->InstanceCount == 1 && _Cmd->StartInstanceLocation == 0 ) {
-        glDrawArrays( CurrentPipeline->PrimitiveTopology, _Cmd->StartVertexLocation, _Cmd->VertexCountPerInstance ); // Since 2.0
-    } else {
-        if ( _Cmd->StartInstanceLocation == 0 ) {
-            glDrawArraysInstanced( CurrentPipeline->PrimitiveTopology, _Cmd->StartVertexLocation, _Cmd->VertexCountPerInstance, _Cmd->InstanceCount );// Since 3.1
-        } else {
-            glDrawArraysInstancedBaseInstance( CurrentPipeline->PrimitiveTopology,
-                _Cmd->StartVertexLocation,
-                _Cmd->VertexCountPerInstance,
-                _Cmd->InstanceCount,
-                _Cmd->StartInstanceLocation
-            ); // Since 4.2 or GL_ARB_base_instance
+    if (_Cmd->InstanceCount == 1 && _Cmd->StartInstanceLocation == 0)
+    {
+        glDrawArrays(CurrentPipeline->PrimitiveTopology, _Cmd->StartVertexLocation, _Cmd->VertexCountPerInstance); // Since 2.0
+    }
+    else
+    {
+        if (_Cmd->StartInstanceLocation == 0)
+        {
+            glDrawArraysInstanced(CurrentPipeline->PrimitiveTopology, _Cmd->StartVertexLocation, _Cmd->VertexCountPerInstance, _Cmd->InstanceCount); // Since 3.1
+        }
+        else
+        {
+            glDrawArraysInstancedBaseInstance(CurrentPipeline->PrimitiveTopology,
+                                              _Cmd->StartVertexLocation,
+                                              _Cmd->VertexCountPerInstance,
+                                              _Cmd->InstanceCount,
+                                              _Cmd->StartInstanceLocation); // Since 4.2 or GL_ARB_base_instance
         }
     }
 }
 
-void AImmediateContextGLImpl::Draw( SDrawIndexedCmd const * _Cmd )
+void AImmediateContextGLImpl::Draw(SDrawIndexedCmd const* _Cmd)
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    AN_ASSERT(CurrentPipeline != nullptr);
 
-    if ( _Cmd->InstanceCount == 0 || _Cmd->IndexCountPerInstance == 0 ) {
+    if (_Cmd->InstanceCount == 0 || _Cmd->IndexCountPerInstance == 0)
+    {
         return;
     }
 
     UpdateVertexAndIndexBuffers();
     UpdateShaderBindings();
 
-    const GLubyte * offset = reinterpret_cast<const GLubyte *>( 0 ) + _Cmd->StartIndexLocation * IndexBufferTypeSizeOf
-        + IndexBufferOffset;
+    const GLubyte* offset = reinterpret_cast<const GLubyte*>(0) + _Cmd->StartIndexLocation * IndexBufferTypeSizeOf + IndexBufferOffset;
 
-    if ( _Cmd->InstanceCount == 1 && _Cmd->StartInstanceLocation == 0 ) {
-        if ( _Cmd->BaseVertexLocation == 0 ) {
-            glDrawElements( CurrentPipeline->PrimitiveTopology,
-                            _Cmd->IndexCountPerInstance,
-                            IndexBufferType,
-                            offset ); // 2.0
-        } else {
-            glDrawElementsBaseVertex( CurrentPipeline->PrimitiveTopology,
-                                      _Cmd->IndexCountPerInstance,
-                                      IndexBufferType,
-                                      offset,
-                                      _Cmd->BaseVertexLocation
-                                      ); // 3.2 or GL_ARB_draw_elements_base_vertex
+    if (_Cmd->InstanceCount == 1 && _Cmd->StartInstanceLocation == 0)
+    {
+        if (_Cmd->BaseVertexLocation == 0)
+        {
+            glDrawElements(CurrentPipeline->PrimitiveTopology,
+                           _Cmd->IndexCountPerInstance,
+                           IndexBufferType,
+                           offset); // 2.0
         }
-    } else {
-        if ( _Cmd->StartInstanceLocation == 0 ) {
-            if ( _Cmd->BaseVertexLocation == 0 ) {
-                glDrawElementsInstanced( CurrentPipeline->PrimitiveTopology,
-                                         _Cmd->IndexCountPerInstance,
-                                         IndexBufferType,
-                                         offset,
-                                         _Cmd->InstanceCount ); // 3.1
-            } else {
-                glDrawElementsInstancedBaseVertex( CurrentPipeline->PrimitiveTopology,
-                                                   _Cmd->IndexCountPerInstance,
-                                                   IndexBufferType,
-                                                   offset,
-                                                   _Cmd->InstanceCount,
-                                                   _Cmd->BaseVertexLocation ); // 3.2 or GL_ARB_draw_elements_base_vertex
+        else
+        {
+            glDrawElementsBaseVertex(CurrentPipeline->PrimitiveTopology,
+                                     _Cmd->IndexCountPerInstance,
+                                     IndexBufferType,
+                                     offset,
+                                     _Cmd->BaseVertexLocation); // 3.2 or GL_ARB_draw_elements_base_vertex
+        }
+    }
+    else
+    {
+        if (_Cmd->StartInstanceLocation == 0)
+        {
+            if (_Cmd->BaseVertexLocation == 0)
+            {
+                glDrawElementsInstanced(CurrentPipeline->PrimitiveTopology,
+                                        _Cmd->IndexCountPerInstance,
+                                        IndexBufferType,
+                                        offset,
+                                        _Cmd->InstanceCount); // 3.1
             }
-        } else {
-            if ( _Cmd->BaseVertexLocation == 0 ) {
-                glDrawElementsInstancedBaseInstance( CurrentPipeline->PrimitiveTopology,
-                                                     _Cmd->IndexCountPerInstance,
-                                                     IndexBufferType,
-                                                     offset,
-                                                     _Cmd->InstanceCount,
-                                                     _Cmd->StartInstanceLocation ); // 4.2 or GL_ARB_base_instance
-            } else {
-                glDrawElementsInstancedBaseVertexBaseInstance( CurrentPipeline->PrimitiveTopology,
-                                                               _Cmd->IndexCountPerInstance,
-                                                               IndexBufferType,
-                                                               offset,
-                                                               _Cmd->InstanceCount,
-                                                               _Cmd->BaseVertexLocation,
-                                                               _Cmd->StartInstanceLocation ); // 4.2 or GL_ARB_base_instance
+            else
+            {
+                glDrawElementsInstancedBaseVertex(CurrentPipeline->PrimitiveTopology,
+                                                  _Cmd->IndexCountPerInstance,
+                                                  IndexBufferType,
+                                                  offset,
+                                                  _Cmd->InstanceCount,
+                                                  _Cmd->BaseVertexLocation); // 3.2 or GL_ARB_draw_elements_base_vertex
+            }
+        }
+        else
+        {
+            if (_Cmd->BaseVertexLocation == 0)
+            {
+                glDrawElementsInstancedBaseInstance(CurrentPipeline->PrimitiveTopology,
+                                                    _Cmd->IndexCountPerInstance,
+                                                    IndexBufferType,
+                                                    offset,
+                                                    _Cmd->InstanceCount,
+                                                    _Cmd->StartInstanceLocation); // 4.2 or GL_ARB_base_instance
+            }
+            else
+            {
+                glDrawElementsInstancedBaseVertexBaseInstance(CurrentPipeline->PrimitiveTopology,
+                                                              _Cmd->IndexCountPerInstance,
+                                                              IndexBufferType,
+                                                              offset,
+                                                              _Cmd->InstanceCount,
+                                                              _Cmd->BaseVertexLocation,
+                                                              _Cmd->StartInstanceLocation); // 4.2 or GL_ARB_base_instance
             }
         }
     }
 }
 
-void AImmediateContextGLImpl::Draw( ITransformFeedback * _TransformFeedback, unsigned int _InstanceCount, unsigned int _StreamIndex )
+void AImmediateContextGLImpl::Draw(ITransformFeedback* _TransformFeedback, unsigned int _InstanceCount, unsigned int _StreamIndex)
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    AN_ASSERT(CurrentPipeline != nullptr);
 
-    if ( _InstanceCount == 0 ) {
+    if (_InstanceCount == 0)
+    {
         return;
     }
 
     UpdateShaderBindings();
 
-    if ( _InstanceCount > 1 ) {
-        if ( _StreamIndex == 0 ) {
-            glDrawTransformFeedbackInstanced( CurrentPipeline->PrimitiveTopology, _TransformFeedback->GetHandleNativeGL(), _InstanceCount ); // 4.2
-        } else {
-            glDrawTransformFeedbackStreamInstanced( CurrentPipeline->PrimitiveTopology, _TransformFeedback->GetHandleNativeGL(), _StreamIndex, _InstanceCount ); // 4.2
+    if (_InstanceCount > 1)
+    {
+        if (_StreamIndex == 0)
+        {
+            glDrawTransformFeedbackInstanced(CurrentPipeline->PrimitiveTopology, _TransformFeedback->GetHandleNativeGL(), _InstanceCount); // 4.2
         }
-    } else {
-        if ( _StreamIndex == 0 ) {
-            glDrawTransformFeedback( CurrentPipeline->PrimitiveTopology, _TransformFeedback->GetHandleNativeGL() ); // 4.0
-        } else {
-            glDrawTransformFeedbackStream( CurrentPipeline->PrimitiveTopology, _TransformFeedback->GetHandleNativeGL(), _StreamIndex );  // 4.0
+        else
+        {
+            glDrawTransformFeedbackStreamInstanced(CurrentPipeline->PrimitiveTopology, _TransformFeedback->GetHandleNativeGL(), _StreamIndex, _InstanceCount); // 4.2
+        }
+    }
+    else
+    {
+        if (_StreamIndex == 0)
+        {
+            glDrawTransformFeedback(CurrentPipeline->PrimitiveTopology, _TransformFeedback->GetHandleNativeGL()); // 4.0
+        }
+        else
+        {
+            glDrawTransformFeedbackStream(CurrentPipeline->PrimitiveTopology, _TransformFeedback->GetHandleNativeGL(), _StreamIndex); // 4.0
         }
     }
 }
@@ -1887,15 +2191,16 @@ void AImmediateContextGLImpl::DrawIndirect( SDrawIndexedIndirectCmd const * _Cmd
 }
 #endif
 
-void AImmediateContextGLImpl::DrawIndirect( IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset )
+void AImmediateContextGLImpl::DrawIndirect(IBuffer* _DrawIndirectBuffer, unsigned int _AlignedByteOffset)
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    AN_ASSERT(CurrentPipeline != nullptr);
 
     GLuint handle = _DrawIndirectBuffer->GetHandleNativeGL();
-    if ( Binding.DrawInderectBuffer != handle ) {
-        glBindBuffer( GL_DRAW_INDIRECT_BUFFER, handle );
+    if (Binding.DrawInderectBuffer != handle)
+    {
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, handle);
         Binding.DrawInderectBuffer = handle;
     }
 
@@ -1903,19 +2208,20 @@ void AImmediateContextGLImpl::DrawIndirect( IBuffer * _DrawIndirectBuffer, unsig
     UpdateVertexBuffers();
 
     // This is similar glDrawArraysInstancedBaseInstance, but with binded INDIRECT buffer
-    glDrawArraysIndirect( CurrentPipeline->PrimitiveTopology,
-                          reinterpret_cast< const GLubyte * >(0) + _AlignedByteOffset ); // Since 4.0 or GL_ARB_draw_indirect
+    glDrawArraysIndirect(CurrentPipeline->PrimitiveTopology,
+                         reinterpret_cast<const GLubyte*>(0) + _AlignedByteOffset); // Since 4.0 or GL_ARB_draw_indirect
 }
 
-void AImmediateContextGLImpl::DrawIndexedIndirect( IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset )
+void AImmediateContextGLImpl::DrawIndexedIndirect(IBuffer* _DrawIndirectBuffer, unsigned int _AlignedByteOffset)
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    AN_ASSERT(CurrentPipeline != nullptr);
 
     GLuint handle = _DrawIndirectBuffer->GetHandleNativeGL();
-    if ( Binding.DrawInderectBuffer != handle ) {
-        glBindBuffer( GL_DRAW_INDIRECT_BUFFER, handle );
+    if (Binding.DrawInderectBuffer != handle)
+    {
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, handle);
         Binding.DrawInderectBuffer = handle;
     }
 
@@ -1923,24 +2229,24 @@ void AImmediateContextGLImpl::DrawIndexedIndirect( IBuffer * _DrawIndirectBuffer
     UpdateVertexAndIndexBuffers();
 
     // This is similar glDrawElementsInstancedBaseVertexBaseInstance, but with binded INDIRECT buffer
-    glDrawElementsIndirect( CurrentPipeline->PrimitiveTopology,
-                            IndexBufferType,
-                            reinterpret_cast< const GLubyte * >(0) + _AlignedByteOffset ); // Since 4.0 or GL_ARB_draw_indirect
+    glDrawElementsIndirect(CurrentPipeline->PrimitiveTopology,
+                           IndexBufferType,
+                           reinterpret_cast<const GLubyte*>(0) + _AlignedByteOffset); // Since 4.0 or GL_ARB_draw_indirect
 }
 
-void AImmediateContextGLImpl::MultiDraw( unsigned int _DrawCount, const unsigned int * _VertexCount, const unsigned int * _StartVertexLocations )
+void AImmediateContextGLImpl::MultiDraw(unsigned int _DrawCount, const unsigned int* _VertexCount, const unsigned int* _StartVertexLocations)
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    AN_ASSERT(CurrentPipeline != nullptr);
 
-    static_assert( sizeof( _VertexCount[0] ) == sizeof( GLsizei ), "!" );
-    static_assert( sizeof( _StartVertexLocations[0] ) == sizeof( GLint ), "!" );
+    static_assert(sizeof(_VertexCount[0]) == sizeof(GLsizei), "!");
+    static_assert(sizeof(_StartVertexLocations[0]) == sizeof(GLint), "!");
 
     UpdateVertexBuffers();
     UpdateShaderBindings();
 
-    glMultiDrawArrays( CurrentPipeline->PrimitiveTopology, ( const GLint * )_StartVertexLocations, ( const GLsizei * )_VertexCount, _DrawCount ); // Since 2.0
+    glMultiDrawArrays(CurrentPipeline->PrimitiveTopology, (const GLint*)_StartVertexLocations, (const GLsizei*)_VertexCount, _DrawCount); // Since 2.0
 
     // Эквивалентный код:
     //for ( unsigned int i = 0 ; i < _DrawCount ; i++ ) {
@@ -1948,26 +2254,27 @@ void AImmediateContextGLImpl::MultiDraw( unsigned int _DrawCount, const unsigned
     //}
 }
 
-void AImmediateContextGLImpl::MultiDraw( unsigned int _DrawCount, const unsigned int * _IndexCount, const void * const * _IndexByteOffsets, const int * _BaseVertexLocations )
+void AImmediateContextGLImpl::MultiDraw(unsigned int _DrawCount, const unsigned int* _IndexCount, const void* const* _IndexByteOffsets, const int* _BaseVertexLocations)
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    AN_ASSERT(CurrentPipeline != nullptr);
 
-    static_assert( sizeof( unsigned int ) == sizeof( GLsizei ), "!" );
+    static_assert(sizeof(unsigned int) == sizeof(GLsizei), "!");
 
     // FIXME: how to apply IndexBufferOffset?
 
     UpdateVertexAndIndexBuffers();
     UpdateShaderBindings();
 
-    if ( _BaseVertexLocations ) {
-        glMultiDrawElementsBaseVertex( CurrentPipeline->PrimitiveTopology,
-                                       ( const GLsizei * )_IndexCount,
-                                       IndexBufferType,
-                                       _IndexByteOffsets,
-                                       _DrawCount,
-                                       _BaseVertexLocations ); // 3.2
+    if (_BaseVertexLocations)
+    {
+        glMultiDrawElementsBaseVertex(CurrentPipeline->PrimitiveTopology,
+                                      (const GLsizei*)_IndexCount,
+                                      IndexBufferType,
+                                      _IndexByteOffsets,
+                                      _DrawCount,
+                                      _BaseVertexLocations); // 3.2
         // Эквивалентный код:
         //    for ( int i = 0 ; i < _DrawCount ; i++ )
         //        if ( _IndexCount[i] > 0 )
@@ -1976,12 +2283,14 @@ void AImmediateContextGLImpl::MultiDraw( unsigned int _DrawCount, const unsigned
         //                                      IndexBufferType,
         //                                      _IndexByteOffsets[i],
         //                                      _BaseVertexLocations[i]);
-    } else {
-        glMultiDrawElements( CurrentPipeline->PrimitiveTopology,
-                             ( const GLsizei * )_IndexCount,
-                             IndexBufferType,
-                             _IndexByteOffsets,
-                             _DrawCount ); // 2.0
+    }
+    else
+    {
+        glMultiDrawElements(CurrentPipeline->PrimitiveTopology,
+                            (const GLsizei*)_IndexCount,
+                            IndexBufferType,
+                            _IndexByteOffsets,
+                            _DrawCount); // 2.0
     }
 }
 
@@ -1995,7 +2304,7 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
     UpdateVertexBuffers();
     UpdateShaderBindings();
 
-#if 0
+#    if 0
     if ( Binding.DrawInderectBuffer != 0 ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, 0 );
         Binding.DrawInderectBuffer = 0;
@@ -2006,7 +2315,7 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
                                _Cmds,
                                _DrawCount,
                                _Stride ); // 4.3 or GL_ARB_multi_draw_indirect
-#else
+#    else
     for ( unsigned int n = 0 ; n < _DrawCount ; n++ ) {
         SDrawIndirectCmd const *cmd = ( _Stride != 0 ) ?
                     (SDrawIndirectCmd const *)((uintptr_t)_Cmds + n * _Stride) : (_Cmds + n);
@@ -2016,7 +2325,7 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
                                            cmd->InstanceCount,
                                            cmd->StartInstanceLocation );
     }
-#endif
+#    endif
 }
 
 void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawIndexedIndirectCmd const * _Cmds, unsigned int _Stride )
@@ -2028,7 +2337,7 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
     UpdateVertexAndIndexBuffers();
     UpdateShaderBindings();
 
-#if 0
+#    if 0
     if ( Binding.DrawInderectBuffer != 0 ) {
         glBindBuffer( GL_DRAW_INDIRECT_BUFFER, 0 );
         Binding.DrawInderectBuffer = 0;
@@ -2039,7 +2348,7 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
                                  _Cmds,
                                  _DrawCount,
                                  _Stride ); // 4.3
-#else
+#    else
     for ( unsigned int n = 0 ; n < _DrawCount ; n++ ) {
         SDrawIndexedIndirectCmd const *cmd = ( _Stride != 0 ) ?
             (SDrawIndexedIndirectCmd const *)((uintptr_t)_Cmds + n * _Stride) : ( (SDrawIndexedIndirectCmd const *)_Cmds + n );
@@ -2051,632 +2360,729 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
                                                       cmd->BaseVertexLocation,
                                                       cmd->StartInstanceLocation);
     }
-#endif
+#    endif
 }
 #endif
 
-void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset, unsigned int _Stride )
+void AImmediateContextGLImpl::MultiDrawIndirect(unsigned int _DrawCount, IBuffer* _DrawIndirectBuffer, unsigned int _AlignedByteOffset, unsigned int _Stride)
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    AN_ASSERT(CurrentPipeline != nullptr);
 
     GLuint handle = _DrawIndirectBuffer->GetHandleNativeGL();
-    if ( Binding.DrawInderectBuffer != handle ) {
-        glBindBuffer( GL_DRAW_INDIRECT_BUFFER, handle );
+    if (Binding.DrawInderectBuffer != handle)
+    {
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, handle);
         Binding.DrawInderectBuffer = handle;
     }
 
     UpdateShaderBindings();
     UpdateVertexBuffers();
 
-    glMultiDrawArraysIndirect( CurrentPipeline->PrimitiveTopology,
-                               reinterpret_cast< const GLubyte * >(0) + _AlignedByteOffset,
-                               _DrawCount,
-                               _Stride ); // 4.3 or GL_ARB_multi_draw_indirect
+    glMultiDrawArraysIndirect(CurrentPipeline->PrimitiveTopology,
+                              reinterpret_cast<const GLubyte*>(0) + _AlignedByteOffset,
+                              _DrawCount,
+                              _Stride); // 4.3 or GL_ARB_multi_draw_indirect
 }
 
-void AImmediateContextGLImpl::MultiDrawIndexedIndirect( unsigned int _DrawCount, IBuffer * _DrawIndirectBuffer, unsigned int _AlignedByteOffset, unsigned int _Stride )
+void AImmediateContextGLImpl::MultiDrawIndexedIndirect(unsigned int _DrawCount, IBuffer* _DrawIndirectBuffer, unsigned int _AlignedByteOffset, unsigned int _Stride)
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    AN_ASSERT(CurrentPipeline != nullptr);
 
     GLuint handle = _DrawIndirectBuffer->GetHandleNativeGL();
-    if ( Binding.DrawInderectBuffer != handle ) {
-        glBindBuffer( GL_DRAW_INDIRECT_BUFFER, handle );
+    if (Binding.DrawInderectBuffer != handle)
+    {
+        glBindBuffer(GL_DRAW_INDIRECT_BUFFER, handle);
         Binding.DrawInderectBuffer = handle;
     }
 
     UpdateShaderBindings();
     UpdateVertexAndIndexBuffers();
 
-    glMultiDrawElementsIndirect( CurrentPipeline->PrimitiveTopology,
-                                 IndexBufferType,
-                                 reinterpret_cast< const GLubyte * >(0) + _AlignedByteOffset,
-                                 _DrawCount,
-                                 _Stride ); // 4.3
+    glMultiDrawElementsIndirect(CurrentPipeline->PrimitiveTopology,
+                                IndexBufferType,
+                                reinterpret_cast<const GLubyte*>(0) + _AlignedByteOffset,
+                                _DrawCount,
+                                _Stride); // 4.3
 }
 
-void AImmediateContextGLImpl::DispatchCompute( unsigned int _ThreadGroupCountX,
-                                               unsigned int _ThreadGroupCountY,
-                                               unsigned int _ThreadGroupCountZ )
+void AImmediateContextGLImpl::DispatchCompute(unsigned int _ThreadGroupCountX,
+                                              unsigned int _ThreadGroupCountY,
+                                              unsigned int _ThreadGroupCountZ)
 {
 
     VerifyContext();
 
     // Must be: ThreadGroupCount <= GL_MAX_COMPUTE_WORK_GROUP_COUNT
 
-    glDispatchCompute( _ThreadGroupCountX, _ThreadGroupCountY, _ThreadGroupCountZ ); // 4.3 or GL_ARB_compute_shader
+    glDispatchCompute(_ThreadGroupCountX, _ThreadGroupCountY, _ThreadGroupCountZ); // 4.3 or GL_ARB_compute_shader
 }
 
-void AImmediateContextGLImpl::DispatchCompute( SDispatchIndirectCmd const * _Cmd )
+void AImmediateContextGLImpl::DispatchCompute(SDispatchIndirectCmd const* _Cmd)
 {
     VerifyContext();
 
-    if ( Binding.DispatchIndirectBuffer != 0 ) {
-        glBindBuffer( GL_DISPATCH_INDIRECT_BUFFER, 0 );
+    if (Binding.DispatchIndirectBuffer != 0)
+    {
+        glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, 0);
         Binding.DispatchIndirectBuffer = 0;
     }
 
-    glDispatchComputeIndirect( ( GLintptr ) _Cmd ); // 4.3 or GL_ARB_compute_shader
+    glDispatchComputeIndirect((GLintptr)_Cmd); // 4.3 or GL_ARB_compute_shader
 
     // or
     //glDispatchCompute( _Cmd->ThreadGroupCountX, _Cmd->ThreadGroupCountY, _Cmd->ThreadGroupCountZ ); // 4.3 or GL_ARB_compute_shader
 }
 
-void AImmediateContextGLImpl::DispatchComputeIndirect( IBuffer * _DispatchIndirectBuffer,
-                                                       unsigned int _AlignedByteOffset )
+void AImmediateContextGLImpl::DispatchComputeIndirect(IBuffer*     _DispatchIndirectBuffer,
+                                                      unsigned int _AlignedByteOffset)
 {
     VerifyContext();
 
     GLuint handle = _DispatchIndirectBuffer->GetHandleNativeGL();
-    if ( Binding.DispatchIndirectBuffer != handle ) {
-        glBindBuffer( GL_DISPATCH_INDIRECT_BUFFER, handle );
+    if (Binding.DispatchIndirectBuffer != handle)
+    {
+        glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, handle);
         Binding.DispatchIndirectBuffer = handle;
     }
 
-    GLubyte * offset = reinterpret_cast< GLubyte * >(0) + _AlignedByteOffset;
-    glDispatchComputeIndirect( ( GLintptr ) offset ); // 4.3 or GL_ARB_compute_shader
+    GLubyte* offset = reinterpret_cast<GLubyte*>(0) + _AlignedByteOffset;
+    glDispatchComputeIndirect((GLintptr)offset); // 4.3 or GL_ARB_compute_shader
 }
 
-void AImmediateContextGLImpl::BeginQuery( IQueryPool * _QueryPool, uint32_t _QueryID, uint32_t _StreamIndex )
+void AImmediateContextGLImpl::BeginQuery(IQueryPool* _QueryPool, uint32_t _QueryID, uint32_t _StreamIndex)
 {
     VerifyContext();
 
-    AQueryPoolGLImpl * queryPool = static_cast< AQueryPoolGLImpl * >( _QueryPool );
+    AQueryPoolGLImpl* queryPool = static_cast<AQueryPoolGLImpl*>(_QueryPool);
 
-    AN_ASSERT( _QueryID < queryPool->PoolSize );
-    AN_ASSERT( queryPool->QueryType != QUERY_TYPE_TIMESTAMP );
+    AN_ASSERT(_QueryID < queryPool->PoolSize);
+    AN_ASSERT(queryPool->QueryType != QUERY_TYPE_TIMESTAMP);
 
-    if ( CurrentQueryUID[queryPool->QueryType] != 0 ) {
-        GLogger.Printf( "AImmediateContextGLImpl::BeginQuery: missing EndQuery() for the target\n" );
+    if (CurrentQueryUID[queryPool->QueryType] != 0)
+    {
+        GLogger.Printf("AImmediateContextGLImpl::BeginQuery: missing EndQuery() for the target\n");
         return;
     }
 
     CurrentQueryUID[queryPool->QueryType] = queryPool->GetUID();
 
-    if ( _StreamIndex == 0 ) {
-        glBeginQuery( TableQueryTarget[queryPool->QueryType], queryPool->IdPool[_QueryID] ); // 2.0
-    } else {
-        glBeginQueryIndexed( TableQueryTarget[queryPool->QueryType], queryPool->IdPool[_QueryID], _StreamIndex ); // 4.0
+    if (_StreamIndex == 0)
+    {
+        glBeginQuery(TableQueryTarget[queryPool->QueryType], queryPool->IdPool[_QueryID]); // 2.0
+    }
+    else
+    {
+        glBeginQueryIndexed(TableQueryTarget[queryPool->QueryType], queryPool->IdPool[_QueryID], _StreamIndex); // 4.0
     }
 }
 
-void AImmediateContextGLImpl::EndQuery( IQueryPool * _QueryPool, uint32_t _StreamIndex )
+void AImmediateContextGLImpl::EndQuery(IQueryPool* _QueryPool, uint32_t _StreamIndex)
 {
     VerifyContext();
 
-    AQueryPoolGLImpl * queryPool = static_cast< AQueryPoolGLImpl * >(_QueryPool);
+    AQueryPoolGLImpl* queryPool = static_cast<AQueryPoolGLImpl*>(_QueryPool);
 
-    AN_ASSERT( queryPool->QueryType != QUERY_TYPE_TIMESTAMP );
+    AN_ASSERT(queryPool->QueryType != QUERY_TYPE_TIMESTAMP);
 
-    if ( CurrentQueryUID[queryPool->QueryType] != _QueryPool->GetUID() ) {
-        GLogger.Printf( "AImmediateContextGLImpl::EndQuery: missing BeginQuery() for the target\n" );
+    if (CurrentQueryUID[queryPool->QueryType] != _QueryPool->GetUID())
+    {
+        GLogger.Printf("AImmediateContextGLImpl::EndQuery: missing BeginQuery() for the target\n");
         return;
     }
 
     CurrentQueryUID[queryPool->QueryType] = 0;
 
-    if ( _StreamIndex == 0 ) {
-        glEndQuery( TableQueryTarget[queryPool->QueryType] ); // 2.0
-    } else {
-        glEndQueryIndexed( TableQueryTarget[queryPool->QueryType], _StreamIndex ); // 4.0
+    if (_StreamIndex == 0)
+    {
+        glEndQuery(TableQueryTarget[queryPool->QueryType]); // 2.0
+    }
+    else
+    {
+        glEndQueryIndexed(TableQueryTarget[queryPool->QueryType], _StreamIndex); // 4.0
     }
 }
 
-void AImmediateContextGLImpl::RecordTimeStamp( IQueryPool * _QueryPool, uint32_t _QueryID )
+void AImmediateContextGLImpl::RecordTimeStamp(IQueryPool* _QueryPool, uint32_t _QueryID)
 {
     VerifyContext();
 
-    AQueryPoolGLImpl * queryPool = static_cast< AQueryPoolGLImpl * >(_QueryPool);
+    AQueryPoolGLImpl* queryPool = static_cast<AQueryPoolGLImpl*>(_QueryPool);
 
-    AN_ASSERT( _QueryID < queryPool->PoolSize );
+    AN_ASSERT(_QueryID < queryPool->PoolSize);
 
-    if ( queryPool->QueryType != QUERY_TYPE_TIMESTAMP ) {
-        GLogger.Printf( "AImmediateContextGLImpl::RecordTimeStamp: query pool target must be QUERY_TYPE_TIMESTAMP\n" );
+    if (queryPool->QueryType != QUERY_TYPE_TIMESTAMP)
+    {
+        GLogger.Printf("AImmediateContextGLImpl::RecordTimeStamp: query pool target must be QUERY_TYPE_TIMESTAMP\n");
         return;
     }
 
-    glQueryCounter( queryPool->IdPool[_QueryID], GL_TIMESTAMP );
+    glQueryCounter(queryPool->IdPool[_QueryID], GL_TIMESTAMP);
 }
 
-void AImmediateContextGLImpl::BeginConditionalRender( IQueryPool * _QueryPool, uint32_t _QueryID, CONDITIONAL_RENDER_MODE _Mode )
+void AImmediateContextGLImpl::BeginConditionalRender(IQueryPool* _QueryPool, uint32_t _QueryID, CONDITIONAL_RENDER_MODE _Mode)
 {
     VerifyContext();
 
-    AQueryPoolGLImpl * queryPool = static_cast< AQueryPoolGLImpl * >(_QueryPool);
+    AQueryPoolGLImpl* queryPool = static_cast<AQueryPoolGLImpl*>(_QueryPool);
 
-    AN_ASSERT( _QueryID < queryPool->PoolSize );
-    glBeginConditionalRender( queryPool->IdPool[ _QueryID ], TableConditionalRenderMode[ _Mode ] ); // 4.4 (with some flags 3.0)
+    AN_ASSERT(_QueryID < queryPool->PoolSize);
+    glBeginConditionalRender(queryPool->IdPool[_QueryID], TableConditionalRenderMode[_Mode]); // 4.4 (with some flags 3.0)
 }
 
 void AImmediateContextGLImpl::EndConditionalRender()
 {
     VerifyContext();
 
-    glEndConditionalRender();  // 3.0
+    glEndConditionalRender(); // 3.0
 }
 
-void AImmediateContextGLImpl::CopyQueryPoolResultsAvailable( IQueryPool * _QueryPool,
-                                                             uint32_t _FirstQuery,
-                                                             uint32_t _QueryCount,
-                                                             IBuffer * _DstBuffer,
-                                                             size_t _DstOffst,
-                                                             size_t _DstStride,
-                                                             bool _QueryResult64Bit )
+void AImmediateContextGLImpl::CopyQueryPoolResultsAvailable(IQueryPool* _QueryPool,
+                                                            uint32_t    _FirstQuery,
+                                                            uint32_t    _QueryCount,
+                                                            IBuffer*    _DstBuffer,
+                                                            size_t      _DstOffst,
+                                                            size_t      _DstStride,
+                                                            bool        _QueryResult64Bit)
 {
     VerifyContext();
 
-    AQueryPoolGLImpl * queryPool = static_cast< AQueryPoolGLImpl * >(_QueryPool);
+    AQueryPoolGLImpl* queryPool = static_cast<AQueryPoolGLImpl*>(_QueryPool);
 
-    AN_ASSERT( _FirstQuery + _QueryCount <= queryPool->PoolSize );
+    AN_ASSERT(_FirstQuery + _QueryCount <= queryPool->PoolSize);
 
-    const GLuint bufferId = _DstBuffer->GetHandleNativeGL();
+    const GLuint bufferId   = _DstBuffer->GetHandleNativeGL();
     const size_t bufferSize = _DstBuffer->GetSizeInBytes();
 
-    if ( _QueryResult64Bit ) {
+    if (_QueryResult64Bit)
+    {
 
-        AN_ASSERT( ( _DstStride & ~(size_t)7 ) == _DstStride ); // check stride must be multiples of 8
+        AN_ASSERT((_DstStride & ~(size_t)7) == _DstStride); // check stride must be multiples of 8
 
-        for ( uint32_t index = 0 ; index < _QueryCount ; index++ ) {
+        for (uint32_t index = 0; index < _QueryCount; index++)
+        {
 
-            if ( _DstOffst + sizeof(uint64_t) > bufferSize ) {
-                GLogger.Printf( "AImmediateContextGLImpl::CopyQueryPoolResultsAvailable: out of buffer size\n" );
+            if (_DstOffst + sizeof(uint64_t) > bufferSize)
+            {
+                GLogger.Printf("AImmediateContextGLImpl::CopyQueryPoolResultsAvailable: out of buffer size\n");
                 break;
             }
 
-            glGetQueryBufferObjectui64v( queryPool->IdPool[ _FirstQuery + index ], bufferId, GL_QUERY_RESULT_AVAILABLE, _DstOffst );  // 4.5
+            glGetQueryBufferObjectui64v(queryPool->IdPool[_FirstQuery + index], bufferId, GL_QUERY_RESULT_AVAILABLE, _DstOffst); // 4.5
 
             _DstOffst += _DstStride;
         }
     }
-    else {
-        AN_ASSERT( ( _DstStride & ~(size_t)3 ) == _DstStride ); // check stride must be multiples of 4
+    else
+    {
+        AN_ASSERT((_DstStride & ~(size_t)3) == _DstStride); // check stride must be multiples of 4
 
-        for ( uint32_t index = 0 ; index < _QueryCount ; index++ ) {
+        for (uint32_t index = 0; index < _QueryCount; index++)
+        {
 
-            if ( _DstOffst + sizeof(uint32_t) > bufferSize ) {
-                GLogger.Printf( "AImmediateContextGLImpl::CopyQueryPoolResultsAvailable: out of buffer size\n" );
+            if (_DstOffst + sizeof(uint32_t) > bufferSize)
+            {
+                GLogger.Printf("AImmediateContextGLImpl::CopyQueryPoolResultsAvailable: out of buffer size\n");
                 break;
             }
 
-            glGetQueryBufferObjectuiv( queryPool->IdPool[ _FirstQuery + index ], bufferId, GL_QUERY_RESULT_AVAILABLE, _DstOffst );  // 4.5
+            glGetQueryBufferObjectuiv(queryPool->IdPool[_FirstQuery + index], bufferId, GL_QUERY_RESULT_AVAILABLE, _DstOffst); // 4.5
 
             _DstOffst += _DstStride;
         }
     }
 }
 
-void AImmediateContextGLImpl::CopyQueryPoolResults( IQueryPool * _QueryPool,
-                                                    uint32_t _FirstQuery,
-                                                    uint32_t _QueryCount,
-                                                    IBuffer * _DstBuffer,
-                                                    size_t _DstOffst,
-                                                    size_t _DstStride,
-                                                    QUERY_RESULT_FLAGS _Flags )
+void AImmediateContextGLImpl::CopyQueryPoolResults(IQueryPool*        _QueryPool,
+                                                   uint32_t           _FirstQuery,
+                                                   uint32_t           _QueryCount,
+                                                   IBuffer*           _DstBuffer,
+                                                   size_t             _DstOffst,
+                                                   size_t             _DstStride,
+                                                   QUERY_RESULT_FLAGS _Flags)
 {
     VerifyContext();
 
-    AQueryPoolGLImpl * queryPool = static_cast< AQueryPoolGLImpl * >(_QueryPool);
+    AQueryPoolGLImpl* queryPool = static_cast<AQueryPoolGLImpl*>(_QueryPool);
 
-    AN_ASSERT( _FirstQuery + _QueryCount <= queryPool->PoolSize );
+    AN_ASSERT(_FirstQuery + _QueryCount <= queryPool->PoolSize);
 
-    const GLuint bufferId = _DstBuffer->GetHandleNativeGL();
+    const GLuint bufferId   = _DstBuffer->GetHandleNativeGL();
     const size_t bufferSize = _DstBuffer->GetSizeInBytes();
 
-    GLenum pname = ( _Flags & QUERY_RESULT_WAIT_BIT ) ? GL_QUERY_RESULT : GL_QUERY_RESULT_NO_WAIT;
+    GLenum pname = (_Flags & QUERY_RESULT_WAIT_BIT) ? GL_QUERY_RESULT : GL_QUERY_RESULT_NO_WAIT;
 
-    if ( _Flags & QUERY_RESULT_WITH_AVAILABILITY_BIT ) {
-        GLogger.Printf( "AImmediateContextGLImpl::CopyQueryPoolResults: ignoring flag QUERY_RESULT_WITH_AVAILABILITY_BIT. Use CopyQueryPoolResultsAvailable to get available status.\n" );
+    if (_Flags & QUERY_RESULT_WITH_AVAILABILITY_BIT)
+    {
+        GLogger.Printf("AImmediateContextGLImpl::CopyQueryPoolResults: ignoring flag QUERY_RESULT_WITH_AVAILABILITY_BIT. Use CopyQueryPoolResultsAvailable to get available status.\n");
     }
 
-    if ( _Flags & QUERY_RESULT_64_BIT ) {
+    if (_Flags & QUERY_RESULT_64_BIT)
+    {
 
-        AN_ASSERT( ( _DstStride & ~(size_t)7 ) == _DstStride ); // check stride must be multiples of 8
+        AN_ASSERT((_DstStride & ~(size_t)7) == _DstStride); // check stride must be multiples of 8
 
-        for ( uint32_t index = 0 ; index < _QueryCount ; index++ ) {
+        for (uint32_t index = 0; index < _QueryCount; index++)
+        {
 
-            if ( _DstOffst + sizeof(uint64_t) > bufferSize ) {
-                GLogger.Printf( "AImmediateContextGLImpl::CopyQueryPoolResults: out of buffer size\n" );
+            if (_DstOffst + sizeof(uint64_t) > bufferSize)
+            {
+                GLogger.Printf("AImmediateContextGLImpl::CopyQueryPoolResults: out of buffer size\n");
                 break;
             }
 
-            glGetQueryBufferObjectui64v( queryPool->IdPool[ _FirstQuery + index ], bufferId, pname, _DstOffst ); // 4.5
+            glGetQueryBufferObjectui64v(queryPool->IdPool[_FirstQuery + index], bufferId, pname, _DstOffst); // 4.5
 
             _DstOffst += _DstStride;
         }
     }
-    else {
-        AN_ASSERT( ( _DstStride & ~(size_t)3 ) == _DstStride ); // check stride must be multiples of 4
+    else
+    {
+        AN_ASSERT((_DstStride & ~(size_t)3) == _DstStride); // check stride must be multiples of 4
 
-        for ( uint32_t index = 0 ; index < _QueryCount ; index++ ) {
+        for (uint32_t index = 0; index < _QueryCount; index++)
+        {
 
-            if ( _DstOffst + sizeof(uint32_t) > bufferSize ) {
-                GLogger.Printf( "AImmediateContextGLImpl::CopyQueryPoolResults: out of buffer size\n" );
+            if (_DstOffst + sizeof(uint32_t) > bufferSize)
+            {
+                GLogger.Printf("AImmediateContextGLImpl::CopyQueryPoolResults: out of buffer size\n");
                 break;
             }
 
-            glGetQueryBufferObjectuiv( queryPool->IdPool[ _FirstQuery + index ], bufferId, pname, _DstOffst ); // 4.5
+            glGetQueryBufferObjectuiv(queryPool->IdPool[_FirstQuery + index], bufferId, pname, _DstOffst); // 4.5
 
             _DstOffst += _DstStride;
         }
     }
 }
 
-void AImmediateContextGLImpl::BeginRenderPassDefaultFramebuffer( SRenderPassBegin const & _RenderPassBegin )
+void AImmediateContextGLImpl::BeginRenderPass(SRenderPassBeginGL const& _RenderPassBegin)
 {
     VerifyContext();
 
-    if ( Binding.DrawFramebufferUID != DefaultFramebuffer->GetUID() ) {
-        glBindFramebuffer( GL_DRAW_FRAMEBUFFER, DefaultFramebuffer->GetHandleNativeGL() );
+    AN_ASSERT(CurrentRenderPass == nullptr);
 
-        Binding.DrawFramebuffer = DefaultFramebuffer->GetHandleNativeGL();
-        Binding.DrawFramebufferUID = DefaultFramebuffer->GetUID();
-        Binding.DrawFramebufferWidth = (unsigned short)SwapChainWidth;
-        Binding.DrawFramebufferHeight = ( unsigned short )SwapChainHeight;
-    }
-
-    const int framebufferId = 0;
-
-    bool bScissorEnabled = RasterizerState.bScissorEnable;
-    bool bRasterizerDiscard = RasterizerState.bRasterizerDiscard;
-
-    ARenderPassGLImpl const * renderPass = static_cast< ARenderPassGLImpl const * >( _RenderPassBegin.pRenderPass );
-
-    if ( renderPass->NumColorAttachments > 0 ) {
-
-        SAttachmentInfo const * attachment = &renderPass->ColorAttachments[ 0 ];
-        //FramebufferAttachmentInfo const * framebufferAttachment = &framebuffer->ColorAttachments[ i ];
-
-        if ( attachment->LoadOp == ATTACHMENT_LOAD_OP_CLEAR ) {
-
-            AN_ASSERT( _RenderPassBegin.pColorClearValues != nullptr );
-
-            SClearColorValue const * clearValue = &_RenderPassBegin.pColorClearValues[ 0 ];
-
-            if ( !bScissorEnabled ) {
-                glEnable( GL_SCISSOR_TEST );
-                bScissorEnabled = true;
-            }
-
-
-            SetScissor( _RenderPassBegin.RenderArea );
-
-            if ( bRasterizerDiscard ) {
-                glDisable( GL_RASTERIZER_DISCARD );
-                bRasterizerDiscard = false;
-            }
-
-            SRenderTargetBlendingInfo const & currentState = BlendState.RenderTargetSlots[ 0 ];
-            if ( currentState.ColorWriteMask != COLOR_WRITE_RGBA ) {
-                glColorMaski( 0, 1, 1, 1, 1 );
-            }
-
-            glClearNamedFramebufferfv( framebufferId,
-                                       GL_COLOR,
-                                       0,
-                                       clearValue->Float32 );
-
-            // Restore color mask
-            if ( currentState.ColorWriteMask != COLOR_WRITE_RGBA ) {
-                if ( currentState.ColorWriteMask == COLOR_WRITE_DISABLED ) {
-                    glColorMaski( 0, 0, 0, 0, 0 );
-                } else {
-                    glColorMaski( 0,
-                                  !!(currentState.ColorWriteMask & COLOR_WRITE_R_BIT),
-                                  !!(currentState.ColorWriteMask & COLOR_WRITE_G_BIT),
-                                  !!(currentState.ColorWriteMask & COLOR_WRITE_B_BIT),
-                                  !!(currentState.ColorWriteMask & COLOR_WRITE_A_BIT) );
-                }
-            }
-        }
-    }
-
-    if ( renderPass->bHasDepthStencilAttachment ) {
-        SAttachmentInfo const * attachment = &renderPass->DepthStencilAttachment;
-        //FramebufferAttachmentInfo const * framebufferAttachment = &framebuffer->DepthStencilAttachment;
-
-        if ( attachment->LoadOp == ATTACHMENT_LOAD_OP_CLEAR ) {
-            SClearDepthStencilValue const * clearValue = _RenderPassBegin.pDepthStencilClearValue;
-
-            AN_ASSERT( clearValue != nullptr );
-
-            if ( !bScissorEnabled ) {
-                glEnable( GL_SCISSOR_TEST );
-                bScissorEnabled = true;
-            }
-
-            SetScissor( _RenderPassBegin.RenderArea );
-
-            if ( bRasterizerDiscard ) {
-                glDisable( GL_RASTERIZER_DISCARD );
-                bRasterizerDiscard = false;
-            }
-
-            if ( DepthStencilState.DepthWriteMask == DEPTH_WRITE_DISABLE ) {
-                glDepthMask( 1 );
-            }
-
-            //glClearNamedFramebufferuiv( framebufferId,
-            //                            GL_STENCIL,
-            //                            0,
-            //                            &clearValue->Stencil );
-
-            glClearNamedFramebufferfv( framebufferId,
-                                       GL_DEPTH,
-                                       0,
-                                       &clearValue->Depth );
-
-            //glClearNamedFramebufferfi( framebufferId,
-            //                           GL_DEPTH_STENCIL,
-            //                           0,
-            //                           clearValue->Depth,
-            //                           clearValue->Stencil );
-
-            if ( DepthStencilState.DepthWriteMask == DEPTH_WRITE_DISABLE ) {
-                glDepthMask( 0 );
-            }
-        }
-    }
-
-    // Restore scissor test
-    if ( bScissorEnabled != RasterizerState.bScissorEnable ) {
-        if ( RasterizerState.bScissorEnable ) {
-            glEnable( GL_SCISSOR_TEST );
-        } else {
-            glDisable( GL_SCISSOR_TEST );
-        }
-    }
-
-    // Restore rasterizer discard
-    if ( bRasterizerDiscard != RasterizerState.bRasterizerDiscard ) {
-        if ( RasterizerState.bRasterizerDiscard ) {
-            glEnable( GL_RASTERIZER_DISCARD );
-        } else {
-            glDisable( GL_RASTERIZER_DISCARD );
-        }
-    }
-}
-
-void AImmediateContextGLImpl::BeginRenderPass( SRenderPassBegin const & _RenderPassBegin )
-{
-    VerifyContext();
-
-    ARenderPassGLImpl const * renderPass = static_cast< ARenderPassGLImpl const * >( _RenderPassBegin.pRenderPass );
-    IFramebuffer const * framebuffer = _RenderPassBegin.pFramebuffer;
-
-    AN_ASSERT( CurrentRenderPass == nullptr );
-
-    CurrentRenderPass = renderPass;
-    CurrentSubpass = -1;
+    CurrentFramebuffer          = _RenderPassBegin.pFramebuffer;
+    CurrentRenderPass           = _RenderPassBegin.pRenderPass;
+    CurrentSubpass              = 0;
     CurrentRenderPassRenderArea = _RenderPassBegin.RenderArea;
-    CurrentPipeline = nullptr;
+    CurrentPipeline             = nullptr;
 
-    GLuint framebufferId = framebuffer->GetHandleNativeGL();
+    for (int i = 0; i < CurrentRenderPass->GetColorAttachments().Size(); i++)
+    {
+        ColorAttachmentClearValues[i] = CurrentRenderPass->GetColorAttachments()[i].ClearValue.Color;
+    }
 
-    if ( !framebufferId ) {
-        // default framebuffer
-        BeginRenderPassDefaultFramebuffer( _RenderPassBegin );
+    if (CurrentRenderPass->HasDepthStencilAttachment())
+    {
+        DepthStencilAttachmentClearValue = CurrentRenderPass->GetDepthStencilAttachment().ClearValue.DepthStencil;
+    }
+
+    for (int i = 0; i < CurrentRenderPass->GetColorAttachments().Size(); i++)
+    {
+        ColorAttachmentSubpassUse[i].FirstSubpass = -1;
+        ColorAttachmentSubpassUse[i].LastSubpass  = -1;
+    }
+    DepthStencilAttachmentSubpassUse.FirstSubpass = -1;
+    DepthStencilAttachmentSubpassUse.LastSubpass  = -1;
+
+    for (int subpassNum = 0; subpassNum < CurrentRenderPass->GetSubpasses().Size(); subpassNum++)
+    {
+        ASubpassInfo const& subpass = CurrentRenderPass->GetSubpasses()[subpassNum];
+
+        if (!subpass.Refs.IsEmpty())
+        {
+            for (uint32_t i = 0; i < subpass.Refs.Size(); i++)
+            {
+                uint32_t attachmentNum = subpass.Refs[i].Attachment;
+
+                if (ColorAttachmentSubpassUse[attachmentNum].FirstSubpass == -1)
+                {
+                    ColorAttachmentSubpassUse[attachmentNum].FirstSubpass = subpassNum;
+                }
+                ColorAttachmentSubpassUse[attachmentNum].LastSubpass = subpassNum;
+            }
+        }
+    }
+
+    // FIXME: Is it correct for depthstencil attachment?
+    if (CurrentRenderPass->HasDepthStencilAttachment())
+    {
+        DepthStencilAttachmentSubpassUse.FirstSubpass = 0;
+        DepthStencilAttachmentSubpassUse.LastSubpass  = CurrentRenderPass->GetSubpasses().Size() - 1;
+    }
+
+    BeginSubpass();
+}
+
+void AImmediateContextGLImpl::UpdateDrawBuffers()
+{
+    VerifyContext();
+
+    AN_ASSERT(CurrentRenderPass != nullptr);
+
+    const GLuint framebufferId = Binding.DrawFramebuffer;
+
+    if (framebufferId == 0)
+    {
+        //glDrawBuffer(GL_BACK);
+        //glNamedFramebufferDrawBuffer( 0, GL_BACK );
         return;
     }
 
-    if ( Binding.DrawFramebufferUID != framebuffer->GetUID() ) {
-        glBindFramebuffer( GL_DRAW_FRAMEBUFFER, framebufferId );
+    ASubpassInfo const& subpass = CurrentRenderPass->GetSubpasses()[CurrentSubpass];
 
-        Binding.DrawFramebuffer = framebufferId;
-        Binding.DrawFramebufferUID = framebuffer->GetUID();
-        Binding.DrawFramebufferWidth = framebuffer->GetWidth();
-        Binding.DrawFramebufferHeight = framebuffer->GetHeight();
+    if (subpass.Refs.Size() > 0)
+    {
+        for (uint32_t i = 0; i < subpass.Refs.Size(); i++)
+        {
+            Attachments[i] = GL_COLOR_ATTACHMENT0 + subpass.Refs[i].Attachment;
+        }
+
+        glNamedFramebufferDrawBuffers(framebufferId, subpass.Refs.Size(), Attachments);
+    }
+    else
+    {
+        glNamedFramebufferDrawBuffer(framebufferId, GL_NONE);
+    }
+}
+
+void AImmediateContextGLImpl::BeginSubpass()
+{
+    GLuint framebufferId = CurrentFramebuffer->GetHandleNativeGL();
+
+    if (Binding.DrawFramebuffer != framebufferId)
+    {
+        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, framebufferId);
+
+        Binding.DrawFramebuffer       = framebufferId;
+        Binding.DrawFramebufferWidth  = CurrentFramebuffer->GetWidth();
+        Binding.DrawFramebufferHeight = CurrentFramebuffer->GetHeight();
     }
 
-    bool bScissorEnabled = RasterizerState.bScissorEnable;
+    UpdateDrawBuffers();
+
+    bool bScissorEnabled    = RasterizerState.bScissorEnable;
     bool bRasterizerDiscard = RasterizerState.bRasterizerDiscard;
 
-    SFramebufferAttachmentInfo const * framebufferColorAttachments = framebuffer->GetColorAttachments();
+    TWeakRef<ITextureView> const* framebufferColorAttachments = CurrentFramebuffer->GetColorAttachments();
 
-    //// We must set draw buffers to clear attachment :(
-    //for ( uint32_t i = 0 ; i < renderPass->NumColorAttachments ; i++ ) {
-    //    Attachments[i] = GL_COLOR_ATTACHMENT0 + i;
-    //}
-    //glNamedFramebufferDrawBuffers( framebufferId, renderPass->NumColorAttachments, Attachments );
+    ASubpassInfo const& subpass = CurrentRenderPass->GetSubpasses()[CurrentSubpass];
 
-    static SClearColorValue defaultClearValue = {};
+    for (uint32_t i = 0; i < subpass.Refs.Size(); i++)
+    {
+        uint32_t attachmentNum = subpass.Refs[i].Attachment;
 
-    for ( unsigned int i = 0 ; i < renderPass->NumColorAttachments ; i++ ) {
+        STextureAttachment const& attachment = CurrentRenderPass->GetColorAttachments()[attachmentNum];
+        ITextureView*             rtv        = framebufferColorAttachments[attachmentNum];
 
-        SAttachmentInfo const * attachment = &renderPass->ColorAttachments[ i ];
-        SFramebufferAttachmentInfo const & framebufferAttachment = framebufferColorAttachments[ i ];
-
-        if ( attachment->LoadOp == ATTACHMENT_LOAD_OP_CLEAR ) {
-
-            // We must set draw buffers to clear attachment :(
-            glNamedFramebufferDrawBuffer( framebufferId, GL_COLOR_ATTACHMENT0 + i );
-
-            SClearColorValue const * clearValue = _RenderPassBegin.pColorClearValues
-                ? &_RenderPassBegin.pColorClearValues[ i ]
-                : &defaultClearValue;
-
-            if ( !bScissorEnabled ) {
-                glEnable( GL_SCISSOR_TEST );
+        if (ColorAttachmentSubpassUse[attachmentNum].FirstSubpass == CurrentSubpass && attachment.LoadOp == ATTACHMENT_LOAD_OP_CLEAR)
+        {
+            if (!bScissorEnabled)
+            {
+                glEnable(GL_SCISSOR_TEST);
                 bScissorEnabled = true;
             }
 
+            SetScissor(CurrentRenderPassRenderArea);
 
-            SetScissor( _RenderPassBegin.RenderArea );
-
-            if ( bRasterizerDiscard ) {
-                glDisable( GL_RASTERIZER_DISCARD );
+            if (bRasterizerDiscard)
+            {
+                glDisable(GL_RASTERIZER_DISCARD);
                 bRasterizerDiscard = false;
             }
 
-            int drawbufferNum = 0;//i;  // FIXME: is this correct?
-
-            SRenderTargetBlendingInfo const & currentState = BlendState.RenderTargetSlots[ i ];
-            if ( currentState.ColorWriteMask != COLOR_WRITE_RGBA ) {
-                glColorMaski( drawbufferNum, 1, 1, 1, 1 );
+            SRenderTargetBlendingInfo const& currentState = BlendState.RenderTargetSlots[attachmentNum];
+            if (currentState.ColorWriteMask != COLOR_WRITE_RGBA)
+            {
+                glColorMaski(attachmentNum, 1, 1, 1, 1);
             }
 
-            // Clear attachment
-            switch ( InternalFormatLUT[ framebufferAttachment.pTexture->GetFormat() ].ClearType ) {
-            case CLEAR_TYPE_FLOAT32:
-                glClearNamedFramebufferfv( framebufferId,
-                                           GL_COLOR,
-                                           drawbufferNum,
-                                           clearValue->Float32 );
-                break;
-            case CLEAR_TYPE_INT32:
-                glClearNamedFramebufferiv( framebufferId,
-                                           GL_COLOR,
-                                           drawbufferNum,
-                                           clearValue->Int32 );
-                break;
-            case CLEAR_TYPE_UINT32:
-                glClearNamedFramebufferuiv( framebufferId,
-                                            GL_COLOR,
-                                            drawbufferNum,
-                                            clearValue->UInt32 );
-                break;
-            default:
-                AN_ASSERT( 0 );
+            if (framebufferId == 0) // default framebuffer
+            {
+                glClearNamedFramebufferfv(framebufferId,
+                                          GL_COLOR,
+                                          0,
+                                          ColorAttachmentClearValues[attachmentNum].Float32);
+            }
+            else
+            {
+                // Clear attachment
+                switch (InternalFormatLUT[rtv->GetDesc().Format].ClearType)
+                {
+                    case CLEAR_TYPE_FLOAT32:
+                        glClearNamedFramebufferfv(framebufferId,
+                                                  GL_COLOR,
+                                                  attachmentNum,
+                                                  ColorAttachmentClearValues[attachmentNum].Float32);
+                        break;
+                    case CLEAR_TYPE_INT32:
+                        glClearNamedFramebufferiv(framebufferId,
+                                                  GL_COLOR,
+                                                  attachmentNum,
+                                                  ColorAttachmentClearValues[attachmentNum].Int32);
+                        break;
+                    case CLEAR_TYPE_UINT32:
+                        glClearNamedFramebufferuiv(framebufferId,
+                                                   GL_COLOR,
+                                                   attachmentNum,
+                                                   ColorAttachmentClearValues[attachmentNum].UInt32);
+                        break;
+                    default:
+                        AN_ASSERT(0);
+                }
             }
 
             // Restore color mask
-            if ( currentState.ColorWriteMask != COLOR_WRITE_RGBA ) {
-                if ( currentState.ColorWriteMask == COLOR_WRITE_DISABLED ) {
-                    glColorMaski( drawbufferNum, 0, 0, 0, 0 );
-                } else {
-                    glColorMaski( drawbufferNum,
-                                  !!(currentState.ColorWriteMask & COLOR_WRITE_R_BIT),
-                                  !!(currentState.ColorWriteMask & COLOR_WRITE_G_BIT),
-                                  !!(currentState.ColorWriteMask & COLOR_WRITE_B_BIT),
-                                  !!(currentState.ColorWriteMask & COLOR_WRITE_A_BIT) );
+            if (currentState.ColorWriteMask != COLOR_WRITE_RGBA)
+            {
+                if (currentState.ColorWriteMask == COLOR_WRITE_DISABLED)
+                {
+                    glColorMaski(attachmentNum, 0, 0, 0, 0);
+                }
+                else
+                {
+                    glColorMaski(attachmentNum,
+                                 !!(currentState.ColorWriteMask & COLOR_WRITE_R_BIT),
+                                 !!(currentState.ColorWriteMask & COLOR_WRITE_G_BIT),
+                                 !!(currentState.ColorWriteMask & COLOR_WRITE_B_BIT),
+                                 !!(currentState.ColorWriteMask & COLOR_WRITE_A_BIT));
                 }
             }
         }
     }
 
-    if ( renderPass->bHasDepthStencilAttachment ) {
-        SAttachmentInfo const * attachment = &renderPass->DepthStencilAttachment;
-        SFramebufferAttachmentInfo const & framebufferAttachment = framebuffer->GetDepthStencilAttachment();
+    if (CurrentRenderPass->HasDepthStencilAttachment())
+    {
+        STextureAttachment const& attachment = CurrentRenderPass->GetDepthStencilAttachment();
+        ITextureView const*       dsv        = CurrentFramebuffer->GetDepthStencilAttachment();
 
-        if ( attachment->LoadOp == ATTACHMENT_LOAD_OP_CLEAR ) {
-            SClearDepthStencilValue const * clearValue = _RenderPassBegin.pDepthStencilClearValue;
-
-            AN_ASSERT( clearValue != nullptr );
-
-            if ( !bScissorEnabled ) {
-                glEnable( GL_SCISSOR_TEST );
+        if (DepthStencilAttachmentSubpassUse.FirstSubpass == CurrentSubpass && attachment.LoadOp == ATTACHMENT_LOAD_OP_CLEAR)
+        {
+            if (!bScissorEnabled)
+            {
+                glEnable(GL_SCISSOR_TEST);
                 bScissorEnabled = true;
             }
 
-            SetScissor( _RenderPassBegin.RenderArea );
+            SetScissor(CurrentRenderPassRenderArea);
 
-            if ( bRasterizerDiscard ) {
-                glDisable( GL_RASTERIZER_DISCARD );
+            if (bRasterizerDiscard)
+            {
+                glDisable(GL_RASTERIZER_DISCARD);
                 bRasterizerDiscard = false;
             }
 
-            if ( DepthStencilState.DepthWriteMask == DEPTH_WRITE_DISABLE ) {
-                glDepthMask( 1 );
+            if (DepthStencilState.DepthWriteMask == DEPTH_WRITE_DISABLE)
+            {
+                glDepthMask(1);
             }
 
             // TODO: table
-            switch ( InternalFormatLUT[ framebufferAttachment.pTexture->GetFormat() ].ClearType ) {
-            case CLEAR_TYPE_STENCIL_ONLY:
-                glClearNamedFramebufferuiv( framebufferId,
-                                            GL_STENCIL,
-                                            0,
-                                            &clearValue->Stencil );
-                break;
-            case CLEAR_TYPE_DEPTH_ONLY:
-                glClearNamedFramebufferfv( framebufferId,
-                                           GL_DEPTH,
-                                           0,
-                                           &clearValue->Depth );
-                break;
-            case CLEAR_TYPE_DEPTH_STENCIL:
-                glClearNamedFramebufferfi( framebufferId,
-                                           GL_DEPTH_STENCIL,
-                                           0,
-                                           clearValue->Depth,
-                                           clearValue->Stencil );
-                break;
-            default:
-                AN_ASSERT( 0 );
+            switch (InternalFormatLUT[dsv->GetDesc().Format].ClearType)
+            {
+                case CLEAR_TYPE_STENCIL_ONLY:
+                    glClearNamedFramebufferuiv(framebufferId,
+                                               GL_STENCIL,
+                                               0,
+                                               &DepthStencilAttachmentClearValue.Stencil);
+                    break;
+                case CLEAR_TYPE_DEPTH_ONLY:
+                    glClearNamedFramebufferfv(framebufferId,
+                                              GL_DEPTH,
+                                              0,
+                                              &DepthStencilAttachmentClearValue.Depth);
+                    break;
+                case CLEAR_TYPE_DEPTH_STENCIL:
+                    glClearNamedFramebufferfi(framebufferId,
+                                              GL_DEPTH_STENCIL,
+                                              0,
+                                              DepthStencilAttachmentClearValue.Depth,
+                                              DepthStencilAttachmentClearValue.Stencil);
+                    break;
+                default:
+                    AN_ASSERT(0);
             }
 
-            if ( DepthStencilState.DepthWriteMask == DEPTH_WRITE_DISABLE ) {
-                glDepthMask( 0 );
+            if (DepthStencilState.DepthWriteMask == DEPTH_WRITE_DISABLE)
+            {
+                glDepthMask(0);
             }
         }
     }
 
     // Restore scissor test
-    if ( bScissorEnabled != RasterizerState.bScissorEnable ) {
-        if ( RasterizerState.bScissorEnable ) {
-            glEnable( GL_SCISSOR_TEST );
-        } else {
-            glDisable( GL_SCISSOR_TEST );
+    if (bScissorEnabled != RasterizerState.bScissorEnable)
+    {
+        if (RasterizerState.bScissorEnable)
+        {
+            glEnable(GL_SCISSOR_TEST);
+        }
+        else
+        {
+            glDisable(GL_SCISSOR_TEST);
         }
     }
 
     // Restore rasterizer discard
-    if ( bRasterizerDiscard != RasterizerState.bRasterizerDiscard ) {
-        if ( RasterizerState.bRasterizerDiscard ) {
-            glEnable( GL_RASTERIZER_DISCARD );
-        } else {
-            glDisable( GL_RASTERIZER_DISCARD );
+    if (bRasterizerDiscard != RasterizerState.bRasterizerDiscard)
+    {
+        if (RasterizerState.bRasterizerDiscard)
+        {
+            glEnable(GL_RASTERIZER_DISCARD);
         }
+        else
+        {
+            glDisable(GL_RASTERIZER_DISCARD);
+        }
+    }
+}
+
+void AImmediateContextGLImpl::EndSubpass()
+{
+    VerifyContext();
+
+    AN_ASSERT(CurrentRenderPass != nullptr);
+
+    TArray<GLenum, MAX_COLOR_ATTACHMENTS + 1> attachments;
+    int                                       numAttachments = 0;
+
+    ASubpassInfo const& subpass = CurrentRenderPass->GetSubpasses()[CurrentSubpass];
+
+    for (int i = 0; i < subpass.Refs.Size(); i++)
+    {
+        int attachmentNum = subpass.Refs[i].Attachment;
+
+        if (ColorAttachmentSubpassUse[attachmentNum].LastSubpass == CurrentSubpass &&
+            CurrentRenderPass->GetColorAttachments()[attachmentNum].StoreOp == ATTACHMENT_STORE_OP_DONT_CARE)
+        {
+            if (CurrentFramebuffer->GetHandleNativeGL() == 0)
+            {
+                AN_ASSERT(subpass.Refs.Size() == 1);
+                attachments[numAttachments++] = GL_COLOR;
+            }
+            else
+            {
+                attachments[numAttachments++] = GL_COLOR_ATTACHMENT0 + attachmentNum;
+            }
+        }
+    }
+
+    if (CurrentRenderPass->HasDepthStencilAttachment())
+    {
+        if (DepthStencilAttachmentSubpassUse.LastSubpass == CurrentSubpass &&
+            CurrentRenderPass->GetDepthStencilAttachment().StoreOp == ATTACHMENT_STORE_OP_DONT_CARE)
+        {
+            AN_ASSERT(CurrentFramebuffer->GetDepthStencilAttachment());
+
+            switch (CurrentFramebuffer->GetDepthStencilAttachment()->GetDesc().Format)
+            {
+                case TEXTURE_FORMAT_STENCIL1:
+                case TEXTURE_FORMAT_STENCIL4:
+                case TEXTURE_FORMAT_STENCIL8:
+                case TEXTURE_FORMAT_STENCIL16:
+                    if (CurrentFramebuffer->GetHandleNativeGL() == 0)
+                    {
+                        attachments[numAttachments++] = GL_STENCIL;
+                    }
+                    else
+                    {
+                        attachments[numAttachments++] = GL_STENCIL_ATTACHMENT;
+                    }
+                    break;
+                case TEXTURE_FORMAT_DEPTH16:
+                case TEXTURE_FORMAT_DEPTH24:
+                case TEXTURE_FORMAT_DEPTH32:
+                    if (CurrentFramebuffer->GetHandleNativeGL() == 0)
+                    {
+                        attachments[numAttachments++] = GL_DEPTH;
+                    }
+                    else
+                    {
+                        attachments[numAttachments++] = GL_DEPTH_ATTACHMENT;
+                    }
+                    break;
+                case TEXTURE_FORMAT_DEPTH24_STENCIL8:
+                case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
+                    if (CurrentFramebuffer->GetHandleNativeGL() == 0)
+                    {
+                        attachments[numAttachments++] = GL_DEPTH;
+                        attachments[numAttachments++] = GL_STENCIL;
+                    }
+                    else
+                    {
+                        attachments[numAttachments++] = GL_DEPTH_STENCIL_ATTACHMENT;
+                    }
+                    break;
+                default:
+                    AN_ASSERT(0);
+            }
+        }
+    }
+
+    if (numAttachments > 0)
+    {
+        if (CurrentRenderPassRenderArea.X == 0 &&
+            CurrentRenderPassRenderArea.Y == 0 &&
+            CurrentRenderPassRenderArea.Width == CurrentFramebuffer->GetWidth() &&
+            CurrentRenderPassRenderArea.Height == CurrentFramebuffer->GetHeight())
+        {
+            glInvalidateNamedFramebufferData(CurrentFramebuffer->GetHandleNativeGL(), numAttachments, attachments.ToPtr());
+        }
+        else
+        {
+            glInvalidateNamedFramebufferSubData(CurrentFramebuffer->GetHandleNativeGL(), numAttachments, attachments.ToPtr(),
+                                                CurrentRenderPassRenderArea.X, CurrentRenderPassRenderArea.Y,
+                                                CurrentRenderPassRenderArea.Width, CurrentRenderPassRenderArea.Height);
+        }
+    }
+}
+
+void AImmediateContextGLImpl::NextSubpass()
+{
+    AN_ASSERT(CurrentRenderPass);
+    AN_ASSERT(CurrentSubpass + 1 < CurrentRenderPass->GetSubpasses().Size());
+
+    if (CurrentSubpass + 1 < CurrentRenderPass->GetSubpasses().Size())
+    {
+        EndSubpass();
+
+        CurrentSubpass++;
+        BeginSubpass();
     }
 }
 
 void AImmediateContextGLImpl::EndRenderPass()
 {
-    VerifyContext();
+    EndSubpass();
 
-    CurrentRenderPass = nullptr;
+    CurrentRenderPass  = nullptr;
+    CurrentFramebuffer = nullptr;
 }
 
-void AImmediateContextGLImpl::BindTransformFeedback( ITransformFeedback * _TransformFeedback )
+void AImmediateContextGLImpl::BindTransformFeedback(ITransformFeedback* _TransformFeedback)
 {
     VerifyContext();
 
     // FIXME: Move transform feedback to Pipeline? Call glBindTransformFeedback in BindPipeline()?
-    glBindTransformFeedback( GL_TRANSFORM_FEEDBACK, _TransformFeedback->GetHandleNativeGL() );
+    glBindTransformFeedback(GL_TRANSFORM_FEEDBACK, _TransformFeedback->GetHandleNativeGL());
 }
 
-void AImmediateContextGLImpl::BeginTransformFeedback( PRIMITIVE_TOPOLOGY _OutputPrimitive )
+void AImmediateContextGLImpl::BeginTransformFeedback(PRIMITIVE_TOPOLOGY _OutputPrimitive)
 {
     VerifyContext();
 
     GLenum topology = GL_POINTS;
 
-    if ( _OutputPrimitive <= PRIMITIVE_TRIANGLE_STRIP_ADJ ) {
-        topology = PrimitiveTopologyLUT[ _OutputPrimitive ];
+    if (_OutputPrimitive <= PRIMITIVE_TRIANGLE_STRIP_ADJ)
+    {
+        topology = PrimitiveTopologyLUT[_OutputPrimitive];
     }
 
-    glBeginTransformFeedback( topology ); // 3.0
+    glBeginTransformFeedback(topology); // 3.0
 }
 
 void AImmediateContextGLImpl::ResumeTransformFeedback()
@@ -2704,45 +3110,46 @@ SyncObject AImmediateContextGLImpl::FenceSync()
 {
     VerifyContext();
 
-    SyncObject sync = reinterpret_cast< SyncObject >( glFenceSync( GL_SYNC_GPU_COMMANDS_COMPLETE, 0 ) );
+    SyncObject sync = reinterpret_cast<SyncObject>(glFenceSync(GL_SYNC_GPU_COMMANDS_COMPLETE, 0));
     return sync;
 }
 
-void AImmediateContextGLImpl::RemoveSync( SyncObject _Sync )
+void AImmediateContextGLImpl::RemoveSync(SyncObject _Sync)
 {
     VerifyContext();
 
-    if ( _Sync ) {
-        glDeleteSync( reinterpret_cast< GLsync >( _Sync ) );
+    if (_Sync)
+    {
+        glDeleteSync(reinterpret_cast<GLsync>(_Sync));
     }
 }
 
-CLIENT_WAIT_STATUS AImmediateContextGLImpl::ClientWait( SyncObject _Sync, uint64_t _TimeOutNanoseconds )
+CLIENT_WAIT_STATUS AImmediateContextGLImpl::ClientWait(SyncObject _Sync, uint64_t _TimeOutNanoseconds)
 {
     VerifyContext();
 
-    static_assert( 0xFFFFFFFFFFFFFFFF == GL_TIMEOUT_IGNORED, "Constant check" );
-    return static_cast< CLIENT_WAIT_STATUS >(
-                glClientWaitSync( reinterpret_cast< GLsync >( _Sync ), GL_SYNC_FLUSH_COMMANDS_BIT, _TimeOutNanoseconds ) - GL_ALREADY_SIGNALED );
+    static_assert(0xFFFFFFFFFFFFFFFF == GL_TIMEOUT_IGNORED, "Constant check");
+    return static_cast<CLIENT_WAIT_STATUS>(
+        glClientWaitSync(reinterpret_cast<GLsync>(_Sync), GL_SYNC_FLUSH_COMMANDS_BIT, _TimeOutNanoseconds) - GL_ALREADY_SIGNALED);
 }
 
-void AImmediateContextGLImpl::ServerWait( SyncObject _Sync )
+void AImmediateContextGLImpl::ServerWait(SyncObject _Sync)
 {
     VerifyContext();
 
-    glWaitSync( reinterpret_cast< GLsync >( _Sync ), 0, GL_TIMEOUT_IGNORED );
+    glWaitSync(reinterpret_cast<GLsync>(_Sync), 0, GL_TIMEOUT_IGNORED);
 }
 
-bool AImmediateContextGLImpl::IsSignaled( SyncObject _Sync )
+bool AImmediateContextGLImpl::IsSignaled(SyncObject _Sync)
 {
     VerifyContext();
 
     GLint value;
-    glGetSynciv( reinterpret_cast< GLsync >( _Sync ),
-                 GL_SYNC_STATUS,
-                 sizeof( GLint ),
-                 nullptr,
-                 &value );
+    glGetSynciv(reinterpret_cast<GLsync>(_Sync),
+                GL_SYNC_STATUS,
+                sizeof(GLint),
+                nullptr,
+                &value);
     return value == GL_SIGNALED;
 }
 
@@ -2753,18 +3160,18 @@ void AImmediateContextGLImpl::Flush()
     glFlush();
 }
 
-void AImmediateContextGLImpl::Barrier( int _BarrierBits )
+void AImmediateContextGLImpl::Barrier(int _BarrierBits)
 {
     VerifyContext();
 
-    glMemoryBarrier( _BarrierBits ); // 4.2
+    glMemoryBarrier(_BarrierBits); // 4.2
 }
 
-void AImmediateContextGLImpl::BarrierByRegion( int _BarrierBits )
+void AImmediateContextGLImpl::BarrierByRegion(int _BarrierBits)
 {
     VerifyContext();
 
-    glMemoryBarrierByRegion( _BarrierBits ); // 4.5
+    glMemoryBarrierByRegion(_BarrierBits); // 4.5
 }
 
 void AImmediateContextGLImpl::TextureBarrier()
@@ -2774,59 +3181,83 @@ void AImmediateContextGLImpl::TextureBarrier()
     glTextureBarrier(); // 4.5
 }
 
-void AImmediateContextGLImpl::DynamicState_BlendingColor( /* optional */ const float _ConstantColor[4] )
+void AImmediateContextGLImpl::DynamicState_BlendingColor(const float _ConstantColor[4])
 {
     VerifyContext();
 
-    constexpr const float defaultColor[4] = { 0, 0, 0, 0 };
+    constexpr const float defaultColor[4] = {0, 0, 0, 0};
 
     // Validate blend color
     _ConstantColor = _ConstantColor ? _ConstantColor : defaultColor;
 
     // Apply blend color
-    bool isColorChanged = !BlendCompareColor( BlendColor, _ConstantColor );
-    if ( isColorChanged ) {
-        glBlendColor( _ConstantColor[0], _ConstantColor[1], _ConstantColor[2], _ConstantColor[3] );
-        memcpy( BlendColor, _ConstantColor, sizeof( BlendColor ) );
+    bool isColorChanged = !BlendCompareColor(BlendColor, _ConstantColor);
+    if (isColorChanged)
+    {
+        glBlendColor(_ConstantColor[0], _ConstantColor[1], _ConstantColor[2], _ConstantColor[3]);
+        memcpy(BlendColor, _ConstantColor, sizeof(BlendColor));
     }
 }
 
-void AImmediateContextGLImpl::DynamicState_SampleMask( /* optional */ const uint32_t _SampleMask[4] )
+void AImmediateContextGLImpl::DynamicState_SampleMask(const uint32_t _SampleMask[4])
 {
     VerifyContext();
 
     // Apply sample mask
-    if ( _SampleMask ) {
-        static_assert( sizeof( GLbitfield ) == sizeof( _SampleMask[0] ), "Type Sizeof check" );
-        if ( _SampleMask[0] != SampleMask[0] ) { glSampleMaski( 0, _SampleMask[0] ); SampleMask[0] = _SampleMask[0]; }
-        if ( _SampleMask[1] != SampleMask[1] ) { glSampleMaski( 1, _SampleMask[1] ); SampleMask[1] = _SampleMask[1]; }
-        if ( _SampleMask[2] != SampleMask[2] ) { glSampleMaski( 2, _SampleMask[2] ); SampleMask[2] = _SampleMask[2]; }
-        if ( _SampleMask[3] != SampleMask[3] ) { glSampleMaski( 3, _SampleMask[3] ); SampleMask[3] = _SampleMask[3]; }
+    if (_SampleMask)
+    {
+        static_assert(sizeof(GLbitfield) == sizeof(_SampleMask[0]), "Type Sizeof check");
+        if (_SampleMask[0] != SampleMask[0])
+        {
+            glSampleMaski(0, _SampleMask[0]);
+            SampleMask[0] = _SampleMask[0];
+        }
+        if (_SampleMask[1] != SampleMask[1])
+        {
+            glSampleMaski(1, _SampleMask[1]);
+            SampleMask[1] = _SampleMask[1];
+        }
+        if (_SampleMask[2] != SampleMask[2])
+        {
+            glSampleMaski(2, _SampleMask[2]);
+            SampleMask[2] = _SampleMask[2];
+        }
+        if (_SampleMask[3] != SampleMask[3])
+        {
+            glSampleMaski(3, _SampleMask[3]);
+            SampleMask[3] = _SampleMask[3];
+        }
 
-        if ( !bSampleMaskEnabled ) {
-            glEnable( GL_SAMPLE_MASK );
+        if (!bSampleMaskEnabled)
+        {
+            glEnable(GL_SAMPLE_MASK);
             bSampleMaskEnabled = true;
         }
-    } else {
-        if ( bSampleMaskEnabled ) {
-            glDisable( GL_SAMPLE_MASK );
+    }
+    else
+    {
+        if (bSampleMaskEnabled)
+        {
+            glDisable(GL_SAMPLE_MASK);
             bSampleMaskEnabled = false;
         }
     }
 }
 
-void AImmediateContextGLImpl::DynamicState_StencilRef( uint32_t _StencilRef )
+void AImmediateContextGLImpl::DynamicState_StencilRef(uint32_t _StencilRef)
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    AN_ASSERT(CurrentPipeline != nullptr);
 
-    if ( Binding.DepthStencilState == CurrentPipeline->DepthStencilState ) {
+    if (Binding.DepthStencilState == CurrentPipeline->DepthStencilState)
+    {
 
-        if ( StencilRef != _StencilRef ) {
+        if (StencilRef != _StencilRef)
+        {
             // Update stencil ref
 
-            SDepthStencilStateInfo const & desc = *CurrentPipeline->DepthStencilState;
+            SDepthStencilStateInfo const& desc = *CurrentPipeline->DepthStencilState;
 
 #if 0
             if ( desc.FrontFace.StencilFunc == desc.BackFace.StencilFunc ) {
@@ -2837,21 +3268,24 @@ void AImmediateContextGLImpl::DynamicState_StencilRef( uint32_t _StencilRef )
             else
 #endif
             {
-                if ( desc.FrontFace.StencilFunc == desc.BackFace.StencilFunc ) {
-                    glStencilFuncSeparate( GL_FRONT_AND_BACK,
-                                           ComparisonFuncLUT[desc.FrontFace.StencilFunc],
-                                           _StencilRef,
-                                           desc.StencilReadMask );
-                } else {
-                    glStencilFuncSeparate( GL_FRONT,
-                                           ComparisonFuncLUT[desc.FrontFace.StencilFunc],
-                                           _StencilRef,
-                                           desc.StencilReadMask );
+                if (desc.FrontFace.StencilFunc == desc.BackFace.StencilFunc)
+                {
+                    glStencilFuncSeparate(GL_FRONT_AND_BACK,
+                                          ComparisonFuncLUT[desc.FrontFace.StencilFunc],
+                                          _StencilRef,
+                                          desc.StencilReadMask);
+                }
+                else
+                {
+                    glStencilFuncSeparate(GL_FRONT,
+                                          ComparisonFuncLUT[desc.FrontFace.StencilFunc],
+                                          _StencilRef,
+                                          desc.StencilReadMask);
 
-                    glStencilFuncSeparate( GL_BACK,
-                                           ComparisonFuncLUT[desc.BackFace.StencilFunc],
-                                           _StencilRef,
-                                           desc.StencilReadMask );
+                    glStencilFuncSeparate(GL_BACK,
+                                          ComparisonFuncLUT[desc.BackFace.StencilFunc],
+                                          _StencilRef,
+                                          desc.StencilReadMask);
                 }
             }
 
@@ -2860,37 +3294,31 @@ void AImmediateContextGLImpl::DynamicState_StencilRef( uint32_t _StencilRef )
     }
 }
 
-void AImmediateContextGLImpl::SetLineWidth( float _Width )
-{
-    VerifyContext();
-
-    glLineWidth( _Width );
-}
-
-void AImmediateContextGLImpl::CopyBuffer( IBuffer * _SrcBuffer, IBuffer * _DstBuffer )
+void AImmediateContextGLImpl::CopyBuffer(IBuffer* _SrcBuffer, IBuffer* _DstBuffer)
 {
     VerifyContext();
 
     size_t size = _SrcBuffer->GetSizeInBytes();
-    AN_ASSERT( size == _DstBuffer->GetSizeInBytes() );
+    AN_ASSERT(size == _DstBuffer->GetSizeInBytes());
 
-    glCopyNamedBufferSubData( _SrcBuffer->GetHandleNativeGL(),
-                              _DstBuffer->GetHandleNativeGL(),
-                              0,
-                              0,
-                              size ); // 4.5 or GL_ARB_direct_state_access
+    glCopyNamedBufferSubData(_SrcBuffer->GetHandleNativeGL(),
+                             _DstBuffer->GetHandleNativeGL(),
+                             0,
+                             0,
+                             size); // 4.5 or GL_ARB_direct_state_access
 }
 
-void AImmediateContextGLImpl::CopyBufferRange( IBuffer * _SrcBuffer, IBuffer * _DstBuffer, uint32_t _NumRanges, SBufferCopy const * _Ranges )
+void AImmediateContextGLImpl::CopyBufferRange(IBuffer* _SrcBuffer, IBuffer* _DstBuffer, uint32_t _NumRanges, SBufferCopy const* _Ranges)
 {
     VerifyContext();
 
-    for ( SBufferCopy const * range = _Ranges ; range < &_Ranges[_NumRanges] ; range++ ) {
-        glCopyNamedBufferSubData( _SrcBuffer->GetHandleNativeGL(),
-                                  _DstBuffer->GetHandleNativeGL(),
-                                  range->SrcOffset,
-                                  range->DstOffset,
-                                  range->SizeInBytes ); // 4.5 or GL_ARB_direct_state_access
+    for (SBufferCopy const* range = _Ranges; range < &_Ranges[_NumRanges]; range++)
+    {
+        glCopyNamedBufferSubData(_SrcBuffer->GetHandleNativeGL(),
+                                 _DstBuffer->GetHandleNativeGL(),
+                                 range->SrcOffset,
+                                 range->DstOffset,
+                                 range->SizeInBytes); // 4.5 or GL_ARB_direct_state_access
     }
 
 
@@ -2909,787 +3337,914 @@ void AImmediateContextGLImpl::CopyBufferRange( IBuffer * _SrcBuffer, IBuffer * _
 }
 
 // Only for TEXTURE_1D
-bool AImmediateContextGLImpl::CopyBufferToTexture1D( IBuffer const * _SrcBuffer,
-                                                     ITexture * _DstTexture,
-                                                     uint16_t _Lod,
-                                                     uint16_t _OffsetX,
-                                                     uint16_t _DimensionX,
-                                                     size_t _CompressedDataSizeInBytes, // Only for compressed images
-                                                     DATA_FORMAT _Format,
-                                                     size_t _SourceByteOffset,
-                                                     unsigned int _Alignment )
+bool AImmediateContextGLImpl::CopyBufferToTexture1D(IBuffer const* _SrcBuffer,
+                                                    ITexture*      _DstTexture,
+                                                    uint16_t       _MipLevel,
+                                                    uint16_t       _OffsetX,
+                                                    uint16_t       _DimensionX,
+                                                    size_t         _CompressedDataSizeInBytes, // Only for compressed images
+                                                    DATA_FORMAT    _Format,
+                                                    size_t         _SourceByteOffset,
+                                                    unsigned int   _Alignment)
 {
     VerifyContext();
 
-    if ( _DstTexture->GetType() != TEXTURE_1D ) {
+    if (_DstTexture->GetDesc().Type != TEXTURE_1D)
+    {
         return false;
     }
 
-    glBindBuffer( GL_PIXEL_UNPACK_BUFFER, _SrcBuffer->GetHandleNativeGL() );
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _SrcBuffer->GetHandleNativeGL());
 
     // TODO: check this
 
     GLuint textureId = _DstTexture->GetHandleNativeGL();
 
-    UnpackAlignment( _Alignment );
+    UnpackAlignment(_Alignment);
 
-    if ( _DstTexture->IsCompressed() ) {
-        glCompressedTextureSubImage1D( textureId,
-                                       _Lod,
-                                       _OffsetX,
-                                       _DimensionX,
-                                       InternalFormatLUT[ _DstTexture->GetFormat() ].InternalFormat,
-                                       (GLsizei)_CompressedDataSizeInBytes,
-                                       ((uint8_t *)0) + _SourceByteOffset );
-    } else {
-        glTextureSubImage1D( textureId,
-                             _Lod,
-                             _OffsetX,
-                             _DimensionX,
-                             TypeLUT[_Format].FormatRGB,
-                             TypeLUT[_Format].Type,
-                             ((uint8_t *)0) + _SourceByteOffset );
+    if (_DstTexture->IsCompressed())
+    {
+        glCompressedTextureSubImage1D(textureId,
+                                      _MipLevel,
+                                      _OffsetX,
+                                      _DimensionX,
+                                      InternalFormatLUT[_DstTexture->GetDesc().Format].InternalFormat,
+                                      (GLsizei)_CompressedDataSizeInBytes,
+                                      ((uint8_t*)0) + _SourceByteOffset);
+    }
+    else
+    {
+        glTextureSubImage1D(textureId,
+                            _MipLevel,
+                            _OffsetX,
+                            _DimensionX,
+                            TypeLUT[_Format].FormatRGB,
+                            TypeLUT[_Format].Type,
+                            ((uint8_t*)0) + _SourceByteOffset);
     }
 
-    glBindBuffer( GL_PIXEL_UNPACK_BUFFER, 0 );
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     return true;
 }
 
 // Only for TEXTURE_2D, TEXTURE_1D_ARRAY, TEXTURE_CUBE_MAP
-bool AImmediateContextGLImpl::CopyBufferToTexture2D( IBuffer const * _SrcBuffer,
-                                                     ITexture * _DstTexture,
-                                                     uint16_t _Lod,
-                                                     uint16_t _OffsetX,
-                                                     uint16_t _OffsetY,
-                                                     uint16_t _DimensionX,
-                                                     uint16_t _DimensionY,
-                                                     uint16_t _CubeFaceIndex, // only for TEXTURE_CUBE_MAP
-                                                     uint16_t _NumCubeFaces, // only for TEXTURE_CUBE_MAP
-                                                     size_t _CompressedDataSizeInBytes, // Only for compressed images
-                                                     DATA_FORMAT _Format,
-                                                     size_t _SourceByteOffset,
-                                                     unsigned int _Alignment )
+bool AImmediateContextGLImpl::CopyBufferToTexture2D(IBuffer const* _SrcBuffer,
+                                                    ITexture*      _DstTexture,
+                                                    uint16_t       _MipLevel,
+                                                    uint16_t       _OffsetX,
+                                                    uint16_t       _OffsetY,
+                                                    uint16_t       _DimensionX,
+                                                    uint16_t       _DimensionY,
+                                                    uint16_t       _CubeFaceIndex,             // only for TEXTURE_CUBE_MAP
+                                                    uint16_t       _NumCubeFaces,              // only for TEXTURE_CUBE_MAP
+                                                    size_t         _CompressedDataSizeInBytes, // Only for compressed images
+                                                    DATA_FORMAT    _Format,
+                                                    size_t         _SourceByteOffset,
+                                                    unsigned int   _Alignment)
 {
     VerifyContext();
 
-    if ( _DstTexture->GetType() != TEXTURE_2D && _DstTexture->GetType() != TEXTURE_1D_ARRAY && _DstTexture->GetType() != TEXTURE_CUBE_MAP ) {
+    if (_DstTexture->GetDesc().Type != TEXTURE_2D && _DstTexture->GetDesc().Type != TEXTURE_1D_ARRAY && _DstTexture->GetDesc().Type != TEXTURE_CUBE_MAP)
+    {
         return false;
     }
 
-    glBindBuffer( GL_PIXEL_UNPACK_BUFFER, _SrcBuffer->GetHandleNativeGL() );
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _SrcBuffer->GetHandleNativeGL());
 
     // TODO: check this
 
     GLuint textureId = _DstTexture->GetHandleNativeGL();
 
-    UnpackAlignment( _Alignment );
+    UnpackAlignment(_Alignment);
 
-    if ( _DstTexture->GetType() == TEXTURE_CUBE_MAP ) {
+    if (_DstTexture->GetDesc().Type == TEXTURE_CUBE_MAP)
+    {
 
-        GLint i;
+        GLint  i;
         GLuint currentBinding;
 
-        glGetIntegerv( GL_TEXTURE_BINDING_CUBE_MAP, &i );
+        glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP, &i);
 
         currentBinding = i;
 
-        if ( currentBinding != textureId ) {
-            glBindTexture( GL_TEXTURE_CUBE_MAP, textureId );
+        if (currentBinding != textureId)
+        {
+            glBindTexture(GL_TEXTURE_CUBE_MAP, textureId);
         }
 
         // TODO: Учитывать _NumCubeFaces!!!
 
-        if ( _DstTexture->IsCompressed() ) {
-            glCompressedTexSubImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + _CubeFaceIndex,
-                                       _Lod,
-                                       _OffsetX,
-                                       _OffsetY,
-                                       _DimensionX,
-                                       _DimensionY,
-                                       InternalFormatLUT[ _DstTexture->GetFormat() ].InternalFormat,
-                                       (GLsizei)_CompressedDataSizeInBytes,
-                                       ((uint8_t *)0) + _SourceByteOffset );
-        } else {
-            glTexSubImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + _CubeFaceIndex,
-                             _Lod,
-                             _OffsetX,
-                             _OffsetY,
-                             _DimensionX,
-                             _DimensionY,
-                             TypeLUT[_Format].FormatRGB,
-                             TypeLUT[_Format].Type,
-                             ((uint8_t *)0) + _SourceByteOffset );
+        if (_DstTexture->IsCompressed())
+        {
+            glCompressedTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + _CubeFaceIndex,
+                                      _MipLevel,
+                                      _OffsetX,
+                                      _OffsetY,
+                                      _DimensionX,
+                                      _DimensionY,
+                                      InternalFormatLUT[_DstTexture->GetDesc().Format].InternalFormat,
+                                      (GLsizei)_CompressedDataSizeInBytes,
+                                      ((uint8_t*)0) + _SourceByteOffset);
+        }
+        else
+        {
+            glTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + _CubeFaceIndex,
+                            _MipLevel,
+                            _OffsetX,
+                            _OffsetY,
+                            _DimensionX,
+                            _DimensionY,
+                            TypeLUT[_Format].FormatRGB,
+                            TypeLUT[_Format].Type,
+                            ((uint8_t*)0) + _SourceByteOffset);
         }
 
-        if ( currentBinding != textureId ) {
-            glBindTexture( GL_TEXTURE_CUBE_MAP, currentBinding );
+        if (currentBinding != textureId)
+        {
+            glBindTexture(GL_TEXTURE_CUBE_MAP, currentBinding);
         }
-    } else {
-        if ( _DstTexture->IsCompressed() ) {
-            glCompressedTextureSubImage2D( textureId,
-                                           _Lod,
-                                           _OffsetX,
-                                           _OffsetY,
-                                           _DimensionX,
-                                           _DimensionY,
-                                           InternalFormatLUT[ _DstTexture->GetFormat() ].InternalFormat,
-                                           (GLsizei)_CompressedDataSizeInBytes,
-                                           ((uint8_t *)0) + _SourceByteOffset );
-        } else {
-            glTextureSubImage2D( textureId,
-                                 _Lod,
-                                 _OffsetX,
-                                 _OffsetY,
-                                 _DimensionX,
-                                 _DimensionY,
-                                 TypeLUT[_Format].FormatRGB,
-                                 TypeLUT[_Format].Type,
-                                 ((uint8_t *)0) + _SourceByteOffset );
+    }
+    else
+    {
+        if (_DstTexture->IsCompressed())
+        {
+            glCompressedTextureSubImage2D(textureId,
+                                          _MipLevel,
+                                          _OffsetX,
+                                          _OffsetY,
+                                          _DimensionX,
+                                          _DimensionY,
+                                          InternalFormatLUT[_DstTexture->GetDesc().Format].InternalFormat,
+                                          (GLsizei)_CompressedDataSizeInBytes,
+                                          ((uint8_t*)0) + _SourceByteOffset);
+        }
+        else
+        {
+            glTextureSubImage2D(textureId,
+                                _MipLevel,
+                                _OffsetX,
+                                _OffsetY,
+                                _DimensionX,
+                                _DimensionY,
+                                TypeLUT[_Format].FormatRGB,
+                                TypeLUT[_Format].Type,
+                                ((uint8_t*)0) + _SourceByteOffset);
         }
     }
 
-    glBindBuffer( GL_PIXEL_UNPACK_BUFFER, 0 );
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     return true;
 }
 
 // Only for TEXTURE_3D, TEXTURE_2D_ARRAY
-bool AImmediateContextGLImpl::CopyBufferToTexture3D( IBuffer const * _SrcBuffer,
-                                                     ITexture * _DstTexture,
-                                                     uint16_t _Lod,
-                                                     uint16_t _OffsetX,
-                                                     uint16_t _OffsetY,
-                                                     uint16_t _OffsetZ,
-                                                     uint16_t _DimensionX,
-                                                     uint16_t _DimensionY,
-                                                     uint16_t _DimensionZ,
-                                                     size_t _CompressedDataSizeInBytes, // Only for compressed images
-                                                     DATA_FORMAT _Format,
-                                                     size_t _SourceByteOffset,
-                                                     unsigned int _Alignment )
+bool AImmediateContextGLImpl::CopyBufferToTexture3D(IBuffer const* _SrcBuffer,
+                                                    ITexture*      _DstTexture,
+                                                    uint16_t       _MipLevel,
+                                                    uint16_t       _OffsetX,
+                                                    uint16_t       _OffsetY,
+                                                    uint16_t       _OffsetZ,
+                                                    uint16_t       _DimensionX,
+                                                    uint16_t       _DimensionY,
+                                                    uint16_t       _DimensionZ,
+                                                    size_t         _CompressedDataSizeInBytes, // Only for compressed images
+                                                    DATA_FORMAT    _Format,
+                                                    size_t         _SourceByteOffset,
+                                                    unsigned int   _Alignment)
 {
     VerifyContext();
 
-    if ( _DstTexture->GetType() != TEXTURE_3D && _DstTexture->GetType() != TEXTURE_2D_ARRAY ) {
+    if (_DstTexture->GetDesc().Type != TEXTURE_3D && _DstTexture->GetDesc().Type != TEXTURE_2D_ARRAY)
+    {
         return false;
     }
 
-    glBindBuffer( GL_PIXEL_UNPACK_BUFFER, _SrcBuffer->GetHandleNativeGL() );
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, _SrcBuffer->GetHandleNativeGL());
 
     // TODO: check this
 
     GLuint textureId = _DstTexture->GetHandleNativeGL();
 
-    UnpackAlignment( _Alignment );
+    UnpackAlignment(_Alignment);
 
-    if ( _DstTexture->IsCompressed() ) {
-        glCompressedTextureSubImage3D( textureId,
-                                       _Lod,
-                                       _OffsetX,
-                                       _OffsetY,
-                                       _OffsetZ,
-                                       _DimensionX,
-                                       _DimensionY,
-                                       _DimensionZ,
-                                       InternalFormatLUT[ _DstTexture->GetFormat() ].InternalFormat,
-                                       (GLsizei)_CompressedDataSizeInBytes,
-                                       ((uint8_t *)0) + _SourceByteOffset );
-    } else {
-        glTextureSubImage3D( textureId,
-                             _Lod,
-                             _OffsetX,
-                             _OffsetY,
-                             _OffsetZ,
-                             _DimensionX,
-                             _DimensionY,
-                             _DimensionZ,
-                             TypeLUT[_Format].FormatRGB,
-                             TypeLUT[_Format].Type,
-                             ((uint8_t *)0) + _SourceByteOffset );
+    if (_DstTexture->IsCompressed())
+    {
+        glCompressedTextureSubImage3D(textureId,
+                                      _MipLevel,
+                                      _OffsetX,
+                                      _OffsetY,
+                                      _OffsetZ,
+                                      _DimensionX,
+                                      _DimensionY,
+                                      _DimensionZ,
+                                      InternalFormatLUT[_DstTexture->GetDesc().Format].InternalFormat,
+                                      (GLsizei)_CompressedDataSizeInBytes,
+                                      ((uint8_t*)0) + _SourceByteOffset);
+    }
+    else
+    {
+        glTextureSubImage3D(textureId,
+                            _MipLevel,
+                            _OffsetX,
+                            _OffsetY,
+                            _OffsetZ,
+                            _DimensionX,
+                            _DimensionY,
+                            _DimensionZ,
+                            TypeLUT[_Format].FormatRGB,
+                            TypeLUT[_Format].Type,
+                            ((uint8_t*)0) + _SourceByteOffset);
     }
 
-    glBindBuffer( GL_PIXEL_UNPACK_BUFFER, 0 );
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
 
     return true;
 }
 
 // Types supported: TEXTURE_1D, TEXTURE_1D_ARRAY, TEXTURE_2D, TEXTURE_2D_ARRAY, TEXTURE_3D, TEXTURE_CUBE_MAP
-bool AImmediateContextGLImpl::CopyBufferToTexture( IBuffer const * _SrcBuffer,
-                                                   ITexture * _DstTexture,
-                                                   STextureRect const & _Rectangle,
-                                                   DATA_FORMAT _Format,
-                                                   size_t _CompressedDataSizeInBytes,       // for compressed images
-                                                   size_t _SourceByteOffset,
-                                                   unsigned int _Alignment )
+bool AImmediateContextGLImpl::CopyBufferToTexture(IBuffer const*      _SrcBuffer,
+                                                  ITexture*           _DstTexture,
+                                                  STextureRect const& _Rectangle,
+                                                  DATA_FORMAT         _Format,
+                                                  size_t              _CompressedDataSizeInBytes, // for compressed images
+                                                  size_t              _SourceByteOffset,
+                                                  unsigned int        _Alignment)
 {
     VerifyContext();
 
     // FIXME: what about multisample textures?
 
-    switch ( _DstTexture->GetType() ) {
-    case TEXTURE_1D:
-        return CopyBufferToTexture1D( _SrcBuffer,
-                                      _DstTexture,
-                                      _Rectangle.Offset.Lod,
-                                      _Rectangle.Offset.X,
-                                      _Rectangle.Dimension.X,
-                                      _CompressedDataSizeInBytes,
-                                      _Format,
-                                      _SourceByteOffset,
-                                      _Alignment );
-    case TEXTURE_1D_ARRAY:
-    case TEXTURE_2D:
-        return CopyBufferToTexture2D( _SrcBuffer,
-                                      _DstTexture,
-                                      _Rectangle.Offset.Lod,
-                                      _Rectangle.Offset.X,
-                                      _Rectangle.Offset.Y,
-                                      _Rectangle.Dimension.X,
-                                      _Rectangle.Dimension.Y,
-                                      0,
-                                      0,
-                                      _CompressedDataSizeInBytes,
-                                      _Format,
-                                      _SourceByteOffset,
-                                      _Alignment );
-    case TEXTURE_2D_ARRAY:
-    case TEXTURE_3D:
-        return CopyBufferToTexture3D( _SrcBuffer,
-                                      _DstTexture,
-                                      _Rectangle.Offset.Lod,
-                                      _Rectangle.Offset.X,
-                                      _Rectangle.Offset.Y,
-                                      _Rectangle.Offset.Z,
-                                      _Rectangle.Dimension.X,
-                                      _Rectangle.Dimension.Y,
-                                      _Rectangle.Dimension.Z,
-                                      _CompressedDataSizeInBytes,
-                                      _Format,
-                                      _SourceByteOffset,
-                                      _Alignment );
-    case TEXTURE_CUBE_MAP:
-        return CopyBufferToTexture2D( _SrcBuffer,
-                                      _DstTexture,
-                                      _Rectangle.Offset.Lod,
-                                      _Rectangle.Offset.X,
-                                      _Rectangle.Offset.Y,
-                                      _Rectangle.Dimension.X,
-                                      _Rectangle.Dimension.Y,
-                                      _Rectangle.Offset.Z,
-                                      _Rectangle.Dimension.Z,
-                                      _CompressedDataSizeInBytes,
-                                      _Format,
-                                      _SourceByteOffset,
-                                      _Alignment );
-    case TEXTURE_CUBE_MAP_ARRAY:
-        // FIXME: ???
-        //return CopyBufferToTexture3D( static_cast< Buffer const * >( _SrcBuffer ),
-        //                              static_cast< Texture * >( _DstTexture ),
-        //                              _Rectangle.Offset.Lod,
-        //                              _Rectangle.Offset.X,
-        //                              _Rectangle.Offset.Y,
-        //                              _Rectangle.Offset.Z,
-        //                              _Rectangle.Dimension.X,
-        //                              _Rectangle.Dimension.Y,
-        //                              _Rectangle.Dimension.Z,
-        //                              _CompressedDataSizeInBytes,
-        //                              _Format,
-        //                              _SourceByteOffset );
-        return false;
-    case TEXTURE_RECT_GL:
-        // FIXME: ???
-        return false;
-    default:
-        break;
+    switch (_DstTexture->GetDesc().Type)
+    {
+        case TEXTURE_1D:
+            return CopyBufferToTexture1D(_SrcBuffer,
+                                         _DstTexture,
+                                         _Rectangle.Offset.MipLevel,
+                                         _Rectangle.Offset.X,
+                                         _Rectangle.Dimension.X,
+                                         _CompressedDataSizeInBytes,
+                                         _Format,
+                                         _SourceByteOffset,
+                                         _Alignment);
+        case TEXTURE_1D_ARRAY:
+        case TEXTURE_2D:
+            return CopyBufferToTexture2D(_SrcBuffer,
+                                         _DstTexture,
+                                         _Rectangle.Offset.MipLevel,
+                                         _Rectangle.Offset.X,
+                                         _Rectangle.Offset.Y,
+                                         _Rectangle.Dimension.X,
+                                         _Rectangle.Dimension.Y,
+                                         0,
+                                         0,
+                                         _CompressedDataSizeInBytes,
+                                         _Format,
+                                         _SourceByteOffset,
+                                         _Alignment);
+        case TEXTURE_2D_ARRAY:
+        case TEXTURE_3D:
+            return CopyBufferToTexture3D(_SrcBuffer,
+                                         _DstTexture,
+                                         _Rectangle.Offset.MipLevel,
+                                         _Rectangle.Offset.X,
+                                         _Rectangle.Offset.Y,
+                                         _Rectangle.Offset.Z,
+                                         _Rectangle.Dimension.X,
+                                         _Rectangle.Dimension.Y,
+                                         _Rectangle.Dimension.Z,
+                                         _CompressedDataSizeInBytes,
+                                         _Format,
+                                         _SourceByteOffset,
+                                         _Alignment);
+        case TEXTURE_CUBE_MAP:
+            return CopyBufferToTexture2D(_SrcBuffer,
+                                         _DstTexture,
+                                         _Rectangle.Offset.MipLevel,
+                                         _Rectangle.Offset.X,
+                                         _Rectangle.Offset.Y,
+                                         _Rectangle.Dimension.X,
+                                         _Rectangle.Dimension.Y,
+                                         _Rectangle.Offset.Z,
+                                         _Rectangle.Dimension.Z,
+                                         _CompressedDataSizeInBytes,
+                                         _Format,
+                                         _SourceByteOffset,
+                                         _Alignment);
+        case TEXTURE_CUBE_MAP_ARRAY:
+            // FIXME: ???
+            //return CopyBufferToTexture3D( static_cast< Buffer const * >( _SrcBuffer ),
+            //                              static_cast< Texture * >( _DstTexture ),
+            //                              _Rectangle.Offset.MipLevel,
+            //                              _Rectangle.Offset.X,
+            //                              _Rectangle.Offset.Y,
+            //                              _Rectangle.Offset.Z,
+            //                              _Rectangle.Dimension.X,
+            //                              _Rectangle.Dimension.Y,
+            //                              _Rectangle.Dimension.Z,
+            //                              _CompressedDataSizeInBytes,
+            //                              _Format,
+            //                              _SourceByteOffset );
+            return false;
+        case TEXTURE_RECT_GL:
+            // FIXME: ???
+            return false;
+        default:
+            break;
     }
 
     return false;
 }
 
-void AImmediateContextGLImpl::CopyTextureToBuffer( ITexture const * _SrcTexture,
-                                                   IBuffer * _DstBuffer,
-                                                   STextureRect const & _Rectangle,
-                                                   DATA_FORMAT _Format,
-                                                   size_t _SizeInBytes,
-                                                   size_t _DstByteOffset,
-                                                   unsigned int _Alignment )
+void AImmediateContextGLImpl::CopyTextureToBuffer(ITexture const*     _SrcTexture,
+                                                  IBuffer*            _DstBuffer,
+                                                  STextureRect const& _Rectangle,
+                                                  DATA_FORMAT         _Format,
+                                                  size_t              _SizeInBytes,
+                                                  size_t              _DstByteOffset,
+                                                  unsigned int        _Alignment)
 {
     VerifyContext();
 
-    glBindBuffer( GL_PIXEL_PACK_BUFFER, _DstBuffer->GetHandleNativeGL() );
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, _DstBuffer->GetHandleNativeGL());
 
     // TODO: check this
 
     GLuint textureId = _SrcTexture->GetHandleNativeGL();
 
-    PackAlignment( _Alignment );
+    PackAlignment(_Alignment);
 
-    if ( _SrcTexture->IsCompressed() ) {
-        glGetCompressedTextureSubImage( textureId,
-                                        _Rectangle.Offset.Lod,
-                                        _Rectangle.Offset.X,
-                                        _Rectangle.Offset.Y,
-                                        _Rectangle.Offset.Z,
-                                        _Rectangle.Dimension.X,
-                                        _Rectangle.Dimension.Y,
-                                        _Rectangle.Dimension.Z,
-                                        (GLsizei)_SizeInBytes,
-                                        ((uint8_t *)0) + _DstByteOffset );
-
-    } else {
-        glGetTextureSubImage( textureId,
-                              _Rectangle.Offset.Lod,
-                              _Rectangle.Offset.X,
-                              _Rectangle.Offset.Y,
-                              _Rectangle.Offset.Z,
-                              _Rectangle.Dimension.X,
-                              _Rectangle.Dimension.Y,
-                              _Rectangle.Dimension.Z,
-                              TypeLUT[_Format].FormatRGB,
-                              TypeLUT[_Format].Type,
-                              (GLsizei)_SizeInBytes,
-                              ((uint8_t *)0) + _DstByteOffset );
+    if (_SrcTexture->IsCompressed())
+    {
+        glGetCompressedTextureSubImage(textureId,
+                                       _Rectangle.Offset.MipLevel,
+                                       _Rectangle.Offset.X,
+                                       _Rectangle.Offset.Y,
+                                       _Rectangle.Offset.Z,
+                                       _Rectangle.Dimension.X,
+                                       _Rectangle.Dimension.Y,
+                                       _Rectangle.Dimension.Z,
+                                       (GLsizei)_SizeInBytes,
+                                       ((uint8_t*)0) + _DstByteOffset);
+    }
+    else
+    {
+        glGetTextureSubImage(textureId,
+                             _Rectangle.Offset.MipLevel,
+                             _Rectangle.Offset.X,
+                             _Rectangle.Offset.Y,
+                             _Rectangle.Offset.Z,
+                             _Rectangle.Dimension.X,
+                             _Rectangle.Dimension.Y,
+                             _Rectangle.Dimension.Z,
+                             TypeLUT[_Format].FormatRGB,
+                             TypeLUT[_Format].Type,
+                             (GLsizei)_SizeInBytes,
+                             ((uint8_t*)0) + _DstByteOffset);
     }
 
-    glBindBuffer( GL_PIXEL_PACK_BUFFER, 0 );
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
 
-void AImmediateContextGLImpl::CopyTextureRect( ITexture const * _SrcTexture,
-                                               ITexture * _DstTexture,
-                                               uint32_t _NumCopies,
-                                               TextureCopy const * Copies )
+void AImmediateContextGLImpl::CopyTextureRect(ITexture const*    _SrcTexture,
+                                              ITexture*          _DstTexture,
+                                              uint32_t           _NumCopies,
+                                              TextureCopy const* Copies)
 {
     VerifyContext();
 
     // TODO: check this
 
-    GLenum srcTarget = TextureTargetLUT[ _SrcTexture->GetType() ].Target;
-    GLenum dstTarget = TextureTargetLUT[ _DstTexture->GetType() ].Target;
-    GLuint srcId = _SrcTexture->GetHandleNativeGL();
-    GLuint dstId = _DstTexture->GetHandleNativeGL();
+    GLenum srcTarget = TextureTargetLUT[_SrcTexture->GetDesc().Type].Target;
+    GLenum dstTarget = TextureTargetLUT[_DstTexture->GetDesc().Type].Target;
+    GLuint srcId     = _SrcTexture->GetHandleNativeGL();
+    GLuint dstId     = _DstTexture->GetHandleNativeGL();
 
-    if ( _SrcTexture->IsMultisample() ) {
-        switch ( srcTarget ) {
-        case GL_TEXTURE_2D: srcTarget = GL_TEXTURE_2D_MULTISAMPLE; break;
-        case GL_TEXTURE_2D_ARRAY: srcTarget = GL_TEXTURE_2D_MULTISAMPLE_ARRAY; break;
+    if (_SrcTexture->IsMultisample())
+    {
+        switch (srcTarget)
+        {
+            case GL_TEXTURE_2D: srcTarget = GL_TEXTURE_2D_MULTISAMPLE; break;
+            case GL_TEXTURE_2D_ARRAY: srcTarget = GL_TEXTURE_2D_MULTISAMPLE_ARRAY; break;
         }
     }
-    if ( _DstTexture->IsMultisample() ) {
-        switch ( dstTarget ) {
-        case GL_TEXTURE_2D: dstTarget = GL_TEXTURE_2D_MULTISAMPLE; break;
-        case GL_TEXTURE_2D_ARRAY: dstTarget = GL_TEXTURE_2D_MULTISAMPLE_ARRAY; break;
+    if (_DstTexture->IsMultisample())
+    {
+        switch (dstTarget)
+        {
+            case GL_TEXTURE_2D: dstTarget = GL_TEXTURE_2D_MULTISAMPLE; break;
+            case GL_TEXTURE_2D_ARRAY: dstTarget = GL_TEXTURE_2D_MULTISAMPLE_ARRAY; break;
         }
     }
 
-    for ( TextureCopy const * copy = Copies ; copy < &Copies[_NumCopies] ; copy++ ) {
-        glCopyImageSubData( srcId,
-                            srcTarget,
-                            copy->SrcRect.Offset.Lod,
-                            copy->SrcRect.Offset.X,
-                            copy->SrcRect.Offset.Y,
-                            copy->SrcRect.Offset.Z,
-                            dstId,
-                            dstTarget,
-                            copy->DstOffset.Lod,
-                            copy->DstOffset.X,
-                            copy->DstOffset.Y,
-                            copy->DstOffset.Z,
-                            copy->SrcRect.Dimension.X,
-                            copy->SrcRect.Dimension.Y,
-                            copy->SrcRect.Dimension.Z );
+    for (TextureCopy const* copy = Copies; copy < &Copies[_NumCopies]; copy++)
+    {
+        glCopyImageSubData(srcId,
+                           srcTarget,
+                           copy->SrcRect.Offset.MipLevel,
+                           copy->SrcRect.Offset.X,
+                           copy->SrcRect.Offset.Y,
+                           copy->SrcRect.Offset.Z,
+                           dstId,
+                           dstTarget,
+                           copy->DstOffset.MipLevel,
+                           copy->DstOffset.X,
+                           copy->DstOffset.Y,
+                           copy->DstOffset.Z,
+                           copy->SrcRect.Dimension.X,
+                           copy->SrcRect.Dimension.Y,
+                           copy->SrcRect.Dimension.Z);
     }
 }
 
-bool AImmediateContextGLImpl::CopyFramebufferToTexture( IFramebuffer const * _SrcFramebuffer,
-                                                        ITexture * _DstTexture,
-                                                        FRAMEBUFFER_ATTACHMENT _Attachment,
-                                                        STextureOffset const & _Offset,
-                                                        SRect2D const & _SrcRect,
-                                                        unsigned int _Alignment )
-{            // Specifies alignment of destination data
+bool AImmediateContextGLImpl::CopyFramebufferToTexture(ARenderPassContext&   RenderPassContext,
+                                                       ITexture*             _DstTexture,
+                                                       int                   _ColorAttachment,
+                                                       STextureOffset const& _Offset,
+                                                       SRect2D const&        _SrcRect,
+                                                       unsigned int          _Alignment)
+{
     VerifyContext();
 
-    AFramebufferGLImpl const * framebuffer = static_cast< AFramebufferGLImpl const * >( _SrcFramebuffer );
-
-    if ( !framebuffer->ChooseReadBuffer( _Attachment ) ) {
-        GLogger.Printf( "AImmediateContextGLImpl::CopyFramebufferToTexture: invalid framebuffer attachment\n" );
+    if (!ChooseReadBuffer(CurrentFramebuffer, _ColorAttachment))
+    {
+        GLogger.Printf("AImmediateContextGLImpl::CopyFramebufferToTexture: invalid framebuffer attachment\n");
         return false;
     }
 
-    PackAlignment( _Alignment );
+    PackAlignment(_Alignment);
 
-    BindReadFramebuffer( framebuffer );
+    BindReadFramebuffer(CurrentFramebuffer);
 
     // TODO: check this function
 
-    if ( _DstTexture->IsMultisample() ) {
-        switch ( _DstTexture->GetType() ) {
-        case TEXTURE_2D:
+    if (_DstTexture->IsMultisample())
+    {
+        switch (_DstTexture->GetDesc().Type)
+        {
+            case TEXTURE_2D:
+            case TEXTURE_2D_ARRAY:
+                // FIXME: в спецификации про multisample-типы ничего не сказано
+                return false;
+            default:;
+        }
+    }
+
+    switch (_DstTexture->GetDesc().Type)
+    {
+        case TEXTURE_1D: {
+            glCopyTextureSubImage1D(_DstTexture->GetHandleNativeGL(),
+                                    _Offset.MipLevel,
+                                    _Offset.X,
+                                    _SrcRect.X,
+                                    _SrcRect.Y,
+                                    _SrcRect.Width);
+            break;
+        }
+        case TEXTURE_1D_ARRAY:
+        case TEXTURE_2D: {
+            glCopyTextureSubImage2D(_DstTexture->GetHandleNativeGL(),
+                                    _Offset.MipLevel,
+                                    _Offset.X,
+                                    _Offset.Y,
+                                    _SrcRect.X,
+                                    _SrcRect.Y,
+                                    _SrcRect.Width,
+                                    _SrcRect.Height);
+            break;
+        }
         case TEXTURE_2D_ARRAY:
-            // FIXME: в спецификации про multisample-типы ничего не сказано
+        case TEXTURE_3D: {
+            glCopyTextureSubImage3D(_DstTexture->GetHandleNativeGL(),
+                                    _Offset.MipLevel,
+                                    _Offset.X,
+                                    _Offset.Y,
+                                    _Offset.Z,
+                                    _SrcRect.X,
+                                    _SrcRect.Y,
+                                    _SrcRect.Width,
+                                    _SrcRect.Height);
+            break;
+        }
+        case TEXTURE_CUBE_MAP: {
+            // FIXME: в спецификации не сказано, как с помощью glCopyTextureSubImage2D
+            // скопировать в грань кубической текстуры, поэтому используем обходной путь
+            // через glCopyTexSubImage2D
+
+            GLint currentBinding;
+            GLint id = _DstTexture->GetHandleNativeGL();
+
+            glGetIntegerv(GL_TEXTURE_BINDING_CUBE_MAP, &currentBinding);
+            if (currentBinding != id)
+            {
+                glBindTexture(GL_TEXTURE_CUBE_MAP, id);
+            }
+
+            int face = _Offset.Z < 6 ? _Offset.Z : 5; // cubemap face
+            glCopyTexSubImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
+                                _Offset.MipLevel,
+                                _Offset.X,
+                                _Offset.Y,
+                                _SrcRect.X,
+                                _SrcRect.Y,
+                                _SrcRect.Width,
+                                _SrcRect.Height);
+
+            if (currentBinding != id)
+            {
+                glBindTexture(GL_TEXTURE_CUBE_MAP, currentBinding);
+            }
+            break;
+        }
+        case TEXTURE_RECT_GL: {
+            glCopyTextureSubImage2D(_DstTexture->GetHandleNativeGL(),
+                                    0,
+                                    _Offset.X,
+                                    _Offset.Y,
+                                    _SrcRect.X,
+                                    _SrcRect.Y,
+                                    _SrcRect.Width,
+                                    _SrcRect.Height);
+            break;
+        }
+        case TEXTURE_CUBE_MAP_ARRAY:
+            // FIXME: в спецификации про этот тип ничего не сказано
             return false;
-        default:;
-        }
-    }
-
-    switch ( _DstTexture->GetType() ) {
-    case TEXTURE_1D:
-    {
-        glCopyTextureSubImage1D( _DstTexture->GetHandleNativeGL(),
-                                 _Offset.Lod,
-                                 _Offset.X,
-                                 _SrcRect.X,
-                                 _SrcRect.Y,
-                                 _SrcRect.Width );
-        break;
-    }
-    case TEXTURE_1D_ARRAY:
-    case TEXTURE_2D:
-    {
-        glCopyTextureSubImage2D( _DstTexture->GetHandleNativeGL(),
-                                 _Offset.Lod,
-                                 _Offset.X,
-                                 _Offset.Y,
-                                 _SrcRect.X,
-                                 _SrcRect.Y,
-                                 _SrcRect.Width,
-                                 _SrcRect.Height );
-        break;
-    }
-    case TEXTURE_2D_ARRAY:
-    case TEXTURE_3D:
-    {
-        glCopyTextureSubImage3D( _DstTexture->GetHandleNativeGL(),
-                                 _Offset.Lod,
-                                 _Offset.X,
-                                 _Offset.Y,
-                                 _Offset.Z,
-                                 _SrcRect.X,
-                                 _SrcRect.Y,
-                                 _SrcRect.Width,
-                                 _SrcRect.Height );
-        break;
-    }
-    case TEXTURE_CUBE_MAP:
-    {
-        // FIXME: в спецификации не сказано, как с помощью glCopyTextureSubImage2D
-        // скопировать в грань кубической текстуры, поэтому используем обходной путь
-        // через glCopyTexSubImage2D
-
-        GLint currentBinding;
-        GLint id = _DstTexture->GetHandleNativeGL();
-
-        glGetIntegerv( GL_TEXTURE_BINDING_CUBE_MAP, &currentBinding );
-        if ( currentBinding != id ) {
-            glBindTexture( GL_TEXTURE_CUBE_MAP, id );
-        }
-
-        int face = _Offset.Z < 6 ? _Offset.Z : 5; // cubemap face
-        glCopyTexSubImage2D( GL_TEXTURE_CUBE_MAP_POSITIVE_X + face,
-                             _Offset.Lod,
-                             _Offset.X,
-                             _Offset.Y,
-                             _SrcRect.X,
-                             _SrcRect.Y,
-                             _SrcRect.Width,
-                             _SrcRect.Height );
-
-        if ( currentBinding != id ) {
-            glBindTexture( GL_TEXTURE_CUBE_MAP, currentBinding );
-        }
-        break;
-    }
-    case TEXTURE_RECT_GL:
-    {
-        glCopyTextureSubImage2D( _DstTexture->GetHandleNativeGL(),
-                                 0,
-                                 _Offset.X,
-                                 _Offset.Y,
-                                 _SrcRect.X,
-                                 _SrcRect.Y,
-                                 _SrcRect.Width,
-                                 _SrcRect.Height );
-        break;
-    }
-    case TEXTURE_CUBE_MAP_ARRAY:
-        // FIXME: в спецификации про этот тип ничего не сказано
-        return false;
     }
 
     return true;
 }
 
-void AImmediateContextGLImpl::CopyFramebufferToBuffer( IFramebuffer const * _SrcFramebuffer,
-                                                       IBuffer * _DstBuffer,
-                                                       FRAMEBUFFER_ATTACHMENT _Attachment,
-                                                       SRect2D const & _SrcRect,
-                                                       FRAMEBUFFER_CHANNEL _FramebufferChannel,
-                                                       FRAMEBUFFER_OUTPUT _FramebufferOutput,
-                                                       COLOR_CLAMP _ColorClamp,
-                                                       size_t _SizeInBytes,
-                                                       size_t _DstByteOffset,
-                                                       unsigned int _Alignment )
+void AImmediateContextGLImpl::CopyColorAttachmentToBuffer(ARenderPassContext& RenderPassContext,
+                                                          IBuffer*            pDstBuffer,
+                                                          int                 SubpassAttachmentRef,
+                                                          SRect2D const&      SrcRect,
+                                                          FRAMEBUFFER_CHANNEL FramebufferChannel,
+                                                          FRAMEBUFFER_OUTPUT  FramebufferOutput,
+                                                          COLOR_CLAMP         InColorClamp,
+                                                          size_t              SizeInBytes,
+                                                          size_t              DstByteOffset,
+                                                          unsigned int        Alignment)
 {
     VerifyContext();
 
-    AFramebufferGLImpl const * framebuffer = static_cast< AFramebufferGLImpl const * >( _SrcFramebuffer );
+    auto&    subpasses     = CurrentRenderPass->GetSubpasses();
+    uint32_t attachmentNum = subpasses[RenderPassContext.GetSubpassIndex()].Refs[SubpassAttachmentRef].Attachment;
 
     // TODO: check this
 
-    if ( !framebuffer->ChooseReadBuffer( _Attachment ) ) {
-        GLogger.Printf( "AImmediateContextGLImpl::CopyFramebufferToBuffer: invalid framebuffer attachment\n" );
+    if (!ChooseReadBuffer(CurrentFramebuffer, attachmentNum))
+    {
+        GLogger.Printf("AImmediateContextGLImpl::CopyFramebufferToBuffer: invalid framebuffer attachment\n");
         return;
     }
 
-    BindReadFramebuffer( framebuffer );
+    BindReadFramebuffer(CurrentFramebuffer);
 
-    PackAlignment( _Alignment );
+    PackAlignment(Alignment);
 
-    glBindBuffer( GL_PIXEL_PACK_BUFFER, _DstBuffer->GetHandleNativeGL() );
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, pDstBuffer->GetHandleNativeGL());
 
-    ClampReadColor( _ColorClamp );
+    ClampReadColor(InColorClamp);
 
-    glReadnPixels( _SrcRect.X,
-                   _SrcRect.Y,
-                   _SrcRect.Width,
-                   _SrcRect.Height,
-                   FramebufferChannelLUT[ _FramebufferChannel ],
-                   FramebufferOutputLUT[ _FramebufferOutput ],
-                   (GLsizei)_SizeInBytes,
-                   ((uint8_t *)0) + _DstByteOffset );
-    glBindBuffer( GL_PIXEL_PACK_BUFFER, 0 );
+    glReadnPixels(SrcRect.X,
+                  SrcRect.Y,
+                  SrcRect.Width,
+                  SrcRect.Height,
+                  FramebufferChannelLUT[FramebufferChannel],
+                  FramebufferOutputLUT[FramebufferOutput],
+                  (GLsizei)SizeInBytes,
+                  ((uint8_t*)0) + DstByteOffset);
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 }
 
-bool AImmediateContextGLImpl::BlitFramebuffer( IFramebuffer const * _SrcFramebuffer,
-                                               FRAMEBUFFER_ATTACHMENT _SrcAttachment,
-                                               uint32_t _NumRectangles,
-                                               SBlitRectangle const * _Rectangles,
-                                               FRAMEBUFFER_MASK _Mask,
-                                               bool _LinearFilter )
+static void ChooseDepthStencilAttachmentFormatAndType(TEXTURE_FORMAT TextureFormat, GLenum& Format, GLenum& Type, GLsizei& SizeInBytes)
+{
+    Format      = GL_DEPTH_STENCIL;
+    Type        = GL_FLOAT;
+    SizeInBytes = 4; // FIXME
+    switch (TextureFormat)
+    {
+        case TEXTURE_FORMAT_STENCIL1:
+        case TEXTURE_FORMAT_STENCIL4:
+        case TEXTURE_FORMAT_STENCIL8:
+        case TEXTURE_FORMAT_STENCIL16:
+            Format = GL_STENCIL_INDEX;
+            Type   = GL_UNSIGNED_INT; // FIXME
+            break;
+        case TEXTURE_FORMAT_DEPTH16:
+        case TEXTURE_FORMAT_DEPTH24:
+        case TEXTURE_FORMAT_DEPTH32:
+            Format = GL_DEPTH_COMPONENT;
+            Type   = GL_FLOAT; // FIXME
+            break;
+        case TEXTURE_FORMAT_DEPTH24_STENCIL8:
+        case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
+            Format = GL_DEPTH_STENCIL;
+            Type   = GL_FLOAT; // FIXME
+            break;
+        default:
+            AN_ASSERT(0);
+    }
+}
+
+void AImmediateContextGLImpl::CopyDepthAttachmentToBuffer(ARenderPassContext& RenderPassContext,
+                                                          IBuffer*            pDstBuffer,
+                                                          SRect2D const&      SrcRect,
+                                                          size_t              SizeInBytes,
+                                                          size_t              DstByteOffset,
+                                                          unsigned int        Alignment)
+{
+    // TODO: check this
+
+    VerifyContext();
+
+    if (!CurrentFramebuffer->HasDepthStencilAttachment())
+    {
+        GLogger.Printf("AImmediateContextGLImpl::CopyFramebufferDepthToBuffer: framebuffer has no depth-stencil attachment\n");
+        return;
+    }
+
+    BindReadFramebuffer(CurrentFramebuffer);
+
+    PackAlignment(Alignment);
+
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, pDstBuffer->GetHandleNativeGL());
+
+    ClampReadColor(COLOR_CLAMP_OFF);
+
+    GLenum  format, type;
+    GLsizei size;
+    ChooseDepthStencilAttachmentFormatAndType(CurrentFramebuffer->GetDepthStencilAttachment()->GetDesc().Format, format, type, size);
+
+    size *= SrcRect.Width * SrcRect.Height;
+
+    AN_ASSERT(size == SizeInBytes);
+    if (size > SizeInBytes)
+        size = SizeInBytes;
+
+    glReadnPixels(SrcRect.X,
+                  SrcRect.Y,
+                  SrcRect.Width,
+                  SrcRect.Height,
+                  format,
+                  type,
+                  size,
+                  ((uint8_t*)0) + DstByteOffset);
+    glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
+}
+
+bool AImmediateContextGLImpl::BlitFramebuffer(ARenderPassContext&   RenderPassContext,
+                                              int                   _ColorAttachment,
+                                              uint32_t              _NumRectangles,
+                                              SBlitRectangle const* _Rectangles,
+                                              FRAMEBUFFER_BLIT_MASK _Mask,
+                                              bool                  _LinearFilter)
 {
     VerifyContext();
 
-    AFramebufferGLImpl const * framebuffer = static_cast< AFramebufferGLImpl const * >( _SrcFramebuffer );
-
     GLbitfield mask = 0;
 
-    if ( _Mask & FB_MASK_COLOR ) {
+    if (_Mask & FB_MASK_COLOR)
+    {
         mask |= GL_COLOR_BUFFER_BIT;
 
-        if ( !framebuffer->ChooseReadBuffer( _SrcAttachment ) ) {
-            GLogger.Printf( "AImmediateContextGLImpl::BlitFramebuffer: invalid framebuffer attachment\n" );
+        if (!ChooseReadBuffer(CurrentFramebuffer, _ColorAttachment))
+        {
+            GLogger.Printf("AImmediateContextGLImpl::BlitFramebuffer: invalid framebuffer attachment\n");
             return false;
         }
     }
 
-    if ( _Mask & FB_MASK_DEPTH ) {
+    if (_Mask & FB_MASK_DEPTH)
+    {
         mask |= GL_DEPTH_BUFFER_BIT;
     }
 
-    if ( _Mask & FB_MASK_STENCIL ) {
+    if (_Mask & FB_MASK_STENCIL)
+    {
         mask |= GL_STENCIL_BUFFER_BIT;
     }
 
-    BindReadFramebuffer( framebuffer );
+    BindReadFramebuffer(CurrentFramebuffer);
 
     GLenum filter = _LinearFilter ? GL_LINEAR : GL_NEAREST;
 
-    for ( SBlitRectangle const * rect = _Rectangles ; rect < &_Rectangles[_NumRectangles] ; rect++ ) {
-        glBlitFramebuffer( rect->SrcX,
-                           rect->SrcY,
-                           rect->SrcX + rect->SrcWidth,
-                           rect->SrcY + rect->SrcHeight,
-                           rect->DstX,
-                           rect->DstY,
-                           rect->DstX + rect->DstWidth,
-                           rect->DstY + rect->DstHeight,
-                           mask,
-                           filter );
+    for (SBlitRectangle const* rect = _Rectangles; rect < &_Rectangles[_NumRectangles]; rect++)
+    {
+        glBlitFramebuffer(rect->SrcX,
+                          rect->SrcY,
+                          rect->SrcX + rect->SrcWidth,
+                          rect->SrcY + rect->SrcHeight,
+                          rect->DstX,
+                          rect->DstY,
+                          rect->DstX + rect->DstWidth,
+                          rect->DstY + rect->DstHeight,
+                          mask,
+                          filter);
     }
 
     return true;
 }
 
-void AImmediateContextGLImpl::ClearBuffer( IBuffer * _Buffer, BUFFER_VIEW_PIXEL_FORMAT _InternalFormat, DATA_FORMAT _Format, SClearValue const * _ClearValue )
+void AImmediateContextGLImpl::ClearBuffer(IBuffer* _Buffer, BUFFER_VIEW_PIXEL_FORMAT _InternalFormat, DATA_FORMAT _Format, SClearValue const* _ClearValue)
 {
     VerifyContext();
 
     // If GL_RASTERIZER_DISCARD enabled glClear## ignored FIX
-    if ( RasterizerState.bRasterizerDiscard ) {
-        glDisable( GL_RASTERIZER_DISCARD );
+    if (RasterizerState.bRasterizerDiscard)
+    {
+        glDisable(GL_RASTERIZER_DISCARD);
     }
 
-    TableInternalPixelFormat const * format = &InternalFormatLUT[ _InternalFormat ];
+    TableInternalPixelFormat const* format = &InternalFormatLUT[_InternalFormat];
 
-    glClearNamedBufferData( _Buffer->GetHandleNativeGL(),
-                            format->InternalFormat,
-                            TypeLUT[_Format].FormatRGB,
-                            TypeLUT[_Format].Type,
-                            _ClearValue ); // 4.5 or GL_ARB_direct_state_access
+    glClearNamedBufferData(_Buffer->GetHandleNativeGL(),
+                           format->InternalFormat,
+                           TypeLUT[_Format].FormatRGB,
+                           TypeLUT[_Format].Type,
+                           _ClearValue); // 4.5 or GL_ARB_direct_state_access
 
-    if ( RasterizerState.bRasterizerDiscard ) {
-        glEnable( GL_RASTERIZER_DISCARD );
+    if (RasterizerState.bRasterizerDiscard)
+    {
+        glEnable(GL_RASTERIZER_DISCARD);
     }
 
     // It can be also replaced by glClearBufferData
 }
 
-void AImmediateContextGLImpl::ClearBufferRange( IBuffer * _Buffer, BUFFER_VIEW_PIXEL_FORMAT _InternalFormat, uint32_t _NumRanges, SBufferClear const * _Ranges, DATA_FORMAT _Format, const SClearValue * _ClearValue )
+void AImmediateContextGLImpl::ClearBufferRange(IBuffer* _Buffer, BUFFER_VIEW_PIXEL_FORMAT _InternalFormat, uint32_t _NumRanges, SBufferClear const* _Ranges, DATA_FORMAT _Format, const SClearValue* _ClearValue)
 {
     VerifyContext();
 
     // If GL_RASTERIZER_DISCARD enabled glClear## ignored FIX
-    if ( RasterizerState.bRasterizerDiscard ) {
-        glDisable( GL_RASTERIZER_DISCARD );
+    if (RasterizerState.bRasterizerDiscard)
+    {
+        glDisable(GL_RASTERIZER_DISCARD);
     }
 
-    TableInternalPixelFormat const * format = &InternalFormatLUT[ _InternalFormat ];
+    TableInternalPixelFormat const* format = &InternalFormatLUT[_InternalFormat];
 
-    for ( SBufferClear const * range = _Ranges ; range < &_Ranges[_NumRanges] ; range++ ) {
-        glClearNamedBufferSubData( _Buffer->GetHandleNativeGL(),
-                                   format->InternalFormat,
-                                   range->Offset,
-                                   range->SizeInBytes,
-                                   TypeLUT[_Format].FormatRGB,
-                                   TypeLUT[_Format].Type,
-                                   _ClearValue ); // 4.5 or GL_ARB_direct_state_access
+    for (SBufferClear const* range = _Ranges; range < &_Ranges[_NumRanges]; range++)
+    {
+        glClearNamedBufferSubData(_Buffer->GetHandleNativeGL(),
+                                  format->InternalFormat,
+                                  range->Offset,
+                                  range->SizeInBytes,
+                                  TypeLUT[_Format].FormatRGB,
+                                  TypeLUT[_Format].Type,
+                                  _ClearValue); // 4.5 or GL_ARB_direct_state_access
     }
 
-    if ( RasterizerState.bRasterizerDiscard ) {
-        glEnable( GL_RASTERIZER_DISCARD );
+    if (RasterizerState.bRasterizerDiscard)
+    {
+        glEnable(GL_RASTERIZER_DISCARD);
     }
 
     // It can be also replaced by glClearBufferSubData
 }
 
-void AImmediateContextGLImpl::ClearTexture( ITexture * _Texture, uint16_t _Lod, DATA_FORMAT _Format, SClearValue const * _ClearValue )
+void AImmediateContextGLImpl::ClearTexture(ITexture* _Texture, uint16_t _MipLevel, DATA_FORMAT _Format, SClearValue const* _ClearValue)
 {
     VerifyContext();
 
     // If GL_RASTERIZER_DISCARD enabled glClear## ignored FIX
-    if ( RasterizerState.bRasterizerDiscard ) {
-        glDisable( GL_RASTERIZER_DISCARD );
+    if (RasterizerState.bRasterizerDiscard)
+    {
+        glDisable(GL_RASTERIZER_DISCARD);
     }
 
     GLenum format;
 
-    switch ( _Texture->GetFormat() ) {
-    case TEXTURE_FORMAT_STENCIL1:
-    case TEXTURE_FORMAT_STENCIL4:
-    case TEXTURE_FORMAT_STENCIL8:
-    case TEXTURE_FORMAT_STENCIL16:
-        format = GL_STENCIL_INDEX;
-        break;
-    case TEXTURE_FORMAT_DEPTH16:
-    case TEXTURE_FORMAT_DEPTH24:
-    case TEXTURE_FORMAT_DEPTH32:
-        format = GL_DEPTH_COMPONENT;
-        break;
-    case TEXTURE_FORMAT_DEPTH24_STENCIL8:
-    case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
-        format = GL_DEPTH_STENCIL;
-        break;
-    default:
-        format = TypeLUT[_Format].FormatRGB;
-        break;
+    switch (_Texture->GetDesc().Format)
+    {
+        case TEXTURE_FORMAT_STENCIL1:
+        case TEXTURE_FORMAT_STENCIL4:
+        case TEXTURE_FORMAT_STENCIL8:
+        case TEXTURE_FORMAT_STENCIL16:
+            format = GL_STENCIL_INDEX;
+            break;
+        case TEXTURE_FORMAT_DEPTH16:
+        case TEXTURE_FORMAT_DEPTH24:
+        case TEXTURE_FORMAT_DEPTH32:
+            format = GL_DEPTH_COMPONENT;
+            break;
+        case TEXTURE_FORMAT_DEPTH24_STENCIL8:
+        case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
+            format = GL_DEPTH_STENCIL;
+            break;
+        default:
+            format = TypeLUT[_Format].FormatRGB;
+            break;
     };
 
-    glClearTexImage( _Texture->GetHandleNativeGL(),
-                     _Lod,
-                     format,
-                     TypeLUT[_Format].Type,
-                     _ClearValue );
+    glClearTexImage(_Texture->GetHandleNativeGL(),
+                    _MipLevel,
+                    format,
+                    TypeLUT[_Format].Type,
+                    _ClearValue);
 
-    if ( RasterizerState.bRasterizerDiscard ) {
-        glEnable( GL_RASTERIZER_DISCARD );
+    if (RasterizerState.bRasterizerDiscard)
+    {
+        glEnable(GL_RASTERIZER_DISCARD);
     }
 }
 
-void AImmediateContextGLImpl::ClearTextureRect( ITexture * _Texture,
-                                                uint32_t _NumRectangles,
-                                                STextureRect const * _Rectangles,
-                                                DATA_FORMAT _Format,
-                                                /* optional */ SClearValue const * _ClearValue )
+void AImmediateContextGLImpl::ClearTextureRect(ITexture*           _Texture,
+                                               uint32_t            _NumRectangles,
+                                               STextureRect const* _Rectangles,
+                                               DATA_FORMAT         _Format,
+                                               SClearValue const*  _ClearValue)
 {
     VerifyContext();
 
     // If GL_RASTERIZER_DISCARD enabled glClear## ignored FIX
-    if ( RasterizerState.bRasterizerDiscard ) {
-        glDisable( GL_RASTERIZER_DISCARD );
+    if (RasterizerState.bRasterizerDiscard)
+    {
+        glDisable(GL_RASTERIZER_DISCARD);
     }
 
     GLenum format;
 
-    switch ( _Texture->GetFormat() ) {
-    case TEXTURE_FORMAT_STENCIL1:
-    case TEXTURE_FORMAT_STENCIL4:
-    case TEXTURE_FORMAT_STENCIL8:
-    case TEXTURE_FORMAT_STENCIL16:
-        format = GL_STENCIL_INDEX;
-        break;
-    case TEXTURE_FORMAT_DEPTH16:
-    case TEXTURE_FORMAT_DEPTH24:
-    case TEXTURE_FORMAT_DEPTH32:
-        format = GL_DEPTH_COMPONENT;
-        break;
-    case TEXTURE_FORMAT_DEPTH24_STENCIL8:
-    case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
-        format = GL_DEPTH_STENCIL;
-        break;
-    default:
-        format = TypeLUT[_Format].FormatRGB;
-        break;
+    switch (_Texture->GetDesc().Format)
+    {
+        case TEXTURE_FORMAT_STENCIL1:
+        case TEXTURE_FORMAT_STENCIL4:
+        case TEXTURE_FORMAT_STENCIL8:
+        case TEXTURE_FORMAT_STENCIL16:
+            format = GL_STENCIL_INDEX;
+            break;
+        case TEXTURE_FORMAT_DEPTH16:
+        case TEXTURE_FORMAT_DEPTH24:
+        case TEXTURE_FORMAT_DEPTH32:
+            format = GL_DEPTH_COMPONENT;
+            break;
+        case TEXTURE_FORMAT_DEPTH24_STENCIL8:
+        case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
+            format = GL_DEPTH_STENCIL;
+            break;
+        default:
+            format = TypeLUT[_Format].FormatRGB;
+            break;
     };
 
-    for ( STextureRect const * rect = _Rectangles ; rect < &_Rectangles[_NumRectangles] ; rect++ ) {
-        glClearTexSubImage( _Texture->GetHandleNativeGL(),
-                            rect->Offset.Lod,
-                            rect->Offset.X,
-                            rect->Offset.Y,
-                            rect->Offset.Z,
-                            rect->Dimension.X,
-                            rect->Dimension.Y,
-                            rect->Dimension.Z,
-                            format,
-                            TypeLUT[_Format].Type,
-                            _ClearValue );
+    for (STextureRect const* rect = _Rectangles; rect < &_Rectangles[_NumRectangles]; rect++)
+    {
+        glClearTexSubImage(_Texture->GetHandleNativeGL(),
+                           rect->Offset.MipLevel,
+                           rect->Offset.X,
+                           rect->Offset.Y,
+                           rect->Offset.Z,
+                           rect->Dimension.X,
+                           rect->Dimension.Y,
+                           rect->Dimension.Z,
+                           format,
+                           TypeLUT[_Format].Type,
+                           _ClearValue);
     }
 
-    if ( RasterizerState.bRasterizerDiscard ) {
-        glEnable( GL_RASTERIZER_DISCARD );
+    if (RasterizerState.bRasterizerDiscard)
+    {
+        glEnable(GL_RASTERIZER_DISCARD);
     }
 }
 
-void AImmediateContextGLImpl::ClearFramebufferAttachments( IFramebuffer * _Framebuffer,
-                                                           /* optional */ unsigned int * _ColorAttachments,
-                                                           /* optional */ unsigned int _NumColorAttachments,
-                                                           /* optional */ SClearColorValue const * _ColorClearValues,
-                                                           /* optional */ SClearDepthStencilValue const * _DepthStencilClearValue,
-                                                           /* optional */ SRect2D const * _Rect )
+void AImmediateContextGLImpl::ClearAttachments(ARenderPassContext&            RenderPassContext,
+                                               unsigned int*                  _ColorAttachments,
+                                               unsigned int                   _NumColorAttachments,
+                                               SClearColorValue const*        _ColorClearValues,
+                                               SClearDepthStencilValue const* _DepthStencilClearValue,
+                                               SRect2D const*                 _Rect)
 {
     VerifyContext();
 
-    AFramebufferGLImpl const * framebuffer = static_cast< AFramebufferGLImpl const * >( _Framebuffer );
+    bool bUpdateDrawBuffers = false;
 
-    AN_ASSERT( _NumColorAttachments <= framebuffer->GetNumColorAttachments() );
+    AN_ASSERT(_NumColorAttachments <= CurrentFramebuffer->GetNumColorAttachments());
 
-    GLuint framebufferId = framebuffer->GetHandleNativeGL();
+    GLuint framebufferId = CurrentFramebuffer->GetHandleNativeGL();
 
-    AN_ASSERT( framebufferId );
+    if (framebufferId == 0)
+    {
+        // TODO: Clear attachments for default framebuffer
+        AN_ASSERT(framebufferId);
+    }
 
-    bool bScissorEnabled = RasterizerState.bScissorEnable;
-    bool bRasterizerDiscard = RasterizerState.bRasterizerDiscard;
+    bool    bScissorEnabled    = RasterizerState.bScissorEnable;
+    bool    bRasterizerDiscard = RasterizerState.bRasterizerDiscard;
     SRect2D scissorRect;
 
     // If clear rect was not specified, use renderpass render area
-    if ( !_Rect && CurrentRenderPass ) {
+    if (!_Rect && CurrentRenderPass)
+    {
         _Rect = &CurrentRenderPassRenderArea;
     }
 
-    if ( _Rect ) {
-        if ( !bScissorEnabled ) {
-            glEnable( GL_SCISSOR_TEST );
+    if (_Rect)
+    {
+        if (!bScissorEnabled)
+        {
+            glEnable(GL_SCISSOR_TEST);
             bScissorEnabled = true;
         }
 
@@ -3697,175 +4252,1447 @@ void AImmediateContextGLImpl::ClearFramebufferAttachments( IFramebuffer * _Frame
         scissorRect = CurrentScissor;
 
         // Set new scissor rectangle
-        SetScissor( *_Rect );
-    } else {
-        if ( bScissorEnabled ) {
-            glDisable( GL_SCISSOR_TEST );
+        SetScissor(*_Rect);
+    }
+    else
+    {
+        if (bScissorEnabled)
+        {
+            glDisable(GL_SCISSOR_TEST);
             bScissorEnabled = false;
         }
     }
 
-    if ( bRasterizerDiscard ) {
-        glDisable( GL_RASTERIZER_DISCARD );
+    if (bRasterizerDiscard)
+    {
+        glDisable(GL_RASTERIZER_DISCARD);
         bRasterizerDiscard = false;
     }
 
-    if ( _ColorAttachments ) {
+    if (_ColorAttachments)
+    {
         // We must set draw buffers to clear attachment :(
-        for ( unsigned int i = 0 ; i < _NumColorAttachments ; i++ ) {
+        for (unsigned int i = 0; i < _NumColorAttachments; i++)
+        {
             unsigned int attachmentIndex = _ColorAttachments[i];
 
             Attachments[i] = GL_COLOR_ATTACHMENT0 + attachmentIndex;
         }
-        glNamedFramebufferDrawBuffers( framebufferId, _NumColorAttachments, Attachments );
+        glNamedFramebufferDrawBuffers(framebufferId, _NumColorAttachments, Attachments);
 
         // Mark subpass to reset draw buffers
-        CurrentSubpass = -1;
+        bUpdateDrawBuffers = true;
 
-        for ( unsigned int i = 0 ; i < _NumColorAttachments ; i++ ) {
+        for (unsigned int i = 0; i < _NumColorAttachments; i++)
+        {
 
-            unsigned int attachmentIndex = _ColorAttachments[ i ];
+            unsigned int attachmentIndex = _ColorAttachments[i];
 
-            AN_ASSERT( attachmentIndex < framebuffer->GetNumColorAttachments() );
-            AN_ASSERT( _ColorClearValues );
+            AN_ASSERT(attachmentIndex < CurrentFramebuffer->GetNumColorAttachments());
+            AN_ASSERT(_ColorClearValues);
 
-            SFramebufferAttachmentInfo const & framebufferAttachment = framebuffer->GetColorAttachments()[ attachmentIndex ];
+            ITextureView const* rtv = CurrentFramebuffer->GetColorAttachments()[attachmentIndex];
 
-            SClearColorValue const * clearValue = &_ColorClearValues[ i ];
+            SClearColorValue const* clearValue = &_ColorClearValues[i];
 
-            SRenderTargetBlendingInfo const & currentState = BlendState.RenderTargetSlots[ attachmentIndex ];
-            if ( currentState.ColorWriteMask != COLOR_WRITE_RGBA ) {
-                glColorMaski( i, 1, 1, 1, 1 );
+            SRenderTargetBlendingInfo const& currentState = BlendState.RenderTargetSlots[attachmentIndex];
+            if (currentState.ColorWriteMask != COLOR_WRITE_RGBA)
+            {
+                glColorMaski(i, 1, 1, 1, 1);
             }
 
             // Clear attchment
-            switch ( InternalFormatLUT[ framebufferAttachment.pTexture->GetFormat() ].ClearType ) {
-            case CLEAR_TYPE_FLOAT32:
-                glClearNamedFramebufferfv( framebufferId,
-                                           GL_COLOR,
-                                           i,
-                                           clearValue->Float32 );
-                break;
-            case CLEAR_TYPE_INT32:
-                glClearNamedFramebufferiv( framebufferId,
-                                           GL_COLOR,
-                                           i,
-                                           clearValue->Int32 );
-                break;
-            case CLEAR_TYPE_UINT32:
-                glClearNamedFramebufferuiv( framebufferId,
-                                            GL_COLOR,
-                                            i,
-                                            clearValue->UInt32 );
-                break;
-            default:
-                AN_ASSERT( 0 );
+            switch (InternalFormatLUT[rtv->GetDesc().Format].ClearType)
+            {
+                case CLEAR_TYPE_FLOAT32:
+                    glClearNamedFramebufferfv(framebufferId,
+                                              GL_COLOR,
+                                              i,
+                                              clearValue->Float32);
+                    break;
+                case CLEAR_TYPE_INT32:
+                    glClearNamedFramebufferiv(framebufferId,
+                                              GL_COLOR,
+                                              i,
+                                              clearValue->Int32);
+                    break;
+                case CLEAR_TYPE_UINT32:
+                    glClearNamedFramebufferuiv(framebufferId,
+                                               GL_COLOR,
+                                               i,
+                                               clearValue->UInt32);
+                    break;
+                default:
+                    AN_ASSERT(0);
             }
 
             // Restore color mask
-            if ( currentState.ColorWriteMask != COLOR_WRITE_RGBA ) {
-                if ( currentState.ColorWriteMask == COLOR_WRITE_DISABLED ) {
-                    glColorMaski( i, 0, 0, 0, 0 );
-                } else {
-                    glColorMaski( i,
-                                  !!(currentState.ColorWriteMask & COLOR_WRITE_R_BIT),
-                                  !!(currentState.ColorWriteMask & COLOR_WRITE_G_BIT),
-                                  !!(currentState.ColorWriteMask & COLOR_WRITE_B_BIT),
-                                  !!(currentState.ColorWriteMask & COLOR_WRITE_A_BIT) );
+            if (currentState.ColorWriteMask != COLOR_WRITE_RGBA)
+            {
+                if (currentState.ColorWriteMask == COLOR_WRITE_DISABLED)
+                {
+                    glColorMaski(i, 0, 0, 0, 0);
+                }
+                else
+                {
+                    glColorMaski(i,
+                                 !!(currentState.ColorWriteMask & COLOR_WRITE_R_BIT),
+                                 !!(currentState.ColorWriteMask & COLOR_WRITE_G_BIT),
+                                 !!(currentState.ColorWriteMask & COLOR_WRITE_B_BIT),
+                                 !!(currentState.ColorWriteMask & COLOR_WRITE_A_BIT));
                 }
             }
         }
     }
 
-    if ( _DepthStencilClearValue ) {
+    if (_DepthStencilClearValue)
+    {
+        AN_ASSERT(CurrentFramebuffer->HasDepthStencilAttachment());
 
-        AN_ASSERT( framebuffer->HasDepthStencilAttachment() );
-
-        SFramebufferAttachmentInfo const & framebufferAttachment = framebuffer->GetDepthStencilAttachment();
+        ITextureView const* dsv = CurrentFramebuffer->GetDepthStencilAttachment();
 
         // TODO: table
-        switch ( InternalFormatLUT[ framebufferAttachment.pTexture->GetFormat() ].ClearType ) {
-        case CLEAR_TYPE_STENCIL_ONLY:
-            glClearNamedFramebufferuiv( framebufferId,
-                                        GL_STENCIL,
-                                        0,
-                                        &_DepthStencilClearValue->Stencil );
-            break;
-        case CLEAR_TYPE_DEPTH_ONLY:
-            glClearNamedFramebufferfv( framebufferId,
-                                       GL_DEPTH,
-                                       0,
-                                       &_DepthStencilClearValue->Depth );
-            break;
-        case CLEAR_TYPE_DEPTH_STENCIL:
-            glClearNamedFramebufferfi( framebufferId,
-                                       GL_DEPTH_STENCIL,
-                                       0,
-                                       _DepthStencilClearValue->Depth,
-                                       _DepthStencilClearValue->Stencil );
-            break;
-        default:
-            AN_ASSERT( 0 );
+        switch (InternalFormatLUT[dsv->GetDesc().Format].ClearType)
+        {
+            case CLEAR_TYPE_STENCIL_ONLY:
+                glClearNamedFramebufferuiv(framebufferId,
+                                           GL_STENCIL,
+                                           0,
+                                           &_DepthStencilClearValue->Stencil);
+                break;
+            case CLEAR_TYPE_DEPTH_ONLY:
+                glClearNamedFramebufferfv(framebufferId,
+                                          GL_DEPTH,
+                                          0,
+                                          &_DepthStencilClearValue->Depth);
+                break;
+            case CLEAR_TYPE_DEPTH_STENCIL:
+                glClearNamedFramebufferfi(framebufferId,
+                                          GL_DEPTH_STENCIL,
+                                          0,
+                                          _DepthStencilClearValue->Depth,
+                                          _DepthStencilClearValue->Stencil);
+                break;
+            default:
+                AN_ASSERT(0);
         }
     }
 
     // Restore scissor test
-    if ( bScissorEnabled != RasterizerState.bScissorEnable ) {
-        if ( RasterizerState.bScissorEnable ) {
-            glEnable( GL_SCISSOR_TEST );
-        } else {
-            glDisable( GL_SCISSOR_TEST );
+    if (bScissorEnabled != RasterizerState.bScissorEnable)
+    {
+        if (RasterizerState.bScissorEnable)
+        {
+            glEnable(GL_SCISSOR_TEST);
+        }
+        else
+        {
+            glDisable(GL_SCISSOR_TEST);
         }
     }
 
     // Restore scissor rect
-    if ( _Rect ) {
-        SetScissor( scissorRect );
+    if (_Rect)
+    {
+        SetScissor(scissorRect);
     }
 
     // Restore rasterizer discard
-    if ( bRasterizerDiscard != RasterizerState.bRasterizerDiscard ) {
-        if ( RasterizerState.bRasterizerDiscard ) {
-            glEnable( GL_RASTERIZER_DISCARD );
-        } else {
-            glDisable( GL_RASTERIZER_DISCARD );
+    if (bRasterizerDiscard != RasterizerState.bRasterizerDiscard)
+    {
+        if (RasterizerState.bRasterizerDiscard)
+        {
+            glEnable(GL_RASTERIZER_DISCARD);
+        }
+        else
+        {
+            glDisable(GL_RASTERIZER_DISCARD);
+        }
+    }
+
+    if (bUpdateDrawBuffers)
+    {
+        UpdateDrawBuffers();
+    }
+}
+
+void AImmediateContextGLImpl::BindReadFramebuffer(AFramebufferGLImpl const* Framebuffer)
+{
+    GLuint framebufferId = Framebuffer->GetHandleNativeGL();
+
+    if (Binding.ReadFramebuffer != framebufferId)
+    {
+        glBindFramebuffer(GL_READ_FRAMEBUFFER, framebufferId);
+        Binding.ReadFramebuffer = framebufferId;
+    }
+}
+
+bool AImmediateContextGLImpl::ChooseReadBuffer(AFramebufferGLImpl const* pFramebuffer, int _ColorAttachment) const
+{
+    if (pFramebuffer->GetHandleNativeGL() == 0)
+    {
+        AN_ASSERT(_ColorAttachment == 0);
+
+        if (_ColorAttachment != 0)
+            return false;
+
+        glNamedFramebufferReadBuffer(pFramebuffer->GetHandleNativeGL(), GL_BACK); // FIXME: check this
+    }
+    else
+    {
+        AN_ASSERT(_ColorAttachment < MAX_COLOR_ATTACHMENTS);
+
+        glNamedFramebufferReadBuffer(pFramebuffer->GetHandleNativeGL(), GL_COLOR_ATTACHMENT0 + _ColorAttachment);
+    }
+
+    return true;
+}
+
+bool AImmediateContextGLImpl::ReadFramebufferAttachment(ARenderPassContext& RenderPassContext,
+                                                        int                 _ColorAttachment,
+                                                        SRect2D const&      _SrcRect,
+                                                        FRAMEBUFFER_CHANNEL _FramebufferChannel,
+                                                        FRAMEBUFFER_OUTPUT  _FramebufferOutput,
+                                                        COLOR_CLAMP         _ColorClamp,
+                                                        size_t              _SizeInBytes,
+                                                        unsigned int        _Alignment, // Specifies alignment of destination data
+                                                        void*               _SysMem)
+{
+    if (!ChooseReadBuffer(CurrentFramebuffer, _ColorAttachment))
+    {
+        GLogger.Printf("Framebuffer::Read: invalid framebuffer attachment\n");
+        return false;
+    }
+
+    PackAlignment(_Alignment);
+
+    BindReadFramebuffer(CurrentFramebuffer);
+
+    ClampReadColor(_ColorClamp);
+
+    glReadnPixels(_SrcRect.X,
+                  _SrcRect.Y,
+                  _SrcRect.Width,
+                  _SrcRect.Height,
+                  FramebufferChannelLUT[_FramebufferChannel],
+                  FramebufferOutputLUT[_FramebufferOutput],
+                  (GLsizei)_SizeInBytes,
+                  _SysMem);
+    return true;
+}
+
+bool AImmediateContextGLImpl::ReadFramebufferDepthStencilAttachment(ARenderPassContext& RenderPassContext,
+                                                                    SRect2D const&      SrcRect,
+                                                                    size_t              SizeInBytes,
+                                                                    unsigned int        Alignment,
+                                                                    void*               SysMem)
+{
+    if (!CurrentFramebuffer->HasDepthStencilAttachment())
+    {
+        GLogger.Printf("AImmediateContextGLImpl::ReadFramebufferDepthStencilAttachment: framebuffer has no depth-stencil attachment\n");
+        return false;
+    }
+
+    PackAlignment(Alignment);
+
+    BindReadFramebuffer(CurrentFramebuffer);
+
+    ClampReadColor(COLOR_CLAMP_OFF);
+
+    GLenum  format, type;
+    GLsizei size;
+    ChooseDepthStencilAttachmentFormatAndType(CurrentFramebuffer->GetDepthStencilAttachment()->GetDesc().Format, format, type, size);
+
+    size *= SrcRect.Width * SrcRect.Height;
+
+    AN_ASSERT(size == SizeInBytes);
+    if (size > SizeInBytes)
+        size = SizeInBytes;
+
+    glReadnPixels(SrcRect.X,
+                  SrcRect.Y,
+                  SrcRect.Width,
+                  SrcRect.Height,
+                  format,
+                  type,
+                  size,
+                  SysMem);
+    return true;
+}
+
+void AImmediateContextGLImpl::ReadTexture(ITexture*    pTexture,
+                                          uint16_t     MipLevel,
+                                          DATA_FORMAT  Format,
+                                          size_t       SizeInBytes,
+                                          unsigned int Alignment,
+                                          void*        pSysMem)
+{
+    AN_ASSERT(MipLevel < pTexture->GetDesc().NumMipLevels);
+
+    STextureRect rect;
+    rect.Offset.MipLevel = MipLevel;
+    rect.Dimension.X     = Math::Max(1u, pTexture->GetWidth() >> MipLevel);
+    rect.Dimension.Y     = Math::Max(1u, pTexture->GetHeight() >> MipLevel);
+    rect.Dimension.Z     = pTexture->GetSliceCount(MipLevel);
+
+    ReadTextureRect(pTexture, rect, Format, SizeInBytes, Alignment, pSysMem);
+}
+
+static bool ChooseBackbufferReadFormat(ITexture* pTexture, DATA_FORMAT Format, GLenum& FormatGL, GLenum& TypeGL)
+{
+    switch (pTexture->GetDesc().Format)
+    {
+        case TEXTURE_FORMAT_STENCIL1:
+        case TEXTURE_FORMAT_STENCIL4:
+        case TEXTURE_FORMAT_STENCIL8:
+        case TEXTURE_FORMAT_STENCIL16:
+            FormatGL = GL_STENCIL_INDEX;
+            TypeGL   = GL_UNSIGNED_INT; // FIXME
+            return Format == FORMAT_UINT1;
+        case TEXTURE_FORMAT_DEPTH16:
+        case TEXTURE_FORMAT_DEPTH24:
+        case TEXTURE_FORMAT_DEPTH32:
+            FormatGL = GL_DEPTH_COMPONENT;
+            TypeGL   = GL_FLOAT; // FIXME
+            return Format == FORMAT_FLOAT1;
+        case TEXTURE_FORMAT_DEPTH24_STENCIL8:
+        case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
+            FormatGL = GL_DEPTH_STENCIL;
+            TypeGL   = GL_FLOAT; // FIXME
+            return Format == FORMAT_FLOAT1;
+        case TEXTURE_FORMAT_RGBA8:
+        case TEXTURE_FORMAT_SRGB8_ALPHA8:
+            FormatGL = GL_BGRA;
+            TypeGL   = GL_UNSIGNED_BYTE;
+            return Format == FORMAT_UBYTE4;
+        default:
+            FormatGL = TypeLUT[Format].FormatBGR;
+            TypeGL   = TypeLUT[Format].Type;
+            break;
+    }
+    return false;
+}
+
+void AImmediateContextGLImpl::ReadTextureRect(ITexture*           pTexture,
+                                              STextureRect const& Rectangle,
+                                              DATA_FORMAT         Format,
+                                              size_t              SizeInBytes,
+                                              unsigned int        Alignment,
+                                              void*               pSysMem)
+{
+    GLuint id = pTexture->GetHandleNativeGL();
+
+    PackAlignment(Alignment);
+
+    GLsizei size = TypeLUT[Format].SizeInBytes * Rectangle.Dimension.X * Rectangle.Dimension.Y * Rectangle.Dimension.Z;
+
+    AN_ASSERT(size == SizeInBytes);
+    if (size > SizeInBytes)
+        size = SizeInBytes;
+
+    AN_ASSERT(Rectangle.Offset.MipLevel < pTexture->GetDesc().NumMipLevels);
+
+    uint32_t maxDimensionZ = pTexture->GetSliceCount(Rectangle.Offset.MipLevel);
+
+    if (Rectangle.Offset.X == 0 &&
+        Rectangle.Offset.Y == 0 &&
+        Rectangle.Offset.Z == 0 &&
+        Rectangle.Dimension.X == pTexture->GetWidth() &&
+        Rectangle.Dimension.Y == pTexture->GetHeight() &&
+        Rectangle.Dimension.Z == maxDimensionZ)
+    {
+        // Dummy texture is a default color or depth buffer
+        if (static_cast<ATextureGLImpl*>(pTexture)->IsDummyTexture())
+        {
+            AN_ASSERT(Rectangle.Offset.MipLevel == 0);
+            AN_ASSERT(Rectangle.Dimension.Z == 1);
+
+            GLenum format, type;
+            if (!ChooseBackbufferReadFormat(pTexture, Format, format, type))
+            {
+                AN_ASSERT_(0, "AImmediateContextGLImpl::ReadTextureRect: Uncompatible data format");
+                return;
+            }
+
+            if (Binding.ReadFramebuffer != 0)
+            {
+                glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+                Binding.ReadFramebuffer = 0;
+            }
+
+            glNamedFramebufferReadBuffer(0, GL_BACK);
+
+            ClampReadColor(COLOR_CLAMP_OFF);
+
+            glReadnPixels(0,
+                          0,
+                          Rectangle.Dimension.X,
+                          Rectangle.Dimension.Y,
+                          format,
+                          type,
+                          size,
+                          pSysMem);
+        }
+        else
+        {
+            if (pTexture->IsCompressed())
+            {
+                glGetCompressedTextureImage(id, Rectangle.Offset.MipLevel, size, pSysMem);
+            }
+            else
+            {
+                glGetTextureImage(id,
+                                  Rectangle.Offset.MipLevel,
+                                  TypeLUT[Format].FormatBGR,
+                                  TypeLUT[Format].Type,
+                                  size,
+                                  pSysMem);
+            }
+        }
+    }
+    else
+    {
+        AN_ASSERT(Rectangle.Offset.X + Rectangle.Dimension.X <= pTexture->GetWidth());
+        AN_ASSERT(Rectangle.Offset.Y + Rectangle.Dimension.Y <= pTexture->GetHeight());
+        AN_ASSERT(Rectangle.Offset.Z + Rectangle.Dimension.Z <= maxDimensionZ);
+
+        // Dummy texture is a default color or depth buffer
+        if (static_cast<ATextureGLImpl*>(pTexture)->IsDummyTexture())
+        {
+            AN_ASSERT(Rectangle.Offset.MipLevel == 0);
+            AN_ASSERT(Rectangle.Offset.Z == 0);
+            AN_ASSERT(Rectangle.Dimension.Z == 1);
+
+            GLenum format, type;
+            if (!ChooseBackbufferReadFormat(pTexture, Format, format, type))
+            {
+                AN_ASSERT_(0, "AImmediateContextGLImpl::ReadTextureRect: Uncompatible data format");
+                return;
+            }
+
+            if (Binding.ReadFramebuffer != 0)
+            {
+                glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+                Binding.ReadFramebuffer = 0;
+            }
+
+            glNamedFramebufferReadBuffer(0, GL_BACK);
+
+            ClampReadColor(COLOR_CLAMP_OFF);
+
+            glReadnPixels(Rectangle.Offset.X,
+                          Rectangle.Offset.Y,
+                          Rectangle.Dimension.X,
+                          Rectangle.Dimension.Y,
+                          format,
+                          type,
+                          size,
+                          pSysMem);
+        }
+        else
+        {
+            if (pTexture->IsCompressed())
+            {
+                glGetCompressedTextureSubImage(id,
+                                               Rectangle.Offset.MipLevel,
+                                               Rectangle.Offset.X,
+                                               Rectangle.Offset.Y,
+                                               Rectangle.Offset.Z,
+                                               Rectangle.Dimension.X,
+                                               Rectangle.Dimension.Y,
+                                               Rectangle.Dimension.Z,
+                                               size,
+                                               pSysMem);
+            }
+            else
+            {
+                glGetTextureSubImage(id,
+                                     Rectangle.Offset.MipLevel,
+                                     Rectangle.Offset.X,
+                                     Rectangle.Offset.Y,
+                                     Rectangle.Offset.Z,
+                                     Rectangle.Dimension.X,
+                                     Rectangle.Dimension.Y,
+                                     Rectangle.Dimension.Z,
+                                     TypeLUT[Format].FormatBGR,
+                                     TypeLUT[Format].Type,
+                                     size,
+                                     pSysMem);
+            }
         }
     }
 }
 
-void AImmediateContextGLImpl::BindReadFramebuffer( IFramebuffer const * Framebuffer )
+bool AImmediateContextGLImpl::WriteTexture(ITexture*    pTexture,
+                                           uint16_t     MipLevel,
+                                           DATA_FORMAT  Type, // Specifies a pixel format for the input data
+                                           size_t       SizeInBytes,
+                                           unsigned int Alignment, // Specifies alignment of source data
+                                           const void*  pSysMem)
 {
-    if ( Binding.ReadFramebufferUID == Framebuffer->GetUID() ) {
+    AN_ASSERT(MipLevel < pTexture->GetDesc().NumMipLevels);
+
+    STextureRect rect;
+    rect.Offset.MipLevel = MipLevel;
+    rect.Dimension.X     = Math::Max(1u, pTexture->GetWidth() >> MipLevel);
+    rect.Dimension.Y     = Math::Max(1u, pTexture->GetHeight() >> MipLevel);
+    rect.Dimension.Z     = pTexture->GetSliceCount(MipLevel);
+
+    return WriteTextureRect(pTexture,
+                            rect,
+                            Type,
+                            SizeInBytes,
+                            Alignment,
+                            pSysMem);
+}
+
+bool AImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
+                                               STextureRect const& Rectangle,
+                                               DATA_FORMAT         Format, // Specifies a pixel format for the input data
+                                               size_t              SizeInBytes,
+                                               unsigned int        Alignment, // Specifies alignment of source data
+                                               const void*         pSysMem)
+{
+    GLuint id               = pTexture->GetHandleNativeGL();
+    GLenum compressedFormat = InternalFormatLUT[pTexture->GetDesc().Format].InternalFormat;
+    GLenum format           = TypeLUT[Format].FormatBGR;
+    GLenum type             = TypeLUT[Format].Type;
+
+    AN_ASSERT_(!static_cast<ATextureGLImpl*>(pTexture)->IsDummyTexture(),
+               "Attempting to write raw data to OpenGL back buffer");
+    // NOTE: For default back buffer we can write data to temp texture and then blit it.
+
+    uint32_t maxDimensionZ = pTexture->GetSliceCount(Rectangle.Offset.MipLevel);
+
+    AN_ASSERT(Rectangle.Offset.X + Rectangle.Dimension.X <= pTexture->GetWidth());
+    AN_ASSERT(Rectangle.Offset.Y + Rectangle.Dimension.Y <= pTexture->GetHeight());
+    AN_ASSERT(Rectangle.Offset.Z + Rectangle.Dimension.Z <= maxDimensionZ);
+
+    if (!id)
+    {
+        return false;
+    }
+
+    UnpackAlignment(Alignment);
+
+    switch (pTexture->GetDesc().Type)
+    {
+        case TEXTURE_1D:
+            if (pTexture->IsCompressed())
+            {
+                glCompressedTextureSubImage1D(id,
+                                              Rectangle.Offset.MipLevel,
+                                              Rectangle.Offset.X,
+                                              Rectangle.Dimension.X,
+                                              compressedFormat,
+                                              (GLsizei)SizeInBytes,
+                                              pSysMem);
+            }
+            else
+            {
+                glTextureSubImage1D(id,
+                                    Rectangle.Offset.MipLevel,
+                                    Rectangle.Offset.X,
+                                    Rectangle.Dimension.X,
+                                    format,
+                                    type,
+                                    pSysMem);
+            }
+            break;
+        case TEXTURE_1D_ARRAY:
+            if (pTexture->IsCompressed())
+            {
+                glCompressedTextureSubImage2D(id,
+                                              Rectangle.Offset.MipLevel,
+                                              Rectangle.Offset.X,
+                                              Rectangle.Offset.Y,
+                                              Rectangle.Dimension.X,
+                                              Rectangle.Dimension.Y,
+                                              compressedFormat,
+                                              (GLsizei)SizeInBytes,
+                                              pSysMem);
+            }
+            else
+            {
+                glTextureSubImage2D(id,
+                                    Rectangle.Offset.MipLevel,
+                                    Rectangle.Offset.X,
+                                    Rectangle.Offset.Y,
+                                    Rectangle.Dimension.X,
+                                    Rectangle.Dimension.Y,
+                                    format,
+                                    type,
+                                    pSysMem);
+            }
+            break;
+        case TEXTURE_2D:
+            if (pTexture->IsMultisample())
+            {
+                return false;
+            }
+            if (pTexture->IsCompressed())
+            {
+                glCompressedTextureSubImage2D(id,
+                                              Rectangle.Offset.MipLevel,
+                                              Rectangle.Offset.X,
+                                              Rectangle.Offset.Y,
+                                              Rectangle.Dimension.X,
+                                              Rectangle.Dimension.Y,
+                                              compressedFormat,
+                                              (GLsizei)SizeInBytes,
+                                              pSysMem);
+            }
+            else
+            {
+                glTextureSubImage2D(id,
+                                    Rectangle.Offset.MipLevel,
+                                    Rectangle.Offset.X,
+                                    Rectangle.Offset.Y,
+                                    Rectangle.Dimension.X,
+                                    Rectangle.Dimension.Y,
+                                    format,
+                                    type,
+                                    pSysMem);
+            }
+            break;
+        case TEXTURE_2D_ARRAY:
+            if (pTexture->IsMultisample())
+            {
+                return false;
+            }
+            if (pTexture->IsCompressed())
+            {
+                glCompressedTextureSubImage3D(id,
+                                              Rectangle.Offset.MipLevel,
+                                              Rectangle.Offset.X,
+                                              Rectangle.Offset.Y,
+                                              Rectangle.Offset.Z,
+                                              Rectangle.Dimension.X,
+                                              Rectangle.Dimension.Y,
+                                              Rectangle.Dimension.Z,
+                                              compressedFormat,
+                                              (GLsizei)SizeInBytes,
+                                              pSysMem);
+            }
+            else
+            {
+                glTextureSubImage3D(id,
+                                    Rectangle.Offset.MipLevel,
+                                    Rectangle.Offset.X,
+                                    Rectangle.Offset.Y,
+                                    Rectangle.Offset.Z,
+                                    Rectangle.Dimension.X,
+                                    Rectangle.Dimension.Y,
+                                    Rectangle.Dimension.Z,
+                                    format,
+                                    type,
+                                    pSysMem);
+            }
+            break;
+        case TEXTURE_3D:
+            if (pTexture->IsCompressed())
+            {
+                glCompressedTextureSubImage3D(id,
+                                              Rectangle.Offset.MipLevel,
+                                              Rectangle.Offset.X,
+                                              Rectangle.Offset.Y,
+                                              Rectangle.Offset.Z,
+                                              Rectangle.Dimension.X,
+                                              Rectangle.Dimension.Y,
+                                              Rectangle.Dimension.Z,
+                                              compressedFormat,
+                                              (GLsizei)SizeInBytes,
+                                              pSysMem);
+            }
+            else
+            {
+                glTextureSubImage3D(id,
+                                    Rectangle.Offset.MipLevel,
+                                    Rectangle.Offset.X,
+                                    Rectangle.Offset.Y,
+                                    Rectangle.Offset.Z,
+                                    Rectangle.Dimension.X,
+                                    Rectangle.Dimension.Y,
+                                    Rectangle.Dimension.Z,
+                                    format,
+                                    type,
+                                    pSysMem);
+            }
+            break;
+        case TEXTURE_CUBE_MAP:
+            if (pTexture->IsCompressed())
+            {
+                //glCompressedTextureSubImage2D( id, Rectangle.Offset.MipLevel, Rectangle.Offset.X, Rectangle.Offset.Y, Rectangle.Dimension.X, Rectangle.Dimension.Y, format, SizeInBytes, pSysMem );
+
+                // Tested on NVidia
+                glCompressedTextureSubImage3D(id,
+                                              Rectangle.Offset.MipLevel,
+                                              Rectangle.Offset.X,
+                                              Rectangle.Offset.Y,
+                                              Rectangle.Offset.Z,
+                                              Rectangle.Dimension.X,
+                                              Rectangle.Dimension.Y,
+                                              Rectangle.Dimension.Z,
+                                              compressedFormat,
+                                              (GLsizei)SizeInBytes,
+                                              pSysMem);
+            }
+            else
+            {
+                //glTextureSubImage2D( id, Rectangle.Offset.MipLevel, Rectangle.Offset.X, Rectangle.Offset.Y, Rectangle.Dimension.X, Rectangle.Dimension.Y, format, type, pSysMem );
+
+                // Tested on NVidia
+                glTextureSubImage3D(id,
+                                    Rectangle.Offset.MipLevel,
+                                    Rectangle.Offset.X,
+                                    Rectangle.Offset.Y,
+                                    Rectangle.Offset.Z,
+                                    Rectangle.Dimension.X,
+                                    Rectangle.Dimension.Y,
+                                    Rectangle.Dimension.Z,
+                                    format,
+                                    type,
+                                    pSysMem);
+            }
+            break;
+        case TEXTURE_CUBE_MAP_ARRAY:
+            // FIXME: В спецификации ничего не сказано о возможности записи в данный тип текстурного таргета
+            if (pTexture->IsCompressed())
+            {
+                //glCompressedTextureSubImage2D( id, Rectangle.Offset.MipLevel, Rectangle.Offset.X, Rectangle.Offset.Y, Rectangle.Dimension.X, Rectangle.Dimension.Y, format, SizeInBytes, pSysMem );
+
+                glCompressedTextureSubImage3D(id,
+                                              Rectangle.Offset.MipLevel,
+                                              Rectangle.Offset.X,
+                                              Rectangle.Offset.Y,
+                                              Rectangle.Offset.Z,
+                                              Rectangle.Dimension.X,
+                                              Rectangle.Dimension.Y,
+                                              Rectangle.Dimension.Z,
+                                              compressedFormat,
+                                              (GLsizei)SizeInBytes,
+                                              pSysMem);
+            }
+            else
+            {
+                //glTextureSubImage2D( id, Rectangle.Offset.MipLevel, Rectangle.Offset.X, Rectangle.Offset.Y, Rectangle.Dimension.X, Rectangle.Dimension.Y, format, type, pSysMem );
+
+                glTextureSubImage3D(id,
+                                    Rectangle.Offset.MipLevel,
+                                    Rectangle.Offset.X,
+                                    Rectangle.Offset.Y,
+                                    Rectangle.Offset.Z,
+                                    Rectangle.Dimension.X,
+                                    Rectangle.Dimension.Y,
+                                    Rectangle.Dimension.Z,
+                                    format,
+                                    type,
+                                    pSysMem);
+            }
+            break;
+        case TEXTURE_RECT_GL:
+            // FIXME: В спецификации ничего не сказано о возможности записи в данный тип текстурного таргета
+            if (pTexture->IsCompressed())
+            {
+                glCompressedTextureSubImage2D(id,
+                                              Rectangle.Offset.MipLevel,
+                                              Rectangle.Offset.X,
+                                              Rectangle.Offset.Y,
+                                              Rectangle.Dimension.X,
+                                              Rectangle.Dimension.Y,
+                                              compressedFormat,
+                                              (GLsizei)SizeInBytes,
+                                              pSysMem);
+            }
+            else
+            {
+                glTextureSubImage2D(id,
+                                    Rectangle.Offset.MipLevel,
+                                    Rectangle.Offset.X,
+                                    Rectangle.Offset.Y,
+                                    Rectangle.Dimension.X,
+                                    Rectangle.Dimension.Y,
+                                    format,
+                                    type,
+                                    pSysMem);
+            }
+            break;
+    }
+
+    return true;
+}
+
+void AImmediateContextGLImpl::GenerateTextureMipLevels(ITexture* pTexture)
+{
+    AN_ASSERT_(!static_cast<ATextureGLImpl*>(pTexture)->IsDummyTexture(),
+               "Attempting to generate mipmap levels for OpenGL back buffer");
+
+    GLuint id = pTexture->GetHandleNativeGL();
+    if (!id)
+    {
         return;
     }
 
-    GLuint framebufferId = Framebuffer->GetHandleNativeGL();
-    glBindFramebuffer( GL_READ_FRAMEBUFFER, framebufferId );
-
-    Binding.ReadFramebufferUID = Framebuffer->GetUID();
+    glGenerateTextureMipmap(id);
 }
 
-void AImmediateContextGLImpl::UnbindFramebuffer( IFramebuffer const * Framebuffer )
+void AImmediateContextGLImpl::SparseTextureCommitPage(ISparseTexture* _Texture,
+                                                      int             InMipLevel,
+                                                      int             InPageX,
+                                                      int             InPageY,
+                                                      int             InPageZ,
+                                                      DATA_FORMAT     _Format, // Specifies a pixel format for the input data
+                                                      size_t          _SizeInBytes,
+                                                      unsigned int    _Alignment, // Specifies alignment of source data
+                                                      const void*     _SysMem)
 {
-    if ( Binding.DrawFramebufferUID == Framebuffer->GetUID() ) {
-        Binding.DrawFramebufferUID = DefaultFramebuffer->GetUID();
-        Binding.DrawFramebuffer = DefaultFramebuffer->GetHandleNativeGL();
+    STextureRect rect;
 
-        glBindFramebuffer( GL_DRAW_FRAMEBUFFER, DefaultFramebuffer->GetHandleNativeGL() );
-    }
-    if ( Binding.ReadFramebufferUID == Framebuffer->GetUID() ) {
-        Binding.ReadFramebufferUID = DefaultFramebuffer->GetUID();
+    rect.Offset.MipLevel = InMipLevel;
+    rect.Offset.X        = InPageX * _Texture->GetPageSizeX();
+    rect.Offset.Y        = InPageY * _Texture->GetPageSizeY();
+    rect.Offset.Z        = InPageZ * _Texture->GetPageSizeZ();
+    rect.Dimension.X     = _Texture->GetPageSizeX();
+    rect.Dimension.Y     = _Texture->GetPageSizeY();
+    rect.Dimension.Z     = _Texture->GetPageSizeZ();
 
-        glBindFramebuffer( GL_READ_FRAMEBUFFER, DefaultFramebuffer->GetHandleNativeGL() );
-    }
+    SparseTextureCommitRect(_Texture, rect, _Format, _SizeInBytes, _Alignment, _SysMem);
 }
 
-void AImmediateContextGLImpl::NotifyRenderPassDestroyed( ARenderPassGLImpl const * RenderPass )
+void AImmediateContextGLImpl::SparseTextureCommitRect(ISparseTexture*     _Texture,
+                                                      STextureRect const& _Rectangle,
+                                                      DATA_FORMAT         _Format, // Specifies a pixel format for the input data
+                                                      size_t              _SizeInBytes,
+                                                      unsigned int        _Alignment, // Specifies alignment of source data
+                                                      const void*         _SysMem)
 {
-    if ( CurrentRenderPass == RenderPass ) {
-        GLogger.Printf( "AImmediateContextGLImpl::NotifyRenderPassDestroyed: destroying render pass without EndRenderPass()\n" );
-        CurrentRenderPass = nullptr;
+    GLuint id = _Texture->GetHandleNativeGL();
+
+    if (!id)
+    {
+        GLogger.Printf("AImmediateContextGLImpl::SparseTextureCommitRect: null handle\n");
+        return;
+    }
+
+    GLenum compressedFormat = InternalFormatLUT[_Texture->GetDesc().Format].InternalFormat;
+    GLenum format           = TypeLUT[_Format].FormatBGR;
+    GLenum type             = TypeLUT[_Format].Type;
+
+    glTexturePageCommitmentEXT(id,
+                               _Rectangle.Offset.MipLevel,
+                               _Rectangle.Offset.X,
+                               _Rectangle.Offset.Y,
+                               _Rectangle.Offset.Z,
+                               _Rectangle.Dimension.X,
+                               _Rectangle.Dimension.Y,
+                               _Rectangle.Dimension.Z,
+                               GL_TRUE);
+
+    UnpackAlignment(_Alignment);
+
+    switch (_Texture->GetDesc().Type)
+    {
+        case SPARSE_TEXTURE_2D:
+            if (_Texture->IsCompressed())
+            {
+                glCompressedTextureSubImage2D(id,
+                                              _Rectangle.Offset.MipLevel,
+                                              _Rectangle.Offset.X,
+                                              _Rectangle.Offset.Y,
+                                              _Rectangle.Dimension.X,
+                                              _Rectangle.Dimension.Y,
+                                              compressedFormat,
+                                              (GLsizei)_SizeInBytes,
+                                              _SysMem);
+            }
+            else
+            {
+                glTextureSubImage2D(id,
+                                    _Rectangle.Offset.MipLevel,
+                                    _Rectangle.Offset.X,
+                                    _Rectangle.Offset.Y,
+                                    _Rectangle.Dimension.X,
+                                    _Rectangle.Dimension.Y,
+                                    format,
+                                    type,
+                                    _SysMem);
+            }
+            break;
+        case SPARSE_TEXTURE_2D_ARRAY:
+            if (_Texture->IsCompressed())
+            {
+                glCompressedTextureSubImage3D(id,
+                                              _Rectangle.Offset.MipLevel,
+                                              _Rectangle.Offset.X,
+                                              _Rectangle.Offset.Y,
+                                              _Rectangle.Offset.Z,
+                                              _Rectangle.Dimension.X,
+                                              _Rectangle.Dimension.Y,
+                                              _Rectangle.Dimension.Z,
+                                              compressedFormat,
+                                              (GLsizei)_SizeInBytes,
+                                              _SysMem);
+            }
+            else
+            {
+                glTextureSubImage3D(id,
+                                    _Rectangle.Offset.MipLevel,
+                                    _Rectangle.Offset.X,
+                                    _Rectangle.Offset.Y,
+                                    _Rectangle.Offset.Z,
+                                    _Rectangle.Dimension.X,
+                                    _Rectangle.Dimension.Y,
+                                    _Rectangle.Dimension.Z,
+                                    format,
+                                    type,
+                                    _SysMem);
+            }
+            break;
+        case SPARSE_TEXTURE_3D:
+            if (_Texture->IsCompressed())
+            {
+                glCompressedTextureSubImage3D(id,
+                                              _Rectangle.Offset.MipLevel,
+                                              _Rectangle.Offset.X,
+                                              _Rectangle.Offset.Y,
+                                              _Rectangle.Offset.Z,
+                                              _Rectangle.Dimension.X,
+                                              _Rectangle.Dimension.Y,
+                                              _Rectangle.Dimension.Z,
+                                              compressedFormat,
+                                              (GLsizei)_SizeInBytes,
+                                              _SysMem);
+            }
+            else
+            {
+                glTextureSubImage3D(id,
+                                    _Rectangle.Offset.MipLevel,
+                                    _Rectangle.Offset.X,
+                                    _Rectangle.Offset.Y,
+                                    _Rectangle.Offset.Z,
+                                    _Rectangle.Dimension.X,
+                                    _Rectangle.Dimension.Y,
+                                    _Rectangle.Dimension.Z,
+                                    format,
+                                    type,
+                                    _SysMem);
+            }
+            break;
+        case SPARSE_TEXTURE_CUBE_MAP:
+            if (_Texture->IsCompressed())
+            {
+                //glCompressedTextureSubImage2D( id, _Rectangle.Offset.MipLevel, _Rectangle.Offset.X, _Rectangle.Offset.Y, _Rectangle.Dimension.X, _Rectangle.Dimension.Y, format, _SizeInBytes, _SysMem );
+
+                // Tested on NVidia
+                glCompressedTextureSubImage3D(id,
+                                              _Rectangle.Offset.MipLevel,
+                                              _Rectangle.Offset.X,
+                                              _Rectangle.Offset.Y,
+                                              _Rectangle.Offset.Z,
+                                              _Rectangle.Dimension.X,
+                                              _Rectangle.Dimension.Y,
+                                              _Rectangle.Dimension.Z,
+                                              compressedFormat,
+                                              (GLsizei)_SizeInBytes,
+                                              _SysMem);
+            }
+            else
+            {
+                //glTextureSubImage2D( id, _Rectangle.Offset.MipLevel, _Rectangle.Offset.X, _Rectangle.Offset.Y, _Rectangle.Dimension.X, _Rectangle.Dimension.Y, format, type, _SysMem );
+
+                // Tested on NVidia
+                glTextureSubImage3D(id,
+                                    _Rectangle.Offset.MipLevel,
+                                    _Rectangle.Offset.X,
+                                    _Rectangle.Offset.Y,
+                                    _Rectangle.Offset.Z,
+                                    _Rectangle.Dimension.X,
+                                    _Rectangle.Dimension.Y,
+                                    _Rectangle.Dimension.Z,
+                                    format,
+                                    type,
+                                    _SysMem);
+            }
+            break;
+        case SPARSE_TEXTURE_CUBE_MAP_ARRAY:
+            // FIXME: specs
+            if (_Texture->IsCompressed())
+            {
+                //glCompressedTextureSubImage2D( id, _Rectangle.Offset.MipLevel, _Rectangle.Offset.X, _Rectangle.Offset.Y, _Rectangle.Dimension.X, _Rectangle.Dimension.Y, format, _SizeInBytes, _SysMem );
+
+                glCompressedTextureSubImage3D(id,
+                                              _Rectangle.Offset.MipLevel,
+                                              _Rectangle.Offset.X,
+                                              _Rectangle.Offset.Y,
+                                              _Rectangle.Offset.Z,
+                                              _Rectangle.Dimension.X,
+                                              _Rectangle.Dimension.Y,
+                                              _Rectangle.Dimension.Z,
+                                              compressedFormat,
+                                              (GLsizei)_SizeInBytes,
+                                              _SysMem);
+            }
+            else
+            {
+                //glTextureSubImage2D( id, _Rectangle.Offset.MipLevel, _Rectangle.Offset.X, _Rectangle.Offset.Y, _Rectangle.Dimension.X, _Rectangle.Dimension.Y, format, type, _SysMem );
+
+                glTextureSubImage3D(id,
+                                    _Rectangle.Offset.MipLevel,
+                                    _Rectangle.Offset.X,
+                                    _Rectangle.Offset.Y,
+                                    _Rectangle.Offset.Z,
+                                    _Rectangle.Dimension.X,
+                                    _Rectangle.Dimension.Y,
+                                    _Rectangle.Dimension.Z,
+                                    format,
+                                    type,
+                                    _SysMem);
+            }
+            break;
+        case SPARSE_TEXTURE_RECT_GL:
+            // FIXME: specs
+            if (_Texture->IsCompressed())
+            {
+                glCompressedTextureSubImage2D(id,
+                                              _Rectangle.Offset.MipLevel,
+                                              _Rectangle.Offset.X,
+                                              _Rectangle.Offset.Y,
+                                              _Rectangle.Dimension.X,
+                                              _Rectangle.Dimension.Y,
+                                              compressedFormat,
+                                              (GLsizei)_SizeInBytes,
+                                              _SysMem);
+            }
+            else
+            {
+                glTextureSubImage2D(id,
+                                    _Rectangle.Offset.MipLevel,
+                                    _Rectangle.Offset.X,
+                                    _Rectangle.Offset.Y,
+                                    _Rectangle.Dimension.X,
+                                    _Rectangle.Dimension.Y,
+                                    format,
+                                    type,
+                                    _SysMem);
+            }
+            break;
     }
 }
 
+void AImmediateContextGLImpl::SparseTextureUncommitPage(ISparseTexture* _Texture, int InMipLevel, int InPageX, int InPageY, int InPageZ)
+{
+    STextureRect rect;
+
+    rect.Offset.MipLevel = InMipLevel;
+    rect.Offset.X        = InPageX * _Texture->GetPageSizeX();
+    rect.Offset.Y        = InPageY * _Texture->GetPageSizeY();
+    rect.Offset.Z        = InPageZ * _Texture->GetPageSizeZ();
+    rect.Dimension.X     = _Texture->GetPageSizeX();
+    rect.Dimension.Y     = _Texture->GetPageSizeY();
+    rect.Dimension.Z     = _Texture->GetPageSizeZ();
+
+    SparseTextureUncommitRect(_Texture, rect);
 }
+
+void AImmediateContextGLImpl::SparseTextureUncommitRect(ISparseTexture* _Texture, STextureRect const& _Rectangle)
+{
+    GLuint id = _Texture->GetHandleNativeGL();
+
+    if (!id)
+    {
+        GLogger.Printf("AImmediateContextGLImpl::SparseTextureUncommitRect: null handle\n");
+        return;
+    }
+
+    glTexturePageCommitmentEXT(id,
+                               _Rectangle.Offset.MipLevel,
+                               _Rectangle.Offset.X,
+                               _Rectangle.Offset.Y,
+                               _Rectangle.Offset.Z,
+                               _Rectangle.Dimension.X,
+                               _Rectangle.Dimension.Y,
+                               _Rectangle.Dimension.Z,
+                               GL_FALSE);
+}
+
+void AImmediateContextGLImpl::GetQueryPoolResults(IQueryPool*        _QueryPool,
+                                                  uint32_t           _FirstQuery,
+                                                  uint32_t           _QueryCount,
+                                                  size_t             _DataSize,
+                                                  void*              _SysMem,
+                                                  size_t             _DstStride,
+                                                  QUERY_RESULT_FLAGS _Flags)
+{
+    AN_ASSERT(_FirstQuery + _QueryCount <= _QueryPool->GetPoolSize());
+
+    unsigned int* idPool = static_cast<AQueryPoolGLImpl*>(_QueryPool)->IdPool;
+
+    glBindBuffer(GL_QUERY_BUFFER, 0);
+
+    uint8_t* ptr = (uint8_t*)_SysMem;
+    uint8_t* end = ptr + _DataSize;
+
+    if (_Flags & QUERY_RESULT_64_BIT)
+    {
+
+        AN_ASSERT((_DstStride & ~(size_t)7) == _DstStride); // check stride must be multiples of 8
+
+        for (uint32_t index = 0; index < _QueryCount; index++)
+        {
+
+            if (ptr + sizeof(uint64_t) > end)
+            {
+                GLogger.Printf("QueryPool::GetResults: out of data size\n");
+                break;
+            }
+
+            if (_Flags & QUERY_RESULT_WAIT_BIT)
+            {
+                glGetQueryObjectui64v(idPool[_FirstQuery + index], GL_QUERY_RESULT, (GLuint64*)ptr); // 3.2
+
+                if (_Flags & QUERY_RESULT_WITH_AVAILABILITY_BIT)
+                {
+                    *(uint64_t*)ptr |= 0x8000000000000000;
+                }
+            }
+            else
+            {
+                if (_Flags & QUERY_RESULT_WITH_AVAILABILITY_BIT)
+                {
+                    uint64_t available;
+                    glGetQueryObjectui64v(idPool[_FirstQuery + index], GL_QUERY_RESULT_AVAILABLE, &available); // 3.2
+
+                    if (available)
+                    {
+                        glGetQueryObjectui64v(idPool[_FirstQuery + index], GL_QUERY_RESULT, (GLuint64*)ptr); // 3.2
+                        *(uint64_t*)ptr |= 0x8000000000000000;
+                    }
+                    else
+                    {
+                        *(uint64_t*)ptr = 0;
+                    }
+                }
+                else
+                {
+                    *(uint64_t*)ptr = 0;
+                    glGetQueryObjectui64v(idPool[_FirstQuery + index], GL_QUERY_RESULT_NO_WAIT, (GLuint64*)ptr); // 3.2
+                }
+            }
+
+            ptr += _DstStride;
+        }
+    }
+    else
+    {
+
+        AN_ASSERT((_DstStride & ~(size_t)3) == _DstStride); // check stride must be multiples of 4
+
+        for (uint32_t index = 0; index < _QueryCount; index++)
+        {
+
+            if (ptr + sizeof(uint32_t) > end)
+            {
+                GLogger.Printf("QueryPool::GetResults: out of data size\n");
+                break;
+            }
+
+            if (_Flags & QUERY_RESULT_WAIT_BIT)
+            {
+                glGetQueryObjectuiv(idPool[_FirstQuery + index], GL_QUERY_RESULT, (GLuint*)ptr); // 2.0
+
+                if (_Flags & QUERY_RESULT_WITH_AVAILABILITY_BIT)
+                {
+                    *(uint32_t*)ptr |= 0x80000000;
+                }
+            }
+            else
+            {
+                if (_Flags & QUERY_RESULT_WITH_AVAILABILITY_BIT)
+                {
+                    uint32_t available;
+                    glGetQueryObjectuiv(idPool[_FirstQuery + index], GL_QUERY_RESULT_AVAILABLE, &available); // 2.0
+
+                    if (available)
+                    {
+                        glGetQueryObjectuiv(idPool[_FirstQuery + index], GL_QUERY_RESULT, (GLuint*)ptr); // 2.0
+                        *(uint32_t*)ptr |= 0x80000000;
+                    }
+                    else
+                    {
+                        *(uint32_t*)ptr = 0;
+                    }
+                }
+                else
+                {
+                    *(uint32_t*)ptr = 0;
+                    glGetQueryObjectuiv(idPool[_FirstQuery + index], GL_QUERY_RESULT_NO_WAIT, (GLuint*)ptr); // 2.0
+                }
+            }
+
+            ptr += _DstStride;
+        }
+    }
+}
+
+void AImmediateContextGLImpl::ReadBuffer(IBuffer* _Buffer, void* _SysMem)
+{
+    ReadBufferRange(_Buffer, 0, _Buffer->GetSizeInBytes(), _SysMem);
+}
+
+void AImmediateContextGLImpl::ReadBufferRange(IBuffer* _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void* _SysMem)
+{
+    glGetNamedBufferSubData(_Buffer->GetHandleNativeGL(), _ByteOffset, _SizeInBytes, _SysMem); // 4.5 or GL_ARB_direct_state_access
+
+    /*
+    // Other path:
+    GLint id = GetHandleNativeGL();
+    GLenum target = BufferTargetLUT[ Type ].Target;
+    GLint currentBinding;
+    glGetIntegerv( BufferTargetLUT[ Type ].Binding, &currentBinding );
+    if ( currentBinding == id ) {
+        glBufferSubData( target, _ByteOffset, _SizeInBytes, _SysMem );
+    } else {
+        glBindBuffer( GL_COPY_READ_BUFFER, id );
+        glGetBufferSubData( GL_COPY_READ_BUFFER, _ByteOffset, _SizeInBytes, _SysMem );
+    }
+    */
+}
+
+void AImmediateContextGLImpl::WriteBuffer(IBuffer* _Buffer, const void* _SysMem)
+{
+    WriteBufferRange(_Buffer, 0, _Buffer->GetSizeInBytes(), _SysMem);
+}
+
+void AImmediateContextGLImpl::WriteBufferRange(IBuffer* _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void* _SysMem)
+{
+    glNamedBufferSubData(_Buffer->GetHandleNativeGL(), _ByteOffset, _SizeInBytes, _SysMem); // 4.5 or GL_ARB_direct_state_access
+
+    /*
+    // Other path:
+    GLint id = GetHandleNativeGL();
+    GLint currentBinding;
+    GLenum target = BufferTargetLUT[ Type ].Target;
+    glGetIntegerv( BufferTargetLUT[ Type ].Binding, &currentBinding );
+    if ( currentBinding == id ) {
+        glBufferSubData( target, _ByteOffset, _SizeInBytes, _SysMem );
+    } else {
+        glBindBuffer( target, id );
+        glBufferSubData( target, _ByteOffset, _SizeInBytes, _SysMem );
+        glBindBuffer( target, currentBinding );
+    }
+    */
+    /*
+    // Other path:
+    GLint id = GetHandleNativeGL();
+    GLenum target = BufferTargetLUT[ Type ].Target;
+    GLint currentBinding;
+    glGetIntegerv( BufferTargetLUT[ Type ].Binding, &currentBinding );
+    if ( currentBinding == id ) {
+        glBufferSubData( target, _ByteOffset, _SizeInBytes, _SysMem );
+    } else {
+        glBindBuffer( GL_COPY_WRITE_BUFFER, id );
+        glBufferSubData( GL_COPY_WRITE_BUFFER, _ByteOffset, _SizeInBytes, _SysMem );
+    }
+    */
+}
+
+void* AImmediateContextGLImpl::MapBuffer(IBuffer*        _Buffer,
+                                         MAP_TRANSFER    _ClientServerTransfer,
+                                         MAP_INVALIDATE  _Invalidate,
+                                         MAP_PERSISTENCE _Persistence,
+                                         bool            _FlushExplicit,
+                                         bool            _Unsynchronized)
+{
+    return MapBufferRange(_Buffer,
+                          0, _Buffer->GetSizeInBytes(),
+                          _ClientServerTransfer,
+                          _Invalidate,
+                          _Persistence,
+                          _FlushExplicit,
+                          _Unsynchronized);
+}
+
+void* AImmediateContextGLImpl::MapBufferRange(IBuffer*        _Buffer,
+                                              size_t          _RangeOffset,
+                                              size_t          _RangeSize,
+                                              MAP_TRANSFER    _ClientServerTransfer,
+                                              MAP_INVALIDATE  _Invalidate,
+                                              MAP_PERSISTENCE _Persistence,
+                                              bool            _FlushExplicit,
+                                              bool            _Unsynchronized)
+{
+    int flags = 0;
+
+    switch (_ClientServerTransfer)
+    {
+        case MAP_TRANSFER_READ:
+            flags |= GL_MAP_READ_BIT;
+            break;
+        case MAP_TRANSFER_WRITE:
+            flags |= GL_MAP_WRITE_BIT;
+            break;
+        case MAP_TRANSFER_RW:
+            flags |= GL_MAP_READ_BIT | GL_MAP_WRITE_BIT;
+            break;
+    }
+
+    if (!flags)
+    {
+        // At least on of the bits GL_MAP_READ_BIT or GL_MAP_WRITE_BIT
+        // must be set
+        GLogger.Printf("AImmediateContextGLImpl::MapBufferRange: invalid map transfer function\n");
+        return nullptr;
+    }
+
+    if (_Invalidate != MAP_NO_INVALIDATE)
+    {
+        if (flags & GL_MAP_READ_BIT)
+        {
+            // This flag may not be used in combination with GL_MAP_READ_BIT.
+            GLogger.Printf("AImmediateContextGLImpl::MapBufferRange: MAP_NO_INVALIDATE may not be used in combination with MAP_TRANSFER_READ/MAP_TRANSFER_RW\n");
+            return nullptr;
+        }
+
+        if (_Invalidate == MAP_INVALIDATE_ENTIRE_BUFFER)
+        {
+            flags |= GL_MAP_INVALIDATE_BUFFER_BIT;
+        }
+        else if (_Invalidate == MAP_INVALIDATE_RANGE)
+        {
+            flags |= GL_MAP_INVALIDATE_RANGE_BIT;
+        }
+    }
+
+    switch (_Persistence)
+    {
+        case MAP_NON_PERSISTENT:
+            break;
+        case MAP_PERSISTENT_COHERENT:
+            flags |= GL_MAP_PERSISTENT_BIT | GL_MAP_COHERENT_BIT;
+            break;
+        case MAP_PERSISTENT_NO_COHERENT:
+            flags |= GL_MAP_PERSISTENT_BIT;
+            break;
+    }
+
+    if (_FlushExplicit)
+    {
+        flags |= GL_MAP_FLUSH_EXPLICIT_BIT;
+    }
+
+    if (_Unsynchronized)
+    {
+        flags |= GL_MAP_UNSYNCHRONIZED_BIT;
+    }
+
+    return glMapNamedBufferRange(_Buffer->GetHandleNativeGL(), _RangeOffset, _RangeSize, flags);
+}
+
+void AImmediateContextGLImpl::UnmapBuffer(IBuffer* _Buffer)
+{
+    glUnmapNamedBuffer(_Buffer->GetHandleNativeGL());
+}
+
+
+void AImmediateContextGLImpl::ExecuteFrameGraph(AFrameGraph* pFrameGraph)
+{
+    pFramebufferCache->CleanupOutdatedFramebuffers();
+
+    for (AFrameGraph::STimelineStep const& step : pFrameGraph->GetTimeline())
+    {
+        //for ( AFrameGraphResourceBase * resource : step.AcquiredResources ) {
+        //    resource->Acquire( *this );
+        //}
+
+        switch (step.RenderTask->GetProxyType())
+        {
+            case FG_RENDER_TASK_PROXY_TYPE_RENDER_PASS:
+                ExecuteRenderPass(static_cast<ARenderPass*>(step.RenderTask));
+                break;
+            case FG_RENDER_TASK_PROXY_TYPE_CUSTOM:
+                ExecuteCustomTask(static_cast<ACustomTask*>(step.RenderTask));
+                break;
+            default:
+                AN_ASSERT(0);
+                break;
+        }
+
+        //step.RenderTask->Execute(*pFrameGraph, this);
+
+        //for ( AFrameGraphResourceBase * resource : step.ReleasedResources ) {
+        //    resource->Release( *this );
+        //}
+    }
+
+    // Unbind current framebuffer
+    Binding.DrawFramebuffer = ~0u;
+    Binding.ReadFramebuffer = ~0u;
+
+    // This is really not necessary:
+    //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+    //glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+}
+
+void AImmediateContextGLImpl::ExecuteRenderPass(ARenderPass* pRenderPass)
+{
+    auto& colorAttachments           = pRenderPass->GetColorAttachments();
+    auto& depthStencilAttachment     = pRenderPass->GetDepthStencilAttachment();
+    bool  bHasDepthStencilAttachment = pRenderPass->HasDepthStencilAttachment();
+
+    AFramebufferGLImpl* pFramebuffer = pFramebufferCache->GetFramebuffer(pRenderPass->GetName(),
+                                                                         const_cast<TStdVector<STextureAttachment>&>(colorAttachments),
+                                                                         bHasDepthStencilAttachment ? const_cast<STextureAttachment*>(&depthStencilAttachment) : nullptr);
+
+    SRenderPassBeginGL renderPassBegin = {};
+    renderPassBegin.pRenderPass      = pRenderPass;
+    renderPassBegin.pFramebuffer     = pFramebuffer;
+    if (pRenderPass->IsRenderAreaSpecified())
+    {
+        auto& renderArea                  = pRenderPass->GetRenderArea();
+        renderPassBegin.RenderArea.X      = renderArea.X;
+        renderPassBegin.RenderArea.Y      = renderArea.Y;
+        renderPassBegin.RenderArea.Width  = renderArea.Width;
+        renderPassBegin.RenderArea.Height = renderArea.Height;
+    }
+    else
+    {
+        renderPassBegin.RenderArea.Width  = pFramebuffer->GetWidth();
+        renderPassBegin.RenderArea.Height = pFramebuffer->GetHeight();
+    }
+
+    BeginRenderPass(renderPassBegin);
+
+    SViewport vp;
+    vp.X        = renderPassBegin.RenderArea.X;
+    vp.Y        = renderPassBegin.RenderArea.Y;
+    vp.Width    = renderPassBegin.RenderArea.Width;
+    vp.Height   = renderPassBegin.RenderArea.Height;
+    vp.MinDepth = 0;
+    vp.MaxDepth = 1;
+    SetViewport(vp);
+
+    ACommandBuffer     commandBuffer;
+    ARenderPassContext renderPassContext;
+
+    renderPassContext.pRenderPass  = pRenderPass;
+    renderPassContext.SubpassIndex = 0;
+    renderPassContext.RenderArea   = renderPassBegin.RenderArea;
+    for (ASubpassInfo const& Subpass : pRenderPass->GetSubpasses())
+    {
+        Subpass.Function(renderPassContext, commandBuffer);
+        renderPassContext.SubpassIndex++;
+        if (renderPassContext.SubpassIndex < pRenderPass->GetSubpasses().Size())
+        {
+            NextSubpass();
+        }
+    }
+
+    EndRenderPass();
+}
+
+void AImmediateContextGLImpl::ExecuteCustomTask(ACustomTask* pCustomTask)
+{
+    pCustomTask->Function(*pCustomTask);
+}
+
+} // namespace RenderCore

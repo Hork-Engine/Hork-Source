@@ -30,363 +30,225 @@ SOFTWARE.
 
 #pragma once
 
-#include "DeviceObject.h"
-#include "Buffer.h"
+#include "TextureView.h"
+
+#include <Core/Public/BaseMath.h>
 
 #include <memory.h>
 
-namespace RenderCore {
-
-class ITexture;
-
-enum TEXTURE_FORMAT : uint8_t
+namespace RenderCore
 {
-    //
-    // Normalized signed/unsigned formats
-    //
-
-    TEXTURE_FORMAT_R8,             /// RED   8
-    TEXTURE_FORMAT_R8_SNORM,       /// RED   s8
-    TEXTURE_FORMAT_R16,            /// RED   16
-    TEXTURE_FORMAT_R16_SNORM,      /// RED   s16
-    TEXTURE_FORMAT_RG8,            /// RG    8   8
-    TEXTURE_FORMAT_RG8_SNORM,      /// RG    s8  s8
-    TEXTURE_FORMAT_RG16,           /// RG    16  16
-    TEXTURE_FORMAT_RG16_SNORM,     /// RG    s16 s16
-    TEXTURE_FORMAT_R3_G3_B2,       /// RGB   3  3  2
-    TEXTURE_FORMAT_RGB4,           /// RGB   4  4  4
-    TEXTURE_FORMAT_RGB5,           /// RGB   5  5  5
-    TEXTURE_FORMAT_RGB8,           /// RGB   8  8  8
-    TEXTURE_FORMAT_RGB8_SNORM,     /// RGB   s8  s8  s8
-    TEXTURE_FORMAT_RGB10,          /// RGB   10  10  10
-    TEXTURE_FORMAT_RGB12,          /// RGB   12  12  12
-    TEXTURE_FORMAT_RGB16,          /// RGB   16  16  16
-    TEXTURE_FORMAT_RGB16_SNORM,    /// RGB   s16  s16  s16
-    TEXTURE_FORMAT_RGBA2,          /// RGB   2  2  2  2
-    TEXTURE_FORMAT_RGBA4,          /// RGB   4  4  4  4
-    TEXTURE_FORMAT_RGB5_A1,        /// RGBA  5  5  5  1
-    TEXTURE_FORMAT_RGBA8,          /// RGBA  8  8  8  8
-    TEXTURE_FORMAT_RGBA8_SNORM,    /// RGBA  s8  s8  s8  s8
-    TEXTURE_FORMAT_RGB10_A2,       /// RGBA  10  10  10  2
-    TEXTURE_FORMAT_RGB10_A2UI,     /// RGBA  ui10  ui10  ui10  ui2
-    TEXTURE_FORMAT_RGBA12,         /// RGBA  12  12  12  12
-    TEXTURE_FORMAT_RGBA16,         /// RGBA  16  16  16  16
-    TEXTURE_FORMAT_RGBA16_SNORM,   /// RGBA  s16  s16  s16  s16
-    TEXTURE_FORMAT_SRGB8,          /// RGB   8  8  8
-    TEXTURE_FORMAT_SRGB8_ALPHA8,   /// RGBA  8  8  8  8
-
-    //
-    // Half-float
-    //
-
-    TEXTURE_FORMAT_R16F,           /// RED   f16
-    TEXTURE_FORMAT_RG16F,          /// RG    f16  f16
-    TEXTURE_FORMAT_RGB16F,         /// RGB   f16  f16  f16
-    TEXTURE_FORMAT_RGBA16F,        /// RGBA  f16  f16  f16  f16
-
-    //
-    // Float
-    //
-
-    TEXTURE_FORMAT_R32F,           /// RED   f32
-    TEXTURE_FORMAT_RG32F,          /// RG    f32  f32
-    TEXTURE_FORMAT_RGB32F,         /// RGB   f32  f32  f32
-    TEXTURE_FORMAT_RGBA32F,        /// RGBA  f32  f32  f32  f32
-    TEXTURE_FORMAT_R11F_G11F_B10F, /// RGB   f11  f11  f10
-
-    // Shared exponent
-    TEXTURE_FORMAT_RGB9_E5,        /// RGB   9  9  9     5
-
-    //
-    // Integer formats
-    //
-
-    TEXTURE_FORMAT_R8I,            /// RED   i8
-    TEXTURE_FORMAT_R8UI,           /// RED   ui8
-    TEXTURE_FORMAT_R16I,           /// RED   i16
-    TEXTURE_FORMAT_R16UI,          /// RED   ui16
-    TEXTURE_FORMAT_R32I,           /// RED   i32
-    TEXTURE_FORMAT_R32UI,          /// RED   ui32
-    TEXTURE_FORMAT_RG8I,           /// RG    i8   i8
-    TEXTURE_FORMAT_RG8UI,          /// RG    ui8   ui8
-    TEXTURE_FORMAT_RG16I,          /// RG    i16   i16
-    TEXTURE_FORMAT_RG16UI,         /// RG    ui16  ui16
-    TEXTURE_FORMAT_RG32I,          /// RG    i32   i32
-    TEXTURE_FORMAT_RG32UI,         /// RG    ui32  ui32
-    TEXTURE_FORMAT_RGB8I,          /// RGB   i8   i8   i8
-    TEXTURE_FORMAT_RGB8UI,         /// RGB   ui8  ui8  ui8
-    TEXTURE_FORMAT_RGB16I,         /// RGB   i16  i16  i16
-    TEXTURE_FORMAT_RGB16UI,        /// RGB   ui16 ui16 ui16
-    TEXTURE_FORMAT_RGB32I,         /// RGB   i32  i32  i32
-    TEXTURE_FORMAT_RGB32UI,        /// RGB   ui32 ui32 ui32
-    TEXTURE_FORMAT_RGBA8I,         /// RGBA  i8   i8   i8   i8
-    TEXTURE_FORMAT_RGBA8UI,        /// RGBA  ui8  ui8  ui8  ui8
-    TEXTURE_FORMAT_RGBA16I,        /// RGBA  i16  i16  i16  i16
-    TEXTURE_FORMAT_RGBA16UI,       /// RGBA  ui16 ui16 ui16 ui16
-    TEXTURE_FORMAT_RGBA32I,        /// RGBA  i32  i32  i32  i32
-    TEXTURE_FORMAT_RGBA32UI,       /// RGBA  ui32 ui32 ui32 ui32
-
-    //
-    // Compressed formats
-    //
-
-    // RGB
-    TEXTURE_FORMAT_COMPRESSED_BC1_RGB,
-    TEXTURE_FORMAT_COMPRESSED_BC1_SRGB,
-
-    // RGB A-4bit / RGB (not the best quality, it is better to use BC3)
-    TEXTURE_FORMAT_COMPRESSED_BC2_RGBA,
-    TEXTURE_FORMAT_COMPRESSED_BC2_SRGB_ALPHA,
-
-    // RGB A-8bit
-    TEXTURE_FORMAT_COMPRESSED_BC3_RGBA,
-    TEXTURE_FORMAT_COMPRESSED_BC3_SRGB_ALPHA,
-
-    // R single channel texture (use for metalmap, glossmap, etc)
-    TEXTURE_FORMAT_COMPRESSED_BC4_R,
-    TEXTURE_FORMAT_COMPRESSED_BC4_R_SIGNED,
-
-    // RG two channel texture (use for normal map or two grayscale maps)
-    TEXTURE_FORMAT_COMPRESSED_BC5_RG,
-    TEXTURE_FORMAT_COMPRESSED_BC5_RG_SIGNED,
-
-    // RGB half float HDR
-    TEXTURE_FORMAT_COMPRESSED_BC6H,
-    TEXTURE_FORMAT_COMPRESSED_BC6H_SIGNED,
-
-    // RGB[A], best quality, every block is compressed different
-    TEXTURE_FORMAT_COMPRESSED_BC7_RGBA,
-    TEXTURE_FORMAT_COMPRESSED_BC7_SRGB_ALPHA,
-
-    //
-    // Depth and stencil formats
-    //
-
-    TEXTURE_FORMAT_STENCIL1,
-    TEXTURE_FORMAT_STENCIL4,
-    TEXTURE_FORMAT_STENCIL8,
-    TEXTURE_FORMAT_STENCIL16,
-    TEXTURE_FORMAT_DEPTH16,
-    TEXTURE_FORMAT_DEPTH24,
-    TEXTURE_FORMAT_DEPTH32,
-    TEXTURE_FORMAT_DEPTH24_STENCIL8,
-    TEXTURE_FORMAT_DEPTH32F_STENCIL8
-};
-
-AN_INLINE bool IsCompressedFormat( TEXTURE_FORMAT Format )
-{
-    switch ( Format ) {
-    case TEXTURE_FORMAT_COMPRESSED_BC1_RGB:
-    case TEXTURE_FORMAT_COMPRESSED_BC1_SRGB:
-    case TEXTURE_FORMAT_COMPRESSED_BC2_RGBA:
-    case TEXTURE_FORMAT_COMPRESSED_BC2_SRGB_ALPHA:
-    case TEXTURE_FORMAT_COMPRESSED_BC3_RGBA:
-    case TEXTURE_FORMAT_COMPRESSED_BC3_SRGB_ALPHA:
-    case TEXTURE_FORMAT_COMPRESSED_BC4_R:
-    case TEXTURE_FORMAT_COMPRESSED_BC4_R_SIGNED:
-    case TEXTURE_FORMAT_COMPRESSED_BC5_RG:
-    case TEXTURE_FORMAT_COMPRESSED_BC5_RG_SIGNED:
-    case TEXTURE_FORMAT_COMPRESSED_BC6H:
-    case TEXTURE_FORMAT_COMPRESSED_BC6H_SIGNED:
-    case TEXTURE_FORMAT_COMPRESSED_BC7_RGBA:
-    case TEXTURE_FORMAT_COMPRESSED_BC7_SRGB_ALPHA:
-        return true;
-    default:;
-    }
-    return false;
-}
-
-/// Texture types
-enum TEXTURE_TYPE : uint8_t
-{
-    TEXTURE_1D,
-    TEXTURE_1D_ARRAY,
-    TEXTURE_2D,
-    TEXTURE_2D_ARRAY,
-    TEXTURE_3D,
-    TEXTURE_CUBE_MAP,
-    TEXTURE_CUBE_MAP_ARRAY,
-
-    TEXTURE_RECT_GL // Can be used only with OpenGL backend
-};
 
 enum TEXTURE_SWIZZLE : uint8_t
 {
     TEXTURE_SWIZZLE_IDENTITY = 0,
-    TEXTURE_SWIZZLE_ZERO = 1,
-    TEXTURE_SWIZZLE_ONE = 2,
-    TEXTURE_SWIZZLE_R = 3,
-    TEXTURE_SWIZZLE_G = 4,
-    TEXTURE_SWIZZLE_B = 5,
-    TEXTURE_SWIZZLE_A = 6
+    TEXTURE_SWIZZLE_ZERO     = 1,
+    TEXTURE_SWIZZLE_ONE      = 2,
+    TEXTURE_SWIZZLE_R        = 3,
+    TEXTURE_SWIZZLE_G        = 4,
+    TEXTURE_SWIZZLE_B        = 5,
+    TEXTURE_SWIZZLE_A        = 6
 };
 
-struct STextureResolution1D
+struct STextureResolutionBase
 {
-    uint32_t Width;
+    uint32_t Width{};
+    uint32_t Height{};
+    uint32_t SliceCount{};
 
+    bool operator==(STextureResolutionBase const& Rhs) const
+    {
+        // clang-format off
+        return Width      == Rhs.Width &&
+               Height     == Rhs.Height &&
+               SliceCount == Rhs.SliceCount;
+        // clang-format on
+    }
+
+    bool operator!=(STextureResolutionBase const& Rhs) const
+    {
+        return !(operator==(Rhs));
+    }
+};
+
+struct STextureResolution1D : STextureResolutionBase
+{
     STextureResolution1D() = default;
-    STextureResolution1D( uint32_t InWidth )
-        : Width( InWidth )
+    STextureResolution1D(uint32_t InWidth)
     {
+        Width      = InWidth;
+        Height     = 1;
+        SliceCount = 1;
     }
 };
 
-struct STextureResolution1DArray
+struct STextureResolution1DArray : STextureResolutionBase
 {
-    uint32_t Width;
-    uint32_t NumLayers;
-
     STextureResolution1DArray() = default;
-    STextureResolution1DArray( uint32_t InWidth, uint32_t InNumLayers )
-        : Width( InWidth ), NumLayers( InNumLayers )
+    STextureResolution1DArray(uint32_t InWidth, uint32_t InNumLayers)
     {
+        Width      = InWidth;
+        Height     = 1;
+        SliceCount = InNumLayers;
     }
 };
 
-struct STextureResolution2D
+struct STextureResolution2D : STextureResolutionBase
 {
-    uint32_t Width;
-    uint32_t Height;
-
     STextureResolution2D() = default;
-    STextureResolution2D( uint32_t InWidth, uint32_t InHeight )
-        : Width( InWidth ), Height( InHeight )
+    STextureResolution2D(uint32_t InWidth, uint32_t InHeight)
     {
+        Width      = InWidth;
+        Height     = InHeight;
+        SliceCount = 1;
     }
 };
 
-struct STextureResolution2DArray
+struct STextureResolution2DArray : STextureResolutionBase
 {
-    uint32_t Width;
-    uint32_t Height;
-    uint32_t NumLayers;
-
     STextureResolution2DArray() = default;
-    STextureResolution2DArray( uint32_t InWidth, uint32_t InHeight, uint32_t InNumLayers )
-        : Width( InWidth ), Height( InHeight ), NumLayers( InNumLayers )
+    STextureResolution2DArray(uint32_t InWidth, uint32_t InHeight, uint32_t InNumLayers)
     {
+        Width      = InWidth;
+        Height     = InHeight;
+        SliceCount = InNumLayers;
     }
 };
 
-struct STextureResolution3D
+struct STextureResolution3D : STextureResolutionBase
 {
-    uint32_t Width;
-    uint32_t Height;
-    uint32_t Depth;
-
     STextureResolution3D() = default;
-    STextureResolution3D( uint32_t InWidth, uint32_t InHeight, uint32_t InDepth )
-        : Width( InWidth ), Height( InHeight ), Depth( InDepth )
+    STextureResolution3D(uint32_t InWidth, uint32_t InHeight, uint32_t InDepth)
     {
+        Width      = InWidth;
+        Height     = InHeight;
+        SliceCount = InDepth;
     }
 };
 
-struct STextureResolutionCubemap
+struct STextureResolutionCubemap : STextureResolutionBase
 {
-    uint32_t Width;
-
     STextureResolutionCubemap() = default;
-    STextureResolutionCubemap( uint32_t InWidth )
-        : Width( InWidth )
+    STextureResolutionCubemap(uint32_t InWidth)
     {
+        Width      = InWidth;
+        Height     = InWidth;
+        SliceCount = 6;
     }
 };
 
-struct STextureResolutionCubemapArray
+struct STextureResolutionCubemapArray : STextureResolutionBase
 {
-    uint32_t Width;
-    uint32_t NumLayers;
-
     STextureResolutionCubemapArray() = default;
-    STextureResolutionCubemapArray( uint32_t InWidth, uint32_t InNumLayers )
-        : Width( InWidth ), NumLayers( InNumLayers )
+    STextureResolutionCubemapArray(uint32_t InWidth, uint32_t InNumLayers)
     {
+        Width      = InWidth;
+        Height     = InWidth;
+        SliceCount = InNumLayers * 6;
     }
 };
 
-struct STextureResolutionRectGL
+struct STextureResolutionRectGL : STextureResolutionBase
 {
-    uint32_t Width;
-    uint32_t Height;
-
     STextureResolutionRectGL() = default;
-    STextureResolutionRectGL( uint32_t InWidth, uint32_t InHeight )
-        : Width( InWidth ), Height( InHeight )
+    STextureResolutionRectGL(uint32_t InWidth, uint32_t InHeight)
     {
+        Width      = InWidth;
+        Height     = InWidth;
+        SliceCount = 1;
     }
 };
 
-struct STextureResolution
-{
-    union {
-        STextureResolution1D         Tex1D;
-
-        STextureResolution1DArray    Tex1DArray;
-
-        STextureResolution2D         Tex2D;
-
-        STextureResolution2DArray    Tex2DArray;
-
-        STextureResolution3D         Tex3D;
-
-        STextureResolutionCubemap    TexCubemap;
-
-        STextureResolutionCubemapArray TexCubemapArray;
-
-        STextureResolutionRectGL     TexRect;
-    };
-
-    bool operator==( STextureResolution const & Rhs ) const {
-        return memcmp( this, &Rhs, sizeof( *this ) ) == 0;
-    }
-};
+using STextureResolution = STextureResolutionBase;
+//struct STextureResolution
+//{
+//    union
+//    {
+//        STextureResolution1D Tex1D;
+//
+//        STextureResolution1DArray Tex1DArray;
+//
+//        STextureResolution2D Tex2D;
+//
+//        STextureResolution2DArray Tex2DArray;
+//
+//        STextureResolution3D Tex3D;
+//
+//        STextureResolutionCubemap TexCubemap;
+//
+//        STextureResolutionCubemapArray TexCubemapArray;
+//
+//        STextureResolutionRectGL TexRect;
+//    };
+//
+//    bool operator==(STextureResolution const& Rhs) const
+//    {
+//        return memcmp(this, &Rhs, sizeof(*this)) == 0;
+//    }
+//
+//    bool operator!=(STextureResolution const& Rhs) const
+//    {
+//        return !(operator==(Rhs));
+//    }
+//};
 
 struct STextureOffset
 {
-    uint16_t Lod;
-    uint16_t X;
-    uint16_t Y;
-    uint16_t Z;
+    uint16_t MipLevel = 0;
+    uint16_t X        = 0;
+    uint16_t Y        = 0;
+    uint16_t Z        = 0;
 };
 
 struct STextureDimension
 {
-    uint16_t X;
-    uint16_t Y;
-    uint16_t Z;
+    uint16_t X = 0;
+    uint16_t Y = 0;
+    uint16_t Z = 0;
 };
 
 struct STextureRect
 {
-    STextureOffset Offset;
+    STextureOffset    Offset;
     STextureDimension Dimension;
 };
 
 struct TextureCopy
 {
-    STextureRect SrcRect;
+    STextureRect   SrcRect;
     STextureOffset DstOffset;
 };
 
 struct STextureMultisampleInfo
 {
-    uint8_t NumSamples;             /// The number of samples in the multisample texture's image
-    bool    bFixedSampleLocations;  /// Specifies whether the image will use identical sample locations
-                                    /// and the same number of samples for all texels in the image,
-                                    /// and the sample locations will not depend on the internal format or size of the image
+    /** The number of samples in the multisample texture's image. */
+    uint8_t NumSamples = 1;
 
-    STextureMultisampleInfo() {
-        NumSamples = 1;
-        bFixedSampleLocations = false;
+    /** Specifies whether the image will use identical sample locations
+    and the same number of samples for all texels in the image,
+    and the sample locations will not depend on the internal format or size of the image. */
+    bool bFixedSampleLocations = false;
+
+    STextureMultisampleInfo() = default;
+
+    bool operator==(STextureMultisampleInfo const& Rhs) const
+    {
+        return NumSamples == Rhs.NumSamples && bFixedSampleLocations == Rhs.bFixedSampleLocations;
     }
 
-    STextureMultisampleInfo & SetSamples( int InNumSamples ) {
+    bool operator!=(STextureMultisampleInfo const& Rhs) const
+    {
+        return !(operator==(Rhs));
+    }
+
+    STextureMultisampleInfo& SetSamples(int InNumSamples)
+    {
         NumSamples = InNumSamples;
         return *this;
     }
 
-    STextureMultisampleInfo & SetFixedSampleLocations( bool InbFixedSampleLocations ) {
+    STextureMultisampleInfo& SetFixedSampleLocations(bool InbFixedSampleLocations)
+    {
         bFixedSampleLocations = InbFixedSampleLocations;
         return *this;
     }
@@ -394,190 +256,168 @@ struct STextureMultisampleInfo
 
 struct STextureSwizzle
 {
-    uint8_t R;
-    uint8_t G;
-    uint8_t B;
-    uint8_t A;
+    uint8_t R = TEXTURE_SWIZZLE_IDENTITY;
+    uint8_t G = TEXTURE_SWIZZLE_IDENTITY;
+    uint8_t B = TEXTURE_SWIZZLE_IDENTITY;
+    uint8_t A = TEXTURE_SWIZZLE_IDENTITY;
 
-    STextureSwizzle()
-        : R(TEXTURE_SWIZZLE_IDENTITY),
-          G(TEXTURE_SWIZZLE_IDENTITY),
-          B(TEXTURE_SWIZZLE_IDENTITY),
-          A(TEXTURE_SWIZZLE_IDENTITY)
-    {
-    }
+    STextureSwizzle() = default;
 
-    STextureSwizzle( uint8_t InR,
+    STextureSwizzle(uint8_t InR,
                     uint8_t InG,
                     uint8_t InB,
-                    uint8_t InA )
-        : R(InR), G(InG), B(InB), A(InA)
+                    uint8_t InA) :
+        R(InR), G(InG), B(InB), A(InA)
     {
     }
 
-    bool operator==( STextureSwizzle const & Rhs ) const {
-        return memcmp( this, &Rhs, sizeof( *this ) ) == 0;
+    bool operator==(STextureSwizzle const& Rhs) const
+    {
+        return memcmp(this, &Rhs, sizeof(*this)) == 0;
+    }
+
+    bool operator!=(STextureSwizzle const& Rhs) const
+    {
+        return !(operator==(Rhs));
     }
 };
 
-struct STextureCreateInfo
+enum BIND_FLAG : uint16_t
 {
-    TEXTURE_TYPE            Type;
-    TEXTURE_FORMAT          Format;
-    STextureResolution      Resolution;
+    BIND_NONE             = 0,
+    BIND_VERTEX_BUFFER    = 1 << 0, // TODO
+    BIND_INDEX_BUFFER     = 1 << 1, // TODO
+    BIND_CONSTANT_BUFFER  = 1 << 2, // TODO
+    BIND_SHADER_RESOURCE  = 1 << 3,
+    BIND_STREAM_OUTPUT    = 1 << 4, // TODO
+    BIND_RENDER_TARGET    = 1 << 5,
+    BIND_DEPTH_STENCIL    = 1 << 6,
+    BIND_UNORDERED_ACCESS = 1 << 7
+};
+
+AN_FLAG_ENUM_OPERATORS(BIND_FLAG)
+
+struct STextureDesc
+{
+    TEXTURE_TYPE            Type       = TEXTURE_2D;
+    TEXTURE_FORMAT          Format     = TEXTURE_FORMAT_RGBA8;
+    BIND_FLAG               BindFlags  = BIND_NONE;
+    STextureResolution      Resolution = {};
     STextureMultisampleInfo Multisample;
     STextureSwizzle         Swizzle;
-    uint16_t                NumLods;
+    uint16_t                NumMipLevels = 1;
 
-    STextureCreateInfo()
-        : Type( TEXTURE_2D )
-        , Format( TEXTURE_FORMAT_RGBA8 )
-        , NumLods( 1 )
+    STextureDesc() = default;
+
+    bool operator==(STextureDesc const& Rhs) const
     {
+        // clang-format off
+        return Type        == Rhs.Type &&
+               Format      == Rhs.Format &&
+               Resolution  == Rhs.Resolution &&
+               Multisample == Rhs.Multisample &&
+               Swizzle     == Rhs.Swizzle &&
+               NumMipLevels== Rhs.NumMipLevels;
+        // clang-format on
+    }
+
+    bool operator!=(STextureDesc const& Rhs) const
+    {
+        return !(operator==(Rhs));
+    }
+
+    STextureDesc& SetFormat(TEXTURE_FORMAT InFormat)
+    {
+        Format = InFormat;
+        return *this;
+    }
+
+    STextureDesc& SetBindFlags(BIND_FLAG InBindFlags)
+    {
+        BindFlags = InBindFlags;
+        return *this;
+    }
+
+    STextureDesc& SetMultisample(STextureMultisampleInfo const& InMultisample)
+    {
+        Multisample = InMultisample;
+        return *this;
+    }
+
+    STextureDesc& SetSwizzle(STextureSwizzle const& InSwizzle)
+    {
+        Swizzle = InSwizzle;
+        return *this;
+    }
+
+    STextureDesc& SetMipLevels(int InNumMipLevels)
+    {
+        NumMipLevels = InNumMipLevels;
+        return *this;
+    }
+
+    STextureDesc& SetResolution(STextureResolution1D const& InResolution)
+    {
+        Type       = TEXTURE_1D;
+        Resolution = InResolution;
+        return *this;
+    }
+
+    STextureDesc& SetResolution(STextureResolution1DArray const& InResolution)
+    {
+        Type       = TEXTURE_1D_ARRAY;
+        Resolution = InResolution;
+        return *this;
+    }
+
+    STextureDesc& SetResolution(STextureResolution2D const& InResolution)
+    {
+        Type       = TEXTURE_2D;
+        Resolution = InResolution;
+        return *this;
+    }
+
+    STextureDesc& SetResolution(STextureResolution2DArray const& InResolution)
+    {
+        Type       = TEXTURE_2D_ARRAY;
+        Resolution = InResolution;
+        return *this;
+    }
+
+    STextureDesc& SetResolution(STextureResolution3D const& InResolution)
+    {
+        Type       = TEXTURE_3D;
+        Resolution = InResolution;
+        return *this;
+    }
+
+    STextureDesc& SetResolution(STextureResolutionCubemap const& InResolution)
+    {
+        Type       = TEXTURE_CUBE_MAP;
+        Resolution = InResolution;
+        return *this;
+    }
+
+    STextureDesc& SetResolution(STextureResolutionCubemapArray const& InResolution)
+    {
+        Type       = TEXTURE_CUBE_MAP_ARRAY;
+        Resolution = InResolution;
+        return *this;
+    }
+
+    STextureDesc& SetResolution(STextureResolutionRectGL const& InResolution)
+    {
+        Type       = TEXTURE_RECT_GL;
+        Resolution = InResolution;
+        return *this;
     }
 };
 
-inline STextureCreateInfo MakeTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolution1D const &     Resolution,
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
+struct STextureMipLevelInfo
 {
-    STextureCreateInfo createInfo;
-    createInfo.Type = TEXTURE_1D;
-    createInfo.Format = Format;
-    createInfo.Resolution.Tex1D = Resolution;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
-
-inline STextureCreateInfo MakeTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolution1DArray const &Resolution,
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
-{
-    STextureCreateInfo createInfo;
-    createInfo.Type = TEXTURE_1D_ARRAY;
-    createInfo.Format = Format;
-    createInfo.Resolution.Tex1DArray = Resolution;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
-
-inline STextureCreateInfo MakeTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolution2D const &     Resolution,
-    STextureMultisampleInfo const &  Multisample = STextureMultisampleInfo(),
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
-{
-    STextureCreateInfo createInfo;
-    createInfo.Type = TEXTURE_2D;
-    createInfo.Format = Format;
-    createInfo.Resolution.Tex2D = Resolution;
-    createInfo.Multisample = Multisample;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
-
-inline STextureCreateInfo MakeTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolution2DArray const &Resolution,
-    STextureMultisampleInfo const &  Multisample = STextureMultisampleInfo(),
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
-{
-    STextureCreateInfo createInfo;
-    createInfo.Type = TEXTURE_2D_ARRAY;
-    createInfo.Format = Format;
-    createInfo.Resolution.Tex2DArray = Resolution;
-    createInfo.Multisample = Multisample;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
-
-inline STextureCreateInfo MakeTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolution3D const &     Resolution,
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
-{
-    STextureCreateInfo createInfo;
-    createInfo.Type = TEXTURE_3D;
-    createInfo.Format = Format;
-    createInfo.Resolution.Tex3D = Resolution;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
-
-inline STextureCreateInfo MakeTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolutionCubemap const &Resolution,
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
-{
-    STextureCreateInfo createInfo;
-    createInfo.Type = TEXTURE_CUBE_MAP;
-    createInfo.Format = Format;
-    createInfo.Resolution.TexCubemap = Resolution;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
-
-inline STextureCreateInfo MakeTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolutionCubemapArray const &Resolution,
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
-{
-    STextureCreateInfo createInfo;
-    createInfo.Type = TEXTURE_CUBE_MAP_ARRAY;
-    createInfo.Format = Format;
-    createInfo.Resolution.TexCubemapArray = Resolution;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
-
-inline STextureCreateInfo MakeTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolutionRectGL const & Resolution,
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
-{
-    STextureCreateInfo createInfo;
-    createInfo.Type = TEXTURE_RECT_GL;
-    createInfo.Format = Format;
-    createInfo.Resolution.TexRect = Resolution;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
-
-struct STextureLodInfo
-{
-    STextureResolution Resoultion;
-    bool               bCompressed;
-    size_t             CompressedDataSizeInBytes;
-};
-
-struct STextureViewCreateInfo
-{
-    TEXTURE_TYPE    Type;
-    TEXTURE_FORMAT  Format;
-    ITexture *      pOriginalTexture;
-    uint16_t        MinLod;
-    uint16_t        NumLods;
-    uint16_t        MinLayer;
-    uint16_t        NumLayers;
-    bool            bMultisample;
+    STextureResolution Resoultion                = {};
+    bool               bCompressed               = false;
+    size_t             CompressedDataSizeInBytes = 0;
 };
 
 enum DATA_FORMAT : uint8_t
@@ -623,140 +463,127 @@ enum DATA_FORMAT : uint8_t
     FORMAT_FLOAT4
 };
 
-class ITextureBase : public IDeviceObject
+class ITexture : public IDeviceObject
 {
 public:
-    ITextureBase( IDevice * Device ) : IDeviceObject( Device ) {}
-};
+    ITexture(IDevice* pDevice, STextureDesc const& Desc) :
+        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_TEXTURE), Desc(Desc)
+    {
+        const auto AllowedBindings = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET | BIND_DEPTH_STENCIL | BIND_UNORDERED_ACCESS;
 
-class ITexture : public ITextureBase
-{
-public:
-    ITexture( IDevice * Device ) : ITextureBase( Device ) {}
+        AN_ASSERT_((Desc.BindFlags & ~AllowedBindings) == 0, "The following bind flags are allowed for texture: BIND_SHADER_RESOURCE, BIND_RENDER_TARGET, BIND_DEPTH_STENCIL, BIND_UNORDERED_ACCESS");
+        AN_ASSERT_(!(Desc.Multisample.NumSamples > 1 && (Desc.BindFlags & BIND_UNORDERED_ACCESS)), "Multisampled textures cannot have BIND_UNORDERED_ACCESS flag");            
+    }
 
-    TEXTURE_TYPE GetType() const { return Type; }
+    // The texture view is alive as long as the texture exists. Do not store a strong reference to the view.
+    virtual ITextureView* GetTextureView(STextureViewDesc const& Desc) = 0;
 
-    uint32_t GetWidth() const;
+    ITextureView* GetRenderTargetView();
+    ITextureView* GetDepthStencilView();
+    ITextureView* GetShaderResourceView();
+    ITextureView* GetUnorderedAccessView();
 
-    uint32_t GetHeight() const;
+    STextureDesc const& GetDesc() const { return Desc; }
 
-    uint32_t GetNumLods() const { return NumLods; }
+    uint32_t GetWidth() const { return Desc.Resolution.Width; }
 
-    TEXTURE_FORMAT GetFormat() const { return Format; }
+    uint32_t GetHeight() const { return Desc.Resolution.Height; }
+
+    bool IsArray() const
+    {
+        return Desc.Type == TEXTURE_1D_ARRAY || Desc.Type == TEXTURE_2D_ARRAY || Desc.Type == TEXTURE_CUBE_MAP_ARRAY;
+    }
+
+    uint32_t GetSliceCount() const
+    {
+        return Desc.Resolution.SliceCount;
+    }
+
+    uint32_t GetSliceCount(uint16_t MipLevel) const
+    {
+        return (Desc.Type == TEXTURE_3D) ? Math::Max(1u, Desc.Resolution.SliceCount >> MipLevel) : Desc.Resolution.SliceCount;
+    }
 
     bool IsCompressed() const { return bCompressed; }
 
-    STextureResolution const & GetResolution() const { return Resolution; }
+    bool IsMultisample() const { return Desc.Multisample.NumSamples > 1; }
 
-    STextureSwizzle const & GetSwizzle() const { return Swizzle; }
+    virtual void GetMipLevelInfo(uint16_t MipLevel, STextureMipLevelInfo* pInfo) const = 0;
 
-    bool IsMultisample() const { return NumSamples > 1; }
 
-    uint8_t GetNumSamples() const { return NumSamples; }
-
-    bool FixedSampleLocations() const { return bFixedSampleLocations; }
-
-    //bool IsTextureView() const { return bTextureView; }
-
-    /// Only for TEXTURE_1D, TEXTURE_2D, TEXTURE_3D, TEXTURE_1D_ARRAY, TEXTURE_2D_ARRAY, TEXTURE_CUBE_MAP, or TEXTURE_CUBE_MAP_ARRAY.
-    virtual void GenerateLods() = 0;
-
-    virtual void GetLodInfo( uint16_t _Lod, STextureLodInfo * _Info ) const = 0;
-
-    /// Client-side call function. Read data to client memory.
-    virtual void Read( uint16_t _Lod,
-                       DATA_FORMAT _Format, /// Specifies a pixel format for the returned data
-                       size_t _SizeInBytes,
-                       unsigned int _Alignment,           /// Specifies alignment of destination data
-                       void * _SysMem ) = 0;
-
-    /// Client-side call function. Read data to client memory.
-    virtual void ReadRect( STextureRect const & _Rectangle,
-                           DATA_FORMAT _Format, /// Specifies a pixel format for the returned data
-                           size_t _SizeInBytes,
-                           unsigned int _Alignment,           /// Specifies alignment of destination data
-                           void * _SysMem ) = 0;
-
-    /// Client-side call function. Write data from client memory.
-    virtual bool Write( uint16_t _Lod,
-                        DATA_FORMAT _Format, /// Specifies a pixel format for the input data
-                        size_t _SizeInBytes,
-                        unsigned int _Alignment,           /// Specifies alignment of source data
-                        const void * _SysMem ) = 0;
-
-    /// Only for TEXTURE_1D TEXTURE_1D_ARRAY TEXTURE_2D TEXTURE_2D_ARRAY TEXTURE_3D
-    /// Client-side call function. Write data from client memory.
-    virtual bool WriteRect( STextureRect const & _Rectangle,
-                            DATA_FORMAT _Format, /// Specifies a pixel format for the input data
-                            size_t _SizeInBytes,
-                            unsigned int _Alignment,               /// Specifies alignment of source data
-                            const void * _SysMem ) = 0;
-
-    virtual void Invalidate( uint16_t _Lod ) = 0;
-
-    virtual void InvalidateRect( uint32_t _NumRectangles, STextureRect const * _Rectangles ) = 0;
+    // TODO: Move Invalidate to FrameGraph
+    virtual void Invalidate(uint16_t MipLevel)                                          = 0;
+    virtual void InvalidateRect(uint32_t NumRectangles, STextureRect const* Rectangles) = 0;
 
     //
     // Utilites
     //
 
-    static int CalcMaxLods( TEXTURE_TYPE _Type, STextureResolution const & _Resolution );
+    static int CalcMaxMipLevels(TEXTURE_TYPE Type, STextureResolution const& Resolution);
 
 protected:
-    TEXTURE_TYPE            Type;
-    TEXTURE_FORMAT          Format;
-    STextureResolution      Resolution;
-    STextureSwizzle         Swizzle;
-    uint8_t                 NumSamples;
-    bool                    bFixedSampleLocations;
-    uint16_t                NumLods;
-    bool                    bTextureView;
-    bool                    bCompressed;
+    STextureDesc Desc;
+    bool         bCompressed = false;
+    ITextureView* pRenderTargetView{};
+    ITextureView* pDepthStencilView{};
+    ITextureView* pShaderResourceView{};
+    ITextureView* pUnorderedAccesView{};
 };
 
-AN_INLINE uint32_t ITexture::GetWidth() const {
-    switch ( Type ) {
-    case TEXTURE_1D:
-        return Resolution.Tex1D.Width;
-    case TEXTURE_1D_ARRAY:
-        return Resolution.Tex1DArray.Width;
-    case TEXTURE_2D:
-        return Resolution.Tex2D.Width;
-    case TEXTURE_2D_ARRAY:
-        return Resolution.Tex2DArray.Width;
-    case TEXTURE_3D:
-        return Resolution.Tex3D.Width;
-    case TEXTURE_CUBE_MAP:
-        return Resolution.TexCubemap.Width;
-    case TEXTURE_CUBE_MAP_ARRAY:
-        return Resolution.TexCubemapArray.Width;
-    case TEXTURE_RECT_GL:
-        return Resolution.TexRect.Width;
-    }
-    AN_ASSERT( 0 );
-    return 0;
+AN_FORCEINLINE ITextureView* ITexture::GetRenderTargetView()
+{
+    AN_ASSERT(GetDesc().BindFlags & BIND_RENDER_TARGET);
+    return pRenderTargetView;
 }
 
-AN_INLINE uint32_t ITexture::GetHeight() const {
-    switch ( Type ) {
-    case TEXTURE_1D:
-    case TEXTURE_1D_ARRAY:
+AN_FORCEINLINE ITextureView* ITexture::GetDepthStencilView()
+{
+    AN_ASSERT(GetDesc().BindFlags & BIND_DEPTH_STENCIL);
+    return pDepthStencilView;
+}
+
+AN_FORCEINLINE ITextureView* ITexture::GetShaderResourceView()
+{
+    AN_ASSERT(GetDesc().BindFlags & BIND_SHADER_RESOURCE);
+    return pShaderResourceView;
+}
+
+AN_FORCEINLINE ITextureView* ITexture::GetUnorderedAccessView()
+{
+    AN_ASSERT(GetDesc().BindFlags & BIND_UNORDERED_ACCESS);
+    return pUnorderedAccesView;
+}
+
+AN_INLINE int ITexture::CalcMaxMipLevels(TEXTURE_TYPE Type, STextureResolution const& Resolution)
+{
+    uint32_t maxDimension = 0;
+
+    if (Type == TEXTURE_RECT_GL)
+    {
+        // Texture rect does not support mipmapping
         return 1;
-    case TEXTURE_2D:
-        return Resolution.Tex2D.Height;
-    case TEXTURE_2D_ARRAY:
-        return Resolution.Tex2DArray.Height;
-    case TEXTURE_3D:
-        return Resolution.Tex3D.Height;
-    case TEXTURE_CUBE_MAP:
-        return Resolution.TexCubemap.Width;
-    case TEXTURE_CUBE_MAP_ARRAY:
-        return Resolution.TexCubemapArray.Width;
-    case TEXTURE_RECT_GL:
-        return Resolution.TexRect.Height;
     }
-    AN_ASSERT( 0 );
-    return 0;
+
+    switch (Type)
+    {
+        case TEXTURE_1D:
+        case TEXTURE_1D_ARRAY:
+            maxDimension = Resolution.Width;
+            break;
+
+        case TEXTURE_2D:
+        case TEXTURE_2D_ARRAY:
+        case TEXTURE_CUBE_MAP:
+        case TEXTURE_CUBE_MAP_ARRAY:
+            maxDimension = Math::Max(Resolution.Width, Resolution.Height);
+            break;
+
+        case TEXTURE_3D:
+            maxDimension = Math::Max3(Resolution.Width, Resolution.Height, Resolution.SliceCount);
+            break;
+    }
+
+    return maxDimension > 0 ? Math::Log2(maxDimension) + 1 : 0;
 }
 
-}
+} // namespace RenderCore

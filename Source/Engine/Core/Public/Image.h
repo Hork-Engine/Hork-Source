@@ -34,10 +34,10 @@ SOFTWARE.
 
 enum EMipmapEdgeMode
 {
-    MIPMAP_EDGE_CLAMP = 1,
+    MIPMAP_EDGE_CLAMP   = 1,
     MIPMAP_EDGE_REFLECT = 2,
-    MIPMAP_EDGE_WRAP = 3,
-    MIPMAP_EDGE_ZERO = 4,
+    MIPMAP_EDGE_WRAP    = 3,
+    MIPMAP_EDGE_ZERO    = 4,
 };
 
 enum EMipmapFilter
@@ -57,23 +57,23 @@ enum EMipmapFilter
 /** Software mipmap generator */
 struct SSoftwareMipmapGenerator
 {
-    const void * SourceImage = nullptr;
-    int Width = 0;
-    int Height = 0;
-    int NumChannels = 0;
-    int AlphaChannel = -1;
-    EMipmapEdgeMode EdgeMode = MIPMAP_EDGE_WRAP;
-    EMipmapFilter Filter = MIPMAP_FILTER_MITCHELL;
-    bool bLinearSpace = false;
-    bool bPremultipliedAlpha = false;
-    bool bHDRI = false;
+    const void*     SourceImage         = nullptr;
+    int             Width               = 0;
+    int             Height              = 0;
+    int             NumChannels         = 0;
+    int             AlphaChannel        = -1;
+    EMipmapEdgeMode EdgeMode            = MIPMAP_EDGE_WRAP;
+    EMipmapFilter   Filter              = MIPMAP_FILTER_MITCHELL;
+    bool            bLinearSpace        = false;
+    bool            bPremultipliedAlpha = false;
+    bool            bHDRI               = false;
 };
 
 struct SImageMipmapConfig
 {
-    EMipmapEdgeMode EdgeMode = MIPMAP_EDGE_WRAP;
-    EMipmapFilter Filter = MIPMAP_FILTER_MITCHELL;
-    bool bPremultipliedAlpha = false;
+    EMipmapEdgeMode EdgeMode            = MIPMAP_EDGE_WRAP;
+    EMipmapFilter   Filter              = MIPMAP_FILTER_MITCHELL;
+    bool            bPremultipliedAlpha = false;
 };
 
 enum EImagePixelFormat
@@ -91,7 +91,7 @@ enum EImagePixelFormat
     //IMAGE_PF_RGB,
     //IMAGE_PF_RGB_GAMMA2,
     //IMAGE_PF_RGB16F,
-    IMAGE_PF_RGB32F,    
+    IMAGE_PF_RGB32F,
     IMAGE_PF_RGBA,
     IMAGE_PF_RGBA_GAMMA2,
     IMAGE_PF_RGBA16F,
@@ -107,32 +107,33 @@ enum EImagePixelFormat
 };
 
 /** Image loader */
-class AImage {
+class AImage
+{
 public:
     AImage();
     ~AImage();
 
-    bool Load( const char * _Path, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2 );
-    bool Load( IBinaryStream & _Stream, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2 );
+    bool Load(const char* _Path, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2);
+    bool Load(IBinaryStream& _Stream, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2);
 
     /** Source data must be float* or byte* according to specified pixel format */
-    void FromRawData( const void * _Source, int _Width, int _Height, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat );
+    void FromRawData(const void* _Source, int _Width, int _Height, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat);
 
     void Free();
 
-    void * GetData() const { return pRawData; }
-    int GetWidth() const { return Width; }
-    int GetHeight() const { return Height; }
-    int GetNumLods() const { return NumLods; }
+    void*             GetData() const { return pRawData; }
+    int               GetWidth() const { return Width; }
+    int               GetHeight() const { return Height; }
+    int               GetNumMipLevels() const { return NumMipLevels; }
     EImagePixelFormat GetPixelFormat() const { return PixelFormat; }
 
 private:
-    void FromRawData( const void * _Source, int _Width, int _Height, SImageMipmapConfig const * _MipmapGen, EImagePixelFormat _PixelFormat, bool bReuseSourceBuffer );
+    void FromRawData(const void* _Source, int _Width, int _Height, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat, bool bReuseSourceBuffer);
 
-    void * pRawData;
-    int Width;
-    int Height;
-    int NumLods;
+    void*             pRawData;
+    int               Width;
+    int               Height;
+    int               NumMipLevels;
     EImagePixelFormat PixelFormat;
 };
 
@@ -143,20 +144,20 @@ Utilites
 */
 
 /** Flip image horizontally */
-void FlipImageX( void * _ImageData, int _Width, int _Height, int _BytesPerPixel, int _BytesPerLine );
+void FlipImageX(void* _ImageData, int _Width, int _Height, int _BytesPerPixel, int _BytesPerLine);
 
 /** Flip image vertically */
-void FlipImageY( void * _ImageData, int _Width, int _Height, int _BytesPerPixel, int _BytesPerLine );
+void FlipImageY(void* _ImageData, int _Width, int _Height, int _BytesPerPixel, int _BytesPerLine);
 
 /** Convert linear image to premultiplied alpha sRGB */
-void LinearToPremultipliedAlphaSRGB( const float * SourceImage,
-                                     int Width,
-                                     int Height,
-                                     bool bOverbright,
-                                     float fOverbright,
-                                     bool bReplaceAlpha,
-                                     float fReplaceAlpha,
-                                     byte * sRGB );
+void LinearToPremultipliedAlphaSRGB(const float* SourceImage,
+                                    int          Width,
+                                    int          Height,
+                                    bool         bOverbright,
+                                    float        fOverbright,
+                                    bool         bReplaceAlpha,
+                                    float        fReplaceAlpha,
+                                    byte*        sRGB);
 
 enum EImageDataType
 {
@@ -169,7 +170,7 @@ enum EImageDataType
 struct SImageResizeDesc
 {
     /** Source image */
-    const void * pImage;
+    const void* pImage;
     /** Source image width */
     int Width;
     /** Source image height */
@@ -200,25 +201,25 @@ struct SImageResizeDesc
 };
 
 /** Scale image */
-void ResizeImage( SImageResizeDesc const & InDesc, void * pScaledImage );
+void ResizeImage(SImageResizeDesc const& InDesc, void* pScaledImage);
 
 /** Calculate required size in bytes for mipmapped image */
-void ComputeRequiredMemorySize( SSoftwareMipmapGenerator const & _Config, int & _RequiredMemory, int & _NumLods );
+void ComputeRequiredMemorySize(SSoftwareMipmapGenerator const& _Config, int& _RequiredMemory, int& _NumMipLevels);
 
 /** Generate image mipmaps */
-void GenerateMipmaps( SSoftwareMipmapGenerator const & _Config, void * _Data );
+void GenerateMipmaps(SSoftwareMipmapGenerator const& _Config, void* _Data);
 
 /** Write image in PNG format */
-bool WritePNG( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _BytesPerLine );
+bool WritePNG(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _BytesPerLine);
 
 /** Write image in BMP format */
-bool WriteBMP( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData );
+bool WriteBMP(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData);
 
 /** Write image in TGA format */
-bool WriteTGA( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData );
+bool WriteTGA(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData);
 
 /** Write image in JPG format */
-bool WriteJPG( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const void * _ImageData, int _Quality );
+bool WriteJPG(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _Quality);
 
 /** Write image in HDR format */
-bool WriteHDR( IBinaryStream & _Stream, int _Width, int _Height, int _NumChannels, const float * _ImageData );
+bool WriteHDR(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const float* _ImageData);

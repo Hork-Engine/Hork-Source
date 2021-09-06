@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Core/Public/PodVector.h>
+#include <Core/Public/Ref.h>
 
 //#define AN_ACTIVE_THREADS_COUNTERS
 
@@ -38,9 +39,9 @@ SOFTWARE.
 struct SAsyncJob
 {
     /** Callback for the job */
-    void (*Callback)( void * );
+    void ( *Callback )( void * );
     /** Data that will be passed for the job */
-    void *Data;
+    void * Data;
     /** Pointer to the next job in job list */
     SAsyncJob * Next;
 };
@@ -62,7 +63,7 @@ public:
     int GetMaxParallelJobs() const;
 
     /** Add job to the list */
-    void AddJob( void (*_Callback)( void * ), void * _Data );
+    void AddJob( void ( *_Callback )( void * ), void * _Data );
 
     /** Submit jobs to worker threads */
     void Submit();
@@ -77,43 +78,41 @@ private:
     AAsyncJobList();
     ~AAsyncJobList();
 
-    AAsyncJobManager * JobManager;
+    AAsyncJobManager * JobManager{ nullptr };
 
     TPodVector< SAsyncJob, 1024 > JobPool;
-    SAsyncJob * JobList;
-    int NumPendingJobs;
+    SAsyncJob *                   JobList{ nullptr };
+    int                           NumPendingJobs{ 0 };
 
-    SAsyncJob * SubmittedJobs;
-    AMutex SubmitSync;
+    SAsyncJob * SubmittedJobs{ nullptr };
+    AMutex      SubmitSync;
 
-    AAtomicInt SubmittedJobsCount;
-    AAtomicInt FetchCount;
-    //AAtomicInt FetchLock;
+    AAtomicInt SubmittedJobsCount{ 0 };
+    AAtomicInt FetchCount{ 0 };
+    //AAtomicInt FetchLock{ 0 };
 
     ASyncEvent EventDone;
-    bool       bSignalled;      // FIXME: must be atomic?
+    bool       bSignalled{ false }; // FIXME: must be atomic?
 };
 
-AN_FORCEINLINE int AAsyncJobList::GetMaxParallelJobs() const {
+AN_FORCEINLINE int AAsyncJobList::GetMaxParallelJobs() const
+{
     return JobPool.Capacity();
 }
 
 /** Job manager */
-class AAsyncJobManager final
+class AAsyncJobManager final : public ARefCounted
 {
     AN_FORBID_COPY( AAsyncJobManager )
 
 public:
     static constexpr int MAX_WORKER_THREADS = 4;
-    static constexpr int MAX_JOB_LISTS = 4;
-
-    AAsyncJobManager();
+    static constexpr int MAX_JOB_LISTS      = 4;
 
     /** Initialize job manager. Set worker threads count and create job lists */
-    void Initialize( int _NumWorkerThreads, int _NumJobLists );
+    AAsyncJobManager( int _NumWorkerThreads, int _NumJobLists );
 
-    /** Shutdown job manager */
-    void Deinitialize();
+    ~AAsyncJobManager();
 
     void SubmitJobList( AAsyncJobList * InJobList );
 
@@ -121,41 +120,48 @@ public:
     void NotifyThreads();
 
     /** Get job list by the index */
-    AAsyncJobList * GetAsyncJobList( int _Index ) { AN_ASSERT( _Index >= 0 && _Index < NumJobLists ); return &JobList[_Index]; }
+    AAsyncJobList * GetAsyncJobList( int _Index )
+    {
+        AN_ASSERT( _Index >= 0 && _Index < NumJobLists );
+        return &JobList[_Index];
+    }
 
     /** Get worker threads count */
     int GetNumWorkerThreads() const { return NumWorkerThreads; }
 
 #ifdef AN_ACTIVE_THREADS_COUNTERS
-    int GetNumActiveThreads() const { return NumActiveThreads.Load(); }
+    int GetNumActiveThreads() const
+    {
+        return NumActiveThreads.Load();
+    }
 #endif
 
 private:
-
     static void _WorkerThreadRoutine( void * _Data );
 
     void WorkerThreadRoutine( int _ThreadId );
 
-    AThread     WorkerThread[MAX_WORKER_THREADS];
-    int         NumWorkerThreads;
+    AThread WorkerThread[MAX_WORKER_THREADS];
+    int     NumWorkerThreads{ 0 };
 
 #ifdef AN_ACTIVE_THREADS_COUNTERS
-    AAtomicInt  NumActiveThreads;
+    AAtomicInt NumActiveThreads{ 0 };
 #endif
 
-    ASyncEvent  EventNotify[MAX_WORKER_THREADS];
+    ASyncEvent EventNotify[MAX_WORKER_THREADS];
 
     AAsyncJobList JobList[MAX_JOB_LISTS];
-    int         NumJobLists;
+    int           NumJobLists{ 0 };
 
-    AAtomicInt  TotalJobs;
+    AAtomicInt TotalJobs{ 0 };
 
-    struct SContext {
+    struct SContext
+    {
         AAsyncJobManager * JobManager;
-        int ThreadId;
+        int                ThreadId;
     };
 
-    SContext    Contexts[MAX_WORKER_THREADS];
+    SContext Contexts[MAX_WORKER_THREADS];
 
-    bool        bTerminated;
+    bool bTerminated{ false };
 };

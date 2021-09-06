@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Core/Public/CoreMath.h>
 #include <Core/Public/PodVector.h>
 
-#include <RenderCore/FrameGraph/FrameGraph.h>
+#include <RenderCore/FrameGraph.h>
 
 #include "VT.h"
 
@@ -106,7 +106,7 @@ public:
     void MakePageTransferVisible( SPageTransfer * Transfer );
 
     /** Draw cache for debugging */
-    void Draw( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget, int LayerIndex );
+    void Draw(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, int LayerIndex);
 
 private:
     bool LockTransfers();

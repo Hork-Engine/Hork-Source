@@ -32,16 +32,19 @@ SOFTWARE.
 
 #include "DeviceObject.h"
 
-namespace RenderCore {
+namespace RenderCore
+{
 
-struct STransformFeedbackCreateInfo
+struct STransformFeedbackDesc
 {
 };
 
 class ITransformFeedback : public IDeviceObject
 {
 public:
-    ITransformFeedback( IDevice * Device ) : IDeviceObject( Device ) {}
+    ITransformFeedback(IDevice* pDevice) :
+        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_TRANSFORM_FEEDBACK)
+    {}
 };
 
-}
+} // namespace RenderCore

@@ -30,24 +30,25 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/FrameGraph/FrameGraph.h>
+#include <RenderCore/FrameGraph.h>
 
-class ABloomRenderer {
+class ABloomRenderer
+{
 public:
     ABloomRenderer();
 
     struct STextures
     {
-        AFrameGraphTexture * BloomTexture0;
-        AFrameGraphTexture * BloomTexture1;
-        AFrameGraphTexture * BloomTexture2;
-        AFrameGraphTexture * BloomTexture3;
+        RenderCore::FGTextureProxy* BloomTexture0;
+        RenderCore::FGTextureProxy* BloomTexture1;
+        RenderCore::FGTextureProxy* BloomTexture2;
+        RenderCore::FGTextureProxy* BloomTexture3;
     };
 
-    void AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, ABloomRenderer::STextures * pResult );
+    void AddPasses(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, ABloomRenderer::STextures* pResult);
 
 private:
-    TRef< RenderCore::IPipeline > BrightPipeline;
-    TRef< RenderCore::IPipeline > BlurPipeline;
-    TRef< RenderCore::IPipeline > CopyPipeline;
+    TRef<RenderCore::IPipeline> BrightPipeline;
+    TRef<RenderCore::IPipeline> BlurPipeline;
+    TRef<RenderCore::IPipeline> CopyPipeline;
 };

@@ -32,14 +32,17 @@ SOFTWARE.
 
 #include "DeviceObject.h"
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 class ITexture;
 
 class IBindlessSampler : public IDeviceObject
 {
 public:
-    IBindlessSampler( IDevice * Device ) : IDeviceObject( Device ) {}
+    IBindlessSampler(IDevice* pDevice) :
+        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_BINDLESS_SAMPLER)
+    {}
 
     virtual void MakeResident() = 0;
 
@@ -47,10 +50,10 @@ public:
 
     virtual bool IsResident() const = 0;
 
-    ITexture * GetTexture() { return Texture; }
+    ITexture* GetTexture() { return Texture; }
 
 protected:
-    ITexture * Texture;
+    ITexture* Texture;
 };
 
-}
+} // namespace RenderCore

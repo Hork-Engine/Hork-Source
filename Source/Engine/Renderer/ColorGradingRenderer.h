@@ -30,15 +30,16 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/FrameGraph/FrameGraph.h>
+#include <RenderCore/FrameGraph.h>
 
-class AColorGradingRenderer {
+class AColorGradingRenderer
+{
 public:
     AColorGradingRenderer();
 
-    void AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppColorGrading );
+    void AddPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppColorGrading);
 
 private:
-    TRef< RenderCore::IPipeline > PipelineLUT;
-    TRef< RenderCore::IPipeline > PipelineProcedural;
+    TRef<RenderCore::IPipeline> PipelineLUT;
+    TRef<RenderCore::IPipeline> PipelineProcedural;
 };

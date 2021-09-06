@@ -39,27 +39,8 @@ class ADeviceGLImpl;
 class ASparseTextureGLImpl final : public ISparseTexture
 {
 public:
-    ASparseTextureGLImpl( ADeviceGLImpl * _Device, SSparseTextureCreateInfo const & _CreateInfo );
+    ASparseTextureGLImpl(ADeviceGLImpl* pDevice, SSparseTextureDesc const& Desc);
     ~ASparseTextureGLImpl();
-
-    void CommitPage( int InLod, int InPageX, int InPageY, int InPageZ,
-                     DATA_FORMAT _Format, // Specifies a pixel format for the input data
-                     size_t _SizeInBytes,
-                     unsigned int _Alignment,               // Specifies alignment of source data
-                     const void * _SysMem ) override;
-
-    void CommitRect( STextureRect const & _Rectangle,
-                     DATA_FORMAT _Format, // Specifies a pixel format for the input data
-                     size_t _SizeInBytes,
-                     unsigned int _Alignment,               // Specifies alignment of source data
-                     const void * _SysMem ) override;
-
-    void UncommitPage( int InLod, int InPageX, int InPageY, int InPageZ ) override;
-
-    void UncommitRect( STextureRect const & _Rectangle ) override;
-
-private:
-    ADeviceGLImpl * pDevice;
 };
 
 }

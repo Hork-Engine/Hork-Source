@@ -30,44 +30,51 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/FrameGraph/FrameGraph.h>
+#include <RenderCore/FrameGraph.h>
 
-class ASSAORenderer {
+class ASSAORenderer
+{
 public:
     ASSAORenderer();
 
-    void AddPasses( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture * NormalTexture, AFrameGraphTexture ** ppSSAOTexture );
+    void AddPasses(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy* NormalTexture, RenderCore::FGTextureProxy** ppSSAOTexture);
 
 private:
-    void AddDeinterleaveDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture ** ppSSAOTexture );
+    void AddDeinterleaveDepthPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppSSAOTexture);
 
-    void AddCacheAwareAOPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DeinterleaveDepthArray, AFrameGraphTexture * NormalTexture, AFrameGraphTexture ** ppDeinterleaveDepthArray );
+    void AddCacheAwareAOPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* DeinterleaveDepthArray, RenderCore::FGTextureProxy* NormalTexture, RenderCore::FGTextureProxy** ppDeinterleaveDepthArray);
 
-    void AddReinterleavePass( AFrameGraph & FrameGraph, AFrameGraphTexture * SSAOTextureArray, AFrameGraphTexture ** ppSSAOTexture );
+    void AddReinterleavePass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SSAOTextureArray, RenderCore::FGTextureProxy** ppSSAOTexture);
 
-    void AddSimpleAOPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture * NormalTexture, AFrameGraphTexture ** ppSSAOTexture );
+    void AddSimpleAOPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy* NormalTexture, RenderCore::FGTextureProxy** ppSSAOTexture);
 
-    void AddAOBlurPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SSAOTexture, AFrameGraphTexture * LinearDepth, AFrameGraphTexture ** ppBluredSSAO );
+    void AddAOBlurPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SSAOTexture, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppBluredSSAO);
 
-    void ResizeAO( int Width, int Height );
+    void ResizeAO(int Width, int Height);
 
-    enum { HBAO_RANDOM_SIZE = 4 };
-    enum { HBAO_RANDOM_ELEMENTS = HBAO_RANDOM_SIZE*HBAO_RANDOM_SIZE };
+    enum
+    {
+        HBAO_RANDOM_SIZE = 4
+    };
+    enum
+    {
+        HBAO_RANDOM_ELEMENTS = HBAO_RANDOM_SIZE * HBAO_RANDOM_SIZE
+    };
 
-    int AOWidth = 0;
-    int AOHeight = 0;
-    int AOQuarterWidth = 0;
+    int AOWidth         = 0;
+    int AOHeight        = 0;
+    int AOQuarterWidth  = 0;
     int AOQuarterHeight = 0;
 
-    TRef< RenderCore::ITexture > SSAODeinterleaveDepthArray;
-    TRef< RenderCore::ITexture > SSAODeinterleaveDepthView[HBAO_RANDOM_ELEMENTS];
+    TRef<RenderCore::ITexture> SSAODeinterleaveDepthArray;
+    //RenderCore::ITextureView* SSAODeinterleaveDepthView[HBAO_RANDOM_ELEMENTS];
 
-    TRef< RenderCore::IPipeline > Pipe;
-    TRef< RenderCore::IPipeline > Pipe_ORTHO;
-    TRef< RenderCore::IPipeline > CacheAwarePipe;
-    TRef< RenderCore::IPipeline > CacheAwarePipe_ORTHO;
-    TRef< RenderCore::IPipeline > BlurPipe;
-    TRef< RenderCore::ITexture > RandomMap;
-    TRef< RenderCore::IPipeline > DeinterleavePipe;
-    TRef< RenderCore::IPipeline > ReinterleavePipe;
+    TRef<RenderCore::IPipeline> Pipe;
+    TRef<RenderCore::IPipeline> Pipe_ORTHO;
+    TRef<RenderCore::IPipeline> CacheAwarePipe;
+    TRef<RenderCore::IPipeline> CacheAwarePipe_ORTHO;
+    TRef<RenderCore::IPipeline> BlurPipe;
+    TRef<RenderCore::ITexture>  RandomMap;
+    TRef<RenderCore::IPipeline> DeinterleavePipe;
+    TRef<RenderCore::IPipeline> ReinterleavePipe;
 };

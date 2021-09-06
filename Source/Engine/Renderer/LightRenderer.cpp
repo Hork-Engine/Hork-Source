@@ -177,14 +177,12 @@ void ALightRenderer::CreateLookupBRDF()
         f.ReadBuffer( data, sizeInBytes );
     }
 
-    RenderCore::STextureCreateInfo createInfo = {};
-    createInfo.Type = RenderCore::TEXTURE_2D;
-    createInfo.Format = RenderCore::TEXTURE_FORMAT_RG16F;
-    createInfo.Resolution.Tex2D.Width = sizeX;
-    createInfo.Resolution.Tex2D.Height = sizeY;
-    createInfo.NumLods = 1;
-    GDevice->CreateTexture( createInfo, &LookupBRDF );
-    LookupBRDF->Write( 0, RenderCore::FORMAT_FLOAT2, sizeInBytes, 1, data );
+    GDevice->CreateTexture(RenderCore::STextureDesc{}
+                               .SetFormat(RenderCore::TEXTURE_FORMAT_RG16F)
+                               .SetResolution(STextureResolution2D(sizeX, sizeY))
+                               .SetBindFlags(BIND_SHADER_RESOURCE),
+                           &LookupBRDF);
+    rcmd->WriteTexture(LookupBRDF, 0, RenderCore::FORMAT_FLOAT2, sizeInBytes, 1, data);
 
     GHunkMemory.ClearLastHunk();
 }
@@ -267,51 +265,22 @@ bool ALightRenderer::BindMaterialLightPass( SRenderInstance const * Instance )
 }
 
 void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
-                              AFrameGraphTexture * DepthTarget,
-                              AFrameGraphTexture * SSAOTexture,
-                              AFrameGraphTexture * ShadowMapDepth0,
-                              AFrameGraphTexture * ShadowMapDepth1,
-                              AFrameGraphTexture * ShadowMapDepth2,
-                              AFrameGraphTexture * ShadowMapDepth3,
-                              AFrameGraphTexture * LinearDepth,
-                              AFrameGraphTexture ** ppLight/*,
-                              AFrameGraphTexture ** ppVelocity*/ )
+                              FGTextureProxy * DepthTarget,
+                              FGTextureProxy * SSAOTexture,
+                              FGTextureProxy * ShadowMapDepth0,
+                              FGTextureProxy * ShadowMapDepth1,
+                              FGTextureProxy * ShadowMapDepth2,
+                              FGTextureProxy * ShadowMapDepth3,
+                              FGTextureProxy * LinearDepth,
+                              FGTextureProxy ** ppLight/*,
+                              FGTextureProxy ** ppVelocity*/ )
 {
-    AFrameGraphTexture * PhotometricProfiles_R = FrameGraph.AddExternalResource(
-        "Photometric Profiles",
-        RenderCore::STextureCreateInfo(),
-        GRenderView->PhotometricProfiles
-    );
-
-    AFrameGraphTexture * LookupBRDF_R = FrameGraph.AddExternalResource(
-        "Lookup BRDF",
-        RenderCore::STextureCreateInfo(),
-        LookupBRDF
-    );
-
-    AFrameGraphBufferView * ClusterItemTBO_R = FrameGraph.AddExternalResource(
-        "Cluster Item Buffer View",
-        RenderCore::SBufferViewCreateInfo(),
-        GClusterItemTBO
-    );
-
-    AFrameGraphTexture * ClusterLookup_R = FrameGraph.AddExternalResource(
-        "Cluster lookup texture",
-        RenderCore::STextureCreateInfo(),
-        GClusterLookup
-    );
-
-    AFrameGraphTexture * ReflectionColor_R = FrameGraph.AddExternalResource(
-        "Reflection color texture",
-        RenderCore::STextureCreateInfo(),
-        GRenderView->LightTexture
-    );
-
-    AFrameGraphTexture * ReflectionDepth_R = FrameGraph.AddExternalResource(
-        "Reflection depth texture",
-        RenderCore::STextureCreateInfo(),
-        GRenderView->DepthTexture
-    );
+    FGTextureProxy*    PhotometricProfiles_R = FrameGraph.AddExternalResource<FGTextureProxy>("Photometric Profiles", GRenderView->PhotometricProfiles);
+    FGTextureProxy*    LookupBRDF_R          = FrameGraph.AddExternalResource<FGTextureProxy>("Lookup BRDF", LookupBRDF);
+    FGBufferViewProxy* ClusterItemTBO_R      = FrameGraph.AddExternalResource<FGBufferViewProxy>("Cluster Item Buffer View", GClusterItemTBO);
+    FGTextureProxy*    ClusterLookup_R       = FrameGraph.AddExternalResource<FGTextureProxy>("Cluster lookup texture", GClusterLookup);
+    FGTextureProxy*    ReflectionColor_R     = FrameGraph.AddExternalResource<FGTextureProxy>("Reflection color texture", GRenderView->LightTexture);
+    FGTextureProxy*    ReflectionDepth_R     = FrameGraph.AddExternalResource<FGTextureProxy>("Reflection depth texture", GRenderView->DepthTexture);
 
     RenderCore::TEXTURE_FORMAT pf;
     switch ( r_LightTextureFormat ) {
@@ -326,40 +295,37 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
 
     ARenderPass & opaquePass = FrameGraph.AddTask< ARenderPass >( "Opaque Pass" );
 
-    opaquePass.SetDynamicRenderArea( &GRenderViewArea );
+    opaquePass.SetRenderArea( GRenderViewArea );
 
-    opaquePass.AddResource( SSAOTexture, RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( PhotometricProfiles_R, RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( LookupBRDF_R, RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( ClusterItemTBO_R, RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( ClusterLookup_R, RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( ShadowMapDepth0, RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( ShadowMapDepth1, RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( ShadowMapDepth2, RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( ShadowMapDepth3, RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( SSAOTexture, FG_RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( PhotometricProfiles_R, FG_RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( LookupBRDF_R, FG_RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( ClusterItemTBO_R, FG_RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( ClusterLookup_R, FG_RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( ShadowMapDepth0, FG_RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( ShadowMapDepth1, FG_RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( ShadowMapDepth2, FG_RESOURCE_ACCESS_READ );
+    opaquePass.AddResource( ShadowMapDepth3, FG_RESOURCE_ACCESS_READ );
 
     if ( r_SSLR ) {
-        opaquePass.AddResource( ReflectionColor_R, RESOURCE_ACCESS_READ );
-        opaquePass.AddResource( ReflectionDepth_R, RESOURCE_ACCESS_READ );
+        opaquePass.AddResource( ReflectionColor_R, FG_RESOURCE_ACCESS_READ );
+        opaquePass.AddResource( ReflectionDepth_R, FG_RESOURCE_ACCESS_READ );
     }
 
-    opaquePass.SetColorAttachments(
-    {
-        {
-            "Light texture",
-            RenderCore::MakeTexture( pf, GetFrameResoultion() ),
-            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-        }
-    } );
+    opaquePass.SetColorAttachment(
+        STextureAttachment("Light texture",
+                           STextureDesc()
+                               .SetFormat(pf)
+                               .SetResolution(GetFrameResoultion()))
+            .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
  
     opaquePass.SetDepthStencilAttachment(
-    {
-        DepthTarget,
-        RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-    } );
+        STextureAttachment(DepthTarget)
+        .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
+    );
 
     opaquePass.AddSubpass( { 0 }, // color attachment refs
-                          [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
     {
         // Clearing don't work properly with dynamic resolution scale :(
 #if 0
@@ -443,44 +409,40 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         }
     } );
 
-    AFrameGraphTexture * LightTexture = opaquePass.GetColorAttachments()[0].Resource;
+    FGTextureProxy * LightTexture = opaquePass.GetColorAttachments()[0].pResource;
 
     if ( GRenderView->TranslucentInstanceCount ) {
         ARenderPass & translucentPass = FrameGraph.AddTask< ARenderPass >( "Translucent Pass" );
 
-        translucentPass.SetDynamicRenderArea( &GRenderViewArea );
+        translucentPass.SetRenderArea(GRenderViewArea);
 
-        translucentPass.AddResource( SSAOTexture, RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( PhotometricProfiles_R, RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( LookupBRDF_R, RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( ClusterItemTBO_R, RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( ClusterLookup_R, RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( ShadowMapDepth0, RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( ShadowMapDepth1, RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( ShadowMapDepth2, RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( ShadowMapDepth3, RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( SSAOTexture, FG_RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( PhotometricProfiles_R, FG_RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( LookupBRDF_R, FG_RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( ClusterItemTBO_R, FG_RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( ClusterLookup_R, FG_RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( ShadowMapDepth0, FG_RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( ShadowMapDepth1, FG_RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( ShadowMapDepth2, FG_RESOURCE_ACCESS_READ );
+        translucentPass.AddResource( ShadowMapDepth3, FG_RESOURCE_ACCESS_READ );
 
         if ( r_SSLR ) {
-            translucentPass.AddResource( ReflectionColor_R, RESOURCE_ACCESS_READ );
-            translucentPass.AddResource( ReflectionDepth_R, RESOURCE_ACCESS_READ );
+            translucentPass.AddResource( ReflectionColor_R, FG_RESOURCE_ACCESS_READ );
+            translucentPass.AddResource( ReflectionDepth_R, FG_RESOURCE_ACCESS_READ );
         }
 
-        translucentPass.SetColorAttachments(
-        {
-            {
-                LightTexture,
-                RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-            }
-        } );
+        translucentPass.SetColorAttachment(
+            STextureAttachment(LightTexture)
+            .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
+        );
 
         translucentPass.SetDepthStencilAttachment(
-        {
-            DepthTarget,
-            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-        } );
+            STextureAttachment(DepthTarget)
+            .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
+        );
 
         translucentPass.AddSubpass( { 0 }, // color attachment refs
-                                    [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                                   [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
         {
             SDrawIndexedCmd drawCmd;
             drawCmd.InstanceCount = 1;
@@ -535,16 +497,16 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
 
         } );
 
-        LightTexture = translucentPass.GetColorAttachments()[0].Resource;
+        LightTexture = translucentPass.GetColorAttachments()[0].pResource;
     }
 
     if ( r_SSLR ) {
         // TODO: We can store reflection color and depth in one texture
         ACustomTask & task = FrameGraph.AddTask< ACustomTask >( "Copy Light Pass" );
-        task.AddResource( LightTexture, RESOURCE_ACCESS_READ );
-        task.AddResource( LinearDepth, RESOURCE_ACCESS_READ );
-        task.AddResource( ReflectionColor_R, RESOURCE_ACCESS_WRITE );
-        task.AddResource( ReflectionDepth_R, RESOURCE_ACCESS_WRITE );
+        task.AddResource( LightTexture, FG_RESOURCE_ACCESS_READ );
+        task.AddResource( LinearDepth, FG_RESOURCE_ACCESS_READ );
+        task.AddResource( ReflectionColor_R, FG_RESOURCE_ACCESS_WRITE );
+        task.AddResource( ReflectionDepth_R, FG_RESOURCE_ACCESS_WRITE );
         task.SetFunction( [=]( ACustomTask const & RenderTask )
         {
             RenderCore::TextureCopy Copy = {};

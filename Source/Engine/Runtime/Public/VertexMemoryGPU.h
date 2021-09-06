@@ -88,7 +88,7 @@ public:
     /** Max blocks count. */
     uint8_t MaxBlocks = 0;
 
-    AVertexMemoryGPU( RenderCore::IDevice * Device );
+    AVertexMemoryGPU( RenderCore::IDevice * pDevice );
 
     ~AVertexMemoryGPU();
 
@@ -168,7 +168,7 @@ private:
         size_t UsedMemory;
     };
 
-    TRef< RenderCore::IDevice > RenderDevice;
+    TRef<RenderCore::IDevice>                 pDevice;
     TPodVector< SVertexHandle * > Handles;
     TPodVector< SVertexHandle * > HugeHandles;
     TPodVector< SBlock > Blocks;
@@ -183,7 +183,7 @@ class AStreamedMemoryGPU : public ARefCounted {
     AN_FORBID_COPY( AStreamedMemoryGPU )
 
 public:
-    AStreamedMemoryGPU( RenderCore::IDevice * Device );
+    AStreamedMemoryGPU(RenderCore::IDevice* Device, RenderCore::IImmediateContext* pImmediateContext);
 
     ~AStreamedMemoryGPU();
 
@@ -250,7 +250,7 @@ private:
         RenderCore::SyncObject Sync;
     };
 
-    TRef< RenderCore::IDevice > RenderDevice;
+    TRef< RenderCore::IDevice > pDevice;
     RenderCore::IImmediateContext * pImmediateContext;
     SChainBuffer ChainBuffer[STREAMED_MEMORY_GPU_BUFFERS_COUNT];
     TRef< RenderCore::IBuffer > Buffer;

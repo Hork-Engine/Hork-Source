@@ -52,13 +52,13 @@ AFrameRenderer::AFrameRenderer()
     resourceLayout.NumBuffers = 1;
     resourceLayout.Buffers = &bufferInfo;
 
-    SSamplerInfo nearestSampler;
+    SSamplerDesc nearestSampler;
     nearestSampler.Filter = FILTER_NEAREST;
     nearestSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
     nearestSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
     nearestSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
 
-    SSamplerInfo linearSampler;
+    SSamplerDesc linearSampler;
     linearSampler.Filter = FILTER_LINEAR;
     linearSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
     linearSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
@@ -73,7 +73,7 @@ AFrameRenderer::AFrameRenderer()
     CreateFullscreenQuadPipeline( &ReconstructNormalPipe, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal.frag", &resourceLayout );
     CreateFullscreenQuadPipeline( &ReconstructNormalPipe_ORTHO, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal_ortho.frag", &resourceLayout );
 
-    SSamplerInfo motionBlurSamplers[3];
+    SSamplerDesc motionBlurSamplers[3];
     motionBlurSamplers[0] = linearSampler;
     motionBlurSamplers[1] = nearestSampler;
     motionBlurSamplers[2] = nearestSampler;
@@ -88,7 +88,7 @@ AFrameRenderer::AFrameRenderer()
 
     CreateFullscreenQuadPipeline( &OutlineBlurPipe, "postprocess/outlineblur.vert", "postprocess/outlineblur.frag", &resourceLayout );
 
-    SSamplerInfo outlineApplySamplers[2];
+    SSamplerDesc outlineApplySamplers[2];
     outlineApplySamplers[0] = linearSampler;
     outlineApplySamplers[1] = linearSampler;
 
@@ -99,21 +99,19 @@ AFrameRenderer::AFrameRenderer()
     CreateFullscreenQuadPipeline( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_ALPHA );
 }
 
-void AFrameRenderer::AddLinearizeDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DepthTexture, AFrameGraphTexture ** ppLinearDepth )
+void AFrameRenderer::AddLinearizeDepthPass( AFrameGraph & FrameGraph, FGTextureProxy * DepthTexture, FGTextureProxy ** ppLinearDepth )
 {
     ARenderPass & linearizeDepthPass = FrameGraph.AddTask< ARenderPass >( "Linearize Depth Pass" );
-    linearizeDepthPass.SetDynamicRenderArea( &GRenderViewArea );
-    linearizeDepthPass.AddResource( DepthTexture, RESOURCE_ACCESS_READ );
-    linearizeDepthPass.SetColorAttachments(
-    {
-        {
-            "Linear depth texture",
-            MakeTexture( RenderCore::TEXTURE_FORMAT_R32F, GetFrameResoultion() ),
-            RenderCore::SAttachmentInfo().SetLoadOp( RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE )
-        }
-    } );
+    linearizeDepthPass.SetRenderArea(GRenderViewArea);
+    linearizeDepthPass.AddResource( DepthTexture, FG_RESOURCE_ACCESS_READ );
+    linearizeDepthPass.SetColorAttachment(
+        STextureAttachment("Linear depth texture",
+                           STextureDesc()
+                               .SetFormat(RenderCore::TEXTURE_FORMAT_R32F)
+                               .SetResolution(GetFrameResoultion()))
+            .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
     linearizeDepthPass.AddSubpass( { 0 }, // color attachment refs
-                                   [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                                  [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
     {
         using namespace RenderCore;
 
@@ -126,24 +124,22 @@ void AFrameRenderer::AddLinearizeDepthPass( AFrameGraph & FrameGraph, AFrameGrap
             DrawSAQ( LinearDepthPipe_ORTHO );
         }
     } );
-    *ppLinearDepth = linearizeDepthPass.GetColorAttachments()[0].Resource;
+    *ppLinearDepth = linearizeDepthPass.GetColorAttachments()[0].pResource;
 }
 
-void AFrameRenderer::AddReconstrutNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture ** ppNormalTexture )
+void AFrameRenderer::AddReconstrutNormalsPass( AFrameGraph & FrameGraph, FGTextureProxy * LinearDepth, FGTextureProxy ** ppNormalTexture )
 {
     ARenderPass & reconstructNormalPass = FrameGraph.AddTask< ARenderPass >( "Reconstruct Normal Pass" );
-    reconstructNormalPass.SetDynamicRenderArea( &GRenderViewArea );
-    reconstructNormalPass.AddResource( LinearDepth, RESOURCE_ACCESS_READ );
-    reconstructNormalPass.SetColorAttachments(
-    {
-        {
-            "Normal texture",
-            MakeTexture( RenderCore::TEXTURE_FORMAT_RGB8, GetFrameResoultion() ),
-            RenderCore::SAttachmentInfo().SetLoadOp( RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE )
-        }
-    } );
+    reconstructNormalPass.SetRenderArea(GRenderViewArea);
+    reconstructNormalPass.AddResource( LinearDepth, FG_RESOURCE_ACCESS_READ );
+    reconstructNormalPass.SetColorAttachment(
+        STextureAttachment("Normal texture",
+                           STextureDesc()
+                               .SetFormat(RenderCore::TEXTURE_FORMAT_RGB8)
+                               .SetResolution(GetFrameResoultion()))
+            .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
     reconstructNormalPass.AddSubpass( { 0 }, // color attachment refs
-                                      [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                                     [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
     {
         using namespace RenderCore;
 
@@ -156,35 +152,30 @@ void AFrameRenderer::AddReconstrutNormalsPass( AFrameGraph & FrameGraph, AFrameG
             DrawSAQ( ReconstructNormalPipe_ORTHO );
         }
     } );
-    *ppNormalTexture = reconstructNormalPass.GetColorAttachments()[0].Resource;
+    *ppNormalTexture = reconstructNormalPass.GetColorAttachments()[0].pResource;
 }
 
 void AFrameRenderer::AddMotionBlurPass( AFrameGraph & FrameGraph,
-                                        AFrameGraphTexture * LightTexture,
-                                        AFrameGraphTexture * VelocityTexture,
-                                        AFrameGraphTexture * LinearDepth,
-                                        AFrameGraphTexture ** ppResultTexture )
+                                        FGTextureProxy * LightTexture,
+                                        FGTextureProxy * VelocityTexture,
+                                        FGTextureProxy * LinearDepth,
+                                        FGTextureProxy ** ppResultTexture )
 {
     ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "Motion Blur Pass" );
 
-    renderPass.SetDynamicRenderArea( &GRenderViewArea );
+    renderPass.SetRenderArea(GRenderViewArea);
 
-    renderPass.AddResource( LightTexture, RESOURCE_ACCESS_READ );
-    renderPass.AddResource( VelocityTexture, RESOURCE_ACCESS_READ );
-    renderPass.AddResource( LinearDepth, RESOURCE_ACCESS_READ );
+    renderPass.AddResource( LightTexture, FG_RESOURCE_ACCESS_READ );
+    renderPass.AddResource( VelocityTexture, FG_RESOURCE_ACCESS_READ );
+    renderPass.AddResource( LinearDepth, FG_RESOURCE_ACCESS_READ );
 
-    renderPass.SetColorAttachments(
-    {
-        {
-            "Motion blur texture",
-            LightTexture->GetCreateInfo(), // Use same format as light texture
-            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-        }
-    }
-    );
+    renderPass.SetColorAttachment(
+        STextureAttachment("Motion blur texture",
+                           LightTexture->GetResourceDesc()) // Use same format as light texture
+            .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 
     renderPass.AddSubpass( { 0 }, // color attachment refs
-                           [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
 
     {
         rtbl->BindTexture( 0, LightTexture->Actual() );
@@ -195,7 +186,7 @@ void AFrameRenderer::AddMotionBlurPass( AFrameGraph & FrameGraph,
 
     } );
 
-    *ppResultTexture = renderPass.GetColorAttachments()[0].Resource;
+    *ppResultTexture = renderPass.GetColorAttachments()[0].pResource;
 }
 
 static bool BindMaterialOutlinePass( SRenderInstance const * instance )
@@ -225,7 +216,7 @@ static bool BindMaterialOutlinePass( SRenderInstance const * instance )
     return true;
 }
 
-void AFrameRenderer::AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppOutlineTexture )
+void AFrameRenderer::AddOutlinePass( AFrameGraph & FrameGraph, FGTextureProxy ** ppOutlineTexture )
 {
     if ( GRenderView->OutlineInstanceCount == 0 ) {
         *ppOutlineTexture = nullptr;
@@ -236,21 +227,19 @@ void AFrameRenderer::AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTextur
 
     ARenderPass & maskPass = FrameGraph.AddTask< ARenderPass >( "Outline Pass" );
 
-    maskPass.SetDynamicRenderArea( &GRenderViewArea );
+    maskPass.SetRenderArea(GRenderViewArea);
 
-    maskPass.SetClearColors( { RenderCore::MakeClearColorValue( 0.0f, 1.0f, 0.0f, 0.0f ) } );
-
-    maskPass.SetColorAttachments(
-    {
-        {
-            "Outline mask",
-            RenderCore::MakeTexture( pf, GetFrameResoultion() ),
-            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_CLEAR )
-        }
-    } );
+    maskPass.SetColorAttachment(
+        STextureAttachment("Outline mask",
+                           STextureDesc()
+                               .SetFormat(pf)
+                               .SetResolution(GetFrameResoultion()))
+            .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
+            .SetClearValue(RenderCore::MakeClearColorValue(0.0f, 1.0f, 0.0f, 0.0f))
+    );
 
     maskPass.AddSubpass( { 0 }, // color attachment refs
-                         [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
     {
         //for ( int i = 0 ; i < GRenderView->TerrainInstanceCount ; i++ ) {
         //    STerrainRenderInstance const * instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
@@ -296,30 +285,28 @@ void AFrameRenderer::AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTextur
         }
     } );
 
-    *ppOutlineTexture = maskPass.GetColorAttachments()[0].Resource;
+    *ppOutlineTexture = maskPass.GetColorAttachments()[0].pResource;
 }
 
-void AFrameRenderer::AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget, AFrameGraphTexture * OutlineMaskTexture )
+void AFrameRenderer::AddOutlineOverlayPass( AFrameGraph & FrameGraph, FGTextureProxy * RenderTarget, FGTextureProxy * OutlineMaskTexture )
 {
     RenderCore::TEXTURE_FORMAT pf = TEXTURE_FORMAT_RG8;
 
     ARenderPass & blurPass = FrameGraph.AddTask< ARenderPass >( "Outline Blur Pass" );
 
-    blurPass.SetDynamicRenderArea( &GRenderViewArea );
+    blurPass.SetRenderArea(GRenderViewArea);
 
-    blurPass.AddResource( OutlineMaskTexture, RESOURCE_ACCESS_READ );
+    blurPass.AddResource( OutlineMaskTexture, FG_RESOURCE_ACCESS_READ );
 
-    blurPass.SetColorAttachments(
-    {
-        {
-            "Outline blured mask",
-            RenderCore::MakeTexture( pf, GetFrameResoultion() ),
-            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-        }
-    } );
+    blurPass.SetColorAttachment(
+        STextureAttachment("Outline blured mask",
+                           STextureDesc()
+                               .SetFormat(pf)
+                               .SetResolution(GetFrameResoultion()))
+            .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 
     blurPass.AddSubpass( { 0 }, // color attachment refs
-                         [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
     {
         using namespace RenderCore;
 
@@ -328,26 +315,22 @@ void AFrameRenderer::AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGrap
         DrawSAQ( OutlineBlurPipe );
     } );
 
-    AFrameGraphTexture * OutlineBlurTexture = blurPass.GetColorAttachments()[0].Resource;
+    FGTextureProxy * OutlineBlurTexture = blurPass.GetColorAttachments()[0].pResource;
 
     ARenderPass & applyPass = FrameGraph.AddTask< ARenderPass >( "Outline Apply Pass" );
 
-    applyPass.SetDynamicRenderArea( &GRenderViewArea );
+    applyPass.SetRenderArea(GRenderViewArea);
 
-    applyPass.AddResource( OutlineMaskTexture, RESOURCE_ACCESS_READ );
-    applyPass.AddResource( OutlineBlurTexture, RESOURCE_ACCESS_READ );
+    applyPass.AddResource( OutlineMaskTexture, FG_RESOURCE_ACCESS_READ );
+    applyPass.AddResource( OutlineBlurTexture, FG_RESOURCE_ACCESS_READ );
 
-    applyPass.SetColorAttachments(
-    {
-        {
-            RenderTarget,
-            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-        }
-    }
+    applyPass.SetColorAttachment(
+        STextureAttachment(RenderTarget)
+        .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
     );
 
     applyPass.AddSubpass( { 0 }, // color attachment refs
-                         [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                         [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
     {
         using namespace RenderCore;
 
@@ -358,17 +341,15 @@ void AFrameRenderer::AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGrap
     } );
 }
 
-void AFrameRenderer::Render( AFrameGraph & FrameGraph, bool bVirtualTexturing, AVirtualTextureCache * PhysCacheVT, SFrameGraphCaptured & CapturedResources )
+void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVirtualTextureCache* PhysCacheVT, FGTextureProxy** ppFinalTexture)
 {
     AScopedTimeCheck TimeCheck( "Framegraph build&fill" );
-
-    FrameGraph.Clear();
 
     if ( bVirtualTexturing ) {
         GRenderView->VTFeedback->AddPass( FrameGraph );
     }
 
-    AFrameGraphTexture * ShadowMapDepth[MAX_DIRECTIONAL_LIGHTS] = {};
+    FGTextureProxy * ShadowMapDepth[MAX_DIRECTIONAL_LIGHTS] = {};
 
     int numDirLights = GRenderView->NumDirectionalLights;
     if ( numDirLights > MAX_DIRECTIONAL_LIGHTS ) {
@@ -389,28 +370,24 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, bool bVirtualTexturing, A
     }
 
 
-    AFrameGraphTexture * DepthTexture, * VelocityTexture;
+    FGTextureProxy * DepthTexture, * VelocityTexture;
     AddDepthPass( FrameGraph, &DepthTexture, &VelocityTexture );
 
-    AFrameGraphTexture * LinearDepth;
+    FGTextureProxy * LinearDepth;
     AddLinearizeDepthPass( FrameGraph, DepthTexture, &LinearDepth );
 
-    AFrameGraphTexture * NormalTexture;
+    FGTextureProxy * NormalTexture;
     AddReconstrutNormalsPass( FrameGraph, LinearDepth, &NormalTexture );
 
-    AFrameGraphTexture * SSAOTexture;
+    FGTextureProxy * SSAOTexture;
     if ( r_HBAO ) {
         SSAORenderer.AddPasses( FrameGraph, LinearDepth, NormalTexture, &SSAOTexture );
     }
     else {
-        SSAOTexture = FrameGraph.AddExternalResource(
-            "White Texture",
-            RenderCore::STextureCreateInfo(),
-            GWhiteTexture
-        );
+        SSAOTexture = FrameGraph.AddExternalResource<FGTextureProxy>("White Texture", GWhiteTexture);
     }
 
-    AFrameGraphTexture * LightTexture;
+    FGTextureProxy * LightTexture;
     LightRenderer.AddPass( FrameGraph, DepthTexture, SSAOTexture, ShadowMapDepth[0], ShadowMapDepth[1], ShadowMapDepth[2], ShadowMapDepth[3], LinearDepth, &LightTexture );
 
     if ( r_MotionBlur ) {
@@ -420,23 +397,23 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, bool bVirtualTexturing, A
     ABloomRenderer::STextures BloomTex;
     BloomRenderer.AddPasses( FrameGraph, LightTexture, &BloomTex );
 
-    AFrameGraphTexture * Exposure;
+    FGTextureProxy * Exposure;
     ExposureRenderer.AddPass( FrameGraph, LightTexture, &Exposure );
 
-    AFrameGraphTexture * ColorGrading;
+    FGTextureProxy * ColorGrading;
     ColorGradingRenderer.AddPass( FrameGraph, &ColorGrading );
 
-    AFrameGraphTexture * PostprocessTexture;
+    FGTextureProxy * PostprocessTexture;
     PostprocessRenderer.AddPass( FrameGraph, LightTexture, Exposure, ColorGrading, BloomTex, &PostprocessTexture );
 
-    AFrameGraphTexture * OutlineTexture;
+    FGTextureProxy * OutlineTexture;
     AddOutlinePass( FrameGraph, &OutlineTexture );
 
     if ( OutlineTexture ) {
         AddOutlineOverlayPass( FrameGraph, PostprocessTexture, OutlineTexture );
     }
 
-    AFrameGraphTexture * FinalTexture;
+    FGTextureProxy * FinalTexture;
     if ( r_FXAA ) {
         FxaaRenderer.AddPass( FrameGraph, PostprocessTexture, &FinalTexture );
     }
@@ -466,11 +443,5 @@ void AFrameRenderer::Render( AFrameGraph & FrameGraph, bool bVirtualTexturing, A
         }
     }
 
-    FinalTexture->SetResourceCapture( true );
-
-    CapturedResources.FinalTexture = FinalTexture;
-
-    FrameGraph.Build();
-
-    //FrameGraph.ExportGraphviz( "framegraph.graphviz" );
+    *ppFinalTexture = FinalTexture;
 }

@@ -47,35 +47,35 @@ public:
     ARenderBackend();
     ~ARenderBackend();
 
-    void RenderFrame( SRenderFrame * pFrameData );
+    void RenderFrame(RenderCore::ITexture* pBackBuffer, SRenderFrame* pFrameData);
 
-    void InitializeMaterial( AMaterialGPU * _Material, SMaterialDef const * _Def );
+    void InitializeMaterial(AMaterialGPU* _Material, SMaterialDef const* _Def);
 
     int ClusterPackedIndicesAlignment() const;
 
 private:
-    void RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture );
-    void SetViewConstants();
-    void UploadShaderResources();
+    void RenderView(int ViewportIndex, SRenderView* pRenderView, RenderCore::FGTextureProxy** ppViewTexture);
+    void SetViewConstants(int ViewportIndex);
+    void UploadShaderResources(int ViewportIndex);
 
-    TRef< AFrameGraph > FrameGraph;
-    AFrameRenderer::SFrameGraphCaptured CapturedResources;
+    TRef<RenderCore::AFrameGraph>       FrameGraph;
+    //AFrameRenderer::SFrameGraphCaptured CapturedResources;
 
-    TRef< ACanvasRenderer > CanvasRenderer;
-    TRef< AFrameRenderer > FrameRenderer;
+    TRef<ACanvasRenderer> CanvasRenderer;
+    TRef<AFrameRenderer>  FrameRenderer;
 
-    TRef< RenderCore::IQueryPool > TimeQuery;
+    TRef<RenderCore::IQueryPool> TimeQuery;
 
-    TRef< RenderCore::IQueryPool > TimeStamp1;
-    TRef< RenderCore::IQueryPool > TimeStamp2;
+    TRef<RenderCore::IQueryPool> TimeStamp1;
+    TRef<RenderCore::IQueryPool> TimeStamp2;
 
-    TRef< AVirtualTextureFeedbackAnalyzer > FeedbackAnalyzerVT;
-    TRef< AVirtualTextureCache > PhysCacheVT;
+    TRef<AVirtualTextureFeedbackAnalyzer> FeedbackAnalyzerVT;
+    TRef<AVirtualTextureCache>            PhysCacheVT;
 
-    TRef< RenderCore::IPipeline > TerrainDepthPipeline;
-    TRef< RenderCore::IPipeline > TerrainLightPipeline;
-    TRef< RenderCore::IPipeline > TerrainWireframePipeline;
+    TRef<RenderCore::IPipeline> TerrainDepthPipeline;
+    TRef<RenderCore::IPipeline> TerrainLightPipeline;
+    TRef<RenderCore::IPipeline> TerrainWireframePipeline;
 
     // Just for test
-    TRef< AVirtualTexture > TestVT;
+    TRef<AVirtualTexture> TestVT;
 };

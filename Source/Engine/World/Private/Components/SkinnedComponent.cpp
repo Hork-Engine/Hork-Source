@@ -251,7 +251,7 @@ void ASkinnedComponent::UpdateTransforms() {
                 STransform const & frame2 = transforms[ jointAnim.TransformOffset + controller->NextFrame ];
 
                 transform.Position = Math::Lerp( frame1.Position, frame2.Position, controller->Blend );
-                transform.Rotation = frame1.Rotation.Slerp( frame2.Rotation, controller->Blend );
+                transform.Rotation = Math::Slerp( frame1.Rotation, frame2.Rotation, controller->Blend );
                 transform.Scale = Math::Lerp( frame1.Scale, frame2.Scale, controller->Blend );
             }
 

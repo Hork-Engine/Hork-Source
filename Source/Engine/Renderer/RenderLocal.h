@@ -36,8 +36,6 @@ SOFTWARE.
 #include "CircularBuffer.h"
 #include "SphereMesh.h"
 
-//#include <RenderCore/FrameGraph/FrameGraph.h>
-
 #define SHADOWMAP_PCF
 //#define SHADOWMAP_PCSS
 //#define SHADOWMAP_VSM
@@ -63,8 +61,8 @@ struct SViewConstantBuffer
 
     // ViewportParams
     Float2 InvViewportSize;
-    float ZNear;
-    float ZFar;
+    float  ZNear;
+    float  ZFar;
 
     Float4 ProjectionInfo;
 
@@ -86,7 +84,7 @@ struct SViewConstantBuffer
     Float4 VTPageTranslationOffsetAndScale;
 
     Float3 ViewPosition;
-    float TimeDelta;
+    float  TimeDelta;
 
     //float ViewHeight;
     //float Pad[3];
@@ -99,11 +97,11 @@ struct SViewConstantBuffer
     float ColorGrading;
     float FXAA;
 
-    Float4 VignetteColorIntensity;        // rgb, intensity
-    float VignetteOuterRadiusSqr;
-    float VignetteInnerRadiusSqr;
-    float ViewBrightness;
-    float ColorGradingAdaptationSpeed;
+    Float4 VignetteColorIntensity; // rgb, intensity
+    float  VignetteOuterRadiusSqr;
+    float  VignetteInnerRadiusSqr;
+    float  ViewBrightness;
+    float  ColorGradingAdaptationSpeed;
 
     float SSLRSampleOffset;
     float SSLRMaxDist;
@@ -118,25 +116,25 @@ struct SViewConstantBuffer
     int32_t Pad4;
     int32_t DebugMode;
 
-    Float4 LightDirs[MAX_DIRECTIONAL_LIGHTS];            // Direction, W-channel is not used
-    Float4 LightColors[MAX_DIRECTIONAL_LIGHTS];          // RGB, alpha - ambient intensity
-    uint32_t LightParameters[MAX_DIRECTIONAL_LIGHTS][4];      // RenderMask, FirstCascade, NumCascades, W-channel is not used
+    Float4   LightDirs[MAX_DIRECTIONAL_LIGHTS];          // Direction, W-channel is not used
+    Float4   LightColors[MAX_DIRECTIONAL_LIGHTS];        // RGB, alpha - ambient intensity
+    uint32_t LightParameters[MAX_DIRECTIONAL_LIGHTS][4]; // RenderMask, FirstCascade, NumCascades, W-channel is not used
 };
 
-static_assert( sizeof( SViewConstantBuffer ) <= ( 16<<10 ), "sizeof SViewConstantBuffer > 16 kB" );
+static_assert(sizeof(SViewConstantBuffer) <= (16 << 10), "sizeof SViewConstantBuffer > 16 kB");
 
 struct SInstanceConstantBuffer
 {
     Float4x4 TransformMatrix;
     Float4x4 TransformMatrixP;
     Float3x4 ModelNormalToViewSpace;
-    Float4 LightmapOffset;
-    Float4 uaddr_0;
-    Float4 uaddr_1;
-    Float4 uaddr_2;
-    Float4 uaddr_3;
-    Float2 VTOffset;
-    Float2 VTScale;
+    Float4   LightmapOffset;
+    Float4   uaddr_0;
+    Float4   uaddr_1;
+    Float4   uaddr_2;
+    Float4   uaddr_3;
+    Float2   VTOffset;
+    Float2   VTScale;
     uint32_t VTUnit;
     uint32_t Pad0;
     uint32_t Pad1;
@@ -146,8 +144,8 @@ struct SInstanceConstantBuffer
 struct SFeedbackConstantBuffer
 {
     Float4x4 TransformMatrix; // Instance MVP
-    Float2 VTOffset;
-    Float2 VTScale;
+    Float2   VTOffset;
+    Float2   VTScale;
     uint32_t VTUnit;
     uint32_t Pad[3];
 };
@@ -158,10 +156,10 @@ struct SShadowInstanceConstantBuffer
     //Float4 ModelNormalToViewSpace0;
     //Float4 ModelNormalToViewSpace1;
     //Float4 ModelNormalToViewSpace2;
-    Float4 uaddr_0;
-    Float4 uaddr_1;
-    Float4 uaddr_2;
-    Float4 uaddr_3;
+    Float4   uaddr_0;
+    Float4   uaddr_1;
+    Float4   uaddr_2;
+    Float4   uaddr_3;
     uint32_t CascadeMask;
     uint32_t Pad[3];
 };
@@ -170,9 +168,9 @@ struct STerrainInstanceConstantBuffer
 {
     Float4x4 LocalViewProjection;
     Float3x4 ModelNormalToViewSpace;
-    Float4 ViewPositionAndHeight;
-    Int2 TerrainClipMin;
-    Int2 TerrainClipMax;
+    Float4   ViewPositionAndHeight;
+    Int2     TerrainClipMin;
+    Int2     TerrainClipMax;
 };
 
 
@@ -191,66 +189,71 @@ extern ARuntimeVariable r_HBAO;
 //
 
 /** Render device */
-extern RenderCore::IDevice * GDevice;
+extern RenderCore::IDevice* GDevice;
 
 /** Render context */
-extern RenderCore::IImmediateContext * rcmd;
+extern RenderCore::IImmediateContext* rcmd;
 
 /** Render resource table */
-extern RenderCore::IResourceTable * rtbl;
+extern RenderCore::IResourceTable* rtbl;
 
 /** Render frame data */
-extern SRenderFrame * GFrameData;
+extern SRenderFrame* GFrameData;
 
 /** Render frame view */
-extern SRenderView * GRenderView;
+extern SRenderView* GRenderView;
 
 /** Render view area */
-extern ARenderArea GRenderViewArea;
+extern RenderCore::SRect2D GRenderViewArea;
 
 /** Stream buffer */
-extern RenderCore::IBuffer * GStreamBuffer;
+extern RenderCore::IBuffer* GStreamBuffer;
 
 /** Circular buffer. Contains constant data for single draw call.
 Don't use to store long-live data. */
-extern TRef< ACircularBuffer > GCircularBuffer;
+extern TRef<ACircularBuffer> GCircularBuffer;
 
 /** Sphere mesh */
-extern TRef< ASphereMesh > GSphereMesh;
+extern TRef<ASphereMesh> GSphereMesh;
 
 /** Screen aligned quad mesh */
-extern TRef< RenderCore::IBuffer > GSaq;
+extern TRef<RenderCore::IBuffer> GSaq;
 
 /** Simple white texture */
-extern TRef< RenderCore::ITexture > GWhiteTexture;
+extern TRef<RenderCore::ITexture> GWhiteTexture;
 
 /** Cluster lookcup 3D texture */
-extern TRef< RenderCore::ITexture > GClusterLookup;
+extern TRef<RenderCore::ITexture> GClusterLookup;
 
 /** Cluster item references */
-extern TRef< RenderCore::IBuffer > GClusterItemBuffer;
+extern TRef<RenderCore::IBuffer> GClusterItemBuffer;
 
 /** Cluster item references view */
-extern TRef< RenderCore::IBufferView > GClusterItemTBO;
+extern TRef<RenderCore::IBufferView> GClusterItemTBO;
 
 /** Irradiance texture array */
-extern TRef< RenderCore::ITexture > GIrradianceMap;
-extern TRef< RenderCore::IBindlessSampler > GIrradianceMapBindless;
+extern TRef<RenderCore::ITexture>         GIrradianceMap;
+extern TRef<RenderCore::IBindlessSampler> GIrradianceMapBindless;
 
 /** Reflections texture array */
-extern TRef< RenderCore::ITexture > GPrefilteredMap;
-extern TRef< RenderCore::IBindlessSampler > GPrefilteredMapBindless;
+extern TRef<RenderCore::ITexture>         GPrefilteredMap;
+extern TRef<RenderCore::IBindlessSampler> GPrefilteredMapBindless;
 
-/** View constant binding */
-extern size_t GViewConstantBufferBindingBindingOffset;
-extern size_t GViewConstantBufferBindingBindingSize;
+struct SRenderViewContext
+{
+    /** View constant binding */
+    size_t ViewConstantBufferBindingBindingOffset;
+    size_t ViewConstantBufferBindingBindingSize;
+};
+extern std::vector<SRenderViewContext> GRenderViewContext;
 
-extern AVirtualTextureFeedbackAnalyzer * GFeedbackAnalyzerVT;
-extern AVirtualTextureCache * GPhysCacheVT;
 
-extern RenderCore::IPipeline * GTerrainDepthPipeline;
-extern RenderCore::IPipeline * GTerrainLightPipeline;
-extern RenderCore::IPipeline * GTerrainWireframePipeline;
+extern AVirtualTextureFeedbackAnalyzer* GFeedbackAnalyzerVT;
+extern AVirtualTextureCache*            GPhysCacheVT;
+
+extern RenderCore::IPipeline* GTerrainDepthPipeline;
+extern RenderCore::IPipeline* GTerrainLightPipeline;
+extern RenderCore::IPipeline* GTerrainWireframePipeline;
 
 //
 // Common functions
@@ -258,67 +261,68 @@ extern RenderCore::IPipeline * GTerrainWireframePipeline;
 
 RenderCore::STextureResolution2D GetFrameResoultion();
 
-void DrawSAQ( RenderCore::IPipeline * Pipeline, unsigned int InstanceCount = 1 );
+void DrawSAQ(RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
-void DrawSphere( RenderCore::IPipeline * Pipeline, unsigned int InstanceCount = 1 );
+void DrawSphere(RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
-void BindVertexAndIndexBuffers( SRenderInstance const * Instance );
+void BindVertexAndIndexBuffers(SRenderInstance const* Instance);
 
-void BindVertexAndIndexBuffers( SShadowRenderInstance const * Instance );
+void BindVertexAndIndexBuffers(SShadowRenderInstance const* Instance);
 
-void BindVertexAndIndexBuffers( SLightPortalRenderInstance const * Instance );
+void BindVertexAndIndexBuffers(SLightPortalRenderInstance const* Instance);
 
-void BindSkeleton( size_t _Offset, size_t _Size );
-void BindSkeletonMotionBlur( size_t _Offset, size_t _Size );
+void BindSkeleton(size_t _Offset, size_t _Size);
+void BindSkeletonMotionBlur(size_t _Offset, size_t _Size);
 
-void BindTextures( RenderCore::IResourceTable * Rtbl, SMaterialFrameData * Instance, int MaxTextures );
-void BindTextures( SMaterialFrameData * Instance, int MaxTextures );
+void BindTextures(RenderCore::IResourceTable* Rtbl, SMaterialFrameData* Instance, int MaxTextures);
+void BindTextures(SMaterialFrameData* Instance, int MaxTextures);
 
-void BindInstanceConstants( SRenderInstance const * Instance );
+void BindInstanceConstants(SRenderInstance const* Instance);
 
-void BindInstanceConstantsFB( SRenderInstance const * Instance );
+void BindInstanceConstantsFB(SRenderInstance const* Instance);
 
-void BindShadowInstanceConstants( SShadowRenderInstance const * Instance );
+void BindShadowInstanceConstants(SShadowRenderInstance const* Instance);
 
-void * MapDrawCallConstants( size_t SizeInBytes );
+void* MapDrawCallConstants(size_t SizeInBytes);
 
-template< typename T >
-T * MapDrawCallConstants() {
-    return (T *)MapDrawCallConstants( sizeof( T ) );
+template <typename T>
+T* MapDrawCallConstants()
+{
+    return (T*)MapDrawCallConstants(sizeof(T));
 }
 
 void BindShadowMatrix();
-void BindShadowCascades( size_t StreamHandle );
+void BindShadowCascades(size_t StreamHandle);
 
-void SaveSnapshot( RenderCore::ITexture & _Texture );
+void SaveSnapshot(RenderCore::ITexture& _Texture);
 
-AString LoadShader( AStringView FileName, SMaterialShader const * Predefined = nullptr );
-AString LoadShaderFromString( AStringView FileName, AStringView Source, SMaterialShader const * Predefined = nullptr );
+AString LoadShader(AStringView FileName, SMaterialShader const* Predefined = nullptr);
+AString LoadShaderFromString(AStringView FileName, AStringView Source, SMaterialShader const* Predefined = nullptr);
 
-void CreateShader( RenderCore::SHADER_TYPE _ShaderType, TPodVector< const char * > _SourcePtrs, TRef< RenderCore::IShaderModule > & _Module );
-void CreateShader( RenderCore::SHADER_TYPE _ShaderType, const char * _SourcePtr, TRef< RenderCore::IShaderModule > & _Module );
-void CreateShader( RenderCore::SHADER_TYPE _ShaderType, AString const & _SourcePtr, TRef< RenderCore::IShaderModule > & _Module );
+void CreateShader(RenderCore::SHADER_TYPE _ShaderType, TPodVector<const char*> _SourcePtrs, TRef<RenderCore::IShaderModule>& _Module);
+void CreateShader(RenderCore::SHADER_TYPE _ShaderType, const char* _SourcePtr, TRef<RenderCore::IShaderModule>& _Module);
+void CreateShader(RenderCore::SHADER_TYPE _ShaderType, AString const& _SourcePtr, TRef<RenderCore::IShaderModule>& _Module);
 
-void CreateVertexShader( AStringView FileName, RenderCore::SVertexAttribInfo const * _VertexAttribs, int _NumVertexAttribs, TRef< RenderCore::IShaderModule > & _Module );
-void CreateTessControlShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module );
-void CreateTessEvalShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module );
-void CreateGeometryShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module );
-void CreateFragmentShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module );
+void CreateVertexShader(AStringView FileName, RenderCore::SVertexAttribInfo const* _VertexAttribs, int _NumVertexAttribs, TRef<RenderCore::IShaderModule>& _Module);
+void CreateTessControlShader(AStringView FileName, TRef<RenderCore::IShaderModule>& _Module);
+void CreateTessEvalShader(AStringView FileName, TRef<RenderCore::IShaderModule>& _Module);
+void CreateGeometryShader(AStringView FileName, TRef<RenderCore::IShaderModule>& _Module);
+void CreateFragmentShader(AStringView FileName, TRef<RenderCore::IShaderModule>& _Module);
 
-void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline,
-                                   AStringView VertexShader,
-                                   AStringView FragmentShader,
-                                   RenderCore::SPipelineResourceLayout const * pResourceLayout = nullptr,
-                                   RenderCore::BLENDING_PRESET BlendingPreset = RenderCore::BLENDING_NO_BLEND );
+void CreateFullscreenQuadPipeline(TRef<RenderCore::IPipeline>*               ppPipeline,
+                                  AStringView                                VertexShader,
+                                  AStringView                                FragmentShader,
+                                  RenderCore::SPipelineResourceLayout const* pResourceLayout = nullptr,
+                                  RenderCore::BLENDING_PRESET                BlendingPreset  = RenderCore::BLENDING_NO_BLEND);
 
-void CreateFullscreenQuadPipelineGS( TRef< RenderCore::IPipeline > * ppPipeline,
-                                     AStringView VertexShader,
-                                     AStringView FragmentShader,
-                                     AStringView GeometryShader,
-                                     RenderCore::SPipelineResourceLayout const * pResourceLayout = nullptr,
-                                     RenderCore::BLENDING_PRESET BlendingPreset = RenderCore::BLENDING_NO_BLEND );
+void CreateFullscreenQuadPipelineGS(TRef<RenderCore::IPipeline>*               ppPipeline,
+                                    AStringView                                VertexShader,
+                                    AStringView                                FragmentShader,
+                                    AStringView                                GeometryShader,
+                                    RenderCore::SPipelineResourceLayout const* pResourceLayout = nullptr,
+                                    RenderCore::BLENDING_PRESET                BlendingPreset  = RenderCore::BLENDING_NO_BLEND);
 
-AN_FORCEINLINE void StoreFloat3x3AsFloat3x4Transposed( Float3x3 const & _In, Float3x4 & _Out )
+AN_FORCEINLINE void StoreFloat3x3AsFloat3x4Transposed(Float3x3 const& _In, Float3x4& _Out)
 {
     _Out[0][0] = _In[0][0];
     _Out[0][1] = _In[1][0];
@@ -336,7 +340,7 @@ AN_FORCEINLINE void StoreFloat3x3AsFloat3x4Transposed( Float3x3 const & _In, Flo
     _Out[2][3] = 0;
 }
 
-AN_FORCEINLINE void StoreFloat3x4AsFloat4x4Transposed( Float3x4 const & _In, Float4x4 & _Out )
+AN_FORCEINLINE void StoreFloat3x4AsFloat4x4Transposed(Float3x4 const& _In, Float4x4& _Out)
 {
     _Out[0][0] = _In[0][0];
     _Out[0][1] = _In[1][0];

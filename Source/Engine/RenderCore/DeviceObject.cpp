@@ -32,28 +32,32 @@ SOFTWARE.
 #include "Device.h"
 
 #ifdef AN_DEBUG
-#include <Core/Public/IntrusiveLinkedListMacro.h>
+#    include <Core/Public/IntrusiveLinkedListMacro.h>
 #endif
 
-namespace RenderCore {
+namespace RenderCore
+{
 
-IDeviceObject::IDeviceObject( IDevice * Device )
-    : Handle( nullptr )
+IDeviceObject::IDeviceObject(IDevice* pDevice, DEVICE_OBJECT_PROXY_TYPE ProxyType) :
+    ProxyType(ProxyType), pDevice(pDevice)
 {
     static uint32_t UnqiueIdGen = 0;
+
     UID = ++UnqiueIdGen;
 #ifdef AN_DEBUG
-    pDevice = Device;
-    Next = Prev = nullptr;
-    INTRUSIVE_ADD( this, Next, Prev, pDevice->ListHead, pDevice->ListTail );
+    INTRUSIVE_ADD(this, Next, Prev, pDevice->ListHead, pDevice->ListTail);
 #endif
+
+    ++pDevice->ObjectCounters[ProxyType];
 }
 
 IDeviceObject::~IDeviceObject()
 {
 #ifdef AN_DEBUG
-    INTRUSIVE_REMOVE( this, Next, Prev, pDevice->ListHead, pDevice->ListTail );
+    INTRUSIVE_REMOVE(this, Next, Prev, pDevice->ListHead, pDevice->ListTail);
 #endif
+
+    --pDevice->ObjectCounters[ProxyType];
 }
 
-}
+} // namespace RenderCore

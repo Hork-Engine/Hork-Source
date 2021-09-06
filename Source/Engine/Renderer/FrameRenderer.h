@@ -50,42 +50,42 @@ class AFrameRenderer : public ARefCounted
 public:
     AFrameRenderer();
 
-    struct SFrameGraphCaptured
-    {
-        AFrameGraphTexture * FinalTexture;
-    };
+    //struct SFrameGraphCaptured
+    //{
+    //    RenderCore::FGTextureProxy* FinalTexture;
+    //};
 
-    void Render( AFrameGraph & FrameGraph, bool bVirtualTexturing, class AVirtualTextureCache * PhysCacheVT, SFrameGraphCaptured & CapturedResources );
+    void Render(RenderCore::AFrameGraph& FrameGraph, bool bVirtualTexturing, class AVirtualTextureCache* PhysCacheVT, RenderCore::FGTextureProxy** ppFinalTexture);
 
 private:
-    void AddLinearizeDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture * DepthTexture, AFrameGraphTexture ** ppLinearDepth );
+    void AddLinearizeDepthPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* DepthTexture, RenderCore::FGTextureProxy** ppLinearDepth);
 
-    void AddReconstrutNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * LinearDepth, AFrameGraphTexture ** ppNormalTexture );
+    void AddReconstrutNormalsPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppNormalTexture);
 
-    void AddMotionBlurPass( AFrameGraph & FrameGraph,
-                            AFrameGraphTexture * LightTexture,
-                            AFrameGraphTexture * VelocityTexture,
-                            AFrameGraphTexture * LinearDepth,
-                            AFrameGraphTexture ** ppResultTexture );
+    void AddMotionBlurPass(RenderCore::AFrameGraph&         FrameGraph,
+                           RenderCore::FGTextureProxy*  LightTexture,
+                           RenderCore::FGTextureProxy*  VelocityTexture,
+                           RenderCore::FGTextureProxy*  LinearDepth,
+                           RenderCore::FGTextureProxy** ppResultTexture);
 
-    void AddOutlinePass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppOutlineTexture );
-    void AddOutlineOverlayPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget, AFrameGraphTexture * OutlineMaskTexture );
+    void AddOutlinePass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppOutlineTexture);
+    void AddOutlineOverlayPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, RenderCore::FGTextureProxy* OutlineMaskTexture);
 
-    AShadowMapRenderer ShadowMapRenderer;
-    ALightRenderer LightRenderer;
-    ADebugDrawRenderer DebugDrawRenderer;
-    ABloomRenderer BloomRenderer;
-    AExposureRenderer ExposureRenderer;
+    AShadowMapRenderer    ShadowMapRenderer;
+    ALightRenderer        LightRenderer;
+    ADebugDrawRenderer    DebugDrawRenderer;
+    ABloomRenderer        BloomRenderer;
+    AExposureRenderer     ExposureRenderer;
     AColorGradingRenderer ColorGradingRenderer;
-    APostprocessRenderer PostprocessRenderer;
-    AFxaaRenderer FxaaRenderer;
-    ASSAORenderer SSAORenderer;
+    APostprocessRenderer  PostprocessRenderer;
+    AFxaaRenderer         FxaaRenderer;
+    ASSAORenderer         SSAORenderer;
 
-    TRef< RenderCore::IPipeline > LinearDepthPipe;
-    TRef< RenderCore::IPipeline > LinearDepthPipe_ORTHO;
-    TRef< RenderCore::IPipeline > ReconstructNormalPipe;
-    TRef< RenderCore::IPipeline > ReconstructNormalPipe_ORTHO;
-    TRef< RenderCore::IPipeline > MotionBlurPipeline;
-    TRef< RenderCore::IPipeline > OutlineBlurPipe;
-    TRef< RenderCore::IPipeline > OutlineApplyPipe;
+    TRef<RenderCore::IPipeline> LinearDepthPipe;
+    TRef<RenderCore::IPipeline> LinearDepthPipe_ORTHO;
+    TRef<RenderCore::IPipeline> ReconstructNormalPipe;
+    TRef<RenderCore::IPipeline> ReconstructNormalPipe_ORTHO;
+    TRef<RenderCore::IPipeline> MotionBlurPipeline;
+    TRef<RenderCore::IPipeline> OutlineBlurPipe;
+    TRef<RenderCore::IPipeline> OutlineApplyPipe;
 };

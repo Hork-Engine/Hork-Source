@@ -33,6 +33,8 @@ SOFTWARE.
 #include <Core/Public/Core.h>
 #include <Runtime/Public/Runtime.h>
 
+using namespace RenderCore;
+
 // NOTE: supported by NVidia, but not supported on AMD
 //#define CSTYLE_LINE_DIRECTIVE
 
@@ -45,13 +47,13 @@ ARuntimeVariable r_MaterialDebugMode( _CTS( "r_MaterialDebugMode" ),
                                       VAR_CHEAT );
 
 /** Render device */
-RenderCore::IDevice * GDevice;
+IDevice * GDevice;
 
 /** Render context */
-RenderCore::IImmediateContext * rcmd;
+IImmediateContext * rcmd;
 
 /** Render resource table */
-RenderCore::IResourceTable * rtbl;
+IResourceTable * rtbl;
 
 /** Render frame data */
 SRenderFrame * GFrameData;
@@ -60,10 +62,10 @@ SRenderFrame * GFrameData;
 SRenderView * GRenderView;
 
 /** Render view area */
-ARenderArea GRenderViewArea;
+SRect2D GRenderViewArea;
 
 /** Stream buffer */
-RenderCore::IBuffer * GStreamBuffer;
+IBuffer * GStreamBuffer;
 
 /** Circular buffer. Contains constant data for single draw call.
 Don't use to store long-live data. */
@@ -73,66 +75,64 @@ TRef< ACircularBuffer > GCircularBuffer;
 TRef< ASphereMesh > GSphereMesh;
 
 /** Screen aligned quad mesh */
-TRef< RenderCore::IBuffer > GSaq;
+TRef< IBuffer > GSaq;
 
 /** Simple white texture */
-TRef< RenderCore::ITexture > GWhiteTexture;
+TRef< ITexture > GWhiteTexture;
 
 /** Cluster lookcup 3D texture */
-TRef< RenderCore::ITexture > GClusterLookup;
+TRef< ITexture > GClusterLookup;
 
 /** Cluster item references */
-TRef< RenderCore::IBuffer > GClusterItemBuffer;
+TRef< IBuffer > GClusterItemBuffer;
 
 /** Cluster item references view */
-TRef< RenderCore::IBufferView > GClusterItemTBO;
+TRef< IBufferView > GClusterItemTBO;
 
 /** Irradiance texture array */
-TRef< RenderCore::ITexture > GIrradianceMap;
-TRef< RenderCore::IBindlessSampler > GIrradianceMapBindless;
+TRef< ITexture > GIrradianceMap;
+TRef< IBindlessSampler > GIrradianceMapBindless;
 
 /** Reflections texture array */
-TRef< RenderCore::ITexture > GPrefilteredMap;
-TRef< RenderCore::IBindlessSampler > GPrefilteredMapBindless;
+TRef< ITexture > GPrefilteredMap;
+TRef< IBindlessSampler > GPrefilteredMapBindless;
 
-/** View constant binding */
-size_t GViewConstantBufferBindingBindingOffset;
-size_t GViewConstantBufferBindingBindingSize;
+std::vector<SRenderViewContext> GRenderViewContext;
 
 AVirtualTextureFeedbackAnalyzer * GFeedbackAnalyzerVT;
 AVirtualTextureCache * GPhysCacheVT;
 
-RenderCore::IPipeline * GTerrainDepthPipeline;
-RenderCore::IPipeline * GTerrainLightPipeline;
-RenderCore::IPipeline * GTerrainWireframePipeline;
+IPipeline * GTerrainDepthPipeline;
+IPipeline * GTerrainLightPipeline;
+IPipeline * GTerrainWireframePipeline;
 
-RenderCore::STextureResolution2D GetFrameResoultion()
+STextureResolution2D GetFrameResoultion()
 {
-    return RenderCore::STextureResolution2D( GFrameData->RenderTargetMaxWidth, GFrameData->RenderTargetMaxHeight );
+    return STextureResolution2D( GFrameData->RenderTargetMaxWidth, GFrameData->RenderTargetMaxHeight );
 }
 
-void DrawSAQ( RenderCore::IPipeline * Pipeline, unsigned int InstanceCount )
+void DrawSAQ( IPipeline * Pipeline, unsigned int InstanceCount )
 {
-    const RenderCore::SDrawCmd drawCmd = { 4, InstanceCount, 0, 0 };
+    const SDrawCmd drawCmd = { 4, InstanceCount, 0, 0 };
     rcmd->BindPipeline( Pipeline );
     rcmd->BindVertexBuffer( 0, GSaq, 0 );
-    rcmd->BindIndexBuffer( NULL, RenderCore::INDEX_TYPE_UINT16, 0 );
+    rcmd->BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
     rcmd->Draw( &drawCmd );
 }
 
-void DrawSphere( RenderCore::IPipeline * Pipeline, unsigned int InstanceCount )
+void DrawSphere( IPipeline * Pipeline, unsigned int InstanceCount )
 {
-    RenderCore::SDrawIndexedCmd drawCmd = {};
+    SDrawIndexedCmd drawCmd = {};
     drawCmd.IndexCountPerInstance = GSphereMesh->IndexCount;
     drawCmd.InstanceCount = InstanceCount;
 
     rcmd->BindPipeline( Pipeline );
     rcmd->BindVertexBuffer( 0, GSphereMesh->VertexBuffer );
-    rcmd->BindIndexBuffer( GSphereMesh->IndexBuffer, RenderCore::INDEX_TYPE_UINT16 );
+    rcmd->BindIndexBuffer( GSphereMesh->IndexBuffer, INDEX_TYPE_UINT16 );
     rcmd->Draw( &drawCmd );
 }
 
-void BindTextures( RenderCore::IResourceTable * Rtbl, SMaterialFrameData * Instance, int MaxTextures )
+void BindTextures( IResourceTable * Rtbl, SMaterialFrameData * Instance, int MaxTextures )
 {
     AN_ASSERT( Instance );
 
@@ -157,19 +157,19 @@ void BindTextures( SMaterialFrameData * Instance, int MaxTextures )
 void BindVertexAndIndexBuffers( SRenderInstance const * Instance )
 {
     rcmd->BindVertexBuffer( 0, Instance->VertexBuffer, Instance->VertexBufferOffset );
-    rcmd->BindIndexBuffer( Instance->IndexBuffer, RenderCore::INDEX_TYPE_UINT32, Instance->IndexBufferOffset );
+    rcmd->BindIndexBuffer( Instance->IndexBuffer, INDEX_TYPE_UINT32, Instance->IndexBufferOffset );
 }
 
 void BindVertexAndIndexBuffers( SShadowRenderInstance const * Instance )
 {
     rcmd->BindVertexBuffer( 0, Instance->VertexBuffer, Instance->VertexBufferOffset );
-    rcmd->BindIndexBuffer( Instance->IndexBuffer, RenderCore::INDEX_TYPE_UINT32, Instance->IndexBufferOffset );
+    rcmd->BindIndexBuffer( Instance->IndexBuffer, INDEX_TYPE_UINT32, Instance->IndexBufferOffset );
 }
 
 void BindVertexAndIndexBuffers( SLightPortalRenderInstance const * Instance )
 {
     rcmd->BindVertexBuffer( 0, Instance->VertexBuffer, Instance->VertexBufferOffset );
-    rcmd->BindIndexBuffer( Instance->IndexBuffer, RenderCore::INDEX_TYPE_UINT32, Instance->IndexBufferOffset );
+    rcmd->BindIndexBuffer( Instance->IndexBuffer, INDEX_TYPE_UINT32, Instance->IndexBufferOffset );
 }
 
 void BindSkeleton( size_t _Offset, size_t _Size )
@@ -254,11 +254,11 @@ void BindShadowCascades( size_t StreamHandle )
     rtbl->BindBuffer( 3, GStreamBuffer, StreamHandle, MAX_SHADOW_CASCADES * sizeof( Float4x4 ) );
 }
 
-void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline, AStringView VertexShader, AStringView FragmentShader, RenderCore::SPipelineResourceLayout const * pResourceLayout, RenderCore::BLENDING_PRESET BlendingPreset )
+void CreateFullscreenQuadPipeline( TRef< IPipeline > * ppPipeline, AStringView VertexShader, AStringView FragmentShader, SPipelineResourceLayout const * pResourceLayout, BLENDING_PRESET BlendingPreset )
 {
     using namespace RenderCore;
 
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = POLYGON_CULL_FRONT;
@@ -312,11 +312,11 @@ void CreateFullscreenQuadPipeline( TRef< RenderCore::IPipeline > * ppPipeline, A
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void CreateFullscreenQuadPipelineGS( TRef< RenderCore::IPipeline > * ppPipeline, AStringView VertexShader, AStringView FragmentShader, AStringView GeometryShader, RenderCore::SPipelineResourceLayout const * pResourceLayout, RenderCore::BLENDING_PRESET BlendingPreset )
+void CreateFullscreenQuadPipelineGS( TRef< IPipeline > * ppPipeline, AStringView VertexShader, AStringView FragmentShader, AStringView GeometryShader, SPipelineResourceLayout const * pResourceLayout, BLENDING_PRESET BlendingPreset )
 {
     using namespace RenderCore;
 
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = POLYGON_CULL_FRONT;
@@ -371,7 +371,7 @@ void CreateFullscreenQuadPipelineGS( TRef< RenderCore::IPipeline > * ppPipeline,
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
 
-void SaveSnapshot( RenderCore::ITexture & _Texture )
+void SaveSnapshot( ITexture & _Texture )
 {
     const int w = _Texture.GetWidth();
     const int h = _Texture.GetHeight();
@@ -383,10 +383,10 @@ void SaveSnapshot( RenderCore::ITexture & _Texture )
     byte * data = (byte *)GHunkMemory.Alloc( size );
 
 #if 0
-    _Texture.Read( 0, RenderCore::PIXEL_FORMAT_BYTE_RGB, size, 1, data );
+    _Texture.Read( 0, PIXEL_FORMAT_BYTE_RGB, size, 1, data );
 #else
     float * fdata = (float *)GHunkMemory.Alloc( size*sizeof(float) );
-    _Texture.Read( 0, RenderCore::FORMAT_FLOAT3, size*sizeof(float), 1, fdata );
+    rcmd->ReadTexture(&_Texture, 0, FORMAT_FLOAT3, size * sizeof(float), 1, fdata);
     // to sRGB
     for ( int i = 0 ; i < size ; i++ ) {
         data[i] = LinearToSRGB_UChar( fdata[i] );
@@ -694,7 +694,7 @@ AString LoadShaderFromString( AStringView FileName, AStringView Source, SMateria
     return result;
 }
 
-void CreateShader( RenderCore::SHADER_TYPE _ShaderType, TPodVector< const char * > _SourcePtrs, TRef< RenderCore::IShaderModule > & _Module )
+void CreateShader( SHADER_TYPE _ShaderType, TPodVector< const char * > _SourcePtrs, TRef< IShaderModule > & _Module )
 {
     TPodVector< const char * > sources;
 
@@ -710,13 +710,13 @@ void CreateShader( RenderCore::SHADER_TYPE _ShaderType, TPodVector< const char *
     AString predefines = predefine[_ShaderType];
 
     switch ( GDevice->GetGraphicsVendor() ) {
-    case RenderCore::VENDOR_NVIDIA:
+    case VENDOR_NVIDIA:
         predefines += "#define NVIDIA\n";
         break;
-    case RenderCore::VENDOR_ATI:
+    case VENDOR_ATI:
         predefines += "#define ATI\n";
         break;
-    case RenderCore::VENDOR_INTEL:
+    case VENDOR_INTEL:
         predefines += "#define INTEL\n";
         break;
     default:
@@ -772,23 +772,23 @@ void CreateShader( RenderCore::SHADER_TYPE _ShaderType, TPodVector< const char *
     GDevice->CreateShaderFromCode( _ShaderType, sources.Size(), sources.ToPtr(), &_Module );
 }
 
-void CreateShader( RenderCore::SHADER_TYPE _ShaderType, const char * _SourcePtr, TRef< RenderCore::IShaderModule > & _Module )
+void CreateShader( SHADER_TYPE _ShaderType, const char * _SourcePtr, TRef< IShaderModule > & _Module )
 {
     TPodVector< const char * > sources;
     sources.Append( _SourcePtr );
     CreateShader( _ShaderType, sources, _Module );
 }
 
-void CreateShader( RenderCore::SHADER_TYPE _ShaderType, AString const & _SourcePtr, TRef< RenderCore::IShaderModule > & _Module )
+void CreateShader( SHADER_TYPE _ShaderType, AString const & _SourcePtr, TRef< IShaderModule > & _Module )
 {
     CreateShader( _ShaderType, _SourcePtr.CStr(), _Module );
 }
 
-void CreateVertexShader( AStringView FileName, RenderCore::SVertexAttribInfo const * _VertexAttribs, int _NumVertexAttribs, TRef< RenderCore::IShaderModule > & _Module )
+void CreateVertexShader( AStringView FileName, SVertexAttribInfo const * _VertexAttribs, int _NumVertexAttribs, TRef< IShaderModule > & _Module )
 {
     // TODO: here check if the shader binary is cached. Load from cache if so.
 
-    AString vertexAttribsShaderString = RenderCore::ShaderStringForVertexAttribs< AString >( _VertexAttribs, _NumVertexAttribs );
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( _VertexAttribs, _NumVertexAttribs );
     AString source = LoadShader( FileName );
 
     TPodVector< const char * > sources;
@@ -796,31 +796,31 @@ void CreateVertexShader( AStringView FileName, RenderCore::SVertexAttribInfo con
     sources.Append( vertexAttribsShaderString.CStr() );
     sources.Append( source.CStr() );
 
-    CreateShader( RenderCore::VERTEX_SHADER, sources, _Module );
+    CreateShader( VERTEX_SHADER, sources, _Module );
 
     // TODO: Write shader binary to cache
 }
 
-void CreateTessControlShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module )
+void CreateTessControlShader( AStringView FileName, TRef< IShaderModule > & _Module )
 {
     AString source = LoadShader( FileName );
-    CreateShader( RenderCore::TESS_CONTROL_SHADER, source, _Module );
+    CreateShader( TESS_CONTROL_SHADER, source, _Module );
 }
 
-void CreateTessEvalShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module )
+void CreateTessEvalShader( AStringView FileName, TRef< IShaderModule > & _Module )
 {
     AString source = LoadShader( FileName );
-    CreateShader( RenderCore::TESS_EVALUATION_SHADER, source, _Module );
+    CreateShader( TESS_EVALUATION_SHADER, source, _Module );
 }
 
-void CreateGeometryShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module )
+void CreateGeometryShader( AStringView FileName, TRef< IShaderModule > & _Module )
 {
     AString source = LoadShader( FileName );
-    CreateShader( RenderCore::GEOMETRY_SHADER, source, _Module );
+    CreateShader( GEOMETRY_SHADER, source, _Module );
 }
 
-void CreateFragmentShader( AStringView FileName, TRef< RenderCore::IShaderModule > & _Module )
+void CreateFragmentShader( AStringView FileName, TRef< IShaderModule > & _Module )
 {
     AString source = LoadShader( FileName );
-    CreateShader( RenderCore::FRAGMENT_SHADER, source, _Module );
+    CreateShader( FRAGMENT_SHADER, source, _Module );
 }

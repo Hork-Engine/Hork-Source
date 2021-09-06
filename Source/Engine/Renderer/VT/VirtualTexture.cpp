@@ -32,6 +32,8 @@ SOFTWARE.
 #include "QuadTree.h"
 #include "../RenderLocal.h"
 
+using namespace RenderCore;
+
 #define USE_PBO
 
 AVirtualTexture::AVirtualTexture( const char * FileName, AVirtualTextureCache * Cache )
@@ -63,14 +65,14 @@ AVirtualTexture::AVirtualTexture( const char * FileName, AVirtualTextureCache * 
     NumLods = AddressTable.NumLods;
 
 #ifdef USE_PBO
-    RenderCore::SBufferCreateInfo bufferCI = {};
+    SBufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
-    bufferCI.ImmutableStorageFlags = (RenderCore::IMMUTABLE_STORAGE_FLAGS)(
-        RenderCore::IMMUTABLE_MAP_READ
-        | RenderCore::IMMUTABLE_MAP_WRITE
-        //| RenderCore::IMMUTABLE_MAP_CLIENT_STORAGE
-        | RenderCore::IMMUTABLE_MAP_PERSISTENT
-        | RenderCore::IMMUTABLE_MAP_COHERENT
+    bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)(
+        IMMUTABLE_MAP_READ
+        | IMMUTABLE_MAP_WRITE
+        //| IMMUTABLE_MAP_CLIENT_STORAGE
+        | IMMUTABLE_MAP_PERSISTENT
+        | IMMUTABLE_MAP_COHERENT
         );
     bufferCI.SizeInBytes = sizeof( pIndirectionData[0] ) * AddressTable.TotalPages;
     GDevice->CreateBuffer( bufferCI, nullptr, &IndirectionData );
@@ -86,22 +88,19 @@ AVirtualTexture::AVirtualTexture( const char * FileName, AVirtualTextureCache * 
         uint32_t indirectionTableSize = 1u << (NumLods - 1);
 
         GDevice->CreateTexture(
-            RenderCore::MakeTexture(
-                RenderCore::TEXTURE_FORMAT_RG8,
-                RenderCore::STextureResolution2D( indirectionTableSize, indirectionTableSize ),
-                RenderCore::STextureMultisampleInfo(),
-                RenderCore::STextureSwizzle( RenderCore::TEXTURE_SWIZZLE_IDENTITY,
-                                     RenderCore::TEXTURE_SWIZZLE_IDENTITY,
-                                     RenderCore::TEXTURE_SWIZZLE_IDENTITY,
-                                     RenderCore::TEXTURE_SWIZZLE_IDENTITY ),
-                NumLods ), &IndirectionTexture );
+            STextureDesc()
+                .SetFormat(TEXTURE_FORMAT_RG8)
+                .SetResolution(STextureResolution2D(indirectionTableSize, indirectionTableSize))
+                .SetMipLevels(NumLods)
+                .SetBindFlags(BIND_SHADER_RESOURCE),
+            &IndirectionTexture);
 
         IndirectionTexture->SetDebugName( "Indirection texture" );
 
-        const RenderCore::SClearValue clearValue[2] = { 0,0 };
+        const SClearValue clearValue[2] = { 0,0 };
 
         for ( int level = 0 ; level < NumLods ; level++ ) {
-            rcmd->ClearTexture( IndirectionTexture, level, RenderCore::FORMAT_UBYTE2, clearValue );
+            rcmd->ClearTexture( IndirectionTexture, level, FORMAT_UBYTE2, clearValue );
         }
     }
 }
@@ -133,11 +132,12 @@ void AVirtualTexture::MapIndirectionData()
 {
 #ifdef USE_PBO
     if ( !pIndirectionData ) {
-        pIndirectionData = (uint16_t *)IndirectionData->Map( RenderCore::MAP_TRANSFER_RW,
-                                          RenderCore::MAP_NO_INVALIDATE,
-                                          RenderCore::MAP_PERSISTENT_COHERENT,
-                                          false,
-                                          false );
+        pIndirectionData = (uint16_t*)rcmd->MapBuffer(IndirectionData,
+                                                      MAP_TRANSFER_RW,
+                                                      MAP_NO_INVALIDATE,
+                                                      MAP_PERSISTENT_COHERENT,
+                                                      false,
+                                                      false);
     }
 #endif
 }
@@ -146,7 +146,7 @@ void AVirtualTexture::UnmapIndirectionData()
 {
 #ifdef USE_PBO
     if ( pIndirectionData ) {
-        IndirectionData->Unmap();
+        rcmd->UnmapBuffer(IndirectionData);
         pIndirectionData = nullptr;
     }
 #endif
@@ -246,7 +246,7 @@ void AVirtualTexture::UpdateAllBranches() {
 }
 
 void AVirtualTexture::CommitPageResidency() {
-    RenderCore::STextureRect rect;
+    STextureRect rect;
 
     rect.Offset.X = 0;
     rect.Offset.Y = 0;
@@ -258,7 +258,7 @@ void AVirtualTexture::CommitPageResidency() {
             uint32_t page = QuadTreeRelativeToAbsoluteIndex( 0, level );
             int size = 1 << level;
 
-            rect.Offset.Lod = NumLods - level - 1;
+            rect.Offset.MipLevel = NumLods - level - 1;
             rect.Dimension.X = rect.Dimension.Y = size;
 
             UnmapIndirectionData();
@@ -269,7 +269,7 @@ void AVirtualTexture::CommitPageResidency() {
             rcmd->CopyBufferToTexture( IndirectionData,
                                        IndirectionTexture,
                                        rect,
-                                       RenderCore::FORMAT_UBYTE2,
+                                       FORMAT_UBYTE2,
                                        0,
                                        page * sizeof( pIndirectionData[0] ),
                                        2 );
@@ -277,7 +277,7 @@ void AVirtualTexture::CommitPageResidency() {
             size_t sizeInBytes = size * size * 2;
 
             IndirectionTexture.WriteRect( rect,
-                                          RenderCore::FORMAT_UBYTE2,
+                                          FORMAT_UBYTE2,
                                           sizeInBytes,
                                           1,
                                           &pIndirectionData[page] );

@@ -28,33 +28,4 @@ SOFTWARE.
 
 */
 
-#pragma once
-
-#include <RenderCore/RenderPass.h>
-
-namespace RenderCore {
-
-class ADeviceGLImpl;
-
-class ARenderPassGLImpl final : public IRenderPass
-{
-    friend class AImmediateContextGLImpl;
-
-public:
-    ARenderPassGLImpl( ADeviceGLImpl * _Device, SRenderPassCreateInfo const & _CreateInfo );
-    ~ARenderPassGLImpl();
-
-private:
-    ADeviceGLImpl * pDevice;
-
-    unsigned int    NumColorAttachments;
-    SAttachmentInfo ColorAttachments[ MAX_COLOR_ATTACHMENTS ];
-
-    bool            bHasDepthStencilAttachment;
-    SAttachmentInfo DepthStencilAttachment;
-
-    int             NumSubpasses;
-    SRenderSubpass  Subpasses[ MAX_SUBPASS_COUNT ];
-};
-
-}
+#include "FGRenderPass.h"

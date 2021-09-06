@@ -90,7 +90,7 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
     
     vec3 Irradiance = vec3( 0.0 );
     vec3 PrefilteredColor = vec3( 0.0 );
-#if 0
+#if 1
     samplerCubeArray IrradianceMap = samplerCubeArray(IrradianceMapSampler); // TODO: Stop using bindless
     samplerCubeArray PrefilteredMap = samplerCubeArray(PrefilteredMapSampler); // TODO: Stop using bindless
     

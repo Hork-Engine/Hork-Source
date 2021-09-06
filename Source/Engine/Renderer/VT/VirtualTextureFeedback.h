@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Core/Public/LinearAllocator.h>
 #include <Core/Public/CoreMath.h>
-#include <RenderCore/FrameGraph/FrameGraph.h>
+#include <RenderCore/FrameGraph.h>
 
 class AVirtualTextureFeedback
 {
@@ -43,8 +43,8 @@ public:
     void Begin( int Width, int Height );
     void End( int * pFeedbackSize, const void ** ppData );
 
-    void AddPass( AFrameGraph & FrameGraph );
-    void DrawFeedback( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget );
+    void AddPass(RenderCore::AFrameGraph& FrameGraph);
+    void DrawFeedback(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget);
 
     RenderCore::ITexture * GetFeedbackTexture() { return FeedbackTexture; }
     RenderCore::ITexture * GetFeedbackDepth() { return FeedbackDepth; }

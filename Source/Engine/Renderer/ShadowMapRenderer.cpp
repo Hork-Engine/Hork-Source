@@ -16,7 +16,11 @@ AShadowMapRenderer::AShadowMapRenderer()
     CreatePipeline();
     CreateLightPortalPipeline();
 
-    GDevice->CreateTexture( MakeTexture( TEXTURE_FORMAT_DEPTH16, STextureResolution2DArray( 1, 1, 1 ) ), &DummyShadowMap );
+    GDevice->CreateTexture(STextureDesc()
+                               .SetFormat(TEXTURE_FORMAT_DEPTH16)
+                               .SetResolution(STextureResolution2DArray(1, 1, 1))
+                               .SetBindFlags(BIND_SHADER_RESOURCE),
+                           &DummyShadowMap);
 
     SClearValue clearValue;
     clearValue.Float1.R = 1.0f;
@@ -25,7 +29,7 @@ AShadowMapRenderer::AShadowMapRenderer()
 
 void AShadowMapRenderer::CreatePipeline()
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
 #if defined SHADOWMAP_VSM
@@ -102,7 +106,7 @@ void AShadowMapRenderer::CreatePipeline()
 
 void AShadowMapRenderer::CreateLightPortalPipeline()
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.bScissorEnable = false;
@@ -241,16 +245,12 @@ static void BlurDepthMoments()
 }
 #endif
 
-void AShadowMapRenderer::AddDummyShadowMap( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppShadowMapDepth )
+void AShadowMapRenderer::AddDummyShadowMap( AFrameGraph & FrameGraph, FGTextureProxy ** ppShadowMapDepth )
 {
-    *ppShadowMapDepth = FrameGraph.AddExternalResource(
-        "Dummy Shadow Map",
-        RenderCore::STextureCreateInfo(),
-        DummyShadowMap
-    );
+    *ppShadowMapDepth = FrameGraph.AddExternalResource<FGTextureProxy>("Dummy Shadow Map", DummyShadowMap);
 }
 
-void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightInstance const * Light, AFrameGraphTexture ** ppShadowMapDepth )
+void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightInstance const * Light, FGTextureProxy ** ppShadowMapDepth )
 {
     if ( Light->ShadowmapIndex < 0 ) {
         AddDummyShadowMap( FrameGraph, ppShadowMapDepth );
@@ -282,18 +282,13 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightIns
     pass.SetRenderArea( cascadeResolution, cascadeResolution );
 
     pass.SetDepthStencilAttachment(
-    {
-        "Shadow Cascade Depth texture",
-        MakeTexture( depthFormat, STextureResolution2DArray( cascadeResolution, cascadeResolution, totalCascades ) ),
-        RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_CLEAR )
-    } );
-
-    if ( shadowMap->LightPortalsCount > 0 ) {
-        pass.SetDepthStencilClearValue( MakeClearDepthStencilValue( 0, 0 ) );
-    }
-    else {
-        pass.SetDepthStencilClearValue( MakeClearDepthStencilValue( 1, 0 ) );
-    }
+        STextureAttachment("Shadow Cascade Depth texture",
+                           STextureDesc()
+                               .SetFormat(depthFormat)
+                               .SetResolution(STextureResolution2DArray(cascadeResolution, cascadeResolution, totalCascades))
+                               .SetBindFlags(BIND_SHADER_RESOURCE))
+            .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
+            .SetClearValue(shadowMap->LightPortalsCount > 0 ? SClearDepthStencilValue(0, 0) : SClearDepthStencilValue(1, 0)));
 
 #if defined SHADOWMAP_EVSM || defined SHADOWMAP_VSM
 #ifdef SHADOWMAP_EVSM
@@ -327,7 +322,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightIns
 #endif
 
     pass.AddSubpass( {}, // no color attachments
-                     [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
     {
         BindShadowCascades( Light->ViewProjStreamHandle );
 
@@ -369,7 +364,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightIns
         }
     } );
 
-    *ppShadowMapDepth = pass.GetDepthStencilAttachment().Resource;
+    *ppShadowMapDepth = pass.GetDepthStencilAttachment().pResource;
 }
 
 
@@ -394,7 +389,7 @@ ARuntimeVariable r_ShadowmapResolution( _CTS( "r_ShadowmapResolution" ), _CTS( "
 ARuntimeVariable r_ShadowmapBits( _CTS( "r_ShadowmapBits" ), _CTS( "24" ) );
 #endif
 
-void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SLightParameters const * Light, AFrameGraphTexture ** ppShadowMapDepth )
+void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SLightParameters const * Light, FGTextureProxy ** ppShadowMapDepth )
 {
 #if 0
     if ( Light->ShadowmapIndex < 0 ) {
@@ -443,7 +438,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SLightParameters con
         pass.SetDepthStencilClearValue( MakeClearDepthStencilValue( 1, 0 ) );
 
         pass.AddSubpass( {}, // no color attachments
-                         [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                         [=]( ARenderPass const & RenderPass, ACommandBuffer const& CommandBuffer )
         {
             SetShadowFaceBinding( faceIndex );
 

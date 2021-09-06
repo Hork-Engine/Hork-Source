@@ -35,7 +35,7 @@ SOFTWARE.
 ACircularBuffer::ACircularBuffer( size_t InBufferSize )
     : BufferSize( InBufferSize )
 {
-    RenderCore::SBufferCreateInfo bufferCI = {};
+    RenderCore::SBufferDesc bufferCI = {};
 
     bufferCI.SizeInBytes = BufferSize * SWAP_CHAIN_SIZE;
 
@@ -46,11 +46,12 @@ ACircularBuffer::ACircularBuffer( size_t InBufferSize )
 
     Buffer->SetDebugName( "Circular buffer" );
 
-    pMappedMemory = Buffer->Map( RenderCore::MAP_TRANSFER_WRITE,
-                                 RenderCore::MAP_NO_INVALIDATE,//RenderCore::MAP_INVALIDATE_ENTIRE_BUFFER,
-                                 RenderCore::MAP_PERSISTENT_COHERENT,
-                                 false, // flush explicit
-                                 false ); // unsynchronized
+    pMappedMemory = rcmd->MapBuffer(Buffer,
+                                    RenderCore::MAP_TRANSFER_WRITE,
+                                    RenderCore::MAP_NO_INVALIDATE, //RenderCore::MAP_INVALIDATE_ENTIRE_BUFFER,
+                                    RenderCore::MAP_PERSISTENT_COHERENT,
+                                    false,  // flush explicit
+                                    false); // unsynchronized
 
     if ( !pMappedMemory ) {
         CriticalError( "ACircularBuffer::ctor: cannot initialize persistent mapped buffer size %d\n", bufferCI.SizeInBytes );
@@ -73,7 +74,7 @@ ACircularBuffer::~ACircularBuffer()
         rcmd->RemoveSync( ChainBuffer[i].Sync );
     }
 
-    Buffer->Unmap();
+    rcmd->UnmapBuffer(Buffer);
 }
 
 size_t ACircularBuffer::Allocate( size_t InSize )

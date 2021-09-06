@@ -30,284 +30,208 @@ SOFTWARE.
 
 #include "FramebufferGLImpl.h"
 #include "DeviceGLImpl.h"
-#include "ImmediateContextGLImpl.h"
-#include "TextureGLImpl.h"
 #include "LUT.h"
 #include "GL/glew.h"
 
-#include <Core/Public/Logger.h>
+#include <SDL.h>
 
-namespace RenderCore {
-
-AFramebufferGLImpl::AFramebufferGLImpl( ADeviceGLImpl * _Device, SFramebufferCreateInfo const & _CreateInfo, bool _Default )
-    : IFramebuffer( _Device ), pDevice( _Device )
+namespace RenderCore
 {
-    Width = 0;
-    Height = 0;
-    NumColorAttachments = 0;
-    bHasDepthStencilAttachment = 0;
-    bDefault = _Default;
 
-    if ( bDefault ) {
+AFramebufferGLImpl::AFramebufferGLImpl(ADeviceGLImpl* pDevice, SFramebufferDesc const& Desc) :
+    pDevice(pDevice), Width(Desc.Width), Height(Desc.Height), NumColorAttachments(Desc.NumColorAttachments), bHasDepthStencilAttachment(Desc.pDepthStencilAttachment != nullptr)
+{
+    AN_ASSERT(Desc.Width != 0);
+    AN_ASSERT(Desc.Height != 0);
+    AN_ASSERT(Desc.NumColorAttachments <= MAX_COLOR_ATTACHMENTS);
+
+    bool bDefault = false;
+
+    // Check if this is the default framebuffer
+    // Iterate all color attachments. The default framebuffer can only have one color attachment.
+    for (uint16_t i = 0; i < NumColorAttachments; i++)
+    {
+        ITextureView* rtv = Desc.pColorAttachments[i];
+
+        AN_ASSERT(rtv->GetDesc().ViewType == TEXTURE_VIEW_RENDER_TARGET);
+
+        if (rtv->GetHandleNativeGL() == 0)
+        {
+            if (i == 0)
+            {
+                ITexture const* backBuffer = rtv->GetTexture();
+
+                AN_ASSERT(backBuffer->GetHandleNativeGL() == 0);
+                AN_ASSERT(Width == backBuffer->GetWidth());
+                AN_ASSERT(Height == backBuffer->GetHeight());
+
+                RTVs[0] = rtv;
+
+                bDefault = true;
+            }
+            else
+            {
+                AN_ASSERT_(0, "Attempting to combine the swap chain's back buffer with other color attachments");
+            }
+        }
+    }
+
+    // If there is a default depth stencil buffer, it can only be combined with the default back buffer, or not to have color attachments.
+    if (Desc.pDepthStencilAttachment)
+    {
+        ITextureView* dsv = Desc.pDepthStencilAttachment;
+
+        AN_ASSERT(dsv->GetDesc().ViewType == TEXTURE_VIEW_DEPTH_STENCIL);
+
+        if (bDefault && dsv->GetHandleNativeGL() != 0)
+        {
+            AN_ASSERT_(0, "Expected default depth-stencil buffer");
+        }
+
+        if (dsv->GetHandleNativeGL() == 0)
+        {
+            if (!bDefault && Desc.NumColorAttachments > 0)
+            {
+                AN_ASSERT_(0, "The swap chain's depth-stencil buffer can only be combined with default back buffer.");
+            }
+            else
+            {                
+                ITexture const* depthBuffer = dsv->GetTexture();
+
+                AN_ASSERT(depthBuffer->GetHandleNativeGL() == 0);
+                AN_ASSERT(Width == depthBuffer->GetWidth());
+                AN_ASSERT(Height == depthBuffer->GetHeight());
+
+                pDSV = dsv;
+
+                bDefault = true;
+            }
+        }
+    }
+
+    if (bDefault)
+    {
         return;
     }
 
-    GLuint framebufferId;
+    glCreateFramebuffers(1, &FramebufferId);
 
-    AN_ASSERT( _CreateInfo.NumColorAttachments <= MAX_COLOR_ATTACHMENTS );
+    // TODO: Check GL_MAX_FRAMEBUFFER_WIDTH, GL_MAX_FRAMEBUFFER_HEIGHT, GL_MAX_FRAMEBUFFER_LAYERS
 
-    // TODO: Create framebuffer for each context
+    // From OpenGL specification: GL_FRAMEBUFFER_DEFAULT_WIDTH/GL_FRAMEBUFFER_DEFAULT_HEIGHT/etc specifies the assumed with for a framebuffer object with no attachments.
+    // If a framebuffer has attachments then the params of those attachments is used.
+    // Therefore, we do not need to set this:
+    //glNamedFramebufferParameteri(FramebufferId, GL_FRAMEBUFFER_DEFAULT_WIDTH, Width);
+    //glNamedFramebufferParameteri(FramebufferId, GL_FRAMEBUFFER_DEFAULT_HEIGHT, Height);
+    //glNamedFramebufferParameteri(FramebufferId, GL_FRAMEBUFFER_DEFAULT_LAYERS, NumLayers);
+    //glNamedFramebufferParameteri(FramebufferId, GL_FRAMEBUFFER_DEFAULT_SAMPLES, SamplesCount);
+    //glNamedFramebufferParameteri(FramebufferId, GL_FRAMEBUFFER_DEFAULT_FIXED_SAMPLE_LOCATIONS, FixedSampleLocations);
 
-    glCreateFramebuffers( 1, &framebufferId );
+    glNamedFramebufferDrawBuffer(FramebufferId, GL_NONE);
 
-    glNamedFramebufferParameteri( framebufferId, GL_FRAMEBUFFER_DEFAULT_WIDTH, _CreateInfo.Width );
-    glNamedFramebufferParameteri( framebufferId, GL_FRAMEBUFFER_DEFAULT_HEIGHT, _CreateInfo.Height );
-    //glNamedFramebufferParameteri( framebufferId, GL_FRAMEBUFFER_DEFAULT_LAYERS, _CreateInfo.Layers );
-    //todo: glNamedFramebufferParameteri( framebufferId, GL_FRAMEBUFFER_DEFAULT_SAMPLES, _DefaultSamplesCount );
-    //todo: glNamedFramebufferParameteri( framebufferId, GL_FRAMEBUFFER_DEFAULT_FIXED_SAMPLE_LOCATIONS, _DefaultFixedSampleLocations );
+    for (uint16_t i = 0; i < NumColorAttachments; i++)
+    {
+        ITextureView*           textureView    = Desc.pColorAttachments[i];
+        ITexture*               texture        = textureView->GetTexture();
+        GLuint                  textureId      = textureView->GetHandleNativeGL();
+        STextureViewDesc const& viewDesc       = textureView->GetDesc();
+        GLenum                  attachmentName = GL_COLOR_ATTACHMENT0 + i;
 
-    // TODO: Check?
-    //    GL_MAX_FRAMEBUFFER_WIDTH
-    //    GL_MAX_FRAMEBUFFER_HEIGHT
-    //    GL_MAX_FRAMEBUFFER_LAYERS
+        AN_ASSERT(Width == textureView->GetWidth());
+        AN_ASSERT(Height == textureView->GetHeight());
 
-    glNamedFramebufferDrawBuffer( framebufferId, GL_NONE );
-
-    for ( int i = 0 ; i < _CreateInfo.NumColorAttachments ; i++ ) {
-        SFramebufferAttachmentInfo const * attachment = &_CreateInfo.pColorAttachments[ i ];
-        ITexture const * texture = attachment->pTexture;
-        GLuint textureId = texture->GetHandleNativeGL();
-        GLenum attachmentName = GL_COLOR_ATTACHMENT0 + i;
-
-        if ( _CreateInfo.Width != ( texture->GetWidth() >> attachment->LodNum )
-            || _CreateInfo.Height != ( texture->GetHeight() >> attachment->LodNum ) ) {
-            GLogger.Printf( "Framebuffer::Initialize: invalid texture resolution\n" );
+        if (viewDesc.NumSlices == texture->GetSliceCount(viewDesc.FirstMipLevel))
+        {
+            glNamedFramebufferTexture(FramebufferId, attachmentName, textureId, viewDesc.FirstMipLevel);
+        }
+        else if (viewDesc.NumSlices == 1)
+        {
+            glNamedFramebufferTextureLayer(FramebufferId, attachmentName, textureId, viewDesc.FirstMipLevel, viewDesc.FirstSlice);
+        }
+        else
+        {
+            AN_ASSERT_(0, "Only one layer or an entire texture can be attached to a framebuffer");
         }
 
-        if ( attachment->Type == ATTACH_LAYER ) {
-            glNamedFramebufferTextureLayer( framebufferId, attachmentName, textureId, attachment->LodNum, attachment->LayerNum );
-        }
-        else {
-            glNamedFramebufferTexture( framebufferId, attachmentName, textureId, attachment->LodNum );
-        }
-
-        Textures[i] = attachment->pTexture;
+        RTVs[i] = textureView;
     }
 
-    SetHandleNativeGL( framebufferId );
+    if (bHasDepthStencilAttachment)
+    {
+        ITextureView*           textureView = Desc.pDepthStencilAttachment;
+        ITexture*               texture     = textureView->GetTexture();
+        GLuint                  textureId   = textureView->GetHandleNativeGL();
+        STextureViewDesc const& viewDesc    = textureView->GetDesc();
+        GLenum                  attachmentName;
 
-    NumColorAttachments = _CreateInfo.NumColorAttachments;
-    memcpy( ColorAttachments, _CreateInfo.pColorAttachments, sizeof( ColorAttachments[0] ) * NumColorAttachments );
-
-    bHasDepthStencilAttachment = ( _CreateInfo.pDepthStencilAttachment != nullptr );
-    if ( bHasDepthStencilAttachment ) {
-        memcpy( &DepthStencilAttachment, _CreateInfo.pDepthStencilAttachment, sizeof( DepthStencilAttachment ) );
-
-        SFramebufferAttachmentInfo const * attachment = _CreateInfo.pDepthStencilAttachment;
-        ITexture const * texture = attachment->pTexture;
-        GLuint textureId = texture->GetHandleNativeGL();
-        GLenum attachmentName;
+        AN_ASSERT(Width == textureView->GetWidth());
+        AN_ASSERT(Height == textureView->GetHeight());
 
         // TODO: table
-        switch ( texture->GetFormat() ) {
-        case TEXTURE_FORMAT_STENCIL1:
-        case TEXTURE_FORMAT_STENCIL4:
-        case TEXTURE_FORMAT_STENCIL8:
-        case TEXTURE_FORMAT_STENCIL16:
-            attachmentName = GL_STENCIL_ATTACHMENT;
-            break;
-        case TEXTURE_FORMAT_DEPTH16:
-        case TEXTURE_FORMAT_DEPTH24:
-        case TEXTURE_FORMAT_DEPTH32:
-            attachmentName = GL_DEPTH_ATTACHMENT;
-            break;
-        case TEXTURE_FORMAT_DEPTH24_STENCIL8:
-        case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
-            attachmentName = GL_DEPTH_STENCIL_ATTACHMENT;
-            break;
-        default:
-            AN_ASSERT( 0 );
-            attachmentName = GL_DEPTH_STENCIL_ATTACHMENT;
+        switch (textureView->GetDesc().Format)
+        {
+            case TEXTURE_FORMAT_STENCIL1:
+            case TEXTURE_FORMAT_STENCIL4:
+            case TEXTURE_FORMAT_STENCIL8:
+            case TEXTURE_FORMAT_STENCIL16:
+                attachmentName = GL_STENCIL_ATTACHMENT;
+                break;
+            case TEXTURE_FORMAT_DEPTH16:
+            case TEXTURE_FORMAT_DEPTH24:
+            case TEXTURE_FORMAT_DEPTH32:
+                attachmentName = GL_DEPTH_ATTACHMENT;
+                break;
+            case TEXTURE_FORMAT_DEPTH24_STENCIL8:
+            case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
+                attachmentName = GL_DEPTH_STENCIL_ATTACHMENT;
+                break;
+            default:
+                AN_ASSERT(0);
+                attachmentName = GL_DEPTH_STENCIL_ATTACHMENT;
         }
 
-        if ( attachment->Type == ATTACH_LAYER ) {
-            glNamedFramebufferTextureLayer( framebufferId, attachmentName, textureId, 0, attachment->LayerNum );
+        if (viewDesc.NumSlices == texture->GetSliceCount(viewDesc.FirstMipLevel))
+        {
+            glNamedFramebufferTexture(FramebufferId, attachmentName, textureId, viewDesc.FirstMipLevel);
         }
-        else {
-            glNamedFramebufferTexture( framebufferId, attachmentName, textureId, 0 );
+        else if (viewDesc.NumSlices == 1)
+        {
+            glNamedFramebufferTextureLayer(FramebufferId, attachmentName, textureId, viewDesc.FirstMipLevel, viewDesc.FirstSlice);
+        }
+        else
+        {
+            AN_ASSERT_(0, "Only one layer or an entire texture can be attached to a framebuffer");
         }
 
-        DepthAttachment = attachment->pTexture;
+        pDSV = textureView;
     }
 
-    //GLenum framebufferStatus = glCheckNamedFramebufferStatus( framebufferId, GL_DRAW_FRAMEBUFFER );
+    AN_ASSERT(glCheckNamedFramebufferStatus(FramebufferId, GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
-    Width = _CreateInfo.Width;
-    Height = _CreateInfo.Height;
-
-    pDevice->TotalFramebuffers++;
-
-    // NOTE: текущие параметры буфера можно получить с помощью следующих функций:
+    // Reminder: These framebuffer parameters can be obtained using the following functions:
     // glGetBufferParameteri64v        glGetNamedBufferParameteri64v
     // glGetBufferParameteriv          glGetNamedBufferParameteriv
 }
 
 AFramebufferGLImpl::~AFramebufferGLImpl()
 {
-    if ( bDefault ) {
-        return;
+    if (FramebufferId)
+    {
+        glDeleteFramebuffers(1, &FramebufferId);
     }
-
-    AImmediateContextGLImpl * ctx = AImmediateContextGLImpl::GetCurrent();
-
-    GLuint framebufferId = GetHandleNativeGL();
-
-    if ( framebufferId ) {
-        ctx->UnbindFramebuffer( this );
-
-        glDeleteFramebuffers( 1, &framebufferId );
-    }
-
-    pDevice->TotalFramebuffers--;
 }
 
-bool IFramebuffer::IsAttachmentsOutdated() const
+bool AFramebufferGLImpl::IsAttachmentsOutdated() const
 {
-    for ( int i = 0 ; i < NumColorAttachments ; i++ ) {
-        if ( Textures[i].IsExpired() ) {
+    for (int i = 0; i < NumColorAttachments; i++)
+    {
+        if (RTVs[i].IsExpired())
+        {
             return true;
         }
     }
 
-    return bHasDepthStencilAttachment && DepthAttachment.IsExpired();
+    return bHasDepthStencilAttachment && pDSV.IsExpired();
 }
 
-bool AFramebufferGLImpl::ChooseReadBuffer( FRAMEBUFFER_ATTACHMENT _Attachment ) const
-{
-    GLuint framebufferId = GetHandleNativeGL();
-
-    if ( _Attachment < FB_DEPTH_ATTACHMENT ) {
-        if ( bDefault ) {
-            return false;
-        }
-
-        // TODO: check _Attachment < MAX_COLOR_ATTACHMENTS
-
-        glNamedFramebufferReadBuffer( framebufferId, GL_COLOR_ATTACHMENT0 + _Attachment );
-    }
-    else if ( _Attachment <= FB_DEPTH_STENCIL_ATTACHMENT ) {
-        if ( bDefault ) {
-            return false;
-        }
-
-        // Depth and Stencil read directly from framebuffer
-        // There is no need to select read buffer
-    }
-    else {
-        if ( !bDefault ) {
-            return false;
-        }
-        glNamedFramebufferReadBuffer( 0, FramebufferAttachmentLUT[ _Attachment - FB_DEPTH_ATTACHMENT ] );
-    }
-
-    return true;
-}
-
-bool AFramebufferGLImpl::Read( FRAMEBUFFER_ATTACHMENT _Attachment,
-                               SRect2D const & _SrcRect,
-                               FRAMEBUFFER_CHANNEL _FramebufferChannel,
-                               FRAMEBUFFER_OUTPUT _FramebufferOutput,
-                               COLOR_CLAMP _ColorClamp,
-                               size_t _SizeInBytes,
-                               unsigned int _Alignment,               // Specifies alignment of destination data
-                               void * _SysMem )
-{
-    AImmediateContextGLImpl * ctx = AImmediateContextGLImpl::GetCurrent();
-
-    if ( !ChooseReadBuffer( _Attachment ) ) {
-        GLogger.Printf( "Framebuffer::Read: invalid framebuffer attachment\n" );
-        return false;
-    }
-
-    ctx->PackAlignment( _Alignment );
-
-    ctx->BindReadFramebuffer( this );
-
-    ctx->ClampReadColor( _ColorClamp );
-
-    glReadnPixels( _SrcRect.X,
-                   _SrcRect.Y,
-                   _SrcRect.Width,
-                   _SrcRect.Height,
-                   FramebufferChannelLUT[ _FramebufferChannel ],
-                   FramebufferOutputLUT[ _FramebufferOutput ],
-                   (GLsizei)_SizeInBytes,
-                   _SysMem );
-    return true;
-}
-
-bool AFramebufferGLImpl::Invalidate( uint16_t _NumFramebufferAttachments, FRAMEBUFFER_ATTACHMENT const * _Attachments )
-{
-    if ( _NumFramebufferAttachments == 0 ) {
-        return true;
-    }
-
-    if ( !_Attachments ) {
-        return false;
-    }
-
-    GLenum * handles = (GLenum *)StackAlloc( sizeof( GLenum ) * _NumFramebufferAttachments );
-
-    for ( uint16_t i = 0 ; i < _NumFramebufferAttachments ; i++ ) {
-        if ( _Attachments[ i ] < FB_DEPTH_ATTACHMENT ) {
-            // TODO: check _Attachments[ i ] < MAX_COLOR_ATTACHMENTS
-
-            handles[ i ] = GL_COLOR_ATTACHMENT0 + _Attachments[ i ];
-        }
-        else {
-            handles[ i ] = FramebufferAttachmentLUT[ _Attachments[ i ] - FB_DEPTH_ATTACHMENT ];
-        }
-    }
-
-    glInvalidateNamedFramebufferData( GetHandleNativeGL(), _NumFramebufferAttachments, handles );
-
-    return true;
-}
-
-bool AFramebufferGLImpl::InvalidateRect( uint16_t _NumFramebufferAttachments,
-                                  FRAMEBUFFER_ATTACHMENT const * _Attachments,
-                                  SRect2D const & _Rect )
-{
-    if ( _NumFramebufferAttachments == 0 ) {
-        return true;
-    }
-
-    if ( !_Attachments ) {
-        return false;
-    }
-
-    GLenum * handles = (GLenum *)StackAlloc( sizeof( GLenum ) * _NumFramebufferAttachments );
-
-    for ( uint16_t i = 0 ; i < _NumFramebufferAttachments ; i++ ) {
-        if ( _Attachments[ i ] < FB_DEPTH_ATTACHMENT ) {
-            // TODO: check _Attachments[ i ] < MAX_COLOR_ATTACHMENTS
-
-            handles[ i ] = GL_COLOR_ATTACHMENT0 + _Attachments[ i ];
-        }
-        else {
-            handles[ i ] = FramebufferAttachmentLUT[ _Attachments[ i ] - FB_DEPTH_ATTACHMENT ];
-        }
-    }
-
-    glInvalidateNamedFramebufferSubData( GetHandleNativeGL(),
-                                         _NumFramebufferAttachments,
-                                         handles,
-                                         _Rect.X,
-                                         _Rect.Y,
-                                         _Rect.Width,
-                                         _Rect.Height );
-
-    return true;
-}
-
-}
+} // namespace RenderCore

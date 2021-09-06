@@ -48,29 +48,31 @@ SOFTWARE.
 
 #include <SDL.h>
 
-ARuntimeVariable r_FrameGraphDebug( _CTS( "r_FrameGraphDebug" ), _CTS( "0" ) );
-ARuntimeVariable r_RenderSnapshot( _CTS( "r_RenderSnapshot" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable r_DebugRenderMode( _CTS( "r_DebugRenderMode" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable r_BloomScale( _CTS( "r_BloomScale" ), _CTS( "1" ) );
-ARuntimeVariable r_Bloom( _CTS( "r_Bloom" ), _CTS( "1" ) );
-ARuntimeVariable r_BloomParam0( _CTS( "r_BloomParam0" ), _CTS( "0.5" ) );
-ARuntimeVariable r_BloomParam1( _CTS( "r_BloomParam1" ), _CTS( "0.3" ) );
-ARuntimeVariable r_BloomParam2( _CTS( "r_BloomParam2" ), _CTS( "0.04" ) );
-ARuntimeVariable r_BloomParam3( _CTS( "r_BloomParam3" ), _CTS( "0.01" ) );
-ARuntimeVariable r_ToneExposure( _CTS( "r_ToneExposure" ), _CTS( "0.4" ) );
-ARuntimeVariable r_Brightness( _CTS( "r_Brightness" ), _CTS( "1" ) );
-ARuntimeVariable r_TessellationLevel( _CTS( "r_TessellationLevel" ), _CTS( "0.05" ) );
-ARuntimeVariable r_MotionBlur( _CTS( "r_MotionBlur" ), _CTS( "1" ) );
-ARuntimeVariable r_SSLR( _CTS( "r_SSLR" ), _CTS( "1" ), 0, _CTS( "Required to rebuld materials to apply" ) );
-ARuntimeVariable r_SSLRMaxDist( _CTS( "r_SSLRMaxDist" ), _CTS( "10" ) );
-ARuntimeVariable r_SSLRSampleOffset( _CTS( "r_SSLRSampleOffset" ), _CTS( "0.1" ) );
-ARuntimeVariable r_HBAO( _CTS( "r_HBAO" ), _CTS( "1" ), 0, _CTS( "Required to rebuld materials to apply" ) );
-ARuntimeVariable r_FXAA( _CTS( "r_FXAA" ), _CTS( "1" ) );
-ARuntimeVariable r_ShowGPUTime( _CTS( "r_ShowGPUTime" ), _CTS( "0" ) );
+using namespace RenderCore;
+
+ARuntimeVariable r_FrameGraphDebug(_CTS("r_FrameGraphDebug"), _CTS("0"));
+ARuntimeVariable r_RenderSnapshot(_CTS("r_RenderSnapshot"), _CTS("0"), VAR_CHEAT);
+ARuntimeVariable r_DebugRenderMode(_CTS("r_DebugRenderMode"), _CTS("0"), VAR_CHEAT);
+ARuntimeVariable r_BloomScale(_CTS("r_BloomScale"), _CTS("1"));
+ARuntimeVariable r_Bloom(_CTS("r_Bloom"), _CTS("1"));
+ARuntimeVariable r_BloomParam0(_CTS("r_BloomParam0"), _CTS("0.5"));
+ARuntimeVariable r_BloomParam1(_CTS("r_BloomParam1"), _CTS("0.3"));
+ARuntimeVariable r_BloomParam2(_CTS("r_BloomParam2"), _CTS("0.04"));
+ARuntimeVariable r_BloomParam3(_CTS("r_BloomParam3"), _CTS("0.01"));
+ARuntimeVariable r_ToneExposure(_CTS("r_ToneExposure"), _CTS("0.4"));
+ARuntimeVariable r_Brightness(_CTS("r_Brightness"), _CTS("1"));
+ARuntimeVariable r_TessellationLevel(_CTS("r_TessellationLevel"), _CTS("0.05"));
+ARuntimeVariable r_MotionBlur(_CTS("r_MotionBlur"), _CTS("1"));
+ARuntimeVariable r_SSLR(_CTS("r_SSLR"), _CTS("1"), 0, _CTS("Required to rebuld materials to apply"));
+ARuntimeVariable r_SSLRMaxDist(_CTS("r_SSLRMaxDist"), _CTS("10"));
+ARuntimeVariable r_SSLRSampleOffset(_CTS("r_SSLRSampleOffset"), _CTS("0.1"));
+ARuntimeVariable r_HBAO(_CTS("r_HBAO"), _CTS("1"), 0, _CTS("Required to rebuld materials to apply"));
+ARuntimeVariable r_FXAA(_CTS("r_FXAA"), _CTS("1"));
+ARuntimeVariable r_ShowGPUTime(_CTS("r_ShowGPUTime"), _CTS("0"));
 
 void TestVT();
 
-static void LoadSPIRV( void ** BinaryCode, size_t * BinarySize )
+static void LoadSPIRV(void** BinaryCode, size_t* BinarySize)
 {
     // TODO
 
@@ -80,13 +82,11 @@ static void LoadSPIRV( void ** BinaryCode, size_t * BinarySize )
 
 ARenderBackend::ARenderBackend()
 {
-    using namespace RenderCore;
-
-    GLogger.Printf( "Initializing render backend...\n" );
+    GLogger.Printf("Initializing render backend...\n");
 
     GDevice = GRuntime->GetRenderDevice();
 
-    GDevice->GetImmediateContext( &rcmd );
+    rcmd = GRuntime->GetImmediateContext();
 
     rtbl = rcmd->GetRootResourceTable();
 
@@ -95,88 +95,94 @@ ARenderBackend::ARenderBackend()
 
     InitMaterialSamplers();
 
-    FrameGraph = MakeRef< AFrameGraph >( GDevice );
-    FrameRenderer = MakeRef< AFrameRenderer >();
-    CanvasRenderer = MakeRef< ACanvasRenderer >();
+    FrameGraph = MakeRef<AFrameGraph>(GDevice);
 
-    GCircularBuffer = MakeRef< ACircularBuffer >( 2 * 1024 * 1024 ); // 2MB
+    FrameRenderer  = MakeRef<AFrameRenderer>();
+    CanvasRenderer = MakeRef<ACanvasRenderer>();
+
+    GCircularBuffer = MakeRef<ACircularBuffer>(2 * 1024 * 1024); // 2MB
     //GFrameConstantBuffer = MakeRef< AFrameConstantBuffer >( 2 * 1024 * 1024 ); // 2MB
 
-//#define QUERY_TIMESTAMP
+    //#define QUERY_TIMESTAMP
 
-    SQueryPoolCreateInfo timeQueryCI;
+    SQueryPoolDesc timeQueryCI;
 #ifdef QUERY_TIMESTAMP
     timeQueryCI.QueryType = QUERY_TYPE_TIMESTAMP;
-    timeQueryCI.PoolSize = 3;
-    GDevice->CreateQueryPool( timeQueryCI, &TimeStamp1 );
-    GDevice->CreateQueryPool( timeQueryCI, &TimeStamp2 );
+    timeQueryCI.PoolSize  = 3;
+    GDevice->CreateQueryPool(timeQueryCI, &TimeStamp1);
+    GDevice->CreateQueryPool(timeQueryCI, &TimeStamp2);
 #else
     timeQueryCI.QueryType = QUERY_TYPE_TIME_ELAPSED;
-    timeQueryCI.PoolSize = 3;
-    GDevice->CreateQueryPool( timeQueryCI, &TimeQuery );
+    timeQueryCI.PoolSize  = 3;
+    GDevice->CreateQueryPool(timeQueryCI, &TimeQuery);
 #endif
 
     // Create sphere mesh for cubemap rendering
-    GSphereMesh = MakeRef< ASphereMesh >();
+    GSphereMesh = MakeRef<ASphereMesh>();
 
     // Create screen aligned quad
     {
         constexpr Float2 saqVertices[4] = {
-            { Float2( -1.0f,  1.0f ) },
-            { Float2( 1.0f,  1.0f ) },
-            { Float2( -1.0f, -1.0f ) },
-            { Float2( 1.0f, -1.0f ) }
-        };
+            {Float2(-1.0f, 1.0f)},
+            {Float2(1.0f, 1.0f)},
+            {Float2(-1.0f, -1.0f)},
+            {Float2(1.0f, -1.0f)}};
 
-        RenderCore::SBufferCreateInfo bufferCI = {};
+        SBufferDesc bufferCI = {};
         bufferCI.bImmutableStorage = true;
-        bufferCI.SizeInBytes = sizeof( saqVertices );
-        GDevice->CreateBuffer( bufferCI, saqVertices, &GSaq );
+        bufferCI.SizeInBytes       = sizeof(saqVertices);
+        GDevice->CreateBuffer(bufferCI, saqVertices, &GSaq);
 
-        GSaq->SetDebugName( "Screen aligned quad" );
+        GSaq->SetDebugName("Screen aligned quad");
     }
 
     // Create white texture
     {
-        GDevice->CreateTexture( RenderCore::MakeTexture( RenderCore::TEXTURE_FORMAT_RGBA8, RenderCore::STextureResolution2D( 1, 1 ) ),
-                                &GWhiteTexture );
-        RenderCore::STextureRect rect = {};
-        rect.Dimension.X = 1;
-        rect.Dimension.Y = 1;
-        rect.Dimension.Z = 1;
-        const byte data[4] = { 0xff, 0xff, 0xff, 0xff };
-        GWhiteTexture->WriteRect( rect, RenderCore::FORMAT_UBYTE4, sizeof( data ), 4, data );
+        GDevice->CreateTexture(STextureDesc()
+                                   .SetFormat(TEXTURE_FORMAT_RGBA8)
+                                   .SetResolution(STextureResolution2D(1, 1))
+                                   .SetBindFlags(BIND_SHADER_RESOURCE),
+                               &GWhiteTexture);
+        STextureRect rect  = {};
+        rect.Dimension.X   = 1;
+        rect.Dimension.Y   = 1;
+        rect.Dimension.Z   = 1;
+        const byte data[4] = {0xff, 0xff, 0xff, 0xff};
+        rcmd->WriteTextureRect(GWhiteTexture, rect, FORMAT_UBYTE4, sizeof(data), 4, data);
     }
 
     // Create cluster lookup 3D texture
-    GDevice->CreateTexture( RenderCore::MakeTexture( RenderCore::TEXTURE_FORMAT_RG32UI,
-                                                     RenderCore::STextureResolution3D( MAX_FRUSTUM_CLUSTERS_X,
-                                                                                       MAX_FRUSTUM_CLUSTERS_Y,
-                                                                                       MAX_FRUSTUM_CLUSTERS_Z ) ), &GClusterLookup );
+    GDevice->CreateTexture(STextureDesc()
+                               .SetFormat(TEXTURE_FORMAT_RG32UI)
+                               .SetResolution(STextureResolution3D(MAX_FRUSTUM_CLUSTERS_X,
+                                                                   MAX_FRUSTUM_CLUSTERS_Y,
+                                                                   MAX_FRUSTUM_CLUSTERS_Z))
+                               .SetBindFlags(BIND_SHADER_RESOURCE),
+                           &GClusterLookup);
     // Create item buffer
     {
 #if 0
         // FIXME: Use SSBO?
-        RenderCore::SBufferCreateInfo bufferCI = {};
+        SBufferDesc bufferCI = {};
         bufferCI.bImmutableStorage = true;
-        bufferCI.ImmutableStorageFlags = RenderCore::IMMUTABLE_DYNAMIC_STORAGE;
+        bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
         bufferCI.SizeInBytes = MAX_TOTAL_CLUSTER_ITEMS * sizeof( SClusterPackedIndex );
         GDevice->CreateBuffer( bufferCI, nullptr, &GClusterItemBuffer );
 
         GClusterItemBuffer->SetDebugName( "Cluster item buffer" );
 
-        RenderCore::SBufferViewCreateInfo bufferViewCI = {};
-        bufferViewCI.Format = RenderCore::BUFFER_VIEW_PIXEL_FORMAT_R32UI;
-        GDevice->CreateBufferView( bufferViewCI, GClusterItemBuffer, &GClusterItemTBO );
+        SBufferViewDesc bufferViewCI = {};
+        bufferViewCI.Format = BUFFER_VIEW_PIXEL_FORMAT_R32UI;
+        GClusterItemBuffer->CreateView( bufferViewCI, &GClusterItemTBO );
 #else
-        RenderCore::SBufferViewCreateInfo bufferViewCI = {};
-        bufferViewCI.Format = RenderCore::BUFFER_VIEW_PIXEL_FORMAT_R32UI;
-        TRef< RenderCore::IBuffer > buffer( GStreamBuffer );
-        GDevice->CreateBufferView( bufferViewCI, buffer, &GClusterItemTBO );
+        SBufferViewDesc bufferViewCI = {};
+        bufferViewCI.Format          = BUFFER_VIEW_PIXEL_FORMAT_R32UI;
+
+        GStreamBuffer->CreateView(bufferViewCI, &GClusterItemTBO);
 #endif
     }
 
-    FeedbackAnalyzerVT = MakeRef< AVirtualTextureFeedbackAnalyzer >();
+    FeedbackAnalyzerVT  = MakeRef<AVirtualTextureFeedbackAnalyzer>();
     GFeedbackAnalyzerVT = FeedbackAnalyzerVT;
 
     /////////////////////////////////////////////////////////////////////
@@ -188,12 +194,12 @@ ARenderBackend::ARenderBackend()
         vox.Render();
     }
 
-    TRef< RenderCore::ITexture > skybox;
+    TRef<ITexture> skybox;
     {
         AAtmosphereRenderer atmosphereRenderer;
-        atmosphereRenderer.Render( 512, Float3( -0.5f, -2, -10 ), &skybox );
+        atmosphereRenderer.Render(512, Float3(-0.5f, -2, -10), &skybox);
 #if 0
-        RenderCore::STextureRect rect = {};
+        STextureRect rect = {};
         rect.Dimension.X = rect.Dimension.Y = skybox->GetWidth();
         rect.Dimension.Z = 1;
 
@@ -202,7 +208,7 @@ ARenderBackend::ARenderBackend()
         //byte * ucdata = (byte *)GHunkMemory.Alloc( 512*512*3 );
         for ( int i = 0 ; i < 6 ; i++ ) {
             rect.Offset.Z = i;
-            skybox->ReadRect( rect, RenderCore::FORMAT_FLOAT3, 512*512*3*sizeof( *data ), 1, data ); // TODO: check half float
+            skybox->ReadRect( rect, FORMAT_FLOAT3, 512*512*3*sizeof( *data ), 1, data ); // TODO: check half float
 
             //FlipImageY( data, 512, 512, 3*sizeof(*data), 512*3*sizeof( *data ) );
 
@@ -225,99 +231,99 @@ ARenderBackend::ARenderBackend()
     }
 
 #if 1
-    TRef< RenderCore::ITexture > cubemap;
-    TRef< RenderCore::ITexture > cubemap2;
+    TRef<ITexture> cubemap;
+    TRef<ITexture> cubemap2;
     {
-        const char * Cubemap[6] = {
+        const char* Cubemap[6] = {
             "DarkSky/rt.tga",
             "DarkSky/lt.tga",
             "DarkSky/up.tga",
             "DarkSky/dn.tga",
             "DarkSky/bk.tga",
-            "DarkSky/ft.tga"
-        };
-        const char * Cubemap2[6] = {
+            "DarkSky/ft.tga"};
+        const char* Cubemap2[6] = {
             "DarkSky/rt.tga",
             "DarkSky/lt.tga",
             "DarkSky/up.tga",
             "DarkSky/dn.tga",
             "DarkSky/bk.tga",
-            "DarkSky/ft.tga"
-        };
-        AImage rt, lt, up, dn, bk, ft;
-        AImage const * cubeFaces[6] = { &rt,&lt,&up,&dn,&bk,&ft };
-        rt.Load( Cubemap[0], nullptr, IMAGE_PF_BGR32F );
-        lt.Load( Cubemap[1], nullptr, IMAGE_PF_BGR32F );
-        up.Load( Cubemap[2], nullptr, IMAGE_PF_BGR32F );
-        dn.Load( Cubemap[3], nullptr, IMAGE_PF_BGR32F );
-        bk.Load( Cubemap[4], nullptr, IMAGE_PF_BGR32F );
-        ft.Load( Cubemap[5], nullptr, IMAGE_PF_BGR32F );
-#if 0
+            "DarkSky/ft.tga"};
+        AImage        rt, lt, up, dn, bk, ft;
+        AImage const* cubeFaces[6] = {&rt, &lt, &up, &dn, &bk, &ft};
+        rt.Load(Cubemap[0], nullptr, IMAGE_PF_BGR32F);
+        lt.Load(Cubemap[1], nullptr, IMAGE_PF_BGR32F);
+        up.Load(Cubemap[2], nullptr, IMAGE_PF_BGR32F);
+        dn.Load(Cubemap[3], nullptr, IMAGE_PF_BGR32F);
+        bk.Load(Cubemap[4], nullptr, IMAGE_PF_BGR32F);
+        ft.Load(Cubemap[5], nullptr, IMAGE_PF_BGR32F);
+#    if 0
         const float HDRI_Scale = 4.0f;
         const float HDRI_Pow = 1.1f;
-#else
+#    else
         const float HDRI_Scale = 2;
-        const float HDRI_Pow = 1;
-#endif
-        for ( int i = 0 ; i < 6 ; i++ ) {
-            float * HDRI = (float*)cubeFaces[i]->GetData();
-            int count = cubeFaces[i]->GetWidth()*cubeFaces[i]->GetHeight()*3;
-            for ( int j = 0; j < count ; j += 3 ) {
-                HDRI[j] = Math::Pow( HDRI[j + 0] * HDRI_Scale, HDRI_Pow );
-                HDRI[j + 1] = Math::Pow( HDRI[j + 1] * HDRI_Scale, HDRI_Pow );
-                HDRI[j + 2] = Math::Pow( HDRI[j + 2] * HDRI_Scale, HDRI_Pow );
+        const float HDRI_Pow   = 1;
+#    endif
+        for (int i = 0; i < 6; i++)
+        {
+            float* HDRI  = (float*)cubeFaces[i]->GetData();
+            int    count = cubeFaces[i]->GetWidth() * cubeFaces[i]->GetHeight() * 3;
+            for (int j = 0; j < count; j += 3)
+            {
+                HDRI[j]     = Math::Pow(HDRI[j + 0] * HDRI_Scale, HDRI_Pow);
+                HDRI[j + 1] = Math::Pow(HDRI[j + 1] * HDRI_Scale, HDRI_Pow);
+                HDRI[j + 2] = Math::Pow(HDRI[j + 2] * HDRI_Scale, HDRI_Pow);
 
 
-//HDRI[j + 2]= HDRI[j + 1]= HDRI[j]=0.01f;
+                //HDRI[j + 2]= HDRI[j + 1]= HDRI[j]=0.01f;
             }
         }
-        int w = cubeFaces[0]->GetWidth();
-        RenderCore::STextureCreateInfo cubemapCI = {};
-        cubemapCI.Type = RenderCore::TEXTURE_CUBE_MAP;
-        cubemapCI.Format = RenderCore::TEXTURE_FORMAT_RGB32F;
-        cubemapCI.Resolution.TexCubemap.Width = w;
-        cubemapCI.NumLods = 1;
-        GDevice->CreateTexture( cubemapCI, &cubemap );
-        for ( int face = 0 ; face < 6 ; face++ ) {
-            float * pSrc = (float *)cubeFaces[face]->GetData();
+        int          w                        = cubeFaces[0]->GetWidth();
+        STextureDesc cubemapCI                = {};
+        cubemapCI.SetFormat(TEXTURE_FORMAT_RGB32F);
+        cubemapCI.SetResolution(STextureResolutionCubemap(w));
+        cubemapCI.SetBindFlags(BIND_SHADER_RESOURCE);
+        GDevice->CreateTexture(cubemapCI, &cubemap);
+        for (int face = 0; face < 6; face++)
+        {
+            float* pSrc = (float*)cubeFaces[face]->GetData();
 
-            RenderCore::STextureRect rect = {};
-            rect.Offset.Z = face;
-            rect.Dimension.X = w;
-            rect.Dimension.Y = w;
-            rect.Dimension.Z = 1;
+            STextureRect rect = {};
+            rect.Offset.Z     = face;
+            rect.Dimension.X  = w;
+            rect.Dimension.Y  = w;
+            rect.Dimension.Z  = 1;
 
-            cubemap->WriteRect( rect, RenderCore::FORMAT_FLOAT3, w*w*3*sizeof( float ), 1, pSrc );
+            rcmd->WriteTextureRect(cubemap, rect, FORMAT_FLOAT3, w * w * 3 * sizeof(float), 1, pSrc);
         }
-        rt.Load( Cubemap2[0], nullptr, IMAGE_PF_BGR32F );
-        lt.Load( Cubemap2[1], nullptr, IMAGE_PF_BGR32F );
-        up.Load( Cubemap2[2], nullptr, IMAGE_PF_BGR32F );
-        dn.Load( Cubemap2[3], nullptr, IMAGE_PF_BGR32F );
-        bk.Load( Cubemap2[4], nullptr, IMAGE_PF_BGR32F );
-        ft.Load( Cubemap2[5], nullptr, IMAGE_PF_BGR32F );
-        w = cubeFaces[0]->GetWidth();
-        cubemapCI.Resolution.TexCubemap.Width = w;
-        cubemapCI.NumLods = 1;
-        GDevice->CreateTexture( cubemapCI, &cubemap2 );
-        for ( int face = 0 ; face < 6 ; face++ ) {
-            float * pSrc = (float *)cubeFaces[face]->GetData();
+        rt.Load(Cubemap2[0], nullptr, IMAGE_PF_BGR32F);
+        lt.Load(Cubemap2[1], nullptr, IMAGE_PF_BGR32F);
+        up.Load(Cubemap2[2], nullptr, IMAGE_PF_BGR32F);
+        dn.Load(Cubemap2[3], nullptr, IMAGE_PF_BGR32F);
+        bk.Load(Cubemap2[4], nullptr, IMAGE_PF_BGR32F);
+        ft.Load(Cubemap2[5], nullptr, IMAGE_PF_BGR32F);
+        w                                     = cubeFaces[0]->GetWidth();
+        cubemapCI.SetResolution(STextureResolutionCubemap(w));
+        GDevice->CreateTexture(cubemapCI, &cubemap2);
+        for (int face = 0; face < 6; face++)
+        {
+            float* pSrc = (float*)cubeFaces[face]->GetData();
 
-//Core::Memset(pSrc,0, w*w*3*sizeof( float ) );
-            for ( int y=0;y<w;y++ )
-                for ( int x=0;x<w;x++ )
-                    pSrc[y*w*3 + x*3 + 0 ] = pSrc[y*w*3 + x*3 + 1] = pSrc[y*w*3 + x*3 + 2] = 0.02f;
+            //Core::Memset(pSrc,0, w*w*3*sizeof( float ) );
+            for (int y = 0; y < w; y++)
+                for (int x = 0; x < w; x++)
+                    pSrc[y * w * 3 + x * 3 + 0] = pSrc[y * w * 3 + x * 3 + 1] = pSrc[y * w * 3 + x * 3 + 2] = 0.02f;
 
-            RenderCore::STextureRect rect = {};
-            rect.Offset.Z = face;
-            rect.Dimension.X = w;
-            rect.Dimension.Y = w;
-            rect.Dimension.Z = 1;
+            STextureRect rect = {};
+            rect.Offset.Z     = face;
+            rect.Dimension.X  = w;
+            rect.Dimension.Y  = w;
+            rect.Dimension.Z  = 1;
 
-            cubemap2->WriteRect( rect, RenderCore::FORMAT_FLOAT3, w*w*3*sizeof( float ), 1, pSrc );
+            rcmd->WriteTextureRect(cubemap2, rect, FORMAT_FLOAT3, w * w * 3 * sizeof(float), 1, pSrc);
         }
     }
 
-    RenderCore::ITexture * cubemaps[2] = { cubemap2,cubemap/*skybox*/ };
+    ITexture* cubemaps[2] = {cubemap2, cubemap /*skybox*/};
 #else
 
     Texture cubemap;
@@ -326,26 +332,26 @@ ARenderBackend::ARenderBackend()
 
         //img.Load( "052_hdrmaps_com_free.exr", NULL, IMAGE_PF_RGB16F );
         //img.Load( "059_hdrmaps_com_free.exr", NULL, IMAGE_PF_RGB16F );
-        img.Load( "087_hdrmaps_com_free.exr", NULL, IMAGE_PF_RGB16F );
+        img.Load("087_hdrmaps_com_free.exr", NULL, IMAGE_PF_RGB16F);
 
-        RenderCore::ITexture source;
-        RenderCore::TextureStorageCreateInfo createInfo = {};
-        createInfo.Type = RenderCore::TEXTURE_2D;
-        createInfo.Format = RenderCore::TEXTURE_FORMAT_RGB16F;
-        createInfo.Resolution.Tex2D.Width = img.GetWidth();
-        createInfo.Resolution.Tex2D.Height = img.GetHeight();
-        createInfo.NumLods = 1;
-        source = GDevice->CreateTexture( createInfo );
-        source->Write( 0, RenderCore::PIXEL_FORMAT_HALF_RGB, img.GetWidth()*img.GetHeight()*3*2, 1, img.GetData() );
+        ITexture                 source;
+        TextureStorageCreateInfo createInfo = {};
+        createInfo.Type                     = TEXTURE_2D;
+        createInfo.Format                   = TEXTURE_FORMAT_RGB16F;
+        createInfo.Resolution.Tex2D.Width   = img.GetWidth();
+        createInfo.Resolution.Tex2D.Height  = img.GetHeight();
+        createInfo.NumMipLevels             = 1;
+        source                              = GDevice->CreateTexture(createInfo);
+        source->Write(0, PIXEL_FORMAT_HALF_RGB, img.GetWidth() * img.GetHeight() * 3 * 2, 1, img.GetData());
 
         const int cubemapResoultion = 1024;
 
         ACubemapGenerator cubemapGenerator;
         cubemapGenerator.Initialize();
-        cubemapGenerator.Generate( cubemap, RenderCore::TEXTURE_FORMAT_RGB16F, cubemapResoultion, &source );
+        cubemapGenerator.Generate(cubemap, TEXTURE_FORMAT_RGB16F, cubemapResoultion, &source);
 
-#if 0
-        RenderCore::TextureRect rect;
+#    if 0
+        TextureRect rect;
         rect.Offset.Lod = 0;
         rect.Offset.X = 0;
         rect.Offset.Y = 0;
@@ -356,30 +362,30 @@ ARenderBackend::ARenderBackend()
         AFileStream f;
         for ( int i = 0 ; i < 6 ; i++ ) {
             rect.Offset.Z = i;
-            cubemap.ReadRect( rect, RenderCore::FORMAT_FLOAT3, cubemapResoultion*cubemapResoultion*3*sizeof( float ), 1, data );
+            cubemap.ReadRect( rect, FORMAT_FLOAT3, cubemapResoultion*cubemapResoultion*3*sizeof( float ), 1, data );
             f.OpenWrite( Core::Fmt( "nightsky_%d.hdr", i ) );
             WriteHDR( f, cubemapResoultion, cubemapResoultion, 3, (float*)data );
         }
         GHeapMemory.Free( data );
-#endif
+#    endif
     }
 
-    Texture * cubemaps[] = { &cubemap };
+    Texture* cubemaps[] = {&cubemap};
 #endif
 
 
 
     {
         AEnvProbeGenerator envProbeGenerator;
-        envProbeGenerator.GenerateArray( 7, AN_ARRAY_SIZE( cubemaps ), cubemaps, &GPrefilteredMap );
-        RenderCore::SSamplerInfo samplerCI;
-        samplerCI.Filter = RenderCore::FILTER_MIPMAP_BILINEAR;
+        envProbeGenerator.GenerateArray(7, AN_ARRAY_SIZE(cubemaps), cubemaps, &GPrefilteredMap);
+        SSamplerDesc samplerCI;
+        samplerCI.Filter           = FILTER_MIPMAP_BILINEAR;
         samplerCI.bCubemapSeamless = true;
 
-//!!!!!!!!!!!!
-        GDevice->GetBindlessSampler( GPrefilteredMap, samplerCI, &GPrefilteredMapBindless );
+        //!!!!!!!!!!!!
+        GDevice->GetBindlessSampler(GPrefilteredMap, samplerCI, &GPrefilteredMapBindless);
 
-        //TRef< RenderCore::IBindlessSampler > smp;
+        //TRef< IBindlessSampler > smp;
         //GDevice->GetBindlessSampler( PrefilteredMap, samplerCI, &smp );
 
         GPrefilteredMapBindless->MakeResident();
@@ -387,27 +393,27 @@ ARenderBackend::ARenderBackend()
 
     {
         AIrradianceGenerator irradianceGenerator;
-        irradianceGenerator.GenerateArray( AN_ARRAY_SIZE( cubemaps ), cubemaps, &GIrradianceMap );
-        RenderCore::SSamplerInfo samplerCI;
-        samplerCI.Filter = RenderCore::FILTER_LINEAR;
+        irradianceGenerator.GenerateArray(AN_ARRAY_SIZE(cubemaps), cubemaps, &GIrradianceMap);
+        SSamplerDesc samplerCI;
+        samplerCI.Filter           = FILTER_LINEAR;
         samplerCI.bCubemapSeamless = true;
 
-        GDevice->GetBindlessSampler( GIrradianceMap, samplerCI, &GIrradianceMapBindless );
+        GDevice->GetBindlessSampler(GIrradianceMap, samplerCI, &GIrradianceMapBindless);
         GIrradianceMapBindless->MakeResident();
     }
 
     SVirtualTextureCacheLayerInfo layer;
-    layer.TextureFormat = RenderCore::TEXTURE_FORMAT_SRGB8;
-    layer.UploadFormat = RenderCore::FORMAT_UBYTE3;
-    layer.PageSizeInBytes = 128*128*3;
+    layer.TextureFormat   = TEXTURE_FORMAT_SRGB8;
+    layer.UploadFormat    = FORMAT_UBYTE3;
+    layer.PageSizeInBytes = 128 * 128 * 3;
 
     SVirtualTextureCacheCreateInfo createInfo;
     createInfo.PageCacheCapacityX = 32;
     createInfo.PageCacheCapacityY = 32;
-    createInfo.PageResolutionB = 128;
-    createInfo.NumLayers = 1;
-    createInfo.pLayers = &layer;
-    PhysCacheVT = MakeRef< AVirtualTextureCache >( createInfo );
+    createInfo.PageResolutionB    = 128;
+    createInfo.NumLayers          = 1;
+    createInfo.pLayers            = &layer;
+    PhysCacheVT                   = MakeRef<AVirtualTextureCache>(createInfo);
 
     GPhysCacheVT = PhysCacheVT;
 
@@ -416,7 +422,7 @@ ARenderBackend::ARenderBackend()
 
 //#define SPARSE_TEXTURE_TEST
 #ifdef SPARSE_TEXTURE_TEST
-#if 0
+#    if 0
     {
     SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture( TEXTURE_FORMAT_RGBA8, STextureResolution2D( 2048, 2048 ) );
     TRef< ISparseTexture > sparseTexture;
@@ -443,20 +449,21 @@ ARenderBackend::ARenderBackend()
         GLogger.Printf( "Sparse page size %d %d %d\n", pageSizeX[i], pageSizeY[i], pageSizeZ[i] );
     }
     }
-#endif
-    int maxLayers = GDevice->GetDeviceCaps( DEVICE_CAPS_MAX_TEXTURE_LAYERS );
-    int texSize = 1024;
-    int n = texSize;
-    int numLods = 1;
-    while ( n >>= 1 ) {
+#    endif
+    int maxLayers = GDevice->GetDeviceCaps(DEVICE_CAPS_MAX_TEXTURE_LAYERS);
+    int texSize   = 1024;
+    int n         = texSize;
+    int numLods   = 1;
+    while (n >>= 1)
+    {
         numLods++;
     }
-    SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture( TEXTURE_FORMAT_RGBA8, STextureResolution2DArray( texSize, texSize, maxLayers ), STextureSwizzle(), numLods );
+    SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture(TEXTURE_FORMAT_RGBA8, STextureResolution2DArray(texSize, texSize, maxLayers), STextureSwizzle(), numLods);
 
-    TRef< ISparseTexture > sparseTexture;
-    GDevice->CreateSparseTexture( sparseTextureCI, &sparseTexture );
+    TRef<ISparseTexture> sparseTexture;
+    GDevice->CreateSparseTexture(sparseTextureCI, &sparseTexture);
 
-#if 0
+#    if 0
     int pageSizeX = sparseTexture->GetPageSizeX();
     int pageSizeY = sparseTexture->GetPageSizeY();
     int sz = pageSizeX*pageSizeY*4;
@@ -465,16 +472,17 @@ ARenderBackend::ARenderBackend()
     Core::ZeroMem( mem, sz );
 
     sparseTexture->CommitPage( 0, 0, 0, 0, FORMAT_UBYTE4, sz, 1, mem );
-#else
-    int sz = texSize*texSize*4;
+#    else
+    int sz = texSize * texSize * 4;
 
-    byte * mem = (byte*)malloc( sz );
-    Core::ZeroMem( mem, sz );
+    byte* mem = (byte*)malloc(sz);
+    Core::ZeroMem(mem, sz);
 
-    GLogger.Printf( "\tTotal available after create: %d Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10 );
+    GLogger.Printf("\tTotal available after create: %d Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10);
 
-    for ( int i = 0 ; i < 10 ; i++ ) {
-        RenderCore::STextureRect rect;
+    for (int i = 0; i < 10; i++)
+    {
+        STextureRect rect;
         rect.Offset.Lod = 0;
         rect.Offset.X = 0;
         rect.Offset.Y = 0;
@@ -482,38 +490,38 @@ ARenderBackend::ARenderBackend()
         rect.Dimension.X = texSize;
         rect.Dimension.Y = texSize;
         rect.Dimension.Z = 1;
-        sparseTexture->CommitRect( rect, FORMAT_UBYTE4, sz, 1, mem );
-        GLogger.Printf( "\tTotal available after commit: %d Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10 );
-        sparseTexture->UncommitRect( rect );
-        GLogger.Printf( "\tTotal available after uncommit: %d Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10 );
+        sparseTexture->CommitRect(rect, FORMAT_UBYTE4, sz, 1, mem);
+        GLogger.Printf("\tTotal available after commit: %d Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10);
+        sparseTexture->UncommitRect(rect);
+        GLogger.Printf("\tTotal available after uncommit: %d Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10);
     }
     free(mem);
-#endif
+#    endif
 #endif
 
     // Test SPIR-V
-    TRef< IShaderModule > shaderModule;
-    SShaderBinaryData binaryData;
-    binaryData.ShaderType = VERTEX_SHADER;
+    TRef<IShaderModule> shaderModule;
+    SShaderBinaryData   binaryData;
+    binaryData.ShaderType   = VERTEX_SHADER;
     binaryData.BinaryFormat = SHADER_BINARY_FORMAT_SPIR_V_ARB;
-    LoadSPIRV( &binaryData.BinaryCode, &binaryData.BinarySize );
-    GDevice->CreateShaderFromBinary( &binaryData, &shaderModule );
+    LoadSPIRV(&binaryData.BinaryCode, &binaryData.BinarySize);
+    GDevice->CreateShaderFromBinary(&binaryData, &shaderModule);
 
 
 
-    CreateTerrainMaterialDepth( &TerrainDepthPipeline );
+    CreateTerrainMaterialDepth(&TerrainDepthPipeline);
     GTerrainDepthPipeline = TerrainDepthPipeline;
 
-    CreateTerrainMaterialLight( &TerrainLightPipeline );
+    CreateTerrainMaterialLight(&TerrainLightPipeline);
     GTerrainLightPipeline = TerrainLightPipeline;
 
-    CreateTerrainMaterialWireframe( &TerrainWireframePipeline );
+    CreateTerrainMaterialWireframe(&TerrainWireframePipeline);
     GTerrainWireframePipeline = TerrainWireframePipeline;
 }
 
 ARenderBackend::~ARenderBackend()
 {
-    GLogger.Printf( "Deinitializing render backend...\n" );
+    GLogger.Printf("Deinitializing render backend...\n");
 
     //SDL_SetRelativeMouseMode( SDL_FALSE );
     //AVirtualTexture * vt = TestVT.GetObject();
@@ -536,38 +544,38 @@ ARenderBackend::~ARenderBackend()
 }
 
 #if 0
-void ARenderBackend::InitializeBuffer( TRef< RenderCore::IBuffer > * ppBuffer, size_t _SizeInBytes )
+void ARenderBackend::InitializeBuffer( TRef< IBuffer > * ppBuffer, size_t _SizeInBytes )
 {
-    RenderCore::SBufferCreateInfo bufferCI = {};
+    SBufferDesc bufferCI = {};
 
     bufferCI.SizeInBytes = _SizeInBytes;
 
     const bool bDynamicStorage = false;
     if ( bDynamicStorage ) {
-#if 1
+#    if 1
         // Seems to be faster
-        bufferCI.ImmutableStorageFlags = RenderCore::IMMUTABLE_DYNAMIC_STORAGE;
+        bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
         bufferCI.bImmutableStorage = true;
-#else
-        bufferCI.MutableClientAccess = RenderCore::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
-        bufferCI.MutableUsage = RenderCore::MUTABLE_STORAGE_STREAM;
-        bufferCI.ImmutableStorageFlags = (RenderCore::IMMUTABLE_STORAGE_FLAGS)0;
+#    else
+        bufferCI.MutableClientAccess = MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
+        bufferCI.MutableUsage = MUTABLE_STORAGE_STREAM;
+        bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
         bufferCI.bImmutableStorage = false;
-#endif
+#    endif
 
         GDevice->CreateBuffer( bufferCI, nullptr, ppBuffer );
     }
     else {
-#if 1
+#    if 1
         // Mutable storage with flag MUTABLE_STORAGE_STATIC is much faster during rendering (tested on NVidia GeForce GTX 770)
-        bufferCI.MutableClientAccess = RenderCore::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
-        bufferCI.MutableUsage = RenderCore::MUTABLE_STORAGE_STATIC;
-        bufferCI.ImmutableStorageFlags = (RenderCore::IMMUTABLE_STORAGE_FLAGS)0;
+        bufferCI.MutableClientAccess = MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
+        bufferCI.MutableUsage = MUTABLE_STORAGE_STATIC;
+        bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
         bufferCI.bImmutableStorage = false;
-#else
-        bufferCI.ImmutableStorageFlags = RenderCore::IMMUTABLE_DYNAMIC_STORAGE;
+#    else
+        bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
         bufferCI.bImmutableStorage = true;
-#endif
+#    endif
 
         GDevice->CreateBuffer( bufferCI, nullptr, ppBuffer );
     }
@@ -576,22 +584,22 @@ void ARenderBackend::InitializeBuffer( TRef< RenderCore::IBuffer > * ppBuffer, s
 
 int ARenderBackend::ClusterPackedIndicesAlignment() const
 {
-    return GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT );
+    return GDevice->GetDeviceCaps(DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT);
 }
 
-void ARenderBackend::InitializeMaterial( AMaterialGPU * Material, SMaterialDef const * Def )
+void ARenderBackend::InitializeMaterial(AMaterialGPU* Material, SMaterialDef const* Def)
 {
-    Material->MaterialType = Def->Type;
-    Material->LightmapSlot = Def->LightmapSlot;
+    Material->MaterialType              = Def->Type;
+    Material->LightmapSlot              = Def->LightmapSlot;
     Material->DepthPassTextureCount     = Def->DepthPassTextureCount;
     Material->LightPassTextureCount     = Def->LightPassTextureCount;
     Material->WireframePassTextureCount = Def->WireframePassTextureCount;
     Material->NormalsPassTextureCount   = Def->NormalsPassTextureCount;
     Material->ShadowMapPassTextureCount = Def->ShadowMapPassTextureCount;
 
-    RenderCore::POLYGON_CULL cullMode = Def->bTwoSided ? RenderCore::POLYGON_CULL_DISABLED : RenderCore::POLYGON_CULL_FRONT;
+    POLYGON_CULL cullMode = Def->bTwoSided ? POLYGON_CULL_DISABLED : POLYGON_CULL_FRONT;
 
-    AString code = LoadShader( "material.glsl", Def->Shaders );
+    AString code = LoadShader("material.glsl", Def->Shaders);
 
     //{
     //    AFileStream fs;
@@ -599,59 +607,65 @@ void ARenderBackend::InitializeMaterial( AMaterialGPU * Material, SMaterialDef c
     //    fs.WriteBuffer( code.CStr(), code.Length() );
     //}
 
-    bool bTessellation = Def->TessellationMethod != TESSELLATION_DISABLED;
+    bool bTessellation          = Def->TessellationMethod != TESSELLATION_DISABLED;
     bool bTessellationShadowMap = bTessellation && Def->bDisplacementAffectShadow;
 
-    switch ( Material->MaterialType ) {
-    case MATERIAL_TYPE_PBR:
-    case MATERIAL_TYPE_BASELIGHT:
-    case MATERIAL_TYPE_UNLIT: {
-        for ( int i = 0 ; i < 2 ; i++ ) {
-            bool bSkinned = !!i;
+    switch (Material->MaterialType)
+    {
+        case MATERIAL_TYPE_PBR:
+        case MATERIAL_TYPE_BASELIGHT:
+        case MATERIAL_TYPE_UNLIT: {
+            for (int i = 0; i < 2; i++)
+            {
+                bool bSkinned = !!i;
 
-            CreateDepthPassPipeline( &Material->DepthPass[i], code.CStr(), Def->bAlphaMasking, cullMode, bSkinned, bTessellation, Def->Samplers, Def->DepthPassTextureCount );
-            CreateDepthVelocityPassPipeline( &Material->DepthVelocityPass[i], code.CStr(), cullMode, bSkinned, bTessellation, Def->Samplers, Def->DepthPassTextureCount );
-            CreateLightPassPipeline( &Material->LightPass[i], code.CStr(), cullMode, bSkinned, Def->bDepthTest_EXPERIMENTAL, Def->bTranslucent, Def->Blending, bTessellation, Def->Samplers, Def->LightPassTextureCount );
-            CreateWireframePassPipeline( &Material->WireframePass[i], code.CStr(), cullMode, bSkinned, bTessellation, Def->Samplers, Def->WireframePassTextureCount );
-            CreateNormalsPassPipeline( &Material->NormalsPass[i], code.CStr(), bSkinned, Def->Samplers, Def->NormalsPassTextureCount );
-            CreateShadowMapPassPipeline( &Material->ShadowPass[i], code.CStr(), Def->bShadowMapMasking, Def->bTwoSided, bSkinned, bTessellationShadowMap, Def->Samplers, Def->ShadowMapPassTextureCount );
-            CreateFeedbackPassPipeline( &Material->FeedbackPass[i], code.CStr(), cullMode, bSkinned, Def->Samplers, Def->LightPassTextureCount ); // FIXME: Add FeedbackPassTextureCount
-            CreateOutlinePassPipeline( &Material->OutlinePass[i], code.CStr(), cullMode, bSkinned, bTessellation, Def->Samplers, Def->DepthPassTextureCount );
-        }
+                CreateDepthPassPipeline(&Material->DepthPass[i], code.CStr(), Def->bAlphaMasking, cullMode, bSkinned, bTessellation, Def->Samplers, Def->DepthPassTextureCount);
+                CreateDepthVelocityPassPipeline(&Material->DepthVelocityPass[i], code.CStr(), cullMode, bSkinned, bTessellation, Def->Samplers, Def->DepthPassTextureCount);
+                CreateLightPassPipeline(&Material->LightPass[i], code.CStr(), cullMode, bSkinned, Def->bDepthTest_EXPERIMENTAL, Def->bTranslucent, Def->Blending, bTessellation, Def->Samplers, Def->LightPassTextureCount);
+                CreateWireframePassPipeline(&Material->WireframePass[i], code.CStr(), cullMode, bSkinned, bTessellation, Def->Samplers, Def->WireframePassTextureCount);
+                CreateNormalsPassPipeline(&Material->NormalsPass[i], code.CStr(), bSkinned, Def->Samplers, Def->NormalsPassTextureCount);
+                CreateShadowMapPassPipeline(&Material->ShadowPass[i], code.CStr(), Def->bShadowMapMasking, Def->bTwoSided, bSkinned, bTessellationShadowMap, Def->Samplers, Def->ShadowMapPassTextureCount);
+                CreateFeedbackPassPipeline(&Material->FeedbackPass[i], code.CStr(), cullMode, bSkinned, Def->Samplers, Def->LightPassTextureCount); // FIXME: Add FeedbackPassTextureCount
+                CreateOutlinePassPipeline(&Material->OutlinePass[i], code.CStr(), cullMode, bSkinned, bTessellation, Def->Samplers, Def->DepthPassTextureCount);
+            }
 
-        if ( Material->MaterialType != MATERIAL_TYPE_UNLIT ) {
-            CreateLightPassLightmapPipeline( &Material->LightPassLightmap, code.CStr(), cullMode, Def->bDepthTest_EXPERIMENTAL, Def->bTranslucent, Def->Blending, bTessellation, Def->Samplers, Def->LightPassTextureCount );
-            CreateLightPassVertexLightPipeline( &Material->LightPassVertexLight, code.CStr(), cullMode, Def->bDepthTest_EXPERIMENTAL, Def->bTranslucent, Def->Blending, bTessellation, Def->Samplers, Def->LightPassTextureCount );
+            if (Material->MaterialType != MATERIAL_TYPE_UNLIT)
+            {
+                CreateLightPassLightmapPipeline(&Material->LightPassLightmap, code.CStr(), cullMode, Def->bDepthTest_EXPERIMENTAL, Def->bTranslucent, Def->Blending, bTessellation, Def->Samplers, Def->LightPassTextureCount);
+                CreateLightPassVertexLightPipeline(&Material->LightPassVertexLight, code.CStr(), cullMode, Def->bDepthTest_EXPERIMENTAL, Def->bTranslucent, Def->Blending, bTessellation, Def->Samplers, Def->LightPassTextureCount);
+            }
+            break;
         }
-        break;
-    }
-    case MATERIAL_TYPE_HUD:
-    case MATERIAL_TYPE_POSTPROCESS: {
-        CreateHUDPipeline( &Material->HUDPipeline, code.CStr(), Def->Samplers, Def->NumSamplers );
-        break;
-    }
-    default:
-        AN_ASSERT( 0 );
+        case MATERIAL_TYPE_HUD:
+        case MATERIAL_TYPE_POSTPROCESS: {
+            CreateHUDPipeline(&Material->HUDPipeline, code.CStr(), Def->Samplers, Def->NumSamplers);
+            break;
+        }
+        default:
+            AN_ASSERT(0);
     }
 }
 
-void ARenderBackend::RenderFrame( SRenderFrame * pFrameData )
+void ARenderBackend::RenderFrame(ITexture* pBackBuffer, SRenderFrame* pFrameData)
 {
     static int timeQueryFrame = 0;
 
-    if ( r_ShowGPUTime ) {
+    if (r_ShowGPUTime)
+    {
 #ifdef QUERY_TIMESTAMP
-        rcmd->RecordTimeStamp( TimeStamp1, timeQueryFrame );
+        rcmd->RecordTimeStamp(TimeStamp1, timeQueryFrame);
 #else
-        rcmd->BeginQuery( TimeQuery, timeQueryFrame );
+        rcmd->BeginQuery(TimeQuery, timeQueryFrame);
 
-        timeQueryFrame = ( timeQueryFrame + 1 ) % TimeQuery->GetPoolSize();
+        timeQueryFrame = (timeQueryFrame + 1) % TimeQuery->GetPoolSize();
 #endif
     }
 
     GFrameData = pFrameData;
 
-    rcmd->SetSwapChainResolution( GFrameData->CanvasWidth, GFrameData->CanvasHeight );
+    FrameGraph->Clear();
+
+    //rcmd->SetSwapChainResolution( GFrameData->CanvasWidth, GFrameData->CanvasHeight );
 
     // Update cache at beggining of the frame to give more time for stream thread
     PhysCacheVT->Update();
@@ -659,50 +673,69 @@ void ARenderBackend::RenderFrame( SRenderFrame * pFrameData )
     FeedbackAnalyzerVT->Begin();
 
     // TODO: Bind virtual textures in one place
-    FeedbackAnalyzerVT->BindTexture( 0, TestVT );
+    FeedbackAnalyzerVT->BindTexture(0, TestVT);
 
-    CanvasRenderer->Render( [this]( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture )
+    GRenderViewContext.clear();
+    GRenderViewContext.resize(GFrameData->NumViews);
+
+    TPodVector<FGTextureProxy*> pRenderViewTexture(GFrameData->NumViews);
+    for (int i = 0; i < GFrameData->NumViews; i++)
     {
-        RenderView( pRenderView, ppViewTexture );
-    });
+        SRenderView* pRenderView = &GFrameData->RenderViews[i];
+
+        RenderView(i, pRenderView, &pRenderViewTexture[i]);
+        AN_ASSERT(pRenderViewTexture[i] != nullptr);
+    }
+
+    CanvasRenderer->Render(*FrameGraph, pRenderViewTexture, pBackBuffer);
+
+    FrameGraph->Build();
+    FrameGraph->ExportGraphviz("frame.graphviz");
+    rcmd->ExecuteFrameGraph(FrameGraph);
+
+    if (r_FrameGraphDebug)
+    {
+        FrameGraph->Debug();
+    }
 
     FeedbackAnalyzerVT->End();
 
-    if ( r_ShowGPUTime ) {
+    if (r_ShowGPUTime)
+    {
 #ifdef QUERY_TIMESTAMP
-        rcmd->RecordTimeStamp( TimeStamp2, timeQueryFrame );
+        rcmd->RecordTimeStamp(TimeStamp2, timeQueryFrame);
 
-        timeQueryFrame = ( timeQueryFrame + 1 ) % TimeStamp1->GetPoolSize();
+        timeQueryFrame = (timeQueryFrame + 1) % TimeStamp1->GetPoolSize();
 
         uint64_t timeStamp1 = 0;
         uint64_t timeStamp2 = 0;
-        TimeStamp2->GetResult64( timeQueryFrame, &timeStamp2, RenderCore::QUERY_RESULT_WAIT_BIT );
-        TimeStamp1->GetResult64( timeQueryFrame, &timeStamp1, RenderCore::QUERY_RESULT_WAIT_BIT );
+        rcmd->GetQueryPoolResult64(TimeStamp2, timeQueryFrame, &timeStamp2, QUERY_RESULT_WAIT_BIT);
+        rcmd->GetQueryPoolResult64(TimeStamp1, timeQueryFrame, &timeStamp1, QUERY_RESULT_WAIT_BIT);
 
-        GLogger.Printf( "GPU time %f ms\n", (double)(timeStamp2-timeStamp1) / 1000000.0 );
+        GLogger.Printf("GPU time %f ms\n", (double)(timeStamp2 - timeStamp1) / 1000000.0);
 #else
-        rcmd->EndQuery( TimeQuery );
+        rcmd->EndQuery(TimeQuery);
 
         uint64_t timeQueryResult = 0;
-        TimeQuery->GetResult64( timeQueryFrame, &timeQueryResult, RenderCore::QUERY_RESULT_WAIT_BIT );
+        rcmd->GetQueryPoolResult64(TimeQuery, timeQueryFrame, &timeQueryResult, QUERY_RESULT_WAIT_BIT);
 
-        GLogger.Printf( "GPU time %f ms\n", (double)timeQueryResult / 1000000.0 );
+        GLogger.Printf("GPU time %f ms\n", (double)timeQueryResult / 1000000.0);
 #endif
     }
 
     r_RenderSnapshot = false;
 }
 
-void ARenderBackend::SetViewConstants()
+void ARenderBackend::SetViewConstants(int ViewportIndex)
 {
-    AStreamedMemoryGPU * pStreamedMemory = GRuntime->GetStreamedMemoryGPU();
-    size_t offset = pStreamedMemory->AllocateConstant( sizeof( SViewConstantBuffer ) );
+    AStreamedMemoryGPU* pStreamedMemory = GRuntime->GetStreamedMemoryGPU();
+    size_t              offset          = pStreamedMemory->AllocateConstant(sizeof(SViewConstantBuffer));
 
-    SViewConstantBuffer * pViewCBuf = (SViewConstantBuffer *)pStreamedMemory->Map( offset );
+    SViewConstantBuffer* pViewCBuf = (SViewConstantBuffer*)pStreamedMemory->Map(offset);
 
-    pViewCBuf->OrthoProjection = GFrameData->CanvasOrthoProjection;
-    pViewCBuf->ViewProjection = GRenderView->ViewProjection;
-    pViewCBuf->ProjectionMatrix = GRenderView->ProjectionMatrix;
+    pViewCBuf->OrthoProjection         = GFrameData->CanvasOrthoProjection;
+    pViewCBuf->ViewProjection          = GRenderView->ViewProjection;
+    pViewCBuf->ProjectionMatrix        = GRenderView->ProjectionMatrix;
     pViewCBuf->InverseProjectionMatrix = GRenderView->InverseProjectionMatrix;
 
     pViewCBuf->InverseViewMatrix = GRenderView->ViewSpaceToWorldSpace;
@@ -732,166 +765,186 @@ void ARenderBackend::SetViewConstants()
 
     pViewCBuf->InvViewportSize.X = 1.0f / GRenderView->Width;
     pViewCBuf->InvViewportSize.Y = 1.0f / GRenderView->Height;
-    pViewCBuf->ZNear = GRenderView->ViewZNear;
-    pViewCBuf->ZFar = GRenderView->ViewZFar;
+    pViewCBuf->ZNear             = GRenderView->ViewZNear;
+    pViewCBuf->ZFar              = GRenderView->ViewZFar;
 
-    if ( GRenderView->bPerspective ) {
-        pViewCBuf->ProjectionInfo.X = -2.0f / GRenderView->ProjectionMatrix[0][0]; // (x) * (R - L)/N
-        pViewCBuf->ProjectionInfo.Y = 2.0f / GRenderView->ProjectionMatrix[1][1]; // (y) * (T - B)/N
-        pViewCBuf->ProjectionInfo.Z = (1.0f - GRenderView->ProjectionMatrix[2][0]) / GRenderView->ProjectionMatrix[0][0]; // L/N
+    if (GRenderView->bPerspective)
+    {
+        pViewCBuf->ProjectionInfo.X = -2.0f / GRenderView->ProjectionMatrix[0][0];                                         // (x) * (R - L)/N
+        pViewCBuf->ProjectionInfo.Y = 2.0f / GRenderView->ProjectionMatrix[1][1];                                          // (y) * (T - B)/N
+        pViewCBuf->ProjectionInfo.Z = (1.0f - GRenderView->ProjectionMatrix[2][0]) / GRenderView->ProjectionMatrix[0][0];  // L/N
         pViewCBuf->ProjectionInfo.W = -(1.0f + GRenderView->ProjectionMatrix[2][1]) / GRenderView->ProjectionMatrix[1][1]; // B/N
     }
-    else {
-        pViewCBuf->ProjectionInfo.X = 2.0f / GRenderView->ProjectionMatrix[0][0]; // (x) * R - L
-        pViewCBuf->ProjectionInfo.Y = -2.0f / GRenderView->ProjectionMatrix[1][1]; // (y) * T - B
+    else
+    {
+        pViewCBuf->ProjectionInfo.X = 2.0f / GRenderView->ProjectionMatrix[0][0];                                          // (x) * R - L
+        pViewCBuf->ProjectionInfo.Y = -2.0f / GRenderView->ProjectionMatrix[1][1];                                         // (y) * T - B
         pViewCBuf->ProjectionInfo.Z = -(1.0f + GRenderView->ProjectionMatrix[3][0]) / GRenderView->ProjectionMatrix[0][0]; // L
-        pViewCBuf->ProjectionInfo.W = (1.0f - GRenderView->ProjectionMatrix[3][1]) / GRenderView->ProjectionMatrix[1][1]; // B
+        pViewCBuf->ProjectionInfo.W = (1.0f - GRenderView->ProjectionMatrix[3][1]) / GRenderView->ProjectionMatrix[1][1];  // B
     }
 
     pViewCBuf->GameRunningTimeSeconds = GRenderView->GameRunningTimeSeconds;
-    pViewCBuf->GameplayTimeSeconds = GRenderView->GameplayTimeSeconds;
+    pViewCBuf->GameplayTimeSeconds    = GRenderView->GameplayTimeSeconds;
 
     pViewCBuf->GlobalIrradianceMap = GRenderView->GlobalIrradianceMap;
     pViewCBuf->GlobalReflectionMap = GRenderView->GlobalReflectionMap;
 
-    pViewCBuf->DynamicResolutionRatioX = (float)GRenderView->Width / GFrameData->RenderTargetMaxWidth;
-    pViewCBuf->DynamicResolutionRatioY = (float)GRenderView->Height / GFrameData->RenderTargetMaxHeight;
+    pViewCBuf->DynamicResolutionRatioX  = (float)GRenderView->Width / GFrameData->RenderTargetMaxWidth;
+    pViewCBuf->DynamicResolutionRatioY  = (float)GRenderView->Height / GFrameData->RenderTargetMaxHeight;
     pViewCBuf->DynamicResolutionRatioPX = (float)GRenderView->WidthP / GFrameData->RenderTargetMaxWidthP;
     pViewCBuf->DynamicResolutionRatioPY = (float)GRenderView->HeightP / GFrameData->RenderTargetMaxHeightP;
 
     pViewCBuf->FeedbackBufferResolutionRatio = GRenderView->VTFeedback->GetResolutionRatio();
-    pViewCBuf->VTPageCacheCapacity.X = (float)PhysCacheVT->GetPageCacheCapacityX();
-    pViewCBuf->VTPageCacheCapacity.Y = (float)PhysCacheVT->GetPageCacheCapacityY();
+    pViewCBuf->VTPageCacheCapacity.X         = (float)PhysCacheVT->GetPageCacheCapacityX();
+    pViewCBuf->VTPageCacheCapacity.Y         = (float)PhysCacheVT->GetPageCacheCapacityY();
 
     pViewCBuf->VTPageTranslationOffsetAndScale = PhysCacheVT->GetPageTranslationOffsetAndScale();
 
     pViewCBuf->ViewPosition = GRenderView->ViewPosition;
-    pViewCBuf->TimeDelta = GRenderView->GameplayTimeStep;
+    pViewCBuf->TimeDelta    = GRenderView->GameplayTimeStep;
 
-    pViewCBuf->PostprocessBloomMix = Float4( r_BloomParam0.GetFloat(),
-                                               r_BloomParam1.GetFloat(),
-                                               r_BloomParam2.GetFloat(),
-                                               r_BloomParam3.GetFloat() ) * r_BloomScale.GetFloat();
+    pViewCBuf->PostprocessBloomMix = Float4(r_BloomParam0.GetFloat(),
+                                            r_BloomParam1.GetFloat(),
+                                            r_BloomParam2.GetFloat(),
+                                            r_BloomParam3.GetFloat()) *
+        r_BloomScale.GetFloat();
 
-    pViewCBuf->BloomEnabled = r_Bloom;  // TODO: Get from GRenderView
-    pViewCBuf->ToneMappingExposure = r_ToneExposure.GetFloat();  // TODO: Get from GRenderView
-    pViewCBuf->ColorGrading = GRenderView->CurrentColorGradingLUT ? 1.0f : 0.0f;
-    pViewCBuf->FXAA = r_FXAA;
-    pViewCBuf->VignetteColorIntensity = GRenderView->VignetteColorIntensity;
-    pViewCBuf->VignetteOuterRadiusSqr = GRenderView->VignetteOuterRadiusSqr;
-    pViewCBuf->VignetteInnerRadiusSqr = GRenderView->VignetteInnerRadiusSqr;
+    pViewCBuf->BloomEnabled                = r_Bloom;                   // TODO: Get from GRenderView
+    pViewCBuf->ToneMappingExposure         = r_ToneExposure.GetFloat(); // TODO: Get from GRenderView
+    pViewCBuf->ColorGrading                = GRenderView->CurrentColorGradingLUT ? 1.0f : 0.0f;
+    pViewCBuf->FXAA                        = r_FXAA;
+    pViewCBuf->VignetteColorIntensity      = GRenderView->VignetteColorIntensity;
+    pViewCBuf->VignetteOuterRadiusSqr      = GRenderView->VignetteOuterRadiusSqr;
+    pViewCBuf->VignetteInnerRadiusSqr      = GRenderView->VignetteInnerRadiusSqr;
     pViewCBuf->ColorGradingAdaptationSpeed = GRenderView->ColorGradingAdaptationSpeed;
-    pViewCBuf->ViewBrightness = Math::Saturate( r_Brightness.GetFloat() );
+    pViewCBuf->ViewBrightness              = Math::Saturate(r_Brightness.GetFloat());
 
-    pViewCBuf->SSLRSampleOffset = r_SSLRSampleOffset.GetFloat();
-    pViewCBuf->SSLRMaxDist = r_SSLRMaxDist.GetFloat();
-    pViewCBuf->IsPerspective = float( GRenderView->bPerspective );
-    pViewCBuf->TessellationLevel = r_TessellationLevel.GetFloat() * Math::Lerp( (float)GRenderView->Width, (float)GRenderView->Height, 0.5f );
+    pViewCBuf->SSLRSampleOffset  = r_SSLRSampleOffset.GetFloat();
+    pViewCBuf->SSLRMaxDist       = r_SSLRMaxDist.GetFloat();
+    pViewCBuf->IsPerspective     = float(GRenderView->bPerspective);
+    pViewCBuf->TessellationLevel = r_TessellationLevel.GetFloat() * Math::Lerp((float)GRenderView->Width, (float)GRenderView->Height, 0.5f);
 
     pViewCBuf->PrefilteredMapSampler = (uint64_t)GPrefilteredMapBindless->GetHandle();
-    pViewCBuf->IrradianceMapSampler = (uint64_t)GIrradianceMapBindless->GetHandle();
+    pViewCBuf->IrradianceMapSampler  = (uint64_t)GIrradianceMapBindless->GetHandle();
 
     pViewCBuf->DebugMode = r_DebugRenderMode.GetInteger();
 
     pViewCBuf->NumDirectionalLights = GRenderView->NumDirectionalLights;
     //GLogger.Printf( "GRenderView->FirstDirectionalLight: %d\n", GRenderView->FirstDirectionalLight );
 
-    for ( int i = 0 ; i < GRenderView->NumDirectionalLights ; i++ ) {
-        SDirectionalLightInstance * light = GFrameData->DirectionalLights[GRenderView->FirstDirectionalLight + i];
+    for (int i = 0; i < GRenderView->NumDirectionalLights; i++)
+    {
+        SDirectionalLightInstance* light = GFrameData->DirectionalLights[GRenderView->FirstDirectionalLight + i];
 
-        pViewCBuf->LightDirs[i] = Float4( GRenderView->NormalToViewMatrix * (light->Matrix[2]), 0.0f );
-        pViewCBuf->LightColors[i] = light->ColorAndAmbientIntensity;
+        pViewCBuf->LightDirs[i]          = Float4(GRenderView->NormalToViewMatrix * (light->Matrix[2]), 0.0f);
+        pViewCBuf->LightColors[i]        = light->ColorAndAmbientIntensity;
         pViewCBuf->LightParameters[i][0] = light->RenderMask;
         pViewCBuf->LightParameters[i][1] = light->FirstCascade;
         pViewCBuf->LightParameters[i][2] = light->NumCascades;
     }
 
-    GViewConstantBufferBindingBindingOffset = offset;
-    GViewConstantBufferBindingBindingSize = sizeof( *pViewCBuf );
-    rtbl->BindBuffer( 0, GStreamBuffer, GViewConstantBufferBindingBindingOffset, GViewConstantBufferBindingBindingSize );
+    GRenderViewContext[ViewportIndex].ViewConstantBufferBindingBindingOffset = offset;
+    GRenderViewContext[ViewportIndex].ViewConstantBufferBindingBindingSize  = sizeof(*pViewCBuf);
+    rtbl->BindBuffer(0, GStreamBuffer, GRenderViewContext[ViewportIndex].ViewConstantBufferBindingBindingOffset, GRenderViewContext[ViewportIndex].ViewConstantBufferBindingBindingSize);
 }
 
-void ARenderBackend::UploadShaderResources()
+void ARenderBackend::UploadShaderResources(int ViewportIndex)
 {
-    SetViewConstants();
+    SetViewConstants(ViewportIndex);
 
     // Bind light buffer
-    rtbl->BindBuffer( 4, GStreamBuffer, GRenderView->PointLightsStreamHandle, GRenderView->PointLightsStreamSize );
+    rtbl->BindBuffer(4, GStreamBuffer, GRenderView->PointLightsStreamHandle, GRenderView->PointLightsStreamSize);
 
     // Bind IBL buffer
-    rtbl->BindBuffer( 5, GStreamBuffer, GRenderView->ProbeStreamHandle, GRenderView->ProbeStreamSize );
+    rtbl->BindBuffer(5, GStreamBuffer, GRenderView->ProbeStreamHandle, GRenderView->ProbeStreamSize);
 
     // Copy cluster data
 
 #if 1
     // Perform copy from stream buffer on GPU side
-    RenderCore::STextureRect rect = {};
-    rect.Dimension.X = MAX_FRUSTUM_CLUSTERS_X;
-    rect.Dimension.Y = MAX_FRUSTUM_CLUSTERS_Y;
-    rect.Dimension.Z = MAX_FRUSTUM_CLUSTERS_Z;
-    rcmd->CopyBufferToTexture( GStreamBuffer, GClusterLookup, rect, RenderCore::FORMAT_UINT2, 0, GRenderView->ClusterLookupStreamHandle, 1 );
+    STextureRect rect = {};
+    rect.Dimension.X  = MAX_FRUSTUM_CLUSTERS_X;
+    rect.Dimension.Y  = MAX_FRUSTUM_CLUSTERS_Y;
+    rect.Dimension.Z  = MAX_FRUSTUM_CLUSTERS_Z;
+    rcmd->CopyBufferToTexture(GStreamBuffer, GClusterLookup, rect, FORMAT_UINT2, 0, GRenderView->ClusterLookupStreamHandle, 1);
 #else
-    GClusterLookup->Write( 0,
-                          RenderCore::FORMAT_UINT2,
-                          sizeof( SClusterHeader )*MAX_FRUSTUM_CLUSTERS_X*MAX_FRUSTUM_CLUSTERS_Y*MAX_FRUSTUM_CLUSTERS_Z,
+    GClusterLookup->Write(0,
+                          FORMAT_UINT2,
+                          sizeof(SClusterHeader) * MAX_FRUSTUM_CLUSTERS_X * MAX_FRUSTUM_CLUSTERS_Y * MAX_FRUSTUM_CLUSTERS_Z,
                           1,
-                          GRenderView->LightData.ClusterLookup );
+                          GRenderView->LightData.ClusterLookup);
 #endif
 
 #if 1
     // Perform copy from stream buffer on GPU side
-    if ( GRenderView->ClusterPackedIndexCount > 0 ) {
-#if 0
-        RenderCore::SBufferCopy range;
+    if (GRenderView->ClusterPackedIndexCount > 0)
+    {
+#    if 0
+        SBufferCopy range;
         range.SrcOffset = GRenderView->ClusterPackedIndicesStreamHandle;
         range.DstOffset = 0;
         range.SizeInBytes = sizeof( SClusterPackedIndex ) * GRenderView->ClusterPackedIndexCount;
         rcmd->CopyBufferRange( GStreamBuffer, GClusterItemBuffer, 1, &range );
-#else
+#    else
         size_t offset = GRenderView->ClusterPackedIndicesStreamHandle;
-        size_t sizeInBytes = sizeof( SClusterPackedIndex ) * GRenderView->ClusterPackedIndexCount;
-        GClusterItemTBO->UpdateRange( offset, sizeInBytes );
-#endif
+        size_t sizeInBytes = sizeof(SClusterPackedIndex) * GRenderView->ClusterPackedIndexCount;
+        GClusterItemTBO->SetRange(offset, sizeInBytes);
+#    endif
     }
 #else
-    GClusterItemBuffer->WriteRange( 0,
-                                   sizeof( SClusterItemOffset )*GRenderView->LightData.NumClusterItems,
-                                   GRenderView->LightData.ItemBuffer );
+    GClusterItemBuffer->WriteRange(0,
+                                   sizeof(SClusterItemOffset) * GRenderView->LightData.NumClusterItems,
+                                   GRenderView->LightData.ItemBuffer);
 #endif
 }
 
-void ARenderBackend::RenderView( SRenderView * pRenderView, AFrameGraphTexture ** ppViewTexture )
+void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView, FGTextureProxy** ppViewTexture)
 {
-    GRenderView = pRenderView;
-    GRenderViewArea.X = 0;
-    GRenderViewArea.Y = 0;
-    GRenderViewArea.Width = GRenderView->Width;
-    GRenderViewArea.Height = GRenderView->Height;
+    *ppViewTexture = nullptr;
 
-    UploadShaderResources();
+    GRenderView            = pRenderView;
+    GRenderViewArea.X      = 0;
+    GRenderViewArea.Y      = 0;
+    GRenderViewArea.Width  = pRenderView->Width;
+    GRenderViewArea.Height = pRenderView->Height;
 
-    rcmd->BindResourceTable( rtbl );
+    //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ACustomTask& task = FrameGraph->AddTask<ACustomTask>("Setup render view");
+    FGBufferViewProxy*bufferView = FrameGraph->AddExternalResource<FGBufferViewProxy>("hack hack", GClusterItemTBO);
+    task.AddResource(bufferView, FG_RESOURCE_ACCESS_WRITE);
+    task.SetFunction([=](ACustomTask const&)
+                      {
+                         GRenderView = pRenderView;
+                         GRenderViewArea.X      = 0;
+                         GRenderViewArea.Y      = 0;
+                         GRenderViewArea.Width  = pRenderView->Width;
+                         GRenderViewArea.Height = pRenderView->Height;
+
+                         UploadShaderResources(ViewportIndex);
+
+                         rcmd->BindResourceTable(rtbl);
+
+    });
+
+    
 
     bool bVirtualTexturing = FeedbackAnalyzerVT->HasBindings();
 
-    if ( bVirtualTexturing ) {
-        GRenderView->VTFeedback->Begin( GRenderView->Width, GRenderView->Height );
+    // !!!!!!!!!!! FIXME: move outside of framegraph filling
+    if (bVirtualTexturing)
+    {
+        pRenderView->VTFeedback->Begin(pRenderView->Width, pRenderView->Height);
     }
 
-    FrameRenderer->Render( *FrameGraph, bVirtualTexturing, PhysCacheVT, CapturedResources );
-    FrameGraph->Execute( rcmd );
+    FrameRenderer->Render(*FrameGraph, bVirtualTexturing, PhysCacheVT, ppViewTexture);
 
-    if ( r_FrameGraphDebug ) {
-        FrameGraph->Debug();
-    }
+    // !!!!!!!!!!! FIXME: move outside of framegraph filling
+    if (bVirtualTexturing)
+    {
+        int         FeedbackSize;
+        const void* FeedbackData;
+        pRenderView->VTFeedback->End(&FeedbackSize, &FeedbackData);
 
-    *ppViewTexture = CapturedResources.FinalTexture;
-
-    if ( bVirtualTexturing ) {
-        int FeedbackSize;
-        const void * FeedbackData;
-        GRenderView->VTFeedback->End( &FeedbackSize, &FeedbackData );
-    
-        FeedbackAnalyzerVT->AddFeedbackData( FeedbackSize, FeedbackData );
+        FeedbackAnalyzerVT->AddFeedbackData(FeedbackSize, FeedbackData);
     }
 }

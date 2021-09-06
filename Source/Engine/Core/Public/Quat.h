@@ -463,13 +463,6 @@ struct Quat
         return atan2( 2.0f * ( X * Y + W * Z ), W * W + X * X - Y * Y - Z * Z );
     }
 
-    Quat Slerp( Quat const & _To, float _Mix ) const
-    {
-        return Slerp( *this, _To, _Mix );
-    }
-
-    static Quat Slerp( Quat const & _From, Quat const & _To, float _Mix );
-
     // String conversions
     AString ToString( int _Precision = -1 ) const
     {
@@ -520,7 +513,10 @@ AN_FORCEINLINE Quat operator*( float _Left, Quat const & _Right )
     return Quat( _Left * _Right.W, _Left * _Right.X, _Left * _Right.Y, _Left * _Right.Z );
 }
 
-AN_FORCEINLINE Quat Quat::Slerp( Quat const & _From, Quat const & _To, float _Mix )
+namespace Math
+{
+
+AN_FORCEINLINE Quat Slerp( Quat const & _From, Quat const & _To, float _Mix )
 {
     if ( _Mix <= 0.0f ) {
         return _From;
@@ -555,4 +551,6 @@ AN_FORCEINLINE Quat Quat::Slerp( Quat const & _From, Quat const & _To, float _Mi
     }
 
     return Scale0 * _From + Scale1 * Temp;
+}
+
 }

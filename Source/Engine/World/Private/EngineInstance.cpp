@@ -236,7 +236,7 @@ void AEngineInstance::Run( SEntryDecl const & _EntryDecl )
         Renderer->Render( &Canvas );
 
         // Generate GPU commands
-        RenderBackend->RenderFrame( Renderer->GetFrameData() );
+        RenderBackend->RenderFrame( GRuntime->GetSwapChain()->GetBackBuffer(), Renderer->GetFrameData() );
 
     } while ( !GRuntime->IsPendingTerminate() );
 

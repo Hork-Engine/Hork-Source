@@ -35,7 +35,7 @@ using namespace RenderCore;
 
 AFxaaRenderer::AFxaaRenderer()
 {
-    SSamplerInfo samplerCI;
+    SSamplerDesc samplerCI;
     samplerCI.Filter = FILTER_LINEAR;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
@@ -54,26 +54,23 @@ AFxaaRenderer::AFxaaRenderer()
     CreateFullscreenQuadPipeline( &FxaaPipeline, "postprocess/fxaa.vert", "postprocess/fxaa.frag", &resourceLayout );
 }
 
-void AFxaaRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppFxaaTexture )
+void AFxaaRenderer::AddPass( AFrameGraph & FrameGraph, FGTextureProxy * SourceTexture, FGTextureProxy ** ppFxaaTexture )
 {
     ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "FXAA Pass" );
 
-    renderPass.SetDynamicRenderArea( &GRenderViewArea );
+    renderPass.SetRenderArea(GRenderViewArea);
 
-    renderPass.AddResource( SourceTexture, RESOURCE_ACCESS_READ );
+    renderPass.AddResource( SourceTexture, FG_RESOURCE_ACCESS_READ );
 
-    renderPass.SetColorAttachments(
-    {
-        {
-            "FXAA texture",
-            RenderCore::MakeTexture( RenderCore::TEXTURE_FORMAT_R11F_G11F_B10F, GetFrameResoultion() ),
-            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-        }
-    }
-    );
+    renderPass.SetColorAttachment(
+        STextureAttachment("FXAA texture",
+                           STextureDesc()
+                               .SetFormat(RenderCore::TEXTURE_FORMAT_R11F_G11F_B10F)
+                               .SetResolution(GetFrameResoultion()))
+            .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 
     renderPass.AddSubpass( { 0 }, // color attachment refs
-                           [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
 
     {
         rtbl->BindTexture( 0, SourceTexture->Actual() );
@@ -81,5 +78,5 @@ void AFxaaRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * Sour
         DrawSAQ( FxaaPipeline );
     } );
 
-    *ppFxaaTexture = renderPass.GetColorAttachments()[0].Resource;
+    *ppFxaaTexture = renderPass.GetColorAttachments()[0].pResource;
 }

@@ -32,24 +32,25 @@ SOFTWARE.
 
 #include <RenderCore/Pipeline.h>
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 struct SVertexArrayObjectHashedData
 {
-    uint32_t          NumVertexBindings;
+    uint32_t           NumVertexBindings;
     SVertexBindingInfo VertexBindings[MAX_VERTEX_BINDINGS];
-    uint32_t          NumVertexAttribs;
+    uint32_t           NumVertexAttribs;
     SVertexAttribInfo  VertexAttribs[MAX_VERTEX_ATTRIBS];
 };
 
 struct SVertexArrayObject
 {
-    unsigned int      Handle;
-    uint32_t          VertexBindingsStrides[MAX_VERTEX_BUFFER_SLOTS];
+    unsigned int                 Handle;
+    uint32_t                     VertexBindingsStrides[MAX_VERTEX_BUFFER_SLOTS];
     SVertexArrayObjectHashedData Hashed;
-    uint32_t          VertexBufferUIDs[MAX_VERTEX_BUFFER_SLOTS];
-    uint32_t          VertexBufferOffsets[MAX_VERTEX_BUFFER_SLOTS];
-    uint32_t          IndexBufferUID;
+    uint32_t                     VertexBufferUIDs[MAX_VERTEX_BUFFER_SLOTS];
+    uint32_t                     VertexBufferOffsets[MAX_VERTEX_BUFFER_SLOTS];
+    uint32_t                     IndexBufferUID;
 };
 
-}
+} // namespace RenderCore

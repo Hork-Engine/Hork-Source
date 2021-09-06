@@ -179,7 +179,7 @@ void AVSD::QueryVisiblePrimitives( AWorld * InWorld, TPodVector< SPrimitiveDef *
         }
 
         // Wait when it's done
-        GRenderFrontendJobList->Wait();
+        GRuntime->RenderFrontendJobList->Wait();
 
         {
             AScopedTimeCheck TimeCheck( "Evaluate submits" );
@@ -770,7 +770,7 @@ void AVSD::CullPrimitives( SVisArea const * InArea, PlaneF const * InCullPlanes,
             SubmitCullingJobs( submit );
 
             // Wait when it's done
-            GRenderFrontendJobList->Wait();
+            GRuntime->RenderFrontendJobList->Wait();
 
             Dbg_TotalPrimitiveBounds += numBoxes;
 
@@ -1076,7 +1076,7 @@ void AVSD::CullBoxAsync( void * InData ) {
 void AVSD::SubmitCullingJobs( SCullJobSubmit & InSubmit ) {
     int i, firstObject;
 
-    const int threasCount = vsd_FrustumCullingMT ? GAsyncJobManager.GetNumWorkerThreads() : 1;
+    const int threasCount = vsd_FrustumCullingMT ? GRuntime->AsyncJobManager->GetNumWorkerThreads() : 1;
 
     const int MIN_OBJECTS_PER_THREAD = 4; // TODO: choose appropriate value
 
@@ -1118,11 +1118,11 @@ void AVSD::SubmitCullingJobs( SCullJobSubmit & InSubmit ) {
         InSubmit.ThreadData[i].JobCullPlanes = InSubmit.JobCullPlanes;
         InSubmit.ThreadData[i].JobCullPlanesCount = InSubmit.JobCullPlanesCount;
 
-        GRenderFrontendJobList->AddJob( CullBoxAsync, &InSubmit.ThreadData[i] );
+        GRuntime->RenderFrontendJobList->AddJob( CullBoxAsync, &InSubmit.ThreadData[i] );
     }
 
     // Do jobs
-    GRenderFrontendJobList->Submit();
+    GRuntime->RenderFrontendJobList->Submit();
 
     // Process residual objects
     const int Residual = InSubmit.NumObjects - firstObject;

@@ -32,17 +32,18 @@ SOFTWARE.
 
 #include "BloomRenderer.h"
 
-class APostprocessRenderer {
+class APostprocessRenderer
+{
 public:
     APostprocessRenderer();
 
-    void AddPass( AFrameGraph & FrameGraph,
-                  AFrameGraphTexture * ColorTexture,
-                  AFrameGraphTexture * Exposure,
-                  AFrameGraphTexture * ColorGrading,
-                  ABloomRenderer::STextures & BloomTex,
-                  AFrameGraphTexture ** ppPostprocessTexture );
+    void AddPass(RenderCore::AFrameGraph&         FrameGraph,
+                 RenderCore::FGTextureProxy*  ColorTexture,
+                 RenderCore::FGTextureProxy*  Exposure,
+                 RenderCore::FGTextureProxy*  ColorGrading,
+                 ABloomRenderer::STextures&       BloomTex,
+                 RenderCore::FGTextureProxy** ppPostprocessTexture);
 
 private:
-    TRef< RenderCore::IPipeline > PostprocessPipeline;
+    TRef<RenderCore::IPipeline> PostprocessPipeline;
 };

@@ -30,13 +30,13 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/FrameGraph/FrameGraph.h>
+#include <RenderCore/FrameGraph.h>
 
 class AExposureRenderer {
 public:
     AExposureRenderer();
 
-    void AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppExposure );
+    void AddPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppExposure);
 
     RenderCore::ITexture * GetDefaultLuminance() { return DefaultLuminance; }
 

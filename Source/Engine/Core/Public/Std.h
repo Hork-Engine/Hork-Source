@@ -147,3 +147,17 @@ using AStdThread = std::thread;
 
 #define StdUniquePtr std::unique_ptr
 #define StdMakeUnique std::make_unique
+
+#include <unordered_map>
+
+template <typename T>
+struct SUnorderedMapHasher
+{
+    std::size_t operator()(T const& Key) const
+    {
+        return HashTraits::Hash(Key);
+    }
+};
+
+template <typename Key, typename Value>
+using TStdUnorderedMap = std::unordered_map<Key, Value, SUnorderedMapHasher<Key>>;

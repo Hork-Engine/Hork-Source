@@ -32,7 +32,8 @@ SOFTWARE.
 
 #include "DeviceObject.h"
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 enum SHADER_TYPE : uint8_t
 {
@@ -51,7 +52,7 @@ enum SHADER_BINARY_FORMAT : unsigned int
 
 struct SShaderBinaryData
 {
-    void *       BinaryCode;
+    void*        BinaryCode;
     size_t       BinarySize;
     unsigned int BinaryFormat;
     SHADER_TYPE  ShaderType;
@@ -60,11 +61,14 @@ struct SShaderBinaryData
 class IShaderModule : public IDeviceObject
 {
 public:
-    IShaderModule( IDevice * Device ) : IDeviceObject( Device ) {}
+    IShaderModule(IDevice* pDevice) :
+        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_SHADER_MODULE)
+    {}
 
     SHADER_TYPE GetType() const { return Type; }
+
 protected:
     SHADER_TYPE Type;
 };
 
-}
+} // namespace RenderCore

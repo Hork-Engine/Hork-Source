@@ -35,7 +35,7 @@ using namespace RenderCore;
 
 AColorGradingRenderer::AColorGradingRenderer()
 {
-    SSamplerInfo samplerCI;
+    SSamplerDesc samplerCI;
     samplerCI.Filter = FILTER_NEAREST;// FILTER_LINEAR;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
@@ -68,36 +68,33 @@ AColorGradingRenderer::AColorGradingRenderer()
                                     RenderCore::BLENDING_ALPHA );
 }
 
-void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppColorGrading )
+void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, FGTextureProxy ** ppColorGrading )
 {
     if ( !GRenderView->CurrentColorGradingLUT ) {
         *ppColorGrading = nullptr;
         return;
     }
 
-    auto ColorGrading_R = FrameGraph.AddExternalResource< RenderCore::STextureCreateInfo, RenderCore::ITexture >(
-        "CurrentColorGradingLUT",
-        MakeTexture( RenderCore::TEXTURE_FORMAT_RGB16F, STextureResolution3D( 16,16,16 ) ),
-        GRenderView->CurrentColorGradingLUT );
+    auto ColorGrading_R = FrameGraph.AddExternalResource<FGTextureProxy>("CurrentColorGradingLUT", GRenderView->CurrentColorGradingLUT);
 
     if ( GRenderView->ColorGradingLUT )
     {
-        auto source = FrameGraph.AddExternalResource< RenderCore::STextureCreateInfo, RenderCore::ITexture >(
-            "ColorGradingLUT",
-            MakeTexture( RenderCore::TEXTURE_FORMAT_RGB16F, STextureResolution3D( 16,16,16 ) ),
-            GRenderView->ColorGradingLUT );
+        auto source = FrameGraph.AddExternalResource<FGTextureProxy>("ColorGradingLUT", GRenderView->ColorGradingLUT);
 
         ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "Color Grading Pass" );
 
         renderPass.SetRenderArea( 16, 16 );
         renderPass.SetColorAttachments(
         {
-            { ColorGrading_R, RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD ) }
+            {
+                STextureAttachment(ColorGrading_R)
+                .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
+            }
         }
         );
-        renderPass.AddResource( source, RESOURCE_ACCESS_READ );
+        renderPass.AddResource( source, FG_RESOURCE_ACCESS_READ );
         renderPass.AddSubpass( { 0 },
-                               [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                              [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
         {
             rtbl->BindTexture( 0, source->Actual() );
 
@@ -111,11 +108,14 @@ void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTextur
         renderPass.SetRenderArea( 16, 16 );
         renderPass.SetColorAttachments(
         {
-            { ColorGrading_R, RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD ) }
+            {
+                STextureAttachment(ColorGrading_R)
+                .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
+            }
         }
         );
         renderPass.AddSubpass( { 0 },
-                               [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                              [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
         {
             struct SDrawCall
             {

@@ -62,9 +62,8 @@ private:
     //TRef< RenderCore::IBuffer > ConstantBuffer;
     //SConstantData ConstantBufferData;
     TRef< RenderCore::IPipeline > Pipeline;
-    TRef< RenderCore::IRenderPass > RP;
 
-    TRef< RenderCore::IFramebuffer > voxelFBO;
+//    TRef< RenderCore::IFramebuffer > voxelFBO;
     TRef< RenderCore::ITexture > voxel2DTex;
     TRef< RenderCore::ITexture > voxelTex;
     TRef< RenderCore::IBuffer > drawIndBuffer;

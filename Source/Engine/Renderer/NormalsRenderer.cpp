@@ -61,23 +61,19 @@ static bool BindMaterialNormalPass( SRenderInstance const * instance )
     return true;
 }
 
-void AddNormalsPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget )
+void AddNormalsPass( AFrameGraph & FrameGraph, FGTextureProxy * RenderTarget )
 {
     ARenderPass & normalPass = FrameGraph.AddTask< ARenderPass >( "Normal Pass" );
 
-    normalPass.SetDynamicRenderArea( &GRenderViewArea );
+    normalPass.SetRenderArea(GRenderViewArea);
 
-    normalPass.SetColorAttachments(
-    {
-        {
-            RenderTarget,
-            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-        }
-    }
+    normalPass.SetColorAttachment(
+        STextureAttachment(RenderTarget)
+        .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
     );
 
     normalPass.AddSubpass( { 0 }, // color attachment refs
-                           [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
 
     {
         SDrawIndexedCmd drawCmd;

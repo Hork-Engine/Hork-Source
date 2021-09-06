@@ -48,26 +48,26 @@ feedbackBuffer->End( Allocator, &FeedbackSize, &FeedbackData );
 
 */
 
+using namespace RenderCore;
+
 ARuntimeVariable r_FeedbackResolutionFactorVT( _CTS( "r_FeedbackResolutionFactorVT" ), _CTS( "16" ) );
 ARuntimeVariable r_RenderFeedback( _CTS( "r_RenderFeedback" ), _CTS( "1" ) );
 
 // TODO: Move to project settings?
-//static const RenderCore::INTERNAL_PIXEL_FORMAT FEEDBACK_DEPTH_FORMAT = RenderCore::TEXTURE_FORMAT_DEPTH16;
-static const RenderCore::TEXTURE_FORMAT FEEDBACK_DEPTH_FORMAT = RenderCore::TEXTURE_FORMAT_DEPTH24;
-//static const RenderCore::INTERNAL_PIXEL_FORMAT FEEDBACK_DEPTH_FORMAT = RenderCore::TEXTURE_FORMAT_DEPTH32;
+//static const INTERNAL_PIXEL_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_DEPTH16;
+static const TEXTURE_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_DEPTH24;
+//static const INTERNAL_PIXEL_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_DEPTH32;
 
 AVirtualTextureFeedback::AVirtualTextureFeedback()
     : SwapIndex( 0 )
     , ResolutionRatio( 0.0f )
 {
-    using namespace RenderCore;
-
     FeedbackSize[0] = FeedbackSize[1] = 0;
     MappedData[0] = MappedData[1] = 0;
 
     SPipelineResourceLayout resourceLayout;
 
-    SSamplerInfo nearestSampler;
+    SSamplerDesc nearestSampler;
     nearestSampler.Filter = FILTER_NEAREST;
     nearestSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
     nearestSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
@@ -82,14 +82,12 @@ AVirtualTextureFeedback::AVirtualTextureFeedback()
 AVirtualTextureFeedback::~AVirtualTextureFeedback()
 {
     if ( MappedData[SwapIndex] ) {
-        PixelBufferObject[SwapIndex]->Unmap();
+        rcmd->UnmapBuffer(PixelBufferObject[SwapIndex]);
     }
 }
 
 void AVirtualTextureFeedback::Begin( int Width, int Height )
 {
-    using namespace RenderCore;
-
     float resolutionScale = Math::Max( r_FeedbackResolutionFactorVT.GetFloat(), 1.0f );
     resolutionScale = 1.0f / resolutionScale;
 
@@ -113,25 +111,31 @@ void AVirtualTextureFeedback::Begin( int Width, int Height )
 
     if ( MappedData[SwapIndex] ) {
         MappedData[SwapIndex] = nullptr;
-        PixelBufferObject[SwapIndex]->Unmap();
+        rcmd->UnmapBuffer(PixelBufferObject[SwapIndex]);
     }
 
     if ( !FeedbackTexture || FeedbackTexture->GetWidth() != feedbackWidth || FeedbackTexture->GetHeight() != feedbackHeight )
     {
-        GDevice->CreateTexture( MakeTexture( TEXTURE_FORMAT_RGBA8, STextureResolution2D( feedbackWidth, feedbackHeight ) ), &FeedbackTexture );
-        GDevice->CreateTexture( MakeTexture( FEEDBACK_DEPTH_FORMAT, STextureResolution2D( feedbackWidth, feedbackHeight ) ), &FeedbackDepth );
+        GDevice->CreateTexture(STextureDesc()
+                                   .SetFormat(TEXTURE_FORMAT_RGBA8)
+                                   .SetResolution(STextureResolution2D(feedbackWidth, feedbackHeight)),
+                               &FeedbackTexture);
+        GDevice->CreateTexture(STextureDesc()
+                                   .SetFormat(FEEDBACK_DEPTH_FORMAT)
+                                   .SetResolution(STextureResolution2D(feedbackWidth, feedbackHeight)),
+                               &FeedbackDepth);
     }
 
     size_t feedbackSizeInBytes = FeedbackSize[SwapIndex] * 4;
 
     if ( !PixelBufferObject[SwapIndex] || PixelBufferObject[SwapIndex]->GetSizeInBytes() != feedbackSizeInBytes ) {
-        RenderCore::SBufferCreateInfo bufferCI = {};
+        SBufferDesc bufferCI = {};
         bufferCI.bImmutableStorage = true;
-        bufferCI.ImmutableStorageFlags = (RenderCore::IMMUTABLE_STORAGE_FLAGS)(
-            RenderCore::IMMUTABLE_MAP_READ
-            //| RenderCore::IMMUTABLE_MAP_CLIENT_STORAGE
-            | RenderCore::IMMUTABLE_MAP_PERSISTENT
-            | RenderCore::IMMUTABLE_MAP_COHERENT
+        bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)(
+            IMMUTABLE_MAP_READ
+            //| IMMUTABLE_MAP_CLIENT_STORAGE
+            | IMMUTABLE_MAP_PERSISTENT
+            | IMMUTABLE_MAP_COHERENT
             );
         bufferCI.SizeInBytes = feedbackSizeInBytes;
 
@@ -142,8 +146,6 @@ void AVirtualTextureFeedback::Begin( int Width, int Height )
 
 void AVirtualTextureFeedback::End( int * pFeedbackSize, const void ** ppData )
 {
-    using namespace RenderCore;
-
     SwapIndex = (SwapIndex + 1) & 1;
 
     size_t sizeInBytes = FeedbackSize[SwapIndex] * 4; // 4 bytes per pixel
@@ -153,12 +155,14 @@ void AVirtualTextureFeedback::End( int * pFeedbackSize, const void ** ppData )
 
     if ( sizeInBytes > 0 ) {
         if ( PixelBufferObject[SwapIndex] ) {
-            MappedData[SwapIndex] = PixelBufferObject[SwapIndex]->Map( MAP_TRANSFER_READ,
-                                                                       MAP_NO_INVALIDATE,
-                                                                       MAP_PERSISTENT_COHERENT,
-                                                                       false,
-                                                                       false );
-            if ( MappedData[SwapIndex] ) {
+            MappedData[SwapIndex] = rcmd->MapBuffer(PixelBufferObject[SwapIndex],
+                                                    MAP_TRANSFER_READ,
+                                                    MAP_NO_INVALIDATE,
+                                                    MAP_PERSISTENT_COHERENT,
+                                                    false,
+                                                    false);
+            if (MappedData[SwapIndex])
+            {
                 *ppData = MappedData[SwapIndex];
                 *pFeedbackSize = FeedbackSize[SwapIndex];
             }
@@ -168,8 +172,6 @@ void AVirtualTextureFeedback::End( int * pFeedbackSize, const void ** ppData )
 
 static bool BindMaterialFeedbackPass( SRenderInstance const * Instance )
 {
-    using namespace RenderCore;
-
     AMaterialGPU * pMaterial = Instance->Material;
     IBuffer * pSecondVertexBuffer = nullptr;
     size_t secondBufferOffset = 0;
@@ -202,49 +204,30 @@ static bool BindMaterialFeedbackPass( SRenderInstance const * Instance )
 
 void AVirtualTextureFeedback::AddPass( AFrameGraph & FrameGraph )
 {
-    if ( !r_RenderFeedback )return;
-    AFrameGraphTexture * FeedbackDepth_R = FrameGraph.AddExternalResource(
-        "VT Feedback depth",
-        RenderCore::STextureCreateInfo(),
-        GetFeedbackDepth()
-    );
+    if ( !r_RenderFeedback )
+        return;
 
-    AFrameGraphTexture * FeedbackTexture_R = FrameGraph.AddExternalResource(
-        "VT Feedback texture",
-        RenderCore::STextureCreateInfo(),
-        GetFeedbackTexture()
-    );
+    FGTextureProxy* FeedbackDepth_R   = FrameGraph.AddExternalResource<FGTextureProxy>("VT Feedback depth", GetFeedbackDepth());
+    FGTextureProxy* FeedbackTexture_R = FrameGraph.AddExternalResource<FGTextureProxy>("VT Feedback texture", GetFeedbackTexture());
 
     ARenderPass & pass = FrameGraph.AddTask< ARenderPass >( "VT Feedback Pass" );
 
     pass.SetRenderArea( GetFeedbackTexture()->GetWidth(), GetFeedbackTexture()->GetHeight() );
 
-    pass.SetClearColors(
-    {
-        RenderCore::MakeClearColorValue( 0.0f,0.0f,0.0f,0.0f )
-    }
-    );
-
-    pass.SetColorAttachments(
-    {
-        {
-            FeedbackTexture_R,
-            RenderCore::SAttachmentInfo().SetLoadOp( RenderCore::ATTACHMENT_LOAD_OP_CLEAR )
-        }
-    }
-    );
+    pass.SetColorAttachment(
+        STextureAttachment(FeedbackTexture_R)
+            .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
+            .SetClearValue(MakeClearColorValue(0.0f, 0.0f, 0.0f, 0.0f)));
 
     pass.SetDepthStencilAttachment(
-    {
-        FeedbackDepth_R,
-        RenderCore::SAttachmentInfo().SetLoadOp( RenderCore::ATTACHMENT_LOAD_OP_CLEAR )
-    } );
+        STextureAttachment(FeedbackDepth_R)
+        .SetLoadOp( ATTACHMENT_LOAD_OP_CLEAR )
+        //.SetStoreOp( ATTACHMENT_STORE_OP_DONT_CARE )  // TODO: Check
+    );
 
     pass.AddSubpass( { 0 }, // color attachment refs
-                     [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
     {
-        using namespace RenderCore;
-
         SDrawIndexedCmd drawCmd;
         drawCmd.InstanceCount = 1;
         drawCmd.StartInstanceLocation = 0;
@@ -277,29 +260,25 @@ void AVirtualTextureFeedback::AddPass( AFrameGraph & FrameGraph )
         SRect2D r;
         r.X = 0;
         r.Y = 0;
-        r.Width = RenderPass.GetRenderArea().Width;
-        r.Height = RenderPass.GetRenderArea().Height;
+        r.Width  = RenderPassContext.RenderArea.Width;
+        r.Height = RenderPassContext.RenderArea.Height;
 
-        rcmd->CopyFramebufferToBuffer( RenderPass.GetFramebuffer(),
-                                       GetPixelBuffer(),
-                                       FB_COLOR_ATTACHMENT,
-                                       r,
-                                       FB_CHANNEL_BGRA,
-                                       FB_UBYTE,
-                                       COLOR_CLAMP_OFF,
-                                       r.Width*r.Height*4,
-                                       0,
-                                       4 );
+        rcmd->CopyColorAttachmentToBuffer(RenderPassContext,
+                                                          GetPixelBuffer(),
+                                                          0,
+                                                          r,
+                                                          FB_CHANNEL_BGRA,
+                                                          FB_UBYTE,
+                                                          COLOR_CLAMP_OFF,
+                                                          r.Width * r.Height * 4,
+                                                          0,
+                                                          4);
     } );
 }
 
-void AVirtualTextureFeedback::DrawFeedback( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget )
+void AVirtualTextureFeedback::DrawFeedback( AFrameGraph & FrameGraph, FGTextureProxy * RenderTarget )
 {
-    AFrameGraphTexture * FeedbackTexture_R = FrameGraph.AddExternalResource(
-        "VT Feedback texture",
-        RenderCore::STextureCreateInfo(),
-        GetFeedbackTexture()
-    );
+    FGTextureProxy* FeedbackTexture_R = FrameGraph.AddExternalResource<FGTextureProxy>("VT Feedback texture", GetFeedbackTexture());
 
     ARenderPass & pass = FrameGraph.AddTask< ARenderPass >( "VT Draw Feedback Pass" );
 
@@ -310,21 +289,16 @@ void AVirtualTextureFeedback::DrawFeedback( AFrameGraph & FrameGraph, AFrameGrap
                 GRenderView->Height * 0.5f
                 );
 
-    pass.AddResource( FeedbackTexture_R, RESOURCE_ACCESS_READ );
+    pass.AddResource( FeedbackTexture_R, FG_RESOURCE_ACCESS_READ );
 
-    pass.SetColorAttachments(
-    {
-        {
-            RenderTarget,
-            RenderCore::SAttachmentInfo().SetLoadOp( RenderCore::ATTACHMENT_LOAD_OP_LOAD )
-        }
-    }
+    pass.SetColorAttachment(
+        STextureAttachment(RenderTarget)
+        .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
     );
 
     pass.AddSubpass( { 0 }, // color attachment refs
-                     [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
     {
-        using namespace RenderCore;
         rtbl->BindTexture( 0, FeedbackTexture_R->Actual() );
 
         DrawSAQ( DrawFeedbackPipeline );

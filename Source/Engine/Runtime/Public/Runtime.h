@@ -177,6 +177,10 @@ public:
     /** Global random number generator */
     AMersenneTwisterRand Rand;
 
+    TRef< AAsyncJobManager > AsyncJobManager;
+    AAsyncJobList *          RenderFrontendJobList;
+    AAsyncJobList *          RenderBackendJobList;
+
     ARuntime( struct SEntryDecl const & _EntryDecl );
 
     ~ARuntime();
@@ -238,11 +242,13 @@ public:
     void GetCursorPosition( int * _X, int * _Y );
 
     RenderCore::IDevice * GetRenderDevice();
+    RenderCore::IImmediateContext* GetImmediateContext() { return pImmediateContext; }
+    RenderCore::ISwapChain* GetSwapChain() { return pSwapChain; }
 
     AVertexMemoryGPU * GetVertexMemoryGPU() { return VertexMemoryGPU; }
     AStreamedMemoryGPU * GetStreamedMemoryGPU() { return StreamedMemoryGPU; }
 
-    void ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem );
+    void ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, void * _SysMem );
 
     /** Zip archive of embedded content */
     AArchive const & GetEmbeddedResources();
@@ -269,7 +275,8 @@ private:
     bool            bPostChangeVideoMode;
 
     TRef< RenderCore::IDevice > RenderDevice;
-    RenderCore::IImmediateContext * pImmediateContext;
+    TRef< RenderCore::IImmediateContext > pImmediateContext;
+    TRef<RenderCore::ISwapChain> pSwapChain;
 
     TRef< AVertexMemoryGPU > VertexMemoryGPU;
     TRef< AStreamedMemoryGPU > StreamedMemoryGPU;
@@ -298,6 +305,3 @@ private:
 };
 
 extern ARuntime * GRuntime;
-extern AAsyncJobManager GAsyncJobManager;
-extern AAsyncJobList * GRenderFrontendJobList;
-extern AAsyncJobList * GRenderBackendJobList;

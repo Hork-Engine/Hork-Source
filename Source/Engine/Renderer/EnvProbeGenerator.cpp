@@ -39,7 +39,7 @@ static const TEXTURE_FORMAT TEX_FORMAT_ENVPROBE = TEXTURE_FORMAT_RGB16F; // TODO
 
 AEnvProbeGenerator::AEnvProbeGenerator()
 {
-    SBufferCreateInfo bufferCI = {};
+    SBufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
     bufferCI.SizeInBytes = sizeof( SConstantData );
@@ -52,24 +52,7 @@ AEnvProbeGenerator::AEnvProbeGenerator()
         ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
     }
 
-    SAttachmentInfo colorAttachment = {};
-    colorAttachment.LoadOp = ATTACHMENT_LOAD_OP_DONT_CARE;
-
-    SAttachmentRef attachmentRef = {};
-    attachmentRef.Attachment = 0;
-
-    SSubpassInfo subpassInfo = {};
-    subpassInfo.NumColorAttachments = 1;
-    subpassInfo.pColorAttachmentRefs = &attachmentRef;
-
-    SRenderPassCreateInfo renderPassCI = {};
-    renderPassCI.NumColorAttachments = 1;
-    renderPassCI.pColorAttachments = &colorAttachment;
-    renderPassCI.NumSubpasses = 1;
-    renderPassCI.pSubpasses = &subpassInfo;
-    GDevice->CreateRenderPass( renderPassCI, &RP );
-
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
 
     SPipelineInputAssemblyInfo & ia = pipelineCI.IA;
     ia.Topology = PRIMITIVE_TRIANGLES;
@@ -109,7 +92,7 @@ AEnvProbeGenerator::AEnvProbeGenerator()
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
-    SSamplerInfo samplerCI;
+    SSamplerDesc samplerCI;
     samplerCI.Filter = FILTER_LINEAR;
     samplerCI.bCubemapSeamless = true;
 
@@ -128,130 +111,128 @@ void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITextur
 {
     int size = 1 << _MaxLod;
 
-    STextureCreateInfo textureCI = {};
-    textureCI.Type = RenderCore::TEXTURE_CUBE_MAP_ARRAY;
-    textureCI.Format = TEX_FORMAT_ENVPROBE;
-    textureCI.Resolution.TexCubemapArray.Width = size;
-    textureCI.Resolution.TexCubemapArray.NumLayers = _CubemapsCount;
-    textureCI.NumLods = _MaxLod + 1;
-    GDevice->CreateTexture( textureCI, ppTextureArray );
+    GDevice->CreateTexture(STextureDesc()
+                               .SetFormat(TEX_FORMAT_ENVPROBE)
+                               .SetResolution(STextureResolutionCubemapArray(size, _CubemapsCount))
+                               .SetMipLevels(_MaxLod + 1),
+                           ppTextureArray);
 
+    AFrameGraph frameGraph( GDevice );
+
+    FGTextureProxy*    pCubemapArrayProxy = frameGraph.AddExternalResource<FGTextureProxy>("CubemapArray", *ppTextureArray);
     TRef< IResourceTable > resourceTbl;
     GDevice->CreateResourceTable( &resourceTbl );
 
     resourceTbl->BindBuffer( 0, ConstantBuffer );
 
     SViewport viewport = {};
-    viewport.MaxDepth = 1;
+    viewport.MaxDepth  = 1;
 
     int lodWidth = size;
 
-    for ( int Lod = 0 ; lodWidth >= 1 ; Lod++, lodWidth >>= 1 ) {
-        SFramebufferAttachmentInfo attachment = {};
-        attachment.pTexture = *ppTextureArray;
-        attachment.LodNum = Lod;
+    TStdVector< AString > strs( _MaxLod + 1 );
 
-        SFramebufferCreateInfo framebufferCI = {};
-        framebufferCI.Width = lodWidth;
-        framebufferCI.Height = lodWidth;
-        framebufferCI.NumColorAttachments = 1;
-        framebufferCI.pColorAttachments = &attachment;
+    for ( int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1 ) {
 
-        TRef< RenderCore::IFramebuffer > framebuffer;
-        GDevice->CreateFramebuffer( framebufferCI, &framebuffer );
+        strs[Lod] = "Envprobe LOD " + Math::ToString( Lod ) + " pass";
 
-        SRenderPassBegin renderPassBegin = {};
-        renderPassBegin.pFramebuffer = framebuffer;
-        renderPassBegin.pRenderPass = RP;
-        renderPassBegin.RenderArea.Width = lodWidth;
-        renderPassBegin.RenderArea.Height = lodWidth;
+        ARenderPass & pass = frameGraph.AddTask< ARenderPass >( strs[Lod].CStr() );
 
-        rcmd->BeginRenderPass( renderPassBegin );
+        //pass.SetRenderArea( lodWidth, lodWidth );
 
-        viewport.Width = lodWidth;
-        viewport.Height = lodWidth;
+        pass.SetColorAttachments(
+            {
+                {
+                    STextureAttachment(pCubemapArrayProxy)
+                    .SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
+                    .SetMipLevel(Lod)
+                }
+            }
+        );
 
-        rcmd->SetViewport( viewport );
-        rcmd->BindResourceTable( resourceTbl );
+        pass.AddSubpass( { 0 }, // color attachments
+                        [&, Lod](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                         {
+                             rcmd->BindResourceTable( resourceTbl );
 
-        ConstantBufferData.Roughness.X = static_cast<float>(Lod) / _MaxLod;
+                             ConstantBufferData.Roughness.X = static_cast< float >( Lod ) / _MaxLod;
 
-        for ( int cubemapIndex = 0 ; cubemapIndex < _CubemapsCount ; cubemapIndex++ ) {
-            ConstantBufferData.Roughness.Y = cubemapIndex * 6; // Offset for cubemap array layer
+                             for ( int cubemapIndex = 0; cubemapIndex < _CubemapsCount; cubemapIndex++ ) {
+                                 ConstantBufferData.Roughness.Y = cubemapIndex * 6; // Offset for cubemap array layer
 
-            ConstantBuffer->Write( &ConstantBufferData );
+                                 rcmd->WriteBuffer(ConstantBuffer, &ConstantBufferData);
 
-            resourceTbl->BindTexture( 0, _Cubemaps[cubemapIndex] );
+                                 resourceTbl->BindTexture( 0, _Cubemaps[cubemapIndex] );
 
-            // Draw six faces in one draw call
-            DrawSphere( Pipeline, 6 );
-        }
-
-        rcmd->EndRenderPass();
+                                 // Draw six faces in one draw call
+                                 DrawSphere( Pipeline, 6 );
+                             }
+                         } );
     }
+
+    frameGraph.Build();
+    frameGraph.ExportGraphviz( "framegraph.graphviz" );
+    rcmd->ExecuteFrameGraph(&frameGraph);
 }
 
 void AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap, TRef< RenderCore::ITexture > * ppTexture )
 {
     int size = 1 << _MaxLod;
 
-    STextureCreateInfo textureCI = {};
-    textureCI.Type = RenderCore::TEXTURE_CUBE_MAP;
-    textureCI.Format = TEX_FORMAT_ENVPROBE;
-    textureCI.Resolution.TexCubemap.Width = size;
-    textureCI.NumLods = _MaxLod + 1;
-    GDevice->CreateTexture( textureCI, ppTexture );
+    GDevice->CreateTexture(STextureDesc()
+                               .SetFormat(TEX_FORMAT_ENVPROBE)
+                               .SetResolution(STextureResolutionCubemap(size))
+                               .SetMipLevels(_MaxLod + 1),
+                           ppTexture);
 
+    AFrameGraph frameGraph( GDevice );
+
+    FGTextureProxy*    pCubemapProxy = frameGraph.AddExternalResource<FGTextureProxy>("Cubemap", *ppTexture);
     TRef< IResourceTable > resourceTbl;
     GDevice->CreateResourceTable( &resourceTbl );
 
     resourceTbl->BindBuffer( 0, ConstantBuffer );
 
+    ConstantBufferData.Roughness.Y = 0; // Offset for cubemap array layer
+
     SViewport viewport = {};
-    viewport.MaxDepth = 1;
+    viewport.MaxDepth  = 1;
 
     int lodWidth = size;
 
-    ConstantBufferData.Roughness.Y = 0; // Offset for cubemap array layer
+    TStdVector< AString > strs( _MaxLod + 1 );
 
-    rcmd->BindResourceTable( resourceTbl );
+    for ( int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1 ) {
 
-    for ( int Lod = 0 ; lodWidth >= 1 ; Lod++, lodWidth >>= 1 ) {
-        SFramebufferAttachmentInfo attachment = {};
-        attachment.pTexture = *ppTexture;
-        attachment.LodNum = Lod;
+        strs[Lod] = "Envprobe LOD " + Math::ToString( Lod ) + " pass";
 
-        SFramebufferCreateInfo framebufferCI = {};
-        framebufferCI.Width = lodWidth;
-        framebufferCI.Height = lodWidth;
-        framebufferCI.NumColorAttachments = 1;
-        framebufferCI.pColorAttachments = &attachment;
+        ARenderPass & pass = frameGraph.AddTask< ARenderPass >( strs[Lod].CStr() );
 
-        TRef< RenderCore::IFramebuffer > framebuffer;
-        GDevice->CreateFramebuffer( framebufferCI, &framebuffer );
+        pass.SetRenderArea( lodWidth, lodWidth );
 
-        SRenderPassBegin renderPassBegin = {};
-        renderPassBegin.pFramebuffer = framebuffer;
-        renderPassBegin.pRenderPass = RP;
-        renderPassBegin.RenderArea.Width = lodWidth;
-        renderPassBegin.RenderArea.Height = lodWidth;
+        pass.SetColorAttachment(
+            STextureAttachment( pCubemapProxy )
+                .SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
+                .SetMipLevel(Lod)
+        );
 
-        rcmd->BeginRenderPass( renderPassBegin );
+        pass.AddSubpass( { 0 }, // color attachments
+                        [&, Lod](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                         {
+                             rcmd->BindResourceTable( resourceTbl );
 
-        viewport.Width = lodWidth;
-        viewport.Height = lodWidth;
+                             ConstantBufferData.Roughness.X = static_cast< float >( Lod ) / _MaxLod;
+                             
+                             rcmd->WriteBuffer(ConstantBuffer, &ConstantBufferData);
 
-        rcmd->SetViewport( viewport );
+                             resourceTbl->BindTexture( 0, _SourceCubemap );
 
-        ConstantBufferData.Roughness.X = static_cast<float>(Lod) / _MaxLod;
-
-        ConstantBuffer->Write( &ConstantBufferData );
-
-        resourceTbl->BindTexture( 0, _SourceCubemap );
-
-        // Draw six faces in one draw call
-        DrawSphere( Pipeline, 6 );
-
-        rcmd->EndRenderPass();
+                             // Draw six faces in one draw call
+                             DrawSphere( Pipeline, 6 );
+                         } );
     }
+
+    frameGraph.Build();
+    frameGraph.ExportGraphviz( "framegraph.graphviz" );
+    rcmd->ExecuteFrameGraph(&frameGraph);
 }

@@ -50,5 +50,4 @@ private:
     TRef< RenderCore::IBuffer > ConstantBuffer;
     SConstantData ConstantBufferData;
     TRef< RenderCore::IPipeline > Pipeline;
-    TRef< RenderCore::IRenderPass > RP;
 };

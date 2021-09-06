@@ -33,28 +33,55 @@ SOFTWARE.
 #include <Core/Public/Ref.h>
 
 #ifdef AN_DEBUG
-#include <Core/Public/String.h>
+#    include <Core/Public/String.h>
 #endif
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 class IDevice;
+
+enum DEVICE_OBJECT_PROXY_TYPE
+{
+    DEVICE_OBJECT_TYPE_IMMEDIATE_CONTEXT,
+
+    DEVICE_OBJECT_TYPE_BUFFER,
+    DEVICE_OBJECT_TYPE_BUFFER_VIEW,
+
+    DEVICE_OBJECT_TYPE_TEXTURE,
+    DEVICE_OBJECT_TYPE_TEXTURE_VIEW,
+
+    DEVICE_OBJECT_TYPE_SPARSE_TEXTURE,
+
+    DEVICE_OBJECT_TYPE_PIPELINE,
+    DEVICE_OBJECT_TYPE_SHADER_MODULE,
+    DEVICE_OBJECT_TYPE_TRANSFORM_FEEDBACK,
+    DEVICE_OBJECT_TYPE_QUERY_POOL,
+    DEVICE_OBJECT_TYPE_BINDLESS_SAMPLER,
+    DEVICE_OBJECT_TYPE_RESOURCE_TABLE,
+
+    DEVICE_OBJECT_TYPE_SWAP_CHAIN,
+
+    DEVICE_OBJECT_TYPE_MAX
+};
 
 class IDeviceObject : public ARefCounted
 {
 public:
-    IDeviceObject( IDevice * Device );
+    IDeviceObject(IDevice* pDevice, DEVICE_OBJECT_PROXY_TYPE ProxyType);
 
     ~IDeviceObject();
 
-    void SetDebugName( const char * _DebugName )
+    DEVICE_OBJECT_PROXY_TYPE GetProxyType() const { return ProxyType; }
+
+    void SetDebugName(const char* _DebugName)
     {
 #ifdef AN_DEBUG
         DebugName = _DebugName;
 #endif
     }
 
-    const char * GetDebugName() const
+    const char* GetDebugName() const
     {
 #ifdef AN_DEBUG
         return DebugName.CStr();
@@ -64,24 +91,32 @@ public:
     }
 
 #ifdef AN_DEBUG
-    IDeviceObject * GetNext_DEBUG() { return Next; }
+    IDeviceObject* GetNext_DEBUG()
+    {
+        return Next;
+    }
 #endif
 
-    uint32_t GetUID() const { return UID; }
+    uint32_t GetUID() const
+    {
+        return UID;
+    }
 
     bool IsValid() const { return Handle != nullptr; }
 
-    void * GetHandle() const { return Handle; }
+    void* GetHandle() const { return Handle; }
 
     uint64_t GetHandleNativeGL() const { return HandleUI64; }
 
-protected:    
-    void SetHandle( void * InHandle )
+    IDevice* GetDevice() { return pDevice; }
+
+protected:
+    void SetHandle(void* InHandle)
     {
         Handle = InHandle;
     }
 
-    void SetHandleNativeGL( uint64_t NativeHandle )
+    void SetHandleNativeGL(uint64_t NativeHandle)
     {
         HandleUI64 = NativeHandle;
     }
@@ -90,19 +125,19 @@ private:
     uint32_t UID;
     union
     {
-        void * Handle;
+        void* Handle;
 
         /** Use 64-bit integer for bindless handle compatibility */
-        uint64_t HandleUI64;
+        uint64_t HandleUI64 = 0;
     };
+    DEVICE_OBJECT_PROXY_TYPE ProxyType;
+    TRef<IDevice> pDevice;
 #ifdef AN_DEBUG
     AString DebugName;
 
-    IDevice * pDevice;
-
-    IDeviceObject * Next;
-    IDeviceObject * Prev;
+    IDeviceObject* Next = nullptr;
+    IDeviceObject* Prev = nullptr;
 #endif
 };
 
-}
+} // namespace RenderCore

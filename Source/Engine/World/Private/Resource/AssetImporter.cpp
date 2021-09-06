@@ -402,7 +402,7 @@ static void sample_quat( cgltf_animation_sampler * sampler, float frameTime, Qua
                     float dur = nt - ct;
                     float fract = ( frameTime - ct ) / dur;
                     AN_ASSERT( fract >= 0.0f && fract <= 1.0f );
-                    q = p0.Slerp( p1, fract ).Normalized();
+                    q = Math::Slerp( p0, p1, fract ).Normalized();
                 }
             } else if ( sampler->interpolation == cgltf_interpolation_type_step ) {
                 cgltf_accessor_read_float( animdata, t, ( float * )q.ToPtr(), 4 );
@@ -1627,7 +1627,7 @@ void AAssetImporter::WriteTexture( TextureInfo & tex ) {
     GuidMap[tex.GUID.ToString().CStr()] = "/Root/" + fileName;
 
     uint32_t textureType = TEXTURE_2D;
-    uint32_t w = image.GetWidth(), h = image.GetHeight(), d = 1, numLods = image.GetNumLods();
+    uint32_t w = image.GetWidth(), h = image.GetHeight(), d = 1, numLods = image.GetNumMipLevels();
 
     f.WriteUInt32( FMT_FILE_TYPE_TEXTURE );
     f.WriteUInt32( FMT_VERSION_TEXTURE );

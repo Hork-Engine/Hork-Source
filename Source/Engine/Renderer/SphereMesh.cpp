@@ -95,7 +95,7 @@ ASphereMesh::ASphereMesh( int _HDiv, int _VDiv )
         }
     }
 
-    SBufferCreateInfo bufferCI = {};
+    SBufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
 
     bufferCI.SizeInBytes = sizeof( Float3 ) * vertices.Size();

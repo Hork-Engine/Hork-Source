@@ -39,12 +39,12 @@ SOFTWARE.
 
 #define PAGE_STREAM_PBO
 
+using namespace RenderCore;
+
 ARuntimeVariable r_ResetCacheVT( _CTS("r_ResetCacheVT"), _CTS("0") );
 
 AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const & CreateInfo )
 {
-    using namespace RenderCore;
-
     AN_ASSERT( CreateInfo.PageResolutionB > VT_PAGE_BORDER_WIDTH * 2 && CreateInfo.PageResolutionB <= 512 );
 
     PageResolutionB = CreateInfo.PageResolutionB;
@@ -79,11 +79,15 @@ AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const
     PhysCacheLayers.resize( CreateInfo.NumLayers );
     LayerInfo.resize( CreateInfo.NumLayers );
     for ( int i = 0 ; i < CreateInfo.NumLayers ; i++ ) {
-        GDevice->CreateTexture( MakeTexture( CreateInfo.pLayers[i].TextureFormat, STextureResolution2D( physCacheWidth, physCacheHeight ) ), &PhysCacheLayers[i] );
+        GDevice->CreateTexture(STextureDesc()
+                                   .SetFormat(CreateInfo.pLayers[i].TextureFormat)
+                                   .SetResolution(STextureResolution2D(physCacheWidth, physCacheHeight))
+                                   .SetBindFlags(BIND_SHADER_RESOURCE),
+                               &PhysCacheLayers[i]);
         PhysCacheLayers[i]->SetDebugName( "Virtual texture phys cache layer" );
         LayerInfo[i] = CreateInfo.pLayers[i];
 
-        size_t size = LayerInfo[i].PageSizeInBytes;//RenderCore::ITexture::GetPixelFormatSize( PageResolutionB, PageResolutionB, LayerInfo[i].UploadFormat );
+        size_t size = LayerInfo[i].PageSizeInBytes;//ITexture::GetPixelFormatSize( PageResolutionB, PageResolutionB, LayerInfo[i].UploadFormat );
         PageSizeInBytes += size;
 
         AlignedSize += Align( size, 16 );
@@ -100,7 +104,7 @@ AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const
 
     SPipelineResourceLayout resourceLayout;
 
-    SSamplerInfo nearestSampler;
+    SSamplerDesc nearestSampler;
     nearestSampler.Filter = FILTER_NEAREST;
     nearestSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
     nearestSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
@@ -112,12 +116,12 @@ AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const
     CreateFullscreenQuadPipeline( &DrawCachePipeline, "drawvtcache.vert", "drawvtcache.frag", &resourceLayout );
 
 #ifdef PAGE_STREAM_PBO
-    RenderCore::SBufferCreateInfo bufferCI = {};
+    SBufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
-    bufferCI.ImmutableStorageFlags = (RenderCore::IMMUTABLE_STORAGE_FLAGS)(
-        RenderCore::IMMUTABLE_MAP_WRITE
-        | RenderCore::IMMUTABLE_MAP_PERSISTENT
-        | RenderCore::IMMUTABLE_MAP_COHERENT
+    bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)(
+        IMMUTABLE_MAP_WRITE
+        | IMMUTABLE_MAP_PERSISTENT
+        | IMMUTABLE_MAP_COHERENT
         );
     
     bufferCI.SizeInBytes = AlignedSize * MAX_UPLOADS_PER_FRAME;
@@ -127,11 +131,12 @@ AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const
     GDevice->CreateBuffer( bufferCI, nullptr, &TransferBuffer );
     TransferBuffer->SetDebugName( "Virtual texture page transfer buffer" );
 
-    pTransferData = (byte *)TransferBuffer->Map( RenderCore::MAP_TRANSFER_WRITE,
-                                                 RenderCore::MAP_INVALIDATE_ENTIRE_BUFFER,
-                                                 RenderCore::MAP_PERSISTENT_COHERENT,
-                                                 false,
-                                                 false );
+    pTransferData = (byte*)rcmd->MapBuffer(TransferBuffer,
+                                           MAP_TRANSFER_WRITE,
+                                           MAP_INVALIDATE_ENTIRE_BUFFER,
+                                           MAP_PERSISTENT_COHERENT,
+                                           false,
+                                           false);
     AN_ASSERT( IsAlignedPtr( pTransferData, 16 ) );
 
     TransferDataOffset = 0;
@@ -148,7 +153,7 @@ AVirtualTextureCache::AVirtualTextureCache( SVirtualTextureCacheCreateInfo const
 AVirtualTextureCache::~AVirtualTextureCache()
 {
 #ifdef PAGE_STREAM_PBO
-    TransferBuffer->Unmap();
+    rcmd->UnmapBuffer(TransferBuffer);
 #endif
 
     if ( LockTransfers() ) {
@@ -424,9 +429,9 @@ void AVirtualTextureCache::TransferPageData( SPageTransfer * Transfer, int PhysP
     int offsetX = PhysPageIndex & (PageCacheCapacityX-1);
     int offsetY = PhysPageIndex / PageCacheCapacityX;
 
-    RenderCore::STextureRect rect;
+    STextureRect rect;
 
-    rect.Offset.Lod = 0;
+    rect.Offset.MipLevel = 0;
     rect.Offset.X = offsetX * PageResolutionB;
     rect.Offset.Y = offsetY * PageResolutionB;
     rect.Offset.Z = 0;
@@ -459,7 +464,7 @@ void AVirtualTextureCache::TransferPageData( SPageTransfer * Transfer, int PhysP
 void AVirtualTextureCache::DiscardTransfers( SPageTransfer ** InTransfers, int Count )
 {
     if ( Count > 0 ) {
-        RenderCore::SyncObject Fence = rcmd->FenceSync();
+        SyncObject Fence = rcmd->FenceSync();
 
         for ( int i = 0 ; i < Count ; i++ ) {
             InTransfers[i]->Fence = Fence;
@@ -479,9 +484,9 @@ void AVirtualTextureCache::WaitForFences()
             break;
         }
 
-        RenderCore::CLIENT_WAIT_STATUS status = rcmd->ClientWait( PageTransfer[freePoint].Fence, timeOutNanoseconds );
+        CLIENT_WAIT_STATUS status = rcmd->ClientWait( PageTransfer[freePoint].Fence, timeOutNanoseconds );
 
-        if ( status == RenderCore::CLIENT_WAIT_ALREADY_SIGNALED || status == RenderCore::CLIENT_WAIT_CONDITION_SATISFIED )
+        if ( status == CLIENT_WAIT_ALREADY_SIGNALED || status == CLIENT_WAIT_CONDITION_SATISFIED )
         {
             rcmd->RemoveSync( PageTransfer[freePoint].Fence );
             PageTransfer[freePoint].Fence = nullptr;
@@ -494,19 +499,15 @@ void AVirtualTextureCache::WaitForFences()
     }
 }
 
-void AVirtualTextureCache::Draw( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget, int LayerIndex )
+void AVirtualTextureCache::Draw( AFrameGraph & FrameGraph, FGTextureProxy * RenderTarget, int LayerIndex )
 {
     if ( LayerIndex < 0 || LayerIndex >= PhysCacheLayers.size() ) {
         return;
     }
 
-    RenderCore::ITexture * texture = PhysCacheLayers[LayerIndex];
+    ITexture * texture = PhysCacheLayers[LayerIndex];
 
-    AFrameGraphTexture * CacheTexture_R = FrameGraph.AddExternalResource(
-        "VT Cache",
-        RenderCore::STextureCreateInfo(),
-        texture
-    );
+    FGTextureProxy* CacheTexture_R = FrameGraph.AddExternalResource<FGTextureProxy>("VT Cache", texture);
 
     ARenderPass & pass = FrameGraph.AddTask< ARenderPass >( "VT Draw Cache" );
 
@@ -515,21 +516,16 @@ void AVirtualTextureCache::Draw( AFrameGraph & FrameGraph, AFrameGraphTexture * 
     pass.SetRenderArea( (float)texture->GetWidth()*scale*0.5f,
                         (float)texture->GetHeight()*scale*0.5f );
 
-    pass.AddResource( CacheTexture_R, RESOURCE_ACCESS_READ );
+    pass.AddResource( CacheTexture_R, FG_RESOURCE_ACCESS_READ );
 
-    pass.SetColorAttachments(
-    {
-        {
-            RenderTarget,
-            RenderCore::SAttachmentInfo().SetLoadOp( RenderCore::ATTACHMENT_LOAD_OP_LOAD )
-        }
-    }
+    pass.SetColorAttachment(
+        STextureAttachment(RenderTarget)
+        .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
     );
 
     pass.AddSubpass( { 0 }, // color attachment refs
-                     [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
     {
-        using namespace RenderCore;
         rtbl->BindTexture( 0, CacheTexture_R->Actual() );
 
         DrawSAQ( DrawCachePipeline );

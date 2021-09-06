@@ -30,7 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/Texture.h>
+#include "TextureViewGLImpl.h"
+#include <Core/Public/Std.h>
 
 namespace RenderCore {
 
@@ -39,45 +40,26 @@ class ADeviceGLImpl;
 class ATextureGLImpl final : public ITexture
 {
 public:
-    ATextureGLImpl( ADeviceGLImpl * _Device, STextureCreateInfo const & _CreateInfo );
-    ATextureGLImpl( ADeviceGLImpl * _Device, STextureViewCreateInfo const & _CreateInfo );
+    ATextureGLImpl(ADeviceGLImpl* pDevice, STextureDesc const& TextureDesc, bool bDummyTexture = false);
     ~ATextureGLImpl();
 
-    void GenerateLods() override;
+    ITextureView* GetTextureView(STextureViewDesc const& Desc) override;
 
-    void GetLodInfo( uint16_t _Lod, STextureLodInfo * _Info ) const;
+    void GetMipLevelInfo(uint16_t MipLevel, STextureMipLevelInfo* pInfo) const;
 
-    void Read( uint16_t _Lod,
-               DATA_FORMAT _Format,
-               size_t _SizeInBytes,
-               unsigned int _Alignment,
-               void * _SysMem ) override;
-
-    void ReadRect( STextureRect const & _Rectangle,
-                   DATA_FORMAT _Format,
-                   size_t _SizeInBytes,
-                   unsigned int _Alignment,
-                   void * _SysMem ) override;
-
-    bool Write( uint16_t _Lod,
-                DATA_FORMAT _Format,
-                size_t _SizeInBytes,
-                unsigned int _Alignment,
-                const void * _SysMem ) override;
-
-    bool WriteRect( STextureRect const & _Rectangle,
-                    DATA_FORMAT _Format,
-                    size_t _SizeInBytes,
-                    unsigned int _Alignment,
-                    const void * _SysMem ) override;
-
-    void Invalidate( uint16_t _Lod ) override;
-
+    // TODO: Move Invalidate to FrameGraph
+    void Invalidate(uint16_t MipLevel) override;
     void InvalidateRect( uint32_t _NumRectangles, STextureRect const * _Rectangles ) override;
 
+    bool IsDummyTexture() const { return bDummyTexture; }
+
 private:
-    ADeviceGLImpl * pDevice;
-    TRef< ITexture > pOriginalTex;
+    void CreateDefaultViews();
+
+    TStdUnorderedMap<STextureViewDesc, TRef<ATextureViewGLImpl>> Views;
+
+    // Dummy texture is used for default color and depth buffers
+    bool bDummyTexture{};
 };
 
 }

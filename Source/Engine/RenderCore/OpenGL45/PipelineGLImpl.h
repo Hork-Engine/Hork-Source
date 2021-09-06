@@ -32,7 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/Pipeline.h>
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 class ADeviceGLImpl;
 
@@ -52,30 +53,29 @@ class APipelineGLImpl final : public IPipeline
     friend class AImmediateContextGLImpl;
 
 public:
-    APipelineGLImpl( ADeviceGLImpl * _Device, SPipelineCreateInfo const & _CreateInfo );
+    APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& Desc);
     ~APipelineGLImpl();
 
 private:
-    ADeviceGLImpl * pDevice;
-    struct SVertexArrayObject * VAO;
-    SBlendingStateInfo const * BlendingState;
-    SRasterizerStateInfo const * RasterizerState;
-    SDepthStencilStateInfo const * DepthStencilState;
-    unsigned int * SamplerObjects;
-    int          NumSamplerObjects;
-    SImageInfoGL * Images;
-    int          NumImages;
-    SBufferInfoGL * Buffers;
-    int          NumBuffers;
-    unsigned int PrimitiveTopology;
-    int          NumPatchVertices;
-    bool         bPrimitiveRestartEnabled;
-    TRef< IShaderModule > pVS;
-    TRef< IShaderModule > pTCS;
-    TRef< IShaderModule > pTES;
-    TRef< IShaderModule > pGS;
-    TRef< IShaderModule > pFS;
-    TRef< IShaderModule > pCS;
+    struct SVertexArrayObject*    VAO;
+    SBlendingStateInfo const*     BlendingState;
+    SRasterizerStateInfo const*   RasterizerState;
+    SDepthStencilStateInfo const* DepthStencilState;
+    unsigned int*                 SamplerObjects;
+    int                           NumSamplerObjects;
+    SImageInfoGL*                 Images;
+    int                           NumImages;
+    SBufferInfoGL*                Buffers;
+    int                           NumBuffers;
+    unsigned int                  PrimitiveTopology;
+    int                           NumPatchVertices;
+    bool                          bPrimitiveRestartEnabled;
+    TRef<IShaderModule>           pVS;
+    TRef<IShaderModule>           pTCS;
+    TRef<IShaderModule>           pTES;
+    TRef<IShaderModule>           pGS;
+    TRef<IShaderModule>           pFS;
+    TRef<IShaderModule>           pCS;
 };
 
-}
+} // namespace RenderCore

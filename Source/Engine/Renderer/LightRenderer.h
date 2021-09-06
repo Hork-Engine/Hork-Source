@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/FrameGraph/FrameGraph.h>
+#include <RenderCore/FrameGraph.h>
 
 struct SRenderInstance;
 
@@ -39,16 +39,16 @@ class ALightRenderer
 public:
     ALightRenderer();
 
-    void AddPass( AFrameGraph & FrameGraph,
-                  AFrameGraphTexture * DepthTarget,
-                  AFrameGraphTexture * SSAOTexture,
-                  AFrameGraphTexture * ShadowMapDepth0,
-                  AFrameGraphTexture * ShadowMapDepth1,
-                  AFrameGraphTexture * ShadowMapDepth2,
-                  AFrameGraphTexture * ShadowMapDepth3,
-                  AFrameGraphTexture * LinearDepth,
-                  AFrameGraphTexture ** ppLight/*,
-                  AFrameGraphTexture ** ppVelocity*/ );
+    void AddPass(RenderCore::AFrameGraph& FrameGraph,
+                 RenderCore::FGTextureProxy* DepthTarget,
+                 RenderCore::FGTextureProxy* SSAOTexture,
+                 RenderCore::FGTextureProxy* ShadowMapDepth0,
+                 RenderCore::FGTextureProxy* ShadowMapDepth1,
+                 RenderCore::FGTextureProxy* ShadowMapDepth2,
+                 RenderCore::FGTextureProxy* ShadowMapDepth3,
+                 RenderCore::FGTextureProxy* LinearDepth,
+                 RenderCore::FGTextureProxy** ppLight /*,
+                 RenderCore::FGTextureProxy ** ppVelocity*/ );
 
 private:
     void CreateLookupBRDF();

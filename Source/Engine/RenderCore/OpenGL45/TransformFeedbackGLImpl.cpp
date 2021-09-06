@@ -30,32 +30,29 @@ SOFTWARE.
 
 #include "TransformFeedbackGLImpl.h"
 #include "DeviceGLImpl.h"
-#include "ImmediateContextGLImpl.h"
 #include "LUT.h"
-
 #include "GL/glew.h"
 
-namespace RenderCore {
+namespace RenderCore
+{
 
-ATransformFeedbackGLImpl::ATransformFeedbackGLImpl( ADeviceGLImpl * _Device, STransformFeedbackCreateInfo const & _CreateInfo )
-    : ITransformFeedback( _Device ), pDevice( _Device )
+ATransformFeedbackGLImpl::ATransformFeedbackGLImpl(ADeviceGLImpl* pDevice, STransformFeedbackDesc const& Desc) :
+    ITransformFeedback(pDevice)
 {
     // TODO: create transform feedback for each context
     GLuint id;
-    glCreateTransformFeedbacks( 1, &id ); // 4.5
+    glCreateTransformFeedbacks(1, &id); // 4.5
 
-    SetHandleNativeGL( id );
-
-    pDevice->TotalTransformFeedbacks++;
+    SetHandleNativeGL(id);
 }
 
 ATransformFeedbackGLImpl::~ATransformFeedbackGLImpl()
 {
     GLuint id = GetHandleNativeGL();
-    if ( id ) {
-        glDeleteTransformFeedbacks( 1, &id );
+    if (id)
+    {
+        glDeleteTransformFeedbacks(1, &id);
     }
-    pDevice->TotalTransformFeedbacks--;
 }
 
-}
+} // namespace RenderCore

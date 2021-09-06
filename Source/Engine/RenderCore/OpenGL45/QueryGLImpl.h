@@ -32,7 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/Query.h>
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 class ADeviceGLImpl;
 
@@ -41,19 +42,11 @@ class AQueryPoolGLImpl final : public IQueryPool
     friend class AImmediateContextGLImpl;
 
 public:
-    AQueryPoolGLImpl( ADeviceGLImpl * _Device, SQueryPoolCreateInfo const & _CreateInfo );
+    AQueryPoolGLImpl(ADeviceGLImpl* pDevice, SQueryPoolDesc const& Desc);
     ~AQueryPoolGLImpl();
 
-    void GetResults( uint32_t _FirstQuery,
-                     uint32_t _QueryCount,
-                     size_t _DataSize,
-                     void * _SysMem,
-                     size_t _DstStride,
-                     QUERY_RESULT_FLAGS _Flags ) override;
-
 private:
-    ADeviceGLImpl * pDevice;
-    unsigned int * IdPool;
+    unsigned int* IdPool;
 };
 
-}
+} // namespace RenderCore

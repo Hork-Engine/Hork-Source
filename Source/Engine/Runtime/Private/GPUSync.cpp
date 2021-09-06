@@ -47,53 +47,52 @@ AGPUSync::~AGPUSync()
 void AGPUSync::SetEvent()
 {
     if ( Texture ) {
-        Texture->GenerateLods();
+        pImmediateContext->GenerateTextureMipLevels(Texture);
     }
 }
 
 void AGPUSync::Wait()
 {
-    if ( !Texture ) {
-        byte data[2*2*4];
-        Core::Memset( data, 128, sizeof( data ) );
+    if (!Texture)
+    {
+        byte data[2 * 2 * 4];
+        Core::Memset(data, 128, sizeof(data));
 
-        IDevice * device = pImmediateContext->GetDevice();
+        IDevice* device = pImmediateContext->GetDevice();
 
-        device->CreateTexture( MakeTexture( TEXTURE_FORMAT_RGBA8,
-                                            STextureResolution2D( 2, 2 ),
-                                            STextureMultisampleInfo(),
-                                            STextureSwizzle(),
-                                            2 ),
-                               &Texture );
+        device->CreateTexture(STextureDesc()
+                                  .SetFormat(TEXTURE_FORMAT_RGBA8)
+                                  .SetResolution(STextureResolution2D(2, 2))
+                                  .SetMipLevels(2),
+                              &Texture);
 
-        Texture->Write( 0, FORMAT_UBYTE4, sizeof( data ), 1, data );
+        pImmediateContext->WriteTexture(Texture, 0, FORMAT_UBYTE4, sizeof(data), 1, data);
 
-
-        device->CreateTexture( MakeTexture( TEXTURE_FORMAT_RGBA8,
-                                            STextureResolution2D( 1, 1 ),
-                                            STextureMultisampleInfo(),
-                                            STextureSwizzle(),
-                                            1 ),
-                               &Staging );
+        device->CreateTexture(STextureDesc()
+                                  .SetFormat(TEXTURE_FORMAT_RGBA8)
+                                  .SetResolution(STextureResolution2D(1, 1))
+                                  .SetMipLevels(1),
+                              &Staging);
     }
-    else {
+    else
+    {
         TextureCopy copy = {};
 
-        copy.SrcRect.Offset.Lod = 1;
-        copy.SrcRect.Offset.X = 0;
-        copy.SrcRect.Offset.Y = 0;
-        copy.SrcRect.Offset.Z = 0;
-        copy.SrcRect.Dimension.X = 1;
-        copy.SrcRect.Dimension.Y = 1;
-        copy.SrcRect.Dimension.Z = 1;
-        copy.DstOffset.Lod = 0;
-        copy.DstOffset.X = 0;
-        copy.DstOffset.Y = 0;
-        copy.DstOffset.Z = 0;
+        copy.SrcRect.Offset.MipLevel = 1;
+        copy.SrcRect.Offset.X        = 0;
+        copy.SrcRect.Offset.Y        = 0;
+        copy.SrcRect.Offset.Z        = 0;
+        copy.SrcRect.Dimension.X     = 1;
+        copy.SrcRect.Dimension.Y     = 1;
+        copy.SrcRect.Dimension.Z     = 1;
+        copy.DstOffset.MipLevel      = 0;
+        copy.DstOffset.X             = 0;
+        copy.DstOffset.Y             = 0;
+        copy.DstOffset.Z             = 0;
 
-        pImmediateContext->CopyTextureRect( Texture, Staging, 1, &copy );
+        pImmediateContext->CopyTextureRect(Texture, Staging, 1, &copy);
 
         byte data[4];
-        Staging->Read( 0, FORMAT_UBYTE4, 4, 1, data );
+        pImmediateContext->ReadTexture(Staging, 0, FORMAT_UBYTE4, 4, 1, data);
     }
 }

@@ -35,151 +35,160 @@ SOFTWARE.
 
 class AImage;
 
-struct SColorGradingPreset {
+struct SColorGradingPreset
+{
     Float3 Gain;
     Float3 Gamma;
     Float3 Lift;
     Float3 Presaturation;
     Float3 ColorTemperatureStrength;
-    float ColorTemperature; // in K
-    float ColorTemperatureBrightnessNormalization;
+    float  ColorTemperature; // in K
+    float  ColorTemperatureBrightnessNormalization;
 };
 
-struct STexture1D {};
-struct STexture1DArray {};
-struct STexture2D {};
-struct STexture2DArray {};
-struct STexture3D {};
-struct STextureCubemap {};
-struct STextureCubemapArray {};
+struct STexture1D
+{};
+struct STexture1DArray
+{};
+struct STexture2D
+{};
+struct STexture2DArray
+{};
+struct STexture3D
+{};
+struct STextureCubemap
+{};
+struct STextureCubemapArray
+{};
 
 /**
 
 ATexture
 
 */
-class ATexture : public AResource {
-    AN_CLASS( ATexture, AResource )
+class ATexture : public AResource
+{
+    AN_CLASS(ATexture, AResource)
 
 public:
     ATexture();
     ~ATexture();
 
-    ATexture( STexture1D const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width )
+    ATexture(STexture1D const&, STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width)
     {
-        Initialize1D( _PixelFormat, _NumLods, _Width );
+        Initialize1D(_PixelFormat, _NumMipLevels, _Width);
     }
 
-    ATexture( STexture1DArray const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize )
+    ATexture(STexture1DArray const&, STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _ArraySize)
     {
-        Initialize1DArray( _PixelFormat, _NumLods, _Width, _ArraySize );
+        Initialize1DArray(_PixelFormat, _NumMipLevels, _Width, _ArraySize);
     }
 
-    ATexture( STexture2D const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height )
+    ATexture(STexture2D const&, STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _Height)
     {
-        Initialize2D( _PixelFormat, _NumLods, _Width, _Height );
+        Initialize2D(_PixelFormat, _NumMipLevels, _Width, _Height);
     }
 
-    ATexture( AImage const & _Image )
+    ATexture(AImage const& _Image)
     {
-        InitializeFromImage( _Image );
+        InitializeFromImage(_Image);
     }
 
-    ATexture( STexture2DArray const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize )
+    ATexture(STexture2DArray const&, STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _Height, int _ArraySize)
     {
-        Initialize2DArray( _PixelFormat, _NumLods, _Width, _Height, _ArraySize );
+        Initialize2DArray(_PixelFormat, _NumMipLevels, _Width, _Height, _ArraySize);
     }
 
-    ATexture( STexture3D const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth )
+    ATexture(STexture3D const&, STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _Height, int _Depth)
     {
-        Initialize3D( _PixelFormat, _NumLods, _Width, _Height, _Depth );
+        Initialize3D(_PixelFormat, _NumMipLevels, _Width, _Height, _Depth);
     }
 
-    ATexture( const char * _Path )
+    ATexture(const char* _Path)
     {
-        InitializeColorGradingLUT( _Path );
+        InitializeColorGradingLUT(_Path);
     }
 
-    ATexture( SColorGradingPreset const & _Preset )
+    ATexture(SColorGradingPreset const& _Preset)
     {
-        InitializeColorGradingLUT( _Preset );
+        InitializeColorGradingLUT(_Preset);
     }
 
-    ATexture( STextureCubemap const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width )
+    ATexture(STextureCubemap const&, STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width)
     {
-        InitializeCubemap( _PixelFormat, _NumLods, _Width );
+        InitializeCubemap(_PixelFormat, _NumMipLevels, _Width);
     }
 
-    ATexture( TArray< AImage const *, 6 > const & _Faces )
+    ATexture(TArray<AImage const*, 6> const& _Faces)
     {
-        InitializeCubemapFromImages( _Faces );
+        InitializeCubemapFromImages(_Faces);
     }
 
-    ATexture( STextureCubemapArray const &, STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize )
+    ATexture(STextureCubemapArray const&, STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _ArraySize)
     {
-        InitializeCubemapArray( _PixelFormat, _NumLods, _Width, _ArraySize );
+        InitializeCubemapArray(_PixelFormat, _NumMipLevels, _Width, _ArraySize);
     }
 
     /** Create empty 1D texture */
-    void Initialize1D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width );
+    void Initialize1D(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width);
 
     /** Create empty 1D array texture */
-    void Initialize1DArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
+    void Initialize1DArray(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _ArraySize);
 
     /** Create empty 2D texture */
-    void Initialize2D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height );
+    void Initialize2D(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _Height);
 
     /** Create 2D texture */
-    bool InitializeFromImage( AImage const & _Image );
+    bool InitializeFromImage(AImage const& _Image);
 
     /** Create empty 2D array texture */
-    void Initialize2DArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize );
+    void Initialize2DArray(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _Height, int _ArraySize);
 
     /** Create empty 3D texture */
-    void Initialize3D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth );
+    void Initialize3D(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _Height, int _Depth);
 
     /** Create 3D color grading LUT */
-    void InitializeColorGradingLUT( const char * _Path );
+    void InitializeColorGradingLUT(const char* _Path);
 
     /** Create 3D color grading LUT */
-    void InitializeColorGradingLUT( SColorGradingPreset const & _Preset );
+    void InitializeColorGradingLUT(SColorGradingPreset const& _Preset);
 
     /** Create empty cubemap texture */
-    void InitializeCubemap( STexturePixelFormat _PixelFormat, int _NumLods, int _Width );
+    void InitializeCubemap(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width);
 
     /** Create cubemap texture */
-    bool InitializeCubemapFromImages( TArray< AImage const *, 6 > const & _Faces );
+    bool InitializeCubemapFromImages(TArray<AImage const*, 6> const& _Faces);
 
     /** Create empty cubemap array texture */
-    void InitializeCubemapArray( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
+    void InitializeCubemapArray(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _ArraySize);
 
     /** Fill texture data for any texture type. */
-    bool WriteArbitraryData( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Depth, int _Lod, const void * _SysMem );
+    bool WriteArbitraryData(int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Depth, int _Lod, const void* _SysMem);
 
     /** Helper. Fill texture data. */
-    bool WriteTextureData1D( int _LocationX, int _Width, int _Lod, const void * _SysMem );
+    bool WriteTextureData1D(int _LocationX, int _Width, int _Lod, const void* _SysMem);
 
     /** Helper. Fill texture data. */
-    bool WriteTextureData1DArray( int _LocationX, int _Width, int _ArrayLayer, int _Lod, const void * _SysMem );
+    bool WriteTextureData1DArray(int _LocationX, int _Width, int _ArrayLayer, int _Lod, const void* _SysMem);
 
     /** Helper. Fill texture data. */
-    bool WriteTextureData2D( int _LocationX, int _LocationY, int _Width, int _Height, int _Lod, const void * _SysMem );
+    bool WriteTextureData2D(int _LocationX, int _LocationY, int _Width, int _Height, int _Lod, const void* _SysMem);
 
     /** Helper. Fill texture data. */
-    bool WriteTextureData2DArray( int _LocationX, int _LocationY, int _Width, int _Height, int _ArrayLayer, int _Lod, const void * _SysMem );
+    bool WriteTextureData2DArray(int _LocationX, int _LocationY, int _Width, int _Height, int _ArrayLayer, int _Lod, const void* _SysMem);
 
     /** Helper. Fill texture data. */
-    bool WriteTextureData3D( int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Depth, int _Lod, const void * _SysMem );
+    bool WriteTextureData3D(int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Depth, int _Lod, const void* _SysMem);
 
     /** Helper. Fill texture data. */
-    bool WriteTextureDataCubemap( int _LocationX, int _LocationY, int _Width, int _Height, int _FaceIndex, int _Lod, const void * _SysMem );
+    bool WriteTextureDataCubemap(int _LocationX, int _LocationY, int _Width, int _Height, int _FaceIndex, int _Lod, const void* _SysMem);
 
     /** Helper. Fill texture data. */
-    bool WriteTextureDataCubemapArray( int _LocationX, int _LocationY, int _Width, int _Height, int _FaceIndex, int _ArrayLayer, int _Lod, const void * _SysMem );
+    bool WriteTextureDataCubemapArray(int _LocationX, int _LocationY, int _Width, int _Height, int _FaceIndex, int _ArrayLayer, int _Lod, const void* _SysMem);
 
     ETextureType GetType() const { return (ETextureType)TextureType; }
 
-    STexturePixelFormat const & GetPixelFormat() const { return PixelFormat; }
+    STexturePixelFormat const& GetPixelFormat() const { return PixelFormat; }
 
     int GetDimensionX() const { return Width; }
 
@@ -189,7 +198,7 @@ public:
 
     int GetArraySize() const;
 
-    int GetNumLods() const { return NumLods; }
+    int GetNumMipLevels() const { return NumMipLevels; }
 
     bool IsCubemap() const;
 
@@ -206,29 +215,29 @@ public:
     size_t GetSizeInBytes() const;
 
     // Utilites
-    static size_t TextureSizeInBytes1D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
-    static size_t TextureSizeInBytes2D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _ArraySize );
-    static size_t TextureSizeInBytes3D( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _Height, int _Depth );
-    static size_t TextureSizeInBytesCubemap( STexturePixelFormat _PixelFormat, int _NumLods, int _Width, int _ArraySize );
+    static size_t TextureSizeInBytes1D(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _ArraySize);
+    static size_t TextureSizeInBytes2D(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _Height, int _ArraySize);
+    static size_t TextureSizeInBytes3D(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _Height, int _Depth);
+    static size_t TextureSizeInBytesCubemap(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _ArraySize);
 
-    RenderCore::ITexture * GetGPUResource() { return TextureGPU; }
+    RenderCore::ITexture* GetGPUResource() { return TextureGPU; }
 
     void Purge();
 
 protected:
     /** Load resource from file */
-    bool LoadResource( IBinaryStream & Stream ) override;
+    bool LoadResource(IBinaryStream& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource( const char * _Path ) override;
+    void LoadInternalResource(const char* _Path) override;
 
-    const char * GetDefaultResourcePath() const override { return "/Default/Textures/Default2D"; }
+    const char* GetDefaultResourcePath() const override { return "/Default/Textures/Default2D"; }
 
-    TRef< RenderCore::ITexture > TextureGPU;
-    int TextureType = 0;
-    STexturePixelFormat PixelFormat = TEXTURE_PF_BGRA8_SRGB;
-    int Width = 0;
-    int Height = 0;
-    int Depth = 0;
-    int NumLods = 0;
+    TRef<RenderCore::ITexture> TextureGPU;
+    int                        TextureType  = 0;
+    STexturePixelFormat        PixelFormat  = TEXTURE_PF_BGRA8_SRGB;
+    int                        Width        = 0;
+    int                        Height       = 0;
+    int                        Depth        = 0;
+    int                        NumMipLevels = 0;
 };

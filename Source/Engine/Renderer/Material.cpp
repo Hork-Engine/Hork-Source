@@ -53,20 +53,20 @@ static constexpr SAMPLER_ADDRESS_MODE SamplerAddressLUT[] = {
 extern const Float4 EVSM_ClearValue;
 extern const Float4 VSM_ClearValue;
 
-static SSamplerInfo LightmapSampler;
-static SSamplerInfo ReflectSampler;
-static SSamplerInfo ReflectDepthSampler;
-static SSamplerInfo VirtualTextureSampler;
-static SSamplerInfo VirtualTextureIndirectionSampler;
-static SSamplerInfo ShadowDepthSamplerPCF;
-static SSamplerInfo ShadowDepthSamplerVSM;
-static SSamplerInfo ShadowDepthSamplerEVSM;
-static SSamplerInfo ShadowDepthSamplerPCSS0;
-static SSamplerInfo ShadowDepthSamplerPCSS1;
-static SSamplerInfo IESSampler;
-static SSamplerInfo ClusterLookupSampler;
-static SSamplerInfo SSAOSampler;
-static SSamplerInfo LookupBRDFSampler;
+static SSamplerDesc LightmapSampler;
+static SSamplerDesc ReflectSampler;
+static SSamplerDesc ReflectDepthSampler;
+static SSamplerDesc VirtualTextureSampler;
+static SSamplerDesc VirtualTextureIndirectionSampler;
+static SSamplerDesc ShadowDepthSamplerPCF;
+static SSamplerDesc ShadowDepthSamplerVSM;
+static SSamplerDesc ShadowDepthSamplerEVSM;
+static SSamplerDesc ShadowDepthSamplerPCSS0;
+static SSamplerDesc ShadowDepthSamplerPCSS1;
+static SSamplerDesc IESSampler;
+static SSamplerDesc ClusterLookupSampler;
+static SSamplerDesc SSAOSampler;
+static SSamplerDesc LookupBRDFSampler;
 
 void InitMaterialSamplers()
 {
@@ -165,9 +165,9 @@ void InitMaterialSamplers()
     LookupBRDFSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
 }
 
-static void CopyMaterialSamplers( SSamplerInfo * Dest, STextureSampler const * Samplers, int NumSamplers )
+static void CopyMaterialSamplers( SSamplerDesc * Dest, STextureSampler const * Samplers, int NumSamplers )
 {
-    SSamplerInfo samplerCI;
+    SSamplerDesc samplerCI;
     samplerCI.Filter = FILTER_MIN_NEAREST_MIPMAP_LINEAR_MAG_LINEAR;
     samplerCI.AddressU = SAMPLER_ADDRESS_WRAP;
     samplerCI.AddressV = SAMPLER_ADDRESS_WRAP;
@@ -508,7 +508,7 @@ static const SVertexAttribInfo VertexAttribsTerrainInstanced[] = {
 
 void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _AlphaMasking, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
     TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -585,7 +585,7 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
-    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
@@ -606,7 +606,7 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
 void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
     TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -682,7 +682,7 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
-    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
@@ -708,7 +708,7 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
 
 void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
     TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -792,7 +792,7 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
-    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
@@ -812,7 +812,7 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 
 void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _Skinned, STextureSampler const * Samplers, int NumSamplers )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
     TPodVector< const char * > sources;
 
     SBlendingStateInfo & bsd = pipelineCI.BS;
@@ -875,7 +875,7 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     inputAssembly.Topology = PRIMITIVE_POINTS;
     inputAssembly.bPrimitiveRestart = false;
 
-    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
@@ -895,7 +895,7 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
 
 void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, STextureSampler const * Samplers, int NumSamplers )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
     TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -938,7 +938,7 @@ void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char *
     pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsHUD );
     pipelineCI.pVertexAttribs = VertexAttribsHUD;
 
-    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
@@ -981,7 +981,7 @@ static RenderCore::BLENDING_PRESET GetBlendingPreset( EColorBlending _Blending )
 
 void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
     TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1079,7 +1079,7 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
     pipelineCI.pVertexBindings = vertexBinding;
 
-    SSamplerInfo samplers[19];
+    SSamplerDesc samplers[19];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
     // lightmap is in last sample
@@ -1125,7 +1125,7 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
 void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
     TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1198,7 +1198,7 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
-    SSamplerInfo samplers[19];
+    SSamplerDesc samplers[19];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
     // lightmap is in last sample
@@ -1244,7 +1244,7 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
 
 void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _DepthTest, bool _Translucent, EColorBlending _Blending, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
     TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1317,7 +1317,7 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
-    SSamplerInfo samplers[19];
+    SSamplerDesc samplers[19];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
     // lightmap is in last sample
@@ -1363,7 +1363,7 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
 
 void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
     TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1465,7 +1465,7 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
         CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
     }
 
-    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
@@ -1487,7 +1487,7 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 
 void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, STextureSampler const * Samplers, int NumSamplers )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
     TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1555,7 +1555,7 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
 
     pipelineCI.pVertexBindings = vertexBinding;
 
-    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
@@ -1580,7 +1580,7 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
 
 void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
     TPodVector< const char * > sources;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
@@ -1660,7 +1660,7 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
     inputAssembly.bPrimitiveRestart = false;
 
-    SSamplerInfo samplers[MAX_SAMPLER_SLOTS];
+    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
 
@@ -1681,7 +1681,7 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
 
 void CreateTerrainMaterialDepth( TRef< RenderCore::IPipeline > * ppPipeline )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = POLYGON_CULL_FRONT;
@@ -1714,7 +1714,7 @@ void CreateTerrainMaterialDepth( TRef< RenderCore::IPipeline > * ppPipeline )
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
     inputAssembly.bPrimitiveRestart = true;
 
-    SSamplerInfo clipmapSampler;
+    SSamplerDesc clipmapSampler;
     clipmapSampler.Filter = FILTER_NEAREST;
 
     pipelineCI.ResourceLayout.NumSamplers = 1;
@@ -1732,7 +1732,7 @@ void CreateTerrainMaterialDepth( TRef< RenderCore::IPipeline > * ppPipeline )
 
 void CreateTerrainMaterialLight( TRef< RenderCore::IPipeline > * ppPipeline )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = POLYGON_CULL_FRONT;
@@ -1765,12 +1765,12 @@ void CreateTerrainMaterialLight( TRef< RenderCore::IPipeline > * ppPipeline )
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
     inputAssembly.bPrimitiveRestart = true;
 
-    SSamplerInfo samplers[19];
+    SSamplerDesc samplers[19];
 
-    SSamplerInfo & clipmapSampler = samplers[0];
+    SSamplerDesc & clipmapSampler = samplers[0];
     clipmapSampler.Filter = FILTER_NEAREST;
 
-    SSamplerInfo & normalmapSampler = samplers[1];
+    SSamplerDesc & normalmapSampler = samplers[1];
     normalmapSampler.Filter = FILTER_LINEAR;
 
     // lightmap is in last sample
@@ -1815,7 +1815,7 @@ void CreateTerrainMaterialLight( TRef< RenderCore::IPipeline > * ppPipeline )
 
 void CreateTerrainMaterialWireframe( TRef< RenderCore::IPipeline > * ppPipeline )
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = POLYGON_CULL_FRONT;
@@ -1851,7 +1851,7 @@ void CreateTerrainMaterialWireframe( TRef< RenderCore::IPipeline > * ppPipeline 
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
     inputAssembly.bPrimitiveRestart = true;
 
-    SSamplerInfo clipmapSampler;
+    SSamplerDesc clipmapSampler;
     clipmapSampler.Filter = FILTER_NEAREST;
 
     pipelineCI.ResourceLayout.NumSamplers = 1;

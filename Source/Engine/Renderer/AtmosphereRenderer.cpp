@@ -38,7 +38,7 @@ using namespace RenderCore;
 static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_RGB16F; // TODO: try compression
 
 AAtmosphereRenderer::AAtmosphereRenderer() {
-    SBufferCreateInfo bufferCI = {};
+    SBufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
     bufferCI.SizeInBytes = sizeof( SConstantData );
@@ -51,24 +51,7 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
         ConstantBufferData.Transform[faceIndex] = projMat * cubeFaceMatrices[faceIndex];
     }
 
-    SAttachmentInfo colorAttachment = {};
-    colorAttachment.LoadOp = ATTACHMENT_LOAD_OP_DONT_CARE;
-
-    SAttachmentRef attachmentRef = {};
-    attachmentRef.Attachment = 0;
-
-    SSubpassInfo subpassInfo = {};
-    subpassInfo.NumColorAttachments = 1;
-    subpassInfo.pColorAttachmentRefs = &attachmentRef;
-
-    SRenderPassCreateInfo renderPassCI = {};
-    renderPassCI.NumColorAttachments = 1;
-    renderPassCI.pColorAttachments = &colorAttachment;
-    renderPassCI.NumSubpasses = 1;
-    renderPassCI.pSubpasses = &subpassInfo;
-    GDevice->CreateRenderPass( renderPassCI, &RP );
-
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
 
     SPipelineInputAssemblyInfo & ia = pipelineCI.IA;
     ia.Topology = PRIMITIVE_TRIANGLES;
@@ -119,47 +102,47 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
 
 void AAtmosphereRenderer::Render( int CubemapWidth, Float3 const & LightDir, TRef< RenderCore::ITexture > * ppTexture )
 {
-    GDevice->CreateTexture( MakeTexture( TEX_FORMAT_SKY, STextureResolutionCubemap( CubemapWidth ) ), ppTexture );
+    AFrameGraph frameGraph( GDevice );
+    ARenderPass & pass = frameGraph.AddTask< ARenderPass >( "Atmosphere pass" );
 
-    ConstantBufferData.LightDir = Float4( LightDir.Normalized(), 0.0f );
+    pass.SetRenderArea( CubemapWidth, CubemapWidth );
 
-    ConstantBuffer->Write( &ConstantBufferData );
+    pass.SetColorAttachments(
+        {
+            {
+                STextureAttachment("Render target texture",
+                                    STextureDesc()
+                                        .SetFormat( TEX_FORMAT_SKY )
+                                        .SetResolution(STextureResolutionCubemap(CubemapWidth))
+                )
+                .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE)
+            }
+        } );
 
-    TRef< IResourceTable > resourceTbl;
-    GDevice->CreateResourceTable( &resourceTbl );
+    pass.AddSubpass( { 0 }, // color attachments
+                    [&](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                     {
+                         ConstantBufferData.LightDir = Float4( LightDir.Normalized(), 0.0f );
 
-    resourceTbl->BindBuffer( 0, ConstantBuffer );
+                         rcmd->WriteBuffer(ConstantBuffer, &ConstantBufferData);
 
-    SViewport viewport = {};
-    viewport.Width = CubemapWidth;
-    viewport.Height = CubemapWidth;
-    viewport.MaxDepth = 1;
+                         TRef< IResourceTable > resourceTbl;
+                         GDevice->CreateResourceTable( &resourceTbl );
 
-    SFramebufferAttachmentInfo attachment = {};
-    attachment.pTexture = *ppTexture;
-    attachment.LodNum = 0;
+                         resourceTbl->BindBuffer( 0, ConstantBuffer );
 
-    SFramebufferCreateInfo framebufferCI = {};
-    framebufferCI.Width = CubemapWidth;
-    framebufferCI.Height = CubemapWidth;
-    framebufferCI.NumColorAttachments = 1;
-    framebufferCI.pColorAttachments = &attachment;
+                         rcmd->BindResourceTable( resourceTbl );
 
-    TRef< RenderCore::IFramebuffer > framebuffer;
-    GDevice->CreateFramebuffer( framebufferCI, &framebuffer );
+                         // Draw six faces in one draw call
+                         DrawSphere( Pipeline, 6 );
+                     } );
+    
+    FGTextureProxy * pTexture = pass.GetColorAttachments()[0].pResource;
+    pTexture->SetResourceCapture( true );
 
-    SRenderPassBegin renderPassBegin = {};
-    renderPassBegin.pFramebuffer = framebuffer;
-    renderPassBegin.pRenderPass = RP;
-    renderPassBegin.RenderArea.Width = CubemapWidth;
-    renderPassBegin.RenderArea.Height = CubemapWidth;
+    frameGraph.Build();
+    //frameGraph.Execute( rcmd );
+    rcmd->ExecuteFrameGraph(&frameGraph);
 
-    rcmd->BeginRenderPass( renderPassBegin );
-    rcmd->SetViewport( viewport );
-    rcmd->BindResourceTable( resourceTbl );
-
-    // Draw six faces in one draw call
-    DrawSphere( Pipeline, 6 );
-
-    rcmd->EndRenderPass();
+    *ppTexture = pTexture->Actual();
 }

@@ -32,15 +32,16 @@ SOFTWARE.
 
 #include <RenderCore/Sampler.h>
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 class ADeviceGLImpl;
-struct SSamplerInfo;
+struct SSamplerDesc;
 
 class ABindlessSamplerGLImpl final : public IBindlessSampler
 {
 public:
-    ABindlessSamplerGLImpl( ADeviceGLImpl * _Device, ITexture * _Texture, SSamplerInfo const & _CreateInfo );
+    ABindlessSamplerGLImpl(ADeviceGLImpl* pDevice, ITexture* pTexture, SSamplerDesc const& Desc);
     ~ABindlessSamplerGLImpl();
 
     void MakeResident() override;
@@ -50,4 +51,4 @@ public:
     bool IsResident() const override;
 };
 
-}
+} // namespace RenderCore

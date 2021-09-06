@@ -413,10 +413,10 @@ void ALightVoxelizer::Voxelize( SRenderView * RV ) {
     for ( int i = 0 ; i < MAX_FRUSTUM_CLUSTERS_Z ; i++ ) {
         works[i].SliceIndex = i;
         works[i].Self = this;
-        GRenderFrontendJobList->AddJob( VoxelizeWork, &works[i] );
+        GRuntime->RenderFrontendJobList->AddJob( VoxelizeWork, &works[i] );
     }
 
-    GRenderFrontendJobList->SubmitAndWait();
+    GRuntime->RenderFrontendJobList->SubmitAndWait();
 
     RV->ClusterPackedIndexCount = ItemCounter.Load();
 

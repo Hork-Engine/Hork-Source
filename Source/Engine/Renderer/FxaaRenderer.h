@@ -30,16 +30,17 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/FrameGraph/FrameGraph.h>
+#include <RenderCore/FrameGraph.h>
 
-class AFxaaRenderer {
+class AFxaaRenderer
+{
 public:
     AFxaaRenderer();
 
-    void AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppFxaaTexture );
+    void AddPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppFxaaTexture);
 
 private:
     void CreateSampler();
 
-    TRef< RenderCore::IPipeline > FxaaPipeline;
+    TRef<RenderCore::IPipeline> FxaaPipeline;
 };

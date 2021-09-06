@@ -34,14 +34,13 @@ SOFTWARE.
 constexpr int AAsyncJobManager::MAX_WORKER_THREADS;
 constexpr int AAsyncJobManager::MAX_JOB_LISTS;
 
-AAsyncJobManager::AAsyncJobManager() {
-}
-
-void AAsyncJobManager::Initialize( int _NumWorkerThreads, int _NumJobLists ) {
+AAsyncJobManager::AAsyncJobManager( int _NumWorkerThreads, int _NumJobLists )
+{
     if ( _NumWorkerThreads > MAX_WORKER_THREADS ) {
         GLogger.Printf( "AAsyncJobManager::Initialize: NumWorkerThreads > MAX_WORKER_THREADS\n" );
         _NumWorkerThreads = MAX_WORKER_THREADS;
-    } else if ( _NumWorkerThreads <= 0 ) {
+    }
+    else if ( _NumWorkerThreads <= 0 ) {
         _NumWorkerThreads = MAX_WORKER_THREADS;
     }
 
@@ -52,28 +51,29 @@ void AAsyncJobManager::Initialize( int _NumWorkerThreads, int _NumJobLists ) {
     bTerminated = false;
 
     NumJobLists = _NumJobLists;
-    for ( int i = 0 ; i < NumJobLists ; i++ ) {
+    for ( int i = 0; i < NumJobLists; i++ ) {
         JobList[i].JobManager = this;
     }
 
     TotalJobs.Store( 0 );
 
     NumWorkerThreads = _NumWorkerThreads;
-    for ( int i = 0 ; i < NumWorkerThreads ; i++ ) {
-        Contexts[i].JobManager = this;
-        Contexts[i].ThreadId = i;
+    for ( int i = 0; i < NumWorkerThreads; i++ ) {
+        Contexts[i].JobManager  = this;
+        Contexts[i].ThreadId    = i;
         WorkerThread[i].Routine = _WorkerThreadRoutine;
-        WorkerThread[i].Data = ( void * )&Contexts[i];
+        WorkerThread[i].Data    = (void *)&Contexts[i];
         WorkerThread[i].Start();
     }
 }
 
-void AAsyncJobManager::Deinitialize() {
+AAsyncJobManager::~AAsyncJobManager()
+{
     GLogger.Printf( "Deinitializing async job manager\n" );
 
     NotifyThreads();
 
-    for ( int i = 0 ; i < NumJobLists ; i++ ) {
+    for ( int i = 0; i < NumJobLists; i++ ) {
         JobList[i].Wait();
         JobList[i].JobPool.Free();
     }
@@ -81,26 +81,29 @@ void AAsyncJobManager::Deinitialize() {
     bTerminated = true;
     NotifyThreads();
 
-    for ( int i = 0 ; i < NumWorkerThreads ; i++ ) {
+    for ( int i = 0; i < NumWorkerThreads; i++ ) {
         WorkerThread[i].Join();
     }
 }
 
-void AAsyncJobManager::NotifyThreads() {
-    for ( int i = 0 ; i < NumWorkerThreads ; i++ ) {
+void AAsyncJobManager::NotifyThreads()
+{
+    for ( int i = 0; i < NumWorkerThreads; i++ ) {
         EventNotify[i].Signal();
     }
 }
 
-void AAsyncJobManager::_WorkerThreadRoutine( void * _Data ) {
-    SContext * context = ( SContext * )_Data;
+void AAsyncJobManager::_WorkerThreadRoutine( void * _Data )
+{
+    SContext * context = (SContext *)_Data;
 
     context->JobManager->WorkerThreadRoutine( context->ThreadId );
 }
 
-void AAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
+void AAsyncJobManager::WorkerThreadRoutine( int _ThreadId )
+{
     SAsyncJob job = {};
-    bool haveJob;
+    bool      haveJob;
 
 #ifdef AN_ACTIVE_THREADS_COUNTERS
     NumActiveThreads.Increment();
@@ -114,17 +117,17 @@ void AAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
 
         //GLogger.Printf( "Thread waiting %d\n", _ThreadId );
 
-        EventNotify[ _ThreadId ].Wait();
+        EventNotify[_ThreadId].Wait();
 
 #ifdef AN_ACTIVE_THREADS_COUNTERS
         NumActiveThreads.Increment();
 #endif
 
-        for ( int currentList = 0 ; TotalJobs.Load() > 0 ; currentList++ ) {
+        for ( int currentList = 0; TotalJobs.Load() > 0; currentList++ ) {
 
             int fetchIndex = ( _ThreadId + currentList ) % NumJobLists;
 
-            AAsyncJobList * jobList = &JobList[ fetchIndex ];
+            AAsyncJobList * jobList = &JobList[fetchIndex];
 
             // Check if list have a jobs
             if ( jobList->FetchCount.Load() > 0 ) {
@@ -138,9 +141,9 @@ void AAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
                     //if ( jobList->FetchLock.Increment() == 1 )
                     //{
                     if ( jobList->SubmittedJobs ) {
-                        job = *jobList->SubmittedJobs;
+                        job                    = *jobList->SubmittedJobs;
                         jobList->SubmittedJobs = job.Next;
-                        haveJob = true;
+                        haveJob                = true;
 
                         jobList->FetchCount.Decrement();
                         TotalJobs.Decrement();
@@ -180,28 +183,25 @@ void AAsyncJobManager::WorkerThreadRoutine( int _ThreadId ) {
     GLogger.Printf( "Terminating worker thread (%d)\n", _ThreadId );
 }
 
-AAsyncJobList::AAsyncJobList() {
-    JobList = nullptr;
-    SubmittedJobs = nullptr;
-    SubmittedJobsCount.Store( 0 );
-    FetchCount.Store( 0 );
-    //FetchLock.Store( 0 );
-    NumPendingJobs = 0;
-    bSignalled = false;
+AAsyncJobList::AAsyncJobList()
+{
 }
 
-AAsyncJobList::~AAsyncJobList() {
+AAsyncJobList::~AAsyncJobList()
+{
     Wait();
 }
 
-void AAsyncJobList::SetMaxParallelJobs( int _MaxParallelJobs ) {
+void AAsyncJobList::SetMaxParallelJobs( int _MaxParallelJobs )
+{
     AN_ASSERT( JobPool.IsEmpty() );
 
     JobPool.ReserveInvalidate( _MaxParallelJobs );
     JobPool.Clear();
 }
 
-void AAsyncJobList::AddJob( void (*_Callback)( void * ), void * _Data ) {
+void AAsyncJobList::AddJob( void ( *_Callback )( void * ), void * _Data )
+{
     if ( JobPool.Size() == JobPool.Capacity() ) {
         GLogger.Printf( "Warning: AAsyncJobList::AddJob: job pool overflow, use SetMaxParallelJobs to reserve proper pool size (current size %d)\n", JobPool.Capacity() );
 
@@ -210,30 +210,32 @@ void AAsyncJobList::AddJob( void (*_Callback)( void * ), void * _Data ) {
     }
 
     SAsyncJob & job = JobPool.Append();
-    job.Callback = _Callback;
-    job.Data = _Data;
-    job.Next = JobList;
-    JobList = &job;
+    job.Callback    = _Callback;
+    job.Data        = _Data;
+    job.Next        = JobList;
+    JobList         = &job;
     NumPendingJobs++;
 }
 
-void AAsyncJobList::Submit() {
+void AAsyncJobList::Submit()
+{
     JobManager->SubmitJobList( this );
 }
 
-void AAsyncJobManager::SubmitJobList( AAsyncJobList * InJobList ) {
+void AAsyncJobManager::SubmitJobList( AAsyncJobList * InJobList )
+{
     if ( !InJobList->NumPendingJobs ) {
         return;
     }
 
-    SAsyncJob * headJob = &InJobList->JobPool[ InJobList->JobPool.Size() - InJobList->NumPendingJobs ];
+    SAsyncJob * headJob = &InJobList->JobPool[InJobList->JobPool.Size() - InJobList->NumPendingJobs];
     AN_ASSERT( headJob->Next == nullptr );
 
     // lock section
     {
         AMutexGurad syncGuard( InJobList->SubmitSync );
 
-        headJob->Next = InJobList->SubmittedJobs;
+        headJob->Next            = InJobList->SubmittedJobs;
         InJobList->SubmittedJobs = InJobList->JobList;
 
         InJobList->SubmittedJobsCount.Add( InJobList->NumPendingJobs );
@@ -245,11 +247,12 @@ void AAsyncJobManager::SubmitJobList( AAsyncJobList * InJobList ) {
     }
 
     NotifyThreads();
-    InJobList->JobList = nullptr;
+    InJobList->JobList        = nullptr;
     InJobList->NumPendingJobs = 0;
 }
 
-void AAsyncJobList::Wait() {
+void AAsyncJobList::Wait()
+{
     int jobsCount = JobPool.Size() - NumPendingJobs;
 
     if ( jobsCount > 0 ) {
@@ -267,18 +270,19 @@ void AAsyncJobList::Wait() {
 
             JobPool.Remove( 0, jobsCount );
 
-            JobList = JobPool.ToPtr() + ( NumPendingJobs - 1 );
-            for ( int i = 1 ; i < NumPendingJobs ; i++ ) {
+            JobList = JobPool.ToPtr() + size_t( NumPendingJobs - 1 );
+            for ( int i = 1; i < NumPendingJobs; i++ ) {
                 JobPool[i].Next = &JobPool[i - 1];
             }
-
-        } else {
+        }
+        else {
             JobPool.Clear();
         }
     }
 }
 
-void AAsyncJobList::SubmitAndWait() {
+void AAsyncJobList::SubmitAndWait()
+{
     Submit();
     Wait();
 }

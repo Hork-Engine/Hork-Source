@@ -32,18 +32,16 @@ SOFTWARE.
 
 #include <RenderCore/TransformFeedback.h>
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 class ADeviceGLImpl;
 
 class ATransformFeedbackGLImpl final : public ITransformFeedback
 {
 public:
-    ATransformFeedbackGLImpl( ADeviceGLImpl * _Device, STransformFeedbackCreateInfo const & _CreateInfo );
+    ATransformFeedbackGLImpl(ADeviceGLImpl* pDevice, STransformFeedbackDesc const& Desc);
     ~ATransformFeedbackGLImpl();
-
-private:
-    ADeviceGLImpl * pDevice;
 };
 
 #if 0
@@ -75,4 +73,4 @@ void SetTransformFeedbackBuffer( ShaderTransformFeedbackSlot const & _Slot ) {
 #endif
 
 
-}
+} // namespace RenderCore

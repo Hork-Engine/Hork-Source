@@ -32,131 +32,95 @@ SOFTWARE.
 
 #include <RenderCore/Device.h>
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 class AImmediateContextGLImpl;
 
 class ADeviceGLImpl final : public IDevice
 {
 public:
-    ADeviceGLImpl( SImmediateContextCreateInfo const & _CreateInfo,
-                   SAllocatorCallback const * _Allocator,
-                   HashCallback _Hash );
+    ADeviceGLImpl(SImmediateContextDesc const& Desc,
+                  SAllocatorCallback const*    _Allocator,
+                  HashCallback                 _Hash,
+                  TRef<IImmediateContext>*     ppImmediateContext);
     ~ADeviceGLImpl();
 
-    //
-    // IDevice interface
-    //
+    void CreateImmediateContext(SImmediateContextDesc const& Desc, TRef<IImmediateContext>* ppImmediateContext) override;
 
-    void SwapBuffers( SDL_Window * WindowHandle, int SwapInterval ) override;
+    void CreateSwapChain(SDL_Window* pWindow, TRef<ISwapChain>* ppSwapChain) override;
 
-    void GetImmediateContext( IImmediateContext ** ppImmediateContext ) override;
+    void CreatePipeline(SPipelineDesc const& Desc, TRef<IPipeline>* ppPipeline) override;
 
-    void CreateImmediateContext( SImmediateContextCreateInfo const & _CreateInfo, IImmediateContext ** ppImmediateContext ) override;
-    void ReleaseImmediateContext( IImmediateContext * pImmediateContext ) override;
+    void CreateShaderFromBinary(SShaderBinaryData const* _BinaryData, TRef<IShaderModule>* ppShaderModule) override;
+    void CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, TRef<IShaderModule>* ppShaderModule) override;
 
-    void CreateFramebuffer( SFramebufferCreateInfo const & _CreateInfo, TRef< IFramebuffer > * ppFramebuffer ) override;
+    void CreateBuffer(SBufferDesc const& Desc, const void* _SysMem, TRef<IBuffer>* ppBuffer) override;
 
-    void CreateRenderPass( SRenderPassCreateInfo const & _CreateInfo, TRef< IRenderPass > * ppRenderPass ) override;
+    void CreateTexture(STextureDesc const& Desc, TRef<ITexture>* ppTexture) override;
 
-    void CreatePipeline( SPipelineCreateInfo const & _CreateInfo, TRef< IPipeline > * ppPipeline ) override;
+    void CreateSparseTexture(SSparseTextureDesc const& Desc, TRef<ISparseTexture>* ppTexture) override;
 
-    void CreateShaderFromBinary( SShaderBinaryData const * _BinaryData, TRef< IShaderModule > * ppShaderModule ) override;
-    void CreateShaderFromCode( SHADER_TYPE _ShaderType, unsigned int _NumSources, const char * const * _Sources, TRef< IShaderModule > * ppShaderModule ) override;
+    void CreateTransformFeedback(STransformFeedbackDesc const& Desc, TRef<ITransformFeedback>* ppTransformFeedback) override;
 
-    void CreateBuffer( SBufferCreateInfo const & _CreateInfo, const void * _SysMem, TRef< IBuffer > * ppBuffer ) override;
+    void CreateQueryPool(SQueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool) override;
 
-    void CreateBufferView( SBufferViewCreateInfo const & CreateInfo, TRef< IBuffer > pBuffer, TRef< IBufferView > * ppBufferView ) override;
+    void GetBindlessSampler(ITexture* pTexture, SSamplerDesc const& Desc, TRef<IBindlessSampler>* ppBindlessSampler) override;
 
-    void CreateTexture( STextureCreateInfo const & _CreateInfo, TRef< ITexture > * ppTexture ) override;
+    void CreateResourceTable(TRef<IResourceTable>* ppResourceTable) override;
 
-    void CreateTextureView( STextureViewCreateInfo const & _CreateInfo, TRef< ITexture > * ppTexture ) override;
+    bool CreateShaderBinaryData(SHADER_TYPE        _ShaderType,
+                                unsigned int       _NumSources,
+                                const char* const* _Sources,
+                                SShaderBinaryData* _BinaryData) override;
 
-    void CreateSparseTexture( SSparseTextureCreateInfo const & _CreateInfo, TRef< ISparseTexture > * ppTexture ) override;
-
-    void CreateTransformFeedback( STransformFeedbackCreateInfo const & _CreateInfo, TRef< ITransformFeedback > * ppTransformFeedback ) override;
-
-    void CreateQueryPool( SQueryPoolCreateInfo const & _CreateInfo, TRef< IQueryPool > * ppQueryPool ) override;
-
-    void GetBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler ) override;
-
-    void CreateResourceTable( TRef< IResourceTable > * ppResourceTable ) override;
-
-    bool CreateShaderBinaryData( SHADER_TYPE _ShaderType,
-                                 unsigned int _NumSources,
-                                 const char * const * _Sources,
-                                 SShaderBinaryData * _BinaryData ) override;
-
-    void DestroyShaderBinaryData( SShaderBinaryData * _BinaryData ) override;
-
-    bool IsFeatureSupported( FEATURE_TYPE InFeatureType ) override;
-
-    unsigned int GetDeviceCaps( DEVICE_CAPS InDeviceCaps ) override;
+    void DestroyShaderBinaryData(SShaderBinaryData* _BinaryData) override;
 
     int32_t GetGPUMemoryTotalAvailable() override;
     int32_t GetGPUMemoryCurrentAvailable() override;
 
-    bool EnumerateSparseTexturePageSize( SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int * NumPageSizes, int * PageSizesX, int * PageSizesY, int * PageSizesZ ) override;
+    bool EnumerateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int* NumPageSizes, int* PageSizesX, int* PageSizesY, int* PageSizesZ) override;
 
-    bool ChooseAppropriateSparseTexturePageSize( SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int * PageSizeIndex, int * PageSizeX = nullptr, int * PageSizeY = nullptr, int * PageSizeZ = nullptr ) override;
+    bool ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int* PageSizeIndex, int* PageSizeX = nullptr, int* PageSizeY = nullptr, int* PageSizeZ = nullptr) override;
 
-    bool LookupImageFormat( const char * _FormatQualifier, TEXTURE_FORMAT * _Format ) override;
+    bool LookupImageFormat(const char* _FormatQualifier, TEXTURE_FORMAT* _Format) override;
 
-    const char * LookupImageFormatQualifier( TEXTURE_FORMAT _Format ) override;
+    const char* LookupImageFormatQualifier(TEXTURE_FORMAT _Format) override;
+
+    SAllocatorCallback const& GetAllocator() const override;
 
     //
     // Local
     //
 
-    SAllocatorCallback const & GetAllocator() const;
-
-    int Hash( const unsigned char * _Data, int _Size ) const
+    int Hash(const unsigned char* _Data, int _Size) const
     {
-        return HashCB( _Data, _Size );
+        return HashCB(_Data, _Size);
     }
 
-    SBlendingStateInfo const * CachedBlendingState( SBlendingStateInfo const & _BlendingState );
-    SRasterizerStateInfo const * CachedRasterizerState( SRasterizerStateInfo const & _RasterizerState );
-    SDepthStencilStateInfo const * CachedDepthStencilState( SDepthStencilStateInfo const & _DepthStencilState );
-    unsigned int CachedSampler( SSamplerInfo const & _CreateInfo );
-
-    // Statistic
-    unsigned int TotalContexts;
-    unsigned int TotalBuffers;
-    unsigned int TotalTextures;
-    unsigned int TotalShaderModules;
-    unsigned int TotalPipelines;
-    unsigned int TotalRenderPasses;
-    unsigned int TotalFramebuffers;
-    unsigned int TotalTransformFeedbacks;
-    unsigned int TotalQueryPools;
+    SBlendingStateInfo const*     CachedBlendingState(SBlendingStateInfo const& _BlendingState);
+    SRasterizerStateInfo const*   CachedRasterizerState(SRasterizerStateInfo const& _RasterizerState);
+    SDepthStencilStateInfo const* CachedDepthStencilState(SDepthStencilStateInfo const& _DepthStencilState);
+    unsigned int                  CachedSampler(SSamplerDesc const& SamplerDesc);
 
     size_t BufferMemoryAllocated;
     size_t TextureMemoryAllocated;
 
 private:
-    AImmediateContextGLImpl * pMainContext;
-
     SAllocatorCallback Allocator;
-    HashCallback HashCB;
+    HashCallback       HashCB;
 
-    THash<> SamplerHash;
-    TPodVector< struct SamplerInfo * > SamplerCache;
+    THash<>                         SamplerHash;
+    TPodVector<struct SamplerInfo*> SamplerCache;
 
-    THash<> BlendingHash;
-    TPodVector< SBlendingStateInfo * > BlendingStateCache;
+    THash<>                         BlendingHash;
+    TPodVector<SBlendingStateInfo*> BlendingStateCache;
 
-    THash<> RasterizerHash;
-    TPodVector< SRasterizerStateInfo * > RasterizerStateCache;
+    THash<>                           RasterizerHash;
+    TPodVector<SRasterizerStateInfo*> RasterizerStateCache;
 
-    THash<> DepthStencilHash;
-    TPodVector< SDepthStencilStateInfo * > DepthStencilStateCache;
-
-    unsigned int DeviceCaps[DEVICE_CAPS_MAX];
-
-    bool FeatureSupport[FEATURE_MAX];
-
-    int SwapInterval;
+    THash<>                             DepthStencilHash;
+    TPodVector<SDepthStencilStateInfo*> DepthStencilStateCache;
 };
 
-}
+} // namespace RenderCore

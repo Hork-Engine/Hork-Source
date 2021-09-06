@@ -39,7 +39,7 @@ ADebugDrawRenderer::ADebugDrawRenderer()
     // Create pipeline
     //
 
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
 
     SRasterizerStateInfo & rsd = pipelineCI.RS;
     rsd.CullMode = POLYGON_CULL_FRONT;
@@ -143,29 +143,35 @@ ADebugDrawRenderer::ADebugDrawRenderer()
     }
 }
 
-void ADebugDrawRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget, AFrameGraphTexture * DepthTexture )
+void ADebugDrawRenderer::AddPass( AFrameGraph & FrameGraph, FGTextureProxy * RenderTarget, FGTextureProxy * DepthTexture )
 {
+    if (GRenderView->DebugDrawCommandCount == 0)
+    {
+        return;
+    }
+
     ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "Debug Draw Pass" );
 
-    renderPass.SetDynamicRenderArea( &GRenderViewArea );
+    renderPass.SetRenderArea(GRenderViewArea);
 
     renderPass.SetColorAttachments(
     {
         {
-            RenderTarget,
-            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
+            STextureAttachment(RenderTarget)
+            .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
         }
     }
     );
 
     renderPass.SetDepthStencilAttachment(
-        { DepthTexture, RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD ) }
+        {
+            STextureAttachment(DepthTexture)
+            .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
+        }
     );
 
-    renderPass.SetCondition( []() { return GRenderView->DebugDrawCommandCount > 0; } );
-
     renderPass.AddSubpass( { 0 }, // color attachment refs
-                           [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
 
     {
         SDrawIndexedCmd drawCmd;

@@ -30,6 +30,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/FrameGraph/FrameGraph.h>
+#include <RenderCore/FrameGraph.h>
 
-void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget );
+void AddWireframePass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget);

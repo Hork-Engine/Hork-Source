@@ -32,7 +32,8 @@ SOFTWARE.
 
 #include "DeviceObject.h"
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 enum QUERY_TYPE : uint8_t
 {
@@ -49,45 +50,23 @@ enum QUERY_TYPE : uint8_t
 
 enum QUERY_RESULT_FLAGS : uint32_t
 {
-    QUERY_RESULT_64_BIT = 1,
-    QUERY_RESULT_WAIT_BIT = 2,
+    QUERY_RESULT_64_BIT                = 1,
+    QUERY_RESULT_WAIT_BIT              = 2,
     QUERY_RESULT_WITH_AVAILABILITY_BIT = 4,
     //QUERY_RESULT_PARTIAL_BIT = 8  // TODO?
 };
 
-struct SQueryPoolCreateInfo
+struct SQueryPoolDesc
 {
     QUERY_TYPE QueryType;
-    uint32_t PoolSize;
+    uint32_t   PoolSize;
 };
 
 class IQueryPool : public IDeviceObject
 {
 public:
-    IQueryPool( IDevice * Device ) : IDeviceObject( Device ) {}
-
-    virtual void GetResults( uint32_t _FirstQuery,
-                             uint32_t _QueryCount,
-                             size_t _DataSize,
-                             void * _SysMem,
-                             size_t _DstStride,
-                             QUERY_RESULT_FLAGS _Flags ) = 0;
-
-    void GetResult32( uint32_t _QueryId,
-                      uint32_t * pResult,
-                      QUERY_RESULT_FLAGS _Flags )
-    {
-        auto flags = _Flags & ~QUERY_RESULT_64_BIT;
-        GetResults( _QueryId, 1, sizeof( *pResult ), pResult, sizeof( *pResult ), (QUERY_RESULT_FLAGS)flags );
-    }
-
-    void GetResult64( uint32_t _QueryId,
-                      uint64_t * pResult,
-                      QUERY_RESULT_FLAGS _Flags )
-    {
-        auto flags = _Flags | QUERY_RESULT_64_BIT;
-        GetResults( _QueryId, 1, sizeof( *pResult ), pResult, sizeof( *pResult ), (QUERY_RESULT_FLAGS)flags );
-    }
+    IQueryPool(IDevice* pDevice) :
+        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_QUERY_POOL) {}
 
     QUERY_TYPE GetQueryType() const { return QueryType; }
 
@@ -95,7 +74,7 @@ public:
 
 protected:
     QUERY_TYPE QueryType;
-    uint32_t PoolSize;
+    uint32_t   PoolSize;
 };
 
-}
+} // namespace RenderCore

@@ -32,54 +32,28 @@ SOFTWARE.
 
 #include <RenderCore/Buffer.h>
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 class ADeviceGLImpl;
 
 class ABufferGLImpl final : public IBuffer
 {
 public:
-    ABufferGLImpl( ADeviceGLImpl * _Device, SBufferCreateInfo const & _CreateInfo, const void * _SysMem = nullptr );
+    ABufferGLImpl(ADeviceGLImpl* pDevice, SBufferDesc const& Desc, const void* SysMem = nullptr);
     ~ABufferGLImpl();
 
-    bool Realloc( size_t _SizeInBytes, const void * _SysMem = nullptr ) override;
+    bool CreateView(SBufferViewDesc const& Desc, TRef<IBufferView>* ppBufferView) override;
+
+    bool Realloc(size_t SizeInBytes, const void* SysMem = nullptr) override;
 
     bool Orphan() override;
 
-    void Read( void * _SysMem ) override;
-
-    void ReadRange( size_t _ByteOffset, size_t _SizeInBytes, void * _SysMem ) override;
-
-    void Write( const void * _SysMem ) override;
-
-    void WriteRange( size_t _ByteOffset, size_t _SizeInBytes, const void * _SysMem ) override;
-
-    void * MapRange( size_t _RangeOffset,
-                     size_t _RangeSize,
-                     MAP_TRANSFER _ClientServerTransfer,
-                     MAP_INVALIDATE _Invalidate = MAP_NO_INVALIDATE,
-                     MAP_PERSISTENCE _Persistence = MAP_NON_PERSISTENT,
-                     bool _FlushExplicit = false,
-                     bool _Unsynchronized = false ) override;
-
-    void * Map( MAP_TRANSFER _ClientServerTransfer,
-                MAP_INVALIDATE _Invalidate = MAP_NO_INVALIDATE,
-                MAP_PERSISTENCE _Persistence = MAP_NON_PERSISTENT,
-                bool _FlushExplicit = false,
-                bool _Unsynchronized = false ) override;
-
-    void Unmap() override;
-
-    void * GetMapPointer() override;
-
     void Invalidate() override;
 
-    void InvalidateRange( size_t _RangeOffset, size_t _RangeSize ) override;
+    void InvalidateRange(size_t RangeOffset, size_t RangeSize) override;
 
-    void FlushMappedRange( size_t _RangeOffset, size_t _RangeSize ) override;
-
-private:
-    ADeviceGLImpl * pDevice;
+    void FlushMappedRange(size_t RangeOffset, size_t RangeSize) override;
 };
 
-}
+} // namespace RenderCore

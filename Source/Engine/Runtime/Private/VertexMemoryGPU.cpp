@@ -29,11 +29,12 @@ SOFTWARE.
 */
 
 #include <Runtime/Public/VertexMemoryGPU.h>
+#include <Runtime/Public/Runtime.h>
 #include <Core/Public/Core.h>
 #include <Core/Public/CoreMath.h>
 
-AVertexMemoryGPU::AVertexMemoryGPU( RenderCore::IDevice * Device )
-    : RenderDevice( Device )
+AVertexMemoryGPU::AVertexMemoryGPU( RenderCore::IDevice * pDevice ) :
+    pDevice(pDevice)
 {
     UsedMemory = 0;
     UsedMemoryHuge = 0;
@@ -103,7 +104,7 @@ void AVertexMemoryGPU::Update( SVertexHandle * _Handle, size_t _ByteOffset, size
         return;
     }
 
-    BufferHandles[_Handle->GetBlockIndex()]->WriteRange( _Handle->GetBlockOffset() + _ByteOffset, _SizeInBytes, _Data );
+    GRuntime->GetImmediateContext()->WriteBufferRange(BufferHandles[_Handle->GetBlockIndex()], _Handle->GetBlockOffset() + _ByteOffset, _SizeInBytes, _Data );
 }
 
 void AVertexMemoryGPU::Defragment( bool bDeallocateEmptyBlocks, bool bForceUpload )
@@ -135,7 +136,7 @@ void AVertexMemoryGPU::Defragment( bool bDeallocateEmptyBlocks, bool bForceUploa
                 if ( handleBlockIndex != j || handleBlockOffset != Blocks[j].AllocOffset || bForceUpload ) {
                     handle->MakeAddress( j, Blocks[j].AllocOffset );
 
-                    BufferHandles[handle->GetBlockIndex()]->WriteRange( handle->GetBlockOffset(), handle->Size, handle->GetMemoryCB( handle->UserPointer ) );
+                    GRuntime->GetImmediateContext()->WriteBufferRange(BufferHandles[handle->GetBlockIndex()], handle->GetBlockOffset(), handle->Size, handle->GetMemoryCB(handle->UserPointer));
                 }
                 Blocks[j].AllocOffset += chunkSize;
                 Blocks[j].UsedMemory += chunkSize;
@@ -155,7 +156,7 @@ void AVertexMemoryGPU::Defragment( bool bDeallocateEmptyBlocks, bool bForceUploa
             if ( handleBlockIndex != blockIndex || handleBlockOffset != offset || bForceUpload ) {
                 handle->MakeAddress( blockIndex, offset );
 
-                BufferHandles[blockIndex]->WriteRange( offset, handle->Size, handle->GetMemoryCB( handle->UserPointer ) );
+                GRuntime->GetImmediateContext()->WriteBufferRange(BufferHandles[blockIndex], offset, handle->Size, handle->GetMemoryCB(handle->UserPointer));
             }
 
             SBlock newBlock;
@@ -272,7 +273,7 @@ SVertexHandle * AVertexMemoryGPU::Allocate( size_t _SizeInBytes, const void * _D
     UsedMemory += chunkSize;
 
     if ( _Data ) {
-        BufferHandles[handle->GetBlockIndex()]->WriteRange( handle->GetBlockOffset(), handle->Size, _Data );
+        GRuntime->GetImmediateContext()->WriteBufferRange(BufferHandles[handle->GetBlockIndex()], handle->GetBlockOffset(), handle->Size, _Data);
     }
 
     //GLogger.Printf( "Allocated buffer at block %d, offset %d, size %d\n", handle->GetBlockIndex(), handle->GetBlockOffset(), handle->Size );
@@ -288,14 +289,14 @@ SVertexHandle * AVertexMemoryGPU::AllocateHuge( size_t _SizeInBytes, const void 
     handle->GetMemoryCB = _GetMemoryCB;
     handle->UserPointer = _UserPointer;
 
-    RenderCore::SBufferCreateInfo bufferCI = {};
+    RenderCore::SBufferDesc bufferCI = {};
     bufferCI.SizeInBytes = _SizeInBytes;
     // Mutable storage with flag MUTABLE_STORAGE_STATIC is much faster during rendering than immutable (tested on NVidia GeForce GTX 770)
     bufferCI.MutableClientAccess = RenderCore::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
     bufferCI.MutableUsage = RenderCore::MUTABLE_STORAGE_STATIC;
 
     TRef< RenderCore::IBuffer > buffer;
-    RenderDevice->CreateBuffer( bufferCI, _Data, &buffer );
+    pDevice->CreateBuffer( bufferCI, _Data, &buffer );
     buffer->SetDebugName( "Vertex memory HUGE buffer" );
 
     RenderCore::IBuffer * pBuffer = buffer.GetObject();
@@ -324,7 +325,7 @@ void AVertexMemoryGPU::DeallocateHuge( SVertexHandle * _Handle )
 
 void AVertexMemoryGPU::UpdateHuge( SVertexHandle * _Handle, size_t _ByteOffset, size_t _SizeInBytes, const void * _Data )
 {
-    ((RenderCore::IBuffer *)_Handle->Address)->WriteRange( _ByteOffset, _SizeInBytes, _Data );
+    GRuntime->GetImmediateContext()->WriteBufferRange((RenderCore::IBuffer*)_Handle->Address, _ByteOffset, _SizeInBytes, _Data);
 }
 
 void AVertexMemoryGPU::UploadBuffers()
@@ -341,7 +342,7 @@ void AVertexMemoryGPU::UploadBuffersHuge()
 {
     for ( int i = 0 ; i < HugeHandles.Size() ; i++ ) {
         SVertexHandle * handle = HugeHandles[i];
-        ((RenderCore::IBuffer *)handle->Address)->WriteRange( 0, handle->Size, handle->GetMemoryCB( handle->UserPointer ) );
+        GRuntime->GetImmediateContext()->WriteBufferRange((RenderCore::IBuffer*)handle->Address, 0, handle->Size, handle->GetMemoryCB(handle->UserPointer));
     }
 }
 
@@ -349,14 +350,14 @@ void AVertexMemoryGPU::AddGPUBuffer()
 {
     // Create GPU buffer
 
-    RenderCore::SBufferCreateInfo bufferCI = {};
+    RenderCore::SBufferDesc bufferCI = {};
     bufferCI.SizeInBytes = VERTEX_MEMORY_GPU_BLOCK_SIZE;
     // Mutable storage with flag MUTABLE_STORAGE_STATIC is much faster during rendering than immutable (tested on NVidia GeForce GTX 770)
     bufferCI.MutableClientAccess = RenderCore::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
     bufferCI.MutableUsage = RenderCore::MUTABLE_STORAGE_STATIC;
 
     TRef< RenderCore::IBuffer > buffer;
-    RenderDevice->CreateBuffer( bufferCI, nullptr, &buffer );
+    pDevice->CreateBuffer(bufferCI, nullptr, &buffer);
 
     buffer->SetDebugName( "Vertex memory block buffer" );
 
@@ -377,10 +378,10 @@ void AVertexMemoryGPU::CheckMemoryLeaks()
     }
 }
 
-AStreamedMemoryGPU::AStreamedMemoryGPU( RenderCore::IDevice * Device )
-    : RenderDevice( Device )
+AStreamedMemoryGPU::AStreamedMemoryGPU( RenderCore::IDevice * pDevice, RenderCore::IImmediateContext* pImmediateContext ) :
+    pDevice(pDevice), pImmediateContext(pImmediateContext)
 {
-    RenderCore::SBufferCreateInfo bufferCI = {};
+    RenderCore::SBufferDesc bufferCI = {};
 
     bufferCI.SizeInBytes = STREAMED_MEMORY_GPU_BLOCK_SIZE * STREAMED_MEMORY_GPU_BUFFERS_COUNT;
 
@@ -388,16 +389,17 @@ AStreamedMemoryGPU::AStreamedMemoryGPU( RenderCore::IDevice * Device )
             ( RenderCore::IMMUTABLE_MAP_WRITE | RenderCore::IMMUTABLE_MAP_PERSISTENT | RenderCore::IMMUTABLE_MAP_COHERENT );
     bufferCI.bImmutableStorage = true;
 
-    RenderDevice->CreateBuffer( bufferCI, nullptr, &Buffer );
+    pDevice->CreateBuffer(bufferCI, nullptr, &Buffer);
 
     Buffer->SetDebugName( "Streamed memory buffer" );
 
-    pMappedMemory = Buffer->Map( RenderCore::MAP_TRANSFER_WRITE,
-                                 RenderCore::MAP_NO_INVALIDATE,//RenderCore::MAP_INVALIDATE_ENTIRE_BUFFER,
-                                 RenderCore::MAP_PERSISTENT_COHERENT,
-                                 false, // flush explicit
-                                 false  // unsynchronized
-                               );
+    pMappedMemory = pImmediateContext->MapBuffer(Buffer,
+                                                 RenderCore::MAP_TRANSFER_WRITE,
+                                                 RenderCore::MAP_NO_INVALIDATE, //RenderCore::MAP_INVALIDATE_ENTIRE_BUFFER,
+                                                 RenderCore::MAP_PERSISTENT_COHERENT,
+                                                 false, // flush explicit
+                                                 false  // unsynchronized
+    );
 
     if ( !pMappedMemory ) {
         CriticalError( "AStreamedMemoryGPU::Initialize: cannot initialize persistent mapped buffer size %d\n", bufferCI.SizeInBytes );
@@ -411,9 +413,7 @@ AStreamedMemoryGPU::AStreamedMemoryGPU( RenderCore::IDevice * Device )
 
     VertexBufferAlignment = 32; // TODO: Get from driver!!!
     IndexBufferAlignment = 16; // TODO: Get from driver!!!
-    ConstantBufferAlignment = RenderDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT );
-
-    RenderDevice->GetImmediateContext( &pImmediateContext );
+    ConstantBufferAlignment = pDevice->GetDeviceCaps(RenderCore::DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT);
 }
 
 AStreamedMemoryGPU::~AStreamedMemoryGPU()
@@ -426,7 +426,7 @@ AStreamedMemoryGPU::~AStreamedMemoryGPU()
     }
 
     if ( Buffer ) {
-        Buffer->Unmap();
+        pImmediateContext->UnmapBuffer(Buffer);
     }
 }
 

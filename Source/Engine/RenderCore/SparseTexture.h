@@ -32,7 +32,8 @@ SOFTWARE.
 
 #include "Texture.h"
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 /// Sparse texture types
 enum SPARSE_TEXTURE_TYPE : uint8_t
@@ -48,220 +49,141 @@ enum SPARSE_TEXTURE_TYPE : uint8_t
 
 struct SSparseTextureResolution
 {
-    union {
-        STextureResolution2D         Tex2D;
+    union
+    {
+        STextureResolution2D Tex2D;
 
-        STextureResolution2DArray    Tex2DArray;
+        STextureResolution2DArray Tex2DArray;
 
-        STextureResolution3D         Tex3D;
+        STextureResolution3D Tex3D;
 
-        STextureResolutionCubemap    TexCubemap;
+        STextureResolutionCubemap TexCubemap;
 
         STextureResolutionCubemapArray TexCubemapArray;
 
-        STextureResolutionRectGL     TexRect;
+        STextureResolutionRectGL TexRect;
     };
 
-    bool operator==( STextureResolution const & Rhs ) const {
-        return memcmp( this, &Rhs, sizeof( *this ) ) == 0;
-    }
-};
-
-struct SSparseTextureCreateInfo
-{
-    SPARSE_TEXTURE_TYPE     Type;
-    TEXTURE_FORMAT          Format;
-    SSparseTextureResolution Resolution;
-    STextureSwizzle         Swizzle;
-    uint16_t                NumLods;
-
-    SSparseTextureCreateInfo()
-        : Type( SPARSE_TEXTURE_2D )
-        , Format( TEXTURE_FORMAT_RGBA8 )
-        , NumLods( 1 )
+    bool operator==(STextureResolution const& Rhs) const
     {
+        return memcmp(this, &Rhs, sizeof(*this)) == 0;
     }
 };
 
-inline SSparseTextureCreateInfo MakeSparseTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolution2D const &     Resolution,
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
+struct SSparseTextureDesc
 {
-    SSparseTextureCreateInfo createInfo;
-    createInfo.Type = SPARSE_TEXTURE_2D;
-    createInfo.Format = Format;
-    createInfo.Resolution.Tex2D = Resolution;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
+    SPARSE_TEXTURE_TYPE Type       = SPARSE_TEXTURE_2D;
+    TEXTURE_FORMAT      Format     = TEXTURE_FORMAT_RGBA8;
+    STextureResolution  Resolution = {};
+    STextureSwizzle     Swizzle;
+    uint16_t            NumMipLevels = 1;
 
-inline SSparseTextureCreateInfo MakeSparseTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolution2DArray const &Resolution,
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
-{
-    SSparseTextureCreateInfo createInfo;
-    createInfo.Type = SPARSE_TEXTURE_2D_ARRAY;
-    createInfo.Format = Format;
-    createInfo.Resolution.Tex2DArray = Resolution;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
+    SSparseTextureDesc() = default;
 
-inline SSparseTextureCreateInfo MakeSparseTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolution3D const &     Resolution,
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
-{
-    SSparseTextureCreateInfo createInfo;
-    createInfo.Type = SPARSE_TEXTURE_3D;
-    createInfo.Format = Format;
-    createInfo.Resolution.Tex3D = Resolution;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
+    bool operator==(SSparseTextureDesc const& Rhs) const
+    {
+        // clang-format off
+        return Type        == Rhs.Type &&
+               Format      == Rhs.Format &&
+               Resolution  == Rhs.Resolution &&
+               Swizzle     == Rhs.Swizzle &&
+               NumMipLevels== Rhs.NumMipLevels;
+        // clang-format on
+    }
 
-inline SSparseTextureCreateInfo MakeSparseTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolutionCubemap const &Resolution,
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
-{
-    SSparseTextureCreateInfo createInfo;
-    createInfo.Type = SPARSE_TEXTURE_CUBE_MAP;
-    createInfo.Format = Format;
-    createInfo.Resolution.TexCubemap = Resolution;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
+    bool operator!=(SSparseTextureDesc const& Rhs) const
+    {
+        return !(operator==(Rhs));
+    }
 
-inline SSparseTextureCreateInfo MakeSparseTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolutionCubemapArray const &Resolution,
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
-{
-    SSparseTextureCreateInfo createInfo;
-    createInfo.Type = SPARSE_TEXTURE_CUBE_MAP_ARRAY;
-    createInfo.Format = Format;
-    createInfo.Resolution.TexCubemapArray = Resolution;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
+    SSparseTextureDesc& SetFormat(TEXTURE_FORMAT InFormat)
+    {
+        Format = InFormat;
+        return *this;
+    }
 
-inline SSparseTextureCreateInfo MakeSparseTexture(
-    TEXTURE_FORMAT                   Format,
-    STextureResolutionRectGL const & Resolution,
-    STextureSwizzle const &          Swizzle = STextureSwizzle(),
-    uint16_t                         NumLods = 1 )
-{
-    SSparseTextureCreateInfo createInfo;
-    createInfo.Type = SPARSE_TEXTURE_RECT_GL;
-    createInfo.Format = Format;
-    createInfo.Resolution.TexRect = Resolution;
-    createInfo.Swizzle = Swizzle;
-    createInfo.NumLods = NumLods;
-    return createInfo;
-}
+    SSparseTextureDesc& SetSwizzle(STextureSwizzle const& InSwizzle)
+    {
+        Swizzle = InSwizzle;
+        return *this;
+    }
 
-class ISparseTexture : public ITextureBase
+    SSparseTextureDesc& SetMipLevels(int InNumMipLevels)
+    {
+        NumMipLevels = InNumMipLevels;
+        return *this;
+    }
+
+    SSparseTextureDesc& SetResolution(STextureResolution2D const& InResolution)
+    {
+        Type       = SPARSE_TEXTURE_2D;
+        Resolution = InResolution;
+        return *this;
+    }
+
+    SSparseTextureDesc& SetResolution(STextureResolution2DArray const& InResolution)
+    {
+        Type       = SPARSE_TEXTURE_2D_ARRAY;
+        Resolution = InResolution;
+        return *this;
+    }
+
+    SSparseTextureDesc& SetResolution(STextureResolution3D const& InResolution)
+    {
+        Type       = SPARSE_TEXTURE_3D;
+        Resolution = InResolution;
+        return *this;
+    }
+
+    SSparseTextureDesc& SetResolution(STextureResolutionCubemap const& InResolution)
+    {
+        Type       = SPARSE_TEXTURE_CUBE_MAP;
+        Resolution = InResolution;
+        return *this;
+    }
+
+    SSparseTextureDesc& SetResolution(STextureResolutionCubemapArray const& InResolution)
+    {
+        Type       = SPARSE_TEXTURE_CUBE_MAP_ARRAY;
+        Resolution = InResolution;
+        return *this;
+    }
+
+    SSparseTextureDesc& SetResolution(STextureResolutionRectGL const& InResolution)
+    {
+        Type       = SPARSE_TEXTURE_RECT_GL;
+        Resolution = InResolution;
+        return *this;
+    }
+};
+
+class ISparseTexture : public IDeviceObject
 {
 public:
-    ISparseTexture( IDevice * Device ) : ITextureBase( Device ) {}
+    ISparseTexture(IDevice* pDevice, SSparseTextureDesc const& Desc) :
+        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_SPARSE_TEXTURE), Desc(Desc)
+    {}
 
-    SPARSE_TEXTURE_TYPE GetType() const { return Type; }
+    //SPARSE_TEXTURE_TYPE GetType() const { return Type; }
 
-    uint32_t GetWidth() const;
+    SSparseTextureDesc const& GetDesc() const { return Desc; }
 
-    uint32_t GetHeight() const;
+    uint32_t GetWidth() const { return Desc.Resolution.Width; }
 
-    uint32_t GetNumLods() const { return NumLods; }
-
-    TEXTURE_FORMAT GetFormat() const { return Format; }
+    uint32_t GetHeight() const { return Desc.Resolution.Height; }
 
     bool IsCompressed() const { return bCompressed; }
-
-    SSparseTextureResolution const & GetResolution() const { return Resolution; }
-
-    STextureSwizzle const & GetSwizzle() const { return Swizzle; }
 
     int GetPageSizeX() const { return PageSizeX; }
     int GetPageSizeY() const { return PageSizeY; }
     int GetPageSizeZ() const { return PageSizeZ; }
 
-    virtual void CommitPage( int InLod, int InPageX, int InPageY, int InPageZ,
-                             DATA_FORMAT _Format, // Specifies a pixel format for the input data
-                             size_t _SizeInBytes,
-                             unsigned int _Alignment,               // Specifies alignment of source data
-                             const void * _SysMem ) = 0;
-
-    virtual void CommitRect( STextureRect const & _Rectangle,
-                             DATA_FORMAT _Format, // Specifies a pixel format for the input data
-                             size_t _SizeInBytes,
-                             unsigned int _Alignment,               // Specifies alignment of source data
-                             const void * _SysMem ) = 0;
-
-    virtual void UncommitPage( int InLod, int InPageX, int InPageY, int InPageZ ) = 0;
-
-    virtual void UncommitRect( STextureRect const & _Rectangle ) = 0;
-
 protected:
-    int PageSizeX;
-    int PageSizeY;
-    int PageSizeZ;
-    SPARSE_TEXTURE_TYPE Type;
-    TEXTURE_FORMAT Format;
-    SSparseTextureResolution Resolution;
-    STextureSwizzle Swizzle;
-    int NumLods;
-    bool bCompressed;
+    SSparseTextureDesc Desc;
+    int                PageSizeX;
+    int                PageSizeY;
+    int                PageSizeZ;
+    bool               bCompressed;
 };
 
-AN_INLINE uint32_t ISparseTexture::GetWidth() const {
-    switch ( Type ) {
-    case SPARSE_TEXTURE_2D:
-        return Resolution.Tex2D.Width;
-    case SPARSE_TEXTURE_2D_ARRAY:
-        return Resolution.Tex2DArray.Width;
-    case SPARSE_TEXTURE_3D:
-        return Resolution.Tex3D.Width;
-    case SPARSE_TEXTURE_CUBE_MAP:
-        return Resolution.TexCubemap.Width;
-    case SPARSE_TEXTURE_CUBE_MAP_ARRAY:
-        return Resolution.TexCubemapArray.Width;
-    case SPARSE_TEXTURE_RECT_GL:
-        return Resolution.TexRect.Width;
-    }
-    AN_ASSERT( 0 );
-    return 0;
-}
-
-AN_INLINE uint32_t ISparseTexture::GetHeight() const {
-    switch ( Type ) {
-    case SPARSE_TEXTURE_2D:
-        return Resolution.Tex2D.Height;
-    case SPARSE_TEXTURE_2D_ARRAY:
-        return Resolution.Tex2DArray.Height;
-    case SPARSE_TEXTURE_3D:
-        return Resolution.Tex3D.Height;
-    case SPARSE_TEXTURE_CUBE_MAP:
-        return Resolution.TexCubemap.Width;
-    case SPARSE_TEXTURE_CUBE_MAP_ARRAY:
-        return Resolution.TexCubemapArray.Width;
-    case SPARSE_TEXTURE_RECT_GL:
-        return Resolution.TexRect.Height;
-    }
-    AN_ASSERT( 0 );
-    return 0;
-}
-
-}
+} // namespace RenderCore

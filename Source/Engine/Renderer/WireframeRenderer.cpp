@@ -60,25 +60,26 @@ static bool BindMaterialWireframePass( SRenderInstance const * instance )
     return true;
 }
 
-void AddWireframePass( AFrameGraph & FrameGraph, AFrameGraphTexture * RenderTarget )
+void AddWireframePass( AFrameGraph & FrameGraph, FGTextureProxy * RenderTarget )
 {
+    if (!GRenderView->bWireframe)
+    {
+        return;
+    }
+
     ARenderPass & wireframePass = FrameGraph.AddTask< ARenderPass >( "Wireframe Pass" );
 
-    wireframePass.SetDynamicRenderArea( &GRenderViewArea );
+    wireframePass.SetRenderArea(GRenderViewArea);
 
-    wireframePass.SetColorAttachments(
-    {
-        {
-            RenderTarget,
-            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-        }
-    }
+    wireframePass.SetColorAttachment(
+        STextureAttachment(RenderTarget)
+        .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
     );
 
-    wireframePass.SetCondition( []() { return GRenderView->bWireframe; } );
+    //wireframePass.SetCondition( []() { return GRenderView->bWireframe; } );
 
     wireframePass.AddSubpass( { 0 }, // color attachment refs
-                              [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                             [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
 
     {
         for ( int i = 0 ; i < GRenderView->TerrainInstanceCount ; i++ ) {

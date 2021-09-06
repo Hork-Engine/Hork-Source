@@ -389,7 +389,7 @@ ATerrainMesh::ATerrainMesh( int InTextureSize )
 
     RenderCore::IDevice * device = GRuntime->GetRenderDevice();
 
-    RenderCore::SBufferCreateInfo ci = {};
+    RenderCore::SBufferDesc ci = {};
     ci.bImmutableStorage = true;
 
     ci.SizeInBytes = VertexBuffer.Size() * sizeof( STerrainVertex );
@@ -427,16 +427,20 @@ ATerrainView::ATerrainView( int InTextureSize )
 
     MinViewLod = MaxViewLod = 0;
 
-    auto textureFormat = RenderCore::MakeTexture( RenderCore::TEXTURE_FORMAT_RG32F,
-                                                  RenderCore::STextureResolution2DArray( TextureSize,
-                                                                                         TextureSize,
-                                                                                         MAX_TERRAIN_LODS ) );
+    auto textureFormat = RenderCore::STextureDesc()
+                             .SetFormat(RenderCore::TEXTURE_FORMAT_RG32F)
+                             .SetResolution(RenderCore::STextureResolution2DArray(TextureSize,
+                                                                                  TextureSize,
+                                                                                  MAX_TERRAIN_LODS))
+                             .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
     GRuntime->GetRenderDevice()->CreateTexture( textureFormat, &ClipmapArray );
 
-    auto normalMapFormat = RenderCore::MakeTexture( RenderCore::TEXTURE_FORMAT_RGBA8,
-                                                    RenderCore::STextureResolution2DArray( TextureSize,
-                                                                                           TextureSize,
-                                                                                           MAX_TERRAIN_LODS ) );
+    auto normalMapFormat = RenderCore::STextureDesc()
+                               .SetFormat(RenderCore::TEXTURE_FORMAT_RGBA8)
+                               .SetResolution(RenderCore::STextureResolution2DArray(TextureSize,
+                                                                                    TextureSize,
+                                                                                    MAX_TERRAIN_LODS))
+                               .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
     GRuntime->GetRenderDevice()->CreateTexture( normalMapFormat, &NormalMapArray );
 }
 
@@ -1268,7 +1272,7 @@ void ATerrainView::UpdateTextures()
         if ( bUpdateToGPU ) {
             RenderCore::STextureRect rect;
 
-            rect.Offset.Lod = 0;
+            rect.Offset.MipLevel = 0;
             rect.Offset.X = 0;
             rect.Offset.Y = 0;
             rect.Offset.Z = lod;
@@ -1290,9 +1294,9 @@ void ATerrainView::UpdateTextures()
             lodInfo.MaxH += Margin;
 
             // TODO: Update only dirty regions
-            ClipmapArray->WriteRect( rect, RenderCore::FORMAT_FLOAT2, count*sizeof(Float2), 4, lodInfo.HeightMap );
+            GRuntime->GetImmediateContext()->WriteTextureRect(ClipmapArray, rect, RenderCore::FORMAT_FLOAT2, count*sizeof(Float2), 4, lodInfo.HeightMap );
 
-            NormalMapArray->WriteRect( rect, RenderCore::FORMAT_UBYTE4, count*4, 4, lodInfo.NormalMap );
+            GRuntime->GetImmediateContext()->WriteTextureRect(NormalMapArray, rect, RenderCore::FORMAT_UBYTE4, count * 4, 4, lodInfo.NormalMap);
         }
     }
 }

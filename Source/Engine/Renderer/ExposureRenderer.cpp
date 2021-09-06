@@ -33,211 +33,183 @@ SOFTWARE.
 
 #include <Runtime/Public/RuntimeVariable.h>
 
-ARuntimeVariable r_ShowDefaultExposure( _CTS( "r_ShowDefaultExposure" ), _CTS( "0" ) );
+ARuntimeVariable r_ShowDefaultExposure(_CTS("r_ShowDefaultExposure"), _CTS("0"));
 
 using namespace RenderCore;
 
 AExposureRenderer::AExposureRenderer()
 {
     // Create textures
-    STextureCreateInfo texCI = {};
-    texCI.Type = RenderCore::TEXTURE_2D;
-    texCI.NumLods = 1;
-    texCI.Format = RenderCore::TEXTURE_FORMAT_RG16F;
+    STextureDesc textureDesc;
+    textureDesc.SetMipLevels(1);
+    textureDesc.SetBindFlags(BIND_SHADER_RESOURCE);
 
-    texCI.Resolution.Tex2D.Width = 64;
-    texCI.Resolution.Tex2D.Height = 64;
-    GDevice->CreateTexture( texCI, &Luminance64 );
+    textureDesc.SetFormat(TEXTURE_FORMAT_RG16F);
 
-    texCI.Resolution.Tex2D.Width = 32;
-    texCI.Resolution.Tex2D.Height = 32;
-    GDevice->CreateTexture( texCI, &Luminance32 );
+    textureDesc.SetResolution(STextureResolution2D(64, 64));
+    GDevice->CreateTexture(textureDesc, &Luminance64);
 
-    texCI.Resolution.Tex2D.Width = 16;
-    texCI.Resolution.Tex2D.Height = 16;
-    GDevice->CreateTexture( texCI, &Luminance16 );
+    textureDesc.SetResolution(STextureResolution2D(32, 32));
+    GDevice->CreateTexture(textureDesc, &Luminance32);
 
-    texCI.Resolution.Tex2D.Width = 8;
-    texCI.Resolution.Tex2D.Height = 8;
-    GDevice->CreateTexture( texCI, &Luminance8 );
+    textureDesc.SetResolution(STextureResolution2D(16, 16));
+    GDevice->CreateTexture(textureDesc, &Luminance16);
 
-    texCI.Resolution.Tex2D.Width = 4;
-    texCI.Resolution.Tex2D.Height = 4;
-    GDevice->CreateTexture( texCI, &Luminance4 );
+    textureDesc.SetResolution(STextureResolution2D(8, 8));
+    GDevice->CreateTexture(textureDesc, &Luminance8);
 
-    texCI.Resolution.Tex2D.Width = 2;
-    texCI.Resolution.Tex2D.Height = 2;
-    GDevice->CreateTexture( texCI, &Luminance2 );
+    textureDesc.SetResolution(STextureResolution2D(4, 4));
+    GDevice->CreateTexture(textureDesc, &Luminance4);
 
-    byte defaultLum[2] = { 30, 30 }; // TODO: choose appropriate value
-    texCI.Resolution.Tex2D.Width = 1;
-    texCI.Resolution.Tex2D.Height = 1;
-    texCI.Format = RenderCore::TEXTURE_FORMAT_RG8;
-    GDevice->CreateTexture( texCI, &DefaultLuminance );
-    DefaultLuminance->Write( 0, RenderCore::FORMAT_UBYTE2, sizeof( defaultLum ), 1, defaultLum );
+    textureDesc.SetResolution(STextureResolution2D(2, 2));
+    GDevice->CreateTexture(textureDesc, &Luminance2);
 
-    SSamplerInfo samplerCI;
+    byte defaultLum[2] = {30, 30}; // TODO: choose appropriate value
+
+    textureDesc.SetResolution(STextureResolution2D(1, 1));
+    textureDesc.SetFormat(TEXTURE_FORMAT_RG8);
+    GDevice->CreateTexture(textureDesc, &DefaultLuminance);
+    rcmd->WriteTexture(DefaultLuminance, 0, FORMAT_UBYTE2, sizeof(defaultLum), 1, defaultLum);
+
+    SSamplerDesc samplerCI;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
-    samplerCI.Filter = FILTER_LINEAR;
+    samplerCI.Filter   = FILTER_LINEAR;
 
     SBufferInfo bufferInfo[1];
     bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
     SPipelineResourceLayout resourceLayout;
     resourceLayout.NumSamplers = 1;
-    resourceLayout.Samplers = &samplerCI;
+    resourceLayout.Samplers    = &samplerCI;
 
-    resourceLayout.NumBuffers = AN_ARRAY_SIZE( bufferInfo );
-    resourceLayout.Buffers = bufferInfo;
+    resourceLayout.NumBuffers = AN_ARRAY_SIZE(bufferInfo);
+    resourceLayout.Buffers    = bufferInfo;
 
-    CreateFullscreenQuadPipeline( &MakeLuminanceMapPipe, "postprocess/exposure/make_luminance.vert", "postprocess/exposure/make_luminance.frag", &resourceLayout );
-    CreateFullscreenQuadPipeline( &DynamicExposurePipe, "postprocess/exposure/dynamic_exposure.vert", "postprocess/exposure/dynamic_exposure.frag", &resourceLayout, RenderCore::BLENDING_ALPHA );
+    CreateFullscreenQuadPipeline(&MakeLuminanceMapPipe, "postprocess/exposure/make_luminance.vert", "postprocess/exposure/make_luminance.frag", &resourceLayout);
+    CreateFullscreenQuadPipeline(&DynamicExposurePipe, "postprocess/exposure/dynamic_exposure.vert", "postprocess/exposure/dynamic_exposure.frag", &resourceLayout, BLENDING_ALPHA);
 
     resourceLayout.NumBuffers = 0;
 
-    CreateFullscreenQuadPipeline( &SumLuminanceMapPipe, "postprocess/exposure/sum_luminance.vert", "postprocess/exposure/sum_luminance.frag", &resourceLayout );
+    CreateFullscreenQuadPipeline(&SumLuminanceMapPipe, "postprocess/exposure/sum_luminance.vert", "postprocess/exposure/sum_luminance.frag", &resourceLayout);
 }
 
-void AExposureRenderer::AddPass( AFrameGraph & FrameGraph, AFrameGraphTexture * SourceTexture, AFrameGraphTexture ** ppExposure )
+void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceTexture, FGTextureProxy** ppExposure)
 {
-    RenderCore::ITexture * exposureTexture = GRenderView->CurrentExposure;
+    ITexture* exposureTexture = GRenderView->CurrentExposure;
 
-    if ( !exposureTexture || r_ShowDefaultExposure ) {
-        *ppExposure = FrameGraph.AddExternalResource< RenderCore::STextureCreateInfo, RenderCore::ITexture >(
-            "Fallback exposure texture",
-            MakeTexture( RenderCore::TEXTURE_FORMAT_RG16F, RenderCore::STextureResolution2D( 1, 1 ) ),
-            DefaultLuminance );
+    if (!exposureTexture || r_ShowDefaultExposure)
+    {
+        *ppExposure = FrameGraph.AddExternalResource<FGTextureProxy>("Fallback exposure texture", DefaultLuminance);
         return;
     }
 
-    auto Exposure_R = FrameGraph.AddExternalResource(
-        "Exposure texture",
-        RenderCore::STextureCreateInfo(),
-        exposureTexture
-    );
-    auto Luminance64_R = FrameGraph.AddExternalResource(
-        "Luminance64",
-        RenderCore::STextureCreateInfo(),
-        Luminance64
-    );
-    auto Luminance32_R = FrameGraph.AddExternalResource(
-        "Luminance32",
-        RenderCore::STextureCreateInfo(),
-        Luminance32
-    );
-    auto Luminance16_R = FrameGraph.AddExternalResource(
-        "Luminance16",
-        RenderCore::STextureCreateInfo(),
-        Luminance16
-    );
-    auto Luminance8_R = FrameGraph.AddExternalResource(
-        "Luminance8",
-        RenderCore::STextureCreateInfo(),
-        Luminance8
-    );
-    auto Luminance4_R = FrameGraph.AddExternalResource(
-        "Luminance4",
-        RenderCore::STextureCreateInfo(),
-        Luminance4
-    );
-    auto Luminance2_R = FrameGraph.AddExternalResource(
-        "Luminance2",
-        RenderCore::STextureCreateInfo(),
-        Luminance2
-    );
+    auto Exposure_R    = FrameGraph.AddExternalResource<FGTextureProxy>("Exposure texture", exposureTexture);
+    auto Luminance64_R = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance64", Luminance64);
+    auto Luminance32_R = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance32", Luminance32);
+    auto Luminance16_R = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance16", Luminance16);
+    auto Luminance8_R  = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance8", Luminance8);
+    auto Luminance4_R  = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance4", Luminance4);
+    auto Luminance2_R  = FrameGraph.AddExternalResource<FGTextureProxy>("Luminance2", Luminance2);
 
     // Make luminance map 64x64
-    FrameGraph.AddTask< ARenderPass >( "Make luminance map 64x64" )
-        .SetRenderArea( 64, 64 )
-        .SetColorAttachments( { { Luminance64_R, SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE ) } } )
-        .AddResource( SourceTexture, RESOURCE_ACCESS_READ )
-        .AddSubpass( { 0 },
-                     [=]( ARenderPass const & RenderPass, int SubpassIndex )
-    {
-        rtbl->BindTexture( 0, SourceTexture->Actual() );
+    FrameGraph.AddTask<ARenderPass>("Make luminance map 64x64")
+        .SetRenderArea(64, 64)
+        .SetColorAttachment(STextureAttachment(Luminance64_R)
+                                .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
+        .AddResource(SourceTexture, FG_RESOURCE_ACCESS_READ)
+        .AddSubpass({0},
+                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    {
+                        rtbl->BindTexture(0, SourceTexture->Actual());
 
-        DrawSAQ( MakeLuminanceMapPipe );
-    });
+                        DrawSAQ(MakeLuminanceMapPipe);
+                    });
 
     // Downscale luminance to 32x32
-    FrameGraph.AddTask< ARenderPass >( "Downscale luminance to 32x32" )
-        .SetRenderArea( 32, 32 )
-        .SetColorAttachments( { { Luminance32_R, SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE ) } } )
-        .AddResource( Luminance64_R, RESOURCE_ACCESS_READ )
-        .AddSubpass( { 0 },
-                     [=]( ARenderPass const & RenderPass, int SubpassIndex )
-    {
-        rtbl->BindTexture( 0, Luminance64_R->Actual() );
+    FrameGraph.AddTask<ARenderPass>("Downscale luminance to 32x32")
+        .SetRenderArea(32, 32)
+        .SetColorAttachment(STextureAttachment(Luminance32_R)
+                                .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
+        .AddResource(Luminance64_R, FG_RESOURCE_ACCESS_READ)
+        .AddSubpass({0},
+                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    {
+                        rtbl->BindTexture(0, Luminance64_R->Actual());
 
-        DrawSAQ( SumLuminanceMapPipe );
-    } );
+                        DrawSAQ(SumLuminanceMapPipe);
+                    });
 
     // Downscale luminance to 16x16
-    FrameGraph.AddTask< ARenderPass >( "Downscale luminance to 16x16" )
-        .SetRenderArea( 16, 16 )
-        .SetColorAttachments( { { Luminance16_R, SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE ) } } )
-        .AddResource( Luminance32_R, RESOURCE_ACCESS_READ )
-        .AddSubpass( { 0 },
-                     [=]( ARenderPass const & RenderPass, int SubpassIndex )
-    {
-        rtbl->BindTexture( 0, Luminance32_R->Actual() );
+    FrameGraph.AddTask<ARenderPass>("Downscale luminance to 16x16")
+        .SetRenderArea(16, 16)
+        .SetColorAttachment(STextureAttachment(Luminance16_R)
+                                .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
+        .AddResource(Luminance32_R, FG_RESOURCE_ACCESS_READ)
+        .AddSubpass({0},
+                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    {
+                        rtbl->BindTexture(0, Luminance32_R->Actual());
 
-        DrawSAQ( SumLuminanceMapPipe );
-    } );
+                        DrawSAQ(SumLuminanceMapPipe);
+                    });
 
     // Downscale luminance to 8x8
-    FrameGraph.AddTask< ARenderPass >( "Downscale luminance to 8x8" )
-        .SetRenderArea( 8, 8 )
-        .SetColorAttachments( { { Luminance8_R, SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE ) } } )
-        .AddResource( Luminance16_R, RESOURCE_ACCESS_READ )
-        .AddSubpass( { 0 },
-                     [=]( ARenderPass const & RenderPass, int SubpassIndex )
-    {
-        rtbl->BindTexture( 0, Luminance16_R->Actual() );
+    FrameGraph.AddTask<ARenderPass>("Downscale luminance to 8x8")
+        .SetRenderArea(8, 8)
+        .SetColorAttachment(STextureAttachment(Luminance8_R)
+                                .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
+        .AddResource(Luminance16_R, FG_RESOURCE_ACCESS_READ)
+        .AddSubpass({0},
+                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    {
+                        rtbl->BindTexture(0, Luminance16_R->Actual());
 
-        DrawSAQ( SumLuminanceMapPipe );
-    } );
+                        DrawSAQ(SumLuminanceMapPipe);
+                    });
 
     // Downscale luminance to 4x4
-    FrameGraph.AddTask< ARenderPass >( "Downscale luminance to 4x4" )
-        .SetRenderArea( 4, 4 )
-        .SetColorAttachments( { { Luminance4_R, SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE ) } } )
-        .AddResource( Luminance8_R, RESOURCE_ACCESS_READ )
-        .AddSubpass( { 0 },
-                     [=]( ARenderPass const & RenderPass, int SubpassIndex )
-    {
-        rtbl->BindTexture( 0, Luminance8_R->Actual() );
+    FrameGraph.AddTask<ARenderPass>("Downscale luminance to 4x4")
+        .SetRenderArea(4, 4)
+        .SetColorAttachment(STextureAttachment(Luminance4_R)
+                                .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
+        .AddResource(Luminance8_R, FG_RESOURCE_ACCESS_READ)
+        .AddSubpass({0},
+                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    {
+                        rtbl->BindTexture(0, Luminance8_R->Actual());
 
-        DrawSAQ( SumLuminanceMapPipe );
-    } );
+                        DrawSAQ(SumLuminanceMapPipe);
+                    });
 
     // Downscale luminance to 2x2
-    FrameGraph.AddTask< ARenderPass >( "Downscale luminance to 2x2" )
-        .SetRenderArea( 2, 2 )
-        .SetColorAttachments( { { Luminance2_R, SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE ) } } )
-        .AddResource( Luminance4_R, RESOURCE_ACCESS_READ )
-        .AddSubpass( { 0 },
-                     [=]( ARenderPass const & RenderPass, int SubpassIndex )
-    {
-        rtbl->BindTexture( 0, Luminance4_R->Actual() );
+    FrameGraph.AddTask<ARenderPass>("Downscale luminance to 2x2")
+        .SetRenderArea(2, 2)
+        .SetColorAttachment(STextureAttachment(Luminance2_R)
+                                .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
+        .AddResource(Luminance4_R, FG_RESOURCE_ACCESS_READ)
+        .AddSubpass({0},
+                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    {
+                        rtbl->BindTexture(0, Luminance4_R->Actual());
 
-        DrawSAQ( SumLuminanceMapPipe );
-    } );
+                        DrawSAQ(SumLuminanceMapPipe);
+                    });
 
     // Render final exposure
-    FrameGraph.AddTask< ARenderPass >( "Render final exposure" )
-        .SetRenderArea( 1, 1 )
-        .SetColorAttachments( { { Exposure_R, SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE ) } } )
-        .AddResource( Luminance2_R, RESOURCE_ACCESS_READ )
-        .AddSubpass( { 0 },
-                     [=]( ARenderPass const & RenderPass, int SubpassIndex )
-    {
-        rtbl->BindTexture( 0, Luminance2_R->Actual() );
+    FrameGraph.AddTask<ARenderPass>("Render final exposure")
+        .SetRenderArea(1, 1)
+        .SetColorAttachment(STextureAttachment(Exposure_R)
+                                .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE))
+        .AddResource(Luminance2_R, FG_RESOURCE_ACCESS_READ)
+        .AddSubpass({0},
+                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    {
+                        rtbl->BindTexture(0, Luminance2_R->Actual());
 
-        DrawSAQ( DynamicExposurePipe );
-    } );
+                        DrawSAQ(DynamicExposurePipe);
+                    });
 
     *ppExposure = Exposure_R;
 }

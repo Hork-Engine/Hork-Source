@@ -35,28 +35,31 @@ SOFTWARE.
 
 #include "GL/glew.h"
 
-namespace RenderCore {
-
-static std::unordered_map< uint64_t, int > BindlessHandleRefCount;
-
-ABindlessSamplerGLImpl::ABindlessSamplerGLImpl( ADeviceGLImpl * _Device, ITexture * _Texture, SSamplerInfo const & _CreateInfo )
-    : IBindlessSampler( _Device )
+namespace RenderCore
 {
-    Texture = _Texture;
+
+static std::unordered_map<uint64_t, int> BindlessHandleRefCount;
+
+ABindlessSamplerGLImpl::ABindlessSamplerGLImpl(ADeviceGLImpl* pDevice, ITexture* pTexture, SSamplerDesc const& Desc) :
+    IBindlessSampler(pDevice)
+{
+    Texture = pTexture;
     Texture->AddRef();
 
-    if ( !_Device->IsFeatureSupported( FEATURE_BINDLESS_TEXTURE ) ) {
-        GLogger.Printf( "ABindlessSamplerGLImpl::ctor: bindless textures not supported by current hardware\n" );
+    if (!pDevice->IsFeatureSupported(FEATURE_BINDLESS_TEXTURE))
+    {
+        GLogger.Printf("ABindlessSamplerGLImpl::ctor: bindless textures not supported by current hardware\n");
         return;
     }
 
-    unsigned int samplerId = _Device->CachedSampler( _CreateInfo );
+    unsigned int samplerId = pDevice->CachedSampler(Desc);
 
-    uint64_t id = glGetTextureSamplerHandleARB( _Texture->GetHandleNativeGL(), samplerId );
+    uint64_t id = glGetTextureSamplerHandleARB(pTexture->GetHandleNativeGL(), samplerId);
 
-    SetHandleNativeGL( id );
+    SetHandleNativeGL(id);
 
-    if ( id ) {
+    if (id)
+    {
         ++BindlessHandleRefCount[id];
     }
 }
@@ -67,9 +70,11 @@ ABindlessSamplerGLImpl::~ABindlessSamplerGLImpl()
 
     uint64_t id = GetHandleNativeGL();
 
-    if ( id ) {
-        if ( 0 == --BindlessHandleRefCount[id] ) {
-            glMakeTextureHandleNonResidentARB( id );
+    if (id)
+    {
+        if (0 == --BindlessHandleRefCount[id])
+        {
+            glMakeTextureHandleNonResidentARB(id);
         }
     }
 }
@@ -77,26 +82,29 @@ ABindlessSamplerGLImpl::~ABindlessSamplerGLImpl()
 void ABindlessSamplerGLImpl::MakeResident()
 {
     uint64_t id = GetHandleNativeGL();
-    if ( id ) {
-        glMakeTextureHandleResidentARB( id );
+    if (id)
+    {
+        glMakeTextureHandleResidentARB(id);
     }
 }
 
 void ABindlessSamplerGLImpl::MakeNonResident()
 {
     uint64_t id = GetHandleNativeGL();
-    if ( id ) {
-        glMakeTextureHandleNonResidentARB( id );
+    if (id)
+    {
+        glMakeTextureHandleNonResidentARB(id);
     }
 }
 
 bool ABindlessSamplerGLImpl::IsResident() const
 {
     uint64_t id = GetHandleNativeGL();
-    if ( id ) {
-        return !!glIsTextureHandleResidentARB( id );
+    if (id)
+    {
+        return !!glIsTextureHandleResidentARB(id);
     }
     return false;
 }
 
-}
+} // namespace RenderCore

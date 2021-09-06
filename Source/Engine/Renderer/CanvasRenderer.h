@@ -32,24 +32,22 @@ SOFTWARE.
 
 #include "RenderDefs.h"
 
-#include <RenderCore/FrameGraph/FrameGraph.h>
+#include <RenderCore/FrameGraph.h>
 
 struct SRenderView;
 
-class ACanvasRenderer : public ARefCounted {
+class ACanvasRenderer : public ARefCounted
+{
 public:
     ACanvasRenderer();
 
-    void Render( std::function<void(SRenderView *, AFrameGraphTexture**)> RenderViewCB );
+    void Render(RenderCore::AFrameGraph& FrameGraph, TPodVector<RenderCore::FGTextureProxy*>& pRenderViewTexture, RenderCore::ITexture* pBackBuffer);
 
 private:
     void CreatePresentViewPipeline();
     void CreatePipelines();
 
-    void BeginCanvasPass();
-
-    TRef< RenderCore::IRenderPass > CanvasPass;
-    TRef< RenderCore::IPipeline > PresentViewPipeline[COLOR_BLENDING_MAX];
-    TRef< RenderCore::IPipeline > Pipelines[COLOR_BLENDING_MAX][HUD_SAMPLER_MAX];
-    TRef< RenderCore::IResourceTable > ResourceTable;
+    TRef<RenderCore::IPipeline>      PresentViewPipeline[COLOR_BLENDING_MAX];
+    TRef<RenderCore::IPipeline>      Pipelines[COLOR_BLENDING_MAX][HUD_SAMPLER_MAX];
+    TRef<RenderCore::IResourceTable> ResourceTable;
 };

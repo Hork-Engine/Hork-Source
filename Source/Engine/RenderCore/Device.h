@@ -39,14 +39,14 @@ SOFTWARE.
 #include "Pipeline.h"
 #include "ShaderModule.h"
 #include "TransformFeedback.h"
-#include "Framebuffer.h"
-#include "RenderPass.h"
+#include "SwapChain.h"
 
 #include <Core/Public/Hash.h>
 #include <Core/Public/PodVector.h>
 #include <Core/Public/Ref.h>
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 enum FEATURE_TYPE
 {
@@ -97,55 +97,48 @@ enum GRAPHICS_VENDOR
     VENDOR_INTEL
 };
 
+struct SAllocatorCallback
+{
+    void* (*Allocate)(size_t _BytesCount);
+    void (*Deallocate)(void* _Bytes);
+};
+
 class IDevice : public ARefCounted
 {
 public:
-    virtual void SwapBuffers( struct SDL_Window * WindowHandle, int SwapInterval ) = 0;
+    ~IDevice();
 
-    virtual void GetImmediateContext( IImmediateContext ** ppImmediateContext ) = 0;
+    virtual void CreateImmediateContext(SImmediateContextDesc const& Desc, TRef<IImmediateContext>* ppImmediateContext) = 0;
 
-    virtual void CreateImmediateContext( SImmediateContextCreateInfo const & _CreateInfo, IImmediateContext ** ppImmediateContext ) = 0;
-    virtual void ReleaseImmediateContext( IImmediateContext * pImmediateContext ) = 0;
+    virtual void CreateSwapChain(SDL_Window* pWindow, TRef<ISwapChain>* ppSwapChain) = 0;
 
-    virtual void CreateFramebuffer( SFramebufferCreateInfo const & _CreateInfo, TRef< IFramebuffer > * ppFramebuffer ) = 0;
+    virtual void CreatePipeline(SPipelineDesc const& Desc, TRef<IPipeline>* ppPipeline) = 0;
 
-    virtual void CreateRenderPass( SRenderPassCreateInfo const & _CreateInfo, TRef< IRenderPass > * ppRenderPass ) = 0;
+    virtual void CreateShaderFromBinary(SShaderBinaryData const* _BinaryData, TRef<IShaderModule>* ppShaderModule)                                         = 0;
+    virtual void CreateShaderFromCode(SHADER_TYPE _ShaderType, unsigned int _NumSources, const char* const* _Sources, TRef<IShaderModule>* ppShaderModule) = 0;
 
-    virtual void CreatePipeline( SPipelineCreateInfo const & _CreateInfo, TRef< IPipeline > * ppPipeline ) = 0;
+    virtual void CreateBuffer(SBufferDesc const& Desc, const void* _SysMem, TRef<IBuffer>* ppBuffer) = 0;
 
-    virtual void CreateShaderFromBinary( SShaderBinaryData const * _BinaryData, TRef< IShaderModule > * ppShaderModule ) = 0;
-    virtual void CreateShaderFromCode( SHADER_TYPE _ShaderType, unsigned int _NumSources, const char * const * _Sources, TRef< IShaderModule > * ppShaderModule ) = 0;
-
-    virtual void CreateBuffer( SBufferCreateInfo const & _CreateInfo, const void * _SysMem, TRef< IBuffer > * ppBuffer ) = 0;
-
-    virtual void CreateBufferView( SBufferViewCreateInfo const & CreateInfo, TRef< IBuffer > pBuffer, TRef< IBufferView > * ppBufferView ) = 0;
-
-    virtual void CreateTexture( STextureCreateInfo const & _CreateInfo, TRef< ITexture > * ppTexture ) = 0;
-
-    virtual void CreateTextureView( STextureViewCreateInfo const & _CreateInfo, TRef< ITexture > * ppTexture ) = 0;
+    virtual void CreateTexture(STextureDesc const& Desc, TRef<ITexture>* ppTexture) = 0;
 
     /** FEATURE_SPARSE_TEXTURES must be supported */
-    virtual void CreateSparseTexture( SSparseTextureCreateInfo const & _CreateInfo, TRef< ISparseTexture > * ppTexture ) = 0;
+    virtual void CreateSparseTexture(SSparseTextureDesc const& Desc, TRef<ISparseTexture>* ppTexture) = 0;
 
-    virtual void CreateTransformFeedback( STransformFeedbackCreateInfo const & _CreateInfo, TRef< ITransformFeedback > * ppTransformFeedback ) = 0;
+    virtual void CreateTransformFeedback(STransformFeedbackDesc const& Desc, TRef<ITransformFeedback>* ppTransformFeedback) = 0;
 
-    virtual void CreateQueryPool( SQueryPoolCreateInfo const & _CreateInfo, TRef< IQueryPool > * ppQueryPool ) = 0;
+    virtual void CreateQueryPool(SQueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool) = 0;
 
     /** FEATURE_BINDLESS_TEXTURE must be supported */
-    virtual void GetBindlessSampler( ITexture * pTexture, SSamplerInfo const & _CreateInfo, TRef< IBindlessSampler > * ppBindlessSampler ) = 0;
+    virtual void GetBindlessSampler(ITexture* pTexture, SSamplerDesc const& Desc, TRef<IBindlessSampler>* ppBindlessSampler) = 0;
 
-    virtual void CreateResourceTable( TRef< IResourceTable > * ppResourceTable ) = 0;
+    virtual void CreateResourceTable(TRef<IResourceTable>* ppResourceTable) = 0;
 
-    virtual bool CreateShaderBinaryData( SHADER_TYPE _ShaderType,
-                                         unsigned int _NumSources,
-                                         const char * const * _Sources,
-                                         SShaderBinaryData * _BinaryData ) = 0;
+    virtual bool CreateShaderBinaryData(SHADER_TYPE        _ShaderType,
+                                        unsigned int       _NumSources,
+                                        const char* const* _Sources,
+                                        SShaderBinaryData* _BinaryData) = 0;
 
-    virtual void DestroyShaderBinaryData( SShaderBinaryData * _BinaryData ) = 0;
-
-    virtual bool IsFeatureSupported( FEATURE_TYPE InFeatureType ) = 0;
-
-    virtual unsigned int GetDeviceCaps( DEVICE_CAPS InDeviceCaps ) = 0;
+    virtual void DestroyShaderBinaryData(SShaderBinaryData* _BinaryData) = 0;
 
     /** Get total available GPU memory in kB. FEATURE_GPU_MEMORY_INFO must be supported */
     virtual int32_t GetGPUMemoryTotalAvailable() = 0;
@@ -153,37 +146,48 @@ public:
     /** Get current available GPU memory in kB. FEATURE_GPU_MEMORY_INFO must be supported */
     virtual int32_t GetGPUMemoryCurrentAvailable() = 0;
 
-    virtual bool EnumerateSparseTexturePageSize( SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int * NumPageSizes, int * PageSizesX, int * PageSizesY, int * PageSizesZ ) = 0;
+    virtual bool EnumerateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int* NumPageSizes, int* PageSizesX, int* PageSizesY, int* PageSizesZ) = 0;
 
-    virtual bool ChooseAppropriateSparseTexturePageSize( SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int * PageSizeIndex, int * PageSizeX = nullptr, int * PageSizeY = nullptr, int * PageSizeZ = nullptr ) = 0;
+    virtual bool ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int* PageSizeIndex, int* PageSizeX = nullptr, int* PageSizeY = nullptr, int* PageSizeZ = nullptr) = 0;
 
-    virtual bool LookupImageFormat( const char * _FormatQualifier, TEXTURE_FORMAT * _Format ) = 0;
+    virtual bool LookupImageFormat(const char* _FormatQualifier, TEXTURE_FORMAT* _Format) = 0;
 
-    virtual const char * LookupImageFormatQualifier( TEXTURE_FORMAT _Format ) = 0;
+    virtual const char* LookupImageFormatQualifier(TEXTURE_FORMAT _Format) = 0;
 
-    GRAPHICS_VENDOR GetGraphicsVendor() const { return GraphicsVendor; }
+    virtual SAllocatorCallback const& GetAllocator() const = 0;
 
-    //unsigned int GetTotalImmediateContexts() const { return TotalContexts; }
-    //unsigned int GetTotalBuffers() const { return TotalBuffers; }
-    //unsigned int GetTotalTextures() const { return TotalTextures; }
-    //unsigned int GetTotalSamplers() const { return SamplerCache.Size(); }
-    //unsigned int GetTotalBlendingStates() const { return BlendingStateCache.Size(); }
-    //unsigned int GetTotalRasterizerStates() const { return RasterizerStateCache.Size(); }
-    //unsigned int GetTotalDepthStencilStates() const { return DepthStencilStateCache.Size(); }
-    //unsigned int GetTotalShaderModules() const { return TotalShaderModules; }
-    //unsigned int GetTotalPipelines() const { return TotalPipelines; }
-    //unsigned int GetTotalRenderPasses() const { return TotalRenderPasses; }
-    //unsigned int GetTotalFramebuffers() const { return TotalFramebuffers; }
-    //unsigned int GetTotalTransformFeedbacks() const { return TotalTransformFeedbacks; }
-    //unsigned int GetTotalQueryPools() const { return TotalQueryPools; }
+    GRAPHICS_VENDOR GetGraphicsVendor() const
+    {
+        return GraphicsVendor;
+    }
+
+    bool IsFeatureSupported(FEATURE_TYPE FeatureType) const
+    {
+        return FeatureSupport[FeatureType];
+    }
+
+    unsigned int GetDeviceCaps(DEVICE_CAPS DevCaps) const
+    {
+        return DeviceCaps[DevCaps];
+    }
+
+    int GetObjectCount(DEVICE_OBJECT_PROXY_TYPE ProxyType) const
+    {
+        return ObjectCounters[ProxyType];
+    }
 
 #ifdef AN_DEBUG
-    IDeviceObject * GetDeviceObjects_DEBUG() { return ListHead; }
-
-    IDeviceObject * FindDeviceObject_DEBUG( uint64_t UID )
+    IDeviceObject* GetDeviceObjects_DEBUG()
     {
-        for ( IDeviceObject * object = ListHead ; object ; object = object->GetNext_DEBUG() ) {
-            if ( object->GetUID() == UID ) {
+        return ListHead;
+    }
+
+    IDeviceObject* FindDeviceObject_DEBUG(uint64_t UID)
+    {
+        for (IDeviceObject* object = ListHead; object; object = object->GetNext_DEBUG())
+        {
+            if (object->GetUID() == UID)
+            {
                 return object;
             }
         }
@@ -194,26 +198,25 @@ public:
 protected:
     GRAPHICS_VENDOR GraphicsVendor = VENDOR_UNKNOWN;
 
+    TArray<unsigned int, DEVICE_CAPS_MAX> DeviceCaps;
+    TArray<bool, FEATURE_MAX>             FeatureSupport;
+
 private:
+    TArray<int, DEVICE_OBJECT_TYPE_MAX> ObjectCounters = {};
+
 #ifdef AN_DEBUG
-    IDeviceObject * ListHead = nullptr;
-    IDeviceObject * ListTail = nullptr;
-
-    friend class IDeviceObject;
+    IDeviceObject* ListHead = nullptr;
+    IDeviceObject* ListTail = nullptr;
 #endif
+    friend class IDeviceObject;
 };
 
-struct SAllocatorCallback
-{
-    void * ( *Allocate )( size_t _BytesCount );
-    void ( *Deallocate )( void * _Bytes );
-};
+typedef int (*HashCallback)(const unsigned char* _Data, int _Size);
 
-typedef int ( *HashCallback )( const unsigned char * _Data, int _Size );
+void CreateLogicalDevice(SImmediateContextDesc const& Desc,
+                         SAllocatorCallback const*    Allocator,
+                         HashCallback                 Hash,
+                         TRef<IDevice>*               ppDevice,
+                         TRef<IImmediateContext>*     ppImmediateContext);
 
-void CreateLogicalDevice( SImmediateContextCreateInfo const & _CreateInfo,
-                          SAllocatorCallback const * _Allocator,
-                          HashCallback _Hash,
-                          TRef< IDevice > * ppDevice );
-
-}
+} // namespace RenderCore

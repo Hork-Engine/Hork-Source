@@ -92,7 +92,7 @@ void ALevel::Initialize() {
 
     // FIXME: Use AVertexMemoryGPU?
 
-    RenderCore::SBufferCreateInfo bufferCI = {};
+    RenderCore::SBufferDesc bufferCI = {};
     bufferCI.MutableClientAccess = RenderCore::MUTABLE_STORAGE_CLIENT_WRITE_ONLY;
     bufferCI.MutableUsage = RenderCore::MUTABLE_STORAGE_STATIC;
 

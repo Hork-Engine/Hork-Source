@@ -94,7 +94,7 @@ AImage::AImage() {
     pRawData = nullptr;
     Width = 0;
     Height = 0;
-    NumLods = 0;
+    NumMipLevels = 0;
     PixelFormat = IMAGE_PF_AUTO_GAMMA2;
 }
 
@@ -606,7 +606,7 @@ void AImage::FromRawData( const void * _Source, int _Width, int _Height, SImageM
 
     Width = _Width;
     Height = _Height;
-    NumLods = 1;
+    NumMipLevels = 1;
     PixelFormat = _PixelFormat;
 
     if ( bReuseSourceBuffer ) {
@@ -632,7 +632,7 @@ void AImage::FromRawData( const void * _Source, int _Width, int _Height, SImageM
         mipmapGen.bHDRI = bHDRI;
 
         int requiredMemorySize;
-        ComputeRequiredMemorySize( mipmapGen, requiredMemorySize, NumLods );
+        ComputeRequiredMemorySize(mipmapGen, requiredMemorySize, NumMipLevels);
 
         void * tmp = GHeapMemory.Alloc( requiredMemorySize );
 
@@ -644,7 +644,8 @@ void AImage::FromRawData( const void * _Source, int _Width, int _Height, SImageM
 
     if ( bHalf ) {
         int imageSize = 0;
-        for ( int i = 0 ; i < NumLods ; i++ ) {
+        for (int i = 0; i < NumMipLevels; i++)
+        {
             int w = Math::Max( 1, Width >> i );
             int h = Math::Max( 1, Height >> i );
             imageSize += w * h;
@@ -663,7 +664,7 @@ void AImage::Free() {
     pRawData = nullptr;
     Width = 0;
     Height = 0;
-    NumLods = 0;
+    NumMipLevels = 0;
     PixelFormat = IMAGE_PF_AUTO_GAMMA2;
 }
 
@@ -823,11 +824,11 @@ static void GenerateMipmaps( const byte * ImageData, int ImageWidth, int ImageHe
     }
 
     for ( int i = 1 ; ; i++ ) {
-        int LodWidth = Math::Max( 1, ImageWidth >> i );
-        int LodHeight = Math::Max( 1, ImageHeight >> i );
+        int MipWidth = Math::Max(1, ImageWidth >> i);
+        int MipHeight = Math::Max(1, ImageHeight >> i);
 
-        byte * LodData = Dest + MemoryOffset;
-        MemoryOffset += LodWidth * LodHeight * NumChannels;
+        byte* MipData = Dest + MemoryOffset;
+        MemoryOffset += MipWidth * MipHeight * NumChannels;
 
 #if 1
         // NOTE: We assume that this function is called from main thread,
@@ -835,7 +836,7 @@ static void GenerateMipmaps( const byte * ImageData, int ImageWidth, int ImageHe
         int hunkMark = GHunkMemory.SetHunkMark();
 
         stbir_resize( ImageData, CurWidth, CurHeight, NumChannels * CurWidth,
-                      LodData, LodWidth, LodHeight, NumChannels * LodWidth,
+                     MipData, MipWidth, MipHeight, NumChannels * MipWidth,
                       STBIR_TYPE_UINT8,
                       NumChannels,
                       AlphaChannel,
@@ -847,15 +848,16 @@ static void GenerateMipmaps( const byte * ImageData, int ImageWidth, int ImageHe
 
         GHunkMemory.ClearToMark( hunkMark );
 #else
-        DownscaleSimpleAverage( CurWidth, CurHeight, LodWidth, LodHeight, NumChannels, AlphaChannel, bLinearSpace, ImageData, LodData );
+        DownscaleSimpleAverage(CurWidth, CurHeight, MipWidth, MipHeight, NumChannels, AlphaChannel, bLinearSpace, ImageData, MipData);
 #endif
 
-        ImageData = LodData;
+        ImageData = MipData;
 
-        CurWidth = LodWidth;
-        CurHeight = LodHeight;
+        CurWidth  = MipWidth;
+        CurHeight = MipHeight;
 
-        if ( LodWidth == 1 && LodHeight == 1 ) {
+        if (MipWidth == 1 && MipHeight == 1)
+        {
             break;
         }
     }
@@ -874,11 +876,11 @@ static void GenerateMipmapsHDRI( const float * ImageData, int ImageWidth, int Im
     }
 
     for ( int i = 1 ; ; i++ ) {
-        int LodWidth = Math::Max( 1, ImageWidth >> i );
-        int LodHeight = Math::Max( 1, ImageHeight >> i );
+        int MipWidth  = Math::Max(1, ImageWidth >> i);
+        int MipHeight = Math::Max(1, ImageHeight >> i);
 
-        float * LodData = _Dest + MemoryOffset;
-        MemoryOffset += LodWidth * LodHeight * NumChannels;
+        float* MipData = _Dest + MemoryOffset;
+        MemoryOffset += MipWidth * MipHeight * NumChannels;
 
 #if 1
         // NOTE: We assume that this function is called from main thread,
@@ -886,7 +888,7 @@ static void GenerateMipmapsHDRI( const float * ImageData, int ImageWidth, int Im
         int hunkMark = GHunkMemory.SetHunkMark();
 
         stbir_resize( ImageData, CurWidth, CurHeight, NumChannels * CurWidth * sizeof( float ),
-                      LodData, LodWidth, LodHeight, NumChannels * LodWidth * sizeof( float ),
+                     MipData, MipWidth, MipHeight, NumChannels * MipWidth * sizeof(float),
                       STBIR_TYPE_FLOAT,
                       NumChannels,
                       -1,
@@ -898,30 +900,33 @@ static void GenerateMipmapsHDRI( const float * ImageData, int ImageWidth, int Im
 
         GHunkMemory.ClearToMark( hunkMark );
 #else
-        DownscaleSimpleAverageHDRI( CurWidth, CurHeight, LodWidth, LodHeight, NumChannels, ImageData, LodData );
+        DownscaleSimpleAverageHDRI(CurWidth, CurHeight, MipWidth, MipHeight, NumChannels, ImageData, MipData);
 #endif
 
-        ImageData = LodData;
+        ImageData = MipData;
 
-        CurWidth = LodWidth;
-        CurHeight = LodHeight;
+        CurWidth  = MipWidth;
+        CurHeight = MipHeight;
 
-        if ( LodWidth == 1 && LodHeight == 1 ) {
+        if (MipWidth == 1 && MipHeight == 1)
+        {
             break;
         }
     }
 }
 
-void ComputeRequiredMemorySize( SSoftwareMipmapGenerator const & _Config, int & _RequiredMemory, int & _NumLods ) {
+void ComputeRequiredMemorySize(SSoftwareMipmapGenerator const& _Config, int& _RequiredMemory, int& _NumMipLevels)
+{
     _RequiredMemory = 0;
-    _NumLods = 0;
+    _NumMipLevels = 0;
 
     for ( int i = 0 ; ; i++ ) {
-        int LodWidth = Math::Max( 1, _Config.Width >> i );
-        int LodHeight = Math::Max( 1, _Config.Height >> i );
-        _RequiredMemory += LodWidth * LodHeight;
-        _NumLods++;
-        if ( LodWidth == 1 && LodHeight == 1 ) {
+        int MipWidth  = Math::Max(1, _Config.Width >> i);
+        int MipHeight = Math::Max(1, _Config.Height >> i);
+        _RequiredMemory += MipWidth * MipHeight;
+        _NumMipLevels++;
+        if (MipWidth == 1 && MipHeight == 1)
+        {
             break;
         }
     }

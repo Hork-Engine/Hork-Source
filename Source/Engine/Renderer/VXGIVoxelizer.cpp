@@ -45,6 +45,7 @@ static const int VoxGridSize = 256;
 static const int numMipLevels = std::log2( VoxGridSize );
 
 VXGIVoxelizer::VXGIVoxelizer() {
+    #if 0
     SFramebufferCreateInfo framebufferCI = {};
     framebufferCI.Width = VoxGridSize;
     framebufferCI.Height = VoxGridSize;
@@ -76,7 +77,7 @@ VXGIVoxelizer::VXGIVoxelizer() {
 
     // Draw Indirect Command buffer for drawing voxels
     {
-    SBufferCreateInfo bufferCI = {};
+    SBufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
     bufferCI.SizeInBytes = sizeof( drawIndCmd );
@@ -96,7 +97,7 @@ VXGIVoxelizer::VXGIVoxelizer() {
     }
 
     {
-    SBufferCreateInfo bufferCI = {};
+    SBufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)0;
     bufferCI.SizeInBytes = sizeof( compIndCmd );
@@ -129,7 +130,7 @@ VXGIVoxelizer::VXGIVoxelizer() {
     CreatePipeline();
 
 #if 0
-    SBufferCreateInfo bufferCI = {};
+    SBufferDesc bufferCI = {};
     bufferCI.bImmutableStorage = true;
     bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
     bufferCI.SizeInBytes = sizeof( SConstantData );
@@ -159,7 +160,7 @@ VXGIVoxelizer::VXGIVoxelizer() {
     renderPassCI.pSubpasses = &subpassInfo;
     GDevice->CreateRenderPass( renderPassCI, &RP );
 
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
 
     SPipelineInputAssemblyInfo & ia = pipelineCI.IA;
     ia.Topology = PRIMITIVE_TRIANGLES;
@@ -207,11 +208,12 @@ VXGIVoxelizer::VXGIVoxelizer() {
 
     GDevice->CreatePipeline( pipelineCI, &Pipeline );
 #endif
+    #endif
 }
 
 void VXGIVoxelizer::CreatePipeline()
 {
-    SPipelineCreateInfo pipelineCI;
+    SPipelineDesc pipelineCI;
 
     SPipelineInputAssemblyInfo & ia = pipelineCI.IA;
     ia.Topology = PRIMITIVE_TRIANGLES;
@@ -262,6 +264,7 @@ void VXGIVoxelizer::CreatePipeline()
 
 void VXGIVoxelizer::Render()
 {
+    #if 0
     RenderCore::IResourceTable * resourceTable = rtbl; // FIXME: create separate resource table?
 
     // Clear the last voxelization data
@@ -376,4 +379,5 @@ void VXGIVoxelizer::Render()
 
     rcmd->EndRenderPass();
 #endif
+    #endif
 }

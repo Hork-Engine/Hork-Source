@@ -1,6 +1,6 @@
 #pragma once
 
-#include <RenderCore/FrameGraph/FrameGraph.h>
+#include <RenderCore/FrameGraph.h>
 #include <Core/Public/CoreMath.h>
 
 struct SDirectionalLightInstance;
@@ -11,9 +11,9 @@ class AShadowMapRenderer {
 public:
     AShadowMapRenderer();
 
-    void AddDummyShadowMap( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppShadowMapDepth );
-    void AddPass( AFrameGraph & FrameGraph, SDirectionalLightInstance const * Light, AFrameGraphTexture ** ppShadowMapDepth );
-    void AddPass( AFrameGraph & FrameGraph, SLightParameters const * Light, AFrameGraphTexture ** ppShadowMapDepth );
+    void AddDummyShadowMap(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppShadowMapDepth);
+    void AddPass(RenderCore::AFrameGraph& FrameGraph, SDirectionalLightInstance const* Light, RenderCore::FGTextureProxy** ppShadowMapDepth);
+    void AddPass(RenderCore::AFrameGraph& FrameGraph, SLightParameters const* Light, RenderCore::FGTextureProxy** ppShadowMapDepth);
 
 private:
     void CreatePipeline();

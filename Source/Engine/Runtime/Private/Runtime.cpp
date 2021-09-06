@@ -40,6 +40,8 @@ SOFTWARE.
 #include <Core/Public/Document.h>
 #include <Core/Public/Core.h>
 
+#include <Core/Public/Image.h>
+
 #include "GPUSync.h"
 
 #include <SDL.h>
@@ -53,10 +55,6 @@ SOFTWARE.
 #include <Runtime/Public/EntryDecl.h>
 
 ARuntime * GRuntime;
-
-AAsyncJobManager GAsyncJobManager;
-AAsyncJobList * GRenderFrontendJobList;
-AAsyncJobList * GRenderBackendJobList;
 
 ARuntimeVariable rt_VidWidth( _CTS( "rt_VidWidth" ), _CTS( "0" ) );
 ARuntimeVariable rt_VidHeight( _CTS( "rt_VidHeight" ), _CTS( "0" ) );
@@ -135,12 +133,13 @@ ARuntime::ARuntime( struct SEntryDecl const & _EntryDecl )
         GLogger.Printf( "Num hardware threads: %d\n", AThread::NumHardwareThreads );
     }
 
-    int jobManagerThreadCount = AThread::NumHardwareThreads ? Math::Min( AThread::NumHardwareThreads, GAsyncJobManager.MAX_WORKER_THREADS )
-        : GAsyncJobManager.MAX_WORKER_THREADS;
-    GAsyncJobManager.Initialize( jobManagerThreadCount, MAX_RUNTIME_JOB_LISTS );
+    int jobManagerThreadCount = AThread::NumHardwareThreads ? Math::Min( AThread::NumHardwareThreads, AAsyncJobManager::MAX_WORKER_THREADS )
+        : AAsyncJobManager::MAX_WORKER_THREADS;
 
-    GRenderFrontendJobList = GAsyncJobManager.GetAsyncJobList( RENDER_FRONTEND_JOB_LIST );
-    GRenderBackendJobList = GAsyncJobManager.GetAsyncJobList( RENDER_BACKEND_JOB_LIST );
+    AsyncJobManager = MakeRef< AAsyncJobManager >( jobManagerThreadCount, MAX_RUNTIME_JOB_LISTS );
+
+    RenderFrontendJobList = AsyncJobManager->GetAsyncJobList( RENDER_FRONTEND_JOB_LIST );
+    RenderBackendJobList = AsyncJobManager->GetAsyncJobList( RENDER_BACKEND_JOB_LIST );
 
     Core::ZeroMem( PressedKeys.ToPtr(), sizeof( PressedKeys ) );
     Core::ZeroMem( PressedMouseButtons.ToPtr(), sizeof( PressedMouseButtons ) );
@@ -173,10 +172,7 @@ ARuntime::ARuntime( struct SEntryDecl const & _EntryDecl )
         CriticalError( "Failed to create main window\n" );
     }
 
-    RenderCore::SImmediateContextCreateInfo stateCreateInfo = {};
-    stateCreateInfo.ClipControl = RenderCore::CLIP_CONTROL_DIRECTX;
-    stateCreateInfo.ViewportOrigin = RenderCore::VIEWPORT_ORIGIN_TOP_LEFT;
-    stateCreateInfo.SwapInterval = rt_SwapInterval.GetInteger();
+    RenderCore::SImmediateContextDesc stateCreateInfo = {};
     stateCreateInfo.Window = WindowHandle;
 
     RenderCore::SAllocatorCallback allocator;
@@ -201,12 +197,13 @@ ARuntime::ARuntime( struct SEntryDecl const & _EntryDecl )
                          {
                              return Core::Hash( ( const char * )_Data, _Size );
                          },
-                         &RenderDevice );
+                         &RenderDevice,
+                         &pImmediateContext);
 
     VertexMemoryGPU = MakeRef< AVertexMemoryGPU >( RenderDevice );
-    StreamedMemoryGPU = MakeRef< AStreamedMemoryGPU >( RenderDevice );
+    StreamedMemoryGPU = MakeRef<AStreamedMemoryGPU>(RenderDevice, pImmediateContext);
 
-    RenderDevice->GetImmediateContext( &pImmediateContext );
+    RenderDevice->CreateSwapChain(WindowHandle, &pSwapChain);
 
     GPUSync = MakeRef< AGPUSync >( pImmediateContext );
 
@@ -221,13 +218,42 @@ ARuntime::~ARuntime()
     DestroyEngineInstance();
     Engine = nullptr;
 
-    GAsyncJobManager.Deinitialize();
+    AsyncJobManager.Reset();
 
     GPUSync.Reset();
 
     VertexMemoryGPU.Reset();
     StreamedMemoryGPU.Reset();
 
+    pSwapChain.Reset();
+
+    pImmediateContext.Reset();
+
+    TArray<const char*, RenderCore::DEVICE_OBJECT_TYPE_MAX> name =
+        {
+            "DEVICE_OBJECT_TYPE_IMMEDIATE_CONTEXT",
+
+            "DEVICE_OBJECT_TYPE_BUFFER",
+            "DEVICE_OBJECT_TYPE_BUFFER_VIEW",
+
+            "DEVICE_OBJECT_TYPE_TEXTURE",
+            "DEVICE_OBJECT_TYPE_TEXTURE_VIEW",
+
+            "DEVICE_OBJECT_TYPE_SPARSE_TEXTURE",
+
+            "DEVICE_OBJECT_TYPE_PIPELINE",
+            "DEVICE_OBJECT_TYPE_SHADER_MODULE",
+            "DEVICE_OBJECT_TYPE_TRANSFORM_FEEDBACK",
+            "DEVICE_OBJECT_TYPE_QUERY_POOL",
+            "DEVICE_OBJECT_TYPE_BINDLESS_SAMPLER",
+            "DEVICE_OBJECT_TYPE_RESOURCE_TABLE",
+
+            "DEVICE_OBJECT_TYPE_SWAP_CHAIN"};
+
+    for (int i = 0; i < RenderCore::DEVICE_OBJECT_TYPE_MAX;i++)
+    {
+        GLogger.Printf("Object count %s: %d\n", name[i], RenderDevice->GetObjectCount((RenderCore::DEVICE_OBJECT_PROXY_TYPE)i));
+    }
     RenderDevice.Reset();
 
     DestroyGenericWindow( WindowHandle );
@@ -775,7 +801,7 @@ void ARuntime::NewFrame()
     StreamedMemoryGPU->Swap();
 
     // Swap window
-    RenderDevice->SwapBuffers( WindowHandle, rt_SwapInterval.GetInteger() );
+    pSwapChain->Present(rt_SwapInterval.GetInteger());
 
     // Wait for free streamed buffer
     StreamedMemoryGPU->Wait();
@@ -944,6 +970,7 @@ void ARuntime::PollEvents()
                 } else {
                     VideoMode.AspectScale = 1;
                 }
+                pSwapChain->Resize(VideoMode.FramebufferWidth, VideoMode.FramebufferHeight);
                 Engine->OnResize();
                 break;
             }
@@ -1353,7 +1380,7 @@ void ARuntime::SetVideoMode( SVideoMode const & _DesiredMode )
     VideoMode.RefreshRate = mode.refresh_rate;
 
     // Swap buffers to prevent flickering
-    RenderDevice->SwapBuffers( WindowHandle, rt_SwapInterval.GetInteger() );
+    pSwapChain->Present(rt_SwapInterval.GetInteger());
 }
 
 void ARuntime::SetCursorEnabled( bool _Enabled )
@@ -1377,15 +1404,23 @@ RenderCore::IDevice * ARuntime::GetRenderDevice()
     return RenderDevice;
 }
 
-void ARuntime::ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, unsigned int _Alignment, void * _SysMem )
+void ARuntime::ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, void * _SysMem )
 {
-    RenderCore::SRect2D rect;
-    rect.X = _X;
-    rect.Y = _Y;
-    rect.Width = _Width;
-    rect.Height = _Height;
+    RenderCore::ITexture* pBackBuffer = pSwapChain->GetBackBuffer();
 
-    RenderCore::IFramebuffer * framebuffer = pImmediateContext->GetDefaultFramebuffer();
+    RenderCore::STextureRect rect;
+    rect.Offset.X    = _X;
+    rect.Offset.Y    = _Y;
+    rect.Dimension.X = _Width;
+    rect.Dimension.Y = _Height;
+    rect.Dimension.Z = 1;
 
-    framebuffer->Read( RenderCore::FB_BACK_DEFAULT, rect, RenderCore::FB_CHANNEL_RGBA, RenderCore::FB_UBYTE, RenderCore::COLOR_CLAMP_ON, _SizeInBytes, _Alignment, _SysMem );
+    pImmediateContext->ReadTextureRect(pBackBuffer, rect, RenderCore::FORMAT_UBYTE4, _SizeInBytes, 4, _SysMem);
+
+    // Swap to rgba
+    int count = _Width * _Height * 4;
+    for (int i = 0 ; i < count ; i+=4)
+    {
+        StdSwap(((uint8_t *)_SysMem)[i], ((uint8_t *)_SysMem)[i+2]);
+    }
 }

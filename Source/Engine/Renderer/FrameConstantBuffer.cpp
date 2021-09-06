@@ -35,7 +35,7 @@ SOFTWARE.
 AFrameConstantBuffer::AFrameConstantBuffer( size_t InBufferSize )
     : BufferSize( InBufferSize )
 {
-    RenderCore::SBufferCreateInfo bufferCI = {};
+    RenderCore::SBufferDesc bufferCI = {};
 
     bufferCI.SizeInBytes = BufferSize * SWAP_CHAIN_SIZE;
 

@@ -30,6 +30,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/FrameGraph/FrameGraph.h>
+#include <RenderCore/FrameGraph.h>
 
-void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTexture, AFrameGraphTexture ** ppVelocity );
+void AddDepthPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppDepthTexture, RenderCore::FGTextureProxy** ppVelocity);

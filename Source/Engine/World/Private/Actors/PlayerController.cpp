@@ -146,7 +146,7 @@ void APlayerController::TakeScreenshot() {
             size_t sz = w*h*4;
             if ( sz > 0 ) {
                 void * p = GHunkMemory.Alloc( sz );
-                GRuntime->ReadScreenPixels( 0, 0, w, h, sz, 1, p );
+                GRuntime->ReadScreenPixels( 0, 0, w, h, sz, p );
                 FlipImageY( p, w, h, 4, w * 4 );
                 static int n = 0;
                 AFileStream f;

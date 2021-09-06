@@ -34,25 +34,25 @@ SOFTWARE.
 
 #include "BufferGLImpl.h"
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 class ADeviceGLImpl;
 
 class ABufferViewGLImpl final : public IBufferView
 {
 public:
-    ABufferViewGLImpl( ADeviceGLImpl * Device, SBufferViewCreateInfo const & CreateInfo, ABufferGLImpl * pBuffer );
+    ABufferViewGLImpl(SBufferViewDesc const& Desc, ABufferGLImpl* pBuffer);
     ~ABufferViewGLImpl();
 
-    void UpdateRange( size_t Offset, size_t SizeInBytes ) override;
+    void SetRange(size_t Offset, size_t SizeInBytes) override;
 
-    size_t GetBufferOffset( uint16_t _Lod ) const override;
-    size_t GetBufferSizeInBytes( uint16_t _Lod ) const override;
+    size_t GetBufferOffset(uint16_t MipLevel) const override;
+    size_t GetBufferSizeInBytes(uint16_t MipLevel) const override;
 
 private:
-    ADeviceGLImpl * pDevice;
-    ABufferGLImpl * pSrcBuffer;
-    int InternalFormat;
+    ABufferGLImpl* pSrcBuffer;
+    int            InternalFormat;
 };
 
-}
+} // namespace RenderCore

@@ -59,8 +59,6 @@ private:
                                              bool bBinaryRetrievable );
 
     unsigned int CreateShaderProgramBin( SShaderBinaryData const * _BinaryData );
-
-    ADeviceGLImpl * pDevice;
 };
 
 }

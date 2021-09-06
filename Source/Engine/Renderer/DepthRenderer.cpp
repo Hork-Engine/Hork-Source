@@ -70,40 +70,34 @@ static bool BindMaterialDepthPass( SRenderInstance const * instance )
     return true;
 }
 
-void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTexture, AFrameGraphTexture ** ppVelocity )
+void AddDepthPass( AFrameGraph & FrameGraph, FGTextureProxy ** ppDepthTexture, FGTextureProxy ** ppVelocity )
 {
     ARenderPass & depthPass = FrameGraph.AddTask< ARenderPass >( "Depth Pre-Pass" );
 
-    depthPass.SetDynamicRenderArea( &GRenderViewArea );
+    depthPass.SetRenderArea(GRenderViewArea);
 
     depthPass.SetDepthStencilAttachment(
-    {
-        "Depth texture",
-        MakeTexture( RenderCore::TEXTURE_FORMAT_DEPTH24_STENCIL8, GetFrameResoultion() ),
-        RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_CLEAR )
-    } );
+        STextureAttachment("Depth texture",
+                           STextureDesc()
+                               .SetFormat(RenderCore::TEXTURE_FORMAT_DEPTH24_STENCIL8)
+                               .SetResolution(GetFrameResoultion()))
+            .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR));
 
     if ( r_MotionBlur ) {
         Float2 velocity( 1, 1 );
 
-        depthPass.SetClearColors(
-        {
-            RenderCore::MakeClearColorValue( velocity.X,velocity.Y,0.0f,0.0f )
-        });
+        depthPass.SetColorAttachment(
+            STextureAttachment("Velocity texture",
+                               STextureDesc()
+                                   .SetFormat(TEXTURE_FORMAT_RG8)
+                                   .SetResolution(GetFrameResoultion()))
+                .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
+                .SetClearValue(RenderCore::MakeClearColorValue(velocity.X, velocity.Y, 0.0f, 0.0f)));
 
-        depthPass.SetColorAttachments(
-        {
-            {
-                "Velocity texture",
-                RenderCore::MakeTexture( TEXTURE_FORMAT_RG8, GetFrameResoultion() ),
-                RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_CLEAR )
-            }
-        });
-
-        *ppVelocity = depthPass.GetColorAttachments()[0].Resource;
+        *ppVelocity = depthPass.GetColorAttachments()[0].pResource;
 
         depthPass.AddSubpass( { 0 }, // color attachments
-                              [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                             [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
         {
             for ( int i = 0 ; i < GRenderView->TerrainInstanceCount ; i++ ) {
                 STerrainRenderInstance const * instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
@@ -155,7 +149,7 @@ void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTextur
         *ppVelocity = nullptr;
 
         depthPass.AddSubpass( {}, // no color attachments
-                              [=]( ARenderPass const & RenderPass, int SubpassIndex )
+                             [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
         {
             for ( int i = 0 ; i < GRenderView->TerrainInstanceCount ; i++ ) {
                 STerrainRenderInstance const * instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
@@ -202,5 +196,5 @@ void AddDepthPass( AFrameGraph & FrameGraph, AFrameGraphTexture ** ppDepthTextur
         } );
     }
 
-    *ppDepthTexture = depthPass.GetDepthStencilAttachment().Resource;
+    *ppDepthTexture = depthPass.GetDepthStencilAttachment().pResource;
 }
