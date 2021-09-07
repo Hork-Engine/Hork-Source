@@ -204,7 +204,7 @@ void SVirtualTexturePIT::Generate( APageBitfield const & BitField, int & StoredL
 
     int numLods = QuadTreeCalcLod64( NumPages );
 
-    memset( lodPagesCount, 0, sizeof(lodPagesCount[0]) * numLods );
+    Core::ZeroMem(lodPagesCount, sizeof(lodPagesCount[0]) * numLods);
 
     // Parse bits
     for ( unsigned int i = 0 ; i < NumPages ; i++ ) {
@@ -365,7 +365,7 @@ void SVirtualTextureAddressTable::Generate( APageBitfield const & BitField ) {
 #if 0
         int * addrTableByteOffsets = new int[ AddrTableSize ];
 
-        memset( addrTableByteOffsets, 0, sizeof( int ) * AddrTableSize);
+        Core::ZeroMem( addrTableByteOffsets, sizeof( int ) * AddrTableSize);
 
         for ( unsigned int i = 85 ; i < TotalPages ; i++) {
             //Заполняем byte offsets для LOD'ов > 4

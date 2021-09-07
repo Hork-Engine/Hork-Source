@@ -203,7 +203,7 @@ static const unsigned short * GetGlyphRangesJapanese() {
     static SWideChar full_ranges[AN_ARRAY_SIZE( base_ranges ) + AN_ARRAY_SIZE( accumulative_offsets_from_0x4E00 )*2 + 1] = { 0 };
     if ( !full_ranges[0] )
     {
-        memcpy( full_ranges, base_ranges, sizeof( base_ranges ) );
+        Core::Memcpy(full_ranges, base_ranges, sizeof(base_ranges));
         UnpackAccumulativeOffsetsIntoRanges( 0x4E00, accumulative_offsets_from_0x4E00, AN_ARRAY_SIZE( accumulative_offsets_from_0x4E00 ), full_ranges + AN_ARRAY_SIZE( base_ranges ) );
     }
     return &full_ranges[0];
@@ -281,7 +281,7 @@ static const unsigned short * GetGlyphRangesChineseSimplifiedCommon() {
     static SWideChar full_ranges[AN_ARRAY_SIZE( base_ranges ) + AN_ARRAY_SIZE( accumulative_offsets_from_0x4E00 ) * 2 + 1] = { 0 };
     if ( !full_ranges[0] )
     {
-        memcpy( full_ranges, base_ranges, sizeof( base_ranges ) );
+        Core::Memcpy(full_ranges, base_ranges, sizeof(base_ranges));
         UnpackAccumulativeOffsetsIntoRanges( 0x4E00, accumulative_offsets_from_0x4E00, AN_ARRAY_SIZE( accumulative_offsets_from_0x4E00 ), full_ranges + AN_ARRAY_SIZE( base_ranges ) );
     }
     return &full_ranges[0];

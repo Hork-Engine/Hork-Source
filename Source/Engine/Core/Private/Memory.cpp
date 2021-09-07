@@ -1466,7 +1466,7 @@ void _MemsetSSE( byte * _Dst, int _Val, size_t _SizeInBytes )
 
     alignas(16) int32_t data[4];
 
-    memset( data, _Val, sizeof( data ) );
+    std::memset( data, _Val, sizeof( data ) );
 
     __m128i val = _mm_load_si128( (__m128i *)&data[0] );
 

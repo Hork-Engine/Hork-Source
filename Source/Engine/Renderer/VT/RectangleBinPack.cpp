@@ -406,7 +406,7 @@ float ARectangleBinPack::Occupancy() const {
 SRectangleBinBack_RectNode ARectangleBinPack::FindPositionForNewNode( int _Width, int _Height, FreeRectChoiceHeuristic _RectChoice, int * _NodeIndex ) {
     SRectangleBinBack_RectNode bestNode;
 
-    memset( &bestNode, 0, sizeof( SRectangleBinBack_RectNode ) );
+    Core::ZeroMem(&bestNode, sizeof(SRectangleBinBack_RectNode));
 
     int bestScore = std::numeric_limits<int>::max();
 

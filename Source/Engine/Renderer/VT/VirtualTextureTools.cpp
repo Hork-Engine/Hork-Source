@@ -268,7 +268,7 @@ SVirtualTextureLayer::SCachedPage * VT_OpenCachedPage( const SVirtualTextureStru
         // create empty page
         cachedPage->Image.CreateEmpty( _Struct.PageResolutionB, _Struct.PageResolutionB, Layer.NumChannels );
         int ImageByteSize = _Struct.PageResolutionB * _Struct.PageResolutionB * Layer.NumChannels;
-        memset( cachedPage->Image.GetData(), 0, ImageByteSize );
+        Core::ZeroMem(cachedPage->Image.GetData(), ImageByteSize);
     } else if ( _OpenMode == SVirtualTextureLayer::OpenActual ){
         // open from file
         lod = QuadTreeCalcLod64( _AbsoluteIndex );
@@ -335,7 +335,7 @@ static void CopyRect( const SRect & _Rect,
     int sourceStep = _SourceWidth * _ElementSize;
 
     for ( int y = 0; y < _Rect.height ; y++ ) {
-        memcpy( pDest, pSource, rectLineSize );
+        Core::Memcpy(pDest, pSource, rectLineSize);
         pDest += destStep;
         pSource += sourceStep;
     }
@@ -749,7 +749,7 @@ void VT_GenerateBorder_U( SVirtualTextureStructure & _Struct, SVirtualTextureLay
         int srcOffset = __PageByteOffset( _Struct, Layer, VT_PAGE_BORDER_WIDTH, VT_PAGE_BORDER_WIDTH );
 
         for ( int i = 0 ; i < VT_PAGE_BORDER_WIDTH ; i++ ) {
-            memcpy( PageData + dstOffset + i * _Struct.PageResolutionB * Layer.NumChannels, PageData + srcOffset, _Struct.PageResolution * Layer.NumChannels );
+            Core::Memcpy(PageData + dstOffset + i * _Struct.PageResolutionB * Layer.NumChannels, PageData + srcOffset, _Struct.PageResolution * Layer.NumChannels);
         }
         return;
     }
@@ -798,7 +798,7 @@ void VT_GenerateBorder_D( SVirtualTextureStructure & _Struct, SVirtualTextureLay
         int srcOffset = __PageByteOffset( _Struct, Layer, VT_PAGE_BORDER_WIDTH, _Struct.PageResolutionB - VT_PAGE_BORDER_WIDTH - 1 );
 
         for ( int i = 0 ; i < VT_PAGE_BORDER_WIDTH ; i++ ) {
-            memcpy( PageData + dstOffset + i * _Struct.PageResolutionB * Layer.NumChannels, PageData + srcOffset, _Struct.PageResolution * Layer.NumChannels );
+            Core::Memcpy(PageData + dstOffset + i * _Struct.PageResolutionB * Layer.NumChannels, PageData + srcOffset, _Struct.PageResolution * Layer.NumChannels);
         }
         return;
     }
@@ -847,7 +847,7 @@ void VT_GenerateBorder_L( SVirtualTextureStructure & _Struct, SVirtualTextureLay
 
         for ( int j = 0 ; j < _Struct.PageResolution ; j++ ) {
             for ( int i = 0 ; i < VT_PAGE_BORDER_WIDTH ; i++ ) {
-                memcpy( PageData + i * Layer.NumChannels, srcData, Layer.NumChannels );
+                Core::Memcpy(PageData + i * Layer.NumChannels, srcData, Layer.NumChannels);
             }
             PageData += _Struct.PageResolutionB * Layer.NumChannels;
             srcData += _Struct.PageResolutionB * Layer.NumChannels;
@@ -901,7 +901,7 @@ void VT_GenerateBorder_R( SVirtualTextureStructure & _Struct, SVirtualTextureLay
 
         for ( int j = 0 ; j < _Struct.PageResolution ; j++ ) {
             for ( int i = 0 ; i < VT_PAGE_BORDER_WIDTH ; i++ ) {
-                memcpy( PageData + i * Layer.NumChannels, srcData, Layer.NumChannels );
+                Core::Memcpy(PageData + i * Layer.NumChannels, srcData, Layer.NumChannels);
             }
             PageData += _Struct.PageResolutionB * Layer.NumChannels;
             srcData += _Struct.PageResolutionB * Layer.NumChannels;
@@ -951,7 +951,7 @@ void VT_GenerateBorder_UL( SVirtualTextureStructure & _Struct, SVirtualTextureLa
 
         for ( int j = 0 ; j < VT_PAGE_BORDER_WIDTH ; j++ ) {
             for ( int i = 0 ; i < VT_PAGE_BORDER_WIDTH ; i++ ) {
-                memcpy( PageData + ( j * _Struct.PageResolutionB + i ) * Layer.NumChannels, srcData, Layer.NumChannels );
+                Core::Memcpy(PageData + (j * _Struct.PageResolutionB + i) * Layer.NumChannels, srcData, Layer.NumChannels);
             }
         }
         return;
@@ -1003,7 +1003,7 @@ void VT_GenerateBorder_UR( SVirtualTextureStructure & _Struct, SVirtualTextureLa
 
         for ( int j = 0 ; j < VT_PAGE_BORDER_WIDTH ; j++ ) {
             for ( int i = 0 ; i < VT_PAGE_BORDER_WIDTH ; i++ ) {
-                memcpy( PageData + ( j * _Struct.PageResolutionB + i ) * Layer.NumChannels, srcData, Layer.NumChannels );
+                Core::Memcpy(PageData + (j * _Struct.PageResolutionB + i) * Layer.NumChannels, srcData, Layer.NumChannels);
             }
         }
         return;
@@ -1055,7 +1055,7 @@ void VT_GenerateBorder_DL( SVirtualTextureStructure & _Struct, SVirtualTextureLa
 
         for ( int j = 0 ; j < VT_PAGE_BORDER_WIDTH ; j++ ) {
             for ( int i = 0 ; i < VT_PAGE_BORDER_WIDTH ; i++ ) {
-                memcpy( PageData + ( j * _Struct.PageResolutionB + i ) * Layer.NumChannels, srcData, Layer.NumChannels );
+                Core::Memcpy(PageData + (j * _Struct.PageResolutionB + i) * Layer.NumChannels, srcData, Layer.NumChannels);
             }
         }
         return;
@@ -1107,7 +1107,7 @@ void VT_GenerateBorder_DR( SVirtualTextureStructure & _Struct, SVirtualTextureLa
 
         for ( int j = 0 ; j < VT_PAGE_BORDER_WIDTH ; j++ ) {
             for ( int i = 0 ; i < VT_PAGE_BORDER_WIDTH ; i++ ) {
-                memcpy( PageData + ( j * _Struct.PageResolutionB + i ) * Layer.NumChannels, srcData, Layer.NumChannels );
+                Core::Memcpy(PageData + (j * _Struct.PageResolutionB + i) * Layer.NumChannels, srcData, Layer.NumChannels);
             }
         }
         return;

@@ -876,12 +876,12 @@ bool WriteResourcePack( const char * SourcePath, const char * ResultFile )
     }
 
     uint64_t magic;
-    memcpy( &magic, "ARESPACK", sizeof( magic ) );
+    Core::Memcpy(&magic, "ARESPACK", sizeof(magic));
     magic = Core::LittleDDWord( magic );
     fwrite( &magic, 1, sizeof( magic ), file );
 
     mz_zip_archive zip;
-    memset( &zip, 0, sizeof( zip ) );
+    Core::ZeroMem( &zip, sizeof( zip ) );
 
     if ( mz_zip_writer_init_cfile( &zip, file, 0 ) ) {
         TraverseDirectory( path, true,

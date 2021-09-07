@@ -390,7 +390,7 @@ static void * LoadEXR( IBinaryStream & _Stream, int * w, int * h, int * channels
             }
         } else {
             result = STBI_MALLOC( (*w) * (*h) * numChannels * sizeof( float ) );
-            memcpy( result, data, (*w) * (*h) * numChannels * sizeof( float ) );
+            Core::Memcpy(result, data, (*w) * (*h) * numChannels * sizeof(float));
         }
     }
 
