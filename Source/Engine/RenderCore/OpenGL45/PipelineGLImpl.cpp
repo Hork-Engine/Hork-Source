@@ -32,17 +32,15 @@ SOFTWARE.
 #include "DeviceGLImpl.h"
 #include "ImmediateContextGLImpl.h"
 #include "ShaderModuleGLImpl.h"
-#include "VertexArrayObjectGL.h"
 #include "LUT.h"
 #include "GL/glew.h"
 
-namespace RenderCore {
+namespace RenderCore
+{
 
 APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& Desc) :
     IPipeline(pDevice)
 {
-    AImmediateContextGLImpl * ctx = AImmediateContextGLImpl::GetCurrent();
-
     GLuint pipelineId;
 
     if ( !pDevice->IsFeatureSupported( FEATURE_HALF_FLOAT_VERTEX ) ) {
@@ -106,10 +104,8 @@ APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& De
         }
     }
 
-    // Cache VAO for each context
-    VAO = ctx->CachedVAO(Desc.pVertexBindings, Desc.NumVertexBindings,
-                         Desc.pVertexAttribs, Desc.NumVertexAttribs);
-
+    pVertexLayout = pDevice->GetVertexLayout(Desc.pVertexBindings, Desc.NumVertexBindings,
+                                             Desc.pVertexAttribs, Desc.NumVertexAttribs);
     BlendingState     = pDevice->CachedBlendingState(Desc.BS);
     RasterizerState   = pDevice->CachedRasterizerState(Desc.RS);
     DepthStencilState = pDevice->CachedDepthStencilState(Desc.DSS);

@@ -98,6 +98,13 @@ public:
         return HashCB(_Data, _Size);
     }
 
+    class AVertexLayoutGL* GetVertexLayout(SVertexBindingInfo const* pVertexBindings,
+                                           uint32_t                  NumVertexBindings,
+                                           SVertexAttribInfo const*  pVertexAttribs,
+                                           uint32_t                  NumVertexAttribs);
+
+    TPodVector<AVertexLayoutGL*> const& GetVertexLayouts() const { return VertexLayouts; }
+
     SBlendingStateInfo const*     CachedBlendingState(SBlendingStateInfo const& _BlendingState);
     SRasterizerStateInfo const*   CachedRasterizerState(SRasterizerStateInfo const& _RasterizerState);
     SDepthStencilStateInfo const* CachedDepthStencilState(SDepthStencilStateInfo const& _DepthStencilState);
@@ -109,6 +116,9 @@ public:
 private:
     SAllocatorCallback Allocator;
     HashCallback       HashCB;
+
+    THash<>                      VertexLayoutsHash;
+    TPodVector<AVertexLayoutGL*> VertexLayouts;
 
     THash<>                         SamplerHash;
     TPodVector<struct SamplerInfo*> SamplerCache;

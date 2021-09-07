@@ -546,10 +546,7 @@ public:
     // Local
     //
 
-    struct SVertexArrayObject* CachedVAO(SVertexBindingInfo const* pVertexBindings,
-                                         uint32_t                  NumVertexBindings,
-                                         SVertexAttribInfo const*  pVertexAttribs,
-                                         uint32_t                  NumVertexAttribs);
+    bool IsMainContext() const { return bMainContext; }
 
 private:
     void PolygonOffsetClampSafe(float _Slope, int _Bias, float _Clamp);
@@ -614,6 +611,7 @@ private:
 
     struct SDL_Window* pWindow;
     void*              pContextGL;
+    bool               bMainContext;
 
     TRef<AFramebufferGLImpl> DefaultFramebuffer;
 
@@ -626,7 +624,8 @@ private:
     TRef<IResourceTable>       RootResourceTable;
     TRef<AResourceTableGLImpl> CurrentResourceTable;
     APipelineGLImpl*           CurrentPipeline;
-    struct SVertexArrayObject* CurrentVAO;
+    class AVertexLayoutGL*     CurrentVertexLayout;
+    class AVertexArrayObjectGL* CurrentVAO;
     uint8_t                    NumPatchVertices;      // count of patch vertices to set by glPatchParameteri
     unsigned int               IndexBufferType;       // type of current binded index buffer (uin16 or uint32_t)
     size_t                     IndexBufferTypeSizeOf; // size of one index
@@ -660,8 +659,7 @@ private:
     SDepthStencilStateInfo DepthStencilState; // current depth-stencil state
     unsigned int           StencilRef;
 
-    ARenderPass* CurrentRenderPass;
-    //ARenderPassGLImpl const* CurrentRenderPass;
+    ARenderPass*              CurrentRenderPass;
     int                      CurrentSubpass;
     SRect2D                  CurrentRenderPassRenderArea;
     AFramebufferGLImpl const* CurrentFramebuffer;
@@ -681,9 +679,6 @@ private:
     float CurrentDepthRange[2];
 
     SRect2D CurrentScissor;
-
-    THash<>                                VAOHash;
-    TPodVector<struct SVertexArrayObject*> VAOCache;
 
     TRef<AFramebufferCacheGLImpl> pFramebufferCache;
 };

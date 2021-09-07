@@ -35,7 +35,6 @@ SOFTWARE.
 #include "PipelineGLImpl.h"
 #include "TransformFeedbackGLImpl.h"
 #include "QueryGLImpl.h"
-#include "VertexArrayObjectGL.h"
 #include "LUT.h"
 
 #include "../FrameGraph.h"
@@ -56,17 +55,17 @@ namespace RenderCore
 AResourceTableGLImpl::AResourceTableGLImpl(ADeviceGLImpl* pDevice) :
     IResourceTable(pDevice)
 {
-    memset(TextureBindings, 0, sizeof(TextureBindings));
-    memset(TextureBindingUIDs, 0, sizeof(TextureBindingUIDs));
-    memset(ImageBindings, 0, sizeof(ImageBindings));
-    memset(ImageBindingUIDs, 0, sizeof(ImageBindingUIDs));
-    memset(ImageMipLevel, 0, sizeof(ImageMipLevel));
-    memset(ImageLayerIndex, 0, sizeof(ImageLayerIndex));
-    memset(ImageLayered, 0, sizeof(ImageLayered));
-    memset(BufferBindings, 0, sizeof(BufferBindings));
-    memset(BufferBindingUIDs, 0, sizeof(BufferBindingUIDs));
-    memset(BufferBindingOffsets, 0, sizeof(BufferBindingOffsets));
-    memset(BufferBindingSizes, 0, sizeof(BufferBindingSizes));
+    Core::ZeroMem(TextureBindings, sizeof(TextureBindings));
+    Core::ZeroMem(TextureBindingUIDs, sizeof(TextureBindingUIDs));
+    Core::ZeroMem(ImageBindings, sizeof(ImageBindings));
+    Core::ZeroMem(ImageBindingUIDs, sizeof(ImageBindingUIDs));
+    Core::ZeroMem(ImageMipLevel, sizeof(ImageMipLevel));
+    Core::ZeroMem(ImageLayerIndex, sizeof(ImageLayerIndex));
+    Core::ZeroMem(ImageLayered, sizeof(ImageLayered));
+    Core::ZeroMem(BufferBindings, sizeof(BufferBindings));
+    Core::ZeroMem(BufferBindingUIDs, sizeof(BufferBindingUIDs));
+    Core::ZeroMem(BufferBindingOffsets, sizeof(BufferBindingOffsets));
+    Core::ZeroMem(BufferBindingSizes, sizeof(BufferBindingSizes));
 }
 
 AResourceTableGLImpl::~AResourceTableGLImpl()
@@ -347,14 +346,19 @@ AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmedi
         // To fix this it's advised to simply call glGetError after glewInit to clear the flag.
         (void)glGetError();
     }
+    else
+    {
+        bMainContext = true;
+    }
 
     Current = this;
 
-    memset(BufferBindingUIDs, 0, sizeof(BufferBindingUIDs));
-    memset(BufferBindingOffsets, 0, sizeof(BufferBindingOffsets));
-    memset(BufferBindingSizes, 0, sizeof(BufferBindingSizes));
+    Core::ZeroMem(BufferBindingUIDs, sizeof(BufferBindingUIDs));
+    Core::ZeroMem(BufferBindingOffsets, sizeof(BufferBindingOffsets));
+    Core::ZeroMem(BufferBindingSizes, sizeof(BufferBindingSizes));
 
     CurrentPipeline       = nullptr;
+    CurrentVertexLayout   = nullptr;
     CurrentVAO            = nullptr;
     NumPatchVertices      = 0;
     IndexBufferType       = 0;
@@ -362,13 +366,13 @@ AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmedi
     IndexBufferOffset     = 0;
     IndexBufferUID        = 0;
     IndexBufferHandle     = 0;
-    memset(VertexBufferUIDs, 0, sizeof(VertexBufferUIDs));
-    memset(VertexBufferHandles, 0, sizeof(VertexBufferHandles));
-    memset(VertexBufferOffsets, 0, sizeof(VertexBufferOffsets));
+    Core::ZeroMem(VertexBufferUIDs, sizeof(VertexBufferUIDs));
+    Core::ZeroMem(VertexBufferHandles, sizeof(VertexBufferHandles));
+    Core::ZeroMem(VertexBufferOffsets, sizeof(VertexBufferOffsets));
 
     //CurrentQueryTarget = 0;
     //CurrentQueryObject = 0;
-    memset(CurrentQueryUID, 0, sizeof(CurrentQueryUID));
+    Core::ZeroMem(CurrentQueryUID, sizeof(CurrentQueryUID));
 
     // GL_NICEST, GL_FASTEST and GL_DONT_CARE
 
@@ -394,7 +398,7 @@ AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmedi
     PixelStore.UnpackAlignment = 4;
     glPixelStorei(GL_UNPACK_ALIGNMENT, PixelStore.UnpackAlignment);
 
-    memset(&Binding, 0, sizeof(Binding));
+    Core::ZeroMem(&Binding, sizeof(Binding));
 
     // Init default blending state
     bLogicOpEnabled = false;
@@ -406,7 +410,7 @@ AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmedi
     glBlendColor(0, 0, 0, 0);
     glDisable(GL_COLOR_LOGIC_OP);
     glLogicOp(GL_COPY);
-    memset(BlendColor, 0, sizeof(BlendColor));
+    Core::ZeroMem(BlendColor, sizeof(BlendColor));
 
     GLint maxSampleMaskWords = 0;
     glGetIntegerv(GL_MAX_SAMPLE_MASK_WORDS, &maxSampleMaskWords);
@@ -524,16 +528,12 @@ AImmediateContextGLImpl::~AImmediateContextGLImpl()
     CurrentResourceTable.Reset();
     RootResourceTable.Reset();
 
-    SAllocatorCallback const& allocator = GetDevice()->GetAllocator();
-
     glBindVertexArray(0);
-    for (SVertexArrayObject* vao : VAOCache)
+
+    for (AVertexLayoutGL* pVertexLayout : static_cast<ADeviceGLImpl*>(GetDevice())->GetVertexLayouts())
     {
-        glDeleteVertexArrays(1, &vao->Handle);
-        allocator.Deallocate(vao);
+        pVertexLayout->DestroyVAO(this);
     }
-    VAOCache.Free();
-    VAOHash.Free();
 
     SDL_GL_DeleteContext(pContextGL);
     if (Current == this)
@@ -610,161 +610,6 @@ void AImmediateContextGLImpl::ClampReadColor(COLOR_CLAMP _ColorClamp)
         ColorClamp = _ColorClamp;
     }
 }
-
-SVertexArrayObject* AImmediateContextGLImpl::CachedVAO(SVertexBindingInfo const* pVertexBindings,
-                                                       uint32_t                  NumVertexBindings,
-                                                       SVertexAttribInfo const*  pVertexAttribs,
-                                                       uint32_t                  NumVertexAttribs)
-{
-    VerifyContext();
-
-    SVertexArrayObjectHashedData hashed;
-
-    memset(&hashed, 0, sizeof(hashed));
-
-    hashed.NumVertexBindings = NumVertexBindings;
-    if (hashed.NumVertexBindings > MAX_VERTEX_BINDINGS)
-    {
-        hashed.NumVertexBindings = MAX_VERTEX_BINDINGS;
-
-        GLogger.Printf("AImmediateContextGLImpl::CachedVAO: NumVertexBindings > MAX_VERTEX_BINDINGS\n");
-    }
-    memcpy(hashed.VertexBindings, pVertexBindings, sizeof(hashed.VertexBindings[0]) * hashed.NumVertexBindings);
-
-    hashed.NumVertexAttribs = NumVertexAttribs;
-    if (hashed.NumVertexAttribs > MAX_VERTEX_ATTRIBS)
-    {
-        hashed.NumVertexAttribs = MAX_VERTEX_ATTRIBS;
-
-        GLogger.Printf("AImmediateContextGLImpl::CachedVAO: NumVertexAttribs > MAX_VERTEX_ATTRIBS\n");
-    }
-    memcpy(hashed.VertexAttribs, pVertexAttribs, sizeof(hashed.VertexAttribs[0]) * hashed.NumVertexAttribs);
-
-    // Clear semantic name to have proper hash key
-    for (int i = 0; i < hashed.NumVertexAttribs; i++)
-    {
-        hashed.VertexAttribs[i].SemanticName = nullptr;
-    }
-
-    int hash = static_cast<ADeviceGLImpl*>(GetDevice())->Hash((unsigned char*)&hashed, sizeof(hashed));
-
-    int i = VAOHash.First(hash);
-    for (; i != -1; i = VAOHash.Next(i))
-    {
-        SVertexArrayObject* vao = VAOCache[i];
-
-        if (memcmp(&vao->Hashed, &hashed, sizeof(vao->Hashed)) == 0)
-        {
-            //GLogger.Printf( "Caching VAO\n" );
-            return vao;
-        }
-    }
-
-    SAllocatorCallback const& allocator = GetDevice()->GetAllocator();
-
-    SVertexArrayObject* vao = static_cast<SVertexArrayObject*>(allocator.Allocate(sizeof(SVertexArrayObject)));
-
-    memcpy(&vao->Hashed, &hashed, sizeof(vao->Hashed));
-
-    vao->IndexBufferUID = 0;
-
-    memset(vao->VertexBufferUIDs, 0, sizeof(vao->VertexBufferUIDs));
-    memset(vao->VertexBufferOffsets, 0, sizeof(vao->VertexBufferOffsets));
-
-    i = VAOCache.Size();
-
-    VAOHash.Insert(hash, i);
-    VAOCache.Append(vao);
-
-    //GLogger.Printf( "Total VAOs %d\n", i+1 );
-
-    // TODO: For each context create VAO
-    glCreateVertexArrays(1, &vao->Handle);
-    if (!vao->Handle)
-    {
-        GLogger.Printf("AImmediateContextGLImpl::CachedVAO: couldn't create vertex array object\n");
-        //return nullptr;
-    }
-
-    memset(vao->VertexBindingsStrides, 0, sizeof(vao->VertexBindingsStrides));
-    for (SVertexBindingInfo const* binding = hashed.VertexBindings; binding < &hashed.VertexBindings[hashed.NumVertexBindings]; binding++)
-    {
-        AN_ASSERT(binding->InputSlot < MAX_VERTEX_BUFFER_SLOTS);
-
-        if (binding->InputSlot >= GetDevice()->GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_BUFFER_SLOTS))
-        {
-            GLogger.Printf("AImmediateContextGLImpl::CachedVAO: binding->InputSlot >= MaxVertexBufferSlots\n");
-        }
-
-        if (binding->Stride > GetDevice()->GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE))
-        {
-            GLogger.Printf("AImmediateContextGLImpl::CachedVAO: binding->Stride > MaxVertexAttribStride\n");
-        }
-
-        vao->VertexBindingsStrides[binding->InputSlot] = binding->Stride;
-    }
-
-    for (SVertexAttribInfo const* attrib = hashed.VertexAttribs; attrib < &hashed.VertexAttribs[hashed.NumVertexAttribs]; attrib++)
-    {
-
-        // glVertexAttribFormat, glVertexAttribBinding, glVertexBindingDivisor - v4.3 or GL_ARB_vertex_attrib_binding
-
-        if (attrib->Offset > GetDevice()->GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET))
-        {
-            GLogger.Printf("AImmediateContextGLImpl::CachedVAO: attrib offset > MaxVertexAttribRelativeOffset\n");
-        }
-
-        switch (attrib->Mode)
-        {
-            case VAM_FLOAT:
-                glVertexArrayAttribFormat(vao->Handle,
-                                          attrib->Location,
-                                          attrib->NumComponents(),
-                                          VertexAttribTypeLUT[attrib->TypeOfComponent()],
-                                          attrib->IsNormalized(),
-                                          attrib->Offset);
-                break;
-            case VAM_DOUBLE:
-                glVertexArrayAttribLFormat(vao->Handle,
-                                           attrib->Location,
-                                           attrib->NumComponents(),
-                                           VertexAttribTypeLUT[attrib->TypeOfComponent()],
-                                           attrib->Offset);
-                break;
-            case VAM_INTEGER:
-                glVertexArrayAttribIFormat(vao->Handle,
-                                           attrib->Location,
-                                           attrib->NumComponents(),
-                                           VertexAttribTypeLUT[attrib->TypeOfComponent()],
-                                           attrib->Offset);
-                break;
-        }
-
-        glVertexArrayAttribBinding(vao->Handle, attrib->Location, attrib->InputSlot);
-
-        for (SVertexBindingInfo const* binding = hashed.VertexBindings; binding < &hashed.VertexBindings[hashed.NumVertexBindings]; binding++)
-        {
-            if (binding->InputSlot == attrib->InputSlot)
-            {
-                if (binding->InputRate == INPUT_RATE_PER_INSTANCE)
-                {
-                    //glVertexAttribDivisor( ) // тоже самое, что и glVertexBindingDivisor если attrib->Location==InputSlot
-                    glVertexArrayBindingDivisor(vao->Handle, attrib->InputSlot, attrib->InstanceDataStepRate); // Since GL v4.3
-                }
-                else
-                {
-                    glVertexArrayBindingDivisor(vao->Handle, attrib->InputSlot, 0); // Since GL v4.3
-                }
-                break;
-            }
-        }
-
-        glEnableVertexArrayAttrib(vao->Handle, attrib->Location);
-    }
-
-    return vao;
-}
-
 
 static GLenum Attachments[MAX_COLOR_ATTACHMENTS];
 
@@ -962,15 +807,16 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
 
     glBindProgramPipeline(pipelineId);
 
-    if (CurrentVAO != CurrentPipeline->VAO)
+    if (CurrentPipeline->pVertexLayout != CurrentVertexLayout)
     {
-        CurrentVAO = CurrentPipeline->VAO;
-        glBindVertexArray(CurrentVAO->Handle);
-        //GLogger.Printf( "Binding vao %d\n", CurrentVAO->Handle );
+        CurrentVertexLayout = CurrentPipeline->pVertexLayout;
+        CurrentVAO = CurrentVertexLayout->GetVAO(this);
+        glBindVertexArray(CurrentVAO->HandleGL);
+        //GLogger.Printf( "Binding vao %d\n", CurrentVAO->HandleGL );
     }
     else
     {
-        //GLogger.Printf( "caching vao binding %d\n", CurrentVAO->Handle );
+        //GLogger.Printf( "caching vao binding %d\n", CurrentVAO->HandleGL );
     }
 
     //
@@ -1001,7 +847,7 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
             {
                 SRenderTargetBlendingInfo const& rtDesc = desc.RenderTargetSlots[i];
                 SetRenderTargetSlotBlending(i, BlendState.RenderTargetSlots[i], rtDesc);
-                memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
+                Core::Memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
             }
         }
         else
@@ -1011,7 +857,7 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
             SetRenderTargetSlotsBlending(BlendState.RenderTargetSlots[0], rtDesc, needReset);
             for (int i = 0; i < MAX_COLOR_ATTACHMENTS; i++)
             {
-                memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
+                Core::Memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
             }
         }
 
@@ -1311,8 +1157,8 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
                                     StencilOpLUT[desc.FrontFace.DepthFailOp],
                                     StencilOpLUT[desc.FrontFace.DepthPassOp]);
 
-                memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
-                memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
+                Core::Memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
+                Core::Memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
             }
             else
             {
@@ -1324,7 +1170,7 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
                                         StencilOpLUT[desc.FrontFace.DepthFailOp],
                                         StencilOpLUT[desc.FrontFace.DepthPassOp]);
 
-                    memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
+                    Core::Memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
                 }
 
                 if (backStencilChanged)
@@ -1334,7 +1180,7 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
                                         StencilOpLUT[desc.BackFace.DepthFailOp],
                                         StencilOpLUT[desc.BackFace.DepthPassOp]);
 
-                    memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
+                    Core::Memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
                 }
             }
         }
@@ -1787,14 +1633,14 @@ void AImmediateContextGLImpl::SetViewport(SViewport const& _Viewport)
                    (GLint)INVERT_VIEWPORT_Y(&_Viewport),
                    (GLsizei)_Viewport.Width,
                    (GLsizei)_Viewport.Height);
-        memcpy(CurrentViewport, &_Viewport, sizeof(CurrentViewport));
+        Core::Memcpy(CurrentViewport, &_Viewport, sizeof(CurrentViewport));
     }
 
     if (memcmp(CurrentDepthRange, &_Viewport.MinDepth, sizeof(CurrentDepthRange)) != 0)
     {
         glDepthRangef(_Viewport.MinDepth, _Viewport.MaxDepth); // Since GL v4.1
 
-        memcpy(CurrentDepthRange, &_Viewport.MinDepth, sizeof(CurrentDepthRange));
+        Core::Memcpy(CurrentDepthRange, &_Viewport.MinDepth, sizeof(CurrentDepthRange));
     }
 }
 
@@ -1907,14 +1753,15 @@ void AImmediateContextGLImpl::SetScissorIndexed(uint32_t _Index, SRect2D const& 
 
 void AImmediateContextGLImpl::UpdateVertexBuffers()
 {
-    for (SVertexBindingInfo const* binding = CurrentVAO->Hashed.VertexBindings; binding < &CurrentVAO->Hashed.VertexBindings[CurrentVAO->Hashed.NumVertexBindings]; binding++)
+    SVertexLayoutDescGL const& desc = CurrentVertexLayout->GetDesc();
+    for (SVertexBindingInfo const* binding = desc.VertexBindings; binding < &desc.VertexBindings[desc.NumVertexBindings]; binding++)
     {
         int slot = binding->InputSlot;
 
         if (CurrentVAO->VertexBufferUIDs[slot] != VertexBufferUIDs[slot] || CurrentVAO->VertexBufferOffsets[slot] != VertexBufferOffsets[slot])
         {
 
-            glVertexArrayVertexBuffer(CurrentVAO->Handle, slot, VertexBufferHandles[slot], VertexBufferOffsets[slot], CurrentVAO->VertexBindingsStrides[slot]);
+            glVertexArrayVertexBuffer(CurrentVAO->HandleGL, slot, VertexBufferHandles[slot], VertexBufferOffsets[slot], CurrentVertexLayout->GetVertexBindingsStrides()[slot]);
 
             CurrentVAO->VertexBufferUIDs[slot]    = VertexBufferUIDs[slot];
             CurrentVAO->VertexBufferOffsets[slot] = VertexBufferOffsets[slot];
@@ -1932,7 +1779,7 @@ void AImmediateContextGLImpl::UpdateVertexAndIndexBuffers()
 
     if (CurrentVAO->IndexBufferUID != IndexBufferUID)
     {
-        glVertexArrayElementBuffer(CurrentVAO->Handle, IndexBufferHandle);
+        glVertexArrayElementBuffer(CurrentVAO->HandleGL, IndexBufferHandle);
         CurrentVAO->IndexBufferUID = IndexBufferUID;
 
         //GLogger.Printf( "BindIndexBuffer %d\n", indexBufferId );
@@ -3181,7 +3028,7 @@ void AImmediateContextGLImpl::DynamicState_BlendingColor(const float _ConstantCo
     if (isColorChanged)
     {
         glBlendColor(_ConstantColor[0], _ConstantColor[1], _ConstantColor[2], _ConstantColor[3]);
-        memcpy(BlendColor, _ConstantColor, sizeof(BlendColor));
+        Core::Memcpy(BlendColor, _ConstantColor, sizeof(BlendColor));
     }
 }
 

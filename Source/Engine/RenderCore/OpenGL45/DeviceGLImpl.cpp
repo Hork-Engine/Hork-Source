@@ -552,6 +552,11 @@ ADeviceGLImpl::ADeviceGLImpl(SImmediateContextDesc const& Desc,
 
 ADeviceGLImpl::~ADeviceGLImpl()
 {
+    for (AVertexLayoutGL* pVertexLayout : VertexLayouts)
+    {
+        pVertexLayout->RemoveRef();
+    }
+
     for (SamplerInfo* sampler : SamplerCache)
     {
         glDeleteSamplers(1, &sampler->Id);
@@ -573,16 +578,6 @@ ADeviceGLImpl::~ADeviceGLImpl()
     {
         Allocator.Deallocate(state);
     }
-
-    SamplerCache.Free();
-    BlendingStateCache.Free();
-    RasterizerStateCache.Free();
-    DepthStencilStateCache.Free();
-
-    SamplerHash.Free();
-    BlendingHash.Free();
-    RasterizerHash.Free();
-    DepthStencilHash.Free();
 }
 
 void ADeviceGLImpl::CreateImmediateContext(SImmediateContextDesc const& Desc, TRef<IImmediateContext>* ppImmediateContext)
@@ -690,6 +685,90 @@ int32_t ADeviceGLImpl::GetGPUMemoryCurrentAvailable()
     return 0;
 }
 
+AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVertexBindings,
+                                                uint32_t                  NumVertexBindings,
+                                                SVertexAttribInfo const*  pVertexAttribs,
+                                                uint32_t                  NumVertexAttribs)
+{
+    SVertexLayoutDescGL desc;
+
+    desc.NumVertexBindings = NumVertexBindings;
+    if (desc.NumVertexBindings > MAX_VERTEX_BINDINGS)
+    {
+        desc.NumVertexBindings = MAX_VERTEX_BINDINGS;
+
+        GLogger.Printf("ADeviceGLImpl::GetVertexLayout: NumVertexBindings > MAX_VERTEX_BINDINGS\n");
+    }
+    Core::Memcpy(desc.VertexBindings, pVertexBindings, sizeof(desc.VertexBindings[0]) * desc.NumVertexBindings);
+
+    desc.NumVertexAttribs = NumVertexAttribs;
+    if (desc.NumVertexAttribs > MAX_VERTEX_ATTRIBS)
+    {
+        desc.NumVertexAttribs = MAX_VERTEX_ATTRIBS;
+
+        GLogger.Printf("ADeviceGLImpl::GetVertexLayout: NumVertexAttribs > MAX_VERTEX_ATTRIBS\n");
+    }
+    Core::Memcpy(desc.VertexAttribs, pVertexAttribs, sizeof(desc.VertexAttribs[0]) * desc.NumVertexAttribs);
+
+    // Clear semantic name to have proper hash key
+    for (int i = 0; i < desc.NumVertexAttribs; i++)
+    {
+        desc.VertexAttribs[i].SemanticName = nullptr;
+    }
+
+    int hash = Hash((unsigned char*)&desc, sizeof(desc));
+
+    int i = VertexLayoutsHash.First(hash);
+    for (; i != -1; i = VertexLayoutsHash.Next(i))
+    {
+        AVertexLayoutGL* pVertexLayout = VertexLayouts[i];
+
+        if (pVertexLayout->GetDesc() == desc)
+        {
+            GLogger.Printf( "Caching vertex layout\n" );
+            return pVertexLayout;
+        }
+    }
+
+    // Validate
+
+    for (SVertexBindingInfo const* binding = desc.VertexBindings; binding < &desc.VertexBindings[desc.NumVertexBindings]; binding++)
+    {
+        AN_ASSERT(binding->InputSlot < MAX_VERTEX_BUFFER_SLOTS);
+
+        if (binding->InputSlot >= GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_BUFFER_SLOTS))
+        {
+            GLogger.Printf("ADeviceGLImpl::GetVertexLayout: binding->InputSlot >= MaxVertexBufferSlots\n");
+        }
+
+        if (binding->Stride > GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE))
+        {
+            GLogger.Printf("ADeviceGLImpl::GetVertexLayout: binding->Stride > MaxVertexAttribStride\n");
+        }
+    }
+
+    for (SVertexAttribInfo const* attrib = desc.VertexAttribs; attrib < &desc.VertexAttribs[desc.NumVertexAttribs]; attrib++)
+    {
+        if (attrib->Offset > GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET))
+        {
+            GLogger.Printf("ADeviceGLImpl::GetVertexLayout: attrib offset > MaxVertexAttribRelativeOffset\n");
+        }
+    }
+
+    TRef<AVertexLayoutGL> pVertexLayout;
+    pVertexLayout = MakeRef<AVertexLayoutGL>(desc);
+
+    i = VertexLayouts.Size();
+
+    VertexLayoutsHash.Insert(hash, i);
+    VertexLayouts.Append(pVertexLayout);
+    pVertexLayout->AddRef();
+
+    GLogger.Printf("Create VAO, total %d\n", VertexLayouts.Size());
+
+    return pVertexLayout;
+}
+
 SBlendingStateInfo const* ADeviceGLImpl::CachedBlendingState(SBlendingStateInfo const& _BlendingState)
 {
     int hash = Hash((unsigned char*)&_BlendingState, sizeof(_BlendingState));
@@ -708,7 +787,7 @@ SBlendingStateInfo const* ADeviceGLImpl::CachedBlendingState(SBlendingStateInfo 
     }
 
     SBlendingStateInfo* state = static_cast<SBlendingStateInfo*>(Allocator.Allocate(sizeof(SBlendingStateInfo)));
-    memcpy(state, &_BlendingState, sizeof(*state));
+    Core::Memcpy(state, &_BlendingState, sizeof(*state));
 
     i = BlendingStateCache.Size();
 
@@ -738,7 +817,7 @@ SRasterizerStateInfo const* ADeviceGLImpl::CachedRasterizerState(SRasterizerStat
     }
 
     SRasterizerStateInfo* state = static_cast<SRasterizerStateInfo*>(Allocator.Allocate(sizeof(SRasterizerStateInfo)));
-    memcpy(state, &_RasterizerState, sizeof(*state));
+    Core::Memcpy(state, &_RasterizerState, sizeof(*state));
 
     i = RasterizerStateCache.Size();
 
@@ -768,7 +847,7 @@ SDepthStencilStateInfo const* ADeviceGLImpl::CachedDepthStencilState(SDepthStenc
     }
 
     SDepthStencilStateInfo* state = static_cast<SDepthStencilStateInfo*>(Allocator.Allocate(sizeof(SDepthStencilStateInfo)));
-    memcpy(state, &_DepthStencilState, sizeof(*state));
+    Core::Memcpy(state, &_DepthStencilState, sizeof(*state));
 
     i = DepthStencilStateCache.Size();
 
@@ -798,7 +877,7 @@ unsigned int ADeviceGLImpl::CachedSampler(SSamplerDesc const& SamplerDesc)
     }
 
     SamplerInfo* sampler = static_cast<SamplerInfo*>(Allocator.Allocate(sizeof(SamplerInfo)));
-    memcpy(&sampler->Desc, &SamplerDesc, sizeof(sampler->Desc));
+    Core::Memcpy(&sampler->Desc, &SamplerDesc, sizeof(sampler->Desc));
 
     i = SamplerCache.Size();
 

@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include <RenderCore/Pipeline.h>
 
+#include "VertexLayoutGL.h"
+
 namespace RenderCore
 {
 
@@ -57,7 +59,7 @@ public:
     ~APipelineGLImpl();
 
 private:
-    struct SVertexArrayObject*    VAO;
+    AVertexLayoutGL*              pVertexLayout;
     SBlendingStateInfo const*     BlendingState;
     SRasterizerStateInfo const*   RasterizerState;
     SDepthStencilStateInfo const* DepthStencilState;
