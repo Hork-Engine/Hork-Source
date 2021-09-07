@@ -198,8 +198,8 @@ public:
 protected:
     GRAPHICS_VENDOR GraphicsVendor = VENDOR_UNKNOWN;
 
-    TArray<unsigned int, DEVICE_CAPS_MAX> DeviceCaps;
-    TArray<bool, FEATURE_MAX>             FeatureSupport;
+    TArray<unsigned int, DEVICE_CAPS_MAX> DeviceCaps = {};
+    TArray<bool, FEATURE_MAX>             FeatureSupport = {};
 
 private:
     TArray<int, DEVICE_OBJECT_TYPE_MAX> ObjectCounters = {};

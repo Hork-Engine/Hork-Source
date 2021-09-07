@@ -75,9 +75,9 @@ enum BUFFER_VIEW_PIXEL_FORMAT : uint8_t
 
 struct SBufferViewDesc
 {
-    BUFFER_VIEW_PIXEL_FORMAT Format;
-    size_t                   Offset;
-    size_t                   SizeInBytes;
+    BUFFER_VIEW_PIXEL_FORMAT Format      = BUFFER_VIEW_PIXEL_FORMAT_R8;
+    size_t                   Offset      = 0;
+    size_t                   SizeInBytes = 0;
 };
 
 class IBufferView : public IDeviceObject

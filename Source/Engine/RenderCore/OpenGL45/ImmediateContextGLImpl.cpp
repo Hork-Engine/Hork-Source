@@ -468,7 +468,14 @@ AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmedi
 
     glEnable(GL_FRAMEBUFFER_SRGB);
 
-    bPrimitiveRestartEnabled = false;
+    // GL_PRIMITIVE_RESTART_FIXED_INDEX if from GL_ARB_ES3_compatibility
+    // Enables primitive restarting with a fixed index.
+    // If enabled, any one of the draw commands which transfers a set of generic attribute array elements
+    // to the GL will restart the primitive when the index of the vertex is equal to the fixed primitive index
+    // for the specified index type.
+    // The fixed index is equal to 2n−1 where n is equal to 8 for GL_UNSIGNED_BYTE,
+    // 16 for GL_UNSIGNED_SHORT and 32 for GL_UNSIGNED_INT.
+    glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
 
     CurrentRenderPass  = nullptr;
     CurrentFramebuffer = nullptr;
@@ -979,27 +986,6 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
         }
     }
 
-    if (bPrimitiveRestartEnabled != CurrentPipeline->bPrimitiveRestartEnabled)
-    {
-        if (CurrentPipeline->bPrimitiveRestartEnabled)
-        {
-            // GL_PRIMITIVE_RESTART_FIXED_INDEX if from GL_ARB_ES3_compatibility
-            // Enables primitive restarting with a fixed index.
-            // If enabled, any one of the draw commands which transfers a set of generic attribute array elements
-            // to the GL will restart the primitive when the index of the vertex is equal to the fixed primitive index
-            // for the specified index type.
-            // The fixed index is equal to 2n−1 where n is equal to 8 for GL_UNSIGNED_BYTE,
-            // 16 for GL_UNSIGNED_SHORT and 32 for GL_UNSIGNED_INT.
-            glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-        }
-        else
-        {
-            glDisable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-        }
-
-        bPrimitiveRestartEnabled = CurrentPipeline->bPrimitiveRestartEnabled;
-    }
-
     //
     // Set blending state
     //
@@ -1239,10 +1225,10 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
             DepthStencilState.bDepthEnable = desc.bDepthEnable;
         }
 
-        if (DepthStencilState.DepthWriteMask != desc.DepthWriteMask)
+        if (DepthStencilState.bDepthWrite != desc.bDepthWrite)
         {
-            glDepthMask(desc.DepthWriteMask);
-            DepthStencilState.DepthWriteMask = desc.DepthWriteMask;
+            glDepthMask(desc.bDepthWrite);
+            DepthStencilState.bDepthWrite = desc.bDepthWrite;
         }
 
         if (DepthStencilState.DepthFunc != desc.DepthFunc)
@@ -2555,7 +2541,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResultsAvailable(IQueryPool* _QueryPo
     AN_ASSERT(_FirstQuery + _QueryCount <= queryPool->PoolSize);
 
     const GLuint bufferId   = _DstBuffer->GetHandleNativeGL();
-    const size_t bufferSize = _DstBuffer->GetSizeInBytes();
+    const size_t bufferSize = _DstBuffer->GetDesc().SizeInBytes;
 
     if (_QueryResult64Bit)
     {
@@ -2611,7 +2597,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResults(IQueryPool*        _QueryPool
     AN_ASSERT(_FirstQuery + _QueryCount <= queryPool->PoolSize);
 
     const GLuint bufferId   = _DstBuffer->GetHandleNativeGL();
-    const size_t bufferSize = _DstBuffer->GetSizeInBytes();
+    const size_t bufferSize = _DstBuffer->GetDesc().SizeInBytes;
 
     GLenum pname = (_Flags & QUERY_RESULT_WAIT_BIT) ? GL_QUERY_RESULT : GL_QUERY_RESULT_NO_WAIT;
 
@@ -2876,7 +2862,7 @@ void AImmediateContextGLImpl::BeginSubpass()
                 bRasterizerDiscard = false;
             }
 
-            if (DepthStencilState.DepthWriteMask == DEPTH_WRITE_DISABLE)
+            if (DepthStencilState.bDepthWrite == false)
             {
                 glDepthMask(1);
             }
@@ -2907,7 +2893,7 @@ void AImmediateContextGLImpl::BeginSubpass()
                     AN_ASSERT(0);
             }
 
-            if (DepthStencilState.DepthWriteMask == DEPTH_WRITE_DISABLE)
+            if (DepthStencilState.bDepthWrite == false)
             {
                 glDepthMask(0);
             }
@@ -3298,8 +3284,8 @@ void AImmediateContextGLImpl::CopyBuffer(IBuffer* _SrcBuffer, IBuffer* _DstBuffe
 {
     VerifyContext();
 
-    size_t size = _SrcBuffer->GetSizeInBytes();
-    AN_ASSERT(size == _DstBuffer->GetSizeInBytes());
+    size_t size = _SrcBuffer->GetDesc().SizeInBytes;
+    AN_ASSERT(size == _DstBuffer->GetDesc().SizeInBytes);
 
     glCopyNamedBufferSubData(_SrcBuffer->GetHandleNativeGL(),
                              _DstBuffer->GetHandleNativeGL(),
@@ -5436,7 +5422,7 @@ void AImmediateContextGLImpl::GetQueryPoolResults(IQueryPool*        _QueryPool,
 
 void AImmediateContextGLImpl::ReadBuffer(IBuffer* _Buffer, void* _SysMem)
 {
-    ReadBufferRange(_Buffer, 0, _Buffer->GetSizeInBytes(), _SysMem);
+    ReadBufferRange(_Buffer, 0, _Buffer->GetDesc().SizeInBytes, _SysMem);
 }
 
 void AImmediateContextGLImpl::ReadBufferRange(IBuffer* _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void* _SysMem)
@@ -5460,7 +5446,7 @@ void AImmediateContextGLImpl::ReadBufferRange(IBuffer* _Buffer, size_t _ByteOffs
 
 void AImmediateContextGLImpl::WriteBuffer(IBuffer* _Buffer, const void* _SysMem)
 {
-    WriteBufferRange(_Buffer, 0, _Buffer->GetSizeInBytes(), _SysMem);
+    WriteBufferRange(_Buffer, 0, _Buffer->GetDesc().SizeInBytes, _SysMem);
 }
 
 void AImmediateContextGLImpl::WriteBufferRange(IBuffer* _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void* _SysMem)
@@ -5504,7 +5490,7 @@ void* AImmediateContextGLImpl::MapBuffer(IBuffer*        _Buffer,
                                          bool            _Unsynchronized)
 {
     return MapBufferRange(_Buffer,
-                          0, _Buffer->GetSizeInBytes(),
+                          0, _Buffer->GetDesc().SizeInBytes,
                           _ClientServerTransfer,
                           _Invalidate,
                           _Persistence,

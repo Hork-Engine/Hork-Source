@@ -74,15 +74,10 @@ static GLenum ChooseBufferUsageHint(MUTABLE_STORAGE_CLIENT_ACCESS _ClientAccess,
 }
 
 ABufferGLImpl::ABufferGLImpl(ADeviceGLImpl* pDevice, SBufferDesc const& Desc, const void* SysMem) :
-    IBuffer(pDevice)
+    IBuffer(pDevice, Desc)
 {
     GLuint id;
     GLint  size;
-
-    bImmutableStorage     = Desc.bImmutableStorage;
-    MutableClientAccess   = Desc.MutableClientAccess;
-    MutableUsage          = Desc.MutableUsage;
-    ImmutableStorageFlags = Desc.ImmutableStorageFlags;
 
     glCreateBuffers(1, &id);
 
@@ -99,9 +94,7 @@ ABufferGLImpl::ABufferGLImpl(ADeviceGLImpl* pDevice, SBufferDesc const& Desc, co
 
     glGetNamedBufferParameteriv(id, GL_BUFFER_SIZE, &size);
 
-    SizeInBytes = size;
-
-    if (SizeInBytes != (GLint)Desc.SizeInBytes)
+    if (size != (GLint)Desc.SizeInBytes)
     {
         glDeleteBuffers(1, &id);
 
@@ -111,7 +104,7 @@ ABufferGLImpl::ABufferGLImpl(ADeviceGLImpl* pDevice, SBufferDesc const& Desc, co
 
     SetHandleNativeGL(id);
 
-    pDevice->BufferMemoryAllocated += SizeInBytes;
+    pDevice->BufferMemoryAllocated += Desc.SizeInBytes;
 
     // NOTE: текущие параметры буфера можно получить с помощью следующих функций:
     // glGetBufferParameteri64v        glGetNamedBufferParameteri64v
@@ -127,39 +120,24 @@ ABufferGLImpl::~ABufferGLImpl()
         glDeleteBuffers(1, &id);
     }
 
-    static_cast<ADeviceGLImpl*>(GetDevice())->BufferMemoryAllocated -= SizeInBytes;
+    static_cast<ADeviceGLImpl*>(GetDevice())->BufferMemoryAllocated -= GetDesc().SizeInBytes;
 }
 
-bool ABufferGLImpl::CreateView(SBufferViewDesc const& Desc, TRef<IBufferView>* ppBufferView)
+bool ABufferGLImpl::CreateView(SBufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView)
 {
-    *ppBufferView = MakeRef<ABufferViewGLImpl>(Desc, this);
-    return true;
-}
-
-bool ABufferGLImpl::Realloc(size_t _SizeInBytes, const void* SysMem)
-{
-    if (bImmutableStorage)
-    {
-        GLogger.Printf("Buffer::Realloc: immutable buffer cannot be reallocated\n");
-        return false;
-    }
-
-    SizeInBytes = _SizeInBytes;
-
-    glNamedBufferData(GetHandleNativeGL(), _SizeInBytes, SysMem, ChooseBufferUsageHint(MutableClientAccess, MutableUsage)); // 4.5
-
+    *ppBufferView = MakeRef<ABufferViewGLImpl>(BufferViewDesc, this);
     return true;
 }
 
 bool ABufferGLImpl::Orphan()
 {
-    if (bImmutableStorage)
+    if (GetDesc().bImmutableStorage)
     {
         GLogger.Printf("Buffer::Orphan: expected mutable buffer\n");
         return false;
     }
 
-    glNamedBufferData(GetHandleNativeGL(), SizeInBytes, nullptr, ChooseBufferUsageHint(MutableClientAccess, MutableUsage)); // 4.5
+    glNamedBufferData(GetHandleNativeGL(), GetDesc().SizeInBytes, nullptr, ChooseBufferUsageHint(GetDesc().MutableClientAccess, GetDesc().MutableUsage)); // 4.5
 
     return true;
 }

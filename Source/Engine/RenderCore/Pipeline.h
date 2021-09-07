@@ -139,20 +139,20 @@ struct SRenderTargetBlendingInfo
 {
     struct Operation
     {
-        BLEND_OP ColorRGB;
-        BLEND_OP Alpha;
+        BLEND_OP ColorRGB = BLEND_OP_ADD;
+        BLEND_OP Alpha    = BLEND_OP_ADD;
     } Op;
 
     struct Function
     {
-        BLEND_FUNC SrcFactorRGB;
-        BLEND_FUNC DstFactorRGB;
-        BLEND_FUNC SrcFactorAlpha;
-        BLEND_FUNC DstFactorAlpha;
+        BLEND_FUNC SrcFactorRGB   = BLEND_FUNC_ONE;
+        BLEND_FUNC DstFactorRGB   = BLEND_FUNC_ZERO;
+        BLEND_FUNC SrcFactorAlpha = BLEND_FUNC_ONE;
+        BLEND_FUNC DstFactorAlpha = BLEND_FUNC_ZERO;
     } Func;
 
-    bool             bBlendEnable;
-    COLOR_WRITE_MASK ColorWriteMask;
+    bool             bBlendEnable = false;
+    COLOR_WRITE_MASK ColorWriteMask = COLOR_WRITE_RGBA;
 
     // General blend equation:
     // if ( BlendEnable ) {
@@ -163,31 +163,19 @@ struct SRenderTargetBlendingInfo
     //     ResultAlpha    = SourceColor.a;
     // }
 
-    SRenderTargetBlendingInfo()
-    {
-        Op.ColorRGB = Op.Alpha = BLEND_OP_ADD;
-        Func.SrcFactorRGB = Func.SrcFactorAlpha = BLEND_FUNC_ONE;
-        Func.DstFactorRGB = Func.DstFactorAlpha = BLEND_FUNC_ZERO;
-        bBlendEnable                            = false;
-        ColorWriteMask                          = COLOR_WRITE_RGBA;
-    }
+    SRenderTargetBlendingInfo() = default;
 
     void SetBlendingPreset(BLENDING_PRESET _Preset);
 };
 
 struct SBlendingStateInfo
 {
-    bool                      bSampleAlphaToCoverage;
-    bool                      bIndependentBlendEnable;
-    LOGIC_OP                  LogicOp;
+    bool                      bSampleAlphaToCoverage = false;
+    bool                      bIndependentBlendEnable = false;
+    LOGIC_OP                  LogicOp                 = LOGIC_OP_COPY;
     SRenderTargetBlendingInfo RenderTargetSlots[MAX_COLOR_ATTACHMENTS];
 
-    SBlendingStateInfo()
-    {
-        bSampleAlphaToCoverage  = false;
-        bIndependentBlendEnable = false;
-        LogicOp                 = LOGIC_OP_COPY;
-    }
+    SBlendingStateInfo() = default;
 };
 
 //
@@ -209,9 +197,9 @@ enum POLYGON_CULL : uint8_t
 
 struct SRasterizerStateInfo
 {
-    POLYGON_FILL FillMode;
-    POLYGON_CULL CullMode;
-    bool         bFrontClockwise;
+    POLYGON_FILL FillMode        = POLYGON_FILL_SOLID;
+    POLYGON_CULL CullMode        = POLYGON_CULL_BACK;
+    bool         bFrontClockwise = false;
 
     struct
     {
@@ -224,32 +212,23 @@ struct SRasterizerStateInfo
                       |_  max(MaxDepthSlope x Slope + r * Bias, Clamp),   if Clamp < 0.
 
         */
-        float Slope;
-        int   Bias;
-        float Clamp;
+        float Slope = 0;
+        int   Bias  = 0;
+        float Clamp = 0;
     } DepthOffset;
 
-    bool bDepthClampEnable; // If enabled, the −wc ≤ zc ≤ wc plane equation is ignored by view volume clipping
-                            // (effectively, there is no near or far plane clipping). See viewport->MinDepth, viewport->MaxDepth.
-    bool bScissorEnable;
-    bool bMultisampleEnable;
-    bool bAntialiasedLineEnable;
-    bool bRasterizerDiscard; // If enabled, primitives are discarded after the optional transform feedback stage, but before rasterization
+    // If enabled, the −wc ≤ zc ≤ wc plane equation is ignored by view volume clipping
+    // (effectively, there is no near or far plane clipping). See viewport->MinDepth, viewport->MaxDepth.
+    bool bDepthClampEnable = false;
+                                    
+    bool bScissorEnable         = false;
+    bool bMultisampleEnable     = false;
+    bool bAntialiasedLineEnable = false;
 
-    SRasterizerStateInfo()
-    {
-        FillMode               = POLYGON_FILL_SOLID;
-        CullMode               = POLYGON_CULL_BACK;
-        bFrontClockwise        = false;
-        DepthOffset.Slope      = 0;
-        DepthOffset.Bias       = 0;
-        DepthOffset.Clamp      = 0;
-        bDepthClampEnable      = false;
-        bScissorEnable         = false;
-        bMultisampleEnable     = false;
-        bAntialiasedLineEnable = false;
-        bRasterizerDiscard     = false;
-    }
+    // If enabled, primitives are discarded after the optional transform feedback stage, but before rasterization
+    bool bRasterizerDiscard     = false;
+
+    SRasterizerStateInfo() = default;
 };
 
 //
@@ -272,12 +251,6 @@ enum COMPARISON_FUNCTION : uint8_t
 // Depth-Stencil state
 //
 
-enum DEPTH_WRITE_MASK : uint8_t
-{
-    DEPTH_WRITE_DISABLE = 0,
-    DEPTH_WRITE_ENABLE  = 1
-};
-
 enum STENCIL_OP : uint8_t
 {
     STENCIL_OP_KEEP     = 0,
@@ -292,42 +265,27 @@ enum STENCIL_OP : uint8_t
 
 struct SStencilTestInfo
 {
-    STENCIL_OP          StencilFailOp;
-    STENCIL_OP          DepthFailOp;
-    STENCIL_OP          DepthPassOp;
-    COMPARISON_FUNCTION StencilFunc;
-    //int              Reference;
+    STENCIL_OP          StencilFailOp = STENCIL_OP_KEEP;
+    STENCIL_OP          DepthFailOp   = STENCIL_OP_KEEP;
+    STENCIL_OP          DepthPassOp   = STENCIL_OP_KEEP;
+    COMPARISON_FUNCTION StencilFunc   = CMPFUNC_ALWAYS;
+    //int              Reference = 0;
 
-    SStencilTestInfo()
-    {
-        StencilFailOp = STENCIL_OP_KEEP;
-        DepthFailOp   = STENCIL_OP_KEEP;
-        DepthPassOp   = STENCIL_OP_KEEP;
-        StencilFunc   = CMPFUNC_ALWAYS;
-        //Reference = 0;
-    }
+    SStencilTestInfo() = default;
 };
 
 struct SDepthStencilStateInfo
 {
-    bool                bDepthEnable;
-    DEPTH_WRITE_MASK    DepthWriteMask;
-    COMPARISON_FUNCTION DepthFunc;
-    bool                bStencilEnable;
-    uint8_t             StencilReadMask;
-    uint8_t             StencilWriteMask;
+    bool                bDepthEnable     = true;
+    bool                bDepthWrite      = true;
+    COMPARISON_FUNCTION DepthFunc        = CMPFUNC_LESS;
+    bool                bStencilEnable   = false;
+    uint8_t             StencilReadMask  = DEFAULT_STENCIL_READ_MASK;
+    uint8_t             StencilWriteMask = DEFAULT_STENCIL_WRITE_MASK;
     SStencilTestInfo    FrontFace;
     SStencilTestInfo    BackFace;
 
-    SDepthStencilStateInfo()
-    {
-        bDepthEnable     = true;
-        DepthWriteMask   = DEPTH_WRITE_ENABLE;
-        DepthFunc        = CMPFUNC_LESS;
-        bStencilEnable   = false;
-        StencilReadMask  = DEFAULT_STENCIL_READ_MASK;
-        StencilWriteMask = DEFAULT_STENCIL_WRITE_MASK;
-    }
+    SDepthStencilStateInfo() = default;
 };
 
 //
@@ -491,37 +449,27 @@ enum IMAGE_ACCESS_MODE : uint8_t
 
 struct SImageInfo
 {
-    IMAGE_ACCESS_MODE AccessMode;
-    TEXTURE_FORMAT    TextureFormat; // FIXME: get texture format from texture?
+    IMAGE_ACCESS_MODE AccessMode = IMAGE_ACCESS_READ;
+    TEXTURE_FORMAT    TextureFormat = TEXTURE_FORMAT_RGBA8; // FIXME: get texture format from texture?
 };
 
 struct SBufferInfo
 {
-    BUFFER_BINDING BufferBinding;
+    BUFFER_BINDING BufferBinding = BUFFER_BIND_CONSTANT;
 };
 
 struct SPipelineResourceLayout
 {
-    int                  NumSamplers;
-    struct SSamplerDesc* Samplers;
+    int                  NumSamplers = 0;
+    struct SSamplerDesc* Samplers = nullptr;
 
-    int         NumImages;
-    SImageInfo* Images;
+    int         NumImages = 0;
+    SImageInfo* Images = nullptr;
 
-    int          NumBuffers;
-    SBufferInfo* Buffers;
+    int          NumBuffers = 0;
+    SBufferInfo* Buffers = nullptr;
 
-    SPipelineResourceLayout()
-    {
-        NumSamplers = 0;
-        Samplers    = nullptr;
-
-        NumImages = 0;
-        Images    = nullptr;
-
-        NumBuffers = 0;
-        Buffers    = nullptr;
-    }
+    SPipelineResourceLayout() = default;
 };
 
 //
@@ -647,24 +595,30 @@ enum VERTEX_INPUT_RATE : uint8_t
 
 struct SVertexBindingInfo
 {
-    uint8_t           InputSlot; /// vertex buffer binding
-    uint32_t          Stride;    /// vertex stride
-    VERTEX_INPUT_RATE InputRate; /// per vertex / per instance
+    uint8_t           InputSlot = 0;                     /// vertex buffer binding
+    uint32_t          Stride    = 0;                     /// vertex stride
+    VERTEX_INPUT_RATE InputRate = INPUT_RATE_PER_VERTEX; /// per vertex / per instance
 };
 
 struct SVertexAttribInfo
 {
-    const char*        SemanticName;
-    uint32_t           Location;
-    uint32_t           InputSlot; /// vertex buffer binding
-    VERTEX_ATTRIB_TYPE Type;
-    VERTEX_ATTRIB_MODE Mode; /// float / double / integer
+    const char* SemanticName = "Undefined";
+    uint32_t    Location     = 0;
 
-    uint32_t InstanceDataStepRate; /// Only for INPUT_RATE_PER_INSTANCE. The number of instances to draw using same
-                                   /// per-instance data before advancing in the buffer by one element. This value must
-                                   /// by 0 for an element that contains per-vertex data (InputRate = INPUT_RATE_PER_VERTEX)
+    /// vertex buffer binding
+    uint32_t           InputSlot = 0;
+    VERTEX_ATTRIB_TYPE Type      = VAT_FLOAT1;
 
-    uint32_t Offset; /// attribute offset
+    /// float / double / integer
+    VERTEX_ATTRIB_MODE Mode = VAM_FLOAT;
+
+    /// Only for INPUT_RATE_PER_INSTANCE. The number of instances to draw using same
+    /// per-instance data before advancing in the buffer by one element. This value must
+    /// /// by 0 for an element that contains per-vertex data (InputRate = INPUT_RATE_PER_VERTEX)
+    uint32_t InstanceDataStepRate = 0;
+
+    /// attribute offset
+    uint32_t Offset = 0;
 
     /// Number of vector components 1,2,3,4
     int NumComponents() const { return ((Type >> 5) & 3) + 1; }
@@ -776,9 +730,6 @@ enum PRIMITIVE_TOPOLOGY : uint8_t
 struct SPipelineInputAssemblyInfo
 {
     PRIMITIVE_TOPOLOGY Topology = PRIMITIVE_TRIANGLES;
-
-    /** Has no effect on non-indexed drawing commands */
-    bool               bPrimitiveRestart = false;
 };
 
 struct SPipelineDesc

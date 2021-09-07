@@ -106,8 +106,6 @@ APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& De
         }
     }
 
-    bPrimitiveRestartEnabled = Desc.IA.bPrimitiveRestart;
-
     // Cache VAO for each context
     VAO = ctx->CachedVAO(Desc.pVertexBindings, Desc.NumVertexBindings,
                          Desc.pVertexAttribs, Desc.NumVertexAttribs);

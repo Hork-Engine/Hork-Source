@@ -128,7 +128,8 @@ void AVirtualTextureFeedback::Begin( int Width, int Height )
 
     size_t feedbackSizeInBytes = FeedbackSize[SwapIndex] * 4;
 
-    if ( !PixelBufferObject[SwapIndex] || PixelBufferObject[SwapIndex]->GetSizeInBytes() != feedbackSizeInBytes ) {
+    if (!PixelBufferObject[SwapIndex] || PixelBufferObject[SwapIndex]->GetDesc().SizeInBytes != feedbackSizeInBytes)
+    {
         SBufferDesc bufferCI = {};
         bufferCI.bImmutableStorage = true;
         bufferCI.ImmutableStorageFlags = (IMMUTABLE_STORAGE_FLAGS)(

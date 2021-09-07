@@ -126,34 +126,31 @@ enum MAP_PERSISTENCE : uint8_t
 
 struct SBufferDesc
 {
-    bool                          bImmutableStorage;
-    MUTABLE_STORAGE_CLIENT_ACCESS MutableClientAccess;   /// only for mutable buffers
-    MUTABLE_STORAGE_USAGE         MutableUsage;          /// only for mutable buffers
-    IMMUTABLE_STORAGE_FLAGS       ImmutableStorageFlags; /// make sense only with ImmutableStorage = true
-    size_t                        SizeInBytes;           /// size of buffer in bytes
+    bool bImmutableStorage = false;
+
+    /// make sense only with bImmutableStorage = true
+    IMMUTABLE_STORAGE_FLAGS ImmutableStorageFlags = IMMUTABLE_MAP_WRITE;
+
+    /// only for mutable buffers
+    MUTABLE_STORAGE_CLIENT_ACCESS MutableClientAccess = MUTABLE_STORAGE_CLIENT_DONT_CARE;
+
+    /// only for mutable buffers
+    MUTABLE_STORAGE_USAGE MutableUsage = MUTABLE_STORAGE_DONT_CARE;
+
+    /// size of buffer in bytes
+    size_t SizeInBytes = 0;
 };
 
 class IBuffer : public IDeviceObject
 {
 public:
-    IBuffer(IDevice* pDevice) :
-        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_BUFFER)
+    IBuffer(IDevice* pDevice, SBufferDesc const& Desc) :
+        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_BUFFER), Desc(Desc)
     {}
 
-    virtual bool CreateView(SBufferViewDesc const& Desc, TRef<IBufferView>* ppBufferView) = 0;
+    virtual bool CreateView(SBufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView) = 0;
 
-    bool IsImmutableStorage() const { return bImmutableStorage; }
-
-    IMMUTABLE_STORAGE_FLAGS GetImmutableStorageFlags() const { return ImmutableStorageFlags; }
-
-    MUTABLE_STORAGE_CLIENT_ACCESS GetMutableClientAccess() const { return MutableClientAccess; }
-
-    MUTABLE_STORAGE_USAGE GetMutableUsage() const { return MutableUsage; }
-
-    size_t GetSizeInBytes() const { return SizeInBytes; }
-
-    /// Only for mutable buffers
-    virtual bool Realloc(size_t _SizeInBytes, const void* _SysMem = nullptr) = 0;
+    SBufferDesc const& GetDesc() const { return Desc; }
 
     /// Allocate new storage for the buffer
     virtual bool Orphan() = 0;
@@ -165,11 +162,7 @@ public:
     virtual void FlushMappedRange(size_t _RangeOffset, size_t _RangeSize) = 0;
 
 protected:
-    bool                          bImmutableStorage;
-    MUTABLE_STORAGE_CLIENT_ACCESS MutableClientAccess;
-    MUTABLE_STORAGE_USAGE         MutableUsage;
-    IMMUTABLE_STORAGE_FLAGS       ImmutableStorageFlags;
-    size_t                        SizeInBytes;
+    SBufferDesc Desc;
 };
 
 } // namespace RenderCore

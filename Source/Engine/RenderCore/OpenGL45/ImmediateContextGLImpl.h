@@ -682,8 +682,6 @@ private:
 
     SRect2D CurrentScissor;
 
-    bool bPrimitiveRestartEnabled;
-
     THash<>                                VAOHash;
     TPodVector<struct SVertexArrayObject*> VAOCache;
 

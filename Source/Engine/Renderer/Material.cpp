@@ -583,7 +583,6 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
@@ -680,7 +679,6 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
@@ -719,7 +717,7 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
     dssd.bDepthEnable = false;
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.bDepthWrite = false;
 
     SVertexBindingInfo vertexBinding[2] = {};
 
@@ -790,7 +788,6 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
@@ -820,7 +817,7 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
     dssd.bDepthEnable = false;
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.bDepthWrite = false;
 
     SVertexBindingInfo vertexBinding[2] = {};
 
@@ -873,7 +870,6 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_POINTS;
-    inputAssembly.bPrimitiveRestart = false;
 
     SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
@@ -907,7 +903,7 @@ void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char *
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
     dssd.bDepthEnable = false;
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.bDepthWrite = false;
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( VertexAttribsHUD, AN_ARRAY_SIZE( VertexAttribsHUD ) );
 
@@ -924,7 +920,6 @@ void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char *
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     SVertexBindingInfo vertexBinding[1] = {};
 
@@ -994,7 +989,7 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
 
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.bDepthWrite = false;
     if ( _Translucent ) {
         dssd.DepthFunc = CMPFUNC_GREATER;
     }
@@ -1006,7 +1001,6 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     SVertexBindingInfo vertexBinding[2] = {};
 
@@ -1139,7 +1133,7 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
 
     // Depth pre-pass
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.bDepthWrite = false;
     if ( _Translucent ) {
         dssd.DepthFunc = CMPFUNC_GREATER;
     }
@@ -1183,7 +1177,6 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     SVertexBindingInfo vertexBinding[2] = {};
 
@@ -1258,7 +1251,7 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
 
     // Depth pre-pass
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.bDepthWrite = false;
     if ( _Translucent ) {
         dssd.DepthFunc = CMPFUNC_GREATER;
     }
@@ -1302,7 +1295,6 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     SVertexBindingInfo vertexBinding[2] = {};
 
@@ -1410,7 +1402,6 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
@@ -1494,13 +1485,12 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
     rsd.CullMode = _CullMode;
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
-    dssd.DepthWriteMask = DEPTH_WRITE_ENABLE;
+    dssd.bDepthWrite = true;
     dssd.DepthFunc = CMPFUNC_GREATER;
     dssd.bDepthEnable = true;
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     SVertexBindingInfo vertexBinding[2] = {};
 
@@ -1591,7 +1581,7 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     dssd.DepthFunc = CMPFUNC_GEQUAL;//CMPFUNC_GREATER;
 #else
     dssd.bDepthEnable = false;
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.bDepthWrite = false;
 #endif
 
     //SBlendingStateInfo & bs = pipelineCI.BS;
@@ -1658,7 +1648,6 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
 
@@ -1712,7 +1701,6 @@ void CreateTerrainMaterialDepth( TRef< RenderCore::IPipeline > * ppPipeline )
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
-    inputAssembly.bPrimitiveRestart = true;
 
     SSamplerDesc clipmapSampler;
     clipmapSampler.Filter = FILTER_NEAREST;
@@ -1738,7 +1726,7 @@ void CreateTerrainMaterialLight( TRef< RenderCore::IPipeline > * ppPipeline )
     rsd.CullMode = POLYGON_CULL_FRONT;
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.bDepthWrite = false;
     dssd.DepthFunc = CMPFUNC_EQUAL;
 
     SVertexBindingInfo vertexBinding[2] = {};
@@ -1763,7 +1751,6 @@ void CreateTerrainMaterialLight( TRef< RenderCore::IPipeline > * ppPipeline )
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
-    inputAssembly.bPrimitiveRestart = true;
 
     SSamplerDesc samplers[19];
 
@@ -1822,7 +1809,7 @@ void CreateTerrainMaterialWireframe( TRef< RenderCore::IPipeline > * ppPipeline 
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
     dssd.bDepthEnable = false;
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.bDepthWrite = false;
 
     SBlendingStateInfo & bsd = pipelineCI.BS;
     bsd.RenderTargetSlots[0].SetBlendingPreset( BLENDING_ALPHA );
@@ -1849,7 +1836,6 @@ void CreateTerrainMaterialWireframe( TRef< RenderCore::IPipeline > * ppPipeline 
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
-    inputAssembly.bPrimitiveRestart = true;
 
     SSamplerDesc clipmapSampler;
     clipmapSampler.Filter = FILTER_NEAREST;

@@ -53,8 +53,6 @@ public:
 
     virtual ITexture* GetBackBuffer() = 0;
     virtual ITexture* GetDepthBuffer() = 0;
-    //virtual ITextureView* GetColorBufferRTV() = 0;
-    //virtual ITextureView* GetDepthBufferDSV() = 0;
 
 protected:
     int Width  = 0;

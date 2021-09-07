@@ -279,8 +279,7 @@ public:
 
     STextureViewDesc const& GetDesc() const { return Desc; }
 
-    ITexture*       GetTexture() { return pTexture; }
-    ITexture const* GetTexture() const { return pTexture; }
+    ITexture* GetTexture() { return pTexture; }
 
     uint32_t GetWidth() const;
 

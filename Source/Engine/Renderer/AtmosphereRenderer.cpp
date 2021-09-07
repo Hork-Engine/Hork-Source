@@ -58,7 +58,7 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
 
     SDepthStencilStateInfo & depthStencil = pipelineCI.DSS;
     depthStencil.bDepthEnable = false;
-    depthStencil.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    depthStencil.bDepthWrite = false;
 
     SVertexBindingInfo vertexBindings[] =
     {

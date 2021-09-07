@@ -69,7 +69,6 @@ private:
     int                           NumBuffers;
     unsigned int                  PrimitiveTopology;
     int                           NumPatchVertices;
-    bool                          bPrimitiveRestartEnabled;
     TRef<IShaderModule>           pVS;
     TRef<IShaderModule>           pTCS;
     TRef<IShaderModule>           pTES;

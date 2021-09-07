@@ -272,7 +272,7 @@ void CreateFullscreenQuadPipeline( TRef< IPipeline > * ppPipeline, AStringView V
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
     dssd.bDepthEnable = false;
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.bDepthWrite = false;
 
     static const SVertexAttribInfo vertexAttribs[] = {
         {
@@ -291,7 +291,6 @@ void CreateFullscreenQuadPipeline( TRef< IPipeline > * ppPipeline, AStringView V
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
-    inputAssembly.bPrimitiveRestart = false;
 
     SVertexBindingInfo vertexBinding[1] = {};
 
@@ -330,7 +329,7 @@ void CreateFullscreenQuadPipelineGS( TRef< IPipeline > * ppPipeline, AStringView
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
     dssd.bDepthEnable = false;
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.bDepthWrite = false;
 
     static const SVertexAttribInfo vertexAttribs[] = {
         {
@@ -350,7 +349,6 @@ void CreateFullscreenQuadPipelineGS( TRef< IPipeline > * ppPipeline, AStringView
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
-    inputAssembly.bPrimitiveRestart = false;
 
     SVertexBindingInfo vertexBinding[1] = {};
 

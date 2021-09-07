@@ -57,7 +57,7 @@ void ACanvasRenderer::CreatePresentViewPipeline()
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
     dssd.bDepthEnable = false;
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.bDepthWrite = false;
 
     static const SVertexAttribInfo vertexAttribs[] = {
         {
@@ -94,7 +94,6 @@ void ACanvasRenderer::CreatePresentViewPipeline()
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     SVertexBindingInfo vertexBinding[1] = {};
 
@@ -148,7 +147,7 @@ void ACanvasRenderer::CreatePipelines()
 
     SDepthStencilStateInfo & dssd = pipelineCI.DSS;
     dssd.bDepthEnable = false;
-    dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    dssd.bDepthWrite = false;
 
     static const SVertexAttribInfo vertexAttribs[] = {
         {
@@ -188,7 +187,6 @@ void ACanvasRenderer::CreatePipelines()
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     pipelineCI.pVS = vertexShaderModule;
     pipelineCI.pFS = fragmentShaderModule;

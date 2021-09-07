@@ -167,7 +167,7 @@ VXGIVoxelizer::VXGIVoxelizer() {
 
     SDepthStencilStateInfo & depthStencil = pipelineCI.DSS;
     depthStencil.bDepthEnable = false;
-    depthStencil.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    depthStencil.bDepthWrite = false;
 
     SVertexBindingInfo vertexBindings[] =
     {
@@ -220,7 +220,7 @@ void VXGIVoxelizer::CreatePipeline()
 
     SDepthStencilStateInfo & depthStencil = pipelineCI.DSS;
     depthStencil.bDepthEnable = false;
-    depthStencil.DepthWriteMask = DEPTH_WRITE_DISABLE;
+    depthStencil.bDepthWrite = false;
 
     SVertexBindingInfo vertexBindings[] =
     {

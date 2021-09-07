@@ -77,7 +77,6 @@ void AShadowMapRenderer::CreatePipeline()
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     CreateVertexShader( "instance_shadowmap_default.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
     CreateGeometryShader( "instance_shadowmap_default.geom", pipelineCI.pGS );
@@ -142,7 +141,6 @@ void AShadowMapRenderer::CreateLightPortalPipeline()
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLES;
-    inputAssembly.bPrimitiveRestart = false;
 
     CreateVertexShader( "instance_lightportal.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
     CreateGeometryShader( "instance_lightportal.geom", pipelineCI.pGS );

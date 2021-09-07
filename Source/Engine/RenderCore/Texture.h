@@ -50,13 +50,13 @@ enum TEXTURE_SWIZZLE : uint8_t
     TEXTURE_SWIZZLE_A        = 6
 };
 
-struct STextureResolutionBase
+struct STextureResolution
 {
     uint32_t Width{};
     uint32_t Height{};
     uint32_t SliceCount{};
 
-    bool operator==(STextureResolutionBase const& Rhs) const
+    bool operator==(STextureResolution const& Rhs) const
     {
         // clang-format off
         return Width      == Rhs.Width &&
@@ -65,13 +65,13 @@ struct STextureResolutionBase
         // clang-format on
     }
 
-    bool operator!=(STextureResolutionBase const& Rhs) const
+    bool operator!=(STextureResolution const& Rhs) const
     {
         return !(operator==(Rhs));
     }
 };
 
-struct STextureResolution1D : STextureResolutionBase
+struct STextureResolution1D : STextureResolution
 {
     STextureResolution1D() = default;
     STextureResolution1D(uint32_t InWidth)
@@ -82,7 +82,7 @@ struct STextureResolution1D : STextureResolutionBase
     }
 };
 
-struct STextureResolution1DArray : STextureResolutionBase
+struct STextureResolution1DArray : STextureResolution
 {
     STextureResolution1DArray() = default;
     STextureResolution1DArray(uint32_t InWidth, uint32_t InNumLayers)
@@ -93,7 +93,7 @@ struct STextureResolution1DArray : STextureResolutionBase
     }
 };
 
-struct STextureResolution2D : STextureResolutionBase
+struct STextureResolution2D : STextureResolution
 {
     STextureResolution2D() = default;
     STextureResolution2D(uint32_t InWidth, uint32_t InHeight)
@@ -104,7 +104,7 @@ struct STextureResolution2D : STextureResolutionBase
     }
 };
 
-struct STextureResolution2DArray : STextureResolutionBase
+struct STextureResolution2DArray : STextureResolution
 {
     STextureResolution2DArray() = default;
     STextureResolution2DArray(uint32_t InWidth, uint32_t InHeight, uint32_t InNumLayers)
@@ -115,7 +115,7 @@ struct STextureResolution2DArray : STextureResolutionBase
     }
 };
 
-struct STextureResolution3D : STextureResolutionBase
+struct STextureResolution3D : STextureResolution
 {
     STextureResolution3D() = default;
     STextureResolution3D(uint32_t InWidth, uint32_t InHeight, uint32_t InDepth)
@@ -126,7 +126,7 @@ struct STextureResolution3D : STextureResolutionBase
     }
 };
 
-struct STextureResolutionCubemap : STextureResolutionBase
+struct STextureResolutionCubemap : STextureResolution
 {
     STextureResolutionCubemap() = default;
     STextureResolutionCubemap(uint32_t InWidth)
@@ -137,7 +137,7 @@ struct STextureResolutionCubemap : STextureResolutionBase
     }
 };
 
-struct STextureResolutionCubemapArray : STextureResolutionBase
+struct STextureResolutionCubemapArray : STextureResolution
 {
     STextureResolutionCubemapArray() = default;
     STextureResolutionCubemapArray(uint32_t InWidth, uint32_t InNumLayers)
@@ -148,7 +148,7 @@ struct STextureResolutionCubemapArray : STextureResolutionBase
     }
 };
 
-struct STextureResolutionRectGL : STextureResolutionBase
+struct STextureResolutionRectGL : STextureResolution
 {
     STextureResolutionRectGL() = default;
     STextureResolutionRectGL(uint32_t InWidth, uint32_t InHeight)
@@ -158,39 +158,6 @@ struct STextureResolutionRectGL : STextureResolutionBase
         SliceCount = 1;
     }
 };
-
-using STextureResolution = STextureResolutionBase;
-//struct STextureResolution
-//{
-//    union
-//    {
-//        STextureResolution1D Tex1D;
-//
-//        STextureResolution1DArray Tex1DArray;
-//
-//        STextureResolution2D Tex2D;
-//
-//        STextureResolution2DArray Tex2DArray;
-//
-//        STextureResolution3D Tex3D;
-//
-//        STextureResolutionCubemap TexCubemap;
-//
-//        STextureResolutionCubemapArray TexCubemapArray;
-//
-//        STextureResolutionRectGL TexRect;
-//    };
-//
-//    bool operator==(STextureResolution const& Rhs) const
-//    {
-//        return memcmp(this, &Rhs, sizeof(*this)) == 0;
-//    }
-//
-//    bool operator!=(STextureResolution const& Rhs) const
-//    {
-//        return !(operator==(Rhs));
-//    }
-//};
 
 struct STextureOffset
 {
@@ -314,6 +281,7 @@ struct STextureDesc
         // clang-format off
         return Type        == Rhs.Type &&
                Format      == Rhs.Format &&
+               BindFlags   == Rhs.BindFlags &&
                Resolution  == Rhs.Resolution &&
                Multisample == Rhs.Multisample &&
                Swizzle     == Rhs.Swizzle &&
@@ -556,31 +524,12 @@ AN_FORCEINLINE ITextureView* ITexture::GetUnorderedAccessView()
 
 AN_INLINE int ITexture::CalcMaxMipLevels(TEXTURE_TYPE Type, STextureResolution const& Resolution)
 {
-    uint32_t maxDimension = 0;
-
+    uint32_t maxDimension = (Type == TEXTURE_3D) ? Math::Max3(Resolution.Width, Resolution.Height, Resolution.SliceCount) :
+                                                   Math::Max(Resolution.Width, Resolution.Height);
     if (Type == TEXTURE_RECT_GL)
     {
         // Texture rect does not support mipmapping
-        return 1;
-    }
-
-    switch (Type)
-    {
-        case TEXTURE_1D:
-        case TEXTURE_1D_ARRAY:
-            maxDimension = Resolution.Width;
-            break;
-
-        case TEXTURE_2D:
-        case TEXTURE_2D_ARRAY:
-        case TEXTURE_CUBE_MAP:
-        case TEXTURE_CUBE_MAP_ARRAY:
-            maxDimension = Math::Max(Resolution.Width, Resolution.Height);
-            break;
-
-        case TEXTURE_3D:
-            maxDimension = Math::Max3(Resolution.Width, Resolution.Height, Resolution.SliceCount);
-            break;
+        return maxDimension > 0 ? 1 : 0;
     }
 
     return maxDimension > 0 ? Math::Log2(maxDimension) + 1 : 0;

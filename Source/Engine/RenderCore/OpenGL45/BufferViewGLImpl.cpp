@@ -50,7 +50,7 @@ ABufferViewGLImpl::ABufferViewGLImpl(SBufferViewDesc const& Desc, ABufferGLImpl*
 
     bool bViewRange = Desc.SizeInBytes > 0;
 
-    size_t sizeInBytes = bViewRange ? Desc.SizeInBytes : pSrcBuffer->GetSizeInBytes();
+    size_t sizeInBytes = bViewRange ? Desc.SizeInBytes : pSrcBuffer->GetDesc().SizeInBytes;
     size_t offset      = bViewRange ? Desc.Offset : 0;
 
     if (!IsAligned(offset, GetDevice()->GetDeviceCaps(DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT)))
@@ -59,7 +59,7 @@ ABufferViewGLImpl::ABufferViewGLImpl(SBufferViewDesc const& Desc, ABufferGLImpl*
         return;
     }
 
-    if (offset + sizeInBytes > pSrcBuffer->GetSizeInBytes())
+    if (offset + sizeInBytes > pSrcBuffer->GetDesc().SizeInBytes)
     {
         GLogger.Printf("ABufferViewGLImpl::ctor: invalid buffer range\n");
         return;
@@ -78,7 +78,7 @@ ABufferViewGLImpl::ABufferViewGLImpl(SBufferViewDesc const& Desc, ABufferGLImpl*
 
     InternalFormat = format->InternalFormat;
 
-    if (offset == 0 && sizeInBytes == pSrcBuffer->GetSizeInBytes())
+    if (offset == 0 && sizeInBytes == pSrcBuffer->GetDesc().SizeInBytes)
     {
         glTextureBuffer(textureId, InternalFormat, bufferId);
     }
@@ -110,7 +110,7 @@ void ABufferViewGLImpl::SetRange(size_t Offset, size_t SizeInBytes)
         return;
     }
 
-    if (Offset + SizeInBytes > pSrcBuffer->GetSizeInBytes())
+    if (Offset + SizeInBytes > pSrcBuffer->GetDesc().SizeInBytes)
     {
         GLogger.Printf("ABufferViewGLImpl::SetRange: invalid buffer range\n");
         return;

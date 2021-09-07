@@ -43,9 +43,7 @@ public:
     ABufferGLImpl(ADeviceGLImpl* pDevice, SBufferDesc const& Desc, const void* SysMem = nullptr);
     ~ABufferGLImpl();
 
-    bool CreateView(SBufferViewDesc const& Desc, TRef<IBufferView>* ppBufferView) override;
-
-    bool Realloc(size_t SizeInBytes, const void* SysMem = nullptr) override;
+    bool CreateView(SBufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView) override;
 
     bool Orphan() override;
 

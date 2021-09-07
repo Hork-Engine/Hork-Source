@@ -101,41 +101,35 @@ ADebugDrawRenderer::ADebugDrawRenderer()
         switch ( i ) {
         case DBG_DRAW_CMD_POINTS:
             inputAssembly.Topology = PRIMITIVE_POINTS;
-            inputAssembly.bPrimitiveRestart = false;
             dssd.bDepthEnable = false;
-            dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+            dssd.bDepthWrite = false;
             break;
         case DBG_DRAW_CMD_POINTS_DEPTH_TEST:
             inputAssembly.Topology = PRIMITIVE_POINTS;
-            inputAssembly.bPrimitiveRestart = false;
             dssd.bDepthEnable = true;
-            dssd.DepthWriteMask = DEPTH_WRITE_ENABLE;
+            dssd.bDepthWrite = true;
             break;
         case DBG_DRAW_CMD_LINES:
             inputAssembly.Topology = PRIMITIVE_LINE_STRIP;
-            inputAssembly.bPrimitiveRestart = true;
             dssd.bDepthEnable = false;
-            dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+            dssd.bDepthWrite = false;
             rsd.bAntialiasedLineEnable = true;
             break;
         case DBG_DRAW_CMD_LINES_DEPTH_TEST:
             inputAssembly.Topology = PRIMITIVE_LINE_STRIP;
-            inputAssembly.bPrimitiveRestart = true;
             dssd.bDepthEnable = true;
-            dssd.DepthWriteMask = DEPTH_WRITE_ENABLE;
+            dssd.bDepthWrite = true;
             rsd.bAntialiasedLineEnable = true;
             break;
         case DBG_DRAW_CMD_TRIANGLE_SOUP:
             inputAssembly.Topology = PRIMITIVE_TRIANGLES;
-            inputAssembly.bPrimitiveRestart = false;
             dssd.bDepthEnable = false;
-            dssd.DepthWriteMask = DEPTH_WRITE_DISABLE;
+            dssd.bDepthWrite = false;
             break;
         case DBG_DRAW_CMD_TRIANGLE_SOUP_DEPTH_TEST:
             inputAssembly.Topology = PRIMITIVE_TRIANGLES;
-            inputAssembly.bPrimitiveRestart = false;
             dssd.bDepthEnable = true;
-            dssd.DepthWriteMask = DEPTH_WRITE_ENABLE;
+            dssd.bDepthWrite = true;
             break;
         }
 

@@ -47,29 +47,6 @@ enum SPARSE_TEXTURE_TYPE : uint8_t
     SPARSE_TEXTURE_RECT_GL // Can be used only with OpenGL backend
 };
 
-struct SSparseTextureResolution
-{
-    union
-    {
-        STextureResolution2D Tex2D;
-
-        STextureResolution2DArray Tex2DArray;
-
-        STextureResolution3D Tex3D;
-
-        STextureResolutionCubemap TexCubemap;
-
-        STextureResolutionCubemapArray TexCubemapArray;
-
-        STextureResolutionRectGL TexRect;
-    };
-
-    bool operator==(STextureResolution const& Rhs) const
-    {
-        return memcmp(this, &Rhs, sizeof(*this)) == 0;
-    }
-};
-
 struct SSparseTextureDesc
 {
     SPARSE_TEXTURE_TYPE Type       = SPARSE_TEXTURE_2D;
@@ -163,8 +140,6 @@ public:
     ISparseTexture(IDevice* pDevice, SSparseTextureDesc const& Desc) :
         IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_SPARSE_TEXTURE), Desc(Desc)
     {}
-
-    //SPARSE_TEXTURE_TYPE GetType() const { return Type; }
 
     SSparseTextureDesc const& GetDesc() const { return Desc; }
 
