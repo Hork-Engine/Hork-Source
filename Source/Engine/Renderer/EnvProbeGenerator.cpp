@@ -171,7 +171,7 @@ void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITextur
     }
 
     frameGraph.Build();
-    frameGraph.ExportGraphviz( "framegraph.graphviz" );
+    //frameGraph.ExportGraphviz( "framegraph.graphviz" );
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
 
@@ -233,6 +233,6 @@ void AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap, TRef<
     }
 
     frameGraph.Build();
-    frameGraph.ExportGraphviz( "framegraph.graphviz" );
+    //frameGraph.ExportGraphviz( "framegraph.graphviz" );
     rcmd->ExecuteFrameGraph(&frameGraph);
 }

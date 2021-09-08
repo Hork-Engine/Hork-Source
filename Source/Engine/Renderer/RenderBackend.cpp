@@ -690,7 +690,7 @@ void ARenderBackend::RenderFrame(ITexture* pBackBuffer, SRenderFrame* pFrameData
     CanvasRenderer->Render(*FrameGraph, pRenderViewTexture, pBackBuffer);
 
     FrameGraph->Build();
-    FrameGraph->ExportGraphviz("frame.graphviz");
+    //FrameGraph->ExportGraphviz("frame.graphviz");
     rcmd->ExecuteFrameGraph(FrameGraph);
 
     if (r_FrameGraphDebug)

@@ -155,7 +155,7 @@ void AIrradianceGenerator::GenerateArray( int _CubemapsCount, ITexture ** _Cubem
                      } );
 
     frameGraph.Build();
-    frameGraph.ExportGraphviz( "framegraph.graphviz" );
+    //frameGraph.ExportGraphviz( "framegraph.graphviz" );
     //frameGraph.Execute( rcmd );
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
@@ -206,7 +206,7 @@ void AIrradianceGenerator::Generate( ITexture * _SourceCubemap, TRef< RenderCore
                      } );
 
     frameGraph.Build();
-    frameGraph.ExportGraphviz( "framegraph.graphviz" );
+    //frameGraph.ExportGraphviz( "framegraph.graphviz" );
     //frameGraph.Execute( rcmd );
     rcmd->ExecuteFrameGraph(&frameGraph);
 }

@@ -149,7 +149,7 @@ void ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _
                      } );
 
     frameGraph.Build();
-    frameGraph.ExportGraphviz( "framegraph.graphviz" );
+    //frameGraph.ExportGraphviz( "framegraph.graphviz" );
     //frameGraph.Execute( rcmd );
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
@@ -195,7 +195,7 @@ void ACubemapGenerator::Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resol
                      } );
 
     frameGraph.Build();
-    frameGraph.ExportGraphviz( "framegraph.graphviz" );
+    //frameGraph.ExportGraphviz( "framegraph.graphviz" );
     //frameGraph.Execute( rcmd );
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
