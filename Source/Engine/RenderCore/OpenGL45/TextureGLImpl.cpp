@@ -65,12 +65,6 @@ static void SetSwizzleParams(GLuint _Id, STextureSwizzle const& _Swizzle)
 ATextureGLImpl::ATextureGLImpl(ADeviceGLImpl* pDevice, STextureDesc const& TextureDesc, bool bDummyTexture) :
     ITexture(pDevice, TextureDesc), bDummyTexture(bDummyTexture)
 {
-    AN_ASSERT_(TextureDesc.NumMipLevels > 0, "Invalid mipmap count");
-    AN_ASSERT_(TextureDesc.Multisample.NumSamples > 0, "Invalid sample count");
-    AN_ASSERT_(TextureDesc.Multisample.NumSamples == 1 ||
-                   (TextureDesc.Multisample.NumSamples > 1 && (TextureDesc.Type == TEXTURE_2D || TextureDesc.Type == TEXTURE_2D_ARRAY)),
-               "Multisample allowed only for 2D and 2DArray textures\n");
-
     GLuint id = 0;
 
     if (!bDummyTexture)

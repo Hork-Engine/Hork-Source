@@ -611,7 +611,7 @@ private:
 
     struct SDL_Window* pWindow;
     void*              pContextGL;
-    bool               bMainContext;
+    bool               bMainContext = false;
 
     TRef<AFramebufferGLImpl> DefaultFramebuffer;
 

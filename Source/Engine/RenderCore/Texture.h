@@ -440,7 +440,13 @@ public:
         const auto AllowedBindings = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET | BIND_DEPTH_STENCIL | BIND_UNORDERED_ACCESS;
 
         AN_ASSERT_((Desc.BindFlags & ~AllowedBindings) == 0, "The following bind flags are allowed for texture: BIND_SHADER_RESOURCE, BIND_RENDER_TARGET, BIND_DEPTH_STENCIL, BIND_UNORDERED_ACCESS");
-        AN_ASSERT_(!(Desc.Multisample.NumSamples > 1 && (Desc.BindFlags & BIND_UNORDERED_ACCESS)), "Multisampled textures cannot have BIND_UNORDERED_ACCESS flag");            
+        AN_ASSERT_(!(Desc.Multisample.NumSamples > 1 && (Desc.BindFlags & BIND_UNORDERED_ACCESS)), "Multisampled textures cannot have BIND_UNORDERED_ACCESS flag");
+
+        AN_ASSERT_(Desc.NumMipLevels > 0, "Invalid mipmap count");
+        AN_ASSERT_(Desc.Multisample.NumSamples > 0, "Invalid sample count");
+        AN_ASSERT_(Desc.Multisample.NumSamples == 1 ||
+                       (Desc.Multisample.NumSamples > 1 && (Desc.Type == TEXTURE_2D || Desc.Type == TEXTURE_2D_ARRAY)),
+                   "Multisample allowed only for 2D and 2DArray textures\n");
     }
 
     // The texture view is alive as long as the texture exists. Do not store a strong reference to the view.

@@ -38,7 +38,7 @@ namespace RenderCore
 
 std::unique_ptr<AVertexArrayObjectGL> AVertexLayoutGL::CreateVAO()
 {
-    unsigned int vaoHandle = 0;
+    GLuint vaoHandle = 0;
 
     glCreateVertexArrays(1, &vaoHandle);
     if (!vaoHandle)
