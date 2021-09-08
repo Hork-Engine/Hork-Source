@@ -65,7 +65,8 @@ AAudioHRTF::AAudioHRTF( int SampleRate )
 
     uint32_t magic = f.ReadUInt32();
     const char * MAGIC = "HRIR";
-    if ( memcmp( &magic, MAGIC, sizeof( uint32_t ) ) != 0 ) {
+    if (std::memcmp(&magic, MAGIC, sizeof(uint32_t)) != 0)
+    {
         CriticalError( "Invalid HRTF data\n" );
     }
 

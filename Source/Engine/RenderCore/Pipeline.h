@@ -168,6 +168,70 @@ struct SRenderTargetBlendingInfo
     void SetBlendingPreset(BLENDING_PRESET _Preset);
 };
 
+AN_INLINE void SRenderTargetBlendingInfo::SetBlendingPreset(BLENDING_PRESET _Preset)
+{
+    switch (_Preset)
+    {
+        case BLENDING_ALPHA:
+            bBlendEnable      = true;
+            ColorWriteMask    = COLOR_WRITE_RGBA;
+            Func.SrcFactorRGB = Func.SrcFactorAlpha = BLEND_FUNC_SRC_ALPHA;
+            Func.DstFactorRGB = Func.DstFactorAlpha = BLEND_FUNC_INV_SRC_ALPHA;
+            Op.ColorRGB = Op.Alpha = BLEND_OP_ADD;
+            break;
+        case BLENDING_PREMULTIPLIED_ALPHA:
+            bBlendEnable      = true;
+            ColorWriteMask    = COLOR_WRITE_RGBA;
+            Func.SrcFactorRGB = Func.SrcFactorAlpha = BLEND_FUNC_ONE;
+            Func.DstFactorRGB = Func.DstFactorAlpha = BLEND_FUNC_INV_SRC_ALPHA;
+            Op.ColorRGB = Op.Alpha = BLEND_OP_ADD;
+            break;
+        case BLENDING_COLOR_ADD:
+            bBlendEnable      = true;
+            ColorWriteMask    = COLOR_WRITE_RGBA;
+            Func.SrcFactorRGB = Func.SrcFactorAlpha = BLEND_FUNC_ONE;
+            Func.DstFactorRGB = Func.DstFactorAlpha = BLEND_FUNC_ONE;
+            Op.ColorRGB = Op.Alpha = BLEND_OP_ADD;
+            break;
+        case BLENDING_MULTIPLY:
+            bBlendEnable      = true;
+            ColorWriteMask    = COLOR_WRITE_RGBA;
+            Func.SrcFactorRGB = Func.SrcFactorAlpha = BLEND_FUNC_DST_COLOR;
+            Func.DstFactorRGB = Func.DstFactorAlpha = BLEND_FUNC_ZERO;
+            Op.ColorRGB = Op.Alpha = BLEND_OP_ADD;
+            break;
+        case BLENDING_SOURCE_TO_DEST:
+            bBlendEnable      = true;
+            ColorWriteMask    = COLOR_WRITE_RGBA;
+            Func.SrcFactorRGB = Func.SrcFactorAlpha = BLEND_FUNC_SRC_COLOR;
+            Func.DstFactorRGB = Func.DstFactorAlpha = BLEND_FUNC_ONE;
+            Op.ColorRGB = Op.Alpha = BLEND_OP_ADD;
+            break;
+        case BLENDING_ADD_MUL:
+            bBlendEnable      = true;
+            ColorWriteMask    = COLOR_WRITE_RGBA;
+            Func.SrcFactorRGB = Func.SrcFactorAlpha = BLEND_FUNC_INV_DST_COLOR;
+            Func.DstFactorRGB = Func.DstFactorAlpha = BLEND_FUNC_ONE;
+            Op.ColorRGB = Op.Alpha = BLEND_OP_ADD;
+            break;
+        case BLENDING_ADD_ALPHA:
+            bBlendEnable      = true;
+            ColorWriteMask    = COLOR_WRITE_RGBA;
+            Func.SrcFactorRGB = Func.SrcFactorAlpha = BLEND_FUNC_SRC_ALPHA;
+            Func.DstFactorRGB = Func.DstFactorAlpha = BLEND_FUNC_ONE;
+            Op.ColorRGB = Op.Alpha = BLEND_OP_ADD;
+            break;
+        case BLENDING_NO_BLEND:
+        default:
+            bBlendEnable      = false;
+            ColorWriteMask    = COLOR_WRITE_RGBA;
+            Func.SrcFactorRGB = Func.SrcFactorAlpha = BLEND_FUNC_ONE;
+            Func.DstFactorRGB = Func.DstFactorAlpha = BLEND_FUNC_ZERO;
+            Op.ColorRGB = Op.Alpha = BLEND_OP_ADD;
+            break;
+    }
+}
+
 struct SBlendingStateInfo
 {
     bool                      bSampleAlphaToCoverage = false;
@@ -176,6 +240,16 @@ struct SBlendingStateInfo
     SRenderTargetBlendingInfo RenderTargetSlots[MAX_COLOR_ATTACHMENTS];
 
     SBlendingStateInfo() = default;
+
+    bool operator==(SBlendingStateInfo const& Rhs) const
+    {
+        return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
+    }
+
+    bool operator!=(SBlendingStateInfo const& Rhs) const
+    {
+        return !(operator==(Rhs));
+    }
 };
 
 //
@@ -229,6 +303,16 @@ struct SRasterizerStateInfo
     bool bRasterizerDiscard     = false;
 
     SRasterizerStateInfo() = default;
+
+    bool operator==(SRasterizerStateInfo const& Rhs) const
+    {
+        return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
+    }
+
+    bool operator!=(SRasterizerStateInfo const& Rhs) const
+    {
+        return !(operator==(Rhs));
+    }
 };
 
 //
@@ -286,6 +370,16 @@ struct SDepthStencilStateInfo
     SStencilTestInfo    BackFace;
 
     SDepthStencilStateInfo() = default;
+
+    bool operator==(SDepthStencilStateInfo const& Rhs) const
+    {
+        return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
+    }
+
+    bool operator!=(SDepthStencilStateInfo const& Rhs) const
+    {
+        return !(operator==(Rhs));
+    }
 };
 
 //
@@ -432,6 +526,16 @@ struct SSamplerDesc
     {
         bCubemapSeamless = InbCubemapSeamless;
         return *this;
+    }
+
+    bool operator==(SSamplerDesc const& Rhs) const
+    {
+        return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
+    }
+
+    bool operator!=(SSamplerDesc const& Rhs) const
+    {
+        return !(operator==(Rhs));
     }
 };
 

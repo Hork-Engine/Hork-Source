@@ -1627,7 +1627,7 @@ void AImmediateContextGLImpl::SetViewport(SViewport const& _Viewport)
 
     AN_ASSERT(CurrentRenderPass != nullptr);
 
-    if (memcmp(CurrentViewport, &_Viewport, sizeof(CurrentViewport)) != 0)
+    if (std::memcmp(CurrentViewport, &_Viewport, sizeof(CurrentViewport)) != 0)
     {
         glViewport((GLint)_Viewport.X,
                    (GLint)INVERT_VIEWPORT_Y(&_Viewport),
@@ -1636,7 +1636,7 @@ void AImmediateContextGLImpl::SetViewport(SViewport const& _Viewport)
         Core::Memcpy(CurrentViewport, &_Viewport, sizeof(CurrentViewport));
     }
 
-    if (memcmp(CurrentDepthRange, &_Viewport.MinDepth, sizeof(CurrentDepthRange)) != 0)
+    if (std::memcmp(CurrentDepthRange, &_Viewport.MinDepth, sizeof(CurrentDepthRange)) != 0)
     {
         glDepthRangef(_Viewport.MinDepth, _Viewport.MaxDepth); // Since GL v4.1
 

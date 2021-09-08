@@ -240,7 +240,7 @@ struct STextureSwizzle
 
     bool operator==(STextureSwizzle const& Rhs) const
     {
-        return memcmp(this, &Rhs, sizeof(*this)) == 0;
+        return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
     }
 
     bool operator!=(STextureSwizzle const& Rhs) const

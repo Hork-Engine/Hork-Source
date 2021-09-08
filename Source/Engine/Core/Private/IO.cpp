@@ -507,7 +507,8 @@ bool AArchive::Open( AStringView _ArchiveName, bool bResourcePack )
 
         uint64_t     magic = f.ReadUInt64();
         const char * MAGIC = "ARESPACK";
-        if ( memcmp( &magic, MAGIC, sizeof( uint64_t ) ) != 0 ) {
+        if (std::memcmp(&magic, MAGIC, sizeof(uint64_t)) != 0)
+        {
             GLogger.Printf( "Invalid file format %s\n", _ArchiveName );
             return false;
         }
