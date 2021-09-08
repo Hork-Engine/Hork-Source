@@ -159,7 +159,7 @@ BraceWrapping:
 
 
   # Only wrap braces after a multi-line control statement.
-  AfterControlStatement: Never
+  AfterControlStatement: true
   # MultiLine:
   # if (foo && bar)
   # {
@@ -385,7 +385,7 @@ PenaltyBreakTemplateDeclaration: 10
 PenaltyExcessCharacter: 1000000
 PenaltyReturnTypeOnItsOwnLine: 1000
 
-PointerAlignment: Middle
+PointerAlignment: Left
 # left:
 # int * a;
 # int & b;
@@ -404,10 +404,9 @@ SpaceAfterLogicalNot: false
 # false:
 # !bar();
 
-SpaceAfterTemplateKeyword: false
+SpaceAfterTemplateKeyword: true
 # false:
 # template<typename>
-
 
 SpaceBeforeAssignmentOperators: true
 # true:
@@ -456,7 +455,7 @@ SpaceInEmptyParentheses: false
 
 SpacesBeforeTrailingComments: 1
 
-SpacesInAngles:  true
+SpacesInAngles:  false
 # true:
 # static_cast< int >(arg);
 
@@ -471,7 +470,7 @@ SpacesInCStyleCastParentheses: false
 # x = (int32)y
 
 
-SpacesInParentheses: true
+SpacesInParentheses: false
 # true:
 # t f( Deleted & ) & = delete;
 
@@ -479,7 +478,7 @@ SpacesInSquareBrackets: false
 # false:
 # int a[5];
 
-SpacesInConditionalStatement: true
+SpacesInConditionalStatement: false
 
 Standard:        Latest
 
