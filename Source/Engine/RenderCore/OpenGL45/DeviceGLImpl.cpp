@@ -710,7 +710,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
 
         if (pVertexLayout->GetDesc() == desc)
         {
-            GLogger.Printf( "Caching vertex layout\n" );
+            //GLogger.Printf( "Caching vertex layout\n" );
             return pVertexLayout;
         }
     }
@@ -749,7 +749,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
     VertexLayouts.Append(pVertexLayout);
     pVertexLayout->AddRef();
 
-    GLogger.Printf("Create VAO, total %d\n", VertexLayouts.Size());
+    //GLogger.Printf("Create vertex layout, total %d\n", VertexLayouts.Size());
 
     return pVertexLayout;
 }

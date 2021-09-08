@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "FramebufferGLImpl.h"
+#include "FramebufferGL.h"
 #include "DeviceGLImpl.h"
 #include "LUT.h"
 #include "GL/glew.h"
@@ -38,8 +38,8 @@ SOFTWARE.
 namespace RenderCore
 {
 
-AFramebufferGLImpl::AFramebufferGLImpl(ADeviceGLImpl* pDevice, SFramebufferDesc const& Desc) :
-    pDevice(pDevice), Width(Desc.Width), Height(Desc.Height), NumColorAttachments(Desc.NumColorAttachments), bHasDepthStencilAttachment(Desc.pDepthStencilAttachment != nullptr)
+AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
+    Hash(Hash), Width(Desc.Width), Height(Desc.Height), NumColorAttachments(Desc.NumColorAttachments), bHasDepthStencilAttachment(Desc.pDepthStencilAttachment != nullptr)
 {
     AN_ASSERT(Desc.Width != 0);
     AN_ASSERT(Desc.Height != 0);
@@ -213,7 +213,7 @@ AFramebufferGLImpl::AFramebufferGLImpl(ADeviceGLImpl* pDevice, SFramebufferDesc 
     // glGetBufferParameteriv          glGetNamedBufferParameteriv
 }
 
-AFramebufferGLImpl::~AFramebufferGLImpl()
+AFramebufferGL::~AFramebufferGL()
 {
     if (FramebufferId)
     {
@@ -221,7 +221,7 @@ AFramebufferGLImpl::~AFramebufferGLImpl()
     }
 }
 
-bool AFramebufferGLImpl::IsAttachmentsOutdated() const
+bool AFramebufferGL::IsAttachmentsOutdated() const
 {
     for (int i = 0; i < NumColorAttachments; i++)
     {

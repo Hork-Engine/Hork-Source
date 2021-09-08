@@ -33,38 +33,34 @@ SOFTWARE.
 #include "TextureGLImpl.h"
 #include <RenderCore/StaticLimits.h>
 
-struct SDL_Window;
-
 namespace RenderCore
 {
 
-class ADeviceGLImpl;
-
-struct SFramebufferDesc
+struct SFramebufferDescGL
 {
-    uint16_t                    Width                   = 0;
-    uint16_t                    Height                  = 0;
-    uint16_t                    NumColorAttachments     = 0;
-    ITextureView**              pColorAttachments       = nullptr;
-    ITextureView*               pDepthStencilAttachment = nullptr;
+    uint16_t       Width                   = 0;
+    uint16_t       Height                  = 0;
+    uint16_t       NumColorAttachments     = 0;
+    ITextureView** pColorAttachments       = nullptr;
+    ITextureView*  pDepthStencilAttachment = nullptr;
 
-    SFramebufferDesc() = default;
+    SFramebufferDescGL() = default;
 
-    SFramebufferDesc(uint16_t      Width,
-                     uint16_t      Height,
-                     uint16_t      NumColorAttachments,
-                     ITextureView** pColorAttachments,
-                     ITextureView* pDepthStencilAttachment) :
+    SFramebufferDescGL(uint16_t       Width,
+                       uint16_t       Height,
+                       uint16_t       NumColorAttachments,
+                       ITextureView** pColorAttachments,
+                       ITextureView*  pDepthStencilAttachment) :
         Width(Width), Height(Height), NumColorAttachments(NumColorAttachments), pColorAttachments(pColorAttachments), pDepthStencilAttachment(pDepthStencilAttachment)
     {
     }
 };
 
-class AFramebufferGLImpl final : public ARefCounted
+class AFramebufferGL
 {
 public:
-    AFramebufferGLImpl(ADeviceGLImpl* pDevice, SFramebufferDesc const& Desc);
-    ~AFramebufferGLImpl();
+    AFramebufferGL(SFramebufferDescGL const& Desc, int Hash);
+    ~AFramebufferGL();
 
     unsigned int GetHandleNativeGL() const { return FramebufferId; }
 
@@ -84,7 +80,9 @@ public:
 
     bool IsAttachmentsOutdated() const;
 
-    bool CompareWith(SFramebufferDesc const& InDesc) const
+    int GetHash() const { return Hash; }
+
+    bool CompareWith(SFramebufferDescGL const& InDesc) const
     {
         if (InDesc.Width != Width ||
             InDesc.Height != Height ||
@@ -115,9 +113,9 @@ public:
     }
 
 private:
-    TRef<IDevice> pDevice;
-
     unsigned int FramebufferId = 0;
+
+    int Hash;
 
     uint16_t Width;
     uint16_t Height;

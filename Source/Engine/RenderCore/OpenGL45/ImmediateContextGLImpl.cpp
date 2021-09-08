@@ -168,9 +168,8 @@ void AFramebufferCacheGLImpl::CleanupOutdatedFramebuffers()
     {
         if (FramebufferCache[i]->IsAttachmentsOutdated())
         {
+            FramebufferHash.RemoveIndex(FramebufferCache[i]->GetHash(), i);
             FramebufferCache.erase(FramebufferCache.begin() + i);
-            FramebufferHash.RemoveIndex(FramebufferHashes[i], i);
-            FramebufferHashes.Erase(FramebufferHashes.begin() + i);
             continue;
         }
         i++;
@@ -193,11 +192,11 @@ void AFramebufferCacheGLImpl::CleanupOutdatedFramebuffers()
 //    return hash;
 //}
 
-AFramebufferGLImpl* AFramebufferCacheGLImpl::GetFramebuffer(const char*                     RenderPassName,
-                                                            TStdVector<STextureAttachment>& ColorAttachments,
-                                                            STextureAttachment*             pDepthStencilAttachment)
+AFramebufferGL* AFramebufferCacheGLImpl::GetFramebuffer(const char*                     RenderPassName,
+                                                        TStdVector<STextureAttachment>& ColorAttachments,
+                                                        STextureAttachment*             pDepthStencilAttachment)
 {
-    SFramebufferDesc                             framebufferDesc;
+    SFramebufferDescGL                           framebufferDesc;
     TArray<ITextureView*, MAX_COLOR_ATTACHMENTS> colorAttachments;
  
     AN_ASSERT(ColorAttachments.Size() <= MAX_COLOR_ATTACHMENTS);
@@ -296,7 +295,7 @@ AFramebufferGLImpl* AFramebufferCacheGLImpl::GetFramebuffer(const char*         
 
     for (int i = FramebufferHash.First(hash); i != -1; i = FramebufferHash.Next(i))
     {
-        AFramebufferGLImpl* framebuffer = FramebufferCache[i];
+        AFramebufferGL* framebuffer = FramebufferCache[i].get();
 
         if (framebuffer->CompareWith(framebufferDesc))
         {
@@ -306,16 +305,14 @@ AFramebufferGLImpl* AFramebufferCacheGLImpl::GetFramebuffer(const char*         
 
     // create new framebuffer
 
-    TRef<AFramebufferGLImpl> framebuffer;
-    framebuffer = MakeRef<AFramebufferGLImpl>(pDevice, framebufferDesc);
+    std::unique_ptr<AFramebufferGL> framebuffer = std::make_unique<AFramebufferGL>(framebufferDesc, hash);
 
-    FramebufferHash.Insert(hash, FramebufferCache.Size());
-    FramebufferCache.push_back(framebuffer);
-    FramebufferHashes.Append(hash);
+    FramebufferHash.Insert(framebuffer->GetHash(), FramebufferCache.Size());
+    FramebufferCache.emplace_back(std::move(framebuffer));
 
     //GLogger.Printf( "Total framebuffers %d for %s hash 0x%08x\n", FramebufferCache.Size(), RenderPassName, hash );
 
-    return framebuffer;
+    return FramebufferCache.back().get();
 }
 
 AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmediateContextDesc const& Desc, void* _Context) :
@@ -4249,7 +4246,7 @@ void AImmediateContextGLImpl::ClearAttachments(ARenderPassContext&            Re
     }
 }
 
-void AImmediateContextGLImpl::BindReadFramebuffer(AFramebufferGLImpl const* Framebuffer)
+void AImmediateContextGLImpl::BindReadFramebuffer(AFramebufferGL const* Framebuffer)
 {
     GLuint framebufferId = Framebuffer->GetHandleNativeGL();
 
@@ -4260,7 +4257,7 @@ void AImmediateContextGLImpl::BindReadFramebuffer(AFramebufferGLImpl const* Fram
     }
 }
 
-bool AImmediateContextGLImpl::ChooseReadBuffer(AFramebufferGLImpl const* pFramebuffer, int _ColorAttachment) const
+bool AImmediateContextGLImpl::ChooseReadBuffer(AFramebufferGL const* pFramebuffer, int _ColorAttachment) const
 {
     if (pFramebuffer->GetHandleNativeGL() == 0)
     {
@@ -5472,7 +5469,7 @@ void AImmediateContextGLImpl::ExecuteRenderPass(ARenderPass* pRenderPass)
     auto& depthStencilAttachment     = pRenderPass->GetDepthStencilAttachment();
     bool  bHasDepthStencilAttachment = pRenderPass->HasDepthStencilAttachment();
 
-    AFramebufferGLImpl* pFramebuffer = pFramebufferCache->GetFramebuffer(pRenderPass->GetName(),
+    AFramebufferGL* pFramebuffer = pFramebufferCache->GetFramebuffer(pRenderPass->GetName(),
                                                                          const_cast<TStdVector<STextureAttachment>&>(colorAttachments),
                                                                          bHasDepthStencilAttachment ? const_cast<STextureAttachment*>(&depthStencilAttachment) : nullptr);
 

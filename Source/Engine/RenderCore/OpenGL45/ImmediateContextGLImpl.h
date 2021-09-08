@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "DeviceGLImpl.h"
-#include "FramebufferGLImpl.h"
+#include "FramebufferGL.h"
 
 namespace RenderCore
 {
@@ -103,20 +103,19 @@ public:
 
     void CleanupOutdatedFramebuffers();
 
-    AFramebufferGLImpl* GetFramebuffer(const char* RenderPassName, TStdVector<STextureAttachment>& ColorAttachments, STextureAttachment* DepthStencilAttachment);
+    AFramebufferGL* GetFramebuffer(const char* RenderPassName, TStdVector<STextureAttachment>& ColorAttachments, STextureAttachment* DepthStencilAttachment);
 
 private:
-    TRef<ADeviceGLImpl>            pDevice;
-    THash<>                        FramebufferHash;
-    TStdVector<TRef<AFramebufferGLImpl>> FramebufferCache;
-    TPodVector<int>                FramebufferHashes;
+    TRef<ADeviceGLImpl>              pDevice;
+    THash<>                          FramebufferHash;
+    TStdVector<std::unique_ptr<AFramebufferGL>> FramebufferCache;
 };
 
 struct SRenderPassBeginGL
 {
-    ARenderPass*                   pRenderPass;
-    AFramebufferGLImpl const*      pFramebuffer;
-    SRect2D                        RenderArea;
+    ARenderPass*          pRenderPass;
+    AFramebufferGL const* pFramebuffer;
+    SRect2D               RenderArea;
 };
 
 class AImmediateContextGLImpl final : public IImmediateContext
@@ -391,7 +390,7 @@ public:
 
     //
     // Sparse texture
-    // 
+    //
 
     void SparseTextureCommitPage(ISparseTexture* pTexture,
                                  int             MipLevel,
@@ -476,7 +475,7 @@ public:
                              void*              pSysMem,
                              size_t             DstStride,
                              QUERY_RESULT_FLAGS Flags) override;
-    
+
     //
     // Misc
     //
@@ -602,9 +601,9 @@ private:
 
     void ClampReadColor(COLOR_CLAMP _ColorClamp);
 
-    void BindReadFramebuffer(AFramebufferGLImpl const* Framebuffer);
+    void BindReadFramebuffer(AFramebufferGL const* Framebuffer);
 
-    bool ChooseReadBuffer(AFramebufferGLImpl const* pFramebuffer, int _ColorAttachment) const;
+    bool ChooseReadBuffer(AFramebufferGL const* pFramebuffer, int _ColorAttachment) const;
 
     void ExecuteRenderPass(class ARenderPass* pRenderPass);
     void ExecuteCustomTask(class ACustomTask* pCustomTask);
@@ -613,28 +612,26 @@ private:
     void*              pContextGL;
     bool               bMainContext = false;
 
-    TRef<AFramebufferGLImpl> DefaultFramebuffer;
-
     SBindingStateGL Binding;
 
     uint32_t  BufferBindingUIDs[MAX_BUFFER_SLOTS];
     ptrdiff_t BufferBindingOffsets[MAX_BUFFER_SLOTS];
     ptrdiff_t BufferBindingSizes[MAX_BUFFER_SLOTS];
 
-    TRef<IResourceTable>       RootResourceTable;
-    TRef<AResourceTableGLImpl> CurrentResourceTable;
-    APipelineGLImpl*           CurrentPipeline;
-    class AVertexLayoutGL*     CurrentVertexLayout;
+    TRef<IResourceTable>        RootResourceTable;
+    TRef<AResourceTableGLImpl>  CurrentResourceTable;
+    APipelineGLImpl*            CurrentPipeline;
+    class AVertexLayoutGL*      CurrentVertexLayout;
     class AVertexArrayObjectGL* CurrentVAO;
-    uint8_t                    NumPatchVertices;      // count of patch vertices to set by glPatchParameteri
-    unsigned int               IndexBufferType;       // type of current binded index buffer (uin16 or uint32_t)
-    size_t                     IndexBufferTypeSizeOf; // size of one index
-    unsigned int               IndexBufferOffset;     // offset in current binded index buffer
-    uint32_t                   IndexBufferUID;
-    unsigned int               IndexBufferHandle;
-    uint32_t                   VertexBufferUIDs[MAX_VERTEX_BUFFER_SLOTS];
-    unsigned int               VertexBufferHandles[MAX_VERTEX_BUFFER_SLOTS];
-    ptrdiff_t                  VertexBufferOffsets[MAX_VERTEX_BUFFER_SLOTS];
+    uint8_t                     NumPatchVertices;      // count of patch vertices to set by glPatchParameteri
+    unsigned int                IndexBufferType;       // type of current binded index buffer (uin16 or uint32_t)
+    size_t                      IndexBufferTypeSizeOf; // size of one index
+    unsigned int                IndexBufferOffset;     // offset in current binded index buffer
+    uint32_t                    IndexBufferUID;
+    unsigned int                IndexBufferHandle;
+    uint32_t                    VertexBufferUIDs[MAX_VERTEX_BUFFER_SLOTS];
+    unsigned int                VertexBufferHandles[MAX_VERTEX_BUFFER_SLOTS];
+    ptrdiff_t                   VertexBufferOffsets[MAX_VERTEX_BUFFER_SLOTS];
 
     uint32_t CurrentQueryUID[QUERY_TYPE_MAX];
 
@@ -659,10 +656,10 @@ private:
     SDepthStencilStateInfo DepthStencilState; // current depth-stencil state
     unsigned int           StencilRef;
 
-    ARenderPass*              CurrentRenderPass;
-    int                      CurrentSubpass;
-    SRect2D                  CurrentRenderPassRenderArea;
-    AFramebufferGLImpl const* CurrentFramebuffer;
+    ARenderPass*          CurrentRenderPass;
+    int                   CurrentSubpass;
+    SRect2D               CurrentRenderPassRenderArea;
+    AFramebufferGL const* CurrentFramebuffer;
 
     TArray<SClearColorValue, MAX_COLOR_ATTACHMENTS> ColorAttachmentClearValues;
     SClearDepthStencilValue                         DepthStencilAttachmentClearValue;
