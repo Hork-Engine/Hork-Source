@@ -211,11 +211,8 @@ private:
     friend class IDeviceObject;
 };
 
-typedef int (*HashCallback)(const unsigned char* _Data, int _Size);
-
 void CreateLogicalDevice(SImmediateContextDesc const& Desc,
                          SAllocatorCallback const*    Allocator,
-                         HashCallback                 Hash,
                          TRef<IDevice>*               ppDevice,
                          TRef<IImmediateContext>*     ppImmediateContext);
 

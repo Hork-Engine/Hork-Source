@@ -41,8 +41,7 @@ class ADeviceGLImpl final : public IDevice
 {
 public:
     ADeviceGLImpl(SImmediateContextDesc const& Desc,
-                  SAllocatorCallback const*    _Allocator,
-                  HashCallback                 _Hash,
+                  SAllocatorCallback const*    pAllocator,
                   TRef<IImmediateContext>*     ppImmediateContext);
     ~ADeviceGLImpl();
 
@@ -93,11 +92,6 @@ public:
     // Local
     //
 
-    int Hash(const unsigned char* _Data, int _Size) const
-    {
-        return HashCB(_Data, _Size);
-    }
-
     class AVertexLayoutGL* GetVertexLayout(SVertexBindingInfo const* pVertexBindings,
                                            uint32_t                  NumVertexBindings,
                                            SVertexAttribInfo const*  pVertexAttribs,
@@ -115,7 +109,6 @@ public:
 
 private:
     SAllocatorCallback Allocator;
-    HashCallback       HashCB;
 
     THash<>                      VertexLayoutsHash;
     TPodVector<AVertexLayoutGL*> VertexLayouts;

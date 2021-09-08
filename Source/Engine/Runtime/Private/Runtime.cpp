@@ -193,10 +193,6 @@ ARuntime::ARuntime( struct SEntryDecl const & _EntryDecl )
 
     CreateLogicalDevice( stateCreateInfo,
                          &allocator,
-                         []( const unsigned char * _Data, int _Size )
-                         {
-                             return Core::Hash( ( const char * )_Data, _Size );
-                         },
                          &RenderDevice,
                          &pImmediateContext);
 

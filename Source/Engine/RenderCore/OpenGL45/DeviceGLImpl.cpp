@@ -153,19 +153,7 @@ static void Deallocate(void* _Bytes)
     GZoneMemory.Free(_Bytes);
 }
 
-static constexpr SAllocatorCallback DefaultAllocator =
-    {
-        Allocate, Deallocate};
-
-static int SDBM_Hash(const unsigned char* _Data, int _Size)
-{
-    int hash = 0;
-    while (_Size-- > 0)
-    {
-        hash = *_Data++ + (hash << 6) + (hash << 16) - hash;
-    }
-    return hash;
-}
+static constexpr SAllocatorCallback DefaultAllocator = { Allocate, Deallocate };
 
 static void DebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
@@ -264,17 +252,15 @@ static void DebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum s
 }
 
 void CreateLogicalDevice(SImmediateContextDesc const& Desc,
-                         SAllocatorCallback const*    Allocator,
-                         HashCallback                 Hash,
+                         SAllocatorCallback const*    pAllocator,
                          TRef<IDevice>*               ppDevice,
                          TRef<IImmediateContext>*     ppImmediateContext)
 {
-    *ppDevice = MakeRef<ADeviceGLImpl>(Desc, Allocator, Hash, ppImmediateContext);
+    *ppDevice = MakeRef<ADeviceGLImpl>(Desc, pAllocator, ppImmediateContext);
 }
 
 ADeviceGLImpl::ADeviceGLImpl(SImmediateContextDesc const& Desc,
-                             SAllocatorCallback const*    _Allocator,
-                             HashCallback                 _Hash,
+                             SAllocatorCallback const*    pAllocator,
                              TRef<IImmediateContext>*     ppImmediateContext)
 {
     BufferMemoryAllocated  = 0;
@@ -533,8 +519,7 @@ ADeviceGLImpl::ADeviceGLImpl(SImmediateContextDesc const& Desc,
         GLogger.Printf("\tEvicted memory: %d Megs\n", evictedMemory >> 10);
     }
 
-    Allocator = _Allocator ? *_Allocator : DefaultAllocator;
-    HashCB    = _Hash ? _Hash : SDBM_Hash;
+    Allocator = pAllocator ? *pAllocator : DefaultAllocator;
 
     *ppImmediateContext = MakeRef<AImmediateContextGLImpl>(this, Desc, windowCtx);
 
@@ -716,7 +701,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
         desc.VertexAttribs[i].SemanticName = nullptr;
     }
 
-    int hash = Hash((unsigned char*)&desc, sizeof(desc));
+    int hash = Core::SDBMHash((const char*)&desc, sizeof(desc));
 
     int i = VertexLayoutsHash.First(hash);
     for (; i != -1; i = VertexLayoutsHash.Next(i))
@@ -771,15 +756,14 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
 
 SBlendingStateInfo const* ADeviceGLImpl::CachedBlendingState(SBlendingStateInfo const& _BlendingState)
 {
-    int hash = Hash((unsigned char*)&_BlendingState, sizeof(_BlendingState));
+    int hash = Core::SDBMHash((const char*)&_BlendingState, sizeof(_BlendingState));
 
     int i = BlendingHash.First(hash);
     for (; i != -1; i = BlendingHash.Next(i))
     {
-
         SBlendingStateInfo const* state = BlendingStateCache[i];
 
-        if (!memcmp(state, &_BlendingState, sizeof(*state)))
+        if (*state == _BlendingState)
         {
             //GLogger.Printf( "Caching blending state\n" );
             return state;
@@ -801,15 +785,14 @@ SBlendingStateInfo const* ADeviceGLImpl::CachedBlendingState(SBlendingStateInfo 
 
 SRasterizerStateInfo const* ADeviceGLImpl::CachedRasterizerState(SRasterizerStateInfo const& _RasterizerState)
 {
-    int hash = Hash((unsigned char*)&_RasterizerState, sizeof(_RasterizerState));
+    int hash = Core::SDBMHash((const char*)&_RasterizerState, sizeof(_RasterizerState));
 
     int i = RasterizerHash.First(hash);
     for (; i != -1; i = RasterizerHash.Next(i))
     {
-
         SRasterizerStateInfo const* state = RasterizerStateCache[i];
 
-        if (!memcmp(state, &_RasterizerState, sizeof(*state)))
+        if (*state == _RasterizerState)
         {
             //GLogger.Printf( "Caching rasterizer state\n" );
             return state;
@@ -831,15 +814,14 @@ SRasterizerStateInfo const* ADeviceGLImpl::CachedRasterizerState(SRasterizerStat
 
 SDepthStencilStateInfo const* ADeviceGLImpl::CachedDepthStencilState(SDepthStencilStateInfo const& _DepthStencilState)
 {
-    int hash = Hash((unsigned char*)&_DepthStencilState, sizeof(_DepthStencilState));
+    int hash = Core::SDBMHash((const char*)&_DepthStencilState, sizeof(_DepthStencilState));
 
     int i = DepthStencilHash.First(hash);
     for (; i != -1; i = DepthStencilHash.Next(i))
     {
-
         SDepthStencilStateInfo const* state = DepthStencilStateCache[i];
 
-        if (!memcmp(state, &_DepthStencilState, sizeof(*state)))
+        if (*state == _DepthStencilState)
         {
             //GLogger.Printf( "Caching depth stencil state\n" );
             return state;
@@ -861,15 +843,14 @@ SDepthStencilStateInfo const* ADeviceGLImpl::CachedDepthStencilState(SDepthStenc
 
 unsigned int ADeviceGLImpl::CachedSampler(SSamplerDesc const& SamplerDesc)
 {
-    int hash = Hash((unsigned char*)&SamplerDesc, sizeof(SamplerDesc));
+    int hash = Core::SDBMHash((const char*)&SamplerDesc, sizeof(SamplerDesc));
 
     int i = SamplerHash.First(hash);
     for (; i != -1; i = SamplerHash.Next(i))
     {
-
         SamplerInfo const* sampler = SamplerCache[i];
 
-        if (!memcmp(&sampler->Desc, &SamplerDesc, sizeof(sampler->Desc)))
+        if (sampler->Desc == SamplerDesc)
         {
             //GLogger.Printf( "Caching sampler\n" );
             return sampler->Id;
