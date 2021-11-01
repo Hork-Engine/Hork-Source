@@ -35,7 +35,7 @@ namespace RenderCore
 {
 
 ITextureView::ITextureView(STextureViewDesc const& TextureViewDesc, ITexture* pTexture) :
-    IDeviceObject(pTexture->GetDevice(), DEVICE_OBJECT_TYPE_TEXTURE_VIEW), Desc(TextureViewDesc), pTexture(pTexture)
+    IDeviceObject(pTexture->GetDevice(), PROXY_TYPE), Desc(TextureViewDesc), pTexture(pTexture)
 {
     STextureDesc const& textureDesc = pTexture->GetDesc();
 

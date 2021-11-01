@@ -64,8 +64,6 @@ public:
 
     void CreateQueryPool(SQueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool) override;
 
-    void GetBindlessSampler(ITexture* pTexture, SSamplerDesc const& Desc, TRef<IBindlessSampler>* ppBindlessSampler) override;
-
     void CreateResourceTable(TRef<IResourceTable>* ppResourceTable) override;
 
     bool CreateShaderBinaryData(SHADER_TYPE        _ShaderType,

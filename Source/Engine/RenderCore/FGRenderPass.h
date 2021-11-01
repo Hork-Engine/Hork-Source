@@ -166,26 +166,9 @@ struct STextureAttachment
     ATTACHMENT_STORE_OP          StoreOp            = ATTACHMENT_STORE_OP_STORE;
     STextureAttachmentClearValue ClearValue;
     bool                         bCreateNewResource = false;
-
-    uint16_t MipLevel = 0;
-    uint16_t SliceNum = 0;
-    bool bSingleSlice = false;
-
-    //ITextureView* GetRenderTargetView()
-    //{
-    //    AN_ASSERT(pResource);
-    //    if (pResource->pTextureView)
-    //    {
-    //        return pResource->pTextureView;
-    //    }
-
-    //    return pResource->Actual()->GetRenderTargetView();
-    //}
-    ITexture* GetTexture()
-    {
-        AN_ASSERT(pResource);
-        return pResource->Actual();
-    }
+    uint16_t                     MipLevel           = 0;
+    uint16_t                     SliceNum           = 0;
+    bool                         bSingleSlice       = false;
 
     explicit STextureAttachment(FGTextureProxy* pResource) :
         pResource(pResource), bCreateNewResource(false)
@@ -244,6 +227,12 @@ struct STextureAttachment
         SliceNum     = InSlice;
         bSingleSlice = true;
         return *this;
+    }
+
+    ITexture* GetTexture()
+    {
+        AN_ASSERT(pResource);
+        return pResource->Actual();
     }
 };
 

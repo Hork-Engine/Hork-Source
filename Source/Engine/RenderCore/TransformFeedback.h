@@ -42,8 +42,10 @@ struct STransformFeedbackDesc
 class ITransformFeedback : public IDeviceObject
 {
 public:
+    static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_TRANSFORM_FEEDBACK;
+
     ITransformFeedback(IDevice* pDevice) :
-        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_TRANSFORM_FEEDBACK)
+        IDeviceObject(pDevice, PROXY_TYPE)
     {}
 };
 

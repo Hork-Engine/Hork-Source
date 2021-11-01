@@ -94,10 +94,10 @@ private:
     ptrdiff_t    BufferBindingSizes[MAX_BUFFER_SLOTS];
 };
 
-class AFramebufferCacheGLImpl : public ARefCounted
+class AFramebufferCacheGL : public ARefCounted
 {
 public:
-    AFramebufferCacheGLImpl(ADeviceGLImpl* pDevice) :
+    AFramebufferCacheGL(ADeviceGLImpl* pDevice) :
         pDevice(pDevice)
     {}
 
@@ -677,7 +677,7 @@ private:
 
     SRect2D CurrentScissor;
 
-    TRef<AFramebufferCacheGLImpl> pFramebufferCache;
+    TRef<AFramebufferCacheGL> pFramebufferCache;
 };
 
 } // namespace RenderCore

@@ -34,7 +34,6 @@ SOFTWARE.
 #include "BufferView.h"
 #include "Texture.h"
 #include "SparseTexture.h"
-#include "Sampler.h"
 #include "Query.h"
 #include "Pipeline.h"
 #include "ShaderModule.h"
@@ -127,9 +126,6 @@ public:
     virtual void CreateTransformFeedback(STransformFeedbackDesc const& Desc, TRef<ITransformFeedback>* ppTransformFeedback) = 0;
 
     virtual void CreateQueryPool(SQueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool) = 0;
-
-    /** FEATURE_BINDLESS_TEXTURE must be supported */
-    virtual void GetBindlessSampler(ITexture* pTexture, SSamplerDesc const& Desc, TRef<IBindlessSampler>* ppBindlessSampler) = 0;
 
     virtual void CreateResourceTable(TRef<IResourceTable>* ppResourceTable) = 0;
 

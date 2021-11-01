@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "TextureViewGLImpl.h"
 #include <Core/Public/Std.h>
+#include <unordered_set>
 
 namespace RenderCore {
 
@@ -43,7 +44,13 @@ public:
     ATextureGLImpl(ADeviceGLImpl* pDevice, STextureDesc const& TextureDesc, bool bDummyTexture = false);
     ~ATextureGLImpl();
 
-    ITextureView* GetTextureView(STextureViewDesc const& Desc) override;
+    void MakeBindlessSamplerResident(BindlessHandle Handle, bool bResident) override;
+
+    bool IsBindlessSamplerResident(BindlessHandle Handle) override;
+
+    BindlessHandle GetBindlessSampler(SSamplerDesc const& SamplerDesc) override;
+
+    ITextureView* GetTextureView(STextureViewDesc const& TextureViewDesc) override;
 
     void GetMipLevelInfo(uint16_t MipLevel, STextureMipLevelInfo* pInfo) const;
 
@@ -57,6 +64,8 @@ private:
     void CreateDefaultViews();
 
     TStdUnorderedMap<STextureViewDesc, TRef<ATextureViewGLImpl>> Views;
+
+    TStdUnorderedSet<uint64_t> BindlessSamplers;
 
     // Dummy texture is used for default color and depth buffers
     bool bDummyTexture{};

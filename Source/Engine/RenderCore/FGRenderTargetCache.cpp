@@ -62,6 +62,11 @@ ITexture* FGRenderTargetCache::Acquire(STextureDesc const& TextureDesc)
 
 void FGRenderTargetCache::Release(ITexture* pTexture)
 {
+    auto numMipLevels = pTexture->GetDesc().NumMipLevels;
+    for (decltype(numMipLevels) mipLevel = 0; mipLevel < numMipLevels; ++mipLevel)
+    {
+        pTexture->Invalidate(mipLevel);
+    }
     FreeTextures.Append(pTexture);
 }
 

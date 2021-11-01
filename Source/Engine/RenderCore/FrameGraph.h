@@ -72,14 +72,6 @@ public:
         IdGenerator = 0;
     }
 
-    //void ResetResources()
-    //{
-    //    Textures.Clear();
-    //    FreeTextures.Clear();
-    //    FramebufferHash.Clear();
-    //    FramebufferCache.Clear();
-    //}
-
     template <typename TTask>
     TTask& AddTask(const char* Name)
     {
@@ -93,12 +85,6 @@ public:
         ExternalResources.emplace_back(StdMakeUnique<T>(GenerateResourceId(), Name, Resource));
         return static_cast<T*>(ExternalResources.back().get());
     }
-
-    //FGTextureProxy* AddTextureView(const char* Name, ITextureView* Resource)
-    //{
-    //    ExternalResources.emplace_back(StdMakeUnique<FGTextureProxy>(GenerateResourceId(), Name, Resource));
-    //    return static_cast<FGTextureProxy*>(ExternalResources.back().get());
-    //}
 
     void Build();
 
@@ -130,6 +116,16 @@ public:
         return Timeline;
     }
 
+    TPodVector<FGResourceProxyBase*> const& GetAcquiredResources() const
+    {
+        return AcquiredResources;
+    }
+
+    TPodVector<FGResourceProxyBase*> const& GetReleasedResources() const
+    {
+        return ReleasedResources;
+    }
+
 private:
     void RegisterResources()
     {
@@ -149,13 +145,7 @@ private:
         }
     }
 
-    void ReleaseCapturedResources()
-    {
-        for (FGResourceProxyBase* resource : CapturedResources)
-        {
-            resource->Release(*this);
-        }
-    }
+    void ReleaseCapturedResources();
 
     TRef<IDevice>             pDevice;
     TRef<FGRenderTargetCache> pRenderTargetCache;

@@ -382,13 +382,8 @@ ARenderBackend::ARenderBackend()
         samplerCI.Filter           = FILTER_MIPMAP_BILINEAR;
         samplerCI.bCubemapSeamless = true;
 
-        //!!!!!!!!!!!!
-        GDevice->GetBindlessSampler(GPrefilteredMap, samplerCI, &GPrefilteredMapBindless);
-
-        //TRef< IBindlessSampler > smp;
-        //GDevice->GetBindlessSampler( PrefilteredMap, samplerCI, &smp );
-
-        GPrefilteredMapBindless->MakeResident();
+        GPrefilteredMapBindless = GPrefilteredMap->GetBindlessSampler(samplerCI);
+        GPrefilteredMap->MakeBindlessSamplerResident(GPrefilteredMapBindless, true);
     }
 
     {
@@ -398,8 +393,8 @@ ARenderBackend::ARenderBackend()
         samplerCI.Filter           = FILTER_LINEAR;
         samplerCI.bCubemapSeamless = true;
 
-        GDevice->GetBindlessSampler(GIrradianceMap, samplerCI, &GIrradianceMapBindless);
-        GIrradianceMapBindless->MakeResident();
+        GIrradianceMapBindless = GIrradianceMap->GetBindlessSampler(samplerCI);
+        GIrradianceMap->MakeBindlessSamplerResident(GIrradianceMapBindless, true);
     }
 
     SVirtualTextureCacheLayerInfo layer;
@@ -537,8 +532,6 @@ ARenderBackend::~ARenderBackend()
     GClusterLookup.Reset();
     GClusterItemTBO.Reset();
     GClusterItemBuffer.Reset();
-    GPrefilteredMapBindless.Reset();
-    GIrradianceMapBindless.Reset();
     GPrefilteredMap.Reset();
     GIrradianceMap.Reset();
 }
@@ -824,8 +817,8 @@ void ARenderBackend::SetViewConstants(int ViewportIndex)
     pViewCBuf->IsPerspective     = float(GRenderView->bPerspective);
     pViewCBuf->TessellationLevel = r_TessellationLevel.GetFloat() * Math::Lerp((float)GRenderView->Width, (float)GRenderView->Height, 0.5f);
 
-    pViewCBuf->PrefilteredMapSampler = (uint64_t)GPrefilteredMapBindless->GetHandle();
-    pViewCBuf->IrradianceMapSampler  = (uint64_t)GIrradianceMapBindless->GetHandle();
+    pViewCBuf->PrefilteredMapSampler = GPrefilteredMapBindless;
+    pViewCBuf->IrradianceMapSampler  = GIrradianceMapBindless;
 
     pViewCBuf->DebugMode = r_DebugRenderMode.GetInteger();
 

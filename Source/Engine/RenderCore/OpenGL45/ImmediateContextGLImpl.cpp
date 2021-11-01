@@ -161,7 +161,7 @@ void AResourceTableGLImpl::BindBuffer(int Slot, IBuffer const* pBuffer, size_t O
 
 
 
-void AFramebufferCacheGLImpl::CleanupOutdatedFramebuffers()
+void AFramebufferCacheGL::CleanupOutdatedFramebuffers()
 {
     // Remove outdated framebuffers
     for (int i = 0; i < FramebufferCache.Size();)
@@ -192,9 +192,9 @@ void AFramebufferCacheGLImpl::CleanupOutdatedFramebuffers()
 //    return hash;
 //}
 
-AFramebufferGL* AFramebufferCacheGLImpl::GetFramebuffer(const char*                     RenderPassName,
-                                                        TStdVector<STextureAttachment>& ColorAttachments,
-                                                        STextureAttachment*             pDepthStencilAttachment)
+AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                     RenderPassName,
+                                                    TStdVector<STextureAttachment>& ColorAttachments,
+                                                    STextureAttachment*             pDepthStencilAttachment)
 {
     SFramebufferDescGL                           framebufferDesc;
     TArray<ITextureView*, MAX_COLOR_ATTACHMENTS> colorAttachments;
@@ -508,7 +508,7 @@ AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmedi
 
     CurrentResourceTable = static_cast<AResourceTableGLImpl*>(RootResourceTable.GetObject());
 
-    pFramebufferCache = MakeRef<AFramebufferCacheGLImpl>(pDevice);
+    pFramebufferCache = MakeRef<AFramebufferCacheGL>(pDevice);
 }
 
 void AImmediateContextGLImpl::MakeCurrent()
@@ -5428,11 +5428,29 @@ void AImmediateContextGLImpl::ExecuteFrameGraph(AFrameGraph* pFrameGraph)
 {
     pFramebufferCache->CleanupOutdatedFramebuffers();
 
+    auto& acquiredResources = pFrameGraph->GetAcquiredResources();
+    auto& releasedResources = pFrameGraph->GetReleasedResources();
+
+    FGRenderTargetCache* pRenderTargetCache = pFrameGraph->GetRenderTargetCache();
+
     for (AFrameGraph::STimelineStep const& step : pFrameGraph->GetTimeline())
     {
-        //for ( AFrameGraphResourceBase * resource : step.AcquiredResources ) {
-        //    resource->Acquire( *this );
-        //}
+        // Acquire resources for the render pass
+        for (int i = 0; i < step.NumAcquiredResources; i++)
+        {
+            FGResourceProxyBase* resourceProxy = acquiredResources[step.FirstAcquiredResource + i];
+            if (resourceProxy->IsTransient())
+            {
+                switch (resourceProxy->GetProxyType())
+                {
+                    case DEVICE_OBJECT_TYPE_TEXTURE:
+                        resourceProxy->SetDeviceObject(pRenderTargetCache->Acquire(static_cast<FGTextureProxy*>(resourceProxy)->GetResourceDesc()));
+                        break;
+                    default:
+                        AN_ASSERT(0);
+                }
+            }
+        }
 
         switch (step.RenderTask->GetProxyType())
         {
@@ -5447,11 +5465,22 @@ void AImmediateContextGLImpl::ExecuteFrameGraph(AFrameGraph* pFrameGraph)
                 break;
         }
 
-        //step.RenderTask->Execute(*pFrameGraph, this);
-
-        //for ( AFrameGraphResourceBase * resource : step.ReleasedResources ) {
-        //    resource->Release( *this );
-        //}
+        // Release resources that are not needed after the current render pass
+        for (int i = 0; i < step.NumReleasedResources; i++)
+        {
+            FGResourceProxyBase* resourceProxy = releasedResources[step.FirstReleasedResource + i];
+            if (resourceProxy->IsTransient() && resourceProxy->GetDeviceObject())
+            {
+                switch (resourceProxy->GetProxyType())
+                {
+                    case DEVICE_OBJECT_TYPE_TEXTURE:
+                        pRenderTargetCache->Release(static_cast<ITexture*>(resourceProxy->GetDeviceObject()));
+                        break;
+                    default:
+                        AN_ASSERT(0);
+                }
+            }
+        }
     }
 
     // Unbind current framebuffer

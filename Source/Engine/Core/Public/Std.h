@@ -149,6 +149,7 @@ using AStdThread = std::thread;
 #define StdMakeUnique std::make_unique
 
 #include <unordered_map>
+#include <unordered_set>
 
 template <typename T>
 struct SUnorderedMapHasher
@@ -161,3 +162,16 @@ struct SUnorderedMapHasher
 
 template <typename Key, typename Value>
 using TStdUnorderedMap = std::unordered_map<Key, Value, SUnorderedMapHasher<Key>>;
+
+template <typename Key>
+using TStdUnorderedSet = std::unordered_set<Key, SUnorderedMapHasher<Key>>;
+
+namespace HashTraits
+{
+
+AN_FORCEINLINE std::size_t Hash(uint64_t Key)
+{
+    return std::hash<uint64_t>()(Key);
+}
+
+}

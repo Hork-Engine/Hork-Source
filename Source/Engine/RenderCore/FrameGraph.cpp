@@ -33,44 +33,6 @@ SOFTWARE.
 namespace RenderCore
 {
 
-template <>
-ITexture* AcquireResource(AFrameGraph& FrameGraph, STextureDesc const& ResourceDesc)
-{
-    return FrameGraph.GetRenderTargetCache()->Acquire(ResourceDesc);
-}
-
-template <>
-void ReleaseResource(AFrameGraph& FrameGraph, ITexture* pResource)
-{
-    FrameGraph.GetRenderTargetCache()->Release(pResource);
-}
-
-template <>
-ITextureView* AcquireResource(AFrameGraph& pFrameGraph, STextureViewDesc const& ResourceDesc)
-{
-    AN_ASSERT(0);
-    return nullptr;
-}
-
-template <>
-void ReleaseResource(AFrameGraph& FrameGraph, ITextureView* pResource)
-{
-    AN_ASSERT(0);
-}
-
-template <>
-IBufferView* AcquireResource(AFrameGraph& pFrameGraph, SBufferViewDesc const& ResourceDesc)
-{
-    AN_ASSERT(0);
-    return nullptr;
-}
-
-template <>
-void ReleaseResource(AFrameGraph& FrameGraph, IBufferView* pResource)
-{
-    AN_ASSERT(0);
-}
-
 void AFrameGraph::Build()
 {
     AN_ASSERT(CapturedResources.IsEmpty());
@@ -232,39 +194,8 @@ void AFrameGraph::Build()
         step.NumAcquiredResources  = numAcquiredResources;
         step.FirstReleasedResource = firstReleasedResource;
         step.NumReleasedResources  = numReleasedResources;
-
-        // Resolve pointers
-        for (int i = 0; i < numAcquiredResources; i++)
-        {
-            FGResourceProxyBase* resource = AcquiredResources[firstAcquiredResource + i];
-            resource->Acquire(*this);
-        }
-        // Initialize task
-//        task->Create(*this);
-        // Resolve pointers
-        for (int i = 0; i < numReleasedResources; i++)
-        {
-            FGResourceProxyBase* resource = ReleasedResources[firstReleasedResource + i];
-            resource->Release(*this);
-        }
     }
 }
-
-//void AFrameGraph::Execute(IImmediateContext* Rcmd)
-//{
-//    for (STimelineStep& step : Timeline)
-//    {
-//        //for ( AFrameGraphResourceBase * resource : step.AcquiredResources ) {
-//        //    resource->Acquire( *this );
-//        //}
-//
-//        step.RenderTask->Execute(*this, Rcmd);
-//
-//        //for ( AFrameGraphResourceBase * resource : step.ReleasedResources ) {
-//        //    resource->Release( *this );
-//        //}
-//    }
-//}
 
 void AFrameGraph::Debug()
 {
@@ -360,6 +291,21 @@ void AFrameGraph::ExportGraphviz(const char* FileName)
         f.Printf("} [color=skyblue]\n");
     }
     f.Printf("}");
+}
+
+void AFrameGraph::ReleaseCapturedResources()
+{
+    for (FGResourceProxyBase* resourceProxy : CapturedResources)
+    {
+        switch (resourceProxy->GetProxyType())
+        {
+            case DEVICE_OBJECT_TYPE_TEXTURE:
+                pRenderTargetCache->Release(static_cast<ITexture*>(resourceProxy->pDeviceObject));
+                break;
+            default:
+                AN_ASSERT(0);
+        }
+    }
 }
 
 } // namespace RenderCore

@@ -40,8 +40,10 @@ class ITexture;
 class ISwapChain : public IDeviceObject
 {
 public:
+    static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_SWAP_CHAIN;
+
     ISwapChain(IDevice* pDevice) :
-        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_SWAP_CHAIN)
+        IDeviceObject(pDevice, PROXY_TYPE)
     {}
 
     virtual void Present(int SwapInterval = 1) = 0;

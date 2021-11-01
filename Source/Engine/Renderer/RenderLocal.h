@@ -232,12 +232,12 @@ extern TRef<RenderCore::IBuffer> GClusterItemBuffer;
 extern TRef<RenderCore::IBufferView> GClusterItemTBO;
 
 /** Irradiance texture array */
-extern TRef<RenderCore::ITexture>         GIrradianceMap;
-extern TRef<RenderCore::IBindlessSampler> GIrradianceMapBindless;
+extern TRef<RenderCore::ITexture> GIrradianceMap;
+extern RenderCore::BindlessHandle GIrradianceMapBindless;
 
 /** Reflections texture array */
-extern TRef<RenderCore::ITexture>         GPrefilteredMap;
-extern TRef<RenderCore::IBindlessSampler> GPrefilteredMapBindless;
+extern TRef<RenderCore::ITexture> GPrefilteredMap;
+extern RenderCore::BindlessHandle GPrefilteredMapBindless;
 
 struct SRenderViewContext
 {

@@ -61,8 +61,10 @@ struct SShaderBinaryData
 class IShaderModule : public IDeviceObject
 {
 public:
+    static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_SHADER_MODULE;
+
     IShaderModule(IDevice* pDevice) :
-        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_SHADER_MODULE)
+        IDeviceObject(pDevice, PROXY_TYPE)
     {}
 
     SHADER_TYPE GetType() const { return Type; }

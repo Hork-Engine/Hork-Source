@@ -91,11 +91,11 @@ TRef< IBufferView > GClusterItemTBO;
 
 /** Irradiance texture array */
 TRef< ITexture > GIrradianceMap;
-TRef< IBindlessSampler > GIrradianceMapBindless;
+RenderCore::BindlessHandle GIrradianceMapBindless;
 
 /** Reflections texture array */
 TRef< ITexture > GPrefilteredMap;
-TRef< IBindlessSampler > GPrefilteredMapBindless;
+RenderCore::BindlessHandle GPrefilteredMapBindless;
 
 std::vector<SRenderViewContext> GRenderViewContext;
 

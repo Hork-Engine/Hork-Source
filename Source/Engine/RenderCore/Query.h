@@ -65,8 +65,10 @@ struct SQueryPoolDesc
 class IQueryPool : public IDeviceObject
 {
 public:
+    static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_QUERY_POOL;
+
     IQueryPool(IDevice* pDevice) :
-        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_QUERY_POOL) {}
+        IDeviceObject(pDevice, PROXY_TYPE) {}
 
     QUERY_TYPE GetQueryType() const { return QueryType; }
 

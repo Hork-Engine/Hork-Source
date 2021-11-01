@@ -228,6 +228,11 @@ ATextureGLImpl::~ATextureGLImpl()
 #endif
     Views.clear();
 
+    for (BindlessHandle it : BindlessSamplers)
+    {
+        glMakeTextureHandleNonResidentARB(it);
+    }
+
     GLuint id = GetHandleNativeGL();
 
     if (id)
@@ -236,6 +241,43 @@ ATextureGLImpl::~ATextureGLImpl()
     }
     
     static_cast<ADeviceGLImpl*>(GetDevice())->TextureMemoryAllocated -= CalcTextureRequiredMemory();
+}
+
+void ATextureGLImpl::MakeBindlessSamplerResident(BindlessHandle BindlessHandle, bool bResident)
+{
+    AN_ASSERT(BindlessSamplers.count(BindlessHandle) == 1);
+
+    if (bResident)
+        glMakeTextureHandleResidentARB(BindlessHandle);
+    else
+        glMakeTextureHandleNonResidentARB(BindlessHandle);
+}
+
+bool ATextureGLImpl::IsBindlessSamplerResident(BindlessHandle BindlessHandle)
+{
+    AN_ASSERT(BindlessSamplers.count(BindlessHandle) == 1);
+
+    return !!glIsTextureHandleResidentARB(BindlessHandle);
+}
+
+BindlessHandle ATextureGLImpl::GetBindlessSampler(SSamplerDesc const& SamplerDesc)
+{
+    if (!GetDevice()->IsFeatureSupported(FEATURE_BINDLESS_TEXTURE))
+    {
+        GLogger.Printf("ATextureGLImpl::GetBindlessSampler: bindless textures are not supported by current hardware\n");
+        return 0;
+    }
+
+    uint64_t bindlessHandle = glGetTextureSamplerHandleARB(GetHandleNativeGL(), static_cast<ADeviceGLImpl*>(GetDevice())->CachedSampler(SamplerDesc));
+    if (!bindlessHandle)
+    {
+        GLogger.Printf("ATextureGLImpl::GetBindlessSampler: couldn't get texture sampler handle\n");
+        return 0;
+    }
+
+    BindlessSamplers.insert(bindlessHandle);
+
+    return bindlessHandle;
 }
 
 void ATextureGLImpl::GetMipLevelInfo(uint16_t MipLevel, STextureMipLevelInfo* pInfo) const

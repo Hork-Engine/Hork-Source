@@ -137,8 +137,10 @@ struct SSparseTextureDesc
 class ISparseTexture : public IDeviceObject
 {
 public:
+    static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_SPARSE_TEXTURE;
+
     ISparseTexture(IDevice* pDevice, SSparseTextureDesc const& Desc) :
-        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_SPARSE_TEXTURE), Desc(Desc)
+        IDeviceObject(pDevice, PROXY_TYPE), Desc(Desc)
     {}
 
     SSparseTextureDesc const& GetDesc() const { return Desc; }

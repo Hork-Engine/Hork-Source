@@ -275,6 +275,8 @@ struct STextureViewDesc
 class ITextureView : public IDeviceObject
 {
 public:
+    static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_TEXTURE_VIEW;
+
     ITextureView(STextureViewDesc const& TextureViewDesc, ITexture* pTexture);
 
     STextureViewDesc const& GetDesc() const { return Desc; }

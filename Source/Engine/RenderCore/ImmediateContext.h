@@ -418,8 +418,10 @@ public:
 class IImmediateContext : public IDeviceObject
 {
 public:
+    static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_IMMEDIATE_CONTEXT;
+
     IImmediateContext(IDevice* pDevice) :
-        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_IMMEDIATE_CONTEXT)
+        IDeviceObject(pDevice, PROXY_TYPE)
     {}
 
     virtual void MakeCurrent() = 0;

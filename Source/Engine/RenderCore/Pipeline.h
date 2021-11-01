@@ -315,21 +315,6 @@ struct SRasterizerStateInfo
     }
 };
 
-//
-// Comparison func
-//
-
-enum COMPARISON_FUNCTION : uint8_t
-{
-    CMPFUNC_NEVER     = 0,
-    CMPFUNC_LESS      = 1,
-    CMPFUNC_EQUAL     = 2,
-    CMPFUNC_LEQUAL    = 3,
-    CMPFUNC_GREATER   = 4,
-    CMPFUNC_NOT_EQUAL = 5,
-    CMPFUNC_GEQUAL    = 6,
-    CMPFUNC_ALWAYS    = 7
-};
 
 //
 // Depth-Stencil state
@@ -377,163 +362,6 @@ struct SDepthStencilStateInfo
     }
 
     bool operator!=(SDepthStencilStateInfo const& Rhs) const
-    {
-        return !(operator==(Rhs));
-    }
-};
-
-//
-// Sampler state info
-//
-
-enum SAMPLER_FILTER : uint8_t
-{
-    FILTER_MIN_NEAREST_MAG_NEAREST = 0,
-    FILTER_MIN_LINEAR_MAG_NEAREST,
-    FILTER_MIN_NEAREST_MIPMAP_NEAREST_MAG_NEAREST,
-    FILTER_MIN_LINEAR_MIPMAP_NEAREST_MAG_NEAREST,
-    FILTER_MIN_NEAREST_MIPMAP_LINEAR_MAG_NEAREST,
-    FILTER_MIN_LINEAR_MIPMAP_LINEAR_MAG_NEAREST,
-
-    FILTER_MIN_NEAREST_MAG_LINEAR,
-    FILTER_MIN_LINEAR_MAG_LINEAR,
-    FILTER_MIN_NEAREST_MIPMAP_NEAREST_MAG_LINEAR,
-    FILTER_MIN_LINEAR_MIPMAP_NEAREST_MAG_LINEAR,
-    FILTER_MIN_NEAREST_MIPMAP_LINEAR_MAG_LINEAR,
-    FILTER_MIN_LINEAR_MIPMAP_LINEAR_MAG_LINEAR,
-
-    FILTER_NEAREST          = FILTER_MIN_NEAREST_MAG_NEAREST,
-    FILTER_LINEAR           = FILTER_MIN_LINEAR_MAG_LINEAR,
-    FILTER_MIPMAP_NEAREST   = FILTER_MIN_NEAREST_MIPMAP_NEAREST_MAG_NEAREST,
-    FILTER_MIPMAP_BILINEAR  = FILTER_MIN_LINEAR_MIPMAP_NEAREST_MAG_LINEAR,
-    FILTER_MIPMAP_NLINEAR   = FILTER_MIN_NEAREST_MIPMAP_LINEAR_MAG_NEAREST,
-    FILTER_MIPMAP_TRILINEAR = FILTER_MIN_LINEAR_MIPMAP_LINEAR_MAG_LINEAR
-};
-
-enum SAMPLER_ADDRESS_MODE : uint8_t
-{
-    SAMPLER_ADDRESS_WRAP        = 0,
-    SAMPLER_ADDRESS_MIRROR      = 1,
-    SAMPLER_ADDRESS_CLAMP       = 2,
-    SAMPLER_ADDRESS_BORDER      = 3,
-    SAMPLER_ADDRESS_MIRROR_ONCE = 4
-};
-
-struct SSamplerDesc
-{
-    /** Filtering method to use when sampling a texture */
-    SAMPLER_FILTER Filter = FILTER_MIN_NEAREST_MIPMAP_LINEAR_MAG_LINEAR;
-
-    SAMPLER_ADDRESS_MODE AddressU = SAMPLER_ADDRESS_WRAP;
-    SAMPLER_ADDRESS_MODE AddressV = SAMPLER_ADDRESS_WRAP;
-    SAMPLER_ADDRESS_MODE AddressW = SAMPLER_ADDRESS_WRAP;
-
-    float MipLODBias = 0;
-
-    uint8_t MaxAnisotropy = 0;
-
-    /** a function that compares sampled data against existing sampled data */
-    COMPARISON_FUNCTION ComparisonFunc = CMPFUNC_LEQUAL;
-
-    bool bCompareRefToTexture = false;
-
-    float BorderColor[4] = {0, 0, 0, 0};
-
-    float MinLOD = 0;
-
-    float MaxLOD = 1000.0f;
-
-    bool bCubemapSeamless = false;
-
-    SSamplerDesc& SetFilter(SAMPLER_FILTER InFilter)
-    {
-        Filter = InFilter;
-        return *this;
-    }
-
-    SSamplerDesc& SetAddress(SAMPLER_ADDRESS_MODE InAddress)
-    {
-        AddressU = InAddress;
-        AddressV = InAddress;
-        AddressW = InAddress;
-        return *this;
-    }
-
-    SSamplerDesc& SetAddressU(SAMPLER_ADDRESS_MODE InAddressU)
-    {
-        AddressU = InAddressU;
-        return *this;
-    }
-
-    SSamplerDesc& SetAddressV(SAMPLER_ADDRESS_MODE InAddressV)
-    {
-        AddressV = InAddressV;
-        return *this;
-    }
-
-    SSamplerDesc& SetAddressW(SAMPLER_ADDRESS_MODE InAddressW)
-    {
-        AddressW = InAddressW;
-        return *this;
-    }
-
-    SSamplerDesc& SetMipLODBias(float InMipLODBias)
-    {
-        MipLODBias = InMipLODBias;
-        return *this;
-    }
-
-    SSamplerDesc& SetMaxAnisotropy(uint8_t InMaxAnisotropy)
-    {
-        MaxAnisotropy = InMaxAnisotropy;
-        return *this;
-    }
-
-    SSamplerDesc& SetComparisonFunc(COMPARISON_FUNCTION InComparisonFunc)
-    {
-        ComparisonFunc = InComparisonFunc;
-        return *this;
-    }
-
-    SSamplerDesc& SetCompareRefToTexture(bool InbCompareRefToTexture)
-    {
-        bCompareRefToTexture = InbCompareRefToTexture;
-        return *this;
-    }
-
-    SSamplerDesc& SetBorderColor(float InR, float InG, float InB, float InA)
-    {
-        BorderColor[0] = InR;
-        BorderColor[1] = InG;
-        BorderColor[2] = InB;
-        BorderColor[3] = InA;
-        return *this;
-    }
-
-    SSamplerDesc& SetMinLOD(float InMinLOD)
-    {
-        MinLOD = InMinLOD;
-        return *this;
-    }
-
-    SSamplerDesc& SetMaxLOD(float InMaxLOD)
-    {
-        MaxLOD = InMaxLOD;
-        return *this;
-    }
-
-    SSamplerDesc& SetCubemapSeamless(bool InbCubemapSeamless)
-    {
-        bCubemapSeamless = InbCubemapSeamless;
-        return *this;
-    }
-
-    bool operator==(SSamplerDesc const& Rhs) const
-    {
-        return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
-    }
-
-    bool operator!=(SSamplerDesc const& Rhs) const
     {
         return !(operator==(Rhs));
     }
@@ -858,8 +686,10 @@ struct SPipelineDesc
 class IPipeline : public IDeviceObject
 {
 public:
+    static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_PIPELINE;
+
     IPipeline(IDevice* pDevice) :
-        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_PIPELINE)
+        IDeviceObject(pDevice, PROXY_TYPE)
     {}
 };
 

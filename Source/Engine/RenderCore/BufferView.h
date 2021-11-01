@@ -83,8 +83,10 @@ struct SBufferViewDesc
 class IBufferView : public IDeviceObject
 {
 public:
+    static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_BUFFER_VIEW;
+
     IBufferView(IDevice* pDevice, SBufferViewDesc const& Desc) :
-        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_BUFFER_VIEW), Desc(Desc)
+        IDeviceObject(pDevice, PROXY_TYPE), Desc(Desc)
     {}
 
     SBufferViewDesc const& GetDesc() const { return Desc; }

@@ -227,6 +227,8 @@ ARuntime::~ARuntime()
 
     TArray<const char*, RenderCore::DEVICE_OBJECT_TYPE_MAX> name =
         {
+            "DEVICE_OBJECT_TYPE_UNKNOWN",
+
             "DEVICE_OBJECT_TYPE_IMMEDIATE_CONTEXT",
 
             "DEVICE_OBJECT_TYPE_BUFFER",
@@ -241,7 +243,6 @@ ARuntime::~ARuntime()
             "DEVICE_OBJECT_TYPE_SHADER_MODULE",
             "DEVICE_OBJECT_TYPE_TRANSFORM_FEEDBACK",
             "DEVICE_OBJECT_TYPE_QUERY_POOL",
-            "DEVICE_OBJECT_TYPE_BINDLESS_SAMPLER",
             "DEVICE_OBJECT_TYPE_RESOURCE_TABLE",
 
             "DEVICE_OBJECT_TYPE_SWAP_CHAIN"};

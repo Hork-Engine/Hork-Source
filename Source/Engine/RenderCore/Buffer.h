@@ -144,8 +144,10 @@ struct SBufferDesc
 class IBuffer : public IDeviceObject
 {
 public:
+    static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_BUFFER;
+
     IBuffer(IDevice* pDevice, SBufferDesc const& Desc) :
-        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_BUFFER), Desc(Desc)
+        IDeviceObject(pDevice, PROXY_TYPE), Desc(Desc)
     {}
 
     virtual bool CreateView(SBufferViewDesc const& BufferViewDesc, TRef<IBufferView>* ppBufferView) = 0;

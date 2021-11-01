@@ -40,7 +40,6 @@ SOFTWARE.
 #include "BufferViewGLImpl.h"
 #include "TextureGLImpl.h"
 #include "SparseTextureGLImpl.h"
-#include "SamplerGLImpl.h"
 #include "TransformFeedbackGLImpl.h"
 #include "QueryGLImpl.h"
 #include "PipelineGLImpl.h"
@@ -613,11 +612,6 @@ void ADeviceGLImpl::CreateTransformFeedback(STransformFeedbackDesc const& Desc, 
 void ADeviceGLImpl::CreateQueryPool(SQueryPoolDesc const& Desc, TRef<IQueryPool>* ppQueryPool)
 {
     *ppQueryPool = MakeRef<AQueryPoolGLImpl>(this, Desc);
-}
-
-void ADeviceGLImpl::GetBindlessSampler(ITexture* pTexture, SSamplerDesc const& Desc, TRef<IBindlessSampler>* ppBindlessSampler)
-{
-    *ppBindlessSampler = MakeRef<ABindlessSamplerGLImpl>(this, pTexture, Desc);
 }
 
 void ADeviceGLImpl::CreateResourceTable(TRef<IResourceTable>* ppResourceTable)

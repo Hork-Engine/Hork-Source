@@ -36,14 +36,7 @@ SOFTWARE.
 namespace RenderCore
 {
 
-class AFrameGraph;
 class FGRenderTaskBase;
-
-template <typename TResourceDesc, typename TResource>
-TResource* AcquireResource(AFrameGraph& FrameGraph, TResourceDesc const& ResourceDesc);
-
-template <typename TResource>
-void ReleaseResource(AFrameGraph& FrameGraph, TResource* Resource);
 
 enum FG_RESOURCE_ACCESS
 {
@@ -55,8 +48,8 @@ enum FG_RESOURCE_ACCESS
 class FGResourceProxyBase
 {
 public:
-    explicit FGResourceProxyBase(std::size_t ResourceId, const char* Name, FGRenderTaskBase* RenderTask) :
-        Id(ResourceId), Name(Name), Creator(RenderTask), ResourceRefs(0), bCaptured(false)
+    explicit FGResourceProxyBase(std::size_t ResourceId, const char* Name, FGRenderTaskBase* RenderTask, DEVICE_OBJECT_PROXY_TYPE ProxyType) :
+        Id(ResourceId), Name(Name), Creator(RenderTask), ResourceRefs(0), bCaptured(false), ProxyType(ProxyType)
     {}
 
     FGResourceProxyBase(FGResourceProxyBase const&) = delete;
@@ -92,13 +85,22 @@ public:
         return bCaptured;
     }
 
-protected:
-    friend class AFrameGraph;
-    friend class FGRenderTaskBase;
+    DEVICE_OBJECT_PROXY_TYPE GetProxyType() const
+    {
+        return ProxyType;
+    }
 
-    virtual void Acquire(AFrameGraph& FrameGraph) = 0;
-    virtual void Release(AFrameGraph& FrameGraph) = 0;
+    void SetDeviceObject(IDeviceObject* DeviceObject)
+    {
+        pDeviceObject = DeviceObject;
+    }
 
+    IDeviceObject* GetDeviceObject() const
+    {
+        return pDeviceObject;
+    }
+
+private:
     const std::size_t                   Id;
     const char*                         Name;
     FGRenderTaskBase const*             Creator;
@@ -106,6 +108,11 @@ protected:
     TPodVector<FGRenderTaskBase const*> Writers;
     int                                 ResourceRefs;
     bool                                bCaptured;
+    DEVICE_OBJECT_PROXY_TYPE            ProxyType{DEVICE_OBJECT_TYPE_UNKNOWN};
+    IDeviceObject*                      pDeviceObject{nullptr};
+
+    friend class AFrameGraph;
+    friend class FGRenderTaskBase;
 };
 
 template <typename TResourceDesc, typename TResource>
@@ -117,14 +124,14 @@ public:
 
     // Construct internal (transient) resource
     explicit FGResourceProxy(std::size_t ResourceId, const char* Name, FGRenderTaskBase* RenderTask, TResourceDesc const& ResourceDesc) :
-        FGResourceProxyBase(ResourceId, Name, RenderTask), Desc(ResourceDesc), pResource(nullptr)
+        FGResourceProxyBase(ResourceId, Name, RenderTask, TResource::PROXY_TYPE), Desc(ResourceDesc)
     {}
 
     // Construct external resource
     explicit FGResourceProxy(std::size_t ResourceId, const char* Name, TResource* InResource) :
-        FGResourceProxyBase(ResourceId, Name, nullptr), Desc(InResource ? InResource->GetDesc() : TResourceDesc()), pResource(InResource)
+        FGResourceProxyBase(ResourceId, Name, nullptr, TResource::PROXY_TYPE), Desc(InResource->GetDesc())
     {
-        //AN_ASSERT(InResource);
+        SetDeviceObject(InResource);
     }
 
     FGResourceProxy(FGResourceProxy const&) = delete;
@@ -136,7 +143,7 @@ public:
 
     ResourceType* Actual() const
     {
-        return pResource;
+        return static_cast<ResourceType*>(GetDeviceObject());
     }
 
     TResourceDesc const& GetResourceDesc() const
@@ -144,33 +151,9 @@ public:
         return Desc;
     }
 
-protected:
-    void Acquire(AFrameGraph& FrameGraph) override
-    {
-        if (IsTransient())
-        {
-            AN_ASSERT(!pResource);
-
-            //GLogger.Printf( "--- Acquire %s ---\n", GetName() );
-            pResource = AcquireResource<ResourceDesc, ResourceType>(FrameGraph, Desc);
-        }
-    }
-
-    void Release(AFrameGraph& FrameGraph) override
-    {
-        if (IsTransient() && pResource)
-        {
-            //GLogger.Printf( "Release %s\n", GetName() );
-            ReleaseResource<ResourceType>(FrameGraph, pResource);
-        }
-    }
-
 private:
     TResourceDesc Desc;
-    TResource*    pResource;
 };
-
-//using FGTextureProxy = FGResourceProxy<STextureDesc, ITexture>;
 
 class FGTextureProxy : public FGResourceProxy<STextureDesc, ITexture>
 {
@@ -186,16 +169,22 @@ public:
     explicit FGTextureProxy(std::size_t ResourceId, const char* Name, ITexture* InResource) :
         Super(ResourceId, Name, InResource)
     {}
-
-    //// Construct texture view
-    //explicit FGTextureProxy(std::size_t ResourceId, const char* Name, ITextureView* InResourceView) :
-    //    Super(ResourceId, Name, InResourceView->GetTexture()), pTextureView(InResourceView)
-    //{}
-
-    //ITextureView* pTextureView{};
 };
 
-//using AFrameGraphTextureView = FGResourceProxy<STextureDesc, ITextureView>;
-using FGBufferViewProxy = FGResourceProxy<SBufferViewDesc, IBufferView>;
+class FGBufferViewProxy : public FGResourceProxy<SBufferViewDesc, IBufferView>
+{
+    using Super = FGResourceProxy<SBufferViewDesc, IBufferView>;
+
+public:
+    // Construct internal (transient) resource
+    explicit FGBufferViewProxy(std::size_t ResourceId, const char* Name, FGRenderTaskBase* RenderTask, SBufferViewDesc const& ResourceDesc) :
+        Super(ResourceId, Name, RenderTask, ResourceDesc)
+    {}
+
+    // Construct external resource
+    explicit FGBufferViewProxy(std::size_t ResourceId, const char* Name, IBufferView* InResource) :
+        Super(ResourceId, Name, InResource)
+    {}
+};
 
 } // namespace RenderCore
