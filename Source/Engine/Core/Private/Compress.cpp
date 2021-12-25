@@ -95,7 +95,7 @@ size_t ZMaxCompressedSize( size_t SourceSize ) {
 }
 
 bool ZCompress( byte * pCompressedData, size_t * pCompressedSize, byte const * pSource, size_t SourceSize, int Level ) {
-    mz_ulong compressedSize;
+    mz_ulong compressedSize = *pCompressedSize;
     *pCompressedSize = 0;
     if ( mz_compress2( pCompressedData, &compressedSize, pSource, SourceSize, Level ) != MZ_OK ) {
         return false;
@@ -137,7 +137,7 @@ bool ZDecompressToHeap( byte const * pCompressedData, size_t CompressedSize, byt
     byte * data = ( byte * )GHeapMemory.Alloc( allocated, 16 );
     size_t size = 0;
 
-    while ( status == MZ_OK ) {
+    do {
         stream.next_out = chunk;
         stream.avail_out = sizeof( chunk );
         status = mz_inflate( &stream, MZ_NO_FLUSH );
@@ -149,7 +149,7 @@ bool ZDecompressToHeap( byte const * pCompressedData, size_t CompressedSize, byt
             Memcpy( data + size, chunk, stream.total_out - size );
         }
         size = stream.total_out;
-    }
+    } while (status == MZ_OK);
 
     mz_inflateEnd( &stream );
 
