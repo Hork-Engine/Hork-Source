@@ -409,7 +409,7 @@ public:
 
     AString();
     AString(AString const& _Str);
-    AString(AString&& _Str);
+    AString(AString&& _Str) noexcept;
     AString(AStringView _Str);
     AString(const char* _Begin, const char* _End);
     ~AString();
@@ -418,7 +418,7 @@ public:
     char&       operator[](const int _Index);
 
     AString& operator=(AString const& _Str);
-    AString& operator=(AString&& _Str);
+    AString& operator=(AString&& _Str) noexcept;
     AString& operator=(AStringView _Str);
 
     friend AString operator+(AStringView _Str1, AStringView _Str2);
@@ -692,7 +692,7 @@ AN_FORCEINLINE AString::AString(AString const& _Str) :
     Size         = newLen;
 }
 
-AN_FORCEINLINE AString::AString(AString&& _Str)
+AN_FORCEINLINE AString::AString(AString&& _Str) noexcept
 {
     if (_Str.Data == &_Str.Base[0])
     {
@@ -765,7 +765,7 @@ AN_FORCEINLINE AString& AString::operator=(AString const& _Str)
     return *this;
 }
 
-AN_FORCEINLINE AString& AString::operator=(AString&& _Str)
+AN_FORCEINLINE AString& AString::operator=(AString&& _Str) noexcept
 {
     Free();
 
