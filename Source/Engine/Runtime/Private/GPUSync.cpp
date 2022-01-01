@@ -34,10 +34,9 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-AGPUSync::AGPUSync( RenderCore::IImmediateContext * _pImmediateContext )
-    : pImmediateContext( _pImmediateContext )
+AGPUSync::AGPUSync(RenderCore::IImmediateContext* _pImmediateContext) :
+    pImmediateContext(_pImmediateContext)
 {
-
 }
 
 AGPUSync::~AGPUSync()
@@ -46,7 +45,8 @@ AGPUSync::~AGPUSync()
 
 void AGPUSync::SetEvent()
 {
-    if ( Texture ) {
+    if (Texture)
+    {
         pImmediateContext->GenerateTextureMipLevels(Texture);
     }
 }

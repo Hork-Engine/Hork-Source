@@ -33,102 +33,106 @@ SOFTWARE.
 
 #include <SDL.h>
 
-namespace Core
+namespace Runtime
 {
 
-void GetDisplays( TPodVector< SDisplayInfo > & Displays )
+void GetDisplays(TPodVector<SDisplayInfo>& Displays)
 {
     SDL_Rect rect;
-    int displayCount = SDL_GetNumVideoDisplays();
+    int      displayCount = SDL_GetNumVideoDisplays();
 
-    Displays.ResizeInvalidate( displayCount );
+    Displays.ResizeInvalidate(displayCount);
 
-    for ( int i = 0 ; i < displayCount ; i++ ) {
-        SDisplayInfo & d = Displays[i];
+    for (int i = 0; i < displayCount; i++)
+    {
+        SDisplayInfo& d = Displays[i];
 
-        d.Id = i;
-        d.Name = SDL_GetDisplayName( i );
+        d.Id   = i;
+        d.Name = SDL_GetDisplayName(i);
 
-        SDL_GetDisplayBounds( i, &rect );
+        SDL_GetDisplayBounds(i, &rect);
 
         d.DisplayX = rect.x;
         d.DisplayY = rect.y;
         d.DisplayW = rect.w;
         d.DisplayH = rect.h;
 
-        SDL_GetDisplayUsableBounds( i, &rect );
+        SDL_GetDisplayUsableBounds(i, &rect);
 
         d.DisplayUsableX = rect.x;
         d.DisplayUsableY = rect.y;
         d.DisplayUsableW = rect.w;
         d.DisplayUsableH = rect.h;
 
-        d.Orientation = (DISPLAY_ORIENTATION)SDL_GetDisplayOrientation( i );
+        d.Orientation = (DISPLAY_ORIENTATION)SDL_GetDisplayOrientation(i);
 
-        SDL_GetDisplayDPI( i, &d.ddpi, &d.hdpi, &d.vdpi );
+        SDL_GetDisplayDPI(i, &d.ddpi, &d.hdpi, &d.vdpi);
     }
 }
 
-void GetDisplayModes( SDisplayInfo const & Display, TPodVector< SDisplayMode > & Modes )
+void GetDisplayModes(SDisplayInfo const& Display, TPodVector<SDisplayMode>& Modes)
 {
     SDL_DisplayMode modeSDL;
 
-    int numModes = SDL_GetNumDisplayModes( Display.Id );
+    int numModes = SDL_GetNumDisplayModes(Display.Id);
 
     Modes.Clear();
-    for ( int i = 0 ; i < numModes ; i++ ) {
-        SDL_GetDisplayMode( Display.Id, i, &modeSDL );
+    for (int i = 0; i < numModes; i++)
+    {
+        SDL_GetDisplayMode(Display.Id, i, &modeSDL);
 
-        if ( modeSDL.format == SDL_PIXELFORMAT_RGB888 ) {
-            SDisplayMode & mode = Modes.Append();
+        if (modeSDL.format == SDL_PIXELFORMAT_RGB888)
+        {
+            SDisplayMode& mode = Modes.Append();
 
-            mode.Width = modeSDL.w;
-            mode.Height = modeSDL.h;
+            mode.Width       = modeSDL.w;
+            mode.Height      = modeSDL.h;
             mode.RefreshRate = modeSDL.refresh_rate;
         }
     }
 }
 
-void GetDesktopDisplayMode( SDisplayInfo const & Display, SDisplayMode & Mode )
+void GetDesktopDisplayMode(SDisplayInfo const& Display, SDisplayMode& Mode)
 {
     SDL_DisplayMode modeSDL;
-    SDL_GetDesktopDisplayMode( Display.Id, &modeSDL );
+    SDL_GetDesktopDisplayMode(Display.Id, &modeSDL);
 
-    Mode.Width = modeSDL.w;
-    Mode.Height = modeSDL.h;
+    Mode.Width       = modeSDL.w;
+    Mode.Height      = modeSDL.h;
     Mode.RefreshRate = modeSDL.refresh_rate;
 }
 
-void GetCurrentDisplayMode( SDisplayInfo const & Display, SDisplayMode & Mode )
+void GetCurrentDisplayMode(SDisplayInfo const& Display, SDisplayMode& Mode)
 {
     SDL_DisplayMode modeSDL;
-    SDL_GetCurrentDisplayMode( Display.Id, &modeSDL );
+    SDL_GetCurrentDisplayMode(Display.Id, &modeSDL);
 
-    Mode.Width = modeSDL.w;
-    Mode.Height = modeSDL.h;
+    Mode.Width       = modeSDL.w;
+    Mode.Height      = modeSDL.h;
     Mode.RefreshRate = modeSDL.refresh_rate;
 }
 
-bool GetClosestDisplayMode( SDisplayInfo const & Display, int Width, int Height, int RefreshRate, SDisplayMode & Mode )
+bool GetClosestDisplayMode(SDisplayInfo const& Display, int Width, int Height, int RefreshRate, SDisplayMode& Mode)
 {
     SDL_DisplayMode modeSDL, closestSDL;
 
-    modeSDL.w = Width;
-    modeSDL.h = Height;
+    modeSDL.w            = Width;
+    modeSDL.h            = Height;
     modeSDL.refresh_rate = RefreshRate;
-    modeSDL.format = SDL_PIXELFORMAT_RGB888;
-    modeSDL.driverdata = nullptr;
-    if ( !SDL_GetClosestDisplayMode( Display.Id, &modeSDL, &closestSDL ) || closestSDL.format != modeSDL.format ) {
-        GLogger.Printf( "Couldn't find closest display mode to %d x %d %dHz\n", Width, Height, RefreshRate );
-        Core::ZeroMem( &Mode, sizeof( Mode ) );
+    modeSDL.format       = SDL_PIXELFORMAT_RGB888;
+    modeSDL.driverdata   = nullptr;
+    if (!SDL_GetClosestDisplayMode(Display.Id, &modeSDL, &closestSDL) || closestSDL.format != modeSDL.format)
+    {
+        GLogger.Printf("Couldn't find closest display mode to %d x %d %dHz\n", Width, Height, RefreshRate);
+        Core::ZeroMem(&Mode, sizeof(Mode));
         return false;
     }
 
-    Mode.Width = closestSDL.w;
-    Mode.Height = closestSDL.h;
+    Mode.Width       = closestSDL.w;
+    Mode.Height      = closestSDL.h;
     Mode.RefreshRate = closestSDL.refresh_rate;
 
     return true;
 }
 
-} // namespace Core
+} // namespace Runtime

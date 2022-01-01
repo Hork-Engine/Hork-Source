@@ -88,7 +88,7 @@ struct SDisplayInfo
     float vdpi;
 };
 
-namespace Core
+namespace Runtime
 {
 
 /** Get list of displays */
