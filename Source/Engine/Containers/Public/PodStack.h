@@ -43,11 +43,6 @@ template <typename T, int BASE_CAPACITY = 32, int GRANULARITY = 32, typename All
 class TPodStack final
 {
 public:
-    enum
-    {
-        TYPE_SIZEOF = sizeof(T)
-    };
-
     TPodStack() {}
     TPodStack(TPodStack const& _Stack) :
         Array(_Stack.ToPtr(), _Stack.Size()) {}

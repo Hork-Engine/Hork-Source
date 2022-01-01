@@ -1225,7 +1225,7 @@ AN_FORCEINLINE T ToReal(const char* _String)
     // check for character
     if (_String[0] == '\'')
     {
-        return sign * _String[1];
+        return sign * T(_String[1]);
     }
 
     decimal = -1;

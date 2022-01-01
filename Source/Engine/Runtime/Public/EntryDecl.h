@@ -48,16 +48,16 @@ struct SEntryDecl
 /** Runtime entry point */
 void RunEngine(SEntryDecl const& _EntryDecl);
 
-#    define AN_ENTRY_DECL(_EntryDecl)                                                                       \
-        int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) \
-        {                                                                                                   \
-            RunEngine(_EntryDecl);                                                                          \
-            return 0;                                                                                       \
+#    define AN_ENTRY_DECL(_EntryDecl)                                                                     \
+        int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) \
+        {                                                                                                 \
+            RunEngine(_EntryDecl);                                                                        \
+            return 0;                                                                                     \
         }
-#    define AN_NO_RUNTIME_MAIN(_MainFunc)                                                                   \
-        int APIENTRY wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) \
-        {                                                                                                   \
-            return _MainFunc();                                                                             \
+#    define AN_NO_RUNTIME_MAIN(_MainFunc)                                                                 \
+        int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) \
+        {                                                                                                 \
+            return _MainFunc();                                                                           \
         }
 
 #else

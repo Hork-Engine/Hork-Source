@@ -56,7 +56,7 @@ public:
     }
 
     void (*Routine)(void* _Data) = EmptyRoutine;
-    void* Data;
+    void* Data = nullptr;
 
     void Start(int IdealProcessor = -1);
 

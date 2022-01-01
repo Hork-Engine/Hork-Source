@@ -3416,9 +3416,9 @@ struct Float4x4
     // OpenGL ortho projection with clip control "upper-left & zero-to-one"
     static AN_FORCEINLINE Float4x4 OrthoCC(Float2 const& mins, Float2 const& maxs, float znear, float zfar)
     {
-        const float InvX = 1.0 / (maxs.X - mins.X);
-        const float InvY = 1.0 / (maxs.Y - mins.Y);
-        const float InvZ = 1.0 / (zfar - znear);
+        const float InvX = 1.0f / (maxs.X - mins.X);
+        const float InvY = 1.0f / (maxs.Y - mins.Y);
+        const float InvZ = 1.0f / (zfar - znear);
         const float tx   = -(maxs.X + mins.X) * InvX;
         const float ty   = -(maxs.Y + mins.Y) * InvY;
         const float tz   = -(zfar + znear) * InvZ;

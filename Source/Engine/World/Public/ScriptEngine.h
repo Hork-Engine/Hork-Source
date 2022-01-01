@@ -79,8 +79,8 @@ private:
     AString              Module;
     asITypeInfo*         Type{};
     asIScriptFunction*   M_FactoryFunc{};
-    asIScriptFunction*   M_BeginPlay;
-    asIScriptFunction*   M_EndPlay;
+    asIScriptFunction*   M_BeginPlay{};
+    asIScriptFunction*   M_EndPlay{};
     asIScriptFunction*   M_Tick{};
     asIScriptFunction*   M_TickPrePhysics{};
     asIScriptFunction*   M_TickPostPhysics{};

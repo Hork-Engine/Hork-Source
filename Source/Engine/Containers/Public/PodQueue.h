@@ -44,10 +44,7 @@ template <typename T, int MAX_QUEUE_LENGTH = 256, bool FIXED_LENGTH = true, type
 class TPodQueue final
 {
 public:
-    enum
-    {
-        TYPE_SIZEOF = sizeof(T)
-    };
+    static constexpr size_t TYPE_SIZE = sizeof(T);
 
     TPodQueue() :
         pQueue(StaticData), QueueHead(0), QueueTail(0), MaxQueueLength(MAX_QUEUE_LENGTH)
@@ -60,7 +57,7 @@ public:
         if (_Queue.MaxQueueLength > MAX_QUEUE_LENGTH)
         {
             MaxQueueLength = _Queue.MaxQueueLength;
-            pQueue         = (T*)Allocator::Inst().Alloc1(TYPE_SIZEOF * MaxQueueLength);
+            pQueue         = (T*)Allocator::Inst().Alloc(TYPE_SIZE * MaxQueueLength);
         }
         else
         {
@@ -71,7 +68,7 @@ public:
         const int queueLength = _Queue.Size();
         if (queueLength == _Queue.MaxQueueLength || _Queue.QueueTail == 0)
         {
-            Core::Memcpy(pQueue, _Queue.pQueue, TYPE_SIZEOF * queueLength);
+            Core::Memcpy(pQueue, _Queue.pQueue, TYPE_SIZE * queueLength);
             QueueHead = _Queue.QueueHead;
             QueueTail = _Queue.QueueTail;
         }
@@ -138,17 +135,17 @@ public:
         {
             if (pQueue == StaticData)
             {
-                pQueue = (T*)Allocator::Inst().Alloc(TYPE_SIZEOF * MaxQueueLength);
-                Core::Memcpy(pQueue, StaticData, TYPE_SIZEOF * queueLength);
+                pQueue = (T*)Allocator::Inst().Alloc(TYPE_SIZE * MaxQueueLength);
+                Core::Memcpy(pQueue, StaticData, TYPE_SIZE * queueLength);
             }
             else
             {
-                pQueue = (T*)Allocator::Inst().Realloc(pQueue, TYPE_SIZEOF * MaxQueueLength, true);
+                pQueue = (T*)Allocator::Inst().Realloc(pQueue, TYPE_SIZE * MaxQueueLength, true);
             }
         }
         else
         {
-            T* data = (T*)Allocator::Inst().Alloc(TYPE_SIZEOF * MaxQueueLength);
+            T* data = (T*)Allocator::Inst().Alloc(TYPE_SIZE * MaxQueueLength);
             for (int i = 0; i < queueLength; i++)
             {
                 data[i] = pQueue[(i + QueueTail) & WrapMask];
@@ -229,7 +226,7 @@ public:
             if (_Queue.MaxQueueLength > MAX_QUEUE_LENGTH)
             {
                 MaxQueueLength = _Queue.MaxQueueLength;
-                pQueue         = (T*)Allocator::Inst().Alloc1(TYPE_SIZEOF * MaxQueueLength);
+                pQueue         = (T*)Allocator::Inst().Alloc(TYPE_SIZE * MaxQueueLength);
             }
             else
             {
@@ -242,7 +239,7 @@ public:
         const int queueLength = _Queue.Size();
         if (queueLength == _Queue.MaxQueueLength || _Queue.QueueTail == 0)
         {
-            Core::Memcpy(pQueue, _Queue.pQueue, TYPE_SIZEOF * queueLength);
+            Core::Memcpy(pQueue, _Queue.pQueue, TYPE_SIZE * queueLength);
             QueueHead = _Queue.QueueHead;
             QueueTail = _Queue.QueueTail;
         }
