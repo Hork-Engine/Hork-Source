@@ -34,6 +34,8 @@ SOFTWARE.
 
 struct Angl
 {
+    using ElementType = float;
+
     float Pitch;
     float Yaw;
     float Roll;

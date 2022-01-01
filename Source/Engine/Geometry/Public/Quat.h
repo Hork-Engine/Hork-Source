@@ -34,6 +34,8 @@ SOFTWARE.
 
 struct Quat
 {
+    using ElementType = float;
+
     float X;
     float Y;
     float Z;

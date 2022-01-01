@@ -342,6 +342,8 @@ constexpr TVector4<T> operator*(T lhs, TVector4<T> const& rhs)
 template <typename T>
 struct TVector2
 {
+    using ElementType = T;
+
     T X;
     T Y;
 
@@ -719,7 +721,6 @@ struct TVector2
         Reader(stream, Y);
     }
 
-    // Static methods
     static constexpr int   NumComponents() { return 2; }
     static TVector2 const& Zero()
     {
@@ -731,6 +732,8 @@ struct TVector2
 template <typename T>
 struct TVector3
 {
+    using ElementType = T;
+
     T X;
     T Y;
     T Z;
@@ -1347,7 +1350,6 @@ struct TVector3
         Reader(stream, Z);
     }
 
-    // Static methods
     static constexpr int   NumComponents() { return 3; }
     static TVector3 const& Zero()
     {
@@ -1359,6 +1361,8 @@ struct TVector3
 template <typename T>
 struct TVector4
 {
+    using ElementType = T;
+
     T X;
     T Y;
     T Z;
@@ -1850,7 +1854,6 @@ struct TVector4
         Reader(stream, W);
     }
 
-    // Static methods
     static constexpr int   NumComponents() { return 4; }
     static TVector4 const& Zero()
     {
@@ -2111,6 +2114,8 @@ struct Float3x4;
 // Column-major matrix 2x2
 struct Float2x2
 {
+    using ElementType = Float2;
+
     Float2 Col0;
     Float2 Col1;
 
@@ -2139,19 +2144,19 @@ struct Float2x2
 
     Float2& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < 2, "Index out of range");
+        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float2 const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < 2, "Index out of range");
+        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float2 GetRow(int index) const
     {
-        AN_ASSERT_(index >= 0 && index < 2, "Index out of range");
+        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return Float2(Col0[index], Col1[index]);
     }
 
@@ -2342,7 +2347,7 @@ struct Float2x2
         Col1.Read(stream);
     }
 
-    // Static methods
+    static constexpr int   NumComponents() { return 2; }
 
     static Float2x2 const& Identity()
     {
@@ -2354,6 +2359,8 @@ struct Float2x2
 // Column-major matrix 3x3
 struct Float3x3
 {
+    using ElementType = Float3;
+
     Float3 Col0;
     Float3 Col1;
     Float3 Col2;
@@ -2383,19 +2390,19 @@ struct Float3x3
 
     Float3& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < 3, "Index out of range");
+        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float3 const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < 3, "Index out of range");
+        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float3 GetRow(int index) const
     {
-        AN_ASSERT_(index >= 0 && index < 3, "Index out of range");
+        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return Float3(Col0[index], Col1[index], Col2[index]);
     }
 
@@ -2701,7 +2708,7 @@ struct Float3x3
         Col2.Read(stream);
     }
 
-    // Static methods
+    static constexpr int   NumComponents() { return 3; }
 
     static Float3x3 const& Identity()
     {
@@ -2713,6 +2720,8 @@ struct Float3x3
 // Column-major matrix 4x4
 struct Float4x4
 {
+    using ElementType = Float4;
+
     Float4 Col0;
     Float4 Col1;
     Float4 Col2;
@@ -2743,19 +2752,19 @@ struct Float4x4
 
     Float4& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < 4, "Index out of range");
+        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float4 const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < 4, "Index out of range");
+        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float4 GetRow(int index) const
     {
-        AN_ASSERT_(index >= 0 && index < 4, "Index out of range");
+        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return Float4(Col0[index], Col1[index], Col2[index], Col3[index]);
     }
 
@@ -3317,7 +3326,7 @@ struct Float4x4
         Col3.Read(stream);
     }
 
-    // Static methods
+    static constexpr int   NumComponents() { return 4; }
 
     static Float4x4 const& Identity()
     {
@@ -3573,6 +3582,8 @@ struct Float4x4
 // Keep transformations transposed
 struct Float3x4
 {
+    using ElementType = Float4;
+
     Float4 Col0;
     Float4 Col1;
     Float4 Col2;
@@ -3602,19 +3613,19 @@ struct Float3x4
 
     Float4& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < 3, "Index out of range");
+        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float4 const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < 3, "Index out of range");
+        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float3 GetRow(int index) const
     {
-        AN_ASSERT_(index >= 0 && index < 4, "Index out of range");
+        AN_ASSERT_(index >= 0 && index < ElementType::NumComponents(), "Index out of range");
         return Float3(Col0[index], Col1[index], Col2[index]);
     }
 
@@ -4028,7 +4039,7 @@ struct Float3x4
         Col2.Read(stream);
     }
 
-    // Static methods
+    static constexpr int   NumComponents() { return 3; }
 
     static Float3x4 const& Identity()
     {

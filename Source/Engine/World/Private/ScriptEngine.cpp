@@ -96,7 +96,24 @@ struct SScopedContext
 };
 
 
+template <typename T>
+static void Destruct(T* p)
+{
+    p->~T();
+}
 
+template <typename T>
+static typename T::ElementType* IndexOperator(T& self, int i)
+{
+    if ((unsigned)i >= self.NumComponents())
+    {
+        asIScriptContext* ctx = asGetActiveContext();
+        ctx->SetException("Out of range");
+        return {};
+    }
+
+    return &self[i];
+}
 
 static void ConstructFloat2Default(Float2* p)
 {
@@ -111,23 +128,6 @@ static void ConstructFloat2XY(Float2* p, float X, float Y)
 static void ConstructFloat2FromFloat2(Float2* p, Float2 const& other)
 {
     new (p) Float2(other);
-}
-
-static void DestructFloat2(Float2* p)
-{
-    p->~Float2();
-}
-
-static float* Float2At(Float2& self, int i)
-{
-    if ((unsigned)i >= self.NumComponents())
-    {
-        asIScriptContext* ctx = asGetActiveContext();
-        ctx->SetException("Out of range");
-        return {};
-    }
-
-    return &self[i];
 }
 
 static std::string Float2ToString(Float2 const& self, int Precision)
@@ -171,13 +171,13 @@ static void RegisterFloat2(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("Float2", asBEHAVE_CONSTRUCT, "void f(const Float2 &in)", asFUNCTION(ConstructFloat2FromFloat2), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("Float2", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructFloat2), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Float2", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<Float2>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float2", "Float2 &opAssign(const Float2 &in)", asMETHODPR(Float2, operator=, (const Float2&), Float2&), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float2", "float &opIndex(int)", asFUNCTION(Float2At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float2", "float &opIndex(int)", asFUNCTION(IndexOperator<Float2>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float2", "const float &opIndex(int) const", asFUNCTION(Float2At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float2", "const float &opIndex(int) const", asFUNCTION(IndexOperator<Float2>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float2", "bool opEquals(const Float2 &in) const", asMETHOD(Float2, operator==), asCALL_THISCALL);
     assert(r >= 0);
@@ -273,8 +273,6 @@ static void RegisterFloat2(asIScriptEngine* pEngine)
 
     // TODO?
 #if 0
-        T* ToPtr();
-        T const* ToPtr() const;
         template <int Index>
         constexpr T const& Get() const;
         template <int _Shuffle>
@@ -287,16 +285,6 @@ static void RegisterFloat2(asIScriptEngine* pEngine)
         constexpr Bool2 IsNan() const;
         constexpr Bool2 IsNormal() const;
         constexpr Bool2 IsDenormal() const;
-        constexpr Bool2 LessThan(TVector2 const& _Other) const;
-        constexpr Bool2 LessThan(T _Other) const;
-        constexpr Bool2 LequalThan(TVector2 const& _Other) const;
-        constexpr Bool2 LequalThan(T _Other) const;
-        constexpr Bool2 GreaterThan(TVector2 const& _Other) const;
-        constexpr Bool2 GreaterThan(T _Other) const;
-        constexpr Bool2 GequalThan(TVector2 const& _Other) const;
-        constexpr Bool2 GequalThan(T _Other) const;
-        constexpr Bool2 NotEqual(TVector2 const& _Other) const;
-        constexpr Bool2 NotEqual(T _Other) const;
         void Write(IBinaryStream& _Stream) const;
         void Read(IBinaryStream& _Stream);
         static constexpr int   NumComponents() { return 2; }
@@ -317,23 +305,6 @@ static void ConstructFloat3XYZ(Float3* p, float X, float Y, float Z)
 static void ConstructFloat3FromFloat3(Float3* p, Float3 const& other)
 {
     new (p) Float3(other);
-}
-
-static void DestructFloat3(Float3* p)
-{
-    p->~Float3();
-}
-
-static float* Float3At(Float3& self, int i)
-{
-    if ((unsigned)i >= self.NumComponents())
-    {
-        asIScriptContext* ctx = asGetActiveContext();
-        ctx->SetException("Out of range");
-        return {};
-    }
-
-    return &self[i];
 }
 
 static std::string Float3ToString(Float3 const& self, int Precision)
@@ -374,13 +345,13 @@ static void RegisterFloat3(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("Float3", asBEHAVE_CONSTRUCT, "void f(const Float3 &in)", asFUNCTION(ConstructFloat3FromFloat3), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("Float3", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructFloat3), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Float3", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<Float3>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3", "Float3 &opAssign(const Float3 &in)", asMETHODPR(Float3, operator=, (const Float3&), Float3&), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float3", "float &opIndex(int)", asFUNCTION(Float3At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float3", "float &opIndex(int)", asFUNCTION(IndexOperator<Float3>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float3", "const float &opIndex(int) const", asFUNCTION(Float3At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float3", "const float &opIndex(int) const", asFUNCTION(IndexOperator<Float3>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3", "bool opEquals(const Float3 &in) const", asMETHOD(Float3, operator==), asCALL_THISCALL);
     assert(r >= 0);
@@ -483,9 +454,6 @@ static void RegisterFloat3(asIScriptEngine* pEngine)
 
     // TODO?
     #if 0
-        constexpr TVector3 operator+() const;
-        T* ToPtr();
-        T const* ToPtr() const;
         template <int _Shuffle>
         constexpr TVector2<T> Shuffle2() const;
         template <int _Shuffle>
@@ -496,16 +464,6 @@ static void RegisterFloat3(asIScriptEngine* pEngine)
         constexpr Bool3 IsNan() const;
         constexpr Bool3 IsNormal() const;
         constexpr Bool3 IsDenormal() const;
-        constexpr Bool3 LessThan(TVector3 const& _Other) const;
-        constexpr Bool3 LessThan(T const& _Other) const;
-        constexpr Bool3 LequalThan(TVector3 const& _Other) const;
-        constexpr Bool3 LequalThan(T const& _Other) const;
-        constexpr Bool3 GreaterThan(TVector3 const& _Other) const;
-        constexpr Bool3 GreaterThan(T const& _Other) const;
-        constexpr Bool3 GequalThan(TVector3 const& _Other) const;
-        constexpr Bool3 GequalThan(T const& _Other) const;
-        constexpr Bool3 NotEqual(TVector3 const& _Other) const;
-        constexpr Bool3 NotEqual(T const& _Other) const;
         void Write(IBinaryStream& _Stream) const;
         void Read(IBinaryStream& _Stream);
         static constexpr int   NumComponents();
@@ -526,23 +484,6 @@ static void ConstructFloat4XYZW(Float4* p, float X, float Y, float Z, float W)
 static void ConstructFloat4FromFloat4(Float4* p, Float4 const& other)
 {
     new (p) Float4(other);
-}
-
-static void DestructFloat4(Float4* p)
-{
-    p->~Float4();
-}
-
-static float* Float4At(Float4& self, int i)
-{
-    if ((unsigned)i >= self.NumComponents())
-    {
-        asIScriptContext* ctx = asGetActiveContext();
-        ctx->SetException("Out of range");
-        return {};
-    }
-
-    return &self[i];
 }
 
 static std::string Float4ToString(Float4 const& self, int Precision)
@@ -585,13 +526,13 @@ static void RegisterFloat4(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("Float4", asBEHAVE_CONSTRUCT, "void f(const Float4 &in)", asFUNCTION(ConstructFloat4FromFloat4), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("Float4", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructFloat4), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Float4", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<Float4>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float4", "Float4 &opAssign(const Float4 &in)", asMETHODPR(Float4, operator=, (const Float4&), Float4&), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float4", "float &opIndex(int)", asFUNCTION(Float4At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float4", "float &opIndex(int)", asFUNCTION(IndexOperator<Float4>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float4", "const float &opIndex(int) const", asFUNCTION(Float4At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float4", "const float &opIndex(int) const", asFUNCTION(IndexOperator<Float4>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float4", "bool opEquals(const Float4 &in) const", asMETHOD(Float4, operator==), asCALL_THISCALL);
     assert(r >= 0);
@@ -684,8 +625,6 @@ static void RegisterFloat4(asIScriptEngine* pEngine)
 
 // TODO?
 #if 0
-    T* ToPtr();
-    T const* ToPtr() const;
     template <int Index>
     constexpr T const& Get() const;
     template <int _Shuffle>
@@ -694,21 +633,10 @@ static void RegisterFloat4(asIScriptEngine* pEngine)
     constexpr TVector3<T> Shuffle3() const;
     template <int _Shuffle>
     constexpr TVector4<T> Shuffle4() const;    
-    constexpr TVector4 operator+() const;    
     constexpr Bool4 IsInfinite() const;
     constexpr Bool4 IsNan() const;
     constexpr Bool4 IsNormal() const;
     constexpr Bool4 IsDenormal() const;
-    constexpr Bool4 LessThan(TVector4 const& _Other) const;
-    constexpr Bool4 LessThan(T _Other) const;
-    constexpr Bool4 LequalThan(TVector4 const& _Other) const;
-    constexpr Bool4 LequalThan(T _Other) const;
-    constexpr Bool4 GreaterThan(TVector4 const& _Other) const;
-    constexpr Bool4 GreaterThan(T _Other) const;
-    constexpr Bool4 GequalThan(TVector4 const& _Other) const;
-    constexpr Bool4 GequalThan(T _Other) const;
-    constexpr Bool4 NotEqual(TVector4 const& _Other) const;
-    constexpr Bool4 NotEqual(T _Other) const;
     void Write(IBinaryStream & _Stream) const;
     void Read(IBinaryStream & _Stream);
     static constexpr int   NumComponents();
@@ -747,11 +675,6 @@ static void ConstructPlaneFromPlane(PlaneF* p, PlaneF const& Plane)
     new (p) PlaneF(Plane);
 }
 
-static void DestructPlane(PlaneF* p)
-{
-    p->~PlaneF();
-}
-
 static std::string PlaneToString(PlaneF const& self, int Precision)
 {
     return self.ToString(Precision).CStr();
@@ -782,7 +705,7 @@ static void RegisterPlane(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("Plane", asBEHAVE_CONSTRUCT, "void f(const Plane &in)", asFUNCTION(ConstructPlaneFromPlane), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("Plane", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructPlane), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Plane", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<PlaneF>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Plane", "Plane opNeg() const", asMETHODPR(PlaneF, operator-, () const, PlaneF), asCALL_THISCALL);
     assert(r >= 0);
@@ -825,8 +748,6 @@ static void RegisterPlane(asIScriptEngine* pEngine)
 
     // TODO?
 #if 0
-    T* ToPtr();
-    T const* ToPtr() const;
     void Write(IBinaryStream& _Stream) const;
     void Read(IBinaryStream& _Stream);
 #endif
@@ -850,23 +771,6 @@ static void ConstructFloat2x2FromFloat2x2(Float2x2* p, const Float2x2& v)
 static void ConstructFloat2x2Vecs(Float2x2* p, Float2 const& _Col0, Float2 const& _Col1)
 {
     new (p) Float2x2(_Col0, _Col1);
-}
-
-static void DestructFloat2x2(Float2x2* p)
-{
-    p->~Float2x2();
-}
-
-static Float2* Float2x2At(Float2x2& self, int i)
-{
-    if ((unsigned)i >= 2)
-    {
-        asIScriptContext* ctx = asGetActiveContext();
-        ctx->SetException("Out of range");
-        return {};
-    }
-
-    return &self[i];
 }
 
 static Float2 Float2x2GetRow(Float2x2& self, int i)
@@ -932,11 +836,11 @@ static void RegisterFloat2x2(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("Float2x2", asBEHAVE_CONSTRUCT, "void f(const Float2& in, const Float2& in)", asFUNCTION(ConstructFloat2x2Vecs), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("Float2x2", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructFloat2x2), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Float2x2", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<Float2x2>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float2x2", "Float2 &opIndex(int)", asFUNCTION(Float2x2At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float2x2", "Float2 &opIndex(int)", asFUNCTION(IndexOperator<Float2x2>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float2x2", "const Float2 &opIndex(int) const", asFUNCTION(Float2x2At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float2x2", "const Float2 &opIndex(int) const", asFUNCTION(IndexOperator<Float2x2>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float2x2", "Float2x2 &opAssign(const Float2x2 &in)", asMETHODPR(Float2x2, operator=, (const Float2x2&), Float2x2&), asCALL_THISCALL);
     assert(r >= 0);
@@ -997,8 +901,6 @@ static void RegisterFloat2x2(asIScriptEngine* pEngine)
 
     // TODO?
     #if 0
-    float*                 ToPtr();
-    const float*           ToPtr() const;
     void                   Write(IBinaryStream & _Stream) const;
     void                   Read(IBinaryStream & _Stream);
     #endif
@@ -1022,23 +924,6 @@ static void ConstructFloat3x3FromFloat3x3(Float3x3* p, const Float3x3& v)
 static void ConstructFloat3x3Vecs(Float3x3* p, Float3 const& _Col0, Float3 const& _Col1, Float3 const& _Col2)
 {
     new (p) Float3x3(_Col0, _Col1, _Col2);
-}
-
-static void DestructFloat3x3(Float3x3* p)
-{
-    p->~Float3x3();
-}
-
-static Float3* Float3x3At(Float3x3& self, int i)
-{
-    if ((unsigned)i >= 3)
-    {
-        asIScriptContext* ctx = asGetActiveContext();
-        ctx->SetException("Out of range");
-        return {};
-    }
-
-    return &self[i];
 }
 
 static Float3 Float3x3GetRow(Float3x3& self, int i)
@@ -1106,11 +991,11 @@ static void RegisterFloat3x3(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("Float3x3", asBEHAVE_CONSTRUCT, "void f(const Float3& in, const Float3& in, const Float3& in)", asFUNCTION(ConstructFloat3x3Vecs), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("Float3x3", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructFloat3x3), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Float3x3", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<Float3x3>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float3x3", "Float3 &opIndex(int)", asFUNCTION(Float3x3At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float3x3", "Float3 &opIndex(int)", asFUNCTION(IndexOperator<Float3x3>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float3x3", "const Float3 &opIndex(int) const", asFUNCTION(Float3x3At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float3x3", "const Float3 &opIndex(int) const", asFUNCTION(IndexOperator<Float3x3>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x3", "Float3x3 &opAssign(const Float3x3 &in)", asMETHODPR(Float3x3, operator=, (const Float3x3&), Float3x3&), asCALL_THISCALL);
     assert(r >= 0);
@@ -1185,8 +1070,6 @@ static void RegisterFloat3x3(asIScriptEngine* pEngine)
 
 // TODO?
 #if 0
-    float*                 ToPtr();
-    const float*           ToPtr() const;
     void                   Write(IBinaryStream & _Stream) const;
     void                   Read(IBinaryStream & _Stream);
 #endif
@@ -1210,23 +1093,6 @@ static void ConstructFloat3x4FromFloat3x4(Float3x4* p, const Float3x4& v)
 static void ConstructFloat3x4Vecs(Float3x4* p, Float4 const& _Col0, Float4 const& _Col1, Float4 const& _Col2)
 {
     new (p) Float3x4(_Col0, _Col1, _Col2);
-}
-
-static void DestructFloat3x4(Float3x4* p)
-{
-    p->~Float3x4();
-}
-
-static Float4* Float3x4At(Float3x4& self, int i)
-{
-    if ((unsigned)i >= 3)
-    {
-        asIScriptContext* ctx = asGetActiveContext();
-        ctx->SetException("Out of range");
-        return {};
-    }
-
-    return &self[i];
 }
 
 static Float3 Float3x4GetRow(Float3x4& self, int i)
@@ -1294,11 +1160,11 @@ static void RegisterFloat3x4(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("Float3x4", asBEHAVE_CONSTRUCT, "void f(const Float4& in, const Float4& in, const Float4& in)", asFUNCTION(ConstructFloat3x4Vecs), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("Float3x4", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructFloat3x4), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Float3x4", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<Float3x4>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);    
-    r = pEngine->RegisterObjectMethod("Float3x4", "Float4 &opIndex(int)", asFUNCTION(Float3x4At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float3x4", "Float4 &opIndex(int)", asFUNCTION(IndexOperator<Float3x4>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float3x4", "const Float4 &opIndex(int) const", asFUNCTION(Float3x4At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float3x4", "const Float4 &opIndex(int) const", asFUNCTION(IndexOperator<Float3x4>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x4", "Float3x4 &opAssign(const Float3x4 &in)", asMETHODPR(Float3x4, operator=, (const Float3x4&), Float3x4&), asCALL_THISCALL);
     assert(r >= 0);
@@ -1385,8 +1251,6 @@ static void RegisterFloat3x4(asIScriptEngine* pEngine)
 
 // TODO?
 #    if 0
-    float*                 ToPtr();
-    const float*           ToPtr() const;
     void                   Write(IBinaryStream & _Stream) const;
     void                   Read(IBinaryStream & _Stream);
 #    endif
@@ -1410,23 +1274,6 @@ static void ConstructFloat4x4FromFloat4x4(Float4x4* p, const Float4x4& v)
 static void ConstructFloat4x4Vecs(Float4x4* p, Float4 const& _Col0, Float4 const& _Col1, Float4 const& _Col2, Float4 const& _Col3)
 {
     new (p) Float4x4(_Col0, _Col1, _Col2, _Col3);
-}
-
-static void DestructFloat4x4(Float4x4* p)
-{
-    p->~Float4x4();
-}
-
-static Float4* Float4x4At(Float4x4& self, int i)
-{
-    if ((unsigned)i >= 4)
-    {
-        asIScriptContext* ctx = asGetActiveContext();
-        ctx->SetException("Out of range");
-        return {};
-    }
-
-    return &self[i];
 }
 
 static Float4 Float4x4GetRow(Float4x4& self, int i)
@@ -1496,11 +1343,11 @@ static void RegisterFloat4x4(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("Float4x4", asBEHAVE_CONSTRUCT, "void f(const Float4& in, const Float4& in, const Float4& in, const Float4& in)", asFUNCTION(ConstructFloat4x4Vecs), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("Float4x4", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructFloat4x4), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Float4x4", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<Float4x4>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float4x4", "Float4 &opIndex(int)", asFUNCTION(Float4x4At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float4x4", "Float4 &opIndex(int)", asFUNCTION(IndexOperator<Float4x4>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float4x4", "const Float4 &opIndex(int) const", asFUNCTION(Float4x4At), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Float4x4", "const Float4 &opIndex(int) const", asFUNCTION(IndexOperator<Float4x4>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float4x4", "Float4x4 &opAssign(const Float4x4 &in)", asMETHODPR(Float4x4, operator=, (const Float4x4&), Float4x4&), asCALL_THISCALL);
     assert(r >= 0);
@@ -1617,8 +1464,6 @@ static void RegisterFloat4x4(asIScriptEngine* pEngine)
                                     Float4x4 & _NegativeZ);
     static Float4x4 const* GetCubeFaceMatrices();
 
-    float*                 ToPtr();
-    const float*           ToPtr() const;
     void                   Write(IBinaryStream & _Stream) const;
     void                   Read(IBinaryStream & _Stream);
 #endif
@@ -1642,23 +1487,6 @@ static void ConstructQuatPYR(Quat* p, float Pitch, float Yaw, float Roll)
 static void ConstructQuatFromQuat(Quat* p, Quat const& other)
 {
     new (p) Quat(other);
-}
-
-static void DestructQuat(Quat* p)
-{
-    p->~Quat();
-}
-
-static float* QuatAt(Quat& self, int i)
-{
-    if ((unsigned)i >= self.NumComponents())
-    {
-        asIScriptContext* ctx = asGetActiveContext();
-        ctx->SetException("Out of range");
-        return {};
-    }
-
-    return &self[i];
 }
 
 static std::string QuatToString(Quat const& self, int Precision)
@@ -1691,13 +1519,13 @@ static void RegisterQuat(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("Quat", asBEHAVE_CONSTRUCT, "void f(const Quat &in)", asFUNCTION(ConstructQuatFromQuat), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("Quat", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructQuat), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Quat", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<Quat>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Quat", "Quat &opAssign(const Quat &in)", asMETHODPR(Quat, operator=, (const Quat&), Quat&), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Quat", "float &opIndex(int)", asFUNCTION(QuatAt), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Quat", "float &opIndex(int)", asFUNCTION(IndexOperator<Quat>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Quat", "const float &opIndex(int) const", asFUNCTION(QuatAt), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Quat", "const float &opIndex(int) const", asFUNCTION(IndexOperator<Quat>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Quat", "bool opEquals(const Quat &in) const", asMETHOD(Quat, operator==), asCALL_THISCALL);
     assert(r >= 0);
@@ -1788,8 +1616,6 @@ static void RegisterQuat(asIScriptEngine* pEngine)
 
 // TODO?
 #if 0
-    float * ToPtr();
-    const float * ToPtr() const;
     Bool4 IsInfinite() const;
     Bool4 IsNan() const;
     Bool4 IsNormal() const;
@@ -1815,23 +1641,6 @@ static void ConstructAnglPYR(Angl* p, float Pitch, float Yaw, float Roll)
 static void ConstructAnglFromAngl(Angl* p, Angl const& other)
 {
     new (p) Angl(other);
-}
-
-static void DestructAngl(Angl* p)
-{
-    p->~Angl();
-}
-
-static float* AnglAt(Angl& self, int i)
-{
-    if ((unsigned)i >= self.NumComponents())
-    {
-        asIScriptContext* ctx = asGetActiveContext();
-        ctx->SetException("Out of range");
-        return {};
-    }
-
-    return &self[i];
 }
 
 static std::string AnglToString(Angl const& self, int Precision)
@@ -1860,13 +1669,13 @@ static void RegisterAngl(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("Angl", asBEHAVE_CONSTRUCT, "void f(const Angl &in)", asFUNCTION(ConstructAnglFromAngl), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("Angl", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructAngl), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("Angl", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<Angl>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Angl", "Angl &opAssign(const Angl &in)", asMETHODPR(Angl, operator=, (const Angl&), Angl&), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Angl", "float &opIndex(int)", asFUNCTION(AnglAt), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Angl", "float &opIndex(int)", asFUNCTION(IndexOperator<Angl>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Angl", "const float &opIndex(int) const", asFUNCTION(AnglAt), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectMethod("Angl", "const float &opIndex(int) const", asFUNCTION(IndexOperator<Angl>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);    
     r = pEngine->RegisterObjectMethod("Angl", "bool opEquals(const Angl &in) const", asMETHOD(Angl, operator==), asCALL_THISCALL);
     assert(r >= 0);
@@ -1915,8 +1724,6 @@ static void RegisterAngl(asIScriptEngine* pEngine)
 
 // TODO?
 #if 0
-    float * ToPtr();
-    const float * ToPtr() const;
     Bool3 IsInfinite() const;
     Bool3 IsNan() const;
     Bool3 IsNormal() const;
@@ -1954,11 +1761,6 @@ static void ConstructTransformFromTransform(STransform* p, STransform const& oth
     new (p) STransform(other);
 }
 
-static void DestructTransform(STransform* p)
-{
-    p->~STransform();
-}
-
 static void RegisterTransform(asIScriptEngine* pEngine)
 {
     int r;
@@ -1977,7 +1779,7 @@ static void RegisterTransform(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("STransform", asBEHAVE_CONSTRUCT, "void f(const STransform &in)", asFUNCTION(ConstructTransformFromTransform), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("STransform", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructTransform), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("STransform", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<STransform>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("STransform", "STransform &opAssign(const STransform &in)", asMETHODPR(STransform, operator=, (const STransform&), STransform&), asCALL_THISCALL);
     assert(r >= 0);
@@ -2078,11 +1880,6 @@ static void ConstructAxisAlignedBoxFromAxisAlignedBox(BvAxisAlignedBox* p, BvAxi
     new (p) BvAxisAlignedBox(Box);
 }
 
-static void DestructAxisAlignedBox(BvAxisAlignedBox* p)
-{
-    p->~BvAxisAlignedBox();
-}
-
 static void RegisterAxisAlignedBox(asIScriptEngine* pEngine)
 {
     int r;
@@ -2099,7 +1896,7 @@ static void RegisterAxisAlignedBox(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("BvAxisAlignedBox", asBEHAVE_CONSTRUCT, "void f(const BvAxisAlignedBox &in)", asFUNCTION(ConstructAxisAlignedBoxFromAxisAlignedBox), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("BvAxisAlignedBox", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructAxisAlignedBox), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("BvAxisAlignedBox", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<BvAxisAlignedBox>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("BvAxisAlignedBox", "BvAxisAlignedBox &opAssign(const BvAxisAlignedBox &in)", asMETHODPR(BvAxisAlignedBox, operator=, (const BvAxisAlignedBox&), BvAxisAlignedBox&), asCALL_THISCALL);
     assert(r >= 0);
@@ -2170,8 +1967,6 @@ static void RegisterAxisAlignedBox(asIScriptEngine* pEngine)
 #if 0
     void   GetVertices( Float3 _Vertices[8] ) const;
     static BvAxisAlignedBox const & Empty();
-    float *       ToPtr();
-    const float * ToPtr() const;
     void Write( IBinaryStream & _Stream ) const;
     void Read( IBinaryStream & _Stream );
 #endif
@@ -2193,11 +1988,6 @@ static void ConstructOrientedBoxFromOrientedBox(BvOrientedBox* p, BvOrientedBox 
     new (p) BvOrientedBox(Box);
 }
 
-static void DestructOrientedBox(BvOrientedBox* p)
-{
-    p->~BvOrientedBox();
-}
-
 static void RegisterOrientedBox(asIScriptEngine* pEngine)
 {
     int r;
@@ -2214,7 +2004,7 @@ static void RegisterOrientedBox(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("BvOrientedBox", asBEHAVE_CONSTRUCT, "void f(const BvOrientedBox &in)", asFUNCTION(ConstructOrientedBoxFromOrientedBox), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("BvOrientedBox", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructOrientedBox), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("BvOrientedBox", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<BvOrientedBox>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("BvOrientedBox", "BvOrientedBox &opAssign(const BvOrientedBox &in)", asMETHODPR(BvOrientedBox, operator=, (const BvOrientedBox&), BvOrientedBox&), asCALL_THISCALL);
     assert(r >= 0);
@@ -2251,11 +2041,6 @@ static void ConstructSphereFromSphere(BvSphere* p, BvSphere const& Sphere)
     new (p) BvSphere(Sphere);
 }
 
-static void DestructSphere(BvSphere* p)
-{
-    p->~BvSphere();
-}
-
 static void RegisterSphere(asIScriptEngine* pEngine)
 {
     int r;
@@ -2270,7 +2055,7 @@ static void RegisterSphere(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("BvSphere", asBEHAVE_CONSTRUCT, "void f(const BvSphere &in)", asFUNCTION(ConstructSphereFromSphere), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("BvSphere", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DestructSphere), asCALL_CDECL_OBJFIRST);
+    r = pEngine->RegisterObjectBehaviour("BvSphere", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<BvSphere>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("BvSphere", "BvSphere &opAssign(const BvSphere &in)", asMETHODPR(BvSphere, operator=, (const BvSphere&), BvSphere&), asCALL_THISCALL);
     assert(r >= 0);
