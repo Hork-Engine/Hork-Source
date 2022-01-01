@@ -226,11 +226,13 @@ public:
         // Set current desktop
         GEngine->SetDesktop( desktop );
 
-        
+        // Experimental AngelScript integration
+#if 0
         SActorSpawnInfo spawnInfo(&AActor::ClassMeta());
         spawnInfo.ScriptModule = "zombie";
 
         world->SpawnActor(spawnInfo);
+#endif
     }
     void CreateResources()
     {
