@@ -30,13 +30,14 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/Memory.h>
-#include <Core/Public/Hash.h>
+#include <Platform/Public/Memory/Memory.h>
 #include <Core/Public/HashFunc.h>
 #include <Core/Public/String.h>
-#include <Core/Public/CoreMath.h>
-#include <Core/Public/PodVector.h>
 #include <Core/Public/Ref.h>
+#include <Containers/Public/Hash.h>
+#include <Containers/Public/PodVector.h>
+#include <Geometry/Public/VectorMath.h>
+#include <Geometry/Public/Quat.h>
 
 class AClassMeta;
 class AAttributeMeta;
@@ -218,9 +219,9 @@ private:
     uint32_t Flags;
 
 protected:
-    TStdFunction< void( ADummy *, AString const & ) > FromString;
-    TStdFunction< void( ADummy *, AString & ) > ToString;
-    TStdFunction< void( ADummy const *, ADummy * ) > Copy;
+    std::function< void( ADummy *, AString const & ) > FromString;
+    std::function< void( ADummy *, AString & ) > ToString;
+    std::function< void( ADummy const *, ADummy * ) > Copy;
 };
 
 
@@ -442,14 +443,14 @@ public:
     template< typename... TArgs >
     static T* CreateInstance( TArgs &&..._Args )
     {
-        return new FinalClass( StdForward< TArgs >( _Args )... );
+        return new FinalClass( std::forward< TArgs >( _Args )... );
     }
 private:
     class FinalClass : private T
     {
         template< typename... TArgs >
         FinalClass( TArgs &&..._Args )
-            : T( StdForward< TArgs >( _Args )... )
+            : T( std::forward< TArgs >( _Args )... )
         {
         }
         ~FinalClass()
@@ -462,7 +463,7 @@ private:
 
 template< typename T, typename... TArgs > T * CreateInstanceOf( TArgs &&... _Args )
 {
-    return TObjectCreator< T >::CreateInstance( StdForward< TArgs >( _Args )... );
+    return TObjectCreator< T >::CreateInstance( std::forward< TArgs >( _Args )... );
 }
 
 #define AN_CLASS( _Class, _SuperClass ) \

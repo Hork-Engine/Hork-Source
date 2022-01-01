@@ -1,7 +1,7 @@
 #pragma once
 
 #include <RenderCore/FrameGraph.h>
-#include <Core/Public/CoreMath.h>
+#include <Geometry/Public/VectorMath.h>
 
 struct SDirectionalLightInstance;
 struct SLightParameters;

@@ -42,8 +42,8 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/ScopedTimeCheck.h>
 
-#include <Core/Public/WindowsDefs.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/WindowsDefs.h>
+#include <Platform/Public/Logger.h>
 #include <Core/Public/Image.h>
 
 #include <SDL.h>
@@ -213,7 +213,7 @@ ARenderBackend::ARenderBackend()
             //FlipImageY( data, 512, 512, 3*sizeof(*data), 512*3*sizeof( *data ) );
 
             for ( int p = 0; p<512*512*3; p += 3 ) {
-                StdSwap( data[p], data[p+2] );
+                std::swap( data[p], data[p+2] );
                 //ucdata[p] = Math::Clamp( data[p] * 255.0f, 0.0f, 255.0f );
                 //ucdata[p+1] = Math::Clamp( data[p+1] * 255.0f, 0.0f, 255.0f );
                 //ucdata[p+2] = Math::Clamp( data[p+2] * 255.0f, 0.0f, 255.0f );

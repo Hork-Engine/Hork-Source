@@ -32,7 +32,7 @@ SOFTWARE.
 #include <World/Public/Resource/Asset.h>
 #include <Runtime/Public/ScopedTimeCheck.h>
 #include <Runtime/Public/Runtime.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Core/Public/Image.h>
 
@@ -886,34 +886,43 @@ void ATexture::InitializeColorGradingLUT(const char* _Path)
     LoadInternalResource("/Default/Textures/LUT_Luminance");
 }
 
-static Float3 ApplyColorGrading(SColorGradingPreset const& p, AColor4 const& _Color)
+static Float3 ApplyColorGrading(SColorGradingPreset const& p, Color4 const& _Color)
 {
     float lum = _Color.GetLuminance();
 
-    AColor4 mult;
+    Color4 mult;
 
     mult.SetTemperature(Math::Clamp(p.ColorTemperature, 1000.0f, 40000.0f));
 
-    AColor4 c = Math::Lerp(_Color.GetRGB(), _Color.GetRGB() * mult.GetRGB(), p.ColorTemperatureStrength);
+    Color4 c;
+    c.R = Math::Lerp(_Color.R, _Color.R * mult.R, p.ColorTemperatureStrength.X);
+    c.G = Math::Lerp(_Color.G, _Color.G * mult.G, p.ColorTemperatureStrength.Y);
+    c.B = Math::Lerp(_Color.B, _Color.B * mult.B, p.ColorTemperatureStrength.Z);
+    c.A = 1;
 
     float newLum = c.GetLuminance();
 
     c *= Math::Lerp(1.0f, (newLum > 1e-6) ? (lum / newLum) : 1.0f, p.ColorTemperatureBrightnessNormalization);
 
-    c = Math::Lerp(Float3(c.GetLuminance()), c.GetRGB(), p.Presaturation);
+    lum = c.GetLuminance();
 
-    Float3 t = (p.Gain * 2.0f) * (c.GetRGB() + ((p.Lift * 2.0f - 1.0) * (Float3(1.0) - c.GetRGB())));
+    Float3 rgb;
+    rgb.X = Math::Lerp(lum, c.R, p.Presaturation.X);
+    rgb.Y = Math::Lerp(lum, c.G, p.Presaturation.Y);
+    rgb.Z = Math::Lerp(lum, c.B, p.Presaturation.Z);
 
-    t.X = Math::Pow(t.X, 0.5f / p.Gamma.X);
-    t.Y = Math::Pow(t.Y, 0.5f / p.Gamma.Y);
-    t.Z = Math::Pow(t.Z, 0.5f / p.Gamma.Z);
+    rgb = (p.Gain * 2.0f) * (rgb + ((p.Lift * 2.0f - 1.0) * (Float3(1.0) - rgb)));
 
-    return t;
+    rgb.X = Math::Pow(rgb.X, 0.5f / p.Gamma.X);
+    rgb.Y = Math::Pow(rgb.Y, 0.5f / p.Gamma.Y);
+    rgb.Z = Math::Pow(rgb.Z, 0.5f / p.Gamma.Z);
+
+    return rgb;
 }
 
 void ATexture::InitializeColorGradingLUT(SColorGradingPreset const& _Preset)
 {
-    AColor4 color;
+    Color4 color;
     Float3  result;
 
     Initialize3D(TEXTURE_PF_BGRA8_SRGB, 1, 16, 16, 16);
@@ -924,15 +933,15 @@ void ATexture::InitializeColorGradingLUT(SColorGradingPreset const& _Preset)
 
     for (int z = 0; z < 16; z++)
     {
-        color.Z     = scale * z;
+        color.B     = scale * z;
         byte* depth = data + (size_t)z * (16 * 16 * 4);
         for (int y = 0; y < 16; y++)
         {
-            color.Y   = scale * y;
+            color.G   = scale * y;
             byte* row = depth + (size_t)y * (16 * 4);
             for (int x = 0; x < 16; x++)
             {
-                color.X = scale * x;
+                color.R = scale * x;
 
                 result = ApplyColorGrading(_Preset, color) * 255.0f;
 
@@ -1046,7 +1055,7 @@ bool ATexture::WriteTextureData1DArray(int _LocationX, int _Width, int _ArrayLay
         GLogger.Printf("ATexture::WriteTextureData1DArray: called for %s\n", TextureTypeName[TextureType]);
         return false;
     }
-    return WriteArbitraryData(_LocationX, _ArrayLayer, 0, _Width, 1, 1, _Lod, _SysMem);
+    return WriteArbitraryData(_LocationX, 0, _ArrayLayer, _Width, 1, 1, _Lod, _SysMem);
 }
 
 bool ATexture::WriteTextureData2D(int _LocationX, int _LocationY, int _Width, int _Height, int _Lod, const void* _SysMem)

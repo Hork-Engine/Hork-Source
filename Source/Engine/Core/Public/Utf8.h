@@ -30,55 +30,57 @@ SOFTWARE.
 
 #pragma once
 
-#include "BaseTypes.h"
+#include <Platform/Public/BaseTypes.h>
 
 typedef unsigned short SWideChar;
 
-namespace Core {
+namespace Core
+{
 
 /** Length of utf8 character in bytes */
-int UTF8CharSizeInBytes( const char * _Unicode );
+int UTF8CharSizeInBytes(const char* _Unicode);
 
 /** Length of utf8 string */
-int UTF8StrLength( const char * _Unicode );
+int UTF8StrLength(const char* _Unicode);
 
 /** Decode utf8 character to wide char */
-int WideCharDecodeUTF8( const char * _Unicode, SWideChar & _Ch );
+int WideCharDecodeUTF8(const char* _Unicode, SWideChar& _Ch);
 
 /** Decode utf8 character to wide char */
-int WideCharDecodeUTF8( const char * _Unicode, const char * _UnicodeEnd, SWideChar & _Ch );
+int WideCharDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, SWideChar& _Ch);
 
 /** Decode utf8 string to wide string */
-int WideStrDecodeUTF8( const char * _Unicode, SWideChar * _Str, int _MaxLength );
+int WideStrDecodeUTF8(const char* _Unicode, SWideChar* _Str, int _MaxLength);
 
 /** Decode utf8 string to wide string */
-int WideStrDecodeUTF8( const char * _Unicode, const char * _UnicodeEnd, SWideChar * _Str, int _MaxLength );
+int WideStrDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, SWideChar* _Str, int _MaxLength);
 
 /** Length of utf8 character in bytes */
-AN_FORCEINLINE int WideCharUTF8Bytes( SWideChar _Ch ) {
-    if ( _Ch < 0x80 ) return 1;
-    if ( _Ch < 0x800 ) return 2;
-    if ( _Ch >= 0xdc00 && _Ch < 0xe000 ) return 0;
-    if ( _Ch >= 0xd800 && _Ch < 0xdc00 ) return 4;
+AN_FORCEINLINE int WideCharUTF8Bytes(SWideChar _Ch)
+{
+    if (_Ch < 0x80) return 1;
+    if (_Ch < 0x800) return 2;
+    if (_Ch >= 0xdc00 && _Ch < 0xe000) return 0;
+    if (_Ch >= 0xd800 && _Ch < 0xdc00) return 4;
     return 3;
 }
 
 /** Length of utf8 string in bytes */
-int WideStrUTF8Bytes( SWideChar const * _Str, SWideChar const * _StrEnd = nullptr );
+int WideStrUTF8Bytes(SWideChar const* _Str, SWideChar const* _StrEnd = nullptr);
 
 /** Length of wide string */
-int WideStrLength( SWideChar const * _Str );
+int WideStrLength(SWideChar const* _Str);
 
 /** Encode wide character to utf8 char */
-int WideCharEncodeUTF8( char * _Buf, int _BufSize, unsigned int _Ch );
+int WideCharEncodeUTF8(char* _Buf, int _BufSize, unsigned int _Ch);
 
 /** Encode wide string to utf8 string */
-int WideStrEncodeUTF8( char * _Buf, int _BufSize, SWideChar const * _Str, SWideChar const * _StrEnd = nullptr );
+int WideStrEncodeUTF8(char* _Buf, int _BufSize, SWideChar const* _Str, SWideChar const* _StrEnd = nullptr);
 
 /** Check wide char is blank */
-AN_FORCEINLINE bool WideCharIsBlank( SWideChar _Ch )  { return _Ch == ' ' || _Ch == '\t' || _Ch == 0x3000; }
+AN_FORCEINLINE bool WideCharIsBlank(SWideChar _Ch) { return _Ch == ' ' || _Ch == '\t' || _Ch == 0x3000; }
 
 /** Check ascii char is blank */
-AN_FORCEINLINE bool CharIsBlank( char _Ch ) { return _Ch == ' ' || _Ch == '\t'; }
+AN_FORCEINLINE bool CharIsBlank(char _Ch) { return _Ch == ' ' || _Ch == '\t'; }
 
-}
+} // namespace Core

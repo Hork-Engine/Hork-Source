@@ -31,8 +31,8 @@ SOFTWARE.
 #include "VirtualTextureFile.h"
 #include "QuadTree.h"
 
-#include <Core/Public/CoreMath.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
+#include <Core/Public/BaseMath.h>
 
 AVirtualTextureFile::AVirtualTextureFile( const char * FileName )
 {

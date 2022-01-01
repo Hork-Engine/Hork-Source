@@ -41,7 +41,7 @@ void AFrameGraph::Build()
 
     RegisterResources();
 
-    for (StdUniquePtr<FGRenderTaskBase>& task : RenderTasks)
+    for (std::unique_ptr<FGRenderTaskBase>& task : RenderTasks)
     {
         task->ResourceRefs = task->ProducedResources.Size() + task->WriteResources.Size() + task->ReadWriteResources.Size();
     }
@@ -115,7 +115,7 @@ void AFrameGraph::Build()
 
     //resourcesRW.ReserveInvalidate( 1024 );
 
-    for (StdUniquePtr<FGRenderTaskBase>& task : RenderTasks)
+    for (std::unique_ptr<FGRenderTaskBase>& task : RenderTasks)
     {
         if (task->ResourceRefs == 0 && !task->bCulled)
         {
@@ -152,7 +152,7 @@ void AFrameGraph::Build()
                 auto lastReader = std::find_if(
                     RenderTasks.begin(),
                     RenderTasks.end(),
-                    [&resource](StdUniquePtr<FGRenderTaskBase> const& it)
+                    [&resource](std::unique_ptr<FGRenderTaskBase> const& it)
                     {
                         return it.get() == resource->Readers.Last();
                     });
@@ -167,7 +167,7 @@ void AFrameGraph::Build()
                 auto lastWriter = std::find_if(
                     RenderTasks.begin(),
                     RenderTasks.end(),
-                    [&resource](StdUniquePtr<FGRenderTaskBase> const& it)
+                    [&resource](std::unique_ptr<FGRenderTaskBase> const& it)
                     {
                         return it.get() == resource->Writers.Last();
                     });

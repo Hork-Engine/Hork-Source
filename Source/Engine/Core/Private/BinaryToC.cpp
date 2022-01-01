@@ -28,106 +28,121 @@ SOFTWARE.
 
 */
 
+#include <Platform/Public/Memory/Memory.h>
+#include <Platform/Public/Logger.h>
+
 #include <Core/Public/BinaryToC.h>
-#include <Core/Public/Memory.h>
 #include <Core/Public/Compress.h>
-#include <Core/Public/Logger.h>
 #include <Core/Public/BaseMath.h>
 
-namespace Core {
+namespace Core
+{
 
-bool BinaryToC( const char * _SourceFile, const char * _DestFile, const char * _SymName, bool _EncodeBase85 )
+bool BinaryToC(const char* _SourceFile, const char* _DestFile, const char* _SymName, bool _EncodeBase85)
 {
     AFileStream source, dest;
-    
-    if ( !source.OpenRead( _SourceFile ) ) {
-        GLogger.Printf( "Failed to open %s\n", _SourceFile );
+
+    if (!source.OpenRead(_SourceFile))
+    {
+        GLogger.Printf("Failed to open %s\n", _SourceFile);
         return false;
     }
 
-    if ( !dest.OpenWrite( _DestFile ) ) {
-        GLogger.Printf( "Failed to open %s\n", _DestFile );
+    if (!dest.OpenWrite(_DestFile))
+    {
+        GLogger.Printf("Failed to open %s\n", _DestFile);
         return false;
     }
 
     size_t size = source.SizeInBytes();
-    byte * data = (byte *)GHeapMemory.Alloc( size );
-    source.ReadBuffer( data, size );
+    byte*  data = (byte*)GHeapMemory.Alloc(size);
+    source.ReadBuffer(data, size);
 
-    WriteBinaryToC( dest, _SymName, data, size, _EncodeBase85 );
+    WriteBinaryToC(dest, _SymName, data, size, _EncodeBase85);
 
-    GHeapMemory.Free( data );
+    GHeapMemory.Free(data);
 
     return true;
 }
 
-bool BinaryToCompressedC( const char * _SourceFile, const char * _DestFile, const char * _SymName, bool _EncodeBase85 )
+bool BinaryToCompressedC(const char* _SourceFile, const char* _DestFile, const char* _SymName, bool _EncodeBase85)
 {
     AFileStream source, dest;
 
-    if ( !source.OpenRead( _SourceFile ) ) {
-        GLogger.Printf( "Failed to open %s\n", _SourceFile );
+    if (!source.OpenRead(_SourceFile))
+    {
+        GLogger.Printf("Failed to open %s\n", _SourceFile);
         return false;
     }
 
-    if ( !dest.OpenWrite( _DestFile ) ) {
-        GLogger.Printf( "Failed to open %s\n", _DestFile );
+    if (!dest.OpenWrite(_DestFile))
+    {
+        GLogger.Printf("Failed to open %s\n", _DestFile);
         return false;
     }
 
     size_t decompressedSize = source.SizeInBytes();
-    byte * decompressedData = (byte *)GHeapMemory.Alloc( decompressedSize );
-    source.ReadBuffer( decompressedData, decompressedSize );
+    byte*  decompressedData = (byte*)GHeapMemory.Alloc(decompressedSize);
+    source.ReadBuffer(decompressedData, decompressedSize);
 
-    size_t compressedSize = Core::ZMaxCompressedSize( decompressedSize );
-    byte * compressedData = (byte *)GHeapMemory.Alloc( compressedSize );
-    Core::ZCompress( compressedData, &compressedSize, (byte *)decompressedData, decompressedSize, ZLIB_UBER_COMPRESSION );
+    size_t compressedSize = Core::ZMaxCompressedSize(decompressedSize);
+    byte*  compressedData = (byte*)GHeapMemory.Alloc(compressedSize);
+    Core::ZCompress(compressedData, &compressedSize, (byte*)decompressedData, decompressedSize, ZLIB_COMPRESS_UBER_COMPRESSION);
 
-    WriteBinaryToC( dest, _SymName, compressedData, compressedSize, _EncodeBase85 );
+    WriteBinaryToC(dest, _SymName, compressedData, compressedSize, _EncodeBase85);
 
-    GHeapMemory.Free( compressedData );
-    GHeapMemory.Free( decompressedData );
+    GHeapMemory.Free(compressedData);
+    GHeapMemory.Free(decompressedData);
 
     return true;
 }
 
-void WriteBinaryToC( IBinaryStream & Stream, const char * _SymName, const void * pData, size_t SizeInBytes, bool bEncodeBase85 )
+void WriteBinaryToC(IBinaryStream& Stream, const char* _SymName, const void* pData, size_t SizeInBytes, bool bEncodeBase85)
 {
-    const byte * bytes = (const byte *)pData;
+    const byte* bytes = (const byte*)pData;
 
-    if ( bEncodeBase85 ) {
-        Stream.Printf( "static const char %s_Data_Base85[%d+1] =\n    \"", _SymName, (int)((SizeInBytes+3)/4)*5 );
+    if (bEncodeBase85)
+    {
+        Stream.Printf("static const char %s_Data_Base85[%d+1] =\n    \"", _SymName, (int)((SizeInBytes + 3) / 4) * 5);
         char prev_c = 0;
-        for ( size_t i = 0; i < SizeInBytes; i += 4 ) {
-            uint32_t d = *(uint32_t *)(bytes + i);
-            for ( int j = 0; j < 5; j++, d /= 85 ) {
-                unsigned int x = ( d % 85 ) + 35;
-                char c = ( x >= '\\' ) ? x + 1 : x;
-                Stream.Printf( ( c == '?' && prev_c == '?' ) ? "\\%c" : "%c", c );
+        for (size_t i = 0; i < SizeInBytes; i += 4)
+        {
+            uint32_t d = *(uint32_t*)(bytes + i);
+            for (int j = 0; j < 5; j++, d /= 85)
+            {
+                unsigned int x = (d % 85) + 35;
+                char         c = (x >= '\\') ? x + 1 : x;
+                Stream.Printf((c == '?' && prev_c == '?') ? "\\%c" : "%c", c);
                 prev_c = c;
             }
-            if ( (i % 112) == 112-4 )
-                Stream.Printf( "\"\n    \"" );
+            if ((i % 112) == 112 - 4)
+                Stream.Printf("\"\n    \"");
         }
-        Stream.Printf( "\";\n\n" );
+        Stream.Printf("\";\n\n");
     }
-    else {
-        Stream.Printf( "static const size_t %s_Size = %d;\n", _SymName, (int)SizeInBytes );
-        Stream.Printf( "static const uint64_t %s_Data[%d] =\n{", _SymName, Align( SizeInBytes, 8 ) );
+    else
+    {
+        Stream.Printf("static const size_t %s_Size = %d;\n", _SymName, (int)SizeInBytes);
+        Stream.Printf("static const uint64_t %s_Data[%d] =\n{", _SymName, Align(SizeInBytes, 8));
         int column = 0;
-        for ( size_t i = 0; i < SizeInBytes; i += 8 ) {
-            uint64_t d = *(uint64_t *)(bytes + i);
-            if ( (column++ % 6) == 0 ) {
-                Stream.Printf( "\n    0x%08x%08x", Math::INT64_HIGH_INT( d ), Math::INT64_LOW_INT( d ) );
-            } else {
-                Stream.Printf( "0x%08x%08x", Math::INT64_HIGH_INT( d ), Math::INT64_LOW_INT( d ) );
+        for (size_t i = 0; i < SizeInBytes; i += 8)
+        {
+            uint64_t d = *(uint64_t*)(bytes + i);
+            if ((column++ % 6) == 0)
+            {
+                Stream.Printf("\n    0x%08x%08x", Math::INT64_HIGH_INT(d), Math::INT64_LOW_INT(d));
             }
-            if ( i + 8 < SizeInBytes ) {
-                Stream.Printf( ", " );
+            else
+            {
+                Stream.Printf("0x%08x%08x", Math::INT64_HIGH_INT(d), Math::INT64_LOW_INT(d));
+            }
+            if (i + 8 < SizeInBytes)
+            {
+                Stream.Printf(", ");
             }
         }
-        Stream.Printf( "\n};\n\n" );
+        Stream.Printf("\n};\n\n");
     }
 }
 
-}
+} // namespace Core

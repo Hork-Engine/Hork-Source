@@ -152,7 +152,7 @@ AModule::AModule() {
     //AHUD * hud = World->SpawnActor< AMyHUD >();
 
     RenderingParams = CreateInstanceOf< ARenderingParameters >();
-    RenderingParams->BackgroundColor = AColor4::Black();
+    RenderingParams->BackgroundColor = Color4::Black();
     RenderingParams->bClearBackground = true;
     RenderingParams->bWireframe = false;
     RenderingParams->bDrawDebug = true;

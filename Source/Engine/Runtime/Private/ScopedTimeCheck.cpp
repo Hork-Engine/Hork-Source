@@ -30,4 +30,4 @@ SOFTWARE.
 
 #include <Runtime/Public/ScopedTimeCheck.h>
 
-ARuntimeVariable rt_ScopedTimeCheck( _CTS( "rt_ScopedTimeCheck" ), _CTS( "0" ) );
+ARuntimeVariable rt_ScopedTimeCheck(_CTS("rt_ScopedTimeCheck"), _CTS("0"));

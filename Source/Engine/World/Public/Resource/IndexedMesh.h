@@ -37,6 +37,8 @@ SOFTWARE.
 #include "CollisionBody.h"
 #include "Skeleton.h"
 
+#include <Geometry/Public/Transform.h>
+
 class AIndexedMesh;
 class ALevel;
 struct SVertexHandle;

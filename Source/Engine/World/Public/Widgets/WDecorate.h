@@ -69,7 +69,7 @@ class WTextDecorate : public WDecorate {
 public:
     WTextDecorate & SetText( const char * _Text );
     WTextDecorate & SetFont( AFont * _Font );
-    WTextDecorate & SetColor( AColor4 const & _Color );
+    WTextDecorate & SetColor( Color4 const & _Color );
     WTextDecorate & SetHorizontalAlignment( EWidgetAlignment _Alignment );
     WTextDecorate & SetVerticalAlignment( EWidgetAlignment _Alignment );
     WTextDecorate & SetWordWrap( bool _WordWrap );
@@ -86,7 +86,7 @@ protected:
 private:
     TRef< AFont > Font;
     AString Text;
-    AColor4 Color;
+    Color4 Color;
     Float2 Offset;
     bool bWordWrap;
     EWidgetAlignment HorizontalAlignment;
@@ -97,9 +97,9 @@ class WBorderDecorate : public WDecorate {
     AN_CLASS( WBorderDecorate, WDecorate )
 
 public:
-    WBorderDecorate & SetColor( AColor4 const & _Color );
+    WBorderDecorate & SetColor( Color4 const & _Color );
     WBorderDecorate & SetFillBackground( bool _FillBackgrond );
-    WBorderDecorate & SetBackgroundColor( AColor4 const & _Color );
+    WBorderDecorate & SetBackgroundColor( Color4 const & _Color );
     WBorderDecorate & SetThickness( float _Thickness );
     WBorderDecorate & SetRounding( float _Rounding );
     WBorderDecorate & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
@@ -111,8 +111,8 @@ protected:
     void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
-    AColor4 Color;
-    AColor4 BgColor;
+    Color4 Color;
+    Color4 BgColor;
     EDrawCornerFlags RoundingCorners;
     float Rounding;
     float Thickness;
@@ -123,7 +123,7 @@ class WImageDecorate : public WDecorate {
     AN_CLASS( WImageDecorate, WDecorate )
 
 public:
-    WImageDecorate & SetColor( AColor4 const & _Color );
+    WImageDecorate & SetColor( Color4 const & _Color );
     WImageDecorate & SetRounding( float _Rounding );
     WImageDecorate & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
     WImageDecorate & SetTexture( ATexture * _Texture );
@@ -143,7 +143,7 @@ protected:
     void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
-    AColor4 Color;
+    Color4 Color;
     float Rounding;
     EDrawCornerFlags RoundingCorners;
     TRef< ATexture > Texture;

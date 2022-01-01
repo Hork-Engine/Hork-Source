@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include <World/Public/MaterialGraph/MaterialGraph.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 enum EMaterialStage
 {

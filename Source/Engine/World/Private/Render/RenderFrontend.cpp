@@ -134,11 +134,11 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     //int64_t t = GRuntime->SysMilliseconds();
 
     for ( SRenderView * view = FrameData.RenderViews ; view < &FrameData.RenderViews[FrameData.NumViews] ; view++ ) {
-        StdSort( FrameData.Instances.Begin() + view->FirstInstance,
+        std::sort( FrameData.Instances.Begin() + view->FirstInstance,
                  FrameData.Instances.Begin() + ( view->FirstInstance + view->InstanceCount ),
                  InstanceSortFunction );
 
-        StdSort( FrameData.TranslucentInstances.Begin() + view->FirstTranslucentInstance,
+        std::sort( FrameData.TranslucentInstances.Begin() + view->FirstTranslucentInstance,
                  FrameData.TranslucentInstances.Begin() + (view->FirstTranslucentInstance + view->TranslucentInstanceCount),
                  InstanceSortFunction );
     }
@@ -216,7 +216,7 @@ void ARenderFrontend::RenderView( int _Index ) {
     view->ViewProjectionP = view->ProjectionMatrixP * view->ViewMatrixP;
     view->ViewSpaceToWorldSpace = view->ViewMatrix.Inversed(); // TODO: Check with ViewInverseFast
     view->ClipSpaceToWorldSpace = view->ViewSpaceToWorldSpace * view->InverseProjectionMatrix;
-    view->BackgroundColor = RP->BackgroundColor.GetRGB();
+    view->BackgroundColor = Float3(RP->BackgroundColor.R, RP->BackgroundColor.G, RP->BackgroundColor.B);
     view->bClearBackground = RP->bClearBackground;
     view->bWireframe = RP->bWireframe;
     if ( RP->bVignetteEnabled ) {
@@ -668,7 +668,7 @@ void ARenderFrontend::QueryShadowCasters( AWorld * InWorld, Float4x4 const & Lig
     }
 
     DebugDraw.SetDepthTest( false );
-    DebugDraw.SetColor(AColor4(1,1,0,1));
+    DebugDraw.SetColor(Color4(1,1,0,1));
     DebugDraw.DrawLine( clipBox, 8 );
 #else
     Float3 vectorTR;
@@ -713,14 +713,14 @@ void ARenderFrontend::QueryShadowCasters( AWorld * InWorld, Float4x4 const & Lig
 
     DebugDraw.SetDepthTest( true );
 
-    DebugDraw.SetColor( AColor4( 0, 1, 1, 1 ) );
+    DebugDraw.SetColor( Color4( 0, 1, 1, 1 ) );
     DebugDraw.DrawLine( origin, v[0] );
     DebugDraw.DrawLine( origin, v[3] );
     DebugDraw.DrawLine( origin, v[1] );
     DebugDraw.DrawLine( origin, v[2] );
     DebugDraw.DrawLine( v, 4, true );
 
-    DebugDraw.SetColor( AColor4( 1, 1, 1, 0.3f ) );
+    DebugDraw.SetColor( Color4( 1, 1, 1, 0.3f ) );
     DebugDraw.DrawTriangles( &faces[0][0], 4, sizeof( Float3 ), false );
     DebugDraw.DrawConvexPoly( v, 4, false );
 #endif
@@ -793,7 +793,7 @@ void ARenderFrontend::AddRenderInstances( AWorld * InWorld )
             }
         } SortFunction;
 
-        StdSort( VisSurfaces.ToPtr(), VisSurfaces.ToPtr() + VisSurfaces.Size(), SortFunction );
+        std::sort( VisSurfaces.ToPtr(), VisSurfaces.ToPtr() + VisSurfaces.Size(), SortFunction );
 
         AddSurfaces( VisSurfaces.ToPtr(), VisSurfaces.Size() );
     }
@@ -821,7 +821,7 @@ void ARenderFrontend::AddRenderInstances( AWorld * InWorld )
         view->NumCascadedShadowMaps += instance->NumCascades > 0 ? 1 : 0;  // Just statistics
 
         instance->ColorAndAmbientIntensity = dirlight->GetEffectiveColor();
-        instance->Matrix = dirlight->GetWorldRotation().ToMatrix();
+        instance->Matrix = dirlight->GetWorldRotation().ToMatrix3x3();
         instance->MaxShadowCascades = dirlight->GetMaxShadowCascades();
         instance->RenderMask = ~0;//dirlight->RenderingGroup;
         instance->ShadowmapIndex = -1;
@@ -943,7 +943,7 @@ void ARenderFrontend::AddTerrain( ATerrainComponent * InComponent ) {
 
     // Terrain world rotation
     Float3x3 rotation;
-    rotation = InComponent->GetWorldRotation().ToMatrix();
+    rotation = InComponent->GetWorldRotation().ToMatrix3x3();
 
     // Terrain inversed transform
     Float3x4 const & terrainWorldTransformInv = InComponent->GetTerrainWorldTransformInversed();
@@ -952,7 +952,7 @@ void ARenderFrontend::AddTerrain( ATerrainComponent * InComponent ) {
     Float3 localViewPosition = terrainWorldTransformInv * view->ViewPosition;
 
     // Camera rotation in terrain space
-    Float3x3 localRotation = rotation.Transposed() * view->ViewRotation.ToMatrix();
+    Float3x3 localRotation = rotation.Transposed() * view->ViewRotation.ToMatrix3x3();
 
     Float3x3 basis = localRotation.Transposed();
     Float3 origin = basis * (-localViewPosition);
@@ -1017,7 +1017,7 @@ void ARenderFrontend::AddStaticMesh( AMeshComponent * InComponent ) {
     Float4x4 instanceMatrix = RenderDef.View->ViewProjection * componentWorldTransform;
     Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * InComponent->RenderTransformMatrix;
 
-    Float3x3 worldRotation = InComponent->GetWorldRotation().ToMatrix();
+    Float3x3 worldRotation = InComponent->GetWorldRotation().ToMatrix3x3();
 
     InComponent->RenderTransformMatrix = componentWorldTransform;
 
@@ -1121,7 +1121,7 @@ void ARenderFrontend::AddSkinnedMesh( ASkinnedComponent * InComponent ) {
     Float4x4 instanceMatrix = RenderDef.View->ViewProjection * componentWorldTransform;
     Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * InComponent->RenderTransformMatrix;
 
-    Float3x3 worldRotation = InComponent->GetWorldRotation().ToMatrix();
+    Float3x3 worldRotation = InComponent->GetWorldRotation().ToMatrix3x3();
 
     InComponent->RenderTransformMatrix = componentWorldTransform;
 
@@ -1257,7 +1257,7 @@ void ARenderFrontend::AddProceduralMesh( AProceduralMeshComponent * InComponent 
     instance->SkeletonSize = 0;
     instance->Matrix = instanceMatrix;
     instance->MatrixP = instanceMatrixP;
-    instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix();
+    instance->ModelNormalToViewSpace = RenderDef.View->NormalToViewMatrix * InComponent->GetWorldRotation().ToMatrix3x3();
 
     uint8_t priority = material->GetRenderingPriority();
     if ( InComponent->GetMotionBehavior() != MB_STATIC ) {
@@ -1602,7 +1602,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances( AWorld * InWorld ) {
             RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
         }
 
-        StdSort( FrameData.ShadowInstances.Begin() + shadowMap->FirstShadowInstance,
+        std::sort( FrameData.ShadowInstances.Begin() + shadowMap->FirstShadowInstance,
                  FrameData.ShadowInstances.Begin() + (shadowMap->FirstShadowInstance + shadowMap->ShadowInstanceCount),
                  ShadowInstanceSortFunction );
 
@@ -1809,10 +1809,10 @@ void ARenderFrontend::AddShadowmapSurfaces( SLightShadowmap * ShadowMap, SSurfac
 
 #if 0
         DebugDraw.SetDepthTest( false );
-        DebugDraw.SetColor( AColor4( 1, 1, 0, 1 ) );
+        DebugDraw.SetColor( Color4( 1, 1, 0, 1 ) );
         DebugDraw.DrawTriangleSoupWireframe( &srcVerts->Position, sizeof( SMeshVertex ),
                                              srcIndices, surfDef->NumIndices );
-        //DebugDraw.SetColor( AColor4( 0, 1, 0, 1 ) );
+        //DebugDraw.SetColor( Color4( 0, 1, 0, 1 ) );
         //DebugDraw.DrawAABB( surfDef->Bounds );
 #endif
 
@@ -2007,7 +2007,7 @@ void ARenderFrontend::AddLightShadowmap( AAnalyticLightComponent * Light, float 
 
 #if 0
                 DebugDraw.SetDepthTest( false );
-                DebugDraw.SetColor( AColor4( 0, 1, 0, 1 ) );
+                DebugDraw.SetColor( Color4( 0, 1, 0, 1 ) );
                 DebugDraw.DrawAABB( drawable->GetWorldBounds() );
 #endif
 
@@ -2022,14 +2022,14 @@ void ARenderFrontend::AddLightShadowmap( AAnalyticLightComponent * Light, float 
                 }
             } SortFunction;
 
-            StdSort( VisSurfaces.ToPtr(), VisSurfaces.ToPtr() + VisSurfaces.Size(), SortFunction );
+            std::sort( VisSurfaces.ToPtr(), VisSurfaces.ToPtr() + VisSurfaces.Size(), SortFunction );
 
             AddShadowmapSurfaces( shadowMap, VisSurfaces.ToPtr(), VisSurfaces.Size() );
 
             totalSurfaces += VisSurfaces.Size();
         }
 
-        StdSort( FrameData.ShadowInstances.Begin() + shadowMap->FirstShadowInstance,
+        std::sort( FrameData.ShadowInstances.Begin() + shadowMap->FirstShadowInstance,
                  FrameData.ShadowInstances.Begin() + (shadowMap->FirstShadowInstance + shadowMap->ShadowInstanceCount),
                  ShadowInstanceSortFunction );
 

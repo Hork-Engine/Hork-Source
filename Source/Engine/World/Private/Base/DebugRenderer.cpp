@@ -90,7 +90,7 @@ void ADebugRenderer::SetColor( uint32_t _Color ) {
     CurrentColor = _Color;
 }
 
-void ADebugRenderer::SetColor( AColor4 const & _Color ) {
+void ADebugRenderer::SetColor( Color4 const & _Color ) {
     CurrentColor = _Color.GetDWord();
 }
 
@@ -332,7 +332,7 @@ void ADebugRenderer::DrawTriangleSoup( Float3 const * _Points, int _NumPoints, i
 
             //#define VISUALIE_VERTICES
 #ifdef VISUALIE_VERTICES
-            verts->Color = AColor4( Float4(i%255,i%255,i%255,255)/255.0f ).GetDWord();
+            verts->Color = Color4( Float4(i%255,i%255,i%255,255)/255.0f ).GetDWord();
 #endif
 
             pPoints += _Stride;
@@ -375,7 +375,7 @@ void ADebugRenderer::DrawTriangleSoup( Float3 const * _Points, int _NumPoints, i
 
             //#define VISUALIE_VERTICES
 #ifdef VISUALIE_VERTICES
-            verts->Color = AColor4( Float4( i%255, i%255, i%255, 255 )/255.0f ).GetDWord();
+            verts->Color = Color4( Float4( i%255, i%255, i%255, 255 )/255.0f ).GetDWord();
 #endif
 
             pPoints += _Stride;
@@ -772,20 +772,20 @@ void ADebugRenderer::DrawAxis( Float3x4 const & _TransformMatrix, bool _Normaliz
         ZVec.NormalizeSelf();
     }
 
-    SetColor( AColor4( 1,0,0,1 ) );
+    SetColor( Color4( 1,0,0,1 ) );
     DrawLine( Origin, Origin + XVec );
-    SetColor( AColor4( 0,1,0,1 ) );
+    SetColor( Color4( 0,1,0,1 ) );
     DrawLine( Origin, Origin + YVec );
-    SetColor( AColor4( 0,0,1,1 ) );
+    SetColor( Color4( 0,0,1,1 ) );
     DrawLine( Origin, Origin + ZVec );
 }
 
 void ADebugRenderer::DrawAxis( Float3 const & _Origin, Float3 const & _XVec, Float3 const & _YVec, Float3 const & _ZVec, Float3 const & _Scale ) {
-    SetColor( AColor4( 1,0,0,1 ) );
+    SetColor( Color4( 1,0,0,1 ) );
     DrawLine( _Origin, _Origin + _XVec * _Scale.X );
-    SetColor( AColor4( 0,1,0,1 ) );
+    SetColor( Color4( 0,1,0,1 ) );
     DrawLine( _Origin, _Origin + _YVec * _Scale.Y );
-    SetColor( AColor4( 0,0,1,1 ) );
+    SetColor( Color4( 0,0,1,1 ) );
     DrawLine( _Origin, _Origin + _ZVec * _Scale.Z );
 }
 

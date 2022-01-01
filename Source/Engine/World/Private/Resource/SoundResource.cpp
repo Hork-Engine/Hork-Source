@@ -31,8 +31,8 @@ SOFTWARE.
 #include <World/Public/Resource/SoundResource.h>
 #include <World/Public/AudioSystem.h>
 
-#include <Core/Public/Memory.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Memory/Memory.h>
+#include <Platform/Public/Logger.h>
 
 #include <Audio/Public/AudioDevice.h>
 #include <Audio/Public/AudioDecoder.h>

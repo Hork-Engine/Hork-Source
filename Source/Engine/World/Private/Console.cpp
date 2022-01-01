@@ -36,7 +36,7 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/InputDefs.h>
 
-#include <Core/Public/Core.h>
+#include <Platform/Public/Platform.h>
 #include <Core/Public/Utf8.h>
 #include <Core/Public/Color.h>
 
@@ -554,7 +554,7 @@ void AConsole::MouseWheelEvent( SMouseWheelEvent const & _Event )
 
 void AConsole::DrawCmdLine( ACanvas * _Canvas, int x, int y )
 {
-    AColor4 const & charColor = AColor4::White();
+    Color4 const & charColor = Color4::White();
 
     //AFont * font = _Canvas->GetCurrentFont();
 
@@ -625,16 +625,16 @@ void AConsole::Draw( ACanvas * _Canvas, float _TimeStep )
     const float halfVidHeight = ( _Canvas->GetHeight() >> 1 ) * ConHeight;
     const int numVisLines = Math::Ceil( ( halfVidHeight - cmdLineH ) / fontVStride );
 
-    const AColor4 c1(0,0,0,1.0f);
-    const AColor4 c2(0,0,0,0.0f);
-    const AColor4 charColor(1,1,1,1);
+    const Color4 c1(0,0,0,1.0f);
+    const Color4 c2(0,0,0,0.0f);
+    const Color4 charColor(1,1,1,1);
 
     if ( bFullscreen ) {
-        _Canvas->DrawRectFilled( Float2( 0, 0 ), Float2( _Canvas->GetWidth(), _Canvas->GetHeight() ), AColor4::Black() );
+        _Canvas->DrawRectFilled( Float2( 0, 0 ), Float2( _Canvas->GetWidth(), _Canvas->GetHeight() ), Color4::Black() );
     } else {
         _Canvas->DrawRectFilledMultiColor( Float2( 0, 0 ), Float2( _Canvas->GetWidth(), halfVidHeight ), c1, c2, c2, c1 );
     }
-    _Canvas->DrawLine( Float2( 0, halfVidHeight ), Float2( _Canvas->GetWidth(), halfVidHeight ), AColor4::White(), 2.0f );
+    _Canvas->DrawLine( Float2( 0, halfVidHeight ), Float2( _Canvas->GetWidth(), halfVidHeight ), Color4::White(), 2.0f );
 
     int x = Padding;
     int y = halfVidHeight - fontVStride;

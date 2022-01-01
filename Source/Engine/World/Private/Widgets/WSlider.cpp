@@ -45,9 +45,9 @@ WSlider::WSlider() {
     SliderWidth = 12;
     bVerticalOrientation = false;
     bUpdateGeometry = true;
-    BackgroundColor = AColor4(0.4f, 0.4f, 0.4f, 1.0f);
-    SliderColor = AColor4::White();
-    LineColor = AColor4::White();
+    BackgroundColor = Color4(0.4f, 0.4f, 0.4f, 1.0f);
+    SliderColor = Color4::White();
+    LineColor = Color4::White();
 }
 
 WSlider::~WSlider() {
@@ -114,17 +114,17 @@ WSlider & WSlider::SetVerticalOrientation( bool _VerticalOrientation ) {
     return *this;
 }
 
-WSlider & WSlider::SetBackgroundColor( AColor4 const & _Color ) {
+WSlider & WSlider::SetBackgroundColor( Color4 const & _Color ) {
     BackgroundColor = _Color;
     return *this;
 }
 
-WSlider & WSlider::SetSliderColor( AColor4 const & _Color ) {
+WSlider & WSlider::SetSliderColor( Color4 const & _Color ) {
     SliderColor = _Color;
     return *this;
 }
 
-WSlider & WSlider::SetLineColor( AColor4 const & _Color ) {
+WSlider & WSlider::SetLineColor( Color4 const & _Color ) {
     LineColor = _Color;
     return *this;
 }
@@ -266,7 +266,7 @@ void WSlider::OnDrawEvent( ACanvas & _Canvas ) {
 
     // Draw slider background
     if ( geometry.BgMaxs.X > geometry.BgMins.X && geometry.BgMaxs.Y > geometry.BgMins.Y ) {
-        //_Canvas.DrawRectFilled( geometry.BgMins, geometry.BgMaxs, AColor4(0.4f,0.4f,0.4f) );
+        //_Canvas.DrawRectFilled( geometry.BgMins, geometry.BgMaxs, Color4(0.4f,0.4f,0.4f) );
 
         Float2 h = bVerticalOrientation ? Float2( ( geometry.BgMaxs.X - geometry.BgMins.X ) * 0.5f, 0.0f )
                                         : Float2( 0.0f, ( geometry.BgMaxs.Y - geometry.BgMins.Y ) * 0.5f );

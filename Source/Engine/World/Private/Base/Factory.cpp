@@ -29,9 +29,9 @@ SOFTWARE.
 */
 
 #include <World/Public/Base/Factory.h>
-#include <Core/Public/Memory.h>
+#include <Platform/Public/Memory/Memory.h>
 #include <Core/Public/HashFunc.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 AN_CLASS_META( ADummy )
 

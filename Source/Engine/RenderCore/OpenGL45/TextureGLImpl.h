@@ -31,8 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "TextureViewGLImpl.h"
-#include <Core/Public/Std.h>
-#include <unordered_set>
+#include <Containers/Public/StdHash.h>
 
 namespace RenderCore {
 
@@ -63,9 +62,9 @@ public:
 private:
     void CreateDefaultViews();
 
-    TStdUnorderedMap<STextureViewDesc, TRef<ATextureViewGLImpl>> Views;
+    TStdHashMap<STextureViewDesc, TRef<ATextureViewGLImpl>> Views;
 
-    TStdUnorderedSet<uint64_t> BindlessSamplers;
+    TStdHashSet<uint64_t> BindlessSamplers;
 
     // Dummy texture is used for default color and depth buffers
     bool bDummyTexture{};

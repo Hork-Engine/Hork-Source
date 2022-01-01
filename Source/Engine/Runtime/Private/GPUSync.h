@@ -42,14 +42,14 @@ Sync GPU and CPU. Used to reduce input lag.
 class AGPUSync : public ARefCounted
 {
 public:
-    AGPUSync( RenderCore::IImmediateContext * pImmediateContext );
+    AGPUSync(RenderCore::IImmediateContext* pImmediateContext);
     ~AGPUSync();
 
     void SetEvent();
     void Wait();
 
 private:
-    RenderCore::IImmediateContext *  pImmediateContext;
-    TRef< RenderCore::ITexture > Texture;
-    TRef< RenderCore::ITexture > Staging;
+    RenderCore::IImmediateContext* pImmediateContext;
+    TRef<RenderCore::ITexture>     Texture;
+    TRef<RenderCore::ITexture>     Staging;
 };

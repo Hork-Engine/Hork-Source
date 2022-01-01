@@ -31,8 +31,9 @@ SOFTWARE.
 #include "VirtualTextureTools.h"
 #include "QuadTree.h"
 
-#include <Core/Public/Logger.h>
-#include <Core/Public/WindowsDefs.h>
+#include <Platform/Public/Logger.h>
+#include <Platform/Public/WindowsDefs.h>
+#include <Geometry/Public/VectorMath.h>
 
 #define PAGE_EXTENSION ".page"
 

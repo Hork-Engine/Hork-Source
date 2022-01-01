@@ -794,9 +794,9 @@ void ALightVoxelizer::DrawVoxels( ADebugRenderer * InRenderer )
     }
 
     if ( bUseSSE )
-        InRenderer->SetColor( AColor4( 0, 0, 1 ) );
+        InRenderer->SetColor( Color4( 0, 0, 1 ) );
     else
-        InRenderer->SetColor( AColor4( 1, 0, 0 ) );
+        InRenderer->SetColor( Color4( 1, 0, 0 ) );
 
     int n = 0;
     for ( Float3 * lineP = DebugLinePoints.data() ; n < DebugLinePoints.size() ; lineP += 8, n += 8 )

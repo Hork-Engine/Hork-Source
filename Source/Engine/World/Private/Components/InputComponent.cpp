@@ -31,10 +31,10 @@ SOFTWARE.
 #include <World/Public/Components/InputComponent.h>
 #include <World/Public/World.h>
 #include <Runtime/Public/Runtime.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
+#include <Platform/Public/Platform.h>
 #include <Core/Public/HashFunc.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
-#include <Core/Public/Core.h>
 
 ARuntimeVariable in_MouseSensitivity( _CTS( "in_MouseSensitivity" ), _CTS( "6.8" ) );
 ARuntimeVariable in_MouseSensX( _CTS( "in_MouseSensX" ), _CTS( "0.022" ) );

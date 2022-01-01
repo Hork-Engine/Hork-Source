@@ -29,55 +29,68 @@ SOFTWARE.
 */
 
 #include <Runtime/Public/RuntimeCommandProcessor.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
-ARuntimeCommandProcessor::ARuntimeCommandProcessor() {
+ARuntimeCommandProcessor::ARuntimeCommandProcessor()
+{
     ClearBuffer();
 }
 
-void ARuntimeCommandProcessor::ClearBuffer() {
+void ARuntimeCommandProcessor::ClearBuffer()
+{
     Cmdbuf.Clear();
     CmdbufPos = 0;
     ArgsCount = 0;
 }
 
-void ARuntimeCommandProcessor::Add( const char * _Text ) {
+void ARuntimeCommandProcessor::Add(const char* _Text)
+{
     Cmdbuf += _Text;
 }
 
-void ARuntimeCommandProcessor::Insert( const char * _Text ) {
-    Cmdbuf.Insert( _Text, CmdbufPos );
+void ARuntimeCommandProcessor::Insert(const char* _Text)
+{
+    Cmdbuf.Insert(_Text, CmdbufPos);
 }
 
-void ARuntimeCommandProcessor::Execute( IRuntimeCommandContext & _Ctx ) {
-    if ( Cmdbuf.IsEmpty() ) {
+void ARuntimeCommandProcessor::Execute(IRuntimeCommandContext& _Ctx)
+{
+    if (Cmdbuf.IsEmpty())
+    {
         return;
     }
 
     ArgsCount = 0;
 
-    AN_ASSERT( CmdbufPos == 0 );
+    AN_ASSERT(CmdbufPos == 0);
 
-    while ( CmdbufPos < Cmdbuf.Length() ) {
+    while (CmdbufPos < Cmdbuf.Length())
+    {
         // "//" comments
-        if ( Cmdbuf[ CmdbufPos ] == '/' && Cmdbuf[ CmdbufPos+1 ] == '/' ) {
+        if (Cmdbuf[CmdbufPos] == '/' && Cmdbuf[CmdbufPos + 1] == '/')
+        {
             CmdbufPos += 2; // skip "//"
-            while ( Cmdbuf[ CmdbufPos ] != '\n' && CmdbufPos < Cmdbuf.Length() ) {
+            while (Cmdbuf[CmdbufPos] != '\n' && CmdbufPos < Cmdbuf.Length())
+            {
                 CmdbufPos++;
             }
             continue;
         }
 
         // "/* */" comments
-        if ( Cmdbuf[ CmdbufPos ] == '/' && Cmdbuf[ CmdbufPos+1 ] == '*' ) {
+        if (Cmdbuf[CmdbufPos] == '/' && Cmdbuf[CmdbufPos + 1] == '*')
+        {
             CmdbufPos += 2; // skip "/*"
-            for ( ;; ) {
-                if ( CmdbufPos >= Cmdbuf.Length() ) {
-                    GLogger.Printf( "ARuntimeCommandProcessor::Execute: expected '*/'\n" );
+            for (;;)
+            {
+                if (CmdbufPos >= Cmdbuf.Length())
+                {
+                    GLogger.Printf("ARuntimeCommandProcessor::Execute: expected '*/'\n");
                     break;
                 }
 
-                if ( Cmdbuf[ CmdbufPos ] == '*' && Cmdbuf[ CmdbufPos+1 ] == '/' ) {
+                if (Cmdbuf[CmdbufPos] == '*' && Cmdbuf[CmdbufPos + 1] == '/')
+                {
                     CmdbufPos += 2; // skip "*/"
                     break;
                 }
@@ -87,28 +100,34 @@ void ARuntimeCommandProcessor::Execute( IRuntimeCommandContext & _Ctx ) {
             continue;
         }
 
-        if ( Cmdbuf[ CmdbufPos ] == '\n' || Cmdbuf[ CmdbufPos ] == ';' ) {
+        if (Cmdbuf[CmdbufPos] == '\n' || Cmdbuf[CmdbufPos] == ';')
+        {
             CmdbufPos++;
-            if ( ArgsCount > 0 ) {
-                _Ctx.ExecuteCommand( *this );
+            if (ArgsCount > 0)
+            {
+                _Ctx.ExecuteCommand(*this);
                 ArgsCount = 0;
             }
             continue;
         }
 
         // skip whitespaces
-        if ( ( Cmdbuf[ CmdbufPos ] < 32 && Cmdbuf[ CmdbufPos ] > 0 ) || Cmdbuf[ CmdbufPos ] == ' ' || Cmdbuf[ CmdbufPos ] == '\t' ) {
+        if ((Cmdbuf[CmdbufPos] < 32 && Cmdbuf[CmdbufPos] > 0) || Cmdbuf[CmdbufPos] == ' ' || Cmdbuf[CmdbufPos] == '\t')
+        {
             CmdbufPos++;
             continue;
         }
 
-        if ( ArgsCount < MAX_ARGS ) {
+        if (ArgsCount < MAX_ARGS)
+        {
             bool bQuoted = false;
 
-            if ( Cmdbuf[ CmdbufPos ] == '\"' ) { /* quoted token */
+            if (Cmdbuf[CmdbufPos] == '\"')
+            { /* quoted token */
                 bQuoted = true;
                 CmdbufPos++;
-                if ( Cmdbuf[ CmdbufPos ] == '\"' ) {
+                if (Cmdbuf[CmdbufPos] == '\"')
+                {
                     // empty token
                     bQuoted = false;
                     CmdbufPos++;
@@ -116,51 +135,57 @@ void ARuntimeCommandProcessor::Execute( IRuntimeCommandContext & _Ctx ) {
                 }
             }
 
-            if ( CmdbufPos >= Cmdbuf.Length() ) {
-                if ( bQuoted ) {
-                    GLogger.Printf( "ARuntimeCommandProcessor::Execute: no closed quote\n" );
+            if (CmdbufPos >= Cmdbuf.Length())
+            {
+                if (bQuoted)
+                {
+                    GLogger.Printf("ARuntimeCommandProcessor::Execute: no closed quote\n");
                 }
                 continue;
             }
 
             int c = 0;
-            for ( ;; ) {
-                if ( ( Cmdbuf[ CmdbufPos ] < 32 && Cmdbuf[ CmdbufPos ] > 0 )
-                     || Cmdbuf[ CmdbufPos ] == '\"' || CmdbufPos >= Cmdbuf.Length() || c >= (MAX_ARG_LEN-1) )
+            for (;;)
+            {
+                if ((Cmdbuf[CmdbufPos] < 32 && Cmdbuf[CmdbufPos] > 0) || Cmdbuf[CmdbufPos] == '\"' || CmdbufPos >= Cmdbuf.Length() || c >= (MAX_ARG_LEN - 1))
                 {
-                    if ( bQuoted ) {
-                        GLogger.Printf( "ARuntimeCommandProcessor::Execute: no closed quote\n" );
+                    if (bQuoted)
+                    {
+                        GLogger.Printf("ARuntimeCommandProcessor::Execute: no closed quote\n");
                     }
                     break;
                 }
 
-                if ( !bQuoted ) {
-                    if ( (Cmdbuf[ CmdbufPos ] == '/' && Cmdbuf[ CmdbufPos+1 ] == '/' )
-                         || (Cmdbuf[ CmdbufPos ] == '/' && Cmdbuf[ CmdbufPos+1 ] == '*' )
-                         || Cmdbuf[ CmdbufPos ] == ' ' || Cmdbuf[ CmdbufPos ] == '\t' || Cmdbuf[ CmdbufPos ] == ';' )
+                if (!bQuoted)
+                {
+                    if ((Cmdbuf[CmdbufPos] == '/' && Cmdbuf[CmdbufPos + 1] == '/') || (Cmdbuf[CmdbufPos] == '/' && Cmdbuf[CmdbufPos + 1] == '*') || Cmdbuf[CmdbufPos] == ' ' || Cmdbuf[CmdbufPos] == '\t' || Cmdbuf[CmdbufPos] == ';')
                     {
                         break;
                     }
                 }
 
-                Args[ ArgsCount ][ c++ ] = Cmdbuf[ CmdbufPos++ ];
+                Args[ArgsCount][c++] = Cmdbuf[CmdbufPos++];
 
-                if ( bQuoted && Cmdbuf[ CmdbufPos ] == '\"' ) {
+                if (bQuoted && Cmdbuf[CmdbufPos] == '\"')
+                {
                     bQuoted = false;
                     CmdbufPos++;
                     break;
                 }
             }
-            Args[ ArgsCount ][ c ] = 0;
+            Args[ArgsCount][c] = 0;
             ArgsCount++;
-        } else {
-            GLogger.Printf( "ARuntimeCommandProcessor::Execute: MAX_ARGS hit\n" );
+        }
+        else
+        {
+            GLogger.Printf("ARuntimeCommandProcessor::Execute: MAX_ARGS hit\n");
             CmdbufPos++;
         }
     }
 
-    if ( ArgsCount > 0 ) {
-        _Ctx.ExecuteCommand( *this );
+    if (ArgsCount > 0)
+    {
+        _Ctx.ExecuteCommand(*this);
         ArgsCount = 0;
     }
 
@@ -169,19 +194,23 @@ void ARuntimeCommandProcessor::Execute( IRuntimeCommandContext & _Ctx ) {
     Cmdbuf.Clear();
 }
 
-bool ARuntimeCommandProcessor::IsValidCommandName( const char * _Name ) {
-    if ( !_Name || !*_Name ) {
+bool ARuntimeCommandProcessor::IsValidCommandName(const char* _Name)
+{
+    if (!_Name || !*_Name)
+    {
         return false;
     }
 
-    while ( *_Name ) {
+    while (*_Name)
+    {
         const char c = *_Name++;
 
         const bool bLiteral = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
         const bool bNumeric = (c >= '0' && c <= '9');
-        const bool bMisc = (c == '_');
+        const bool bMisc    = (c == '_');
 
-        if ( !bLiteral && !bNumeric && !bMisc ) {
+        if (!bLiteral && !bNumeric && !bMisc)
+        {
             return false;
         }
     }

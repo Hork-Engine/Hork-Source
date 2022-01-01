@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Timer.h>
 #include <World/Public/World.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 enum ETimerState
 {

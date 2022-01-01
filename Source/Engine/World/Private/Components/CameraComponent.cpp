@@ -301,7 +301,7 @@ BvFrustum const & ACameraComponent::GetFrustum() const {
 
 Float4x4 const & ACameraComponent::GetViewMatrix() const {
     if ( bViewMatrixDirty ) {
-        BillboardMatrix = GetWorldRotation().ToMatrix();
+        BillboardMatrix = GetWorldRotation().ToMatrix3x3();
 
         Float3x3 basis = BillboardMatrix.Transposed();
         Float3 origin = basis * (-GetWorldPosition());
@@ -370,14 +370,14 @@ void ACameraComponent::DrawDebug( ADebugRenderer * InRenderer ) {
 
         InRenderer->SetDepthTest( true );
 
-        InRenderer->SetColor( AColor4( 0, 1, 1, 1 ) );
+        InRenderer->SetColor( Color4( 0, 1, 1, 1 ) );
         InRenderer->DrawLine( origin, v[0] );
         InRenderer->DrawLine( origin, v[3] );
         InRenderer->DrawLine( origin, v[1] );
         InRenderer->DrawLine( origin, v[2] );
         InRenderer->DrawLine( v, 4, true );
 
-        InRenderer->SetColor( AColor4( 1, 1, 1, 0.3f ) );
+        InRenderer->SetColor( Color4( 1, 1, 1, 0.3f ) );
         InRenderer->DrawTriangles( &faces[0][0], 4, sizeof( Float3 ), false );
         InRenderer->DrawConvexPoly( v, 4, false );
     }

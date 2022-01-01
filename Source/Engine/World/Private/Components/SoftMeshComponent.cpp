@@ -389,12 +389,18 @@ void ASoftMeshComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     // Draw faces
     if ( com_DrawSoftmeshFaces ) {
         InRenderer->SetDepthTest( true );
-        InRenderer->SetColor( AColor4( 1, 0, 0, 1 ) );
+        InRenderer->SetColor( Color4( 1, 0, 0, 1 ) );
         for ( int i = 0; i < SoftBody->m_faces.size(); i++ ) {
 
             btSoftBody::Face & f = SoftBody->m_faces[ i ];
 
-            InRenderer->SetColor( Float4( btVectorToFloat3( f.m_normal ) * 0.5f + 0.5f, 1.0f ) );
+            Color4 color;
+            color[0] = f.m_normal[0] * 0.5f + 0.5f;
+            color[1] = f.m_normal[1] * 0.5f + 0.5f;
+            color[2] = f.m_normal[2] * 0.5f + 0.5f;
+            color[3] = 1.0f;
+
+            InRenderer->SetColor( color );
 
             InRenderer->DrawTriangle(
                 btVectorToFloat3( f.m_n[ 0 ]->m_x ),

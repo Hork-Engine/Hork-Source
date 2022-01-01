@@ -31,6 +31,7 @@ SOFTWARE.
 #include <World/Public/Widgets/WDesktop.h>
 #include <Runtime/Public/InputDefs.h>
 #include <Runtime/Public/Runtime.h>
+#include <Geometry/Public/BV/BvIntersect.h>
 
 #define DOUBLECLICKTIME_MSEC        250
 #define DOUBLECLICKHALFSIZE         4.0f
@@ -93,7 +94,7 @@ WDesktop & WDesktop::SetSize( float _Width, float _Height ) {
 
 WDesktop & WDesktop::SetSize( Float2 const & _Size ) {
     Float2 sz = Root->GetSize();
-    if ( sz.Compare( _Size ) ) {
+    if ( sz == _Size ) {
         return *this;
     }
     Root->SetSize( _Size );
@@ -751,7 +752,7 @@ void WDesktop::GenerateDrawEvents( ACanvas & _Canvas ) {
         child->Draw_r( _Canvas, mins, maxs );
     }
 
-    //_Canvas.DrawCircleFilled( CursorPosition, 5.0f, AColor4(1,0,0) );
+    //_Canvas.DrawCircleFilled( CursorPosition, 5.0f, Color4(1,0,0) );
 
     _Canvas.PopClipRect();
 }
@@ -761,12 +762,12 @@ void WDesktop::MarkTransformDirty() {
 }
 
 void WDesktop::OnDrawBackground( ACanvas & _Canvas ) {
-    _Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), AColor4(0.03f,0.03f,0.03f,1.0f) );
-    //_Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), AColor4::Black() );
+    _Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), Color4(0.03f,0.03f,0.03f,1.0f) );
+    //_Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), Color4::Black() );
 }
 
 void WDesktop::DrawCursor( ACanvas & _Canvas ) {
-    _Canvas.DrawCursor( Cursor, CursorPosition, AColor4::White(), AColor4( 0, 0, 0, 1 ), AColor4( 0, 0, 0, 0.3f ) );
+    _Canvas.DrawCursor( Cursor, CursorPosition, Color4::White(), Color4( 0, 0, 0, 1 ), Color4( 0, 0, 0, 0.3f ) );
 }
 
 void WDesktop::SetShortcuts( AShortcutContainer * _ShortcutContainer ) {

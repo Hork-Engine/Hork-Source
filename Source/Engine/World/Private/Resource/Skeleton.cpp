@@ -32,7 +32,7 @@ SOFTWARE.
 #include <World/Public/Resource/IndexedMesh.h>
 #include <World/Public/Resource/Asset.h>
 
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 AN_CLASS_META( ASkeleton )
 

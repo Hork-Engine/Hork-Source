@@ -30,7 +30,7 @@ SOFTWARE.
 
 
 #include <World/Public/Base/CommandContext.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 ACommandContext::ACommandContext() {
 
@@ -175,7 +175,7 @@ void ACommandContext::Print( const char * _Str, int _StrLen ) {
             }
         } CmdSortFunction;
 
-        StdSort( cmds.Begin(), cmds.End(), CmdSortFunction );
+        std::sort( cmds.Begin(), cmds.End(), CmdSortFunction );
 
         for ( ARuntimeVariable * var = ARuntimeVariable::GlobalVariableList() ; var ; var = var->GetNext() ) {
             if ( !Core::StricmpN( var->GetName(), _Str, _StrLen ) ) {
@@ -189,7 +189,7 @@ void ACommandContext::Print( const char * _Str, int _StrLen ) {
             }
         } VarSortFunction;
 
-        StdSort( vars.Begin(), vars.End(), VarSortFunction );
+        std::sort( vars.Begin(), vars.End(), VarSortFunction );
 
         GLogger.Printf( "Total commands found: %d\n"
                         "Total variables found: %d\n", cmds.Size(), vars.Size() );

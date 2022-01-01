@@ -35,7 +35,7 @@ SOFTWARE.
 #include "FGRenderTargetCache.h"
 
 #include <Core/Public/String.h>
-#include <Core/Public/PodStack.h>
+#include <Containers/Public/PodStack.h>
 
 #include <RenderCore/Device.h>
 
@@ -75,14 +75,14 @@ public:
     template <typename TTask>
     TTask& AddTask(const char* Name)
     {
-        RenderTasks.emplace_back(StdMakeUnique<TTask>(this, Name));
+        RenderTasks.emplace_back(std::make_unique<TTask>(this, Name));
         return *static_cast<TTask*>(RenderTasks.back().get());
     }
 
     template <typename T>
     T* AddExternalResource(const char* Name, typename T::ResourceType* Resource)
     {
-        ExternalResources.emplace_back(StdMakeUnique<T>(GenerateResourceId(), Name, Resource));
+        ExternalResources.emplace_back(std::make_unique<T>(GenerateResourceId(), Name, Resource));
         return static_cast<T*>(ExternalResources.back().get());
     }
 
@@ -131,7 +131,7 @@ private:
     {
         Resources.Clear();
 
-        for (StdUniquePtr<FGRenderTaskBase>& task : RenderTasks)
+        for (std::unique_ptr<FGRenderTaskBase>& task : RenderTasks)
         {
             for (auto& resourcePtr : task->GetProducedResources())
             {
@@ -150,8 +150,8 @@ private:
     TRef<IDevice>             pDevice;
     TRef<FGRenderTargetCache> pRenderTargetCache;
 
-    TStdVector<StdUniquePtr<FGRenderTaskBase>>    RenderTasks;
-    TStdVector<StdUniquePtr<FGResourceProxyBase>> ExternalResources;
+    TStdVector<std::unique_ptr<FGRenderTaskBase>>    RenderTasks;
+    TStdVector<std::unique_ptr<FGResourceProxyBase>> ExternalResources;
     TPodVector<FGResourceProxyBase*>              Resources; // all resources
     TPodVector<FGResourceProxyBase*>              CapturedResources;
 

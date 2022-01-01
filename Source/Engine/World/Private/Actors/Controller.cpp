@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include <World/Public/Actors/Controller.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 AN_CLASS_META( AController )
 

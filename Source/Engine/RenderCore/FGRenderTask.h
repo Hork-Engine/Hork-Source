@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "FGResource.h"
+#include <Containers/Public/StdVector.h>
 
 namespace RenderCore
 {
@@ -60,7 +61,7 @@ public:
 
     const char* GetName() const { return Name; }
 
-    TStdVector<StdUniquePtr<FGResourceProxyBase>> const& GetProducedResources() const
+    TStdVector<std::unique_ptr<FGResourceProxyBase>> const& GetProducedResources() const
     {
         return ProducedResources;
     }
@@ -96,7 +97,7 @@ protected:
 
     AFrameGraph*                                  pFrameGraph;
     const char*                                   Name;
-    TStdVector<StdUniquePtr<FGResourceProxyBase>> ProducedResources;
+    TStdVector<std::unique_ptr<FGResourceProxyBase>> ProducedResources;
     TPodVector<FGResourceProxyBase*>              ReadResources;
     TPodVector<FGResourceProxyBase*>              WriteResources;
     TPodVector<FGResourceProxyBase*>              ReadWriteResources;
@@ -121,7 +122,7 @@ public:
     {
         static_assert(std::is_same<typename TResourceProxy::ResourceDesc, TResourceDesc>::value, "Invalid TResourceDesc");
 
-        ProducedResources.emplace_back(StdMakeUnique<TResourceProxy>(FG_GenerateResourceId(pFrameGraph), Name, this, ResourceDesc));
+        ProducedResources.emplace_back(std::make_unique<TResourceProxy>(FG_GenerateResourceId(pFrameGraph), Name, this, ResourceDesc));
 
         if (ppResource)
         {

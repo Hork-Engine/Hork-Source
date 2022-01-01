@@ -58,9 +58,9 @@ public:
     WSlider & SetStep( float _Step );
     WSlider & SetSliderWidth( float _Width );
     WSlider & SetVerticalOrientation( bool _VerticalOrientation );
-    WSlider & SetBackgroundColor( AColor4 const & _Color );
-    WSlider & SetSliderColor( AColor4 const & _Color );
-    WSlider & SetLineColor( AColor4 const & _Color );
+    WSlider & SetBackgroundColor( Color4 const & _Color );
+    WSlider & SetSliderColor( Color4 const & _Color );
+    WSlider & SetLineColor( Color4 const & _Color );
 
     float GetValue() const { return Value; }
     float GetMinValue() const { return MinValue; }
@@ -91,9 +91,9 @@ private:
 
     enum EScrollAction { A_NONE, A_DECREASE, A_INCREASE, A_MOVE };
 
-    AColor4 BackgroundColor;
-    AColor4 SliderColor;
-    AColor4 LineColor;
+    Color4 BackgroundColor;
+    Color4 SliderColor;
+    Color4 LineColor;
 
     int Action;
     float DragCursor;

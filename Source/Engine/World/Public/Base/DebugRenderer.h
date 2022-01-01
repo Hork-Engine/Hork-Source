@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include <Renderer/RenderDefs.h>
 
-#include <Core/Public/BV/BvAxisAlignedBox.h>
-#include <Core/Public/BV/BvOrientedBox.h>
+#include <Geometry/Public/BV/BvAxisAlignedBox.h>
+#include <Geometry/Public/BV/BvOrientedBox.h>
 
 using AArrayOfDebugVertices = TPodVectorHeap< SDebugVertex, 1024, 1024 >;
 using AArrayOfDebugIndices = TPodVectorHeap< unsigned short, 1024, 1024 >;
@@ -61,7 +61,7 @@ public:
 
     void SetColor( uint32_t _Color );
 
-    void SetColor( AColor4 const & _Color );
+    void SetColor( Color4 const & _Color );
 
     void SetAlpha( float _Alpha );
 

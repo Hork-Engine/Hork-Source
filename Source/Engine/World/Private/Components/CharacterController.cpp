@@ -85,7 +85,7 @@ void ACharacterController::DrawDebug( ADebugRenderer * InRenderer )
     Super::DrawDebug( InRenderer );
 
     if ( bTouchGround ) {
-        InRenderer->SetColor( AColor4(1,0,0,1) );
+        InRenderer->SetColor( Color4(1,0,0,1) );
         InRenderer->DrawLine( GroundPoint, GroundPoint + GroundNormal );
     }
 }
@@ -242,7 +242,7 @@ float ACharacterController::CalcMoveSpeed() const
         return 0;
     }
 
-    float moveLength = StdSqrt( MoveForward * MoveForward + MoveSide * MoveSide + MoveUp * MoveUp );
+    float moveLength = std::sqrt( MoveForward * MoveForward + MoveSide * MoveSide + MoveUp * MoveUp );
 
     return maxSpeed / moveLength;
 }

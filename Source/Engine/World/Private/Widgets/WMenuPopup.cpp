@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Widgets/WMenuPopup.h>
 #include <World/Public/Widgets/WScroll.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 AN_CLASS_META( WMenuPopup )
 
@@ -55,11 +55,11 @@ WMenuPopup::WMenuPopup() {
         .SetButtonWidth( 12 )
         .SetShowButtons( false )
         .SetSliderRounding( 4 )
-        .SetBackgroundColor( AColor4( 0, 0, 0, 0 ) )
-        .SetButtonColor( AColor4( 0.03f, 0.03f, 0.03f, 1.0f ) )
-        .SetSliderBackgroundColor( AColor4( 0 ) )
+        .SetBackgroundColor( Color4( 0, 0, 0, 0 ) )
+        .SetButtonColor( Color4( 0.03f, 0.03f, 0.03f, 1.0f ) )
+        .SetSliderBackgroundColor( Color4( 0 ) )
         //.SetSliderColor( SliderColor )
-        .SetSliderColor( AColor4( 0.03f, 0.03f, 0.03f, 1.0f ) )
+        .SetSliderColor( Color4( 0.03f, 0.03f, 0.03f, 1.0f ) )
         .SetAutoScrollH( true )
         .SetAutoScrollV( true )
         //.SetAutoWidth( true )

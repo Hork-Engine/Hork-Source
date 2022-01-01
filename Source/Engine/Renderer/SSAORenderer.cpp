@@ -138,7 +138,7 @@ ASSAORenderer::ASSAORenderer()
         hbaoRandom[i].Y = s;
         hbaoRandom[i].Z = r2;
 
-        StdSwap(hbaoRandom[i].X, hbaoRandom[i].Z); // Swap to BGR
+        std::swap(hbaoRandom[i].X, hbaoRandom[i].Z); // Swap to BGR
     }
 
     //for ( int i = 0; i < HBAO_RANDOM_ELEMENTS; i++ ) {

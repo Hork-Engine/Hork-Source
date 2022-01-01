@@ -30,9 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/BaseTypes.h>
-#include <Core/Public/PodVector.h>
-#include <Core/Public/Plane.h>
+#include <Platform/Public/BaseTypes.h>
 
 class AWorld;
 class ADrawable;

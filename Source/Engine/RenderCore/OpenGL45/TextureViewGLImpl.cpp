@@ -32,7 +32,7 @@ SOFTWARE.
 #include "LUT.h"
 #include "GL/glew.h"
 
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 namespace RenderCore
 {

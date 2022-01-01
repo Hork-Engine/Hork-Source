@@ -1,5 +1,5 @@
 #include "RectangleBinPack.h"
-#include <Core/Public/CoreMath.h>
+#include <Core/Public/BaseMath.h>
 
 #include <limits>
 #include <memory.h>

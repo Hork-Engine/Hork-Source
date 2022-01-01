@@ -45,7 +45,7 @@ public:
 
     void Draw( ACanvas * _Canvas, int _X, int _Y, int _W, int _H );
 
-    void DrawText( AFont * _Font, int x, int y, AColor4 const & color, const char * _Text );
+    void DrawText( AFont * _Font, int x, int y, Color4 const & color, const char * _Text );
 
     int GetViewportX() const { return ViewportX; }
     int GetViewportY() const { return ViewportY; }

@@ -28,8 +28,8 @@ SOFTWARE.
 
 */
 
-#include <Core/Public/CString.h>
-#include <Core/Public/Memory.h>
+#include <Platform/Public/Memory/Memory.h>
+#include <Platform/Public/String.h>
 
 static AN_FORCEINLINE unsigned int Decode85Byte(const char c)
 {

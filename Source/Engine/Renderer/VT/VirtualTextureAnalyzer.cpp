@@ -149,12 +149,13 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
 
         pTexture->ReadPage( physAddress, transfer->Layers );
 
-        //int32_t pagePayLoad = GRuntime->SysMilliseconds() - time;
+        //int32_t pagePayLoad = Core::SysMilliseconds() - time;
 
         //GLogger.Printf( "pagePayLoad %d msec\n", pagePayLoad );
 
-        //GRuntime->WaitSeconds( 1 );
-        //GRuntime->WaitMilliseconds(500);
+        // Wait for test
+        //AThread::WaitSeconds( 1 );
+        //AThread::WaitMilliseconds(500);
 
         pTexture->pCache->MakePageTransferVisible( transfer );
     }

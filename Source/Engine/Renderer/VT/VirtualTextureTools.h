@@ -31,9 +31,6 @@ SOFTWARE.
 #pragma once
 
 #include "VT.h"
-
-#include <Core/Public/CoreMath.h>
-#include <Core/Public/BitMask.h>
 #include "RectangleBinPack.h"
 
 #include <unordered_map>

@@ -32,7 +32,7 @@ SOFTWARE.
 #include <World/Public/Components/MeshComponent.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/RuntimeVariable.h>
 
@@ -186,10 +186,12 @@ Float4 const & ADirectionalLightComponent::GetEffectiveColor() const {
 
         float energy = IlluminanceInLux * EnergyUnitScale * GetAnimationBrightness();
 
-        AColor4 temperatureColor;
+        Color4 temperatureColor;
         temperatureColor.SetTemperature( GetTemperature() );
 
-        *(Float3 *)&EffectiveColor = GetColor() * temperatureColor.GetRGB() * energy;
+        EffectiveColor[0] = Color[0] * temperatureColor[0] * energy;
+        EffectiveColor[1] = Color[1] * temperatureColor[1] * energy;
+        EffectiveColor[2] = Color[2] * temperatureColor[2] * energy;
 
         bEffectiveColorDirty = false;
     }
@@ -202,7 +204,7 @@ void ADirectionalLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
     if ( com_DrawDirectionalLights ) {
         Float3 pos = GetWorldPosition();
         InRenderer->SetDepthTest( false );
-        InRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );
+        InRenderer->SetColor( Color4( 1, 1, 1, 1 ) );
         InRenderer->DrawLine( pos, pos + GetWorldDirection() * 10.0f );
     }
 }
@@ -287,7 +289,7 @@ void ADirectionalLightComponent::AddShadowmapCascades( SRenderView * View, size_
 
     BvSphere cascadeSphere;
 
-    Float3x3 basis = GetWorldRotation().ToMatrix().Transposed();
+    Float3x3 basis = GetWorldRotation().ToMatrix3x3().Transposed();
     lightViewMatrix[0] = Float4( basis[0], 0.0f );
     lightViewMatrix[1] = Float4( basis[1], 0.0f );
     lightViewMatrix[2] = Float4( basis[2], 0.0f );

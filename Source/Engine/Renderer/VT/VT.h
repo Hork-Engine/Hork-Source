@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Core/Public/IO.h>
-#include <Core/Public/BitMask.h>
+#include <Containers/Public/BitMask.h>
 
 constexpr short     VT_FILE_VERSION                 = 5;
 constexpr uint32_t  VT_FILE_ID                      = 'V' | ( 'T' << 8 ) | ( VT_FILE_VERSION << 16 );

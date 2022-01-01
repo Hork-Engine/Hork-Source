@@ -36,7 +36,7 @@ SOFTWARE.
 
 #include <Audio/Public/AudioChannel.h>
 
-#include <Core/Public/PodQueue.h>
+#include <Containers/Public/PodQueue.h>
 
 class ASoundGroup : public ABaseObject
 {

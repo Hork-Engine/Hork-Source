@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/VectorMath.h>
+#include <Geometry/Public/VectorMath.h>
 
 class AMaterialInstance;
 

@@ -39,7 +39,7 @@ SOFTWARE.
 
 #include "FGRenderPass.h"
 
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 struct SDL_Window;
 

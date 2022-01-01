@@ -42,8 +42,8 @@ SOFTWARE.
 
 #include <Runtime/Public/Runtime.h>
 
-#include <Core/Public/Logger.h>
-#include <Core/Public/Core.h>
+#include <Platform/Public/Logger.h>
+#include <Platform/Public/Platform.h>
 
 #include <Bullet3Common/b3Logging.h>
 #include <Bullet3Common/b3AlignedAllocator.h>
@@ -330,21 +330,21 @@ void AEngineInstance::ShowStats()
         pos.Y = Canvas.GetHeight() - numLines * y_step;
 
         Canvas.PushFont( font );
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ), nullptr, true ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ), nullptr, true ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime->GetFrameMemoryUsedPrev()/1024.0f, GRuntime->GetFrameMemorySize()>>20, GRuntime->GetMaxFrameMemoryUsage()/1024.0f ), nullptr, true ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frame memory usage (GPU): %f KB / %d MB (Max %f KB)", streamedMemory->GetUsedMemoryPrev()/1024.0f, streamedMemory->GetAllocatedMemory()>>20, streamedMemory->GetMaxMemoryUsage()/1024.0f ), nullptr, true ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Vertex cache memory usage (GPU): %f KB / %d MB", vertexMemory->GetUsedMemory()/1024.0f, vertexMemory->GetAllocatedMemory()>>20 ), nullptr, true ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, Color4::White(), Core::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage()/1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes() ), nullptr, true ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, Color4::White(), Core::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage()/1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes() ), nullptr, true ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, Color4::White(), Core::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", GRuntime->GetFrameMemoryUsedPrev()/1024.0f, GRuntime->GetFrameMemorySize()>>20, GRuntime->GetMaxFrameMemoryUsage()/1024.0f ), nullptr, true ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, Color4::White(), Core::Fmt("Frame memory usage (GPU): %f KB / %d MB (Max %f KB)", streamedMemory->GetUsedMemoryPrev()/1024.0f, streamedMemory->GetAllocatedMemory()>>20, streamedMemory->GetMaxMemoryUsage()/1024.0f ), nullptr, true ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, Color4::White(), Core::Fmt("Vertex cache memory usage (GPU): %f KB / %d MB", vertexMemory->GetUsedMemory()/1024.0f, vertexMemory->GetAllocatedMemory()>>20 ), nullptr, true ); pos.Y += y_step;
         if ( GHeapMemory.GetTotalMemoryUsage() > 0 ) {
-            Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f ), nullptr, true ); pos.Y += y_step;
+            Canvas.DrawTextUTF8( pos, Color4::White(), Core::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage()-TotalMemorySizeInBytes)/1024.0f ), nullptr, true ); pos.Y += y_step;
         }
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Visible instances: %d", frameData->Instances.Size() ), nullptr, true ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Visible shadow instances: %d", frameData->ShadowInstances.Size() ), nullptr, true ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Visible dir lights: %d", frameData->DirectionalLights.Size() ), nullptr, true ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Polycount: %d", stat.PolyCount ), nullptr, true ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount ), nullptr, true ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Frontend time: %d msec", stat.FrontendTime ), nullptr, true ); pos.Y += y_step;
-        Canvas.DrawTextUTF8( pos, AColor4::White(), Core::Fmt("Audio channels: %d active, %d virtual", GAudioSystem.GetMixer()->GetNumActiveChannels(), GAudioSystem.GetMixer()->GetNumVirtualChannels() ), nullptr, true ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, Color4::White(), Core::Fmt("Visible instances: %d", frameData->Instances.Size() ), nullptr, true ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, Color4::White(), Core::Fmt("Visible shadow instances: %d", frameData->ShadowInstances.Size() ), nullptr, true ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, Color4::White(), Core::Fmt("Visible dir lights: %d", frameData->DirectionalLights.Size() ), nullptr, true ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, Color4::White(), Core::Fmt("Polycount: %d", stat.PolyCount ), nullptr, true ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, Color4::White(), Core::Fmt("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount ), nullptr, true ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, Color4::White(), Core::Fmt("Frontend time: %d msec", stat.FrontendTime ), nullptr, true ); pos.Y += y_step;
+        Canvas.DrawTextUTF8( pos, Color4::White(), Core::Fmt("Audio channels: %d active, %d virtual", GAudioSystem.GetMixer()->GetNumActiveChannels(), GAudioSystem.GetMixer()->GetNumVirtualChannels() ), nullptr, true ); pos.Y += y_step;
         Canvas.PopFont();
     }
 
@@ -360,7 +360,7 @@ void AEngineInstance::ShowStats()
         fps *= (1.0f/FPS_BUF);
         fps = 1.0f / (fps > 0.0f ? fps : 1.0f);
         Canvas.PushFont( font );
-        Canvas.DrawTextUTF8( Float2( 10, 10 ), AColor4::White(), Core::Fmt( "Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int( 1.0f / FrameDurationInSeconds ), int( fps+0.5f ) ), nullptr, true );
+        Canvas.DrawTextUTF8( Float2( 10, 10 ), Color4::White(), Core::Fmt( "Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds*1000.0f, int( 1.0f / FrameDurationInSeconds ), int( fps+0.5f ) ), nullptr, true );
         Canvas.PopFont();
     }
 }

@@ -40,9 +40,9 @@ SOFTWARE.
 #include "TransformFeedback.h"
 #include "SwapChain.h"
 
-#include <Core/Public/Hash.h>
-#include <Core/Public/PodVector.h>
 #include <Core/Public/Ref.h>
+#include <Containers/Public/Hash.h>
+#include <Containers/Public/Array.h>
 
 namespace RenderCore
 {

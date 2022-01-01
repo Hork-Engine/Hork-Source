@@ -30,8 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/CoreMath.h>
-#include <Core/Public/PodVector.h>
+#include <Geometry/Public/VectorMath.h>
+#include <Geometry/Public/Complex.h>
+#include <Containers/Public/PodVector.h>
 
 constexpr int HRTF_BLOCK_LENGTH = 128; // Keep it to a power of two
 

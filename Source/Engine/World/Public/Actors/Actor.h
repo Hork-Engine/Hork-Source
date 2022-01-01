@@ -33,6 +33,7 @@ SOFTWARE.
 #include <World/Public/Level.h>
 #include <World/Public/CollisionEvents.h>
 #include <Core/Public/Guid.h>
+#include <Geometry/Public/Transform.h>
 
 class AWorld;
 class APawn;
@@ -56,8 +57,8 @@ struct SActorDamage
     AActor * DamageCauser;
 };
 
-#define LIFESPAN_ALIVE      (0)
-#define LIFESPAN_DEAD       (-1)
+constexpr float LIFESPAN_ALIVE = 0;
+constexpr float LIFESPAN_DEAD  = -1;
 
 
 /**
@@ -158,6 +159,8 @@ public:
     /** Actor spawned for editing */
     bool IsInEditor() const { return bInEditor; }
 
+    class asILockableSharedBool* ScriptGetWeakRefFlag();
+
 protected:
 
     bool bCanEverTick = false;
@@ -180,21 +183,20 @@ protected:
 
     /** Tick based on variable time step. Dependend on current frame rate.
     One tick per frame. It is good place to update things like animation. */
-    virtual void Tick( float _TimeStep ) {}
+    virtual void Tick( float _TimeStep );
 
     /** Tick based on fixed time step. Use it to update logic and physics.
     There may be one or several ticks per frame. Called before physics simulation. */
-    virtual void TickPrePhysics( float _TimeStep ) {}
+    virtual void TickPrePhysics( float _TimeStep );
 
     /** Tick based on fixed time step. Use it to update logic based on physics simulation.
     There may be one or several ticks per frame. Called after physics simulation. */
-    virtual void TickPostPhysics( float _TimeStep ) {}
+    virtual void TickPostPhysics( float _TimeStep );
 
     /** Draw debug primitives */
     virtual void DrawDebug( ADebugRenderer * InRenderer );
 
 private:
-
     void Initialize( STransform const & _SpawnTransform );
 
     void InitializeComponents();
@@ -228,6 +230,9 @@ private:
     //TWeakRef< AActor > Attach; // TODO: Attach actor to another actor
 
     APawn * Instigator = nullptr;
+
+    class asIScriptObject*       pScriptInstance = nullptr;
+    class asILockableSharedBool* pWeakRefFlag    = nullptr;
 
     float LifeTime = 0.0f;
 

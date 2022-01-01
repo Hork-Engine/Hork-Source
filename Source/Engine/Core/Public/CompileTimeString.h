@@ -30,30 +30,38 @@ SOFTWARE.
 
 #pragma once
 
-template< char... Chars >
-struct TCompileTimeString {
+template <char... Chars>
+struct TCompileTimeString
+{
     static constexpr const char Data[sizeof...(Chars)] = {Chars...};
 
-    operator const char *() const { return Data; }
+    operator const char*() const { return Data; }
 
-    const char * CStr() const { return Data; }
+    const char* CStr() const { return Data; }
 
     constexpr int Length() const { return sizeof...(Chars) - 1; }
 };
 
-template< char... Chars >
+template <char... Chars>
 constexpr const char TCompileTimeString<Chars...>::Data[sizeof...(Chars)];
 
-template< typename Str, unsigned int N, char... Chars >
-struct TMakeCompileTimeString : TMakeCompileTimeString< Str, N-1, Str().chars[N-1],Chars...> {};
+template <typename Str, unsigned int N, char... Chars>
+struct TMakeCompileTimeString : TMakeCompileTimeString<Str, N - 1, Str().chars[N - 1], Chars...>
+{};
 
-template< typename Str, char... Chars >
-struct TMakeCompileTimeString< Str, 0, Chars...> { typedef TCompileTimeString<Chars...> type; };
+template <typename Str, char... Chars>
+struct TMakeCompileTimeString<Str, 0, Chars...>
+{
+    typedef TCompileTimeString<Chars...> type;
+};
 
-#define MakeCompileTimeString( s ) []{ \
-    struct Str { const char * chars = s; }; \
-    return TMakeCompileTimeString< Str, sizeof( s ) >::type(); \
-    }()
+#define MakeCompileTimeString(s) [] {                      \
+    struct Str                                             \
+    {                                                      \
+        const char* chars = s;                             \
+    };                                                     \
+    return TMakeCompileTimeString<Str, sizeof(s)>::type(); \
+}()
 
 
 #define _CTS MakeCompileTimeString

@@ -33,6 +33,7 @@ SOFTWARE.
 #include "WorldPhysics.h"
 #include "AINavigationMesh.h"
 #include "Level.h"
+#include "ScriptEngine.h"
 #include "Render/RenderWorld.h"
 #include "Render/VSD.h"
 
@@ -58,6 +59,9 @@ struct SActorSpawnInfo
 
     /** Actor spawned for editing */
     bool bInEditor;
+
+    /** Create from script module. EXPERIMENTAL! */
+    AString ScriptModule;
 
     SActorSpawnInfo() = delete;
 
@@ -208,7 +212,7 @@ struct SWorldRaycastResult
         } SortPrimitives( Hits );
 
         // Sort by primitives distance
-        StdSort( Primitives.ToPtr(), Primitives.ToPtr() + Primitives.Size(), SortPrimitives );
+        std::sort( Primitives.ToPtr(), Primitives.ToPtr() + Primitives.Size(), SortPrimitives );
 
         struct ASortHit
         {
@@ -219,7 +223,7 @@ struct SWorldRaycastResult
 
         // Sort by hit distance
         for ( SWorldRaycastPrimitive & primitive : Primitives ) {
-            StdSort( Hits.ToPtr() + primitive.FirstHit, Hits.ToPtr() + (primitive.FirstHit + primitive.NumHits), SortHit );
+            std::sort( Hits.ToPtr() + primitive.FirstHit, Hits.ToPtr() + (primitive.FirstHit + primitive.NumHits), SortHit );
             primitive.ClosestHit = primitive.FirstHit;
         }
     }
@@ -572,6 +576,8 @@ public:
         return NavigationMesh;
     }
 
+    AScriptEngine* GetScriptEngine() { return ScriptEngine.get(); }
+
     void DrawDebug( ADebugRenderer * InRenderer );
 
 protected:
@@ -672,6 +678,8 @@ private:
     AAINavigationMesh NavigationMesh;
     // Visible surface determinition
     AVSD Vsd;
+    // Script
+    std::unique_ptr<AScriptEngine> ScriptEngine;
 };
 
 #include "Actors/Actor.h"

@@ -31,8 +31,8 @@ SOFTWARE.
 #pragma once
 
 #include <World/Public/Base/Resource.h>
-#include <Core/Public/BV/BvAxisAlignedBox.h>
 #include <Core/Public/Guid.h>
+#include <Geometry/Public/BV/BvAxisAlignedBox.h>
 
 /**
 

@@ -380,7 +380,7 @@ static void ReadMesh( SContextGLTF & Ctx, cgltf_mesh * Mesh, Float3x4 const & Gl
         }
     } SortFunction;
 
-    StdSort( &Mesh->primitives[ 0 ], &Mesh->primitives[ Mesh->primitives_count ], SortFunction );
+    std::sort( &Mesh->primitives[ 0 ], &Mesh->primitives[ Mesh->primitives_count ], SortFunction );
 
     cgltf_material * material = nullptr;
     SSubpart * subpart = nullptr;

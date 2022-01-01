@@ -31,7 +31,7 @@ SOFTWARE.
 #include <World/Public/Widgets/WTextEdit.h>
 #include <World/Public/Widgets/WScroll.h>
 #include <World/Public/Widgets/WDesktop.h>
-#include <Core/Public/Core.h>
+#include <Platform/Public/Platform.h>
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/InputDefs.h>
 #include <World/Public/Base/ResourceManager.h>
@@ -296,8 +296,8 @@ WTextEdit::WTextEdit() {
     InsertSpacesOnTab = 4;
     TempCursor = 0;
 
-    SelectionColor = AColor4( 0.32f, 0.32f, 0.4f );
-    TextColor = AColor4( 0.9f, 0.9f, 0.9f );
+    SelectionColor = Color4( 0.32f, 0.32f, 0.4f );
+    TextColor = Color4( 0.9f, 0.9f, 0.9f );
 
     SetSize( 0, 0 );
 }
@@ -402,12 +402,12 @@ WTextEdit & WTextEdit::SetAllowUndo( bool _Enabled ) {
     return *this;
 }
 
-WTextEdit & WTextEdit::SetSelectionColor( AColor4 const & _Color ) {
+WTextEdit & WTextEdit::SetSelectionColor( Color4 const & _Color ) {
     SelectionColor = _Color;
     return *this;
 }
 
-WTextEdit & WTextEdit::SetTextColor( AColor4 const & _Color ) {
+WTextEdit & WTextEdit::SetTextColor( Color4 const & _Color ) {
     TextColor = _Color;
     return *this;
 }
@@ -1128,7 +1128,7 @@ void WTextEdit::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, dou
             Stb->select_end = Stb->cursor;
 
             if ( Stb->select_start > Stb->select_end ) {
-                StdSwap( Stb->select_start, Stb->select_end );
+                std::swap( Stb->select_start, Stb->select_end );
             }
 
         } else {
@@ -1240,7 +1240,7 @@ void WTextEdit::OnDrawEvent( ACanvas & _Canvas ) {
     Float2 mins, maxs;
     GetDesktopRect( mins, maxs, false );
 
-    //_Canvas.DrawRect( mins, maxs, AColor4::White() );
+    //_Canvas.DrawRect( mins, maxs, Color4::White() );
 
     if ( HasSelection() ) {
         int start = GetSelectionStart();

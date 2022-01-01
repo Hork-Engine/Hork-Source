@@ -30,9 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/CoreMath.h>
-#include <Core/Public/PodVector.h>
-
+#include <Containers/Public/PodVector.h>
+#include <Geometry/Public/VectorMath.h>
 #include <RenderCore/FrameGraph.h>
 
 #include "VT.h"

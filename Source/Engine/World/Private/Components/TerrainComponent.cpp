@@ -77,7 +77,7 @@ static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRaySta
     Float3x3 normalMatrix;
     transform.DecomposeNormalMatrix( normalMatrix );
 #else
-    Float3x3 normalMatrix = terrain->GetWorldRotation().ToMatrix();
+    Float3x3 normalMatrix = terrain->GetWorldRotation().ToMatrix3x3();
 #endif
 
     int numHits = Hits.Size() - firstHit;
@@ -142,7 +142,7 @@ static bool RaycastClosestCallback( SPrimitiveDef const * Self,
     TerrainWorldTransform.DecomposeNormalMatrix( normalMatrix );
     Hit.Normal = (normalMatrix * Hit.Normal).Normalized();
 #else
-    Hit.Normal = terrain->GetWorldRotation().ToMatrix() * Hit.Normal;
+    Hit.Normal = terrain->GetWorldRotation().ToMatrix3x3() * Hit.Normal;
     Hit.Normal.NormalizeSelf();
 #endif
 
@@ -275,7 +275,7 @@ void ATerrainComponent::AddTerrainPhysics()
     AN_ASSERT( RigidBody == nullptr );
 
     Float3 worldPosition = TerrainWorldTransform * Float3( 0.0f, (Terrain->GetMinHeight()+Terrain->GetMaxHeight())*0.5f, 0.0f );
-    Float3x3 worldRotation = GetWorldRotation().ToMatrix();
+    Float3x3 worldRotation = GetWorldRotation().ToMatrix3x3();
 
     btRigidBody::btRigidBodyConstructionInfo contructInfo( 0.0f, nullptr, Terrain->GetHeightfieldShape() );
     contructInfo.m_startWorldTransform.setOrigin( btVectorToFloat3( worldPosition ) );
@@ -374,7 +374,7 @@ bool ATerrainComponent::RaycastClosest( Float3 const & InRayStart, Float3 const 
 void ATerrainComponent::UpdateTransform()
 {
     Float3 worldPosition = GetWorldPosition();
-    Float3x3 worldRotation = GetWorldRotation().ToMatrix();
+    Float3x3 worldRotation = GetWorldRotation().ToMatrix3x3();
 
     // Terrain transform without scale
     TerrainWorldTransform.Compose( worldPosition, worldRotation );
@@ -414,7 +414,7 @@ void ATerrainComponent::OnTransformDirty()
     if ( Terrain && RigidBody ) {
         btTransform worldTransform;
         Float3 worldPosition = TerrainWorldTransform * Float3( 0.0f, (Terrain->GetMinHeight()+Terrain->GetMaxHeight())*0.5f, 0.0f );
-        Float3x3 worldRotation = GetWorldRotation().ToMatrix();
+        Float3x3 worldRotation = GetWorldRotation().ToMatrix3x3();
 
         worldTransform.setOrigin( btVectorToFloat3( worldPosition ) );
         worldTransform.setBasis( btMatrixToFloat3x3( worldRotation.Transposed() ) );
@@ -454,7 +454,7 @@ bool ATerrainComponent::GetTerrainTriangle( Float3 const & InPosition, STerrainT
     TerrainWorldTransform.DecomposeNormalMatrix( normalMatrix );
     Triangle.Normal = (normalMatrix * Triangle.Normal).Normalized();
 #else
-    Triangle.Normal = (GetWorldRotation().ToMatrix() * Triangle.Normal).Normalized();
+    Triangle.Normal = (GetWorldRotation().ToMatrix3x3() * Triangle.Normal).Normalized();
 #endif
 
     return true;
@@ -494,7 +494,7 @@ void ATerrainComponent::DrawDebug( ADebugRenderer * InRenderer )
         if ( Primitive.VisPass == InRenderer->GetVisPass() )
         {
             InRenderer->SetDepthTest( false );
-            InRenderer->SetColor( AColor4( 1, 0, 0, 1 ) );
+            InRenderer->SetColor( Color4( 1, 0, 0, 1 ) );
             InRenderer->DrawAABB( Primitive.Box );
         }
     }

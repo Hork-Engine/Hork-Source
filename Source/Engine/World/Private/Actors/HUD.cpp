@@ -52,7 +52,7 @@ void AHUD::DrawHUD() {
 
 }
 
-void AHUD::DrawText( AFont * _Font, int x, int y, AColor4 const & color, const char * _Text ) {
+void AHUD::DrawText( AFont * _Font, int x, int y, Color4 const & color, const char * _Text ) {
     const int CharacterWidth = 8;
     const int CharacterHeight = 16;
 

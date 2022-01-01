@@ -31,8 +31,6 @@ SOFTWARE.
 #include "CubemapGenerator.h"
 #include "RenderLocal.h"
 
-#include <Core/Public/PodVector.h>
-
 using namespace RenderCore;
 
 ACubemapGenerator::ACubemapGenerator()

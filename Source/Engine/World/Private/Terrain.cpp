@@ -59,6 +59,8 @@ Future:
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include "BulletCompatibility/BulletCompatibility.h"
 
+#include <Geometry/Public/BV/BvIntersect.h>
+
 
 static const unsigned short RESET_INDEX = 0xffff;
 
@@ -618,7 +620,7 @@ void ATerrainView::AddBlock( STerrainLodInfo const & Lod, Int2 const & Offset )
     instance.VertexTranslate.X = Offset.X * Lod.GridScale + Lod.Offset.X;
     instance.VertexTranslate.Y = Offset.Y * Lod.GridScale + Lod.Offset.Y;
     instance.TexcoordOffset = GetTexcoordOffset( Lod );
-    instance.QuadColor = AColor4( 0.5f, 0.5f, 0.5f, 1.0f );
+    instance.QuadColor = Color4( 0.5f, 0.5f, 0.5f, 1.0f );
 }
 
 void ATerrainView::AddGapV( STerrainLodInfo const & Lod, Int2 const & Offset )
@@ -629,7 +631,7 @@ void ATerrainView::AddGapV( STerrainLodInfo const & Lod, Int2 const & Offset )
     instance.VertexTranslate.X = Offset.X * Lod.GridScale + Lod.Offset.X;
     instance.VertexTranslate.Y = Offset.Y * Lod.GridScale + Lod.Offset.Y;
     instance.TexcoordOffset = GetTexcoordOffset( Lod );
-    instance.QuadColor = AColor4( 0.2f, 0.7f, 0.2f, 1.0f );
+    instance.QuadColor = Color4( 0.2f, 0.7f, 0.2f, 1.0f );
 }
 
 void ATerrainView::AddGapH( STerrainLodInfo const & Lod, Int2 const & Offset )
@@ -640,7 +642,7 @@ void ATerrainView::AddGapH( STerrainLodInfo const & Lod, Int2 const & Offset )
     instance.VertexTranslate.X = Offset.X * Lod.GridScale + Lod.Offset.X;
     instance.VertexTranslate.Y = Offset.Y * Lod.GridScale + Lod.Offset.Y;
     instance.TexcoordOffset = GetTexcoordOffset( Lod );
-    instance.QuadColor = AColor4( 0.2f, 0.7f, 0.2f, 1.0f );
+    instance.QuadColor = Color4( 0.2f, 0.7f, 0.2f, 1.0f );
 }
 
 void ATerrainView::AddInteriorTopLeft( STerrainLodInfo const & Lod )
@@ -650,7 +652,7 @@ void ATerrainView::AddInteriorTopLeft( STerrainLodInfo const & Lod )
     instance.VertexScale = Int2( Lod.GridScale, Lod.LodIndex );
     instance.VertexTranslate = Lod.Offset;
     instance.TexcoordOffset = GetTexcoordOffset( Lod );
-    instance.QuadColor = AColor4( 0.5f, 0.5f, 1.0f, 1.0f );
+    instance.QuadColor = Color4( 0.5f, 0.5f, 1.0f, 1.0f );
 }
 
 void ATerrainView::AddInteriorTopRight( STerrainLodInfo const & Lod )
@@ -660,7 +662,7 @@ void ATerrainView::AddInteriorTopRight( STerrainLodInfo const & Lod )
     instance.VertexScale = Int2( Lod.GridScale, Lod.LodIndex );
     instance.VertexTranslate = Lod.Offset;
     instance.TexcoordOffset = GetTexcoordOffset( Lod );
-    instance.QuadColor = AColor4( 0.5f, 0.5f, 1.0f, 1.0f );
+    instance.QuadColor = Color4( 0.5f, 0.5f, 1.0f, 1.0f );
 }
 
 void ATerrainView::AddInteriorBottomLeft( STerrainLodInfo const & Lod )
@@ -670,7 +672,7 @@ void ATerrainView::AddInteriorBottomLeft( STerrainLodInfo const & Lod )
     instance.VertexScale = Int2( Lod.GridScale, Lod.LodIndex );
     instance.VertexTranslate = Lod.Offset;
     instance.TexcoordOffset = GetTexcoordOffset( Lod );
-    instance.QuadColor = AColor4( 0.5f, 0.5f, 1.0f, 1.0f );
+    instance.QuadColor = Color4( 0.5f, 0.5f, 1.0f, 1.0f );
 }
 
 void ATerrainView::AddInteriorBottomRight( STerrainLodInfo const & Lod )
@@ -680,7 +682,7 @@ void ATerrainView::AddInteriorBottomRight( STerrainLodInfo const & Lod )
     instance.VertexScale = Int2( Lod.GridScale, Lod.LodIndex );
     instance.VertexTranslate = Lod.Offset;
     instance.TexcoordOffset = GetTexcoordOffset( Lod );
-    instance.QuadColor = AColor4( 0.5f, 0.5f, 1.0f, 1.0f );
+    instance.QuadColor = Color4( 0.5f, 0.5f, 1.0f, 1.0f );
 }
 
 void ATerrainView::AddCrackLines( STerrainLodInfo const & Lod )
@@ -690,7 +692,7 @@ void ATerrainView::AddCrackLines( STerrainLodInfo const & Lod )
     instance.VertexScale = Int2( Lod.GridScale, Lod.LodIndex );
     instance.VertexTranslate = Lod.Offset;
     instance.TexcoordOffset = GetTexcoordOffset( Lod );
-    instance.QuadColor = AColor4( 0, 1, 0, 1.0f );
+    instance.QuadColor = Color4( 0, 1, 0, 1.0f );
 }
 
 void ATerrainView::MakeView( ATerrainMesh * TerrainMesh, Float3 const & ViewPosition, BvFrustum const & ViewFrustum )
@@ -781,7 +783,7 @@ void ATerrainView::AddPatches( ATerrainMesh * TerrainMesh, BvFrustum const & Vie
     instance.VertexTranslate.X = finestLod.Offset.X + trimOffset.X * finestLod.GridScale;
     instance.VertexTranslate.Y = finestLod.Offset.Y + trimOffset.Y * finestLod.GridScale;
     instance.TexcoordOffset = GetTexcoordOffset( finestLod );
-    instance.QuadColor = AColor4( 0.3f, 0.5f, 0.4f, 1.0f );
+    instance.QuadColor = Color4( 0.3f, 0.5f, 0.4f, 1.0f );
     AddPatchInstances( TerrainMesh->GetInteriorFinestPatch(), 1 );
 
     //
@@ -1307,7 +1309,7 @@ void ATerrainView::DrawDebug( ADebugRenderer * InRenderer, ATerrainMesh * Terrai
 
     TerrainRenderer = InRenderer;
 
-    TerrainRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );
+    TerrainRenderer->SetColor( Color4( 1, 1, 1, 1 ) );
     for ( BvAxisAlignedBox & box : BoundingBoxes ) {
         TerrainRenderer->DrawAABB( box );
     }
@@ -1321,7 +1323,7 @@ void ATerrainView::DrawDebug( ADebugRenderer * InRenderer, ATerrainMesh * Terrai
     static int64_t currentDrawCall = 0;
 
     static int64_t prev = 0;
-    int64_t cur = GRuntime->SysMilliseconds();
+    int64_t cur = Core::SysMilliseconds();
     int64_t delta = prev ? cur - prev : 0;
     prev = cur;
 
@@ -1421,9 +1423,9 @@ void ATerrainView::DrawTerrainTriangle( STerrainVertex const & a, STerrainVertex
     float dp = Math::Max( Math::Dot( n, lightVec ), 0.1f );
 
     TerrainRenderer->SetDepthTest( true );
-    TerrainRenderer->SetColor( AColor4( pDrawCallUniformData->QuadColor.X*dp,
-                                        pDrawCallUniformData->QuadColor.Y*dp,
-                                        pDrawCallUniformData->QuadColor.Z*dp,
+    TerrainRenderer->SetColor( Color4( pDrawCallUniformData->QuadColor.R*dp,
+                                        pDrawCallUniformData->QuadColor.G*dp,
+                                        pDrawCallUniformData->QuadColor.B*dp,
                                         1 ) );
     TerrainRenderer->DrawTriangle( v0, v1, v2, false );
 
@@ -1431,7 +1433,7 @@ void ATerrainView::DrawTerrainTriangle( STerrainVertex const & a, STerrainVertex
     v0.Y += 0.01f;
     v1.Y += 0.01f;
     v2.Y += 0.01f;
-    TerrainRenderer->SetColor( AColor4::White() );
+    TerrainRenderer->SetColor( Color4::White() );
     //TerrainRenderer->SetColor( pDrawCallUniformData->QuadColor );
     TerrainRenderer->DrawLine( v0, v1 );
     TerrainRenderer->DrawLine( v1, v2 );

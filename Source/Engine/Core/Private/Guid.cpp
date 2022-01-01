@@ -30,13 +30,13 @@ SOFTWARE.
 
 #include <Core/Public/Guid.h>
 
-#if defined( AN_OS_WIN32 )
-#    include <Core/Public/WindowsDefs.h>
+#if defined(AN_OS_WIN32)
+#    include <Platform/Public/WindowsDefs.h>
 #    include <objbase.h>
 void AGUID::Generate()
 {
     GUID id;
-    CoCreateGuid( &id );
+    CoCreateGuid(&id);
     // clang-format off
     Hi = ( static_cast< uint64_t >( ( id.Data1 >> 24 ) & 0xff ) << 56 )
              | ( static_cast< uint64_t >( ( id.Data1 >> 16 ) & 0xff ) << 48 )
@@ -56,12 +56,12 @@ void AGUID::Generate()
              | ( static_cast< uint64_t >( id.Data4[7] ) << 0 );
     // clang-format on
 }
-#elif defined( AN_OS_LINUX )
+#elif defined(AN_OS_LINUX)
 #    include <uuid/uuid.h>
 void AGUID::Generate()
 {
     uuid_t id;
-    uuid_generate( id );
+    uuid_generate(id);
     // clang-format off
     Hi = ( static_cast< uint64_t >( id[0] ) << 56 )
              | ( static_cast< uint64_t >( id[1] ) << 48 )
@@ -81,12 +81,12 @@ void AGUID::Generate()
              | ( static_cast< uint64_t >( id[15] ) << 0 );
     // clang-format on
 }
-#elif defined( AN_OS_APPLE )
+#elif defined(AN_OS_APPLE)
 void AGUID::Generate()
 {
-    auto id    = CFUUIDCreate( NULL );
-    auto bytes = CFUUIDGetUUIDBytes( id );
-    CFRelease( id );
+    auto id    = CFUUIDCreate(NULL);
+    auto bytes = CFUUIDGetUUIDBytes(id);
+    CFRelease(id);
     // clang-format off
     Hi = ( static_cast< uint64_t >( bytes.byte0 ) << 56 )
              | ( static_cast< uint64_t >( bytes.byte1 ) << 48 )
@@ -110,39 +110,47 @@ void AGUID::Generate()
 #    error "GenerateGUID is not implemented on current platform"
 #endif
 
-AGUID & AGUID::FromString( const char * _String )
+AGUID& AGUID::FromString(const char* _String)
 {
     char ch;
     int  n = 0;
 
     Hi = Lo = 0;
 
-    byte * bytes = GetBytes();
+    byte* bytes = GetBytes();
 
-    for ( const char * s = _String; *s && n < 32; s++ ) {
-        if ( *s == '-' ) {
+    for (const char* s = _String; *s && n < 32; s++)
+    {
+        if (*s == '-')
+        {
             continue;
         }
 
         ch = *s;
 
-        if ( ch >= '0' && ch <= '9' ) {
+        if (ch >= '0' && ch <= '9')
+        {
             ch -= '0';
         }
-        else if ( ch >= 'a' && ch <= 'f' ) {
+        else if (ch >= 'a' && ch <= 'f')
+        {
             ch = ch - 'a' + 10;
         }
-        else if ( ch >= 'A' && ch <= 'F' ) {
+        else if (ch >= 'A' && ch <= 'F')
+        {
             ch = ch - 'A' + 10;
         }
-        else {
+        else
+        {
             ch = 0;
         }
 
-        if ( n & 1 ) {
+        if (n & 1)
+        {
             bytes[n >> 1] |= ch;
         }
-        else {
+        else
+        {
             bytes[n >> 1] |= ch << 4;
         }
 

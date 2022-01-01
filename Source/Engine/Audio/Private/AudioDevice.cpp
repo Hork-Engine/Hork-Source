@@ -31,7 +31,7 @@ SOFTWARE.
 #include <Audio/Public/AudioDevice.h>
 
 #include <Runtime/Public/Runtime.h>
-#include <Core/Public/Core.h>
+#include <Platform/Public/Platform.h>
 
 #include <SDL.h>
 

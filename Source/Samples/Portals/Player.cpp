@@ -179,8 +179,8 @@ void APlayer::DrawDebug( ADebugRenderer * InRenderer ) {
     Super::DrawDebug( InRenderer );
 
     InRenderer->SetDepthTest( false );
-    InRenderer->SetColor( AColor4( 1, 0, 0, 0.5f ) );
+    InRenderer->SetColor( Color4( 1, 0, 0, 0.5f ) );
     InRenderer->DrawTriangles( Triangle, 1, sizeof( Float3 ), true );
-    InRenderer->SetColor( AColor4( 0, 1, 0, 1 ) );
+    InRenderer->SetColor( Color4( 0, 1, 0, 1 ) );
     InRenderer->DrawLine( HitPos, HitPos + HitNormal * 10 );
 }

@@ -84,10 +84,10 @@ public:
     WScroll & SetButtonWidth( float _Width );
     WScroll & SetShowButtons( bool _ShowButtons );
     WScroll & SetSliderRounding( float _Rounding );
-    WScroll & SetBackgroundColor( AColor4 const & _Color );
-    WScroll & SetButtonColor( AColor4 const & _Color );
-    WScroll & SetSliderBackgroundColor( AColor4 const & _Color );
-    WScroll & SetSliderColor( AColor4 const & _Color );
+    WScroll & SetBackgroundColor( Color4 const & _Color );
+    WScroll & SetButtonColor( Color4 const & _Color );
+    WScroll & SetSliderBackgroundColor( Color4 const & _Color );
+    WScroll & SetSliderColor( Color4 const & _Color );
 
     WWidget * GetContentWidget();
 
@@ -138,10 +138,10 @@ private:
 
     enum EScrollAction { A_NONE, A_SCROLL_LEFT, A_SCROLL_RIGHT, A_SCROLL_UP, A_SCROLL_DOWN, A_SCROLL_HSLIDER, A_SCROLL_VSLIDER };
 
-    AColor4 BackgroundColor;
-    AColor4 ButtonColor;
-    AColor4 SliderBackgroundColor;
-    AColor4 SliderColor;
+    Color4 BackgroundColor;
+    Color4 ButtonColor;
+    Color4 SliderBackgroundColor;
+    Color4 SliderColor;
 
     TRef< WWidget > Content;
     int Action;

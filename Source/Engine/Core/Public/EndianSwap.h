@@ -30,11 +30,13 @@ SOFTWARE.
 
 #pragma once
 
-#include "BaseTypes.h"
+#include <Platform/Public/BaseTypes.h>
 
-namespace Core {
+namespace Core
+{
 
-AN_FORCEINLINE constexpr bool IsLittleEndian() {
+AN_FORCEINLINE constexpr bool IsLittleEndian()
+{
 #ifdef AN_LITTLE_ENDIAN
     return true;
 #else
@@ -42,36 +44,35 @@ AN_FORCEINLINE constexpr bool IsLittleEndian() {
 #endif
 }
 
-AN_FORCEINLINE constexpr bool IsBigEndian() {
+AN_FORCEINLINE constexpr bool IsBigEndian()
+{
     return !IsLittleEndian();
 }
 
-AN_FORCEINLINE constexpr word WordSwap( word const & _Val ) {
+AN_FORCEINLINE constexpr uint16_t Swap16(uint16_t _Val)
+{
     return ((_Val & 0xff) << 8) | ((_Val >> 8) & 0xff);
 }
 
-AN_FORCEINLINE constexpr dword DWordSwap( dword const & _Val ) {
+AN_FORCEINLINE constexpr uint32_t Swap32(uint32_t _Val)
+{
     return ((_Val & 0xff) << 24) | (((_Val >> 8) & 0xff) << 16) | (((_Val >> 16) & 0xff) << 8) | ((_Val >> 24) & 0xff);
 }
 
-AN_FORCEINLINE constexpr ddword DDWordSwap( ddword const & _Val ) {
-    return (((_Val) & 0xff) << 56)
-        | (((_Val >> 8) & 0xff) << 48)
-        | (((_Val >> 16) & 0xff) << 40)
-        | (((_Val >> 24) & 0xff) << 32)
-        | (((_Val >> 32) & 0xff) << 24)
-        | (((_Val >> 40) & 0xff) << 16)
-        | (((_Val >> 48) & 0xff) << 8)
-        | (((_Val >> 56) & 0xff));
+AN_FORCEINLINE constexpr uint64_t Swap64(uint64_t _Val)
+{
+    return (((_Val)&0xff) << 56) | (((_Val >> 8) & 0xff) << 48) | (((_Val >> 16) & 0xff) << 40) | (((_Val >> 24) & 0xff) << 32) | (((_Val >> 32) & 0xff) << 24) | (((_Val >> 40) & 0xff) << 16) | (((_Val >> 48) & 0xff) << 8) | (((_Val >> 56) & 0xff));
 }
 
-AN_FORCEINLINE float FloatSwap( float const & _Val ) {
-    union {
+AN_FORCEINLINE float Swap32f(float _Val)
+{
+    union
+    {
         float f;
         byte  b[4];
     } dat1, dat2;
 
-    dat1.f = _Val;
+    dat1.f    = _Val;
     dat2.b[0] = dat1.b[3];
     dat2.b[1] = dat1.b[2];
     dat2.b[2] = dat1.b[1];
@@ -79,13 +80,15 @@ AN_FORCEINLINE float FloatSwap( float const & _Val ) {
     return dat2.f;
 }
 
-AN_FORCEINLINE double DoubleSwap( double const & _Val ) {
-    union {
+AN_FORCEINLINE double Swap64f(double _Val)
+{
+    union
+    {
         double f;
         byte   b[8];
     } dat1, dat2;
 
-    dat1.f = _Val;
+    dat1.f    = _Val;
     dat2.b[0] = dat1.b[7];
     dat2.b[1] = dat1.b[6];
     dat2.b[2] = dat1.b[5];
@@ -97,112 +100,93 @@ AN_FORCEINLINE double DoubleSwap( double const & _Val ) {
     return dat2.f;
 }
 
-AN_FORCEINLINE void BlockSwap( void * _Bytes, int _ElementSz, int _Count ) {
-    AN_ASSERT_( _ElementSz > 0, "BlockSwap" );
-    if ( _ElementSz == 1 ) {
-        return;
-    }
-    int half = _ElementSz >> 1;
-    byte * block = (byte *)_Bytes;
-    byte tmp;
-    while ( _Count-- ) {
-        byte *b1 = block;
-        byte *b2 = block + _ElementSz - 1;
-        while ( b1<&block[half] )
-            tmp = *b1, *b1 = *b2--, *b1++ = tmp;
-        block += _ElementSz;
-    }
-}
-
-AN_FORCEINLINE constexpr word BigWord( word const & _Val ) {
+AN_FORCEINLINE constexpr uint16_t BigWord(uint16_t _Val)
+{
 #ifdef AN_LITTLE_ENDIAN
-    return WordSwap( _Val );
+    return Swap16(_Val);
 #else
     return _Val;
 #endif
 }
 
-AN_FORCEINLINE constexpr dword BigDWord( dword const & _Val ) {
+AN_FORCEINLINE constexpr uint32_t BigDWord(uint32_t _Val)
+{
 #ifdef AN_LITTLE_ENDIAN
-    return DWordSwap( _Val );
+    return Swap32(_Val);
 #else
     return _Val;
 #endif
 }
 
-AN_FORCEINLINE constexpr ddword BigDDWord( ddword const & _Val ) {
+AN_FORCEINLINE constexpr uint64_t BigDDWord(uint64_t _Val)
+{
 #ifdef AN_LITTLE_ENDIAN
-    return DDWordSwap( _Val );
+    return Swap64(_Val);
 #else
     return _Val;
 #endif
 }
 
-AN_FORCEINLINE float BigFloat( float const & _Val ) {
+AN_FORCEINLINE float BigFloat(float _Val)
+{
 #ifdef AN_LITTLE_ENDIAN
-    return FloatSwap( _Val );
+    return Swap32f(_Val);
 #else
     return _Val;
 #endif
 }
 
-AN_FORCEINLINE double BigDouble( double const & _Val ) {
+AN_FORCEINLINE double BigDouble(double _Val)
+{
 #ifdef AN_LITTLE_ENDIAN
-    return DoubleSwap( _Val );
+    return Swap64f(_Val);
 #else
     return _Val;
 #endif
 }
 
-AN_FORCEINLINE void BigBlock( void * _Bytes, int _ElementSz, int _Count ) {
-#ifdef AN_LITTLE_ENDIAN
-    BlockSwap( _Bytes, _ElementSz, _Count );
-#endif
-}
-
-AN_FORCEINLINE constexpr word LittleWord( word const & _Val ) {
+AN_FORCEINLINE constexpr uint16_t LittleWord(uint16_t _Val)
+{
 #ifdef AN_LITTLE_ENDIAN
     return _Val;
 #else
-    return WordSwap( _Val );
+    return Swap16(_Val);
 #endif
 }
 
-AN_FORCEINLINE constexpr dword LittleDWord( dword const & _Val ) {
+AN_FORCEINLINE constexpr uint32_t LittleDWord(uint32_t _Val)
+{
 #ifdef AN_LITTLE_ENDIAN
     return _Val;
 #else
-    return DWordSwap( _Val );
+    return Swap32(_Val);
 #endif
 }
 
-AN_FORCEINLINE constexpr ddword LittleDDWord( ddword const & _Val ) {
+AN_FORCEINLINE constexpr uint64_t LittleDDWord(uint64_t _Val)
+{
 #ifdef AN_LITTLE_ENDIAN
     return _Val;
 #else
-    return DDWordSwap( _Val );
+    return Swap64(_Val);
 #endif
 }
 
-AN_FORCEINLINE float LittleFloat( float const & _Val ) {
+AN_FORCEINLINE float LittleFloat(float _Val)
+{
 #ifdef AN_LITTLE_ENDIAN
     return _Val;
 #else
-    return FloatSwap( _Val );
+    return Swap32f(_Val);
 #endif
 }
 
-AN_FORCEINLINE double LittleDouble( double const & _Val ) {
+AN_FORCEINLINE double LittleDouble(double _Val)
+{
 #ifdef AN_LITTLE_ENDIAN
     return _Val;
 #else
-    return DoubleSwap( _Val );
-#endif
-}
-
-AN_FORCEINLINE void LittleBlock( void * _Bytes, int _ElementSz, int _Count ) {
-#ifndef AN_LITTLE_ENDIAN
-    BlockSwap( _Bytes, _ElementSz, _Count );
+    return Swap64f(_Val);
 #endif
 }
 

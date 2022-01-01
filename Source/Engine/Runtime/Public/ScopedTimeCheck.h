@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/Core.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Platform.h>
+#include <Platform/Public/Logger.h>
 #include <Runtime/Public/RuntimeVariable.h>
 
 /**
@@ -41,14 +41,15 @@ AScopedTimeCheck
 */
 struct AScopedTimeCheck
 {
-    const char * Name;
-    int64_t Milliseconds;
+    const char* Name;
+    int64_t     Milliseconds;
 
-    AScopedTimeCheck( const char * _Name ) : Name( _Name )
+    AScopedTimeCheck(const char* _Name) :
+        Name(_Name)
     {
         extern ARuntimeVariable rt_ScopedTimeCheck;
 
-        if ( rt_ScopedTimeCheck )
+        if (rt_ScopedTimeCheck)
         {
             Milliseconds = Core::SysMilliseconds();
         }
@@ -58,9 +59,9 @@ struct AScopedTimeCheck
     {
         extern ARuntimeVariable rt_ScopedTimeCheck;
 
-        if ( rt_ScopedTimeCheck )
+        if (rt_ScopedTimeCheck)
         {
-            GLogger.Printf( "SCOPED_TIME_CHECK: %s : %d ms\n", Name, Core::SysMilliseconds() - Milliseconds );
+            GLogger.Printf("SCOPED_TIME_CHECK: %s : %d ms\n", Name, Core::SysMilliseconds() - Milliseconds);
         }
     }
 };

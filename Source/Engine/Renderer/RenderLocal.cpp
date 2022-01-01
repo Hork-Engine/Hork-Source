@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "RenderLocal.h"
 
-#include <Core/Public/Core.h>
+#include <Platform/Public/Platform.h>
 #include <Runtime/Public/Runtime.h>
 
 using namespace RenderCore;

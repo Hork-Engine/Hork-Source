@@ -757,7 +757,7 @@ void ACharacterControllerBase::DrawDebug( ADebugRenderer * InRenderer )
 
     if ( com_DrawCharacterControllerCapsule ) {
         InRenderer->SetDepthTest( false );
-        InRenderer->SetColor( AColor4::White() );
+        InRenderer->SetColor( Color4::White() );
         btDrawCollisionShape( InRenderer, GhostObject->getWorldTransform(), GhostObject->getCollisionShape() );
     }
 }
@@ -1088,7 +1088,7 @@ void AProjectileExperimental::DrawDebug( ADebugRenderer * InRenderer )
 
     //if ( com_DrawCharacterControllerCapsule ) {
         InRenderer->SetDepthTest( false );
-        InRenderer->SetColor( AColor4::White() );
+        InRenderer->SetColor( Color4::White() );
         btDrawCollisionShape( InRenderer, GhostObject->getWorldTransform(), GhostObject->getCollisionShape() );
     //}
 }

@@ -37,9 +37,9 @@ SOFTWARE.
 #include <Runtime/Public/ScopedTimeCheck.h>
 #include <Runtime/Public/Runtime.h>
 
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
-#include <Core/Public/BV/BvIntersect.h>
+#include <Geometry/Public/BV/BvIntersect.h>
 
 AN_CLASS_META( AIndexedMesh )
 AN_CLASS_META( AIndexedMeshSubpart )
@@ -1369,7 +1369,7 @@ void AIndexedMeshSubpart::DrawBVH( ADebugRenderer * InRenderer, Float3x4 const &
     }
 
     InRenderer->SetDepthTest( false );
-    InRenderer->SetColor( AColor4::White() );
+    InRenderer->SetColor( Color4::White() );
 
     BvOrientedBox orientedBox;
 
@@ -2836,7 +2836,7 @@ static SBestSplitResult FindBestSplitPrimitive( SAABBTreeBuild & _Build, int _Ax
     for ( int axis = 0; axis < 3; axis++ ) {
         SPrimitiveBounds * primBounds = primitives[ axis ];
 
-        StdSort( primBounds, primBounds + _PrimCount, CompareBoundsMax( axis ) );
+        std::sort( primBounds, primBounds + _PrimCount, CompareBoundsMax( axis ) );
 
         right.Clear();
         for ( size_t i = _PrimCount - 1; i > 0; i-- ) {

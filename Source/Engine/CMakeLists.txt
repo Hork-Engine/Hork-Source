@@ -139,40 +139,69 @@ add_subdirectory_with_folder( "ThirdParty/tinyexr" ThirdParty/tinyexr )
 #
 add_subdirectory_with_folder( "ThirdParty/cgltf" ThirdParty/cgltf )
 
-
 #
-# DiligentCore
+# AngelScript
 #
-#include_directories(${PROJECT} PRIVATE "DiligentCore")
-#add_subdirectory_with_folder("ThirdParty/DiligentCore" ThirdParty/DiligentCore)
+#add_subdirectory_with_folder( "ThirdParty/angelscript" ThirdParty/angelscript )
 
+add_subdirectory(ThirdParty/angelscript/projects/cmake angelscript)
+add_subdirectory(ThirdParty/angelscript_addon angelscript_addon)
+include_directories(ThirdParty/angelscript/include)
+include_directories(ThirdParty/angelscript_addon)
+set_target_properties(angelscript PROPERTIES FOLDER ThirdParty/angelscript)
+set_target_properties(angelscript_addon PROPERTIES FOLDER ThirdParty/angelscript)
+
+
+#---------------------------------------------------------------------
+# Platform module
+file( GLOB PlatformPublic Platform/Public/*.h Platform/Public/*.cpp )
+file( GLOB PlatformPrivate Platform/Private/*.h Platform/Private/*.cpp )
+file( GLOB PlatformPublicMemory Platform/Public/Memory/*.h Platform/Public/Memory/*.cpp )
+file( GLOB PlatformPrivateMemory Platform/Private/Memory/*.h Platform/Private/Memory/*.cpp )
+
+source_group( "Platform\\Public" FILES ${PlatformPublic} )
+source_group( "Platform\\Private" FILES ${PlatformPrivate} )
+source_group( "Platform\\Public\\Memory" FILES ${PlatformPublicMemory} )
+source_group( "Platform\\Private\\Memory" FILES ${PlatformPrivateMemory} )
 
 #---------------------------------------------------------------------
 # Core module
 file( GLOB CorePublic Core/Public/*.h Core/Public/*.cpp )
-file( GLOB CorePublicBV Core/Public/BV/*.h Core/Public/BV/*.cpp )
 file( GLOB CorePrivate Core/Private/*.h Core/Private/*.cpp )
-file( GLOB CorePrivateBV Core/Private/BV/*.h Core/Private/BV/*.cpp )
 file( GLOB CorePrivateSTB Core/Private/stb/*.h )
 
 source_group( "Core\\Public" FILES ${CorePublic} )
-source_group( "Core\\Public\\BV" FILES ${CorePublicBV} )
 source_group( "Core\\Private" FILES ${CorePrivate} )
-source_group( "Core\\Private\\BV" FILES ${CorePrivateBV} )
 source_group( "Core\\Private\\stb" FILES ${CorePrivateSTB} )
+
+#---------------------------------------------------------------------
+# Containers module
+file( GLOB ContainersPublic Containers/Public/*.h Containers/Public/*.cpp )
+file( GLOB ContainersPrivate Containers/Private/*.h Containers/Private/*.cpp )
+source_group( "Containers\\Public" FILES ${ContainersPublic} )
+source_group( "Containers\\Private" FILES ${ContainersPrivate} )
+
+#---------------------------------------------------------------------
+# Geometry module
+file( GLOB GeometryPublic Geometry/Public/*.h Geometry/Public/*.cpp )
+file( GLOB GeometryPrivate Geometry/Private/*.h Geometry/Private/*.cpp )
+file( GLOB GeometryPublicBV Geometry/Public/BV/*.h Geometry/Public/BV/*.cpp )
+file( GLOB GeometryPrivateBV Geometry/Private/BV/*.h Geometry/Private/BV/*.cpp )
+source_group( "Geometry\\Public" FILES ${GeometryPublic} )
+source_group( "Geometry\\Private" FILES ${GeometryPrivate} )
+source_group( "Geometry\\Public\\BV" FILES ${GeometryPublicBV} )
+source_group( "Geometry\\Private\\BV" FILES ${GeometryPrivateBV} )
 
 #---------------------------------------------------------------------
 # Render core module
 file( GLOB RenderCore RenderCore/*.h RenderCore/*.cpp )
 file( GLOB RenderCoreOpenGL45 RenderCore/OpenGL45/*.h RenderCore/OpenGL45/*.cpp )
 file( GLOB RenderCoreOpenGL45GL RenderCore/OpenGL45/GL/*.h RenderCore/OpenGL45/GL/*.c )
-#file( GLOB RenderCoreDiligent RenderCore/Diligent/*.h RenderCore/Diligent/*.cpp )
 file( GLOB RenderCoreFrameGraph RenderCore/FrameGraph/*.h RenderCore/FrameGraph/*.cpp )
 
 source_group( "RenderCore" FILES ${RenderCore} )
 source_group( "RenderCore\\OpenGL45" FILES ${RenderCoreOpenGL45} )
 source_group( "RenderCore\\OpenGL45\\GL" FILES ${RenderCoreOpenGL45GL} )
-#source_group( "RenderCore\\Diligent" FILES ${RenderCoreDiligent} )
 source_group( "RenderCore\\FrameGraph" FILES ${RenderCoreFrameGraph} )
 
 #---------------------------------------------------------------------
@@ -247,7 +276,7 @@ source_group( "World\\Private" FILES ${WorldPrivate} )
 
 #---------------------------------------------------------------------
 
-add_executable( EmbedTool Util/EmbedTool.cpp )
+add_executable( EmbedTool Tools/EmbedTool.cpp )
 target_link_libraries( EmbedTool miniz )
 
 message( ${CMAKE_CURRENT_BINARY_DIR} )
@@ -271,16 +300,26 @@ ${PROJECT}
 
 ${CMAKE_CURRENT_BINARY_DIR}/EmbeddedResources.c
 
+${PlatformPublic}
+${PlatformPrivate}
+${PlatformPublicMemory}
+${PlatformPrivateMemory}
+
 ${CorePublic}
-${CorePublicBV}
 ${CorePrivate}
-${CorePrivateBV}
 ${CorePrivateSTB}
+
+${ContainersPublic}
+${ContainersPrivate}
+
+${GeometryPublic}
+${GeometryPrivate}
+${GeometryPublicBV}
+${GeometryPrivateBV}
 
 ${RenderCore}
 ${RenderCoreOpenGL45}
 ${RenderCoreOpenGL45GL}
-#${RenderCoreDiligent}
 ${RenderCoreFrameGraph}
 
 ${RuntimePublic}
@@ -332,11 +371,8 @@ set( LIBRARIES
         polyclipping
         tinyexr
         cgltf
-
-#    Diligent-GraphicsEngineD3D11-static
-#    Diligent-GraphicsEngineOpenGL-static
-#    Diligent-GraphicsEngineD3D12-static
-#    Diligent-GraphicsEngineVk-static
+		${ANGELSCRIPT_LIBRARY_NAME}
+		angelscript_addon
 )
 
 if(UNIX)

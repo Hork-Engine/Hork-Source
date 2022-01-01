@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <Audio/Public/AudioDecoder.h>
 
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 #include <Core/Public/BaseMath.h>
 
 #include <miniaudio/miniaudio.h>

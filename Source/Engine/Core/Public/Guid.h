@@ -52,12 +52,12 @@ struct AGUID
 
     void Generate();
 
-    bool operator==( AGUID const& _Other ) const
+    bool operator==(AGUID const& _Other) const
     {
         return Hi == _Other.Hi && Lo == _Other.Lo;
     }
 
-    bool operator!=( AGUID const& _Other ) const
+    bool operator!=(AGUID const& _Other) const
     {
         return Hi != _Other.Hi || Lo != _Other.Lo;
     }
@@ -65,43 +65,43 @@ struct AGUID
     // String conversions
     AString ToString() const
     {
-        TSprintfBuffer< 37 > buffer;
-        return buffer.Sprintf( "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
-                               HiBytes[0], HiBytes[1], HiBytes[2], HiBytes[3],
-                               HiBytes[4], HiBytes[5],
-                               HiBytes[6], HiBytes[7],
-                               LoBytes[0], LoBytes[1],
-                               LoBytes[2], LoBytes[3], LoBytes[4], LoBytes[5], LoBytes[6], LoBytes[7] );
+        TSprintfBuffer<37> buffer;
+        return buffer.Sprintf("%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+                              HiBytes[0], HiBytes[1], HiBytes[2], HiBytes[3],
+                              HiBytes[4], HiBytes[5],
+                              HiBytes[6], HiBytes[7],
+                              LoBytes[0], LoBytes[1],
+                              LoBytes[2], LoBytes[3], LoBytes[4], LoBytes[5], LoBytes[6], LoBytes[7]);
     }
 
     const char* CStr() const
     {
-        return Core::Fmt( "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
-                          HiBytes[0], HiBytes[1], HiBytes[2], HiBytes[3],
-                          HiBytes[4], HiBytes[5],
-                          HiBytes[6], HiBytes[7],
-                          LoBytes[0], LoBytes[1],
-                          LoBytes[2], LoBytes[3], LoBytes[4], LoBytes[5], LoBytes[6], LoBytes[7] );
+        return Core::Fmt("%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+                         HiBytes[0], HiBytes[1], HiBytes[2], HiBytes[3],
+                         HiBytes[4], HiBytes[5],
+                         HiBytes[6], HiBytes[7],
+                         LoBytes[0], LoBytes[1],
+                         LoBytes[2], LoBytes[3], LoBytes[4], LoBytes[5], LoBytes[6], LoBytes[7]);
     }
 
-    AGUID& FromString( AString const& _String )
+    AGUID& FromString(AString const& _String)
     {
-        return FromString( _String.CStr() );
+        return FromString(_String.CStr());
     }
 
-    AGUID& FromString( const char* _String );
+    AGUID& FromString(const char* _String);
 
     const byte* GetBytes() const { return &HiBytes[0]; }
     byte*       GetBytes() { return &HiBytes[0]; }
 
     // Byte serialization
-    void Write( IBinaryStream& _Stream ) const
+    void Write(IBinaryStream& _Stream) const
     {
-        _Stream.WriteUInt64( Hi );
-        _Stream.WriteUInt64( Lo );
+        _Stream.WriteUInt64(Hi);
+        _Stream.WriteUInt64(Lo);
     }
 
-    void Read( IBinaryStream& _Stream )
+    void Read(IBinaryStream& _Stream)
     {
         Hi = _Stream.ReadUInt64();
         Lo = _Stream.ReadUInt64();

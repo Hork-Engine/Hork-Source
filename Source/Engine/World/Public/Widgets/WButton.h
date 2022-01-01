@@ -95,11 +95,11 @@ class WTextButton : public WButton {
 
 public:
     WTextButton & SetText( AStringView _Text );
-    WTextButton & SetColor( AColor4 const & _Color );
-    WTextButton & SetHoverColor( AColor4 const & _Color );
-    WTextButton & SetPressedColor( AColor4 const & _Color );
-    WTextButton & SetTextColor( AColor4 const & _Color );
-    WTextButton & SetBorderColor( AColor4 const & _Color );
+    WTextButton & SetColor( Color4 const & _Color );
+    WTextButton & SetHoverColor( Color4 const & _Color );
+    WTextButton & SetPressedColor( Color4 const & _Color );
+    WTextButton & SetTextColor( Color4 const & _Color );
+    WTextButton & SetBorderColor( Color4 const & _Color );
     WTextButton & SetRounding( float _Rounding );
     WTextButton & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
     WTextButton & SetBorderThickness( float _Thickness );
@@ -115,11 +115,11 @@ protected:
     void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
-    AColor4 Color;
-    AColor4 HoverColor;
-    AColor4 PressedColor;
-    AColor4 TextColor;
-    AColor4 BorderColor;
+    Color4 Color;
+    Color4 HoverColor;
+    Color4 PressedColor;
+    Color4 TextColor;
+    Color4 BorderColor;
     EDrawCornerFlags RoundingCorners;
     EWidgetButtonTextAlign TextAlign;
     AString Text;

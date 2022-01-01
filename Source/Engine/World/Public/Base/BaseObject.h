@@ -33,6 +33,7 @@ SOFTWARE.
 #include "Factory.h"
 #include <Core/Public/Document.h>
 #include <Core/Public/Ref.h>
+#include <Containers/Public/StdVector.h>
 
 struct SWeakRefCounter;
 
@@ -245,7 +246,7 @@ struct TCallback< TReturn( TArgs... ) > {
     TReturn operator()( TArgs... _Args ) const {
         ABaseObject * pObject = Object;
         if ( pObject ) {
-            return (pObject->*Method)(StdForward< TArgs >( _Args )...);
+            return (pObject->*Method)(std::forward< TArgs >( _Args )...);
         }
         return TReturn();
     }
@@ -311,7 +312,7 @@ struct TEvent {
         for ( int i = 0 ; i < Callbacks.size() ; ) {
             if ( Callbacks[ i ].IsValid() ) {
                 // Invoke
-                Callbacks[ i++ ]( StdForward< TArgs >( _Args )... );
+                Callbacks[ i++ ]( std::forward< TArgs >( _Args )... );
             } else {
                 // Cleanup
                 Callbacks.erase( Callbacks.begin() + i );
@@ -325,7 +326,7 @@ struct TEvent {
             if ( Callbacks[ i ].IsValid() ) {
                 // Invoke
                 if ( _Condition() ) {
-                    Callbacks[ i ]( StdForward< TArgs >( _Args )... );
+                    Callbacks[ i ]( std::forward< TArgs >( _Args )... );
                 }
                 i++;
             } else {

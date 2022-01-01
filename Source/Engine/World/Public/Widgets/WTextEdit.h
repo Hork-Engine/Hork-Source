@@ -62,8 +62,8 @@ public:
     WTextEdit & SetCtrlEnterForNewLine( bool _Enabled );
     WTextEdit & SetAllowTabInput( bool _Enabled );
     WTextEdit & SetAllowUndo( bool _Enabled );
-    WTextEdit & SetSelectionColor( AColor4 const & _Color );
-    WTextEdit & SetTextColor( AColor4 const & _Color );
+    WTextEdit & SetSelectionColor( Color4 const & _Color );
+    WTextEdit & SetTextColor( Color4 const & _Color );
     WTextEdit & ShouldKeepSelection( bool bShouldKeepSelection );
 
     template< typename T, typename... TArgs >
@@ -143,7 +143,7 @@ public:
     // WTextEdit & SetSyntaxHighlighter( ISyntaxHighlighter * _SyntaxHighlighterInterface );
     // class ISyntaxHighlighter {
     // public:
-    //     virtual AColor4 const & GetWordColor( SWideChar * _WordStart, SWideChar * _WordEnd ) = 0;
+    //     virtual Color4 const & GetWordColor( SWideChar * _WordStart, SWideChar * _WordEnd ) = 0;
     // };
 
     bool IsShortcutsAllowed() const override { return false; }
@@ -183,8 +183,8 @@ private:
     bool FindLineStartEnd( int _Cursor, SWideChar ** _LineStart, SWideChar ** _LineEnd );
     WScroll * GetScroll();
 
-    AColor4 SelectionColor;
-    AColor4 TextColor;
+    Color4 SelectionColor;
+    Color4 TextColor;
 
     TRef< AFont > Font;
 

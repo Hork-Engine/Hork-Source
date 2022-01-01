@@ -73,7 +73,7 @@ ASponzaModel::ASponzaModel()
     //AHUD * hud = World->SpawnActor< AMyHUD >();
 
     RenderingParams = CreateInstanceOf< ARenderingParameters >();
-    RenderingParams->BackgroundColor = AColor4(0.5f);
+    RenderingParams->BackgroundColor = Color4(0.5f);
     RenderingParams->bWireframe = false;
     RenderingParams->bDrawDebug = true;
 

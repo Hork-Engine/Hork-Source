@@ -45,7 +45,7 @@ class ARenderingParameters : public ABaseObject {
     AN_CLASS( ARenderingParameters, ABaseObject )
 
 public:
-    AColor4 BackgroundColor = AColor4( 0.3f, 0.3f, 0.8f );
+    Color4 BackgroundColor = Color4( 0.3f, 0.3f, 0.8f );
 
     bool bClearBackground = false;
 

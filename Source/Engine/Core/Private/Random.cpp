@@ -30,32 +30,34 @@ SOFTWARE.
 
 #include <Core/Public/Random.h>
 
-void AMersenneTwisterRand::Initialize( uint32_t InSeed ) {
+void AMersenneTwisterRand::Initialize(uint32_t InSeed)
+{
     // Initialize generator state with seed
     // See Knuth TAOCP Vol 2, 3rd Ed, p.106 for multiplier.
     // In previous versions, most significant bits (MSBs) of the seed affect
     // only MSBs of the state array.  Modified 9 Jan 2002 by Makoto Matsumoto.
-    uint32_t *s = State;
-    uint32_t *r = State;
-    int i = 1;
-    *s++ = InSeed & 0xffffffffUL;
-    for ( ; i < N; ++i )
+    uint32_t* s = State;
+    uint32_t* r = State;
+    int       i = 1;
+    *s++        = InSeed & 0xffffffffUL;
+    for (; i < N; ++i)
     {
         *s++ = (1812433253UL * (*r ^ (*r >> 30)) + i) & 0xffffffffUL;
         r++;
     }
 }
 
-void AMersenneTwisterRand::Reload() {
+void AMersenneTwisterRand::Reload()
+{
     // Generate N new values in state
     // Made clearer and faster by Matthew Bellew (matthew.bellew@home.com)
-    uint32_t *p = State;
-    int i;
-    for ( i = N - M; i--; ++p )
-        *p = twist( p[M], p[0], p[1] );
-    for ( i = M; --i; ++p )
-        *p = twist( p[M-N], p[0], p[1] );
-    *p = twist( p[M-N], p[0], State[0] );
+    uint32_t* p = State;
+    int       i;
+    for (i = N - M; i--; ++p)
+        *p = twist(p[M], p[0], p[1]);
+    for (i = M; --i; ++p)
+        *p = twist(p[M - N], p[0], p[1]);
+    *p = twist(p[M - N], p[0], State[0]);
 
     Left = N, Next = State;
 }

@@ -33,8 +33,8 @@ SOFTWARE.
 #include "AudioBuffer.h"
 #include "AudioStream.h"
 
-#include <Core/Public/CoreMath.h>
-#include <Core/Public/PoolAllocator.h>
+#include <Geometry/Public/VectorMath.h>
+#include <Platform/Public/Memory/PoolAllocator.h>
 
 
 /**

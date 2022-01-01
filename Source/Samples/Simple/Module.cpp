@@ -118,9 +118,9 @@ protected:
         Float3 dir = Movable->GetWorldForwardVector();
         Float3 p1 = pos + dir * 0.5f;
         Float3 p2 = pos + dir * 2.0f;
-        Renderer->SetColor( AColor4::Blue() );
+        Renderer->SetColor( Color4::Blue() );
         Renderer->DrawLine( p1, p2 );
-        Renderer->DrawCone( p2, Movable->GetWorldRotation().ToMatrix() * Float3x3::RotationAroundNormal( Math::_PI, Float3(1,0,0) ), 0.4f, Math::_PI/6 );
+        Renderer->DrawCone( p2, Movable->GetWorldRotation().ToMatrix3x3() * Float3x3::RotationAroundNormal( Math::_PI, Float3(1,0,0) ), 0.4f, Math::_PI/6 );
     }
 };
 
@@ -225,8 +225,13 @@ public:
 
         // Set current desktop
         GEngine->SetDesktop( desktop );
-    }
 
+        
+        SActorSpawnInfo spawnInfo(&AActor::ClassMeta());
+        spawnInfo.ScriptModule = "zombie";
+
+        world->SpawnActor(spawnInfo);
+    }
     void CreateResources()
     {
         // Create mesh for ground

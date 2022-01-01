@@ -34,11 +34,11 @@ SOFTWARE.
 #include <World/Public/Components/MeshComponent.h>
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/RuntimeVariable.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
+#include <Platform/Public/Memory/LinearAllocator.h>
 #include <Core/Public/Compress.h>
-#include <Core/Public/BV/BvIntersect.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
-#include <Core/Public/LinearAllocator.h>
+#include <Geometry/Public/BV/BvIntersect.h>
 
 #undef malloc
 #undef free
@@ -61,7 +61,7 @@ ARuntimeVariable com_DrawNavMeshNodes( _CTS( "com_DrawNavMeshNodes" ), _CTS( "0"
 ARuntimeVariable com_DrawNavMesh( _CTS( "com_DrawNavMesh" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable com_DrawNavMeshTileBounds( _CTS( "com_DrawNavMeshTileBounds" ), _CTS( "0" ), VAR_CHEAT );
 
-AN_SIZEOF_STATIC_CHECK( SNavPolyRef, sizeof( dtPolyRef ) );
+AN_VALIDATE_TYPE_SIZE( SNavPolyRef, sizeof( dtPolyRef ) );
 
 static const int MAX_LAYERS = 255;
 static const bool RECAST_ENABLE_LOGGING = true;
@@ -1362,7 +1362,7 @@ void AAINavigationMesh::DrawDebug( ADebugRenderer * InRenderer ) {
     if ( com_DrawNavMeshTileBounds ) {
         BvAxisAlignedBox boundingBox;
         InRenderer->SetDepthTest(false);
-        InRenderer->SetColor( AColor4( 1,1,1,1 ) );
+        InRenderer->SetColor( Color4( 1,1,1,1 ) );
         for ( int z = 0 ; z < NumTilesZ ; z++ ) {
             for ( int x = 0 ; x < NumTilesX ; x++ ) {
                 if ( IsTileExsist( x, z ) ) {

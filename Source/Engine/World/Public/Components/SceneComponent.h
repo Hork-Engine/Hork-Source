@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "ActorComponent.h"
 
+#include <Geometry/Public/Transform.h>
+
 class ASceneComponent;
 
 using AArrayOfChildComponents = TPodVector< ASceneComponent *, 8 >;

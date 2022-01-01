@@ -114,10 +114,13 @@ Float3 const & AAnalyticLightComponent::GetEffectiveColor( float CosHalfConeAngl
         // Animate light intensity
         candela *= GetAnimationBrightness();
 
-        AColor4 temperatureColor;
+        Color4 temperatureColor;
         temperatureColor.SetTemperature( GetTemperature() );
 
-        EffectiveColor = GetColor() * temperatureColor.GetRGB() * ( candela * EnergyUnitScale );
+        float finalScale  = candela * EnergyUnitScale;
+        EffectiveColor[0] = Color[0] * temperatureColor[0] * finalScale;
+        EffectiveColor[1] = Color[1] * temperatureColor[1] * finalScale;
+        EffectiveColor[2] = Color[2] * temperatureColor[2] * finalScale;
 
         bEffectiveColorDirty = false;
     }

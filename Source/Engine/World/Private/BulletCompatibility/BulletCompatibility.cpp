@@ -257,24 +257,24 @@ void btDrawCollisionShape( ADebugRenderer * InRenderer, const btTransform& world
 
 void btDrawCollisionObject( ADebugRenderer * InRenderer, btCollisionObject * CollisionObject )
 {
-    AColor4 color( 0.3f, 0.3f, 0.3f );
+    Color4 color( 0.3f, 0.3f, 0.3f );
 
     switch ( CollisionObject->getActivationState() )
     {
     case ACTIVE_TAG:
-        color = AColor4( 1, 1, 1 );
+        color = Color4( 1, 1, 1 );
         break;
     case ISLAND_SLEEPING:
-        color = AColor4( 0, 1, 0 );
+        color = Color4( 0, 1, 0 );
         break;
     case WANTS_DEACTIVATION:
-        color = AColor4( 0, 1, 1 );
+        color = Color4( 0, 1, 1 );
         break;
     case DISABLE_DEACTIVATION:
-        color = AColor4( 1, 0, 0 );
+        color = Color4( 1, 0, 0 );
         break;
     case DISABLE_SIMULATION:
-        color = AColor4( 1, 1, 0 );
+        color = Color4( 1, 1, 0 );
         break;
     default:
         break;

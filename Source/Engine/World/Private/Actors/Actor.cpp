@@ -33,8 +33,9 @@ SOFTWARE.
 #include <World/Public/Components/SceneComponent.h>
 #include <World/Public/World.h>
 #include <World/Public/Timer.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 #include <Runtime/Public/RuntimeVariable.h>
+#include <angelscript.h>
 
 AN_BEGIN_CLASS_META( AActor )
 AN_END_CLASS_META()
@@ -345,14 +346,47 @@ void AActor::DrawDebug( ADebugRenderer * InRenderer )
     }
 }
 
+#define CALL_SCRIPT(Function, ...)                                        \
+    if (pScriptInstance)                                                  \
+    {                                                                     \
+        AActorScript* pScript = AActorScript::GetScript(pScriptInstance); \
+        pScript->Function(pScriptInstance, __VA_ARGS__);                  \
+    }
+
 void AActor::BeginPlay()
 {
+    CALL_SCRIPT(BeginPlay);
 }
 
 void AActor::EndPlay()
 {
+    CALL_SCRIPT(EndPlay);
+}
+
+void AActor::Tick(float _TimeStep)
+{
+    CALL_SCRIPT(Tick, _TimeStep);
+}
+
+void AActor::TickPrePhysics(float _TimeStep)
+{
+    CALL_SCRIPT(TickPrePhysics, _TimeStep);
+}
+
+void AActor::TickPostPhysics(float _TimeStep)
+{
+    CALL_SCRIPT(TickPostPhysics, _TimeStep);
 }
 
 void AActor::ApplyDamage( SActorDamage const & Damage )
 {
+    CALL_SCRIPT(ApplyDamage, Damage);
+}
+
+asILockableSharedBool* AActor::ScriptGetWeakRefFlag()
+{
+    if (!pWeakRefFlag)
+        pWeakRefFlag = asCreateLockableSharedBool();
+
+    return pWeakRefFlag;
 }

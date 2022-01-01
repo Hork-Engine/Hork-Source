@@ -32,7 +32,7 @@ SOFTWARE.
 #include <World/Public/Resource/IndexedMesh.h>
 #include <World/Public/Resource/Asset.h>
 
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 #include "../BulletCompatibility/BulletCompatibility.h"
 
@@ -1643,7 +1643,7 @@ ACollisionInstance::ACollisionInstance( ACollisionModel const * CollisionModel, 
         btTransform const & childTransform = CompoundShape->getChildTransform( 0 );
 
         if ( !btVectorToFloat3( childTransform.getOrigin() ).CompareEps( Float3::Zero(), PHYS_COMPARE_EPSILON )
-             || !btQuaternionToQuat( childTransform.getRotation() ).Compare( Quat::Identity() ) ) {
+             || btQuaternionToQuat( childTransform.getRotation() ) != Quat::Identity() ) {
             bUseCompound = true;
         }
     }

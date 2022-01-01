@@ -41,31 +41,31 @@ public:
     virtual ~IEngineInterface() {}
 
     /** Run the engine */
-    virtual void Run( SEntryDecl const & _EntryDecl ) = 0;
+    virtual void Run(SEntryDecl const& _EntryDecl) = 0;
 
     /** Print callback */
-    virtual void Print( const char * _Message ) = 0;
+    virtual void Print(const char* _Message) = 0;
 
-    virtual void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) = 0;
+    virtual void OnKeyEvent(struct SKeyEvent const& _Event, double _TimeStamp) = 0;
 
-    virtual void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) = 0;
+    virtual void OnMouseButtonEvent(struct SMouseButtonEvent const& _Event, double _TimeStamp) = 0;
 
-    virtual void OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp ) = 0;
+    virtual void OnMouseWheelEvent(struct SMouseWheelEvent const& _Event, double _TimeStamp) = 0;
 
-    virtual void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) = 0;
+    virtual void OnMouseMoveEvent(struct SMouseMoveEvent const& _Event, double _TimeStamp) = 0;
 
-    virtual void OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Event, double _TimeStamp ) = 0;
+    virtual void OnJoystickAxisEvent(struct SJoystickAxisEvent const& _Event, double _TimeStamp) = 0;
 
-    virtual void OnJoystickButtonEvent( struct SJoystickButtonEvent const & _Event, double _TimeStamp ) = 0;
+    virtual void OnJoystickButtonEvent(struct SJoystickButtonEvent const& _Event, double _TimeStamp) = 0;
 
-    virtual void OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp ) = 0;
+    virtual void OnCharEvent(struct SCharEvent const& _Event, double _TimeStamp) = 0;
 
-    virtual void OnWindowVisible( bool _Visible ) = 0;
+    virtual void OnWindowVisible(bool _Visible) = 0;
 
     virtual void OnCloseEvent() = 0;
 
     virtual void OnResize() = 0;
 };
 
-extern IEngineInterface * CreateEngineInstance();
-extern void DestroyEngineInstance();
+extern IEngineInterface* CreateEngineInstance();
+extern void              DestroyEngineInstance();

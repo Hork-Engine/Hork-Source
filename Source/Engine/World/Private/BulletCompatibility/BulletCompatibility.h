@@ -30,8 +30,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/CoreMath.h>
-
 #include <World/Public/Base/DebugRenderer.h>
 
 #include <LinearMath/btVector3.h>

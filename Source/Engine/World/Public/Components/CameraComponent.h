@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "SceneComponent.h"
 
-#include <Core/Public/BV/BvFrustum.h>
+#include <Geometry/Public/BV/BvFrustum.h>
 
 enum ECameraProjection : uint8_t
 {

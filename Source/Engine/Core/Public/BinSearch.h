@@ -30,19 +30,23 @@ SOFTWARE.
 
 #pragma once
 
-#include "BaseTypes.h"
+#include <Platform/Public/BaseTypes.h>
 
-namespace Core {
+namespace Core
+{
 
 /** Find last element less than _Value in sorted array */
-template< typename T >
-AN_FORCEINLINE int BinSearchLess( T const * _Array, const int _ArrayLength, T const & _Value ) {
-    int len = _ArrayLength;
-    int mid = len;
+template <typename T>
+AN_FORCEINLINE int BinSearchLess(T const* _Array, const int _ArrayLength, T const& _Value)
+{
+    int len    = _ArrayLength;
+    int mid    = len;
     int offset = 0;
-    while ( mid > 0 ) {
+    while (mid > 0)
+    {
         mid = len >> 1;
-        if ( _Array[offset+mid] < _Value ) {
+        if (_Array[offset + mid] < _Value)
+        {
             offset += mid;
         }
         len -= mid;
@@ -51,14 +55,17 @@ AN_FORCEINLINE int BinSearchLess( T const * _Array, const int _ArrayLength, T co
 }
 
 /** Find last element less or equal than _Value in sorted array */
-template< typename T >
-AN_FORCEINLINE int BinSearchLequal( T const * _Array, const int _ArrayLength, T const & _Value ) {
-    int len = _ArrayLength;
-    int mid = len;
+template <typename T>
+AN_FORCEINLINE int BinSearchLequal(T const* _Array, const int _ArrayLength, T const& _Value)
+{
+    int len    = _ArrayLength;
+    int mid    = len;
     int offset = 0;
-    while ( mid > 0 ) {
+    while (mid > 0)
+    {
         mid = len >> 1;
-        if ( _Array[offset+mid] <= _Value ) {
+        if (_Array[offset + mid] <= _Value)
+        {
             offset += mid;
         }
         len -= mid;
@@ -67,44 +74,53 @@ AN_FORCEINLINE int BinSearchLequal( T const * _Array, const int _ArrayLength, T 
 }
 
 /** Find first element greater than _Value in sorted array */
-template< typename T >
-AN_FORCEINLINE int BinSearchGreater( T const * _Array, const int _ArrayLength, T const & _Value ) {
-    int len = _ArrayLength;
-    int mid = len;
+template <typename T>
+AN_FORCEINLINE int BinSearchGreater(T const* _Array, const int _ArrayLength, T const& _Value)
+{
+    int len    = _ArrayLength;
+    int mid    = len;
     int offset = 0;
-    int res = 0;
-    while ( mid > 0 ) {
+    int res    = 0;
+    while (mid > 0)
+    {
         mid = len >> 1;
-        if ( _Array[offset+mid] > _Value ) {
+        if (_Array[offset + mid] > _Value)
+        {
             res = 0;
-        } else {
+        }
+        else
+        {
             offset += mid;
             res = 1;
         }
         len -= mid;
     }
-    return offset+res;
+    return offset + res;
 }
 
 /** Find first element greater or equal than _Value in sorted array */
-template< typename T >
-AN_FORCEINLINE int BinSearchGequal( T const * _Array, const int _ArrayLength, T const & _Value ) {
-    int len = _ArrayLength;
-    int mid = len;
+template <typename T>
+AN_FORCEINLINE int BinSearchGequal(T const* _Array, const int _ArrayLength, T const& _Value)
+{
+    int len    = _ArrayLength;
+    int mid    = len;
     int offset = 0;
-    int res = 0;
-    while ( mid > 0 ) {
+    int res    = 0;
+    while (mid > 0)
+    {
         mid = len >> 1;
-        if ( _Array[offset+mid] >= _Value ) {
+        if (_Array[offset + mid] >= _Value)
+        {
             res = 0;
-        } else {
+        }
+        else
+        {
             offset += mid;
             res = 1;
         }
         len -= mid;
     }
-    return offset+res;
+    return offset + res;
 }
 
-}
-
+} // namespace Core

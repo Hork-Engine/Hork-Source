@@ -96,7 +96,7 @@ void AIBLComponent::DrawDebug( ADebugRenderer * InRenderer ) {
             Float3 pos = GetWorldPosition();
 
             InRenderer->SetDepthTest( false );
-            InRenderer->SetColor( AColor4( 1, 0, 1, 1 ) );
+            InRenderer->SetColor( Color4( 1, 0, 1, 1 ) );
             InRenderer->DrawSphere( pos, Radius );
         }
     }

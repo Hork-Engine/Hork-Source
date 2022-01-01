@@ -36,7 +36,7 @@ SOFTWARE.
 #include <World/Public/Base/DebugRenderer.h>
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 #include <BulletSoftBody/btSoftBodyRigidBodyCollisionConfiguration.h>
 #include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
@@ -397,7 +397,7 @@ void AWorldPhysics::DispatchContactAndOverlapEvents()
         }
 
         if ( objectA->Id < objectB->Id ) {
-            StdSwap( objectA, objectB );
+            std::swap( objectA, objectB );
         }
 
         AActor * actorA = objectA->GetOwnerActor();
@@ -924,13 +924,13 @@ void AWorldPhysics::DrawDebug( ADebugRenderer * InRenderer )
 
             void drawLine( btVector3 const & from, btVector3 const & to, btVector3 const & color ) override
             {
-                Renderer->SetColor( AColor4( color.x(), color.y(), color.z(), 1.0f ) );
+                Renderer->SetColor( Color4( color.x(), color.y(), color.z(), 1.0f ) );
                 Renderer->DrawLine( btVectorToFloat3( from ), btVectorToFloat3( to ) );
             }
 
             void drawContactPoint( btVector3 const & pointOnB, btVector3 const & normalOnB, btScalar distance, int lifeTime, btVector3 const & color ) override
             {
-                Renderer->SetColor( AColor4( color.x(), color.y(), color.z(), 1.0f ) );
+                Renderer->SetColor( Color4( color.x(), color.y(), color.z(), 1.0f ) );
                 Renderer->DrawPoint( btVectorToFloat3( pointOnB ) );
                 Renderer->DrawPoint( btVectorToFloat3( normalOnB ) );
             }
@@ -1304,7 +1304,7 @@ bool AWorldPhysics::Trace( TPodVector< SCollisionTraceResult > & _Result, Float3
     DynamicsWorld->rayTest( btVectorToFloat3( _RayStart ), btVectorToFloat3( _RayEnd ), hitResult );
 
     if ( _QueryFilter->bSortByDistance ) {
-        StdSort( _Result.Begin(), _Result.End(), CompareDistance );
+        std::sort( _Result.Begin(), _Result.End(), CompareDistance );
     }
 
     return !_Result.IsEmpty();
@@ -1479,8 +1479,8 @@ bool AWorldPhysics::TraceConvex( SCollisionTraceResult & _Result, SConvexSweepTe
 
     Float3x4 startTransform, endTransform;
 
-    startTransform.Compose( _SweepTest.StartPosition, _SweepTest.StartRotation.ToMatrix(), _SweepTest.Scale );
-    endTransform.Compose( _SweepTest.EndPosition, _SweepTest.EndRotation.ToMatrix(), _SweepTest.Scale );
+    startTransform.Compose( _SweepTest.StartPosition, _SweepTest.StartRotation.ToMatrix3x3(), _SweepTest.Scale );
+    endTransform.Compose(_SweepTest.EndPosition, _SweepTest.EndRotation.ToMatrix3x3(), _SweepTest.Scale);
 
     Float3 startPos = startTransform * _SweepTest.CollisionBody->Position;
     Float3 endPos = endTransform * _SweepTest.CollisionBody->Position;

@@ -33,7 +33,7 @@ SOFTWARE.
 #include "AudioDevice.h"
 #include "AudioChannel.h"
 
-#include <Core/Public/PodVector.h>
+#include <Containers/Public/PodVector.h>
 
 #include <Runtime/Public/RuntimeVariable.h>
 

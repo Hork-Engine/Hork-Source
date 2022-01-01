@@ -37,10 +37,12 @@ SOFTWARE.
 #include <World/Public/Render/vsd.h>
 #include <World/Public/EngineInstance.h>
 
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 
 #include <Runtime/Public/Runtime.h>
+
+#include <angelscript.h>
 
 AN_CLASS_META( AWorld )
 
@@ -257,6 +259,15 @@ AActor * AWorld::SpawnActor( SActorSpawnInfo const & _SpawnInfo )
         for ( AActorComponent * component : tempArray ) {
             component->OnCreateAvatar();
         }
+    }
+
+    if ( !_SpawnInfo.ScriptModule.IsEmpty() ) {
+        if (!ScriptEngine)
+            ScriptEngine = std::make_unique<AScriptEngine>(this);
+        actor->pScriptInstance = ScriptEngine->CreateScriptInstance(_SpawnInfo.ScriptModule, actor);
+        actor->bCanEverTick = true; // TODO: move to script?
+        actor->bTickPrePhysics = true;
+        actor->bTickPostPhysics = true;
     }
 
     actor->Initialize( _SpawnInfo.SpawnTransform );
@@ -688,6 +699,20 @@ void AWorld::KickoffPendingKillObjects()
 //            level->Actors.RemoveLast();
 //            actor->IndexInLevelArrayOfActors = -1;
 //            actor->Level = nullptr;
+
+
+            if (actor->pWeakRefFlag)
+            {
+                // Tell the ones that hold weak references that the object is destroyed
+                actor->pWeakRefFlag->Set(true);
+                actor->pWeakRefFlag->Release();
+            }
+
+            if (actor->pScriptInstance)
+            {
+                actor->pScriptInstance->Release();
+                actor->pScriptInstance = nullptr;
+            }
 
             actor->RemoveRef();
 

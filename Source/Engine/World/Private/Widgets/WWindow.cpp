@@ -36,19 +36,19 @@ AN_CLASS_META( WWindow )
 
 WWindow::WWindow() {
     CaptionHeight = 24;
-    TextColor = AColor4::White();
+    TextColor = Color4::White();
     TextOffset = Float2( 0.0f );
     TextHorizontalAlignment = WIDGET_ALIGNMENT_CENTER;
     TextVerticalAlignment = WIDGET_ALIGNMENT_CENTER;
-    CaptionColor = AColor4(0.1f,0.4f,0.8f);
-    CaptionColorNotActive = AColor4( 0.15f, 0.15f, 0.15f );
-    BorderColor = AColor4(1,1,1,0.5f);
+    CaptionColor = Color4(0.1f,0.4f,0.8f);
+    CaptionColorNotActive = Color4( 0.15f, 0.15f, 0.15f );
+    BorderColor = Color4(1,1,1,0.5f);
     RoundingCorners = CORNER_ROUND_TOP;
     BorderRounding = 8;
     BorderThickness = 2;
     bWindowBorder = true;
     bCaptionBorder = true;
-    BgColor = AColor4( 0 ); // transparent by default
+    BgColor = Color4( 0 ); // transparent by default
     bWordWrap = false;
     UpdateDragShape();
     UpdateMargin();
@@ -74,7 +74,7 @@ WWindow & WWindow::SetCaptionFont( AFont * _Font ) {
     return *this;
 }
 
-WWindow & WWindow::SetTextColor( AColor4 const & _Color ) {
+WWindow & WWindow::SetTextColor( Color4 const & _Color ) {
     TextColor = _Color;
     return *this;
 }
@@ -99,17 +99,17 @@ WWindow & WWindow::SetTextOffset( Float2 const & _Offset ) {
     return *this;
 }
 
-WWindow & WWindow::SetCaptionColor( AColor4 const & _Color ) {
+WWindow & WWindow::SetCaptionColor( Color4 const & _Color ) {
     CaptionColor = _Color;
     return *this;
 }
 
-WWindow & WWindow::SetCaptionColorNotActive( AColor4 const & _Color ) {
+WWindow & WWindow::SetCaptionColorNotActive( Color4 const & _Color ) {
     CaptionColorNotActive = _Color;
     return *this;
 }
 
-WWindow & WWindow::SetBorderColor( AColor4 const & _Color ) {
+WWindow & WWindow::SetBorderColor( Color4 const & _Color ) {
     BorderColor = _Color;
     return *this;
 }
@@ -120,7 +120,7 @@ WWindow & WWindow::SetBorderThickness( float _Thickness ) {
     return *this;
 }
 
-WWindow & WWindow::SetBackgroundColor( AColor4 const & _Color ) {
+WWindow & WWindow::SetBackgroundColor( Color4 const & _Color ) {
     BgColor = _Color;
     return *this;
 }

@@ -31,7 +31,7 @@ SOFTWARE.
 #include <World/Public/Resource/PhotometricProfile.h>
 #include <World/Public/Resource/Asset.h>
 #include <World/Public/Resource/Texture.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 #include <Core/Public/Image.h>
 #include "iesna/iesna.h"
 
@@ -111,7 +111,7 @@ static float SampleIESAvgVertical( IE_DATA const * Data, float VerticalAgnle ) {
 static float SampleIES( IE_DATA const * iesData, float x, float y ) {
     float z = 0;
     // Convert cartesian coordinate to polar coordinates
-    const float distance = StdSqrt( x * x + y * y + z * z );
+    const float distance = std::sqrt( x * x + y * y + z * z );
 
     const float angleV = /*Angl::Normalize360*/(Math::Degrees( std::acos( y / distance ) ));
 
@@ -195,7 +195,7 @@ static float SampleIES( IE_DATA const * iesData, float x, float y ) {
 static float SampleIESAvg( IE_DATA const * iesData, float x, float y ) {
     float z = 0;
     // Convert cartesian coordinate to polar coordinates
-    const float distance = StdSqrt( x * x + y * y + z * z );
+    const float distance = std::sqrt( x * x + y * y + z * z );
 
     const float angleV = /*Angl::Normalize360*/(Math::Degrees( std::acos( y / distance ) ));
 

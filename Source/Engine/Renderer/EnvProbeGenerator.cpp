@@ -31,8 +31,6 @@ SOFTWARE.
 #include "EnvProbeGenerator.h"
 #include "RenderLocal.h"
 
-#include <Core/Public/PodVector.h>
-
 using namespace RenderCore;
 
 static const TEXTURE_FORMAT TEX_FORMAT_ENVPROBE = TEXTURE_FORMAT_RGB16F; // TODO: try compression

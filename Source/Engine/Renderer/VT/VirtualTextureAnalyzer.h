@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "VirtualTexture.h"
 
-#include <Core/Public/PodVector.h>
+#include <Containers/Public/PodVector.h>
 
 constexpr int VT_MAX_TEXTURE_UNITS = 256;
 

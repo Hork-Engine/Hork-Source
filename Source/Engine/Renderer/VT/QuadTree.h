@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/BaseTypes.h>
+#include <Platform/Public/BaseTypes.h>
 
 /** Max levels of detail */
 constexpr int QUADTREE_MAX_LODS_32 = 16;

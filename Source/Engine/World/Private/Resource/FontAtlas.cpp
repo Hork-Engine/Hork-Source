@@ -31,11 +31,11 @@ SOFTWARE.
 // NOTE: Some code in this file is based on Dear ImGui
 
 #include <World/Public/Resource/FontAtlas.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
+#include <Platform/Public/Platform.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Core/Public/Base85.h>
 #include <Core/Public/Compress.h>
-#include <Core/Public/Core.h>
 #include <Runtime/Public/Runtime.h>
 
 // Padding between glyphs within texture in pixels. Defaults to 1. If your rendering method doesn't rely on bilinear filtering you may set this to 0.
@@ -65,7 +65,7 @@ static EGlyphRange GGlyphRange = GLYPH_RANGE_DEFAULT;
 #define STBTT_free(x,u)     ((void)(u), GZoneMemory.Free(x))
 #define STBTT_assert(x)     AN_ASSERT(x)
 #define STBTT_fmod(x,y)     Math::FMod(x,y)
-#define STBTT_sqrt(x)       StdSqrt(x)
+#define STBTT_sqrt(x)       std::sqrt(x)
 #define STBTT_pow(x,y)      Math::Pow(x,y)
 #define STBTT_fabs(x)       Math::Abs(x)
 #define STBTT_ifloor(x)     (int)Math::Floor(x)
@@ -995,7 +995,7 @@ bool AFont::Build( const void * _SysMem, size_t _SizeInBytes, SFontCreateInfo co
 
     // We need a width for the skyline algorithm, any width!
     // The exact width doesn't really matter much, but some API/GPU have texture size limitations and increasing width can decrease height.
-    const int surface_sqrt = (int)StdSqrt( (float)area ) + 1;
+    const int surface_sqrt = (int)std::sqrt( (float)area ) + 1;
     TexWidth = (surface_sqrt >= 4096*0.7f) ? 4096 : (surface_sqrt >= 2048*0.7f) ? 2048 : (surface_sqrt >= 1024*0.7f) ? 1024 : 512;
     TexHeight = 0;
 

@@ -32,4 +32,4 @@ SOFTWARE.
 
 class IGameModule;
 class AClassMeta;
-typedef IGameModule * (*ACreateGameModuleCallback)( AClassMeta * _Meta );
+typedef IGameModule* (*ACreateGameModuleCallback)(AClassMeta* _Meta);

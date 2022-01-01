@@ -35,7 +35,7 @@ SOFTWARE.
 #include <World/Public/Resource/Texture.h>
 
 #include <Core/Public/Utf8.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 #include <World/Public/Base/ResourceManager.h>
 
@@ -133,58 +133,58 @@ void ACanvas::PopFont() {
     SetCurrentFont( FontStack.IsEmpty() ? nullptr : FontStack.Last() );
 }
 
-void ACanvas::DrawLine( Float2 const & a, Float2 const & b, AColor4 const & col, float thickness ) {
+void ACanvas::DrawLine( Float2 const & a, Float2 const & b, Color4 const & col, float thickness ) {
     DrawList.AddLine( a, b, col.GetDWord(), thickness );
 }
 
-void ACanvas::DrawRect( Float2 const & a, Float2 const & b, AColor4 const & col, float rounding, int _RoundingCorners, float thickness ) {
+void ACanvas::DrawRect( Float2 const & a, Float2 const & b, Color4 const & col, float rounding, int _RoundingCorners, float thickness ) {
     DrawList.AddRect( a, b, col.GetDWord(), rounding, _RoundingCorners, thickness );
 }
 
-void ACanvas::DrawRectFilled( Float2 const & a, Float2 const & b, AColor4 const & col, float rounding, int _RoundingCorners ) {
+void ACanvas::DrawRectFilled( Float2 const & a, Float2 const & b, Color4 const & col, float rounding, int _RoundingCorners ) {
     DrawList.AddRectFilled( a, b, col.GetDWord(), rounding, _RoundingCorners );
 }
 
-void ACanvas::DrawRectFilledMultiColor( Float2 const & a, Float2 const & b, AColor4 const & col_upr_left, AColor4 const & col_upr_right, AColor4 const & col_bot_right, AColor4 const & col_bot_left ) {
+void ACanvas::DrawRectFilledMultiColor( Float2 const & a, Float2 const & b, Color4 const & col_upr_left, Color4 const & col_upr_right, Color4 const & col_bot_right, Color4 const & col_bot_left ) {
     DrawList.AddRectFilledMultiColor( a, b, col_upr_left.GetDWord(), col_upr_right.GetDWord(), col_bot_right.GetDWord(), col_bot_left.GetDWord() );
 }
 
-void ACanvas::DrawQuad( Float2 const & a, Float2 const & b, Float2 const & c, Float2 const & d, AColor4 const & col, float thickness ) {
+void ACanvas::DrawQuad( Float2 const & a, Float2 const & b, Float2 const & c, Float2 const & d, Color4 const & col, float thickness ) {
     DrawList.AddQuad( a, b, c, d, col.GetDWord(), thickness );
 }
 
-void ACanvas::DrawQuadFilled( Float2 const & a, Float2 const & b, Float2 const & c, Float2 const & d, AColor4 const & col ) {
+void ACanvas::DrawQuadFilled( Float2 const & a, Float2 const & b, Float2 const & c, Float2 const & d, Color4 const & col ) {
     DrawList.AddQuadFilled( a, b, c, d, col.GetDWord() );
 }
 
-void ACanvas::DrawTriangle( Float2 const & a, Float2 const & b, Float2 const & c, AColor4 const & col, float thickness ) {
+void ACanvas::DrawTriangle( Float2 const & a, Float2 const & b, Float2 const & c, Color4 const & col, float thickness ) {
     DrawList.AddTriangle( a, b, c, col.GetDWord(), thickness );
 }
 
-void ACanvas::DrawTriangleFilled( Float2 const & a, Float2 const & b, Float2 const & c, AColor4 const & col ) {
+void ACanvas::DrawTriangleFilled( Float2 const & a, Float2 const & b, Float2 const & c, Color4 const & col ) {
     DrawList.AddTriangleFilled( a, b, c, col.GetDWord() );
 }
 
-void ACanvas::DrawCircle( Float2 const & centre, float radius, AColor4 const & col, int num_segments, float thickness ) {
+void ACanvas::DrawCircle( Float2 const & centre, float radius, Color4 const & col, int num_segments, float thickness ) {
     DrawList.AddCircle( centre, radius, col.GetDWord(), num_segments, thickness );
 }
 
-void ACanvas::DrawCircleFilled( Float2 const & centre, float radius, AColor4 const & col, int num_segments ) {
+void ACanvas::DrawCircleFilled( Float2 const & centre, float radius, Color4 const & col, int num_segments ) {
     DrawList.AddCircleFilled( centre, radius, col.GetDWord(), num_segments );
 }
 
-void ACanvas::DrawTextUTF8( Float2 const & pos, AColor4 const & col, const char* _TextBegin, const char* _TextEnd, bool bShadow ) {
+void ACanvas::DrawTextUTF8( Float2 const & pos, Color4 const & col, const char* _TextBegin, const char* _TextEnd, bool bShadow ) {
     DrawTextUTF8( DrawListSharedData.FontSize, pos, col, _TextBegin, _TextEnd, 0, nullptr, bShadow );
 }
 
-void ACanvas::DrawTextUTF8( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect, bool bShadow ) {
+void ACanvas::DrawTextUTF8( float _FontSize, Float2 const & _Pos, Color4 const & _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect, bool bShadow ) {
     if ( bShadow ) {
-        _DrawTextUTF8( _FontSize, _Pos + Float2( 1, 1 ), AColor4::Black(), _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect );
+        _DrawTextUTF8( _FontSize, _Pos + Float2( 1, 1 ), Color4::Black(), _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect );
     }
     _DrawTextUTF8( _FontSize, _Pos, _Color, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect );
 }
 
-void ACanvas::_DrawTextUTF8( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
+void ACanvas::_DrawTextUTF8( float _FontSize, Float2 const & _Pos, Color4 const & _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
     if ( _Color.IsTransparent() ) {
         return;
     }
@@ -406,18 +406,18 @@ void ACanvas::_DrawTextUTF8( float _FontSize, Float2 const & _Pos, AColor4 const
     DrawList._VtxCurrentIdx = (unsigned int)DrawList.VtxBuffer.Size;
 }
 
-void ACanvas::DrawTextWChar( Float2 const & pos, AColor4 const & col, SWideChar const * _TextBegin, SWideChar const * _TextEnd, bool bShadow ) {
+void ACanvas::DrawTextWChar( Float2 const & pos, Color4 const & col, SWideChar const * _TextBegin, SWideChar const * _TextEnd, bool bShadow ) {
     DrawTextWChar( DrawListSharedData.FontSize, pos, col, _TextBegin, _TextEnd, 0, nullptr, bShadow );
 }
 
-void ACanvas::DrawTextWChar( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect, bool bShadow ) {
+void ACanvas::DrawTextWChar( float _FontSize, Float2 const & _Pos, Color4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect, bool bShadow ) {
     if ( bShadow ) {
-        _DrawTextWChar( _FontSize, _Pos + Float2(1,1), AColor4::Black(), _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect );
+        _DrawTextWChar( _FontSize, _Pos + Float2(1,1), Color4::Black(), _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect );
     }
     _DrawTextWChar( _FontSize, _Pos, _Color, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect );
 }
 
-void ACanvas::_DrawTextWChar( float _FontSize, Float2 const & _Pos, AColor4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
+void ACanvas::_DrawTextWChar( float _FontSize, Float2 const & _Pos, Color4 const & _Color, SWideChar const * _TextBegin, SWideChar const * _TextEnd, float _WrapWidth, Float4 const * _CPUFineClipRect ) {
     if ( _Color.IsTransparent() ) {
         return;
     }
@@ -643,11 +643,11 @@ void ACanvas::_DrawTextWChar( float _FontSize, Float2 const & _Pos, AColor4 cons
     DrawList._VtxCurrentIdx = ( unsigned int )DrawList.VtxBuffer.Size;
 }
 
-void ACanvas::DrawChar( char _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color ) {
+void ACanvas::DrawChar( char _Ch, int _X, int _Y, float _Scale, Color4 const & _Color ) {
     DrawWChar( _Ch, _X, _Y, _Scale, _Color );
 }
 
-void ACanvas::DrawWChar( SWideChar _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color ) {
+void ACanvas::DrawWChar( SWideChar _Ch, int _X, int _Y, float _Scale, Color4 const & _Color ) {
     if ( _Color.IsTransparent() ) {
         return;
     }
@@ -669,7 +669,7 @@ void ACanvas::DrawWChar( SWideChar _Ch, int _X, int _Y, float _Scale, AColor4 co
     DrawList.PrimRectUV( a, b, Float2( glyph->U0, glyph->V0 ), Float2( glyph->U1, glyph->V1 ), _Color.GetDWord() );
 }
 
-void ACanvas::DrawCharUTF8( const char * _Ch, int _X, int _Y, float _Scale, AColor4 const & _Color ) {
+void ACanvas::DrawCharUTF8( const char * _Ch, int _X, int _Y, float _Scale, Color4 const & _Color ) {
     if ( _Color.IsTransparent() ) {
         return;
     }
@@ -683,31 +683,31 @@ void ACanvas::DrawCharUTF8( const char * _Ch, int _X, int _Y, float _Scale, ACol
     DrawWChar( ch, _X, _Y, _Scale, _Color );
 }
 
-void ACanvas::DrawTexture( ATexture * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, AColor4 const & _Color, EColorBlending _Blending, EHUDSamplerType _SamplerType ) {
+void ACanvas::DrawTexture( ATexture * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, Color4 const & _Color, EColorBlending _Blending, EHUDSamplerType _SamplerType ) {
     DrawList.AddImage( _Texture->GetGPUResource(), ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), HUD_DRAW_CMD_TEXTURE | ( _Blending << 8 ) | ( _SamplerType << 16 ) );
 }
 
-void ACanvas::DrawTextureQuad( ATexture * _Texture, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const & _UV0, Float2 const & _UV1, Float2 const & _UV2, Float2 const & _UV3, AColor4 const & _Color, EColorBlending _Blending, EHUDSamplerType _SamplerType ) {
+void ACanvas::DrawTextureQuad( ATexture * _Texture, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const & _UV0, Float2 const & _UV1, Float2 const & _UV2, Float2 const & _UV3, Color4 const & _Color, EColorBlending _Blending, EHUDSamplerType _SamplerType ) {
     DrawList.AddImageQuad( _Texture->GetGPUResource(), ImVec2(_X0,_Y0), ImVec2(_X1,_Y1), ImVec2(_X2,_Y2), ImVec2(_X3,_Y3), _UV0, _UV1, _UV2, _UV3, _Color.GetDWord(), HUD_DRAW_CMD_TEXTURE | ( _Blending << 8 ) | ( _SamplerType << 16 ) );
 }
 
-void ACanvas::DrawTextureRounded( ATexture * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, AColor4 const & _Color, float _Rounding, int _RoundingCorners, EColorBlending _Blending, EHUDSamplerType _SamplerType ) {
+void ACanvas::DrawTextureRounded( ATexture * _Texture, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, Color4 const & _Color, float _Rounding, int _RoundingCorners, EColorBlending _Blending, EHUDSamplerType _SamplerType ) {
     DrawList.AddImageRounded( _Texture->GetGPUResource(), ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_TEXTURE | ( _Blending << 8 ) | ( _SamplerType << 16 ) );
 }
 
-void ACanvas::DrawMaterial( AMaterialInstance * _MaterialInstance, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, AColor4 const & _Color ) {
+void ACanvas::DrawMaterial( AMaterialInstance * _MaterialInstance, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, Color4 const & _Color ) {
     DrawList.AddImage( _MaterialInstance, ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), HUD_DRAW_CMD_MATERIAL );
 }
 
-void ACanvas::DrawMaterialQuad( AMaterialInstance * _MaterialInstance, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const & _UV0, Float2 const & _UV1, Float2 const & _UV2, Float2 const & _UV3, AColor4 const & _Color ) {
+void ACanvas::DrawMaterialQuad( AMaterialInstance * _MaterialInstance, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const & _UV0, Float2 const & _UV1, Float2 const & _UV2, Float2 const & _UV3, Color4 const & _Color ) {
     DrawList.AddImageQuad( _MaterialInstance, ImVec2(_X0,_Y0), ImVec2(_X1,_Y1), ImVec2(_X2,_Y2), ImVec2(_X3,_Y3), _UV0, _UV1, _UV2, _UV3, _Color.GetDWord(), HUD_DRAW_CMD_MATERIAL );
 }
 
-void ACanvas::DrawMaterialRounded( AMaterialInstance * _MaterialInstance, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, AColor4 const & _Color, float _Rounding, int _RoundingCorners ) {
+void ACanvas::DrawMaterialRounded( AMaterialInstance * _MaterialInstance, int _X, int _Y, int _W, int _H, Float2 const & _UV0, Float2 const & _UV1, Color4 const & _Color, float _Rounding, int _RoundingCorners ) {
     DrawList.AddImageRounded( _MaterialInstance, ImVec2(_X,_Y), ImVec2(_X+_W,_Y+_H), _UV0, _UV1, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_MATERIAL );
 }
 
-void ACanvas::DrawViewport( ACameraComponent * _Camera, ARenderingParameters * _RP, int _X, int _Y, int _W, int _H, AColor4 const & _Color, float _Rounding, int _RoundingCorners, EColorBlending _Blending ) {
+void ACanvas::DrawViewport( ACameraComponent * _Camera, ARenderingParameters * _RP, int _X, int _Y, int _W, int _H, Color4 const & _Color, float _Rounding, int _RoundingCorners, EColorBlending _Blending ) {
     if ( !_Camera ) {
         return;
     }
@@ -747,7 +747,7 @@ void ACanvas::DrawViewport( ACameraComponent * _Camera, ARenderingParameters * _
     viewport.RenderingParams = _RP;
 }
 
-void ACanvas::DrawCursor( EDrawCursor _Cursor, Float2 const & _Position, AColor4 const & _Color, AColor4 const & _BorderColor, AColor4 const & _ShadowColor, const float _Scale ) {
+void ACanvas::DrawCursor( EDrawCursor _Cursor, Float2 const & _Position, Color4 const & _Color, Color4 const & _BorderColor, Color4 const & _ShadowColor, const float _Scale ) {
     AFont const * font = DrawList._Data->Font;
     Float2 offset, size, uv[ 4 ];
 
@@ -764,15 +764,15 @@ void ACanvas::DrawCursor( EDrawCursor _Cursor, Float2 const & _Position, AColor4
     }
 }
 
-void ACanvas::DrawPolyline( Float2 const * points, int num_points, AColor4 const & col, bool closed, float thickness ) {
+void ACanvas::DrawPolyline( Float2 const * points, int num_points, Color4 const & col, bool closed, float thickness ) {
     DrawList.AddPolyline( reinterpret_cast< ImVec2 const * >( points ), num_points, col.GetDWord(), closed, thickness );
 }
 
-void ACanvas::DrawConvexPolyFilled( Float2 const * points, int num_points, AColor4 const & col ) {
+void ACanvas::DrawConvexPolyFilled( Float2 const * points, int num_points, Color4 const & col ) {
     DrawList.AddConvexPolyFilled( reinterpret_cast< ImVec2 const * >( points ), num_points, col.GetDWord() );
 }
 
-void ACanvas::DrawBezierCurve( Float2 const & pos0, Float2 const & cp0, Float2 const & cp1, Float2 const & pos1, AColor4 const & col, float thickness, int num_segments ) {
+void ACanvas::DrawBezierCurve( Float2 const & pos0, Float2 const & cp0, Float2 const & cp1, Float2 const & pos1, Color4 const & col, float thickness, int num_segments ) {
     DrawList.AddBezierCurve( pos0, cp0, cp1, pos1, col.GetDWord(), thickness, num_segments );
 }
 
@@ -780,8 +780,8 @@ void ACanvas::DrawBezierCurve( Float2 const & pos0, Float2 const & cp0, Float2 c
 //void PathClear() { _Path.Size = 0; }
 //void PathLineTo(Float2 const & pos) { _Path.push_back(pos); }
 //void PathLineToMergeDuplicate(Float2 const & pos) { if (_Path.Size == 0 || memcmp(&_Path.Data[_Path.Size-1], &pos, 8) != 0) _Path.push_back(pos); }
-//void PathFillConvex(AColor4 const & col) { AddConvexPolyFilled(_Path.Data, _Path.Size, col); _Path.Size = 0; }  // Note: Anti-aliased filling requires points to be in clockwise order.
-//void PathStroke(AColor4 const & col, bool closed, float thickness ) { AddPolyline(_Path.Data, _Path.Size, col, closed, thickness); _Path.Size = 0; }
+//void PathFillConvex(Color4 const & col) { AddConvexPolyFilled(_Path.Data, _Path.Size, col); _Path.Size = 0; }  // Note: Anti-aliased filling requires points to be in clockwise order.
+//void PathStroke(Color4 const & col, bool closed, float thickness ) { AddPolyline(_Path.Data, _Path.Size, col, closed, thickness); _Path.Size = 0; }
 //void PathArcTo(Float2 const & centre, float radius, float a_min, float a_max, int num_segments = 10);
 //void PathArcToFast(Float2 const & centre, float radius, int a_min_of_12, int a_max_of_12);                                            // Use precomputed angles for a 12 steps circle
 //void PathBezierCurveTo(Float2 const & p1, Float2 const & p2, Float2 const & p3, int num_segments = 0);

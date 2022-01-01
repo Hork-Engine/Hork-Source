@@ -37,10 +37,12 @@ SOFTWARE.
 #include <World/Public/Components/PointLightComponent.h>
 #include <World/Public/Actors/PlayerController.h>
 #include <World/Public/Resource/Texture.h>
-#include <Core/Public/BV/BvIntersect.h>
-#include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/RuntimeVariable.h>
+
+#include <Geometry/Public/BV/BvIntersect.h>
+#include <Geometry/Public/ConvexHull.h>
+#include <Core/Public/IntrusiveLinkedListMacro.h>
 
 ARuntimeVariable com_DrawLevelAreaBounds( _CTS( "com_DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable com_DrawLevelIndoorBounds( _CTS( "com_DrawLevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
@@ -204,7 +206,7 @@ void ALevel::CreatePortals( SPortalDef const * InPortals, int InPortalsCount, Fl
         SVisArea * a2 = def->Areas[1] >= 0 ? &Areas[def->Areas[1]] : &OutdoorArea;
 #if 0
         if ( a1 == &OutdoorArea ) {
-            StdSwap( a1, a2 );
+            std::swap( a1, a2 );
         }
 
         // Check area position relative to portal plane
@@ -492,12 +494,12 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
     //AConvexHull * hull = AConvexHull::CreateForPlane( PlaneF(Float3(0,0,1), Float3(0.0f) ), 100.0f );
 
     //InRenderer->SetDepthTest( false );
-    //InRenderer->SetColor( AColor4( 0, 1, 1, 0.5f ) );
+    //InRenderer->SetColor( Color4( 0, 1, 1, 0.5f ) );
     //InRenderer->DrawConvexPoly( hull->Points, hull->NumPoints, false );
 
     //Float3 normal = hull->CalcNormal();
 
-    //InRenderer->SetColor( AColor4::White() );
+    //InRenderer->SetColor( Color4::White() );
     //InRenderer->DrawLine( Float3(0.0f), Float3( 0, 0, 1 )*100.0f );
 
     //hull->Destroy();
@@ -528,7 +530,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
 
     if ( com_DrawLevelAreaBounds ) {
         InRenderer->SetDepthTest( false );
-        InRenderer->SetColor( AColor4( 0,1,0,0.5f) );
+        InRenderer->SetColor( Color4( 0,1,0,0.5f) );
         for ( SVisArea & area : Areas ) {
             InRenderer->DrawAABB( area.Bounds );
         }
@@ -542,7 +544,7 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
 //        }
 
         InRenderer->SetDepthTest( false );
-        //InRenderer->SetColor( AColor4( 0,0,1,0.4f ) );
+        //InRenderer->SetColor( Color4( 0,0,1,0.4f ) );
 
         /*if ( LastVisitedArea >= 0 && LastVisitedArea < Areas.Size() ) {
             VSDArea * area = &Areas[ LastVisitedArea ];
@@ -557,9 +559,9 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
             for ( SVisPortal & portal : Portals ) {
 
                 if ( portal.VisMark == InRenderer->GetVisPass() ) {
-                    InRenderer->SetColor( AColor4( 1,0,0,0.4f ) );
+                    InRenderer->SetColor( Color4( 1,0,0,0.4f ) );
                 } else {
-                    InRenderer->SetColor( AColor4( 0,1,0,0.4f ) );
+                    InRenderer->SetColor( Color4( 0,1,0,0.4f ) );
                 }
                 InRenderer->DrawConvexPoly( portal.Hull->Points, portal.Hull->NumPoints, true );
             }
@@ -569,9 +571,9 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
             for ( SPortalLink * p = portals; p; p = p->Next ) {
 
                 if ( p->Portal->VisMark == InRenderer->GetVisPass() ) {
-                    InRenderer->SetColor( AColor4( 1, 0, 0, 0.4f ) );
+                    InRenderer->SetColor( Color4( 1, 0, 0, 0.4f ) );
                 } else {
-                    InRenderer->SetColor( AColor4( 0, 1, 0, 0.4f ) );
+                    InRenderer->SetColor( Color4( 0, 1, 0, 0.4f ) );
                 }
 
                 InRenderer->DrawConvexPoly( p->Hull->Points, p->Hull->NumPoints, false );
@@ -583,9 +585,9 @@ void ALevel::DrawDebug( ADebugRenderer * InRenderer ) {
                 for ( SPortalLink * p = portals; p; p = p->Next ) {
 
                     if ( p->Portal->VisMark == InRenderer->GetVisPass() ) {
-                        InRenderer->SetColor( AColor4( 1, 0, 0, 0.4f ) );
+                        InRenderer->SetColor( Color4( 1, 0, 0, 0.4f ) );
                     } else {
-                        InRenderer->SetColor( AColor4( 0, 1, 0, 0.4f ) );
+                        InRenderer->SetColor( Color4( 0, 1, 0, 0.4f ) );
                     }
 
                     InRenderer->DrawConvexPoly( p->Hull->Points, p->Hull->NumPoints, false );

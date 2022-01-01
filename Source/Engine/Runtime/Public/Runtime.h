@@ -30,12 +30,12 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/Atomic.h>
+#include <Platform/Public/Atomic.h>
+#include <Platform/Public/Memory/LinearAllocator.h>
 #include <Core/Public/String.h>
-#include <Core/Public/PodQueue.h>
 #include <Core/Public/Utf8.h>
 #include <Core/Public/Random.h>
-#include <Core/Public/LinearAllocator.h>
+#include <Containers/Public/PodQueue.h>
 #include "AsyncJobManager.h"
 #include "GameModuleCallback.h"
 #include "VertexMemoryGPU.h"
@@ -99,16 +99,16 @@ enum EInputAction
 struct SKeyEvent
 {
     int Key;
-    int Scancode;       // Not used, reserved for future
+    int Scancode; // Not used, reserved for future
     int ModMask;
-    int Action;         // EInputAction
+    int Action; // EInputAction
 };
 
 struct SMouseButtonEvent
 {
     int Button;
     int ModMask;
-    int Action;         // EInputAction
+    int Action; // EInputAction
 };
 
 struct SMouseWheelEvent
@@ -125,8 +125,8 @@ struct SMouseMoveEvent
 
 struct SJoystickAxisEvent
 {
-    int Joystick;
-    int Axis;
+    int   Joystick;
+    int   Axis;
     float Value;
 };
 
@@ -134,7 +134,7 @@ struct SJoystickButtonEvent
 {
     int Joystick;
     int Button;
-    int Action;         // EInputAction
+    int Action; // EInputAction
 };
 
 //struct SJoystickStateEvent
@@ -149,7 +149,7 @@ struct SJoystickButtonEvent
 struct SCharEvent
 {
     SWideChar UnicodeCharacter;
-    int ModMask;
+    int       ModMask;
 };
 
 enum
@@ -177,25 +177,25 @@ public:
     /** Global random number generator */
     AMersenneTwisterRand Rand;
 
-    TRef< AAsyncJobManager > AsyncJobManager;
-    AAsyncJobList *          RenderFrontendJobList;
-    AAsyncJobList *          RenderBackendJobList;
+    TRef<AAsyncJobManager> AsyncJobManager;
+    AAsyncJobList*         RenderFrontendJobList;
+    AAsyncJobList*         RenderBackendJobList;
 
-    ARuntime( struct SEntryDecl const & _EntryDecl );
+    ARuntime(struct SEntryDecl const& _EntryDecl);
 
     ~ARuntime();
 
     /** Return application working directory */
-    AString const & GetWorkingDir();
+    AString const& GetWorkingDir();
 
     /** Return game module root directory */
-    AString const & GetRootPath();
+    AString const& GetRootPath();
 
     /** Return application exacutable name */
-    const char * GetExecutableName();
+    const char* GetExecutableName();
 
     /** Allocate frame memory */
-    void * AllocFrameMem( size_t _SizeInBytes );
+    void* AllocFrameMem(size_t _SizeInBytes);
 
     /** Return frame memory size in bytes */
     size_t GetFrameMemorySize() const;
@@ -219,10 +219,10 @@ public:
     int SysFrameNumber() const;
 
     /** Current video mode */
-    SVideoMode const & GetVideoMode() const;
+    SVideoMode const& GetVideoMode() const;
 
     /** Change a video mode */
-    void PostChangeVideoMode( SVideoMode const & _DesiredMode );
+    void PostChangeVideoMode(SVideoMode const& _DesiredMode);
 
     /** Terminate the application */
     void PostTerminateEvent();
@@ -235,55 +235,55 @@ public:
     /** Poll runtime events */
     void PollEvents();
 
-    void SetCursorEnabled( bool _Enabled );
+    void SetCursorEnabled(bool _Enabled);
 
     bool IsCursorEnabled();
 
-    void GetCursorPosition( int * _X, int * _Y );
+    void GetCursorPosition(int* _X, int* _Y);
 
-    RenderCore::IDevice * GetRenderDevice();
+    RenderCore::IDevice*           GetRenderDevice();
     RenderCore::IImmediateContext* GetImmediateContext() { return pImmediateContext; }
-    RenderCore::ISwapChain* GetSwapChain() { return pSwapChain; }
+    RenderCore::ISwapChain*        GetSwapChain() { return pSwapChain; }
 
-    AVertexMemoryGPU * GetVertexMemoryGPU() { return VertexMemoryGPU; }
-    AStreamedMemoryGPU * GetStreamedMemoryGPU() { return StreamedMemoryGPU; }
+    AVertexMemoryGPU*   GetVertexMemoryGPU() { return VertexMemoryGPU; }
+    AStreamedMemoryGPU* GetStreamedMemoryGPU() { return StreamedMemoryGPU; }
 
-    void ReadScreenPixels( uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, void * _SysMem );
+    void ReadScreenPixels(uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, void* _SysMem);
 
     /** Zip archive of embedded content */
-    AArchive const & GetEmbeddedResources();
+    AArchive const& GetEmbeddedResources();
 
 private:
-    AString         WorkingDir;
-    AString         RootPath;
-    char *          Executable;
+    AString WorkingDir;
+    AString RootPath;
+    char*   Executable;
 
-    int64_t         FrameTimeStamp;
-    int64_t         FrameDuration;
-    int             FrameNumber;
+    int64_t FrameTimeStamp;
+    int64_t FrameDuration;
+    int     FrameNumber;
 
     TLinearAllocator<> FrameMemory;
-    size_t          FrameMemoryUsedPrev;
-    size_t          MaxFrameMemoryUsage;
+    size_t             FrameMemoryUsedPrev;
+    size_t             MaxFrameMemoryUsage;
 
-    struct SEntryDecl const * pModuleDecl;
+    struct SEntryDecl const* pModuleDecl;
 
-    class IEngineInterface * Engine;
+    class IEngineInterface* Engine;
 
-    SVideoMode      VideoMode;
-    SVideoMode      DesiredMode;
-    bool            bPostChangeVideoMode;
+    SVideoMode VideoMode;
+    SVideoMode DesiredMode;
+    bool       bPostChangeVideoMode;
 
-    TRef< RenderCore::IDevice > RenderDevice;
-    TRef< RenderCore::IImmediateContext > pImmediateContext;
-    TRef<RenderCore::ISwapChain> pSwapChain;
+    TRef<RenderCore::IDevice>           RenderDevice;
+    TRef<RenderCore::IImmediateContext> pImmediateContext;
+    TRef<RenderCore::ISwapChain>        pSwapChain;
 
-    TRef< AVertexMemoryGPU > VertexMemoryGPU;
-    TRef< AStreamedMemoryGPU > StreamedMemoryGPU;
+    TRef<AVertexMemoryGPU>   VertexMemoryGPU;
+    TRef<AStreamedMemoryGPU> StreamedMemoryGPU;
 
-    bool            bPostTerminateEvent;
+    bool bPostTerminateEvent;
 
-    TUniqueRef< AArchive > EmbeddedResourcesArch;
+    TUniqueRef<AArchive> EmbeddedResourcesArch;
 
     void Run();
 
@@ -291,17 +291,17 @@ private:
 
     void LoadConfigFile();
 
-    void SetVideoMode( SVideoMode const & _DesiredMode );
+    void SetVideoMode(SVideoMode const& _DesiredMode);
 
-    void ClearJoystickAxes( int _JoystickNum, double _TimeStamp );
+    void ClearJoystickAxes(int _JoystickNum, double _TimeStamp);
     void UnpressKeysAndButtons();
-    void UnpressJoystickButtons( int _JoystickNum, double _TimeStamp );
+    void UnpressJoystickButtons(int _JoystickNum, double _TimeStamp);
 
 #ifdef AN_OS_WIN32
-    friend void RunEngine( SEntryDecl const & _EntryDecl );
+    friend void RunEngine(SEntryDecl const& _EntryDecl);
 #else
-    friend void RunEngine( int _Argc, char ** _Argv, SEntryDecl const & _EntryDecl );
+    friend void RunEngine(int _Argc, char** _Argv, SEntryDecl const& _EntryDecl);
 #endif
 };
 
-extern ARuntime * GRuntime;
+extern ARuntime* GRuntime;

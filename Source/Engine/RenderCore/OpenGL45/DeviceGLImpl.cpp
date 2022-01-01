@@ -28,10 +28,9 @@ SOFTWARE.
 
 */
 
-#include <Core/Public/Core.h>
-#include <Core/Public/WindowsDefs.h>
-#include <Core/Public/CoreMath.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Platform.h>
+#include <Platform/Public/WindowsDefs.h>
+#include <Platform/Public/Logger.h>
 
 #include "DeviceGLImpl.h"
 #include "ImmediateContextGLImpl.h"

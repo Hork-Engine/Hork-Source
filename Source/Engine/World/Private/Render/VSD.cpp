@@ -42,6 +42,8 @@ SOFTWARE.
 #include <World/Public/Render/RenderWorld.h>
 #include <World/Public/Level.h>
 #include <Runtime/Public/ScopedTimeCheck.h>
+#include <Geometry/Public/ConvexHull.h>
+#include <Geometry/Public/BV/BvIntersect.h>
 
 static const SWorldRaycastFilter DefaultRaycastFilter;
 
@@ -136,12 +138,12 @@ void AVSD::QueryVisiblePrimitives( AWorld * InWorld, TPodVector< SPrimitiveDef *
     ViewPosition = InQuery.ViewPosition;
     ViewRightVec = InQuery.ViewRightVec;
     ViewUpVec = InQuery.ViewUpVec;
-    ViewPlane = *InQuery.FrustumPlanes[ FPL_NEAR ];
-    ViewZNear = -ViewPlane.Dist( ViewPosition );//Camera->GetZNear();
+    ViewPlane    = *InQuery.FrustumPlanes[FRUSTUM_PLANE_NEAR];
+    ViewZNear = -ViewPlane.DistanceToPoint( ViewPosition );//Camera->GetZNear();
     ViewCenter = ViewPlane.Normal * ViewZNear;
 
     // Get corner at left-bottom of frustum
-    Float3 corner = Math::Cross( InQuery.FrustumPlanes[ FPL_BOTTOM ]->Normal, InQuery.FrustumPlanes[ FPL_LEFT ]->Normal );
+    Float3 corner = Math::Cross(InQuery.FrustumPlanes[FRUSTUM_PLANE_BOTTOM]->Normal, InQuery.FrustumPlanes[FRUSTUM_PLANE_LEFT]->Normal);
 
     // Project left-bottom corner to near plane
     corner = corner * ( ViewZNear / Math::Dot( ViewPlane.Normal, corner ) );
@@ -278,7 +280,7 @@ void AVSD::FlowThroughPortals_r( SVisArea const * InArea ) {
 }
 
 bool AVSD::CalcPortalStack( SPortalStack * OutStack, SPortalStack const * InPrevStack, SPortalLink const * InPortal ) {
-    const float d = InPortal->Plane.Dist( ViewPosition );
+    const float d = InPortal->Plane.DistanceToPoint( ViewPosition );
     if ( d <= 0.0f ) {
         #ifdef DEBUG_TRAVERSING_COUNTERS
         Dbg_SkippedByPlaneOffset++;
@@ -401,7 +403,7 @@ bool AVSD::CalcPortalStack( SPortalStack * OutStack, SPortalStack const * InPrev
 //
 
 static float ClipDistances[ MAX_HULL_POINTS ];
-static EPlaneSide ClipSides[ MAX_HULL_POINTS ];
+static PLANE_SIDE ClipSides[ MAX_HULL_POINTS ];
 
 bool AVSD::ClipPolygonFast( Float3 const * InPoints, const int InNumPoints, SPortalHull * Out, PlaneF const & InClipPlane, const float InEpsilon ) {
     int front = 0;
@@ -413,18 +415,18 @@ bool AVSD::ClipPolygonFast( Float3 const * InPoints, const int InNumPoints, SPor
 
     // Classify hull points
     for ( i = 0; i < InNumPoints; i++ ) {
-        d = InClipPlane.Dist( InPoints[ i ] );
+        d = InClipPlane.DistanceToPoint( InPoints[ i ] );
 
         ClipDistances[ i ] = d;
 
         if ( d > InEpsilon ) {
-            ClipSides[ i ] = EPlaneSide::Front;
+            ClipSides[ i ] = PLANE_SIDE_FRONT;
             front++;
         } else if ( d < -InEpsilon ) {
-            ClipSides[ i ] = EPlaneSide::Back;
+            ClipSides[ i ] = PLANE_SIDE_BACK;
             back++;
         } else {
-            ClipSides[ i ] = EPlaneSide::On;
+            ClipSides[ i ] = PLANE_SIDE_ON;
         }
     }
 
@@ -447,18 +449,18 @@ bool AVSD::ClipPolygonFast( Float3 const * InPoints, const int InNumPoints, SPor
     for ( i = 0; i < InNumPoints; i++ ) {
         Float3 const & v = InPoints[ i ];
 
-        if ( ClipSides[ i ] == EPlaneSide::On ) {
+        if ( ClipSides[ i ] == PLANE_SIDE_ON ) {
             Out->Points[ Out->NumPoints++ ] = v;
             continue;
         }
 
-        if ( ClipSides[ i ] == EPlaneSide::Front ) {
+        if ( ClipSides[ i ] == PLANE_SIDE_FRONT ) {
             Out->Points[ Out->NumPoints++ ] = v;
         }
 
-        EPlaneSide nextSide = ClipSides[ i + 1 ];
+        PLANE_SIDE nextSide = ClipSides[ i + 1 ];
 
-        if ( nextSide == EPlaneSide::On || nextSide == ClipSides[ i ] ) {
+        if ( nextSide == PLANE_SIDE_ON || nextSide == ClipSides[ i ] ) {
             continue;
         }
 
@@ -542,11 +544,11 @@ void AVSD::CalcPortalScissor( SPortalScissor & OutScissor, SPortalHull const * I
 }
 
 AN_FORCEINLINE bool AVSD::FaceCull( SPrimitiveDef const * InPrimitive ) {
-    return InPrimitive->Face.Dist( ViewPosition ) < 0.0f;
+    return InPrimitive->Face.DistanceToPoint( ViewPosition ) < 0.0f;
 }
 
 AN_FORCEINLINE bool AVSD::FaceCull( SSurfaceDef const * InSurface ) {
-    return InSurface->Face.Dist( ViewPosition ) < 0.0f;
+    return InSurface->Face.DistanceToPoint( ViewPosition ) < 0.0f;
 }
 
 AN_INLINE bool VSD_CullBoxSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBox const & InBounds ) {
@@ -1896,10 +1898,10 @@ bool AVSD::LevelRaycast2_r( int InNodeIndex, Float3 const & InRayStart, Float3 c
     else
     {
         // Calc front distance
-        d1 = node->Plane->Dist( InRayStart );
+        d1 = node->Plane->DistanceToPoint( InRayStart );
 
         // Calc back distance
-        d2 = node->Plane->Dist( InRayEnd );
+        d2 = node->Plane->DistanceToPoint( InRayEnd );
     }
 
     int side = d1 < 0;
@@ -2038,10 +2040,10 @@ bool AVSD::LevelRaycastBounds2_r( int InNodeIndex, Float3 const & InRayStart, Fl
     else
     {
         // Calc front distance
-        d1 = node->Plane->Dist( InRayStart );
+        d1 = node->Plane->DistanceToPoint( InRayStart );
 
         // Calc back distance
-        d2 = node->Plane->Dist( InRayEnd );
+        d2 = node->Plane->DistanceToPoint( InRayEnd );
     }
 
     int side = d1 < 0;
@@ -2107,7 +2109,7 @@ void AVSD::LevelRaycastPortals_r( SVisArea * InArea ) {
         }
 #if 1
         // Calculate distance from ray origin to plane
-        const float d1 = portal->Plane.Dist( Raycast.RayStart );
+        const float d1 = portal->Plane.DistanceToPoint( Raycast.RayStart );
         if ( d1 <= 0.0f ) {
             // ray is behind
             continue;
@@ -2170,7 +2172,7 @@ void AVSD::LevelRaycastBoundsPortals_r( SVisArea * InArea ) {
 
 #if 1
         // Calculate distance from ray origin to plane
-        const float d1 = portal->Plane.Dist( Raycast.RayStart );
+        const float d1 = portal->Plane.DistanceToPoint( Raycast.RayStart );
         if ( d1 <= 0.0f ) {
             // ray is behind
             continue;
@@ -2485,7 +2487,7 @@ bool AVSD::RaycastBounds( AWorld * InWorld, TPodVector< SBoxHitResult > & Result
             }
         } SortHit;
 
-        StdSort( Result.ToPtr(), Result.ToPtr() + Result.Size(), SortHit );
+        std::sort( Result.ToPtr(), Result.ToPtr() + Result.Size(), SortHit );
     }
 
     return true;
@@ -2555,7 +2557,7 @@ bool AVSD::RaycastClosestBounds( AWorld * InWorld, SBoxHitResult & Result, Float
 void AVSD::DrawDebug( ADebugRenderer * InRenderer ) {
 #ifdef DEBUG_PORTAL_SCISSORS
     InRenderer->SetDepthTest( false );
-    InRenderer->SetColor( AColor4( 0, 1, 0 ) );
+    InRenderer->SetColor( Color4( 0, 1, 0 ) );
 
     Float3 Corners[4];
 

@@ -31,7 +31,7 @@ SOFTWARE.
 #include <World/Public/Base/ResourceManager.h>
 #include <World/Public/Base/GameModuleInterface.h>
 #include <Runtime/Public/Runtime.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 AResourceManager * GResourceManager = nullptr;
 

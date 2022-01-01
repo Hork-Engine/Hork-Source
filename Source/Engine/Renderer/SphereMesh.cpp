@@ -31,8 +31,7 @@ SOFTWARE.
 #include "SphereMesh.h"
 #include "RenderLocal.h"
 
-#include <Core/Public/PodVector.h>
-#include <Core/Public/CoreMath.h>
+#include <Containers/Public/PodVector.h>
 
 using namespace RenderCore;
 

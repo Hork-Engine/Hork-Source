@@ -124,20 +124,20 @@ int WButton::GetDrawState() const
 }
 
 void WButton::OnDrawEvent( ACanvas & _Canvas ) {
-    AColor4 bgColor;
+    Color4 bgColor;
 
     switch ( GetDrawState() ) {
     case DRAW_DISABLED:
-        bgColor = AColor4(0.4f,0.4f,0.4f);
+        bgColor = Color4(0.4f,0.4f,0.4f);
         break;
     case DRAW_SIMPLE:
-        bgColor = AColor4(0.4f,0.4f,0.4f);
+        bgColor = Color4(0.4f,0.4f,0.4f);
         break;
     case DRAW_HOVERED:
-        bgColor = AColor4( 0.5f,0.5f,0.5f,1 );
+        bgColor = Color4( 0.5f,0.5f,0.5f,1 );
         break;
     case DRAW_PRESSED:
-        bgColor = AColor4( 0.6f,0.6f,0.6f,1 );
+        bgColor = Color4( 0.6f,0.6f,0.6f,1 );
         break;
     }
 
@@ -152,11 +152,11 @@ void WButton::OnDrawEvent( ACanvas & _Canvas ) {
 AN_CLASS_META( WTextButton )
 
 WTextButton::WTextButton() {
-    Color = AColor4(0.4f,0.4f,0.4f);
-    HoverColor = AColor4( 0.5f,0.5f,0.5f,1 );
-    PressedColor = AColor4( 0.6f,0.6f,0.6f,1 );
-    TextColor = AColor4::White();
-    BorderColor = Float4(0,0,0,0.5f);
+    Color = Color4(0.4f,0.4f,0.4f);
+    HoverColor = Color4( 0.5f,0.5f,0.5f,1 );
+    PressedColor = Color4( 0.6f,0.6f,0.6f,1 );
+    TextColor = Color4::White();
+    BorderColor = Color4(0,0,0,0.5f);
     Rounding = 8;
     RoundingCorners = CORNER_ROUND_ALL;
     BorderThickness = 1;
@@ -172,27 +172,27 @@ WTextButton & WTextButton::SetText( AStringView _Text ) {
     return *this;
 }
 
-WTextButton & WTextButton::SetColor( AColor4 const & _Color ) {
+WTextButton & WTextButton::SetColor( Color4 const & _Color ) {
     Color = _Color;
     return *this;
 }
 
-WTextButton & WTextButton::SetHoverColor( AColor4 const & _Color ) {
+WTextButton & WTextButton::SetHoverColor( Color4 const & _Color ) {
     HoverColor = _Color;
     return *this;
 }
 
-WTextButton & WTextButton::SetPressedColor( AColor4 const & _Color ) {
+WTextButton & WTextButton::SetPressedColor( Color4 const & _Color ) {
     PressedColor = _Color;
     return *this;
 }
 
-WTextButton & WTextButton::SetTextColor( AColor4 const & _Color ) {
+WTextButton & WTextButton::SetTextColor( Color4 const & _Color ) {
     TextColor = _Color;
     return *this;
 }
 
-WTextButton & WTextButton::SetBorderColor( AColor4 const & _Color ) {
+WTextButton & WTextButton::SetBorderColor( Color4 const & _Color ) {
     BorderColor = _Color;
     return *this;
 }
@@ -223,7 +223,7 @@ WTextButton & WTextButton::SetFont( AFont * _Font ) {
 }
 
 void WTextButton::OnDrawEvent( ACanvas & _Canvas ) {
-    AColor4 bgColor;
+    Color4 bgColor;
 
     switch ( GetDrawState() ) {
     case DRAW_DISABLED:

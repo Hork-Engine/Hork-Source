@@ -323,10 +323,12 @@ void ARenderingParameters::SetColorGradingPresaturation( Float3 const & _ColorGr
 void ARenderingParameters::SetColorGradingTemperature( float _ColorGradingTemperature ) {
     ColorGradingTemperature = _ColorGradingTemperature;
 
-    AColor4 color;
+    Color4 color;
     color.SetTemperature( ColorGradingTemperature );
 
-    ColorGradingTemperatureScale = color.GetRGB();
+    ColorGradingTemperatureScale.X = color.R;
+    ColorGradingTemperatureScale.Y = color.G;
+    ColorGradingTemperatureScale.Z = color.B;
 }
 
 void ARenderingParameters::SetColorGradingTemperatureStrength( Float3 const & _ColorGradingTemperatureStrength ) {
@@ -353,7 +355,9 @@ void ARenderingParameters::SetColorGradingDefaults() {
     ColorGradingAdaptationSpeed = 2;
     ColorGradingTemperature = 6500.0f;
 
-    AColor4 color;
+    Color4 color;
     color.SetTemperature( ColorGradingTemperature );
-    ColorGradingTemperatureScale = color.GetRGB();
+    ColorGradingTemperatureScale.X = color.R;
+    ColorGradingTemperatureScale.Y = color.G;
+    ColorGradingTemperatureScale.Z = color.B;
 }

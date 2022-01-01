@@ -30,115 +30,188 @@ SOFTWARE.
 
 #pragma once
 
-#include "VectorMath.h"
+#include "BaseMath.h"
 
-struct AColor4 : Float4
+struct Color4
 {
-    AColor4() = default;
-    explicit constexpr AColor4( float _Value ) :
-        Float4( _Value ) {}
-    constexpr AColor4( float _X, float _Y, float _Z ) :
-        Float4( _X, _Y, _Z, 1.0f ) {}
-    constexpr AColor4( float _X, float _Y, float _Z, float _W ) :
-        Float4( _X, _Y, _Z, _W ) {}
-    AColor4( Float4 const & _Value ) :
-        Float4( _Value ) {}
-    AColor4( Float3 const & _Value ) :
-        Float4( _Value.X, _Value.Y, _Value.Z, 1.0f ) {}
+    float R;
+    float G;
+    float B;
+    float A;
+
+    Color4() = default;
+    explicit constexpr Color4(float _Value) :
+        R(_Value), G(_Value), B(_Value), A(_Value) {}
+    constexpr Color4(float InR, float InG, float InB) :
+        R(InR), G(InG), B(InB), A(1.0f) {}
+    constexpr Color4(float InR, float InG, float InB, float InA) :
+        R(InR), G(InG), B(InB), A(InA) {}
+
+    float* ToPtr()
+    {
+        return &R;
+    }
+
+    float const* ToPtr() const
+    {
+        return &R;
+    }
+
+    float& operator[](int _Index)
+    {
+        AN_ASSERT_(_Index >= 0 && _Index < NumComponents(), "Index out of range");
+        return (&R)[_Index];
+    }
+
+    float const& operator[](int _Index) const
+    {
+        AN_ASSERT_(_Index >= 0 && _Index < NumComponents(), "Index out of range");
+        return (&R)[_Index];
+    }
+
+    constexpr Color4 operator*(Color4 const& Rhs) const
+    {
+        return Color4(R * Rhs.R, G * Rhs.G, B * Rhs.B, A * Rhs.A);
+    }
+    constexpr Color4 operator/(Color4 const& Rhs) const
+    {
+        return Color4(R / Rhs.R, G / Rhs.G, B / Rhs.B, A / Rhs.A);
+    }
+    constexpr Color4 operator*(float Rhs) const
+    {
+        return Color4(R * Rhs, G * Rhs, B * Rhs, A * Rhs);
+    }
+    constexpr Color4 operator/(float Rhs) const
+    {
+        return (*this) * (1.0f / Rhs);
+    }
+
+    Color4& operator*=(Color4 const& Rhs)
+    {
+        R *= Rhs.R;
+        G *= Rhs.G;
+        B *= Rhs.B;
+        A *= Rhs.A;
+        return *this;
+    }
+    Color4& operator/=(Color4 const& Rhs)
+    {
+        R /= Rhs.R;
+        G /= Rhs.G;
+        B /= Rhs.B;
+        A /= Rhs.A;
+        return *this;
+    }
+    Color4& operator*=(float Rhs)
+    {
+        R *= Rhs;
+        G *= Rhs;
+        B *= Rhs;
+        A *= Rhs;
+        return *this;
+    }
+    Color4& operator/=(float Rhs)
+    {
+        float invRhs = 1.0f / Rhs;
+        R *= invRhs;
+        G *= invRhs;
+        B *= invRhs;
+        A *= invRhs;
+        return *this;
+    }
 
     void SwapRGB();
 
-    void  SetAlpha( float _Alpha );
-    float GetAlpha() const { return W; }
+    void  SetAlpha(float _Alpha);
+    float GetAlpha() const { return A; }
 
-    bool IsTransparent() const { return W < 0.0001f; }
+    bool IsTransparent() const { return A < 0.0001f; }
 
     /** Convert temperature in Kelvins to RGB color.
     Assume temperature is range between 1000 and 15000. */
-    void SetTemperature( float _Temperature );
+    void SetTemperature(float _Temperature);
 
-    void SetByte( byte _Red, byte _Green, byte _Blue );
-    void SetByte( byte _Red, byte _Green, byte _Blue, byte _Alpha );
+    void SetByte(uint8_t _Red, uint8_t _Green, uint8_t _Blue);
+    void SetByte(uint8_t _Red, uint8_t _Green, uint8_t _Blue, uint8_t _Alpha);
 
-    void GetByte( byte & _Red, byte & _Green, byte & _Blue ) const;
-    void GetByte( byte & _Red, byte & _Green, byte & _Blue, byte & _Alpha ) const;
+    void GetByte(uint8_t& _Red, uint8_t& _Green, uint8_t& _Blue) const;
+    void GetByte(uint8_t& _Red, uint8_t& _Green, uint8_t& _Blue, uint8_t& _Alpha) const;
 
-    void     SetDWord( uint32_t _Color );
+    void     SetDWord(uint32_t _Color);
     uint32_t GetDWord() const;
 
-    void           SetUShort565( unsigned short _565 );
+    void           SetUShort565(unsigned short _565);
     unsigned short GetUShort565() const;
 
-    void SetYCoCgAlpha( const byte _YCoCgAlpha[4] );
-    void GetYCoCgAlpha( byte _YCoCgAlpha[4] ) const;
+    void SetYCoCgAlpha(const uint8_t _YCoCgAlpha[4]);
+    void GetYCoCgAlpha(uint8_t _YCoCgAlpha[4]) const;
 
-    void SetYCoCg( const byte _YCoCg[3] );
-    void GetYCoCg( byte _YCoCg[3] ) const;
+    void SetYCoCg(const uint8_t _YCoCg[3]);
+    void GetYCoCg(uint8_t _YCoCg[3]) const;
 
-    void SetCoCg_Y( const byte _CoCg_Y[4] );
-    void GetCoCg_Y( byte _CoCg_Y[4] ) const;
+    void SetCoCg_Y(const uint8_t _CoCg_Y[4]);
+    void GetCoCg_Y(uint8_t _CoCg_Y[4]) const;
 
-    void SetHSL( float _Hue, float _Saturation, float _Lightness );
-    void GetHSL( float & _Hue, float & _Saturation, float & _Lightness ) const;
+    void SetHSL(float _Hue, float _Saturation, float _Lightness);
+    void GetHSL(float& _Hue, float& _Saturation, float& _Lightness) const;
 
-    void SetCMYK( float _Cyan, float _Magenta, float _Yellow, float _Key );
-    void GetCMYK( float & _Cyan, float & _Magenta, float & _Yellow, float & _Key ) const;
+    void SetCMYK(float _Cyan, float _Magenta, float _Yellow, float _Key);
+    void GetCMYK(float& _Cyan, float& _Magenta, float& _Yellow, float& _Key) const;
 
     /** Assume color is in linear space */
     float GetLuminance() const;
 
-    AColor4 ToLinear() const;
-    AColor4 ToSRGB() const;
+    Color4 ToLinear() const;
+    Color4 ToSRGB() const;
 
-    Float3 &       GetRGB() { return *(Float3 *)( this ); }
-    Float3 const & GetRGB() const { return *(Float3 *)( this ); }
-
-    static AColor4 const & White()
+    static Color4 const& White()
     {
-        static AColor4 color( 1.0f );
+        static Color4 color(1.0f);
         return color;
     }
 
-    static AColor4 const & Black()
+    static Color4 const& Black()
     {
-        static AColor4 color( 0.0f, 0.0f, 0.0f, 1.0f );
+        static Color4 color(0.0f, 0.0f, 0.0f, 1.0f);
         return color;
     }
 
-    static AColor4 const & Red()
+    static Color4 const& Red()
     {
-        static AColor4 color( 1.0f, 0.0f, 0.0f, 1.0f );
+        static Color4 color(1.0f, 0.0f, 0.0f, 1.0f);
         return color;
     }
 
-    static AColor4 const & Green()
+    static Color4 const& Green()
     {
-        static AColor4 color( 0.0f, 1.0f, 0.0f, 1.0f );
+        static Color4 color(0.0f, 1.0f, 0.0f, 1.0f);
         return color;
     }
 
-    static AColor4 const & Blue()
+    static Color4 const& Blue()
     {
-        static AColor4 color( 0.0f, 0.0f, 1.0f, 1.0f );
+        static Color4 color(0.0f, 0.0f, 1.0f, 1.0f);
         return color;
     }
+
+    static constexpr int NumComponents() { return 4; }
 };
 
-AN_FORCEINLINE float LinearFromSRGB( float Color )
+AN_FORCEINLINE float LinearFromSRGB(float Color)
 {
-    if ( Color < 0.0f ) return 0.0f;
-    if ( Color > 1.0f ) return 1.0f;
-    return ( Color <= 0.04045f ) ? Color / 12.92f : Math::Pow( ( Color + 0.055f ) / 1.055f, 2.4f );
+    if (Color < 0.0f) return 0.0f;
+    if (Color > 1.0f) return 1.0f;
+    return (Color <= 0.04045f) ? Color / 12.92f : Math::Pow((Color + 0.055f) / 1.055f, 2.4f);
 }
 
-AN_FORCEINLINE float LinearToSRGB( float LinearColor )
+AN_FORCEINLINE float LinearToSRGB(float LinearColor)
 {
-    if ( LinearColor < 0.0f ) return 0.0f;
-    if ( LinearColor > 1.0f ) return 1.0f;
-    return ( LinearColor <= 0.0031308f ) ? LinearColor * 12.92f : Math::Pow( LinearColor, 1.0f / 2.4f ) * 1.055f - 0.055f;
+    if (LinearColor < 0.0f) return 0.0f;
+    if (LinearColor > 1.0f) return 1.0f;
+    return (LinearColor <= 0.0031308f) ? LinearColor * 12.92f : Math::Pow(LinearColor, 1.0f / 2.4f) * 1.055f - 0.055f;
 }
 
-AN_FORCEINLINE float LinearFromSRGB_UChar( byte in )
+AN_FORCEINLINE float LinearFromSRGB_UChar(uint8_t in)
 {
     // Uses true SRGB conversion
     extern float stbir__srgb_uchar_to_linear_float[256];
@@ -147,7 +220,7 @@ AN_FORCEINLINE float LinearFromSRGB_UChar( byte in )
 
 extern const uint32_t FP32ToSRGB8[104];
 
-AN_FORCEINLINE byte LinearToSRGB_UChar( float in )
+AN_FORCEINLINE uint8_t LinearToSRGB_UChar(float in)
 {
     // From https://gist.github.com/rygorous/2203834
     // Assume float is in IEEE format
@@ -158,73 +231,73 @@ AN_FORCEINLINE byte LinearToSRGB_UChar( float in )
         float    f;
     } FP32;
 
-    static const FP32 almostone = { 0x3f7fffff }; // 1-eps
-    static const FP32 minval    = { ( 127 - 13 ) << 23 };
+    static const FP32 almostone = {0x3f7fffff}; // 1-eps
+    static const FP32 minval    = {(127 - 13) << 23};
     uint32_t          tab, bias, scale, t;
     FP32              f;
 
     // Clamp to [2^(-13), 1-eps]; these two values map to 0 and 1, respectively.
     // The tests are carefully written so that NaNs map to 0, same as in the reference
     // implementation.
-    if ( !( in > minval.f ) ) // written this way to catch NaNs
+    if (!(in > minval.f)) // written this way to catch NaNs
         in = minval.f;
-    if ( in > almostone.f )
+    if (in > almostone.f)
         in = almostone.f;
 
     // Do the table lookup and unpack bias, scale
     f.f   = in;
-    tab   = FP32ToSRGB8[( f.u - minval.u ) >> 20];
-    bias  = ( tab >> 16 ) << 9;
+    tab   = FP32ToSRGB8[(f.u - minval.u) >> 20];
+    bias  = (tab >> 16) << 9;
     scale = tab & 0xffff;
 
     // Grab next-highest mantissa bits and perform linear interpolation
-    t = ( f.u >> 12 ) & 0xff;
-    return (unsigned char)( ( bias + scale * t ) >> 16 );
+    t = (f.u >> 12) & 0xff;
+    return (unsigned char)((bias + scale * t) >> 16);
 }
 
-AN_FORCEINLINE AColor4 AColor4::ToLinear() const
+AN_FORCEINLINE Color4 Color4::ToLinear() const
 {
-    return AColor4( LinearFromSRGB( X ), LinearFromSRGB( Y ), LinearFromSRGB( Z ), W );
+    return Color4(LinearFromSRGB(R), LinearFromSRGB(G), LinearFromSRGB(B), A);
 }
 
-AN_FORCEINLINE AColor4 AColor4::ToSRGB() const
+AN_FORCEINLINE Color4 Color4::ToSRGB() const
 {
-    return AColor4( LinearToSRGB( X ), LinearToSRGB( Y ), LinearToSRGB( Z ), W );
+    return Color4(LinearToSRGB(R), LinearToSRGB(G), LinearToSRGB(B), A);
 }
 
-AN_FORCEINLINE void AColor4::SwapRGB()
+AN_FORCEINLINE void Color4::SwapRGB()
 {
-    StdSwap( X, Z );
+    std::swap(R, B);
 }
 
-AN_FORCEINLINE void AColor4::SetAlpha( float _Alpha )
+AN_FORCEINLINE void Color4::SetAlpha(float _Alpha)
 {
-    W = Math::Saturate( _Alpha );
+    A = Math::Saturate(_Alpha);
 }
 
-AN_FORCEINLINE void AColor4::SetTemperature( float _Temperature )
+AN_FORCEINLINE void Color4::SetTemperature(float _Temperature)
 {
 #if 1
     // Approximate Planckian locus in CIE 1960 UCS
     // Urho3D and UE4 uses same formulas
 
-    const float temperature = Math::Clamp( _Temperature, 1000.0f, 15000.0f );
+    const float temperature = Math::Clamp(_Temperature, 1000.0f, 15000.0f);
 
-    const float u = ( 0.860117757f + 1.54118254e-4f * temperature + 1.28641212e-7f * temperature * temperature ) /
-        ( 1.0f + 8.42420235e-4f * temperature + 7.08145163e-7f * temperature * temperature );
-    const float v = ( 0.317398726f + 4.22806245e-5f * temperature + 4.20481691e-8f * temperature * temperature ) /
-        ( 1.0f - 2.89741816e-5f * temperature + 1.61456053e-7f * temperature * temperature );
+    const float u = (0.860117757f + 1.54118254e-4f * temperature + 1.28641212e-7f * temperature * temperature) /
+        (1.0f + 8.42420235e-4f * temperature + 7.08145163e-7f * temperature * temperature);
+    const float v = (0.317398726f + 4.22806245e-5f * temperature + 4.20481691e-8f * temperature * temperature) /
+        (1.0f - 2.89741816e-5f * temperature + 1.61456053e-7f * temperature * temperature);
 
-    const float x = 3.0f * u / ( 2.0f * u - 8.0f * v + 4.0f );
-    const float y = 2.0f * v / ( 2.0f * u - 8.0f * v + 4.0f );
+    const float x = 3.0f * u / (2.0f * u - 8.0f * v + 4.0f);
+    const float y = 2.0f * v / (2.0f * u - 8.0f * v + 4.0f);
     const float z = 1.0f - x - y;
 
     const float x_ = 1.0f / y * x;
     const float z_ = 1.0f / y * z;
 
-    X = Math::Saturate( 3.2404542f * x_ + -1.5371385f + -0.4985314f * z_ );
-    Y = Math::Saturate( -0.9692660f * x_ + 1.8760108f + 0.0415560f * z_ );
-    Z = Math::Saturate( 0.0556434f * x_ + -0.2040259f + 1.0572252f * z_ );
+    R = Math::Saturate(3.2404542f * x_ + -1.5371385f + -0.4985314f * z_);
+    G = Math::Saturate(-0.9692660f * x_ + 1.8760108f + 0.0415560f * z_);
+    B = Math::Saturate(0.0556434f * x_ + -0.2040259f + 1.0572252f * z_);
 #endif
 
 #if 0
@@ -232,16 +305,16 @@ AN_FORCEINLINE void AColor4::SetTemperature( float _Temperature )
     _Temperature = Math::Clamp( _Temperature, 1000.0f, 15000.0f );
 
     if ( _Temperature <= 6500.0f ) {
-        X = 1.0f;
-        Y = -2902.1955373783176f / (1669.5803561666639f + _Temperature) + 1.3302673723350029f;
-        Z = -8257.7997278925690f / (2575.2827530017594f + _Temperature) + 1.8993753891711275f;
-        Z = Math::Max( 0.0f, Z );
+        R = 1.0f;
+        G = -2902.1955373783176f / (1669.5803561666639f + _Temperature) + 1.3302673723350029f;
+        B = -8257.7997278925690f / (2575.2827530017594f + _Temperature) + 1.8993753891711275f;
+        B = Math::Max( 0.0f, B );
     } else {
-        X = 1745.0425298314172f / (-2666.3474220535695f + _Temperature) + 0.55995389139931482f;
-        Y = 1216.6168361476490f / (-2173.1012343082230f + _Temperature) + 0.70381203140554553f;
-        Z = -8257.7997278925690f / (2575.2827530017594f + _Temperature) + 1.8993753891711275f;
-        X = Math::Min( 1.0f, X );
-        Z = Math::Min( 1.0f, Z );
+        R = 1745.0425298314172f / (-2666.3474220535695f + _Temperature) + 0.55995389139931482f;
+        G = 1216.6168361476490f / (-2173.1012343082230f + _Temperature) + 0.70381203140554553f;
+        B = -8257.7997278925690f / (2575.2827530017594f + _Temperature) + 1.8993753891711275f;
+        R = Math::Min( 1.0f, R );
+        B = Math::Min( 1.0f, B );
     }
 #endif
 
@@ -254,330 +327,346 @@ AN_FORCEINLINE void AColor4::SetTemperature( float _Temperature )
     // Calculate each color in turn
 
     if ( _Temperature <= 66 ) {
-        X = 1.0f;
+        R = 1.0f;
 
         // Note: the R-squared value for this approximation is .996
         Value = (99.4708025861/255.0) * log( _Temperature ) - (161.1195681661/255.0);
-        Y = Math::Min( 1.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
+        G = Math::Min( 1.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
 
     } else {
         // Note: the R-squared value for this approximation is .988
         Value = (329.698727446 / 255.0) * Math::Pow( _Temperature - 60, -0.1332047592 );
-        X = Math::Min( 1.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
+        R = Math::Min( 1.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
 
                                             // Note: the R-squared value for this approximation is .987
         Value = (288.1221695283/255.0) * Math::Pow( _Temperature - 60, -0.0755148492 );
-        Y = Value;//Math::Clamp( Value, 0.0f, 1.0f );
+        G = Value;//Math::Clamp( Value, 0.0f, 1.0f );
     }
 
     if ( _Temperature >= 66 ) {
-        Z = 1.0f;
+        B = 1.0f;
     } else if ( _Temperature <= 19 ) {
-        Z = 0.0f;
+        B = 0.0f;
     } else {
         // Note: the R-squared value for this approximation is .998
         Value = (138.5177312231/255.0) * log( _Temperature - 10 ) - (305.0447927307/255.0);
-        Z = Math::Max( 0.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
+        B = Math::Max( 0.0f, Value );//Math::Clamp( Value, 0.0f, 1.0f );
     }
 #endif
 }
 
-AN_FORCEINLINE void AColor4::SetByte( byte _Red, byte _Green, byte _Blue )
+AN_FORCEINLINE void Color4::SetByte(uint8_t _Red, uint8_t _Green, uint8_t _Blue)
 {
     const float scale = 1.0f / 255.0f;
-    X                 = _Red * scale;
-    Y                 = _Green * scale;
-    Z                 = _Blue * scale;
+    R                 = _Red * scale;
+    G                 = _Green * scale;
+    B                 = _Blue * scale;
 }
 
-AN_FORCEINLINE void AColor4::SetByte( byte _Red, byte _Green, byte _Blue, byte _Alpha )
+AN_FORCEINLINE void Color4::SetByte(uint8_t _Red, uint8_t _Green, uint8_t _Blue, uint8_t _Alpha)
 {
     const float scale = 1.0f / 255.0f;
-    X                 = _Red * scale;
-    Y                 = _Green * scale;
-    Z                 = _Blue * scale;
-    W                 = _Alpha * scale;
+    R                 = _Red * scale;
+    G                 = _Green * scale;
+    B                 = _Blue * scale;
+    A                 = _Alpha * scale;
 }
 
-AN_FORCEINLINE void AColor4::GetByte( byte & _Red, byte & _Green, byte & _Blue ) const
+AN_FORCEINLINE void Color4::GetByte(uint8_t& _Red, uint8_t& _Green, uint8_t& _Blue) const
 {
-    _Red   = Math::Clamp( Math::ToIntFast( X * 255 ), 0, 255 );
-    _Green = Math::Clamp( Math::ToIntFast( Y * 255 ), 0, 255 );
-    _Blue  = Math::Clamp( Math::ToIntFast( Z * 255 ), 0, 255 );
+    _Red   = Math::Clamp(Math::ToIntFast(R * 255), 0, 255);
+    _Green = Math::Clamp(Math::ToIntFast(G * 255), 0, 255);
+    _Blue  = Math::Clamp(Math::ToIntFast(B * 255), 0, 255);
 }
 
-AN_FORCEINLINE void AColor4::GetByte( byte & _Red, byte & _Green, byte & _Blue, byte & _Alpha ) const
+AN_FORCEINLINE void Color4::GetByte(uint8_t& _Red, uint8_t& _Green, uint8_t& _Blue, uint8_t& _Alpha) const
 {
-    _Red   = Math::Clamp( Math::ToIntFast( X * 255 ), 0, 255 );
-    _Green = Math::Clamp( Math::ToIntFast( Y * 255 ), 0, 255 );
-    _Blue  = Math::Clamp( Math::ToIntFast( Z * 255 ), 0, 255 );
-    _Alpha = Math::Clamp( Math::ToIntFast( W * 255 ), 0, 255 );
+    _Red   = Math::Clamp(Math::ToIntFast(R * 255), 0, 255);
+    _Green = Math::Clamp(Math::ToIntFast(G * 255), 0, 255);
+    _Blue  = Math::Clamp(Math::ToIntFast(B * 255), 0, 255);
+    _Alpha = Math::Clamp(Math::ToIntFast(A * 255), 0, 255);
 }
 
-AN_FORCEINLINE void AColor4::SetDWord( uint32_t _Color )
+AN_FORCEINLINE void Color4::SetDWord(uint32_t _Color)
 {
     const int r = _Color & 0xff;
-    const int g = ( _Color >> 8 ) & 0xff;
-    const int b = ( _Color >> 16 ) & 0xff;
-    const int a = ( _Color >> 24 );
+    const int g = (_Color >> 8) & 0xff;
+    const int b = (_Color >> 16) & 0xff;
+    const int a = (_Color >> 24);
 
     const float scale = 1.0f / 255.0f;
-    X                 = r * scale;
-    Y                 = g * scale;
-    Z                 = b * scale;
-    W                 = a * scale;
+    R                 = r * scale;
+    G                 = g * scale;
+    B                 = b * scale;
+    A                 = a * scale;
 }
 
-AN_FORCEINLINE uint32_t AColor4::GetDWord() const
+AN_FORCEINLINE uint32_t Color4::GetDWord() const
 {
-    const int r = Math::Clamp( Math::ToIntFast( X * 255 ), 0, 255 );
-    const int g = Math::Clamp( Math::ToIntFast( Y * 255 ), 0, 255 );
-    const int b = Math::Clamp( Math::ToIntFast( Z * 255 ), 0, 255 );
-    const int a = Math::Clamp( Math::ToIntFast( W * 255 ), 0, 255 );
+    const int r = Math::Clamp(Math::ToIntFast(R * 255), 0, 255);
+    const int g = Math::Clamp(Math::ToIntFast(G * 255), 0, 255);
+    const int b = Math::Clamp(Math::ToIntFast(B * 255), 0, 255);
+    const int a = Math::Clamp(Math::ToIntFast(A * 255), 0, 255);
 
-    return r | ( g << 8 ) | ( b << 16 ) | ( a << 24 );
+    return r | (g << 8) | (b << 16) | (a << 24);
 }
 
-AN_FORCEINLINE void AColor4::SetUShort565( unsigned short _565 )
+AN_FORCEINLINE void Color4::SetUShort565(unsigned short _565)
 {
     const float scale = 1.0f / 255.0f;
-    const int   r     = ( ( _565 >> 8 ) & ( ( ( 1 << ( 8 - 3 ) ) - 1 ) << 3 ) ) | ( ( _565 >> 13 ) & ( ( 1 << 3 ) - 1 ) );
-    const int   g     = ( ( _565 >> 3 ) & ( ( ( 1 << ( 8 - 2 ) ) - 1 ) << 2 ) ) | ( ( _565 >> 9 ) & ( ( 1 << 2 ) - 1 ) );
-    const int   b     = ( ( _565 << 3 ) & ( ( ( 1 << ( 8 - 3 ) ) - 1 ) << 3 ) ) | ( ( _565 >> 2 ) & ( ( 1 << 3 ) - 1 ) );
-    X                 = r * scale;
-    Y                 = g * scale;
-    Z                 = b * scale;
+    const int   r     = ((_565 >> 8) & (((1 << (8 - 3)) - 1) << 3)) | ((_565 >> 13) & ((1 << 3) - 1));
+    const int   g     = ((_565 >> 3) & (((1 << (8 - 2)) - 1) << 2)) | ((_565 >> 9) & ((1 << 2) - 1));
+    const int   b     = ((_565 << 3) & (((1 << (8 - 3)) - 1) << 3)) | ((_565 >> 2) & ((1 << 3) - 1));
+    R                 = r * scale;
+    G                 = g * scale;
+    B                 = b * scale;
 }
 
-AN_FORCEINLINE unsigned short AColor4::GetUShort565() const
+AN_FORCEINLINE unsigned short Color4::GetUShort565() const
 {
-    const int r = Math::Clamp( Math::ToIntFast( X * 255 ), 0, 255 );
-    const int g = Math::Clamp( Math::ToIntFast( Y * 255 ), 0, 255 );
-    const int b = Math::Clamp( Math::ToIntFast( Z * 255 ), 0, 255 );
+    const int r = Math::Clamp(Math::ToIntFast(R * 255), 0, 255);
+    const int g = Math::Clamp(Math::ToIntFast(G * 255), 0, 255);
+    const int b = Math::Clamp(Math::ToIntFast(B * 255), 0, 255);
 
-    return ( ( r >> 3 ) << 11 ) | ( ( g >> 2 ) << 5 ) | ( b >> 3 );
+    return ((r >> 3) << 11) | ((g >> 2) << 5) | (b >> 3);
 }
 
-AN_FORCEINLINE void AColor4::SetYCoCgAlpha( const byte _YCoCgAlpha[4] )
+AN_FORCEINLINE void Color4::SetYCoCgAlpha(const uint8_t _YCoCgAlpha[4])
 {
     const float scale = 1.0f / 255.0f;
     const int   y     = _YCoCgAlpha[0];
     const int   co    = _YCoCgAlpha[1] - 128;
     const int   cg    = _YCoCgAlpha[2] - 128;
-    X                 = Math::Clamp( y + ( co - cg ), 0, 255 ) * scale;
-    Y                 = Math::Clamp( y + ( cg ), 0, 255 ) * scale;
-    Z                 = Math::Clamp( y + ( -co - cg ), 0, 255 ) * scale;
-    W                 = _YCoCgAlpha[3] * scale;
+    R                 = Math::Clamp(y + (co - cg), 0, 255) * scale;
+    G                 = Math::Clamp(y + (cg), 0, 255) * scale;
+    B                 = Math::Clamp(y + (-co - cg), 0, 255) * scale;
+    A                 = _YCoCgAlpha[3] * scale;
 }
 
-AN_FORCEINLINE void AColor4::GetYCoCgAlpha( byte _YCoCgAlpha[4] ) const
+AN_FORCEINLINE void Color4::GetYCoCgAlpha(uint8_t _YCoCgAlpha[4]) const
 {
-    const int r = Math::Clamp( Math::ToIntFast( X * 255 ), 0, 255 );
-    const int g = Math::Clamp( Math::ToIntFast( Y * 255 ), 0, 255 );
-    const int b = Math::Clamp( Math::ToIntFast( Z * 255 ), 0, 255 );
-    const int a = Math::Clamp( Math::ToIntFast( W * 255 ), 0, 255 );
+    const int r = Math::Clamp(Math::ToIntFast(R * 255), 0, 255);
+    const int g = Math::Clamp(Math::ToIntFast(G * 255), 0, 255);
+    const int b = Math::Clamp(Math::ToIntFast(B * 255), 0, 255);
+    const int a = Math::Clamp(Math::ToIntFast(A * 255), 0, 255);
 
-    _YCoCgAlpha[0] = Math::Clamp( ( ( r + ( g << 1 ) + b ) + 2 ) >> 2, 0, 255 );
-    _YCoCgAlpha[1] = Math::Clamp( ( ( ( ( r << 1 ) - ( b << 1 ) ) + 2 ) >> 2 ) + 128, 0, 255 );
-    _YCoCgAlpha[2] = Math::Clamp( ( ( ( -r + ( g << 1 ) - b ) + 2 ) >> 2 ) + 128, 0, 255 );
+    _YCoCgAlpha[0] = Math::Clamp(((r + (g << 1) + b) + 2) >> 2, 0, 255);
+    _YCoCgAlpha[1] = Math::Clamp(((((r << 1) - (b << 1)) + 2) >> 2) + 128, 0, 255);
+    _YCoCgAlpha[2] = Math::Clamp((((-r + (g << 1) - b) + 2) >> 2) + 128, 0, 255);
     _YCoCgAlpha[3] = a;
 }
 
-AN_FORCEINLINE void AColor4::SetYCoCg( const byte _YCoCg[3] )
+AN_FORCEINLINE void Color4::SetYCoCg(const uint8_t _YCoCg[3])
 {
     const float scale = 1.0f / 255.0f;
     const int   y     = _YCoCg[0];
     const int   co    = _YCoCg[1] - 128;
     const int   cg    = _YCoCg[2] - 128;
-    X                 = Math::Clamp( y + ( co - cg ), 0, 255 ) * scale;
-    Y                 = Math::Clamp( y + ( cg ), 0, 255 ) * scale;
-    Z                 = Math::Clamp( y + ( -co - cg ), 0, 255 ) * scale;
+    R                 = Math::Clamp(y + (co - cg), 0, 255) * scale;
+    G                 = Math::Clamp(y + (cg), 0, 255) * scale;
+    B                 = Math::Clamp(y + (-co - cg), 0, 255) * scale;
 }
 
-AN_FORCEINLINE void AColor4::GetYCoCg( byte _YCoCg[3] ) const
+AN_FORCEINLINE void Color4::GetYCoCg(uint8_t _YCoCg[3]) const
 {
-    const int r = Math::Clamp( Math::ToIntFast( X * 255 ), 0, 255 );
-    const int g = Math::Clamp( Math::ToIntFast( Y * 255 ), 0, 255 );
-    const int b = Math::Clamp( Math::ToIntFast( Z * 255 ), 0, 255 );
-    _YCoCg[0]   = Math::Clamp( ( ( r + ( g << 1 ) + b ) + 2 ) >> 2, 0, 255 );
-    _YCoCg[1]   = Math::Clamp( ( ( ( ( r << 1 ) - ( b << 1 ) ) + 2 ) >> 2 ) + 128, 0, 255 );
-    _YCoCg[2]   = Math::Clamp( ( ( ( -r + ( g << 1 ) - b ) + 2 ) >> 2 ) + 128, 0, 255 );
+    const int r = Math::Clamp(Math::ToIntFast(R * 255), 0, 255);
+    const int g = Math::Clamp(Math::ToIntFast(G * 255), 0, 255);
+    const int b = Math::Clamp(Math::ToIntFast(B * 255), 0, 255);
+    _YCoCg[0]   = Math::Clamp(((r + (g << 1) + b) + 2) >> 2, 0, 255);
+    _YCoCg[1]   = Math::Clamp(((((r << 1) - (b << 1)) + 2) >> 2) + 128, 0, 255);
+    _YCoCg[2]   = Math::Clamp((((-r + (g << 1) - b) + 2) >> 2) + 128, 0, 255);
 }
 
-AN_FORCEINLINE void AColor4::SetCoCg_Y( const byte _CoCg_Y[4] )
+AN_FORCEINLINE void Color4::SetCoCg_Y(const uint8_t _CoCg_Y[4])
 {
     const float scale = 1.0f / 255.0f;
     const int   y     = _CoCg_Y[3];
     const int   co    = _CoCg_Y[0] - 128;
     const int   cg    = _CoCg_Y[1] - 128;
-    X                 = Math::Clamp( y + ( co - cg ), 0, 255 ) * scale;
-    Y                 = Math::Clamp( y + ( cg ), 0, 255 ) * scale;
-    Z                 = Math::Clamp( y + ( -co - cg ), 0, 255 ) * scale;
+    R                 = Math::Clamp(y + (co - cg), 0, 255) * scale;
+    G                 = Math::Clamp(y + (cg), 0, 255) * scale;
+    B                 = Math::Clamp(y + (-co - cg), 0, 255) * scale;
 }
 
-AN_FORCEINLINE void AColor4::GetCoCg_Y( byte _CoCg_Y[4] ) const
+AN_FORCEINLINE void Color4::GetCoCg_Y(uint8_t _CoCg_Y[4]) const
 {
-    const int r = Math::Clamp( Math::ToIntFast( X * 255 ), 0, 255 );
-    const int g = Math::Clamp( Math::ToIntFast( Y * 255 ), 0, 255 );
-    const int b = Math::Clamp( Math::ToIntFast( Z * 255 ), 0, 255 );
+    const int r = Math::Clamp(Math::ToIntFast(R * 255), 0, 255);
+    const int g = Math::Clamp(Math::ToIntFast(G * 255), 0, 255);
+    const int b = Math::Clamp(Math::ToIntFast(B * 255), 0, 255);
 
-    _CoCg_Y[0] = Math::Clamp( ( ( ( ( r << 1 ) - ( b << 1 ) ) + 2 ) >> 2 ) + 128, 0, 255 );
-    _CoCg_Y[1] = Math::Clamp( ( ( ( -r + ( g << 1 ) - b ) + 2 ) >> 2 ) + 128, 0, 255 );
+    _CoCg_Y[0] = Math::Clamp(((((r << 1) - (b << 1)) + 2) >> 2) + 128, 0, 255);
+    _CoCg_Y[1] = Math::Clamp((((-r + (g << 1) - b) + 2) >> 2) + 128, 0, 255);
     _CoCg_Y[2] = 0;
-    _CoCg_Y[3] = Math::Clamp( ( ( r + ( g << 1 ) + b ) + 2 ) >> 2, 0, 255 );
+    _CoCg_Y[3] = Math::Clamp(((r + (g << 1) + b) + 2) >> 2, 0, 255);
 }
 
-AN_FORCEINLINE void AColor4::SetHSL( float _Hue, float _Saturation, float _Lightness )
+AN_FORCEINLINE void Color4::SetHSL(float _Hue, float _Saturation, float _Lightness)
 {
-    _Hue        = Math::Saturate( _Hue );
-    _Saturation = Math::Saturate( _Saturation );
-    _Lightness  = Math::Saturate( _Lightness );
+    _Hue        = Math::Saturate(_Hue);
+    _Saturation = Math::Saturate(_Saturation);
+    _Lightness  = Math::Saturate(_Lightness);
 
     const float max = _Lightness;
-    const float min = ( 1.0f - _Saturation ) * _Lightness;
+    const float min = (1.0f - _Saturation) * _Lightness;
 
     const float f = max - min;
 
-    if ( _Hue >= 0.0f && _Hue <= 1.0f / 6.0f ) {
-        X = max;
-        Y = Math::Saturate( min + _Hue * f * 6.0f );
-        Z = min;
+    if (_Hue >= 0.0f && _Hue <= 1.0f / 6.0f)
+    {
+        R = max;
+        G = Math::Saturate(min + _Hue * f * 6.0f);
+        B = min;
         return;
     }
 
-    if ( _Hue <= 1.0f / 3.0f ) {
-        X = Math::Saturate( max - ( _Hue - 1.0f / 6.0f ) * f * 6.0f );
-        Y = max;
-        Z = min;
+    if (_Hue <= 1.0f / 3.0f)
+    {
+        R = Math::Saturate(max - (_Hue - 1.0f / 6.0f) * f * 6.0f);
+        G = max;
+        B = min;
         return;
     }
 
-    if ( _Hue <= 0.5f ) {
-        X = min;
-        Y = max;
-        Z = Math::Saturate( min + ( _Hue - 1.0f / 3.0f ) * f * 6.0f );
+    if (_Hue <= 0.5f)
+    {
+        R = min;
+        G = max;
+        B = Math::Saturate(min + (_Hue - 1.0f / 3.0f) * f * 6.0f);
         return;
     }
 
-    if ( _Hue <= 2.0f / 3.0f ) {
-        X = min;
-        Y = Math::Saturate( max - ( _Hue - 0.5f ) * f * 6.0f );
-        Z = max;
+    if (_Hue <= 2.0f / 3.0f)
+    {
+        R = min;
+        G = Math::Saturate(max - (_Hue - 0.5f) * f * 6.0f);
+        B = max;
         return;
     }
 
-    if ( _Hue <= 5.0f / 6.0f ) {
-        X = Math::Saturate( min + ( _Hue - 2.0f / 3.0f ) * f * 6.0f );
-        Y = min;
-        Z = max;
+    if (_Hue <= 5.0f / 6.0f)
+    {
+        R = Math::Saturate(min + (_Hue - 2.0f / 3.0f) * f * 6.0f);
+        G = min;
+        B = max;
         return;
     }
 
-    if ( _Hue <= 1.0f ) {
-        X = max;
-        Y = min;
-        Z = Math::Saturate( max - ( _Hue - 5.0f / 6.0f ) * f * 6.0f );
+    if (_Hue <= 1.0f)
+    {
+        R = max;
+        G = min;
+        B = Math::Saturate(max - (_Hue - 5.0f / 6.0f) * f * 6.0f);
         return;
     }
 
-    X = Y = Z = 0.0f;
+    R = G = B = 0.0f;
 }
 
-AN_FORCEINLINE void AColor4::GetHSL( float & _Hue, float & _Saturation, float & _Lightness ) const
+AN_FORCEINLINE void Color4::GetHSL(float& _Hue, float& _Saturation, float& _Lightness) const
 {
     float maxComponent, minComponent;
 
-    const float r = Math::Saturate( X ) * 255.0f;
-    const float g = Math::Saturate( Y ) * 255.0f;
-    const float b = Math::Saturate( Z ) * 255.0f;
+    const float r = Math::Saturate(R) * 255.0f;
+    const float g = Math::Saturate(G) * 255.0f;
+    const float b = Math::Saturate(B) * 255.0f;
 
-    Math::MinMax( r, g, b, minComponent, maxComponent );
+    Math::MinMax(r, g, b, minComponent, maxComponent);
 
     const float dist = maxComponent - minComponent;
 
-    const float f = ( dist == 0.0f ) ? 0.0f : 60.0f / dist;
+    const float f = (dist == 0.0f) ? 0.0f : 60.0f / dist;
 
-    if ( maxComponent == r ) {
+    if (maxComponent == r)
+    {
         // R 360
-        if ( g < b ) {
-            _Hue = ( 360.0f + f * ( g - b ) ) / 360.0f;
+        if (g < b)
+        {
+            _Hue = (360.0f + f * (g - b)) / 360.0f;
         }
-        else {
-            _Hue = ( f * ( g - b ) ) / 360.0f;
+        else
+        {
+            _Hue = (f * (g - b)) / 360.0f;
         }
     }
-    else if ( maxComponent == g ) {
+    else if (maxComponent == g)
+    {
         // G 120 degrees
-        _Hue = ( 120.0f + f * ( b - r ) ) / 360.0f;
+        _Hue = (120.0f + f * (b - r)) / 360.0f;
     }
-    else if ( maxComponent == b ) {
+    else if (maxComponent == b)
+    {
         // B 240 degrees
-        _Hue = ( 240.0f + f * ( r - g ) ) / 360.0f;
+        _Hue = (240.0f + f * (r - g)) / 360.0f;
     }
-    else {
+    else
+    {
         _Hue = 0.0f;
     }
 
-    _Hue = Math::Saturate( _Hue );
+    _Hue = Math::Saturate(_Hue);
 
     _Saturation = maxComponent == 0.0f ? 0.0f : dist / maxComponent;
     _Lightness  = maxComponent / 255.0f;
 }
 
-AN_FORCEINLINE void AColor4::SetCMYK( float _Cyan, float _Magenta, float _Yellow, float _Key )
+AN_FORCEINLINE void Color4::SetCMYK(float _Cyan, float _Magenta, float _Yellow, float _Key)
 {
-    const float scale = 1.0f - Math::Saturate( _Key );
-    X                 = ( 1.0f - Math::Saturate( _Cyan ) ) * scale;
-    Y                 = ( 1.0f - Math::Saturate( _Magenta ) ) * scale;
-    Z                 = ( 1.0f - Math::Saturate( _Yellow ) ) * scale;
+    const float scale = 1.0f - Math::Saturate(_Key);
+    R                 = (1.0f - Math::Saturate(_Cyan)) * scale;
+    G                 = (1.0f - Math::Saturate(_Magenta)) * scale;
+    B                 = (1.0f - Math::Saturate(_Yellow)) * scale;
 }
 
-AN_FORCEINLINE void AColor4::GetCMYK( float & _Cyan, float & _Magenta, float & _Yellow, float & _Key ) const
+AN_FORCEINLINE void Color4::GetCMYK(float& _Cyan, float& _Magenta, float& _Yellow, float& _Key) const
 {
-    const float r            = Math::Saturate( X );
-    const float g            = Math::Saturate( Y );
-    const float b            = Math::Saturate( Z );
-    const float maxComponent = Math::Max3( r, g, b );
+    const float r            = Math::Saturate(R);
+    const float g            = Math::Saturate(G);
+    const float b            = Math::Saturate(B);
+    const float maxComponent = Math::Max3(r, g, b);
     const float scale        = maxComponent > 0.0f ? 1.0f / maxComponent : 0.0f;
 
-    _Cyan    = ( maxComponent - r ) * scale;
-    _Magenta = ( maxComponent - g ) * scale;
-    _Yellow  = ( maxComponent - b ) * scale;
+    _Cyan    = (maxComponent - r) * scale;
+    _Magenta = (maxComponent - g) * scale;
+    _Yellow  = (maxComponent - b) * scale;
     _Key     = 1.0f - maxComponent;
 }
 
-AN_FORCEINLINE float AColor4::GetLuminance() const
+AN_FORCEINLINE float Color4::GetLuminance() const
 {
-    return X * 0.2126f + Y * 0.7152f + Z * 0.0722f;
+    return R * 0.2126f + G * 0.7152f + B * 0.0722f;
 }
 
-AN_INLINE void EncodeRGBE( byte * RGBE, const float * LinearRGB )
+AN_INLINE void EncodeRGBE(uint8_t* RGBE, const float* LinearRGB)
 {
-    float maxcomp = Math::Max3( LinearRGB[0], LinearRGB[1], LinearRGB[2] );
+    float maxcomp = Math::Max3(LinearRGB[0], LinearRGB[1], LinearRGB[2]);
 
-    if ( maxcomp < 1e-32f ) {
+    if (maxcomp < 1e-32f)
+    {
         RGBE[0] = RGBE[1] = RGBE[2] = RGBE[3] = 0;
     }
-    else {
+    else
+    {
         int   exponent;
-        float normalize = frexp( maxcomp, &exponent ) * 256.0f / maxcomp;
+        float normalize = frexp(maxcomp, &exponent) * 256.0f / maxcomp;
 
-        RGBE[0] = (unsigned char)( LinearRGB[0] * normalize );
-        RGBE[1] = (unsigned char)( LinearRGB[1] * normalize );
-        RGBE[2] = (unsigned char)( LinearRGB[2] * normalize );
-        RGBE[3] = (unsigned char)( exponent + 128 );
+        RGBE[0] = (unsigned char)(LinearRGB[0] * normalize);
+        RGBE[1] = (unsigned char)(LinearRGB[1] * normalize);
+        RGBE[2] = (unsigned char)(LinearRGB[2] * normalize);
+        RGBE[3] = (unsigned char)(exponent + 128);
     }
 }
 
-AN_INLINE void DecodeRGBE( float * LinearRGB, const byte * RGBE )
+AN_INLINE void DecodeRGBE(float* LinearRGB, const uint8_t* RGBE)
 {
-    if ( RGBE[3] != 0 ) {
-        float scale  = ldexp( 1.0f, RGBE[3] - (int)( 128 + 8 ) );
+    if (RGBE[3] != 0)
+    {
+        float scale  = ldexp(1.0f, RGBE[3] - (int)(128 + 8));
         LinearRGB[0] = RGBE[0] * scale;
         LinearRGB[1] = RGBE[1] * scale;
         LinearRGB[2] = RGBE[2] * scale;
     }
-    else {
+    else
+    {
         LinearRGB[0] = LinearRGB[1] = LinearRGB[2] = 0;
     }
 }

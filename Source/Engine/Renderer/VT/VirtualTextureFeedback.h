@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/LinearAllocator.h>
-#include <Core/Public/CoreMath.h>
+#include <Platform/Public/Memory/LinearAllocator.h>
+#include <Geometry/Public/VectorMath.h>
 #include <RenderCore/FrameGraph.h>
 
 class AVirtualTextureFeedback

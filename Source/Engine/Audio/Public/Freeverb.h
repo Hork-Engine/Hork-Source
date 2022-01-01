@@ -32,7 +32,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/BaseTypes.h>
+#include <Platform/Public/BaseTypes.h>
 
 #define freeverb_Undenormalise( sample ) if(((*(unsigned int*)&sample)&0x7f800000)==0) sample=0.0f
 

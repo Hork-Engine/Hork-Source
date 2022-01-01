@@ -31,24 +31,28 @@ SOFTWARE.
 #include <Core/Public/BaseMath.h>
 
 #ifdef AN_COMPILER_MSVC
-#pragma warning( disable : 4756 ) // overlow
+#    pragma warning(disable : 4756) // overlow
 #endif
 
-static float FloatToHalfOverflow() {
+static float FloatToHalfOverflow()
+{
     volatile float f = 1e10;
-    for ( int j = 0 ; j < 10 ; j++ ) {
+    for (int j = 0; j < 10; j++)
+    {
         f *= f; // this will overflow before the for loop terminates
     }
     return f;
 }
 
-namespace Math {
+namespace Math
+{
 
 //-----------------------------------------------------
 // Float-to-half conversion -- general case, including
 // zeroes, denormalized numbers and exponent overflows.
 //-----------------------------------------------------
-uint16_t _FloatToHalf( const uint32_t & _I ) {
+uint16_t _FloatToHalf(const uint32_t& _I)
+{
     //
     // Our floating point number, f, is represented by the bit
     // pattern in integer _I.  Disassemble that bit pattern into
@@ -59,9 +63,9 @@ uint16_t _FloatToHalf( const uint32_t & _I ) {
     // of float and half (127 versus 15).
     //
 
-    register int s =  (_I >> 16) & 0x00008000;
+    register int s = (_I >> 16) & 0x00008000;
     register int e = ((_I >> 23) & 0x000000ff) - (127 - 15);
-    register int m =   _I        & 0x007fffff;
+    register int m = _I & 0x007fffff;
 
     //
     // Now reassemble s, e and m into a half:
@@ -100,7 +104,7 @@ uint16_t _FloatToHalf( const uint32_t & _I ) {
         // the code below will handle it correctly.
         //
 
-        if (m &  0x00001000)
+        if (m & 0x00001000)
             m += 0x00002000;
 
         //
@@ -146,14 +150,14 @@ uint16_t _FloatToHalf( const uint32_t & _I ) {
         // Round to nearest, round "0.5" up
         //
 
-        if (m &  0x00001000)
+        if (m & 0x00001000)
         {
             m += 0x00002000;
 
             if (m & 0x00800000)
             {
-                m =  0;		// overflow in significand,
-                e += 1;		// adjust exponent
+                m = 0;  // overflow in significand,
+                e += 1; // adjust exponent
             }
         }
 
@@ -163,9 +167,9 @@ uint16_t _FloatToHalf( const uint32_t & _I ) {
 
         if (e > 30)
         {
-            FloatToHalfOverflow();	// Cause a hardware floating point overflow;
-            return s | 0x7c00;	// if this returns, the half becomes an
-        }   			// infinity with the same sign as f.
+            FloatToHalfOverflow(); // Cause a hardware floating point overflow;
+            return s | 0x7c00;     // if this returns, the half becomes an
+        }                          // infinity with the same sign as f.
 
         //
         // Assemble the half from s, e and m.
@@ -176,10 +180,11 @@ uint16_t _FloatToHalf( const uint32_t & _I ) {
 }
 
 // Taken from OpenEXR
-uint32_t _HalfToFloat( const uint16_t & _I ) {
+uint32_t _HalfToFloat(const uint16_t& _I)
+{
     int s = (_I >> 15) & 0x00000001;
     int e = (_I >> 10) & 0x0000001f;
-    int m =  _I        & 0x000003ff;
+    int m = _I & 0x000003ff;
 
     if (e == 0)
     {
@@ -200,7 +205,7 @@ uint32_t _HalfToFloat( const uint16_t & _I ) {
             while (!(m & 0x00000400))
             {
                 m <<= 1;
-                e -=  1;
+                e -= 1;
             }
 
             e += 1;
@@ -241,18 +246,22 @@ uint32_t _HalfToFloat( const uint16_t & _I ) {
     return (s << 31) | (e << 23) | m;
 }
 
-void FloatToHalf( const float * _In, uint16_t * _Out, int _Count ) {
-    const float *pIn = _In;
-    while ( pIn < &_In[ _Count ] ) {
-        *_Out++ = _FloatToHalf( *reinterpret_cast< const uint32_t * >( pIn++ ) );
+void FloatToHalf(const float* _In, uint16_t* _Out, int _Count)
+{
+    const float* pIn = _In;
+    while (pIn < &_In[_Count])
+    {
+        *_Out++ = _FloatToHalf(*reinterpret_cast<const uint32_t*>(pIn++));
     }
 }
 
-void HalfToFloat( const uint16_t * _In, float * _Out, int _Count ) {
-    const unsigned short *pIn = _In;
-    while ( pIn < &_In[ _Count ] ) {
-        *reinterpret_cast< uint32_t * >( _Out++ ) = _HalfToFloat( *pIn++ );
+void HalfToFloat(const uint16_t* _In, float* _Out, int _Count)
+{
+    const unsigned short* pIn = _In;
+    while (pIn < &_In[_Count])
+    {
+        *reinterpret_cast<uint32_t*>(_Out++) = _HalfToFloat(*pIn++);
     }
 }
 
-}
+} // namespace Math

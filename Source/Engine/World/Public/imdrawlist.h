@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/CoreMath.h>
+#include <Geometry/Public/VectorMath.h>
 
 class AFont;
 

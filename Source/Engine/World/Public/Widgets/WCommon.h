@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/BaseTypes.h>
+#include <Platform/Public/BaseTypes.h>
 
 enum EWidgetStyle {
     WIDGET_STYLE_DEFAULT    = 0,

@@ -516,11 +516,11 @@ public:
     TWidgetEvent<> E_OnButtonClick;
 
     WMenuItem & SetText( const char * _Text );
-    WMenuItem & SetColor( AColor4 const & _Color );
-    WMenuItem & SetHoverColor( AColor4 const & _Color );
-    WMenuItem & SetPressedColor( AColor4 const & _Color );
-    WMenuItem & SetTextColor( AColor4 const & _Color );
-    WMenuItem & SetBorderColor( AColor4 const & _Color );
+    WMenuItem & SetColor( Color4 const & _Color );
+    WMenuItem & SetHoverColor( Color4 const & _Color );
+    WMenuItem & SetPressedColor( Color4 const & _Color );
+    WMenuItem & SetTextColor( Color4 const & _Color );
+    WMenuItem & SetBorderColor( Color4 const & _Color );
     WMenuItem & SetRounding( float _Rounding );
     WMenuItem & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
     WMenuItem & SetBorderThickness( float _Thickness );
@@ -549,11 +549,11 @@ private:
     };
 
     int State;
-    AColor4 Color;
-    AColor4 HoverColor;
-    AColor4 PressedColor;
-    AColor4 TextColor;
-    AColor4 BorderColor;
+    Color4 Color;
+    Color4 HoverColor;
+    Color4 PressedColor;
+    Color4 TextColor;
+    Color4 BorderColor;
     EDrawCornerFlags RoundingCorners;
     AString Text;
     float Rounding;

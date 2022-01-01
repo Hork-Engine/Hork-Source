@@ -50,7 +50,7 @@ void WDecorate::OnDrawEvent( ACanvas & _Canvas ) {
 AN_CLASS_META( WTextDecorate )
 
 WTextDecorate::WTextDecorate() {
-    Color = AColor4::White();
+    Color = Color4::White();
     Offset = Float2( 0.0f );
     bWordWrap = false;
     HorizontalAlignment = WIDGET_ALIGNMENT_NONE;
@@ -70,7 +70,7 @@ WTextDecorate & WTextDecorate::SetFont( AFont * _Font ) {
     return *this;
 }
 
-WTextDecorate & WTextDecorate::SetColor( AColor4 const & _Color ) {
+WTextDecorate & WTextDecorate::SetColor( Color4 const & _Color ) {
     Color = _Color;
     return *this;
 }
@@ -151,8 +151,8 @@ void WTextDecorate::OnDrawEvent( ACanvas & _Canvas ) {
 AN_CLASS_META( WBorderDecorate )
 
 WBorderDecorate::WBorderDecorate() {
-    Color = AColor4::White();
-    BgColor = AColor4::Black();
+    Color = Color4::White();
+    BgColor = Color4::Black();
     bFillBackgrond = false;
     Rounding = 0;
     RoundingCorners = CORNER_ROUND_ALL;
@@ -162,7 +162,7 @@ WBorderDecorate::WBorderDecorate() {
 WBorderDecorate::~WBorderDecorate() {
 }
 
-WBorderDecorate & WBorderDecorate::SetColor( AColor4 const & _Color ) {
+WBorderDecorate & WBorderDecorate::SetColor( Color4 const & _Color ) {
     Color = _Color;
     return *this;
 }
@@ -172,7 +172,7 @@ WBorderDecorate & WBorderDecorate::SetFillBackground( bool _FillBackgrond ) {
     return *this;
 }
 
-WBorderDecorate & WBorderDecorate::SetBackgroundColor( AColor4 const & _Color ) {
+WBorderDecorate & WBorderDecorate::SetBackgroundColor( Color4 const & _Color ) {
     BgColor = _Color;
     return *this;
 }
@@ -208,7 +208,7 @@ void WBorderDecorate::OnDrawEvent( ACanvas & _Canvas ) {
 AN_CLASS_META( WImageDecorate )
 
 WImageDecorate::WImageDecorate() {
-    Color = AColor4::White();
+    Color = Color4::White();
     Rounding = 0;
     RoundingCorners = CORNER_ROUND_ALL;
     ColorBlending = COLOR_BLENDING_ALPHA;
@@ -225,7 +225,7 @@ WImageDecorate::WImageDecorate() {
 WImageDecorate::~WImageDecorate() {
 }
 
-WImageDecorate & WImageDecorate::SetColor( AColor4 const & _Color ) {
+WImageDecorate & WImageDecorate::SetColor( Color4 const & _Color ) {
     Color = _Color;
     return *this;
 }

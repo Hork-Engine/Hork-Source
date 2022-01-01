@@ -33,7 +33,7 @@ SOFTWARE.
 #include <World/Public/Base/ResourceManager.h>
 #include <World/Public/MaterialGraph/MaterialGraph.h>
 #include <World/Public/EngineInstance.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Runtime/Public/Runtime.h>
 

@@ -30,12 +30,14 @@ SOFTWARE.
 
 #include <Core/Public/Ref.h>
 
-SWeakRefCounter * AWeakReference::AllocateWeakRefCounter() {
+SWeakRefCounter* AWeakReference::AllocateWeakRefCounter()
+{
     // Own allocator couldn't handle destruction of static objects :(
     return new SWeakRefCounter;
 }
 
-void AWeakReference::DeallocateWeakRefCounter( SWeakRefCounter * _RefCounter ) {
+void AWeakReference::DeallocateWeakRefCounter(SWeakRefCounter* _RefCounter)
+{
     // Own allocator couldn't handle destruction of static objects :(
     delete _RefCounter;
 }

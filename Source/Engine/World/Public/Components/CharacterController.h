@@ -32,6 +32,8 @@ SOFTWARE.
 
 #include "CharacterControllerBase.h"
 
+#include <Geometry/Public/Shuffle.h>
+
 enum ECharacterWaterLevel
 {
     CHARACTER_WATER_LEVEL_NONE  = 0,

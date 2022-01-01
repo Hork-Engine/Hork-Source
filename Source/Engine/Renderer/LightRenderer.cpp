@@ -32,7 +32,7 @@ SOFTWARE.
 #include "ShadowMapRenderer.h"
 #include "RenderLocal.h"
 
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 
 ARuntimeVariable r_LightTextureFormat( _CTS( "r_LightTextureFormat" ), _CTS( "0" ), 0, _CTS( "0 - R11F_G11F_B10F, 1 - RGB16F" ) );
 

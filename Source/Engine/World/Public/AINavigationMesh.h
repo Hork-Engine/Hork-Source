@@ -35,7 +35,7 @@ SOFTWARE.
 #include <World/Public/Base/BaseObject.h>
 #include <World/Public/Base/DebugRenderer.h>
 
-#include <Core/Public/BitMask.h>
+#include <Containers/Public/BitMask.h>
 
 #ifdef DT_POLYREF64
 typedef uint64_t SNavPolyRef;

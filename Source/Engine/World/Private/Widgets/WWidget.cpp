@@ -32,6 +32,7 @@ SOFTWARE.
 #include <World/Public/Widgets/WScroll.h>
 #include <World/Public/Widgets/WDesktop.h>
 #include <Runtime/Public/Runtime.h>
+#include <Geometry/Public/Shuffle.h>
 
 AN_CLASS_META( WWidget )
 
@@ -1603,7 +1604,7 @@ WWidget & ScrollTest2() {
     return  WNew(WWindow)
             .SetCaptionText( "Test Scroll" )
             .SetCaptionHeight( 24 )
-            .SetBackgroundColor( AColor4( 0.5f,0.5f,0.5f ) )
+            .SetBackgroundColor( Color4( 0.5f,0.5f,0.5f ) )
             .SetStyle( WIDGET_STYLE_RESIZABLE )
             .SetSize( 400, 300 )
             .SetLayout( WIDGET_LAYOUT_GRID )
@@ -1672,15 +1673,15 @@ WWidget & ScrollTest2() {
                 //.SetAutoHeight( true )
                 [
                     WNew(WBorderDecorate)
-                    .SetColor( AColor4( 1,1,0 ) )
+                    .SetColor( Color4( 1,1,0 ) )
                     .SetFillBackground( true )
-                    .SetBackgroundColor( AColor4( 0,1,0 ) )
+                    .SetBackgroundColor( Color4( 0,1,0 ) )
                     .SetThickness( 1 )
                 ]
                 [
                     WNew(WTextDecorate)
                     .SetText( "Content view" )
-                    .SetColor( AColor4::Black() )
+                    .SetColor( Color4::Black() )
                     .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
                     .SetVerticalAlignment( WIDGET_ALIGNMENT_CENTER )
                 ]
@@ -1790,9 +1791,9 @@ WWidget & ScrollTest2() {
                 .SetLayout( WIDGET_LAYOUT_GRID )
                 [
                     WNew(WBorderDecorate)
-                    .SetColor( AColor4( 1,0,0 ) )
+                    .SetColor( Color4( 1,0,0 ) )
                     .SetFillBackground( true )
-                    .SetBackgroundColor( AColor4( 1,0,1 ) )
+                    .SetBackgroundColor( Color4( 1,0,1 ) )
                     .SetThickness( 1 )
                 ]
                 [
@@ -1818,9 +1819,9 @@ WWidget & ScrollTest2() {
                     .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
                     .SetGridOffset( 0, 1 )
                     .AddDecorate( &(*CreateInstanceOf< WBorderDecorate >())
-                                  .SetColor( AColor4( 0,1,0 ) )
+                                  .SetColor( Color4( 0,1,0 ) )
                                   .SetFillBackground( true )
-                                  .SetBackgroundColor( AColor4::Black() )
+                                  .SetBackgroundColor( Color4::Black() )
                                   .SetThickness( 1 )
                                   .SetRounding( 0 )
                                   .SetRoundingCorners( CORNER_ROUND_NONE ) )
@@ -1840,9 +1841,9 @@ WWidget & ScrollTest() {
             .SetPosition( 0, 0 )
             [
                 WNew(WBorderDecorate)
-                .SetColor( AColor4( 0.5f,0.5f,0.5f,0.5f ) )
+                .SetColor( Color4( 0.5f,0.5f,0.5f,0.5f ) )
                 .SetFillBackground( true )
-                .SetBackgroundColor( AColor4( 0.3f,0.3f,0.3f ) )
+                .SetBackgroundColor( Color4( 0.3f,0.3f,0.3f ) )
                 .SetThickness( 1 )
             ]
 //            [
@@ -1897,7 +1898,7 @@ WWidget & ScrollTest() {
     return WNew(WWindow)
                 .SetCaptionText( "Test Scroll" )
                 .SetCaptionHeight( 24 )
-                .SetBackgroundColor( AColor4( 0.5f,0.5f,0.5f ) )
+                .SetBackgroundColor( Color4( 0.5f,0.5f,0.5f ) )
                 .SetStyle( WIDGET_STYLE_RESIZABLE )
                 .SetLayout( WIDGET_LAYOUT_EXPLICIT )
                 .SetSize( 320,240 )
@@ -1967,7 +1968,7 @@ WWidget & ScrollTest() {
     return WNew(WWindow)
                 .SetCaptionText( "Test Scroll" )
                 .SetCaptionHeight( 24 )
-                .SetBackgroundColor( AColor4( 0.5f,0.5f,0.5f ) )
+                .SetBackgroundColor( Color4( 0.5f,0.5f,0.5f ) )
                 .SetStyle( WIDGET_STYLE_RESIZABLE )
                 .SetLayout( WIDGET_LAYOUT_EXPLICIT )
                 .SetAutoWidth( true )
@@ -2005,11 +2006,11 @@ AN_CLASS_META( WMenuItem )
 
 WMenuItem::WMenuItem() {
     State = ST_RELEASED;
-    Color = AColor4::White();
-    HoverColor = AColor4( 1,1,0.5f,1 );
-    PressedColor = AColor4( 1,1,0.2f,1 );
-    TextColor = AColor4::Black();
-    BorderColor = AColor4::Black();
+    Color = Color4::White();
+    HoverColor = Color4( 1,1,0.5f,1 );
+    PressedColor = Color4( 1,1,0.2f,1 );
+    TextColor = Color4::Black();
+    BorderColor = Color4::Black();
     Rounding = 8;
     RoundingCorners = CORNER_ROUND_ALL;
     BorderThickness = 1;
@@ -2023,27 +2024,27 @@ WMenuItem & WMenuItem::SetText( const char * _Text ) {
     return *this;
 }
 
-WMenuItem & WMenuItem::SetColor( AColor4 const & _Color ) {
+WMenuItem & WMenuItem::SetColor( Color4 const & _Color ) {
     Color = _Color;
     return *this;
 }
 
-WMenuItem & WMenuItem::SetHoverColor( AColor4 const & _Color ) {
+WMenuItem & WMenuItem::SetHoverColor( Color4 const & _Color ) {
     HoverColor = _Color;
     return *this;
 }
 
-WMenuItem & WMenuItem::SetPressedColor( AColor4 const & _Color ) {
+WMenuItem & WMenuItem::SetPressedColor( Color4 const & _Color ) {
     PressedColor = _Color;
     return *this;
 }
 
-WMenuItem & WMenuItem::SetTextColor( AColor4 const & _Color ) {
+WMenuItem & WMenuItem::SetTextColor( Color4 const & _Color ) {
     TextColor = _Color;
     return *this;
 }
 
-WMenuItem & WMenuItem::SetBorderColor( AColor4 const & _Color ) {
+WMenuItem & WMenuItem::SetBorderColor( Color4 const & _Color ) {
     BorderColor = _Color;
     return *this;
 }
@@ -2081,7 +2082,7 @@ void WMenuItem::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, dou
 }
 
 void WMenuItem::OnDrawEvent( ACanvas & _Canvas ) {
-    AColor4 bgColor;
+    Color4 bgColor;
 
     if ( IsHoveredByCursor() && !IsDisabled() ) {
         if ( State == ST_PRESSED ) {

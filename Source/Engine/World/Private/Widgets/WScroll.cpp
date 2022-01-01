@@ -42,10 +42,10 @@ WScroll::WScroll() {
     ScrollbarSize = 12;
     ButtonWidth = 0.0f;
     SliderRounding = 0.0f;
-    BackgroundColor = AColor4( 0.05f, 0.05f, 0.05f );
-    ButtonColor = AColor4( 1, 0, 1, 1 );
-    SliderBackgroundColor = AColor4( 0.4f, 0.4f, 0.4f );
-    SliderColor = AColor4( 1, 1, 1, 1 );
+    BackgroundColor = Color4( 0.05f, 0.05f, 0.05f );
+    ButtonColor = Color4( 1, 0, 1, 1 );
+    SliderBackgroundColor = Color4( 0.4f, 0.4f, 0.4f );
+    SliderColor = Color4( 1, 1, 1, 1 );
     Action = A_NONE;
     DragCursor = 0.0f;
     UpdateMargin();
@@ -121,7 +121,7 @@ void WScroll::UpdateMargin() {
         newMargin.Z = ScrollbarSize;
     }
 
-    if ( !GetMargin().Compare( newMargin ) ) {
+    if ( GetMargin() != newMargin ) {
         SetMargin( newMargin );
         bUpdateGeometry = true;
     }
@@ -174,22 +174,22 @@ WScroll & WScroll::SetSliderRounding( float _Rounding ) {
     return *this;
 }
 
-WScroll & WScroll::SetBackgroundColor( AColor4 const & _Color ) {
+WScroll & WScroll::SetBackgroundColor( Color4 const & _Color ) {
     BackgroundColor = _Color;
     return *this;
 }
 
-WScroll & WScroll::SetButtonColor( AColor4 const & _Color ) {
+WScroll & WScroll::SetButtonColor( Color4 const & _Color ) {
     ButtonColor = _Color;
     return *this;
 }
 
-WScroll & WScroll::SetSliderBackgroundColor( AColor4 const & _Color ) {
+WScroll & WScroll::SetSliderBackgroundColor( Color4 const & _Color ) {
     SliderBackgroundColor = _Color;
     return *this;
 }
 
-WScroll & WScroll::SetSliderColor( AColor4 const & _Color ) {
+WScroll & WScroll::SetSliderColor( Color4 const & _Color ) {
     SliderColor = _Color;
     return *this;
 }

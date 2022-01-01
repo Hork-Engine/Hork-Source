@@ -133,7 +133,7 @@ void ASpotLightComponent::UpdateWorldBounds() {
     const float SinHalfConeAngle = Math::Sin( HalfConeAngle );
 
     // Compute cone OBB for voxelization
-    OBBWorldBounds.Orient = GetWorldRotation().ToMatrix();
+    OBBWorldBounds.Orient = GetWorldRotation().ToMatrix3x3();
 
     const Float3 SpotDir = -OBBWorldBounds.Orient[ 2 ];
 
@@ -183,11 +183,11 @@ void ASpotLightComponent::DrawDebug( ADebugRenderer * InRenderer ) {
         if ( Primitive.VisPass == InRenderer->GetVisPass() )
         {
             Float3 pos = GetWorldPosition();
-            Float3x3 orient = GetWorldRotation().ToMatrix();
+            Float3x3 orient = GetWorldRotation().ToMatrix3x3();
             InRenderer->SetDepthTest( false );
-            InRenderer->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
+            InRenderer->SetColor( Color4( 0.5f, 0.5f, 0.5f, 1 ) );
             InRenderer->DrawCone( pos, orient, Radius, Math::Radians( InnerConeAngle ) * 0.5f );
-            InRenderer->SetColor( AColor4( 1, 1, 1, 1 ) );
+            InRenderer->SetColor( Color4( 1, 1, 1, 1 ) );
             InRenderer->DrawCone( pos, orient, Radius, Math::Radians( OuterConeAngle ) * 0.5f );
         }
     }

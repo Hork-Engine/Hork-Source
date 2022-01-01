@@ -40,7 +40,7 @@ SOFTWARE.
 #include <World/Public/Base/ResourceManager.h>
 #include <World/Public/Resource/Asset.h>
 #include <World/Public/Resource/Animation.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/RuntimeVariable.h>
@@ -511,7 +511,7 @@ void ASkinnedComponent::DrawDebug( ADebugRenderer * InRenderer ) {
 
     // Draw skeleton
     if ( com_DrawSkeleton ) {
-        InRenderer->SetColor( AColor4( 1,0,0,1 ) );
+        InRenderer->SetColor( Color4( 1,0,0,1 ) );
         InRenderer->SetDepthTest( false );
         TPodVector< SJoint > const & joints = Skeleton->GetJoints();
 

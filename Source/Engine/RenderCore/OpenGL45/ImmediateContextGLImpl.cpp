@@ -39,7 +39,7 @@ SOFTWARE.
 
 #include "../FrameGraph.h"
 
-#include <Core/Public/Core.h>
+#include <Platform/Public/Platform.h>
 
 #include "GL/glew.h"
 
@@ -4635,9 +4635,9 @@ bool AImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
                 glCompressedTextureSubImage2D(id,
                                               Rectangle.Offset.MipLevel,
                                               Rectangle.Offset.X,
-                                              Rectangle.Offset.Y,
+                                              Rectangle.Offset.Z,
                                               Rectangle.Dimension.X,
-                                              Rectangle.Dimension.Y,
+                                              Rectangle.Dimension.Z,
                                               compressedFormat,
                                               (GLsizei)SizeInBytes,
                                               pSysMem);
@@ -4647,9 +4647,9 @@ bool AImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
                 glTextureSubImage2D(id,
                                     Rectangle.Offset.MipLevel,
                                     Rectangle.Offset.X,
-                                    Rectangle.Offset.Y,
+                                    Rectangle.Offset.Z,
                                     Rectangle.Dimension.X,
-                                    Rectangle.Dimension.Y,
+                                    Rectangle.Dimension.Z,
                                     format,
                                     type,
                                     pSysMem);

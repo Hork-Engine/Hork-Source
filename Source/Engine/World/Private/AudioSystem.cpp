@@ -31,7 +31,7 @@ SOFTWARE.
 #include <World/Public/AudioSystem.h>
 #include <World/Public/Actors/PlayerController.h>
 
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 
 #include <Runtime/Public/Runtime.h>
@@ -81,7 +81,7 @@ void AAudioSystem::Update( APlayerController * _Controller, float _TimeStep )
         Listener.Position = audioListener->GetWorldPosition();
         Listener.RightVec = audioListener->GetWorldRightVector();
 
-        Listener.TransformInv.Compose( Listener.Position, audioListener->GetWorldRotation().ToMatrix() );
+        Listener.TransformInv.Compose( Listener.Position, audioListener->GetWorldRotation().ToMatrix3x3() );
         // We can optimize Inverse like for viewmatrix
         Listener.TransformInv.InverseSelf();
 

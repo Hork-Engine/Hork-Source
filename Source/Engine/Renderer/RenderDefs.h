@@ -30,9 +30,11 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/CoreMath.h>
 #include <Core/Public/Image.h>
-#include <Core/Public/PodVector.h>
+#include <Core/Public/Color.h>
+#include <Containers/Public/PodVector.h>
+#include <Geometry/Public/Quat.h>
+#include <Geometry/Public/BV/BvFrustum.h>
 
 #include <RenderCore/Device.h>
 
@@ -1157,7 +1159,7 @@ struct STerrainPatchInstance
     Int2 VertexScale;
     Int2 VertexTranslate;
     Int2 TexcoordOffset;
-    AColor4 QuadColor; // Just for debug. Will be removed later
+    Color4 QuadColor; // Just for debug. Will be removed later
 };
 
 

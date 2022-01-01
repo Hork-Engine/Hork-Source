@@ -33,8 +33,9 @@ SOFTWARE.
 #include <World/Public/Actors/Actor.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/ResourceManager.h>
-#include <Core/Public/Logger.h>
 #include <Runtime/Public/RuntimeVariable.h>
+#include <Platform/Public/Logger.h>
+#include <Geometry/Public/BV/BvIntersect.h>
 
 ARuntimeVariable com_DrawMeshBounds( _CTS( "com_DrawMeshBounds" ), _CTS( "0" ), VAR_CHEAT );
 ARuntimeVariable com_DrawBrushBounds( _CTS( "com_DrawBrushBounds" ), _CTS( "0" ), VAR_CHEAT );
@@ -368,11 +369,11 @@ void AMeshComponent::DrawDebug( ADebugRenderer * InRenderer ) {
 
             if ( IsSkinnedMesh() )
             {
-                InRenderer->SetColor( AColor4( 0.5f,0.5f,1,1 ) );
+                InRenderer->SetColor( Color4( 0.5f,0.5f,1,1 ) );
             }
             else
             {
-                InRenderer->SetColor( AColor4( 1,1,1,1 ) );
+                InRenderer->SetColor( Color4( 1,1,1,1 ) );
             }
 
             InRenderer->DrawAABB( WorldBounds );
@@ -461,7 +462,7 @@ void ABrushComponent::DrawDebug( ADebugRenderer * InRenderer ) {
         if ( Primitive.VisPass == InRenderer->GetVisPass() )
         {
             InRenderer->SetDepthTest( false );
-            InRenderer->SetColor( AColor4( 1, 0.5f, 0.5f, 1 ) );
+            InRenderer->SetColor( Color4( 1, 0.5f, 0.5f, 1 ) );
             InRenderer->DrawAABB( WorldBounds );
         }
     }
@@ -630,7 +631,7 @@ void AProceduralMeshComponent::DrawDebug( ADebugRenderer * InRenderer ) {
         if ( Primitive.VisPass == InRenderer->GetVisPass() )
         {
             InRenderer->SetDepthTest( false );
-            InRenderer->SetColor( AColor4( 0.5f,1,0.5f,1 ) );
+            InRenderer->SetColor( Color4( 0.5f,1,0.5f,1 ) );
             InRenderer->DrawAABB( WorldBounds );
         }
     }

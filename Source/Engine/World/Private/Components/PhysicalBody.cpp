@@ -31,7 +31,7 @@ SOFTWARE.
 #include <World/Public/Components/PhysicalBody.h>
 #include <World/Public/World.h>
 #include <World/Public/Base/DebugRenderer.h>
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 #include <Runtime/Public/RuntimeVariable.h>
 
 #include "../BulletCompatibility/BulletCompatibility.h"
@@ -1328,7 +1328,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer )
 
         if ( HitProxy->IsTrigger() ) {
             if ( com_DrawTriggers ) {
-                InRenderer->SetColor( AColor4( 0, 1, 0, 0.5f ) );
+                InRenderer->SetColor( Color4( 0, 1, 0, 0.5f ) );
 
                 InRenderer->DrawTriangleSoup( DebugDrawCache->Vertices.ToPtr(), DebugDrawCache->Vertices.Size(), sizeof(Float3),
                                               DebugDrawCache->Indices.ToPtr(), DebugDrawCache->Indices.Size(), false );
@@ -1340,25 +1340,25 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer )
                 case MB_STATIC:
                 {
                     //uint32_t h = Core::Hash((const char*)&Id,sizeof(Id));
-                    //AColor4 c;
+                    //Color4 c;
                     //c.SetDWord( h );
                     //c.SetAlpha( 0.1f );
                     //InRenderer->SetColor( c );
-                    InRenderer->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 0.1f ) );
+                    InRenderer->SetColor( Color4( 0.5f, 0.5f, 0.5f, 0.1f ) );
                     break;
                 }
                 case MB_SIMULATED:
-                    InRenderer->SetColor( AColor4( 1, 0.5f, 0.5f, 0.1f ) );
+                    InRenderer->SetColor( Color4( 1, 0.5f, 0.5f, 0.1f ) );
                     break;
                 case MB_KINEMATIC:
-                    InRenderer->SetColor( AColor4( 0.5f, 0.5f, 1, 0.1f ) );
+                    InRenderer->SetColor( Color4( 0.5f, 0.5f, 1, 0.1f ) );
                     break;
                 }
 
                 InRenderer->DrawTriangleSoup( DebugDrawCache->Vertices.ToPtr(), DebugDrawCache->Vertices.Size(), sizeof(Float3),
                                               DebugDrawCache->Indices.ToPtr(), DebugDrawCache->Indices.Size(), false );
 
-                InRenderer->SetColor( AColor4(0,0,0,1) );
+                InRenderer->SetColor( Color4(0,0,0,1) );
                 InRenderer->DrawTriangleSoupWireframe( DebugDrawCache->Vertices.ToPtr(), sizeof( Float3 ),
                                                        DebugDrawCache->Indices.ToPtr(), DebugDrawCache->Indices.Size() );
             }
@@ -1371,7 +1371,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer )
         GetCollisionBodiesWorldBounds( boundingBoxes );
 
         InRenderer->SetDepthTest( false );
-        InRenderer->SetColor( AColor4( 1, 0, 1, 1 ) );
+        InRenderer->SetColor( Color4( 1, 0, 1, 1 ) );
         for ( BvAxisAlignedBox const & bb : boundingBoxes ) {
             InRenderer->DrawAABB( bb );
         }
@@ -1383,7 +1383,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer )
             GetCollisionBodiesWorldBounds( boundingBoxes );
 
             InRenderer->SetDepthTest( false );
-            InRenderer->SetColor( AColor4( 0.5f, 0.5f, 0.5f, 1 ) );
+            InRenderer->SetColor( Color4( 0.5f, 0.5f, 0.5f, 1 ) );
             for ( BvAxisAlignedBox const & bb : boundingBoxes ) {
                 InRenderer->DrawAABB( bb );
             }
@@ -1395,7 +1395,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer )
             GetCollisionBodiesWorldBounds( boundingBoxes );
 
             InRenderer->SetDepthTest( false );
-            InRenderer->SetColor( IsPhysicsActive() ? AColor4( 0.1f, 1.0f, 0.1f, 1 ) : AColor4( 0.3f, 0.3f, 0.3f, 1 ) );
+            InRenderer->SetColor( IsPhysicsActive() ? Color4( 0.1f, 1.0f, 0.1f, 1 ) : Color4( 0.3f, 0.3f, 0.3f, 1 ) );
             for ( BvAxisAlignedBox const & bb : boundingBoxes ) {
                 InRenderer->DrawAABB( bb );
             }
@@ -1407,7 +1407,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer )
             GetCollisionBodiesWorldBounds( boundingBoxes );
 
             InRenderer->SetDepthTest( false );
-            InRenderer->SetColor( AColor4( 0.5f, 0.5f, 1, 1 ) );
+            InRenderer->SetColor( Color4( 0.5f, 0.5f, 1, 1 ) );
             for ( BvAxisAlignedBox const & bb : boundingBoxes ) {
                 InRenderer->DrawAABB( bb );
             }
@@ -1417,7 +1417,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer )
     if ( com_DrawBoneCollisionBounds ) {
         btVector3 mins, maxs;
         InRenderer->SetDepthTest( false );
-        InRenderer->SetColor( AColor4( 1.0f, 1.0f, 0.0f, 1 ) );
+        InRenderer->SetColor( Color4( 1.0f, 1.0f, 0.0f, 1 ) );
         for ( ABoneCollisionInstance * boneCollision : BoneCollisionInst ) {
             btCollisionObject * colObject = boneCollision->HitProxy->GetCollisionObject();
             btCollisionShape * shape = colObject->getCollisionShape();
@@ -1430,7 +1430,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer )
 
     if ( com_DrawBoneCollisionShapes ) {
         InRenderer->SetDepthTest( false );
-        InRenderer->SetColor( AColor4( 1.0f, 1.0f, 0.0f, 1 ) );
+        InRenderer->SetColor( Color4( 1.0f, 1.0f, 0.0f, 1 ) );
         for ( ABoneCollisionInstance * boneCollision : BoneCollisionInst ) {
             btCollisionObject * colObject = boneCollision->HitProxy->GetCollisionObject();
 
@@ -1443,7 +1443,7 @@ void APhysicalBody::DrawDebug( ADebugRenderer * InRenderer )
             Float3 centerOfMass = GetCenterOfMassWorldPosition();
 
             InRenderer->SetDepthTest( false );
-            InRenderer->SetColor( AColor4( 1, 0, 0, 1 ) );
+            InRenderer->SetColor( Color4( 1, 0, 0, 1 ) );
             InRenderer->DrawBox( centerOfMass, Float3( 0.02f ) );
         }
     }

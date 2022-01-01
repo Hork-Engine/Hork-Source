@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Audio/Public/Freeverb.h>
 #include <Audio/Public/AudioDecoder.h>
 
-#include <Core/Public/Logger.h>
+#include <Platform/Public/Logger.h>
 #include <Core/Public/IntrusiveLinkedListMacro.h>
 
 ARuntimeVariable Snd_MixAhead( _CTS( "Snd_MixAhead" ), _CTS( "0.1" ) );

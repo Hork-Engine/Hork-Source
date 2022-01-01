@@ -28,8 +28,9 @@ SOFTWARE.
 
 */
 
-#include <Core/Public/Logger.h>
-#include <Core/Public/Core.h>
+#include <Platform/Public/Logger.h>
+#include <Platform/Public/Platform.h>
+#include <Geometry/Public/BV/BvIntersect.h>
 
 #include <Runtime/Public/RuntimeVariable.h>
 #include <Runtime/Public/Runtime.h>
@@ -393,7 +394,7 @@ void AAudioHRTF::ApplyHRTF( Float3 const & CurDir, Float3 const & NewDir, const 
                 pStream += 2;
             }
 
-            StdSwap( curIndex, newIndex );
+            std::swap( curIndex, newIndex );
         }
 
         frames += HRTF_BLOCK_LENGTH;
