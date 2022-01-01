@@ -66,55 +66,43 @@ ARuntimeVariable rt_SyncGPU(_CTS("rt_SyncGPU"), _CTS("0"));
 
 ARuntimeVariable rt_SwapInterval(_CTS("rt_SwapInterval"), _CTS("0"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing"));
 
-static int            TotalAllocatedRenderCore = 0;
-static SDL_Window*    WindowHandle;
-static TRef<AGPUSync> GPUSync;
-
-static TArray<int, KEY_LAST + 1>                                                PressedKeys;
-static TArray<bool, MOUSE_BUTTON_8 + 1>                                         PressedMouseButtons;
-static TArray<TArray<unsigned char, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT> JoystickButtonState;
-static TArray<TArray<short, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT>            JoystickAxisState;
-static TArray<bool, MAX_JOYSTICKS_COUNT>                                        JoystickAdded;
-
-static SDL_Window* CreateGenericWindow(SVideoMode const& _VideoMode);
+static SDL_Window* CreateGenericWindow(SVideoMode const& VideoMode);
 static void        DestroyGenericWindow(SDL_Window* Window);
 
-ARuntime::ARuntime(struct SEntryDecl const& _EntryDecl) :
+ARuntime::ARuntime(struct SEntryDecl const& EntryDecl) :
     Rand(Core::RandomSeed())
 {
     GRuntime = this;
 
     ARuntimeVariable::AllocateVariables();
 
-    FrameMemoryUsedPrev  = 0;
-    MaxFrameMemoryUsage  = 0;
-    bPostTerminateEvent  = false;
-    bPostChangeVideoMode = false;
-
     FrameTimeStamp = Core::SysStartMicroseconds();
     FrameDuration  = 1000000.0 / 60;
     FrameNumber    = 0;
 
-    pModuleDecl = &_EntryDecl;
+    pModuleDecl = &EntryDecl;
 
     Engine = CreateEngineInstance();
 
-    GLogger.SetMessageCallback([](int _Level, const char* _Message)
+    GLogger.SetMessageCallback([](int Level, const char* Message, void* UserData)
                                {
-                                   Core::WriteDebugString(_Message);
-                                   Core::WriteLog(_Message);
+                                   Core::WriteDebugString(Message);
+                                   Core::WriteLog(Message);
 
-                                   if (GRuntime->Engine)
+                                   IEngineInterface* engine = ((ARuntime*)UserData)->Engine;
+
+                                   if (engine)
                                    {
                                        std::string& messageBuffer = Core::GetMessageBuffer();
                                        if (!messageBuffer.empty())
                                        {
-                                           GRuntime->Engine->Print(messageBuffer.c_str());
+                                           engine->Print(messageBuffer.c_str());
                                            messageBuffer.clear();
                                        }
-                                       GRuntime->Engine->Print(_Message);
+                                       engine->Print(Message);
                                    }
-                               });
+                               },
+                               this);
 
     InitializeWorkingDirectory();
 
@@ -167,7 +155,7 @@ ARuntime::ARuntime(struct SEntryDecl const& _EntryDecl) :
     desiredMode.bFullscreen = rt_VidFullscreen;
     desiredMode.bCentrized  = true;
     Core::Strcpy(desiredMode.Backend, sizeof(desiredMode.Backend), "OpenGL 4.5");
-    Core::Strcpy(desiredMode.Title, sizeof(desiredMode.Title), _EntryDecl.GameTitle);
+    Core::Strcpy(desiredMode.Title, sizeof(desiredMode.Title), EntryDecl.GameTitle);
 
     WindowHandle = CreateGenericWindow(desiredMode);
     if (!WindowHandle)
@@ -183,14 +171,14 @@ ARuntime::ARuntime(struct SEntryDecl const& _EntryDecl) :
     allocator.Allocate =
         [](size_t _BytesCount)
     {
-        TotalAllocatedRenderCore++;
+        GRuntime->TotalAllocatedRenderCore++;
         return GZoneMemory.Alloc(_BytesCount);
     };
 
     allocator.Deallocate =
         [](void* _Bytes)
     {
-        TotalAllocatedRenderCore--;
+        GRuntime->TotalAllocatedRenderCore--;
         GZoneMemory.Free(_Bytes);
     };
 
@@ -308,7 +296,7 @@ void ARuntime::LoadConfigFile()
     }
 }
 
-static SDL_Window* CreateGenericWindow(SVideoMode const& _VideoMode)
+static SDL_Window* CreateGenericWindow(SVideoMode const& VideoMode)
 {
     int flags = SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN | SDL_WINDOW_INPUT_FOCUS;
 
@@ -356,26 +344,26 @@ static SDL_Window* CreateGenericWindow(SVideoMode const& _VideoMode)
 
     int x, y;
 
-    if (_VideoMode.bFullscreen)
+    if (VideoMode.bFullscreen)
     {
         flags |= SDL_WINDOW_FULLSCREEN; // | SDL_WINDOW_BORDERLESS;
         x = y = 0;
     }
     else
     {
-        if (_VideoMode.bCentrized)
+        if (VideoMode.bCentrized)
         {
             x = SDL_WINDOWPOS_CENTERED;
             y = SDL_WINDOWPOS_CENTERED;
         }
         else
         {
-            x = _VideoMode.WindowedX;
-            y = _VideoMode.WindowedY;
+            x = VideoMode.WindowedX;
+            y = VideoMode.WindowedY;
         }
     }
 
-    return SDL_CreateWindow(_VideoMode.Title, x, y, _VideoMode.Width, _VideoMode.Height, flags);
+    return SDL_CreateWindow(VideoMode.Title, x, y, VideoMode.Width, VideoMode.Height, flags);
 }
 
 static void DestroyGenericWindow(SDL_Window* Window)
@@ -438,9 +426,9 @@ void ARuntime::InitializeWorkingDirectory()
 }
 
 #ifdef AN_OS_WIN32
-void RunEngine(SEntryDecl const& _EntryDecl)
+void RunEngine(SEntryDecl const& EntryDecl)
 #else
-void RunEngine(int _Argc, char** _Argv, SEntryDecl const& _EntryDecl)
+void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
 #endif
 {
     static bool bApplicationRun = false;
@@ -465,7 +453,7 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& _EntryDecl)
     init.HunkSizeInMegabytes     = 32;
     Core::Initialize(init);
     {
-        ARuntime runtime(_EntryDecl);
+        ARuntime runtime(EntryDecl);
         runtime.Run();
     }
     Core::Deinitialize();

@@ -690,13 +690,14 @@ void Initialize(SCoreInitialize const& CoreInitialize)
         pCommandLine = &cmdLine;
     }
 
-    GLogger.SetMessageCallback([](int Level, const char* Message)
+    GLogger.SetMessageCallback([](int Level, const char* Message, void* UserData)
                                {
                                    WriteDebugString(Message);
                                    WriteLog(Message);
 
                                    MessageBuffer += Message;
-                               });
+                               },
+                               nullptr);
 
     // Synchronize SDL ticks with our start time
     (void)SDL_GetTicks();

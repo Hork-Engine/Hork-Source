@@ -39,6 +39,7 @@ SOFTWARE.
 #include "AsyncJobManager.h"
 #include "GameModuleCallback.h"
 #include "VertexMemoryGPU.h"
+#include "InputDefs.h"
 
 struct SVideoMode
 {
@@ -263,8 +264,8 @@ private:
     int     FrameNumber;
 
     TLinearAllocator<> FrameMemory;
-    size_t             FrameMemoryUsedPrev;
-    size_t             MaxFrameMemoryUsage;
+    size_t             FrameMemoryUsedPrev = 0;
+    size_t             MaxFrameMemoryUsage = 0;
 
     struct SEntryDecl const* pModuleDecl;
 
@@ -272,7 +273,7 @@ private:
 
     SVideoMode VideoMode;
     SVideoMode DesiredMode;
-    bool       bPostChangeVideoMode;
+    bool       bPostChangeVideoMode = false;
 
     TRef<RenderCore::IDevice>           RenderDevice;
     TRef<RenderCore::IImmediateContext> pImmediateContext;
@@ -281,9 +282,19 @@ private:
     TRef<AVertexMemoryGPU>   VertexMemoryGPU;
     TRef<AStreamedMemoryGPU> StreamedMemoryGPU;
 
-    bool bPostTerminateEvent;
+    bool bPostTerminateEvent = false;
 
     TUniqueRef<AArchive> EmbeddedResourcesArch;
+
+    int            TotalAllocatedRenderCore = 0;
+    SDL_Window*    WindowHandle = {};
+    TRef<class AGPUSync> GPUSync;
+
+    TArray<int, KEY_LAST + 1>                                                PressedKeys;
+    TArray<bool, MOUSE_BUTTON_8 + 1>                                         PressedMouseButtons;
+    TArray<TArray<unsigned char, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT> JoystickButtonState;
+    TArray<TArray<short, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT>            JoystickAxisState;
+    TArray<bool, MAX_JOYSTICKS_COUNT>                                        JoystickAdded;
 
     void Run();
 

@@ -57,12 +57,14 @@ public:
         Printf(_Format, std::forward<TArgs>(_Args)...);
     }
 
-    void SetMessageCallback(void (*_MessageCallback)(int, const char*));
+    void SetMessageCallback(void (*_MessageCallback)(int, const char*, void*), void* _UserData);
 
 private:
-    void (*MessageCallback)(int, const char*) = DefaultMessageCallback;
+    void (*MessageCallback)(int, const char*, void*) = DefaultMessageCallback;
 
-    static void DefaultMessageCallback(int, const char*);
+    static void DefaultMessageCallback(int, const char*, void*);
+
+    void* UserData = nullptr;
 };
 
 extern ALogger GLogger;

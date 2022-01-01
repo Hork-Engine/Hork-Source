@@ -50,7 +50,7 @@ void ALogger::Critical(const char* _Format, ...)
     va_start(VaList, _Format);
     Core::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
     va_end(VaList);
-    MessageCallback(LOGGER_LEVEL_CRITICAL, LogBuffer);
+    MessageCallback(LOGGER_LEVEL_CRITICAL, LogBuffer, UserData);
 }
 
 void ALogger::Error(const char* _Format, ...)
@@ -59,7 +59,7 @@ void ALogger::Error(const char* _Format, ...)
     va_start(VaList, _Format);
     Core::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
     va_end(VaList);
-    MessageCallback(LOGGER_LEVEL_ERROR, LogBuffer);
+    MessageCallback(LOGGER_LEVEL_ERROR, LogBuffer, UserData);
 }
 
 void ALogger::Warning(const char* _Format, ...)
@@ -68,7 +68,7 @@ void ALogger::Warning(const char* _Format, ...)
     va_start(VaList, _Format);
     Core::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
     va_end(VaList);
-    MessageCallback(LOGGER_LEVEL_WARNING, LogBuffer);
+    MessageCallback(LOGGER_LEVEL_WARNING, LogBuffer, UserData);
 }
 
 void ALogger::DebugMessage(const char* _Format, ...)
@@ -78,7 +78,7 @@ void ALogger::DebugMessage(const char* _Format, ...)
     va_start(VaList, _Format);
     Core::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
     va_end(VaList);
-    MessageCallback(LOGGER_LEVEL_MESSAGE, LogBuffer);
+    MessageCallback(LOGGER_LEVEL_MESSAGE, LogBuffer, UserData);
 #endif
 }
 
@@ -88,12 +88,12 @@ void ALogger::Printf(const char* _Format, ...)
     va_start(VaList, _Format);
     Core::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
     va_end(VaList);
-    MessageCallback(LOGGER_LEVEL_MESSAGE, LogBuffer);
+    MessageCallback(LOGGER_LEVEL_MESSAGE, LogBuffer, UserData);
 }
 
 void ALogger::Print(const char* _Message)
 {
-    MessageCallback(LOGGER_LEVEL_MESSAGE, _Message);
+    MessageCallback(LOGGER_LEVEL_MESSAGE, _Message, UserData);
 }
 
 void ALogger::_Printf(int _Level, const char* _Format, ...)
@@ -102,15 +102,16 @@ void ALogger::_Printf(int _Level, const char* _Format, ...)
     va_start(VaList, _Format);
     Core::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
     va_end(VaList);
-    MessageCallback(_Level, LogBuffer);
+    MessageCallback(_Level, LogBuffer, UserData);
 }
 
-void ALogger::SetMessageCallback(void (*_MessageCallback)(int, const char*))
+void ALogger::SetMessageCallback(void (*_MessageCallback)(int, const char*, void*), void *_UserData)
 {
     MessageCallback = _MessageCallback;
+    UserData        = _UserData;
 }
 
-void ALogger::DefaultMessageCallback(int, const char* _Message)
+void ALogger::DefaultMessageCallback(int, const char* _Message, void*)
 {
 #if defined AN_DEBUG
 #    if defined AN_COMPILER_MSVC
