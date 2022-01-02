@@ -133,7 +133,7 @@ static bool FindExtension(const char* _Extension)
     for (int i = 0; i < numExtensions; i++)
     {
         const char* ExtI = (const char*)glGetStringi(GL_EXTENSIONS, i);
-        if (ExtI && Core::Strcmp(ExtI, _Extension) == 0)
+        if (ExtI && Platform::Strcmp(ExtI, _Extension) == 0)
         {
             return true;
         }
@@ -311,15 +311,15 @@ ADeviceGLImpl::ADeviceGLImpl(SImmediateContextDesc const& Desc,
     GLogger.Printf("Graphics adapter: %s\n", adapterString);
     GLogger.Printf("Driver version: %s\n", driverVersion);
 
-    if (Core::SubstringIcmp(vendorString, "NVIDIA") != -1)
+    if (Platform::SubstringIcmp(vendorString, "NVIDIA") != -1)
     {
         GraphicsVendor = VENDOR_NVIDIA;
     }
-    else if (Core::SubstringIcmp(vendorString, "ATI") != -1)
+    else if (Platform::SubstringIcmp(vendorString, "ATI") != -1)
     {
         GraphicsVendor = VENDOR_ATI;
     }
-    else if (Core::SubstringIcmp(vendorString, "Intel") != -1)
+    else if (Platform::SubstringIcmp(vendorString, "Intel") != -1)
     {
         GraphicsVendor = VENDOR_INTEL;
     }
@@ -348,14 +348,14 @@ ADeviceGLImpl::ADeviceGLImpl(SImmediateContextDesc const& Desc,
             {
                 const char* extName2 = (const char*)glGetStringi(GL_EXTENSIONS, i + 1);
 
-                int strLen1 = Core::Strlen(extName1);
-                int strLen2 = Core::Strlen(extName2);
+                int strLen1 = Platform::Strlen(extName1);
+                int strLen2 = Platform::Strlen(extName2);
 
                 if (strLen1 < MaxExtensionLength && strLen2 < MaxExtensionLength)
                 {
-                    Core::Memset(&str[strLen1], ' ', MaxExtensionLength - strLen1);
-                    Core::Memcpy(str, extName1, strLen1);
-                    Core::Memcpy(&str[MaxExtensionLength], extName2, strLen2);
+                    Platform::Memset(&str[strLen1], ' ', MaxExtensionLength - strLen1);
+                    Platform::Memcpy(str, extName1, strLen1);
+                    Platform::Memcpy(&str[MaxExtensionLength], extName2, strLen2);
                     str[MaxExtensionLength + strLen2] = '\0';
 
                     GLogger.Printf(" %s\n", str);
@@ -677,7 +677,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
 
         GLogger.Printf("ADeviceGLImpl::GetVertexLayout: NumVertexBindings > MAX_VERTEX_BINDINGS\n");
     }
-    Core::Memcpy(desc.VertexBindings, pVertexBindings, sizeof(desc.VertexBindings[0]) * desc.NumVertexBindings);
+    Platform::Memcpy(desc.VertexBindings, pVertexBindings, sizeof(desc.VertexBindings[0]) * desc.NumVertexBindings);
 
     desc.NumVertexAttribs = NumVertexAttribs;
     if (desc.NumVertexAttribs > MAX_VERTEX_ATTRIBS)
@@ -686,7 +686,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
 
         GLogger.Printf("ADeviceGLImpl::GetVertexLayout: NumVertexAttribs > MAX_VERTEX_ATTRIBS\n");
     }
-    Core::Memcpy(desc.VertexAttribs, pVertexAttribs, sizeof(desc.VertexAttribs[0]) * desc.NumVertexAttribs);
+    Platform::Memcpy(desc.VertexAttribs, pVertexAttribs, sizeof(desc.VertexAttribs[0]) * desc.NumVertexAttribs);
 
     // Clear semantic name to have proper hash key
     for (int i = 0; i < desc.NumVertexAttribs; i++)
@@ -764,7 +764,7 @@ SBlendingStateInfo const* ADeviceGLImpl::CachedBlendingState(SBlendingStateInfo 
     }
 
     SBlendingStateInfo* state = static_cast<SBlendingStateInfo*>(Allocator.Allocate(sizeof(SBlendingStateInfo)));
-    Core::Memcpy(state, &_BlendingState, sizeof(*state));
+    Platform::Memcpy(state, &_BlendingState, sizeof(*state));
 
     i = BlendingStateCache.Size();
 
@@ -793,7 +793,7 @@ SRasterizerStateInfo const* ADeviceGLImpl::CachedRasterizerState(SRasterizerStat
     }
 
     SRasterizerStateInfo* state = static_cast<SRasterizerStateInfo*>(Allocator.Allocate(sizeof(SRasterizerStateInfo)));
-    Core::Memcpy(state, &_RasterizerState, sizeof(*state));
+    Platform::Memcpy(state, &_RasterizerState, sizeof(*state));
 
     i = RasterizerStateCache.Size();
 
@@ -822,7 +822,7 @@ SDepthStencilStateInfo const* ADeviceGLImpl::CachedDepthStencilState(SDepthStenc
     }
 
     SDepthStencilStateInfo* state = static_cast<SDepthStencilStateInfo*>(Allocator.Allocate(sizeof(SDepthStencilStateInfo)));
-    Core::Memcpy(state, &_DepthStencilState, sizeof(*state));
+    Platform::Memcpy(state, &_DepthStencilState, sizeof(*state));
 
     i = DepthStencilStateCache.Size();
 
@@ -851,7 +851,7 @@ unsigned int ADeviceGLImpl::CachedSampler(SSamplerDesc const& SamplerDesc)
     }
 
     SamplerInfo* sampler = static_cast<SamplerInfo*>(Allocator.Allocate(sizeof(SamplerInfo)));
-    Core::Memcpy(&sampler->Desc, &SamplerDesc, sizeof(sampler->Desc));
+    Platform::Memcpy(&sampler->Desc, &SamplerDesc, sizeof(sampler->Desc));
 
     i = SamplerCache.Size();
 

@@ -193,7 +193,7 @@ void SVirtualTexturePIT::Create( unsigned int InNumPages ) {
 
 void SVirtualTexturePIT::Clear() {
     AN_ASSERT_( Data != NULL, "SVirtualTexturePIT::clear" );
-    Core::ZeroMem( Data, sizeof( Data[0] ) * NumPages );
+    Platform::ZeroMem( Data, sizeof( Data[0] ) * NumPages );
 }
 
 void SVirtualTexturePIT::Generate( APageBitfield const & BitField, int & StoredLods ) {
@@ -204,7 +204,7 @@ void SVirtualTexturePIT::Generate( APageBitfield const & BitField, int & StoredL
 
     int numLods = QuadTreeCalcLod64( NumPages );
 
-    Core::ZeroMem(lodPagesCount, sizeof(lodPagesCount[0]) * numLods);
+    Platform::ZeroMem(lodPagesCount, sizeof(lodPagesCount[0]) * numLods);
 
     // Parse bits
     for ( unsigned int i = 0 ; i < NumPages ; i++ ) {
@@ -304,9 +304,9 @@ void SVirtualTextureAddressTable::Create( int _NumLods ) {
 void SVirtualTextureAddressTable::Clear() {
     AN_ASSERT_( ByteOffsets != NULL, "SVirtualTextureAddressTable::clear" );
 
-    Core::ZeroMem( ByteOffsets, sizeof( ByteOffsets[0] ) * TotalPages );
+    Platform::ZeroMem( ByteOffsets, sizeof( ByteOffsets[0] ) * TotalPages );
     if ( Table ) {
-        Core::ZeroMem( Table, sizeof( Table[0] ) * TableSize );
+        Platform::ZeroMem( Table, sizeof( Table[0] ) * TableSize );
     }
 }
 
@@ -365,7 +365,7 @@ void SVirtualTextureAddressTable::Generate( APageBitfield const & BitField ) {
 #if 0
         int * addrTableByteOffsets = new int[ AddrTableSize ];
 
-        Core::ZeroMem( addrTableByteOffsets, sizeof( int ) * AddrTableSize);
+        Platform::ZeroMem( addrTableByteOffsets, sizeof( int ) * AddrTableSize);
 
         for ( unsigned int i = 85 ; i < TotalPages ; i++) {
             //Заполняем byte offsets для LOD'ов > 4

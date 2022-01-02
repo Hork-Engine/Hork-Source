@@ -201,7 +201,7 @@ bool WriteMaterial( AString const & _Path, SMaterialDef const * pDef ) {
 }
 
 void AMaterial::LoadInternalResource( const char * _Path ) {
-    if ( !Core::Stricmp( _Path, "/Default/Materials/Unlit" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Materials/Unlit" ) ) {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
@@ -222,7 +222,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/UnlitMask" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Materials/UnlitMask" ) ) {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
@@ -245,7 +245,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/UnlitOpacity" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Materials/UnlitOpacity" ) ) {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
@@ -267,7 +267,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/BaseLight" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Materials/BaseLight" ) ) {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
@@ -288,7 +288,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/DefaultPBR" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Materials/DefaultPBR" ) ) {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
@@ -337,7 +337,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughness" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughness" ) ) {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
@@ -396,7 +396,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessMask" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessMask" ) ) {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
@@ -457,7 +457,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessOpacity" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessOpacity" ) ) {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
@@ -517,7 +517,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactor" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactor" ) ) {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
@@ -608,7 +608,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactorMask" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactorMask" ) ) {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
@@ -701,7 +701,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactorOpacity" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessFactorOpacity" ) ) {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInTexCoord * inTexCoord = graph->AddNode< MGInTexCoord >();
@@ -793,7 +793,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessNoTex" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Materials/PBRMetallicRoughnessNoTex" ) ) {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGUniformAddress * baseColorFactor = graph->AddNode< MGUniformAddress >();
@@ -823,7 +823,7 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Materials/Skybox" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Materials/Skybox" ) ) {
         MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
 
         MGInPosition * inPosition = graph->AddNode< MGInPosition >();
@@ -869,7 +869,7 @@ AMaterialInstance::AMaterialInstance() {
 
 void AMaterialInstance::LoadInternalResource( const char * _Path ) {
 #if 0
-    if ( !Core::Stricmp( _Path, "/Default/MaterialInstance/Default" ) )
+    if ( !Platform::Stricmp( _Path, "/Default/MaterialInstance/Default" ) )
     {
         static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
         //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
@@ -883,7 +883,7 @@ void AMaterialInstance::LoadInternalResource( const char * _Path ) {
         return;
     }
 #endif
-    if ( !Core::Stricmp( _Path, "/Default/MaterialInstance/BaseLight" ) || !Core::Stricmp( _Path, "/Default/MaterialInstance/Default" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/MaterialInstance/BaseLight" ) || !Platform::Stricmp( _Path, "/Default/MaterialInstance/Default" ) ) {
         static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/BaseLight" ) );
         //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
         //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );
@@ -895,7 +895,7 @@ void AMaterialInstance::LoadInternalResource( const char * _Path ) {
         SetTexture( 0, TextureResource.GetObject() );
         return;
     }
-    if ( !Core::Stricmp( _Path, "/Default/MaterialInstance/Metal" ) )
+    if ( !Platform::Stricmp( _Path, "/Default/MaterialInstance/Metal" ) )
     {
         static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/PBRMetallicRoughnessNoTex" ) );
 
@@ -911,7 +911,7 @@ void AMaterialInstance::LoadInternalResource( const char * _Path ) {
         UniformVectors[2] = Float4(0.0f);
         return;
     }
-    if ( !Core::Stricmp( _Path, "/Default/MaterialInstance/Dielectric" ) )
+    if ( !Platform::Stricmp( _Path, "/Default/MaterialInstance/Dielectric" ) )
     {
         static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/PBRMetallicRoughnessNoTex" ) );
 
@@ -1069,7 +1069,7 @@ SMaterialFrameData * AMaterialInstance::PreRenderUpdate( int _FrameNumber ) {
     }
 
     FrameData->NumUniformVectors = Material->GetNumUniformVectors();
-    Core::Memcpy( FrameData->UniformVectors, UniformVectors, sizeof( Float4 )*FrameData->NumUniformVectors );
+    Platform::Memcpy( FrameData->UniformVectors, UniformVectors, sizeof( Float4 )*FrameData->NumUniformVectors );
 
     FrameData->VirtualTexture = VirtualTexture.GetObject();
 

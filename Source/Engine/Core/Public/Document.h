@@ -217,10 +217,10 @@ public:
             GZoneMemory.Free(pTokenMemory);
         }
 
-        int len = Core::Strlen(Str);
+        int len = Platform::Strlen(Str);
 
         pTokenMemory = GZoneMemory.Alloc(len + 1);
-        Core::Memcpy(pTokenMemory, Str, len + 1);
+        Platform::Memcpy(pTokenMemory, Str, len + 1);
 
         StrBegin = (const char*)pTokenMemory;
         StrEnd   = (const char*)pTokenMemory + len;

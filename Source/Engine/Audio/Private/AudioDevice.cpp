@@ -41,9 +41,9 @@ AAudioDevice::AAudioDevice( int InSampleRate )
 
     const char * driver = NULL;
 
-    int n = Core::CheckArg( "-AudioDrv" );
+    int n = Platform::CheckArg("-AudioDrv");
     if ( n != -1 ) {
-        driver = Core::GetArgv()[n];
+        driver = Platform::GetArgv()[n];
         SDL_setenv( "SDL_AUDIODRIVER", driver, SDL_TRUE );
     }
 
@@ -151,7 +151,7 @@ AAudioDevice::AAudioDevice( int InSampleRate )
     NumFrames = Samples >> ( Channels - 1 );
     TransferBufferSizeInBytes = Samples * (SampleBits / 8);
     pTransferBuffer = (uint8_t *)GHeapMemory.Alloc( TransferBufferSizeInBytes );
-    Core::Memset( pTransferBuffer, SampleBits == 8 && !bSigned8 ? 0x80 : 0, TransferBufferSizeInBytes );
+    Platform::Memset( pTransferBuffer, SampleBits == 8 && !bSigned8 ? 0x80 : 0, TransferBufferSizeInBytes );
     TransferOffset = 0;
     PrevTransferOffset = 0;
     BufferWraps = 0;
@@ -190,7 +190,7 @@ void AAudioDevice::RenderAudio( uint8_t * pStream, int StreamLength )
 
     if ( !pTransferBuffer ) {
         // Should never happen
-        Core::ZeroMem( pStream, StreamLength );
+        Platform::ZeroMem(pStream, StreamLength);
         return;
     }
 
@@ -218,11 +218,11 @@ void AAudioDevice::RenderAudio( uint8_t * pStream, int StreamLength )
         len2 = StreamLength - len1;
     }
 
-    Core::Memcpy( pStream, pTransferBuffer + offset, len1 );
-    //Core::ZeroMem( pTransferBuffer + offset, len1 );
+    Platform::Memcpy( pStream, pTransferBuffer + offset, len1 );
+    //Platform::ZeroMem( pTransferBuffer + offset, len1 );
 
     if ( len2 > 0 ) {
-        Core::Memcpy( pStream + len1, pTransferBuffer, len2 );
+        Platform::Memcpy( pStream + len1, pTransferBuffer, len2 );
         TransferOffset = len2 / sampleWidth;
     }
     else {
@@ -264,6 +264,6 @@ void AAudioDevice::UnblockSound()
 void AAudioDevice::ClearBuffer()
 {
     MapTransferBuffer();
-    Core::Memset( pTransferBuffer, SampleBits == 8 && !bSigned8 ? 0x80 : 0, TransferBufferSizeInBytes );
+    Platform::Memset( pTransferBuffer, SampleBits == 8 && !bSigned8 ? 0x80 : 0, TransferBufferSizeInBytes );
     UnmapTransferBuffer();
 }

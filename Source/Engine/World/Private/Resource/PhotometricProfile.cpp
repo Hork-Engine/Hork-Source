@@ -40,7 +40,7 @@ AN_CLASS_META( APhotometricProfile )
 int APhotometricProfile::PhotometricProfileCounter = 0;
 
 APhotometricProfile::APhotometricProfile() {
-    Core::ZeroMem( Data, sizeof( Data ) );
+    Platform::ZeroMem( Data, sizeof( Data ) );
 }
 
 APhotometricProfile::~APhotometricProfile() {
@@ -48,13 +48,13 @@ APhotometricProfile::~APhotometricProfile() {
 
 void APhotometricProfile::Initialize( const byte * InData, float InIntensity ) {
     Intensity = InIntensity;
-    Core::Memcpy( Data, InData, sizeof( Data ) );
+    Platform::Memcpy( Data, InData, sizeof( Data ) );
 }
 
 void APhotometricProfile::LoadInternalResource( const char * _Path ) {
-    if ( !Core::Stricmp( _Path, "/Default/PhotometricProfile/Default" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/PhotometricProfile/Default" ) ) {
         Intensity = 1.0f;
-        Core::Memset( Data, 0xff, sizeof( Data ) );
+        Platform::Memset( Data, 0xff, sizeof( Data ) );
         return;
     }
 
@@ -320,9 +320,9 @@ static void TestIES( IE_DATA & PhotoData )
 bool APhotometricProfile::LoadResource( IBinaryStream & Stream ) {
     const char * fn = Stream.GetFileName();
 
-    int extOffset = Core::FindExt( fn );
+    int extOffset = Platform::FindExt( fn );
 
-    if ( !Core::Stricmp( &fn[extOffset], ".ies" ) ) {
+    if ( !Platform::Stricmp( &fn[extOffset], ".ies" ) ) {
         IE_Context context;
         IE_DATA photoData;
 

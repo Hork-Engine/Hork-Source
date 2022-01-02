@@ -61,8 +61,8 @@ ASponzaModel::ASponzaModel()
     //videoMode.RefreshRate = 60;
     //videoMode.Opacity = 1.0f;
     //videoMode.bFullscreen = false;
-    //Core::Strcpy( videoMode.Backend, sizeof( videoMode.Backend ), "OpenGL 4.5" );
-    //Core::Strcpy( videoMode.Title, sizeof( videoMode.Title ), "AngieEngine: Sponza" );
+    //Platform::Strcpy( videoMode.Backend, sizeof( videoMode.Backend ), "OpenGL 4.5" );
+    //Platform::Strcpy( videoMode.Title, sizeof( videoMode.Title ), "AngieEngine: Sponza" );
     //GRuntime->PostChangeVideoMode( videoMode );
 
     SetInputMappings();
@@ -1393,7 +1393,7 @@ void ASponzaModel::LoadStaticMeshes() {
     {
         for ( int i = 1 ; i <= 32 ; i++ ) {
             AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
-            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( Core::Fmt( "/Root/SpaceStation/scene_Circle.0%02d_0.asset", i ) ) );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( Platform::Fmt( "/Root/SpaceStation/scene_Circle.0%02d_0.asset", i ) ) );
         }
         {
             AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
@@ -1401,7 +1401,7 @@ void ASponzaModel::LoadStaticMeshes() {
         }
         for ( int i = 0 ; i <= 41 ; i++ ) {
             AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
-            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( Core::Fmt( "/Root/SpaceStation/scene_Cube.0%02d_0.asset", i ) ) );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( Platform::Fmt( "/Root/SpaceStation/scene_Cube.0%02d_0.asset", i ) ) );
         }
         {
             AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
@@ -1413,7 +1413,7 @@ void ASponzaModel::LoadStaticMeshes() {
         }
         for ( int i = 1 ; i <= 10 ; i++ ) {
             AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
-            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( Core::Fmt( "/Root/SpaceStation/scene_SF.0%02d_0.asset", i ) ) );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( Platform::Fmt( "/Root/SpaceStation/scene_SF.0%02d_0.asset", i ) ) );
         }
         {
             AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
@@ -1480,7 +1480,7 @@ void ASponzaModel::LoadStaticMeshes() {
 
         for ( int i = 5 ; i <= 21 ; i++ ) {
             AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );
-            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( Core::Fmt( "/Root/SpaceStation/scene_Torus.0%02d_0.asset", i ) ) );
+            actor->SetMesh( GetOrCreateResource< AIndexedMesh >( Platform::Fmt( "/Root/SpaceStation/scene_Torus.0%02d_0.asset", i ) ) );
         }
         {
             AStaticMesh * actor = World->SpawnActor< AStaticMesh >( Float3( 0 ), Quat::Identity() );

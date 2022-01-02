@@ -48,7 +48,7 @@ void ALogger::Critical(const char* _Format, ...)
 {
     va_list VaList;
     va_start(VaList, _Format);
-    Core::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
+    Platform::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
     va_end(VaList);
     MessageCallback(LOGGER_LEVEL_CRITICAL, LogBuffer, UserData);
 }
@@ -57,7 +57,7 @@ void ALogger::Error(const char* _Format, ...)
 {
     va_list VaList;
     va_start(VaList, _Format);
-    Core::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
+    Platform::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
     va_end(VaList);
     MessageCallback(LOGGER_LEVEL_ERROR, LogBuffer, UserData);
 }
@@ -66,7 +66,7 @@ void ALogger::Warning(const char* _Format, ...)
 {
     va_list VaList;
     va_start(VaList, _Format);
-    Core::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
+    Platform::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
     va_end(VaList);
     MessageCallback(LOGGER_LEVEL_WARNING, LogBuffer, UserData);
 }
@@ -76,7 +76,7 @@ void ALogger::DebugMessage(const char* _Format, ...)
 #ifdef AN_DEBUG
     va_list VaList;
     va_start(VaList, _Format);
-    Core::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
+    Platform::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
     va_end(VaList);
     MessageCallback(LOGGER_LEVEL_MESSAGE, LogBuffer, UserData);
 #endif
@@ -86,7 +86,7 @@ void ALogger::Printf(const char* _Format, ...)
 {
     va_list VaList;
     va_start(VaList, _Format);
-    Core::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
+    Platform::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
     va_end(VaList);
     MessageCallback(LOGGER_LEVEL_MESSAGE, LogBuffer, UserData);
 }
@@ -100,7 +100,7 @@ void ALogger::_Printf(int _Level, const char* _Format, ...)
 {
     va_list VaList;
     va_start(VaList, _Format);
-    Core::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
+    Platform::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
     va_end(VaList);
     MessageCallback(_Level, LogBuffer, UserData);
 }

@@ -188,11 +188,11 @@ void BindInstanceConstants( SRenderInstance const * Instance )
 
     SInstanceConstantBuffer * pConstantBuf = reinterpret_cast< SInstanceConstantBuffer * >(GCircularBuffer->GetMappedMemory() + offset);
 
-    Core::Memcpy( &pConstantBuf->TransformMatrix, &Instance->Matrix, sizeof( pConstantBuf->TransformMatrix ) );
-    Core::Memcpy( &pConstantBuf->TransformMatrixP, &Instance->MatrixP, sizeof( pConstantBuf->TransformMatrixP ) );
+    Platform::Memcpy( &pConstantBuf->TransformMatrix, &Instance->Matrix, sizeof( pConstantBuf->TransformMatrix ) );
+    Platform::Memcpy( &pConstantBuf->TransformMatrixP, &Instance->MatrixP, sizeof( pConstantBuf->TransformMatrixP ) );
     StoreFloat3x3AsFloat3x4Transposed( Instance->ModelNormalToViewSpace, pConstantBuf->ModelNormalToViewSpace );
-    Core::Memcpy( &pConstantBuf->LightmapOffset, &Instance->LightmapOffset, sizeof( pConstantBuf->LightmapOffset ) );
-    Core::Memcpy( &pConstantBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof( Float4 )*Instance->MaterialInstance->NumUniformVectors );
+    Platform::Memcpy( &pConstantBuf->LightmapOffset, &Instance->LightmapOffset, sizeof( pConstantBuf->LightmapOffset ) );
+    Platform::Memcpy( &pConstantBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof( Float4 )*Instance->MaterialInstance->NumUniformVectors );
 
     // TODO:
     pConstantBuf->VTOffset = Float2( 0.0f );//Instance->VTOffset;
@@ -208,7 +208,7 @@ void BindInstanceConstantsFB( SRenderInstance const * Instance )
 
     SFeedbackConstantBuffer * pConstantBuf = reinterpret_cast< SFeedbackConstantBuffer * >(GCircularBuffer->GetMappedMemory() + offset);
 
-    Core::Memcpy( &pConstantBuf->TransformMatrix, &Instance->Matrix, sizeof( pConstantBuf->TransformMatrix ) );
+    Platform::Memcpy( &pConstantBuf->TransformMatrix, &Instance->Matrix, sizeof( pConstantBuf->TransformMatrix ) );
 
     // TODO:
     pConstantBuf->VTOffset = Float2(0.0f);//Instance->VTOffset;
@@ -227,7 +227,7 @@ void BindShadowInstanceConstants( SShadowRenderInstance const * Instance )
     StoreFloat3x4AsFloat4x4Transposed( Instance->WorldTransformMatrix, pConstantBuf->TransformMatrix );
 
     if ( Instance->MaterialInstance ) {
-        Core::Memcpy( &pConstantBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof( Float4 )*Instance->MaterialInstance->NumUniformVectors );
+        Platform::Memcpy( &pConstantBuf->uaddr_0, Instance->MaterialInstance->UniformVectors, sizeof( Float4 )*Instance->MaterialInstance->NumUniformVectors );
     }
 
     pConstantBuf->CascadeMask = Instance->CascadeMask;
@@ -395,7 +395,7 @@ void SaveSnapshot( ITexture & _Texture )
     
     static int n = 0;
     AFileStream f;
-    if ( f.OpenWrite( Core::Fmt( "snapshots/%d.png", n++ ) ) ) {
+    if ( f.OpenWrite( Platform::Fmt( "snapshots/%d.png", n++ ) ) ) {
          WritePNG( f, w, h, numchannels, data, w*numchannels );
     }
 
@@ -472,7 +472,7 @@ static SIncludeInfo * FindIncludes( AStringView text )
             ++s;
             while ( ( *s == ' ' || *s == '\t' ) && s < e )
                 ++s;
-            if ( e-s > 7 && !Core::StrcmpN( s, "include", 7 ) && IsSpace( s[7] ) ) {
+            if ( e-s > 7 && !Platform::StrcmpN( s, "include", 7 ) && IsSpace( s[7] ) ) {
                 s += 7;
                 while ( ( *s == ' ' || *s == '\t' ) && s < e )
                     ++s;
@@ -560,7 +560,7 @@ static bool LoadShaderFromString( SIncludeCtx * Ctx, AStringView FileName, AStri
 #endif
             SMaterialShader const * s;
             for ( s = Ctx->Predefined ; s ; s = s->Next ) {
-                if ( !Core::StricmpN( s->SourceName, includeInfo->filename, includeInfo->len ) ) {
+                if ( !Platform::StricmpN( s->SourceName, includeInfo->filename, includeInfo->len ) ) {
                     break;
                 }
             }
@@ -579,7 +579,7 @@ static bool LoadShaderFromString( SIncludeCtx * Ctx, AStringView FileName, AStri
             Out += "#line 1\n";
 #endif
             temp[0] = 0;
-            Core::StrcatN( temp, sizeof( temp ), includeInfo->filename, includeInfo->len );
+            Platform::StrcatN(temp, sizeof(temp), includeInfo->filename, includeInfo->len);
             if ( !LoadShaderWithInclude( Ctx, temp, Out ) ) {
                 FreeIncludes( includeList );
                 return false;
@@ -587,9 +587,9 @@ static bool LoadShaderFromString( SIncludeCtx * Ctx, AStringView FileName, AStri
         }        
 
 #ifdef CSTYLE_LINE_DIRECTIVE
-        Core::Sprintf( temp, sizeof( temp ), "\n#line %d \"%s\"", includeInfo->next_line_after, FileName ? FileName : "source-file" );
+        Platform::Sprintf( temp, sizeof( temp ), "\n#line %d \"%s\"", includeInfo->next_line_after, FileName ? FileName : "source-file" );
 #else
-        Core::Sprintf( temp, sizeof( temp ), "\n#line %d", includeInfo->next_line_after );
+        Platform::Sprintf(temp, sizeof(temp), "\n#line %d", includeInfo->next_line_after);
 #endif
         Out += temp;
 

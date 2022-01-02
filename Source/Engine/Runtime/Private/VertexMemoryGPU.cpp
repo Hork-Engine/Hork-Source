@@ -434,7 +434,7 @@ AStreamedMemoryGPU::AStreamedMemoryGPU(RenderCore::IDevice* pDevice, RenderCore:
         CriticalError("AStreamedMemoryGPU::Initialize: cannot initialize persistent mapped buffer size %d\n", bufferCI.SizeInBytes);
     }
 
-    Core::ZeroMem(ChainBuffer, sizeof(SChainBuffer));
+    Platform::ZeroMem(ChainBuffer, sizeof(SChainBuffer));
 
     BufferIndex            = 0;
     MaxMemoryUsage         = 0;
@@ -560,7 +560,7 @@ size_t AStreamedMemoryGPU::Allocate(size_t _SizeInBytes, int _Alignment, const v
 
     if (_Data)
     {
-        Core::Memcpy((byte*)pMappedMemory + alignedOffset, _Data, _SizeInBytes);
+        Platform::Memcpy((byte*)pMappedMemory + alignedOffset, _Data, _SizeInBytes);
     }
 
     return alignedOffset;

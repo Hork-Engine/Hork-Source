@@ -106,7 +106,7 @@ public:
 
         if (_NumBits > NumBits)
         {
-            Core::ZeroMem(Bits.ToPtr() + oldsize, (newsize - oldsize) * sizeof(T));
+            Platform::ZeroMem(Bits.ToPtr() + oldsize, (newsize - oldsize) * sizeof(T));
 
             const int clearBitsInWord = oldsize * BitCount;
             for (int i = NumBits; i < clearBitsInWord; i++)

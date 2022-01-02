@@ -165,7 +165,7 @@ struct SBoxHitResult
 
     void Clear()
     {
-        Core::ZeroMem( this, sizeof( *this ) );
+        Platform::ZeroMem( this, sizeof( *this ) );
     }
 };
 
@@ -259,7 +259,7 @@ struct SWorldRaycastClosestResult
     /** Clear raycast result */
     void Clear()
     {
-        Core::ZeroMem( this, sizeof( *this ) );
+        Platform::ZeroMem( this, sizeof( *this ) );
     }
 };
 

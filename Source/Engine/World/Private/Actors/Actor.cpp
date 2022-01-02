@@ -179,7 +179,7 @@ AActorComponent * AActor::GetComponent( uint64_t _ClassId )
 AActorComponent * AActor::GetComponent( const char * _ClassName )
 {
     for ( AActorComponent * component : Components ) {
-        if ( !Core::Strcmp( component->FinalClassName(), _ClassName ) ) {
+        if ( !Platform::Strcmp( component->FinalClassName(), _ClassName ) ) {
             return component;
         }
     }

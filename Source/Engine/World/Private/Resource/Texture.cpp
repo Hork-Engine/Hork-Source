@@ -274,7 +274,7 @@ bool ATexture::InitializeCubemapFromImages(TArray<AImage const*, 6> const& _Face
 
 void ATexture::LoadInternalResource(const char* _Path)
 {
-    if (!Core::Stricmp(_Path, "/Default/Textures/White"))
+    if (!Platform::Stricmp(_Path, "/Default/Textures/White"))
     {
         const byte data[4] = {255, 255, 255, 255};
 
@@ -284,7 +284,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Core::Stricmp(_Path, "/Default/Textures/Black"))
+    if (!Platform::Stricmp(_Path, "/Default/Textures/Black"))
     {
         const byte data[4] = {0, 0, 0, 255};
 
@@ -294,7 +294,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Core::Stricmp(_Path, "/Default/Textures/Gray"))
+    if (!Platform::Stricmp(_Path, "/Default/Textures/Gray"))
     {
         const byte data[4] = {127, 127, 127, 255};
 
@@ -304,7 +304,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Core::Stricmp(_Path, "/Default/Textures/BaseColorWhite") || !Core::Stricmp(_Path, "/Default/Textures/Default2D"))
+    if (!Platform::Stricmp(_Path, "/Default/Textures/BaseColorWhite") || !Platform::Stricmp(_Path, "/Default/Textures/Default2D"))
     {
         const byte data[4] = {240, 240, 240, 255};
 
@@ -314,7 +314,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Core::Stricmp(_Path, "/Default/Textures/BaseColorBlack"))
+    if (!Platform::Stricmp(_Path, "/Default/Textures/BaseColorBlack"))
     {
         const byte data[4] = {30, 30, 30, 255};
 
@@ -324,7 +324,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Core::Stricmp(_Path, "/Default/Textures/Normal"))
+    if (!Platform::Stricmp(_Path, "/Default/Textures/Normal"))
     {
         const byte data[4] = {255, 127, 127, 255}; // Z Y X Alpha
 
@@ -334,7 +334,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Core::Stricmp(_Path, "/Default/Textures/DefaultCubemap"))
+    if (!Platform::Stricmp(_Path, "/Default/Textures/DefaultCubemap"))
     {
         constexpr Float3 dirs[6] = {
             Float3(1, 0, 0),
@@ -363,7 +363,7 @@ void ATexture::LoadInternalResource(const char* _Path)
     }
 
 #if 0
-    if ( !Core::Stricmp( _Path, "/Default/Textures/BlackCubemap" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Textures/BlackCubemap" ) ) {
         const byte data[1] = {};
 
         InitializeCubemap( TEXTURE_PF_R8, 1, 1 );
@@ -375,7 +375,7 @@ void ATexture::LoadInternalResource(const char* _Path)
     }
 #endif
 
-    if (!Core::Stricmp(_Path, "/Default/Textures/LUT1") || !Core::Stricmp(_Path, "/Default/Textures/Default3D"))
+    if (!Platform::Stricmp(_Path, "/Default/Textures/LUT1") || !Platform::Stricmp(_Path, "/Default/Textures/Default3D"))
     {
 
         constexpr SColorGradingPreset ColorGradingPreset1 = {
@@ -393,7 +393,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Core::Stricmp(_Path, "/Default/Textures/LUT2"))
+    if (!Platform::Stricmp(_Path, "/Default/Textures/LUT2"))
     {
         constexpr SColorGradingPreset ColorGradingPreset2 = {
             Float3(0.5f), // Gain
@@ -410,7 +410,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Core::Stricmp(_Path, "/Default/Textures/LUT3"))
+    if (!Platform::Stricmp(_Path, "/Default/Textures/LUT3"))
     {
         constexpr SColorGradingPreset ColorGradingPreset3 = {
             Float3(0.51f, 0.55f, 0.53f), // Gain
@@ -427,7 +427,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Core::Stricmp(_Path, "/Default/Textures/LUT_Luminance"))
+    if (!Platform::Stricmp(_Path, "/Default/Textures/LUT_Luminance"))
     {
         byte* data = (byte*)GHunkMemory.Alloc(16 * 16 * 16 * 4);
         for (int z = 0; z < 16; z++)
@@ -457,6 +457,34 @@ void ATexture::LoadInternalResource(const char* _Path)
     LoadInternalResource("/Default/Textures/Default2D");
 }
 
+static bool IsImageExtension(const char* pExtension)
+{
+    const char* extensionList[] = {".jpg",
+                                   ".jpeg",
+                                   ".png",
+                                   ".tga",
+                                   ".psd",
+                                   ".gif",
+                                   ".hdr",
+                                   ".exr",
+                                   ".pic",
+                                   ".pnm",
+                                   ".ppm",
+                                   ".pgm"};
+
+    for (int i = 0 ; i < AN_ARRAY_SIZE(extensionList) ; i++)
+    {
+        if (!Platform::Stricmp(pExtension, extensionList[i]))
+            return true;
+    }
+    return false;
+}
+
+static bool IsHDRImageExtension(const char* pExtension)
+{
+    return !Platform::Stricmp(pExtension, ".hdr") || !Platform::Stricmp(pExtension, ".exr");
+}
+
 bool ATexture::LoadResource(IBinaryStream& Stream)
 {
     const char* fn = Stream.GetFileName();
@@ -465,19 +493,15 @@ bool ATexture::LoadResource(IBinaryStream& Stream)
 
     AImage image;
 
-    int i = Core::FindExt(fn);
-    if (!Core::Stricmp(&fn[i], ".jpg") || !Core::Stricmp(&fn[i], ".jpeg") || !Core::Stricmp(&fn[i], ".png") || !Core::Stricmp(&fn[i], ".tga") || !Core::Stricmp(&fn[i], ".psd") || !Core::Stricmp(&fn[i], ".gif") || !Core::Stricmp(&fn[i], ".hdr") || !Core::Stricmp(&fn[i], ".exr") || !Core::Stricmp(&fn[i], ".pic") || !Core::Stricmp(&fn[i], ".pnm") || !Core::Stricmp(&fn[i], ".ppm") || !Core::Stricmp(&fn[i], ".pgm"))
+    int i = Platform::FindExt(fn);
+    if (IsImageExtension(&fn[i]))
     {
-
-
-        //AN_ASSERT( 0 );
-
         SImageMipmapConfig mipmapGen;
         mipmapGen.EdgeMode            = MIPMAP_EDGE_WRAP;
         mipmapGen.Filter              = MIPMAP_FILTER_MITCHELL;
         mipmapGen.bPremultipliedAlpha = false;
 
-        if (!Core::Stricmp(&fn[i], ".hdr") || !Core::Stricmp(&fn[i], ".exr"))
+        if (IsHDRImageExtension(&fn[i]))
         {
             if (!image.Load(Stream, &mipmapGen, IMAGE_PF_AUTO_16F))
             {
@@ -870,7 +894,7 @@ void ATexture::InitializeColorGradingLUT(const char* _Path)
             {
                 byte* row = data + (size_t)z * (16 * 16 * 4) + y * (16 * 4);
 
-                Core::Memcpy(row, p, 16 * 4);
+                Platform::Memcpy(row, p, 16 * 4);
                 p += 16 * 4;
             }
         }

@@ -76,7 +76,7 @@ ARuntime::ARuntime(struct SEntryDecl const& EntryDecl) :
 
     ARuntimeVariable::AllocateVariables();
 
-    FrameTimeStamp = Core::SysStartMicroseconds();
+    FrameTimeStamp = Platform::SysStartMicroseconds();
     FrameDuration  = 1000000.0 / 60;
     FrameNumber    = 0;
 
@@ -86,14 +86,14 @@ ARuntime::ARuntime(struct SEntryDecl const& EntryDecl) :
 
     GLogger.SetMessageCallback([](int Level, const char* Message, void* UserData)
                                {
-                                   Core::WriteDebugString(Message);
-                                   Core::WriteLog(Message);
+                                   Platform::WriteDebugString(Message);
+                                   Platform::WriteLog(Message);
 
                                    IEngineInterface* engine = ((ARuntime*)UserData)->Engine;
 
                                    if (engine)
                                    {
-                                       std::string& messageBuffer = Core::GetMessageBuffer();
+                                       std::string& messageBuffer = Platform::GetMessageBuffer();
                                        if (!messageBuffer.empty())
                                        {
                                            engine->Print(messageBuffer.c_str());
@@ -108,7 +108,7 @@ ARuntime::ARuntime(struct SEntryDecl const& EntryDecl) :
 
     GLogger.Printf("Working directory: %s\n", WorkingDir.CStr());
     GLogger.Printf("Root path: %s\n", RootPath.CStr());
-    GLogger.Printf("Executable: %s\n", Core::GetProcessInfo().Executable);
+    GLogger.Printf("Executable: %s\n", Platform::GetProcessInfo().Executable);
 
     SDL_LogSetOutputFunction(
         [](void* userdata, int category, SDL_LogPriority priority, const char* message)
@@ -131,11 +131,11 @@ ARuntime::ARuntime(struct SEntryDecl const& EntryDecl) :
     RenderFrontendJobList = AsyncJobManager->GetAsyncJobList(RENDER_FRONTEND_JOB_LIST);
     RenderBackendJobList  = AsyncJobManager->GetAsyncJobList(RENDER_BACKEND_JOB_LIST);
 
-    Core::ZeroMem(PressedKeys.ToPtr(), sizeof(PressedKeys));
-    Core::ZeroMem(PressedMouseButtons.ToPtr(), sizeof(PressedMouseButtons));
-    Core::ZeroMem(JoystickButtonState.ToPtr(), sizeof(JoystickButtonState));
-    Core::ZeroMem(JoystickAxisState.ToPtr(), sizeof(JoystickAxisState));
-    Core::ZeroMem(JoystickAdded.ToPtr(), sizeof(JoystickAdded));
+    Platform::ZeroMem(PressedKeys.ToPtr(), sizeof(PressedKeys));
+    Platform::ZeroMem(PressedMouseButtons.ToPtr(), sizeof(PressedMouseButtons));
+    Platform::ZeroMem(JoystickButtonState.ToPtr(), sizeof(JoystickButtonState));
+    Platform::ZeroMem(JoystickAxisState.ToPtr(), sizeof(JoystickAxisState));
+    Platform::ZeroMem(JoystickAdded.ToPtr(), sizeof(JoystickAdded));
 
     LoadConfigFile();
 
@@ -154,8 +154,8 @@ ARuntime::ARuntime(struct SEntryDecl const& EntryDecl) :
     desiredMode.Opacity     = 1;
     desiredMode.bFullscreen = rt_VidFullscreen;
     desiredMode.bCentrized  = true;
-    Core::Strcpy(desiredMode.Backend, sizeof(desiredMode.Backend), "OpenGL 4.5");
-    Core::Strcpy(desiredMode.Title, sizeof(desiredMode.Title), EntryDecl.GameTitle);
+    Platform::Strcpy(desiredMode.Backend, sizeof(desiredMode.Backend), "OpenGL 4.5");
+    Platform::Strcpy(desiredMode.Title, sizeof(desiredMode.Title), EntryDecl.GameTitle);
 
     WindowHandle = CreateGenericWindow(desiredMode);
     if (!WindowHandle)
@@ -397,7 +397,7 @@ void ARuntime::Run()
 
 void ARuntime::InitializeWorkingDirectory()
 {
-    SProcessInfo const& processInfo = Core::GetProcessInfo();
+    SProcessInfo const& processInfo = Platform::GetProcessInfo();
 
     WorkingDir = processInfo.Executable;
     WorkingDir.ClipFilename();
@@ -451,12 +451,12 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
     init.bAllowMultipleInstances = false;
     init.ZoneSizeInMegabytes     = 256;
     init.HunkSizeInMegabytes     = 32;
-    Core::Initialize(init);
+    Platform::Initialize(init);
     {
         ARuntime runtime(EntryDecl);
         runtime.Run();
     }
-    Core::Deinitialize();
+    Platform::Deinitialize();
 }
 
 #if defined(AN_DEBUG) && defined(AN_COMPILER_MSVC)
@@ -483,7 +483,7 @@ AString const& ARuntime::GetRootPath()
 
 const char* ARuntime::GetExecutableName()
 {
-    SProcessInfo const& processInfo = Core::GetProcessInfo();
+    SProcessInfo const& processInfo = Platform::GetProcessInfo();
     return processInfo.Executable ? processInfo.Executable : "";
 }
 
@@ -556,7 +556,7 @@ struct SKeyMappingsSDL : public TArray<unsigned short, SDL_NUM_SCANCODES>
     {
         SKeyMappingsSDL& self = *this;
 
-        Core::ZeroMem(ToPtr(), sizeof(*this));
+        Platform::ZeroMem(ToPtr(), sizeof(*this));
 
         self[SDL_SCANCODE_A]            = KEY_A;
         self[SDL_SCANCODE_B]            = KEY_B;
@@ -787,7 +787,7 @@ void ARuntime::UnpressKeysAndButtons()
     mouseEvent.Action  = IA_RELEASE;
     mouseEvent.ModMask = 0;
 
-    double timeStamp = Core::SysSeconds_d();
+    double timeStamp = Platform::SysSeconds_d();
 
     for (int i = 0; i <= KEY_LAST; i++)
     {
@@ -834,8 +834,8 @@ void ARuntime::NewFrame()
     StreamedMemoryGPU->Wait();
 
     int64_t prevTimeStamp = FrameTimeStamp;
-    FrameTimeStamp        = Core::SysMicroseconds();
-    if (prevTimeStamp == Core::SysStartMicroseconds())
+    FrameTimeStamp        = Platform::SysMicroseconds();
+    if (prevTimeStamp == Platform::SysStartMicroseconds())
     {
         // First frame
         FrameDuration = 1000000.0 / 60;
@@ -1288,8 +1288,8 @@ void ARuntime::PollEvents()
                     AN_ASSERT(!JoystickAdded[event.jdevice.which]);
                     JoystickAdded[event.jdevice.which] = true;
 
-                    Core::ZeroMem(JoystickButtonState[event.jdevice.which].ToPtr(), sizeof(JoystickButtonState[0]));
-                    Core::ZeroMem(JoystickAxisState[event.jdevice.which].ToPtr(), sizeof(JoystickAxisState[0]));
+                    Platform::ZeroMem(JoystickButtonState[event.jdevice.which].ToPtr(), sizeof(JoystickButtonState[0]));
+                    Platform::ZeroMem(JoystickAxisState[event.jdevice.which].ToPtr(), sizeof(JoystickAxisState[0]));
                 }
                 else
                 {
@@ -1415,7 +1415,7 @@ void ARuntime::PollEvents()
 
 void ARuntime::SetVideoMode(SVideoMode const& _DesiredMode)
 {
-    Core::Memcpy(&VideoMode, &_DesiredMode, sizeof(VideoMode));
+    Platform::Memcpy(&VideoMode, &_DesiredMode, sizeof(VideoMode));
 
     SDL_Window* wnd = WindowHandle;
 

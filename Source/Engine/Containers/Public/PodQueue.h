@@ -68,7 +68,7 @@ public:
         const int queueLength = _Queue.Size();
         if (queueLength == _Queue.MaxQueueLength || _Queue.QueueTail == 0)
         {
-            Core::Memcpy(pQueue, _Queue.pQueue, TYPE_SIZE * queueLength);
+            Platform::Memcpy(pQueue, _Queue.pQueue, TYPE_SIZE * queueLength);
             QueueHead = _Queue.QueueHead;
             QueueTail = _Queue.QueueTail;
         }
@@ -136,7 +136,7 @@ public:
             if (pQueue == StaticData)
             {
                 pQueue = (T*)Allocator::Inst().Alloc(TYPE_SIZE * MaxQueueLength);
-                Core::Memcpy(pQueue, StaticData, TYPE_SIZE * queueLength);
+                Platform::Memcpy(pQueue, StaticData, TYPE_SIZE * queueLength);
             }
             else
             {
@@ -239,7 +239,7 @@ public:
         const int queueLength = _Queue.Size();
         if (queueLength == _Queue.MaxQueueLength || _Queue.QueueTail == 0)
         {
-            Core::Memcpy(pQueue, _Queue.pQueue, TYPE_SIZE * queueLength);
+            Platform::Memcpy(pQueue, _Queue.pQueue, TYPE_SIZE * queueLength);
             QueueHead = _Queue.QueueHead;
             QueueTail = _Queue.QueueTail;
         }

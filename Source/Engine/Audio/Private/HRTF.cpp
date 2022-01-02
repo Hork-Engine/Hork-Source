@@ -250,7 +250,7 @@ void AAudioHRTF::GenerateHRTF( const float * pFrames, int InFrameCount, SComplex
 
     FFT( hrirComplex, temp );
 
-    Core::Memcpy( pHRTF, temp, sizeof( SComplex ) * FilterSize );
+    Platform::Memcpy( pHRTF, temp, sizeof( SComplex ) * FilterSize );
 
     mufft_free( temp );
     mufft_free( hrirComplex );
@@ -296,8 +296,8 @@ void AAudioHRTF::SampleHRTF( Float3 const & Dir, SComplex * pLeftHRTF, SComplex 
         }
     }
 
-    Core::ZeroMem( pLeftHRTF, FilterSize * sizeof( SComplex ) );
-    Core::ZeroMem( pRightHRTF, FilterSize * sizeof( SComplex ) );
+    Platform::ZeroMem(pLeftHRTF, FilterSize * sizeof(SComplex));
+    Platform::ZeroMem(pRightHRTF, FilterSize * sizeof(SComplex));
 }
 
 void AAudioHRTF::ApplyHRTF( Float3 const & CurDir, Float3 const & NewDir, const float * pFrames, int InFrameCount, float * pStream, Float3 & Dir )

@@ -129,7 +129,7 @@ void AHeapMemory::DecMemoryStatistics(size_t _MemoryUsage, size_t _Overhead)
     TotalMemoryOverhead -= _Overhead;
 }
 
-namespace Core
+namespace Platform
 {
 
 void* SysAlloc(size_t _SizeInBytes, int _Alignment)
@@ -175,7 +175,7 @@ void SysFree(void* _Bytes)
     }
 }
 
-} // namespace Core
+} // namespace Platform
 
 namespace
 {
@@ -188,7 +188,7 @@ static constexpr bool HeapDebug()
 #else
 static bool HeapDebug()
 {
-    static bool bHeapDebug = Core::HasArg("-bHeapDebug");
+    static bool bHeapDebug = Platform::HasArg("-bHeapDebug");
     return bHeapDebug;
 }
 #endif
@@ -205,7 +205,7 @@ static constexpr bool MemoryTrashTest()
 #else
 static bool MemoryTrashTest()
 {
-    static bool bMemoryTrashTest = Core::HasArg("-bMemoryTrashTest");
+    static bool bMemoryTrashTest = Platform::HasArg("-bMemoryTrashTest");
     return bMemoryTrashTest;
 }
 #endif
@@ -229,7 +229,7 @@ void* AHeapMemory::Alloc(size_t _BytesCount, int _Alignment)
 
     if (!HeapDebug())
     {
-        return Core::SysAlloc(Align(_BytesCount, _Alignment), _Alignment);
+        return Platform::SysAlloc(Align(_BytesCount, _Alignment), _Alignment);
     }
 
     size_t chunkSizeInBytes = _BytesCount + sizeof(SHeapChunk);
@@ -245,14 +245,14 @@ void* AHeapMemory::Alloc(size_t _BytesCount, int _Alignment)
     if (_Alignment == 16)
     {
         chunkSizeInBytes = Align(chunkSizeInBytes, 16);
-        bytes            = (byte*)Core::SysAlloc(chunkSizeInBytes, 16);
+        bytes            = (byte*)Platform::SysAlloc(chunkSizeInBytes, 16);
         aligned          = bytes + sizeof(SHeapChunk);
     }
     else
     {
         chunkSizeInBytes += _Alignment - 1;
         chunkSizeInBytes = Align(chunkSizeInBytes, sizeof(void*));
-        bytes            = (byte*)Core::SysAlloc(chunkSizeInBytes, sizeof(void*));
+        bytes            = (byte*)Platform::SysAlloc(chunkSizeInBytes, sizeof(void*));
         aligned          = (byte*)AlignPtr(bytes + sizeof(SHeapChunk), _Alignment);
     }
 
@@ -286,7 +286,7 @@ void AHeapMemory::Free(void* _Bytes)
 {
     if (!HeapDebug())
     {
-        return Core::SysFree(_Bytes);
+        return Platform::SysFree(_Bytes);
     }
 
     if (_Bytes)
@@ -314,7 +314,7 @@ void AHeapMemory::Free(void* _Bytes)
 
         DecMemoryStatistics(heap->Size, heap->Size - heap->DataSize);
 
-        Core::SysFree(bytes);
+        Platform::SysFree(bytes);
     }
 }
 
@@ -335,7 +335,7 @@ void* AHeapMemory::Realloc(void* _Data, int _NewBytesCount, int _NewAlignment, b
 
     if (!HeapDebug())
     {
-        return Core::SysRealloc(_Data, Align(_NewBytesCount, _NewAlignment), _NewAlignment);
+        return Platform::SysRealloc(_Data, Align(_NewBytesCount, _NewAlignment), _NewAlignment);
     }
 
     if (!_Data)
@@ -366,7 +366,7 @@ void* AHeapMemory::Realloc(void* _Data, int _NewBytesCount, int _NewAlignment, b
     if (_KeepOld)
     {
         bytes = (byte*)Alloc(_NewBytesCount, _NewAlignment);
-        Core::Memcpy(bytes, _Data, heap->DataSize);
+        Platform::Memcpy(bytes, _Data, heap->DataSize);
         Free(_Data);
         return bytes;
     }
@@ -983,7 +983,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
 #    if 0
     if ( _Data ) {
         void * d = SysAlloc( _NewBytesCount, 16 );
-        Core::Memcpy(d,_Data,_NewBytesCount);
+        Platform::Memcpy(d,_Data,_NewBytesCount);
         SysFree(_Data);
         return d;
     }
@@ -1020,12 +1020,12 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
 
     int   sz   = chunk->DataSize;
     void* temp = GHunkMemory.Alloc(sz);
-    Core::Memcpy(temp, _Data, sz);
+    Platform::Memcpy(temp, _Data, sz);
     Free(_Data);
     void* pNewData = Alloc(_NewBytesCount);
     if (pNewData != _Data)
     {
-        Core::Memcpy(pNewData, temp, sz);
+        Platform::Memcpy(pNewData, temp, sz);
     }
     else
     {
@@ -1110,10 +1110,10 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
 #            else
             chunk->Size = -chunk->Size;
             void* d     = malloc(_NewBytesCount);
-            Core::Memcpy(d, _Data, oldSize);
+            Platform::Memcpy(d, _Data, oldSize);
             Free(_Data);
             _Data = Alloc(_NewBytesCount);
-            Core::Memcpy(_Data, d, _NewBytesCount);
+            Platform::Memcpy(_Data, d, _NewBytesCount);
             free(d);
             return _Data;
 #            endif
@@ -1126,22 +1126,22 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
             chunk->Size += cur->Size;
             IncMemoryStatistics(cur->Size, cur->Size - _NewBytesCount);
 
-            //Core::Memset( (byte *)_Data + chunk->DataSize, 0, _NewBytesCount - chunk->DataSize );
+            //Platform::Memset( (byte *)_Data + chunk->DataSize, 0, _NewBytesCount - chunk->DataSize );
 #            else
             //            chunk->Size = -chunk->Size;
             //            void * d = malloc( oldSize );
-            //            Core::Memcpy( d, _Data, oldSize );
+            //            Platform::Memcpy( d, _Data, oldSize );
             //            Free( _Data );
             //            _Data = Alloc( _NewBytesCount );
-            //            Core::Memcpy( _Data, d, oldSize );
+            //            Platform::Memcpy( _Data, d, oldSize );
             //            free( d );
             //            return _Data;
             chunk->Size = -chunk->Size;
             void* d     = malloc(_NewBytesCount);
-            Core::Memcpy(d, _Data, oldSize);
+            Platform::Memcpy(d, _Data, oldSize);
             Free(_Data);
             _Data = Alloc(_NewBytesCount);
-            Core::Memcpy(_Data, d, oldSize);
+            Platform::Memcpy(_Data, d, oldSize);
             free(d);
             return _Data;
 #            endif
@@ -1162,10 +1162,10 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
 #        else
         chunk->Size = -chunk->Size;
         void* d     = malloc(_NewBytesCount);
-        Core::Memcpy(d, _Data, oldSize);
+        Platform::Memcpy(d, _Data, oldSize);
         Free(_Data);
         _Data = Alloc(_NewBytesCount);
-        Core::Memcpy(_Data, d, _NewBytesCount);
+        Platform::Memcpy(_Data, d, _NewBytesCount);
         free(d);
         return _Data;
 #        endif
@@ -1175,10 +1175,10 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
 
         //chunk->Size = -chunk->Size;
         //void * d = malloc( _NewBytesCount );
-        //Core::Memcpy(d,_Data, oldSize );
+        //Platform::Memcpy(d,_Data, oldSize );
         //Free(_Data);
         //_Data=Alloc(_NewBytesCount);
-        //Core::Memcpy(_Data,d,_NewBytesCount);
+        //Platform::Memcpy(_Data,d,_NewBytesCount);
         //free(d);
         //return _Data;
 #        if 1
@@ -1225,7 +1225,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
 
         if (_KeepOld)
         {
-            Core::Memcpy(pointer, _Data, oldSize);
+            Platform::Memcpy(pointer, _Data, oldSize);
         }
 
         // Deallocate old chunk
@@ -1386,7 +1386,7 @@ void AZoneMemory::CheckMemoryLeaks()
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-namespace Core
+namespace Platform
 {
 
 void _MemcpySSE(byte* _Dst, const byte* _Src, size_t _SizeInBytes)
@@ -1620,4 +1620,4 @@ void _MemsetSSE(byte* _Dst, int _Val, size_t _SizeInBytes)
 #endif
 }
 
-} // namespace Core
+} // namespace Platform

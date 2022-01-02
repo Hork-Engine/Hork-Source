@@ -77,9 +77,9 @@ void ADocumentTokenizer::Reset(const char* pDocumentData, bool InSitu)
     }
     else
     {
-        int n = Core::Strlen(pDocumentData) + 1;
+        int n = Platform::Strlen(pDocumentData) + 1;
         Start = (char*)GZoneMemory.Alloc(n);
-        Core::Memcpy(Start, pDocumentData, n);
+        Platform::Memcpy(Start, pDocumentData, n);
     }
     Cur        = Start;
     LineNumber = 1;
@@ -679,7 +679,7 @@ ADocMember* ADocument::AddString(const char* MemberName, const char* Str)
     // Create member
     TRef<ADocMember> member = MakeRef<ADocMember>();
     member->NameBegin       = MemberName;
-    member->NameEnd         = MemberName + Core::Strlen(MemberName);
+    member->NameEnd         = MemberName + Platform::Strlen(MemberName);
 
     // Create string
     TRef<ADocString> value = MakeRef<ADocString>();
@@ -699,7 +699,7 @@ ADocMember* ADocument::AddObject(const char* MemberName, ADocObject* Object)
     // Create member
     TRef<ADocMember> member = MakeRef<ADocMember>();
     member->NameBegin       = MemberName;
-    member->NameEnd         = MemberName + Core::Strlen(MemberName);
+    member->NameEnd         = MemberName + Platform::Strlen(MemberName);
 
     member->AddValue(Object);
 
@@ -712,7 +712,7 @@ ADocMember* ADocument::AddArray(const char* ArrayName)
 {
     TRef<ADocMember> array = MakeRef<ADocMember>();
     array->NameBegin       = ArrayName;
-    array->NameEnd         = ArrayName + Core::Strlen(ArrayName);
+    array->NameEnd         = ArrayName + Platform::Strlen(ArrayName);
 
     AddMember(array);
 
@@ -810,7 +810,7 @@ ADocMember* ADocValue::AddString(const char* MemberName, const char* Str)
     // Create member
     TRef<ADocMember> member = MakeRef<ADocMember>();
     member->NameBegin       = MemberName;
-    member->NameEnd         = MemberName + Core::Strlen(MemberName);
+    member->NameEnd         = MemberName + Platform::Strlen(MemberName);
 
     // Create string
     TRef<ADocString> value = MakeRef<ADocString>();
@@ -836,7 +836,7 @@ ADocMember* ADocValue::AddObject(const char* MemberName, ADocObject* Object)
     // Create member
     TRef<ADocMember> member = MakeRef<ADocMember>();
     member->NameBegin       = MemberName;
-    member->NameEnd         = MemberName + Core::Strlen(MemberName);
+    member->NameEnd         = MemberName + Platform::Strlen(MemberName);
 
     member->AddValue(Object);
 
@@ -855,7 +855,7 @@ ADocMember* ADocValue::AddArray(const char* ArrayName)
 
     TRef<ADocMember> array = MakeRef<ADocMember>();
     array->NameBegin       = ArrayName;
-    array->NameEnd         = ArrayName + Core::Strlen(ArrayName);
+    array->NameEnd         = ArrayName + Platform::Strlen(ArrayName);
 
     AddMember(array);
 

@@ -74,13 +74,13 @@ public:
     TPodVector(TPodVector const& _Array) :
         TPodVector(_Array.ArraySize)
     {
-        Core::Memcpy(ArrayData, _Array.ArrayData, TYPE_SIZE * ArraySize);
+        Platform::Memcpy(ArrayData, _Array.ArrayData, TYPE_SIZE * ArraySize);
     }
 
     TPodVector(T const* _Data, int _Size) :
         TPodVector(_Size)
     {
-        Core::Memcpy(ArrayData, _Data, TYPE_SIZE * ArraySize);
+        Platform::Memcpy(ArrayData, _Data, TYPE_SIZE * ArraySize);
     }
 
     TPodVector(std::initializer_list<T> InitializerList) :
@@ -124,7 +124,7 @@ public:
         {
             if (ArraySize > 0)
             {
-                Core::Memcpy(StaticData, ArrayData, TYPE_SIZE * ArraySize);
+                Platform::Memcpy(StaticData, ArrayData, TYPE_SIZE * ArraySize);
             }
             Allocator::Inst().Free(ArrayData);
             ArrayData     = StaticData;
@@ -133,7 +133,7 @@ public:
         }
 
         T* data = (T*)Allocator::Inst().Alloc(TYPE_SIZE * ArraySize);
-        Core::Memcpy(data, ArrayData, TYPE_SIZE * ArraySize);
+        Platform::Memcpy(data, ArrayData, TYPE_SIZE * ArraySize);
         Allocator::Inst().Free(ArrayData);
         ArrayData     = data;
         ArrayCapacity = ArraySize;
@@ -148,7 +148,7 @@ public:
         if (ArrayData == StaticData)
         {
             ArrayData = (T*)Allocator::Inst().Alloc(TYPE_SIZE * _NewCapacity);
-            Core::Memcpy(ArrayData, StaticData, TYPE_SIZE * ArraySize);
+            Platform::Memcpy(ArrayData, StaticData, TYPE_SIZE * ArraySize);
         }
         else
         {
@@ -198,12 +198,12 @@ public:
 
     void Memset(const int _Value)
     {
-        Core::Memset(ArrayData, _Value, TYPE_SIZE * ArraySize);
+        Platform::Memset(ArrayData, _Value, TYPE_SIZE * ArraySize);
     }
 
     void ZeroMem()
     {
-        Core::ZeroMem(ArrayData, TYPE_SIZE * ArraySize);
+        Platform::ZeroMem(ArrayData, TYPE_SIZE * ArraySize);
     }
 
     /** Swap elements */
@@ -263,10 +263,10 @@ public:
         {
             T* data = (T*)Allocator::Inst().Alloc(TYPE_SIZE * capacity);
 
-            Core::Memcpy(data, ArrayData, TYPE_SIZE * _Index);
+            Platform::Memcpy(data, ArrayData, TYPE_SIZE * _Index);
             data[_Index]             = _Element;
             const int elementsToMove = ArraySize - _Index;
-            Core::Memcpy(&data[_Index + 1], &ArrayData[_Index], TYPE_SIZE * elementsToMove);
+            Platform::Memcpy(&data[_Index + 1], &ArrayData[_Index], TYPE_SIZE * elementsToMove);
 
             if (ArrayData != StaticData)
             {
@@ -278,7 +278,7 @@ public:
             return;
         }
 
-        Core::Memmove(ArrayData + _Index + 1, ArrayData + _Index, TYPE_SIZE * (ArraySize - _Index));
+        Platform::Memmove(ArrayData + _Index + 1, ArrayData + _Index, TYPE_SIZE * (ArraySize - _Index));
         ArrayData[_Index] = _Element;
         ArraySize         = newLength;
     }
@@ -299,7 +299,7 @@ public:
         int length = ArraySize;
 
         Resize(ArraySize + _Size);
-        Core::Memcpy(&ArrayData[length], _Data, TYPE_SIZE * _Size);
+        Platform::Memcpy(&ArrayData[length], _Data, TYPE_SIZE * _Size);
     }
 
     T& Append()
@@ -312,7 +312,7 @@ public:
     {
         AN_ASSERT_(_Index >= 0 && _Index < ArraySize, "TPodVector::Remove: array index is out of bounds");
 
-        Core::Memmove(ArrayData + _Index, ArrayData + _Index + 1, TYPE_SIZE * (ArraySize - _Index - 1));
+        Platform::Memmove(ArrayData + _Index, ArrayData + _Index + 1, TYPE_SIZE * (ArraySize - _Index - 1));
 
         ArraySize--;
     }
@@ -336,7 +336,7 @@ public:
                 {
                     // duplicate found
 
-                    Core::Memmove(ArrayData + j, ArrayData + j + 1, TYPE_SIZE * (ArraySize - j - 1));
+                    Platform::Memmove(ArrayData + j, ArrayData + j + 1, TYPE_SIZE * (ArraySize - j - 1));
                     ArraySize--;
                 }
             }
@@ -362,7 +362,7 @@ public:
         AN_ASSERT_(_LastIndex >= 0 && _LastIndex <= ArraySize, "TPodVector::Remove: array index is out of bounds");
         AN_ASSERT_(_FirstIndex < _LastIndex, "TPodVector::Remove: invalid order");
 
-        Core::Memmove(ArrayData + _FirstIndex, ArrayData + _LastIndex, TYPE_SIZE * (ArraySize - _LastIndex));
+        Platform::Memmove(ArrayData + _FirstIndex, ArrayData + _LastIndex, TYPE_SIZE * (ArraySize - _LastIndex));
         ArraySize -= _LastIndex - _FirstIndex;
     }
 
@@ -443,7 +443,7 @@ public:
     {
         AN_ASSERT_(_Iterator >= ArrayData && _Iterator < ArrayData + ArraySize, "TPodVector::Erase");
         int Index = _Iterator - ArrayData;
-        Core::Memmove(ArrayData + Index, ArrayData + Index + 1, TYPE_SIZE * (ArraySize - Index - 1));
+        Platform::Memmove(ArrayData + Index, ArrayData + Index + 1, TYPE_SIZE * (ArraySize - Index - 1));
         ArraySize--;
         return ArrayData + Index;
     }
@@ -542,7 +542,7 @@ public:
     void Set(T const* _Data, int _Size)
     {
         ResizeInvalidate(_Size);
-        Core::Memcpy(ArrayData, _Data, TYPE_SIZE * _Size);
+        Platform::Memcpy(ArrayData, _Data, TYPE_SIZE * _Size);
     }
 
     int GrowCapacity(int _Size) const

@@ -49,7 +49,7 @@ void AConsole::Clear()
 {
     AMutexGurad syncGuard( ConSync );
 
-    Core::ZeroMem( pImage, sizeof( *pImage ) * CON_IMAGE_SIZE );
+    Platform::ZeroMem( pImage, sizeof( *pImage ) * CON_IMAGE_SIZE );
 
     Scroll = 0;
 }
@@ -83,7 +83,7 @@ void AConsole::_Resize( int _VidWidth )
 
     SWideChar * pNewImage = ( pImage == ImageData[0] ) ? ImageData[1] : ImageData[0];
 
-    Core::ZeroMem( pNewImage, sizeof( *pNewImage ) * CON_IMAGE_SIZE );
+    Platform::ZeroMem( pNewImage, sizeof( *pNewImage ) * CON_IMAGE_SIZE );
 
     const int width = Math::Min( prevMaxLineChars, MaxLineChars );
     const int height = Math::Min( prevMaxLines, MaxLines );
@@ -92,7 +92,7 @@ void AConsole::_Resize( int _VidWidth )
         const int newOffset = ( MaxLines - i - 1 ) * MaxLineChars;
         const int oldOffset = ( ( prevMaxLines + PrintLine - i ) % prevMaxLines ) * prevMaxLineChars;
 
-        Core::Memcpy( &pNewImage[ newOffset ], &pImage[ oldOffset ], width * sizeof( *pNewImage ) );
+        Platform::Memcpy( &pNewImage[ newOffset ], &pImage[ oldOffset ], width * sizeof( *pNewImage ) );
     }
 
     pImage = pNewImage;
@@ -293,7 +293,7 @@ void AConsole::CopyStoryLine( SWideChar const * _StoryLine )
 void AConsole::AddStoryLine( SWideChar * _Text, int _Length )
 {
     SWideChar * storyLine = StoryLines[NumStoryLines++ & ( MAX_STORY_LINES - 1 )];
-    Core::Memcpy( storyLine, _Text, sizeof( _Text[0] ) * Math::Min( _Length, MAX_CMD_LINE_CHARS ) );
+    Platform::Memcpy( storyLine, _Text, sizeof( _Text[0] ) * Math::Min( _Length, MAX_CMD_LINE_CHARS ) );
     if ( _Length < MAX_CMD_LINE_CHARS ) {
         storyLine[_Length] = 0;
     }
@@ -309,7 +309,7 @@ void AConsole::InsertUTF8Text( const char * _Utf8 )
     }
 
     if ( len && CmdLinePos != CmdLineLength ) {
-        Core::Memmove( &CmdLine[CmdLinePos+len], &CmdLine[CmdLinePos], sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos ) );
+        Platform::Memmove( &CmdLine[CmdLinePos+len], &CmdLine[CmdLinePos], sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos ) );
     }
 
     CmdLineLength += len;
@@ -328,7 +328,7 @@ void AConsole::InsertUTF8Text( const char * _Utf8 )
 
 void AConsole::InsertClipboardText()
 {
-    InsertUTF8Text( Core::GetClipboard() );
+    InsertUTF8Text( Platform::GetClipboard() );
 }
 
 void AConsole::CompleteString( ACommandContext & _CommandCtx, const char * _Str )
@@ -435,14 +435,14 @@ void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx
             break;
         case KEY_BACKSPACE:
             if ( CmdLinePos > 0 ) {
-                Core::Memmove( CmdLine + CmdLinePos - 1, CmdLine + CmdLinePos, sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos ) );
+                Platform::Memmove( CmdLine + CmdLinePos - 1, CmdLine + CmdLinePos, sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos ) );
                 CmdLineLength--;
                 CmdLinePos--;
             }
             break;
         case KEY_DELETE:
             if ( CmdLinePos < CmdLineLength ) {
-                Core::Memmove( CmdLine + CmdLinePos, CmdLine + CmdLinePos + 1, sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos - 1 ) );
+                Platform::Memmove( CmdLine + CmdLinePos, CmdLine + CmdLinePos + 1, sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos - 1 ) );
                 CmdLineLength--;
             }
             break;
@@ -526,7 +526,7 @@ void AConsole::CharEvent( SCharEvent const & _Event )
 
     if ( CmdLineLength < MAX_CMD_LINE_CHARS ) {
         if ( CmdLinePos != CmdLineLength ) {
-            Core::Memmove( &CmdLine[CmdLinePos+1], &CmdLine[CmdLinePos], sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos ) );
+            Platform::Memmove( &CmdLine[CmdLinePos+1], &CmdLine[CmdLinePos], sizeof( CmdLine[0] ) * ( CmdLineLength - CmdLinePos ) );
         }
         CmdLine[ CmdLinePos ] = _Event.UnicodeCharacter;
         CmdLineLength++;

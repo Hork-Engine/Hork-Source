@@ -35,7 +35,7 @@ SOFTWARE.
 #define STB_SPRINTF_STATIC
 #include "stb_sprintf.h"
 
-namespace Core
+namespace Platform
 {
 
 int Stricmp(const char* _S1, const char* _S2)
@@ -422,4 +422,4 @@ uint64_t HexToUInt64(const char* _Str, int _Len)
     return value;
 }
 
-} // namespace Core
+} // namespace Platform

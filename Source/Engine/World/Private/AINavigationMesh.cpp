@@ -336,7 +336,7 @@ bool AAINavigationMesh::Initialize( SAINavigationConfig const & _NavigationConfi
     TileWidth = Initial.TileSize * Initial.CellSize;
 
     dtNavMeshParams params;
-    Core::ZeroMem( &params, sizeof( params ) );
+    Platform::ZeroMem( &params, sizeof( params ) );
     rcVcopy( params.orig, (const float * )BoundingBox.Mins.ToPtr() );
     params.tileWidth = TileWidth;
     params.tileHeight = TileWidth;
@@ -376,7 +376,7 @@ bool AAINavigationMesh::Initialize( SAINavigationConfig const & _NavigationConfi
         // Create tile cache
 
         dtTileCacheParams tileCacheParams;
-        Core::ZeroMem( &tileCacheParams, sizeof( tileCacheParams ) );
+        Platform::ZeroMem( &tileCacheParams, sizeof( tileCacheParams ) );
         rcVcopy( tileCacheParams.orig, (const float *)Initial.BoundingBox.Mins.ToPtr() );
         tileCacheParams.cs = Initial.CellSize;
         tileCacheParams.ch = Initial.CellHeight;
@@ -516,7 +516,7 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
         rcHeightfieldLayerSet * LayerSet;
 
         TemportalData() {
-            Core::ZeroMem( this, sizeof( *this ) );
+            Platform::ZeroMem( this, sizeof( *this ) );
         }
 
         ~TemportalData() {
@@ -539,7 +539,7 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
     GetTileWorldBounds( _X, _Z, tileWorldBounds );
 
     rcConfig config;
-    Core::ZeroMem( &config, sizeof( config ) );
+    Platform::ZeroMem( &config, sizeof( config ) );
     config.cs = Initial.CellSize;
     config.ch = Initial.CellHeight;
     config.walkableSlopeAngle = Initial.WalkableSlopeAngle;
@@ -1004,7 +1004,7 @@ bool AAINavigationMesh::BuildTile( int _X, int _Z ) {
         // Create Detour data from poly mesh.
 
         dtNavMeshCreateParams params;
-        Core::ZeroMem( &params, sizeof( params ) );
+        Platform::ZeroMem( &params, sizeof( params ) );
         params.verts = temporal.PolyMesh->verts;
         params.vertCount = temporal.PolyMesh->nverts;
         params.polys = temporal.PolyMesh->polys;
@@ -1751,7 +1751,7 @@ bool AAINavigationMesh::FindPath( Float3 const & _StartPos, Float3 const & _EndP
 
     _PathPoints.ResizeInvalidate( PathLength );
 
-    Core::Memcpy( _PathPoints.ToPtr(), TmpPathPoints, sizeof( Float3 ) * PathLength );
+    Platform::Memcpy( _PathPoints.ToPtr(), TmpPathPoints, sizeof( Float3 ) * PathLength );
 
     return true;
 }
@@ -1932,7 +1932,7 @@ int ANavigationMeshComponent::FixupCorridor( SNavPolyRef * _Path, const int _NPa
     if (req+size > _MaxPath)
         size = _MaxPath-req;
     if (size)
-        Core::Memmove(_Path+req, _Path+orig, size*sizeof(SNavPolyRef));
+        Platform::Memmove(_Path+req, _Path+orig, size*sizeof(SNavPolyRef));
 
     // Store visited
     for (int i = 0; i < req; ++i)
@@ -2118,7 +2118,7 @@ void AAINavigationMesh::GatherNavigationGeometry( TPodVectorHeap< Float3 > & _Ve
             Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
             unsigned int * pIndices = _Indices.ToPtr() + firstIndex;
 
-            Core::Memcpy( pVertices, srcVertices, vertexCount * sizeof( Float3 ) );
+            Platform::Memcpy( pVertices, srcVertices, vertexCount * sizeof( Float3 ) );
 
             if ( _ClipBoundingBox ) {
                 // Clip triangles

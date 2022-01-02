@@ -456,9 +456,9 @@ bool WTextEdit::InsertCharsProxy( int _Offset, SWideChar const * _Text, int _Tex
 
     SWideChar * text = TextData.ToPtr();
     if ( _Offset != CurTextLength ) {
-        Core::Memmove( text + _Offset + _TextLength, text + _Offset, ( size_t )( CurTextLength - _Offset ) * sizeof( SWideChar ) );
+        Platform::Memmove( text + _Offset + _TextLength, text + _Offset, ( size_t )( CurTextLength - _Offset ) * sizeof( SWideChar ) );
     }
-    Core::Memcpy( text + _Offset, _Text, ( size_t )_TextLength * sizeof( SWideChar ) );
+    Platform::Memcpy( text + _Offset, _Text, ( size_t )_TextLength * sizeof( SWideChar ) );
 
     CurTextLength += _TextLength;
     TextData[ CurTextLength ] = '\0';
@@ -485,7 +485,7 @@ void WTextEdit::DeleteCharsProxy( int _First, int _Count ) {
 
     CurTextLength -= _Count;
 
-    Core::Memmove( &TextData[_First], &TextData[_First + _Count], ( CurTextLength - _First ) * sizeof( SWideChar ) );
+    Platform::Memmove( &TextData[_First], &TextData[_First + _Count], ( CurTextLength - _First ) * sizeof( SWideChar ) );
     TextData[CurTextLength] = '\0';
 
     UpdateWidgetSize();
@@ -778,7 +778,7 @@ bool WTextEdit::Copy() {
 
     Core::WideStrEncodeUTF8( pClipboardData, clipboardDataLen, start, end );
 
-    Core::SetClipboard( pClipboardData );
+    Platform::SetClipboard( pClipboardData );
 
     GZoneMemory.Free( pClipboardData );
 
@@ -791,7 +791,7 @@ bool WTextEdit::Paste() {
         return false;
     }
 
-    const char * s = Core::GetClipboard();
+    const char * s = Platform::GetClipboard();
 
     int len = Core::UTF8StrLength( s );
 

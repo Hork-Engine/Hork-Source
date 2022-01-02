@@ -33,7 +33,7 @@ SOFTWARE.
 #include "BaseTypes.h"
 #include <stdarg.h>
 
-namespace Core
+namespace Platform
 {
 
 /** Case insensitive string comparision */
@@ -95,4 +95,4 @@ uint32_t HexToUInt32(const char* _Str, int _Len);
 /** Convert hex string to uint64 */
 uint64_t HexToUInt64(const char* _Str, int _Len);
 
-} // namespace Core
+} // namespace Platform

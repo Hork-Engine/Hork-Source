@@ -142,7 +142,7 @@ struct SCoreInitialize
     size_t      HunkSizeInMegabytes     = 32;
 };
 
-namespace Core
+namespace Platform
 {
 
 /** Initialize core library */
@@ -236,7 +236,7 @@ void SetClipboard(const char* _Utf8String);
 /** Get clipboard text */
 const char* GetClipboard();
 
-} // namespace Core
+} // namespace Platform
 
 /** Show critical error and exit */
 void CriticalError(const char* _Format, ...);

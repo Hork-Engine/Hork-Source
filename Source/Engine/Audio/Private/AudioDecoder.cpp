@@ -66,7 +66,7 @@ static ma_bool32 Seek( ma_decoder * pDecoder, ma_int64 byteOffset, ma_seek_origi
 
 bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void ** ppFrames )
 {
-    Core::ZeroMem( pAudioFileInfo, sizeof( *pAudioFileInfo ) );
+    Platform::ZeroMem(pAudioFileInfo, sizeof(*pAudioFileInfo));
     if ( ppFrames ) {
         *ppFrames = nullptr;
     }
@@ -114,7 +114,7 @@ bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int S
             }
 
             // Copy frames
-            Core::Memcpy( (ma_int8 *)pFrames + totalFramesRead*stride, temp, (size_t)(framesJustRead*stride) );
+            Platform::Memcpy( (ma_int8 *)pFrames + totalFramesRead*stride, temp, (size_t)(framesJustRead*stride) );
             totalFramesRead += framesJustRead;
 
             // Check EOF

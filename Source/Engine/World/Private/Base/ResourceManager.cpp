@@ -91,7 +91,7 @@ bool AResourceManager::FindFile( AStringView FileName, AArchive ** ppResourcePac
 }
 
 AResource * AResourceManager::FindResource( AClassMeta const & _ClassMeta, const char * _Alias, bool & _bMetadataMismatch, int & _Hash ) {
-    _Hash = Core::HashCase( _Alias, Core::Strlen( _Alias ) );
+    _Hash = Core::HashCase( _Alias, Platform::Strlen( _Alias ) );
 
     _bMetadataMismatch = false;
 
@@ -109,7 +109,7 @@ AResource * AResourceManager::FindResource( AClassMeta const & _ClassMeta, const
 }
 
 AResource * AResourceManager::FindResourceByAlias( const char * _Alias ) {
-    int hash = Core::HashCase( _Alias, Core::Strlen( _Alias ) );
+    int hash = Core::HashCase( _Alias, Platform::Strlen( _Alias ) );
 
     for ( int i = ResourceHash.First( hash ) ; i != -1 ; i = ResourceHash.Next( i ) ) {
         if ( !ResourceCache[i]->GetResourcePath().Icmp( _Alias ) ) {
@@ -121,7 +121,7 @@ AResource * AResourceManager::FindResourceByAlias( const char * _Alias ) {
 }
 
 AResource * AResourceManager::GetResource( AClassMeta const & _ClassMeta, const char * _Alias, bool * _bResourceFoundResult, bool * _bMetadataMismatch ) {
-    int hash = Core::HashCase( _Alias, Core::Strlen( _Alias ) );
+    int hash = Core::HashCase( _Alias, Platform::Strlen( _Alias ) );
 
     if ( _bResourceFoundResult ) {
         *_bResourceFoundResult = false;
@@ -159,7 +159,7 @@ AResource * AResourceManager::GetResource( AClassMeta const & _ClassMeta, const 
 }
 
 AClassMeta const * AResourceManager::GetResourceInfo( const char * _Alias ) {
-    int hash = Core::HashCase( _Alias, Core::Strlen( _Alias ) );
+    int hash = Core::HashCase( _Alias, Platform::Strlen( _Alias ) );
 
     for ( int i = ResourceHash.First( hash ) ; i != -1 ; i = ResourceHash.Next( i ) ) {
         if ( !ResourceCache[i]->GetResourcePath().Icmp( _Alias ) ) {

@@ -81,7 +81,7 @@ AVirtualTexture::AVirtualTexture( const char * FileName, AVirtualTextureCache * 
     pIndirectionData = (uint16_t *)GHeapMemory.ClearedAlloc( sizeof( pIndirectionData[0] ) * AddressTable.TotalPages );
 #endif
 
-    Core::ZeroMem( bDirtyLods, sizeof( bDirtyLods ) );
+    Platform::ZeroMem( bDirtyLods, sizeof( bDirtyLods ) );
 
     // Init indirection table
     if ( NumLods > 0 ) {

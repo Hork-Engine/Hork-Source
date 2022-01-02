@@ -50,7 +50,7 @@ void AString::GrowCapacity(int _Capacity, bool _CopyOld)
         Data = (char*)Allocator::Inst().Alloc(Capacity);
         if (_CopyOld)
         {
-            Core::Memcpy(Data, Base, Size + 1);
+            Platform::Memcpy(Data, Base, Size + 1);
         }
     }
     else
@@ -77,7 +77,7 @@ void AString::operator=( const char * _Str )
     // check if we're aliasing
     if ( _Str >= Data && _Str <= Data + Size ) {
         diff = _Str - Data;
-        AN_ASSERT( Core::Strlen( _Str ) < Size );
+        AN_ASSERT( Platform::Strlen( _Str ) < Size );
         for ( i = 0; _Str[ i ]; i++ ) {
             Data[ i ] = _Str[ i ];
         }
@@ -86,9 +86,9 @@ void AString::operator=( const char * _Str )
         return;
     }
 
-    const int newLen = Core::Strlen( _Str );
+    const int newLen = Platform::Strlen( _Str );
     GrowCapacity( newLen+1, false );
-    Core::Strcpy( Data, Capacity, _Str );
+    Platform::Strcpy( Data, Capacity, _Str );
     Size = newLen;
 }
 #endif
@@ -97,7 +97,7 @@ void AString::Concat(AStringView _Str)
 {
     const int newLen = Size + _Str.Length();
     GrowCapacity(newLen + 1, true);
-    Core::Memcpy(&Data[Size], _Str.ToPtr(), _Str.Length());
+    Platform::Memcpy(&Data[Size], _Str.ToPtr(), _Str.Length());
     Size       = newLen;
     Data[Size] = '\0';
 }
@@ -164,7 +164,7 @@ void AString::Replace(AStringView _Str, int _Index)
 
     const int newLen = _Index + _Str.Length();
     GrowCapacity(newLen + 1, true);
-    Core::Memcpy(&Data[_Index], _Str.ToPtr(), _Str.Length());
+    Platform::Memcpy(&Data[_Index], _Str.ToPtr(), _Str.Length());
     Size       = newLen;
     Data[Size] = '\0';
 }
@@ -231,7 +231,7 @@ void AString::ClipPath()
 {
     AString s(*this);
     char*   p = s.Data + s.Size;
-    while (--p >= s.Data && !Core::IsPathSeparator(*p))
+    while (--p >= s.Data && !Platform::IsPathSeparator(*p))
     {
         ;
     }
@@ -249,7 +249,7 @@ void AString::ClipExt()
             Size = p - Data;
             break;
         }
-        if (Core::IsPathSeparator(*p))
+        if (Platform::IsPathSeparator(*p))
         {
             break; // no extension
         }
@@ -259,7 +259,7 @@ void AString::ClipExt()
 void AString::ClipFilename()
 {
     char* p = Data + Size;
-    while (--p > Data && !Core::IsPathSeparator(*p))
+    while (--p > Data && !Platform::IsPathSeparator(*p))
     {
         ;
     }
@@ -270,7 +270,7 @@ void AString::ClipFilename()
 void AString::UpdateExt(AStringView _Extension)
 {
     char* p = Data + Size;
-    while (--p >= Data && !Core::IsPathSeparator(*p))
+    while (--p >= Data && !Platform::IsPathSeparator(*p))
     {
         if (*p == '.')
         {
@@ -282,17 +282,17 @@ void AString::UpdateExt(AStringView _Extension)
 
 void AString::FixPath()
 {
-    Size = Core::FixPath(Data, Size);
+    Size = Platform::FixPath(Data, Size);
 }
 
 void AString::ToLower()
 {
-    Core::ToLower(Data);
+    Platform::ToLower(Data);
 }
 
 void AString::ToUpper()
 {
-    Core::ToUpper(Data);
+    Platform::ToUpper(Data);
 }
 
 

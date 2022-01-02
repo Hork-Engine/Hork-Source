@@ -31,7 +31,7 @@ SOFTWARE.
 #include <Platform/Public/Path.h>
 #include <Platform/Public/Memory/Memory.h>
 
-namespace Core
+namespace Platform
 {
 
 int CmpPath(const char* _Path1, const char* _Path2)
@@ -284,4 +284,4 @@ bool IsPathSeparator(char _Char)
 #endif
 }
 
-} // namespace Core
+} // namespace Platform

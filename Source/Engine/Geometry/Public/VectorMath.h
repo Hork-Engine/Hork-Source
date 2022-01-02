@@ -2225,7 +2225,7 @@ struct Float2x2
 
     void Clear()
     {
-        Core::ZeroMem(this, sizeof(*this));
+        Platform::ZeroMem(this, sizeof(*this));
     }
 
     void SetIdentity()
@@ -2490,7 +2490,7 @@ struct Float3x3
 
     void Clear()
     {
-        Core::ZeroMem(this, sizeof(*this));
+        Platform::ZeroMem(this, sizeof(*this));
     }
 
     void SetIdentity()
@@ -2919,7 +2919,7 @@ struct Float4x4
 
     void Clear()
     {
-        Core::ZeroMem(this, sizeof(*this));
+        Platform::ZeroMem(this, sizeof(*this));
     }
 
     void SetIdentity()
@@ -3849,7 +3849,7 @@ struct Float3x4
 
     void Clear()
     {
-        Core::ZeroMem(this, sizeof(*this));
+        Platform::ZeroMem(this, sizeof(*this));
     }
 
     void SetIdentity()

@@ -55,17 +55,17 @@ namespace RenderCore
 AResourceTableGLImpl::AResourceTableGLImpl(ADeviceGLImpl* pDevice) :
     IResourceTable(pDevice)
 {
-    Core::ZeroMem(TextureBindings, sizeof(TextureBindings));
-    Core::ZeroMem(TextureBindingUIDs, sizeof(TextureBindingUIDs));
-    Core::ZeroMem(ImageBindings, sizeof(ImageBindings));
-    Core::ZeroMem(ImageBindingUIDs, sizeof(ImageBindingUIDs));
-    Core::ZeroMem(ImageMipLevel, sizeof(ImageMipLevel));
-    Core::ZeroMem(ImageLayerIndex, sizeof(ImageLayerIndex));
-    Core::ZeroMem(ImageLayered, sizeof(ImageLayered));
-    Core::ZeroMem(BufferBindings, sizeof(BufferBindings));
-    Core::ZeroMem(BufferBindingUIDs, sizeof(BufferBindingUIDs));
-    Core::ZeroMem(BufferBindingOffsets, sizeof(BufferBindingOffsets));
-    Core::ZeroMem(BufferBindingSizes, sizeof(BufferBindingSizes));
+    Platform::ZeroMem(TextureBindings, sizeof(TextureBindings));
+    Platform::ZeroMem(TextureBindingUIDs, sizeof(TextureBindingUIDs));
+    Platform::ZeroMem(ImageBindings, sizeof(ImageBindings));
+    Platform::ZeroMem(ImageBindingUIDs, sizeof(ImageBindingUIDs));
+    Platform::ZeroMem(ImageMipLevel, sizeof(ImageMipLevel));
+    Platform::ZeroMem(ImageLayerIndex, sizeof(ImageLayerIndex));
+    Platform::ZeroMem(ImageLayered, sizeof(ImageLayered));
+    Platform::ZeroMem(BufferBindings, sizeof(BufferBindings));
+    Platform::ZeroMem(BufferBindingUIDs, sizeof(BufferBindingUIDs));
+    Platform::ZeroMem(BufferBindingOffsets, sizeof(BufferBindingOffsets));
+    Platform::ZeroMem(BufferBindingSizes, sizeof(BufferBindingSizes));
 }
 
 AResourceTableGLImpl::~AResourceTableGLImpl()
@@ -350,9 +350,9 @@ AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmedi
 
     Current = this;
 
-    Core::ZeroMem(BufferBindingUIDs, sizeof(BufferBindingUIDs));
-    Core::ZeroMem(BufferBindingOffsets, sizeof(BufferBindingOffsets));
-    Core::ZeroMem(BufferBindingSizes, sizeof(BufferBindingSizes));
+    Platform::ZeroMem(BufferBindingUIDs, sizeof(BufferBindingUIDs));
+    Platform::ZeroMem(BufferBindingOffsets, sizeof(BufferBindingOffsets));
+    Platform::ZeroMem(BufferBindingSizes, sizeof(BufferBindingSizes));
 
     CurrentPipeline       = nullptr;
     CurrentVertexLayout   = nullptr;
@@ -363,13 +363,13 @@ AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmedi
     IndexBufferOffset     = 0;
     IndexBufferUID        = 0;
     IndexBufferHandle     = 0;
-    Core::ZeroMem(VertexBufferUIDs, sizeof(VertexBufferUIDs));
-    Core::ZeroMem(VertexBufferHandles, sizeof(VertexBufferHandles));
-    Core::ZeroMem(VertexBufferOffsets, sizeof(VertexBufferOffsets));
+    Platform::ZeroMem(VertexBufferUIDs, sizeof(VertexBufferUIDs));
+    Platform::ZeroMem(VertexBufferHandles, sizeof(VertexBufferHandles));
+    Platform::ZeroMem(VertexBufferOffsets, sizeof(VertexBufferOffsets));
 
     //CurrentQueryTarget = 0;
     //CurrentQueryObject = 0;
-    Core::ZeroMem(CurrentQueryUID, sizeof(CurrentQueryUID));
+    Platform::ZeroMem(CurrentQueryUID, sizeof(CurrentQueryUID));
 
     // GL_NICEST, GL_FASTEST and GL_DONT_CARE
 
@@ -395,7 +395,7 @@ AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmedi
     PixelStore.UnpackAlignment = 4;
     glPixelStorei(GL_UNPACK_ALIGNMENT, PixelStore.UnpackAlignment);
 
-    Core::ZeroMem(&Binding, sizeof(Binding));
+    Platform::ZeroMem(&Binding, sizeof(Binding));
 
     // Init default blending state
     bLogicOpEnabled = false;
@@ -407,7 +407,7 @@ AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmedi
     glBlendColor(0, 0, 0, 0);
     glDisable(GL_COLOR_LOGIC_OP);
     glLogicOp(GL_COPY);
-    Core::ZeroMem(BlendColor, sizeof(BlendColor));
+    Platform::ZeroMem(BlendColor, sizeof(BlendColor));
 
     GLint maxSampleMaskWords = 0;
     glGetIntegerv(GL_MAX_SAMPLE_MASK_WORDS, &maxSampleMaskWords);
@@ -844,7 +844,7 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
             {
                 SRenderTargetBlendingInfo const& rtDesc = desc.RenderTargetSlots[i];
                 SetRenderTargetSlotBlending(i, BlendState.RenderTargetSlots[i], rtDesc);
-                Core::Memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
+                Platform::Memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
             }
         }
         else
@@ -854,7 +854,7 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
             SetRenderTargetSlotsBlending(BlendState.RenderTargetSlots[0], rtDesc, needReset);
             for (int i = 0; i < MAX_COLOR_ATTACHMENTS; i++)
             {
-                Core::Memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
+                Platform::Memcpy(&BlendState.RenderTargetSlots[i], &rtDesc, sizeof(rtDesc));
             }
         }
 
@@ -1154,8 +1154,8 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
                                     StencilOpLUT[desc.FrontFace.DepthFailOp],
                                     StencilOpLUT[desc.FrontFace.DepthPassOp]);
 
-                Core::Memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
-                Core::Memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
+                Platform::Memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
+                Platform::Memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
             }
             else
             {
@@ -1167,7 +1167,7 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
                                         StencilOpLUT[desc.FrontFace.DepthFailOp],
                                         StencilOpLUT[desc.FrontFace.DepthPassOp]);
 
-                    Core::Memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
+                    Platform::Memcpy(&DepthStencilState.FrontFace, &desc.FrontFace, sizeof(desc.FrontFace));
                 }
 
                 if (backStencilChanged)
@@ -1177,7 +1177,7 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
                                         StencilOpLUT[desc.BackFace.DepthFailOp],
                                         StencilOpLUT[desc.BackFace.DepthPassOp]);
 
-                    Core::Memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
+                    Platform::Memcpy(&DepthStencilState.BackFace, &desc.BackFace, sizeof(desc.FrontFace));
                 }
             }
         }
@@ -1630,14 +1630,14 @@ void AImmediateContextGLImpl::SetViewport(SViewport const& _Viewport)
                    (GLint)INVERT_VIEWPORT_Y(&_Viewport),
                    (GLsizei)_Viewport.Width,
                    (GLsizei)_Viewport.Height);
-        Core::Memcpy(CurrentViewport, &_Viewport, sizeof(CurrentViewport));
+        Platform::Memcpy(CurrentViewport, &_Viewport, sizeof(CurrentViewport));
     }
 
     if (std::memcmp(CurrentDepthRange, &_Viewport.MinDepth, sizeof(CurrentDepthRange)) != 0)
     {
         glDepthRangef(_Viewport.MinDepth, _Viewport.MaxDepth); // Since GL v4.1
 
-        Core::Memcpy(CurrentDepthRange, &_Viewport.MinDepth, sizeof(CurrentDepthRange));
+        Platform::Memcpy(CurrentDepthRange, &_Viewport.MinDepth, sizeof(CurrentDepthRange));
     }
 }
 
@@ -3025,7 +3025,7 @@ void AImmediateContextGLImpl::DynamicState_BlendingColor(const float _ConstantCo
     if (isColorChanged)
     {
         glBlendColor(_ConstantColor[0], _ConstantColor[1], _ConstantColor[2], _ConstantColor[3]);
-        Core::Memcpy(BlendColor, _ConstantColor, sizeof(BlendColor));
+        Platform::Memcpy(BlendColor, _ConstantColor, sizeof(BlendColor));
     }
 }
 

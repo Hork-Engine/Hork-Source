@@ -583,8 +583,8 @@ void AIndexedMesh::SetSkin( int32_t const * _JointIndices, Float3x4 const * _Off
     Skin.JointIndices.ResizeInvalidate( _JointsCount );
     Skin.OffsetMatrices.ResizeInvalidate( _JointsCount );
 
-    Core::Memcpy( Skin.JointIndices.ToPtr(), _JointIndices, _JointsCount * sizeof(*_JointIndices) );
-    Core::Memcpy( Skin.OffsetMatrices.ToPtr(), _OffsetMatrices, _JointsCount * sizeof(*_OffsetMatrices) );
+    Platform::Memcpy( Skin.JointIndices.ToPtr(), _JointIndices, _JointsCount * sizeof(*_JointIndices) );
+    Platform::Memcpy( Skin.OffsetMatrices.ToPtr(), _OffsetMatrices, _JointsCount * sizeof(*_OffsetMatrices) );
 }
 
 void AIndexedMesh::SetCollisionModel( ACollisionModel * _CollisionModel )
@@ -640,7 +640,7 @@ bool AIndexedMesh::WriteVertexData( SMeshVertex const * _Vertices, int _Vertices
         return false;
     }
 
-    Core::Memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertex ) );
+    Platform::Memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertex ) );
 
     for ( AIndexedMeshSubpart * subpart : Subparts ) {
         subpart->bAABBTreeDirty = true;
@@ -686,7 +686,7 @@ bool AIndexedMesh::WriteJointWeights( SMeshVertexSkin const * _Vertices, int _Ve
         return false;
     }
 
-    Core::Memcpy( Weights.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexSkin ) );
+    Platform::Memcpy( Weights.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexSkin ) );
 
     return SendJointWeightsToGPU( _VerticesCount, _StartVertexLocation );
 }
@@ -718,7 +718,7 @@ bool AIndexedMesh::WriteIndexData( unsigned int const * _Indices, int _IndexCoun
         return false;
     }
 
-    Core::Memcpy( Indices.ToPtr() + _StartIndexLocation, _Indices, _IndexCount * sizeof( unsigned int ) );
+    Platform::Memcpy( Indices.ToPtr() + _StartIndexLocation, _Indices, _IndexCount * sizeof( unsigned int ) );
 
     for ( AIndexedMeshSubpart * subpart : Subparts ) {
         if ( _StartIndexLocation >= subpart->FirstIndex
@@ -889,7 +889,7 @@ void AIndexedMesh::InitializeSkydomeMesh( float _Radius, float _TexCoordScale, i
 
 void AIndexedMesh::LoadInternalResource( const char * _Path ) {
 
-    if ( !Core::Stricmp( _Path, "/Default/Meshes/Box" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Meshes/Box" ) ) {
         InitializeBoxMesh( Float3(1), 1 );
 
         CollisionModel = CreateInstanceOf< ACollisionModel >();
@@ -898,7 +898,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Meshes/Sphere" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Meshes/Sphere" ) ) {
         InitializeSphereMesh( 0.5f, 1 );
 
         CollisionModel = CreateInstanceOf< ACollisionModel >();
@@ -907,7 +907,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Meshes/Cylinder" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Meshes/Cylinder" ) ) {
         InitializeCylinderMesh( 0.5f, 1, 1 );
 
         CollisionModel = CreateInstanceOf< ACollisionModel >();
@@ -916,7 +916,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Meshes/Cone" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Meshes/Cone" ) ) {
         InitializeConeMesh( 0.5f, 1, 1 );
 
         CollisionModel = CreateInstanceOf< ACollisionModel >();
@@ -926,7 +926,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Meshes/Capsule" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Meshes/Capsule" ) ) {
         InitializeCapsuleMesh( 0.5f, 1.0f, 1 );
 
         CollisionModel = CreateInstanceOf< ACollisionModel >();
@@ -936,7 +936,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Meshes/PlaneXZ") ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Meshes/PlaneXZ") ) {
         InitializePlaneMeshXZ( 256, 256, 256 );
 
         CollisionModel = CreateInstanceOf< ACollisionModel >();
@@ -948,7 +948,7 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Meshes/PlaneXY" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Meshes/PlaneXY" ) ) {
         InitializePlaneMeshXY( 256, 256, 256 );
 
         CollisionModel = CreateInstanceOf< ACollisionModel >();
@@ -960,17 +960,17 @@ void AIndexedMesh::LoadInternalResource( const char * _Path ) {
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Meshes/Skybox" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Meshes/Skybox" ) ) {
         InitializeSkyboxMesh( Float3( 1 ), 1 );
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Meshes/Skydome" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Meshes/Skydome" ) ) {
         InitializeSkydomeMesh( 0.5f, 1, 32, 32, false );
         return;
     }
 
-    if ( !Core::Stricmp( _Path, "/Default/Meshes/SkydomeHemisphere" ) ) {
+    if ( !Platform::Stricmp( _Path, "/Default/Meshes/SkydomeHemisphere" ) ) {
         InitializeSkydomeMesh( 0.5f, 1, 16, 32, true );
         return;
     }    
@@ -1453,7 +1453,7 @@ bool ALightmapUV::WriteVertexData( SMeshVertexUV const * _Vertices, int _Vertice
         return false;
     }
 
-    Core::Memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexUV ) );
+    Platform::Memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexUV ) );
 
     return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }
@@ -1541,7 +1541,7 @@ bool AVertexLight::WriteVertexData( SMeshVertexLight const * _Vertices, int _Ver
         return false;
     }
 
-    Core::Memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexLight ) );
+    Platform::Memcpy( Vertices.ToPtr() + _StartVertexLocation, _Vertices, _VerticesCount * sizeof( SMeshVertexLight ) );
 
     return SendVertexDataToGPU( _VerticesCount, _StartVertexLocation );
 }
@@ -1902,7 +1902,7 @@ void CreateBoxMesh( TPodVector< SMeshVertex > & _Vertices, TPodVector< unsigned 
     _Vertices.ResizeInvalidate( 24 );
     _Indices.ResizeInvalidate( 36 );
 
-    Core::Memcpy( _Indices.ToPtr(), indices, sizeof( indices ) );
+    Platform::Memcpy( _Indices.ToPtr(), indices, sizeof( indices ) );
 
     const Float3 halfSize = _Size * 0.5f;
 
@@ -2097,10 +2097,10 @@ void CreatePlaneMeshXZ( TPodVector< SMeshVertex > & _Vertices, TPodVector< unsig
         MakeMeshVertex( Float3( halfWidth,0,-halfHeight ), Float2( _TexCoordScale,0 ), Float3( 0,0,1 ), 1.0f, Float3( 0,1,0 ) )
     };
 
-    Core::Memcpy( _Vertices.ToPtr(), &Verts, 4 * sizeof( SMeshVertex ) );
+    Platform::Memcpy( _Vertices.ToPtr(), &Verts, 4 * sizeof( SMeshVertex ) );
 
     constexpr unsigned int indices[ 6 ] = { 0,1,2,2,3,0 };
-    Core::Memcpy( _Indices.ToPtr(), &indices, sizeof( indices ) );
+    Platform::Memcpy( _Indices.ToPtr(), &indices, sizeof( indices ) );
 
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 
@@ -2126,10 +2126,10 @@ void CreatePlaneMeshXY( TPodVector< SMeshVertex > & _Vertices, TPodVector< unsig
         MakeMeshVertex( Float3( -halfWidth,halfHeight,0 ), Float2( 0,0 ), Float3( 0,0,0 ), 1.0f, Float3( 0,0,1 ) )
     };
 
-    Core::Memcpy( _Vertices.ToPtr(), &Verts, 4 * sizeof( SMeshVertex ) );
+    Platform::Memcpy( _Vertices.ToPtr(), &Verts, 4 * sizeof( SMeshVertex ) );
 
     constexpr unsigned int indices[ 6 ] = { 0,1,2,2,3,0 };
-    Core::Memcpy( _Indices.ToPtr(), &indices, sizeof( indices ) );
+    Platform::Memcpy( _Indices.ToPtr(), &indices, sizeof( indices ) );
 
     CalcTangentSpace( _Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size() );
 
@@ -2819,7 +2819,7 @@ static SBestSplitResult FindBestSplitPrimitive( SAABBTreeBuild & _Build, int _Ax
 
     for ( int i = 0; i < 3; i++ ) {
         if ( i != _Axis ) {
-            Core::Memcpy( primitives[ i ], primitives[ _Axis ], sizeof( SPrimitiveBounds ) * _PrimCount );
+            Platform::Memcpy( primitives[ i ], primitives[ _Axis ], sizeof( SPrimitiveBounds ) * _PrimCount );
         }
     }
 

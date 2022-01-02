@@ -51,7 +51,7 @@ struct AScopedTimeCheck
 
         if (rt_ScopedTimeCheck)
         {
-            Milliseconds = Core::SysMilliseconds();
+            Milliseconds = Platform::SysMilliseconds();
         }
     }
 
@@ -61,7 +61,7 @@ struct AScopedTimeCheck
 
         if (rt_ScopedTimeCheck)
         {
-            GLogger.Printf("SCOPED_TIME_CHECK: %s : %d ms\n", Name, Core::SysMilliseconds() - Milliseconds);
+            GLogger.Printf("SCOPED_TIME_CHECK: %s : %d ms\n", Name, Platform::SysMilliseconds() - Milliseconds);
         }
     }
 };

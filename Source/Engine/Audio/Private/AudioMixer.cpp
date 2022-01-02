@@ -252,7 +252,7 @@ void AAudioMixer::RenderChannels( int64_t EndFrame )
 
         int frameCount = end - RenderFrame;
 
-        Core::ZeroMem( RenderBuffer, frameCount * sizeof( SSamplePair ) );
+        Platform::ZeroMem(RenderBuffer, frameCount * sizeof(SSamplePair));
 
         SAudioChannel * next;
         for ( SAudioChannel * chan = Channels ; chan ; chan = next ) {
@@ -391,7 +391,7 @@ static void ConvertFramesToMonoF32( const void * pFramesIn, int FrameCount, int 
 
         // Mono
         if ( Channels == 1 ) {
-            Core::Memcpy( pFramesOut, pFramesIn, FrameCount * sizeof( float ) );
+            Platform::Memcpy( pFramesOut, pFramesIn, FrameCount * sizeof( float ) );
             return;
         }
 
@@ -433,7 +433,7 @@ void AAudioMixer::ReadFramesF32( SAudioChannel * Chan, int FramesToRead, int His
         ConvertFramesToMonoF32( pRawSamples + ( from - framesToCopy ) * stride, framesToCopy, sampleBits, channels, pFrames + HistoryExtraFrames );
 
         if ( !inloop && HistoryExtraFrames > 0 ) {
-            Core::ZeroMem( pFrames, HistoryExtraFrames * sizeof( float ) );
+            Platform::ZeroMem(pFrames, HistoryExtraFrames * sizeof(float));
             break;
         }
 
@@ -462,7 +462,7 @@ void AAudioMixer::ReadFramesF32( SAudioChannel * Chan, int FramesToRead, int His
                 p = Chan->GetLoopStart();
             }
             else {
-                Core::ZeroMem( frames, FramesToRead * sizeof( float ) );
+                Platform::ZeroMem(frames, FramesToRead * sizeof(float));
                 break;
             }
         }

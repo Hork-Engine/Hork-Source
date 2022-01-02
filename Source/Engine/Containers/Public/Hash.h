@@ -69,7 +69,7 @@ public:
     {
         if (HashBuckets != InvalidHashIndex)
         {
-            Core::Memset(HashBuckets, 0xff, HashBucketsCount * sizeof(*HashBuckets));
+            Platform::Memset(HashBuckets, 0xff, HashBucketsCount * sizeof(*HashBuckets));
         }
     }
 
@@ -99,7 +99,7 @@ public:
             // first allocation
             //HashBuckets = ( int * )Allocator::Inst().AllocCleared1( HashBucketsCount * sizeof( *HashBuckets ), 0xffffffffffffffff );
             HashBuckets = (int*)Allocator::Inst().Alloc(HashBucketsCount * sizeof(*HashBuckets));
-            Core::Memset(HashBuckets, 0xff, HashBucketsCount * sizeof(*HashBuckets));
+            Platform::Memset(HashBuckets, 0xff, HashBucketsCount * sizeof(*HashBuckets));
             LookupMask = ~0;
         }
 
@@ -250,14 +250,14 @@ private:
         if (IndexChain == InvalidHashIndex)
         {
             IndexChain = (int*)Allocator::Inst().Alloc(_NewIndexChainLength * sizeof(*IndexChain));
-            Core::Memset(IndexChain, 0xff, _NewIndexChainLength * sizeof(*IndexChain));
+            Platform::Memset(IndexChain, 0xff, _NewIndexChainLength * sizeof(*IndexChain));
         }
         else
         {
             IndexChain = (int*)Allocator::Inst().Realloc(IndexChain, _NewIndexChainLength * sizeof(*IndexChain), true);
 
             int* pIndexChain = IndexChain + IndexChainLength * sizeof(*IndexChain);
-            Core::Memset(pIndexChain, 0xff, (_NewIndexChainLength - IndexChainLength) * sizeof(*IndexChain));
+            Platform::Memset(pIndexChain, 0xff, (_NewIndexChainLength - IndexChainLength) * sizeof(*IndexChain));
         }
         IndexChainLength = _NewIndexChainLength;
     }

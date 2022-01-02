@@ -49,12 +49,12 @@ void AResource::InitializeFromFile( const char * _Path )
 
 bool AResource::LoadFromPath( const char * _Path )
 {
-    if ( !Core::StricmpN( _Path, "/Default/", 9 ) ) {
+    if ( !Platform::StricmpN( _Path, "/Default/", 9 ) ) {
         LoadInternalResource( _Path );
         return true;
     }
 
-    if ( !Core::StricmpN( _Path, "/Root/", 6 ) ) {
+    if ( !Platform::StricmpN( _Path, "/Root/", 6 ) ) {
         _Path += 6;
 
         // try to load from file system
@@ -82,7 +82,7 @@ bool AResource::LoadFromPath( const char * _Path )
         return false;
     }
 
-    if ( !Core::StricmpN( _Path, "/Common/", 8 ) ) {
+    if ( !Platform::StricmpN( _Path, "/Common/", 8 ) ) {
         _Path += 1;
 
         // try to load from file system
@@ -102,7 +102,7 @@ bool AResource::LoadFromPath( const char * _Path )
         return LoadResource( f );
     }
 
-    if ( !Core::StricmpN( _Path, "/FS/", 4 ) ) {
+    if ( !Platform::StricmpN( _Path, "/FS/", 4 ) ) {
         _Path += 4;
 
         AFileStream f;
@@ -113,7 +113,7 @@ bool AResource::LoadFromPath( const char * _Path )
         return LoadResource( f );
     }
 
-    if ( !Core::StricmpN( _Path, "/Embedded/", 10 ) ) {
+    if ( !Platform::StricmpN( _Path, "/Embedded/", 10 ) ) {
         _Path += 10;
 
         AMemoryStream f;

@@ -450,7 +450,7 @@ static void* LoadEXR(IBinaryStream& _Stream, int* w, int* h, int* channels, int 
         else
         {
             result = STBI_MALLOC((*w) * (*h) * numChannels * sizeof(float));
-            Core::Memcpy(result, data, (*w) * (*h) * numChannels * sizeof(float));
+            Platform::Memcpy(result, data, (*w) * (*h) * numChannels * sizeof(float));
         }
     }
 
@@ -702,7 +702,7 @@ void AImage::FromRawData(const void* _Source, int _Width, int _Height, SImageMip
     {
         size_t sizeInBytes = Width * Height * numChannels * (bHDRI ? 4 : 1);
         pRawData           = GHeapMemory.Alloc(sizeInBytes);
-        Core::Memcpy(pRawData, _Source, sizeInBytes);
+        Platform::Memcpy(pRawData, _Source, sizeInBytes);
     }
 
     if (_MipmapGen && !(Width == 1 && Height == 1))
@@ -765,7 +765,7 @@ static void DownscaleSimpleAverage(int _CurWidth, int _CurHeight, int _NewWidth,
 
     if (_CurWidth == _NewWidth && _CurHeight == _NewHeight)
     {
-        Core::Memcpy(_DstData, _SrcData, _NewWidth * _NewHeight * Bpp);
+        Platform::Memcpy(_DstData, _SrcData, _NewWidth * _NewHeight * Bpp);
         return;
     }
 
@@ -867,7 +867,7 @@ static void DownscaleSimpleAverageHDRI(int _CurWidth, int _CurHeight, int _NewWi
 
     if (_CurWidth == _NewWidth && _CurHeight == _NewHeight)
     {
-        Core::Memcpy(_DstData, _SrcData, _NewWidth * _NewHeight * Bpp * sizeof(float));
+        Platform::Memcpy(_DstData, _SrcData, _NewWidth * _NewHeight * Bpp * sizeof(float));
         return;
     }
 
@@ -926,7 +926,7 @@ static void DownscaleSimpleAverageHDRI(int _CurWidth, int _CurHeight, int _NewWi
 
 static void GenerateMipmaps(const byte* ImageData, int ImageWidth, int ImageHeight, int NumChannels, int AlphaChannel, EMipmapEdgeMode EdgeMode, EMipmapFilter Filter, bool bLinearSpace, bool bPremultipliedAlpha, byte* Dest)
 {
-    Core::Memcpy(Dest, ImageData, ImageWidth * ImageHeight * NumChannels);
+    Platform::Memcpy(Dest, ImageData, ImageWidth * ImageHeight * NumChannels);
 
     int MemoryOffset = ImageWidth * ImageHeight * NumChannels;
 
@@ -981,7 +981,7 @@ static void GenerateMipmaps(const byte* ImageData, int ImageWidth, int ImageHeig
 
 static void GenerateMipmapsHDRI(const float* ImageData, int ImageWidth, int ImageHeight, int NumChannels, EMipmapEdgeMode EdgeMode, EMipmapFilter Filter, bool bPremultipliedAlpha, float* _Dest)
 {
-    Core::Memcpy(_Dest, ImageData, ImageWidth * ImageHeight * NumChannels * sizeof(float));
+    Platform::Memcpy(_Dest, ImageData, ImageWidth * ImageHeight * NumChannels * sizeof(float));
 
     int MemoryOffset = ImageWidth * ImageHeight * NumChannels;
 
@@ -1077,18 +1077,18 @@ static void MemSwap(byte* Block, const size_t BlockSz, byte* _Ptr1, byte* _Ptr2,
     size_t       i;
     for (i = 0; i < blockCount; i++)
     {
-        Core::Memcpy(Block, _Ptr1, BlockSz);
-        Core::Memcpy(_Ptr1, _Ptr2, BlockSz);
-        Core::Memcpy(_Ptr2, Block, BlockSz);
+        Platform::Memcpy(Block, _Ptr1, BlockSz);
+        Platform::Memcpy(_Ptr1, _Ptr2, BlockSz);
+        Platform::Memcpy(_Ptr2, Block, BlockSz);
         _Ptr2 += BlockSz;
         _Ptr1 += BlockSz;
     }
     i = _Size - i * BlockSz;
     if (i > 0)
     {
-        Core::Memcpy(Block, _Ptr1, i);
-        Core::Memcpy(_Ptr1, _Ptr2, i);
-        Core::Memcpy(_Ptr2, Block, i);
+        Platform::Memcpy(Block, _Ptr1, i);
+        Platform::Memcpy(_Ptr1, _Ptr2, i);
+        Platform::Memcpy(_Ptr2, Block, i);
     }
 }
 
@@ -1105,9 +1105,9 @@ void FlipImageX(void* _ImageData, int _Width, int _Height, int _BytesPerPixel, i
         for (int x = 0; x < halfWidth; x++)
         {
             e -= _BytesPerPixel;
-            Core::Memcpy(temp, s, _BytesPerPixel);
-            Core::Memcpy(s, e, _BytesPerPixel);
-            Core::Memcpy(e, temp, _BytesPerPixel);
+            Platform::Memcpy(temp, s, _BytesPerPixel);
+            Platform::Memcpy(s, e, _BytesPerPixel);
+            Platform::Memcpy(e, temp, _BytesPerPixel);
             s += _BytesPerPixel;
         }
         image += _BytesPerLine;

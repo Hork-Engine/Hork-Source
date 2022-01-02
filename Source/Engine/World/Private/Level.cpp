@@ -57,7 +57,7 @@ ALevel::ALevel() {
 
     Float3 extents( CONVEX_HULL_MAX_BOUNDS * 2 );
 
-    Core::ZeroMem( &OutdoorArea, sizeof( OutdoorArea ) );
+    Platform::ZeroMem( &OutdoorArea, sizeof( OutdoorArea ) );
 
     OutdoorArea.Bounds.Mins = -extents * 0.5f;
     OutdoorArea.Bounds.Maxs = extents * 0.5f;
@@ -257,13 +257,13 @@ void ALevel::CreatePortals( SPortalDef const * InPortals, int InPortalsCount, Fl
 
 void ALevel::CreateLightPortals( SLightPortalDef const * InPortals, int InPortalsCount, Float3 const * InMeshVertices, int InVertexCount, unsigned int const * InMeshIndices, int InIndexCount ) {
     LightPortals.Resize( InPortalsCount );
-    Core::Memcpy( LightPortals.ToPtr(), InPortals, InPortalsCount * sizeof( LightPortals[0] ) );
+    Platform::Memcpy( LightPortals.ToPtr(), InPortals, InPortalsCount * sizeof( LightPortals[0] ) );
 
     LightPortalVertexBuffer.Resize( InVertexCount );
-    Core::Memcpy( LightPortalVertexBuffer.ToPtr(), InMeshVertices, InVertexCount * sizeof( LightPortalVertexBuffer[0] ) );
+    Platform::Memcpy( LightPortalVertexBuffer.ToPtr(), InMeshVertices, InVertexCount * sizeof( LightPortalVertexBuffer[0] ) );
 
     LightPortalIndexBuffer.Resize( InIndexCount );
-    Core::Memcpy( LightPortalIndexBuffer.ToPtr(), InMeshIndices, InIndexCount * sizeof( LightPortalIndexBuffer[0] ) );
+    Platform::Memcpy( LightPortalIndexBuffer.ToPtr(), InMeshIndices, InIndexCount * sizeof( LightPortalIndexBuffer[0] ) );
 }
 
 int ALevel::FindLeaf( Float3 const & InPosition ) {

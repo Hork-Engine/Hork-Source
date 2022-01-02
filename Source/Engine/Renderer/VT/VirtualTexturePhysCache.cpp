@@ -340,7 +340,7 @@ void AVirtualTextureCache::Update() {
 
     int fetchIndex = 0;
 
-    int64_t uploadStartTime = Core::SysMicroseconds();
+    int64_t uploadStartTime = Platform::SysMicroseconds();
 
     for ( SPhysPageInfoSorted * physPage = pFirstPhysPage ;
           physPage < pLastPhysPage && fetchIndex < Transfers.Size() ; ++fetchIndex )
@@ -396,7 +396,7 @@ void AVirtualTextureCache::Update() {
         GLogger.Printf( "Double streamed %d times\n", d_duplicates );
     }
 
-    GLogger.Printf( "Streamed per frame %d, uploaded %d, time %d microsec\n", Transfers.Size(), d_uploaded, Core::SysMicroseconds() - uploadStartTime );
+    GLogger.Printf( "Streamed per frame %d, uploaded %d, time %d microsec\n", Transfers.Size(), d_uploaded, Platform::SysMicroseconds() - uploadStartTime );
 
     UnlockTransfers();
 

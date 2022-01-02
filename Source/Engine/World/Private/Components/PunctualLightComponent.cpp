@@ -38,7 +38,7 @@ APunctualLightComponent::APunctualLightComponent() {
     AABBWorldBounds.Clear();
     OBBTransformInverse.Clear();
 
-    Core::ZeroMem( &Primitive, sizeof( Primitive ) );
+    Platform::ZeroMem( &Primitive, sizeof( Primitive ) );
     Primitive.Owner = this;
     Primitive.Type = VSD_PRIMITIVE_SPHERE;
     Primitive.VisGroup = VISIBILITY_GROUP_DEFAULT;

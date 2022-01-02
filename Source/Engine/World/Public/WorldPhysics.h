@@ -53,7 +53,7 @@ struct SCollisionTraceResult
     /** Clear trace result */
     void Clear()
     {
-        Core::ZeroMem( this, sizeof( *this ) );
+        Platform::ZeroMem( this, sizeof( *this ) );
     }
 };
 
@@ -156,7 +156,7 @@ struct SCollisionQueryResult
     /** Clear trace result */
     void Clear()
     {
-        Core::ZeroMem( this, sizeof( *this ) );
+        Platform::ZeroMem( this, sizeof( *this ) );
     }
 };
 

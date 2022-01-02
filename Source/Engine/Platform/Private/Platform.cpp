@@ -325,7 +325,7 @@ void SCommandLine::Validate()
         return;
     }
     // Fix executable path separator
-    Core::FixSeparator(Arguments[0]);
+    Platform::FixSeparator(Arguments[0]);
 }
 
 int SCommandLine::CheckArg(const char* _Arg) const
@@ -407,11 +407,11 @@ static void InitializeProcess()
     }
     ProcessInfo.Executable[len] = 0;
 
-    Core::FixSeparator(ProcessInfo.Executable);
+    Platform::FixSeparator(ProcessInfo.Executable);
 
     uint32_t appHash = SDBMHash(ProcessInfo.Executable, len);
 
-    ProcessMutex = CreateMutexA(NULL, FALSE, Core::Fmt("angie_%u", appHash));
+    ProcessMutex = CreateMutexA(NULL, FALSE, Platform::Fmt("angie_%u", appHash));
     if (!ProcessMutex)
     {
         ProcessInfo.ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
@@ -448,7 +448,7 @@ static void InitializeProcess()
     ProcessInfo.Executable[len] = 0;
 
     uint32_t appHash = SDBMHash(ProcessInfo.Executable, len);
-    int f = open(Core::Fmt("/tmp/angie_%u.pid", appHash), O_RDWR | O_CREAT, 0666);
+    int f = open(Platform::Fmt("/tmp/angie_%u.pid", appHash), O_RDWR | O_CREAT, 0666);
     int locked = flock(f, LOCK_EX | LOCK_NB);
     if (locked)
     {
@@ -470,7 +470,7 @@ static void InitializeProcess()
 #endif
 
     ProcessLogFile = nullptr;
-    if (Core::HasArg("-bEnableLog"))
+    if (Platform::HasArg("-bEnableLog"))
     {
         // TODO: Set correct path for log file
         ProcessLogFile = fopen("log.txt", "ab");
@@ -548,7 +548,7 @@ static void InitializeMemory(size_t ZoneSizeInMegabytes, size_t HunkSizeInMegaby
     }
 #endif
 
-    SMemoryInfo physMemoryInfo = Core::GetPhysMemoryInfo();
+    SMemoryInfo physMemoryInfo = Platform::GetPhysMemoryInfo();
     GLogger.Printf("Memory page size: %d bytes\n", physMemoryInfo.PageSize);
     if (physMemoryInfo.TotalAvailableMegabytes > 0 && physMemoryInfo.CurrentAvailableMegabytes > 0)
     {
@@ -563,7 +563,7 @@ static void InitializeMemory(size_t ZoneSizeInMegabytes, size_t HunkSizeInMegaby
     GHeapMemory.Initialize();
 
     MemoryHeap = GHeapMemory.Alloc(TotalMemorySizeInBytes, 16);
-    Core::ZeroMem(MemoryHeap, TotalMemorySizeInBytes);
+    Platform::ZeroMem(MemoryHeap, TotalMemorySizeInBytes);
 
     //TouchMemoryPages( MemoryHeap, TotalMemorySizeInBytes );
 
@@ -670,7 +670,7 @@ static char* Clipboard = nullptr;
 
 static std::string MessageBuffer;
 
-namespace Core
+namespace Platform
 {
 
 void Initialize(SCoreInitialize const& CoreInitialize)
@@ -708,7 +708,7 @@ void Initialize(SCoreInitialize const& CoreInitialize)
 
     InitializeProcess();
 
-    SProcessInfo const& processInfo = Core::GetProcessInfo();
+    SProcessInfo const& processInfo = Platform::GetProcessInfo();
 
     if (!CoreInitialize.bAllowMultipleInstances && !pCommandLine->HasArg("-bAllowMultipleInstances"))
     {
@@ -792,7 +792,7 @@ SCPUInfo const* CPUInfo()
     int32_t cpuInfo[4];
     char    vendor[13];
 
-    Core::ZeroMem(&info, sizeof(info));
+    Platform::ZeroMem(&info, sizeof(info));
 
 #ifdef AN_OS_WIN32
 #    ifdef _M_X64
@@ -822,9 +822,9 @@ SCPUInfo const* CPUInfo()
     }
 
     CPUID(cpuInfo, 0);
-    Core::Memcpy(vendor + 0, &cpuInfo[1], 4);
-    Core::Memcpy(vendor + 4, &cpuInfo[3], 4);
-    Core::Memcpy(vendor + 8, &cpuInfo[2], 4);
+    Platform::Memcpy(vendor + 0, &cpuInfo[1], 4);
+    Platform::Memcpy(vendor + 4, &cpuInfo[3], 4);
+    Platform::Memcpy(vendor + 8, &cpuInfo[2], 4);
     vendor[12] = '\0';
 
     if (!strcmp(vendor, "GenuineIntel"))
@@ -951,7 +951,7 @@ double SysMicroseconds_d()
 
 void PrintCPUFeatures()
 {
-    SCPUInfo const* pCPUInfo = Core::CPUInfo();
+    SCPUInfo const* pCPUInfo = Platform::CPUInfo();
 
     GLogger.Printf("CPU: %s\n", pCPUInfo->Intel ? "Intel" : "AMD");
     GLogger.Print("CPU Features:");
@@ -1121,7 +1121,7 @@ SMemoryInfo GetPhysMemoryInfo()
     return info;
 }
 
-} // namespace Core
+} // namespace Platform
 
 namespace
 {
@@ -1169,7 +1169,7 @@ void CriticalError(const char* _Format, ...)
 
     va_list VaList;
     va_start(VaList, _Format);
-    Core::VSprintf(CriticalErrorMessage,
+    Platform::VSprintf(CriticalErrorMessage,
                    sizeof(CriticalErrorMessage),
                    _Format,
                    VaList);

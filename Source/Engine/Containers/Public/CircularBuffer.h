@@ -45,7 +45,7 @@ public:
     {
         static_assert(IsPowerOfTwo(MAX_BUFFER_SIZE), "Circular buffer size must be power of two");
 
-        Core::ZeroMem(Data, sizeof(Data));
+        Platform::ZeroMem(Data, sizeof(Data));
     }
 
     bool IsEmpty() const
@@ -120,7 +120,7 @@ public:
             {
                 int offset = (Head + i) & (MAX_BUFFER_SIZE - 1);
 
-                Core::ZeroMem(Data[offset], sizeof(T));
+                Platform::ZeroMem(Data[offset], sizeof(T));
             }
         }
 
@@ -135,7 +135,7 @@ public:
         }
 
         int offset = (Head + Sz - 1) & (MAX_BUFFER_SIZE - 1);
-        Core::ZeroMem(Data[offset], sizeof(T));
+        Platform::ZeroMem(Data[offset], sizeof(T));
 
         Sz--;
     }
@@ -148,7 +148,7 @@ public:
         }
 
         int offset = Head & (MAX_BUFFER_SIZE - 1);
-        Core::ZeroMem(Data[offset], sizeof(T));
+        Platform::ZeroMem(Data[offset], sizeof(T));
 
         Head = (Head + 1) & (MAX_BUFFER_SIZE - 1);
         Sz--;
@@ -169,7 +169,7 @@ public:
         }
 
         offset = (Head + Sz - 1) & (MAX_BUFFER_SIZE - 1);
-        Core::ZeroMem(Data[offset], sizeof(T));
+        Platform::ZeroMem(Data[offset], sizeof(T));
 
         Sz--;
     }

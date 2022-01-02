@@ -66,7 +66,7 @@ struct SAINavigationTraceResult
     float HitFraction;
 
     void Clear() {
-        Core::ZeroMem( this, sizeof( *this ) );
+        Platform::ZeroMem( this, sizeof( *this ) );
     }
 };
 
@@ -78,7 +78,7 @@ struct SAINavigationHitResult
 
     void Clear()
     {
-        Core::ZeroMem( this, sizeof( *this ) );
+        Platform::ZeroMem( this, sizeof( *this ) );
     }
 };
 

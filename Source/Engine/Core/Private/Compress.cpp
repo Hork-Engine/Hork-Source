@@ -138,7 +138,7 @@ bool ZDecompressToHeap(byte const* pCompressedData, size_t CompressedSize, byte*
     }
 
     mz_stream stream;
-    ZeroMem(&stream, sizeof(stream));
+    Platform::ZeroMem(&stream, sizeof(stream));
     stream.next_in  = pCompressedData;
     stream.avail_in = (mz_uint32)CompressedSize;
 
@@ -163,7 +163,7 @@ bool ZDecompressToHeap(byte const* pCompressedData, size_t CompressedSize, byte*
                 allocated <<= 1;
                 data = (byte*)GHeapMemory.Realloc(data, allocated, 16, true);
             }
-            Memcpy(data + size, chunk, stream.total_out - size);
+            Platform::Memcpy(data + size, chunk, stream.total_out - size);
         }
         size = stream.total_out;
     } while (status == MZ_OK);

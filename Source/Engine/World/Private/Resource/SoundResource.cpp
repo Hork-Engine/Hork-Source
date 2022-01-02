@@ -45,7 +45,7 @@ ASoundResource::ASoundResource()
 {
     Revision = ++RevisionGen;
 
-    Core::ZeroMem( &AudioFileInfo, sizeof( AudioFileInfo ) );
+    Platform::ZeroMem( &AudioFileInfo, sizeof( AudioFileInfo ) );
 }
 
 ASoundResource::~ASoundResource()
@@ -107,7 +107,8 @@ bool ASoundResource::LoadResource( IBinaryStream & Stream )
 {
     Purge();
 
-    if ( !Core::Stricmp( Stream.GetFileName() + Core::FindExt( Stream.GetFileName() ), ".sound" ) ) {
+    if (!Platform::Stricmp(Stream.GetFileName() + Platform::FindExt(Stream.GetFileName()), ".sound"))
+    {
         AString text;
         text.FromFile( Stream );
 
@@ -271,7 +272,7 @@ bool ASoundResource::InitializeFromMemory( const char * _Path, const void * _Sys
         }
 
         void * pHeapPtr = GHeapMemory.Alloc( _SizeInBytes );
-        Core::Memcpy( pHeapPtr, _SysMem, _SizeInBytes );
+        Platform::Memcpy( pHeapPtr, _SysMem, _SizeInBytes );
 
         pFileInMemory = MakeRef< SFileInMemory >( pHeapPtr, _SizeInBytes );
 

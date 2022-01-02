@@ -85,7 +85,7 @@ static void unpack_vec2_or_vec3(cgltf_accessor* acc, Float3* output, size_t stri
     {
         cgltf_accessor_read_float(acc, i, position, num_elements);
 
-        Core::Memcpy(ptr, position, sizeof(float) * 3);
+        Platform::Memcpy(ptr, position, sizeof(float) * 3);
 
         ptr += stride;
     }
@@ -275,7 +275,7 @@ static void unpack_mat4_to_mat3x4(cgltf_accessor* acc, Float3x4* output, size_t 
     {
         cgltf_accessor_read_float(acc, i, (float*)temp.ToPtr(), 16);
 
-        Core::Memcpy(ptr, temp.Transposed().ToPtr(), sizeof(Float3x4));
+        Platform::Memcpy(ptr, temp.Transposed().ToPtr(), sizeof(Float3x4));
 
         ptr += stride;
     }
@@ -632,7 +632,7 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
 
     cgltf_options options;
 
-    Core::ZeroMem(&options, sizeof(options));
+    Platform::ZeroMem(&options, sizeof(options));
 
     options.memory_alloc     = cgltf_alloc;
     options.memory_free      = cgltf_free;
@@ -684,11 +684,11 @@ void AAssetImporter::ReadSkeleton(cgltf_node* node, int parentIndex)
 
     if (node->name)
     {
-        Core::Strcpy(joint.Name, sizeof(joint.Name), node->name);
+        Platform::Strcpy(joint.Name, sizeof(joint.Name), node->name);
     }
     else
     {
-        Core::Strcpy(joint.Name, sizeof(joint.Name), Core::Fmt("unnamed_%d", m_Joints.Size() - 1));
+        Platform::Strcpy(joint.Name, sizeof(joint.Name), Platform::Fmt("unnamed_%d", m_Joints.Size() - 1));
     }
 
     GLogger.Printf("ReadSkeleton: %s\n", node->name);
@@ -816,7 +816,7 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
                 SJoint& joint = m_Joints.Append();
 
                 joint.LocalTransform.SetIdentity();
-                Core::Strcpy(joint.Name, sizeof(joint.Name), Core::Fmt("generated_root"));
+                Platform::Strcpy(joint.Name, sizeof(joint.Name), Platform::Fmt("generated_root"));
 
                 joint.Parent = -1;
 
@@ -960,7 +960,7 @@ void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
     Info.Material        = Material;
     Info.DefaultMaterial = "/Default/Materials/Unlit";
     Info.NumTextures     = 0;
-    Core::ZeroMem(Info.Uniforms, sizeof(Info.Uniforms));
+    Platform::ZeroMem(Info.Uniforms, sizeof(Info.Uniforms));
 
     if (Material->unlit && m_Settings.bAllowUnlitMaterials)
     {
@@ -2770,7 +2770,7 @@ static void* lwAlloc(void* _Allocator, size_t _Size)
 {
     ALinearAllocatorLWO& Allocator = *static_cast<ALinearAllocatorLWO*>(_Allocator);
     void*                ptr       = Allocator.Allocate(_Size);
-    Core::ZeroMem(ptr, _Size);
+    Platform::ZeroMem(ptr, _Size);
     return ptr;
 }
 

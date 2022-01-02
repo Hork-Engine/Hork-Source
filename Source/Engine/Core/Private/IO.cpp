@@ -366,7 +366,7 @@ int AMemoryStream::Impl_Read(void* _Buffer, int _SizeInBytes)
 
     if (_SizeInBytes > 0)
     {
-        Core::Memcpy(_Buffer, MemoryBuffer + MemoryBufferOffset, _SizeInBytes);
+        Platform::Memcpy(_Buffer, MemoryBuffer + MemoryBufferOffset, _SizeInBytes);
         MemoryBufferOffset += _SizeInBytes;
     }
 
@@ -394,7 +394,7 @@ int AMemoryStream::Impl_Write(const void* _Buffer, int _SizeInBytes)
         MemoryBuffer     = (byte*)Realloc(MemoryBuffer, requiredSize);
         MemoryBufferSize = requiredSize;
     }
-    Core::Memcpy(MemoryBuffer + MemoryBufferOffset, _Buffer, _SizeInBytes);
+    Platform::Memcpy(MemoryBuffer + MemoryBufferOffset, _Buffer, _SizeInBytes);
     MemoryBufferOffset += _SizeInBytes;
     return _SizeInBytes;
 }
@@ -557,7 +557,7 @@ bool AArchive::Open(AStringView _ArchiveName, bool bResourcePack)
         archiveSize = f.SizeInBytes() - fileStartOffset;
     }
 
-    Core::ZeroMem(&arch, sizeof(arch));
+    Platform::ZeroMem(&arch, sizeof(arch));
 
     mz_bool status = mz_zip_reader_init_file_v2(&arch, AString(_ArchiveName).CStr(), 0, fileStartOffset, archiveSize);
     if (!status)
@@ -567,7 +567,7 @@ bool AArchive::Open(AStringView _ArchiveName, bool bResourcePack)
     }
 
     Handle = GZoneMemory.Alloc(sizeof(mz_zip_archive));
-    Core::Memcpy(Handle, &arch, sizeof(arch));
+    Platform::Memcpy(Handle, &arch, sizeof(arch));
 
     // Keep pointer valid
     ((mz_zip_archive*)Handle)->m_pIO_opaque = Handle;
@@ -581,7 +581,7 @@ bool AArchive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
 
     mz_zip_archive arch;
 
-    Core::ZeroMem(&arch, sizeof(arch));
+    Platform::ZeroMem(&arch, sizeof(arch));
 
     mz_bool status = mz_zip_reader_init_mem(&arch, pMemory, SizeInBytes, 0);
     if (!status)
@@ -591,7 +591,7 @@ bool AArchive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
     }
 
     Handle = GZoneMemory.Alloc(sizeof(mz_zip_archive));
-    Core::Memcpy(Handle, &arch, sizeof(arch));
+    Platform::Memcpy(Handle, &arch, sizeof(arch));
 
     // Keep pointer valid
     ((mz_zip_archive*)Handle)->m_pIO_opaque = Handle;
@@ -666,7 +666,7 @@ bool AArchive::GetFileName(int _FileIndex, AString& FileName) const
     }
 
     FileName.Resize(filename_len);
-    Core::Memcpy(FileName.ToPtr(), pFilename, filename_len);
+    Platform::Memcpy(FileName.ToPtr(), pFilename, filename_len);
 
     return true;
 }
@@ -780,13 +780,13 @@ namespace Core
 
 void MakeDir(const char* _Directory, bool _FileName)
 {
-    size_t len = Core::Strlen(_Directory);
+    size_t len = Platform::Strlen(_Directory);
     if (!len)
     {
         return;
     }
     char* tmpStr = (char*)GZoneMemory.Alloc(len + 1);
-    Core::Memcpy(tmpStr, _Directory, len + 1);
+    Platform::Memcpy(tmpStr, _Directory, len + 1);
     char* p = tmpStr;
 #ifdef AN_OS_WIN32
     if (len >= 3 && _Directory[1] == ':')
@@ -797,7 +797,7 @@ void MakeDir(const char* _Directory, bool _FileName)
 #endif
     for (; *_Directory; p++, _Directory++)
     {
-        if (Core::IsPathSeparator(*p))
+        if (Platform::IsPathSeparator(*p))
         {
             *p = 0;
 #ifdef AN_COMPILER_MSVC
@@ -955,12 +955,12 @@ bool WriteResourcePack(const char* SourcePath, const char* ResultFile)
     }
 
     uint64_t magic;
-    Core::Memcpy(&magic, "ARESPACK", sizeof(magic));
+    Platform::Memcpy(&magic, "ARESPACK", sizeof(magic));
     magic = Core::LittleDDWord(magic);
     fwrite(&magic, 1, sizeof(magic), file);
 
     mz_zip_archive zip;
-    Core::ZeroMem(&zip, sizeof(zip));
+    Platform::ZeroMem(&zip, sizeof(zip));
 
     if (mz_zip_writer_init_cfile(&zip, file, 0))
     {

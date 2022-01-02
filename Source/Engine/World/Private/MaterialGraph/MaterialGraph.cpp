@@ -2557,44 +2557,44 @@ static const char * builtin_saturate =
 static void GenerateBuiltinSource() {
     AString builtin;
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        builtin += Core::Fmt( texture_srgb_alpha, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Platform::Fmt( texture_srgb_alpha, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        builtin += Core::Fmt( texture_ycocg, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Platform::Fmt( texture_ycocg, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        builtin += Core::Fmt( texture_grayscaled, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Platform::Fmt( texture_grayscaled, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        builtin += Core::Fmt( texture_nm_xyz, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Platform::Fmt( texture_nm_xyz, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        builtin += Core::Fmt( texture_nm_xy, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Platform::Fmt( texture_nm_xy, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        builtin += Core::Fmt( texture_nm_spheremap, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Platform::Fmt( texture_nm_spheremap, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        builtin += Core::Fmt( texture_nm_stereographic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Platform::Fmt( texture_nm_stereographic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        builtin += Core::Fmt( texture_nm_paraboloid, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Platform::Fmt( texture_nm_paraboloid, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        builtin += Core::Fmt( texture_nm_quartic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Platform::Fmt( texture_nm_quartic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        builtin += Core::Fmt( texture_nm_float, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Platform::Fmt( texture_nm_float, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
     for ( int i = 0 ; i < TEXTURE_TYPE_MAX ; i++ ) {
-        builtin += Core::Fmt( texture_nm_dxt5, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
+        builtin += Platform::Fmt( texture_nm_dxt5, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1] );
     }
 
     builtin += builtin_spheremap_coord;
     builtin += builtin_luminance;
 
     for ( int i = AT_Float1 ; i <= AT_Float4 ; i++ ) {
-        builtin += Core::Fmt( builtin_saturate, VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i] );
+        builtin += Platform::Fmt( builtin_saturate, VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i] );
     }
 
     AFileStream f;

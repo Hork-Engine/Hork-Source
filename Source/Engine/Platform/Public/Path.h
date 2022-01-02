@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-namespace Core
+namespace Platform
 {
 
 /** Compare two paths */
@@ -64,4 +64,4 @@ int FindExtWithoutDot(const char* _Path);
 /** Check char is a path separator */
 bool IsPathSeparator(char _Char);
 
-} // namespace Core
+} // namespace Platform

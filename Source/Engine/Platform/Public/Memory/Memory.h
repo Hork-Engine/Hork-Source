@@ -39,7 +39,7 @@ Memory utilites
 
 */
 
-namespace Core
+namespace Platform
 {
 
 /** Built-in memcpy function replacement */
@@ -103,7 +103,7 @@ void* SysRealloc(void* _Bytes, size_t _SizeInBytes, int _Alignment = 16);
 
 void SysFree(void* _Bytes);
 
-} // namespace Core
+} // namespace Platform
 
 /**
 
@@ -182,7 +182,7 @@ private:
 AN_FORCEINLINE void* AHeapMemory::ClearedAlloc(size_t _BytesCount, int _Alignment)
 {
     void* bytes = Alloc(_BytesCount, _Alignment);
-    Core::ZeroMem(bytes, _BytesCount);
+    Platform::ZeroMem(bytes, _BytesCount);
     return bytes;
 }
 
@@ -266,7 +266,7 @@ private:
 AN_FORCEINLINE void* AHunkMemory::ClearedAlloc(size_t _BytesCount)
 {
     void* bytes = Alloc(_BytesCount);
-    Core::ZeroMem(bytes, _BytesCount);
+    Platform::ZeroMem(bytes, _BytesCount);
     return bytes;
 }
 
@@ -347,7 +347,7 @@ private:
 AN_FORCEINLINE void* AZoneMemory::ClearedAlloc(size_t _BytesCount)
 {
     void* bytes = Alloc(_BytesCount);
-    Core::ZeroMem(bytes, _BytesCount);
+    Platform::ZeroMem(bytes, _BytesCount);
     return bytes;
 }
 
@@ -374,7 +374,7 @@ public:
     void* ClearedAlloc(size_t _BytesCount)
     {
         void* bytes = static_cast<T*>(this)->ImplAlloc(_BytesCount);
-        Core::ZeroMem(bytes, _BytesCount);
+        Platform::ZeroMem(bytes, _BytesCount);
         return bytes;
     }
 

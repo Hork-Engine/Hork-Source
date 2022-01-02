@@ -67,7 +67,7 @@ const AClassMeta * AObjectFactory::FindClass( const char * _ClassName ) const {
         return nullptr;
     }
     for ( AClassMeta const * n = Classes ; n ; n = n->pNext ) {
-        if ( !Core::Strcmp( n->GetName(), _ClassName ) ) {
+        if ( !Platform::Strcmp( n->GetName(), _ClassName ) ) {
             return n;
         }
     }
@@ -78,14 +78,14 @@ const AClassMeta * AObjectFactory::LookupClass( const char * _ClassName ) const 
     if ( !NameTable.IsAllocated() ) {
         // init name table
         for ( AClassMeta * n = Classes ; n ; n = n->pNext ) {
-            NameTable.Insert( Core::Hash( n->GetName(), Core::Strlen( n->GetName() ) ), n->GetId() );
+            NameTable.Insert( Core::Hash( n->GetName(), Platform::Strlen( n->GetName() ) ), n->GetId() );
         }
     }
 
-    int i = NameTable.First( Core::Hash( _ClassName, Core::Strlen( _ClassName ) ) );
+    int i = NameTable.First( Core::Hash( _ClassName, Platform::Strlen( _ClassName ) ) );
     for ( ; i != -1 ; i = NameTable.Next( i ) ) {
         AClassMeta const * classMeta = LookupClass( i );
-        if ( classMeta && !Core::Strcmp( classMeta->GetName(), _ClassName ) ) {
+        if ( classMeta && !Platform::Strcmp( classMeta->GetName(), _ClassName ) ) {
              return classMeta;
         }
     }
@@ -113,7 +113,7 @@ const AClassMeta * AObjectFactory::LookupClass( uint64_t _ClassId ) const {
 
 AAttributeMeta const * AClassMeta::FindAttribute( const char * _Name, bool _Recursive ) const {
     for ( AAttributeMeta const * attrib = AttributesHead ; attrib ; attrib = attrib->Next() ) {
-        if ( !Core::Strcmp( attrib->GetName(), _Name ) ) {
+        if ( !Platform::Strcmp( attrib->GetName(), _Name ) ) {
             return attrib;
         }
     }

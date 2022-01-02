@@ -82,7 +82,7 @@ AConvexHull* AConvexHull::CreateFromPoints(Float3 const* points, int numPoints)
     AConvexHull* hull;
     hull            = CreateEmpty(numPoints);
     hull->NumPoints = numPoints;
-    Core::Memcpy(hull->Points, points, sizeof(Float3) * numPoints);
+    Platform::Memcpy(hull->Points, points, sizeof(Float3) * numPoints);
     return hull;
 }
 
@@ -92,7 +92,7 @@ AConvexHull * AConvexHull::RecreateFromPoints( AConvexHull * oldHull, Float3 con
 
         // hull capacity is big enough
         if ( oldHull->MaxPoints >= numPoints ) {
-            Core::Memcpy( oldHull->Points, points, numPoints * sizeof( Float3 ) );
+            Platform::Memcpy( oldHull->Points, points, numPoints * sizeof( Float3 ) );
             oldHull->NumPoints = numPoints;
             return oldHull;
         }
@@ -103,7 +103,7 @@ AConvexHull * AConvexHull::RecreateFromPoints( AConvexHull * oldHull, Float3 con
         AConvexHull * hull = ( AConvexHull * )GZoneMemory.Realloc( oldHull, newSize, false );
         hull->MaxPoints = numPoints;
         hull->NumPoints = numPoints;
-        Core::Memcpy( hull->Points, points, numPoints * sizeof( Float3 ) );
+        Platform::Memcpy( hull->Points, points, numPoints * sizeof( Float3 ) );
         return hull;
     }
 
@@ -121,7 +121,7 @@ AConvexHull* AConvexHull::Duplicate() const
     AConvexHull* hull;
     hull            = CreateEmpty(MaxPoints);
     hull->NumPoints = NumPoints;
-    Core::Memcpy(hull->Points, Points, sizeof(Float3) * NumPoints);
+    Platform::Memcpy(hull->Points, Points, sizeof(Float3) * NumPoints);
     return hull;
 }
 

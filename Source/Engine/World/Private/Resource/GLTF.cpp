@@ -84,7 +84,7 @@ static void unpack_vec2_or_vec3( cgltf_accessor * acc, Float3 * output, size_t s
     for ( int i = 0; i < acc->count; i++ ) {
         cgltf_accessor_read_float( acc, i, position, num_elements );
 
-        Core::Memcpy( ptr, position, sizeof( float ) * 3 );
+        Platform::Memcpy( ptr, position, sizeof( float ) * 3 );
 
         ptr += stride;
     }
@@ -171,7 +171,7 @@ static void unpack_mat4_to_mat3x4( cgltf_accessor * acc, Float3x4 * output, size
     for ( int i = 0; i < acc->count; i++ ) {
         cgltf_accessor_read_float( acc, i, ( float * )temp.ToPtr(), 16 );
 
-        Core::Memcpy( ptr, temp.Transposed().ToPtr(), sizeof( Float3x4 ) );
+        Platform::Memcpy( ptr, temp.Transposed().ToPtr(), sizeof( Float3x4 ) );
 
         ptr += stride;
     }
@@ -1036,7 +1036,7 @@ bool LoadGLTF( const char * FileName, SMeshAsset & MeshAsset, SSkeletonAsset & S
 
     cgltf_options options;
 
-    Core::ZeroMem( &options, sizeof( options ) );
+    Platform::ZeroMem( &options, sizeof( options ) );
 
     options.memory_alloc = cgltf_alloc;
     options.memory_free = cgltf_free;
@@ -1098,7 +1098,7 @@ bool LoadGeometryGLTF( const char * FileName, SMeshAsset & MeshAsset ) {
 
     cgltf_options options;
 
-    Core::ZeroMem( &options, sizeof( options ) );
+    Platform::ZeroMem( &options, sizeof( options ) );
 
     options.memory_alloc = cgltf_alloc;
     options.memory_free = cgltf_free;

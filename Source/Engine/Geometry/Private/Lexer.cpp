@@ -96,7 +96,7 @@ void ALexer::ErrorPrintf(const char* _Format, ...)
     char    text[4096];
     va_list VaList;
     va_start(VaList, _Format);
-    Core::VSprintf(text, sizeof(text), _Format, VaList);
+    Platform::VSprintf(text, sizeof(text), _Format, VaList);
     va_end(VaList);
 
     AString str;
@@ -109,7 +109,7 @@ void ALexer::WarnPrintf(const char* _Format, ...)
     char    text[4096];
     va_list VaList;
     va_start(VaList, _Format);
-    Core::VSprintf(text, sizeof(text), _Format, VaList);
+    Platform::VSprintf(text, sizeof(text), _Format, VaList);
     va_end(VaList);
 
     AString str;
@@ -121,7 +121,7 @@ void ALexer::AddOperator(const char* _String)
 {
     SOperator Op;
 
-    Core::Strcpy(Op.Str, sizeof(Op.Str), _String);
+    Platform::Strcpy(Op.Str, sizeof(Op.Str), _String);
     Op.Len = static_cast<int>(strlen(Op.Str));
 
     Operators.Append(Op);
@@ -133,7 +133,7 @@ int ALexer::CheckOperator(const char* _Ptr) const
     {
         for (SOperator const& op : Operators)
         {
-            if (!Core::StrcmpN(_Ptr, op.Str, op.Len))
+            if (!Platform::StrcmpN(_Ptr, op.Str, op.Len))
             {
                 return op.Len;
             }
@@ -456,7 +456,7 @@ int ALexer::Expect(const char* _Str, int _TokenType, bool _MatchCase)
         return ErrorCode;
     }
 
-    bool compare = _MatchCase ? !Core::Strcmp(_Str, CurToken) : !Core::Stricmp(_Str, CurToken);
+    bool compare = _MatchCase ? !Platform::Strcmp(_Str, CurToken) : !Platform::Stricmp(_Str, CurToken);
 
     ErrorCode = compare ? ERROR_NO : ERROR_UNEXPECTED_TOKEN_FOUND;
 
@@ -757,11 +757,11 @@ bool ALexer::ExpectBoolean(bool _CrossLine)
     }
     if (GetTokenType() == TOKEN_TYPE_IDENTIFIER)
     {
-        if (!Core::Stricmp(Token(), "true"))
+        if (!Platform::Stricmp(Token(), "true"))
         {
             return true;
         }
-        if (!Core::Stricmp(Token(), "false"))
+        if (!Platform::Stricmp(Token(), "false"))
         {
             return false;
         }
@@ -1034,7 +1034,7 @@ bool ALexer::GoToNearest(const char* _Identifier)
             ErrorPrint(err);
             return false;
         }
-    } while (Core::Stricmp(str, _Identifier));
+    } while (Platform::Stricmp(str, _Identifier));
 
     // Token found
     return true;

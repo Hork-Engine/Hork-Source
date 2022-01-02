@@ -358,14 +358,14 @@ static SFrustumSliceZClipInitializer FrustumSliceZClipInitializer;
 
 void SMaterialDef::AddShader( const char * SourceName, AString const & SourceCode )
 {
-    int sourceNameLength = Core::Strlen( SourceName );
+    int sourceNameLength = Platform::Strlen( SourceName );
 
     SMaterialShader * s = (SMaterialShader *)GZoneMemory.Alloc( sizeof( SMaterialShader ) + sourceNameLength + 1 + SourceCode.Length() + 1 );
 
     s->SourceName = (char *)s + sizeof( SMaterialShader );
     s->Code       = (char *)s + sizeof( SMaterialShader ) + sourceNameLength + 1;
-    Core::Memcpy( s->SourceName, SourceName, sourceNameLength + 1 );
-    Core::Memcpy( s->Code, SourceCode.CStr(), SourceCode.Length() + 1 );
+    Platform::Memcpy( s->SourceName, SourceName, sourceNameLength + 1 );
+    Platform::Memcpy( s->Code, SourceCode.CStr(), SourceCode.Length() + 1 );
 
     if ( !Shaders ) {
         Shaders = s;

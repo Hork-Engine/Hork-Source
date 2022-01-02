@@ -486,7 +486,7 @@ AVSD::SPortalHull * AVSD::CalcPortalWinding( SPortalLink const * InPortal, SPort
 
         AN_ASSERT( InPortal->Hull->NumPoints <= MAX_HULL_POINTS );
 
-        Core::Memcpy( PortalHull[ flip ].Points, InPortal->Hull->Points, InPortal->Hull->NumPoints * sizeof( Float3 ) );
+        Platform::Memcpy( PortalHull[ flip ].Points, InPortal->Hull->Points, InPortal->Hull->NumPoints * sizeof( Float3 ) );
         PortalHull[ flip ].NumPoints = InPortal->Hull->NumPoints;
     }
 

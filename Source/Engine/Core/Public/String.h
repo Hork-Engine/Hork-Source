@@ -49,7 +49,7 @@ public:
     }
 
     AN_FORCEINLINE AStringView(const char* _Str) :
-        Data(_Str), Size(Core::Strlen(_Str))
+        Data(_Str), Size(Platform::Strlen(_Str))
     {
     }
 
@@ -180,12 +180,12 @@ public:
 
     AN_FORCEINLINE uint32_t HexToUInt32() const
     {
-        return Core::HexToUInt32(Data, std::min(Size, 8));
+        return Platform::HexToUInt32(Data, std::min(Size, 8));
     }
 
     AN_FORCEINLINE uint64_t HexToUInt64() const
     {
-        return Core::HexToUInt64(Data, std::min(Size, 16));
+        return Platform::HexToUInt64(Data, std::min(Size, 16));
     }
 
     /** Compare the strings (case insensitive) */
@@ -206,7 +206,7 @@ public:
         const char* p = Data + Size;
         while (--p >= Data)
         {
-            if (Core::IsPathSeparator(*p))
+            if (Platform::IsPathSeparator(*p))
             {
                 return p - Data + 1;
             }
@@ -218,7 +218,7 @@ public:
     AN_FORCEINLINE AStringView GetFilenameNoPath() const
     {
         const char* p = Data + Size;
-        while (--p >= Data && !Core::IsPathSeparator(*p))
+        while (--p >= Data && !Platform::IsPathSeparator(*p))
         {
             ;
         }
@@ -238,7 +238,7 @@ public:
                 sz = p - Data;
                 break;
             }
-            if (Core::IsPathSeparator(*p))
+            if (Platform::IsPathSeparator(*p))
             {
                 break; // no extension
             }
@@ -250,7 +250,7 @@ public:
     AN_FORCEINLINE AStringView GetFilePath() const
     {
         const char* p = Data + Size;
-        while (--p > Data && !Core::IsPathSeparator(*p))
+        while (--p > Data && !Platform::IsPathSeparator(*p))
         {
             ;
         }
@@ -314,7 +314,7 @@ public:
     int FindExt() const
     {
         const char* p = Data + Size;
-        while (--p >= Data && !Core::IsPathSeparator(*p))
+        while (--p >= Data && !Platform::IsPathSeparator(*p))
         {
             if (*p == '.')
             {
@@ -328,7 +328,7 @@ public:
     int FindExtWithoutDot() const
     {
         const char* p = Data + Size;
-        while (--p >= Data && !Core::IsPathSeparator(*p))
+        while (--p >= Data && !Platform::IsPathSeparator(*p))
         {
             if (*p == '.')
             {
@@ -687,7 +687,7 @@ AN_FORCEINLINE AString::AString(AString const& _Str) :
 {
     const int newLen = _Str.Length();
     GrowCapacity(newLen + 1, false);
-    Core::Memcpy(Data, _Str.ToPtr(), newLen);
+    Platform::Memcpy(Data, _Str.ToPtr(), newLen);
     Data[newLen] = 0;
     Size         = newLen;
 }
@@ -696,7 +696,7 @@ AN_FORCEINLINE AString::AString(AString&& _Str) noexcept
 {
     if (_Str.Data == &_Str.Base[0])
     {
-        Core::Memcpy(Base, _Str.Base, _Str.Size);
+        Platform::Memcpy(Base, _Str.Base, _Str.Size);
         Data       = Base;
         Capacity   = _Str.Capacity;
         Size       = _Str.Size;
@@ -720,7 +720,7 @@ AN_FORCEINLINE AString::AString(AStringView _Str) :
 {
     const int newLen = _Str.Length();
     GrowCapacity(newLen + 1, false);
-    Core::Memcpy(Data, _Str.ToPtr(), newLen);
+    Platform::Memcpy(Data, _Str.ToPtr(), newLen);
     Data[newLen] = 0;
     Size         = newLen;
 }
@@ -730,7 +730,7 @@ AN_FORCEINLINE AString::AString(const char* _Begin, const char* _End) :
 {
     const int newLen = _End - _Begin;
     GrowCapacity(newLen + 1, false);
-    Core::Memcpy(Data, _Begin, newLen);
+    Platform::Memcpy(Data, _Begin, newLen);
     Data[newLen] = 0;
     Size         = newLen;
 }
@@ -759,7 +759,7 @@ AN_FORCEINLINE AString& AString::operator=(AString const& _Str)
 {
     const int newLen = _Str.Length();
     GrowCapacity(newLen + 1, false);
-    Core::Memcpy(Data, _Str.ToPtr(), newLen);
+    Platform::Memcpy(Data, _Str.ToPtr(), newLen);
     Data[newLen] = 0;
     Size         = newLen;
     return *this;
@@ -771,7 +771,7 @@ AN_FORCEINLINE AString& AString::operator=(AString&& _Str) noexcept
 
     if (_Str.Data == &_Str.Base[0])
     {
-        Core::Memcpy(Base, _Str.Base, _Str.Size);
+        Platform::Memcpy(Base, _Str.Base, _Str.Size);
         Data       = Base;
         Capacity   = _Str.Capacity;
         Size       = _Str.Size;
@@ -796,7 +796,7 @@ AN_FORCEINLINE AString& AString::operator=(AStringView _Str)
 {
     const int newLen = _Str.Length();
     GrowCapacity(newLen + 1, false);
-    Core::Memcpy(Data, _Str.ToPtr(), newLen);
+    Platform::Memcpy(Data, _Str.ToPtr(), newLen);
     Data[newLen] = 0;
     Size         = newLen;
     return *this;
@@ -887,7 +887,7 @@ AN_FORCEINLINE void AString::Resize(int _Length)
     GrowCapacity(_Length + 1, true);
     if (_Length > Size)
     {
-        Core::Memset(&Data[Size], ' ', _Length - Size);
+        Platform::Memset(&Data[Size], ' ', _Length - Size);
     }
     Size       = _Length;
     Data[Size] = 0;
@@ -895,7 +895,7 @@ AN_FORCEINLINE void AString::Resize(int _Length)
 
 AN_FORCEINLINE void AString::FixSeparator()
 {
-    Core::FixSeparator(Data);
+    Platform::FixSeparator(Data);
 }
 
 AN_FORCEINLINE void AString::ReplaceExt(AStringView _Extension)
@@ -981,7 +981,7 @@ struct TSprintfBuffer
         AN_ASSERT(_Format);
         va_list VaList;
         va_start(VaList, _Format);
-        Core::VSprintf(Data, Size, _Format, VaList);
+        Platform::VSprintf(Data, Size, _Format, VaList);
         va_end(VaList);
         return Data;
     }

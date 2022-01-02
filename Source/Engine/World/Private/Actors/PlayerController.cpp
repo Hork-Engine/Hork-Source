@@ -150,7 +150,7 @@ void APlayerController::TakeScreenshot() {
                 FlipImageY( p, w, h, 4, w * 4 );
                 static int n = 0;
                 AFileStream f;
-                if ( f.OpenWrite( Core::Fmt( "screenshots/%d.png", n++ ) ) ) {
+                if ( f.OpenWrite( Platform::Fmt( "screenshots/%d.png", n++ ) ) ) {
                     WritePNG( f, w, h, 4, p, w*4 );
                 }
                 GHunkMemory.ClearLastHunk();

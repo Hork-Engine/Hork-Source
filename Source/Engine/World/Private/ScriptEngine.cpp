@@ -2633,7 +2633,7 @@ asIScriptContext* AScriptContextPool::PrepareContext(asIScriptFunction* pFunctio
         pContext = pEngine->CreateContext();
 
     int r = pContext->Prepare(pFunction);
-    assert(r >= 0);
+    AN_ASSERT(r >= 0);
 
     return pContext;
 }

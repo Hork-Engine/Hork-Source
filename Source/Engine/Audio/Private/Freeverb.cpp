@@ -119,7 +119,7 @@ void AFreeverb::Mute()
         return;
     }
 
-    Core::ZeroMem( pMemory, MemorySize );
+    Platform::ZeroMem(pMemory, MemorySize);
 }
 
 void AFreeverb::ProcessReplace( float * inputL, float * inputR, float * outputL, float * outputR, int frameCount, int skip )

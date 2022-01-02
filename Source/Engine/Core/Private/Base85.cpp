@@ -47,7 +47,7 @@ namespace Core
 
 size_t DecodeBase85(byte const* _Base85, byte* _Dst)
 {
-    size_t size = ((Strlen((const char*)_Base85) + 4) / 5) * 4;
+    size_t size = ((Platform::Strlen((const char*)_Base85) + 4) / 5) * 4;
 
     if (_Dst)
     {
@@ -106,7 +106,7 @@ size_t EncodeBase85(byte const* _Source, size_t _SourceSize, byte* _Base85)
         {
             uint32_t d = 0;
 
-            Memcpy(&d, ((uint32_t*)_Source) + chunks, residual);
+            Platform::Memcpy(&d, ((uint32_t*)_Source) + chunks, residual);
 
             *_Base85++ = Encode85Byte(d);
             d /= 85;

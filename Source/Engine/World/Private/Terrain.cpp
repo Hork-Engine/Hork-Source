@@ -370,9 +370,9 @@ ATerrainMesh::ATerrainMesh( int InTextureSize )
         Patch.BaseVertex = firstVert;
         Patch.StartIndex = firstIndex;
         Patch.IndexCount = IB.Size();
-        Core::Memcpy( VertexBuffer.ToPtr() + firstVert, VB.ToPtr(), VB.Size() * sizeof( STerrainVertex ) );
+        Platform::Memcpy( VertexBuffer.ToPtr() + firstVert, VB.ToPtr(), VB.Size() * sizeof( STerrainVertex ) );
         firstVert += VB.Size();
-        Core::Memcpy( IndexBuffer.ToPtr() + firstIndex, IB.ToPtr(), IB.Size() * sizeof( unsigned short ) );
+        Platform::Memcpy( IndexBuffer.ToPtr() + firstIndex, IB.ToPtr(), IB.Size() * sizeof( unsigned short ) );
         firstIndex += IB.Size();
     };
 
@@ -1323,7 +1323,7 @@ void ATerrainView::DrawDebug( ADebugRenderer * InRenderer, ATerrainMesh * Terrai
     static int64_t currentDrawCall = 0;
 
     static int64_t prev = 0;
-    int64_t cur = Core::SysMilliseconds();
+    int64_t cur = Platform::SysMilliseconds();
     int64_t delta = prev ? cur - prev : 0;
     prev = cur;
 
@@ -1515,7 +1515,7 @@ ATerrain::ATerrain()
     f.ReadBuffer( Heightmap[0], HeightmapResolution*HeightmapResolution*sizeof( float ) );
 #endif
 #if 0
-    Core::ZeroMem( Heightmap[0], HeightmapResolution*HeightmapResolution*sizeof( float ) );
+    Platform::ZeroMem( Heightmap[0], HeightmapResolution*HeightmapResolution*sizeof( float ) );
     AImage image;
     if ( !image.Load( "swiss2min.png", nullptr, IMAGE_PF_R32F ) ) {
         GRuntime->PostTerminateEvent();

@@ -42,8 +42,8 @@ AVirtualTextureFeedbackAnalyzer::AVirtualTextureFeedbackAnalyzer()
     , bStopStreamThread( false )
 
 {
-    Core::ZeroMem( Textures, sizeof( Textures ) );
-    Core::ZeroMem( QuedPages, sizeof( QuedPages ) );
+    Platform::ZeroMem( Textures, sizeof( Textures ) );
+    Platform::ZeroMem( QuedPages, sizeof( QuedPages ) );
 
     StreamThread.Routine = StreamThreadMain;
     StreamThread.Data = this;
@@ -96,7 +96,7 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
             QueueLoadPos = QueueLoadPos & (MAX_QUEUE_LENGTH - 1);
             quedPage = QuedPages[QueueLoadPos];
 
-            Core::ZeroMem( &QuedPages[QueueLoadPos], sizeof( SPageDesc ) );
+            Platform::ZeroMem( &QuedPages[QueueLoadPos], sizeof( SPageDesc ) );
 
             QueueLoadPos++;
         }
@@ -115,7 +115,7 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
         //    continue;
         //}
 
-        int64_t time = Core::SysMilliseconds();
+        int64_t time = Platform::SysMilliseconds();
 
         // NOTE: We can't use THash now becouse our allocators are not support multithreading
         // for better performance.
@@ -149,7 +149,7 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
 
         pTexture->ReadPage( physAddress, transfer->Layers );
 
-        //int32_t pagePayLoad = Core::SysMilliseconds() - time;
+        //int32_t pagePayLoad = Platform::SysMilliseconds() - time;
 
         //GLogger.Printf( "pagePayLoad %d msec\n", pagePayLoad );
 
@@ -191,7 +191,7 @@ void AVirtualTextureFeedbackAnalyzer::SubmitPages( TPodVector< SPageDesc > const
     ClearQueue();
 
     // Refresh queue
-    Core::Memcpy( QuedPages, Pages.ToPtr(), Pages.Size() * sizeof( QuedPages[0] ) );
+    Platform::Memcpy( QuedPages, Pages.ToPtr(), Pages.Size() * sizeof( QuedPages[0] ) );
     for ( int i = 0 ; i < Pages.Size() ; i++ ) {
         SPageDesc * quedPage = &QuedPages[i];
         quedPage->pTexture->AddRef();

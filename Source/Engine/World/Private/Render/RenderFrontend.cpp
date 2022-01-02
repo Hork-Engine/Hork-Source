@@ -87,7 +87,7 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
     FrameData.DrawListHead = nullptr;
     FrameData.DrawListTail = nullptr;
 
-    Stat.FrontendTime = Core::SysMilliseconds();
+    Stat.FrontendTime = Platform::SysMilliseconds();
     Stat.PolyCount = 0;
     Stat.ShadowMapPolyCount = 0;
 
@@ -152,7 +152,7 @@ void ARenderFrontend::Render( ACanvas * InCanvas ) {
         FrameData.DbgIndexStreamOffset = streamedMemory->AllocateVertex( DebugDraw.GetIndices().Size() * sizeof( unsigned short ), DebugDraw.GetIndices().ToPtr() );
     }
 
-    Stat.FrontendTime = Core::SysMilliseconds() - Stat.FrontendTime;
+    Stat.FrontendTime = Platform::SysMilliseconds() - Stat.FrontendTime;
 }
 
 void ARenderFrontend::RenderView( int _Index ) {
@@ -381,7 +381,7 @@ void ARenderFrontend::RenderCanvas( ACanvas * InCanvas ) {
             continue;
         }
 
-        Core::Memcpy( &dstCmd->ClipMins, &cmd.ClipRect, sizeof( Float4 ) );
+        Platform::Memcpy( &dstCmd->ClipMins, &cmd.ClipRect, sizeof( Float4 ) );
         dstCmd->IndexCount = cmd.ElemCount;
         dstCmd->StartIndexLocation = cmd.IdxOffset;
         dstCmd->BaseVertexLocation = cmd.VtxOffset;
@@ -539,12 +539,12 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
     int bytesCount = sizeof( SHUDDrawVert ) * drawList->VerticesCount;
     drawList->Vertices = ( SHUDDrawVert * )GRuntime->AllocFrameMem( bytesCount );
 
-    Core::Memcpy( drawList->Vertices, srcList->VtxBuffer.Data, bytesCount );
+    Platform::Memcpy( drawList->Vertices, srcList->VtxBuffer.Data, bytesCount );
 
     bytesCount = sizeof( unsigned short ) * drawList->IndicesCount;
     drawList->Indices = ( unsigned short * )GRuntime->AllocFrameMem( bytesCount );
 
-    Core::Memcpy( drawList->Indices, srcList->IdxBuffer.Data, bytesCount );
+    Platform::Memcpy( drawList->Indices, srcList->IdxBuffer.Data, bytesCount );
 
     bytesCount = sizeof( SHUDDrawCmd ) * drawList->CommandsCount;
     drawList->Commands = ( SHUDDrawCmd * )GRuntime->AllocFrameMem( bytesCount );
@@ -554,7 +554,7 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
     SHUDDrawCmd * dstCmd = drawList->Commands;
     for ( const ImDrawCmd * pCmd = srcList->CmdBuffer.begin() ; pCmd != srcList->CmdBuffer.end() ; pCmd++ ) {
 
-        Core::Memcpy( &dstCmd->ClipMins, &pCmd->ClipRect, sizeof( Float4 ) );
+        Platform::Memcpy( &dstCmd->ClipMins, &pCmd->ClipRect, sizeof( Float4 ) );
         dstCmd->IndexCount = pCmd->ElemCount;
         dstCmd->StartIndexLocation = startIndexLocation;
         dstCmd->Type = (EHUDDrawCmd)( pCmd->BlendingState & 0xff );
@@ -1721,9 +1721,9 @@ void ARenderFrontend::AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCo
         AN_ASSERT( surfDef->FirstVertex + surfDef->NumVertices <= model->VertexLight.Size() );
         AN_ASSERT( surfDef->FirstIndex + surfDef->NumIndices <= model->Indices.Size() );
 
-        Core::Memcpy( vertices    + numVerts, srcVerts, sizeof( SMeshVertex ) * surfDef->NumVertices );
-        Core::Memcpy( vertexUV    + numVerts, srcLM   , sizeof( SMeshVertexUV ) * surfDef->NumVertices );
-        Core::Memcpy( vertexLight + numVerts, srcVL   , sizeof( SMeshVertexLight ) * surfDef->NumVertices );
+        Platform::Memcpy( vertices    + numVerts, srcVerts, sizeof( SMeshVertex ) * surfDef->NumVertices );
+        Platform::Memcpy( vertexUV    + numVerts, srcLM   , sizeof( SMeshVertexUV ) * surfDef->NumVertices );
+        Platform::Memcpy( vertexLight + numVerts, srcVL   , sizeof( SMeshVertexLight ) * surfDef->NumVertices );
 
         for ( int ind = 0 ; ind < surfDef->NumIndices ; ind++ ) {
             *indices++ = numVerts + srcIndices[ind];
@@ -1821,7 +1821,7 @@ void ARenderFrontend::AddShadowmapSurfaces( SLightShadowmap * ShadowMap, SSurfac
         AN_ASSERT( surfDef->FirstVertex + surfDef->NumVertices <= model->Vertices.Size() );
         AN_ASSERT( surfDef->FirstIndex + surfDef->NumIndices <= model->Indices.Size() );
 
-        Core::Memcpy( vertices    + numVerts, srcVerts, sizeof( SMeshVertex ) * surfDef->NumVertices );
+        Platform::Memcpy( vertices    + numVerts, srcVerts, sizeof( SMeshVertex ) * surfDef->NumVertices );
 
         for ( int ind = 0 ; ind < surfDef->NumIndices ; ind++ ) {
             *indices++ = numVerts + srcIndices[ind];

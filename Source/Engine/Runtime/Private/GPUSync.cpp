@@ -56,7 +56,7 @@ void AGPUSync::Wait()
     if (!Texture)
     {
         byte data[2 * 2 * 4];
-        Core::Memset(data, 128, sizeof(data));
+        Platform::Memset(data, 128, sizeof(data));
 
         IDevice* device = pImmediateContext->GetDevice();
 

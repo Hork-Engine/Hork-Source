@@ -220,10 +220,10 @@ ARenderBackend::ARenderBackend()
             }
 
             AFileStream f;
-            //f.OpenWrite( Core::Fmt( "skyface%d.png", i ) );
+            //f.OpenWrite( Platform::Fmt( "skyface%d.png", i ) );
             //WritePNG( f, rect.Dimension.X, rect.Dimension.Y, 3, ucdata, rect.Dimension.X * 3 );
 
-            f.OpenWrite( Core::Fmt( "xskyface%d.hdr", i ) );
+            f.OpenWrite( Platform::Fmt( "xskyface%d.hdr", i ) );
             WriteHDR( f, rect.Dimension.X, rect.Dimension.Y, 3, data );
         }
         GHunkMemory.ClearToMark( hunkMark );
@@ -308,7 +308,7 @@ ARenderBackend::ARenderBackend()
         {
             float* pSrc = (float*)cubeFaces[face]->GetData();
 
-            //Core::Memset(pSrc,0, w*w*3*sizeof( float ) );
+            //Platform::Memset(pSrc,0, w*w*3*sizeof( float ) );
             for (int y = 0; y < w; y++)
                 for (int x = 0; x < w; x++)
                     pSrc[y * w * 3 + x * 3 + 0] = pSrc[y * w * 3 + x * 3 + 1] = pSrc[y * w * 3 + x * 3 + 2] = 0.02f;
@@ -363,7 +363,7 @@ ARenderBackend::ARenderBackend()
         for ( int i = 0 ; i < 6 ; i++ ) {
             rect.Offset.Z = i;
             cubemap.ReadRect( rect, FORMAT_FLOAT3, cubemapResoultion*cubemapResoultion*3*sizeof( float ), 1, data );
-            f.OpenWrite( Core::Fmt( "nightsky_%d.hdr", i ) );
+            f.OpenWrite( Platform::Fmt( "nightsky_%d.hdr", i ) );
             WriteHDR( f, cubemapResoultion, cubemapResoultion, 3, (float*)data );
         }
         GHeapMemory.Free( data );
@@ -428,7 +428,7 @@ ARenderBackend::ARenderBackend()
     int sz = pageSizeX*pageSizeY*4;
 
     byte * mem = (byte*)StackAlloc( sz );
-    Core::ZeroMem( mem, sz );
+    Platform::ZeroMem( mem, sz );
 
     sparseTexture->CommitPage( 0,0,0,0, FORMAT_UBYTE4, sz, 1, mem );
     }
@@ -464,14 +464,14 @@ ARenderBackend::ARenderBackend()
     int sz = pageSizeX*pageSizeY*4;
 
     byte * mem = (byte*)StackAlloc( sz );
-    Core::ZeroMem( mem, sz );
+    Platform::ZeroMem( mem, sz );
 
     sparseTexture->CommitPage( 0, 0, 0, 0, FORMAT_UBYTE4, sz, 1, mem );
 #    else
     int sz = texSize * texSize * 4;
 
     byte* mem = (byte*)malloc(sz);
-    Core::ZeroMem(mem, sz);
+    Platform::ZeroMem(mem, sz);
 
     GLogger.Printf("\tTotal available after create: %d Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10);
 

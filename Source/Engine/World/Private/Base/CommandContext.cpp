@@ -142,9 +142,9 @@ int ACommandContext::CompleteString( const char * _Str, int _StrLen, AString & _
     }
 
     for ( ARuntimeVariable * var = ARuntimeVariable::GlobalVariableList() ; var ; var = var->GetNext() ) {
-        if ( !Core::StricmpN( var->GetName(), _Str, _StrLen ) ) {
+        if ( !Platform::StricmpN( var->GetName(), _Str, _StrLen ) ) {
             int n;
-            int minLen = Math::Min( Core::Strlen( var->GetName() ), _Result.Length() );
+            int minLen = Math::Min( Platform::Strlen( var->GetName() ), _Result.Length() );
             for ( n = 0 ; n < minLen && CompareChar( var->GetName()[n], _Result[n] ) ; n++ ) {}
             if ( n == 0 ) {
                 _Result = var->GetName();
@@ -178,14 +178,14 @@ void ACommandContext::Print( const char * _Str, int _StrLen ) {
         std::sort( cmds.Begin(), cmds.End(), CmdSortFunction );
 
         for ( ARuntimeVariable * var = ARuntimeVariable::GlobalVariableList() ; var ; var = var->GetNext() ) {
-            if ( !Core::StricmpN( var->GetName(), _Str, _StrLen ) ) {
+            if ( !Platform::StricmpN( var->GetName(), _Str, _StrLen ) ) {
                 vars.Append( var );
             }
         }
 
         struct {
             bool operator() ( ARuntimeVariable const * _A, ARuntimeVariable * _B ) {
-                return Core::Stricmp( _A->GetName(), _B->GetName() ) < 0;
+                return Platform::Stricmp( _A->GetName(), _B->GetName() ) < 0;
             }
         } VarSortFunction;
 

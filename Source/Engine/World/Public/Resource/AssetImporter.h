@@ -58,7 +58,7 @@ struct SAssetImportSettings
         Rotation = Quat::Identity();
         SkyboxHDRIScale = 1; // 4
         SkyboxHDRIPow = 1; // 1.1
-        Core::ZeroMem( ExplicitSkyboxFaces, sizeof( ExplicitSkyboxFaces ) );
+        Platform::ZeroMem( ExplicitSkyboxFaces, sizeof( ExplicitSkyboxFaces ) );
         bCreateSkyboxMaterialInstance = true;
         bAllowUnlitMaterials = true;
     }

@@ -1261,11 +1261,11 @@ AN_FORCEINLINE T ToReal(const char* _String)
 
 AN_FORCEINLINE bool ToBool(const char* _String)
 {
-    if (!Core::Strcmp(_String, "0") || !Core::Strcmp(_String, "false"))
+    if (!Platform::Strcmp(_String, "0") || !Platform::Strcmp(_String, "false"))
     {
         return false;
     }
-    else if (!Core::Strcmp(_String, "true"))
+    else if (!Platform::Strcmp(_String, "true"))
     {
         return true;
     }
@@ -1327,7 +1327,7 @@ AN_FORCEINLINE AString ToString(T const& _Value, int _Precision = FloatingPointP
     {
         value.Sprintf("%f", _Value);
     }
-    for (char* p = &value.Data[Core::Strlen(value.Data) - 1]; p >= &value.Data[0]; p--)
+    for (char* p = &value.Data[Platform::Strlen(value.Data) - 1]; p >= &value.Data[0]; p--)
     {
         if (*p != '0')
         {

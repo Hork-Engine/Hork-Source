@@ -761,7 +761,7 @@ struct SMaterialDef
 
     SMaterialDef()
     {
-        Core::ZeroMem( this, sizeof( *this ) );
+        Platform::ZeroMem( this, sizeof( *this ) );
     }
 
     ~SMaterialDef()

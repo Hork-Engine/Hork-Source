@@ -306,7 +306,7 @@ bool AShaderModuleGLImpl::CreateShaderBinaryData(ADeviceGLImpl*     _Device,
     GLenum   format;
     uint8_t* binary;
 
-    Core::ZeroMem(_BinaryData, sizeof(*_BinaryData));
+    Platform::ZeroMem(_BinaryData, sizeof(*_BinaryData));
 
     id = CreateShaderProgram(_ShaderType, _NumSources, _Sources, true);
     if (!id)
@@ -347,7 +347,7 @@ void AShaderModuleGLImpl::DestroyShaderBinaryData(ADeviceGLImpl* _Device, SShade
     uint8_t* binary = (uint8_t*)_BinaryData->BinaryCode;
     _Device->GetAllocator().Deallocate(binary);
 
-    Core::ZeroMem(_BinaryData, sizeof(*_BinaryData));
+    Platform::ZeroMem(_BinaryData, sizeof(*_BinaryData));
 }
 
 } // namespace RenderCore
