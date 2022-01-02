@@ -83,14 +83,17 @@ bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int S
     pAudioFileInfo->Channels = decoder.outputChannels;
     pAudioFileInfo->SampleBits = bForce8Bit ? 8 : 16;
 
-    byte temp[8192];
+    //byte temp[tempSize];
+
+    const size_t tempSize = 8192;
+    byte* temp = (byte*)GHeapMemory.Alloc(tempSize);
 
     if ( ppFrames ) {
         ma_uint64 totalFramesRead = 0;
         ma_uint64 framesCapacity = 0;
         void* pFrames = NULL;
         const int stride = ( pAudioFileInfo->SampleBits >> 3 ) * pAudioFileInfo->Channels;
-        const ma_uint64 framesToReadRightNow = AN_ARRAY_SIZE( temp ) / stride;
+        const ma_uint64 framesToReadRightNow = tempSize / stride;
         for ( ;; ) {
             ma_uint64 framesJustRead = ma_decoder_read_pcm_frames( &decoder, temp, framesToReadRightNow );
             if ( framesJustRead == 0 ) {
@@ -137,7 +140,7 @@ bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int S
         if ( pAudioFileInfo->FrameCount == 0 ) { // stb_vorbis :(
             ma_uint64 totalFramesRead = 0;
             const int stride = (pAudioFileInfo->SampleBits >> 3) * pAudioFileInfo->Channels;
-            const ma_uint64 framesToReadRightNow = AN_ARRAY_SIZE( temp ) / stride;
+            const ma_uint64 framesToReadRightNow = tempSize / stride;
             for ( ;; ) {
                 ma_uint64 framesJustRead = ma_decoder_read_pcm_frames( &decoder, temp, framesToReadRightNow );
                 if ( framesJustRead == 0 ) {
@@ -153,6 +156,8 @@ bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int S
             pAudioFileInfo->FrameCount = totalFramesRead;
         }
     }
+
+    GHeapMemory.Free(temp);
 
     ma_decoder_uninit( &decoder );
 
