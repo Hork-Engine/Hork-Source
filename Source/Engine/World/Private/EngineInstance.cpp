@@ -365,11 +365,6 @@ void AEngineInstance::ShowStats()
     }
 }
 
-void AEngineInstance::Print( const char * _Message )
-{
-    Console.Print( _Message );
-}
-
 void AEngineInstance::DeveloperKeys( SKeyEvent const & _Event )
 {
 }
@@ -560,8 +555,6 @@ void AEngineInstance::OnResize()
 
     RetinaScale = Float2( (float)videoMode.FramebufferWidth / videoMode.Width,
                           (float)videoMode.FramebufferHeight / videoMode.Height );
-
-    Console.Resize( videoMode.FramebufferWidth );
 
     if ( Desktop ) {
         // Force update transform

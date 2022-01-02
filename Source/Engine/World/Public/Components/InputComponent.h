@@ -35,7 +35,7 @@ SOFTWARE.
 #include <Runtime/Public/InputDefs.h>
 #include <Runtime/Public/RuntimeVariable.h>
 
-#include <Core/Public/Utf8.h>
+#include <Platform/Public/Utf8.h>
 #include <Containers/Public/Array.h>
 
 constexpr int MAX_PRESSED_KEYS      = 128;

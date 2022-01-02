@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "Texture.h"
 
-#include <Core/Public/Utf8.h>
+#include <Platform/Public/Utf8.h>
 
 enum EDrawCursor
 {

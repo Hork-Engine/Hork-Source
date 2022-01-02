@@ -83,9 +83,6 @@ private:
     /** IEngineInterface interface. Run the engine */
     void Run( SEntryDecl const & _EntryDecl ) override;
 
-    /** IEngineInterface interface. Message print callback. This must be a thread-safe function. */
-    void Print( const char * _Message ) override;
-
     /** IEngineInterface interface. */
     void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) override;
 

@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include <Platform/Public/Atomic.h>
 #include <Platform/Public/Memory/LinearAllocator.h>
+#include <Platform/Public/Utf8.h>
 #include <Core/Public/String.h>
-#include <Core/Public/Utf8.h>
 #include <Core/Public/Random.h>
 #include <Containers/Public/PodQueue.h>
 #include "AsyncJobManager.h"

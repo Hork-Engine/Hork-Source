@@ -285,7 +285,6 @@ void AAsyncJobList::Wait()
 
         if (NumPendingJobs > 0)
         {
-
             GLogger.Printf("Warning: AAsyncJobList::Wait: NumPendingJobs > 0\n");
 
             JobPool.Remove(0, jobsCount);

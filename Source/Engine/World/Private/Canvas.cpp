@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <World/Public/Resource/Texture.h>
 
-#include <Core/Public/Utf8.h>
+#include <Platform/Public/Utf8.h>
 #include <Platform/Public/Logger.h>
 
 #include <World/Public/Base/ResourceManager.h>

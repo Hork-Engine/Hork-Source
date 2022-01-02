@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Core/Public/Utf8.h>
+#include <Platform/Public/Utf8.h>
 
 namespace Core
 {

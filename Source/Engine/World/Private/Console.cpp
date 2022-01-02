@@ -36,22 +36,18 @@ SOFTWARE.
 #include <Runtime/Public/Runtime.h>
 #include <Runtime/Public/InputDefs.h>
 
-#include <Platform/Public/Platform.h>
-#include <Core/Public/Utf8.h>
 #include <Core/Public/Color.h>
+#include <Platform/Public/Platform.h>
 
-static const int Padding = 8;
-static const int CharacterWidth = 10;//8;
-//static const int CharacterHeight = 16;
 static const float DropSpeed = 10;
+
+AConsole::AConsole() :
+    pConBuffer(&Platform::GetConsoleBuffer())
+{}
 
 void AConsole::Clear()
 {
-    AMutexGurad syncGuard( ConSync );
-
-    Platform::ZeroMem( pImage, sizeof( *pImage ) * CON_IMAGE_SIZE );
-
-    Scroll = 0;
+    pConBuffer->Clear();
 }
 
 bool AConsole::IsActive() const
@@ -62,223 +58,6 @@ bool AConsole::IsActive() const
 void AConsole::SetFullscreen( bool _Fullscreen )
 {
     bFullscreen = _Fullscreen;
-}
-
-void AConsole::_Resize( int _VidWidth )
-{
-    int prevMaxLines = MaxLines;
-    int prevMaxLineChars = MaxLineChars;
-
-    MaxLineChars = (_VidWidth - Padding*2) / CharacterWidth;
-
-    if ( MaxLineChars == prevMaxLineChars ) {
-        return;
-    }
-
-    MaxLines = CON_IMAGE_SIZE / MaxLineChars;
-
-    if ( NumLines > MaxLines ) {
-        NumLines = MaxLines;
-    }
-
-    SWideChar * pNewImage = ( pImage == ImageData[0] ) ? ImageData[1] : ImageData[0];
-
-    Platform::ZeroMem( pNewImage, sizeof( *pNewImage ) * CON_IMAGE_SIZE );
-
-    const int width = Math::Min( prevMaxLineChars, MaxLineChars );
-    const int height = Math::Min( prevMaxLines, MaxLines );
-
-    for ( int i = 0 ; i < height ; i++ ) {
-        const int newOffset = ( MaxLines - i - 1 ) * MaxLineChars;
-        const int oldOffset = ( ( prevMaxLines + PrintLine - i ) % prevMaxLines ) * prevMaxLineChars;
-
-        Platform::Memcpy( &pNewImage[ newOffset ], &pImage[ oldOffset ], width * sizeof( *pNewImage ) );
-    }
-
-    pImage = pNewImage;
-
-    PrintLine = MaxLines - 1;
-    Scroll = 0;
-}
-
-void AConsole::Resize( int _VidWidth )
-{
-    AMutexGurad syncGuard( ConSync );
-
-    _Resize( _VidWidth );
-}
-
-void AConsole::Print( const char * _Text )
-{
-    const char * wordStr;
-    int wordLength;
-    SWideChar ch;
-    int byteLen;
-
-    AMutexGurad syncGuard( ConSync );
-
-    if ( !bInitialized ) {
-        _Resize( 1024 );
-        bInitialized = true;
-    }
-
-    const char * s = _Text;
-
-    while ( *s ) {
-        byteLen = Core::WideCharDecodeUTF8( s, ch );
-        if ( !byteLen ) {
-            break;
-        }
-
-        switch ( ch ) {
-        case ' ':
-            pImage[ PrintLine * MaxLineChars + CurWidth++ ] = ' ';
-            if ( CurWidth == MaxLineChars ) {
-                CurWidth = 0;
-                PrintLine = ( PrintLine + 1 ) % MaxLines;
-                NumLines++;
-            }
-            s += byteLen;
-            break;
-        case '\t':
-            if ( CurWidth + 4 >= MaxLineChars ) {
-                CurWidth = 0;
-                PrintLine = ( PrintLine + 1 ) % MaxLines;
-                NumLines++;
-            } else {
-                pImage[ PrintLine * MaxLineChars + CurWidth++ ] = ' ';
-                pImage[ PrintLine * MaxLineChars + CurWidth++ ] = ' ';
-                pImage[ PrintLine * MaxLineChars + CurWidth++ ] = ' ';
-                pImage[ PrintLine * MaxLineChars + CurWidth++ ] = ' ';
-            }
-            s += byteLen;
-            break;
-        case '\n':
-        case '\r':
-            pImage[ PrintLine * MaxLineChars + CurWidth++ ] = '\0';
-            CurWidth = 0;
-            PrintLine = ( PrintLine + 1 ) % MaxLines;
-            NumLines++;
-            s += byteLen;
-            break;
-        default:
-            wordStr = s;
-            wordLength = 0;
-
-            if ( ch > ' ' ) {
-                do {
-                    s += byteLen;
-                    wordLength++;
-                    byteLen = Core::WideCharDecodeUTF8( s, ch );
-                } while ( byteLen > 0 && ch > ' ' );
-            } else {
-                s += byteLen;
-            }
-
-            if ( CurWidth + wordLength > MaxLineChars ) {
-                CurWidth = 0;
-                PrintLine = ( PrintLine + 1 ) % MaxLines;
-                NumLines++;
-            }
-
-            while ( wordLength-- > 0 ) {
-                byteLen = Core::WideCharDecodeUTF8( wordStr, ch );
-                wordStr += byteLen;
-
-                pImage[ PrintLine * MaxLineChars + CurWidth++ ] = ch;
-                if ( CurWidth == MaxLineChars ) {
-                    CurWidth = 0;
-                    PrintLine = ( PrintLine + 1 ) % MaxLines;
-                    NumLines++;
-                }
-            }
-            break;
-        }
-    }
-
-    if ( NumLines > MaxLines ) {
-        NumLines = MaxLines;
-    }
-}
-
-void AConsole::WidePrint( SWideChar const * _Text )
-{
-    SWideChar const * wordStr;
-    int wordLength;
-
-    AMutexGurad syncGuard( ConSync );
-
-    if ( !bInitialized ) {
-        _Resize( 640 );
-        bInitialized = true;
-    }
-
-    while ( *_Text ) {
-        switch ( *_Text ) {
-        case ' ':
-            pImage[ PrintLine * MaxLineChars + CurWidth++ ] = ' ';
-            if ( CurWidth == MaxLineChars ) {
-                CurWidth = 0;
-                PrintLine = ( PrintLine + 1 ) % MaxLines;
-                NumLines++;
-            }
-            _Text++;
-            break;
-        case '\t':
-            if ( CurWidth + 4 >= MaxLineChars ) {
-                CurWidth = 0;
-                PrintLine = ( PrintLine + 1 ) % MaxLines;
-                NumLines++;
-            } else {
-                pImage[ PrintLine * MaxLineChars + CurWidth++ ] = ' ';
-                pImage[ PrintLine * MaxLineChars + CurWidth++ ] = ' ';
-                pImage[ PrintLine * MaxLineChars + CurWidth++ ] = ' ';
-                pImage[ PrintLine * MaxLineChars + CurWidth++ ] = ' ';
-            }
-            _Text++;
-            break;
-        case '\n':
-        case '\r':
-            pImage[ PrintLine * MaxLineChars + CurWidth++ ] = '\0';
-            CurWidth = 0;
-            PrintLine = ( PrintLine + 1 ) % MaxLines;
-            NumLines++;
-            _Text++;
-            break;
-        default:
-            wordStr = _Text;
-            wordLength = 0;
-
-            if ( *_Text > ' ' ) {
-                do {
-                    _Text++;
-                    wordLength++;
-                } while ( *_Text > ' ' );
-            } else {
-                _Text++;
-            }
-
-            if ( CurWidth + wordLength > MaxLineChars ) {
-                CurWidth = 0;
-                PrintLine = ( PrintLine + 1 ) % MaxLines;
-                NumLines++;
-            }
-
-            while ( wordLength-- > 0 ) {
-                pImage[ PrintLine * MaxLineChars + CurWidth++ ] = *wordStr++;
-                if ( CurWidth == MaxLineChars ) {
-                    CurWidth = 0;
-                    PrintLine = ( PrintLine + 1 ) % MaxLines;
-                    NumLines++;
-                }
-            }
-            break;
-        }
-    }
-
-    if ( NumLines > MaxLines ) {
-        NumLines = MaxLines;
-    }
 }
 
 void AConsole::CopyStoryLine( SWideChar const * _StoryLine )
@@ -365,37 +144,33 @@ void AConsole::KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx
     }
 
     if ( IsActive() && ( _Event.Action == IA_PRESS || _Event.Action == IA_REPEAT ) ) {
-
-        // Scrolling (protected by mutex)
+        int scrollDelta = 1;
+        if (_Event.ModMask & KMOD_MASK_CONTROL)
         {
-            AMutexGurad syncGuard( ConSync );
-
-            int scrollDelta = 1;
-            if ( _Event.ModMask & KMOD_MASK_CONTROL ) {
-                if ( _Event.Key == KEY_HOME ) {
-                    Scroll = NumLines-1;
-                } else if ( _Event.Key == KEY_END ) {
-                    Scroll = 0;
-                }
-                scrollDelta = 4;
+            if (_Event.Key == KEY_HOME)
+            {
+                pConBuffer->ScrollStart();
             }
-
-            switch ( _Event.Key ) {
-            case KEY_PAGE_UP:
-                Scroll += scrollDelta;
-                break;
-            case KEY_PAGE_DOWN:
-                Scroll -= scrollDelta;
-                if ( Scroll < 0 ) {
-                    Scroll = 0;
-                }
-                break;
-            //case KEY_ENTER:
-            //    Scroll = 0;
-            //    break;
+            else if (_Event.Key == KEY_END)
+            {
+                pConBuffer->ScrollEnd();
             }
+            scrollDelta = 4;
         }
 
+        switch (_Event.Key)
+        {
+            case KEY_PAGE_UP:
+                pConBuffer->ScrollDelta(scrollDelta);
+                break;
+            case KEY_PAGE_DOWN:
+                pConBuffer->ScrollDelta(-scrollDelta);
+                break;
+                //case KEY_ENTER:
+                //    pConBuffer->ScrollEnd();
+                //    break;
+        }
+        
         // Command line keys
         switch ( _Event.Key ) {
         case KEY_LEFT:
@@ -540,19 +315,14 @@ void AConsole::MouseWheelEvent( SMouseWheelEvent const & _Event )
         return;
     }
 
-    AMutexGurad syncGuard( ConSync );
-
     if ( _Event.WheelY < 0.0 ) {
-        Scroll--;
-        if ( Scroll < 0 ) {
-            Scroll = 0;
-        }
+        pConBuffer->ScrollDelta(-1);
     } else if ( _Event.WheelY > 0.0 ) {
-        Scroll++;
+        pConBuffer->ScrollDelta(1);
     }
 }
 
-void AConsole::DrawCmdLine( ACanvas * _Canvas, int x, int y )
+void AConsole::DrawCmdLine( ACanvas * _Canvas, int x, int y, int MaxLineChars )
 {
     Color4 const & charColor = Color4::White();
 
@@ -580,17 +350,17 @@ void AConsole::DrawCmdLine( ACanvas * _Canvas, int x, int y )
         SWideChar ch = CmdLine[n];
 
         if ( ch <= ' ' ) {
-            cx += CharacterWidth;
+            cx += AConsoleBuffer::CharacterWidth;
             continue;
         }
 
         _Canvas->DrawWChar( ch, cx, y, scale, charColor );
 
-        cx += CharacterWidth;
+        cx += AConsoleBuffer::CharacterWidth;
     }
 
     if ( ( GRuntime->SysFrameTimeStamp() >> 18 ) & 1 ) {
-        cx = x + ( CmdLinePos - offset ) * CharacterWidth;
+        cx = x + (CmdLinePos - offset) * AConsoleBuffer::CharacterWidth;
 
         _Canvas->DrawWChar( '_', cx, y, scale, charColor );
     }
@@ -636,36 +406,38 @@ void AConsole::Draw( ACanvas * _Canvas, float _TimeStep )
     }
     _Canvas->DrawLine( Float2( 0, halfVidHeight ), Float2( _Canvas->GetWidth(), halfVidHeight ), Color4::White(), 2.0f );
 
-    int x = Padding;
+    int x = AConsoleBuffer::Padding;
     int y = halfVidHeight - fontVStride;
 
     const float scale = 1;//(float)CharacterHeight / font->GetFontSize();
 
-    ConSync.Lock();
+    AConsoleBuffer::SLock lock = pConBuffer->Lock();
 
-    DrawCmdLine( _Canvas, x, y );
+    DrawCmdLine(_Canvas, x, y, lock.MaxLineChars);
 
     y -= cmdLineH;
 
     for ( int i = 0 ; i < numVisLines ; i++ ) {
-        int n = i + Scroll;
-        if ( n >= MaxLines ) {
+        int n = i + lock.Scroll;
+        if (n >= lock.MaxLines)
+        {
             break;
         }
 
-        const int offset = ( ( MaxLines + PrintLine - n - 1 ) % MaxLines ) * MaxLineChars;
-        SWideChar * line = &pImage[ offset ];
+        const int  offset = ((lock.MaxLines + lock.PrintLine - n - 1) % lock.MaxLines) * lock.MaxLineChars;
+        SWideChar* line   = &lock.pImage[offset];
 
-        for ( int j = 0 ; j < MaxLineChars && *line ; j++ ) {
+        for (int j = 0; j < lock.MaxLineChars && *line; j++)
+        {
             _Canvas->DrawWChar( *line++, x, y, scale, charColor );
 
-            x += CharacterWidth;
+            x += AConsoleBuffer::CharacterWidth;
         }
-        x = Padding;
+        x = AConsoleBuffer::Padding;
         y -= fontVStride;
     }
 
-    ConSync.Unlock();
+    pConBuffer->Unlock();
 }
 
 void AConsole::WriteStoryLines()

@@ -43,9 +43,6 @@ public:
     /** Run the engine */
     virtual void Run(SEntryDecl const& _EntryDecl) = 0;
 
-    /** Print callback */
-    virtual void Print(const char* _Message) = 0;
-
     virtual void OnKeyEvent(struct SKeyEvent const& _Event, double _TimeStamp) = 0;
 
     virtual void OnMouseButtonEvent(struct SMouseButtonEvent const& _Event, double _TimeStamp) = 0;

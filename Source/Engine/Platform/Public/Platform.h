@@ -142,6 +142,8 @@ struct SCoreInitialize
     size_t      HunkSizeInMegabytes     = 32;
 };
 
+class AConsoleBuffer;
+
 namespace Platform
 {
 
@@ -150,9 +152,6 @@ void Initialize(SCoreInitialize const& CoreInitialize);
 
 /** Deinitialize core library */
 void Deinitialize();
-
-/** Get dump of global logger */
-std::string& GetMessageBuffer();
 
 /** Application command line args count */
 int GetArgc();
@@ -168,6 +167,9 @@ bool HasArg(const char* _Arg);
 
 /** Get command line pointer */
 SCommandLine const* GetCommandLine();
+
+/** Console buffer */
+AConsoleBuffer& GetConsoleBuffer();
 
 /** Get CPU info */
 SCPUInfo const* CPUInfo();

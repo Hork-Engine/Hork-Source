@@ -34,6 +34,7 @@ SOFTWARE.
 #include <Platform/Public/WindowsDefs.h>
 #include <Platform/Public/Path.h>
 #include <Platform/Public/String.h>
+#include <Platform/Public/ConsoleBuffer.h>
 
 #include <SDL.h>
 
@@ -667,8 +668,7 @@ static int64_t StartMilliseconds;
 static int64_t StartMicroseconds;
 
 static char* Clipboard = nullptr;
-
-static std::string MessageBuffer;
+static AConsoleBuffer ConBuffer;
 
 namespace Platform
 {
@@ -690,22 +690,6 @@ void Initialize(SCoreInitialize const& CoreInitialize)
         pCommandLine = &cmdLine;
     }
 
-    GLogger.SetMessageCallback([](int Level, const char* Message, void* UserData)
-                               {
-                                   WriteDebugString(Message);
-                                   WriteLog(Message);
-
-                                   MessageBuffer += Message;
-                               },
-                               nullptr);
-
-    // Synchronize SDL ticks with our start time
-    (void)SDL_GetTicks();
-
-    StartMicroseconds = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
-    StartMilliseconds = StartMicroseconds * 0.001;
-    StartSeconds      = StartMicroseconds * 0.000001;
-
     InitializeProcess();
 
     SProcessInfo const& processInfo = Platform::GetProcessInfo();
@@ -724,6 +708,28 @@ void Initialize(SCoreInitialize const& CoreInitialize)
                 break;
         }
     }
+
+    GLogger.SetMessageCallback([](int Level, const char* Message, void* UserData)
+                               {
+                                   WriteDebugString(Message);
+                                   WriteLog(Message);
+                                   ConBuffer.Print(Message);
+                               },
+                               nullptr);
+
+    SDL_LogSetOutputFunction(
+        [](void* userdata, int category, SDL_LogPriority priority, const char* message)
+        {
+            GLogger.Printf("SDL: %d : %s\n", category, message);
+        },
+        NULL);
+
+    // Synchronize SDL ticks with our start time
+    (void)SDL_GetTicks();
+
+    StartMicroseconds = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
+    StartMilliseconds = StartMicroseconds * 0.001;
+    StartSeconds      = StartMicroseconds * 0.000001;    
 
     PrintCPUFeatures();
 
@@ -745,11 +751,6 @@ void Deinitialize()
     }
 
     SDL_Quit();
-}
-
-std::string& GetMessageBuffer()
-{
-    return MessageBuffer;
 }
 
 int GetArgc()
@@ -775,6 +776,11 @@ bool HasArg(const char* _Arg)
 SCommandLine const* GetCommandLine()
 {
     return pCommandLine;
+}
+
+AConsoleBuffer& GetConsoleBuffer()
+{
+    return ConBuffer;
 }
 
 SCPUInfo const* CPUInfo()
@@ -1170,9 +1176,9 @@ void CriticalError(const char* _Format, ...)
     va_list VaList;
     va_start(VaList, _Format);
     Platform::VSprintf(CriticalErrorMessage,
-                   sizeof(CriticalErrorMessage),
-                   _Format,
-                   VaList);
+                       sizeof(CriticalErrorMessage),
+                       _Format,
+                       VaList);
     va_end(VaList);
 
     DisplayCriticalMessage(CriticalErrorMessage);

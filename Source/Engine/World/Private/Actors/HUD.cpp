@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <World/Public/Actors/HUD.h>
 #include <World/Public/Canvas.h>
-#include <Core/Public/Utf8.h>
+#include <Platform/Public/Utf8.h>
 
 AN_CLASS_META( AHUD )
 

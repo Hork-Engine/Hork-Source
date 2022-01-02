@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/Utf8.h>
+#include <Platform/Public/ConsoleBuffer.h>
 #include <World/Public/Base/CommandContext.h>
 
 struct SKeyEvent;
@@ -43,7 +43,7 @@ class AConsole
     AN_FORBID_COPY( AConsole )
 
 public:
-    AConsole() {}
+    AConsole();
 
     /** Clear console text */
     void Clear();
@@ -53,15 +53,6 @@ public:
 
     /** Set console to fullscreen mode */
     void SetFullscreen( bool _Fullscreen );
-
-    /** Set console width */
-    void Resize( int _VidWidth );
-
-    /** Print Utf8 text */
-    void Print( const char * _Text );
-
-    /** Print WideChar text */
-    void WidePrint( SWideChar const * _Text );
 
     /** Process key event */
     void KeyEvent( SKeyEvent const & _Event, ACommandContext & _CommandCtx, ARuntimeCommandProcessor & _CommandProcessor );
@@ -82,29 +73,20 @@ public:
     void ReadStoryLines();
 
 private:
-    void _Resize( int _VidWidth );
     void CopyStoryLine( SWideChar const * _StoryLine );
     void AddStoryLine( SWideChar * _Text, int _Length );
     void InsertUTF8Text( const char * _Utf8 );
     void InsertClipboardText();
     void CompleteString( ACommandContext & _CommandCtx, const char * _Str );
-    void DrawCmdLine( ACanvas * _Canvas, int x, int y );
+    void DrawCmdLine( ACanvas * _Canvas, int x, int y, int MaxLineChars );
 
-    static const int CON_IMAGE_SIZE = 1024*1024;
     static const int MAX_CMD_LINE_CHARS = 256;
     static const int MAX_STORY_LINES = 64;
 
-    SWideChar ImageData[2][CON_IMAGE_SIZE];
-    SWideChar * pImage = ImageData[0];
+    AConsoleBuffer* pConBuffer;
+
     SWideChar CmdLine[MAX_CMD_LINE_CHARS];
     SWideChar StoryLines[MAX_STORY_LINES][MAX_CMD_LINE_CHARS];
-    AMutex ConSync;
-    int MaxLineChars = 0;
-    int PrintLine = 0;
-    int CurWidth = 0;
-    int MaxLines = 0;
-    int NumLines = 0;
-    int Scroll = 0;
     float ConHeight = 0;
     int CmdLineLength = 0;
     int CmdLinePos = 0;
@@ -112,5 +94,4 @@ private:
     int CurStoryLine = 0;
     bool bDown = false;
     bool bFullscreen = false;
-    bool bInitialized = false;
 };

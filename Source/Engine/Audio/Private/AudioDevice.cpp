@@ -30,8 +30,10 @@ SOFTWARE.
 
 #include <Audio/Public/AudioDevice.h>
 
-#include <Runtime/Public/Runtime.h>
 #include <Platform/Public/Platform.h>
+#include <Platform/Public/Logger.h>
+#include <Platform/Public/Memory/Memory.h>
+#include <Core/Public/BaseMath.h>
 
 #include <SDL.h>
 

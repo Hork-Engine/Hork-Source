@@ -37,6 +37,7 @@ SOFTWARE.
 #include <Platform/Public/Platform.h>
 #include <Platform/Public/Logger.h>
 #include <Platform/Public/WindowsDefs.h>
+#include <Platform/Public/ConsoleBuffer.h>
 #include <Core/Public/HashFunc.h>
 #include <Core/Public/Document.h>
 #include <Core/Public/Image.h>
@@ -82,40 +83,11 @@ ARuntime::ARuntime(struct SEntryDecl const& EntryDecl) :
 
     pModuleDecl = &EntryDecl;
 
-    Engine = CreateEngineInstance();
-
-    GLogger.SetMessageCallback([](int Level, const char* Message, void* UserData)
-                               {
-                                   Platform::WriteDebugString(Message);
-                                   Platform::WriteLog(Message);
-
-                                   IEngineInterface* engine = ((ARuntime*)UserData)->Engine;
-
-                                   if (engine)
-                                   {
-                                       std::string& messageBuffer = Platform::GetMessageBuffer();
-                                       if (!messageBuffer.empty())
-                                       {
-                                           engine->Print(messageBuffer.c_str());
-                                           messageBuffer.clear();
-                                       }
-                                       engine->Print(Message);
-                                   }
-                               },
-                               this);
-
     InitializeWorkingDirectory();
 
-    GLogger.Printf("Working directory: %s\n", WorkingDir.CStr());
-    GLogger.Printf("Root path: %s\n", RootPath.CStr());
-    GLogger.Printf("Executable: %s\n", Platform::GetProcessInfo().Executable);
-
-    SDL_LogSetOutputFunction(
-        [](void* userdata, int category, SDL_LogPriority priority, const char* message)
-        {
-            GLogger.Printf("SDL: %d : %s\n", category, message);
-        },
-        NULL);
+    GLogger.Printf("Working directory: %s\n", GetWorkingDir().CStr());
+    GLogger.Printf("Root path: %s\n", GetRootPath().CStr());
+    GLogger.Printf("Executable: %s\n", GetExecutableName());
 
     SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_SENSOR | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER | SDL_INIT_EVENTS);
 
@@ -195,16 +167,10 @@ ARuntime::ARuntime(struct SEntryDecl const& EntryDecl) :
     GPUSync = MakeRef<AGPUSync>(pImmediateContext);
 
     SetVideoMode(desiredMode);
-
-    // Process initial events
-    PollEvents();
 }
 
 ARuntime::~ARuntime()
 {
-    DestroyEngineInstance();
-    Engine = nullptr;
-
     AsyncJobManager.Reset();
 
     GPUSync.Reset();
@@ -392,7 +358,15 @@ AArchive const& ARuntime::GetEmbeddedResources()
 
 void ARuntime::Run()
 {
+    Engine = CreateEngineInstance();
+
+    // Process initial events
+    PollEvents();
+
     Engine->Run(*pModuleDecl);
+
+    DestroyEngineInstance();
+    Engine = nullptr;    
 }
 
 void ARuntime::InitializeWorkingDirectory()
@@ -1011,6 +985,7 @@ void ARuntime::PollEvents()
                             VideoMode.AspectScale = 1;
                         }
                         pSwapChain->Resize(VideoMode.FramebufferWidth, VideoMode.FramebufferHeight);
+                        Platform::GetConsoleBuffer().Resize(VideoMode.FramebufferWidth);
                         Engine->OnResize();
                         break;
                     }
