@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Audio/AudioChannel.h>
+#include "AudioChannel.h"
 
 TPoolAllocator< SAudioChannel > SAudioChannel::ChannelPool;
 AMutex SAudioChannel::PoolMutex;

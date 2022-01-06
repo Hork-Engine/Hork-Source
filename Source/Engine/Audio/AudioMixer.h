@@ -38,14 +38,14 @@ SOFTWARE.
 
 class AAudioMixer
 {
-    AN_FORBID_COPY( AAudioMixer )
+    AN_FORBID_COPY(AAudioMixer)
 
 public:
-    AAudioMixer( AAudioDevice * _Device );
+    AAudioMixer(AAudioDevice* _Device);
     virtual ~AAudioMixer();
 
     /** Make channel visible for mixer thread */
-    void SubmitChannel( SAudioChannel * Channel );
+    void SubmitChannel(SAudioChannel* Channel);
 
     /** Get current active channels */
     int GetNumActiveChannels() const
@@ -74,63 +74,69 @@ public:
     /** Perform mixing in main thread */
     void Update();
 
+    bool IsAsync() const
+    {
+        return bAsync;
+    }
+
 private:
     struct SSamplePair
     {
         union
         {
             int32_t Chan[2];
-            float Chanf[2];
+            float   Chanf[2];
         };
     };
 
-    void UpdateAsync( uint8_t * pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender );
+    void UpdateAsync(uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender);
 
     // This fuction adds pending channels to list
     void AddPendingChannels();
-    void RejectChannel( SAudioChannel * Channel );
-    void RenderChannels( int64_t EndFrame );
-    void RenderChannel( SAudioChannel * Chan, int64_t EndFrame );
-    void RenderStream( SAudioChannel * Chan, int64_t EndFrame );
-    void RenderFramesHRTF( SAudioChannel * Chan, int FrameCount, SSamplePair * pBuffer );
-    void RenderFrames( SAudioChannel * Chan, const void * pFrames, int FrameCount, SSamplePair * pBuffer );
-    void WriteToTransferBuffer( int const * pSamples, int64_t EndFrame );
-    void MakeVolumeRamp( const int CurVol[2], const int NewVol[2], int FrameCount, int Scale );
-    void ReadFramesF32( SAudioChannel * Chan, int FramesToRead, int HistoryExtraFrames, float * pFrames );
+    void RejectChannel(SAudioChannel* Channel);
+    void RenderChannels(int64_t EndFrame);
+    void RenderChannel(SAudioChannel* Chan, int64_t EndFrame);
+    void RenderStream(SAudioChannel* Chan, int64_t EndFrame);
+    void RenderFramesHRTF(SAudioChannel* Chan, int FrameCount, SSamplePair* pBuffer);
+    void RenderFrames(SAudioChannel* Chan, const void* pFrames, int FrameCount, SSamplePair* pBuffer);
+    void WriteToTransferBuffer(int const* pSamples, int64_t EndFrame);
+    void MakeVolumeRamp(const int CurVol[2], const int NewVol[2], int FrameCount, int Scale);
+    void ReadFramesF32(SAudioChannel* Chan, int FramesToRead, int HistoryExtraFrames, float* pFrames);
 
-    TUniqueRef< class AAudioHRTF > Hrtf;
-    TUniqueRef< class AFreeverb > ReverbFilter;
+    TUniqueRef<class AAudioHRTF> Hrtf;
+    TUniqueRef<class AFreeverb>  ReverbFilter;
 
     alignas(16) SSamplePair RenderBuffer[2048];
-    const int RenderBufferSize = AN_ARRAY_SIZE( RenderBuffer );
+    const int RenderBufferSize = AN_ARRAY_SIZE(RenderBuffer);
 
-    AAudioDevice * pDevice;
-    uint8_t * pTransferBuffer;
-    bool bAsync;
-    int64_t RenderFrame;
-    AAtomicInt NumActiveChannels;
-    AAtomicInt TotalChannels;
+    TRef<AAudioDevice> pDevice;
+    AAudioDevice* DeviceRawPtr;
+    uint8_t*      pTransferBuffer;
+    bool          bAsync;
+    int64_t       RenderFrame;
+    AAtomicInt    NumActiveChannels;
+    AAtomicInt    TotalChannels;
 
-    SAudioChannel * Channels;
-    SAudioChannel * ChannelsTail;
-    SAudioChannel * PendingList;
-    SAudioChannel * PendingListTail;
+    SAudioChannel* Channels;
+    SAudioChannel* ChannelsTail;
+    SAudioChannel* PendingList;
+    SAudioChannel* PendingListTail;
 
     ASpinLock SubmitLock;
 
     // For current mixing channel
-    int NewVol[2];
+    int    NewVol[2];
     Float3 NewDir;
-    bool bSpatializedChannel;
-    bool bChannelPaused;
-    int PlaybackPos;
-    int VolumeRampL[1024];
-    int VolumeRampR[1024];
-    int VolumeRampSize;
+    bool   bSpatializedChannel;
+    bool   bChannelPaused;
+    int    PlaybackPos;
+    int    VolumeRampL[1024];
+    int    VolumeRampR[1024];
+    int    VolumeRampSize;
 
-    TPodVectorHeap< uint8_t > TempFrames;
-    TPodVectorHeap< float > FramesF32;
-    TPodVectorHeap< SSamplePair > StreamF32;
+    TPodVectorHeap<uint8_t>     TempFrames;
+    TPodVectorHeap<float>       FramesF32;
+    TPodVectorHeap<SSamplePair> StreamF32;
 };
 
 extern AConsoleVar Snd_HRTF;

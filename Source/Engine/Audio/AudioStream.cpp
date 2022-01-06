@@ -28,7 +28,8 @@ SOFTWARE.
 
 */
 
-#include <Audio/AudioStream.h>
+#include "AudioStream.h"
+
 #include <Platform/Platform.h>
 #include <Core/BaseMath.h>
 

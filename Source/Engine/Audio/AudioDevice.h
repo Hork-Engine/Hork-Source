@@ -31,13 +31,12 @@ SOFTWARE.
 #pragma once
 
 #include <Platform/BaseTypes.h>
+#include <Core/Ref.h>
 
-class AAudioDevice
+class AAudioDevice : public ARefCounted
 {
-    AN_FORBID_COPY( AAudioDevice )
-
 public:
-    AAudioDevice( int InSampleRate );
+    AAudioDevice(int InSampleRate);
     virtual ~AAudioDevice();
 
     /** Playback frequency */
@@ -96,21 +95,21 @@ public:
     void ClearBuffer();
 
     /** Lock transfer buffer for writing */
-    uint8_t * MapTransferBuffer( int64_t * pFrameNum = nullptr );
+    uint8_t* MapTransferBuffer(int64_t* pFrameNum = nullptr);
 
     /** Submit changes and unlock the buffer. */
     void UnmapTransferBuffer();
 
     /** Pass MixerCallback for async mixing */
-    void SetMixerCallback( std::function< void( uint8_t * pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender ) > MixerCallback );
+    void SetMixerCallback(std::function<void(uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)> MixerCallback);
 
 private:
-    void RenderAudio( uint8_t * pStream, int StreamLength );
+    void RenderAudio(uint8_t* pStream, int StreamLength);
 
     // Internal device id
     uint32_t AudioDeviceId;
     // Transfer buffer memory
-    uint8_t * pTransferBuffer;
+    uint8_t* pTransferBuffer;
     // Transfer buffer size in bytes
     int TransferBufferSizeInBytes;
     // Transfer buffer size in frames * channels
@@ -132,5 +131,5 @@ private:
     // Is signed 8bit audio (desired is unsigned)
     bool bSigned8;
     // Callback for async mixing
-    std::function< void( uint8_t * pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender ) > MixerCallback;
+    std::function<void(uint8_t* pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender)> MixerCallback;
 };

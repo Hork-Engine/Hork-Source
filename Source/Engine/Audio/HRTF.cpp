@@ -28,13 +28,13 @@ SOFTWARE.
 
 */
 
+#include "HRTF.h"
+
 #include <Platform/Logger.h>
 #include <Platform/Platform.h>
 #include <Geometry/BV/BvIntersect.h>
 #include <Core/ConsoleVar.h>
 #include <Runtime/EmbeddedResources.h>
-
-#include <Audio/HRTF.h>
 
 // Use miniaudio for resampling
 #include <miniaudio/miniaudio.h>

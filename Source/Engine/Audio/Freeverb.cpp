@@ -30,7 +30,7 @@ SOFTWARE.
 
 // Freeverb is a free and open-source Schroeder reverberator originally implemented in C++ by Jezar at Dreampoint.
 
-#include <Audio/Freeverb.h>
+#include "Freeverb.h"
 
 #include <Platform/Memory/Memory.h>
 

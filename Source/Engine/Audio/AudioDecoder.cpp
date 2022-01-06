@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Audio/AudioDecoder.h>
+#include "AudioDecoder.h"
 
 #include <Platform/Logger.h>
 #include <Core/BaseMath.h>

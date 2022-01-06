@@ -38,7 +38,7 @@ SOFTWARE.
 // FIXME: Replace AABB culling to OBB culling?
 
 #include "World.h"
-#include "vsd.h"
+#include "VSD.h"
 #include "RenderWorld.h"
 #include "Level.h"
 #include "Engine.h"
