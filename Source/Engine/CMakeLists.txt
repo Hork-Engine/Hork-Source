@@ -154,31 +154,31 @@ set_target_properties(angelscript_addon PROPERTIES FOLDER ThirdParty/angelscript
 
 #---------------------------------------------------------------------
 # Platform module
-file( GLOB PlatformPublic Platform/*.h Platform/*.cpp )
-file( GLOB PlatformPublicMemory Platform/Memory/*.h Platform/Memory/*.cpp )
+file( GLOB Platform Platform/*.h Platform/*.cpp )
+file( GLOB PlatformMemory Platform/Memory/*.h Platform/Memory/*.cpp )
 
-source_group( "Platform" FILES ${PlatformPublic} )
-source_group( "Platform\\Memory" FILES ${PlatformPublicMemory} )
+source_group( "Platform" FILES ${Platform} )
+source_group( "Platform\\Memory" FILES ${PlatformMemory} )
 
 #---------------------------------------------------------------------
 # Core module
-file( GLOB CorePublic Core/*.h Core/*.cpp )
-file( GLOB CorePrivateSTB Core/stb/*.h )
+file( GLOB Core Core/*.h Core/*.cpp )
+file( GLOB CoreSTB Core/stb/*.h )
 
-source_group( "Core" FILES ${CorePublic} )
-source_group( "Core\\stb" FILES ${CorePrivateSTB} )
+source_group( "Core" FILES ${Core} )
+source_group( "Core\\stb" FILES ${CoreSTB} )
 
 #---------------------------------------------------------------------
 # Containers module
-file( GLOB ContainersPublic Containers/*.h Containers/*.cpp )
-source_group( "Containers" FILES ${ContainersPublic} )
+file( GLOB Containers Containers/*.h Containers/*.cpp )
+source_group( "Containers" FILES ${Containers} )
 
 #---------------------------------------------------------------------
 # Geometry module
-file( GLOB GeometryPublic Geometry/*.h Geometry/*.cpp )
-file( GLOB GeometryPublicBV Geometry/BV/*.h Geometry/BV/*.cpp )
-source_group( "Geometry" FILES ${GeometryPublic} )
-source_group( "Geometry\\BV" FILES ${GeometryPublicBV} )
+file( GLOB Geometry Geometry/*.h Geometry/*.cpp )
+file( GLOB GeometryBV Geometry/BV/*.h Geometry/BV/*.cpp )
+source_group( "Geometry" FILES ${Geometry} )
+source_group( "Geometry\\BV" FILES ${GeometryBV} )
 
 #---------------------------------------------------------------------
 # Render core module
@@ -194,15 +194,21 @@ source_group( "RenderCore\\FrameGraph" FILES ${RenderCoreFrameGraph} )
 
 #---------------------------------------------------------------------
 # Runtime module
-file( GLOB RuntimePublic Runtime/*.h Runtime/*.cpp )
+file( GLOB Runtime Runtime/*.h Runtime/*.cpp )
+file( GLOB RuntimeLWO Runtime/lwo/*.h Runtime/lwo/*.c )
+file( GLOB RuntimeIESNA Runtime/iesna/*.h Runtime/iesna/*.c )
+file( GLOB RuntimeSTB Runtime/stb/*.h Runtime/stb/*.c )
 
-source_group( "Runtime" FILES ${RuntimePublic} )
+source_group( "Runtime" FILES ${Runtime} )
+source_group( "Runtime\\lwo" FILES ${RuntimeLWO} )
+source_group( "Runtime\\iesna" FILES ${RuntimeIESNA} )
+source_group( "Runtime\\stb" FILES ${RuntimeSTB} )
 
 #---------------------------------------------------------------------
 # Audio module
-file( GLOB AudioPublic Audio/*.h Audio/*.cpp )
+file( GLOB Audio Audio/*.h Audio/*.cpp )
 
-source_group( "Audio" FILES ${AudioPublic} )
+source_group( "Audio" FILES ${Audio} )
 
 #---------------------------------------------------------------------
 # Renderer module
@@ -211,17 +217,6 @@ file( GLOB RendererVT Renderer/VT/*.h Renderer/VT/*.cpp )
 
 source_group( "Renderer" FILES ${Renderer} )
 source_group( "Renderer\\VT" FILES ${RendererVT} )
-
-
-#---------------------------------------------------------------------
-# World private
-file( GLOB RuntimeLWO Runtime/lwo/*.h Runtime/lwo/*.c )
-file( GLOB RuntimeIESNA Runtime/iesna/*.h Runtime/iesna/*.c )
-file( GLOB RuntimeSTB Runtime/stb/*.h Runtime/stb/*.c )
-
-source_group( "Runtime\\lwo" FILES ${RuntimeLWO} )
-source_group( "Runtime\\iesna" FILES ${RuntimeIESNA} )
-source_group( "Runtime\\stb" FILES ${RuntimeSTB} )
 
 #---------------------------------------------------------------------
 
@@ -249,34 +244,33 @@ ${PROJECT}
 
 ${CMAKE_CURRENT_BINARY_DIR}/EmbeddedResources.c
 
-${PlatformPublic}
-${PlatformPublicMemory}
+${Platform}
+${PlatformMemory}
 
-${CorePublic}
-${CorePrivateSTB}
+${Core}
+${CoreSTB}
 
-${ContainersPublic}
+${Containers}
 
-${GeometryPublic}
-${GeometryPublicBV}
+${Geometry}
+${GeometryBV}
 
 ${RenderCore}
 ${RenderCoreOpenGL45}
 ${RenderCoreOpenGL45GL}
 ${RenderCoreFrameGraph}
 
-${RuntimePublic}
+${Runtime}
+${RuntimeLWO}
+${RuntimeIESNA}
+${RuntimeSTB}
 
-${AudioPublic}
+${Audio}
 
 ${Renderer}
 ${RendererVT}
 
 ${Imgui}
-
-${RuntimeLWO}
-${RuntimeIESNA}
-${RuntimeSTB}
 )
 
 # if shared
