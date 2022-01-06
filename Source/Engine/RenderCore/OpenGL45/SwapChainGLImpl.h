@@ -33,17 +33,16 @@ SOFTWARE.
 #include <RenderCore/SwapChain.h>
 #include "TextureGLImpl.h"
 
-struct SDL_Window;
-
 namespace RenderCore
 {
 
 class ADeviceGLImpl;
+class AGenericWindowGLImpl;
 
-class ASwapChainGLImpl : public ISwapChain
+class ASwapChainGLImpl final : public ISwapChain
 {
 public:
-    ASwapChainGLImpl(ADeviceGLImpl* pDevice, SDL_Window* pWindow);
+    ASwapChainGLImpl(ADeviceGLImpl* pDevice, AGenericWindowGLImpl* pWindow);
 
     void Present(int SwapInterval = 1) override;
 
@@ -53,7 +52,7 @@ public:
     ITexture* GetDepthBuffer() override;
 
 private:
-    SDL_Window*          pWindow; // TODO: strong or weak ptr
+    TRef<AGenericWindowGLImpl> pWindow;
     TRef<ATextureGLImpl> BackBuffer;
     TRef<ATextureGLImpl> DepthBuffer;
 };

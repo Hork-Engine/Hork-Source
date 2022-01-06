@@ -33,115 +33,123 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-static bool BindMaterialWireframePass( SRenderInstance const * instance )
+static bool BindMaterialWireframePass(IImmediateContext* immediateCtx, SRenderInstance const* instance)
 {
-    AMaterialGPU * pMaterial = instance->Material;
+    AMaterialGPU* pMaterial = instance->Material;
 
-    AN_ASSERT( pMaterial );
+    AN_ASSERT(pMaterial);
 
     int bSkinned = instance->SkeletonSize > 0;
 
-    IPipeline * pPipeline = pMaterial->WireframePass[bSkinned];
-    if ( !pPipeline ) {
+    IPipeline* pPipeline = pMaterial->WireframePass[bSkinned];
+    if (!pPipeline)
+    {
         return false;
     }
 
-    rcmd->BindPipeline( pPipeline );
+    immediateCtx->BindPipeline(pPipeline);
 
-    if ( bSkinned ) {
-        rcmd->BindVertexBuffer( 1, instance->WeightsBuffer, instance->WeightsBufferOffset );
+    if (bSkinned)
+    {
+        immediateCtx->BindVertexBuffer(1, instance->WeightsBuffer, instance->WeightsBufferOffset);
     }
-    else {
-        rcmd->BindVertexBuffer( 1, nullptr, 0 );
+    else
+    {
+        immediateCtx->BindVertexBuffer(1, nullptr, 0);
     }
 
-    BindVertexAndIndexBuffers( instance );
+    BindVertexAndIndexBuffers(immediateCtx, instance);
 
     return true;
 }
 
-void AddWireframePass( AFrameGraph & FrameGraph, FGTextureProxy * RenderTarget )
+void AddWireframePass(AFrameGraph& FrameGraph, FGTextureProxy* RenderTarget)
 {
     if (!GRenderView->bWireframe)
     {
         return;
     }
 
-    ARenderPass & wireframePass = FrameGraph.AddTask< ARenderPass >( "Wireframe Pass" );
+    ARenderPass& wireframePass = FrameGraph.AddTask<ARenderPass>("Wireframe Pass");
 
     wireframePass.SetRenderArea(GRenderViewArea);
 
     wireframePass.SetColorAttachment(
         STextureAttachment(RenderTarget)
-        .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-    );
+            .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
 
     //wireframePass.SetCondition( []() { return GRenderView->bWireframe; } );
 
-    wireframePass.AddSubpass( { 0 }, // color attachment refs
+    wireframePass.AddSubpass({0}, // color attachment refs
                              [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
 
-    {
-        for ( int i = 0 ; i < GRenderView->TerrainInstanceCount ; i++ ) {
-            STerrainRenderInstance const * instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
+                             {
+                                 IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-            STerrainInstanceConstantBuffer * drawCall = MapDrawCallConstants< STerrainInstanceConstantBuffer >();
-            drawCall->LocalViewProjection = instance->LocalViewProjection;
-            StoreFloat3x3AsFloat3x4Transposed( instance->ModelNormalToViewSpace, drawCall->ModelNormalToViewSpace );
-            drawCall->ViewPositionAndHeight = instance->ViewPositionAndHeight;
-            drawCall->TerrainClipMin = instance->ClipMin;
-            drawCall->TerrainClipMax = instance->ClipMax;
+                                 for (int i = 0; i < GRenderView->TerrainInstanceCount; i++)
+                                 {
+                                     STerrainRenderInstance const* instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
 
-            rtbl->BindTexture( 0, instance->Clipmaps );
-            rcmd->BindPipeline( GTerrainWireframePipeline );
-            rcmd->BindVertexBuffer( 0, instance->VertexBuffer );
-            rcmd->BindVertexBuffer( 1, GStreamBuffer, instance->InstanceBufferStreamHandle );
-            rcmd->BindIndexBuffer( instance->IndexBuffer, INDEX_TYPE_UINT16 );
-            rcmd->MultiDrawIndexedIndirect( instance->IndirectBufferDrawCount,
-                                            GStreamBuffer,
-                                            instance->IndirectBufferStreamHandle,
-                                            sizeof( SDrawIndexedIndirectCmd ) );
-        }
+                                     STerrainInstanceConstantBuffer* drawCall = MapDrawCallConstants<STerrainInstanceConstantBuffer>();
+                                     drawCall->LocalViewProjection            = instance->LocalViewProjection;
+                                     StoreFloat3x3AsFloat3x4Transposed(instance->ModelNormalToViewSpace, drawCall->ModelNormalToViewSpace);
+                                     drawCall->ViewPositionAndHeight = instance->ViewPositionAndHeight;
+                                     drawCall->TerrainClipMin        = instance->ClipMin;
+                                     drawCall->TerrainClipMax        = instance->ClipMax;
 
-        SDrawIndexedCmd drawCmd;
-        drawCmd.InstanceCount = 1;
-        drawCmd.StartInstanceLocation = 0;
+                                     rtbl->BindTexture(0, instance->Clipmaps);
+                                     immediateCtx->BindPipeline(GTerrainWireframePipeline);
+                                     immediateCtx->BindVertexBuffer(0, instance->VertexBuffer);
+                                     immediateCtx->BindVertexBuffer(1, GStreamBuffer, instance->InstanceBufferStreamHandle);
+                                     immediateCtx->BindIndexBuffer(instance->IndexBuffer, INDEX_TYPE_UINT16);
+                                     immediateCtx->MultiDrawIndexedIndirect(instance->IndirectBufferDrawCount,
+                                                                            GStreamBuffer,
+                                                                            instance->IndirectBufferStreamHandle,
+                                                                            sizeof(SDrawIndexedIndirectCmd));
+                                 }
 
-        for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
-            SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
+                                 SDrawIndexedCmd drawCmd;
+                                 drawCmd.InstanceCount         = 1;
+                                 drawCmd.StartInstanceLocation = 0;
 
-            if ( !BindMaterialWireframePass( instance ) ) {
-                continue;
-            }
+                                 for (int i = 0; i < GRenderView->InstanceCount; i++)
+                                 {
+                                     SRenderInstance const* instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
-            BindTextures( instance->MaterialInstance, instance->Material->WireframePassTextureCount );
-            BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-            BindInstanceConstants( instance );
+                                     if (!BindMaterialWireframePass(immediateCtx, instance))
+                                     {
+                                         continue;
+                                     }
 
-            drawCmd.IndexCountPerInstance = instance->IndexCount;
-            drawCmd.StartIndexLocation = instance->StartIndexLocation;
-            drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+                                     BindTextures(instance->MaterialInstance, instance->Material->WireframePassTextureCount);
+                                     BindSkeleton(instance->SkeletonOffset, instance->SkeletonSize);
+                                     BindInstanceConstants(instance);
 
-            rcmd->Draw( &drawCmd );
-        }
+                                     drawCmd.IndexCountPerInstance = instance->IndexCount;
+                                     drawCmd.StartIndexLocation    = instance->StartIndexLocation;
+                                     drawCmd.BaseVertexLocation    = instance->BaseVertexLocation;
 
-        for ( int i = 0 ; i < GRenderView->TranslucentInstanceCount ; i++ ) {
-            SRenderInstance const * instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
+                                     immediateCtx->Draw(&drawCmd);
+                                 }
 
-            if ( !BindMaterialWireframePass( instance ) ) {
-                continue;
-            }
+                                 for (int i = 0; i < GRenderView->TranslucentInstanceCount; i++)
+                                 {
+                                     SRenderInstance const* instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
 
-            BindTextures( instance->MaterialInstance, instance->Material->WireframePassTextureCount );
-            BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-            BindInstanceConstants( instance );
+                                     if (!BindMaterialWireframePass(immediateCtx, instance))
+                                     {
+                                         continue;
+                                     }
 
-            drawCmd.IndexCountPerInstance = instance->IndexCount;
-            drawCmd.StartIndexLocation = instance->StartIndexLocation;
-            drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+                                     BindTextures(instance->MaterialInstance, instance->Material->WireframePassTextureCount);
+                                     BindSkeleton(instance->SkeletonOffset, instance->SkeletonSize);
+                                     BindInstanceConstants(instance);
 
-            rcmd->Draw( &drawCmd );
-        }
+                                     drawCmd.IndexCountPerInstance = instance->IndexCount;
+                                     drawCmd.StartIndexLocation    = instance->StartIndexLocation;
+                                     drawCmd.BaseVertexLocation    = instance->BaseVertexLocation;
 
-    } );
+                                     immediateCtx->Draw(&drawCmd);
+                                 }
+                             });
 }

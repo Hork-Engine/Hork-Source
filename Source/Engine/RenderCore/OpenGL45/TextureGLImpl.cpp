@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "TextureGLImpl.h"
 #include "DeviceGLImpl.h"
+#include "ImmediateContextGLImpl.h"
 #include "LUT.h"
 #include "GL/glew.h"
 
@@ -349,11 +350,16 @@ void ATextureGLImpl::GetMipLevelInfo(uint16_t MipLevel, STextureMipLevelInfo* pI
 
 void ATextureGLImpl::Invalidate(uint16_t MipLevel)
 {
+    if (IsDummyTexture())
+        return;
     glInvalidateTexImage(GetHandleNativeGL(), MipLevel);
 }
 
 void ATextureGLImpl::InvalidateRect(uint32_t _NumRectangles, STextureRect const* _Rectangles)
 {
+    if (IsDummyTexture())
+        return;
+
     GLuint id = GetHandleNativeGL();
 
     for (STextureRect const* rect = _Rectangles; rect < &_Rectangles[_NumRectangles]; rect++)
@@ -367,6 +373,74 @@ void ATextureGLImpl::InvalidateRect(uint32_t _NumRectangles, STextureRect const*
                                 rect->Dimension.Y,
                                 rect->Dimension.Z);
     }
+}
+
+void ATextureGLImpl::Read(uint16_t     MipLevel,
+                          DATA_FORMAT  Format,
+                          size_t       SizeInBytes,
+                          unsigned int Alignment,
+                          void*        pSysMem)
+{
+    AN_ASSERT(MipLevel < GetDesc().NumMipLevels);
+
+    STextureRect rect;
+    rect.Offset.MipLevel = MipLevel;
+    rect.Dimension.X     = Math::Max(1u, GetWidth() >> MipLevel);
+    rect.Dimension.Y     = Math::Max(1u, GetHeight() >> MipLevel);
+    rect.Dimension.Z     = GetSliceCount(MipLevel);
+
+    ReadRect(rect, Format, SizeInBytes, Alignment, pSysMem);
+}
+
+void ATextureGLImpl::ReadRect(STextureRect const& Rectangle,
+                              DATA_FORMAT         Format,
+                              size_t              SizeInBytes,
+                              unsigned int        Alignment,
+                              void*               pSysMem)
+{
+    if (IsDummyTexture())
+    {
+        AN_ASSERT(pContext);
+        
+        SScopedContextGL scopedContext(pContext);
+        pContext->ReadTextureRect(this, Rectangle, Format, SizeInBytes, Alignment, pSysMem);
+    }
+    else
+    {
+        AImmediateContextGLImpl* current = AImmediateContextGLImpl::GetCurrent();
+        current->ReadTextureRect(this, Rectangle, Format, SizeInBytes, Alignment, pSysMem);
+    }
+}
+
+bool ATextureGLImpl::Write(uint16_t     MipLevel,
+                           DATA_FORMAT  Type, // Specifies a pixel format for the input data
+                           size_t       SizeInBytes,
+                           unsigned int Alignment, // Specifies alignment of source data
+                           const void*  pSysMem)
+{
+    AN_ASSERT(MipLevel < GetDesc().NumMipLevels);
+
+    STextureRect rect;
+    rect.Offset.MipLevel = MipLevel;
+    rect.Dimension.X     = Math::Max(1u, GetWidth() >> MipLevel);
+    rect.Dimension.Y     = Math::Max(1u, GetHeight() >> MipLevel);
+    rect.Dimension.Z     = GetSliceCount(MipLevel);
+
+    return WriteRect(rect,
+                     Type,
+                     SizeInBytes,
+                     Alignment,
+                     pSysMem);
+}
+
+bool ATextureGLImpl::WriteRect(STextureRect const& Rectangle,
+                               DATA_FORMAT         Format, // Specifies a pixel format for the input data
+                               size_t              SizeInBytes,
+                               unsigned int        Alignment, // Specifies alignment of source data
+                               const void*         pSysMem)
+{
+    AImmediateContextGLImpl* current = AImmediateContextGLImpl::GetCurrent();
+    return current->WriteTextureRect(this, Rectangle, Format, SizeInBytes, Alignment, pSysMem);
 }
 
 } // namespace RenderCore

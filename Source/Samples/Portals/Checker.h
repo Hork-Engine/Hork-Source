@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <World/Public/Actors/Pawn.h>
+#include <Runtime/Pawn.h>
 
 class AChecker : public APawn {
     AN_ACTOR( AChecker, APawn )

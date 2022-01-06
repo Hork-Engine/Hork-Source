@@ -29,10 +29,3 @@ SOFTWARE.
 */
 
 #include "ImmediateContext.h"
-
-namespace RenderCore
-{
-
-IImmediateContext* IImmediateContext::Current = nullptr;
-
-}

@@ -30,10 +30,10 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/Ref.h>
+#include <Core/Ref.h>
 
 #ifdef AN_DEBUG
-#    include <Core/Public/String.h>
+#    include <Core/String.h>
 #endif
 
 namespace RenderCore
@@ -63,13 +63,15 @@ enum DEVICE_OBJECT_PROXY_TYPE : uint8_t
 
     DEVICE_OBJECT_TYPE_SWAP_CHAIN,
 
+    DEVICE_OBJECT_TYPE_WINDOW,
+
     DEVICE_OBJECT_TYPE_MAX
 };
 
 class IDeviceObject : public ARefCounted
 {
 public:
-    IDeviceObject(IDevice* pDevice, DEVICE_OBJECT_PROXY_TYPE ProxyType);
+    IDeviceObject(IDevice* pDevice, DEVICE_OBJECT_PROXY_TYPE ProxyType, bool bInternalDeviceObject = false);
 
     ~IDeviceObject();
 
@@ -132,7 +134,8 @@ private:
         uint64_t HandleUI64 = 0;
     };
     DEVICE_OBJECT_PROXY_TYPE ProxyType;
-    TRef<IDevice> pDevice;
+    IDevice* pDevice;
+    bool bInternalDeviceObject;
 #ifdef AN_DEBUG
     AString DebugName;
 

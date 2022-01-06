@@ -30,11 +30,11 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Public/Image.h>
-#include <Core/Public/Color.h>
-#include <Containers/Public/PodVector.h>
-#include <Geometry/Public/Quat.h>
-#include <Geometry/Public/BV/BvFrustum.h>
+#include <Core/Image.h>
+#include <Core/Color.h>
+#include <Containers/PodVector.h>
+#include <Geometry/Quat.h>
+#include <Geometry/BV/BvFrustum.h>
 
 #include <RenderCore/Device.h>
 
@@ -1416,4 +1416,5 @@ struct SRenderFrontendDef
     int ShadowMapPolyCount;
     //int LightPortalPolyCount;
     //int TerrainPolyCount;
+    class AStreamedMemoryGPU *StreamedMemory;
 };

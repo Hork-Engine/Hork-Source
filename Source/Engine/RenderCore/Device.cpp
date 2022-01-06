@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Device.h"
+#include "OpenGL45/DeviceGLImpl.h"
 
 namespace RenderCore
 {
@@ -43,7 +44,50 @@ IDevice::~IDevice()
         GLogger.Printf("Uninitialized resource: '%s'\n", pObject->GetDebugName());
     }
     AN_ASSERT(ListHead == nullptr);
+
+    TArray<const char*, DEVICE_OBJECT_TYPE_MAX> name =
+        {
+            "DEVICE_OBJECT_TYPE_UNKNOWN",
+
+            "DEVICE_OBJECT_TYPE_IMMEDIATE_CONTEXT",
+
+            "DEVICE_OBJECT_TYPE_BUFFER",
+            "DEVICE_OBJECT_TYPE_BUFFER_VIEW",
+
+            "DEVICE_OBJECT_TYPE_TEXTURE",
+            "DEVICE_OBJECT_TYPE_TEXTURE_VIEW",
+
+            "DEVICE_OBJECT_TYPE_SPARSE_TEXTURE",
+
+            "DEVICE_OBJECT_TYPE_PIPELINE",
+            "DEVICE_OBJECT_TYPE_SHADER_MODULE",
+            "DEVICE_OBJECT_TYPE_TRANSFORM_FEEDBACK",
+            "DEVICE_OBJECT_TYPE_QUERY_POOL",
+            "DEVICE_OBJECT_TYPE_RESOURCE_TABLE",
+
+            "DEVICE_OBJECT_TYPE_SWAP_CHAIN",
+    
+            "DEVICE_OBJECT_TYPE_WINDOW"};
+
+    for (int i = 0; i < DEVICE_OBJECT_TYPE_MAX; i++)
+    {
+        GLogger.Printf("Object count %s: %d\n", name[i], GetObjectCount((DEVICE_OBJECT_PROXY_TYPE)i));
+    }
 #endif
+}
+
+void CreateLogicalDevice(const char*               Backend,
+                         SAllocatorCallback const* pAllocator,
+                         TRef<IDevice>*            ppDevice)
+{
+    if (!Platform::Stricmp(Backend, "OpenGL 4.5"))
+    {
+        *ppDevice = MakeRef<ADeviceGLImpl>(pAllocator);
+    }
+    else
+    {
+        *ppDevice = nullptr;
+    }
 }
 
 } // namespace RenderCore

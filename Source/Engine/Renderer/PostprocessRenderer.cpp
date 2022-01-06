@@ -138,7 +138,7 @@ void APostprocessRenderer::AddPass( AFrameGraph & FrameGraph,
         rtbl->BindTexture( 5, BloomTex.BloomTexture3->Actual() );
         rtbl->BindTexture( 6, Exposure->Actual() );
 
-        DrawSAQ( PostprocessPipeline );
+        DrawSAQ(RenderPassContext.pImmediateContext, PostprocessPipeline);
 
     } );
 

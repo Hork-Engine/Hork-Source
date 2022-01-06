@@ -154,43 +154,31 @@ set_target_properties(angelscript_addon PROPERTIES FOLDER ThirdParty/angelscript
 
 #---------------------------------------------------------------------
 # Platform module
-file( GLOB PlatformPublic Platform/Public/*.h Platform/Public/*.cpp )
-file( GLOB PlatformPrivate Platform/Private/*.h Platform/Private/*.cpp )
-file( GLOB PlatformPublicMemory Platform/Public/Memory/*.h Platform/Public/Memory/*.cpp )
-file( GLOB PlatformPrivateMemory Platform/Private/Memory/*.h Platform/Private/Memory/*.cpp )
+file( GLOB PlatformPublic Platform/*.h Platform/*.cpp )
+file( GLOB PlatformPublicMemory Platform/Memory/*.h Platform/Memory/*.cpp )
 
-source_group( "Platform\\Public" FILES ${PlatformPublic} )
-source_group( "Platform\\Private" FILES ${PlatformPrivate} )
-source_group( "Platform\\Public\\Memory" FILES ${PlatformPublicMemory} )
-source_group( "Platform\\Private\\Memory" FILES ${PlatformPrivateMemory} )
+source_group( "Platform" FILES ${PlatformPublic} )
+source_group( "Platform\\Memory" FILES ${PlatformPublicMemory} )
 
 #---------------------------------------------------------------------
 # Core module
-file( GLOB CorePublic Core/Public/*.h Core/Public/*.cpp )
-file( GLOB CorePrivate Core/Private/*.h Core/Private/*.cpp )
-file( GLOB CorePrivateSTB Core/Private/stb/*.h )
+file( GLOB CorePublic Core/*.h Core/*.cpp )
+file( GLOB CorePrivateSTB Core/stb/*.h )
 
-source_group( "Core\\Public" FILES ${CorePublic} )
-source_group( "Core\\Private" FILES ${CorePrivate} )
-source_group( "Core\\Private\\stb" FILES ${CorePrivateSTB} )
+source_group( "Core" FILES ${CorePublic} )
+source_group( "Core\\stb" FILES ${CorePrivateSTB} )
 
 #---------------------------------------------------------------------
 # Containers module
-file( GLOB ContainersPublic Containers/Public/*.h Containers/Public/*.cpp )
-file( GLOB ContainersPrivate Containers/Private/*.h Containers/Private/*.cpp )
-source_group( "Containers\\Public" FILES ${ContainersPublic} )
-source_group( "Containers\\Private" FILES ${ContainersPrivate} )
+file( GLOB ContainersPublic Containers/*.h Containers/*.cpp )
+source_group( "Containers" FILES ${ContainersPublic} )
 
 #---------------------------------------------------------------------
 # Geometry module
-file( GLOB GeometryPublic Geometry/Public/*.h Geometry/Public/*.cpp )
-file( GLOB GeometryPrivate Geometry/Private/*.h Geometry/Private/*.cpp )
-file( GLOB GeometryPublicBV Geometry/Public/BV/*.h Geometry/Public/BV/*.cpp )
-file( GLOB GeometryPrivateBV Geometry/Private/BV/*.h Geometry/Private/BV/*.cpp )
-source_group( "Geometry\\Public" FILES ${GeometryPublic} )
-source_group( "Geometry\\Private" FILES ${GeometryPrivate} )
-source_group( "Geometry\\Public\\BV" FILES ${GeometryPublicBV} )
-source_group( "Geometry\\Private\\BV" FILES ${GeometryPrivateBV} )
+file( GLOB GeometryPublic Geometry/*.h Geometry/*.cpp )
+file( GLOB GeometryPublicBV Geometry/BV/*.h Geometry/BV/*.cpp )
+source_group( "Geometry" FILES ${GeometryPublic} )
+source_group( "Geometry\\BV" FILES ${GeometryPublicBV} )
 
 #---------------------------------------------------------------------
 # Render core module
@@ -206,19 +194,15 @@ source_group( "RenderCore\\FrameGraph" FILES ${RenderCoreFrameGraph} )
 
 #---------------------------------------------------------------------
 # Runtime module
-file( GLOB RuntimePublic Runtime/Public/*.h Runtime/Public/*.cpp )
-file( GLOB RuntimePrivate Runtime/Private/*.h Runtime/Private/*.cpp )
+file( GLOB RuntimePublic Runtime/*.h Runtime/*.cpp )
 
-source_group( "Runtime\\Public" FILES ${RuntimePublic} )
-source_group( "Runtime\\Private" FILES ${RuntimePrivate} )
+source_group( "Runtime" FILES ${RuntimePublic} )
 
 #---------------------------------------------------------------------
 # Audio module
-file( GLOB AudioPublic Audio/Public/*.h Audio/Public/*.cpp )
-file( GLOB AudioPrivate Audio/Private/*.h Audio/Private/*.cpp )
+file( GLOB AudioPublic Audio/*.h Audio/*.cpp )
 
-source_group( "Audio\\Public" FILES ${AudioPublic} )
-source_group( "Audio\\Private" FILES ${AudioPrivate} )
+source_group( "Audio" FILES ${AudioPublic} )
 
 #---------------------------------------------------------------------
 # Renderer module
@@ -228,51 +212,18 @@ file( GLOB RendererVT Renderer/VT/*.h Renderer/VT/*.cpp )
 source_group( "Renderer" FILES ${Renderer} )
 source_group( "Renderer\\VT" FILES ${RendererVT} )
 
-#---------------------------------------------------------------------
-# World public
-file( GLOB WorldPublicBase World/Public/Base/*.h World/Public/Base/*.cpp )
-file( GLOB WorldPublicResource World/Public/Resource/*.h World/Public/Resource/*.cpp )
-file( GLOB WorldPublicMaterialGraph World/Public/MaterialGraph/*.h World/Public/MaterialGraph/*.cpp )
-file( GLOB WorldPublicRender World/Public/Render/*.h World/Public/Render/*.cpp )
-file( GLOB WorldPublicActors World/Public/Actors/*.h World/Public/Actors/*.cpp )
-file( GLOB WorldPublicComponents World/Public/Components/*.h World/Public/Components/*.cpp )
-file( GLOB WorldPublicWidgets World/Public/Widgets/*.h World/Public/Widgets/*.cpp )
-file( GLOB WorldPublic World/Public/*.h World/Public/*.cpp )
-
-source_group( "World\\Public\\Base" FILES ${WorldPublicBase} )
-source_group( "World\\Public\\Resource" FILES ${WorldPublicResource} )
-source_group( "World\\Public\\MaterialGraph" FILES ${WorldPublicMaterialGraph} )
-source_group( "World\\Public\\Render" FILES ${WorldPublicRender} )
-source_group( "World\\Public\\Actors" FILES ${WorldPublicActors} )
-source_group( "World\\Public\\Components" FILES ${WorldPublicComponents} )
-source_group( "World\\Public\\Widgets" FILES ${WorldPublicWidgets} )
-source_group( "World\\Public" FILES ${WorldPublic} )
 
 #---------------------------------------------------------------------
 # World private
-file( GLOB WorldPrivateBase World/Private/Base/*.h World/Private/Base/*.cpp )
-file( GLOB WorldPrivateResource World/Private/Resource/*.h World/Private/Resource/*.cpp )
-file( GLOB WorldPrivateResourceLWO World/Private/Resource/lwo/*.h World/Private/Resource/lwo/*.c )
-file( GLOB WorldPrivateResourceIESNA World/Private/Resource/iesna/*.h World/Private/Resource/iesna/*.c )
-file( GLOB WorldPrivateMaterialGraph World/Private/MaterialGraph/*.h World/Private/MaterialGraph/*.cpp )
-file( GLOB WorldPrivateRender World/Private/Render/*.h World/Private/Render/*.cpp )
-file( GLOB WorldPrivateActors World/Private/Actors/*.h World/Private/Actors/*.cpp )
-file( GLOB WorldPrivateComponents World/Private/Components/*.h World/Private/Components/*.cpp )
-file( GLOB WorldPrivateWidgets World/Private/Widgets/*.h World/Private/Widgets/*.cpp )
-file( GLOB WorldPrivateBulletCompatibility World/Private/BulletCompatibility/*.h World/Private/BulletCompatibility/*.cpp )
-file( GLOB WorldPrivate World/Private/*.h World/Private/*.cpp )
+file( GLOB RuntimeLWO Runtime/lwo/*.h Runtime/lwo/*.c )
+file( GLOB RuntimeIESNA Runtime/iesna/*.h Runtime/iesna/*.c )
+file( GLOB RuntimeGLTF Runtime/gltf/*.h Runtime/gltf/*.c )
+file( GLOB RuntimeSTB Runtime/stb/*.h Runtime/stb/*.c )
 
-source_group( "World\\Private\\Base" FILES ${WorldPrivateBase} )
-source_group( "World\\Private\\Resource" FILES ${WorldPrivateResource} )
-source_group( "World\\Private\\Resource\\lwo" FILES ${WorldPrivateResourceLWO} )
-source_group( "World\\Private\\Resource\\iesna" FILES ${WorldPrivateResourceIESNA} )
-source_group( "World\\Private\\MaterialGraph" FILES ${WorldPrivateMaterialGraph} )
-source_group( "World\\Private\\Render" FILES ${WorldPrivateRender} )
-source_group( "World\\Private\\Actors" FILES ${WorldPrivateActors} )
-source_group( "World\\Private\\Components" FILES ${WorldPrivateComponents} )
-source_group( "World\\Private\\Widgets" FILES ${WorldPrivateWidgets} )
-source_group( "World\\Private\\BulletCompatibility" FILES ${WorldPrivateBulletCompatibility} )
-source_group( "World\\Private" FILES ${WorldPrivate} )
+source_group( "Runtime\\lwo" FILES ${RuntimeLWO} )
+source_group( "Runtime\\iesna" FILES ${RuntimeIESNA} )
+source_group( "Runtime\\gltf" FILES ${RuntimeGLTF} )
+source_group( "Runtime\\stb" FILES ${RuntimeSTB} )
 
 #---------------------------------------------------------------------
 
@@ -301,21 +252,15 @@ ${PROJECT}
 ${CMAKE_CURRENT_BINARY_DIR}/EmbeddedResources.c
 
 ${PlatformPublic}
-${PlatformPrivate}
 ${PlatformPublicMemory}
-${PlatformPrivateMemory}
 
 ${CorePublic}
-${CorePrivate}
 ${CorePrivateSTB}
 
 ${ContainersPublic}
-${ContainersPrivate}
 
 ${GeometryPublic}
-${GeometryPrivate}
 ${GeometryPublicBV}
-${GeometryPrivateBV}
 
 ${RenderCore}
 ${RenderCoreOpenGL45}
@@ -323,35 +268,18 @@ ${RenderCoreOpenGL45GL}
 ${RenderCoreFrameGraph}
 
 ${RuntimePublic}
-${RuntimePrivate}
 
 ${AudioPublic}
-${AudioPrivate}
 
 ${Renderer}
 ${RendererVT}
 
 ${Imgui}
 
-${WorldPublicBase}
-${WorldPublicResource}
-${WorldPublicMaterialGraph}
-${WorldPublicRender}
-${WorldPublicActors}
-${WorldPublicComponents}
-${WorldPublicWidgets}
-${WorldPublic}
-${WorldPrivateBase}
-${WorldPrivateResource}
-${WorldPrivateResourceLWO}
-${WorldPrivateResourceIESNA}
-${WorldPrivateMaterialGraph}
-${WorldPrivateRender}
-${WorldPrivateActors}
-${WorldPrivateComponents}
-${WorldPrivateWidgets}
-${WorldPrivateBulletCompatibility}
-${WorldPrivate}
+${RuntimeLWO}
+${RuntimeIESNA}
+${RuntimeGLTF}
+${RuntimeSTB}
 )
 
 # if shared

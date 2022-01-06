@@ -129,26 +129,27 @@ void ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _
         .SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
     );
 
-    pass.AddSubpass( { 0 }, // color attachments
+    pass.AddSubpass({0}, // color attachments
                     [&](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
-                     {
-                         rcmd->BindResourceTable( resourceTbl );
+                    {
+                        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-                         for ( int sourceIndex = 0; sourceIndex < _SourcesCount; sourceIndex++ ) {
-                             ConstantBufferData.Index.X = sourceIndex * 6; // Offset for cubemap array layer
+                        immediateCtx->BindResourceTable(resourceTbl);
 
-                             rcmd->WriteBuffer(ConstantBuffer, &ConstantBufferData);
+                        for (int sourceIndex = 0; sourceIndex < _SourcesCount; sourceIndex++)
+                        {
+                            ConstantBufferData.Index.X = sourceIndex * 6; // Offset for cubemap array layer
 
-                             resourceTbl->BindTexture( 0, _Sources[sourceIndex] );
+                            immediateCtx->WriteBufferRange(ConstantBuffer, 0, sizeof(ConstantBufferData), &ConstantBufferData);
 
-                             // Draw six faces in one draw call
-                             DrawSphere( Pipeline, 6 );
-                         }
-                     } );
+                            resourceTbl->BindTexture(0, _Sources[sourceIndex]);
+
+                            // Draw six faces in one draw call
+                            DrawSphere(immediateCtx, Pipeline, 6);
+                        }
+                    });
 
     frameGraph.Build();
-    //frameGraph.ExportGraphviz( "framegraph.graphviz" );
-    //frameGraph.Execute( rcmd );
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
 
@@ -177,23 +178,23 @@ void ACubemapGenerator::Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resol
         .SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
     );
 
-    pass.AddSubpass( { 0 }, // color attachments
+    pass.AddSubpass({0}, // color attachments
                     [&](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
-                     {
-                         ConstantBufferData.Index.X = 0;
+                    {
+                        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-                         rcmd->WriteBuffer(ConstantBuffer, &ConstantBufferData);
+                        ConstantBufferData.Index.X = 0;
 
-                         resourceTbl->BindTexture( 0, _Source );
+                        immediateCtx->WriteBufferRange(ConstantBuffer, 0, sizeof(ConstantBufferData), &ConstantBufferData);
 
-                         rcmd->BindResourceTable( resourceTbl );
+                        resourceTbl->BindTexture(0, _Source);
 
-                         // Draw six faces in one draw call
-                         DrawSphere( Pipeline, 6 );
-                     } );
+                        immediateCtx->BindResourceTable(resourceTbl);
+
+                        // Draw six faces in one draw call
+                        DrawSphere(immediateCtx, Pipeline, 6);
+                    });
 
     frameGraph.Build();
-    //frameGraph.ExportGraphviz( "framegraph.graphviz" );
-    //frameGraph.Execute( rcmd );
     rcmd->ExecuteFrameGraph(&frameGraph);
 }

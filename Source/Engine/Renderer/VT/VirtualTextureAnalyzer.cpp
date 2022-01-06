@@ -31,8 +31,7 @@ SOFTWARE.
 #include "VirtualTextureAnalyzer.h"
 #include "QuadTree.h"
 #include "../RenderLocal.h"
-#include <Runtime/Public/ScopedTimeCheck.h>
-#include <Runtime/Public/Runtime.h>
+#include <Runtime/ScopedTimeCheck.h>
 
 AVirtualTextureFeedbackAnalyzer::AVirtualTextureFeedbackAnalyzer()
     : SwapIndex( 0 )
@@ -202,7 +201,7 @@ void AVirtualTextureFeedbackAnalyzer::SubmitPages( TPodVector< SPageDesc > const
     }
 }
 
-void AVirtualTextureFeedbackAnalyzer::Begin()
+void AVirtualTextureFeedbackAnalyzer::Begin(AStreamedMemoryGPU* StreamedMemory)
 {
     unsigned int maxBlockSize = GDevice->GetDeviceCaps( RenderCore::DEVICE_CAPS_CONSTANT_BUFFER_MAX_BLOCK_SIZE );;
 
@@ -211,13 +210,11 @@ void AVirtualTextureFeedbackAnalyzer::Begin()
         GLogger.Printf( "AVirtualTextureFeedbackAnalyzer::Begin: constant buffer max block size hit\n" );
     }
 
-    AStreamedMemoryGPU * streamedMemory = GRuntime->GetStreamedMemoryGPU();
-
-    size_t offset = streamedMemory->AllocateConstant( size );
+    size_t offset = StreamedMemory->AllocateConstant(size);
 
     rtbl->BindBuffer( 6, GStreamBuffer, offset, size );
 
-    Bindings = (SVirtualTextureUnit *)streamedMemory->Map( offset );
+    Bindings    = (SVirtualTextureUnit*)StreamedMemory->Map(offset);
     NumBindings = 0;
 
     for ( int i = 0 ; i < VT_MAX_TEXTURE_UNITS ; i++ ) {

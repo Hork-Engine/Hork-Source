@@ -33,69 +33,75 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-static bool BindMaterialNormalPass( SRenderInstance const * instance )
+static bool BindMaterialNormalPass(IImmediateContext* immediateCtx, SRenderInstance const* instance)
 {
-    AMaterialGPU * pMaterial = instance->Material;
+    AMaterialGPU* pMaterial = instance->Material;
 
-    AN_ASSERT( pMaterial );
+    AN_ASSERT(pMaterial);
 
     int bSkinned = instance->SkeletonSize > 0;
 
-    IPipeline * pPipeline = pMaterial->NormalsPass[bSkinned];
-    if ( !pPipeline ) {
+    IPipeline* pPipeline = pMaterial->NormalsPass[bSkinned];
+    if (!pPipeline)
+    {
         return false;
     }
 
-    rcmd->BindPipeline( pPipeline );
+    immediateCtx->BindPipeline(pPipeline);
 
-    if ( bSkinned ) {
-        IBuffer * pSecondVertexBuffer = instance->WeightsBuffer;
-        rcmd->BindVertexBuffer( 1, pSecondVertexBuffer, instance->WeightsBufferOffset );
+    if (bSkinned)
+    {
+        IBuffer* pSecondVertexBuffer = instance->WeightsBuffer;
+        immediateCtx->BindVertexBuffer(1, pSecondVertexBuffer, instance->WeightsBufferOffset);
     }
-    else {
-        rcmd->BindVertexBuffer( 1, nullptr, 0 );
+    else
+    {
+        immediateCtx->BindVertexBuffer(1, nullptr, 0);
     }
 
-    BindVertexAndIndexBuffers( instance );
+    BindVertexAndIndexBuffers(immediateCtx, instance);
 
     return true;
 }
 
-void AddNormalsPass( AFrameGraph & FrameGraph, FGTextureProxy * RenderTarget )
+void AddNormalsPass(AFrameGraph& FrameGraph, FGTextureProxy* RenderTarget)
 {
-    ARenderPass & normalPass = FrameGraph.AddTask< ARenderPass >( "Normal Pass" );
+    ARenderPass& normalPass = FrameGraph.AddTask<ARenderPass>("Normal Pass");
 
     normalPass.SetRenderArea(GRenderViewArea);
 
     normalPass.SetColorAttachment(
         STextureAttachment(RenderTarget)
-        .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-    );
+            .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
 
-    normalPass.AddSubpass( { 0 }, // color attachment refs
+    normalPass.AddSubpass({0}, // color attachment refs
                           [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
 
-    {
-        SDrawIndexedCmd drawCmd;
-        drawCmd.InstanceCount = 1;
-        drawCmd.StartInstanceLocation = 0;
+                          {
+                              IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-        for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
-            SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
+                              SDrawIndexedCmd drawCmd;
+                              drawCmd.InstanceCount         = 1;
+                              drawCmd.StartInstanceLocation = 0;
 
-            if ( !BindMaterialNormalPass( instance ) ) {
-                continue;
-            }
+                              for (int i = 0; i < GRenderView->InstanceCount; i++)
+                              {
+                                  SRenderInstance const* instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
-            BindTextures( instance->MaterialInstance, instance->Material->NormalsPassTextureCount );
-            BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-            BindInstanceConstants( instance );
+                                  if (!BindMaterialNormalPass(immediateCtx, instance))
+                                  {
+                                      continue;
+                                  }
 
-            drawCmd.IndexCountPerInstance = instance->IndexCount;
-            drawCmd.StartIndexLocation = instance->StartIndexLocation;
-            drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+                                  BindTextures(instance->MaterialInstance, instance->Material->NormalsPassTextureCount);
+                                  BindSkeleton(instance->SkeletonOffset, instance->SkeletonSize);
+                                  BindInstanceConstants(instance);
 
-            rcmd->Draw( &drawCmd );
-        }
-    } );
+                                  drawCmd.IndexCountPerInstance = instance->IndexCount;
+                                  drawCmd.StartIndexLocation    = instance->StartIndexLocation;
+                                  drawCmd.BaseVertexLocation    = instance->BaseVertexLocation;
+
+                                  immediateCtx->Draw(&drawCmd);
+                              }
+                          });
 }

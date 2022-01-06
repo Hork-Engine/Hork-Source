@@ -28,9 +28,10 @@ SOFTWARE.
 
 */
 
-#include <Platform/Public/Platform.h>
-#include <Platform/Public/WindowsDefs.h>
-#include <Platform/Public/Logger.h>
+#include <Platform/Platform.h>
+#include <Platform/WindowsDefs.h>
+#include <Platform/Logger.h>
+#include <RenderCore/GenericWindow.h>
 
 #include "DeviceGLImpl.h"
 #include "ImmediateContextGLImpl.h"
@@ -43,6 +44,7 @@ SOFTWARE.
 #include "QueryGLImpl.h"
 #include "PipelineGLImpl.h"
 #include "ShaderModuleGLImpl.h"
+#include "GenericWindowGLImpl.h"
 
 #include "LUT.h"
 
@@ -153,150 +155,17 @@ static void Deallocate(void* _Bytes)
 
 static constexpr SAllocatorCallback DefaultAllocator = { Allocate, Deallocate };
 
-static void DebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
-{
-    const char* sourceStr;
-    switch (source)
-    {
-        case GL_DEBUG_SOURCE_API:
-            sourceStr = "API";
-            break;
-        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
-            sourceStr = "WINDOW SYSTEM";
-            break;
-        case GL_DEBUG_SOURCE_SHADER_COMPILER:
-            sourceStr = "SHADER COMPILER";
-            break;
-        case GL_DEBUG_SOURCE_THIRD_PARTY:
-            sourceStr = "THIRD PARTY";
-            break;
-        case GL_DEBUG_SOURCE_APPLICATION:
-            sourceStr = "APPLICATION";
-            break;
-        case GL_DEBUG_SOURCE_OTHER:
-            sourceStr = "OTHER";
-            break;
-        default:
-            sourceStr = "UNKNOWN";
-            break;
-    }
-
-    const char* typeStr;
-    switch (type)
-    {
-        case GL_DEBUG_TYPE_ERROR:
-            typeStr = "ERROR";
-            break;
-        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-            typeStr = "DEPRECATED BEHAVIOR";
-            break;
-        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-            typeStr = "UNDEFINED BEHAVIOR";
-            break;
-        case GL_DEBUG_TYPE_PORTABILITY:
-            typeStr = "PORTABILITY";
-            break;
-        case GL_DEBUG_TYPE_PERFORMANCE:
-            typeStr = "PERFORMANCE";
-            break;
-        case GL_DEBUG_TYPE_OTHER:
-            typeStr = "MISC";
-            break;
-        case GL_DEBUG_TYPE_MARKER:
-            typeStr = "MARKER";
-            break;
-        case GL_DEBUG_TYPE_PUSH_GROUP:
-            typeStr = "PUSH GROUP";
-            break;
-        case GL_DEBUG_TYPE_POP_GROUP:
-            typeStr = "POP GROUP";
-            break;
-        default:
-            typeStr = "UNKNOWN";
-            break;
-    }
-
-    const char* severityStr;
-    switch (severity)
-    {
-        case GL_DEBUG_SEVERITY_NOTIFICATION:
-            severityStr = "NOTIFICATION";
-            break;
-        case GL_DEBUG_SEVERITY_LOW:
-            severityStr = "LOW";
-            break;
-        case GL_DEBUG_SEVERITY_MEDIUM:
-            severityStr = "MEDIUM";
-            break;
-        case GL_DEBUG_SEVERITY_HIGH:
-            severityStr = "HIGH";
-            break;
-        default:
-            severityStr = "UNKNOWN";
-            break;
-    }
-
-    if (type == GL_DEBUG_TYPE_OTHER && severity == GL_DEBUG_SEVERITY_NOTIFICATION)
-    {
-        // Do not print annoying notifications
-        return;
-    }
-
-    GLogger.Printf("-----------------------------------\n"
-                   "%s %s\n"
-                   "%s: %s (Id %d)\n"
-                   "-----------------------------------\n",
-                   sourceStr, typeStr, severityStr, message, id);
-}
-
-void CreateLogicalDevice(SImmediateContextDesc const& Desc,
-                         SAllocatorCallback const*    pAllocator,
-                         TRef<IDevice>*               ppDevice,
-                         TRef<IImmediateContext>*     ppImmediateContext)
-{
-    *ppDevice = MakeRef<ADeviceGLImpl>(Desc, pAllocator, ppImmediateContext);
-}
-
-ADeviceGLImpl::ADeviceGLImpl(SImmediateContextDesc const& Desc,
-                             SAllocatorCallback const*    pAllocator,
-                             TRef<IImmediateContext>*     ppImmediateContext)
+ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
 {
     BufferMemoryAllocated  = 0;
     TextureMemoryAllocated = 0;
 
-    SDL_GLContext windowCtx = SDL_GL_CreateContext(Desc.Window);
-    if (!windowCtx)
-    {
-        CriticalError("Failed to initialize OpenGL context\n");
-    }
+    MainWindowHandle = WindowPool.NewWindow();
 
-    SDL_GL_MakeCurrent(Desc.Window, windowCtx);
+    SDL_Window*   pWindow   = MainWindowHandle.Handle; //pMainWindow->GetNativeHandle();
+    SDL_GLContext windowCtx = MainWindowHandle.GLContext; //static_cast<AGenericWindowGLImpl*>(pMainWindow.GetObject())->GetGLContext();
 
-    // Set glewExperimental=true to allow extension entry points to be loaded even if extension isn't present
-    // in the driver's extensions string
-    glewExperimental = true;
-
-    GLenum result = glewInit();
-    if (result != GLEW_OK)
-    {
-        CriticalError("Failed to load OpenGL functions\n");
-    }
-
-    // GLEW has a long-existing bug where calling glewInit() always sets the GL_INVALID_ENUM error flag and
-    // thus the first glGetError will always return an error code which can throw you completely off guard.
-    // To fix this it's advised to simply call glGetError after glewInit to clear the flag.
-    (void)glGetError();
-
-#ifdef AN_DEBUG
-    GLint contextFlags;
-    glGetIntegerv(GL_CONTEXT_FLAGS, &contextFlags);
-    if (contextFlags & GL_CONTEXT_FLAG_DEBUG_BIT)
-    {
-        glEnable(GL_DEBUG_OUTPUT);
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-        glDebugMessageCallback(DebugMessageCallback, NULL);
-    }
-#endif
+    SDL_GL_MakeCurrent(pWindow, windowCtx);
 
     const char* vendorString = (const char*)glGetString(GL_VENDOR);
     vendorString             = vendorString ? vendorString : "Unknown";
@@ -519,27 +388,26 @@ ADeviceGLImpl::ADeviceGLImpl(SImmediateContextDesc const& Desc,
 
     Allocator = pAllocator ? *pAllocator : DefaultAllocator;
 
-    *ppImmediateContext = MakeRef<AImmediateContextGLImpl>(this, Desc, windowCtx);
+    // Now device is initialized so we can initialize main window context here
+    MainWindowHandle.ImmediateCtx = new AImmediateContextGLImpl(this, MainWindowHandle, true);
+    AImmediateContextGLImpl::MakeCurrent(MainWindowHandle.ImmediateCtx);
 
+    #if 0
     // Clear garbage on screen
     glClearColor(0, 0, 0, 0);
     glClear(GL_COLOR_BUFFER_BIT);
 
     // Set initial swap interval and swap the buffers
     // FIXME: Is it need to be here?
-    //SDL_GL_SetSwapInterval(Desc.SwapInterval);
-    //SDL_GL_SwapWindow(Desc.Window);
     SDL_GL_SetSwapInterval(1);
-    SDL_GL_SwapWindow(Desc.Window);
+    SDL_GL_SwapWindow(pWindow);
+
+    WindowPool.Destroy(window);
+    #endif
 }
 
 ADeviceGLImpl::~ADeviceGLImpl()
 {
-    for (AVertexLayoutGL* pVertexLayout : VertexLayouts)
-    {
-        pVertexLayout->RemoveRef();
-    }
-
     for (SamplerInfo* sampler : SamplerCache)
     {
         glDeleteSamplers(1, &sampler->Id);
@@ -561,16 +429,44 @@ ADeviceGLImpl::~ADeviceGLImpl()
     {
         Allocator.Deallocate(state);
     }
+
+    MainWindowHandle.ImmediateCtx->RemoveRef();
+    WindowPool.Free(MainWindowHandle);
+
+    for (AVertexLayoutGL* pVertexLayout : VertexLayouts)
+    {
+        pVertexLayout->RemoveRef();
+    }
 }
 
-void ADeviceGLImpl::CreateImmediateContext(SImmediateContextDesc const& Desc, TRef<IImmediateContext>* ppImmediateContext)
+IImmediateContext* ADeviceGLImpl::GetImmediateContext()
 {
-    *ppImmediateContext = MakeRef<AImmediateContextGLImpl>(this, Desc, nullptr);
+    return MainWindowHandle.ImmediateCtx;
 }
 
-void ADeviceGLImpl::CreateSwapChain(SDL_Window* pWindow, TRef<ISwapChain>* ppSwapChain)
+void ADeviceGLImpl::GetOrCreateMainWindow(SVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow)
 {
-    *ppSwapChain = MakeRef<ASwapChainGLImpl>(this, pWindow);
+    if (pMainWindow.IsExpired())
+    {
+        *ppWindow = MakeRef<AGenericWindowGLImpl>(this, VideoMode, WindowPool, MainWindowHandle);
+        pMainWindow = *ppWindow;
+    }
+    else
+    {
+        *ppWindow = pMainWindow;
+    }
+}
+
+void ADeviceGLImpl::CreateGenericWindow(SVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow)
+{
+    AWindowPoolGL::SWindowGL dummyHandle = {};
+
+    *ppWindow = MakeRef<AGenericWindowGLImpl>(this, VideoMode, WindowPool, dummyHandle);
+}
+
+void ADeviceGLImpl::CreateSwapChain(IGenericWindow* pWindow, TRef<ISwapChain>* ppSwapChain)
+{
+    *ppSwapChain = MakeRef<ASwapChainGLImpl>(this, static_cast<AGenericWindowGLImpl*>(pWindow));
 }
 
 void ADeviceGLImpl::CreatePipeline(SPipelineDesc const& Desc, TRef<IPipeline>* ppPipeline)
@@ -1046,6 +942,253 @@ bool ADeviceGLImpl::LookupImageFormat(const char* _FormatQualifier, TEXTURE_FORM
 const char* ADeviceGLImpl::LookupImageFormatQualifier(TEXTURE_FORMAT _Format)
 {
     return InternalFormatLUT[_Format].ShaderImageFormatQualifier;
+}
+
+static void DebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
+{
+    const char* sourceStr;
+    switch (source)
+    {
+        case GL_DEBUG_SOURCE_API:
+            sourceStr = "API";
+            break;
+        case GL_DEBUG_SOURCE_WINDOW_SYSTEM:
+            sourceStr = "WINDOW SYSTEM";
+            break;
+        case GL_DEBUG_SOURCE_SHADER_COMPILER:
+            sourceStr = "SHADER COMPILER";
+            break;
+        case GL_DEBUG_SOURCE_THIRD_PARTY:
+            sourceStr = "THIRD PARTY";
+            break;
+        case GL_DEBUG_SOURCE_APPLICATION:
+            sourceStr = "APPLICATION";
+            break;
+        case GL_DEBUG_SOURCE_OTHER:
+            sourceStr = "OTHER";
+            break;
+        default:
+            sourceStr = "UNKNOWN";
+            break;
+    }
+
+    const char* typeStr;
+    switch (type)
+    {
+        case GL_DEBUG_TYPE_ERROR:
+            typeStr = "ERROR";
+            break;
+        case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
+            typeStr = "DEPRECATED BEHAVIOR";
+            break;
+        case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
+            typeStr = "UNDEFINED BEHAVIOR";
+            break;
+        case GL_DEBUG_TYPE_PORTABILITY:
+            typeStr = "PORTABILITY";
+            break;
+        case GL_DEBUG_TYPE_PERFORMANCE:
+            typeStr = "PERFORMANCE";
+            break;
+        case GL_DEBUG_TYPE_OTHER:
+            typeStr = "MISC";
+            break;
+        case GL_DEBUG_TYPE_MARKER:
+            typeStr = "MARKER";
+            break;
+        case GL_DEBUG_TYPE_PUSH_GROUP:
+            typeStr = "PUSH GROUP";
+            break;
+        case GL_DEBUG_TYPE_POP_GROUP:
+            typeStr = "POP GROUP";
+            break;
+        default:
+            typeStr = "UNKNOWN";
+            break;
+    }
+
+    const char* severityStr;
+    switch (severity)
+    {
+        case GL_DEBUG_SEVERITY_NOTIFICATION:
+            severityStr = "NOTIFICATION";
+            break;
+        case GL_DEBUG_SEVERITY_LOW:
+            severityStr = "LOW";
+            break;
+        case GL_DEBUG_SEVERITY_MEDIUM:
+            severityStr = "MEDIUM";
+            break;
+        case GL_DEBUG_SEVERITY_HIGH:
+            severityStr = "HIGH";
+            break;
+        default:
+            severityStr = "UNKNOWN";
+            break;
+    }
+
+    if (type == GL_DEBUG_TYPE_OTHER && severity == GL_DEBUG_SEVERITY_NOTIFICATION)
+    {
+        // Do not print annoying notifications
+        return;
+    }
+
+    GLogger.Printf("-----------------------------------\n"
+                   "%s %s\n"
+                   "%s: %s (Id %d)\n"
+                   "-----------------------------------\n",
+                   sourceStr, typeStr, severityStr, message, id);
+}
+
+
+
+
+
+
+AWindowPoolGL::AWindowPoolGL()
+{
+}
+
+AWindowPoolGL::~AWindowPoolGL()
+{
+    for (SWindowGL& window : Pool)
+    {
+        Free(window);
+    }
+}
+
+AWindowPoolGL::SWindowGL AWindowPoolGL::Create()
+{
+    if (!Pool.IsEmpty())
+    {
+        SWindowGL window = Pool.Last();
+        Pool.RemoveLast();
+        return window;
+    }
+
+    return NewWindow();
+}
+
+AWindowPoolGL::SWindowGL AWindowPoolGL::NewWindow()
+{
+    static bool bInitSDLSubsystems = true;
+
+    if (bInitSDLSubsystems)
+    {
+        SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_SENSOR | SDL_INIT_JOYSTICK | SDL_INIT_HAPTIC | SDL_INIT_GAMECONTROLLER | SDL_INIT_EVENTS);
+        bInitSDLSubsystems = false;
+    }
+
+    SDL_Window*   prevWindow  = SDL_GL_GetCurrentWindow();
+    SDL_GLContext prevContext = SDL_GL_GetCurrentContext();
+
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 5);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_EGL, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS,
+                        SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
+#ifdef AN_DEBUG
+                            | SDL_GL_CONTEXT_DEBUG_FLAG
+#endif
+    );
+    //SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE | SDL_GL_CONTEXT_PROFILE_COMPATIBILITY );
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_SHARE_WITH_CURRENT_CONTEXT, prevContext ? 1 : 0);
+    SDL_GL_SetAttribute(SDL_GL_FRAMEBUFFER_SRGB_CAPABLE, 1);
+    //SDL_GL_SetAttribute( SDL_GL_CONTEXT_RELEASE_BEHAVIOR,  );
+    //SDL_GL_SetAttribute( SDL_GL_CONTEXT_RESET_NOTIFICATION,  );
+    //SDL_GL_SetAttribute( SDL_GL_CONTEXT_NO_ERROR,  );
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_ALPHA_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_BUFFER_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_ACCUM_RED_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_ACCUM_GREEN_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_ACCUM_BLUE_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_ACCUM_ALPHA_SIZE, 0);
+    SDL_GL_SetAttribute(SDL_GL_STEREO, 0);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
+    SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
+    //SDL_GL_SetAttribute( SDL_GL_ACCELERATED_VISUAL,  );
+    //SDL_GL_SetAttribute( SDL_GL_RETAINED_BACKING,  );
+
+    SWindowGL window;
+    window.Handle = SDL_CreateWindow("", 0, 0, 1, 1, SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_HIDDEN | SDL_WINDOW_OPENGL);
+    if (!window.Handle)
+    {
+        CriticalError("Failed to create window\n");
+    }
+
+    window.GLContext = SDL_GL_CreateContext(window.Handle);
+    if (!window.GLContext)
+    {
+        CriticalError("Failed to initialize OpenGL context\n");
+    }
+
+    SDL_GL_MakeCurrent(window.Handle, window.GLContext);
+
+    // Set glewExperimental=true to allow extension entry points to be loaded even if extension isn't present
+    // in the driver's extensions string
+    glewExperimental = true;
+
+    GLenum result = glewInit();
+    if (result != GLEW_OK)
+    {
+        CriticalError("Failed to load OpenGL functions\n");
+    }
+
+    // GLEW has a long-existing bug where calling glewInit() always sets the GL_INVALID_ENUM error flag and
+    // thus the first glGetError will always return an error code which can throw you completely off guard.
+    // To fix this it's advised to simply call glGetError after glewInit to clear the flag.
+    (void)glGetError();
+
+#ifdef AN_DEBUG
+    GLint contextFlags;
+    glGetIntegerv(GL_CONTEXT_FLAGS, &contextFlags);
+    if (contextFlags & GL_CONTEXT_FLAG_DEBUG_BIT)
+    {
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        glDebugMessageCallback(DebugMessageCallback, NULL);
+    }
+#endif
+
+    SDL_GL_MakeCurrent(prevWindow, prevContext);
+
+    window.ImmediateCtx = nullptr;
+    return window;
+}
+
+void AWindowPoolGL::Destroy(AWindowPoolGL::SWindowGL Window)
+{
+    SDL_HideWindow(Window.Handle);
+    Pool.Append(Window);
+}
+
+void AWindowPoolGL::Free(AWindowPoolGL::SWindowGL Window)
+{
+    SDL_Window*   prevWindow  = SDL_GL_GetCurrentWindow();
+    SDL_GLContext prevContext = SDL_GL_GetCurrentContext();
+
+    if (Window.GLContext)
+    {
+        SDL_GL_DeleteContext(Window.GLContext);
+    }
+
+    if (Window.Handle)
+    {
+        SDL_DestroyWindow(Window.Handle);
+    }
+
+    if (Window.GLContext != prevContext)
+    {
+        SDL_GL_MakeCurrent(prevWindow, prevContext);
+    }
 }
 
 } // namespace RenderCore

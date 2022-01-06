@@ -41,8 +41,6 @@ namespace RenderCore
 APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& Desc) :
     IPipeline(pDevice)
 {
-    GLuint pipelineId;
-
     if (!pDevice->IsFeatureSupported(FEATURE_HALF_FLOAT_VERTEX))
     {
         // Check half float vertex type
@@ -56,44 +54,12 @@ APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& De
         }
     }
 
-    // TODO: create program pipeline for each context
-    glCreateProgramPipelines(1, &pipelineId);
-
     pVS  = Desc.pVS;
     pTCS = Desc.pTCS;
     pTES = Desc.pTES;
     pGS  = Desc.pGS;
     pFS  = Desc.pFS;
     pCS  = Desc.pCS;
-
-    if (pVS)
-    {
-        glUseProgramStages(pipelineId, GL_VERTEX_SHADER_BIT, pVS->GetHandleNativeGL());
-    }
-    if (pTCS)
-    {
-        glUseProgramStages(pipelineId, GL_TESS_CONTROL_SHADER_BIT, pTCS->GetHandleNativeGL());
-    }
-    if (pTES)
-    {
-        glUseProgramStages(pipelineId, GL_TESS_EVALUATION_SHADER_BIT, pTES->GetHandleNativeGL());
-    }
-    if (pGS)
-    {
-        glUseProgramStages(pipelineId, GL_GEOMETRY_SHADER_BIT, pGS->GetHandleNativeGL());
-    }
-    if (pFS)
-    {
-        glUseProgramStages(pipelineId, GL_FRAGMENT_SHADER_BIT, pFS->GetHandleNativeGL());
-    }
-    if (pCS)
-    {
-        glUseProgramStages(pipelineId, GL_COMPUTE_SHADER_BIT, pCS->GetHandleNativeGL());
-    }
-
-    glValidateProgramPipeline(pipelineId); // 4.1
-
-    SetHandleNativeGL(pipelineId);
 
     PrimitiveTopology = GL_TRIANGLES; // Use triangles by default
 
@@ -167,12 +133,6 @@ APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& De
 
 APipelineGLImpl::~APipelineGLImpl()
 {
-    GLuint pipelineId = GetHandleNativeGL();
-    if (pipelineId)
-    {
-        glDeleteProgramPipelines(1, &pipelineId);
-    }
-
     SAllocatorCallback const& allocator = GetDevice()->GetAllocator();
 
     if (SamplerObjects)

@@ -31,9 +31,9 @@ SOFTWARE.
 #include "VirtualTextureTools.h"
 #include "QuadTree.h"
 
-#include <Platform/Public/Logger.h>
-#include <Platform/Public/WindowsDefs.h>
-#include <Geometry/Public/VectorMath.h>
+#include <Platform/Logger.h>
+#include <Platform/WindowsDefs.h>
+#include <Geometry/VectorMath.h>
 
 #define PAGE_EXTENSION ".page"
 
@@ -1660,7 +1660,7 @@ struct STextureLayers
     Float2 UVOffset;
 };
 
-#include <Core/Public/Image.h>
+#include <Core/Image.h>
 
 void * LoadDiffuseImage( void * _RectUserData, int Width, int Height ) {
     STextureLayers * layers = (STextureLayers *)_RectUserData;

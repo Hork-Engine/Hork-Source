@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <World/Public/Actors/PlayerController.h>
+#include <Runtime/PlayerController.h>
 
 class AMyPlayerController : public APlayerController {
     AN_ACTOR( AMyPlayerController, APlayerController )

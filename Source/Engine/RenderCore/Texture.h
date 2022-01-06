@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "TextureView.h"
 
-#include <Core/Public/BaseMath.h>
+#include <Core/BaseMath.h>
 
 #include <memory.h>
 
@@ -668,6 +668,31 @@ public:
     // TODO: Move Invalidate to FrameGraph
     virtual void Invalidate(uint16_t MipLevel)                                          = 0;
     virtual void InvalidateRect(uint32_t NumRectangles, STextureRect const* Rectangles) = 0;
+
+
+    virtual void Read(uint16_t     MipLevel,
+                      DATA_FORMAT  Format,
+                      size_t       SizeInBytes,
+                      unsigned int Alignment,
+                      void*        pSysMem) = 0;
+
+    virtual void ReadRect(STextureRect const& Rectangle,
+                          DATA_FORMAT         Format,
+                          size_t              SizeInBytes,
+                          unsigned int        Alignment,
+                          void*               pSysMem) = 0;
+
+    virtual bool Write(uint16_t     MipLevel,
+                       DATA_FORMAT  Format,
+                       size_t       SizeInBytes,
+                       unsigned int Alignment,
+                       const void*  pSysMem) = 0;
+
+    virtual bool WriteRect(STextureRect const& Rectangle,
+                           DATA_FORMAT         Format,
+                           size_t              SizeInBytes,
+                           unsigned int        Alignment,
+                           const void*         pSysMem) = 0;
 
     //
     // Utilites

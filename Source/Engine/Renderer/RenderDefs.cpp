@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "RenderDefs.h"
 
-#include <Platform/Public/Logger.h>
+#include <Platform/Logger.h>
 
 struct STextureFormatDetails
 {

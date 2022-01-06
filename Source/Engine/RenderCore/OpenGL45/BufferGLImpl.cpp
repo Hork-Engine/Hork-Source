@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "BufferGLImpl.h"
 #include "BufferViewGLImpl.h"
+#include "ImmediateContextGLImpl.h"
 #include "DeviceGLImpl.h"
 #include "LUT.h"
 #include "GL/glew.h"
@@ -155,6 +156,26 @@ void ABufferGLImpl::InvalidateRange(size_t _RangeOffset, size_t _RangeSize)
 void ABufferGLImpl::FlushMappedRange(size_t _RangeOffset, size_t _RangeSize)
 {
     glFlushMappedNamedBufferRange(GetHandleNativeGL(), _RangeOffset, _RangeSize);
+}
+
+void ABufferGLImpl::Read(void* _SysMem)
+{
+    ReadRange(0, GetDesc().SizeInBytes, _SysMem);
+}
+
+void ABufferGLImpl::ReadRange(size_t _ByteOffset, size_t _SizeInBytes, void* _SysMem)
+{
+    AImmediateContextGLImpl::GetCurrent()->ReadBufferRange(this, _ByteOffset, _SizeInBytes, _SysMem);
+}
+
+void ABufferGLImpl::Write(const void* _SysMem)
+{
+    WriteRange(0, GetDesc().SizeInBytes, _SysMem);
+}
+
+void ABufferGLImpl::WriteRange(size_t _ByteOffset, size_t _SizeInBytes, const void* _SysMem)
+{
+    AImmediateContextGLImpl::GetCurrent()->WriteBufferRange(this, _ByteOffset, _SizeInBytes, _SysMem);
 }
 
 } // namespace RenderCore

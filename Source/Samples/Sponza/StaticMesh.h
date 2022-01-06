@@ -30,9 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include <World/Public/Actors/Actor.h>
-#include <World/Public/Components/SkinnedComponent.h>
-#include <World/Public/Resource/IndexedMesh.h>
+#include <Runtime/Actor.h>
+#include <Runtime/SkinnedComponent.h>
+#include <Runtime/IndexedMesh.h>
 
 class AStaticMesh : public AActor {
     AN_ACTOR( AStaticMesh, AActor )

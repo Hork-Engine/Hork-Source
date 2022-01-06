@@ -52,6 +52,14 @@ public:
     void InvalidateRange(size_t RangeOffset, size_t RangeSize) override;
 
     void FlushMappedRange(size_t RangeOffset, size_t RangeSize) override;
+
+    void Read(void* pSysMem) override;
+
+    void ReadRange(size_t ByteOffset, size_t SizeInBytes, void* pSysMem) override;
+
+    void Write(const void* pSysMem) override;
+
+    void WriteRange(size_t ByteOffset, size_t SizeInBytes, const void* pSysMem) override;
 };
 
 } // namespace RenderCore

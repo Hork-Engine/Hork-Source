@@ -32,17 +32,16 @@ SOFTWARE.
 #include "StaticMesh.h"
 #include "Player.h"
 
-#include <World/Public/World.h>
-#include <World/Public/Components/InputComponent.h>
-#include <World/Public/Canvas.h>
-#include <World/Public/Actors/DirectionalLight.h>
-#include <World/Public/Actors/PointLight.h>
-#include <World/Public/Actors/SpotLight.h>
-#include <World/Public/Resource/Asset.h>
-#include <World/Public/Resource/AssetImporter.h>
-#include <World/Public/Base/ResourceManager.h>
-#include <World/Public/Widgets/WViewport.h>
-#include <Runtime/Public/Runtime.h>
+#include <Runtime/World.h>
+#include <Runtime/InputComponent.h>
+#include <Runtime/Canvas.h>
+#include <Runtime/DirectionalLight.h>
+#include <Runtime/PointLight.h>
+#include <Runtime/SpotLight.h>
+#include <Runtime/Asset.h>
+#include <Runtime/AssetImporter.h>
+#include <Runtime/ResourceManager.h>
+#include <Runtime/WViewport.h>
 
 AN_CLASS_META( ASponzaModel )
 
@@ -280,8 +279,8 @@ ASponzaModel::ASponzaModel()
 
 
 
-#include <World/Public/AnimationController.h>
-#include <World/Public/Components/SkinnedComponent.h>
+#include <Runtime/AnimationController.h>
+#include <Runtime/SkinnedComponent.h>
 
 class ABrainStem : public APawn {
     AN_ACTOR( ABrainStem, APawn )
@@ -297,7 +296,7 @@ private:
 
 AN_CLASS_META( ABrainStem )
 
-#include <World/Public/MaterialGraph/MaterialGraph.h>
+#include <Runtime/MaterialGraph.h>
 
 ABrainStem::ABrainStem() {
     SkinnedComponent = CreateComponent< ASkinnedComponent >( "Skin" );
@@ -493,7 +492,7 @@ void AGargoyle::Tick( float _TimeStep ) {
     SkinnedComponent->SetTimeBroadcast( time );
 }
 
-#include <Runtime/Public/ScopedTimeCheck.h>
+#include <Runtime/ScopedTimeCheck.h>
 
 void ASponzaModel::LoadStaticMeshes() {
     AScopedTimeCheck ScopedTime( "LoadStaticMeshes" );
@@ -1542,7 +1541,7 @@ void ASponzaModel::SetInputMappings() {
     InputMappings->MapAction( "ToggleDebugDraw", ID_KEYBOARD, KEY_G, 0, CONTROLLER_PLAYER_1 );
 }
 
-#include <Runtime/Public/EntryDecl.h>
+#include <Runtime/EntryDecl.h>
 
 static SEntryDecl ModuleDecl = {
     // Game title

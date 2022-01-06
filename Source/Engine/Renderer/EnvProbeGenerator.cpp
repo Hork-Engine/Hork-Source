@@ -148,24 +148,27 @@ void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITextur
             }
         );
 
-        pass.AddSubpass( { 0 }, // color attachments
+        pass.AddSubpass({0}, // color attachments
                         [&, Lod](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
-                         {
-                             rcmd->BindResourceTable( resourceTbl );
+                        {
+                            IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-                             ConstantBufferData.Roughness.X = static_cast< float >( Lod ) / _MaxLod;
+                            immediateCtx->BindResourceTable(resourceTbl);
 
-                             for ( int cubemapIndex = 0; cubemapIndex < _CubemapsCount; cubemapIndex++ ) {
-                                 ConstantBufferData.Roughness.Y = cubemapIndex * 6; // Offset for cubemap array layer
+                            ConstantBufferData.Roughness.X = static_cast<float>(Lod) / _MaxLod;
 
-                                 rcmd->WriteBuffer(ConstantBuffer, &ConstantBufferData);
+                            for (int cubemapIndex = 0; cubemapIndex < _CubemapsCount; cubemapIndex++)
+                            {
+                                ConstantBufferData.Roughness.Y = cubemapIndex * 6; // Offset for cubemap array layer
 
-                                 resourceTbl->BindTexture( 0, _Cubemaps[cubemapIndex] );
+                                immediateCtx->WriteBufferRange(ConstantBuffer, 0, sizeof(ConstantBufferData), &ConstantBufferData);
 
-                                 // Draw six faces in one draw call
-                                 DrawSphere( Pipeline, 6 );
-                             }
-                         } );
+                                resourceTbl->BindTexture(0, _Cubemaps[cubemapIndex]);
+
+                                // Draw six faces in one draw call
+                                DrawSphere(immediateCtx, Pipeline, 6);
+                            }
+                        });
     }
 
     frameGraph.Build();
@@ -214,20 +217,22 @@ void AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap, TRef<
                 .SetMipLevel(Lod)
         );
 
-        pass.AddSubpass( { 0 }, // color attachments
+        pass.AddSubpass({0}, // color attachments
                         [&, Lod](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
-                         {
-                             rcmd->BindResourceTable( resourceTbl );
+                        {
+                            IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-                             ConstantBufferData.Roughness.X = static_cast< float >( Lod ) / _MaxLod;
-                             
-                             rcmd->WriteBuffer(ConstantBuffer, &ConstantBufferData);
+                            immediateCtx->BindResourceTable(resourceTbl);
 
-                             resourceTbl->BindTexture( 0, _SourceCubemap );
+                            ConstantBufferData.Roughness.X = static_cast<float>(Lod) / _MaxLod;
 
-                             // Draw six faces in one draw call
-                             DrawSphere( Pipeline, 6 );
-                         } );
+                            immediateCtx->WriteBufferRange(ConstantBuffer, 0, sizeof(ConstantBufferData), &ConstantBufferData);
+
+                            resourceTbl->BindTexture(0, _SourceCubemap);
+
+                            // Draw six faces in one draw call
+                            DrawSphere(immediateCtx, Pipeline, 6);
+                        });
     }
 
     frameGraph.Build();

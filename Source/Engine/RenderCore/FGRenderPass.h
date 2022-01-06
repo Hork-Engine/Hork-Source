@@ -250,6 +250,7 @@ public:
     ARenderPass* pRenderPass;
     int          SubpassIndex;
     SRect2D      RenderArea;
+    class IImmediateContext* pImmediateContext;
 
     int GetSubpassIndex() const { return SubpassIndex; }
 };

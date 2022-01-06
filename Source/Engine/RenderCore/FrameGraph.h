@@ -34,8 +34,8 @@ SOFTWARE.
 #include "FGCustomTask.h"
 #include "FGRenderTargetCache.h"
 
-#include <Core/Public/String.h>
-#include <Containers/Public/PodStack.h>
+#include <Core/String.h>
+#include <Containers/PodStack.h>
 
 #include <RenderCore/Device.h>
 

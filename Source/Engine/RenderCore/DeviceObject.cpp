@@ -32,14 +32,14 @@ SOFTWARE.
 #include "Device.h"
 
 #ifdef AN_DEBUG
-#    include <Core/Public/IntrusiveLinkedListMacro.h>
+#    include <Core/IntrusiveLinkedListMacro.h>
 #endif
 
 namespace RenderCore
 {
 
-IDeviceObject::IDeviceObject(IDevice* pDevice, DEVICE_OBJECT_PROXY_TYPE ProxyType) :
-    ProxyType(ProxyType), pDevice(pDevice)
+IDeviceObject::IDeviceObject(IDevice* pDevice, DEVICE_OBJECT_PROXY_TYPE ProxyType, bool bInternalDeviceObject) :
+    ProxyType(ProxyType), pDevice(pDevice), bInternalDeviceObject(bInternalDeviceObject)
 {
     static uint32_t UnqiueIdGen = 0;
 
@@ -49,6 +49,9 @@ IDeviceObject::IDeviceObject(IDevice* pDevice, DEVICE_OBJECT_PROXY_TYPE ProxyTyp
 #endif
 
     ++pDevice->ObjectCounters[ProxyType];
+
+    if (!bInternalDeviceObject)
+        pDevice->AddRef();
 }
 
 IDeviceObject::~IDeviceObject()
@@ -58,6 +61,9 @@ IDeviceObject::~IDeviceObject()
 #endif
 
     --pDevice->ObjectCounters[ProxyType];
+
+    if (!bInternalDeviceObject)
+        pDevice->RemoveRef();
 }
 
 } // namespace RenderCore

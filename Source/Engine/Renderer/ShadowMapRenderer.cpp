@@ -3,13 +3,13 @@
 
 using namespace RenderCore;
 
-ARuntimeVariable r_ShadowCascadeBits( _CTS( "r_ShadowCascadeBits" ), _CTS( "24" ) );    // Allowed 16, 24 or 32 bits
+ARuntimeVariable r_ShadowCascadeBits(_CTS("r_ShadowCascadeBits"), _CTS("24")); // Allowed 16, 24 or 32 bits
 
-static const float EVSM_positiveExponent = 40.0;
-static const float EVSM_negativeExponent = 5.0;
-static const Float2 EVSM_WarpDepth( std::exp( EVSM_positiveExponent ), -std::exp( -EVSM_negativeExponent ) );
-const Float4 EVSM_ClearValue( EVSM_WarpDepth.X, EVSM_WarpDepth.Y, EVSM_WarpDepth.X*EVSM_WarpDepth.X, EVSM_WarpDepth.Y*EVSM_WarpDepth.Y );
-const Float4 VSM_ClearValue( 1.0f );
+static const float  EVSM_positiveExponent = 40.0;
+static const float  EVSM_negativeExponent = 5.0;
+static const Float2 EVSM_WarpDepth(std::exp(EVSM_positiveExponent), -std::exp(-EVSM_negativeExponent));
+const Float4        EVSM_ClearValue(EVSM_WarpDepth.X, EVSM_WarpDepth.Y, EVSM_WarpDepth.X* EVSM_WarpDepth.X, EVSM_WarpDepth.Y* EVSM_WarpDepth.Y);
+const Float4        VSM_ClearValue(1.0f);
 
 AShadowMapRenderer::AShadowMapRenderer()
 {
@@ -24,62 +24,59 @@ AShadowMapRenderer::AShadowMapRenderer()
 
     SClearValue clearValue;
     clearValue.Float1.R = 1.0f;
-    rcmd->ClearTexture( DummyShadowMap, 0, FORMAT_FLOAT1, &clearValue );
+    rcmd->ClearTexture(DummyShadowMap, 0, FORMAT_FLOAT1, &clearValue);
 }
 
 void AShadowMapRenderer::CreatePipeline()
 {
     SPipelineDesc pipelineCI;
 
-    SRasterizerStateInfo & rsd = pipelineCI.RS;
+    SRasterizerStateInfo& rsd = pipelineCI.RS;
 #if defined SHADOWMAP_VSM
     //Desc.CullMode = POLYGON_CULL_FRONT; // Less light bleeding
     Desc.CullMode = POLYGON_CULL_DISABLED;
 #else
     //rsd.CullMode = POLYGON_CULL_BACK;
     rsd.CullMode = POLYGON_CULL_DISABLED; // Less light bleeding
-    //rsd.CullMode = POLYGON_CULL_FRONT;
+                                          //rsd.CullMode = POLYGON_CULL_FRONT;
 #endif
     //rsd.CullMode = POLYGON_CULL_DISABLED;
 
     //BlendingStateInfo & bsd = pipelineCI.BS;
     //bsd.RenderTargetSlots[0].ColorWriteMask = COLOR_WRITE_DISABLED;  // FIXME: there is no fragment shader, so we realy need to disable color mask?
 #if defined SHADOWMAP_VSM
-    bsd.RenderTargetSlots[0].SetBlendingPreset( BLENDING_NO_BLEND );
+    bsd.RenderTargetSlots[0].SetBlendingPreset(BLENDING_NO_BLEND);
 #endif
 
-    SDepthStencilStateInfo & dssd = pipelineCI.DSS;
-    dssd.DepthFunc = CMPFUNC_LESS;
+    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    dssd.DepthFunc               = CMPFUNC_LESS;
 
     SVertexBindingInfo vertexBinding[1] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( Float3 );
+    vertexBinding[0].Stride    = sizeof(Float3);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = 1;
-    pipelineCI.pVertexBindings = vertexBinding;
+    pipelineCI.pVertexBindings   = vertexBinding;
 
     constexpr SVertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            0
-        }
-    };
+        {"InPosition",
+         0, // location
+         0, // buffer input slot
+         VAT_FLOAT3,
+         VAM_FLOAT,
+         0, // InstanceDataStepRate
+         0}};
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-    pipelineCI.pVertexAttribs = vertexAttribs;
+    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE(vertexAttribs);
+    pipelineCI.pVertexAttribs   = vertexAttribs;
 
-    SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology = PRIMITIVE_TRIANGLES;
+    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
 
-    CreateVertexShader( "instance_shadowmap_default.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
-    CreateGeometryShader( "instance_shadowmap_default.geom", pipelineCI.pGS );
+    CreateVertexShader("instance_shadowmap_default.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
+    CreateGeometryShader("instance_shadowmap_default.geom", pipelineCI.pGS);
 
     bool bVSM = false;
 
@@ -87,8 +84,9 @@ void AShadowMapRenderer::CreatePipeline()
     bVSM = true;
 #endif
 
-    if ( /*_ShadowMasking || */bVSM ) {
-        CreateFragmentShader( "instance_shadowmap_default.frag", pipelineCI.pFS );
+    if (/*_ShadowMasking || */ bVSM)
+    {
+        CreateFragmentShader("instance_shadowmap_default.frag", pipelineCI.pFS);
     }
 
     SBufferInfo bufferInfo[4];
@@ -97,53 +95,50 @@ void AShadowMapRenderer::CreatePipeline()
     bufferInfo[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
     bufferInfo[3].BufferBinding = BUFFER_BIND_CONSTANT; // cascade matrix
 
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( bufferInfo );
-    pipelineCI.ResourceLayout.Buffers = bufferInfo;
+    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE(bufferInfo);
+    pipelineCI.ResourceLayout.Buffers    = bufferInfo;
 
-    GDevice->CreatePipeline( pipelineCI, &StaticShadowCasterPipeline );
+    GDevice->CreatePipeline(pipelineCI, &StaticShadowCasterPipeline);
 }
 
 void AShadowMapRenderer::CreateLightPortalPipeline()
 {
     SPipelineDesc pipelineCI;
 
-    SRasterizerStateInfo & rsd = pipelineCI.RS;
-    rsd.bScissorEnable = false;
-    rsd.CullMode = POLYGON_CULL_FRONT;
+    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    rsd.bScissorEnable        = false;
+    rsd.CullMode              = POLYGON_CULL_FRONT;
 
-    SDepthStencilStateInfo & dssd = pipelineCI.DSS;
-    dssd.DepthFunc = CMPFUNC_GREATER;//CMPFUNC_LESS;
-    dssd.bDepthEnable = true;
+    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    dssd.DepthFunc               = CMPFUNC_GREATER; //CMPFUNC_LESS;
+    dssd.bDepthEnable            = true;
 
     SVertexBindingInfo vertexBinding[1] = {};
 
     vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride = sizeof( Float3 );
+    vertexBinding[0].Stride    = sizeof(Float3);
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
     pipelineCI.NumVertexBindings = 1;
-    pipelineCI.pVertexBindings = vertexBinding;
+    pipelineCI.pVertexBindings   = vertexBinding;
 
     constexpr SVertexAttribInfo vertexAttribs[] = {
-        {
-            "InPosition",
-            0,              // location
-            0,              // buffer input slot
-            VAT_FLOAT3,
-            VAM_FLOAT,
-            0,              // InstanceDataStepRate
-            0
-        }
-    };
+        {"InPosition",
+         0, // location
+         0, // buffer input slot
+         VAT_FLOAT3,
+         VAM_FLOAT,
+         0, // InstanceDataStepRate
+         0}};
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
-    pipelineCI.pVertexAttribs = vertexAttribs;
+    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE(vertexAttribs);
+    pipelineCI.pVertexAttribs   = vertexAttribs;
 
-    SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology = PRIMITIVE_TRIANGLES;
+    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
 
-    CreateVertexShader( "instance_lightportal.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
-    CreateGeometryShader( "instance_lightportal.geom", pipelineCI.pGS );
+    CreateVertexShader("instance_lightportal.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
+    CreateGeometryShader("instance_lightportal.geom", pipelineCI.pGS);
 
 #if 0
     CreateFragmentShader( "instance_lightportal.frag", pipelineCI.pFS );
@@ -155,41 +150,46 @@ void AShadowMapRenderer::CreateLightPortalPipeline()
     bufferInfo[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton (unused)
     bufferInfo[3].BufferBinding = BUFFER_BIND_CONSTANT; // cascade matrix
 
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( bufferInfo );
-    pipelineCI.ResourceLayout.Buffers = bufferInfo;
+    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE(bufferInfo);
+    pipelineCI.ResourceLayout.Buffers    = bufferInfo;
 
-    GDevice->CreatePipeline( pipelineCI, &LightPortalPipeline );
+    GDevice->CreatePipeline(pipelineCI, &LightPortalPipeline);
 }
 
-bool AShadowMapRenderer::BindMaterialShadowMap( SShadowRenderInstance const * instance )
+bool AShadowMapRenderer::BindMaterialShadowMap(IImmediateContext* immediateCtx, SShadowRenderInstance const* instance)
 {
-    AMaterialGPU * pMaterial = instance->Material;
+    AMaterialGPU* pMaterial = instance->Material;
 
-    if ( pMaterial ) {
+    if (pMaterial)
+    {
         int bSkinned = instance->SkeletonSize > 0;
 
-        IPipeline * pPipeline = pMaterial->ShadowPass[bSkinned];
-        if ( !pPipeline ) {
+        IPipeline* pPipeline = pMaterial->ShadowPass[bSkinned];
+        if (!pPipeline)
+        {
             return false;
         }
 
-        rcmd->BindPipeline( pPipeline );
+        immediateCtx->BindPipeline(pPipeline);
 
-        if ( bSkinned ) {
-            rcmd->BindVertexBuffer( 1, instance->WeightsBuffer, instance->WeightsBufferOffset );
+        if (bSkinned)
+        {
+            immediateCtx->BindVertexBuffer(1, instance->WeightsBuffer, instance->WeightsBufferOffset);
         }
-        else {
-            rcmd->BindVertexBuffer( 1, nullptr, 0 );
+        else
+        {
+            immediateCtx->BindVertexBuffer(1, nullptr, 0);
         }
 
-        BindTextures( instance->MaterialInstance, pMaterial->ShadowMapPassTextureCount );
+        BindTextures(instance->MaterialInstance, pMaterial->ShadowMapPassTextureCount);
     }
-    else {
-        rcmd->BindPipeline( StaticShadowCasterPipeline.GetObject() );
-        rcmd->BindVertexBuffer( 1, nullptr, 0 );
+    else
+    {
+        immediateCtx->BindPipeline(StaticShadowCasterPipeline.GetObject());
+        immediateCtx->BindVertexBuffer(1, nullptr, 0);
     }
 
-    BindVertexAndIndexBuffers( instance );
+    BindVertexAndIndexBuffers(immediateCtx, instance);
 
     return true;
 }
@@ -197,15 +197,15 @@ bool AShadowMapRenderer::BindMaterialShadowMap( SShadowRenderInstance const * in
 #if defined SHADOWMAP_VSM
 static void BlurDepthMoments()
 {
-    GHI_Framebuffer_t * FB = RenderFrame.Statement->GetFramebuffer< SHADOWMAP_FRAMEBUFFER >();
+    GHI_Framebuffer_t* FB = RenderFrame.Statement->GetFramebuffer<SHADOWMAP_FRAMEBUFFER>();
 
-    GHI_SetDepthStencilTarget( RenderFrame.State, FB, NULL );
-    GHI_SetDepthStencilState( RenderFrame.State, FDepthStencilState< false, GHI_DepthWrite_Disable >().HardwareState() );
-    GHI_SetRasterizerState( RenderFrame.State, FRasterizerState< GHI_FillSolid, GHI_CullFront >().HardwareState() );
-    GHI_SetSampler( RenderFrame.State, 0, ShadowDepthSampler1 );
+    GHI_SetDepthStencilTarget(RenderFrame.State, FB, NULL);
+    GHI_SetDepthStencilState(RenderFrame.State, FDepthStencilState<false, GHI_DepthWrite_Disable>().HardwareState());
+    GHI_SetRasterizerState(RenderFrame.State, FRasterizerState<GHI_FillSolid, GHI_CullFront>().HardwareState());
+    GHI_SetSampler(RenderFrame.State, 0, ShadowDepthSampler1);
 
-    GHI_SetInputAssembler( RenderFrame.State, RenderFrame.SaqIA );
-    GHI_SetPrimitiveTopology( RenderFrame.State, GHI_Prim_TriangleStrip );
+    GHI_SetInputAssembler(RenderFrame.State, RenderFrame.SaqIA);
+    GHI_SetPrimitiveTopology(RenderFrame.State, GHI_Prim_TriangleStrip);
 
     GHI_Viewport_t Viewport;
     Viewport.TopLeftX = 0;
@@ -215,69 +215,74 @@ static void BlurDepthMoments()
 
     // Render horizontal blur
 
-    GHI_Texture_t * DepthMomentsTextureTmp = ShadowPool_DepthMomentsVSMBlur();
+    GHI_Texture_t* DepthMomentsTextureTmp = ShadowPool_DepthMomentsVSMBlur();
 
-    GHI_SetFramebufferSize( RenderFrame.State, FB, DepthMomentsTextureTmp->GetDesc().Width, DepthMomentsTextureTmp->GetDesc().Height );
-    Viewport.Width = DepthMomentsTextureTmp->GetDesc().Width;
+    GHI_SetFramebufferSize(RenderFrame.State, FB, DepthMomentsTextureTmp->GetDesc().Width, DepthMomentsTextureTmp->GetDesc().Height);
+    Viewport.Width  = DepthMomentsTextureTmp->GetDesc().Width;
     Viewport.Height = DepthMomentsTextureTmp->GetDesc().Height;
-    GHI_SetViewport( RenderFrame.State, &Viewport );
+    GHI_SetViewport(RenderFrame.State, &Viewport);
 
     RenderTargetVSM.Texture = DepthMomentsTextureTmp;
-    GHI_SetRenderTargets( RenderFrame.State, FB, 1, &RenderTargetVSM );
-    GHI_SetProgramPipeline( RenderFrame.State, RenderFrame.Statement->GetProgramAndAttach< FGaussianBlur9HProgram, FSaqVertex >() );
-    GHI_AssignTextureUnit( RenderFrame.State, 0, ShadowPool_DepthMomentsVSM() );
-    GHI_DrawInstanced( RenderFrame.State, 4, NumShadowMapCascades, 0 );
+    GHI_SetRenderTargets(RenderFrame.State, FB, 1, &RenderTargetVSM);
+    GHI_SetProgramPipeline(RenderFrame.State, RenderFrame.Statement->GetProgramAndAttach<FGaussianBlur9HProgram, FSaqVertex>());
+    GHI_AssignTextureUnit(RenderFrame.State, 0, ShadowPool_DepthMomentsVSM());
+    GHI_DrawInstanced(RenderFrame.State, 4, NumShadowMapCascades, 0);
 
     // Render vertical blur
 
-    GHI_SetFramebufferSize( RenderFrame.State, FB, r_ShadowCascadeResolution.GetInteger(), r_ShadowCascadeResolution.GetInteger() );
-    Viewport.Width = r_ShadowCascadeResolution.GetInteger();
+    GHI_SetFramebufferSize(RenderFrame.State, FB, r_ShadowCascadeResolution.GetInteger(), r_ShadowCascadeResolution.GetInteger());
+    Viewport.Width  = r_ShadowCascadeResolution.GetInteger();
     Viewport.Height = r_ShadowCascadeResolution.GetInteger();
-    GHI_SetViewport( RenderFrame.State, &Viewport );
+    GHI_SetViewport(RenderFrame.State, &Viewport);
 
     RenderTargetVSM.Texture = ShadowPool_DepthMomentsVSM();
-    GHI_SetRenderTargets( RenderFrame.State, FB, 1, &RenderTargetVSM );
-    GHI_SetProgramPipeline( RenderFrame.State, RenderFrame.Statement->GetProgramAndAttach< FGaussianBlur9VProgram, FSaqVertex >() );
-    GHI_AssignTextureUnit( RenderFrame.State, 0, DepthMomentsTextureTmp );
-    GHI_DrawInstanced( RenderFrame.State, 4, NumShadowMapCascades, 0 );
+    GHI_SetRenderTargets(RenderFrame.State, FB, 1, &RenderTargetVSM);
+    GHI_SetProgramPipeline(RenderFrame.State, RenderFrame.Statement->GetProgramAndAttach<FGaussianBlur9VProgram, FSaqVertex>());
+    GHI_AssignTextureUnit(RenderFrame.State, 0, DepthMomentsTextureTmp);
+    GHI_DrawInstanced(RenderFrame.State, 4, NumShadowMapCascades, 0);
 }
 #endif
 
-void AShadowMapRenderer::AddDummyShadowMap( AFrameGraph & FrameGraph, FGTextureProxy ** ppShadowMapDepth )
+void AShadowMapRenderer::AddDummyShadowMap(AFrameGraph& FrameGraph, FGTextureProxy** ppShadowMapDepth)
 {
     *ppShadowMapDepth = FrameGraph.AddExternalResource<FGTextureProxy>("Dummy Shadow Map", DummyShadowMap);
 }
 
-void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightInstance const * Light, FGTextureProxy ** ppShadowMapDepth )
+void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SDirectionalLightInstance const* Light, FGTextureProxy** ppShadowMapDepth)
 {
-    if ( Light->ShadowmapIndex < 0 ) {
-        AddDummyShadowMap( FrameGraph, ppShadowMapDepth );
+    if (Light->ShadowmapIndex < 0)
+    {
+        AddDummyShadowMap(FrameGraph, ppShadowMapDepth);
         return;
     }
 
-    SLightShadowmap const * shadowMap = &GFrameData->LightShadowmaps[ Light->ShadowmapIndex ];
-    if ( shadowMap->ShadowInstanceCount == 0 ) {
-        AddDummyShadowMap( FrameGraph, ppShadowMapDepth );
+    SLightShadowmap const* shadowMap = &GFrameData->LightShadowmaps[Light->ShadowmapIndex];
+    if (shadowMap->ShadowInstanceCount == 0)
+    {
+        AddDummyShadowMap(FrameGraph, ppShadowMapDepth);
         return;
     }
 
     int cascadeResolution = Light->ShadowCascadeResolution;
-    int totalCascades = Light->NumCascades;
+    int totalCascades     = Light->NumCascades;
 
     RenderCore::TEXTURE_FORMAT depthFormat;
-    if ( r_ShadowCascadeBits.GetInteger() <= 16 ) {
+    if (r_ShadowCascadeBits.GetInteger() <= 16)
+    {
         depthFormat = TEXTURE_FORMAT_DEPTH16;
     }
-    else if ( r_ShadowCascadeBits.GetInteger() <= 24 ) {
+    else if (r_ShadowCascadeBits.GetInteger() <= 24)
+    {
         depthFormat = TEXTURE_FORMAT_DEPTH24;
     }
-    else {
+    else
+    {
         depthFormat = TEXTURE_FORMAT_DEPTH32;
     }
 
-    ARenderPass & pass = FrameGraph.AddTask< ARenderPass >( "ShadowMap Pass" );
+    ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("ShadowMap Pass");
 
-    pass.SetRenderArea( cascadeResolution, cascadeResolution );
+    pass.SetRenderArea(cascadeResolution, cascadeResolution);
 
     pass.SetDepthStencilAttachment(
         STextureAttachment("Shadow Cascade Depth texture",
@@ -289,78 +294,79 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SDirectionalLightIns
             .SetClearValue(shadowMap->LightPortalsCount > 0 ? SClearDepthStencilValue(0, 0) : SClearDepthStencilValue(1, 0)));
 
 #if defined SHADOWMAP_EVSM || defined SHADOWMAP_VSM
-#ifdef SHADOWMAP_EVSM
+#    ifdef SHADOWMAP_EVSM
     TexFormat = TEXTURE_FORMAT_RGBA32F,
-#else
+#    else
     TexFormat = TEXTURE_FORMAT_RG32F,
-#endif
+#    endif
     pass.SetColorAttachments(
-    {
         {
-            "Shadow Cascade Color texture",
-            MakeTextureStorage( TexFormat, TextureResolution2DArray( cascadeResolution, cascadeResolution, totalCascades ) ),
-            RenderCore::AttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_CLEAR )
-        },
-        {
-            "Shadow Cascade Color texture 2",
-            MakeTextureStorage( TexFormat, TextureResolution2DArray( cascadeResolution, cascadeResolution, totalCascades ) ),
-            RenderCore::AttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_DONT_CARE )
-        },
-    } );
+            {"Shadow Cascade Color texture",
+             MakeTextureStorage(TexFormat, TextureResolution2DArray(cascadeResolution, cascadeResolution, totalCascades)),
+             RenderCore::AttachmentInfo().SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)},
+            {"Shadow Cascade Color texture 2",
+             MakeTextureStorage(TexFormat, TextureResolution2DArray(cascadeResolution, cascadeResolution, totalCascades)),
+             RenderCore::AttachmentInfo().SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE)},
+        });
 
     // TODO: очищать только нужные слои!
     pass.SetClearColors(
-    {
-#if defined SHADOWMAP_EVSM
-        MakeClearColorValue( EVSM_ClearValue )
-#elif defined SHADOWMAP_VSM
-        MakeClearColorValue( VSM_ClearValue )
-#endif
-    } );
+        {
+#    if defined SHADOWMAP_EVSM
+            MakeClearColorValue(EVSM_ClearValue)
+#    elif defined SHADOWMAP_VSM
+            MakeClearColorValue(VSM_ClearValue)
+#    endif
+        });
 #endif
 
-    pass.AddSubpass( {}, // no color attachments
+    pass.AddSubpass({}, // no color attachments
                     [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
-    {
-        BindShadowCascades( Light->ViewProjStreamHandle );
+                    {
+                        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-        SDrawIndexedCmd drawCmd;
-        drawCmd.StartInstanceLocation = 0;
+                        BindShadowCascades(Light->ViewProjStreamHandle);
 
-        for ( int i = 0 ; i < shadowMap->LightPortalsCount ; i++ ) {
-            SLightPortalRenderInstance const * instance = GFrameData->LightPortals[shadowMap->FirstLightPortal + i];
+                        SDrawIndexedCmd drawCmd;
+                        drawCmd.StartInstanceLocation = 0;
 
-            rcmd->BindPipeline( LightPortalPipeline.GetObject() );
+                        for (int i = 0; i < shadowMap->LightPortalsCount; i++)
+                        {
+                            SLightPortalRenderInstance const* instance = GFrameData->LightPortals[shadowMap->FirstLightPortal + i];
 
-            BindVertexAndIndexBuffers( instance );
+                            immediateCtx->BindPipeline(LightPortalPipeline.GetObject());
 
-            drawCmd.InstanceCount = Light->NumCascades;
-            drawCmd.IndexCountPerInstance = instance->IndexCount;
-            drawCmd.StartIndexLocation = instance->StartIndexLocation;
-            drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+                            BindVertexAndIndexBuffers(immediateCtx, instance);
 
-            rcmd->Draw( &drawCmd );
-        }
+                            drawCmd.InstanceCount         = Light->NumCascades;
+                            drawCmd.IndexCountPerInstance = instance->IndexCount;
+                            drawCmd.StartIndexLocation    = instance->StartIndexLocation;
+                            drawCmd.BaseVertexLocation    = instance->BaseVertexLocation;
 
-        drawCmd.InstanceCount = 1;
+                            immediateCtx->Draw(&drawCmd);
+                        }
 
-        for ( int i = 0 ; i < shadowMap->ShadowInstanceCount ; i++ ) {
-            SShadowRenderInstance const * instance = GFrameData->ShadowInstances[shadowMap->FirstShadowInstance + i];
+                        drawCmd.InstanceCount = 1;
 
-            if ( !BindMaterialShadowMap( instance ) ) {
-                continue;
-            }
+                        for (int i = 0; i < shadowMap->ShadowInstanceCount; i++)
+                        {
+                            SShadowRenderInstance const* instance = GFrameData->ShadowInstances[shadowMap->FirstShadowInstance + i];
 
-            BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-            BindShadowInstanceConstants( instance );
+                            if (!BindMaterialShadowMap(immediateCtx, instance))
+                            {
+                                continue;
+                            }
 
-            drawCmd.IndexCountPerInstance = instance->IndexCount;
-            drawCmd.StartIndexLocation = instance->StartIndexLocation;
-            drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+                            BindSkeleton(instance->SkeletonOffset, instance->SkeletonSize);
+                            BindShadowInstanceConstants(instance);
 
-            rcmd->Draw( &drawCmd );
-        }
-    } );
+                            drawCmd.IndexCountPerInstance = instance->IndexCount;
+                            drawCmd.StartIndexLocation    = instance->StartIndexLocation;
+                            drawCmd.BaseVertexLocation    = instance->BaseVertexLocation;
+
+                            immediateCtx->Draw(&drawCmd);
+                        }
+                    });
 
     *ppShadowMapDepth = pass.GetDepthStencilAttachment().pResource;
 }
@@ -387,7 +393,7 @@ ARuntimeVariable r_ShadowmapResolution( _CTS( "r_ShadowmapResolution" ), _CTS( "
 ARuntimeVariable r_ShadowmapBits( _CTS( "r_ShadowmapBits" ), _CTS( "24" ) );
 #endif
 
-void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SLightParameters const * Light, FGTextureProxy ** ppShadowMapDepth )
+void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SLightParameters const* Light, FGTextureProxy** ppShadowMapDepth)
 {
 #if 0
     if ( Light->ShadowmapIndex < 0 ) {
@@ -464,7 +470,7 @@ void AShadowMapRenderer::AddPass( AFrameGraph & FrameGraph, SLightParameters con
                 drawCmd.StartIndexLocation = instance->StartIndexLocation;
                 drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
 
-                rcmd->Draw( &drawCmd );
+                immediateCtx->Draw( &drawCmd );
             }
         } );
 

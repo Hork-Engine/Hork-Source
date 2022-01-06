@@ -30,8 +30,8 @@ SOFTWARE.
 
 #include "RenderLocal.h"
 
-#include <Platform/Public/Platform.h>
-#include <Runtime/Public/Runtime.h>
+#include <Platform/Platform.h>
+#include <Runtime/EmbeddedResources.h>
 
 using namespace RenderCore;
 
@@ -66,6 +66,7 @@ SRect2D GRenderViewArea;
 
 /** Stream buffer */
 IBuffer * GStreamBuffer;
+AStreamedMemoryGPU * GStreamedMemory;
 
 /** Circular buffer. Contains constant data for single draw call.
 Don't use to store long-live data. */
@@ -111,25 +112,25 @@ STextureResolution2D GetFrameResoultion()
     return STextureResolution2D( GFrameData->RenderTargetMaxWidth, GFrameData->RenderTargetMaxHeight );
 }
 
-void DrawSAQ( IPipeline * Pipeline, unsigned int InstanceCount )
+void DrawSAQ(IImmediateContext* immediateCtx, IPipeline * Pipeline, unsigned int InstanceCount)
 {
     const SDrawCmd drawCmd = { 4, InstanceCount, 0, 0 };
-    rcmd->BindPipeline( Pipeline );
-    rcmd->BindVertexBuffer( 0, GSaq, 0 );
-    rcmd->BindIndexBuffer( NULL, INDEX_TYPE_UINT16, 0 );
-    rcmd->Draw( &drawCmd );
+    immediateCtx->BindPipeline(Pipeline);
+    immediateCtx->BindVertexBuffer(0, GSaq, 0);
+    immediateCtx->BindIndexBuffer(NULL, INDEX_TYPE_UINT16, 0);
+    immediateCtx->Draw(&drawCmd);
 }
 
-void DrawSphere( IPipeline * Pipeline, unsigned int InstanceCount )
+void DrawSphere(IImmediateContext* immediateCtx, IPipeline* Pipeline, unsigned int InstanceCount)
 {
     SDrawIndexedCmd drawCmd = {};
     drawCmd.IndexCountPerInstance = GSphereMesh->IndexCount;
     drawCmd.InstanceCount = InstanceCount;
 
-    rcmd->BindPipeline( Pipeline );
-    rcmd->BindVertexBuffer( 0, GSphereMesh->VertexBuffer );
-    rcmd->BindIndexBuffer( GSphereMesh->IndexBuffer, INDEX_TYPE_UINT16 );
-    rcmd->Draw( &drawCmd );
+    immediateCtx->BindPipeline(Pipeline);
+    immediateCtx->BindVertexBuffer(0, GSphereMesh->VertexBuffer);
+    immediateCtx->BindIndexBuffer(GSphereMesh->IndexBuffer, INDEX_TYPE_UINT16);
+    immediateCtx->Draw(&drawCmd);
 }
 
 void BindTextures( IResourceTable * Rtbl, SMaterialFrameData * Instance, int MaxTextures )
@@ -154,22 +155,22 @@ void BindTextures( SMaterialFrameData * Instance, int MaxTextures )
     }
 }
 
-void BindVertexAndIndexBuffers( SRenderInstance const * Instance )
+void BindVertexAndIndexBuffers(IImmediateContext* immediateCtx, SRenderInstance const* Instance)
 {
-    rcmd->BindVertexBuffer( 0, Instance->VertexBuffer, Instance->VertexBufferOffset );
-    rcmd->BindIndexBuffer( Instance->IndexBuffer, INDEX_TYPE_UINT32, Instance->IndexBufferOffset );
+    immediateCtx->BindVertexBuffer(0, Instance->VertexBuffer, Instance->VertexBufferOffset);
+    immediateCtx->BindIndexBuffer(Instance->IndexBuffer, INDEX_TYPE_UINT32, Instance->IndexBufferOffset);
 }
 
-void BindVertexAndIndexBuffers( SShadowRenderInstance const * Instance )
+void BindVertexAndIndexBuffers(IImmediateContext* immediateCtx, SShadowRenderInstance const* Instance)
 {
-    rcmd->BindVertexBuffer( 0, Instance->VertexBuffer, Instance->VertexBufferOffset );
-    rcmd->BindIndexBuffer( Instance->IndexBuffer, INDEX_TYPE_UINT32, Instance->IndexBufferOffset );
+    immediateCtx->BindVertexBuffer(0, Instance->VertexBuffer, Instance->VertexBufferOffset);
+    immediateCtx->BindIndexBuffer(Instance->IndexBuffer, INDEX_TYPE_UINT32, Instance->IndexBufferOffset);
 }
 
-void BindVertexAndIndexBuffers( SLightPortalRenderInstance const * Instance )
+void BindVertexAndIndexBuffers(IImmediateContext* immediateCtx, SLightPortalRenderInstance const* Instance)
 {
-    rcmd->BindVertexBuffer( 0, Instance->VertexBuffer, Instance->VertexBufferOffset );
-    rcmd->BindIndexBuffer( Instance->IndexBuffer, INDEX_TYPE_UINT32, Instance->IndexBufferOffset );
+    immediateCtx->BindVertexBuffer(0, Instance->VertexBuffer, Instance->VertexBufferOffset);
+    immediateCtx->BindIndexBuffer(Instance->IndexBuffer, INDEX_TYPE_UINT32, Instance->IndexBufferOffset);
 }
 
 void BindSkeleton( size_t _Offset, size_t _Size )
@@ -384,7 +385,7 @@ void SaveSnapshot( ITexture & _Texture )
     _Texture.Read( 0, PIXEL_FORMAT_BYTE_RGB, size, 1, data );
 #else
     float * fdata = (float *)GHunkMemory.Alloc( size*sizeof(float) );
-    rcmd->ReadTexture(&_Texture, 0, FORMAT_FLOAT3, size * sizeof(float), 1, fdata);
+    _Texture.Read(0, FORMAT_FLOAT3, size * sizeof(float), 1, fdata);
     // to sRGB
     for ( int i = 0 ; i < size ; i++ ) {
         data[i] = LinearToSRGB_UChar( fdata[i] );
@@ -622,7 +623,7 @@ static bool GetShaderSource( AStringView FileName, AString & Source )
 {
     if ( r_EmbeddedShaders ) {
         AMemoryStream f;
-        if ( !f.OpenRead( "Shaders/" + FileName, GRuntime->GetEmbeddedResources() ) ) {
+        if ( !f.OpenRead( "Shaders/" + FileName, Runtime::GetEmbeddedResources() ) ) {
             return false;
         }
         Source.FromFile( f );

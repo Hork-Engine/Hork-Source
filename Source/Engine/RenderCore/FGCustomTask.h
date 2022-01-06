@@ -37,7 +37,13 @@ namespace RenderCore
 
 class ACustomTask;
 
-using ATaskFunction = std::function<void(ACustomTask const&)>;
+class ACustomTaskContext
+{
+public:
+    IImmediateContext* pImmediateContext;
+};
+
+using ATaskFunction = std::function<void(ACustomTaskContext const&)>;
 
 class ACustomTask : public FGRenderTask<ACustomTask>
 {

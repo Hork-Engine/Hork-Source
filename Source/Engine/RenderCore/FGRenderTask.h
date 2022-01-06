@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "FGResource.h"
-#include <Containers/Public/StdVector.h>
+#include <Containers/StdVector.h>
 
 namespace RenderCore
 {

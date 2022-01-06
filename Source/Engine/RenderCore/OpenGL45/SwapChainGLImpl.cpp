@@ -30,16 +30,17 @@ SOFTWARE.
 
 #include "SwapChainGLImpl.h"
 #include "DeviceGLImpl.h"
+#include "GenericWindowGLImpl.h"
 
 #include <SDL.h>
 
 namespace RenderCore
 {
 
-ASwapChainGLImpl::ASwapChainGLImpl(ADeviceGLImpl* pDevice, SDL_Window* pWindow) :
+ASwapChainGLImpl::ASwapChainGLImpl(ADeviceGLImpl* pDevice, AGenericWindowGLImpl* pWindow) :
     ISwapChain(pDevice), pWindow(pWindow)
 {
-    SDL_GL_GetDrawableSize(pWindow, &Width, &Height);
+    SDL_GL_GetDrawableSize((SDL_Window*)pWindow->GetHandle(), &Width, &Height);
 
     STextureDesc textureDesc;
     textureDesc.SetResolution(STextureResolution2D(Width, Height));
@@ -48,16 +49,20 @@ ASwapChainGLImpl::ASwapChainGLImpl(ADeviceGLImpl* pDevice, SDL_Window* pWindow) 
     textureDesc.SetFormat(TEXTURE_FORMAT_RGBA8);
 
     BackBuffer = MakeRef<ATextureGLImpl>(pDevice, textureDesc, true);
+    BackBuffer->pContext = static_cast<AImmediateContextGLImpl*>(pWindow->GetImmediateContext());
 
     // TODO: grab format from default framebuffer
     textureDesc.SetFormat(TEXTURE_FORMAT_DEPTH32);
 
     DepthBuffer = MakeRef<ATextureGLImpl>(pDevice, textureDesc, true);
+    DepthBuffer->pContext = static_cast<AImmediateContextGLImpl*>(pWindow->GetImmediateContext());
+
+    pWindow->SetSwapChain(this);
 }
 
 void ASwapChainGLImpl::Present(int SwapInterval)
 {
-    static int CurrentSwapInterval = 666;
+    SScopedContextGL ScopedContext(pWindow->GetImmediateContext());
 
     SwapInterval = Math::Clamp(SwapInterval, -1, 1);
     if (SwapInterval == -1 && !GetDevice()->IsFeatureSupported(FEATURE_SWAP_CONTROL_TEAR))
@@ -66,15 +71,15 @@ void ASwapChainGLImpl::Present(int SwapInterval)
         SwapInterval = 0;
     }
 
-    if (CurrentSwapInterval != SwapInterval)
+    if (pWindow->CurrentSwapInterval != SwapInterval)
     {
         GLogger.Printf("Changing swap interval to %d\n", SwapInterval);
 
         SDL_GL_SetSwapInterval(SwapInterval);
-        CurrentSwapInterval = SwapInterval;
+        pWindow->CurrentSwapInterval = SwapInterval;
     }
 
-    SDL_GL_SwapWindow(pWindow);
+    SDL_GL_SwapWindow((SDL_Window*)pWindow->GetHandle());
 }
 
 void ASwapChainGLImpl::Resize(int InWidth, int InHeight)
@@ -94,11 +99,13 @@ void ASwapChainGLImpl::Resize(int InWidth, int InHeight)
     textureDesc.SetFormat(TEXTURE_FORMAT_RGBA8);
 
     BackBuffer = MakeRef<ATextureGLImpl>(static_cast<ADeviceGLImpl*>(GetDevice()), textureDesc, true);
+    BackBuffer->pContext = static_cast<AImmediateContextGLImpl*>(pWindow->GetImmediateContext());
 
     // TODO: grab format from default framebuffer
     textureDesc.SetFormat(TEXTURE_FORMAT_DEPTH32);
 
     DepthBuffer = MakeRef<ATextureGLImpl>(static_cast<ADeviceGLImpl*>(GetDevice()), textureDesc, true);
+    DepthBuffer->pContext = static_cast<AImmediateContextGLImpl*>(pWindow->GetImmediateContext());
 }
 
 ITexture* ASwapChainGLImpl::GetBackBuffer()

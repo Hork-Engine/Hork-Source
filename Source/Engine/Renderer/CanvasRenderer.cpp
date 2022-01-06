@@ -31,13 +31,12 @@ SOFTWARE.
 #include "CanvasRenderer.h"
 #include "RenderLocal.h"
 
-#include <Runtime/Public/Runtime.h>
-
 using namespace RenderCore;
 
 ACanvasRenderer::ACanvasRenderer()
 {
     GDevice->CreateResourceTable( &ResourceTable );
+    ResourceTable->SetDebugName("Canvas");
 
     //
     // Create pipelines
@@ -266,13 +265,13 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TPodVector<FGTextureProxy*
                             size_t Size;
                         };
 
+                        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
+
                         SCanvasBinding canvasBinding;
 
-                        AStreamedMemoryGPU* streamedMemory = GRuntime->GetStreamedMemoryGPU();
-
                         canvasBinding.Size            = sizeof(SCanvasConstants);
-                        canvasBinding.Offset          = streamedMemory->AllocateConstant(canvasBinding.Size);
-                        void*             pMemory     = streamedMemory->Map(canvasBinding.Offset);
+                        canvasBinding.Offset          = GStreamedMemory->AllocateConstant(canvasBinding.Size);
+                        void*             pMemory     = GStreamedMemory->Map(canvasBinding.Offset);
                         SCanvasConstants* pCanvasCBuf = (SCanvasConstants*)pMemory;
 
                         pCanvasCBuf->OrthoProjection = GFrameData->CanvasOrthoProjection;
@@ -284,7 +283,7 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TPodVector<FGTextureProxy*
                         drawCmd.StartInstanceLocation = 0;
                         drawCmd.BaseVertexLocation    = 0;
 
-                        rcmd->BindResourceTable(ResourceTable);
+                        immediateCtx->BindResourceTable(ResourceTable);
 
                         for (SHUDDrawList* drawList = GFrameData->DrawListHead; drawList; drawList = drawList->pNext)
                         {
@@ -295,9 +294,9 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TPodVector<FGTextureProxy*
                                 {
                                     case HUD_DRAW_CMD_VIEWPORT: {
                                         // Draw just rendered scene on the canvas
-                                        rcmd->BindPipeline(PresentViewPipeline[cmd->Blending]);
-                                        rcmd->BindVertexBuffer(0, GStreamBuffer, drawList->VertexStreamOffset);
-                                        rcmd->BindIndexBuffer(GStreamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset);
+                                        immediateCtx->BindPipeline(PresentViewPipeline[cmd->Blending]);
+                                        immediateCtx->BindVertexBuffer(0, GStreamBuffer, drawList->VertexStreamOffset);
+                                        immediateCtx->BindIndexBuffer(GStreamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset);
 
                                         // Use constant buffer from rendered view
                                         ResourceTable->BindBuffer(0,
@@ -312,12 +311,12 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TPodVector<FGTextureProxy*
                                         scissorRect.Y      = cmd->ClipMins.Y;
                                         scissorRect.Width  = cmd->ClipMaxs.X - cmd->ClipMins.X;
                                         scissorRect.Height = cmd->ClipMaxs.Y - cmd->ClipMins.Y;
-                                        rcmd->SetScissor(scissorRect);
+                                        immediateCtx->SetScissor(scissorRect);
 
                                         drawCmd.IndexCountPerInstance = cmd->IndexCount;
                                         drawCmd.StartIndexLocation    = cmd->StartIndexLocation;
                                         drawCmd.BaseVertexLocation    = cmd->BaseVertexLocation;
-                                        rcmd->Draw(&drawCmd);
+                                        immediateCtx->Draw(&drawCmd);
                                         break;
                                     }
                                     case HUD_DRAW_CMD_MATERIAL: {
@@ -327,9 +326,9 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TPodVector<FGTextureProxy*
 
                                         AN_ASSERT(pMaterial->MaterialType == MATERIAL_TYPE_HUD);
 
-                                        rcmd->BindPipeline(pMaterial->HUDPipeline);
-                                        rcmd->BindVertexBuffer(0, GStreamBuffer, drawList->VertexStreamOffset);
-                                        rcmd->BindIndexBuffer(GStreamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset);
+                                        immediateCtx->BindPipeline(pMaterial->HUDPipeline);
+                                        immediateCtx->BindVertexBuffer(0, GStreamBuffer, drawList->VertexStreamOffset);
+                                        immediateCtx->BindIndexBuffer(GStreamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset);
 
                                         // Set constant buffer
                                         ResourceTable->BindBuffer(0,
@@ -345,12 +344,12 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TPodVector<FGTextureProxy*
                                         scissorRect.Y      = cmd->ClipMins.Y;
                                         scissorRect.Width  = cmd->ClipMaxs.X - cmd->ClipMins.X;
                                         scissorRect.Height = cmd->ClipMaxs.Y - cmd->ClipMins.Y;
-                                        rcmd->SetScissor(scissorRect);
+                                        immediateCtx->SetScissor(scissorRect);
 
                                         drawCmd.IndexCountPerInstance = cmd->IndexCount;
                                         drawCmd.StartIndexLocation    = cmd->StartIndexLocation;
                                         drawCmd.BaseVertexLocation    = cmd->BaseVertexLocation;
-                                        rcmd->Draw(&drawCmd);
+                                        immediateCtx->Draw(&drawCmd);
                                         break;
                                     }
 
@@ -358,9 +357,9 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TPodVector<FGTextureProxy*
                                     {
                                         IPipeline* pPipeline = Pipelines[cmd->Blending][cmd->SamplerType];
 
-                                        rcmd->BindPipeline(pPipeline);
-                                        rcmd->BindVertexBuffer(0, GStreamBuffer, drawList->VertexStreamOffset);
-                                        rcmd->BindIndexBuffer(GStreamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset);
+                                        immediateCtx->BindPipeline(pPipeline);
+                                        immediateCtx->BindVertexBuffer(0, GStreamBuffer, drawList->VertexStreamOffset);
+                                        immediateCtx->BindIndexBuffer(GStreamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset);
 
                                         // Set constant buffer
                                         ResourceTable->BindBuffer(0,
@@ -375,179 +374,16 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TPodVector<FGTextureProxy*
                                         scissorRect.Y      = cmd->ClipMins.Y;
                                         scissorRect.Width  = cmd->ClipMaxs.X - cmd->ClipMins.X;
                                         scissorRect.Height = cmd->ClipMaxs.Y - cmd->ClipMins.Y;
-                                        rcmd->SetScissor(scissorRect);
+                                        immediateCtx->SetScissor(scissorRect);
 
                                         drawCmd.IndexCountPerInstance = cmd->IndexCount;
                                         drawCmd.StartIndexLocation    = cmd->StartIndexLocation;
                                         drawCmd.BaseVertexLocation    = cmd->BaseVertexLocation;
-                                        rcmd->Draw(&drawCmd);
+                                        immediateCtx->Draw(&drawCmd);
                                         break;
                                     }
                                 }
                             }
                         }
                     });
-
-    #if 0
-
-    std::function<void(SHUDDrawList*, SHUDDrawCmd*, FGTextureProxy*)> ProcessDrawLists = [&](SHUDDrawList* drawList, SHUDDrawCmd* cmd, FGTextureProxy* pViewTexture)
-    {
-        AN_ASSERT(drawList);
-
-        FGTextureProxy* SwapChainColorBuffer = FrameGraph.AddTextureView("SwapChainColorAttachment", pBackBufferRTV);
-
-        ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Draw HUD");
-
-        if (pViewTexture)
-            pass.AddResource(pViewTexture, FG_RESOURCE_ACCESS_READ);
-
-        pass.SetColorAttachment(STextureAttachment(SwapChainColorBuffer)
-                                 .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
-        pass.SetRenderArea(GFrameData->CanvasWidth, GFrameData->CanvasHeight);
-        pass.AddSubpass( {0},
-                        [this, cmd, drawList, pViewTexture, canvasBinding](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
-        {
-                            SRect2D scissorRect;
-
-                            SDrawIndexedCmd drawCmd;
-                            drawCmd.InstanceCount         = 1;
-                            drawCmd.StartInstanceLocation = 0;
-                            drawCmd.BaseVertexLocation    = 0;
-
-                            rcmd->BindResourceTable(ResourceTable);
-
-                            SHUDDrawCmd* curCmd = cmd;
-
-                            if (pViewTexture)
-                            {
-                                // Draw just rendered scene on the canvas
-                                rcmd->BindPipeline(PresentViewPipeline[curCmd->Blending]);
-                                rcmd->BindVertexBuffer(0, GStreamBuffer, drawList->VertexStreamOffset);
-                                rcmd->BindIndexBuffer(GStreamBuffer, INDEX_TYPE_UINT16, drawList->IndexStreamOffset);
-
-                                // Use constant buffer from rendered view
-                                ResourceTable->BindBuffer(0,
-                                                          GStreamBuffer,
-                                                          GViewConstantBufferBindingBindingOffset,
-                                                          GViewConstantBufferBindingBindingSize);
-
-                                // Set texture
-                                ResourceTable->BindTexture(0, pViewTexture->Actual());
-
-                                scissorRect.X      = curCmd->ClipMins.X;
-                                scissorRect.Y      = curCmd->ClipMins.Y;
-                                scissorRect.Width  = curCmd->ClipMaxs.X - curCmd->ClipMins.X;
-                                scissorRect.Height = curCmd->ClipMaxs.Y - curCmd->ClipMins.Y;
-                                rcmd->SetScissor(scissorRect);
-
-                                drawCmd.IndexCountPerInstance = curCmd->IndexCount;
-                                drawCmd.StartIndexLocation    = curCmd->StartIndexLocation;
-                                drawCmd.BaseVertexLocation    = curCmd->BaseVertexLocation;
-                                rcmd->Draw(&drawCmd);
-
-                                // Switch to next cmd
-                                curCmd++;
-                            }
-
-                            SHUDDrawList* curDrawList = drawList;
-
-                            for (; curDrawList; curDrawList = curDrawList->pNext)
-                            {
-                                // Process render commands
-                                for (; curCmd < &curDrawList->Commands[curDrawList->CommandsCount] && curCmd->Type != HUD_DRAW_CMD_VIEWPORT; curCmd++)
-                                {
-                                    switch (curCmd->Type)
-                                    {
-                                        case HUD_DRAW_CMD_MATERIAL: {
-                                            AN_ASSERT(curCmd->MaterialFrameData);
-
-                                            AMaterialGPU* pMaterial = curCmd->MaterialFrameData->Material;
-
-                                            AN_ASSERT(pMaterial->MaterialType == MATERIAL_TYPE_HUD);
-
-                                            rcmd->BindPipeline(pMaterial->HUDPipeline);
-                                            rcmd->BindVertexBuffer(0, GStreamBuffer, curDrawList->VertexStreamOffset);
-                                            rcmd->BindIndexBuffer(GStreamBuffer, INDEX_TYPE_UINT16, curDrawList->IndexStreamOffset);
-
-                                            // Set constant buffer
-                                            ResourceTable->BindBuffer(0,
-                                                                      GStreamBuffer,
-                                                                      canvasBinding.Offset,
-                                                                      canvasBinding.Size);
-
-                                            BindTextures(ResourceTable, curCmd->MaterialFrameData, curCmd->MaterialFrameData->NumTextures);
-
-                                            // FIXME: What about material constants?
-
-                                            scissorRect.X      = curCmd->ClipMins.X;
-                                            scissorRect.Y      = curCmd->ClipMins.Y;
-                                            scissorRect.Width  = curCmd->ClipMaxs.X - curCmd->ClipMins.X;
-                                            scissorRect.Height = curCmd->ClipMaxs.Y - curCmd->ClipMins.Y;
-                                            rcmd->SetScissor(scissorRect);
-
-                                            drawCmd.IndexCountPerInstance = curCmd->IndexCount;
-                                            drawCmd.StartIndexLocation    = curCmd->StartIndexLocation;
-                                            drawCmd.BaseVertexLocation    = curCmd->BaseVertexLocation;
-                                            rcmd->Draw(&drawCmd);
-                                            break;
-                                        }
-
-                                        default:
-                                        {
-                                            IPipeline* pPipeline = Pipelines[curCmd->Blending][curCmd->SamplerType];
-
-                                            rcmd->BindPipeline(pPipeline);
-                                            rcmd->BindVertexBuffer(0, GStreamBuffer, curDrawList->VertexStreamOffset);
-                                            rcmd->BindIndexBuffer(GStreamBuffer, INDEX_TYPE_UINT16, curDrawList->IndexStreamOffset);
-
-                                            // Set constant buffer
-                                            ResourceTable->BindBuffer(0,
-                                                                      GStreamBuffer,
-                                                                      canvasBinding.Offset,
-                                                                      canvasBinding.Size);
-
-                                            // Set texture
-                                            ResourceTable->BindTexture(0, curCmd->Texture);
-
-                                            scissorRect.X      = curCmd->ClipMins.X;
-                                            scissorRect.Y      = curCmd->ClipMins.Y;
-                                            scissorRect.Width  = curCmd->ClipMaxs.X - curCmd->ClipMins.X;
-                                            scissorRect.Height = curCmd->ClipMaxs.Y - curCmd->ClipMins.Y;
-                                            rcmd->SetScissor(scissorRect);
-
-                                            drawCmd.IndexCountPerInstance = curCmd->IndexCount;
-                                            drawCmd.StartIndexLocation    = curCmd->StartIndexLocation;
-                                            drawCmd.BaseVertexLocation    = curCmd->BaseVertexLocation;
-                                            rcmd->Draw(&drawCmd);
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (curCmd < &curDrawList->Commands[curDrawList->CommandsCount] && curCmd->Type == HUD_DRAW_CMD_VIEWPORT)
-                                {
-                                    break;
-                                }
-                            }
-        }
-        );
-
-        if (drawList && cmd < &drawList->Commands[drawList->CommandsCount] && cmd->Type == HUD_DRAW_CMD_VIEWPORT)
-        {
-            // Render scene to viewport
-            AN_ASSERT(cmd->ViewportIndex >= 0 && cmd->ViewportIndex < GFrameData->NumViews);
-
-            SRenderView* pRenderView = &GFrameData->RenderViews[cmd->ViewportIndex];
-
-            FGTextureProxy* pTexture = nullptr;
-            RenderViewCB(pRenderView, &pTexture);
-
-            ProcessDrawLists(drawList, cmd, pTexture);
-        }    
-    };
-
-    if (GFrameData->DrawListHead)
-    {
-        ProcessDrawLists(GFrameData->DrawListHead, GFrameData->DrawListHead->Commands, nullptr);
-    }
-    #endif
 }

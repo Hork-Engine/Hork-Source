@@ -38,6 +38,7 @@ namespace RenderCore
 
 class ARenderPassGLImpl;
 class APipelineGLImpl;
+class AGenericWindowGLImpl;
 
 struct SBindingStateGL
 {
@@ -55,7 +56,7 @@ struct SBindingStateGL
 class AResourceTableGLImpl final : public IResourceTable
 {
 public:
-    AResourceTableGLImpl(ADeviceGLImpl* pDevice);
+    AResourceTableGLImpl(ADeviceGLImpl* pDevice, bool bIsRoot = false);
     ~AResourceTableGLImpl();
 
     void BindTexture(unsigned int Slot, ITextureView* pShaderResourceView) override;
@@ -97,16 +98,13 @@ private:
 class AFramebufferCacheGL : public ARefCounted
 {
 public:
-    AFramebufferCacheGL(ADeviceGLImpl* pDevice) :
-        pDevice(pDevice)
-    {}
+    AFramebufferCacheGL() = default;
 
     void CleanupOutdatedFramebuffers();
 
     AFramebufferGL* GetFramebuffer(const char* RenderPassName, TStdVector<STextureAttachment>& ColorAttachments, STextureAttachment* DepthStencilAttachment);
 
 private:
-    TRef<ADeviceGLImpl>              pDevice;
     THash<>                          FramebufferHash;
     TStdVector<std::unique_ptr<AFramebufferGL>> FramebufferCache;
 };
@@ -121,12 +119,11 @@ struct SRenderPassBeginGL
 class AImmediateContextGLImpl final : public IImmediateContext
 {
 public:
-    AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmediateContextDesc const& Desc, void* Context);
+    AImmediateContextGLImpl(ADeviceGLImpl* pDevice, AWindowPoolGL::SWindowGL Window, bool bMainContext);
     ~AImmediateContextGLImpl();
 
-    void MakeCurrent() override;
-
-    static AImmediateContextGLImpl* GetCurrent() { return static_cast<AImmediateContextGLImpl*>(Current); }
+    static void MakeCurrent(AImmediateContextGLImpl* pContext);
+    static AImmediateContextGLImpl* GetCurrent() { return Current; }
 
     void ExecuteFrameGraph(AFrameGraph* pFrameGraph) override;
 
@@ -418,13 +415,7 @@ public:
     //
 
     /// Client-side call function
-    void ReadBuffer(IBuffer* pBuffer, void* pSysMem) override;
-
-    /// Client-side call function
     void ReadBufferRange(IBuffer* pBuffer, size_t ByteOffset, size_t SizeInBytes, void* pSysMem) override;
-
-    /// Client-side call function
-    void WriteBuffer(IBuffer* pBuffer, const void* pSysMem) override;
 
     /// Client-side call function
     void WriteBufferRange(IBuffer* pBuffer, size_t ByteOffset, size_t SizeInBytes, const void* pSysMem) override;
@@ -608,9 +599,15 @@ private:
     void ExecuteRenderPass(class ARenderPass* pRenderPass);
     void ExecuteCustomTask(class ACustomTask* pCustomTask);
 
-    struct SDL_Window* pWindow;
-    void*              pContextGL;
-    bool               bMainContext = false;
+    uint32_t CreateProgramPipeline(APipelineGLImpl* pPipeline);
+    uint32_t GetProgramPipeline(APipelineGLImpl* pPipeline);
+
+    static AImmediateContextGLImpl* Current;
+
+    //AGenericWindowGLImpl* pWindow;
+    AWindowPoolGL::SWindowGL Window;
+    void*                pContextGL;
+    bool                 bMainContext = false;
 
     SBindingStateGL Binding;
 
@@ -678,6 +675,30 @@ private:
     SRect2D CurrentScissor;
 
     TRef<AFramebufferCacheGL> pFramebufferCache;
+
+    std::unordered_map<uint64_t, uint32_t> ProgramPipelines;
+};
+
+struct SScopedContextGL
+{
+    AImmediateContextGLImpl* PrevContext;
+
+    SScopedContextGL(AImmediateContextGLImpl* NewContext) :
+        PrevContext(AImmediateContextGLImpl::GetCurrent())
+    {
+        if (PrevContext != NewContext)
+        {
+            AImmediateContextGLImpl::MakeCurrent(NewContext);
+        }
+    }
+
+    ~SScopedContextGL()
+    {
+        if (PrevContext != AImmediateContextGLImpl::GetCurrent())
+        {
+            AImmediateContextGLImpl::MakeCurrent(PrevContext);
+        }
+    }
 };
 
 } // namespace RenderCore

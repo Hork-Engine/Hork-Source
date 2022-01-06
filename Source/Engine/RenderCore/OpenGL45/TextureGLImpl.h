@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "TextureViewGLImpl.h"
-#include <Containers/Public/StdHash.h>
+#include <Containers/StdHash.h>
 
 namespace RenderCore {
 
@@ -58,6 +58,32 @@ public:
     void InvalidateRect( uint32_t _NumRectangles, STextureRect const * _Rectangles ) override;
 
     bool IsDummyTexture() const { return bDummyTexture; }
+
+    void Read(uint16_t     MipLevel,
+              DATA_FORMAT  Format,
+              size_t       SizeInBytes,
+              unsigned int Alignment,
+              void*        pSysMem) override;
+
+    void ReadRect(STextureRect const& Rectangle,
+                  DATA_FORMAT         Format,
+                  size_t              SizeInBytes,
+                  unsigned int        Alignment,
+                  void*               pSysMem) override;
+
+    bool Write(uint16_t     MipLevel,
+               DATA_FORMAT  Format,
+               size_t       SizeInBytes,
+               unsigned int Alignment,
+               const void*  pSysMem) override;
+
+    bool WriteRect(STextureRect const& Rectangle,
+                   DATA_FORMAT         Format,
+                   size_t              SizeInBytes,
+                   unsigned int        Alignment,
+                   const void*         pSysMem) override;
+
+    class AImmediateContextGLImpl* pContext{};
 
 private:
     void CreateDefaultViews();

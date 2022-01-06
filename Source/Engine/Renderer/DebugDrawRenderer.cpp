@@ -168,6 +168,8 @@ void ADebugDrawRenderer::AddPass( AFrameGraph & FrameGraph, FGTextureProxy * Ren
                           [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
 
     {
+        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
+
         SDrawIndexedCmd drawCmd;
         drawCmd.InstanceCount = 1;
         drawCmd.StartInstanceLocation = 0;
@@ -175,15 +177,15 @@ void ADebugDrawRenderer::AddPass( AFrameGraph & FrameGraph, FGTextureProxy * Ren
         for ( int i = 0 ; i < GRenderView->DebugDrawCommandCount ; i++ ) {
             SDebugDrawCmd const * cmd = &GFrameData->DbgCmds[GRenderView->FirstDebugDrawCommand + i];
 
-            rcmd->BindPipeline( Pipelines[cmd->Type] );
-            rcmd->BindVertexBuffer( 0, GStreamBuffer, GFrameData->DbgVertexStreamOffset );
-            rcmd->BindIndexBuffer( GStreamBuffer, INDEX_TYPE_UINT16, GFrameData->DbgIndexStreamOffset );
+            immediateCtx->BindPipeline(Pipelines[cmd->Type]);
+            immediateCtx->BindVertexBuffer(0, GStreamBuffer, GFrameData->DbgVertexStreamOffset);
+            immediateCtx->BindIndexBuffer(GStreamBuffer, INDEX_TYPE_UINT16, GFrameData->DbgIndexStreamOffset);
 
             drawCmd.IndexCountPerInstance = cmd->NumIndices;
             drawCmd.StartIndexLocation = cmd->FirstIndex;
             drawCmd.BaseVertexLocation = cmd->FirstVertex;
 
-            rcmd->Draw( &drawCmd );
+            immediateCtx->Draw(&drawCmd);
         }
 
     } );

@@ -31,13 +31,13 @@ SOFTWARE.
 #include "VT.h"
 #include "QuadTree.h"
 
-#include <Core/Public/BaseMath.h>
+#include <Core/BaseMath.h>
 
 #include <fcntl.h>
 
 #ifdef AN_OS_WIN32
 
-#include <Platform/Public/WindowsDefs.h>
+#include <Platform/WindowsDefs.h>
 
 #include <io.h>
 

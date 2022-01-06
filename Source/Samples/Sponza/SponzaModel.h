@@ -30,8 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include <World/Public/EngineInstance.h>
-#include <World/Public/Resource/IndexedMesh.h>
+#include <Runtime/Engine.h>
+#include <Runtime/IndexedMesh.h>
 #include "MyPlayerController.h"
 
 class ASponzaModel : public IGameModule {

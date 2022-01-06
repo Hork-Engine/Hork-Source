@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "CircularBuffer.h"
 #include "RenderLocal.h"
-#include <Platform/Public/Platform.h>
+#include <Platform/Platform.h>
 
 ACircularBuffer::ACircularBuffer( size_t InBufferSize )
     : BufferSize( InBufferSize )

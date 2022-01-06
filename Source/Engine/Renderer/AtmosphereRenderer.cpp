@@ -117,29 +117,30 @@ void AAtmosphereRenderer::Render( int CubemapWidth, Float3 const & LightDir, TRe
             }
         } );
 
-    pass.AddSubpass( { 0 }, // color attachments
+    pass.AddSubpass({0}, // color attachments
                     [&](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
-                     {
-                         ConstantBufferData.LightDir = Float4( LightDir.Normalized(), 0.0f );
+                    {
+                        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-                         rcmd->WriteBuffer(ConstantBuffer, &ConstantBufferData);
+                        ConstantBufferData.LightDir = Float4(LightDir.Normalized(), 0.0f);
 
-                         TRef< IResourceTable > resourceTbl;
-                         GDevice->CreateResourceTable( &resourceTbl );
+                        immediateCtx->WriteBufferRange(ConstantBuffer, 0, sizeof(ConstantBufferData), &ConstantBufferData);
 
-                         resourceTbl->BindBuffer( 0, ConstantBuffer );
+                        TRef<IResourceTable> resourceTbl;
+                        GDevice->CreateResourceTable(&resourceTbl);
 
-                         rcmd->BindResourceTable( resourceTbl );
+                        resourceTbl->BindBuffer(0, ConstantBuffer);
 
-                         // Draw six faces in one draw call
-                         DrawSphere( Pipeline, 6 );
-                     } );
+                        immediateCtx->BindResourceTable(resourceTbl);
+
+                        // Draw six faces in one draw call
+                        DrawSphere(immediateCtx, Pipeline, 6);
+                    });
     
     FGTextureProxy * pTexture = pass.GetColorAttachments()[0].pResource;
     pTexture->SetResourceCapture( true );
 
     frameGraph.Build();
-    //frameGraph.Execute( rcmd );
     rcmd->ExecuteFrameGraph(&frameGraph);
 
     *ppTexture = pTexture->Actual();

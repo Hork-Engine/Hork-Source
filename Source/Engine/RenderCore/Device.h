@@ -39,10 +39,11 @@ SOFTWARE.
 #include "ShaderModule.h"
 #include "TransformFeedback.h"
 #include "SwapChain.h"
+#include "GenericWindow.h"
 
-#include <Core/Public/Ref.h>
-#include <Containers/Public/Hash.h>
-#include <Containers/Public/Array.h>
+#include <Core/Ref.h>
+#include <Containers/Hash.h>
+#include <Containers/Array.h>
 
 namespace RenderCore
 {
@@ -107,9 +108,13 @@ class IDevice : public ARefCounted
 public:
     ~IDevice();
 
-    virtual void CreateImmediateContext(SImmediateContextDesc const& Desc, TRef<IImmediateContext>* ppImmediateContext) = 0;
+    virtual IImmediateContext* GetImmediateContext() = 0;
 
-    virtual void CreateSwapChain(SDL_Window* pWindow, TRef<ISwapChain>* ppSwapChain) = 0;
+    virtual void GetOrCreateMainWindow(SVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) = 0;
+
+    virtual void CreateGenericWindow(SVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) = 0;
+
+    virtual void CreateSwapChain(IGenericWindow* pWindow, TRef<ISwapChain>* ppSwapChain) = 0;
 
     virtual void CreatePipeline(SPipelineDesc const& Desc, TRef<IPipeline>* ppPipeline) = 0;
 
@@ -207,9 +212,8 @@ private:
     friend class IDeviceObject;
 };
 
-void CreateLogicalDevice(SImmediateContextDesc const& Desc,
-                         SAllocatorCallback const*    Allocator,
-                         TRef<IDevice>*               ppDevice,
-                         TRef<IImmediateContext>*     ppImmediateContext);
+void CreateLogicalDevice(const char*               Backend,
+                         SAllocatorCallback const* Allocator,
+                         TRef<IDevice>*            ppDevice);
 
 } // namespace RenderCore

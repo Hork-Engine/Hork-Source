@@ -98,7 +98,7 @@ void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, FGTextureProxy **
         {
             rtbl->BindTexture( 0, source->Actual() );
 
-            DrawSAQ( PipelineLUT );
+            DrawSAQ(RenderPassContext.pImmediateContext, PipelineLUT);
         } );
     }
     else
@@ -165,7 +165,7 @@ void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, FGTextureProxy **
             drawCall->LuminanceNormalization.Z = 0.0f;
             drawCall->LuminanceNormalization.W = 0.0f;
 
-            DrawSAQ( PipelineProcedural );
+            DrawSAQ(RenderPassContext.pImmediateContext, PipelineProcedural);
         } );
     }
 

@@ -31,7 +31,7 @@ SOFTWARE.
 #include "RenderLocal.h"
 #include "SSAORenderer.h"
 
-#include <Core/Public/Random.h>
+#include <Core/Random.h>
 
 ARuntimeVariable r_HBAODeinterleaved(_CTS("r_HBAODeinterleaved"), _CTS("1"));
 ARuntimeVariable r_HBAOBlur(_CTS("r_HBAOBlur"), _CTS("1"));
@@ -155,7 +155,7 @@ ASSAORenderer::ASSAORenderer()
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &RandomMap);
 
-    rcmd->WriteTexture(RandomMap, 0, FORMAT_FLOAT3, sizeof(hbaoRandom), 1, hbaoRandom);
+    RandomMap->Write(0, FORMAT_FLOAT3, sizeof(hbaoRandom), 1, hbaoRandom);
 }
 
 void ASSAORenderer::ResizeAO(int Width, int Height)
@@ -250,7 +250,7 @@ void ASSAORenderer::AddDeinterleaveDepthPass(AFrameGraph& FrameGraph, FGTextureP
 
                                     rtbl->BindTexture(0, LinearDepth->Actual());
 
-                                    DrawSAQ(DeinterleavePipe);
+                                    DrawSAQ(RenderPassContext.pImmediateContext, DeinterleavePipe);
                                 });
 
     ARenderPass& deinterleavePass2 = FrameGraph.AddTask<ARenderPass>("Deinterleave Depth Pass 2");
@@ -284,7 +284,7 @@ void ASSAORenderer::AddDeinterleaveDepthPass(AFrameGraph& FrameGraph, FGTextureP
 
                                      rtbl->BindTexture(0, LinearDepth->Actual());
 
-                                     DrawSAQ(DeinterleavePipe);
+                                     DrawSAQ(RenderPassContext.pImmediateContext, DeinterleavePipe);
                                  });
 
     FGTextureProxy* DeinterleaveDepthArray_R = FrameGraph.AddExternalResource<FGTextureProxy>("Deinterleave Depth Array", SSAODeinterleaveDepthArray);
@@ -347,11 +347,11 @@ void ASSAORenderer::AddCacheAwareAOPass(AFrameGraph& FrameGraph, FGTextureProxy*
 
                                 if (GRenderView->bPerspective)
                                 {
-                                    DrawSAQ(CacheAwarePipe);
+                                    DrawSAQ(RenderPassContext.pImmediateContext, CacheAwarePipe);
                                 }
                                 else
                                 {
-                                    DrawSAQ(CacheAwarePipe_ORTHO);
+                                    DrawSAQ(RenderPassContext.pImmediateContext, CacheAwarePipe_ORTHO);
                                 }
                             });
 
@@ -375,7 +375,7 @@ void ASSAORenderer::AddReinterleavePass(AFrameGraph& FrameGraph, FGTextureProxy*
                                 {
                                     rtbl->BindTexture(0, SSAOTextureArray->Actual());
 
-                                    DrawSAQ(ReinterleavePipe);
+                                    DrawSAQ(RenderPassContext.pImmediateContext, ReinterleavePipe);
                                 });
 
     *ppSSAOTexture = reinterleavePass.GetColorAttachments()[0].pResource;
@@ -440,11 +440,11 @@ void ASSAORenderer::AddSimpleAOPass(AFrameGraph& FrameGraph, FGTextureProxy* Lin
 
                         if (GRenderView->bPerspective)
                         {
-                            DrawSAQ(Pipe);
+                            DrawSAQ(RenderPassContext.pImmediateContext, Pipe);
                         }
                         else
                         {
-                            DrawSAQ(Pipe_ORTHO);
+                            DrawSAQ(RenderPassContext.pImmediateContext, Pipe_ORTHO);
                         }
                     });
 
@@ -479,7 +479,7 @@ void ASSAORenderer::AddAOBlurPass(AFrameGraph& FrameGraph, FGTextureProxy* SSAOT
                                rtbl->BindTexture(0, SSAOTexture->Actual());
                                rtbl->BindTexture(1, LinearDepth->Actual());
 
-                               DrawSAQ(BlurPipe);
+                               DrawSAQ(RenderPassContext.pImmediateContext, BlurPipe);
                            });
 
     FGTextureProxy* TempSSAOTextureBlurX = aoBlurXPass.GetColorAttachments()[0].pResource;
@@ -510,7 +510,7 @@ void ASSAORenderer::AddAOBlurPass(AFrameGraph& FrameGraph, FGTextureProxy* SSAOT
                                rtbl->BindTexture(0, TempSSAOTextureBlurX->Actual());
                                rtbl->BindTexture(1, LinearDepth->Actual());
 
-                               DrawSAQ(BlurPipe);
+                               DrawSAQ(RenderPassContext.pImmediateContext, BlurPipe);
                            });
 
     *ppBluredSSAO = aoBlurYPass.GetColorAttachments()[0].pResource;

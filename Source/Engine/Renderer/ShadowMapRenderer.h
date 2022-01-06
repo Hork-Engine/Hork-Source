@@ -1,7 +1,7 @@
 #pragma once
 
 #include <RenderCore/FrameGraph.h>
-#include <Geometry/Public/VectorMath.h>
+#include <Geometry/VectorMath.h>
 
 struct SDirectionalLightInstance;
 struct SLightParameters;
@@ -19,7 +19,7 @@ private:
     void CreatePipeline();
     void CreateLightPortalPipeline();
 
-    bool BindMaterialShadowMap( SShadowRenderInstance const * instance );
+    bool BindMaterialShadowMap(RenderCore::IImmediateContext* immediateCtx, SShadowRenderInstance const* instance);
 
     TRef< RenderCore::IPipeline > StaticShadowCasterPipeline;
     TRef< RenderCore::IPipeline > LightPortalPipeline;

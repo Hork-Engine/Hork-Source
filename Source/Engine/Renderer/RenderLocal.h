@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Runtime/Public/RuntimeVariable.h>
+#include <Runtime/RuntimeVariable.h>
 
 #include "RenderBackend.h"
 #include "CircularBuffer.h"
@@ -208,6 +208,7 @@ extern RenderCore::SRect2D GRenderViewArea;
 
 /** Stream buffer */
 extern RenderCore::IBuffer* GStreamBuffer;
+extern AStreamedMemoryGPU*  GStreamedMemory;
 
 /** Circular buffer. Contains constant data for single draw call.
 Don't use to store long-live data. */
@@ -261,15 +262,15 @@ extern RenderCore::IPipeline* GTerrainWireframePipeline;
 
 RenderCore::STextureResolution2D GetFrameResoultion();
 
-void DrawSAQ(RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
+void DrawSAQ(RenderCore::IImmediateContext* immediateCtx, RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
-void DrawSphere(RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
+void DrawSphere(RenderCore::IImmediateContext* immediateCtx, RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
-void BindVertexAndIndexBuffers(SRenderInstance const* Instance);
+void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, SRenderInstance const* Instance);
 
-void BindVertexAndIndexBuffers(SShadowRenderInstance const* Instance);
+void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, SShadowRenderInstance const* Instance);
 
-void BindVertexAndIndexBuffers(SLightPortalRenderInstance const* Instance);
+void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, SLightPortalRenderInstance const* Instance);
 
 void BindSkeleton(size_t _Offset, size_t _Size);
 void BindSkeletonMotionBlur(size_t _Offset, size_t _Size);

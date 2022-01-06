@@ -32,16 +32,15 @@ SOFTWARE.
 #include "Player.h"
 #include "Checker.h"
 
-#include <World/Public/World.h>
-#include <World/Public/Components/InputComponent.h>
-#include <World/Public/Actors/TerrainActor.h>
-#include <World/Public/Actors/DirectionalLight.h>
-#include <World/Public/Canvas.h>
-#include <World/Public/Base/ResourceManager.h>
-#include <World/Public/Widgets/WViewport.h>
+#include <Runtime/World.h>
+#include <Runtime/InputComponent.h>
+#include <Runtime/TerrainActor.h>
+#include <Runtime/DirectionalLight.h>
+#include <Runtime/Canvas.h>
+#include <Runtime/ResourceManager.h>
+#include <Runtime/WViewport.h>
 
-#include <Core/Public/Image.h>
-#include <Runtime/Public/Runtime.h>
+#include <Core/Image.h>
 
 AN_CLASS_META( AModule )
 
@@ -304,7 +303,7 @@ void AModule::CreateResources() {
     }
 }
 
-#include <Runtime/Public/EntryDecl.h>
+#include <Runtime/EntryDecl.h>
 
 static SEntryDecl ModuleDecl = {
     // Game title

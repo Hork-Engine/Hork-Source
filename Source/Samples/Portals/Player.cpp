@@ -30,10 +30,9 @@ SOFTWARE.
 
 #include "Player.h"
 
-#include <Runtime/Public/Runtime.h>
-#include <World/Public/Components/InputComponent.h>
-#include <World/Public/Base/ResourceManager.h>
-#include <World/Public/World.h>
+#include <Runtime/InputComponent.h>
+#include <Runtime/ResourceManager.h>
+#include <Runtime/World.h>
 
 AN_BEGIN_CLASS_META( APlayer )
 AN_END_CLASS_META()

@@ -28,13 +28,13 @@ SOFTWARE.
 
 */
 
-#include <World/Public/Components/InputComponent.h>
-#include <World/Public/Components/MeshComponent.h>
-#include <World/Public/Actors/DirectionalLight.h>
-#include <World/Public/Actors/PlayerController.h>
-#include <World/Public/MaterialGraph/MaterialGraph.h>
-#include <World/Public/Widgets/WDesktop.h>
-#include <World/Public/EngineInstance.h>
+#include <Runtime/InputComponent.h>
+#include <Runtime/MeshComponent.h>
+#include <Runtime/DirectionalLight.h>
+#include <Runtime/PlayerController.h>
+#include <Runtime/MaterialGraph.h>
+#include <Runtime/WDesktop.h>
+#include <Runtime/Engine.h>
 
 class APlayer : public APawn
 {
@@ -290,7 +290,7 @@ public:
 // Declare game module
 //
 
-#include <Runtime/Public/EntryDecl.h>
+#include <Runtime/EntryDecl.h>
 
 static SEntryDecl ModuleDecl = {
     // Game title

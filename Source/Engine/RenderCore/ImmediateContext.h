@@ -36,20 +36,12 @@ SOFTWARE.
 #include "Pipeline.h"
 #include "TransformFeedback.h"
 #include "Query.h"
-
 #include "FGRenderPass.h"
 
-#include <Platform/Public/Logger.h>
-
-struct SDL_Window;
+#include <Platform/Logger.h>
 
 namespace RenderCore
 {
-
-struct SImmediateContextDesc
-{
-    SDL_Window* Window;
-};
 
 enum CLIENT_WAIT_STATUS : uint8_t
 {
@@ -400,8 +392,8 @@ struct SClearValue
 class IResourceTable : public IDeviceObject
 {
 public:
-    IResourceTable(IDevice* pDevice) :
-        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_RESOURCE_TABLE)
+    IResourceTable(IDevice* pDevice, bool bIsRoot) :
+        IDeviceObject(pDevice, DEVICE_OBJECT_TYPE_RESOURCE_TABLE, bIsRoot)
     {}
 
     void BindTexture(unsigned int Slot, ITexture* pTexture)
@@ -421,12 +413,8 @@ public:
     static constexpr DEVICE_OBJECT_PROXY_TYPE PROXY_TYPE = DEVICE_OBJECT_TYPE_IMMEDIATE_CONTEXT;
 
     IImmediateContext(IDevice* pDevice) :
-        IDeviceObject(pDevice, PROXY_TYPE)
+        IDeviceObject(pDevice, PROXY_TYPE, true)
     {}
-
-    virtual void MakeCurrent() = 0;
-
-    static IImmediateContext* GetCurrent() { return Current; }
 
     virtual void ExecuteFrameGraph(class AFrameGraph* pFrameGraph) = 0;
 
@@ -717,13 +705,7 @@ public:
     //
 
     /// Client-side call function
-    virtual void ReadBuffer(IBuffer* pBuffer, void* pSysMem) = 0;
-
-    /// Client-side call function
     virtual void ReadBufferRange(IBuffer* pBuffer, size_t ByteOffset, size_t SizeInBytes, void* pSysMem) = 0;
-
-    /// Client-side call function
-    virtual void WriteBuffer(IBuffer* pBuffer, const void* pSysMem) = 0;
 
     /// Client-side call function
     virtual void WriteBufferRange(IBuffer* pBuffer, size_t ByteOffset, size_t SizeInBytes, const void* pSysMem) = 0;
@@ -907,9 +889,6 @@ public:
                                                        size_t              SizeInBytes,
                                                        unsigned int        Alignment,
                                                        void*               pSysMem) = 0;
-
-protected:
-    static IImmediateContext* Current;
 };
 
 } // namespace RenderCore

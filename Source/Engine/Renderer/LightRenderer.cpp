@@ -32,7 +32,7 @@ SOFTWARE.
 #include "ShadowMapRenderer.h"
 #include "RenderLocal.h"
 
-#include <Platform/Public/Logger.h>
+#include <Platform/Logger.h>
 
 ARuntimeVariable r_LightTextureFormat( _CTS( "r_LightTextureFormat" ), _CTS( "0" ), 0, _CTS( "0 - R11F_G11F_B10F, 1 - RGB16F" ) );
 
@@ -182,82 +182,89 @@ void ALightRenderer::CreateLookupBRDF()
                                .SetResolution(STextureResolution2D(sizeX, sizeY))
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &LookupBRDF);
-    rcmd->WriteTexture(LookupBRDF, 0, RenderCore::FORMAT_FLOAT2, sizeInBytes, 1, data);
+    LookupBRDF->Write(0, RenderCore::FORMAT_FLOAT2, sizeInBytes, 1, data);
 
     GHunkMemory.ClearLastHunk();
 }
 
-bool ALightRenderer::BindMaterialLightPass( SRenderInstance const * Instance )
+bool ALightRenderer::BindMaterialLightPass(IImmediateContext* immediateCtx, SRenderInstance const* Instance)
 {
-    AMaterialGPU * pMaterial = Instance->Material;
-    IPipeline * pPipeline;
-    IBuffer * pSecondVertexBuffer = nullptr;
-    size_t secondBufferOffset = 0;
+    AMaterialGPU* pMaterial = Instance->Material;
+    IPipeline*    pPipeline;
+    IBuffer*      pSecondVertexBuffer = nullptr;
+    size_t        secondBufferOffset  = 0;
 
-    AN_ASSERT( pMaterial );
+    AN_ASSERT(pMaterial);
 
-    bool bSkinned = Instance->SkeletonSize > 0;
-    bool bLightmap = Instance->LightmapUVChannel != nullptr && Instance->Lightmap;
+    bool bSkinned     = Instance->SkeletonSize > 0;
+    bool bLightmap    = Instance->LightmapUVChannel != nullptr && Instance->Lightmap;
     bool bVertexLight = Instance->VertexLightChannel != nullptr;
 
-    switch ( pMaterial->MaterialType ) {
-    case MATERIAL_TYPE_UNLIT:
-        pPipeline = pMaterial->LightPass[bSkinned];
-        if ( bSkinned ) {
-            pSecondVertexBuffer = Instance->WeightsBuffer;
-            secondBufferOffset = Instance->WeightsBufferOffset;
-        }
-        break;
+    switch (pMaterial->MaterialType)
+    {
+        case MATERIAL_TYPE_UNLIT:
+            pPipeline = pMaterial->LightPass[bSkinned];
+            if (bSkinned)
+            {
+                pSecondVertexBuffer = Instance->WeightsBuffer;
+                secondBufferOffset  = Instance->WeightsBufferOffset;
+            }
+            break;
 
-    case MATERIAL_TYPE_PBR:
-    case MATERIAL_TYPE_BASELIGHT:
-        if ( bSkinned ) {
-            pPipeline = pMaterial->LightPass[1];
+        case MATERIAL_TYPE_PBR:
+        case MATERIAL_TYPE_BASELIGHT:
+            if (bSkinned)
+            {
+                pPipeline = pMaterial->LightPass[1];
 
-            pSecondVertexBuffer = Instance->WeightsBuffer;
-            secondBufferOffset = Instance->WeightsBufferOffset;
-        }
-        else if ( bLightmap ) {
-            pPipeline = pMaterial->LightPassLightmap;
+                pSecondVertexBuffer = Instance->WeightsBuffer;
+                secondBufferOffset  = Instance->WeightsBufferOffset;
+            }
+            else if (bLightmap)
+            {
+                pPipeline = pMaterial->LightPassLightmap;
 
-            pSecondVertexBuffer = Instance->LightmapUVChannel;
-            secondBufferOffset = Instance->LightmapUVOffset;
+                pSecondVertexBuffer = Instance->LightmapUVChannel;
+                secondBufferOffset  = Instance->LightmapUVOffset;
 
-            // lightmap is in last sample
-            rtbl->BindTexture( pMaterial->LightmapSlot, Instance->Lightmap );
-        }
-        else if ( bVertexLight ) {
-            pPipeline = pMaterial->LightPassVertexLight;
+                // lightmap is in last sample
+                rtbl->BindTexture(pMaterial->LightmapSlot, Instance->Lightmap);
+            }
+            else if (bVertexLight)
+            {
+                pPipeline = pMaterial->LightPassVertexLight;
 
-            pSecondVertexBuffer = Instance->VertexLightChannel;
-            secondBufferOffset = Instance->VertexLightOffset;
-        }
-        else {
-            pPipeline = pMaterial->LightPass[0];
+                pSecondVertexBuffer = Instance->VertexLightChannel;
+                secondBufferOffset  = Instance->VertexLightOffset;
+            }
+            else
+            {
+                pPipeline = pMaterial->LightPass[0];
 
-            pSecondVertexBuffer = nullptr;
-        }
-        break;
+                pSecondVertexBuffer = nullptr;
+            }
+            break;
 
-    default:
-        return false;
+        default:
+            return false;
     }
 
-    rcmd->BindPipeline( pPipeline );
-    rcmd->BindVertexBuffer( 1, pSecondVertexBuffer, secondBufferOffset );
+    immediateCtx->BindPipeline(pPipeline);
+    immediateCtx->BindVertexBuffer(1, pSecondVertexBuffer, secondBufferOffset);
 
-    BindVertexAndIndexBuffers( Instance );
+    BindVertexAndIndexBuffers(immediateCtx, Instance);
 
     //if ( Instance->bUseVT ) // TODO
     {
-        int textureUnit = 0; // TODO: Instance->VTUnit;
-        AVirtualTexture * pVirtualTex = GFeedbackAnalyzerVT->GetTexture( textureUnit );
+        int              textureUnit = 0; // TODO: Instance->VTUnit;
+        AVirtualTexture* pVirtualTex = GFeedbackAnalyzerVT->GetTexture(textureUnit);
         //AN_ASSERT( pVirtualTex != nullptr );
 
-        rtbl->BindTexture( 6, GPhysCacheVT->GetLayers()[0] );
+        rtbl->BindTexture(6, GPhysCacheVT->GetLayers()[0]);
 
-        if ( pVirtualTex ) {
-            rtbl->BindTexture( 7, pVirtualTex->GetIndirectionTexture() );
+        if (pVirtualTex)
+        {
+            rtbl->BindTexture(7, pVirtualTex->GetIndirectionTexture());
         }
     }
 
@@ -334,6 +341,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
             Cmd.ClearFramebufferAttachments( GRenderTarget.GetFramebuffer(), &attachment, 1, &clearValue, nullptr, nullptr );
         }
 #endif
+        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
         BindShadowMatrix();
 
@@ -372,11 +380,11 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
 
             rtbl->BindTexture( 0, instance->Clipmaps );
             rtbl->BindTexture( 1, instance->Normals );
-            rcmd->BindPipeline( GTerrainLightPipeline );
-            rcmd->BindVertexBuffer( 0, instance->VertexBuffer );
-            rcmd->BindVertexBuffer( 1, GStreamBuffer, instance->InstanceBufferStreamHandle );
-            rcmd->BindIndexBuffer( instance->IndexBuffer, INDEX_TYPE_UINT16 );
-            rcmd->MultiDrawIndexedIndirect( instance->IndirectBufferDrawCount,
+            immediateCtx->BindPipeline(GTerrainLightPipeline);
+            immediateCtx->BindVertexBuffer(0, instance->VertexBuffer);
+            immediateCtx->BindVertexBuffer(1, GStreamBuffer, instance->InstanceBufferStreamHandle);
+            immediateCtx->BindIndexBuffer(instance->IndexBuffer, INDEX_TYPE_UINT16);
+            immediateCtx->MultiDrawIndexedIndirect(instance->IndirectBufferDrawCount,
                                             GStreamBuffer,
                                             instance->IndirectBufferStreamHandle,
                                             sizeof( SDrawIndexedIndirectCmd ) );
@@ -389,7 +397,8 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
             SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
-            if ( !BindMaterialLightPass( instance ) ) {
+            if (!BindMaterialLightPass(immediateCtx, instance))
+            {
                 continue;
             }
 
@@ -401,7 +410,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
             drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
 
-            rcmd->Draw( &drawCmd );
+            immediateCtx->Draw(&drawCmd);
 
             //if ( r_RenderSnapshot ) {
             //    SaveSnapshot();
@@ -444,6 +453,8 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         translucentPass.AddSubpass( { 0 }, // color attachment refs
                                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
         {
+            IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
+
             SDrawIndexedCmd drawCmd;
             drawCmd.InstanceCount = 1;
             drawCmd.StartInstanceLocation = 0;
@@ -476,7 +487,8 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
             for ( int i = 0 ; i < GRenderView->TranslucentInstanceCount ; i++ ) {
                 SRenderInstance const * instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
 
-                if ( !BindMaterialLightPass( instance ) ) {
+                if (!BindMaterialLightPass(immediateCtx, instance))
+                {
                     continue;
                 }
 
@@ -488,7 +500,7 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
                 drawCmd.StartIndexLocation = instance->StartIndexLocation;
                 drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
 
-                rcmd->Draw( &drawCmd );
+                immediateCtx->Draw(&drawCmd);
 
                 //if ( r_RenderSnapshot ) {
                 //    SaveSnapshot();
@@ -507,8 +519,10 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
         task.AddResource( LinearDepth, FG_RESOURCE_ACCESS_READ );
         task.AddResource( ReflectionColor_R, FG_RESOURCE_ACCESS_WRITE );
         task.AddResource( ReflectionDepth_R, FG_RESOURCE_ACCESS_WRITE );
-        task.SetFunction( [=]( ACustomTask const & RenderTask )
+        task.SetFunction( [=]( ACustomTaskContext const & Task )
         {
+            IImmediateContext* immediateCtx = Task.pImmediateContext;
+
             RenderCore::TextureCopy Copy = {};
             Copy.SrcRect.Dimension.X = GRenderView->Width;
             Copy.SrcRect.Dimension.Y = GRenderView->Height;
@@ -518,13 +532,13 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
             {
             RenderCore::ITexture * pSource = LightTexture->Actual();
             RenderCore::ITexture * pDest = ReflectionColor_R->Actual();
-            rcmd->CopyTextureRect( pSource, pDest, 1, &Copy );
+            immediateCtx->CopyTextureRect(pSource, pDest, 1, &Copy);
             }
 
             {
             RenderCore::ITexture * pSource = LinearDepth->Actual();
             RenderCore::ITexture * pDest = ReflectionDepth_R->Actual();
-            rcmd->CopyTextureRect( pSource, pDest, 1, &Copy );
+            immediateCtx->CopyTextureRect(pSource, pDest, 1, &Copy);
             }
         } );
     }

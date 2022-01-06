@@ -53,7 +53,7 @@ public:
 private:
     void CreateLookupBRDF();
 
-    bool BindMaterialLightPass( SRenderInstance const * Instance );
+    bool BindMaterialLightPass(RenderCore::IImmediateContext* immediateContext, SRenderInstance const* Instance);
 
     TRef< RenderCore::ITexture > LookupBRDF;
 };

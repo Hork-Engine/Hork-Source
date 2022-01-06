@@ -31,7 +31,7 @@ SOFTWARE.
 #include "ExposureRenderer.h"
 #include "RenderLocal.h"
 
-#include <Runtime/Public/RuntimeVariable.h>
+#include <Runtime/RuntimeVariable.h>
 
 ARuntimeVariable r_ShowDefaultExposure(_CTS("r_ShowDefaultExposure"), _CTS("0"));
 
@@ -69,7 +69,7 @@ AExposureRenderer::AExposureRenderer()
     textureDesc.SetResolution(STextureResolution2D(1, 1));
     textureDesc.SetFormat(TEXTURE_FORMAT_RG8);
     GDevice->CreateTexture(textureDesc, &DefaultLuminance);
-    rcmd->WriteTexture(DefaultLuminance, 0, FORMAT_UBYTE2, sizeof(defaultLum), 1, defaultLum);
+    DefaultLuminance->Write(0, FORMAT_UBYTE2, sizeof(defaultLum), 1, defaultLum);
 
     SSamplerDesc samplerCI;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
@@ -124,7 +124,7 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
                     {
                         rtbl->BindTexture(0, SourceTexture->Actual());
 
-                        DrawSAQ(MakeLuminanceMapPipe);
+                        DrawSAQ(RenderPassContext.pImmediateContext, MakeLuminanceMapPipe);
                     });
 
     // Downscale luminance to 32x32
@@ -138,7 +138,7 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
                     {
                         rtbl->BindTexture(0, Luminance64_R->Actual());
 
-                        DrawSAQ(SumLuminanceMapPipe);
+                        DrawSAQ(RenderPassContext.pImmediateContext, SumLuminanceMapPipe);
                     });
 
     // Downscale luminance to 16x16
@@ -152,7 +152,7 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
                     {
                         rtbl->BindTexture(0, Luminance32_R->Actual());
 
-                        DrawSAQ(SumLuminanceMapPipe);
+                        DrawSAQ(RenderPassContext.pImmediateContext, SumLuminanceMapPipe);
                     });
 
     // Downscale luminance to 8x8
@@ -166,7 +166,7 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
                     {
                         rtbl->BindTexture(0, Luminance16_R->Actual());
 
-                        DrawSAQ(SumLuminanceMapPipe);
+                        DrawSAQ(RenderPassContext.pImmediateContext, SumLuminanceMapPipe);
                     });
 
     // Downscale luminance to 4x4
@@ -180,7 +180,7 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
                     {
                         rtbl->BindTexture(0, Luminance8_R->Actual());
 
-                        DrawSAQ(SumLuminanceMapPipe);
+                        DrawSAQ(RenderPassContext.pImmediateContext, SumLuminanceMapPipe);
                     });
 
     // Downscale luminance to 2x2
@@ -194,7 +194,7 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
                     {
                         rtbl->BindTexture(0, Luminance4_R->Actual());
 
-                        DrawSAQ(SumLuminanceMapPipe);
+                        DrawSAQ(RenderPassContext.pImmediateContext, SumLuminanceMapPipe);
                     });
 
     // Render final exposure
@@ -208,7 +208,7 @@ void AExposureRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceT
                     {
                         rtbl->BindTexture(0, Luminance2_R->Actual());
 
-                        DrawSAQ(DynamicExposurePipe);
+                        DrawSAQ(RenderPassContext.pImmediateContext, DynamicExposurePipe);
                     });
 
     *ppExposure = Exposure_R;

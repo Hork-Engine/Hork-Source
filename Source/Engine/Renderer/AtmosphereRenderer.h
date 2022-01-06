@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <RenderCore/ImmediateContext.h>
-#include <Geometry/Public/VectorMath.h>
+#include <Geometry/VectorMath.h>
 
 class AAtmosphereRenderer {
 public:

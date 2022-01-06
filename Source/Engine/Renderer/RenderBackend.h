@@ -39,15 +39,15 @@ SOFTWARE.
 #include "CanvasRenderer.h"
 #include "FrameRenderer.h"
 
-#include <Runtime/Public/VertexMemoryGPU.h>
+#include <RenderCore/VertexMemoryGPU.h>
 
 class ARenderBackend : public ARefCounted
 {
 public:
-    ARenderBackend();
+    ARenderBackend(RenderCore::IDevice* pDevice);
     ~ARenderBackend();
 
-    void RenderFrame(RenderCore::ITexture* pBackBuffer, SRenderFrame* pFrameData);
+    void RenderFrame(AStreamedMemoryGPU* StreamedMemory, RenderCore::ITexture* pBackBuffer, SRenderFrame* pFrameData);
 
     void InitializeMaterial(AMaterialGPU* _Material, SMaterialDef const* _Def);
 

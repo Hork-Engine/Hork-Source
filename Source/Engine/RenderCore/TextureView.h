@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "DeviceObject.h"
-#include <Core/Public/HashFunc.h>
+#include <Core/HashFunc.h>
 
 namespace RenderCore
 {

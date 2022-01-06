@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "BufferView.h"
-#include <Containers/Public/PodVector.h>
+#include <Containers/PodVector.h>
 
 namespace RenderCore
 {

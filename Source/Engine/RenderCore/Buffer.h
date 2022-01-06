@@ -163,6 +163,14 @@ public:
 
     virtual void FlushMappedRange(size_t _RangeOffset, size_t _RangeSize) = 0;
 
+    virtual void Read(void* pSysMem) = 0;
+
+    virtual void ReadRange(size_t ByteOffset, size_t SizeInBytes, void* pSysMem) = 0;
+
+    virtual void Write(const void* pSysMem) = 0;
+
+    virtual void WriteRange(size_t ByteOffset, size_t SizeInBytes, const void* pSysMem) = 0;
+
 protected:
     SBufferDesc Desc;
 };

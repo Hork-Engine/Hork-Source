@@ -37,17 +37,41 @@ namespace RenderCore
 
 class AImmediateContextGLImpl;
 
+class AWindowPoolGL
+{
+public:
+    AWindowPoolGL();
+    ~AWindowPoolGL();
+
+    struct SWindowGL
+    {
+        SDL_Window* Handle;
+        void*       GLContext;
+        AImmediateContextGLImpl* ImmediateCtx;
+    };
+
+    SWindowGL Create();
+    void      Destroy(SWindowGL Window);
+    void      Free(SWindowGL Window);
+
+    SWindowGL NewWindow();
+
+    TPodVector<SWindowGL> Pool;
+};
+
 class ADeviceGLImpl final : public IDevice
 {
 public:
-    ADeviceGLImpl(SImmediateContextDesc const& Desc,
-                  SAllocatorCallback const*    pAllocator,
-                  TRef<IImmediateContext>*     ppImmediateContext);
+    ADeviceGLImpl(SAllocatorCallback const* pAllocator);
     ~ADeviceGLImpl();
 
-    void CreateImmediateContext(SImmediateContextDesc const& Desc, TRef<IImmediateContext>* ppImmediateContext) override;
+    IImmediateContext* GetImmediateContext() override;
 
-    void CreateSwapChain(SDL_Window* pWindow, TRef<ISwapChain>* ppSwapChain) override;
+    void GetOrCreateMainWindow(SVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) override;
+
+    void CreateGenericWindow(SVideoMode const& VideoMode, TRef<IGenericWindow>* ppWindow) override;
+
+    void CreateSwapChain(IGenericWindow* pWindow, TRef<ISwapChain>* ppSwapChain) override;
 
     void CreatePipeline(SPipelineDesc const& Desc, TRef<IPipeline>* ppPipeline) override;
 
@@ -108,6 +132,8 @@ public:
 private:
     SAllocatorCallback Allocator;
 
+    TWeakRef<IGenericWindow> pMainWindow;
+
     THash<>                      VertexLayoutsHash;
     TPodVector<AVertexLayoutGL*> VertexLayouts;
 
@@ -122,6 +148,9 @@ private:
 
     THash<>                             DepthStencilHash;
     TPodVector<SDepthStencilStateInfo*> DepthStencilStateCache;
+
+    AWindowPoolGL WindowPool;
+    AWindowPoolGL::SWindowGL MainWindowHandle;
 };
 
 } // namespace RenderCore

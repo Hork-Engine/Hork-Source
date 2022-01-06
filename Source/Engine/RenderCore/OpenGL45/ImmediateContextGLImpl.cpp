@@ -36,10 +36,12 @@ SOFTWARE.
 #include "TransformFeedbackGLImpl.h"
 #include "QueryGLImpl.h"
 #include "LUT.h"
+#include "GenericWindowGLImpl.h"
 
 #include "../FrameGraph.h"
 
-#include <Platform/Public/Platform.h>
+#include <Platform/Platform.h>
+#include <RenderCore/GenericWindow.h>
 
 #include "GL/glew.h"
 
@@ -52,8 +54,10 @@ SOFTWARE.
 namespace RenderCore
 {
 
-AResourceTableGLImpl::AResourceTableGLImpl(ADeviceGLImpl* pDevice) :
-    IResourceTable(pDevice)
+AImmediateContextGLImpl* AImmediateContextGLImpl::Current = nullptr;
+
+AResourceTableGLImpl::AResourceTableGLImpl(ADeviceGLImpl* pDevice, bool bIsRoot) :
+    IResourceTable(pDevice, bIsRoot)
 {
     Platform::ZeroMem(TextureBindings, sizeof(TextureBindings));
     Platform::ZeroMem(TextureBindingUIDs, sizeof(TextureBindingUIDs));
@@ -315,40 +319,13 @@ AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                 
     return FramebufferCache.back().get();
 }
 
-AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmediateContextDesc const& Desc, void* _Context) :
-    IImmediateContext(pDevice)
+AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, AWindowPoolGL::SWindowGL Window, bool bMainContext) :
+    IImmediateContext(pDevice),
+    Window(Window),
+    bMainContext(bMainContext),
+    pContextGL(Window.GLContext)
 {
-    pWindow    = Desc.Window;
-    pContextGL = _Context;
-
-    if (!pContextGL)
-    {
-        pContextGL = SDL_GL_CreateContext(pWindow);
-        if (!pContextGL)
-        {
-            CriticalError("Failed to initialize OpenGL context\n");
-        }
-
-        SDL_GL_MakeCurrent(pWindow, pContextGL);
-
-        glewExperimental = true;
-        GLenum result    = glewInit();
-        if (result != GLEW_OK)
-        {
-            CriticalError("Failed to load OpenGL functions\n");
-        }
-
-        // GLEW has a long-existing bug where calling glewInit() always sets the GL_INVALID_ENUM error flag and
-        // thus the first glGetError will always return an error code which can throw you completely off guard.
-        // To fix this it's advised to simply call glGetError after glewInit to clear the flag.
-        (void)glGetError();
-    }
-    else
-    {
-        bMainContext = true;
-    }
-
-    Current = this;
+    SScopedContextGL scopedContext(this);
 
     Platform::ZeroMem(BufferBindingUIDs, sizeof(BufferBindingUIDs));
     Platform::ZeroMem(BufferBindingOffsets, sizeof(BufferBindingOffsets));
@@ -504,38 +481,53 @@ AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, SImmedi
     Binding.ReadFramebuffer = ~0u;
     Binding.DrawFramebuffer = ~0u;
 
-    pDevice->CreateResourceTable(&RootResourceTable);
+    RootResourceTable = MakeRef<AResourceTableGLImpl>(pDevice, true);
+    RootResourceTable->SetDebugName("Root");
 
     CurrentResourceTable = static_cast<AResourceTableGLImpl*>(RootResourceTable.GetObject());
 
-    pFramebufferCache = MakeRef<AFramebufferCacheGL>(pDevice);
+    pFramebufferCache = MakeRef<AFramebufferCacheGL>();
 }
 
-void AImmediateContextGLImpl::MakeCurrent()
+void AImmediateContextGLImpl::MakeCurrent(AImmediateContextGLImpl* pContext)
 {
-    SDL_GL_MakeCurrent(pWindow, pContextGL);
-    Current = this;
+    if (pContext)
+    {
+        SDL_GL_MakeCurrent(pContext->Window.Handle, pContext->Window.GLContext);
+    }
+    else
+    {
+        SDL_GL_MakeCurrent(nullptr, nullptr);
+    }
+    Current = pContext;
 }
 
 AImmediateContextGLImpl::~AImmediateContextGLImpl()
 {
-    VerifyContext();
-
-    pFramebufferCache.Reset();
-    CurrentResourceTable.Reset();
-    RootResourceTable.Reset();
-
-    glBindVertexArray(0);
-
-    for (AVertexLayoutGL* pVertexLayout : static_cast<ADeviceGLImpl*>(GetDevice())->GetVertexLayouts())
     {
-        pVertexLayout->DestroyVAO(this);
+        SScopedContextGL scopedContext(this);
+
+        pFramebufferCache.Reset();
+        CurrentResourceTable.Reset();
+        RootResourceTable.Reset();
+
+        glBindVertexArray(0);
+
+        for (AVertexLayoutGL* pVertexLayout : static_cast<ADeviceGLImpl*>(GetDevice())->GetVertexLayouts())
+        {
+            pVertexLayout->DestroyVAO(this);
+        }
+
+        for (auto& pair : ProgramPipelines)
+        {
+            GLuint pipelineId = pair.second;
+            glDeleteProgramPipelines(1, &pipelineId);
+        }
     }
 
-    SDL_GL_DeleteContext(pContextGL);
     if (Current == this)
     {
-        Current = nullptr;
+        MakeCurrent(nullptr);
     }
 }
 
@@ -800,7 +792,7 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
 
     CurrentPipeline = static_cast<APipelineGLImpl*>(_Pipeline);
 
-    GLuint pipelineId = CurrentPipeline->GetHandleNativeGL();
+    GLuint pipelineId = GetProgramPipeline(CurrentPipeline); //CurrentPipeline->GetHandleNativeGL();
 
     glBindProgramPipeline(pipelineId);
 
@@ -4434,6 +4426,7 @@ void AImmediateContextGLImpl::ReadTextureRect(ITexture*           pTexture,
         // Dummy texture is a default color or depth buffer
         if (static_cast<ATextureGLImpl*>(pTexture)->IsDummyTexture())
         {
+            AN_ASSERT(static_cast<ATextureGLImpl*>(pTexture)->pContext == this);
             AN_ASSERT(Rectangle.Offset.MipLevel == 0);
             AN_ASSERT(Rectangle.Dimension.Z == 1);
 
@@ -4489,6 +4482,7 @@ void AImmediateContextGLImpl::ReadTextureRect(ITexture*           pTexture,
         // Dummy texture is a default color or depth buffer
         if (static_cast<ATextureGLImpl*>(pTexture)->IsDummyTexture())
         {
+            AN_ASSERT(static_cast<ATextureGLImpl*>(pTexture)->pContext == this);
             AN_ASSERT(Rectangle.Offset.MipLevel == 0);
             AN_ASSERT(Rectangle.Offset.Z == 0);
             AN_ASSERT(Rectangle.Dimension.Z == 1);
@@ -5264,13 +5258,9 @@ void AImmediateContextGLImpl::GetQueryPoolResults(IQueryPool*        _QueryPool,
     }
 }
 
-void AImmediateContextGLImpl::ReadBuffer(IBuffer* _Buffer, void* _SysMem)
-{
-    ReadBufferRange(_Buffer, 0, _Buffer->GetDesc().SizeInBytes, _SysMem);
-}
-
 void AImmediateContextGLImpl::ReadBufferRange(IBuffer* _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void* _SysMem)
 {
+    AN_ASSERT(_ByteOffset + _SizeInBytes <= _Buffer->GetDesc().SizeInBytes);
     glGetNamedBufferSubData(_Buffer->GetHandleNativeGL(), _ByteOffset, _SizeInBytes, _SysMem); // 4.5 or GL_ARB_direct_state_access
 
     /*
@@ -5288,13 +5278,9 @@ void AImmediateContextGLImpl::ReadBufferRange(IBuffer* _Buffer, size_t _ByteOffs
     */
 }
 
-void AImmediateContextGLImpl::WriteBuffer(IBuffer* _Buffer, const void* _SysMem)
-{
-    WriteBufferRange(_Buffer, 0, _Buffer->GetDesc().SizeInBytes, _SysMem);
-}
-
 void AImmediateContextGLImpl::WriteBufferRange(IBuffer* _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void* _SysMem)
 {
+    AN_ASSERT(_ByteOffset + _SizeInBytes <= _Buffer->GetDesc().SizeInBytes);
     glNamedBufferSubData(_Buffer->GetHandleNativeGL(), _ByteOffset, _SizeInBytes, _SysMem); // 4.5 or GL_ARB_direct_state_access
 
     /*
@@ -5490,6 +5476,8 @@ void AImmediateContextGLImpl::ExecuteFrameGraph(AFrameGraph* pFrameGraph)
     // This is really not necessary:
     //glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
     //glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+
+    BindResourceTable(nullptr);
 }
 
 void AImmediateContextGLImpl::ExecuteRenderPass(ARenderPass* pRenderPass)
@@ -5501,6 +5489,20 @@ void AImmediateContextGLImpl::ExecuteRenderPass(ARenderPass* pRenderPass)
     AFramebufferGL* pFramebuffer = pFramebufferCache->GetFramebuffer(pRenderPass->GetName(),
                                                                          const_cast<TStdVector<STextureAttachment>&>(colorAttachments),
                                                                          bHasDepthStencilAttachment ? const_cast<STextureAttachment*>(&depthStencilAttachment) : nullptr);
+
+    if (pFramebuffer->IsDefault())
+    {
+        AImmediateContextGLImpl* curContext = static_cast<ATextureGLImpl*>(const_cast<TWeakRef<ITextureView>&>(pFramebuffer->GetColorAttachments()[0])->GetTexture())->pContext;
+        if (curContext != this)
+        {
+            MakeCurrent(curContext);
+
+            curContext->ExecuteRenderPass(pRenderPass);
+
+            MakeCurrent(this);
+            return;
+        }
+    }
 
     SRenderPassBeginGL renderPassBegin = {};
     renderPassBegin.pRenderPass      = pRenderPass;
@@ -5536,6 +5538,7 @@ void AImmediateContextGLImpl::ExecuteRenderPass(ARenderPass* pRenderPass)
     renderPassContext.pRenderPass  = pRenderPass;
     renderPassContext.SubpassIndex = 0;
     renderPassContext.RenderArea   = renderPassBegin.RenderArea;
+    renderPassContext.pImmediateContext = this;
     for (ASubpassInfo const& Subpass : pRenderPass->GetSubpasses())
     {
         Subpass.Function(renderPassContext, commandBuffer);
@@ -5551,7 +5554,87 @@ void AImmediateContextGLImpl::ExecuteRenderPass(ARenderPass* pRenderPass)
 
 void AImmediateContextGLImpl::ExecuteCustomTask(ACustomTask* pCustomTask)
 {
-    pCustomTask->Function(*pCustomTask);
+    ACustomTaskContext taskContext;
+    taskContext.pImmediateContext = this;
+    pCustomTask->Function(taskContext);
+}
+
+GLuint AImmediateContextGLImpl::CreateProgramPipeline(APipelineGLImpl* pPipeline)
+{
+    GLuint pipelineId;
+
+    glCreateProgramPipelines(1, &pipelineId);
+
+    if (pPipeline->pVS)
+    {
+        glUseProgramStages(pipelineId, GL_VERTEX_SHADER_BIT, pPipeline->pVS->GetHandleNativeGL());
+    }
+    if (pPipeline->pTCS)
+    {
+        glUseProgramStages(pipelineId, GL_TESS_CONTROL_SHADER_BIT, pPipeline->pTCS->GetHandleNativeGL());
+    }
+    if (pPipeline->pTES)
+    {
+        glUseProgramStages(pipelineId, GL_TESS_EVALUATION_SHADER_BIT, pPipeline->pTES->GetHandleNativeGL());
+    }
+    if (pPipeline->pGS)
+    {
+        glUseProgramStages(pipelineId, GL_GEOMETRY_SHADER_BIT, pPipeline->pGS->GetHandleNativeGL());
+    }
+    if (pPipeline->pFS)
+    {
+        glUseProgramStages(pipelineId, GL_FRAGMENT_SHADER_BIT, pPipeline->pFS->GetHandleNativeGL());
+    }
+    if (pPipeline->pCS)
+    {
+        glUseProgramStages(pipelineId, GL_COMPUTE_SHADER_BIT, pPipeline->pCS->GetHandleNativeGL());
+    }
+
+    glValidateProgramPipeline(pipelineId); // 4.1
+
+    return pipelineId;
+}
+
+#if 0
+void AImmediateContextGLImpl::DestroyProgramPipeline(APipelineGLImpl* pPipeline)
+{
+    auto it = ProgramPipelines.find(pPipeline->GetUID());
+    if (it == ProgramPipelines.end())
+        return;
+
+    GLuint pipelineId = it->second;
+    ProgramPipelines.erase(it);
+
+    glDeleteProgramPipelines(1, &pipelineId);
+}
+#endif
+
+GLuint AImmediateContextGLImpl::GetProgramPipeline(APipelineGLImpl* pPipeline)
+{
+    // Fast path for apps with single context
+    if (IsMainContext())
+    {
+        GLuint pipelineId = pPipeline->GetHandleNativeGL();
+        if (!pipelineId)
+        {
+            pipelineId = CreateProgramPipeline(pPipeline);
+
+            ProgramPipelines[pPipeline->GetUID()] = pipelineId;
+            pPipeline->SetHandleNativeGL(pipelineId);
+        }
+        return pipelineId;
+    }
+
+    auto it = ProgramPipelines.find(pPipeline->GetUID());
+    if (it != ProgramPipelines.end())
+    {
+        return it->second;
+    }
+
+    auto pipelineId = CreateProgramPipeline(pPipeline);
+
+    ProgramPipelines[pPipeline->GetUID()] = pipelineId;
+    return pipelineId;
 }
 
 } // namespace RenderCore

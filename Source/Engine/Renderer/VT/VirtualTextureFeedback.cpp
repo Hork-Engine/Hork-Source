@@ -32,8 +32,6 @@ SOFTWARE.
 #include "../RenderLocal.h"
 #include "../Material.h"
 
-#include <Runtime/Public/Runtime.h>
-
 /*
 
 Usage:
@@ -171,7 +169,7 @@ void AVirtualTextureFeedback::End( int * pFeedbackSize, const void ** ppData )
     }
 }
 
-static bool BindMaterialFeedbackPass( SRenderInstance const * Instance )
+static bool BindMaterialFeedbackPass(IImmediateContext* immediateCtx, SRenderInstance const * Instance )
 {
     AMaterialGPU * pMaterial = Instance->Material;
     IBuffer * pSecondVertexBuffer = nullptr;
@@ -192,13 +190,13 @@ static bool BindMaterialFeedbackPass( SRenderInstance const * Instance )
     }
 
     // Bind pipeline
-    rcmd->BindPipeline( pPipeline );
+    immediateCtx->BindPipeline( pPipeline );
 
     // Bind second vertex buffer
-    rcmd->BindVertexBuffer( 1, pSecondVertexBuffer, secondBufferOffset );
+    immediateCtx->BindVertexBuffer(1, pSecondVertexBuffer, secondBufferOffset);
 
     // Bind vertex and index buffers
-    BindVertexAndIndexBuffers( Instance );
+    BindVertexAndIndexBuffers(immediateCtx, Instance);
 
     return true;
 }
@@ -229,6 +227,8 @@ void AVirtualTextureFeedback::AddPass( AFrameGraph & FrameGraph )
     pass.AddSubpass( { 0 }, // color attachment refs
                     [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
     {
+        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
+
         SDrawIndexedCmd drawCmd;
         drawCmd.InstanceCount = 1;
         drawCmd.StartInstanceLocation = 0;
@@ -241,7 +241,8 @@ void AVirtualTextureFeedback::AddPass( AFrameGraph & FrameGraph )
             SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
             // Choose pipeline and second vertex buffer
-            if ( !BindMaterialFeedbackPass( instance ) ) {
+            if (!BindMaterialFeedbackPass(immediateCtx, instance))
+            {
                 continue;
             }
 
@@ -255,7 +256,7 @@ void AVirtualTextureFeedback::AddPass( AFrameGraph & FrameGraph )
             drawCmd.StartIndexLocation = instance->StartIndexLocation;
             drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
 
-            rcmd->Draw( &drawCmd );
+            immediateCtx->Draw(&drawCmd);
         }
 
         SRect2D r;
@@ -264,16 +265,16 @@ void AVirtualTextureFeedback::AddPass( AFrameGraph & FrameGraph )
         r.Width  = RenderPassContext.RenderArea.Width;
         r.Height = RenderPassContext.RenderArea.Height;
 
-        rcmd->CopyColorAttachmentToBuffer(RenderPassContext,
-                                                          GetPixelBuffer(),
-                                                          0,
-                                                          r,
-                                                          FB_CHANNEL_BGRA,
-                                                          FB_UBYTE,
-                                                          COLOR_CLAMP_OFF,
-                                                          r.Width * r.Height * 4,
-                                                          0,
-                                                          4);
+        immediateCtx->CopyColorAttachmentToBuffer(RenderPassContext,
+                                                                  GetPixelBuffer(),
+                                                                  0,
+                                                                  r,
+                                                                  FB_CHANNEL_BGRA,
+                                                                  FB_UBYTE,
+                                                                  COLOR_CLAMP_OFF,
+                                                                  r.Width * r.Height * 4,
+                                                                  0,
+                                                                  4);
     } );
 }
 
@@ -300,8 +301,10 @@ void AVirtualTextureFeedback::DrawFeedback( AFrameGraph & FrameGraph, FGTextureP
     pass.AddSubpass( { 0 }, // color attachment refs
                     [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
     {
+        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
+
         rtbl->BindTexture( 0, FeedbackTexture_R->Actual() );
 
-        DrawSAQ( DrawFeedbackPipeline );
+        DrawSAQ(immediateCtx, DrawFeedbackPipeline);
     } );
 }

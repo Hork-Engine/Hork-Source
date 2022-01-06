@@ -38,13 +38,12 @@ SOFTWARE.
 #include "AtmosphereRenderer.h"
 #include "VXGIVoxelizer.h"
 
-#include <Runtime/Public/RuntimeVariable.h>
-#include <Runtime/Public/Runtime.h>
-#include <Runtime/Public/ScopedTimeCheck.h>
+#include <Runtime/RuntimeVariable.h>
+#include <Runtime/ScopedTimeCheck.h>
 
-#include <Platform/Public/WindowsDefs.h>
-#include <Platform/Public/Logger.h>
-#include <Core/Public/Image.h>
+#include <Platform/WindowsDefs.h>
+#include <Platform/Logger.h>
+#include <Core/Image.h>
 
 #include <SDL.h>
 
@@ -80,18 +79,13 @@ static void LoadSPIRV(void** BinaryCode, size_t* BinarySize)
     *BinarySize = 0;
 }
 
-ARenderBackend::ARenderBackend()
+ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 {
     GLogger.Printf("Initializing render backend...\n");
 
-    GDevice = GRuntime->GetRenderDevice();
-
-    rcmd = GRuntime->GetImmediateContext();
-
+    GDevice = pDevice;
+    rcmd = GDevice->GetImmediateContext();
     rtbl = rcmd->GetRootResourceTable();
-
-    // Store in global pointers
-    GStreamBuffer = GRuntime->GetStreamedMemoryGPU()->GetBufferGPU();
 
     InitMaterialSamplers();
 
@@ -148,7 +142,7 @@ ARenderBackend::ARenderBackend()
         rect.Dimension.Y   = 1;
         rect.Dimension.Z   = 1;
         const byte data[4] = {0xff, 0xff, 0xff, 0xff};
-        rcmd->WriteTextureRect(GWhiteTexture, rect, FORMAT_UBYTE4, sizeof(data), 4, data);
+        GWhiteTexture->WriteRect(rect, FORMAT_UBYTE4, sizeof(data), 4, data);
     }
 
     // Create cluster lookup 3D texture
@@ -159,28 +153,7 @@ ARenderBackend::ARenderBackend()
                                                                    MAX_FRUSTUM_CLUSTERS_Z))
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &GClusterLookup);
-    // Create item buffer
-    {
-#if 0
-        // FIXME: Use SSBO?
-        SBufferDesc bufferCI = {};
-        bufferCI.bImmutableStorage = true;
-        bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
-        bufferCI.SizeInBytes = MAX_TOTAL_CLUSTER_ITEMS * sizeof( SClusterPackedIndex );
-        GDevice->CreateBuffer( bufferCI, nullptr, &GClusterItemBuffer );
 
-        GClusterItemBuffer->SetDebugName( "Cluster item buffer" );
-
-        SBufferViewDesc bufferViewCI = {};
-        bufferViewCI.Format = BUFFER_VIEW_PIXEL_FORMAT_R32UI;
-        GClusterItemBuffer->CreateView( bufferViewCI, &GClusterItemTBO );
-#else
-        SBufferViewDesc bufferViewCI = {};
-        bufferViewCI.Format          = BUFFER_VIEW_PIXEL_FORMAT_R32UI;
-
-        GStreamBuffer->CreateView(bufferViewCI, &GClusterItemTBO);
-#endif
-    }
 
     FeedbackAnalyzerVT  = MakeRef<AVirtualTextureFeedbackAnalyzer>();
     GFeedbackAnalyzerVT = FeedbackAnalyzerVT;
@@ -293,7 +266,7 @@ ARenderBackend::ARenderBackend()
             rect.Dimension.Y  = w;
             rect.Dimension.Z  = 1;
 
-            rcmd->WriteTextureRect(cubemap, rect, FORMAT_FLOAT3, w * w * 3 * sizeof(float), 1, pSrc);
+            cubemap->WriteRect(rect, FORMAT_FLOAT3, w * w * 3 * sizeof(float), 1, pSrc);
         }
         rt.Load(Cubemap2[0], nullptr, IMAGE_PF_BGR32F);
         lt.Load(Cubemap2[1], nullptr, IMAGE_PF_BGR32F);
@@ -319,7 +292,7 @@ ARenderBackend::ARenderBackend()
             rect.Dimension.Y  = w;
             rect.Dimension.Z  = 1;
 
-            rcmd->WriteTextureRect(cubemap2, rect, FORMAT_FLOAT3, w * w * 3 * sizeof(float), 1, pSrc);
+            cubemap2->WriteRect(rect, FORMAT_FLOAT3, w * w * 3 * sizeof(float), 1, pSrc);
         }
     }
 
@@ -639,9 +612,36 @@ void ARenderBackend::InitializeMaterial(AMaterialGPU* Material, SMaterialDef con
     }
 }
 
-void ARenderBackend::RenderFrame(ITexture* pBackBuffer, SRenderFrame* pFrameData)
+void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* pBackBuffer, SRenderFrame* pFrameData)
 {
     static int timeQueryFrame = 0;
+
+    GStreamedMemory = StreamedMemory;
+    GStreamBuffer = StreamedMemory->GetBufferGPU();
+
+    // Create item buffer
+    if (!GClusterItemTBO)
+    {
+#if 0
+        // FIXME: Use SSBO?
+        SBufferDesc bufferCI = {};
+        bufferCI.bImmutableStorage = true;
+        bufferCI.ImmutableStorageFlags = IMMUTABLE_DYNAMIC_STORAGE;
+        bufferCI.SizeInBytes = MAX_TOTAL_CLUSTER_ITEMS * sizeof( SClusterPackedIndex );
+        GDevice->CreateBuffer( bufferCI, nullptr, &GClusterItemBuffer );
+
+        GClusterItemBuffer->SetDebugName( "Cluster item buffer" );
+
+        SBufferViewDesc bufferViewCI = {};
+        bufferViewCI.Format = BUFFER_VIEW_PIXEL_FORMAT_R32UI;
+        GClusterItemBuffer->CreateView( bufferViewCI, &GClusterItemTBO );
+#else
+        SBufferViewDesc bufferViewCI = {};
+        bufferViewCI.Format          = BUFFER_VIEW_PIXEL_FORMAT_R32UI;
+
+        GStreamBuffer->CreateView(bufferViewCI, &GClusterItemTBO);
+#endif
+    }
 
     if (r_ShowGPUTime)
     {
@@ -663,7 +663,7 @@ void ARenderBackend::RenderFrame(ITexture* pBackBuffer, SRenderFrame* pFrameData
     // Update cache at beggining of the frame to give more time for stream thread
     PhysCacheVT->Update();
 
-    FeedbackAnalyzerVT->Begin();
+    FeedbackAnalyzerVT->Begin(StreamedMemory);
 
     // TODO: Bind virtual textures in one place
     FeedbackAnalyzerVT->BindTexture(0, TestVT);
@@ -717,14 +717,16 @@ void ARenderBackend::RenderFrame(ITexture* pBackBuffer, SRenderFrame* pFrameData
     }
 
     r_RenderSnapshot = false;
+
+    GStreamedMemory = nullptr;
+    GStreamBuffer = nullptr;
 }
 
 void ARenderBackend::SetViewConstants(int ViewportIndex)
 {
-    AStreamedMemoryGPU* pStreamedMemory = GRuntime->GetStreamedMemoryGPU();
-    size_t              offset          = pStreamedMemory->AllocateConstant(sizeof(SViewConstantBuffer));
+    size_t offset = GStreamedMemory->AllocateConstant(sizeof(SViewConstantBuffer));
 
-    SViewConstantBuffer* pViewCBuf = (SViewConstantBuffer*)pStreamedMemory->Map(offset);
+    SViewConstantBuffer* pViewCBuf = (SViewConstantBuffer*)GStreamedMemory->Map(offset);
 
     pViewCBuf->OrthoProjection         = GFrameData->CanvasOrthoProjection;
     pViewCBuf->ViewProjection          = GRenderView->ViewProjection;
@@ -905,8 +907,9 @@ void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView, FGT
     ACustomTask& task = FrameGraph->AddTask<ACustomTask>("Setup render view");
     FGBufferViewProxy*bufferView = FrameGraph->AddExternalResource<FGBufferViewProxy>("hack hack", GClusterItemTBO);
     task.AddResource(bufferView, FG_RESOURCE_ACCESS_WRITE);
-    task.SetFunction([=](ACustomTask const&)
+    task.SetFunction([=](ACustomTaskContext const& Task)
                       {
+                         IImmediateContext* immediateCtx = Task.pImmediateContext;
                          GRenderView = pRenderView;
                          GRenderViewArea.X      = 0;
                          GRenderViewArea.Y      = 0;
@@ -915,7 +918,7 @@ void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView, FGT
 
                          UploadShaderResources(ViewportIndex);
 
-                         rcmd->BindResourceTable(rtbl);
+                         immediateCtx->BindResourceTable(rtbl);
 
     });
 

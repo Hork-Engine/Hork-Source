@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "VirtualTexture.h"
 
-#include <Containers/Public/PodVector.h>
+#include <Containers/PodVector.h>
 
 constexpr int VT_MAX_TEXTURE_UNITS = 256;
 
@@ -78,7 +78,7 @@ public:
 
     AVirtualTexture * GetTexture( int Unit );
 
-    void Begin();
+    void Begin(class AStreamedMemoryGPU* StreamedMemory);
 
     void End();
 

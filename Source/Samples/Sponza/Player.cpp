@@ -30,10 +30,9 @@ SOFTWARE.
 
 #include "Player.h"
 
-#include <Runtime/Public/Runtime.h>
-#include <World/Public/Base/ResourceManager.h>
-#include <World/Public/Components/InputComponent.h>
-#include <World/Public/Resource/SoundResource.h>
+#include <Runtime/ResourceManager.h>
+#include <Runtime/InputComponent.h>
+#include <Runtime/SoundResource.h>
 
 AN_BEGIN_CLASS_META( APlayer )
 AN_END_CLASS_META()
@@ -175,8 +174,8 @@ void APlayer::SpeedRelease() {
 
 
 #include"SponzaModel.h"
-#include <World/Public/Base/ResourceManager.h>
-#include <World/Public/World.h>
+#include <Runtime/ResourceManager.h>
+#include <Runtime/World.h>
 
 class ASphereActor : public AActor {
     AN_ACTOR( ASphereActor, AActor )
@@ -192,7 +191,7 @@ private:
     AMeshComponent * MeshComponent;
 };
 
-#include <World/Public/MaterialGraph/MaterialGraph.h>
+#include <Runtime/MaterialGraph.h>
 AN_CLASS_META( ASphereActor )
 
 static AMaterial * GetOrCreateSphereMaterial() {
@@ -241,7 +240,7 @@ ASphereActor::ASphereActor() {
     static TStaticResourceFinder< AIndexedMesh > MeshResource( _CTS( "/Default/Meshes/Sphere" ) );
     static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/mipmapchecker.png" ) );
 
-    AMersenneTwisterRand & rng = GRuntime->Rand;
+    AMersenneTwisterRand & rng = GEngine->Rand;
 
     // Create material instance for mesh component
     AMaterialInstance * matInst = CreateInstanceOf< AMaterialInstance >();

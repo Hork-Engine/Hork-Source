@@ -30,8 +30,8 @@ SOFTWARE.
 
 #include "Checker.h"
 
-#include <World/Public/Components/MeshComponent.h>
-#include <World/Public/Base/ResourceManager.h>
+#include <Runtime/MeshComponent.h>
+#include <Runtime/ResourceManager.h>
 
 AN_CLASS_META( AChecker )
 
