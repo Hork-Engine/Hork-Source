@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "ResourceManager.h"
+//#include "ResourceManager.h"
 #include "Texture.h"
 #include "VirtualTextureResource.h"
 
@@ -125,12 +125,12 @@ public:
     /** Set material */
     void SetMaterial( AMaterial * _Material );
 
-    /** Helper. Set material by alias */
-    template< char... Chars >
-    void SetMaterial( TCompileTimeString<Chars...> const & _Alias ) {
-        static TStaticResourceFinder< AMaterial > Resource( _Alias );
-        SetMaterial( Resource.GetObject() );
-    }
+    ///** Helper. Set material by alias */
+    //template< char... Chars >
+    //void SetMaterial( TCompileTimeString<Chars...> const & _Alias ) {
+    //    static TStaticResourceFinder< AMaterial > Resource( _Alias );
+    //    SetMaterial( Resource.GetObject() );
+    //}
 
     /** Get material. Never return null. */
     AMaterial * GetMaterial() const;
@@ -140,12 +140,12 @@ public:
 
     ATexture * GetTexture( int _TextureSlot );
 
-    /** Helper. Set texture for the slot */
-    template< char... Chars >
-    void SetTexture( int _TextureSlot, TCompileTimeString<Chars...> const & _Alias ) {
-        static TStaticResourceFinder< ATexture > Resource( _Alias );
-        SetTexture( _TextureSlot, Resource.GetObject() );
-    }
+    ///** Helper. Set texture for the slot */
+    //template< char... Chars >
+    //void SetTexture( int _TextureSlot, TCompileTimeString<Chars...> const & _Alias ) {
+    //    static TStaticResourceFinder< ATexture > Resource( _Alias );
+    //    SetTexture( _TextureSlot, Resource.GetObject() );
+    //}
 
     void SetVirtualTexture( AVirtualTextureResource * VirtualTex );
 

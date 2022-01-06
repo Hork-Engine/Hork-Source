@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "AmbientPlayer.h"
-#include "AudioSystem.h"
+#include "Engine.h"
 
 AN_CLASS_META( AAmbientPlayer )
 
@@ -77,7 +77,7 @@ void AAmbientPlayer::Tick( float _TimeStep )
 void AAmbientPlayer::UpdateAmbientVolume( float _TimeStep ) {
     ALevel * level = GetLevel();
 
-    int leaf = level->FindLeaf( GAudioSystem.GetListener().Position );
+    int leaf = level->FindLeaf( GEngine->GetAudioSystem()->GetListener().Position );
 
     if ( leaf < 0 ) {
         int ambientCount = AmbientSound.Size();

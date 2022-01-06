@@ -32,6 +32,7 @@ SOFTWARE.
 #include "MeshComponent.h"
 #include "PlayerController.h"
 #include "World.h"
+#include "Engine.h"
 #include <Audio/AudioMixer.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 
@@ -58,6 +59,7 @@ ASoundEmitter::ASoundEmitter()
     ConeOuterAngle = 360;
     bEmitterPaused = false;
     bVirtualizeWhenSilent = false;
+    bSpatializedStereo = false;
     ResourceRevision = 0;
     Channel = nullptr;
 }
@@ -142,7 +144,7 @@ void ASoundEmitter::PlaySound( ASoundResource * SoundResource, int StartFrame, i
         float falloff = FalloffDistance( maxDist );
         float cullDist = maxDist + falloff;
 
-        SAudioListener const & listener = GAudioSystem.GetListener();
+        SAudioListener const & listener = GEngine->GetAudioSystem()->GetListener();
 
         if ( listener.Position.DistSqr( GetWorldPosition() ) >= cullDist * cullDist ) {
             // Sound is too far from listener
@@ -284,7 +286,7 @@ bool ASoundEmitter::StartPlay( ASoundResource * SoundResource, int StartFrame, i
                                  bSpatializedStereo,
                                  IsPaused() );
 
-    GAudioSystem.GetMixer()->SubmitChannel( Channel );
+    GEngine->GetAudioSystem()->GetMixer()->SubmitChannel( Channel );
 
     return true;
 }
@@ -476,7 +478,8 @@ static void CalcAttenuation( ESoundEmitterType EmitterType,
     }
 
     // Panning
-    if ( Snd_HRTF || GAudioSystem.IsMono() ) {
+    if (Snd_HRTF || GEngine->GetAudioSystem()->GetPlaybackDevice()->IsMono())
+    {
         *pLeftVol = *pRightVol = attenuation;
     }
     else {
@@ -492,7 +495,7 @@ static void CalcAttenuation( ESoundEmitterType EmitterType,
 
 void ASoundEmitter::Spatialize()
 {
-    SAudioListener const & listener = GAudioSystem.GetListener();
+    SAudioListener const& listener = GEngine->GetAudioSystem()->GetListener();
 
     ChanVolume[0] = 0;
     ChanVolume[1] = 0;
@@ -562,7 +565,7 @@ void ASoundEmitter::Spatialize()
     if ( ChanVolume[1] > 65535 )
         ChanVolume[1] = 65535;
 
-    bSpatializedStereo = !GAudioSystem.IsMono();
+    bSpatializedStereo = !GEngine->GetAudioSystem()->GetPlaybackDevice()->IsMono();
 
     if ( Snd_HRTF ) {
         LocalDir = listener.TransformInv * soundPosition;
@@ -654,7 +657,7 @@ int ASoundEmitter::GetPlaybackPosition() const
 
 void ASoundEmitter::SetPlaybackTime( float Time )
 {
-    AAudioDevice * device = GAudioSystem.GetPlaybackDevice();
+    AAudioDevice* device = GEngine->GetAudioSystem()->GetPlaybackDevice();
 
     int frameNum = Math::Round( Time * device->GetSampleRate() );
 
@@ -663,7 +666,7 @@ void ASoundEmitter::SetPlaybackTime( float Time )
 
 float ASoundEmitter::GetPlaybackTime() const
 {
-    AAudioDevice * device = GAudioSystem.GetPlaybackDevice();
+    AAudioDevice* device = GEngine->GetAudioSystem()->GetPlaybackDevice();
 
     return (float)Channel->GetPlaybackPos() / device->GetSampleRate();
 }
@@ -727,7 +730,7 @@ void ASoundEmitter::SpawnSound( ASoundResource * SoundResource, Float3 const & S
     float falloff = FalloffDistance( maxDist );
 
     if ( SpawnInfo->EmitterType != SOUND_EMITTER_BACKGROUND && !SpawnInfo->bVirtualizeWhenSilent ) {
-        SAudioListener const & listener = GAudioSystem.GetListener();
+        SAudioListener const& listener = GEngine->GetAudioSystem()->GetListener();
         float cullDist = maxDist + falloff;
 
         if ( listener.Position.DistSqr( SpawnPosition ) >= cullDist * cullDist ) {
@@ -752,7 +755,7 @@ void ASoundEmitter::SpawnSound( ASoundResource * SoundResource, Float3 const & S
         }
     }
 
-    auto & pool = GAudioSystem.GetOneShotPool();
+    auto& pool = GEngine->GetAudioSystem()->GetOneShotPool();
 
     ASoundOneShot * sound = new ( pool.Allocate() ) ASoundOneShot;
     sound->Volume = Math::Saturate( SpawnInfo->Volume );
@@ -804,7 +807,7 @@ void ASoundEmitter::SpawnSound( ASoundResource * SoundResource, Float3 const & S
                                         sound->bSpatializedStereo,
                                         sound->IsPaused() );
 
-    GAudioSystem.GetMixer()->SubmitChannel( sound->Channel );
+    GEngine->GetAudioSystem()->GetMixer()->SubmitChannel(sound->Channel);
 }
 
 void ASoundEmitter::ClearOneShotSounds()
@@ -830,7 +833,7 @@ void ASoundEmitter::FreeSound( ASoundOneShot * Sound )
 
     Sound->~ASoundOneShot();
 
-    auto & pool = GAudioSystem.GetOneShotPool();
+    auto& pool = GEngine->GetAudioSystem()->GetOneShotPool();
     pool.Deallocate( Sound );
 }
 
@@ -876,7 +879,7 @@ void ASoundEmitter::UpdateSound( ASoundOneShot * Sound )
 
 void ASoundOneShot::Spatialize()
 {
-    SAudioListener const & listener = GAudioSystem.GetListener();
+    SAudioListener const& listener = GEngine->GetAudioSystem()->GetListener();
 
     ChanVolume[0] = 0;
     ChanVolume[1] = 0;
@@ -941,7 +944,7 @@ void ASoundOneShot::Spatialize()
     if ( ChanVolume[1] > 65535 )
         ChanVolume[1] = 65535;
 
-    bSpatializedStereo = !GAudioSystem.IsMono();
+    bSpatializedStereo = !GEngine->GetAudioSystem()->GetPlaybackDevice()->IsMono();
 
     if ( Snd_HRTF ) {
         LocalDir = listener.TransformInv * SoundPosition;

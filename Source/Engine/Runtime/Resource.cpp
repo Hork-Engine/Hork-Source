@@ -76,7 +76,7 @@ bool AResource::LoadFromPath(const char* _Path)
         // try to load from resource pack
         AArchive* resourcePack;
         int       fileIndex;
-        if (GResourceManager->FindFile(_Path, &resourcePack, &fileIndex))
+        if (GEngine->GetResourceManager()->FindFile(_Path, &resourcePack, &fileIndex))
         {
             AMemoryStream f;
             if (!f.OpenRead(fileIndex, *resourcePack))
@@ -107,7 +107,7 @@ bool AResource::LoadFromPath(const char* _Path)
 
         // try to load from resource pack
         AMemoryStream f;
-        if (!f.OpenRead(_Path + 7, *GResourceManager->GetCommonResources()))
+        if (!f.OpenRead(_Path + 7, *GEngine->GetResourceManager()->GetCommonResources()))
         {
             return false;
         }

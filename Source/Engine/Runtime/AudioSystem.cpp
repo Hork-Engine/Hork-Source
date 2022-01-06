@@ -37,83 +37,74 @@ SOFTWARE.
 #include <Audio/AudioDevice.h>
 #include <Audio/AudioMixer.h>
 
-AConsoleVar Snd_MasterVolume( _CTS("Snd_MasterVolume"), _CTS("1") );
-AConsoleVar Snd_RefreshRate( _CTS("Snd_RefreshRate"), _CTS("16") );
-
-AAudioSystem & GAudioSystem = AAudioSystem::Inst();
+AConsoleVar Snd_MasterVolume(_CTS("Snd_MasterVolume"), _CTS("1"));
+AConsoleVar Snd_RefreshRate(_CTS("Snd_RefreshRate"), _CTS("16"));
 
 AAudioSystem::AAudioSystem()
 {
+    GLogger.Printf("Initializing audio system...\n");
+
+    pPlaybackDevice = MakeRef<AAudioDevice>(44100);
+
+    pMixer = MakeUnique<AAudioMixer>(pPlaybackDevice);
+    pMixer->StartAsync();
 }
 
 AAudioSystem::~AAudioSystem()
 {
+    GLogger.Printf("Deinitializing audio system...\n");
 }
 
-void AAudioSystem::Initialize()
+void AAudioSystem::Update(APlayerController* _Controller, float _TimeStep)
 {
-    GLogger.Printf( "Initializing audio system...\n" );
+    ASceneComponent*  audioListener   = _Controller ? _Controller->GetAudioListener() : nullptr;
+    AAudioParameters* audioParameters = _Controller ? _Controller->GetAudioParameters() : nullptr;
 
-    pPlaybackDevice = MakeUnique< AAudioDevice >( 44100 );
-    pMixer = MakeUnique< AAudioMixer >( pPlaybackDevice.GetObject() );
-    bMono = pPlaybackDevice->IsMono();
-
-    pMixer->StartAsync();
-}
-
-void AAudioSystem::Deinitialize()
-{
-    GLogger.Printf( "Deinitializing audio system...\n" );
-
-    pMixer.Reset();
-    pPlaybackDevice.Reset();
-    OneShotPool.Free();
-}
-
-void AAudioSystem::Update( APlayerController * _Controller, float _TimeStep )
-{
-    ASceneComponent * audioListener = _Controller ? _Controller->GetAudioListener() : nullptr;
-    AAudioParameters * audioParameters = _Controller ? _Controller->GetAudioParameters() : nullptr;
-
-    if ( audioListener ) {
+    if (audioListener)
+    {
         Listener.Position = audioListener->GetWorldPosition();
         Listener.RightVec = audioListener->GetWorldRightVector();
 
-        Listener.TransformInv.Compose( Listener.Position, audioListener->GetWorldRotation().ToMatrix3x3() );
+        Listener.TransformInv.Compose(Listener.Position, audioListener->GetWorldRotation().ToMatrix3x3());
         // We can optimize Inverse like for viewmatrix
         Listener.TransformInv.InverseSelf();
 
         Listener.Id = audioListener->GetOwnerActor()->Id;
-
     }
-    else {
+    else
+    {
         Listener.Position.Clear();
-        Listener.RightVec = Float3(1,0,0);
+        Listener.RightVec = Float3(1, 0, 0);
 
         Listener.TransformInv.SetIdentity();
 
         Listener.Id = 0;
     }
 
-    if ( audioParameters ) {
-        Listener.VolumeScale = Math::Saturate( audioParameters->Volume * Snd_MasterVolume.GetFloat() );
-        Listener.Mask = audioParameters->ListenerMask;
+    if (audioParameters)
+    {
+        Listener.VolumeScale = Math::Saturate(audioParameters->Volume * Snd_MasterVolume.GetFloat());
+        Listener.Mask        = audioParameters->ListenerMask;
     }
-    else {
+    else
+    {
         // set defaults
-        Listener.VolumeScale = Math::Saturate( Snd_MasterVolume.GetFloat() );
-        Listener.Mask = ~0u;
+        Listener.VolumeScale = Math::Saturate(Snd_MasterVolume.GetFloat());
+        Listener.Mask        = ~0u;
     }
 
     static double time = 0;
 
     time += _TimeStep;
-    if ( time > 1.0f / Snd_RefreshRate.GetFloat() ) {
+    if (time > 1.0f / Snd_RefreshRate.GetFloat())
+    {
         time = 0;
 
-        //GLogger.Printf("Update\n");
         ASoundEmitter::UpdateSounds();
     }
 
-//    pMixer->Update();
+    if (!pMixer->IsAsync())
+    {
+        pMixer->Update();
+    }
 }

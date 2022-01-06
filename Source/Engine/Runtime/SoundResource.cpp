@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "SoundResource.h"
-#include "AudioSystem.h"
+#include "Engine.h"
 
 #include <Platform/Memory/Memory.h>
 #include <Platform/Logger.h>
@@ -55,7 +55,7 @@ ASoundResource::~ASoundResource()
 
 int ASoundResource::GetFrequency() const
 {
-    AAudioDevice * device = GAudioSystem.GetPlaybackDevice();
+    AAudioDevice* device = GEngine->GetAudioSystem()->GetPlaybackDevice();
 
     // The frequency always matches the playback system
     return device->GetSampleRate();
@@ -226,7 +226,7 @@ bool ASoundResource::InitializeFromMemory( const char * _Path, const void * _Sys
         _pCreateInfo = &defaultCI;
     }
 
-    AAudioDevice * device = GAudioSystem.GetPlaybackDevice();
+    AAudioDevice* device = GEngine->GetAudioSystem()->GetPlaybackDevice();
 
     Purge();
 

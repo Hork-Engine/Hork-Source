@@ -30,10 +30,7 @@ SOFTWARE.
 
 #include "ResourceManager.h"
 #include "GameModuleInterface.h"
-#include "Engine.h"
 #include <Platform/Logger.h>
-
-AResourceManager* GResourceManager = nullptr;
 
 AResourceManager::AResourceManager()
 {

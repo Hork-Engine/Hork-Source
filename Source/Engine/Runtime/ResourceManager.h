@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Resource.h"
+#include "Engine.h"
 
 #include <Core/CompileTimeString.h>
 #include <Core/Guid.h>
@@ -110,7 +111,6 @@ private:
     TUniqueRef<AArchive>             CommonResources;
 };
 
-extern AResourceManager* GResourceManager;
 
 /*
 
@@ -122,26 +122,26 @@ Helpers
 template <typename T>
 AN_FORCEINLINE T* GetOrCreateResource(const char* _Path)
 {
-    return GResourceManager->GetOrCreateResource<T>(_Path);
+    return GEngine->GetResourceManager()->GetOrCreateResource<T>(_Path);
 }
 
 /** Get resource. Return default object if fails. */
 template <typename T>
 AN_FORCEINLINE T* GetResource(const char* _Alias, bool* _bResourceFoundResult = nullptr, bool* _bMetadataMismatch = nullptr)
 {
-    return GResourceManager->GetResource<T>(_Alias, _bResourceFoundResult, _bMetadataMismatch);
+    return GEngine->GetResourceManager()->GetResource<T>(_Alias, _bResourceFoundResult, _bMetadataMismatch);
 }
 
 /** Get resource meta. Return null if fails. */
 AN_FORCEINLINE AClassMeta const* GetResourceInfo(const char* _Alias)
 {
-    return GResourceManager->GetResourceInfo(_Alias);
+    return GEngine->GetResourceManager()->GetResourceInfo(_Alias);
 }
 
 /** Find resource in cache. Return null if fails. */
 AN_FORCEINLINE AResource* FindResource(AClassMeta const& _ClassMeta, const char* _Alias, bool& _bMetadataMismatch, int& _Hash)
 {
-    return GResourceManager->FindResource(_ClassMeta, _Alias, _bMetadataMismatch, _Hash);
+    return GEngine->GetResourceManager()->FindResource(_ClassMeta, _Alias, _bMetadataMismatch, _Hash);
 }
 
 /** Find resource in cache. Return null if fails. */
@@ -154,32 +154,32 @@ AN_FORCEINLINE T* FindResource(const char* _Alias, bool& _bMetadataMismatch, int
 /** Find resource in cache. Return null if fails. */
 AN_FORCEINLINE AResource* FindResourceByAlias(const char* _Alias)
 {
-    return GResourceManager->FindResourceByAlias(_Alias);
+    return GEngine->GetResourceManager()->FindResourceByAlias(_Alias);
 }
 
 /** Register object as resource. */
 AN_FORCEINLINE bool RegisterResource(AResource* _Resource, const char* _Alias)
 {
-    return GResourceManager->RegisterResource(_Resource, _Alias);
+    return GEngine->GetResourceManager()->RegisterResource(_Resource, _Alias);
 }
 
 /** Unregister object as resource. */
 AN_FORCEINLINE bool UnregisterResource(AResource* _Resource)
 {
-    return GResourceManager->UnregisterResource(_Resource);
+    return GEngine->GetResourceManager()->UnregisterResource(_Resource);
 }
 
 /** Unregister all resources by type. */
 template <typename T>
 AN_FORCEINLINE void UnregisterResources()
 {
-    GResourceManager->UnregisterResources<T>();
+    GEngine->GetResourceManager()->UnregisterResources<T>();
 }
 
 /** Unregister all resources. */
 AN_FORCEINLINE void UnregisterResources()
 {
-    GResourceManager->UnregisterResources();
+    GEngine->GetResourceManager()->UnregisterResources();
 }
 
 /**

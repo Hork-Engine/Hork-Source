@@ -59,56 +59,35 @@ struct SAudioListener
 
 class AAudioSystem
 {
-    AN_SINGLETON( AAudioSystem )
-
 public:
-    /** Initialize audio system */
-    void Initialize();
+    AAudioSystem();
+    virtual ~AAudioSystem();
 
-    /** Deinitialize audio system */
-    void Deinitialize();
-
-    AAudioDevice * GetPlaybackDevice() const
+    AAudioDevice* GetPlaybackDevice() const
     {
-        return pPlaybackDevice.GetObject();
+        return pPlaybackDevice;
     }
 
-    AAudioMixer * GetMixer() const
+    AAudioMixer* GetMixer() const
     {
         return pMixer.GetObject();
     }
 
-    TPoolAllocator< ASoundOneShot, 128 > & GetOneShotPool()
+    TPoolAllocator<ASoundOneShot, 128>& GetOneShotPool()
     {
         return OneShotPool;
     }
 
-    bool IsMono() const
-    {
-        return bMono;
-    }
-
-    ///** Get current audio listener position */
-    //Float3 const & GetListenerPosition() const
-    //{
-    //    return ListenerPosition;
-    //}
-
-    SAudioListener const & GetListener() const
+    SAudioListener const& GetListener() const
     {
         return Listener;
     }
 
-    void Update( APlayerController * _Controller, float _TimeStep );
+    void Update(APlayerController* _Controller, float _TimeStep);
 
 private:
-    ~AAudioSystem();
-
-    TUniqueRef< AAudioDevice > pPlaybackDevice;
-    TUniqueRef< AAudioMixer > pMixer;
-    TPoolAllocator< ASoundOneShot, 128 > OneShotPool;
-    SAudioListener Listener;
-    bool bMono;
+    TRef<AAudioDevice>                 pPlaybackDevice;
+    TUniqueRef<AAudioMixer>            pMixer;
+    TPoolAllocator<ASoundOneShot, 128> OneShotPool;
+    SAudioListener                     Listener;
 };
-
-extern AAudioSystem & GAudioSystem;

@@ -37,6 +37,7 @@ SOFTWARE.
 #include "WDesktop.h"
 #include "World.h"
 #include "RenderFrontend.h"
+#include "AudioSystem.h"
 
 #include <Renderer/RenderBackend.h>
 #include <Core/Random.h>
@@ -135,6 +136,16 @@ public:
 
     RenderCore::IDevice* GetRenderDevice();
 
+    AAudioSystem* GetAudioSystem()
+    {
+        return &AudioSystem;
+    }
+
+    AResourceManager* GetResourceManager()
+    {
+        return ResourceManager.GetObject();
+    }
+
 private:
     /** IEventListener interface. */
     void OnKeyEvent(struct SKeyEvent const& _Event, double _TimeStamp) override;
@@ -212,6 +223,8 @@ private:
     TRef<RenderCore::IGenericWindow> Window;
     TRef<RenderCore::ISwapChain>     pSwapChain;
     TRef<AVertexMemoryGPU>           VertexMemoryGPU;
+
+    AAudioSystem AudioSystem;
 
     AConsole Console;
 

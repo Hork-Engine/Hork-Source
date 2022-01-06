@@ -318,13 +318,10 @@ void AEngineInstance::Run(SEntryDecl const& _EntryDecl)
     ImGui::SetAllocatorFunctions( ImguiModuleAlloc, ImguiModuleFree, NULL );
 #endif
     ResourceManager  = MakeUnique<AResourceManager>();
-    GResourceManager = ResourceManager.GetObject();
 
     Renderer = CreateInstanceOf<ARenderFrontend>();
 
     RenderBackend = MakeRef<ARenderBackend>(RenderDevice);
-
-    GAudioSystem.Initialize();
 
     AFont::SetGlyphRanges(GLYPH_RANGE_CYRILLIC);
 
@@ -382,7 +379,7 @@ void AEngineInstance::Run(SEntryDecl const& _EntryDecl)
         AWorld::UpdateWorlds(FrameDurationInSeconds);
 
         // Update audio system
-        GAudioSystem.Update(APlayerController::GetCurrentAudioListener(), FrameDurationInSeconds);
+        AudioSystem.Update(APlayerController::GetCurrentAudioListener(), FrameDurationInSeconds);
 
         // Poll runtime events
         FrameLoop->PollEvents(this);
@@ -427,13 +424,10 @@ void AEngineInstance::Run(SEntryDecl const& _EntryDecl)
     Renderer.Reset();
 
     ResourceManager.Reset();
-    GResourceManager = nullptr;
 
     AGarbageCollector::Deinitialize();
 
     ALevel::PrimitiveLinkPool.Free();
-
-    GAudioSystem.Deinitialize();
 
     DeinitializeFactories();
 
@@ -524,7 +518,7 @@ void AEngineInstance::ShowStats()
         pos.Y += y_step;
         Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Frontend time: %d msec", stat.FrontendTime), nullptr, true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Audio channels: %d active, %d virtual", GAudioSystem.GetMixer()->GetNumActiveChannels(), GAudioSystem.GetMixer()->GetNumVirtualChannels()), nullptr, true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Audio channels: %d active, %d virtual", AudioSystem.GetMixer()->GetNumActiveChannels(), AudioSystem.GetMixer()->GetNumVirtualChannels()), nullptr, true);
 
         Canvas.PopFont();
     }
@@ -961,7 +955,7 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
 
     AConsoleVar::AllocateVariables();
 
-    AEngineInstance().Run(EntryDecl);
+    MakeUnique<AEngineInstance>()->Run(EntryDecl);
 
     EmbeddedResourcesArch.Reset();
 
