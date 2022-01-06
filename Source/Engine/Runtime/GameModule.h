@@ -32,16 +32,16 @@ SOFTWARE.
 
 #include "CommandContext.h"
 
-enum ECursorMode
+enum CURSOR_MODE
 {
     CURSOR_MODE_AUTO,
     CURSOR_MODE_FORCE_ENABLED,
     CURSOR_MODE_FORCE_DISABLED
 };
 
-class IGameModule : public ABaseObject
+class AGameModule : public ABaseObject
 {
-    AN_CLASS(IGameModule, ABaseObject)
+    AN_CLASS(AGameModule, ABaseObject)
 
 public:
     /** Quit when user press ESCAPE */
@@ -53,11 +53,11 @@ public:
     /** Allow to drop down the console */
     bool bAllowConsole = true;
 
-    ECursorMode CursorMode = CURSOR_MODE_AUTO;
+    CURSOR_MODE CursorMode = CURSOR_MODE_AUTO;
 
     ACommandContext CommandContext;
 
-    IGameModule();
+    AGameModule();
 
     virtual void OnGameClose();
 

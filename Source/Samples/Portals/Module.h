@@ -35,8 +35,8 @@ SOFTWARE.
 #include <Runtime/Material.h>
 #include "MyPlayerController.h"
 
-class AModule : public IGameModule {
-    AN_CLASS( AModule, IGameModule )
+class AModule : public AGameModule {
+    AN_CLASS( AModule, AGameModule )
 
 public:
     TRef< ARenderingParameters > RenderingParams;

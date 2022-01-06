@@ -149,9 +149,9 @@ protected:
     }
 };
 
-class AModule : public IGameModule
+class AModule : public AGameModule
 {
-    AN_CLASS( AModule, IGameModule )
+    AN_CLASS( AModule, AGameModule )
 
 public:
     AModule()

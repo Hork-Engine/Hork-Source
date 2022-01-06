@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "ResourceManager.h"
-#include "GameModuleInterface.h"
+#include "GameModule.h"
 #include <Platform/Logger.h>
 
 AResourceManager::AResourceManager()

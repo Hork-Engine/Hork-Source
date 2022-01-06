@@ -28,39 +28,39 @@ SOFTWARE.
 
 */
 
-#include "GameModuleInterface.h"
+#include "GameModule.h"
 #include "Engine.h"
 #include "Material.h"
 
-AN_CLASS_META(IGameModule)
+AN_CLASS_META(AGameModule)
 
-IGameModule::IGameModule()
+AGameModule::AGameModule()
 {
-    AddCommand("quit", {this, &IGameModule::Quit}, "Quit from application");
-    AddCommand("RebuildMaterials", {this, &IGameModule::RebuildMaterials}, "Rebuild materials");
+    AddCommand("quit", {this, &AGameModule::Quit}, "Quit from application");
+    AddCommand("RebuildMaterials", {this, &AGameModule::RebuildMaterials}, "Rebuild materials");
 }
 
-void IGameModule::OnGameClose()
+void AGameModule::OnGameClose()
 {
     GEngine->PostTerminateEvent();
 }
 
-void IGameModule::AddCommand(const char* _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment)
+void AGameModule::AddCommand(const char* _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment)
 {
     CommandContext.AddCommand(_Name, _Callback, _Comment);
 }
 
-void IGameModule::RemoveCommand(const char* _Name)
+void AGameModule::RemoveCommand(const char* _Name)
 {
     CommandContext.RemoveCommand(_Name);
 }
 
-void IGameModule::Quit(ACommandProcessor const& _Proc)
+void AGameModule::Quit(ACommandProcessor const& _Proc)
 {
     GEngine->PostTerminateEvent();
 }
 
-void IGameModule::RebuildMaterials(ACommandProcessor const& _Proc)
+void AGameModule::RebuildMaterials(ACommandProcessor const& _Proc)
 {
     AMaterial::RebuildMaterials();
 }

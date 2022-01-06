@@ -34,8 +34,8 @@ SOFTWARE.
 #include <Runtime/IndexedMesh.h>
 #include "MyPlayerController.h"
 
-class ASponzaModel : public IGameModule {
-    AN_CLASS( ASponzaModel, IGameModule )
+class ASponzaModel : public AGameModule {
+    AN_CLASS( ASponzaModel, AGameModule )
 
 public:
     TRef< ARenderingParameters > RenderingParams;

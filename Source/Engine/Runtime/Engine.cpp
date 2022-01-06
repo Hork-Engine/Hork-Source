@@ -137,13 +137,13 @@ static void ImguiModuleFree( void * _Bytes, void * )
 }
 #endif
 
-static IGameModule* CreateGameModule(AClassMeta const* pClassMeta)
+static AGameModule* CreateGameModule(AClassMeta const* pClassMeta)
 {
-    if (!pClassMeta->IsSubclassOf<IGameModule>())
+    if (!pClassMeta->IsSubclassOf<AGameModule>())
     {
-        CriticalError("CreateGameModule: game module is not subclass of IGameModule\n");
+        CriticalError("CreateGameModule: game module is not subclass of AGameModule\n");
     }
-    return static_cast<IGameModule*>(pClassMeta->CreateInstance());
+    return static_cast<AGameModule*>(pClassMeta->CreateInstance());
 }
 
 void AEngineInstance::LoadConfigFile()

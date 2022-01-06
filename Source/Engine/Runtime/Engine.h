@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "FrameLoop.h"
 #include "Console.h"
-#include "GameModuleInterface.h"
+#include "GameModule.h"
 #include "FontAtlas.h"
 #include "WDesktop.h"
 #include "World.h"
@@ -208,7 +208,7 @@ private:
     /** Frame update duration */
     float FrameDurationInSeconds = 0;
 
-    IGameModule* GameModule;
+    AGameModule* GameModule;
 
     TRef<WDesktop> Desktop;
 

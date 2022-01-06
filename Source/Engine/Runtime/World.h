@@ -43,7 +43,7 @@ class AActorComponent;
 class ACameraComponent;
 class ATimer;
 class ADebugRenderer;
-class IGameModule;
+class AGameModule;
 
 /** Actor spawn parameters */
 struct SActorSpawnInfo
