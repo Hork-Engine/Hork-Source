@@ -38,8 +38,8 @@ SOFTWARE.
 #include "AtmosphereRenderer.h"
 #include "VXGIVoxelizer.h"
 
-#include <Runtime/RuntimeVariable.h>
-#include <Runtime/ScopedTimeCheck.h>
+#include <Core/ConsoleVar.h>
+#include <Core/ScopedTimer.h>
 
 #include <Platform/WindowsDefs.h>
 #include <Platform/Logger.h>
@@ -49,25 +49,25 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-ARuntimeVariable r_FrameGraphDebug(_CTS("r_FrameGraphDebug"), _CTS("0"));
-ARuntimeVariable r_RenderSnapshot(_CTS("r_RenderSnapshot"), _CTS("0"), VAR_CHEAT);
-ARuntimeVariable r_DebugRenderMode(_CTS("r_DebugRenderMode"), _CTS("0"), VAR_CHEAT);
-ARuntimeVariable r_BloomScale(_CTS("r_BloomScale"), _CTS("1"));
-ARuntimeVariable r_Bloom(_CTS("r_Bloom"), _CTS("1"));
-ARuntimeVariable r_BloomParam0(_CTS("r_BloomParam0"), _CTS("0.5"));
-ARuntimeVariable r_BloomParam1(_CTS("r_BloomParam1"), _CTS("0.3"));
-ARuntimeVariable r_BloomParam2(_CTS("r_BloomParam2"), _CTS("0.04"));
-ARuntimeVariable r_BloomParam3(_CTS("r_BloomParam3"), _CTS("0.01"));
-ARuntimeVariable r_ToneExposure(_CTS("r_ToneExposure"), _CTS("0.4"));
-ARuntimeVariable r_Brightness(_CTS("r_Brightness"), _CTS("1"));
-ARuntimeVariable r_TessellationLevel(_CTS("r_TessellationLevel"), _CTS("0.05"));
-ARuntimeVariable r_MotionBlur(_CTS("r_MotionBlur"), _CTS("1"));
-ARuntimeVariable r_SSLR(_CTS("r_SSLR"), _CTS("1"), 0, _CTS("Required to rebuld materials to apply"));
-ARuntimeVariable r_SSLRMaxDist(_CTS("r_SSLRMaxDist"), _CTS("10"));
-ARuntimeVariable r_SSLRSampleOffset(_CTS("r_SSLRSampleOffset"), _CTS("0.1"));
-ARuntimeVariable r_HBAO(_CTS("r_HBAO"), _CTS("1"), 0, _CTS("Required to rebuld materials to apply"));
-ARuntimeVariable r_FXAA(_CTS("r_FXAA"), _CTS("1"));
-ARuntimeVariable r_ShowGPUTime(_CTS("r_ShowGPUTime"), _CTS("0"));
+AConsoleVar r_FrameGraphDebug(_CTS("r_FrameGraphDebug"), _CTS("0"));
+AConsoleVar r_RenderSnapshot(_CTS("r_RenderSnapshot"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar r_DebugRenderMode(_CTS("r_DebugRenderMode"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar r_BloomScale(_CTS("r_BloomScale"), _CTS("1"));
+AConsoleVar r_Bloom(_CTS("r_Bloom"), _CTS("1"));
+AConsoleVar r_BloomParam0(_CTS("r_BloomParam0"), _CTS("0.5"));
+AConsoleVar r_BloomParam1(_CTS("r_BloomParam1"), _CTS("0.3"));
+AConsoleVar r_BloomParam2(_CTS("r_BloomParam2"), _CTS("0.04"));
+AConsoleVar r_BloomParam3(_CTS("r_BloomParam3"), _CTS("0.01"));
+AConsoleVar r_ToneExposure(_CTS("r_ToneExposure"), _CTS("0.4"));
+AConsoleVar r_Brightness(_CTS("r_Brightness"), _CTS("1"));
+AConsoleVar r_TessellationLevel(_CTS("r_TessellationLevel"), _CTS("0.05"));
+AConsoleVar r_MotionBlur(_CTS("r_MotionBlur"), _CTS("1"));
+AConsoleVar r_SSLR(_CTS("r_SSLR"), _CTS("1"), 0, _CTS("Required to rebuld materials to apply"));
+AConsoleVar r_SSLRMaxDist(_CTS("r_SSLRMaxDist"), _CTS("10"));
+AConsoleVar r_SSLRSampleOffset(_CTS("r_SSLRSampleOffset"), _CTS("0.1"));
+AConsoleVar r_HBAO(_CTS("r_HBAO"), _CTS("1"), 0, _CTS("Required to rebuld materials to apply"));
+AConsoleVar r_FXAA(_CTS("r_FXAA"), _CTS("1"));
+AConsoleVar r_ShowGPUTime(_CTS("r_ShowGPUTime"), _CTS("0"));
 
 void TestVT();
 

@@ -31,8 +31,7 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Platform/Platform.h>
 #include <Geometry/BV/BvIntersect.h>
-
-#include <Runtime/RuntimeVariable.h>
+#include <Core/ConsoleVar.h>
 #include <Runtime/EmbeddedResources.h>
 
 #include <Audio/HRTF.h>
@@ -44,7 +43,7 @@ SOFTWARE.
 
 #define FILTER_SIZE_POW2
 
-ARuntimeVariable Snd_LerpHRTF( _CTS("Snd_LerpHRTF"), _CTS("1") );
+AConsoleVar Snd_LerpHRTF( _CTS("Snd_LerpHRTF"), _CTS("1") );
 
 AAudioHRTF::AAudioHRTF( int SampleRate )
 {

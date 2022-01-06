@@ -33,8 +33,8 @@ SOFTWARE.
 #include "SceneComponent.h"
 #include "World.h"
 #include "Timer.h"
-#include "RuntimeVariable.h"
 
+#include <Core/ConsoleVar.h>
 #include <Platform/Logger.h>
 
 #include <angelscript.h>
@@ -42,7 +42,7 @@ SOFTWARE.
 AN_BEGIN_CLASS_META( AActor )
 AN_END_CLASS_META()
 
-ARuntimeVariable com_DrawRootComponentAxis( _CTS( "com_DrawRootComponentAxis" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawRootComponentAxis( _CTS( "com_DrawRootComponentAxis" ), _CTS( "0" ), CVAR_CHEAT );
 
 static uint32_t UniqueName = 0;
 

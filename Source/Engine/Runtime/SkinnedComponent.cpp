@@ -40,14 +40,14 @@ SOFTWARE.
 #include "ResourceManager.h"
 #include "Asset.h"
 #include "Animation.h"
-#include "RuntimeVariable.h"
 #include "BulletCompatibility.h"
 
 #include <Platform/Logger.h>
+#include <Core/ConsoleVar.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <RenderCore/VertexMemoryGPU.h>
 
-ARuntimeVariable com_DrawSkeleton( _CTS( "com_DrawSkeleton" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawSkeleton( _CTS( "com_DrawSkeleton" ), _CTS( "0" ), CVAR_CHEAT );
 
 AN_CLASS_META( ASkinnedComponent )
 

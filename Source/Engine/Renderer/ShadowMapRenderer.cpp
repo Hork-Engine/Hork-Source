@@ -3,7 +3,7 @@
 
 using namespace RenderCore;
 
-ARuntimeVariable r_ShadowCascadeBits(_CTS("r_ShadowCascadeBits"), _CTS("24")); // Allowed 16, 24 or 32 bits
+AConsoleVar r_ShadowCascadeBits(_CTS("r_ShadowCascadeBits"), _CTS("24")); // Allowed 16, 24 or 32 bits
 
 static const float  EVSM_positiveExponent = 40.0;
 static const float  EVSM_negativeExponent = 5.0;
@@ -389,8 +389,8 @@ void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SDirectionalLightInsta
 
 
 #if 0
-ARuntimeVariable r_ShadowmapResolution( _CTS( "r_ShadowmapResolution" ), _CTS( "512" ) );
-ARuntimeVariable r_ShadowmapBits( _CTS( "r_ShadowmapBits" ), _CTS( "24" ) );
+AConsoleVar r_ShadowmapResolution( _CTS( "r_ShadowmapResolution" ), _CTS( "512" ) );
+AConsoleVar r_ShadowmapBits( _CTS( "r_ShadowmapBits" ), _CTS( "24" ) );
 #endif
 
 void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SLightParameters const* Light, FGTextureProxy** ppShadowMapDepth)

@@ -34,14 +34,15 @@ SOFTWARE.
 #include "CharacterController.h"
 #include "PhysicalBody.h"
 #include "World.h"
-#include "RuntimeVariable.h"
+
+#include <Core/ConsoleVar.h>
 
 #include <float.h>
 
-ARuntimeVariable com_TraceGroundOffset( _CTS( "com_TraceGroundOffset" ), _CTS( "0.01" ) );
-ARuntimeVariable com_TraceGroundCylinder( _CTS( "com_TraceGroundCylinder" ), _CTS( "1" ) );
+AConsoleVar com_TraceGroundOffset( _CTS( "com_TraceGroundOffset" ), _CTS( "0.01" ) );
+AConsoleVar com_TraceGroundCylinder( _CTS( "com_TraceGroundCylinder" ), _CTS( "1" ) );
 
-ARuntimeVariable WaterMoveScale( _CTS( "WaterMoveScale" ), _CTS( "0.5" ) );
+AConsoleVar WaterMoveScale( _CTS( "WaterMoveScale" ), _CTS( "0.5" ) );
 
 static const Float3 UpVector( 0, 1, 0 );
 

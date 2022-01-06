@@ -34,7 +34,7 @@ SOFTWARE.
 #include "Actor.h"
 #include "World.h"
 #include "DebugRenderer.h"
-#include "RuntimeVariable.h"
+#include <Core/ConsoleVar.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Platform/Logger.h>
 
@@ -58,10 +58,10 @@ SOFTWARE.
 #define SOFT_BODY_WORLD
 #define REF_AWARE
 
-ARuntimeVariable com_DrawContactPoints( _CTS( "com_DrawContactPoints" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawConstraints( _CTS( "com_DrawConstraints" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawConstraintLimits( _CTS( "com_DrawConstraintLimits" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_NoPhysicsSimulation( _CTS( "com_NoPhysicsSimulation" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawContactPoints( _CTS( "com_DrawContactPoints" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawConstraints( _CTS( "com_DrawConstraints" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawConstraintLimits( _CTS( "com_DrawConstraintLimits" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_NoPhysicsSimulation( _CTS( "com_NoPhysicsSimulation" ), _CTS( "0" ), CVAR_CHEAT );
 
 static SCollisionQueryFilter DefaultCollisionQueryFilter;
 

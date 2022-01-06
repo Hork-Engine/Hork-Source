@@ -30,58 +30,58 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/String.h>
-#include <Core/CompileTimeString.h>
+#include "String.h"
+#include "CompileTimeString.h"
 
-enum RV_FLAGS
+enum CVAR_FLAGS
 {
-    VAR_LATCHED    = AN_BIT(0),
-    VAR_READONLY   = AN_BIT(1),
-    VAR_NOSAVE     = AN_BIT(2),
-    VAR_CHEAT      = AN_BIT(3),
-    VAR_SERVERONLY = AN_BIT(4),
-    VAR_NOINGAME   = AN_BIT(5),
+    CVAR_LATCHED    = AN_BIT(0),
+    CVAR_READONLY   = AN_BIT(1),
+    CVAR_NOSAVE     = AN_BIT(2),
+    CVAR_CHEAT      = AN_BIT(3),
+    CVAR_SERVERONLY = AN_BIT(4),
+    CVAR_NOINGAME   = AN_BIT(5),
 
     // Internal
-    VAR_MODIFIED = AN_BIT(6)
+    _CVAR_MODIFIED = AN_BIT(6)
 };
 
-enum RV_ENVIRONMENT_FLAGS
+enum CVAR_ENVIRONMENT_FLAGS
 {
-    /** Is cheats allowed for the game. This allow to change runtime variables with flag VAR_CHEAT */
-    RV_CHEATS_ALLOWED = AN_BIT(0),
+    /** Is cheats allowed for the game. This allow to change console variables with flag CVAR_CHEAT */
+    CVAR_CHEATS_ALLOWED = AN_BIT(0),
 
-    /** Is game server. This allow to change runtime variables with flag VAR_SERVERONLY */
-    RV_SERVER_ACTIVE  = AN_BIT(1),
+    /** Is game server. This allow to change console variables with flag CVAR_SERVERONLY */
+    CVAR_SERVER_ACTIVE  = AN_BIT(1),
 
-    /** Is in game. This blocks changing runtime variables with flag VAR_NOINGAME */
-    RV_INGAME_STATUS  = AN_BIT(2)
+    /** Is in game. This blocks changing console variables with flag CVAR_NOINGAME */
+    CVAR_INGAME_STATUS  = AN_BIT(2)
 };
 
-class ARuntimeVariable final
+class AConsoleVar final
 {
-    AN_FORBID_COPY(ARuntimeVariable)
+    AN_FORBID_COPY(AConsoleVar)
 
 public:
     static int EnvironmentFlags;
 
     template <char... NameChars>
-    ARuntimeVariable(TCompileTimeString<NameChars...> const& _Name) :
-        ARuntimeVariable(_Name.CStr(), "0", 0, "") {}
+    AConsoleVar(TCompileTimeString<NameChars...> const& _Name) :
+        AConsoleVar(_Name.CStr(), "0", 0, "") {}
 
     template <char... NameChars, char... ValueChars>
-    ARuntimeVariable(TCompileTimeString<NameChars...> const& _Name, TCompileTimeString<ValueChars...> const& _Value) :
-        ARuntimeVariable(_Name.CStr(), _Value.CStr(), 0, "") {}
+    AConsoleVar(TCompileTimeString<NameChars...> const& _Name, TCompileTimeString<ValueChars...> const& _Value) :
+        AConsoleVar(_Name.CStr(), _Value.CStr(), 0, "") {}
 
     template <char... NameChars, char... ValueChars>
-    ARuntimeVariable(TCompileTimeString<NameChars...> const& _Name, TCompileTimeString<ValueChars...> const& _Value, uint16_t _Flags) :
-        ARuntimeVariable(_Name.CStr(), _Value.CStr(), _Flags, "") {}
+    AConsoleVar(TCompileTimeString<NameChars...> const& _Name, TCompileTimeString<ValueChars...> const& _Value, uint16_t _Flags) :
+        AConsoleVar(_Name.CStr(), _Value.CStr(), _Flags, "") {}
 
     template <char... NameChars, char... ValueChars, char... CommentChars>
-    ARuntimeVariable(TCompileTimeString<NameChars...> const& _Name, TCompileTimeString<ValueChars...> const& _Value, uint16_t _Flags, TCompileTimeString<CommentChars...> const& _Comment) :
-        ARuntimeVariable(_Name.CStr(), _Value.CStr(), _Flags, _Comment.CStr()) {}
+    AConsoleVar(TCompileTimeString<NameChars...> const& _Name, TCompileTimeString<ValueChars...> const& _Value, uint16_t _Flags, TCompileTimeString<CommentChars...> const& _Comment) :
+        AConsoleVar(_Name.CStr(), _Value.CStr(), _Flags, _Comment.CStr()) {}
 
-    ~ARuntimeVariable();
+    ~AConsoleVar();
 
     char const* GetName() const { return Name; }
 
@@ -101,21 +101,21 @@ public:
 
     float GetFloat() const { return F32; }
 
-    bool IsModified() const { return !!(Flags & VAR_MODIFIED); }
+    bool IsModified() const { return !!(Flags & _CVAR_MODIFIED); }
 
-    void MarkModified() { Flags |= VAR_MODIFIED; }
+    void MarkModified() { Flags |= _CVAR_MODIFIED; }
 
-    void UnmarkModified() { Flags &= ~VAR_MODIFIED; }
+    void UnmarkModified() { Flags &= ~_CVAR_MODIFIED; }
 
-    bool IsReadOnly() const { return !!(Flags & VAR_READONLY); }
+    bool IsReadOnly() const { return !!(Flags & CVAR_READONLY); }
 
-    bool IsNoSave() const { return !!(Flags & VAR_NOSAVE); }
+    bool IsNoSave() const { return !!(Flags & CVAR_NOSAVE); }
 
-    bool IsCheat() const { return !!(Flags & VAR_CHEAT); }
+    bool IsCheat() const { return !!(Flags & CVAR_CHEAT); }
 
-    bool IsServerOnly() const { return !!(Flags & VAR_SERVERONLY); }
+    bool IsServerOnly() const { return !!(Flags & CVAR_SERVERONLY); }
 
-    bool IsNoInGame() const { return !!(Flags & VAR_NOINGAME); }
+    bool IsNoInGame() const { return !!(Flags & CVAR_NOINGAME); }
 
     void SetString(const char* _String);
 
@@ -141,45 +141,45 @@ public:
 
     void Print();
 
-    ARuntimeVariable const& operator=(const char* _String)
+    AConsoleVar const& operator=(const char* _String)
     {
         SetString(_String);
         return *this;
     }
-    ARuntimeVariable const& operator=(AString const& _String)
+    AConsoleVar const& operator=(AString const& _String)
     {
         SetString(_String);
         return *this;
     }
-    ARuntimeVariable const& operator=(bool _Bool)
+    AConsoleVar const& operator=(bool _Bool)
     {
         SetBool(_Bool);
         return *this;
     }
-    ARuntimeVariable const& operator=(int32_t _Integer)
+    AConsoleVar const& operator=(int32_t _Integer)
     {
         SetInteger(_Integer);
         return *this;
     }
-    ARuntimeVariable const& operator=(float _Float)
+    AConsoleVar const& operator=(float _Float)
     {
         SetFloat(_Float);
         return *this;
     }
     operator bool() const { return GetBool(); }
 
-    ARuntimeVariable* GetNext() { return Next; }
+    AConsoleVar* GetNext() { return Next; }
 
-    static ARuntimeVariable* GlobalVariableList();
+    static AConsoleVar* GlobalVariableList();
 
-    static ARuntimeVariable* FindVariable(const char* _Name);
+    static AConsoleVar* FindVariable(const char* _Name);
 
     // Internal
     static void AllocateVariables();
     static void FreeVariables();
 
 private:
-    ARuntimeVariable(const char* _Name,
+    AConsoleVar(const char* _Name,
                      const char* _Value,
                      uint16_t    _Flags,
                      const char* _Comment);
@@ -192,5 +192,5 @@ private:
     int32_t           I32;
     float             F32;
     uint16_t          Flags;
-    ARuntimeVariable* Next;
+    AConsoleVar* Next;
 };

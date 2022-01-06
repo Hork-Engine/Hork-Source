@@ -30,7 +30,6 @@ SOFTWARE.
 
 #pragma once
 
-#include "RuntimeCommandProcessor.h"
 #include "FrameLoop.h"
 #include "Console.h"
 #include "GameModuleInterface.h"
@@ -41,6 +40,7 @@ SOFTWARE.
 
 #include <Renderer/RenderBackend.h>
 #include <Core/Random.h>
+#include <Core/CommandProcessor.h>
 
 enum
 {
@@ -97,7 +97,7 @@ public:
     /** Get hud desktop */
     WDesktop* GetDesktop() { return Desktop; }
 
-    ARuntimeCommandProcessor& GetCommandProcessor() { return CommandProcessor; }
+    ACommandProcessor& GetCommandProcessor() { return CommandProcessor; }
 
     ARenderBackend* GetRenderBackend() { return RenderBackend; }
 
@@ -201,7 +201,7 @@ private:
 
     TRef<WDesktop> Desktop;
 
-    ARuntimeCommandProcessor CommandProcessor;
+    ACommandProcessor CommandProcessor;
 
     TRef<ARenderFrontend> Renderer;
     TRef<ARenderBackend>  RenderBackend;

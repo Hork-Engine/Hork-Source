@@ -30,8 +30,9 @@ SOFTWARE.
 
 #include "CharacterControllerBase.h"
 #include "World.h"
-#include "RuntimeVariable.h"
 #include "BulletCompatibility.h"
+
+#include <Core/ConsoleVar.h>
 
 #include <BulletDynamics/Dynamics/btActionInterface.h>
 #include <BulletCollision/CollisionDispatch/btGhostObject.h>
@@ -39,10 +40,10 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btCylinderShape.h>
 #include <BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h>
 
-ARuntimeVariable com_DrawCharacterControllerCapsule( _CTS( "com_DrawCharacterControllerCapsule" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_RecoverFromPenetration( _CTS( "com_RecoverFromPenetration" ), _CTS( "1" ) );
-ARuntimeVariable com_UseGhostObjectSweepTest( _CTS( "com_UseGhostObjectSweepTest" ), _CTS( "1" ) );
-ARuntimeVariable com_CharacterCcdPenetration( _CTS( "com_CharacterCcdPenetration" ), _CTS( "0" ) );
+AConsoleVar com_DrawCharacterControllerCapsule( _CTS( "com_DrawCharacterControllerCapsule" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_RecoverFromPenetration( _CTS( "com_RecoverFromPenetration" ), _CTS( "1" ) );
+AConsoleVar com_UseGhostObjectSweepTest( _CTS( "com_UseGhostObjectSweepTest" ), _CTS( "1" ) );
+AConsoleVar com_CharacterCcdPenetration( _CTS( "com_CharacterCcdPenetration" ), _CTS( "0" ) );
 
 ATTRIBUTE_ALIGNED16( class )
 ACharacterControllerActionInterface : public btActionInterface

@@ -32,10 +32,10 @@ SOFTWARE.
 
 #include "ActorComponent.h"
 #include "InputDefs.h"
-#include "RuntimeVariable.h"
 
 #include <Platform/Utf8.h>
 #include <Containers/Array.h>
+#include <Core/ConsoleVar.h>
 
 constexpr int MAX_PRESSED_KEYS      = 128;
 constexpr int MAX_AXIS_BINDINGS     = 1024;
@@ -446,9 +446,9 @@ public:
     static int LookupController( const char * _ControllerId );
 };
 
-extern ARuntimeVariable in_MouseSensitivity;
-extern ARuntimeVariable in_MouseSensX;
-extern ARuntimeVariable in_MouseSensY;
-extern ARuntimeVariable in_MouseFilter;
-extern ARuntimeVariable in_MouseInvertY;
-extern ARuntimeVariable in_MouseAccel;
+extern AConsoleVar in_MouseSensitivity;
+extern AConsoleVar in_MouseSensX;
+extern AConsoleVar in_MouseSensY;
+extern AConsoleVar in_MouseFilter;
+extern AConsoleVar in_MouseInvertY;
+extern AConsoleVar in_MouseAccel;

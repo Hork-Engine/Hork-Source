@@ -32,7 +32,8 @@ SOFTWARE.
 #include "MeshComponent.h"
 #include "Actor.h"
 #include "DebugRenderer.h"
-#include "RuntimeVariable.h"
+
+#include <Core/ConsoleVar.h>
 
 #define DEFAULT_PROJECTION CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO
 #define DEFAULT_ZNEAR 0.04f//0.1f
@@ -42,7 +43,7 @@ SOFTWARE.
 #define DEFAULT_ASPECT_RATIO (4.0f / 3.0f)
 #define DEFAULT_ORTHO_ZOOM 30.0f
 
-ARuntimeVariable com_DrawCameraFrustum( _CTS( "com_DrawCameraFrustum" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawCameraFrustum( _CTS( "com_DrawCameraFrustum" ), _CTS( "0" ), CVAR_CHEAT );
 
 AN_CLASS_META( ACameraComponent )
 

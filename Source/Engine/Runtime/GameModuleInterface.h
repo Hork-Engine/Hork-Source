@@ -62,12 +62,12 @@ public:
     virtual void OnGameClose();
 
     /** Add global console command */
-    void AddCommand(const char* _Name, TCallback<void(ARuntimeCommandProcessor const&)> const& _Callback, const char* _Comment = "");
+    void AddCommand(const char* _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment = "");
 
     /** Remove global console command */
     void RemoveCommand(const char* _Name);
 
 private:
-    void Quit(ARuntimeCommandProcessor const& _Proc);
-    void RebuildMaterials(ARuntimeCommandProcessor const& _Proc);
+    void Quit(ACommandProcessor const& _Proc);
+    void RebuildMaterials(ACommandProcessor const& _Proc);
 };

@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
-ARuntimeVariable r_LightTextureFormat( _CTS( "r_LightTextureFormat" ), _CTS( "0" ), 0, _CTS( "0 - R11F_G11F_B10F, 1 - RGB16F" ) );
+AConsoleVar r_LightTextureFormat( _CTS( "r_LightTextureFormat" ), _CTS( "0" ), 0, _CTS( "0 - R11F_G11F_B10F, 1 - RGB16F" ) );
 
 using namespace RenderCore;
 

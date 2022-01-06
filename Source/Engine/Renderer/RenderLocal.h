@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Runtime/RuntimeVariable.h>
+#include <Core/ConsoleVar.h>
 
 #include "RenderBackend.h"
 #include "CircularBuffer.h"
@@ -178,10 +178,10 @@ struct STerrainInstanceConstantBuffer
 // Common variables
 //
 
-extern ARuntimeVariable r_RenderSnapshot;
-extern ARuntimeVariable r_MotionBlur;
-extern ARuntimeVariable r_SSLR;
-extern ARuntimeVariable r_HBAO;
+extern AConsoleVar r_RenderSnapshot;
+extern AConsoleVar r_MotionBlur;
+extern AConsoleVar r_SSLR;
+extern AConsoleVar r_HBAO;
 
 
 //

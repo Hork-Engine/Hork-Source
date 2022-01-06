@@ -56,7 +56,7 @@ public:
     void SetFullscreen(bool _Fullscreen);
 
     /** Process key event */
-    void KeyEvent(SKeyEvent const& _Event, ACommandContext& _CommandCtx, ARuntimeCommandProcessor& _CommandProcessor);
+    void KeyEvent(SKeyEvent const& _Event, ACommandContext& _CommandCtx, ACommandProcessor& _CommandProcessor);
 
     /** Process char event */
     void CharEvent(SCharEvent const& _Event);

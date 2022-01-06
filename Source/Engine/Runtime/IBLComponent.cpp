@@ -31,11 +31,12 @@ SOFTWARE.
 #include "IBLComponent.h"
 #include "World.h"
 #include "DebugRenderer.h"
-#include "RuntimeVariable.h"
+
+#include <Core/ConsoleVar.h>
 
 constexpr float DEFAULT_RADIUS = 1.0f;
 
-ARuntimeVariable com_DrawIBL( _CTS( "com_DrawIBL" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawIBL( _CTS( "com_DrawIBL" ), _CTS( "0" ), CVAR_CHEAT );
 
 AN_CLASS_META( AIBLComponent )
 

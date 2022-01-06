@@ -33,11 +33,11 @@ SOFTWARE.
 #include "World.h"
 #include "MeshComponent.h"
 #include "Engine.h"
-#include "RuntimeVariable.h"
 #include <Platform/Logger.h>
 #include <Platform/Memory/LinearAllocator.h>
 #include <Core/Compress.h>
 #include <Core/IntrusiveLinkedListMacro.h>
+#include <Core/ConsoleVar.h>
 #include <Geometry/BV/BvIntersect.h>
 
 #undef malloc
@@ -56,10 +56,10 @@ SOFTWARE.
 #include <DebugDraw.h>
 #include <float.h>
 
-ARuntimeVariable com_DrawNavMeshBVTree( _CTS( "com_DrawNavMeshBVTree" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawNavMeshNodes( _CTS( "com_DrawNavMeshNodes" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawNavMesh( _CTS( "com_DrawNavMesh" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawNavMeshTileBounds( _CTS( "com_DrawNavMeshTileBounds" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawNavMeshBVTree( _CTS( "com_DrawNavMeshBVTree" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawNavMeshNodes( _CTS( "com_DrawNavMeshNodes" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawNavMesh( _CTS( "com_DrawNavMesh" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawNavMeshTileBounds( _CTS( "com_DrawNavMeshTileBounds" ), _CTS( "0" ), CVAR_CHEAT );
 
 AN_VALIDATE_TYPE_SIZE( SNavPolyRef, sizeof( dtPolyRef ) );
 

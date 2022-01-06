@@ -31,9 +31,7 @@ SOFTWARE.
 #include "ExposureRenderer.h"
 #include "RenderLocal.h"
 
-#include <Runtime/RuntimeVariable.h>
-
-ARuntimeVariable r_ShowDefaultExposure(_CTS("r_ShowDefaultExposure"), _CTS("0"));
+AConsoleVar r_ShowDefaultExposure(_CTS("r_ShowDefaultExposure"), _CTS("0"));
 
 using namespace RenderCore;
 

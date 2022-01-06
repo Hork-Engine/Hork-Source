@@ -28,41 +28,6 @@ SOFTWARE.
 
 */
 
-#pragma once
+#include "ScopedTimer.h"
 
-#include <Platform/Platform.h>
-#include <Platform/Logger.h>
-
-#include "RuntimeVariable.h"
-
-/**
-
-AScopedTimeCheck
-
-*/
-struct AScopedTimeCheck
-{
-    const char* Name;
-    int64_t     Milliseconds;
-
-    AScopedTimeCheck(const char* _Name) :
-        Name(_Name)
-    {
-        extern ARuntimeVariable rt_ScopedTimeCheck;
-
-        if (rt_ScopedTimeCheck)
-        {
-            Milliseconds = Platform::SysMilliseconds();
-        }
-    }
-
-    ~AScopedTimeCheck()
-    {
-        extern ARuntimeVariable rt_ScopedTimeCheck;
-
-        if (rt_ScopedTimeCheck)
-        {
-            GLogger.Printf("SCOPED_TIME_CHECK: %s : %d ms\n", Name, Platform::SysMilliseconds() - Milliseconds);
-        }
-    }
-};
+AConsoleVar rt_ScopedTimeCheck(_CTS("rt_ScopedTimeCheck"), _CTS("0"));

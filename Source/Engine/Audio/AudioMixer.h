@@ -34,8 +34,7 @@ SOFTWARE.
 #include "AudioChannel.h"
 
 #include <Containers/PodVector.h>
-
-#include <Runtime/RuntimeVariable.h>
+#include <Core/ConsoleVar.h>
 
 class AAudioMixer
 {
@@ -134,4 +133,4 @@ private:
     TPodVectorHeap< SSamplePair > StreamF32;
 };
 
-extern ARuntimeVariable Snd_HRTF;
+extern AConsoleVar Snd_HRTF;

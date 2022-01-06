@@ -30,15 +30,16 @@ SOFTWARE.
 
 #include "LightVoxelizer.h"
 #include "Engine.h"
-#include "RuntimeVariable.h"
+
+#include <Core/ConsoleVar.h>
 
 #define LIGHT_ITEMS_OFFSET 0
 #define DECAL_ITEMS_OFFSET 256
 #define PROBE_ITEMS_OFFSET 512
 
-ARuntimeVariable com_ClusterSSE( _CTS( "com_ClusterSSE" ), _CTS( "1" ), VAR_CHEAT );
-ARuntimeVariable com_ReverseNegativeZ( _CTS( "com_ReverseNegativeZ" ), _CTS( "1" ), VAR_CHEAT );
-ARuntimeVariable com_FreezeFrustumClusters( _CTS( "com_FreezeFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_ClusterSSE( _CTS( "com_ClusterSSE" ), _CTS( "1" ), CVAR_CHEAT );
+AConsoleVar com_ReverseNegativeZ( _CTS( "com_ReverseNegativeZ" ), _CTS( "1" ), CVAR_CHEAT );
+AConsoleVar com_FreezeFrustumClusters( _CTS( "com_FreezeFrustumClusters" ), _CTS( "0" ), CVAR_CHEAT );
 
  //////////////////////////////////////////////////////////////////////////////////////////////////////
 //

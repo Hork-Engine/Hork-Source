@@ -33,13 +33,14 @@ SOFTWARE.
 #include "Actor.h"
 #include "World.h"
 #include "ResourceManager.h"
-#include "RuntimeVariable.h"
+
 #include <Platform/Logger.h>
 #include <Geometry/BV/BvIntersect.h>
+#include <Core/ConsoleVar.h>
 
-ARuntimeVariable com_DrawMeshBounds( _CTS( "com_DrawMeshBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawBrushBounds( _CTS( "com_DrawBrushBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawIndexedMeshBVH( _CTS( "com_DrawIndexedMeshBVH" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawMeshBounds( _CTS( "com_DrawMeshBounds" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawBrushBounds( _CTS( "com_DrawBrushBounds" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawIndexedMeshBVH( _CTS( "com_DrawIndexedMeshBVH" ), _CTS( "0" ), CVAR_CHEAT );
 
 AN_CLASS_META( AMeshComponent )
 

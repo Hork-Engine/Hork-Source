@@ -42,15 +42,16 @@ SOFTWARE.
 #include "RenderWorld.h"
 #include "Level.h"
 #include "Engine.h"
-#include "ScopedTimeCheck.h"
+
+#include <Core/ScopedTimer.h>
 #include <Geometry/ConvexHull.h>
 #include <Geometry/BV/BvIntersect.h>
 
 static const SWorldRaycastFilter DefaultRaycastFilter;
 
-ARuntimeVariable vsd_FrustumCullingMT( _CTS( "vsd_FrustumCullingMT" ), _CTS( "1" ) );
-ARuntimeVariable vsd_FrustumCullingSSE( _CTS( "vsd_FrustumCullingSSE" ), _CTS( "1" ) );
-ARuntimeVariable vsd_FrustumCullingType( _CTS( "vsd_FrustumCullingType" ), _CTS( "0" ), 0, _CTS( "0 - combined, 1 - separate, 2 - simple" ) );
+AConsoleVar vsd_FrustumCullingMT( _CTS( "vsd_FrustumCullingMT" ), _CTS( "1" ) );
+AConsoleVar vsd_FrustumCullingSSE( _CTS( "vsd_FrustumCullingSSE" ), _CTS( "1" ) );
+AConsoleVar vsd_FrustumCullingType( _CTS( "vsd_FrustumCullingType" ), _CTS( "0" ), 0, _CTS( "0 - combined, 1 - separate, 2 - simple" ) );
 
 enum EFrustumCullingType {
     CULLING_TYPE_COMBINED,
@@ -185,7 +186,7 @@ void AVSD::QueryVisiblePrimitives( AWorld * InWorld, TPodVector< SPrimitiveDef *
         GEngine->RenderFrontendJobList->Wait();
 
         {
-            AScopedTimeCheck TimeCheck( "Evaluate submits" );
+            AScopedTimer TimeCheck( "Evaluate submits" );
 
             for ( SCullJobSubmit & submit : CullSubmits ) {
 

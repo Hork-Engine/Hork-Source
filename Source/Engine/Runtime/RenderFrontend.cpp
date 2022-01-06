@@ -39,19 +39,20 @@ SOFTWARE.
 #include "PlayerController.h"
 #include "WDesktop.h"
 #include "Engine.h"
-#include "ScopedTimeCheck.h"
+
 #include <Core/IntrusiveLinkedListMacro.h>
+#include <Core/ScopedTimer.h>
 
-ARuntimeVariable r_FixFrustumClusters( _CTS( "r_FixFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable r_RenderView( _CTS( "r_RenderView" ), _CTS( "1" ), VAR_CHEAT );
-ARuntimeVariable r_RenderSurfaces( _CTS( "r_RenderSurfaces" ), _CTS( "1" ), VAR_CHEAT );
-ARuntimeVariable r_RenderMeshes( _CTS( "r_RenderMeshes" ), _CTS( "1" ), VAR_CHEAT );
-ARuntimeVariable r_RenderTerrain( _CTS( "r_RenderTerrain" ), _CTS( "1" ), VAR_CHEAT );
-ARuntimeVariable r_ResolutionScaleX( _CTS( "r_ResolutionScaleX" ), _CTS( "1" ) );
-ARuntimeVariable r_ResolutionScaleY( _CTS( "r_ResolutionScaleY" ), _CTS( "1" ) );
-ARuntimeVariable r_RenderLightPortals( _CTS( "r_RenderLightPortals" ), _CTS( "1" ) );
+AConsoleVar r_FixFrustumClusters( _CTS( "r_FixFrustumClusters" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar r_RenderView( _CTS( "r_RenderView" ), _CTS( "1" ), CVAR_CHEAT );
+AConsoleVar r_RenderSurfaces( _CTS( "r_RenderSurfaces" ), _CTS( "1" ), CVAR_CHEAT );
+AConsoleVar r_RenderMeshes( _CTS( "r_RenderMeshes" ), _CTS( "1" ), CVAR_CHEAT );
+AConsoleVar r_RenderTerrain( _CTS( "r_RenderTerrain" ), _CTS( "1" ), CVAR_CHEAT );
+AConsoleVar r_ResolutionScaleX( _CTS( "r_ResolutionScaleX" ), _CTS( "1" ) );
+AConsoleVar r_ResolutionScaleY( _CTS( "r_ResolutionScaleY" ), _CTS( "1" ) );
+AConsoleVar r_RenderLightPortals( _CTS( "r_RenderLightPortals" ), _CTS( "1" ) );
 
-ARuntimeVariable com_DrawFrustumClusters( _CTS( "com_DrawFrustumClusters" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawFrustumClusters( _CTS( "com_DrawFrustumClusters" ), _CTS( "0" ), CVAR_CHEAT );
 
 AN_CLASS_META( ARenderFrontend )
 
@@ -733,7 +734,7 @@ void ARenderFrontend::QueryShadowCasters( AWorld * InWorld, Float4x4 const & Lig
 
 void ARenderFrontend::AddRenderInstances( AWorld * InWorld )
 {
-    AScopedTimeCheck TimeCheck( "AddRenderInstances" );
+    AScopedTimer TimeCheck( "AddRenderInstances" );
 
     SRenderView * view = RenderDef.View;
     ADrawable * drawable;

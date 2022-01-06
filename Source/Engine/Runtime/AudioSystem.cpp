@@ -37,8 +37,8 @@ SOFTWARE.
 #include <Audio/AudioDevice.h>
 #include <Audio/AudioMixer.h>
 
-ARuntimeVariable Snd_MasterVolume( _CTS("Snd_MasterVolume"), _CTS("1") );
-ARuntimeVariable Snd_RefreshRate( _CTS("Snd_RefreshRate"), _CTS("16") );
+AConsoleVar Snd_MasterVolume( _CTS("Snd_MasterVolume"), _CTS("1") );
+AConsoleVar Snd_RefreshRate( _CTS("Snd_RefreshRate"), _CTS("16") );
 
 AAudioSystem & GAudioSystem = AAudioSystem::Inst();
 

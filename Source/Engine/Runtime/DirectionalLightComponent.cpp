@@ -32,11 +32,12 @@ SOFTWARE.
 #include "MeshComponent.h"
 #include "World.h"
 #include "DebugRenderer.h"
-#include "RuntimeVariable.h"
 #include <Platform/Logger.h>
 #include <RenderCore/VertexMemoryGPU.h>
 
-ARuntimeVariable com_DrawDirectionalLights( _CTS( "com_DrawDirectionalLights" ), _CTS( "0" ), VAR_CHEAT );
+#include <Core/ConsoleVar.h>
+
+AConsoleVar com_DrawDirectionalLights( _CTS( "com_DrawDirectionalLights" ), _CTS( "0" ), CVAR_CHEAT );
 
 static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
 

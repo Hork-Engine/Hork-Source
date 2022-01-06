@@ -40,7 +40,7 @@ ACommandContext::~ACommandContext()
 {
 }
 
-void ACommandContext::ExecuteCommand(ARuntimeCommandProcessor const& _Proc)
+void ACommandContext::ExecuteCommand(ACommandProcessor const& _Proc)
 {
     AN_ASSERT(_Proc.GetArgsCount() > 0);
 
@@ -55,8 +55,8 @@ void ACommandContext::ExecuteCommand(ARuntimeCommandProcessor const& _Proc)
         }
     }
 
-    ARuntimeVariable* var;
-    if (nullptr != (var = ARuntimeVariable::FindVariable(name)))
+    AConsoleVar* var;
+    if (nullptr != (var = AConsoleVar::FindVariable(name)))
     {
         if (_Proc.GetArgsCount() < 2)
         {
@@ -72,15 +72,15 @@ void ACommandContext::ExecuteCommand(ARuntimeCommandProcessor const& _Proc)
     GLogger.Printf("Unknown command \"%s\"\n", name);
 }
 
-void ACommandContext::AddCommand(const char* _Name, TCallback<void(ARuntimeCommandProcessor const&)> const& _Callback, const char* _Comment)
+void ACommandContext::AddCommand(const char* _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment)
 {
-    if (!ARuntimeCommandProcessor::IsValidCommandName(_Name))
+    if (!ACommandProcessor::IsValidCommandName(_Name))
     {
         GLogger.Printf("ACommandContext::AddCommand: invalid command name\n");
         return;
     }
 
-    if (ARuntimeVariable::FindVariable(_Name))
+    if (AConsoleVar::FindVariable(_Name))
     {
         GLogger.Printf("Name conflict: %s already registered as variable\n", _Name);
         return;
@@ -167,7 +167,7 @@ int ACommandContext::CompleteString(const char* _Str, int _StrLen, AString& _Res
         }
     }
 
-    for (ARuntimeVariable* var = ARuntimeVariable::GlobalVariableList(); var; var = var->GetNext())
+    for (AConsoleVar* var = AConsoleVar::GlobalVariableList(); var; var = var->GetNext())
     {
         if (!Platform::StricmpN(var->GetName(), _Str, _StrLen))
         {
@@ -192,7 +192,7 @@ int ACommandContext::CompleteString(const char* _Str, int _StrLen, AString& _Res
 void ACommandContext::Print(const char* _Str, int _StrLen)
 {
     TPodVector<ARuntimeCommand*>  cmds;
-    TPodVector<ARuntimeVariable*> vars;
+    TPodVector<AConsoleVar*> vars;
 
     if (_StrLen > 0)
     {
@@ -214,7 +214,7 @@ void ACommandContext::Print(const char* _Str, int _StrLen)
 
         std::sort(cmds.Begin(), cmds.End(), CmdSortFunction);
 
-        for (ARuntimeVariable* var = ARuntimeVariable::GlobalVariableList(); var; var = var->GetNext())
+        for (AConsoleVar* var = AConsoleVar::GlobalVariableList(); var; var = var->GetNext())
         {
             if (!Platform::StricmpN(var->GetName(), _Str, _StrLen))
             {
@@ -224,7 +224,7 @@ void ACommandContext::Print(const char* _Str, int _StrLen)
 
         struct
         {
-            bool operator()(ARuntimeVariable const* _A, ARuntimeVariable* _B)
+            bool operator()(AConsoleVar const* _A, AConsoleVar* _B)
             {
                 return Platform::Stricmp(_A->GetName(), _B->GetName()) < 0;
             }
@@ -246,7 +246,7 @@ void ACommandContext::Print(const char* _Str, int _StrLen)
                 GLogger.Printf("    %s\n", cmd->GetName().CStr());
             }
         }
-        for (ARuntimeVariable* var : vars)
+        for (AConsoleVar* var : vars)
         {
             if (*var->GetComment())
             {

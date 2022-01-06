@@ -34,10 +34,10 @@ SOFTWARE.
 #include "Level.h"
 #include "ResourceManager.h"
 #include "Engine.h"
-#include "ScopedTimeCheck.h"
 
 #include <Platform/Logger.h>
 #include <Core/IntrusiveLinkedListMacro.h>
+#include <Core/ScopedTimer.h>
 #include <Geometry/BV/BvIntersect.h>
 
 AN_CLASS_META(AIndexedMesh)
@@ -216,7 +216,7 @@ static ASocketDef* ReadSocket(IBinaryStream& f)
 
 bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
 {
-    AScopedTimeCheck ScopedTime(Stream.GetFileName());
+    AScopedTimer ScopedTime(Stream.GetFileName());
 
     Purge();
 
@@ -594,7 +594,7 @@ ASocketDef* AIndexedMesh::FindSocket(const char* _Name)
 
 void AIndexedMesh::GenerateBVH(unsigned int PrimitivesPerLeaf)
 {
-    AScopedTimeCheck ScopedTime("GenerateBVH");
+    AScopedTimer ScopedTime("GenerateBVH");
 
     if (bSkinnedMesh)
     {
@@ -1086,7 +1086,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
 
 void AIndexedMesh::GenerateRigidbodyCollisions()
 {
-    AScopedTimeCheck ScopedTime("GenerateRigidbodyCollisions");
+    AScopedTimer ScopedTime("GenerateRigidbodyCollisions");
 
     ACollisionTriangleSoupData* tris = CreateInstanceOf<ACollisionTriangleSoupData>();
     tris->Initialize((float*)&Vertices.ToPtr()->Position, sizeof(Vertices[0]), Vertices.Size(),
@@ -1103,7 +1103,7 @@ void AIndexedMesh::GenerateRigidbodyCollisions()
 
 void AIndexedMesh::GenerateSoftbodyFacesFromMeshIndices()
 {
-    AScopedTimeCheck ScopedTime("GenerateSoftbodyFacesFromMeshIndices");
+    AScopedTimer ScopedTime("GenerateSoftbodyFacesFromMeshIndices");
 
     int totalIndices = 0;
 
@@ -1133,7 +1133,7 @@ void AIndexedMesh::GenerateSoftbodyFacesFromMeshIndices()
 
 void AIndexedMesh::GenerateSoftbodyLinksFromFaces()
 {
-    AScopedTimeCheck ScopedTime("GenerateSoftbodyLinksFromFaces");
+    AScopedTimer ScopedTime("GenerateSoftbodyLinksFromFaces");
 
     TPodVector<bool> checks;
     unsigned int*    indices;

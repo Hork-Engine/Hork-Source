@@ -29,10 +29,6 @@ SOFTWARE.
 
 */
 
-#include <Runtime/GLTF.h>
-
-#include <Core/Logger.h>
-
 #define CGLTF_IMPLEMENTATION
 #include "cgltf.h"
 

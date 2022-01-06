@@ -31,10 +31,11 @@ SOFTWARE.
 #pragma once
 
 #include "BaseObject.h"
-#include "RuntimeCommandProcessor.h"
-#include "RuntimeVariable.h"
 
-class ACommandContext : public IRuntimeCommandContext
+#include <Core/CommandProcessor.h>
+#include <Core/ConsoleVar.h>
+
+class ACommandContext : public ICommandContext
 {
     AN_FORBID_COPY(ACommandContext)
 
@@ -42,7 +43,7 @@ public:
     ACommandContext();
     ~ACommandContext();
 
-    void AddCommand(const char* _Name, TCallback<void(ARuntimeCommandProcessor const&)> const& _Callback, const char* _Comment = "");
+    void AddCommand(const char* _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment = "");
 
     void RemoveCommand(const char* _Name);
 
@@ -54,21 +55,21 @@ public:
 
 protected:
     //
-    // IRuntimeCommandContext implementation
+    // ICommandContext implementation
     //
 
-    void ExecuteCommand(ARuntimeCommandProcessor const& _Proc) override;
+    void ExecuteCommand(ACommandProcessor const& _Proc) override;
 
 private:
     class ARuntimeCommand
     {
     public:
-        ARuntimeCommand(const char* _Name, TCallback<void(ARuntimeCommandProcessor const&)> const& _Callback, const char* _Comment) :
+        ARuntimeCommand(const char* _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment) :
             Name(_Name), Comment(_Comment), Callback(_Callback)
         {
         }
 
-        void Override(TCallback<void(ARuntimeCommandProcessor const&)> const& _Callback, const char* _Comment)
+        void Override(TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment)
         {
             Comment  = _Comment;
             Callback = _Callback;
@@ -78,12 +79,12 @@ private:
 
         AString const& GetComment() const { return Comment; }
 
-        void Execute(ARuntimeCommandProcessor const& _Proc) { Callback(_Proc); }
+        void Execute(ACommandProcessor const& _Proc) { Callback(_Proc); }
 
     private:
         AString                                          Name;
         AString                                          Comment;
-        TCallback<void(ARuntimeCommandProcessor const&)> Callback;
+        TCallback<void(ACommandProcessor const&)> Callback;
     };
 
     TStdVector<ARuntimeCommand> Commands;

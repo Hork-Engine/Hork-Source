@@ -31,7 +31,8 @@ SOFTWARE.
 #include "RenderWorld.h"
 #include "SkinnedComponent.h"
 #include "DirectionalLightComponent.h"
-#include "RuntimeVariable.h"
+
+#include <Core/ConsoleVar.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 
 ARenderWorld::ARenderWorld()

@@ -138,7 +138,7 @@ void AConsole::CompleteString(ACommandContext& _CommandCtx, const char* _Str)
     InsertUTF8Text(completion.CStr());
 }
 
-void AConsole::KeyEvent(SKeyEvent const& _Event, ACommandContext& _CommandCtx, ARuntimeCommandProcessor& _CommandProcessor)
+void AConsole::KeyEvent(SKeyEvent const& _Event, ACommandContext& _CommandCtx, ACommandProcessor& _CommandProcessor)
 {
     if (_Event.Action == IA_PRESS)
     {

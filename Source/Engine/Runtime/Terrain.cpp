@@ -54,7 +54,8 @@ Future:
 #include "World.h"
 #include "DebugRenderer.h"
 #include "Engine.h"
-#include "RuntimeVariable.h"
+
+#include <Core/ConsoleVar.h>
 
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include "BulletCompatibility.h"
@@ -64,9 +65,9 @@ Future:
 
 static const unsigned short RESET_INDEX = 0xffff;
 
-ARuntimeVariable com_TerrainMinLod(_CTS("com_TerrainMinLod"),_CTS("0"));
-ARuntimeVariable com_TerrainMaxLod(_CTS("com_TerrainMaxLod"),_CTS("5"));
-ARuntimeVariable com_ShowTerrainMemoryUsage(_CTS("com_ShowTerrainMemoryUsage"),_CTS("0"));
+AConsoleVar com_TerrainMinLod(_CTS("com_TerrainMinLod"),_CTS("0"));
+AConsoleVar com_TerrainMaxLod(_CTS("com_TerrainMaxLod"),_CTS("5"));
+AConsoleVar com_ShowTerrainMemoryUsage(_CTS("com_ShowTerrainMemoryUsage"),_CTS("0"));
 
 void CreateTriangleStripPatch( int NumQuadsX, int NumQuadsY, TPodVector< STerrainVertex > & Vertices, TPodVector< unsigned short > & Indices )
 {

@@ -36,12 +36,12 @@ SOFTWARE.
 #include <Core/HashFunc.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 
-ARuntimeVariable in_MouseSensitivity( _CTS( "in_MouseSensitivity" ), _CTS( "6.8" ) );
-ARuntimeVariable in_MouseSensX( _CTS( "in_MouseSensX" ), _CTS( "0.022" ) );
-ARuntimeVariable in_MouseSensY( _CTS( "in_MouseSensY" ), _CTS( "0.022" ) );
-ARuntimeVariable in_MouseFilter( _CTS( "in_MouseFilter" ), _CTS( "1" ) );
-ARuntimeVariable in_MouseInvertY( _CTS( "in_MouseInvertY" ), _CTS( "0" ) );
-ARuntimeVariable in_MouseAccel( _CTS( "in_MouseAccel" ), _CTS( "0" ) );
+AConsoleVar in_MouseSensitivity( _CTS( "in_MouseSensitivity" ), _CTS( "6.8" ) );
+AConsoleVar in_MouseSensX( _CTS( "in_MouseSensX" ), _CTS( "0.022" ) );
+AConsoleVar in_MouseSensY( _CTS( "in_MouseSensY" ), _CTS( "0.022" ) );
+AConsoleVar in_MouseFilter( _CTS( "in_MouseFilter" ), _CTS( "1" ) );
+AConsoleVar in_MouseInvertY( _CTS( "in_MouseInvertY" ), _CTS( "0" ) );
+AConsoleVar in_MouseAccel( _CTS( "in_MouseAccel" ), _CTS( "0" ) );
 
 AN_CLASS_META( AInputAxis )
 AN_CLASS_META( AInputAction )

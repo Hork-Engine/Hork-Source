@@ -34,7 +34,8 @@ SOFTWARE.
 #include "SoftMeshComponent.h"
 #include "World.h"
 #include "Engine.h"
-#include "RuntimeVariable.h"
+
+#include <Core/ConsoleVar.h>
 
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 #include <BulletCollision/CollisionShapes/btSphereShape.h>
@@ -42,7 +43,7 @@ SOFTWARE.
 
 #include "BulletCompatibility.h"
 
-ARuntimeVariable com_DrawSoftmeshFaces( _CTS( "com_DrawSoftmeshFaces" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawSoftmeshFaces( _CTS( "com_DrawSoftmeshFaces" ), _CTS( "0" ), CVAR_CHEAT );
 
 AN_CLASS_META( ASoftMeshComponent )
 

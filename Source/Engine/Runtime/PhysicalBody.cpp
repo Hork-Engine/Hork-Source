@@ -31,8 +31,9 @@ SOFTWARE.
 #include "PhysicalBody.h"
 #include "World.h"
 #include "DebugRenderer.h"
-#include "RuntimeVariable.h"
+
 #include <Platform/Logger.h>
+#include <Core/ConsoleVar.h>
 
 #include "BulletCompatibility.h"
 
@@ -40,16 +41,16 @@ SOFTWARE.
 #define MIN_MASS 0.001f
 #define MAX_MASS 1000.0f
 
-ARuntimeVariable com_DrawCollisionModel( _CTS( "com_DrawCollisionModel" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawCollisionShapes( _CTS( "com_DrawCollisionShapes" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawTriggers( _CTS( "com_DrawTriggers" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawBoneCollisionShapes( _CTS( "com_DrawBoneCollisionShapes" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawStaticCollisionBounds( _CTS( "com_DrawStaticCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawSimulatedCollisionBounds( _CTS( "com_DrawSimulatedCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawKinematicCollisionBounds( _CTS( "com_DrawKinematicCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawBoneCollisionBounds( _CTS( "com_DrawBoneCollisionBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawTriggerBounds( _CTS( "com_DrawTriggerBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawCenterOfMass( _CTS( "com_DrawCenterOfMass" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawCollisionModel( _CTS( "com_DrawCollisionModel" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawCollisionShapes( _CTS( "com_DrawCollisionShapes" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawTriggers( _CTS( "com_DrawTriggers" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawBoneCollisionShapes( _CTS( "com_DrawBoneCollisionShapes" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawStaticCollisionBounds( _CTS( "com_DrawStaticCollisionBounds" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawSimulatedCollisionBounds( _CTS( "com_DrawSimulatedCollisionBounds" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawKinematicCollisionBounds( _CTS( "com_DrawKinematicCollisionBounds" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawBoneCollisionBounds( _CTS( "com_DrawBoneCollisionBounds" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawTriggerBounds( _CTS( "com_DrawTriggerBounds" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawCenterOfMass( _CTS( "com_DrawCenterOfMass" ), _CTS( "0" ), CVAR_CHEAT );
 
 static constexpr bool bUseInternalEdgeUtility = true;
 

@@ -31,9 +31,10 @@ SOFTWARE.
 #include "Texture.h"
 #include "Asset.h"
 #include "Engine.h"
-#include "ScopedTimeCheck.h"
+
 #include <Platform/Logger.h>
 #include <Core/IntrusiveLinkedListMacro.h>
+#include <Core/ScopedTimer.h>
 #include <Core/Image.h>
 
 static const char* TextureTypeName[] =
@@ -489,7 +490,7 @@ bool ATexture::LoadResource(IBinaryStream& Stream)
 {
     const char* fn = Stream.GetFileName();
 
-    AScopedTimeCheck ScopedTime(fn);
+    AScopedTimer ScopedTime(fn);
 
     AImage image;
 

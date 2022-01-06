@@ -45,7 +45,7 @@ void IGameModule::OnGameClose()
     GEngine->PostTerminateEvent();
 }
 
-void IGameModule::AddCommand(const char* _Name, TCallback<void(ARuntimeCommandProcessor const&)> const& _Callback, const char* _Comment)
+void IGameModule::AddCommand(const char* _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment)
 {
     CommandContext.AddCommand(_Name, _Callback, _Comment);
 }
@@ -55,12 +55,12 @@ void IGameModule::RemoveCommand(const char* _Name)
     CommandContext.RemoveCommand(_Name);
 }
 
-void IGameModule::Quit(ARuntimeCommandProcessor const& _Proc)
+void IGameModule::Quit(ACommandProcessor const& _Proc)
 {
     GEngine->PostTerminateEvent();
 }
 
-void IGameModule::RebuildMaterials(ARuntimeCommandProcessor const& _Proc)
+void IGameModule::RebuildMaterials(ACommandProcessor const& _Proc)
 {
     AMaterial::RebuildMaterials();
 }

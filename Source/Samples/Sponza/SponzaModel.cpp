@@ -43,6 +43,8 @@ SOFTWARE.
 #include <Runtime/ResourceManager.h>
 #include <Runtime/WViewport.h>
 
+#include <Core/ScopedTimer.h>
+
 AN_CLASS_META( ASponzaModel )
 
 ASponzaModel * GModule;
@@ -492,10 +494,8 @@ void AGargoyle::Tick( float _TimeStep ) {
     SkinnedComponent->SetTimeBroadcast( time );
 }
 
-#include <Runtime/ScopedTimeCheck.h>
-
 void ASponzaModel::LoadStaticMeshes() {
-    AScopedTimeCheck ScopedTime( "LoadStaticMeshes" );
+    AScopedTimer ScopedTime( "LoadStaticMeshes" );
 
     //{
     //    AAssetImporter importer;

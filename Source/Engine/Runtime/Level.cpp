@@ -37,15 +37,15 @@ SOFTWARE.
 #include "PlayerController.h"
 #include "Texture.h"
 #include "Engine.h"
-#include "RuntimeVariable.h"
 
 #include <Geometry/BV/BvIntersect.h>
 #include <Geometry/ConvexHull.h>
 #include <Core/IntrusiveLinkedListMacro.h>
+#include <Core/ConsoleVar.h>
 
-ARuntimeVariable com_DrawLevelAreaBounds( _CTS( "com_DrawLevelAreaBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawLevelIndoorBounds( _CTS( "com_DrawLevelIndoorBounds" ), _CTS( "0" ), VAR_CHEAT );
-ARuntimeVariable com_DrawLevelPortals( _CTS( "com_DrawLevelPortals" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawLevelAreaBounds( _CTS( "com_DrawLevelAreaBounds" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawLevelIndoorBounds( _CTS( "com_DrawLevelIndoorBounds" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawLevelPortals( _CTS( "com_DrawLevelPortals" ), _CTS( "0" ), CVAR_CHEAT );
 
 AN_CLASS_META( ALevel )
 

@@ -57,19 +57,19 @@ SOFTWARE.
 
 //#define IMGUI_CONTEXT
 
-static ARuntimeVariable com_ShowStat(_CTS("com_ShowStat"), _CTS("0"));
-static ARuntimeVariable com_ShowFPS(_CTS("com_ShowFPS"), _CTS("0"));
-static ARuntimeVariable com_SimulateCursorBallistics(_CTS("com_SimulateCursorBallistics"), _CTS("1"));
+static AConsoleVar com_ShowStat(_CTS("com_ShowStat"), _CTS("0"));
+static AConsoleVar com_ShowFPS(_CTS("com_ShowFPS"), _CTS("0"));
+static AConsoleVar com_SimulateCursorBallistics(_CTS("com_SimulateCursorBallistics"), _CTS("1"));
 
-ARuntimeVariable rt_VidWidth(_CTS("rt_VidWidth"), _CTS("0"));
-ARuntimeVariable rt_VidHeight(_CTS("rt_VidHeight"), _CTS("0"));
+AConsoleVar rt_VidWidth(_CTS("rt_VidWidth"), _CTS("0"));
+AConsoleVar rt_VidHeight(_CTS("rt_VidHeight"), _CTS("0"));
 #ifdef AN_DEBUG
-ARuntimeVariable rt_VidFullscreen(_CTS("rt_VidFullscreen"), _CTS("0"));
+AConsoleVar rt_VidFullscreen(_CTS("rt_VidFullscreen"), _CTS("0"));
 #else
-ARuntimeVariable rt_VidFullscreen(_CTS("rt_VidFullscreen"), _CTS("1"));
+AConsoleVar rt_VidFullscreen(_CTS("rt_VidFullscreen"), _CTS("1"));
 #endif
 
-ARuntimeVariable rt_SwapInterval(_CTS("rt_SwapInterval"), _CTS("0"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing"));
+AConsoleVar rt_SwapInterval(_CTS("rt_SwapInterval"), _CTS("0"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing"));
 
 static int TotalAllocatedRenderCore = 0;
 
@@ -158,16 +158,16 @@ void AEngineInstance::LoadConfigFile()
 
         CommandProcessor.Add(data.CStr());
 
-        class CommandContext : public IRuntimeCommandContext
+        class CommandContext : public ICommandContext
         {
         public:
-            void ExecuteCommand(ARuntimeCommandProcessor const& _Proc) override
+            void ExecuteCommand(ACommandProcessor const& _Proc) override
             {
                 AN_ASSERT(_Proc.GetArgsCount() > 0);
 
                 const char*       name = _Proc.GetArg(0);
-                ARuntimeVariable* var;
-                if (nullptr != (var = ARuntimeVariable::FindVariable(name)))
+                AConsoleVar* var;
+                if (nullptr != (var = AConsoleVar::FindVariable(name)))
                 {
                     if (_Proc.GetArgsCount() < 2)
                     {
@@ -959,13 +959,13 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
     init.HunkSizeInMegabytes     = 32;
     Platform::Initialize(init);
 
-    ARuntimeVariable::AllocateVariables();
+    AConsoleVar::AllocateVariables();
 
     AEngineInstance().Run(EntryDecl);
 
     EmbeddedResourcesArch.Reset();
 
-    ARuntimeVariable::FreeVariables();
+    AConsoleVar::FreeVariables();
 
     Platform::Deinitialize();
 }

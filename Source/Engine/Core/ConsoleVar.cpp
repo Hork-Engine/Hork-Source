@@ -28,24 +28,25 @@ SOFTWARE.
 
 */
 
-#include "RuntimeVariable.h"
-#include "RuntimeCommandProcessor.h"
+#include "ConsoleVar.h"
+#include "CommandProcessor.h"
+#include "BaseMath.h"
+
 #include <Platform/Logger.h>
-#include <Core/BaseMath.h>
 
-static ARuntimeVariable* GlobalVars         = nullptr;
-static bool              GVariableAllocated = false;
+static AConsoleVar* GlobalVars         = nullptr;
+static bool         GVariableAllocated = false;
 
-int ARuntimeVariable::EnvironmentFlags = RV_CHEATS_ALLOWED;
+int AConsoleVar::EnvironmentFlags = CVAR_CHEATS_ALLOWED;
 
-ARuntimeVariable* ARuntimeVariable::GlobalVariableList()
+AConsoleVar* AConsoleVar::GlobalVariableList()
 {
     return GlobalVars;
 }
 
-ARuntimeVariable* ARuntimeVariable::FindVariable(const char* _Name)
+AConsoleVar* AConsoleVar::FindVariable(const char* _Name)
 {
-    for (ARuntimeVariable* var = GlobalVars; var; var = var->GetNext())
+    for (AConsoleVar* var = GlobalVars; var; var = var->GetNext())
     {
         if (!Platform::Stricmp(var->GetName(), _Name))
         {
@@ -55,9 +56,9 @@ ARuntimeVariable* ARuntimeVariable::FindVariable(const char* _Name)
     return nullptr;
 }
 
-void ARuntimeVariable::AllocateVariables()
+void AConsoleVar::AllocateVariables()
 {
-    for (ARuntimeVariable* var = GlobalVars; var; var = var->Next)
+    for (AConsoleVar* var = GlobalVars; var; var = var->Next)
     {
         var->Value = var->DefaultValue;
         var->I32   = Math::ToInt<int32_t>(var->Value);
@@ -66,9 +67,9 @@ void ARuntimeVariable::AllocateVariables()
     GVariableAllocated = true;
 }
 
-void ARuntimeVariable::FreeVariables()
+void AConsoleVar::FreeVariables()
 {
-    for (ARuntimeVariable* var = GlobalVars; var; var = var->Next)
+    for (AConsoleVar* var = GlobalVars; var; var = var->Next)
     {
         var->Value.Free();
         var->LatchedValue.Free();
@@ -76,24 +77,24 @@ void ARuntimeVariable::FreeVariables()
     GlobalVars = nullptr;
 }
 
-ARuntimeVariable::ARuntimeVariable(const char* _Name,
-                                   const char* _Value,
-                                   uint16_t    _Flags,
-                                   const char* _Comment) :
+AConsoleVar::AConsoleVar(const char* _Name,
+                         const char* _Value,
+                         uint16_t    _Flags,
+                         const char* _Comment) :
     Name(_Name ? _Name : ""), DefaultValue(_Value ? _Value : ""), Comment(_Comment ? _Comment : ""), Flags(_Flags)
 {
     AN_ASSERT(!GVariableAllocated);
-    AN_ASSERT(ARuntimeCommandProcessor::IsValidCommandName(Name));
+    AN_ASSERT(ACommandProcessor::IsValidCommandName(Name));
 
-    ARuntimeVariable* head = GlobalVars;
-    Next                   = head;
-    GlobalVars             = this;
+    AConsoleVar* head = GlobalVars;
+    Next              = head;
+    GlobalVars        = this;
 }
 
-ARuntimeVariable::~ARuntimeVariable()
+AConsoleVar::~AConsoleVar()
 {
-    ARuntimeVariable* prev = nullptr;
-    for (ARuntimeVariable* var = GlobalVars; var; var = var->Next)
+    AConsoleVar* prev = nullptr;
+    for (AConsoleVar* var = GlobalVars; var; var = var->Next)
     {
         if (var == this)
         {
@@ -111,27 +112,27 @@ ARuntimeVariable::~ARuntimeVariable()
     }
 }
 
-bool ARuntimeVariable::CanChangeValue() const
+bool AConsoleVar::CanChangeValue() const
 {
-    if (Flags & VAR_READONLY)
+    if (Flags & CVAR_READONLY)
     {
         GLogger.Printf("%s is readonly\n", Name);
         return false;
     }
 
-    if ((Flags & VAR_CHEAT) && !(EnvironmentFlags & RV_CHEATS_ALLOWED))
+    if ((Flags & CVAR_CHEAT) && !(EnvironmentFlags & CVAR_CHEATS_ALLOWED))
     {
         GLogger.Printf("%s is cheat protected\n", Name);
         return false;
     }
 
-    if ((Flags & VAR_SERVERONLY) && !(EnvironmentFlags & RV_SERVER_ACTIVE))
+    if ((Flags & CVAR_SERVERONLY) && !(EnvironmentFlags & CVAR_SERVER_ACTIVE))
     {
         GLogger.Printf("%s can be changed by server only\n", Name);
         return false;
     }
 
-    if ((Flags & VAR_NOINGAME) && (EnvironmentFlags & RV_INGAME_STATUS))
+    if ((Flags & CVAR_NOINGAME) && (EnvironmentFlags & CVAR_INGAME_STATUS))
     {
         GLogger.Printf("%s can't be changed in game\n", Name);
         return false;
@@ -140,7 +141,7 @@ bool ARuntimeVariable::CanChangeValue() const
     return true;
 }
 
-void ARuntimeVariable::SetString(const char* _String)
+void AConsoleVar::SetString(const char* _String)
 {
     if (!CanChangeValue())
     {
@@ -154,7 +155,7 @@ void ARuntimeVariable::SetString(const char* _String)
         return;
     }
 
-    if (Flags & VAR_LATCHED)
+    if (Flags & CVAR_LATCHED)
     {
         GLogger.Printf("%s restart required to change value\n", Name);
 
@@ -166,27 +167,27 @@ void ARuntimeVariable::SetString(const char* _String)
     }
 }
 
-void ARuntimeVariable::SetString(AString const& _String)
+void AConsoleVar::SetString(AString const& _String)
 {
     SetString(_String.CStr());
 }
 
-void ARuntimeVariable::SetBool(bool _Bool)
+void AConsoleVar::SetBool(bool _Bool)
 {
     SetString(_Bool ? "1" : "0");
 }
 
-void ARuntimeVariable::SetInteger(int32_t _Integer)
+void AConsoleVar::SetInteger(int32_t _Integer)
 {
     SetString(Math::ToString(_Integer));
 }
 
-void ARuntimeVariable::SetFloat(float _Float)
+void AConsoleVar::SetFloat(float _Float)
 {
     SetString(Math::ToString(_Float));
 }
 
-void ARuntimeVariable::ForceString(const char* _String)
+void AConsoleVar::ForceString(const char* _String)
 {
     Value = _String;
     I32   = Math::ToInt<int32_t>(Value);
@@ -195,29 +196,29 @@ void ARuntimeVariable::ForceString(const char* _String)
     MarkModified();
 }
 
-void ARuntimeVariable::ForceString(AString const& _String)
+void AConsoleVar::ForceString(AString const& _String)
 {
     ForceString(_String.CStr());
 }
 
-void ARuntimeVariable::ForceBool(bool _Bool)
+void AConsoleVar::ForceBool(bool _Bool)
 {
     ForceString(_Bool ? "1" : "0");
 }
 
-void ARuntimeVariable::ForceInteger(int32_t _Integer)
+void AConsoleVar::ForceInteger(int32_t _Integer)
 {
     ForceString(Math::ToString(_Integer));
 }
 
-void ARuntimeVariable::ForceFloat(float _Float)
+void AConsoleVar::ForceFloat(float _Float)
 {
     ForceString(Math::ToString(_Float));
 }
 
-void ARuntimeVariable::SetLatched()
+void AConsoleVar::SetLatched()
 {
-    if (!(Flags & VAR_LATCHED))
+    if (!(Flags & CVAR_LATCHED))
     {
         return;
     }
@@ -235,7 +236,7 @@ void ARuntimeVariable::SetLatched()
     ForceString(LatchedValue);
 }
 
-void ARuntimeVariable::Print()
+void AConsoleVar::Print()
 {
     GLogger.Printf("    %s", Name);
 
@@ -246,7 +247,7 @@ void ARuntimeVariable::Print()
 
     GLogger.Printf("\n        [CURRENT \"%s\"]  [DEFAULT \"%s\"]", Value.CStr(), DefaultValue);
 
-    if ((Flags & VAR_LATCHED) && !LatchedValue.IsEmpty())
+    if ((Flags & CVAR_LATCHED) && !LatchedValue.IsEmpty())
     {
         GLogger.Printf("  [LATCHED \"%s\"]\n", LatchedValue.CStr());
     }
@@ -255,15 +256,15 @@ void ARuntimeVariable::Print()
         GLogger.Print("\n");
     }
 
-    if (Flags & (VAR_LATCHED | VAR_READONLY | VAR_NOSAVE | VAR_CHEAT | VAR_SERVERONLY | VAR_NOINGAME))
+    if (Flags & (CVAR_LATCHED | CVAR_READONLY | CVAR_NOSAVE | CVAR_CHEAT | CVAR_SERVERONLY | CVAR_NOINGAME))
     {
         GLogger.Print("        [FLAGS");
-        if (Flags & VAR_LATCHED) { GLogger.Print(" LATCHED"); }
-        if (Flags & VAR_READONLY) { GLogger.Print(" READONLY"); }
-        if (Flags & VAR_NOSAVE) { GLogger.Print(" NOSAVE"); }
-        if (Flags & VAR_CHEAT) { GLogger.Print(" CHEAT"); }
-        if (Flags & VAR_SERVERONLY) { GLogger.Print(" SERVERONLY"); }
-        if (Flags & VAR_NOINGAME) { GLogger.Print(" NOINGAME"); }
+        if (Flags & CVAR_LATCHED) { GLogger.Print(" LATCHED"); }
+        if (Flags & CVAR_READONLY) { GLogger.Print(" READONLY"); }
+        if (Flags & CVAR_NOSAVE) { GLogger.Print(" NOSAVE"); }
+        if (Flags & CVAR_CHEAT) { GLogger.Print(" CHEAT"); }
+        if (Flags & CVAR_SERVERONLY) { GLogger.Print(" SERVERONLY"); }
+        if (Flags & CVAR_NOINGAME) { GLogger.Print(" NOINGAME"); }
         GLogger.Print("]\n");
     }
 }

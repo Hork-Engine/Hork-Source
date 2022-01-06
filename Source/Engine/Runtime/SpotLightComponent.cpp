@@ -32,7 +32,8 @@ SOFTWARE.
 #include "MeshComponent.h"
 #include "World.h"
 #include "DebugRenderer.h"
-#include "RuntimeVariable.h"
+
+#include <Core/ConsoleVar.h>
 
 static const float DEFAULT_RADIUS = 15;//1.0f;
 static const float DEFAULT_INNER_CONE_ANGLE = 100.0f;
@@ -41,7 +42,7 @@ static const float DEFAULT_SPOT_EXPONENT = 1.0f;
 static const float MIN_CONE_ANGLE = 1.0f;
 static const float MIN_RADIUS = 0.01f;
 
-ARuntimeVariable com_DrawSpotLights( _CTS( "com_DrawSpotLights" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawSpotLights( _CTS( "com_DrawSpotLights" ), _CTS( "0" ), CVAR_CHEAT );
 
 AN_BEGIN_CLASS_META( ASpotLightComponent )
 AN_ATTRIBUTE( Radius, float, SetRadius, GetRadius, AF_DEFAULT )

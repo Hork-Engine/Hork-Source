@@ -28,32 +28,32 @@ SOFTWARE.
 
 */
 
-#include "RuntimeCommandProcessor.h"
+#include "CommandProcessor.h"
 #include <Platform/Logger.h>
 
-ARuntimeCommandProcessor::ARuntimeCommandProcessor()
+ACommandProcessor::ACommandProcessor()
 {
     ClearBuffer();
 }
 
-void ARuntimeCommandProcessor::ClearBuffer()
+void ACommandProcessor::ClearBuffer()
 {
     Cmdbuf.Clear();
     CmdbufPos = 0;
     ArgsCount = 0;
 }
 
-void ARuntimeCommandProcessor::Add(const char* _Text)
+void ACommandProcessor::Add(const char* _Text)
 {
     Cmdbuf += _Text;
 }
 
-void ARuntimeCommandProcessor::Insert(const char* _Text)
+void ACommandProcessor::Insert(const char* _Text)
 {
     Cmdbuf.Insert(_Text, CmdbufPos);
 }
 
-void ARuntimeCommandProcessor::Execute(IRuntimeCommandContext& _Ctx)
+void ACommandProcessor::Execute(ICommandContext& _Ctx)
 {
     if (Cmdbuf.IsEmpty())
     {
@@ -85,7 +85,7 @@ void ARuntimeCommandProcessor::Execute(IRuntimeCommandContext& _Ctx)
             {
                 if (CmdbufPos >= Cmdbuf.Length())
                 {
-                    GLogger.Printf("ARuntimeCommandProcessor::Execute: expected '*/'\n");
+                    GLogger.Printf("ACommandProcessor::Execute: expected '*/'\n");
                     break;
                 }
 
@@ -139,7 +139,7 @@ void ARuntimeCommandProcessor::Execute(IRuntimeCommandContext& _Ctx)
             {
                 if (bQuoted)
                 {
-                    GLogger.Printf("ARuntimeCommandProcessor::Execute: no closed quote\n");
+                    GLogger.Printf("ACommandProcessor::Execute: no closed quote\n");
                 }
                 continue;
             }
@@ -151,7 +151,7 @@ void ARuntimeCommandProcessor::Execute(IRuntimeCommandContext& _Ctx)
                 {
                     if (bQuoted)
                     {
-                        GLogger.Printf("ARuntimeCommandProcessor::Execute: no closed quote\n");
+                        GLogger.Printf("ACommandProcessor::Execute: no closed quote\n");
                     }
                     break;
                 }
@@ -178,7 +178,7 @@ void ARuntimeCommandProcessor::Execute(IRuntimeCommandContext& _Ctx)
         }
         else
         {
-            GLogger.Printf("ARuntimeCommandProcessor::Execute: MAX_ARGS hit\n");
+            GLogger.Printf("ACommandProcessor::Execute: MAX_ARGS hit\n");
             CmdbufPos++;
         }
     }
@@ -194,7 +194,7 @@ void ARuntimeCommandProcessor::Execute(IRuntimeCommandContext& _Ctx)
     Cmdbuf.Clear();
 }
 
-bool ARuntimeCommandProcessor::IsValidCommandName(const char* _Name)
+bool ACommandProcessor::IsValidCommandName(const char* _Name)
 {
     if (!_Name || !*_Name)
     {

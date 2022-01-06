@@ -32,12 +32,13 @@ SOFTWARE.
 #include "MeshComponent.h"
 #include "World.h"
 #include "DebugRenderer.h"
-#include "RuntimeVariable.h"
+
+#include <Core/ConsoleVar.h>
 
 static const float DEFAULT_RADIUS = 15;//1.0f;
 static const float MIN_RADIUS = 0.01f;
 
-ARuntimeVariable com_DrawPointLights( _CTS( "com_DrawPointLights" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawPointLights( _CTS( "com_DrawPointLights" ), _CTS( "0" ), CVAR_CHEAT );
 
 AN_CLASS_META( APointLightComponent )
 

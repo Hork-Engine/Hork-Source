@@ -32,13 +32,13 @@ SOFTWARE.
 #include "FrameRenderer.h"
 #include "VT/VirtualTextureFeedback.h"
 
-#include <Runtime/ScopedTimeCheck.h>
+#include <Core/ScopedTimer.h>
 
-extern ARuntimeVariable r_FXAA;
+extern AConsoleVar r_FXAA;
 
-ARuntimeVariable r_ShowNormals(_CTS("r_ShowNormals"), _CTS("0"), VAR_CHEAT);
-ARuntimeVariable r_ShowFeedbackVT(_CTS("r_ShowFeedbackVT"), _CTS("0"));
-ARuntimeVariable r_ShowCacheVT(_CTS("r_ShowCacheVT"), _CTS("-1"));
+AConsoleVar r_ShowNormals(_CTS("r_ShowNormals"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar r_ShowFeedbackVT(_CTS("r_ShowFeedbackVT"), _CTS("0"));
+AConsoleVar r_ShowCacheVT(_CTS("r_ShowCacheVT"), _CTS("-1"));
 
 using namespace RenderCore;
 
@@ -352,7 +352,7 @@ void AFrameRenderer::AddOutlineOverlayPass(AFrameGraph& FrameGraph, FGTexturePro
 
 void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVirtualTextureCache* PhysCacheVT, FGTextureProxy** ppFinalTexture)
 {
-    AScopedTimeCheck TimeCheck("Framegraph build&fill");
+    AScopedTimer TimeCheck("Framegraph build&fill");
 
     if (bVirtualTexturing)
     {

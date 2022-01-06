@@ -31,7 +31,8 @@ SOFTWARE.
 #include "VirtualTextureAnalyzer.h"
 #include "QuadTree.h"
 #include "../RenderLocal.h"
-#include <Runtime/ScopedTimeCheck.h>
+
+#include <Core/ScopedTimer.h>
 
 AVirtualTextureFeedbackAnalyzer::AVirtualTextureFeedbackAnalyzer()
     : SwapIndex( 0 )
@@ -269,7 +270,7 @@ void AVirtualTextureFeedbackAnalyzer::DecodePages()
 
     AVirtualTexture **pTextureBindings = Textures[SwapIndex];
 
-    AScopedTimeCheck timecheck("AVirtualTextureFeedbackAnalyzer::DecodePage");
+    AScopedTimer timecheck("AVirtualTextureFeedbackAnalyzer::DecodePage");
 
     int numIterations = 0; // for debug
     int feedbackSize = 0; // for debug

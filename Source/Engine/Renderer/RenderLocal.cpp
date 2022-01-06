@@ -38,13 +38,13 @@ using namespace RenderCore;
 // NOTE: supported by NVidia, but not supported on AMD
 //#define CSTYLE_LINE_DIRECTIVE
 
-ARuntimeVariable r_MaterialDebugMode( _CTS( "r_MaterialDebugMode" ),
+AConsoleVar r_MaterialDebugMode( _CTS( "r_MaterialDebugMode" ),
                                       #ifdef AN_DEBUG
                                       _CTS( "1" ),
                                       #else
                                       _CTS( "0" ),
                                       #endif
-                                      VAR_CHEAT );
+                                      CVAR_CHEAT );
 
 /** Render device */
 IDevice * GDevice;
@@ -617,7 +617,7 @@ static bool LoadShaderWithInclude( SIncludeCtx * Ctx, AStringView FileName, AStr
     return LoadShaderFromString( Ctx, FileName, source, Out );
 }
 
-ARuntimeVariable r_EmbeddedShaders( _CTS("r_EmbeddedShaders"), _CTS("1") );
+AConsoleVar r_EmbeddedShaders( _CTS("r_EmbeddedShaders"), _CTS("1") );
 
 static bool GetShaderSource( AStringView FileName, AString & Source )
 {

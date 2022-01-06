@@ -30,12 +30,13 @@ SOFTWARE.
 
 #include "TerrainComponent.h"
 #include "World.h"
-#include "RuntimeVariable.h"
+
+#include <Core/ConsoleVar.h>
 
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include "BulletCompatibility.h"
 
-ARuntimeVariable com_DrawTerrainBounds( _CTS( "com_DrawTerrainBounds" ), _CTS( "0" ), VAR_CHEAT );
+AConsoleVar com_DrawTerrainBounds( _CTS( "com_DrawTerrainBounds" ), _CTS( "0" ), CVAR_CHEAT );
 
 AN_CLASS_META( ATerrainComponent )
 

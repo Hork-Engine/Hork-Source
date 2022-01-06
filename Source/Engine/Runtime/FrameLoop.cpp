@@ -29,14 +29,14 @@ SOFTWARE.
 */
 
 #include "FrameLoop.h"
-#include "RuntimeVariable.h"
 #include <Platform/Platform.h>
 #include <Platform/ConsoleBuffer.h>
 #include <RenderCore/GPUSync.h>
+#include <Core/ConsoleVar.h>
 
 #include <SDL.h>
 
-ARuntimeVariable rt_SyncGPU(_CTS("rt_SyncGPU"), _CTS("0"));
+AConsoleVar rt_SyncGPU(_CTS("rt_SyncGPU"), _CTS("0"));
 
 AFrameLoop::AFrameLoop(RenderCore::IDevice* RenderDevice) :
     RenderDevice(RenderDevice)

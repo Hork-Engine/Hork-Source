@@ -32,13 +32,13 @@ SOFTWARE.
 #include "SkinnedComponent.h"
 #include "Actor.h"
 #include "World.h"
-#include "RuntimeVariable.h"
 
+#include <Core/ConsoleVar.h>
 #include <Platform/Logger.h>
 
 #include <algorithm> // find
 
-ARuntimeVariable com_DrawSockets(_CTS("com_DrawSockets"), _CTS("0"), VAR_CHEAT);
+AConsoleVar com_DrawSockets(_CTS("com_DrawSockets"), _CTS("0"), CVAR_CHEAT);
 
 AN_CLASS_META(ASceneComponent)
 

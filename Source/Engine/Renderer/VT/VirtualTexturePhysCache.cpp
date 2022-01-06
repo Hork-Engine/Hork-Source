@@ -40,7 +40,7 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-ARuntimeVariable r_ResetCacheVT(_CTS("r_ResetCacheVT"), _CTS("0"));
+AConsoleVar r_ResetCacheVT(_CTS("r_ResetCacheVT"), _CTS("0"));
 
 AVirtualTextureCache::AVirtualTextureCache(SVirtualTextureCacheCreateInfo const& CreateInfo)
 {

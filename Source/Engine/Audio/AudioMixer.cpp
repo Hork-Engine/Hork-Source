@@ -36,16 +36,16 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 
-ARuntimeVariable Snd_MixAhead( _CTS( "Snd_MixAhead" ), _CTS( "0.1" ) );
-ARuntimeVariable Snd_VolumeRampSize( _CTS( "Snd_VolumeRampSize" ), _CTS( "16" ) );
-ARuntimeVariable Snd_HRTF( _CTS( "Snd_HRTF"), _CTS("1") );
+AConsoleVar Snd_MixAhead( _CTS( "Snd_MixAhead" ), _CTS( "0.1" ) );
+AConsoleVar Snd_VolumeRampSize( _CTS( "Snd_VolumeRampSize" ), _CTS( "16" ) );
+AConsoleVar Snd_HRTF( _CTS( "Snd_HRTF"), _CTS("1") );
 
 #if 0
-ARuntimeVariable Rev_RoomSize( _CTS("Rev_RoomSize"),_CTS("0.5") );
-ARuntimeVariable Rev_Damp( _CTS( "Rev_Damp" ), _CTS( "0.5" ) );
-ARuntimeVariable Rev_Wet( _CTS( "Rev_Wet" ), _CTS( "0.33" ) );
-ARuntimeVariable Rev_Dry( _CTS( "Rev_Dry" ), _CTS( "1" ) );
-ARuntimeVariable Rev_Width( _CTS( "Rev_Width" ), _CTS( "1" ) );
+AConsoleVar Rev_RoomSize( _CTS("Rev_RoomSize"),_CTS("0.5") );
+AConsoleVar Rev_Damp( _CTS( "Rev_Damp" ), _CTS( "0.5" ) );
+AConsoleVar Rev_Wet( _CTS( "Rev_Wet" ), _CTS( "0.33" ) );
+AConsoleVar Rev_Dry( _CTS( "Rev_Dry" ), _CTS( "1" ) );
+AConsoleVar Rev_Width( _CTS( "Rev_Width" ), _CTS( "1" ) );
 #endif
 
 // u8 to s32 sample convertion

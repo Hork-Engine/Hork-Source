@@ -32,25 +32,25 @@ SOFTWARE.
 
 #include <Core/String.h>
 
-class ARuntimeCommandProcessor;
+class ACommandProcessor;
 
-/** Runtime command execute context */
-class IRuntimeCommandContext
+/** Command execution context */
+class ICommandContext
 {
 public:
-    virtual void ExecuteCommand(ARuntimeCommandProcessor const& _Proc) = 0;
+    virtual void ExecuteCommand(ACommandProcessor const& _Proc) = 0;
 };
 
 /** Command buffer parser */
-class ARuntimeCommandProcessor final
+class ACommandProcessor final
 {
-    AN_FORBID_COPY(ARuntimeCommandProcessor)
+    AN_FORBID_COPY(ACommandProcessor)
 
 public:
     static constexpr int MAX_ARGS    = 256;
     static constexpr int MAX_ARG_LEN = 256;
 
-    ARuntimeCommandProcessor();
+    ACommandProcessor();
 
     /** Clear command buffer */
     void ClearBuffer();
@@ -62,7 +62,7 @@ public:
     void Insert(const char* _Text);
 
     /** Execute with command context */
-    void Execute(IRuntimeCommandContext& _Ctx);
+    void Execute(ICommandContext& _Ctx);
 
     /** Get argument by index */
     const char* GetArg(int i) const { return Args[i]; }
