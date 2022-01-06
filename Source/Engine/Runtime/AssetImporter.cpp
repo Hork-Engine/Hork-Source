@@ -37,8 +37,7 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Platform/Memory/LinearAllocator.h>
 
-#define CGLTF_IMPLEMENTATION
-#include "gltf/cgltf.h"
+#include <cgltf/cgltf.h>
 
 constexpr int MAX_MEMORY_GLTF = 16 << 20;
 
@@ -627,16 +626,15 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
     void* buf = GHunkMemory.Alloc(size);
     f.ReadBuffer(buf, size);
 
-    //void * memoryBuffer = GHunkMemory.Alloc( MAX_MEMORY_GLTF );
     ALinearAllocatorGLTF allocator;
 
     cgltf_options options;
 
     Platform::ZeroMem(&options, sizeof(options));
 
-    options.memory_alloc     = cgltf_alloc;
-    options.memory_free      = cgltf_free;
-    options.memory_user_data = &allocator; //memoryBuffer;
+    options.memory.alloc     = cgltf_alloc;
+    options.memory.free      = cgltf_free;
+    options.memory.user_data = &allocator;
 
     cgltf_data* data = NULL;
 

@@ -217,12 +217,10 @@ source_group( "Renderer\\VT" FILES ${RendererVT} )
 # World private
 file( GLOB RuntimeLWO Runtime/lwo/*.h Runtime/lwo/*.c )
 file( GLOB RuntimeIESNA Runtime/iesna/*.h Runtime/iesna/*.c )
-file( GLOB RuntimeGLTF Runtime/gltf/*.h Runtime/gltf/*.c )
 file( GLOB RuntimeSTB Runtime/stb/*.h Runtime/stb/*.c )
 
 source_group( "Runtime\\lwo" FILES ${RuntimeLWO} )
 source_group( "Runtime\\iesna" FILES ${RuntimeIESNA} )
-source_group( "Runtime\\gltf" FILES ${RuntimeGLTF} )
 source_group( "Runtime\\stb" FILES ${RuntimeSTB} )
 
 #---------------------------------------------------------------------
@@ -278,7 +276,6 @@ ${Imgui}
 
 ${RuntimeLWO}
 ${RuntimeIESNA}
-${RuntimeGLTF}
 ${RuntimeSTB}
 )
 
