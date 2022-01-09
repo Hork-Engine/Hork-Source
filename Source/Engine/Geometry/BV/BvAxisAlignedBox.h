@@ -194,6 +194,12 @@ struct BvAxisAlignedBox
         return HalfSize().Length();
     }
 
+    AN_FORCEINLINE float InnerRadius() const
+    {
+        Float3 halfSize = HalfSize();
+        return Math::Min3(halfSize.X, halfSize.Y, halfSize.Z);
+    }
+
     constexpr AN_FORCEINLINE Float3 Size() const
     {
         return Maxs - Mins;
