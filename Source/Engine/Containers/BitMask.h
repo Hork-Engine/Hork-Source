@@ -95,6 +95,7 @@ public:
     {
         Bits    = _BitMask.Bits;
         NumBits = _BitMask.NumBits;
+        return *this;
     }
 
     void Resize(int _NumBits)
