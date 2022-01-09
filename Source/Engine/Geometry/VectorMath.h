@@ -344,8 +344,8 @@ struct TVector2
 {
     using ElementType = T;
 
-    T X;
-    T Y;
+    T X{0};
+    T Y{0};
 
     TVector2() = default;
 
@@ -734,9 +734,9 @@ struct TVector3
 {
     using ElementType = T;
 
-    T X;
-    T Y;
-    T Z;
+    T X{0};
+    T Y{0};
+    T Z{0};
 
     TVector3() = default;
 
@@ -1363,10 +1363,10 @@ struct TVector4
 {
     using ElementType = T;
 
-    T X;
-    T Y;
-    T Z;
-    T W;
+    T X{0};
+    T Y{0};
+    T Z{0};
+    T W{0};
 
     TVector4() = default;
 
@@ -2116,8 +2116,8 @@ struct Float2x2
 {
     using ElementType = Float2;
 
-    Float2 Col0;
-    Float2 Col1;
+    Float2 Col0{1,0};
+    Float2 Col1{0,1};
 
     Float2x2() = default;
     explicit Float2x2(Float3x3 const& v);
@@ -2361,9 +2361,9 @@ struct Float3x3
 {
     using ElementType = Float3;
 
-    Float3 Col0;
-    Float3 Col1;
-    Float3 Col2;
+    Float3 Col0{1, 0, 0};
+    Float3 Col1{0, 1, 0};
+    Float3 Col2{0, 0, 1};
 
     Float3x3() = default;
     explicit Float3x3(Float2x2 const& v);
@@ -2722,10 +2722,10 @@ struct Float4x4
 {
     using ElementType = Float4;
 
-    Float4 Col0;
-    Float4 Col1;
-    Float4 Col2;
-    Float4 Col3;
+    Float4 Col0{1, 0, 0, 0};
+    Float4 Col1{0, 1, 0, 0};
+    Float4 Col2{0, 0, 1, 0};
+    Float4 Col3{0, 0, 0, 1};
 
     Float4x4() = default;
     explicit Float4x4(Float2x2 const& v);
@@ -3584,9 +3584,9 @@ struct Float3x4
 {
     using ElementType = Float4;
 
-    Float4 Col0;
-    Float4 Col1;
-    Float4 Col2;
+    Float4 Col0{1, 0, 0, 0};
+    Float4 Col1{0, 1, 0, 0};
+    Float4 Col2{0, 0, 1, 0};
 
     Float3x4() = default;
     explicit Float3x4(Float2x2 const& v);

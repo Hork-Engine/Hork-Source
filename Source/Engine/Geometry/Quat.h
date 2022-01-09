@@ -36,10 +36,10 @@ struct Quat
 {
     using ElementType = float;
 
-    float X;
-    float Y;
-    float Z;
-    float W;
+    float X{0};
+    float Y{0};
+    float Z{0};
+    float W{1};
 
     Quat() = default;
     explicit constexpr Quat(Float4 const& v) :

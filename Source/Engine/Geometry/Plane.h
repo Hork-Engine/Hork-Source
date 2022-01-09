@@ -41,8 +41,8 @@ Plane equalation: Normal.X * X + Normal.Y * Y + Normal.Z * Z + D = 0
 template <typename T>
 struct TPlane
 {
-    TVector3<T> Normal;
-    T           D;
+    TVector3<T> Normal{0,0,1};
+    T           D{0};
 
     /** Construct uninitialized */
     TPlane() = default;

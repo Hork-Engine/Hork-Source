@@ -36,7 +36,7 @@ struct STransform
 {
     Float3 Position;
     Quat   Rotation;
-    Float3 Scale;
+    Float3 Scale{1,1,1};
 
     STransform() = default;
     STransform(Float3 const& position, Quat const& rotation, Float3 const& scale);

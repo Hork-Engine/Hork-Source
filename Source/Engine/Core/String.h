@@ -48,8 +48,8 @@ public:
     {
     }
 
-    AN_FORCEINLINE AStringView(const char* _Str) :
-        Data(_Str), Size(Platform::Strlen(_Str))
+    AN_FORCEINLINE AStringView(const char* Rhs) :
+        Data(Rhs), Size(Platform::Strlen(Rhs))
     {
     }
 
@@ -63,12 +63,12 @@ public:
     AN_FORCEINLINE AStringView(AStdString const& Str);
 
     AStringView(AStringView const& Str) = default;
-    AStringView& operator=(AStringView const& _Str) = default;
+    AStringView& operator=(AStringView const& Rhs) = default;
 
-    AStringView& operator=(AString const& _Str);
+    AStringView& operator=(AString const& Rhs);
 
-    friend bool operator==(AStringView _Str1, AStringView _Str2);
-    friend bool operator!=(AStringView _Str1, AStringView _Str2);
+    friend bool operator==(AStringView Lhs, AStringView Rhs);
+    friend bool operator!=(AStringView Lhs, AStringView Rhs);
 
     AN_FORCEINLINE const char& operator[](const int _Index) const
     {
@@ -189,16 +189,16 @@ public:
     }
 
     /** Compare the strings (case insensitive) */
-    int Icmp(AStringView _Str) const;
+    int Icmp(AStringView Rhs) const;
 
     /** Compare the strings (case sensitive) */
-    int Cmp(AStringView _Str) const;
+    int Cmp(AStringView Rhs) const;
 
     /** Compare the strings (case insensitive) */
-    int IcmpN(AStringView _Str, int _Num) const;
+    int IcmpN(AStringView Rhs, int _Num) const;
 
     /** Compare the strings (case sensitive) */
-    int CmpN(AStringView _Str, int _Num) const;
+    int CmpN(AStringView Rhs, int _Num) const;
 
     /** Path utility. Return index of the path end. */
     int FindPath() const
@@ -408,24 +408,24 @@ public:
     static const int BASE_CAPACITY = 32;
 
     AString();
-    AString(AString const& _Str);
-    AString(AString&& _Str) noexcept;
-    AString(AStringView _Str);
+    AString(AString const& Rhs);
+    AString(AString&& Rhs) noexcept;
+    AString(AStringView Rhs);
     AString(const char* _Begin, const char* _End);
     ~AString();
 
     const char& operator[](const int _Index) const;
     char&       operator[](const int _Index);
 
-    AString& operator=(AString const& _Str);
-    AString& operator=(AString&& _Str) noexcept;
-    AString& operator=(AStringView _Str);
+    AString& operator=(AString const& Rhs);
+    AString& operator=(AString&& Rhs) noexcept;
+    AString& operator=(AStringView Rhs);
 
-    friend AString operator+(AStringView _Str1, AStringView _Str2);
+    friend AString operator+(AStringView Lhs, AStringView Rhs);
     friend AString operator+(AStringView _Str, char _Char);
     friend AString operator+(char _Char, AStringView _Str);
 
-    AString& operator+=(AStringView _Str);
+    AString& operator+=(AStringView Rhs);
     AString& operator+=(char _Char);
 
     /** Clear string but not free a memory */
@@ -456,7 +456,7 @@ public:
     char* ToPtr() const;
 
     /** Append the string */
-    void Concat(AStringView _Str);
+    void Concat(AStringView Rhs);
 
     /** Append the character */
     void Concat(char _Char);
@@ -535,27 +535,27 @@ public:
     }
 
     /** Compare the strings (case insensitive) */
-    AN_FORCEINLINE int Icmp(AStringView _Str) const
+    AN_FORCEINLINE int Icmp(AStringView Rhs) const
     {
-        return AStringView(Data, Size).Icmp(_Str);
+        return AStringView(Data, Size).Icmp(Rhs);
     }
 
     /** Compare the strings (case sensitive) */
-    AN_FORCEINLINE int Cmp(AStringView _Str) const
+    AN_FORCEINLINE int Cmp(AStringView Rhs) const
     {
-        return AStringView(Data, Size).Cmp(_Str);
+        return AStringView(Data, Size).Cmp(Rhs);
     }
 
     /** Compare the strings (case insensitive) */
-    AN_FORCEINLINE int IcmpN(AStringView _Str, int _Num) const
+    AN_FORCEINLINE int IcmpN(AStringView Rhs, int _Num) const
     {
-        return AStringView(Data, Size).IcmpN(_Str, _Num);
+        return AStringView(Data, Size).IcmpN(Rhs, _Num);
     }
 
     /** Compare the strings (case sensitive) */
-    AN_FORCEINLINE int CmpN(AStringView _Str, int _Num) const
+    AN_FORCEINLINE int CmpN(AStringView Rhs, int _Num) const
     {
-        return AStringView(Data, Size).CmpN(_Str, _Num);
+        return AStringView(Data, Size).CmpN(Rhs, _Num);
     }
 
     /** Skip trailing zeros for the numbers. */
@@ -682,45 +682,45 @@ AN_FORCEINLINE AString::AString() :
     Base[0] = 0;
 }
 
-AN_FORCEINLINE AString::AString(AString const& _Str) :
+AN_FORCEINLINE AString::AString(AString const& Rhs) :
     AString()
 {
-    const int newLen = _Str.Length();
+    const int newLen = Rhs.Length();
     GrowCapacity(newLen + 1, false);
-    Platform::Memcpy(Data, _Str.ToPtr(), newLen);
+    Platform::Memcpy(Data, Rhs.ToPtr(), newLen);
     Data[newLen] = 0;
     Size         = newLen;
 }
 
-AN_FORCEINLINE AString::AString(AString&& _Str) noexcept
+AN_FORCEINLINE AString::AString(AString&& Rhs) noexcept
 {
-    if (_Str.Data == &_Str.Base[0])
+    if (Rhs.Data == &Rhs.Base[0])
     {
-        Platform::Memcpy(Base, _Str.Base, _Str.Size);
+        Platform::Memcpy(Base, Rhs.Base, Rhs.Size);
         Data       = Base;
-        Capacity   = _Str.Capacity;
-        Size       = _Str.Size;
+        Capacity   = Rhs.Capacity;
+        Size       = Rhs.Size;
         Base[Size] = 0;
     }
     else
     {
-        Data     = _Str.Data;
-        Capacity = _Str.Capacity;
-        Size     = _Str.Size;
+        Data     = Rhs.Data;
+        Capacity = Rhs.Capacity;
+        Size     = Rhs.Size;
 
-        _Str.Data     = _Str.Base;
-        _Str.Capacity = BASE_CAPACITY;
+        Rhs.Data      = Rhs.Base;
+        Rhs.Capacity = BASE_CAPACITY;
     }
-    _Str.Size    = 0;
-    _Str.Data[0] = '\0';
+    Rhs.Size     = 0;
+    Rhs.Data[0] = '\0';
 }
 
-AN_FORCEINLINE AString::AString(AStringView _Str) :
+AN_FORCEINLINE AString::AString(AStringView Rhs) :
     AString()
 {
-    const int newLen = _Str.Length();
+    const int newLen = Rhs.Length();
     GrowCapacity(newLen + 1, false);
-    Platform::Memcpy(Data, _Str.ToPtr(), newLen);
+    Platform::Memcpy(Data, Rhs.ToPtr(), newLen);
     Data[newLen] = 0;
     Size         = newLen;
 }
@@ -755,48 +755,48 @@ AN_FORCEINLINE char& AString::operator[](const int _Index)
     return Data[_Index];
 }
 
-AN_FORCEINLINE AString& AString::operator=(AString const& _Str)
+AN_FORCEINLINE AString& AString::operator=(AString const& Rhs)
 {
-    const int newLen = _Str.Length();
+    const int newLen = Rhs.Length();
     GrowCapacity(newLen + 1, false);
-    Platform::Memcpy(Data, _Str.ToPtr(), newLen);
+    Platform::Memcpy(Data, Rhs.ToPtr(), newLen);
     Data[newLen] = 0;
     Size         = newLen;
     return *this;
 }
 
-AN_FORCEINLINE AString& AString::operator=(AString&& _Str) noexcept
+AN_FORCEINLINE AString& AString::operator=(AString&& Rhs) noexcept
 {
     Free();
 
-    if (_Str.Data == &_Str.Base[0])
+    if (Rhs.Data == &Rhs.Base[0])
     {
-        Platform::Memcpy(Base, _Str.Base, _Str.Size);
+        Platform::Memcpy(Base, Rhs.Base, Rhs.Size);
         Data       = Base;
-        Capacity   = _Str.Capacity;
-        Size       = _Str.Size;
+        Capacity   = Rhs.Capacity;
+        Size       = Rhs.Size;
         Base[Size] = 0;
     }
     else
     {
-        Data     = _Str.Data;
-        Capacity = _Str.Capacity;
-        Size     = _Str.Size;
+        Data     = Rhs.Data;
+        Capacity = Rhs.Capacity;
+        Size     = Rhs.Size;
 
-        _Str.Data     = _Str.Base;
-        _Str.Capacity = BASE_CAPACITY;
+        Rhs.Data      = Rhs.Base;
+        Rhs.Capacity = BASE_CAPACITY;
     }
-    _Str.Size    = 0;
-    _Str.Data[0] = '\0';
+    Rhs.Size     = 0;
+    Rhs.Data[0] = '\0';
 
     return *this;
 }
 
-AN_FORCEINLINE AString& AString::operator=(AStringView _Str)
+AN_FORCEINLINE AString& AString::operator=(AStringView Rhs)
 {
-    const int newLen = _Str.Length();
+    const int newLen = Rhs.Length();
     GrowCapacity(newLen + 1, false);
-    Platform::Memcpy(Data, _Str.ToPtr(), newLen);
+    Platform::Memcpy(Data, Rhs.ToPtr(), newLen);
     Data[newLen] = 0;
     Size         = newLen;
     return *this;
@@ -820,10 +820,10 @@ AN_FORCEINLINE void AString::Free()
     Data[0] = '\0';
 }
 
-AN_FORCEINLINE AString operator+(AStringView _Str1, AStringView _Str2)
+AN_FORCEINLINE AString operator+(AStringView Lhs, AStringView Rhs)
 {
-    AString result(_Str1);
-    result.Concat(_Str2);
+    AString result(Lhs);
+    result.Concat(Rhs);
     return result;
 }
 
@@ -935,21 +935,21 @@ AN_FORCEINLINE AStringView::AStringView(AStdString const& Str) :
 {
 }
 
-AN_FORCEINLINE AStringView& AStringView::operator=(AString const& _Str)
+AN_FORCEINLINE AStringView& AStringView::operator=(AString const& Rhs)
 {
-    Data = _Str.ToPtr();
-    Size = _Str.Length();
+    Data = Rhs.ToPtr();
+    Size = Rhs.Length();
     return *this;
 }
 
-AN_FORCEINLINE bool operator==(AStringView _Str1, AStringView _Str2)
+AN_FORCEINLINE bool operator==(AStringView Lhs, AStringView Rhs)
 {
-    return _Str1.Cmp(_Str2) == 0;
+    return Lhs.Cmp(Rhs) == 0;
 }
 
-AN_FORCEINLINE bool operator!=(AStringView _Str1, AStringView _Str2)
+AN_FORCEINLINE bool operator!=(AStringView Lhs, AStringView Rhs)
 {
-    return _Str1.Cmp(_Str2) != 0;
+    return Lhs.Cmp(Rhs) != 0;
 }
 
 AN_FORCEINLINE AString AStringView::ToString() const

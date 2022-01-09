@@ -36,7 +36,7 @@ SOFTWARE.
 struct BvSphere
 {
     Float3 Center;
-    float  Radius;
+    float  Radius{0};
 
     BvSphere() = default;
 

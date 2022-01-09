@@ -34,10 +34,10 @@ SOFTWARE.
 
 struct Color4
 {
-    float R;
-    float G;
-    float B;
-    float A;
+    float R{1};
+    float G{1};
+    float B{1};
+    float A{1};
 
     Color4() = default;
     explicit constexpr Color4(float _Value) :

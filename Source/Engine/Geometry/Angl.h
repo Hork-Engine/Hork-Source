@@ -36,9 +36,9 @@ struct Angl
 {
     using ElementType = float;
 
-    float Pitch;
-    float Yaw;
-    float Roll;
+    float Pitch{0};
+    float Yaw{0};
+    float Roll{0};
 
     Angl() = default;
     explicit constexpr Angl(Float3 const& v) :

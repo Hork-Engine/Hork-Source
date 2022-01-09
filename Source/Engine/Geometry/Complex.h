@@ -32,8 +32,8 @@ SOFTWARE.
 
 struct SComplex
 {
-    float R;
-    float I;
+    float R{0};
+    float I{0};
 
     SComplex() = default;
 

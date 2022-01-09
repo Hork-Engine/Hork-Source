@@ -557,7 +557,7 @@ private:
     int ArraySize;
     int ArrayCapacity;
 
-    static_assert(std::is_trivial<T>::value, "Expected POD type");
+    //static_assert(std::is_trivial<T>::value, "Expected POD type");
     //static_assert( IsAligned( sizeof( T ), Alignment ), "Alignment check" );
 };
 

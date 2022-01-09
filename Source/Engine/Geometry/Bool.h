@@ -34,8 +34,8 @@ SOFTWARE.
 
 struct Bool2
 {
-    bool X;
-    bool Y;
+    bool X{false};
+    bool Y{false};
 
     Bool2() = default;
     explicit constexpr Bool2(bool v) :
@@ -117,9 +117,9 @@ struct Bool2
 
 struct Bool3
 {
-    bool X;
-    bool Y;
-    bool Z;
+    bool X{false};
+    bool Y{false};
+    bool Z{false};
 
     Bool3() = default;
     explicit constexpr Bool3(bool v) :
@@ -202,10 +202,10 @@ struct Bool3
 
 struct Bool4
 {
-    bool X;
-    bool Y;
-    bool Z;
-    bool W;
+    bool X{false};
+    bool Y{false};
+    bool Z{false};
+    bool W{false};
 
     Bool4() = default;
     explicit constexpr Bool4(bool v) :
