@@ -31,12 +31,11 @@ SOFTWARE.
 #pragma once
 
 #include <Platform/Memory/Memory.h>
+#include "StdVector.h"
 
 template <int HashBucketsCount = 1024, typename Allocator = AZoneAllocator> // must be power of two
 class THash final
 {
-    AN_FORBID_COPY(THash)
-
 public:
     /** Change it to set up granularity. Granularity must be >= 1 */
     int Granularity = 1024;
@@ -44,12 +43,11 @@ public:
     /** Change it to reallocate indices */
     int NumBucketIndices = 0;
 
-    THash()
+    THash() :
+        HashBuckets(const_cast<int*>(InvalidHashIndex)),
+        IndexChain(const_cast<int*>(InvalidHashIndex))
     {
         static_assert(IsPowerOfTwo(HashBucketsCount), "Buckets count must be power of two");
-
-        HashBuckets = const_cast<int*>(InvalidHashIndex);
-        IndexChain  = const_cast<int*>(InvalidHashIndex);
     }
 
     ~THash()
@@ -63,6 +61,115 @@ public:
         {
             Allocator::Inst().Free(IndexChain);
         }
+    }
+
+    THash(THash const& Rhs) :
+        Granularity(Rhs.Granularity),
+        NumBucketIndices(Rhs.NumBucketIndices),
+        HashBuckets(const_cast<int*>(InvalidHashIndex)),
+        IndexChain(const_cast<int*>(InvalidHashIndex)),
+        LookupMask(Rhs.LookupMask),
+        IndexChainLength(Rhs.IndexChainLength)        
+    {
+        if (Rhs.IndexChain != InvalidHashIndex)
+        {
+            IndexChain = (int*)Allocator::Inst().Alloc(IndexChainLength * sizeof(*IndexChain));
+            Platform::Memcpy(IndexChain, Rhs.IndexChain, IndexChainLength * sizeof(*IndexChain));
+        }
+
+        if (Rhs.HashBuckets != InvalidHashIndex)
+        {
+            HashBuckets = (int*)Allocator::Inst().Alloc(HashBucketsCount * sizeof(*HashBuckets));
+            Platform::Memcpy(HashBuckets, Rhs.HashBuckets, HashBucketsCount * sizeof(*HashBuckets));
+        }
+    }
+
+    THash(THash&& Rhs) noexcept :
+        Granularity(Rhs.Granularity),
+        NumBucketIndices(Rhs.NumBucketIndices),
+        HashBuckets(Rhs.HashBuckets),
+        IndexChain(Rhs.IndexChain),
+        LookupMask(Rhs.LookupMask),
+        IndexChainLength(Rhs.IndexChainLength)
+    {
+        HashBuckets      = const_cast<int*>(InvalidHashIndex);
+        IndexChain       = const_cast<int*>(InvalidHashIndex);
+        LookupMask       = 0;
+        IndexChainLength = 0;
+    }
+
+    THash& operator=(THash const& Rhs)
+    {
+        Granularity      = Rhs.Granularity;
+        NumBucketIndices = Rhs.NumBucketIndices;
+        LookupMask       = Rhs.LookupMask;
+        IndexChainLength = Rhs.IndexChainLength;
+
+        if (Rhs.IndexChain != InvalidHashIndex)
+        {
+            if (IndexChain == InvalidHashIndex)
+                IndexChain = (int*)Allocator::Inst().Alloc(IndexChainLength * sizeof(*IndexChain));
+            else
+                IndexChain = (int*)Allocator::Inst().Realloc(IndexChain, IndexChainLength * sizeof(*IndexChain), false);
+
+            Platform::Memcpy(IndexChain, Rhs.IndexChain, IndexChainLength * sizeof(*IndexChain));
+        }
+        else
+        {
+            if (IndexChain != InvalidHashIndex)
+            {
+                Allocator::Inst().Free(IndexChain);
+                IndexChain = const_cast<int*>(InvalidHashIndex);
+            }
+        }        
+
+        if (Rhs.HashBuckets != InvalidHashIndex)
+        {
+            if (HashBuckets == InvalidHashIndex)
+            {
+                // first allocation
+                HashBuckets = (int*)Allocator::Inst().Alloc(HashBucketsCount * sizeof(*HashBuckets));
+            }
+
+            Platform::Memcpy(HashBuckets, Rhs.HashBuckets, HashBucketsCount * sizeof(*HashBuckets));
+        }
+        else
+        {
+            if (HashBuckets != InvalidHashIndex)
+            {
+                Allocator::Inst().Free(HashBuckets);
+                HashBuckets = const_cast<int*>(InvalidHashIndex);
+            }
+        }
+
+        return *this;
+    }
+
+    THash& operator=(THash&& Rhs) noexcept
+    {
+        if (HashBuckets != InvalidHashIndex)
+        {
+            Allocator::Inst().Free(HashBuckets);
+        }
+
+        if (IndexChain != InvalidHashIndex)
+        {
+            Allocator::Inst().Free(IndexChain);
+        }
+
+        Granularity      = Rhs.Granularity;
+        NumBucketIndices = Rhs.NumBucketIndices;
+        HashBuckets      = Rhs.HashBuckets;
+        IndexChain       = Rhs.IndexChain;
+        LookupMask       = Rhs.LookupMask;
+        IndexChainLength = Rhs.IndexChainLength;
+
+        Rhs.HashBuckets      = const_cast<int*>(InvalidHashIndex);
+        Rhs.IndexChain       = const_cast<int*>(InvalidHashIndex);
+        Rhs.LookupMask       = 0;
+        Rhs.IndexChainLength = 0;
+
+        return *this;
     }
 
     void Clear()
@@ -273,3 +380,51 @@ private:
 
 template <int HashBucketsCount, typename Allocator>
 constexpr const int THash<HashBucketsCount, Allocator>::InvalidHashIndex[1];
+
+template <typename KeyType, typename ValueType, int HashBucketsCount = 1024, typename Allocator = AZoneAllocator>
+struct THashContainer
+{
+    THash<HashBucketsCount, Allocator>        Hash;
+    TStdVector<std::pair<KeyType, ValueType>> Container;
+
+    std::pair<KeyType, ValueType>& operator[](int Index)
+    {
+        return Container[Index];
+    }
+
+    std::pair<KeyType, ValueType> const& operator[](int Index) const
+    {
+        return Container[Index];
+    }
+
+    bool IsEmpty() const
+    {
+        return Container.IsEmpty();
+    }
+
+    int First(int KeyHash) const
+    {
+        return Hash.First(KeyHash);
+    }
+
+    int Next(int Index) const
+    {
+        return Hash.Next(Index);
+    }
+
+    template <typename KeyTypeView>
+    void Insert(KeyTypeView const& Key, ValueType const& Value)
+    {
+        int hash = Key.Hash();
+        for (int i = Hash.First(hash); i != -1; i = Hash.Next(i))
+        {
+            if (Container[i].first == Key)
+            {
+                Container[i].second = Value;
+                return;
+            }
+        }
+        Hash.Insert(hash, Container.Size());
+        Container.Append(std::make_pair(Key, Value));
+    }
+};
