@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Platform/Memory/Memory.h>
+#include <Platform/BaseTypes.h>
 
 #include <unordered_map>
 #include <unordered_set>
@@ -56,6 +56,12 @@ namespace HashTraits
 AN_FORCEINLINE std::size_t Hash(uint64_t Key)
 {
     return std::hash<uint64_t>()(Key);
+}
+
+template <typename T>
+AN_FORCEINLINE std::size_t Hash(T const& Key)
+{
+    return Key.Hash();
 }
 
 } // namespace HashTraits
