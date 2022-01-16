@@ -278,6 +278,11 @@ char* ToLower(char* _Str)
     return _Str;
 }
 
+char ToLower(char Ch)
+{
+    return ::tolower(Ch);
+}
+
 char* ToUpper(char* _Str)
 {
     char* p = _Str;
@@ -290,6 +295,11 @@ char* ToUpper(char* _Str)
         }
     }
     return _Str;
+}
+
+char ToUpper(char Ch)
+{
+    return ::toupper(Ch);
 }
 
 int Strlen(const char* _Str)

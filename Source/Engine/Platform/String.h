@@ -74,8 +74,14 @@ void StrcpyN(char* _Dest, size_t _Size, const char* _Src, int _Num);
 /** Convert string to lowercase */
 char* ToLower(char* _Str);
 
+/** Convert char to lowercase */
+char ToLower(char Ch);
+
 /** Convert string to uppercase */
 char* ToUpper(char* _Str);
+
+/** Convert char to uppercase */
+char ToUpper(char Ch);
 
 /** Calc string length */
 int Strlen(const char* _Str);
