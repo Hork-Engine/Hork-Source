@@ -26,7 +26,7 @@ set_target_properties( Physics PROPERTIES FOLDER "Samples" )
 add_subdirectory( Samples/Planet )
 set_target_properties( Planet PROPERTIES FOLDER "Samples" )
 
-add_subdirectory( Samples/Portals )
+add_subdirectory( Samples/Portals2 )
 set_target_properties( Portals PROPERTIES FOLDER "Samples" )
 
 add_subdirectory( Samples/Project1 )
@@ -41,7 +41,7 @@ set_target_properties( Simple PROPERTIES FOLDER "Samples" )
 add_subdirectory( Samples/Shooter3D )
 set_target_properties( Shooter3D PROPERTIES FOLDER "Samples" )
 
-add_subdirectory( Samples/Sponza )
+add_subdirectory( Samples/Sponza2 )
 set_target_properties( Sponza PROPERTIES FOLDER "Samples" )
 
 add_subdirectory( Samples/Terrain )
