@@ -974,9 +974,9 @@ struct SRenderInstance
     void GenerateSortKey( uint8_t Priority, uint64_t Mesh ) {
         // NOTE: 8 bits are still unused. We can use it in future.
         SortKey = ( (uint64_t)(Priority) << 56u)
-                | ((uint64_t)(Core::PHHash64( (uint64_t)Material ) & 0xffffu) << 40u)
-                | ((uint64_t)(Core::PHHash64( (uint64_t)MaterialInstance ) & 0xffffu) << 24u)
-                | ((uint64_t)(Core::PHHash64( Mesh ) & 0xffffu) << 8u);
+                | ((uint64_t)(Core::MurMur3Hash64( (uint64_t)Material ) & 0xffffu) << 40u)
+                | ((uint64_t)(Core::MurMur3Hash64( (uint64_t)MaterialInstance ) & 0xffffu) << 24u)
+                | ((uint64_t)(Core::MurMur3Hash64( Mesh ) & 0xffffu) << 8u);
     }
 };
 
@@ -1008,9 +1008,9 @@ struct SShadowRenderInstance
     void GenerateSortKey( uint8_t Priority, uint64_t Mesh ) {
         // NOTE: 8 bits are still unused. We can use it in future.
         SortKey = ( (uint64_t)(Priority) << 56u)
-                | ((uint64_t)(Core::PHHash64( (uint64_t)Material ) & 0xffffu) << 40u)
-                | ((uint64_t)(Core::PHHash64( (uint64_t)MaterialInstance ) & 0xffffu) << 24u)
-                | ((uint64_t)(Core::PHHash64( Mesh ) & 0xffffu) << 8u);
+                | ((uint64_t)(Core::MurMur3Hash64( (uint64_t)Material ) & 0xffffu) << 40u)
+                | ((uint64_t)(Core::MurMur3Hash64( (uint64_t)MaterialInstance ) & 0xffffu) << 24u)
+                | ((uint64_t)(Core::MurMur3Hash64( Mesh ) & 0xffffu) << 8u);
     }
 };
 
