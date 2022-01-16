@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Platform/BaseTypes.h>
+#include <Platform/String.h>
 
 namespace Core
 {
@@ -128,6 +128,18 @@ AN_FORCEINLINE uint32_t SDBMHash(const char* _Str, int _Length)
     for (int i = 0; i < _Length; i++)
     {
         hash = _Str[i] + (hash << 6) + (hash << 16) - hash;
+    }
+
+    return hash;
+}
+
+AN_FORCEINLINE uint32_t SDBMHash_Case(const char* _Str, int _Length)
+{
+    uint32_t hash = 0;
+
+    for (int i = 0; i < _Length; i++)
+    {
+        hash = Platform::ToLower(_Str[i]) + (hash << 6) + (hash << 16) - hash;
     }
 
     return hash;
@@ -321,7 +333,7 @@ AN_FORCEINLINE uint32_t PHHash64(uint64_t p, uint32_t hash = 0)
 }
 
 /** Modified version MurMur3 hash for 32-bit integers */
-AN_FORCEINLINE uint32_t MurMur3Hash32(uint32_t k, uint32_t seed)
+AN_FORCEINLINE uint32_t MurMur3Hash32(uint32_t k, uint32_t seed = 0)
 {
     uint32_t h = seed;
     k *= 0xcc9e2d51;
@@ -340,7 +352,7 @@ AN_FORCEINLINE uint32_t MurMur3Hash32(uint32_t k, uint32_t seed)
 }
 
 /** Modified version MurMur3 hash for 64-bit integers */
-AN_FORCEINLINE uint32_t MurMur3Hash64(uint64_t key, uint32_t seed)
+AN_FORCEINLINE uint32_t MurMur3Hash64(uint64_t key, uint32_t seed = 0)
 {
     uint32_t h = seed;
     uint32_t k = key >> 32;
@@ -368,12 +380,12 @@ AN_FORCEINLINE uint32_t MurMur3Hash64(uint64_t key, uint32_t seed)
 
 AN_FORCEINLINE int Hash(const char* _Str, int _Length)
 {
-    return PHHash(_Str, _Length);
+    return SDBMHash(_Str, _Length);
 }
 
 AN_FORCEINLINE int HashCase(const char* _Str, int _Length)
 {
-    return PHHash_Case(_Str, _Length);
+    return SDBMHash_Case(_Str, _Length);
 }
 
 } // namespace Core
