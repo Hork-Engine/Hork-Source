@@ -43,40 +43,40 @@ enum ECameraProjection : uint8_t
     CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO
 };
 
-class ACameraComponent : public ASceneComponent {
-    AN_COMPONENT( ACameraComponent, ASceneComponent )
+class ACameraComponent : public ASceneComponent
+{
+    AN_COMPONENT(ACameraComponent, ASceneComponent)
 
 public:
     /** Set view projection */
-    void SetProjection( ECameraProjection _Projection );
+    void SetProjection(ECameraProjection _Projection);
 
     /** Near clip distance */
-    void SetZNear( float _ZNear );
+    void SetZNear(float _ZNear);
 
     /** Far clip distance */
-    void SetZFar( float _ZFar );
+    void SetZFar(float _ZFar);
 
     /** Viewport aspect ratio. For example 4/3, 16/9 */
-    void SetAspectRatio( float _AspectRatio );
+    void SetAspectRatio(float _AspectRatio);
 
     /** Horizontal FOV for perspective projection */
-    void SetFovX( float _FieldOfView );
+    void SetFovX(float _FieldOfView);
 
     /** Vertical FOV for perspective projection */
-    void SetFovY( float _FieldOfView );
+    void SetFovY(float _FieldOfView);
 
     /** Rectangle for orthogonal projection */
-    void SetOrthoRect( Float2 const & _Mins, Float2 const & _Maxs );
+    void SetOrthoRect(Float2 const& _Mins, Float2 const& _Maxs);
 
     /** Zoom for orthogonal projection */
-    void SetOrthoZoom( float _Zoom );
+    void SetOrthoZoom(float _Zoom);
 
     ECameraProjection GetProjection() const { return Projection; }
 
-    bool IsPerspective() const {
-        return Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO
-            || Projection == CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO
-            || Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_FOV_Y;
+    bool IsPerspective() const
+    {
+        return Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO || Projection == CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO || Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_FOV_Y;
     }
 
     bool IsOrthographic() const { return Projection == CAMERA_PROJ_ORTHO_RECT || Projection == CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO; }
@@ -92,29 +92,29 @@ public:
     float GetFovY() const { return FovY; }
 
     /** Computes real camera field of view in radians for perspective projection */
-    void GetEffectiveFov( float & _FovX, float & _FovY ) const;
+    void GetEffectiveFov(float& _FovX, float& _FovY) const;
 
-    Float2 const & GetOrthoMins() const { return OrthoMins; }
+    Float2 const& GetOrthoMins() const { return OrthoMins; }
 
-    Float2 const & GetOrthoMaxs() const { return OrthoMaxs; }
+    Float2 const& GetOrthoMaxs() const { return OrthoMaxs; }
 
-    Float4x4 const & GetProjectionMatrix() const;
+    Float4x4 const& GetProjectionMatrix() const;
 
-    Float4x4 const & GetViewMatrix() const;
+    Float4x4 const& GetViewMatrix() const;
 
-    Float3x3 const & GetBillboardMatrix() const;
+    Float3x3 const& GetBillboardMatrix() const;
 
-    BvFrustum const & GetFrustum() const;
+    BvFrustum const& GetFrustum() const;
 
     /** NormalizedX = ScreenX / ScreenWidth, NormalizedY = ScreenY / ScreenHeight */
-    void MakeRay( float _NormalizedX, float _NormalizedY, Float3 & _RayStart, Float3 & _RayEnd ) const;
+    void MakeRay(float _NormalizedX, float _NormalizedY, Float3& _RayStart, Float3& _RayEnd) const;
 
-    static void MakeRay( Float4x4 const & _ModelViewProjectionInversed, float _NormalizedX, float _NormalizedY, Float3 & _RayStart, Float3 & _RayEnd );
+    static void MakeRay(Float4x4 const& _ModelViewProjectionInversed, float _NormalizedX, float _NormalizedY, Float3& _RayStart, Float3& _RayEnd);
 
     /** Compute ortho rect based on aspect ratio and zoom */
-    static void MakeOrthoRect( float _CameraAspectRatio, float _Zoom, Float2 & _Mins, Float2 & _Maxs );
+    static void MakeOrthoRect(float _CameraAspectRatio, float _Zoom, Float2& _Mins, Float2& _Maxs);
 
-    void MakeClusterProjectionMatrix( Float4x4 & _ProjectionMatrix/*, const float _ClusterZNear, const float _ClusterZFar*/ ) const;
+    void MakeClusterProjectionMatrix(Float4x4& _ProjectionMatrix /*, const float _ClusterZNear, const float _ClusterZFar*/) const;
 
 protected:
     ACameraComponent();
@@ -123,23 +123,23 @@ protected:
 
     void OnTransformDirty() override;
 
-    void DrawDebug( ADebugRenderer * InRenderer ) override;
+    void DrawDebug(ADebugRenderer* InRenderer) override;
 
 private:
-    float               FovX;
-    float               FovY;
-    float               ZNear;
-    float               ZFar;
-    float               AspectRatio;
-    Float2              OrthoMins;
-    Float2              OrthoMaxs;
-    float               OrthoZoom;
-    mutable Float4x4    ViewMatrix;
-    mutable Float3x3    BillboardMatrix;    
-    mutable Float4x4    ProjectionMatrix;    
-    mutable BvFrustum   Frustum;
-    ECameraProjection   Projection;
-    mutable bool        bViewMatrixDirty;
-    mutable bool        bProjectionDirty;
-    mutable bool        bFrustumDirty;
+    float             FovX{90.0f};
+    float             FovY{90.0f};
+    float             ZNear{0.04f};
+    float             ZFar{99999.0f};
+    float             AspectRatio{1.0f};
+    Float2            OrthoMins{-1,-1};
+    Float2            OrthoMaxs{1,1};
+    float             OrthoZoom{30};
+    mutable Float4x4  ViewMatrix;
+    mutable Float3x3  BillboardMatrix;
+    mutable Float4x4  ProjectionMatrix;
+    mutable BvFrustum Frustum;
+    ECameraProjection Projection{CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO};
+    mutable bool      bViewMatrixDirty{true};
+    mutable bool      bProjectionDirty{true};
+    mutable bool      bFrustumDirty{true};
 };

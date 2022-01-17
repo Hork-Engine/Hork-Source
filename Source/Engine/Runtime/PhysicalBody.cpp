@@ -694,7 +694,7 @@ void APhysicalBody::OnTransformDirty()
         UpdateDebugDrawCache();
     }
     else {
-        if ( MotionBehavior != MB_KINEMATIC && !GetOwnerActor()->IsDuringConstruction() && !IsInEditor() ) {
+        if ( MotionBehavior != MB_KINEMATIC && !GetOwnerActor()->IsSpawning() && !IsInEditor() ) {
             GLogger.Printf( "WARNING: Set transform for non-KINEMATIC body %s\n", GetObjectNameCStr() );
         }
     }

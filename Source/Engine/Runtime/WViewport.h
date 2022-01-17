@@ -40,10 +40,10 @@ class WViewport : public WWidget {
 public:
     WViewport & SetPlayerController( APlayerController * _PlayerController );
 
-protected:
     WViewport();
     ~WViewport();
 
+protected:
     void OnTransformDirty() override;
 
     void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) override;

@@ -116,8 +116,6 @@ protected:
 
     void OnMeshChanged() override;
 
-    void BeginPlay() override;
-
     void TickComponent( float _TimeStep ) override;
 
     void DrawDebug( ADebugRenderer * InRenderer ) override;

@@ -347,9 +347,6 @@ void ASoftMeshComponent::UpdateAnchorPoints() {
     }
 }
 
-void ASoftMeshComponent::BeginPlay() {
-}
-
 void ASoftMeshComponent::TickComponent( float _TimeStep ) {
     Super::TickComponent( _TimeStep );
 

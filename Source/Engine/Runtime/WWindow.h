@@ -52,10 +52,10 @@ public:
     WWindow & SetRounding( float _Rounding );
     WWindow & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
 
-protected:
     WWindow();
     ~WWindow();
 
+protected:
     void OnTransformDirty() override;
     void OnDrawEvent( ACanvas & _Canvas ) override;
 

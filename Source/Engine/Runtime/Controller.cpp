@@ -31,39 +31,47 @@ SOFTWARE.
 #include "Controller.h"
 #include <Platform/Logger.h>
 
-AN_CLASS_META( AController )
+AN_CLASS_META(AController)
 
-AController::AController() {
-    bCanEverTick = true;
+AController::AController()
+{
+    bCanEverTick        = true;
     bTickEvenWhenPaused = true;
 }
 
-void AController::Tick( float _TimeStep ) {
-    Super::Tick( _TimeStep );
+void AController::Tick(float TimeStep)
+{
+    Super::Tick(TimeStep);
 
-    if ( Pawn && Pawn->IsPendingKill() ) {
-        SetPawn( nullptr );
+    if (Pawn && Pawn->IsPendingKill())
+    {
+        SetPawn(nullptr);
     }
 }
 
-void AController::SetPawn( APawn * _Pawn ) {
-    if ( IsSame( Pawn, _Pawn ) ) {
+void AController::SetPawn(AActor* _Pawn)
+{
+    if (IsSame(Pawn, _Pawn))
+    {
         return;
     }
 
-    if ( _Pawn && _Pawn->OwnerController ) {
-        GLogger.Printf( "Pawn already controlled by other controller\n" );
+    if (_Pawn && _Pawn->Controller)
+    {
+        GLogger.Printf("Pawn already controlled by other controller\n");
         return;
     }
 
-    if ( Pawn ) {
-        Pawn->OwnerController = nullptr;
+    if (Pawn)
+    {
+        Pawn->Controller = nullptr;
     }
 
     Pawn = _Pawn;
 
-    if ( Pawn ) {
-        Pawn->OwnerController = this;
+    if (Pawn)
+    {
+        Pawn->Controller = this;
     }
 
     OnPawnChanged();

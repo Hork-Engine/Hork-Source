@@ -32,7 +32,7 @@ SOFTWARE.
 #include "World.h"
 #include "BulletCompatibility.h"
 
-AN_CLASS_META( AHitProxy )
+AN_CLASS_META(AHitProxy)
 
 AHitProxy::AHitProxy()
 {
@@ -40,30 +40,31 @@ AHitProxy::AHitProxy()
 
 AHitProxy::~AHitProxy()
 {
-    for ( AActor * actor : CollisionIgnoreActors ) {
+    for (AActor* actor : CollisionIgnoreActors)
+    {
         actor->RemoveRef();
     }
 }
 
-void AHitProxy::Initialize( ASceneComponent * _OwnerComponent, btCollisionObject * _CollisionObject )
+void AHitProxy::Initialize(ASceneComponent* _OwnerComponent, btCollisionObject* _CollisionObject)
 {
-    AN_ASSERT( !OwnerComponent );
+    AN_ASSERT(!OwnerComponent);
 
-    OwnerComponent = _OwnerComponent;
+    OwnerComponent  = _OwnerComponent;
     CollisionObject = _CollisionObject;
 
-    AWorld * world = OwnerComponent->GetWorld();
-    world->GetPhysics().AddHitProxy( this );
+    AWorld* world = OwnerComponent->GetWorld();
+    world->GetPhysics().AddHitProxy(this);
 }
 
 void AHitProxy::Deinitialize()
 {
-    if ( OwnerComponent )
+    if (OwnerComponent)
     {
-        AWorld * world = OwnerComponent->GetWorld();
-        world->GetPhysics().RemoveHitProxy( this );
+        AWorld* world = OwnerComponent->GetWorld();
+        world->GetPhysics().RemoveHitProxy(this);
 
-        OwnerComponent = nullptr;
+        OwnerComponent  = nullptr;
         CollisionObject = nullptr;
     }
 }
@@ -71,15 +72,15 @@ void AHitProxy::Deinitialize()
 void AHitProxy::UpdateBroadphase()
 {
     // Re-add collision object to physics world
-    if ( bInWorld )
+    if (bInWorld)
     {
-        GetWorld()->GetPhysics().AddHitProxy( this );
+        GetWorld()->GetPhysics().AddHitProxy(this);
     }
 }
 
-void AHitProxy::SetCollisionGroup( int _CollisionGroup )
+void AHitProxy::SetCollisionGroup(int _CollisionGroup)
 {
-    if ( CollisionGroup == _CollisionGroup )
+    if (CollisionGroup == _CollisionGroup)
     {
         return;
     }
@@ -89,9 +90,9 @@ void AHitProxy::SetCollisionGroup( int _CollisionGroup )
     UpdateBroadphase();
 }
 
-void AHitProxy::SetCollisionMask( int _CollisionMask )
+void AHitProxy::SetCollisionMask(int _CollisionMask)
 {
-    if ( CollisionMask == _CollisionMask )
+    if (CollisionMask == _CollisionMask)
     {
         return;
     }
@@ -101,44 +102,48 @@ void AHitProxy::SetCollisionMask( int _CollisionMask )
     UpdateBroadphase();
 }
 
-void AHitProxy::SetCollisionFilter( int _CollisionGroup, int _CollisionMask )
+void AHitProxy::SetCollisionFilter(int _CollisionGroup, int _CollisionMask)
 {
-    if ( CollisionGroup == _CollisionGroup && CollisionMask == _CollisionMask )
+    if (CollisionGroup == _CollisionGroup && CollisionMask == _CollisionMask)
     {
         return;
     }
 
     CollisionGroup = _CollisionGroup;
-    CollisionMask = _CollisionMask;
+    CollisionMask  = _CollisionMask;
 
     UpdateBroadphase();
 }
 
-void AHitProxy::AddCollisionIgnoreActor( AActor * _Actor )
+void AHitProxy::AddCollisionIgnoreActor(AActor* _Actor)
 {
-    if ( !_Actor ) {
+    if (!_Actor)
+    {
         return;
     }
-    if ( CollisionIgnoreActors.Find( _Actor ) == CollisionIgnoreActors.End() ) {
-        CollisionIgnoreActors.Append( _Actor );
+    if (CollisionIgnoreActors.Find(_Actor) == CollisionIgnoreActors.End())
+    {
+        CollisionIgnoreActors.Append(_Actor);
         _Actor->AddRef();
 
         UpdateBroadphase();
     }
 }
 
-void AHitProxy::RemoveCollisionIgnoreActor( AActor * _Actor )
+void AHitProxy::RemoveCollisionIgnoreActor(AActor* _Actor)
 {
-    if ( !_Actor ) {
+    if (!_Actor)
+    {
         return;
     }
-    auto it = CollisionIgnoreActors.Find( _Actor );
-    if ( it != CollisionIgnoreActors.End() ) {
-        AActor * actor = *it;
+    auto it = CollisionIgnoreActors.Find(_Actor);
+    if (it != CollisionIgnoreActors.End())
+    {
+        AActor* actor = *it;
 
         actor->RemoveRef();
 
-        CollisionIgnoreActors.RemoveSwap( it - CollisionIgnoreActors.Begin() );
+        CollisionIgnoreActors.RemoveSwap(it - CollisionIgnoreActors.Begin());
 
         UpdateBroadphase();
     }
@@ -146,126 +151,130 @@ void AHitProxy::RemoveCollisionIgnoreActor( AActor * _Actor )
 
 struct SContactQueryCallback : public btCollisionWorld::ContactResultCallback
 {
-    SContactQueryCallback( TPodVector< AHitProxy * > & _Result, int _CollisionGroup, int _CollisionMask, AHitProxy const * _Self )
-        : Result( _Result )
-        , Self( _Self )
+    SContactQueryCallback(TPodVector<AHitProxy*>& _Result, int _CollisionGroup, int _CollisionMask, AHitProxy const* _Self) :
+        Result(_Result), Self(_Self)
     {
         m_collisionFilterGroup = _CollisionGroup;
-        m_collisionFilterMask = _CollisionMask;
+        m_collisionFilterMask  = _CollisionMask;
 
         Result.Clear();
     }
 
-    btScalar addSingleResult( btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1 ) override
+    btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1) override
     {
-        AHitProxy * hitProxy;
+        AHitProxy* hitProxy;
 
-        hitProxy = static_cast<AHitProxy *>(colObj0Wrap->getCollisionObject()->getUserPointer());
-        if ( hitProxy && hitProxy != Self /*&& (hitProxy->GetCollisionGroup() & CollisionMask)*/ ) {
-            AddUnique( hitProxy );
+        hitProxy = static_cast<AHitProxy*>(colObj0Wrap->getCollisionObject()->getUserPointer());
+        if (hitProxy && hitProxy != Self /*&& (hitProxy->GetCollisionGroup() & CollisionMask)*/)
+        {
+            AddUnique(hitProxy);
         }
 
-        hitProxy = static_cast<AHitProxy *>(colObj1Wrap->getCollisionObject()->getUserPointer());
-        if ( hitProxy && hitProxy != Self /*&& (hitProxy->GetCollisionGroup() & CollisionMask)*/ ) {
-            AddUnique( hitProxy );
+        hitProxy = static_cast<AHitProxy*>(colObj1Wrap->getCollisionObject()->getUserPointer());
+        if (hitProxy && hitProxy != Self /*&& (hitProxy->GetCollisionGroup() & CollisionMask)*/)
+        {
+            AddUnique(hitProxy);
         }
 
         return 0.0f;
     }
 
-    void AddUnique( AHitProxy * HitProxy )
+    void AddUnique(AHitProxy* HitProxy)
     {
-        if ( Result.Find( HitProxy ) == Result.End() ) {
-            Result.Append( HitProxy );
+        if (Result.Find(HitProxy) == Result.End())
+        {
+            Result.Append(HitProxy);
         }
     }
 
-    TPodVector< AHitProxy * > & Result;
-    AHitProxy const * Self;
+    TPodVector<AHitProxy*>& Result;
+    AHitProxy const*        Self;
 };
 
 struct SContactQueryActorCallback : public btCollisionWorld::ContactResultCallback
 {
-    SContactQueryActorCallback( TPodVector< AActor * > & _Result, int _CollisionGroup, int _CollisionMask, AActor const * _Self )
-        : Result( _Result )
-        , Self( _Self )
+    SContactQueryActorCallback(TPodVector<AActor*>& _Result, int _CollisionGroup, int _CollisionMask, AActor const* _Self) :
+        Result(_Result), Self(_Self)
     {
         m_collisionFilterGroup = _CollisionGroup;
-        m_collisionFilterMask = _CollisionMask;
+        m_collisionFilterMask  = _CollisionMask;
 
         Result.Clear();
     }
 
-    btScalar addSingleResult( btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1 ) override
+    btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, int partId1, int index1) override
     {
-        AHitProxy * hitProxy;
+        AHitProxy* hitProxy;
 
-        hitProxy = static_cast<AHitProxy *>(colObj0Wrap->getCollisionObject()->getUserPointer());
-        if ( hitProxy && hitProxy->GetOwnerActor() != Self /*&& (hitProxy->GetCollisionGroup() & CollisionMask)*/ ) {
-            AddUnique( hitProxy->GetOwnerActor() );
+        hitProxy = static_cast<AHitProxy*>(colObj0Wrap->getCollisionObject()->getUserPointer());
+        if (hitProxy && hitProxy->GetOwnerActor() != Self /*&& (hitProxy->GetCollisionGroup() & CollisionMask)*/)
+        {
+            AddUnique(hitProxy->GetOwnerActor());
         }
 
-        hitProxy = static_cast<AHitProxy *>(colObj1Wrap->getCollisionObject()->getUserPointer());
-        if ( hitProxy && hitProxy->GetOwnerActor() != Self /*&& (hitProxy->GetCollisionGroup() & CollisionMask)*/ ) {
-            AddUnique( hitProxy->GetOwnerActor() );
+        hitProxy = static_cast<AHitProxy*>(colObj1Wrap->getCollisionObject()->getUserPointer());
+        if (hitProxy && hitProxy->GetOwnerActor() != Self /*&& (hitProxy->GetCollisionGroup() & CollisionMask)*/)
+        {
+            AddUnique(hitProxy->GetOwnerActor());
         }
 
         return 0.0f;
     }
 
-    void AddUnique( AActor * Actor )
+    void AddUnique(AActor* Actor)
     {
-        if ( Result.Find( Actor ) == Result.End() ) {
-            Result.Append( Actor );
+        if (Result.Find(Actor) == Result.End())
+        {
+            Result.Append(Actor);
         }
     }
 
-    TPodVector< AActor * > & Result;
-    AActor const * Self;
+    TPodVector<AActor*>& Result;
+    AActor const*        Self;
 };
 
-
-void AHitProxy::CollisionContactQuery( TPodVector< AHitProxy * > & _Result ) const
+void AHitProxy::CollisionContactQuery(TPodVector<AHitProxy*>& _Result) const
 {
-    SContactQueryCallback callback( _Result, CollisionGroup, CollisionMask, this );
+    SContactQueryCallback callback(_Result, CollisionGroup, CollisionMask, this);
 
-    if ( !CollisionObject )
+    if (!CollisionObject)
     {
-        GLogger.Printf( "AHitProxy::CollisionContactQuery: No collision object\n" );
+        GLogger.Printf("AHitProxy::CollisionContactQuery: No collision object\n");
         return;
     }
 
-    if ( !bInWorld )
+    if (!bInWorld)
     {
-        GLogger.Printf( "AHitProxy::CollisionContactQuery: The body is not in world\n" );
+        GLogger.Printf("AHitProxy::CollisionContactQuery: The body is not in world\n");
         return;
     }
 
-    GetWorld()->GetPhysics().GetInternal()->contactTest( CollisionObject, callback );
+    GetWorld()->GetPhysics().GetInternal()->contactTest(CollisionObject, callback);
 }
 
-void AHitProxy::CollisionContactQueryActor( TPodVector< AActor * > & _Result ) const
+void AHitProxy::CollisionContactQueryActor(TPodVector<AActor*>& _Result) const
 {
-    SContactQueryActorCallback callback( _Result, CollisionGroup, CollisionMask, GetOwnerActor() );
+    SContactQueryActorCallback callback(_Result, CollisionGroup, CollisionMask, GetOwnerActor());
 
-    if ( !CollisionObject )
+    if (!CollisionObject)
     {
-        GLogger.Printf( "AHitProxy::CollisionContactQueryActor: No collision object\n" );
+        GLogger.Printf("AHitProxy::CollisionContactQueryActor: No collision object\n");
         return;
     }
 
-    if ( !bInWorld )
+    if (!bInWorld)
     {
-        GLogger.Printf( "AHitProxy::CollisionContactQueryActor: The body is not in world\n" );
+        GLogger.Printf("AHitProxy::CollisionContactQueryActor: The body is not in world\n");
         return;
     }
 
-    GetWorld()->GetPhysics().GetInternal()->contactTest( CollisionObject, callback );
+    GetWorld()->GetPhysics().GetInternal()->contactTest(CollisionObject, callback);
 }
 
-void AHitProxy::DrawCollisionShape( ADebugRenderer * InRenderer )
+void AHitProxy::DrawCollisionShape(ADebugRenderer* InRenderer)
 {
-    if ( CollisionObject ) {
-        btDrawCollisionShape( InRenderer, CollisionObject->getWorldTransform(), CollisionObject->getCollisionShape() );
+    if (CollisionObject)
+    {
+        btDrawCollisionShape(InRenderer, CollisionObject->getWorldTransform(), CollisionObject->getCollisionShape());
     }
 }

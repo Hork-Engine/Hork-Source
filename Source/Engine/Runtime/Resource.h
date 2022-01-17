@@ -92,9 +92,10 @@ public:
         return pBinaryData ? (const char*)pBinaryData : "";
     }
 
-protected:
     ABinaryResource();
     ~ABinaryResource();
+
+protected:
 
     void Purge();
 

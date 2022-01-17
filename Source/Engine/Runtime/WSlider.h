@@ -66,10 +66,10 @@ public:
     float GetMinValue() const { return MinValue; }
     float GetMaxValue() const { return MaxValue; }
 
-protected:
     WSlider();
     ~WSlider();
 
+protected:
     // You can override OnDrawEvent and use GetSliderGeometry to
     // draw your own style slider.
     SSliderGeometry const & GetSliderGeometry() const;

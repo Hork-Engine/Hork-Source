@@ -103,7 +103,6 @@ public:
     /** Is controller enabled */
     bool IsEnabled() const { return bEnabled; }
 
-protected:
     AAnimationController();
 
 private:

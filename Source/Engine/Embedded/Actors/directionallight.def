@@ -1,0 +1,62 @@
+components
+[
+	{
+		classname "ADirectionalLightComponent"
+		name "DirectionalLight"
+		id "1"
+	}
+]
+root "1"
+public_attributes
+[
+	{
+		component_id "1"
+		attribute "Enabled"
+		public_name "Enabled"
+	}
+	{
+		component_id "1"
+		attribute "AnimationTime"
+		public_name "AnimationTime"
+	}
+	{
+		component_id "1"
+		attribute "Illuminance"
+		public_name "Illuminance"
+	}
+	{
+		component_id "1"
+		attribute "Color"
+		public_name "Color"
+	}
+	{
+		component_id "1"
+		attribute "bCastShadow"
+		public_name "bCastShadow"
+	}	
+	{
+		component_id "1"
+		attribute "ShadowMaxDistance"
+		public_name "ShadowMaxDistance"
+	}
+	{
+		component_id "1"
+		attribute "ShadowCascadeResolution"
+		public_name "ShadowCascadeResolution"
+	}
+	{
+		component_id "1"
+		attribute "ShadowCascadeOffset"
+		public_name "ShadowCascadeOffset"
+	}
+	{
+		component_id "1"
+		attribute "ShadowCascadeSplitLambda"
+		public_name "ShadowCascadeSplitLambda"
+	}	
+	{
+		component_id "1"
+		attribute "MaxShadowCascades"
+		public_name "MaxShadowCascades"
+	}
+]

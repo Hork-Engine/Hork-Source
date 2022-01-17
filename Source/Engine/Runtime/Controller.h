@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "Pawn.h"
+#include "Actor.h"
 
 
 /**
@@ -44,18 +44,17 @@ class AController : public AActor {
     AN_ACTOR( AController, AActor )
 
 public:
-
-    void SetPawn( APawn * _Pawn );
-
-    APawn * GetPawn() const { return Pawn; }
-
-protected:
-
-    TRef< APawn > Pawn;
-
     AController();
 
-    void Tick( float _TimeStep ) override;
+    void SetPawn(AActor* _Pawn);
+    AActor* GetPawn() const { return Pawn; }
 
+protected:
+    void Tick(float _TimeStep) override;
+
+protected:
     virtual void OnPawnChanged() {}
+
+protected:
+    TRef<AActor> Pawn;
 };

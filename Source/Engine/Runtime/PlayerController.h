@@ -263,8 +263,7 @@ protected:
     AInputComponent * InputComponent;
 
     APlayerController();
-
-    void EndPlay() override;
+    ~APlayerController();
 
     void OnPawnChanged() override;
 
@@ -278,9 +277,9 @@ private:
     TRef< AAudioParameters > AudioParameters;
     TWeakRef< ASceneComponent > AudioListener;
     TWeakRef< AHUD > HUD;
-    float ViewportAspectRatio;
-    int ViewportWidth;
-    int ViewportHeight;
+    float ViewportAspectRatio{};
+    int ViewportWidth{};
+    int ViewportHeight{};
 
     static APlayerController * CurrentAudioListener;
 };

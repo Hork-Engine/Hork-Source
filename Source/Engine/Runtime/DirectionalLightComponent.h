@@ -32,64 +32,65 @@ SOFTWARE.
 
 #include "LightComponent.h"
 
-class ADirectionalLightComponent : public ALightComponent {
-    AN_COMPONENT( ADirectionalLightComponent, ALightComponent )
+class ADirectionalLightComponent : public ALightComponent
+{
+    AN_COMPONENT(ADirectionalLightComponent, ALightComponent)
 
     friend class ARenderWorld;
 
 public:
-    void SetIlluminance( float IlluminanceInLux );
+    void  SetIlluminance(float IlluminanceInLux);
     float GetIlluminance() const;
 
     /** Set temperature of the light in Kelvin */
-    void SetTemperature( float _Temperature );
+    void SetTemperature(float _Temperature);
 
     /** Get temperature of the light in Kelvin */
     float GetTemperature() const;
 
-    void SetColor( Float3 const & _Color );
-    void SetColor( float _R, float _G, float _B );
-    Float3 const & GetColor() const;
+    void          SetColor(Float3 const& _Color);
+    void          SetColor(float _R, float _G, float _B);
+    Float3 const& GetColor() const;
 
     /** Set light direction in local space */
-    void SetDirection( Float3 const & _Direction );
+    void SetDirection(Float3 const& _Direction);
 
     /** Get light direction in local space */
     Float3 GetDirection() const;
 
     /** Set light direction in world space */
-    void SetWorldDirection( Float3 const & _Direction );
+    void SetWorldDirection(Float3 const& _Direction);
 
     /** Get light direction in world space */
     Float3 GetWorldDirection() const;
 
     /** Allow mesh to cast shadows on the world */
-    void SetCastShadow( bool _CastShadow ) { bCastShadow = _CastShadow; }
+    void SetCastShadow(bool _CastShadow) { bCastShadow = _CastShadow; }
 
     /** Is cast shadows enabled */
     bool IsCastShadow() const { return bCastShadow; }
 
-    void SetShadowMaxDistance( float MaxDistance ) { ShadowMaxDistance = MaxDistance; }
-    int GetShadowMaxDistance() const { return ShadowMaxDistance; }
+    void SetShadowMaxDistance(float MaxDistance) { ShadowMaxDistance = MaxDistance; }
+    int  GetShadowMaxDistance() const { return ShadowMaxDistance; }
 
-    void SetShadowCascadeResolution( int Resolution ) { ShadowCascadeResolution = Math::ToClosestPowerOfTwo( Resolution ); }
-    int GetShadowCascadeResolution() const { return ShadowCascadeResolution; }
+    void SetShadowCascadeResolution(int Resolution) { ShadowCascadeResolution = Math::ToClosestPowerOfTwo(Resolution); }
+    int  GetShadowCascadeResolution() const { return ShadowCascadeResolution; }
 
-    void SetShadowCascadeOffset( float Offset ) { ShadowCascadeOffset = Offset; }
-    int GetShadowCascadeOffset() const { return ShadowCascadeOffset; }
+    void SetShadowCascadeOffset(float Offset) { ShadowCascadeOffset = Offset; }
+    int  GetShadowCascadeOffset() const { return ShadowCascadeOffset; }
 
-    void SetShadowCascadeSplitLambda( float SplitLambda ) { ShadowCascadeSplitLambda = SplitLambda; }
+    void  SetShadowCascadeSplitLambda(float SplitLambda) { ShadowCascadeSplitLambda = SplitLambda; }
     float GetShadowCascadeSplitLambda() const { return ShadowCascadeSplitLambda; }
 
-    void SetMaxShadowCascades( int _MaxShadowCascades );
-    int GetMaxShadowCascades() const;
+    void SetMaxShadowCascades(int _MaxShadowCascades);
+    int  GetMaxShadowCascades() const;
 
-    Float4 const & GetEffectiveColor() const;
+    Float4 const& GetEffectiveColor() const;
 
     void AddShadowmapCascades(class AStreamedMemoryGPU* StreamedMemory, struct SRenderView* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades);
 
-    ADirectionalLightComponent * GetNext() { return Next; }
-    ADirectionalLightComponent * GetPrev() { return Prev; }
+    ADirectionalLightComponent* GetNext() { return Next; }
+    ADirectionalLightComponent* GetPrev() { return Prev; }
 
 protected:
     ADirectionalLightComponent();
@@ -98,19 +99,19 @@ protected:
     void InitializeComponent() override;
     void DeinitializeComponent() override;
     void OnTransformDirty() override;
-    void DrawDebug( ADebugRenderer * InRenderer ) override;
+    void DrawDebug(ADebugRenderer* InRenderer) override;
 
 private:
-    float IlluminanceInLux;
-    float Temperature;
-    Float3 Color;
-    mutable Float4 EffectiveColor;
-    bool bCastShadow;
-    float ShadowMaxDistance;
-    float ShadowCascadeOffset;
-    int MaxShadowCascades;
-    int ShadowCascadeResolution;
-    float ShadowCascadeSplitLambda;
-    ADirectionalLightComponent * Next;
-    ADirectionalLightComponent * Prev;
+    float                       IlluminanceInLux;
+    float                       Temperature;
+    Float3                      Color;
+    mutable Float4              EffectiveColor;
+    bool                        bCastShadow;
+    float                       ShadowMaxDistance;
+    float                       ShadowCascadeOffset;
+    int                         MaxShadowCascades;
+    int                         ShadowCascadeResolution;
+    float                       ShadowCascadeSplitLambda;
+    ADirectionalLightComponent* Next;
+    ADirectionalLightComponent* Prev;
 };

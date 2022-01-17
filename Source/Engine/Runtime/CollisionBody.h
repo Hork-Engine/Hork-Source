@@ -50,7 +50,6 @@ public:
 
     virtual void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const {}
 
-protected:
     ACollisionBody()
         : Position( 0.0f )
         , Rotation( Quat::Identity() )
@@ -73,7 +72,6 @@ public:
 
     void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
-protected:
     ACollisionSphere() {}
 
 public:
@@ -90,7 +88,6 @@ public:
 
     void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
-protected:
     ACollisionSphereRadii() {}
 
 public:
@@ -107,7 +104,6 @@ public:
 
     void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
-protected:
     ACollisionBox() {}
 
 public:
@@ -125,7 +121,6 @@ public:
 
     void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
-protected:
     ACollisionCylinder() {}
 
 public:
@@ -144,7 +139,6 @@ public:
 
     void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
-protected:
     ACollisionCone() {}
 
 public:
@@ -170,7 +164,6 @@ public:
 
     void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
-protected:
     ACollisionCapsule() {}
 
 public:
@@ -192,7 +185,6 @@ public:
 
 //    void GatherGeometry( TPodVector< Float3 > & _Vertices, TPodVector< unsigned int > & _Indices ) const override;
 
-//protected:
 //    ACollisionConvexHull() {}
 
 //private:
@@ -218,10 +210,10 @@ public:
 //        ConvexHullVerticesFromPlanes( _Planes, _NumPlanes, Vertices );
 //    }
 
-protected:
     ACollisionConvexHullData();
     ~ACollisionConvexHullData();
 
+protected:
     TPodVectorHeap< Float3 > Vertices;
     TPodVectorHeap< unsigned int > Indices;
     //class btVector3 * Data = nullptr;
@@ -237,7 +229,6 @@ public:
 
     void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
-protected:
     ACollisionConvexHull() {}
 
 public:
@@ -269,7 +260,6 @@ public:
     /** Initialize collision triangle soup with single subpart */
     void Initialize( float const * _Vertices, int _VertexStride, int _VertexCount, unsigned int const * _Indices, int _IndexCount, BvAxisAlignedBox const & _BoundingBox );
 
-protected:
     ACollisionTriangleSoupData() {
         BoundingBox.Clear();
     }
@@ -291,7 +281,6 @@ public:
 
     class btBvhTriangleMeshShape * GetData() { return Data.GetObject(); }
 
-protected:
     ACollisionTriangleSoupBVHData();
     ~ACollisionTriangleSoupBVHData();
 
@@ -313,7 +302,6 @@ public:
 
     void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
-protected:
     ACollisionTriangleSoupBVH() {}
 
 public:
@@ -328,7 +316,6 @@ public:
 
     void GatherGeometry( TPodVectorHeap< Float3 > & _Vertices, TPodVectorHeap< unsigned int > & _Indices ) const override;
 
-protected:
     ACollisionTriangleSoupGimpact();
     ~ACollisionTriangleSoupGimpact();
 

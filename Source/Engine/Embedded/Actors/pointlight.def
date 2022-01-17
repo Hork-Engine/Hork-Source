@@ -1,0 +1,13 @@
+components
+[
+	{
+		classname "APointLightComponent"
+		name "PointLight"
+		id "1"
+	}
+]
+root "1"
+// TODO:
+//public_attributes
+//[
+//]

@@ -60,7 +60,6 @@ public:
     Quat Rotation;
     int JointIndex;
 
-protected:
     ASocketDef() : Position(0.0f), Scale(1.0f), Rotation(Quat::Identity()), JointIndex(-1)
     {
     }
@@ -124,7 +123,6 @@ public:
     void Read( IBinaryStream & _Stream );
     void Write( IBinaryStream & _Stream ) const;
 
-protected:
     ATreeAABB();
     ~ATreeAABB() {}
 
@@ -177,7 +175,6 @@ public:
 
     void DrawBVH( ADebugRenderer * InRenderer, Float3x4 const & _TransformMatrix );
 
-protected:
     AIndexedMeshSubpart();
     ~AIndexedMeshSubpart();
 
@@ -222,10 +219,10 @@ public:
 
     ALevel * GetLightingLevel() { return LightingLevel; }
 
-protected:
     ALightmapUV();
     ~ALightmapUV();
 
+protected:
     void Invalidate() { bInvalid = true; }
 
 private:
@@ -268,10 +265,10 @@ public:
 
     ALevel * GetLightingLevel() { return LightingLevel; }
 
-protected:
     AVertexLight();
     ~AVertexLight();
 
+protected:
     void Invalidate() { bInvalid = true; }
 
 private:
@@ -494,10 +491,10 @@ public:
 
     void DrawBVH( ADebugRenderer * InRenderer, Float3x4 const & _TransformMatrix );
 
-protected:
     AIndexedMesh();
     ~AIndexedMesh();
 
+protected:
     /** Load resource from file */
     bool LoadResource( IBinaryStream & Stream ) override;
 
@@ -572,7 +569,6 @@ public:
 
     // TODO: Add methods like AddTriangle, AddQuad, etc.
 
-protected:
     AProceduralMesh();
     ~AProceduralMesh();
 

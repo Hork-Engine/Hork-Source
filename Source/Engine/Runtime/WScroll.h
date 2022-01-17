@@ -107,10 +107,10 @@ public:
 
     bool IsVerticalScrollAllowed() const;
 
-protected:
     WScroll();
     ~WScroll();
 
+protected:
     // You can override OnDrawEvent and use GetScrollbarGeometry to
     // draw your own style scrollbar.
     SScrollbarGeometry const & GetScrollbarGeometry() const;

@@ -173,10 +173,10 @@ public:
 
     virtual void DrawCursor( ACanvas & _Canvas );
 
-protected:
     WDesktop();
     ~WDesktop();
 
+protected:
     virtual void OnDrawBackground( ACanvas & _Canvas );
 
 private:

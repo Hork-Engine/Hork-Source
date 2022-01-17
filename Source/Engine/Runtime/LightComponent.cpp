@@ -30,57 +30,69 @@ SOFTWARE.
 
 #include "LightComponent.h"
 
-AN_CLASS_META( ALightComponent )
+AN_BEGIN_CLASS_META(ALightComponent)
+AN_ATTRIBUTE(Enabled, bool, SetEnabled, IsEnabled, AF_DEFAULT)
+//AN_ATTRIBUTE(Animation, ....) TODO
+AN_ATTRIBUTE(AnimationTime, float, SetAnimationTime, GetAnimationTime, AF_DEFAULT)
+AN_END_CLASS_META()
 
-ALightComponent::ALightComponent() {
+ALightComponent::ALightComponent()
+{
+    bCanEverTick = true;
 }
 
-void ALightComponent::SetEnabled( bool _Enabled ) {
+void ALightComponent::SetEnabled(bool _Enabled)
+{
     bEnabled = _Enabled;
 }
 
-void ALightComponent::SetAnimation( const char * _Pattern, float _Speed, float _Quantizer ) {
-    AAnimationPattern * anim = CreateInstanceOf< AAnimationPattern >();
-    anim->Pattern = _Pattern;
-    anim->Speed = _Speed;
-    anim->Quantizer = _Quantizer;
-    SetAnimation( anim );
+void ALightComponent::SetAnimation(const char* _Pattern, float _Speed, float _Quantizer)
+{
+    AAnimationPattern* anim = CreateInstanceOf<AAnimationPattern>();
+    anim->Pattern           = _Pattern;
+    anim->Speed             = _Speed;
+    anim->Quantizer         = _Quantizer;
+    SetAnimation(anim);
 }
 
-void ALightComponent::SetAnimation( AAnimationPattern * _Animation ) {
-    if ( IsSame( Animation, _Animation ) ) {
+void ALightComponent::SetAnimation(AAnimationPattern* _Animation)
+{
+    if (IsSame(Animation, _Animation))
+    {
         return;
     }
 
-    Animation = _Animation;
+    Animation           = _Animation;
     AnimationBrightness = 1;
 
-    if ( Animation ) {
-        AnimationBrightness = Animation->Calculate( AnimTime );
+    if (Animation)
+    {
+        AnimationBrightness = Animation->Calculate(AnimTime);
     }
-
-    bCanEverTick = ( _Animation != nullptr );
 
     bEffectiveColorDirty = true;
 }
 
-void ALightComponent::SetAnimationTime( float _Time )
+void ALightComponent::SetAnimationTime(float _Time)
 {
     AnimTime = _Time;
 
-    if ( Animation ) {
-        AnimationBrightness = Animation->Calculate( AnimTime );
+    if (Animation)
+    {
+        AnimationBrightness = Animation->Calculate(AnimTime);
     }
 }
 
-void ALightComponent::TickComponent( float _TimeStep ) {
-    if ( !bEnabled ) {
+void ALightComponent::TickComponent(float _TimeStep)
+{
+    if (!bEnabled || !Animation)
+    {
         return;
     }
 
     // FIXME: Update light animation only if light is visible?
 
-    AnimationBrightness = Animation->Calculate( AnimTime );
+    AnimationBrightness = Animation->Calculate(AnimTime);
     AnimTime += _TimeStep;
     bEffectiveColorDirty = true;
 }

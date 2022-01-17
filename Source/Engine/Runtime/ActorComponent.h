@@ -31,7 +31,6 @@ SOFTWARE.
 #pragma once
 
 #include "BaseObject.h"
-#include <Core/Guid.h>
 
 class AWorld;
 class ALevel;
@@ -62,9 +61,6 @@ public:
     /** Actor Component factory */
     static AObjectFactory & Factory() { static AObjectFactory ObjectFactory( "Actor Component factory" ); return ObjectFactory; }
 
-    /** Get component GUID */
-    //AGUID const & GetGUID() const { return GUID; }
-
     /** Component owner */
     AActor * GetOwnerActor() const { return OwnerActor; }
 
@@ -73,9 +69,6 @@ public:
 
     /** Get world */
     AWorld * GetWorld() const;
-
-    /** Serialize component to document data */
-    TRef< ADocObject > Serialize() override;
 
     /** Destroy this component */
     void Destroy();
@@ -86,22 +79,18 @@ public:
     /** Is component marked as pending kill */
     bool IsPendingKill() const { return bPendingKill; }
 
-    /** Is component was created during actor construction */
-    bool IsDefault() const { return bCreatedDuringConstruction; }
+    /** Spawned for editing */
+    bool IsInEditor() const;
 
     /** Attributes of this component will not be visible in editor */
     void SetHideInEditor( bool _HideInEditor ) { bHideInEditor = _HideInEditor; }
 
     bool HiddenInEditor() const { return bHideInEditor; }
 
-    /** Spawned for editing */
-    bool IsInEditor() const;
-
     /** Register component to initialize it at runtime */
     void RegisterComponent();
 
 protected:
-
     bool bCanEverTick = false;
 
     AActorComponent();
@@ -116,25 +105,20 @@ protected:
 
     virtual void BeginPlay() {}
 
-    /** Called only from Destroy() method */
-    virtual void EndPlay() {}
-
     virtual void TickComponent( float _TimeStep ) {}
 
     virtual void DrawDebug( ADebugRenderer * InRenderer ) {}
 
 private:
-
-    //AGUID GUID;
-
     AActor * OwnerActor = nullptr;
 
     AActorComponent * NextPendingKillComponent = nullptr;
 
+    int LocalId{};
     int ComponentIndex = -1;
 
     bool bInitialized : 1;
     bool bPendingKill : 1;
-    bool bCreatedDuringConstruction : 1;
     bool bHideInEditor : 1;
+    bool bTicking : 1;
 };

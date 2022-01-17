@@ -52,9 +52,9 @@ enum
 
 struct SEntryDecl;
 
-class AEngineInstance : public IEventListener
+class AEngine : public IEventListener
 {
-    AN_FORBID_COPY(AEngineInstance)
+    AN_FORBID_COPY(AEngine)
 
 public:
     ACanvas Canvas;
@@ -66,7 +66,7 @@ public:
     AAsyncJobList*         RenderFrontendJobList;
     AAsyncJobList*         RenderBackendJobList;
 
-    AEngineInstance();
+    AEngine();
 
     /** Run the engine */
     void Run(SEntryDecl const& _EntryDecl);
@@ -78,7 +78,7 @@ public:
     void DestroyWorlds() { return AWorld::DestroyWorlds(); }
 
     /** Helper. Get all existing worlds */
-    TPodVector<AWorld*> const& GetWorld() { return AWorld::GetWorlds(); }
+    TPodVector<AWorld*> const& GetWorlds() { return AWorld::GetWorlds(); }
 
     /** Get scale for Retina displays */
     Float2 const& GetRetinaScale() const { return RetinaScale; }
@@ -148,25 +148,25 @@ public:
 
 private:
     /** IEventListener interface. */
-    void OnKeyEvent(struct SKeyEvent const& _Event, double _TimeStamp) override;
+    void OnKeyEvent(SKeyEvent const& _Event, double _TimeStamp) override;
 
     /** IEventListener interface. */
-    void OnMouseButtonEvent(struct SMouseButtonEvent const& _Event, double _TimeStamp) override;
+    void OnMouseButtonEvent(SMouseButtonEvent const& _Event, double _TimeStamp) override;
 
     /** IEventListener interface. */
-    void OnMouseWheelEvent(struct SMouseWheelEvent const& _Event, double _TimeStamp) override;
+    void OnMouseWheelEvent(SMouseWheelEvent const& _Event, double _TimeStamp) override;
 
     /** IEventListener interface. */
-    void OnMouseMoveEvent(struct SMouseMoveEvent const& _Event, double _TimeStamp) override;
+    void OnMouseMoveEvent(SMouseMoveEvent const& _Event, double _TimeStamp) override;
 
     /** IEventListener interface. */
-    void OnJoystickAxisEvent(struct SJoystickAxisEvent const& _Event, double _TimeStamp) override;
+    void OnJoystickAxisEvent(SJoystickAxisEvent const& _Event, double _TimeStamp) override;
 
     /** IEventListener interface. */
-    void OnJoystickButtonEvent(struct SJoystickButtonEvent const& _Event, double _TimeStamp);
+    void OnJoystickButtonEvent(SJoystickButtonEvent const& _Event, double _TimeStamp);
 
     /** IEventListener interface. */
-    void OnCharEvent(struct SCharEvent const& _Event, double _TimeStamp) override;
+    void OnCharEvent(SCharEvent const& _Event, double _TimeStamp) override;
 
     /** IEventListener interface. */
     void OnWindowVisible(bool _Visible) override;
@@ -181,7 +181,7 @@ private:
     void UpdateInput();
 
     /** Used to debug some features. Must be removed from release. */
-    void DeveloperKeys(struct SKeyEvent const& _Event);
+    void DeveloperKeys(SKeyEvent const& _Event);
 
     void DrawCanvas();
 
@@ -195,7 +195,7 @@ private:
 
     AString                   WorkingDir;
     AString                   RootPath;
-    struct SEntryDecl const*  pModuleDecl;
+    SEntryDecl const*         pModuleDecl;
     TRef<RenderCore::IDevice> RenderDevice;
 
     /** scale coordinates for Retina displays */
@@ -235,4 +235,4 @@ private:
     bool bAllowInputEvents = false;
 };
 
-extern AEngineInstance* GEngine;
+extern AEngine* GEngine;

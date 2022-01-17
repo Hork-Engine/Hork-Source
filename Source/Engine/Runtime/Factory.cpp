@@ -129,11 +129,11 @@ const AClassMeta* AObjectFactory::LookupClass(uint64_t _ClassId) const
     return IdTable[_ClassId];
 }
 
-AAttributeMeta const* AClassMeta::FindAttribute(const char* _Name, bool _Recursive) const
+AAttributeMeta const* AClassMeta::FindAttribute(AStringView _Name, bool _Recursive) const
 {
     for (AAttributeMeta const* attrib = AttributesHead; attrib; attrib = attrib->Next())
     {
-        if (!Platform::Strcmp(attrib->GetName(), _Name))
+        if (_Name == attrib->GetName())
         {
             return attrib;
         }

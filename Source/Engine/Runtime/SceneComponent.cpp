@@ -183,13 +183,16 @@ void ASceneComponent::Detach(bool _KeepWorldTransform)
     AttachParent = nullptr;
     SocketIndex  = -1;
 
-    if (_KeepWorldTransform)
+    if (!IsPendingKill())
     {
-        SetWorldTransform(worldPosition, worldRotation, worldScale);
-    }
-    else
-    {
-        MarkTransformDirty();
+        if (_KeepWorldTransform)
+        {
+            SetWorldTransform(worldPosition, worldRotation, worldScale);
+        }
+        else
+        {
+            MarkTransformDirty();
+        }
     }
 }
 

@@ -159,7 +159,7 @@ void WViewport::OnDrawEvent( ACanvas & InCanvas ) {
     Float2 const & pos = mins;
     Float2 const & size = maxs-mins;
 
-    APawn * pawn = PlayerController->GetPawn();
+    AActor * pawn = PlayerController->GetPawn();
     if ( pawn ) {
         InCanvas.DrawViewport( pawn->GetPawnCamera(), PlayerController->GetRenderingParameters(),
                                pos.X, pos.Y, size.X, size.Y, Color4::White(), 0, -1, COLOR_BLENDING_DISABLED );

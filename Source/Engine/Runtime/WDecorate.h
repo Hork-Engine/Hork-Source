@@ -53,10 +53,10 @@ public:
     WWidget * GetOwner() { return Owner; }
     WWidget const * GetOwner() const { return Owner; }
 
-protected:
     WDecorate();
     ~WDecorate();
 
+protected:
     virtual void OnDrawEvent( ACanvas & _Canvas );
 
 private:
@@ -75,10 +75,10 @@ public:
     WTextDecorate & SetWordWrap( bool _WordWrap );
     WTextDecorate & SetOffset( Float2 const & _Offset );
 
-protected:
     WTextDecorate();
     ~WTextDecorate();
 
+protected:
     void OnDrawEvent( ACanvas & _Canvas ) override;
 
     AFont const * GetFont() const;
@@ -104,10 +104,10 @@ public:
     WBorderDecorate & SetRounding( float _Rounding );
     WBorderDecorate & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
 
-protected:
     WBorderDecorate();
     ~WBorderDecorate();
 
+protected:
     void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:
@@ -136,10 +136,10 @@ public:
     WImageDecorate & SetUseOriginalSize( bool _UseOriginalSize );
     WImageDecorate & SetUVs( Float2 const & _UV0, Float2 const & _UV1 );
 
-protected:
     WImageDecorate();
     ~WImageDecorate();
 
+protected:
     void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:

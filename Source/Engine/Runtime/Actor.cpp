@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "Actor.h"
-#include "Pawn.h"
 #include "SceneComponent.h"
 #include "World.h"
 #include "Timer.h"
@@ -39,350 +38,227 @@ SOFTWARE.
 
 #include <angelscript.h>
 
-AN_BEGIN_CLASS_META( AActor )
-AN_END_CLASS_META()
+AConsoleVar com_DrawRootComponentAxis(_CTS("com_DrawRootComponentAxis"), _CTS("0"), CVAR_CHEAT);
 
-AConsoleVar com_DrawRootComponentAxis( _CTS( "com_DrawRootComponentAxis" ), _CTS( "0" ), CVAR_CHEAT );
+AN_CLASS_META(AActor)
 
 static uint32_t UniqueName = 0;
 
 AActor::AActor()
 {
-    //GUID.Generate();
-    SetObjectName( "Actor" + Math::ToString( UniqueName ) );
+    SetObjectName("Actor" + Math::ToString(UniqueName));
     UniqueName++;
 }
 
-//void AActor::SetName( AString const & _Name )
-//{
-//    if ( !ParentWorld ) {
-//        // In constructor
-//        Name = _Name;
-//        return;
-//    }
-//
-//    AString newName = _Name;
-//
-//    // Clear name for GenerateActorUniqueName
-//    Name.Clear();
-//
-//    // Generate new name
-//    Name = ParentWorld->GenerateActorUniqueName( newName.CStr() );
-//}
-
 void AActor::Destroy()
 {
-    if ( bPendingKill ) {
+    if (bPendingKill)
+    {
         return;
     }
 
     // Mark actor to remove it from the world
-    bPendingKill = true;
-    NextPendingKillActor = ParentWorld->PendingKillActors;
-    ParentWorld->PendingKillActors = this;
+    bPendingKill             = true;
+    NextPendingKillActor     = World->PendingKillActors;
+    World->PendingKillActors = this;
 
-    // FIXME: do next code at end of the frame?
-
-    DestroyComponents();
-
-    EndPlay();
-
-    if ( Instigator ) {
-        Instigator->RemoveRef();
-        Instigator = nullptr;
-    }
-
-    // Remove actor from level array of actors
-    ALevel * level = Level;
-    level->Actors[ IndexInLevelArrayOfActors ] = level->Actors[ level->Actors.Size() - 1 ];
-    level->Actors[ IndexInLevelArrayOfActors ]->IndexInLevelArrayOfActors = IndexInLevelArrayOfActors;
-    level->Actors.RemoveLast();
-    IndexInLevelArrayOfActors = -1;
-    Level = nullptr;
-}
-
-void AActor::DestroyComponents()
-{
-    for ( AActorComponent * component : Components ) {
+    for (AActorComponent* component : Components)
+    {
         component->Destroy();
     }
 }
 
-void AActor::AddComponent( AActorComponent * _Component )
+AActorComponent* AActor::CreateComponent(uint64_t _ClassId, AStringView InName)
 {
-    Components.Append( _Component );
-    _Component->ComponentIndex = Components.Size() - 1;
-    _Component->OwnerActor = this;
-    _Component->bCreatedDuringConstruction = bDuringConstruction;
-}
-
-//AString AActor::GenerateComponentUniqueName( const char * _Name )
-//{
-//    if ( !FindComponent( _Name ) ) {
-//        return _Name;
-//    }
-//    int uniqueNumber = 0;
-//    AString uniqueName;
-//    do {
-//        uniqueName.Resize( 0 );
-//        uniqueName.Concat( _Name );
-//        uniqueName.Concat( Int( ++uniqueNumber ).CStr() );
-//    } while ( FindComponent( uniqueName.CStr() ) != nullptr );
-//    return uniqueName;
-//}
-
-AActorComponent * AActor::CreateComponent( uint64_t _ClassId, const char * _Name )
-{
-    AActorComponent * component = static_cast< AActorComponent * >( AActorComponent::Factory().CreateInstance( _ClassId ) );
-    if ( !component ) {
-        return nullptr;
-    }
-    component->AddRef();
-    component->SetObjectName( _Name );//GenerateComponentUniqueName( _Name );
-    AddComponent( component );
+    AActorComponent* component = static_cast<AActorComponent*>(AActorComponent::Factory().CreateInstance(_ClassId));
+    AddComponent(component, InName);
     return component;
 }
 
-AActorComponent * AActor::CreateComponent( const char * _ClassName, const char * _Name )
+AActorComponent* AActor::CreateComponent(const char* _ClassName, AStringView InName)
 {
-    AActorComponent * component = static_cast< AActorComponent * >( AActorComponent::Factory().CreateInstance( _ClassName ) );
-    if ( !component ) {
-        return nullptr;
-    }
-    component->AddRef();
-    component->SetObjectName( _Name );//GenerateComponentUniqueName( _Name );
-    AddComponent( component );
+    AActorComponent* component = static_cast<AActorComponent*>(AActorComponent::Factory().CreateInstance(_ClassName));
+    AddComponent(component, InName);
     return component;
 }
 
-AActorComponent * AActor::CreateComponent( AClassMeta const * _ClassMeta, const char * _Name )
+AActorComponent* AActor::CreateComponent(AClassMeta const* _ClassMeta, AStringView InName)
 {
-    AN_ASSERT( _ClassMeta->Factory() == &AActorComponent::Factory() );
-    AActorComponent * component = static_cast< AActorComponent * >( _ClassMeta->CreateInstance() );
-    if ( !component ) {
-        return nullptr;
-    }
-    component->AddRef();
-    component->SetObjectName( _Name );//GenerateComponentUniqueName( _Name );
-    AddComponent( component );
+    AN_ASSERT(_ClassMeta->Factory() == &AActorComponent::Factory());
+    AActorComponent* component = static_cast<AActorComponent*>(_ClassMeta->CreateInstance());
+    AddComponent(component, InName);
     return component;
 }
 
-AActorComponent * AActor::GetComponent( uint64_t _ClassId )
+void AActor::AddComponent(AActorComponent* Component, AStringView InName)
 {
-    for ( AActorComponent * component : Components ) {
-        if ( component->FinalClassId() == _ClassId ) {
+    if (!Component)
+        return;
+
+    Component->AddRef();
+    Component->SetObjectName(InName);
+    Component->ComponentIndex = Components.Size();
+    Component->OwnerActor     = this;
+    Component->LocalId        = ++ComponentLocalIdGen;
+
+    Components.Append(Component);
+}
+
+AActorComponent* AActor::GetComponent(uint64_t _ClassId)
+{
+    for (AActorComponent* component : Components)
+    {
+        if (component->FinalClassId() == _ClassId)
+        {
             return component;
         }
     }
     return nullptr;
 }
 
-AActorComponent * AActor::GetComponent( const char * _ClassName )
+AActorComponent* AActor::GetComponent(const char* _ClassName)
 {
-    for ( AActorComponent * component : Components ) {
-        if ( !Platform::Strcmp( component->FinalClassName(), _ClassName ) ) {
+    for (AActorComponent* component : Components)
+    {
+        if (!Platform::Strcmp(component->FinalClassName(), _ClassName))
+        {
             return component;
         }
     }
     return nullptr;
 }
 
-AActorComponent * AActor::GetComponent( AClassMeta const * _ClassMeta )
+AActorComponent* AActor::GetComponent(AClassMeta const* _ClassMeta)
 {
-    AN_ASSERT( _ClassMeta->Factory() == &AActorComponent::Factory() );
-    for ( AActorComponent * component : Components ) {
-        if ( &component->FinalClassMeta() == _ClassMeta ) {
+    AN_ASSERT(_ClassMeta->Factory() == &AActorComponent::Factory());
+    for (AActorComponent* component : Components)
+    {
+        if (&component->FinalClassMeta() == _ClassMeta)
+        {
             return component;
         }
     }
     return nullptr;
 }
 
-//AActorComponent * AActor::FindComponent( const char * _UniqueName )
-//{
-//    for ( AActorComponent * component : Components ) {
-//        if ( !component->GetName().Icmp( _UniqueName ) ) {
-//            return component;
-//        }
-//    }
-//    return nullptr;
-//}
-
-//AActorComponent * AActor::FindComponentGUID( AGUID const & _GUID )
-//{
-//    for ( AActorComponent * component : Components ) {
-//        if ( component->GUID == _GUID ) {
-//            return component;
-//        }
-//    }
-//    return nullptr;
-//}
-
-void AActor::Initialize( STransform const & _SpawnTransform )
+void AActor::InitializeAndPlay()
 {
-    if ( RootComponent ) {
-        RootComponent->SetTransform( _SpawnTransform );
+    AWorld* world = GetWorld();
+
+    if (bCanEverTick)
+    {
+        world->TickingActors.Append(this);
+    }
+    if (bTickPrePhysics)
+    {
+        world->PrePhysicsTickActors.Append(this);
+    }
+    if (bTickPostPhysics)
+    {
+        world->PostPhysicsTickActors.Append(this);
+    }
+    if (bLateUpdate)
+    {
+        world->LateUpdateActors.Append(this);
     }
 
     PreInitializeComponents();
-    InitializeComponents();
-    PostInitializeComponents();
 
-    BeginPlayComponents();
-    BeginPlay();
-}
+    for (AActorComponent* component : Components)
+    {
+        AN_ASSERT(!component->bInitialized);
 
-void AActor::InitializeComponents()
-{
-    for ( AActorComponent * component : Components ) {
         component->InitializeComponent();
         component->bInitialized = true;
-    }
-}
 
-void AActor::BeginPlayComponents()
-{
-    for ( AActorComponent * component : Components ) {
-        if ( !component->IsPendingKill() ) {
-            component->BeginPlay();
-        }
-    }
-}
-
-void AActor::TickComponents( float _TimeStep )
-{
-    for ( AActorComponent * component : Components ) {
-        if ( component->bCanEverTick && !component->IsPendingKill() ) {
-            component->TickComponent( _TimeStep );
-        }
-    }
-}
-
-TRef< ADocObject > AActor::Serialize()
-{
-    TRef< ADocObject > object = Super::Serialize();
-
-    //object->AddString( "GUID", GUID.ToString() );
-
-    //if ( RootComponent ) {
-    //    object->AddString( "Root", RootComponent->GetName() );
-    //}
-
-    //TRef< ADocMember >  components = object->AddArray( "Components" );
-
-    //for ( AActorComponent * component : Components ) {
-    //    if ( component->IsPendingKill() ) {
-    //        continue;
-    //    }
-    //    TRef< ADocumentObject > componentObject = component->Serialize();
-    //    components->AddValue( componentObject );
-    //}
-
-    return object;
-}
-
-#if 0
-AActorComponent * AActor::LoadComponent( ADocument const & _Document, int _FieldsHead )
-{
-    SDocumentField const * classNameField = _Document.FindField( _FieldsHead, "ClassName" );
-    if ( !classNameField ) {
-        GLogger.Printf( "AActor::LoadComponent: invalid component class\n" );
-        return nullptr;
-    }
-
-    SDocumentValue const * classNameValue = &_Document.Values[ classNameField->ValuesHead ];
-
-    AClassMeta const * classMeta = AActorComponent::Factory().LookupClass( classNameValue->Token.ToString().CStr() );
-    if ( !classMeta ) {
-        GLogger.Printf( "AActor::LoadComponent: invalid component class \"%s\"\n", classNameValue->Token.ToString().CStr() );
-        return nullptr;
-    }
-
-    AString name, guid;
-
-    SDocumentField * field = _Document.FindField( _FieldsHead, "Name" );
-    if ( field ) {
-        name = _Document.Values[ field->ValuesHead ].Token.ToString();
-    }
-
-    field = _Document.FindField( _FieldsHead, "GUID" );
-    if ( field ) {
-        guid = _Document.Values[field->ValuesHead].Token.ToString();
-    }
-
-    bool bCreatedDuringConstruction = false;
-
-    AActorComponent * component = nullptr;
-
-    if ( !guid.IsEmpty() ) {
-        component = FindComponentGUID( AGUID().FromString( guid ) );
-        if ( component && &component->FinalClassMeta() == classMeta ) {
-            bCreatedDuringConstruction = component->bCreatedDuringConstruction;
+        if (component->bCanEverTick)
+        {
+            world->TickingComponents.Append(component);
+            component->bTicking = true;
         }
     }
 
-    if ( !bCreatedDuringConstruction ) {
-        component = AddComponent( classMeta, name.IsEmpty() ? "Unnamed" : name.CStr() );
+    PostInitializeComponents();
+
+    for (AActorComponent* component : Components)
+    {
+        AN_ASSERT(!component->IsPendingKill());
+        component->BeginPlay();
     }
 
-    if ( component ) {
-        component->LoadAttributes( _Document, _FieldsHead );
-    }
-
-    return component;
-}
-#endif
-
-void AActor::DrawDebug( ADebugRenderer * InRenderer )
-{
-    for ( AActorComponent * component : Components ) {
-        component->DrawDebug( InRenderer );
-    }
-
-    if ( com_DrawRootComponentAxis ) {
-        if ( RootComponent ) {
-            InRenderer->SetDepthTest( false );
-            InRenderer->DrawAxis( RootComponent->GetWorldTransformMatrix(), false );
-        }
-    }
+    CallBeginPlay();
 }
 
-#define CALL_SCRIPT(Function, ...)                                        \
-    if (pScriptInstance)                                                  \
-    {                                                                     \
-        AActorScript* pScript = AActorScript::GetScript(pScriptInstance); \
-        pScript->Function(pScriptInstance, __VA_ARGS__);                  \
+#define CALL_SCRIPT(Function, ...)                                         \
+    {                                                                      \
+        if (ScriptModule)                                                  \
+        {                                                                  \
+            AActorScript* pScript = AActorScript::GetScript(ScriptModule); \
+            pScript->Function(ScriptModule, __VA_ARGS__);                  \
+        }                                                                  \
     }
 
-void AActor::BeginPlay()
+void AActor::CallBeginPlay()
 {
+    BeginPlay();
+
     CALL_SCRIPT(BeginPlay);
 }
 
-void AActor::EndPlay()
+void AActor::CallTick(float TimeStep)
 {
-    CALL_SCRIPT(EndPlay);
+    Tick(TimeStep);
+
+    CALL_SCRIPT(Tick, TimeStep);
 }
 
-void AActor::Tick(float _TimeStep)
+void AActor::CallTickPrePhysics(float TimeStep)
 {
-    CALL_SCRIPT(Tick, _TimeStep);
+    TickPrePhysics(TimeStep);
+
+    CALL_SCRIPT(TickPrePhysics, TimeStep);
 }
 
-void AActor::TickPrePhysics(float _TimeStep)
+void AActor::CallTickPostPhysics(float TimeStep)
 {
-    CALL_SCRIPT(TickPrePhysics, _TimeStep);
+    TickPostPhysics(TimeStep);
+
+    CALL_SCRIPT(TickPostPhysics, TimeStep);
 }
 
-void AActor::TickPostPhysics(float _TimeStep)
+void AActor::CallLateUpdate(float TimeStep)
 {
-    CALL_SCRIPT(TickPostPhysics, _TimeStep);
+    LateUpdate(TimeStep);
+
+    CALL_SCRIPT(LateUpdate, TimeStep);
 }
 
-void AActor::ApplyDamage( SActorDamage const & Damage )
+void AActor::CallDrawDebug(ADebugRenderer* Renderer)
 {
-    CALL_SCRIPT(ApplyDamage, Damage);
+    for (AActorComponent* component : Components)
+    {
+        component->DrawDebug(Renderer);
+    }
+
+    if (com_DrawRootComponentAxis)
+    {
+        if (RootComponent)
+        {
+            Renderer->SetDepthTest(false);
+            Renderer->DrawAxis(RootComponent->GetWorldTransformMatrix(), false);
+        }
+    }
+
+    DrawDebug(Renderer);
+
+    CALL_SCRIPT(DrawDebug, Renderer);
+}
+
+void AActor::ApplyDamage(SActorDamage const& Damage)
+{
+    OnApplyDamage(Damage);
+
+    CALL_SCRIPT(OnApplyDamage, Damage);
 }
 
 asILockableSharedBool* AActor::ScriptGetWeakRefFlag()
@@ -391,4 +267,53 @@ asILockableSharedBool* AActor::ScriptGetWeakRefFlag()
         pWeakRefFlag = asCreateLockableSharedBool();
 
     return pWeakRefFlag;
+}
+
+bool AActor::SetPublicAttribute(AStringView PublicName, AStringView Value)
+{
+    if (!pActorDef)
+        return false;
+
+    auto FindComponent = [this](AClassMeta const* ClassMeta, int ComponentIndex) -> AActorComponent*
+    {
+        for (AActorComponent* component : GetComponents())
+        {
+            if (component->FinalClassId() == ClassMeta->ClassId && component->LocalId == ComponentIndex)
+                return component;
+        }
+        return {};
+    };
+
+    for (AActorDefinition::SPublicAttriubte const& attr : pActorDef->PublicAttributes)
+    {
+        if (attr.PublicName == PublicName)
+        {
+            if (attr.ComponentIndex != -1)
+            {
+                // NOTE: component->LocalId should match ComponentIndex
+                AActorComponent* component = FindComponent(pActorDef->Components[attr.ComponentIndex].ClassMeta, attr.ComponentIndex);
+                if (component)
+                {
+                    return component->SetAttribute(attr.AttributeName, Value);
+                }
+            }
+            else
+            {
+                return SetAttribute(attr.AttributeName, Value);
+            }
+        }
+    }
+
+    if (ScriptModule)
+    {
+        for (AActorDefinition::SScriptPublicAttriubte const& attr : pActorDef->ScriptPublicAttributes)
+        {
+            if (attr.PublicName == PublicName)
+            {
+                return AActorScript::SetAttribute(ScriptModule, attr.AttributeName, Value);
+            }
+        }
+    }
+
+    return false;
 }

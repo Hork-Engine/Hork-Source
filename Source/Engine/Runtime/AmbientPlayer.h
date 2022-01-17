@@ -42,6 +42,7 @@ public:
 protected:
     AAmbientPlayer();
 
+    void Initialize(SActorInitializer& Initializer) override;
     void PreInitializeComponents() override;
     void BeginPlay() override;
     void Tick( float _TimeStep ) override;

@@ -58,13 +58,12 @@ public:
     /** Object unique identifier */
     const uint64_t Id;
 
-    /** Serialize object to document data */
-    virtual TRef<ADocObject> Serialize();
+    ABaseObject();
+    virtual ~ABaseObject();
 
-    /** Load attributes form document data */
-    void LoadAttributes(ADocValue const* pObject);
+    void SetAttributes(THashContainer<AString, AString> const& Attributes);
 
-    void SetAttributes(THash<> const& AttributeHash, TStdVector<std::pair<AString, AString>> const& Attributes);
+    bool SetAttribute(AStringView AttributeName, AStringView AttributeValue);
 
     /** Add reference */
     void AddRef();
@@ -83,14 +82,14 @@ public:
     /** Get object debug/editor or ingame name */
     const char* GetObjectNameCStr() const { return Name.CStr(); }
 
-    /** Get total existing objects */
-    static uint64_t GetTotalObjects() { return TotalObjects; }
-
     /** Set weakref counter. Used by TWeakRef */
     void SetWeakRefCounter(SWeakRefCounter* _RefCounter) { WeakRefCounter = _RefCounter; }
 
     /** Get weakref counter. Used by TWeakRef */
     SWeakRefCounter* GetWeakRefCounter() { return WeakRefCounter; }
+
+    /** Get total existing objects */
+    static uint64_t GetTotalObjects() { return TotalObjects; }
 
     static ABaseObject* FindObject(uint64_t _Id);
 
@@ -130,36 +129,31 @@ public:
         String = Math::ToString(Id);
     }
 
-protected:
-    ABaseObject();
-
-    virtual ~ABaseObject();
-
 private:
     void LoadAttributes_r(AClassMeta const* Meta, ADocValue const* pObject);
-    void SetAttributes_r(AClassMeta const* Meta, THash<> const& AttributeHash, TStdVector<std::pair<AString, AString>> const& Attributes);
-
-    /** Total existing objects */
-    static uint64_t TotalObjects;
+    void SetAttributes_r(AClassMeta const* Meta, THashContainer<AString, AString> const& Attributes);
 
     /** Custom object name */
     AString Name;
 
     /** Current refs count for this object */
-    int RefCount = 0;
+    int RefCount{};
 
-    SWeakRefCounter* WeakRefCounter = nullptr;
+    SWeakRefCounter* WeakRefCounter{};
 
     /** Object global list */
-    ABaseObject* NextObject = nullptr;
-    ABaseObject* PrevObject = nullptr;
+    ABaseObject* NextObject{};
+    ABaseObject* PrevObject{};
+
+    /** Used by garbage collector to add this object to garbage list */
+    ABaseObject* NextGarbageObject{};
+    ABaseObject* PrevGarbageObject{};
+
+    /** Total existing objects */
+    static uint64_t     TotalObjects;
 
     static ABaseObject* Objects;
     static ABaseObject* ObjectsTail;
-
-    /** Used by garbage collector to add this object to garbage list */
-    ABaseObject* NextGarbageObject = nullptr;
-    ABaseObject* PrevGarbageObject = nullptr;
 };
 
 /**
@@ -186,12 +180,6 @@ class AGarbageCollector final
     friend class ABaseObject;
 
 public:
-    /** Initialize garbage collector */
-    static void Initialize();
-
-    /** Deinitialize garbage collector */
-    static void Deinitialize();
-
     /** Deallocates all collected objects */
     static void DeallocateObjects();
 
@@ -412,19 +400,3 @@ void SetAttributeToString(T* const& Attribute, AString& String)
         String = "0";
     }
 }
-
-//template< typename T >
-//void SetAttributeSubmember( TRef< T > & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
-//{
-//    if ( Attribute ) {
-//        Attribute->SetAttributes( AttributeHash, Attributes );
-//    }
-//}
-//
-//template< typename T >
-//void SetAttributeSubmember( T * & Attribute, THash<> const & AttributeHash, TStdVector< std::pair< AString, AString > > const & Attributes )
-//{
-//    if ( Attribute ) {
-//        Attribute->SetAttributes( AttributeHash, Attributes );
-//    }
-//}

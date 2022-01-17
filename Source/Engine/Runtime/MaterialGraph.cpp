@@ -585,6 +585,7 @@ MGOutput * MGInput::GetConnection() {
     return Slot;
 }
 
+#if 0
 TRef< ADocObject > MGInput::Serialize() {
     TRef< ADocObject > object = MakeRef< ADocObject >();
 
@@ -597,6 +598,7 @@ TRef< ADocObject > MGInput::Serialize() {
 
     return object;
 }
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -700,6 +702,7 @@ void MGNode::TouchConnections( AMaterialBuildContext const & _Context ) {
     }
 }
 
+#if 0
 TRef< ADocObject > MGNode::Serialize() {
 #if 0
     TRef< ADocumentObject > object = MakeRef< ADocumentObject >();
@@ -719,6 +722,7 @@ TRef< ADocObject > MGNode::Serialize() {
     }
     return object;
 }
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -2996,6 +3000,7 @@ void MGMaterialGraph::RegisterTextureSlot( MGTextureSlot * _Slot ) {
     TextureSlots.Append( _Slot );
 }
 
+#if 0
 TRef< ADocObject > MGMaterialGraph::Serialize() {
     TRef< ADocObject > object = MakeRef< ADocObject >();
 
@@ -3010,6 +3015,7 @@ TRef< ADocObject > MGMaterialGraph::Serialize() {
 
     return object;
 }
+#endif
 
 void CompileMaterialGraph( MGMaterialGraph * InGraph, SMaterialDef * pDef )
 {

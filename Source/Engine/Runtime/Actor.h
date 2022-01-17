@@ -30,31 +30,37 @@ SOFTWARE.
 
 #pragma once
 
+#include "ActorDefinition.h"
 #include "Level.h"
 #include "CollisionEvents.h"
-#include <Core/Guid.h>
-#include <Geometry/Transform.h>
+#include "CameraComponent.h"
 
 class AWorld;
-class APawn;
 class AActorComponent;
 class ASceneComponent;
+class AInputComponent;
+class AController;
 
-using AArrayOfActorComponents = TPodVector< AActorComponent *, 8 >;
+using AArrayOfActorComponents = TPodVector<AActorComponent*, 8>;
 
-#define AN_ACTOR( _Class, _SuperClass ) \
-    AN_FACTORY_CLASS( AActor::Factory(), _Class, _SuperClass ) \
-protected: \
-    ~_Class() {} \
-private:
+#define AN_ACTOR(_Class, _SuperClass)                        \
+    AN_FACTORY_CLASS(AActor::Factory(), _Class, _SuperClass)
 
+struct SActorInitializer
+{
+    bool bCanEverTick{};
+    bool bTickEvenWhenPaused{};
+    bool bTickPrePhysics{};
+    bool bTickPostPhysics{};
+    bool bLateUpdate{};
+};
 
 struct SActorDamage
 {
-    float Amount;
-    Float3 Position;
-    float Radius;
-    AActor * DamageCauser;
+    float   Amount;
+    Float3  Position;
+    float   Radius;
+    AActor* DamageCauser;
 };
 
 constexpr float LIFESPAN_ALIVE = 0;
@@ -68,13 +74,105 @@ AActor
 Base class for all actors
 
 */
-class AActor : public ABaseObject {
-    AN_ACTOR( AActor, ABaseObject )
+class AActor : public ABaseObject
+{
+    AN_ACTOR(AActor, ABaseObject)
 
     friend class AWorld;
 
 public:
+    /** Actor factory */
+    static AObjectFactory& Factory()
+    {
+        static AObjectFactory ObjectFactory("Actor factory");
+        return ObjectFactory;
+    }
 
+public:
+    /** You can control the lifespan of an actor by setting the LifeSpan property.
+    Note that ticking must be enabled (bCanEverTick set to true). */
+    float LifeSpan{LIFESPAN_ALIVE};
+
+    AActor();
+
+    /** Get actor's world */
+    AWorld* GetWorld() const { return World; }
+
+    /** Get actor's level */
+    ALevel* GetLevel() const { return Level; }
+
+    /** The root component is used to place an actor in the world.
+    It is also used to set the actor's location during spawning. */
+    ASceneComponent* GetRootComponent() const { return RootComponent; }
+
+    /** The pawn camera is used to setup rendering. */
+    ACameraComponent* GetPawnCamera() { return PawnCamera; }
+
+    /** Actor's instigator */
+    AActor* GetInstigator() { return Instigator; }
+
+    AController* GetController() { return Controller; }    
+
+    /** Create component by it's class id */
+    AActorComponent* CreateComponent(uint64_t _ClassId, AStringView Name);
+
+    /** Create component by it's class name */
+    AActorComponent* CreateComponent(const char* _ClassName, AStringView Name);
+
+    /** Create component by it's class meta (fastest way to create component) */
+    AActorComponent* CreateComponent(AClassMeta const* _ClassMeta, AStringView Name);
+
+    /** Get component by it's class id */
+    AActorComponent* GetComponent(uint64_t _ClassId);
+
+    /** Get component by it's class name */
+    AActorComponent* GetComponent(const char* _ClassName);
+
+    /** Get component by it's class meta */
+    AActorComponent* GetComponent(AClassMeta const* _ClassMeta);
+
+    /** Create component of specified type */
+    template <typename ComponentType>
+    ComponentType* CreateComponent(AStringView Name)
+    {
+        return static_cast<ComponentType*>(CreateComponent(&ComponentType::ClassMeta(), Name));
+    }
+
+    /** Get component of specified type */
+    template <typename ComponentType>
+    ComponentType* GetComponent()
+    {
+        return static_cast<ComponentType*>(GetComponent(&ComponentType::ClassMeta()));
+    }
+
+    /** Get all actor components */
+    AArrayOfActorComponents const& GetComponents() const { return Components; }
+
+    /** Destroy self */
+    void Destroy();
+
+    /** Is actor marked as pending kill */
+    bool IsPendingKill() const { return bPendingKill; }
+
+    /** Apply damage to the actor */
+    void ApplyDamage(SActorDamage const& Damage);
+
+    /** Override this function to setup input component */
+    virtual void SetupInputComponent(AInputComponent* Input) {}
+
+    /** Is used to register console commands. Experimental. */
+    virtual void SetupRuntimeCommands() {}
+
+    bool IsSpawning() const { return bSpawning; }
+
+    bool IsInEditor() const { return bInEditor; }
+
+    /** Set attribute value by it's public name. See actor definition. */
+    bool SetPublicAttribute(AStringView PublicName, AStringView Value);
+
+    class asILockableSharedBool* ScriptGetWeakRefFlag();
+
+protected:
     // Actor events
     AContactDelegate E_OnBeginContact;
     AContactDelegate E_OnEndContact;
@@ -83,91 +181,46 @@ public:
     AOverlapDelegate E_OnEndOverlap;
     AOverlapDelegate E_OnUpdateOverlap;
 
-    /** Root component keeps component hierarchy and transform for the actor */
-    ASceneComponent * RootComponent = nullptr;
+    /** The root component is used to place an actor in the world.
+    It is also used to set the actor's location during spawning. */
+    ASceneComponent* RootComponent{};
 
-    float LifeSpan = LIFESPAN_ALIVE;
+    /** The pawn camera is used to setup rendering. */
+    TWeakRef<ACameraComponent> PawnCamera;
 
-    bool bTickEvenWhenPaused = false;
-
-    bool bTickPrePhysics = false;
-
-    bool bTickPostPhysics = false;
-
-    /** Actors factory */
-    static AObjectFactory & Factory() { static AObjectFactory ObjectFactory( "Actor factory" ); return ObjectFactory; }
-
-    // Get actor GUID
-    //AGUID const & GetGUID() const { return GUID; }
-
-    /** Get actor's world */
-    AWorld * GetWorld() const { return ParentWorld; }
-
-    /** Get actor's level */
-    ALevel * GetLevel() const { return Level; }
-
-    /** Create component by it's class id */
-    AActorComponent * CreateComponent( uint64_t _ClassId, const char * _Name );
-
-    /** Create component by it's class name */
-    AActorComponent * CreateComponent( const char * _ClassName, const char * _Name );
-
-    /** Create component by it's class meta (fastest way to create component) */
-    AActorComponent * CreateComponent( AClassMeta const * _ClassMeta, const char * _Name );
-
-    /** Get component by it's class id */
-    AActorComponent * GetComponent( uint64_t _ClassId );
-
-    /** Get component by it's class name */
-    AActorComponent * GetComponent( const char * _ClassName );
-
-    /** Get component by it's class meta */
-    AActorComponent * GetComponent( AClassMeta const * _ClassMeta );
-
-    /** Create component of specified type */
-    template< typename ComponentType >
-    ComponentType * CreateComponent( const char * _Name ) {
-        return static_cast< ComponentType * >( CreateComponent( &ComponentType::ClassMeta(), _Name ) );
+    /** Called after constructor. Note that the actor is not yet in the world.
+    The actor appears in the world only after spawn and just before calling BeginPlay().
+    Spawning occurs at the beginning of the next frame. */
+    virtual void Initialize(SActorInitializer& Initializer)
+    {
+        // NOTE: You can subscribe to actor events like this:
+        // Actor->E_OnBeginContact.Add(this, &MyActorController::HandleBeginContact)
+        // In the script, you just need to declare the OnBeginContact method
     }
 
-    /** Get component of specified type */
-    template< typename ComponentType >
-    ComponentType * GetComponent() {
-        return static_cast< ComponentType * >( GetComponent( &ComponentType::ClassMeta() ) );
-    }
+    /** Called when the actor enters the game */
+    virtual void BeginPlay() {}
 
-    /** Get all actor components */
-    AArrayOfActorComponents const & GetComponents() const { return Components; }
+    /** Tick based on variable time step. Depends on the current frame rate.
+    One tick per frame. This is a good place to update things like animation. */
+    virtual void Tick(float TimeStep) {}
 
-    /** Serialize actor to document data */
-    TRef< ADocObject > Serialize() override;
+    /** Tick based on fixed time step. Use it to update logic and physics.
+    There can be zero or more ticks per frame. Called before physics simulation. */
+    virtual void TickPrePhysics(float TimeStep) {}
 
-    /** Destroy self */
-    void Destroy();
+    /** Tick based on fixed time step. Use it to update logic based on physics simulation.
+    There can be zero or more ticks per frame. Called after physics simulation. */
+    virtual void TickPostPhysics(float TimeStep) {}
 
-    /** Is actor marked as pending kill */
-    bool IsPendingKill() const { return bPendingKill; }
+    /** Tick based on variable time step. Depends on the current frame rate.
+    One tick per frame. Called at the end of a frame. */
+    virtual void LateUpdate(float TimeStep) {}
 
-    /** Actor's instigator */
-    APawn * GetInstigator() { return Instigator; }
+    virtual void OnApplyDamage(SActorDamage const& Damage) {}
 
-    /** Apply damage to the actor */
-    virtual void ApplyDamage( SActorDamage const & Damage );
-
-    bool IsDuringConstruction() const { return bDuringConstruction; }
-
-    /** Actor spawned for editing */
-    bool IsInEditor() const { return bInEditor; }
-
-    class asILockableSharedBool* ScriptGetWeakRefFlag();
-
-protected:
-
-    bool bCanEverTick = false;
-
-    AActor();
-
-protected:
+    /** Draw debug primitives */
+    virtual void DrawDebug(ADebugRenderer* InRenderer) {}
 
     /** Called before components initialized */
     virtual void PreInitializeComponents() {}
@@ -175,68 +228,51 @@ protected:
     /** Called after components initialized */
     virtual void PostInitializeComponents() {}
 
-    /** Called when actor enters the game */
-    virtual void BeginPlay();
-
-    /** Called only from Destroy() method */
-    virtual void EndPlay();
-
-    /** Tick based on variable time step. Dependend on current frame rate.
-    One tick per frame. It is good place to update things like animation. */
-    virtual void Tick( float _TimeStep );
-
-    /** Tick based on fixed time step. Use it to update logic and physics.
-    There may be one or several ticks per frame. Called before physics simulation. */
-    virtual void TickPrePhysics( float _TimeStep );
-
-    /** Tick based on fixed time step. Use it to update logic based on physics simulation.
-    There may be one or several ticks per frame. Called after physics simulation. */
-    virtual void TickPostPhysics( float _TimeStep );
-
-    /** Draw debug primitives */
-    virtual void DrawDebug( ADebugRenderer * InRenderer );
+private:
+    void InitializeAndPlay();
+    void AddComponent(AActorComponent* Component, AStringView Name);
+    void CallBeginPlay();
+    void CallTick(float TimeStep);
+    void CallTickPrePhysics(float TimeStep);
+    void CallTickPostPhysics(float TimeStep);
+    void CallLateUpdate(float TimeStep);
+    void CallDrawDebug(ADebugRenderer* InRenderer);
 
 private:
-    void Initialize( STransform const & _SpawnTransform );
+    AWorld*                      World{};
+    TWeakRef<ALevel>             Level;
+    AArrayOfActorComponents      Components;
+    TRef<AActorDefinition>       pActorDef;
+    AActor*                      Instigator{};
+    AController*                 Controller{};
+    class asIScriptObject*       ScriptModule{};
+    class asILockableSharedBool* pWeakRefFlag{};
 
-    void InitializeComponents();
-
-    void BeginPlayComponents();
-
-    void TickComponents( float _TimeStep );
-
-    void DestroyComponents();
-
-    void AddComponent( AActorComponent * _Component );
-
-    //AGUID GUID;
-
-    /** All actor components */
-    AArrayOfActorComponents Components;
+    int ComponentLocalIdGen{};
 
     /** Index in world array of actors */
-    int IndexInWorldArrayOfActors = -1;
+    int IndexInWorldArrayOfActors{-1};
 
     /** Index in level array of actors */
-    int IndexInLevelArrayOfActors = -1;
+    int IndexInLevelArrayOfActors{-1};
 
-    AActor * NextPendingKillActor = nullptr;
+    AActor* NextSpawnActor{};
+    AActor* NextPendingKillActor{};
 
-    AWorld * ParentWorld = nullptr;
+    float LifeTime{0.0f};
 
-    //TRef< ALevel > Level;
-    TWeakRef< ALevel > Level;
+    bool bCanEverTick{};
+    bool bTickEvenWhenPaused{};
+    bool bTickPrePhysics{};
+    bool bTickPostPhysics{};
+    bool bLateUpdate{};
+    bool bSpawning{true};
+    bool bPendingKill{};
+    bool bInEditor{};
 
-    //TWeakRef< AActor > Attach; // TODO: Attach actor to another actor
-
-    APawn * Instigator = nullptr;
-
-    class asIScriptObject*       pScriptInstance = nullptr;
-    class asILockableSharedBool* pWeakRefFlag    = nullptr;
-
-    float LifeTime = 0.0f;
-
-    bool bPendingKill = false;
-    bool bDuringConstruction = true;
-    bool bInEditor = false;
+protected:
+    friend class ASceneComponent;
+    friend class AController;
+    friend class APlayerController;
+    friend class AWorldPhysics;
 };

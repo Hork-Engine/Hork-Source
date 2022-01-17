@@ -43,6 +43,5 @@ public:
 
     float Calculate(float _Time);
 
-protected:
     AAnimationPattern() {}
 };

@@ -148,10 +148,10 @@ public:
 
     bool IsShortcutsAllowed() const override { return false; }
 
-protected:
     WTextEdit();
     ~WTextEdit();
 
+protected:
     virtual bool OnFilterCharacter( SWideChar & _Char ) { return true; }
 
     void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) override;

@@ -161,8 +161,6 @@ public:
     AInputMappings();
     ~AInputMappings();
 
-    TRef< ADocObject > Serialize() override;
-
     static AInputMappings * LoadMappings( ADocObject const * pObject );
 
     // Load axes form document data

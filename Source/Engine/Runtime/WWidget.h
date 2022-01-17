@@ -384,10 +384,10 @@ public:
 
     virtual bool IsShortcutsAllowed() const { return true; }
 
-protected:
     WWidget();
     ~WWidget();
 
+protected:
     virtual void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp );
 
     virtual void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp );

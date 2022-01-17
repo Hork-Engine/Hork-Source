@@ -35,7 +35,11 @@ AN_CLASS_META( AAmbientPlayer )
 
 AAmbientPlayer::AAmbientPlayer()
 {
-    bCanEverTick = true;
+}
+
+void AAmbientPlayer::Initialize(SActorInitializer& Initializer)
+{
+    Initializer.bCanEverTick = true;
 }
 
 void AAmbientPlayer::PreInitializeComponents()

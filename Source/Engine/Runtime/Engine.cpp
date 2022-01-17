@@ -73,9 +73,9 @@ AConsoleVar rt_SwapInterval(_CTS("rt_SwapInterval"), _CTS("0"), 0, _CTS("1 - ena
 
 static int TotalAllocatedRenderCore = 0;
 
-AEngineInstance* GEngine;
+AEngine* GEngine;
 
-AEngineInstance::AEngineInstance() :
+AEngine::AEngine() :
     Rand(Core::RandomSeed())
 {
     GEngine = this;
@@ -146,7 +146,7 @@ static AGameModule* CreateGameModule(AClassMeta const* pClassMeta)
     return static_cast<AGameModule*>(pClassMeta->CreateInstance());
 }
 
-void AEngineInstance::LoadConfigFile()
+void AEngine::LoadConfigFile()
 {
     AString configFile = GetRootPath() + "config.cfg";
 
@@ -187,7 +187,7 @@ void AEngineInstance::LoadConfigFile()
     }
 }
 
-void AEngineInstance::InitializeDirectories()
+void AEngine::InitializeDirectories()
 {
     SProcessInfo const& processInfo = Platform::GetProcessInfo();
 
@@ -221,7 +221,7 @@ void AEngineInstance::InitializeDirectories()
     GLogger.Printf("Executable: %s\n", GetExecutableName());
 }
 
-void AEngineInstance::Run(SEntryDecl const& _EntryDecl)
+void AEngine::Run(SEntryDecl const& _EntryDecl)
 {
     pModuleDecl = &_EntryDecl;
 
@@ -299,8 +299,6 @@ void AEngineInstance::Run(SEntryDecl const& _EntryDecl)
     Console.ReadStoryLines();
 
     InitializeFactories();
-
-    AGarbageCollector::Initialize();
 
     // Init physics module
     b3SetCustomPrintfFunc(PhysModulePrintFunction);
@@ -410,7 +408,7 @@ void AEngineInstance::Run(SEntryDecl const& _EntryDecl)
     Desktop.Reset();
 
     AWorld::DestroyWorlds();
-    AWorld::KickoffPendingKillWorlds();
+    AWorld::KillWorlds();
 
     ASoundEmitter::ClearOneShotSounds();
 
@@ -425,7 +423,7 @@ void AEngineInstance::Run(SEntryDecl const& _EntryDecl)
 
     ResourceManager.Reset();
 
-    AGarbageCollector::Deinitialize();
+    AGarbageCollector::DeallocateObjects();
 
     ALevel::PrimitiveLinkPool.Free();
 
@@ -434,7 +432,7 @@ void AEngineInstance::Run(SEntryDecl const& _EntryDecl)
     Console.WriteStoryLines();
 }
 
-void AEngineInstance::DrawCanvas()
+void AEngine::DrawCanvas()
 {
     SVideoMode const& videoMode = Window->GetVideoMode();
 
@@ -469,7 +467,7 @@ void AEngineInstance::DrawCanvas()
     Canvas.End();
 }
 
-void AEngineInstance::ShowStats()
+void AEngine::ShowStats()
 {
     static TStaticResourceFinder<AFont> Impact18(_CTS("/Root/impact18.font"));
     AFont*                              font = Impact18.GetObject();
@@ -544,11 +542,11 @@ void AEngineInstance::ShowStats()
     }
 }
 
-void AEngineInstance::DeveloperKeys(SKeyEvent const& _Event)
+void AEngine::DeveloperKeys(SKeyEvent const& _Event)
 {
 }
 
-void AEngineInstance::OnKeyEvent(SKeyEvent const& _Event, double _TimeStamp)
+void AEngine::OnKeyEvent(SKeyEvent const& _Event, double _TimeStamp)
 {
     if (!bAllowInputEvents)
     {
@@ -599,7 +597,7 @@ void AEngineInstance::OnKeyEvent(SKeyEvent const& _Event, double _TimeStamp)
     }
 }
 
-void AEngineInstance::OnMouseButtonEvent(SMouseButtonEvent const& _Event, double _TimeStamp)
+void AEngine::OnMouseButtonEvent(SMouseButtonEvent const& _Event, double _TimeStamp)
 {
     if (!bAllowInputEvents)
     {
@@ -621,7 +619,7 @@ void AEngineInstance::OnMouseButtonEvent(SMouseButtonEvent const& _Event, double
     }
 }
 
-void AEngineInstance::OnMouseWheelEvent(SMouseWheelEvent const& _Event, double _TimeStamp)
+void AEngine::OnMouseWheelEvent(SMouseWheelEvent const& _Event, double _TimeStamp)
 {
     if (!bAllowInputEvents)
     {
@@ -644,7 +642,7 @@ void AEngineInstance::OnMouseWheelEvent(SMouseWheelEvent const& _Event, double _
     }
 }
 
-void AEngineInstance::OnMouseMoveEvent(SMouseMoveEvent const& _Event, double _TimeStamp)
+void AEngine::OnMouseMoveEvent(SMouseMoveEvent const& _Event, double _TimeStamp)
 {
     if (!bAllowInputEvents)
     {
@@ -694,7 +692,7 @@ void AEngineInstance::OnMouseMoveEvent(SMouseMoveEvent const& _Event, double _Ti
     }
 }
 
-void AEngineInstance::OnJoystickButtonEvent(SJoystickButtonEvent const& _Event, double _TimeStamp)
+void AEngine::OnJoystickButtonEvent(SJoystickButtonEvent const& _Event, double _TimeStamp)
 {
     if (!bAllowInputEvents)
     {
@@ -712,7 +710,7 @@ void AEngineInstance::OnJoystickButtonEvent(SJoystickButtonEvent const& _Event, 
     }
 }
 
-void AEngineInstance::OnJoystickAxisEvent(struct SJoystickAxisEvent const& _Event, double _TimeStamp)
+void AEngine::OnJoystickAxisEvent(SJoystickAxisEvent const& _Event, double _TimeStamp)
 {
     if (!bAllowInputEvents)
     {
@@ -725,7 +723,7 @@ void AEngineInstance::OnJoystickAxisEvent(struct SJoystickAxisEvent const& _Even
     }
 }
 
-void AEngineInstance::OnCharEvent(SCharEvent const& _Event, double _TimeStamp)
+void AEngine::OnCharEvent(SCharEvent const& _Event, double _TimeStamp)
 {
     if (!bAllowInputEvents)
     {
@@ -748,17 +746,17 @@ void AEngineInstance::OnCharEvent(SCharEvent const& _Event, double _TimeStamp)
     }
 }
 
-void AEngineInstance::OnWindowVisible(bool _Visible)
+void AEngine::OnWindowVisible(bool _Visible)
 {
     bIsWindowVisible = _Visible;
 }
 
-void AEngineInstance::OnCloseEvent()
+void AEngine::OnCloseEvent()
 {
     GameModule->OnGameClose();
 }
 
-void AEngineInstance::OnResize()
+void AEngine::OnResize()
 {
     SVideoMode const& videoMode = Window->GetVideoMode();
 
@@ -775,7 +773,7 @@ void AEngineInstance::OnResize()
     }
 }
 
-void AEngineInstance::UpdateInput()
+void AEngine::UpdateInput()
 {
     SVideoMode const& videoMode = Window->GetVideoMode();
 
@@ -807,21 +805,21 @@ void AEngineInstance::UpdateInput()
     }
 }
 
-void AEngineInstance::MapWindowCoordinate(float& InOutX, float& InOutY) const
+void AEngine::MapWindowCoordinate(float& InOutX, float& InOutY) const
 {
     SVideoMode const& videoMode = Window->GetVideoMode();
     InOutX += videoMode.X;
     InOutY += videoMode.Y;
 }
 
-void AEngineInstance::UnmapWindowCoordinate(float& InOutX, float& InOutY) const
+void AEngine::UnmapWindowCoordinate(float& InOutX, float& InOutY) const
 {
     SVideoMode const& videoMode = Window->GetVideoMode();
     InOutX -= videoMode.X;
     InOutY -= videoMode.Y;
 }
 
-void AEngineInstance::SetDesktop(WDesktop* _Desktop)
+void AEngine::SetDesktop(WDesktop* _Desktop)
 {
     if (IsSame(Desktop, _Desktop))
     {
@@ -845,23 +843,23 @@ void AEngineInstance::SetDesktop(WDesktop* _Desktop)
     }
 }
 
-void AEngineInstance::PostChangeVideoMode(SVideoMode const& _DesiredMode)
+void AEngine::PostChangeVideoMode(SVideoMode const& _DesiredMode)
 {
     DesiredMode          = _DesiredMode;
     bPostChangeVideoMode = true;
 }
 
-void AEngineInstance::PostTerminateEvent()
+void AEngine::PostTerminateEvent()
 {
     bPostTerminateEvent = true;
 }
 
-bool AEngineInstance::IsPendingTerminate()
+bool AEngine::IsPendingTerminate()
 {
     return bPostTerminateEvent;
 }
 
-void AEngineInstance::ReadScreenPixels(uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, void* _SysMem)
+void AEngine::ReadScreenPixels(uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, void* _SysMem)
 {
     RenderCore::ITexture* pBackBuffer = pSwapChain->GetBackBuffer();
 
@@ -882,23 +880,23 @@ void AEngineInstance::ReadScreenPixels(uint16_t _X, uint16_t _Y, uint16_t _Width
     }
 }
 
-AString const& AEngineInstance::GetWorkingDir()
+AString const& AEngine::GetWorkingDir()
 {
     return WorkingDir;
 }
 
-AString const& AEngineInstance::GetRootPath()
+AString const& AEngine::GetRootPath()
 {
     return RootPath;
 }
 
-const char* AEngineInstance::GetExecutableName()
+const char* AEngine::GetExecutableName()
 {
     SProcessInfo const& processInfo = Platform::GetProcessInfo();
     return processInfo.Executable ? processInfo.Executable : "";
 }
 
-RenderCore::IDevice* AEngineInstance::GetRenderDevice()
+RenderCore::IDevice* AEngine::GetRenderDevice()
 {
     return RenderDevice;
 }
@@ -955,7 +953,7 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
 
     AConsoleVar::AllocateVariables();
 
-    MakeUnique<AEngineInstance>()->Run(EntryDecl);
+    MakeUnique<AEngine>()->Run(EntryDecl);
 
     EmbeddedResourcesArch.Reset();
 

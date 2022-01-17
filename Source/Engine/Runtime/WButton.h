@@ -108,10 +108,10 @@ public:
 
     AString const & GetText() const { return Text; }
 
-protected:
     WTextButton();
     ~WTextButton();
 
+protected:
     void OnDrawEvent( ACanvas & _Canvas ) override;
 
 private:

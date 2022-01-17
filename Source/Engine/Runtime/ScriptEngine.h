@@ -33,6 +33,7 @@ SOFTWARE.
 #include <Core/String.h>
 #include <Containers/PodVector.h>
 #include <Containers/StdVector.h>
+#include <Containers/Hash.h>
 
 class AActor;
 class AWorld;
@@ -64,27 +65,32 @@ class AActorScript
 public:
     AActorScript() {}
 
-    static AActorScript* GetScript(asIScriptObject* pScriptInstance);
+    static AActorScript* GetScript(asIScriptObject* pObject);
+
+    static void SetAttributes(asIScriptObject* pObject, THashContainer<AString, AString> const& Attributes);
+    static bool SetAttribute(asIScriptObject* pObject, AStringView AttributeName, AStringView AttributeValue);    
+    static void CloneAttributes(asIScriptObject* Template, asIScriptObject* Destination);
 
     AString const& GetModule() const { return Module; }
 
-    void BeginPlay(asIScriptObject* pScriptInstance);
-    void EndPlay(asIScriptObject* pScriptInstance);
-    void Tick(asIScriptObject* pScriptInstance, float TimeStep);
-    void TickPrePhysics(asIScriptObject* pScriptInstance, float TimeStep);
-    void TickPostPhysics(asIScriptObject* pScriptInstance, float TimeStep);
-    void ApplyDamage(asIScriptObject* pScriptInstance, struct SActorDamage const& Damage);
+    void BeginPlay(asIScriptObject* pObject);
+    void Tick(asIScriptObject* pObject, float TimeStep);
+    void TickPrePhysics(asIScriptObject* pObject, float TimeStep);
+    void TickPostPhysics(asIScriptObject* pObject, float TimeStep);
+    void LateUpdate(asIScriptObject* pObject, float TimeStep);
+    void OnApplyDamage(asIScriptObject* pObject, struct SActorDamage const& Damage);
+    void DrawDebug(asIScriptObject* pObject, class ADebugRenderer* InRenderer);
 
-private:
+//private:
     AString              Module;
     asITypeInfo*         Type{};
     asIScriptFunction*   M_FactoryFunc{};
     asIScriptFunction*   M_BeginPlay{};
-    asIScriptFunction*   M_EndPlay{};
     asIScriptFunction*   M_Tick{};
     asIScriptFunction*   M_TickPrePhysics{};
     asIScriptFunction*   M_TickPostPhysics{};
-    asIScriptFunction*   M_ApplyDamage{};
+    asIScriptFunction*   M_LateUpdate{};
+    asIScriptFunction*   M_OnApplyDamage{};
     class AScriptEngine* pEngine{};
 
     friend class AScriptEngine;

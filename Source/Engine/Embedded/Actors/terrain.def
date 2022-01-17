@@ -1,0 +1,14 @@
+components
+[
+	{
+		classname "ATerrainComponent"
+		name "Terrain"
+		id "1"
+	}
+]
+root "1"
+
+// TODO
+//public_attributes
+//[	
+//]

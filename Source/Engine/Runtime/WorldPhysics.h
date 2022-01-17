@@ -134,8 +134,8 @@ struct SCollisionContact
 
     int Hash() const
     {
-        uint32_t hash = Core::PHHash64( ComponentA->Id );
-        hash = Core::PHHash64( ComponentB->Id, hash );
+        uint32_t hash = Core::MurMur3Hash64( ComponentA->Id );
+        hash = Core::MurMur3Hash64( ComponentB->Id, hash );
         return hash;
     }
 };

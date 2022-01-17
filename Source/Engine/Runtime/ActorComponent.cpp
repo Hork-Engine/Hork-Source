@@ -32,16 +32,14 @@ SOFTWARE.
 #include "Actor.h"
 #include "World.h"
 
-AN_BEGIN_CLASS_META( AActorComponent )
-AN_END_CLASS_META()
+AN_CLASS_META( AActorComponent )
 
 AActorComponent::AActorComponent()
 {
     bInitialized = false;
     bPendingKill = false;
-    bCreatedDuringConstruction = false;
     bHideInEditor = false;
-    //GUID.Generate();
+    bTicking = false;
 }
 
 AWorld * AActorComponent::GetWorld() const
@@ -62,30 +60,20 @@ bool AActorComponent::IsInEditor() const
     return OwnerActor ? OwnerActor->IsInEditor() : false;
 }
 
-//void AActorComponent::SetName( AString const & _Name )
-//{
-//    if ( !ParentActor ) {
-//        // In constructor
-//        Name = _Name;
-//        return;
-//    }
-//
-//    AString newName = _Name;
-//
-//    // Clear name for GenerateComponentUniqueName
-//    Name.Clear();
-//
-//    // Generate new name
-//    Name = ParentActor->GenerateComponentUniqueName( newName.CStr() );
-//}
-
 void AActorComponent::RegisterComponent()
 {
-    if ( bPendingKill ) {
+    if (bPendingKill)
+    {
         return;
     }
 
-    if ( IsInitialized() ) {
+    if (bInitialized)
+    {
+        return;
+    }
+
+    if (OwnerActor->IsSpawning())
+    {
         return;
     }
 
@@ -98,7 +86,8 @@ void AActorComponent::RegisterComponent()
 
 void AActorComponent::Destroy()
 {
-    if ( bPendingKill ) {
+    if (bPendingKill)
+    {
         return;
     }
 
@@ -106,21 +95,6 @@ void AActorComponent::Destroy()
     bPendingKill = true;
 
     // Add component to pending kill list
-    NextPendingKillComponent = GetWorld()->PendingKillComponents;
+    NextPendingKillComponent          = GetWorld()->PendingKillComponents;
     GetWorld()->PendingKillComponents = this;
-
-    EndPlay();
-
-    DeinitializeComponent();
-    bInitialized = false;
-}
-
-TRef< ADocObject > AActorComponent::Serialize()
-{
-    TRef< ADocObject > object = Super::Serialize();
-
-    object->AddString( "Name", GetObjectName() );
-    //object->AddString( "bCreatedDuringConstruction", bCreatedDuringConstruction ? "1" : "0" );
-
-    return object;
 }

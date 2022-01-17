@@ -90,7 +90,6 @@ public:
     /** Vertical padding */
     void SetVerticalPadding( float _Padding );
 
-protected:
     WMenuPopup();
     ~WMenuPopup();
 

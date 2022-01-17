@@ -112,10 +112,10 @@ public:
     /** Internal. Used by audio system to determine that audio data changed. */
     int GetRevision() const { return Revision; }
 
-protected:
     ASoundResource();
     ~ASoundResource();
 
+protected:
     /** Load resource from file */
     bool LoadResource( IBinaryStream & _Stream ) override;
 

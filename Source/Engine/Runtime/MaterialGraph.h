@@ -73,7 +73,6 @@ public:
     int Usages = 0;
     MGNode * GetOwner() { return Owner; }
 
-protected:
     MGOutput() {}
     ~MGOutput() {}
 
@@ -87,6 +86,9 @@ class MGInput : public ABaseObject {
     MG_CLASS( MGInput, ABaseObject )
 
 public:
+    MGInput();
+    ~MGInput();
+
     void Connect( MGNode * pNode, const char * SlotName ); // deprecated
     void Connect( MGOutput * pSlot );
 
@@ -96,13 +98,8 @@ public:
 
     MGNode * ConnectedNode() { return Slot ? Slot->GetOwner() : nullptr; }
 
-    TRef< ADocObject > Serialize() override;
-
 protected:
     TRef< MGOutput > Slot;
-
-    MGInput();
-    ~MGInput();
 };
 
 class MGNode : public ABaseObject {
@@ -122,12 +119,10 @@ public:
     void ResetConnections( AMaterialBuildContext const & _Context );
     void TouchConnections( AMaterialBuildContext const & _Context );
 
-    TRef< ADocObject > Serialize() override;
-
-protected:
     MGNode( const char * _Name = "Node" );
     ~MGNode();
 
+protected:
     MGInput * AddInput( const char * _Name );
 
     MGOutput * AddOutput( const char * _Name, EMGNodeType _Type = AT_Unknown );
@@ -151,6 +146,8 @@ public:
     MGInput * Value;
     MGOutput * Result;
 
+    MGArithmeticFunction1();
+
 protected:
     enum EArithmeticFunction {
         Saturate,
@@ -161,8 +158,7 @@ protected:
         Normalize
     };
 
-    MGArithmeticFunction1();
-    MGArithmeticFunction1( EArithmeticFunction _Function, const char * _Name = "ArithmeticFunction1" );
+    MGArithmeticFunction1(EArithmeticFunction _Function, const char* _Name = "ArithmeticFunction1");
 
     void Compute( AMaterialBuildContext & _Context ) override;
 
@@ -177,6 +173,8 @@ public:
     MGInput * ValueB;
     MGOutput * Result;
 
+    MGArithmeticFunction2();
+
 protected:
     enum EArithmeticFunction {
         Add,
@@ -190,8 +188,7 @@ protected:
         Max
     };
 
-    MGArithmeticFunction2();
-    MGArithmeticFunction2( EArithmeticFunction _Function, const char * _Name = "ArithmeticFunction2" );
+    MGArithmeticFunction2(EArithmeticFunction _Function, const char* _Name = "ArithmeticFunction2");
 
     void Compute( AMaterialBuildContext & _Context ) override;
 
@@ -207,15 +204,17 @@ public:
     MGInput * ValueC;
     MGOutput * Result;
 
-protected:
-    enum EArithmeticFunction {
+    enum EArithmeticFunction
+    {
         Mad,
         Lerp,
         Clamp
     };
 
     MGArithmeticFunction3();
-    MGArithmeticFunction3( EArithmeticFunction _Function, const char * _Name = "ArithmeticFunction3" );
+
+protected:
+    MGArithmeticFunction3(EArithmeticFunction _Function, const char* _Name = "ArithmeticFunction3");
 
     void Compute( AMaterialBuildContext & _Context ) override;
 
@@ -225,126 +224,126 @@ protected:
 class MGSaturate : public MGArithmeticFunction1 {
     MG_CLASS( MGSaturate, MGArithmeticFunction1 )
 
-protected:
+public:
     MGSaturate() : Super( Saturate, "Saturate" ) {}
 };
 
 class MGSinusNode : public MGArithmeticFunction1 {
     MG_CLASS( MGSinusNode, MGArithmeticFunction1 )
 
-protected:
+public:
     MGSinusNode() : Super( Sin, "Sin" ) {}
 };
 
 class MGCosinusNode : public MGArithmeticFunction1 {
     MG_CLASS( MGCosinusNode, MGArithmeticFunction1 )
 
-protected:
+public:
     MGCosinusNode() : Super( Cos, "Cos" ) {}
 };
 
 class MGFractNode : public MGArithmeticFunction1 {
     MG_CLASS( MGFractNode, MGArithmeticFunction1 )
 
-protected:
+public:
     MGFractNode() : Super( Fract, "Fract" ) {}
 };
 
 class MGNegateNode : public MGArithmeticFunction1 {
     MG_CLASS( MGNegateNode, MGArithmeticFunction1 )
 
-protected:
+public:
     MGNegateNode() : Super( Negate, "Negate" ) {}
 };
 
 class MGNormalizeNode : public MGArithmeticFunction1 {
     MG_CLASS( MGNormalizeNode, MGArithmeticFunction1 )
 
-protected:
+public:
     MGNormalizeNode() : Super( Normalize, "Normalize" ) {}
 };
 
 class MGMulNode : public MGArithmeticFunction2 {
     MG_CLASS( MGMulNode, MGArithmeticFunction2 )
 
-protected:
+public:
     MGMulNode() : Super( Mul, "Mul A * B" ) {}
 };
 
 class MGDivNode : public MGArithmeticFunction2 {
     MG_CLASS( MGDivNode, MGArithmeticFunction2 )
 
-protected:
+public:
     MGDivNode() : Super( Div, "Div A / B" ) {}
 };
 
 class MGAddNode : public MGArithmeticFunction2 {
     MG_CLASS( MGAddNode, MGArithmeticFunction2 )
 
-protected:
+public:
     MGAddNode() : Super( Add, "Add A + B" ) {}
 };
 
 class MGSubNode : public MGArithmeticFunction2 {
     MG_CLASS( MGSubNode, MGArithmeticFunction2 )
 
-protected:
+public:
     MGSubNode() : Super( Sub, "Sub A - B" ) {}
 };
 
 class MGMADNode : public MGArithmeticFunction3 {
     MG_CLASS( MGMADNode, MGArithmeticFunction3 )
 
-protected:
+public:
     MGMADNode() : Super( Mad, "MAD A * B + C" ) {}
 };
 
 class MGStepNode : public MGArithmeticFunction2 {
     MG_CLASS( MGStepNode, MGArithmeticFunction2 )
 
-protected:
+public:
     MGStepNode() : Super( Step, "Step( A, B )" ) {}
 };
 
 class MGPowNode : public MGArithmeticFunction2 {
     MG_CLASS( MGPowNode, MGArithmeticFunction2 )
 
-protected:
+public:
     MGPowNode() : Super( Pow, "Pow A^B" ) {}
 };
 
 class MGModNode : public MGArithmeticFunction2 {
     MG_CLASS( MGModNode, MGArithmeticFunction2 )
 
-protected:
+public:
     MGModNode() : Super( Mod, "Mod (A,B)" ) {}
 };
 
 class MGMin : public MGArithmeticFunction2 {
     MG_CLASS( MGMin, MGArithmeticFunction2 )
 
-protected:
+public:
     MGMin() : Super( Min, "Min" ) {}
 };
 
 class MGMax : public MGArithmeticFunction2 {
     MG_CLASS( MGMax, MGArithmeticFunction2 )
 
-protected:
+public:
     MGMax() : Super( Max, "Max" ) {}
 };
 
 class MGLerpNode : public MGArithmeticFunction3 {
     MG_CLASS( MGLerpNode, MGArithmeticFunction3 )
 
-protected:
+public:
     MGLerpNode() : Super( Lerp, "Lerp( A, B, C )" ) {}
 };
 
 class MGClamp : public MGArithmeticFunction3 {
     MG_CLASS( MGClamp, MGArithmeticFunction3 )
 
-protected:
+public:
     MGClamp() : Super( Clamp, "Clamp" ) {}
 };
 
@@ -355,9 +354,9 @@ public:
     MGInput * Value;
     MGOutput * Result;
 
-protected:
     MGLengthNode();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -371,9 +370,9 @@ public:
     MGOutput * Z;
     MGOutput * W;
 
-protected:
     MGDecomposeVectorNode();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -387,9 +386,9 @@ public:
     MGInput * W;
     MGOutput * Result;
 
-protected:
     MGMakeVectorNode();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -400,9 +399,9 @@ public:
     MGInput * Dir;
     MGOutput * TexCoord;
 
-protected:
     MGSpheremapCoord();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -413,9 +412,9 @@ public:
     MGInput * LinearColor;
     MGOutput * Luminance;
 
-protected:
     MGLuminance();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -425,9 +424,9 @@ class MGPINode : public MGNode {
 public:
     MGOutput * OutValue;
 
-protected:
     MGPINode();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -437,9 +436,9 @@ class MG2PINode : public MGNode {
 public:
     MGOutput * OutValue;
 
-protected:
     MG2PINode();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -450,9 +449,9 @@ public:
     MGOutput * OutValue;
     bool bValue;
 
-protected:
     MGBooleanNode();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -463,9 +462,9 @@ public:
     MGOutput * OutValue;
     Bool2 bValue;
 
-protected:
     MGBoolean2Node();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -476,9 +475,9 @@ public:
     MGOutput * OutValue;
     Bool3 bValue;
 
-protected:
     MGBoolean3Node();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -489,9 +488,9 @@ public:
     MGOutput * OutValue;
     Bool4 bValue;
 
-protected:
     MGBoolean4Node();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -502,9 +501,9 @@ public:
     MGOutput * OutValue;
     float Value;
 
-protected:
     MGFloatNode();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -515,9 +514,9 @@ public:
     MGOutput * OutValue;
     Float2 Value;
 
-protected:
     MGFloat2Node();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -528,9 +527,9 @@ public:
     MGOutput * OutValue;
     Float3 Value;
 
-protected:
     MGFloat3Node();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -541,9 +540,9 @@ public:
     MGOutput * OutValue;
     Float4 Value;
 
-protected:
     MGFloat4Node();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -559,9 +558,9 @@ public:
 
     int GetSlotIndex() const { return SlotIndex; }
 
-protected:
     MGTextureSlot();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 
 private:
@@ -579,9 +578,9 @@ public:
     EMGNodeType Type;
     int Address;
 
-protected:
     MGUniformAddress();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -601,9 +600,9 @@ public:
     bool bSwappedToBGR = false;
     ETextureColorSpace ColorSpace = TEXTURE_COLORSPACE_RGBA;
 
-protected:
     MGSampler();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -620,9 +619,9 @@ public:
 
     ENormalMapCompression Compression = NM_XYZ;
 
-protected:
     MGNormalSampler();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -637,9 +636,9 @@ public:
     //MGInput * SelfShadowing;
     MGOutput * Result;
 
-protected:
     MGParallaxMapSampler();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -658,9 +657,9 @@ public:
     bool bSwappedToBGR = false;
     ETextureColorSpace ColorSpace = TEXTURE_COLORSPACE_RGBA;
 
-protected:
     MGSamplerVT();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -676,9 +675,9 @@ public:
 
     ENormalMapCompression Compression = NM_XYZ;
 
-protected:
     MGNormalSamplerVT();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -687,9 +686,9 @@ class MGInFragmentCoord : public MGNode {
 
 public:
 
-protected:
     MGInFragmentCoord();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -700,9 +699,9 @@ class MGInPosition : public MGNode {
 public:
     MGOutput * Value;
 
-protected:
     MGInPosition();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -712,9 +711,9 @@ class MGInNormal : public MGNode {
 public:
     MGOutput * Value;
 
-protected:
     MGInNormal();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -736,9 +735,9 @@ class MGInTexCoord : public MGNode {
 public:
     MGOutput * Value;
 
-protected:
     MGInTexCoord();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -749,9 +748,9 @@ public:
     MGOutput * GameRunningTimeSeconds;
     MGOutput * GameplayTimeSeconds;
 
-protected:
     MGInTimer();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -760,9 +759,9 @@ class MGInViewPosition : public MGNode {
 
 public:
 
-protected:
     MGInViewPosition();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -776,9 +775,9 @@ public:
     MGInput * False;
     MGOutput * Result;
 
-protected:
     MGCondLess();
 
+protected:
     void Compute( AMaterialBuildContext & _Context ) override;
 };
 
@@ -791,10 +790,10 @@ public:
     MGInput * Dir;
     MGOutput * Result;
 
-protected:
     MGAtmosphereNode();
 
-    void Compute( AMaterialBuildContext & _Context ) override;
+protected:
+    void Compute(AMaterialBuildContext& _Context) override;
 };
 
 enum EParallaxTechnique
@@ -885,8 +884,6 @@ public:
         return static_cast< T * >( node );
     }
 
-    TRef< ADocObject > Serialize() override;
-
     void RegisterTextureSlot( MGTextureSlot * _Slot );
 
     TPodVector< MGTextureSlot * > const & GetTextureSlots() const { return TextureSlots; }
@@ -900,13 +897,13 @@ public:
                                  AMaterialBuildContext const * GeometryStage,
                                  AMaterialBuildContext const * FragmentStage );
 
+    MGMaterialGraph();
+    ~MGMaterialGraph();
+
 protected:
     TPodVector< MGNode * > Nodes;
     TPodVector< MGTextureSlot * > TextureSlots;
     uint32_t NodeIdGen;
-
-    MGMaterialGraph();
-    ~MGMaterialGraph();
 
     void Compute( AMaterialBuildContext & _Context ) override;
 

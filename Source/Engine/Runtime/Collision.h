@@ -40,30 +40,30 @@ SOFTWARE.
 
 enum ECollisionMask
 {
-    CM_NOCOLLISION   = 0,
-    CM_WORLD_STATIC  = 1,
-    CM_WORLD_DYNAMIC = 2,
-    CM_WORLD         = CM_WORLD_STATIC | CM_WORLD_DYNAMIC,
-    CM_PAWN          = 4,
-    CM_PROJECTILE    = 8,
-    CM_TRIGGER       = 16,
+    CM_NOCOLLISION          = 0,
+    CM_WORLD_STATIC         = 1,
+    CM_WORLD_DYNAMIC        = 2,
+    CM_WORLD                = CM_WORLD_STATIC | CM_WORLD_DYNAMIC,
+    CM_PAWN                 = 4,
+    CM_PROJECTILE           = 8,
+    CM_TRIGGER              = 16,
     CM_CHARACTER_CONTROLLER = 32,
-    CM_WATER         = 64,
-    CM_UNUSED7       = 128,
-    CM_UNUSED8       = 256,
-    CM_UNUSED9       = 512,
-    CM_UNUSED10      = 1024,
-    CM_UNUSED11      = 1024,
-    CM_UNUSED12      = 2048,
-    CM_UNUSED13      = 4096,
-    CM_UNUSED14      = 8192,
-    CM_UNUSED15      = 16384,
-    CM_ALL           = 0xffffffff
+    CM_WATER                = 64,
+    CM_UNUSED7              = 128,
+    CM_UNUSED8              = 256,
+    CM_UNUSED9              = 512,
+    CM_UNUSED10             = 1024,
+    CM_UNUSED11             = 1024,
+    CM_UNUSED12             = 2048,
+    CM_UNUSED13             = 4096,
+    CM_UNUSED14             = 8192,
+    CM_UNUSED15             = 16384,
+    CM_ALL                  = 0xffffffff
 };
 
 class AHitProxy : public ABaseObject
 {
-    AN_CLASS( AHitProxy, ABaseObject )
+    AN_CLASS(AHitProxy, ABaseObject)
 
     friend class AWorldPhysics;
 
@@ -85,67 +85,65 @@ public:
     /** Generate contact points for contact events. Use with bDispatchContactEvents. */
     bool bGenerateContactPoints = false;
 
-    void Initialize( ASceneComponent * _OwnerComponent, class btCollisionObject * _CollisionObject );
+    void Initialize(ASceneComponent* _OwnerComponent, class btCollisionObject* _CollisionObject);
     void Deinitialize();
 
-    ASceneComponent * GetOwnerComponent() const { return OwnerComponent; }
+    ASceneComponent* GetOwnerComponent() const { return OwnerComponent; }
 
-    AActor * GetOwnerActor() const { return OwnerComponent->GetOwnerActor(); }
+    AActor* GetOwnerActor() const { return OwnerComponent->GetOwnerActor(); }
 
-    AWorld * GetWorld() const { return OwnerComponent->GetWorld(); }
+    AWorld* GetWorld() const { return OwnerComponent->GetWorld(); }
 
     /** Set collision group/layer. See ECollisionMask. */
-    void SetCollisionGroup( int _CollisionGroup );
+    void SetCollisionGroup(int _CollisionGroup);
 
     /** Get collision group. See ECollisionMask. */
     int GetCollisionGroup() const { return CollisionGroup; }
 
     /** Set collision mask. See ECollisionMask. */
-    void SetCollisionMask( int _CollisionMask );
+    void SetCollisionMask(int _CollisionMask);
 
     /** Get collision mask. See ECollisionMask. */
     int GetCollisionMask() const { return CollisionMask; }
 
     /** Set collision group and mask. See ECollisionMask. */
-    void SetCollisionFilter( int _CollisionGroup, int _CollisionMask );
+    void SetCollisionFilter(int _CollisionGroup, int _CollisionMask);
 
     /** Set actor to ignore collisions with this component */
-    void AddCollisionIgnoreActor( AActor * _Actor );
+    void AddCollisionIgnoreActor(AActor* _Actor);
 
     /** Unset actor to ignore collisions with this component */
-    void RemoveCollisionIgnoreActor( AActor * _Actor );
+    void RemoveCollisionIgnoreActor(AActor* _Actor);
 
-    void SetTrigger( bool _Trigger ) { bTrigger = _Trigger; }
+    void SetTrigger(bool _Trigger) { bTrigger = _Trigger; }
 
     bool IsTrigger() const { return bTrigger; }
 
-    void SetJointIndex( int _JointIndex ) { JointIndex = _JointIndex; }
+    void SetJointIndex(int _JointIndex) { JointIndex = _JointIndex; }
 
     int GetJointIndex() const { return JointIndex; }
 
-    TPodVector< AActor *, 1 > const & GetCollisionIgnoreActors() const { return CollisionIgnoreActors; }
+    TPodVector<AActor*, 1> const& GetCollisionIgnoreActors() const { return CollisionIgnoreActors; }
 
-    void CollisionContactQuery( TPodVector< AHitProxy * > & _Result ) const;
+    void CollisionContactQuery(TPodVector<AHitProxy*>& _Result) const;
 
-    void CollisionContactQueryActor( TPodVector< AActor * > & _Result ) const;
+    void CollisionContactQueryActor(TPodVector<AActor*>& _Result) const;
 
-    class btCollisionObject * GetCollisionObject() const { return CollisionObject; }
+    class btCollisionObject* GetCollisionObject() const { return CollisionObject; }
 
-    void DrawCollisionShape( ADebugRenderer * InRenderer );
+    void DrawCollisionShape(ADebugRenderer* InRenderer);
 
     void UpdateBroadphase();
 
-protected:
     AHitProxy();
-
     ~AHitProxy();
 
 private:
-    ASceneComponent * OwnerComponent = nullptr;
-    btCollisionObject * CollisionObject = nullptr;
+    ASceneComponent*   OwnerComponent  = nullptr;
+    btCollisionObject* CollisionObject = nullptr;
 
     int CollisionGroup = CM_WORLD_STATIC;
-    int CollisionMask = CM_ALL;
+    int CollisionMask  = CM_ALL;
 
     int JointIndex = 0;
 
@@ -153,8 +151,8 @@ private:
 
     bool bInWorld = false;
 
-    TPodVector< AActor *, 1 > CollisionIgnoreActors;
+    TPodVector<AActor*, 1> CollisionIgnoreActors;
 
-    AHitProxy * NextMarked = nullptr;
-    AHitProxy * PrevMarked = nullptr;
+    AHitProxy* NextMarked = nullptr;
+    AHitProxy* PrevMarked = nullptr;
 };

@@ -33,7 +33,6 @@ SOFTWARE.
 #include "Actor.h"
 #include "FontAtlas.h"
 
-class APawn;
 class APlayerController;
 class ACanvas;
 
@@ -52,7 +51,7 @@ public:
     int GetViewportW() const { return ViewportW; }
     int GetViewportH() const { return ViewportH; }
 
-    APawn * GetOwnerPawn() const { return OwnerPawn; }
+    AActor * GetOwnerPawn() const { return OwnerPawn; }
 
 protected:
     AHUD();
@@ -68,5 +67,5 @@ protected:
 
 private:
     APlayerController * OwnerPlayer = nullptr;
-    APawn * OwnerPawn = nullptr;
+    AActor*            OwnerPawn   = nullptr;
 };

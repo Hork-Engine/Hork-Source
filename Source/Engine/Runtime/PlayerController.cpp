@@ -52,9 +52,8 @@ APlayerController::APlayerController() {
     }
 }
 
-void APlayerController::EndPlay() {
-    Super::EndPlay();
-
+APlayerController::~APlayerController()
+{
     if ( CurrentAudioListener == this ) {
         CurrentAudioListener = nullptr;
     }
@@ -70,7 +69,7 @@ void APlayerController::OnPawnChanged()
     InputComponent->BindAction( "ToggleDebugDraw", IA_PRESS, this, &APlayerController::ToggleDebugDraw, true );
 
     if ( Pawn ) {
-        Pawn->SetupPlayerInputComponent( InputComponent );
+        Pawn->SetupInputComponent( InputComponent );
         Pawn->SetupRuntimeCommands();
     }
 

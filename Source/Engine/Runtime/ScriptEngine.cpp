@@ -2408,8 +2408,8 @@ AScriptEngine::AScriptEngine(AWorld* pWorld) :
     r = pEngine->RegisterObjectType("SActorDamage", sizeof(SActorDamage), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<Float3>());
     assert(r >= 0);
 
-    r = pEngine->RegisterObjectProperty("AActor", "bool bTickEvenWhenPaused", offsetof(AActor, bTickEvenWhenPaused));
-    assert(r >= 0);
+    //r = pEngine->RegisterObjectProperty("AActor", "bool bTickEvenWhenPaused", offsetof(AActor, bTickEvenWhenPaused));
+    //assert(r >= 0);
 
     r = pEngine->RegisterObjectMethod("AActor", "void Destroy()", asMETHOD(AActor, Destroy), asCALL_THISCALL);
     assert(r >= 0);
@@ -2499,7 +2499,7 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
 {
     int r;
 
-    for (auto& pScript : Scripts)
+    for (auto& pScript : Scripts) // TODO: hash
     {
         if (pScript->Module == ModuleName)
             return pScript.get();
@@ -2576,11 +2576,11 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
     }
 
     pScript->M_BeginPlay       = type->GetMethodByDecl("void BeginPlay()");
-    pScript->M_EndPlay         = type->GetMethodByDecl("void EndPlay()");
     pScript->M_Tick            = type->GetMethodByDecl("void Tick(float TimeStep)");
     pScript->M_TickPrePhysics  = type->GetMethodByDecl("void TickPrePhysics(float TimeStep)");
     pScript->M_TickPostPhysics = type->GetMethodByDecl("void TickPostPhysics(float TimeStep)");
-    pScript->M_ApplyDamage     = type->GetMethodByDecl("void ApplyDamage(const SActorDamage& in Damage)");
+    pScript->M_LateUpdate      = type->GetMethodByDecl("void LateUpdate(float TimeStep)");    
+    pScript->M_OnApplyDamage   = type->GetMethodByDecl("void OnApplyDamage(const SActorDamage& in Damage)");
 
     pScript->pEngine = this;
 
@@ -2651,65 +2651,87 @@ void AScriptContextPool::UnprepareContext(asIScriptContext* pContext)
     Contexts.Append(pContext);
 }
 
-AActorScript* AActorScript::GetScript(asIScriptObject* pScriptInstance)
+AActorScript* AActorScript::GetScript(asIScriptObject* pObject)
 {
-    return reinterpret_cast<AActorScript*>(pScriptInstance->GetObjectType()->GetUserData());
+    return reinterpret_cast<AActorScript*>(pObject->GetObjectType()->GetUserData());
 }
 
-void AActorScript::BeginPlay(asIScriptObject* pScriptInstance)
+void AActorScript::SetAttributes(asIScriptObject* pObject, THashContainer<AString, AString> const& Attributes)
+{
+    // TODO
+}
+
+bool AActorScript::SetAttribute(asIScriptObject* pObject, AStringView AttributeName, AStringView AttributeValue)
+{
+    // TODO
+    return false;
+}
+
+void AActorScript::CloneAttributes(asIScriptObject* Template, asIScriptObject* Destination)
+{
+    // TODO
+}
+
+void AActorScript::BeginPlay(asIScriptObject* pObject)
 {
     if (M_BeginPlay)
     {
-        SScopedContext ctx(pEngine, pScriptInstance, M_BeginPlay);
+        SScopedContext ctx(pEngine, pObject, M_BeginPlay);
         ctx.ExecuteCall();
     }
 }
 
-void AActorScript::EndPlay(asIScriptObject* pScriptInstance)
-{
-    if (M_EndPlay)
-    {
-        SScopedContext ctx(pEngine, pScriptInstance, M_EndPlay);
-        ctx.ExecuteCall();
-    }
-}
-
-void AActorScript::Tick(asIScriptObject* pScriptInstance, float TimeStep)
+void AActorScript::Tick(asIScriptObject* pObject, float TimeStep)
 {
     if (M_Tick)
     {
-        SScopedContext ctx(pEngine, pScriptInstance, M_Tick);
+        SScopedContext ctx(pEngine, pObject, M_Tick);
         ctx->SetArgFloat(0, TimeStep);
         ctx.ExecuteCall();
     }
 }
 
-void AActorScript::TickPrePhysics(asIScriptObject* pScriptInstance, float TimeStep)
+void AActorScript::TickPrePhysics(asIScriptObject* pObject, float TimeStep)
 {
     if (M_TickPrePhysics)
     {
-        SScopedContext ctx(pEngine, pScriptInstance, M_TickPrePhysics);
+        SScopedContext ctx(pEngine, pObject, M_TickPrePhysics);
         ctx->SetArgFloat(0, TimeStep);
         ctx.ExecuteCall();
     }
 }
 
-void AActorScript::TickPostPhysics(asIScriptObject* pScriptInstance, float TimeStep)
+void AActorScript::TickPostPhysics(asIScriptObject* pObject, float TimeStep)
 {
     if (M_TickPostPhysics)
     {
-        SScopedContext ctx(pEngine, pScriptInstance, M_TickPostPhysics);
+        SScopedContext ctx(pEngine, pObject, M_TickPostPhysics);
         ctx->SetArgFloat(0, TimeStep);
         ctx.ExecuteCall();
     }
 }
 
-void AActorScript::ApplyDamage(asIScriptObject* pScriptInstance, SActorDamage const& Damage)
+void AActorScript::LateUpdate(asIScriptObject* pObject, float TimeStep)
 {
-    if (M_ApplyDamage)
+    if (M_LateUpdate)
     {
-        SScopedContext ctx(pEngine, pScriptInstance, M_ApplyDamage);
+        SScopedContext ctx(pEngine, pObject, M_LateUpdate);
+        ctx->SetArgFloat(0, TimeStep);
+        ctx.ExecuteCall();
+    }
+}
+
+void AActorScript::OnApplyDamage(asIScriptObject* pObject, SActorDamage const& Damage)
+{
+    if (M_OnApplyDamage)
+    {
+        SScopedContext ctx(pEngine, pObject, M_OnApplyDamage);
         ctx->SetArgObject(0, (void *)&Damage);
         ctx.ExecuteCall();
     }
+}
+
+void AActorScript::DrawDebug(asIScriptObject* pObject, ADebugRenderer* InRenderer)
+{
+    // TODO
 }

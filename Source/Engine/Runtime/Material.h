@@ -70,7 +70,6 @@ public:
 
     static void RebuildMaterials();
 
-protected:
     AMaterial();
     ~AMaterial();
 
@@ -152,10 +151,10 @@ public:
     /** Internal. Used by render frontend */
     SMaterialFrameData* PreRenderUpdate(class AFrameLoop* FrameLoop, int _FrameNumber);
 
-protected:
     AMaterialInstance();
     ~AMaterialInstance() {}
 
+protected:
     /** Load resource from file */
     bool LoadResource( IBinaryStream & _Stream ) override;
 

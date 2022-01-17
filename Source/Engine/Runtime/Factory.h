@@ -130,7 +130,7 @@ public:
     }
 
     // Utilites
-    AAttributeMeta const* FindAttribute(const char* _Name, bool _Recursive) const;
+    AAttributeMeta const* FindAttribute(AStringView _Name, bool _Recursive) const;
     void                  GetAttributes(TPodVector<AAttributeMeta const*>& _Attributes, bool _Recursive = true) const;
 
 protected:
@@ -361,8 +361,8 @@ class TAttributeMeta : public AAttributeMeta
     AN_FORBID_COPY(TAttributeMeta)
 
 public:
-    template <typename AttributeSetterType>
-    TAttributeMeta(AClassMeta const& _ClassMeta, const char* _Name, void (ObjectType::*_Setter)(AttributeSetterType), AttributeSetterType (ObjectType::*_Getter)() const, int _Flags) :
+    template <typename AttributeSetterType, typename AttributeGetterType>
+    TAttributeMeta(AClassMeta const& _ClassMeta, const char* _Name, void (ObjectType::*_Setter)(AttributeSetterType), AttributeGetterType (ObjectType::*_Getter)() const, int _Flags) :
         AAttributeMeta(_ClassMeta, _Name, _Flags)
     {
         FromString = [_Setter](ADummy* _Object, AString const& _Value)
@@ -446,37 +446,38 @@ public:                                               \
     }
 
 
-template <typename T>
-using EnableIfDerivedFromDummy = typename std::enable_if<std::is_base_of<class ADummy, T>::value, T>::type;
-
-template <typename T, EnableIfDerivedFromDummy<T>* = nullptr> class TObjectCreator
-{
-public:
-    template <typename... TArgs>
-    static T* CreateInstance(TArgs&&... _Args)
-    {
-        return new FinalClass(std::forward<TArgs>(_Args)...);
-    }
-
-private:
-    class FinalClass : private T
-    {
-        template <typename... TArgs>
-        FinalClass(TArgs&&... _Args) :
-            T(std::forward<TArgs>(_Args)...)
-        {
-        }
-        ~FinalClass()
-        {
-        }
-        virtual void FactoryImpl(typename T::SFactoryImplKey&&) override {}
-        friend class TObjectCreator;
-    };
-};
+//template <typename T>
+//using EnableIfDerivedFromDummy = typename std::enable_if<std::is_base_of<class ADummy, T>::value, T>::type;
+//
+//template <typename T, EnableIfDerivedFromDummy<T>* = nullptr> class TObjectCreator
+//{
+//public:
+//    template <typename... TArgs>
+//    static T* CreateInstance(TArgs&&... _Args)
+//    {
+//        return new FinalClass(std::forward<TArgs>(_Args)...);
+//    }
+//
+//private:
+//    class FinalClass : private T
+//    {
+//        template <typename... TArgs>
+//        FinalClass(TArgs&&... _Args) :
+//            T(std::forward<TArgs>(_Args)...)
+//        {
+//        }
+//        ~FinalClass()
+//        {
+//        }
+//        virtual void FactoryImpl(typename T::SFactoryImplKey&&) override {}
+//        friend class TObjectCreator;
+//    };
+//};
 
 template <typename T, typename... TArgs> T* CreateInstanceOf(TArgs&&... _Args)
 {
-    return TObjectCreator<T>::CreateInstance(std::forward<TArgs>(_Args)...);
+    //return TObjectCreator<T>::CreateInstance(std::forward<TArgs>(_Args)...);
+    return new T(std::forward<TArgs>(_Args)...);
 }
 
 #define AN_CLASS(_Class, _SuperClass) \
@@ -502,7 +503,7 @@ public:                                                                         
         }                                                                                 \
         ADummy* CreateInstance() const override                                           \
         {                                                                                 \
-            return CreateInstanceOf<ThisClass>();                                         \
+            return new ThisClass;                                                         \
         }                                                                                 \
                                                                                           \
     private:                                                                              \
@@ -573,9 +574,9 @@ public:
     _AN_GENERATED_CLASS_BODY()
 
 private:
-    struct SFactoryImplKey;
-    virtual void FactoryImpl(SFactoryImplKey&&) = 0;
-    template <typename T, EnableIfDerivedFromDummy<T>*> friend class TObjectCreator; // Allow TObjectCreator to access to SFactoryImplKey
+    //struct SFactoryImplKey;
+    //virtual void FactoryImpl(SFactoryImplKey&&) = 0;
+    //template <typename T, EnableIfDerivedFromDummy<T>*> friend class TObjectCreator; // Allow TObjectCreator to access to SFactoryImplKey
 };
 
 template <typename T>

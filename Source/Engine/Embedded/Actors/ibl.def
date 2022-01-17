@@ -1,0 +1,13 @@
+components
+[
+	{
+		classname "AIBLComponent"
+		name "IBL"
+		id "1"
+	}
+]
+root "1"
+// TODO:
+//public_attributes
+//[
+//]
