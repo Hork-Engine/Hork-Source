@@ -38,11 +38,7 @@ class AActor;
 class ADebugRenderer;
 
 #define AN_COMPONENT( _Class, _SuperClass ) \
-    AN_FACTORY_CLASS( AActorComponent::Factory(), _Class, _SuperClass ) \
-protected: \
-    ~_Class() {} \
-private:
-
+    AN_FACTORY_CLASS( AActorComponent::Factory(), _Class, _SuperClass )
 
 /**
 
