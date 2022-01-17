@@ -36,9 +36,6 @@ SOFTWARE.
 #include <Runtime/WDesktop.h>
 #include <Runtime/Engine.h>
 
-#include <Platform/Platform.h>
-#include <Runtime/PointLightComponent.h>
-
 class APlayer : public AActor
 {
     AN_ACTOR(APlayer, AActor)
@@ -130,7 +127,7 @@ protected:
     }
 };
 
-class AModule : public AGameModule
+class AModule final : public AGameModule
 {
     AN_CLASS(AModule, AGameModule)
 
@@ -267,12 +264,41 @@ public:
             graph->Roughness->Connect(roughness->OutValue);
 
             AMaterial* material = CreateMaterial(graph);
-            RegisterResource(material, "ExampleMaterial");
+            RegisterResource(material, "ExampleMaterial1");
+        }
+        {
+            MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+
+            graph->MaterialType                 = MATERIAL_TYPE_PBR;
+            graph->bAllowScreenSpaceReflections = true; //false;
+
+            MGTextureSlot* diffuseTexture      = graph->AddNode<MGTextureSlot>();
+            diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
+            graph->RegisterTextureSlot(diffuseTexture);
+
+            MGInTexCoord* texCoord = graph->AddNode<MGInTexCoord>();
+
+            MGSampler* diffuseSampler = graph->AddNode<MGSampler>();
+            diffuseSampler->TexCoord->Connect(texCoord, "Value");
+            diffuseSampler->TextureSlot->Connect(diffuseTexture, "Value");
+
+            MGFloatNode* metallic = graph->AddNode<MGFloatNode>();
+            metallic->Value       = 0.0f;
+
+            MGFloatNode* roughness = graph->AddNode<MGFloatNode>();
+            roughness->Value       = 0.1f; //1;
+
+            graph->Color->Connect(diffuseSampler->RGBA);
+            graph->Metallic->Connect(metallic->OutValue);
+            graph->Roughness->Connect(roughness->OutValue);
+
+            AMaterial* material = CreateMaterial(graph);
+            RegisterResource(material, "ExampleMaterial2");
         }
 
         // Create material instance for ground
         {
-            static TStaticResourceFinder<AMaterial> ExampleMaterial(_CTS("ExampleMaterial"));
+            static TStaticResourceFinder<AMaterial> ExampleMaterial(_CTS("ExampleMaterial1"));
             static TStaticResourceFinder<ATexture>  ExampleTexture(_CTS("/Common/blank256.png"));
 
             AMaterialInstance* ExampleMaterialInstance = CreateInstanceOf<AMaterialInstance>();
@@ -283,7 +309,7 @@ public:
 
         // Create material instance for character
         {
-            static TStaticResourceFinder<AMaterial> ExampleMaterial(_CTS("ExampleMaterial"));
+            static TStaticResourceFinder<AMaterial> ExampleMaterial(_CTS("ExampleMaterial2"));
             static TStaticResourceFinder<ATexture>  CharacterTexture(_CTS("/Common/blank512.png"));
 
             AMaterialInstance* CharacterMaterialInstance = CreateInstanceOf<AMaterialInstance>();
