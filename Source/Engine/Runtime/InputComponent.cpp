@@ -371,13 +371,13 @@ AInputComponent* AInputComponent::InputComponentsTail = nullptr;
 
 static bool ValidateDeviceKey(SInputDeviceKey const& DeviceKey)
 {
-    if (DeviceKey.DeviceId < 0 || DeviceKey.DeviceId >= MAX_INPUT_DEVICES)
+    if (DeviceKey.DeviceId >= MAX_INPUT_DEVICES)
     {
         GLogger.Printf("ValidateDeviceKey: invalid device ID\n");
         return false;
     }
 
-    if (DeviceKey.KeyId < 0 || DeviceKey.KeyId >= Static.DeviceButtonLimits[DeviceKey.DeviceId])
+    if (DeviceKey.KeyId >= Static.DeviceButtonLimits[DeviceKey.DeviceId])
     {
         GLogger.Printf("ValidateDeviceKey: invalid key ID\n");
         return false;
@@ -579,22 +579,6 @@ AInputMappings* AInputComponent::GetInputMappings() const
     return InputMappings;
 }
 
-struct SBooleanLock
-{
-    SBooleanLock(bool& bValue) :
-        bValue(bValue)
-    {
-        bValue = true;
-    }
-
-    ~SBooleanLock()
-    {
-        bValue = false;
-    }
-
-    bool& bValue;
-};
-
 void AInputComponent::UpdateAxes(float TimeStep)
 {
     if (!InputMappings)
@@ -674,14 +658,12 @@ void AInputComponent::UpdateAxes(float TimeStep)
             else if (mapping.DeviceId >= ID_JOYSTICK_1 && mapping.DeviceId <= ID_JOYSTICK_16)
             {
                 int joyNum = mapping.DeviceId - ID_JOYSTICK_1;
-                //if (Static.Joysticks[joyNum].bConnected)
-                {
-                    if (mapping.KeyId >= JOY_AXIS_BASE)
-                    {
-                        int joystickAxis = mapping.KeyId - JOY_AXIS_BASE;
 
-                        binding.AxisScale += Static.JoystickAxisState[joyNum][joystickAxis] * mapping.AxisScale * TimeStep;
-                    }
+                if (mapping.KeyId >= JOY_AXIS_BASE)
+                {
+                    int joystickAxis = mapping.KeyId - JOY_AXIS_BASE;
+
+                    binding.AxisScale += Static.JoystickAxisState[joyNum][joystickAxis] * mapping.AxisScale * TimeStep;
                 }
             }
         }
@@ -1218,8 +1200,8 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
                 continue;
             }
 
-            ADocMember const* mOwner = mAxis->FindMember("Owner");
-            if (!mOwner)
+            ADocMember const* mController = mAxis->FindMember("Controller");
+            if (!mController)
             {
                 continue;
             }
@@ -1228,7 +1210,7 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
             AString device     = mDevice->GetString();
             AString key        = mKey->GetString();
             AString scale      = mScale->GetString();
-            AString controller = mOwner->GetString();
+            AString controller = mController->GetString();
 
             uint16_t deviceId     = AInputHelper::LookupDevice(device.CStr());
             uint16_t deviceKey    = AInputHelper::LookupDeviceKey(deviceId, key.CStr());
@@ -1268,8 +1250,8 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
                 continue;
             }
 
-            ADocMember const* mOwner = mAction->FindMember("Owner");
-            if (!mOwner)
+            ADocMember const* mController = mAction->FindMember("Controller");
+            if (!mController)
             {
                 continue;
             }
@@ -1284,7 +1266,7 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
             AString name       = mName->GetString();
             AString device     = mDevice->GetString();
             AString key        = mKey->GetString();
-            AString controller = mOwner->GetString();
+            AString controller = mController->GetString();
 
             uint16_t deviceId     = AInputHelper::LookupDevice(device.CStr());
             uint16_t deviceKey    = AInputHelper::LookupDeviceKey(deviceId, key.CStr());
@@ -1358,16 +1340,16 @@ void AInputMappings::UnmapAxis(SInputDeviceKey const& DeviceKey)
             auto map_it = AxisMappings.find(mapping.Name);
             AN_ASSERT(map_it != AxisMappings.end());
 
-            auto& axisMappings = map_it->second;
-            for (auto axis_it = axisMappings.Begin(); axis_it != axisMappings.End(); axis_it++)
+            auto& axisMappingsVector = map_it->second;
+            for (auto axis_it = axisMappingsVector.Begin(); axis_it != axisMappingsVector.End(); axis_it++)
             {
                 if (axis_it->DeviceId == DeviceKey.DeviceId && axis_it->KeyId == DeviceKey.KeyId)
                 {
-                    axisMappings.Erase(axis_it);
+                    axisMappingsVector.Erase(axis_it);
                     break;
                 }
             }
-            if (axisMappings.IsEmpty())
+            if (axisMappingsVector.IsEmpty())
             {
                 AxisMappings.erase(map_it);
             }
