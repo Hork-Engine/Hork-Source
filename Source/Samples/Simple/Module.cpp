@@ -145,18 +145,18 @@ public:
 
         // Set input mappings
         AInputMappings* inputMappings = CreateInstanceOf<AInputMappings>();
-        inputMappings->MapAxis("MoveForward", ID_KEYBOARD, KEY_W, 1.0f, CONTROLLER_PLAYER_1);
-        inputMappings->MapAxis("MoveForward", ID_KEYBOARD, KEY_S, -1.0f, CONTROLLER_PLAYER_1);
-        inputMappings->MapAxis("MoveRight", ID_KEYBOARD, KEY_A, -1.0f, CONTROLLER_PLAYER_1);
-        inputMappings->MapAxis("MoveRight", ID_KEYBOARD, KEY_D, 1.0f, CONTROLLER_PLAYER_1);
-        inputMappings->MapAxis("MoveUp", ID_KEYBOARD, KEY_SPACE, 1.0f, CONTROLLER_PLAYER_1);
-        inputMappings->MapAxis("MoveDown", ID_KEYBOARD, KEY_C, 1.0f, CONTROLLER_PLAYER_1);
-        inputMappings->MapAxis("TurnRight", ID_MOUSE, MOUSE_AXIS_X, 1.0f, CONTROLLER_PLAYER_1);
-        inputMappings->MapAxis("TurnUp", ID_MOUSE, MOUSE_AXIS_Y, 1.0f, CONTROLLER_PLAYER_1);
-        inputMappings->MapAxis("TurnRight", ID_KEYBOARD, KEY_LEFT, -90.0f, CONTROLLER_PLAYER_1);
-        inputMappings->MapAxis("TurnRight", ID_KEYBOARD, KEY_RIGHT, 90.0f, CONTROLLER_PLAYER_1);
-        inputMappings->MapAction("Pause", ID_KEYBOARD, KEY_P, 0, CONTROLLER_PLAYER_1);
-        inputMappings->MapAction("Pause", ID_KEYBOARD, KEY_PAUSE, 0, CONTROLLER_PLAYER_1);
+        inputMappings->MapAxis("MoveForward", {ID_KEYBOARD, KEY_W}, 1.0f, CONTROLLER_PLAYER_1);
+        inputMappings->MapAxis("MoveForward", {ID_KEYBOARD, KEY_S}, -1.0f, CONTROLLER_PLAYER_1);
+        inputMappings->MapAxis("MoveRight", {ID_KEYBOARD, KEY_A}, -1.0f, CONTROLLER_PLAYER_1);
+        inputMappings->MapAxis("MoveRight", {ID_KEYBOARD, KEY_D}, 1.0f, CONTROLLER_PLAYER_1);
+        inputMappings->MapAxis("MoveUp", {ID_KEYBOARD, KEY_SPACE}, 1.0f, CONTROLLER_PLAYER_1);
+        inputMappings->MapAxis("MoveDown", {ID_KEYBOARD, KEY_C}, 1.0f, CONTROLLER_PLAYER_1);
+        inputMappings->MapAxis("TurnRight", {ID_MOUSE, MOUSE_AXIS_X}, 1.0f, CONTROLLER_PLAYER_1);
+        inputMappings->MapAxis("TurnUp", {ID_MOUSE, MOUSE_AXIS_Y}, 1.0f, CONTROLLER_PLAYER_1);
+        inputMappings->MapAxis("TurnRight", {ID_KEYBOARD, KEY_LEFT}, -90.0f, CONTROLLER_PLAYER_1);
+        inputMappings->MapAxis("TurnRight", {ID_KEYBOARD, KEY_RIGHT}, 90.0f, CONTROLLER_PLAYER_1);
+        inputMappings->MapAction("Pause", {ID_KEYBOARD, KEY_P}, 0, CONTROLLER_PLAYER_1);
+        inputMappings->MapAction("Pause", {ID_KEYBOARD, KEY_PAUSE}, 0, CONTROLLER_PLAYER_1);
 
         // Set rendering parameters
         ARenderingParameters* renderingParams = CreateInstanceOf<ARenderingParameters>();

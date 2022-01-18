@@ -32,9 +32,11 @@ SOFTWARE.
 
 #include "ActorComponent.h"
 #include "InputDefs.h"
+#include "Resource.h"
 
 #include <Platform/Utf8.h>
 #include <Containers/Array.h>
+#include <Containers/StdHash.h>
 #include <Core/ConsoleVar.h>
 
 constexpr int MAX_PRESSED_KEYS      = 128;
@@ -64,6 +66,7 @@ enum INPUT_DEVICE
     ID_JOYSTICK_15    = 16,
     ID_JOYSTICK_16    = 17,
     MAX_INPUT_DEVICES = 18,
+    ID_UNDEFINED      = 0xffff
 };
 
 /* Player controllers */
@@ -87,141 +90,79 @@ enum CONTROLLER
     CONTROLLER_PLAYER_16 = 15
 };
 
-class AInputAxis;
-class AInputAction;
-class AInputMappings;
-class AInputComponent;
-
-class AInputAxis : public ABaseObject
+struct SInputDeviceKey
 {
-    AN_CLASS( AInputAxis, ABaseObject )
+    uint16_t DeviceId;
+    uint16_t KeyId;
 
-    friend class AInputMappings;
+    int Hash() const
+    {
+        return Core::MurMur3Hash32(*(const int32_t*)&DeviceId);
+    }
 
-public:
-    AInputAxis();
-
-    int GetNameHash() const { return NameHash; }
-
-    void Map( int _DevId, int _KeyToken, float _AxisScale, int _ControllerId );
-
-    //uint8_t GetMouseAxes() const { return MappedMouseAxes; }
-    //uint32_t GetJoystickAxes( int _Joystick ) const { return MappedJoystickAxes[ _Joystick ]; }
-
-private:
-    int NameHash = 0;
-
-    AInputMappings * Parent = nullptr;
-
-    /** Keys mapped to this axis */
-    //TPodVector< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
-
-    /** Mouse axes mapped to this axis */
-    //uint8_t MappedMouseAxes = 0;
-
-    /** Joystick axes mapped to this axis */
-    //uint32_t MappedJoystickAxes[MAX_JOYSTICKS_COUNT];
-
-    int IndexInArrayOfAxes = 0;
+    bool operator==(SInputDeviceKey const& Rhs) const
+    {
+        return DeviceId == Rhs.DeviceId && KeyId == Rhs.KeyId;
+    }
 };
 
-class AInputAction : public ABaseObject
+class AInputMappings : public AResource
 {
-    AN_CLASS( AInputAction, ABaseObject )
-
-    friend class AInputMappings;
+    AN_CLASS(AInputMappings, AResource)
 
 public:
-    AInputAction() {}
+    struct SMapping
+    {
+        AString Name;
+        int     NameHash;
+        float   AxisScale;
+        uint8_t ModMask;
+        uint8_t ControllerId;
+        bool    bAxis;
+    };
 
-    int GetNameHash() const { return NameHash; }
+    struct SAxisMapping
+    {
+        uint16_t DeviceId;
+        uint16_t KeyId;
+        float    AxisScale;
+        uint8_t  ControllerId;
+    };
 
-    void Map( int _DevId, int _KeyToken, int _ModMask, int _ControllerId );
+    AInputMappings()
+    {}
 
-private:
-    int NameHash = 0;
+    void MapAxis(AStringView AxisName, SInputDeviceKey const& DeviceKey, float AxisScale, int ControllerId);
+    void UnmapAxis(SInputDeviceKey const& DeviceKey);
 
-    AInputMappings * Parent = nullptr;
-
-    /** Keys mapped to this action */
-    //TPodVector< unsigned short, 8 > MappedKeys[MAX_INPUT_DEVICES];
-
-    int IndexInArrayOfActions = 0;
-};
-
-class AInputMappings : public ABaseObject
-{
-    AN_CLASS( AInputMappings, ABaseObject )
-
-    friend class AInputAxis;
-    friend class AInputAction;
-    friend class AInputComponent;
-
-public:
-    AInputMappings();
-    ~AInputMappings();
-
-    static AInputMappings * LoadMappings( ADocObject const * pObject );
-
-    // Load axes form document data
-    void LoadAxes( ADocMember const * ArrayOfAxes );
-
-    // Load actions form document data
-    void LoadActions( ADocMember const * ArrayOfActions );
-
-    AInputAxis *   AddAxis( const char * _Name );
-    AInputAction * AddAction( const char * _Name );
-
-    AInputAxis *   FindAxis( const char * _AxisName );
-    AInputAction * FindAction( const char * _ActionName );
-
-    void MapAxis( const char * _AxisName, int _DevId, int _KeyToken, float _AxisScale, int _ControllerId );
-    void UnmapAxis( int _DevId, int _KeyToken );
-
-    void MapAction( const char * _ActionName, int _DevId, int _KeyToken, int _ModMask, int _ControllerId );
-    void UnmapAction( int _DevId, int _KeyToken, int _ModMask );
+    void MapAction(AStringView ActionName, SInputDeviceKey const& DeviceKey, int ModMask, int ControllerId);
+    void UnmapAction(SInputDeviceKey const& DeviceKey, int ModMask);
 
     void UnmapAll();
 
-    const TStdVector< TRef< AInputAxis > > &   GetAxes() const { return Axes; }
-    const TStdVector< TRef< AInputAction > > & GetActions() const { return Actions; }
+    TStdHashMap<SInputDeviceKey, TStdVector<SMapping>> const& GetMappings() const { return Mappings; }
+
+    TStdHashMap<AString, TPodVector<SAxisMapping>> const& GetAxisMappings() const { return AxisMappings; }
+
+protected:
+    /** Load resource from file */
+    bool LoadResource(IBinaryStream& Stream) override;
+
+    /** Create internal resource */
+    void LoadInternalResource(const char* Path) override;
+
+    const char* GetDefaultResourcePath() const override { return "/Default/InputMappings/Default"; }
 
 private:
-    struct SMapping
-    {
-        int     AxisOrActionIndex;
-        float   AxisScale;
-        uint8_t ControllerId;
-        bool    bAxis;
-        byte    ModMask;
-    };
+    void InitializeFromDocument(ADocument const& Document);
 
-    using AArrayOfMappings = TPodVector< SMapping >;
-
-    AArrayOfMappings * GetKeyMappings( int _DevId, int _KeyToken );
-
-    /** All known axes */
-    TStdVector< TRef<AInputAxis> > Axes;
-
-    /** All known actions */
-    TStdVector< TRef<AInputAction> > Actions;
-
-    TArray< AArrayOfMappings, MAX_KEYBOARD_BUTTONS > KeyboardMappings;
-    TArray< AArrayOfMappings, MAX_MOUSE_BUTTONS >    MouseMappings;
-    TArray< AArrayOfMappings, MAX_MOUSE_AXES >       MouseAxisMappings;
-
-    struct SJoystickMappings
-    {
-        TArray< AArrayOfMappings, MAX_JOYSTICK_BUTTONS > ButtonMappings;
-        TArray< AArrayOfMappings, MAX_JOYSTICK_AXES >    AxisMappings;
-    };
-
-    TArray< SJoystickMappings, MAX_JOYSTICKS_COUNT > JoystickMappings;
+    TStdHashMap<SInputDeviceKey, TStdVector<SMapping>> Mappings;
+    TStdHashMap<AString, TPodVector<SAxisMapping>>     AxisMappings;
 };
 
 class AInputComponent : public AActorComponent
 {
-    AN_COMPONENT( AInputComponent, AActorComponent )
+    AN_COMPONENT(AInputComponent, AActorComponent)
 
 public:
     /** Filter keyboard events */
@@ -239,87 +180,82 @@ public:
     int ControllerId = 0;
 
     /** Set input mappings config */
-    void SetInputMappings( AInputMappings * _InputMappings );
+    void SetInputMappings(AInputMappings* Mappings);
 
     /** Get input mappints config */
-    AInputMappings * GetInputMappings();
+    AInputMappings* GetInputMappings() const;
 
     /** Bind axis to class method */
-    template< typename T >
-    void BindAxis( const char * _Axis, T * _Object, void ( T::*_Method )( float ), bool _ExecuteEvenWhenPaused = false )
+    template <typename T>
+    void BindAxis(AStringView Axis, T* Object, void (T::*Method)(float), bool bExecuteEvenWhenPaused = false)
     {
-        BindAxis( _Axis, { _Object, _Method }, _ExecuteEvenWhenPaused );
+        BindAxis(Axis, {Object, Method}, bExecuteEvenWhenPaused);
     }
 
     /** Bind axis to function */
-    void BindAxis( const char * _Axis, TCallback< void( float ) > const & _Callback, bool _ExecuteEvenWhenPaused = false );
+    void BindAxis(AStringView Axis, TCallback<void(float)> const& Callback, bool bExecuteEvenWhenPaused = false);
 
     /** Unbind axis */
-    void UnbindAxis( const char * _Axis );
+    void UnbindAxis(AStringView Axis);
 
     /** Bind action to class method */
-    template< typename T >
-    void BindAction( const char * _Action, int _Event, T * _Object, void ( T::*_Method )(), bool _ExecuteEvenWhenPaused = false )
+    template <typename T>
+    void BindAction(AStringView Action, int Event, T* Object, void (T::*Method)(), bool bExecuteEvenWhenPaused = false)
     {
-        BindAction( _Action, _Event, { _Object, _Method }, _ExecuteEvenWhenPaused );
+        BindAction(Action, Event, {Object, Method}, bExecuteEvenWhenPaused);
     }
 
     /** Bind action to function */
-    void BindAction( const char * _Action, int _Event, TCallback< void() > const & _Callback, bool _ExecuteEvenWhenPaused = false );
+    void BindAction(AStringView Action, int Event, TCallback<void()> const& Callback, bool bExecuteEvenWhenPaused = false);
 
     /** Unbind action */
-    void UnbindAction( const char * _Action );
+    void UnbindAction(AStringView Action);
 
     /** Unbind all */
     void UnbindAll();
 
     /** Set callback for input characters */
-    template< typename T >
-    void SetCharacterCallback( T * _Object, void ( T::*_Method )( SWideChar, int, double ), bool _ExecuteEvenWhenPaused = false )
+    template <typename T>
+    void SetCharacterCallback(T* Object, void (T::*Method)(SWideChar, int, double), bool bExecuteEvenWhenPaused = false)
     {
-        SetCharacterCallback( { _Object, _Method }, _ExecuteEvenWhenPaused );
+        SetCharacterCallback({Object, Method}, bExecuteEvenWhenPaused);
     }
 
     /** Set callback for input characters */
-    void SetCharacterCallback( TCallback< void( SWideChar, int, double ) > const & _Callback, bool _ExecuteEvenWhenPaused = false );
+    void SetCharacterCallback(TCallback<void(SWideChar, int, double)> const& Callback, bool bExecuteEvenWhenPaused = false);
 
     void UnsetCharacterCallback();
 
-    void UpdateAxes( float _TimeStep );
+    void UpdateAxes(float TimeStep);
 
-    bool IsKeyDown( int _Key ) const { return GetButtonState( ID_KEYBOARD, _Key ); }
-    bool IsMouseDown( int _Button ) const { return GetButtonState( ID_MOUSE, _Button ); }
-    //bool IsJoyDown( struct SJoystick const * _Joystick, int _Button ) const;
-    bool IsJoyDown( int _JoystickId, int _Button ) const;
+    bool IsKeyDown(uint16_t Key) const { return GetButtonState({ID_KEYBOARD, Key}); }
+    bool IsMouseDown(uint16_t Button) const { return GetButtonState({ID_MOUSE, Button}); }
+    bool IsJoyDown(int JoystickId, uint16_t Button) const;
 
-    void SetButtonState( int _DevId, int _Button, int _Action, int _ModMask, double _TimeStamp );
+    void SetButtonState(SInputDeviceKey const& DeviceKey, int Action, int ModMask, double TimeStamp);
 
     /** Return is button pressed or not */
-    bool GetButtonState( int _DevId, int _Button ) const;
+    bool GetButtonState(SInputDeviceKey const& DeviceKey) const;
 
     void UnpressButtons();
 
-    void SetMouseAxisState( float _X, float _Y );
+    void SetMouseAxisState(float X, float Y);
 
     float GetMouseMoveX() const { return MouseAxisState[MouseIndex].X; }
     float GetMouseMoveY() const { return MouseAxisState[MouseIndex].Y; }
 
-    float GetMouseAxisState( int _Axis );
+    float GetMouseAxisState(int Axis);
 
-    void NotifyUnicodeCharacter( SWideChar _UnicodeCharacter, int _ModMask, double _TimeStamp );
+    void NotifyUnicodeCharacter(SWideChar UnicodeCharacter, int ModMask, double TimeStamp);
 
-    AInputComponent * GetNext() { return Next; }
-    AInputComponent * GetPrev() { return Prev; }
+    AInputComponent* GetNext() { return Next; }
+    AInputComponent* GetPrev() { return Prev; }
 
-    //static void SetJoystickState( int _Joystick, int _NumAxes, int _NumButtons, bool _bGamePad, bool _bConnected );
+    static void SetJoystickAxisState(int Joystick, int Axis, float Value);
 
-    static void SetJoystickAxisState( int _Joystick, int _Axis, float _Value );
+    static float GetJoystickAxisState(int Joystick, int Axis);
 
-    static float GetJoystickAxisState( int _Joystick, int _Axis );
-
-    //static struct SJoystick const * GetJoysticks();
-
-    static AInputComponent * GetInputComponents() { return InputComponents; }
+    static AInputComponent* GetInputComponents() { return InputComponents; }
 
 protected:
     struct SAxisBinding
@@ -327,7 +263,7 @@ protected:
         /** Axis name */
         AString Name;
         /** Binding callback */
-        TCallback< void( float ) > Callback;
+        TCallback<void(float)> Callback;
         /** Final axis value that will be passed to binding callback */
         float AxisScale;
         /** Execute binding even when paused */
@@ -339,7 +275,7 @@ protected:
         /** Action name */
         AString Name;
         /** Binding callback */
-        TCallback< void() > Callback[2];
+        TCallback<void()> Callback[2];
         /** Execute binding even when paused */
         bool bExecuteEvenWhenPaused;
     };
@@ -364,84 +300,72 @@ protected:
     };
 
     AInputComponent();
-
-    void DeinitializeComponent() override;
-
-    /** Return axis binding or -1 if axis is not binded */
-    int GetAxisBinding( const char * _Axis ) const;
+    ~AInputComponent();
 
     /** Return axis binding or -1 if axis is not binded */
-    int GetAxisBinding( const AInputAxis * _Axis ) const;
-
-    /** Return axis binding or -1 if axis is not binded */
-    int GetAxisBindingHash( const char * _Axis, int _Hash ) const;
+    int GetAxisBinding(AInputMappings::SMapping const& Mapping) const;
 
     /** Return action binding or -1 if action is not binded */
-    int GetActionBinding( const char * _Action ) const;
+    int GetActionBinding(AInputMappings::SMapping const& Mapping) const;
 
-    /** Return action binding or -1 if action is not binded */
-    int GetActionBinding( const AInputAction * _Action ) const;
+    TRef<AInputMappings> InputMappings;
 
-    /** Return action binding or -1 if action is not binded */
-    int GetActionBindingHash( const char * _Action, int _Hash ) const;
+    THash<>                  AxisBindingsHash;
+    TStdVector<SAxisBinding> AxisBindings;
+    int                      BindingVersion = 0;
 
-    TRef< AInputMappings > InputMappings;
-
-    THash<>                    AxisBindingsHash;
-    TStdVector< SAxisBinding > AxisBindings;
-
-    THash<>                      ActionBindingsHash;
-    TStdVector< SActionBinding > ActionBindings;
+    THash<>                    ActionBindingsHash;
+    TStdVector<SActionBinding> ActionBindings;
 
     /** Array of pressed keys */
-    TArray< SPressedKey, MAX_PRESSED_KEYS > PressedKeys = {};
-    int                                     NumPressedKeys = 0;
+    TArray<SPressedKey, MAX_PRESSED_KEYS> PressedKeys    = {};
+    int                                   NumPressedKeys = 0;
 
     // Index to PressedKeys array or -1 if button is up
-    TArray< int8_t *, MAX_INPUT_DEVICES >                                 DeviceButtonDown;
-    TArray< int8_t, MAX_KEYBOARD_BUTTONS >                                KeyboardButtonDown;
-    TArray< int8_t, MAX_MOUSE_BUTTONS >                                   MouseButtonDown;
-    TArray< TArray< int8_t, MAX_JOYSTICK_BUTTONS >, MAX_JOYSTICKS_COUNT > JoystickButtonDown;
+    TArray<int8_t*, MAX_INPUT_DEVICES>                                DeviceButtonDown;
+    TArray<int8_t, MAX_KEYBOARD_BUTTONS>                              KeyboardButtonDown;
+    TArray<int8_t, MAX_MOUSE_BUTTONS>                                 MouseButtonDown;
+    TArray<TArray<int8_t, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT> JoystickButtonDown;
 
-    TArray< Float2, 2 > MouseAxisState;
-    int                 MouseIndex = 0;
+    TArray<Float2, 2> MouseAxisState;
+    int               MouseIndex = 0;
 
-    TCallback< void( SWideChar, int, double ) > CharacterCallback;
-    bool                                        bCharacterCallbackExecuteEvenWhenPaused = false;
+    TCallback<void(SWideChar, int, double)> CharacterCallback;
+    bool                                    bCharacterCallbackExecuteEvenWhenPaused = false;
 
     // Global list of input components
-    AInputComponent *        Next = nullptr;
-    AInputComponent *        Prev = nullptr;
-    static AInputComponent * InputComponents;
-    static AInputComponent * InputComponentsTail;
+    AInputComponent*        Next = nullptr;
+    AInputComponent*        Prev = nullptr;
+    static AInputComponent* InputComponents;
+    static AInputComponent* InputComponentsTail;
 };
 
 class AInputHelper final
 {
 public:
     /** Translate device to string */
-    static const char * TranslateDevice( int _DevId );
+    static const char* TranslateDevice(uint16_t DeviceId);
 
     /** Translate modifier to string */
-    static const char * TranslateModifier( int _Modifier );
+    static const char* TranslateModifier(int Modifier);
 
     /** Translate key code to string */
-    static const char * TranslateDeviceKey( int _DevId, int _Key );
+    static const char* TranslateDeviceKey(SInputDeviceKey const& DeviceKey);
 
     /** Translate key owner player to string */
-    static const char * TranslateController( int _ControllerId );
+    static const char* TranslateController(int ControllerId);
 
     /** Lookup device from string */
-    static int LookupDevice( const char * _Device );
+    static uint16_t LookupDevice(AStringView Device);
 
     /** Lookup modifier from string */
-    static int LookupModifier( const char * _Modifier );
+    static int LookupModifier(AStringView Modifier);
 
     /** Lookup key code from string */
-    static int LookupDeviceKey( int _DevId, const char * _Key );
+    static uint16_t LookupDeviceKey(uint16_t DeviceId, AStringView Key);
 
     /** Lookup key owner player from string */
-    static int LookupController( const char * _ControllerId );
+    static int LookupController(AStringView ControllerId);
 };
 
 extern AConsoleVar in_MouseSensitivity;

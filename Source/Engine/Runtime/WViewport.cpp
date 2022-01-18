@@ -81,7 +81,7 @@ void WViewport::OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp )
 
     AInputComponent * inputComponent = PlayerController->GetInputComponent();
 
-    inputComponent->SetButtonState( ID_KEYBOARD, _Event.Key, _Event.Action, _Event.ModMask, _TimeStamp );
+    inputComponent->SetButtonState( {ID_KEYBOARD, uint16_t(_Event.Key)}, _Event.Action, _Event.ModMask, _TimeStamp );
 }
 
 void WViewport::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) {
@@ -91,7 +91,7 @@ void WViewport::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, dou
 
     AInputComponent * inputComponent = PlayerController->GetInputComponent();
 
-    inputComponent->SetButtonState( ID_MOUSE, _Event.Button, _Event.Action, _Event.ModMask, _TimeStamp );
+    inputComponent->SetButtonState( {ID_MOUSE, uint16_t(_Event.Button)}, _Event.Action, _Event.ModMask, _TimeStamp );
 }
 
 void WViewport::OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp ) {
@@ -114,7 +114,7 @@ void WViewport::OnJoystickButtonEvent( struct SJoystickButtonEvent const & _Even
 
     AInputComponent * inputComponent = PlayerController->GetInputComponent();
 
-    inputComponent->SetButtonState( ID_JOYSTICK_1 + _Event.Joystick, _Event.Button, _Event.Action, 0, _TimeStamp );
+    inputComponent->SetButtonState( {uint16_t(ID_JOYSTICK_1 + _Event.Joystick), uint16_t(_Event.Button)}, _Event.Action, 0, _TimeStamp );
 }
 
 void WViewport::OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Event, double _TimeStamp ) {

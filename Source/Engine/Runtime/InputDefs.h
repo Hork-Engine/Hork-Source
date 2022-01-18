@@ -278,6 +278,8 @@ enum {
     JOY_AXIS_31           = (JOY_AXIS_BASE + 30),
     JOY_AXIS_32           = (JOY_AXIS_BASE + 31),
     JOY_AXIS_LAST         = JOY_AXIS_32,
+
+    KEY_UNDEFINED = 0xffff
 };
 
 enum EInputAction
