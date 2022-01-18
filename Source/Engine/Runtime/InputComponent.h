@@ -282,11 +282,11 @@ protected:
 
     struct SPressedKey
     {
-        unsigned short Key;
-        short          AxisBinding;
-        short          ActionBinding;
-        float          AxisScale;
-        uint8_t        DevId;
+        uint16_t Key;
+        int16_t  AxisBinding;
+        int16_t  ActionBinding;
+        float    AxisScale;
+        uint8_t  DeviceId;
 
         bool HasAxis() const
         {

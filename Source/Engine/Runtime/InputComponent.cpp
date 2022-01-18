@@ -725,7 +725,7 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
             if (NumPressedKeys < MAX_PRESSED_KEYS)
             {
                 SPressedKey& pressedKey  = PressedKeys[NumPressedKeys];
-                pressedKey.DevId         = DeviceKey.DeviceId;
+                pressedKey.DeviceId      = DeviceKey.DeviceId;
                 pressedKey.Key           = DeviceKey.KeyId;
                 pressedKey.AxisBinding   = -1;
                 pressedKey.ActionBinding = -1;
@@ -848,7 +848,7 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
 
             int actionBinding = PressedKeys[index].ActionBinding;
 
-            DeviceButtonDown[PressedKeys[index].DevId][PressedKeys[index].Key] = -1;
+            DeviceButtonDown[PressedKeys[index].DeviceId][PressedKeys[index].Key] = -1;
 
             if (index != NumPressedKeys - 1)
             {
@@ -856,7 +856,7 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
                 PressedKeys[index] = PressedKeys[NumPressedKeys - 1];
 
                 // Refresh index of moved element
-                DeviceButtonDown[PressedKeys[index].DevId][PressedKeys[index].Key] = index;
+                DeviceButtonDown[PressedKeys[index].DeviceId][PressedKeys[index].Key] = index;
             }
 
             // Pop back
@@ -1032,6 +1032,7 @@ void AInputComponent::UnbindAxis(AStringView Axis)
             AxisBindingsHash.RemoveIndex(hash, i);
             auto it = AxisBindings.begin() + i;
             AxisBindings.erase(it);
+            BindingVersion++;
 
             for (SPressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
             {
@@ -1044,8 +1045,6 @@ void AInputComponent::UnbindAxis(AStringView Axis)
             return;
         }
     }
-
-    BindingVersion++;
 }
 
 void AInputComponent::BindAction(AStringView Action, int Event, TCallback<void()> const& Callback, bool bExecuteEvenWhenPaused)
