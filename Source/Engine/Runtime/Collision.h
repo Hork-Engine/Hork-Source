@@ -49,6 +49,7 @@ enum ECollisionMask
     CM_TRIGGER              = 16,
     CM_CHARACTER_CONTROLLER = 32,
     CM_WATER                = 64,
+    CM_SOLID                = CM_WORLD_STATIC | CM_WORLD_DYNAMIC | CM_PAWN | CM_PROJECTILE | CM_CHARACTER_CONTROLLER,
     CM_UNUSED7              = 128,
     CM_UNUSED8              = 256,
     CM_UNUSED9              = 512,
