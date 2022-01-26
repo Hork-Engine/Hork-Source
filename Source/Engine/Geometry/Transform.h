@@ -41,6 +41,7 @@ struct STransform
     STransform() = default;
     STransform(Float3 const& position, Quat const& rotation, Float3 const& scale);
     STransform(Float3 const& position, Quat const& rotation);
+    STransform(Float3 const& position);
     void   Clear();
     void   SetIdentity();
     void   SetScale(Float3 const& scale);
@@ -84,22 +85,17 @@ struct STransform
     void Read(IBinaryStream& stream);
 };
 
-//AN_FORCEINLINE STransform::STransform()
-//    : Position( 0, 0, 0 )
-//    , Rotation( 1, 0, 0, 0 )
-//    , Scale( 1, 1, 1 )
-//{
-//}
-
 AN_FORCEINLINE STransform::STransform(Float3 const& position, Quat const& rotation, Float3 const& scale) :
     Position(position), Rotation(rotation), Scale(scale)
-{
-}
+{}
 
 AN_FORCEINLINE STransform::STransform(Float3 const& position, Quat const& rotation) :
-    Position(position), Rotation(rotation), Scale(1, 1, 1)
-{
-}
+    Position(position), Rotation(rotation)
+{}
+
+AN_FORCEINLINE STransform::STransform(Float3 const& position) :
+    Position(position)
+{}
 
 AN_FORCEINLINE void STransform::Clear()
 {
