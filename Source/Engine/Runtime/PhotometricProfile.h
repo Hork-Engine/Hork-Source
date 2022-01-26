@@ -45,6 +45,9 @@ class APhotometricProfile : public AResource {
 public:
     enum { PHOTOMETRIC_DATA_SIZE = 256 };
 
+    APhotometricProfile();
+    ~APhotometricProfile();
+
     void Initialize( const byte * InData, float InIntensity );
 
     void SetIntensity( float _Intensity ) { Intensity = _Intensity; }
@@ -59,9 +62,6 @@ public:
     int GetPhotometricProfileIndex() const { return PhotometricProfileIndex; }
 
 protected:
-    APhotometricProfile();
-    ~APhotometricProfile();
-
     /** Load resource from file */
     bool LoadResource( IBinaryStream & Stream ) override;
 

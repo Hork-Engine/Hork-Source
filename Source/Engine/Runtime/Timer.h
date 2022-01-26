@@ -41,6 +41,9 @@ class ATimer : public ABaseObject
     friend class AWorld;
 
 public:
+    ATimer();
+    ~ATimer();
+
     float FirstDelay = 0.0f;
 
     float SleepDelay = 0.0f;
@@ -72,10 +75,6 @@ public:
     float GetElapsedTime() const { return ElapsedTime; }
 
     int GetPulseIndex() const { return NumPulses - 1; }
-
-protected:
-    ATimer();
-    ~ATimer();
 
 private:
     AWorld * pOwnerWorld = nullptr;

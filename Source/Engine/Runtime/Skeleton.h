@@ -79,6 +79,9 @@ class ASkeleton : public AResource {
 public:
     enum { MAX_JOINTS = 256 };
 
+    ASkeleton();
+    ~ASkeleton();
+
     void Initialize( SJoint * _Joints, int _JointsCount, BvAxisAlignedBox const & _BindposeBounds );
 
     void Purge();
@@ -90,9 +93,6 @@ public:
     BvAxisAlignedBox const & GetBindposeBounds() const { return BindposeBounds; }
 
 protected:
-    ASkeleton();
-    ~ASkeleton();
-
     /** Load resource from file */
     bool LoadResource( IBinaryStream & Stream ) override;
 
