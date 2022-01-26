@@ -11,6 +11,18 @@ add_subdirectory( Engine )
 # Samples
 if (ANGIE_ENGINE_WITH_SAMPLES)
 
+add_subdirectory( Samples/01_Simple )
+set_target_properties( 01_Simple PROPERTIES FOLDER "Samples" )
+
+add_subdirectory( Samples/02_CharacterController)
+set_target_properties( 02_CharacterController PROPERTIES FOLDER "Samples" )
+
+add_subdirectory( Samples/03_Triggers)
+set_target_properties( 03_Triggers PROPERTIES FOLDER "Samples" )
+
+add_subdirectory( Samples/04_Terrain )
+set_target_properties( 04_Terrain PROPERTIES FOLDER "Samples" )
+
 add_subdirectory( Samples/Airplane )
 set_target_properties( Airplane PROPERTIES FOLDER "Samples" )
 
@@ -35,17 +47,11 @@ set_target_properties( Project1 PROPERTIES FOLDER "Samples" )
 add_subdirectory( Samples/Quake1 )
 set_target_properties( Quake1 PROPERTIES FOLDER "Samples" )
 
-add_subdirectory( Samples/Simple )
-set_target_properties( Simple PROPERTIES FOLDER "Samples" )
-
 add_subdirectory( Samples/Shooter3D )
 set_target_properties( Shooter3D PROPERTIES FOLDER "Samples" )
 
 add_subdirectory( Samples/Sponza2 )
 set_target_properties( Sponza PROPERTIES FOLDER "Samples" )
-
-add_subdirectory( Samples/Terrain )
-set_target_properties( Terrain PROPERTIES FOLDER "Samples" )
 
 add_subdirectory( Samples/VirtualTexture )
 set_target_properties( VirtualTexture PROPERTIES FOLDER "Samples" )
