@@ -147,6 +147,7 @@ PBR (physically based).
 * MIT license
    
 ## Used third-party libraries
+* angelscript (zlib license)
 * bullet (zlib license)
 * cgltf (MIT license)
 * clipper (Boost Software License 1.0)
