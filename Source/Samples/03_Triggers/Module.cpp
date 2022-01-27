@@ -151,24 +151,6 @@ public:
             meshComp->SetMaterialInstance(0, WallMaterialInstance.GetObject());
         }
 
-        //// Spawn small box with simulated physics
-        //AActor* box = world->SpawnActor2(StaticMeshDef.GetObject(), {{3, 5, 3}, {1, 0, 0, 0}, {0.5f, 0.5f, 0.5f}});
-        //meshComp    = box->GetComponent<AMeshComponent>();
-        //if (meshComp)
-        //{
-        //    static TStaticResourceFinder<AMaterialInstance> WallMaterialInstance(_CTS("WallMaterialInstance"));
-        //    static TStaticResourceFinder<AIndexedMesh>      UnitBox(_CTS("/Default/Meshes/Box"));
-
-        //    // Set mesh and material resources for mesh component
-        //    meshComp->SetMesh(UnitBox.GetObject());
-        //    meshComp->SetMaterialInstance(0, WallMaterialInstance.GetObject());
-
-        //    // Setup physics
-        //    meshComp->SetMass(1.0f);
-        //    meshComp->SetMotionBehavior(MB_SIMULATED);
-        //    meshComp->SetCollisionGroup(CM_WORLD_DYNAMIC);
-        //}
-
         // Spawn trigger
         ATrigger* trigger = world->SpawnActor2<ATrigger>({{0, 1, -2}, {1, 0, 0, 0}, {1.5f, 2, 1.5f}});
         trigger->SpawnFunction = [world]()
