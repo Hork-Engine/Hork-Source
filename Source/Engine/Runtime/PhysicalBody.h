@@ -121,7 +121,7 @@ public:
         return HitProxy->bGenerateContactPoints;
     }
 
-    /** Set to false if you want to use own collision model and discard collisions from the mesh */
+    /** Set to false if you want to use own collision model and discard collisions from the mesh. */
     void SetUseMeshCollision( bool bUseMeshCollision );
 
     bool ShouldUseMeshCollision() const
@@ -204,10 +204,10 @@ public:
     /** Is physics active */
     bool IsPhysicsActive() const;
 
-    /** Object linear velocity */
+    /** Overwrite linear velocity */
     void SetLinearVelocity( Float3 const & _Velocity );
 
-    /** Add value to current velocity */
+    /** Increment linear velocity */
     void AddLinearVelocity( Float3 const & _Velocity );
 
     /** Get object velocity. For soft bodies use GetVertexVelocity in ASoftMeshComponent. */
@@ -230,10 +230,10 @@ public:
 
     float GetLinearDamping() const;
 
-    /** Object angular velocity */
+    /** Overwrite angular velocity */
     void SetAngularVelocity( Float3 const & _Velocity );
 
-    /** Add value to current velocity */
+    /** Increment angular velocity */
     void AddAngularVelocity( Float3 const & _Velocity );
 
     /** Object angular velocity */
@@ -293,14 +293,23 @@ public:
 
     Float3 GetCenterOfMassWorldPosition() const;
 
+    /** Clear total force and torque. */
     void ClearForces();
 
+    /** Change force by formula:
+        TotalForce += Force * LinearFactor
+
+        The force is then applied to the linear velocity during the integration step:
+        Velocity += TotalForce / Mass * Step; */
     void ApplyCentralForce( Float3 const & _Force );
 
+    /** Apply force at specified point. */
     void ApplyForce( Float3 const & _Force, Float3 const & _Position );
 
     void ApplyTorque( Float3 const & _Torque );
 
+    /** Change linear velocity by formula:
+        Velocity += Impulse * LinearFactor / Mass */
     void ApplyCentralImpulse( Float3 const & _Impulse );
 
     void ApplyImpulse( Float3 const & _Impulse, Float3 const & _Position );
