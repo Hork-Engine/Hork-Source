@@ -486,6 +486,8 @@ void AWorld::CleanupActor(AActor* Actor)
     E_OnActorSpawned.Remove(Actor);
     E_OnPrepareRenderFrontend.Remove(Actor);
 
+    Actor->RemoveAllTimers();
+
     Actor->Level = nullptr;
     Actor->World = nullptr;
 
@@ -564,37 +566,15 @@ void AWorld::UpdatePauseStatus()
 
 void AWorld::UpdateTimers(float TimeStep)
 {
-    bDuringTimerTick = true;
-    int i            = 0;
-    for (ATimer* timer = TimerList; timer; timer = timer->Next)
+    for (ATimer* timer = TimerList; timer; )
     {
+        // The timer can be unregistered during the Tick function, so we keep a pointer to the next timer.
+        pNextTickingTimer = timer->NextInWorld;
 
-        if (timer->GetRefCount() > 1)
-        {
-            timer->Tick(TimeStep);
-            i++;
-        }
-        else
-        {
-            // Timer has no owner, unregister it
-            timer->Unregister();
-        }
-    }
-    //GLogger.Printf( "Timers in world %d\n", i );
-    bDuringTimerTick = false;
+        timer->Tick(this, TimeStep);
 
-    for (STimerCmd& cmd : TimerCmd)
-    {
-        if (cmd.Command == STimerCmd::ADD)
-        {
-            INTRUSIVE_ADD_UNIQUE(cmd.TimerCb, Next, Prev, TimerList, TimerListTail);
-        }
-        else
-        {
-            INTRUSIVE_REMOVE(cmd.TimerCb, Next, Prev, TimerList, TimerListTail);
-        }
+        timer = pNextTickingTimer;
     }
-    TimerCmd.Clear();
 }
 
 void AWorld::SpawnActors()
@@ -1021,34 +1001,32 @@ void AWorld::RemoveLevel(ALevel* _Level)
     _Level->RemoveRef();
 }
 
-void AWorld::AddTimer(ATimer* _Timer)
+void AWorld::RegisterTimer(ATimer* Timer)
 {
-    _Timer->AddRef();
-    if (bDuringTimerTick)
+    if (INTRUSIVE_EXISTS(Timer, NextInWorld, PrevInWorld, TimerList, TimerListTail))
     {
-        GLogger.Printf("AWorld::AddTimer: Add pending\n");
-        TimerCmd.Append({STimerCmd::ADD, _Timer});
+        // Already in the world
+        return;
     }
-    else
-    {
-        GLogger.Printf("AWorld::AddTimer: Add now\n");
-        INTRUSIVE_ADD_UNIQUE(_Timer, Next, Prev, TimerList, TimerListTail);
-    }
+
+    Timer->AddRef();
+    INTRUSIVE_ADD(Timer, NextInWorld, PrevInWorld, TimerList, TimerListTail);
 }
 
-void AWorld::RemoveTimer(ATimer* _Timer)
+void AWorld::UnregisterTimer(ATimer* Timer)
 {
-    _Timer->RemoveRef();
-    if (bDuringTimerTick)
+    if (!INTRUSIVE_EXISTS(Timer, NextInWorld, PrevInWorld, TimerList, TimerListTail))
     {
-        GLogger.Printf("AWorld::RemoveTimer: Remove pending\n");
-        TimerCmd.Append({STimerCmd::REMOVE, _Timer});
+        return;
     }
-    else
+
+    if (pNextTickingTimer && pNextTickingTimer == Timer)
     {
-        GLogger.Printf("AWorld::RemoveTimer: Remove now\n");
-        INTRUSIVE_REMOVE(_Timer, Next, Prev, TimerList, TimerListTail);
+        pNextTickingTimer = Timer->NextInWorld;
     }
+    INTRUSIVE_REMOVE(Timer, NextInWorld, PrevInWorld, TimerList, TimerListTail);
+
+    Timer->RemoveRef();
 }
 
 void AWorld::DrawDebug(ADebugRenderer* InRenderer)

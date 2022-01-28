@@ -394,17 +394,15 @@ protected:
     void Tick(float TimeStep);
 
 private:
-    // Allow timer to register itself in the world
-    friend class ATimer;
-    void AddTimer(ATimer* _Timer);
-    void RemoveTimer(ATimer* _Timer);
-
-private:
     // Allow actor to add self to pendingkill list
     friend class AActor;
     AActor* PendingKillActors = nullptr;
 
     AActor* PendingSpawnActors = nullptr;
+
+    // Allow actor to register timers in the world
+    void RegisterTimer(ATimer* Timer);
+    void UnregisterTimer(ATimer* Timer);
 
 private:
     // Allow actor component to add self to pendingkill list
@@ -467,22 +465,10 @@ private:
     int64_t GameplayTimeMicro          = 0;
     int64_t GameplayTimeMicroAfterTick = 0;
 
-    struct STimerCmd
-    {
-        enum
-        {
-            ADD,
-            REMOVE
-        } Command;
-        ATimer* TimerCb;
-    };
-
-    TPodVector<STimerCmd> TimerCmd;
-
     ATimer* TimerList     = nullptr;
     ATimer* TimerListTail = nullptr;
+    ATimer* pNextTickingTimer = nullptr;
 
-    bool bDuringTimerTick = false;
     bool bPendingKill = false;
     bool bTicking = false;
 

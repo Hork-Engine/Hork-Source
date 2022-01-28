@@ -43,7 +43,7 @@ class AController;
 
 using AArrayOfActorComponents = TPodVector<AActorComponent*, 8>;
 
-#define AN_ACTOR(_Class, _SuperClass)                        \
+#define AN_ACTOR(_Class, _SuperClass) \
     AN_FACTORY_CLASS(AActor::Factory(), _Class, _SuperClass)
 
 struct SActorInitializer
@@ -111,7 +111,7 @@ public:
     /** Actor's instigator */
     AActor* GetInstigator() { return Instigator; }
 
-    AController* GetController() { return Controller; }    
+    AController* GetController() { return Controller; }
 
     /** Create component by it's class id */
     AActorComponent* CreateComponent(uint64_t _ClassId, AStringView Name);
@@ -157,7 +157,7 @@ public:
     /** Apply damage to the actor */
     void ApplyDamage(SActorDamage const& Damage);
 
-    /** Override this function to setup input component */
+    /** Override this function to bind axes and actions to the input component */
     virtual void SetupInputComponent(AInputComponent* Input) {}
 
     /** Is used to register console commands. Experimental. */
@@ -217,6 +217,8 @@ protected:
     One tick per frame. Called at the end of a frame. */
     virtual void LateUpdate(float TimeStep) {}
 
+    virtual void OnInputLost() {}
+
     virtual void OnApplyDamage(SActorDamage const& Damage) {}
 
     /** Draw debug primitives */
@@ -227,6 +229,10 @@ protected:
 
     /** Called after components initialized */
     virtual void PostInitializeComponents() {}
+
+    class ATimer* AddTimer(TCallback<void()> const& Callback);
+    void          RemoveTimer(ATimer* Timer);
+    void          RemoveAllTimers();
 
 private:
     void InitializeAndPlay();
@@ -258,6 +264,9 @@ private:
 
     AActor* NextSpawnActor{};
     AActor* NextPendingKillActor{};
+
+    ATimer* TimerList{};
+    ATimer* TimerListTail{};
 
     float LifeTime{0.0f};
 

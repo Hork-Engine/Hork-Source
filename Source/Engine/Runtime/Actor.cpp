@@ -34,6 +34,7 @@ SOFTWARE.
 #include "Timer.h"
 
 #include <Core/ConsoleVar.h>
+#include <Core/IntrusiveLinkedListMacro.h>
 #include <Platform/Logger.h>
 
 #include <angelscript.h>
@@ -160,6 +161,11 @@ void AActor::InitializeAndPlay()
     if (bLateUpdate)
     {
         world->LateUpdateActors.Append(this);
+    }
+
+    for (ATimer* timer = TimerList; timer; timer = timer->NextInActor)
+    {
+        world->RegisterTimer(timer);
     }
 
     PreInitializeComponents();
@@ -316,4 +322,64 @@ bool AActor::SetPublicAttribute(AStringView PublicName, AStringView Value)
     }
 
     return false;
+}
+
+ATimer* AActor::AddTimer(TCallback<void()> const& Callback)
+{
+    if (bPendingKill)
+    {
+        GLogger.Printf("AActor::AddTimer: Attempting to add a timer to a destroyed actor\n");
+        return {};
+    }
+
+    ATimer* timer = CreateInstanceOf<ATimer>();
+    timer->AddRef();
+    timer->Callback = Callback;
+
+    // If an actor is queued to spawn, the timer will be registered after spawning
+    if (!bSpawning)
+    {
+        World->RegisterTimer(timer);
+    }
+
+    INTRUSIVE_ADD(timer, NextInActor, PrevInActor, TimerList, TimerListTail);
+
+    return timer;
+}
+
+void AActor::RemoveTimer(ATimer* Timer)
+{
+    if (!Timer)
+    {
+        GLogger.Printf("Timer is null\n");
+        return;
+    }
+
+    if (!INTRUSIVE_EXISTS(Timer, NextInActor, PrevInActor, TimerList, TimerListTail))
+    {
+        GLogger.Printf("Timer is not exists\n");
+        return;
+    }
+
+    if (World)
+    {
+        World->UnregisterTimer(Timer);
+    }
+
+    INTRUSIVE_REMOVE(Timer, NextInActor, PrevInActor, TimerList, TimerListTail);
+    Timer->RemoveRef();
+}
+
+void AActor::RemoveAllTimers()
+{
+    for (ATimer* timer = TimerList; timer; timer = timer->NextInActor)
+    {
+        if (World)
+        {
+            World->UnregisterTimer(timer);
+        }
+        timer->RemoveRef();
+    }
+    TimerList     = {};
+    TimerListTail = {};
 }

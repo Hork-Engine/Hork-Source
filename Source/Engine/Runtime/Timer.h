@@ -36,9 +36,7 @@ class AWorld;
 
 class ATimer : public ABaseObject
 {
-    AN_CLASS( ATimer, ABaseObject )
-
-    friend class AWorld;
+    AN_CLASS(ATimer, ABaseObject)
 
 public:
     ATimer();
@@ -58,13 +56,7 @@ public:
     /** Tick timer even when game is paused */
     bool bTickEvenWhenPaused = false;
 
-    TCallback< void() > Callback;
-
-    /** Register timer in a world. Call this in/after BeginPlay */
-    void Register( AWorld * InOwnerWorld );
-
-    /** Unregister timer if you want to stop timer ticking */
-    void Unregister();
+    TCallback<void()> Callback;
 
     void Restart();
 
@@ -76,16 +68,22 @@ public:
 
     int GetPulseIndex() const { return NumPulses - 1; }
 
-private:
-    AWorld * pOwnerWorld = nullptr;
-    ATimer * Next = nullptr;      // List inside a world
-    ATimer * Prev = nullptr;      // List inside a world
-    int State = 0;
-    int NumPulses = 0;
-    float ElapsedTime = 0.0f;
+    void Tick(AWorld* World, float TimeStep);
 
-    /** The tick function is called by owner world */
-    void Tick( float InTimeStep );
+private:
+    // Allow a world to register actors
+    friend class AWorld;
+    ATimer* NextInActor = {};
+    ATimer* PrevInActor = {};
+
+    // Allow an actor to keep a list of timers
+    friend class AActor;
+    ATimer* NextInWorld = {};
+    ATimer* PrevInWorld = {};
+
+    int   State       = 0;
+    int   NumPulses   = 0;
+    float ElapsedTime = 0.0f;
 
     void Trigger();
 };
