@@ -65,6 +65,7 @@ void AController::SetPawn(AActor* _Pawn)
     if (Pawn)
     {
         Pawn->Controller = nullptr;
+        Pawn->OnInputLost();
     }
 
     Pawn = _Pawn;
