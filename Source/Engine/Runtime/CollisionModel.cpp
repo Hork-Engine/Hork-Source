@@ -231,11 +231,7 @@ struct ACollisionSphere : ACollisionBody
                 const float phi = slice * Math::_2PI / numSlices;
                 Math::SinCos(phi, sinPhi, cosPhi);
 
-                *pVertices++ = transform * ( Float3(cosPhi * sinTheta, cosTheta, sinPhi * sinTheta) * Radius + Position );
-
-                // No rotation
-
-                // TODO: work around with bNonUniformScale ?
+                *pVertices++ = transform * (Float3(cosPhi * sinTheta, cosTheta, sinPhi * sinTheta) * Radius + Position);
             }
         }
 
