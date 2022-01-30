@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Collision.h"
+#include "CollisionModel.h"
 
 class ADebugRenderer;
 class APhysicalBody;
@@ -97,7 +98,16 @@ struct SCollisionQueryFilter
 struct SConvexSweepTest
 {
     /** Convex collision body */
-    ACollisionBody * CollisionBody;
+    union
+    {
+        SCollisionSphereDef*      CollisionSphere;
+        SCollisionSphereRadiiDef* CollisionSphereRADII;
+        SCollisionBoxDef*         CollisionBox;
+        SCollisionCylinderDef*    CollisionCylinder;
+        SCollisionConeDef*        CollisionCone;
+        SCollisionCapsuleDef*     CollisionCapsule;
+        SCollisionConvexHullDef*  CollisionConvexHull;
+    };
     /** Scale of collision body */
     Float3 Scale;
     /** Start position for convex sweep trace */

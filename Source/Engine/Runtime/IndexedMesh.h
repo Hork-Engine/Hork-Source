@@ -34,7 +34,7 @@ SOFTWARE.
 #include "DebugRenderer.h"
 #include "Level.h"
 #include "Material.h"
-#include "CollisionBody.h"
+#include "CollisionModel.h"
 #include "Skeleton.h"
 
 #include <Geometry/Transform.h>

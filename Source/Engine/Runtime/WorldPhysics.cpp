@@ -1467,29 +1467,129 @@ bool AWorldPhysics::TraceConvex( SCollisionTraceResult & _Result, SConvexSweepTe
 {
     _Result.Clear();
 
-    if ( !_SweepTest.CollisionBody->IsConvex() ) {
-        GLogger.Printf( "AWorld::TraceConvex: non-convex collision body for convex trace\n" );
-        return false;
-    }
-
-    TUniqueRef< btCollisionShape > shape( _SweepTest.CollisionBody->Create() );
-    shape->setMargin( _SweepTest.CollisionBody->Margin );
-
-    AN_ASSERT( shape->isConvex() );
-
     Float3x4 startTransform, endTransform;
 
-    startTransform.Compose( _SweepTest.StartPosition, _SweepTest.StartRotation.ToMatrix3x3(), _SweepTest.Scale );
+    startTransform.Compose(_SweepTest.StartPosition, _SweepTest.StartRotation.ToMatrix3x3(), _SweepTest.Scale);
     endTransform.Compose(_SweepTest.EndPosition, _SweepTest.EndRotation.ToMatrix3x3(), _SweepTest.Scale);
 
-    Float3 startPos = startTransform * _SweepTest.CollisionBody->Position;
-    Float3 endPos = endTransform * _SweepTest.CollisionBody->Position;
-    Quat startRot = _SweepTest.StartRotation * _SweepTest.CollisionBody->Rotation;
-    Quat endRot = _SweepTest.EndRotation * _SweepTest.CollisionBody->Rotation;
+    TUniqueRef<btConvexShape> shape;
+    Float3 position;
+    Quat rotation;
+    float margin;
+
+    COLLISION_SHAPE type = _SweepTest.CollisionSphere->Type;
+    switch (type)
+    {
+        case COLLISION_SHAPE_SPHERE:
+            if (_SweepTest.CollisionSphere->bNonUniformScale)
+            {
+                btVector3 pos(0, 0, 0);
+                shape.Reset(new btMultiSphereShape(&pos, &_SweepTest.CollisionSphere->Radius, 1));
+            }
+            else
+            {
+                shape.Reset(new btSphereShape(_SweepTest.CollisionSphere->Radius));
+            }
+            position = _SweepTest.CollisionSphere->Position;
+            rotation = Quat::Identity();
+            margin   = _SweepTest.CollisionSphere->Margin;
+            break;
+        case COLLISION_SHAPE_SPHERE_RADII: {
+            btVector3 pos(0, 0, 0);
+            float     radius = 1.0f;
+            shape.Reset(new btMultiSphereShape(&pos, &radius, 1));
+            shape->setLocalScaling(btVectorToFloat3(_SweepTest.CollisionSphereRADII->Radius));
+            position = _SweepTest.CollisionSphereRADII->Position;
+            rotation = _SweepTest.CollisionSphereRADII->Rotation;
+            margin   = _SweepTest.CollisionSphereRADII->Margin;
+            break;
+            }
+        case COLLISION_SHAPE_BOX:
+            shape.Reset(new btBoxShape(btVectorToFloat3(_SweepTest.CollisionBox->HalfExtents)));
+            position = _SweepTest.CollisionBox->Position;
+            rotation = _SweepTest.CollisionBox->Rotation;
+            margin   = _SweepTest.CollisionBox->Margin;
+            break;
+        case COLLISION_SHAPE_CYLINDER:
+            switch (_SweepTest.CollisionCylinder->Axial)
+            {
+                case COLLISION_SHAPE_AXIAL_X:
+                    shape.Reset(new btCylinderShapeX(btVectorToFloat3(_SweepTest.CollisionCylinder->HalfExtents)));
+                    break;
+                case COLLISION_SHAPE_AXIAL_Y:
+                    shape.Reset(new btCylinderShape(btVectorToFloat3(_SweepTest.CollisionCylinder->HalfExtents)));
+                    break;
+                case COLLISION_SHAPE_AXIAL_Z:
+                    shape.Reset(new btCylinderShapeZ(btVectorToFloat3(_SweepTest.CollisionCylinder->HalfExtents)));
+                    break;
+                default:
+                    shape.Reset(new btCylinderShape(btVectorToFloat3(_SweepTest.CollisionCylinder->HalfExtents)));
+                    break;
+            }
+            position = _SweepTest.CollisionCylinder->Position;
+            rotation = _SweepTest.CollisionCylinder->Rotation;
+            margin   = _SweepTest.CollisionCylinder->Margin;
+            break;
+        case COLLISION_SHAPE_CONE:
+            switch (_SweepTest.CollisionCone->Axial)
+            {
+                case COLLISION_SHAPE_AXIAL_X:
+                    shape.Reset(new btConeShapeX(_SweepTest.CollisionCone->Radius, _SweepTest.CollisionCone->Height));
+                    break;
+                case COLLISION_SHAPE_AXIAL_Y:
+                    shape.Reset(new btConeShape(_SweepTest.CollisionCone->Radius, _SweepTest.CollisionCone->Height));
+                    break;
+                case COLLISION_SHAPE_AXIAL_Z:
+                    shape.Reset(new btConeShapeZ(_SweepTest.CollisionCone->Radius, _SweepTest.CollisionCone->Height));
+                    break;
+                default:
+                    shape.Reset(new btConeShape(_SweepTest.CollisionCone->Radius, _SweepTest.CollisionCone->Height));
+                    break;
+            }
+            position = _SweepTest.CollisionCone->Position;
+            rotation = _SweepTest.CollisionCone->Rotation;
+            margin   = _SweepTest.CollisionCone->Margin;
+            break;
+        case COLLISION_SHAPE_CAPSULE:
+            switch (_SweepTest.CollisionCapsule->Axial)
+            {
+                case COLLISION_SHAPE_AXIAL_X:
+                    shape.Reset(new btCapsuleShapeX(_SweepTest.CollisionCapsule->Radius, _SweepTest.CollisionCapsule->Height));
+                    break;
+                case COLLISION_SHAPE_AXIAL_Y:
+                    shape.Reset(new btCapsuleShape(_SweepTest.CollisionCapsule->Radius, _SweepTest.CollisionCapsule->Height));
+                    break;
+                case COLLISION_SHAPE_AXIAL_Z:
+                    shape.Reset(new btCapsuleShapeZ(_SweepTest.CollisionCapsule->Radius, _SweepTest.CollisionCapsule->Height));
+                    break;
+                default:
+                    shape.Reset(new btCapsuleShape(_SweepTest.CollisionCapsule->Radius, _SweepTest.CollisionCapsule->Height));
+                    break;
+            }
+            position = _SweepTest.CollisionCapsule->Position;
+            rotation = _SweepTest.CollisionCapsule->Rotation;
+            margin   = _SweepTest.CollisionCapsule->Margin;
+            break;
+        case COLLISION_SHAPE_CONVEX_HULL:
+            shape.Reset(new btConvexHullShape(&_SweepTest.CollisionConvexHull->pVertices[0][0], _SweepTest.CollisionConvexHull->VertexCount, sizeof(Float3)));
+            position = _SweepTest.CollisionConvexHull->Position;
+            rotation = _SweepTest.CollisionConvexHull->Rotation;
+            margin   = _SweepTest.CollisionConvexHull->Margin;
+            break;
+        default:
+            GLogger.Printf("AWorld::TraceConvex: unsupported collision shape\n");
+            return false;
+    }
+
+    shape->setMargin( margin );
+    Float3 startPos = startTransform * position;
+    Float3 endPos = endTransform * position;
+    Quat startRot = _SweepTest.StartRotation * rotation;
+    Quat endRot = _SweepTest.EndRotation * rotation;
 
     STraceClosestConvexResultCallback hitResult( &_SweepTest.QueryFilter );
 
-    DynamicsWorld->convexSweepTest( static_cast< btConvexShape * >( shape.GetObject() ),
+    DynamicsWorld->convexSweepTest( shape.GetObject(),
         btTransform( btQuaternionToQuat( startRot ), btVectorToFloat3( startPos ) ),
         btTransform( btQuaternionToQuat( endRot ), btVectorToFloat3( endPos ) ), hitResult );
 

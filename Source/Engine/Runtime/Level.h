@@ -30,7 +30,6 @@ SOFTWARE.
 
 #pragma once
 
-#include "CollisionBody.h"
 #include "Material.h"
 #include "SoundResource.h"
 #include "HitTest.h"

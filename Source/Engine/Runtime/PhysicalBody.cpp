@@ -225,8 +225,6 @@ AN_ATTRIBUTE( Restitution, float, SetRestitution, GetRestitution, AF_DEFAULT )
 AN_ATTRIBUTE( ContactProcessingThreshold, float, SetContactProcessingThreshold, GetContactProcessingThreshold, AF_DEFAULT )
 AN_ATTRIBUTE( CcdRadius, float, SetCcdRadius, GetCcdRadius, AF_DEFAULT )
 AN_ATTRIBUTE( CcdMotionThreshold, float, SetCcdMotionThreshold, GetCcdMotionThreshold, AF_DEFAULT )
-//ACollisionModel CollisionModel;
-//void AddCollisionIgnoreActor( AActor * _Actor );
 AN_END_CLASS_META()
 
 APhysicalBody::APhysicalBody()
@@ -336,9 +334,9 @@ public:
 
         rotation.FromMatrix( jointTransform.DecomposeRotation() );
 
-        Float3 localPosition = Self->CachedScale * CollisionBody->Position;
+        Float3 localPosition = Self->CachedScale * OffsetPosition;
 
-        _CenterOfMassTransform.setRotation( btQuaternionToQuat( rotation * CollisionBody->Rotation ) );
+        _CenterOfMassTransform.setRotation( btQuaternionToQuat( rotation * OffsetRotation ) );
         _CenterOfMassTransform.setOrigin( btVectorToFloat3( position ) + _CenterOfMassTransform.getBasis() * btVectorToFloat3( localPosition ) );
     }
 
@@ -350,7 +348,8 @@ public:
     APhysicalBody * Self;
 
     TRef< AHitProxy > HitProxy;
-    TRef< ACollisionBody > CollisionBody;
+    Float3 OffsetPosition;
+    Quat OffsetRotation;
 };
 
 void APhysicalBody::ClearBoneCollisions()
@@ -365,7 +364,6 @@ void APhysicalBody::ClearBoneCollisions()
 
         delete colObject;
         delete shape;
-        //boneCollision->CollisionBody->RemoveRef();
         delete boneCollision;
     }
 
@@ -383,26 +381,29 @@ void APhysicalBody::UpdateBoneCollisions()
 
 void APhysicalBody::CreateBoneCollisions()
 {
-    btRigidBody::btRigidBodyConstructionInfo constructInfo( 0.0f, nullptr, nullptr );
-    const btVector3 scaling = btVectorToFloat3( CachedScale );
-
     ClearBoneCollisions();
 
-    if ( !CollisionModel ) {
+    ACollisionModel const * collisionModel = GetCollisionModel();
+
+    if ( !collisionModel ) {
         return;
     }
 
-    TStdVector< SBoneCollision > const & boneCollisions = CollisionModel->GetBoneCollisions();
+    btRigidBody::btRigidBodyConstructionInfo constructInfo( 0.0f, nullptr, nullptr );
+    const btVector3 scaling = btVectorToFloat3( CachedScale );
+
+    TStdVector< SBoneCollision > const & boneCollisions = collisionModel->GetBoneCollisions();
 
     BoneCollisionInst.Resize( boneCollisions.Size() );
     for ( int i = 0 ; i < boneCollisions.Size() ; i++ ) {
         ABoneCollisionInstance * boneCollision = new ABoneCollisionInstance;
-        ACollisionBody * collisionBody = boneCollisions[i].CollisionBody;
+        TUniqueRef<ACollisionBody> const& collisionBody = boneCollisions[i].CollisionBody;
 
         BoneCollisionInst[i] = boneCollision;
 
         boneCollision->Self = this;
-        boneCollision->CollisionBody = collisionBody;
+        boneCollision->OffsetPosition = collisionBody->Position;
+        boneCollision->OffsetRotation = collisionBody->Rotation;
         boneCollision->HitProxy = CreateInstanceOf< AHitProxy >();
         boneCollision->HitProxy->SetCollisionMask( boneCollisions[i].CollisionMask );
         boneCollision->HitProxy->SetCollisionGroup( boneCollisions[i].CollisionGroup );
@@ -411,19 +412,13 @@ void APhysicalBody::CreateBoneCollisions()
         btCollisionShape * shape = collisionBody->Create();
         shape->setMargin( collisionBody->Margin );
         shape->setLocalScaling( shape->getLocalScaling() * scaling );
-        //shape->setUserPointer( collisionBody );
-
-        //collisionBody->AddRef();
 
         constructInfo.m_motionState = boneCollision;
         constructInfo.m_collisionShape = shape;
 
         int collisionFlags = btCollisionObject::CF_KINEMATIC_OBJECT;
-        //if ( BoneCollisions[i].bTrigger ) {
-        //    collisionFlags |= btCollisionObject::CF_NO_CONTACT_RESPONSE;
-        //}
 
-        btRigidBody * rigidBody = new btRigidBody( constructInfo );;
+        btRigidBody * rigidBody = new btRigidBody( constructInfo );
         rigidBody->setCollisionFlags( collisionFlags );
         rigidBody->forceActivationState( DISABLE_DEACTIVATION );
         rigidBody->setUserPointer( boneCollision->HitProxy.GetObject() );
@@ -445,7 +440,7 @@ void APhysicalBody::SetCollisionModel( ACollisionModel * _CollisionModel )
     UpdateBoneCollisions();
 }
 
-ACollisionModel const * APhysicalBody::GetCollisionModel() const
+ACollisionModel* APhysicalBody::GetCollisionModel() const
 {
     return bUseMeshCollision ? GetMeshCollisionModel() : CollisionModel;
 }
@@ -535,7 +530,7 @@ void APhysicalBody::CreateRigidBody()
     MotionState = new APhysicalBodyMotionState;
     MotionState->Self = this;
 
-    CollisionInstance = MakeRef< ACollisionInstance >( GetCollisionModel(), CachedScale );
+    CollisionInstance = GetCollisionModel()->Instantiate(CachedScale);
     MotionState->CenterOfMass = CollisionInstance->GetCenterOfMass();
 
     Float3 localInertia( 0.0f, 0.0f, 0.0f );
@@ -618,7 +613,7 @@ void APhysicalBody::UpdatePhysicsAttribs()
 
     CachedScale = GetWorldScale();
 
-    CollisionInstance = MakeRef< ACollisionInstance >( GetCollisionModel(), CachedScale );
+    CollisionInstance = GetCollisionModel()->Instantiate(CachedScale);
     MotionState->CenterOfMass = CollisionInstance->GetCenterOfMass();
 
     float mass = Math::Clamp( Mass, MIN_MASS, MAX_MASS );
@@ -1189,21 +1184,7 @@ void APhysicalBody::GatherCollisionGeometry( TPodVectorHeap< Float3 > & _Vertice
         return;
     }
 
-    int firstVertex = _Vertices.Size();
-
-    collisionModel->GatherGeometry( _Vertices, _Indices );
-
-    int numVertices = _Vertices.Size() - firstVertex;
-
-    if ( numVertices > 0 )
-    {
-        Float3 * pVertices = _Vertices.ToPtr() + firstVertex;
-
-        Float3x4 const & worldTransform = GetWorldTransformMatrix();
-        for ( int i = 0 ; i < numVertices ; i++, pVertices++ ) {
-            *pVertices = worldTransform * (*pVertices);
-        }
-    }
+    collisionModel->GatherGeometry(_Vertices, _Indices, GetWorldTransformMatrix());
 }
 
 void APhysicalBody::SetTrigger( bool _Trigger )

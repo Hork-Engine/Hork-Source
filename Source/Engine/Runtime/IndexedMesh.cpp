@@ -987,9 +987,10 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
     {
         InitializeBoxMesh(Float3(1), 1);
 
-        CollisionModel               = CreateInstanceOf<ACollisionModel>();
-        ACollisionBox* collisionBody = CollisionModel->CreateBody<ACollisionBox>();
-        collisionBody->HalfExtents   = Float3(0.5f);
+        SCollisionBoxDef box;
+
+        CollisionModel = CreateInstanceOf<ACollisionModel>();
+        CollisionModel->Initialize(&box);
         return;
     }
 
@@ -997,9 +998,10 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
     {
         InitializeSphereMesh(0.5f, 1);
 
-        CollisionModel                  = CreateInstanceOf<ACollisionModel>();
-        ACollisionSphere* collisionBody = CollisionModel->CreateBody<ACollisionSphere>();
-        collisionBody->Radius           = 0.5f;
+        SCollisionSphereDef sphere;
+
+        CollisionModel = CreateInstanceOf<ACollisionModel>();
+        CollisionModel->Initialize(&sphere);
         return;
     }
 
@@ -1007,9 +1009,11 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
     {
         InitializeCylinderMesh(0.5f, 1, 1);
 
-        CollisionModel                    = CreateInstanceOf<ACollisionModel>();
-        ACollisionCylinder* collisionBody = CollisionModel->CreateBody<ACollisionCylinder>();
-        collisionBody->HalfExtents        = Float3(0.5f);
+        SCollisionCylinderDef cylinder;
+        cylinder.HalfExtents = {0.5f, 0.5f, 0.5f};
+
+        CollisionModel = CreateInstanceOf<ACollisionModel>();
+        CollisionModel->Initialize(&cylinder);
         return;
     }
 
@@ -1017,10 +1021,11 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
     {
         InitializeConeMesh(0.5f, 1, 1);
 
-        CollisionModel                = CreateInstanceOf<ACollisionModel>();
-        ACollisionCone* collisionBody = CollisionModel->CreateBody<ACollisionCone>();
-        collisionBody->Radius         = 0.5f;
-        collisionBody->Height         = 1.0f;
+        SCollisionConeDef cone;
+        cone.Radius = 0.5f;
+
+        CollisionModel = CreateInstanceOf<ACollisionModel>();
+        CollisionModel->Initialize(&cone);
         return;
     }
 
@@ -1028,10 +1033,11 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
     {
         InitializeCapsuleMesh(0.5f, 1.0f, 1);
 
-        CollisionModel                   = CreateInstanceOf<ACollisionModel>();
-        ACollisionCapsule* collisionBody = CollisionModel->CreateBody<ACollisionCapsule>();
-        collisionBody->Radius            = 0.5f;
-        collisionBody->Height            = 1;
+        SCollisionCapsuleDef capsule;
+        capsule.Radius = 0.5f;
+
+        CollisionModel = CreateInstanceOf<ACollisionModel>();
+        CollisionModel->Initialize(&capsule);
         return;
     }
 
@@ -1039,12 +1045,14 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
     {
         InitializePlaneMeshXZ(256, 256, 256);
 
-        CollisionModel     = CreateInstanceOf<ACollisionModel>();
-        ACollisionBox* box = CollisionModel->CreateBody<ACollisionBox>();
-        box->HalfExtents.X = 128;
-        box->HalfExtents.Y = 0.1f;
-        box->HalfExtents.Z = 128;
-        box->Position.Y -= box->HalfExtents.Y;
+        SCollisionBoxDef box;
+        box.HalfExtents.X = 128;
+        box.HalfExtents.Y = 0.1f;
+        box.HalfExtents.Z = 128;
+        box.Position.Y -= box.HalfExtents.Y;
+
+        CollisionModel = CreateInstanceOf<ACollisionModel>();
+        CollisionModel->Initialize(&box);
         return;
     }
 
@@ -1052,12 +1060,14 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
     {
         InitializePlaneMeshXY(256, 256, 256);
 
-        CollisionModel     = CreateInstanceOf<ACollisionModel>();
-        ACollisionBox* box = CollisionModel->CreateBody<ACollisionBox>();
-        box->HalfExtents.X = 128;
-        box->HalfExtents.Y = 128;
-        box->HalfExtents.Z = 0.1f;
-        box->Position.Z -= box->HalfExtents.Z;
+        SCollisionBoxDef box;
+        box.HalfExtents.X = 128;
+        box.HalfExtents.Y = 128;
+        box.HalfExtents.Z = 0.1f;
+        box.Position.Z -= box.HalfExtents.Z;
+
+        CollisionModel = CreateInstanceOf<ACollisionModel>();
+        CollisionModel->Initialize(&box);
         return;
     }
 
@@ -1088,17 +1098,17 @@ void AIndexedMesh::GenerateRigidbodyCollisions()
 {
     AScopedTimer ScopedTime("GenerateRigidbodyCollisions");
 
-    ACollisionTriangleSoupData* tris = CreateInstanceOf<ACollisionTriangleSoupData>();
-    tris->Initialize((float*)&Vertices.ToPtr()->Position, sizeof(Vertices[0]), Vertices.Size(),
-                     Indices.ToPtr(), Indices.Size(), Subparts.ToPtr(), Subparts.Size());
+    SCollisionTriangleSoupBVHDef bvh;
+    bvh.pVertices = &Vertices[0].Position;
+    bvh.VertexStride = sizeof(Vertices[0]);
+    bvh.VertexCount  = Vertices.Size();
+    bvh.pIndices = Indices.ToPtr();
+    bvh.IndexCount = Indices.Size();
+    bvh.pIndexedMeshSubparts = Subparts.ToPtr();
+    bvh.SubpartCount = Subparts.Size();
 
-    ACollisionTriangleSoupBVHData* bvh = CreateInstanceOf<ACollisionTriangleSoupBVHData>();
-    bvh->TrisData                      = tris;
-    bvh->BuildBVH();
-
-    CollisionModel                           = CreateInstanceOf<ACollisionModel>();
-    ACollisionTriangleSoupBVH* CollisionBody = CollisionModel->CreateBody<ACollisionTriangleSoupBVH>();
-    CollisionBody->BvhData                   = bvh;
+    CollisionModel = CreateInstanceOf<ACollisionModel>();
+    CollisionModel->Initialize(&bvh);
 }
 
 void AIndexedMesh::GenerateSoftbodyFacesFromMeshIndices()

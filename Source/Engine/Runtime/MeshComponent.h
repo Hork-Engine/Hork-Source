@@ -125,7 +125,7 @@ protected:
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    ACollisionModel const * GetMeshCollisionModel() const override;
+    ACollisionModel * GetMeshCollisionModel() const override;
 
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 

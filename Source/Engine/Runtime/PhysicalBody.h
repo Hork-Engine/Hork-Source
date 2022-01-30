@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "SceneComponent.h"
 #include "Collision.h"
-#include "CollisionBody.h"
+#include "CollisionModel.h"
 
 class APhysicalBodyMotionState;
 class ABoneCollisionInstance;
@@ -133,7 +133,7 @@ public:
     void SetCollisionModel( ACollisionModel * CollisionModel );
 
     /** Get current collision model */
-    ACollisionModel const * GetCollisionModel() const;
+    ACollisionModel* GetCollisionModel() const;
 
     /** Set object motion behavior: static, simulated, kinematic */
     void SetMotionBehavior( EMotionBehavior _MotionBehavior );
@@ -353,7 +353,7 @@ protected:
 
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 
-    virtual ACollisionModel const * GetMeshCollisionModel() const { return nullptr; }
+    virtual ACollisionModel* GetMeshCollisionModel() const { return nullptr; }
 
     friend class ABoneCollisionInstance;
     virtual Float3x4 const & _GetJointTransform( int _JointIndex )

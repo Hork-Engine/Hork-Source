@@ -343,7 +343,7 @@ BvAxisAlignedBox AMeshComponent::GetSubpartWorldBounds( int _SubpartIndex ) cons
     return subpart->GetBoundingBox().Transform( GetWorldTransformMatrix() );
 }
 
-ACollisionModel const * AMeshComponent::GetMeshCollisionModel() const {
+ACollisionModel * AMeshComponent::GetMeshCollisionModel() const {
     return Mesh->GetCollisionModel();
 }
 
