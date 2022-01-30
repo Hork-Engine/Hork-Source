@@ -31,6 +31,7 @@ SOFTWARE.
 #include <Platform/Memory/Memory.h>
 #include <Platform/Logger.h>
 #include <Platform/Platform.h>
+#include <Platform/WindowsDefs.h>
 
 #include <malloc.h>
 #include <memory.h>
@@ -57,7 +58,7 @@ AZoneMemory GZoneMemory;
 
 // Uncomment the following two lines to check for a memory leak
 //#define ZONE_MEMORY_LEAK_ADDRESS <local address>
-//#define ZONE_MEMORY_LEAK_SIZE <size>
+//#define ZONE_MEMORY_LEAK_SIZE    <size>
 
 #ifdef AN_ZONE_MULTITHREADED_ALLOC
 #    define ZONE_SYNC_GUARD      ASyncGuard syncGuard(Sync);
