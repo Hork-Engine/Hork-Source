@@ -3660,56 +3660,56 @@ struct Float3x4
 
     // Math operators
 
-    void Compose(Float3 const& _Translation, Float3x3 const& _Rotation, Float3 const& scale)
+    void Compose(Float3 const& translation, Float3x3 const& rotation, Float3 const& scale)
     {
-        Col0[3] = _Translation.X;
-        Col1[3] = _Translation.Y;
-        Col2[3] = _Translation.Z;
+        Col0[3] = translation.X;
+        Col1[3] = translation.Y;
+        Col2[3] = translation.Z;
 
-        Col0[0] = _Rotation[0][0] * scale.X;
-        Col0[1] = _Rotation[1][0] * scale.Y;
-        Col0[2] = _Rotation[2][0] * scale.Z;
+        Col0[0] = rotation[0][0] * scale.X;
+        Col0[1] = rotation[1][0] * scale.Y;
+        Col0[2] = rotation[2][0] * scale.Z;
 
-        Col1[0] = _Rotation[0][1] * scale.X;
-        Col1[1] = _Rotation[1][1] * scale.Y;
-        Col1[2] = _Rotation[2][1] * scale.Z;
+        Col1[0] = rotation[0][1] * scale.X;
+        Col1[1] = rotation[1][1] * scale.Y;
+        Col1[2] = rotation[2][1] * scale.Z;
 
-        Col2[0] = _Rotation[0][2] * scale.X;
-        Col2[1] = _Rotation[1][2] * scale.Y;
-        Col2[2] = _Rotation[2][2] * scale.Z;
+        Col2[0] = rotation[0][2] * scale.X;
+        Col2[1] = rotation[1][2] * scale.Y;
+        Col2[2] = rotation[2][2] * scale.Z;
     }
 
-    void Compose(Float3 const& _Translation, Float3x3 const& _Rotation)
+    void Compose(Float3 const& translation, Float3x3 const& rotation)
     {
-        Col0[3] = _Translation.X;
-        Col1[3] = _Translation.Y;
-        Col2[3] = _Translation.Z;
+        Col0[3] = translation.X;
+        Col1[3] = translation.Y;
+        Col2[3] = translation.Z;
 
-        Col0[0] = _Rotation[0][0];
-        Col0[1] = _Rotation[1][0];
-        Col0[2] = _Rotation[2][0];
+        Col0[0] = rotation[0][0];
+        Col0[1] = rotation[1][0];
+        Col0[2] = rotation[2][0];
 
-        Col1[0] = _Rotation[0][1];
-        Col1[1] = _Rotation[1][1];
-        Col1[2] = _Rotation[2][1];
+        Col1[0] = rotation[0][1];
+        Col1[1] = rotation[1][1];
+        Col1[2] = rotation[2][1];
 
-        Col2[0] = _Rotation[0][2];
-        Col2[1] = _Rotation[1][2];
-        Col2[2] = _Rotation[2][2];
+        Col2[0] = rotation[0][2];
+        Col2[1] = rotation[1][2];
+        Col2[2] = rotation[2][2];
     }
 
-    void SetTranslation(Float3 const& _Translation)
+    void SetTranslation(Float3 const& translation)
     {
-        Col0[3] = _Translation.X;
-        Col1[3] = _Translation.Y;
-        Col2[3] = _Translation.Z;
+        Col0[3] = translation.X;
+        Col1[3] = translation.Y;
+        Col2[3] = translation.Z;
     }
 
-    void DecomposeAll(Float3& _Translation, Float3x3& _Rotation, Float3& scale) const
+    void DecomposeAll(Float3& translation, Float3x3& rotation, Float3& scale) const
     {
-        _Translation.X = Col0[3];
-        _Translation.Y = Col1[3];
-        _Translation.Z = Col2[3];
+        translation.X = Col0[3];
+        translation.Y = Col1[3];
+        translation.Z = Col2[3];
 
         scale.X = Float3(Col0[0], Col1[0], Col2[0]).Length();
         scale.Y = Float3(Col0[1], Col1[1], Col2[1]).Length();
@@ -3719,17 +3719,17 @@ struct Float3x4
         float sy = 1.0f / scale.Y;
         float sz = 1.0f / scale.Z;
 
-        _Rotation[0][0] = Col0[0] * sx;
-        _Rotation[1][0] = Col0[1] * sy;
-        _Rotation[2][0] = Col0[2] * sz;
+        rotation[0][0]  = Col0[0] * sx;
+        rotation[1][0]  = Col0[1] * sy;
+        rotation[2][0]  = Col0[2] * sz;
 
-        _Rotation[0][1] = Col1[0] * sx;
-        _Rotation[1][1] = Col1[1] * sy;
-        _Rotation[2][1] = Col1[2] * sz;
+        rotation[0][1]  = Col1[0] * sx;
+        rotation[1][1]  = Col1[1] * sy;
+        rotation[2][1]  = Col1[2] * sz;
 
-        _Rotation[0][2] = Col2[0] * sx;
-        _Rotation[1][2] = Col2[1] * sy;
-        _Rotation[2][2] = Col2[2] * sz;
+        rotation[0][2]  = Col2[0] * sx;
+        rotation[1][2]  = Col2[1] * sy;
+        rotation[2][2]  = Col2[2] * sz;
     }
 
     Float3 DecomposeTranslation() const
@@ -3751,7 +3751,7 @@ struct Float3x4
                       Float3(Col0[2], Col1[2], Col2[2]).Length());
     }
 
-    void DecomposeRotationAndScale(Float3x3& _Rotation, Float3& scale) const
+    void DecomposeRotationAndScale(Float3x3& rotation, Float3& scale) const
     {
         scale.X = Float3(Col0[0], Col1[0], Col2[0]).Length();
         scale.Y = Float3(Col0[1], Col1[1], Col2[1]).Length();
@@ -3761,17 +3761,17 @@ struct Float3x4
         float sy = 1.0f / scale.Y;
         float sz = 1.0f / scale.Z;
 
-        _Rotation[0][0] = Col0[0] * sx;
-        _Rotation[1][0] = Col0[1] * sy;
-        _Rotation[2][0] = Col0[2] * sz;
+        rotation[0][0]  = Col0[0] * sx;
+        rotation[1][0]  = Col0[1] * sy;
+        rotation[2][0]  = Col0[2] * sz;
 
-        _Rotation[0][1] = Col1[0] * sx;
-        _Rotation[1][1] = Col1[1] * sy;
-        _Rotation[2][1] = Col1[2] * sz;
+        rotation[0][1]  = Col1[0] * sx;
+        rotation[1][1]  = Col1[1] * sy;
+        rotation[2][1]  = Col1[2] * sz;
 
-        _Rotation[0][2] = Col2[0] * sx;
-        _Rotation[1][2] = Col2[1] * sy;
-        _Rotation[2][2] = Col2[2] * sz;
+        rotation[0][2]  = Col2[0] * sx;
+        rotation[1][2]  = Col2[1] * sy;
+        rotation[2][2]  = Col2[2] * sz;
     }
 
     void DecomposeNormalMatrix(Float3x3& _NormalMatrix) const
