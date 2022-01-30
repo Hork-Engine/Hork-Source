@@ -84,6 +84,9 @@ class ASkeletalAnimation : public AResource {
     AN_CLASS( ASkeletalAnimation, AResource )
 
 public:
+    ASkeletalAnimation();
+    ~ASkeletalAnimation();
+
     void Initialize( int _FrameCount, float _FrameDelta, STransform const * _Transforms, int _TransformsCount, SAnimationChannel const * _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const * _Bounds );
 
     void Purge();
@@ -102,9 +105,6 @@ public:
     bool IsValid() const { return bIsAnimationValid; }
 
 protected:
-    ASkeletalAnimation();
-    ~ASkeletalAnimation();
-
     /** Load resource from file */
     bool LoadResource( IBinaryStream & Stream ) override;
 
