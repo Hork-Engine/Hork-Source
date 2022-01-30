@@ -39,7 +39,7 @@ struct SShortcutInfo
     TCallback< void() > Binding;
 };
 
-class AShortcutContainer : public ARefCounted
+class AShortcutContainer : public ABaseObject
 {
 public:
     void Clear()
