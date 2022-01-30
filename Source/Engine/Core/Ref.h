@@ -580,7 +580,8 @@ public:
     TUniqueRef(TUniqueRef<T> const&) = delete;
     TUniqueRef& operator=(TUniqueRef<T> const&) = delete;
 
-    TUniqueRef(TUniqueRef&& _Rhs) :
+    template <typename T2>
+    TUniqueRef(TUniqueRef<T2>&& _Rhs) :
         Object(_Rhs.Detach())
     {
     }
@@ -590,7 +591,8 @@ public:
         Reset();
     }
 
-    TUniqueRef& operator=(TUniqueRef&& _Rhs)
+    template <typename T2>
+    TUniqueRef& operator=(TUniqueRef<T2>&& _Rhs)
     {
         Reset(_Rhs.Detach());
         return *this;
