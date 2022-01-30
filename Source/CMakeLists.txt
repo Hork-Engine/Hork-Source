@@ -23,6 +23,9 @@ set_target_properties( 03_Triggers PROPERTIES FOLDER "Samples" )
 add_subdirectory( Samples/04_Terrain )
 set_target_properties( 04_Terrain PROPERTIES FOLDER "Samples" )
 
+add_subdirectory( Samples/05_ProceduralMesh )
+set_target_properties( 05_ProceduralMesh PROPERTIES FOLDER "Samples" )
+
 add_subdirectory( Samples/Airplane )
 set_target_properties( Airplane PROPERTIES FOLDER "Samples" )
 
