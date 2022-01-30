@@ -1,4 +1,4 @@
-# Angie Engine
+# Hork Engine
 
 Game engine
 
@@ -10,8 +10,6 @@ started from scratch in the fall of 2018. Before that, there were other versions
 
 ## Fun fact
 One of the engine versions was called Unity and was developed in 2002. It was a clone of Quake 3 Arena (only level renderer). At that time, I was inspired by Carmack's code, the sources of Quake1 and Doom2 were already available.
-
-The name Angie Engine was chosen by the name of heroine Angela "Angie" McAlister after watching the series Under The Dome. I liked her name, and it is in tune with the word Engine, and I thought, why not?
 
 # Features
 
