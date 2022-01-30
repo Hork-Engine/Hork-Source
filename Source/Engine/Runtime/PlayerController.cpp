@@ -65,8 +65,6 @@ void APlayerController::OnPawnChanged()
 
     InputComponent->BindAction( "Pause", IA_PRESS, this, &APlayerController::TogglePause, true );
     InputComponent->BindAction( "TakeScreenshot", IA_PRESS, this, &APlayerController::TakeScreenshot, true );
-    InputComponent->BindAction( "ToggleWireframe", IA_PRESS, this, &APlayerController::ToggleWireframe, true );
-    InputComponent->BindAction( "ToggleDebugDraw", IA_PRESS, this, &APlayerController::ToggleDebugDraw, true );
 
     if ( Pawn ) {
         Pawn->SetupInputComponent( InputComponent );
@@ -154,18 +152,6 @@ void APlayerController::TakeScreenshot() {
                 GHunkMemory.ClearLastHunk();
             }
         }
-    }
-}
-
-void APlayerController::ToggleWireframe() {
-    if ( RenderingParameters ) {
-        RenderingParameters->bWireframe ^= 1;
-    }
-}
-
-void APlayerController::ToggleDebugDraw() {
-    if ( RenderingParameters ) {
-        RenderingParameters->bDrawDebug ^= 1;
     }
 }
 

@@ -270,8 +270,6 @@ protected:
 private:
     void TogglePause();
     void TakeScreenshot();
-    void ToggleWireframe();
-    void ToggleDebugDraw();
 
     TRef< ARenderingParameters > RenderingParameters;
     TRef< AAudioParameters > AudioParameters;
