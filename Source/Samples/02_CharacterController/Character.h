@@ -33,20 +33,49 @@ SOFTWARE.
 #include <Runtime/InputComponent.h>
 #include <Runtime/MeshComponent.h>
 
-constexpr float CHARACTER_CAPSULE_RADIUS = 0.5f;
+constexpr float CHARACTER_CAPSULE_RADIUS = 0.35f;
 constexpr float CHARACTER_CAPSULE_HEIGHT = 1.0f;
 
 class ACharacter : public AActor
 {
     AN_ACTOR(ACharacter, AActor)
 
+public:
+    void SetFirstPersonCamera(bool FirstPersonCamera)
+    {
+        bFirstPersonCamera = FirstPersonCamera;
+
+        if (bFirstPersonCamera)
+        {
+            float eyeOffset = CHARACTER_CAPSULE_HEIGHT * 0.5f;
+            Camera->SetPosition(0, eyeOffset, 0);
+            Camera->SetAngles(Math::Degrees(FirstPersonCameraPitch), 0, 0);
+        }
+        else
+        {
+            Camera->SetPosition(0, 4, std::sqrt(8.0f));
+            Camera->SetAngles(-60, 0, 0);
+        }
+    }
+
+    bool IsFirstPersonCamera() const
+    {
+        return bFirstPersonCamera;
+    }
+
 protected:
-    AMeshComponent*   CharacterMesh{};
-    APhysicalBody*    CharacterPhysics{};
-    ACameraComponent* Camera{};
-    Float3            WishDir{};
-    bool              bWantJump{};
-    Float3            TotalVelocity{};
+    AMeshComponent*           CharacterMesh{};
+    APhysicalBody*            CharacterPhysics{};
+    ACameraComponent*         Camera{};
+    float                     ForwardMove{};
+    float                     SideMove{};
+    bool                      bWantJump{};
+    Float3                    TotalVelocity{};
+    AProceduralMeshComponent* ProcMesh;
+    TRef<AProceduralMesh>     ProcMeshResource;
+    float                     NextJumpTime{};
+    bool                      bFirstPersonCamera{};
+    float                     FirstPersonCameraPitch{};
 
     ACharacter()
     {}
@@ -57,18 +86,18 @@ protected:
         static TStaticResourceFinder<AMaterialInstance> CharacterMaterialInstance(_CTS("CharacterMaterialInstance"));
 
         // Create capsule collision model
-        ACollisionModel*   model   = CreateInstanceOf<ACollisionModel>();
-        ACollisionCapsule* capsule = model->CreateBody<ACollisionCapsule>();
-        capsule->Radius            = CHARACTER_CAPSULE_RADIUS;
-        capsule->Height            = CHARACTER_CAPSULE_HEIGHT;
+        SCollisionCapsuleDef capsule;
+        capsule.Radius = CHARACTER_CAPSULE_RADIUS;
+        capsule.Height = CHARACTER_CAPSULE_HEIGHT;
+
+        ACollisionModel* model = CreateInstanceOf<ACollisionModel>();
+        model->Initialize(&capsule);
 
         // Create simulated physics body
         CharacterPhysics = CreateComponent<APhysicalBody>("CharacterPhysics");
         CharacterPhysics->SetMotionBehavior(MB_SIMULATED);
         CharacterPhysics->SetAngularFactor({0, 0, 0});
         CharacterPhysics->SetCollisionModel(model);
-        CharacterPhysics->SetOverrideWorldGravity(true);
-        CharacterPhysics->SetSelfGravity({0, 0, 0});
         CharacterPhysics->SetCollisionGroup(CM_PAWN);
 
         // Create character model and attach it to physics body
@@ -83,6 +112,16 @@ protected:
         Camera->SetPosition(0, 4, std::sqrt(8.0f));
         Camera->SetAngles(-60, 0, 0);
         Camera->AttachTo(CharacterMesh);
+
+        static TStaticResourceFinder<AIndexedMesh>      UnitBox(_CTS("/Default/Meshes/Skybox"));
+        static TStaticResourceFinder<AMaterialInstance> SkyboxMaterialInst(_CTS("/Root/Skybox/skybox_matinst.minst"));
+        AMeshComponent*                                 SkyboxComponent;
+        SkyboxComponent = CreateComponent<AMeshComponent>("Skybox");
+        SkyboxComponent->SetMotionBehavior(MB_KINEMATIC);
+        SkyboxComponent->SetMesh(UnitBox.GetObject());
+        SkyboxComponent->SetMaterialInstance(SkyboxMaterialInst.GetObject());
+        SkyboxComponent->AttachTo(Camera);
+        SkyboxComponent->SetAbsoluteRotation(true);
 
         // Set root
         RootComponent = CharacterPhysics;
@@ -108,39 +147,45 @@ protected:
 
         bool bOnGround{};
 
-        if (GetWorld()->TraceCapsule(result, CHARACTER_CAPSULE_HEIGHT, CHARACTER_CAPSULE_RADIUS - 0.1f, traceStart, traceEnd, &filter))
+        NextJumpTime = Math::Max(0.0f, NextJumpTime - TimeStep);
+
+        if (GetWorld()->TraceCapsule(result, CHARACTER_CAPSULE_HEIGHT + 0.1f, CHARACTER_CAPSULE_RADIUS - 0.1f, traceStart, traceEnd, &filter))
         {
-            constexpr float JUMP_VELOCITY = 8;
+            constexpr float JUMP_IMPULSE = 4.5f;
 
             bOnGround = true;
 
-            TotalVelocity.Y = 0;
-            if (bWantJump)
-                TotalVelocity.Y = JUMP_VELOCITY;
+            if (bWantJump && NextJumpTime <= 0.0f)
+            {
+                CharacterPhysics->ApplyCentralImpulse(Float3(0, 1, 0) * JUMP_IMPULSE);
+
+                NextJumpTime = 0.05f;
+            }
         }
 
         bWantJump = false;
 
-        constexpr float WALK_VELOCITY = 4;
-        constexpr float FLY_VELOCITY  = 2;
+        constexpr float WALK_IMPULSE     = 0.4f;
+        constexpr float FLY_IMPULSE      = 0.2f;
+        constexpr float STOP_IMPULSE     = 0.08f;
+        constexpr float STOP_IMPULSE_AIR = 0.05f;
 
-        float velocityScale = bOnGround ? WALK_VELOCITY : FLY_VELOCITY;
+        Float3 wishDir = CharacterMesh->GetForwardVector() * ForwardMove + CharacterMesh->GetRightVector() * SideMove;
 
-        Float2 horizontalDir = {WishDir.X, WishDir.Z};
+        Float2 horizontalDir = {wishDir.X, wishDir.Z};
         horizontalDir.NormalizeSelf();
 
-        TotalVelocity.X = horizontalDir.X * velocityScale;
-        TotalVelocity.Z = horizontalDir.Y * velocityScale;
+        Float3 overallImpulse{};
+        overallImpulse += Float3(horizontalDir.X, 0, horizontalDir.Y) * (bOnGround ? WALK_IMPULSE : FLY_IMPULSE);
 
-        if (!bOnGround)
-        {
-            constexpr float GRAVITY = 20.0f;
-            TotalVelocity.Y -= TimeStep * GRAVITY;
-        }
+        Float3 horizontalVelocity = CharacterPhysics->GetLinearVelocity();
+        horizontalVelocity.Y      = 0;
 
-        CharacterPhysics->SetLinearVelocity(TotalVelocity);
+        Float3 stopImpulse = -horizontalVelocity * (bOnGround ? STOP_IMPULSE : STOP_IMPULSE_AIR);
 
-        WishDir.Clear();
+        overallImpulse += stopImpulse;
+
+        CharacterPhysics->ApplyCentralImpulse(overallImpulse);
     }
 
     void SetupInputComponent(AInputComponent* Input) override
@@ -149,16 +194,17 @@ protected:
         Input->BindAxis("MoveRight", this, &ACharacter::MoveRight);
         Input->BindAxis("MoveUp", this, &ACharacter::MoveUp);
         Input->BindAxis("TurnRight", this, &ACharacter::TurnRight);
+        Input->BindAxis("TurnUp", this, &ACharacter::TurnUp);
     }
 
     void MoveForward(float Value)
     {
-        WishDir += CharacterMesh->GetForwardVector() * Value;
+        ForwardMove = Value;
     }
 
     void MoveRight(float Value)
     {
-        WishDir += CharacterMesh->GetRightVector() * Value;
+        SideMove = Value;
     }
 
     void MoveUp(float Value)
@@ -175,16 +221,25 @@ protected:
         CharacterMesh->TurnRightFPS(Value * RotationSpeed);
     }
 
-    void DrawDebug(ADebugRenderer* Renderer) override
+    void TurnUp(float Value)
     {
-        Super::DrawDebug(Renderer);
-
-        Float3 pos = CharacterMesh->GetWorldPosition();
-        Float3 dir = CharacterMesh->GetWorldForwardVector();
-        Float3 p1  = pos + dir * CHARACTER_CAPSULE_RADIUS;
-        Float3 p2  = pos + dir * (CHARACTER_CAPSULE_RADIUS + 1.5f);
-        Renderer->SetColor(Color4::Blue());
-        Renderer->DrawLine(p1, p2);
-        Renderer->DrawCone(p2, CharacterMesh->GetWorldRotation().ToMatrix3x3() * Float3x3::RotationAroundNormal(Math::_PI, Float3(1, 0, 0)), 0.4f, Math::_PI / 6);
+        if (bFirstPersonCamera && Value)
+        {
+            const float RotationSpeed = 0.01f;
+            float delta = Value * RotationSpeed;
+            if (FirstPersonCameraPitch + delta > Math::_PI/2)
+            {
+                delta                  = FirstPersonCameraPitch - Math::_PI / 2;
+                FirstPersonCameraPitch = Math::_PI / 2;
+            }
+            else if (FirstPersonCameraPitch + delta < -Math::_PI / 2)
+            {
+                delta                  = -Math::_PI / 2 - FirstPersonCameraPitch;
+                FirstPersonCameraPitch = -Math::_PI / 2;
+            }
+            else
+                FirstPersonCameraPitch += delta;
+            Camera->TurnUpFPS(delta);
+        }
     }
 };

@@ -49,14 +49,14 @@ protected:
 
     void Initialize(SActorInitializer& Initializer) override
     {
-        static TStaticResourceFinder<AIndexedMesh>      CapsuleMesh(_CTS("CharacterCapsule"));
-        static TStaticResourceFinder<AMaterialInstance> CharacterMaterialInstance(_CTS("CharacterMaterialInstance"));
+        static TStaticResourceFinder<AIndexedMesh>      BoxMesh(_CTS("Box"));
+        static TStaticResourceFinder<AMaterialInstance> ExampleMaterialInstance(_CTS("ExampleMaterialInstance"));
 
         RootComponent = CreateComponent<ASceneComponent>("Root");
 
         Movable = CreateComponent<AMeshComponent>("Movable");
-        Movable->SetMesh(CapsuleMesh.GetObject());
-        Movable->SetMaterialInstance(CharacterMaterialInstance.GetObject());
+        Movable->SetMesh(BoxMesh.GetObject());
+        Movable->SetMaterialInstance(ExampleMaterialInstance.GetObject());
         Movable->SetMotionBehavior(MB_KINEMATIC);
         Movable->AttachTo(RootComponent);
 
@@ -64,8 +64,6 @@ protected:
         Camera->SetPosition(2, 4, 2);
         Camera->SetAngles(-60, 45, 0);
         Camera->AttachTo(RootComponent);
-        //Camera->SetProjection(CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO);
-        //Camera->SetOrthoZoom(10);
 
         PawnCamera = Camera;
     }
@@ -104,9 +102,9 @@ protected:
     {
         Float3 pos = Movable->GetWorldPosition();
         pos.Y -= Value;
-        if (pos.Y < 0.75f)
+        if (pos.Y < 0.5f)
         {
-            pos.Y = 0.75f;
+            pos.Y = 0.5f;
         }
         Movable->SetWorldPosition(pos);
     }
@@ -143,7 +141,7 @@ public:
         AWorld* world = AWorld::CreateWorld();
 
         // Spawn player
-        APlayer* player = world->SpawnActor2<APlayer>({Float3(0, 0.75f, 0), Quat::Identity()});
+        APlayer* player = world->SpawnActor2<APlayer>({Float3(0, 0.5f, 0), Quat::Identity()});
 
         // Set input mappings
         AInputMappings* inputMappings = CreateInstanceOf<AInputMappings>();
@@ -231,11 +229,11 @@ public:
             RegisterResource(mesh, "GroundMesh");
         }
 
-        // Create character capsule
+        // Create box
         {
             AIndexedMesh* mesh = CreateInstanceOf<AIndexedMesh>();
-            mesh->InitializeCapsuleMesh(0.5f, 1.0f, 1.0f, 12, 16);
-            RegisterResource(mesh, "CharacterCapsule");
+            mesh->InitializeBoxMesh(Float3(1.0f), 1.0f);
+            RegisterResource(mesh, "Box");
         }
 
         // Create material
@@ -266,58 +264,18 @@ public:
             graph->Roughness->Connect(roughness->OutValue);
 
             AMaterial* material = CreateMaterial(graph);
-            RegisterResource(material, "ExampleMaterial1");
-        }
-        {
-            MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
-
-            graph->MaterialType                 = MATERIAL_TYPE_PBR;
-            graph->bAllowScreenSpaceReflections = true; //false;
-
-            MGTextureSlot* diffuseTexture      = graph->AddNode<MGTextureSlot>();
-            diffuseTexture->SamplerDesc.Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
-            graph->RegisterTextureSlot(diffuseTexture);
-
-            MGInTexCoord* texCoord = graph->AddNode<MGInTexCoord>();
-
-            MGSampler* diffuseSampler = graph->AddNode<MGSampler>();
-            diffuseSampler->TexCoord->Connect(texCoord, "Value");
-            diffuseSampler->TextureSlot->Connect(diffuseTexture, "Value");
-
-            MGFloatNode* metallic = graph->AddNode<MGFloatNode>();
-            metallic->Value       = 0.0f;
-
-            MGFloatNode* roughness = graph->AddNode<MGFloatNode>();
-            roughness->Value       = 0.1f; //1;
-
-            graph->Color->Connect(diffuseSampler->RGBA);
-            graph->Metallic->Connect(metallic->OutValue);
-            graph->Roughness->Connect(roughness->OutValue);
-
-            AMaterial* material = CreateMaterial(graph);
-            RegisterResource(material, "ExampleMaterial2");
+            RegisterResource(material, "ExampleMaterial");
         }
 
-        // Create material instance for ground
+        // Create material
         {
-            static TStaticResourceFinder<AMaterial> ExampleMaterial(_CTS("ExampleMaterial1"));
-            static TStaticResourceFinder<ATexture>  ExampleTexture(_CTS("/Common/blank256.png"));
+            static TStaticResourceFinder<AMaterial> ExampleMaterial(_CTS("ExampleMaterial"));
+            static TStaticResourceFinder<ATexture>  ExampleTexture(_CTS("/Common/grid8.png"));
 
             AMaterialInstance* ExampleMaterialInstance = CreateInstanceOf<AMaterialInstance>();
             ExampleMaterialInstance->SetMaterial(ExampleMaterial.GetObject());
             ExampleMaterialInstance->SetTexture(0, ExampleTexture.GetObject());
             RegisterResource(ExampleMaterialInstance, "ExampleMaterialInstance");
-        }
-
-        // Create material instance for character
-        {
-            static TStaticResourceFinder<AMaterial> ExampleMaterial(_CTS("ExampleMaterial2"));
-            static TStaticResourceFinder<ATexture>  CharacterTexture(_CTS("/Common/blank512.png"));
-
-            AMaterialInstance* CharacterMaterialInstance = CreateInstanceOf<AMaterialInstance>();
-            CharacterMaterialInstance->SetMaterial(ExampleMaterial.GetObject());
-            CharacterMaterialInstance->SetTexture(0, CharacterTexture.GetObject());
-            RegisterResource(CharacterMaterialInstance, "CharacterMaterialInstance");
         }
     }
 };

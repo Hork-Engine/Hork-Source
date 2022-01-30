@@ -42,6 +42,8 @@ class AModule final : public AGameModule
     AN_CLASS(AModule, AGameModule)
 
 public:
+    ACharacter* Player;
+
     AModule()
     {
         // Create game resources
@@ -51,7 +53,7 @@ public:
         AWorld* world = AWorld::CreateWorld();
 
         // Spawn player
-        ACharacter* player = world->SpawnActor2<ACharacter>({Float3(0, 1, 0), Quat::Identity()});
+        Player = world->SpawnActor2<ACharacter>({Float3(0, 1, 0), Quat::Identity()});
 
         CreateScene(world);
 
@@ -62,6 +64,7 @@ public:
         inputMappings->MapAxis("MoveRight", {ID_KEYBOARD, KEY_A}, -1.0f, CONTROLLER_PLAYER_1);
         inputMappings->MapAxis("MoveRight", {ID_KEYBOARD, KEY_D}, 1.0f, CONTROLLER_PLAYER_1);
         inputMappings->MapAxis("MoveUp", {ID_KEYBOARD, KEY_SPACE}, 1.0f, CONTROLLER_PLAYER_1);
+        inputMappings->MapAxis("MoveUp", {ID_MOUSE, MOUSE_BUTTON_2}, 1.0f, CONTROLLER_PLAYER_1);
         inputMappings->MapAxis("TurnRight", {ID_MOUSE, MOUSE_AXIS_X}, 1.0f, CONTROLLER_PLAYER_1);
         inputMappings->MapAxis("TurnUp", {ID_MOUSE, MOUSE_AXIS_Y}, 1.0f, CONTROLLER_PLAYER_1);
         inputMappings->MapAxis("TurnRight", {ID_KEYBOARD, KEY_LEFT}, -90.0f, CONTROLLER_PLAYER_1);
@@ -78,7 +81,7 @@ public:
         playerController->SetPlayerIndex(CONTROLLER_PLAYER_1);
         playerController->SetInputMappings(inputMappings);
         playerController->SetRenderingParameters(renderingParams);
-        playerController->SetPawn(player);
+        playerController->SetPawn(Player);
 
         // Create UI desktop
         WDesktop* desktop = CreateInstanceOf<WDesktop>();
@@ -89,15 +92,27 @@ public:
                  .SetPlayerController(playerController)
                  .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
                  .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                 .SetFocus());
+                 .SetFocus()
+                     [WNew(WTextDecorate)
+                          .SetColor({1, 1, 1})
+                          .SetText("Press ENTER to switch First/Third person camera\nUse WASD to move, SPACE to jump")]);
 
         // Hide mouse cursor
         desktop->SetCursorVisible(false);
+
+        AShortcutContainer* shortcuts = CreateInstanceOf<AShortcutContainer>();
+        shortcuts->AddShortcut(KEY_ENTER, 0, {this, &AModule::ToggleFirstPersonCamera});
+        desktop->SetShortcuts(shortcuts);
 
         // Set current desktop
         GEngine->SetDesktop(desktop);
 
         GEngine->GetCommandProcessor().Add("com_DrawTriggers 1\n");
+    }
+
+    void ToggleFirstPersonCamera()
+    {
+        Player->SetFirstPersonCamera(!Player->IsFirstPersonCamera());
     }
 
     void CreateScene(AWorld* world)
@@ -123,14 +138,13 @@ public:
         STransform spawnTransform;
         spawnTransform.Position = Float3(0);
         spawnTransform.Rotation = Quat::Identity();
-        spawnTransform.Scale    = Float3(2, 1, 2);
 
         AActor*         ground   = world->SpawnActor2(StaticMeshDef.GetObject(), spawnTransform);
         AMeshComponent* meshComp = ground->GetComponent<AMeshComponent>();
         if (meshComp)
         {
             static TStaticResourceFinder<AMaterialInstance> ExampleMaterialInstance(_CTS("ExampleMaterialInstance"));
-            static TStaticResourceFinder<AIndexedMesh>      GroundMesh(_CTS("GroundMesh"));
+            static TStaticResourceFinder<AIndexedMesh>      GroundMesh(_CTS("/Default/Meshes/PlaneXZ"));
 
             // Setup mesh and material
             meshComp->SetMesh(GroundMesh.GetObject());
@@ -178,18 +192,6 @@ public:
 
     void CreateResources()
     {
-        // Create mesh for ground
-        {
-            AIndexedMesh* mesh = CreateInstanceOf<AIndexedMesh>();
-            mesh->InitializePlaneMeshXZ(256, 256, 256);
-            ACollisionModel* model = CreateInstanceOf<ACollisionModel>();
-            ACollisionBox*   box   = model->CreateBody<ACollisionBox>();
-            box->HalfExtents       = Float3(128, 0.5f, 128);
-            box->Position.Y -= box->HalfExtents.Y;
-            mesh->SetCollisionModel(model);
-            RegisterResource(mesh, "GroundMesh");
-        }
-
         // Create character capsule
         {
             AIndexedMesh* mesh = CreateInstanceOf<AIndexedMesh>();

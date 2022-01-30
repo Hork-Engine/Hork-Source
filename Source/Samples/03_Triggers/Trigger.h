@@ -56,13 +56,14 @@ protected:
         TriggerBody->SetMotionBehavior(MB_STATIC);
         TriggerBody->SetCollisionGroup(CM_TRIGGER);
         TriggerBody->SetCollisionMask(CM_PAWN);
+
+        SCollisionBoxDef box;
         ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>();
-        collisionModel->CreateBody<ACollisionBox>();
+        collisionModel->Initialize(&box);
+
         TriggerBody->SetCollisionModel(collisionModel);
 
         RootComponent = TriggerBody;
-
-        Timer = CreateInstanceOf<ATimer>();
     }
 
     void BeginPlay()
@@ -72,14 +73,6 @@ protected:
         E_OnBeginOverlap.Add(this, &ATrigger::OnBeginOverlap);
         E_OnEndOverlap.Add(this, &ATrigger::OnEndOverlap);
         E_OnUpdateOverlap.Add(this, &ATrigger::OnUpdateOverlap);
-
-        Timer->SleepDelay = 0.5f;
-        Timer->Callback.Set(this, &ATrigger::OnTimer);
-
-        //Timer = AddTimer(this, &ATrigger::OnTimer);
-        //Timer->SleepDelay = 0.5f;
-
-        //RemoveTimer(Timer);
     }
 
     void OnBeginOverlap(SOverlapEvent const& _Event)
@@ -88,7 +81,15 @@ protected:
                        _Event.SelfBody->GetObjectName().CStr(),
                        _Event.OtherBody->GetObjectName().CStr());
 
-        Timer->Register(GetWorld());
+        if (!Timer)
+        {
+            Timer             = AddTimer({this, &ATrigger::OnTimer});
+            Timer->SleepDelay = 0.5f;
+        }
+        else
+        {
+            Timer->Restart();
+        }
     }
 
     void OnEndOverlap(SOverlapEvent const& _Event)
@@ -97,7 +98,7 @@ protected:
                        _Event.SelfBody->GetObjectName().CStr(),
                        _Event.OtherBody->GetObjectName().CStr());
 
-        Timer->Unregister();
+        Timer->Stop();
     }
 
     void OnUpdateOverlap(SOverlapEvent const& _Event)

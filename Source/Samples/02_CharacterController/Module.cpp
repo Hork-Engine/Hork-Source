@@ -35,12 +35,15 @@ SOFTWARE.
 #include <Runtime/Engine.h>
 
 #include "Character.h"
+#include "Platform.h"
 
 class AModule final : public AGameModule
 {
     AN_CLASS(AModule, AGameModule)
 
 public:
+    ACharacter* Player;
+
     AModule()
     {
         // Create game resources
@@ -50,7 +53,7 @@ public:
         AWorld* world = AWorld::CreateWorld();
 
         // Spawn player
-        ACharacter* player = world->SpawnActor2<ACharacter>({Float3(0, 1, 0), Quat::Identity()});
+        Player = world->SpawnActor2<ACharacter>({Float3(0, 1, 0), Quat::Identity()});
 
         CreateScene(world);
 
@@ -61,6 +64,7 @@ public:
         inputMappings->MapAxis("MoveRight", {ID_KEYBOARD, KEY_A}, -1.0f, CONTROLLER_PLAYER_1);
         inputMappings->MapAxis("MoveRight", {ID_KEYBOARD, KEY_D}, 1.0f, CONTROLLER_PLAYER_1);
         inputMappings->MapAxis("MoveUp", {ID_KEYBOARD, KEY_SPACE}, 1.0f, CONTROLLER_PLAYER_1);
+        inputMappings->MapAxis("MoveUp", {ID_MOUSE, MOUSE_BUTTON_2}, 1.0f, CONTROLLER_PLAYER_1);
         inputMappings->MapAxis("TurnRight", {ID_MOUSE, MOUSE_AXIS_X}, 1.0f, CONTROLLER_PLAYER_1);
         inputMappings->MapAxis("TurnUp", {ID_MOUSE, MOUSE_AXIS_Y}, 1.0f, CONTROLLER_PLAYER_1);
         inputMappings->MapAxis("TurnRight", {ID_KEYBOARD, KEY_LEFT}, -90.0f, CONTROLLER_PLAYER_1);
@@ -77,7 +81,7 @@ public:
         playerController->SetPlayerIndex(CONTROLLER_PLAYER_1);
         playerController->SetInputMappings(inputMappings);
         playerController->SetRenderingParameters(renderingParams);
-        playerController->SetPawn(player);
+        playerController->SetPawn(Player);
 
         // Create UI desktop
         WDesktop* desktop = CreateInstanceOf<WDesktop>();
@@ -88,13 +92,25 @@ public:
                  .SetPlayerController(playerController)
                  .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
                  .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                 .SetFocus());
+                 .SetFocus()
+                     [WNew(WTextDecorate)
+                          .SetColor({1,1,1})
+                          .SetText("Press ENTER to switch First/Third person camera\nUse WASD to move, SPACE to jump")]);
 
         // Hide mouse cursor
         desktop->SetCursorVisible(false);
 
+        AShortcutContainer* shortcuts = CreateInstanceOf<AShortcutContainer>();
+        shortcuts->AddShortcut(KEY_ENTER, 0, {this, &AModule::ToggleFirstPersonCamera});
+        desktop->SetShortcuts(shortcuts);
+
         // Set current desktop
         GEngine->SetDesktop(desktop);
+    }
+
+    void ToggleFirstPersonCamera()
+    {
+        Player->SetFirstPersonCamera(!Player->IsFirstPersonCamera());
     }
 
     void CreateScene(AWorld* world)
@@ -117,17 +133,12 @@ public:
         }
 
         // Spawn ground
-        STransform spawnTransform;
-        spawnTransform.Position = Float3(0);
-        spawnTransform.Rotation = Quat::Identity();
-        spawnTransform.Scale    = Float3(2, 1, 2);
-
-        AActor*         ground   = world->SpawnActor2(StaticMeshDef.GetObject(), spawnTransform);
+        AActor*         ground   = world->SpawnActor2(StaticMeshDef.GetObject());
         AMeshComponent* meshComp = ground->GetComponent<AMeshComponent>();
         if (meshComp)
         {
             static TStaticResourceFinder<AMaterialInstance> ExampleMaterialInstance(_CTS("ExampleMaterialInstance"));
-            static TStaticResourceFinder<AIndexedMesh>      GroundMesh(_CTS("GroundMesh"));
+            static TStaticResourceFinder<AIndexedMesh>      GroundMesh(_CTS("/Default/Meshes/PlaneXZ"));
 
             // Setup mesh and material
             meshComp->SetMesh(GroundMesh.GetObject());
@@ -165,22 +176,47 @@ public:
             meshComp->SetMotionBehavior(MB_SIMULATED);
             meshComp->SetCollisionGroup(CM_WORLD_DYNAMIC);
         }
+
+        STransform spawnTransform;
+        spawnTransform.Rotation.FromAngles(0,0,Math::_PI/4);
+        spawnTransform.Scale    = Float3(2, 1, 6);
+        spawnTransform.Position = Float3(-4,2,2);
+        AActor*         floor   = world->SpawnActor2(StaticMeshDef.GetObject(), spawnTransform);
+        meshComp      = floor->GetComponent<AMeshComponent>();
+        if (meshComp)
+        {
+            static TStaticResourceFinder<AMaterialInstance> ExampleMaterialInstance(_CTS("ExampleMaterialInstance"));
+            static TStaticResourceFinder<AIndexedMesh>      GroundMesh(_CTS("/Default/IndexedMesh/UnitBox"));
+
+            // Setup mesh and material
+            meshComp->SetMesh(GroundMesh.GetObject());
+            meshComp->SetMaterialInstance(0, ExampleMaterialInstance.GetObject());
+        }
+
+        spawnTransform.Rotation.FromAngles(0, -Math::_PI / 8, -Math::_PI / 4);
+        spawnTransform.Scale    = Float3(6, 0.3f, 6);
+        spawnTransform.Position = Float3(4, 0, 2);
+        AActor* floor2           = world->SpawnActor2(StaticMeshDef.GetObject(), spawnTransform);
+        meshComp                = floor2->GetComponent<AMeshComponent>();
+        if (meshComp)
+        {
+            static TStaticResourceFinder<AMaterialInstance> ExampleMaterialInstance(_CTS("ExampleMaterialInstance"));
+            static TStaticResourceFinder<AIndexedMesh>      GroundMesh(_CTS("/Default/IndexedMesh/UnitBox"));
+
+            // Setup mesh and material
+            meshComp->SetMesh(GroundMesh.GetObject());
+            meshComp->SetMaterialInstance(0, ExampleMaterialInstance.GetObject());
+        }
+
+
+        spawnTransform.Rotation.SetIdentity();//.FromAngles(0, -Math::_PI / 8, -Math::_PI / 4);
+        spawnTransform.Scale    = Float3(2, 0.3f, 2);
+        spawnTransform.Position = Float3(0, 0.5f, -1);
+        world->SpawnActor2<APlatform>(spawnTransform);
     }
 
     void CreateResources()
     {
-        // Create mesh for ground
-        {
-            AIndexedMesh* mesh = CreateInstanceOf<AIndexedMesh>();
-            mesh->InitializePlaneMeshXZ(256, 256, 256);
-            ACollisionModel* model = CreateInstanceOf<ACollisionModel>();
-            ACollisionBox*   box   = model->CreateBody<ACollisionBox>();
-            box->HalfExtents       = Float3(128, 0.5f, 128);
-            box->Position.Y -= box->HalfExtents.Y;
-            mesh->SetCollisionModel(model);
-            RegisterResource(mesh, "GroundMesh");
-        }
-
         // Create character capsule
         {
             AIndexedMesh* mesh = CreateInstanceOf<AIndexedMesh>();
@@ -291,9 +327,9 @@ public:
 
 static SEntryDecl ModuleDecl = {
     // Game title
-    "AngieEngine: Simple",
+    "AngieEngine: Character Controller",
     // Root path
-    "Samples/01_Simple",
+    "Samples/02_CharacterController",
     // Module class
     &AModule::ClassMeta()};
 
