@@ -117,7 +117,7 @@ public:
 
     void ToggleWireframe()
     {
-        RenderingParams->bWireframe = !RenderingParams->bWireframe;
+        RenderingParams->bWireframe ^= 1;
     }
 
     void CreateScene(AWorld* world)
@@ -242,17 +242,6 @@ public:
             ExampleMaterialInstance->SetTexture(0, ExampleTexture.GetObject());
             RegisterResource(ExampleMaterialInstance, "ExampleMaterialInstance");
         }
-
-        //// Create material instance for wall
-        //{
-        //    static TStaticResourceFinder<AMaterial> ExampleMaterial(_CTS("ExampleMaterial1"));
-        //    static TStaticResourceFinder<ATexture>  ExampleTexture(_CTS("/Common/grid8.png"));
-
-        //    AMaterialInstance* WallMaterialInstance = CreateInstanceOf<AMaterialInstance>();
-        //    WallMaterialInstance->SetMaterial(ExampleMaterial.GetObject());
-        //    WallMaterialInstance->SetTexture(0, ExampleTexture.GetObject());
-        //    RegisterResource(WallMaterialInstance, "WallMaterialInstance");
-        //}
 
         // Create material instance for character
         {

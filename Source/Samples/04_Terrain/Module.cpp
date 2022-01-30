@@ -41,6 +41,8 @@ class AModule final : public AGameModule
     AN_CLASS(AModule, AGameModule)
 
 public:
+    ARenderingParameters* RenderingParams;
+
     AModule()
     {
         AInputMappings* inputMappings = CreateInstanceOf<AInputMappings>();
@@ -59,14 +61,12 @@ public:
         inputMappings->MapAction("Pause", {ID_KEYBOARD, KEY_P}, 0, CONTROLLER_PLAYER_1);
         inputMappings->MapAction("Pause", {ID_KEYBOARD, KEY_PAUSE}, 0, CONTROLLER_PLAYER_1);
         inputMappings->MapAction("TakeScreenshot", {ID_KEYBOARD, KEY_F12}, 0, CONTROLLER_PLAYER_1);
-        inputMappings->MapAction("ToggleWireframe", {ID_KEYBOARD, KEY_Y}, 0, CONTROLLER_PLAYER_1);
-        inputMappings->MapAction("ToggleDebugDraw", {ID_KEYBOARD, KEY_G}, 0, CONTROLLER_PLAYER_1);
 
-        ARenderingParameters* renderingParams = CreateInstanceOf<ARenderingParameters>();
-        renderingParams->BackgroundColor      = Color4(0.0f);
-        renderingParams->bClearBackground     = true;
-        renderingParams->bWireframe           = false;
-        renderingParams->bDrawDebug           = true;
+        RenderingParams = CreateInstanceOf<ARenderingParameters>();
+        RenderingParams->BackgroundColor      = Color4(0.0f);
+        RenderingParams->bClearBackground     = true;
+        RenderingParams->bWireframe           = false;
+        RenderingParams->bDrawDebug           = true;
 
         AWorld* world = AWorld::CreateWorld();
 
@@ -79,7 +79,7 @@ public:
         APlayerController* playerController = world->SpawnActor2<APlayerController>();
         playerController->SetPlayerIndex(CONTROLLER_PLAYER_1);
         playerController->SetInputMappings(inputMappings);
-        playerController->SetRenderingParameters(renderingParams);
+        playerController->SetRenderingParameters(RenderingParams);
         playerController->SetPawn(spectator);
 
         WDesktop* desktop = CreateInstanceOf<WDesktop>();
@@ -91,6 +91,22 @@ public:
                  .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
                  .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
                  .SetFocus());
+
+        AShortcutContainer* shortcuts = CreateInstanceOf<AShortcutContainer>();
+        shortcuts->AddShortcut(KEY_Y, 0, {this, &AModule::ToggleWireframe});
+        shortcuts->AddShortcut(KEY_G, 0, {this, &AModule::ToggleDebugDraw});
+        
+        desktop->SetShortcuts(shortcuts);
+    }
+
+    void ToggleWireframe()
+    {
+        RenderingParams->bWireframe ^= 1;
+    }
+
+    void ToggleDebugDraw()
+    {
+        RenderingParams->bDrawDebug ^= 1;
     }
 
     void CreateScene(AWorld* world)
