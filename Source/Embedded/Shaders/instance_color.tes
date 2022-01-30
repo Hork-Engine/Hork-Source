@@ -1,0 +1,114 @@
+/*
+
+Angie Engine Source Code
+
+MIT License
+
+Copyright (C) 2017-2022 Alexander Samusev.
+
+This file is part of the Angie Engine Source Code.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+*/
+
+layout( triangles, TESSELLATION_SPACING, ccw ) in;
+
+#include "$COLOR_PASS_TES_INPUT_VARYINGS$"
+#include "$COLOR_PASS_TES_OUTPUT_VARYINGS$"
+
+#ifdef USE_LIGHTMAP
+layout( location = COLOR_PASS_VARYING_BAKED_LIGHT ) in vec2 TCS_LightmapTexCoord[];
+layout( location = COLOR_PASS_VARYING_BAKED_LIGHT ) out vec2 VS_LightmapTexCoord;
+#endif
+
+#ifdef USE_VERTEX_LIGHT
+layout( location = COLOR_PASS_VARYING_BAKED_LIGHT ) in vec3 TCS_VertexLight[];
+layout( location = COLOR_PASS_VARYING_BAKED_LIGHT ) out vec3 VS_VertexLight;
+#endif
+
+#ifdef COMPUTE_TBN
+layout( location = COLOR_PASS_VARYING_TANGENT  ) in vec3 TCS_T[];
+layout( location = COLOR_PASS_VARYING_TANGENT  ) out vec3 VS_T;
+layout( location = COLOR_PASS_VARYING_BINORMAL ) in vec3 TCS_B[];
+layout( location = COLOR_PASS_VARYING_BINORMAL ) out vec3 VS_B;
+#endif
+
+layout( location = COLOR_PASS_VARYING_NORMAL   ) in vec3 TCS_N[];
+layout( location = COLOR_PASS_VARYING_POSITION ) in vec3 TCS_Position[];
+#ifdef COMPUTE_TBN
+layout( location = COLOR_PASS_VARYING_NORMAL   ) out vec3 VS_N;
+layout( location = COLOR_PASS_VARYING_POSITION ) out vec3 VS_Position;
+#endif
+
+#ifdef USE_VIRTUAL_TEXTURE
+layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) in vec2 TCS_TexCoordVT[];
+layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) out vec2 VS_TexCoordVT;
+#endif
+
+out gl_PerVertex
+{
+    vec4 gl_Position;
+};
+
+#include "$COLOR_PASS_TES_SAMPLERS$"
+
+#define Interpolate( X ) \
+    ( gl_TessCoord.x * X[0] + gl_TessCoord.y * X[1] + gl_TessCoord.z * X[2] )
+    
+#define InterpolateNorm( X ) \
+    normalize( Interpolate( X ) )
+
+void main(){
+    #ifdef USE_LIGHTMAP
+    VS_LightmapTexCoord = Interpolate( TCS_LightmapTexCoord );
+    #endif
+
+    #ifdef USE_VERTEX_LIGHT
+    VS_VertexLight = Interpolate( TCS_VertexLight );
+    #endif
+
+    #ifdef COMPUTE_TBN
+    VS_T = InterpolateNorm( TCS_T );
+    VS_B = InterpolateNorm( TCS_B );
+    #endif
+    
+    #ifndef COMPUTE_TBN
+    vec3 VS_N, VS_Position;
+    #endif
+
+    VS_N = InterpolateNorm( TCS_N );
+    VS_Position = Interpolate( TCS_Position );
+
+    #ifdef USE_VIRTUAL_TEXTURE
+    VS_TexCoordVT = Interpolate( TCS_TexCoordVT );
+    #endif
+
+#   include "$COLOR_PASS_TES_INTERPOLATE$"
+#   include "$COLOR_PASS_TES_CODE$"
+    
+    VS_Position += VS_N * ( Displacement * 0.01 );
+    
+    gl_Position = ProjectionMatrix * vec4( VS_Position, 1 );
+#   if defined WEAPON_DEPTH_HACK
+        gl_Position.z += 0.1;
+#   elif defined SKYBOX_DEPTH_HACK // Sky box with tessellation? No problem :)
+        gl_Position.z = 0.0;
+#   endif
+}

@@ -1,0 +1,97 @@
+/*
+
+Angie Engine Source Code
+
+MIT License
+
+Copyright (C) 2017-2022 Alexander Samusev.
+
+This file is part of the Angie Engine Source Code.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+*/
+
+layout( triangles, TESSELLATION_SPACING, ccw ) in;
+
+#include "$SHADOWMAP_PASS_TES_INPUT_VARYINGS$"
+#include "$SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$"
+
+//layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) out flat int VS_InstanceID;
+
+struct SPatchVertices
+{
+    vec3 B030;
+    vec3 B021;
+    vec3 B012;
+    vec3 B003;
+    vec3 B102;
+    vec3 B201;
+    vec3 B300;
+    vec3 B210;
+    vec3 B120;
+    vec3 B111;
+    vec3 N[3];
+//    int InstanceID;
+};
+
+//#define SHADOWMAP_PASS_VARYING_PATCH 0
+
+layout( location = PATCH_LOCATION ) in patch SPatchVertices TCS_Patch;
+
+out gl_PerVertex
+{
+    vec4 gl_Position;
+};
+
+#include "$SHADOWMAP_PASS_TES_SAMPLERS$"
+
+void main(){
+    const vec3 normal = normalize( gl_TessCoord.x * TCS_Patch.N[0] + gl_TessCoord.y * TCS_Patch.N[1] + gl_TessCoord.z * TCS_Patch.N[2] );
+    
+    const float u = gl_TessCoord.x;
+    const float v = gl_TessCoord.y;
+    const float w = gl_TessCoord.z;
+
+    const float u2 = u * u;
+    const float v2 = v * v;
+    const float w2 = w * w;
+    const float u3 = u2 * u;
+    const float v3 = v2 * v;
+    const float w3 = w2 * w;
+
+    vec3 pos =  TCS_Patch.B300 * w3 + TCS_Patch.B030 * u3 + TCS_Patch.B003 * v3 +
+                TCS_Patch.B210 * ( 3.0 * w2 * u ) +
+                TCS_Patch.B120 * ( 3.0 * w * u2 ) +
+                TCS_Patch.B201 * ( 3.0 * w2 * v ) +
+                TCS_Patch.B021 * ( 3.0 * u2 * v ) +
+                TCS_Patch.B102 * ( 3.0 * w * v2 ) +
+                TCS_Patch.B012 * ( 3.0 * u * v2 ) +
+                TCS_Patch.B111 * ( 6.0 * w * u * v );
+                
+    //VS_InstanceID = TCS_Patch.InstanceID;
+    
+#   include "$SHADOWMAP_PASS_TES_INTERPOLATE$"
+#   include "$SHADOWMAP_PASS_TES_CODE$"
+    
+    pos += normal * ( Displacement * 0.01 );
+    
+    gl_Position = vec4( pos, 1.0 );
+}
+

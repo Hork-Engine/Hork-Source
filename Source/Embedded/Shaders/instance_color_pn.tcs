@@ -1,0 +1,178 @@
+/*
+
+Angie Engine Source Code
+
+MIT License
+
+Copyright (C) 2017-2022 Alexander Samusev.
+
+This file is part of the Angie Engine Source Code.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+*/
+
+layout( vertices = 1 ) out;
+
+#include "$COLOR_PASS_TCS_SAMPLERS$"
+#include "$COLOR_PASS_TCS_INPUT_VARYINGS$"
+#include "$COLOR_PASS_TCS_OUTPUT_VARYINGS$"
+
+#ifdef USE_LIGHTMAP
+layout( location = COLOR_PASS_VARYING_BAKED_LIGHT ) in vec2 VS_LightmapTexCoord[];
+#endif
+
+#ifdef USE_VERTEX_LIGHT
+layout( location = COLOR_PASS_VARYING_BAKED_LIGHT ) in vec3 VS_VertexLight[];
+#endif
+
+#ifdef COMPUTE_TBN
+layout( location = COLOR_PASS_VARYING_TANGENT  ) in vec3 VS_T[];
+layout( location = COLOR_PASS_VARYING_BINORMAL ) in vec3 VS_B[];
+#endif
+
+layout( location = COLOR_PASS_VARYING_NORMAL   ) in vec3 VS_N[];
+layout( location = COLOR_PASS_VARYING_POSITION ) in vec3 VS_Position[];
+
+#ifdef USE_VIRTUAL_TEXTURE
+layout( location = COLOR_PASS_VARYING_VT_TEXCOORD ) in vec2 VS_TexCoordVT[];
+#endif
+
+struct SPatchVertices
+{
+    vec4 pack0;
+    vec4 pack1;
+    vec4 pack2;
+    vec4 pack3;
+    vec4 pack4;
+    vec4 pack5;
+    vec4 pack6;
+    vec4 pack7;
+    vec4 pack8;
+    vec4 pack9;
+/*
+    vec3 B030;
+    vec3 B021;
+    vec3 B012;
+    vec3 B003;
+    vec3 B102;
+    vec3 B201;
+    vec3 B300;
+    vec3 B210;
+    vec3 B120;
+    vec3 B111;
+    vec3 N[3];*/
+};
+
+struct SPatchAdd
+{
+    #ifdef USE_LIGHTMAP
+    vec2 LightmapTexCoord[3];
+    #endif
+    #ifdef USE_VERTEX_LIGHT
+    vec3 VertexLight[3];
+    #endif
+    #ifdef COMPUTE_TBN
+    vec3 T[3];
+    vec3 B[3];
+    #endif
+    #ifdef USE_VIRTUAL_TEXTURE
+    vec2 TexCoordVT[3];
+    #endif
+};
+
+layout( location = PATCH_LOCATION ) out patch SPatchVertices TCS_Patch;
+layout( location = PATCH_LOCATION + 10 ) out patch SPatchAdd TCS_PatchAdd;
+
+vec3 ProjectToPlane( vec3 Point, vec3 PlanePoint, vec3 PlaneNormal ) {
+    vec3 v = Point - PlanePoint;
+    float len = dot( v, PlaneNormal );
+    vec3 d = len * PlaneNormal;
+    return Point - d;
+}
+
+#include "tessellation_level.glsl"
+
+void main()
+{
+    for ( int i = 0 ; i < 3 ; i++ ) {
+        #ifdef USE_LIGHTMAP
+        TCS_PatchAdd.LightmapTexCoord[i] = VS_LightmapTexCoord[i];
+        #endif
+        #ifdef USE_VERTEX_LIGHT
+        TCS_PatchAdd.VertexLight[i] = VS_VertexLight[i];
+        #endif
+        #ifdef COMPUTE_TBN
+        TCS_PatchAdd.T[i] = VS_T[i];
+        TCS_PatchAdd.B[i] = VS_B[i];
+        #endif
+        //TCS_Patch.N[i] = VS_N[i];
+        #ifdef USE_VIRTUAL_TEXTURE
+        TCS_PatchAdd.TexCoordVT[i] = VS_TexCoordVT[i];
+        #endif
+    }
+    
+#   include "$COLOR_PASS_TCS_COPY_VARYINGS$"
+
+    //SetPatchVertices();
+
+    const vec3 b030 = VS_Position[0];
+    const vec3 b003 = VS_Position[1];
+    const vec3 b300 = VS_Position[2];
+
+    const vec3 EdgeB300 = b003 - b030;
+    const vec3 EdgeB030 = b300 - b003;
+    const vec3 EdgeB003 = b030 - b300;
+
+    const vec3 b021 = ProjectToPlane( b030 + EdgeB300 * ( 1.0 / 3.0 ), b030, VS_N[0] );
+    const vec3 b012 = ProjectToPlane( b030 + EdgeB300 * ( 2.0 / 3.0 ), b003, VS_N[1] );
+    const vec3 b102 = ProjectToPlane( b003 + EdgeB030 * ( 1.0 / 3.0 ), b003, VS_N[1] );
+    const vec3 b201 = ProjectToPlane( b003 + EdgeB030 * ( 2.0 / 3.0 ), b300, VS_N[2] );
+    const vec3 b210 = ProjectToPlane( b300 + EdgeB003 * ( 1.0 / 3.0 ), b300, VS_N[2] );
+    const vec3 b120 = ProjectToPlane( b300 + EdgeB003 * ( 2.0 / 3.0 ), b030, VS_N[0] );
+
+    const vec3 b111 = ( b021 + b012 + b102 + b201 + b210 + b120 ) * 0.25 - ( b003 + b030 + b300 ) * ( 1.0 / 6.0 );
+
+    TCS_Patch.pack0.xyz = b030;
+    TCS_Patch.pack0.w = b021.x;
+    TCS_Patch.pack1.xy = b021.yz;
+    TCS_Patch.pack1.zw = b012.xy;
+    TCS_Patch.pack2.x = b012.z;
+    TCS_Patch.pack2.yzw = b003;
+    TCS_Patch.pack3.xyz = b102;
+    TCS_Patch.pack3.w = b201.x;
+    TCS_Patch.pack4.xy = b201.yz;
+    TCS_Patch.pack4.zw = b300.xy;
+    TCS_Patch.pack5.x = b300.z;
+    TCS_Patch.pack5.yzw = b210;
+    TCS_Patch.pack6.xyz = b120;
+    TCS_Patch.pack6.w = b111.x;
+    TCS_Patch.pack7.xy = b111.yz;
+    TCS_Patch.pack7.zw  = VS_N[0].xy;
+    TCS_Patch.pack8.x   = VS_N[0].z;
+    TCS_Patch.pack8.yzw = VS_N[1];
+    TCS_Patch.pack9.xyz = VS_N[2];
+
+    if ( gl_InvocationID == 0 ) {
+#       include "$COLOR_PASS_TCS_CODE$"
+        
+        SetTessLevelViewSpace( TessellationFactor );
+    }
+}
+
