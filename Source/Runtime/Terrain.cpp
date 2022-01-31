@@ -140,8 +140,8 @@ bool ATerrain::LoadResource(IBinaryStream& Stream)
     }
 
     // Calc Min/Max height. TODO: should be specified in asset file
-    MinHeight = 99999;
-    MaxHeight = -99999;
+    MinHeight = std::numeric_limits<float>::max();
+    MaxHeight = -std::numeric_limits<float>::max();
     for (y = 0; y < HeightmapResolution; y++)
     {
         for (x = 0; x < HeightmapResolution; x++)
@@ -199,11 +199,11 @@ void ATerrain::LoadInternalResource(const char* Path)
     for (int i = 0; i < HeightmapLods; i++)
     {
         int sz       = 1 << (HeightmapLods - i - 1);
-        Heightmap[i] = (float*)GHeapMemory.ClearedAlloc((sz + 1) * (sz + 1) * sizeof(float));
+        Heightmap[i] = (float*)GHeapMemory.ClearedAlloc(sizeof(float) * (sz + 1) * (sz + 1));
     }
 
-    MinHeight = 0.1f;
-    MaxHeight = -0.1f;
+    MinHeight = -0.1f;
+    MaxHeight = 0.1f;
 
     // Calc clipping region
     int halfResolution = HeightmapResolution >> 1;
@@ -237,7 +237,8 @@ void ATerrain::Purge()
 
 float ATerrain::ReadHeight(int X, int Z, int Lod) const
 {
-    AN_ASSERT(Lod >= 0 && Lod < HeightmapLods);
+    if (Lod < 0 || Lod >= HeightmapLods)
+        return 0.0f;
 
     int sampleX = X >> Lod;
     int sampleY = Z >> Lod;
@@ -283,6 +284,9 @@ bool ATerrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Dista
             }
         }
     };
+
+    if (!HeightfieldShape)
+        return false;
 
     float boxMin, boxMax;
 
@@ -379,6 +383,9 @@ bool ATerrain::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, floa
 #endif
         }
     };
+
+    if (!HeightfieldShape)
+        return false;
 
     float boxMin, boxMax;
 
