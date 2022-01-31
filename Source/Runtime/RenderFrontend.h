@@ -36,6 +36,7 @@ SOFTWARE.
 #include "IndexedMesh.h"
 #include "World.h"
 #include "Terrain.h"
+#include "TerrainMesh.h"
 #include "LightVoxelizer.h"
 
 class AAnalyticLightComponent;

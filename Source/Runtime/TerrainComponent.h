@@ -131,7 +131,9 @@ public:
     void GetLocalXZ( Float3 const & Position, float & X, float & Z ) const;
 
     /** Get terrain triangle at specified world position */
-    bool GetTerrainTriangle( Float3 const & Position, STerrainTriangle & Triangle ) const;
+    bool GetTriangle( Float3 const & Position, STerrainTriangle & Triangle ) const;
+
+    float SampleHeight(Float3 const& Position) const;
 
     /** Get world transform matrix. Terrain world transform has no scale. */
     Float3x4 const & GetTerrainWorldTransform() const { return TerrainWorldTransform; }
@@ -156,6 +158,8 @@ protected:
 
     void DrawDebug( ADebugRenderer * InRenderer ) override;
 
+    void OnTerrainModified();
+
     void UpdateTransform();
     void UpdateWorldBounds();
 
@@ -167,7 +171,7 @@ protected:
     // Collision hit proxy
     TRef< AHitProxy > HitProxy;
     // Internal rigid body
-    btRigidBody * RigidBody;
+    btRigidBody * RigidBody{};
     // VSD primitive
     SPrimitiveDef Primitive;
     // Cached world transform
@@ -176,4 +180,9 @@ protected:
     Float3x4 TerrainWorldTransformInv;
     // Allow raycast flag
     bool bAllowRaycast : 1;
+
+    ATerrainComponent* pNext{};
+    ATerrainComponent* pPrev{};
+
+    friend class ATerrain;
 };

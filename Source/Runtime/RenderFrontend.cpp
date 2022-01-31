@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "RenderFrontend.h"
 #include "World.h"
+#include "TerrainView.h"
 #include "CameraComponent.h"
 #include "SkinnedComponent.h"
 #include "DirectionalLightComponent.h"

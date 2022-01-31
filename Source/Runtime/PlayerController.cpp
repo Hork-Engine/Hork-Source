@@ -32,6 +32,7 @@ SOFTWARE.
 #include "InputComponent.h"
 #include "CameraComponent.h"
 #include "World.h"
+#include "TerrainView.h"
 #include "WViewport.h"
 #include "WDesktop.h"
 #include "Engine.h"

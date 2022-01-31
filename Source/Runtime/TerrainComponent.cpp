@@ -36,29 +36,31 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include "BulletCompatibility.h"
 
-AConsoleVar com_DrawTerrainBounds( _CTS( "com_DrawTerrainBounds" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawTerrainBounds(_CTS("com_DrawTerrainBounds"), _CTS("0"), CVAR_CHEAT);
 
-AN_CLASS_META( ATerrainComponent )
+AN_CLASS_META(ATerrainComponent)
 
-static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< STriangleHitResult > & Hits )
+static bool RaycastCallback(SPrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits)
 {
-    ATerrainComponent const * terrain = static_cast< ATerrainComponent const * >(Self->Owner);
-    bool bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
+    ATerrainComponent const* terrain        = static_cast<ATerrainComponent const*>(Self->Owner);
+    bool                     bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
 
-    ATerrain * resource = terrain->GetTerrain();
-    if ( !resource ) {
+    ATerrain* resource = terrain->GetTerrain();
+    if (!resource)
+    {
         return false;
     }
 
-    Float3x4 const & transformInverse = terrain->GetTerrainWorldTransformInversed();
+    Float3x4 const& transformInverse = terrain->GetTerrainWorldTransformInversed();
 
     // transform ray to object space
     Float3 rayStartLocal = transformInverse * InRayStart;
-    Float3 rayEndLocal = transformInverse * InRayEnd;
-    Float3 rayDirLocal = rayEndLocal - rayStartLocal;
+    Float3 rayEndLocal   = transformInverse * InRayEnd;
+    Float3 rayDirLocal   = rayEndLocal - rayStartLocal;
 
     float hitDistanceLocal = rayDirLocal.Length();
-    if ( hitDistanceLocal < 0.0001f ) {
+    if (hitDistanceLocal < 0.0001f)
+    {
         return false;
     }
 
@@ -66,13 +68,14 @@ static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRaySta
 
     int firstHit = Hits.Size();
 
-    if ( !resource->Raycast( rayStartLocal, rayDirLocal, hitDistanceLocal, bCullBackFaces, Hits ) ) {
+    if (!resource->Raycast(rayStartLocal, rayDirLocal, hitDistanceLocal, bCullBackFaces, Hits))
+    {
         return false;
     }
 
     // Convert hits to worldspace and find closest hit
 
-    Float3x4 const & transform = terrain->GetTerrainWorldTransform();
+    Float3x4 const& transform = terrain->GetTerrainWorldTransform();
 
 #if 0 // General case
     Float3x3 normalMatrix;
@@ -82,12 +85,13 @@ static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRaySta
 #endif
 
     int numHits = Hits.Size() - firstHit;
-    for ( int i = 0 ; i < numHits ; i++ ) {
-        int hitNum = firstHit + i;
-        STriangleHitResult & hitResult = Hits[hitNum];
+    for (int i = 0; i < numHits; i++)
+    {
+        int                 hitNum    = firstHit + i;
+        STriangleHitResult& hitResult = Hits[hitNum];
 
         hitResult.Location = transform * hitResult.Location;
-        hitResult.Normal = (normalMatrix * hitResult.Normal).Normalized();
+        hitResult.Normal   = (normalMatrix * hitResult.Normal).Normalized();
 
         // No need to recalc hit distance
         //hitResult.Distance = (hitResult.Location - InRayStart).Length();
@@ -96,39 +100,43 @@ static bool RaycastCallback( SPrimitiveDef const * Self, Float3 const & InRaySta
     return true;
 }
 
-static bool RaycastClosestCallback( SPrimitiveDef const * Self,
-                                    Float3 const & InRayStart,
-                                    Float3 const & InRayEnd,
-                                    STriangleHitResult & Hit,
-                                    SMeshVertex const ** pVertices )
+static bool RaycastClosestCallback(SPrimitiveDef const* Self,
+                                   Float3 const&        InRayStart,
+                                   Float3 const&        InRayEnd,
+                                   STriangleHitResult&  Hit,
+                                   SMeshVertex const**  pVertices)
 {
-    ATerrainComponent const * terrain = static_cast< ATerrainComponent const * >(Self->Owner);
-    bool bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
+    ATerrainComponent const* terrain        = static_cast<ATerrainComponent const*>(Self->Owner);
+    bool                     bCullBackFaces = !(Self->Flags & SURF_TWOSIDED);
 
-    ATerrain * resource = terrain->GetTerrain();
-    if ( !resource ) {
+    ATerrain* resource = terrain->GetTerrain();
+    if (!resource)
+    {
         return false;
     }
 
-    Float3x4 const & transformInverse = terrain->GetTerrainWorldTransformInversed();
+    Float3x4 const& transformInverse = terrain->GetTerrainWorldTransformInversed();
 
     // transform ray to object space
     Float3 rayStartLocal = transformInverse * InRayStart;
-    Float3 rayEndLocal = transformInverse * InRayEnd;
-    Float3 rayDirLocal = rayEndLocal - rayStartLocal;
+    Float3 rayEndLocal   = transformInverse * InRayEnd;
+    Float3 rayDirLocal   = rayEndLocal - rayStartLocal;
 
     float hitDistanceLocal = rayDirLocal.Length();
-    if ( hitDistanceLocal < 0.0001f ) {
+    if (hitDistanceLocal < 0.0001f)
+    {
         return false;
     }
 
     rayDirLocal /= hitDistanceLocal;
 
-    if ( !resource->RaycastClosest( rayStartLocal, rayDirLocal, hitDistanceLocal, bCullBackFaces, Hit ) ) {
+    if (!resource->RaycastClosest(rayStartLocal, rayDirLocal, hitDistanceLocal, bCullBackFaces, Hit))
+    {
         return false;
     }
 
-    if ( pVertices ) {
+    if (pVertices)
+    {
         *pVertices = nullptr;
     }
 
@@ -150,45 +158,44 @@ static bool RaycastClosestCallback( SPrimitiveDef const * Self,
     return true;
 }
 
-static void EvaluateRaycastResult( SPrimitiveDef * Self,
-                                   ALevel const * LightingLevel,
-                                   SMeshVertex const * pVertices,
-                                   SMeshVertexUV const * pLightmapVerts,
-                                   int LightmapBlock,
-                                   unsigned int const * pIndices,
-                                   Float3 const & HitLocation,
-                                   Float2 const & HitUV,
-                                   Float3 * Vertices,
-                                   Float2 & TexCoord,
-                                   Float3 & LightmapSample )
+static void EvaluateRaycastResult(SPrimitiveDef*       Self,
+                                  ALevel const*        LightingLevel,
+                                  SMeshVertex const*   pVertices,
+                                  SMeshVertexUV const* pLightmapVerts,
+                                  int                  LightmapBlock,
+                                  unsigned int const*  pIndices,
+                                  Float3 const&        HitLocation,
+                                  Float2 const&        HitUV,
+                                  Float3*              Vertices,
+                                  Float2&              TexCoord,
+                                  Float3&              LightmapSample)
 {
-    ATerrainComponent * terrain = static_cast< ATerrainComponent * >( Self->Owner );
+    ATerrainComponent* terrain = static_cast<ATerrainComponent*>(Self->Owner);
 
     STerrainTriangle triangle;
 
-    terrain->GetTerrainTriangle( HitLocation, triangle );
+    terrain->GetTriangle(HitLocation, triangle);
 
-    Vertices[0] = triangle.Vertices[0];
-    Vertices[1] = triangle.Vertices[1];
-    Vertices[2] = triangle.Vertices[2];
-    TexCoord = triangle.Texcoord;
-    LightmapSample = Float3( 0.0f );
+    Vertices[0]    = triangle.Vertices[0];
+    Vertices[1]    = triangle.Vertices[1];
+    Vertices[2]    = triangle.Vertices[2];
+    TexCoord       = triangle.Texcoord;
+    LightmapSample = Float3(0.0f);
 }
 
 ATerrainComponent::ATerrainComponent()
-    : RigidBody( nullptr )
 {
-    HitProxy = CreateInstanceOf< AHitProxy >();
+    HitProxy = CreateInstanceOf<AHitProxy>();
 
-    Platform::ZeroMem( &Primitive, sizeof( Primitive ) );
-    Primitive.Owner = this;
-    Primitive.Type = VSD_PRIMITIVE_BOX;
-    Primitive.VisGroup = VISIBILITY_GROUP_TERRAIN;
-    Primitive.QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS/* | VSD_QUERY_MASK_SHADOW_CAST*/;
-    Primitive.bIsOutdoor = true;
-    Primitive.RaycastCallback = RaycastCallback;
+    Platform::ZeroMem(&Primitive, sizeof(Primitive));
+    Primitive.Owner                  = this;
+    Primitive.Type                   = VSD_PRIMITIVE_BOX;
+    Primitive.VisGroup               = VISIBILITY_GROUP_TERRAIN;
+    Primitive.QueryGroup             = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS /* | VSD_QUERY_MASK_SHADOW_CAST*/;
+    Primitive.bIsOutdoor             = true;
+    Primitive.RaycastCallback        = RaycastCallback;
     Primitive.RaycastClosestCallback = RaycastClosestCallback;
-    Primitive.EvaluateRaycastResult = EvaluateRaycastResult;
+    Primitive.EvaluateRaycastResult  = EvaluateRaycastResult;
     Primitive.Box.Clear();
 
     bAllowRaycast = true;
@@ -197,7 +204,7 @@ ATerrainComponent::ATerrainComponent()
     TerrainWorldTransformInv.SetIdentity();
 }
 
-void ATerrainComponent::SetVisibilityGroup( int InVisibilityGroup )
+void ATerrainComponent::SetVisibilityGroup(int InVisibilityGroup)
 {
     Primitive.VisGroup = InVisibilityGroup;
 }
@@ -207,13 +214,15 @@ int ATerrainComponent::GetVisibilityGroup() const
     return Primitive.VisGroup;
 }
 
-void ATerrainComponent::SetVisible( bool _Visible )
+void ATerrainComponent::SetVisible(bool _Visible)
 {
-    if ( _Visible ) {
+    if (_Visible)
+    {
         Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE;
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
     }
-    else {
+    else
+    {
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
         Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
     }
@@ -224,13 +233,15 @@ bool ATerrainComponent::IsVisible() const
     return !!(Primitive.QueryGroup & VSD_QUERY_MASK_VISIBLE);
 }
 
-void ATerrainComponent::SetHiddenInLightPass( bool _HiddenInLightPass )
+void ATerrainComponent::SetHiddenInLightPass(bool _HiddenInLightPass)
 {
-    if ( _HiddenInLightPass ) {
+    if (_HiddenInLightPass)
+    {
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
         Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS;
     }
-    else {
+    else
+    {
         Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS;
     }
@@ -241,17 +252,19 @@ bool ATerrainComponent::IsHiddenInLightPass() const
     return !(Primitive.QueryGroup & VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS);
 }
 
-void ATerrainComponent::SetQueryGroup( int _UserQueryGroup )
+void ATerrainComponent::SetQueryGroup(int _UserQueryGroup)
 {
     Primitive.QueryGroup |= _UserQueryGroup & 0xffff0000;
 }
 
-void ATerrainComponent::SetTwoSidedSurface( bool bTwoSidedSurface )
+void ATerrainComponent::SetTwoSidedSurface(bool bTwoSidedSurface)
 {
-    if ( bTwoSidedSurface ) {
+    if (bTwoSidedSurface)
+    {
         Primitive.Flags |= SURF_TWOSIDED;
     }
-    else {
+    else
+    {
         Primitive.Flags &= ~SURF_TWOSIDED;
     }
 }
@@ -263,40 +276,46 @@ uint8_t ATerrainComponent::GetSurfaceFlags() const
 
 void ATerrainComponent::AddTerrainPhysics()
 {
-    if ( IsInEditor() ) {
+    if (IsInEditor())
+    {
         // Do not add/remove physics for objects in editor
         return;
     }
 
-    if ( !Terrain ) {
+    if (!Terrain)
+    {
         // No terrain resource assigned to component
         return;
     }
 
-    AN_ASSERT( RigidBody == nullptr );
+    AN_ASSERT(RigidBody == nullptr);
 
-    Float3 worldPosition = TerrainWorldTransform * Float3( 0.0f, (Terrain->GetMinHeight()+Terrain->GetMaxHeight())*0.5f, 0.0f );
+    float verticalOffset = (Terrain->GetMinHeight() + Terrain->GetMaxHeight()) * 0.5f;
+
+    Float3   worldPosition = TerrainWorldTransform * Float3(0.0f, verticalOffset, 0.0f);
     Float3x3 worldRotation = GetWorldRotation().ToMatrix3x3();
 
-    btRigidBody::btRigidBodyConstructionInfo contructInfo( 0.0f, nullptr, Terrain->GetHeightfieldShape() );
-    contructInfo.m_startWorldTransform.setOrigin( btVectorToFloat3( worldPosition ) );
-    contructInfo.m_startWorldTransform.setBasis( btMatrixToFloat3x3( worldRotation.Transposed() ) );
+    btRigidBody::btRigidBodyConstructionInfo contructInfo(0.0f, nullptr, Terrain->GetHeightfieldShape());
+    contructInfo.m_startWorldTransform.setOrigin(btVectorToFloat3(worldPosition));
+    contructInfo.m_startWorldTransform.setBasis(btMatrixToFloat3x3(worldRotation.Transposed()));
 
-    RigidBody = new btRigidBody( contructInfo );
-    RigidBody->setCollisionFlags( btCollisionObject::CF_STATIC_OBJECT /*| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT*/ );
-    RigidBody->setUserPointer( HitProxy.GetObject() );
+    RigidBody = new btRigidBody(contructInfo);
+    RigidBody->setCollisionFlags(btCollisionObject::CF_STATIC_OBJECT /*| btCollisionObject::CF_DISABLE_VISUALIZE_OBJECT*/);
+    RigidBody->setUserPointer(HitProxy.GetObject());
 
-    HitProxy->Initialize( this, RigidBody );
+    HitProxy->Initialize(this, RigidBody);
 }
 
 void ATerrainComponent::RemoveTerrainPhysics()
 {
-    if ( IsInEditor() ) {
+    if (IsInEditor())
+    {
         // Do not add/remove physics for objects in editor
         return;
     }
 
-    if ( RigidBody == nullptr ) {
+    if (RigidBody == nullptr)
+    {
         return;
     }
 
@@ -314,71 +333,103 @@ void ATerrainComponent::InitializeComponent()
 
     AddTerrainPhysics();
 
-    GetLevel()->AddPrimitive( &Primitive );
+    GetLevel()->AddPrimitive(&Primitive);
 }
 
 void ATerrainComponent::DeinitializeComponent()
 {
+    if (Terrain)
+    {
+        Terrain->RemoveListener(this);
+    }
+
     RemoveTerrainPhysics();
 
-    GetLevel()->RemovePrimitive( &Primitive );
+    GetLevel()->RemovePrimitive(&Primitive);
 
     Super::DeinitializeComponent();
 }
 
-void ATerrainComponent::SetTerrain( ATerrain * InTerrain )
+void ATerrainComponent::SetTerrain(ATerrain* InTerrain)
 {
+    if (Terrain)
+    {
+        Terrain->RemoveListener(this);
+    }
+
     Terrain = InTerrain;
 
-    if ( IsInitialized() ) {
+    if (Terrain)
+    {
+        Terrain->AddListener(this);
+    }
+
+    if (IsInitialized())
+    {
         // Keep terrain physics in sync with terrain resource
         RemoveTerrainPhysics();
         AddTerrainPhysics();
 
         UpdateWorldBounds();
-    }    
+    }
 }
 
-void ATerrainComponent::SetAllowRaycast( bool _AllowRaycast )
+void ATerrainComponent::OnTerrainModified()
 {
-    if ( _AllowRaycast ) {
-        Primitive.RaycastCallback = RaycastCallback;
+    if (IsInitialized())
+    {
+        // Keep terrain physics in sync with terrain resource
+        RemoveTerrainPhysics();
+        AddTerrainPhysics();
+
+        UpdateWorldBounds();
+    }
+}
+
+void ATerrainComponent::SetAllowRaycast(bool _AllowRaycast)
+{
+    if (_AllowRaycast)
+    {
+        Primitive.RaycastCallback        = RaycastCallback;
         Primitive.RaycastClosestCallback = RaycastClosestCallback;
     }
-    else {
-        Primitive.RaycastCallback = nullptr;
+    else
+    {
+        Primitive.RaycastCallback        = nullptr;
         Primitive.RaycastClosestCallback = nullptr;
     }
     bAllowRaycast = _AllowRaycast;
 }
 
-bool ATerrainComponent::Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< STriangleHitResult > & Hits ) const
+bool ATerrainComponent::Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits) const
 {
-    if ( !Primitive.RaycastCallback ) {
+    if (!Primitive.RaycastCallback)
+    {
         return false;
     }
 
     Hits.Clear();
 
-    return Primitive.RaycastCallback( &Primitive, InRayStart, InRayEnd, Hits );
+    return Primitive.RaycastCallback(&Primitive, InRayStart, InRayEnd, Hits);
 }
 
-bool ATerrainComponent::RaycastClosest( Float3 const & InRayStart, Float3 const & InRayEnd, STriangleHitResult & Hit ) const
+bool ATerrainComponent::RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, STriangleHitResult& Hit) const
 {
-    if ( !Primitive.RaycastCallback ) {
+    if (!Primitive.RaycastCallback)
+    {
         return false;
     }
 
-    return Primitive.RaycastClosestCallback( &Primitive, InRayStart, InRayEnd, Hit, nullptr );
+    return Primitive.RaycastClosestCallback(&Primitive, InRayStart, InRayEnd, Hit, nullptr);
 }
 
 void ATerrainComponent::UpdateTransform()
 {
-    Float3 worldPosition = GetWorldPosition();
+    Float3   worldPosition = GetWorldPosition();
     Float3x3 worldRotation = GetWorldRotation().ToMatrix3x3();
 
     // Terrain transform without scale
-    TerrainWorldTransform.Compose( worldPosition, worldRotation );
+    TerrainWorldTransform.Compose(worldPosition, worldRotation);
 
     // Terrain inversed transform
     TerrainWorldTransformInv = TerrainWorldTransform.Inversed();
@@ -388,17 +439,14 @@ void ATerrainComponent::UpdateTransform()
 
 void ATerrainComponent::UpdateWorldBounds()
 {
-    if ( !Terrain ) {
+    if (!Terrain)
+    {
         return;
     }
 
-    Primitive.Box = Terrain->GetBoundingBox().Transform( TerrainWorldTransform );
+    Primitive.Box = Terrain->GetBoundingBox().Transform(TerrainWorldTransform);
 
-    // Terrain is always in outdoor area. So we don't need to update primitive
-    //if ( IsInitialized() )
-    //{
-    //    GetLevel()->MarkPrimitive( &Primitive );
-    //}
+    // NOTE: Terrain is always in outdoor area. So we don't need to update primitive.
 }
 
 void ATerrainComponent::OnTransformDirty()
@@ -407,23 +455,25 @@ void ATerrainComponent::OnTransformDirty()
 
     UpdateTransform();
 
-    if ( !IsInEditor() ) {
-        GLogger.Printf( "WARNING: Set transform for terrain %s\n", GetObjectNameCStr() );
+    if (!IsInEditor())
+    {
+        GLogger.Printf("WARNING: Set transform for terrain %s\n", GetObjectNameCStr());
     }
 
     // Update rigid body transform
-    if ( Terrain && RigidBody ) {
+    if (Terrain && RigidBody)
+    {
         btTransform worldTransform;
-        Float3 worldPosition = TerrainWorldTransform * Float3( 0.0f, (Terrain->GetMinHeight()+Terrain->GetMaxHeight())*0.5f, 0.0f );
-        Float3x3 worldRotation = GetWorldRotation().ToMatrix3x3();
+        Float3      worldPosition = TerrainWorldTransform * Float3(0.0f, (Terrain->GetMinHeight() + Terrain->GetMaxHeight()) * 0.5f, 0.0f);
+        Float3x3    worldRotation = GetWorldRotation().ToMatrix3x3();
 
-        worldTransform.setOrigin( btVectorToFloat3( worldPosition ) );
-        worldTransform.setBasis( btMatrixToFloat3x3( worldRotation.Transposed() ) );
-        RigidBody->setWorldTransform( worldTransform );
+        worldTransform.setOrigin(btVectorToFloat3(worldPosition));
+        worldTransform.setBasis(btMatrixToFloat3x3(worldRotation.Transposed()));
+        RigidBody->setWorldTransform(worldTransform);
     }
 }
 
-void ATerrainComponent::GetLocalXZ( Float3 const & InPosition, float & X, float & Z ) const
+void ATerrainComponent::GetLocalXZ(Float3 const& InPosition, float& X, float& Z) const
 {
     // position in terrain space
     Float3 localPosition = TerrainWorldTransformInv * InPosition;
@@ -432,16 +482,18 @@ void ATerrainComponent::GetLocalXZ( Float3 const & InPosition, float & X, float 
     Z = localPosition.Z;
 }
 
-bool ATerrainComponent::GetTerrainTriangle( Float3 const & InPosition, STerrainTriangle & Triangle ) const
+bool ATerrainComponent::GetTriangle(Float3 const& InPosition, STerrainTriangle& Triangle) const
 {
-    if ( !Terrain ) {
+    if (!Terrain)
+    {
         return false;
     }
 
     // position in terrain space
     Float3 localPosition = TerrainWorldTransformInv * InPosition;
 
-    if ( !Terrain->GetTerrainTriangle( localPosition.X, localPosition.Z, Triangle ) ) {
+    if (!Terrain->GetTriangle(localPosition.X, localPosition.Z, Triangle))
+    {
         return false;
     }
 
@@ -461,42 +513,54 @@ bool ATerrainComponent::GetTerrainTriangle( Float3 const & InPosition, STerrainT
     return true;
 }
 
-void ATerrainComponent::SetCollisionGroup( int _CollisionGroup )
+float ATerrainComponent::SampleHeight(Float3 const& InPosition) const
 {
-    HitProxy->SetCollisionGroup( _CollisionGroup );
-}
-
-void ATerrainComponent::SetCollisionMask( int _CollisionMask )
-{
-    HitProxy->SetCollisionMask( _CollisionMask );
-}
-
-void ATerrainComponent::SetCollisionFilter( int _CollisionGroup, int _CollisionMask )
-{
-    HitProxy->SetCollisionFilter( _CollisionGroup, _CollisionMask );
-}
-
-void ATerrainComponent::AddCollisionIgnoreActor( AActor * _Actor )
-{
-    HitProxy->AddCollisionIgnoreActor( _Actor );
-}
-
-void ATerrainComponent::RemoveCollisionIgnoreActor( AActor * _Actor )
-{
-    HitProxy->RemoveCollisionIgnoreActor( _Actor );
-}
-
-void ATerrainComponent::DrawDebug( ADebugRenderer * InRenderer )
-{
-    Super::DrawDebug( InRenderer );
-
-    if ( com_DrawTerrainBounds && Terrain )
+    if (!Terrain)
     {
-        if ( Primitive.VisPass == InRenderer->GetVisPass() )
+        return 0.0f;
+    }
+
+    float x, z;
+    GetLocalXZ(InPosition, x, z);
+    return Terrain->SampleHeight(x, z);
+}
+
+void ATerrainComponent::SetCollisionGroup(int _CollisionGroup)
+{
+    HitProxy->SetCollisionGroup(_CollisionGroup);
+}
+
+void ATerrainComponent::SetCollisionMask(int _CollisionMask)
+{
+    HitProxy->SetCollisionMask(_CollisionMask);
+}
+
+void ATerrainComponent::SetCollisionFilter(int _CollisionGroup, int _CollisionMask)
+{
+    HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
+}
+
+void ATerrainComponent::AddCollisionIgnoreActor(AActor* _Actor)
+{
+    HitProxy->AddCollisionIgnoreActor(_Actor);
+}
+
+void ATerrainComponent::RemoveCollisionIgnoreActor(AActor* _Actor)
+{
+    HitProxy->RemoveCollisionIgnoreActor(_Actor);
+}
+
+void ATerrainComponent::DrawDebug(ADebugRenderer* InRenderer)
+{
+    Super::DrawDebug(InRenderer);
+
+    if (com_DrawTerrainBounds && Terrain)
+    {
+        if (Primitive.VisPass == InRenderer->GetVisPass())
         {
-            InRenderer->SetDepthTest( false );
-            InRenderer->SetColor( Color4( 1, 0, 0, 1 ) );
-            InRenderer->DrawAABB( Primitive.Box );
+            InRenderer->SetDepthTest(false);
+            InRenderer->SetColor(Color4(1, 0, 0, 1));
+            InRenderer->DrawAABB(Primitive.Box);
         }
     }
 }
