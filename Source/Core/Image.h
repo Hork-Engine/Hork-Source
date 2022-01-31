@@ -218,7 +218,11 @@ bool WriteBMP(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels,
 /** Write image in TGA format */
 bool WriteTGA(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData);
 
-/** Write image in JPG format */
+/**
+Write image in JPG format.
+JPEG does ignore alpha channels in input data; quality is between 1 and 100.
+Higher quality looks better but results in a bigger image.
+*/
 bool WriteJPG(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _Quality);
 
 /** Write image in HDR format */

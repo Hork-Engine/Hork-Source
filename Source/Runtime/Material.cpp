@@ -856,9 +856,6 @@ void AMaterial::LoadInternalResource( const char * _Path ) {
 
 AMaterialInstance::AMaterialInstance() {
     static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
-    //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
-    //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );
-    //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
     static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/grid8.png" ) );
 
     Material = MaterialResource.GetObject();
@@ -871,9 +868,6 @@ void AMaterialInstance::LoadInternalResource( const char * _Path ) {
     if ( !Platform::Stricmp( _Path, "/Default/MaterialInstance/Default" ) )
     {
         static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
-        //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
-        //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );
-        //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
         static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/grid8.png" ) );
 
         Material = MaterialResource.GetObject();
@@ -884,9 +878,6 @@ void AMaterialInstance::LoadInternalResource( const char * _Path ) {
 #endif
     if ( !Platform::Stricmp( _Path, "/Default/MaterialInstance/BaseLight" ) || !Platform::Stricmp( _Path, "/Default/MaterialInstance/Default" ) ) {
         static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/BaseLight" ) );
-        //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Default/Textures/Default2D" ) );
-        //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/gridyblack.png" ) );
-        //static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/uv_checker.png" ) );
         static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/grid8.png" ) );
 
         Material = MaterialResource.GetObject();
