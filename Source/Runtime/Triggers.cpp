@@ -43,8 +43,7 @@ ATriggerBox::ATriggerBox() {
     TriggerBody->SetCollisionMask( CM_PAWN );
 
     SCollisionBoxDef box;
-    ACollisionModel * collisionModel = CreateInstanceOf< ACollisionModel >();
-    collisionModel->Initialize(&box);
+    ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>(&box);
 
     TriggerBody->SetCollisionModel( collisionModel );
 }
@@ -62,8 +61,7 @@ ATriggerSphere::ATriggerSphere() {
     TriggerBody->SetCollisionMask( CM_PAWN );
 
     SCollisionSphereDef sphere;
-    ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>();
-    collisionModel->Initialize(&sphere);
+    ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>(&sphere);
 
     TriggerBody->SetCollisionModel( collisionModel );
 }
@@ -81,8 +79,7 @@ ATriggerCylinder::ATriggerCylinder() {
     TriggerBody->SetCollisionMask( CM_PAWN );
 
     SCollisionCylinderDef cylinder;
-    ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>();
-    collisionModel->Initialize(&cylinder);
+    ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>(&cylinder);
 
     TriggerBody->SetCollisionModel( collisionModel );
 }
@@ -100,8 +97,7 @@ ATriggerCone::ATriggerCone() {
     TriggerBody->SetCollisionMask( CM_PAWN );
 
     SCollisionConeDef cone;
-    ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>();
-    collisionModel->Initialize(&cone);
+    ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>(&cone);
 
     TriggerBody->SetCollisionModel( collisionModel );
 }
@@ -119,8 +115,7 @@ ATriggerCapsule::ATriggerCapsule() {
     TriggerBody->SetCollisionMask( CM_PAWN );
 
     SCollisionCapsuleDef capsule;
-    ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>();
-    collisionModel->Initialize(&capsule);
+    ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>(&capsule);
 
     TriggerBody->SetCollisionModel( collisionModel );
 }

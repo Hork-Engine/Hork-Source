@@ -251,7 +251,7 @@ bool APhysicalBody::ShouldHaveCollisionBody() const
         return false;
     }
 
-    if ( !collisionModel->NumCollisionBodies() ) {
+    if ( collisionModel->IsEmpty() ) {
         return false;
     }
 

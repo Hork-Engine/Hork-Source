@@ -180,8 +180,6 @@ struct ACollisionSphere : ACollisionBody
         }
     }
 
-    bool IsConvex() const override { return true; }
-
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         float sinTheta, cosTheta, sinPhi, cosPhi;
@@ -267,8 +265,6 @@ struct ACollisionSphereRadii : ACollisionBody
         return shape;
     }
 
-    bool IsConvex() const override { return true; }
-
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         float sinTheta, cosTheta, sinPhi, cosPhi;
@@ -332,8 +328,6 @@ struct ACollisionBox : ACollisionBody
         return new btBoxShape(btVectorToFloat3(HalfExtents));
     }
 
-    bool IsConvex() const override { return true; }
-
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         unsigned int const indices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
@@ -381,8 +375,6 @@ struct ACollisionCylinder : ACollisionBody
         }
         return new btCylinderShape(btVectorToFloat3(HalfExtents));
     }
-
-    bool IsConvex() const override { return true; }
 
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
@@ -495,8 +487,6 @@ struct ACollisionCone : ACollisionBody
         return new btConeShape(Radius, Height);
     }
 
-    bool IsConvex() const override { return true; }
-
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         float sinPhi, cosPhi;
@@ -602,10 +592,6 @@ struct ACollisionCapsule : ACollisionBody
         }
         return new btCapsuleShape(Radius, Height);
     }
-
-    float GetTotalHeight() const { return Height + 2 * Radius; }
-
-    bool IsConvex() const override { return true; }
 
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
@@ -804,8 +790,6 @@ struct ACollisionConvexHull : ACollisionBody
             return new btConvexHullShape(&Vertices[0][0], Vertices.Size(), sizeof(Float3));
         #endif
     }
-
-    bool IsConvex() const override { return true; }
 
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
@@ -1029,13 +1013,8 @@ struct ACollisionTriangleSoupGimpact : ACollisionBody
 ACollisionModel::ACollisionModel()
 {}
 
-ACollisionModel::~ACollisionModel()
-{}
-
-void ACollisionModel::Initialize(void const* pShapes)
+ACollisionModel::ACollisionModel(void const* pShapes)
 {
-    Purge();
-
     int numShapes = 0;
 
     while (pShapes)
@@ -1090,21 +1069,27 @@ void ACollisionModel::Initialize(void const* pShapes)
     }
 }
 
-void ACollisionModel::Initialize(SCollisionModelCreateInfo const& CreateInfo)
+ ACollisionModel::ACollisionModel(SCollisionModelCreateInfo const& CreateInfo) :
+    ACollisionModel(CreateInfo.pShapes)
 {
-    Initialize(CreateInfo.pShapes);
-
     if (CreateInfo.bOverrideCenterOfMass)
     {
         CenterOfMass = CreateInfo.CenterOfMass;
     }
 }
 
-void ACollisionModel::Purge()
+ACollisionModel::~ACollisionModel()
+{}
+
+bool ACollisionModel::LoadResource(IBinaryStream& Stream)
 {
-    CollisionBodies.Clear();
-    CenterOfMass.Clear();
-    BoneCollisions.Clear();
+    // TODO
+    return false;
+}
+
+void ACollisionModel::LoadInternalResource(const char* Path)
+{
+    // TODO
 }
 
 void ACollisionModel::AddSphere(SCollisionSphereDef const* pShape, int& NumShapes)
@@ -1675,12 +1660,12 @@ ACollisionInstance::ACollisionInstance(ACollisionModel* CollisionModel, Float3 c
     CompoundShape = MakeUnique<btCompoundShape>();
     CenterOfMass  = Scale * CollisionModel->GetCenterOfMass();
 
-    if (!CollisionModel->GetCollisionBodies().IsEmpty())
+    if (!CollisionModel->CollisionBodies.IsEmpty())
     {
         const btVector3 scaling = btVectorToFloat3(Scale);
         btTransform     shapeTransform;
 
-        for (TUniqueRef<ACollisionBody> const& collisionBody : CollisionModel->GetCollisionBodies())
+        for (TUniqueRef<ACollisionBody> const& collisionBody : CollisionModel->CollisionBodies)
         {
             btCollisionShape* shape = collisionBody->Create();
 

@@ -227,7 +227,6 @@ struct ACollisionBody
     virtual ~ACollisionBody() {}
 
     virtual class btCollisionShape* Create() { return nullptr; }
-    virtual bool                    IsConvex() const { return false; }
     virtual void                    GatherGeometry(TPodVectorHeap<Float3>& Vertices, TPodVectorHeap<unsigned int>& Indices, Float3x4 const& Transform) const {}
 };
 
@@ -255,18 +254,13 @@ class ACollisionModel : public AResource
 
 public:
     ACollisionModel();
+    ACollisionModel(void const* pShapes);
+    ACollisionModel(SCollisionModelCreateInfo const& CreateInfo);
     ~ACollisionModel();
-
-    void Initialize(void const* pShapes);
-    void Initialize(SCollisionModelCreateInfo const& CreateInfo);
-
-    void Purge();
 
     Float3 const& GetCenterOfMass() const { return CenterOfMass; }
 
-    int NumCollisionBodies() const { return CollisionBodies.Size(); }
-
-    TStdVector<TUniqueRef<ACollisionBody>> const& GetCollisionBodies() const { return CollisionBodies; }
+    bool IsEmpty() const { return CollisionBodies.IsEmpty(); }
 
     TStdVector<SBoneCollision> const& GetBoneCollisions() const { return BoneCollisions; }
 
@@ -277,19 +271,10 @@ public:
 
 protected:
     /** Load resource from file */
-    bool LoadResource(IBinaryStream& Stream) override
-    {
-        // TODO
-        Purge();
-        return false;
-    }
+    bool LoadResource(IBinaryStream& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(const char* Path) override
-    {
-        // TODO
-        Purge();
-    }
+    void LoadInternalResource(const char* Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/CollisionModel/Default"; }
 
@@ -309,6 +294,9 @@ private:
     TStdVector<TUniqueRef<ACollisionBody>> CollisionBodies;
     TStdVector<SBoneCollision>     BoneCollisions;
     Float3                         CenterOfMass;
+
+    // Collision instance has access to CollisionBodies
+    friend class ACollisionInstance;
 };
 
 /** Collision instance is an immutable object */
