@@ -6,6 +6,7 @@ setup_msvc_runtime_library()
 
 add_definitions( -DANGIE_ENGINE_EXPORTS )
 
+include_directories( . )
 
 set_property(GLOBAL PROPERTY USE_FOLDERS TRUE)
 
