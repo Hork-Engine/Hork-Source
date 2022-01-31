@@ -1,12 +1,12 @@
 /*
 
-Angie Engine Source Code
+Hork Engine Source Code
 
 MIT License
 
 Copyright (C) 2017-2022 Alexander Samusev.
 
-This file is part of the Angie Engine Source Code.
+This file is part of the Hork Engine Source Code.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -168,7 +168,7 @@ void btDrawCollisionShape( ADebugRenderer * InRenderer, const btTransform& world
 
         case STATIC_PLANE_PROXYTYPE:
         {
-            // Static plane shape is not really used in Angie Engine
+            // Static plane shape is not really used in Hork Engine
             const btStaticPlaneShape* staticPlaneShape = static_cast<const btStaticPlaneShape*>(shape);
             btScalar planeConst = staticPlaneShape->getPlaneConstant();
             const btVector3& planeNormal = staticPlaneShape->getPlaneNormal();

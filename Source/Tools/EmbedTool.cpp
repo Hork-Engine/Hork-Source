@@ -1,12 +1,12 @@
 /*
 
-Angie Engine Source Code
+Hork Engine Source Code
 
 MIT License
 
 Copyright (C) 2017-2022 Alexander Samusev.
 
-This file is part of the Angie Engine Source Code.
+This file is part of the Hork Engine Source Code.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
