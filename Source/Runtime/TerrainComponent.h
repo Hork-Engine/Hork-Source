@@ -37,16 +37,16 @@ SOFTWARE.
 
 class ATerrainComponent : public ASceneComponent
 {
-    AN_COMPONENT( ATerrainComponent, ASceneComponent )
+    AN_COMPONENT(ATerrainComponent, ASceneComponent)
 
 public:
-    AHitProxy * GetHitProxy() const
+    AHitProxy* GetHitProxy() const
     {
         return HitProxy;
     }
 
     /** Dispatch contact events (OnBeginContact, OnUpdateContact, OnEndContact) */
-    void SetDispatchContactEvents( bool bDispatch )
+    void SetDispatchContactEvents(bool bDispatch)
     {
         HitProxy->bDispatchContactEvents = bDispatch;
     }
@@ -57,7 +57,7 @@ public:
     }
 
     /** Generate contact points for contact events. Use with bDispatchContactEvents. */
-    void SetGenerateContactPoints( bool bGenerate )
+    void SetGenerateContactPoints(bool bGenerate)
     {
         HitProxy->bGenerateContactPoints = bGenerate;
     }
@@ -68,84 +68,84 @@ public:
     }
 
     /** Set collision group/layer. See ECollisionMask. */
-    void SetCollisionGroup( int _CollisionGroup );
+    void SetCollisionGroup(int _CollisionGroup);
 
     /** Get collision group. See ECollisionMask. */
     int GetCollisionGroup() const { return HitProxy->GetCollisionGroup(); }
 
     /** Set collision mask. See ECollisionMask. */
-    void SetCollisionMask( int _CollisionMask );
+    void SetCollisionMask(int _CollisionMask);
 
     /** Get collision mask. See ECollisionMask. */
     int GetCollisionMask() const { return HitProxy->GetCollisionMask(); }
 
     /** Set collision group and mask. See ECollisionMask. */
-    void SetCollisionFilter( int _CollisionGroup, int _CollisionMask );
+    void SetCollisionFilter(int _CollisionGroup, int _CollisionMask);
 
     /** Set actor to ignore collisions with this component */
-    void AddCollisionIgnoreActor( AActor * _Actor );
+    void AddCollisionIgnoreActor(AActor* _Actor);
 
     /** Unset actor to ignore collisions with this component */
-    void RemoveCollisionIgnoreActor( AActor * _Actor );
+    void RemoveCollisionIgnoreActor(AActor* _Actor);
 
     /** Set terrain resource */
-    void SetTerrain( ATerrain * InTerrain );
+    void SetTerrain(ATerrain* InTerrain);
 
     /** Get terrain resource */
-    ATerrain * GetTerrain() const { return Terrain; }
+    ATerrain* GetTerrain() const { return Terrain; }
 
     /** Visibility group to filter drawables during rendering */
-    void SetVisibilityGroup( int InVisibilityGroup );
+    void SetVisibilityGroup(int InVisibilityGroup);
 
     int GetVisibilityGroup() const;
 
-    void SetVisible( bool _Visible );
+    void SetVisible(bool _Visible);
 
     bool IsVisible() const;
 
     /** Set hidden during main render pass */
-    void SetHiddenInLightPass( bool _HiddenInLightPass );
+    void SetHiddenInLightPass(bool _HiddenInLightPass);
 
     bool IsHiddenInLightPass() const;
 
-    void SetQueryGroup( int _UserQueryGroup );
+    void SetQueryGroup(int _UserQueryGroup);
 
-    void SetTwoSidedSurface( bool bTwoSidedSurface );
+    void SetTwoSidedSurface(bool bTwoSidedSurface);
 
     uint8_t GetSurfaceFlags() const;
 
-    SPrimitiveDef const * GetPrimitive() const { return &Primitive; }
+    SPrimitiveDef const* GetPrimitive() const { return &Primitive; }
 
     /** Allow raycasting */
-    void SetAllowRaycast( bool _AllowRaycast );
+    void SetAllowRaycast(bool _AllowRaycast);
 
     bool IsRaycastAllowed() const { return bAllowRaycast; }
 
     /** Raycast the terrain */
-    bool Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< STriangleHitResult > & Hits ) const;
+    bool Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits) const;
 
     /** Raycast the terrain */
-    bool RaycastClosest( Float3 const & InRayStart, Float3 const & InRayEnd, STriangleHitResult & Hit ) const;
+    bool RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, STriangleHitResult& Hit) const;
 
     /** Get X,Z coordinates in local terrain space */
-    void GetLocalXZ( Float3 const & Position, float & X, float & Z ) const;
+    void GetLocalXZ(Float3 const& Position, float& X, float& Z) const;
 
     /** Get terrain triangle at specified world position */
-    bool GetTriangle( Float3 const & Position, STerrainTriangle & Triangle ) const;
+    bool GetTriangle(Float3 const& Position, STerrainTriangle& Triangle) const;
 
     float SampleHeight(Float3 const& Position) const;
 
     /** Get world transform matrix. Terrain world transform has no scale. */
-    Float3x4 const & GetTerrainWorldTransform() const { return TerrainWorldTransform; }
+    Float3x4 const& GetTerrainWorldTransform() const { return TerrainWorldTransform; }
 
     /** Get world transform matrix inversed. Terrain world transform has no scale. */
-    Float3x4 const & GetTerrainWorldTransformInversed() const { return TerrainWorldTransformInv; }
+    Float3x4 const& GetTerrainWorldTransformInversed() const { return TerrainWorldTransformInv; }
 
     /** Get bounding box */
-    BvAxisAlignedBox const & GetWorldBounds() const { return Primitive.Box; }
+    BvAxisAlignedBox const& GetWorldBounds() const { return Primitive.Box; }
 
     /** Internal rigid body */
-    class btRigidBody * GetRigidBody() const { return RigidBody; }
+    class btRigidBody* GetRigidBody() const { return RigidBody; }
 
 protected:
     ATerrainComponent();
@@ -156,7 +156,7 @@ protected:
 
     void OnTransformDirty() override;
 
-    void DrawDebug( ADebugRenderer * InRenderer ) override;
+    void DrawDebug(ADebugRenderer* InRenderer) override;
 
     void OnTerrainModified();
 
@@ -167,11 +167,11 @@ protected:
     void RemoveTerrainPhysics();
 
     // Terrain resource
-    TRef< ATerrain > Terrain;
+    TRef<ATerrain> Terrain;
     // Collision hit proxy
-    TRef< AHitProxy > HitProxy;
+    TRef<AHitProxy> HitProxy;
     // Internal rigid body
-    btRigidBody * RigidBody{};
+    btRigidBody* RigidBody{};
     // VSD primitive
     SPrimitiveDef Primitive;
     // Cached world transform
