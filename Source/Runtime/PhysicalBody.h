@@ -405,6 +405,6 @@ private:
     bool bUseMeshCollision = false;
     Float3 CachedScale = Float3( 1.0f );
 
-    APhysicalBody * NextNavBody = nullptr;
-    APhysicalBody * PrevNavBody = nullptr;
+    APhysicalBody * pNextNav{};
+    APhysicalBody * pPrevNav{};
 };

@@ -49,8 +49,6 @@ FIXME: move normal texture fetching to fragment shader?
 Future:
  Precalculate occluders inside mountains so that invisible objects can be cut off.
 
-Modify NavMesh
-
 */
 
 #include "Terrain.h"
@@ -642,4 +640,113 @@ void ATerrain::NotifyTerrainModified()
     }
 
     // TODO: Update terrain views
+}
+
+void ATerrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TPodVectorHeap<Float3>& Vertices, TPodVectorHeap<unsigned int>& Indices) const
+{
+    if (!BvBoxOverlapBox(BoundingBox, LocalBounds))
+    {
+        return;
+    }
+
+    float minX = Math::Floor(LocalBounds.Mins.X);
+    float minZ = Math::Floor(LocalBounds.Mins.Z);
+    float maxX = Math::Ceil(LocalBounds.Maxs.X);
+    float maxZ = Math::Ceil(LocalBounds.Maxs.Z);
+    float minY = LocalBounds.Mins.Y;
+    float maxY = LocalBounds.Maxs.Y;
+
+    int halfResolution = HeightmapResolution >> 1;
+
+    int minQuadX = minX + halfResolution;
+    int minQuadZ = minZ + halfResolution;
+    int maxQuadX = maxX + halfResolution;
+    int maxQuadZ = maxZ + halfResolution;
+
+    minQuadX = Math::Max(minQuadX, 0);
+    minQuadZ = Math::Max(minQuadZ, 0);
+    maxQuadX = Math::Min(maxQuadX, HeightmapResolution - 1);
+    maxQuadZ = Math::Min(maxQuadZ, HeightmapResolution - 1);
+
+    int n = Vertices.Size();
+
+    for (int qz = minQuadZ ; qz < maxQuadZ ; qz++)
+    {
+        float z = qz - halfResolution;
+
+        float h0 = Heightmap[0][qz * HeightmapResolution + minQuadX];
+        float h3 = Heightmap[0][(qz + 1) * HeightmapResolution + minQuadX];
+
+        for (int qx = minQuadX ; qx < maxQuadX ; qx++)
+        {
+            float x = qx - halfResolution;
+
+            /*
+
+            h0       h1
+            +--------+
+            |     /  |
+            |   /    |
+            | /      |
+            +--------+
+            h3       h2
+
+            */
+
+            float h1 = Heightmap[0][qz * HeightmapResolution + qx + 1];            
+            float h2 = Heightmap[0][(qz + 1) * HeightmapResolution + qx + 1];
+            
+            bool firstTriangleCut = false;
+
+            // Triangle h0 h3 h1
+            if ((h0 >= minY && h0 <= maxY) ||
+                (h3 >= minY && h3 <= maxY) ||
+                (h1 >= minY && h1 <= maxY))
+            {
+                // emit triangle
+
+                Vertices.Append({x, h0, z});
+                Vertices.Append({x, h3, z + 1});
+                Vertices.Append({x + 1, h1, z});
+
+                Indices.Append(n);
+                Indices.Append(n + 1);
+                Indices.Append(n + 2);
+                n += 3;
+            }
+            else
+                firstTriangleCut = true;
+
+            // Triangle h1 h3 h2
+            if ((h1 >= minY && h1 <= maxY) ||
+                (h3 >= minY && h3 <= maxY) ||
+                (h2 >= minY && h2 <= maxY))
+            {
+                // emit triangle
+                if (firstTriangleCut)
+                {
+                    Vertices.Append({x + 1, h1, z});
+                    Vertices.Append({x, h3, z + 1});
+                    Vertices.Append({x + 1, h2, z + 1});
+
+                    Indices.Append(n);
+                    Indices.Append(n + 1);
+                    Indices.Append(n + 2);
+                    n += 3;
+                }
+                else
+                {
+                    Vertices.Append({x + 1, h2, z + 1});
+
+                    Indices.Append(n - 1);
+                    Indices.Append(n - 2);
+                    Indices.Append(n);
+                    n++;
+                }
+            }
+
+            h0 = h1;
+            h3 = h2;
+        }
+    }
 }

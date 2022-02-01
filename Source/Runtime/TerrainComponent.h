@@ -144,6 +144,8 @@ public:
     /** Get bounding box */
     BvAxisAlignedBox const& GetWorldBounds() const { return Primitive.Box; }
 
+    void GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, TPodVectorHeap<Float3>& CollisionVertices, TPodVectorHeap<unsigned int>& CollisionIndices) const;
+
     /** Internal rigid body */
     class btRigidBody* GetRigidBody() const { return RigidBody; }
 
@@ -181,8 +183,11 @@ protected:
     // Allow raycast flag
     bool bAllowRaycast : 1;
 
+    friend class ATerrain;
     ATerrainComponent* pNext{};
     ATerrainComponent* pPrev{};
 
-    friend class ATerrain;
+    friend class AAINavigationMesh;
+    ATerrainComponent* pNextNav{};
+    ATerrainComponent* pPrevNav{};
 };

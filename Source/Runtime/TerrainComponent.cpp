@@ -334,10 +334,16 @@ void ATerrainComponent::InitializeComponent()
     AddTerrainPhysics();
 
     GetLevel()->AddPrimitive(&Primitive);
+
+    AAINavigationMesh & NavigationMesh = GetWorld()->GetNavigationMesh();
+    NavigationMesh.AddNavigationGeometry( this );
 }
 
 void ATerrainComponent::DeinitializeComponent()
 {
+    AAINavigationMesh & NavigationMesh = GetWorld()->GetNavigationMesh();
+    NavigationMesh.RemoveNavigationGeometry( this );
+
     if (Terrain)
     {
         Terrain->RemoveListener(this);
@@ -561,6 +567,25 @@ void ATerrainComponent::DrawDebug(ADebugRenderer* InRenderer)
             InRenderer->SetDepthTest(false);
             InRenderer->SetColor(Color4(1, 0, 0, 1));
             InRenderer->DrawAABB(Primitive.Box);
+        }
+    }
+}
+
+void ATerrainComponent::GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, TPodVectorHeap<Float3>& CollisionVertices, TPodVectorHeap<unsigned int>& CollisionIndices) const
+{
+    if (!Terrain)
+        return;
+
+    int firstVert = CollisionVertices.Size();
+    Terrain->GatherGeometry(LocalBounds, CollisionVertices, CollisionIndices);
+
+    int numVerts = CollisionVertices.Size() - firstVert;
+    if (numVerts)
+    {
+        Float3x4 const& transformMatrix = GetWorldTransformMatrix();
+        for (int i = 0 ; i < numVerts ; i++)
+        {
+            CollisionVertices[firstVert + i] = transformMatrix * CollisionVertices[firstVert + i];
         }
     }
 }

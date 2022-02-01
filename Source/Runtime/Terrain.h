@@ -53,6 +53,13 @@ public:
 
     ~ATerrain();
 
+    /** Navigation areas are used to gather navigation geometry.
+    
+    NOTE: In the future, we can create a bit mask for each terrain quad to decide which triangles should be used for navigation.
+    e.g. TBitMask<> WalkableMask
+    */
+    TPodVector<BvAxisAlignedBox> NavigationAreas;
+
     float GetMinHeight() const { return MinHeight; }
 
     float GetMaxHeight() const { return MaxHeight; }
@@ -78,6 +85,8 @@ public:
     bool GetTexcoord(float X, float Z, Float2& Texcoord) const;
 
     bool GetTriangle(float X, float Z, STerrainTriangle& Triangle) const;
+
+    void GatherGeometry(BvAxisAlignedBox const& LocalBounds, TPodVectorHeap<Float3>& Vertices, TPodVectorHeap<unsigned int>& Indices) const;
 
     class btHeightfieldTerrainShape* GetHeightfieldShape() const { return HeightfieldShape.GetObject(); }
 
