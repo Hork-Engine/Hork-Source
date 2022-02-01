@@ -49,6 +49,8 @@ class ATerrain : public AResource
 
 public:
     ATerrain();
+    ATerrain(int Resolution, const float* pData);
+
     ~ATerrain();
 
     float GetMinHeight() const { return MinHeight; }
@@ -93,13 +95,16 @@ protected:
 
 private:
     void Purge();
+    void GenerateLods();
+    void UpdateTerrainBounds();
+    void UpdateTerrainShape();
     void NotifyTerrainModified();
 
-    int                                   HeightmapResolution;
-    int                                   HeightmapLods;
+    int                                   HeightmapResolution{};
+    int                                   HeightmapLods{};
     TPodVector<float*>                    Heightmap;
-    float                                 MinHeight;
-    float                                 MaxHeight;
+    float                                 MinHeight{};
+    float                                 MaxHeight{};
     TUniqueRef<btHeightfieldTerrainShape> HeightfieldShape;
     Int2                                  ClipMin;
     Int2                                  ClipMax;

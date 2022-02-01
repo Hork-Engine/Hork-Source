@@ -72,6 +72,34 @@ ATerrain::~ATerrain()
     Purge();
 }
 
+ATerrain::ATerrain(int Resolution, const float* pData)
+{
+    if (!IsPowerOfTwo(Resolution - 1))
+    {
+        GLogger.Printf("ATerrain::ctor: invalid resolution\n");
+        return;
+    }
+
+    HeightmapResolution = Resolution;
+
+    // Allocate memory for terrain lods
+    HeightmapLods = Math::Log2((uint32_t)(HeightmapResolution - 1)) + 1;
+    Heightmap.Resize(HeightmapLods);
+    for (int i = 0; i < HeightmapLods; i++)
+    {
+        int sz       = 1 << (HeightmapLods - i - 1);
+        Heightmap[i] = (float*)GHeapMemory.Alloc((sz + 1) * (sz + 1) * sizeof(float));
+    }
+
+    // Read most detailed lod
+    Platform::Memcpy(Heightmap[0], pData, HeightmapResolution * HeightmapResolution * sizeof(float));
+
+    GenerateLods();
+    UpdateTerrainBounds();
+    UpdateTerrainShape();
+    NotifyTerrainModified();
+}
+
 bool ATerrain::LoadResource(IBinaryStream& Stream)
 {
     Purge();
@@ -91,7 +119,66 @@ bool ATerrain::LoadResource(IBinaryStream& Stream)
     // Read most detailed lod
     Stream.ReadBuffer(Heightmap[0], HeightmapResolution * HeightmapResolution * sizeof(float));
 
-    // Generate lods
+    GenerateLods();
+    UpdateTerrainBounds();
+    UpdateTerrainShape();
+    NotifyTerrainModified();
+
+    return true;
+}
+
+void ATerrain::LoadInternalResource(const char* Path)
+{
+    Purge();
+
+    // Create some dummy terrain
+
+    HeightmapResolution = 33;
+
+    // Allocate memory for terrain lods
+    HeightmapLods = Math::Log2((uint32_t)(HeightmapResolution - 1)) + 1;
+    Heightmap.Resize(HeightmapLods);
+    for (int i = 0; i < HeightmapLods; i++)
+    {
+        int sz       = 1 << (HeightmapLods - i - 1);
+        Heightmap[i] = (float*)GHeapMemory.ClearedAlloc(sizeof(float) * (sz + 1) * (sz + 1));
+    }
+
+    MinHeight = -0.1f;
+    MaxHeight = 0.1f;
+
+    // Calc clipping region
+    int halfResolution = HeightmapResolution >> 1;
+    ClipMin.X          = halfResolution;
+    ClipMin.Y          = halfResolution;
+    ClipMax.X          = halfResolution;
+    ClipMax.Y          = halfResolution;
+
+    // Calc bounding box
+    BoundingBox.Mins.X = -ClipMin.X;
+    BoundingBox.Mins.Y = MinHeight;
+    BoundingBox.Mins.Z = -ClipMin.Y;
+    BoundingBox.Maxs.X = ClipMax.X;
+    BoundingBox.Maxs.Y = MaxHeight;
+    BoundingBox.Maxs.Z = ClipMax.Y;
+
+    UpdateTerrainShape();
+    NotifyTerrainModified();
+}
+
+void ATerrain::Purge()
+{
+    for (int i = 0; i < HeightmapLods; i++)
+    {
+        GHeapMemory.Free(Heightmap[i]);
+    }
+
+    HeightmapLods = 0;
+    Heightmap.Clear();
+}
+
+void ATerrain::GenerateLods()
+{
     float h1, h2, h3, h4;
     int   x, y;
     for (int i = 1; i < HeightmapLods; i++)
@@ -138,13 +225,16 @@ bool ATerrain::LoadResource(IBinaryStream& Stream)
         int src_x       = x << 1;
         lod[y * sz + x] = srcLod[src_y * sz2 + src_x];
     }
+}
 
+void ATerrain::UpdateTerrainBounds()
+{
     // Calc Min/Max height. TODO: should be specified in asset file
     MinHeight = std::numeric_limits<float>::max();
     MaxHeight = -std::numeric_limits<float>::max();
-    for (y = 0; y < HeightmapResolution; y++)
+    for (int y = 0; y < HeightmapResolution; y++)
     {
-        for (x = 0; x < HeightmapResolution; x++)
+        for (int x = 0; x < HeightmapResolution; x++)
         {
             float h   = Heightmap[0][y * HeightmapResolution + x];
             MinHeight = Math::Min(MinHeight, h);
@@ -166,11 +256,10 @@ bool ATerrain::LoadResource(IBinaryStream& Stream)
     BoundingBox.Maxs.X = ClipMax.X;
     BoundingBox.Maxs.Y = MaxHeight;
     BoundingBox.Maxs.Z = ClipMax.Y;
+}
 
-    // Generate accelerated terrain collision shape
-    HeightfieldShape = MakeUnique<btHeightfieldTerrainShape>(HeightmapResolution, HeightmapResolution, Heightmap[0], 1, MinHeight, MaxHeight, 1, PHY_FLOAT, false /* bFlipQuadEdges */);
-    HeightfieldShape->buildAccelerator();
-
+void ATerrain::UpdateTerrainShape()
+{
     /*
     NOTE about btHeightfieldTerrainShape:
       The caller is responsible for maintaining the heightfield array; this
@@ -180,59 +269,9 @@ bool ATerrain::LoadResource(IBinaryStream& Stream)
       capture the extremes (heights must always be in that range).
     */
 
-    NotifyTerrainModified();
-
-    return true;
-}
-
-void ATerrain::LoadInternalResource(const char* Path)
-{
-    Purge();
-
-    // Create some dummy terrain
-
-    HeightmapResolution = 33;
-
-    // Allocate memory for terrain lods
-    HeightmapLods = Math::Log2((uint32_t)(HeightmapResolution - 1)) + 1;
-    Heightmap.Resize(HeightmapLods);
-    for (int i = 0; i < HeightmapLods; i++)
-    {
-        int sz       = 1 << (HeightmapLods - i - 1);
-        Heightmap[i] = (float*)GHeapMemory.ClearedAlloc(sizeof(float) * (sz + 1) * (sz + 1));
-    }
-
-    MinHeight = -0.1f;
-    MaxHeight = 0.1f;
-
-    // Calc clipping region
-    int halfResolution = HeightmapResolution >> 1;
-    ClipMin.X          = halfResolution;
-    ClipMin.Y          = halfResolution;
-    ClipMax.X          = halfResolution;
-    ClipMax.Y          = halfResolution;
-
-    // Calc bounding box
-    BoundingBox.Mins.X = -ClipMin.X;
-    BoundingBox.Mins.Y = MinHeight;
-    BoundingBox.Mins.Z = -ClipMin.Y;
-    BoundingBox.Maxs.X = ClipMax.X;
-    BoundingBox.Maxs.Y = MaxHeight;
-    BoundingBox.Maxs.Z = ClipMax.Y;
-
     // Generate accelerated terrain collision shape
     HeightfieldShape = MakeUnique<btHeightfieldTerrainShape>(HeightmapResolution, HeightmapResolution, Heightmap[0], 1, MinHeight, MaxHeight, 1, PHY_FLOAT, false /* bFlipQuadEdges */);
     HeightfieldShape->buildAccelerator();
-
-    NotifyTerrainModified();
-}
-
-void ATerrain::Purge()
-{
-    for (int i = 0; i < HeightmapLods; i++)
-    {
-        GHeapMemory.Free(Heightmap[i]);
-    }
 }
 
 float ATerrain::ReadHeight(int X, int Z, int Lod) const
