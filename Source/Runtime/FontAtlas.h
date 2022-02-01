@@ -122,101 +122,109 @@ struct SFontCreateInfo
     float RasterizerMultiply;
 };
 
-class AFont : public AResource {
-    AN_CLASS( AFont, AResource )
+class AFont : public AResource
+{
+    AN_CLASS(AFont, AResource)
 
 public:
     /** Initialize from memory */
-    void InitializeFromMemoryTTF( const void * _SysMem, size_t _SizeInBytes, SFontCreateInfo const * _pCreateInfo = nullptr );
+    void InitializeFromMemoryTTF(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo const* _pCreateInfo = nullptr);
 
     /** Purge font data */
     void Purge();
 
-    bool IsValid() const {
+    bool IsValid() const
+    {
         return AtlasTexture.GetObject() != nullptr;
     }
 
-    int GetFontSize() const {
+    int GetFontSize() const
+    {
         return FontSize;
     }
 
-    void SetDrawOffset( Float2 const & _Offset );
+    void SetDrawOffset(Float2 const& _Offset);
 
-    Float2 const & GetDrawOffset() const {
+    Float2 const& GetDrawOffset() const
+    {
         return DrawOffset;
     }
 
-    Float2 const & GetUVWhitePixel() const {
+    Float2 const& GetUVWhitePixel() const
+    {
         return TexUvWhitePixel;
     }
 
-    SFontGlyph const * GetGlyph( SWideChar c ) const {
+    SFontGlyph const* GetGlyph(SWideChar c) const
+    {
         return ((int)c < WideCharToGlyph.Size()) ? Glyphs.ToPtr() + WideCharToGlyph[(int)c] : FallbackGlyph;
     }
 
-    float GetCharAdvance( SWideChar c ) const {
+    float GetCharAdvance(SWideChar c) const
+    {
         return ((int)c < WideCharAdvanceX.Size()) ? WideCharAdvanceX[(int)c] : FallbackAdvanceX;
     }
 
-    ATexture * GetTexture() const {
+    ATexture* GetTexture() const
+    {
         return AtlasTexture;
     }
 
-    bool GetMouseCursorTexData( EDrawCursor cursor_type, Float2* out_offset, Float2* out_size, Float2 out_uv_border[2], Float2 out_uv_fill[2] ) const;
+    bool GetMouseCursorTexData(EDrawCursor cursor_type, Float2* out_offset, Float2* out_size, Float2 out_uv_border[2], Float2 out_uv_fill[2]) const;
 
-    Float2 CalcTextSizeA( float _Size, float _MaxWidth, float _WrapWidth, const char * _TextBegin, const char * _TextEnd = nullptr, const char** _Remaining = nullptr ) const; // utf8
+    Float2 CalcTextSizeA(float _Size, float _MaxWidth, float _WrapWidth, const char* _TextBegin, const char* _TextEnd = nullptr, const char** _Remaining = nullptr) const; // utf8
 
-    const char * CalcWordWrapPositionA( float _Scale, const char * _Text, const char * _TextEnd, float _WrapWidth ) const;
+    const char* CalcWordWrapPositionA(float _Scale, const char* _Text, const char* _TextEnd, float _WrapWidth) const;
 
-    SWideChar const * CalcWordWrapPositionW( float _Scale, SWideChar const * _Text, SWideChar const * _TextEnd, float _WrapWidth ) const;
+    SWideChar const* CalcWordWrapPositionW(float _Scale, SWideChar const* _Text, SWideChar const* _TextEnd, float _WrapWidth) const;
 
-    static void SetGlyphRanges( EGlyphRange _GlyphRange );
+    static void SetGlyphRanges(EGlyphRange _GlyphRange);
 
 protected:
     AFont();
     ~AFont();
 
     /** Load resource from file */
-    bool LoadResource( IBinaryStream & Stream ) override;
+    bool LoadResource(IBinaryStream& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource( const char * _Path ) override;
+    void LoadInternalResource(const char* _Path) override;
 
-    const char * GetDefaultResourcePath() const override { return "/Default/Fonts/Default"; }
+    const char* GetDefaultResourcePath() const override { return "/Default/Fonts/Default"; }
 
 private:
-    bool Build( const void * _SysMem, size_t _SizeInBytes, SFontCreateInfo const * _CreateInfo );
+    bool Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo const* _CreateInfo);
 
-    void AddGlyph( SFontCreateInfo const & cfg, SWideChar c, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1, float advance_x );
+    void AddGlyph(SFontCreateInfo const& cfg, SWideChar c, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1, float advance_x);
 
-    int AddCustomRect( unsigned int id, int width, int height );
+    int AddCustomRect(unsigned int id, int width, int height);
 
     // Cache-friendly glyph advanceX
-    TPodVector< float > WideCharAdvanceX;
+    TPodVector<float> WideCharAdvanceX;
     // AdvanceX for fallback character
     float FallbackAdvanceX = 0.0f;
     // Indexed by widechar, holds indices for corresponding glyphs
-    TPodVector< unsigned short > WideCharToGlyph;
+    TPodVector<unsigned short> WideCharToGlyph;
     // Font glyphs
-    TPodVector< SFontGlyph > Glyphs;
+    TPodVector<SFontGlyph> Glyphs;
     // Glyph for fallback character
-    SFontGlyph const * FallbackGlyph = nullptr;
+    SFontGlyph const* FallbackGlyph = nullptr;
     // Font size in pixels
     float FontSize = 0.0f;
     // Offset for font rendering in pixels
-    Float2 DrawOffset = Float2( 0.0f );
+    Float2 DrawOffset = Float2(0.0f);
     // Texture raw data
-    byte * TexPixelsAlpha8 = nullptr;
+    byte* TexPixelsAlpha8 = nullptr;
     // Texture width
     int TexWidth = 0;
     // Texture height
     int TexHeight = 0;
     // 1.0f/TexWidth, 1.0f/TexHeight
-    Float2 TexUvScale = Float2( 0.0f );
+    Float2 TexUvScale = Float2(0.0f);
     // Texture coordinates to a white pixel
-    Float2 TexUvWhitePixel = Float2( 0.0f );
+    Float2 TexUvWhitePixel = Float2(0.0f);
     // Texture object
-    TRef< ATexture > AtlasTexture;
+    TRef<ATexture> AtlasTexture;
     // Rectangles for packing custom texture data into the atlas.
-    TPodVector< SFontCustomRect > CustomRects;
+    TPodVector<SFontCustomRect> CustomRects;
 };

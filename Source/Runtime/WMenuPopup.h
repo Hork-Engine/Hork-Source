@@ -32,44 +32,50 @@ SOFTWARE.
 
 #include "WWidget.h"
 
-class WMenuPopup : public ABaseObject {
-    AN_CLASS( WMenuPopup, ABaseObject )
+class WMenuPopup : public ABaseObject
+{
+    AN_CLASS(WMenuPopup, ABaseObject)
 
     friend class WDesktop;
 
 public:
-
     /** Add child widget */
-    WMenuPopup & AddWidget( WWidget * _Widget ) {
-        ContentWidget->AddWidget( _Widget );
+    WMenuPopup& AddWidget(WWidget* _Widget)
+    {
+        ContentWidget->AddWidget(_Widget);
         return *this;
     }
 
     /** Helper. Add child widget */
-    WMenuPopup & operator[]( WWidget & _Widget ) {
-        return AddWidget( &_Widget );
+    WMenuPopup& operator[](WWidget& _Widget)
+    {
+        return AddWidget(&_Widget);
     }
 
     /** Helper. Add child decorate */
-    WMenuPopup & operator[]( WDecorate & _Decorate ) {
-        Self->AddDecorate( &_Decorate );
+    WMenuPopup& operator[](WDecorate& _Decorate)
+    {
+        Self->AddDecorate(&_Decorate);
         return *this;
     }
 
     /** Add widget decoration */
-    WMenuPopup & AddDecorate( WDecorate * _Decorate ) {
-        Self->AddDecorate( _Decorate );
+    WMenuPopup& AddDecorate(WDecorate* _Decorate)
+    {
+        Self->AddDecorate(_Decorate);
         return *this;
     }
 
     /** Remove widget decoration */
-    WMenuPopup & RemoveDecorate( WDecorate * _Decorate ) {
-        Self->RemoveDecorate( _Decorate );
+    WMenuPopup& RemoveDecorate(WDecorate* _Decorate)
+    {
+        Self->RemoveDecorate(_Decorate);
         return *this;
     }
 
     /** Remove all widget decorations */
-    WMenuPopup & RemoveDecorates() {
+    WMenuPopup& RemoveDecorates()
+    {
         Self->RemoveDecorates();
         return *this;
     }
@@ -82,20 +88,20 @@ public:
     void SelectPrevSubMenu();
 
     /** Determines the padding of the client area within the widget */
-    void SetMargin( float _Left, float _Top, float _Right, float _Bottom );
+    void SetMargin(float _Left, float _Top, float _Right, float _Bottom);
 
     /** Determines the padding of the client area within the widget */
-    void SetMargin( Float4 const & _Margin );
+    void SetMargin(Float4 const& _Margin);
 
     /** Vertical padding */
-    void SetVerticalPadding( float _Padding );
+    void SetVerticalPadding(float _Padding);
 
     WMenuPopup();
     ~WMenuPopup();
 
 private:
-    TRef< WWidget > Self;
-    TRef< WWidget > ContentWidget;
+    TRef<WWidget> Self;
+    TRef<WWidget> ContentWidget;
     //float CurWidth;
     //float CurHeight;
 };

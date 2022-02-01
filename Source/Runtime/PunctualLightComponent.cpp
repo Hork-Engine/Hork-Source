@@ -32,46 +32,55 @@ SOFTWARE.
 #include "World.h"
 #include "DebugRenderer.h"
 
-AN_CLASS_META( APunctualLightComponent )
+AN_CLASS_META(APunctualLightComponent)
 
-APunctualLightComponent::APunctualLightComponent() {
+APunctualLightComponent::APunctualLightComponent()
+{
     AABBWorldBounds.Clear();
     OBBTransformInverse.Clear();
 
-    Platform::ZeroMem( &Primitive, sizeof( Primitive ) );
-    Primitive.Owner = this;
-    Primitive.Type = VSD_PRIMITIVE_SPHERE;
-    Primitive.VisGroup = VISIBILITY_GROUP_DEFAULT;
+    Platform::ZeroMem(&Primitive, sizeof(Primitive));
+    Primitive.Owner      = this;
+    Primitive.Type       = VSD_PRIMITIVE_SPHERE;
+    Primitive.VisGroup   = VISIBILITY_GROUP_DEFAULT;
     Primitive.QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
 }
 
-void APunctualLightComponent::InitializeComponent() {
+void APunctualLightComponent::InitializeComponent()
+{
     Super::InitializeComponent();
 
-    GetLevel()->AddPrimitive( &Primitive );
+    GetLevel()->AddPrimitive(&Primitive);
 }
 
-void APunctualLightComponent::DeinitializeComponent() {
+void APunctualLightComponent::DeinitializeComponent()
+{
     Super::DeinitializeComponent();
 
-    GetLevel()->RemovePrimitive( &Primitive );
+    GetLevel()->RemovePrimitive(&Primitive);
 }
 
-void APunctualLightComponent::SetVisibilityGroup( int InVisibilityGroup ) {
+void APunctualLightComponent::SetVisibilityGroup(int InVisibilityGroup)
+{
     Primitive.VisGroup = InVisibilityGroup;
 }
 
-int APunctualLightComponent::GetVisibilityGroup() const {
+int APunctualLightComponent::GetVisibilityGroup() const
+{
     return Primitive.VisGroup;
 }
 
-void APunctualLightComponent::SetEnabled( bool _Enabled ) {
-    Super::SetEnabled( _Enabled );
+void APunctualLightComponent::SetEnabled(bool _Enabled)
+{
+    Super::SetEnabled(_Enabled);
 
-    if ( _Enabled ) {
+    if (_Enabled)
+    {
         Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE;
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
-    } else {
+    }
+    else
+    {
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
         Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
     }

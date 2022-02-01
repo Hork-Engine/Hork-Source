@@ -30,92 +30,97 @@ SOFTWARE.
 
 #include "Triggers.h"
 
-AN_CLASS_META( ATriggerBox )
+AN_CLASS_META(ATriggerBox)
 
-ATriggerBox::ATriggerBox() {
-    TriggerBody = CreateComponent< APhysicalBody >( "TriggerBody" );
+ATriggerBox::ATriggerBox()
+{
+    TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
     RootComponent = TriggerBody;
 
-    TriggerBody->SetDispatchOverlapEvents( true );
-    TriggerBody->SetTrigger( true );
-    TriggerBody->SetMotionBehavior( MB_STATIC );
-    TriggerBody->SetCollisionGroup( CM_TRIGGER );
-    TriggerBody->SetCollisionMask( CM_PAWN );
+    TriggerBody->SetDispatchOverlapEvents(true);
+    TriggerBody->SetTrigger(true);
+    TriggerBody->SetMotionBehavior(MB_STATIC);
+    TriggerBody->SetCollisionGroup(CM_TRIGGER);
+    TriggerBody->SetCollisionMask(CM_PAWN);
 
     SCollisionBoxDef box;
     ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>(&box);
 
-    TriggerBody->SetCollisionModel( collisionModel );
+    TriggerBody->SetCollisionModel(collisionModel);
 }
 
-AN_CLASS_META( ATriggerSphere )
+AN_CLASS_META(ATriggerSphere)
 
-ATriggerSphere::ATriggerSphere() {
-    TriggerBody = CreateComponent< APhysicalBody >( "TriggerBody" );
+ATriggerSphere::ATriggerSphere()
+{
+    TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
     RootComponent = TriggerBody;
 
-    TriggerBody->SetDispatchOverlapEvents( true );
-    TriggerBody->SetTrigger( true );
-    TriggerBody->SetMotionBehavior( MB_STATIC );
-    TriggerBody->SetCollisionGroup( CM_TRIGGER );
-    TriggerBody->SetCollisionMask( CM_PAWN );
+    TriggerBody->SetDispatchOverlapEvents(true);
+    TriggerBody->SetTrigger(true);
+    TriggerBody->SetMotionBehavior(MB_STATIC);
+    TriggerBody->SetCollisionGroup(CM_TRIGGER);
+    TriggerBody->SetCollisionMask(CM_PAWN);
 
     SCollisionSphereDef sphere;
-    ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>(&sphere);
+    ACollisionModel*    collisionModel = CreateInstanceOf<ACollisionModel>(&sphere);
 
-    TriggerBody->SetCollisionModel( collisionModel );
+    TriggerBody->SetCollisionModel(collisionModel);
 }
 
-AN_CLASS_META( ATriggerCylinder )
+AN_CLASS_META(ATriggerCylinder)
 
-ATriggerCylinder::ATriggerCylinder() {
-    TriggerBody = CreateComponent< APhysicalBody >( "TriggerBody" );
+ATriggerCylinder::ATriggerCylinder()
+{
+    TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
     RootComponent = TriggerBody;
 
-    TriggerBody->SetDispatchOverlapEvents( true );
-    TriggerBody->SetTrigger( true );
-    TriggerBody->SetMotionBehavior( MB_STATIC );
-    TriggerBody->SetCollisionGroup( CM_TRIGGER );
-    TriggerBody->SetCollisionMask( CM_PAWN );
+    TriggerBody->SetDispatchOverlapEvents(true);
+    TriggerBody->SetTrigger(true);
+    TriggerBody->SetMotionBehavior(MB_STATIC);
+    TriggerBody->SetCollisionGroup(CM_TRIGGER);
+    TriggerBody->SetCollisionMask(CM_PAWN);
 
     SCollisionCylinderDef cylinder;
-    ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>(&cylinder);
+    ACollisionModel*      collisionModel = CreateInstanceOf<ACollisionModel>(&cylinder);
 
-    TriggerBody->SetCollisionModel( collisionModel );
+    TriggerBody->SetCollisionModel(collisionModel);
 }
 
-AN_CLASS_META( ATriggerCone )
+AN_CLASS_META(ATriggerCone)
 
-ATriggerCone::ATriggerCone() {
-    TriggerBody = CreateComponent< APhysicalBody >( "TriggerBody" );
+ATriggerCone::ATriggerCone()
+{
+    TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
     RootComponent = TriggerBody;
 
-    TriggerBody->SetDispatchOverlapEvents( true );
-    TriggerBody->SetTrigger( true );
-    TriggerBody->SetMotionBehavior( MB_STATIC );
-    TriggerBody->SetCollisionGroup( CM_TRIGGER );
-    TriggerBody->SetCollisionMask( CM_PAWN );
+    TriggerBody->SetDispatchOverlapEvents(true);
+    TriggerBody->SetTrigger(true);
+    TriggerBody->SetMotionBehavior(MB_STATIC);
+    TriggerBody->SetCollisionGroup(CM_TRIGGER);
+    TriggerBody->SetCollisionMask(CM_PAWN);
 
     SCollisionConeDef cone;
-    ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>(&cone);
+    ACollisionModel*  collisionModel = CreateInstanceOf<ACollisionModel>(&cone);
 
-    TriggerBody->SetCollisionModel( collisionModel );
+    TriggerBody->SetCollisionModel(collisionModel);
 }
 
-AN_CLASS_META( ATriggerCapsule )
+AN_CLASS_META(ATriggerCapsule)
 
-ATriggerCapsule::ATriggerCapsule() {
-    TriggerBody = CreateComponent< APhysicalBody >( "TriggerBody" );
+ATriggerCapsule::ATriggerCapsule()
+{
+    TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
     RootComponent = TriggerBody;
 
-    TriggerBody->SetDispatchOverlapEvents( true );
-    TriggerBody->SetTrigger( true );
-    TriggerBody->SetMotionBehavior( MB_STATIC );
-    TriggerBody->SetCollisionGroup( CM_TRIGGER );
-    TriggerBody->SetCollisionMask( CM_PAWN );
+    TriggerBody->SetDispatchOverlapEvents(true);
+    TriggerBody->SetTrigger(true);
+    TriggerBody->SetMotionBehavior(MB_STATIC);
+    TriggerBody->SetCollisionGroup(CM_TRIGGER);
+    TriggerBody->SetCollisionMask(CM_PAWN);
 
     SCollisionCapsuleDef capsule;
-    ACollisionModel* collisionModel = CreateInstanceOf<ACollisionModel>(&capsule);
+    ACollisionModel*     collisionModel = CreateInstanceOf<ACollisionModel>(&capsule);
 
-    TriggerBody->SetCollisionModel( collisionModel );
+    TriggerBody->SetCollisionModel(collisionModel);
 }

@@ -32,38 +32,41 @@ SOFTWARE.
 
 #include "BulletCompatibility.h"
 
-AN_BEGIN_CLASS_META( AAnchorComponent )
+AN_BEGIN_CLASS_META(AAnchorComponent)
 AN_END_CLASS_META()
 
-AAnchorComponent::AAnchorComponent() {
-
+AAnchorComponent::AAnchorComponent()
+{
 }
 
-void AAnchorComponent::InitializeComponent() {
-
+void AAnchorComponent::InitializeComponent()
+{
 }
 
-void AAnchorComponent::DeinitializeComponent() {
+void AAnchorComponent::DeinitializeComponent()
+{
     Super::DeinitializeComponent();
 
-    btCollisionShape * shape = Anchor->getCollisionShape();
+    btCollisionShape* shape = Anchor->getCollisionShape();
     delete Anchor;
     Anchor = nullptr;
     delete shape;
     shape = nullptr;
 }
 
-void AAnchorComponent::OnTransformDirty() {
+void AAnchorComponent::OnTransformDirty()
+{
     btTransform transform;
 
     Float3 worldPosition = GetWorldPosition();
-    Quat worldRotation = GetWorldRotation();
+    Quat   worldRotation = GetWorldRotation();
 
-    transform.setOrigin( btVectorToFloat3( worldPosition ) );
-    transform.setRotation( btQuaternionToQuat( worldRotation ) );
+    transform.setOrigin(btVectorToFloat3(worldPosition));
+    transform.setRotation(btQuaternionToQuat(worldRotation));
 
-    if ( Anchor ) {
-        Anchor->setWorldTransform( transform );
+    if (Anchor)
+    {
+        Anchor->setWorldTransform(transform);
     }
 
     //PrevWorldPosition = worldPosition;

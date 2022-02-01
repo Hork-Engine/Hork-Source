@@ -30,19 +30,22 @@ SOFTWARE.
 
 #include "AnimationPattern.h"
 
-AN_CLASS_META( AAnimationPattern )
+AN_CLASS_META(AAnimationPattern)
 
-AN_FORCEINLINE float Quantize( float _Lerp, float _Quantizer ) {
-    return _Quantizer > 0.0f ? Math::Floor( _Lerp * _Quantizer ) / _Quantizer : _Lerp;
+AN_FORCEINLINE float Quantize(float _Lerp, float _Quantizer)
+{
+    return _Quantizer > 0.0f ? Math::Floor(_Lerp * _Quantizer) / _Quantizer : _Lerp;
 }
 
-float AAnimationPattern::Calculate( float _Time ) {
+float AAnimationPattern::Calculate(float _Time)
+{
     int numFrames = Pattern.Length();
 
-    if ( numFrames > 0 ) {
+    if (numFrames > 0)
+    {
         float t = _Time * Speed;
 
-        int keyFrame = Math::Floor( t );
+        int keyFrame  = Math::Floor(t);
         int nextFrame = keyFrame + 1;
 
         float lerp = t - keyFrame;
@@ -50,10 +53,10 @@ float AAnimationPattern::Calculate( float _Time ) {
         keyFrame %= numFrames;
         nextFrame %= numFrames;
 
-        float a = (Math::Clamp( Pattern[keyFrame ], 'a', 'z' )-'a') / 26.0f;
-        float b = (Math::Clamp( Pattern[nextFrame], 'a', 'z' )-'a') / 26.0f;
+        float a = (Math::Clamp(Pattern[keyFrame], 'a', 'z') - 'a') / 26.0f;
+        float b = (Math::Clamp(Pattern[nextFrame], 'a', 'z') - 'a') / 26.0f;
 
-        return Math::Lerp( a, b, Quantize( lerp, Quantizer ) );
+        return Math::Lerp(a, b, Quantize(lerp, Quantizer));
     }
 
     return 1.0f;

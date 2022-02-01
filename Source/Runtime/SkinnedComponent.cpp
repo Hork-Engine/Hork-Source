@@ -47,104 +47,121 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <RenderCore/VertexMemoryGPU.h>
 
-AConsoleVar com_DrawSkeleton( _CTS( "com_DrawSkeleton" ), _CTS( "0" ), CVAR_CHEAT );
+AConsoleVar com_DrawSkeleton(_CTS("com_DrawSkeleton"), _CTS("0"), CVAR_CHEAT);
 
-AN_CLASS_META( ASkinnedComponent )
+AN_CLASS_META(ASkinnedComponent)
 
-ASkinnedComponent::ASkinnedComponent() {
+ASkinnedComponent::ASkinnedComponent()
+{
     DrawableType = DRAWABLE_SKINNED_MESH;
 
-    bUpdateBounds = false;
-    bUpdateControllers = true;
+    bUpdateBounds             = false;
+    bUpdateControllers        = true;
     bUpdateRelativeTransforms = false;
     bUpdateAbsoluteTransforms = false;
     bJointsSimulatedByPhysics = false;
-    bSkinnedMesh = true;
+    bSkinnedMesh              = true;
 
     // Raycasting of skinned meshes is not supported yet
-    Primitive.RaycastCallback = nullptr;
+    Primitive.RaycastCallback        = nullptr;
     Primitive.RaycastClosestCallback = nullptr;
 
-    static TStaticResourceFinder< ASkeleton > SkeletonResource( _CTS( "/Default/Skeleton/Default" ) );
+    static TStaticResourceFinder<ASkeleton> SkeletonResource(_CTS("/Default/Skeleton/Default"));
     Skeleton = SkeletonResource.GetObject();
 }
 
-void ASkinnedComponent::InitializeComponent() {
+void ASkinnedComponent::InitializeComponent()
+{
     Super::InitializeComponent();
 
-    GetWorld()->GetRender().AddSkinnedMesh( this );
+    GetWorld()->GetRender().AddSkinnedMesh(this);
 }
 
-void ASkinnedComponent::DeinitializeComponent() {
+void ASkinnedComponent::DeinitializeComponent()
+{
     Super::DeinitializeComponent();
 
     RemoveAnimationControllers();
 
-    GetWorld()->GetRender().RemoveSkinnedMesh( this );
+    GetWorld()->GetRender().RemoveSkinnedMesh(this);
 }
 
-void ASkinnedComponent::OnMeshChanged() {
+void ASkinnedComponent::OnMeshChanged()
+{
     Super::OnMeshChanged();
 
-    ASkeleton * newSkeleton = GetMesh()->GetSkeleton();
+    ASkeleton* newSkeleton = GetMesh()->GetSkeleton();
 
-    if ( IsSame( Skeleton, newSkeleton ) ) {
+    if (IsSame(Skeleton, newSkeleton))
+    {
         return;
     }
 
     Skeleton = newSkeleton;
 
-    TPodVector< SJoint > const & joints = Skeleton->GetJoints();
+    TPodVector<SJoint> const& joints = Skeleton->GetJoints();
 
     int numJoints = joints.Size();
 
-    AbsoluteTransforms.ResizeInvalidate( numJoints + 1 );  // + 1 for root's parent
+    AbsoluteTransforms.ResizeInvalidate(numJoints + 1); // + 1 for root's parent
     AbsoluteTransforms[0].SetIdentity();
 
-    RelativeTransforms.ResizeInvalidate( numJoints );
-    for ( int i = 0 ; i < numJoints ; i++ ) {
-        RelativeTransforms[ i ] = joints[ i ].LocalTransform;
+    RelativeTransforms.ResizeInvalidate(numJoints);
+    for (int i = 0; i < numJoints; i++)
+    {
+        RelativeTransforms[i] = joints[i].LocalTransform;
     }
 
     bUpdateControllers = true;
 }
 
-void ASkinnedComponent::AddAnimationController( AAnimationController * _Controller ) {
-    if ( !_Controller ) {
+void ASkinnedComponent::AddAnimationController(AAnimationController* _Controller)
+{
+    if (!_Controller)
+    {
         return;
     }
-    if ( _Controller->Owner ) {
-        if ( _Controller->Owner != this ) {
-            GLogger.Printf( "ASkinnedComponent::AddAnimationController: animation controller already added to other component\n" );
+    if (_Controller->Owner)
+    {
+        if (_Controller->Owner != this)
+        {
+            GLogger.Printf("ASkinnedComponent::AddAnimationController: animation controller already added to other component\n");
         }
         return;
     }
     _Controller->Owner = this;
     _Controller->AddRef();
-    AnimControllers.Append( _Controller );
+    AnimControllers.Append(_Controller);
     bUpdateControllers = true;
 }
 
-void ASkinnedComponent::RemoveAnimationController( AAnimationController * _Controller ) {
-    if ( !_Controller ) {
+void ASkinnedComponent::RemoveAnimationController(AAnimationController* _Controller)
+{
+    if (!_Controller)
+    {
         return;
     }
-    if ( _Controller->Owner != this ) {
+    if (_Controller->Owner != this)
+    {
         return;
     }
-    for ( int i = 0; i < AnimControllers.Size(); i++ ) {
-        if ( AnimControllers[ i ]->Id == _Controller->Id ) {
+    for (int i = 0; i < AnimControllers.Size(); i++)
+    {
+        if (AnimControllers[i]->Id == _Controller->Id)
+        {
             _Controller->Owner = nullptr;
             _Controller->RemoveRef();
-            AnimControllers.Remove( i );
+            AnimControllers.Remove(i);
             bUpdateControllers = true;
             return;
         }
     }
 }
 
-void ASkinnedComponent::RemoveAnimationControllers() {
-    for ( AAnimationController * controller : AnimControllers ) {
+void ASkinnedComponent::RemoveAnimationControllers()
+{
+    for (AAnimationController* controller : AnimControllers)
+    {
         controller->Owner = nullptr;
         controller->RemoveRef();
     }
@@ -152,129 +169,153 @@ void ASkinnedComponent::RemoveAnimationControllers() {
     bUpdateControllers = true;
 }
 
-void ASkinnedComponent::SetTimeBroadcast( float _Time ) {
-    for ( int i = 0; i < AnimControllers.Size(); i++ ) {
-        AAnimationController * controller = AnimControllers[ i ];
-        controller->SetTime( _Time );
+void ASkinnedComponent::SetTimeBroadcast(float _Time)
+{
+    for (int i = 0; i < AnimControllers.Size(); i++)
+    {
+        AAnimationController* controller = AnimControllers[i];
+        controller->SetTime(_Time);
     }
 }
 
-void ASkinnedComponent::AddTimeDeltaBroadcast( float _TimeDelta ) {
-    for ( int i = 0; i < AnimControllers.Size(); i++ ) {
-        AAnimationController * controller = AnimControllers[ i ];
-        controller->AddTimeDelta( _TimeDelta );
+void ASkinnedComponent::AddTimeDeltaBroadcast(float _TimeDelta)
+{
+    for (int i = 0; i < AnimControllers.Size(); i++)
+    {
+        AAnimationController* controller = AnimControllers[i];
+        controller->AddTimeDelta(_TimeDelta);
     }
 }
 
-AN_FORCEINLINE float Quantize( float _Lerp, float _Quantizer ) {
-    return _Quantizer > 0.0f ? Math::Floor( _Lerp * _Quantizer ) / _Quantizer : _Lerp;
+AN_FORCEINLINE float Quantize(float _Lerp, float _Quantizer)
+{
+    return _Quantizer > 0.0f ? Math::Floor(_Lerp * _Quantizer) / _Quantizer : _Lerp;
 }
 
-void ASkinnedComponent::MergeJointAnimations() {
-    if ( bJointsSimulatedByPhysics ) {
+void ASkinnedComponent::MergeJointAnimations()
+{
+    if (bJointsSimulatedByPhysics)
+    {
         // TODO:
-        if ( SoftBody && bUpdateAbsoluteTransforms ) {
+        if (SoftBody && bUpdateAbsoluteTransforms)
+        {
 
             //GLogger.Printf("Update abs matrices\n");
-            TPodVector< SJoint > const & joints = Skeleton->GetJoints();
-            for ( int j = 0 ; j < joints.Size() ; j++ ) {
+            TPodVector<SJoint> const& joints = Skeleton->GetJoints();
+            for (int j = 0; j < joints.Size(); j++)
+            {
                 // TODO: joint rotation from normal?
-                AbsoluteTransforms[ j + 1 ].Compose( btVectorToFloat3( SoftBody->m_nodes[ j ].m_x ), Float3x3::Identity() );
+                AbsoluteTransforms[j + 1].Compose(btVectorToFloat3(SoftBody->m_nodes[j].m_x), Float3x3::Identity());
             }
             bUpdateAbsoluteTransforms = false;
             //bWriteTransforms = true;
         }
-
-    } else {
+    }
+    else
+    {
         UpdateControllersIfDirty();
         UpdateTransformsIfDirty();
         UpdateAbsoluteTransformsIfDirty();
     }
 }
 
-void ASkinnedComponent::UpdateTransformsIfDirty() {
-    if ( !bUpdateRelativeTransforms ) {
+void ASkinnedComponent::UpdateTransformsIfDirty()
+{
+    if (!bUpdateRelativeTransforms)
+    {
         return;
     }
 
     UpdateTransforms();
 }
 
-void ASkinnedComponent::UpdateTransforms() {
-    SJoint const * joints = Skeleton->GetJoints().ToPtr();
-    int jointsCount = Skeleton->GetJoints().Size();
+void ASkinnedComponent::UpdateTransforms()
+{
+    SJoint const* joints      = Skeleton->GetJoints().ToPtr();
+    int           jointsCount = Skeleton->GetJoints().Size();
 
-    TPodVector< STransform > tempTransforms;
-    TPodVector< float > weights;
+    TPodVector<STransform> tempTransforms;
+    TPodVector<float>      weights;
 
-    tempTransforms.Resize( AnimControllers.Size() );
-    weights.Resize( AnimControllers.Size() );
+    tempTransforms.Resize(AnimControllers.Size());
+    weights.Resize(AnimControllers.Size());
 
-    Platform::ZeroMem( RelativeTransforms.ToPtr(), sizeof( RelativeTransforms[0] ) * jointsCount );
+    Platform::ZeroMem(RelativeTransforms.ToPtr(), sizeof(RelativeTransforms[0]) * jointsCount);
 
-    for ( int jointIndex = 0; jointIndex < jointsCount; jointIndex++ ) {
+    for (int jointIndex = 0; jointIndex < jointsCount; jointIndex++)
+    {
 
         float sumWeight = 0;
 
         int n = 0;
 
-        for ( int controllerId = 0; controllerId < AnimControllers.Size(); controllerId++ ) {
-            AAnimationController * controller = AnimControllers[ controllerId ];
-            ASkeletalAnimation * animation = controller->Animation;
+        for (int controllerId = 0; controllerId < AnimControllers.Size(); controllerId++)
+        {
+            AAnimationController* controller = AnimControllers[controllerId];
+            ASkeletalAnimation*   animation  = controller->Animation;
 
-            if ( !controller->bEnabled || !animation || !animation->IsValid() ) {
+            if (!controller->bEnabled || !animation || !animation->IsValid())
+            {
                 continue;
             }
 
             // TODO: Enable/Disable joint animation?
 
-            unsigned short channelIndex = animation->GetChannelIndex( jointIndex );
+            unsigned short channelIndex = animation->GetChannelIndex(jointIndex);
 
-            if ( channelIndex == (unsigned short)-1 ) {
+            if (channelIndex == (unsigned short)-1)
+            {
                 continue;
             }
 
-            TPodVector< SAnimationChannel > const & animJoints = animation->GetChannels();
+            TPodVector<SAnimationChannel> const& animJoints = animation->GetChannels();
 
-            SAnimationChannel const & jointAnim = animJoints[ channelIndex ];
+            SAnimationChannel const& jointAnim = animJoints[channelIndex];
 
-            TPodVector< STransform > const & transforms = animation->GetTransforms();
+            TPodVector<STransform> const& transforms = animation->GetTransforms();
 
-            STransform & transform = tempTransforms[ n ];
-            weights[ n ] = controller->Weight;
+            STransform& transform = tempTransforms[n];
+            weights[n]            = controller->Weight;
             n++;
 
-            if ( controller->Frame == controller->NextFrame || controller->Blend < 0.0001f ) {
-                transform = transforms[ jointAnim.TransformOffset + controller->Frame ];
-            } else {
-                STransform const & frame1 = transforms[ jointAnim.TransformOffset + controller->Frame ];
-                STransform const & frame2 = transforms[ jointAnim.TransformOffset + controller->NextFrame ];
+            if (controller->Frame == controller->NextFrame || controller->Blend < 0.0001f)
+            {
+                transform = transforms[jointAnim.TransformOffset + controller->Frame];
+            }
+            else
+            {
+                STransform const& frame1 = transforms[jointAnim.TransformOffset + controller->Frame];
+                STransform const& frame2 = transforms[jointAnim.TransformOffset + controller->NextFrame];
 
-                transform.Position = Math::Lerp( frame1.Position, frame2.Position, controller->Blend );
-                transform.Rotation = Math::Slerp( frame1.Rotation, frame2.Rotation, controller->Blend );
-                transform.Scale = Math::Lerp( frame1.Scale, frame2.Scale, controller->Blend );
+                transform.Position = Math::Lerp(frame1.Position, frame2.Position, controller->Blend);
+                transform.Rotation = Math::Slerp(frame1.Rotation, frame2.Rotation, controller->Blend);
+                transform.Scale    = Math::Lerp(frame1.Scale, frame2.Scale, controller->Blend);
             }
 
             sumWeight += controller->Weight;
         }
 
-        Float3x4 & resultTransform = RelativeTransforms[ jointIndex ];
+        Float3x4& resultTransform = RelativeTransforms[jointIndex];
 
-        if ( n > 0 ) {
+        if (n > 0)
+        {
             Float3x4 m;
 
-            const float sumWeightReciprocal = ( sumWeight == 0.0f ) ? 0.0f : 1.0f / sumWeight;
+            const float sumWeightReciprocal = (sumWeight == 0.0f) ? 0.0f : 1.0f / sumWeight;
 
-            for ( int i = 0; i < n; i++ ) {
+            for (int i = 0; i < n; i++)
+            {
                 const float weight = weights[i] * sumWeightReciprocal;
 
-                tempTransforms[ i ].ComputeTransformMatrix( m );
+                tempTransforms[i].ComputeTransformMatrix(m);
 
-                resultTransform[ 0 ] += m[ 0 ] * weight;
-                resultTransform[ 1 ] += m[ 1 ] * weight;
-                resultTransform[ 2 ] += m[ 2 ] * weight;
+                resultTransform[0] += m[0] * weight;
+                resultTransform[1] += m[1] * weight;
+                resultTransform[2] += m[2] * weight;
             }
-        } else {
+        }
+        else
+        {
             resultTransform = joints[jointIndex].LocalTransform;
         }
     }
@@ -283,19 +324,22 @@ void ASkinnedComponent::UpdateTransforms() {
     bUpdateAbsoluteTransforms = true;
 }
 
-void ASkinnedComponent::UpdateAbsoluteTransformsIfDirty() {
-    if ( !bUpdateAbsoluteTransforms ) {
+void ASkinnedComponent::UpdateAbsoluteTransformsIfDirty()
+{
+    if (!bUpdateAbsoluteTransforms)
+    {
         return;
     }
 
-    TPodVector< SJoint > const & joints = Skeleton->GetJoints();
+    TPodVector<SJoint> const& joints = Skeleton->GetJoints();
 
-    for ( int j = 0 ; j < joints.Size() ; j++ ) {
-        SJoint const & joint = joints[ j ];
+    for (int j = 0; j < joints.Size(); j++)
+    {
+        SJoint const& joint = joints[j];
 
         // ... Update relative joints physics here ...
 
-        AbsoluteTransforms[ j + 1 ] = AbsoluteTransforms[ joint.Parent + 1 ] * RelativeTransforms[ j ];
+        AbsoluteTransforms[j + 1] = AbsoluteTransforms[joint.Parent + 1] * RelativeTransforms[j];
 
         // ... Update absolute joints physics here ...
     }
@@ -304,157 +348,181 @@ void ASkinnedComponent::UpdateAbsoluteTransformsIfDirty() {
     //bWriteTransforms = true;
 }
 
-void ASkinnedComponent::UpdateControllersIfDirty() {
-    if ( !bUpdateControllers ) {
+void ASkinnedComponent::UpdateControllersIfDirty()
+{
+    if (!bUpdateControllers)
+    {
         return;
     }
 
     UpdateControllers();
 }
 
-void ASkinnedComponent::UpdateControllers() {
+void ASkinnedComponent::UpdateControllers()
+{
     float controllerTimeLine;
-    int keyFrame;
+    int   keyFrame;
     float lerp;
-    int take;
+    int   take;
 
-    for ( int controllerId = 0 ; controllerId < AnimControllers.Size() ; controllerId++ ) {
-        AAnimationController * controller = AnimControllers[ controllerId ];
-        ASkeletalAnimation * anim = controller->Animation;
+    for (int controllerId = 0; controllerId < AnimControllers.Size(); controllerId++)
+    {
+        AAnimationController* controller = AnimControllers[controllerId];
+        ASkeletalAnimation*   anim       = controller->Animation;
 
-        if ( !anim ) {
+        if (!anim)
+        {
             continue;
         }
 
-        if ( anim->GetFrameCount() > 1 ) {
+        if (anim->GetFrameCount() > 1)
+        {
 
-            switch ( controller->PlayMode ) {
-            case ANIMATION_PLAY_CLAMP:
+            switch (controller->PlayMode)
+            {
+                case ANIMATION_PLAY_CLAMP:
 
-                // clamp and normalize 0..1
-                if ( controller->TimeLine <= 0.0f ) {
+                    // clamp and normalize 0..1
+                    if (controller->TimeLine <= 0.0f)
+                    {
 
-                    controller->Blend = 0;
-                    controller->Frame = 0;
-                    controller->NextFrame = 0;
+                        controller->Blend     = 0;
+                        controller->Frame     = 0;
+                        controller->NextFrame = 0;
+                    }
+                    else if (controller->TimeLine >= anim->GetDurationInSeconds())
+                    {
 
-                } else if ( controller->TimeLine >= anim->GetDurationInSeconds() ) {
+                        controller->Blend = 0;
+                        controller->Frame = controller->NextFrame = anim->GetFrameCount() - 1;
+                    }
+                    else
+                    {
+                        // normalize 0..1
+                        controllerTimeLine = controller->TimeLine * anim->GetDurationNormalizer();
 
-                    controller->Blend = 0;
-                    controller->Frame = controller->NextFrame = anim->GetFrameCount() - 1;
+                        // adjust 0...framecount-1
+                        controllerTimeLine = controllerTimeLine * (float)(anim->GetFrameCount() - 1);
 
-                } else {
+                        keyFrame = Math::Floor(controllerTimeLine);
+                        lerp     = Math::Fract(controllerTimeLine);
+
+                        controller->Frame     = keyFrame;
+                        controller->NextFrame = keyFrame + 1;
+                        controller->Blend     = Quantize(lerp, controller->Quantizer);
+                    }
+                    break;
+
+                case ANIMATION_PLAY_WRAP:
+
                     // normalize 0..1
-                    controllerTimeLine = controller->TimeLine * anim->GetDurationNormalizer();
-
-                    // adjust 0...framecount-1
-                    controllerTimeLine = controllerTimeLine * (float)( anim->GetFrameCount() - 1 );
-
-                    keyFrame = Math::Floor( controllerTimeLine );
-                    lerp = Math::Fract( controllerTimeLine );
-
-                    controller->Frame = keyFrame;
-                    controller->NextFrame = keyFrame + 1;
-                    controller->Blend = Quantize( lerp, controller->Quantizer );
-                }
-                break;
-
-            case ANIMATION_PLAY_WRAP:
-
-                // normalize 0..1
 #if 1
-                controllerTimeLine = controller->TimeLine * anim->GetDurationNormalizer();
-                controllerTimeLine = Math::Fract( controllerTimeLine );
+                    controllerTimeLine = controller->TimeLine * anim->GetDurationNormalizer();
+                    controllerTimeLine = Math::Fract(controllerTimeLine);
 #else
-                controllerTimeLine = fmod( controller->TimeLine, anim->GetDurationInSeconds() ) * anim->GetDurationNormalize();
-                if ( controllerTimeLine < 0.0f ) {
-                    controllerTimeLine += 1.0f;
-                }
+                    controllerTimeLine = fmod(controller->TimeLine, anim->GetDurationInSeconds()) * anim->GetDurationNormalize();
+                    if (controllerTimeLine < 0.0f)
+                    {
+                        controllerTimeLine += 1.0f;
+                    }
 #endif
 
-                // adjust 0...framecount-1
-                controllerTimeLine = controllerTimeLine * (float)( anim->GetFrameCount() - 1 );
+                    // adjust 0...framecount-1
+                    controllerTimeLine = controllerTimeLine * (float)(anim->GetFrameCount() - 1);
 
-                keyFrame = Math::Floor( controllerTimeLine );
-                lerp = Math::Fract( controllerTimeLine );
+                    keyFrame = Math::Floor(controllerTimeLine);
+                    lerp     = Math::Fract(controllerTimeLine);
 
-                if ( controller->TimeLine < 0.0f ) {
-                    controller->Frame = keyFrame + 1;
-                    controller->NextFrame = keyFrame;
-                    controller->Blend = Quantize( 1.0f - lerp, controller->Quantizer );
-                } else {
-                    controller->Frame = keyFrame;
-                    controller->NextFrame = controller->Frame + 1;
-                    controller->Blend = Quantize( lerp, controller->Quantizer );
-                }
-                break;
+                    if (controller->TimeLine < 0.0f)
+                    {
+                        controller->Frame     = keyFrame + 1;
+                        controller->NextFrame = keyFrame;
+                        controller->Blend     = Quantize(1.0f - lerp, controller->Quantizer);
+                    }
+                    else
+                    {
+                        controller->Frame     = keyFrame;
+                        controller->NextFrame = controller->Frame + 1;
+                        controller->Blend     = Quantize(lerp, controller->Quantizer);
+                    }
+                    break;
 
-            case ANIMATION_PLAY_MIRROR:
+                case ANIMATION_PLAY_MIRROR:
 
-                // normalize 0..1
-                controllerTimeLine = controller->TimeLine * anim->GetDurationNormalizer();
-                take = Math::Floor( Math::Abs( controllerTimeLine ) );
-                controllerTimeLine = Math::Fract( controllerTimeLine );
+                    // normalize 0..1
+                    controllerTimeLine = controller->TimeLine * anim->GetDurationNormalizer();
+                    take               = Math::Floor(Math::Abs(controllerTimeLine));
+                    controllerTimeLine = Math::Fract(controllerTimeLine);
 
-                // adjust 0...framecount-1
-                controllerTimeLine = controllerTimeLine * (float)( anim->GetFrameCount() - 1 );
+                    // adjust 0...framecount-1
+                    controllerTimeLine = controllerTimeLine * (float)(anim->GetFrameCount() - 1);
 
-                keyFrame = Math::Floor( controllerTimeLine );
-                lerp = Math::Fract( controllerTimeLine );
+                    keyFrame = Math::Floor(controllerTimeLine);
+                    lerp     = Math::Fract(controllerTimeLine);
 
-                if ( controller->TimeLine < 0.0f ) {
-                    controller->Frame = keyFrame + 1;
-                    controller->NextFrame = keyFrame;
-                    controller->Blend = Quantize( 1.0f - lerp, controller->Quantizer );
-                } else {
-                    controller->Frame = keyFrame;
-                    controller->NextFrame = controller->Frame + 1;
-                    controller->Blend = Quantize( lerp, controller->Quantizer );
-                }
+                    if (controller->TimeLine < 0.0f)
+                    {
+                        controller->Frame     = keyFrame + 1;
+                        controller->NextFrame = keyFrame;
+                        controller->Blend     = Quantize(1.0f - lerp, controller->Quantizer);
+                    }
+                    else
+                    {
+                        controller->Frame     = keyFrame;
+                        controller->NextFrame = controller->Frame + 1;
+                        controller->Blend     = Quantize(lerp, controller->Quantizer);
+                    }
 
-                if ( take & 1 ) {
-                    controller->Frame = anim->GetFrameCount() - controller->Frame - 1;
-                    controller->NextFrame = anim->GetFrameCount() - controller->NextFrame - 1;
-                }
-                break;
+                    if (take & 1)
+                    {
+                        controller->Frame     = anim->GetFrameCount() - controller->Frame - 1;
+                        controller->NextFrame = anim->GetFrameCount() - controller->NextFrame - 1;
+                    }
+                    break;
             }
-        } else if ( anim->GetFrameCount() == 1 ) {
-            controller->Blend = 0;
-            controller->Frame = 0;
+        }
+        else if (anim->GetFrameCount() == 1)
+        {
+            controller->Blend     = 0;
+            controller->Frame     = 0;
             controller->NextFrame = 0;
         }
     }
 
-    bUpdateControllers = false;
-    bUpdateBounds = true;
+    bUpdateControllers        = false;
+    bUpdateBounds             = true;
     bUpdateRelativeTransforms = true;
 }
 
-void ASkinnedComponent::UpdateBounds() {
+void ASkinnedComponent::UpdateBounds()
+{
     UpdateControllersIfDirty();
 
-    if ( !bUpdateBounds ) {
+    if (!bUpdateBounds)
+    {
         return;
     }
 
     bUpdateBounds = false;
 
-    if ( AnimControllers.IsEmpty() )
+    if (AnimControllers.IsEmpty())
     {
         Bounds = Skeleton->GetBindposeBounds();
     }
     else
     {
         Bounds.Clear();
-        for ( int controllerId = 0 ; controllerId < AnimControllers.Size() ; controllerId++ ) {
-            AAnimationController const * controller = AnimControllers[ controllerId ];
-            ASkeletalAnimation * animation = controller->Animation;
+        for (int controllerId = 0; controllerId < AnimControllers.Size(); controllerId++)
+        {
+            AAnimationController const* controller = AnimControllers[controllerId];
+            ASkeletalAnimation*         animation  = controller->Animation;
 
-            if ( !controller->bEnabled || !animation || animation->GetFrameCount() == 0 ) {
+            if (!controller->bEnabled || !animation || animation->GetFrameCount() == 0)
+            {
                 continue;
             }
 
-            Bounds.AddAABB( animation->GetBoundingBoxes()[ controller->Frame ] );
+            Bounds.AddAABB(animation->GetBoundingBoxes()[controller->Frame]);
         }
     }
 
@@ -464,68 +532,79 @@ void ASkinnedComponent::UpdateBounds() {
 
 static Float3x4 JointsBufferData[ASkeleton::MAX_JOINTS]; // TODO: thread_local for multithreaded update
 
-void ASkinnedComponent::GetSkeletonHandle( size_t & _SkeletonOffset, size_t & _SkeletonOffsetMB, size_t & _SkeletonSize ) {
-    _SkeletonOffset = SkeletonOffset;
+void ASkinnedComponent::GetSkeletonHandle(size_t& _SkeletonOffset, size_t& _SkeletonOffsetMB, size_t& _SkeletonSize)
+{
+    _SkeletonOffset   = SkeletonOffset;
     _SkeletonOffsetMB = SkeletonOffsetMB;
-    _SkeletonSize = SkeletonSize;
+    _SkeletonSize     = SkeletonSize;
 }
 
-void ASkinnedComponent::OnPreRenderUpdate( SRenderFrontendDef const * _Def ) {
+void ASkinnedComponent::OnPreRenderUpdate(SRenderFrontendDef const* _Def)
+{
     MergeJointAnimations();
 
-    ASkin const & skin = GetMesh()->GetSkin();
-    TPodVector< SJoint > const & joints = Skeleton->GetJoints();
+    ASkin const&              skin   = GetMesh()->GetSkin();
+    TPodVector<SJoint> const& joints = Skeleton->GetJoints();
 
-    SkeletonSize = joints.Size() * sizeof( Float3x4 );
-    if ( SkeletonSize > 0 ) {
-        AStreamedMemoryGPU * streamedMemory = _Def->StreamedMemory;
+    SkeletonSize = joints.Size() * sizeof(Float3x4);
+    if (SkeletonSize > 0)
+    {
+        AStreamedMemoryGPU* streamedMemory = _Def->StreamedMemory;
 
         // Write joints from previous frame
-        SkeletonOffsetMB = streamedMemory->AllocateJoint( SkeletonSize, JointsBufferData );
+        SkeletonOffsetMB = streamedMemory->AllocateJoint(SkeletonSize, JointsBufferData);
 
         // Write joints from current frame
-        SkeletonOffset = streamedMemory->AllocateJoint( SkeletonSize, nullptr );
-        Float3x4 * data = (Float3x4 * )streamedMemory->Map( SkeletonOffset );
-        for ( int j = 0 ; j < skin.JointIndices.Size() ; j++ ) {
+        SkeletonOffset = streamedMemory->AllocateJoint(SkeletonSize, nullptr);
+        Float3x4* data = (Float3x4*)streamedMemory->Map(SkeletonOffset);
+        for (int j = 0; j < skin.JointIndices.Size(); j++)
+        {
             int jointIndex = skin.JointIndices[j];
             data[j] = JointsBufferData[j] = AbsoluteTransforms[jointIndex + 1] * skin.OffsetMatrices[j];
         }
-
-    } else {
+    }
+    else
+    {
         SkeletonOffset = SkeletonOffsetMB = 0;
     }
 }
 
-Float3x4 const & ASkinnedComponent::GetJointTransform( int _JointIndex ) {
-    if ( _JointIndex < 0 || _JointIndex >= Skeleton->GetJoints().Size() ) {
+Float3x4 const& ASkinnedComponent::GetJointTransform(int _JointIndex)
+{
+    if (_JointIndex < 0 || _JointIndex >= Skeleton->GetJoints().Size())
+    {
         return Float3x4::Identity();
     }
 
     MergeJointAnimations();
 
-    return AbsoluteTransforms[_JointIndex+1];
+    return AbsoluteTransforms[_JointIndex + 1];
 }
 
-void ASkinnedComponent::DrawDebug( ADebugRenderer * InRenderer ) {
-    Super::DrawDebug( InRenderer );
+void ASkinnedComponent::DrawDebug(ADebugRenderer* InRenderer)
+{
+    Super::DrawDebug(InRenderer);
 
     // Draw skeleton
-    if ( com_DrawSkeleton ) {
-        InRenderer->SetColor( Color4( 1,0,0,1 ) );
-        InRenderer->SetDepthTest( false );
-        TPodVector< SJoint > const & joints = Skeleton->GetJoints();
+    if (com_DrawSkeleton)
+    {
+        InRenderer->SetColor(Color4(1, 0, 0, 1));
+        InRenderer->SetDepthTest(false);
+        TPodVector<SJoint> const& joints = Skeleton->GetJoints();
 
-        for ( int i = 0 ; i < joints.Size() ; i++ ) {
-            SJoint const & joint = joints[i];
+        for (int i = 0; i < joints.Size(); i++)
+        {
+            SJoint const& joint = joints[i];
 
-            Float3x4 t = GetWorldTransformMatrix() * GetJointTransform( i );
-            Float3 v1 = t.DecomposeTranslation();
+            Float3x4 t  = GetWorldTransformMatrix() * GetJointTransform(i);
+            Float3   v1 = t.DecomposeTranslation();
 
-            InRenderer->DrawOrientedBox( v1, t.DecomposeRotation(), Float3(0.01f) );
+            InRenderer->DrawOrientedBox(v1, t.DecomposeRotation(), Float3(0.01f));
 
-            if ( joint.Parent >= 0 ) {
-                Float3 v0 = ( GetWorldTransformMatrix() * GetJointTransform( joint.Parent ) ).DecomposeTranslation();
-                InRenderer->DrawLine( v0, v1 );
+            if (joint.Parent >= 0)
+            {
+                Float3 v0 = (GetWorldTransformMatrix() * GetJointTransform(joint.Parent)).DecomposeTranslation();
+                InRenderer->DrawLine(v0, v1);
             }
         }
     }

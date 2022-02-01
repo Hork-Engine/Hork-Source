@@ -40,34 +40,34 @@ struct SAssetImportSettings
 {
     SAssetImportSettings()
     {
-        bImportMeshes = true;
-        bImportMaterials = true;
-        bImportSkinning = true;
-        bImportSkeleton = true;
+        bImportMeshes     = true;
+        bImportMaterials  = true;
+        bImportSkinning   = true;
+        bImportSkeleton   = true;
         bImportAnimations = true;
-        bImportTextures = true;
-        bSingleModel = true;
-        bMergePrimitives = true;
+        bImportTextures   = true;
+        bSingleModel      = true;
+        bMergePrimitives  = true;
         //bGenerateStaticCollisions = true;
-        bGenerateRaycastBVH = true;
+        bGenerateRaycastBVH      = true;
         RaycastPrimitivesPerLeaf = 16;
-        bImportSkybox = false;
-        bImportSkyboxExplicit = false;
-        bSkyboxHDRI = false;
-        Scale = 1.0f;
-        Rotation = Quat::Identity();
-        SkyboxHDRIScale = 1; // 4
-        SkyboxHDRIPow = 1; // 1.1
-        Platform::ZeroMem( ExplicitSkyboxFaces, sizeof( ExplicitSkyboxFaces ) );
+        bImportSkybox            = false;
+        bImportSkyboxExplicit    = false;
+        bSkyboxHDRI              = false;
+        Scale                    = 1.0f;
+        Rotation                 = Quat::Identity();
+        SkyboxHDRIScale          = 1; // 4
+        SkyboxHDRIPow            = 1; // 1.1
+        Platform::ZeroMem(ExplicitSkyboxFaces, sizeof(ExplicitSkyboxFaces));
         bCreateSkyboxMaterialInstance = true;
-        bAllowUnlitMaterials = true;
+        bAllowUnlitMaterials          = true;
     }
 
     /** Source file name */
     AString ImportFile;
 
     /** Source files for skybox */
-    const char * ExplicitSkyboxFaces[6];
+    const char* ExplicitSkyboxFaces[6];
 
     /** Asset output directory */
     AString OutputPath;
@@ -114,96 +114,101 @@ struct SAssetImportSettings
     float SkyboxHDRIPow;
 };
 
-class AAssetImporter {
+class AAssetImporter
+{
 public:
-    bool ImportGLTF( SAssetImportSettings const & InSettings );
-    bool ImportSkybox( SAssetImportSettings const & _Settings );
+    bool ImportGLTF(SAssetImportSettings const& InSettings);
+    bool ImportSkybox(SAssetImportSettings const& _Settings);
 
 private:
-    struct MeshInfo {
-        AGUID GUID;
-        int BaseVertex;
-        int VertexCount;
-        int FirstIndex;
-        int IndexCount;
-        struct cgltf_mesh * Mesh;
-        struct cgltf_material * Material;
-        BvAxisAlignedBox BoundingBox;
+    struct MeshInfo
+    {
+        AGUID                  GUID;
+        int                    BaseVertex;
+        int                    VertexCount;
+        int                    FirstIndex;
+        int                    IndexCount;
+        struct cgltf_mesh*     Mesh;
+        struct cgltf_material* Material;
+        BvAxisAlignedBox       BoundingBox;
     };
 
-    struct TextureInfo {
-        AGUID GUID;
-        bool bSRGB;
-        struct cgltf_image * Image;
+    struct TextureInfo
+    {
+        AGUID               GUID;
+        bool                bSRGB;
+        struct cgltf_image* Image;
     };
 
-    struct MaterialInfo {
-        AGUID GUID;
-        struct cgltf_material * Material;
+    struct MaterialInfo
+    {
+        AGUID                  GUID;
+        struct cgltf_material* Material;
         //class MGMaterialGraph * Graph;
-        const char * DefaultMaterial;
+        const char* DefaultMaterial;
 
-        TextureInfo * Textures[MAX_MATERIAL_TEXTURES];
-        int NumTextures;
+        TextureInfo* Textures[MAX_MATERIAL_TEXTURES];
+        int          NumTextures;
 
         float Uniforms[16];
 
-        const char * DefaultTexture[MAX_MATERIAL_TEXTURES];
+        const char* DefaultTexture[MAX_MATERIAL_TEXTURES];
     };
 
-    struct AnimationInfo {
-        AGUID GUID;
-        AString Name;
-        float FrameDelta;       // fixed time delta between frames
-        uint32_t FrameCount;         // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
-        TPodVector< SAnimationChannel > Channels;
-        TPodVector< STransform > Transforms;
-        TPodVector< BvAxisAlignedBox > Bounds;
+    struct AnimationInfo
+    {
+        AGUID                         GUID;
+        AString                       Name;
+        float                         FrameDelta; // fixed time delta between frames
+        uint32_t                      FrameCount; // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
+        TPodVector<SAnimationChannel> Channels;
+        TPodVector<STransform>        Transforms;
+        TPodVector<BvAxisAlignedBox>  Bounds;
     };
 
-    bool ReadGLTF( struct cgltf_data * Data );
-    void ReadMaterial( struct cgltf_material * Material, MaterialInfo & Info );
-    void ReadNode_r( struct cgltf_node * Node );
-    void ReadMesh( struct cgltf_node * Node );
-    void ReadMesh( struct cgltf_mesh * Mesh, Float3x4 const & GlobalTransform, Float3x3 const & NormalMatrix );
-    void ReadAnimations( struct cgltf_data * Data );
-    void ReadAnimation( struct cgltf_animation * Anim, AnimationInfo & _Animation );
-    void ReadSkeleton( struct cgltf_node * node, int parentIndex = -1 );
-    void WriteAssets();
-    void WriteTextures();
-    void WriteTexture( TextureInfo & tex );
-    void WriteMaterials();
-    void WriteMaterial( MaterialInfo const & m );
-    void WriteSkeleton();
-    void WriteAnimations();
-    void WriteAnimation( AnimationInfo const & Animation );
-    void WriteSingleModel();
-    void WriteMeshes();
-    void WriteMesh( MeshInfo const & Mesh );
-    void WriteSkyboxMaterial( AGUID const & SkyboxTextureGUID );
-    AString GeneratePhysicalPath( const char * DesiredName, const char * Extension );
-    AString GetMaterialGUID( cgltf_material * Material );
-    TextureInfo * FindTextureImage( struct cgltf_texture const * Texture );
-    void SetTextureProps( TextureInfo * Info, const char * Name, bool SRGB );
+    bool         ReadGLTF(struct cgltf_data* Data);
+    void         ReadMaterial(struct cgltf_material* Material, MaterialInfo& Info);
+    void         ReadNode_r(struct cgltf_node* Node);
+    void         ReadMesh(struct cgltf_node* Node);
+    void         ReadMesh(struct cgltf_mesh* Mesh, Float3x4 const& GlobalTransform, Float3x3 const& NormalMatrix);
+    void         ReadAnimations(struct cgltf_data* Data);
+    void         ReadAnimation(struct cgltf_animation* Anim, AnimationInfo& _Animation);
+    void         ReadSkeleton(struct cgltf_node* node, int parentIndex = -1);
+    void         WriteAssets();
+    void         WriteTextures();
+    void         WriteTexture(TextureInfo& tex);
+    void         WriteMaterials();
+    void         WriteMaterial(MaterialInfo const& m);
+    void         WriteSkeleton();
+    void         WriteAnimations();
+    void         WriteAnimation(AnimationInfo const& Animation);
+    void         WriteSingleModel();
+    void         WriteMeshes();
+    void         WriteMesh(MeshInfo const& Mesh);
+    void         WriteSkyboxMaterial(AGUID const& SkyboxTextureGUID);
+    AString      GeneratePhysicalPath(const char* DesiredName, const char* Extension);
+    AString      GetMaterialGUID(cgltf_material* Material);
+    TextureInfo* FindTextureImage(struct cgltf_texture const* Texture);
+    void         SetTextureProps(TextureInfo* Info, const char* Name, bool SRGB);
 
-    std::unordered_map< std::string, AString > GuidMap; // Guid -> file name
+    std::unordered_map<std::string, AString> GuidMap; // Guid -> file name
 
-    SAssetImportSettings m_Settings;
-    AString m_Path;
-    struct cgltf_data * m_Data;
-    bool m_bSkeletal;
-    TPodVector< SMeshVertex > m_Vertices;
-    TPodVector< SMeshVertexSkin > m_Weights;
-    TPodVector< unsigned int > m_Indices;
-    TPodVector< MeshInfo > m_Meshes;
-    TPodVector< TextureInfo > m_Textures;
-    TStdVector< MaterialInfo > m_Materials;
-    TStdVector< AnimationInfo > m_Animations;
-    TPodVector< SJoint > m_Joints;
-    ASkin m_Skin;
-    BvAxisAlignedBox m_BindposeBounds;
-    AGUID m_SkeletonGUID;
+    SAssetImportSettings        m_Settings;
+    AString                     m_Path;
+    struct cgltf_data*          m_Data;
+    bool                        m_bSkeletal;
+    TPodVector<SMeshVertex>     m_Vertices;
+    TPodVector<SMeshVertexSkin> m_Weights;
+    TPodVector<unsigned int>    m_Indices;
+    TPodVector<MeshInfo>        m_Meshes;
+    TPodVector<TextureInfo>     m_Textures;
+    TStdVector<MaterialInfo>    m_Materials;
+    TStdVector<AnimationInfo>   m_Animations;
+    TPodVector<SJoint>          m_Joints;
+    ASkin                       m_Skin;
+    BvAxisAlignedBox            m_BindposeBounds;
+    AGUID                       m_SkeletonGUID;
 };
 
 
-bool LoadLWO( IBinaryStream & InStream, float InScale, AMaterialInstance * (*GetMaterial)( const char * _Name ), AIndexedMesh ** IndexedMesh );
+bool LoadLWO(IBinaryStream& InStream, float InScale, AMaterialInstance* (*GetMaterial)(const char* _Name), AIndexedMesh** IndexedMesh);

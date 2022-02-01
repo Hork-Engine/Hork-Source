@@ -30,18 +30,22 @@ SOFTWARE.
 
 #include "VirtualTextureResource.h"
 
-AN_CLASS_META( AVirtualTextureResource )
+AN_CLASS_META(AVirtualTextureResource)
 
-AVirtualTextureResource::AVirtualTextureResource() {
+AVirtualTextureResource::AVirtualTextureResource()
+{
 }
 
-AVirtualTextureResource::~AVirtualTextureResource() {
+AVirtualTextureResource::~AVirtualTextureResource()
+{
 }
 
-void AVirtualTextureResource::LoadInternalResource( const char * _Path ) {
+void AVirtualTextureResource::LoadInternalResource(const char* _Path)
+{
 }
 
-bool AVirtualTextureResource::LoadResource( IBinaryStream & _Stream ) {
+bool AVirtualTextureResource::LoadResource(IBinaryStream& _Stream)
+{
     // TODO:...
 
     return true;

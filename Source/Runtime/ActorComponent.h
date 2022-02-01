@@ -37,8 +37,8 @@ class ALevel;
 class AActor;
 class ADebugRenderer;
 
-#define AN_COMPONENT( _Class, _SuperClass ) \
-    AN_FACTORY_CLASS( AActorComponent::Factory(), _Class, _SuperClass )
+#define AN_COMPONENT(_Class, _SuperClass) \
+    AN_FACTORY_CLASS(AActorComponent::Factory(), _Class, _SuperClass)
 
 /**
 
@@ -47,24 +47,29 @@ AActorComponent
 Base class for all actor components
 
 */
-class AActorComponent : public ABaseObject {
-    AN_COMPONENT( AActorComponent, ABaseObject )
+class AActorComponent : public ABaseObject
+{
+    AN_COMPONENT(AActorComponent, ABaseObject)
 
     friend class AActor;
     friend class AWorld;
 
 public:
     /** Actor Component factory */
-    static AObjectFactory & Factory() { static AObjectFactory ObjectFactory( "Actor Component factory" ); return ObjectFactory; }
+    static AObjectFactory& Factory()
+    {
+        static AObjectFactory ObjectFactory("Actor Component factory");
+        return ObjectFactory;
+    }
 
     /** Component owner */
-    AActor * GetOwnerActor() const { return OwnerActor; }
+    AActor* GetOwnerActor() const { return OwnerActor; }
 
     /** Component parent level */
-    ALevel * GetLevel() const;
+    ALevel* GetLevel() const;
 
     /** Get world */
-    AWorld * GetWorld() const;
+    AWorld* GetWorld() const;
 
     /** Destroy this component */
     void Destroy();
@@ -79,7 +84,7 @@ public:
     bool IsInEditor() const;
 
     /** Attributes of this component will not be visible in editor */
-    void SetHideInEditor( bool _HideInEditor ) { bHideInEditor = _HideInEditor; }
+    void SetHideInEditor(bool _HideInEditor) { bHideInEditor = _HideInEditor; }
 
     bool HiddenInEditor() const { return bHideInEditor; }
 
@@ -101,14 +106,14 @@ protected:
 
     virtual void BeginPlay() {}
 
-    virtual void TickComponent( float _TimeStep ) {}
+    virtual void TickComponent(float _TimeStep) {}
 
-    virtual void DrawDebug( ADebugRenderer * InRenderer ) {}
+    virtual void DrawDebug(ADebugRenderer* InRenderer) {}
 
 private:
-    AActor * OwnerActor = nullptr;
+    AActor* OwnerActor = nullptr;
 
-    AActorComponent * NextPendingKillComponent = nullptr;
+    AActorComponent* NextPendingKillComponent = nullptr;
 
     int LocalId{};
     int ComponentIndex = -1;

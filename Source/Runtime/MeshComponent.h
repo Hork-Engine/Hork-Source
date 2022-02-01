@@ -45,45 +45,47 @@ AMeshComponent
 Mesh component without skinning
 
 */
-class AMeshComponent : public ADrawable {
-    AN_COMPONENT( AMeshComponent, ADrawable )
+class AMeshComponent : public ADrawable
+{
+    AN_COMPONENT(AMeshComponent, ADrawable)
 
 public:
     /** Lightmap atlas index */
-    int             LightmapBlock = 0;
+    int LightmapBlock = 0;
 
     /** Lighmap channel UV offset and scale */
-    Float4          LightmapOffset = Float4( 0,0,1,1 );
+    Float4 LightmapOffset = Float4(0, 0, 1, 1);
 
     /** Lightmap UV channel */
-    TRef< ALightmapUV >   LightmapUVChannel;
+    TRef<ALightmapUV> LightmapUVChannel;
 
     /** Baked vertex light channel */
-    TRef< AVertexLight >  VertexLightChannel;
+    TRef<AVertexLight> VertexLightChannel;
 
     /** Flipbook animation page offset */
-    unsigned int    SubpartBaseVertexOffset = 0;
+    unsigned int SubpartBaseVertexOffset = 0;
 
-    bool            bOverrideMeshMaterials = true;
+    bool bOverrideMeshMaterials = true;
 
     /** Transform matrix used during last rendering */
-    Float3x4        RenderTransformMatrix;
+    Float3x4 RenderTransformMatrix;
 
     /** Allow raycasting */
-    void SetAllowRaycast( bool _AllowRaycast ) override;
+    void SetAllowRaycast(bool _AllowRaycast) override;
 
     /** Set indexed mesh for the component */
-    void SetMesh( AIndexedMesh * _Mesh );
+    void SetMesh(AIndexedMesh* _Mesh);
 
     /** Helper. Set indexed mesh by alias */
-    template< char... Chars >
-    void SetMesh( TCompileTimeString<Chars...> const & _Alias ) {
-        static TStaticResourceFinder< AIndexedMesh > Resource( _Alias );
-        SetMesh( Resource.GetObject() );
+    template <char... Chars>
+    void SetMesh(TCompileTimeString<Chars...> const& _Alias)
+    {
+        static TStaticResourceFinder<AIndexedMesh> Resource(_Alias);
+        SetMesh(Resource.GetObject());
     }
 
     /** Get indexed mesh. Never return null */
-    AIndexedMesh * GetMesh() const { return Mesh; }
+    AIndexedMesh* GetMesh() const { return Mesh; }
 
     /** Unset materials */
     void ClearMaterials();
@@ -92,32 +94,34 @@ public:
     void CopyMaterialsFromMeshResource();
 
     /** Set material instance for subpart of the mesh */
-    void SetMaterialInstance( int _SubpartIndex, AMaterialInstance * _Instance );
+    void SetMaterialInstance(int _SubpartIndex, AMaterialInstance* _Instance);
 
     /** Helper. Set material instance by alias */
-    template< char... Chars >
-    void SetMaterialInstance( int _SubpartIndex, TCompileTimeString<Chars...> const & _Alias ) {
-        static TStaticResourceFinder< AMaterialInstance > Resource( _Alias );
-        SetMaterialInstance( _SubpartIndex, Resource.GetObject() );
+    template <char... Chars>
+    void SetMaterialInstance(int _SubpartIndex, TCompileTimeString<Chars...> const& _Alias)
+    {
+        static TStaticResourceFinder<AMaterialInstance> Resource(_Alias);
+        SetMaterialInstance(_SubpartIndex, Resource.GetObject());
     }
 
     /** Get material instance of subpart of the mesh. Never return null. */
-    AMaterialInstance * GetMaterialInstance( int _SubpartIndex ) const;
+    AMaterialInstance* GetMaterialInstance(int _SubpartIndex) const;
 
     /** Set material instance for subpart of the mesh */
-    void SetMaterialInstance( AMaterialInstance * _Instance ) { SetMaterialInstance( 0, _Instance ); }
+    void SetMaterialInstance(AMaterialInstance* _Instance) { SetMaterialInstance(0, _Instance); }
 
     /** Helper. Set material instance by alias */
-    template< char... Chars >
-    void SetMaterialInstance( TCompileTimeString<Chars...> const & _Alias ) {
-        static TStaticResourceFinder< AMaterialInstance > Resource( _Alias );
-        SetMaterialInstance( 0, Resource.GetObject() );
+    template <char... Chars>
+    void SetMaterialInstance(TCompileTimeString<Chars...> const& _Alias)
+    {
+        static TStaticResourceFinder<AMaterialInstance> Resource(_Alias);
+        SetMaterialInstance(0, Resource.GetObject());
     }
 
     /** Get material instance of subpart of the mesh. Never return null. */
-    AMaterialInstance * GetMaterialInstance() const { return GetMaterialInstance( 0 ); }
+    AMaterialInstance* GetMaterialInstance() const { return GetMaterialInstance(0); }
 
-    BvAxisAlignedBox GetSubpartWorldBounds( int _SubpartIndex ) const;
+    BvAxisAlignedBox GetSubpartWorldBounds(int _SubpartIndex) const;
 
 protected:
     AMeshComponent();
@@ -125,44 +129,48 @@ protected:
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    ACollisionModel * GetMeshCollisionModel() const override;
+    ACollisionModel* GetMeshCollisionModel() const override;
 
-    void DrawDebug( ADebugRenderer * InRenderer ) override;
+    void DrawDebug(ADebugRenderer* InRenderer) override;
 
     virtual void OnMeshChanged() {}
 
 private:
     void NotifyMeshChanged();
 
-    AMaterialInstance * GetMaterialInstanceUnsafe( int _SubpartIndex ) const;
+    AMaterialInstance* GetMaterialInstanceUnsafe(int _SubpartIndex) const;
 
-    TRef< AIndexedMesh > Mesh;
-    TPodVector< AMaterialInstance *, 1 > Materials;
+    TRef<AIndexedMesh>                Mesh;
+    TPodVector<AMaterialInstance*, 1> Materials;
 };
 
-class AProceduralMeshComponent : public ADrawable {
-    AN_COMPONENT( AProceduralMeshComponent, ADrawable )
+class AProceduralMeshComponent : public ADrawable
+{
+    AN_COMPONENT(AProceduralMeshComponent, ADrawable)
 
 public:
     /** Transform matrix used during last rendering */
-    Float3x4        RenderTransformMatrix;
+    Float3x4 RenderTransformMatrix;
 
     /** Allow raycasting */
-    void SetAllowRaycast( bool _AllowRaycast ) override;
+    void SetAllowRaycast(bool _AllowRaycast) override;
 
-    void SetMesh( AProceduralMesh * _Mesh ) {
+    void SetMesh(AProceduralMesh* _Mesh)
+    {
         ProceduralMesh = _Mesh;
     }
 
-    AProceduralMesh * GetMesh() const {
+    AProceduralMesh* GetMesh() const
+    {
         return ProceduralMesh;
     }
 
-    void SetMaterialInstance( AMaterialInstance * _MaterialInstance ) {
+    void SetMaterialInstance(AMaterialInstance* _MaterialInstance)
+    {
         MaterialInstance = _MaterialInstance;
     }
 
-    AMaterialInstance * GetMaterialInstance() const;
+    AMaterialInstance* GetMaterialInstance() const;
 
 protected:
     AProceduralMeshComponent();
@@ -170,11 +178,10 @@ protected:
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    void DrawDebug( ADebugRenderer * InRenderer ) override;
+    void DrawDebug(ADebugRenderer* InRenderer) override;
 
-    TRef< AProceduralMesh > ProceduralMesh;
-    TRef< AMaterialInstance > MaterialInstance;
-
+    TRef<AProceduralMesh>   ProceduralMesh;
+    TRef<AMaterialInstance> MaterialInstance;
 };
 
 #if 0

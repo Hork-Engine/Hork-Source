@@ -45,7 +45,8 @@ class AMeshComponent;
 class ASkinnedComponent;
 class AProceduralMeshComponent;
 
-struct SRenderFrontendStat {
+struct SRenderFrontendStat
+{
     int PolyCount;
     int ShadowMapPolyCount;
     int FrontendTime;
@@ -53,7 +54,7 @@ struct SRenderFrontendStat {
 
 class ARenderFrontend : public ABaseObject
 {
-    AN_CLASS( ARenderFrontend, ABaseObject )
+    AN_CLASS(ARenderFrontend, ABaseObject)
 
 public:
     ARenderFrontend();
@@ -62,59 +63,59 @@ public:
     void Render(class AFrameLoop* FrameLoop, ACanvas* InCanvas);
 
     /** Get render frame data */
-    SRenderFrame * GetFrameData() { return &FrameData; }
+    SRenderFrame* GetFrameData() { return &FrameData; }
 
-    SRenderFrontendStat const & GetStat() const { return Stat; }
+    SRenderFrontendStat const& GetStat() const { return Stat; }
 
 private:
-    void RenderCanvas( ACanvas * InCanvas );
-    void RenderView( int _Index );
+    void RenderCanvas(ACanvas* InCanvas);
+    void RenderView(int _Index);
 
-    void QueryVisiblePrimitives( AWorld * InWorld );
-    void QueryShadowCasters( AWorld * InWorld, Float4x4 const & LightViewProjection, Float3 const & LightPosition, Float3x3 const & LightBasis,
-                             TPodVector< SPrimitiveDef * > & Primitives, TPodVector< SSurfaceDef * > & Surfaces );
-    void AddRenderInstances( AWorld * InWorld );
-    void AddDrawable( ADrawable * InComponent );
-    void AddTerrain( ATerrainComponent * InComponent );
-    void AddStaticMesh( AMeshComponent * InComponent );
-    void AddSkinnedMesh( ASkinnedComponent * InComponent );
-    void AddProceduralMesh( AProceduralMeshComponent * InComponent );
-    void AddDirectionalShadowmapInstances( AWorld * InWorld );
-    void AddShadowmap_StaticMesh( SLightShadowmap * ShadowMap, AMeshComponent * InComponent );
-    void AddShadowmap_SkinnedMesh( SLightShadowmap * ShadowMap, ASkinnedComponent * InComponent );
-    void AddShadowmap_ProceduralMesh( SLightShadowmap * ShadowMap, AProceduralMeshComponent * InComponent );
+    void QueryVisiblePrimitives(AWorld* InWorld);
+    void QueryShadowCasters(AWorld* InWorld, Float4x4 const& LightViewProjection, Float3 const& LightPosition, Float3x3 const& LightBasis, TPodVector<SPrimitiveDef*>& Primitives, TPodVector<SSurfaceDef*>& Surfaces);
+    void AddRenderInstances(AWorld* InWorld);
+    void AddDrawable(ADrawable* InComponent);
+    void AddTerrain(ATerrainComponent* InComponent);
+    void AddStaticMesh(AMeshComponent* InComponent);
+    void AddSkinnedMesh(ASkinnedComponent* InComponent);
+    void AddProceduralMesh(AProceduralMeshComponent* InComponent);
+    void AddDirectionalShadowmapInstances(AWorld* InWorld);
+    void AddShadowmap_StaticMesh(SLightShadowmap* ShadowMap, AMeshComponent* InComponent);
+    void AddShadowmap_SkinnedMesh(SLightShadowmap* ShadowMap, ASkinnedComponent* InComponent);
+    void AddShadowmap_ProceduralMesh(SLightShadowmap* ShadowMap, AProceduralMeshComponent* InComponent);
 
-    void AddSurfaces( SSurfaceDef * const * Surfaces, int SurfaceCount );
-    void AddSurface( ALevel * Level, AMaterialInstance * MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex/*, int _RenderingOrder*/ );
+    void AddSurfaces(SSurfaceDef* const* Surfaces, int SurfaceCount);
+    void AddSurface(ALevel* Level, AMaterialInstance* MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/);
 
-    void AddShadowmapSurfaces( SLightShadowmap * ShadowMap, SSurfaceDef * const * Surfaces, int SurfaceCount );
-    void AddShadowmapSurface( SLightShadowmap * ShadowMap, AMaterialInstance * MaterialInstance, int _NumIndices, int _FirstIndex/*, int _RenderingOrder*/ );
+    void AddShadowmapSurfaces(SLightShadowmap* ShadowMap, SSurfaceDef* const* Surfaces, int SurfaceCount);
+    void AddShadowmapSurface(SLightShadowmap* ShadowMap, AMaterialInstance* MaterialInstance, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/);
 
-    void AddLightShadowmap( AAnalyticLightComponent * Light, float Radius, int * pShadowmapIndex );
+    void AddLightShadowmap(AAnalyticLightComponent* Light, float Radius, int* pShadowmapIndex);
 
     SRenderFrame   FrameData;
     ADebugRenderer DebugDraw;
-    int FrameNumber = 0;
+    int            FrameNumber = 0;
 
     SRenderFrontendStat Stat;
 
-    TPodVector< SViewport const * > Viewports;
-    int MaxViewportWidth = 0;
-    int MaxViewportHeight = 0;
+    TPodVector<SViewport const*> Viewports;
+    int                          MaxViewportWidth  = 0;
+    int                          MaxViewportHeight = 0;
 
-    TPodVector< SPrimitiveDef * > VisPrimitives;
-    TPodVector< SSurfaceDef * > VisSurfaces;
-    TPodVector< AAnalyticLightComponent * > VisLights;
-    TPodVector< AIBLComponent * > VisIBLs;
+    TPodVector<SPrimitiveDef*>           VisPrimitives;
+    TPodVector<SSurfaceDef*>             VisSurfaces;
+    TPodVector<AAnalyticLightComponent*> VisLights;
+    TPodVector<AIBLComponent*>           VisIBLs;
 
     int VisPass = 0;
 
     // TODO: We can keep ready shadowCasters[] and boxes[]
-    TPodVector< ADrawable * > ShadowCasters;
-    TPodVector< BvAxisAlignedBoxSSE > ShadowBoxes;
-    TPodVector< int > ShadowCasterCullResult;
+    TPodVector<ADrawable*>          ShadowCasters;
+    TPodVector<BvAxisAlignedBoxSSE> ShadowBoxes;
+    TPodVector<int>                 ShadowCasterCullResult;
 
-    struct SSurfaceStream {
+    struct SSurfaceStream
+    {
         size_t VertexAddr;
         size_t VertexLightAddr;
         size_t VertexUVAddr;
@@ -123,12 +124,12 @@ private:
 
     SSurfaceStream SurfaceStream;
 
-    SRenderFrontendDef RenderDef;
-    ARenderingParameters * ViewRP;
+    SRenderFrontendDef    RenderDef;
+    ARenderingParameters* ViewRP;
 
-    TRef< ATexture > PhotometricProfiles;
+    TRef<ATexture> PhotometricProfiles;
 
-    TRef< ATerrainMesh > TerrainMesh;
+    TRef<ATerrainMesh> TerrainMesh;
 
     ALightVoxelizer LightVoxelizer;
 

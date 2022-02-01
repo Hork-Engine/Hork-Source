@@ -42,7 +42,8 @@ EAnimationPlayMode
 Animation play mode
 
 */
-enum EAnimationPlayMode {
+enum EAnimationPlayMode
+{
     ANIMATION_PLAY_WRAP,
     ANIMATION_PLAY_MIRROR,
     ANIMATION_PLAY_CLAMP
@@ -55,50 +56,51 @@ AAnimationController
 Animation controller (track, state)
 
 */
-class AAnimationController : public ABaseObject {
-    AN_CLASS( AAnimationController, ABaseObject )
+class AAnimationController : public ABaseObject
+{
+    AN_CLASS(AAnimationController, ABaseObject)
 
     friend class ASkinnedComponent;
 
 public:
     /** Set source animation */
-    void SetAnimation( ASkeletalAnimation * _Animation );
+    void SetAnimation(ASkeletalAnimation* _Animation);
 
     /** Get source animation */
-    ASkeletalAnimation * GetAnimation() { return Animation; }
+    ASkeletalAnimation* GetAnimation() { return Animation; }
 
     /** Get animation owner */
-    ASkinnedComponent * GetOwner() { return Owner; }
+    ASkinnedComponent* GetOwner() { return Owner; }
 
     /** Set position on animation track */
-    void SetTime( float _Time );
+    void SetTime(float _Time);
 
     /** Step time delta on animation track */
-    void AddTimeDelta( float _TimeDelta );
+    void AddTimeDelta(float _TimeDelta);
 
     /** Get time */
     float GetTime() const { return TimeLine; }
 
     /** Set play mode */
-    void SetPlayMode( EAnimationPlayMode _PlayMode );
+    void SetPlayMode(EAnimationPlayMode _PlayMode);
 
     /** Get play mode */
     EAnimationPlayMode GetPlayMode() const { return PlayMode; }
 
     /** Set time quantizer */
-    void SetQuantizer( float _Quantizer );
+    void SetQuantizer(float _Quantizer);
 
     /** Get quantizer */
     float GetQuantizer() const { return Quantizer; }
 
     /** Set weight for animation blending */
-    void SetWeight( float _Weight );
+    void SetWeight(float _Weight);
 
     /** Get weight */
     float GetWeight() const { return Weight; }
 
     /** Set controller enabled/disabled */
-    void SetEnabled( bool _Enabled );
+    void SetEnabled(bool _Enabled);
 
     /** Is controller enabled */
     bool IsEnabled() const { return bEnabled; }
@@ -106,14 +108,14 @@ public:
     AAnimationController();
 
 private:
-    TRef< ASkeletalAnimation > Animation;
-    ASkinnedComponent * Owner;
-    float TimeLine;
-    float Quantizer;
-    float Weight;
-    float Blend;
-    int Frame;
-    int NextFrame;
-    EAnimationPlayMode PlayMode;
-    bool bEnabled;
+    TRef<ASkeletalAnimation> Animation;
+    ASkinnedComponent*       Owner;
+    float                    TimeLine;
+    float                    Quantizer;
+    float                    Weight;
+    float                    Blend;
+    int                      Frame;
+    int                      NextFrame;
+    EAnimationPlayMode       PlayMode;
+    bool                     bEnabled;
 };

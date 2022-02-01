@@ -34,8 +34,8 @@ SOFTWARE.
 
 struct SEntryDecl
 {
-    const char*       GameTitle;
-    const char*       RootPath;
+    const char*             GameTitle;
+    const char*             RootPath;
     class AClassMeta const* ModuleClass;
 };
 

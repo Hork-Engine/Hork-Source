@@ -32,108 +32,135 @@ SOFTWARE.
 #include "WWidget.h"
 #include "ResourceManager.h"
 
-AN_CLASS_META( WDecorate )
+AN_CLASS_META(WDecorate)
 
-WDecorate::WDecorate() {
-
+WDecorate::WDecorate()
+{
 }
 
-WDecorate::~WDecorate() {
-
+WDecorate::~WDecorate()
+{
 }
 
-void WDecorate::OnDrawEvent( ACanvas & _Canvas ) {
-
+void WDecorate::OnDrawEvent(ACanvas& _Canvas)
+{
 }
 
 
-AN_CLASS_META( WTextDecorate )
+AN_CLASS_META(WTextDecorate)
 
-WTextDecorate::WTextDecorate() {
-    Color = Color4::White();
-    Offset = Float2( 0.0f );
-    bWordWrap = false;
+WTextDecorate::WTextDecorate()
+{
+    Color               = Color4::White();
+    Offset              = Float2(0.0f);
+    bWordWrap           = false;
     HorizontalAlignment = WIDGET_ALIGNMENT_NONE;
-    VerticalAlignment = WIDGET_ALIGNMENT_NONE;
+    VerticalAlignment   = WIDGET_ALIGNMENT_NONE;
 }
 
-WTextDecorate::~WTextDecorate() {
+WTextDecorate::~WTextDecorate()
+{
 }
 
-WTextDecorate & WTextDecorate::SetText( const char * _Text ) {
+WTextDecorate& WTextDecorate::SetText(const char* _Text)
+{
     Text = _Text;
     return *this;
 }
 
-WTextDecorate & WTextDecorate::SetFont( AFont * _Font ) {
+WTextDecorate& WTextDecorate::SetFont(AFont* _Font)
+{
     Font = _Font;
     return *this;
 }
 
-WTextDecorate & WTextDecorate::SetColor( Color4 const & _Color ) {
+WTextDecorate& WTextDecorate::SetColor(Color4 const& _Color)
+{
     Color = _Color;
     return *this;
 }
 
-WTextDecorate & WTextDecorate::SetHorizontalAlignment( EWidgetAlignment _Alignment ) {
+WTextDecorate& WTextDecorate::SetHorizontalAlignment(EWidgetAlignment _Alignment)
+{
     HorizontalAlignment = _Alignment;
     return *this;
 }
 
-WTextDecorate & WTextDecorate::SetVerticalAlignment( EWidgetAlignment _Alignment ) {
+WTextDecorate& WTextDecorate::SetVerticalAlignment(EWidgetAlignment _Alignment)
+{
     VerticalAlignment = _Alignment;
     return *this;
 }
 
-WTextDecorate & WTextDecorate::SetWordWrap( bool _WordWrap ) {
+WTextDecorate& WTextDecorate::SetWordWrap(bool _WordWrap)
+{
     bWordWrap = _WordWrap;
     return *this;
 }
 
-WTextDecorate & WTextDecorate::SetOffset( Float2 const & _Offset ) {
+WTextDecorate& WTextDecorate::SetOffset(Float2 const& _Offset)
+{
     Offset = _Offset;
     return *this;
 }
 
-AFont const * WTextDecorate::GetFont() const {
+AFont const* WTextDecorate::GetFont() const
+{
     return Font ? Font : ACanvas::GetDefaultFont();
 }
 
-void WTextDecorate::OnDrawEvent( ACanvas & _Canvas ) {
-    Float2 ownerSize = GetOwner()->GetCurrentSize();
-    float width = ownerSize.X;
-    AFont const * font = GetFont();
+void WTextDecorate::OnDrawEvent(ACanvas& _Canvas)
+{
+    Float2       ownerSize = GetOwner()->GetCurrentSize();
+    float        width     = ownerSize.X;
+    AFont const* font      = GetFont();
 
     Float2 pos;
-    Float2 size = font->CalcTextSizeA( font->GetFontSize(), ownerSize.X, bWordWrap ? ownerSize.X : 0.0f, Text.Begin(), Text.End() );
+    Float2 size = font->CalcTextSizeA(font->GetFontSize(), ownerSize.X, bWordWrap ? ownerSize.X : 0.0f, Text.Begin(), Text.End());
 
-    if ( HorizontalAlignment == WIDGET_ALIGNMENT_LEFT ) {
+    if (HorizontalAlignment == WIDGET_ALIGNMENT_LEFT)
+    {
         pos.X = 0;
-    } else if ( HorizontalAlignment == WIDGET_ALIGNMENT_RIGHT ) {
+    }
+    else if (HorizontalAlignment == WIDGET_ALIGNMENT_RIGHT)
+    {
         pos.X = ownerSize.X - size.X;
-    } else if ( HorizontalAlignment == WIDGET_ALIGNMENT_CENTER ) {
+    }
+    else if (HorizontalAlignment == WIDGET_ALIGNMENT_CENTER)
+    {
         float center = ownerSize.X * 0.5f;
-        pos.X = center - size.X * 0.5f;
-    } else {
+        pos.X        = center - size.X * 0.5f;
+    }
+    else
+    {
         pos.X = Offset.X;
 
-        if ( GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE ) {
-            pos.X = Math::Round( pos.X / GetOwner()->GetImageSize().X * ownerSize.X );
+        if (GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE)
+        {
+            pos.X = Math::Round(pos.X / GetOwner()->GetImageSize().X * ownerSize.X);
         }
     }
 
-    if ( VerticalAlignment == WIDGET_ALIGNMENT_TOP ) {
+    if (VerticalAlignment == WIDGET_ALIGNMENT_TOP)
+    {
         pos.Y = 0;
-    } else if ( VerticalAlignment == WIDGET_ALIGNMENT_BOTTOM ) {
+    }
+    else if (VerticalAlignment == WIDGET_ALIGNMENT_BOTTOM)
+    {
         pos.Y = ownerSize.Y - size.Y;
-    } else if ( VerticalAlignment == WIDGET_ALIGNMENT_CENTER ) {
+    }
+    else if (VerticalAlignment == WIDGET_ALIGNMENT_CENTER)
+    {
         float center = ownerSize.Y * 0.5f;
-        pos.Y = center - size.Y * 0.5f;
-    } else {
+        pos.Y        = center - size.Y * 0.5f;
+    }
+    else
+    {
         pos.Y = Offset.Y;
 
-        if ( GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE ) {
-            pos.Y = Math::Round( pos.Y / GetOwner()->GetImageSize().Y * ownerSize.Y );
+        if (GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE)
+        {
+            pos.Y = Math::Round(pos.Y / GetOwner()->GetImageSize().Y * ownerSize.Y);
         }
     }
 
@@ -141,153 +168,179 @@ void WTextDecorate::OnDrawEvent( ACanvas & _Canvas ) {
 
     pos += GetOwner()->GetDesktopPosition();
 
-    _Canvas.PushFont( font );
-    _Canvas.DrawTextUTF8( font->GetFontSize(), pos, Color, Text.Begin(), Text.End(), bWordWrap ? width : 0.0f );
+    _Canvas.PushFont(font);
+    _Canvas.DrawTextUTF8(font->GetFontSize(), pos, Color, Text.Begin(), Text.End(), bWordWrap ? width : 0.0f);
     _Canvas.PopFont();
 }
 
 
 
-AN_CLASS_META( WBorderDecorate )
+AN_CLASS_META(WBorderDecorate)
 
-WBorderDecorate::WBorderDecorate() {
-    Color = Color4::White();
-    BgColor = Color4::Black();
-    bFillBackgrond = false;
-    Rounding = 0;
+WBorderDecorate::WBorderDecorate()
+{
+    Color           = Color4::White();
+    BgColor         = Color4::Black();
+    bFillBackgrond  = false;
+    Rounding        = 0;
     RoundingCorners = CORNER_ROUND_ALL;
-    Thickness = 1;
+    Thickness       = 1;
 }
 
-WBorderDecorate::~WBorderDecorate() {
+WBorderDecorate::~WBorderDecorate()
+{
 }
 
-WBorderDecorate & WBorderDecorate::SetColor( Color4 const & _Color ) {
+WBorderDecorate& WBorderDecorate::SetColor(Color4 const& _Color)
+{
     Color = _Color;
     return *this;
 }
 
-WBorderDecorate & WBorderDecorate::SetFillBackground( bool _FillBackgrond ) {
+WBorderDecorate& WBorderDecorate::SetFillBackground(bool _FillBackgrond)
+{
     bFillBackgrond = _FillBackgrond;
     return *this;
 }
 
-WBorderDecorate & WBorderDecorate::SetBackgroundColor( Color4 const & _Color ) {
+WBorderDecorate& WBorderDecorate::SetBackgroundColor(Color4 const& _Color)
+{
     BgColor = _Color;
     return *this;
 }
 
-WBorderDecorate & WBorderDecorate::SetThickness( float _Thickness ) {
+WBorderDecorate& WBorderDecorate::SetThickness(float _Thickness)
+{
     Thickness = _Thickness;
     return *this;
 }
 
-WBorderDecorate & WBorderDecorate::SetRounding( float _Rounding ) {
+WBorderDecorate& WBorderDecorate::SetRounding(float _Rounding)
+{
     Rounding = _Rounding;
     return *this;
 }
 
-WBorderDecorate & WBorderDecorate::SetRoundingCorners( EDrawCornerFlags _RoundingCorners ) {
+WBorderDecorate& WBorderDecorate::SetRoundingCorners(EDrawCornerFlags _RoundingCorners)
+{
     RoundingCorners = _RoundingCorners;
     return *this;
 }
 
-void WBorderDecorate::OnDrawEvent( ACanvas & _Canvas ) {
+void WBorderDecorate::OnDrawEvent(ACanvas& _Canvas)
+{
     Float2 mins, maxs;
 
-    GetOwner()->GetDesktopRect( mins, maxs, false );
+    GetOwner()->GetDesktopRect(mins, maxs, false);
 
-    if ( bFillBackgrond ) {
-        _Canvas.DrawRectFilled( mins, maxs, BgColor, Rounding, RoundingCorners );
+    if (bFillBackgrond)
+    {
+        _Canvas.DrawRectFilled(mins, maxs, BgColor, Rounding, RoundingCorners);
     }
 
-    _Canvas.DrawRect( mins, maxs, Color, Rounding, RoundingCorners, Thickness );
+    _Canvas.DrawRect(mins, maxs, Color, Rounding, RoundingCorners, Thickness);
 }
 
 
-AN_CLASS_META( WImageDecorate )
+AN_CLASS_META(WImageDecorate)
 
-WImageDecorate::WImageDecorate() {
-    Color = Color4::White();
-    Rounding = 0;
-    RoundingCorners = CORNER_ROUND_ALL;
-    ColorBlending = COLOR_BLENDING_ALPHA;
-    SamplerType = HUD_SAMPLER_TILED_LINEAR;
-    bUseOriginalSize = false;
+WImageDecorate::WImageDecorate()
+{
+    Color               = Color4::White();
+    Rounding            = 0;
+    RoundingCorners     = CORNER_ROUND_ALL;
+    ColorBlending       = COLOR_BLENDING_ALPHA;
+    SamplerType         = HUD_SAMPLER_TILED_LINEAR;
+    bUseOriginalSize    = false;
     HorizontalAlignment = WIDGET_ALIGNMENT_NONE;
-    VerticalAlignment = WIDGET_ALIGNMENT_NONE;
-    Offset = Float2(0.0f);
-    Size = Float2(32,32);
-    UV0 = Float2(0,0);
-    UV1 = Float2(1,1);
+    VerticalAlignment   = WIDGET_ALIGNMENT_NONE;
+    Offset              = Float2(0.0f);
+    Size                = Float2(32, 32);
+    UV0                 = Float2(0, 0);
+    UV1                 = Float2(1, 1);
 }
 
-WImageDecorate::~WImageDecorate() {
+WImageDecorate::~WImageDecorate()
+{
 }
 
-WImageDecorate & WImageDecorate::SetColor( Color4 const & _Color ) {
+WImageDecorate& WImageDecorate::SetColor(Color4 const& _Color)
+{
     Color = _Color;
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetRounding( float _Rounding ) {
+WImageDecorate& WImageDecorate::SetRounding(float _Rounding)
+{
     Rounding = _Rounding;
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetRoundingCorners( EDrawCornerFlags _RoundingCorners ) {
+WImageDecorate& WImageDecorate::SetRoundingCorners(EDrawCornerFlags _RoundingCorners)
+{
     RoundingCorners = _RoundingCorners;
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetTexture( ATexture * _Texture ) {
+WImageDecorate& WImageDecorate::SetTexture(ATexture* _Texture)
+{
     Texture = _Texture;
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetColorBlending( EColorBlending _Blending ) {
+WImageDecorate& WImageDecorate::SetColorBlending(EColorBlending _Blending)
+{
     ColorBlending = _Blending;
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetSamplerType( EHUDSamplerType _SamplerType ) {
+WImageDecorate& WImageDecorate::SetSamplerType(EHUDSamplerType _SamplerType)
+{
     SamplerType = _SamplerType;
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetOffset( Float2 const & _Offset ) {
+WImageDecorate& WImageDecorate::SetOffset(Float2 const& _Offset)
+{
     Offset = _Offset;
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetSize( Float2 const & _Size ) {
+WImageDecorate& WImageDecorate::SetSize(Float2 const& _Size)
+{
     Size = _Size;
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetHorizontalAlignment( EWidgetAlignment _Alignment ) {
+WImageDecorate& WImageDecorate::SetHorizontalAlignment(EWidgetAlignment _Alignment)
+{
     HorizontalAlignment = _Alignment;
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetVerticalAlignment( EWidgetAlignment _Alignment ) {
+WImageDecorate& WImageDecorate::SetVerticalAlignment(EWidgetAlignment _Alignment)
+{
     VerticalAlignment = _Alignment;
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetUseOriginalSize( bool _UseOriginalSize ) {
+WImageDecorate& WImageDecorate::SetUseOriginalSize(bool _UseOriginalSize)
+{
     bUseOriginalSize = _UseOriginalSize;
     return *this;
 }
 
-WImageDecorate & WImageDecorate::SetUVs( Float2 const & _UV0, Float2 const & _UV1 ) {
+WImageDecorate& WImageDecorate::SetUVs(Float2 const& _UV0, Float2 const& _UV1)
+{
     UV0 = _UV0;
     UV1 = _UV1;
     return *this;
 }
 
-void WImageDecorate::OnDrawEvent( ACanvas & _Canvas ) {
-    if ( !Texture ) {
+void WImageDecorate::OnDrawEvent(ACanvas& _Canvas)
+{
+    if (!Texture)
+    {
         return;
     }
 
@@ -296,55 +349,77 @@ void WImageDecorate::OnDrawEvent( ACanvas & _Canvas ) {
     Float2 pos;
     Float2 size = Size;
 
-    if ( bUseOriginalSize ) {
+    if (bUseOriginalSize)
+    {
         size.X = Texture->GetDimensionX();
         size.Y = Texture->GetDimensionY();
     }
 
-    Float2 const & imageSize = GetOwner()->GetImageSize();
-    Float2 scale = ownerSize / imageSize;
+    Float2 const& imageSize = GetOwner()->GetImageSize();
+    Float2        scale     = ownerSize / imageSize;
 
-    if ( GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE ) {
+    if (GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE)
+    {
         size = (size * scale + 0.5f).Floor();
     }
 
-    if ( HorizontalAlignment == WIDGET_ALIGNMENT_STRETCH ) {
-        pos.X = 0;
+    if (HorizontalAlignment == WIDGET_ALIGNMENT_STRETCH)
+    {
+        pos.X  = 0;
         size.X = ownerSize.X;
-    } else if ( HorizontalAlignment == WIDGET_ALIGNMENT_LEFT ) {
+    }
+    else if (HorizontalAlignment == WIDGET_ALIGNMENT_LEFT)
+    {
         pos.X = 0;
-    } else if ( HorizontalAlignment == WIDGET_ALIGNMENT_RIGHT ) {
+    }
+    else if (HorizontalAlignment == WIDGET_ALIGNMENT_RIGHT)
+    {
         pos.X = ownerSize.X - size.X;
-    } else if ( HorizontalAlignment == WIDGET_ALIGNMENT_CENTER ) {
+    }
+    else if (HorizontalAlignment == WIDGET_ALIGNMENT_CENTER)
+    {
         float center = ownerSize.X * 0.5f;
-        pos.X = center - size.X * 0.5f;
-    } else {
+        pos.X        = center - size.X * 0.5f;
+    }
+    else
+    {
         pos.X = Offset.X;
 
-        if ( GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE ) {
-            pos.X = Math::Round( pos.X * scale.X );
+        if (GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE)
+        {
+            pos.X = Math::Round(pos.X * scale.X);
         }
     }
 
-    if ( VerticalAlignment == WIDGET_ALIGNMENT_STRETCH ) {
-        pos.Y = 0;
+    if (VerticalAlignment == WIDGET_ALIGNMENT_STRETCH)
+    {
+        pos.Y  = 0;
         size.Y = ownerSize.Y;
-    } else if ( VerticalAlignment == WIDGET_ALIGNMENT_TOP ) {
+    }
+    else if (VerticalAlignment == WIDGET_ALIGNMENT_TOP)
+    {
         pos.Y = 0;
-    } else if ( VerticalAlignment == WIDGET_ALIGNMENT_BOTTOM ) {
+    }
+    else if (VerticalAlignment == WIDGET_ALIGNMENT_BOTTOM)
+    {
         pos.Y = ownerSize.Y - size.Y;
-    } else if ( VerticalAlignment == WIDGET_ALIGNMENT_CENTER ) {
+    }
+    else if (VerticalAlignment == WIDGET_ALIGNMENT_CENTER)
+    {
         float center = ownerSize.Y * 0.5f;
-        pos.Y = center - size.Y * 0.5f;
-    } else {
+        pos.Y        = center - size.Y * 0.5f;
+    }
+    else
+    {
         pos.Y = Offset.Y;
 
-        if ( GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE ) {
-            pos.Y = Math::Round( pos.Y * scale.Y );
+        if (GetOwner()->GetLayout() == WIDGET_LAYOUT_IMAGE)
+        {
+            pos.Y = Math::Round(pos.Y * scale.Y);
         }
     }
 
     pos += GetOwner()->GetDesktopPosition();
 
-    _Canvas.DrawTextureRounded( Texture, pos.X, pos.Y, size.X, size.Y, UV0, UV1, Color, Rounding, RoundingCorners, ColorBlending, SamplerType );
+    _Canvas.DrawTextureRounded(Texture, pos.X, pos.Y, size.X, size.Y, UV0, UV1, Color, Rounding, RoundingCorners, ColorBlending, SamplerType);
 }

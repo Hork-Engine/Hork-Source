@@ -39,16 +39,14 @@ AAnchorComponent
 Anchors is used to attach softbodies
 
 */
-class AAnchorComponent : public ASceneComponent {
-    AN_COMPONENT( AAnchorComponent, ASceneComponent )
+class AAnchorComponent : public ASceneComponent
+{
+    AN_COMPONENT(AAnchorComponent, ASceneComponent)
 
     friend class ASoftMeshComponent;
+
 public:
-    
-
-
 protected:
-
     AAnchorComponent();
 
     void InitializeComponent() override;
@@ -58,7 +56,6 @@ protected:
 
 
 private:
-
-    class btRigidBody * Anchor = nullptr;
-    int AttachCount = 0;
+    class btRigidBody* Anchor      = nullptr;
+    int                AttachCount = 0;
 };

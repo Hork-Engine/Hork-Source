@@ -34,8 +34,8 @@ SOFTWARE.
 #include "Texture.h"
 #include "VirtualTextureResource.h"
 
-#define MAX_MATERIAL_UNIFORMS           16
-#define MAX_MATERIAL_UNIFORM_VECTORS    (16>>2)
+#define MAX_MATERIAL_UNIFORMS        16
+#define MAX_MATERIAL_UNIFORM_VECTORS (16 >> 2)
 
 class MGMaterialGraph;
 
@@ -44,12 +44,13 @@ class MGMaterialGraph;
 Material
 
 */
-class AMaterial : public AResource {
-    AN_CLASS( AMaterial, AResource )
+class AMaterial : public AResource
+{
+    AN_CLASS(AMaterial, AResource)
 
 public:
     /** Initialize from graph */
-    void Initialize( MGMaterialGraph * Graph );
+    void Initialize(MGMaterialGraph* Graph);
 
     void Purge();
 
@@ -62,7 +63,7 @@ public:
 
     bool CanCastShadow() const { return !Def.bNoCastShadow; }
 
-    AMaterialGPU * GetGPUResource() { return &MaterialGPU; }
+    AMaterialGPU* GetGPUResource() { return &MaterialGPU; }
 
     int GetNumUniformVectors() const { return Def.NumUniformVectors; }
 
@@ -74,31 +75,31 @@ public:
     ~AMaterial();
 
     /** Load resource from file */
-    bool LoadResource( IBinaryStream & Stream ) override;
+    bool LoadResource(IBinaryStream& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource( const char * _Path ) override;
+    void LoadInternalResource(const char* _Path) override;
 
-    const char * GetDefaultResourcePath() const override { return "/Default/Materials/Unlit"; }
+    const char* GetDefaultResourcePath() const override { return "/Default/Materials/Unlit"; }
 
 private:
     /** Material GPU representation */
     AMaterialGPU MaterialGPU;
 
     /** Source graph */
-    TWeakRef< MGMaterialGraph > MaterialGraph;
+    TWeakRef<MGMaterialGraph> MaterialGraph;
 
     /** Material definition */
     SMaterialDef Def;
 
-    AMaterial * pNext = nullptr;
-    AMaterial * pPrev = nullptr;
+    AMaterial* pNext = nullptr;
+    AMaterial* pPrev = nullptr;
 };
 
-AN_FORCEINLINE AMaterial * CreateMaterial( MGMaterialGraph * InGraph )
+AN_FORCEINLINE AMaterial* CreateMaterial(MGMaterialGraph* InGraph)
 {
-    AMaterial * material = CreateInstanceOf< AMaterial >();
-    material->Initialize( InGraph );
+    AMaterial* material = CreateInstanceOf<AMaterial>();
+    material->Initialize(InGraph);
     return material;
 }
 
@@ -108,8 +109,9 @@ AN_FORCEINLINE AMaterial * CreateMaterial( MGMaterialGraph * InGraph )
 Material Instance
 
 */
-class AMaterialInstance : public AResource {
-    AN_CLASS( AMaterialInstance, AResource )
+class AMaterialInstance : public AResource
+{
+    AN_CLASS(AMaterialInstance, AResource)
 
 public:
     union
@@ -122,7 +124,7 @@ public:
     };
 
     /** Set material */
-    void SetMaterial( AMaterial * _Material );
+    void SetMaterial(AMaterial* _Material);
 
     ///** Helper. Set material by alias */
     //template< char... Chars >
@@ -132,12 +134,12 @@ public:
     //}
 
     /** Get material. Never return null. */
-    AMaterial * GetMaterial() const;
+    AMaterial* GetMaterial() const;
 
     /** Set texture for the slot */
-    void SetTexture( int _TextureSlot, ATexture * _Texture );
+    void SetTexture(int _TextureSlot, ATexture* _Texture);
 
-    ATexture * GetTexture( int _TextureSlot );
+    ATexture* GetTexture(int _TextureSlot);
 
     ///** Helper. Set texture for the slot */
     //template< char... Chars >
@@ -146,7 +148,7 @@ public:
     //    SetTexture( _TextureSlot, Resource.GetObject() );
     //}
 
-    void SetVirtualTexture( AVirtualTextureResource * VirtualTex );
+    void SetVirtualTexture(AVirtualTextureResource* VirtualTex);
 
     /** Internal. Used by render frontend */
     SMaterialFrameData* PreRenderUpdate(class AFrameLoop* FrameLoop, int _FrameNumber);
@@ -156,19 +158,19 @@ public:
 
 protected:
     /** Load resource from file */
-    bool LoadResource( IBinaryStream & _Stream ) override;
+    bool LoadResource(IBinaryStream& _Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource( const char * _Path ) override;
+    void LoadInternalResource(const char* _Path) override;
 
-    const char * GetDefaultResourcePath() const override { return "/Default/MaterialInstance/Default"; }
+    const char* GetDefaultResourcePath() const override { return "/Default/MaterialInstance/Default"; }
 
-    bool LoadTextVersion( IBinaryStream & Stream );
+    bool LoadTextVersion(IBinaryStream& Stream);
 
 private:
-    TRef< AMaterial > Material;
-    SMaterialFrameData * FrameData = nullptr;
-    TRef< ATexture > Textures[ MAX_MATERIAL_TEXTURES ];
-    TRef< AVirtualTextureResource > VirtualTexture;
-    int VisFrame = -1;
+    TRef<AMaterial>               Material;
+    SMaterialFrameData*           FrameData = nullptr;
+    TRef<ATexture>                Textures[MAX_MATERIAL_TEXTURES];
+    TRef<AVirtualTextureResource> VirtualTexture;
+    int                           VisFrame = -1;
 };

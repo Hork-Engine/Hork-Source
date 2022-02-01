@@ -35,20 +35,19 @@ SOFTWARE.
 
 class AAmbientPlayer : public AActor
 {
-    AN_ACTOR( AAmbientPlayer, AActor )
+    AN_ACTOR(AAmbientPlayer, AActor)
 
 public:
-
 protected:
     AAmbientPlayer();
 
     void Initialize(SActorInitializer& Initializer) override;
     void PreInitializeComponents() override;
     void BeginPlay() override;
-    void Tick( float _TimeStep ) override;
+    void Tick(float _TimeStep) override;
 
 private:
-    void UpdateAmbientVolume( float _TimeStep );
+    void UpdateAmbientVolume(float _TimeStep);
 
-    TPodVector< ASoundEmitter * > AmbientSound;
+    TPodVector<ASoundEmitter*> AmbientSound;
 };

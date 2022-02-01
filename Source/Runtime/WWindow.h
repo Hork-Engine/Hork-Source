@@ -32,55 +32,56 @@ SOFTWARE.
 
 #include "WWidget.h"
 
-class WWindow : public WWidget {
-    AN_CLASS( WWindow, WWidget )
+class WWindow : public WWidget
+{
+    AN_CLASS(WWindow, WWidget)
 
 public:
-    WWindow & SetCaptionText( const char * _CaptionText );
-    WWindow & SetCaptionHeight( float _CaptionHeight );
-    WWindow & SetCaptionFont( AFont * _Font );
-    WWindow & SetTextColor( Color4 const & _Color );
-    WWindow & SetTextHorizontalAlignment( EWidgetAlignment _Alignment );
-    WWindow & SetTextVerticalAlignment( EWidgetAlignment _Alignment );
-    WWindow & SetWordWrap( bool _WordWrap );
-    WWindow & SetTextOffset( Float2 const & _Offset );
-    WWindow & SetCaptionColor( Color4 const & _Color );
-    WWindow & SetCaptionColorNotActive( Color4 const & _Color );
-    WWindow & SetBorderColor( Color4 const & _Color );
-    WWindow & SetBorderThickness( float _Thickness );
-    WWindow & SetBackgroundColor( Color4 const & _Color );
-    WWindow & SetRounding( float _Rounding );
-    WWindow & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
+    WWindow& SetCaptionText(const char* _CaptionText);
+    WWindow& SetCaptionHeight(float _CaptionHeight);
+    WWindow& SetCaptionFont(AFont* _Font);
+    WWindow& SetTextColor(Color4 const& _Color);
+    WWindow& SetTextHorizontalAlignment(EWidgetAlignment _Alignment);
+    WWindow& SetTextVerticalAlignment(EWidgetAlignment _Alignment);
+    WWindow& SetWordWrap(bool _WordWrap);
+    WWindow& SetTextOffset(Float2 const& _Offset);
+    WWindow& SetCaptionColor(Color4 const& _Color);
+    WWindow& SetCaptionColorNotActive(Color4 const& _Color);
+    WWindow& SetBorderColor(Color4 const& _Color);
+    WWindow& SetBorderThickness(float _Thickness);
+    WWindow& SetBackgroundColor(Color4 const& _Color);
+    WWindow& SetRounding(float _Rounding);
+    WWindow& SetRoundingCorners(EDrawCornerFlags _RoundingCorners);
 
     WWindow();
     ~WWindow();
 
 protected:
     void OnTransformDirty() override;
-    void OnDrawEvent( ACanvas & _Canvas ) override;
+    void OnDrawEvent(ACanvas& _Canvas) override;
 
-    Float2 GetTextPositionWithAlignment( ACanvas & _Canvas ) const;
-    AFont const * GetFont() const;
+    Float2       GetTextPositionWithAlignment(ACanvas& _Canvas) const;
+    AFont const* GetFont() const;
 
 private:
     void UpdateDragShape();
     void UpdateMargin();
 
-    AString CaptionText;
-    float CaptionHeight;
-    TRef< AFont > Font;
-    Color4 TextColor;
-    Float2 TextOffset;
-    bool bWordWrap;
+    AString          CaptionText;
+    float            CaptionHeight;
+    TRef<AFont>      Font;
+    Color4           TextColor;
+    Float2           TextOffset;
+    bool             bWordWrap;
     EWidgetAlignment TextHorizontalAlignment;
     EWidgetAlignment TextVerticalAlignment;
-    Color4 CaptionColor;
-    Color4 CaptionColorNotActive;
-    Color4 BorderColor;
-    Color4 BgColor;
+    Color4           CaptionColor;
+    Color4           CaptionColorNotActive;
+    Color4           BorderColor;
+    Color4           BgColor;
     EDrawCornerFlags RoundingCorners;
-    float BorderRounding;
-    float BorderThickness;
-    bool bWindowBorder;
-    bool bCaptionBorder;
+    float            BorderRounding;
+    float            BorderThickness;
+    bool             bWindowBorder;
+    bool             bCaptionBorder;
 };

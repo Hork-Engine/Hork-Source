@@ -38,24 +38,27 @@ SOFTWARE.
 #include "Engine.h"
 #include <Core/Image.h>
 
-AN_CLASS_META( APlayerController )
-AN_CLASS_META( ARenderingParameters )
+AN_CLASS_META(APlayerController)
+AN_CLASS_META(ARenderingParameters)
 
-APlayerController * APlayerController::CurrentAudioListener = nullptr;
+APlayerController* APlayerController::CurrentAudioListener = nullptr;
 
-APlayerController::APlayerController() {
-    InputComponent = CreateComponent< AInputComponent >( "PlayerControllerInput" );
+APlayerController::APlayerController()
+{
+    InputComponent = CreateComponent<AInputComponent>("PlayerControllerInput");
 
     bCanEverTick = true;
 
-    if ( !CurrentAudioListener ) {
+    if (!CurrentAudioListener)
+    {
         CurrentAudioListener = this;
     }
 }
 
 APlayerController::~APlayerController()
 {
-    if ( CurrentAudioListener == this ) {
+    if (CurrentAudioListener == this)
+    {
         CurrentAudioListener = nullptr;
     }
 }
@@ -64,91 +67,111 @@ void APlayerController::OnPawnChanged()
 {
     InputComponent->UnbindAll();
 
-    InputComponent->BindAction( "Pause", IA_PRESS, this, &APlayerController::TogglePause, true );
-    InputComponent->BindAction( "TakeScreenshot", IA_PRESS, this, &APlayerController::TakeScreenshot, true );
+    InputComponent->BindAction("Pause", IA_PRESS, this, &APlayerController::TogglePause, true);
+    InputComponent->BindAction("TakeScreenshot", IA_PRESS, this, &APlayerController::TakeScreenshot, true);
 
-    if ( Pawn ) {
-        Pawn->SetupInputComponent( InputComponent );
+    if (Pawn)
+    {
+        Pawn->SetupInputComponent(InputComponent);
         Pawn->SetupRuntimeCommands();
     }
 
-    if ( HUD ) {
+    if (HUD)
+    {
         HUD->OwnerPawn = Pawn;
     }
 
     UpdatePawnCamera();
 }
 
-void APlayerController::SetAudioListener( ASceneComponent * _AudioListener ) {
+void APlayerController::SetAudioListener(ASceneComponent* _AudioListener)
+{
     AudioListener = _AudioListener;
 }
 
-void APlayerController::SetHUD( AHUD * _HUD ) {
-    if ( IsSame( HUD, _HUD ) ) {
+void APlayerController::SetHUD(AHUD* _HUD)
+{
+    if (IsSame(HUD, _HUD))
+    {
         return;
     }
 
-    if ( _HUD && _HUD->OwnerPlayer ) {
-        _HUD->OwnerPlayer->SetHUD( nullptr );
+    if (_HUD && _HUD->OwnerPlayer)
+    {
+        _HUD->OwnerPlayer->SetHUD(nullptr);
     }
 
-    if ( HUD ) {
+    if (HUD)
+    {
         HUD->OwnerPlayer = nullptr;
-        HUD->OwnerPawn = nullptr;
+        HUD->OwnerPawn   = nullptr;
     }
 
     HUD = _HUD;
 
-    if ( HUD ) {
+    if (HUD)
+    {
         HUD->OwnerPlayer = this;
-        HUD->OwnerPawn = Pawn;
+        HUD->OwnerPawn   = Pawn;
     }
 }
 
-void APlayerController::SetRenderingParameters( ARenderingParameters * _RP ) {
+void APlayerController::SetRenderingParameters(ARenderingParameters* _RP)
+{
     RenderingParameters = _RP;
 }
 
-void APlayerController::SetAudioParameters( AAudioParameters * _AudioParameters ) {
+void APlayerController::SetAudioParameters(AAudioParameters* _AudioParameters)
+{
     AudioParameters = _AudioParameters;
 }
 
-void APlayerController::SetInputMappings( AInputMappings * _InputMappings ) {
-    InputComponent->SetInputMappings( _InputMappings );
+void APlayerController::SetInputMappings(AInputMappings* _InputMappings)
+{
+    InputComponent->SetInputMappings(_InputMappings);
 }
 
-AInputMappings * APlayerController::GetInputMappings() {
+AInputMappings* APlayerController::GetInputMappings()
+{
     return InputComponent->GetInputMappings();
 }
 
-void APlayerController::SetPlayerIndex( int _ControllerId ) {
+void APlayerController::SetPlayerIndex(int _ControllerId)
+{
     InputComponent->ControllerId = _ControllerId;
 }
 
-int APlayerController::GetPlayerIndex() const {
+int APlayerController::GetPlayerIndex() const
+{
     return InputComponent->ControllerId;
 }
 
-void APlayerController::TogglePause() {
-    GetWorld()->SetPaused( !GetWorld()->IsPaused() );
+void APlayerController::TogglePause()
+{
+    GetWorld()->SetPaused(!GetWorld()->IsPaused());
 }
 
-void APlayerController::TakeScreenshot() {
-    if ( Viewport ) {
-        WDesktop * desktop = Viewport->GetDesktop();
+void APlayerController::TakeScreenshot()
+{
+    if (Viewport)
+    {
+        WDesktop* desktop = Viewport->GetDesktop();
 
-        if ( desktop ) {
-            int w = desktop->GetWidth();
-            int h = desktop->GetHeight();
-            size_t sz = w*h*4;
-            if ( sz > 0 ) {
-                void * p = GHunkMemory.Alloc( sz );
-                GEngine->ReadScreenPixels( 0, 0, w, h, sz, p );
-                FlipImageY( p, w, h, 4, w * 4 );
-                static int n = 0;
+        if (desktop)
+        {
+            int    w  = desktop->GetWidth();
+            int    h  = desktop->GetHeight();
+            size_t sz = w * h * 4;
+            if (sz > 0)
+            {
+                void* p = GHunkMemory.Alloc(sz);
+                GEngine->ReadScreenPixels(0, 0, w, h, sz, p);
+                FlipImageY(p, w, h, 4, w * 4);
+                static int  n = 0;
                 AFileStream f;
-                if ( f.OpenWrite( Platform::Fmt( "screenshots/%d.png", n++ ) ) ) {
-                    WritePNG( f, w, h, 4, p, w*4 );
+                if (f.OpenWrite(Platform::Fmt("screenshots/%d.png", n++)))
+                {
+                    WritePNG(f, w, h, 4, p, w * 4);
                 }
                 GHunkMemory.ClearLastHunk();
             }
@@ -156,13 +179,14 @@ void APlayerController::TakeScreenshot() {
     }
 }
 
-ASceneComponent * APlayerController::GetAudioListener() {
-    if ( AudioListener )
+ASceneComponent* APlayerController::GetAudioListener()
+{
+    if (AudioListener)
     {
         return AudioListener;
     }
 
-    if ( Pawn )
+    if (Pawn)
     {
         return Pawn->GetPawnCamera();
     }
@@ -170,91 +194,104 @@ ASceneComponent * APlayerController::GetAudioListener() {
     return nullptr;
 }
 
-void APlayerController::SetCurrentAudioListener() {
+void APlayerController::SetCurrentAudioListener()
+{
     CurrentAudioListener = this;
 }
 
-APlayerController * APlayerController::GetCurrentAudioListener() {
+APlayerController* APlayerController::GetCurrentAudioListener()
+{
     return CurrentAudioListener;
 }
 
-float APlayerController::GetViewportAspectRatio() const {
+float APlayerController::GetViewportAspectRatio() const
+{
     return ViewportAspectRatio;
 }
 
-Float2 APlayerController::GetLocalCursorPosition() const {
-    return Viewport ? Viewport->GetLocalCursorPosition()
-                    : Float2::Zero();
+Float2 APlayerController::GetLocalCursorPosition() const
+{
+    return Viewport ? Viewport->GetLocalCursorPosition() : Float2::Zero();
 }
 
-Float2 APlayerController::GetNormalizedCursorPosition() const {
-    if ( Viewport ) {
+Float2 APlayerController::GetNormalizedCursorPosition() const
+{
+    if (Viewport)
+    {
         Float2 size = Viewport->GetAvailableSize();
-        if ( size.X > 0 && size.Y > 0 )
+        if (size.X > 0 && size.Y > 0)
         {
             Float2 pos = GetLocalCursorPosition();
             pos.X /= size.X;
             pos.Y /= size.Y;
-            pos.X = Math::Saturate( pos.X );
-            pos.Y = Math::Saturate( pos.Y );
+            pos.X = Math::Saturate(pos.X);
+            pos.Y = Math::Saturate(pos.Y);
             return pos;
         }
     }
     return Float2::Zero();
 }
 
-void APlayerController::OnViewportUpdate() {
-    if ( Viewport )
+void APlayerController::OnViewportUpdate()
+{
+    if (Viewport)
     {
         Float2 size = Viewport->GetAvailableSize();
-        if ( size.X > 0 && size.Y > 0 ) {
-            ViewportAspectRatio =  size.X / size.Y;
+        if (size.X > 0 && size.Y > 0)
+        {
+            ViewportAspectRatio = size.X / size.Y;
         }
 
-        ViewportWidth = size.X;
+        ViewportWidth  = size.X;
         ViewportHeight = size.Y;
     }
     else
     {
         // Set default
         ViewportAspectRatio = 1.0f;
-        ViewportWidth = 512;
-        ViewportHeight = 512;
+        ViewportWidth       = 512;
+        ViewportHeight      = 512;
     }
 
     UpdatePawnCamera();
 }
 
-void APlayerController::UpdatePawnCamera() {
-    if ( !Pawn )
+void APlayerController::UpdatePawnCamera()
+{
+    if (!Pawn)
     {
         return;
     }
 
-    ACameraComponent * camera = Pawn->GetPawnCamera();
-    if ( !camera )
+    ACameraComponent* camera = Pawn->GetPawnCamera();
+    if (!camera)
     {
         return;
     }
 
-    SVideoMode const & vidMode = GEngine->GetVideoMode();
+    SVideoMode const& vidMode = GEngine->GetVideoMode();
 
-    camera->SetAspectRatio( ViewportAspectRatio * vidMode.AspectScale );
+    camera->SetAspectRatio(ViewportAspectRatio * vidMode.AspectScale);
 }
 
 
 
 
-ARenderingParameters::ARenderingParameters() {
+ARenderingParameters::ARenderingParameters()
+{
     static uint16_t data[16][16][16][4];
     static bool     dataInit = false;
-    if ( !dataInit ) {
-        for ( int z = 0; z < 16; z++ ) {
-            for ( int y = 0; y < 16; y++ ) {
-                for ( int x = 0; x < 16; x++ ) {
-                    data[z][y][x][0] = Math::FloatToHalf( (float)z / 15.0f * 255.0f );
-                    data[z][y][x][1] = Math::FloatToHalf( (float)y / 15.0f * 255.0f );
-                    data[z][y][x][2] = Math::FloatToHalf( (float)x / 15.0f * 255.0f );
+    if (!dataInit)
+    {
+        for (int z = 0; z < 16; z++)
+        {
+            for (int y = 0; y < 16; y++)
+            {
+                for (int x = 0; x < 16; x++)
+                {
+                    data[z][y][x][0] = Math::FloatToHalf((float)z / 15.0f * 255.0f);
+                    data[z][y][x][1] = Math::FloatToHalf((float)y / 15.0f * 255.0f);
+                    data[z][y][x][2] = Math::FloatToHalf((float)x / 15.0f * 255.0f);
                     data[z][y][x][3] = 255;
                 }
             }
@@ -262,86 +299,99 @@ ARenderingParameters::ARenderingParameters() {
         dataInit = true;
     }
 
-    CurrentColorGradingLUT = CreateInstanceOf< ATexture >( STexture3D{}, TEXTURE_PF_BGRA16F, 1, 16, 16, 16 );
-    CurrentColorGradingLUT->WriteTextureData3D( 0, 0, 0, 16, 16, 16, 0, data );
+    CurrentColorGradingLUT = CreateInstanceOf<ATexture>(STexture3D{}, TEXTURE_PF_BGRA16F, 1, 16, 16, 16);
+    CurrentColorGradingLUT->WriteTextureData3D(0, 0, 0, 16, 16, 16, 0, data);
 
-    const float initialExposure[2] = { 30.0f / 255.0f, 30.0f / 255.0f };
-    CurrentExposure = CreateInstanceOf< ATexture >( STexture2D{}, TEXTURE_PF_RG32F, 1, 1, 1 );
-    CurrentExposure->WriteTextureData2D( 0, 0, 1, 1, 0, initialExposure );
+    const float initialExposure[2] = {30.0f / 255.0f, 30.0f / 255.0f};
+    CurrentExposure                = CreateInstanceOf<ATexture>(STexture2D{}, TEXTURE_PF_RG32F, 1, 1, 1);
+    CurrentExposure->WriteTextureData2D(0, 0, 1, 1, 0, initialExposure);
 
-    LightTexture = CreateInstanceOf< ATexture >();
-    DepthTexture = CreateInstanceOf< ATexture >();
+    LightTexture = CreateInstanceOf<ATexture>();
+    DepthTexture = CreateInstanceOf<ATexture>();
 
     SetColorGradingDefaults();
 }
 
-ARenderingParameters::~ARenderingParameters() {
-    for ( auto it : TerrainViews ) {
+ARenderingParameters::~ARenderingParameters()
+{
+    for (auto it : TerrainViews)
+    {
         it.second->RemoveRef();
     }
 }
 
-void ARenderingParameters::SetColorGradingEnabled( bool _ColorGradingEnabled ) {
+void ARenderingParameters::SetColorGradingEnabled(bool _ColorGradingEnabled)
+{
     bColorGradingEnabled = _ColorGradingEnabled;
 }
 
-void ARenderingParameters::SetColorGradingLUT( ATexture * Texture ) {
+void ARenderingParameters::SetColorGradingLUT(ATexture* Texture)
+{
     ColorGradingLUT = Texture;
 }
 
-void ARenderingParameters::SetColorGradingGrain( Float3 const & _ColorGradingGrain ) {
+void ARenderingParameters::SetColorGradingGrain(Float3 const& _ColorGradingGrain)
+{
     ColorGradingGrain = _ColorGradingGrain;
 }
 
-void ARenderingParameters::SetColorGradingGamma( Float3 const & _ColorGradingGamma ) {
+void ARenderingParameters::SetColorGradingGamma(Float3 const& _ColorGradingGamma)
+{
     ColorGradingGamma = _ColorGradingGamma;
 }
 
-void ARenderingParameters::SetColorGradingLift( Float3 const & _ColorGradingLift ) {
+void ARenderingParameters::SetColorGradingLift(Float3 const& _ColorGradingLift)
+{
     ColorGradingLift = _ColorGradingLift;
 }
 
-void ARenderingParameters::SetColorGradingPresaturation( Float3 const & _ColorGradingPresaturation ) {
+void ARenderingParameters::SetColorGradingPresaturation(Float3 const& _ColorGradingPresaturation)
+{
     ColorGradingPresaturation = _ColorGradingPresaturation;
 }
 
-void ARenderingParameters::SetColorGradingTemperature( float _ColorGradingTemperature ) {
+void ARenderingParameters::SetColorGradingTemperature(float _ColorGradingTemperature)
+{
     ColorGradingTemperature = _ColorGradingTemperature;
 
     Color4 color;
-    color.SetTemperature( ColorGradingTemperature );
+    color.SetTemperature(ColorGradingTemperature);
 
     ColorGradingTemperatureScale.X = color.R;
     ColorGradingTemperatureScale.Y = color.G;
     ColorGradingTemperatureScale.Z = color.B;
 }
 
-void ARenderingParameters::SetColorGradingTemperatureStrength( Float3 const & _ColorGradingTemperatureStrength ) {
+void ARenderingParameters::SetColorGradingTemperatureStrength(Float3 const& _ColorGradingTemperatureStrength)
+{
     ColorGradingTemperatureStrength = _ColorGradingTemperatureStrength;
 }
 
-void ARenderingParameters::SetColorGradingBrightnessNormalization( float _ColorGradingBrightnessNormalization ) {
+void ARenderingParameters::SetColorGradingBrightnessNormalization(float _ColorGradingBrightnessNormalization)
+{
     ColorGradingBrightnessNormalization = _ColorGradingBrightnessNormalization;
 }
 
-void ARenderingParameters::SetColorGradingAdaptationSpeed( float _ColorGradingAdaptationSpeed ) {
+void ARenderingParameters::SetColorGradingAdaptationSpeed(float _ColorGradingAdaptationSpeed)
+{
     ColorGradingAdaptationSpeed = _ColorGradingAdaptationSpeed;
 }
 
-void ARenderingParameters::SetColorGradingDefaults() {
-    bColorGradingEnabled = false;
-    ColorGradingLUT = NULL;
-    ColorGradingGrain = Float3( 0.5f );
-    ColorGradingGamma = Float3( 0.5f );
-    ColorGradingLift = Float3( 0.5f );
-    ColorGradingPresaturation = Float3( 1.0f );
-    ColorGradingTemperatureStrength = Float3( 0.0f );
+void ARenderingParameters::SetColorGradingDefaults()
+{
+    bColorGradingEnabled                = false;
+    ColorGradingLUT                     = NULL;
+    ColorGradingGrain                   = Float3(0.5f);
+    ColorGradingGamma                   = Float3(0.5f);
+    ColorGradingLift                    = Float3(0.5f);
+    ColorGradingPresaturation           = Float3(1.0f);
+    ColorGradingTemperatureStrength     = Float3(0.0f);
     ColorGradingBrightnessNormalization = 0.0f;
-    ColorGradingAdaptationSpeed = 2;
-    ColorGradingTemperature = 6500.0f;
+    ColorGradingAdaptationSpeed         = 2;
+    ColorGradingTemperature             = 6500.0f;
 
     Color4 color;
-    color.SetTemperature( ColorGradingTemperature );
+    color.SetTemperature(ColorGradingTemperature);
     ColorGradingTemperatureScale.X = color.R;
     ColorGradingTemperatureScale.Y = color.G;
     ColorGradingTemperatureScale.Z = color.B;

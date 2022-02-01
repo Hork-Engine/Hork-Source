@@ -44,24 +44,26 @@ Joint properties
 struct SJoint
 {
     /** Parent node index. For root = -1 */
-    int32_t  Parent;
+    int32_t Parent;
 
     /** Joint local transform */
     Float3x4 LocalTransform;
 
     /** Joint name */
-    char     Name[64];
+    char Name[64];
 
-    void Write( IBinaryStream & _Stream ) const {
-        _Stream.WriteInt32( Parent );
-        _Stream.WriteObject( LocalTransform );
-        _Stream.WriteCString( Name );
+    void Write(IBinaryStream& _Stream) const
+    {
+        _Stream.WriteInt32(Parent);
+        _Stream.WriteObject(LocalTransform);
+        _Stream.WriteCString(Name);
     }
 
-    void Read( IBinaryStream & _Stream ) {
+    void Read(IBinaryStream& _Stream)
+    {
         Parent = _Stream.ReadInt32();
-        _Stream.ReadObject( LocalTransform );
-        _Stream.ReadCString( Name, sizeof( Name ) );
+        _Stream.ReadObject(LocalTransform);
+        _Stream.ReadCString(Name, sizeof(Name));
     }
 };
 
@@ -73,35 +75,39 @@ ASkeleton
 Skeleton structure
 
 */
-class ASkeleton : public AResource {
-    AN_CLASS( ASkeleton, AResource )
+class ASkeleton : public AResource
+{
+    AN_CLASS(ASkeleton, AResource)
 
 public:
-    enum { MAX_JOINTS = 256 };
+    enum
+    {
+        MAX_JOINTS = 256
+    };
 
     ASkeleton();
     ~ASkeleton();
 
-    void Initialize( SJoint * _Joints, int _JointsCount, BvAxisAlignedBox const & _BindposeBounds );
+    void Initialize(SJoint* _Joints, int _JointsCount, BvAxisAlignedBox const& _BindposeBounds);
 
     void Purge();
 
-    int FindJoint( const char * _Name ) const;
+    int FindJoint(const char* _Name) const;
 
-    TPodVector< SJoint > const & GetJoints() const { return Joints; }
+    TPodVector<SJoint> const& GetJoints() const { return Joints; }
 
-    BvAxisAlignedBox const & GetBindposeBounds() const { return BindposeBounds; }
+    BvAxisAlignedBox const& GetBindposeBounds() const { return BindposeBounds; }
 
 protected:
     /** Load resource from file */
-    bool LoadResource( IBinaryStream & Stream ) override;
+    bool LoadResource(IBinaryStream& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource( const char * _Path ) override;
+    void LoadInternalResource(const char* _Path) override;
 
-    const char * GetDefaultResourcePath() const override { return "/Default/Skeleton/Default"; }
+    const char* GetDefaultResourcePath() const override { return "/Default/Skeleton/Default"; }
 
 private:
-    TPodVector< SJoint > Joints;
-    BvAxisAlignedBox BindposeBounds;
+    TPodVector<SJoint> Joints;
+    BvAxisAlignedBox   BindposeBounds;
 };

@@ -33,20 +33,21 @@ SOFTWARE.
 #include "LightComponent.h"
 #include "Level.h"
 
-class APunctualLightComponent : public ALightComponent {
-    AN_COMPONENT( APunctualLightComponent, ALightComponent )
+class APunctualLightComponent : public ALightComponent
+{
+    AN_COMPONENT(APunctualLightComponent, ALightComponent)
 
 public:
     /** Rendering group to filter lights during rendering */
-    void SetVisibilityGroup( int InVisibilityGroup );
+    void SetVisibilityGroup(int InVisibilityGroup);
 
     int GetVisibilityGroup() const;
 
-    void SetEnabled( bool _Enabled ) override;
+    void SetEnabled(bool _Enabled) override;
 
-    BvAxisAlignedBox const & GetWorldBounds() const { return AABBWorldBounds; }
+    BvAxisAlignedBox const& GetWorldBounds() const { return AABBWorldBounds; }
 
-    Float4x4 const & GetOBBTransformInverse() const { return OBBTransformInverse; }
+    Float4x4 const& GetOBBTransformInverse() const { return OBBTransformInverse; }
 
 protected:
     APunctualLightComponent();
@@ -55,6 +56,6 @@ protected:
     void DeinitializeComponent() override;
 
     BvAxisAlignedBox AABBWorldBounds;
-    Float4x4 OBBTransformInverse;
-    SPrimitiveDef Primitive;
+    Float4x4         OBBTransformInverse;
+    SPrimitiveDef    Primitive;
 };

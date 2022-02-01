@@ -50,8 +50,9 @@ ADrawable
 Base class for drawing surfaces
 
 */
-class ADrawable : public APhysicalBody {
-    AN_COMPONENT( ADrawable, APhysicalBody )
+class ADrawable : public APhysicalBody
+{
+    AN_COMPONENT(ADrawable, APhysicalBody)
 
     friend class ARenderWorld;
 
@@ -66,79 +67,79 @@ public:
     bool bOutline = false;
 
     /** Visibility group to filter drawables during rendering */
-    void SetVisibilityGroup( int InVisibilityGroup );
+    void SetVisibilityGroup(int InVisibilityGroup);
 
     int GetVisibilityGroup() const;
 
-    void SetVisible( bool _Visible );
+    void SetVisible(bool _Visible);
 
     bool IsVisible() const;
 
     /** Set hidden during main render pass */
-    void SetHiddenInLightPass( bool _HiddenInLightPass );
+    void SetHiddenInLightPass(bool _HiddenInLightPass);
 
     bool IsHiddenInLightPass() const;
 
     /** Allow mesh to cast shadows on the world */
-    void SetCastShadow( bool _CastShadow );
+    void SetCastShadow(bool _CastShadow);
 
     /** Is cast shadows enabled */
     bool IsCastShadow() const { return bCastShadow; }
 
-    void SetQueryGroup( int _UserQueryGroup );
+    void SetQueryGroup(int _UserQueryGroup);
 
-    void SetSurfaceFlags( uint8_t Flags );
+    void SetSurfaceFlags(uint8_t Flags);
 
     uint8_t GetSurfaceFlags() const;
 
     /** Used for face culling */
-    void SetFacePlane( PlaneF const & _Plane );
+    void SetFacePlane(PlaneF const& _Plane);
 
-    PlaneF const & GetFacePlane() const;
+    PlaneF const& GetFacePlane() const;
 
     /** Helper. Return true if surface is skinned mesh */
     bool IsSkinnedMesh() const { return bSkinnedMesh; }
 
     /** Force using bounding box specified by SetBoundsOverride() */
-    void ForceOverrideBounds( bool _OverrideBounds );
+    void ForceOverrideBounds(bool _OverrideBounds);
 
     /** Set bounding box to override object bounds */
-    void SetBoundsOverride( BvAxisAlignedBox const & _Bounds );
+    void SetBoundsOverride(BvAxisAlignedBox const& _Bounds);
 
-    void ForceOutdoor( bool _OutdoorSurface );
+    void ForceOutdoor(bool _OutdoorSurface);
 
     bool IsOutdoor() const;
 
     /** Get overrided bounding box in local space */
-    BvAxisAlignedBox const & GetBoundsOverride() const { return OverrideBoundingBox; }
+    BvAxisAlignedBox const& GetBoundsOverride() const { return OverrideBoundingBox; }
 
     /** Get current local bounds */
-    BvAxisAlignedBox const & GetBounds() const;
+    BvAxisAlignedBox const& GetBounds() const;
 
     /** Get current bounds in world space */
-    BvAxisAlignedBox const & GetWorldBounds() const;
+    BvAxisAlignedBox const& GetWorldBounds() const;
 
     /** Allow raycasting */
-    virtual void SetAllowRaycast( bool _AllowRaycast ) {}
+    virtual void SetAllowRaycast(bool _AllowRaycast) {}
 
     bool IsRaycastAllowed() const { return bAllowRaycast; }
 
     /** Raycast the drawable */
-    bool Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< STriangleHitResult > & Hits ) const;
+    bool Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits) const;
 
     /** Raycast the drawable */
-    bool RaycastClosest( Float3 const & InRayStart, Float3 const & InRayEnd, STriangleHitResult & Hit ) const;
+    bool RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, STriangleHitResult& Hit) const;
 
-    SPrimitiveDef const * GetPrimitive() const { return &Primitive; }
+    SPrimitiveDef const* GetPrimitive() const { return &Primitive; }
 
     EDrawableType GetDrawableType() const { return DrawableType; }
 
     /** Called before rendering. Don't call directly. */
-    void PreRenderUpdate( SRenderFrontendDef const * _Def );
+    void PreRenderUpdate(SRenderFrontendDef const* _Def);
 
     /** Iterate shadow casters in parent world */
-    ADrawable * GetNextShadowCaster() { return NextShadowCaster; }
-    ADrawable * GetPrevShadowCaster() { return PrevShadowCaster; }
+    ADrawable* GetNextShadowCaster() { return NextShadowCaster; }
+    ADrawable* GetPrevShadowCaster() { return PrevShadowCaster; }
 
     // Used during culling stage
     uint32_t CascadeMask = 0;
@@ -153,12 +154,12 @@ protected:
     void UpdateWorldBounds();
 
     /** Override to dynamic update mesh data */
-    virtual void OnPreRenderUpdate( SRenderFrontendDef const * _Def ) {}
+    virtual void OnPreRenderUpdate(SRenderFrontendDef const* _Def) {}
 
     EDrawableType DrawableType = DRAWABLE_UNKNOWN;
 
-    ADrawable * NextShadowCaster = nullptr;
-    ADrawable * PrevShadowCaster = nullptr;
+    ADrawable* NextShadowCaster = nullptr;
+    ADrawable* PrevShadowCaster = nullptr;
 
     SPrimitiveDef Primitive;
 
@@ -166,9 +167,9 @@ protected:
 
     mutable BvAxisAlignedBox Bounds;
     mutable BvAxisAlignedBox WorldBounds;
-    BvAxisAlignedBox OverrideBoundingBox;
-    bool bOverrideBounds : 1;
-    bool bSkinnedMesh : 1;
-    bool bCastShadow : 1;
-    bool bAllowRaycast : 1;
+    BvAxisAlignedBox         OverrideBoundingBox;
+    bool                     bOverrideBounds : 1;
+    bool                     bSkinnedMesh : 1;
+    bool                     bCastShadow : 1;
+    bool                     bAllowRaycast : 1;
 };

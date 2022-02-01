@@ -31,58 +31,76 @@ SOFTWARE.
 #include "WButton.h"
 #include "FrameLoop.h"
 
-AN_CLASS_META( WButton )
+AN_CLASS_META(WButton)
 
-WButton::WButton() {
-    State = ST_RELEASED;
+WButton::WButton()
+{
+    State         = ST_RELEASED;
     bToggleButton = false;
 }
 
-WButton::~WButton() {
+WButton::~WButton()
+{
 }
 
-void WButton::OnMouseButtonEvent( SMouseButtonEvent const & _Event, double _TimeStamp ) {
-    if ( _Event.Button != 0 ) {
+void WButton::OnMouseButtonEvent(SMouseButtonEvent const& _Event, double _TimeStamp)
+{
+    if (_Event.Button != 0)
+    {
         return;
     }
 
-    if ( bToggleButton ) {
-        if ( _Event.Action == IA_PRESS ) {
-            if ( State == ST_PRESSED ) {
+    if (bToggleButton)
+    {
+        if (_Event.Action == IA_PRESS)
+        {
+            if (State == ST_PRESSED)
+            {
                 State = ST_RELEASED;
             }
-            else {
+            else
+            {
                 State = ST_PRESSED;
             }
         }
-        else if ( _Event.Action == IA_RELEASE ) {
-            if ( IsHoveredByCursor() ) {
+        else if (_Event.Action == IA_RELEASE)
+        {
+            if (IsHoveredByCursor())
+            {
                 // Keep new state and dispatch event
-                E_OnButtonClick.Dispatch( this );
+                E_OnButtonClick.Dispatch(this);
             }
-            else {
+            else
+            {
                 // Switch to previous state
-                if ( State == ST_PRESSED ) {
+                if (State == ST_PRESSED)
+                {
                     State = ST_RELEASED;
                 }
-                else {
+                else
+                {
                     State = ST_PRESSED;
                 }
             }
         }
     }
-    else {
-        if ( _Event.Action == IA_PRESS ) {
+    else
+    {
+        if (_Event.Action == IA_PRESS)
+        {
             State = ST_PRESSED;
         }
-        else if ( _Event.Action == IA_RELEASE ) {
-            if ( State == ST_PRESSED && IsHoveredByCursor() ) {
+        else if (_Event.Action == IA_RELEASE)
+        {
+            if (State == ST_PRESSED && IsHoveredByCursor())
+            {
 
                 State = ST_RELEASED;
 
-                E_OnButtonClick.Dispatch( this );
+                E_OnButtonClick.Dispatch(this);
             }
-            else {
+            else
+            {
                 State = ST_RELEASED;
             }
         }
@@ -99,234 +117,266 @@ enum
 
 int WButton::GetDrawState() const
 {
-    if ( IsDisabled() ) {
+    if (IsDisabled())
+    {
         return DRAW_DISABLED;
     }
-    else if ( IsToggleButton() ) {
-        if ( IsPressed() ) {
+    else if (IsToggleButton())
+    {
+        if (IsPressed())
+        {
             return DRAW_PRESSED;
         }
-        else if ( IsHoveredByCursor() ) {
+        else if (IsHoveredByCursor())
+        {
             return DRAW_HOVERED;
         }
-        else {
+        else
+        {
             return DRAW_SIMPLE;
         }
     }
-    else if ( IsHoveredByCursor() ) {
-        if ( IsPressed() ) {
+    else if (IsHoveredByCursor())
+    {
+        if (IsPressed())
+        {
             return DRAW_PRESSED;
-        } else {
+        }
+        else
+        {
             return DRAW_HOVERED;
         }
     }
     return DRAW_SIMPLE;
 }
 
-void WButton::OnDrawEvent( ACanvas & _Canvas ) {
+void WButton::OnDrawEvent(ACanvas& _Canvas)
+{
     Color4 bgColor;
 
-    switch ( GetDrawState() ) {
-    case DRAW_DISABLED:
-        bgColor = Color4(0.4f,0.4f,0.4f);
-        break;
-    case DRAW_SIMPLE:
-        bgColor = Color4(0.4f,0.4f,0.4f);
-        break;
-    case DRAW_HOVERED:
-        bgColor = Color4( 0.5f,0.5f,0.5f,1 );
-        break;
-    case DRAW_PRESSED:
-        bgColor = Color4( 0.6f,0.6f,0.6f,1 );
-        break;
+    switch (GetDrawState())
+    {
+        case DRAW_DISABLED:
+            bgColor = Color4(0.4f, 0.4f, 0.4f);
+            break;
+        case DRAW_SIMPLE:
+            bgColor = Color4(0.4f, 0.4f, 0.4f);
+            break;
+        case DRAW_HOVERED:
+            bgColor = Color4(0.5f, 0.5f, 0.5f, 1);
+            break;
+        case DRAW_PRESSED:
+            bgColor = Color4(0.6f, 0.6f, 0.6f, 1);
+            break;
     }
 
     Float2 mins, maxs;
 
-    GetDesktopRect( mins, maxs, true );
+    GetDesktopRect(mins, maxs, true);
 
-    _Canvas.DrawRectFilled( mins, maxs, bgColor );
+    _Canvas.DrawRectFilled(mins, maxs, bgColor);
 }
 
 
-AN_CLASS_META( WTextButton )
+AN_CLASS_META(WTextButton)
 
-WTextButton::WTextButton() {
-    Color = Color4(0.4f,0.4f,0.4f);
-    HoverColor = Color4( 0.5f,0.5f,0.5f,1 );
-    PressedColor = Color4( 0.6f,0.6f,0.6f,1 );
-    TextColor = Color4::White();
-    BorderColor = Color4(0,0,0,0.5f);
-    Rounding = 8;
+WTextButton::WTextButton()
+{
+    Color           = Color4(0.4f, 0.4f, 0.4f);
+    HoverColor      = Color4(0.5f, 0.5f, 0.5f, 1);
+    PressedColor    = Color4(0.6f, 0.6f, 0.6f, 1);
+    TextColor       = Color4::White();
+    BorderColor     = Color4(0, 0, 0, 0.5f);
+    Rounding        = 8;
     RoundingCorners = CORNER_ROUND_ALL;
     BorderThickness = 1;
-    TextAlign = WIDGET_BUTTON_TEXT_ALIGN_CENTER;
-    Font = ACanvas::GetDefaultFont();
+    TextAlign       = WIDGET_BUTTON_TEXT_ALIGN_CENTER;
+    Font            = ACanvas::GetDefaultFont();
 }
 
-WTextButton::~WTextButton() {
+WTextButton::~WTextButton()
+{
 }
 
-WTextButton & WTextButton::SetText( AStringView _Text ) {
+WTextButton& WTextButton::SetText(AStringView _Text)
+{
     Text = _Text;
     return *this;
 }
 
-WTextButton & WTextButton::SetColor( Color4 const & _Color ) {
+WTextButton& WTextButton::SetColor(Color4 const& _Color)
+{
     Color = _Color;
     return *this;
 }
 
-WTextButton & WTextButton::SetHoverColor( Color4 const & _Color ) {
+WTextButton& WTextButton::SetHoverColor(Color4 const& _Color)
+{
     HoverColor = _Color;
     return *this;
 }
 
-WTextButton & WTextButton::SetPressedColor( Color4 const & _Color ) {
+WTextButton& WTextButton::SetPressedColor(Color4 const& _Color)
+{
     PressedColor = _Color;
     return *this;
 }
 
-WTextButton & WTextButton::SetTextColor( Color4 const & _Color ) {
+WTextButton& WTextButton::SetTextColor(Color4 const& _Color)
+{
     TextColor = _Color;
     return *this;
 }
 
-WTextButton & WTextButton::SetBorderColor( Color4 const & _Color ) {
+WTextButton& WTextButton::SetBorderColor(Color4 const& _Color)
+{
     BorderColor = _Color;
     return *this;
 }
 
-WTextButton & WTextButton::SetRounding( float _Rounding ) {
+WTextButton& WTextButton::SetRounding(float _Rounding)
+{
     Rounding = _Rounding;
     return *this;
 }
 
-WTextButton & WTextButton::SetRoundingCorners( EDrawCornerFlags _RoundingCorners ) {
+WTextButton& WTextButton::SetRoundingCorners(EDrawCornerFlags _RoundingCorners)
+{
     RoundingCorners = _RoundingCorners;
     return *this;
 }
 
-WTextButton & WTextButton::SetBorderThickness( float _BorderThickness ) {
+WTextButton& WTextButton::SetBorderThickness(float _BorderThickness)
+{
     BorderThickness = _BorderThickness;
     return *this;
 }
 
-WTextButton & WTextButton::SetTextAlign( EWidgetButtonTextAlign _TextAlign ) {
+WTextButton& WTextButton::SetTextAlign(EWidgetButtonTextAlign _TextAlign)
+{
     TextAlign = _TextAlign;
     return *this;
 }
 
-WTextButton & WTextButton::SetFont( AFont * _Font ) {
+WTextButton& WTextButton::SetFont(AFont* _Font)
+{
     Font = _Font ? _Font : ACanvas::GetDefaultFont();
     return *this;
 }
 
-void WTextButton::OnDrawEvent( ACanvas & _Canvas ) {
+void WTextButton::OnDrawEvent(ACanvas& _Canvas)
+{
     Color4 bgColor;
 
-    switch ( GetDrawState() ) {
-    case DRAW_DISABLED:
-        bgColor = Color;
-        break;
-    case DRAW_SIMPLE:
-        bgColor = Color;
-        break;
-    case DRAW_HOVERED:
-        bgColor = HoverColor;
-        break;
-    case DRAW_PRESSED:
-        bgColor = PressedColor;
-        break;
+    switch (GetDrawState())
+    {
+        case DRAW_DISABLED:
+            bgColor = Color;
+            break;
+        case DRAW_SIMPLE:
+            bgColor = Color;
+            break;
+        case DRAW_HOVERED:
+            bgColor = HoverColor;
+            break;
+        case DRAW_PRESSED:
+            bgColor = PressedColor;
+            break;
     }
 
     Float2 mins, maxs;
 
-    GetDesktopRect( mins, maxs, true );
+    GetDesktopRect(mins, maxs, true);
 
-    float width = GetAvailableWidth();
+    float width  = GetAvailableWidth();
     float height = GetAvailableHeight();
 
-    _Canvas.DrawRectFilled( mins, maxs, bgColor, Rounding, RoundingCorners );
-    if ( BorderThickness > 0.0f ) {
-        _Canvas.DrawRect( mins, maxs, BorderColor, Rounding, RoundingCorners, BorderThickness );
+    _Canvas.DrawRectFilled(mins, maxs, bgColor, Rounding, RoundingCorners);
+    if (BorderThickness > 0.0f)
+    {
+        _Canvas.DrawRect(mins, maxs, BorderColor, Rounding, RoundingCorners, BorderThickness);
     }
 
-    Float2 size = Font->CalcTextSizeA( Font->GetFontSize(), width, 0, Text.Begin(), Text.End() );
+    Float2 size = Font->CalcTextSizeA(Font->GetFontSize(), width, 0, Text.Begin(), Text.End());
 
     Float2 pos = mins;
     pos.Y += (height - size.Y) * 0.5f;
 
-    switch ( TextAlign )
+    switch (TextAlign)
     {
-        case WIDGET_BUTTON_TEXT_ALIGN_CENTER:
-        {
-            pos.X += ( width - size.X ) * 0.5f;
+        case WIDGET_BUTTON_TEXT_ALIGN_CENTER: {
+            pos.X += (width - size.X) * 0.5f;
             break;
         }
-        case WIDGET_BUTTON_TEXT_ALIGN_LEFT:
-        {
+        case WIDGET_BUTTON_TEXT_ALIGN_LEFT: {
             break;
         }
-        case WIDGET_BUTTON_TEXT_ALIGN_RIGHT:
-        {
+        case WIDGET_BUTTON_TEXT_ALIGN_RIGHT: {
             pos.X += width - size.X;
             break;
         }
     }
 
-    _Canvas.PushFont( Font );
-    _Canvas.DrawTextUTF8( pos, TextColor, Text.Begin(), Text.End() );
+    _Canvas.PushFont(Font);
+    _Canvas.DrawTextUTF8(pos, TextColor, Text.Begin(), Text.End());
     _Canvas.PopFont();
 }
 
 
-AN_CLASS_META( WImageButton )
+AN_CLASS_META(WImageButton)
 
-WImageButton::WImageButton() {
+WImageButton::WImageButton()
+{
 }
 
-WImageButton::~WImageButton() {
+WImageButton::~WImageButton()
+{
 }
 
-WImageButton & WImageButton::SetImage( ATexture * _Image ) {
+WImageButton& WImageButton::SetImage(ATexture* _Image)
+{
     Image = _Image;
     return *this;
 }
 
-WImageButton & WImageButton::SetHoverImage( ATexture * _Image ) {
+WImageButton& WImageButton::SetHoverImage(ATexture* _Image)
+{
     HoverImage = _Image;
     return *this;
 }
 
-WImageButton & WImageButton::SetPressedImage( ATexture * _Image ) {
+WImageButton& WImageButton::SetPressedImage(ATexture* _Image)
+{
     PressedImage = _Image;
     return *this;
 }
 
-void WImageButton::OnDrawEvent( ACanvas & _Canvas ) {
-    ATexture * bgImage = nullptr;
+void WImageButton::OnDrawEvent(ACanvas& _Canvas)
+{
+    ATexture* bgImage = nullptr;
 
-    switch ( GetDrawState() ) {
-    case DRAW_DISABLED:
-        bgImage = Image;
-        break;
-    case DRAW_SIMPLE:
-        bgImage = Image;
-        break;
-    case DRAW_HOVERED:
-        bgImage = HoverImage;
-        break;
-    case DRAW_PRESSED:
-        bgImage = PressedImage;
-        break;
+    switch (GetDrawState())
+    {
+        case DRAW_DISABLED:
+            bgImage = Image;
+            break;
+        case DRAW_SIMPLE:
+            bgImage = Image;
+            break;
+        case DRAW_HOVERED:
+            bgImage = HoverImage;
+            break;
+        case DRAW_PRESSED:
+            bgImage = PressedImage;
+            break;
     }
 
-    if ( bgImage ) {
+    if (bgImage)
+    {
         Float2 mins, maxs;
 
-        GetDesktopRect( mins, maxs, true );
+        GetDesktopRect(mins, maxs, true);
 
-        _Canvas.DrawTexture( bgImage, mins.X, mins.Y, maxs.X-mins.X, maxs.Y-mins.Y );
+        _Canvas.DrawTexture(bgImage, mins.X, mins.Y, maxs.X - mins.X, maxs.Y - mins.Y);
     }
 }

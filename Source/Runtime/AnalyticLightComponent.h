@@ -33,61 +33,62 @@ SOFTWARE.
 #include "PunctualLightComponent.h"
 #include "PhotometricProfile.h"
 
-class AAnalyticLightComponent : public APunctualLightComponent {
-    AN_COMPONENT( AAnalyticLightComponent, APunctualLightComponent )
+class AAnalyticLightComponent : public APunctualLightComponent
+{
+    AN_COMPONENT(AAnalyticLightComponent, APunctualLightComponent)
 
 public:
     /** Allow mesh to cast shadows on the world */
-    void SetCastShadow( bool _CastShadow ) { bCastShadow = _CastShadow; }
+    void SetCastShadow(bool _CastShadow) { bCastShadow = _CastShadow; }
 
     /** Is cast shadows enabled */
     bool IsCastShadow() const { return bCastShadow; }
 
     /** Set photometric profile for the light source */
-    void SetPhotometricProfile( APhotometricProfile * Profile );
-    APhotometricProfile * GetPhotometricProfile() const { return PhotometricProfile; }
+    void                 SetPhotometricProfile(APhotometricProfile* Profile);
+    APhotometricProfile* GetPhotometricProfile() const { return PhotometricProfile; }
 
     /** If true, photometric profile will be used as mask to modify luminous intensity of the light source.
     If false, luminous intensity will be taken from photometric profile */
-    void SetPhotometricAsMask( bool bPhotometricAsMask );
+    void SetPhotometricAsMask(bool bPhotometricAsMask);
     bool IsPhotometricAsMask() const { return bPhotometricAsMask; }
 
     /** Luminous intensity scale for photometric profile */
-    void SetLuminousIntensityScale( float IntensityScale );
+    void  SetLuminousIntensityScale(float IntensityScale);
     float GetLuminousIntensityScale() const { return LuminousIntensityScale; }
 
-    void SetLumens( float Lumens );
+    void  SetLumens(float Lumens);
     float GetLumens() const;
 
     /** Set temperature of the light in Kelvin */
-    void SetTemperature( float _Temperature );
+    void  SetTemperature(float _Temperature);
     float GetTemperature() const;
 
-    void SetColor( Float3 const & _Color );
-    void SetColor( float _R, float _G, float _B );
-    Float3 const & GetColor() const;
+    void          SetColor(Float3 const& _Color);
+    void          SetColor(float _R, float _G, float _B);
+    Float3 const& GetColor() const;
 
-    Float3 const & GetEffectiveColor( float CosHalfConeAngle ) const;
+    Float3 const& GetEffectiveColor(float CosHalfConeAngle) const;
 
-    void SetDirection( Float3 const & _Direction );
+    void   SetDirection(Float3 const& _Direction);
     Float3 GetDirection() const;
 
-    void SetWorldDirection( Float3 const & _Direction );
+    void   SetWorldDirection(Float3 const& _Direction);
     Float3 GetWorldDirection() const;
 
     /** Internal */
-    virtual void PackLight( Float4x4 const & InViewMatrix, struct SLightParameters & Light );
+    virtual void PackLight(Float4x4 const& InViewMatrix, struct SLightParameters& Light);
 
 protected:
     AAnalyticLightComponent();
 
 private:
-    TRef< APhotometricProfile > PhotometricProfile;
-    float Lumens;
-    float LuminousIntensityScale = 1.0f;
-    float Temperature;
-    Float3 Color;
-    mutable Float3 EffectiveColor; // Composed from Temperature, Lumens, Color
-    bool bPhotometricAsMask = false;
-    bool bCastShadow = false;
+    TRef<APhotometricProfile> PhotometricProfile;
+    float                     Lumens;
+    float                     LuminousIntensityScale = 1.0f;
+    float                     Temperature;
+    Float3                    Color;
+    mutable Float3            EffectiveColor; // Composed from Temperature, Lumens, Color
+    bool                      bPhotometricAsMask = false;
+    bool                      bCastShadow        = false;
 };

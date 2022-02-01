@@ -39,27 +39,30 @@ enum EWidgetButtonTextAlign
     WIDGET_BUTTON_TEXT_ALIGN_RIGHT
 };
 
-class WButton : public WWidget {
-    AN_CLASS( WButton, WWidget )
+class WButton : public WWidget
+{
+    AN_CLASS(WButton, WWidget)
 
 public:
-    TWidgetEvent< WButton * > E_OnButtonClick;
+    TWidgetEvent<WButton*> E_OnButtonClick;
 
-    template< typename T, typename... TArgs >
-    WButton & SetOnClick( T * _Object, void ( T::*_Method )(TArgs...) ) {
-        E_OnButtonClick.Add( _Object, _Method );
+    template <typename T, typename... TArgs>
+    WButton& SetOnClick(T* _Object, void (T::*_Method)(TArgs...))
+    {
+        E_OnButtonClick.Add(_Object, _Method);
         return *this;
     }
 
-    WButton & SetToggleButton( bool _bToggleButton )
+    WButton& SetToggleButton(bool _bToggleButton)
     {
         bToggleButton = _bToggleButton;
         return *this;
     }
 
-    WButton & SetPressed( bool bPressed )
+    WButton& SetPressed(bool bPressed)
     {
-        if ( bToggleButton ) {
+        if (bToggleButton)
+        {
             State = bPressed ? ST_PRESSED : ST_RELEASED;
         }
         return *this;
@@ -74,73 +77,76 @@ protected:
     WButton();
     ~WButton();
 
-    void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseButtonEvent(struct SMouseButtonEvent const& _Event, double _TimeStamp) override;
 
-    void OnDrawEvent( ACanvas & _Canvas ) override;
+    void OnDrawEvent(ACanvas& _Canvas) override;
 
     int GetDrawState() const;
 
 private:
-    enum {
+    enum
+    {
         ST_RELEASED = 0,
-        ST_PRESSED = 1
+        ST_PRESSED  = 1
     };
 
-    int State;
+    int  State;
     bool bToggleButton;
 };
 
-class WTextButton : public WButton {
-    AN_CLASS( WTextButton, WButton )
+class WTextButton : public WButton
+{
+    AN_CLASS(WTextButton, WButton)
 
 public:
-    WTextButton & SetText( AStringView _Text );
-    WTextButton & SetColor( Color4 const & _Color );
-    WTextButton & SetHoverColor( Color4 const & _Color );
-    WTextButton & SetPressedColor( Color4 const & _Color );
-    WTextButton & SetTextColor( Color4 const & _Color );
-    WTextButton & SetBorderColor( Color4 const & _Color );
-    WTextButton & SetRounding( float _Rounding );
-    WTextButton & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
-    WTextButton & SetBorderThickness( float _Thickness );
-    WTextButton & SetTextAlign( EWidgetButtonTextAlign _TextAlign );
-    WTextButton & SetFont( AFont * _Font );
+    WTextButton& SetText(AStringView _Text);
+    WTextButton& SetColor(Color4 const& _Color);
+    WTextButton& SetHoverColor(Color4 const& _Color);
+    WTextButton& SetPressedColor(Color4 const& _Color);
+    WTextButton& SetTextColor(Color4 const& _Color);
+    WTextButton& SetBorderColor(Color4 const& _Color);
+    WTextButton& SetRounding(float _Rounding);
+    WTextButton& SetRoundingCorners(EDrawCornerFlags _RoundingCorners);
+    WTextButton& SetBorderThickness(float _Thickness);
+    WTextButton& SetTextAlign(EWidgetButtonTextAlign _TextAlign);
+    WTextButton& SetFont(AFont* _Font);
 
-    AString const & GetText() const { return Text; }
+    AString const& GetText() const { return Text; }
 
     WTextButton();
     ~WTextButton();
 
 protected:
-    void OnDrawEvent( ACanvas & _Canvas ) override;
+    void OnDrawEvent(ACanvas& _Canvas) override;
 
 private:
-    Color4 Color;
-    Color4 HoverColor;
-    Color4 PressedColor;
-    Color4 TextColor;
-    Color4 BorderColor;
-    EDrawCornerFlags RoundingCorners;
+    Color4                 Color;
+    Color4                 HoverColor;
+    Color4                 PressedColor;
+    Color4                 TextColor;
+    Color4                 BorderColor;
+    EDrawCornerFlags       RoundingCorners;
     EWidgetButtonTextAlign TextAlign;
-    AString Text;
-    float Rounding;
-    float BorderThickness;
-    TRef< AFont > Font;
+    AString                Text;
+    float                  Rounding;
+    float                  BorderThickness;
+    TRef<AFont>            Font;
 };
 
-class WImageButton : public WButton {
-    AN_CLASS( WImageButton, WButton )
+class WImageButton : public WButton
+{
+    AN_CLASS(WImageButton, WButton)
 
 public:
-    WImageButton & SetImage( ATexture * _Image );
-    WImageButton & SetHoverImage( ATexture * _Image );
-    WImageButton & SetPressedImage( ATexture * _Image );
+    WImageButton& SetImage(ATexture* _Image);
+    WImageButton& SetHoverImage(ATexture* _Image);
+    WImageButton& SetPressedImage(ATexture* _Image);
 
 protected:
     WImageButton();
     ~WImageButton();
 
-    void OnDrawEvent( ACanvas & _Canvas ) override;
+    void OnDrawEvent(ACanvas& _Canvas) override;
 
 private:
     TRef<ATexture> Image;

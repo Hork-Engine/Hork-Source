@@ -78,7 +78,7 @@ AEngine* GEngine;
 AEngine::AEngine() :
     Rand(Core::RandomSeed())
 {
-    GEngine = this;
+    GEngine     = this;
     RetinaScale = Float2(1.0f);
 }
 
@@ -165,7 +165,7 @@ void AEngine::LoadConfigFile()
             {
                 AN_ASSERT(_Proc.GetArgsCount() > 0);
 
-                const char*       name = _Proc.GetArg(0);
+                const char*  name = _Proc.GetArg(0);
                 AConsoleVar* var;
                 if (nullptr != (var = AConsoleVar::FindVariable(name)))
                 {
@@ -315,7 +315,7 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
     // Init Imgui allocators
     ImGui::SetAllocatorFunctions( ImguiModuleAlloc, ImguiModuleFree, NULL );
 #endif
-    ResourceManager  = MakeUnique<AResourceManager>();
+    ResourceManager = MakeUnique<AResourceManager>();
 
     Renderer = CreateInstanceOf<ARenderFrontend>();
 
@@ -973,4 +973,3 @@ BOOL WINAPI DllMain(
     return TRUE;
 }
 #endif
-

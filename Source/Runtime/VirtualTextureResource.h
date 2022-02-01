@@ -38,20 +38,20 @@ SOFTWARE.
 AVirtualTextureResource
 
 */
-class AVirtualTextureResource : public AResource {
-    AN_CLASS( AVirtualTextureResource, AResource )
+class AVirtualTextureResource : public AResource
+{
+    AN_CLASS(AVirtualTextureResource, AResource)
 
 public:
-
 protected:
     AVirtualTextureResource();
     ~AVirtualTextureResource();
 
     /** Load resource from file */
-    bool LoadResource( IBinaryStream & _Stream ) override;
+    bool LoadResource(IBinaryStream& _Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource( const char * _Path ) override;
+    void LoadInternalResource(const char* _Path) override;
 
-    const char * GetDefaultResourcePath() const override { return "/Default/Textures/DefaultVT"; }
+    const char* GetDefaultResourcePath() const override { return "/Default/Textures/DefaultVT"; }
 };

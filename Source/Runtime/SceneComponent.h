@@ -36,7 +36,7 @@ SOFTWARE.
 
 class ASceneComponent;
 
-using AArrayOfChildComponents = TPodVector< ASceneComponent *, 8 >;
+using AArrayOfChildComponents = TPodVector<ASceneComponent*, 8>;
 
 class ASocketDef;
 class ASkinnedComponent;
@@ -44,9 +44,9 @@ class ASkinnedComponent;
 struct SSocket
 {
     /** Socket resource object */
-    ASocketDef * SocketDef;
+    ASocketDef* SocketDef;
     /** Skinned mesh if socket is attached to joint */
-    ASkinnedComponent * SkinnedMesh;
+    ASkinnedComponent* SkinnedMesh;
     /** Evaluate socket transform */
     Float3x4 EvaluateTransform() const;
 };
@@ -58,39 +58,40 @@ ASceneComponent
 Base class for all actor components that have its position, rotation and scale
 
 */
-class ASceneComponent : public AActorComponent {
-    AN_COMPONENT( ASceneComponent, AActorComponent )
+class ASceneComponent : public AActorComponent
+{
+    AN_COMPONENT(ASceneComponent, AActorComponent)
 
 public:
     /** Attach to parent component */
-    void AttachTo( ASceneComponent * _Parent, const char * _Socket = nullptr, bool _KeepWorldTransform = false );
+    void AttachTo(ASceneComponent* _Parent, const char* _Socket = nullptr, bool _KeepWorldTransform = false);
 
     /** Detach from parent component */
-    void Detach( bool _KeepWorldTransform = false );
+    void Detach(bool _KeepWorldTransform = false);
 
     /** Detach all childs */
-    void DetachChilds( bool _bRecursive = false, bool _KeepWorldTransform = false );
+    void DetachChilds(bool _bRecursive = false, bool _KeepWorldTransform = false);
 
     /** Is component parent of specified child */
-    bool IsChild( ASceneComponent * _Child, bool _Recursive ) const;
+    bool IsChild(ASceneComponent* _Child, bool _Recursive) const;
 
     /** Is component root */
     bool IsRoot() const;
 
     /** Find child by name */
-    ASceneComponent * FindChild( const char * _UniqueName, bool _Recursive );
+    ASceneComponent* FindChild(const char* _UniqueName, bool _Recursive);
 
     /** Get reference to array of child components */
-    AArrayOfChildComponents const & GetChilds() const { return Childs; }
+    AArrayOfChildComponents const& GetChilds() const { return Childs; }
 
     /** Get parent component */
-    ASceneComponent * GetParent() const { return AttachParent; }
+    ASceneComponent* GetParent() const { return AttachParent; }
 
     /** Get socket index by name */
-    int FindSocket( const char * _Name ) const;
+    int FindSocket(const char* _Name) const;
 
     /** Get socket transform matrix */
-    Float3x4 GetSocketTransform( int _SocketIndex ) const;
+    Float3x4 GetSocketTransform(int _SocketIndex) const;
 
     /** Get attached socket */
     int GetAttachedSocket() const { return SocketIndex; }
@@ -99,87 +100,87 @@ public:
     bool IsAttachedToSocket() const { return SocketIndex >= 0; }
 
     /** Set ignore parent position */
-    void SetAbsolutePosition( bool _AbsolutePosition );
+    void SetAbsolutePosition(bool _AbsolutePosition);
 
     bool IsAbsolutePosition() const { return bAbsolutePosition; }
 
     /** Set ignore parent rotation */
-    void SetAbsoluteRotation( bool _AbsoluteRotation );
+    void SetAbsoluteRotation(bool _AbsoluteRotation);
 
     bool IsAbsoluteRotation() const { return bAbsoluteRotation; }
 
     /** Set ignore parent scale */
-    void SetAbsoluteScale( bool _AbsoluteScale );
+    void SetAbsoluteScale(bool _AbsoluteScale);
 
     bool IsAbsoluteScale() const { return bAbsoluteScale; }
 
     /** Set local position */
-    void SetPosition( Float3 const & _Position );
+    void SetPosition(Float3 const& _Position);
 
     /** Set local position */
-    void SetPosition( float _X, float _Y, float _Z );
+    void SetPosition(float _X, float _Y, float _Z);
 
     /** Set local rotation */
-    void SetRotation( Quat const & _Rotation );
+    void SetRotation(Quat const& _Rotation);
 
     /** Set local rotation */
-    void SetAngles( Angl const & _Angles );
+    void SetAngles(Angl const& _Angles);
 
     /** Set local rotation */
-    void SetAngles( float _Pitch, float _Yaw, float _Roll );
+    void SetAngles(float _Pitch, float _Yaw, float _Roll);
 
     /** Set scale */
-    void SetScale( Float3 const & _Scale );
+    void SetScale(Float3 const& _Scale);
 
     /** Set scale */
-    void SetScale( float _X, float _Y, float _Z );
+    void SetScale(float _X, float _Y, float _Z);
 
     /** Set scale */
-    void SetScale( float _ScaleXYZ );
+    void SetScale(float _ScaleXYZ);
 
     /** Set local transform */
-    void SetTransform( Float3 const & _Position, Quat const & _Rotation );
+    void SetTransform(Float3 const& _Position, Quat const& _Rotation);
 
     /** Set local transform */
-    void SetTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale );
+    void SetTransform(Float3 const& _Position, Quat const& _Rotation, Float3 const& _Scale);
 
     /** Set local transform */
-    void SetTransform( STransform const & _Transform );
+    void SetTransform(STransform const& _Transform);
 
     /** Set local transform */
-    void SetTransform( ASceneComponent const * _Transform );
+    void SetTransform(ASceneComponent const* _Transform);
 
     /** Set world position */
-    void SetWorldPosition( Float3 const & _Position );
+    void SetWorldPosition(Float3 const& _Position);
 
     /** Set world position */
-    void SetWorldPosition( float _X, float _Y, float _Z );
+    void SetWorldPosition(float _X, float _Y, float _Z);
 
     /** Set world rotation */
-    void SetWorldRotation( Quat const & _Rotation );
+    void SetWorldRotation(Quat const& _Rotation);
 
     /** Set world scale */
-    void SetWorldScale( Float3 const & _Scale );
+    void SetWorldScale(Float3 const& _Scale);
 
     /** Set world scale */
-    void SetWorldScale( float _X, float _Y, float _Z );
+    void SetWorldScale(float _X, float _Y, float _Z);
 
     /** Set world transform */
-    void SetWorldTransform( Float3 const & _Position, Quat const & _Rotation );
+    void SetWorldTransform(Float3 const& _Position, Quat const& _Rotation);
 
     /** Set world transform */
-    void SetWorldTransform( Float3 const & _Position, Quat const & _Rotation, Float3 const & _Scale );
+    void SetWorldTransform(Float3 const& _Position, Quat const& _Rotation, Float3 const& _Scale);
 
     /** Set world transform */
-    void SetWorldTransform( STransform const & _Transform );
+    void SetWorldTransform(STransform const& _Transform);
 
     /** Get local position */
-    Float3 const & GetPosition() const;
+    Float3 const& GetPosition() const;
 
     /** Get local rotation */
-    Quat const & GetRotation() const;
+    Quat const& GetRotation() const;
 
-    Angl GetAngles() const;
+    Angl  GetAngles() const;
     float GetPitch() const;
     float GetYaw() const;
     float GetRoll() const;
@@ -190,7 +191,7 @@ public:
     Float3 GetDownVector() const;
     Float3 GetBackVector() const;
     Float3 GetForwardVector() const;
-    void GetVectors( Float3 * _Right, Float3 * _Up, Float3 * _Back ) const;
+    void   GetVectors(Float3* _Right, Float3* _Up, Float3* _Back) const;
 
     Float3 GetWorldRightVector() const;
     Float3 GetWorldLeftVector() const;
@@ -198,16 +199,16 @@ public:
     Float3 GetWorldDownVector() const;
     Float3 GetWorldBackVector() const;
     Float3 GetWorldForwardVector() const;
-    void GetWorldVectors( Float3 * _Right, Float3 * _Up, Float3 * _Back ) const;
+    void   GetWorldVectors(Float3* _Right, Float3* _Up, Float3* _Back) const;
 
     /** Get scale */
-    Float3 const & GetScale() const;
+    Float3 const& GetScale() const;
 
     /** Get world position */
     Float3 GetWorldPosition() const;
 
     /** Get world rotation */
-    Quat const & GetWorldRotation() const;
+    Quat const& GetWorldRotation() const;
 
     /** Get world scale */
     Float3 GetWorldScale() const;
@@ -216,58 +217,58 @@ public:
     void MarkTransformDirty();
 
     /** Compute component local transform matrix */
-    void ComputeLocalTransformMatrix( Float3x4 & _LocalTransformMatrix ) const;
+    void ComputeLocalTransformMatrix(Float3x4& _LocalTransformMatrix) const;
 
     /** Get transposed world transform matrix */
-    Float3x4 const & GetWorldTransformMatrix() const;
+    Float3x4 const& GetWorldTransformMatrix() const;
 
     Float3x4 ComputeWorldTransformInverse() const;
-    Quat ComputeWorldRotationInverse() const;
+    Quat     ComputeWorldRotationInverse() const;
 
     /** First person shooter rotations */
-    void TurnRightFPS( float _DeltaAngleRad );
-    void TurnLeftFPS( float _DeltaAngleRad );
-    void TurnUpFPS( float _DeltaAngleRad );
-    void TurnDownFPS( float _DeltaAngleRad );
+    void TurnRightFPS(float _DeltaAngleRad);
+    void TurnLeftFPS(float _DeltaAngleRad);
+    void TurnUpFPS(float _DeltaAngleRad);
+    void TurnDownFPS(float _DeltaAngleRad);
 
     /** Rotations */
-    void TurnAroundAxis( float _DeltaAngleRad, Float3 const & _NormalizedAxis );
-    void TurnAroundVector( float _DeltaAngleRad, Float3 const & _Vector );
+    void TurnAroundAxis(float _DeltaAngleRad, Float3 const& _NormalizedAxis);
+    void TurnAroundVector(float _DeltaAngleRad, Float3 const& _Vector);
 
     /** Move */
-    void StepRight( float _Units );
-    void StepLeft( float _Units );
-    void StepUp( float _Units );
-    void StepDown( float _Units );
-    void StepBack( float _Units );
-    void StepForward( float _Units );
-    void Step( Float3 const & _Vector );
+    void StepRight(float _Units);
+    void StepLeft(float _Units);
+    void StepUp(float _Units);
+    void StepDown(float _Units);
+    void StepBack(float _Units);
+    void StepForward(float _Units);
+    void Step(Float3 const& _Vector);
 
 protected:
     ASceneComponent();
 
     void DeinitializeComponent() override;
 
-    void DrawDebug( ADebugRenderer * InRenderer ) override;
+    void DrawDebug(ADebugRenderer* InRenderer) override;
 
     virtual void OnTransformDirty() {}
 
-    using AArrayOfSockets = TPodVector< SSocket, 1 >;
+    using AArrayOfSockets = TPodVector<SSocket, 1>;
     AArrayOfSockets Sockets;
 
 private:
-    void _AttachTo( ASceneComponent * _Parent, bool _KeepWorldTransform );
+    void _AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransform);
 
     void ComputeWorldTransform() const;
 
-    Float3                  Position{ 0, 0, 0 };
-    Quat                    Rotation{ 1, 0, 0, 0 };
-    Float3                  Scale{ 1, 1, 1 };
+    Float3                  Position{0, 0, 0};
+    Quat                    Rotation{1, 0, 0, 0};
+    Float3                  Scale{1, 1, 1};
     mutable Float3x4        WorldTransformMatrix; // Transposed world transform matrix
-    mutable Quat            WorldRotation{ 1, 0, 0, 0 };
+    mutable Quat            WorldRotation{1, 0, 0, 0};
     mutable bool            bTransformDirty{true};
     AArrayOfChildComponents Childs;
-    ASceneComponent *       AttachParent{nullptr};
+    ASceneComponent*        AttachParent{nullptr};
     int                     SocketIndex{0};
     bool                    bAbsolutePosition : 1;
     bool                    bAbsoluteRotation : 1;

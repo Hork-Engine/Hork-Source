@@ -32,99 +32,107 @@ SOFTWARE.
 #include "WScroll.h"
 #include <Platform/Logger.h>
 
-AN_CLASS_META( WMenuPopup )
+AN_CLASS_META(WMenuPopup)
 
-WMenuPopup::WMenuPopup() {
-    Self = CreateInstanceOf< WWidget >();
-    Self->SetStyle( WIDGET_STYLE_POPUP );
-    Self->SetLayout( WIDGET_LAYOUT_EXPLICIT );
-    Self->SetAutoWidth( true );
-    Self->SetAutoHeight( true );
+WMenuPopup::WMenuPopup()
+{
+    Self = CreateInstanceOf<WWidget>();
+    Self->SetStyle(WIDGET_STYLE_POPUP);
+    Self->SetLayout(WIDGET_LAYOUT_EXPLICIT);
+    Self->SetAutoWidth(true);
+    Self->SetAutoHeight(true);
     //Self->SetMargin( 10,10,10,10 );
 
 #if 1
-    WWidget & scroll = WNew( WScroll )
-        .SetContentWidget
-        (
-            WNewAssign( ContentWidget, WWidget )
-            .SetAutoWidth( true )
-            .SetAutoHeight( true )
-            .SetLayout( WIDGET_LAYOUT_VERTICAL )
-        )
-        .SetScrollbarSize( 12 )
-        .SetButtonWidth( 12 )
-        .SetShowButtons( false )
-        .SetSliderRounding( 4 )
-        .SetBackgroundColor( Color4( 0, 0, 0, 0 ) )
-        .SetButtonColor( Color4( 0.03f, 0.03f, 0.03f, 1.0f ) )
-        .SetSliderBackgroundColor( Color4( 0 ) )
-        //.SetSliderColor( SliderColor )
-        .SetSliderColor( Color4( 0.03f, 0.03f, 0.03f, 1.0f ) )
-        .SetAutoScrollH( true )
-        .SetAutoScrollV( true )
-        //.SetAutoWidth( true )
-        //.SetAutoHeight( true )
-        .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
-        .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
-        ;
+    WWidget& scroll = WNew(WScroll)
+                          .SetContentWidget(
+                              WNewAssign(ContentWidget, WWidget)
+                                  .SetAutoWidth(true)
+                                  .SetAutoHeight(true)
+                                  .SetLayout(WIDGET_LAYOUT_VERTICAL))
+                          .SetScrollbarSize(12)
+                          .SetButtonWidth(12)
+                          .SetShowButtons(false)
+                          .SetSliderRounding(4)
+                          .SetBackgroundColor(Color4(0, 0, 0, 0))
+                          .SetButtonColor(Color4(0.03f, 0.03f, 0.03f, 1.0f))
+                          .SetSliderBackgroundColor(Color4(0))
+                          //.SetSliderColor( SliderColor )
+                          .SetSliderColor(Color4(0.03f, 0.03f, 0.03f, 1.0f))
+                          .SetAutoScrollH(true)
+                          .SetAutoScrollV(true)
+                          //.SetAutoWidth( true )
+                          //.SetAutoHeight( true )
+                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
+                          .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH);
 
-    Self->AddWidget( &scroll );
+    Self->AddWidget(&scroll);
 #endif
 
     //Self->AddDecorate( &(*CreateInstanceOf< WBorderDecorate >() )
     //                   .SetFillBackground( true ) );
 }
 
-WMenuPopup::~WMenuPopup() {
-//    for ( WWidget * w : Widgets ) {
-//        w->RemoveRef();
-//    }
+WMenuPopup::~WMenuPopup()
+{
+    //    for ( WWidget * w : Widgets ) {
+    //        w->RemoveRef();
+    //    }
 }
 
-void WMenuPopup::SelectFirstItem() {
-    GLogger.Printf( "SelectFirstItem\n" );
+void WMenuPopup::SelectFirstItem()
+{
+    GLogger.Printf("SelectFirstItem\n");
 
     // TODO: ...
 }
 
-void WMenuPopup::SelectLastItem() {
-    GLogger.Printf( "SelectLastItem\n" );
+void WMenuPopup::SelectLastItem()
+{
+    GLogger.Printf("SelectLastItem\n");
 
     // TODO: ...
 }
 
-void WMenuPopup::SelectNextItem() {
-    GLogger.Printf( "SelectNextItem\n" );
+void WMenuPopup::SelectNextItem()
+{
+    GLogger.Printf("SelectNextItem\n");
 
     // TODO: ...
 }
 
-void WMenuPopup::SelectPrevItem() {
-    GLogger.Printf( "SelectPrevItem\n" );
+void WMenuPopup::SelectPrevItem()
+{
+    GLogger.Printf("SelectPrevItem\n");
 
     // TODO: ...
 }
 
-void WMenuPopup::SelectNextSubMenu() {
-    GLogger.Printf( "SelectNextSubMenu\n" );
+void WMenuPopup::SelectNextSubMenu()
+{
+    GLogger.Printf("SelectNextSubMenu\n");
 
     // TODO: ...
 }
 
-void WMenuPopup::SelectPrevSubMenu() {
-    GLogger.Printf( "SelectPrevSubMenu\n" );
+void WMenuPopup::SelectPrevSubMenu()
+{
+    GLogger.Printf("SelectPrevSubMenu\n");
 
     // TODO: ...
 }
 
-void WMenuPopup::SetMargin( float _Left, float _Top, float _Right, float _Bottom ) {
-    Self->SetMargin( _Left, _Top, _Right, _Bottom );
+void WMenuPopup::SetMargin(float _Left, float _Top, float _Right, float _Bottom)
+{
+    Self->SetMargin(_Left, _Top, _Right, _Bottom);
 }
 
-void WMenuPopup::SetMargin( Float4 const & Margin ) {
-    Self->SetMargin( Margin );
+void WMenuPopup::SetMargin(Float4 const& Margin)
+{
+    Self->SetMargin(Margin);
 }
 
-void WMenuPopup::SetVerticalPadding( float _Padding ) {
-    Self->SetVerticalPadding( _Padding );
+void WMenuPopup::SetVerticalPadding(float _Padding)
+{
+    Self->SetVerticalPadding(_Padding);
 }

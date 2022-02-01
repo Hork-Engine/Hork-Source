@@ -33,47 +33,52 @@ SOFTWARE.
 #include "Actor.h"
 #include "PhysicalBody.h"
 
-class ATriggerBox : public AActor {
-    AN_ACTOR( ATriggerBox, AActor )
+class ATriggerBox : public AActor
+{
+    AN_ACTOR(ATriggerBox, AActor)
 
 protected:
     ATriggerBox();
 
-    APhysicalBody * TriggerBody;
+    APhysicalBody* TriggerBody;
 };
 
-class ATriggerSphere : public AActor {
-    AN_ACTOR( ATriggerSphere, AActor )
+class ATriggerSphere : public AActor
+{
+    AN_ACTOR(ATriggerSphere, AActor)
 
 protected:
     ATriggerSphere();
 
-    APhysicalBody * TriggerBody;
+    APhysicalBody* TriggerBody;
 };
 
-class ATriggerCylinder : public AActor {
-    AN_ACTOR( ATriggerCylinder, AActor )
+class ATriggerCylinder : public AActor
+{
+    AN_ACTOR(ATriggerCylinder, AActor)
 
 protected:
     ATriggerCylinder();
 
-    APhysicalBody * TriggerBody;
+    APhysicalBody* TriggerBody;
 };
 
-class ATriggerCone : public AActor {
-    AN_ACTOR( ATriggerCone, AActor )
+class ATriggerCone : public AActor
+{
+    AN_ACTOR(ATriggerCone, AActor)
 
 protected:
     ATriggerCone();
 
-    APhysicalBody * TriggerBody;
+    APhysicalBody* TriggerBody;
 };
 
-class ATriggerCapsule : public AActor {
-    AN_ACTOR( ATriggerCapsule, AActor )
+class ATriggerCapsule : public AActor
+{
+    AN_ACTOR(ATriggerCapsule, AActor)
 
 protected:
     ATriggerCapsule();
 
-    APhysicalBody * TriggerBody;
+    APhysicalBody* TriggerBody;
 };

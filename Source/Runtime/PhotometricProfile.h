@@ -39,41 +39,45 @@ class ATexture;
 APhotometricProfile
 
 */
-class APhotometricProfile : public AResource {
-    AN_CLASS( APhotometricProfile, AResource )
+class APhotometricProfile : public AResource
+{
+    AN_CLASS(APhotometricProfile, AResource)
 
 public:
-    enum { PHOTOMETRIC_DATA_SIZE = 256 };
+    enum
+    {
+        PHOTOMETRIC_DATA_SIZE = 256
+    };
 
     APhotometricProfile();
     ~APhotometricProfile();
 
-    void Initialize( const byte * InData, float InIntensity );
+    void Initialize(const byte* InData, float InIntensity);
 
-    void SetIntensity( float _Intensity ) { Intensity = _Intensity; }
+    void SetIntensity(float _Intensity) { Intensity = _Intensity; }
 
     /** Get intensity scale to convert data to candelas */
     float GetIntensity() const { return Intensity; }
 
-    const byte * GetPhotometricData() const { return Data; }
+    const byte* GetPhotometricData() const { return Data; }
 
     /** Internal */
-    void WritePhotometricData( ATexture * ProfileTexture, int FrameIndex );
-    int GetPhotometricProfileIndex() const { return PhotometricProfileIndex; }
+    void WritePhotometricData(ATexture* ProfileTexture, int FrameIndex);
+    int  GetPhotometricProfileIndex() const { return PhotometricProfileIndex; }
 
 protected:
     /** Load resource from file */
-    bool LoadResource( IBinaryStream & Stream ) override;
+    bool LoadResource(IBinaryStream& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource( const char * _Path ) override;
+    void LoadInternalResource(const char* _Path) override;
 
-    const char * GetDefaultResourcePath() const override { return "/Default/PhotometricProfile/Default"; }
+    const char* GetDefaultResourcePath() const override { return "/Default/PhotometricProfile/Default"; }
 
-    int PhotometricProfileIndex = 0;
-    int FrameNum = -1;
-    float Intensity = 0.0f;
-    byte Data[PHOTOMETRIC_DATA_SIZE];
+    int   PhotometricProfileIndex = 0;
+    int   FrameNum                = -1;
+    float Intensity               = 0.0f;
+    byte  Data[PHOTOMETRIC_DATA_SIZE];
 
     static int PhotometricProfileCounter;
 };

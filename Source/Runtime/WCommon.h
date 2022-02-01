@@ -32,18 +32,20 @@ SOFTWARE.
 
 #include <Platform/BaseTypes.h>
 
-enum EWidgetStyle {
-    WIDGET_STYLE_DEFAULT    = 0,
-    WIDGET_STYLE_BACKGROUND = AN_BIT(0),      // widget is stays background
-    WIDGET_STYLE_FOREGROUND = AN_BIT(1),      // widget is stays on top
-    WIDGET_STYLE_EXCLUSIVE  = WIDGET_STYLE_FOREGROUND | AN_BIT(2), // widget is stays on top of other widgets and receives inputs
-    WIDGET_STYLE_RESIZABLE  = AN_BIT(3),      // allows user to change size/maximize window
-    WIDGET_STYLE_NO_INPUTS  = AN_BIT(4),      // forward inputs to parent
-    WIDGET_STYLE_TRANSPARENT= AN_BIT(6),      // transparent for clicking/hovering
-    WIDGET_STYLE_POPUP      = WIDGET_STYLE_FOREGROUND | AN_BIT(5)
+enum EWidgetStyle
+{
+    WIDGET_STYLE_DEFAULT     = 0,
+    WIDGET_STYLE_BACKGROUND  = AN_BIT(0),                           // widget is stays background
+    WIDGET_STYLE_FOREGROUND  = AN_BIT(1),                           // widget is stays on top
+    WIDGET_STYLE_EXCLUSIVE   = WIDGET_STYLE_FOREGROUND | AN_BIT(2), // widget is stays on top of other widgets and receives inputs
+    WIDGET_STYLE_RESIZABLE   = AN_BIT(3),                           // allows user to change size/maximize window
+    WIDGET_STYLE_NO_INPUTS   = AN_BIT(4),                           // forward inputs to parent
+    WIDGET_STYLE_TRANSPARENT = AN_BIT(6),                           // transparent for clicking/hovering
+    WIDGET_STYLE_POPUP       = WIDGET_STYLE_FOREGROUND | AN_BIT(5)
 };
 
-enum EWidgetAlignment {
+enum EWidgetAlignment
+{
     WIDGET_ALIGNMENT_NONE,
     WIDGET_ALIGNMENT_LEFT,
     WIDGET_ALIGNMENT_RIGHT,
@@ -53,7 +55,8 @@ enum EWidgetAlignment {
     WIDGET_ALIGNMENT_STRETCH
 };
 
-enum EWidgetLayout {
+enum EWidgetLayout
+{
     WIDGET_LAYOUT_EXPLICIT,
     WIDGET_LAYOUT_GRID,
     WIDGET_LAYOUT_HORIZONTAL,
@@ -64,8 +67,9 @@ enum EWidgetLayout {
     WIDGET_LAYOUT_CUSTOM
 };
 
-enum EWidgetVisibility {
-    WIDGET_VISIBILITY_VISIBLE,      // The widget will appear normally
-    WIDGET_VISIBILITY_INVISIBLE,    // The widget will be not visible, but will take up space in the layout
-    WIDGET_VISIBILITY_COLLAPSED     // The widget will be not visible and will take no space in the layout
+enum EWidgetVisibility
+{
+    WIDGET_VISIBILITY_VISIBLE,   // The widget will appear normally
+    WIDGET_VISIBILITY_INVISIBLE, // The widget will be not visible, but will take up space in the layout
+    WIDGET_VISIBILITY_COLLAPSED  // The widget will be not visible and will take no space in the layout
 };

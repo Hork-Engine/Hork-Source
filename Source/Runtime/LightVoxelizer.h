@@ -38,32 +38,36 @@ enum EItemType
     ITEM_TYPE_PROBE
 };
 
-struct Float4x4SSE {
+struct Float4x4SSE
+{
     __m128 col0;
     __m128 col1;
     __m128 col2;
     __m128 col3;
 
-    Float4x4SSE() {
-    }
-
-    Float4x4SSE( __m128 _col0, __m128 _col1, __m128 _col2, __m128 _col3 )
-        : col0( _col0 ), col1( _col1 ), col2( _col2 ), col3( _col3 )
+    Float4x4SSE()
     {
     }
 
-    Float4x4SSE( Float4x4 const & m ) {
-        col0 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[0]) );
-        col1 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[1]) );
-        col2 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[2]) );
-        col3 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[3]) );
+    Float4x4SSE(__m128 _col0, __m128 _col1, __m128 _col2, __m128 _col3) :
+        col0(_col0), col1(_col1), col2(_col2), col3(_col3)
+    {
     }
 
-    AN_FORCEINLINE void operator=( Float4x4 const & m ) {
-        col0 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[0]) );
-        col1 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[1]) );
-        col2 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[2]) );
-        col3 = _mm_loadu_ps( reinterpret_cast< const float * >(&m[3]) );
+    Float4x4SSE(Float4x4 const& m)
+    {
+        col0 = _mm_loadu_ps(reinterpret_cast<const float*>(&m[0]));
+        col1 = _mm_loadu_ps(reinterpret_cast<const float*>(&m[1]));
+        col2 = _mm_loadu_ps(reinterpret_cast<const float*>(&m[2]));
+        col3 = _mm_loadu_ps(reinterpret_cast<const float*>(&m[3]));
+    }
+
+    AN_FORCEINLINE void operator=(Float4x4 const& m)
+    {
+        col0 = _mm_loadu_ps(reinterpret_cast<const float*>(&m[0]));
+        col1 = _mm_loadu_ps(reinterpret_cast<const float*>(&m[1]));
+        col2 = _mm_loadu_ps(reinterpret_cast<const float*>(&m[2]));
+        col3 = _mm_loadu_ps(reinterpret_cast<const float*>(&m[3]));
     }
 };
 
@@ -93,40 +97,43 @@ struct SItemInfo
     uint8_t Type;
 };
 
-class ALightVoxelizer {
+class ALightVoxelizer
+{
 public:
     void Reset();
 
     bool IsSSE() const { return bUseSSE; };
 
-    SItemInfo * AllocItem() {
-        AN_ASSERT( ItemsCount < MAX_ITEMS );
+    SItemInfo* AllocItem()
+    {
+        AN_ASSERT(ItemsCount < MAX_ITEMS);
         return &ItemInfos[ItemsCount++];
     }
 
     void Voxelize(AStreamedMemoryGPU* StreamedMemory, SRenderView* RV);
 
-    void DrawVoxels( ADebugRenderer * InRenderer );
+    void DrawVoxels(ADebugRenderer* InRenderer);
 
 private:
-    static void VoxelizeWork( void * _Data );
+    static void VoxelizeWork(void* _Data);
 
-    void VoxelizeWork( int SliceIndex );
+    void VoxelizeWork(int SliceIndex);
 
     void TransformItemsSSE();
     void TransformItemsGeneric();
 
-    void GatherVoxelGeometry( TStdVectorHeap< Float3 > & LinePoints, Float4x4 const & ViewProjectionInversed );
+    void GatherVoxelGeometry(TStdVectorHeap<Float3>& LinePoints, Float4x4 const& ViewProjectionInversed);
 
     SItemInfo ItemInfos[MAX_ITEMS];
-    int ItemsCount;
+    int       ItemsCount;
 
     unsigned short Items[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X][MAX_CLUSTER_ITEMS * 3]; // TODO: optimize size!!! 4 MB
-    AAtomicInt ItemCounter;
-    Float4x4 ViewProj;
-    Float4x4 ViewProjInv;
+    AAtomicInt     ItemCounter;
+    Float4x4       ViewProj;
+    Float4x4       ViewProjInv;
 
-    struct SFrustumCluster {
+    struct SFrustumCluster
+    {
         unsigned short LightsCount;
         unsigned short DecalsCount;
         unsigned short ProbesCount;
@@ -134,10 +141,10 @@ private:
 
     alignas(16) SFrustumCluster ClusterData[MAX_FRUSTUM_CLUSTERS_Z][MAX_FRUSTUM_CLUSTERS_Y][MAX_FRUSTUM_CLUSTERS_X];
 
-    SClusterHeader * pClusterHeaderData;
-    SClusterPackedIndex * pClusterPackedIndices;
+    SClusterHeader*      pClusterHeaderData;
+    SClusterPackedIndex* pClusterPackedIndices;
 
-    TStdVectorHeap< Float3 > DebugLinePoints;
+    TStdVectorHeap<Float3> DebugLinePoints;
 
     bool bUseSSE;
 };

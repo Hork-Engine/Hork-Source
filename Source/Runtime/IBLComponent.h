@@ -32,33 +32,34 @@ SOFTWARE.
 
 #include "PunctualLightComponent.h"
 
-class AIBLComponent : public APunctualLightComponent {
-    AN_COMPONENT( AIBLComponent, APunctualLightComponent )
+class AIBLComponent : public APunctualLightComponent
+{
+    AN_COMPONENT(AIBLComponent, APunctualLightComponent)
 
 public:
-    void SetRadius( float _Radius );
+    void  SetRadius(float _Radius);
     float GetRadius() const { return Radius; }
 
-    void SetIrradianceMap( int _Index );
-    int GetIrradianceMap() const { return IrradianceMap; }
+    void SetIrradianceMap(int _Index);
+    int  GetIrradianceMap() const { return IrradianceMap; }
 
-    void SetReflectionMap( int _Index );
-    int GetReflectionMap() const { return ReflectionMap; }
+    void SetReflectionMap(int _Index);
+    int  GetReflectionMap() const { return ReflectionMap; }
 
-    BvSphere const & GetSphereWorldBounds() const { return SphereWorldBounds; }
+    BvSphere const& GetSphereWorldBounds() const { return SphereWorldBounds; }
 
-    void PackProbe( Float4x4 const & InViewMatrix, struct SProbeParameters & Probe );
+    void PackProbe(Float4x4 const& InViewMatrix, struct SProbeParameters& Probe);
 
 protected:
     AIBLComponent();
 
     void OnTransformDirty() override;
-    void DrawDebug( ADebugRenderer * InRenderer ) override;
+    void DrawDebug(ADebugRenderer* InRenderer) override;
 
 private:
     void UpdateWorldBounds();
 
-    BvSphere SphereWorldBounds;
+    BvSphere      SphereWorldBounds;
     BvOrientedBox OBBWorldBounds;
 
     float Radius;

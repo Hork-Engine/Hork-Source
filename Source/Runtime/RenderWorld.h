@@ -40,43 +40,43 @@ class ADebugRenderer;
 
 class ARenderWorld
 {
-    AN_FORBID_COPY( ARenderWorld )
+    AN_FORBID_COPY(ARenderWorld)
 
 public:
     ARenderWorld();
     virtual ~ARenderWorld() {}
 
     /** Get skinned meshes in the world */
-    ASkinnedComponent * GetSkinnedMeshes() { return SkinnedMeshList; }
+    ASkinnedComponent* GetSkinnedMeshes() { return SkinnedMeshList; }
 
     /** Get all shadow casters in the world */
-    ADrawable * GetShadowCasters() { return ShadowCasters; }
+    ADrawable* GetShadowCasters() { return ShadowCasters; }
 
     /** Get directional lights in the world */
-    ADirectionalLightComponent * GetDirectionalLights() { return DirectionalLightList; }
+    ADirectionalLightComponent* GetDirectionalLights() { return DirectionalLightList; }
 
-    void DrawDebug( ADebugRenderer * InRenderer );
+    void DrawDebug(ADebugRenderer* InRenderer);
 
 private:
     friend class ADrawable;
-    void AddShadowCaster( ADrawable * InMesh );
-    void RemoveShadowCaster( ADrawable * InMesh );
+    void AddShadowCaster(ADrawable* InMesh);
+    void RemoveShadowCaster(ADrawable* InMesh);
 
 private:
     friend class ASkinnedComponent;
-    void AddSkinnedMesh( ASkinnedComponent * InSkeleton );
-    void RemoveSkinnedMesh( ASkinnedComponent * InSkeleton );
+    void AddSkinnedMesh(ASkinnedComponent* InSkeleton);
+    void RemoveSkinnedMesh(ASkinnedComponent* InSkeleton);
 
 private:
     friend class ADirectionalLightComponent;
-    void AddDirectionalLight( ADirectionalLightComponent * InLight );
-    void RemoveDirectionalLight( ADirectionalLightComponent * InLight );
+    void AddDirectionalLight(ADirectionalLightComponent* InLight);
+    void RemoveDirectionalLight(ADirectionalLightComponent* InLight);
 
 private:
-    ASkinnedComponent * SkinnedMeshList = nullptr;
-    ASkinnedComponent * SkinnedMeshListTail = nullptr;
-    ADrawable * ShadowCasters = nullptr;
-    ADrawable * ShadowCastersTail = nullptr;
-    ADirectionalLightComponent * DirectionalLightList = nullptr;
-    ADirectionalLightComponent * DirectionalLightListTail = nullptr;
+    ASkinnedComponent*          SkinnedMeshList          = nullptr;
+    ASkinnedComponent*          SkinnedMeshListTail      = nullptr;
+    ADrawable*                  ShadowCasters            = nullptr;
+    ADrawable*                  ShadowCastersTail        = nullptr;
+    ADirectionalLightComponent* DirectionalLightList     = nullptr;
+    ADirectionalLightComponent* DirectionalLightListTail = nullptr;
 };

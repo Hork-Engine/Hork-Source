@@ -40,8 +40,9 @@ ASoftMeshComponent
 Mesh with softbody physics simulation
 
 */
-class ASoftMeshComponent : public ASkinnedComponent {
-    AN_COMPONENT( ASoftMeshComponent, ASkinnedComponent )
+class ASoftMeshComponent : public ASkinnedComponent
+{
+    AN_COMPONENT(ASoftMeshComponent, ASkinnedComponent)
 
 public:
     /** Velocities correction factor (Baumgarte) */
@@ -80,33 +81,33 @@ public:
     //Float3x4 BaseTransform;
 
     /** Attach vertex to anchor point */
-    void AttachVertex( int _VertexIndex, AAnchorComponent * _Anchor );
+    void AttachVertex(int _VertexIndex, AAnchorComponent* _Anchor);
 
     /** Detach vertex from anchor point */
-    void DetachVertex( int _VertexIndex );
+    void DetachVertex(int _VertexIndex);
 
     /** Detach all vertices */
     void DetachAllVertices();
 
     /** Get vertex attachment */
-    AAnchorComponent * GetVertexAnchor( int _VertexIndex ) const;
+    AAnchorComponent* GetVertexAnchor(int _VertexIndex) const;
 
     /** Set a wind velocity for interaction with the air */
-    void SetWindVelocity( Float3 const & _Velocity );
+    void SetWindVelocity(Float3 const& _Velocity);
 
-    Float3 const & GetWindVelocity() const;
+    Float3 const& GetWindVelocity() const;
 
     /** Add force (or gravity) to the entire soft body */
-    void AddForceSoftBody( Float3 const & _Force );
+    void AddForceSoftBody(Float3 const& _Force);
 
     /** Add force (or gravity) to a vertex of the soft body */
-    void AddForceToVertex( Float3 const & _Force, int _VertexIndex );
+    void AddForceToVertex(Float3 const& _Force, int _VertexIndex);
 
-    Float3 GetVertexPosition( int _VertexIndex ) const;
+    Float3 GetVertexPosition(int _VertexIndex) const;
 
-    Float3 GetVertexNormal( int _VertexIndex ) const;
+    Float3 GetVertexNormal(int _VertexIndex) const;
 
-    Float3 GetVertexVelocity( int _VertexIndex ) const;    
+    Float3 GetVertexVelocity(int _VertexIndex) const;
 
 protected:
     ASoftMeshComponent();
@@ -116,9 +117,9 @@ protected:
 
     void OnMeshChanged() override;
 
-    void TickComponent( float _TimeStep ) override;
+    void TickComponent(float _TimeStep) override;
 
-    void DrawDebug( ADebugRenderer * InRenderer ) override;
+    void DrawDebug(ADebugRenderer* InRenderer) override;
 
 private:
     void RecreateSoftBody();
@@ -126,16 +127,17 @@ private:
     void UpdateSoftbodyTransform();
     void UpdateSoftbodyBoundingBox();
 
-    Float3 WindVelocity = Float3( 0.0f );
-    
+    Float3 WindVelocity = Float3(0.0f);
+
     //Float3x3 PrevTransformBasis;
     //Float3 PrevTransformOrigin;
     //btRigidBody * Anchor;
 
-    struct SAnchorBinding {
-        AAnchorComponent * Anchor;
-        int VertexIndex;
+    struct SAnchorBinding
+    {
+        AAnchorComponent* Anchor;
+        int               VertexIndex;
     };
-    TPodVector< SAnchorBinding > Anchors;
-    bool bUpdateAnchors = false;
+    TPodVector<SAnchorBinding> Anchors;
+    bool                       bUpdateAnchors = false;
 };

@@ -34,11 +34,12 @@ SOFTWARE.
 
 class APlayerController;
 
-class WViewport : public WWidget {
-    AN_CLASS( WViewport, WWidget )
+class WViewport : public WWidget
+{
+    AN_CLASS(WViewport, WWidget)
 
 public:
-    WViewport & SetPlayerController( APlayerController * _PlayerController );
+    WViewport& SetPlayerController(APlayerController* _PlayerController);
 
     WViewport();
     ~WViewport();
@@ -46,26 +47,26 @@ public:
 protected:
     void OnTransformDirty() override;
 
-    void OnKeyEvent( struct SKeyEvent const & _Event, double _TimeStamp ) override;
+    void OnKeyEvent(struct SKeyEvent const& _Event, double _TimeStamp) override;
 
-    void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseButtonEvent(struct SMouseButtonEvent const& _Event, double _TimeStamp) override;
 
-    void OnMouseWheelEvent( struct SMouseWheelEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseWheelEvent(struct SMouseWheelEvent const& _Event, double _TimeStamp) override;
 
-    void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseMoveEvent(struct SMouseMoveEvent const& _Event, double _TimeStamp) override;
 
-    void OnJoystickButtonEvent( struct SJoystickButtonEvent const & _Event, double _TimeStamp ) override;
+    void OnJoystickButtonEvent(struct SJoystickButtonEvent const& _Event, double _TimeStamp) override;
 
-    void OnJoystickAxisEvent( struct SJoystickAxisEvent const & _Event, double _TimeStamp ) override;
+    void OnJoystickAxisEvent(struct SJoystickAxisEvent const& _Event, double _TimeStamp) override;
 
-    void OnCharEvent( struct SCharEvent const & _Event, double _TimeStamp ) override;
+    void OnCharEvent(struct SCharEvent const& _Event, double _TimeStamp) override;
 
     void OnFocusLost() override;
 
     void OnFocusReceive() override;
 
-    void OnDrawEvent( ACanvas & _Canvas ) override;
+    void OnDrawEvent(ACanvas& _Canvas) override;
 
 private:
-    TRef< APlayerController > PlayerController;
+    TRef<APlayerController> PlayerController;
 };

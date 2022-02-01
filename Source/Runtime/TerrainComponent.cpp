@@ -336,13 +336,13 @@ void ATerrainComponent::InitializeComponent()
     GetLevel()->AddPrimitive(&Primitive);
 
     AAINavigationMesh & NavigationMesh = GetWorld()->GetNavigationMesh();
-    NavigationMesh.AddNavigationGeometry( this );
+    NavigationMesh.AddNavigationGeometry(this);
 }
 
 void ATerrainComponent::DeinitializeComponent()
 {
     AAINavigationMesh & NavigationMesh = GetWorld()->GetNavigationMesh();
-    NavigationMesh.RemoveNavigationGeometry( this );
+    NavigationMesh.RemoveNavigationGeometry(this);
 
     if (Terrain)
     {

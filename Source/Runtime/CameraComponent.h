@@ -131,8 +131,8 @@ private:
     float             ZNear{0.04f};
     float             ZFar{99999.0f};
     float             AspectRatio{1.0f};
-    Float2            OrthoMins{-1,-1};
-    Float2            OrthoMaxs{1,1};
+    Float2            OrthoMins{-1, -1};
+    Float2            OrthoMaxs{1, 1};
     float             OrthoZoom{30};
     mutable Float4x4  ViewMatrix;
     mutable Float3x3  BillboardMatrix;

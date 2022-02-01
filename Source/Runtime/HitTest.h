@@ -43,10 +43,10 @@ Raycast hit result
 */
 struct STriangleHitResult
 {
-    Float3 Location;
-    Float3 Normal;
-    Float2 UV;
-    float Distance;
-    unsigned int Indices[3];
-    AMaterialInstance * Material;
+    Float3             Location;
+    Float3             Normal;
+    Float2             UV;
+    float              Distance;
+    unsigned int       Indices[3];
+    AMaterialInstance* Material;
 };

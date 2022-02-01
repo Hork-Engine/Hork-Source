@@ -368,10 +368,10 @@ AActor* AWorld::SpawnActor(SActorSpawnInfo const& _SpawnInfo)
 {
     SActorSpawnPrivate spawnInfo;
     spawnInfo.ActorClass = _SpawnInfo.ActorClassMeta();
-    spawnInfo.Template = _SpawnInfo.GetTemplate();
+    spawnInfo.Template   = _SpawnInfo.GetTemplate();
     spawnInfo.Instigator = _SpawnInfo.Instigator;
-    spawnInfo.Level = _SpawnInfo.Level;
-    spawnInfo.bInEditor = _SpawnInfo.bInEditor;
+    spawnInfo.Level      = _SpawnInfo.Level;
+    spawnInfo.bInEditor  = _SpawnInfo.bInEditor;
 
     if (!spawnInfo.ActorClass)
     {
@@ -566,7 +566,7 @@ void AWorld::UpdatePauseStatus()
 
 void AWorld::UpdateTimers(float TimeStep)
 {
-    for (ATimer* timer = TimerList; timer; )
+    for (ATimer* timer = TimerList; timer;)
     {
         // The timer can be unregistered during the Tick function, so we keep a pointer to the next timer.
         pNextTickingTimer = timer->NextInWorld;
@@ -634,7 +634,7 @@ void AWorld::KillActors(bool bClearSpawnQueue)
             AActor* owner = component->OwnerActor;
             if (owner)
             {
-                owner->Components[component->ComponentIndex]                  = owner->Components[owner->Components.Size() - 1];
+                owner->Components[component->ComponentIndex]                 = owner->Components[owner->Components.Size() - 1];
                 owner->Components[component->ComponentIndex]->ComponentIndex = component->ComponentIndex;
                 owner->Components.RemoveLast();
             }
@@ -1090,7 +1090,7 @@ void AWorld::KillWorlds()
             for (ALevel* level : world->ArrayOfLevels)
             {
                 level->OnRemoveLevelFromWorld();
-                level->OwnerWorld = nullptr; 
+                level->OwnerWorld = nullptr;
                 level->RemoveRef();
             }
             world->ArrayOfLevels.Clear();

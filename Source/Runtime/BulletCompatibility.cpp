@@ -46,31 +46,31 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
 
 // TODO: replace btIDebugDraw by ADebugRenderer
-void btDrawCollisionShape( ADebugRenderer * InRenderer, const btTransform& worldTransform, const btCollisionShape* shape )
+void btDrawCollisionShape(ADebugRenderer* InRenderer, const btTransform& worldTransform, const btCollisionShape* shape)
 {
     class ABulletDebugDraw : public btIDebugDraw
     {
     public:
-        ADebugRenderer * Renderer;
+        ADebugRenderer* Renderer;
 
-        void drawLine( btVector3 const & from, btVector3 const & to, btVector3 const & color ) override
+        void drawLine(btVector3 const& from, btVector3 const& to, btVector3 const& color) override
         {
-            Renderer->DrawLine( btVectorToFloat3( from ), btVectorToFloat3( to ) );
+            Renderer->DrawLine(btVectorToFloat3(from), btVectorToFloat3(to));
         }
 
-        void drawContactPoint( btVector3 const & pointOnB, btVector3 const & normalOnB, btScalar distance, int lifeTime, btVector3 const & color ) override
-        {
-        }
-
-        void reportErrorWarning( const char * warningString ) override
+        void drawContactPoint(btVector3 const& pointOnB, btVector3 const& normalOnB, btScalar distance, int lifeTime, btVector3 const& color) override
         {
         }
 
-        void draw3dText( btVector3 const & location, const char * textString ) override
+        void reportErrorWarning(const char* warningString) override
         {
         }
 
-        void setDebugMode( int debugMode ) override
+        void draw3dText(btVector3 const& location, const char* textString) override
+        {
+        }
+
+        void setDebugMode(int debugMode) override
         {
         }
 
@@ -84,7 +84,7 @@ void btDrawCollisionShape( ADebugRenderer * InRenderer, const btTransform& world
         }
     };
     static ABulletDebugDraw debugDrawer;
-    static btVector3 dummy(0,0,0);
+    static btVector3        dummy(0, 0, 0);
 
     debugDrawer.Renderer = InRenderer;
 
@@ -96,136 +96,129 @@ void btDrawCollisionShape( ADebugRenderer * InRenderer, const btTransform& world
         const btCompoundShape* compoundShape = static_cast<const btCompoundShape*>(shape);
         for (int i = compoundShape->getNumChildShapes() - 1; i >= 0; i--)
         {
-            btTransform childTrans = compoundShape->getChildTransform(i);
-            const btCollisionShape* colShape = compoundShape->getChildShape(i);
-            btDrawCollisionShape( InRenderer, worldTransform * childTrans, colShape );
+            btTransform             childTrans = compoundShape->getChildTransform(i);
+            const btCollisionShape* colShape   = compoundShape->getChildShape(i);
+            btDrawCollisionShape(InRenderer, worldTransform * childTrans, colShape);
         }
     }
     else
     {
         switch (shape->getShapeType())
         {
-        case BOX_SHAPE_PROXYTYPE:
-        {
-            const btBoxShape* boxShape = static_cast<const btBoxShape*>(shape);
-            btVector3 halfExtents = boxShape->getHalfExtentsWithMargin();
-            debugDrawer.drawBox(-halfExtents, halfExtents, worldTransform, dummy);
-            break;
-        }
-
-        case SPHERE_SHAPE_PROXYTYPE:
-        {
-            const btSphereShape* sphereShape = static_cast<const btSphereShape*>(shape);
-            btScalar radius = sphereShape->getMargin();  //radius doesn't include the margin, so draw with margin
-            debugDrawer.drawSphere(radius, worldTransform, dummy);
-            break;
-        }
-        case MULTI_SPHERE_SHAPE_PROXYTYPE:
-        {
-            const btMultiSphereShape* multiSphereShape = static_cast<const btMultiSphereShape*>(shape);
-
-            btTransform childTransform;
-            childTransform.setIdentity();
-
-            for (int i = multiSphereShape->getSphereCount() - 1; i >= 0; i--)
-            {
-                childTransform.setOrigin(multiSphereShape->getSpherePosition(i));
-                debugDrawer.drawSphere(multiSphereShape->getSphereRadius(i), worldTransform * childTransform, dummy);
+            case BOX_SHAPE_PROXYTYPE: {
+                const btBoxShape* boxShape    = static_cast<const btBoxShape*>(shape);
+                btVector3         halfExtents = boxShape->getHalfExtentsWithMargin();
+                debugDrawer.drawBox(-halfExtents, halfExtents, worldTransform, dummy);
+                break;
             }
 
-            break;
-        }
-        case CAPSULE_SHAPE_PROXYTYPE:
-        {
-            const btCapsuleShape* capsuleShape = static_cast<const btCapsuleShape*>(shape);
+            case SPHERE_SHAPE_PROXYTYPE: {
+                const btSphereShape* sphereShape = static_cast<const btSphereShape*>(shape);
+                btScalar             radius      = sphereShape->getMargin(); //radius doesn't include the margin, so draw with margin
+                debugDrawer.drawSphere(radius, worldTransform, dummy);
+                break;
+            }
+            case MULTI_SPHERE_SHAPE_PROXYTYPE: {
+                const btMultiSphereShape* multiSphereShape = static_cast<const btMultiSphereShape*>(shape);
 
-            btScalar radius = capsuleShape->getRadius();
-            btScalar halfHeight = capsuleShape->getHalfHeight();
+                btTransform childTransform;
+                childTransform.setIdentity();
 
-            int upAxis = capsuleShape->getUpAxis();
-            debugDrawer.drawCapsule(radius, halfHeight, upAxis, worldTransform, dummy);
-            break;
-        }
-        case CONE_SHAPE_PROXYTYPE:
-        {
-            const btConeShape* coneShape = static_cast<const btConeShape*>(shape);
-            btScalar radius = coneShape->getRadius();  //+coneShape->getMargin();
-            btScalar height = coneShape->getHeight();  //+coneShape->getMargin();
-
-            int upAxis = coneShape->getConeUpIndex();
-            debugDrawer.drawCone(radius, height, upAxis, worldTransform, dummy);
-            break;
-        }
-        case CYLINDER_SHAPE_PROXYTYPE:
-        {
-            const btCylinderShape* cylinder = static_cast<const btCylinderShape*>(shape);
-            int upAxis = cylinder->getUpAxis();
-            btScalar radius = cylinder->getRadius();
-            btScalar halfHeight = cylinder->getHalfExtentsWithMargin()[upAxis];
-            debugDrawer.drawCylinder(radius, halfHeight, upAxis, worldTransform, dummy);
-            break;
-        }
-
-        case STATIC_PLANE_PROXYTYPE:
-        {
-            // Static plane shape is not really used in Hork Engine
-            const btStaticPlaneShape* staticPlaneShape = static_cast<const btStaticPlaneShape*>(shape);
-            btScalar planeConst = staticPlaneShape->getPlaneConstant();
-            const btVector3& planeNormal = staticPlaneShape->getPlaneNormal();
-            debugDrawer.drawPlane(planeNormal, planeConst, worldTransform, dummy);
-            break;
-        }
-        default:
-        {
-            /// for polyhedral shapes
-            if (shape->isPolyhedral())
-            {
-                btPolyhedralConvexShape* polyshape = (btPolyhedralConvexShape*)shape;
-
-                int i;
-                if (polyshape->getConvexPolyhedron())
+                for (int i = multiSphereShape->getSphereCount() - 1; i >= 0; i--)
                 {
-                    const btConvexPolyhedron* poly = polyshape->getConvexPolyhedron();
-                    for (i = 0; i < poly->m_faces.size(); i++)
+                    childTransform.setOrigin(multiSphereShape->getSpherePosition(i));
+                    debugDrawer.drawSphere(multiSphereShape->getSphereRadius(i), worldTransform * childTransform, dummy);
+                }
+
+                break;
+            }
+            case CAPSULE_SHAPE_PROXYTYPE: {
+                const btCapsuleShape* capsuleShape = static_cast<const btCapsuleShape*>(shape);
+
+                btScalar radius     = capsuleShape->getRadius();
+                btScalar halfHeight = capsuleShape->getHalfHeight();
+
+                int upAxis = capsuleShape->getUpAxis();
+                debugDrawer.drawCapsule(radius, halfHeight, upAxis, worldTransform, dummy);
+                break;
+            }
+            case CONE_SHAPE_PROXYTYPE: {
+                const btConeShape* coneShape = static_cast<const btConeShape*>(shape);
+                btScalar           radius    = coneShape->getRadius(); //+coneShape->getMargin();
+                btScalar           height    = coneShape->getHeight(); //+coneShape->getMargin();
+
+                int upAxis = coneShape->getConeUpIndex();
+                debugDrawer.drawCone(radius, height, upAxis, worldTransform, dummy);
+                break;
+            }
+            case CYLINDER_SHAPE_PROXYTYPE: {
+                const btCylinderShape* cylinder   = static_cast<const btCylinderShape*>(shape);
+                int                    upAxis     = cylinder->getUpAxis();
+                btScalar               radius     = cylinder->getRadius();
+                btScalar               halfHeight = cylinder->getHalfExtentsWithMargin()[upAxis];
+                debugDrawer.drawCylinder(radius, halfHeight, upAxis, worldTransform, dummy);
+                break;
+            }
+
+            case STATIC_PLANE_PROXYTYPE: {
+                // Static plane shape is not really used in Hork Engine
+                const btStaticPlaneShape* staticPlaneShape = static_cast<const btStaticPlaneShape*>(shape);
+                btScalar                  planeConst       = staticPlaneShape->getPlaneConstant();
+                const btVector3&          planeNormal      = staticPlaneShape->getPlaneNormal();
+                debugDrawer.drawPlane(planeNormal, planeConst, worldTransform, dummy);
+                break;
+            }
+            default:
+            {
+                /// for polyhedral shapes
+                if (shape->isPolyhedral())
+                {
+                    btPolyhedralConvexShape* polyshape = (btPolyhedralConvexShape*)shape;
+
+                    int i;
+                    if (polyshape->getConvexPolyhedron())
                     {
-//                        btVector3 centroid(0, 0, 0);
-                        int numVerts = poly->m_faces[i].m_indices.size();
-                        if (numVerts)
+                        const btConvexPolyhedron* poly = polyshape->getConvexPolyhedron();
+                        for (i = 0; i < poly->m_faces.size(); i++)
                         {
-                            int lastV = poly->m_faces[i].m_indices[numVerts - 1];
-                            for (int v = 0; v < poly->m_faces[i].m_indices.size(); v++)
+                            //                        btVector3 centroid(0, 0, 0);
+                            int numVerts = poly->m_faces[i].m_indices.size();
+                            if (numVerts)
                             {
-                                int curVert = poly->m_faces[i].m_indices[v];
-//                                centroid += poly->m_vertices[curVert];
+                                int lastV = poly->m_faces[i].m_indices[numVerts - 1];
+                                for (int v = 0; v < poly->m_faces[i].m_indices.size(); v++)
+                                {
+                                    int curVert = poly->m_faces[i].m_indices[v];
+                                    //                                centroid += poly->m_vertices[curVert];
 
-                                InRenderer->DrawLine( btVectorToFloat3( worldTransform * poly->m_vertices[lastV] ),
-                                                      btVectorToFloat3( worldTransform * poly->m_vertices[curVert] ) );
-                                lastV = curVert;
+                                    InRenderer->DrawLine(btVectorToFloat3(worldTransform * poly->m_vertices[lastV]),
+                                                         btVectorToFloat3(worldTransform * poly->m_vertices[curVert]));
+                                    lastV = curVert;
+                                }
                             }
+                            //                        centroid *= btScalar(1.f) / btScalar(numVerts);
+                            //                        if (debugDrawer.getDebugMode() & btIDebugDraw::DBG_DrawNormals)
+                            //                        {
+                            //                            btVector3 normalColor(1, 1, 0);
+                            //                            btVector3 faceNormal(poly->m_faces[i].m_plane[0], poly->m_faces[i].m_plane[1], poly->m_faces[i].m_plane[2]);
+                            //                            debugDrawer.drawLine(worldTransform * centroid, worldTransform * (centroid + faceNormal), normalColor);
+                            //                        }
                         }
-//                        centroid *= btScalar(1.f) / btScalar(numVerts);
-//                        if (debugDrawer.getDebugMode() & btIDebugDraw::DBG_DrawNormals)
-//                        {
-//                            btVector3 normalColor(1, 1, 0);
-//                            btVector3 faceNormal(poly->m_faces[i].m_plane[0], poly->m_faces[i].m_plane[1], poly->m_faces[i].m_plane[2]);
-//                            debugDrawer.drawLine(worldTransform * centroid, worldTransform * (centroid + faceNormal), normalColor);
-//                        }
                     }
-                }
-                else
-                {
-                    for (i = 0; i < polyshape->getNumEdges(); i++)
+                    else
                     {
-                        btVector3 a, b;
-                        polyshape->getEdge(i, a, b);
-                        btVector3 wa = worldTransform * a;
-                        btVector3 wb = worldTransform * b;
-                        InRenderer->DrawLine( btVectorToFloat3( wa ), btVectorToFloat3( wb ) );
+                        for (i = 0; i < polyshape->getNumEdges(); i++)
+                        {
+                            btVector3 a, b;
+                            polyshape->getEdge(i, a, b);
+                            btVector3 wa = worldTransform * a;
+                            btVector3 wb = worldTransform * b;
+                            InRenderer->DrawLine(btVectorToFloat3(wa), btVectorToFloat3(wb));
+                        }
                     }
                 }
-            }
 
-            // FIXME: This is too slow to visualize at real time
+                // FIXME: This is too slow to visualize at real time
 #if 0
             if (shape->isConcave())
             {
@@ -250,44 +243,45 @@ void btDrawCollisionShape( ADebugRenderer * InRenderer, const btTransform& world
                 convexMesh->getMeshInterface()->InternalProcessAllTriangles(&drawCallback, aabbMin, aabbMax);
             }
 #endif
-        }
+            }
         }
     }
 }
 
-void btDrawCollisionObject( ADebugRenderer * InRenderer, btCollisionObject * CollisionObject )
+void btDrawCollisionObject(ADebugRenderer* InRenderer, btCollisionObject* CollisionObject)
 {
-    Color4 color( 0.3f, 0.3f, 0.3f );
+    Color4 color(0.3f, 0.3f, 0.3f);
 
-    switch ( CollisionObject->getActivationState() )
+    switch (CollisionObject->getActivationState())
     {
-    case ACTIVE_TAG:
-        color = Color4( 1, 1, 1 );
-        break;
-    case ISLAND_SLEEPING:
-        color = Color4( 0, 1, 0 );
-        break;
-    case WANTS_DEACTIVATION:
-        color = Color4( 0, 1, 1 );
-        break;
-    case DISABLE_DEACTIVATION:
-        color = Color4( 1, 0, 0 );
-        break;
-    case DISABLE_SIMULATION:
-        color = Color4( 1, 1, 0 );
-        break;
-    default:
-        break;
+        case ACTIVE_TAG:
+            color = Color4(1, 1, 1);
+            break;
+        case ISLAND_SLEEPING:
+            color = Color4(0, 1, 0);
+            break;
+        case WANTS_DEACTIVATION:
+            color = Color4(0, 1, 1);
+            break;
+        case DISABLE_DEACTIVATION:
+            color = Color4(1, 0, 0);
+            break;
+        case DISABLE_SIMULATION:
+            color = Color4(1, 1, 0);
+            break;
+        default:
+            break;
     };
 
     btVector3 customColor;
-    if ( CollisionObject->getCustomDebugColor( customColor ) ) {
+    if (CollisionObject->getCustomDebugColor(customColor))
+    {
         color[0] = customColor[0];
         color[1] = customColor[1];
         color[2] = customColor[2];
     }
 
-    InRenderer->SetColor( color );
+    InRenderer->SetColor(color);
 
-    btDrawCollisionShape( InRenderer, CollisionObject->getWorldTransform(), CollisionObject->getCollisionShape() );
+    btDrawCollisionShape(InRenderer, CollisionObject->getWorldTransform(), CollisionObject->getCollisionShape());
 }

@@ -42,7 +42,8 @@ SAnimationChannel
 Animation for single joint
 
 */
-struct SAnimationChannel {
+struct SAnimationChannel
+{
     /** Joint index in skeleton */
     int32_t JointIndex;
 
@@ -53,23 +54,23 @@ struct SAnimationChannel {
     bool bHasRotation : 1;
     bool bHasScale : 1;
 
-    void Read( IBinaryStream & _Stream ) {
-        JointIndex = _Stream.ReadInt32();
+    void Read(IBinaryStream& _Stream)
+    {
+        JointIndex      = _Stream.ReadInt32();
         TransformOffset = _Stream.ReadInt32();
 
         uint8_t bitMask = _Stream.ReadUInt8();
 
-        bHasPosition = (bitMask>>0) & 1;
-        bHasRotation = (bitMask>>1) & 1;
-        bHasScale    = (bitMask>>2) & 1;
+        bHasPosition = (bitMask >> 0) & 1;
+        bHasRotation = (bitMask >> 1) & 1;
+        bHasScale    = (bitMask >> 2) & 1;
     }
 
-    void Write( IBinaryStream & _Stream ) const {
-        _Stream.WriteInt32( JointIndex );
-        _Stream.WriteInt32( TransformOffset );
-        _Stream.WriteUInt8(   ( uint8_t(bHasPosition) << 0 )
-                            | ( uint8_t(bHasRotation) << 1 )
-                            | ( uint8_t(bHasScale   ) << 2 ) );
+    void Write(IBinaryStream& _Stream) const
+    {
+        _Stream.WriteInt32(JointIndex);
+        _Stream.WriteInt32(TransformOffset);
+        _Stream.WriteUInt8((uint8_t(bHasPosition) << 0) | (uint8_t(bHasRotation) << 1) | (uint8_t(bHasScale) << 2));
     }
 };
 
@@ -80,54 +81,56 @@ ASkeletalAnimation
 Animation class
 
 */
-class ASkeletalAnimation : public AResource {
-    AN_CLASS( ASkeletalAnimation, AResource )
+class ASkeletalAnimation : public AResource
+{
+    AN_CLASS(ASkeletalAnimation, AResource)
 
 public:
     ASkeletalAnimation();
     ~ASkeletalAnimation();
 
-    void Initialize( int _FrameCount, float _FrameDelta, STransform const * _Transforms, int _TransformsCount, SAnimationChannel const * _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const * _Bounds );
+    void Initialize(int _FrameCount, float _FrameDelta, STransform const* _Transforms, int _TransformsCount, SAnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds);
 
     void Purge();
 
-    TPodVector< SAnimationChannel > const & GetChannels() const { return Channels; }
-    TPodVector< STransform > const & GetTransforms() const { return Transforms; }
+    TPodVector<SAnimationChannel> const& GetChannels() const { return Channels; }
+    TPodVector<STransform> const&        GetTransforms() const { return Transforms; }
 
-    unsigned short GetChannelIndex( int _JointIndex ) const;
+    unsigned short GetChannelIndex(int _JointIndex) const;
 
-    int GetFrameCount() const { return FrameCount; }
-    float GetFrameDelta() const { return FrameDelta; }
-    float GetFrameRate() const { return FrameRate; }
-    float GetDurationInSeconds() const { return DurationInSeconds; }
-    float GetDurationNormalizer() const { return DurationNormalizer; }
-    TPodVector< BvAxisAlignedBox > const & GetBoundingBoxes() const { return Bounds; }
-    bool IsValid() const { return bIsAnimationValid; }
+    int                                 GetFrameCount() const { return FrameCount; }
+    float                               GetFrameDelta() const { return FrameDelta; }
+    float                               GetFrameRate() const { return FrameRate; }
+    float                               GetDurationInSeconds() const { return DurationInSeconds; }
+    float                               GetDurationNormalizer() const { return DurationNormalizer; }
+    TPodVector<BvAxisAlignedBox> const& GetBoundingBoxes() const { return Bounds; }
+    bool                                IsValid() const { return bIsAnimationValid; }
 
 protected:
     /** Load resource from file */
-    bool LoadResource( IBinaryStream & Stream ) override;
+    bool LoadResource(IBinaryStream& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource( const char * _Path ) override;
+    void LoadInternalResource(const char* _Path) override;
 
-    const char * GetDefaultResourcePath() const override { return "/Default/Animation/Default"; }
+    const char* GetDefaultResourcePath() const override { return "/Default/Animation/Default"; }
 
 private:
-    TPodVector< SAnimationChannel > Channels;
-    TPodVector< STransform > Transforms;
-    TPodVector< unsigned short > ChannelsMap;
-    TPodVector< BvAxisAlignedBox > Bounds;
-    int     MinNodeIndex = 0;
-    int     MaxNodeIndex = 0;
-    int     FrameCount = 0;     // frames count
-    float   FrameDelta = 0;     // fixed time delta between frames
-    float   FrameRate = 60;     // frames per second (animation speed) FrameRate = 1.0 / FrameDelta
-    float   DurationInSeconds = 0;  // animation duration is FrameDelta * ( FrameCount - 1 )
-    float   DurationNormalizer = 1; // to normalize track timeline (DurationNormalizer = 1.0 / DurationInSeconds)
-    bool    bIsAnimationValid = false;
+    TPodVector<SAnimationChannel> Channels;
+    TPodVector<STransform>        Transforms;
+    TPodVector<unsigned short>    ChannelsMap;
+    TPodVector<BvAxisAlignedBox>  Bounds;
+    int                           MinNodeIndex       = 0;
+    int                           MaxNodeIndex       = 0;
+    int                           FrameCount         = 0;  // frames count
+    float                         FrameDelta         = 0;  // fixed time delta between frames
+    float                         FrameRate          = 60; // frames per second (animation speed) FrameRate = 1.0 / FrameDelta
+    float                         DurationInSeconds  = 0;  // animation duration is FrameDelta * ( FrameCount - 1 )
+    float                         DurationNormalizer = 1;  // to normalize track timeline (DurationNormalizer = 1.0 / DurationInSeconds)
+    bool                          bIsAnimationValid  = false;
 };
 
-AN_FORCEINLINE unsigned short ASkeletalAnimation::GetChannelIndex( int _JointIndex ) const {
-    return ( _JointIndex < MinNodeIndex || _JointIndex > MaxNodeIndex ) ? (unsigned short)-1 : ChannelsMap[ _JointIndex - MinNodeIndex ];
+AN_FORCEINLINE unsigned short ASkeletalAnimation::GetChannelIndex(int _JointIndex) const
+{
+    return (_JointIndex < MinNodeIndex || _JointIndex > MaxNodeIndex) ? (unsigned short)-1 : ChannelsMap[_JointIndex - MinNodeIndex];
 }

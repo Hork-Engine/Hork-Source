@@ -32,31 +32,31 @@ SOFTWARE.
 #include "Actor.h"
 #include "World.h"
 
-AN_CLASS_META( AActorComponent )
+AN_CLASS_META(AActorComponent)
 
 AActorComponent::AActorComponent()
 {
-    bInitialized = false;
-    bPendingKill = false;
+    bInitialized  = false;
+    bPendingKill  = false;
     bHideInEditor = false;
-    bTicking = false;
+    bTicking      = false;
 }
 
-AWorld * AActorComponent::GetWorld() const
+AWorld* AActorComponent::GetWorld() const
 {
-    AN_ASSERT( OwnerActor );
+    AN_ASSERT(OwnerActor);
     return OwnerActor ? OwnerActor->GetWorld() : nullptr;
 }
 
-ALevel * AActorComponent::GetLevel() const
+ALevel* AActorComponent::GetLevel() const
 {
-    AN_ASSERT( OwnerActor );
+    AN_ASSERT(OwnerActor);
     return OwnerActor ? OwnerActor->GetLevel() : nullptr;
 }
 
 bool AActorComponent::IsInEditor() const
 {
-    AN_ASSERT( OwnerActor );
+    AN_ASSERT(OwnerActor);
     return OwnerActor ? OwnerActor->IsInEditor() : false;
 }
 

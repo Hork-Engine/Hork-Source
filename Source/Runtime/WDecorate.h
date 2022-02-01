@@ -44,116 +44,120 @@ WDecorate
 Specifies the base class for non interactive widgets (decorates)
 
 */
-class WDecorate : public ABaseObject {
-    AN_CLASS( WDecorate, ABaseObject )
+class WDecorate : public ABaseObject
+{
+    AN_CLASS(WDecorate, ABaseObject)
 
     friend class WWidget;
 
 public:
-    WWidget * GetOwner() { return Owner; }
-    WWidget const * GetOwner() const { return Owner; }
+    WWidget*       GetOwner() { return Owner; }
+    WWidget const* GetOwner() const { return Owner; }
 
     WDecorate();
     ~WDecorate();
 
 protected:
-    virtual void OnDrawEvent( ACanvas & _Canvas );
+    virtual void OnDrawEvent(ACanvas& _Canvas);
 
 private:
-    WWidget * Owner = nullptr;
+    WWidget* Owner = nullptr;
 };
 
-class WTextDecorate : public WDecorate {
-    AN_CLASS( WTextDecorate, WDecorate )
+class WTextDecorate : public WDecorate
+{
+    AN_CLASS(WTextDecorate, WDecorate)
 
 public:
-    WTextDecorate & SetText( const char * _Text );
-    WTextDecorate & SetFont( AFont * _Font );
-    WTextDecorate & SetColor( Color4 const & _Color );
-    WTextDecorate & SetHorizontalAlignment( EWidgetAlignment _Alignment );
-    WTextDecorate & SetVerticalAlignment( EWidgetAlignment _Alignment );
-    WTextDecorate & SetWordWrap( bool _WordWrap );
-    WTextDecorate & SetOffset( Float2 const & _Offset );
+    WTextDecorate& SetText(const char* _Text);
+    WTextDecorate& SetFont(AFont* _Font);
+    WTextDecorate& SetColor(Color4 const& _Color);
+    WTextDecorate& SetHorizontalAlignment(EWidgetAlignment _Alignment);
+    WTextDecorate& SetVerticalAlignment(EWidgetAlignment _Alignment);
+    WTextDecorate& SetWordWrap(bool _WordWrap);
+    WTextDecorate& SetOffset(Float2 const& _Offset);
 
     WTextDecorate();
     ~WTextDecorate();
 
 protected:
-    void OnDrawEvent( ACanvas & _Canvas ) override;
+    void OnDrawEvent(ACanvas& _Canvas) override;
 
-    AFont const * GetFont() const;
+    AFont const* GetFont() const;
 
 private:
-    TRef< AFont > Font;
-    AString Text;
-    Color4 Color;
-    Float2 Offset;
-    bool bWordWrap;
+    TRef<AFont>      Font;
+    AString          Text;
+    Color4           Color;
+    Float2           Offset;
+    bool             bWordWrap;
     EWidgetAlignment HorizontalAlignment;
     EWidgetAlignment VerticalAlignment;
 };
 
-class WBorderDecorate : public WDecorate {
-    AN_CLASS( WBorderDecorate, WDecorate )
+class WBorderDecorate : public WDecorate
+{
+    AN_CLASS(WBorderDecorate, WDecorate)
 
 public:
-    WBorderDecorate & SetColor( Color4 const & _Color );
-    WBorderDecorate & SetFillBackground( bool _FillBackgrond );
-    WBorderDecorate & SetBackgroundColor( Color4 const & _Color );
-    WBorderDecorate & SetThickness( float _Thickness );
-    WBorderDecorate & SetRounding( float _Rounding );
-    WBorderDecorate & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
+    WBorderDecorate& SetColor(Color4 const& _Color);
+    WBorderDecorate& SetFillBackground(bool _FillBackgrond);
+    WBorderDecorate& SetBackgroundColor(Color4 const& _Color);
+    WBorderDecorate& SetThickness(float _Thickness);
+    WBorderDecorate& SetRounding(float _Rounding);
+    WBorderDecorate& SetRoundingCorners(EDrawCornerFlags _RoundingCorners);
 
     WBorderDecorate();
     ~WBorderDecorate();
 
 protected:
-    void OnDrawEvent( ACanvas & _Canvas ) override;
+    void OnDrawEvent(ACanvas& _Canvas) override;
 
 private:
-    Color4 Color;
-    Color4 BgColor;
+    Color4           Color;
+    Color4           BgColor;
     EDrawCornerFlags RoundingCorners;
-    float Rounding;
-    float Thickness;
-    bool bFillBackgrond;
+    float            Rounding;
+    float            Thickness;
+    bool             bFillBackgrond;
 };
 
-class WImageDecorate : public WDecorate {
-    AN_CLASS( WImageDecorate, WDecorate )
+class WImageDecorate : public WDecorate
+{
+    AN_CLASS(WImageDecorate, WDecorate)
 
 public:
-    WImageDecorate & SetColor( Color4 const & _Color );
-    WImageDecorate & SetRounding( float _Rounding );
-    WImageDecorate & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
-    WImageDecorate & SetTexture( ATexture * _Texture );
-    WImageDecorate & SetColorBlending( EColorBlending _Blending );
-    WImageDecorate & SetSamplerType( EHUDSamplerType _SamplerType );
-    WImageDecorate & SetOffset( Float2 const & _Offset );
-    WImageDecorate & SetSize( Float2 const & _Size );
-    WImageDecorate & SetHorizontalAlignment( EWidgetAlignment _Alignment );
-    WImageDecorate & SetVerticalAlignment( EWidgetAlignment _Alignment );
-    WImageDecorate & SetUseOriginalSize( bool _UseOriginalSize );
-    WImageDecorate & SetUVs( Float2 const & _UV0, Float2 const & _UV1 );
+    WImageDecorate& SetColor(Color4 const& _Color);
+    WImageDecorate& SetRounding(float _Rounding);
+    WImageDecorate& SetRoundingCorners(EDrawCornerFlags _RoundingCorners);
+    WImageDecorate& SetTexture(ATexture* _Texture);
+    WImageDecorate& SetColorBlending(EColorBlending _Blending);
+    WImageDecorate& SetSamplerType(EHUDSamplerType _SamplerType);
+    WImageDecorate& SetOffset(Float2 const& _Offset);
+    WImageDecorate& SetSize(Float2 const& _Size);
+    WImageDecorate& SetHorizontalAlignment(EWidgetAlignment _Alignment);
+    WImageDecorate& SetVerticalAlignment(EWidgetAlignment _Alignment);
+    WImageDecorate& SetUseOriginalSize(bool _UseOriginalSize);
+    WImageDecorate& SetUVs(Float2 const& _UV0, Float2 const& _UV1);
 
     WImageDecorate();
     ~WImageDecorate();
 
 protected:
-    void OnDrawEvent( ACanvas & _Canvas ) override;
+    void OnDrawEvent(ACanvas& _Canvas) override;
 
 private:
-    Color4 Color;
-    float Rounding;
+    Color4           Color;
+    float            Rounding;
     EDrawCornerFlags RoundingCorners;
-    TRef< ATexture > Texture;
-    EColorBlending ColorBlending;
-    EHUDSamplerType SamplerType;
-    Float2 Offset;
-    Float2 Size;
-    Float2 UV0;
-    Float2 UV1;
-    bool bUseOriginalSize;
+    TRef<ATexture>   Texture;
+    EColorBlending   ColorBlending;
+    EHUDSamplerType  SamplerType;
+    Float2           Offset;
+    Float2           Size;
+    Float2           UV0;
+    Float2           UV1;
+    bool             bUseOriginalSize;
     EWidgetAlignment HorizontalAlignment;
     EWidgetAlignment VerticalAlignment;
 };

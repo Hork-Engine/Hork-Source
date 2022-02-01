@@ -37,5 +37,5 @@ namespace Runtime
 
 /** Zip archive of embedded content */
 AArchive const& GetEmbeddedResources();
-    
-}
+
+} // namespace Runtime

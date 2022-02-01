@@ -41,11 +41,12 @@ SOFTWARE.
 
 class AInputMappings;
 
-class ARenderingParameters : public ABaseObject {
-    AN_CLASS( ARenderingParameters, ABaseObject )
+class ARenderingParameters : public ABaseObject
+{
+    AN_CLASS(ARenderingParameters, ABaseObject)
 
 public:
-    Color4 BackgroundColor = Color4( 0.3f, 0.3f, 0.8f );
+    Color4 BackgroundColor = Color4(0.3f, 0.3f, 0.8f);
 
     bool bClearBackground = false;
 
@@ -53,13 +54,13 @@ public:
 
     bool bDrawDebug = false;
 
-    bool bVignetteEnabled = false;
-    Float4 VignetteColorIntensity = Float4( 0,0,0, 0.4f );        // rgb, intensity
-    float VignetteOuterRadiusSqr = 0.7f*0.7f;
-    float VignetteInnerRadiusSqr = 0.6f*0.6f;
-    int VisibilityMask = ~0;
+    bool   bVignetteEnabled       = false;
+    Float4 VignetteColorIntensity = Float4(0, 0, 0, 0.4f); // rgb, intensity
+    float  VignetteOuterRadiusSqr = 0.7f * 0.7f;
+    float  VignetteInnerRadiusSqr = 0.6f * 0.6f;
+    int    VisibilityMask         = ~0;
 
-    std::unordered_map< uint64_t, class ATerrainView * > TerrainViews; // TODO: Needs to be cleaned from time to time
+    std::unordered_map<uint64_t, class ATerrainView*> TerrainViews; // TODO: Needs to be cleaned from time to time
 
     // TODO: TonemappingExposure, bTonemappingAutoExposure, TonemappingMethod:Disabled,Reinhard,Uncharted,etc
     // TODO: Wireframe color/line width
@@ -69,106 +70,107 @@ public:
     ARenderingParameters();
     ~ARenderingParameters();
 
-    ATexture * GetCurrentExposure() { return CurrentExposure; }
+    ATexture* GetCurrentExposure() { return CurrentExposure; }
 
-    void SetColorGradingEnabled( bool _ColorGradingEnabled );
+    void SetColorGradingEnabled(bool _ColorGradingEnabled);
 
     bool IsColorGradingEnabled() const { return bColorGradingEnabled; }
 
-    void SetColorGradingLUT( ATexture * Texture );
+    void SetColorGradingLUT(ATexture* Texture);
 
-    ATexture * GetColorGradingLUT() { return ColorGradingLUT; }
+    ATexture* GetColorGradingLUT() { return ColorGradingLUT; }
 
-    ATexture * GetCurrentColorGradingLUT() { return CurrentColorGradingLUT; }
+    ATexture* GetCurrentColorGradingLUT() { return CurrentColorGradingLUT; }
 
-    void SetColorGradingGrain( Float3 const & _ColorGradingGrain );
+    void SetColorGradingGrain(Float3 const& _ColorGradingGrain);
 
-    Float3 const & GetColorGradingGrain() const { return ColorGradingGrain; }
+    Float3 const& GetColorGradingGrain() const { return ColorGradingGrain; }
 
-    void SetColorGradingGamma( Float3 const & _ColorGradingGamma );
+    void SetColorGradingGamma(Float3 const& _ColorGradingGamma);
 
-    Float3 const & GetColorGradingGamma() const { return ColorGradingGamma; }
+    Float3 const& GetColorGradingGamma() const { return ColorGradingGamma; }
 
-    void SetColorGradingLift( Float3 const & _ColorGradingLift );
+    void SetColorGradingLift(Float3 const& _ColorGradingLift);
 
-    Float3 const & GetColorGradingLift() const { return ColorGradingLift; }
+    Float3 const& GetColorGradingLift() const { return ColorGradingLift; }
 
-    void SetColorGradingPresaturation( Float3 const & _ColorGradingPresaturation );
+    void SetColorGradingPresaturation(Float3 const& _ColorGradingPresaturation);
 
-    Float3 const & GetColorGradingPresaturation() const { return ColorGradingPresaturation; }
+    Float3 const& GetColorGradingPresaturation() const { return ColorGradingPresaturation; }
 
-    void SetColorGradingTemperature( float _ColorGradingTemperature );
+    void SetColorGradingTemperature(float _ColorGradingTemperature);
 
     float GetColorGradingTemperature() const { return ColorGradingTemperature; }
 
     Float3 const GetColorGradingTemperatureScale() const { return ColorGradingTemperatureScale; }
 
-    void SetColorGradingTemperatureStrength( Float3 const & _ColorGradingTemperatureStrength );
+    void SetColorGradingTemperatureStrength(Float3 const& _ColorGradingTemperatureStrength);
 
-    Float3 const & GetColorGradingTemperatureStrength() const { return ColorGradingTemperatureStrength; }
+    Float3 const& GetColorGradingTemperatureStrength() const { return ColorGradingTemperatureStrength; }
 
-    void SetColorGradingBrightnessNormalization( float _ColorGradingBrightnessNormalization );
+    void SetColorGradingBrightnessNormalization(float _ColorGradingBrightnessNormalization);
 
     float GetColorGradingBrightnessNormalization() const { return ColorGradingBrightnessNormalization; }
 
-    void SetColorGradingAdaptationSpeed( float _ColorGradingAdaptationSpeed );
+    void SetColorGradingAdaptationSpeed(float _ColorGradingAdaptationSpeed);
 
     float GetColorGradingAdaptationSpeed() const { return ColorGradingAdaptationSpeed; }
 
     void SetColorGradingDefaults();
 
-// TODO:
-//    void SetVignetteEnabled( bool _VignetteEnabled );
-//    bool IsVignetteEnabled() const { return VignetteEnabled; }
+    // TODO:
+    //    void SetVignetteEnabled( bool _VignetteEnabled );
+    //    bool IsVignetteEnabled() const { return VignetteEnabled; }
 
-//    void SetVignetteColor( const Float3 & _VignetteColor );
-//    const Float3 & GetVignetteColor() const { return VignetteColor; }
+    //    void SetVignetteColor( const Float3 & _VignetteColor );
+    //    const Float3 & GetVignetteColor() const { return VignetteColor; }
 
-//    void SetVignetteOuterRadius( const float & _VignetteOuterRadius );
-//    const Float & GetVignetteOuterRadius() const { return VignetteOuterRadius; }
+    //    void SetVignetteOuterRadius( const float & _VignetteOuterRadius );
+    //    const Float & GetVignetteOuterRadius() const { return VignetteOuterRadius; }
 
-//    void SetVignetteInnerRadius( const float & _VignetteInnerRadius );
-//    const Float & GetVignetteInnerRadius() const { return VignetteInnerRadius; }
+    //    void SetVignetteInnerRadius( const float & _VignetteInnerRadius );
+    //    const Float & GetVignetteInnerRadius() const { return VignetteInnerRadius; }
 
-//    void SetVignetteIntensity( const float & _VignetteIntensity );
-//    const Float & GetVignetteIntensity() const { return VignetteIntensity; }
-//    enum ECustomDepthStencilBuffer {
-//        RT_NoCustomDepth,
-//        RT_CustomDepth,
-//        RT_CustomDepthStencil
-//    };
-//   void SetCustomDepthStencil( ECustomDepthStencilBuffer _CustomDepthStencil );
-//   ECustomDepthStencilBuffer GetCustomDepthStencil() const { return CustomDepthStencil; }
+    //    void SetVignetteIntensity( const float & _VignetteIntensity );
+    //    const Float & GetVignetteIntensity() const { return VignetteIntensity; }
+    //    enum ECustomDepthStencilBuffer {
+    //        RT_NoCustomDepth,
+    //        RT_CustomDepth,
+    //        RT_CustomDepthStencil
+    //    };
+    //   void SetCustomDepthStencil( ECustomDepthStencilBuffer _CustomDepthStencil );
+    //   ECustomDepthStencilBuffer GetCustomDepthStencil() const { return CustomDepthStencil; }
 
     // Internal (experimental)
     Float4x4 ProjectionMatrix; // last rendered projection
-    Float4x4 ViewMatrix; // last rendered view
+    Float4x4 ViewMatrix;       // last rendered view
 
     AVirtualTextureFeedback VTFeedback;
 
-    ATexture * GetLightTexture() { return LightTexture; }
-    ATexture * GetDepthTexture() { return DepthTexture; }
+    ATexture* GetLightTexture() { return LightTexture; }
+    ATexture* GetDepthTexture() { return DepthTexture; }
 
 private:
-    TRef< ATexture > ColorGradingLUT;
-    TRef< ATexture > CurrentColorGradingLUT;
-    TRef< ATexture > CurrentExposure;
-    TRef< ATexture > LightTexture;
-    TRef< ATexture > DepthTexture;
-    Float3 ColorGradingGrain;
-    Float3 ColorGradingGamma;
-    Float3 ColorGradingLift;
-    Float3 ColorGradingPresaturation;
-    float ColorGradingTemperature;
-    Float3 ColorGradingTemperatureScale = Float3(1.0f);
-    Float3 ColorGradingTemperatureStrength;
-    float ColorGradingBrightnessNormalization;
-    float ColorGradingAdaptationSpeed;
-    bool bColorGradingEnabled;
+    TRef<ATexture> ColorGradingLUT;
+    TRef<ATexture> CurrentColorGradingLUT;
+    TRef<ATexture> CurrentExposure;
+    TRef<ATexture> LightTexture;
+    TRef<ATexture> DepthTexture;
+    Float3         ColorGradingGrain;
+    Float3         ColorGradingGamma;
+    Float3         ColorGradingLift;
+    Float3         ColorGradingPresaturation;
+    float          ColorGradingTemperature;
+    Float3         ColorGradingTemperatureScale = Float3(1.0f);
+    Float3         ColorGradingTemperatureStrength;
+    float          ColorGradingBrightnessNormalization;
+    float          ColorGradingAdaptationSpeed;
+    bool           bColorGradingEnabled;
 };
 
-class AAudioParameters : public ABaseObject {
-    AN_CLASS( AAudioParameters, ABaseObject )
+class AAudioParameters : public ABaseObject
+{
+    AN_CLASS(AAudioParameters, ABaseObject)
 
 public:
     //Float3 Velocity;
@@ -192,30 +194,31 @@ APlayerController
 Base class for players
 
 */
-class APlayerController : public AController {
-    AN_ACTOR( APlayerController, AController )
+class APlayerController : public AController
+{
+    AN_ACTOR(APlayerController, AController)
 
 public:
     /** Player viewport. Don't change directly, use WViewport::SetPlayerController to attach controller to viewport. */
-    TWeakRef< WViewport > Viewport;
+    TWeakRef<WViewport> Viewport;
 
     /** Override listener location. If listener is not specified, pawn camera will be used. */
-    void SetAudioListener( ASceneComponent * _AudioListener );
+    void SetAudioListener(ASceneComponent* _AudioListener);
 
     /** Set HUD actor */
-    void SetHUD( AHUD * _HUD );
+    void SetHUD(AHUD* _HUD);
 
     /** Set viewport rendering parameters */
-    void SetRenderingParameters( ARenderingParameters * _RP );
+    void SetRenderingParameters(ARenderingParameters* _RP);
 
     /** Set audio rendering parameters */
-    void SetAudioParameters( AAudioParameters * _AudioParameters );
+    void SetAudioParameters(AAudioParameters* _AudioParameters);
 
     /** Set input mappings for input component */
-    void SetInputMappings( AInputMappings * _InputMappings );
+    void SetInputMappings(AInputMappings* _InputMappings);
 
     /** Set controller player index */
-    void SetPlayerIndex( int _ControllerId );
+    void SetPlayerIndex(int _ControllerId);
 
     /** Set player controller as primary audio listener */
     void SetCurrentAudioListener();
@@ -226,22 +229,22 @@ public:
     int GetViewportHeight() const { return ViewportHeight; }
 
     /** Get current audio listener */
-    ASceneComponent * GetAudioListener();
+    ASceneComponent* GetAudioListener();
 
     /** Get HUD actor */
-    AHUD * GetHUD() const { return HUD; }
+    AHUD* GetHUD() const { return HUD; }
 
     /** Get viewport rendering parameters */
-    ARenderingParameters * GetRenderingParameters() { return RenderingParameters; }
+    ARenderingParameters* GetRenderingParameters() { return RenderingParameters; }
 
     /** Get audio rendering parameters */
-    AAudioParameters * GetAudioParameters() { return AudioParameters; }
+    AAudioParameters* GetAudioParameters() { return AudioParameters; }
 
     /** Get input mappings of input component */
-    AInputMappings * GetInputMappings();
+    AInputMappings* GetInputMappings();
 
     /** Return input component */
-    AInputComponent * GetInputComponent() const { return InputComponent; }
+    AInputComponent* GetInputComponent() const { return InputComponent; }
 
     /** Get cursor location in viewport-relative coordinates */
     Float2 GetLocalCursorPosition() const;
@@ -253,14 +256,14 @@ public:
     int GetPlayerIndex() const;
 
     /** Primary audio listener */
-    static APlayerController * GetCurrentAudioListener();
+    static APlayerController* GetCurrentAudioListener();
 
     virtual void OnViewportUpdate();
 
     virtual void UpdatePawnCamera();
 
 protected:
-    AInputComponent * InputComponent;
+    AInputComponent* InputComponent;
 
     APlayerController();
     ~APlayerController();
@@ -271,13 +274,13 @@ private:
     void TogglePause();
     void TakeScreenshot();
 
-    TRef< ARenderingParameters > RenderingParameters;
-    TRef< AAudioParameters > AudioParameters;
-    TWeakRef< ASceneComponent > AudioListener;
-    TWeakRef< AHUD > HUD;
-    float ViewportAspectRatio{};
-    int ViewportWidth{};
-    int ViewportHeight{};
+    TRef<ARenderingParameters> RenderingParameters;
+    TRef<AAudioParameters>     AudioParameters;
+    TWeakRef<ASceneComponent>  AudioListener;
+    TWeakRef<AHUD>             HUD;
+    float                      ViewportAspectRatio{};
+    int                        ViewportWidth{};
+    int                        ViewportHeight{};
 
-    static APlayerController * CurrentAudioListener;
+    static APlayerController* CurrentAudioListener;
 };

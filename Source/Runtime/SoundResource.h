@@ -53,20 +53,20 @@ enum ESoundStreamType
 struct SSoundCreateInfo
 {
     ESoundStreamType StreamType = SOUND_STREAM_DISABLED;
-    bool bForce8Bit = false;
-    bool bForceMono = false;
+    bool             bForce8Bit = false;
+    bool             bForceMono = false;
 };
 
 class ASoundResource : public AResource
 {
-    AN_CLASS( ASoundResource, AResource )
+    AN_CLASS(ASoundResource, AResource)
 
 public:
     /** Initialize from memory */
-    bool InitializeFromMemory( const char * _Path, const void * _SysMem, size_t _SizeInBytes, SSoundCreateInfo const * _pCreateInfo = nullptr );
+    bool InitializeFromMemory(const char* _Path, const void* _SysMem, size_t _SizeInBytes, SSoundCreateInfo const* _pCreateInfo = nullptr);
 
     /** Create streaming instance */
-    bool CreateStreamInstance( TRef< SAudioStream > * ppInterface );
+    bool CreateStreamInstance(TRef<SAudioStream>* ppInterface);
 
     /** Purge audio data */
     void Purge();
@@ -101,13 +101,13 @@ public:
     ESoundStreamType GetStreamType() const;
 
     /** File name */
-    AString const & GetFileName() const { return FileName; }
+    AString const& GetFileName() const { return FileName; }
 
     /** Audio buffer. Null for streamed audio */
-    SAudioBuffer * GetAudioBuffer() { return pBuffer.GetObject(); }
+    SAudioBuffer* GetAudioBuffer() { return pBuffer.GetObject(); }
 
     /** File data for streaming */
-    SFileInMemory * GetFileInMemory() { return pFileInMemory.GetObject(); }
+    SFileInMemory* GetFileInMemory() { return pFileInMemory.GetObject(); }
 
     /** Internal. Used by audio system to determine that audio data changed. */
     int GetRevision() const { return Revision; }
@@ -117,19 +117,19 @@ public:
 
 protected:
     /** Load resource from file */
-    bool LoadResource( IBinaryStream & _Stream ) override;
+    bool LoadResource(IBinaryStream& _Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource( const char * _Path ) override;
+    void LoadInternalResource(const char* _Path) override;
 
-    const char * GetDefaultResourcePath() const override { return "/Default/Sound/Default"; }
+    const char* GetDefaultResourcePath() const override { return "/Default/Sound/Default"; }
 
 private:
-    TRef< SAudioBuffer > pBuffer;
-    TRef< SFileInMemory > pFileInMemory;
-    ESoundStreamType CurStreamType = SOUND_STREAM_DISABLED;
-    SAudioFileInfo AudioFileInfo;
-    float DurationInSeconds = 0.0f;
-    int Revision;
-    AString FileName;
+    TRef<SAudioBuffer>  pBuffer;
+    TRef<SFileInMemory> pFileInMemory;
+    ESoundStreamType    CurStreamType = SOUND_STREAM_DISABLED;
+    SAudioFileInfo      AudioFileInfo;
+    float               DurationInSeconds = 0.0f;
+    int                 Revision;
+    AString             FileName;
 };

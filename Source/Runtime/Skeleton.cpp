@@ -34,64 +34,75 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
-AN_CLASS_META( ASkeleton )
+AN_CLASS_META(ASkeleton)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-ASkeleton::ASkeleton() {
+ASkeleton::ASkeleton()
+{
     BindposeBounds.Clear();
 }
 
-ASkeleton::~ASkeleton() {
+ASkeleton::~ASkeleton()
+{
     Purge();
 }
 
-void ASkeleton::Purge() {
+void ASkeleton::Purge()
+{
     Joints.Clear();
 }
 
-void ASkeleton::Initialize( SJoint * _Joints, int _JointsCount, BvAxisAlignedBox const & _BindposeBounds ) {
+void ASkeleton::Initialize(SJoint* _Joints, int _JointsCount, BvAxisAlignedBox const& _BindposeBounds)
+{
     Purge();
 
-    if ( _JointsCount < 0 ) {
-        GLogger.Printf( "ASkeleton::Initialize: joints count < 0\n" );
+    if (_JointsCount < 0)
+    {
+        GLogger.Printf("ASkeleton::Initialize: joints count < 0\n");
         _JointsCount = 0;
     }
 
     // Copy joints
-    Joints.ResizeInvalidate( _JointsCount );
-    if ( _JointsCount > 0 ) {
-        Platform::Memcpy( Joints.ToPtr(), _Joints, sizeof( *_Joints ) * _JointsCount );
+    Joints.ResizeInvalidate(_JointsCount);
+    if (_JointsCount > 0)
+    {
+        Platform::Memcpy(Joints.ToPtr(), _Joints, sizeof(*_Joints) * _JointsCount);
     }
 
     BindposeBounds = _BindposeBounds;
 }
 
-void ASkeleton::LoadInternalResource( const char * _Path ) {
+void ASkeleton::LoadInternalResource(const char* _Path)
+{
     Purge();
 
-    if ( !Platform::Stricmp( _Path, "/Default/Skeleton/Default" ) ) {
-        Initialize( nullptr, 0, BvAxisAlignedBox::Empty() );
+    if (!Platform::Stricmp(_Path, "/Default/Skeleton/Default"))
+    {
+        Initialize(nullptr, 0, BvAxisAlignedBox::Empty());
         return;
     }
 
-    GLogger.Printf( "Unknown internal skeleton %s\n", _Path );
+    GLogger.Printf("Unknown internal skeleton %s\n", _Path);
 
-    LoadInternalResource( "/Default/Skeleton/Default" );
+    LoadInternalResource("/Default/Skeleton/Default");
 }
 
-bool ASkeleton::LoadResource( IBinaryStream & Stream ) {
+bool ASkeleton::LoadResource(IBinaryStream& Stream)
+{
     uint32_t fileFormat = Stream.ReadUInt32();
 
-    if ( fileFormat != FMT_FILE_TYPE_SKELETON ) {
-        GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_SKELETON );
+    if (fileFormat != FMT_FILE_TYPE_SKELETON)
+    {
+        GLogger.Printf("Expected file format %d\n", FMT_FILE_TYPE_SKELETON);
         return false;
     }
 
     uint32_t fileVersion = Stream.ReadUInt32();
 
-    if ( fileVersion != FMT_VERSION_SKELETON ) {
-        GLogger.Printf( "Expected file version %d\n", FMT_VERSION_SKELETON );
+    if (fileVersion != FMT_VERSION_SKELETON)
+    {
+        GLogger.Printf("Expected file version %d\n", FMT_VERSION_SKELETON);
         return false;
     }
 
@@ -99,19 +110,21 @@ bool ASkeleton::LoadResource( IBinaryStream & Stream ) {
 
     AString guid;
 
-    Stream.ReadObject( guid );
-    Stream.ReadArrayOfStructs( Joints );
-    Stream.ReadObject( BindposeBounds );
+    Stream.ReadObject(guid);
+    Stream.ReadArrayOfStructs(Joints);
+    Stream.ReadObject(BindposeBounds);
 
     return true;
 }
 
-int ASkeleton::FindJoint( const char * _Name ) const {
-    for ( int j = 0 ; j < Joints.Size() ; j++ ) {
-        if ( !Platform::Stricmp( Joints[j].Name, _Name ) ) {
+int ASkeleton::FindJoint(const char* _Name) const
+{
+    for (int j = 0; j < Joints.Size(); j++)
+    {
+        if (!Platform::Stricmp(Joints[j].Name, _Name))
+        {
             return j;
         }
     }
     return -1;
 }
-

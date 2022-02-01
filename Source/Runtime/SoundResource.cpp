@@ -39,13 +39,13 @@ SOFTWARE.
 
 static int RevisionGen = 0;
 
-AN_CLASS_META( ASoundResource )
+AN_CLASS_META(ASoundResource)
 
 ASoundResource::ASoundResource()
 {
     Revision = ++RevisionGen;
 
-    Platform::ZeroMem( &AudioFileInfo, sizeof( AudioFileInfo ) );
+    Platform::ZeroMem(&AudioFileInfo, sizeof(AudioFileInfo));
 }
 
 ASoundResource::~ASoundResource()
@@ -96,69 +96,73 @@ ESoundStreamType ASoundResource::GetStreamType() const
     return CurStreamType;
 }
 
-void ASoundResource::LoadInternalResource( const char * _Path )
+void ASoundResource::LoadInternalResource(const char* _Path)
 {
     Purge();
 
     // TODO: ...
 }
 
-bool ASoundResource::LoadResource( IBinaryStream & Stream )
+bool ASoundResource::LoadResource(IBinaryStream& Stream)
 {
     Purge();
 
     if (!Platform::Stricmp(Stream.GetFileName() + Platform::FindExt(Stream.GetFileName()), ".sound"))
     {
         AString text;
-        text.FromFile( Stream );
+        text.FromFile(Stream);
 
         SDocumentDeserializeInfo deserializeInfo;
         deserializeInfo.pDocumentData = text.CStr();
-        deserializeInfo.bInsitu = true;
+        deserializeInfo.bInsitu       = true;
 
         ADocument doc;
-        doc.DeserializeFromString( deserializeInfo );
+        doc.DeserializeFromString(deserializeInfo);
 
-        ADocMember * soundMemb = doc.FindMember( "Sound" );
-        if ( !soundMemb ) {
-            GLogger.Printf( "ASoundResource::LoadResource: invalid sound\n" );
+        ADocMember* soundMemb = doc.FindMember("Sound");
+        if (!soundMemb)
+        {
+            GLogger.Printf("ASoundResource::LoadResource: invalid sound\n");
             return false;
         }
 
         AString fontFile = soundMemb->GetString();
-        if ( fontFile.IsEmpty() ) {
-            GLogger.Printf( "ASoundResource::LoadResource: invalid sound\n" );
+        if (fontFile.IsEmpty())
+        {
+            GLogger.Printf("ASoundResource::LoadResource: invalid sound\n");
             return false;
         }
 
-        ABinaryResource * soundBinary = CreateInstanceOf< ABinaryResource >();
-        soundBinary->InitializeFromFile( fontFile.CStr() );
+        ABinaryResource* soundBinary = CreateInstanceOf<ABinaryResource>();
+        soundBinary->InitializeFromFile(fontFile.CStr());
 
-        if ( !soundBinary->GetSizeInBytes() ) {
-            GLogger.Printf( "ASoundResource::LoadResource: invalid sound\n" );
+        if (!soundBinary->GetSizeInBytes())
+        {
+            GLogger.Printf("ASoundResource::LoadResource: invalid sound\n");
             return false;
         }
 
         SSoundCreateInfo createInfo;
 
-        ADocMember * member;
+        ADocMember* member;
 
-        member = doc.FindMember( "bStreamed" );
-        createInfo.StreamType = member ? ( Math::ToBool( member->GetString() ) ? SOUND_STREAM_MEMORY : SOUND_STREAM_DISABLED ) : SOUND_STREAM_DISABLED;
+        member                = doc.FindMember("bStreamed");
+        createInfo.StreamType = member ? (Math::ToBool(member->GetString()) ? SOUND_STREAM_MEMORY : SOUND_STREAM_DISABLED) : SOUND_STREAM_DISABLED;
 
-        member = doc.FindMember( "bForce8Bit" );
-        createInfo.bForce8Bit = member ? Math::ToBool( member->GetString() ) : false;
+        member                = doc.FindMember("bForce8Bit");
+        createInfo.bForce8Bit = member ? Math::ToBool(member->GetString()) : false;
 
-        member = doc.FindMember( "bForceMono" );
-        createInfo.bForceMono = member ? Math::ToBool( member->GetString() ) : false;
+        member                = doc.FindMember("bForceMono");
+        createInfo.bForceMono = member ? Math::ToBool(member->GetString()) : false;
 
-        return InitializeFromMemory( fontFile.CStr(), soundBinary->GetBinaryData(), soundBinary->GetSizeInBytes(), &createInfo );
+        return InitializeFromMemory(fontFile.CStr(), soundBinary->GetBinaryData(), soundBinary->GetSizeInBytes(), &createInfo);
     }
-    else {
+    else
+    {
         size_t size = Stream.SizeInBytes();
-        void * data = GHunkMemory.Alloc( size );
-        Stream.ReadBuffer( data, size );
-        bool bResult = InitializeFromMemory( Stream.GetFileName(), data, size );
+        void*  data = GHunkMemory.Alloc(size);
+        Stream.ReadBuffer(data, size);
+        bool bResult = InitializeFromMemory(Stream.GetFileName(), data, size);
         GHunkMemory.ClearLastHunk();
         return bResult;
     }
@@ -219,10 +223,11 @@ bool ASoundResource::LoadResource( IBinaryStream & Stream )
 #endif
 }
 
-bool ASoundResource::InitializeFromMemory( const char * _Path, const void * _SysMem, size_t _SizeInBytes, SSoundCreateInfo const * _pCreateInfo )
+bool ASoundResource::InitializeFromMemory(const char* _Path, const void* _SysMem, size_t _SizeInBytes, SSoundCreateInfo const* _pCreateInfo)
 {
     static const SSoundCreateInfo defaultCI;
-    if ( !_pCreateInfo ) {
+    if (!_pCreateInfo)
+    {
         _pCreateInfo = &defaultCI;
     }
 
@@ -230,57 +235,61 @@ bool ASoundResource::InitializeFromMemory( const char * _Path, const void * _Sys
 
     Purge();
 
-    AN_ASSERT( !pBuffer );
+    AN_ASSERT(!pBuffer);
 
     FileName = _Path;
 
     CurStreamType = _pCreateInfo->StreamType;
-    if ( CurStreamType == SOUND_STREAM_FILE ) {
+    if (CurStreamType == SOUND_STREAM_FILE)
+    {
         CurStreamType = SOUND_STREAM_MEMORY;
 
-        GLogger.Printf( "Using MemoryStreamed instead of FileStreamed as the file data is already in memory\n" );
+        GLogger.Printf("Using MemoryStreamed instead of FileStreamed as the file data is already in memory\n");
     }
 
-    bool mono = _pCreateInfo->bForceMono || device->GetChannels() == 1;
-    int deviceSampleRate = device->GetSampleRate();
+    bool mono             = _pCreateInfo->bForceMono || device->GetChannels() == 1;
+    int  deviceSampleRate = device->GetSampleRate();
 
-    switch ( CurStreamType ) {
-    case SOUND_STREAM_DISABLED:
+    switch (CurStreamType)
     {
-        AMemoryStream f;
+        case SOUND_STREAM_DISABLED: {
+            AMemoryStream f;
 
-        if ( !f.OpenRead( _Path, _SysMem, _SizeInBytes ) ) {
-            return false;
+            if (!f.OpenRead(_Path, _SysMem, _SizeInBytes))
+            {
+                return false;
+            }
+
+            if (!CreateAudioBuffer(f, &AudioFileInfo, deviceSampleRate, mono, _pCreateInfo->bForce8Bit, &pBuffer))
+            {
+                return false;
+            }
+
+            break;
         }
+        case SOUND_STREAM_MEMORY: {
+            AMemoryStream f;
 
-        if ( !CreateAudioBuffer( f, &AudioFileInfo, deviceSampleRate, mono, _pCreateInfo->bForce8Bit, &pBuffer ) ) {
-            return false;
+            if (!f.OpenRead(_Path, _SysMem, _SizeInBytes))
+            {
+                return false;
+            }
+
+            if (!LoadAudioFile(f, &AudioFileInfo, deviceSampleRate, mono, _pCreateInfo->bForce8Bit, nullptr))
+            {
+                return false;
+            }
+
+            void* pHeapPtr = GHeapMemory.Alloc(_SizeInBytes);
+            Platform::Memcpy(pHeapPtr, _SysMem, _SizeInBytes);
+
+            pFileInMemory = MakeRef<SFileInMemory>(pHeapPtr, _SizeInBytes);
+
+            break;
         }
-
-        break;
-    }
-    case SOUND_STREAM_MEMORY:
-    {
-        AMemoryStream f;
-
-        if ( !f.OpenRead( _Path, _SysMem, _SizeInBytes ) ) {
+        default:
+            AN_ASSERT(0);
             return false;
-        }
-
-        if ( !LoadAudioFile( f, &AudioFileInfo, deviceSampleRate, mono, _pCreateInfo->bForce8Bit, nullptr ) ) {
-            return false;
-        }
-
-        void * pHeapPtr = GHeapMemory.Alloc( _SizeInBytes );
-        Platform::Memcpy( pHeapPtr, _SysMem, _SizeInBytes );
-
-        pFileInMemory = MakeRef< SFileInMemory >( pHeapPtr, _SizeInBytes );
-
-        break;
-    }
-    default:
-        AN_ASSERT(0);
-        return false;
     }
 
     DurationInSeconds = (float)GetFrameCount() / GetFrequency();
@@ -324,13 +333,14 @@ bool ASoundResource::CreateAudioStreamInstance( TRef< IAudioStream > * ppInterfa
 }
 #endif
 
-bool ASoundResource::CreateStreamInstance( TRef< SAudioStream > * ppInterface )
+bool ASoundResource::CreateStreamInstance(TRef<SAudioStream>* ppInterface)
 {
-    if ( CurStreamType != SOUND_STREAM_MEMORY || !pFileInMemory ) {
+    if (CurStreamType != SOUND_STREAM_MEMORY || !pFileInMemory)
+    {
         return false;
     }
 
-    *ppInterface = MakeRef< SAudioStream >( pFileInMemory, GetFrameCount(), GetFrequency(), GetSampleBits(), GetChannels() );
+    *ppInterface = MakeRef<SAudioStream>(pFileInMemory, GetFrameCount(), GetFrequency(), GetSampleBits(), GetChannels());
     return true;
 }
 

@@ -465,12 +465,12 @@ private:
     int64_t GameplayTimeMicro          = 0;
     int64_t GameplayTimeMicroAfterTick = 0;
 
-    ATimer* TimerList     = nullptr;
-    ATimer* TimerListTail = nullptr;
+    ATimer* TimerList         = nullptr;
+    ATimer* TimerListTail     = nullptr;
     ATimer* pNextTickingTimer = nullptr;
 
     bool bPendingKill = false;
-    bool bTicking = false;
+    bool bTicking     = false;
 
     AWorld*        NextPendingKillWorld = nullptr;
     static AWorld* PendingKillWorlds;

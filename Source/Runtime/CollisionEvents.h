@@ -37,29 +37,29 @@ class AHitProxy;
 
 struct SOverlapEvent
 {
-    AActor * SelfActor;
-    AHitProxy * SelfBody;
-    AActor * OtherActor;
-    AHitProxy * OtherBody;
+    AActor*    SelfActor;
+    AHitProxy* SelfBody;
+    AActor*    OtherActor;
+    AHitProxy* OtherBody;
 };
 
 struct SContactPoint
 {
     Float3 Position;
     Float3 Normal;
-    float Distance;
-    float Impulse;
+    float  Distance;
+    float  Impulse;
 };
 
 struct SContactEvent
 {
-    AActor * SelfActor;
-    AHitProxy * SelfBody;
-    AActor * OtherActor;
-    AHitProxy * OtherBody;
-    SContactPoint const * Points;
-    int NumPoints;
+    AActor*              SelfActor;
+    AHitProxy*           SelfBody;
+    AActor*              OtherActor;
+    AHitProxy*           OtherBody;
+    SContactPoint const* Points;
+    int                  NumPoints;
 };
 
-using AOverlapDelegate = TEvent< SOverlapEvent const & >;
-using AContactDelegate = TEvent< SContactEvent const & >;
+using AOverlapDelegate = TEvent<SOverlapEvent const&>;
+using AContactDelegate = TEvent<SContactEvent const&>;

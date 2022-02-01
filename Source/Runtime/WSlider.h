@@ -32,7 +32,8 @@ SOFTWARE.
 
 #include "WWidget.h"
 
-struct SSliderGeometry {
+struct SSliderGeometry
+{
     Float2 SliderMins;
     Float2 SliderMaxs;
 
@@ -40,27 +41,29 @@ struct SSliderGeometry {
     Float2 BgMaxs;
 };
 
-class WSlider : public WWidget {
-    AN_CLASS( WSlider, WWidget )
+class WSlider : public WWidget
+{
+    AN_CLASS(WSlider, WWidget)
 
 public:
-    TWidgetEvent< float > E_OnUpdateValue;
+    TWidgetEvent<float> E_OnUpdateValue;
 
-    template< typename T, typename... TArgs >
-    WSlider & SetOnUpdateValue( T * _Object, void ( T::*_Method )(TArgs...) ) {
-        E_OnUpdateValue.Add( _Object, _Method );
+    template <typename T, typename... TArgs>
+    WSlider& SetOnUpdateValue(T* _Object, void (T::*_Method)(TArgs...))
+    {
+        E_OnUpdateValue.Add(_Object, _Method);
         return *this;
     }
 
-    WSlider & SetValue( float _Value );
-    WSlider & SetMaxValue( float _MaxValue );
-    WSlider & SetMinValue( float _MinValue );
-    WSlider & SetStep( float _Step );
-    WSlider & SetSliderWidth( float _Width );
-    WSlider & SetVerticalOrientation( bool _VerticalOrientation );
-    WSlider & SetBackgroundColor( Color4 const & _Color );
-    WSlider & SetSliderColor( Color4 const & _Color );
-    WSlider & SetLineColor( Color4 const & _Color );
+    WSlider& SetValue(float _Value);
+    WSlider& SetMaxValue(float _MaxValue);
+    WSlider& SetMinValue(float _MinValue);
+    WSlider& SetStep(float _Step);
+    WSlider& SetSliderWidth(float _Width);
+    WSlider& SetVerticalOrientation(bool _VerticalOrientation);
+    WSlider& SetBackgroundColor(Color4 const& _Color);
+    WSlider& SetSliderColor(Color4 const& _Color);
+    WSlider& SetLineColor(Color4 const& _Color);
 
     float GetValue() const { return Value; }
     float GetMinValue() const { return MinValue; }
@@ -72,37 +75,43 @@ public:
 protected:
     // You can override OnDrawEvent and use GetSliderGeometry to
     // draw your own style slider.
-    SSliderGeometry const & GetSliderGeometry() const;
+    SSliderGeometry const& GetSliderGeometry() const;
 
     bool IsVertical() const { return bVerticalOrientation; }
 
     void OnTransformDirty() override;
 
-    void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseButtonEvent(struct SMouseButtonEvent const& _Event, double _TimeStamp) override;
 
-    void OnMouseMoveEvent( struct SMouseMoveEvent const & _Event, double _TimeStamp ) override;
+    void OnMouseMoveEvent(struct SMouseMoveEvent const& _Event, double _TimeStamp) override;
 
-    void OnDrawEvent( ACanvas & _Canvas ) override;
+    void OnDrawEvent(ACanvas& _Canvas) override;
 
 private:
     void UpdateSliderGeometry();
     void UpdateSliderGeometryIfDirty();
-    void MoveSlider( float _Vec );
+    void MoveSlider(float _Vec);
 
-    enum EScrollAction { A_NONE, A_DECREASE, A_INCREASE, A_MOVE };
+    enum EScrollAction
+    {
+        A_NONE,
+        A_DECREASE,
+        A_INCREASE,
+        A_MOVE
+    };
 
     Color4 BackgroundColor;
     Color4 SliderColor;
     Color4 LineColor;
 
-    int Action;
-    float DragCursor;
+    int             Action;
+    float           DragCursor;
     SSliderGeometry Geometry;
-    float MinValue;
-    float MaxValue;
-    float Step;
-    float Value;
-    float SliderWidth;
-    bool bVerticalOrientation;
-    bool bUpdateGeometry;
+    float           MinValue;
+    float           MaxValue;
+    float           Step;
+    float           Value;
+    float           SliderWidth;
+    bool            bVerticalOrientation;
+    bool            bUpdateGeometry;
 };

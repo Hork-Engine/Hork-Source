@@ -32,35 +32,36 @@ SOFTWARE.
 
 #include "AnalyticLightComponent.h"
 
-class ASpotLightComponent : public AAnalyticLightComponent {
-    AN_COMPONENT( ASpotLightComponent, AAnalyticLightComponent )
+class ASpotLightComponent : public AAnalyticLightComponent
+{
+    AN_COMPONENT(ASpotLightComponent, AAnalyticLightComponent)
 
 public:
-    void SetRadius( float _Radius );
+    void  SetRadius(float _Radius);
     float GetRadius() const;
 
-    void SetInnerConeAngle( float _Angle );
+    void  SetInnerConeAngle(float _Angle);
     float GetInnerConeAngle() const;
 
-    void SetOuterConeAngle( float _Angle );
+    void  SetOuterConeAngle(float _Angle);
     float GetOuterConeAngle() const;
 
-    void SetSpotExponent( float _Exponent );
+    void  SetSpotExponent(float _Exponent);
     float GetSpotExponent() const;
 
-    void PackLight( Float4x4 const & InViewMatrix, SLightParameters & Light ) override;
+    void PackLight(Float4x4 const& InViewMatrix, SLightParameters& Light) override;
 
 protected:
     ASpotLightComponent();
 
     void OnCreateAvatar() override;
     void OnTransformDirty() override;
-    void DrawDebug( ADebugRenderer * InRenderer ) override;
+    void DrawDebug(ADebugRenderer* InRenderer) override;
 
 private:
     void UpdateWorldBounds();
 
-    BvSphere SphereWorldBounds;
+    BvSphere      SphereWorldBounds;
     BvOrientedBox OBBWorldBounds;
 
     float Radius;

@@ -32,26 +32,26 @@ SOFTWARE.
 #include "World.h"
 #include <Core/IntrusiveLinkedListMacro.h>
 
-AN_CLASS_META( ADrawable )
+AN_CLASS_META(ADrawable)
 
-static void EvaluateRaycastResult( SPrimitiveDef * Self,
-                                   ALevel const * LightingLevel,
-                                   SMeshVertex const * pVertices,
-                                   SMeshVertexUV const * pLightmapVerts,
-                                   int LightmapBlock,
-                                   unsigned int const * pIndices,
-                                   Float3 const & HitLocation,
-                                   Float2 const & HitUV,
-                                   Float3 * Vertices,
-                                   Float2 & TexCoord,
-                                   Float3 & LightmapSample )
+static void EvaluateRaycastResult(SPrimitiveDef*       Self,
+                                  ALevel const*        LightingLevel,
+                                  SMeshVertex const*   pVertices,
+                                  SMeshVertexUV const* pLightmapVerts,
+                                  int                  LightmapBlock,
+                                  unsigned int const*  pIndices,
+                                  Float3 const&        HitLocation,
+                                  Float2 const&        HitUV,
+                                  Float3*              Vertices,
+                                  Float2&              TexCoord,
+                                  Float3&              LightmapSample)
 {
-    ASceneComponent * primitiveOwner = Self->Owner;
-    Float3x4 const & transform = primitiveOwner->GetWorldTransformMatrix();
+    ASceneComponent* primitiveOwner = Self->Owner;
+    Float3x4 const&  transform      = primitiveOwner->GetWorldTransformMatrix();
 
-    Float3 const & v0 = pVertices[pIndices[0]].Position;
-    Float3 const & v1 = pVertices[pIndices[1]].Position;
-    Float3 const & v2 = pVertices[pIndices[2]].Position;
+    Float3 const& v0 = pVertices[pIndices[0]].Position;
+    Float3 const& v1 = pVertices[pIndices[1]].Position;
+    Float3 const& v2 = pVertices[pIndices[2]].Position;
 
     // transform triangle vertices to worldspace
     Vertices[0] = transform * v0;
@@ -63,97 +63,119 @@ static void EvaluateRaycastResult( SPrimitiveDef * Self,
     Float2 uv0 = pVertices[pIndices[0]].GetTexCoord();
     Float2 uv1 = pVertices[pIndices[1]].GetTexCoord();
     Float2 uv2 = pVertices[pIndices[2]].GetTexCoord();
-    TexCoord = uv0 * hitW + uv1 * HitUV[0] + uv2 * HitUV[1];
+    TexCoord   = uv0 * hitW + uv1 * HitUV[0] + uv2 * HitUV[1];
 
-    if ( pLightmapVerts && LightingLevel && LightmapBlock >= 0 ) {
-        Float2 const & lm0 = pLightmapVerts[pIndices[0]].TexCoord;
-        Float2 const & lm1 = pLightmapVerts[pIndices[1]].TexCoord;
-        Float2 const & lm2 = pLightmapVerts[pIndices[2]].TexCoord;
-        Float2 lighmapTexcoord = lm0 * hitW + lm1 * HitUV[0] + lm2 * HitUV[1];
+    if (pLightmapVerts && LightingLevel && LightmapBlock >= 0)
+    {
+        Float2 const& lm0             = pLightmapVerts[pIndices[0]].TexCoord;
+        Float2 const& lm1             = pLightmapVerts[pIndices[1]].TexCoord;
+        Float2 const& lm2             = pLightmapVerts[pIndices[2]].TexCoord;
+        Float2        lighmapTexcoord = lm0 * hitW + lm1 * HitUV[0] + lm2 * HitUV[1];
 
-        LightmapSample = LightingLevel->SampleLight( LightmapBlock, lighmapTexcoord );
+        LightmapSample = LightingLevel->SampleLight(LightmapBlock, lighmapTexcoord);
     }
-    else {
+    else
+    {
         LightmapSample = Float3(0.0f);
     }
 }
 
-ADrawable::ADrawable() {
+ADrawable::ADrawable()
+{
     Bounds.Clear();
     WorldBounds.Clear();
     OverrideBoundingBox.Clear();
 
-    Platform::ZeroMem( &Primitive, sizeof( Primitive ) );
-    Primitive.Owner = this;
-    Primitive.Type = VSD_PRIMITIVE_BOX;
-    Primitive.VisGroup = VISIBILITY_GROUP_DEFAULT;
-    Primitive.QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS | VSD_QUERY_MASK_SHADOW_CAST;
+    Platform::ZeroMem(&Primitive, sizeof(Primitive));
+    Primitive.Owner                 = this;
+    Primitive.Type                  = VSD_PRIMITIVE_BOX;
+    Primitive.VisGroup              = VISIBILITY_GROUP_DEFAULT;
+    Primitive.QueryGroup            = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS | VSD_QUERY_MASK_SHADOW_CAST;
     Primitive.EvaluateRaycastResult = EvaluateRaycastResult;
 
     bOverrideBounds = false;
-    bSkinnedMesh = false;
-    bCastShadow = true;
-    bAllowRaycast = false;
+    bSkinnedMesh    = false;
+    bCastShadow     = true;
+    bAllowRaycast   = false;
 }
 
-void ADrawable::SetVisibilityGroup( int InVisibilityGroup ) {
+void ADrawable::SetVisibilityGroup(int InVisibilityGroup)
+{
     Primitive.VisGroup = InVisibilityGroup;
 }
 
-int ADrawable::GetVisibilityGroup() const {
+int ADrawable::GetVisibilityGroup() const
+{
     return Primitive.VisGroup;
 }
 
-void ADrawable::SetVisible( bool _Visible ) {
-    if ( _Visible ) {
+void ADrawable::SetVisible(bool _Visible)
+{
+    if (_Visible)
+    {
         Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE;
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
-    } else {
+    }
+    else
+    {
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
         Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
     }
 }
 
-bool ADrawable::IsVisible() const {
-    return !!( Primitive.QueryGroup & VSD_QUERY_MASK_VISIBLE );
+bool ADrawable::IsVisible() const
+{
+    return !!(Primitive.QueryGroup & VSD_QUERY_MASK_VISIBLE);
 }
 
-void ADrawable::SetHiddenInLightPass( bool _HiddenInLightPass ) {
-    if ( _HiddenInLightPass ) {
+void ADrawable::SetHiddenInLightPass(bool _HiddenInLightPass)
+{
+    if (_HiddenInLightPass)
+    {
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
         Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS;
-    } else {
+    }
+    else
+    {
         Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS;
     }
 }
 
-bool ADrawable::IsHiddenInLightPass() const {
+bool ADrawable::IsHiddenInLightPass() const
+{
     return !(Primitive.QueryGroup & VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS);
 }
 
-void ADrawable::SetQueryGroup( int _UserQueryGroup ) {
+void ADrawable::SetQueryGroup(int _UserQueryGroup)
+{
     Primitive.QueryGroup |= _UserQueryGroup & 0xffff0000;
 }
 
-void ADrawable::SetSurfaceFlags( uint8_t Flags ) {
+void ADrawable::SetSurfaceFlags(uint8_t Flags)
+{
     Primitive.Flags = Flags;
 }
 
-uint8_t ADrawable::GetSurfaceFlags() const {
+uint8_t ADrawable::GetSurfaceFlags() const
+{
     return Primitive.Flags;
 }
 
-void ADrawable::SetFacePlane( PlaneF const & _Plane ) {
+void ADrawable::SetFacePlane(PlaneF const& _Plane)
+{
     Primitive.Face = _Plane;
 }
 
-PlaneF const & ADrawable::GetFacePlane() const {
+PlaneF const& ADrawable::GetFacePlane() const
+{
     return Primitive.Face;
 }
 
-void ADrawable::ForceOverrideBounds( bool _OverrideBounds ) {
-    if ( bOverrideBounds == _OverrideBounds ) {
+void ADrawable::ForceOverrideBounds(bool _OverrideBounds)
+{
+    if (bOverrideBounds == _OverrideBounds)
+    {
         return;
     }
 
@@ -162,61 +184,69 @@ void ADrawable::ForceOverrideBounds( bool _OverrideBounds ) {
     UpdateWorldBounds();
 }
 
-void ADrawable::SetBoundsOverride( BvAxisAlignedBox const & _Bounds ) {
+void ADrawable::SetBoundsOverride(BvAxisAlignedBox const& _Bounds)
+{
     OverrideBoundingBox = _Bounds;
 
-    if ( bOverrideBounds ) {
+    if (bOverrideBounds)
+    {
         UpdateWorldBounds();
     }
 }
 
-BvAxisAlignedBox const & ADrawable::GetBounds() const {
+BvAxisAlignedBox const& ADrawable::GetBounds() const
+{
     return bOverrideBounds ? OverrideBoundingBox : Bounds;
 }
 
-BvAxisAlignedBox const & ADrawable::GetWorldBounds() const {
+BvAxisAlignedBox const& ADrawable::GetWorldBounds() const
+{
     return WorldBounds;
 }
 
-void ADrawable::OnTransformDirty() {
+void ADrawable::OnTransformDirty()
+{
     Super::OnTransformDirty();
 
     UpdateWorldBounds();
 }
 
-void ADrawable::InitializeComponent() {
+void ADrawable::InitializeComponent()
+{
     Super::InitializeComponent();
 
-    GetLevel()->AddPrimitive( &Primitive );
+    GetLevel()->AddPrimitive(&Primitive);
 
     UpdateWorldBounds();
 
-    if ( bCastShadow )
+    if (bCastShadow)
     {
-        GetWorld()->GetRender().AddShadowCaster( this );
+        GetWorld()->GetRender().AddShadowCaster(this);
     }
 }
 
-void ADrawable::DeinitializeComponent() {
+void ADrawable::DeinitializeComponent()
+{
     Super::DeinitializeComponent();
 
-    GetLevel()->RemovePrimitive( &Primitive );
+    GetLevel()->RemovePrimitive(&Primitive);
 
-    if ( bCastShadow )
+    if (bCastShadow)
     {
-        GetWorld()->GetRender().RemoveShadowCaster( this );
+        GetWorld()->GetRender().RemoveShadowCaster(this);
     }
 }
 
-void ADrawable::SetCastShadow( bool _CastShadow ) {
-    if ( bCastShadow == _CastShadow )
+void ADrawable::SetCastShadow(bool _CastShadow)
+{
+    if (bCastShadow == _CastShadow)
     {
         return;
     }
 
     bCastShadow = _CastShadow;
 
-    if ( bCastShadow )
+    if (bCastShadow)
     {
         Primitive.QueryGroup |= VSD_QUERY_MASK_SHADOW_CAST;
         Primitive.QueryGroup &= ~VSD_QUERY_MASK_NO_SHADOW_CAST;
@@ -227,74 +257,85 @@ void ADrawable::SetCastShadow( bool _CastShadow ) {
         Primitive.QueryGroup |= VSD_QUERY_MASK_NO_SHADOW_CAST;
     }
 
-    if ( IsInitialized() )
+    if (IsInitialized())
     {
-        ARenderWorld & RenderWorld = GetWorld()->GetRender();
+        ARenderWorld& RenderWorld = GetWorld()->GetRender();
 
-        if ( bCastShadow )
+        if (bCastShadow)
         {
-            RenderWorld.AddShadowCaster( this );
-        } else
+            RenderWorld.AddShadowCaster(this);
+        }
+        else
         {
-            RenderWorld.RemoveShadowCaster( this );
+            RenderWorld.RemoveShadowCaster(this);
         }
     }
 }
 
-void ADrawable::UpdateWorldBounds() {
-    BvAxisAlignedBox const & boundingBox = GetBounds();
+void ADrawable::UpdateWorldBounds()
+{
+    BvAxisAlignedBox const& boundingBox = GetBounds();
 
-    WorldBounds = boundingBox.Transform( GetWorldTransformMatrix() );
+    WorldBounds = boundingBox.Transform(GetWorldTransformMatrix());
 
     Primitive.Box = WorldBounds;
 
-    if ( IsInitialized() )
+    if (IsInitialized())
     {
-        GetLevel()->MarkPrimitive( &Primitive );
+        GetLevel()->MarkPrimitive(&Primitive);
     }
 }
 
-void ADrawable::ForceOutdoor( bool _OutdoorSurface ) {
-    if ( Primitive.bIsOutdoor == _OutdoorSurface ) {
+void ADrawable::ForceOutdoor(bool _OutdoorSurface)
+{
+    if (Primitive.bIsOutdoor == _OutdoorSurface)
+    {
         return;
     }
 
     Primitive.bIsOutdoor = _OutdoorSurface;
 
-    if ( IsInitialized() )
+    if (IsInitialized())
     {
-        GetLevel()->MarkPrimitive( &Primitive );
+        GetLevel()->MarkPrimitive(&Primitive);
     }
 }
 
-bool ADrawable::IsOutdoor() const {
+bool ADrawable::IsOutdoor() const
+{
     return Primitive.bIsOutdoor;
 }
 
-void ADrawable::PreRenderUpdate( SRenderFrontendDef const * _Def ) {
-    if ( VisFrame != _Def->FrameNumber ) {
+void ADrawable::PreRenderUpdate(SRenderFrontendDef const* _Def)
+{
+    if (VisFrame != _Def->FrameNumber)
+    {
         VisFrame = _Def->FrameNumber;
 
-        OnPreRenderUpdate( _Def );
+        OnPreRenderUpdate(_Def);
     }
 }
 
-bool ADrawable::Raycast( Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< STriangleHitResult > & Hits ) const {
-    if ( !Primitive.RaycastCallback ) {
+bool ADrawable::Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits) const
+{
+    if (!Primitive.RaycastCallback)
+    {
         return false;
     }
 
     Hits.Clear();
 
-    return Primitive.RaycastCallback( &Primitive, InRayStart, InRayEnd, Hits );
+    return Primitive.RaycastCallback(&Primitive, InRayStart, InRayEnd, Hits);
 }
 
-bool ADrawable::RaycastClosest( Float3 const & InRayStart, Float3 const & InRayEnd, STriangleHitResult & Hit ) const {
-    if ( !Primitive.RaycastClosestCallback ) {
+bool ADrawable::RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, STriangleHitResult& Hit) const
+{
+    if (!Primitive.RaycastClosestCallback)
+    {
         return false;
     }
 
-    SMeshVertex const * pVertices;
+    SMeshVertex const* pVertices;
 
-    return Primitive.RaycastClosestCallback( &Primitive, InRayStart, InRayEnd, Hit, &pVertices );
+    return Primitive.RaycastClosestCallback(&Primitive, InRayStart, InRayEnd, Hit, &pVertices);
 }

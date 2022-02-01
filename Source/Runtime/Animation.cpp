@@ -35,112 +35,126 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
-AN_CLASS_META( ASkeletalAnimation )
+AN_CLASS_META(ASkeletalAnimation)
 
-ASkeletalAnimation::ASkeletalAnimation() {
+ASkeletalAnimation::ASkeletalAnimation()
+{
 }
 
-ASkeletalAnimation::~ASkeletalAnimation() {
+ASkeletalAnimation::~ASkeletalAnimation()
+{
 }
 
-void ASkeletalAnimation::Purge() {
+void ASkeletalAnimation::Purge()
+{
     Channels.Clear();
     Transforms.Clear();
     Bounds.Clear();
     MinNodeIndex = 0;
     MaxNodeIndex = 0;
     ChannelsMap.Clear();
-    FrameCount = 0;
-    FrameDelta = 0;
-    FrameRate = 0;
-    DurationInSeconds = 0;
+    FrameCount         = 0;
+    FrameDelta         = 0;
+    FrameRate          = 0;
+    DurationInSeconds  = 0;
     DurationNormalizer = 1.0f;
 }
 
-void ASkeletalAnimation::Initialize( int _FrameCount, float _FrameDelta, STransform const * _Transforms, int _TransformsCount, SAnimationChannel const * _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const * _Bounds ) {
-    AN_ASSERT( _TransformsCount == _FrameCount * _NumAnimatedJoints );
+void ASkeletalAnimation::Initialize(int _FrameCount, float _FrameDelta, STransform const* _Transforms, int _TransformsCount, SAnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds)
+{
+    AN_ASSERT(_TransformsCount == _FrameCount * _NumAnimatedJoints);
 
-    Channels.ResizeInvalidate( _NumAnimatedJoints );
-    Platform::Memcpy( Channels.ToPtr(), _AnimatedJoints, sizeof( Channels[0] ) * _NumAnimatedJoints );
+    Channels.ResizeInvalidate(_NumAnimatedJoints);
+    Platform::Memcpy(Channels.ToPtr(), _AnimatedJoints, sizeof(Channels[0]) * _NumAnimatedJoints);
 
-    Transforms.ResizeInvalidate( _TransformsCount );
-    Platform::Memcpy( Transforms.ToPtr(), _Transforms, sizeof( Transforms[0] ) * _TransformsCount );
+    Transforms.ResizeInvalidate(_TransformsCount);
+    Platform::Memcpy(Transforms.ToPtr(), _Transforms, sizeof(Transforms[0]) * _TransformsCount);
 
-    Bounds.ResizeInvalidate( _FrameCount );
-    Platform::Memcpy( Bounds.ToPtr(), _Bounds, sizeof( Bounds[0] ) * _FrameCount );
+    Bounds.ResizeInvalidate(_FrameCount);
+    Platform::Memcpy(Bounds.ToPtr(), _Bounds, sizeof(Bounds[0]) * _FrameCount);
 
-    if ( !Channels.IsEmpty() ) {
-        MinNodeIndex = Math::MaxValue< int32_t >();
+    if (!Channels.IsEmpty())
+    {
+        MinNodeIndex = Math::MaxValue<int32_t>();
         MaxNodeIndex = 0;
 
-        for ( int i = 0; i < Channels.Size(); i++ ) {
-            MinNodeIndex = Math::Min( MinNodeIndex, Channels[ i ].JointIndex );
-            MaxNodeIndex = Math::Max( MaxNodeIndex, Channels[ i ].JointIndex );
+        for (int i = 0; i < Channels.Size(); i++)
+        {
+            MinNodeIndex = Math::Min(MinNodeIndex, Channels[i].JointIndex);
+            MaxNodeIndex = Math::Max(MaxNodeIndex, Channels[i].JointIndex);
         }
 
         int mapSize = MaxNodeIndex - MinNodeIndex + 1;
 
-        ChannelsMap.ResizeInvalidate( mapSize );
+        ChannelsMap.ResizeInvalidate(mapSize);
 
-        for ( int i = 0; i < mapSize; i++ ) {
-            ChannelsMap[ i ] = ( unsigned short )-1;
+        for (int i = 0; i < mapSize; i++)
+        {
+            ChannelsMap[i] = (unsigned short)-1;
         }
 
-        for ( int i = 0; i < Channels.Size(); i++ ) {
-            ChannelsMap[ Channels[ i ].JointIndex - MinNodeIndex ] = i;
+        for (int i = 0; i < Channels.Size(); i++)
+        {
+            ChannelsMap[Channels[i].JointIndex - MinNodeIndex] = i;
         }
-    } else {
+    }
+    else
+    {
         MinNodeIndex = 0;
         MaxNodeIndex = 0;
 
         ChannelsMap.Clear();
     }
 
-    FrameCount = _FrameCount;
-    FrameDelta = _FrameDelta;
-    FrameRate = 1.0f / _FrameDelta;
-    DurationInSeconds = ( FrameCount - 1 ) * FrameDelta;
+    FrameCount         = _FrameCount;
+    FrameDelta         = _FrameDelta;
+    FrameRate          = 1.0f / _FrameDelta;
+    DurationInSeconds  = (FrameCount - 1) * FrameDelta;
     DurationNormalizer = 1.0f / DurationInSeconds;
 
     bIsAnimationValid = _FrameCount > 0 && !Channels.IsEmpty();
 }
 
-void ASkeletalAnimation::LoadInternalResource( const char * _Path ) {
+void ASkeletalAnimation::LoadInternalResource(const char* _Path)
+{
     Purge();
 }
 
-bool ASkeletalAnimation::LoadResource( IBinaryStream & Stream ) {
+bool ASkeletalAnimation::LoadResource(IBinaryStream& Stream)
+{
     AString guid;
 
-    TPodVector< SAnimationChannel > channels;
-    TPodVector< STransform > transforms;
-    TPodVector< BvAxisAlignedBox > bounds;
+    TPodVector<SAnimationChannel> channels;
+    TPodVector<STransform>        transforms;
+    TPodVector<BvAxisAlignedBox>  bounds;
 
     uint32_t fileFormat = Stream.ReadUInt32();
 
-    if ( fileFormat != FMT_FILE_TYPE_ANIMATION ) {
-        GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_ANIMATION );
+    if (fileFormat != FMT_FILE_TYPE_ANIMATION)
+    {
+        GLogger.Printf("Expected file format %d\n", FMT_FILE_TYPE_ANIMATION);
         return false;
     }
 
     uint32_t fileVersion = Stream.ReadUInt32();
 
-    if ( fileVersion != FMT_VERSION_ANIMATION ) {
-        GLogger.Printf( "Expected file version %d\n", FMT_VERSION_ANIMATION );
+    if (fileVersion != FMT_VERSION_ANIMATION)
+    {
+        GLogger.Printf("Expected file version %d\n", FMT_VERSION_ANIMATION);
         return false;
     }
 
-    Stream.ReadObject( guid );
+    Stream.ReadObject(guid);
 
-    float frameDelta = Stream.ReadFloat();
+    float    frameDelta = Stream.ReadFloat();
     uint32_t frameCount = Stream.ReadUInt32();
-    Stream.ReadArrayOfStructs( channels );
-    Stream.ReadArrayOfStructs( transforms );
-    Stream.ReadArrayOfStructs( bounds );
+    Stream.ReadArrayOfStructs(channels);
+    Stream.ReadArrayOfStructs(transforms);
+    Stream.ReadArrayOfStructs(bounds);
 
-    Initialize( frameCount, frameDelta,
-                transforms.ToPtr(), transforms.Size(),
-                channels.ToPtr(), channels.Size(), bounds.ToPtr() );
+    Initialize(frameCount, frameDelta,
+               transforms.ToPtr(), transforms.Size(),
+               channels.ToPtr(), channels.Size(), bounds.ToPtr());
 
     return true;
 }

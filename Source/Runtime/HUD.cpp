@@ -32,14 +32,15 @@ SOFTWARE.
 #include "Canvas.h"
 #include <Platform/Utf8.h>
 
-AN_CLASS_META( AHUD )
+AN_CLASS_META(AHUD)
 
-AHUD::AHUD() {
-
+AHUD::AHUD()
+{
 }
 
-void AHUD::Draw( ACanvas * _Canvas, int _X, int _Y, int _W, int _H ) {
-    Canvas = _Canvas;
+void AHUD::Draw(ACanvas* _Canvas, int _X, int _Y, int _W, int _H)
+{
+    Canvas    = _Canvas;
     ViewportX = _X;
     ViewportY = _Y;
     ViewportW = _W;
@@ -48,43 +49,48 @@ void AHUD::Draw( ACanvas * _Canvas, int _X, int _Y, int _W, int _H ) {
     DrawHUD();
 }
 
-void AHUD::DrawHUD() {
-
+void AHUD::DrawHUD()
+{
 }
 
-void AHUD::DrawText( AFont * _Font, int x, int y, Color4 const & color, const char * _Text ) {
-    const int CharacterWidth = 8;
+void AHUD::DrawText(AFont* _Font, int x, int y, Color4 const& color, const char* _Text)
+{
+    const int CharacterWidth  = 8;
     const int CharacterHeight = 16;
 
     const float scale = (float)CharacterHeight / _Font->GetFontSize();
 
-    const char * s = _Text;
-    int byteLen;
-    SWideChar ch;
-    int cx = x;
+    const char* s = _Text;
+    int         byteLen;
+    SWideChar   ch;
+    int         cx = x;
 
-    Canvas->PushFont( _Font );
+    Canvas->PushFont(_Font);
 
-    while ( *s ) {
-        byteLen = Core::WideCharDecodeUTF8( s, ch );
-        if ( !byteLen ) {
+    while (*s)
+    {
+        byteLen = Core::WideCharDecodeUTF8(s, ch);
+        if (!byteLen)
+        {
             break;
         }
 
         s += byteLen;
 
-        if ( ch == '\n' || ch == '\r' ) {
+        if (ch == '\n' || ch == '\r')
+        {
             y += CharacterHeight + 4;
             cx = x;
             continue;
         }
 
-        if ( ch == ' ' ) {
+        if (ch == ' ')
+        {
             cx += CharacterWidth;
             continue;
         }
 
-        Canvas->DrawWChar( ch, cx, y, scale, color );
+        Canvas->DrawWChar(ch, cx, y, scale, color);
 
         cx += CharacterWidth;
     }

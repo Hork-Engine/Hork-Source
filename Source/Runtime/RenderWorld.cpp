@@ -39,36 +39,36 @@ ARenderWorld::ARenderWorld()
 {
 }
 
-void ARenderWorld::AddSkinnedMesh( ASkinnedComponent * InSkeleton )
+void ARenderWorld::AddSkinnedMesh(ASkinnedComponent* InSkeleton)
 {
-    INTRUSIVE_ADD_UNIQUE( InSkeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
+    INTRUSIVE_ADD_UNIQUE(InSkeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail);
 }
 
-void ARenderWorld::RemoveSkinnedMesh( ASkinnedComponent * InSkeleton )
+void ARenderWorld::RemoveSkinnedMesh(ASkinnedComponent* InSkeleton)
 {
-    INTRUSIVE_REMOVE( InSkeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail );
+    INTRUSIVE_REMOVE(InSkeleton, Next, Prev, SkinnedMeshList, SkinnedMeshListTail);
 }
 
-void ARenderWorld::AddShadowCaster( ADrawable * InMesh )
+void ARenderWorld::AddShadowCaster(ADrawable* InMesh)
 {
-    INTRUSIVE_ADD_UNIQUE( InMesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
+    INTRUSIVE_ADD_UNIQUE(InMesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail);
 }
 
-void ARenderWorld::RemoveShadowCaster( ADrawable * InMesh )
+void ARenderWorld::RemoveShadowCaster(ADrawable* InMesh)
 {
-    INTRUSIVE_REMOVE( InMesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail );
+    INTRUSIVE_REMOVE(InMesh, NextShadowCaster, PrevShadowCaster, ShadowCasters, ShadowCastersTail);
 }
 
-void ARenderWorld::AddDirectionalLight( ADirectionalLightComponent * InLight )
+void ARenderWorld::AddDirectionalLight(ADirectionalLightComponent* InLight)
 {
-    INTRUSIVE_ADD_UNIQUE( InLight, Next, Prev, DirectionalLightList, DirectionalLightListTail );
+    INTRUSIVE_ADD_UNIQUE(InLight, Next, Prev, DirectionalLightList, DirectionalLightListTail);
 }
 
-void ARenderWorld::RemoveDirectionalLight( ADirectionalLightComponent * InLight )
+void ARenderWorld::RemoveDirectionalLight(ADirectionalLightComponent* InLight)
 {
-    INTRUSIVE_REMOVE( InLight, Next, Prev, DirectionalLightList, DirectionalLightListTail );
+    INTRUSIVE_REMOVE(InLight, Next, Prev, DirectionalLightList, DirectionalLightListTail);
 }
 
-void ARenderWorld::DrawDebug( ADebugRenderer * InRenderer )
+void ARenderWorld::DrawDebug(ADebugRenderer* InRenderer)
 {
 }
