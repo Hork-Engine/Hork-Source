@@ -101,7 +101,7 @@ RenderCore::BindlessHandle GPrefilteredMapBindless;
 std::vector<SRenderViewContext> GRenderViewContext;
 
 AVirtualTextureFeedbackAnalyzer * GFeedbackAnalyzerVT;
-AVirtualTextureCache * GPhysCacheVT;
+AVirtualTextureCache * GPhysCacheVT{};
 
 IPipeline * GTerrainDepthPipeline;
 IPipeline * GTerrainLightPipeline;

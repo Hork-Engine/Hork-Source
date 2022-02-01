@@ -161,7 +161,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     /////////////////////////////////////////////////////////////////////
     // test
     /////////////////////////////////////////////////////////////////////
-
+    #if 0
     {
         VXGIVoxelizer vox;
         vox.Render();
@@ -385,6 +385,8 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 
     GPhysCacheVT = PhysCacheVT;
 
+    #endif
+
     //::TestVT();
     //PhysCacheVT->CreateTexture( "Test.vt3", &TestVT );
 
@@ -467,6 +469,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 #    endif
 #endif
 
+    #if 0
     // Test SPIR-V
     TRef<IShaderModule> shaderModule;
     SShaderBinaryData   binaryData;
@@ -474,7 +477,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     binaryData.BinaryFormat = SHADER_BINARY_FORMAT_SPIR_V_ARB;
     LoadSPIRV(&binaryData.BinaryCode, &binaryData.BinarySize);
     GDevice->CreateShaderFromBinary(&binaryData, &shaderModule);
-
+    #endif
 
 
     CreateTerrainMaterialDepth(&TerrainDepthPipeline);
@@ -661,7 +664,8 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
     //rcmd->SetSwapChainResolution( GFrameData->CanvasWidth, GFrameData->CanvasHeight );
 
     // Update cache at beggining of the frame to give more time for stream thread
-    PhysCacheVT->Update();
+    if (PhysCacheVT)
+        PhysCacheVT->Update();
 
     FeedbackAnalyzerVT->Begin(StreamedMemory);
 
@@ -790,10 +794,19 @@ void ARenderBackend::SetViewConstants(int ViewportIndex)
     pViewCBuf->DynamicResolutionRatioPY = (float)GRenderView->HeightP / GFrameData->RenderTargetMaxHeightP;
 
     pViewCBuf->FeedbackBufferResolutionRatio = GRenderView->VTFeedback->GetResolutionRatio();
-    pViewCBuf->VTPageCacheCapacity.X         = (float)PhysCacheVT->GetPageCacheCapacityX();
-    pViewCBuf->VTPageCacheCapacity.Y         = (float)PhysCacheVT->GetPageCacheCapacityY();
 
-    pViewCBuf->VTPageTranslationOffsetAndScale = PhysCacheVT->GetPageTranslationOffsetAndScale();
+    if (PhysCacheVT)
+    {
+        pViewCBuf->VTPageCacheCapacity.X           = (float)PhysCacheVT->GetPageCacheCapacityX();
+        pViewCBuf->VTPageCacheCapacity.Y           = (float)PhysCacheVT->GetPageCacheCapacityY();
+        pViewCBuf->VTPageTranslationOffsetAndScale = PhysCacheVT->GetPageTranslationOffsetAndScale();
+    }
+    else
+    {
+        pViewCBuf->VTPageCacheCapacity.X           = 0;
+        pViewCBuf->VTPageCacheCapacity.Y           = 0;
+        pViewCBuf->VTPageTranslationOffsetAndScale = {0.0f, 0.0f, 1.0f, 1.0f};
+    }
 
     pViewCBuf->ViewPosition = GRenderView->ViewPosition;
     pViewCBuf->TimeDelta    = GRenderView->GameplayTimeStep;

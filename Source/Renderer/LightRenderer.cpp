@@ -260,7 +260,8 @@ bool ALightRenderer::BindMaterialLightPass(IImmediateContext* immediateCtx, SRen
         AVirtualTexture* pVirtualTex = GFeedbackAnalyzerVT->GetTexture(textureUnit);
         //AN_ASSERT( pVirtualTex != nullptr );
 
-        rtbl->BindTexture(6, GPhysCacheVT->GetLayers()[0]);
+        if (GPhysCacheVT)
+            rtbl->BindTexture(6, GPhysCacheVT->GetLayers()[0]);
 
         if (pVirtualTex)
         {
