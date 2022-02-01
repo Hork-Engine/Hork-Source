@@ -641,6 +641,8 @@ void AIndexedMesh::SetSkin(int32_t const* _JointIndices, Float3x4 const* _Offset
 void AIndexedMesh::SetCollisionModel(ACollisionModel* _CollisionModel)
 {
     CollisionModel = _CollisionModel;
+
+    // TODO: Notify users that the collision model has been changed?
 }
 
 void AIndexedMesh::SetMaterialInstance(int _SubpartIndex, AMaterialInstance* _MaterialInstance)
@@ -650,6 +652,8 @@ void AIndexedMesh::SetMaterialInstance(int _SubpartIndex, AMaterialInstance* _Ma
         return;
     }
     Subparts[_SubpartIndex]->SetMaterialInstance(_MaterialInstance);
+
+    // TODO: Notify users that the material instance has been changed?
 }
 
 void AIndexedMesh::SetBoundingBox(int _SubpartIndex, BvAxisAlignedBox const& _BoundingBox)
@@ -659,6 +663,8 @@ void AIndexedMesh::SetBoundingBox(int _SubpartIndex, BvAxisAlignedBox const& _Bo
         return;
     }
     Subparts[_SubpartIndex]->SetBoundingBox(_BoundingBox);
+
+    // TODO: Notify users that the bounding box has been changed?
 }
 
 AIndexedMeshSubpart* AIndexedMesh::GetSubpart(int _SubpartIndex)
@@ -989,7 +995,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
 
         SCollisionBoxDef box;
 
-        CollisionModel = CreateInstanceOf<ACollisionModel>(&box);
+        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&box));
         return;
     }
 
@@ -999,7 +1005,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
 
         SCollisionSphereDef sphere;
 
-        CollisionModel = CreateInstanceOf<ACollisionModel>(&sphere);
+        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&sphere));
         return;
     }
 
@@ -1010,7 +1016,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         SCollisionCylinderDef cylinder;
         cylinder.HalfExtents = {0.5f, 0.5f, 0.5f};
 
-        CollisionModel = CreateInstanceOf<ACollisionModel>(&cylinder);
+        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&cylinder));
         return;
     }
 
@@ -1021,7 +1027,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         SCollisionConeDef cone;
         cone.Radius = 0.5f;
 
-        CollisionModel = CreateInstanceOf<ACollisionModel>(&cone);
+        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&cone));
         return;
     }
 
@@ -1032,7 +1038,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         SCollisionCapsuleDef capsule;
         capsule.Radius = 0.5f;
 
-        CollisionModel = CreateInstanceOf<ACollisionModel>(&capsule);
+        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&capsule));
         return;
     }
 
@@ -1046,7 +1052,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         box.HalfExtents.Z = 128;
         box.Position.Y -= box.HalfExtents.Y;
 
-        CollisionModel = CreateInstanceOf<ACollisionModel>(&box);
+        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&box));
         return;
     }
 
@@ -1060,7 +1066,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         box.HalfExtents.Z = 0.1f;
         box.Position.Z -= box.HalfExtents.Z;
 
-        CollisionModel = CreateInstanceOf<ACollisionModel>(&box);
+        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&box));
         return;
     }
 
@@ -1100,7 +1106,7 @@ void AIndexedMesh::GenerateRigidbodyCollisions()
     bvh.pIndexedMeshSubparts = Subparts.ToPtr();
     bvh.SubpartCount = Subparts.Size();
 
-    CollisionModel = CreateInstanceOf<ACollisionModel>(&bvh);
+    SetCollisionModel(CreateInstanceOf<ACollisionModel>(&bvh));
 }
 
 void AIndexedMesh::GenerateSoftbodyFacesFromMeshIndices()
