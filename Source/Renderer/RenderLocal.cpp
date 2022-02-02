@@ -82,6 +82,9 @@ TRef< IBuffer > GSaq;
 TRef< ITexture > GWhiteTexture;
 
 /** Cluster lookcup 3D texture */
+TRef<ITexture> GLookupBRDF;
+
+/** Cluster lookcup 3D texture */
 TRef< ITexture > GClusterLookup;
 
 /** Cluster item references */

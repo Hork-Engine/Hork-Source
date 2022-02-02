@@ -28,28 +28,14 @@ SOFTWARE.
 
 */
 
-#pragma once
-
-#include <RenderCore/FrameGraph.h>
-
-struct SRenderInstance;
-
-class ALightRenderer
+out gl_PerVertex
 {
-public:
-    ALightRenderer();
-
-    void AddPass(RenderCore::AFrameGraph& FrameGraph,
-                 RenderCore::FGTextureProxy* DepthTarget,
-                 RenderCore::FGTextureProxy* SSAOTexture,
-                 RenderCore::FGTextureProxy* ShadowMapDepth0,
-                 RenderCore::FGTextureProxy* ShadowMapDepth1,
-                 RenderCore::FGTextureProxy* ShadowMapDepth2,
-                 RenderCore::FGTextureProxy* ShadowMapDepth3,
-                 RenderCore::FGTextureProxy* LinearDepth,
-                 RenderCore::FGTextureProxy** ppLight /*,
-                 RenderCore::FGTextureProxy ** ppVelocity*/);
-
-private:
-    bool BindMaterialLightPass(RenderCore::IImmediateContext* immediateContext, SRenderInstance const* Instance);
+    vec4 gl_Position;
 };
+
+layout( location = 0 ) noperspective out vec2 VS_TexCoord;
+
+void main() {
+    gl_Position = vec4( InPosition, 0.0, 1.0 );
+    VS_TexCoord = InPosition * vec2(0.5,-0.5) + 0.5;
+}

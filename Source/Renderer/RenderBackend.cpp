@@ -36,6 +36,7 @@ SOFTWARE.
 #include "EnvProbeGenerator.h"
 #include "CubemapGenerator.h"
 #include "AtmosphereRenderer.h"
+#include "BRDFGenerator.h"
 #include "VXGIVoxelizer.h"
 
 #include <Core/ConsoleVar.h>
@@ -157,6 +158,11 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 
     FeedbackAnalyzerVT  = MakeRef<AVirtualTextureFeedbackAnalyzer>();
     GFeedbackAnalyzerVT = FeedbackAnalyzerVT;
+
+    {
+        ABRDFGenerator generator;
+        generator.Render(&GLookupBRDF);
+    }
 
     /////////////////////////////////////////////////////////////////////
     // test
@@ -503,6 +509,7 @@ ARenderBackend::~ARenderBackend()
 
     GCircularBuffer.Reset();
     GWhiteTexture.Reset();
+    GLookupBRDF.Reset();
     GSphereMesh.Reset();
     GSaq.Reset();
     GClusterLookup.Reset();

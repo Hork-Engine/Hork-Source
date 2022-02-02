@@ -40,9 +40,9 @@ using namespace RenderCore;
 
 ALightRenderer::ALightRenderer()
 {
-    CreateLookupBRDF();
 }
 
+#if 0
 static Float2 Hammersley( int k, int n )
 {
     float u = 0;
@@ -186,7 +186,7 @@ void ALightRenderer::CreateLookupBRDF()
 
     GHunkMemory.ClearLastHunk();
 }
-
+#endif
 bool ALightRenderer::BindMaterialLightPass(IImmediateContext* immediateCtx, SRenderInstance const* Instance)
 {
     AMaterialGPU* pMaterial = Instance->Material;
@@ -281,10 +281,10 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
                               FGTextureProxy * ShadowMapDepth3,
                               FGTextureProxy * LinearDepth,
                               FGTextureProxy ** ppLight/*,
-                              FGTextureProxy ** ppVelocity*/ )
+                              FGTextureProxy ** ppVelocity*/)
 {
     FGTextureProxy*    PhotometricProfiles_R = FrameGraph.AddExternalResource<FGTextureProxy>("Photometric Profiles", GRenderView->PhotometricProfiles);
-    FGTextureProxy*    LookupBRDF_R          = FrameGraph.AddExternalResource<FGTextureProxy>("Lookup BRDF", LookupBRDF);
+    FGTextureProxy*    LookupBRDF_R          = FrameGraph.AddExternalResource<FGTextureProxy>("Lookup BRDF", GLookupBRDF);
     FGBufferViewProxy* ClusterItemTBO_R      = FrameGraph.AddExternalResource<FGBufferViewProxy>("Cluster Item Buffer View", GClusterItemTBO);
     FGTextureProxy*    ClusterLookup_R       = FrameGraph.AddExternalResource<FGTextureProxy>("Cluster lookup texture", GClusterLookup);
     FGTextureProxy*    ReflectionColor_R     = FrameGraph.AddExternalResource<FGTextureProxy>("Reflection color texture", GRenderView->LightTexture);

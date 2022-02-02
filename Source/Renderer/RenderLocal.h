@@ -223,6 +223,9 @@ extern TRef<RenderCore::IBuffer> GSaq;
 /** Simple white texture */
 extern TRef<RenderCore::ITexture> GWhiteTexture;
 
+/** BRDF */
+extern TRef<RenderCore::ITexture> GLookupBRDF;
+
 /** Cluster lookcup 3D texture */
 extern TRef<RenderCore::ITexture> GClusterLookup;
 

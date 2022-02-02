@@ -30,26 +30,15 @@ SOFTWARE.
 
 #pragma once
 
-#include <RenderCore/FrameGraph.h>
+#include <RenderCore/ImmediateContext.h>
 
-struct SRenderInstance;
-
-class ALightRenderer
+class ABRDFGenerator
 {
 public:
-    ALightRenderer();
+    ABRDFGenerator();
 
-    void AddPass(RenderCore::AFrameGraph& FrameGraph,
-                 RenderCore::FGTextureProxy* DepthTarget,
-                 RenderCore::FGTextureProxy* SSAOTexture,
-                 RenderCore::FGTextureProxy* ShadowMapDepth0,
-                 RenderCore::FGTextureProxy* ShadowMapDepth1,
-                 RenderCore::FGTextureProxy* ShadowMapDepth2,
-                 RenderCore::FGTextureProxy* ShadowMapDepth3,
-                 RenderCore::FGTextureProxy* LinearDepth,
-                 RenderCore::FGTextureProxy** ppLight /*,
-                 RenderCore::FGTextureProxy ** ppVelocity*/);
+    void Render(TRef<RenderCore::ITexture>* ppTexture);
 
 private:
-    bool BindMaterialLightPass(RenderCore::IImmediateContext* immediateContext, SRenderInstance const* Instance);
+    TRef<RenderCore::IPipeline> Pipeline;
 };
