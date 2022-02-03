@@ -155,7 +155,7 @@ public:
         bHasAABB = true;
     }
 
-    void getPremadeAabb(btVector3* aabbMin, btVector3* aabbMax) const override
+    void getPremadeAabb(btVector3 * aabbMin, btVector3 * aabbMax) const override
     {
         *aabbMin = AABBMin;
         *aabbMax = AABBMax;
@@ -781,14 +781,14 @@ struct ACollisionConvexHull : ACollisionBody
 
     btCollisionShape* Create() override
     {
-        #if 0
+#if 0
             constexpr bool bComputeAabb = false; // FIXME: Do we need to calc aabb now?
             // NOTE: btConvexPointCloudShape keeps pointer to vertices
             return new btConvexPointCloudShape( &Vertices[0][0], Vertices.Size(), btVector3(1.f,1.f,1.f), bComputeAabb );
-        #else
-            // NOTE: btConvexHullShape keeps copy of vertices
-            return new btConvexHullShape(&Vertices[0][0], Vertices.Size(), sizeof(Float3));
-        #endif
+#else
+        // NOTE: btConvexHullShape keeps copy of vertices
+        return new btConvexHullShape(&Vertices[0][0], Vertices.Size(), sizeof(Float3));
+#endif
     }
 
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
@@ -915,33 +915,37 @@ struct ACollisionTriangleSoupBVH : ACollisionBody
     }
 
 #ifdef BULLET_WORLD_IMPORTER
-    void Read( IBinaryStream & _Stream ) {
+    void Read(IBinaryStream& _Stream)
+    {
         uint32_t bufferSize;
         _Stream >> bufferSize;
-        byte * buffer = (byte *)GHeapMemory.Alloc( bufferSize );
-        _Stream.Read( buffer, bufferSize );
+        byte* buffer = (byte*)GHeapMemory.Alloc(bufferSize);
+        _Stream.Read(buffer, bufferSize);
 
         btBulletWorldImporter Importer(0);
-        if ( Importer.loadFileFromMemory( (char *)buffer, bufferSize ) ) {
-            Data = (btBvhTriangleMeshShape*)Importer.getCollisionShapeByIndex( 0 );
+        if (Importer.loadFileFromMemory((char*)buffer, bufferSize))
+        {
+            Data = (btBvhTriangleMeshShape*)Importer.getCollisionShapeByIndex(0);
         }
 
-        GHeapMemory.HeapFree( buffer );
+        GHeapMemory.HeapFree(buffer);
     }
 
-    void Write( IBinaryStream & _Stream ) const {
-        if ( Data ) {
+    void Write(IBinaryStream& _Stream) const
+    {
+        if (Data)
+        {
             btDefaultSerializer Serializer;
 
             Serializer.startSerialization();
 
-            Data->serializeSingleBvh( &Serializer );
-            Data->serializeSingleTriangleInfoMap( &Serializer );
+            Data->serializeSingleBvh(&Serializer);
+            Data->serializeSingleTriangleInfoMap(&Serializer);
 
             Serializer.finishSerialization();
 
-            _Stream << uint32_t( Serializer.getCurrentBufferSize() );
-            _Stream.Write( Serializer.getBufferPointer(), Serializer.getCurrentBufferSize() );
+            _Stream << uint32_t(Serializer.getCurrentBufferSize());
+            _Stream.Write(Serializer.getBufferPointer(), Serializer.getCurrentBufferSize());
         }
     }
 #endif
@@ -1069,7 +1073,7 @@ ACollisionModel::ACollisionModel(void const* pShapes)
     }
 }
 
- ACollisionModel::ACollisionModel(SCollisionModelCreateInfo const& CreateInfo) :
+ACollisionModel::ACollisionModel(SCollisionModelCreateInfo const& CreateInfo) :
     ACollisionModel(CreateInfo.pShapes)
 {
     if (CreateInfo.bOverrideCenterOfMass)
@@ -1275,7 +1279,7 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
         {
             AConvexHull* hull = AConvexHull::CreateForPlane(pShape->pPlanes[i]);
 
-            for (int j = 0; j < pShape->PlaneCount; j++)
+            for (int j = 0; j < pShape->PlaneCount && hull; j++)
             {
                 if (i != j)
                 {
@@ -1348,6 +1352,12 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
 
 void ACollisionModel::AddTriangleSoupBVH(SCollisionTriangleSoupBVHDef const* pShape, int& NumShapes)
 {
+    if (pShape->VertexStride <= 0)
+    {
+        GLogger.Printf("ACollisionModel::AddTriangleSoupBVH: invalid VertexStride\n");
+        return;
+    }
+
     auto body = MakeUnique<ACollisionTriangleSoupBVH>();
 
     body->pInterface = MakeUnique<AStridingMeshInterface>();
@@ -1389,8 +1399,8 @@ void ACollisionModel::AddTriangleSoupBVH(SCollisionTriangleSoupBVHDef const* pSh
             body->Subparts[i].FirstIndex  = subpart.FirstIndex;
             body->Subparts[i].IndexCount  = subpart.IndexCount;
 
-            Float3 const* pVertices = pShape->pVertices + subpart.BaseVertex;
-            unsigned int const* pIndices = pShape->pIndices + subpart.FirstIndex;
+            Float3 const*       pVertices = pShape->pVertices + subpart.BaseVertex;
+            unsigned int const* pIndices  = pShape->pIndices + subpart.FirstIndex;
             for (int n = 0; n < subpart.IndexCount; n += 3)
             {
                 unsigned int i0 = pIndices[n];
@@ -1450,6 +1460,12 @@ void ACollisionModel::AddTriangleSoupBVH(SCollisionTriangleSoupBVHDef const* pSh
 
 void ACollisionModel::AddTriangleSoupGimpact(SCollisionTriangleSoupGimpactDef const* pShape, int& NumShapes)
 {
+    if (pShape->VertexStride <= 0)
+    {
+        GLogger.Printf("ACollisionModel::AddTriangleSoupGimpact: invalid VertexStride\n");
+        return;
+    }
+
     auto body = MakeUnique<ACollisionTriangleSoupGimpact>();
 
     body->pInterface = MakeUnique<AStridingMeshInterface>();
@@ -1554,6 +1570,12 @@ void ACollisionModel::AddConvexDecomposition(SCollisionConvexDecompositionDef co
     TPodVector<unsigned int>    hullIndices;
     TPodVector<SConvexHullDesc> hulls;
 
+    if (pShape->VertexStride <= 0)
+    {
+        GLogger.Printf("ACollisionModel::AddConvexDecomposition: invalid VertexStride\n");
+        return;
+    }
+
     ::PerformConvexDecomposition(pShape->pVertices,
                                  pShape->VerticesCount,
                                  pShape->VertexStride,
@@ -1598,6 +1620,12 @@ void ACollisionModel::AddConvexDecompositionVHACD(SCollisionConvexDecompositionV
     TPodVector<unsigned int>    hullIndices;
     TPodVector<SConvexHullDesc> hulls;
     Float3                      decompositionCenterOfMass;
+
+    if (pShape->VertexStride <= 0)
+    {
+        GLogger.Printf("ACollisionModel::AddConvexDecompositionVHACD: invalid VertexStride\n");
+        return;
+    }
 
     ::PerformConvexDecompositionVHACD(pShape->pVertices,
                                       pShape->VerticesCount,
@@ -1654,9 +1682,9 @@ TRef<ACollisionInstance> ACollisionModel::Instantiate(Float3 const& Scale)
 
 ACollisionInstance::ACollisionInstance(ACollisionModel* CollisionModel, Float3 const& Scale)
 {
-    constexpr float POSITION_COMPARE_EPSILON {0.0001f};
+    constexpr float POSITION_COMPARE_EPSILON{0.0001f};
 
-    Model = CollisionModel;
+    Model         = CollisionModel;
     CompoundShape = MakeUnique<btCompoundShape>();
     CenterOfMass  = Scale * CollisionModel->GetCenterOfMass();
 
