@@ -84,6 +84,8 @@ void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTe
     STextureResolution2D bloomResolution = GetFrameResoultion();
     bloomResolution.Width >>= 1;
     bloomResolution.Height >>= 1;
+    bloomResolution.Width = Math::Max(64u, bloomResolution.Width);
+    bloomResolution.Height = Math::Max(64u, bloomResolution.Height);
 
     FGTextureProxy *BrightTexture, *BrightBlurXTexture, *BrightBlurTexture;
     FGTextureProxy *BrightTexture2, *BrightBlurXTexture2, *BrightBlurTexture2;
