@@ -418,15 +418,18 @@ void ARenderFrontend::RenderCanvas(ACanvas* InCanvas)
                 // Unpack viewport
                 SViewport const* viewport = &InCanvas->GetViewports()[(size_t)cmd.TextureId - 1];
 
-                // Save pointer to viewport to array of viewports
-                Viewports.Append(viewport);
+                if (viewport->Width > 0 && viewport->Height > 0)
+                {
+                    // Save pointer to viewport to array of viewports
+                    Viewports.Append(viewport);
 
-                // Set viewport index in array of viewports
-                dstCmd->ViewportIndex = Viewports.Size() - 1;
+                    // Set viewport index in array of viewports
+                    dstCmd->ViewportIndex = Viewports.Size() - 1;
 
-                // Calc max viewport size
-                MaxViewportWidth  = Math::Max(MaxViewportWidth, viewport->Width);
-                MaxViewportHeight = Math::Max(MaxViewportHeight, viewport->Height);
+                    // Calc max viewport size
+                    MaxViewportWidth  = Math::Max(MaxViewportWidth, viewport->Width);
+                    MaxViewportHeight = Math::Max(MaxViewportHeight, viewport->Height);
+                }
 
                 break;
             }
