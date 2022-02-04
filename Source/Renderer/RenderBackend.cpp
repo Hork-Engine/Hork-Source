@@ -915,6 +915,9 @@ void ARenderBackend::UploadShaderResources(int ViewportIndex)
 
 void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView, FGTextureProxy** ppViewTexture)
 {
+    AN_ASSERT(pRenderView->Width > 0);
+    AN_ASSERT(pRenderView->Height > 0);
+
     *ppViewTexture = nullptr;
 
     GRenderView            = pRenderView;
