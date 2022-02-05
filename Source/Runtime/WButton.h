@@ -46,6 +46,9 @@ class WButton : public WWidget
 public:
     TWidgetEvent<WButton*> E_OnButtonClick;
 
+    WButton();
+    ~WButton();
+
     template <typename T, typename... TArgs>
     WButton& SetOnClick(T* _Object, void (T::*_Method)(TArgs...))
     {
@@ -74,9 +77,6 @@ public:
     bool IsToggleButton() const { return bToggleButton; }
 
 protected:
-    WButton();
-    ~WButton();
-
     void OnMouseButtonEvent(struct SMouseButtonEvent const& _Event, double _TimeStamp) override;
 
     void OnDrawEvent(ACanvas& _Canvas) override;
