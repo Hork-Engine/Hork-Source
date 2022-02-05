@@ -149,12 +149,18 @@ void ACanvas::PopFont()
 
 void ACanvas::DrawLine(Float2 const& a, Float2 const& b, Color4 const& col, float thickness)
 {
-    DrawList.AddLine(a, b, col.GetDWord(), thickness);
+    if (thickness > 0)
+    {
+        DrawList.AddLine(a, b, col.GetDWord(), thickness);
+    }
 }
 
 void ACanvas::DrawRect(Float2 const& a, Float2 const& b, Color4 const& col, float rounding, int _RoundingCorners, float thickness)
 {
-    DrawList.AddRect(a, b, col.GetDWord(), rounding, _RoundingCorners, thickness);
+    if (thickness > 0)
+    {
+        DrawList.AddRect(a, b, col.GetDWord(), rounding, _RoundingCorners, thickness);
+    }
 }
 
 void ACanvas::DrawRectFilled(Float2 const& a, Float2 const& b, Color4 const& col, float rounding, int _RoundingCorners)
@@ -169,7 +175,10 @@ void ACanvas::DrawRectFilledMultiColor(Float2 const& a, Float2 const& b, Color4 
 
 void ACanvas::DrawQuad(Float2 const& a, Float2 const& b, Float2 const& c, Float2 const& d, Color4 const& col, float thickness)
 {
-    DrawList.AddQuad(a, b, c, d, col.GetDWord(), thickness);
+    if (thickness > 0)
+    {
+        DrawList.AddQuad(a, b, c, d, col.GetDWord(), thickness);
+    }
 }
 
 void ACanvas::DrawQuadFilled(Float2 const& a, Float2 const& b, Float2 const& c, Float2 const& d, Color4 const& col)
@@ -179,7 +188,10 @@ void ACanvas::DrawQuadFilled(Float2 const& a, Float2 const& b, Float2 const& c, 
 
 void ACanvas::DrawTriangle(Float2 const& a, Float2 const& b, Float2 const& c, Color4 const& col, float thickness)
 {
-    DrawList.AddTriangle(a, b, c, col.GetDWord(), thickness);
+    if (thickness > 0)
+    {
+        DrawList.AddTriangle(a, b, c, col.GetDWord(), thickness);
+    }
 }
 
 void ACanvas::DrawTriangleFilled(Float2 const& a, Float2 const& b, Float2 const& c, Color4 const& col)
@@ -189,7 +201,10 @@ void ACanvas::DrawTriangleFilled(Float2 const& a, Float2 const& b, Float2 const&
 
 void ACanvas::DrawCircle(Float2 const& centre, float radius, Color4 const& col, int num_segments, float thickness)
 {
-    DrawList.AddCircle(centre, radius, col.GetDWord(), num_segments, thickness);
+    if (thickness > 0)
+    {
+        DrawList.AddCircle(centre, radius, col.GetDWord(), num_segments, thickness);
+    }
 }
 
 void ACanvas::DrawCircleFilled(Float2 const& centre, float radius, Color4 const& col, int num_segments)
@@ -878,7 +893,10 @@ void ACanvas::DrawCursor(EDrawCursor _Cursor, Float2 const& _Position, Color4 co
 
 void ACanvas::DrawPolyline(Float2 const* points, int num_points, Color4 const& col, bool closed, float thickness)
 {
-    DrawList.AddPolyline(reinterpret_cast<ImVec2 const*>(points), num_points, col.GetDWord(), closed, thickness);
+    if (thickness > 0)
+    {
+        DrawList.AddPolyline(reinterpret_cast<ImVec2 const*>(points), num_points, col.GetDWord(), closed, thickness);
+    }
 }
 
 void ACanvas::DrawConvexPolyFilled(Float2 const* points, int num_points, Color4 const& col)
@@ -888,7 +906,10 @@ void ACanvas::DrawConvexPolyFilled(Float2 const* points, int num_points, Color4 
 
 void ACanvas::DrawBezierCurve(Float2 const& pos0, Float2 const& cp0, Float2 const& cp1, Float2 const& pos1, Color4 const& col, float thickness, int num_segments)
 {
-    DrawList.AddBezierCurve(pos0, cp0, cp1, pos1, col.GetDWord(), thickness, num_segments);
+    if (thickness > 0)
+    {
+        DrawList.AddBezierCurve(pos0, cp0, cp1, pos1, col.GetDWord(), thickness, num_segments);
+    }
 }
 
 //// Stateful path API, add points then finish with PathFillConvex() or PathStroke()
