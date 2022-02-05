@@ -302,6 +302,9 @@ protected:
     AInputComponent();
     ~AInputComponent();
 
+    void InitializeComponent() override;
+    void DeinitializeComponent() override;
+
     /** Return axis binding or -1 if axis is not binded */
     int GetAxisBinding(AInputMappings::SMapping const& Mapping) const;
 

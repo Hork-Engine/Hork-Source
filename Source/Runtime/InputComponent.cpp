@@ -560,11 +560,18 @@ AInputComponent::AInputComponent()
 
     MouseAxisState[0].Clear();
     MouseAxisState[1].Clear();
-
-    INTRUSIVE_ADD(this, Next, Prev, InputComponents, InputComponentsTail);
 }
 
 AInputComponent::~AInputComponent()
+{
+}
+
+void AInputComponent::InitializeComponent()
+{
+    INTRUSIVE_ADD(this, Next, Prev, InputComponents, InputComponentsTail);
+}
+
+void AInputComponent::DeinitializeComponent()
 {
     INTRUSIVE_REMOVE(this, Next, Prev, InputComponents, InputComponentsTail);
 }
