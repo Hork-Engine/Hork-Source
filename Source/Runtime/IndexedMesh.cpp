@@ -1014,7 +1014,8 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         InitializeCylinderMesh(0.5f, 1, 1);
 
         SCollisionCylinderDef cylinder;
-        cylinder.HalfExtents = {0.5f, 0.5f, 0.5f};
+        cylinder.Radius = 0.5f;
+        cylinder.Height = 0.5f;
 
         SetCollisionModel(CreateInstanceOf<ACollisionModel>(&cylinder));
         return;
@@ -2623,17 +2624,18 @@ void CreateConeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>
 
     const float invSubdivs = 1.0f / _NumSubdivs;
     const float angleStep  = Math::_2PI * invSubdivs;
+    const float halfHeight = _Height * 0.5f;
 
     _Vertices.ResizeInvalidate(4 * (_NumSubdivs + 1));
     _Indices.ResizeInvalidate(2 * _NumSubdivs * 6);
 
     _Bounds.Mins.X = -_Radius;
     _Bounds.Mins.Z = -_Radius;
-    _Bounds.Mins.Y = 0;
+    _Bounds.Mins.Y = -halfHeight;
 
     _Bounds.Maxs.X = _Radius;
     _Bounds.Maxs.Z = _Radius;
-    _Bounds.Maxs.Y = _Height;
+    _Bounds.Maxs.Y = halfHeight;
 
     uint16_t neg = Math::FloatToHalf(-1.0f);
 
@@ -2643,7 +2645,7 @@ void CreateConeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>
 
     for (j = 0; j <= _NumSubdivs; j++)
     {
-        pVerts[firstVertex + j].Position = Float3::Zero();
+        pVerts[firstVertex + j].Position = Float3(0, -halfHeight, 0);
         pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 0.0f) * _TexCoordScale);
         pVerts[firstVertex + j].SetNormalNative(0, neg, 0);
     }
@@ -2653,7 +2655,7 @@ void CreateConeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>
     {
         float s, c;
         Math::SinCos(angle, s, c);
-        pVerts[firstVertex + j].Position = Float3(_Radius * c, 0.0f, _Radius * s);
+        pVerts[firstVertex + j].Position = Float3(_Radius * c, -halfHeight, _Radius * s);
         pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 1.0f) * _TexCoordScale);
         pVerts[firstVertex + j].SetNormalNative(0, neg, 0);
         ;
@@ -2665,7 +2667,7 @@ void CreateConeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>
     {
         float s, c;
         Math::SinCos(angle, s, c);
-        pVerts[firstVertex + j].Position = Float3(_Radius * c, 0.0f, _Radius * s);
+        pVerts[firstVertex + j].Position = Float3(_Radius * c, -halfHeight, _Radius * s);
         pVerts[firstVertex + j].SetTexCoord(Float2(1.0f - j * invSubdivs, 1.0f) * _TexCoordScale);
         pVerts[firstVertex + j].SetNormal(c, 0.0f, s);
         angle += angleStep;
@@ -2673,13 +2675,13 @@ void CreateConeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>
     firstVertex += _NumSubdivs + 1;
 
     Float3 vx;
-    Float3 vy(0, _Height, 0);
+    Float3 vy(0, halfHeight, 0);
     Float3 v;
     for (j = 0, angle = 0; j <= _NumSubdivs; j++)
     {
         float s, c;
         Math::SinCos(angle, s, c);
-        pVerts[firstVertex + j].Position = Float3(0, _Height, 0);
+        pVerts[firstVertex + j].Position = Float3(0, halfHeight, 0);
         pVerts[firstVertex + j].SetTexCoord(Float2(1.0f - j * invSubdivs, 0.0f) * _TexCoordScale);
 
         vx = Float3(c, 0.0f, s);
