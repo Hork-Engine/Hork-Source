@@ -182,6 +182,9 @@ public:
 
     void SetShortcuts(AShortcutContainer* ShortcutContainer);
 
+    void AddTooltip(WWidget* TooltipWidget);
+    void RemoveTooltip(WWidget* TooltipWidget);
+
     virtual void DrawCursor(ACanvas& _Canvas);
 
     WDesktop();
@@ -206,6 +209,7 @@ private:
     TRef<WWidget>            MouseFocusWidget;
     TWeakRef<WWidget>        LastHoveredWidget;
     TRef<AShortcutContainer> ShortcutContainer;
+    TStdVector<TWeakRef<WWidget>> Tooltips;
     uint64_t                 MouseClickTime;
     Float2                   MouseClickPos;
     Float2                   DraggingCursor;

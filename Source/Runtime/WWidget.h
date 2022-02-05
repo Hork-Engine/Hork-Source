@@ -82,6 +82,15 @@ public:
     static constexpr int MAX_COLUMNS = 32;
     static constexpr int MAX_ROWS    = 128;
 
+    TWidgetEvent<bool> E_OnHovered;
+
+    template <typename T, typename... TArgs>
+    WWidget& SetOnHovered(T* _Object, void (T::*_Method)(TArgs...))
+    {
+        E_OnHovered.Add(_Object, _Method);
+        return *this;
+    }
+
     /** Add child widget */
     template <typename T>
     T* AddWidget()
@@ -393,6 +402,11 @@ public:
     /** Set widget on top of other widgets */
     WWidget& BringOnTop(bool _RecursiveForParents = true);
 
+    void ShowTooltip();
+    void HideTooltip();
+
+    WWidget& SetTooltip(WWidget* Tooltip);
+
     virtual bool IsShortcutsAllowed() const { return true; }
 
     WWidget();
@@ -430,8 +444,6 @@ protected:
     virtual void AdjustSizeAndPosition(Float2 const& _AvailableSize, Float2& _Size, Float2& _Position);
 
     //virtual void OnTimerEvent( uint64_t _TimerID, float _FrameTimeDelta );
-
-    // TODO: Add joystick events?
 
     void DrawDecorates(ACanvas& _Canvas);
 
@@ -518,7 +530,14 @@ private:
     bool                      bTransformDirty;
     bool                      bFocus;
     bool                      bSetFocusOnAddToDesktop;
+    TRef<WWidget>             TooltipWidget;
 };
+
+//class WTooltip : public WWidget
+//{
+//public:
+//
+//};
 
 #if 0
 class WMenuItem : public WWidget {

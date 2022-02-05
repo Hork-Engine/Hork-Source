@@ -1110,6 +1110,35 @@ void WWidget::OnWindowHovered(bool _Hovered)
     {
         Desktop->SetCursor(DRAW_CURSOR_ARROW);
     }
+
+    E_OnHovered.Dispatch(_Hovered);
+
+    if (_Hovered)
+    {
+        ShowTooltip();
+    }
+    else
+    {
+        HideTooltip();
+    }
+}
+
+void WWidget::ShowTooltip()
+{
+    if (TooltipWidget)
+        Desktop->AddTooltip(TooltipWidget);
+}
+
+void WWidget::HideTooltip()
+{
+    if (TooltipWidget)
+        Desktop->RemoveTooltip(TooltipWidget);
+}
+
+WWidget& WWidget::SetTooltip(WWidget* Tooltip)
+{
+    TooltipWidget = Tooltip;
+    return *this;
 }
 
 void WWidget::OnDrawEvent(ACanvas& _Canvas)

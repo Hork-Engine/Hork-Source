@@ -871,14 +871,17 @@ void WDesktop::GenerateWindowHoverEvents()
         LastHoveredWidget->OnWindowHovered(false);
     }
 
-    LastHoveredWidget = w;
-
-    if (!w)
+    if (LastHoveredWidget != w)
     {
-        return;
-    }
+        LastHoveredWidget = w;
 
-    LastHoveredWidget->OnWindowHovered(true);
+        if (!w)
+        {
+            return;
+        }
+
+        LastHoveredWidget->OnWindowHovered(true);
+    }
 }
 
 void WDesktop::GenerateDrawEvents(ACanvas& _Canvas)
@@ -897,6 +900,20 @@ void WDesktop::GenerateDrawEvents(ACanvas& _Canvas)
     for (WWidget* child : Root->Childs)
     {
         child->Draw_r(_Canvas, mins, maxs);
+    }
+
+    for (auto it = Tooltips.begin(); it != Tooltips.end();)
+    {
+        auto& tooltip = (*it);
+        if (tooltip.IsExpired())
+        {
+            it = Tooltips.erase(it);
+        }
+        else
+        {
+            tooltip->Draw_r(_Canvas, mins, maxs);
+            it++;
+        }
     }
 
     //_Canvas.DrawCircleFilled( CursorPosition, 5.0f, Color4(1,0,0) );
@@ -923,4 +940,24 @@ void WDesktop::DrawCursor(ACanvas& _Canvas)
 void WDesktop::SetShortcuts(AShortcutContainer* _ShortcutContainer)
 {
     ShortcutContainer = _ShortcutContainer;
+}
+
+void WDesktop::AddTooltip(WWidget* TooltipWidget)
+{
+    if (std::find(Tooltips.begin(), Tooltips.end(), TooltipWidget)
+         != Tooltips.end())
+    {
+        return;
+    }
+
+    Tooltips.emplace_back(TooltipWidget);
+}
+
+void WDesktop::RemoveTooltip(WWidget* TooltipWidget)
+{
+    auto it = std::find(Tooltips.begin(), Tooltips.end(), TooltipWidget);
+    if (it != Tooltips.end())
+    {
+        Tooltips.erase(it);
+    }
 }
