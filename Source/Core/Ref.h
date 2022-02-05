@@ -424,9 +424,9 @@ public:
         ResetWeakRef(_Object);
     }
 
-    TWeakRef(TWeakRef<T>&& _Rhs) :
-        WeakRefCounter(_Rhs.WeakRefCounter)
+    TWeakRef(TWeakRef<T>&& _Rhs)
     {
+        WeakRefCounter      = _Rhs.WeakRefCounter;
         _Rhs.WeakRefCounter = nullptr;
     }
 
