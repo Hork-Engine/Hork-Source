@@ -302,7 +302,6 @@ WWidget& WWidget::SetSize(float _Width, float _Height)
 
 WWidget& WWidget::SetSize(Float2 const& _Size)
 {
-
     Float2 sz = (_Size + 0.5f).Floor();
 
     if (sz.X < 0.0f)
@@ -449,7 +448,7 @@ WWidget& WWidget::SetLayout(EWidgetLayout _Layout)
     return *this;
 }
 
-WWidget& WWidget::SetGridOffset(int _Column, int _Row)
+WWidget& WWidget::SetGridCell(int _Column, int _Row)
 {
     Column = _Column;
     Row    = _Row;
@@ -782,7 +781,7 @@ Float2 WWidget::GetLocalCursorPosition() const
     return Float2(0.0f);
 }
 
-void WWidget::GetGridOffset(int& _Column, int& _Row) const
+void WWidget::GetGridCell(int& _Column, int& _Row) const
 {
     _Column = Column;
     _Row    = Row;
@@ -1002,7 +1001,7 @@ void WWidget::Draw_r(ACanvas& _Canvas, Float2 const& _ClipMins, Float2 const& _C
             int columnIndex;
             int rowIndex;
 
-            child->GetGridOffset(columnIndex, rowIndex);
+            child->GetGridCell(columnIndex, rowIndex);
 
             GetCellRect(columnIndex, rowIndex, cellMins, cellMaxs);
             cellMins += clientPos;
@@ -1480,10 +1479,22 @@ void WWidget::UpdateLayout()
             }
         }
 
-        Columns[0].Offset = 0;
-        for (int i = 1; i < numColumns; i++)
+        if (numColumns)
         {
-            Columns[i].Offset = Columns[i - 1].Offset + Columns[i - 1].ActualSize;
+            // Calc offsets
+            Columns[0].Offset = 0;
+            float sumSize     = Columns[0].ActualSize;
+            for (int i = 1; i < numColumns; i++)
+            {
+                sumSize += Columns[i].ActualSize;
+
+                Columns[i].Offset = Columns[i - 1].Offset + Columns[i - 1].ActualSize;
+
+                Columns[i].Offset         = Math::Floor(Columns[i].Offset);
+                Columns[i - 1].ActualSize = Columns[i].Offset - Columns[i - 1].Offset;
+            }
+
+            Columns[numColumns - 1].ActualSize = sumSize - Columns[numColumns - 1].Offset;
         }
 
         if (bAutoHeight)
@@ -1520,16 +1531,28 @@ void WWidget::UpdateLayout()
         }
         else
         {
-            for (int i = 0; i < RowsCount; i++)
+            for (int i = 0; i < numRows; i++)
             {
                 Rows[i].ActualSize = Rows[i].Size;
             }
         }
 
-        Rows[0].Offset = 0;
-        for (int i = 1; i < numRows; i++)
+        if (numRows)
         {
-            Rows[i].Offset = Rows[i - 1].Offset + Rows[i - 1].ActualSize;
+            // Calc offsets
+            Rows[0].Offset = 0;
+            float sumSize  = Rows[0].ActualSize;
+            for (int i = 1; i < numRows; i++)
+            {
+                sumSize += Rows[i].ActualSize;
+
+                Rows[i].Offset = Rows[i - 1].Offset + Rows[i - 1].ActualSize;
+
+                Rows[i].Offset         = Math::Floor(Rows[i].Offset);
+                Rows[i - 1].ActualSize = Rows[i].Offset - Rows[i - 1].Offset;
+            }
+
+            Rows[numRows - 1].ActualSize = sumSize - Rows[numRows - 1].Offset;
         }
     }
     else if (Layout == WIDGET_LAYOUT_HORIZONTAL || Layout == WIDGET_LAYOUT_HORIZONTAL_WRAP)
@@ -1623,13 +1646,13 @@ float WWidget::CalcContentWidth()
         contentWidth = Size.X;
     }
 
-    // Если установлен лэйаут WIDGET_LAYOUT_IMAGE, то размер окна устанавливается равным ImageSize.
+    // If the WIDGET_LAYOUT_IMAGE layout is set, then the window size is set to ImageSize.
     else if (Layout == WIDGET_LAYOUT_IMAGE)
     {
         contentWidth = ImageSize.X;
     }
 
-    // Если установлен лэйаут WIDGET_LAYOUT_GRID, то размер окна устанавливается равным размеру сетки.
+    // If the WIDGET_LAYOUT_GRID layout is set, then the window size is set equal to the grid size.
     else if (Layout == WIDGET_LAYOUT_GRID)
     {
         int numColumns = Math::Min(ColumnsCount, Columns.Size());
@@ -1691,13 +1714,13 @@ float WWidget::CalcContentHeight()
         contentHeight = Size.Y;
     }
 
-    // Если установлен лэйаут WIDGET_LAYOUT_IMAGE, то размер окна устанавливается равным ImageSize.
+    // If the WIDGET_LAYOUT_IMAGE layout is set, then the window size is set to ImageSize.
     else if (Layout == WIDGET_LAYOUT_IMAGE)
     {
         contentHeight = ImageSize.Y;
     }
 
-    // Если установлен лэйаут WIDGET_LAYOUT_GRID, то размер окна устанавливается равным размеру сетки.
+    // If the WIDGET_LAYOUT_GRID layout is set, then the window size is set equal to the grid size.
     else if (Layout == WIDGET_LAYOUT_GRID)
     {
         int numRows = Math::Min(RowsCount, Rows.Size());
@@ -1933,7 +1956,7 @@ WWidget& ScrollTest2()
                 WNew(WWidget)
                 .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
                 .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
-                .SetGridOffset( 0, 0 )
+                .SetGridCell( 0, 0 )
                 .SetLayout( WIDGET_LAYOUT_IMAGE )
                 .SetImageSize( 640, 480 )
                 [
@@ -1975,7 +1998,7 @@ WWidget& ScrollTest2()
             [WNew(WWidget)
                  //.SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
                  .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                 .SetGridOffset(0, 0)
+                 .SetGridCell(0, 0)
                  .SetLayout(WIDGET_LAYOUT_HORIZONTAL)
                  .SetHorizontalPadding(8)
                  .SetVerticalPadding(4)
@@ -2063,7 +2086,7 @@ WWidget& ScrollTest2()
             [WNew(WWidget)
                  .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
                  .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                 .SetGridOffset(1, 0)
+                 .SetGridCell(1, 0)
                  .SetGridSize(1, 3)
                  .SetColumnWidth(0, 1)
                  .SetRowWidth(0, 0.2f)
@@ -2082,18 +2105,18 @@ WWidget& ScrollTest2()
                           .SetStyle(WIDGET_STYLE_FOREGROUND)
                           .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
                           .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                          .SetGridOffset(0, 0)]
+                          .SetGridCell(0, 0)]
                      [WNew(WTextButton)
                           .SetText("Down")
                           .SetStyle(WIDGET_STYLE_FOREGROUND)
                           .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
                           .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                          .SetGridOffset(0, 2)]
+                          .SetGridCell(0, 2)]
                      [WNew(WWidget)
                           .SetStyle(WIDGET_STYLE_FOREGROUND)
                           .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
                           .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                          .SetGridOffset(0, 1)
+                          .SetGridCell(0, 1)
                           .AddDecorate(&(*CreateInstanceOf<WBorderDecorate>())
                                             .SetColor(Color4(0, 1, 0))
                                             .SetFillBackground(true)

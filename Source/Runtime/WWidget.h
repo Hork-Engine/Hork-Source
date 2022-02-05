@@ -206,7 +206,7 @@ public:
     WWidget& SetLayout(EWidgetLayout _Layout);
 
     /** Determines location in grid (for grid layouts) */
-    WWidget& SetGridOffset(int _Column, int _Row);
+    WWidget& SetGridCell(int _Column, int _Row);
 
     /** Determines grid size */
     WWidget& SetGridSize(int _ColumnsCount, int _RowsCount);
@@ -223,10 +223,10 @@ public:
     /** Audo adjust row sizes */
     WWidget& SetFitRows(bool _FitRows);
 
-    // Размер окна выбирается таким образом, чтобы на нем поместились все дочерние окна.
-    // Если установлен лэйаут WIDGET_LAYOUT_IMAGE, то размер окна устанавливается равным ImageSize.
-    // Если установлен лэйаут WIDGET_LAYOUT_GRID, то размеры ячеек зависят от вложенных окон, FitColumns/FitRows - игнорируются.
-    // Если установлен лэйаут WIDGET_LAYOUT_HORIZONTAL_WRAP/WIDGET_LAYOUT_VERTICAL_WRAP, то враппинг игнорируется.
+    /** The size of the window is chosen so that all child windows fit on it.
+        If the WIDGET_LAYOUT_IMAGE layout is set, then the window size is set to ImageSize.
+        If the WIDGET_LAYOUT_GRID layout is set, then cell sizes depend on nested windows, FitColumns/FitRows are ignored.
+        If the WIDGET_LAYOUT_HORIZONTAL_WRAP/WIDGET_LAYOUT_VERTICAL_WRAP layout is set, wrapping is ignored. */
     WWidget& SetAutoWidth(bool _AutoWidth);
     WWidget& SetAutoHeight(bool _AutoHeight);
 
@@ -358,7 +358,7 @@ public:
     Float2 const& GetImageSize() const { return ImageSize; }
 
     /** Get location in parents grid */
-    void GetGridOffset(int& _Column, int& _Row) const;
+    void GetGridCell(int& _Column, int& _Row) const;
 
     /** Get widget visibility type */
     EWidgetVisibility GetVisibility() const { return Visibility; }
