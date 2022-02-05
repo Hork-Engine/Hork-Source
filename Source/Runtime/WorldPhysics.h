@@ -108,8 +108,6 @@ struct SConvexSweepTest
         SCollisionCapsuleDef*     CollisionCapsule;
         SCollisionConvexHullDef*  CollisionConvexHull;
     };
-    /** Scale of collision body */
-    Float3 Scale;
     /** Start position for convex sweep trace */
     Float3 StartPosition;
     /** Start rotation for convex sweep trace */

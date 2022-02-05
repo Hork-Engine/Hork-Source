@@ -81,7 +81,6 @@ struct SCollisionSphereDef
     Float3          Position;
     float           Margin{0.01f};
     float           Radius{0.5f};
-    bool            bNonUniformScale{false};
     SCollisionBone  Bone;
 };
 
@@ -114,7 +113,8 @@ struct SCollisionCylinderDef
     Float3          Position;
     Quat            Rotation;
     float           Margin{0.01f};
-    Float3          HalfExtents{1, 1, 1};
+    float           Radius{0.5f};
+    float           Height{1};
     int             Axial{COLLISION_SHAPE_AXIAL_DEFAULT};
     SCollisionBone  Bone;
 };
@@ -126,7 +126,7 @@ struct SCollisionConeDef
     Float3          Position;
     Quat            Rotation;
     float           Margin{0.01f};
-    float           Radius{1};
+    float           Radius{0.5f};
     float           Height{1};
     int             Axial{COLLISION_SHAPE_AXIAL_DEFAULT};
     SCollisionBone  Bone;
@@ -139,7 +139,7 @@ struct SCollisionCapsuleDef
     Float3          Position;
     Quat            Rotation;
     float           Margin{0.01f};
-    float           Radius{1};
+    float           Radius{0.5f};
     float           Height{1};
     int             Axial{COLLISION_SHAPE_AXIAL_DEFAULT};
     SCollisionBone  Bone;
@@ -226,7 +226,7 @@ struct ACollisionBody
 
     virtual ~ACollisionBody() {}
 
-    virtual class btCollisionShape* Create() { return nullptr; }
+    virtual class btCollisionShape* Create(Float3 const& Scale) { return nullptr; }
     virtual void                    GatherGeometry(TPodVectorHeap<Float3>& Vertices, TPodVectorHeap<unsigned int>& Indices, Float3x4 const& Transform) const {}
 };
 

@@ -408,7 +408,6 @@ void APhysicalBody::CreateBoneCollisions()
     }
 
     btRigidBody::btRigidBodyConstructionInfo constructInfo(0.0f, nullptr, nullptr);
-    const btVector3                          scaling = btVectorToFloat3(CachedScale);
 
     TStdVector<SBoneCollision> const& boneCollisions = collisionModel->GetBoneCollisions();
 
@@ -428,9 +427,8 @@ void APhysicalBody::CreateBoneCollisions()
         boneCollision->HitProxy->SetCollisionGroup(boneCollisions[i].CollisionGroup);
         boneCollision->HitProxy->SetJointIndex(boneCollisions[i].JointIndex);
 
-        btCollisionShape* shape = collisionBody->Create();
+        btCollisionShape* shape = collisionBody->Create(CachedScale);
         shape->setMargin(collisionBody->Margin);
-        shape->setLocalScaling(shape->getLocalScaling() * scaling);
 
         constructInfo.m_motionState    = boneCollision;
         constructInfo.m_collisionShape = shape;

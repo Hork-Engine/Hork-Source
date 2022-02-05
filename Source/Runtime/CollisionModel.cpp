@@ -164,20 +164,21 @@ public:
 
 struct ACollisionSphere : ACollisionBody
 {
-    float Radius           = 0.5f;
-    bool  bNonUniformScale = false;
+    float Radius = 0.5f;
 
-    btCollisionShape* Create() override
+    btCollisionShape* Create(Float3 const& Scale) override
     {
-        if (bNonUniformScale)
+        const float Epsilon = 0.0001f;
+        if (Math::Abs(Scale.X - Scale.Y) < Epsilon && Math::Abs(Scale.X - Scale.Z) < Epsilon)
         {
-            btVector3 pos(0, 0, 0);
-            return new btMultiSphereShape(&pos, &Radius, 1);
+            return new btSphereShape(Radius * Scale.X);
         }
-        else
-        {
-            return new btSphereShape(Radius);
-        }
+
+        btVector3 pos(0, 0, 0);
+        btMultiSphereShape* shape = new btMultiSphereShape(&pos, &Radius, 1);
+        shape->setLocalScaling(btVectorToFloat3(Scale));
+
+        return shape;
     }
 
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
@@ -201,24 +202,6 @@ struct ACollisionSphere : ACollisionBody
         Float3*       pVertices = _Vertices.ToPtr() + firstVertex;
         unsigned int* pIndices  = _Indices.ToPtr() + firstIndex;
 
-        Float3x4 transform = Transform;
-        if (!bNonUniformScale)
-        {
-            float sqrScaleX = Float3(transform[0][0], transform[1][0], transform[2][0]).LengthSqr();
-            float sqrScaleY = Float3(transform[0][1], transform[1][1], transform[2][1]).LengthSqr();
-            float sqrScaleZ = Float3(transform[0][2], transform[1][2], transform[2][2]).LengthSqr();
-
-            float sy = std::sqrt(sqrScaleX / sqrScaleY);
-            float sz = std::sqrt(sqrScaleX / sqrScaleZ);
-
-            transform[0][1] *= sy;
-            transform[0][2] *= sz;
-            transform[1][1] *= sy;
-            transform[1][2] *= sz;
-            transform[2][1] *= sy;
-            transform[2][2] *= sz;
-        }
-
         for (int stack = 0; stack <= numStacks; ++stack)
         {
             const float theta = stack * Math::_PI / numStacks;
@@ -229,7 +212,7 @@ struct ACollisionSphere : ACollisionBody
                 const float phi = slice * Math::_2PI / numSlices;
                 Math::SinCos(phi, sinPhi, cosPhi);
 
-                *pVertices++ = transform * (Float3(cosPhi * sinTheta, cosTheta, sinPhi * sinTheta) * Radius + Position);
+                *pVertices++ = Transform * (Float3(cosPhi * sinTheta, cosTheta, sinPhi * sinTheta) * Radius + Position);
             }
         }
 
@@ -256,12 +239,12 @@ struct ACollisionSphereRadii : ACollisionBody
 {
     Float3 Radius = Float3(0.5f);
 
-    btCollisionShape* Create() override
+    btCollisionShape* Create(Float3 const& Scale) override
     {
         btVector3           pos(0, 0, 0);
         float               radius = 1.0f;
         btMultiSphereShape* shape  = new btMultiSphereShape(&pos, &radius, 1);
-        shape->setLocalScaling(btVectorToFloat3(Radius));
+        shape->setLocalScaling(btVectorToFloat3(Radius * Scale));
         return shape;
     }
 
@@ -323,9 +306,9 @@ struct ACollisionBox : ACollisionBody
 {
     Float3 HalfExtents = Float3(0.5f);
 
-    btCollisionShape* Create() override
+    btCollisionShape* Create(Float3 const& Scale) override
     {
-        return new btBoxShape(btVectorToFloat3(HalfExtents));
+        return new btBoxShape(btVectorToFloat3(HalfExtents * Scale));
     }
 
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
@@ -359,51 +342,82 @@ struct ACollisionBox : ACollisionBody
 
 struct ACollisionCylinder : ACollisionBody
 {
-    Float3 HalfExtents = Float3(1.0f);
-    int    Axial       = COLLISION_SHAPE_AXIAL_DEFAULT;
+    float Radius = 0.5f;
+    float Height = 1;
+    int   Axial  = COLLISION_SHAPE_AXIAL_DEFAULT;
 
-    btCollisionShape* Create() override
+    btCollisionShape* Create(Float3 const& Scale) override
     {
         switch (Axial)
         {
             case COLLISION_SHAPE_AXIAL_X:
-                return new btCylinderShapeX(btVectorToFloat3(HalfExtents));
-            case COLLISION_SHAPE_AXIAL_Y:
-                return new btCylinderShape(btVectorToFloat3(HalfExtents));
+                return new btCylinderShapeX(btVector3(Height * 0.5f * Scale.X, Radius * Scale.Y, Radius * Scale.Y));
             case COLLISION_SHAPE_AXIAL_Z:
-                return new btCylinderShapeZ(btVectorToFloat3(HalfExtents));
+                return new btCylinderShapeZ(btVector3(Radius * Scale.X, Radius * Scale.X, Height * 0.5f * Scale.Z));
+            case COLLISION_SHAPE_AXIAL_Y:
+            default:
+                return new btCylinderShape(btVector3(Radius * Scale.X, Height * 0.5f * Scale.Y, Radius * Scale.X));
         }
-        return new btCylinderShape(btVectorToFloat3(HalfExtents));
     }
 
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         float sinPhi, cosPhi;
+        int   idxRadius, idxRadius2, idxHeight;
 
-        int idxRadius, idxRadius2, idxHeight;
+        Float3x4 transform = Transform;
+
+        Float3 scale = {Float3(transform[0][0], transform[1][0], transform[2][0]).Length(),
+                        Float3(transform[0][1], transform[1][1], transform[2][1]).Length(),
+                        Float3(transform[0][2], transform[1][2], transform[2][2]).Length()};
+        Float3 invScale = Float3(1.0f) / scale;
+
+        // Remove scaling from the transform
+        transform[0][0] *= invScale.X;
+        transform[0][1] *= invScale.Y;
+        transform[0][2] *= invScale.Z;
+        transform[1][0] *= invScale.X;
+        transform[1][1] *= invScale.Y;
+        transform[1][2] *= invScale.Z;
+        transform[2][0] *= invScale.X;
+        transform[2][1] *= invScale.Y;
+        transform[2][2] *= invScale.Z;
+
+        float halfHeight = Height * 0.5f;
+        float scaledRadius = Radius;
+
         switch (Axial)
         {
             case COLLISION_SHAPE_AXIAL_X:
                 idxRadius  = 1;
                 idxRadius2 = 2;
                 idxHeight  = 0;
+
+                halfHeight *= scale.X;
+                scaledRadius *= scale.Y;
                 break;
             case COLLISION_SHAPE_AXIAL_Z:
                 idxRadius  = 0;
                 idxRadius2 = 1;
                 idxHeight  = 2;
+
+                halfHeight *= scale.Z;
+                scaledRadius *= scale.X;
                 break;
             case COLLISION_SHAPE_AXIAL_Y:
             default:
                 idxRadius  = 0;
                 idxRadius2 = 2;
                 idxHeight  = 1;
+
+                halfHeight *= scale.Y;
+                scaledRadius *= scale.X;
                 break;
         }
 
-        const float detal = Math::Floor(Math::Max(1.0f, HalfExtents[idxRadius]) + 0.5f);
+        const float detail = Math::Floor(Math::Max(1.0f, scaledRadius) + 0.5f);
 
-        const int numSlices     = 8 * detal;
+        const int numSlices     = 8 * detail;
         const int faceTriangles = numSlices - 2;
 
         const int vertexCount = numSlices * 2;
@@ -424,15 +438,15 @@ struct ACollisionCylinder : ACollisionBody
         {
             Math::SinCos(slice * Math::_2PI / numSlices, sinPhi, cosPhi);
 
-            vert[idxRadius]  = cosPhi * HalfExtents[idxRadius];
-            vert[idxRadius2] = sinPhi * HalfExtents[idxRadius];
-            vert[idxHeight]  = HalfExtents[idxHeight];
+            vert[idxRadius]  = cosPhi * scaledRadius;
+            vert[idxRadius2] = sinPhi * scaledRadius;
+            vert[idxHeight]  = halfHeight;
 
-            *pVertices = Transform * (Rotation * vert + Position);
+            *pVertices = transform * (Rotation * vert + Position);
 
             vert[idxHeight] = -vert[idxHeight];
 
-            *(pVertices + numSlices) = Transform * (Rotation * vert + Position);
+            *(pVertices + numSlices) = transform * (Rotation * vert + Position);
         }
 
         const int offset     = firstVertex;
@@ -469,52 +483,82 @@ struct ACollisionCylinder : ACollisionBody
 
 struct ACollisionCone : ACollisionBody
 {
-    float Radius = 1;
+    float Radius = 0.5f;
     float Height = 1;
     int   Axial  = COLLISION_SHAPE_AXIAL_DEFAULT;
 
-    btCollisionShape* Create() override
+    btCollisionShape* Create(Float3 const& Scale) override
     {
         switch (Axial)
         {
             case COLLISION_SHAPE_AXIAL_X:
-                return new btConeShapeX(Radius, Height);
-            case COLLISION_SHAPE_AXIAL_Y:
-                return new btConeShape(Radius, Height);
+                return new btConeShapeX(Radius * Scale.Y, Height * Scale.X);
             case COLLISION_SHAPE_AXIAL_Z:
-                return new btConeShapeZ(Radius, Height);
+                return new btConeShapeZ(Radius * Scale.X, Height * Scale.Z);
+            case COLLISION_SHAPE_AXIAL_Y:
+            default:
+                return new btConeShape(Radius * Scale.X, Height * Scale.Y);
         }
-        return new btConeShape(Radius, Height);
     }
 
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         float sinPhi, cosPhi;
-
         int idxRadius, idxRadius2, idxHeight;
+
+        Float3x4 transform = Transform;
+
+        Float3 scale = {Float3(transform[0][0], transform[1][0], transform[2][0]).Length(),
+                        Float3(transform[0][1], transform[1][1], transform[2][1]).Length(),
+                        Float3(transform[0][2], transform[1][2], transform[2][2]).Length()};
+        Float3 invScale = Float3(1.0f) / scale;
+
+        // Remove scaling from the transform
+        transform[0][0] *= invScale.X;
+        transform[0][1] *= invScale.Y;
+        transform[0][2] *= invScale.Z;
+        transform[1][0] *= invScale.X;
+        transform[1][1] *= invScale.Y;
+        transform[1][2] *= invScale.Z;
+        transform[2][0] *= invScale.X;
+        transform[2][1] *= invScale.Y;
+        transform[2][2] *= invScale.Z;
+
+        float scaledHeight = Height;
+        float scaledRadius = Radius;
+
         switch (Axial)
         {
             case COLLISION_SHAPE_AXIAL_X:
                 idxRadius  = 1;
                 idxRadius2 = 2;
                 idxHeight  = 0;
+
+                scaledHeight *= scale.X;
+                scaledRadius *= scale.Y;
                 break;
             case COLLISION_SHAPE_AXIAL_Z:
                 idxRadius  = 0;
                 idxRadius2 = 1;
                 idxHeight  = 2;
+
+                scaledHeight *= scale.Z;
+                scaledRadius *= scale.X;
                 break;
             case COLLISION_SHAPE_AXIAL_Y:
             default:
                 idxRadius  = 0;
                 idxRadius2 = 2;
                 idxHeight  = 1;
+
+                scaledHeight *= scale.Y;
+                scaledRadius *= scale.X;
                 break;
         }
 
-        const float detal = Math::Floor(Math::Max(1.0f, Radius) + 0.5f);
+        const float detail = Math::Floor(Math::Max(1.0f, scaledRadius) + 0.5f);
 
-        const int numSlices     = 8 * detal;
+        const int numSlices     = 8 * detail;
         const int faceTriangles = numSlices - 2;
 
         const int vertexCount = numSlices + 1;
@@ -532,21 +576,21 @@ struct ACollisionCone : ACollisionBody
         Float3 vert;
 
         vert.Clear();
-        vert[idxHeight] = Height;
+        vert[idxHeight] = scaledHeight * 0.5f;
 
         // top point
-        *pVertices++ = Transform * (Rotation * vert + Position);
+        *pVertices++ = transform * (Rotation * vert + Position);
 
-        vert[idxHeight] = 0;
+        vert[idxHeight] = -scaledHeight * 0.5f;
 
         for (int slice = 0; slice < numSlices; slice++)
         {
             Math::SinCos(slice * Math::_2PI / numSlices, sinPhi, cosPhi);
 
-            vert[idxRadius]  = cosPhi * Radius;
-            vert[idxRadius2] = sinPhi * Radius;
+            vert[idxRadius]  = cosPhi * scaledRadius;
+            vert[idxRadius2] = sinPhi * scaledRadius;
 
-            *pVertices++ = Transform * (Rotation * vert + Position);
+            *pVertices++ = transform * (Rotation * vert + Position);
         }
 
         const int offset = firstVertex + 1;
@@ -572,29 +616,50 @@ struct ACollisionCone : ACollisionBody
 struct ACollisionCapsule : ACollisionBody
 {
     /** Radius of the capsule. The total height is Height + 2 * Radius */
-    float Radius = 1;
+    float Radius = 0.5f;
 
     /** Height between the center of each sphere of the capsule caps */
     float Height = 1;
 
     int Axial = COLLISION_SHAPE_AXIAL_DEFAULT;
 
-    btCollisionShape* Create() override
+    btCollisionShape* Create(Float3 const& Scale) override
     {
         switch (Axial)
         {
             case COLLISION_SHAPE_AXIAL_X:
-                return new btCapsuleShapeX(Radius, Height);
-            case COLLISION_SHAPE_AXIAL_Y:
-                return new btCapsuleShape(Radius, Height);
+                return new btCapsuleShapeX(Radius * Scale.X, Height * Scale.X);
             case COLLISION_SHAPE_AXIAL_Z:
-                return new btCapsuleShapeZ(Radius, Height);
+                return new btCapsuleShapeZ(Radius * Scale.Z, Height * Scale.Z);
+            case COLLISION_SHAPE_AXIAL_Y:
+            default:
+                return new btCapsuleShape(Radius * Scale.Y, Height * Scale.Y);
         }
-        return new btCapsuleShape(Radius, Height);
     }
 
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
+        Float3x4 transform = Transform;
+
+        Float3 scale = {Float3(transform[0][0], transform[1][0], transform[2][0]).Length(),
+                        Float3(transform[0][1], transform[1][1], transform[2][1]).Length(),
+                        Float3(transform[0][2], transform[1][2], transform[2][2]).Length()};
+        Float3 invScale = Float3(1.0f) / scale;
+
+        // Remove scaling from the transform
+        transform[0][0] *= invScale.X;
+        transform[0][1] *= invScale.Y;
+        transform[0][2] *= invScale.Z;
+        transform[1][0] *= invScale.X;
+        transform[1][1] *= invScale.Y;
+        transform[1][2] *= invScale.Z;
+        transform[2][0] *= invScale.X;
+        transform[2][1] *= invScale.Y;
+        transform[2][2] *= invScale.Z;
+
+        float scaledHeight = Height;
+        float scaledRadius = Radius;
+
         int idxRadius, idxRadius2, idxHeight;
         switch (Axial)
         {
@@ -602,17 +667,26 @@ struct ACollisionCapsule : ACollisionBody
                 idxRadius  = 1;
                 idxRadius2 = 2;
                 idxHeight  = 0;
+
+                scaledHeight *= scale.X;
+                scaledRadius *= scale.X;
                 break;
             case COLLISION_SHAPE_AXIAL_Z:
                 idxRadius  = 0;
                 idxRadius2 = 1;
                 idxHeight  = 2;
+
+                scaledHeight *= scale.Z;
+                scaledRadius *= scale.Z;
                 break;
             case COLLISION_SHAPE_AXIAL_Y:
             default:
                 idxRadius  = 0;
                 idxRadius2 = 2;
                 idxHeight  = 1;
+
+                scaledHeight *= scale.Y;
+                scaledRadius *= scale.Y;
                 break;
         }
 
@@ -621,9 +695,9 @@ struct ACollisionCapsule : ACollisionBody
 
         float sinPhi, cosPhi;
 
-        const float detal = Math::Floor( Math::Max( 1.0f, Radius ) + 0.5f );
+        const float detail = Math::Floor( Math::Max( 1.0f, scaledRadius ) + 0.5f );
 
-        const int numSlices = 8 * detal;
+        const int numSlices = 8 * detail;
         const int faceTriangles = numSlices - 2;
 
         const int vertexCount = numSlices * 2;
@@ -640,13 +714,13 @@ struct ACollisionCapsule : ACollisionBody
 
         Float3 vert;
 
-        const float halfOfTotalHeight = Height*0.5f + Radius;
+        const float halfOfTotalHeight = scaledHeight*0.5f + scaledRadius;
 
         for ( int slice = 0; slice < numSlices; slice++, pVertices++ ) {
             Math::SinCos( slice * Math::_2PI / numSlices, sinPhi, cosPhi );
 
-            vert[idxRadius] = cosPhi * Radius;
-            vert[idxRadius2] = sinPhi * Radius;
+            vert[idxRadius] = cosPhi * scaledRadius;
+            vert[idxRadius2] = sinPhi * scaledRadius;
             vert[idxHeight] = halfOfTotalHeight;
 
             *pVertices = Rotation * vert + Position;
@@ -688,7 +762,7 @@ struct ACollisionCapsule : ACollisionBody
 
         unsigned int quad[4];
 
-        const float detail = Math::Floor(Math::Max(1.0f, Radius) + 0.5f);
+        const float detail = Math::Floor(Math::Max(1.0f, scaledRadius) + 0.5f);
 
         const int numVerticalSubdivs   = 6 * detail;
         const int numHorizontalSubdivs = 8 * detail;
@@ -710,14 +784,14 @@ struct ACollisionCapsule : ACollisionBody
         const float verticalStep   = Math::_PI / numVerticalSubdivs;
         const float horizontalStep = Math::_2PI / numHorizontalSubdivs;
 
-        const float halfHeight = Height * 0.5f;
+        const float halfHeight = scaledHeight * 0.5f;
 
         for (y = 0, verticalAngle = -Math::_HALF_PI; y <= halfVerticalSubdivs; y++)
         {
             float h, r;
             Math::SinCos(verticalAngle, h, r);
-            h = h * Radius - halfHeight;
-            r *= Radius;
+            h = h * scaledRadius - halfHeight;
+            r *= scaledRadius;
             for (x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++)
             {
                 float   s, c;
@@ -726,7 +800,7 @@ struct ACollisionCapsule : ACollisionBody
                 v[idxRadius]  = r * c;
                 v[idxRadius2] = r * s;
                 v[idxHeight]  = h;
-                v             = Transform * (Rotation * v + Position);
+                v             = transform * (Rotation * v + Position);
                 horizontalAngle += horizontalStep;
             }
             verticalAngle += verticalStep;
@@ -736,8 +810,8 @@ struct ACollisionCapsule : ACollisionBody
         {
             float h, r;
             Math::SinCos(verticalAngle, h, r);
-            h = h * Radius + halfHeight;
-            r *= Radius;
+            h = h * scaledRadius + halfHeight;
+            r *= scaledRadius;
             for (x = 0, horizontalAngle = 0; x <= numHorizontalSubdivs; x++)
             {
                 float   s, c;
@@ -746,7 +820,7 @@ struct ACollisionCapsule : ACollisionBody
                 v[idxRadius]  = r * c;
                 v[idxRadius2] = r * s;
                 v[idxHeight]  = h;
-                v             = Transform * (Rotation * v + Position);
+                v             = transform * (Rotation * v + Position);
                 horizontalAngle += horizontalStep;
             }
             verticalAngle += verticalStep;
@@ -779,15 +853,17 @@ struct ACollisionConvexHull : ACollisionBody
     TPodVectorHeap<Float3>       Vertices;
     TPodVectorHeap<unsigned int> Indices;
 
-    btCollisionShape* Create() override
+    btCollisionShape* Create(Float3 const& Scale) override
     {
 #if 0
             constexpr bool bComputeAabb = false; // FIXME: Do we need to calc aabb now?
             // NOTE: btConvexPointCloudShape keeps pointer to vertices
-            return new btConvexPointCloudShape( &Vertices[0][0], Vertices.Size(), btVector3(1.f,1.f,1.f), bComputeAabb );
+            return new btConvexPointCloudShape( &Vertices[0][0], Vertices.Size(), btVectorToFloat3(Scale), bComputeAabb );
 #else
         // NOTE: btConvexHullShape keeps copy of vertices
-        return new btConvexHullShape(&Vertices[0][0], Vertices.Size(), sizeof(Float3));
+        auto* shape = new btConvexHullShape(&Vertices[0][0], Vertices.Size(), sizeof(Float3));
+        shape->setLocalScaling(btVectorToFloat3(Scale));
+        return shape;
 #endif
     }
 
@@ -829,9 +905,9 @@ struct ACollisionTriangleSoupBVH : ACollisionBody
     BvAxisAlignedBox                      BoundingBox;
     TUniqueRef<AStridingMeshInterface>    pInterface;
 
-    btCollisionShape* Create() override
+    btCollisionShape* Create(Float3 const& Scale) override
     {
-        return new btScaledBvhTriangleMeshShape(Data.GetObject(), btVector3(1.f, 1.f, 1.f));
+        return new btScaledBvhTriangleMeshShape(Data.GetObject(), btVectorToFloat3(Scale));
 
         // TODO: Create GImpact mesh shape for dynamic objects
     }
@@ -965,14 +1041,16 @@ struct ACollisionTriangleSoupGimpact : ACollisionBody
     BvAxisAlignedBox                      BoundingBox;
     TUniqueRef<AStridingMeshInterface>    pInterface;
 
-    btCollisionShape* Create() override
+    btCollisionShape* Create(Float3 const& Scale) override
     {
         // FIXME: This shape don't work. Why?
         pInterface->Vertices     = Vertices.ToPtr();
         pInterface->Indices      = Indices.ToPtr();
         pInterface->Subparts     = Subparts.ToPtr();
         pInterface->SubpartCount = Subparts.Size();
-        return new btGImpactMeshShape(pInterface.GetObject());
+        auto* shape = new btGImpactMeshShape(pInterface.GetObject());
+        shape->setLocalScaling(btVectorToFloat3(Scale));
+        return shape;
     }
 
     void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
@@ -1100,10 +1178,9 @@ void ACollisionModel::AddSphere(SCollisionSphereDef const* pShape, int& NumShape
 {
     auto body = MakeUnique<ACollisionSphere>();
 
-    body->Position         = pShape->Position;
-    body->Margin           = pShape->Margin;
-    body->Radius           = pShape->Radius;
-    body->bNonUniformScale = pShape->bNonUniformScale;
+    body->Position = pShape->Position;
+    body->Margin   = pShape->Margin;
+    body->Radius   = pShape->Radius;
 
     if (pShape->Bone.JointIndex >= 0)
     {
@@ -1178,11 +1255,12 @@ void ACollisionModel::AddCylinder(SCollisionCylinderDef const* pShape, int& NumS
 {
     auto body = MakeUnique<ACollisionCylinder>();
 
-    body->Position    = pShape->Position;
-    body->Rotation    = pShape->Rotation;
-    body->Margin      = pShape->Margin;
-    body->HalfExtents = pShape->HalfExtents;
-    body->Axial       = pShape->Axial;
+    body->Position = pShape->Position;
+    body->Rotation = pShape->Rotation;
+    body->Margin   = pShape->Margin;
+    body->Radius   = pShape->Radius;
+    body->Height   = pShape->Height;
+    body->Axial    = pShape->Axial;
 
     if (pShape->Bone.JointIndex >= 0)
     {
@@ -1690,15 +1768,13 @@ ACollisionInstance::ACollisionInstance(ACollisionModel* CollisionModel, Float3 c
 
     if (!CollisionModel->CollisionBodies.IsEmpty())
     {
-        const btVector3 scaling = btVectorToFloat3(Scale);
         btTransform     shapeTransform;
 
         for (TUniqueRef<ACollisionBody> const& collisionBody : CollisionModel->CollisionBodies)
         {
-            btCollisionShape* shape = collisionBody->Create();
+            btCollisionShape* shape = collisionBody->Create(Scale);
 
             shape->setMargin(collisionBody->Margin);
-            shape->setLocalScaling(shape->getLocalScaling() * scaling);
 
             shapeTransform.setOrigin(btVectorToFloat3(Scale * collisionBody->Position - CenterOfMass));
             shapeTransform.setRotation(btQuaternionToQuat(collisionBody->Rotation));
