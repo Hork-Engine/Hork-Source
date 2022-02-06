@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Core/Ref.h>
 
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
 #    include <Core/String.h>
 #endif
 
@@ -79,21 +79,21 @@ public:
 
     void SetDebugName(const char* _DebugName)
     {
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
         DebugName = _DebugName;
 #endif
     }
 
     const char* GetDebugName() const
     {
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
         return DebugName.CStr();
 #else
         return "";
 #endif
     }
 
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
     IDeviceObject* GetNext_DEBUG()
     {
         return Next;
@@ -136,7 +136,7 @@ private:
     DEVICE_OBJECT_PROXY_TYPE ProxyType;
     IDevice* pDevice;
     bool bInternalDeviceObject;
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
     AString DebugName;
 
     IDeviceObject* Next = nullptr;

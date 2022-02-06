@@ -32,7 +32,7 @@ SOFTWARE.
 #include "WDesktop.h"
 #include "ResourceManager.h"
 
-AN_CLASS_META(WWindow)
+HK_CLASS_META(WWindow)
 
 WWindow::WWindow()
 {

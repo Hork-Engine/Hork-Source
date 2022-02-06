@@ -54,7 +54,7 @@ struct SRenderFrontendStat
 
 class ARenderFrontend : public ABaseObject
 {
-    AN_CLASS(ARenderFrontend, ABaseObject)
+    HK_CLASS(ARenderFrontend, ABaseObject)
 
 public:
     ARenderFrontend();

@@ -250,7 +250,7 @@ class ACollisionInstance;
 // TODO: Collision model should be an immutable object
 class ACollisionModel : public AResource
 {
-    AN_CLASS(ACollisionModel, AResource)
+    HK_CLASS(ACollisionModel, AResource)
 
 public:
     ACollisionModel();

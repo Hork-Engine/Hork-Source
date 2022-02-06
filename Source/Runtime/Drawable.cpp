@@ -32,7 +32,7 @@ SOFTWARE.
 #include "World.h"
 #include <Core/IntrusiveLinkedListMacro.h>
 
-AN_CLASS_META(ADrawable)
+HK_CLASS_META(ADrawable)
 
 static void EvaluateRaycastResult(SPrimitiveDef*       Self,
                                   ALevel const*        LightingLevel,

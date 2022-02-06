@@ -233,7 +233,7 @@ public:
 
     void Remove(int _Key, int _Index)
     {
-        AN_ASSERT(_Index < IndexChainLength);
+        HK_ASSERT(_Index < IndexChainLength);
 
         if (HashBuckets == InvalidHashIndex)
         {
@@ -326,7 +326,7 @@ public:
             }
         }
 
-        AN_ASSERT(max < IndexChainLength);
+        HK_ASSERT(max < IndexChainLength);
 
         for (int i = _Index; i < max; i++)
         {
@@ -342,7 +342,7 @@ public:
 
     int Next(int _Index) const
     {
-        AN_ASSERT(_Index < IndexChainLength);
+        HK_ASSERT(_Index < IndexChainLength);
         return IndexChain[_Index & LookupMask];
     }
 

@@ -32,8 +32,8 @@ SOFTWARE.
 
 #include "BulletCompatibility.h"
 
-AN_BEGIN_CLASS_META(AAnchorComponent)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(AAnchorComponent)
+HK_END_CLASS_META()
 
 AAnchorComponent::AAnchorComponent()
 {

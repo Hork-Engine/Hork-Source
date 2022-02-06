@@ -59,7 +59,7 @@ ADebugDrawRenderer::ADebugDrawRenderer()
             VAT_FLOAT3,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            AN_OFS( SDebugVertex, Position )
+            HK_OFS( SDebugVertex, Position )
         },
         {
             "InColor",
@@ -68,11 +68,11 @@ ADebugDrawRenderer::ADebugDrawRenderer()
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            AN_OFS( SDebugVertex, Color )
+            HK_OFS( SDebugVertex, Color )
         }
     };
 
-    CreateVertexShader( "debugdraw.vert", vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    CreateVertexShader( "debugdraw.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
     CreateFragmentShader( "debugdraw.frag", pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
@@ -85,7 +85,7 @@ ADebugDrawRenderer::ADebugDrawRenderer()
     pipelineCI.NumVertexBindings = 1;
     pipelineCI.pVertexBindings = &vertexBinding;
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
     SBufferInfo bufferInfo;

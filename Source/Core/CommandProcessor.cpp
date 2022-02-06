@@ -62,7 +62,7 @@ void ACommandProcessor::Execute(ICommandContext& _Ctx)
 
     ArgsCount = 0;
 
-    AN_ASSERT(CmdbufPos == 0);
+    HK_ASSERT(CmdbufPos == 0);
 
     while (CmdbufPos < Cmdbuf.Length())
     {

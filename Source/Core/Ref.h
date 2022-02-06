@@ -100,7 +100,7 @@ public:
             return;
         }
 
-        AN_ASSERT(RefCount > 0);
+        HK_ASSERT(RefCount > 0);
     }
 
     /** Reference count */
@@ -135,7 +135,7 @@ Reference counter is interlocked variable.
 */
 struct SInterlockedRef
 {
-    AN_FORBID_COPY(SInterlockedRef)
+    HK_FORBID_COPY(SInterlockedRef)
 
 private:
     /** Reference counter */
@@ -162,13 +162,13 @@ public:
     }
 
     /** Add reference. */
-    AN_FORCEINLINE void AddRef()
+    HK_FORCEINLINE void AddRef()
     {
         RefCount.Increment();
     }
 
     /** Remove reference. */
-    AN_FORCEINLINE void RemoveRef()
+    HK_FORCEINLINE void RemoveRef()
     {
         if (RefCount.Decrement() == 0)
         {
@@ -177,7 +177,7 @@ public:
     }
 
     /** Reference count */
-    AN_FORCEINLINE int GetRefCount() const
+    HK_FORCEINLINE int GetRefCount() const
     {
         return RefCount.Load();
     }
@@ -256,19 +256,19 @@ public:
 
     T& operator*() const
     {
-        AN_ASSERT_(Object, "TRef");
+        HK_ASSERT_(Object, "TRef");
         return *Object;
     }
 
     T* operator->()
     {
-        AN_ASSERT_(Object, "TRef");
+        HK_ASSERT_(Object, "TRef");
         return Object;
     }
 
     T const* operator->() const
     {
-        AN_ASSERT_(Object, "TRef");
+        HK_ASSERT_(Object, "TRef");
         return Object;
     }
 
@@ -462,19 +462,19 @@ public:
 
     T& operator*() const
     {
-        AN_ASSERT_(!IsExpired(), "TWeakRef");
+        HK_ASSERT_(!IsExpired(), "TWeakRef");
         return *GetObject();
     }
 
     T* operator->()
     {
-        AN_ASSERT_(!IsExpired(), "TWeakRef");
+        HK_ASSERT_(!IsExpired(), "TWeakRef");
         return GetObject();
     }
 
     T const* operator->() const
     {
-        AN_ASSERT_(!IsExpired(), "TWeakRef");
+        HK_ASSERT_(!IsExpired(), "TWeakRef");
         return GetObject();
     }
 
@@ -520,28 +520,28 @@ public:
 };
 
 template <typename T>
-AN_FORCEINLINE bool operator==(TRef<T> const& _Ref, TRef<T> const& _Ref2) { return _Ref.GetObject() == _Ref2.GetObject(); }
+HK_FORCEINLINE bool operator==(TRef<T> const& _Ref, TRef<T> const& _Ref2) { return _Ref.GetObject() == _Ref2.GetObject(); }
 
 template <typename T>
-AN_FORCEINLINE bool operator!=(TRef<T> const& _Ref, TRef<T> const& _Ref2) { return _Ref.GetObject() != _Ref2.GetObject(); }
+HK_FORCEINLINE bool operator!=(TRef<T> const& _Ref, TRef<T> const& _Ref2) { return _Ref.GetObject() != _Ref2.GetObject(); }
 
 template <typename T>
-AN_FORCEINLINE bool operator==(TRef<T> const& _Ref, TWeakRef<T> const& _Ref2) { return _Ref.GetObject() == _Ref2.GetObject(); }
+HK_FORCEINLINE bool operator==(TRef<T> const& _Ref, TWeakRef<T> const& _Ref2) { return _Ref.GetObject() == _Ref2.GetObject(); }
 
 template <typename T>
-AN_FORCEINLINE bool operator!=(TRef<T> const& _Ref, TWeakRef<T> const& _Ref2) { return _Ref.GetObject() != _Ref2.GetObject(); }
+HK_FORCEINLINE bool operator!=(TRef<T> const& _Ref, TWeakRef<T> const& _Ref2) { return _Ref.GetObject() != _Ref2.GetObject(); }
 
 template <typename T>
-AN_FORCEINLINE bool operator==(TWeakRef<T> const& _Ref, TRef<T> const& _Ref2) { return _Ref.GetObject() == _Ref2.GetObject(); }
+HK_FORCEINLINE bool operator==(TWeakRef<T> const& _Ref, TRef<T> const& _Ref2) { return _Ref.GetObject() == _Ref2.GetObject(); }
 
 template <typename T>
-AN_FORCEINLINE bool operator!=(TWeakRef<T> const& _Ref, TRef<T> const& _Ref2) { return _Ref.GetObject() != _Ref2.GetObject(); }
+HK_FORCEINLINE bool operator!=(TWeakRef<T> const& _Ref, TRef<T> const& _Ref2) { return _Ref.GetObject() != _Ref2.GetObject(); }
 
 template <typename T>
-AN_FORCEINLINE bool operator==(TWeakRef<T> const& _Ref, TWeakRef<T> const& _Ref2) { return _Ref.GetObject() == _Ref2.GetObject(); }
+HK_FORCEINLINE bool operator==(TWeakRef<T> const& _Ref, TWeakRef<T> const& _Ref2) { return _Ref.GetObject() == _Ref2.GetObject(); }
 
 template <typename T>
-AN_FORCEINLINE bool operator!=(TWeakRef<T> const& _Ref, TWeakRef<T> const& _Ref2) { return _Ref.GetObject() != _Ref2.GetObject(); }
+HK_FORCEINLINE bool operator!=(TWeakRef<T> const& _Ref, TWeakRef<T> const& _Ref2) { return _Ref.GetObject() != _Ref2.GetObject(); }
 
 template <typename T, typename... Args>
 inline TRef<T> MakeRef(Args&&... args)
@@ -556,7 +556,7 @@ inline TRef<T> MakeRef(Args&&... args)
 }
 
 template <typename T>
-AN_FORCEINLINE void CheckedDelete(T* Ptr)
+HK_FORCEINLINE void CheckedDelete(T* Ptr)
 {
     using type_must_be_complete = char[sizeof(T) ? 1 : -1];
     (void)sizeof(type_must_be_complete);
@@ -600,13 +600,13 @@ public:
 
     T* operator->() const
     {
-        AN_ASSERT(Object);
+        HK_ASSERT(Object);
         return Object;
     }
 
     T& operator*() const
     {
-        AN_ASSERT(Object);
+        HK_ASSERT(Object);
         return *Object;
     }
 

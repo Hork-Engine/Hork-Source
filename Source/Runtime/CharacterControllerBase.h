@@ -69,7 +69,7 @@ struct SCharacterControllerContact
 
 class ACharacterControllerBase : public ASceneComponent
 {
-    AN_COMPONENT(ACharacterControllerBase, ASceneComponent)
+    HK_COMPONENT(ACharacterControllerBase, ASceneComponent)
 
 public:
     AHitProxy* GetHitProxy() const
@@ -270,7 +270,7 @@ struct SProjectileTrace
 
 class AProjectileExperimental : public ASceneComponent
 {
-    AN_COMPONENT(AProjectileExperimental, ASceneComponent)
+    HK_COMPONENT(AProjectileExperimental, ASceneComponent)
 
 public:
     TEvent<AHitProxy*, Float3 const&, Float3 const&> OnHit;

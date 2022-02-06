@@ -186,7 +186,7 @@ enum TEXTURE_FORMAT : uint8_t
     TEXTURE_FORMAT_DEPTH32F_STENCIL8
 };
 
-AN_INLINE bool IsCompressedFormat(TEXTURE_FORMAT Format)
+HK_INLINE bool IsCompressedFormat(TEXTURE_FORMAT Format)
 {
     // TODO: lookup table
     switch (Format)
@@ -211,7 +211,7 @@ AN_INLINE bool IsCompressedFormat(TEXTURE_FORMAT Format)
     return false;
 }
 
-AN_INLINE bool IsDepthStencilFormat(TEXTURE_FORMAT Format)
+HK_INLINE bool IsDepthStencilFormat(TEXTURE_FORMAT Format)
 {
     // TODO: lookup table
     switch (Format)
@@ -297,7 +297,7 @@ private:
 namespace HashTraits
 {
 
-AN_FORCEINLINE std::size_t Hash(RenderCore::STextureViewDesc const& Desc)
+HK_FORCEINLINE std::size_t Hash(RenderCore::STextureViewDesc const& Desc)
 {
     return Core::SDBMHash(reinterpret_cast<const char*>(&Desc), sizeof(Desc));
 }

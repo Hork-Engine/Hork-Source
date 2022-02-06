@@ -45,7 +45,7 @@ All ***_COMMIT members are protected by spinlock
 */
 struct SAudioChannel final
 {
-    AN_FORBID_COPY( SAudioChannel )
+    HK_FORBID_COPY( SAudioChannel )
 
     /** Audio buffer. Read only */
     SAudioBuffer * pBuffer;
@@ -126,22 +126,22 @@ struct SAudioChannel final
     int SampleStride;
 
     /** Audio data. Just a wrapper to simplify access to audio buffer */
-    AN_FORCEINLINE const void * GetFrames() const
+    HK_FORCEINLINE const void * GetFrames() const
     {
         return pBuffer->GetFrames();
     }
 
-    AN_FORCEINLINE int GetLoopStart() const
+    HK_FORCEINLINE int GetLoopStart() const
     {
         return LoopStart;
     }
 
-    AN_FORCEINLINE int GetPlaybackPos() const
+    HK_FORCEINLINE int GetPlaybackPos() const
     {
         return PlaybackPos.Load();
     }
 
-    AN_FORCEINLINE bool IsStopped() const
+    HK_FORCEINLINE bool IsStopped() const
     {
         return Stopped.Load();
     }
@@ -179,13 +179,13 @@ public:
     void ChangePlaybackPosition( int _PlaybackPos );
 
     /** Add reference. Can be used from both main and mixer threads. */
-    AN_FORCEINLINE void AddRef()
+    HK_FORCEINLINE void AddRef()
     {
         RefCount.Increment();
     }
 
     /** Remove reference. Can be used from both main and mixer threads. */
-    AN_FORCEINLINE void RemoveRef()
+    HK_FORCEINLINE void RemoveRef()
     {
         if ( RefCount.Decrement() == 0 ) {
             delete this;
@@ -193,7 +193,7 @@ public:
     }
 
     /** Reference count */
-    AN_FORCEINLINE int GetRefCount() const
+    HK_FORCEINLINE int GetRefCount() const
     {
         return RefCount.Load();
     }

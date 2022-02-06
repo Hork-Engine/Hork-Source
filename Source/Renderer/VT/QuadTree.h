@@ -67,73 +67,73 @@ struct SQuadTreeRemapTable
 
 extern const SQuadTreeRemapTable QuadTreeRemapTable;
 
-AN_FORCEINLINE uint32_t QuadTreeCalcLodNodes( int Lod ) {
+HK_FORCEINLINE uint32_t QuadTreeCalcLodNodes( int Lod ) {
     return 1u << (Lod << 1);
 }
 
-AN_FORCEINLINE uint64_t QuadTreeCalcLodNodes64( int Lod ) {
+HK_FORCEINLINE uint64_t QuadTreeCalcLodNodes64( int Lod ) {
     return uint64_t( 1 ) << (Lod << 1);
 }
 
-AN_FORCEINLINE uint32_t QuadTreeRelativeToAbsoluteIndex( uint32_t RelIndex, int Lod ) {
+HK_FORCEINLINE uint32_t QuadTreeRelativeToAbsoluteIndex( uint32_t RelIndex, int Lod ) {
     return RelIndex + QuadTreeRemapTable.Rel2Abs[Lod];
 }
 
-AN_FORCEINLINE uint64_t QuadTreeRelativeToAbsoluteIndex64( uint64_t RelIndex, int Lod ) {
+HK_FORCEINLINE uint64_t QuadTreeRelativeToAbsoluteIndex64( uint64_t RelIndex, int Lod ) {
     return RelIndex + QuadTreeRemapTable.Rel2Abs64[Lod];
 }
 
-AN_FORCEINLINE uint32_t QuadTreeAbsoluteToRelativeIndex( uint32_t AbsIndex, int Lod ) {
+HK_FORCEINLINE uint32_t QuadTreeAbsoluteToRelativeIndex( uint32_t AbsIndex, int Lod ) {
     return AbsIndex - QuadTreeRemapTable.Rel2Abs[Lod];
 }
 
-AN_FORCEINLINE uint64_t QuadTreeAbsoluteToRelativeIndex64( uint64_t AbsIndex, int Lod ) {
+HK_FORCEINLINE uint64_t QuadTreeAbsoluteToRelativeIndex64( uint64_t AbsIndex, int Lod ) {
     return AbsIndex - QuadTreeRemapTable.Rel2Abs64[Lod];
 }
 
-AN_FORCEINLINE void QuadTreeGetXYFromRelative( int & X, int & Y, uint32_t RelIndex, int Lod ) {
+HK_FORCEINLINE void QuadTreeGetXYFromRelative( int & X, int & Y, uint32_t RelIndex, int Lod ) {
     X = RelIndex & ((1u << Lod)-1);
     Y = RelIndex >> Lod;
 }
 
-AN_FORCEINLINE void QuadTreeGetXYFromRelative64( int64_t & X, int64_t & Y, uint64_t RelIndex, int Lod ) {
+HK_FORCEINLINE void QuadTreeGetXYFromRelative64( int64_t & X, int64_t & Y, uint64_t RelIndex, int Lod ) {
     X = RelIndex & ((uint64_t( 1 ) << Lod)-1);
     Y = RelIndex >> Lod;
 }
 
-AN_FORCEINLINE int QuadTreeGetXFromRelative( uint32_t RelIndex, int Lod ) {
+HK_FORCEINLINE int QuadTreeGetXFromRelative( uint32_t RelIndex, int Lod ) {
     return RelIndex & ((1u << Lod)-1);
 }
 
-AN_FORCEINLINE int QuadTreeGetYFromRelative( uint32_t RelIndex, int Lod ) {
+HK_FORCEINLINE int QuadTreeGetYFromRelative( uint32_t RelIndex, int Lod ) {
     return RelIndex >> Lod;
 }
 
-AN_FORCEINLINE int64_t QuadTreeGetXFromRelative64( uint64_t RelIndex, int Lod ) {
+HK_FORCEINLINE int64_t QuadTreeGetXFromRelative64( uint64_t RelIndex, int Lod ) {
     return RelIndex & ((uint64_t( 1 ) << Lod)-1);
 }
 
-AN_FORCEINLINE int64_t QuadTreeGetYFromRelative64( uint64_t RelIndex, int Lod ) {
+HK_FORCEINLINE int64_t QuadTreeGetYFromRelative64( uint64_t RelIndex, int Lod ) {
     return RelIndex >> Lod;
 }
 
-AN_FORCEINLINE uint32_t QuadTreeGetRelativeFromXY( int X, int Y, int Lod ) {
+HK_FORCEINLINE uint32_t QuadTreeGetRelativeFromXY( int X, int Y, int Lod ) {
     return X + (Y << Lod);
 }
 
-AN_FORCEINLINE uint64_t QuadTreeGetRelativeFromXY64( int64_t X, int64_t Y, int Lod ) {
+HK_FORCEINLINE uint64_t QuadTreeGetRelativeFromXY64( int64_t X, int64_t Y, int Lod ) {
     return X + (Y << Lod);
 }
 
-AN_FORCEINLINE uint32_t QuadTreeGetParentFromRelative( uint32_t RelIndex, int Lod ) {
+HK_FORCEINLINE uint32_t QuadTreeGetParentFromRelative( uint32_t RelIndex, int Lod ) {
     return ((RelIndex & ((1u << Lod)-1)) >> 1) + ((RelIndex >> (Lod+1)) << (Lod-1))  + QuadTreeRemapTable.Rel2Abs[Lod-1];
 }
 
-AN_FORCEINLINE uint64_t QuadTreeGetParentFromRelative64( uint64_t RelIndex, int Lod ) {
+HK_FORCEINLINE uint64_t QuadTreeGetParentFromRelative64( uint64_t RelIndex, int Lod ) {
     return ((RelIndex & ((uint64_t( 1 ) << Lod)-1)) >> 1) + ((RelIndex >> (Lod+1)) << (Lod-1))  + QuadTreeRemapTable.Rel2Abs64[Lod-1];
 }
 
-AN_INLINE int QuadTreeCalcLod64( uint64_t AbsIndex ) {
+HK_INLINE int QuadTreeCalcLod64( uint64_t AbsIndex ) {
     uint64_t totalNodes = 0;
     for ( int lod = 0 ; lod < QUADTREE_MAX_LODS_64 ; lod++ ) {
         totalNodes += QuadTreeCalcLodNodes64( lod );
@@ -144,7 +144,7 @@ AN_INLINE int QuadTreeCalcLod64( uint64_t AbsIndex ) {
     return -1;
 }
 
-AN_INLINE uint32_t QuadTreeCalcQuadTreeNodes( int NumLods ) {
+HK_INLINE uint32_t QuadTreeCalcQuadTreeNodes( int NumLods ) {
     uint32_t total = 0;
     while ( --NumLods >= 0 ) {
         total += 1u << (NumLods << 1);
@@ -152,7 +152,7 @@ AN_INLINE uint32_t QuadTreeCalcQuadTreeNodes( int NumLods ) {
     return total;
 }
 
-AN_INLINE uint64_t QuadTreeCalcQuadTreeNodes64( int NumLods ) {
+HK_INLINE uint64_t QuadTreeCalcQuadTreeNodes64( int NumLods ) {
     uint64_t total = 0;
     while ( --NumLods >= 0 ) {
         total += uint64_t( 1 ) << (NumLods << 1);
@@ -160,7 +160,7 @@ AN_INLINE uint64_t QuadTreeCalcQuadTreeNodes64( int NumLods ) {
     return total;
 }
 
-AN_INLINE void QuadTreeGetRelation( uint32_t RelIndex, int Lod, uint32_t & Parent, uint32_t *Children = nullptr ) {
+HK_INLINE void QuadTreeGetRelation( uint32_t RelIndex, int Lod, uint32_t & Parent, uint32_t *Children = nullptr ) {
     int     x, y;
 
     QuadTreeGetXYFromRelative( x, y, RelIndex, Lod );
@@ -184,7 +184,7 @@ AN_INLINE void QuadTreeGetRelation( uint32_t RelIndex, int Lod, uint32_t & Paren
     }
 }
 
-AN_INLINE void QuadTreeGetRelation64( uint64_t RelIndex, int Lod, uint64_t & Parent, uint64_t *Children = nullptr ) {
+HK_INLINE void QuadTreeGetRelation64( uint64_t RelIndex, int Lod, uint64_t & Parent, uint64_t *Children = nullptr ) {
     int64_t     x, y;
 
     QuadTreeGetXYFromRelative64( x, y, RelIndex, Lod );
@@ -200,33 +200,33 @@ AN_INLINE void QuadTreeGetRelation64( uint64_t RelIndex, int Lod, uint64_t & Par
     }
 }
 
-AN_INLINE void QuadTreeGetNodeOffset( int Lod, uint32_t node, int NumLods, unsigned short Offset[2] ) {
+HK_INLINE void QuadTreeGetNodeOffset( int Lod, uint32_t node, int NumLods, unsigned short Offset[2] ) {
     uint32_t RelIndex = node - QuadTreeRemapTable.Rel2Abs[Lod];
     int diff = NumLods - Lod - 1;
     Offset[0] = (RelIndex & ((1u << Lod)-1)) << diff;
     Offset[1] = (RelIndex >> Lod) << diff;
 }
 
-AN_INLINE void QuadTreeGetNodeOffsetRel( int Lod, uint32_t RelIndex, int NumLods, unsigned short Offset[2] ) {
+HK_INLINE void QuadTreeGetNodeOffsetRel( int Lod, uint32_t RelIndex, int NumLods, unsigned short Offset[2] ) {
     int diff = NumLods - Lod - 1;
     Offset[0] = (RelIndex & ((1u << Lod)-1)) << diff;
     Offset[1] = (RelIndex >> Lod) << diff;
 }
 
-AN_INLINE void QuadTreeGetNodeOffset64( int Lod, uint64_t node, int NumLods, uint32_t Offset[2] ) {
+HK_INLINE void QuadTreeGetNodeOffset64( int Lod, uint64_t node, int NumLods, uint32_t Offset[2] ) {
     uint64_t RelIndex = node - QuadTreeRemapTable.Rel2Abs64[Lod];
     int diff = NumLods - Lod - 1;
     Offset[0] = (RelIndex & ((uint64_t( 1 ) << Lod)-1)) << diff;
     Offset[1] = (RelIndex >> Lod) << diff;
 }
 
-AN_INLINE void QuadTreeGetNodeOffsetRel64( int Lod, uint64_t RelIndex, int NumLods, uint32_t Offset[2] ) {
+HK_INLINE void QuadTreeGetNodeOffsetRel64( int Lod, uint64_t RelIndex, int NumLods, uint32_t Offset[2] ) {
     int diff = NumLods - Lod - 1;
     Offset[0] = (RelIndex & ((uint64_t( 1 ) << Lod)-1)) << diff;
     Offset[1] = (RelIndex >> Lod) << diff;
 }
 
-AN_FORCEINLINE bool QuadTreeIsIndexValid( uint32_t AbsIndex, int Lod )
+HK_FORCEINLINE bool QuadTreeIsIndexValid( uint32_t AbsIndex, int Lod )
 {
     return AbsIndex >= QuadTreeRemapTable.Rel2Abs[Lod] && AbsIndex < QuadTreeRemapTable.Rel2Abs[Lod+1];
 }

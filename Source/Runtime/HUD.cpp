@@ -32,7 +32,7 @@ SOFTWARE.
 #include "Canvas.h"
 #include <Platform/Utf8.h>
 
-AN_CLASS_META(AHUD)
+HK_CLASS_META(AHUD)
 
 AHUD::AHUD()
 {

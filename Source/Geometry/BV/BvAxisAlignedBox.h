@@ -44,58 +44,58 @@ struct BvAxisAlignedBox
         Mins(Pos - Radius), Maxs(Pos + Radius)
     {}
 
-    AN_FORCEINLINE float* ToPtr()
+    HK_FORCEINLINE float* ToPtr()
     {
         return &Mins.X;
     }
 
-    AN_FORCEINLINE const float* ToPtr() const
+    HK_FORCEINLINE const float* ToPtr() const
     {
         return &Mins.X;
     }
 
-    constexpr AN_FORCEINLINE BvAxisAlignedBox operator+(Float3 const& vec) const
+    constexpr HK_FORCEINLINE BvAxisAlignedBox operator+(Float3 const& vec) const
     {
         return BvAxisAlignedBox(Mins + vec, Maxs + vec);
     }
 
-    constexpr AN_FORCEINLINE BvAxisAlignedBox operator-(Float3 const& vec) const
+    constexpr HK_FORCEINLINE BvAxisAlignedBox operator-(Float3 const& vec) const
     {
         return BvAxisAlignedBox(Mins - vec, Maxs - vec);
     }
 
-    constexpr AN_FORCEINLINE BvAxisAlignedBox operator*(float scale) const
+    constexpr HK_FORCEINLINE BvAxisAlignedBox operator*(float scale) const
     {
         return BvAxisAlignedBox(Mins * scale, Maxs * scale);
     }
 
-    constexpr AN_FORCEINLINE BvAxisAlignedBox operator/(float scale) const
+    constexpr HK_FORCEINLINE BvAxisAlignedBox operator/(float scale) const
     {
         return (*this) * (1.0f / scale);
     }
 
-    AN_FORCEINLINE BvAxisAlignedBox& operator+=(Float3 const& vec)
+    HK_FORCEINLINE BvAxisAlignedBox& operator+=(Float3 const& vec)
     {
         Mins += vec;
         Maxs += vec;
         return *this;
     }
 
-    AN_FORCEINLINE BvAxisAlignedBox& operator-=(Float3 const& vec)
+    HK_FORCEINLINE BvAxisAlignedBox& operator-=(Float3 const& vec)
     {
         Mins -= vec;
         Maxs -= vec;
         return *this;
     }
 
-    AN_FORCEINLINE BvAxisAlignedBox& operator*=(float scale)
+    HK_FORCEINLINE BvAxisAlignedBox& operator*=(float scale)
     {
         Mins *= scale;
         Maxs *= scale;
         return *this;
     }
 
-    AN_FORCEINLINE BvAxisAlignedBox& operator/=(float scale)
+    HK_FORCEINLINE BvAxisAlignedBox& operator/=(float scale)
     {
         const float InvScale = 1.0f / scale;
         Mins *= InvScale;
@@ -103,28 +103,28 @@ struct BvAxisAlignedBox
         return *this;
     }
 
-    AN_FORCEINLINE bool CompareEps(BvAxisAlignedBox const& rhs, float epsilon) const
+    HK_FORCEINLINE bool CompareEps(BvAxisAlignedBox const& rhs, float epsilon) const
     {
         return Mins.CompareEps(rhs.Mins, epsilon) && Maxs.CompareEps(rhs.Maxs, epsilon);
     }
 
-    AN_FORCEINLINE bool operator==(BvAxisAlignedBox const& rhs) const
+    HK_FORCEINLINE bool operator==(BvAxisAlignedBox const& rhs) const
     {
         return Mins == rhs.Mins && Maxs == rhs.Maxs;
     }
 
-    AN_FORCEINLINE bool operator!=(BvAxisAlignedBox const& rhs) const
+    HK_FORCEINLINE bool operator!=(BvAxisAlignedBox const& rhs) const
     {
         return !(operator==(rhs));
     }
 
-    AN_FORCEINLINE void Clear()
+    HK_FORCEINLINE void Clear()
     {
         Mins = Float3(9999999999.0f);
         Maxs = Float3(-9999999999.0f);
     }
 
-    AN_FORCEINLINE void AddPoint(Float3 const& p)
+    HK_FORCEINLINE void AddPoint(Float3 const& p)
     {
         Mins.X = Math::Min(p.X, Mins.X);
         Maxs.X = Math::Max(p.X, Maxs.X);
@@ -134,7 +134,7 @@ struct BvAxisAlignedBox
         Maxs.Z = Math::Max(p.Z, Maxs.Z);
     }
 
-    AN_FORCEINLINE void AddPoint(float x, float y, float z)
+    HK_FORCEINLINE void AddPoint(float x, float y, float z)
     {
         Mins.X = Math::Min(x, Mins.X);
         Maxs.X = Math::Max(x, Maxs.X);
@@ -144,7 +144,7 @@ struct BvAxisAlignedBox
         Maxs.Z = Math::Max(z, Maxs.Z);
     }
 
-    AN_FORCEINLINE void AddAABB(BvAxisAlignedBox const& box)
+    HK_FORCEINLINE void AddAABB(BvAxisAlignedBox const& box)
     {
         Mins.X = Math::Min(box.Mins.X, Mins.X);
         Maxs.X = Math::Max(box.Maxs.X, Maxs.X);
@@ -154,7 +154,7 @@ struct BvAxisAlignedBox
         Maxs.Z = Math::Max(box.Maxs.Z, Maxs.Z);
     }
 
-    AN_FORCEINLINE void AddAABB(Float3 const& mins, Float3 const& maxs)
+    HK_FORCEINLINE void AddAABB(Float3 const& mins, Float3 const& maxs)
     {
         Mins.X = Math::Min(mins.X, Mins.X);
         Maxs.X = Math::Max(maxs.X, Maxs.X);
@@ -164,7 +164,7 @@ struct BvAxisAlignedBox
         Maxs.Z = Math::Max(maxs.Z, Maxs.Z);
     }
 
-    AN_FORCEINLINE void AddSphere(Float3 const& position, float radius)
+    HK_FORCEINLINE void AddSphere(Float3 const& position, float radius)
     {
         Mins.X = Math::Min(position.X - radius, Mins.X);
         Maxs.X = Math::Max(position.X + radius, Maxs.X);
@@ -174,7 +174,7 @@ struct BvAxisAlignedBox
         Maxs.Z = Math::Max(position.Z + radius, Maxs.Z);
     }
 
-    AN_FORCEINLINE void FromSphere(Float3 const& position, float radius)
+    HK_FORCEINLINE void FromSphere(Float3 const& position, float radius)
     {
         Mins.X = position.X - radius;
         Maxs.X = position.X + radius;
@@ -184,28 +184,28 @@ struct BvAxisAlignedBox
         Maxs.Z = position.Z + radius;
     }
 
-    constexpr AN_FORCEINLINE Float3 Center() const
+    constexpr HK_FORCEINLINE Float3 Center() const
     {
         return (Maxs + Mins) * 0.5f;
     }
 
-    AN_FORCEINLINE float Radius() const
+    HK_FORCEINLINE float Radius() const
     {
         return HalfSize().Length();
     }
 
-    AN_FORCEINLINE float InnerRadius() const
+    HK_FORCEINLINE float InnerRadius() const
     {
         Float3 halfSize = HalfSize();
         return Math::Min3(halfSize.X, halfSize.Y, halfSize.Z);
     }
 
-    constexpr AN_FORCEINLINE Float3 Size() const
+    constexpr HK_FORCEINLINE Float3 Size() const
     {
         return Maxs - Mins;
     }
 
-    constexpr AN_FORCEINLINE Float3 HalfSize() const
+    constexpr HK_FORCEINLINE Float3 HalfSize() const
     {
         return (Maxs - Mins) * 0.5f;
     }

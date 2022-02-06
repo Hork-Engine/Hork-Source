@@ -52,7 +52,7 @@ Socket for attaching
 */
 class ASocketDef : public ABaseObject
 {
-    AN_CLASS(ASocketDef, ABaseObject)
+    HK_CLASS(ASocketDef, ABaseObject)
 
 public:
     Float3 Position;
@@ -106,7 +106,7 @@ Binary AABB-based BVH tree
 */
 class ATreeAABB : public ABaseObject
 {
-    AN_CLASS(ATreeAABB, ABaseObject)
+    HK_CLASS(ATreeAABB, ABaseObject)
 
 public:
     void InitializeTriangleSoup(SMeshVertex const* _Vertices, unsigned int const* _Indices, unsigned int _IndexCount, int _BaseVertex, unsigned int _PrimitivesPerLeaf);
@@ -148,7 +148,7 @@ Part of indexed mesh (submesh / element)
 */
 class AIndexedMeshSubpart : public ABaseObject
 {
-    AN_CLASS(AIndexedMeshSubpart, ABaseObject)
+    HK_CLASS(AIndexedMeshSubpart, ABaseObject)
 
     friend class AIndexedMesh;
 
@@ -205,7 +205,7 @@ Lightmap UV channel
 */
 class ALightmapUV : public ABaseObject
 {
-    AN_CLASS(ALightmapUV, ABaseObject)
+    HK_CLASS(ALightmapUV, ABaseObject)
 
     friend class AIndexedMesh;
 
@@ -252,7 +252,7 @@ Vertex light channel
 */
 class AVertexLight : public ABaseObject
 {
-    AN_CLASS(AVertexLight, ABaseObject)
+    HK_CLASS(AVertexLight, ABaseObject)
 
     friend class AIndexedMesh;
 
@@ -329,7 +329,7 @@ Triangulated 3d surfaces with indexed vertices
 */
 class AIndexedMesh : public AResource
 {
-    AN_CLASS(AIndexedMesh, AResource)
+    HK_CLASS(AIndexedMesh, AResource)
 
     friend class ALightmapUV;
     friend class AVertexLight;
@@ -550,7 +550,7 @@ Runtime-generated procedural mesh.
 */
 class AProceduralMesh : public ABaseObject
 {
-    AN_CLASS(AProceduralMesh, ABaseObject)
+    HK_CLASS(AProceduralMesh, ABaseObject)
 
 public:
     /** Update vertex cache occasionally or every frame */
@@ -621,12 +621,12 @@ void CreateSkydomeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned i
 void CalcTangentSpace(SMeshVertex* _VertexArray, unsigned int _NumVerts, unsigned int const* _IndexArray, unsigned int _NumIndices);
 
 /** binormal = cross( normal, tangent ) * handedness */
-AN_FORCEINLINE float CalcHandedness(Float3 const& _Tangent, Float3 const& _Binormal, Float3 const& _Normal)
+HK_FORCEINLINE float CalcHandedness(Float3 const& _Tangent, Float3 const& _Binormal, Float3 const& _Normal)
 {
     return (Math::Dot(Math::Cross(_Normal, _Tangent), _Binormal) < 0.0f) ? -1.0f : 1.0f;
 }
 
-AN_FORCEINLINE Float3 CalcBinormal(Float3 const& _Tangent, Float3 const& _Normal, float _Handedness)
+HK_FORCEINLINE Float3 CalcBinormal(Float3 const& _Tangent, Float3 const& _Normal, float _Handedness)
 {
     return Math::Cross(_Normal, _Tangent).Normalized() * _Handedness;
 }

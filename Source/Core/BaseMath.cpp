@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <Core/BaseMath.h>
 
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
 #    pragma warning(disable : 4756) // overlow
 #endif
 

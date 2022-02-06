@@ -40,7 +40,7 @@ SOFTWARE.
 
 #include <angelscript.h>
 
-AN_CLASS_META(AWorld)
+HK_CLASS_META(AWorld)
 
 AWorld*             AWorld::PendingKillWorlds = nullptr;
 TPodVector<AWorld*> AWorld::Worlds;
@@ -146,7 +146,7 @@ SActorSpawnInfo::SActorSpawnInfo(const char* _ActorClassName) :
 
 void SActorSpawnInfo::SetTemplate(AActor const* _Template)
 {
-    AN_ASSERT(&_Template->FinalClassMeta() == ActorTypeClassMeta);
+    HK_ASSERT(&_Template->FinalClassMeta() == ActorTypeClassMeta);
     Template = _Template;
 }
 
@@ -195,7 +195,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
     }
 
     AClassMeta const* actorClass = SpawnInfo.ActorClass;
-    AN_ASSERT(actorClass);
+    HK_ASSERT(actorClass);
 
     AActorDefinition* pActorDef = SpawnInfo.ActorDef;
 
@@ -232,7 +232,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
 
                 if (pActorDef->RootIndex == componentIndex)
                 {
-                    AN_ASSERT(component->FinalClassMeta().IsSubclassOf<ASceneComponent>());
+                    HK_ASSERT(component->FinalClassMeta().IsSubclassOf<ASceneComponent>());
                     actor->RootComponent = static_cast<ASceneComponent*>(component);
                 }
             }
@@ -248,8 +248,8 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
             {
                 if (components[componentIndex] && components[componentDef.ParentIndex])
                 {
-                    AN_ASSERT(components[componentIndex]->FinalClassMeta().IsSubclassOf<ASceneComponent>());
-                    AN_ASSERT(components[componentDef.ParentIndex]->FinalClassMeta().IsSubclassOf<ASceneComponent>());
+                    HK_ASSERT(components[componentIndex]->FinalClassMeta().IsSubclassOf<ASceneComponent>());
+                    HK_ASSERT(components[componentDef.ParentIndex]->FinalClassMeta().IsSubclassOf<ASceneComponent>());
 
                     ASceneComponent* sceneComponent  = static_cast<ASceneComponent*>(components[componentIndex]);
                     ASceneComponent* parentComponent = static_cast<ASceneComponent*>(components[componentDef.ParentIndex]);

@@ -52,7 +52,7 @@ Base class for drawing surfaces
 */
 class ADrawable : public APhysicalBody
 {
-    AN_COMPONENT(ADrawable, APhysicalBody)
+    HK_COMPONENT(ADrawable, APhysicalBody)
 
     friend class ARenderWorld;
 

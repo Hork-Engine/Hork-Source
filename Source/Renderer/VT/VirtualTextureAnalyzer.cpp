@@ -140,7 +140,7 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
 
         SFileOffset physAddress = pTexture->GetPhysAddress( quedPage.PageIndex );
 
-        AN_ASSERT( physAddress != 0 );
+        HK_ASSERT( physAddress != 0 );
 
         AVirtualTextureCache::SPageTransfer * transfer = pTexture->pCache->CreatePageTransfer();
 
@@ -184,7 +184,7 @@ void AVirtualTextureFeedbackAnalyzer::ClearQueue()
 
 void AVirtualTextureFeedbackAnalyzer::SubmitPages( TPodVector< SPageDesc > const & Pages )
 {
-    AN_ASSERT( Pages.Size() < MAX_QUEUE_LENGTH );
+    HK_ASSERT( Pages.Size() < MAX_QUEUE_LENGTH );
 
     AMutexGurad criticalSection( EnqueLock );
 
@@ -231,7 +231,7 @@ void AVirtualTextureFeedbackAnalyzer::Begin(AStreamedMemoryGPU* StreamedMemory)
 // 11111111 11111111 1111 11  11 11111111
 // -------- -------- ---- --  -- --------
 // X_low    Y_low    Lod  Yh  Xh Un
-AN_FORCEINLINE void VT_FeedbackUnpack_RGBA8_11LODS_256UNITS( SFeedbackData const *_Data,
+HK_FORCEINLINE void VT_FeedbackUnpack_RGBA8_11LODS_256UNITS( SFeedbackData const *_Data,
                                                              int & _PageX, int & _PageY, int & _Lod,
                                                              int & _TextureUnit )
 {
@@ -454,7 +454,7 @@ void AVirtualTextureFeedbackAnalyzer::AddFeedbackData( int FeedbackSize, const v
 
 void AVirtualTextureFeedbackAnalyzer::BindTexture( int Unit, AVirtualTexture * Texture )
 {
-    AN_ASSERT( Unit >= 0 && Unit < VT_MAX_TEXTURE_UNITS );
+    HK_ASSERT( Unit >= 0 && Unit < VT_MAX_TEXTURE_UNITS );
     if ( Texture )
     {
         Texture->AddRef();
@@ -482,6 +482,6 @@ void AVirtualTextureFeedbackAnalyzer::BindTexture( int Unit, AVirtualTexture * T
 
 AVirtualTexture * AVirtualTextureFeedbackAnalyzer::GetTexture( int Unit )
 {
-    AN_ASSERT( Unit >= 0 && Unit < VT_MAX_TEXTURE_UNITS );
+    HK_ASSERT( Unit >= 0 && Unit < VT_MAX_TEXTURE_UNITS );
     return Textures[SwapIndex][Unit];
 }

@@ -30,11 +30,11 @@ SOFTWARE.
 
 #include "LightComponent.h"
 
-AN_BEGIN_CLASS_META(ALightComponent)
-AN_ATTRIBUTE(Enabled, bool, SetEnabled, IsEnabled, AF_DEFAULT)
-//AN_ATTRIBUTE(Animation, ....) TODO
-AN_ATTRIBUTE(AnimationTime, float, SetAnimationTime, GetAnimationTime, AF_DEFAULT)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(ALightComponent)
+HK_ATTRIBUTE(Enabled, bool, SetEnabled, IsEnabled, AF_DEFAULT)
+//HK_ATTRIBUTE(Animation, ....) TODO
+HK_ATTRIBUTE(AnimationTime, float, SetAnimationTime, GetAnimationTime, AF_DEFAULT)
+HK_END_CLASS_META()
 
 ALightComponent::ALightComponent()
 {

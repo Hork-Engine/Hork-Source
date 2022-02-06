@@ -43,7 +43,7 @@ class AInputMappings;
 
 class ARenderingParameters : public ABaseObject
 {
-    AN_CLASS(ARenderingParameters, ABaseObject)
+    HK_CLASS(ARenderingParameters, ABaseObject)
 
 public:
     Color4 BackgroundColor = Color4(0.3f, 0.3f, 0.8f);
@@ -170,7 +170,7 @@ private:
 
 class AAudioParameters : public ABaseObject
 {
-    AN_CLASS(AAudioParameters, ABaseObject)
+    HK_CLASS(AAudioParameters, ABaseObject)
 
 public:
     //Float3 Velocity;
@@ -196,7 +196,7 @@ Base class for players
 */
 class APlayerController : public AController
 {
-    AN_ACTOR(APlayerController, AController)
+    HK_ACTOR(APlayerController, AController)
 
 public:
     /** Player viewport. Don't change directly, use WViewport::SetPlayerController to attach controller to viewport. */

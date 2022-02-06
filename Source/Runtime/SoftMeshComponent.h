@@ -42,7 +42,7 @@ Mesh with softbody physics simulation
 */
 class ASoftMeshComponent : public ASkinnedComponent
 {
-    AN_COMPONENT(ASoftMeshComponent, ASkinnedComponent)
+    HK_COMPONENT(ASoftMeshComponent, ASkinnedComponent)
 
 public:
     /** Velocities correction factor (Baumgarte) */

@@ -44,7 +44,7 @@ public:
 /** Command buffer parser */
 class ACommandProcessor final
 {
-    AN_FORBID_COPY(ACommandProcessor)
+    HK_FORBID_COPY(ACommandProcessor)
 
 public:
     static constexpr int MAX_ARGS    = 256;

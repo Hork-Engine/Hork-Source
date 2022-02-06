@@ -54,7 +54,7 @@ SOFTWARE.
 #define PNG_COMPRESSION_LEVEL    8
 
 // Miniz mz_compress2 provides better compression than default stb compression method
-AN_FORCEINLINE unsigned char* stbi_zlib_compress_override(unsigned char* data, int data_len, int* out_len, int quality)
+HK_FORCEINLINE unsigned char* stbi_zlib_compress_override(unsigned char* data, int data_len, int* out_len, int quality)
 {
     //GLogger.Printf( "stbi_zlib_compress_override %d\n", quality );
     //GLogger.Printf( "stbi_zlib_compress_override data_len %d quality %d\n", data_len, quality );
@@ -130,7 +130,7 @@ static void Stbi_Write(void* context, void* data, int size)
     stream->WriteBuffer(data, size);
 }
 
-static AN_FORCEINLINE bool IsAuto(EImagePixelFormat _PixelFormat)
+static HK_FORCEINLINE bool IsAuto(EImagePixelFormat _PixelFormat)
 {
     switch (_PixelFormat)
     {
@@ -145,7 +145,7 @@ static AN_FORCEINLINE bool IsAuto(EImagePixelFormat _PixelFormat)
     return false;
 }
 
-static AN_FORCEINLINE int GetNumChannels(EImagePixelFormat _PixelFormat)
+static HK_FORCEINLINE int GetNumChannels(EImagePixelFormat _PixelFormat)
 {
     switch (_PixelFormat)
     {
@@ -183,11 +183,11 @@ static AN_FORCEINLINE int GetNumChannels(EImagePixelFormat _PixelFormat)
         case IMAGE_PF_BGRA32F:
             return 4;
     }
-    AN_ASSERT(0);
+    HK_ASSERT(0);
     return 0;
 }
 
-static AN_FORCEINLINE bool IsHalfFloat(EImagePixelFormat _PixelFormat)
+static HK_FORCEINLINE bool IsHalfFloat(EImagePixelFormat _PixelFormat)
 {
     switch (_PixelFormat)
     {
@@ -205,7 +205,7 @@ static AN_FORCEINLINE bool IsHalfFloat(EImagePixelFormat _PixelFormat)
     return false;
 }
 
-static AN_FORCEINLINE bool IsFloat(EImagePixelFormat _PixelFormat)
+static HK_FORCEINLINE bool IsFloat(EImagePixelFormat _PixelFormat)
 {
     switch (_PixelFormat)
     {
@@ -223,12 +223,12 @@ static AN_FORCEINLINE bool IsFloat(EImagePixelFormat _PixelFormat)
     return false;
 }
 
-static AN_FORCEINLINE bool IsHDRI(EImagePixelFormat _PixelFormat)
+static HK_FORCEINLINE bool IsHDRI(EImagePixelFormat _PixelFormat)
 {
     return IsHalfFloat(_PixelFormat) || IsFloat(_PixelFormat);
 }
 
-static AN_FORCEINLINE int IsGamma2(EImagePixelFormat _PixelFormat)
+static HK_FORCEINLINE int IsGamma2(EImagePixelFormat _PixelFormat)
 {
     switch (_PixelFormat)
     {
@@ -244,7 +244,7 @@ static AN_FORCEINLINE int IsGamma2(EImagePixelFormat _PixelFormat)
     return false;
 }
 
-static AN_FORCEINLINE bool IsBGR(EImagePixelFormat _PixelFormat)
+static HK_FORCEINLINE bool IsBGR(EImagePixelFormat _PixelFormat)
 {
     switch (_PixelFormat)
     {
@@ -279,7 +279,7 @@ static AN_FORCEINLINE bool IsBGR(EImagePixelFormat _PixelFormat)
         case IMAGE_PF_BGRA32F:
             return true;
     }
-    AN_ASSERT(0);
+    HK_ASSERT(0);
     return false;
 }
 
@@ -301,14 +301,14 @@ bool AImage::Load(const char* _Path, SImageMipmapConfig const* _MipmapGen, EImag
 
 #    include <tinyexr/tinyexr.h>
 
-AN_FORCEINLINE static byte FloatToByte(float _Color)
+HK_FORCEINLINE static byte FloatToByte(float _Color)
 {
     return Math::Floor(Math::Saturate(_Color) * 255.0f + 0.5f);
 }
 
 static void* LoadEXR(IBinaryStream& _Stream, int* w, int* h, int* channels, int desiredchannels, bool ldr)
 {
-    AN_ASSERT(desiredchannels >= 0 && desiredchannels <= 4);
+    HK_ASSERT(desiredchannels >= 0 && desiredchannels <= 4);
 
     long streamOffset = _Stream.Tell();
     _Stream.SeekEnd(0);
@@ -520,7 +520,7 @@ bool AImage::Load(IBinaryStream& _Stream, SImageMipmapConfig const* _MipmapGen, 
                     _PixelFormat = IMAGE_PF_BGRA;
                     break;
                 default:
-                    AN_ASSERT(0);
+                    HK_ASSERT(0);
                     _PixelFormat = IMAGE_PF_BGRA;
                     break;
             }
@@ -542,7 +542,7 @@ bool AImage::Load(IBinaryStream& _Stream, SImageMipmapConfig const* _MipmapGen, 
                     _PixelFormat = IMAGE_PF_BGRA_GAMMA2;
                     break;
                 default:
-                    AN_ASSERT(0);
+                    HK_ASSERT(0);
                     _PixelFormat = IMAGE_PF_BGRA_GAMMA2;
                     break;
             }
@@ -564,7 +564,7 @@ bool AImage::Load(IBinaryStream& _Stream, SImageMipmapConfig const* _MipmapGen, 
                     _PixelFormat = IMAGE_PF_BGRA16F;
                     break;
                 default:
-                    AN_ASSERT(0);
+                    HK_ASSERT(0);
                     _PixelFormat = IMAGE_PF_BGRA16F;
                     break;
             }
@@ -585,7 +585,7 @@ bool AImage::Load(IBinaryStream& _Stream, SImageMipmapConfig const* _MipmapGen, 
                     _PixelFormat = IMAGE_PF_BGRA32F;
                     break;
                 default:
-                    AN_ASSERT(0);
+                    HK_ASSERT(0);
                     _PixelFormat = IMAGE_PF_BGRA32F;
                     break;
             }
@@ -666,7 +666,7 @@ bool AImage::Load(IBinaryStream& _Stream, SImageMipmapConfig const* _MipmapGen, 
         }
         else
         {
-            AN_ASSERT(0);
+            HK_ASSERT(0);
         }
     }
 
@@ -1184,10 +1184,10 @@ void LinearToPremultipliedAlphaSRGB(const float* SourceImage,
 
 void ResizeImage(SImageResizeDesc const& InDesc, void* pScaledImage)
 {
-    AN_ASSERT(IMAGE_DATA_TYPE_UINT8 == STBIR_TYPE_UINT8);
-    AN_ASSERT(IMAGE_DATA_TYPE_UINT16 == STBIR_TYPE_UINT16);
-    AN_ASSERT(IMAGE_DATA_TYPE_UINT32 == STBIR_TYPE_UINT32);
-    AN_ASSERT(IMAGE_DATA_TYPE_FLOAT == STBIR_TYPE_FLOAT);
+    HK_ASSERT(IMAGE_DATA_TYPE_UINT8 == STBIR_TYPE_UINT8);
+    HK_ASSERT(IMAGE_DATA_TYPE_UINT16 == STBIR_TYPE_UINT16);
+    HK_ASSERT(IMAGE_DATA_TYPE_UINT32 == STBIR_TYPE_UINT32);
+    HK_ASSERT(IMAGE_DATA_TYPE_FLOAT == STBIR_TYPE_FLOAT);
 
     // NOTE: We assume that this function is called from main thread,
     // so we can use advantage of hunk memory allocator
@@ -1205,7 +1205,7 @@ void ResizeImage(SImageResizeDesc const& InDesc, void* pScaledImage)
                      InDesc.bLinearSpace ? STBIR_COLORSPACE_LINEAR : STBIR_COLORSPACE_SRGB,
                      NULL);
 
-    AN_ASSERT(result == 1);
+    HK_ASSERT(result == 1);
 
     GHunkMemory.ClearToMark(hunkMark);
 }

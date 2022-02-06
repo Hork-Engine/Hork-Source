@@ -77,7 +77,7 @@ Skeleton structure
 */
 class ASkeleton : public AResource
 {
-    AN_CLASS(ASkeleton, AResource)
+    HK_CLASS(ASkeleton, AResource)
 
 public:
     enum

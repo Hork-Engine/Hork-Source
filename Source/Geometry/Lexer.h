@@ -35,7 +35,7 @@ SOFTWARE.
 
 class ALexer
 {
-    AN_FORBID_COPY(ALexer)
+    HK_FORBID_COPY(ALexer)
 
 public:
     enum EErrorCode

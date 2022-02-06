@@ -40,7 +40,7 @@ AVirtualTextureResource
 */
 class AVirtualTextureResource : public AResource
 {
-    AN_CLASS(AVirtualTextureResource, AResource)
+    HK_CLASS(AVirtualTextureResource, AResource)
 
 public:
 protected:

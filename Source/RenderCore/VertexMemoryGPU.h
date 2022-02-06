@@ -61,8 +61,8 @@ struct SVertexHandle
     /** Pack memory address */
     void MakeAddress(int BlockIndex, size_t Offset)
     {
-        AN_ASSERT(BlockIndex < VERTEX_MEMORY_GPU_BLOCK_COUNT);
-        AN_ASSERT(Offset <= VERTEX_MEMORY_GPU_BLOCK_OFFSET_MASK);
+        HK_ASSERT(BlockIndex < VERTEX_MEMORY_GPU_BLOCK_COUNT);
+        HK_ASSERT(Offset <= VERTEX_MEMORY_GPU_BLOCK_OFFSET_MASK);
         Address = ((size_t(BlockIndex) & 0xff) << VERTEX_MEMORY_GPU_BLOCK_INDEX_SHIFT) | (Offset & VERTEX_MEMORY_GPU_BLOCK_OFFSET_MASK);
     }
 
@@ -78,7 +78,7 @@ struct SVertexHandle
 
 class AVertexMemoryGPU : public ARefCounted
 {
-    AN_FORBID_COPY(AVertexMemoryGPU)
+    HK_FORBID_COPY(AVertexMemoryGPU)
 
 public:
     /** Allow auto defragmentation */
@@ -183,7 +183,7 @@ private:
 
 class AStreamedMemoryGPU : public ARefCounted
 {
-    AN_FORBID_COPY(AStreamedMemoryGPU)
+    HK_FORBID_COPY(AStreamedMemoryGPU)
 
 public:
     AStreamedMemoryGPU(RenderCore::IDevice* Device);

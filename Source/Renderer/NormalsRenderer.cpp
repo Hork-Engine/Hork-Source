@@ -37,7 +37,7 @@ static bool BindMaterialNormalPass(IImmediateContext* immediateCtx, SRenderInsta
 {
     AMaterialGPU* pMaterial = instance->Material;
 
-    AN_ASSERT(pMaterial);
+    HK_ASSERT(pMaterial);
 
     int bSkinned = instance->SkeletonSize > 0;
 

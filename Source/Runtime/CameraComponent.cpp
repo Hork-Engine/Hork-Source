@@ -37,7 +37,7 @@ SOFTWARE.
 
 AConsoleVar com_DrawCameraFrustum(_CTS("com_DrawCameraFrustum"), _CTS("0"), CVAR_CHEAT);
 
-AN_CLASS_META(ACameraComponent)
+HK_CLASS_META(ACameraComponent)
 
 ACameraComponent::ACameraComponent()
 {}

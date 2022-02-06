@@ -62,12 +62,12 @@ struct Bool2
 
     bool& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
     bool const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
@@ -147,12 +147,12 @@ struct Bool3
 
     bool& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
     bool const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
@@ -234,12 +234,12 @@ struct Bool4
 
     bool& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
     bool const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 

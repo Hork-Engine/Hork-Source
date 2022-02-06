@@ -64,9 +64,9 @@ public:
     /** Reverse elements order in range [ _FirstIndex ; _LastIndex ) */
     void Reverse(int _FirstIndex, int _LastIndex)
     {
-        AN_ASSERT_(_FirstIndex >= 0 && _FirstIndex < ArraySize, "TArray::Reverse: array index is out of bounds");
-        AN_ASSERT_(_LastIndex >= 0 && _LastIndex <= ArraySize, "TArray::Reverse: array index is out of bounds");
-        AN_ASSERT_(_FirstIndex < _LastIndex, "TArray::Reverse: invalid order");
+        HK_ASSERT_(_FirstIndex >= 0 && _FirstIndex < ArraySize, "TArray::Reverse: array index is out of bounds");
+        HK_ASSERT_(_LastIndex >= 0 && _LastIndex <= ArraySize, "TArray::Reverse: array index is out of bounds");
+        HK_ASSERT_(_FirstIndex < _LastIndex, "TArray::Reverse: invalid order");
 
         const int HalfRangeLength   = (_LastIndex - _FirstIndex) >> 1;
         const int LastIndexMinusOne = _LastIndex - 1;
@@ -79,37 +79,37 @@ public:
 
     T& operator[](const int _Index)
     {
-        AN_ASSERT_(_Index >= 0 && _Index < ArraySize, "TArray::operator[]");
+        HK_ASSERT_(_Index >= 0 && _Index < ArraySize, "TArray::operator[]");
         return ArrayData[_Index];
     }
 
     T const& operator[](const int _Index) const
     {
-        AN_ASSERT_(_Index >= 0 && _Index < ArraySize, "TArray::operator[]");
+        HK_ASSERT_(_Index >= 0 && _Index < ArraySize, "TArray::operator[]");
         return ArrayData[_Index];
     }
 
     T& Last()
     {
-        AN_ASSERT_(ArraySize > 0, "TArray::Last");
+        HK_ASSERT_(ArraySize > 0, "TArray::Last");
         return ArrayData[ArraySize - 1];
     }
 
     T const& Last() const
     {
-        AN_ASSERT_(ArraySize > 0, "TArray::Last");
+        HK_ASSERT_(ArraySize > 0, "TArray::Last");
         return ArrayData[ArraySize - 1];
     }
 
     T& First()
     {
-        AN_ASSERT_(ArraySize > 0, "TArray::First");
+        HK_ASSERT_(ArraySize > 0, "TArray::First");
         return ArrayData[0];
     }
 
     T const& First() const
     {
-        AN_ASSERT_(ArraySize > 0, "TArray::First");
+        HK_ASSERT_(ArraySize > 0, "TArray::First");
         return ArrayData[0];
     }
 

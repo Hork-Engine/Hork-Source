@@ -52,7 +52,7 @@ void _MemsetSSE(byte* _Dst, int _Val, size_t _SizeInBytes);
 void _ZeroMemSSE(byte* _Dst, size_t _SizeInBytes);
 
 /** Built-in memcpy function replacement */
-AN_FORCEINLINE void Memcpy(void* _Dst, const void* _Src, size_t _SizeInBytes)
+HK_FORCEINLINE void Memcpy(void* _Dst, const void* _Src, size_t _SizeInBytes)
 {
     if (IsSSEAligned((size_t)_Dst) && IsSSEAligned((size_t)_Src))
     {
@@ -65,7 +65,7 @@ AN_FORCEINLINE void Memcpy(void* _Dst, const void* _Src, size_t _SizeInBytes)
 }
 
 /** Built-in memset function replacement */
-AN_FORCEINLINE void Memset(void* _Dst, int _Val, size_t _SizeInBytes)
+HK_FORCEINLINE void Memset(void* _Dst, int _Val, size_t _SizeInBytes)
 {
     if (IsSSEAligned((size_t)_Dst))
     {
@@ -78,7 +78,7 @@ AN_FORCEINLINE void Memset(void* _Dst, int _Val, size_t _SizeInBytes)
 }
 
 /** Built-in memset function replacement */
-AN_FORCEINLINE void ZeroMem(void* _Dst, size_t _SizeInBytes)
+HK_FORCEINLINE void ZeroMem(void* _Dst, size_t _SizeInBytes)
 {
     if (IsSSEAligned((size_t)_Dst))
     {
@@ -91,7 +91,7 @@ AN_FORCEINLINE void ZeroMem(void* _Dst, size_t _SizeInBytes)
 }
 
 /** Built-in memmove function replacement */
-AN_FORCEINLINE void* Memmove(void* _Dst, const void* _Src, size_t _SizeInBytes)
+HK_FORCEINLINE void* Memmove(void* _Dst, const void* _Src, size_t _SizeInBytes)
 {
     return std::memmove(_Dst, _Src, _SizeInBytes);
 }
@@ -114,7 +114,7 @@ Allocates memory on heap
 */
 class AHeapMemory final
 {
-    AN_FORBID_COPY(AHeapMemory)
+    HK_FORBID_COPY(AHeapMemory)
 
 public:
     AHeapMemory();
@@ -179,7 +179,7 @@ private:
     ASpinLock Mutex;
 };
 
-AN_FORCEINLINE void* AHeapMemory::ClearedAlloc(size_t _BytesCount, int _Alignment)
+HK_FORCEINLINE void* AHeapMemory::ClearedAlloc(size_t _BytesCount, int _Alignment)
 {
     void* bytes = Alloc(_BytesCount, _Alignment);
     Platform::ZeroMem(bytes, _BytesCount);
@@ -210,7 +210,7 @@ Only for main thread.
 */
 class AHunkMemory final
 {
-    AN_FORBID_COPY(AHunkMemory)
+    HK_FORBID_COPY(AHunkMemory)
 
 public:
     AHunkMemory() {}
@@ -263,7 +263,7 @@ private:
     size_t MaxMemoryUsage      = 0;
 };
 
-AN_FORCEINLINE void* AHunkMemory::ClearedAlloc(size_t _BytesCount)
+HK_FORCEINLINE void* AHunkMemory::ClearedAlloc(size_t _BytesCount)
 {
     void* bytes = Alloc(_BytesCount);
     Platform::ZeroMem(bytes, _BytesCount);
@@ -283,7 +283,7 @@ Only for main thread.
 */
 class AZoneMemory final
 {
-    AN_FORBID_COPY(AZoneMemory)
+    HK_FORBID_COPY(AZoneMemory)
 
 public:
     AZoneMemory() {}
@@ -339,12 +339,12 @@ private:
     size_t            TotalMemoryOverhead;
     size_t            MaxMemoryUsage;
 
-#ifdef AN_ZONE_MULTITHREADED_ALLOC
+#ifdef HK_ZONE_MULTITHREADED_ALLOC
     AThreadSync Sync;
 #endif
 };
 
-AN_FORCEINLINE void* AZoneMemory::ClearedAlloc(size_t _BytesCount)
+HK_FORCEINLINE void* AZoneMemory::ClearedAlloc(size_t _BytesCount)
 {
     void* bytes = Alloc(_BytesCount);
     Platform::ZeroMem(bytes, _BytesCount);
@@ -458,13 +458,6 @@ public:
     }
 };
 
-
-#ifdef AN_CPP20
-#    define AN_NODISCARD [[nodiscard]]
-#else
-#    define AN_NODISCARD
-#endif
-
 /**
 
 TStdZoneAllocator
@@ -478,9 +471,9 @@ struct TStdZoneAllocator
     TStdZoneAllocator() = default;
     template <typename U> constexpr TStdZoneAllocator(TStdZoneAllocator<U> const&) noexcept {}
 
-    AN_NODISCARD T* allocate(std::size_t _Count) noexcept
+    HK_NODISCARD T* allocate(std::size_t _Count) noexcept
     {
-        AN_ASSERT(_Count <= std::numeric_limits<std::size_t>::max() / sizeof(T));
+        HK_ASSERT(_Count <= std::numeric_limits<std::size_t>::max() / sizeof(T));
 
         return static_cast<T*>(GZoneMemory.Alloc(_Count * sizeof(T)));
     }
@@ -506,9 +499,9 @@ struct TStdHeapAllocator
     TStdHeapAllocator() = default;
     template <typename U> constexpr TStdHeapAllocator(TStdHeapAllocator<U> const&) noexcept {}
 
-    AN_NODISCARD T* allocate(std::size_t _Count) noexcept
+    HK_NODISCARD T* allocate(std::size_t _Count) noexcept
     {
-        AN_ASSERT(_Count <= std::numeric_limits<std::size_t>::max() / sizeof(T));
+        HK_ASSERT(_Count <= std::numeric_limits<std::size_t>::max() / sizeof(T));
 
         return static_cast<T*>(GHeapMemory.Alloc(_Count * sizeof(T)));
     }

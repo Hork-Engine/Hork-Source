@@ -43,24 +43,24 @@ using AStdString = std::basic_string<char, std::char_traits<char>, TStdZoneAlloc
 class AStringView
 {
 public:
-    AN_FORCEINLINE AStringView() :
+    HK_FORCEINLINE AStringView() :
         Data(""), Size(0)
     {
     }
 
-    AN_FORCEINLINE AStringView(const char* Rhs) :
+    HK_FORCEINLINE AStringView(const char* Rhs) :
         Data(Rhs), Size(Platform::Strlen(Rhs))
     {
     }
 
-    AN_FORCEINLINE AStringView(const char* _Str, int _Length) :
+    HK_FORCEINLINE AStringView(const char* _Str, int _Length) :
         Data(_Str), Size(_Length)
     {
-        AN_ASSERT(_Length >= 0);
+        HK_ASSERT(_Length >= 0);
     }
 
-    AN_FORCEINLINE AStringView(AString const& Str);
-    AN_FORCEINLINE AStringView(AStdString const& Str);
+    HK_FORCEINLINE AStringView(AString const& Str);
+    HK_FORCEINLINE AStringView(AStdString const& Str);
 
     AStringView(AStringView const& Str) = default;
     AStringView& operator=(AStringView const& Rhs) = default;
@@ -70,40 +70,40 @@ public:
     friend bool operator==(AStringView Lhs, AStringView Rhs);
     friend bool operator!=(AStringView Lhs, AStringView Rhs);
 
-    AN_FORCEINLINE const char& operator[](const int _Index) const
+    HK_FORCEINLINE const char& operator[](const int _Index) const
     {
-        AN_ASSERT_((_Index >= 0) && (_Index <= Size), "AStringView[]");
+        HK_ASSERT_((_Index >= 0) && (_Index <= Size), "AStringView[]");
         return Data[_Index];
     }
 
     AString ToString() const;
 
     /** Return is string empty or not */
-    AN_FORCEINLINE bool IsEmpty() const
+    HK_FORCEINLINE bool IsEmpty() const
     {
         return Size == 0;
     }
 
     /** Return string length */
-    AN_FORCEINLINE int Length() const
+    HK_FORCEINLINE int Length() const
     {
         return Size;
     }
 
     /** Pointer to the beggining of the string */
-    AN_FORCEINLINE const char* Begin() const
+    HK_FORCEINLINE const char* Begin() const
     {
         return Data;
     }
 
     /** Pointer to the ending of the string */
-    AN_FORCEINLINE const char* End() const
+    HK_FORCEINLINE const char* End() const
     {
         return Data + Size;
     }
 
     /** Get raw pointer */
-    AN_FORCEINLINE const char* ToPtr() const
+    HK_FORCEINLINE const char* ToPtr() const
     {
         return Data;
     }
@@ -178,12 +178,12 @@ public:
         return AStringView(Data + _Pos, _Size);
     }
 
-    AN_FORCEINLINE uint32_t HexToUInt32() const
+    HK_FORCEINLINE uint32_t HexToUInt32() const
     {
         return Platform::HexToUInt32(Data, std::min(Size, 8));
     }
 
-    AN_FORCEINLINE uint64_t HexToUInt64() const
+    HK_FORCEINLINE uint64_t HexToUInt64() const
     {
         return Platform::HexToUInt64(Data, std::min(Size, 16));
     }
@@ -215,7 +215,7 @@ public:
     }
 
     /** Path utility. Get filename without path. */
-    AN_FORCEINLINE AStringView GetFilenameNoPath() const
+    HK_FORCEINLINE AStringView GetFilenameNoPath() const
     {
         const char* p = Data + Size;
         while (--p >= Data && !Platform::IsPathSeparator(*p))
@@ -227,7 +227,7 @@ public:
     }
 
     /** Path utility. Get full filename without extension. */
-    AN_FORCEINLINE AStringView GetFilenameNoExt() const
+    HK_FORCEINLINE AStringView GetFilenameNoExt() const
     {
         int         sz = Size;
         const char* p  = Data + Size;
@@ -247,7 +247,7 @@ public:
     }
 
     /** Path utility. Get path without file name. */
-    AN_FORCEINLINE AStringView GetFilePath() const
+    HK_FORCEINLINE AStringView GetFilePath() const
     {
         const char* p = Data + Size;
         while (--p > Data && !Platform::IsPathSeparator(*p))
@@ -371,18 +371,18 @@ public:
     }
 
     /** Get string hash */
-    AN_FORCEINLINE int Hash() const
+    HK_FORCEINLINE int Hash() const
     {
         return Core::Hash(Data, Size);
     }
 
     /** Get string hash case insensitive */
-    AN_FORCEINLINE int HashCase() const
+    HK_FORCEINLINE int HashCase() const
     {
         return Core::HashCase(Data, Size);
     }
 
-    AN_FORCEINLINE void Write(IBinaryStream& _Stream) const
+    HK_FORCEINLINE void Write(IBinaryStream& _Stream) const
     {
         _Stream.WriteUInt32(Size);
         _Stream.WriteBuffer(Data, Size);
@@ -495,25 +495,25 @@ public:
     }
 
     /** Find the character. Return character position in string or -1. */
-    AN_FORCEINLINE int Contains(char _Ch) const
+    HK_FORCEINLINE int Contains(char _Ch) const
     {
         return AStringView(Data, Size).Contains(_Ch);
     }
 
     /** Find the substring. Return substring position in string or -1. */
-    AN_FORCEINLINE int FindSubstring(AStringView _Substring) const
+    HK_FORCEINLINE int FindSubstring(AStringView _Substring) const
     {
         return AStringView(Data, Size).FindSubstring(_Substring);
     }
 
     /** Find the substring. Return substring position in string or -1. */
-    AN_FORCEINLINE int FindSubstringIcmp(AStringView _Substring) const
+    HK_FORCEINLINE int FindSubstringIcmp(AStringView _Substring) const
     {
         return AStringView(Data, Size).FindSubstringIcmp(_Substring);
     }
 
     /** Get substring. */
-    AN_FORCEINLINE AStringView GetSubstring(size_t _Pos, size_t _Size) const
+    HK_FORCEINLINE AStringView GetSubstring(size_t _Pos, size_t _Size) const
     {
         return AStringView(Data, Size).GetSubstring(_Pos, _Size);
     }
@@ -524,36 +524,36 @@ public:
     /** Convert to upper case */
     void ToUpper();
 
-    AN_FORCEINLINE uint32_t HexToUInt32() const
+    HK_FORCEINLINE uint32_t HexToUInt32() const
     {
         return AStringView(Data, Size).HexToUInt32();
     }
 
-    AN_FORCEINLINE uint64_t HexToUInt64() const
+    HK_FORCEINLINE uint64_t HexToUInt64() const
     {
         return AStringView(Data, Size).HexToUInt64();
     }
 
     /** Compare the strings (case insensitive) */
-    AN_FORCEINLINE int Icmp(AStringView Rhs) const
+    HK_FORCEINLINE int Icmp(AStringView Rhs) const
     {
         return AStringView(Data, Size).Icmp(Rhs);
     }
 
     /** Compare the strings (case sensitive) */
-    AN_FORCEINLINE int Cmp(AStringView Rhs) const
+    HK_FORCEINLINE int Cmp(AStringView Rhs) const
     {
         return AStringView(Data, Size).Cmp(Rhs);
     }
 
     /** Compare the strings (case insensitive) */
-    AN_FORCEINLINE int IcmpN(AStringView Rhs, int _Num) const
+    HK_FORCEINLINE int IcmpN(AStringView Rhs, int _Num) const
     {
         return AStringView(Data, Size).IcmpN(Rhs, _Num);
     }
 
     /** Compare the strings (case sensitive) */
-    AN_FORCEINLINE int CmpN(AStringView Rhs, int _Num) const
+    HK_FORCEINLINE int CmpN(AStringView Rhs, int _Num) const
     {
         return AStringView(Data, Size).CmpN(Rhs, _Num);
     }
@@ -573,13 +573,13 @@ public:
     void ClipPath();
 
     /** Path utility. Get filename without path. */
-    AN_FORCEINLINE AStringView GetFilenameNoPath() const
+    HK_FORCEINLINE AStringView GetFilenameNoPath() const
     {
         return AStringView(Data, Size).GetFilenameNoPath();
     }
 
     /** Path utility. Return index of the path end. */
-    AN_FORCEINLINE int FindPath() const
+    HK_FORCEINLINE int FindPath() const
     {
         return AStringView(Data, Size).FindPath();
     }
@@ -588,7 +588,7 @@ public:
     void ClipExt();
 
     /** Path utility. Get full filename without extension. */
-    AN_FORCEINLINE AStringView GetFilenameNoExt() const
+    HK_FORCEINLINE AStringView GetFilenameNoExt() const
     {
         return AStringView(Data, Size).GetFilenameNoExt();
     }
@@ -597,13 +597,13 @@ public:
     void ClipFilename();
 
     /** Path utility. Get path without file name. */
-    AN_FORCEINLINE AStringView GetFilePath() const
+    HK_FORCEINLINE AStringView GetFilePath() const
     {
         return AStringView(Data, Size).GetFilePath();
     }
 
     /** Path utility. Check file extension. */
-    AN_FORCEINLINE bool CompareExt(AStringView _Ext, bool _CaseInsensitive = true) const
+    HK_FORCEINLINE bool CompareExt(AStringView _Ext, bool _CaseInsensitive = true) const
     {
         return AStringView(Data, Size).CompareExt(_Ext, _CaseInsensitive);
     }
@@ -615,44 +615,44 @@ public:
     void ReplaceExt(AStringView _Extension);
 
     /** Path utility. Return index where the extension begins. */
-    AN_FORCEINLINE int FindExt() const
+    HK_FORCEINLINE int FindExt() const
     {
         return AStringView(Data, Size).FindExt();
     }
 
     /** Path utility. Return index where the extension begins after dot. */
-    AN_FORCEINLINE int FindExtWithoutDot() const
+    HK_FORCEINLINE int FindExtWithoutDot() const
     {
         return AStringView(Data, Size).FindExt();
     }
 
     /** Path utility. Get filename extension. */
-    AN_FORCEINLINE AStringView GetExt() const
+    HK_FORCEINLINE AStringView GetExt() const
     {
         return AStringView(Data, Size).GetExt();
     }
 
     /** Path utility. Get filename extension without dot. */
-    AN_FORCEINLINE AStringView GetExtWithoutDot() const
+    HK_FORCEINLINE AStringView GetExtWithoutDot() const
     {
         return AStringView(Data, Size).GetExtWithoutDot();
     }
 
     /** Get string hash */
-    AN_FORCEINLINE int Hash() const
+    HK_FORCEINLINE int Hash() const
     {
         return Core::Hash(Data, Size);
     }
 
     /** Get string hash case insensitive */
-    AN_FORCEINLINE int HashCase() const
+    HK_FORCEINLINE int HashCase() const
     {
         return Core::HashCase(Data, Size);
     }
 
     void FromFile(IBinaryStream& _Stream);
 
-    AN_FORCEINLINE void Write(IBinaryStream& _Stream) const
+    HK_FORCEINLINE void Write(IBinaryStream& _Stream) const
     {
         AStringView(Data, Size).Write(_Stream);
     }
@@ -676,13 +676,13 @@ private:
     static const AString NullStr;
 };
 
-AN_FORCEINLINE AString::AString() :
+HK_FORCEINLINE AString::AString() :
     Data(Base), Capacity(BASE_CAPACITY), Size(0)
 {
     Base[0] = 0;
 }
 
-AN_FORCEINLINE AString::AString(AString const& Rhs) :
+HK_FORCEINLINE AString::AString(AString const& Rhs) :
     AString()
 {
     const int newLen = Rhs.Length();
@@ -692,7 +692,7 @@ AN_FORCEINLINE AString::AString(AString const& Rhs) :
     Size         = newLen;
 }
 
-AN_FORCEINLINE AString::AString(AString&& Rhs) noexcept
+HK_FORCEINLINE AString::AString(AString&& Rhs) noexcept
 {
     if (Rhs.Data == &Rhs.Base[0])
     {
@@ -715,7 +715,7 @@ AN_FORCEINLINE AString::AString(AString&& Rhs) noexcept
     Rhs.Data[0] = '\0';
 }
 
-AN_FORCEINLINE AString::AString(AStringView Rhs) :
+HK_FORCEINLINE AString::AString(AStringView Rhs) :
     AString()
 {
     const int newLen = Rhs.Length();
@@ -725,7 +725,7 @@ AN_FORCEINLINE AString::AString(AStringView Rhs) :
     Size         = newLen;
 }
 
-AN_FORCEINLINE AString::AString(const char* _Begin, const char* _End) :
+HK_FORCEINLINE AString::AString(const char* _Begin, const char* _End) :
     AString()
 {
     const int newLen = _End - _Begin;
@@ -735,7 +735,7 @@ AN_FORCEINLINE AString::AString(const char* _Begin, const char* _End) :
     Size         = newLen;
 }
 
-AN_FORCEINLINE AString::~AString()
+HK_FORCEINLINE AString::~AString()
 {
     if (Data != Base)
     {
@@ -743,19 +743,19 @@ AN_FORCEINLINE AString::~AString()
     }
 }
 
-AN_FORCEINLINE const char& AString::operator[](const int _Index) const
+HK_FORCEINLINE const char& AString::operator[](const int _Index) const
 {
-    AN_ASSERT_((_Index >= 0) && (_Index <= Size), "AString[]");
+    HK_ASSERT_((_Index >= 0) && (_Index <= Size), "AString[]");
     return Data[_Index];
 }
 
-AN_FORCEINLINE char& AString::operator[](const int _Index)
+HK_FORCEINLINE char& AString::operator[](const int _Index)
 {
-    AN_ASSERT_((_Index >= 0) && (_Index <= Size), "AString[]");
+    HK_ASSERT_((_Index >= 0) && (_Index <= Size), "AString[]");
     return Data[_Index];
 }
 
-AN_FORCEINLINE AString& AString::operator=(AString const& Rhs)
+HK_FORCEINLINE AString& AString::operator=(AString const& Rhs)
 {
     const int newLen = Rhs.Length();
     GrowCapacity(newLen + 1, false);
@@ -765,7 +765,7 @@ AN_FORCEINLINE AString& AString::operator=(AString const& Rhs)
     return *this;
 }
 
-AN_FORCEINLINE AString& AString::operator=(AString&& Rhs) noexcept
+HK_FORCEINLINE AString& AString::operator=(AString&& Rhs) noexcept
 {
     Free();
 
@@ -792,7 +792,7 @@ AN_FORCEINLINE AString& AString::operator=(AString&& Rhs) noexcept
     return *this;
 }
 
-AN_FORCEINLINE AString& AString::operator=(AStringView Rhs)
+HK_FORCEINLINE AString& AString::operator=(AStringView Rhs)
 {
     const int newLen = Rhs.Length();
     GrowCapacity(newLen + 1, false);
@@ -802,13 +802,13 @@ AN_FORCEINLINE AString& AString::operator=(AStringView Rhs)
     return *this;
 }
 
-AN_FORCEINLINE void AString::Clear()
+HK_FORCEINLINE void AString::Clear()
 {
     Size    = 0;
     Data[0] = '\0';
 }
 
-AN_FORCEINLINE void AString::Free()
+HK_FORCEINLINE void AString::Free()
 {
     if (Data != Base)
     {
@@ -820,69 +820,69 @@ AN_FORCEINLINE void AString::Free()
     Data[0] = '\0';
 }
 
-AN_FORCEINLINE AString operator+(AStringView Lhs, AStringView Rhs)
+HK_FORCEINLINE AString operator+(AStringView Lhs, AStringView Rhs)
 {
     AString result(Lhs);
     result.Concat(Rhs);
     return result;
 }
 
-AN_FORCEINLINE AString operator+(AStringView _Str, char _Char)
+HK_FORCEINLINE AString operator+(AStringView _Str, char _Char)
 {
     AString result(_Str);
     result.Concat(_Char);
     return result;
 }
 
-AN_FORCEINLINE AString operator+(char _Char, AStringView _Str)
+HK_FORCEINLINE AString operator+(char _Char, AStringView _Str)
 {
     AString result(_Str);
     result.Concat(_Char);
     return result;
 }
 
-AN_FORCEINLINE AString& AString::operator+=(AStringView _Str)
+HK_FORCEINLINE AString& AString::operator+=(AStringView _Str)
 {
     Concat(_Str);
     return *this;
 }
 
-AN_FORCEINLINE AString& AString::operator+=(char _Char)
+HK_FORCEINLINE AString& AString::operator+=(char _Char)
 {
     Concat(_Char);
     return *this;
 }
 
-AN_FORCEINLINE const char* AString::CStr() const
+HK_FORCEINLINE const char* AString::CStr() const
 {
     return Data;
 }
 
-AN_FORCEINLINE const char* AString::Begin() const
+HK_FORCEINLINE const char* AString::Begin() const
 {
     return Data;
 }
-AN_FORCEINLINE const char* AString::End() const
+HK_FORCEINLINE const char* AString::End() const
 {
     return Data + Size;
 }
 
-AN_FORCEINLINE int AString::Length() const
+HK_FORCEINLINE int AString::Length() const
 {
     return Size;
 }
 
-AN_FORCEINLINE bool AString::IsEmpty() const
+HK_FORCEINLINE bool AString::IsEmpty() const
 {
     return Size == 0;
 }
 
-AN_FORCEINLINE char* AString::ToPtr() const
+HK_FORCEINLINE char* AString::ToPtr() const
 {
     return Data;
 }
 
-AN_FORCEINLINE void AString::Resize(int _Length)
+HK_FORCEINLINE void AString::Resize(int _Length)
 {
     GrowCapacity(_Length + 1, true);
     if (_Length > Size)
@@ -893,18 +893,18 @@ AN_FORCEINLINE void AString::Resize(int _Length)
     Data[Size] = 0;
 }
 
-AN_FORCEINLINE void AString::FixSeparator()
+HK_FORCEINLINE void AString::FixSeparator()
 {
     Platform::FixSeparator(Data);
 }
 
-AN_FORCEINLINE void AString::ReplaceExt(AStringView _Extension)
+HK_FORCEINLINE void AString::ReplaceExt(AStringView _Extension)
 {
     ClipExt();
     Concat(_Extension);
 }
 
-AN_FORCEINLINE void AString::FromFile(IBinaryStream& _Stream)
+HK_FORCEINLINE void AString::FromFile(IBinaryStream& _Stream)
 {
     _Stream.SeekEnd(0);
     long fileSz = _Stream.Tell();
@@ -915,7 +915,7 @@ AN_FORCEINLINE void AString::FromFile(IBinaryStream& _Stream)
     Size         = fileSz;
 }
 
-AN_FORCEINLINE void AString::Read(IBinaryStream& _Stream)
+HK_FORCEINLINE void AString::Read(IBinaryStream& _Stream)
 {
     int len = _Stream.ReadUInt32();
     GrowCapacity(len + 1, false);
@@ -925,34 +925,34 @@ AN_FORCEINLINE void AString::Read(IBinaryStream& _Stream)
 }
 
 
-AN_FORCEINLINE AStringView::AStringView(AString const& Str) :
+HK_FORCEINLINE AStringView::AStringView(AString const& Str) :
     AStringView(Str.ToPtr(), Str.Length())
 {
 }
 
-AN_FORCEINLINE AStringView::AStringView(AStdString const& Str) :
+HK_FORCEINLINE AStringView::AStringView(AStdString const& Str) :
     AStringView(Str.c_str(), Str.length())
 {
 }
 
-AN_FORCEINLINE AStringView& AStringView::operator=(AString const& Rhs)
+HK_FORCEINLINE AStringView& AStringView::operator=(AString const& Rhs)
 {
     Data = Rhs.ToPtr();
     Size = Rhs.Length();
     return *this;
 }
 
-AN_FORCEINLINE bool operator==(AStringView Lhs, AStringView Rhs)
+HK_FORCEINLINE bool operator==(AStringView Lhs, AStringView Rhs)
 {
     return Lhs.Cmp(Rhs) == 0;
 }
 
-AN_FORCEINLINE bool operator!=(AStringView Lhs, AStringView Rhs)
+HK_FORCEINLINE bool operator!=(AStringView Lhs, AStringView Rhs)
 {
     return Lhs.Cmp(Rhs) != 0;
 }
 
-AN_FORCEINLINE AString AStringView::ToString() const
+HK_FORCEINLINE AString AStringView::ToString() const
 {
     return AString(Data, Data + Size);
 }
@@ -978,7 +978,7 @@ struct TSprintfBuffer
     char* Sprintf(const char* _Format, ...)
     {
         static_assert(Size > 0, "Invalid buffer size");
-        AN_ASSERT(_Format);
+        HK_ASSERT(_Format);
         va_list VaList;
         va_start(VaList, _Format);
         Platform::VSprintf(Data, Size, _Format, VaList);

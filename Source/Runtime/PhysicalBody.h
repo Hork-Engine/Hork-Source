@@ -76,7 +76,7 @@ struct SDebugDrawCache
 
 class APhysicalBody : public ASceneComponent
 {
-    AN_COMPONENT(APhysicalBody, ASceneComponent)
+    HK_COMPONENT(APhysicalBody, ASceneComponent)
 
     friend struct SCollisionFilterCallback;
     friend class APhysicalBodyMotionState;

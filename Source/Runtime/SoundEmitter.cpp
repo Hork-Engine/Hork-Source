@@ -42,8 +42,8 @@ ASoundEmitter* ASoundEmitter::SoundEmittersTail;
 ASoundOneShot* ASoundEmitter::OneShots     = nullptr;
 ASoundOneShot* ASoundEmitter::OneShotsTail = nullptr;
 
-AN_CLASS_META(ASoundGroup)
-AN_CLASS_META(ASoundEmitter)
+HK_CLASS_META(ASoundGroup)
+HK_CLASS_META(ASoundEmitter)
 
 ASoundEmitter::ASoundEmitter()
 {
@@ -115,7 +115,7 @@ void ASoundEmitter::BeginPlay()
     }
 }
 
-AN_FORCEINLINE float FalloffDistance(float MaxDistance)
+HK_FORCEINLINE float FalloffDistance(float MaxDistance)
 {
     return MaxDistance * 1.3f;
 }
@@ -895,7 +895,7 @@ void ASoundEmitter::ClearOneShotSounds()
         FreeSound(sound);
     }
 
-    AN_ASSERT(OneShots == nullptr);
+    HK_ASSERT(OneShots == nullptr);
 }
 
 void ASoundEmitter::FreeSound(ASoundOneShot* Sound)

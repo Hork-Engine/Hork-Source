@@ -68,7 +68,7 @@ public:
 };
 
 
-AN_CLASS_META(ACharacterControllerBase)
+HK_CLASS_META(ACharacterControllerBase)
 
 ACharacterControllerBase::ACharacterControllerBase()
 {
@@ -333,7 +333,7 @@ public:
             return 1;
         }
 
-        AN_ASSERT(result.m_hitFraction <= m_closestHitFraction);
+        HK_ASSERT(result.m_hitFraction <= m_closestHitFraction);
 
         m_closestHitFraction = result.m_hitFraction;
         HitNormalWorld       = hitNormalWorld;
@@ -410,7 +410,7 @@ public:
 
         btVector3 hitNormalWorld = normalInWorldSpace ? result.m_hitNormalLocal : result.m_hitCollisionObject->getWorldTransform().getBasis() * result.m_hitNormalLocal;
 
-        AN_ASSERT(result.m_hitFraction <= m_closestHitFraction);
+        HK_ASSERT(result.m_hitFraction <= m_closestHitFraction);
 
         m_closestHitFraction = result.m_hitFraction;
         HitNormalWorld       = hitNormalWorld;
@@ -458,7 +458,7 @@ void ACharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End,
     Trace.Normal   = btVectorToFloat3(callback.HitNormalWorld);
     Trace.Fraction = callback.m_closestHitFraction;
 
-    AN_ASSERT(GhostObject->hasContactResponse());
+    HK_ASSERT(GhostObject->hasContactResponse());
 }
 
 void ACharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End, SCharacterControllerTrace& Trace, bool bCylinder) const
@@ -491,7 +491,7 @@ void ACharacterControllerBase::TraceSelf(Float3 const& Start, Float3 const& End,
     Trace.Normal   = btVectorToFloat3(callback.HitNormalWorld);
     Trace.Fraction = callback.m_closestHitFraction;
 
-    AN_ASSERT(GhostObject->hasContactResponse());
+    HK_ASSERT(GhostObject->hasContactResponse());
 }
 
 void ACharacterControllerBase::RecoverFromPenetration(float MaxPenetrationDepth, int MaxIterations)
@@ -623,7 +623,7 @@ void ACharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& T
     SlideMove(StartPos, linearVelocity, TimeStep, FinalPos, finalVelocity, bClipped, pContacts);
 }
 
-static AN_FORCEINLINE bool FindHitNormal(Float3 const* ContactNormals, int NumContacts, Float3 const& HitNormal)
+static HK_FORCEINLINE bool FindHitNormal(Float3 const* ContactNormals, int NumContacts, Float3 const& HitNormal)
 {
     for (int i = 0; i < NumContacts; i++)
     {
@@ -819,7 +819,7 @@ public:
 };
 
 
-AN_CLASS_META(AProjectileExperimental)
+HK_CLASS_META(AProjectileExperimental)
 
 AProjectileExperimental::AProjectileExperimental()
 {
@@ -1028,7 +1028,7 @@ public:
 
         btVector3 hitNormalWorld = normalInWorldSpace ? result.m_hitNormalLocal : result.m_hitCollisionObject->getWorldTransform().getBasis() * result.m_hitNormalLocal;
 
-        AN_ASSERT(result.m_hitFraction <= m_closestHitFraction);
+        HK_ASSERT(result.m_hitFraction <= m_closestHitFraction);
 
         m_closestHitFraction = result.m_hitFraction;
         HitNormalWorld       = hitNormalWorld;
@@ -1076,7 +1076,7 @@ void AProjectileExperimental::TraceSelf(Float3 const& Start, Float3 const& End, 
     Trace.Normal   = btVectorToFloat3(callback.HitNormalWorld);
     Trace.Fraction = callback.m_closestHitFraction;
 
-    AN_ASSERT(GhostObject->hasContactResponse());
+    HK_ASSERT(GhostObject->hasContactResponse());
 }
 
 void AProjectileExperimental::TraceSelf(Float3 const& Start, Quat const& StartRot, Float3 const& End, Quat const& EndRot, SProjectileTrace& Trace) const
@@ -1107,7 +1107,7 @@ void AProjectileExperimental::TraceSelf(Float3 const& Start, Quat const& StartRo
     Trace.Normal   = btVectorToFloat3(callback.HitNormalWorld);
     Trace.Fraction = callback.m_closestHitFraction;
 
-    AN_ASSERT(GhostObject->hasContactResponse());
+    HK_ASSERT(GhostObject->hasContactResponse());
 }
 
 void AProjectileExperimental::DrawDebug(ADebugRenderer* InRenderer)

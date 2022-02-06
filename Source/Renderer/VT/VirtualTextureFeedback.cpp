@@ -99,7 +99,7 @@ void AVirtualTextureFeedback::Begin( int Width, int Height )
         float w = Math::Floor( Math::Sqrt( float( 0xffff-1 )*aspect ) );
         feedbackWidth = w;
         feedbackHeight = Math::Floor( w / aspect );
-        AN_ASSERT( feedbackWidth*feedbackHeight < 0xffff );
+        HK_ASSERT( feedbackWidth*feedbackHeight < 0xffff );
     }
 
     FeedbackSize[SwapIndex] = feedbackWidth * feedbackHeight;
@@ -175,7 +175,7 @@ static bool BindMaterialFeedbackPass(IImmediateContext* immediateCtx, SRenderIns
     IBuffer * pSecondVertexBuffer = nullptr;
     size_t secondBufferOffset = 0;
 
-    AN_ASSERT( pMaterial );
+    HK_ASSERT( pMaterial );
 
     int bSkinned = Instance->SkeletonSize > 0;
 

@@ -35,7 +35,7 @@ SOFTWARE.
 template <int MIN_BLOCK_SIZE = 64 << 10>
 class TLinearAllocator
 {
-    AN_FORBID_COPY(TLinearAllocator)
+    HK_FORBID_COPY(TLinearAllocator)
 
 public:
     TLinearAllocator()
@@ -68,7 +68,7 @@ public:
 
         TotalMemoryUsage += _SizeInBytes;
 
-        AN_ASSERT(IsAlignedPtr(ptr, 16));
+        HK_ASSERT(IsAlignedPtr(ptr, 16));
 
         return ptr;
     }
@@ -126,7 +126,7 @@ private:
     size_t  TotalAllocs      = 0;
     size_t  TotalMemoryUsage = 0;
 
-    AN_VALIDATE_TYPE_SIZE(SBlock, 32);
+    HK_VALIDATE_TYPE_SIZE(SBlock, 32);
 
     SBlock* FindBlock(size_t _SizeInBytes)
     {

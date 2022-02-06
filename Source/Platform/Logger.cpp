@@ -32,11 +32,11 @@ SOFTWARE.
 #include <Platform/Memory/Memory.h>
 #include <Platform/String.h>
 
-#if defined AN_COMPILER_MSVC && defined AN_DEBUG
+#if defined HK_COMPILER_MSVC && defined HK_DEBUG
 #    include <Platform/WindowsDefs.h>
 #endif
 
-#ifdef AN_OS_ANDROID
+#ifdef HK_OS_ANDROID
 #    include <android/log.h>
 #endif
 
@@ -73,7 +73,7 @@ void ALogger::Warning(const char* _Format, ...)
 
 void ALogger::DebugMessage(const char* _Format, ...)
 {
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
     va_list VaList;
     va_start(VaList, _Format);
     Platform::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
@@ -113,8 +113,8 @@ void ALogger::SetMessageCallback(void (*_MessageCallback)(int, const char*, void
 
 void ALogger::DefaultMessageCallback(int, const char* _Message, void*)
 {
-#if defined AN_DEBUG
-#    if defined AN_COMPILER_MSVC
+#if defined HK_DEBUG
+#    if defined HK_COMPILER_MSVC
     {
         int n = MultiByteToWideChar(CP_UTF8, 0, _Message, -1, NULL, 0);
         if (0 != n)
@@ -127,7 +127,7 @@ void ALogger::DefaultMessageCallback(int, const char* _Message, void*)
         }
     }
 #    else
-#        ifdef AN_OS_ANDROID
+#        ifdef HK_OS_ANDROID
     __android_log_print(ANDROID_LOG_INFO, "Hork Engine", _Message);
 #        else
     fprintf(stdout, "%s", _Message);

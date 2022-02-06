@@ -46,7 +46,7 @@ enum PLANE_SIDE
 
 class AConvexHull final
 {
-    AN_FORBID_COPY(AConvexHull)
+    HK_FORBID_COPY(AConvexHull)
 
 private:
     int MaxPoints;

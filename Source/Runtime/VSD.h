@@ -445,12 +445,12 @@ struct SWorldRaycastFilter
 enum ESurfaceFlags : uint8_t
 {
     /** Planar surface */
-    SURF_PLANAR = AN_BIT(0),
+    SURF_PLANAR = HK_BIT(0),
 
     /** Two sided surface
     NOTE: This flags affects only CPU culling and raycasting.
     You must also use a material with twosided property on to have visual effect. */
-    SURF_TWOSIDED = AN_BIT(1),
+    SURF_TWOSIDED = HK_BIT(1),
 
     /** Planar tow sided surface */
     SURF_PLANAR_TWOSIDED_MASK = SURF_PLANAR | SURF_TWOSIDED
@@ -537,7 +537,7 @@ struct SBinarySpacePlane : PlaneF
     /** Plane axial type */
     uint8_t Type;
 
-    AN_FORCEINLINE float DistFast(Float3 const& InPoint) const
+    HK_FORCEINLINE float DistFast(Float3 const& InPoint) const
     {
         return (Type < 3) ? (InPoint[Type] + D) : (Math::Dot(InPoint, Normal) + D);
     }
@@ -741,8 +741,8 @@ private:
     bool         FaceCull(SSurfaceDef const* InSurface);
     bool         CullNode(PlaneF const InFrustum[MAX_CULL_PLANES], int const InCachedSignBits[MAX_CULL_PLANES], BvAxisAlignedBox const& InBounds, int& InCullBits);
     void         CullPrimitives(SVisArea const* InArea, PlaneF const* InCullPlanes, const int InCullPlanesCount);
-    //AN_INLINE bool CullBoxSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBox const & InBounds );
-    //AN_INLINE bool CullSphereSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvSphere const & InBounds );
+    //HK_INLINE bool CullBoxSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBox const & InBounds );
+    //HK_INLINE bool CullSphereSingle( PlaneF const * InCullPlanes, const int InCullPlanesCount, BvSphere const & InBounds );
     static void CullBoxGeneric(PlaneF const* InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBoxSSE const* InBounds, const int InNumObjects, int* Result);
     static void CullBoxSSE(PlaneF const* InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBoxSSE const* InBounds, const int InNumObjects, int* Result);
     static void CullBoxAsync(void* InData);

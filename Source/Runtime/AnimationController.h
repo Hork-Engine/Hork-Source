@@ -58,7 +58,7 @@ Animation controller (track, state)
 */
 class AAnimationController : public ABaseObject
 {
-    AN_CLASS(AAnimationController, ABaseObject)
+    HK_CLASS(AAnimationController, ABaseObject)
 
     friend class ASkinnedComponent;
 

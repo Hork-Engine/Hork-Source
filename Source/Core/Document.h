@@ -54,7 +54,7 @@ struct SToken
 
 class ADocumentTokenizer
 {
-    AN_FORBID_COPY(ADocumentTokenizer)
+    HK_FORBID_COPY(ADocumentTokenizer)
 
 public:
     ADocumentTokenizer();
@@ -96,7 +96,7 @@ private:
 //
 //    void * Allocate( std::size_t _SizeInBytes )
 //    {
-//        AN_ASSERT( _SizeInBytes == sizeof( T ) );
+//        HK_ASSERT( _SizeInBytes == sizeof( T ) );
 //        return GetMemoryPool().Allocate();
 //    }
 //

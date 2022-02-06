@@ -38,7 +38,7 @@ SOFTWARE.
 
 class AAudioMixer
 {
-    AN_FORBID_COPY(AAudioMixer)
+    HK_FORBID_COPY(AAudioMixer)
 
 public:
     AAudioMixer(AAudioDevice* _Device);
@@ -107,7 +107,7 @@ private:
     TUniqueRef<class AFreeverb>  ReverbFilter;
 
     alignas(16) SSamplePair RenderBuffer[2048];
-    const int RenderBufferSize = AN_ARRAY_SIZE(RenderBuffer);
+    const int RenderBufferSize = HK_ARRAY_SIZE(RenderBuffer);
 
     TRef<AAudioDevice> pDevice;
     AAudioDevice* DeviceRawPtr;

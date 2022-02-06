@@ -53,7 +53,7 @@ ABloomRenderer::ABloomRenderer()
 
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &samplerCI;
-    resourceLayout.NumBuffers  = AN_ARRAY_SIZE(bufferInfo);
+    resourceLayout.NumBuffers  = HK_ARRAY_SIZE(bufferInfo);
     resourceLayout.Buffers     = bufferInfo;
 
     CreateFullscreenQuadPipeline(&BrightPipeline, "postprocess/brightpass.vert", "postprocess/brightpass.frag", &resourceLayout);

@@ -82,7 +82,7 @@ AExposureRenderer::AExposureRenderer()
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &samplerCI;
 
-    resourceLayout.NumBuffers = AN_ARRAY_SIZE(bufferInfo);
+    resourceLayout.NumBuffers = HK_ARRAY_SIZE(bufferInfo);
     resourceLayout.Buffers    = bufferInfo;
 
     CreateFullscreenQuadPipeline(&MakeLuminanceMapPipe, "postprocess/exposure/make_luminance.vert", "postprocess/exposure/make_luminance.frag", &resourceLayout);

@@ -44,7 +44,7 @@ Mesh component with skinning
 */
 class ASkinnedComponent : public AMeshComponent
 {
-    AN_COMPONENT(ASkinnedComponent, AMeshComponent)
+    HK_COMPONENT(ASkinnedComponent, AMeshComponent)
 
     friend class ARenderWorld;
     friend class AAnimationController;

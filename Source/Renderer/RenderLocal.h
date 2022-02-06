@@ -326,7 +326,7 @@ void CreateFullscreenQuadPipelineGS(TRef<RenderCore::IPipeline>*               p
                                     RenderCore::SPipelineResourceLayout const* pResourceLayout = nullptr,
                                     RenderCore::BLENDING_PRESET                BlendingPreset  = RenderCore::BLENDING_NO_BLEND);
 
-AN_FORCEINLINE void StoreFloat3x3AsFloat3x4Transposed(Float3x3 const& _In, Float3x4& _Out)
+HK_FORCEINLINE void StoreFloat3x3AsFloat3x4Transposed(Float3x3 const& _In, Float3x4& _Out)
 {
     _Out[0][0] = _In[0][0];
     _Out[0][1] = _In[1][0];
@@ -344,7 +344,7 @@ AN_FORCEINLINE void StoreFloat3x3AsFloat3x4Transposed(Float3x3 const& _In, Float
     _Out[2][3] = 0;
 }
 
-AN_FORCEINLINE void StoreFloat3x4AsFloat4x4Transposed(Float3x4 const& _In, Float4x4& _Out)
+HK_FORCEINLINE void StoreFloat3x4AsFloat4x4Transposed(Float3x4 const& _In, Float4x4& _Out)
 {
     _Out[0][0] = _In[0][0];
     _Out[0][1] = _In[1][0];

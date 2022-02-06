@@ -36,7 +36,7 @@ SOFTWARE.
 #define DOUBLECLICKTIME_MSEC 250
 #define DOUBLECLICKHALFSIZE  4.0f
 
-AN_CLASS_META(WDesktop)
+HK_CLASS_META(WDesktop)
 
 WDesktop::WDesktop() :
     FocusWidget(nullptr), MouseClickTime(0), MouseClickPos(0.0f), DraggingCursor(0.0f), DraggingWidgetPos(0.0f), CursorPosition(0.0f), Cursor(DRAW_CURSOR_ARROW), bCursorVisible(true), bDrawBackground(false)
@@ -154,12 +154,12 @@ void WDesktop::ClosePopupMenu()
     }
 }
 
-AN_FORCEINLINE bool InRect(Float2 const& _Mins, Float2 const& _Maxs, Float2 const& _Position)
+HK_FORCEINLINE bool InRect(Float2 const& _Mins, Float2 const& _Maxs, Float2 const& _Position)
 {
     return _Position.X >= _Mins.X && _Position.X < _Maxs.X && _Position.Y >= _Mins.Y && _Position.Y < _Maxs.Y;
 }
 
-AN_FORCEINLINE void ApplyMargins(Float2& _Mins, Float2& _Maxs, Float4 const& _Margins)
+HK_FORCEINLINE void ApplyMargins(Float2& _Mins, Float2& _Maxs, Float4 const& _Margins)
 {
     _Mins.X += _Margins.X;
     _Mins.Y += _Margins.Y;
@@ -281,7 +281,7 @@ WWidget* WDesktop::GetExclusive()
     // Проверить exclusive
     while (exclusive)
     {
-        if (AN_HASFLAG(exclusive->GetStyle(), WIDGET_STYLE_EXCLUSIVE) && exclusive->IsVisible())
+        if (HK_HASFLAG(exclusive->GetStyle(), WIDGET_STYLE_EXCLUSIVE) && exclusive->IsVisible())
         {
             break;
         }

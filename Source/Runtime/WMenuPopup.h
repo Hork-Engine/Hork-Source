@@ -34,7 +34,7 @@ SOFTWARE.
 
 class WMenuPopup : public ABaseObject
 {
-    AN_CLASS(WMenuPopup, ABaseObject)
+    HK_CLASS(WMenuPopup, ABaseObject)
 
     friend class WDesktop;
 

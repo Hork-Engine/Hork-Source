@@ -171,7 +171,7 @@ AAudioHRTF::AAudioHRTF( int SampleRate )
             if ( result != MA_SUCCESS ) {
                 CriticalError( "Failed to resample HRTF data\n" );
             }
-            AN_ASSERT( frameCountOut <= framesOut.Size() );
+            HK_ASSERT( frameCountOut <= framesOut.Size() );
 
             GenerateHRTF( framesOut.ToPtr(), frameCountOut, hrtfL.ToPtr() + i * FilterSize );
 
@@ -184,7 +184,7 @@ AAudioHRTF::AAudioHRTF( int SampleRate )
             if ( result != MA_SUCCESS ) {
                 CriticalError( "Failed to resample HRTF data\n" );
             }
-            AN_ASSERT( frameCountOut <= framesOut.Size() );
+            HK_ASSERT( frameCountOut <= framesOut.Size() );
 
             GenerateHRTF( framesOut.ToPtr(), frameCountOut, hrtfR.ToPtr() + i * FilterSize );
         }
@@ -301,8 +301,8 @@ void AAudioHRTF::SampleHRTF( Float3 const & Dir, SComplex * pLeftHRTF, SComplex 
 
 void AAudioHRTF::ApplyHRTF( Float3 const & CurDir, Float3 const & NewDir, const float * pFrames, int InFrameCount, float * pStream, Float3 & Dir )
 {
-    AN_ASSERT( InFrameCount > 0 );
-    AN_ASSERT( ( InFrameCount % HRTF_BLOCK_LENGTH ) == 0 );
+    HK_ASSERT( InFrameCount > 0 );
+    HK_ASSERT( ( InFrameCount % HRTF_BLOCK_LENGTH ) == 0 );
 
     const int numBlocks = InFrameCount / HRTF_BLOCK_LENGTH;
     const int hrtfLen = FrameCount - 1;

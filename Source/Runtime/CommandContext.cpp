@@ -42,7 +42,7 @@ ACommandContext::~ACommandContext()
 
 void ACommandContext::ExecuteCommand(ACommandProcessor const& _Proc)
 {
-    AN_ASSERT(_Proc.GetArgsCount() > 0);
+    HK_ASSERT(_Proc.GetArgsCount() > 0);
 
     const char* name = _Proc.GetArg(0);
 
@@ -123,7 +123,7 @@ void ACommandContext::RemoveCommands()
 namespace
 {
 
-AN_FORCEINLINE bool CompareChar(char _Ch1, char _Ch2)
+HK_FORCEINLINE bool CompareChar(char _Ch1, char _Ch2)
 {
     return tolower(_Ch1) == tolower(_Ch2);
 }

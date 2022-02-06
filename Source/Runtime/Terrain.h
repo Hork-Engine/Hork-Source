@@ -45,7 +45,7 @@ class ATerrainComponent;
 
 class ATerrain : public AResource
 {
-    AN_CLASS(ATerrain, AResource)
+    HK_CLASS(ATerrain, AResource)
 
 public:
     ATerrain();

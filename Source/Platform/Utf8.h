@@ -56,7 +56,7 @@ int WideStrDecodeUTF8(const char* _Unicode, SWideChar* _Str, int _MaxLength);
 int WideStrDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, SWideChar* _Str, int _MaxLength);
 
 /** Length of utf8 character in bytes */
-AN_FORCEINLINE int WideCharUTF8Bytes(SWideChar _Ch)
+HK_FORCEINLINE int WideCharUTF8Bytes(SWideChar _Ch)
 {
     if (_Ch < 0x80) return 1;
     if (_Ch < 0x800) return 2;
@@ -78,9 +78,9 @@ int WideCharEncodeUTF8(char* _Buf, int _BufSize, unsigned int _Ch);
 int WideStrEncodeUTF8(char* _Buf, int _BufSize, SWideChar const* _Str, SWideChar const* _StrEnd = nullptr);
 
 /** Check wide char is blank */
-AN_FORCEINLINE bool WideCharIsBlank(SWideChar _Ch) { return _Ch == ' ' || _Ch == '\t' || _Ch == 0x3000; }
+HK_FORCEINLINE bool WideCharIsBlank(SWideChar _Ch) { return _Ch == ' ' || _Ch == '\t' || _Ch == 0x3000; }
 
 /** Check ascii char is blank */
-AN_FORCEINLINE bool CharIsBlank(char _Ch) { return _Ch == ' ' || _Ch == '\t'; }
+HK_FORCEINLINE bool CharIsBlank(char _Ch) { return _Ch == ' ' || _Ch == '\t'; }
 
 } // namespace Core

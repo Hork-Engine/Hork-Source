@@ -24,11 +24,11 @@ set( CMAKE_POSITION_INDEPENDENT_CODE ON )
 
 # Setup Endianness
 include( TestBigEndian )
-TEST_BIG_ENDIAN( AN_IS_BIG_ENDIAN )
-if ( AN_IS_BIG_ENDIAN )
-add_definitions( -DAN_BIG_ENDIAN )
+TEST_BIG_ENDIAN( HK_IS_BIG_ENDIAN )
+if ( HK_IS_BIG_ENDIAN )
+add_definitions( -DHK_BIG_ENDIAN )
 else()
-add_definitions( -DAN_LITTLE_ENDIAN )
+add_definitions( -DHK_LITTLE_ENDIAN )
 endif()
 
 
@@ -66,7 +66,7 @@ endif()
 endmacro()
 
 # Copy a list of files from one directory to another. Relative files paths are maintained.
-macro(AN_COPY_FILES target file_list source_dir target_dir)
+macro(HK_COPY_FILES target file_list source_dir target_dir)
   foreach(FILENAME ${file_list})
     set(source_file ${source_dir}/${FILENAME})
     set(target_file ${target_dir}/${FILENAME})
@@ -90,7 +90,7 @@ endmacro()
 
 # Compiler flags and defines
 if(UNIX)
-    set( AN_COMPILER_FLAGS
+    set( HK_COMPILER_FLAGS
         -fvisibility=hidden
         -fno-exceptions                 # Disable exceptions
         -fno-builtin-memset
@@ -103,13 +103,13 @@ if(UNIX)
         -Wno-maybe-uninitialized
         -Wno-enum-compare
         )
-    set( AN_COMPILER_DEFINES "" )
+    set( HK_COMPILER_DEFINES "" )
 	
     # Don't generate thread-safe statics
     set( CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} -fno-threadsafe-statics )
 endif()
 if(WIN32)
-    set(AN_COMPILER_FLAGS
+    set(HK_COMPILER_FLAGS
         /W4           # Warning level 4
         /WX           # Treat warnings as errors
 		/wd4018       # Ignore signed/unsigned mismatch
@@ -131,7 +131,7 @@ if(WIN32)
 		/FC           # __FILE__ contains full path
         )
 
-    set( AN_COMPILER_DEFINES
+    set( HK_COMPILER_DEFINES
         WIN32 _WIN32 _WINDOWS             # Windows platform
         UNICODE _UNICODE                  # Unicode build
         NOMINMAX                          # Use the standard's templated min/max

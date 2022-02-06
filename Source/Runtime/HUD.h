@@ -38,7 +38,7 @@ class ACanvas;
 
 class AHUD : public AActor
 {
-    AN_ACTOR(AHUD, AActor)
+    HK_ACTOR(AHUD, AActor)
 
     friend class APlayerController;
 

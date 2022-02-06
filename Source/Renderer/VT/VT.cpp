@@ -35,7 +35,7 @@ SOFTWARE.
 
 #include <fcntl.h>
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 
 #include <Platform/WindowsDefs.h>
 
@@ -97,7 +97,7 @@ void SVirtualTextureFileHandle::Seek( uint64_t Offset ) {
 
     if ( !SetFilePointerEx( Handle, offset, &offset, whence ) ) {
         // error
-        AN_ASSERT( 0 );
+        HK_ASSERT( 0 );
     }
 }
 
@@ -121,8 +121,8 @@ void SVirtualTextureFileHandle::Read( void * Data, unsigned int Size, uint64_t O
         NULL
     );
 
-    AN_ASSERT( r != FALSE );
-    AN_ASSERT( numberOfBytesRead == Size );
+    HK_ASSERT( r != FALSE );
+    HK_ASSERT( numberOfBytesRead == Size );
 }
 
 void SVirtualTextureFileHandle::Write( const void * Data, unsigned int Size, uint64_t Offset ) {
@@ -138,8 +138,8 @@ void SVirtualTextureFileHandle::Write( const void * Data, unsigned int Size, uin
         NULL
     );
 
-    AN_ASSERT( r != FALSE );
-    AN_ASSERT( numberOfBytesWritten == Size );
+    HK_ASSERT( r != FALSE );
+    HK_ASSERT( numberOfBytesWritten == Size );
 }
 
 #else
@@ -184,7 +184,7 @@ SVirtualTexturePIT::~SVirtualTexturePIT() {
 }
 
 void SVirtualTexturePIT::Create( unsigned int InNumPages ) {
-    AN_ASSERT_( InNumPages > 0, "SVirtualTexturePIT::create" );
+    HK_ASSERT_( InNumPages > 0, "SVirtualTexturePIT::create" );
     NumPages = InNumPages;
     GHeapMemory.Free( Data );
     Data = ( byte * )GHeapMemory.Alloc( NumPages );
@@ -192,13 +192,13 @@ void SVirtualTexturePIT::Create( unsigned int InNumPages ) {
 }
 
 void SVirtualTexturePIT::Clear() {
-    AN_ASSERT_( Data != NULL, "SVirtualTexturePIT::clear" );
+    HK_ASSERT_( Data != NULL, "SVirtualTexturePIT::clear" );
     Platform::ZeroMem( Data, sizeof( Data[0] ) * NumPages );
 }
 
 void SVirtualTexturePIT::Generate( APageBitfield const & BitField, int & StoredLods ) {
-    AN_ASSERT_( Data != NULL, "SVirtualTexturePIT::generate" );
-    AN_ASSERT_( BitField.Size() >= NumPages, "SVirtualTexturePIT::Generate" );
+    HK_ASSERT_( Data != NULL, "SVirtualTexturePIT::generate" );
+    HK_ASSERT_( BitField.Size() >= NumPages, "SVirtualTexturePIT::Generate" );
 
     unsigned int lodPagesCount[QUADTREE_MAX_LODS_32];
 
@@ -252,7 +252,7 @@ void SVirtualTexturePIT::Generate( APageBitfield const & BitField, int & StoredL
 }
 
 SFileOffset SVirtualTexturePIT::Write( SVirtualTextureFileHandle * File, SFileOffset Offset ) const {
-    AN_ASSERT_( Data != NULL, "SVirtualTexturePIT::write" );
+    HK_ASSERT_( Data != NULL, "SVirtualTexturePIT::write" );
     File->Write( &WritePages, sizeof(WritePages), Offset );
     Offset += sizeof(WritePages);
     File->Write( Data, sizeof(Data[0])*WritePages, Offset );
@@ -302,7 +302,7 @@ void SVirtualTextureAddressTable::Create( int _NumLods ) {
 }
 
 void SVirtualTextureAddressTable::Clear() {
-    AN_ASSERT_( ByteOffsets != NULL, "SVirtualTextureAddressTable::clear" );
+    HK_ASSERT_( ByteOffsets != NULL, "SVirtualTextureAddressTable::clear" );
 
     Platform::ZeroMem( ByteOffsets, sizeof( ByteOffsets[0] ) * TotalPages );
     if ( Table ) {
@@ -311,8 +311,8 @@ void SVirtualTextureAddressTable::Clear() {
 }
 
 void SVirtualTextureAddressTable::Generate( APageBitfield const & BitField ) {
-    AN_ASSERT_( ByteOffsets != NULL, "SVirtualTextureAddressTable::generate" );
-    AN_ASSERT_( BitField.Size() >= TotalPages, "SVirtualTexturePIT::Generate" );
+    HK_ASSERT_( ByteOffsets != NULL, "SVirtualTextureAddressTable::generate" );
+    HK_ASSERT_( BitField.Size() >= TotalPages, "SVirtualTexturePIT::Generate" );
 
     // Кол-во страниц в LOD'ах от 0 до 4
     unsigned int numFirstPages = Math::Min< unsigned int >( 85, TotalPages );
@@ -405,7 +405,7 @@ void SVirtualTextureAddressTable::Generate( APageBitfield const & BitField ) {
 }
 
 SFileOffset SVirtualTextureAddressTable::Write( SVirtualTextureFileHandle * File, SFileOffset Offset ) const {
-    AN_ASSERT_( ByteOffsets != NULL, "SVirtualTextureAddressTable::write" );
+    HK_ASSERT_( ByteOffsets != NULL, "SVirtualTextureAddressTable::write" );
 
     byte tmp = NumLods;
     File->Write( &tmp, sizeof( tmp ), Offset );

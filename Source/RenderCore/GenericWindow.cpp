@@ -48,7 +48,7 @@ void IGenericWindow::ParseEvent(SDL_Event const& event)
     if (event.type != SDL_WINDOWEVENT)
         return;
 
-    AN_ASSERT(SDL_GetWindowFromID(event.window.windowID) == GetHandle());
+    HK_ASSERT(SDL_GetWindowFromID(event.window.windowID) == GetHandle());
 
     switch (event.window.event)
     {

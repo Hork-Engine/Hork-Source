@@ -41,7 +41,7 @@ Anchors is used to attach softbodies
 */
 class AAnchorComponent : public ASceneComponent
 {
-    AN_COMPONENT(AAnchorComponent, ASceneComponent)
+    HK_COMPONENT(AAnchorComponent, ASceneComponent)
 
     friend class ASoftMeshComponent;
 

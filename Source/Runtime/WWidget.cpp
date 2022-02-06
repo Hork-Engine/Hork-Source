@@ -34,7 +34,7 @@ SOFTWARE.
 #include "FrameLoop.h"
 #include <Geometry/Shuffle.h>
 
-AN_CLASS_META(WWidget)
+HK_CLASS_META(WWidget)
 
 constexpr int WWidget::MAX_COLUMNS;
 constexpr int WWidget::MAX_ROWS;
@@ -83,8 +83,8 @@ WWidget::~WWidget()
 
     if (bFocus)
     {
-        AN_ASSERT(Desktop);
-        AN_ASSERT(Desktop->GetFocusWidget() == this);
+        HK_ASSERT(Desktop);
+        HK_ASSERT(Desktop->GetFocusWidget() == this);
         Desktop->SetFocusWidget(nullptr);
     }
 
@@ -150,7 +150,7 @@ void WWidget::LostFocus_r(WDesktop* _Desktop)
 {
     if (bFocus)
     {
-        AN_ASSERT(_Desktop->GetFocusWidget() == this);
+        HK_ASSERT(_Desktop->GetFocusWidget() == this);
         _Desktop->SetFocusWidget(nullptr);
         return;
     }
@@ -501,7 +501,7 @@ Float2 const& WWidget::GetPosition() const
     return Position;
 }
 
-AN_FORCEINLINE void ClampWidgetSize(Float2& _InOut, Float2 const& _Min, Float2 const& _Max)
+HK_FORCEINLINE void ClampWidgetSize(Float2& _InOut, Float2 const& _Min, Float2 const& _Max)
 {
     if (_InOut.X < _Min.X)
     {
@@ -626,7 +626,7 @@ void WWidget::UpdateTransform()
             break;
         }
         default:
-            AN_ASSERT(0);
+            HK_ASSERT(0);
             availSize = Parent->GetAvailableSize();
             break;
     }
@@ -676,7 +676,7 @@ void WWidget::UpdateTransform()
                 break;
 
             default:
-                AN_ASSERT(0);
+                HK_ASSERT(0);
         }
 
         if (bClampWidth && curPos.X + curSize.X > availSize.X)
@@ -867,7 +867,7 @@ WWidget& WWidget::BringOnTop(bool _RecursiveForParents)
         if (Style & WIDGET_STYLE_FOREGROUND)
         {
 
-            if (AN_HASFLAG(Style, WIDGET_STYLE_POPUP))
+            if (HK_HASFLAG(Style, WIDGET_STYLE_POPUP))
             {
                 // bring on top
                 if (Parent->Childs.Last() != this)
@@ -881,7 +881,7 @@ WWidget& WWidget::BringOnTop(bool _RecursiveForParents)
                 int i;
 
                 // skip popup widgets
-                for (i = Parent->Childs.Size() - 1; i >= 0 && AN_HASFLAG(Parent->Childs[i]->GetStyle(), WIDGET_STYLE_POPUP); i--) {}
+                for (i = Parent->Childs.Size() - 1; i >= 0 && HK_HASFLAG(Parent->Childs[i]->GetStyle(), WIDGET_STYLE_POPUP); i--) {}
 
                 // bring before popup widgets
                 if (i >= 0 && Parent->Childs[i] != this)
@@ -897,7 +897,7 @@ WWidget& WWidget::BringOnTop(bool _RecursiveForParents)
             int i;
 
             // skip foreground widgets
-            for (i = Parent->Childs.Size() - 1; i >= 0 && AN_HASFLAG(Parent->Childs[i]->GetStyle(), WIDGET_STYLE_FOREGROUND); i--) {}
+            for (i = Parent->Childs.Size() - 1; i >= 0 && HK_HASFLAG(Parent->Childs[i]->GetStyle(), WIDGET_STYLE_FOREGROUND); i--) {}
 
             // bring before foreground widgets
             if (i >= 0 && Parent->Childs[i] != this)
@@ -939,7 +939,7 @@ bool WWidget::IsHoveredByCursor() const
     return w == this;
 }
 
-AN_FORCEINLINE void ApplyMargins(Float2& _Mins, Float2& _Maxs, Float4 const& _Margins)
+HK_FORCEINLINE void ApplyMargins(Float2& _Mins, Float2& _Maxs, Float4 const& _Margins)
 {
     _Mins.X += _Margins.X;
     _Mins.Y += _Margins.Y;
@@ -1398,7 +1398,7 @@ void WWidget::GetLayoutRect(Float2& _Mins, Float2& _Maxs) const
         }
         break;
         default:
-            AN_ASSERT(0);
+            HK_ASSERT(0);
             Parent->GetDesktopRect(_Mins, _Maxs, true);
             break;
     }
@@ -2315,7 +2315,7 @@ WWidget& ScrollTest()
 
 
 #if 0
-AN_CLASS_META( WMenuItem )
+HK_CLASS_META( WMenuItem )
 
 WMenuItem::WMenuItem() {
     State = ST_RELEASED;

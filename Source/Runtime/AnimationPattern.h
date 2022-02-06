@@ -34,7 +34,7 @@ SOFTWARE.
 
 class AAnimationPattern : public ABaseObject
 {
-    AN_CLASS(AAnimationPattern, ABaseObject)
+    HK_CLASS(AAnimationPattern, ABaseObject)
 
 public:
     AString Pattern;

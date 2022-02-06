@@ -49,7 +49,7 @@ SOFTWARE.
 
 AConsoleVar com_DrawSkeleton(_CTS("com_DrawSkeleton"), _CTS("0"), CVAR_CHEAT);
 
-AN_CLASS_META(ASkinnedComponent)
+HK_CLASS_META(ASkinnedComponent)
 
 ASkinnedComponent::ASkinnedComponent()
 {
@@ -187,7 +187,7 @@ void ASkinnedComponent::AddTimeDeltaBroadcast(float _TimeDelta)
     }
 }
 
-AN_FORCEINLINE float Quantize(float _Lerp, float _Quantizer)
+HK_FORCEINLINE float Quantize(float _Lerp, float _Quantizer)
 {
     return _Quantizer > 0.0f ? Math::Floor(_Lerp * _Quantizer) / _Quantizer : _Lerp;
 }

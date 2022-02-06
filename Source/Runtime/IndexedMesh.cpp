@@ -40,13 +40,13 @@ SOFTWARE.
 #include <Core/ScopedTimer.h>
 #include <Geometry/BV/BvIntersect.h>
 
-AN_CLASS_META(AIndexedMesh)
-AN_CLASS_META(AIndexedMeshSubpart)
-AN_CLASS_META(ALightmapUV)
-AN_CLASS_META(AVertexLight)
-AN_CLASS_META(ATreeAABB)
-AN_CLASS_META(ASocketDef)
-AN_CLASS_META(AProceduralMesh)
+HK_CLASS_META(AIndexedMesh)
+HK_CLASS_META(AIndexedMeshSubpart)
+HK_CLASS_META(ALightmapUV)
+HK_CLASS_META(AVertexLight)
+HK_CLASS_META(ATreeAABB)
+HK_CLASS_META(ASocketDef)
+HK_CLASS_META(AProceduralMesh)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -62,8 +62,8 @@ AIndexedMesh::~AIndexedMesh()
 {
     Purge();
 
-    AN_ASSERT(LightmapUVs.IsEmpty());
-    AN_ASSERT(VertexLightChannels.IsEmpty());
+    HK_ASSERT(LightmapUVs.IsEmpty());
+    HK_ASSERT(VertexLightChannels.IsEmpty());
 }
 
 void AIndexedMesh::Initialize(int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh)
@@ -2692,7 +2692,7 @@ void CreateConeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>
     }
     firstVertex += _NumSubdivs + 1;
 
-    AN_ASSERT(firstVertex == _Vertices.Size());
+    HK_ASSERT(firstVertex == _Vertices.Size());
 
     // generate indices
 
@@ -2718,7 +2718,7 @@ void CreateConeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>
         firstVertex += (_NumSubdivs + 1) * 2;
     }
 
-    AN_ASSERT(pIndices == _Indices.ToPtr() + _Indices.Size());
+    HK_ASSERT(pIndices == _Indices.ToPtr() + _Indices.Size());
 
     CalcTangentSpace(_Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size());
 }
@@ -3053,7 +3053,7 @@ struct SAABBTreeBuild
 
 static void CalcNodeBounds(SPrimitiveBounds const* _Primitives, int _PrimCount, BvAxisAlignedBox& _Bounds)
 {
-    AN_ASSERT(_PrimCount > 0);
+    HK_ASSERT(_PrimCount > 0);
 
     SPrimitiveBounds const* primitive = _Primitives;
 
@@ -3137,7 +3137,7 @@ static SBestSplitResult FindBestSplitPrimitive(SAABBTreeBuild& _Build, int _Axis
         }
     }
 
-    AN_ASSERT((result.Axis != -1) && (bestSAH < Math::MaxValue<float>()));
+    HK_ASSERT((result.Axis != -1) && (bestSAH < Math::MaxValue<float>()));
 
     return result;
 }

@@ -38,7 +38,7 @@ BvFrustum::BvFrustum()
 
 BvFrustum::~BvFrustum()
 {
-#ifdef AN_FRUSTUM_USE_SSE
+#ifdef HK_FRUSTUM_USE_SSE
     GZoneMemory.Free(PlanesSSE);
 #endif
 }
@@ -89,7 +89,7 @@ void BvFrustum::FromMatrix(Float4x4 const& matrix, bool bReversedDepth)
     planes_[FRUSTUM_PLANE_NEAR].D        = m[3][3] + m[3][2];
     planes_[FRUSTUM_PLANE_NEAR].NormalizeSelf();
 
-#ifdef AN_FRUSTUM_USE_SSE
+#ifdef HK_FRUSTUM_USE_SSE
     if (!PlanesSSE)
     {
         PlanesSSE = (sse_t*)GZoneMemory.Alloc(sizeof(sse_t));
@@ -197,7 +197,7 @@ void BvFrustum::CullBox_IgnoreZ_Generic(BvAxisAlignedBoxSSE const* bounds, int c
 
 void BvFrustum::CullSphere_SSE(BvSphereSSE const* bounds, int count, int* result) const
 {
-#ifdef AN_FRUSTUM_USE_SSE
+#ifdef HK_FRUSTUM_USE_SSE
     const float* sphere_data_ptr = reinterpret_cast<const float*>(&bounds->Center[0]);
     int*         culling_res_sse = &result[0];
 
@@ -250,7 +250,7 @@ void BvFrustum::CullSphere_SSE(BvSphereSSE const* bounds, int count, int* result
 
 void BvFrustum::CullSphere_IgnoreZ_SSE(BvSphereSSE const* bounds, int count, int* result) const
 {
-#ifdef AN_FRUSTUM_USE_SSE
+#ifdef HK_FRUSTUM_USE_SSE
     const float* sphere_data_ptr = reinterpret_cast<const float*>(&bounds->Center[0]);
     int*         culling_res_sse = &result[0];
 
@@ -303,7 +303,7 @@ void BvFrustum::CullSphere_IgnoreZ_SSE(BvSphereSSE const* bounds, int count, int
 
 void BvFrustum::CullBox_SSE(BvAxisAlignedBoxSSE const* bounds, int count, int* result) const
 {
-#ifdef AN_FRUSTUM_USE_SSE
+#ifdef HK_FRUSTUM_USE_SSE
     const float* pBoundingBoxData = reinterpret_cast<const float*>(&bounds->Mins.X);
     int*         pCullingResult   = &result[0];
     int          i, j;
@@ -379,7 +379,7 @@ void BvFrustum::CullBox_SSE(BvAxisAlignedBoxSSE const* bounds, int count, int* r
 
 void BvFrustum::CullBox_IgnoreZ_SSE(BvAxisAlignedBoxSSE const* bounds, int count, int* result) const
 {
-#ifdef AN_FRUSTUM_USE_SSE
+#ifdef HK_FRUSTUM_USE_SSE
     const float* pBoundingBoxData = reinterpret_cast<const float*>(&bounds->Mins.X);
     int*         pCullingResult   = &result[0];
     int          i, j;

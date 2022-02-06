@@ -36,14 +36,14 @@ SOFTWARE.
 #include "Material.h"
 
 #define MG_CLASS(ThisClass, SuperClass)         \
-    AN_CLASS(ThisClass, SuperClass)             \
+    HK_CLASS(ThisClass, SuperClass)             \
 public:                                         \
     static bool IsSingleton() { return false; } \
                                                 \
 private:
 
 #define MG_SINGLETON(ThisClass, SuperClass)    \
-    AN_CLASS(ThisClass, SuperClass)            \
+    HK_CLASS(ThisClass, SuperClass)            \
 public:                                        \
     static bool IsSingleton() { return true; } \
                                                \

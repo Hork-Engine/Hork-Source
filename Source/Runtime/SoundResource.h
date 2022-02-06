@@ -59,7 +59,7 @@ struct SSoundCreateInfo
 
 class ASoundResource : public AResource
 {
-    AN_CLASS(ASoundResource, AResource)
+    HK_CLASS(ASoundResource, AResource)
 
 public:
     /** Initialize from memory */

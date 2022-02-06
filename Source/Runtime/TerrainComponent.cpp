@@ -38,7 +38,7 @@ SOFTWARE.
 
 AConsoleVar com_DrawTerrainBounds(_CTS("com_DrawTerrainBounds"), _CTS("0"), CVAR_CHEAT);
 
-AN_CLASS_META(ATerrainComponent)
+HK_CLASS_META(ATerrainComponent)
 
 static bool RaycastCallback(SPrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits)
 {
@@ -288,7 +288,7 @@ void ATerrainComponent::AddTerrainPhysics()
         return;
     }
 
-    AN_ASSERT(RigidBody == nullptr);
+    HK_ASSERT(RigidBody == nullptr);
 
     float verticalOffset = (Terrain->GetMinHeight() + Terrain->GetMaxHeight()) * 0.5f;
 

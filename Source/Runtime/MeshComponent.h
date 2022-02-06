@@ -47,7 +47,7 @@ Mesh component without skinning
 */
 class AMeshComponent : public ADrawable
 {
-    AN_COMPONENT(AMeshComponent, ADrawable)
+    HK_COMPONENT(AMeshComponent, ADrawable)
 
 public:
     /** Lightmap atlas index */
@@ -146,7 +146,7 @@ private:
 
 class AProceduralMeshComponent : public ADrawable
 {
-    AN_COMPONENT(AProceduralMeshComponent, ADrawable)
+    HK_COMPONENT(AProceduralMeshComponent, ADrawable)
 
 public:
     /** Transform matrix used during last rendering */
@@ -186,7 +186,7 @@ protected:
 
 #if 0
 class ABrushComponent : public ADrawable {
-    AN_COMPONENT( ABrushComponent, ADrawable )
+    HK_COMPONENT( ABrushComponent, ADrawable )
 
 public:
     /** Brush surfaces */

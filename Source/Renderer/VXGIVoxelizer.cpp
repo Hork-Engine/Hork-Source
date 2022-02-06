@@ -189,19 +189,19 @@ VXGIVoxelizer::VXGIVoxelizer() {
         }
     };
 
-    CreateVertexShader( "gen/atmosphere.vert", vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    CreateVertexShader( "gen/atmosphere.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
     CreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
     CreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
 
     SBufferInfo buffers[1];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBindings );
+    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBindings );
     pipelineCI.pVertexBindings = vertexBindings;
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, &Pipeline );
@@ -242,19 +242,19 @@ void VXGIVoxelizer::CreatePipeline()
         }
     };
 
-    CreateVertexShader( "gen/atmosphere.vert", vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    CreateVertexShader( "gen/atmosphere.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
     CreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
     CreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
 
     SBufferInfo buffers[1];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBindings );
+    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBindings );
     pipelineCI.pVertexBindings = vertexBindings;
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, &Pipeline );
@@ -279,7 +279,7 @@ void VXGIVoxelizer::Render()
         ranges[i].SizeInBytes = sizeof( uint32_t );
     }
     // Clear data before since data is used when drawing
-    rcmd->ClearBufferRange( drawIndBuffer, BUFFER_VIEW_PIXEL_FORMAT_R32UI, AN_ARRAY_SIZE( ranges ), ranges, FORMAT_UINT1, nullptr ); // FIXME: format must be GL_RED, GL_UNSIGNED_INT
+    rcmd->ClearBufferRange( drawIndBuffer, BUFFER_VIEW_PIXEL_FORMAT_R32UI, HK_ARRAY_SIZE( ranges ), ranges, FORMAT_UINT1, nullptr ); // FIXME: format must be GL_RED, GL_UNSIGNED_INT
 
     // Reset the sparse voxel count for compute shader
     //TODO glBindBuffer( GL_SHADER_STORAGE_BUFFER, compIndBuffer );
@@ -288,7 +288,7 @@ void VXGIVoxelizer::Render()
         ranges[i].SizeInBytes = sizeof( uint32_t );
     }
     // Clear data before since data is used when drawing
-    rcmd->ClearBufferRange( compIndBuffer, BUFFER_VIEW_PIXEL_FORMAT_R32UI, AN_ARRAY_SIZE( ranges ), ranges, FORMAT_UINT1, nullptr ); // FIXME: format must be GL_RED, GL_UNSIGNED_INT
+    rcmd->ClearBufferRange( compIndBuffer, BUFFER_VIEW_PIXEL_FORMAT_R32UI, HK_ARRAY_SIZE( ranges ), ranges, FORMAT_UINT1, nullptr ); // FIXME: format must be GL_RED, GL_UNSIGNED_INT
 
 
 

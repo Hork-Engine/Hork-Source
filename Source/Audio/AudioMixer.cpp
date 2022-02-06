@@ -127,7 +127,7 @@ void AAudioMixer::SubmitChannel(SAudioChannel* Channel)
 
     ASpinLockGuard lockGuard(SubmitLock);
 
-    AN_ASSERT(!INTRUSIVE_EXISTS(Channel, Next, Prev, PendingList, PendingListTail));
+    HK_ASSERT(!INTRUSIVE_EXISTS(Channel, Next, Prev, PendingList, PendingListTail));
     INTRUSIVE_ADD(Channel, Next, Prev, PendingList, PendingListTail);
 }
 
@@ -439,7 +439,7 @@ static void ConvertFramesToMonoF32(const void* pFramesIn, int FrameCount, int Sa
     }
 
     // Should never happen, but just in case...
-    AN_ASSERT(0);
+    HK_ASSERT(0);
 }
 
 // Read frames from current playback position and convert to f32 format.
@@ -669,7 +669,7 @@ void AAudioMixer::MakeVolumeRamp(const int CurVol[2], const int _NewVol[2], int 
         return;
     }
 
-    VolumeRampSize = Math::Min3((int)AN_ARRAY_SIZE(VolumeRampL), FrameCount, Snd_VolumeRampSize.GetInteger());
+    VolumeRampSize = Math::Min3((int)HK_ARRAY_SIZE(VolumeRampL), FrameCount, Snd_VolumeRampSize.GetInteger());
     if (VolumeRampSize < 0)
     {
         VolumeRampSize = 0;
@@ -722,7 +722,7 @@ void AAudioMixer::RenderFramesHRTF(SAudioChannel* Chan, int FrameCount, SSampleP
     VolumeRampSize = 0;
     if (Chan->Volume[0] != NewVol[0] || Chan->Volume[1] != NewVol[1])
     {
-        VolumeRampSize = Math::Min3((int)AN_ARRAY_SIZE(VolumeRampL), FrameCount, Snd_VolumeRampSize.GetInteger());
+        VolumeRampSize = Math::Min3((int)HK_ARRAY_SIZE(VolumeRampL), FrameCount, Snd_VolumeRampSize.GetInteger());
         if (VolumeRampSize > 0)
         {
             float scale      = 256.0f / Hrtf->GetFilterSize();

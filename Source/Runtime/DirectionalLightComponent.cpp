@@ -77,16 +77,16 @@ static const Float3 DEFAULT_COLOR(1.0f);
 //                                    },
 //}
 
-AN_BEGIN_CLASS_META(ADirectionalLightComponent)
-AN_ATTRIBUTE(Illuminance, float, SetIlluminance, GetIlluminance, AF_DEFAULT)
-AN_ATTRIBUTE(Color, Float3, SetColor, GetColor, AF_DEFAULT)
-AN_ATTRIBUTE(bCastShadow, bool, SetCastShadow, IsCastShadow, AF_DEFAULT)
-AN_ATTRIBUTE(ShadowMaxDistance, float, SetShadowMaxDistance, GetShadowMaxDistance, AF_DEFAULT)
-AN_ATTRIBUTE(ShadowCascadeResolution, int, SetShadowCascadeResolution, GetShadowCascadeResolution, AF_DEFAULT)
-AN_ATTRIBUTE(ShadowCascadeOffset, float, SetShadowCascadeOffset, GetShadowCascadeOffset, AF_DEFAULT)
-AN_ATTRIBUTE(ShadowCascadeSplitLambda, float, SetShadowCascadeSplitLambda, GetShadowCascadeSplitLambda, AF_DEFAULT)
-AN_ATTRIBUTE(MaxShadowCascades, int, SetMaxShadowCascades, GetMaxShadowCascades, AF_DEFAULT)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(ADirectionalLightComponent)
+HK_ATTRIBUTE(Illuminance, float, SetIlluminance, GetIlluminance, AF_DEFAULT)
+HK_ATTRIBUTE(Color, Float3, SetColor, GetColor, AF_DEFAULT)
+HK_ATTRIBUTE(bCastShadow, bool, SetCastShadow, IsCastShadow, AF_DEFAULT)
+HK_ATTRIBUTE(ShadowMaxDistance, float, SetShadowMaxDistance, GetShadowMaxDistance, AF_DEFAULT)
+HK_ATTRIBUTE(ShadowCascadeResolution, int, SetShadowCascadeResolution, GetShadowCascadeResolution, AF_DEFAULT)
+HK_ATTRIBUTE(ShadowCascadeOffset, float, SetShadowCascadeOffset, GetShadowCascadeOffset, AF_DEFAULT)
+HK_ATTRIBUTE(ShadowCascadeSplitLambda, float, SetShadowCascadeSplitLambda, GetShadowCascadeSplitLambda, AF_DEFAULT)
+HK_ATTRIBUTE(MaxShadowCascades, int, SetMaxShadowCascades, GetMaxShadowCascades, AF_DEFAULT)
+HK_END_CLASS_META()
 
 ADirectionalLightComponent::ADirectionalLightComponent()
 {
@@ -272,7 +272,7 @@ void ADirectionalLightComponent::AddShadowmapCascades(AStreamedMemoryGPU* Stream
     Float3   worldspaceVerts[MAX_CASCADE_SPLITS][4];
     Float3   right, up;
 
-    AN_ASSERT(MaxShadowCascades > 0 && MaxShadowCascades <= MAX_SHADOW_CASCADES);
+    HK_ASSERT(MaxShadowCascades > 0 && MaxShadowCascades <= MAX_SHADOW_CASCADES);
 
     if (!bCastShadow)
     {

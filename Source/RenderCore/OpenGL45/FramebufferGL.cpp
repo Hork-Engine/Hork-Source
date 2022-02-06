@@ -41,9 +41,9 @@ namespace RenderCore
 AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
     Hash(Hash), Width(Desc.Width), Height(Desc.Height), NumColorAttachments(Desc.NumColorAttachments), bHasDepthStencilAttachment(Desc.pDepthStencilAttachment != nullptr)
 {
-    AN_ASSERT(Desc.Width != 0);
-    AN_ASSERT(Desc.Height != 0);
-    AN_ASSERT(Desc.NumColorAttachments <= MAX_COLOR_ATTACHMENTS);
+    HK_ASSERT(Desc.Width != 0);
+    HK_ASSERT(Desc.Height != 0);
+    HK_ASSERT(Desc.NumColorAttachments <= MAX_COLOR_ATTACHMENTS);
 
     bool bDefault = false;
 
@@ -53,7 +53,7 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
     {
         ITextureView* rtv = Desc.pColorAttachments[i];
 
-        AN_ASSERT(rtv->GetDesc().ViewType == TEXTURE_VIEW_RENDER_TARGET);
+        HK_ASSERT(rtv->GetDesc().ViewType == TEXTURE_VIEW_RENDER_TARGET);
 
         if (rtv->GetHandleNativeGL() == 0)
         {
@@ -61,9 +61,9 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
             {
                 ITexture const* backBuffer = rtv->GetTexture();
 
-                AN_ASSERT(backBuffer->GetHandleNativeGL() == 0);
-                AN_ASSERT(Width == backBuffer->GetWidth());
-                AN_ASSERT(Height == backBuffer->GetHeight());
+                HK_ASSERT(backBuffer->GetHandleNativeGL() == 0);
+                HK_ASSERT(Width == backBuffer->GetWidth());
+                HK_ASSERT(Height == backBuffer->GetHeight());
 
                 RTVs[0] = rtv;
 
@@ -71,7 +71,7 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
             }
             else
             {
-                AN_ASSERT_(0, "Attempting to combine the swap chain's back buffer with other color attachments");
+                HK_ASSERT_(0, "Attempting to combine the swap chain's back buffer with other color attachments");
             }
         }
     }
@@ -81,26 +81,26 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
     {
         ITextureView* dsv = Desc.pDepthStencilAttachment;
 
-        AN_ASSERT(dsv->GetDesc().ViewType == TEXTURE_VIEW_DEPTH_STENCIL);
+        HK_ASSERT(dsv->GetDesc().ViewType == TEXTURE_VIEW_DEPTH_STENCIL);
 
         if (bDefault && dsv->GetHandleNativeGL() != 0)
         {
-            AN_ASSERT_(0, "Expected default depth-stencil buffer");
+            HK_ASSERT_(0, "Expected default depth-stencil buffer");
         }
 
         if (dsv->GetHandleNativeGL() == 0)
         {
             if (!bDefault && Desc.NumColorAttachments > 0)
             {
-                AN_ASSERT_(0, "The swap chain's depth-stencil buffer can only be combined with default back buffer.");
+                HK_ASSERT_(0, "The swap chain's depth-stencil buffer can only be combined with default back buffer.");
             }
             else
             {                
                 ITexture const* depthBuffer = dsv->GetTexture();
 
-                AN_ASSERT(depthBuffer->GetHandleNativeGL() == 0);
-                AN_ASSERT(Width == depthBuffer->GetWidth());
-                AN_ASSERT(Height == depthBuffer->GetHeight());
+                HK_ASSERT(depthBuffer->GetHandleNativeGL() == 0);
+                HK_ASSERT(Width == depthBuffer->GetWidth());
+                HK_ASSERT(Height == depthBuffer->GetHeight());
 
                 pDSV = dsv;
 
@@ -137,8 +137,8 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
         STextureViewDesc const& viewDesc       = textureView->GetDesc();
         GLenum                  attachmentName = GL_COLOR_ATTACHMENT0 + i;
 
-        AN_ASSERT(Width == textureView->GetWidth());
-        AN_ASSERT(Height == textureView->GetHeight());
+        HK_ASSERT(Width == textureView->GetWidth());
+        HK_ASSERT(Height == textureView->GetHeight());
 
         if (viewDesc.NumSlices == texture->GetSliceCount(viewDesc.FirstMipLevel))
         {
@@ -150,7 +150,7 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
         }
         else
         {
-            AN_ASSERT_(0, "Only one layer or an entire texture can be attached to a framebuffer");
+            HK_ASSERT_(0, "Only one layer or an entire texture can be attached to a framebuffer");
         }
 
         RTVs[i] = textureView;
@@ -164,8 +164,8 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
         STextureViewDesc const& viewDesc    = textureView->GetDesc();
         GLenum                  attachmentName;
 
-        AN_ASSERT(Width == textureView->GetWidth());
-        AN_ASSERT(Height == textureView->GetHeight());
+        HK_ASSERT(Width == textureView->GetWidth());
+        HK_ASSERT(Height == textureView->GetHeight());
 
         // TODO: table
         switch (textureView->GetDesc().Format)
@@ -186,7 +186,7 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
                 attachmentName = GL_DEPTH_STENCIL_ATTACHMENT;
                 break;
             default:
-                AN_ASSERT(0);
+                HK_ASSERT(0);
                 attachmentName = GL_DEPTH_STENCIL_ATTACHMENT;
         }
 
@@ -200,13 +200,13 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
         }
         else
         {
-            AN_ASSERT_(0, "Only one layer or an entire texture can be attached to a framebuffer");
+            HK_ASSERT_(0, "Only one layer or an entire texture can be attached to a framebuffer");
         }
 
         pDSV = textureView;
     }
 
-    AN_ASSERT(glCheckNamedFramebufferStatus(FramebufferId, GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
+    HK_ASSERT(glCheckNamedFramebufferStatus(FramebufferId, GL_DRAW_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE);
 
     // Reminder: These framebuffer parameters can be obtained using the following functions:
     // glGetBufferParameteri64v        glGetNamedBufferParameteri64v

@@ -58,7 +58,7 @@ AVirtualTexture::AVirtualTexture( const char * FileName, AVirtualTextureCache * 
     //    return false;
     //}
 
-    AN_ASSERT( AddressTable.NumLods <= VT_MAX_LODS );
+    HK_ASSERT( AddressTable.NumLods <= VT_MAX_LODS );
 
     PIT = PageInfoTable.Data;
 
@@ -290,7 +290,7 @@ void AVirtualTexture::CommitPageResidency() {
 
 void AVirtualTexture::UpdateLRU( uint32_t AbsIndex )
 {
-    AN_ASSERT( pCache );
+    HK_ASSERT( pCache );
 
     // NOTE: Assume that texture is registered in cache.
     // We don't check even validness of AbsIndex
@@ -319,7 +319,7 @@ void AVirtualTexture::MakePageNonResident( uint32_t AbsIndex )
 {
     MapIndirectionData();
 
-    AN_ASSERT( PIT[AbsIndex] & PF_CACHED );
+    HK_ASSERT( PIT[AbsIndex] & PF_CACHED );
 
     PIT[AbsIndex] &= ~PF_CACHED;
 

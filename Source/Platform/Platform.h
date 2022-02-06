@@ -34,7 +34,7 @@ SOFTWARE.
 
 struct SCommandLine
 {
-    AN_FORBID_COPY(SCommandLine)
+    HK_FORBID_COPY(SCommandLine)
 
     SCommandLine(const char* _CommandLine);
     SCommandLine(int _Argc, char** _Argv);

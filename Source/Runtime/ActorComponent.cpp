@@ -32,7 +32,7 @@ SOFTWARE.
 #include "Actor.h"
 #include "World.h"
 
-AN_CLASS_META(AActorComponent)
+HK_CLASS_META(AActorComponent)
 
 AActorComponent::AActorComponent()
 {
@@ -44,19 +44,19 @@ AActorComponent::AActorComponent()
 
 AWorld* AActorComponent::GetWorld() const
 {
-    AN_ASSERT(OwnerActor);
+    HK_ASSERT(OwnerActor);
     return OwnerActor ? OwnerActor->GetWorld() : nullptr;
 }
 
 ALevel* AActorComponent::GetLevel() const
 {
-    AN_ASSERT(OwnerActor);
+    HK_ASSERT(OwnerActor);
     return OwnerActor ? OwnerActor->GetLevel() : nullptr;
 }
 
 bool AActorComponent::IsInEditor() const
 {
-    AN_ASSERT(OwnerActor);
+    HK_ASSERT(OwnerActor);
     return OwnerActor ? OwnerActor->IsInEditor() : false;
 }
 

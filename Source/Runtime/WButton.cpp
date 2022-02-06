@@ -31,7 +31,7 @@ SOFTWARE.
 #include "WButton.h"
 #include "FrameLoop.h"
 
-AN_CLASS_META(WButton)
+HK_CLASS_META(WButton)
 
 WButton::WButton()
 {
@@ -178,7 +178,7 @@ void WButton::OnDrawEvent(ACanvas& _Canvas)
 }
 
 
-AN_CLASS_META(WTextButton)
+HK_CLASS_META(WTextButton)
 
 WTextButton::WTextButton()
 {
@@ -323,7 +323,7 @@ void WTextButton::OnDrawEvent(ACanvas& _Canvas)
 }
 
 
-AN_CLASS_META(WImageButton)
+HK_CLASS_META(WImageButton)
 
 WImageButton::WImageButton()
 {

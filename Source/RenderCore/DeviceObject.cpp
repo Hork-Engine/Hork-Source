@@ -31,7 +31,7 @@ SOFTWARE.
 #include "DeviceObject.h"
 #include "Device.h"
 
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
 #    include <Core/IntrusiveLinkedListMacro.h>
 #endif
 
@@ -44,7 +44,7 @@ IDeviceObject::IDeviceObject(IDevice* pDevice, DEVICE_OBJECT_PROXY_TYPE ProxyTyp
     static uint32_t UnqiueIdGen = 0;
 
     UID = ++UnqiueIdGen;
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
     INTRUSIVE_ADD(this, Next, Prev, pDevice->ListHead, pDevice->ListTail);
 #endif
 
@@ -56,7 +56,7 @@ IDeviceObject::IDeviceObject(IDevice* pDevice, DEVICE_OBJECT_PROXY_TYPE ProxyTyp
 
 IDeviceObject::~IDeviceObject()
 {
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
     INTRUSIVE_REMOVE(this, Next, Prev, pDevice->ListHead, pDevice->ListTail);
 #endif
 

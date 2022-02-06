@@ -38,14 +38,14 @@ SOFTWARE.
 
 #include <SDL.h>
 
-#ifdef AN_OS_LINUX
+#ifdef HK_OS_LINUX
 #    include <unistd.h>
 #    include <sys/file.h>
 #    include <signal.h>
 #    include <dlfcn.h>
 #endif
 
-#ifdef AN_OS_ANDROID
+#ifdef HK_OS_ANDROID
 #    include <android/log.h>
 #endif
 
@@ -322,7 +322,7 @@ void SCommandLine::Validate()
 {
     if (NumArguments < 1)
     {
-        AN_ASSERT(0);
+        HK_ASSERT(0);
         return;
     }
     // Fix executable path separator
@@ -358,7 +358,7 @@ bool SCommandLine::HasArg(const char* _Arg) const
 namespace
 {
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 static HANDLE ProcessMutex = nullptr;
 #endif
 static FILE*        ProcessLogFile = nullptr;
@@ -370,7 +370,7 @@ static void InitializeProcess()
     setlocale(LC_ALL, "C");
     srand((unsigned)time(NULL));
 
-#if defined(AN_OS_WIN32)
+#if defined(HK_OS_WIN32)
     SetErrorMode(SEM_FAILCRITICALERRORS);
 #endif
 
@@ -382,7 +382,7 @@ static void InitializeProcess()
         return hash;
     };
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     int curLen = 1024;
     int len    = 0;
 
@@ -425,7 +425,7 @@ static void InitializeProcess()
     {
         ProcessInfo.ProcessAttribute = PROCESS_UNIQUE;
     }
-#elif defined AN_OS_LINUX
+#elif defined HK_OS_LINUX
     int curLen = 1024;
     int len = 0;
 
@@ -492,7 +492,7 @@ static void DeinitializeProcess()
         ProcessInfo.Executable = nullptr;
     }
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     if (ProcessMutex)
     {
         ReleaseMutex(ProcessMutex);
@@ -540,7 +540,7 @@ static void InitializeMemory(size_t ZoneSizeInMegabytes, size_t HunkSizeInMegaby
 {
     const size_t TotalMemorySizeInBytes = (ZoneSizeInMegabytes + HunkSizeInMegabytes) << 20;
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     SIZE_T dwMinimumWorkingSetSize = TotalMemorySizeInBytes;
     SIZE_T dwMaximumWorkingSetSize = std::max(TotalMemorySizeInBytes, size_t(1024 << 20));
     if (!SetProcessWorkingSetSize(GetCurrentProcess(), dwMinimumWorkingSetSize, dwMaximumWorkingSetSize))
@@ -591,7 +591,7 @@ static void DeinitializeMemory()
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-#ifdef AN_OS_LINUX
+#ifdef HK_OS_LINUX
 
 #    include <cpuid.h>
 
@@ -618,7 +618,7 @@ static uint64_t xgetbv(unsigned int index)
 
 #endif
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 
 #    include <immintrin.h>
 
@@ -675,7 +675,7 @@ namespace Platform
 
 void Initialize(SPlatformInitialize const& CoreInitialize)
 {
-#if defined(AN_DEBUG) && defined(AN_COMPILER_MSVC)
+#if defined(HK_DEBUG) && defined(HK_COMPILER_MSVC)
     _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #endif
 
@@ -800,7 +800,7 @@ SCPUInfo const* CPUInfo()
 
     Platform::ZeroMem(&info, sizeof(info));
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 #    ifdef _M_X64
     info.OS_64bit = true;
 #    else
@@ -1000,15 +1000,15 @@ void PrintCPUFeatures()
     if (pCPUInfo->AVX512_IFMA) GLogger.Print(" AVX512-IFMA");
     if (pCPUInfo->AVX512_VBMI) GLogger.Print(" AVX512-VBMI");
     GLogger.Print("\n");
-    GLogger.Print("OS: " AN_OS_STRING "\n");
+    GLogger.Print("OS: " HK_OS_STRING "\n");
     GLogger.Print("OS Features:");
     if (pCPUInfo->OS_64bit) GLogger.Print(" 64bit");
     if (pCPUInfo->OS_AVX) GLogger.Print(" AVX");
     if (pCPUInfo->OS_AVX512) GLogger.Print(" AVX512");
     GLogger.Print("\n");
-    GLogger.Print("Endian: " AN_ENDIAN_STRING "\n");
-#ifdef AN_DEBUG
-    GLogger.Print("Compiler: " AN_COMPILER_STRING "\n");
+    GLogger.Print("Endian: " HK_ENDIAN_STRING "\n");
+#ifdef HK_DEBUG
+    GLogger.Print("Compiler: " HK_COMPILER_STRING "\n");
 #endif
 }
 
@@ -1024,8 +1024,8 @@ void WriteLog(const char* _Message)
 
 void WriteDebugString(const char* _Message)
 {
-#if defined AN_DEBUG
-#    if defined AN_COMPILER_MSVC
+#if defined HK_DEBUG
+#    if defined HK_COMPILER_MSVC
     {
         int n = MultiByteToWideChar(CP_UTF8, 0, _Message, -1, NULL, 0);
         if (0 != n)
@@ -1052,7 +1052,7 @@ void WriteDebugString(const char* _Message)
         }
     }
 #    else
-#        ifdef AN_OS_ANDROID
+#        ifdef HK_OS_ANDROID
     __android_log_print(ANDROID_LOG_INFO, "Hork Engine", _Message);
 #        else
     fprintf(stdout, "%s", _Message);
@@ -1096,7 +1096,7 @@ SMemoryInfo GetPhysMemoryInfo()
 {
     SMemoryInfo info = {};
 
-#if defined AN_OS_WIN32
+#if defined HK_OS_WIN32
     MEMORYSTATUSEX memstat = {};
     memstat.dwLength       = sizeof(memstat);
     if (GlobalMemoryStatusEx(&memstat))
@@ -1104,7 +1104,7 @@ SMemoryInfo GetPhysMemoryInfo()
         info.TotalAvailableMegabytes   = memstat.ullTotalPhys >> 20;
         info.CurrentAvailableMegabytes = memstat.ullAvailPhys >> 20;
     }
-#elif defined AN_OS_LINUX
+#elif defined HK_OS_LINUX
     long long TotalPages = sysconf(_SC_PHYS_PAGES);
     long long AvailPages = sysconf(_SC_AVPHYS_PAGES);
     long long PageSize = sysconf(_SC_PAGE_SIZE);
@@ -1114,11 +1114,11 @@ SMemoryInfo GetPhysMemoryInfo()
 #    error "GetPhysMemoryInfo not implemented under current platform"
 #endif
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     SYSTEM_INFO systemInfo;
     GetSystemInfo(&systemInfo);
     info.PageSize = systemInfo.dwPageSize;
-#elif defined AN_OS_LINUX
+#elif defined HK_OS_LINUX
     info.PageSize = sysconf(_SC_PAGE_SIZE);
 #else
 #    error "GetPageSize not implemented under current platform"
@@ -1150,9 +1150,9 @@ namespace
 
 static void DisplayCriticalMessage(const char* _Message)
 {
-#if defined AN_OS_WIN32
+#if defined HK_OS_WIN32
     wchar_t wstr[1024];
-    MultiByteToWideChar(CP_UTF8, 0, _Message, -1, wstr, AN_ARRAY_SIZE(wstr));
+    MultiByteToWideChar(CP_UTF8, 0, _Message, -1, wstr, HK_ARRAY_SIZE(wstr));
     MessageBox(NULL, wstr, L"Critical Error", MB_OK | MB_ICONERROR | MB_SETFOREGROUND | MB_TOPMOST);
 #else
     SDL_MessageBoxData data = {};
@@ -1208,7 +1208,7 @@ void CriticalError(const char* _Format, ...)
     std::quick_exit(0);
 }
 
-#ifdef AN_ALLOW_ASSERTS
+#ifdef HK_ALLOW_ASSERTS
 
 // Define global assert function
 void AssertFunction(const char* _File, int _Line, const char* _Function, const char* _Assertion, const char* _Comment)
@@ -1234,7 +1234,7 @@ void AssertFunction(const char* _File, int _Line, const char* _Function, const c
 
     SDL_SetRelativeMouseMode(SDL_FALSE); // FIXME: Is it threadsafe?
 
-#    ifdef AN_OS_WIN32
+#    ifdef HK_OS_WIN32
     DebugBreak();
 #    else
     //__asm__( "int $3" );

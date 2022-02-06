@@ -55,7 +55,7 @@ static EGlyphRange GGlyphRange = GLYPH_RANGE_DEFAULT;
 
 #ifndef STB_RECT_PACK_IMPLEMENTATION
 #    define STBRP_STATIC
-#    define STBRP_ASSERT(x) AN_ASSERT(x)
+#    define STBRP_ASSERT(x) HK_ASSERT(x)
 #    define STBRP_SORT      qsort
 #    define STB_RECT_PACK_IMPLEMENTATION
 #    include "stb/stb_rect_pack.h"
@@ -64,7 +64,7 @@ static EGlyphRange GGlyphRange = GLYPH_RANGE_DEFAULT;
 #ifndef STB_TRUETYPE_IMPLEMENTATION
 #    define STBTT_malloc(x, u) ((void)(u), GZoneMemory.Alloc(x))
 #    define STBTT_free(x, u)   ((void)(u), GZoneMemory.Free(x))
-#    define STBTT_assert(x)    AN_ASSERT(x)
+#    define STBTT_assert(x)    HK_ASSERT(x)
 #    define STBTT_fmod(x, y)   Math::FMod(x, y)
 #    define STBTT_sqrt(x)      std::sqrt(x)
 #    define STBTT_pow(x, y)    Math::Pow(x, y)
@@ -2121,11 +2121,11 @@ static const unsigned short* GetGlyphRangesJapanese()
             0x31F0, 0x31FF, // Katakana Phonetic Extensions
             0xFF00, 0xFFEF  // Half-width characters
         };
-    static SWideChar full_ranges[AN_ARRAY_SIZE(base_ranges) + AN_ARRAY_SIZE(accumulative_offsets_from_0x4E00) * 2 + 1] = {0};
+    static SWideChar full_ranges[HK_ARRAY_SIZE(base_ranges) + HK_ARRAY_SIZE(accumulative_offsets_from_0x4E00) * 2 + 1] = {0};
     if (!full_ranges[0])
     {
         Platform::Memcpy(full_ranges, base_ranges, sizeof(base_ranges));
-        UnpackAccumulativeOffsetsIntoRanges(0x4E00, accumulative_offsets_from_0x4E00, AN_ARRAY_SIZE(accumulative_offsets_from_0x4E00), full_ranges + AN_ARRAY_SIZE(base_ranges));
+        UnpackAccumulativeOffsetsIntoRanges(0x4E00, accumulative_offsets_from_0x4E00, HK_ARRAY_SIZE(accumulative_offsets_from_0x4E00), full_ranges + HK_ARRAY_SIZE(base_ranges));
     }
     return &full_ranges[0];
 }
@@ -2206,11 +2206,11 @@ static const unsigned short* GetGlyphRangesChineseSimplifiedCommon()
             0x31F0, 0x31FF, // Katakana Phonetic Extensions
             0xFF00, 0xFFEF  // Half-width characters
         };
-    static SWideChar full_ranges[AN_ARRAY_SIZE(base_ranges) + AN_ARRAY_SIZE(accumulative_offsets_from_0x4E00) * 2 + 1] = {0};
+    static SWideChar full_ranges[HK_ARRAY_SIZE(base_ranges) + HK_ARRAY_SIZE(accumulative_offsets_from_0x4E00) * 2 + 1] = {0};
     if (!full_ranges[0])
     {
         Platform::Memcpy(full_ranges, base_ranges, sizeof(base_ranges));
-        UnpackAccumulativeOffsetsIntoRanges(0x4E00, accumulative_offsets_from_0x4E00, AN_ARRAY_SIZE(accumulative_offsets_from_0x4E00), full_ranges + AN_ARRAY_SIZE(base_ranges));
+        UnpackAccumulativeOffsetsIntoRanges(0x4E00, accumulative_offsets_from_0x4E00, HK_ARRAY_SIZE(accumulative_offsets_from_0x4E00), full_ranges + HK_ARRAY_SIZE(base_ranges));
     }
     return &full_ranges[0];
 }
@@ -2298,7 +2298,7 @@ static const unsigned short* GetGlyphRange(EGlyphRange _GlyphRange)
     return GetGlyphRangesDefault();
 }
 
-AN_CLASS_META(AFont)
+HK_CLASS_META(AFont)
 
 AFont::AFont()
 {
@@ -2886,8 +2886,8 @@ struct ImBoolVector
 
 bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo const* _CreateInfo)
 {
-    AN_ASSERT(_SysMem != NULL && _SizeInBytes > 0);
-    AN_ASSERT(_CreateInfo->SizePixels > 0.0f);
+    HK_ASSERT(_SysMem != NULL && _SizeInBytes > 0);
+    HK_ASSERT(_CreateInfo->SizePixels > 0.0f);
 
     SFontCreateInfo const& cfg = *_CreateInfo;
     FontSize                   = cfg.SizePixels;
@@ -2960,7 +2960,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
             for (int bit_n = 0; bit_n < 32; bit_n++)
                 if (entries_32 & (1u << bit_n))
                     glyphsList.Append((int)((it - it_begin) << 5) + bit_n);
-    AN_ASSERT(glyphsList.Size() == totalGlyphsCount);
+    HK_ASSERT(glyphsList.Size() == totalGlyphsCount);
 
     // Allocate packing character data and flag packed characters buffer as non-packed (x0=y0=x1=y1=0)
     // (We technically don't need to zero-clear rects, but let's do it for the sake of sanity)
@@ -2995,7 +2995,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
     {
         int       x0, y0, x1, y1;
         const int glyph_index_in_font = stbtt_FindGlyphIndex(&fontInfo, glyphsList[glyph_i]);
-        AN_ASSERT(glyph_index_in_font != 0);
+        HK_ASSERT(glyph_index_in_font != 0);
         stbtt_GetGlyphBitmapBoxSubpixel(&fontInfo, glyph_index_in_font, scale * cfg.OversampleH, scale * cfg.OversampleV, 0, 0, &x0, &y0, &x1, &y1);
         rects[glyph_i].w = (stbrp_coord)(x1 - x0 + padding + cfg.OversampleH - 1);
         rects[glyph_i].h = (stbrp_coord)(y1 - y0 + padding + cfg.OversampleV - 1);
@@ -3017,9 +3017,9 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
     stbtt_PackBegin(&spc, NULL, TexWidth, TEX_HEIGHT_MAX, 0, TexGlyphPadding, NULL);
 
     stbrp_context* pack_context = (stbrp_context*)spc.pack_info;
-    AN_ASSERT(pack_context != NULL);
+    HK_ASSERT(pack_context != NULL);
 
-    AN_ASSERT(CustomRects.Size() >= 1); // We expect at least the default custom rects to be registered, else something went wrong.
+    HK_ASSERT(CustomRects.Size() >= 1); // We expect at least the default custom rects to be registered, else something went wrong.
 
     TPodVector<stbrp_rect> pack_rects;
     pack_rects.Resize(CustomRects.Size());
@@ -3036,7 +3036,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
         {
             CustomRects[i].X = pack_rects[i].x;
             CustomRects[i].Y = pack_rects[i].y;
-            AN_ASSERT(pack_rects[i].w == CustomRects[i].Width && pack_rects[i].h == CustomRects[i].Height);
+            HK_ASSERT(pack_rects[i].w == CustomRects[i].Width && pack_rects[i].h == CustomRects[i].Height);
             TexHeight = Math::Max(TexHeight, pack_rects[i].y + pack_rects[i].h);
         }
     }
@@ -3112,10 +3112,10 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
     // Render into our custom data block
     {
         SFontCustomRect& r = CustomRects[0];
-        AN_ASSERT(r.Id == FONT_ATLAS_DEFAULT_TEX_DATA_ID);
+        HK_ASSERT(r.Id == FONT_ATLAS_DEFAULT_TEX_DATA_ID);
 
         // Render/copy pixels
-        AN_ASSERT(r.Width == FONT_ATLAS_DEFAULT_TEX_DATA_W_HALF * 2 + 1 && r.Height == FONT_ATLAS_DEFAULT_TEX_DATA_H);
+        HK_ASSERT(r.Width == FONT_ATLAS_DEFAULT_TEX_DATA_W_HALF * 2 + 1 && r.Height == FONT_ATLAS_DEFAULT_TEX_DATA_H);
         for (int y = 0, n = 0; y < FONT_ATLAS_DEFAULT_TEX_DATA_H; y++)
         {
             for (int x = 0; x < FONT_ATLAS_DEFAULT_TEX_DATA_W_HALF; x++, n++)
@@ -3150,7 +3150,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
                  r.GlyphAdvanceX);
     }
 
-    AN_ASSERT(Glyphs.Size() < 0xFFFF); // -1 is reserved
+    HK_ASSERT(Glyphs.Size() < 0xFFFF); // -1 is reserved
 
     int widecharCount = 0;
     for (int i = 0; i != Glyphs.Size(); i++)
@@ -3175,7 +3175,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
         WideCharToGlyph[codepoint]  = (unsigned short)i;
 
         // Ensure there is no TAB codepoint
-        AN_ASSERT(codepoint != '\t');
+        HK_ASSERT(codepoint != '\t');
     }
 
     // Create a glyph to handle TAB
@@ -3250,9 +3250,9 @@ void AFont::AddGlyph(SFontCreateInfo const& cfg, SWideChar codepoint, float x0, 
 int AFont::AddCustomRect(unsigned int id, int width, int height)
 {
     // Id needs to be >= 0x110000. Id >= 0x80000000 are reserved for internal use
-    AN_ASSERT(id >= 0x110000);
-    AN_ASSERT(width > 0 && width <= 0xFFFF);
-    AN_ASSERT(height > 0 && height <= 0xFFFF);
+    HK_ASSERT(id >= 0x110000);
+    HK_ASSERT(width > 0 && width <= 0xFFFF);
+    HK_ASSERT(height > 0 && height <= 0xFFFF);
     SFontCustomRect r;
     r.Id     = id;
     r.Width  = (unsigned short)width;

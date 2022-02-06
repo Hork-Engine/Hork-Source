@@ -96,9 +96,9 @@ ImDrawListSharedData::ImDrawListSharedData()
     InitialFlags = ImDrawListFlags_None;
 
     // Lookup tables
-    for ( int i = 0; i < AN_ARRAY_SIZE( CircleVtx12 ); i++ )
+    for ( int i = 0; i < HK_ARRAY_SIZE( CircleVtx12 ); i++ )
     {
-        const float a = ((float)i * 2 * IM_PI) / (float)AN_ARRAY_SIZE( CircleVtx12 );
+        const float a = ((float)i * 2 * IM_PI) / (float)HK_ARRAY_SIZE( CircleVtx12 );
         CircleVtx12[i] = ImVec2( ImCos( a ), ImSin( a ) );
     }
     memset( CircleSegmentCounts, 0, sizeof( CircleSegmentCounts ) ); // This will be set by SetCircleSegmentMaxError()
@@ -109,7 +109,7 @@ void ImDrawListSharedData::SetCircleSegmentMaxError( float max_error )
     if ( CircleSegmentMaxError == max_error )
         return;
     CircleSegmentMaxError = max_error;
-    for ( int i = 0; i < AN_ARRAY_SIZE( CircleSegmentCounts ); i++ )
+    for ( int i = 0; i < HK_ARRAY_SIZE( CircleSegmentCounts ); i++ )
     {
         const float radius = i + 1.0f;
         const int segment_count = IM_DRAWLIST_CIRCLE_AUTO_SEGMENT_CALC( radius, CircleSegmentMaxError );
@@ -173,7 +173,7 @@ void ImDrawList::AddDrawCmd()
     draw_cmd.IdxOffset = IdxBuffer.Size;
     draw_cmd.BlendingState = GetCurrentBlending();
 
-    AN_ASSERT( draw_cmd.ClipRect.x <= draw_cmd.ClipRect.z && draw_cmd.ClipRect.y <= draw_cmd.ClipRect.w );
+    HK_ASSERT( draw_cmd.ClipRect.x <= draw_cmd.ClipRect.z && draw_cmd.ClipRect.y <= draw_cmd.ClipRect.w );
     CmdBuffer.push_back( draw_cmd );
 }
 
@@ -279,7 +279,7 @@ void ImDrawList::PushClipRectFullScreen()
 
 void ImDrawList::PopClipRect()
 {
-    AN_ASSERT( _ClipRectStack.Size > 0 );
+    HK_ASSERT( _ClipRectStack.Size > 0 );
     _ClipRectStack.pop_back();
     UpdateClipRect();
 }
@@ -292,7 +292,7 @@ void ImDrawList::PushBlendingState( uint32_t _Blending )
 
 void ImDrawList::PopBlendingState()
 {
-    AN_ASSERT( _BlendingStack.Size > 0 );
+    HK_ASSERT( _BlendingStack.Size > 0 );
     _BlendingStack.pop_back();
     UpdateBlendingState();
 }
@@ -305,7 +305,7 @@ void ImDrawList::PushTextureID( ImTextureID texture_id )
 
 void ImDrawList::PopTextureID()
 {
-    AN_ASSERT( _TextureIdStack.Size > 0 );
+    HK_ASSERT( _TextureIdStack.Size > 0 );
     _TextureIdStack.pop_back();
     UpdateTextureID();
 }
@@ -316,7 +316,7 @@ void ImDrawList::PopTextureID()
 void ImDrawList::PrimReserve( int idx_count, int vtx_count )
 {
     // Large mesh support (when enabled)
-    AN_ASSERT( idx_count >= 0 && vtx_count >= 0 );
+    HK_ASSERT( idx_count >= 0 && vtx_count >= 0 );
     if ( sizeof( ImDrawIdx ) == 2 && (_VtxCurrentIdx + vtx_count >= (1 << 16)) )
     {
         _VtxCurrentOffset = VtxBuffer.Size;
@@ -339,7 +339,7 @@ void ImDrawList::PrimReserve( int idx_count, int vtx_count )
 // Release the a number of reserved vertices/indices from the end of the last reservation made with PrimReserve().
 void ImDrawList::PrimUnreserve( int idx_count, int vtx_count )
 {
-    AN_ASSERT( idx_count >= 0 && vtx_count >= 0 );
+    HK_ASSERT( idx_count >= 0 && vtx_count >= 0 );
 
     ImDrawCmd& draw_cmd = CmdBuffer.Data[CmdBuffer.Size - 1];
     draw_cmd.ElemCount -= idx_count;
@@ -675,7 +675,7 @@ void ImDrawList::PathArcToFast( const ImVec2& center, float radius, int a_min_of
     _Path.reserve( _Path.Size + (a_max_of_12 - a_min_of_12 + 1) );
     for ( int a = a_min_of_12; a <= a_max_of_12; a++ )
     {
-        const ImVec2& c = _Data->CircleVtx12[a % AN_ARRAY_SIZE( _Data->CircleVtx12 )];
+        const ImVec2& c = _Data->CircleVtx12[a % HK_ARRAY_SIZE( _Data->CircleVtx12 )];
         _Path.push_back( ImVec2( center.x + c.x * radius, center.y + c.y * radius ) );
     }
 }
@@ -880,7 +880,7 @@ void ImDrawList::AddCircle( const ImVec2& center, float radius, uint32_t col, in
     {
         // Automatic segment count
         const int radius_idx = (int)radius - 1;
-        if ( radius_idx < AN_ARRAY_SIZE( _Data->CircleSegmentCounts ) )
+        if ( radius_idx < HK_ARRAY_SIZE( _Data->CircleSegmentCounts ) )
             num_segments = _Data->CircleSegmentCounts[radius_idx]; // Use cached value
         else
             num_segments = IM_DRAWLIST_CIRCLE_AUTO_SEGMENT_CALC( radius, _Data->CircleSegmentMaxError );
@@ -909,7 +909,7 @@ void ImDrawList::AddCircleFilled( const ImVec2& center, float radius, uint32_t c
     {
         // Automatic segment count
         const int radius_idx = (int)radius - 1;
-        if ( radius_idx < AN_ARRAY_SIZE( _Data->CircleSegmentCounts ) )
+        if ( radius_idx < HK_ARRAY_SIZE( _Data->CircleSegmentCounts ) )
             num_segments = _Data->CircleSegmentCounts[radius_idx]; // Use cached value
         else
             num_segments = IM_DRAWLIST_CIRCLE_AUTO_SEGMENT_CALC( radius, _Data->CircleSegmentMaxError );
@@ -1087,7 +1087,7 @@ void ImDrawListSplitter::ClearFreeMemory()
 
 void ImDrawListSplitter::Split( ImDrawList* draw_list, int channels_count )
 {
-    AN_ASSERT( _Current == 0 && _Count <= 1 && "Nested channel splitting is not supported. Please use separate instances of ImDrawListSplitter." );
+    HK_ASSERT( _Current == 0 && _Count <= 1 && "Nested channel splitting is not supported. Please use separate instances of ImDrawListSplitter." );
     int old_channels_count = _Channels.Size;
     if ( old_channels_count < channels_count )
         _Channels.resize( channels_count );
@@ -1184,7 +1184,7 @@ void ImDrawListSplitter::Merge( ImDrawList* draw_list )
 
 void ImDrawListSplitter::SetCurrentChannel( ImDrawList* draw_list, int idx )
 {
-    AN_ASSERT( idx >= 0 && idx < _Count );
+    HK_ASSERT( idx >= 0 && idx < _Count );
     if ( _Current == idx )
         return;
     // Overwrite ImVector (12/16 bytes), four times. This is merely a silly optimization instead of doing .swap()

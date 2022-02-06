@@ -46,7 +46,7 @@ AAsyncJobManager::AAsyncJobManager(int _NumWorkerThreads, int _NumJobLists)
         _NumWorkerThreads = MAX_WORKER_THREADS;
     }
 
-    AN_ASSERT(_NumJobLists >= 1 && _NumJobLists <= MAX_JOB_LISTS);
+    HK_ASSERT(_NumJobLists >= 1 && _NumJobLists <= MAX_JOB_LISTS);
 
     GLogger.Printf("Initializing async job manager ( %d worker threads, %d job lists )\n", _NumWorkerThreads, _NumJobLists);
 
@@ -112,14 +112,14 @@ void AAsyncJobManager::WorkerThreadRoutine(int _ThreadId)
     SAsyncJob job = {};
     bool      haveJob;
 
-#ifdef AN_ACTIVE_THREADS_COUNTERS
+#ifdef HK_ACTIVE_THREADS_COUNTERS
     NumActiveThreads.Increment();
 #endif
 
     while (!bTerminated)
     {
 
-#ifdef AN_ACTIVE_THREADS_COUNTERS
+#ifdef HK_ACTIVE_THREADS_COUNTERS
         NumActiveThreads.Decrement();
 #endif
 
@@ -127,7 +127,7 @@ void AAsyncJobManager::WorkerThreadRoutine(int _ThreadId)
 
         EventNotify[_ThreadId].Wait();
 
-#ifdef AN_ACTIVE_THREADS_COUNTERS
+#ifdef HK_ACTIVE_THREADS_COUNTERS
         NumActiveThreads.Increment();
 #endif
 
@@ -191,7 +191,7 @@ void AAsyncJobManager::WorkerThreadRoutine(int _ThreadId)
         }
     }
 
-#ifdef AN_ACTIVE_THREADS_COUNTERS
+#ifdef HK_ACTIVE_THREADS_COUNTERS
     NumActiveThreads.Decrement();
 #endif
 
@@ -209,7 +209,7 @@ AAsyncJobList::~AAsyncJobList()
 
 void AAsyncJobList::SetMaxParallelJobs(int _MaxParallelJobs)
 {
-    AN_ASSERT(JobPool.IsEmpty());
+    HK_ASSERT(JobPool.IsEmpty());
 
     JobPool.ReserveInvalidate(_MaxParallelJobs);
     JobPool.Clear();
@@ -246,7 +246,7 @@ void AAsyncJobManager::SubmitJobList(AAsyncJobList* InJobList)
     }
 
     SAsyncJob* headJob = &InJobList->JobPool[InJobList->JobPool.Size() - InJobList->NumPendingJobs];
-    AN_ASSERT(headJob->Next == nullptr);
+    HK_ASSERT(headJob->Next == nullptr);
 
     // lock section
     {
@@ -279,9 +279,9 @@ void AAsyncJobList::Wait()
             EventDone.Wait();
         }
 
-        AN_ASSERT(SubmittedJobsCount.Load() == 0);
-        AN_ASSERT(FetchCount.Load() == 0);
-        AN_ASSERT(SubmittedJobs == nullptr);
+        HK_ASSERT(SubmittedJobsCount.Load() == 0);
+        HK_ASSERT(FetchCount.Load() == 0);
+        HK_ASSERT(SubmittedJobs == nullptr);
 
         if (NumPendingJobs > 0)
         {

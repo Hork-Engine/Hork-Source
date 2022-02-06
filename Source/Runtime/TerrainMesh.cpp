@@ -87,7 +87,7 @@ static void CreateTriangleStripPatch(int NumQuadsX, int NumQuadsY, TPodVector<ST
     }
 }
 
-AN_FORCEINLINE STerrainVertex MakeVertex(short X, short Y)
+HK_FORCEINLINE STerrainVertex MakeVertex(short X, short Y)
 {
     STerrainVertex v;
     v.X = X;
@@ -116,7 +116,7 @@ ATerrainMesh::ATerrainMesh(int InTextureSize)
     TPodVector<STerrainVertex> crackVertices;
     TPodVector<unsigned short> crackIndices;
 
-    AN_ASSERT(IsPowerOfTwo(InTextureSize));
+    HK_ASSERT(IsPowerOfTwo(InTextureSize));
 
     const int BlockWidth          = InTextureSize / 4 - 1;
     const int GapWidth            = 2;
@@ -393,8 +393,8 @@ ATerrainMesh::ATerrainMesh(int InTextureSize)
     AddPatch(InteriorFinestPatch, interiorFinestVertices, interiorFinestIndices);
     AddPatch(CrackPatch, crackVertices, crackIndices);
 
-    AN_ASSERT(firstVert == VertexBuffer.Size());
-    AN_ASSERT(firstIndex == IndexBuffer.Size());
+    HK_ASSERT(firstVert == VertexBuffer.Size());
+    HK_ASSERT(firstIndex == IndexBuffer.Size());
 
     RenderCore::IDevice* device = GEngine->GetRenderDevice();
 

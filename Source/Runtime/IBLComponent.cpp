@@ -38,7 +38,7 @@ constexpr float DEFAULT_RADIUS = 1.0f;
 
 AConsoleVar com_DrawIBL(_CTS("com_DrawIBL"), _CTS("0"), CVAR_CHEAT);
 
-AN_CLASS_META(AIBLComponent)
+HK_CLASS_META(AIBLComponent)
 
 AIBLComponent::AIBLComponent()
 {

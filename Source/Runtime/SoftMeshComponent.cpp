@@ -45,7 +45,7 @@ SOFTWARE.
 
 AConsoleVar com_DrawSoftmeshFaces(_CTS("com_DrawSoftmeshFaces"), _CTS("0"), CVAR_CHEAT);
 
-AN_CLASS_META(ASoftMeshComponent)
+HK_CLASS_META(ASoftMeshComponent)
 
 ASoftMeshComponent::ASoftMeshComponent()
 {

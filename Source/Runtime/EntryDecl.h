@@ -39,20 +39,20 @@ struct SEntryDecl
     class AClassMeta const* ModuleClass;
 };
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 
 #    include <Platform/WindowsDefs.h>
 
 /** Runtime entry point */
 void RunEngine(SEntryDecl const& _EntryDecl);
 
-#    define AN_ENTRY_DECL(_EntryDecl)                                                                     \
+#    define HK_ENTRY_DECL(_EntryDecl)                                                                     \
         int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) \
         {                                                                                                 \
             RunEngine(_EntryDecl);                                                                        \
             return 0;                                                                                     \
         }
-#    define AN_NO_RUNTIME_MAIN(_MainFunc)                                                                 \
+#    define HK_NO_RUNTIME_MAIN(_MainFunc)                                                                 \
         int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPWSTR lpCmdLine, int nCmdShow) \
         {                                                                                                 \
             return _MainFunc();                                                                           \
@@ -63,13 +63,13 @@ void RunEngine(SEntryDecl const& _EntryDecl);
 /** Runtime entry point */
 void RunEngine(int _Argc, char** _Argv, SEntryDecl const& _EntryDecl);
 
-#    define AN_ENTRY_DECL(_EntryDecl)          \
+#    define HK_ENTRY_DECL(_EntryDecl)          \
         int main(int argc, char* argv[])       \
         {                                      \
             RunEngine(argc, argv, _EntryDecl); \
             return 0;                          \
         }
-#    define AN_NO_RUNTIME_MAIN(_MainFunc) \
+#    define HK_NO_RUNTIME_MAIN(_MainFunc) \
         int main(int argc, char* argv[])  \
         {                                 \
             return _MainFunc();           \

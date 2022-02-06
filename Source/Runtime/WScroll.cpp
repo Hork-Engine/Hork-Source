@@ -32,7 +32,7 @@ SOFTWARE.
 #include "WDesktop.h"
 #include "FrameLoop.h"
 
-AN_CLASS_META(WScroll)
+HK_CLASS_META(WScroll)
 
 WScroll::WScroll()
 {
@@ -499,7 +499,7 @@ Float2 WScroll::GetScrollPosition() const
     return geometry.ContentPosition;
 }
 
-AN_FORCEINLINE bool InRect(Float2 const& _Mins, Float2 const& _Maxs, Float2 const& _Position)
+HK_FORCEINLINE bool InRect(Float2 const& _Mins, Float2 const& _Maxs, Float2 const& _Position)
 {
     return _Position.X >= _Mins.X && _Position.X < _Maxs.X && _Position.Y >= _Mins.Y && _Position.Y < _Maxs.Y;
 }

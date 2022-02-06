@@ -37,7 +37,7 @@ SOFTWARE.
 
 class ATerrainComponent : public ASceneComponent
 {
-    AN_COMPONENT(ATerrainComponent, ASceneComponent)
+    HK_COMPONENT(ATerrainComponent, ASceneComponent)
 
 public:
     AHitProxy* GetHitProxy() const

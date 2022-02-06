@@ -35,7 +35,7 @@ SOFTWARE.
 
 class ATriggerBox : public AActor
 {
-    AN_ACTOR(ATriggerBox, AActor)
+    HK_ACTOR(ATriggerBox, AActor)
 
 protected:
     ATriggerBox();
@@ -45,7 +45,7 @@ protected:
 
 class ATriggerSphere : public AActor
 {
-    AN_ACTOR(ATriggerSphere, AActor)
+    HK_ACTOR(ATriggerSphere, AActor)
 
 protected:
     ATriggerSphere();
@@ -55,7 +55,7 @@ protected:
 
 class ATriggerCylinder : public AActor
 {
-    AN_ACTOR(ATriggerCylinder, AActor)
+    HK_ACTOR(ATriggerCylinder, AActor)
 
 protected:
     ATriggerCylinder();
@@ -65,7 +65,7 @@ protected:
 
 class ATriggerCone : public AActor
 {
-    AN_ACTOR(ATriggerCone, AActor)
+    HK_ACTOR(ATriggerCone, AActor)
 
 protected:
     ATriggerCone();
@@ -75,7 +75,7 @@ protected:
 
 class ATriggerCapsule : public AActor
 {
-    AN_ACTOR(ATriggerCapsule, AActor)
+    HK_ACTOR(ATriggerCapsule, AActor)
 
 protected:
     ATriggerCapsule();

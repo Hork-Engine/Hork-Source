@@ -69,7 +69,7 @@ void AShadowMapRenderer::CreatePipeline()
          0, // InstanceDataStepRate
          0}};
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE(vertexAttribs);
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(vertexAttribs);
     pipelineCI.pVertexAttribs   = vertexAttribs;
 
     SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
@@ -95,7 +95,7 @@ void AShadowMapRenderer::CreatePipeline()
     bufferInfo[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
     bufferInfo[3].BufferBinding = BUFFER_BIND_CONSTANT; // cascade matrix
 
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE(bufferInfo);
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE(bufferInfo);
     pipelineCI.ResourceLayout.Buffers    = bufferInfo;
 
     GDevice->CreatePipeline(pipelineCI, &StaticShadowCasterPipeline);
@@ -131,7 +131,7 @@ void AShadowMapRenderer::CreateLightPortalPipeline()
          0, // InstanceDataStepRate
          0}};
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE(vertexAttribs);
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(vertexAttribs);
     pipelineCI.pVertexAttribs   = vertexAttribs;
 
     SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
@@ -150,7 +150,7 @@ void AShadowMapRenderer::CreateLightPortalPipeline()
     bufferInfo[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton (unused)
     bufferInfo[3].BufferBinding = BUFFER_BIND_CONSTANT; // cascade matrix
 
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE(bufferInfo);
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE(bufferInfo);
     pipelineCI.ResourceLayout.Buffers    = bufferInfo;
 
     GDevice->CreatePipeline(pipelineCI, &LightPortalPipeline);

@@ -165,7 +165,7 @@ private:
     mutable std::size_t IdGenerator = 0;
 };
 
-AN_FORCEINLINE std::size_t FG_GenerateResourceId(AFrameGraph* pFrameGraph)
+HK_FORCEINLINE std::size_t FG_GenerateResourceId(AFrameGraph* pFrameGraph)
 {
     return pFrameGraph->GenerateResourceId();
 }

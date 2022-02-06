@@ -50,12 +50,12 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btCompoundShape.h>
 #include <BulletCollision/CollisionDispatch/btInternalEdgeUtility.h>
 
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
 #    pragma warning(push)
 #    pragma warning(disable : 4456 4828)
 #endif
 #include <BulletCollision/Gimpact/btGImpactShape.h>
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
 #    pragma warning(pop)
 #endif
 
@@ -65,7 +65,7 @@ SOFTWARE.
 #    include <bullet3/Extras/Serialize/BulletWorldImporter/btBulletWorldImporter.h>
 #endif
 
-AN_CLASS_META(ACollisionModel)
+HK_CLASS_META(ACollisionModel)
 
 ATTRIBUTE_ALIGNED16(class)
 AStridingMeshInterface : public btStridingMeshInterface
@@ -90,7 +90,7 @@ public:
                                   int             Subpart = 0) override
     {
 
-        AN_ASSERT(Subpart < SubpartCount);
+        HK_ASSERT(Subpart < SubpartCount);
 
         auto* subpart = Subparts + Subpart;
 
@@ -115,7 +115,7 @@ public:
                                           PHY_ScalarType&       IndexType,
                                           int                   Subpart = 0) const override
     {
-        AN_ASSERT(Subpart < SubpartCount);
+        HK_ASSERT(Subpart < SubpartCount);
 
         auto* subpart = Subparts + Subpart;
 

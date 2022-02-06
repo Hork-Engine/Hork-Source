@@ -38,7 +38,7 @@ constexpr int HRTF_BLOCK_LENGTH = 128; // Keep it to a power of two
 
 class AAudioHRTF
 {
-    AN_FORBID_COPY( AAudioHRTF )
+    HK_FORBID_COPY( AAudioHRTF )
 
 public:
     AAudioHRTF( int SampleRate );

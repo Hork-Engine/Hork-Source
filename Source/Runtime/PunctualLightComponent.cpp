@@ -32,7 +32,7 @@ SOFTWARE.
 #include "World.h"
 #include "DebugRenderer.h"
 
-AN_CLASS_META(APunctualLightComponent)
+HK_CLASS_META(APunctualLightComponent)
 
 APunctualLightComponent::APunctualLightComponent()
 {

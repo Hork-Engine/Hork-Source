@@ -55,7 +55,7 @@ AConsoleVar r_RenderLightPortals(_CTS("r_RenderLightPortals"), _CTS("1"));
 
 AConsoleVar com_DrawFrustumClusters(_CTS("com_DrawFrustumClusters"), _CTS("0"), CVAR_CHEAT);
 
-AN_CLASS_META(ARenderFrontend)
+HK_CLASS_META(ARenderFrontend)
 
 static constexpr int TerrainTileSize = 256; //32;//256;
 
@@ -175,7 +175,7 @@ void ARenderFrontend::RenderView(int _Index)
     SRenderView*          view           = &FrameData.RenderViews[_Index];
     AStreamedMemoryGPU*   streamedMemory = FrameLoop->GetStreamedMemoryGPU();
 
-    AN_ASSERT(RP); // TODO: Don't allow <null> rendering parameters
+    HK_ASSERT(RP); // TODO: Don't allow <null> rendering parameters
 
     view->GameRunningTimeSeconds = world->GetRunningTimeMicro() * 0.000001;
     view->GameplayTimeSeconds    = world->GetGameplayTimeMicro() * 0.000001;
@@ -439,13 +439,13 @@ void ARenderFrontend::RenderCanvas(ACanvas* InCanvas)
                 AMaterialInstance* materialInstance = static_cast<AMaterialInstance*>(cmd.TextureId);
 
                 // In normal case materialInstance never be null
-                AN_ASSERT(materialInstance);
+                HK_ASSERT(materialInstance);
 
                 // Get material
                 AMaterial* material = materialInstance->GetMaterial();
 
                 // GetMaterial never return null
-                AN_ASSERT(material);
+                HK_ASSERT(material);
 
                 // Check material type
                 if (material->GetType() != MATERIAL_TYPE_HUD)
@@ -521,7 +521,7 @@ void ARenderFrontend::RenderImgui() {
             ImDrawList * drawList = drawData->CmdLists[ drawData->CmdListsCount - 1 ];
             if ( cursor != ImGuiMouseCursor_None )
             {
-                AN_ASSERT( cursor > ImGuiMouseCursor_None && cursor < ImGuiMouseCursor_COUNT );
+                HK_ASSERT( cursor > ImGuiMouseCursor_None && cursor < ImGuiMouseCursor_COUNT );
 
                 const ImU32 col_shadow = IM_COL32( 0, 0, 0, 48 );
                 const ImU32 col_border = IM_COL32( 0, 0, 0, 255 );          // Black
@@ -593,7 +593,7 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
 
         startIndexLocation += pCmd->ElemCount;
 
-        AN_ASSERT( pCmd->TextureId );
+        HK_ASSERT( pCmd->TextureId );
 
         switch ( dstCmd->Type ) {
         case HUD_DRAW_CMD_VIEWPORT:
@@ -605,10 +605,10 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
         case HUD_DRAW_CMD_MATERIAL:
         {
             AMaterialInstance * materialInstance = static_cast< AMaterialInstance * >( pCmd->TextureId );
-            AN_ASSERT( materialInstance );
+            HK_ASSERT( materialInstance );
 
             AMaterial * material = materialInstance->GetMaterial();
-            AN_ASSERT( material );
+            HK_ASSERT( material );
 
             if ( material->GetType() != MATERIAL_TYPE_HUD ) {
                 drawList->CommandsCount--;
@@ -616,7 +616,7 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
             }
 
             dstCmd->MaterialFrameData = materialInstance->PreRenderUpdate( FrameNumber );
-            AN_ASSERT( dstCmd->MaterialFrameData );
+            HK_ASSERT( dstCmd->MaterialFrameData );
 
             dstCmd++;
 
@@ -630,7 +630,7 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
             break;
         }
         default:
-            AN_ASSERT( 0 );
+            HK_ASSERT( 0 );
             break;
         }
     }
@@ -1099,7 +1099,7 @@ void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
         AIndexedMeshSubpart* subpart = subparts[subpartIndex];
 
         AMaterialInstance* materialInstance = InComponent->GetMaterialInstance(subpartIndex);
-        AN_ASSERT(materialInstance);
+        HK_ASSERT(materialInstance);
 
         AMaterial* material = materialInstance->GetMaterial();
 
@@ -1210,7 +1210,7 @@ void ARenderFrontend::AddSkinnedMesh(ASkinnedComponent* InComponent)
         AIndexedMeshSubpart* subpart = subparts[subpartIndex];
 
         AMaterialInstance* materialInstance = InComponent->GetMaterialInstance(subpartIndex);
-        AN_ASSERT(materialInstance);
+        HK_ASSERT(materialInstance);
 
         AMaterial* material = materialInstance->GetMaterial();
 
@@ -1301,7 +1301,7 @@ void ARenderFrontend::AddProceduralMesh(AProceduralMeshComponent* InComponent)
     InComponent->RenderTransformMatrix = componentWorldTransform;
 
     AMaterialInstance* materialInstance = InComponent->GetMaterialInstance();
-    AN_ASSERT(materialInstance);
+    HK_ASSERT(materialInstance);
 
     AMaterial* material = materialInstance->GetMaterial();
 
@@ -1382,7 +1382,7 @@ void ARenderFrontend::AddShadowmap_StaticMesh(SLightShadowmap* ShadowMap, AMeshC
         AIndexedMeshSubpart* subpart = subparts[subpartIndex];
 
         AMaterialInstance* materialInstance = InComponent->GetMaterialInstance(subpartIndex);
-        AN_ASSERT(materialInstance);
+        HK_ASSERT(materialInstance);
 
         AMaterial* material = materialInstance->GetMaterial();
 
@@ -1458,7 +1458,7 @@ void ARenderFrontend::AddShadowmap_SkinnedMesh(SLightShadowmap* ShadowMap, ASkin
         AIndexedMeshSubpart* subpart = subparts[subpartIndex];
 
         AMaterialInstance* materialInstance = InComponent->GetMaterialInstance(subpartIndex);
-        AN_ASSERT(materialInstance);
+        HK_ASSERT(materialInstance);
 
         AMaterial* material = materialInstance->GetMaterial();
 
@@ -1514,7 +1514,7 @@ void ARenderFrontend::AddShadowmap_ProceduralMesh(SLightShadowmap* ShadowMap, AP
     InComponent->PreRenderUpdate(&RenderDef);
 
     AMaterialInstance* materialInstance = InComponent->GetMaterialInstance();
-    AN_ASSERT(materialInstance);
+    HK_ASSERT(materialInstance);
 
     AMaterial* material = materialInstance->GetMaterial();
 
@@ -1762,13 +1762,13 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
     }
 }
 
-AN_FORCEINLINE bool CanMergeSurfaces(SSurfaceDef const* InFirst, SSurfaceDef const* InSecond)
+HK_FORCEINLINE bool CanMergeSurfaces(SSurfaceDef const* InFirst, SSurfaceDef const* InSecond)
 {
     return (InFirst->Model->Id == InSecond->Model->Id && InFirst->LightmapBlock == InSecond->LightmapBlock && InFirst->MaterialIndex == InSecond->MaterialIndex
             /*&& InFirst->RenderingOrder == InSecond->RenderingOrder*/);
 }
 
-AN_FORCEINLINE bool CanMergeSurfacesShadowmap(SSurfaceDef const* InFirst, SSurfaceDef const* InSecond)
+HK_FORCEINLINE bool CanMergeSurfacesShadowmap(SSurfaceDef const* InFirst, SSurfaceDef const* InSecond)
 {
     return (InFirst->Model->Id == InSecond->Model->Id && InFirst->MaterialIndex == InSecond->MaterialIndex
             /*&& InFirst->RenderingOrder == InSecond->RenderingOrder*/);
@@ -1844,8 +1844,8 @@ void ARenderFrontend::AddSurfaces(SSurfaceDef* const* Surfaces, int SurfaceCount
 
         // NOTE: Here we can perform CPU transformation for surfaces (modify texCoord, color, or vertex position)
 
-        AN_ASSERT(surfDef->FirstVertex + surfDef->NumVertices <= model->VertexLight.Size());
-        AN_ASSERT(surfDef->FirstIndex + surfDef->NumIndices <= model->Indices.Size());
+        HK_ASSERT(surfDef->FirstVertex + surfDef->NumVertices <= model->VertexLight.Size());
+        HK_ASSERT(surfDef->FirstIndex + surfDef->NumIndices <= model->Indices.Size());
 
         Platform::Memcpy(vertices + numVerts, srcVerts, sizeof(SMeshVertex) * surfDef->NumVertices);
         Platform::Memcpy(vertexUV + numVerts, srcLM, sizeof(SMeshVertexUV) * surfDef->NumVertices);
@@ -1869,8 +1869,8 @@ void ARenderFrontend::AddSurfaces(SSurfaceDef* const* Surfaces, int SurfaceCount
                 merge->RenderingOrder*/
     );
 
-    AN_ASSERT(numVerts == totalVerts);
-    AN_ASSERT(numIndices == totalIndices);
+    HK_ASSERT(numVerts == totalVerts);
+    HK_ASSERT(numIndices == totalIndices);
 }
 
 void ARenderFrontend::AddShadowmapSurfaces(SLightShadowmap* ShadowMap, SSurfaceDef* const* Surfaces, int SurfaceCount)
@@ -1955,8 +1955,8 @@ void ARenderFrontend::AddShadowmapSurfaces(SLightShadowmap* ShadowMap, SSurfaceD
 
         // NOTE: Here we can perform CPU transformation for surfaces (modify texCoord, color, or vertex position)
 
-        AN_ASSERT(surfDef->FirstVertex + surfDef->NumVertices <= model->Vertices.Size());
-        AN_ASSERT(surfDef->FirstIndex + surfDef->NumIndices <= model->Indices.Size());
+        HK_ASSERT(surfDef->FirstVertex + surfDef->NumVertices <= model->Vertices.Size());
+        HK_ASSERT(surfDef->FirstIndex + surfDef->NumIndices <= model->Indices.Size());
 
         Platform::Memcpy(vertices + numVerts, srcVerts, sizeof(SMeshVertex) * surfDef->NumVertices);
 
@@ -1977,8 +1977,8 @@ void ARenderFrontend::AddShadowmapSurfaces(SLightShadowmap* ShadowMap, SSurfaceD
                          merge->RenderingOrder*/
     );
 
-    AN_ASSERT(numVerts == totalVerts);
-    AN_ASSERT(numIndices == totalIndices);
+    HK_ASSERT(numVerts == totalVerts);
+    HK_ASSERT(numIndices == totalIndices);
 }
 
 void ARenderFrontend::AddSurface(ALevel* Level, AMaterialInstance* MaterialInstance, int _LightmapBlock, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/)

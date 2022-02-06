@@ -80,19 +80,19 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
         }
     };
 
-    CreateVertexShader( "gen/atmosphere.vert", vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    CreateVertexShader( "gen/atmosphere.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
     CreateGeometryShader( "gen/atmosphere.geom", pipelineCI.pGS );
     CreateFragmentShader( "gen/atmosphere.frag", pipelineCI.pFS );
 
     SBufferInfo buffers[1];
     buffers[0].BufferBinding = BUFFER_BIND_CONSTANT;
 
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBindings );
+    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBindings );
     pipelineCI.pVertexBindings = vertexBindings;
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, &Pipeline );

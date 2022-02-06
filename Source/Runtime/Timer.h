@@ -36,7 +36,7 @@ class AWorld;
 
 class ATimer : public ABaseObject
 {
-    AN_CLASS(ATimer, ABaseObject)
+    HK_CLASS(ATimer, ABaseObject)
 
 public:
     ATimer();

@@ -60,7 +60,7 @@ Future:
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include "BulletCompatibility.h"
 
-AN_CLASS_META(ATerrain)
+HK_CLASS_META(ATerrain)
 
 ATerrain::ATerrain()
 {}

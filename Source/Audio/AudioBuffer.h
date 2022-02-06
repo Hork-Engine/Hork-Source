@@ -68,31 +68,31 @@ public:
     }
 
     /** Audio data */
-    AN_FORCEINLINE const void * GetFrames() const
+    HK_FORCEINLINE const void * GetFrames() const
     {
         return pFramesHeapPtr;
     }
 
     /** Frame count */
-    AN_FORCEINLINE int GetFrameCount() const
+    HK_FORCEINLINE int GetFrameCount() const
     {
         return FrameCount;
     }
 
     /** Channels count */
-    AN_FORCEINLINE int GetChannels() const
+    HK_FORCEINLINE int GetChannels() const
     {
         return Channels;
     }
 
     /** Bits per sample */
-    AN_FORCEINLINE int GetSampleBits() const
+    HK_FORCEINLINE int GetSampleBits() const
     {
         return SampleBits;
     }
 
     /** Stride between frames in bytes */
-    AN_FORCEINLINE int GetSampleStride() const
+    HK_FORCEINLINE int GetSampleStride() const
     {
         return SampleStride;
     }

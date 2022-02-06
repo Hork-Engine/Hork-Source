@@ -294,7 +294,7 @@ void TTriangulator<ContourVertex, TriangleVertex>::OnCombineData(double position
     tr->allocatedVerts_.Append(v);
 }
 
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
 #    pragma warning(push)
 #    pragma warning(disable : 4189)
 #endif
@@ -358,6 +358,6 @@ void TTriangulator<ContourVertex, TriangleVertex>::Triangulate(SPolygon const* p
     vertexAllocator_.Free();
 }
 
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
 #    pragma warning(pop)
 #endif

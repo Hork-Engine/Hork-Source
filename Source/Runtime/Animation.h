@@ -83,7 +83,7 @@ Animation class
 */
 class ASkeletalAnimation : public AResource
 {
-    AN_CLASS(ASkeletalAnimation, AResource)
+    HK_CLASS(ASkeletalAnimation, AResource)
 
 public:
     ASkeletalAnimation();
@@ -130,7 +130,7 @@ private:
     bool                          bIsAnimationValid  = false;
 };
 
-AN_FORCEINLINE unsigned short ASkeletalAnimation::GetChannelIndex(int _JointIndex) const
+HK_FORCEINLINE unsigned short ASkeletalAnimation::GetChannelIndex(int _JointIndex) const
 {
     return (_JointIndex < MinNodeIndex || _JointIndex > MaxNodeIndex) ? (unsigned short)-1 : ChannelsMap[_JointIndex - MinNodeIndex];
 }

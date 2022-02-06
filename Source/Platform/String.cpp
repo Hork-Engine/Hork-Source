@@ -42,7 +42,7 @@ int Stricmp(const char* _S1, const char* _S2)
 {
     char c1, c2;
 
-    AN_ASSERT(_S1 && _S2);
+    HK_ASSERT(_S1 && _S2);
 
     do {
         c1 = *_S1++;
@@ -72,7 +72,7 @@ int StricmpN(const char* _S1, const char* _S2, int _Num)
 {
     char c1, c2;
 
-    AN_ASSERT(_S1 && _S2 && _Num >= 0);
+    HK_ASSERT(_S1 && _S2 && _Num >= 0);
 
     do {
         if (!_Num--)
@@ -105,7 +105,7 @@ int StricmpN(const char* _S1, const char* _S2, int _Num)
 
 int Strcmp(const char* _S1, const char* _S2)
 {
-    AN_ASSERT(_S1 && _S2);
+    HK_ASSERT(_S1 && _S2);
 
     while (*_S1 == *_S2)
     {
@@ -123,7 +123,7 @@ int StrcmpN(const char* _S1, const char* _S2, int _Num)
 {
     char c1, c2;
 
-    AN_ASSERT(_S1 && _S2 && _Num >= 0);
+    HK_ASSERT(_S1 && _S2 && _Num >= 0);
 
     do {
         if (!_Num--)
@@ -158,14 +158,14 @@ int Sprintf(char* _Buffer, size_t _Size, const char* _Format, ...)
 
 int VSprintf(char* _Buffer, size_t _Size, const char* _Format, va_list _VaList)
 {
-    AN_ASSERT(_Buffer && _Format);
+    HK_ASSERT(_Buffer && _Format);
 
     return stbsp_vsnprintf(_Buffer, _Size, _Format, _VaList);
 }
 
 char* Fmt(const char* _Format, ...)
 {
-    AN_ASSERT(_Format);
+    HK_ASSERT(_Format);
     thread_local static char String[4][16384];
     thread_local static int  Index = 0;
     va_list                  VaList;
@@ -182,7 +182,7 @@ void Strcat(char* _Dest, size_t _Size, const char* _Src)
     {
         return;
     }
-    //#ifdef AN_COMPILER_MSVC
+    //#ifdef HK_COMPILER_MSVC
     //    strcat_s( _Dest, _Size, _Src );
     //#else
     size_t destLength = Strlen(_Dest);
@@ -226,7 +226,7 @@ void Strcpy(char* _Dest, size_t _Size, const char* _Src)
     {
         _Src = "";
     }
-    //#ifdef AN_COMPILER_MSVC
+    //#ifdef HK_COMPILER_MSVC
     //    strcpy_s( _Dest, _Size, _Src );
     //#else
     if (_Size > 0)
@@ -250,7 +250,7 @@ void StrcpyN(char* _Dest, size_t _Size, const char* _Src, int _Num)
     {
         _Src = "";
     }
-    //#ifdef AN_COMPILER_MSVC
+    //#ifdef HK_COMPILER_MSVC
     //    strncpy_s( _Dest, _Size, _Src, _Num );
     //#else
     if (_Size > 0 && _Num > 0)

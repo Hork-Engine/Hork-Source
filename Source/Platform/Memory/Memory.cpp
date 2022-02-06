@@ -60,7 +60,7 @@ AZoneMemory GZoneMemory;
 //#define ZONE_MEMORY_LEAK_ADDRESS <local address>
 //#define ZONE_MEMORY_LEAK_SIZE    <size>
 
-#ifdef AN_ZONE_MULTITHREADED_ALLOC
+#ifdef HK_ZONE_MULTITHREADED_ALLOC
 #    define ZONE_SYNC_GUARD      ASyncGuard syncGuard(Sync);
 #    define ZONE_SYNC_GUARD_STAT ASpinLockGuard lockGuard(StatisticLock);
 #else
@@ -88,7 +88,7 @@ AHeapMemory::AHeapMemory()
     TotalMemoryOverhead = 0;
     MaxMemoryUsage      = 0;
 
-    AN_VALIDATE_TYPE_SIZE(SHeapChunk, 32);
+    HK_VALIDATE_TYPE_SIZE(SHeapChunk, 32);
 }
 
 AHeapMemory::~AHeapMemory()
@@ -136,7 +136,7 @@ namespace Platform
 void* SysAlloc(size_t _SizeInBytes, int _Alignment)
 {
     void* ptr;
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
     ptr = _aligned_malloc(_SizeInBytes, _Alignment);
 #else
     ptr = aligned_alloc(_Alignment, _SizeInBytes);
@@ -151,7 +151,7 @@ void* SysAlloc(size_t _SizeInBytes, int _Alignment)
 void* SysRealloc(void* _Bytes, size_t _SizeInBytes, int _Alignment)
 {
     void* ptr;
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
     ptr = _aligned_realloc(_Bytes, _SizeInBytes, _Alignment);
 #else
     ptr = aligned_realloc(_Bytes, _SizeInBytes, _Alignment);
@@ -168,7 +168,7 @@ void SysFree(void* _Bytes)
 {
     if (_Bytes)
     {
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
         _aligned_free(_Bytes);
 #else
         free(_Bytes);
@@ -181,7 +181,7 @@ void SysFree(void* _Bytes)
 namespace
 {
 
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
 static constexpr bool HeapDebug()
 {
     return true;
@@ -194,7 +194,7 @@ static bool HeapDebug()
 }
 #endif
 
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
 static constexpr bool MemoryTrashTest()
 {
 #    ifdef MEMORY_TRASH_TEST
@@ -215,7 +215,7 @@ static bool MemoryTrashTest()
 
 void* AHeapMemory::Alloc(size_t _BytesCount, int _Alignment)
 {
-    AN_ASSERT(_Alignment <= 128 && IsPowerOfTwo(_Alignment));
+    HK_ASSERT(_Alignment <= 128 && IsPowerOfTwo(_Alignment));
 
     if (_Alignment < 16)
     {
@@ -257,7 +257,7 @@ void* AHeapMemory::Alloc(size_t _BytesCount, int _Alignment)
         aligned          = (byte*)AlignPtr(bytes + sizeof(SHeapChunk), _Alignment);
     }
 
-    AN_ASSERT(IsAlignedPtr(aligned, 16));
+    HK_ASSERT(IsAlignedPtr(aligned, 16));
 
     SHeapChunk* heap  = (SHeapChunk*)(aligned)-1;
     heap->Size        = chunkSizeInBytes;
@@ -321,7 +321,7 @@ void AHeapMemory::Free(void* _Bytes)
 
 void* AHeapMemory::Realloc(void* _Data, int _NewBytesCount, int _NewAlignment, bool _KeepOld)
 {
-    AN_ASSERT(_NewAlignment <= 128 && IsPowerOfTwo(_NewAlignment));
+    HK_ASSERT(_NewAlignment <= 128 && IsPowerOfTwo(_NewAlignment));
 
     if (_NewAlignment < 16)
     {
@@ -470,8 +470,8 @@ void AHunkMemory::Initialize(void* _MemoryAddress, int _SizeInMegabytes)
     MaxMemoryUsage      = 0;
     TotalMemoryOverhead = 0;
 
-    AN_VALIDATE_TYPE_SIZE(SHunkMemory, 32);
-    AN_VALIDATE_TYPE_SIZE(SHunk, 16);
+    HK_VALIDATE_TYPE_SIZE(SHunkMemory, 32);
+    HK_VALIDATE_TYPE_SIZE(SHunk, 16);
 
     if (!IsAlignedPtr(MemoryBuffer->Hunk, 16))
     {
@@ -508,7 +508,7 @@ int AHunkMemory::SetHunkMark()
     return ++MemoryBuffer->Mark;
 }
 
-AN_FORCEINLINE void SetTrashMarker(SHunk* _Hunk)
+HK_FORCEINLINE void SetTrashMarker(SHunk* _Hunk)
 {
     if (MemoryTrashTest())
     {
@@ -516,7 +516,7 @@ AN_FORCEINLINE void SetTrashMarker(SHunk* _Hunk)
     }
 }
 
-AN_FORCEINLINE bool HunkTrashTest(const SHunk* _Hunk)
+HK_FORCEINLINE bool HunkTrashTest(const SHunk* _Hunk)
 {
     if (MemoryTrashTest())
     {
@@ -596,7 +596,7 @@ void* AHunkMemory::Alloc(size_t _BytesCount)
 
     void* aligned = hunk + 1;
 
-    AN_ASSERT(IsAlignedPtr(aligned, 16));
+    HK_ASSERT(IsAlignedPtr(aligned, 16));
 
     return aligned;
 }
@@ -736,13 +736,13 @@ struct SZoneBuffer
     byte        Pad[16];
 };
 
-AN_VALIDATE_TYPE_SIZE(SZoneChunk, 32);
-AN_VALIDATE_TYPE_SIZE(SZoneBuffer, 64);
+HK_VALIDATE_TYPE_SIZE(SZoneChunk, 32);
+HK_VALIDATE_TYPE_SIZE(SZoneBuffer, 64);
 
 static const int ChunkHeaderLength     = sizeof(SZoneChunk);
 static const int MinZoneFragmentLength = 64; // Must be > ChunkHeaderLength
 
-AN_FORCEINLINE size_t AdjustChunkSize(size_t _BytesCount)
+HK_FORCEINLINE size_t AdjustChunkSize(size_t _BytesCount)
 {
 
     // Add chunk header
@@ -760,7 +760,7 @@ AN_FORCEINLINE size_t AdjustChunkSize(size_t _BytesCount)
     return _BytesCount;
 }
 
-AN_FORCEINLINE void SetTrashMarker(SZoneChunk* _Chunk)
+HK_FORCEINLINE void SetTrashMarker(SZoneChunk* _Chunk)
 {
     if (MemoryTrashTest())
     {
@@ -768,7 +768,7 @@ AN_FORCEINLINE void SetTrashMarker(SZoneChunk* _Chunk)
     }
 }
 
-AN_FORCEINLINE bool ChunkTrashTest(const SZoneChunk* _Chunk)
+HK_FORCEINLINE bool ChunkTrashTest(const SZoneChunk* _Chunk)
 {
     if (MemoryTrashTest())
     {
@@ -936,7 +936,7 @@ void* AZoneMemory::Alloc(size_t _BytesCount)
     if (recidualChunkSpace >= MinZoneFragmentLength)
     { // don't allow to create very small chunks
         SZoneChunk* newChunk = (SZoneChunk*)((byte*)(cur) + requiredSize);
-        AN_ASSERT(IsAlignedPtr(newChunk, 16));
+        HK_ASSERT(IsAlignedPtr(newChunk, 16));
         newChunk->Size = recidualChunkSpace;
         newChunk->pPrev = cur;
         newChunk->pNext = cur->pNext;
@@ -947,8 +947,8 @@ void* AZoneMemory::Alloc(size_t _BytesCount)
 
     byte* pointer = (byte*)(cur + 1);
 
-    AN_ASSERT(IsAlignedPtr(cur, 16));
-    AN_ASSERT(IsAlignedPtr(pointer, 16));
+    HK_ASSERT(IsAlignedPtr(cur, 16));
+    HK_ASSERT(IsAlignedPtr(pointer, 16));
 
     IncMemoryStatistics(cur->Size, cur->Size - _BytesCount);
 
@@ -956,13 +956,13 @@ void* AZoneMemory::Alloc(size_t _BytesCount)
     cur->DataSize = _BytesCount;
     MemoryBuffer->Rover = cur->pNext;
 
-#    if defined ZONE_MEMORY_LEAK_ADDRESS && defined AN_DEBUG
+#    if defined ZONE_MEMORY_LEAK_ADDRESS && defined HK_DEBUG
     size_t localAddr = (size_t)(cur + 1) - (size_t)GetZoneMemoryAddress();
     size_t size = (-cur->Size);
     if (localAddr == ZONE_MEMORY_LEAK_ADDRESS && size == ZONE_MEMORY_LEAK_SIZE)
     {
         GLogger.Printf("Problem alloc\n");
-#        ifdef AN_OS_WIN32
+#        ifdef HK_OS_WIN32
         DebugBreak();
 #        else
         //__asm__( "int $3" );
@@ -1086,7 +1086,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
     // restore positive chunk size
     chunk->Size = -chunk->Size;
 
-    AN_ASSERT(chunk->Size > 0);
+    HK_ASSERT(chunk->Size > 0);
 
     // try to use next chunk
     SZoneChunk* cur = chunk->pNext;
@@ -1100,7 +1100,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
         {
 #            if 0
             SZoneChunk * newChunk = ( SZoneChunk * )( ( byte * )( cur ) + requiredSize );
-            AN_ASSERT( IsAlignedPtr( newChunk, 16 ) );
+            HK_ASSERT( IsAlignedPtr( newChunk, 16 ) );
             newChunk->Size = recidualChunkSpace;
             newChunk->pPrev = chunk;
             newChunk->pNext = cur->pNext;
@@ -1157,7 +1157,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
 
         //MemLogger.Printf( "using next chunk\n" );
 
-        AN_ASSERT(_Data == chunk + 1);
+        HK_ASSERT(_Data == chunk + 1);
 
         return _Data;
 #        else
@@ -1202,7 +1202,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
         if (recidualChunkSpace >= MinZoneFragmentLength)
         {
             SZoneChunk* newChunk = (SZoneChunk*)((byte*)(cur) + requiredSize);
-            AN_ASSERT(IsAlignedPtr(newChunk, 16));
+            HK_ASSERT(IsAlignedPtr(newChunk, 16));
             newChunk->Size         = recidualChunkSpace;
             newChunk->pPrev        = cur;
             newChunk->pNext        = cur->pNext;
@@ -1213,8 +1213,8 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
 
         byte* pointer = (byte*)(cur + 1);
 
-        AN_ASSERT(IsAlignedPtr(cur, 16));
-        AN_ASSERT(IsAlignedPtr(pointer, 16));
+        HK_ASSERT(IsAlignedPtr(cur, 16));
+        HK_ASSERT(IsAlignedPtr(pointer, 16));
 
         IncMemoryStatistics(cur->Size, cur->Size - _NewBytesCount);
 
@@ -1395,8 +1395,8 @@ void _MemcpySSE(byte* _Dst, const byte* _Src, size_t _SizeInBytes)
 #if 0
     memcpy(_Dst,_Src,_SizeInBytes);
 #else
-    AN_ASSERT(IsSSEAligned((size_t)_Dst));
-    AN_ASSERT(IsSSEAligned((size_t)_Src));
+    HK_ASSERT(IsSSEAligned((size_t)_Dst));
+    HK_ASSERT(IsSSEAligned((size_t)_Src));
 
     int n = 0;
 
@@ -1486,7 +1486,7 @@ void _ZeroMemSSE(byte* _Dst, size_t _SizeInBytes)
 #if 0
     ZeroMem( _Dst, _SizeInBytes );
 #else
-    AN_ASSERT(IsSSEAligned((size_t)_Dst));
+    HK_ASSERT(IsSSEAligned((size_t)_Dst));
 
     int n = 0;
 
@@ -1550,7 +1550,7 @@ void _ZeroMemSSE(byte* _Dst, size_t _SizeInBytes)
 
 void _MemsetSSE(byte* _Dst, int _Val, size_t _SizeInBytes)
 {
-    AN_ASSERT(IsSSEAligned((size_t)_Dst));
+    HK_ASSERT(IsSSEAligned((size_t)_Dst));
 
 #if 0
     Memset( _Dst, _Val, _SizeInBytes );

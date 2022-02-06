@@ -228,7 +228,7 @@ int STexturePixelFormat::BlockSizeCompressed() const
     }
 
     // TODO
-    AN_ASSERT_( 0, "Not implemented" );
+    HK_ASSERT_( 0, "Not implemented" );
 
     return FormatTable[Data].BlockSizeCompressed;
 }

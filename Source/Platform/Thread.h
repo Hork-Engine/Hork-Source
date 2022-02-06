@@ -41,7 +41,7 @@ Thread.
 */
 class AThread final
 {
-    AN_FORBID_COPY(AThread)
+    HK_FORBID_COPY(AThread)
 
 public:
     static const int NumHardwareThreads;
@@ -74,7 +74,7 @@ public:
     static void WaitMicroseconds(int _Microseconds);
 
 private:
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     void* Internal = nullptr;
 #else
     pthread_t Internal = 0;
@@ -93,7 +93,7 @@ Thread mutex.
 */
 class AMutex final
 {
-    AN_FORBID_COPY(AMutex)
+    HK_FORBID_COPY(AMutex)
 
     friend class ASyncEvent;
 
@@ -108,7 +108,7 @@ public:
     void Unlock();
 
 private:
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     byte Internal[40];
 #else
     pthread_mutex_t Internal = PTHREAD_MUTEX_INITIALIZER;
@@ -118,7 +118,7 @@ private:
 
 // Unfortunately, the name Yield is already used by the macro defined in WinBase.h.
 // This great function was taken from miniaudio
-AN_FORCEINLINE void YieldCPU()
+HK_FORCEINLINE void YieldCPU()
 {
 #if defined(__i386) || defined(_M_IX86) || defined(__x86_64__) || defined(_M_X64)
 /* x86/x64 */
@@ -157,13 +157,13 @@ ASpinLock
 */
 class ASpinLock final
 {
-    AN_FORBID_COPY(ASpinLock)
+    HK_FORBID_COPY(ASpinLock)
 
 public:
     ASpinLock() :
         LockVar(false) {}
 
-    AN_FORCEINLINE void Lock() noexcept
+    HK_FORCEINLINE void Lock() noexcept
     {
         // https://rigtorp.se/spinlock/
 
@@ -183,14 +183,14 @@ public:
         }
     }
 
-    AN_FORCEINLINE bool TryLock() noexcept
+    HK_FORCEINLINE bool TryLock() noexcept
     {
         // First do a relaxed load to check if lock is free in order to prevent
         // unnecessary cache misses if someone does while(!TryLock())
         return !LockVar.LoadRelaxed() && !LockVar.Exchange(true);
     }
 
-    AN_FORCEINLINE void Unlock() noexcept
+    HK_FORCEINLINE void Unlock() noexcept
     {
         LockVar.Store(false);
     }
@@ -211,15 +211,15 @@ ownership in the destructor.
 template <typename T>
 class TLockGuard
 {
-    AN_FORBID_COPY(TLockGuard)
+    HK_FORBID_COPY(TLockGuard)
 public:
-    AN_FORCEINLINE explicit TLockGuard(T& _Primitive) :
+    HK_FORCEINLINE explicit TLockGuard(T& _Primitive) :
         Primitive(_Primitive)
     {
         Primitive.Lock();
     }
 
-    AN_FORCEINLINE ~TLockGuard()
+    HK_FORCEINLINE ~TLockGuard()
     {
         Primitive.Unlock();
     }
@@ -240,9 +240,9 @@ ownership in the destructor. Checks condition.
 template <typename T>
 class TLockGuardCond
 {
-    AN_FORBID_COPY(TLockGuardCond)
+    HK_FORBID_COPY(TLockGuardCond)
 public:
-    AN_FORCEINLINE explicit TLockGuardCond(T& _Primitive, const bool _Cond = true) :
+    HK_FORCEINLINE explicit TLockGuardCond(T& _Primitive, const bool _Cond = true) :
         Primitive(_Primitive), Cond(_Cond)
     {
         if (Cond)
@@ -251,7 +251,7 @@ public:
         }
     }
 
-    AN_FORCEINLINE ~TLockGuardCond()
+    HK_FORCEINLINE ~TLockGuardCond()
     {
         if (Cond)
         {
@@ -278,7 +278,7 @@ Thread event.
 */
 class ASyncEvent final
 {
-    AN_FORBID_COPY(ASyncEvent)
+    HK_FORBID_COPY(ASyncEvent)
 
 public:
     ASyncEvent();
@@ -294,7 +294,7 @@ public:
     void Signal();
 
 private:
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     void  CreateEventWIN32();
     void  DestroyEventWIN32();
     void  WaitWIN32();
@@ -307,25 +307,25 @@ private:
 #endif
 };
 
-AN_FORCEINLINE ASyncEvent::ASyncEvent()
+HK_FORCEINLINE ASyncEvent::ASyncEvent()
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     CreateEventWIN32();
 #else
     bSignaled = false;
 #endif
 }
 
-AN_FORCEINLINE ASyncEvent::~ASyncEvent()
+HK_FORCEINLINE ASyncEvent::~ASyncEvent()
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     DestroyEventWIN32();
 #endif
 }
 
-AN_FORCEINLINE void ASyncEvent::Wait()
+HK_FORCEINLINE void ASyncEvent::Wait()
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     WaitWIN32();
 #else
     AMutexGurad syncGuard(Sync);
@@ -337,9 +337,9 @@ AN_FORCEINLINE void ASyncEvent::Wait()
 #endif
 }
 
-AN_FORCEINLINE void ASyncEvent::Signal()
+HK_FORCEINLINE void ASyncEvent::Signal()
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     SingalWIN32();
 #else
     {

@@ -35,7 +35,7 @@ namespace RenderCore
 
 void AFrameGraph::Build()
 {
-    AN_ASSERT(CapturedResources.IsEmpty());
+    HK_ASSERT(CapturedResources.IsEmpty());
 
     //pFramebufferCache->CleanupOutdatedFramebuffers();
 
@@ -303,7 +303,7 @@ void AFrameGraph::ReleaseCapturedResources()
                 pRenderTargetCache->Release(static_cast<ITexture*>(resourceProxy->pDeviceObject));
                 break;
             default:
-                AN_ASSERT(0);
+                HK_ASSERT(0);
         }
     }
 }

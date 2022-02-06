@@ -34,7 +34,7 @@ SOFTWARE.
 
 class WWindow : public WWidget
 {
-    AN_CLASS(WWindow, WWidget)
+    HK_CLASS(WWindow, WWidget)
 
 public:
     WWindow& SetCaptionText(const char* _CaptionText);

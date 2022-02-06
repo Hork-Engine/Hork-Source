@@ -42,7 +42,7 @@ AConsoleVar com_DrawMeshBounds(_CTS("com_DrawMeshBounds"), _CTS("0"), CVAR_CHEAT
 AConsoleVar com_DrawBrushBounds(_CTS("com_DrawBrushBounds"), _CTS("0"), CVAR_CHEAT);
 AConsoleVar com_DrawIndexedMeshBVH(_CTS("com_DrawIndexedMeshBVH"), _CTS("0"), CVAR_CHEAT);
 
-AN_CLASS_META(AMeshComponent)
+HK_CLASS_META(AMeshComponent)
 
 static bool RaycastCallback(SPrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits)
 {
@@ -311,7 +311,7 @@ void AMeshComponent::CopyMaterialsFromMeshResource()
 
 void AMeshComponent::SetMaterialInstance(int _SubpartIndex, AMaterialInstance* _Instance)
 {
-    AN_ASSERT(_SubpartIndex >= 0);
+    HK_ASSERT(_SubpartIndex >= 0);
 
     if (_SubpartIndex >= Materials.Size())
     {
@@ -433,7 +433,7 @@ void AMeshComponent::DrawDebug(ADebugRenderer* InRenderer)
 }
 
 #if 0
-AN_CLASS_META( ABrushComponent )
+HK_CLASS_META( ABrushComponent )
 
 static bool BrushRaycastCallback( SPrimitiveDef const * Self, Float3 const & InRayStart, Float3 const & InRayEnd, TPodVector< STriangleHitResult > & Hits ) {
     ABrushComponent const * brush = static_cast< ABrushComponent const * >(Self->Owner);
@@ -458,7 +458,7 @@ static bool BrushRaycastCallback( SPrimitiveDef const * Self, Float3 const & InR
     return resource->Raycast( rayStartLocal, rayDirLocal, hitDistanceLocal, Hits );
 #    endif
 
-    AN_UNUSED( brush );
+    HK_UNUSED( brush );
 
     GLogger.Printf( "BrushRaycastCallback: todo\n" );
     return false;
@@ -494,7 +494,7 @@ static bool BrushRaycastClosestCallback( SPrimitiveDef const * Self, Float3 cons
 
 #    endif
 
-    AN_UNUSED( brush );
+    HK_UNUSED( brush );
 
     GLogger.Printf( "BrushRaycastClosestCallback: todo\n" );
     return false;
@@ -525,7 +525,7 @@ void ABrushComponent::DrawDebug( ADebugRenderer * InRenderer ) {
 
 
 
-AN_CLASS_META(AProceduralMeshComponent)
+HK_CLASS_META(AProceduralMeshComponent)
 
 static bool RaycastCallback_Procedural(SPrimitiveDef const* Self, Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits)
 {

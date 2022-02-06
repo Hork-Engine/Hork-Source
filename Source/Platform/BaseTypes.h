@@ -52,92 +52,92 @@ SOFTWARE.
 /*
 
 Predefines:
-AN_DEBUG           - debug compilation
-AN_RELEASE         - release compilation
-AN_ENDIAN_STRING   - Big/Little endian (string)
-AN_BIG_ENDIAN      - Big endian platform
-AN_LITTLE_ENDIAN   - Little endian platform
-AN_COMPILER_STRING - Compilator name (string)
-AN_COMPILER_MSVC   - Microsoft Visual Studio compiler
-AN_COMPILER_GCC    - Gnu GCC compiler
-AN_OS_WIN32        - Windows platform (Win32 or Win64)
-AN_OS_WIN64        - 64-bit Windows platform
-AN_OS_XBOX         - XBOX platform
-AN_OS_LINUX        - Linux platform
-AN_OS_UNKNOWN      - Unknown platform
-AN_OS_STRING       - Operating system name (string)
+HK_DEBUG           - debug compilation
+HK_RELEASE         - release compilation
+HK_ENDIAN_STRING   - Big/Little endian (string)
+HK_BIG_ENDIAN      - Big endian platform
+HK_LITTLE_ENDIAN   - Little endian platform
+HK_COMPILER_STRING - Compilator name (string)
+HK_COMPILER_MSVC   - Microsoft Visual Studio compiler
+HK_COMPILER_GCC    - Gnu GCC compiler
+HK_OS_WIN32        - Windows platform (Win32 or Win64)
+HK_OS_WIN64        - 64-bit Windows platform
+HK_OS_XBOX         - XBOX platform
+HK_OS_LINUX        - Linux platform
+HK_OS_UNKNOWN      - Unknown platform
+HK_OS_STRING       - Operating system name (string)
 
 */
 
-#if defined(AN_BIG_ENDIAN)
-#    define AN_ENDIAN_STRING "Big"
+#if defined(HK_BIG_ENDIAN)
+#    define HK_ENDIAN_STRING "Big"
 #endif
 
-#if defined(AN_LITTLE_ENDIAN)
-#    define AN_ENDIAN_STRING "Little"
+#if defined(HK_LITTLE_ENDIAN)
+#    define HK_ENDIAN_STRING "Little"
 #endif
 
-#if !defined(AN_ENDIAN_STRING)
+#if !defined(HK_ENDIAN_STRING)
 #    error "Unknown endianness"
 #endif
 
 #if defined _MSC_VER
-#    define AN_COMPILER_STRING "Microsoft Visual C++"
-#    define AN_COMPILER_MSVC
+#    define HK_COMPILER_STRING "Microsoft Visual C++"
+#    define HK_COMPILER_MSVC
 #endif
 
 #if defined __GNUC__ && !defined __clang__
-#    define AN_COMPILER_STRING "Gnu GCC"
-#    define AN_COMPILER_GCC    1
+#    define HK_COMPILER_STRING "Gnu GCC"
+#    define HK_COMPILER_GCC    1
 #endif
 
-#if !defined AN_COMPILER_STRING
-#    define AN_COMPILER_STRING "Unknown compiler"
+#if !defined HK_COMPILER_STRING
+#    define HK_COMPILER_STRING "Unknown compiler"
 #endif
 
 #if defined _XBOX || defined _XBOX_VER
-#    define AN_OS_XBOX
-#    define AN_OS_STRING "XBOX"
+#    define HK_OS_XBOX
+#    define HK_OS_STRING "XBOX"
 #endif
 
 #if defined _WIN32 || defined WIN32 || defined __NT__ || defined __WIN32__
-#    define AN_OS_WIN32
-#    if !defined AN_OS_XBOX
+#    define HK_OS_WIN32
+#    if !defined HK_OS_XBOX
 #        if defined _WIN64
-#            define AN_OS_WIN64
-#            define AN_OS_STRING "Win64"
+#            define HK_OS_WIN64
+#            define HK_OS_STRING "Win64"
 #        else
-#            if !defined AN_OS_STRING
-#                define AN_OS_STRING "Win32"
+#            if !defined HK_OS_STRING
+#                define HK_OS_STRING "Win32"
 #            endif
 #        endif
 #    endif
 #endif
 
 #if defined linux || defined __linux__
-#    define AN_OS_LINUX
-#    define AN_OS_STRING "Linux"
+#    define HK_OS_LINUX
+#    define HK_OS_STRING "Linux"
 #endif
 
-#if !defined AN_OS_STRING
-#    define AN_OS_UNKNOWN
-#    define AN_OS_STRING "Unknown"
+#if !defined HK_OS_STRING
+#    define HK_OS_UNKNOWN
+#    define HK_OS_STRING "Unknown"
 #endif
 
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
 #    if defined(DEBUG) || defined(_DEBUG)
-#        define AN_DEBUG
+#        define HK_DEBUG
 #    endif
 #endif
 
-#ifdef AN_COMPILER_GCC
+#ifdef HK_COMPILER_GCC
 #    if !defined(NDEBUG)
-#        define AN_DEBUG
+#        define HK_DEBUG
 #    endif
 #endif
 
-#if !defined(AN_DEBUG)
-#    define AN_RELEASE
+#if !defined(HK_DEBUG)
+#    define HK_RELEASE
 #endif
 
 /*
@@ -145,73 +145,47 @@ AN_OS_STRING       - Operating system name (string)
 Function call
 
 */
-#define AN_STDCALL __stdcall
-
-/*
-
-Library import/export switch
-
-ANGIE_STATIC_LIBRARY - Is static library
-ANGIE_ENGINE_EXPORTS - Export/Import switch
-ANGIE_API            - Export or Import class/function
-ANGIE_TEMPLATE       - Export or Import class template
-
-*/
-#ifdef ANGIE_STATIC_LIBRARY
-#    define ANGIE_API
-#    define ANGIE_TEMPLATE
-#else
-#    ifdef AN_COMPILER_MSVC
-#        ifdef ANGIE_ENGINE_EXPORTS
-#            define ANGIE_API __declspec(dllexport)
-#            define ANGIE_TEMPLATE
-#        else
-#            define ANGIE_API      __declspec(dllimport)
-#            define ANGIE_TEMPLATE extern
-#        endif
-#    else
-#        define ANGIE_API __attribute__((visibility("default")))
-#        define ANGIE_TEMPLATE
-#    endif
-#endif
+#define HK_STDCALL __stdcall
 
 /*
 
 Inline defines
 
 */
-#ifdef AN_COMPILER_MSVC
-#    define AN_FORCEINLINE __forceinline
+#ifdef HK_COMPILER_MSVC
+#    define HK_FORCEINLINE __forceinline
 #else
-#    define AN_FORCEINLINE inline __attribute__((always_inline))
+#    define HK_FORCEINLINE inline __attribute__((always_inline))
 #endif
 
-#define AN_INLINE inline
+#define HK_INLINE inline
 
 /*
 
 Deprecated code marker
 
 */
-#ifdef AN_COMPILER_MSVC
-#    define AN_DEPRECATED __declspec(deprecated)
+#ifdef HK_COMPILER_MSVC
+#    define HK_DEPRECATED __declspec(deprecated)
 #else
-#    define AN_DEPRECATED __attribute__((__deprecated__))
+#    define HK_DEPRECATED __attribute__((__deprecated__))
 #endif
+
+#define HK_NODISCARD [[nodiscard]]
 
 /*
 
 Function signature
 
 */
-#if defined(AN_COMPILER_MSVC)
-#    define AN_FUNCSIG __FUNCSIG__
+#if defined(HK_COMPILER_MSVC)
+#    define HK_FUNCSIG __FUNCSIG__
 #elif defined(__GNUC__)
-#    define AN_FUNCSIG __PRETTY_FUNCTION__
+#    define HK_FUNCSIG __PRETTY_FUNCTION__
 #elif __STDC_VERSION__ >= 199901L
-#    define AN_FUNCSIG __func__
+#    define HK_FUNCSIG __func__
 #else
-#    define AN_FUNCSIG "[Function name unavailable]"
+#    define HK_FUNCSIG "[Function name unavailable]"
 #endif
 
 /*
@@ -219,7 +193,7 @@ Function signature
 Suppress "Unused variable" warning
 
 */
-#define AN_UNUSED(x) ((void)x)
+#define HK_UNUSED(x) ((void)x)
 
 
 /*
@@ -228,72 +202,43 @@ Misc
 
 */
 
-#ifdef AN_DEBUG
-#    define AN_ALLOW_ASSERTS
+#ifdef HK_DEBUG
+#    define HK_ALLOW_ASSERTS
 #endif
 
-#ifdef AN_ALLOW_ASSERTS
-#    define AN_ASSERT_(assertion, comment) ((assertion) ? static_cast<void>(0) : AssertFunction(__FILE__, __LINE__, AN_FUNCSIG, AN_STRINGIFY(assertion), comment))
+#ifdef HK_ALLOW_ASSERTS
+#    define HK_ASSERT_(assertion, comment) ((assertion) ? static_cast<void>(0) : AssertFunction(__FILE__, __LINE__, HK_FUNCSIG, HK_STRINGIFY(assertion), comment))
 extern void AssertFunction(const char* _File, int _Line, const char* _Function, const char* _Assertion, const char* _Comment);
 #else
-#    define AN_ASSERT_(assertion, comment) ((void)(assertion))
+#    define HK_ASSERT_(assertion, comment)
 #endif
-#define AN_ASSERT(assertion)   AN_ASSERT_(assertion, nullptr)
-#define AN_STRINGIFY(text)     #text
-#define AN_BIT(sh)             (1 << (sh))
-#define AN_BIT64(sh)           (uint64_t(1) << (sh))
-#define AN_HASBITi(v, bit_i)   ((v) & (1 << (bit_i)))
-#define AN_HASBIT64i(v, bit_i) ((v) & (uint64_t(1) << (bit_i)))
-#define AN_HASFLAG(v, flag)    (((v) & (flag)) == (flag))
-#define AN_OFS(type, name)     offsetof(type, name) //(&(( type * )0)->name)
-#define AN_ARRAY_SIZE(Array)   (sizeof(Array) / sizeof(Array[0]))
+#define HK_ASSERT(assertion)   HK_ASSERT_(assertion, nullptr)
+#define HK_STRINGIFY(text)     #text
+#define HK_BIT(sh)             (1 << (sh))
+#define HK_BIT64(sh)           (uint64_t(1) << (sh))
+#define HK_HASBITi(v, bit_i)   ((v) & (1 << (bit_i)))
+#define HK_HASBIT64i(v, bit_i) ((v) & (uint64_t(1) << (bit_i)))
+#define HK_HASFLAG(v, flag)    (((v) & (flag)) == (flag))
+#define HK_OFS(type, name)     offsetof(type, name) //(&(( type * )0)->name)
+#define HK_ARRAY_SIZE(Array)   (sizeof(Array) / sizeof(Array[0]))
 
 /*
 
 Forbid to copy object
 
 */
-#define AN_FORBID_COPY(_Class)      \
+#define HK_FORBID_COPY(_Class)      \
     _Class(_Class const&) = delete; \
     _Class& operator=(_Class const&) = delete;
 
 class ANoncopyable
 {
-    AN_FORBID_COPY(ANoncopyable)
+    HK_FORBID_COPY(ANoncopyable)
 
 public:
     ANoncopyable() {}
 };
 
-
-/*
-
-Singleton
-
-*/
-#define AN_SINGLETON(_Class)             \
-    AN_FORBID_COPY(_Class)               \
-public:                                  \
-    static _Class& Inst()                \
-    {                                    \
-        static _Class ThisClassInstance; \
-        return ThisClassInstance;        \
-    }                                    \
-                                         \
-protected:                               \
-    _Class();                            \
-                                         \
-private:
-
-
-/*
-
-NULL declaration
-
-*/
-#ifndef NULL
-#    define NULL 0
-#endif
 
 /*
 
@@ -311,23 +256,23 @@ Base types
 
 using byte   = uint8_t;
 
-#define AN_VALIDATE_TYPE_SIZE(a, n) static_assert(sizeof(a) == (n), "AN_VALIDATE_TYPE_SIZE");
+#define HK_VALIDATE_TYPE_SIZE(a, n) static_assert(sizeof(a) == (n), "HK_VALIDATE_TYPE_SIZE");
 
 // Check is the data types has expected size
-AN_VALIDATE_TYPE_SIZE(bool, 1)
-AN_VALIDATE_TYPE_SIZE(char, 1)
-AN_VALIDATE_TYPE_SIZE(short, 2)
-AN_VALIDATE_TYPE_SIZE(float, 4)
-AN_VALIDATE_TYPE_SIZE(double, 8)
-AN_VALIDATE_TYPE_SIZE(int8_t, 1)
-AN_VALIDATE_TYPE_SIZE(int16_t, 2)
-AN_VALIDATE_TYPE_SIZE(int32_t, 4)
-AN_VALIDATE_TYPE_SIZE(int64_t, 8)
-AN_VALIDATE_TYPE_SIZE(uint8_t, 1)
-AN_VALIDATE_TYPE_SIZE(uint16_t, 2)
-AN_VALIDATE_TYPE_SIZE(uint32_t, 4)
-AN_VALIDATE_TYPE_SIZE(uint64_t, 8)
-AN_VALIDATE_TYPE_SIZE(byte, 1)
+HK_VALIDATE_TYPE_SIZE(bool, 1)
+HK_VALIDATE_TYPE_SIZE(char, 1)
+HK_VALIDATE_TYPE_SIZE(short, 2)
+HK_VALIDATE_TYPE_SIZE(float, 4)
+HK_VALIDATE_TYPE_SIZE(double, 8)
+HK_VALIDATE_TYPE_SIZE(int8_t, 1)
+HK_VALIDATE_TYPE_SIZE(int16_t, 2)
+HK_VALIDATE_TYPE_SIZE(int32_t, 4)
+HK_VALIDATE_TYPE_SIZE(int64_t, 8)
+HK_VALIDATE_TYPE_SIZE(uint8_t, 1)
+HK_VALIDATE_TYPE_SIZE(uint16_t, 2)
+HK_VALIDATE_TYPE_SIZE(uint32_t, 4)
+HK_VALIDATE_TYPE_SIZE(uint64_t, 8)
+HK_VALIDATE_TYPE_SIZE(byte, 1)
 
 // characters must be signed
 #if defined(_CHAR_UNSIGNED)
@@ -345,7 +290,7 @@ Flag enum operators
 template <typename EnumType>
 using _UNDERLYING_ENUM_T = typename std::underlying_type<EnumType>::type;
 
-#define AN_FLAG_ENUM_OPERATORS(ENUMTYPE)                                                                                                                                                                      \
+#define HK_FLAG_ENUM_OPERATORS(ENUMTYPE)                                                                                                                                                                      \
     inline ENUMTYPE&          operator|=(ENUMTYPE& a, ENUMTYPE b) { return reinterpret_cast<ENUMTYPE&>(reinterpret_cast<_UNDERLYING_ENUM_T<ENUMTYPE>&>(a) |= static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(b)); } \
     inline ENUMTYPE&          operator&=(ENUMTYPE& a, ENUMTYPE b) { return reinterpret_cast<ENUMTYPE&>(reinterpret_cast<_UNDERLYING_ENUM_T<ENUMTYPE>&>(a) &= static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(b)); } \
     inline ENUMTYPE&          operator^=(ENUMTYPE& a, ENUMTYPE b) { return reinterpret_cast<ENUMTYPE&>(reinterpret_cast<_UNDERLYING_ENUM_T<ENUMTYPE>&>(a) ^= static_cast<_UNDERLYING_ENUM_T<ENUMTYPE>>(b)); } \

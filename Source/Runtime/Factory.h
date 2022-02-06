@@ -45,7 +45,7 @@ class ADummy;
 
 class AObjectFactory
 {
-    AN_FORBID_COPY(AObjectFactory)
+    HK_FORBID_COPY(AObjectFactory)
 
     friend class AClassMeta;
     friend void InitializeFactories();
@@ -84,7 +84,7 @@ private:
 
 class AClassMeta
 {
-    AN_FORBID_COPY(AClassMeta)
+    HK_FORBID_COPY(AClassMeta)
 
     friend class AObjectFactory;
     friend class AAttributeMeta;
@@ -137,7 +137,7 @@ protected:
     AClassMeta(AObjectFactory& _Factory, const char* _ClassName, AClassMeta const* _SuperClassMeta) :
         ClassId(_Factory.NumClasses + 1), ClassName(_ClassName)
     {
-        AN_ASSERT_(_Factory.FindClass(_ClassName) == NULL, "Class already defined");
+        HK_ASSERT_(_Factory.FindClass(_ClassName) == NULL, "Class already defined");
         pNext            = _Factory.Classes;
         pSuperClass      = _SuperClassMeta;
         AttributesHead   = nullptr;
@@ -158,26 +158,26 @@ private:
     AAttributeMeta const* AttributesTail;
 };
 
-AN_FORCEINLINE ADummy* AObjectFactory::CreateInstance(const char* _ClassName) const
+HK_FORCEINLINE ADummy* AObjectFactory::CreateInstance(const char* _ClassName) const
 {
     AClassMeta const* classMeta = LookupClass(_ClassName);
     return classMeta ? classMeta->CreateInstance() : nullptr;
 }
 
-AN_FORCEINLINE ADummy* AObjectFactory::CreateInstance(uint64_t _ClassId) const
+HK_FORCEINLINE ADummy* AObjectFactory::CreateInstance(uint64_t _ClassId) const
 {
     AClassMeta const* classMeta = LookupClass(_ClassId);
     return classMeta ? classMeta->CreateInstance() : nullptr;
 }
 
-AN_FORCEINLINE AClassMeta const* AObjectFactory::GetClassList() const
+HK_FORCEINLINE AClassMeta const* AObjectFactory::GetClassList() const
 {
     return Classes;
 }
 
 class AAttributeMeta
 {
-    AN_FORBID_COPY(AAttributeMeta)
+    HK_FORBID_COPY(AAttributeMeta)
 
 public:
     const char* GetName() const { return Name.c_str(); }
@@ -239,28 +239,28 @@ template <typename AttributeType>
 void SetAttributeFromString(AttributeType& Attribute, AString const& String);
 
 
-AN_FORCEINLINE void SetAttributeFromString(uint8_t& Attribute, AString const& String)
+HK_FORCEINLINE void SetAttributeFromString(uint8_t& Attribute, AString const& String)
 {
     Attribute = Math::ToInt<uint8_t>(String);
 }
 
-AN_FORCEINLINE void SetAttributeFromString(bool& Attribute, AString const& String)
+HK_FORCEINLINE void SetAttributeFromString(bool& Attribute, AString const& String)
 {
     Attribute = !!Math::ToInt<uint8_t>(String);
 }
 
-AN_FORCEINLINE void SetAttributeFromString(int32_t& Attribute, AString const& String)
+HK_FORCEINLINE void SetAttributeFromString(int32_t& Attribute, AString const& String)
 {
     Attribute = Math::ToInt<int32_t>(String);
 }
 
-AN_FORCEINLINE void SetAttributeFromString(float& Attribute, AString const& String)
+HK_FORCEINLINE void SetAttributeFromString(float& Attribute, AString const& String)
 {
     uint32_t i = Math::ToInt<uint32_t>(String);
     Attribute  = *(float*)&i;
 }
 
-AN_FORCEINLINE void SetAttributeFromString(Float2& Attribute, AString const& String)
+HK_FORCEINLINE void SetAttributeFromString(Float2& Attribute, AString const& String)
 {
     uint32_t tmp[2];
     sscanf(String.CStr(), "%d %d", &tmp[0], &tmp[1]);
@@ -270,7 +270,7 @@ AN_FORCEINLINE void SetAttributeFromString(Float2& Attribute, AString const& Str
     }
 }
 
-AN_FORCEINLINE void SetAttributeFromString(Float3& Attribute, AString const& String)
+HK_FORCEINLINE void SetAttributeFromString(Float3& Attribute, AString const& String)
 {
     uint32_t tmp[3];
     sscanf(String.CStr(), "%d %d %d", &tmp[0], &tmp[1], &tmp[2]);
@@ -280,7 +280,7 @@ AN_FORCEINLINE void SetAttributeFromString(Float3& Attribute, AString const& Str
     }
 }
 
-AN_FORCEINLINE void SetAttributeFromString(Float4& Attribute, AString const& String)
+HK_FORCEINLINE void SetAttributeFromString(Float4& Attribute, AString const& String)
 {
     uint32_t tmp[4];
     sscanf(String.CStr(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3]);
@@ -290,7 +290,7 @@ AN_FORCEINLINE void SetAttributeFromString(Float4& Attribute, AString const& Str
     }
 }
 
-AN_FORCEINLINE void SetAttributeFromString(Quat& Attribute, AString const& String)
+HK_FORCEINLINE void SetAttributeFromString(Quat& Attribute, AString const& String)
 {
     uint32_t tmp[4];
     sscanf(String.CStr(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3]);
@@ -300,7 +300,7 @@ AN_FORCEINLINE void SetAttributeFromString(Quat& Attribute, AString const& Strin
     }
 }
 
-AN_FORCEINLINE void SetAttributeFromString(AString& Attribute, AString const& String)
+HK_FORCEINLINE void SetAttributeFromString(AString& Attribute, AString const& String)
 {
     Attribute = String;
 }
@@ -309,48 +309,48 @@ AN_FORCEINLINE void SetAttributeFromString(AString& Attribute, AString const& St
 template <typename AttributeType>
 void SetAttributeToString(AttributeType const& Attribute, AString& String);
 
-AN_FORCEINLINE void SetAttributeToString(uint8_t const& Attribute, AString& String)
+HK_FORCEINLINE void SetAttributeToString(uint8_t const& Attribute, AString& String)
 {
     String = Math::ToString(Attribute);
 }
 
-AN_FORCEINLINE void SetAttributeToString(bool const& Attribute, AString& String)
+HK_FORCEINLINE void SetAttributeToString(bool const& Attribute, AString& String)
 {
     String = Math::ToString(Attribute);
 }
 
-AN_FORCEINLINE void SetAttributeToString(int32_t const& Attribute, AString& String)
+HK_FORCEINLINE void SetAttributeToString(int32_t const& Attribute, AString& String)
 {
     String = Math::ToString(Attribute);
 }
 
-AN_FORCEINLINE void SetAttributeToString(float const& Attribute, AString& String)
+HK_FORCEINLINE void SetAttributeToString(float const& Attribute, AString& String)
 {
     String = Math::ToString(*((uint32_t*)&Attribute));
 }
 
-AN_FORCEINLINE void SetAttributeToString(Float2 const& Attribute, AString& String)
+HK_FORCEINLINE void SetAttributeToString(Float2 const& Attribute, AString& String)
 {
     String = Math::ToString(*((uint32_t*)&Attribute.X)) + " " + Math::ToString(*((uint32_t*)&Attribute.Y));
     ;
 }
 
-AN_FORCEINLINE void SetAttributeToString(Float3 const& Attribute, AString& String)
+HK_FORCEINLINE void SetAttributeToString(Float3 const& Attribute, AString& String)
 {
     String = Math::ToString(*((uint32_t*)&Attribute.X)) + " " + Math::ToString(*((uint32_t*)&Attribute.Y)) + " " + Math::ToString(*((uint32_t*)&Attribute.Z));
 }
 
-AN_FORCEINLINE void SetAttributeToString(Float4 const& Attribute, AString& String)
+HK_FORCEINLINE void SetAttributeToString(Float4 const& Attribute, AString& String)
 {
     String = Math::ToString(*((uint32_t*)&Attribute.X)) + " " + Math::ToString(*((uint32_t*)&Attribute.Y)) + " " + Math::ToString(*((uint32_t*)&Attribute.Z)) + " " + Math::ToString(*((uint32_t*)&Attribute.W));
 }
 
-AN_FORCEINLINE void SetAttributeToString(Quat const& Attribute, AString& String)
+HK_FORCEINLINE void SetAttributeToString(Quat const& Attribute, AString& String)
 {
     String = Math::ToString(*((uint32_t*)&Attribute.X)) + " " + Math::ToString(*((uint32_t*)&Attribute.Y)) + " " + Math::ToString(*((uint32_t*)&Attribute.Z)) + " " + Math::ToString(*((uint32_t*)&Attribute.W));
 }
 
-AN_FORCEINLINE void SetAttributeToString(AString const& Attribute, AString& String)
+HK_FORCEINLINE void SetAttributeToString(AString const& Attribute, AString& String)
 {
     String = Attribute;
 }
@@ -358,7 +358,7 @@ AN_FORCEINLINE void SetAttributeToString(AString const& Attribute, AString& Stri
 template <typename ObjectType, typename AttributeType>
 class TAttributeMeta : public AAttributeMeta
 {
-    AN_FORBID_COPY(TAttributeMeta)
+    HK_FORBID_COPY(TAttributeMeta)
 
 public:
     template <typename AttributeSetterType, typename AttributeGetterType>
@@ -405,7 +405,7 @@ public:
     }
 };
 
-#define _AN_GENERATED_CLASS_BODY()                    \
+#define _HK_GENERATED_CLASS_BODY()                    \
 public:                                               \
     static ThisClassMeta const& ClassMeta()           \
     {                                                 \
@@ -480,14 +480,14 @@ template <typename T, typename... TArgs> T* CreateInstanceOf(TArgs&&... _Args)
     return new T(std::forward<TArgs>(_Args)...);
 }
 
-#define AN_CLASS(_Class, _SuperClass) \
-    AN_FACTORY_CLASS(AClassMeta::DummyFactory(), _Class, _SuperClass)
+#define HK_CLASS(_Class, _SuperClass) \
+    HK_FACTORY_CLASS(AClassMeta::DummyFactory(), _Class, _SuperClass)
 
-#define AN_FACTORY_CLASS(_Factory, _Class, _SuperClass) \
-    AN_FACTORY_CLASS_A(_Factory, _Class, _SuperClass, ADummy::Allocator)
+#define HK_FACTORY_CLASS(_Factory, _Class, _SuperClass) \
+    HK_FACTORY_CLASS_A(_Factory, _Class, _SuperClass, ADummy::Allocator)
 
-#define AN_FACTORY_CLASS_A(_Factory, _Class, _SuperClass, _Allocator)                     \
-    AN_FORBID_COPY(_Class)                                                                \
+#define HK_FACTORY_CLASS_A(_Factory, _Class, _SuperClass, _Allocator)                     \
+    HK_FORBID_COPY(_Class)                                                                \
     friend class ADummy;                                                                  \
                                                                                           \
 public:                                                                                   \
@@ -497,7 +497,7 @@ public:                                                                         
     class ThisClassMeta : public AClassMeta                                               \
     {                                                                                     \
     public:                                                                               \
-        ThisClassMeta() : AClassMeta(_Factory, AN_STRINGIFY(_Class), &Super::ClassMeta()) \
+        ThisClassMeta() : AClassMeta(_Factory, HK_STRINGIFY(_Class), &Super::ClassMeta()) \
         {                                                                                 \
             RegisterAttributes();                                                         \
         }                                                                                 \
@@ -509,27 +509,27 @@ public:                                                                         
     private:                                                                              \
         void RegisterAttributes();                                                        \
     };                                                                                    \
-    _AN_GENERATED_CLASS_BODY()                                                            \
+    _HK_GENERATED_CLASS_BODY()                                                            \
 private:
 
 
 
-#define AN_BEGIN_CLASS_META(_Class)                               \
+#define HK_BEGIN_CLASS_META(_Class)                               \
     AClassMeta const& _Class##__Meta = _Class::ClassMeta();       \
     void              _Class::ThisClassMeta::RegisterAttributes() \
     {
 
-#define AN_END_CLASS_META() \
+#define HK_END_CLASS_META() \
     }
 
-#define AN_CLASS_META(_Class) AN_BEGIN_CLASS_META(_Class) \
-AN_END_CLASS_META()
+#define HK_CLASS_META(_Class) HK_BEGIN_CLASS_META(_Class) \
+HK_END_CLASS_META()
 
-#define AN_ATTRIBUTE(_Name, _Type, _Setter, _Getter, _Flags) \
-    static TAttributeMeta<ThisClass, _Type> const _Name##Meta(*this, AN_STRINGIFY(_Name), &ThisClass::_Setter, &ThisClass::_Getter, _Flags);
+#define HK_ATTRIBUTE(_Name, _Type, _Setter, _Getter, _Flags) \
+    static TAttributeMeta<ThisClass, _Type> const _Name##Meta(*this, HK_STRINGIFY(_Name), &ThisClass::_Setter, &ThisClass::_Getter, _Flags);
 
-#define AN_ATTRIBUTE_(_Name, _Flags) \
-    static TAttributeMeta<ThisClass, decltype(((ThisClass*)0)->_Name)> const _Name##Meta(*this, AN_STRINGIFY(_Name), (&((ThisClass*)0)->_Name), _Flags);
+#define HK_ATTRIBUTE_(_Name, _Flags) \
+    static TAttributeMeta<ThisClass, decltype(((ThisClass*)0)->_Name)> const _Name##Meta(*this, HK_STRINGIFY(_Name), (&((ThisClass*)0)->_Name), _Flags);
 
 /* Attribute flags */
 #define AF_DEFAULT          0
@@ -546,7 +546,7 @@ Needs to resolve class meta data.
 */
 class ADummy
 {
-    AN_FORBID_COPY(ADummy)
+    HK_FORBID_COPY(ADummy)
 
 public:
     typedef ADummy         ThisClass;
@@ -571,7 +571,7 @@ public:
     ADummy() {}
     virtual ~ADummy() {}
 
-    _AN_GENERATED_CLASS_BODY()
+    _HK_GENERATED_CLASS_BODY()
 
 private:
     //struct SFactoryImplKey;

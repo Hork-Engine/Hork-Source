@@ -49,10 +49,10 @@ SOFTWARE.
 #include "LUT.h"
 
 #include "GL/glew.h"
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 #    include "GL/wglew.h"
 #endif
-#ifdef AN_OS_LINUX
+#ifdef HK_OS_LINUX
 #    include "GL/glxew.h"
 #endif
 
@@ -255,10 +255,10 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
     FeatureSupport[FEATURE_SPARSE_TEXTURES]    = FindExtension("GL_ARB_sparse_texture"); // && FindExtension( "GL_ARB_sparse_texture2" );
     FeatureSupport[FEATURE_BINDLESS_TEXTURE]   = FindExtension("GL_ARB_bindless_texture");
 
-#if defined(AN_OS_WIN32)
+#if defined(HK_OS_WIN32)
     FeatureSupport[FEATURE_SWAP_CONTROL]      = !!WGLEW_EXT_swap_control;
     FeatureSupport[FEATURE_SWAP_CONTROL_TEAR] = !!WGLEW_EXT_swap_control_tear;
-#elif defined(AN_OS_LINUX)
+#elif defined(HK_OS_LINUX)
     FeatureSupport[FEATURE_SWAP_CONTROL]      = !!GLXEW_EXT_swap_control || !!GLXEW_MESA_swap_control || !!GLXEW_SGI_swap_control;
     FeatureSupport[FEATURE_SWAP_CONTROL_TEAR] = !!GLXEW_EXT_swap_control_tear;
 #else
@@ -608,7 +608,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
 
     for (SVertexBindingInfo const* binding = desc.VertexBindings; binding < &desc.VertexBindings[desc.NumVertexBindings]; binding++)
     {
-        AN_ASSERT(binding->InputSlot < MAX_VERTEX_BUFFER_SLOTS);
+        HK_ASSERT(binding->InputSlot < MAX_VERTEX_BUFFER_SLOTS);
 
         if (binding->InputSlot >= GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_BUFFER_SLOTS))
         {
@@ -798,7 +798,7 @@ bool ADeviceGLImpl::EnumerateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEX
     GLenum target         = SparseTextureTargetLUT[Type].Target;
     GLenum internalFormat = InternalFormatLUT[Format].InternalFormat;
 
-    AN_ASSERT(NumPageSizes != nullptr);
+    HK_ASSERT(NumPageSizes != nullptr);
 
     *NumPageSizes = 0;
 
@@ -830,7 +830,7 @@ bool ADeviceGLImpl::EnumerateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEX
 
 bool ADeviceGLImpl::ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int* PageSizeIndex, int* PageSizeX, int* PageSizeY, int* PageSizeZ)
 {
-    AN_ASSERT(PageSizeIndex != nullptr);
+    HK_ASSERT(PageSizeIndex != nullptr);
 
     *PageSizeIndex = -1;
 
@@ -919,7 +919,7 @@ bool ADeviceGLImpl::ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE T
             break;
         }
         default:
-            AN_ASSERT(0);
+            HK_ASSERT(0);
     }
 
     return *PageSizeIndex != -1;
@@ -1088,7 +1088,7 @@ AWindowPoolGL::SWindowGL AWindowPoolGL::NewWindow()
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_FLAGS,
                         SDL_GL_CONTEXT_FORWARD_COMPATIBLE_FLAG
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
                             | SDL_GL_CONTEXT_DEBUG_FLAG
 #endif
     );
@@ -1147,7 +1147,7 @@ AWindowPoolGL::SWindowGL AWindowPoolGL::NewWindow()
     // To fix this it's advised to simply call glGetError after glewInit to clear the flag.
     (void)glGetError();
 
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
     GLint contextFlags;
     glGetIntegerv(GL_CONTEXT_FLAGS, &contextFlags);
     if (contextFlags & GL_CONTEXT_FLAG_DEBUG_BIT)

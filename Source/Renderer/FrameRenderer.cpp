@@ -78,7 +78,7 @@ AFrameRenderer::AFrameRenderer()
     motionBlurSamplers[1] = nearestSampler;
     motionBlurSamplers[2] = nearestSampler;
 
-    resourceLayout.NumSamplers = AN_ARRAY_SIZE(motionBlurSamplers);
+    resourceLayout.NumSamplers = HK_ARRAY_SIZE(motionBlurSamplers);
     resourceLayout.Samplers    = motionBlurSamplers;
 
     CreateFullscreenQuadPipeline(&MotionBlurPipeline, "postprocess/motionblur.vert", "postprocess/motionblur.frag", &resourceLayout);
@@ -92,7 +92,7 @@ AFrameRenderer::AFrameRenderer()
     outlineApplySamplers[0] = linearSampler;
     outlineApplySamplers[1] = linearSampler;
 
-    resourceLayout.NumSamplers = AN_ARRAY_SIZE(outlineApplySamplers);
+    resourceLayout.NumSamplers = HK_ARRAY_SIZE(outlineApplySamplers);
     resourceLayout.Samplers    = outlineApplySamplers;
 
     //CreateFullscreenQuadPipeline( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_COLOR_ADD );
@@ -196,7 +196,7 @@ static bool BindMaterialOutlinePass(IImmediateContext* immediateCtx, SRenderInst
 {
     AMaterialGPU* pMaterial = instance->Material;
 
-    AN_ASSERT(pMaterial);
+    HK_ASSERT(pMaterial);
 
     int bSkinned = instance->SkeletonSize > 0;
 

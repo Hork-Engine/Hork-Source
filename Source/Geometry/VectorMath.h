@@ -125,7 +125,7 @@ constexpr TVector3<T> Reflect(TVector3<T> const& incidentVector, TVector3<T> con
 }
 
 template <typename T, typename = TStdEnableIf<IsReal<T>()>>
-AN_FORCEINLINE TVector2<T> Refract(TVector2<T> const& incidentVector, TVector2<T> const& normal, T const eta)
+HK_FORCEINLINE TVector2<T> Refract(TVector2<T> const& incidentVector, TVector2<T> const& normal, T const eta)
 {
     const T NdotI = Dot(normal, incidentVector);
     const T k     = T(1) - eta * eta * (T(1) - NdotI * NdotI);
@@ -137,7 +137,7 @@ AN_FORCEINLINE TVector2<T> Refract(TVector2<T> const& incidentVector, TVector2<T
 }
 
 template <typename T, typename = TStdEnableIf<IsReal<T>()>>
-AN_FORCEINLINE TVector3<T> Refract(TVector3<T> const& incidentVector, TVector3<T> const& normal, const T eta)
+HK_FORCEINLINE TVector3<T> Refract(TVector3<T> const& incidentVector, TVector3<T> const& normal, const T eta)
 {
     const T NdotI = Dot(normal, incidentVector);
     const T k     = T(1) - eta * eta * (T(1) - NdotI * NdotI);
@@ -215,7 +215,7 @@ constexpr TVector2<T> Step(TVector2<T> const& vec, TVector2<T> const& edge)
 }
 
 template <typename T>
-AN_FORCEINLINE TVector2<T> SmoothStep(TVector2<T> const& vec, T edge0, T edge1)
+HK_FORCEINLINE TVector2<T> SmoothStep(TVector2<T> const& vec, T edge0, T edge1)
 {
     const T           denom = T(1) / (edge1 - edge0);
     const TVector2<T> t     = Saturate((vec - edge0) * denom);
@@ -223,7 +223,7 @@ AN_FORCEINLINE TVector2<T> SmoothStep(TVector2<T> const& vec, T edge0, T edge1)
 }
 
 template <typename T>
-AN_FORCEINLINE TVector2<T> SmoothStep(TVector2<T> const& vec, TVector2<T> const& edge0, TVector2<T> const& edge1)
+HK_FORCEINLINE TVector2<T> SmoothStep(TVector2<T> const& vec, TVector2<T> const& edge0, TVector2<T> const& edge1)
 {
     const TVector2<T> t = Saturate((vec - edge0) / (edge1 - edge0));
     return t * t * (T(-2) * t + T(3));
@@ -242,7 +242,7 @@ constexpr TVector3<T> Step(TVector3<T> const& vec, TVector3<T> const& edge)
 }
 
 template <typename T>
-AN_FORCEINLINE TVector3<T> SmoothStep(TVector3<T> const& vec, T edge0, T edge1)
+HK_FORCEINLINE TVector3<T> SmoothStep(TVector3<T> const& vec, T edge0, T edge1)
 {
     const T           denom = T(1) / (edge1 - edge0);
     const TVector3<T> t     = Saturate((vec - edge0) * denom);
@@ -250,7 +250,7 @@ AN_FORCEINLINE TVector3<T> SmoothStep(TVector3<T> const& vec, T edge0, T edge1)
 }
 
 template <typename T>
-AN_FORCEINLINE TVector3<T> SmoothStep(TVector3<T> const& vec, TVector3<T> const& edge0, TVector3<T> const& edge1)
+HK_FORCEINLINE TVector3<T> SmoothStep(TVector3<T> const& vec, TVector3<T> const& edge0, TVector3<T> const& edge1)
 {
     const TVector3<T> t = Saturate((vec - edge0) / (edge1 - edge0));
     return t * t * (T(-2) * t + T(3));
@@ -269,7 +269,7 @@ constexpr TVector4<T> Step(TVector4<T> const& vec, TVector4<T> const& edge)
 }
 
 template <typename T>
-AN_FORCEINLINE TVector4<T> SmoothStep(TVector4<T> const& vec, T edge0, T edge1)
+HK_FORCEINLINE TVector4<T> SmoothStep(TVector4<T> const& vec, T edge0, T edge1)
 {
     const T           denom = T(1) / (edge1 - edge0);
     const TVector4<T> t     = Saturate((vec - edge0) * denom);
@@ -277,7 +277,7 @@ AN_FORCEINLINE TVector4<T> SmoothStep(TVector4<T> const& vec, T edge0, T edge1)
 }
 
 template <typename T>
-AN_FORCEINLINE TVector4<T> SmoothStep(TVector4<T> const& vec, TVector4<T> const& edge0, TVector4<T> const& edge1)
+HK_FORCEINLINE TVector4<T> SmoothStep(TVector4<T> const& vec, TVector4<T> const& edge0, TVector4<T> const& edge1)
 {
     const TVector4<T> t = Saturate((vec - edge0) / (edge1 - edge0));
     return t * t * (T(-2) * t + T(3));
@@ -384,13 +384,13 @@ struct TVector2
 
     T& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
     T const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
@@ -640,7 +640,7 @@ struct TVector2
 
     TVector2 Snap(T snapVal) const
     {
-        AN_ASSERT_(snapVal > 0, "Snap");
+        HK_ASSERT_(snapVal > 0, "Snap");
         TVector2<T> snapVector;
         snapVector   = *this / snapVal;
         snapVector.X = Math::Round(snapVector.X) * snapVal;
@@ -770,13 +770,13 @@ struct TVector3
 
     T& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
     T const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
@@ -1188,7 +1188,7 @@ struct TVector3
 
     TVector3 Snap(T snapVal) const
     {
-        AN_ASSERT_(snapVal > 0, "Snap");
+        HK_ASSERT_(snapVal > 0, "Snap");
         TVector3<T> snapVector;
         snapVector   = *this / snapVal;
         snapVector.X = Math::Round(snapVector.X) * snapVal;
@@ -1404,13 +1404,13 @@ struct TVector4
 
     T& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
     T const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
@@ -1737,7 +1737,7 @@ struct TVector4
 
     TVector4 Snap(T snapVal) const
     {
-        AN_ASSERT_(snapVal > 0, "Snap");
+        HK_ASSERT_(snapVal > 0, "Snap");
         TVector4<T> snapVector;
         snapVector   = *this / snapVal;
         snapVector.X = Math::Round(snapVector.X) * snapVal;
@@ -1865,7 +1865,7 @@ struct TVector4
 namespace Math
 {
 
-AN_FORCEINLINE TVector2<float> Min(TVector2<float> const& a, TVector2<float> const& b)
+HK_FORCEINLINE TVector2<float> Min(TVector2<float> const& a, TVector2<float> const& b)
 {
     alignas(16) float result[4];
 
@@ -1874,7 +1874,7 @@ AN_FORCEINLINE TVector2<float> Min(TVector2<float> const& a, TVector2<float> con
     return TVector2<float>(result[0], result[1]);
 }
 
-AN_FORCEINLINE TVector3<float> Min(TVector3<float> const& a, TVector3<float> const& b)
+HK_FORCEINLINE TVector3<float> Min(TVector3<float> const& a, TVector3<float> const& b)
 {
     alignas(16) float result[4];
 
@@ -1883,7 +1883,7 @@ AN_FORCEINLINE TVector3<float> Min(TVector3<float> const& a, TVector3<float> con
     return TVector3<float>(result[0], result[1], result[2]);
 }
 
-AN_FORCEINLINE TVector4<float> Min(TVector4<float> const& a, TVector4<float> const& b)
+HK_FORCEINLINE TVector4<float> Min(TVector4<float> const& a, TVector4<float> const& b)
 {
     alignas(16) float result[4];
 
@@ -1892,7 +1892,7 @@ AN_FORCEINLINE TVector4<float> Min(TVector4<float> const& a, TVector4<float> con
     return TVector4<float>(result[0], result[1], result[2], result[3]);
 }
 
-AN_FORCEINLINE TVector2<float> Max(TVector2<float> const& a, TVector2<float> const& b)
+HK_FORCEINLINE TVector2<float> Max(TVector2<float> const& a, TVector2<float> const& b)
 {
     alignas(16) float result[4];
 
@@ -1901,7 +1901,7 @@ AN_FORCEINLINE TVector2<float> Max(TVector2<float> const& a, TVector2<float> con
     return TVector2<float>(result[0], result[1]);
 }
 
-AN_FORCEINLINE TVector3<float> Max(TVector3<float> const& a, TVector3<float> const& b)
+HK_FORCEINLINE TVector3<float> Max(TVector3<float> const& a, TVector3<float> const& b)
 {
     alignas(16) float result[4];
 
@@ -1910,7 +1910,7 @@ AN_FORCEINLINE TVector3<float> Max(TVector3<float> const& a, TVector3<float> con
     return TVector3<float>(result[0], result[1], result[2]);
 }
 
-AN_FORCEINLINE TVector4<float> Max(TVector4<float> const& a, TVector4<float> const& b)
+HK_FORCEINLINE TVector4<float> Max(TVector4<float> const& a, TVector4<float> const& b)
 {
     alignas(16) float result[4];
 
@@ -1919,7 +1919,7 @@ AN_FORCEINLINE TVector4<float> Max(TVector4<float> const& a, TVector4<float> con
     return TVector4<float>(result[0], result[1], result[2], result[3]);
 }
 
-AN_FORCEINLINE TVector2<float> Clamp(TVector2<float> const& val, TVector2<float> const& minval, TVector2<float> const& maxval)
+HK_FORCEINLINE TVector2<float> Clamp(TVector2<float> const& val, TVector2<float> const& minval, TVector2<float> const& maxval)
 {
     alignas(16) float result[4];
 
@@ -1928,7 +1928,7 @@ AN_FORCEINLINE TVector2<float> Clamp(TVector2<float> const& val, TVector2<float>
     return TVector2<float>(result[0], result[1]);
 }
 
-AN_FORCEINLINE TVector3<float> Clamp(TVector3<float> const& val, TVector3<float> const& minval, TVector3<float> const& maxval)
+HK_FORCEINLINE TVector3<float> Clamp(TVector3<float> const& val, TVector3<float> const& minval, TVector3<float> const& maxval)
 {
     alignas(16) float result[4];
 
@@ -1937,7 +1937,7 @@ AN_FORCEINLINE TVector3<float> Clamp(TVector3<float> const& val, TVector3<float>
     return TVector3<float>(result[0], result[1], result[2]);
 }
 
-AN_FORCEINLINE TVector4<float> Clamp(TVector4<float> const& val, TVector4<float> const& minval, TVector4<float> const& maxval)
+HK_FORCEINLINE TVector4<float> Clamp(TVector4<float> const& val, TVector4<float> const& minval, TVector4<float> const& maxval)
 {
     alignas(16) float result[4];
 
@@ -1946,7 +1946,7 @@ AN_FORCEINLINE TVector4<float> Clamp(TVector4<float> const& val, TVector4<float>
     return TVector4<float>(result[0], result[1], result[2], result[3]);
 }
 
-AN_FORCEINLINE TVector2<float> Saturate(TVector2<float> const& val)
+HK_FORCEINLINE TVector2<float> Saturate(TVector2<float> const& val)
 {
     alignas(16) float result[4];
 
@@ -1955,7 +1955,7 @@ AN_FORCEINLINE TVector2<float> Saturate(TVector2<float> const& val)
     return TVector2<float>(result[0], result[1]);
 }
 
-AN_FORCEINLINE TVector3<float> Saturate(TVector3<float> const& val)
+HK_FORCEINLINE TVector3<float> Saturate(TVector3<float> const& val)
 {
     alignas(16) float result[4];
 
@@ -1964,7 +1964,7 @@ AN_FORCEINLINE TVector3<float> Saturate(TVector3<float> const& val)
     return TVector3<float>(result[0], result[1], result[2]);
 }
 
-AN_FORCEINLINE TVector4<float> Saturate(TVector4<float> const& val)
+HK_FORCEINLINE TVector4<float> Saturate(TVector4<float> const& val)
 {
     alignas(16) float result[4];
 
@@ -1973,7 +1973,7 @@ AN_FORCEINLINE TVector4<float> Saturate(TVector4<float> const& val)
     return TVector4<float>(result[0], result[1], result[2], result[3]);
 }
 
-AN_FORCEINLINE TVector2<double> Min(TVector2<double> const& a, TVector2<double> const& b)
+HK_FORCEINLINE TVector2<double> Min(TVector2<double> const& a, TVector2<double> const& b)
 {
     alignas(16) double result[2];
 
@@ -1982,7 +1982,7 @@ AN_FORCEINLINE TVector2<double> Min(TVector2<double> const& a, TVector2<double> 
     return TVector2<double>(result[0], result[1]);
 }
 
-AN_FORCEINLINE TVector3<double> Min(TVector3<double> const& a, TVector3<double> const& b)
+HK_FORCEINLINE TVector3<double> Min(TVector3<double> const& a, TVector3<double> const& b)
 {
     alignas(16) double result[2];
     double             z;
@@ -1993,7 +1993,7 @@ AN_FORCEINLINE TVector3<double> Min(TVector3<double> const& a, TVector3<double> 
     return TVector3<double>(result[0], result[1], z);
 }
 
-AN_FORCEINLINE TVector4<double> Min(TVector4<double> const& a, TVector4<double> const& b)
+HK_FORCEINLINE TVector4<double> Min(TVector4<double> const& a, TVector4<double> const& b)
 {
     alignas(16) double result1[2];
     alignas(16) double result2[2];
@@ -2004,7 +2004,7 @@ AN_FORCEINLINE TVector4<double> Min(TVector4<double> const& a, TVector4<double> 
     return TVector4<double>(result1[0], result1[1], result2[0], result2[1]);
 }
 
-AN_FORCEINLINE TVector2<double> Max(TVector2<double> const& a, TVector2<double> const& b)
+HK_FORCEINLINE TVector2<double> Max(TVector2<double> const& a, TVector2<double> const& b)
 {
     alignas(16) double result[2];
 
@@ -2013,7 +2013,7 @@ AN_FORCEINLINE TVector2<double> Max(TVector2<double> const& a, TVector2<double> 
     return TVector2<double>(result[0], result[1]);
 }
 
-AN_FORCEINLINE TVector3<double> Max(TVector3<double> const& a, TVector3<double> const& b)
+HK_FORCEINLINE TVector3<double> Max(TVector3<double> const& a, TVector3<double> const& b)
 {
     alignas(16) double result[2];
     double             z;
@@ -2024,7 +2024,7 @@ AN_FORCEINLINE TVector3<double> Max(TVector3<double> const& a, TVector3<double> 
     return TVector3<double>(result[0], result[1], z);
 }
 
-AN_FORCEINLINE TVector4<double> Max(TVector4<double> const& a, TVector4<double> const& b)
+HK_FORCEINLINE TVector4<double> Max(TVector4<double> const& a, TVector4<double> const& b)
 {
     alignas(16) double result1[2];
     alignas(16) double result2[2];
@@ -2035,7 +2035,7 @@ AN_FORCEINLINE TVector4<double> Max(TVector4<double> const& a, TVector4<double> 
     return TVector4<double>(result1[0], result1[1], result2[0], result2[1]);
 }
 
-AN_FORCEINLINE TVector2<double> Clamp(TVector2<double> const& val, TVector2<double> const& minval, TVector2<double> const& maxval)
+HK_FORCEINLINE TVector2<double> Clamp(TVector2<double> const& val, TVector2<double> const& minval, TVector2<double> const& maxval)
 {
     alignas(16) double result[2];
 
@@ -2044,7 +2044,7 @@ AN_FORCEINLINE TVector2<double> Clamp(TVector2<double> const& val, TVector2<doub
     return TVector2<double>(result[0], result[1]);
 }
 
-AN_FORCEINLINE TVector3<double> Clamp(TVector3<double> const& val, TVector3<double> const& minval, TVector3<double> const& maxval)
+HK_FORCEINLINE TVector3<double> Clamp(TVector3<double> const& val, TVector3<double> const& minval, TVector3<double> const& maxval)
 {
     alignas(16) double result[2];
     double             z;
@@ -2055,7 +2055,7 @@ AN_FORCEINLINE TVector3<double> Clamp(TVector3<double> const& val, TVector3<doub
     return TVector3<double>(result[0], result[1], z);
 }
 
-AN_FORCEINLINE TVector4<double> Clamp(TVector4<double> const& val, TVector4<double> const& minval, TVector4<double> const& maxval)
+HK_FORCEINLINE TVector4<double> Clamp(TVector4<double> const& val, TVector4<double> const& minval, TVector4<double> const& maxval)
 {
     alignas(16) double result1[2];
     alignas(16) double result2[2];
@@ -2066,7 +2066,7 @@ AN_FORCEINLINE TVector4<double> Clamp(TVector4<double> const& val, TVector4<doub
     return TVector4<double>(result1[0], result1[1], result2[0], result2[1]);
 }
 
-AN_FORCEINLINE TVector2<double> Saturate(TVector2<double> const& val)
+HK_FORCEINLINE TVector2<double> Saturate(TVector2<double> const& val)
 {
     alignas(16) double result[2];
 
@@ -2075,7 +2075,7 @@ AN_FORCEINLINE TVector2<double> Saturate(TVector2<double> const& val)
     return TVector2<double>(result[0], result[1]);
 }
 
-AN_FORCEINLINE TVector3<double> Saturate(TVector3<double> const& val)
+HK_FORCEINLINE TVector3<double> Saturate(TVector3<double> const& val)
 {
     alignas(16) double result[2];
     double             z;
@@ -2086,7 +2086,7 @@ AN_FORCEINLINE TVector3<double> Saturate(TVector3<double> const& val)
     return TVector3<double>(result[0], result[1], z);
 }
 
-AN_FORCEINLINE TVector4<double> Saturate(TVector4<double> const& val)
+HK_FORCEINLINE TVector4<double> Saturate(TVector4<double> const& val)
 {
     alignas(16) double result1[2];
     alignas(16) double result2[2];
@@ -2144,19 +2144,19 @@ struct Float2x2
 
     Float2& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float2 const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float2 GetRow(int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return Float2(Col0[index], Col1[index]);
     }
 
@@ -2390,19 +2390,19 @@ struct Float3x3
 
     Float3& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float3 const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float3 GetRow(int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return Float3(Col0[index], Col1[index], Col2[index]);
     }
 
@@ -2677,7 +2677,7 @@ struct Float3x3
         return *this;
     }
 
-    AN_FORCEINLINE Float3x3 ViewInverseFast() const
+    HK_FORCEINLINE Float3x3 ViewInverseFast() const
     {
         return Transposed();
     }
@@ -2752,19 +2752,19 @@ struct Float4x4
 
     Float4& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float4 const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float4 GetRow(int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return Float4(Col0[index], Col1[index], Col2[index], Col3[index]);
     }
 
@@ -3260,7 +3260,7 @@ struct Float4x4
         return inversed;
     }
 
-    AN_FORCEINLINE Float4x4 PerspectiveProjectionInverseFast() const
+    HK_FORCEINLINE Float4x4 PerspectiveProjectionInverseFast() const
     {
         Float4x4 inversed;
 
@@ -3292,7 +3292,7 @@ struct Float4x4
         return inversed;
     }
 
-    AN_FORCEINLINE Float4x4 OrthoProjectionInverseFast() const
+    HK_FORCEINLINE Float4x4 OrthoProjectionInverseFast() const
     {
         // TODO: ...
         return Inversed();
@@ -3334,7 +3334,7 @@ struct Float4x4
         return IdentityMat;
     }
 
-    static AN_FORCEINLINE Float4x4 LookAt(Float3 const& eye, Float3 const& center, Float3 const& up)
+    static HK_FORCEINLINE Float4x4 LookAt(Float3 const& eye, Float3 const& center, Float3 const& up)
     {
         Float3 const f((center - eye).Normalized());
         Float3 const s(Math::Cross(up, f).Normalized());
@@ -3365,7 +3365,7 @@ struct Float4x4
     }
 
     // Conversion from standard projection matrix to clip control "upper-left & zero-to-one"
-    static AN_FORCEINLINE Float4x4 const& ClipControl_UpperLeft_ZeroToOne()
+    static HK_FORCEINLINE Float4x4 const& ClipControl_UpperLeft_ZeroToOne()
     {
         static constexpr float ClipTransform[] = {
             1, 0, 0, 0,
@@ -3380,7 +3380,7 @@ struct Float4x4
     }
 
     // Standard OpenGL ortho projection for 2D
-    static AN_FORCEINLINE Float4x4 Ortho2D(Float2 const& mins, Float2 const& maxs)
+    static HK_FORCEINLINE Float4x4 Ortho2D(Float2 const& mins, Float2 const& maxs)
     {
         const float InvX = 1.0f / (maxs.X - mins.X);
         const float InvY = 1.0f / (maxs.Y - mins.Y);
@@ -3393,13 +3393,13 @@ struct Float4x4
     }
 
     // OpenGL ortho projection for 2D with clip control "upper-left & zero-to-one"
-    static AN_FORCEINLINE Float4x4 Ortho2DCC(Float2 const& mins, Float2 const& maxs)
+    static HK_FORCEINLINE Float4x4 Ortho2DCC(Float2 const& mins, Float2 const& maxs)
     {
         return ClipControl_UpperLeft_ZeroToOne() * Ortho2D(mins, maxs);
     }
 
     // Standard OpenGL ortho projection
-    static AN_FORCEINLINE Float4x4 Ortho(Float2 const& mins, Float2 const& maxs, float znear, float zfar)
+    static HK_FORCEINLINE Float4x4 Ortho(Float2 const& mins, Float2 const& maxs, float znear, float zfar)
     {
         const float InvX = 1.0f / (maxs.X - mins.X);
         const float InvY = 1.0f / (maxs.Y - mins.Y);
@@ -3414,7 +3414,7 @@ struct Float4x4
     }
 
     // OpenGL ortho projection with clip control "upper-left & zero-to-one"
-    static AN_FORCEINLINE Float4x4 OrthoCC(Float2 const& mins, Float2 const& maxs, float znear, float zfar)
+    static HK_FORCEINLINE Float4x4 OrthoCC(Float2 const& mins, Float2 const& maxs, float znear, float zfar)
     {
         const float InvX = 1.0f / (maxs.X - mins.X);
         const float InvY = 1.0f / (maxs.Y - mins.Y);
@@ -3432,7 +3432,7 @@ struct Float4x4
     }
 
     // Reversed-depth OpenGL ortho projection
-    static AN_FORCEINLINE Float4x4 OrthoRev(Float2 const& mins, Float2 const& maxs, float znear, float zfar)
+    static HK_FORCEINLINE Float4x4 OrthoRev(Float2 const& mins, Float2 const& maxs, float znear, float zfar)
     {
         const float InvX = 1.0f / (maxs.X - mins.X);
         const float InvY = 1.0f / (maxs.Y - mins.Y);
@@ -3447,7 +3447,7 @@ struct Float4x4
     }
 
     // Reversed-depth with clip control "upper-left & zero-to-one" OpenGL ortho projection
-    static AN_FORCEINLINE Float4x4 OrthoRevCC(Float2 const& mins, Float2 const& maxs, float znear, float zfar)
+    static HK_FORCEINLINE Float4x4 OrthoRevCC(Float2 const& mins, Float2 const& maxs, float znear, float zfar)
     {
         // TODO: Optimize multiplication
 
@@ -3456,7 +3456,7 @@ struct Float4x4
     }
 
     // Standard OpenGL perspective projection
-    static AN_FORCEINLINE Float4x4 Perspective(float _FovXRad, float _Width, float _Height, float znear, float zfar)
+    static HK_FORCEINLINE Float4x4 Perspective(float _FovXRad, float _Width, float _Height, float znear, float zfar)
     {
         const float TanHalfFovX = tan(_FovXRad * 0.5f);
         const float HalfFovY    = (float)(atan2(_Height, _Width / TanHalfFovX));
@@ -3467,7 +3467,7 @@ struct Float4x4
                         0, 0, 2 * zfar * znear / (znear - zfar), 0);
     }
 
-    static AN_FORCEINLINE Float4x4 Perspective(float _FovXRad, float _FovYRad, float znear, float zfar)
+    static HK_FORCEINLINE Float4x4 Perspective(float _FovXRad, float _FovYRad, float znear, float zfar)
     {
         const float TanHalfFovX = tan(_FovXRad * 0.5f);
         const float TanHalfFovY = tan(_FovYRad * 0.5f);
@@ -3478,7 +3478,7 @@ struct Float4x4
     }
 
     // OpenGL perspective projection with clip control "upper-left & zero-to-one"
-    static AN_FORCEINLINE Float4x4 PerspectiveCC(float _FovXRad, float _Width, float _Height, float znear, float zfar)
+    static HK_FORCEINLINE Float4x4 PerspectiveCC(float _FovXRad, float _Width, float _Height, float znear, float zfar)
     {
         // TODO: Optimize multiplication
 
@@ -3486,7 +3486,7 @@ struct Float4x4
         return ClipControl_UpperLeft_ZeroToOne() * Perspective(_FovXRad, _Width, _Height, znear, zfar);
     }
 
-    static AN_FORCEINLINE Float4x4 PerspectiveCC(float _FovXRad, float _FovYRad, float znear, float zfar)
+    static HK_FORCEINLINE Float4x4 PerspectiveCC(float _FovXRad, float _FovYRad, float znear, float zfar)
     {
         // TODO: Optimize multiplication
 
@@ -3495,7 +3495,7 @@ struct Float4x4
     }
 
     // Reversed-depth OpenGL perspective projection
-    static AN_FORCEINLINE Float4x4 PerspectiveRev(float _FovXRad, float _Width, float _Height, float znear, float zfar)
+    static HK_FORCEINLINE Float4x4 PerspectiveRev(float _FovXRad, float _Width, float _Height, float znear, float zfar)
     {
         const float TanHalfFovX = tan(_FovXRad * 0.5f);
         const float HalfFovY    = (float)(atan2(_Height, _Width / TanHalfFovX));
@@ -3506,7 +3506,7 @@ struct Float4x4
                         0, 0, 2 * znear * zfar / (zfar - znear), 0);
     }
 
-    static AN_FORCEINLINE Float4x4 PerspectiveRev(float _FovXRad, float _FovYRad, float znear, float zfar)
+    static HK_FORCEINLINE Float4x4 PerspectiveRev(float _FovXRad, float _FovYRad, float znear, float zfar)
     {
         const float TanHalfFovX = tan(_FovXRad * 0.5f);
         const float TanHalfFovY = tan(_FovYRad * 0.5f);
@@ -3517,7 +3517,7 @@ struct Float4x4
     }
 
     // Reversed-depth with clip control "upper-left & zero-to-one" OpenGL perspective projection
-    static AN_FORCEINLINE Float4x4 PerspectiveRevCC(float _FovXRad, float _Width, float _Height, float znear, float zfar)
+    static HK_FORCEINLINE Float4x4 PerspectiveRevCC(float _FovXRad, float _Width, float _Height, float znear, float zfar)
     {
         const float TanHalfFovX = tan(_FovXRad * 0.5f);
         const float HalfFovY    = (float)(atan2(_Height, _Width / TanHalfFovX));
@@ -3528,7 +3528,7 @@ struct Float4x4
                         0, 0, znear * zfar / (zfar - znear), 0);
     }
 
-    static AN_FORCEINLINE Float4x4 PerspectiveRevCC_Y(float _FovYRad, float _Width, float _Height, float znear, float zfar)
+    static HK_FORCEINLINE Float4x4 PerspectiveRevCC_Y(float _FovYRad, float _Width, float _Height, float znear, float zfar)
     {
         const float TanHalfFovY = tan(_FovYRad * 0.5f);
         const float HalfFovX    = atan2(TanHalfFovY * _Width, _Height);
@@ -3539,7 +3539,7 @@ struct Float4x4
                         0, 0, znear * zfar / (zfar - znear), 0);
     }
 
-    static AN_FORCEINLINE Float4x4 PerspectiveRevCC(float _FovXRad, float _FovYRad, float znear, float zfar)
+    static HK_FORCEINLINE Float4x4 PerspectiveRevCC(float _FovXRad, float _FovYRad, float znear, float zfar)
     {
         const float TanHalfFovX = tan(_FovXRad * 0.5f);
         const float TanHalfFovY = tan(_FovYRad * 0.5f);
@@ -3549,7 +3549,7 @@ struct Float4x4
                         0, 0, znear * zfar / (zfar - znear), 0);
     }
 
-    static AN_INLINE void GetCubeFaceMatrices(Float4x4& _PositiveX,
+    static HK_INLINE void GetCubeFaceMatrices(Float4x4& _PositiveX,
                                               Float4x4& _NegativeX,
                                               Float4x4& _PositiveY,
                                               Float4x4& _NegativeY,
@@ -3564,7 +3564,7 @@ struct Float4x4
         _NegativeZ = Float4x4::RotationZ(Math::_PI);
     }
 
-    static AN_INLINE Float4x4 const* GetCubeFaceMatrices()
+    static HK_INLINE Float4x4 const* GetCubeFaceMatrices()
     {
         // TODO: Precompute this matrices
         static Float4x4 const CubeFaceMatrices[6] = {
@@ -3613,19 +3613,19 @@ struct Float3x4
 
     Float4& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float4 const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Col0)[index];
     }
 
     Float3 GetRow(int index) const
     {
-        AN_ASSERT_(index >= 0 && index < ElementType::NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < ElementType::NumComponents(), "Index out of range");
         return Float3(Col0[index], Col1[index], Col2[index]);
     }
 
@@ -4051,63 +4051,63 @@ struct Float3x4
 // Type conversion
 
 // Float3x3 to Float2x2
-AN_FORCEINLINE Float2x2::Float2x2(Float3x3 const& v) :
+HK_FORCEINLINE Float2x2::Float2x2(Float3x3 const& v) :
     Col0(v.Col0), Col1(v.Col1) {}
 
 // Float3x4 to Float2x2
-AN_FORCEINLINE Float2x2::Float2x2(Float3x4 const& v) :
+HK_FORCEINLINE Float2x2::Float2x2(Float3x4 const& v) :
     Col0(v.Col0), Col1(v.Col1) {}
 
 // Float4x4 to Float2x2
-AN_FORCEINLINE Float2x2::Float2x2(Float4x4 const& v) :
+HK_FORCEINLINE Float2x2::Float2x2(Float4x4 const& v) :
     Col0(v.Col0), Col1(v.Col1) {}
 
 // Float2x2 to Float3x3
-AN_FORCEINLINE Float3x3::Float3x3(Float2x2 const& v) :
+HK_FORCEINLINE Float3x3::Float3x3(Float2x2 const& v) :
     Col0(v.Col0), Col1(v.Col1), Col2(0, 0, 1) {}
 
 // Float3x4 to Float3x3
-AN_FORCEINLINE Float3x3::Float3x3(Float3x4 const& v) :
+HK_FORCEINLINE Float3x3::Float3x3(Float3x4 const& v) :
     Col0(v.Col0), Col1(v.Col1), Col2(v.Col2) {}
 
 // Float4x4 to Float3x3
-AN_FORCEINLINE Float3x3::Float3x3(Float4x4 const& v) :
+HK_FORCEINLINE Float3x3::Float3x3(Float4x4 const& v) :
     Col0(v.Col0), Col1(v.Col1), Col2(v.Col2) {}
 
 // Float2x2 to Float4x4
-AN_FORCEINLINE Float4x4::Float4x4(Float2x2 const& v) :
+HK_FORCEINLINE Float4x4::Float4x4(Float2x2 const& v) :
     Col0(v.Col0), Col1(v.Col1), Col2(0, 0, 1, 0), Col3(0, 0, 0, 1) {}
 
 // Float3x3 to Float4x4
-AN_FORCEINLINE Float4x4::Float4x4(Float3x3 const& v) :
+HK_FORCEINLINE Float4x4::Float4x4(Float3x3 const& v) :
     Col0(v.Col0), Col1(v.Col1), Col2(v.Col2), Col3(0, 0, 0, 1) {}
 
 // Float3x4 to Float4x4
-AN_FORCEINLINE Float4x4::Float4x4(Float3x4 const& v) :
+HK_FORCEINLINE Float4x4::Float4x4(Float3x4 const& v) :
     Col0(v.Col0), Col1(v.Col1), Col2(v.Col2), Col3(0, 0, 0, 1) {}
 
 // Float2x2 to Float3x4
-AN_FORCEINLINE Float3x4::Float3x4(Float2x2 const& v) :
+HK_FORCEINLINE Float3x4::Float3x4(Float2x2 const& v) :
     Col0(v.Col0), Col1(v.Col1), Col2(0.0f) {}
 
 // Float3x3 to Float3x4
-AN_FORCEINLINE Float3x4::Float3x4(Float3x3 const& v) :
+HK_FORCEINLINE Float3x4::Float3x4(Float3x3 const& v) :
     Col0(v.Col0), Col1(v.Col1), Col2(v.Col2) {}
 
 // Float4x4 to Float3x4
-AN_FORCEINLINE Float3x4::Float3x4(Float4x4 const& v) :
+HK_FORCEINLINE Float3x4::Float3x4(Float4x4 const& v) :
     Col0(v.Col0), Col1(v.Col1), Col2(v.Col2) {}
 
 
 template <typename T>
-AN_FORCEINLINE TVector2<T> operator*(TVector2<T> const& vec, Float2x2 const& matrix)
+HK_FORCEINLINE TVector2<T> operator*(TVector2<T> const& vec, Float2x2 const& matrix)
 {
     return TVector2<T>(matrix[0][0] * vec.X + matrix[0][1] * vec.Y,
                        matrix[1][0] * vec.X + matrix[1][1] * vec.Y);
 }
 
 template <typename T>
-AN_FORCEINLINE TVector3<T> operator*(TVector3<T> const& vec, Float3x3 const& matrix)
+HK_FORCEINLINE TVector3<T> operator*(TVector3<T> const& vec, Float3x3 const& matrix)
 {
     return TVector3<T>(matrix[0][0] * vec.X + matrix[0][1] * vec.Y + matrix[0][2] * vec.Z,
                        matrix[1][0] * vec.X + matrix[1][1] * vec.Y + matrix[1][2] * vec.Z,
@@ -4115,7 +4115,7 @@ AN_FORCEINLINE TVector3<T> operator*(TVector3<T> const& vec, Float3x3 const& mat
 }
 
 template <typename T>
-AN_FORCEINLINE TVector4<T> operator*(TVector4<T> const& vec, Float4x4 const& matrix)
+HK_FORCEINLINE TVector4<T> operator*(TVector4<T> const& vec, Float4x4 const& matrix)
 {
     return TVector4<T>(matrix[0][0] * vec.X + matrix[0][1] * vec.Y + matrix[0][2] * vec.Z + matrix[0][3] * vec.W,
                        matrix[1][0] * vec.X + matrix[1][1] * vec.Y + matrix[1][2] * vec.Z + matrix[1][3] * vec.W,
@@ -4123,7 +4123,7 @@ AN_FORCEINLINE TVector4<T> operator*(TVector4<T> const& vec, Float4x4 const& mat
                        matrix[3][0] * vec.X + matrix[3][1] * vec.Y + matrix[3][2] * vec.Z + matrix[3][3] * vec.W);
 }
 
-AN_FORCEINLINE Float4x4 Float4x4::operator*(Float3x4 const& matrix) const
+HK_FORCEINLINE Float4x4 Float4x4::operator*(Float3x4 const& matrix) const
 {
     Float4 const& SrcB0 = matrix.Col0;
     Float4 const& SrcB1 = matrix.Col1;
@@ -4135,7 +4135,7 @@ AN_FORCEINLINE Float4x4 Float4x4::operator*(Float3x4 const& matrix) const
                     Col0 * SrcB0[3] + Col1 * SrcB1[3] + Col2 * SrcB2[3] + Col3);
 }
 
-AN_FORCEINLINE Float4x4& Float4x4::operator*=(Float3x4 const& matrix)
+HK_FORCEINLINE Float4x4& Float4x4::operator*=(Float3x4 const& matrix)
 {
     Float4 const& SrcB0 = matrix.Col0;
     Float4 const& SrcB1 = matrix.Col1;
@@ -4151,7 +4151,7 @@ AN_FORCEINLINE Float4x4& Float4x4::operator*=(Float3x4 const& matrix)
 namespace Math
 {
 
-AN_INLINE bool Unproject(Float4x4 const& _ModelViewProjectionInversed, const float _Viewport[4], Float3 const& _Coord, Float3& _Result)
+HK_INLINE bool Unproject(Float4x4 const& _ModelViewProjectionInversed, const float _Viewport[4], Float3 const& _Coord, Float3& _Result)
 {
     Float4 In(_Coord, 1.0f);
 
@@ -4179,7 +4179,7 @@ AN_INLINE bool Unproject(Float4x4 const& _ModelViewProjectionInversed, const flo
     return true;
 }
 
-AN_INLINE bool UnprojectRay(Float4x4 const& _ModelViewProjectionInversed, const float _Viewport[4], float x, float y, Float3& _RayStart, Float3& _RayEnd)
+HK_INLINE bool UnprojectRay(Float4x4 const& _ModelViewProjectionInversed, const float _Viewport[4], float x, float y, Float3& _RayStart, Float3& _RayEnd)
 {
     Float3 Coord;
 
@@ -4199,7 +4199,7 @@ AN_INLINE bool UnprojectRay(Float4x4 const& _ModelViewProjectionInversed, const 
     return true;
 }
 
-AN_INLINE bool UnprojectRayDir(Float4x4 const& _ModelViewProjectionInversed, const float _Viewport[4], float x, float y, Float3& _RayStart, Float3& _RayDir)
+HK_INLINE bool UnprojectRayDir(Float4x4 const& _ModelViewProjectionInversed, const float _Viewport[4], float x, float y, Float3& _RayStart, Float3& _RayDir)
 {
     Float3 Coord;
 
@@ -4222,7 +4222,7 @@ AN_INLINE bool UnprojectRayDir(Float4x4 const& _ModelViewProjectionInversed, con
     return true;
 }
 
-AN_INLINE bool UnprojectPoint(Float4x4 const& _ModelViewProjectionInversed,
+HK_INLINE bool UnprojectPoint(Float4x4 const& _ModelViewProjectionInversed,
                               const float     _Viewport[4],
                               float           x,
                               float           y,

@@ -122,7 +122,7 @@ void AVertexLayoutGL::DestroyVAO(AImmediateContextGLImpl* pContext)
         if (it != VaoHandles.end())
         {
             auto& vaoHandle = it->second;
-            AN_ASSERT(vaoHandle);
+            HK_ASSERT(vaoHandle);
 
             if (vaoHandle->HandleGL)
                 glDeleteVertexArrays(1, &vaoHandle->HandleGL);

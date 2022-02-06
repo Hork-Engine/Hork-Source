@@ -42,7 +42,7 @@ ASphereMesh::ASphereMesh( int _HDiv, int _VDiv )
     int i, j;
     float a1, a2;
 
-    AN_ASSERT_( numVerts < 65536, "Too many vertices" );
+    HK_ASSERT_( numVerts < 65536, "Too many vertices" );
 
     TPodVector< Float3 > vertices;
     TPodVector< unsigned short > indices;

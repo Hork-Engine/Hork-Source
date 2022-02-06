@@ -231,7 +231,7 @@ struct STextureAttachment
 
     ITexture* GetTexture()
     {
-        AN_ASSERT(pResource);
+        HK_ASSERT(pResource);
         return pResource->Actual();
     }
 };
@@ -285,7 +285,7 @@ public:
 
     ARenderPass& SetColorAttachment(STextureAttachment const& InColorAttachment)
     {
-        AN_ASSERT_(ColorAttachments.IsEmpty(), "Overwriting color attachments");
+        HK_ASSERT_(ColorAttachments.IsEmpty(), "Overwriting color attachments");
 
         ColorAttachments.Append(InColorAttachment);
 
@@ -295,7 +295,7 @@ public:
 
     ARenderPass& SetColorAttachments(TStdVector<STextureAttachment> InColorAttachments)
     {
-        AN_ASSERT_(ColorAttachments.IsEmpty(), "Overwriting color attachments");
+        HK_ASSERT_(ColorAttachments.IsEmpty(), "Overwriting color attachments");
 
         ColorAttachments = std::move(InColorAttachments);
 
@@ -305,7 +305,7 @@ public:
 
     ARenderPass& SetDepthStencilAttachment(STextureAttachment const& InDepthStencilAttachment)
     {
-        AN_ASSERT_(!bHasDepthStencilAttachment, "Overwriting depth stencil attachment");
+        HK_ASSERT_(!bHasDepthStencilAttachment, "Overwriting depth stencil attachment");
 
         DepthStencilAttachment     = InDepthStencilAttachment;
         bHasDepthStencilAttachment = true;

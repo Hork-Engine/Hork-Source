@@ -46,7 +46,7 @@ Material
 */
 class AMaterial : public AResource
 {
-    AN_CLASS(AMaterial, AResource)
+    HK_CLASS(AMaterial, AResource)
 
 public:
     /** Initialize from graph */
@@ -96,7 +96,7 @@ private:
     AMaterial* pPrev = nullptr;
 };
 
-AN_FORCEINLINE AMaterial* CreateMaterial(MGMaterialGraph* InGraph)
+HK_FORCEINLINE AMaterial* CreateMaterial(MGMaterialGraph* InGraph)
 {
     AMaterial* material = CreateInstanceOf<AMaterial>();
     material->Initialize(InGraph);
@@ -111,7 +111,7 @@ Material Instance
 */
 class AMaterialInstance : public AResource
 {
-    AN_CLASS(AMaterialInstance, AResource)
+    HK_CLASS(AMaterialInstance, AResource)
 
 public:
     union

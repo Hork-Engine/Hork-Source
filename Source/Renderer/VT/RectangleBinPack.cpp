@@ -54,7 +54,7 @@ static int __ScoreByHeuristic( int _Width, int _Height, const SRectangleBinBack_
     case ARectangleBinPack::RectWorstintSideFit:
         return __ScoreWorstintSideFit( _Width, _Height, _FreeRect );
     default:
-        AN_ASSERT( 0 );
+        HK_ASSERT( 0 );
         return std::numeric_limits<int>::max();
     }
 }
@@ -174,7 +174,7 @@ void ARectangleBinPack::Insert( std::vector<SRectSize> & _Rects, /*std::vector<R
         m_UsedRectangles.push_back( newNode );
 
         // Check that we're really producing correct packings here.
-        AN_ASSERT( m_DisjointRects.Add( newNode ) == true );
+        HK_ASSERT( m_DisjointRects.Add( newNode ) == true );
     }
 }
 
@@ -341,7 +341,7 @@ void FRectangleBinPack::InsertMaxFitting(std::vector<RectSize> &rects, std::vect
             if (bestFlipped)
                 std::swap(newNode.width, newNode.height);
 
-            AN_ASSERT(disjointRects.Disjoint(newNode));
+            HK_ASSERT(disjointRects.Disjoint(newNode));
             SplitFreeRectAintAxis(freeRect, newNode, bestSplitHorizontal);
 
             rects.erase(rects.begin() + bestRect);
@@ -386,7 +386,7 @@ SRectangleBinBack_RectNode ARectangleBinPack::Insert( int _Width, int _Height, b
     m_UsedRectangles.push_back( newRect );
 
     // Check that we're really producing correct packings here.
-    AN_ASSERT( m_DisjointRects.Add( newRect ) == true );
+    HK_ASSERT( m_DisjointRects.Add( newRect ) == true );
 
     return newRect;
 }
@@ -420,7 +420,7 @@ SRectangleBinBack_RectNode ARectangleBinPack::FindPositionForNewNode( int _Width
             bestNode.height = _Height;
             bestScore = std::numeric_limits<int>::min();
             *_NodeIndex = i;
-            AN_ASSERT( m_DisjointRects.Disjoint( bestNode ) );
+            HK_ASSERT( m_DisjointRects.Disjoint( bestNode ) );
             break;
         }
         // If this is a perfect fit sideways, choose it.
@@ -431,7 +431,7 @@ SRectangleBinBack_RectNode ARectangleBinPack::FindPositionForNewNode( int _Width
             bestNode.height = _Width;
             bestScore = std::numeric_limits<int>::min();
             *_NodeIndex = i;
-            AN_ASSERT( m_DisjointRects.Disjoint( bestNode ) );
+            HK_ASSERT( m_DisjointRects.Disjoint( bestNode ) );
             break;
         }
         // Does the rectangle fit upright?
@@ -445,7 +445,7 @@ SRectangleBinBack_RectNode ARectangleBinPack::FindPositionForNewNode( int _Width
                 bestNode.height = _Height;
                 bestScore = score;
                 *_NodeIndex = i;
-                AN_ASSERT( m_DisjointRects.Disjoint(bestNode) );
+                HK_ASSERT( m_DisjointRects.Disjoint(bestNode) );
             }
         }
         // Does the rectangle fit sideways?
@@ -459,7 +459,7 @@ SRectangleBinBack_RectNode ARectangleBinPack::FindPositionForNewNode( int _Width
                 bestNode.height = _Width;
                 bestScore = score;
                 *_NodeIndex = i;
-                AN_ASSERT( m_DisjointRects.Disjoint( bestNode ) );
+                HK_ASSERT( m_DisjointRects.Disjoint( bestNode ) );
             }
         }
     }
@@ -507,7 +507,7 @@ void ARectangleBinPack::SplitFreeRectByHeuristic( const SRectangleBinBack_RectNo
         break;
     default:
         splitHorizontal = true;
-        AN_ASSERT(0);
+        HK_ASSERT(0);
     }
 
     // Perform the actual split.
@@ -546,15 +546,15 @@ void ARectangleBinPack::SplitFreeRectAintAxis( const SRectangleBinBack_RectNode 
         m_FreeRectangles.push_back( right );
     }
 
-    AN_ASSERT( m_DisjointRects.Disjoint( bottom ) );
-    AN_ASSERT( m_DisjointRects.Disjoint( right ) );
+    HK_ASSERT( m_DisjointRects.Disjoint( bottom ) );
+    HK_ASSERT( m_DisjointRects.Disjoint( right ) );
 }
 
 void ARectangleBinPack::MergeFreeList() {
 //#ifdef _DEBUG
     ADisjointRectCollection test;
     for ( size_t i = 0 ; i < m_FreeRectangles.size() ; ++i ) {
-        AN_ASSERT( test.Add( m_FreeRectangles[i] ) == true );
+        HK_ASSERT( test.Add( m_FreeRectangles[i] ) == true );
     }
 //#endif
 
@@ -591,7 +591,7 @@ void ARectangleBinPack::MergeFreeList() {
 //#ifdef _DEBUG
     test.Clear();
     for ( size_t i = 0 ; i < m_FreeRectangles.size() ; ++i ) {
-        AN_ASSERT( test.Add( m_FreeRectangles[i] ) == true );
+        HK_ASSERT( test.Add( m_FreeRectangles[i] ) == true );
     }
 //#endif
 }

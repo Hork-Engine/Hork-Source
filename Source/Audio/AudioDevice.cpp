@@ -104,7 +104,7 @@ AAudioDevice::AAudioDevice( int InSampleRate )
     SDL_AudioFormat formats[] = { AUDIO_S16SYS };
 
     // Try to search appropriate native format
-    for ( int i = 0 ; i < AN_ARRAY_SIZE( formats ) ; ) {
+    for ( int i = 0 ; i < HK_ARRAY_SIZE( formats ) ; ) {
         desired.format = formats[i];
 
         AudioDeviceId = SDL_OpenAudioDevice( NULL, SDL_FALSE, &desired, &obtained, allowedChanges );

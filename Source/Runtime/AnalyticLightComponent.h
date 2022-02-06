@@ -35,7 +35,7 @@ SOFTWARE.
 
 class AAnalyticLightComponent : public APunctualLightComponent
 {
-    AN_COMPONENT(AAnalyticLightComponent, APunctualLightComponent)
+    HK_COMPONENT(AAnalyticLightComponent, APunctualLightComponent)
 
 public:
     /** Allow mesh to cast shadows on the world */

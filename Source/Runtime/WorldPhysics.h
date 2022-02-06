@@ -170,7 +170,7 @@ struct SCollisionQueryResult
 
 class AWorldPhysics
 {
-    AN_FORBID_COPY(AWorldPhysics)
+    HK_FORBID_COPY(AWorldPhysics)
 
 public:
     /** Physics refresh rate */

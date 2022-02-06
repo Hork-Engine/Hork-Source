@@ -34,7 +34,7 @@ SOFTWARE.
 #include "EmbeddedResources.h"
 #include <Platform/Logger.h>
 
-AN_CLASS_META(AResource)
+HK_CLASS_META(AResource)
 
 void AResource::InitializeDefaultObject()
 {
@@ -146,7 +146,7 @@ bool AResource::LoadFromPath(const char* _Path)
     return false;
 }
 
-AN_CLASS_META(ABinaryResource)
+HK_CLASS_META(ABinaryResource)
 
 ABinaryResource::ABinaryResource()
 {

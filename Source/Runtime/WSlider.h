@@ -43,7 +43,7 @@ struct SSliderGeometry
 
 class WSlider : public WWidget
 {
-    AN_CLASS(WSlider, WWidget)
+    HK_CLASS(WSlider, WWidget)
 
 public:
     TWidgetEvent<float> E_OnUpdateValue;

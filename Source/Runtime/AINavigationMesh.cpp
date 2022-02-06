@@ -62,7 +62,7 @@ AConsoleVar com_DrawNavMeshNodes(_CTS("com_DrawNavMeshNodes"), _CTS("0"), CVAR_C
 AConsoleVar com_DrawNavMesh(_CTS("com_DrawNavMesh"), _CTS("0"), CVAR_CHEAT);
 AConsoleVar com_DrawNavMeshTileBounds(_CTS("com_DrawNavMeshTileBounds"), _CTS("0"), CVAR_CHEAT);
 
-AN_VALIDATE_TYPE_SIZE(SNavPolyRef, sizeof(dtPolyRef));
+HK_VALIDATE_TYPE_SIZE(SNavPolyRef, sizeof(dtPolyRef));
 
 static const int  MAX_LAYERS            = 255;
 static const bool RECAST_ENABLE_LOGGING = true;
@@ -599,7 +599,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
     BvAxisAlignedBox tileWorldBounds;
     BvAxisAlignedBox tileWorldBoundsWithPadding;
 
-    AN_ASSERT(NavMesh);
+    HK_ASSERT(NavMesh);
 
     RemoveTile(_X, _Z);
 
@@ -1192,7 +1192,7 @@ void AAINavigationMesh::RemoveTile(int _X, int _Z)
     if (Initial.bDynamicNavMesh)
     {
 
-        AN_ASSERT(TileCache);
+        HK_ASSERT(TileCache);
 
         dtCompressedTileRef compressedTiles[MAX_LAYERS];
         int                 count = TileCache->getTilesAt(_X, _Z, compressedTiles, Initial.MaxLayers);
@@ -1228,7 +1228,7 @@ void AAINavigationMesh::RemoveTiles()
     if (Initial.bDynamicNavMesh)
     {
 
-        AN_ASSERT(TileCache);
+        HK_ASSERT(TileCache);
 
         int numTiles = TileCache->getTileCount();
         for (int i = 0; i < numTiles; i++)

@@ -41,7 +41,7 @@ SOFTWARE.
 
 AConsoleVar com_DrawRootComponentAxis(_CTS("com_DrawRootComponentAxis"), _CTS("0"), CVAR_CHEAT);
 
-AN_CLASS_META(AActor)
+HK_CLASS_META(AActor)
 
 static uint32_t UniqueName = 0;
 
@@ -85,7 +85,7 @@ AActorComponent* AActor::CreateComponent(const char* _ClassName, AStringView InN
 
 AActorComponent* AActor::CreateComponent(AClassMeta const* _ClassMeta, AStringView InName)
 {
-    AN_ASSERT(_ClassMeta->Factory() == &AActorComponent::Factory());
+    HK_ASSERT(_ClassMeta->Factory() == &AActorComponent::Factory());
     AActorComponent* component = static_cast<AActorComponent*>(_ClassMeta->CreateInstance());
     AddComponent(component, InName);
     return component;
@@ -131,7 +131,7 @@ AActorComponent* AActor::GetComponent(const char* _ClassName)
 
 AActorComponent* AActor::GetComponent(AClassMeta const* _ClassMeta)
 {
-    AN_ASSERT(_ClassMeta->Factory() == &AActorComponent::Factory());
+    HK_ASSERT(_ClassMeta->Factory() == &AActorComponent::Factory());
     for (AActorComponent* component : Components)
     {
         if (&component->FinalClassMeta() == _ClassMeta)
@@ -172,7 +172,7 @@ void AActor::InitializeAndPlay()
 
     for (AActorComponent* component : Components)
     {
-        AN_ASSERT(!component->bInitialized);
+        HK_ASSERT(!component->bInitialized);
 
         component->InitializeComponent();
         component->bInitialized = true;
@@ -188,7 +188,7 @@ void AActor::InitializeAndPlay()
 
     for (AActorComponent* component : Components)
     {
-        AN_ASSERT(!component->IsPendingKill());
+        HK_ASSERT(!component->IsPendingKill());
         component->BeginPlay();
     }
 

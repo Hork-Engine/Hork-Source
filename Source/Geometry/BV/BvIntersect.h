@@ -87,20 +87,20 @@ Sphere - Plane
 */
 
 /** Sphere - Sphere */
-AN_INLINE bool BvSphereOverlapSphere(BvSphere const& _S1, BvSphere const& _S2)
+HK_INLINE bool BvSphereOverlapSphere(BvSphere const& _S1, BvSphere const& _S2)
 {
     const float R = _S1.Radius + _S2.Radius;
     return _S2.Center.DistSqr(_S1.Center) <= R * R;
 }
 
 /** Sphere - Point */
-AN_INLINE bool BvSphereOverlapPoint(BvSphere const& _Sphere, Float3 const& _Point)
+HK_INLINE bool BvSphereOverlapPoint(BvSphere const& _Sphere, Float3 const& _Point)
 {
     return _Point.DistSqr(_Sphere.Center) <= _Sphere.Radius * _Sphere.Radius;
 }
 
 /** Sphere - Triangle */
-AN_INLINE bool BvSphereOverlapTriangle(BvSphere const& _Sphere, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2)
+HK_INLINE bool BvSphereOverlapTriangle(BvSphere const& _Sphere, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2)
 {
     // based on OPCODE library
 
@@ -353,7 +353,7 @@ AN_INLINE bool BvSphereOverlapTriangle(BvSphere const& _Sphere, Float3 const& _P
 }
 
 /** Sphere - Plane */
-AN_INLINE bool BvSphereOverlapPlane(BvSphere const& _Sphere, PlaneF const& _Plane)
+HK_INLINE bool BvSphereOverlapPlane(BvSphere const& _Sphere, PlaneF const& _Plane)
 {
     float dist = _Plane.DistanceToPoint(_Sphere.Center);
     if (dist > _Sphere.Radius || dist < -_Sphere.Radius)
@@ -364,7 +364,7 @@ AN_INLINE bool BvSphereOverlapPlane(BvSphere const& _Sphere, PlaneF const& _Plan
 }
 
 /** Sphere - Plane */
-AN_INLINE int BvSphereOverlapPlaneSideMask(BvSphere const& _Sphere, PlaneF const& _Plane)
+HK_INLINE int BvSphereOverlapPlaneSideMask(BvSphere const& _Sphere, PlaneF const& _Plane)
 {
     float dist = _Plane.DistanceToPoint(_Sphere.Center);
     if (dist > _Sphere.Radius)
@@ -397,7 +397,7 @@ Box/Box intersection
 */
 
 /** AABB - AABB */
-AN_INLINE bool BvBoxOverlapBox(BvAxisAlignedBox const& _AABB1, BvAxisAlignedBox const& _AABB2)
+HK_INLINE bool BvBoxOverlapBox(BvAxisAlignedBox const& _AABB1, BvAxisAlignedBox const& _AABB2)
 {
     if (_AABB1.Maxs[0] < _AABB2.Mins[0] || _AABB1.Mins[0] > _AABB2.Maxs[0]) return false;
     if (_AABB1.Maxs[1] < _AABB2.Mins[1] || _AABB1.Mins[1] > _AABB2.Maxs[1]) return false;
@@ -406,7 +406,7 @@ AN_INLINE bool BvBoxOverlapBox(BvAxisAlignedBox const& _AABB1, BvAxisAlignedBox 
 }
 
 /** AABB - AABB (2D) */
-AN_INLINE bool BvBoxOverlapBox2D(Float2 const& _AABB1Mins, Float2 const& _AABB1Maxs, Float2 const& _AABB2Mins, Float2 const& _AABB2Maxs)
+HK_INLINE bool BvBoxOverlapBox2D(Float2 const& _AABB1Mins, Float2 const& _AABB1Maxs, Float2 const& _AABB2Mins, Float2 const& _AABB2Maxs)
 {
     if (_AABB1Maxs[0] < _AABB2Mins[0] || _AABB1Mins[0] > _AABB2Maxs[0]) return false;
     if (_AABB1Maxs[1] < _AABB2Mins[1] || _AABB1Mins[1] > _AABB2Maxs[1]) return false;
@@ -414,7 +414,7 @@ AN_INLINE bool BvBoxOverlapBox2D(Float2 const& _AABB1Mins, Float2 const& _AABB1M
 }
 
 /** AABB - Point */
-AN_INLINE bool BvBoxOverlapPoint(BvAxisAlignedBox const& _AABB, Float3 const& _Point)
+HK_INLINE bool BvBoxOverlapPoint(BvAxisAlignedBox const& _AABB, Float3 const& _Point)
 {
     if (_Point.X < _AABB.Mins.X || _Point.Y < _AABB.Mins.Y || _Point.Z < _AABB.Mins.Z || _Point.X > _AABB.Maxs.X || _Point.Y > _AABB.Maxs.Y || _Point.Z > _AABB.Maxs.Z)
     {
@@ -424,7 +424,7 @@ AN_INLINE bool BvBoxOverlapPoint(BvAxisAlignedBox const& _AABB, Float3 const& _P
 }
 
 /** AABB - Sphere */
-AN_INLINE bool BvBoxOverlapSphere(BvAxisAlignedBox const& _AABB, BvSphere const& _Sphere)
+HK_INLINE bool BvBoxOverlapSphere(BvAxisAlignedBox const& _AABB, BvSphere const& _Sphere)
 {
 #if 0
     float d = 0, dist;
@@ -450,7 +450,7 @@ AN_INLINE bool BvBoxOverlapSphere(BvAxisAlignedBox const& _AABB, BvSphere const&
 }
 
 /** AABB - Triangle */
-AN_INLINE bool BvBoxOverlapTriangle(BvAxisAlignedBox const& _AABB, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2)
+HK_INLINE bool BvBoxOverlapTriangle(BvAxisAlignedBox const& _AABB, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2)
 {
     Float3 n;
     float  p;
@@ -583,7 +583,7 @@ AN_INLINE bool BvBoxOverlapTriangle(BvAxisAlignedBox const& _AABB, Float3 const&
 }
 
 /** AABB - Triangle (approximation) */
-AN_INLINE bool BvBoxOverlapTriangle_FastApproximation(BvAxisAlignedBox const& _BoundingBox, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2)
+HK_INLINE bool BvBoxOverlapTriangle_FastApproximation(BvAxisAlignedBox const& _BoundingBox, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2)
 {
 
     // Simple fast triangle - AABB overlap test
@@ -602,7 +602,7 @@ AN_INLINE bool BvBoxOverlapTriangle_FastApproximation(BvAxisAlignedBox const& _B
 }
 
 /** AABB intersection box */
-AN_INLINE bool BvGetBoxIntersection(BvAxisAlignedBox const& _A, BvAxisAlignedBox const& _B, BvAxisAlignedBox& _Intersection)
+HK_INLINE bool BvGetBoxIntersection(BvAxisAlignedBox const& _A, BvAxisAlignedBox const& _B, BvAxisAlignedBox& _Intersection)
 {
     const float x_min = Math::Max(_A.Mins[0], _B.Mins[0]);
     const float x_max = Math::Min(_A.Maxs[0], _B.Maxs[0]);
@@ -637,7 +637,7 @@ AN_INLINE bool BvGetBoxIntersection(BvAxisAlignedBox const& _A, BvAxisAlignedBox
 }
 
 /** AABB overlap convex volume */
-AN_INLINE bool BvBoxOverlapConvex(BvAxisAlignedBox const& _AABB, PlaneF const* _Planes, int _PlaneCount)
+HK_INLINE bool BvBoxOverlapConvex(BvAxisAlignedBox const& _AABB, PlaneF const* _Planes, int _PlaneCount)
 {
     for (int i = 0; i < _PlaneCount; i++)
     {
@@ -654,7 +654,7 @@ AN_INLINE bool BvBoxOverlapConvex(BvAxisAlignedBox const& _AABB, PlaneF const* _
 }
 
 /** AABB inside convex volume */
-AN_INLINE bool BvBoxInsideConvex(BvAxisAlignedBox const& _AABB, PlaneF const* _Planes, int _PlaneCount)
+HK_INLINE bool BvBoxInsideConvex(BvAxisAlignedBox const& _AABB, PlaneF const* _Planes, int _PlaneCount)
 {
     for (int i = 0; i < _PlaneCount; i++)
     {
@@ -671,7 +671,7 @@ AN_INLINE bool BvBoxInsideConvex(BvAxisAlignedBox const& _AABB, PlaneF const* _P
 }
 
 /** AABB overlap plane */
-AN_INLINE bool BvBoxOverlapPlane(Float3 const* _BoxVertices, PlaneF const& _Plane)
+HK_INLINE bool BvBoxOverlapPlane(Float3 const* _BoxVertices, PlaneF const& _Plane)
 {
     bool front = false;
     bool back  = false;
@@ -693,7 +693,7 @@ AN_INLINE bool BvBoxOverlapPlane(Float3 const* _BoxVertices, PlaneF const& _Plan
 }
 
 /** AABB overlap plane */
-AN_INLINE int BvBoxOverlapPlaneSideMask(Float3 const& _Mins, Float3 const& _Maxs, PlaneF const& _Plane)
+HK_INLINE int BvBoxOverlapPlaneSideMask(Float3 const& _Mins, Float3 const& _Maxs, PlaneF const& _Plane)
 {
     int sideMask = 0;
 
@@ -726,19 +726,19 @@ AN_INLINE int BvBoxOverlapPlaneSideMask(Float3 const& _Mins, Float3 const& _Maxs
 }
 
 /** AABB overlap plane */
-AN_INLINE bool BvBoxOverlapPlane(Float3 const& _Mins, Float3 const& _Maxs, PlaneF const& _Plane)
+HK_INLINE bool BvBoxOverlapPlane(Float3 const& _Mins, Float3 const& _Maxs, PlaneF const& _Plane)
 {
     return BvBoxOverlapPlaneSideMask(_Mins, _Maxs, _Plane) == 3;
 }
 
 /** AABB overlap plane */
-AN_INLINE bool BvBoxOverlapPlane(BvAxisAlignedBox const& _AABB, PlaneF const& _Plane)
+HK_INLINE bool BvBoxOverlapPlane(BvAxisAlignedBox const& _AABB, PlaneF const& _Plane)
 {
     return BvBoxOverlapPlane(_AABB.Mins, _AABB.Maxs, _Plane);
 }
 
 /** AABB overlap plane based on precomputed plane axial type and plane sign bits */
-AN_INLINE bool BvBoxOverlapPlaneFast(BvAxisAlignedBox const& _AABB, PlaneF const& _Plane, int _AxialType, int _SignBits)
+HK_INLINE bool BvBoxOverlapPlaneFast(BvAxisAlignedBox const& _AABB, PlaneF const& _Plane, int _AxialType, int _SignBits)
 {
     const float dist = _Plane.GetDist();
 
@@ -799,7 +799,7 @@ AN_INLINE bool BvBoxOverlapPlaneFast(BvAxisAlignedBox const& _AABB, PlaneF const
 }
 
 /** AABB overlap plane based on precomputed plane axial type and plane sign bits */
-AN_INLINE int BvBoxOverlapPlaneSideMask(BvAxisAlignedBox const& _AABB, PlaneF const& _Plane, int _AxialType, int _SignBits)
+HK_INLINE int BvBoxOverlapPlaneSideMask(BvAxisAlignedBox const& _AABB, PlaneF const& _Plane, int _AxialType, int _SignBits)
 {
     const float dist = _Plane.GetDist();
 
@@ -883,7 +883,7 @@ Oriented Box - Plane
 */
 
 /** OBB - OBB */
-AN_INLINE bool BvOrientedBoxOverlapOrientedBox(BvOrientedBox const& _OBB1, BvOrientedBox const& _OBB2)
+HK_INLINE bool BvOrientedBoxOverlapOrientedBox(BvOrientedBox const& _OBB1, BvOrientedBox const& _OBB2)
 {
     // Code based on http://gdlinks.hut.ru/cdfaq/obb.shtml
 
@@ -962,7 +962,7 @@ AN_INLINE bool BvOrientedBoxOverlapOrientedBox(BvOrientedBox const& _OBB1, BvOri
 }
 
 /** OBB - Sphere */
-AN_INLINE bool BvOrientedBoxOverlapSphere(BvOrientedBox const& _OBB, BvSphere const& _Sphere)
+HK_INLINE bool BvOrientedBoxOverlapSphere(BvOrientedBox const& _OBB, BvSphere const& _Sphere)
 {
 
     // Transform sphere center to OBB space
@@ -975,7 +975,7 @@ AN_INLINE bool BvOrientedBoxOverlapSphere(BvOrientedBox const& _OBB, BvSphere co
 }
 
 /** OBB - AABB */
-AN_INLINE bool BvOrientedBoxOverlapBox(BvOrientedBox const& _OBB, Float3 const& _AABBCenter, Float3 const& _AABBHalfSize)
+HK_INLINE bool BvOrientedBoxOverlapBox(BvOrientedBox const& _OBB, Float3 const& _AABBCenter, Float3 const& _AABBHalfSize)
 {
     // transform OBB position to AABB space
     const Float3 T = _OBB.Center - _AABBCenter;
@@ -1050,13 +1050,13 @@ AN_INLINE bool BvOrientedBoxOverlapBox(BvOrientedBox const& _OBB, Float3 const& 
 }
 
 /** OBB - AABB */
-AN_INLINE bool BvOrientedBoxOverlapBox(BvOrientedBox const& _OBB, BvAxisAlignedBox const& _AABB)
+HK_INLINE bool BvOrientedBoxOverlapBox(BvOrientedBox const& _OBB, BvAxisAlignedBox const& _AABB)
 {
     return BvOrientedBoxOverlapBox(_OBB, _AABB.Center(), _AABB.HalfSize());
 }
 
 /** OBB - Triangle */
-AN_INLINE bool BvOrientedBoxOverlapTriangle(BvOrientedBox const& _OBB, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2)
+HK_INLINE bool BvOrientedBoxOverlapTriangle(BvOrientedBox const& _OBB, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2)
 {
 
     // Code based on http://gdlinks.hut.ru/cdfaq/obb.shtml
@@ -1187,7 +1187,7 @@ AN_INLINE bool BvOrientedBoxOverlapTriangle(BvOrientedBox const& _OBB, Float3 co
 }
 
 /** OBB - Triangle (approximation) */
-AN_INLINE bool BvOrientedBoxOverlapTriangle_FastApproximation(BvOrientedBox const& _OBB, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2)
+HK_INLINE bool BvOrientedBoxOverlapTriangle_FastApproximation(BvOrientedBox const& _OBB, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2)
 {
 
     // Simple fast triangle - AABB overlap test
@@ -1206,7 +1206,7 @@ AN_INLINE bool BvOrientedBoxOverlapTriangle_FastApproximation(BvOrientedBox cons
 }
 
 /** OBB overlap convex */
-AN_INLINE bool BvOrientedBoxOverlapConvex(BvOrientedBox const& b, PlaneF const* _Planes, int _PlaneCount)
+HK_INLINE bool BvOrientedBoxOverlapConvex(BvOrientedBox const& b, PlaneF const* _Planes, int _PlaneCount)
 {
     Float3 point;
 
@@ -1230,7 +1230,7 @@ AN_INLINE bool BvOrientedBoxOverlapConvex(BvOrientedBox const& b, PlaneF const* 
 }
 
 /** OBB inside convex */
-AN_INLINE bool BvOrientedBoxInsideConvex(BvOrientedBox const& b, PlaneF const* _Planes, int _PlaneCount)
+HK_INLINE bool BvOrientedBoxInsideConvex(BvOrientedBox const& b, PlaneF const* _Planes, int _PlaneCount)
 {
     Float3 point;
 
@@ -1254,7 +1254,7 @@ AN_INLINE bool BvOrientedBoxInsideConvex(BvOrientedBox const& b, PlaneF const* _
 }
 
 /** OBB overlap plane */
-AN_INLINE bool BvOrientedBoxOverlapPlane(BvOrientedBox const& _OBB, PlaneF const& _Plane)
+HK_INLINE bool BvOrientedBoxOverlapPlane(BvOrientedBox const& _OBB, PlaneF const& _Plane)
 {
     Float3 vertices[8];
 
@@ -1277,7 +1277,7 @@ Ray - Ellipsoid
 */
 
 /** Ray - Sphere */
-AN_INLINE bool BvRayIntersectSphere(Float3 const& _RayStart, Float3 const& _RayDir, BvSphere const& _Sphere, float& _Min, float& _Max)
+HK_INLINE bool BvRayIntersectSphere(Float3 const& _RayStart, Float3 const& _RayDir, BvSphere const& _Sphere, float& _Min, float& _Max)
 {
     const Float3 k        = _RayStart - _Sphere.Center;
     const float  b        = Math::Dot(k, _RayDir);
@@ -1292,7 +1292,7 @@ AN_INLINE bool BvRayIntersectSphere(Float3 const& _RayStart, Float3 const& _RayD
 }
 
 /** Ray - Sphere */
-AN_INLINE bool BvRayIntersectSphere(Float3 const& _RayStart, Float3 const& _RayDir, BvSphere const& _Sphere, float& _Distance)
+HK_INLINE bool BvRayIntersectSphere(Float3 const& _RayStart, Float3 const& _RayDir, BvSphere const& _Sphere, float& _Distance)
 {
     const Float3 k = _RayStart - _Sphere.Center;
     const float  b = Math::Dot(k, _RayDir);
@@ -1311,7 +1311,7 @@ AN_INLINE bool BvRayIntersectSphere(Float3 const& _RayStart, Float3 const& _RayD
 /** Ray - AABB
 If raydir is normalized, min and max will be in rage [0,raylength]
 If raydir is non-normalized, min and max will be in rage [0,1] */
-AN_INLINE bool BvRayIntersectBox(Float3 const& _RayStart, Float3 const& _InvRayDir, BvAxisAlignedBox const& _AABB, float& _Min, float& _Max)
+HK_INLINE bool BvRayIntersectBox(Float3 const& _RayStart, Float3 const& _InvRayDir, BvAxisAlignedBox const& _AABB, float& _Min, float& _Max)
 {
 #if 0
     float Lo = _InvRayDir.X*(_AABB.Mins.X - _RayStart.X);
@@ -1377,7 +1377,7 @@ AN_INLINE bool BvRayIntersectBox(Float3 const& _RayStart, Float3 const& _InvRayD
 /** Ray - AABB2D
 If raydir is normalized, min and max will be in rage [0,raylength]
 If raydir is non-normalized, min and max will be in rage [0,1] */
-AN_INLINE bool BvRayIntersectBox2D(Float2 const& _RayStart, Float2 const& _InvRayDir, Float2 const& _Mins, Float2 const& _Maxs, float& _Min, float& _Max)
+HK_INLINE bool BvRayIntersectBox2D(Float2 const& _RayStart, Float2 const& _InvRayDir, Float2 const& _Mins, Float2 const& _Maxs, float& _Min, float& _Max)
 {
     _Min = -Math::MaxValue<float>();
     _Max = Math::MaxValue<float>();
@@ -1424,7 +1424,7 @@ AN_INLINE bool BvRayIntersectBox2D(Float2 const& _RayStart, Float2 const& _InvRa
 /** Ray - OBB
 If raydir is normalized, min and max will be in rage [0,raylength]
 If raydir is non-normalized, min and max will be in rage [0,1] */
-AN_INLINE bool BvRayIntersectOrientedBox(Float3 const& _RayStart, Float3 const& _RayDir, BvOrientedBox const& _OBB, float& _Min, float& _Max)
+HK_INLINE bool BvRayIntersectOrientedBox(Float3 const& _RayStart, Float3 const& _RayDir, BvOrientedBox const& _OBB, float& _Min, float& _Max)
 {
     const Float3x3 OrientInversed = _OBB.Orient.Transposed();
 
@@ -1503,7 +1503,7 @@ AN_INLINE bool BvRayIntersectOrientedBox(Float3 const& _RayStart, Float3 const& 
 }
 
 /** Ray - triangle */
-AN_INLINE bool BvRayIntersectTriangle(Float3 const& _RayStart, Float3 const& _RayDir, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, float& _Distance, float& _U, float& _V, bool _CullBackFace = true)
+HK_INLINE bool BvRayIntersectTriangle(Float3 const& _RayStart, Float3 const& _RayDir, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, float& _Distance, float& _U, float& _V, bool _CullBackFace = true)
 {
     const Float3 e1 = _P1 - _P0;
     const Float3 e2 = _P2 - _P0;
@@ -1559,7 +1559,7 @@ AN_INLINE bool BvRayIntersectTriangle(Float3 const& _RayStart, Float3 const& _Ra
 }
 
 /** Ray - Plane */
-AN_INLINE bool BvRayIntersectPlane(Float3 const& _RayStart, Float3 const& _RayDir, PlaneF const& _Plane, float& _Distance)
+HK_INLINE bool BvRayIntersectPlane(Float3 const& _RayStart, Float3 const& _RayDir, PlaneF const& _Plane, float& _Distance)
 {
     // Calculate distance from ray origin to plane
     const float d1 = Math::Dot(_RayStart, _Plane.Normal) + _Plane.D;
@@ -1586,7 +1586,7 @@ AN_INLINE bool BvRayIntersectPlane(Float3 const& _RayStart, Float3 const& _RayDi
 }
 
 /** Ray - Plane */
-AN_INLINE bool BvRayIntersectPlaneFront(Float3 const& _RayStart, Float3 const& _RayDir, PlaneF const& _Plane, float& _Distance)
+HK_INLINE bool BvRayIntersectPlaneFront(Float3 const& _RayStart, Float3 const& _RayDir, PlaneF const& _Plane, float& _Distance)
 {
     // Calculate distance from ray origin to plane
     const float d1 = Math::Dot(_RayStart, _Plane.Normal) + _Plane.D;
@@ -1612,7 +1612,7 @@ AN_INLINE bool BvRayIntersectPlaneFront(Float3 const& _RayStart, Float3 const& _
 }
 
 /** Ray - Plane */
-AN_INLINE bool BvRayIntersectPlaneBack(Float3 const& _RayStart, Float3 const& _RayDir, PlaneF const& _Plane, float& _Distance)
+HK_INLINE bool BvRayIntersectPlaneBack(Float3 const& _RayStart, Float3 const& _RayDir, PlaneF const& _Plane, float& _Distance)
 {
     // Calculate distance from ray origin to plane
     const float d1 = Math::Dot(_RayStart, _Plane.Normal) + _Plane.D;
@@ -1645,7 +1645,7 @@ AN_INLINE bool BvRayIntersectPlaneBack(Float3 const& _RayStart, Float3 const& _R
 }
 
 /** Ray - Elipsoid */
-AN_INLINE bool BvRayIntersectElipsoid(Float3 const& _RayStart, Float3 const& _RayDir, float _Radius, float _MParam, float _NParam, float& _Min, float& _Max)
+HK_INLINE bool BvRayIntersectElipsoid(Float3 const& _RayStart, Float3 const& _RayDir, float _Radius, float _MParam, float _NParam, float& _Min, float& _Max)
 {
     const float a = _RayDir.X * _RayDir.X + _MParam * _RayDir.Y * _RayDir.Y + _NParam * _RayDir.Z * _RayDir.Z;
     const float b = 2.0f * (_RayStart.X * _RayDir.X + _MParam * _RayStart.Y * _RayDir.Y + _NParam * _RayStart.Z * _RayDir.Z);
@@ -1662,7 +1662,7 @@ AN_INLINE bool BvRayIntersectElipsoid(Float3 const& _RayStart, Float3 const& _Ra
 }
 
 /** Ray - Elipsoid */
-AN_INLINE bool BvRayIntersectElipsoid(Float3 const& _RayStart, Float3 const& _RayDir, float _Radius, float _MParam, float _NParam, float& _Distance)
+HK_INLINE bool BvRayIntersectElipsoid(Float3 const& _RayStart, Float3 const& _RayDir, float _Radius, float _MParam, float _NParam, float& _Distance)
 {
     const float a = _RayDir.X * _RayDir.X + _MParam * _RayDir.Y * _RayDir.Y + _NParam * _RayDir.Z * _RayDir.Z;
     const float b = 2.0f * (_RayStart.X * _RayDir.X + _MParam * _RayStart.Y * _RayDir.Y + _NParam * _RayStart.Z * _RayDir.Z);
@@ -1689,7 +1689,7 @@ Point tests
 
 */
 
-AN_INLINE bool BvPointInPoly2D(Float2 const* _Points, int _NumPoints, float _PX, float _PY)
+HK_INLINE bool BvPointInPoly2D(Float2 const* _Points, int _NumPoints, float _PX, float _PY)
 {
     int i, j, count = 0;
 
@@ -1704,7 +1704,7 @@ AN_INLINE bool BvPointInPoly2D(Float2 const* _Points, int _NumPoints, float _PX,
     return count & 1;
 }
 
-AN_INLINE bool BvPointInPoly2D(Float2 const* _Points, int _NumPoints, Float2 const& _Point)
+HK_INLINE bool BvPointInPoly2D(Float2 const* _Points, int _NumPoints, Float2 const& _Point)
 {
     return BvPointInPoly2D(_Points, _NumPoints, _Point.X, _Point.Y);
 }
@@ -1716,9 +1716,9 @@ InNormal - hull normal
 InPoints - hull vertices (CCW order required)
 InNumPoints - hull vertex count (more or equal 3)
 */
-AN_INLINE bool BvPointInConvexHullCCW(Float3 const& InPoint, Float3 const& InNormal, Float3 const* InPoints, int InNumPoints)
+HK_INLINE bool BvPointInConvexHullCCW(Float3 const& InPoint, Float3 const& InNormal, Float3 const* InPoints, int InNumPoints)
 {
-    AN_ASSERT(InNumPoints >= 3);
+    HK_ASSERT(InNumPoints >= 3);
 
     Float3 const* p = &InPoints[InNumPoints - 1];
 
@@ -1744,9 +1744,9 @@ InNormal - hull normal
 InPoints - hull vertices (CW order required)
 InNumPoints - hull vertex count (more or equal 3)
 */
-AN_INLINE bool BvPointInConvexHullCW(Float3 const& InPoint, Float3 const& InNormal, Float3 const* InPoints, int InNumPoints)
+HK_INLINE bool BvPointInConvexHullCW(Float3 const& InPoint, Float3 const& InNormal, Float3 const* InPoints, int InNumPoints)
 {
-    AN_ASSERT(InNumPoints >= 3);
+    HK_ASSERT(InNumPoints >= 3);
 
     Float3 const* p = &InPoints[InNumPoints - 1];
 
@@ -1766,7 +1766,7 @@ AN_INLINE bool BvPointInConvexHullCW(Float3 const& InPoint, Float3 const& InNorm
 }
 
 /** Square of shortest distance between Point and Segment */
-AN_INLINE float BvShortestDistanceSqr(Float3 const& _Point, Float3 const& _Start, Float3 const& _End)
+HK_INLINE float BvShortestDistanceSqr(Float3 const& _Point, Float3 const& _Start, Float3 const& _End)
 {
     const Float3 dir = _End - _Start;
     const Float3 v   = _Point - _Start;
@@ -1787,7 +1787,7 @@ AN_INLINE float BvShortestDistanceSqr(Float3 const& _Point, Float3 const& _Start
 }
 
 /** Square of distance between Point and Segment */
-AN_INLINE bool BvDistanceSqr(Float3 const& _Point, Float3 const& _Start, Float3 const& _End, float& _Distance)
+HK_INLINE bool BvDistanceSqr(Float3 const& _Point, Float3 const& _Start, Float3 const& _End, float& _Distance)
 {
     const Float3 dir = _End - _Start;
     const Float3 v   = _Point - _Start;
@@ -1810,7 +1810,7 @@ AN_INLINE bool BvDistanceSqr(Float3 const& _Point, Float3 const& _Start, Float3 
 }
 
 /** Check Point on Segment */
-AN_INLINE bool BvIsPointOnSegment(Float3 const& _Point, Float3 const& _Start, Float3 const& _End, float _Epsilon)
+HK_INLINE bool BvIsPointOnSegment(Float3 const& _Point, Float3 const& _Start, Float3 const& _End, float _Epsilon)
 {
     const Float3 dir = _End - _Start;
     const Float3 v   = _Point - _Start;
@@ -1831,7 +1831,7 @@ AN_INLINE bool BvIsPointOnSegment(Float3 const& _Point, Float3 const& _Start, Fl
 }
 
 /** Project Point on Segment */
-AN_INLINE Float3 BvProjectPointOnLine(Float3 const& _Point, Float3 const& _Start, Float3 const& _End)
+HK_INLINE Float3 BvProjectPointOnLine(Float3 const& _Point, Float3 const& _Start, Float3 const& _End)
 {
     const Float3 dir = _End - _Start;
     const Float3 v   = _Point - _Start;
@@ -1843,7 +1843,7 @@ AN_INLINE Float3 BvProjectPointOnLine(Float3 const& _Point, Float3 const& _Start
 }
 
 /** Square of distance between Point and Segment (2D) */
-AN_INLINE float BvShortestDistanceSqr(Float2 const& _Point, Float2 const& _Start, Float2 const& _End)
+HK_INLINE float BvShortestDistanceSqr(Float2 const& _Point, Float2 const& _Start, Float2 const& _End)
 {
     const Float2 dir = _End - _Start;
     const Float2 v   = _Point - _Start;
@@ -1864,7 +1864,7 @@ AN_INLINE float BvShortestDistanceSqr(Float2 const& _Point, Float2 const& _Start
 }
 
 /** Square of distance between Point and Segment (2D) */
-AN_INLINE bool BvDistanceSqr(Float2 const& _Point, Float2 const& _Start, Float2 const& _End, float& _Distance)
+HK_INLINE bool BvDistanceSqr(Float2 const& _Point, Float2 const& _Start, Float2 const& _End, float& _Distance)
 {
     const Float2 dir = _End - _Start;
     const Float2 v   = _Point - _Start;
@@ -1887,7 +1887,7 @@ AN_INLINE bool BvDistanceSqr(Float2 const& _Point, Float2 const& _Start, Float2 
 }
 
 /** Check Point on Segment (2D) */
-AN_INLINE bool BvIsPointOnSegment(Float2 const& _Point, Float2 const& _Start, Float2 const& _End, float _Epsilon)
+HK_INLINE bool BvIsPointOnSegment(Float2 const& _Point, Float2 const& _Start, Float2 const& _End, float _Epsilon)
 {
     const Float2 dir = _End - _Start;
     const Float2 v   = _Point - _Start;
@@ -1910,7 +1910,7 @@ AN_INLINE bool BvIsPointOnSegment(Float2 const& _Point, Float2 const& _Start, Fl
 
 #if 0
 /** Segment - Sphere */
-AN_INLINE bool BvSegmentIntersectSphere( SegmentF const & _Segment, BvSphere const & _Sphere ) {
+HK_INLINE bool BvSegmentIntersectSphere( SegmentF const & _Segment, BvSphere const & _Sphere ) {
     const Float3 s = _Segment.Start - _Sphere.Center;
     const Float3 e = _Segment.End - _Sphere.Center;
     Float3 r = e - s;
@@ -1931,7 +1931,7 @@ AN_INLINE bool BvSegmentIntersectSphere( SegmentF const & _Segment, BvSphere con
 }
 
 /** Ray - OBB */
-//AN_INLINE bool BvSegmentIntersectOrientedBox( RaySegment const & _Ray, BvOrientedBox const & _OBB ) {
+//HK_INLINE bool BvSegmentIntersectOrientedBox( RaySegment const & _Ray, BvOrientedBox const & _OBB ) {
 //    // Трансформируем отрезок в систему координат OBB
 
 //    //смещение в мировой системе координат
@@ -1987,7 +1987,7 @@ AN_INLINE bool BvSegmentIntersectSphere( SegmentF const & _Segment, BvSphere con
 //}
 /** Segment - Plane */
 // _Distance - расстояние от начала луча до плоскости в направлении луча
-AN_INLINE bool BvSegmentIntersectPlane( SegmentF const & _Segment, PlaneF const & _Plane, float & _Distance ) {
+HK_INLINE bool BvSegmentIntersectPlane( SegmentF const & _Segment, PlaneF const & _Plane, float & _Distance ) {
     const Float3 Dir = _Segment.End - _Segment.Start;
     const float Length = Dir.Length();
     if ( Length.CompareEps( 0.0f, 0.00001f ) ) {

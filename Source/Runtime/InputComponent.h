@@ -108,7 +108,7 @@ struct SInputDeviceKey
 
 class AInputMappings : public AResource
 {
-    AN_CLASS(AInputMappings, AResource)
+    HK_CLASS(AInputMappings, AResource)
 
 public:
     struct SMapping
@@ -162,7 +162,7 @@ private:
 
 class AInputComponent : public AActorComponent
 {
-    AN_COMPONENT(AInputComponent, AActorComponent)
+    HK_COMPONENT(AInputComponent, AActorComponent)
 
 public:
     /** Filter keyboard events */

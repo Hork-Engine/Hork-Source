@@ -35,7 +35,7 @@ SOFTWARE.
 
 class APunctualLightComponent : public ALightComponent
 {
-    AN_COMPONENT(APunctualLightComponent, ALightComponent)
+    HK_COMPONENT(APunctualLightComponent, ALightComponent)
 
 public:
     /** Rendering group to filter lights during rendering */

@@ -40,7 +40,7 @@ static const Float3 DEFAULT_COLOR(1.0f);
 
 AConsoleVar com_LightEnergyScale(_CTS("com_LightEnergyScale"), _CTS("16"));
 
-AN_CLASS_META(AAnalyticLightComponent)
+HK_CLASS_META(AAnalyticLightComponent)
 
 AAnalyticLightComponent::AAnalyticLightComponent()
 {

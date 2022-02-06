@@ -38,7 +38,7 @@ int CmpPath(const char* _Path1, const char* _Path2)
 {
     char c1, c2;
 
-    AN_ASSERT(_Path1 && _Path2);
+    HK_ASSERT(_Path1 && _Path2);
 
     do {
         c1 = *_Path1++;
@@ -76,7 +76,7 @@ int CmpPathN(const char* _Path1, const char* _Path2, int _Num)
 {
     char c1, c2;
 
-    AN_ASSERT(_Path1 && _Path2 && _Num >= 0);
+    HK_ASSERT(_Path1 && _Path2 && _Num >= 0);
 
     do {
         if (!_Num--)
@@ -144,7 +144,7 @@ int FixPath(char* _Path, int _Length)
     int   ofs;
     int   stack[1024];
     int   sp = 0;
-#ifdef AN_OS_LINUX
+#ifdef HK_OS_LINUX
     bool root = *s == '/' || *s == '\\';
 #else
     bool root = false;
@@ -209,10 +209,10 @@ int FixPath(char* _Path, int _Length)
         {
             *t = tmp;
             // save offset
-            if (sp == AN_ARRAY_SIZE(stack))
+            if (sp == HK_ARRAY_SIZE(stack))
             {
                 // stack overflow, can't resolve path
-                AN_ASSERT(0);
+                HK_ASSERT(0);
                 return 0;
             }
             stack[sp++] = int(s - _Path);
@@ -277,7 +277,7 @@ int FindExtWithoutDot(const char* _Path)
 
 bool IsPathSeparator(char _Char)
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     return _Char == '/' || _Char == '\\';
 #else
     return _Char == '/';

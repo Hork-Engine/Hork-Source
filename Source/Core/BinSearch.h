@@ -37,7 +37,7 @@ namespace Core
 
 /** Find last element less than _Value in sorted array */
 template <typename T>
-AN_FORCEINLINE int BinSearchLess(T const* _Array, const int _ArrayLength, T const& _Value)
+HK_FORCEINLINE int BinSearchLess(T const* _Array, const int _ArrayLength, T const& _Value)
 {
     int len    = _ArrayLength;
     int mid    = len;
@@ -56,7 +56,7 @@ AN_FORCEINLINE int BinSearchLess(T const* _Array, const int _ArrayLength, T cons
 
 /** Find last element less or equal than _Value in sorted array */
 template <typename T>
-AN_FORCEINLINE int BinSearchLequal(T const* _Array, const int _ArrayLength, T const& _Value)
+HK_FORCEINLINE int BinSearchLequal(T const* _Array, const int _ArrayLength, T const& _Value)
 {
     int len    = _ArrayLength;
     int mid    = len;
@@ -75,7 +75,7 @@ AN_FORCEINLINE int BinSearchLequal(T const* _Array, const int _ArrayLength, T co
 
 /** Find first element greater than _Value in sorted array */
 template <typename T>
-AN_FORCEINLINE int BinSearchGreater(T const* _Array, const int _ArrayLength, T const& _Value)
+HK_FORCEINLINE int BinSearchGreater(T const* _Array, const int _ArrayLength, T const& _Value)
 {
     int len    = _ArrayLength;
     int mid    = len;
@@ -100,7 +100,7 @@ AN_FORCEINLINE int BinSearchGreater(T const* _Array, const int _ArrayLength, T c
 
 /** Find first element greater or equal than _Value in sorted array */
 template <typename T>
-AN_FORCEINLINE int BinSearchGequal(T const* _Array, const int _ArrayLength, T const& _Value)
+HK_FORCEINLINE int BinSearchGequal(T const* _Array, const int _ArrayLength, T const& _Value)
 {
     int len    = _ArrayLength;
     int mid    = len;

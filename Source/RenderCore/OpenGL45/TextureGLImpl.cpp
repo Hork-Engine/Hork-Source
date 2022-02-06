@@ -221,10 +221,10 @@ ITextureView* ATextureGLImpl::GetTextureView(STextureViewDesc const& TextureView
 ATextureGLImpl::~ATextureGLImpl()
 {
     // It is important to destroy views before a texture
-#ifdef AN_ALLOW_ASSERTS
+#ifdef HK_ALLOW_ASSERTS
     for (auto& it : Views)
     {
-        AN_ASSERT_(it.second->GetRefCount() == 1, "WARNING: Someone keep a strong reference to the texture view");
+        HK_ASSERT_(it.second->GetRefCount() == 1, "WARNING: Someone keep a strong reference to the texture view");
     }
 #endif
     Views.clear();
@@ -246,7 +246,7 @@ ATextureGLImpl::~ATextureGLImpl()
 
 void ATextureGLImpl::MakeBindlessSamplerResident(BindlessHandle BindlessHandle, bool bResident)
 {
-    AN_ASSERT(BindlessSamplers.count(BindlessHandle) == 1);
+    HK_ASSERT(BindlessSamplers.count(BindlessHandle) == 1);
 
     if (bResident)
         glMakeTextureHandleResidentARB(BindlessHandle);
@@ -256,7 +256,7 @@ void ATextureGLImpl::MakeBindlessSamplerResident(BindlessHandle BindlessHandle, 
 
 bool ATextureGLImpl::IsBindlessSamplerResident(BindlessHandle BindlessHandle)
 {
-    AN_ASSERT(BindlessSamplers.count(BindlessHandle) == 1);
+    HK_ASSERT(BindlessSamplers.count(BindlessHandle) == 1);
 
     return !!glIsTextureHandleResidentARB(BindlessHandle);
 }
@@ -381,7 +381,7 @@ void ATextureGLImpl::Read(uint16_t     MipLevel,
                           unsigned int Alignment,
                           void*        pSysMem)
 {
-    AN_ASSERT(MipLevel < GetDesc().NumMipLevels);
+    HK_ASSERT(MipLevel < GetDesc().NumMipLevels);
 
     STextureRect rect;
     rect.Offset.MipLevel = MipLevel;
@@ -400,7 +400,7 @@ void ATextureGLImpl::ReadRect(STextureRect const& Rectangle,
 {
     if (IsDummyTexture())
     {
-        AN_ASSERT(pContext);
+        HK_ASSERT(pContext);
         
         SScopedContextGL scopedContext(pContext);
         pContext->ReadTextureRect(this, Rectangle, Format, SizeInBytes, Alignment, pSysMem);
@@ -418,7 +418,7 @@ bool ATextureGLImpl::Write(uint16_t     MipLevel,
                            unsigned int Alignment, // Specifies alignment of source data
                            const void*  pSysMem)
 {
-    AN_ASSERT(MipLevel < GetDesc().NumMipLevels);
+    HK_ASSERT(MipLevel < GetDesc().NumMipLevels);
 
     STextureRect rect;
     rect.Offset.MipLevel = MipLevel;

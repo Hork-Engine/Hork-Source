@@ -34,7 +34,7 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/HashFunc.h>
 
-AN_CLASS_META(ADummy)
+HK_CLASS_META(ADummy)
 
 AObjectFactory* AObjectFactory::FactoryList = nullptr;
 
@@ -64,7 +64,7 @@ AObjectFactory::AObjectFactory(const char* _Tag) :
 
 AObjectFactory::~AObjectFactory()
 {
-    AN_ASSERT(IdTable == nullptr);
+    HK_ASSERT(IdTable == nullptr);
 }
 
 const AClassMeta* AObjectFactory::FindClass(const char* _ClassName) const

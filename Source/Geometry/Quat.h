@@ -60,13 +60,13 @@ struct Quat
 
     float& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
     float const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&X)[index];
     }
 
@@ -443,7 +443,7 @@ struct Quat
                 break;
 
             default: // Silence a -Wswitch-default warning in GCC. Should never actually get here. Assert is just for sanity.
-                AN_ASSERT(false);
+                HK_ASSERT(false);
                 break;
         }
     }
@@ -508,7 +508,7 @@ struct Quat
     }
 };
 
-AN_FORCEINLINE Quat operator*(float lhs, Quat const& rhs)
+HK_FORCEINLINE Quat operator*(float lhs, Quat const& rhs)
 {
     return Quat(lhs * rhs.W, lhs * rhs.X, lhs * rhs.Y, lhs * rhs.Z);
 }
@@ -516,7 +516,7 @@ AN_FORCEINLINE Quat operator*(float lhs, Quat const& rhs)
 namespace Math
 {
 
-AN_FORCEINLINE Quat Slerp(Quat const& qs, Quat const& qe, float f)
+HK_FORCEINLINE Quat Slerp(Quat const& qs, Quat const& qe, float f)
 {
     if (f <= 0.0f)
     {

@@ -32,7 +32,7 @@ SOFTWARE.
 #include "WScroll.h"
 #include <Platform/Logger.h>
 
-AN_CLASS_META(WMenuPopup)
+HK_CLASS_META(WMenuPopup)
 
 WMenuPopup::WMenuPopup()
 {

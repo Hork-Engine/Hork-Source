@@ -58,7 +58,7 @@ AFont* ACanvas::GetDefaultFont()
 
 void ACanvas::Begin(int _Width, int _Height)
 {
-    AN_ASSERT(FontStack.IsEmpty());
+    HK_ASSERT(FontStack.IsEmpty());
 
     Width  = _Width;
     Height = _Height;
@@ -252,7 +252,7 @@ void ACanvas::_DrawTextUTF8(float _FontSize, Float2 const& _Pos, Color4 const& _
 
     uint32_t color = _Color.GetDWord();
 
-    AN_ASSERT(const_cast<AFont*>(font)->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back());
+    HK_ASSERT(const_cast<AFont*>(font)->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back());
 
     Float4 clipRect = DrawList._ClipRectStack.back();
     if (_CPUFineClipRect)
@@ -515,7 +515,7 @@ void ACanvas::_DrawTextWChar(float _FontSize, Float2 const& _Pos, Color4 const& 
 
     AFont const* font = GetCurrentFont();
 
-    AN_ASSERT(font && _FontSize > 0.0f);
+    HK_ASSERT(font && _FontSize > 0.0f);
 
     if (!font->IsValid())
     {
@@ -524,7 +524,7 @@ void ACanvas::_DrawTextWChar(float _FontSize, Float2 const& _Pos, Color4 const& 
 
     uint32_t color = _Color.GetDWord();
 
-    AN_ASSERT(const_cast<AFont*>(font)->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back());
+    HK_ASSERT(const_cast<AFont*>(font)->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back());
 
     Float4 clipRect = DrawList._ClipRectStack.back();
     if (_CPUFineClipRect)

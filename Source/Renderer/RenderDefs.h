@@ -219,7 +219,7 @@ struct SMeshVertex
 
 static_assert(sizeof( SMeshVertex ) == 32, "Keep 32b vertex size");
 
-AN_FORCEINLINE const SMeshVertex MakeMeshVertex( Float3 const & Position, Float2 const & TexCoord, Float3 const & Tangent, float Handedness, Float3 const & Normal )
+HK_FORCEINLINE const SMeshVertex MakeMeshVertex( Float3 const & Position, Float2 const & TexCoord, Float3 const & Tangent, float Handedness, Float3 const & Normal )
 {
     SMeshVertex v;
     v.Position = Position;
@@ -230,7 +230,7 @@ AN_FORCEINLINE const SMeshVertex MakeMeshVertex( Float3 const & Position, Float2
     return v;
 }
 
-AN_FORCEINLINE SMeshVertex SMeshVertex::Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value )
+HK_FORCEINLINE SMeshVertex SMeshVertex::Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value )
 {
     SMeshVertex Result;
 
@@ -258,7 +258,7 @@ struct SMeshVertexUV
     static SMeshVertexUV Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value = 0.5f );
 };
 
-AN_FORCEINLINE SMeshVertexUV SMeshVertexUV::Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value )
+HK_FORCEINLINE SMeshVertexUV SMeshVertexUV::Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value )
 {
     SMeshVertexUV Result;
 
@@ -282,7 +282,7 @@ struct SMeshVertexLight
     static SMeshVertexLight Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value = 0.5f );
 };
 
-AN_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value )
+HK_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value )
 {
     SMeshVertexLight Result;
 

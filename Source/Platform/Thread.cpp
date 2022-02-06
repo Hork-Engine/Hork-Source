@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <Platform/Thread.h>
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 #    include <Platform/WindowsDefs.h>
 #    include <process.h>
 #endif
@@ -42,7 +42,7 @@ const int AThread::NumHardwareThreads = std::thread::hardware_concurrency();
 
 void AThread::Start(int IdealProcessor)
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     unsigned threadId;
     Internal = (HANDLE)_beginthreadex(
         NULL, // security
@@ -73,7 +73,7 @@ void AThread::Start(int IdealProcessor)
             return nullptr;
         },
         this);
-    AN_UNUSED(IdealProcessor);
+    HK_UNUSED(IdealProcessor);
 #endif
 }
 
@@ -84,7 +84,7 @@ void AThread::Join()
         return;
     }
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     WaitForSingleObject(Internal, INFINITE);
     CloseHandle(Internal);
     Internal = nullptr;
@@ -96,14 +96,14 @@ void AThread::Join()
 
 size_t AThread::ThisThreadId()
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     return GetCurrentThreadId();
 #else
     return pthread_self();
 #endif
 }
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 
 struct SWaitableTimer
 {
@@ -142,7 +142,7 @@ static void WaitMicrosecondsWIN32(int _Microseconds)
 
 void AThread::WaitSeconds(int _Seconds)
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     //std::this_thread::sleep_for( std::chrono::seconds( _Seconds ) );
     WaitMicrosecondsWIN32(_Seconds * 1000000);
 #else
@@ -153,7 +153,7 @@ void AThread::WaitSeconds(int _Seconds)
 
 void AThread::WaitMilliseconds(int _Milliseconds)
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     //std::this_thread::sleep_for( std::chrono::milliseconds( _Milliseconds ) );
     WaitMicrosecondsWIN32(_Milliseconds * 1000);
 #else
@@ -168,7 +168,7 @@ void AThread::WaitMilliseconds(int _Milliseconds)
 
 void AThread::WaitMicroseconds(int _Microseconds)
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     //std::this_thread::sleep_for( std::chrono::microseconds( _Microseconds ) );
     WaitMicrosecondsWIN32(_Microseconds);
 #else
@@ -181,28 +181,28 @@ void AThread::WaitMicroseconds(int _Microseconds)
 #endif
 }
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 constexpr int INTERNAL_SIZEOF = sizeof(CRITICAL_SECTION);
 #endif
 
 AMutex::AMutex()
 {
-#ifdef AN_OS_WIN32
-    AN_VALIDATE_TYPE_SIZE(Internal, INTERNAL_SIZEOF);
+#ifdef HK_OS_WIN32
+    HK_VALIDATE_TYPE_SIZE(Internal, INTERNAL_SIZEOF);
     InitializeCriticalSection((CRITICAL_SECTION*)&Internal[0]);
 #endif
 }
 
 AMutex::~AMutex()
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     DeleteCriticalSection((CRITICAL_SECTION*)&Internal[0]);
 #endif
 }
 
 void AMutex::Lock()
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     EnterCriticalSection((CRITICAL_SECTION*)&Internal[0]);
 #else
     pthread_mutex_lock(&Internal);
@@ -211,7 +211,7 @@ void AMutex::Lock()
 
 bool AMutex::TryLock()
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     return TryEnterCriticalSection((CRITICAL_SECTION*)&Internal[0]) != FALSE;
 #else
     return pthread_mutex_trylock(&Internal) == 0;
@@ -220,14 +220,14 @@ bool AMutex::TryLock()
 
 void AMutex::Unlock()
 {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     LeaveCriticalSection((CRITICAL_SECTION*)&Internal[0]);
 #else
     pthread_mutex_unlock(&Internal);
 #endif
 }
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 void ASyncEvent::CreateEventWIN32()
 {
     Internal = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -253,7 +253,7 @@ void ASyncEvent::WaitTimeout(int _Milliseconds, bool& _TimedOut)
 {
     _TimedOut = false;
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     if (WaitForSingleObject(Internal, _Milliseconds) == WAIT_TIMEOUT)
     {
         _TimedOut = true;

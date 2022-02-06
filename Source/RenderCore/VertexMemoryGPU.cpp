@@ -50,13 +50,13 @@ AVertexMemoryGPU::~AVertexMemoryGPU()
 
 SVertexHandle* AVertexMemoryGPU::AllocateVertex(size_t _SizeInBytes, const void* _Data, SGetMemoryCallback _GetMemoryCB, void* _UserPointer)
 {
-    //AN_ASSERT( IsAligned< VERTEX_SIZE_ALIGN >( _SizeInBytes ) );
+    //HK_ASSERT( IsAligned< VERTEX_SIZE_ALIGN >( _SizeInBytes ) );
     return Allocate(_SizeInBytes, _Data, _GetMemoryCB, _UserPointer);
 }
 
 SVertexHandle* AVertexMemoryGPU::AllocateIndex(size_t _SizeInBytes, const void* _Data, SGetMemoryCallback _GetMemoryCB, void* _UserPointer)
 {
-    //AN_ASSERT( IsAligned< INDEX_SIZE_ALIGN >( _SizeInBytes ) );
+    //HK_ASSERT( IsAligned< INDEX_SIZE_ALIGN >( _SizeInBytes ) );
     return Allocate(_SizeInBytes, _Data, _GetMemoryCB, _UserPointer);
 }
 
@@ -81,7 +81,7 @@ void AVertexMemoryGPU::Deallocate(SVertexHandle* _Handle)
 
     block->UsedMemory -= chunkSize;
 
-    AN_ASSERT(block->UsedMemory >= 0);
+    HK_ASSERT(block->UsedMemory >= 0);
 
     if (block->AllocOffset == _Handle->GetBlockOffset() + chunkSize)
     {
@@ -533,7 +533,7 @@ void AStreamedMemoryGPU::Swap()
 
 size_t AStreamedMemoryGPU::Allocate(size_t _SizeInBytes, int _Alignment, const void* _Data)
 {
-    AN_ASSERT(_SizeInBytes > 0);
+    HK_ASSERT(_SizeInBytes > 0);
 
     if (_SizeInBytes == 0)
     {
@@ -567,7 +567,7 @@ size_t AStreamedMemoryGPU::Allocate(size_t _SizeInBytes, int _Alignment, const v
 
 void AStreamedMemoryGPU::ShrinkLastAllocatedMemoryBlock(size_t _SizeInBytes)
 {
-    AN_ASSERT(_SizeInBytes <= LastAllocatedBlockSize);
+    HK_ASSERT(_SizeInBytes <= LastAllocatedBlockSize);
 
     SChainBuffer* pChainBuffer = &ChainBuffer[BufferIndex];
     pChainBuffer->UsedMemory   = pChainBuffer->UsedMemory - LastAllocatedBlockSize + _SizeInBytes;

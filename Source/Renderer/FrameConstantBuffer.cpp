@@ -76,7 +76,7 @@ AFrameConstantBuffer::~AFrameConstantBuffer()
 
 size_t AFrameConstantBuffer::Allocate( size_t InSize )
 {
-    AN_ASSERT( InSize <= BufferSize );
+    HK_ASSERT( InSize <= BufferSize );
 
     if ( InSize == 0 ) {
         // Don't allow to alloc empty chunks

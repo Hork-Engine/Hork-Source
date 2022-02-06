@@ -52,13 +52,13 @@ public:
         ArrayData(StaticData), ArraySize(0), ArrayCapacity(BASE_CAPACITY)
     {
         static_assert(BASE_CAPACITY > 0, "TPodVector: Invalid BASE_CAPACITY");
-        AN_ASSERT(IsAlignedPtr(StaticData, 16));
+        HK_ASSERT(IsAlignedPtr(StaticData, 16));
     }
 
     explicit TPodVector(int _Size) :
         ArraySize(_Size)
     {
-        AN_ASSERT(_Size >= 0);
+        HK_ASSERT(_Size >= 0);
         if (_Size > BASE_CAPACITY)
         {
             ArrayCapacity = _Size;
@@ -176,7 +176,7 @@ public:
 
     void Resize(int _Size)
     {
-        AN_ASSERT(_Size >= 0);
+        HK_ASSERT(_Size >= 0);
         if (_Size > ArrayCapacity)
         {
             const int capacity = GrowCapacity(_Size);
@@ -187,7 +187,7 @@ public:
 
     void ResizeInvalidate(int _Size)
     {
-        AN_ASSERT(_Size >= 0);
+        HK_ASSERT(_Size >= 0);
         if (_Size > ArrayCapacity)
         {
             const int capacity = GrowCapacity(_Size);
@@ -230,9 +230,9 @@ public:
     /** Reverse elements order in range [ _FirstIndex ; _LastIndex ) */
     void Reverse(int _FirstIndex, int _LastIndex)
     {
-        AN_ASSERT_(_FirstIndex >= 0 && _FirstIndex < ArraySize, "TPodVector::Reverse: array index is out of bounds");
-        AN_ASSERT_(_LastIndex >= 0 && _LastIndex <= ArraySize, "TPodVector::Reverse: array index is out of bounds");
-        AN_ASSERT_(_FirstIndex < _LastIndex, "TPodVector::Reverse: invalid order");
+        HK_ASSERT_(_FirstIndex >= 0 && _FirstIndex < ArraySize, "TPodVector::Reverse: array index is out of bounds");
+        HK_ASSERT_(_LastIndex >= 0 && _LastIndex <= ArraySize, "TPodVector::Reverse: array index is out of bounds");
+        HK_ASSERT_(_FirstIndex < _LastIndex, "TPodVector::Reverse: invalid order");
 
         const int HalfRangeLength   = (_LastIndex - _FirstIndex) >> 1;
         const int LastIndexMinusOne = _LastIndex - 1;
@@ -254,7 +254,7 @@ public:
             return;
         }
 
-        AN_ASSERT_(_Index >= 0 && _Index < ArraySize, "TPodVector::Insert: array index is out of bounds");
+        HK_ASSERT_(_Index >= 0 && _Index < ArraySize, "TPodVector::Insert: array index is out of bounds");
 
         const int newLength = ArraySize + 1;
         const int capacity  = GrowCapacity(newLength);
@@ -310,7 +310,7 @@ public:
 
     void Remove(int _Index)
     {
-        AN_ASSERT_(_Index >= 0 && _Index < ArraySize, "TPodVector::Remove: array index is out of bounds");
+        HK_ASSERT_(_Index >= 0 && _Index < ArraySize, "TPodVector::Remove: array index is out of bounds");
 
         Platform::Memmove(ArrayData + _Index, ArrayData + _Index + 1, TYPE_SIZE * (ArraySize - _Index - 1));
 
@@ -346,7 +346,7 @@ public:
     /** An optimized removing of array element without memory moves. Just swaps last element with removed element. */
     void RemoveSwap(int _Index)
     {
-        AN_ASSERT_(_Index >= 0 && _Index < ArraySize, "TPodVector::RemoveSwap: array index is out of bounds");
+        HK_ASSERT_(_Index >= 0 && _Index < ArraySize, "TPodVector::RemoveSwap: array index is out of bounds");
 
         if (ArraySize > 0)
         {
@@ -358,9 +358,9 @@ public:
     /** Remove elements in range [ _FirstIndex ; _LastIndex ) */
     void Remove(int _FirstIndex, int _LastIndex)
     {
-        AN_ASSERT_(_FirstIndex >= 0 && _FirstIndex < ArraySize, "TPodVector::Remove: array index is out of bounds");
-        AN_ASSERT_(_LastIndex >= 0 && _LastIndex <= ArraySize, "TPodVector::Remove: array index is out of bounds");
-        AN_ASSERT_(_FirstIndex < _LastIndex, "TPodVector::Remove: invalid order");
+        HK_ASSERT_(_FirstIndex >= 0 && _FirstIndex < ArraySize, "TPodVector::Remove: array index is out of bounds");
+        HK_ASSERT_(_LastIndex >= 0 && _LastIndex <= ArraySize, "TPodVector::Remove: array index is out of bounds");
+        HK_ASSERT_(_FirstIndex < _LastIndex, "TPodVector::Remove: invalid order");
 
         Platform::Memmove(ArrayData + _FirstIndex, ArrayData + _LastIndex, TYPE_SIZE * (ArraySize - _LastIndex));
         ArraySize -= _LastIndex - _FirstIndex;
@@ -373,37 +373,37 @@ public:
 
     T& operator[](const int _Index)
     {
-        AN_ASSERT_(_Index >= 0 && _Index < ArraySize, "TPodVector::operator[]");
+        HK_ASSERT_(_Index >= 0 && _Index < ArraySize, "TPodVector::operator[]");
         return ArrayData[_Index];
     }
 
     T const& operator[](const int _Index) const
     {
-        AN_ASSERT_(_Index >= 0 && _Index < ArraySize, "TPodVector::operator[]");
+        HK_ASSERT_(_Index >= 0 && _Index < ArraySize, "TPodVector::operator[]");
         return ArrayData[_Index];
     }
 
     T& Last()
     {
-        AN_ASSERT_(ArraySize > 0, "TPodVector::Last");
+        HK_ASSERT_(ArraySize > 0, "TPodVector::Last");
         return ArrayData[ArraySize - 1];
     }
 
     T const& Last() const
     {
-        AN_ASSERT_(ArraySize > 0, "TPodVector::Last");
+        HK_ASSERT_(ArraySize > 0, "TPodVector::Last");
         return ArrayData[ArraySize - 1];
     }
 
     T& First()
     {
-        AN_ASSERT_(ArraySize > 0, "TPodVector::First");
+        HK_ASSERT_(ArraySize > 0, "TPodVector::First");
         return ArrayData[0];
     }
 
     T const& First() const
     {
-        AN_ASSERT_(ArraySize > 0, "TPodVector::First");
+        HK_ASSERT_(ArraySize > 0, "TPodVector::First");
         return ArrayData[0];
     }
 
@@ -441,7 +441,7 @@ public:
 
     Iterator Erase(ConstIterator _Iterator)
     {
-        AN_ASSERT_(_Iterator >= ArrayData && _Iterator < ArrayData + ArraySize, "TPodVector::Erase");
+        HK_ASSERT_(_Iterator >= ArrayData && _Iterator < ArrayData + ArraySize, "TPodVector::Erase");
         int Index = _Iterator - ArrayData;
         Platform::Memmove(ArrayData + Index, ArrayData + Index + 1, TYPE_SIZE * (ArraySize - Index - 1));
         ArraySize--;
@@ -450,7 +450,7 @@ public:
 
     Iterator EraseSwap(ConstIterator _Iterator)
     {
-        AN_ASSERT_(_Iterator >= ArrayData && _Iterator < ArrayData + ArraySize, "TPodVector::Erase");
+        HK_ASSERT_(_Iterator >= ArrayData && _Iterator < ArrayData + ArraySize, "TPodVector::Erase");
         int Index        = _Iterator - ArrayData;
         ArrayData[Index] = ArrayData[ArraySize - 1];
         ArraySize--;
@@ -459,7 +459,7 @@ public:
 
     Iterator Insert(ConstIterator _Iterator, const T& _Element)
     {
-        AN_ASSERT_(_Iterator >= ArrayData && _Iterator <= ArrayData + ArraySize, "TPodVector::Insert");
+        HK_ASSERT_(_Iterator >= ArrayData && _Iterator <= ArrayData + ArraySize, "TPodVector::Insert");
         int Index = _Iterator - ArrayData;
         Insert(Index, _Element);
         return ArrayData + Index;

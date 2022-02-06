@@ -31,7 +31,7 @@ SOFTWARE.
 #include "AmbientPlayer.h"
 #include "Engine.h"
 
-AN_CLASS_META(AAmbientPlayer)
+HK_CLASS_META(AAmbientPlayer)
 
 AAmbientPlayer::AAmbientPlayer()
 {

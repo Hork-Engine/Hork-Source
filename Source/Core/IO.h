@@ -42,7 +42,7 @@ Read file from archive
 */
 class AArchive final
 {
-    AN_FORBID_COPY(AArchive)
+    HK_FORBID_COPY(AArchive)
 
 public:
     AArchive();
@@ -100,7 +100,7 @@ Read/Write to file
 */
 class AFileStream final : public IBinaryStream
 {
-    AN_FORBID_COPY(AFileStream)
+    HK_FORBID_COPY(AFileStream)
 
 public:
     AFileStream()
@@ -193,7 +193,7 @@ Read/Write to memory
 */
 class AMemoryStream final : public IBinaryStream
 {
-    AN_FORBID_COPY(AMemoryStream)
+    HK_FORBID_COPY(AMemoryStream)
 
 public:
     AMemoryStream()

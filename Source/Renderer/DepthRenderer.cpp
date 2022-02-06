@@ -37,7 +37,7 @@ static bool BindMaterialDepthPass(IImmediateContext* immediateCtx, SRenderInstan
 {
     AMaterialGPU* pMaterial = instance->Material;
 
-    AN_ASSERT(pMaterial);
+    HK_ASSERT(pMaterial);
 
     int bSkinned = instance->SkeletonSize > 0;
 

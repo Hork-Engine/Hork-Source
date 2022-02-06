@@ -34,7 +34,7 @@ const AString AString::NullStr;
 
 void AString::GrowCapacity(int _Capacity, bool _CopyOld)
 {
-    AN_ASSERT(_Capacity > 0);
+    HK_ASSERT(_Capacity > 0);
 
     if (_Capacity <= Capacity)
     {
@@ -77,7 +77,7 @@ void AString::operator=( const char * _Str )
     // check if we're aliasing
     if ( _Str >= Data && _Str <= Data + Size ) {
         diff = _Str - Data;
-        AN_ASSERT( Platform::Strlen( _Str ) < Size );
+        HK_ASSERT( Platform::Strlen( _Str ) < Size );
         for ( i = 0; _Str[ i ]; i++ ) {
             Data[ i ] = _Str[ i ];
         }
@@ -353,7 +353,7 @@ int AStringView::Cmp(AStringView _Str) const
 
 int AStringView::IcmpN(AStringView _Str, int _Num) const
 {
-    AN_ASSERT(_Num >= 0);
+    HK_ASSERT(_Num >= 0);
 
     const char* s1 = Data;
     const char* e1 = Data + Size;
@@ -393,7 +393,7 @@ int AStringView::IcmpN(AStringView _Str, int _Num) const
 
 int AStringView::CmpN(AStringView _Str, int _Num) const
 {
-    AN_ASSERT(_Num >= 0);
+    HK_ASSERT(_Num >= 0);
 
     const char* s1 = Data;
     const char* e1 = Data + Size;

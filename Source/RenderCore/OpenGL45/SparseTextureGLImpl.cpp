@@ -63,7 +63,7 @@ ASparseTextureGLImpl::ASparseTextureGLImpl(ADeviceGLImpl* pDevice, SSparseTextur
     GLenum target         = SparseTextureTargetLUT[Desc.Type].Target;
     GLenum internalFormat = InternalFormatLUT[Desc.Format].InternalFormat;
 
-    AN_ASSERT(Desc.NumMipLevels > 0);
+    HK_ASSERT(Desc.NumMipLevels > 0);
 
     bCompressed = IsCompressedFormat(Desc.Format);
 

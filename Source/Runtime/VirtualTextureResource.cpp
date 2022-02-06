@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "VirtualTextureResource.h"
 
-AN_CLASS_META(AVirtualTextureResource)
+HK_CLASS_META(AVirtualTextureResource)
 
 AVirtualTextureResource::AVirtualTextureResource()
 {

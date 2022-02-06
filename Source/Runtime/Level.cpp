@@ -47,7 +47,7 @@ AConsoleVar com_DrawLevelAreaBounds(_CTS("com_DrawLevelAreaBounds"), _CTS("0"), 
 AConsoleVar com_DrawLevelIndoorBounds(_CTS("com_DrawLevelIndoorBounds"), _CTS("0"), CVAR_CHEAT);
 AConsoleVar com_DrawLevelPortals(_CTS("com_DrawLevelPortals"), _CTS("0"), CVAR_CHEAT);
 
-AN_CLASS_META(ALevel)
+HK_CLASS_META(ALevel)
 
 ALevel::APrimitiveLinkPool ALevel::PrimitiveLinkPool;
 
@@ -476,7 +476,7 @@ Float3 ALevel::SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord)
         return Float3(1.0f);
     }
 
-    AN_ASSERT(InLightmapBlock >= 0 && InLightmapBlock < Lightmaps.Size());
+    HK_ASSERT(InLightmapBlock >= 0 && InLightmapBlock < Lightmaps.Size());
 
     int numChannels = (LightmapFormat == LIGHTMAP_GRAYSCALED_HALF) ? 1 : 4;
     int blockSize   = LightmapBlockWidth * LightmapBlockHeight * numChannels;
@@ -761,7 +761,7 @@ void ALevel::QueryOverplapAreas(BvSphere const& InBounds, TPodVector<SVisArea*>&
 
 static SPrimitiveLink** LastLink;
 
-static AN_FORCEINLINE bool IsPrimitiveInArea(SPrimitiveDef const* InPrimitive, SVisArea const* InArea)
+static HK_FORCEINLINE bool IsPrimitiveInArea(SPrimitiveDef const* InPrimitive, SVisArea const* InArea)
 {
     for (SPrimitiveLink const* link = InPrimitive->Links; link; link = link->Next)
     {
@@ -962,7 +962,7 @@ void ALevel::UnlinkPrimitive(SPrimitiveDef* InPrimitive)
 
     while (link)
     {
-        AN_ASSERT(link->Area);
+        HK_ASSERT(link->Area);
 
         SPrimitiveLink** prev = &link->Area->Links;
         while (1)
@@ -1119,7 +1119,7 @@ void ALevel::MarkPrimitive(SPrimitiveDef* InPrimitive)
     INTRUSIVE_ADD_UNIQUE(InPrimitive, NextUpd, PrevUpd, PrimitiveUpdateList, PrimitiveUpdateListTail);
 }
 
-AN_CLASS_META(ABrushModel)
+HK_CLASS_META(ABrushModel)
 
 void ABrushModel::Purge()
 {

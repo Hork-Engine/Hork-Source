@@ -102,7 +102,7 @@ struct TActorSpawnInfo : SActorSpawnInfo
 /** AWorld. Defines a game map or editor/tool scene */
 class AWorld : public ABaseObject
 {
-    AN_CLASS(AWorld, ABaseObject)
+    HK_CLASS(AWorld, ABaseObject)
 
 public:
     /** Delegate to notify when any actor spawned */

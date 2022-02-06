@@ -35,7 +35,7 @@ SOFTWARE.
 template <typename T, int MAX_BLOCK_SIZE = 1024, int ALIGNMENT = 16>
 class TPoolAllocator
 {
-    AN_FORBID_COPY(TPoolAllocator)
+    HK_FORBID_COPY(TPoolAllocator)
 
     static_assert(MAX_BLOCK_SIZE >= 1, "Invalid MAX_BLOCK_SIZE");
     static_assert(ALIGNMENT >= 16 && ALIGNMENT <= 128 && IsPowerOfTwo(ALIGNMENT), "Alignment Check");
@@ -88,7 +88,7 @@ private:
 };
 
 template <typename T, int MAX_BLOCK_SIZE, int ALIGNMENT>
-AN_INLINE TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::TPoolAllocator()
+HK_INLINE TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::TPoolAllocator()
 {
     Blocks   = nullptr;
     CurBlock = nullptr;
@@ -98,13 +98,13 @@ AN_INLINE TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::TPoolAllocator()
 }
 
 template <typename T, int MAX_BLOCK_SIZE, int ALIGNMENT>
-AN_INLINE TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::~TPoolAllocator()
+HK_INLINE TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::~TPoolAllocator()
 {
     Free();
 }
 
 template <typename T, int MAX_BLOCK_SIZE, int ALIGNMENT>
-AN_INLINE void TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::Free()
+HK_INLINE void TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::Free()
 {
     while (Blocks)
     {
@@ -119,7 +119,7 @@ AN_INLINE void TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::Free()
 }
 
 template <typename T, int MAX_BLOCK_SIZE, int ALIGNMENT>
-AN_INLINE void TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::CleanupEmptyBlocks()
+HK_INLINE void TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::CleanupEmptyBlocks()
 {
     SBlock* prev = nullptr;
     SBlock* next;
@@ -168,7 +168,7 @@ AN_INLINE void TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::CleanupEmptyBlocks(
 }
 
 template <typename T, int MAX_BLOCK_SIZE, int ALIGNMENT>
-AN_INLINE typename TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::SBlock* TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::AllocateBlock()
+HK_INLINE typename TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::SBlock* TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::AllocateBlock()
 {
     SBlock* block   = (SBlock*)GHeapMemory.Alloc(sizeof(SBlock), ALIGNMENT);
     block->FreeList = block->Chunks;
@@ -195,7 +195,7 @@ AN_INLINE typename TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::SBlock* TPoolAl
 }
 
 template <typename T, int MAX_BLOCK_SIZE, int ALIGNMENT>
-AN_INLINE T* TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::Allocate()
+HK_INLINE T* TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::Allocate()
 {
     if (CurBlock && !CurBlock->FreeList)
     {
@@ -223,7 +223,7 @@ AN_INLINE T* TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::Allocate()
 }
 
 template <typename T, int MAX_BLOCK_SIZE, int ALIGNMENT>
-AN_INLINE void TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::Deallocate(void* _Bytes)
+HK_INLINE void TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::Deallocate(void* _Bytes)
 {
     SChunk* chunk = (SChunk*)_Bytes;
     CurBlock      = nullptr;
@@ -239,5 +239,5 @@ AN_INLINE void TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::Deallocate(void* _B
             break;
         }
     }
-    AN_ASSERT(CurBlock != nullptr);
+    HK_ASSERT(CurBlock != nullptr);
 }

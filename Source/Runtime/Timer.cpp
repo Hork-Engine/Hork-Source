@@ -38,7 +38,7 @@ enum TIMER_STATE
     TIMER_STATE_TRIGGERED_ON_FIRST_DELAY = 4
 };
 
-AN_CLASS_META(ATimer)
+HK_CLASS_META(ATimer)
 
 ATimer::ATimer()
 {}

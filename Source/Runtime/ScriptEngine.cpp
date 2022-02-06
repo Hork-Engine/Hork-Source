@@ -48,7 +48,7 @@ void PrintMessage(std::string const& message)
 
 struct SScopedContext
 {
-    AN_FORBID_COPY(SScopedContext)
+    HK_FORBID_COPY(SScopedContext)
 
     asIScriptContext* Self;
     AScriptEngine* pEngine;
@@ -1624,7 +1624,7 @@ static void RegisterQuat(asIScriptEngine* pEngine)
     void Read( IBinaryStream & _Stream );
     static constexpr int NumComponents();
     explicit constexpr Quat( Float4 const & _Value );
-    AN_FORCEINLINE Quat operator*( float _Left, Quat const & _Right );
+    HK_FORCEINLINE Quat operator*( float _Left, Quat const & _Right );
 #endif
 }
 
@@ -1733,7 +1733,7 @@ static void RegisterAngl(asIScriptEngine* pEngine)
     static constexpr int NumComponents() { return 3; }
     static Angl const & Zero();
     explicit constexpr Angl( Float3 const & _Value );
-    AN_FORCEINLINE Angl operator*( float _Left, Angl const & _Right )
+    HK_FORCEINLINE Angl operator*( float _Left, Angl const & _Right )
     static byte PackByte( float _Angle );
     static uint16_t PackShort( float _Angle );
     static float UnpackByte( byte _Angle );
@@ -2633,7 +2633,7 @@ asIScriptContext* AScriptContextPool::PrepareContext(asIScriptFunction* pFunctio
         pContext = pEngine->CreateContext();
 
     int r = pContext->Prepare(pFunction);
-    AN_ASSERT(r >= 0);
+    HK_ASSERT(r >= 0);
 
     return pContext;
 }

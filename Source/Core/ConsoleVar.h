@@ -35,32 +35,32 @@ SOFTWARE.
 
 enum CVAR_FLAGS
 {
-    CVAR_LATCHED    = AN_BIT(0),
-    CVAR_READONLY   = AN_BIT(1),
-    CVAR_NOSAVE     = AN_BIT(2),
-    CVAR_CHEAT      = AN_BIT(3),
-    CVAR_SERVERONLY = AN_BIT(4),
-    CVAR_NOINGAME   = AN_BIT(5),
+    CVAR_LATCHED    = HK_BIT(0),
+    CVAR_READONLY   = HK_BIT(1),
+    CVAR_NOSAVE     = HK_BIT(2),
+    CVAR_CHEAT      = HK_BIT(3),
+    CVAR_SERVERONLY = HK_BIT(4),
+    CVAR_NOINGAME   = HK_BIT(5),
 
     // Internal
-    _CVAR_MODIFIED = AN_BIT(6)
+    _CVAR_MODIFIED = HK_BIT(6)
 };
 
 enum CVAR_ENVIRONMENT_FLAGS
 {
     /** Is cheats allowed for the game. This allow to change console variables with flag CVAR_CHEAT */
-    CVAR_CHEATS_ALLOWED = AN_BIT(0),
+    CVAR_CHEATS_ALLOWED = HK_BIT(0),
 
     /** Is game server. This allow to change console variables with flag CVAR_SERVERONLY */
-    CVAR_SERVER_ACTIVE  = AN_BIT(1),
+    CVAR_SERVER_ACTIVE  = HK_BIT(1),
 
     /** Is in game. This blocks changing console variables with flag CVAR_NOINGAME */
-    CVAR_INGAME_STATUS  = AN_BIT(2)
+    CVAR_INGAME_STATUS  = HK_BIT(2)
 };
 
 class AConsoleVar final
 {
-    AN_FORBID_COPY(AConsoleVar)
+    HK_FORBID_COPY(AConsoleVar)
 
 public:
     static int EnvironmentFlags;

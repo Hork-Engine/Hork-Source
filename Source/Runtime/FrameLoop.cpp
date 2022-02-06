@@ -269,7 +269,7 @@ struct SKeyMappingsSDL : public TArray<unsigned short, SDL_NUM_SCANCODES>
 
 static const SKeyMappingsSDL SDLKeyMappings;
 
-static AN_FORCEINLINE int FromKeymodSDL(Uint16 Mod)
+static HK_FORCEINLINE int FromKeymodSDL(Uint16 Mod)
 {
     int modMask = 0;
 
@@ -296,7 +296,7 @@ static AN_FORCEINLINE int FromKeymodSDL(Uint16 Mod)
     return modMask;
 }
 
-static AN_FORCEINLINE int FromKeymodSDL_Char(Uint16 Mod)
+static HK_FORCEINLINE int FromKeymodSDL_Char(Uint16 Mod)
 {
     int modMask = 0;
 
@@ -743,7 +743,7 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
             case SDL_JOYAXISMOTION: {
                 if (event.jaxis.which >= 0 && event.jaxis.which < MAX_JOYSTICKS_COUNT)
                 {
-                    AN_ASSERT(JoystickAdded[event.jaxis.which]);
+                    HK_ASSERT(JoystickAdded[event.jaxis.which]);
                     if (event.jaxis.axis >= 0 && event.jaxis.axis < MAX_JOYSTICK_AXES)
                     {
                         if (JoystickAxisState[event.jaxis.which][event.jaxis.axis] != event.jaxis.value)
@@ -758,12 +758,12 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
                     }
                     else
                     {
-                        AN_ASSERT_(0, "Invalid joystick axis num");
+                        HK_ASSERT_(0, "Invalid joystick axis num");
                     }
                 }
                 else
                 {
-                    AN_ASSERT_(0, "Invalid joystick id");
+                    HK_ASSERT_(0, "Invalid joystick id");
                 }
                 break;
             }
@@ -784,7 +784,7 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
             case SDL_JOYBUTTONUP: {
                 if (event.jbutton.which >= 0 && event.jbutton.which < MAX_JOYSTICKS_COUNT)
                 {
-                    AN_ASSERT(JoystickAdded[event.jbutton.which]);
+                    HK_ASSERT(JoystickAdded[event.jbutton.which]);
                     if (event.jbutton.button >= 0 && event.jbutton.button < MAX_JOYSTICK_BUTTONS)
                     {
                         if (JoystickButtonState[event.jbutton.which][event.jbutton.button] != event.jbutton.state)
@@ -799,12 +799,12 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
                     }
                     else
                     {
-                        AN_ASSERT_(0, "Invalid joystick button num");
+                        HK_ASSERT_(0, "Invalid joystick button num");
                     }
                 }
                 else
                 {
-                    AN_ASSERT_(0, "Invalid joystick id");
+                    HK_ASSERT_(0, "Invalid joystick id");
                 }
                 break;
             }
@@ -813,7 +813,7 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
             case SDL_JOYDEVICEADDED:
                 if (event.jdevice.which >= 0 && event.jdevice.which < MAX_JOYSTICKS_COUNT)
                 {
-                    AN_ASSERT(!JoystickAdded[event.jdevice.which]);
+                    HK_ASSERT(!JoystickAdded[event.jdevice.which]);
                     JoystickAdded[event.jdevice.which] = true;
 
                     Platform::ZeroMem(JoystickButtonState[event.jdevice.which].ToPtr(), sizeof(JoystickButtonState[0]));
@@ -821,7 +821,7 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
                 }
                 else
                 {
-                    AN_ASSERT_(0, "Invalid joystick id");
+                    HK_ASSERT_(0, "Invalid joystick id");
                 }
                 GLogger.Printf("PollEvent: Joystick added\n");
                 break;
@@ -835,12 +835,12 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
                     UnpressJoystickButtons(Listener, event.jdevice.which, timeStamp);
                     ClearJoystickAxes(Listener, event.jdevice.which, timeStamp);
 
-                    AN_ASSERT(JoystickAdded[event.jdevice.which]);
+                    HK_ASSERT(JoystickAdded[event.jdevice.which]);
                     JoystickAdded[event.jdevice.which] = false;
                 }
                 else
                 {
-                    AN_ASSERT_(0, "Invalid joystick id");
+                    HK_ASSERT_(0, "Invalid joystick id");
                 }
 
                 GLogger.Printf("PollEvent: Joystick removed\n");

@@ -32,7 +32,7 @@ SOFTWARE.
 #include "SkinnedComponent.h"
 #include "Animation.h"
 
-AN_CLASS_META(AAnimationController)
+HK_CLASS_META(AAnimationController)
 
 AAnimationController::AAnimationController()
 {

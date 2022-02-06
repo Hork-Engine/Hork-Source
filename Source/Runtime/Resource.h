@@ -34,7 +34,7 @@ SOFTWARE.
 
 class AResource : public ABaseObject
 {
-    AN_CLASS(AResource, ABaseObject)
+    HK_CLASS(AResource, ABaseObject)
 
     friend class AResourceManager;
 
@@ -74,7 +74,7 @@ private:
 
 class ABinaryResource : public AResource
 {
-    AN_CLASS(ABinaryResource, AResource)
+    HK_CLASS(ABinaryResource, AResource)
 
 public:
     void* GetBinaryData()

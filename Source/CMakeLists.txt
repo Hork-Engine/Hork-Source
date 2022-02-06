@@ -4,8 +4,6 @@ project( ${PROJECT} )
 
 setup_msvc_runtime_library()
 
-add_definitions( -DANGIE_ENGINE_EXPORTS )
-
 include_directories( . )
 
 set_property(GLOBAL PROPERTY USE_FOLDERS TRUE)
@@ -63,7 +61,7 @@ option( BUILD_BULLET3 "Set when you want to build Bullet 3" OFF)
 include_directories( ThirdParty/bullet3/src )
 add_subdirectory_with_folder( "ThirdParty/BulletPhysics" ThirdParty/bullet3 )
 
-set( AN_BULLET_LIBS
+set( HK_BULLET_LIBS
 BulletSoftBody
 BulletDynamics
 BulletCollision
@@ -278,7 +276,7 @@ ${Imgui}
 set_property( TARGET ${PROJECT} PROPERTY POSITION_INDEPENDENT_CODE ON )
 
 set( LIBRARIES
-        ${AN_BULLET_LIBS}
+        ${HK_BULLET_LIBS}
         ${OPENGL_gl_LIBRARY}
         vhacd
         Recast
@@ -306,5 +304,5 @@ set_target_properties( ${PROJECT}
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/../Binary/Win64"
 )
 
-target_compile_definitions(${PROJECT} PUBLIC ${AN_COMPILER_DEFINES})
-target_compile_options(${PROJECT} PUBLIC ${AN_COMPILER_FLAGS})
+target_compile_definitions(${PROJECT} PUBLIC ${HK_COMPILER_DEFINES})
+target_compile_options(${PROJECT} PUBLIC ${HK_COMPILER_FLAGS})

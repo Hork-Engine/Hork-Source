@@ -54,7 +54,7 @@ struct SEntryDecl;
 
 class AEngine : public IEventListener
 {
-    AN_FORBID_COPY(AEngine)
+    HK_FORBID_COPY(AEngine)
 
 public:
     ACanvas Canvas;

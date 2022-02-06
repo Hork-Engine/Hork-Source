@@ -60,7 +60,7 @@ Base class for all actor components that have its position, rotation and scale
 */
 class ASceneComponent : public AActorComponent
 {
-    AN_COMPONENT(ASceneComponent, AActorComponent)
+    HK_COMPONENT(ASceneComponent, AActorComponent)
 
 public:
     /** Attach to parent component */

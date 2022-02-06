@@ -153,7 +153,7 @@ static void ComputeNode_r(ClipperLib::PolyNode const& node, TStdVector<SClipperP
             polygon.Holes.Append(hole);
 
             // FIXME: May hole have childs?
-            AN_ASSERT(child.ChildCount() == 0);
+            HK_ASSERT(child.ChildCount() == 0);
         }
         else
         {
@@ -184,7 +184,7 @@ static void ComputeContours(ClipperLib::PolyTree const& polygonTree, TStdVector<
 
                 // FIXME: May hole have childs?
 
-                AN_ASSERT(0);
+                HK_ASSERT(0);
             }
             else
             {

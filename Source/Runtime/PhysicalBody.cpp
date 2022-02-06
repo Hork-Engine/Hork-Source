@@ -125,7 +125,7 @@ void APhysicalBodyMotionState::setWorldTransform(btTransform const& _CenterOfMas
     bDuringMotionStateUpdate = false;
 }
 
-AN_FORCEINLINE void SetAttributeFromString(EMotionBehavior& Attribute, AString const& String)
+HK_FORCEINLINE void SetAttributeFromString(EMotionBehavior& Attribute, AString const& String)
 {
     if (String == "STATIC")
     {
@@ -157,7 +157,7 @@ void SetAttributeToString(EMotionBehavior Attribute, AString& String)
     }
 }
 
-AN_FORCEINLINE void SetAttributeFromString(EAINavigationBehavior& Attribute, AString const& String)
+HK_FORCEINLINE void SetAttributeFromString(EAINavigationBehavior& Attribute, AString const& String)
 {
     if (String == "NONE")
     {
@@ -210,32 +210,32 @@ void SetAttributeToString(EAINavigationBehavior Attribute, AString& String)
     }
 }
 
-AN_BEGIN_CLASS_META(APhysicalBody)
-AN_ATTRIBUTE(bDispatchContactEvents, bool, SetDispatchContactEvents, ShouldDispatchContactEvents, AF_DEFAULT)
-AN_ATTRIBUTE(bDispatchOverlapEvents, bool, SetDispatchOverlapEvents, ShouldDispatchOverlapEvents, AF_DEFAULT)
-AN_ATTRIBUTE(bGenerateContactPoints, bool, SetGenerateContactPoints, ShouldGenerateContactPoints, AF_DEFAULT)
-AN_ATTRIBUTE_(bUseMeshCollision, AF_DEFAULT)
-AN_ATTRIBUTE(MotionBehavior, EMotionBehavior, SetMotionBehavior, GetMotionBehavior, AF_DEFAULT)
-AN_ATTRIBUTE(AINavigationBehavior, EAINavigationBehavior, SetAINavigationBehavior, GetAINavigationBehavior, AF_DEFAULT)
-AN_ATTRIBUTE(IsTrigger, bool, SetTrigger, IsTrigger, AF_DEFAULT)
-AN_ATTRIBUTE(DisableGravity, bool, SetDisableGravity, IsGravityDisabled, AF_DEFAULT)
-AN_ATTRIBUTE(OverrideWorldGravity, bool, SetOverrideWorldGravity, IsWorldGravityOverriden, AF_DEFAULT)
-AN_ATTRIBUTE(SelfGravity, Float3, SetSelfGravity, GetSelfGravity, AF_DEFAULT)
-AN_ATTRIBUTE(Mass, float, SetMass, GetMass, AF_DEFAULT)
-AN_ATTRIBUTE(CollisionGroup, int, SetCollisionGroup, GetCollisionGroup, AF_DEFAULT)
-AN_ATTRIBUTE(CollisionMask, int, SetCollisionMask, GetCollisionMask, AF_DEFAULT)
-AN_ATTRIBUTE(LinearSleepingThreshold, float, SetLinearSleepingThreshold, GetLinearSleepingThreshold, AF_DEFAULT)
-AN_ATTRIBUTE(LinearDamping, float, SetLinearDamping, GetLinearDamping, AF_DEFAULT)
-AN_ATTRIBUTE(AngularSleepingThreshold, float, SetAngularSleepingThreshold, GetAngularSleepingThreshold, AF_DEFAULT)
-AN_ATTRIBUTE(AngularDamping, float, SetAngularDamping, GetAngularDamping, AF_DEFAULT)
-AN_ATTRIBUTE(Friction, float, SetFriction, GetFriction, AF_DEFAULT)
-AN_ATTRIBUTE(AnisotropicFriction, Float3, SetAnisotropicFriction, GetAnisotropicFriction, AF_DEFAULT)
-AN_ATTRIBUTE(RollingFriction, float, SetRollingFriction, GetRollingFriction, AF_DEFAULT)
-AN_ATTRIBUTE(Restitution, float, SetRestitution, GetRestitution, AF_DEFAULT)
-AN_ATTRIBUTE(ContactProcessingThreshold, float, SetContactProcessingThreshold, GetContactProcessingThreshold, AF_DEFAULT)
-AN_ATTRIBUTE(CcdRadius, float, SetCcdRadius, GetCcdRadius, AF_DEFAULT)
-AN_ATTRIBUTE(CcdMotionThreshold, float, SetCcdMotionThreshold, GetCcdMotionThreshold, AF_DEFAULT)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(APhysicalBody)
+HK_ATTRIBUTE(bDispatchContactEvents, bool, SetDispatchContactEvents, ShouldDispatchContactEvents, AF_DEFAULT)
+HK_ATTRIBUTE(bDispatchOverlapEvents, bool, SetDispatchOverlapEvents, ShouldDispatchOverlapEvents, AF_DEFAULT)
+HK_ATTRIBUTE(bGenerateContactPoints, bool, SetGenerateContactPoints, ShouldGenerateContactPoints, AF_DEFAULT)
+HK_ATTRIBUTE_(bUseMeshCollision, AF_DEFAULT)
+HK_ATTRIBUTE(MotionBehavior, EMotionBehavior, SetMotionBehavior, GetMotionBehavior, AF_DEFAULT)
+HK_ATTRIBUTE(AINavigationBehavior, EAINavigationBehavior, SetAINavigationBehavior, GetAINavigationBehavior, AF_DEFAULT)
+HK_ATTRIBUTE(IsTrigger, bool, SetTrigger, IsTrigger, AF_DEFAULT)
+HK_ATTRIBUTE(DisableGravity, bool, SetDisableGravity, IsGravityDisabled, AF_DEFAULT)
+HK_ATTRIBUTE(OverrideWorldGravity, bool, SetOverrideWorldGravity, IsWorldGravityOverriden, AF_DEFAULT)
+HK_ATTRIBUTE(SelfGravity, Float3, SetSelfGravity, GetSelfGravity, AF_DEFAULT)
+HK_ATTRIBUTE(Mass, float, SetMass, GetMass, AF_DEFAULT)
+HK_ATTRIBUTE(CollisionGroup, int, SetCollisionGroup, GetCollisionGroup, AF_DEFAULT)
+HK_ATTRIBUTE(CollisionMask, int, SetCollisionMask, GetCollisionMask, AF_DEFAULT)
+HK_ATTRIBUTE(LinearSleepingThreshold, float, SetLinearSleepingThreshold, GetLinearSleepingThreshold, AF_DEFAULT)
+HK_ATTRIBUTE(LinearDamping, float, SetLinearDamping, GetLinearDamping, AF_DEFAULT)
+HK_ATTRIBUTE(AngularSleepingThreshold, float, SetAngularSleepingThreshold, GetAngularSleepingThreshold, AF_DEFAULT)
+HK_ATTRIBUTE(AngularDamping, float, SetAngularDamping, GetAngularDamping, AF_DEFAULT)
+HK_ATTRIBUTE(Friction, float, SetFriction, GetFriction, AF_DEFAULT)
+HK_ATTRIBUTE(AnisotropicFriction, Float3, SetAnisotropicFriction, GetAnisotropicFriction, AF_DEFAULT)
+HK_ATTRIBUTE(RollingFriction, float, SetRollingFriction, GetRollingFriction, AF_DEFAULT)
+HK_ATTRIBUTE(Restitution, float, SetRestitution, GetRestitution, AF_DEFAULT)
+HK_ATTRIBUTE(ContactProcessingThreshold, float, SetContactProcessingThreshold, GetContactProcessingThreshold, AF_DEFAULT)
+HK_ATTRIBUTE(CcdRadius, float, SetCcdRadius, GetCcdRadius, AF_DEFAULT)
+HK_ATTRIBUTE(CcdMotionThreshold, float, SetCcdMotionThreshold, GetCcdMotionThreshold, AF_DEFAULT)
+HK_END_CLASS_META()
 
 APhysicalBody::APhysicalBody()
 {
@@ -551,9 +551,9 @@ void APhysicalBody::SetRigidBodyGravity()
 
 void APhysicalBody::CreateRigidBody()
 {
-    AN_ASSERT(MotionState == nullptr);
-    AN_ASSERT(RigidBody == nullptr);
-    AN_ASSERT(CollisionInstance == nullptr);
+    HK_ASSERT(MotionState == nullptr);
+    HK_ASSERT(RigidBody == nullptr);
+    HK_ASSERT(CollisionInstance == nullptr);
 
     CachedScale = GetWorldScale();
 
@@ -752,7 +752,7 @@ void APhysicalBody::OnTransformDirty()
 
 void APhysicalBody::SetCenterOfMassPosition(Float3 const& _Position)
 {
-    AN_ASSERT(RigidBody);
+    HK_ASSERT(RigidBody);
 
     btTransform& centerOfMassTransform = RigidBody->getWorldTransform();
     centerOfMassTransform.setOrigin(btVectorToFloat3(_Position) + centerOfMassTransform.getBasis() * btVectorToFloat3(MotionState->CenterOfMass));
@@ -769,7 +769,7 @@ void APhysicalBody::SetCenterOfMassPosition(Float3 const& _Position)
 
 void APhysicalBody::SetCenterOfMassRotation(Quat const& _Rotation)
 {
-    AN_ASSERT(RigidBody);
+    HK_ASSERT(RigidBody);
 
     btTransform& centerOfMassTransform = RigidBody->getWorldTransform();
 

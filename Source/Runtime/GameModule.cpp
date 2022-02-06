@@ -32,7 +32,7 @@ SOFTWARE.
 #include "Engine.h"
 #include "Material.h"
 
-AN_CLASS_META(AGameModule)
+HK_CLASS_META(AGameModule)
 
 AGameModule::AGameModule()
 {

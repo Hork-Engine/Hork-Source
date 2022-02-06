@@ -75,7 +75,7 @@ struct SScrollbarGeometry
 
 class WScroll : public WWidget
 {
-    AN_CLASS(WScroll, WWidget)
+    HK_CLASS(WScroll, WWidget)
 
 public:
     WScroll& SetContentWidget(WWidget* _Content);

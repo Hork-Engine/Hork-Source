@@ -64,7 +64,7 @@ private:
 
 class WDesktop : public ABaseObject
 {
-    AN_CLASS(WDesktop, ABaseObject)
+    HK_CLASS(WDesktop, ABaseObject)
 
     friend class WWidget;
 

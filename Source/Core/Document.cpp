@@ -864,7 +864,7 @@ ADocMember* ADocValue::AddArray(const char* ArrayName)
 
 void ADocValue::AddMember(ADocMember* Member)
 {
-    AN_ASSERT(Type == ADocValue::TYPE_OBJECT);
+    HK_ASSERT(Type == ADocValue::TYPE_OBJECT);
 
     Member->AddRef();
 
@@ -922,7 +922,7 @@ ADocMember::~ADocMember()
 
 void ADocMember::AddValue(ADocValue* pValue)
 {
-    AN_ASSERT(pValue->Next == nullptr && pValue->Prev == nullptr);
+    HK_ASSERT(pValue->Next == nullptr && pValue->Prev == nullptr);
     pValue->AddRef();
     pValue->Prev = ValuesEnd;
     if (pValue->Prev != nullptr)

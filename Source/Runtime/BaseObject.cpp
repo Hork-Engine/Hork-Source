@@ -31,7 +31,7 @@ SOFTWARE.
 #include "BaseObject.h"
 #include <Core/IntrusiveLinkedListMacro.h>
 
-AN_CLASS_META(ABaseObject)
+HK_CLASS_META(ABaseObject)
 
 uint64_t ABaseObject::TotalObjects = 0;
 
@@ -62,7 +62,7 @@ ABaseObject::~ABaseObject()
 
 void ABaseObject::AddRef()
 {
-    AN_ASSERT_(RefCount != -666, "Calling AddRef() in destructor");
+    HK_ASSERT_(RefCount != -666, "Calling AddRef() in destructor");
     ++RefCount;
     if (RefCount == 1)
     {
@@ -72,13 +72,13 @@ void ABaseObject::AddRef()
 
 void ABaseObject::RemoveRef()
 {
-    AN_ASSERT_(RefCount != -666, "Calling RemoveRef() in destructor");
+    HK_ASSERT_(RefCount != -666, "Calling RemoveRef() in destructor");
     if (--RefCount == 0)
     {
         AGarbageCollector::AddObject(this);
         return;
     }
-    AN_ASSERT(RefCount > 0);
+    HK_ASSERT(RefCount > 0);
 }
 
 ABaseObject* ABaseObject::FindObject(uint64_t _Id)

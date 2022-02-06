@@ -34,7 +34,7 @@ SOFTWARE.
 #include "AnimationPattern.h"
 
 class ALightComponent : public ASceneComponent {
-    AN_COMPONENT( ALightComponent, ASceneComponent )
+    HK_COMPONENT( ALightComponent, ASceneComponent )
 
 public:
     virtual void SetEnabled( bool _Enabled );

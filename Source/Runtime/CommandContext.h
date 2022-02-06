@@ -37,7 +37,7 @@ SOFTWARE.
 
 class ACommandContext : public ICommandContext
 {
-    AN_FORBID_COPY(ACommandContext)
+    HK_FORBID_COPY(ACommandContext)
 
 public:
     ACommandContext();

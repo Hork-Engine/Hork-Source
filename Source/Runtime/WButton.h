@@ -41,7 +41,7 @@ enum EWidgetButtonTextAlign
 
 class WButton : public WWidget
 {
-    AN_CLASS(WButton, WWidget)
+    HK_CLASS(WButton, WWidget)
 
 public:
     TWidgetEvent<WButton*> E_OnButtonClick;
@@ -96,7 +96,7 @@ private:
 
 class WTextButton : public WButton
 {
-    AN_CLASS(WTextButton, WButton)
+    HK_CLASS(WTextButton, WButton)
 
 public:
     WTextButton& SetText(AStringView _Text);
@@ -135,7 +135,7 @@ private:
 
 class WImageButton : public WButton
 {
-    AN_CLASS(WImageButton, WButton)
+    HK_CLASS(WImageButton, WButton)
 
 public:
     WImageButton& SetImage(ATexture* _Image);

@@ -30,9 +30,9 @@ SOFTWARE.
 
 #include "AnimationPattern.h"
 
-AN_CLASS_META(AAnimationPattern)
+HK_CLASS_META(AAnimationPattern)
 
-AN_FORCEINLINE float Quantize(float _Lerp, float _Quantizer)
+HK_FORCEINLINE float Quantize(float _Lerp, float _Quantizer)
 {
     return _Quantizer > 0.0f ? Math::Floor(_Lerp * _Quantizer) / _Quantizer : _Lerp;
 }

@@ -44,7 +44,7 @@ AConsoleVar r_ResetCacheVT(_CTS("r_ResetCacheVT"), _CTS("0"));
 
 AVirtualTextureCache::AVirtualTextureCache(SVirtualTextureCacheCreateInfo const& CreateInfo)
 {
-    AN_ASSERT(CreateInfo.PageResolutionB > VT_PAGE_BORDER_WIDTH * 2 && CreateInfo.PageResolutionB <= 512);
+    HK_ASSERT(CreateInfo.PageResolutionB > VT_PAGE_BORDER_WIDTH * 2 && CreateInfo.PageResolutionB <= 512);
 
     PageResolutionB = CreateInfo.PageResolutionB;
 
@@ -136,7 +136,7 @@ AVirtualTextureCache::AVirtualTextureCache(SVirtualTextureCacheCreateInfo const&
                                            MAP_PERSISTENT_COHERENT,
                                            false,
                                            false);
-    AN_ASSERT(IsAlignedPtr(pTransferData, 16));
+    HK_ASSERT(IsAlignedPtr(pTransferData, 16));
 
     TransferDataOffset = 0;
     TransferAllocPoint = 0;
@@ -198,7 +198,7 @@ bool AVirtualTextureCache::CreateTexture(const char* FileName, TRef<AVirtualText
 //void AVirtualTextureCache::DestroyTexture( TRef< AVirtualTexture > * ppTexture ) {
 //    AVirtualTexture * pTexture = *ppTexture;
 
-//    AN_ASSERT( pTexture && pTexture->pCache == this );
+//    HK_ASSERT( pTexture && pTexture->pCache == this );
 
 //    if ( !pTexture || pTexture->pCache != this ) {
 //        GLogger.Printf( "AVirtualTextureCache::DestroyTexture: invalid texture\n" );
@@ -210,7 +210,7 @@ bool AVirtualTextureCache::CreateTexture(const char* FileName, TRef<AVirtualText
 
 AVirtualTextureCache::SPageTransfer* AVirtualTextureCache::CreatePageTransfer()
 {
-    AN_ASSERT(LayerInfo.size() > 0);
+    HK_ASSERT(LayerInfo.size() > 0);
 
     // TODO: break if thread was stopped
     do {
@@ -319,7 +319,7 @@ void AVirtualTextureCache::Update()
         {
             uint32_t absIndex = texture->PendingUpdateLRU[i];
 
-            AN_ASSERT(texture->PIT[absIndex] & PF_CACHED);
+            HK_ASSERT(texture->PIT[absIndex] & PF_CACHED);
 
             const uint16_t* pageIndirection = texture->GetIndirectionData();
 
@@ -403,7 +403,7 @@ void AVirtualTextureCache::Update()
 
         // get new cached page index
         int physPageIndex = physPage->pInfo - PhysPageInfo.ToPtr();
-        AN_ASSERT(physPageIndex < PageCacheCapacity);
+        HK_ASSERT(physPageIndex < PageCacheCapacity);
 
         TransferPageData(transfer, physPageIndex);
 

@@ -34,7 +34,7 @@ SOFTWARE.
 
 class ASpotLightComponent : public AAnalyticLightComponent
 {
-    AN_COMPONENT(ASpotLightComponent, AAnalyticLightComponent)
+    HK_COMPONENT(ASpotLightComponent, AAnalyticLightComponent)
 
 public:
     void  SetRadius(float _Radius);

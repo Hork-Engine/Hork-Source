@@ -79,7 +79,7 @@ ACircularBuffer::~ACircularBuffer()
 
 size_t ACircularBuffer::Allocate( size_t InSize )
 {
-    AN_ASSERT( InSize > 0 && InSize <= BufferSize );
+    HK_ASSERT( InSize > 0 && InSize <= BufferSize );
 
     SChainBuffer * pChainBuffer = &ChainBuffer[BufferIndex];
 

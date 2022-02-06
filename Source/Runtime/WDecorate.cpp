@@ -32,7 +32,7 @@ SOFTWARE.
 #include "WWidget.h"
 #include "ResourceManager.h"
 
-AN_CLASS_META(WDecorate)
+HK_CLASS_META(WDecorate)
 
 WDecorate::WDecorate()
 {
@@ -47,7 +47,7 @@ void WDecorate::OnDrawEvent(ACanvas& _Canvas)
 }
 
 
-AN_CLASS_META(WTextDecorate)
+HK_CLASS_META(WTextDecorate)
 
 WTextDecorate::WTextDecorate()
 {
@@ -175,7 +175,7 @@ void WTextDecorate::OnDrawEvent(ACanvas& _Canvas)
 
 
 
-AN_CLASS_META(WBorderDecorate)
+HK_CLASS_META(WBorderDecorate)
 
 WBorderDecorate::WBorderDecorate()
 {
@@ -242,7 +242,7 @@ void WBorderDecorate::OnDrawEvent(ACanvas& _Canvas)
 }
 
 
-AN_CLASS_META(WImageDecorate)
+HK_CLASS_META(WImageDecorate)
 
 WImageDecorate::WImageDecorate()
 {

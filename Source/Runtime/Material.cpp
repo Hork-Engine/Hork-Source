@@ -36,8 +36,8 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 
-AN_CLASS_META(AMaterial)
-AN_CLASS_META(AMaterialInstance)
+HK_CLASS_META(AMaterial)
+HK_CLASS_META(AMaterialInstance)
 
 static AMaterial *GMaterials = nullptr, *GMaterialsTail = nullptr;
 

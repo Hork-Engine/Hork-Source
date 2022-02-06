@@ -40,7 +40,7 @@ static const float MIN_RADIUS     = 0.01f;
 
 AConsoleVar com_DrawPointLights(_CTS("com_DrawPointLights"), _CTS("0"), CVAR_CHEAT);
 
-AN_CLASS_META(APointLightComponent)
+HK_CLASS_META(APointLightComponent)
 
 APointLightComponent::APointLightComponent()
 {

@@ -73,7 +73,7 @@ ASSAORenderer::ASSAORenderer()
     resourceLayout.NumBuffers = 2;
     resourceLayout.Buffers    = bufferInfo;
 
-    resourceLayout.NumSamplers = AN_ARRAY_SIZE(pipeSamplers);
+    resourceLayout.NumSamplers = HK_ARRAY_SIZE(pipeSamplers);
     resourceLayout.Samplers    = pipeSamplers;
 
     CreateFullscreenQuadPipeline(&Pipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/simple.frag", &resourceLayout);
@@ -86,7 +86,7 @@ ASSAORenderer::ASSAORenderer()
     // Normal texture sampler
     cacheAwareSamplers[1] = nearestSampler;
 
-    resourceLayout.NumSamplers = AN_ARRAY_SIZE(cacheAwareSamplers);
+    resourceLayout.NumSamplers = HK_ARRAY_SIZE(cacheAwareSamplers);
     resourceLayout.Samplers    = cacheAwareSamplers;
 
     CreateFullscreenQuadPipelineGS(&CacheAwarePipe, "postprocess/ssao/ssao.vert", "postprocess/ssao/deinterleaved.frag", "postprocess/ssao/deinterleaved.geom", &resourceLayout);
@@ -103,7 +103,7 @@ ASSAORenderer::ASSAORenderer()
     // Linear depth sampler
     blurSamplers[1] = nearestSampler;
 
-    resourceLayout.NumSamplers = AN_ARRAY_SIZE(blurSamplers);
+    resourceLayout.NumSamplers = HK_ARRAY_SIZE(blurSamplers);
     resourceLayout.Samplers    = blurSamplers;
 
     CreateFullscreenQuadPipeline(&BlurPipe, "postprocess/ssao/blur.vert", "postprocess/ssao/blur.frag", &resourceLayout);

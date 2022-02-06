@@ -36,10 +36,10 @@ SOFTWARE.
 #include <Core/BaseMath.h>
 
 #include "GL/glew.h"
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 #    include "GL/wglew.h"
 #endif
-#ifdef AN_OS_LINUX
+#ifdef HK_OS_LINUX
 #    include "GL/glxew.h"
 #endif
 

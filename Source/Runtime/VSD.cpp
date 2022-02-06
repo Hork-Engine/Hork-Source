@@ -86,7 +86,7 @@ void AVSD::ProcessLevelVisibility(ALevel* InLevel)
 
         //GLogger.Printf( "NodeViewMark %d\n", NodeViewMark );
 
-        //AN_ASSERT( NodeViewMark != 0 );
+        //HK_ASSERT( NodeViewMark != 0 );
 
         LevelTraverse_r(0, cullBits);
     }
@@ -443,7 +443,7 @@ bool AVSD::ClipPolygonFast(Float3 const* InPoints, const int InNumPoints, SPorta
     int   i;
     float d;
 
-    AN_ASSERT(InNumPoints + 4 <= MAX_HULL_POINTS);
+    HK_ASSERT(InNumPoints + 4 <= MAX_HULL_POINTS);
 
     // Classify hull points
     for (i = 0; i < InNumPoints; i++)
@@ -530,7 +530,7 @@ AVSD::SPortalHull* AVSD::CalcPortalWinding(SPortalLink const* InPortal, SPortalS
     if (!ClipPolygonFast(InPortal->Hull->Points, InPortal->Hull->NumPoints, &PortalHull[flip], ViewPlane, 0.0f))
     {
 
-        AN_ASSERT(InPortal->Hull->NumPoints <= MAX_HULL_POINTS);
+        HK_ASSERT(InPortal->Hull->NumPoints <= MAX_HULL_POINTS);
 
         Platform::Memcpy(PortalHull[flip].Points, InPortal->Hull->Points, InPortal->Hull->NumPoints * sizeof(Float3));
         PortalHull[flip].NumPoints = InPortal->Hull->NumPoints;
@@ -571,7 +571,7 @@ void AVSD::CalcPortalScissor(SPortalScissor& OutScissor, SPortalHull const* InHu
         const float d = Math::Dot(ViewPlane.Normal, vec);
 
         //if ( d < ViewZNear ) {
-        //    AN_ASSERT(0);
+        //    HK_ASSERT(0);
         //}
 
         const Float3 p = d < ViewZNear ? vec : vec * (ViewZNear / d);
@@ -595,17 +595,17 @@ void AVSD::CalcPortalScissor(SPortalScissor& OutScissor, SPortalHull const* InHu
     OutScissor.MaxY = Math::Min(InStack->Scissor.MaxY, OutScissor.MaxY);
 }
 
-AN_FORCEINLINE bool AVSD::FaceCull(SPrimitiveDef const* InPrimitive)
+HK_FORCEINLINE bool AVSD::FaceCull(SPrimitiveDef const* InPrimitive)
 {
     return InPrimitive->Face.DistanceToPoint(ViewPosition) < 0.0f;
 }
 
-AN_FORCEINLINE bool AVSD::FaceCull(SSurfaceDef const* InSurface)
+HK_FORCEINLINE bool AVSD::FaceCull(SSurfaceDef const* InSurface)
 {
     return InSurface->Face.DistanceToPoint(ViewPosition) < 0.0f;
 }
 
-AN_INLINE bool VSD_CullBoxSingle(PlaneF const* InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBox const& InBounds)
+HK_INLINE bool VSD_CullBoxSingle(PlaneF const* InCullPlanes, const int InCullPlanesCount, BvAxisAlignedBox const& InBounds)
 {
     bool inside = true;
 
@@ -620,7 +620,7 @@ AN_INLINE bool VSD_CullBoxSingle(PlaneF const* InCullPlanes, const int InCullPla
     return !inside;
 }
 
-AN_INLINE bool VSD_CullSphereSingle(PlaneF const* InCullPlanes, const int InCullPlanesCount, BvSphere const& InBounds)
+HK_INLINE bool VSD_CullSphereSingle(PlaneF const* InCullPlanes, const int InCullPlanesCount, BvSphere const& InBounds)
 {
 #if 0
     bool cull = false;
@@ -716,7 +716,7 @@ void AVSD::CullPrimitives(SVisArea const* InArea, PlaneF const* InCullPlanes, co
     for (SPrimitiveLink* link = InArea->Links; link; link = link->NextInArea)
     {
 
-        AN_ASSERT(link->Area == InArea);
+        HK_ASSERT(link->Area == InArea);
 
         SPrimitiveDef* primitive = link->Primitive;
 
@@ -1190,7 +1190,7 @@ void AVSD::SubmitCullingJobs(SCullJobSubmit& InSubmit)
         cullObjectsPerThread = 0;
     }
 
-    AN_ASSERT(InSubmit.JobCullPlanesCount <= MAX_CULL_PLANES);
+    HK_ASSERT(InSubmit.JobCullPlanesCount <= MAX_CULL_PLANES);
 
     if (threasCount <= 1 || cullObjectsPerThread < MIN_OBJECTS_PER_THREAD)
     {
@@ -1254,7 +1254,7 @@ void AVSD::SubmitCullingJobs(SCullJobSubmit& InSubmit)
     }
 }
 
-AN_INLINE bool RayIntersectTriangleFast(Float3 const& _RayStart, Float3 const& _RayDir, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, float& _U, float& _V)
+HK_INLINE bool RayIntersectTriangleFast(Float3 const& _RayStart, Float3 const& _RayDir, Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, float& _U, float& _V)
 {
     const Float3 e1 = _P1 - _P0;
     const Float3 e2 = _P2 - _P0;
@@ -1725,7 +1725,7 @@ void AVSD::RaycastArea(SVisArea* InArea)
             }
             default:
             {
-                AN_ASSERT(0);
+                HK_ASSERT(0);
                 continue;
             }
         }
@@ -1891,7 +1891,7 @@ void AVSD::RaycastPrimitiveBounds(SVisArea* InArea)
             }
             default:
             {
-                AN_ASSERT(0);
+                HK_ASSERT(0);
                 continue;
             }
         }
@@ -2271,7 +2271,7 @@ void AVSD::LevelRaycastPortals_r(SVisArea* InArea)
         // Calculate distance from ray origin to plane intersection
         const float dist = -(d1 / d2);
 
-        AN_ASSERT(dist > 0.0f); // -0.0f
+        HK_ASSERT(dist > 0.0f); // -0.0f
 #else
         float dist;
         if (!BvRayIntersectPlane(Raycast.RayStart, Raycast.RayDir, portal->Plane, dist))
@@ -2344,7 +2344,7 @@ void AVSD::LevelRaycastBoundsPortals_r(SVisArea* InArea)
         // Calculate distance from ray origin to plane intersection
         const float dist = -(d1 / d2);
 
-        AN_ASSERT(dist > 0.0f); // -0.0f
+        HK_ASSERT(dist > 0.0f); // -0.0f
 #else
         float dist;
         if (!BvRayIntersectPlane(Raycast.RayStart, Raycast.RayDir, portal->Plane, dist))

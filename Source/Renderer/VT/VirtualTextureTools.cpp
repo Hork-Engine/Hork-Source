@@ -37,7 +37,7 @@ SOFTWARE.
 
 #define PAGE_EXTENSION ".page"
 
-#ifdef AN_OS_LINUX
+#ifdef HK_OS_LINUX
 #include <sys/stat.h>
 #include <dirent.h>
 #endif
@@ -322,10 +322,10 @@ static void CopyRect( const SRect & _Rect,
                       int _DestHeight,
                       int _ElementSize )
 {
-    AN_ASSERT_( _Rect.x + _Rect.width <= _SourceWidth
+    HK_ASSERT_( _Rect.x + _Rect.width <= _SourceWidth
               && _Rect.y + _Rect.height <= _SourceHeight, "CopyRect" );
 
-    AN_ASSERT_( _DestPositionX + _Rect.width <= _DestWidth
+    HK_ASSERT_( _DestPositionX + _Rect.width <= _DestWidth
               && _DestPositionY + _Rect.height <= _DestHeight, "CopyRect" );
 
     const byte * pSource = _Source + ( _Rect.y * _SourceWidth + _Rect.x ) * _ElementSize;
@@ -370,8 +370,8 @@ void VT_PutImageIntoPages( SVirtualTextureStructure & _Struct,
             int pageIndexX = _Rect.x + x;
             int pageIndexY = _Rect.y + y;
 
-            AN_ASSERT_( pageIndexX < numVtPages, "VT_PutImageIntoPages" );
-            AN_ASSERT_( pageIndexY < numVtPages, "VT_PutImageIntoPages" );
+            HK_ASSERT_( pageIndexX < numVtPages, "VT_PutImageIntoPages" );
+            HK_ASSERT_( pageIndexY < numVtPages, "VT_PutImageIntoPages" );
 
             unsigned int relativeIndex = QuadTreeGetRelativeFromXY( pageIndexX, pageIndexY, lod );
             unsigned int absoluteIndex = QuadTreeRelativeToAbsoluteIndex( relativeIndex, lod );
@@ -618,7 +618,7 @@ void VT_MakeLods( SVirtualTextureStructure & _Struct, SVirtualTextureLayer & Lay
 }
 
 static void VT_SynchronizePageBitfieldWithHDD_Lod( APageBitfield & BitField, int _Lod, const char * _LodPath ) {
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     // TODO: Not tested on Windows
     unsigned int relativeIndex;
     unsigned int absoluteIndex;
@@ -634,13 +634,13 @@ static void VT_SynchronizePageBitfieldWithHDD_Lod( APageBitfield & BitField, int
             int len = strlen( fd.cFileName );
             if ( len < 4 ) {
                 // Invalid name
-                AN_ASSERT_( 0, "Never reached" );
+                HK_ASSERT_( 0, "Never reached" );
                 continue;
             }
 
             if ( !Platform::Stricmp( &fd.cFileName[len - 4], ".png" ) ) {
                 // extension is not .png
-                AN_ASSERT_( 0, "Never reached" );
+                HK_ASSERT_( 0, "Never reached" );
                 continue;
             }
 
@@ -726,11 +726,11 @@ void VT_SynchronizePageBitfieldWithHDD( SVirtualTextureStructure & _Struct, SVir
     }
 }
 
-static AN_FORCEINLINE unsigned int __GetAbsoluteFromXY( int _X, int _Y, int _Lod ) {
+static HK_FORCEINLINE unsigned int __GetAbsoluteFromXY( int _X, int _Y, int _Lod ) {
     return QuadTreeRelativeToAbsoluteIndex( QuadTreeGetRelativeFromXY( _X, _Y, _Lod ), _Lod );
 }
 
-static AN_FORCEINLINE int __PageByteOffset( const SVirtualTextureStructure & _Struct, const SVirtualTextureLayer & Layer, const int & _X, const int & _Y ) {
+static HK_FORCEINLINE int __PageByteOffset( const SVirtualTextureStructure & _Struct, const SVirtualTextureLayer & Layer, const int & _X, const int & _Y ) {
     return ( _Y * _Struct.PageResolutionB + _X ) * Layer.NumChannels;
 }
 
@@ -1750,9 +1750,9 @@ void TestVT() {
     //Layers[3].PageCompressionMethod = CompressNormalPage;
 
     STextureLayers TextureLayers[1];
-    int NumTextures = AN_ARRAY_SIZE( TextureLayers );
+    int NumTextures = HK_ARRAY_SIZE( TextureLayers );
 
-#ifdef AN_OS_LINUX
+#ifdef HK_OS_LINUX
     TextureLayers[0].Diffuse = "vt_test.jpg";//"D:/portret.png";
     //TextureLayers[0].Ambient = "";
     //TextureLayers[0].Specular = "";
@@ -1778,7 +1778,7 @@ void TestVT() {
     unsigned int BinWidth;
     unsigned int BinHeight;
 
-    VT_CreateVirtualTexture( Layers, AN_ARRAY_SIZE(Layers), "Test", "TmpVT", 11, VT_PAGE_SIZE_LOG2, inputRects, outputRects, BinWidth, BinHeight );
+    VT_CreateVirtualTexture( Layers, HK_ARRAY_SIZE(Layers), "Test", "TmpVT", 11, VT_PAGE_SIZE_LOG2, inputRects, outputRects, BinWidth, BinHeight );
 
     for ( unsigned int i = 0 ; i < outputRects.size() ; i++ ) {
         STextureLayers * layers = (STextureLayers *)outputRects[i].userdata;

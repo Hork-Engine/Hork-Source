@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "BaseTypes.h"
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 #define CriticalError CriticalError_
 #include <Windows.h>
 #undef CriticalError

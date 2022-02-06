@@ -67,7 +67,7 @@ SAudioChannel::SAudioChannel( int _StartFrame,
         SampleStride = pBuffer->GetSampleStride();
     }
 
-    AN_ASSERT( pBuffer || pStream );
+    HK_ASSERT( pBuffer || pStream );
 
     PlaybackPos.StoreRelaxed( _StartFrame );
     PlaybackPos_COMMIT = -1;

@@ -356,7 +356,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 
     {
         AEnvProbeGenerator envProbeGenerator;
-        envProbeGenerator.GenerateArray(7, AN_ARRAY_SIZE(cubemaps), cubemaps, &GPrefilteredMap);
+        envProbeGenerator.GenerateArray(7, HK_ARRAY_SIZE(cubemaps), cubemaps, &GPrefilteredMap);
         SSamplerDesc samplerCI;
         samplerCI.Filter           = FILTER_MIPMAP_BILINEAR;
         samplerCI.bCubemapSeamless = true;
@@ -367,7 +367,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 
     {
         AIrradianceGenerator irradianceGenerator;
-        irradianceGenerator.GenerateArray(AN_ARRAY_SIZE(cubemaps), cubemaps, &GIrradianceMap);
+        irradianceGenerator.GenerateArray(HK_ARRAY_SIZE(cubemaps), cubemaps, &GIrradianceMap);
         SSamplerDesc samplerCI;
         samplerCI.Filter           = FILTER_LINEAR;
         samplerCI.bCubemapSeamless = true;
@@ -618,7 +618,7 @@ void ARenderBackend::InitializeMaterial(AMaterialGPU* Material, SMaterialDef con
             break;
         }
         default:
-            AN_ASSERT(0);
+            HK_ASSERT(0);
     }
 }
 
@@ -688,7 +688,7 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
         SRenderView* pRenderView = &GFrameData->RenderViews[i];
 
         RenderView(i, pRenderView, &pRenderViewTexture[i]);
-        AN_ASSERT(pRenderViewTexture[i] != nullptr);
+        HK_ASSERT(pRenderViewTexture[i] != nullptr);
     }
 
     CanvasRenderer->Render(*FrameGraph, pRenderViewTexture, pBackBuffer);
@@ -915,8 +915,8 @@ void ARenderBackend::UploadShaderResources(int ViewportIndex)
 
 void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView, FGTextureProxy** ppViewTexture)
 {
-    AN_ASSERT(pRenderView->Width > 0);
-    AN_ASSERT(pRenderView->Height > 0);
+    HK_ASSERT(pRenderView->Width > 0);
+    HK_ASSERT(pRenderView->Height > 0);
 
     *ppViewTexture = nullptr;
 

@@ -41,7 +41,7 @@ APhotometricProfile
 */
 class APhotometricProfile : public AResource
 {
-    AN_CLASS(APhotometricProfile, AResource)
+    HK_CLASS(APhotometricProfile, AResource)
 
 public:
     enum

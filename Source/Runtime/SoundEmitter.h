@@ -38,7 +38,7 @@ SOFTWARE.
 
 class ASoundGroup : public ABaseObject
 {
-    AN_CLASS(ASoundGroup, ABaseObject)
+    HK_CLASS(ASoundGroup, ABaseObject)
 
 public:
     /** Scale volume for all sounds in group */
@@ -194,7 +194,7 @@ struct SSoundSpawnInfo
 
 class ASoundOneShot
 {
-    AN_FORBID_COPY(ASoundOneShot)
+    HK_FORBID_COPY(ASoundOneShot)
 
 public:
     int                   Priority; // EAudioChannelPriority
@@ -266,7 +266,7 @@ public:
 
 class ASoundEmitter : public ASceneComponent
 {
-    AN_COMPONENT(ASoundEmitter, ASceneComponent)
+    HK_COMPONENT(ASoundEmitter, ASceneComponent)
 
 public:
     /** Start playing sound. This function cancels any sound that is already being played by the emitter. */

@@ -217,7 +217,7 @@ int WideCharDecodeUTF8(const char* _Unicode, SWideChar& _Ch)
 
 int WideCharDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, SWideChar& _Ch)
 {
-    AN_ASSERT(_UnicodeEnd != nullptr);
+    HK_ASSERT(_UnicodeEnd != nullptr);
     const unsigned char* s = (const unsigned char*)_Unicode;
     const unsigned char* e = (const unsigned char*)_UnicodeEnd;
     if (__utf8_is_1b(s))

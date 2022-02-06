@@ -37,7 +37,7 @@ static bool BindMaterialWireframePass(IImmediateContext* immediateCtx, SRenderIn
 {
     AMaterialGPU* pMaterial = instance->Material;
 
-    AN_ASSERT(pMaterial);
+    HK_ASSERT(pMaterial);
 
     int bSkinned = instance->SkeletonSize > 0;
 

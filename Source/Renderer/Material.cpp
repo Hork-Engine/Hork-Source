@@ -205,7 +205,7 @@ static const SVertexAttribInfo VertexAttribsSkinned[] = {
         VAT_FLOAT3,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Position )
+        HK_OFS( SMeshVertex, Position )
     },
     {
         "InTexCoord",
@@ -214,7 +214,7 @@ static const SVertexAttribInfo VertexAttribsSkinned[] = {
         VAT_HALF2,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, TexCoord )
+        HK_OFS( SMeshVertex, TexCoord )
     },
     {
         "InNormal",
@@ -223,7 +223,7 @@ static const SVertexAttribInfo VertexAttribsSkinned[] = {
         VAT_HALF3,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Normal )
+        HK_OFS( SMeshVertex, Normal )
     },
     {
         "InTangent",
@@ -232,7 +232,7 @@ static const SVertexAttribInfo VertexAttribsSkinned[] = {
         VAT_HALF3,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Tangent )
+        HK_OFS( SMeshVertex, Tangent )
     },
     {
         "InHandedness",
@@ -241,7 +241,7 @@ static const SVertexAttribInfo VertexAttribsSkinned[] = {
         VAT_BYTE1,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Handedness )
+        HK_OFS( SMeshVertex, Handedness )
     },
     {
         "InJointIndices",
@@ -250,7 +250,7 @@ static const SVertexAttribInfo VertexAttribsSkinned[] = {
         VAT_UBYTE4,
         VAM_INTEGER,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertexSkin, JointIndices )
+        HK_OFS( SMeshVertexSkin, JointIndices )
     },
     {
         "InJointWeights",
@@ -259,7 +259,7 @@ static const SVertexAttribInfo VertexAttribsSkinned[] = {
         VAT_UBYTE4N,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertexSkin, JointWeights )
+        HK_OFS( SMeshVertexSkin, JointWeights )
     }
 };
 
@@ -271,7 +271,7 @@ static const SVertexAttribInfo VertexAttribsStatic[] = {
         VAT_FLOAT3,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Position )
+        HK_OFS( SMeshVertex, Position )
     },
     {
         "InTexCoord",
@@ -280,7 +280,7 @@ static const SVertexAttribInfo VertexAttribsStatic[] = {
         VAT_HALF2,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, TexCoord )
+        HK_OFS( SMeshVertex, TexCoord )
     },
     {
         "InNormal",
@@ -289,7 +289,7 @@ static const SVertexAttribInfo VertexAttribsStatic[] = {
         VAT_HALF3,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Normal )
+        HK_OFS( SMeshVertex, Normal )
     },
     {
         "InTangent",
@@ -298,7 +298,7 @@ static const SVertexAttribInfo VertexAttribsStatic[] = {
         VAT_HALF3,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Tangent )
+        HK_OFS( SMeshVertex, Tangent )
     },
     {
         "InHandedness",
@@ -307,7 +307,7 @@ static const SVertexAttribInfo VertexAttribsStatic[] = {
         VAT_BYTE1,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Handedness )
+        HK_OFS( SMeshVertex, Handedness )
     }
 };
 
@@ -319,7 +319,7 @@ static const SVertexAttribInfo VertexAttribsStaticLightmap[] = {
         VAT_FLOAT3,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Position )
+        HK_OFS( SMeshVertex, Position )
     },
     {
         "InTexCoord",
@@ -328,7 +328,7 @@ static const SVertexAttribInfo VertexAttribsStaticLightmap[] = {
         VAT_HALF2,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, TexCoord )
+        HK_OFS( SMeshVertex, TexCoord )
     },
     {
         "InNormal",
@@ -337,7 +337,7 @@ static const SVertexAttribInfo VertexAttribsStaticLightmap[] = {
         VAT_HALF3,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Normal )
+        HK_OFS( SMeshVertex, Normal )
     },
     {
         "InTangent",
@@ -346,7 +346,7 @@ static const SVertexAttribInfo VertexAttribsStaticLightmap[] = {
         VAT_HALF3,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Tangent )
+        HK_OFS( SMeshVertex, Tangent )
     },
     {
         "InHandedness",
@@ -355,7 +355,7 @@ static const SVertexAttribInfo VertexAttribsStaticLightmap[] = {
         VAT_BYTE1,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Handedness )
+        HK_OFS( SMeshVertex, Handedness )
     },
     {
         "InLightmapTexCoord",
@@ -364,7 +364,7 @@ static const SVertexAttribInfo VertexAttribsStaticLightmap[] = {
         VAT_FLOAT2,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertexUV, TexCoord )
+        HK_OFS( SMeshVertexUV, TexCoord )
     }
 };
 
@@ -376,7 +376,7 @@ static const SVertexAttribInfo VertexAttribsStaticVertexLight[] = {
         VAT_FLOAT3,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Position )
+        HK_OFS( SMeshVertex, Position )
     },
     {
         "InTexCoord",
@@ -385,7 +385,7 @@ static const SVertexAttribInfo VertexAttribsStaticVertexLight[] = {
         VAT_HALF2,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, TexCoord )
+        HK_OFS( SMeshVertex, TexCoord )
     },
     {
         "InNormal",
@@ -394,7 +394,7 @@ static const SVertexAttribInfo VertexAttribsStaticVertexLight[] = {
         VAT_HALF3,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Normal )
+        HK_OFS( SMeshVertex, Normal )
     },
     {
         "InTangent",
@@ -403,7 +403,7 @@ static const SVertexAttribInfo VertexAttribsStaticVertexLight[] = {
         VAT_HALF3,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Tangent )
+        HK_OFS( SMeshVertex, Tangent )
     },
     {
         "InHandedness",
@@ -412,7 +412,7 @@ static const SVertexAttribInfo VertexAttribsStaticVertexLight[] = {
         VAT_BYTE1,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertex, Handedness )
+        HK_OFS( SMeshVertex, Handedness )
     },
     {
         "InVertexLight",
@@ -421,7 +421,7 @@ static const SVertexAttribInfo VertexAttribsStaticVertexLight[] = {
         VAT_UBYTE4,//VAT_UBYTE4N,
         VAM_INTEGER,
         0,              // InstanceDataStepRate
-        AN_OFS( SMeshVertexLight, VertexLight )
+        HK_OFS( SMeshVertexLight, VertexLight )
     }
 };
 
@@ -433,7 +433,7 @@ static const SVertexAttribInfo VertexAttribsHUD[] = {
         VAT_FLOAT2,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SHUDDrawVert, Position )
+        HK_OFS( SHUDDrawVert, Position )
     },
     {
         "InTexCoord",
@@ -442,7 +442,7 @@ static const SVertexAttribInfo VertexAttribsHUD[] = {
         VAT_FLOAT2,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SHUDDrawVert, TexCoord )
+        HK_OFS( SHUDDrawVert, TexCoord )
     },
     {
         "InColor",
@@ -451,7 +451,7 @@ static const SVertexAttribInfo VertexAttribsHUD[] = {
         VAT_UBYTE4N,
         VAM_FLOAT,
         0,              // InstanceDataStepRate
-        AN_OFS( SHUDDrawVert, Color )
+        HK_OFS( SHUDDrawVert, Color )
     }
 };
 
@@ -463,7 +463,7 @@ static const SVertexAttribInfo VertexAttribsTerrain[] = {
         VAT_SHORT2,
         VAM_INTEGER,
         0,              // InstanceDataStepRate
-        AN_OFS( STerrainVertex, X )
+        HK_OFS( STerrainVertex, X )
     }
 };
 
@@ -475,7 +475,7 @@ static const SVertexAttribInfo VertexAttribsTerrainInstanced[] = {
         VAT_SHORT2,
         VAM_INTEGER,
         0,              // InstanceDataStepRate
-        AN_OFS( STerrainVertex, X )
+        HK_OFS( STerrainVertex, X )
     },
     {
         "VertexScaleAndTranslate",
@@ -484,7 +484,7 @@ static const SVertexAttribInfo VertexAttribsTerrainInstanced[] = {
         VAT_INT4,
         VAM_INTEGER,
         1,              // InstanceDataStepRate
-        AN_OFS( STerrainPatchInstance, VertexScale )
+        HK_OFS( STerrainPatchInstance, VertexScale )
     },
     {
         "TexcoordOffset",
@@ -493,7 +493,7 @@ static const SVertexAttribInfo VertexAttribsTerrainInstanced[] = {
         VAT_INT2,
         VAM_INTEGER,
         1,              // InstanceDataStepRate
-        AN_OFS( STerrainPatchInstance, TexcoordOffset )
+        HK_OFS( STerrainPatchInstance, TexcoordOffset )
     },
     {
         "QuadColor",
@@ -502,7 +502,7 @@ static const SVertexAttribInfo VertexAttribsTerrainInstanced[] = {
         VAT_FLOAT4,
         VAM_FLOAT,
         1,              // InstanceDataStepRate
-        AN_OFS( STerrainPatchInstance, QuadColor )
+        HK_OFS( STerrainPatchInstance, QuadColor )
     }
 };
 
@@ -534,11 +534,11 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     pipelineCI.pVertexBindings = vertexBinding;
 
     if ( _Skinned ) {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsSkinned );
         pipelineCI.pVertexAttribs = VertexAttribsSkinned;
     }
     else {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsStatic );
         pipelineCI.pVertexAttribs = VertexAttribsStatic;
     }
 
@@ -628,11 +628,11 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     pipelineCI.pVertexBindings = vertexBinding;
 
     if ( _Skinned ) {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsSkinned );
         pipelineCI.pVertexAttribs = VertexAttribsSkinned;
     }
     else {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsStatic );
         pipelineCI.pVertexAttribs = VertexAttribsStatic;
     }
 
@@ -698,7 +698,7 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     buffers[6].BufferBinding = BUFFER_BIND_CONSTANT; // VT buffer
     buffers[7].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton for motion blur
 
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
@@ -733,11 +733,11 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     pipelineCI.pVertexBindings = vertexBinding;
 
     if ( _Skinned ) {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsSkinned );
         pipelineCI.pVertexAttribs = VertexAttribsSkinned;
     }
     else {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsStatic );
         pipelineCI.pVertexAttribs = VertexAttribsStatic;
     }
 
@@ -833,11 +833,11 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     pipelineCI.pVertexBindings = vertexBinding;
 
     if ( _Skinned ) {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsSkinned );
         pipelineCI.pVertexAttribs = VertexAttribsSkinned;
     }
     else {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsStatic );
         pipelineCI.pVertexAttribs = VertexAttribsStatic;
     }
 
@@ -905,7 +905,7 @@ void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char *
     dssd.bDepthEnable = false;
     dssd.bDepthWrite = false;
 
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( VertexAttribsHUD, AN_ARRAY_SIZE( VertexAttribsHUD ) );
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( VertexAttribsHUD, HK_ARRAY_SIZE( VertexAttribsHUD ) );
 
     sources.Clear();
     sources.Append( "#define MATERIAL_PASS_COLOR\n" );
@@ -927,10 +927,10 @@ void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char *
     vertexBinding[0].Stride = sizeof( SHUDDrawVert );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
+    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsHUD );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsHUD );
     pipelineCI.pVertexAttribs = VertexAttribsHUD;
 
     SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
@@ -969,7 +969,7 @@ static RenderCore::BLENDING_PRESET GetBlendingPreset( EColorBlending _Blending )
     case COLOR_BLENDING_ADD_ALPHA:
         return RenderCore::BLENDING_ADD_ALPHA;
     default:
-        AN_ASSERT( 0 );
+        HK_ASSERT( 0 );
     }
     return RenderCore::BLENDING_NO_BLEND;
 }
@@ -1013,7 +1013,7 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     if ( _Skinned ) {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsSkinned );
         pipelineCI.pVertexAttribs = VertexAttribsSkinned;
 
         AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
@@ -1034,7 +1034,7 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
         pipelineCI.NumVertexBindings = 2;
     }
     else {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsStatic );
         pipelineCI.pVertexAttribs = VertexAttribsStatic;
 
         AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
@@ -1098,7 +1098,7 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     samplers[17] =
     samplers[18] = ShadowDepthSamplerPCF;
 
-    pipelineCI.ResourceLayout.NumSamplers = AN_ARRAY_SIZE( samplers );
+    pipelineCI.ResourceLayout.NumSamplers = HK_ARRAY_SIZE( samplers );
     pipelineCI.ResourceLayout.Samplers = samplers;
 
     // TODO: Specify only used buffers
@@ -1111,7 +1111,7 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     buffers[5].BufferBinding = BUFFER_BIND_CONSTANT; // IBL buffer
     buffers[6].BufferBinding = BUFFER_BIND_CONSTANT; // VT buffer
 
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
@@ -1143,7 +1143,7 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
 
     dssd.bDepthEnable = _DepthTest;
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStaticLightmap );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsStaticLightmap );
     pipelineCI.pVertexAttribs = VertexAttribsStaticLightmap;
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
@@ -1188,7 +1188,7 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     vertexBinding[1].Stride = sizeof( SMeshVertexUV );
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
+    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
     SSamplerDesc samplers[19];
@@ -1216,7 +1216,7 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     samplers[17] =
     samplers[18] = ShadowDepthSamplerPCF;
 
-    pipelineCI.ResourceLayout.NumSamplers = AN_ARRAY_SIZE( samplers );
+    pipelineCI.ResourceLayout.NumSamplers = HK_ARRAY_SIZE( samplers );
     pipelineCI.ResourceLayout.Samplers = samplers;
 
     // TODO: Specify only used buffers
@@ -1229,7 +1229,7 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     buffers[5].BufferBinding = BUFFER_BIND_CONSTANT; // IBL buffer
     buffers[6].BufferBinding = BUFFER_BIND_CONSTANT; // VT buffer
 
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
@@ -1261,7 +1261,7 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
 
     dssd.bDepthEnable = _DepthTest;
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStaticVertexLight );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsStaticVertexLight );
     pipelineCI.pVertexAttribs = VertexAttribsStaticVertexLight;
 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
@@ -1306,7 +1306,7 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     vertexBinding[1].Stride = sizeof( SMeshVertexLight );
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
+    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
     SSamplerDesc samplers[19];
@@ -1334,7 +1334,7 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     samplers[17] =
     samplers[18] = ShadowDepthSamplerPCF;
 
-    pipelineCI.ResourceLayout.NumSamplers = AN_ARRAY_SIZE( samplers );
+    pipelineCI.ResourceLayout.NumSamplers = HK_ARRAY_SIZE( samplers );
     pipelineCI.ResourceLayout.Samplers = samplers;
 
     // TODO: Specify only used buffers
@@ -1347,7 +1347,7 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     buffers[5].BufferBinding = BUFFER_BIND_CONSTANT; // IBL buffer
     buffers[6].BufferBinding = BUFFER_BIND_CONSTANT; // VT buffer
 
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
@@ -1392,11 +1392,11 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     pipelineCI.pVertexBindings = vertexBinding;
 
     if ( _Skinned ) {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsSkinned );
         pipelineCI.pVertexAttribs = VertexAttribsSkinned;
     }
     else {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsStatic );
         pipelineCI.pVertexAttribs = VertexAttribsStatic;
     }
 
@@ -1470,7 +1470,7 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
     buffers[3].BufferBinding = BUFFER_BIND_CONSTANT; // shadow cascade
 
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
@@ -1503,7 +1503,7 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
     vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
 
     if ( _Skinned ) {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsSkinned );
         pipelineCI.pVertexAttribs = VertexAttribsSkinned;
 
         AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
@@ -1524,7 +1524,7 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
         pipelineCI.NumVertexBindings = 2;
     }
     else {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsStatic );
         pipelineCI.pVertexAttribs = VertexAttribsStatic;
 
         AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
@@ -1562,7 +1562,7 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
     buffers[5].BufferBinding = BUFFER_BIND_CONSTANT; // IBL buffer
     buffers[6].BufferBinding = BUFFER_BIND_CONSTANT; // VT buffer
 
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
@@ -1601,11 +1601,11 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     pipelineCI.pVertexBindings = vertexBinding;
 
     if ( _Skinned ) {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsSkinned );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsSkinned );
         pipelineCI.pVertexAttribs = VertexAttribsSkinned;
     }
     else {
-        pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsStatic );
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsStatic );
         pipelineCI.pVertexAttribs = VertexAttribsStatic;
     }
 
@@ -1694,7 +1694,7 @@ void CreateTerrainMaterialDepth( TRef< RenderCore::IPipeline > * ppPipeline )
     pipelineCI.NumVertexBindings = 2;
     pipelineCI.pVertexBindings = vertexBinding;
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsTerrainInstanced );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsTerrainInstanced );
     pipelineCI.pVertexAttribs = VertexAttribsTerrainInstanced;
 
     CreateVertexShader( "terrain_depth.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
@@ -1743,7 +1743,7 @@ void CreateTerrainMaterialLight( TRef< RenderCore::IPipeline > * ppPipeline )
     pipelineCI.NumVertexBindings = 2;
     pipelineCI.pVertexBindings = vertexBinding;
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsTerrainInstanced );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsTerrainInstanced );
     pipelineCI.pVertexAttribs = VertexAttribsTerrainInstanced;
 
     CreateVertexShader( "terrain_color.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
@@ -1782,7 +1782,7 @@ void CreateTerrainMaterialLight( TRef< RenderCore::IPipeline > * ppPipeline )
     samplers[17] =
     samplers[18] = ShadowDepthSamplerPCF;
 
-    pipelineCI.ResourceLayout.NumSamplers = AN_ARRAY_SIZE( samplers );
+    pipelineCI.ResourceLayout.NumSamplers = HK_ARRAY_SIZE( samplers );
     pipelineCI.ResourceLayout.Samplers = samplers;
 
     SBufferInfo buffers[7];
@@ -1827,7 +1827,7 @@ void CreateTerrainMaterialWireframe( TRef< RenderCore::IPipeline > * ppPipeline 
     pipelineCI.NumVertexBindings = 2;
     pipelineCI.pVertexBindings = vertexBinding;
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( VertexAttribsTerrainInstanced );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsTerrainInstanced );
     pipelineCI.pVertexAttribs = VertexAttribsTerrainInstanced;
 
     CreateVertexShader( "terrain_wireframe.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );

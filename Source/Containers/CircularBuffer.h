@@ -70,7 +70,7 @@ public:
 
     T& operator[](int Index)
     {
-        AN_ASSERT(Index >= 0 && Index < Size());
+        HK_ASSERT(Index >= 0 && Index < Size());
 
         int offset = (Head + Index) & (MAX_BUFFER_SIZE - 1);
 
@@ -79,7 +79,7 @@ public:
 
     T const& operator[](int Index) const
     {
-        AN_ASSERT(Index >= 0 && Index < Size());
+        HK_ASSERT(Index >= 0 && Index < Size());
 
         int offset = (Head + Index) & (MAX_BUFFER_SIZE - 1);
 
@@ -112,7 +112,7 @@ public:
 
     void Resize(int NewSize)
     {
-        AN_ASSERT(NewSize >= 0 && NewSize <= MAX_BUFFER_SIZE);
+        HK_ASSERT(NewSize >= 0 && NewSize <= MAX_BUFFER_SIZE);
 
         if (NewSize < Sz)
         {
@@ -156,7 +156,7 @@ public:
 
     void Remove(int Index)
     {
-        AN_ASSERT(Index >= 0 && Index < Size());
+        HK_ASSERT(Index >= 0 && Index < Size());
 
         int offset = (Head + Index) & (MAX_BUFFER_SIZE - 1);
 
@@ -212,7 +212,7 @@ public:
 
     TRef<T>& operator[](int Index)
     {
-        AN_ASSERT(Index >= 0 && Index < Size());
+        HK_ASSERT(Index >= 0 && Index < Size());
 
         int offset = (Head + Index) & (MAX_BUFFER_SIZE - 1);
 
@@ -221,7 +221,7 @@ public:
 
     TRef<T> const& operator[](int Index) const
     {
-        AN_ASSERT(Index >= 0 && Index < Size());
+        HK_ASSERT(Index >= 0 && Index < Size());
 
         int offset = (Head + Index) & (MAX_BUFFER_SIZE - 1);
 
@@ -254,7 +254,7 @@ public:
 
     void Resize(int NewSize)
     {
-        AN_ASSERT(NewSize >= 0 && NewSize <= MAX_BUFFER_SIZE);
+        HK_ASSERT(NewSize >= 0 && NewSize <= MAX_BUFFER_SIZE);
 
         if (NewSize < Sz)
         {
@@ -298,7 +298,7 @@ public:
 
     void Remove(int Index)
     {
-        AN_ASSERT(Index >= 0 && Index < Size());
+        HK_ASSERT(Index >= 0 && Index < Size());
 
         int offset = (Head + Index) & (MAX_BUFFER_SIZE - 1);
 

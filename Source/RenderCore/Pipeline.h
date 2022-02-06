@@ -168,7 +168,7 @@ struct SRenderTargetBlendingInfo
     void SetBlendingPreset(BLENDING_PRESET _Preset);
 };
 
-AN_INLINE void SRenderTargetBlendingInfo::SetBlendingPreset(BLENDING_PRESET _Preset)
+HK_INLINE void SRenderTargetBlendingInfo::SetBlendingPreset(BLENDING_PRESET _Preset)
 {
     switch (_Preset)
     {

@@ -39,7 +39,7 @@ typedef STB_TexteditState_s STB_TexteditState;
 
 class WTextEdit : public WWidget
 {
-    AN_CLASS(WTextEdit, WWidget)
+    HK_CLASS(WTextEdit, WWidget)
 
     friend class WTextEditProxy;
 

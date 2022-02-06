@@ -44,13 +44,13 @@ ATextureViewGLImpl::ATextureViewGLImpl(STextureViewDesc const& TextureViewDesc, 
 
     if (TextureViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET)
     {
-        AN_ASSERT(!IsDepthStencilFormat(textureDesc.Format));
+        HK_ASSERT(!IsDepthStencilFormat(textureDesc.Format));
 
         SetHandleNativeGL(pTexture->GetHandleNativeGL());
     }
     else if (TextureViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL)
     {
-        AN_ASSERT(IsDepthStencilFormat(textureDesc.Format));
+        HK_ASSERT(IsDepthStencilFormat(textureDesc.Format));
 
         SetHandleNativeGL(pTexture->GetHandleNativeGL());
     }

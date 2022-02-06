@@ -32,7 +32,7 @@ SOFTWARE.
 #include "World.h"
 #include "BulletCompatibility.h"
 
-AN_CLASS_META(AHitProxy)
+HK_CLASS_META(AHitProxy)
 
 AHitProxy::AHitProxy()
 {
@@ -48,7 +48,7 @@ AHitProxy::~AHitProxy()
 
 void AHitProxy::Initialize(ASceneComponent* _OwnerComponent, btCollisionObject* _CollisionObject)
 {
-    AN_ASSERT(!OwnerComponent);
+    HK_ASSERT(!OwnerComponent);
 
     OwnerComponent  = _OwnerComponent;
     CollisionObject = _CollisionObject;

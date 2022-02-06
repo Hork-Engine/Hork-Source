@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <Containers/StdHash.h>
 
-AN_CLASS_META(AActorDefinition)
+HK_CLASS_META(AActorDefinition)
 
 AActorDefinition::AActorDefinition()
 {

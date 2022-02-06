@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Containers/PodVector.h>
 #include <Core/Ref.h>
 
-//#define AN_ACTIVE_THREADS_COUNTERS
+//#define HK_ACTIVE_THREADS_COUNTERS
 
 /** Job for job list */
 struct SAsyncJob
@@ -51,7 +51,7 @@ class AAsyncJobManager;
 /** Job list */
 class AAsyncJobList final
 {
-    AN_FORBID_COPY(AAsyncJobList)
+    HK_FORBID_COPY(AAsyncJobList)
 
     friend class AAsyncJobManager;
 
@@ -95,7 +95,7 @@ private:
     bool       bSignalled{false}; // FIXME: must be atomic?
 };
 
-AN_FORCEINLINE int AAsyncJobList::GetMaxParallelJobs() const
+HK_FORCEINLINE int AAsyncJobList::GetMaxParallelJobs() const
 {
     return JobPool.Capacity();
 }
@@ -103,7 +103,7 @@ AN_FORCEINLINE int AAsyncJobList::GetMaxParallelJobs() const
 /** Job manager */
 class AAsyncJobManager final : public ARefCounted
 {
-    AN_FORBID_COPY(AAsyncJobManager)
+    HK_FORBID_COPY(AAsyncJobManager)
 
 public:
     static constexpr int MAX_WORKER_THREADS = 4;
@@ -122,14 +122,14 @@ public:
     /** Get job list by the index */
     AAsyncJobList* GetAsyncJobList(int _Index)
     {
-        AN_ASSERT(_Index >= 0 && _Index < NumJobLists);
+        HK_ASSERT(_Index >= 0 && _Index < NumJobLists);
         return &JobList[_Index];
     }
 
     /** Get worker threads count */
     int GetNumWorkerThreads() const { return NumWorkerThreads; }
 
-#ifdef AN_ACTIVE_THREADS_COUNTERS
+#ifdef HK_ACTIVE_THREADS_COUNTERS
     int GetNumActiveThreads() const
     {
         return NumActiveThreads.Load();
@@ -144,7 +144,7 @@ private:
     AThread WorkerThread[MAX_WORKER_THREADS];
     int     NumWorkerThreads{0};
 
-#ifdef AN_ACTIVE_THREADS_COUNTERS
+#ifdef HK_ACTIVE_THREADS_COUNTERS
     AAtomicInt NumActiveThreads{0};
 #endif
 

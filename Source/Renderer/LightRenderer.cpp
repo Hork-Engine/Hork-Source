@@ -194,7 +194,7 @@ bool ALightRenderer::BindMaterialLightPass(IImmediateContext* immediateCtx, SRen
     IBuffer*      pSecondVertexBuffer = nullptr;
     size_t        secondBufferOffset  = 0;
 
-    AN_ASSERT(pMaterial);
+    HK_ASSERT(pMaterial);
 
     bool bSkinned     = Instance->SkeletonSize > 0;
     bool bLightmap    = Instance->LightmapUVChannel != nullptr && Instance->Lightmap;
@@ -258,7 +258,7 @@ bool ALightRenderer::BindMaterialLightPass(IImmediateContext* immediateCtx, SRen
     {
         int              textureUnit = 0; // TODO: Instance->VTUnit;
         AVirtualTexture* pVirtualTex = GFeedbackAnalyzerVT->GetTexture(textureUnit);
-        //AN_ASSERT( pVirtualTex != nullptr );
+        //HK_ASSERT( pVirtualTex != nullptr );
 
         if (GPhysCacheVT)
             rtbl->BindTexture(6, GPhysCacheVT->GetLayers()[0]);

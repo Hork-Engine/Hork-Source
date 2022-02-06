@@ -36,7 +36,7 @@ SOFTWARE.
 
 AConvexHull* AConvexHull::CreateEmpty(int maxPoints)
 {
-    AN_ASSERT(maxPoints > 0);
+    HK_ASSERT(maxPoints > 0);
     int          size = sizeof(AConvexHull) - sizeof(Points) + maxPoints * sizeof(Points[0]);
     AConvexHull* hull = (AConvexHull*)GZoneMemory.Alloc(size);
     hull->MaxPoints   = maxPoints;
@@ -482,7 +482,7 @@ PLANE_SIDE AConvexHull::Split(PlaneF const& plane, float epsilon, AConvexHull** 
             //newVertex.t = newVertex.t + dist * ( v.t - newVertex.t );
         }
 
-        AN_ASSERT(f->NumPoints < f->MaxPoints);
+        HK_ASSERT(f->NumPoints < f->MaxPoints);
         f->Points[f->NumPoints++] = newVertex;
         b->Points[b->NumPoints++] = newVertex;
     }

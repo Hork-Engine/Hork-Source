@@ -40,7 +40,7 @@ struct BvSphere
 
     BvSphere() = default;
 
-    explicit AN_FORCEINLINE BvSphere(float radius)
+    explicit HK_FORCEINLINE BvSphere(float radius)
     {
         Center.X = 0;
         Center.Y = 0;
@@ -48,72 +48,72 @@ struct BvSphere
         Radius   = radius;
     }
 
-    AN_FORCEINLINE BvSphere(Float3 const& center, float radius)
+    HK_FORCEINLINE BvSphere(Float3 const& center, float radius)
     {
         Center = center;
         Radius = radius;
     }
 
-    AN_FORCEINLINE void Clear()
+    HK_FORCEINLINE void Clear()
     {
         Center.X = Center.Y = Center.Z = Radius = 0;
     }
 
-    AN_FORCEINLINE BvSphere operator+(Float3 const& vec) const
+    HK_FORCEINLINE BvSphere operator+(Float3 const& vec) const
     {
         return BvSphere(Center + vec, Radius);
     }
 
-    AN_FORCEINLINE BvSphere operator-(Float3 const& vec) const
+    HK_FORCEINLINE BvSphere operator-(Float3 const& vec) const
     {
         return BvSphere(Center - vec, Radius);
     }
 
-    AN_FORCEINLINE BvSphere operator*(float scale) const
+    HK_FORCEINLINE BvSphere operator*(float scale) const
     {
         return BvSphere(Center, Radius * scale);
     }
 
-    AN_FORCEINLINE BvSphere operator/(float scale) const
+    HK_FORCEINLINE BvSphere operator/(float scale) const
     {
         return BvSphere(Center, Radius / scale);
     }
 
-    AN_FORCEINLINE BvSphere& operator+=(Float3 const& vec)
+    HK_FORCEINLINE BvSphere& operator+=(Float3 const& vec)
     {
         Center += vec;
         return *this;
     }
 
-    AN_FORCEINLINE BvSphere& operator-=(Float3 const& vec)
+    HK_FORCEINLINE BvSphere& operator-=(Float3 const& vec)
     {
         Center -= vec;
         return *this;
     }
 
-    AN_FORCEINLINE BvSphere& operator*=(float scale)
+    HK_FORCEINLINE BvSphere& operator*=(float scale)
     {
         Radius *= scale;
         return *this;
     }
 
-    AN_FORCEINLINE BvSphere& operator/=(float scale)
+    HK_FORCEINLINE BvSphere& operator/=(float scale)
     {
         Radius /= scale;
         return *this;
     }
 
-    AN_FORCEINLINE bool CompareEps(BvSphere const& rhs, float epsilon) const
+    HK_FORCEINLINE bool CompareEps(BvSphere const& rhs, float epsilon) const
     {
         return Center.CompareEps(rhs.Center, epsilon) && Math::CompareEps(Radius, rhs.Radius, epsilon);
     }
 
-    AN_FORCEINLINE bool operator==(BvSphere const& rhs) const
+    HK_FORCEINLINE bool operator==(BvSphere const& rhs) const
     {
         return Center == rhs.Center && Radius == rhs.Radius;
     }
 
-    AN_FORCEINLINE bool operator!=(BvSphere const& rhs) const
+    HK_FORCEINLINE bool operator!=(BvSphere const& rhs) const
     {
         return !(operator==(rhs));
     }
@@ -205,7 +205,7 @@ struct BvSphere
         Radius = Math::Sqrt(Radius);
     }
 
-    AN_FORCEINLINE void FromAxisAlignedBox(BvAxisAlignedBox const& axisAlignedBox)
+    HK_FORCEINLINE void FromAxisAlignedBox(BvAxisAlignedBox const& axisAlignedBox)
     {
         Center = (axisAlignedBox.Maxs + axisAlignedBox.Mins) * 0.5f;
         Radius = Center.Dist(axisAlignedBox.Maxs);

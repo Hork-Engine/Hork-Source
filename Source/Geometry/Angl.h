@@ -68,13 +68,13 @@ struct Angl
 
     float& operator[](int index)
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Pitch)[index];
     }
 
     float const& operator[](int index) const
     {
-        AN_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
+        HK_ASSERT_(index >= 0 && index < NumComponents(), "Index out of range");
         return (&Pitch)[index];
     }
 
@@ -293,7 +293,7 @@ struct Angl
     }
 };
 
-AN_FORCEINLINE Angl operator*(float lhs, Angl const& rhs)
+HK_FORCEINLINE Angl operator*(float lhs, Angl const& rhs)
 {
     return Angl(lhs * rhs.Pitch, lhs * rhs.Yaw, lhs * rhs.Roll);
 }

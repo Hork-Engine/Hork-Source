@@ -329,7 +329,7 @@ static void sample_vec3(cgltf_animation_sampler* sampler, float frameTime, Float
 
     float ft0, ftN, ct, nt;
 
-    AN_ASSERT(animtimes->count > 0);
+    HK_ASSERT(animtimes->count > 0);
 
     cgltf_accessor_read_float(animtimes, 0, &ft0, 1);
 
@@ -387,7 +387,7 @@ static void sample_vec3(cgltf_animation_sampler* sampler, float frameTime, Float
                     cgltf_accessor_read_float(animdata, t + 1, (float*)p1.ToPtr(), 3);
                     float dur   = nt - ct;
                     float fract = (frameTime - ct) / dur;
-                    AN_ASSERT(fract >= 0.0f && fract <= 1.0f);
+                    HK_ASSERT(fract >= 0.0f && fract <= 1.0f);
                     vec = Math::Lerp(p0, p1, fract);
                 }
             }
@@ -399,7 +399,7 @@ static void sample_vec3(cgltf_animation_sampler* sampler, float frameTime, Float
             {
                 float dur   = nt - ct;
                 float fract = (dur == 0.0f) ? 0.0f : (frameTime - ct) / dur;
-                AN_ASSERT(fract >= 0.0f && fract <= 1.0f);
+                HK_ASSERT(fract >= 0.0f && fract <= 1.0f);
 
                 Float3 p0, m0, m1, p1;
 
@@ -425,7 +425,7 @@ static void sample_quat(cgltf_animation_sampler* sampler, float frameTime, Quat&
 
     float ft0, ftN, ct, nt;
 
-    AN_ASSERT(animtimes->count > 0);
+    HK_ASSERT(animtimes->count > 0);
 
     cgltf_accessor_read_float(animtimes, 0, &ft0, 1);
 
@@ -483,7 +483,7 @@ static void sample_quat(cgltf_animation_sampler* sampler, float frameTime, Quat&
                     cgltf_accessor_read_float(animdata, t + 1, (float*)p1.ToPtr(), 4);
                     float dur   = nt - ct;
                     float fract = (frameTime - ct) / dur;
-                    AN_ASSERT(fract >= 0.0f && fract <= 1.0f);
+                    HK_ASSERT(fract >= 0.0f && fract <= 1.0f);
                     q = Math::Slerp(p0, p1, fract).Normalized();
                 }
             }
@@ -495,7 +495,7 @@ static void sample_quat(cgltf_animation_sampler* sampler, float frameTime, Quat&
             {
                 float dur   = nt - ct;
                 float fract = (dur == 0.0f) ? 0.0f : (frameTime - ct) / dur;
-                AN_ASSERT(fract >= 0.0f && fract <= 1.0f);
+                HK_ASSERT(fract >= 0.0f && fract <= 1.0f);
 
                 Quat p0, m0, m1, p1;
 
@@ -1479,7 +1479,7 @@ void AAssetImporter::ReadMesh(cgltf_mesh* Mesh, Float3x4 const& GlobalTransform,
             unpack_joints(joints, &m_Weights[firstVert]);
         }
 
-        AN_UNUSED(color);
+        HK_UNUSED(color);
 
         SMeshVertex* pVert = m_Vertices.ToPtr() + firstVert;
 
@@ -2391,7 +2391,7 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
     }
 
     bool bSkinnedMesh = m_bSkeletal;
-    AN_ASSERT(bSkinnedMesh == false);
+    HK_ASSERT(bSkinnedMesh == false);
 
     GuidMap[Mesh.GUID.CStr()] = "/Root/" + fileName;
 

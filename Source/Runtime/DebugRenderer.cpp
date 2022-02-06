@@ -70,7 +70,7 @@ void ADebugRenderer::Reset()
 
 void ADebugRenderer::BeginRenderView(SRenderView* InView, int InVisPass)
 {
-    AN_ASSERT(!pView);
+    HK_ASSERT(!pView);
 
     pView                        = InView;
     pView->FirstDebugDrawCommand = CommandsCount();
@@ -81,7 +81,7 @@ void ADebugRenderer::BeginRenderView(SRenderView* InView, int InVisPass)
 
 void ADebugRenderer::EndRenderView()
 {
-    AN_ASSERT(pView);
+    HK_ASSERT(pView);
 
     pView->DebugDrawCommandCount = CommandsCount() - pView->FirstDebugDrawCommand;
     pView                        = nullptr;
@@ -834,7 +834,7 @@ void ADebugRenderer::DrawCylinder(Float3 const& _Position, Float3x3 const& _Orie
 
 void ADebugRenderer::DrawCapsule(Float3 const& _Position, Float3x3 const& _Orientation, float _Radius, float _Height, int _UpAxis)
 {
-    AN_ASSERT(_UpAxis >= 0 && _UpAxis < 3);
+    HK_ASSERT(_UpAxis >= 0 && _UpAxis < 3);
 
     const int   stepDegrees = 30;
     const float halfHeight  = _Height * 0.5f;

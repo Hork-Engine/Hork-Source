@@ -36,7 +36,7 @@ class APlayerController;
 
 class WViewport : public WWidget
 {
-    AN_CLASS(WViewport, WWidget)
+    HK_CLASS(WViewport, WWidget)
 
 public:
     WViewport& SetPlayerController(APlayerController* _PlayerController);

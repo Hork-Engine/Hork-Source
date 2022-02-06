@@ -41,7 +41,7 @@ enum CURSOR_MODE
 
 class AGameModule : public ABaseObject
 {
-    AN_CLASS(AGameModule, ABaseObject)
+    HK_CLASS(AGameModule, ABaseObject)
 
 public:
     /** Quit when user press ESCAPE */

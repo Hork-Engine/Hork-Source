@@ -47,7 +47,7 @@ AConsoleVar com_FreezeFrustumClusters(_CTS("com_FreezeFrustumClusters"), _CTS("0
 //
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_FORCEINLINE __m128 Float4x4SSE_MultiplyFloat4(Float4x4SSE const& m, __m128 v)
+HK_FORCEINLINE __m128 Float4x4SSE_MultiplyFloat4(Float4x4SSE const& m, __m128 v)
 {
     __m128 xxxx = _mm_shuffle_ps(v, v, _MM_SHUFFLE(0, 0, 0, 0));
     __m128 yyyy = _mm_shuffle_ps(v, v, _MM_SHUFFLE(1, 1, 1, 1));
@@ -59,7 +59,7 @@ AN_FORCEINLINE __m128 Float4x4SSE_MultiplyFloat4(Float4x4SSE const& m, __m128 v)
         _mm_add_ps(_mm_mul_ps(zzzz, m.col2), _mm_mul_ps(wwww, m.col3)));
 }
 
-AN_FORCEINLINE __m128 Float4x4SSE_MultiplyFloat3(Float4x4SSE const& m, __m128 v)
+HK_FORCEINLINE __m128 Float4x4SSE_MultiplyFloat3(Float4x4SSE const& m, __m128 v)
 {
     __m128 xxxx = _mm_shuffle_ps(v, v, _MM_SHUFFLE(0, 0, 0, 0));
     __m128 yyyy = _mm_shuffle_ps(v, v, _MM_SHUFFLE(1, 1, 1, 1));
@@ -70,14 +70,14 @@ AN_FORCEINLINE __m128 Float4x4SSE_MultiplyFloat3(Float4x4SSE const& m, __m128 v)
         _mm_add_ps(_mm_mul_ps(zzzz, m.col2), m.col3));
 }
 
-AN_FORCEINLINE __m128 Float4x4SSE_MultiplyFloat3(Float4x4SSE const& m, __m128 v_xxxx, __m128 v_yyyy, __m128 v_zzzz)
+HK_FORCEINLINE __m128 Float4x4SSE_MultiplyFloat3(Float4x4SSE const& m, __m128 v_xxxx, __m128 v_yyyy, __m128 v_zzzz)
 {
     return _mm_add_ps(
         _mm_add_ps(_mm_mul_ps(v_xxxx, m.col0), _mm_mul_ps(v_yyyy, m.col1)),
         _mm_add_ps(_mm_mul_ps(v_zzzz, m.col2), m.col3));
 }
 
-AN_FORCEINLINE void Float4x4SSE_Multiply(Float4x4SSE& dest, Float4x4SSE const& m1, Float4x4SSE const& m2)
+HK_FORCEINLINE void Float4x4SSE_Multiply(Float4x4SSE& dest, Float4x4SSE const& m1, Float4x4SSE const& m2)
 {
     dest.col0 = Float4x4SSE_MultiplyFloat4(m1, m2.col0);
     dest.col1 = Float4x4SSE_MultiplyFloat4(m1, m2.col1);
@@ -85,7 +85,7 @@ AN_FORCEINLINE void Float4x4SSE_Multiply(Float4x4SSE& dest, Float4x4SSE const& m
     dest.col3 = Float4x4SSE_MultiplyFloat4(m1, m2.col3);
 }
 
-AN_FORCEINLINE Float4x4SSE operator*(Float4x4SSE const& m1, Float4x4SSE const& m2)
+HK_FORCEINLINE Float4x4SSE operator*(Float4x4SSE const& m1, Float4x4SSE const& m2)
 {
     return Float4x4SSE(Float4x4SSE_MultiplyFloat4(m1, m2.col0),
                        Float4x4SSE_MultiplyFloat4(m1, m2.col1),
@@ -198,9 +198,9 @@ void ALightVoxelizer::TransformItemsSSE()
             if (std::isnan(Point.Y)) Point.Y = 1;
             if (std::isnan(Point.Z)) Point.Z = 1;
 
-            //AN_ASSERT( !std::isnan( Point.X ) && !std::isinf( Point.X ) );
-            //AN_ASSERT( !std::isnan( Point.Y ) && !std::isinf( Point.Y ) );
-            //AN_ASSERT( !std::isnan( Point.Z ) && !std::isinf( Point.Z ) );
+            //HK_ASSERT( !std::isnan( Point.X ) && !std::isinf( Point.X ) );
+            //HK_ASSERT( !std::isnan( Point.Y ) && !std::isinf( Point.Y ) );
+            //HK_ASSERT( !std::isnan( Point.Z ) && !std::isinf( Point.Z ) );
 
             if (Point.Z < 0.0)
             {
@@ -248,7 +248,7 @@ void ALightVoxelizer::TransformItemsSSE()
         _mm_store_ps(&bb_mins.X, bbMins);
         _mm_store_ps(&bb_maxs.X, bbMaxs);
 
-        AN_ASSERT(bb_mins.Z >= 0);
+        HK_ASSERT(bb_mins.Z >= 0);
 
         info.MaxSlice = ceilf(std::log2f(bb_mins.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR) * FRUSTUM_SLICE_SCALE + FRUSTUM_SLICE_BIAS);
         info.MinSlice = floorf(std::log2f(bb_maxs.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR) * FRUSTUM_SLICE_SCALE + FRUSTUM_SLICE_BIAS);
@@ -262,11 +262,11 @@ void ALightVoxelizer::TransformItemsSSE()
         info.MinSlice = Math::Max(info.MinSlice, 0);
         info.MaxSlice = Math::Clamp(info.MaxSlice, 1, MAX_FRUSTUM_CLUSTERS_Z);
 
-        AN_ASSERT(info.MinSlice >= 0 && info.MinSlice <= MAX_FRUSTUM_CLUSTERS_Z);
-        AN_ASSERT(info.MinClusterX >= 0 && info.MinClusterX <= MAX_FRUSTUM_CLUSTERS_X);
-        AN_ASSERT(info.MinClusterY >= 0 && info.MinClusterY <= MAX_FRUSTUM_CLUSTERS_Y);
-        AN_ASSERT(info.MaxClusterX >= 0 && info.MaxClusterX <= MAX_FRUSTUM_CLUSTERS_X);
-        AN_ASSERT(info.MaxClusterY >= 0 && info.MaxClusterY <= MAX_FRUSTUM_CLUSTERS_Y);
+        HK_ASSERT(info.MinSlice >= 0 && info.MinSlice <= MAX_FRUSTUM_CLUSTERS_Z);
+        HK_ASSERT(info.MinClusterX >= 0 && info.MinClusterX <= MAX_FRUSTUM_CLUSTERS_X);
+        HK_ASSERT(info.MinClusterY >= 0 && info.MinClusterY <= MAX_FRUSTUM_CLUSTERS_Y);
+        HK_ASSERT(info.MaxClusterX >= 0 && info.MaxClusterX <= MAX_FRUSTUM_CLUSTERS_X);
+        HK_ASSERT(info.MaxClusterY >= 0 && info.MaxClusterY <= MAX_FRUSTUM_CLUSTERS_Y);
     }
 }
 
@@ -356,7 +356,7 @@ void ALightVoxelizer::TransformItemsGeneric()
         bb.Maxs.Y = Math::Clamp(bb.Maxs.Y, -1.0f, 1.0f);
         bb.Maxs.Z = Math::Clamp(bb.Maxs.Z, -1.0f, 1.0f);
 
-        AN_ASSERT(bb.Mins.Z >= 0);
+        HK_ASSERT(bb.Mins.Z >= 0);
 
         info.MaxSlice = ceilf(std::log2f(bb.Mins.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR) * FRUSTUM_SLICE_SCALE + FRUSTUM_SLICE_BIAS);
         info.MinSlice = floorf(std::log2f(bb.Maxs.Z * FRUSTUM_CLUSTER_ZRANGE + FRUSTUM_CLUSTER_ZNEAR) * FRUSTUM_SLICE_SCALE + FRUSTUM_SLICE_BIAS);
@@ -376,11 +376,11 @@ void ALightVoxelizer::TransformItemsGeneric()
         //info.MaxClusterX = Math::Min( info.MaxClusterX, MAX_FRUSTUM_CLUSTERS_X );
         //info.MaxClusterY = Math::Min( info.MaxClusterY, MAX_FRUSTUM_CLUSTERS_Y );
 
-        AN_ASSERT(info.MinSlice >= 0 && info.MinSlice <= MAX_FRUSTUM_CLUSTERS_Z);
-        AN_ASSERT(info.MinClusterX >= 0 && info.MinClusterX <= MAX_FRUSTUM_CLUSTERS_X);
-        AN_ASSERT(info.MinClusterY >= 0 && info.MinClusterY <= MAX_FRUSTUM_CLUSTERS_Y);
-        AN_ASSERT(info.MaxClusterX >= 0 && info.MaxClusterX <= MAX_FRUSTUM_CLUSTERS_X);
-        AN_ASSERT(info.MaxClusterY >= 0 && info.MaxClusterY <= MAX_FRUSTUM_CLUSTERS_Y);
+        HK_ASSERT(info.MinSlice >= 0 && info.MinSlice <= MAX_FRUSTUM_CLUSTERS_Z);
+        HK_ASSERT(info.MinClusterX >= 0 && info.MinClusterX <= MAX_FRUSTUM_CLUSTERS_X);
+        HK_ASSERT(info.MinClusterY >= 0 && info.MinClusterY <= MAX_FRUSTUM_CLUSTERS_Y);
+        HK_ASSERT(info.MaxClusterX >= 0 && info.MaxClusterX <= MAX_FRUSTUM_CLUSTERS_X);
+        HK_ASSERT(info.MaxClusterY >= 0 && info.MaxClusterY <= MAX_FRUSTUM_CLUSTERS_Y);
     }
 }
 

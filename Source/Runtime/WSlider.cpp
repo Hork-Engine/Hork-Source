@@ -33,7 +33,7 @@ SOFTWARE.
 #include "FrameLoop.h"
 #include "InputDefs.h"
 
-AN_CLASS_META(WSlider)
+HK_CLASS_META(WSlider)
 
 WSlider::WSlider()
 {
@@ -228,7 +228,7 @@ void WSlider::MoveSlider(float Vec)
     SetValue(Vec * (MaxValue - MinValue) / SliderBarSize + MinValue);
 }
 
-AN_FORCEINLINE bool InRect(Float2 const& _Mins, Float2 const& _Maxs, Float2 const& _Position)
+HK_FORCEINLINE bool InRect(Float2 const& _Mins, Float2 const& _Maxs, Float2 const& _Position)
 {
     return _Position.X >= _Mins.X && _Position.X < _Maxs.X && _Position.Y >= _Mins.Y && _Position.Y < _Maxs.Y;
 }

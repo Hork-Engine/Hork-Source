@@ -31,7 +31,7 @@ SOFTWARE.
 #include "Controller.h"
 #include <Platform/Logger.h>
 
-AN_CLASS_META(AController)
+HK_CLASS_META(AController)
 
 AController::AController()
 {

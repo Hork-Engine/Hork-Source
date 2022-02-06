@@ -62,7 +62,7 @@ struct Float4x4SSE
         col3 = _mm_loadu_ps(reinterpret_cast<const float*>(&m[3]));
     }
 
-    AN_FORCEINLINE void operator=(Float4x4 const& m)
+    HK_FORCEINLINE void operator=(Float4x4 const& m)
     {
         col0 = _mm_loadu_ps(reinterpret_cast<const float*>(&m[0]));
         col1 = _mm_loadu_ps(reinterpret_cast<const float*>(&m[1]));
@@ -106,7 +106,7 @@ public:
 
     SItemInfo* AllocItem()
     {
-        AN_ASSERT(ItemsCount < MAX_ITEMS);
+        HK_ASSERT(ItemsCount < MAX_ITEMS);
         return &ItemInfos[ItemsCount++];
     }
 

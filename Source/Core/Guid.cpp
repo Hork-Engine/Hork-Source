@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include <Core/Guid.h>
 
-#if defined(AN_OS_WIN32)
+#if defined(HK_OS_WIN32)
 #    include <Platform/WindowsDefs.h>
 #    include <objbase.h>
 void AGUID::Generate()
@@ -56,7 +56,7 @@ void AGUID::Generate()
              | ( static_cast< uint64_t >( id.Data4[7] ) << 0 );
     // clang-format on
 }
-#elif defined(AN_OS_LINUX)
+#elif defined(HK_OS_LINUX)
 #    include <uuid/uuid.h>
 void AGUID::Generate()
 {
@@ -81,7 +81,7 @@ void AGUID::Generate()
              | ( static_cast< uint64_t >( id[15] ) << 0 );
     // clang-format on
 }
-#elif defined(AN_OS_APPLE)
+#elif defined(HK_OS_APPLE)
 void AGUID::Generate()
 {
     auto id    = CFUUIDCreate(NULL);

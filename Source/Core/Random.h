@@ -173,7 +173,7 @@ namespace Core
 {
 
 /** Get a random seed. */
-AN_FORCEINLINE uint32_t RandomSeed()
+HK_FORCEINLINE uint32_t RandomSeed()
 {
     return (uint32_t)time(NULL);
 }

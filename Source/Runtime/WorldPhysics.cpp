@@ -46,12 +46,12 @@ SOFTWARE.
 
 #include "BulletCompatibility.h"
 
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
 #    pragma warning(push)
 #    pragma warning(disable : 4456 4828)
 #endif
 #include <BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
 #    pragma warning(pop)
 #endif
 
@@ -360,7 +360,7 @@ void AWorldPhysics::AddPendingBodies()
 
         if (hitProxy->GetCollisionObject())
         {
-            AN_ASSERT(!hitProxy->bInWorld);
+            HK_ASSERT(!hitProxy->bInWorld);
 
             btRigidBody* rigidBody = btRigidBody::upcast(hitProxy->GetCollisionObject());
             if (rigidBody)
@@ -379,7 +379,7 @@ void AWorldPhysics::AddPendingBodies()
 
 void AWorldPhysics::DispatchContactAndOverlapEvents()
 {
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
 #    pragma warning(disable : 4456)
 #endif
 
@@ -1087,7 +1087,7 @@ static bool FindCollisionBody(SCollisionQueryFilter const& _QueryFilter, ASceneC
     return false;
 }
 
-AN_FORCEINLINE static bool NeedsCollision(SCollisionQueryFilter const& _QueryFilter, btBroadphaseProxy* _Proxy)
+HK_FORCEINLINE static bool NeedsCollision(SCollisionQueryFilter const& _QueryFilter, btBroadphaseProxy* _Proxy)
 {
     btCollisionObject* collisionObject = static_cast<btCollisionObject*>(_Proxy->m_clientObject);
 
@@ -1151,10 +1151,10 @@ static bool CullTriangle( btCollisionObject const * Object, btCollisionWorld::Lo
                                                                       IndexType,
                                                                       LocalShapeInfo->m_shapePart);
 
-        AN_ASSERT(VertexType==PHY_FLOAT);
-        AN_ASSERT(IndexType==PHY_INTEGER);
-        AN_ASSERT(VertexStride==sizeof(Float3));
-        AN_ASSERT(IndexStride==sizeof(unsigned int)*3);
+        HK_ASSERT(VertexType==PHY_FLOAT);
+        HK_ASSERT(IndexType==PHY_INTEGER);
+        HK_ASSERT(VertexStride==sizeof(Float3));
+        HK_ASSERT(IndexStride==sizeof(unsigned int)*3);
 
         const unsigned int * triangleIndices = &pIndices[ LocalShapeInfo->m_triangleIndex * 3 ];
 

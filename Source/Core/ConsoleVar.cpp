@@ -83,8 +83,8 @@ AConsoleVar::AConsoleVar(const char* _Name,
                          const char* _Comment) :
     Name(_Name ? _Name : ""), DefaultValue(_Value ? _Value : ""), Comment(_Comment ? _Comment : ""), Flags(_Flags)
 {
-    AN_ASSERT(!GVariableAllocated);
-    AN_ASSERT(ACommandProcessor::IsValidCommandName(Name));
+    HK_ASSERT(!GVariableAllocated);
+    HK_ASSERT(ACommandProcessor::IsValidCommandName(Name));
 
     AConsoleVar* head = GlobalVars;
     Next              = head;

@@ -86,7 +86,7 @@ struct SLightPortalDef
 
 class ABrushModel : public ABaseObject
 {
-    AN_CLASS(ABrushModel, ABaseObject)
+    HK_CLASS(ABrushModel, ABaseObject)
 
 public:
     /** Baked surface definitions */
@@ -135,7 +135,7 @@ Subpart of a world. Contains actors, level visibility, baked data like lightmaps
 */
 class ALevel : public ABaseObject
 {
-    AN_CLASS(ALevel, ABaseObject)
+    HK_CLASS(ALevel, ABaseObject)
 
     friend class AWorld;
     friend class AActor;

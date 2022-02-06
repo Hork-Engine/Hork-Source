@@ -35,7 +35,7 @@ SOFTWARE.
 
 class AAmbientPlayer : public AActor
 {
-    AN_ACTOR(AAmbientPlayer, AActor)
+    HK_ACTOR(AAmbientPlayer, AActor)
 
 public:
 protected:

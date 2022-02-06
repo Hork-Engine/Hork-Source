@@ -38,12 +38,12 @@ namespace RenderCore
 
 IDevice::~IDevice()
 {
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
     for (IDeviceObject* pObject = ListHead; pObject; pObject=pObject->GetNext_DEBUG())
     {
         GLogger.Printf("Uninitialized resource: '%s'\n", pObject->GetDebugName());
     }
-    AN_ASSERT(ListHead == nullptr);
+    HK_ASSERT(ListHead == nullptr);
 
     TArray<const char*, DEVICE_OBJECT_TYPE_MAX> name =
         {

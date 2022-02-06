@@ -43,8 +43,8 @@ class AController;
 
 using AArrayOfActorComponents = TPodVector<AActorComponent*, 8>;
 
-#define AN_ACTOR(_Class, _SuperClass) \
-    AN_FACTORY_CLASS(AActor::Factory(), _Class, _SuperClass)
+#define HK_ACTOR(_Class, _SuperClass) \
+    HK_FACTORY_CLASS(AActor::Factory(), _Class, _SuperClass)
 
 struct SActorInitializer
 {
@@ -76,7 +76,7 @@ Base class for all actors
 */
 class AActor : public ABaseObject
 {
-    AN_ACTOR(AActor, ABaseObject)
+    HK_ACTOR(AActor, ABaseObject)
 
     friend class AWorld;
 

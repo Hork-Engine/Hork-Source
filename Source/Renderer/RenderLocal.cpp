@@ -39,7 +39,7 @@ using namespace RenderCore;
 //#define CSTYLE_LINE_DIRECTIVE
 
 AConsoleVar r_MaterialDebugMode( _CTS( "r_MaterialDebugMode" ),
-                                      #ifdef AN_DEBUG
+                                      #ifdef HK_DEBUG
                                       _CTS( "1" ),
                                       #else
                                       _CTS( "0" ),
@@ -138,7 +138,7 @@ void DrawSphere(IImmediateContext* immediateCtx, IPipeline* Pipeline, unsigned i
 
 void BindTextures( IResourceTable * Rtbl, SMaterialFrameData * Instance, int MaxTextures )
 {
-    AN_ASSERT( Instance );
+    HK_ASSERT( Instance );
 
     int n = Math::Min( Instance->NumTextures, MaxTextures );
 
@@ -149,7 +149,7 @@ void BindTextures( IResourceTable * Rtbl, SMaterialFrameData * Instance, int Max
 
 void BindTextures( SMaterialFrameData * Instance, int MaxTextures )
 {
-    AN_ASSERT( Instance );
+    HK_ASSERT( Instance );
 
     int n = Math::Min( Instance->NumTextures, MaxTextures );
 
@@ -290,7 +290,7 @@ void CreateFullscreenQuadPipeline( TRef< IPipeline > * ppPipeline, AStringView V
         }
     };
 
-    CreateVertexShader( VertexShader, vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    CreateVertexShader( VertexShader, vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
     CreateFragmentShader( FragmentShader, pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
@@ -302,10 +302,10 @@ void CreateFullscreenQuadPipeline( TRef< IPipeline > * ppPipeline, AStringView V
     vertexBinding[0].Stride = sizeof( Float2 );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
+    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
     if ( pResourceLayout ) {
@@ -347,7 +347,7 @@ void CreateFullscreenQuadPipelineGS( TRef< IPipeline > * ppPipeline, AStringView
         }
     };
 
-    CreateVertexShader( VertexShader, vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    CreateVertexShader( VertexShader, vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
     CreateGeometryShader( GeometryShader, pipelineCI.pGS );
     CreateFragmentShader( FragmentShader, pipelineCI.pFS );
 
@@ -360,10 +360,10 @@ void CreateFullscreenQuadPipelineGS( TRef< IPipeline > * ppPipeline, AStringView
     vertexBinding[0].Stride = sizeof( Float2 );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
+    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
     if ( pResourceLayout ) {
@@ -454,7 +454,7 @@ static void FreeIncludes( SIncludeInfo * list )
     }
 }
 
-static AN_FORCEINLINE int IsSpace( int ch )
+static HK_FORCEINLINE int IsSpace( int ch )
 {
     return (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n');
 }

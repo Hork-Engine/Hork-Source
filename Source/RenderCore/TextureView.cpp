@@ -39,17 +39,17 @@ ITextureView::ITextureView(STextureViewDesc const& TextureViewDesc, ITexture* pT
 {
     STextureDesc const& textureDesc = pTexture->GetDesc();
 
-    AN_ASSERT(TextureViewDesc.ViewType != TEXTURE_VIEW_UNDEFINED);
+    HK_ASSERT(TextureViewDesc.ViewType != TEXTURE_VIEW_UNDEFINED);
 
-    AN_ASSERT(TextureViewDesc.FirstMipLevel >= 0 && TextureViewDesc.NumMipLevels >= 1);
-    AN_ASSERT(TextureViewDesc.FirstMipLevel + TextureViewDesc.NumMipLevels <= textureDesc.NumMipLevels);
+    HK_ASSERT(TextureViewDesc.FirstMipLevel >= 0 && TextureViewDesc.NumMipLevels >= 1);
+    HK_ASSERT(TextureViewDesc.FirstMipLevel + TextureViewDesc.NumMipLevels <= textureDesc.NumMipLevels);
 
-    AN_ASSERT(TextureViewDesc.NumSlices > 0);
+    HK_ASSERT(TextureViewDesc.NumSlices > 0);
 
     if (TextureViewDesc.ViewType == TEXTURE_VIEW_SHADER_RESOURCE)
     {
         // clang-format off
-        AN_ASSERT_(
+        HK_ASSERT_(
             ((textureDesc.Type == TEXTURE_1D)             && (TextureViewDesc.Type == TEXTURE_1D || TextureViewDesc.Type == TEXTURE_1D_ARRAY)) ||
             ((textureDesc.Type == TEXTURE_1D_ARRAY)       && (TextureViewDesc.Type == TEXTURE_1D || TextureViewDesc.Type == TEXTURE_1D_ARRAY)) ||
             ((textureDesc.Type == TEXTURE_2D)             && ((TextureViewDesc.Type == TEXTURE_2D || TextureViewDesc.Type == TEXTURE_2D_ARRAY))) ||
@@ -61,21 +61,21 @@ ITextureView::ITextureView(STextureViewDesc const& TextureViewDesc, ITexture* pT
             "ITextureView::ctor: incompatible texture types");
         // clang-format on
 
-        AN_ASSERT(TextureViewDesc.FirstSlice + TextureViewDesc.NumSlices <= pTexture->GetSliceCount(TextureViewDesc.FirstMipLevel));
+        HK_ASSERT(TextureViewDesc.FirstSlice + TextureViewDesc.NumSlices <= pTexture->GetSliceCount(TextureViewDesc.FirstMipLevel));
     }
     else if (TextureViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET || TextureViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL)
     {
-        AN_ASSERT(textureDesc.Type == TextureViewDesc.Type);
-        AN_ASSERT(textureDesc.Format == TextureViewDesc.Format);
+        HK_ASSERT(textureDesc.Type == TextureViewDesc.Type);
+        HK_ASSERT(textureDesc.Format == TextureViewDesc.Format);
 
-        AN_ASSERT(TextureViewDesc.NumMipLevels == 1);
-        AN_ASSERT(TextureViewDesc.NumSlices == 1 || TextureViewDesc.NumSlices == pTexture->GetSliceCount(TextureViewDesc.FirstMipLevel));
+        HK_ASSERT(TextureViewDesc.NumMipLevels == 1);
+        HK_ASSERT(TextureViewDesc.NumSlices == 1 || TextureViewDesc.NumSlices == pTexture->GetSliceCount(TextureViewDesc.FirstMipLevel));
     }
     else if (TextureViewDesc.ViewType == TEXTURE_VIEW_UNORDERED_ACCESS)
     {
-        AN_ASSERT(textureDesc.Type == TextureViewDesc.Type);
+        HK_ASSERT(textureDesc.Type == TextureViewDesc.Type);
 
-        AN_ASSERT(TextureViewDesc.NumSlices == 1 || TextureViewDesc.NumSlices == pTexture->GetSliceCount(TextureViewDesc.FirstMipLevel));
+        HK_ASSERT(TextureViewDesc.NumSlices == 1 || TextureViewDesc.NumSlices == pTexture->GetSliceCount(TextureViewDesc.FirstMipLevel));
     }
 
     // TODO: Check internal formats compatibility

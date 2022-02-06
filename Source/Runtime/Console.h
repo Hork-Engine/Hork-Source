@@ -41,7 +41,7 @@ class ACanvas;
 
 class AConsole
 {
-    AN_FORBID_COPY(AConsole)
+    HK_FORBID_COPY(AConsole)
 
 public:
     AConsole();

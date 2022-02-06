@@ -40,7 +40,7 @@ SOFTWARE.
 
 AConsoleVar com_DrawSockets(_CTS("com_DrawSockets"), _CTS("0"), CVAR_CHEAT);
 
-AN_CLASS_META(ASceneComponent)
+HK_CLASS_META(ASceneComponent)
 
 ASceneComponent::ASceneComponent() :
     bAbsolutePosition(false), bAbsoluteRotation(false), bAbsoluteScale(false)
@@ -53,7 +53,7 @@ void ASceneComponent::DeinitializeComponent()
 
     AActor* owner = GetOwnerActor();
 
-    AN_ASSERT(owner);
+    HK_ASSERT(owner);
 
     if (!owner)
     {

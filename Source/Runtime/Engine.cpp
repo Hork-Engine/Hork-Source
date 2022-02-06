@@ -51,7 +51,7 @@ SOFTWARE.
 
 #include <DetourAlloc.h>
 
-#ifdef AN_OS_LINUX
+#ifdef HK_OS_LINUX
 #    include <unistd.h> // chdir
 #endif
 
@@ -63,7 +63,7 @@ static AConsoleVar com_SimulateCursorBallistics(_CTS("com_SimulateCursorBallisti
 
 AConsoleVar rt_VidWidth(_CTS("rt_VidWidth"), _CTS("0"));
 AConsoleVar rt_VidHeight(_CTS("rt_VidHeight"), _CTS("0"));
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
 AConsoleVar rt_VidFullscreen(_CTS("rt_VidFullscreen"), _CTS("0"));
 #else
 AConsoleVar rt_VidFullscreen(_CTS("rt_VidFullscreen"), _CTS("1"));
@@ -99,7 +99,7 @@ static void PhysModuleErrorFunction(const char* _Message)
 
 static void* PhysModuleAlignedAlloc(size_t _BytesCount, int _Alignment)
 {
-    AN_ASSERT(_Alignment <= 16);
+    HK_ASSERT(_Alignment <= 16);
     return GZoneMemory.Alloc(_BytesCount);
 }
 
@@ -163,7 +163,7 @@ void AEngine::LoadConfigFile()
         public:
             void ExecuteCommand(ACommandProcessor const& _Proc) override
             {
-                AN_ASSERT(_Proc.GetArgsCount() > 0);
+                HK_ASSERT(_Proc.GetArgsCount() > 0);
 
                 const char*  name = _Proc.GetArg(0);
                 AConsoleVar* var;
@@ -194,9 +194,9 @@ void AEngine::InitializeDirectories()
     WorkingDir = processInfo.Executable;
     WorkingDir.ClipFilename();
 
-#if defined AN_OS_WIN32
+#if defined HK_OS_WIN32
     SetCurrentDirectoryA(WorkingDir.CStr());
-#elif defined AN_OS_LINUX
+#elif defined HK_OS_LINUX
     chdir(WorkingDir.CStr());
 #else
 #    error "InitializeDirectories not implemented under current platform"
@@ -796,7 +796,7 @@ void AEngine::UpdateInput()
             Platform::SetCursorEnabled(false);
             break;
         default:
-            AN_ASSERT(0);
+            HK_ASSERT(0);
     }
 
     for (AInputComponent* component = AInputComponent::GetInputComponents(); component; component = component->GetNext())
@@ -923,7 +923,7 @@ AArchive const& GetEmbeddedResources()
 }
 } // namespace Runtime
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 void RunEngine(SEntryDecl const& EntryDecl)
 #else
 void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
@@ -931,7 +931,7 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
 {
     static bool bApplicationRun = false;
 
-    AN_ASSERT(!bApplicationRun);
+    HK_ASSERT(!bApplicationRun);
     if (bApplicationRun)
     {
         return;
@@ -940,7 +940,7 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
     bApplicationRun = true;
 
     SPlatformInitialize init;
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     init.pCommandLine = ::GetCommandLineA();
 #else
     init.Argc = _Argc;
@@ -962,7 +962,7 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
     Platform::Deinitialize();
 }
 
-#if defined(AN_DEBUG) && defined(AN_COMPILER_MSVC)
+#if defined(HK_DEBUG) && defined(HK_COMPILER_MSVC)
 BOOL WINAPI DllMain(
     _In_ HINSTANCE hinstDLL,
     _In_ DWORD     fdwReason,

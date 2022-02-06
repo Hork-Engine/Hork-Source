@@ -225,11 +225,11 @@ static EMGNodeType ToFloatType(EMGNodeType InType)
 
 enum EVectorCastFlags
 {
-    VECTOR_CAST_IDENTITY_X  = AN_BIT(0),
-    VECTOR_CAST_IDENTITY_Y  = AN_BIT(1),
-    VECTOR_CAST_IDENTITY_Z  = AN_BIT(2),
-    VECTOR_CAST_IDENTITY_W  = AN_BIT(3),
-    VECTOR_CAST_EXPAND_VEC1 = AN_BIT(4),
+    VECTOR_CAST_IDENTITY_X  = HK_BIT(0),
+    VECTOR_CAST_IDENTITY_Y  = HK_BIT(1),
+    VECTOR_CAST_IDENTITY_Z  = HK_BIT(2),
+    VECTOR_CAST_IDENTITY_W  = HK_BIT(3),
+    VECTOR_CAST_EXPAND_VEC1 = HK_BIT(4),
 };
 
 static AString MakeVectorCast(AString const& _Expression, EMGNodeType _TypeFrom, EMGNodeType _TypeTo, int VectorCastFlags = 0)
@@ -257,7 +257,7 @@ static AString MakeVectorCast(AString const& _Expression, EMGNodeType _TypeFrom,
             one  = "true";
             break;
         default:
-            AN_ASSERT(0);
+            HK_ASSERT(0);
     }
 
     AString defX = VectorCastFlags & VECTOR_CAST_IDENTITY_X ? one : zero;
@@ -416,7 +416,7 @@ static AString MakeVectorCast(AString const& _Expression, EMGNodeType _TypeFrom,
             break;
     }
 
-    AN_ASSERT(0);
+    HK_ASSERT(0);
 
     return _Expression;
 }
@@ -482,8 +482,8 @@ void AMaterialBuildContext::GenerateSourceCode(MGOutput* _Slot, AStringView _Exp
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGOutput)
-AN_CLASS_META(MGInput)
+HK_CLASS_META(MGOutput)
+HK_CLASS_META(MGInput)
 
 MGInput::MGInput()
 {
@@ -555,9 +555,9 @@ TRef< ADocObject > MGInput::Serialize() {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGNode)
-AN_ATTRIBUTE_(Location, AF_DEFAULT)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGNode)
+HK_ATTRIBUTE_(Location, AF_DEFAULT)
+HK_END_CLASS_META()
 
 MGNode::MGNode(const char* _Name)
 {
@@ -939,7 +939,7 @@ void MGMaterialGraph::ComputeAlphaMask(AMaterialBuildContext& _Context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 #if 0
-AN_CLASS_META( MGProjectionNode )
+HK_CLASS_META( MGProjectionNode )
 
 MGProjectionNode::MGProjectionNode() : Super( "Projection" ) {
     Vector = AddInput( "Vector" );
@@ -954,7 +954,7 @@ void MGProjectionNode::Compute( AMaterialBuildContext & _Context ) {
 #endif
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGLengthNode)
+HK_CLASS_META(MGLengthNode)
 
 MGLengthNode::MGLengthNode() :
     Super("Length")
@@ -991,7 +991,7 @@ void MGLengthNode::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGDecomposeVectorNode)
+HK_CLASS_META(MGDecomposeVectorNode)
 
 MGDecomposeVectorNode::MGDecomposeVectorNode() :
     Super("Decompose Vector")
@@ -1025,7 +1025,7 @@ void MGDecomposeVectorNode::Compute(AMaterialBuildContext& _Context)
                 zero                                  = "false";
                 break;
             default:
-                AN_ASSERT(0);
+                HK_ASSERT(0);
                 break;
         }
 
@@ -1066,7 +1066,7 @@ void MGDecomposeVectorNode::Compute(AMaterialBuildContext& _Context)
             }
             break;
             default:
-                AN_ASSERT(0);
+                HK_ASSERT(0);
                 break;
         }
     }
@@ -1082,7 +1082,7 @@ void MGDecomposeVectorNode::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGMakeVectorNode)
+HK_CLASS_META(MGMakeVectorNode)
 
 MGMakeVectorNode::MGMakeVectorNode() :
     Super("Make Vector")
@@ -1159,7 +1159,7 @@ void MGMakeVectorNode::Compute(AMaterialBuildContext& _Context)
     else
     {
         resultType = AT_Float1;
-        AN_ASSERT(0);
+        HK_ASSERT(0);
     }
     Result->Type = EMGNodeType(resultType + numComponents - 1);
 
@@ -1176,7 +1176,7 @@ void MGMakeVectorNode::Compute(AMaterialBuildContext& _Context)
             defaultVal    = "false";
             break;
         default:
-            AN_ASSERT(0);
+            HK_ASSERT(0);
     }
 
     AString typeCastX = XValid ?
@@ -1235,24 +1235,24 @@ void MGMakeVectorNode::Compute(AMaterialBuildContext& _Context)
                                         false);
             break;
         default:
-            AN_ASSERT(0);
+            HK_ASSERT(0);
             break;
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGArithmeticFunction1)
-AN_CLASS_META(MGSaturate)
-AN_CLASS_META(MGSinusNode)
-AN_CLASS_META(MGCosinusNode)
-AN_CLASS_META(MGFractNode)
-AN_CLASS_META(MGNegateNode)
-AN_CLASS_META(MGNormalizeNode)
+HK_CLASS_META(MGArithmeticFunction1)
+HK_CLASS_META(MGSaturate)
+HK_CLASS_META(MGSinusNode)
+HK_CLASS_META(MGCosinusNode)
+HK_CLASS_META(MGFractNode)
+HK_CLASS_META(MGNegateNode)
+HK_CLASS_META(MGNormalizeNode)
 
 MGArithmeticFunction1::MGArithmeticFunction1()
 {
-    AN_ASSERT(0);
+    HK_ASSERT(0);
 }
 
 MGArithmeticFunction1::MGArithmeticFunction1(EArithmeticFunction _Function, const char* _Name) :
@@ -1314,7 +1314,7 @@ void MGArithmeticFunction1::Compute(AMaterialBuildContext& _Context)
                 }
                 break;
             default:
-                AN_ASSERT(0);
+                HK_ASSERT(0);
         }
 
         _Context.GenerateSourceCode(Result, expression, false);
@@ -1329,20 +1329,20 @@ void MGArithmeticFunction1::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGArithmeticFunction2)
-AN_CLASS_META(MGMulNode)
-AN_CLASS_META(MGDivNode)
-AN_CLASS_META(MGAddNode)
-AN_CLASS_META(MGSubNode)
-AN_CLASS_META(MGStepNode)
-AN_CLASS_META(MGPowNode)
-AN_CLASS_META(MGModNode)
-AN_CLASS_META(MGMin)
-AN_CLASS_META(MGMax)
+HK_CLASS_META(MGArithmeticFunction2)
+HK_CLASS_META(MGMulNode)
+HK_CLASS_META(MGDivNode)
+HK_CLASS_META(MGAddNode)
+HK_CLASS_META(MGSubNode)
+HK_CLASS_META(MGStepNode)
+HK_CLASS_META(MGPowNode)
+HK_CLASS_META(MGModNode)
+HK_CLASS_META(MGMin)
+HK_CLASS_META(MGMax)
 
 MGArithmeticFunction2::MGArithmeticFunction2()
 {
-    AN_ASSERT(0);
+    HK_ASSERT(0);
 }
 
 MGArithmeticFunction2::MGArithmeticFunction2(EArithmeticFunction _Function, const char* _Name) :
@@ -1407,7 +1407,7 @@ void MGArithmeticFunction2::Compute(AMaterialBuildContext& _Context)
                 expression = "max( " + expressionA + ", " + expressionB + " )";
                 break;
             default:
-                AN_ASSERT(0);
+                HK_ASSERT(0);
         }
 
         _Context.GenerateSourceCode(Result, expression, false);
@@ -1422,14 +1422,14 @@ void MGArithmeticFunction2::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGArithmeticFunction3)
-AN_CLASS_META(MGMADNode)
-AN_CLASS_META(MGLerpNode)
-AN_CLASS_META(MGClamp)
+HK_CLASS_META(MGArithmeticFunction3)
+HK_CLASS_META(MGMADNode)
+HK_CLASS_META(MGLerpNode)
+HK_CLASS_META(MGClamp)
 
 MGArithmeticFunction3::MGArithmeticFunction3()
 {
-    AN_ASSERT(0);
+    HK_ASSERT(0);
 }
 
 MGArithmeticFunction3::MGArithmeticFunction3(EArithmeticFunction _Function, const char* _Name) :
@@ -1479,7 +1479,7 @@ void MGArithmeticFunction3::Compute(AMaterialBuildContext& _Context)
                 expression = "clamp( " + expressionA + ", " + expressionB + ", " + expressionC + " )";
                 break;
             default:
-                AN_ASSERT(0);
+                HK_ASSERT(0);
         }
 
         _Context.GenerateSourceCode(Result, expression, false);
@@ -1493,7 +1493,7 @@ void MGArithmeticFunction3::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGSpheremapCoord)
+HK_CLASS_META(MGSpheremapCoord)
 
 MGSpheremapCoord::MGSpheremapCoord() :
     Super("Spheremap Coord")
@@ -1520,7 +1520,7 @@ void MGSpheremapCoord::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGLuminance)
+HK_CLASS_META(MGLuminance)
 
 MGLuminance::MGLuminance() :
     Super("Luminance")
@@ -1547,8 +1547,8 @@ void MGLuminance::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGPINode)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGPINode)
+HK_END_CLASS_META()
 
 MGPINode::MGPINode() :
     Super("PI")
@@ -1561,8 +1561,8 @@ void MGPINode::Compute(AMaterialBuildContext& _Context)
     OutValue->Expression = "3.1415926";
 }
 
-AN_BEGIN_CLASS_META(MG2PINode)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MG2PINode)
+HK_END_CLASS_META()
 
 MG2PINode::MG2PINode() :
     Super("2PI")
@@ -1577,9 +1577,9 @@ void MG2PINode::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGBooleanNode)
-//AN_ATTRIBUTE_( bValue, AF_DEFAULT )
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGBooleanNode)
+//HK_ATTRIBUTE_( bValue, AF_DEFAULT )
+HK_END_CLASS_META()
 
 MGBooleanNode::MGBooleanNode() :
     Super("Boolean")
@@ -1594,9 +1594,9 @@ void MGBooleanNode::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGBoolean2Node)
-//AN_ATTRIBUTE_( bValue, AF_DEFAULT )
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGBoolean2Node)
+//HK_ATTRIBUTE_( bValue, AF_DEFAULT )
+HK_END_CLASS_META()
 
 MGBoolean2Node::MGBoolean2Node() :
     Super("Boolean2")
@@ -1611,9 +1611,9 @@ void MGBoolean2Node::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGBoolean3Node)
-//AN_ATTRIBUTE_( bValue, AF_DEFAULT )
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGBoolean3Node)
+//HK_ATTRIBUTE_( bValue, AF_DEFAULT )
+HK_END_CLASS_META()
 
 MGBoolean3Node::MGBoolean3Node() :
     Super("Boolean3")
@@ -1628,9 +1628,9 @@ void MGBoolean3Node::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGBoolean4Node)
-//AN_ATTRIBUTE_( bValue, AF_DEFAULT )
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGBoolean4Node)
+//HK_ATTRIBUTE_( bValue, AF_DEFAULT )
+HK_END_CLASS_META()
 
 MGBoolean4Node::MGBoolean4Node() :
     Super("Boolean4")
@@ -1645,9 +1645,9 @@ void MGBoolean4Node::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGFloatNode)
-AN_ATTRIBUTE_(Value, AF_DEFAULT)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGFloatNode)
+HK_ATTRIBUTE_(Value, AF_DEFAULT)
+HK_END_CLASS_META()
 
 MGFloatNode::MGFloatNode() :
     Super("Float")
@@ -1666,9 +1666,9 @@ void MGFloatNode::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGFloat2Node)
-AN_ATTRIBUTE_(Value, AF_DEFAULT)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGFloat2Node)
+HK_ATTRIBUTE_(Value, AF_DEFAULT)
+HK_END_CLASS_META()
 
 MGFloat2Node::MGFloat2Node() :
     Super("Float2")
@@ -1683,9 +1683,9 @@ void MGFloat2Node::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGFloat3Node)
-AN_ATTRIBUTE_(Value, AF_DEFAULT)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGFloat3Node)
+HK_ATTRIBUTE_(Value, AF_DEFAULT)
+HK_END_CLASS_META()
 
 MGFloat3Node::MGFloat3Node() :
     Super("Float3")
@@ -1700,9 +1700,9 @@ void MGFloat3Node::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGFloat4Node)
-AN_ATTRIBUTE_(Value, AF_DEFAULT)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGFloat4Node)
+HK_ATTRIBUTE_(Value, AF_DEFAULT)
+HK_END_CLASS_META()
 
 MGFloat4Node::MGFloat4Node() :
     Super("Float4")
@@ -1717,7 +1717,7 @@ void MGFloat4Node::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGTextureSlot)
+HK_CLASS_META(MGTextureSlot)
 
 MGTextureSlot::MGTextureSlot() :
     Super("Texture Slot")
@@ -1767,7 +1767,7 @@ static const char* GetShaderType(ETextureType _Type)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGUniformAddress)
+HK_CLASS_META(MGUniformAddress)
 
 MGUniformAddress::MGUniformAddress() :
     Super("Texture Slot")
@@ -1830,7 +1830,7 @@ void MGUniformAddress::Compute(AMaterialBuildContext& _Context)
                 break;
 
             default:
-                AN_ASSERT(0);
+                HK_ASSERT(0);
                 break;
         }
 
@@ -1844,9 +1844,9 @@ void MGUniformAddress::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGSampler)
-AN_ATTRIBUTE_(bSwappedToBGR, AF_DEFAULT)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGSampler)
+HK_ATTRIBUTE_(bSwappedToBGR, AF_DEFAULT)
+HK_END_CLASS_META()
 
 MGSampler::MGSampler() :
     Super("Texture Sampler")
@@ -1919,7 +1919,7 @@ void MGSampler::Compute(AMaterialBuildContext& _Context)
                     sampleType = AT_Float3;
                     break;
                 default:
-                    AN_ASSERT(0);
+                    HK_ASSERT(0);
             };
 
             int32_t slotIndex = texSlot->GetSlotIndex();
@@ -1965,8 +1965,8 @@ void MGSampler::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGNormalSampler)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGNormalSampler)
+HK_END_CLASS_META()
 
 MGNormalSampler::MGNormalSampler() :
     Super("Normal Sampler")
@@ -2045,7 +2045,7 @@ void MGNormalSampler::Compute(AMaterialBuildContext& _Context)
                     sampleType = AT_Float3;
                     break;
                 default:
-                    AN_ASSERT(0);
+                    HK_ASSERT(0);
             };
 
             int32_t slotIndex = texSlot->GetSlotIndex();
@@ -2086,8 +2086,8 @@ void MGNormalSampler::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGParallaxMapSampler)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGParallaxMapSampler)
+HK_END_CLASS_META()
 
 MGParallaxMapSampler::MGParallaxMapSampler() :
     Super("Parallax Map Sampler")
@@ -2167,9 +2167,9 @@ void MGParallaxMapSampler::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGSamplerVT)
-AN_ATTRIBUTE_(bSwappedToBGR, AF_DEFAULT)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGSamplerVT)
+HK_ATTRIBUTE_(bSwappedToBGR, AF_DEFAULT)
+HK_END_CLASS_META()
 
 MGSamplerVT::MGSamplerVT() :
     Super("Virtual Texture Sampler")
@@ -2202,8 +2202,8 @@ void MGSamplerVT::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_BEGIN_CLASS_META(MGNormalSamplerVT)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(MGNormalSamplerVT)
+HK_END_CLASS_META()
 
 MGNormalSamplerVT::MGNormalSamplerVT() :
     Super("Virtual Texture Normal Sampler")
@@ -2231,7 +2231,7 @@ void MGNormalSamplerVT::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGInFragmentCoord)
+HK_CLASS_META(MGInFragmentCoord)
 
 MGInFragmentCoord::MGInFragmentCoord() :
     Super("InFragmentCoord")
@@ -2262,7 +2262,7 @@ void MGInFragmentCoord::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGInPosition)
+HK_CLASS_META(MGInPosition)
 
 MGInPosition::MGInPosition() :
     Super("InPosition")
@@ -2295,7 +2295,7 @@ void MGInPosition::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGInNormal)
+HK_CLASS_META(MGInNormal)
 
 MGInNormal::MGInNormal() :
     Super("InNormal")
@@ -2327,7 +2327,7 @@ void MGInNormal::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGInColor)
+HK_CLASS_META(MGInColor)
 
 MGInColor::MGInColor() :
     Super("InColor")
@@ -2360,7 +2360,7 @@ void MGInColor::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGInTexCoord)
+HK_CLASS_META(MGInTexCoord)
 
 MGInTexCoord::MGInTexCoord() :
     Super("InTexCoord")
@@ -2384,7 +2384,7 @@ void MGInTexCoord::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 #if 0
-AN_CLASS_META( MGMaterialInLightmapTexCoord )
+HK_CLASS_META( MGMaterialInLightmapTexCoord )
 
 MGMaterialInLightmapTexCoord::MGMaterialInLightmapTexCoord() {
     Name = "InLightmapTexCoord";
@@ -2399,7 +2399,7 @@ void MGMaterialInLightmapTexCoord::Compute( AMaterialBuildContext & _Context ) {
 #endif
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGInTimer)
+HK_CLASS_META(MGInTimer)
 
 MGInTimer::MGInTimer() :
     Super("InTimer")
@@ -2417,7 +2417,7 @@ void MGInTimer::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGInViewPosition)
+HK_CLASS_META(MGInViewPosition)
 
 MGInViewPosition::MGInViewPosition() :
     Super("InViewPosition")
@@ -2432,7 +2432,7 @@ void MGInViewPosition::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGCondLess)
+HK_CLASS_META(MGCondLess)
 // TODO: add greater, lequal, gequal, equal, not equal
 
 MGCondLess::MGCondLess() :
@@ -2501,7 +2501,7 @@ void MGCondLess::Compute(AMaterialBuildContext& _Context)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGAtmosphereNode)
+HK_CLASS_META(MGAtmosphereNode)
 
 MGAtmosphereNode::MGAtmosphereNode() :
     Super("Atmosphere Scattering")
@@ -2912,7 +2912,7 @@ void MGMaterialGraph::CreateStageTransitions(SMaterialStageTransition&    Transi
                                              AMaterialBuildContext const* GeometryStage,
                                              AMaterialBuildContext const* FragmentStage)
 {
-    AN_ASSERT(VertexStage != nullptr);
+    HK_ASSERT(VertexStage != nullptr);
 
     TStdVector<SVarying>& varyings = Transition.Varyings;
 
@@ -3107,7 +3107,7 @@ void MGMaterialGraph::CreateStageTransitions(SMaterialStageTransition&    Transi
 
     for (SVarying const& v : varyings)
     {
-        AN_ASSERT(v.RefCount == 0);
+        HK_ASSERT(v.RefCount == 0);
     }
 #if 0
     AFileStream f;
@@ -3142,7 +3142,7 @@ void MGMaterialGraph::CreateStageTransitions(SMaterialStageTransition&    Transi
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-AN_CLASS_META(MGMaterialGraph)
+HK_CLASS_META(MGMaterialGraph)
 
 MGMaterialGraph::MGMaterialGraph() :
     Super("Material Graph")
@@ -3257,7 +3257,7 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
             predefines += "#define MATERIAL_TYPE_POSTPROCESS\n";
             break;
         default:
-            AN_ASSERT(0);
+            HK_ASSERT(0);
     }
 
     switch (InGraph->TessellationMethod)
@@ -3543,7 +3543,7 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
                     break;
                 default:
                     predefines += "#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_DISABLED\n";
-                    AN_ASSERT(0);
+                    HK_ASSERT(0);
                     break;
             }
 

@@ -43,15 +43,15 @@ AConsoleVar in_MouseFilter(_CTS("in_MouseFilter"), _CTS("1"));
 AConsoleVar in_MouseInvertY(_CTS("in_MouseInvertY"), _CTS("0"));
 AConsoleVar in_MouseAccel(_CTS("in_MouseAccel"), _CTS("0"));
 
-AN_CLASS_META(AInputMappings)
+HK_CLASS_META(AInputMappings)
 
-AN_BEGIN_CLASS_META(AInputComponent)
-AN_ATTRIBUTE_(bIgnoreKeyboardEvents, AF_DEFAULT)
-AN_ATTRIBUTE_(bIgnoreMouseEvents, AF_DEFAULT)
-AN_ATTRIBUTE_(bIgnoreJoystickEvents, AF_DEFAULT)
-AN_ATTRIBUTE_(bIgnoreCharEvents, AF_DEFAULT)
-AN_ATTRIBUTE_(ControllerId, AF_DEFAULT)
-AN_END_CLASS_META()
+HK_BEGIN_CLASS_META(AInputComponent)
+HK_ATTRIBUTE_(bIgnoreKeyboardEvents, AF_DEFAULT)
+HK_ATTRIBUTE_(bIgnoreMouseEvents, AF_DEFAULT)
+HK_ATTRIBUTE_(bIgnoreJoystickEvents, AF_DEFAULT)
+HK_ATTRIBUTE_(bIgnoreCharEvents, AF_DEFAULT)
+HK_ATTRIBUTE_(ControllerId, AF_DEFAULT)
+HK_END_CLASS_META()
 
 struct AInputComponentStatic
 {
@@ -69,15 +69,15 @@ struct AInputComponentStatic
 
     AInputComponentStatic()
     {
-#define InitKey(Key)                KeyNames[Key] = AN_STRINGIFY(Key) + 4
+#define InitKey(Key)                KeyNames[Key] = HK_STRINGIFY(Key) + 4
 #define InitKey2(Key, Name)         KeyNames[Key] = Name
 #define InitButton(Button, Name)    MouseButtonNames[Button] = Name
 #define InitMouseAxis(Axis, Name)   MouseAxisNames[Axis - MOUSE_AXIS_BASE] = Name
-#define InitDevice(DeviceId)        DeviceNames[DeviceId] = AN_STRINGIFY(DeviceId) + 3
+#define InitDevice(DeviceId)        DeviceNames[DeviceId] = HK_STRINGIFY(DeviceId) + 3
 #define InitJoyButton(Button, Name) JoystickButtonNames[Button - JOY_BUTTON_BASE] = Name
 #define InitJoyAxis(Axis, Name)     JoystickAxisNames[Axis - JOY_AXIS_BASE] = Name
-#define InitModifier(Modifier)      ModifierNames[Modifier] = AN_STRINGIFY(Modifier) + 4
-#define InitController(Controller)  ControllerNames[Controller] = AN_STRINGIFY(Controller) + 11
+#define InitModifier(Modifier)      ModifierNames[Modifier] = HK_STRINGIFY(Modifier) + 4
+#define InitController(Controller)  ControllerNames[Controller] = HK_STRINGIFY(Controller) + 11
 
         DeviceButtonLimits[ID_KEYBOARD] = MAX_KEYBOARD_BUTTONS;
         DeviceButtonLimits[ID_MOUSE]    = MAX_MOUSE_BUTTONS + MAX_MOUSE_AXES;
@@ -844,7 +844,7 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
         {
             // Button is repressed
 
-            //AN_ASSERT( 0 );
+            //HK_ASSERT( 0 );
         }
     }
     else if (Action == IA_RELEASE)
@@ -868,7 +868,7 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
 
             // Pop back
             NumPressedKeys--;
-            AN_ASSERT(NumPressedKeys >= 0);
+            HK_ASSERT(NumPressedKeys >= 0);
 
             if (actionBinding != -1)
             {
@@ -1344,7 +1344,7 @@ void AInputMappings::UnmapAxis(SInputDeviceKey const& DeviceKey)
         if (mapping.bAxis)
         {
             auto map_it = AxisMappings.find(mapping.Name);
-            AN_ASSERT(map_it != AxisMappings.end());
+            HK_ASSERT(map_it != AxisMappings.end());
 
             auto& axisMappingsVector = map_it->second;
             for (auto axis_it = axisMappingsVector.Begin(); axis_it != axisMappingsVector.End(); axis_it++)

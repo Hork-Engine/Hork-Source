@@ -114,7 +114,7 @@ struct SAllPass
 
 class AFreeverb
 {
-    AN_FORBID_COPY( AFreeverb )
+    HK_FORBID_COPY( AFreeverb )
 
 public:
     const float MutedGain    = 0;

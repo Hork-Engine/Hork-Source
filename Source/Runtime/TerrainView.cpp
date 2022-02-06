@@ -103,7 +103,7 @@ void ATerrainView::SetTerrain(ATerrain* InTerrain)
 
 void ATerrainView::Update(AStreamedMemoryGPU* StreamedMemory, ATerrainMesh* TerrainMesh, Float3 const& ViewPosition, BvFrustum const& ViewFrustum)
 {
-    AN_ASSERT(TerrainMesh->GetTextureSize() == TextureSize);
+    HK_ASSERT(TerrainMesh->GetTextureSize() == TextureSize);
 
     BoundingBoxes.Clear();
 
@@ -133,7 +133,7 @@ void ATerrainView::Update(AStreamedMemoryGPU* StreamedMemory, ATerrainMesh* Terr
     }
 }
 
-static AN_FORCEINLINE Int2 GetTexcoordOffset(STerrainLodInfo const& Lod)
+static HK_FORCEINLINE Int2 GetTexcoordOffset(STerrainLodInfo const& Lod)
 {
     Int2 TexcoordOffset;
     TexcoordOffset.X = Lod.TextureOffset.X * Lod.GridScale - Lod.Offset.X;
@@ -843,8 +843,8 @@ void ATerrainView::UpdateRect(STerrainLodInfo const& Lod, STerrainLodInfo const&
             texelWorldPos.X = (x - Lod.TextureOffset.X) * Lod.GridScale + Lod.Offset.X;
             texelWorldPos.Y = (y - Lod.TextureOffset.Y) * Lod.GridScale + Lod.Offset.Y;
 
-            AN_ASSERT(wrapX >= 0 && wrapY >= 0);
-            AN_ASSERT(wrapX <= TextureSize - 1 && wrapY <= TextureSize - 1);
+            HK_ASSERT(wrapX >= 0 && wrapY >= 0);
+            HK_ASSERT(wrapX <= TextureSize - 1 && wrapY <= TextureSize - 1);
 
             int sampleLod = Lod.LodIndex;
 
@@ -1018,7 +1018,7 @@ void ATerrainView::UpdateTextures()
 
 void ATerrainView::DrawDebug(ADebugRenderer* InRenderer, ATerrainMesh* TerrainMesh)
 {
-    AN_ASSERT(TerrainMesh->GetTextureSize() == TextureSize);
+    HK_ASSERT(TerrainMesh->GetTextureSize() == TextureSize);
 
     TerrainRenderer = InRenderer;
 
@@ -1191,8 +1191,8 @@ Float3 ATerrainView::VertexShader(STerrainVertex const& v)
     texCoord.X &= TextureWrapMask;
     texCoord.Y &= TextureWrapMask;
 
-    AN_ASSERT(texCoord.X >= 0 && texCoord.Y >= 0);
-    AN_ASSERT(texCoord.X <= TextureSize - 1 && texCoord.Y <= TextureSize - 1);
+    HK_ASSERT(texCoord.X >= 0 && texCoord.Y >= 0);
+    HK_ASSERT(texCoord.X <= TextureSize - 1 && texCoord.Y <= TextureSize - 1);
 
     result.Y = texture[texCoord.Y * TextureSize + texCoord.X].X;
     return result;

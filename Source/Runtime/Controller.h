@@ -41,7 +41,7 @@ Base class for controllers
 
 */
 class AController : public AActor {
-    AN_ACTOR( AController, AActor )
+    HK_ACTOR( AController, AActor )
 
 public:
     AController();

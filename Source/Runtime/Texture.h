@@ -68,7 +68,7 @@ ATexture
 */
 class ATexture : public AResource
 {
-    AN_CLASS(ATexture, AResource)
+    HK_CLASS(ATexture, AResource)
 
 public:
     ATexture();

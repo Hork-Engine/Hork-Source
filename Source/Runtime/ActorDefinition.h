@@ -36,7 +36,7 @@ SOFTWARE.
 
 class AActorDefinition : public AResource
 {
-    AN_CLASS(AActorDefinition, AResource)
+    HK_CLASS(AActorDefinition, AResource)
 
 public:
     struct SComponentDef

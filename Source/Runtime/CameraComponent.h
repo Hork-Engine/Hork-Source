@@ -45,7 +45,7 @@ enum ECameraProjection : uint8_t
 
 class ACameraComponent : public ASceneComponent
 {
-    AN_COMPONENT(ACameraComponent, ASceneComponent)
+    HK_COMPONENT(ACameraComponent, ASceneComponent)
 
 public:
     /** Set view projection */

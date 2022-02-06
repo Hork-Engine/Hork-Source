@@ -30,7 +30,7 @@ SOFTWARE.
 
 #include "Triggers.h"
 
-AN_CLASS_META(ATriggerBox)
+HK_CLASS_META(ATriggerBox)
 
 ATriggerBox::ATriggerBox()
 {
@@ -49,7 +49,7 @@ ATriggerBox::ATriggerBox()
     TriggerBody->SetCollisionModel(collisionModel);
 }
 
-AN_CLASS_META(ATriggerSphere)
+HK_CLASS_META(ATriggerSphere)
 
 ATriggerSphere::ATriggerSphere()
 {
@@ -68,7 +68,7 @@ ATriggerSphere::ATriggerSphere()
     TriggerBody->SetCollisionModel(collisionModel);
 }
 
-AN_CLASS_META(ATriggerCylinder)
+HK_CLASS_META(ATriggerCylinder)
 
 ATriggerCylinder::ATriggerCylinder()
 {
@@ -87,7 +87,7 @@ ATriggerCylinder::ATriggerCylinder()
     TriggerBody->SetCollisionModel(collisionModel);
 }
 
-AN_CLASS_META(ATriggerCone)
+HK_CLASS_META(ATriggerCone)
 
 ATriggerCone::ATriggerCone()
 {
@@ -106,7 +106,7 @@ ATriggerCone::ATriggerCone()
     TriggerBody->SetCollisionModel(collisionModel);
 }
 
-AN_CLASS_META(ATriggerCapsule)
+HK_CLASS_META(ATriggerCapsule)
 
 ATriggerCapsule::ATriggerCapsule()
 {

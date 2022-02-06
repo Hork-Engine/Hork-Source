@@ -64,7 +64,7 @@ enum ECollisionMask
 
 class AHitProxy : public ABaseObject
 {
-    AN_CLASS(AHitProxy, ABaseObject)
+    HK_CLASS(AHitProxy, ABaseObject)
 
     friend class AWorldPhysics;
 

@@ -68,7 +68,7 @@ enum EDrawCornerFlags
 
 class ACanvas
 {
-    AN_FORBID_COPY(ACanvas)
+    HK_FORBID_COPY(ACanvas)
 
 public:
     ACanvas();

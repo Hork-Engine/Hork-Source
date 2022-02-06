@@ -177,7 +177,7 @@ public:
         return ObjectCounters[ProxyType];
     }
 
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
     IDeviceObject* GetDeviceObjects_DEBUG()
     {
         return ListHead;
@@ -205,7 +205,7 @@ protected:
 private:
     TArray<int, DEVICE_OBJECT_TYPE_MAX> ObjectCounters = {};
 
-#ifdef AN_DEBUG
+#ifdef HK_DEBUG
     IDeviceObject* ListHead = nullptr;
     IDeviceObject* ListTail = nullptr;
 #endif

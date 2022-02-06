@@ -124,7 +124,7 @@ private:
 
 #define STB_TEXTEDIT_INSERTCHARS(_Obj, _Offset, _Text, _TextLength) WTextEditProxy(_Obj).InsertCharsProxy(_Offset, _Text, _TextLength)
 
-AN_FORCEINLINE bool IsSeparator(SWideChar c)
+HK_FORCEINLINE bool IsSeparator(SWideChar c)
 {
     return c == ',' || c == '.' || c == ';' || c == ':' || c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']' || c == '{' || c == '}' || c == '<' || c == '>' || c == '|' || c == '!' || c == '@' || c == '#' || c == '$' || c == '%' || c == '^' || c == '&' || c == '*' || c == '/' || c == '\\' || c == '+' || c == '=' || c == '-' || c == '~' || c == '`' || c == '\'' || c == '"' || c == '?' || c == '\n';
 }
@@ -187,11 +187,11 @@ static const bool bOSX = false;
 
 enum FCharacterFilter
 {
-    CHARS_DECIMAL     = AN_BIT(0), // 0123456789.+-*/
-    CHARS_HEXADECIMAL = AN_BIT(1), // 0123456789ABCDEFabcdef
-    CHARS_UPPERCASE   = AN_BIT(2), // a..z -> A..Z
-    CHARS_NO_BLANK    = AN_BIT(3), // filter out spaces, tabs
-    CHARS_SCIENTIFIC  = AN_BIT(4), // 0123456789.+-*/eE (Scientific notation input)
+    CHARS_DECIMAL     = HK_BIT(0), // 0123456789.+-*/
+    CHARS_HEXADECIMAL = HK_BIT(1), // 0123456789ABCDEFabcdef
+    CHARS_UPPERCASE   = HK_BIT(2), // a..z -> A..Z
+    CHARS_NO_BLANK    = HK_BIT(3), // filter out spaces, tabs
+    CHARS_SCIENTIFIC  = HK_BIT(4), // 0123456789.+-*/eE (Scientific notation input)
 };
 
 static Float2 CalcTextRect(AFont const* _Font, SWideChar const* _TextBegin, SWideChar const* _TextEnd, const SWideChar** _Remaining, Float2* _OutOffset, bool _StopOnNewLine)
@@ -275,7 +275,7 @@ static Float2 CalcCursorOffset(AFont const* _Font, SWideChar* _Text, int _Cursor
     return offset;
 }
 
-AN_CLASS_META(WTextEdit)
+HK_CLASS_META(WTextEdit)
 
 WTextEdit::WTextEdit()
 {

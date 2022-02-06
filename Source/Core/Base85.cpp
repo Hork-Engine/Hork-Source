@@ -31,12 +31,12 @@ SOFTWARE.
 #include <Platform/Memory/Memory.h>
 #include <Platform/String.h>
 
-static AN_FORCEINLINE unsigned int Decode85Byte(const char c)
+static HK_FORCEINLINE unsigned int Decode85Byte(const char c)
 {
     return c >= '\\' ? c - 36 : c - 35;
 }
 
-static AN_FORCEINLINE char Encode85Byte(unsigned int x)
+static HK_FORCEINLINE char Encode85Byte(unsigned int x)
 {
     x = (x % 85) + 35;
     return (x >= '\\') ? x + 1 : x;

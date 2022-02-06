@@ -35,7 +35,7 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
-AN_CLASS_META(ASkeletalAnimation)
+HK_CLASS_META(ASkeletalAnimation)
 
 ASkeletalAnimation::ASkeletalAnimation()
 {
@@ -62,7 +62,7 @@ void ASkeletalAnimation::Purge()
 
 void ASkeletalAnimation::Initialize(int _FrameCount, float _FrameDelta, STransform const* _Transforms, int _TransformsCount, SAnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds)
 {
-    AN_ASSERT(_TransformsCount == _FrameCount * _NumAnimatedJoints);
+    HK_ASSERT(_TransformsCount == _FrameCount * _NumAnimatedJoints);
 
     Channels.ResizeInvalidate(_NumAnimatedJoints);
     Platform::Memcpy(Channels.ToPtr(), _AnimatedJoints, sizeof(Channels[0]) * _NumAnimatedJoints);

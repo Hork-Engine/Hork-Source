@@ -46,7 +46,7 @@ Specifies the base class for non interactive widgets (decorates)
 */
 class WDecorate : public ABaseObject
 {
-    AN_CLASS(WDecorate, ABaseObject)
+    HK_CLASS(WDecorate, ABaseObject)
 
     friend class WWidget;
 
@@ -66,7 +66,7 @@ private:
 
 class WTextDecorate : public WDecorate
 {
-    AN_CLASS(WTextDecorate, WDecorate)
+    HK_CLASS(WTextDecorate, WDecorate)
 
 public:
     WTextDecorate& SetText(const char* _Text);
@@ -97,7 +97,7 @@ private:
 
 class WBorderDecorate : public WDecorate
 {
-    AN_CLASS(WBorderDecorate, WDecorate)
+    HK_CLASS(WBorderDecorate, WDecorate)
 
 public:
     WBorderDecorate& SetColor(Color4 const& _Color);
@@ -124,7 +124,7 @@ private:
 
 class WImageDecorate : public WDecorate
 {
-    AN_CLASS(WImageDecorate, WDecorate)
+    HK_CLASS(WImageDecorate, WDecorate)
 
 public:
     WImageDecorate& SetColor(Color4 const& _Color);

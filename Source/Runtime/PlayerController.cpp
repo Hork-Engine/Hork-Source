@@ -38,8 +38,8 @@ SOFTWARE.
 #include "Engine.h"
 #include <Core/Image.h>
 
-AN_CLASS_META(APlayerController)
-AN_CLASS_META(ARenderingParameters)
+HK_CLASS_META(APlayerController)
+HK_CLASS_META(ARenderingParameters)
 
 APlayerController* APlayerController::CurrentAudioListener = nullptr;
 

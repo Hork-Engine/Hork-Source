@@ -262,7 +262,7 @@ enum BIND_FLAG : uint16_t
     BIND_UNORDERED_ACCESS = 1 << 7
 };
 
-AN_FLAG_ENUM_OPERATORS(BIND_FLAG)
+HK_FLAG_ENUM_OPERATORS(BIND_FLAG)
 
 struct STextureDesc
 {
@@ -612,21 +612,21 @@ public:
     {
         const auto AllowedBindings = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET | BIND_DEPTH_STENCIL | BIND_UNORDERED_ACCESS;
 
-        AN_ASSERT_(Desc.Resolution.Width > 0, "Invalid texture resolution");
-        AN_ASSERT_(Desc.Resolution.Height > 0, "Invalid texture resolution");
-        AN_ASSERT_(Desc.Resolution.SliceCount > 0, "Invalid texture resolution");
+        HK_ASSERT_(Desc.Resolution.Width > 0, "Invalid texture resolution");
+        HK_ASSERT_(Desc.Resolution.Height > 0, "Invalid texture resolution");
+        HK_ASSERT_(Desc.Resolution.SliceCount > 0, "Invalid texture resolution");
 
-        AN_ASSERT_((Desc.BindFlags & ~AllowedBindings) == 0, "The following bind flags are allowed for texture: BIND_SHADER_RESOURCE, BIND_RENDER_TARGET, BIND_DEPTH_STENCIL, BIND_UNORDERED_ACCESS");
-        AN_ASSERT_(!(Desc.Multisample.NumSamples > 1 && (Desc.BindFlags & BIND_UNORDERED_ACCESS)), "Multisampled textures cannot have BIND_UNORDERED_ACCESS flag");
+        HK_ASSERT_((Desc.BindFlags & ~AllowedBindings) == 0, "The following bind flags are allowed for texture: BIND_SHADER_RESOURCE, BIND_RENDER_TARGET, BIND_DEPTH_STENCIL, BIND_UNORDERED_ACCESS");
+        HK_ASSERT_(!(Desc.Multisample.NumSamples > 1 && (Desc.BindFlags & BIND_UNORDERED_ACCESS)), "Multisampled textures cannot have BIND_UNORDERED_ACCESS flag");
 
-        AN_ASSERT_(Desc.NumMipLevels > 0, "Invalid mipmap count");
-        AN_ASSERT_(Desc.Multisample.NumSamples > 0, "Invalid sample count");
-        AN_ASSERT_(Desc.Multisample.NumSamples == 1 ||
+        HK_ASSERT_(Desc.NumMipLevels > 0, "Invalid mipmap count");
+        HK_ASSERT_(Desc.Multisample.NumSamples > 0, "Invalid sample count");
+        HK_ASSERT_(Desc.Multisample.NumSamples == 1 ||
                        (Desc.Multisample.NumSamples > 1 && (Desc.Type == TEXTURE_2D || Desc.Type == TEXTURE_2D_ARRAY)),
                    "Multisample allowed only for 2D and 2DArray textures\n");
 
-        AN_ASSERT_(Desc.NumMipLevels == 1 || (Desc.NumMipLevels > 1 && Desc.Type != TEXTURE_RECT_GL), "Mipmapping is not allowed for TEXTURE_RECT_GL");
-        AN_ASSERT_(Desc.NumMipLevels == 1 || (Desc.NumMipLevels > 1 && Desc.Multisample.NumSamples == 1), "Mipmapping is not allowed for multisample texture");
+        HK_ASSERT_(Desc.NumMipLevels == 1 || (Desc.NumMipLevels > 1 && Desc.Type != TEXTURE_RECT_GL), "Mipmapping is not allowed for TEXTURE_RECT_GL");
+        HK_ASSERT_(Desc.NumMipLevels == 1 || (Desc.NumMipLevels > 1 && Desc.Multisample.NumSamples == 1), "Mipmapping is not allowed for multisample texture");
     }
 
     virtual BindlessHandle GetBindlessSampler(SSamplerDesc const& SamplerDesc)                = 0;
@@ -713,31 +713,31 @@ protected:
     ITextureView* pUnorderedAccesView{};
 };
 
-AN_FORCEINLINE ITextureView* ITexture::GetRenderTargetView()
+HK_FORCEINLINE ITextureView* ITexture::GetRenderTargetView()
 {
-    AN_ASSERT(GetDesc().BindFlags & BIND_RENDER_TARGET);
+    HK_ASSERT(GetDesc().BindFlags & BIND_RENDER_TARGET);
     return pRenderTargetView;
 }
 
-AN_FORCEINLINE ITextureView* ITexture::GetDepthStencilView()
+HK_FORCEINLINE ITextureView* ITexture::GetDepthStencilView()
 {
-    AN_ASSERT(GetDesc().BindFlags & BIND_DEPTH_STENCIL);
+    HK_ASSERT(GetDesc().BindFlags & BIND_DEPTH_STENCIL);
     return pDepthStencilView;
 }
 
-AN_FORCEINLINE ITextureView* ITexture::GetShaderResourceView()
+HK_FORCEINLINE ITextureView* ITexture::GetShaderResourceView()
 {
-    AN_ASSERT(GetDesc().BindFlags & BIND_SHADER_RESOURCE);
+    HK_ASSERT(GetDesc().BindFlags & BIND_SHADER_RESOURCE);
     return pShaderResourceView;
 }
 
-AN_FORCEINLINE ITextureView* ITexture::GetUnorderedAccessView()
+HK_FORCEINLINE ITextureView* ITexture::GetUnorderedAccessView()
 {
-    AN_ASSERT(GetDesc().BindFlags & BIND_UNORDERED_ACCESS);
+    HK_ASSERT(GetDesc().BindFlags & BIND_UNORDERED_ACCESS);
     return pUnorderedAccesView;
 }
 
-AN_INLINE int ITexture::CalcMaxMipLevels(TEXTURE_TYPE Type, STextureResolution const& Resolution)
+HK_INLINE int ITexture::CalcMaxMipLevels(TEXTURE_TYPE Type, STextureResolution const& Resolution)
 {
     uint32_t maxDimension = (Type == TEXTURE_3D) ? Math::Max3(Resolution.Width, Resolution.Height, Resolution.SliceCount) :
                                                    Math::Max(Resolution.Width, Resolution.Height);

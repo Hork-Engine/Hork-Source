@@ -74,7 +74,7 @@ using AWidgetShape = TPodVector<Float2, 4>;
 
 class WWidget : public ABaseObject
 {
-    AN_CLASS(WWidget, ABaseObject)
+    HK_CLASS(WWidget, ABaseObject)
 
     friend class WDesktop;
 
@@ -541,7 +541,7 @@ private:
 
 #if 0
 class WMenuItem : public WWidget {
-    AN_CLASS( WMenuItem, WWidget )
+    HK_CLASS( WMenuItem, WWidget )
 
 public:
     TWidgetEvent<> E_OnButtonClick;

@@ -41,7 +41,7 @@ using AArrayOfDebugDrawCmds = TPodVectorHeap<SDebugDrawCmd>;
 
 class ADebugRenderer
 {
-    AN_FORBID_COPY(ADebugRenderer)
+    HK_FORBID_COPY(ADebugRenderer)
 
 public:
     ADebugRenderer();

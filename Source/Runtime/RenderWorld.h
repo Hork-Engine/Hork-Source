@@ -40,7 +40,7 @@ class ADebugRenderer;
 
 class ARenderWorld
 {
-    AN_FORBID_COPY(ARenderWorld)
+    HK_FORBID_COPY(ARenderWorld)
 
 public:
     ARenderWorld();

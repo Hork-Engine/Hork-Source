@@ -85,7 +85,7 @@ APostprocessRenderer::APostprocessRenderer()
 
     SPipelineResourceLayout resourceLayout;
 
-    resourceLayout.NumSamplers = AN_ARRAY_SIZE( samplers );
+    resourceLayout.NumSamplers = HK_ARRAY_SIZE( samplers );
     resourceLayout.Samplers = samplers;
     resourceLayout.NumBuffers = 1;
     resourceLayout.Buffers = &bufferInfo;

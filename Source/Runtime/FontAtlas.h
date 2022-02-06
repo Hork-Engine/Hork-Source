@@ -124,7 +124,7 @@ struct SFontCreateInfo
 
 class AFont : public AResource
 {
-    AN_CLASS(AFont, AResource)
+    HK_CLASS(AFont, AResource)
 
 public:
     /** Initialize from memory */

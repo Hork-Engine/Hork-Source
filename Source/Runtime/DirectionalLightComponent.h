@@ -34,7 +34,7 @@ SOFTWARE.
 
 class ADirectionalLightComponent : public ALightComponent
 {
-    AN_COMPONENT(ADirectionalLightComponent, ALightComponent)
+    HK_COMPONENT(ADirectionalLightComponent, ALightComponent)
 
     friend class ARenderWorld;
 

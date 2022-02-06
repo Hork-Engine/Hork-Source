@@ -80,13 +80,13 @@ ACubemapGenerator::ACubemapGenerator()
         }
     };
 
-    CreateVertexShader( "gen/cubemapgen.vert", vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    CreateVertexShader( "gen/cubemapgen.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
     CreateGeometryShader( "gen/cubemapgen.geom", pipelineCI.pGS );
     CreateFragmentShader( "gen/cubemapgen.frag", pipelineCI.pFS );
 
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBindings );
+    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBindings );
     pipelineCI.pVertexBindings = vertexBindings;
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
     SSamplerDesc samplerCI;
@@ -98,7 +98,7 @@ ACubemapGenerator::ACubemapGenerator()
 
     pipelineCI.ResourceLayout.Samplers = &samplerCI;
     pipelineCI.ResourceLayout.NumSamplers = 1;
-    pipelineCI.ResourceLayout.NumBuffers = AN_ARRAY_SIZE( buffers );
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE( buffers );
     pipelineCI.ResourceLayout.Buffers = buffers;
 
     GDevice->CreatePipeline( pipelineCI, &Pipeline );

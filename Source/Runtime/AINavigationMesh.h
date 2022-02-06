@@ -275,7 +275,7 @@ public:
 
 struct ANavQueryFilter
 {
-    AN_FORBID_COPY(ANavQueryFilter)
+    HK_FORBID_COPY(ANavQueryFilter)
 
     friend class AAINavigationMesh;
 
@@ -365,7 +365,7 @@ struct SAINavigationConfig
 
 class AAINavigationMesh
 {
-    AN_FORBID_COPY(AAINavigationMesh)
+    HK_FORBID_COPY(AAINavigationMesh)
 
 public:
     AAINavigationMesh();

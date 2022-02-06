@@ -66,7 +66,7 @@ void ACanvasRenderer::CreatePresentViewPipeline()
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            AN_OFS( SHUDDrawVert, Position )
+            HK_OFS( SHUDDrawVert, Position )
         },
         {
             "InTexCoord",
@@ -75,7 +75,7 @@ void ACanvasRenderer::CreatePresentViewPipeline()
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            AN_OFS( SHUDDrawVert, TexCoord )
+            HK_OFS( SHUDDrawVert, TexCoord )
         },
         {
             "InColor",
@@ -84,11 +84,11 @@ void ACanvasRenderer::CreatePresentViewPipeline()
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            AN_OFS( SHUDDrawVert, Color )
+            HK_OFS( SHUDDrawVert, Color )
         }
     };
 
-    CreateVertexShader( "canvas/presentview.vert", vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    CreateVertexShader( "canvas/presentview.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
     CreateFragmentShader( "canvas/presentview.frag", pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
@@ -100,10 +100,10 @@ void ACanvasRenderer::CreatePresentViewPipeline()
     vertexBinding[0].Stride = sizeof( SHUDDrawVert );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
+    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
     SSamplerDesc samplerCI;
@@ -156,7 +156,7 @@ void ACanvasRenderer::CreatePipelines()
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            AN_OFS( SHUDDrawVert, Position )
+            HK_OFS( SHUDDrawVert, Position )
         },
         {
             "InTexCoord",
@@ -165,7 +165,7 @@ void ACanvasRenderer::CreatePipelines()
             VAT_FLOAT2,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            AN_OFS( SHUDDrawVert, TexCoord )
+            HK_OFS( SHUDDrawVert, TexCoord )
         },
         {
             "InColor",
@@ -174,14 +174,14 @@ void ACanvasRenderer::CreatePipelines()
             VAT_UBYTE4N,
             VAM_FLOAT,
             0,              // InstanceDataStepRate
-            AN_OFS( SHUDDrawVert, Color )
+            HK_OFS( SHUDDrawVert, Color )
         }
     };
 
 
     TRef< IShaderModule > vertexShaderModule, fragmentShaderModule;
 
-    CreateVertexShader( "canvas/canvas.vert", vertexAttribs, AN_ARRAY_SIZE( vertexAttribs ), vertexShaderModule );
+    CreateVertexShader( "canvas/canvas.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), vertexShaderModule );
     CreateFragmentShader( "canvas/canvas.frag", fragmentShaderModule );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
@@ -196,10 +196,10 @@ void ACanvasRenderer::CreatePipelines()
     vertexBinding[0].Stride = sizeof( SHUDDrawVert );
     vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
 
-    pipelineCI.NumVertexBindings = AN_ARRAY_SIZE( vertexBinding );
+    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
-    pipelineCI.NumVertexAttribs = AN_ARRAY_SIZE( vertexAttribs );
+    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( vertexAttribs );
     pipelineCI.pVertexAttribs = vertexAttribs;
 
     SSamplerDesc samplerCI;
@@ -320,11 +320,11 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TPodVector<FGTextureProxy*
                                         break;
                                     }
                                     case HUD_DRAW_CMD_MATERIAL: {
-                                        AN_ASSERT(cmd->MaterialFrameData);
+                                        HK_ASSERT(cmd->MaterialFrameData);
 
                                         AMaterialGPU* pMaterial = cmd->MaterialFrameData->Material;
 
-                                        AN_ASSERT(pMaterial->MaterialType == MATERIAL_TYPE_HUD);
+                                        HK_ASSERT(pMaterial->MaterialType == MATERIAL_TYPE_HUD);
 
                                         immediateCtx->BindPipeline(pMaterial->HUDPipeline);
                                         immediateCtx->BindVertexBuffer(0, GStreamBuffer, drawList->VertexStreamOffset);

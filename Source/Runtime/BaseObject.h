@@ -49,7 +49,7 @@ Cares of reference counting, garbage collecting and little basic functionality.
 */
 class ABaseObject : public ADummy
 {
-    AN_CLASS(ABaseObject, ADummy)
+    HK_CLASS(ABaseObject, ADummy)
 
     friend class AGarbageCollector;
     friend class AWeakReference;
@@ -161,7 +161,7 @@ private:
 Utilites
 
 */
-AN_FORCEINLINE bool IsSame(ABaseObject const* _First, ABaseObject const* _Second)
+HK_FORCEINLINE bool IsSame(ABaseObject const* _First, ABaseObject const* _Second)
 {
     return ((!_First && !_Second) || (_First && _Second && _First->Id == _Second->Id));
 }
@@ -175,7 +175,7 @@ Cares of garbage collecting and removing
 */
 class AGarbageCollector final
 {
-    AN_FORBID_COPY(AGarbageCollector)
+    HK_FORBID_COPY(AGarbageCollector)
 
     friend class ABaseObject;
 
@@ -268,7 +268,7 @@ TEvent
 template <typename... TArgs>
 struct TEvent
 {
-    AN_FORBID_COPY(TEvent)
+    HK_FORBID_COPY(TEvent)
 
     using Callback = TCallback<void(TArgs...)>;
 

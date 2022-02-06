@@ -39,7 +39,7 @@ SOFTWARE.
 #include <xmmintrin.h>
 #include <emmintrin.h>
 
-#define AN_FRUSTUM_USE_SSE
+#define HK_FRUSTUM_USE_SSE
 
 enum EFrustumPlane
 {
@@ -53,7 +53,7 @@ enum EFrustumPlane
 
 class BvFrustum
 {
-    AN_FORBID_COPY(BvFrustum)
+    HK_FORBID_COPY(BvFrustum)
 
 public:
     BvFrustum();
@@ -103,7 +103,7 @@ public:
     void CornerVector_BL(Float3& vector) const;
 
 private:
-#ifdef AN_FRUSTUM_USE_SSE
+#ifdef HK_FRUSTUM_USE_SSE
     struct sse_t
     {
         __m128 x[6];
@@ -117,13 +117,13 @@ private:
     PlaneF planes_[6];
 };
 
-AN_FORCEINLINE PlaneF const& BvFrustum::operator[](const int index) const
+HK_FORCEINLINE PlaneF const& BvFrustum::operator[](const int index) const
 {
-    AN_ASSERT_((unsigned)index < 6, "BvFrustum[]");
+    HK_ASSERT_((unsigned)index < 6, "BvFrustum[]");
     return planes_[index];
 }
 
-AN_FORCEINLINE bool BvFrustum::IsPointVisible(Float3 const& point) const
+HK_FORCEINLINE bool BvFrustum::IsPointVisible(Float3 const& point) const
 {
     bool inside = true;
     for (PlaneF const* p = planes_; p < planes_ + 6; p++)
@@ -133,7 +133,7 @@ AN_FORCEINLINE bool BvFrustum::IsPointVisible(Float3 const& point) const
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsPointVisible_IgnoreZ(Float3 const& point) const
+HK_FORCEINLINE bool BvFrustum::IsPointVisible_IgnoreZ(Float3 const& point) const
 {
     bool inside = true;
     for (PlaneF const* p = planes_; p < planes_ + 4; p++)
@@ -143,12 +143,12 @@ AN_FORCEINLINE bool BvFrustum::IsPointVisible_IgnoreZ(Float3 const& point) const
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsSphereVisible(BvSphere const& sphere) const
+HK_FORCEINLINE bool BvFrustum::IsSphereVisible(BvSphere const& sphere) const
 {
     return IsSphereVisible(sphere.Center, sphere.Radius);
 }
 
-AN_FORCEINLINE bool BvFrustum::IsSphereVisible(Float3 const& point, float radius) const
+HK_FORCEINLINE bool BvFrustum::IsSphereVisible(Float3 const& point, float radius) const
 {
     bool inside = true;
     for (PlaneF const* p = planes_; p < planes_ + 6; p++)
@@ -158,12 +158,12 @@ AN_FORCEINLINE bool BvFrustum::IsSphereVisible(Float3 const& point, float radius
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsSphereVisible_IgnoreZ(BvSphere const& sphere) const
+HK_FORCEINLINE bool BvFrustum::IsSphereVisible_IgnoreZ(BvSphere const& sphere) const
 {
     return IsSphereVisible_IgnoreZ(sphere.Center, sphere.Radius);
 }
 
-AN_FORCEINLINE bool BvFrustum::IsSphereVisible_IgnoreZ(Float3 const& point, float radius) const
+HK_FORCEINLINE bool BvFrustum::IsSphereVisible_IgnoreZ(Float3 const& point, float radius) const
 {
     bool inside = true;
     for (PlaneF const* p = planes_; p < planes_ + 4; p++)
@@ -173,7 +173,7 @@ AN_FORCEINLINE bool BvFrustum::IsSphereVisible_IgnoreZ(Float3 const& point, floa
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsBoxVisible(Float3 const& mins, Float3 const& maxs) const
+HK_FORCEINLINE bool BvFrustum::IsBoxVisible(Float3 const& mins, Float3 const& maxs) const
 {
     bool inside = true;
 
@@ -198,7 +198,7 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible(Float3 const& mins, Float3 const& ma
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsBoxVisible(Float4 const& mins, Float4 const& maxs) const
+HK_FORCEINLINE bool BvFrustum::IsBoxVisible(Float4 const& mins, Float4 const& maxs) const
 {
     bool inside = true;
 
@@ -223,12 +223,12 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible(Float4 const& mins, Float4 const& ma
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsBoxVisible(BvAxisAlignedBox const& b) const
+HK_FORCEINLINE bool BvFrustum::IsBoxVisible(BvAxisAlignedBox const& b) const
 {
     return IsBoxVisible(b.Mins, b.Maxs);
 }
 
-AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ(Float3 const& mins, Float3 const& maxs) const
+HK_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ(Float3 const& mins, Float3 const& maxs) const
 {
     bool inside = true;
 
@@ -247,7 +247,7 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ(Float3 const& mins, Float3 c
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ(Float4 const& mins, Float4 const& maxs) const
+HK_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ(Float4 const& mins, Float4 const& maxs) const
 {
     bool inside = true;
 
@@ -266,12 +266,12 @@ AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ(Float4 const& mins, Float4 c
     return inside;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ(BvAxisAlignedBox const& b) const
+HK_FORCEINLINE bool BvFrustum::IsBoxVisible_IgnoreZ(BvAxisAlignedBox const& b) const
 {
     return IsBoxVisible_IgnoreZ(b.Mins, b.Maxs);
 }
 
-AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible(BvOrientedBox const& b) const
+HK_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible(BvOrientedBox const& b) const
 {
     Float3 point;
 
@@ -292,7 +292,7 @@ AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible(BvOrientedBox const& b) cons
     return true;
 }
 
-AN_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible_IgnoreZ(BvOrientedBox const& b) const
+HK_FORCEINLINE bool BvFrustum::IsOrientedBoxVisible_IgnoreZ(BvOrientedBox const& b) const
 {
     Float3 point;
 

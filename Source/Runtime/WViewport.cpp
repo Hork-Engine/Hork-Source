@@ -33,7 +33,7 @@ SOFTWARE.
 #include "PlayerController.h"
 #include "FrameLoop.h"
 
-AN_CLASS_META(WViewport)
+HK_CLASS_META(WViewport)
 
 WViewport::WViewport()
 {

@@ -36,7 +36,7 @@ SOFTWARE.
 #include <ThirdParty/bullet3/Extras/HACD/hacdHACD.h>
 #include <VHACD.h>
 
-AN_FORCEINLINE bool IsPointInsideConvexHull(Float3 const& _Point, PlaneF const* _Planes, int _NumPlanes, float _Margin)
+HK_FORCEINLINE bool IsPointInsideConvexHull(Float3 const& _Point, PlaneF const* _Planes, int _NumPlanes, float _Margin)
 {
     for (int i = 0; i < _NumPlanes; i++)
     {

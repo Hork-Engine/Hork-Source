@@ -166,7 +166,7 @@ struct STextureFormatMapper
 
 static STextureFormatMapper TextureFormatMapper;
 
-AN_CLASS_META(ATexture)
+HK_CLASS_META(ATexture)
 
 ATexture::ATexture()
 {
@@ -473,7 +473,7 @@ static bool IsImageExtension(const char* pExtension)
                                    ".ppm",
                                    ".pgm"};
 
-    for (int i = 0 ; i < AN_ARRAY_SIZE(extensionList) ; i++)
+    for (int i = 0 ; i < HK_ARRAY_SIZE(extensionList) ; i++)
     {
         if (!Platform::Stricmp(pExtension, extensionList[i]))
             return true;
@@ -661,7 +661,7 @@ size_t ATexture::TextureSizeInBytes1D(STexturePixelFormat _PixelFormat, int _Num
     if (_PixelFormat.IsCompressed())
     {
         // TODO
-        AN_ASSERT(0);
+        HK_ASSERT(0);
         return 0;
     }
     else
@@ -681,7 +681,7 @@ size_t ATexture::TextureSizeInBytes2D(STexturePixelFormat _PixelFormat, int _Num
     if (_PixelFormat.IsCompressed())
     {
         // TODO
-        AN_ASSERT(0);
+        HK_ASSERT(0);
         return 0;
     }
     else
@@ -702,7 +702,7 @@ size_t ATexture::TextureSizeInBytes3D(STexturePixelFormat _PixelFormat, int _Num
     if (_PixelFormat.IsCompressed())
     {
         // TODO
-        AN_ASSERT(0);
+        HK_ASSERT(0);
         return 0;
     }
     else
@@ -724,7 +724,7 @@ size_t ATexture::TextureSizeInBytesCubemap(STexturePixelFormat _PixelFormat, int
     if (_PixelFormat.IsCompressed())
     {
         // TODO
-        AN_ASSERT(0);
+        HK_ASSERT(0);
         return 0;
     }
     else
@@ -1146,7 +1146,7 @@ bool ATexture::WriteArbitraryData(int _LocationX, int _LocationY, int _LocationZ
     if (IsCompressed())
     {
         // TODO
-        AN_ASSERT(0);
+        HK_ASSERT(0);
         return false;
     }
     else

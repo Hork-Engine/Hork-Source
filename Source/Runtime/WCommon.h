@@ -35,13 +35,13 @@ SOFTWARE.
 enum EWidgetStyle
 {
     WIDGET_STYLE_DEFAULT     = 0,
-    WIDGET_STYLE_BACKGROUND  = AN_BIT(0),                           // widget is stays background
-    WIDGET_STYLE_FOREGROUND  = AN_BIT(1),                           // widget is stays on top
-    WIDGET_STYLE_EXCLUSIVE   = WIDGET_STYLE_FOREGROUND | AN_BIT(2), // widget is stays on top of other widgets and receives inputs
-    WIDGET_STYLE_RESIZABLE   = AN_BIT(3),                           // allows user to change size/maximize window
-    WIDGET_STYLE_NO_INPUTS   = AN_BIT(4),                           // forward inputs to parent
-    WIDGET_STYLE_TRANSPARENT = AN_BIT(6),                           // transparent for clicking/hovering
-    WIDGET_STYLE_POPUP       = WIDGET_STYLE_FOREGROUND | AN_BIT(5)
+    WIDGET_STYLE_BACKGROUND  = HK_BIT(0),                           // widget is stays background
+    WIDGET_STYLE_FOREGROUND  = HK_BIT(1),                           // widget is stays on top
+    WIDGET_STYLE_EXCLUSIVE   = WIDGET_STYLE_FOREGROUND | HK_BIT(2), // widget is stays on top of other widgets and receives inputs
+    WIDGET_STYLE_RESIZABLE   = HK_BIT(3),                           // allows user to change size/maximize window
+    WIDGET_STYLE_NO_INPUTS   = HK_BIT(4),                           // forward inputs to parent
+    WIDGET_STYLE_TRANSPARENT = HK_BIT(6),                           // transparent for clicking/hovering
+    WIDGET_STYLE_POPUP       = WIDGET_STYLE_FOREGROUND | HK_BIT(5)
 };
 
 enum EWidgetAlignment

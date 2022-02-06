@@ -34,7 +34,7 @@ SOFTWARE.
 
 class AIBLComponent : public APunctualLightComponent
 {
-    AN_COMPONENT(AIBLComponent, APunctualLightComponent)
+    HK_COMPONENT(AIBLComponent, APunctualLightComponent)
 
 public:
     void  SetRadius(float _Radius);

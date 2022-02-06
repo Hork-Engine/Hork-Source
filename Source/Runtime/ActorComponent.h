@@ -37,8 +37,8 @@ class ALevel;
 class AActor;
 class ADebugRenderer;
 
-#define AN_COMPONENT(_Class, _SuperClass) \
-    AN_FACTORY_CLASS(AActorComponent::Factory(), _Class, _SuperClass)
+#define HK_COMPONENT(_Class, _SuperClass) \
+    HK_FACTORY_CLASS(AActorComponent::Factory(), _Class, _SuperClass)
 
 /**
 
@@ -49,7 +49,7 @@ Base class for all actor components
 */
 class AActorComponent : public ABaseObject
 {
-    AN_COMPONENT(AActorComponent, ABaseObject)
+    HK_COMPONENT(AActorComponent, ABaseObject)
 
     friend class AActor;
     friend class AWorld;

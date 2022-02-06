@@ -49,7 +49,7 @@ SOFTWARE.
 
 #define DEFAULT_STENCIL_REF 0
 
-#define VerifyContext() AN_ASSERT(AImmediateContextGLImpl::Current == this);
+#define VerifyContext() HK_ASSERT(AImmediateContextGLImpl::Current == this);
 
 namespace RenderCore
 {
@@ -78,13 +78,13 @@ AResourceTableGLImpl::~AResourceTableGLImpl()
 
 void AResourceTableGLImpl::BindTexture(unsigned int Slot, ITextureView* pShaderResourceView)
 {
-    AN_ASSERT(Slot < MAX_SAMPLER_SLOTS);
+    HK_ASSERT(Slot < MAX_SAMPLER_SLOTS);
 
     // Slot must be < pDevice->MaxCombinedTextureImageUnits
 
     if (pShaderResourceView)
     {
-        AN_ASSERT(pShaderResourceView->GetDesc().ViewType == TEXTURE_VIEW_SHADER_RESOURCE);
+        HK_ASSERT(pShaderResourceView->GetDesc().ViewType == TEXTURE_VIEW_SHADER_RESOURCE);
         TextureBindings[Slot]    = pShaderResourceView->GetHandleNativeGL();
         TextureBindingUIDs[Slot] = pShaderResourceView->GetUID();
     }
@@ -97,7 +97,7 @@ void AResourceTableGLImpl::BindTexture(unsigned int Slot, ITextureView* pShaderR
 
 void AResourceTableGLImpl::BindTexture(unsigned int Slot, IBufferView* pShaderResourceView)
 {
-    AN_ASSERT(Slot < MAX_SAMPLER_SLOTS);
+    HK_ASSERT(Slot < MAX_SAMPLER_SLOTS);
 
     // Slot must be < pDevice->MaxCombinedTextureImageUnits
 
@@ -115,7 +115,7 @@ void AResourceTableGLImpl::BindTexture(unsigned int Slot, IBufferView* pShaderRe
 
  void AResourceTableGLImpl::BindImage(unsigned int Slot, ITextureView* pUnorderedAccessView)
 {
-    AN_ASSERT(Slot < MAX_IMAGE_SLOTS);
+    HK_ASSERT(Slot < MAX_IMAGE_SLOTS);
 
     // _Slot must be < pDevice->MaxCombinedTextureImageUnits
 
@@ -123,7 +123,7 @@ void AResourceTableGLImpl::BindTexture(unsigned int Slot, IBufferView* pShaderRe
     {
         STextureViewDesc const& desc = pUnorderedAccessView->GetDesc();
 
-        AN_ASSERT(desc.ViewType == TEXTURE_VIEW_UNORDERED_ACCESS);
+        HK_ASSERT(desc.ViewType == TEXTURE_VIEW_UNORDERED_ACCESS);
 
         bool bLayered = desc.FirstSlice != 0 || desc.NumSlices != pUnorderedAccessView->GetTexture()->GetSliceCount(desc.FirstMipLevel);
 
@@ -145,7 +145,7 @@ void AResourceTableGLImpl::BindTexture(unsigned int Slot, IBufferView* pShaderRe
 
 void AResourceTableGLImpl::BindBuffer(int Slot, IBuffer const* pBuffer, size_t Offset, size_t Size)
 {
-    AN_ASSERT(Slot < MAX_BUFFER_SLOTS);
+    HK_ASSERT(Slot < MAX_BUFFER_SLOTS);
 
     if (pBuffer)
     {
@@ -203,7 +203,7 @@ AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                 
     SFramebufferDescGL                           framebufferDesc;
     TArray<ITextureView*, MAX_COLOR_ATTACHMENTS> colorAttachments;
  
-    AN_ASSERT(ColorAttachments.Size() <= MAX_COLOR_ATTACHMENTS);
+    HK_ASSERT(ColorAttachments.Size() <= MAX_COLOR_ATTACHMENTS);
 
     framebufferDesc.NumColorAttachments = ColorAttachments.Size();
     framebufferDesc.pColorAttachments   = colorAttachments.ToPtr();
@@ -248,8 +248,8 @@ AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                 
         }
         else
         {
-            AN_ASSERT(framebufferDesc.Width == textureView->GetWidth());
-            AN_ASSERT(framebufferDesc.Height == textureView->GetHeight());
+            HK_ASSERT(framebufferDesc.Width == textureView->GetWidth());
+            HK_ASSERT(framebufferDesc.Height == textureView->GetHeight());
         }
 
         colorAttachments[rt++] = textureView;
@@ -286,8 +286,8 @@ AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                 
         }
         else
         {
-            AN_ASSERT(framebufferDesc.Width == textureView->GetWidth());
-            AN_ASSERT(framebufferDesc.Height == textureView->GetHeight());
+            HK_ASSERT(framebufferDesc.Width == textureView->GetWidth());
+            HK_ASSERT(framebufferDesc.Height == textureView->GetHeight());
         }
 
         framebufferDesc.pDepthStencilAttachment = textureView;
@@ -783,7 +783,7 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
 {
     VerifyContext();
 
-    AN_ASSERT(_Pipeline != nullptr);
+    HK_ASSERT(_Pipeline != nullptr);
 
     if (CurrentPipeline == _Pipeline)
     {
@@ -1198,7 +1198,7 @@ void AImmediateContextGLImpl::BindVertexBuffer(unsigned int   _InputSlot,
                                                IBuffer const* _VertexBuffer,
                                                unsigned int   _Offset)
 {
-    AN_ASSERT(_InputSlot < MAX_VERTEX_BUFFER_SLOTS);
+    HK_ASSERT(_InputSlot < MAX_VERTEX_BUFFER_SLOTS);
 
     VertexBufferUIDs[_InputSlot]    = _VertexBuffer ? _VertexBuffer->GetUID() : 0;
     VertexBufferHandles[_InputSlot] = _VertexBuffer ? _VertexBuffer->GetHandleNativeGL() : 0;
@@ -1210,7 +1210,7 @@ void AImmediateContextGLImpl::BindVertexBuffers(unsigned int    _StartSlot,
                                                 IBuffer* const* _VertexBuffers,
                                                 uint32_t const* _Offsets)
 {
-    AN_ASSERT(_StartSlot + _NumBuffers <= MAX_VERTEX_BUFFER_SLOTS);
+    HK_ASSERT(_StartSlot + _NumBuffers <= MAX_VERTEX_BUFFER_SLOTS);
 
     if (_VertexBuffers)
     {
@@ -1248,7 +1248,7 @@ void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentVAO != nullptr );
+    HK_ASSERT( CurrentVAO != nullptr );
 
     GLuint id = CurrentVAO->Handle;
 
@@ -1614,7 +1614,7 @@ void AImmediateContextGLImpl::SetViewport(SViewport const& _Viewport)
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentRenderPass != nullptr);
+    HK_ASSERT(CurrentRenderPass != nullptr);
 
     if (std::memcmp(CurrentViewport, &_Viewport, sizeof(CurrentViewport)) != 0)
     {
@@ -1642,7 +1642,7 @@ void AImmediateContextGLImpl::SetViewportArray(uint32_t _FirstIndex, uint32_t _N
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentRenderPass != nullptr);
+    HK_ASSERT(CurrentRenderPass != nullptr);
 
 #define MAX_VIEWPORT_DATA 1024
     static_assert(sizeof(float) * 2 == sizeof(double), "ImmediateContext::SetViewportArray type check");
@@ -1676,7 +1676,7 @@ void AImmediateContextGLImpl::SetViewportIndexed(uint32_t _Index, SViewport cons
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentRenderPass != nullptr);
+    HK_ASSERT(CurrentRenderPass != nullptr);
 
     const bool bInvertY        = true;
     float      viewportData[4] = {_Viewport.X, bInvertY ? INVERT_VIEWPORT_Y(&_Viewport) : _Viewport.Y, _Viewport.Width, _Viewport.Height};
@@ -1707,7 +1707,7 @@ void AImmediateContextGLImpl::SetScissorArray(uint32_t _FirstIndex, uint32_t _Nu
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentRenderPass != nullptr);
+    HK_ASSERT(CurrentRenderPass != nullptr);
 
 #define MAX_SCISSOR_DATA 1024
     constexpr uint32_t MAX_SCISSORS = MAX_VIEWPORT_DATA >> 2;
@@ -1732,7 +1732,7 @@ void AImmediateContextGLImpl::SetScissorIndexed(uint32_t _Index, SRect2D const& 
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentRenderPass != nullptr);
+    HK_ASSERT(CurrentRenderPass != nullptr);
 
     const bool bInvertY = true;
 
@@ -1826,7 +1826,7 @@ void AImmediateContextGLImpl::Draw(SDrawCmd const* _Cmd)
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentPipeline != nullptr);
+    HK_ASSERT(CurrentPipeline != nullptr);
 
     if (_Cmd->InstanceCount == 0 || _Cmd->VertexCountPerInstance == 0)
     {
@@ -1861,7 +1861,7 @@ void AImmediateContextGLImpl::Draw(SDrawIndexedCmd const* _Cmd)
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentPipeline != nullptr);
+    HK_ASSERT(CurrentPipeline != nullptr);
 
     if (_Cmd->InstanceCount == 0 || _Cmd->IndexCountPerInstance == 0)
     {
@@ -1942,7 +1942,7 @@ void AImmediateContextGLImpl::Draw(ITransformFeedback* _TransformFeedback, unsig
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentPipeline != nullptr);
+    HK_ASSERT(CurrentPipeline != nullptr);
 
     if (_InstanceCount == 0)
     {
@@ -1980,7 +1980,7 @@ void AImmediateContextGLImpl::DrawIndirect( SDrawIndirectCmd const * _Cmd )
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    HK_ASSERT( CurrentPipeline != nullptr );
 
     UpdateVertexBuffers();
     UpdateShaderBindings();
@@ -1998,7 +1998,7 @@ void AImmediateContextGLImpl::DrawIndirect( SDrawIndexedIndirectCmd const * _Cmd
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    HK_ASSERT( CurrentPipeline != nullptr );
 
     UpdateVertexAndIndexBuffers();
     UpdateShaderBindings();
@@ -2017,7 +2017,7 @@ void AImmediateContextGLImpl::DrawIndirect(IBuffer* _DrawIndirectBuffer, unsigne
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentPipeline != nullptr);
+    HK_ASSERT(CurrentPipeline != nullptr);
 
     GLuint handle = _DrawIndirectBuffer->GetHandleNativeGL();
     if (Binding.DrawInderectBuffer != handle)
@@ -2038,7 +2038,7 @@ void AImmediateContextGLImpl::DrawIndexedIndirect(IBuffer* _DrawIndirectBuffer, 
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentPipeline != nullptr);
+    HK_ASSERT(CurrentPipeline != nullptr);
 
     GLuint handle = _DrawIndirectBuffer->GetHandleNativeGL();
     if (Binding.DrawInderectBuffer != handle)
@@ -2060,7 +2060,7 @@ void AImmediateContextGLImpl::MultiDraw(unsigned int _DrawCount, const unsigned 
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentPipeline != nullptr);
+    HK_ASSERT(CurrentPipeline != nullptr);
 
     static_assert(sizeof(_VertexCount[0]) == sizeof(GLsizei), "!");
     static_assert(sizeof(_StartVertexLocations[0]) == sizeof(GLint), "!");
@@ -2080,7 +2080,7 @@ void AImmediateContextGLImpl::MultiDraw(unsigned int _DrawCount, const unsigned 
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentPipeline != nullptr);
+    HK_ASSERT(CurrentPipeline != nullptr);
 
     static_assert(sizeof(unsigned int) == sizeof(GLsizei), "!");
 
@@ -2121,7 +2121,7 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    HK_ASSERT( CurrentPipeline != nullptr );
 
     UpdateVertexBuffers();
     UpdateShaderBindings();
@@ -2154,7 +2154,7 @@ void AImmediateContextGLImpl::MultiDrawIndirect( unsigned int _DrawCount, SDrawI
 {
     VerifyContext();
 
-    AN_ASSERT( CurrentPipeline != nullptr );
+    HK_ASSERT( CurrentPipeline != nullptr );
 
     UpdateVertexAndIndexBuffers();
     UpdateShaderBindings();
@@ -2190,7 +2190,7 @@ void AImmediateContextGLImpl::MultiDrawIndirect(unsigned int _DrawCount, IBuffer
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentPipeline != nullptr);
+    HK_ASSERT(CurrentPipeline != nullptr);
 
     GLuint handle = _DrawIndirectBuffer->GetHandleNativeGL();
     if (Binding.DrawInderectBuffer != handle)
@@ -2212,7 +2212,7 @@ void AImmediateContextGLImpl::MultiDrawIndexedIndirect(unsigned int _DrawCount, 
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentPipeline != nullptr);
+    HK_ASSERT(CurrentPipeline != nullptr);
 
     GLuint handle = _DrawIndirectBuffer->GetHandleNativeGL();
     if (Binding.DrawInderectBuffer != handle)
@@ -2281,8 +2281,8 @@ void AImmediateContextGLImpl::BeginQuery(IQueryPool* _QueryPool, uint32_t _Query
 
     AQueryPoolGLImpl* queryPool = static_cast<AQueryPoolGLImpl*>(_QueryPool);
 
-    AN_ASSERT(_QueryID < queryPool->PoolSize);
-    AN_ASSERT(queryPool->QueryType != QUERY_TYPE_TIMESTAMP);
+    HK_ASSERT(_QueryID < queryPool->PoolSize);
+    HK_ASSERT(queryPool->QueryType != QUERY_TYPE_TIMESTAMP);
 
     if (CurrentQueryUID[queryPool->QueryType] != 0)
     {
@@ -2308,7 +2308,7 @@ void AImmediateContextGLImpl::EndQuery(IQueryPool* _QueryPool, uint32_t _StreamI
 
     AQueryPoolGLImpl* queryPool = static_cast<AQueryPoolGLImpl*>(_QueryPool);
 
-    AN_ASSERT(queryPool->QueryType != QUERY_TYPE_TIMESTAMP);
+    HK_ASSERT(queryPool->QueryType != QUERY_TYPE_TIMESTAMP);
 
     if (CurrentQueryUID[queryPool->QueryType] != _QueryPool->GetUID())
     {
@@ -2334,7 +2334,7 @@ void AImmediateContextGLImpl::RecordTimeStamp(IQueryPool* _QueryPool, uint32_t _
 
     AQueryPoolGLImpl* queryPool = static_cast<AQueryPoolGLImpl*>(_QueryPool);
 
-    AN_ASSERT(_QueryID < queryPool->PoolSize);
+    HK_ASSERT(_QueryID < queryPool->PoolSize);
 
     if (queryPool->QueryType != QUERY_TYPE_TIMESTAMP)
     {
@@ -2351,7 +2351,7 @@ void AImmediateContextGLImpl::BeginConditionalRender(IQueryPool* _QueryPool, uin
 
     AQueryPoolGLImpl* queryPool = static_cast<AQueryPoolGLImpl*>(_QueryPool);
 
-    AN_ASSERT(_QueryID < queryPool->PoolSize);
+    HK_ASSERT(_QueryID < queryPool->PoolSize);
     glBeginConditionalRender(queryPool->IdPool[_QueryID], TableConditionalRenderMode[_Mode]); // 4.4 (with some flags 3.0)
 }
 
@@ -2374,7 +2374,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResultsAvailable(IQueryPool* _QueryPo
 
     AQueryPoolGLImpl* queryPool = static_cast<AQueryPoolGLImpl*>(_QueryPool);
 
-    AN_ASSERT(_FirstQuery + _QueryCount <= queryPool->PoolSize);
+    HK_ASSERT(_FirstQuery + _QueryCount <= queryPool->PoolSize);
 
     const GLuint bufferId   = _DstBuffer->GetHandleNativeGL();
     const size_t bufferSize = _DstBuffer->GetDesc().SizeInBytes;
@@ -2382,7 +2382,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResultsAvailable(IQueryPool* _QueryPo
     if (_QueryResult64Bit)
     {
 
-        AN_ASSERT((_DstStride & ~(size_t)7) == _DstStride); // check stride must be multiples of 8
+        HK_ASSERT((_DstStride & ~(size_t)7) == _DstStride); // check stride must be multiples of 8
 
         for (uint32_t index = 0; index < _QueryCount; index++)
         {
@@ -2400,7 +2400,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResultsAvailable(IQueryPool* _QueryPo
     }
     else
     {
-        AN_ASSERT((_DstStride & ~(size_t)3) == _DstStride); // check stride must be multiples of 4
+        HK_ASSERT((_DstStride & ~(size_t)3) == _DstStride); // check stride must be multiples of 4
 
         for (uint32_t index = 0; index < _QueryCount; index++)
         {
@@ -2430,7 +2430,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResults(IQueryPool*        _QueryPool
 
     AQueryPoolGLImpl* queryPool = static_cast<AQueryPoolGLImpl*>(_QueryPool);
 
-    AN_ASSERT(_FirstQuery + _QueryCount <= queryPool->PoolSize);
+    HK_ASSERT(_FirstQuery + _QueryCount <= queryPool->PoolSize);
 
     const GLuint bufferId   = _DstBuffer->GetHandleNativeGL();
     const size_t bufferSize = _DstBuffer->GetDesc().SizeInBytes;
@@ -2445,7 +2445,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResults(IQueryPool*        _QueryPool
     if (_Flags & QUERY_RESULT_64_BIT)
     {
 
-        AN_ASSERT((_DstStride & ~(size_t)7) == _DstStride); // check stride must be multiples of 8
+        HK_ASSERT((_DstStride & ~(size_t)7) == _DstStride); // check stride must be multiples of 8
 
         for (uint32_t index = 0; index < _QueryCount; index++)
         {
@@ -2463,7 +2463,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResults(IQueryPool*        _QueryPool
     }
     else
     {
-        AN_ASSERT((_DstStride & ~(size_t)3) == _DstStride); // check stride must be multiples of 4
+        HK_ASSERT((_DstStride & ~(size_t)3) == _DstStride); // check stride must be multiples of 4
 
         for (uint32_t index = 0; index < _QueryCount; index++)
         {
@@ -2485,7 +2485,7 @@ void AImmediateContextGLImpl::BeginRenderPass(SRenderPassBeginGL const& _RenderP
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentRenderPass == nullptr);
+    HK_ASSERT(CurrentRenderPass == nullptr);
 
     CurrentFramebuffer          = _RenderPassBegin.pFramebuffer;
     CurrentRenderPass           = _RenderPassBegin.pRenderPass;
@@ -2544,7 +2544,7 @@ void AImmediateContextGLImpl::UpdateDrawBuffers()
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentRenderPass != nullptr);
+    HK_ASSERT(CurrentRenderPass != nullptr);
 
     const GLuint framebufferId = Binding.DrawFramebuffer;
 
@@ -2654,7 +2654,7 @@ void AImmediateContextGLImpl::BeginSubpass()
                                                    ColorAttachmentClearValues[attachmentNum].UInt32);
                         break;
                     default:
-                        AN_ASSERT(0);
+                        HK_ASSERT(0);
                 }
             }
 
@@ -2726,7 +2726,7 @@ void AImmediateContextGLImpl::BeginSubpass()
                                               DepthStencilAttachmentClearValue.Stencil);
                     break;
                 default:
-                    AN_ASSERT(0);
+                    HK_ASSERT(0);
             }
 
             if (DepthStencilState.bDepthWrite == false)
@@ -2767,7 +2767,7 @@ void AImmediateContextGLImpl::EndSubpass()
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentRenderPass != nullptr);
+    HK_ASSERT(CurrentRenderPass != nullptr);
 
     TArray<GLenum, MAX_COLOR_ATTACHMENTS + 1> attachments;
     int                                       numAttachments = 0;
@@ -2783,7 +2783,7 @@ void AImmediateContextGLImpl::EndSubpass()
         {
             if (CurrentFramebuffer->GetHandleNativeGL() == 0)
             {
-                AN_ASSERT(subpass.Refs.Size() == 1);
+                HK_ASSERT(subpass.Refs.Size() == 1);
                 attachments[numAttachments++] = GL_COLOR;
             }
             else
@@ -2798,7 +2798,7 @@ void AImmediateContextGLImpl::EndSubpass()
         if (DepthStencilAttachmentSubpassUse.LastSubpass == CurrentSubpass &&
             CurrentRenderPass->GetDepthStencilAttachment().StoreOp == ATTACHMENT_STORE_OP_DONT_CARE)
         {
-            AN_ASSERT(CurrentFramebuffer->GetDepthStencilAttachment());
+            HK_ASSERT(CurrentFramebuffer->GetDepthStencilAttachment());
 
             switch (CurrentFramebuffer->GetDepthStencilAttachment()->GetDesc().Format)
             {
@@ -2840,7 +2840,7 @@ void AImmediateContextGLImpl::EndSubpass()
                     }
                     break;
                 default:
-                    AN_ASSERT(0);
+                    HK_ASSERT(0);
             }
         }
     }
@@ -2865,8 +2865,8 @@ void AImmediateContextGLImpl::EndSubpass()
 
 void AImmediateContextGLImpl::NextSubpass()
 {
-    AN_ASSERT(CurrentRenderPass);
-    AN_ASSERT(CurrentSubpass + 1 < CurrentRenderPass->GetSubpasses().Size());
+    HK_ASSERT(CurrentRenderPass);
+    HK_ASSERT(CurrentSubpass + 1 < CurrentRenderPass->GetSubpasses().Size());
 
     if (CurrentSubpass + 1 < CurrentRenderPass->GetSubpasses().Size())
     {
@@ -3070,7 +3070,7 @@ void AImmediateContextGLImpl::DynamicState_StencilRef(uint32_t _StencilRef)
 {
     VerifyContext();
 
-    AN_ASSERT(CurrentPipeline != nullptr);
+    HK_ASSERT(CurrentPipeline != nullptr);
 
     if (Binding.DepthStencilState == CurrentPipeline->DepthStencilState)
     {
@@ -3121,7 +3121,7 @@ void AImmediateContextGLImpl::CopyBuffer(IBuffer* _SrcBuffer, IBuffer* _DstBuffe
     VerifyContext();
 
     size_t size = _SrcBuffer->GetDesc().SizeInBytes;
-    AN_ASSERT(size == _DstBuffer->GetDesc().SizeInBytes);
+    HK_ASSERT(size == _DstBuffer->GetDesc().SizeInBytes);
 
     glCopyNamedBufferSubData(_SrcBuffer->GetHandleNativeGL(),
                              _DstBuffer->GetHandleNativeGL(),
@@ -3766,7 +3766,7 @@ static void ChooseDepthStencilAttachmentFormatAndType(TEXTURE_FORMAT TextureForm
             Type   = GL_FLOAT; // FIXME
             break;
         default:
-            AN_ASSERT(0);
+            HK_ASSERT(0);
     }
 }
 
@@ -3801,7 +3801,7 @@ void AImmediateContextGLImpl::CopyDepthAttachmentToBuffer(ARenderPassContext& Re
 
     size *= SrcRect.Width * SrcRect.Height;
 
-    AN_ASSERT(size == SizeInBytes);
+    HK_ASSERT(size == SizeInBytes);
     if (size > SizeInBytes)
         size = SizeInBytes;
 
@@ -4042,14 +4042,14 @@ void AImmediateContextGLImpl::ClearAttachments(ARenderPassContext&            Re
 
     bool bUpdateDrawBuffers = false;
 
-    AN_ASSERT(_NumColorAttachments <= CurrentFramebuffer->GetNumColorAttachments());
+    HK_ASSERT(_NumColorAttachments <= CurrentFramebuffer->GetNumColorAttachments());
 
     GLuint framebufferId = CurrentFramebuffer->GetHandleNativeGL();
 
     if (framebufferId == 0)
     {
         // TODO: Clear attachments for default framebuffer
-        AN_ASSERT(framebufferId);
+        HK_ASSERT(framebufferId);
     }
 
     bool    bScissorEnabled    = RasterizerState.bScissorEnable;
@@ -4110,8 +4110,8 @@ void AImmediateContextGLImpl::ClearAttachments(ARenderPassContext&            Re
 
             unsigned int attachmentIndex = _ColorAttachments[i];
 
-            AN_ASSERT(attachmentIndex < CurrentFramebuffer->GetNumColorAttachments());
-            AN_ASSERT(_ColorClearValues);
+            HK_ASSERT(attachmentIndex < CurrentFramebuffer->GetNumColorAttachments());
+            HK_ASSERT(_ColorClearValues);
 
             ITextureView const* rtv = CurrentFramebuffer->GetColorAttachments()[attachmentIndex];
 
@@ -4145,7 +4145,7 @@ void AImmediateContextGLImpl::ClearAttachments(ARenderPassContext&            Re
                                                clearValue->UInt32);
                     break;
                 default:
-                    AN_ASSERT(0);
+                    HK_ASSERT(0);
             }
 
             // Restore color mask
@@ -4169,7 +4169,7 @@ void AImmediateContextGLImpl::ClearAttachments(ARenderPassContext&            Re
 
     if (_DepthStencilClearValue)
     {
-        AN_ASSERT(CurrentFramebuffer->HasDepthStencilAttachment());
+        HK_ASSERT(CurrentFramebuffer->HasDepthStencilAttachment());
 
         ITextureView const* dsv = CurrentFramebuffer->GetDepthStencilAttachment();
 
@@ -4196,7 +4196,7 @@ void AImmediateContextGLImpl::ClearAttachments(ARenderPassContext&            Re
                                           _DepthStencilClearValue->Stencil);
                 break;
             default:
-                AN_ASSERT(0);
+                HK_ASSERT(0);
         }
     }
 
@@ -4253,7 +4253,7 @@ bool AImmediateContextGLImpl::ChooseReadBuffer(AFramebufferGL const* pFramebuffe
 {
     if (pFramebuffer->GetHandleNativeGL() == 0)
     {
-        AN_ASSERT(_ColorAttachment == 0);
+        HK_ASSERT(_ColorAttachment == 0);
 
         if (_ColorAttachment != 0)
             return false;
@@ -4262,7 +4262,7 @@ bool AImmediateContextGLImpl::ChooseReadBuffer(AFramebufferGL const* pFramebuffe
     }
     else
     {
-        AN_ASSERT(_ColorAttachment < MAX_COLOR_ATTACHMENTS);
+        HK_ASSERT(_ColorAttachment < MAX_COLOR_ATTACHMENTS);
 
         glNamedFramebufferReadBuffer(pFramebuffer->GetHandleNativeGL(), GL_COLOR_ATTACHMENT0 + _ColorAttachment);
     }
@@ -4327,7 +4327,7 @@ bool AImmediateContextGLImpl::ReadFramebufferDepthStencilAttachment(ARenderPassC
 
     size *= SrcRect.Width * SrcRect.Height;
 
-    AN_ASSERT(size == SizeInBytes);
+    HK_ASSERT(size == SizeInBytes);
     if (size > SizeInBytes)
         size = SizeInBytes;
 
@@ -4349,7 +4349,7 @@ void AImmediateContextGLImpl::ReadTexture(ITexture*    pTexture,
                                           unsigned int Alignment,
                                           void*        pSysMem)
 {
-    AN_ASSERT(MipLevel < pTexture->GetDesc().NumMipLevels);
+    HK_ASSERT(MipLevel < pTexture->GetDesc().NumMipLevels);
 
     STextureRect rect;
     rect.Offset.MipLevel = MipLevel;
@@ -4408,11 +4408,11 @@ void AImmediateContextGLImpl::ReadTextureRect(ITexture*           pTexture,
 
     GLsizei size = TypeLUT[Format].SizeInBytes * Rectangle.Dimension.X * Rectangle.Dimension.Y * Rectangle.Dimension.Z;
 
-    AN_ASSERT(size == SizeInBytes);
+    HK_ASSERT(size == SizeInBytes);
     if (size > SizeInBytes)
         size = SizeInBytes;
 
-    AN_ASSERT(Rectangle.Offset.MipLevel < pTexture->GetDesc().NumMipLevels);
+    HK_ASSERT(Rectangle.Offset.MipLevel < pTexture->GetDesc().NumMipLevels);
 
     uint32_t maxDimensionZ = pTexture->GetSliceCount(Rectangle.Offset.MipLevel);
 
@@ -4426,14 +4426,14 @@ void AImmediateContextGLImpl::ReadTextureRect(ITexture*           pTexture,
         // Dummy texture is a default color or depth buffer
         if (static_cast<ATextureGLImpl*>(pTexture)->IsDummyTexture())
         {
-            AN_ASSERT(static_cast<ATextureGLImpl*>(pTexture)->pContext == this);
-            AN_ASSERT(Rectangle.Offset.MipLevel == 0);
-            AN_ASSERT(Rectangle.Dimension.Z == 1);
+            HK_ASSERT(static_cast<ATextureGLImpl*>(pTexture)->pContext == this);
+            HK_ASSERT(Rectangle.Offset.MipLevel == 0);
+            HK_ASSERT(Rectangle.Dimension.Z == 1);
 
             GLenum format, type;
             if (!ChooseBackbufferReadFormat(pTexture, Format, format, type))
             {
-                AN_ASSERT_(0, "AImmediateContextGLImpl::ReadTextureRect: Uncompatible data format");
+                HK_ASSERT_(0, "AImmediateContextGLImpl::ReadTextureRect: Uncompatible data format");
                 return;
             }
 
@@ -4475,22 +4475,22 @@ void AImmediateContextGLImpl::ReadTextureRect(ITexture*           pTexture,
     }
     else
     {
-        AN_ASSERT(Rectangle.Offset.X + Rectangle.Dimension.X <= pTexture->GetWidth());
-        AN_ASSERT(Rectangle.Offset.Y + Rectangle.Dimension.Y <= pTexture->GetHeight());
-        AN_ASSERT(Rectangle.Offset.Z + Rectangle.Dimension.Z <= maxDimensionZ);
+        HK_ASSERT(Rectangle.Offset.X + Rectangle.Dimension.X <= pTexture->GetWidth());
+        HK_ASSERT(Rectangle.Offset.Y + Rectangle.Dimension.Y <= pTexture->GetHeight());
+        HK_ASSERT(Rectangle.Offset.Z + Rectangle.Dimension.Z <= maxDimensionZ);
 
         // Dummy texture is a default color or depth buffer
         if (static_cast<ATextureGLImpl*>(pTexture)->IsDummyTexture())
         {
-            AN_ASSERT(static_cast<ATextureGLImpl*>(pTexture)->pContext == this);
-            AN_ASSERT(Rectangle.Offset.MipLevel == 0);
-            AN_ASSERT(Rectangle.Offset.Z == 0);
-            AN_ASSERT(Rectangle.Dimension.Z == 1);
+            HK_ASSERT(static_cast<ATextureGLImpl*>(pTexture)->pContext == this);
+            HK_ASSERT(Rectangle.Offset.MipLevel == 0);
+            HK_ASSERT(Rectangle.Offset.Z == 0);
+            HK_ASSERT(Rectangle.Dimension.Z == 1);
 
             GLenum format, type;
             if (!ChooseBackbufferReadFormat(pTexture, Format, format, type))
             {
-                AN_ASSERT_(0, "AImmediateContextGLImpl::ReadTextureRect: Uncompatible data format");
+                HK_ASSERT_(0, "AImmediateContextGLImpl::ReadTextureRect: Uncompatible data format");
                 return;
             }
 
@@ -4554,7 +4554,7 @@ bool AImmediateContextGLImpl::WriteTexture(ITexture*    pTexture,
                                            unsigned int Alignment, // Specifies alignment of source data
                                            const void*  pSysMem)
 {
-    AN_ASSERT(MipLevel < pTexture->GetDesc().NumMipLevels);
+    HK_ASSERT(MipLevel < pTexture->GetDesc().NumMipLevels);
 
     STextureRect rect;
     rect.Offset.MipLevel = MipLevel;
@@ -4582,15 +4582,15 @@ bool AImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
     GLenum format           = TypeLUT[Format].FormatBGR;
     GLenum type             = TypeLUT[Format].Type;
 
-    AN_ASSERT_(!static_cast<ATextureGLImpl*>(pTexture)->IsDummyTexture(),
+    HK_ASSERT_(!static_cast<ATextureGLImpl*>(pTexture)->IsDummyTexture(),
                "Attempting to write raw data to OpenGL back buffer");
     // NOTE: For default back buffer we can write data to temp texture and then blit it.
 
     uint32_t maxDimensionZ = pTexture->GetSliceCount(Rectangle.Offset.MipLevel);
 
-    AN_ASSERT(Rectangle.Offset.X + Rectangle.Dimension.X <= pTexture->GetWidth());
-    AN_ASSERT(Rectangle.Offset.Y + Rectangle.Dimension.Y <= pTexture->GetHeight());
-    AN_ASSERT(Rectangle.Offset.Z + Rectangle.Dimension.Z <= maxDimensionZ);
+    HK_ASSERT(Rectangle.Offset.X + Rectangle.Dimension.X <= pTexture->GetWidth());
+    HK_ASSERT(Rectangle.Offset.Y + Rectangle.Dimension.Y <= pTexture->GetHeight());
+    HK_ASSERT(Rectangle.Offset.Z + Rectangle.Dimension.Z <= maxDimensionZ);
 
     if (!id)
     {
@@ -4848,7 +4848,7 @@ bool AImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
 
 void AImmediateContextGLImpl::GenerateTextureMipLevels(ITexture* pTexture)
 {
-    AN_ASSERT_(!static_cast<ATextureGLImpl*>(pTexture)->IsDummyTexture(),
+    HK_ASSERT_(!static_cast<ATextureGLImpl*>(pTexture)->IsDummyTexture(),
                "Attempting to generate mipmap levels for OpenGL back buffer");
 
     GLuint id = pTexture->GetHandleNativeGL();
@@ -5147,7 +5147,7 @@ void AImmediateContextGLImpl::GetQueryPoolResults(IQueryPool*        _QueryPool,
                                                   size_t             _DstStride,
                                                   QUERY_RESULT_FLAGS _Flags)
 {
-    AN_ASSERT(_FirstQuery + _QueryCount <= _QueryPool->GetPoolSize());
+    HK_ASSERT(_FirstQuery + _QueryCount <= _QueryPool->GetPoolSize());
 
     unsigned int* idPool = static_cast<AQueryPoolGLImpl*>(_QueryPool)->IdPool;
 
@@ -5159,7 +5159,7 @@ void AImmediateContextGLImpl::GetQueryPoolResults(IQueryPool*        _QueryPool,
     if (_Flags & QUERY_RESULT_64_BIT)
     {
 
-        AN_ASSERT((_DstStride & ~(size_t)7) == _DstStride); // check stride must be multiples of 8
+        HK_ASSERT((_DstStride & ~(size_t)7) == _DstStride); // check stride must be multiples of 8
 
         for (uint32_t index = 0; index < _QueryCount; index++)
         {
@@ -5209,7 +5209,7 @@ void AImmediateContextGLImpl::GetQueryPoolResults(IQueryPool*        _QueryPool,
     else
     {
 
-        AN_ASSERT((_DstStride & ~(size_t)3) == _DstStride); // check stride must be multiples of 4
+        HK_ASSERT((_DstStride & ~(size_t)3) == _DstStride); // check stride must be multiples of 4
 
         for (uint32_t index = 0; index < _QueryCount; index++)
         {
@@ -5260,7 +5260,7 @@ void AImmediateContextGLImpl::GetQueryPoolResults(IQueryPool*        _QueryPool,
 
 void AImmediateContextGLImpl::ReadBufferRange(IBuffer* _Buffer, size_t _ByteOffset, size_t _SizeInBytes, void* _SysMem)
 {
-    AN_ASSERT(_ByteOffset + _SizeInBytes <= _Buffer->GetDesc().SizeInBytes);
+    HK_ASSERT(_ByteOffset + _SizeInBytes <= _Buffer->GetDesc().SizeInBytes);
     glGetNamedBufferSubData(_Buffer->GetHandleNativeGL(), _ByteOffset, _SizeInBytes, _SysMem); // 4.5 or GL_ARB_direct_state_access
 
     /*
@@ -5280,7 +5280,7 @@ void AImmediateContextGLImpl::ReadBufferRange(IBuffer* _Buffer, size_t _ByteOffs
 
 void AImmediateContextGLImpl::WriteBufferRange(IBuffer* _Buffer, size_t _ByteOffset, size_t _SizeInBytes, const void* _SysMem)
 {
-    AN_ASSERT(_ByteOffset + _SizeInBytes <= _Buffer->GetDesc().SizeInBytes);
+    HK_ASSERT(_ByteOffset + _SizeInBytes <= _Buffer->GetDesc().SizeInBytes);
     glNamedBufferSubData(_Buffer->GetHandleNativeGL(), _ByteOffset, _SizeInBytes, _SysMem); // 4.5 or GL_ARB_direct_state_access
 
     /*
@@ -5433,7 +5433,7 @@ void AImmediateContextGLImpl::ExecuteFrameGraph(AFrameGraph* pFrameGraph)
                         resourceProxy->SetDeviceObject(pRenderTargetCache->Acquire(static_cast<FGTextureProxy*>(resourceProxy)->GetResourceDesc()));
                         break;
                     default:
-                        AN_ASSERT(0);
+                        HK_ASSERT(0);
                 }
             }
         }
@@ -5447,7 +5447,7 @@ void AImmediateContextGLImpl::ExecuteFrameGraph(AFrameGraph* pFrameGraph)
                 ExecuteCustomTask(static_cast<ACustomTask*>(step.RenderTask));
                 break;
             default:
-                AN_ASSERT(0);
+                HK_ASSERT(0);
                 break;
         }
 
@@ -5463,7 +5463,7 @@ void AImmediateContextGLImpl::ExecuteFrameGraph(AFrameGraph* pFrameGraph)
                         pRenderTargetCache->Release(static_cast<ITexture*>(resourceProxy->GetDeviceObject()));
                         break;
                     default:
-                        AN_ASSERT(0);
+                        HK_ASSERT(0);
                 }
             }
         }

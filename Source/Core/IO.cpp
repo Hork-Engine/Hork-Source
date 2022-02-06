@@ -33,11 +33,11 @@ SOFTWARE.
 #include <Platform/WindowsDefs.h>
 #include <Platform/Logger.h>
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 #    include <direct.h> // _mkdir
 #    include <io.h>     // access
 #endif
-#ifdef AN_OS_LINUX
+#ifdef HK_OS_LINUX
 #    include <dirent.h>
 #    include <sys/stat.h> // _mkdir
 #    include <unistd.h>   // access
@@ -71,7 +71,7 @@ static FILE* OpenFile(const char* _FileName, const char* _Mode)
 #if defined(_MSC_VER)
     wchar_t wMode[64];
 
-    if (0 == MultiByteToWideChar(CP_UTF8, 0, _Mode, -1, wMode, AN_ARRAY_SIZE(wMode)))
+    if (0 == MultiByteToWideChar(CP_UTF8, 0, _Mode, -1, wMode, HK_ARRAY_SIZE(wMode)))
         return NULL;
 
     int n = MultiByteToWideChar(CP_UTF8, 0, _FileName, -1, NULL, 0);
@@ -98,7 +98,7 @@ static FILE* OpenFile(const char* _FileName, const char* _Mode)
 
 bool AFileStream::Open(AStringView _FileName, int _Mode)
 {
-    AN_ASSERT(_Mode >= 0 && _Mode < 3);
+    HK_ASSERT(_Mode >= 0 && _Mode < 3);
 
     Close();
 
@@ -130,7 +130,7 @@ bool AFileStream::Open(AStringView _FileName, int _Mode)
             fopen_mode = "ab";
             break;
         default:
-            AN_ASSERT(0);
+            HK_ASSERT(0);
     }
 
     FILE* f = OpenFile(Name.CStr(), fopen_mode);
@@ -788,7 +788,7 @@ void MakeDir(const char* _Directory, bool _FileName)
     char* tmpStr = (char*)GZoneMemory.Alloc(len + 1);
     Platform::Memcpy(tmpStr, _Directory, len + 1);
     char* p = tmpStr;
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
     if (len >= 3 && _Directory[1] == ':')
     {
         p += 3;
@@ -800,7 +800,7 @@ void MakeDir(const char* _Directory, bool _FileName)
         if (Platform::IsPathSeparator(*p))
         {
             *p = 0;
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
             mkdir(tmpStr);
 #else
             mkdir(tmpStr, S_IRWXU | S_IRWXG | S_IRWXO);
@@ -810,7 +810,7 @@ void MakeDir(const char* _Directory, bool _FileName)
     }
     if (!_FileName)
     {
-#ifdef AN_COMPILER_MSVC
+#ifdef HK_COMPILER_MSVC
         mkdir(tmpStr);
 #else
         mkdir(tmpStr, S_IRWXU | S_IRWXG | S_IRWXO);
@@ -830,9 +830,9 @@ void RemoveFile(const char* _FileName)
 {
     AString s = _FileName;
     s.FixPath();
-#if defined AN_OS_LINUX
+#if defined HK_OS_LINUX
     ::remove(s.CStr());
-#elif defined AN_OS_WIN32
+#elif defined HK_OS_WIN32
     int n = MultiByteToWideChar(CP_UTF8, 0, s.CStr(), -1, NULL, 0);
     if (0 != n)
     {
@@ -847,7 +847,7 @@ void RemoveFile(const char* _FileName)
 #endif
 }
 
-#ifdef AN_OS_LINUX
+#ifdef HK_OS_LINUX
 void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Callback)
 {
     AString fn;
@@ -895,7 +895,7 @@ void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Cal
 }
 #endif
 
-#ifdef AN_OS_WIN32
+#ifdef HK_OS_WIN32
 void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Callback)
 {
     AString fn;

@@ -37,7 +37,7 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/Image.h>
 
-AN_CLASS_META(APhotometricProfile)
+HK_CLASS_META(APhotometricProfile)
 
 int APhotometricProfile::PhotometricProfileCounter = 0;
 

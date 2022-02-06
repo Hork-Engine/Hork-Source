@@ -39,7 +39,7 @@ SOFTWARE.
 
 static int RevisionGen = 0;
 
-AN_CLASS_META(ASoundResource)
+HK_CLASS_META(ASoundResource)
 
 ASoundResource::ASoundResource()
 {
@@ -168,7 +168,7 @@ bool ASoundResource::LoadResource(IBinaryStream& Stream)
     }
 
 #if 0
-    AN_ASSERT( !pBuffer );
+    HK_ASSERT( !pBuffer );
 
     FileName = Stream.GetFileName();
 
@@ -213,7 +213,7 @@ bool ASoundResource::LoadResource(IBinaryStream& Stream)
         break;
     }
     default:
-        AN_ASSERT(0);
+        HK_ASSERT(0);
         return false;
     }
 
@@ -235,7 +235,7 @@ bool ASoundResource::InitializeFromMemory(const char* _Path, const void* _SysMem
 
     Purge();
 
-    AN_ASSERT(!pBuffer);
+    HK_ASSERT(!pBuffer);
 
     FileName = _Path;
 
@@ -288,7 +288,7 @@ bool ASoundResource::InitializeFromMemory(const char* _Path, const void* _SysMem
             break;
         }
         default:
-            AN_ASSERT(0);
+            HK_ASSERT(0);
             return false;
     }
 

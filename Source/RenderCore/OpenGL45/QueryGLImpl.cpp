@@ -39,7 +39,7 @@ namespace RenderCore
 AQueryPoolGLImpl::AQueryPoolGLImpl(ADeviceGLImpl* pDevice, SQueryPoolDesc const& Desc) :
     IQueryPool(pDevice)
 {
-    AN_ASSERT(Desc.PoolSize > 0);
+    HK_ASSERT(Desc.PoolSize > 0);
 
     IdPool    = nullptr;
     QueryType = Desc.QueryType;
