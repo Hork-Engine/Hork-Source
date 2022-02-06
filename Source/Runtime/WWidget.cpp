@@ -1959,13 +1959,16 @@ void WWidget::ForwardKeyEvent(struct SKeyEvent const& _Event, double _TimeStamp)
 {
     OnKeyEvent(_Event, _TimeStamp);
 
-    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    if (ShareFocus)
     {
-        if (w)
+        for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
         {
-            if (w != this)
+            if (w)
             {
-                w->OnKeyEvent(_Event, _TimeStamp);
+                if (w != this)
+                {
+                    w->OnKeyEvent(_Event, _TimeStamp);
+                }
             }
         }
     }
@@ -1975,13 +1978,16 @@ void WWidget::ForwardMouseButtonEvent(struct SMouseButtonEvent const& _Event, do
 {
     OnMouseButtonEvent(_Event, _TimeStamp);
 
-    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    if (ShareFocus)
     {
-        if (w)
+        for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
         {
-            if (w != this)
+            if (w)
             {
-                w->OnMouseButtonEvent(_Event, _TimeStamp);
+                if (w != this)
+                {
+                    w->OnMouseButtonEvent(_Event, _TimeStamp);
+                }
             }
         }
     }
@@ -1991,13 +1997,16 @@ void WWidget::ForwardDblClickEvent(int _ButtonKey, Float2 const& _ClickPos, uint
 {
     OnDblClickEvent(_ButtonKey, _ClickPos, _ClickTime);
 
-    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    if (ShareFocus)
     {
-        if (w)
+        for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
         {
-            if (w != this)
+            if (w)
             {
-                w->OnDblClickEvent(_ButtonKey, _ClickPos, _ClickTime);
+                if (w != this)
+                {
+                    w->OnDblClickEvent(_ButtonKey, _ClickPos, _ClickTime);
+                }
             }
         }
     }
@@ -2007,13 +2016,16 @@ void WWidget::ForwardMouseWheelEvent(struct SMouseWheelEvent const& _Event, doub
 {
     OnMouseWheelEvent(_Event, _TimeStamp);
 
-    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    if (ShareFocus)
     {
-        if (w)
+        for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
         {
-            if (w != this)
+            if (w)
             {
-                w->OnMouseWheelEvent(_Event, _TimeStamp);
+                if (w != this)
+                {
+                    w->OnMouseWheelEvent(_Event, _TimeStamp);
+                }
             }
         }
     }
@@ -2023,13 +2035,16 @@ void WWidget::ForwardMouseMoveEvent(struct SMouseMoveEvent const& _Event, double
 {
     OnMouseMoveEvent(_Event, _TimeStamp);
 
-    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    if (ShareFocus)
     {
-        if (w)
+        for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
         {
-            if (w != this)
+            if (w)
             {
-                w->OnMouseMoveEvent(_Event, _TimeStamp);
+                if (w != this)
+                {
+                    w->OnMouseMoveEvent(_Event, _TimeStamp);
+                }
             }
         }
     }
@@ -2039,13 +2054,16 @@ void WWidget::ForwardJoystickButtonEvent(struct SJoystickButtonEvent const& _Eve
 {
     OnJoystickButtonEvent(_Event, _TimeStamp);
 
-    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    if (ShareFocus)
     {
-        if (w)
+        for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
         {
-            if (w != this)
+            if (w)
             {
-                w->OnJoystickButtonEvent(_Event, _TimeStamp);
+                if (w != this)
+                {
+                    w->OnJoystickButtonEvent(_Event, _TimeStamp);
+                }
             }
         }
     }
@@ -2055,13 +2073,16 @@ void WWidget::ForwardJoystickAxisEvent(struct SJoystickAxisEvent const& _Event, 
 {
     OnJoystickAxisEvent(_Event, _TimeStamp);
 
-    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    if (ShareFocus)
     {
-        if (w)
+        for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
         {
-            if (w != this)
+            if (w)
             {
-                w->OnJoystickAxisEvent(_Event, _TimeStamp);
+                if (w != this)
+                {
+                    w->OnJoystickAxisEvent(_Event, _TimeStamp);
+                }
             }
         }
     }
@@ -2071,13 +2092,16 @@ void WWidget::ForwardCharEvent(struct SCharEvent const& _Event, double _TimeStam
 {
     OnCharEvent(_Event, _TimeStamp);
 
-    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    if (ShareFocus)
     {
-        if (w)
+        for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
         {
-            if (w != this)
+            if (w)
             {
-                w->OnCharEvent(_Event, _TimeStamp);
+                if (w != this)
+                {
+                    w->OnCharEvent(_Event, _TimeStamp);
+                }
             }
         }
     }
