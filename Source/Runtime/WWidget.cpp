@@ -35,6 +35,7 @@ SOFTWARE.
 #include <Geometry/Shuffle.h>
 
 HK_CLASS_META(WWidget)
+HK_CLASS_META(WWidgetShareFocusGroup)
 
 constexpr int WWidget::MAX_COLUMNS;
 constexpr int WWidget::MAX_ROWS;
@@ -1948,480 +1949,136 @@ float WWidget::CalcAutoHeight()
     return contentHeight;
 }
 
-
-
-
-
-
-
-#include "WWindow.h"
-#include "WButton.h"
-#include "WScroll.h"
-#include "WSlider.h"
-#include "WTextEdit.h"
-
-
-
-WWidget& ScrollTest2()
+WWidget& WWidget::SetShareFocus(WWidgetShareFocusGroup* _ShareGroup)
 {
-    return WNew(WWindow)
-        .SetCaptionText("Test Scroll")
-        .SetCaptionHeight(24)
-        .SetBackgroundColor(Color4(0.5f, 0.5f, 0.5f))
-        .SetStyle(WIDGET_STYLE_RESIZABLE)
-        .SetSize(400, 300)
-        .SetLayout(WIDGET_LAYOUT_GRID)
-        .SetGridSize(2, 1)
-        .SetColumnWidth(0, 270)
-        .SetColumnWidth(1, 30)
-        .SetRowWidth(0, 1)
-        .SetFitColumns(true)
-        .SetFitRows(true)
-        //.SetClampWidth(true)
-        .SetAutoWidth(true)
-    //.SetAutoHeight( true )
-#if 0
-            [
-                WNew(WWidget)
-                .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
-                .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
-                .SetGridCell( 0, 0 )
-                .SetLayout( WIDGET_LAYOUT_IMAGE )
-                .SetImageSize( 640, 480 )
-                [
-                    WNew(WBorderDecorate)
-                    .SetColor( 0xff00ffff )
-                    .SetFillBackground( true )
-                    .SetBackgroundColor( 0xff00ff00 )
-                    .SetThickness( 1 )
-                ]
-                [
-                    WNew(WTextDecorate)
-                    .SetText( "Content view" )
-                    .SetColor( 0xff000000 )
-                    .SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
-                    .SetVerticalAlignment( WIDGET_ALIGNMENT_CENTER )
-                ]
-                [
-                    WNew(WButton)
-                    .SetText( "1" )
-                    .SetSize( 64, 64 )
-                    .SetPosition( 640-64, 480-64 )
-                    //.SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
-                    //.SetVerticalAlignment( WIDGET_ALIGNMENT_CENTER )
-                    .SetStyle( WIDGET_STYLE_FOREGROUND )
-                    .SetEnabled( false )
-                ]
-                [
-                    WNew(WButton)
-                    .SetText( "2" )
-                    .SetSize( 64, 64 )
-                    .SetPosition( 640/2-64/2, 480/2-64/2 )
-                    //.SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
-                    //.SetVerticalAlignment( WIDGET_ALIGNMENT_CENTER )
-                    .SetStyle( WIDGET_STYLE_FOREGROUND )
-                ]
-            ]
-#endif
-#if 1
-            [WNew(WWidget)
-                 //.SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
-                 .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                 .SetGridCell(0, 0)
-                 .SetLayout(WIDGET_LAYOUT_HORIZONTAL)
-                 .SetHorizontalPadding(8)
-                 .SetVerticalPadding(4)
-                 .SetAutoWidth(true)
-                     //.SetAutoHeight( true )
-                     [WNew(WBorderDecorate)
-                          .SetColor(Color4(1, 1, 0))
-                          .SetFillBackground(true)
-                          .SetBackgroundColor(Color4(0, 1, 0))
-                          .SetThickness(1)]
-                     [WNew(WTextDecorate)
-                          .SetText("Content view")
-                          .SetColor(Color4::Black())
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_CENTER)]
-                     [WNew(WTextButton)
-                          .SetText("1")
-                          .SetSize(100, 30)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)]
-                     [WNew(WTextButton)
-                          .SetText("2")
-                          .SetSize(200, 50)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)]
-                     [WNew(WTextButton)
-                          .SetText("3")
-                          .SetSize(100, 30)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)
-                      //.SetCollapsed()
-    ]
-                     [WNew(WTextButton)
-                          .SetText("4")
-                          .SetSize(100, 30)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)]
-                     [WNew(WTextButton)
-                          .SetText("5")
-                          .SetSize(100, 30)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_TOP)
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)]
-                     [WNew(WTextButton)
-                          .SetText("6")
-                          .SetSize(100, 30)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_BOTTOM)
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)]
-                     [WNew(WTextButton)
-                          .SetText("7")
-                          .SetSize(100, 30)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)]
-                     [WNew(WTextButton)
-                          .SetText("8")
-                          .SetSize(100, 30)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)]
-                     [WNew(WTextButton)
-                          .SetText("9")
-                          .SetSize(100, 30)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_BOTTOM)
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)]
-                     [WNew(WTextButton)
-                          .SetText("10")
-                          .SetSize(100, 30)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)]
-                     [WNew(WTextButton)
-                          .SetText("11")
-                          .SetSize(100, 30)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)]]
-#endif
-            [WNew(WWidget)
-                 .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                 .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                 .SetGridCell(1, 0)
-                 .SetGridSize(1, 3)
-                 .SetColumnWidth(0, 1)
-                 .SetRowWidth(0, 0.2f)
-                 .SetRowWidth(1, 0.6f)
-                 .SetRowWidth(2, 0.2f)
-                 .SetFitColumns(true)
-                 .SetFitRows(true)
-                 .SetLayout(WIDGET_LAYOUT_GRID)
-                     [WNew(WBorderDecorate)
-                          .SetColor(Color4(1, 0, 0))
-                          .SetFillBackground(true)
-                          .SetBackgroundColor(Color4(1, 0, 1))
-                          .SetThickness(1)]
-                     [WNew(WTextButton)
-                          .SetText("Up")
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                          .SetGridCell(0, 0)]
-                     [WNew(WTextButton)
-                          .SetText("Down")
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                          .SetGridCell(0, 2)]
-                     [WNew(WWidget)
-                          .SetStyle(WIDGET_STYLE_FOREGROUND)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                          .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                          .SetGridCell(0, 1)
-                          .AddDecorate(&(*CreateInstanceOf<WBorderDecorate>())
-                                            .SetColor(Color4(0, 1, 0))
-                                            .SetFillBackground(true)
-                                            .SetBackgroundColor(Color4::Black())
-                                            .SetThickness(1)
-                                            .SetRounding(0)
-                                            .SetRoundingCorners(CORNER_ROUND_NONE))]];
+    ShareFocus = _ShareGroup;
+    return *this;
 }
 
-WWidget& ScrollTest()
+void WWidget::ForwardKeyEvent(struct SKeyEvent const& _Event, double _TimeStamp)
 {
+    OnKeyEvent(_Event, _TimeStamp);
 
-    WWidget& contentWidget =
-        WNew(WWidget)
-            .SetLayout(WIDGET_LAYOUT_VERTICAL)
-            .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
-            //.SetAutoWidth( true )
-            .SetAutoHeight(true)
-            //.SetMaxSize( 128, 128 )
-            .SetPosition(0, 0)
-                [WNew(WBorderDecorate)
-                     .SetColor(Color4(0.5f, 0.5f, 0.5f, 0.5f))
-                     .SetFillBackground(true)
-                     .SetBackgroundColor(Color4(0.3f, 0.3f, 0.3f))
-                     .SetThickness(1)]
-        //            [
-        //                ScrollTest2()
-        //            ]
-        ;
-
-    contentWidget[WNew(WSlider)
-                      .SetMinValue(30)
-                      .SetMaxValue(100)
-                      .SetStep(10)
-                      .SetSize(400, 32)
-                      //.SetVerticalOrientation( true )
-                      //.SetSize( 32, 400 )
-                      .SetHorizontalAlignment(WIDGET_ALIGNMENT_CENTER)
-                      .SetStyle(WIDGET_STYLE_BACKGROUND)];
-
-    contentWidget[WNew(WScroll)
-
-                      .SetAutoScrollH(true)
-                      .SetAutoScrollV(true)
-                      .SetScrollbarSize(12)
-                      .SetButtonWidth(12)
-                      .SetShowButtons(true)
-                      .SetSliderRounding(4)
-                      .SetContentWidget(
-                          WNew(WTextEdit)
-                              //.SetSize( 0, 0 )
-                              //.SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
-                              .SetStyle(WIDGET_STYLE_BACKGROUND))
-                      .SetSize(400, 600)
-                      .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                      //.SetHorizontalAlignment( WIDGET_ALIGNMENT_CENTER )
-                      .SetStyle(WIDGET_STYLE_BACKGROUND)];
-
-    for (int i = 0; i < 100; i++)
+    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
     {
-        contentWidget[WNew(WTextButton)
-                          .SetText(Platform::Fmt("test button %d", i))
-                          .SetSize(400, 32)
-                          .SetHorizontalAlignment(WIDGET_ALIGNMENT_CENTER)
-                          .SetStyle(WIDGET_STYLE_BACKGROUND)];
-    }
-
-    return WNew(WWindow)
-        .SetCaptionText("Test Scroll")
-        .SetCaptionHeight(24)
-        .SetBackgroundColor(Color4(0.5f, 0.5f, 0.5f))
-        .SetStyle(WIDGET_STYLE_RESIZABLE)
-        .SetLayout(WIDGET_LAYOUT_EXPLICIT)
-        .SetSize(320, 240)
-        .SetMaximized()
-            //.SetAutoWidth( true )
-            //.SetAutoHeight( true )
-            [WNew(WScroll)
-                 .SetAutoScrollH(true)
-                 .SetAutoScrollV(true)
-                 .SetScrollbarSize(12)
-                 .SetButtonWidth(12)
-                 .SetShowButtons(true)
-                 .SetSliderRounding(4)
-                 .SetContentWidget(
-                     contentWidget)
-                 .SetHorizontalAlignment(WIDGET_ALIGNMENT_STRETCH)
-                 .SetVerticalAlignment(WIDGET_ALIGNMENT_STRETCH)];
-
-#if 0
-
-    WWidget & scrollView =
-            WNew(WWidget)
-            .SetStyle( WIDGET_STYLE_TRANSPARENT )
-            .SetLayout( WIDGET_LAYOUT_EXPLICIT )
-            .SetSize( 300, 250 )
-            .SetPosition( 0, 0 )
-            .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
-            .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
-            .SetMargin( 4,4,20,20 )
-            [
-                contentWidget
-            ];
-
-    WWidget & scrollBarV =
-            WNew(WScrollBar)
-            .SetView( &scrollView )
-            .SetContent( &contentWidget )
-            .SetSliderRounding( 4 )
-            .SetShowButtons( true )
-            .SetOrientation( SCROLL_BAR_VERTICAL )
-            .SetSize( 12, 250 )
-            .SetPosition( 0, 0 )
-            .SetStyle( WIDGET_STYLE_FOREGROUND )
-            .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
-            .SetHorizontalAlignment( WIDGET_ALIGNMENT_RIGHT )
-            .SetMargin(4,4,4,4);
-
-    WWidget & scrollBarH =
-            WNew(WScrollBar)
-            .SetView( &scrollView )
-            .SetContent( &contentWidget )
-            .SetSliderRounding( 4 )
-            .SetShowButtons( true )
-            .SetOrientation( SCROLL_BAR_HORIZONTAL )
-            .SetSize( 250, 12 )
-            .SetPosition( 0, 0 )
-            .SetStyle( WIDGET_STYLE_FOREGROUND )
-            .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
-            .SetVerticalAlignment( WIDGET_ALIGNMENT_BOTTOM )
-            .SetMargin(4,4,4,4);
-
-    return WNew(WWindow)
-                .SetCaptionText( "Test Scroll" )
-                .SetCaptionHeight( 24 )
-                .SetBackgroundColor( Color4( 0.5f,0.5f,0.5f ) )
-                .SetStyle( WIDGET_STYLE_RESIZABLE )
-                .SetLayout( WIDGET_LAYOUT_EXPLICIT )
-                .SetAutoWidth( true )
-                .SetAutoHeight( true )
-                [
-                    scrollView
-                ]
-                [
-                    WNew(WWidget)
-                    .SetStyle( WIDGET_STYLE_TRANSPARENT )
-                    .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
-                    .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
-                    .SetMargin(0,0,0,20)
-                    [
-                        scrollBarV
-                    ]
-                ]
-                [
-                    WNew(WWidget)
-                    .SetStyle( WIDGET_STYLE_TRANSPARENT )
-                    .SetHorizontalAlignment( WIDGET_ALIGNMENT_STRETCH )
-                    .SetVerticalAlignment( WIDGET_ALIGNMENT_STRETCH )
-                    .SetMargin(0,0,20,0)
-                    [
-                        scrollBarH
-                    ]
-                ]
-            ;
-#endif
-}
-
-
-#if 0
-HK_CLASS_META( WMenuItem )
-
-WMenuItem::WMenuItem() {
-    State = ST_RELEASED;
-    Color = Color4::White();
-    HoverColor = Color4( 1,1,0.5f,1 );
-    PressedColor = Color4( 1,1,0.2f,1 );
-    TextColor = Color4::Black();
-    BorderColor = Color4::Black();
-    Rounding = 8;
-    RoundingCorners = CORNER_ROUND_ALL;
-    BorderThickness = 1;
-}
-
-WMenuItem::~WMenuItem() {
-}
-
-WMenuItem & WMenuItem::SetText( const char * _Text ) {
-    Text = _Text;
-    return *this;
-}
-
-WMenuItem & WMenuItem::SetColor( Color4 const & _Color ) {
-    Color = _Color;
-    return *this;
-}
-
-WMenuItem & WMenuItem::SetHoverColor( Color4 const & _Color ) {
-    HoverColor = _Color;
-    return *this;
-}
-
-WMenuItem & WMenuItem::SetPressedColor( Color4 const & _Color ) {
-    PressedColor = _Color;
-    return *this;
-}
-
-WMenuItem & WMenuItem::SetTextColor( Color4 const & _Color ) {
-    TextColor = _Color;
-    return *this;
-}
-
-WMenuItem & WMenuItem::SetBorderColor( Color4 const & _Color ) {
-    BorderColor = _Color;
-    return *this;
-}
-
-WMenuItem & WMenuItem::SetRounding( float _Rounding ) {
-    Rounding = _Rounding;
-    return *this;
-}
-
-WMenuItem & WMenuItem::SetRoundingCorners( EDrawCornerFlags _RoundingCorners ) {
-    RoundingCorners = _RoundingCorners;
-    return *this;
-}
-
-WMenuItem & WMenuItem::SetBorderThickness( float _BorderThickness ) {
-    BorderThickness = _BorderThickness;
-    return *this;
-}
-
-void WMenuItem::OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) {
-    if ( _Event.Action == IE_Press ) {
-        if ( _Event.Button == 0 ) {
-            State = ST_PRESSED;
-        }
-    } else if ( _Event.Action == IE_Release ) {
-        if ( _Event.Button == 0 && State == ST_PRESSED && IsHoveredByCursor() ) {
-
-            State = ST_RELEASED;
-
-            E_OnButtonClick.Dispatch();
-        } else {
-            State = ST_RELEASED;
+        if (w)
+        {
+            if (w != this)
+            {
+                w->OnKeyEvent(_Event, _TimeStamp);
+            }
         }
     }
 }
 
-void WMenuItem::OnDrawEvent( ACanvas & _Canvas ) {
-    Color4 bgColor;
+void WWidget::ForwardMouseButtonEvent(struct SMouseButtonEvent const& _Event, double _TimeStamp)
+{
+    OnMouseButtonEvent(_Event, _TimeStamp);
 
-    if ( IsHoveredByCursor() && !IsDisabled() ) {
-        if ( State == ST_PRESSED ) {
-            bgColor = PressedColor;
-        } else {
-            bgColor = HoverColor;
+    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    {
+        if (w)
+        {
+            if (w != this)
+            {
+                w->OnMouseButtonEvent(_Event, _TimeStamp);
+            }
         }
-    } else {
-        bgColor = Color;
     }
-
-    Float2 mins, maxs;
-
-    GetDesktopRect( mins, maxs, true );
-
-    FFontNew * font = ACanvas::GetDefaultFont();
-
-    float width = GetClientWidth();
-    float height = GetClientHeight();
-
-    Float2 size = font->CalcTextSizeA( font->FontSize, width, 0, Text.Begin(), Text.End() );
-
-    _Canvas.DrawRectFilled( mins, maxs, bgColor, Rounding, RoundingCorners );
-    if ( BorderThickness > 0.0f ) {
-        _Canvas.DrawRect( mins, maxs, BorderColor, Rounding, RoundingCorners, BorderThickness );
-    }
-    _Canvas.DrawTextUTF8( mins + Float2( width - size.X, height - size.Y ) * 0.5f, TextColor, Text.Begin(), Text.End() );
 }
-#endif
+
+void WWidget::ForwardDblClickEvent(int _ButtonKey, Float2 const& _ClickPos, uint64_t _ClickTime)
+{
+    OnDblClickEvent(_ButtonKey, _ClickPos, _ClickTime);
+
+    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    {
+        if (w)
+        {
+            if (w != this)
+            {
+                w->OnDblClickEvent(_ButtonKey, _ClickPos, _ClickTime);
+            }
+        }
+    }
+}
+
+void WWidget::ForwardMouseWheelEvent(struct SMouseWheelEvent const& _Event, double _TimeStamp)
+{
+    OnMouseWheelEvent(_Event, _TimeStamp);
+
+    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    {
+        if (w)
+        {
+            if (w != this)
+            {
+                w->OnMouseWheelEvent(_Event, _TimeStamp);
+            }
+        }
+    }
+}
+
+void WWidget::ForwardMouseMoveEvent(struct SMouseMoveEvent const& _Event, double _TimeStamp)
+{
+    OnMouseMoveEvent(_Event, _TimeStamp);
+
+    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    {
+        if (w)
+        {
+            if (w != this)
+            {
+                w->OnMouseMoveEvent(_Event, _TimeStamp);
+            }
+        }
+    }
+}
+
+void WWidget::ForwardJoystickButtonEvent(struct SJoystickButtonEvent const& _Event, double _TimeStamp)
+{
+    OnJoystickButtonEvent(_Event, _TimeStamp);
+
+    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    {
+        if (w)
+        {
+            if (w != this)
+            {
+                w->OnJoystickButtonEvent(_Event, _TimeStamp);
+            }
+        }
+    }
+}
+
+void WWidget::ForwardJoystickAxisEvent(struct SJoystickAxisEvent const& _Event, double _TimeStamp)
+{
+    OnJoystickAxisEvent(_Event, _TimeStamp);
+
+    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    {
+        if (w)
+        {
+            if (w != this)
+            {
+                w->OnJoystickAxisEvent(_Event, _TimeStamp);
+            }
+        }
+    }
+}
+
+void WWidget::ForwardCharEvent(struct SCharEvent const& _Event, double _TimeStamp)
+{
+    OnCharEvent(_Event, _TimeStamp);
+
+    for (TWeakRef<WWidget>& w : ShareFocus->Widgets)
+    {
+        if (w)
+        {
+            if (w != this)
+            {
+                w->OnCharEvent(_Event, _TimeStamp);
+            }
+        }
+    }
+}

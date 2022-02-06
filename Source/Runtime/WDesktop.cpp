@@ -475,7 +475,7 @@ void WDesktop::GenerateKeyEvents(SKeyEvent const& _Event, double _TimeStamp)
 
     if (bPassFocusWidgetEvent)
     {
-        FocusWidget->OnKeyEvent(_Event, _TimeStamp);
+        FocusWidget->ForwardKeyEvent(_Event, _TimeStamp);
     }
 }
 
@@ -575,8 +575,8 @@ void WDesktop::GenerateMouseButtonEvents(struct SMouseButtonEvent const& _Event,
 
                     MouseFocusWidget = widget;
 
-                    widget->OnMouseButtonEvent(_Event, _TimeStamp);
-                    widget->OnDblClickEvent(_Event.Button, MouseClickPos, clickTime);
+                    widget->ForwardMouseButtonEvent(_Event, _TimeStamp);
+                    widget->ForwardDblClickEvent(_Event.Button, MouseClickPos, clickTime);
                 }
 
                 MouseClickTime   = 0;
@@ -615,7 +615,7 @@ void WDesktop::GenerateMouseButtonEvents(struct SMouseButtonEvent const& _Event,
 
     if (widget && widget->IsVisible() && !widget->IsDisabled())
     {
-        widget->OnMouseButtonEvent(_Event, _TimeStamp);
+        widget->ForwardMouseButtonEvent(_Event, _TimeStamp);
     }
 }
 
@@ -664,7 +664,7 @@ void WDesktop::GenerateMouseWheelEvents(struct SMouseWheelEvent const& _Event, d
 
         if (!widget->IsDisabled())
         {
-            widget->OnMouseWheelEvent(_Event, _TimeStamp);
+            widget->ForwardMouseWheelEvent(_Event, _TimeStamp);
         }
     }
 }
@@ -785,7 +785,7 @@ void WDesktop::GenerateMouseMoveEvents(struct SMouseMoveEvent const& _Event, dou
 
         if (!widget->IsDisabled())
         {
-            widget->OnMouseMoveEvent(_Event, _TimeStamp);
+            widget->ForwardMouseMoveEvent(_Event, _TimeStamp);
         }
     }
 }
@@ -825,7 +825,7 @@ void WDesktop::GenerateJoystickButtonEvents(SJoystickButtonEvent const& _Event, 
 
     if (FocusWidget && FocusWidget->IsVisible() && !FocusWidget->IsDisabled())
     {
-        FocusWidget->OnJoystickButtonEvent(_Event, _TimeStamp);
+        FocusWidget->ForwardJoystickButtonEvent(_Event, _TimeStamp);
     }
 }
 
@@ -844,7 +844,7 @@ void WDesktop::GenerateJoystickAxisEvents(SJoystickAxisEvent const& _Event, doub
 
     if (FocusWidget && FocusWidget->IsVisible() && !FocusWidget->IsDisabled())
     {
-        FocusWidget->OnJoystickAxisEvent(_Event, _TimeStamp);
+        FocusWidget->ForwardJoystickAxisEvent(_Event, _TimeStamp);
     }
 }
 
@@ -858,7 +858,7 @@ void WDesktop::GenerateCharEvents(struct SCharEvent const& _Event, double _TimeS
 
     if (FocusWidget && FocusWidget->IsVisible() && !FocusWidget->IsDisabled())
     {
-        FocusWidget->OnCharEvent(_Event, _TimeStamp);
+        FocusWidget->ForwardCharEvent(_Event, _TimeStamp);
     }
 }
 

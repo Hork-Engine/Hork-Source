@@ -72,6 +72,19 @@ using AWidgetShape = TPodVector<Float2, 4>;
 #define WNew(Type)            (*CreateInstanceOf<Type>())
 #define WNewAssign(Val, Type) (*(Val = CreateInstanceOf<Type>()))
 
+class WWidget;
+
+class WWidgetShareFocusGroup : public ABaseObject
+{
+    HK_CLASS(WWidgetShareFocusGroup, ABaseObject)
+
+public:
+    TStdVector<TWeakRef<WWidget>> Widgets;
+
+    WWidgetShareFocusGroup()
+    {}
+};
+
 class WWidget : public ABaseObject
 {
     HK_CLASS(WWidget, ABaseObject)
@@ -407,6 +420,8 @@ public:
 
     WWidget& SetTooltip(WWidget* Tooltip);
 
+    WWidget& SetShareFocus(WWidgetShareFocusGroup* ShareGroup);
+
     virtual bool IsShortcutsAllowed() const { return true; }
 
     WWidget();
@@ -456,6 +471,22 @@ public:
     void MarkTransformDirtyChilds();
 
 private:
+    void ForwardKeyEvent(struct SKeyEvent const& _Event, double _TimeStamp);
+
+    void ForwardMouseButtonEvent(struct SMouseButtonEvent const& _Event, double _TimeStamp);
+
+    void ForwardDblClickEvent(int _ButtonKey, Float2 const& _ClickPos, uint64_t _ClickTime);
+
+    void ForwardMouseWheelEvent(struct SMouseWheelEvent const& _Event, double _TimeStamp);
+
+    void ForwardMouseMoveEvent(struct SMouseMoveEvent const& _Event, double _TimeStamp);
+
+    void ForwardJoystickButtonEvent(struct SJoystickButtonEvent const& _Event, double _TimeStamp);
+
+    void ForwardJoystickAxisEvent(struct SJoystickAxisEvent const& _Event, double _TimeStamp);
+
+    void ForwardCharEvent(struct SCharEvent const& _Event, double _TimeStamp);
+
     void Draw_r(ACanvas& _Canvas, Float2 const& _ClipMins, Float2 const& _ClipMaxs);
 
     void UpdateDesktop_r(WDesktop* _Desktop);
@@ -531,63 +562,5 @@ private:
     bool                      bFocus;
     bool                      bSetFocusOnAddToDesktop;
     TRef<WWidget>             TooltipWidget;
+    TRef<WWidgetShareFocusGroup> ShareFocus;
 };
-
-//class WTooltip : public WWidget
-//{
-//public:
-//
-//};
-
-#if 0
-class WMenuItem : public WWidget {
-    HK_CLASS( WMenuItem, WWidget )
-
-public:
-    TWidgetEvent<> E_OnButtonClick;
-
-    WMenuItem & SetText( const char * _Text );
-    WMenuItem & SetColor( Color4 const & _Color );
-    WMenuItem & SetHoverColor( Color4 const & _Color );
-    WMenuItem & SetPressedColor( Color4 const & _Color );
-    WMenuItem & SetTextColor( Color4 const & _Color );
-    WMenuItem & SetBorderColor( Color4 const & _Color );
-    WMenuItem & SetRounding( float _Rounding );
-    WMenuItem & SetRoundingCorners( EDrawCornerFlags _RoundingCorners );
-    WMenuItem & SetBorderThickness( float _Thickness );
-
-    template< typename T, typename... TArgs >
-    WMenuItem & SetOnClick( T * _Object, void ( T::*_Method )(TArgs...) ) {
-        E_OnButtonClick.Add( _Object, _Method );
-        return *this;
-    }
-
-    bool IsPressed() const { return State == ST_PRESSED; }
-    bool IsReleased() const { return State == ST_RELEASED; }
-
-protected:
-    WMenuItem();
-    ~WMenuItem();
-
-    void OnMouseButtonEvent( struct SMouseButtonEvent const & _Event, double _TimeStamp ) override;
-
-    void OnDrawEvent( ACanvas & _Canvas ) override;
-
-private:
-    enum {
-        ST_RELEASED = 0,
-        ST_PRESSED = 1
-    };
-
-    int State;
-    Color4 Color;
-    Color4 HoverColor;
-    Color4 PressedColor;
-    Color4 TextColor;
-    Color4 BorderColor;
-    EDrawCornerFlags RoundingCorners;
-    AString Text;
-    float Rounding;
-    float BorderThickness;
-};
-#endif
