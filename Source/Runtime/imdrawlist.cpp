@@ -1182,6 +1182,11 @@ void ImDrawListSplitter::Merge( ImDrawList* draw_list )
     _Count = 1;
 }
 
+#ifdef HK_COMPILER_GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+
 void ImDrawListSplitter::SetCurrentChannel( ImDrawList* draw_list, int idx )
 {
     HK_ASSERT( idx >= 0 && idx < _Count );
@@ -1195,3 +1200,7 @@ void ImDrawListSplitter::SetCurrentChannel( ImDrawList* draw_list, int idx )
     memcpy( &draw_list->IdxBuffer, &_Channels.Data[idx]._IdxBuffer, sizeof( draw_list->IdxBuffer ) );
     draw_list->_IdxWritePtr = draw_list->IdxBuffer.Data + draw_list->IdxBuffer.Size;
 }
+
+#ifdef HK_COMPILER_GCC
+#pragma GCC diagnostic pop
+#endif

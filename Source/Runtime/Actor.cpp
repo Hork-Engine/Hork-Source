@@ -195,7 +195,16 @@ void AActor::InitializeAndPlay()
     CallBeginPlay();
 }
 
-#define CALL_SCRIPT(Function, ...)                                         \
+#define CALL_SCRIPT(Function)                                              \
+    {                                                                      \
+        if (ScriptModule)                                                  \
+        {                                                                  \
+            AActorScript* pScript = AActorScript::GetScript(ScriptModule); \
+            pScript->Function(ScriptModule);                               \
+        }                                                                  \
+    }
+
+#define CALL_SCRIPT_ARG(Function, ...)                                     \
     {                                                                      \
         if (ScriptModule)                                                  \
         {                                                                  \
@@ -215,28 +224,28 @@ void AActor::CallTick(float TimeStep)
 {
     Tick(TimeStep);
 
-    CALL_SCRIPT(Tick, TimeStep);
+    CALL_SCRIPT_ARG(Tick, TimeStep);
 }
 
 void AActor::CallTickPrePhysics(float TimeStep)
 {
     TickPrePhysics(TimeStep);
 
-    CALL_SCRIPT(TickPrePhysics, TimeStep);
+    CALL_SCRIPT_ARG(TickPrePhysics, TimeStep);
 }
 
 void AActor::CallTickPostPhysics(float TimeStep)
 {
     TickPostPhysics(TimeStep);
 
-    CALL_SCRIPT(TickPostPhysics, TimeStep);
+    CALL_SCRIPT_ARG(TickPostPhysics, TimeStep);
 }
 
 void AActor::CallLateUpdate(float TimeStep)
 {
     LateUpdate(TimeStep);
 
-    CALL_SCRIPT(LateUpdate, TimeStep);
+    CALL_SCRIPT_ARG(LateUpdate, TimeStep);
 }
 
 void AActor::CallDrawDebug(ADebugRenderer* Renderer)
@@ -257,14 +266,14 @@ void AActor::CallDrawDebug(ADebugRenderer* Renderer)
 
     DrawDebug(Renderer);
 
-    CALL_SCRIPT(DrawDebug, Renderer);
+    CALL_SCRIPT_ARG(DrawDebug, Renderer);
 }
 
 void AActor::ApplyDamage(SActorDamage const& Damage)
 {
     OnApplyDamage(Damage);
 
-    CALL_SCRIPT(OnApplyDamage, Damage);
+    CALL_SCRIPT_ARG(OnApplyDamage, Damage);
 }
 
 asILockableSharedBool* AActor::ScriptGetWeakRefFlag()

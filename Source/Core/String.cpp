@@ -32,7 +32,7 @@ SOFTWARE.
 
 const AString AString::NullStr;
 
-void AString::GrowCapacity(int _Capacity, bool _CopyOld)
+void AString::GrowCapacity(int _Capacity, bool bCopyOld)
 {
     HK_ASSERT(_Capacity > 0);
 
@@ -48,123 +48,123 @@ void AString::GrowCapacity(int _Capacity, bool _CopyOld)
     if (Data == Base)
     {
         Data = (char*)Allocator::Inst().Alloc(Capacity);
-        if (_CopyOld)
+        if (bCopyOld)
         {
             Platform::Memcpy(Data, Base, Size + 1);
         }
     }
     else
     {
-        Data = (char*)Allocator::Inst().Realloc(Data, Capacity, _CopyOld);
+        Data = (char*)Allocator::Inst().Realloc(Data, Capacity, bCopyOld);
     }
 }
 
 #if 0
-void AString::operator=( const char * _Str )
+void AString::operator=( const char * Str )
 {
     int diff;
     int i;
 
-    if ( !_Str ) {
+    if ( !Str ) {
         Clear();
         return;
     }
 
-    if ( _Str == Data ) {
+    if ( Str == Data ) {
         return; // copying same thing
     }
 
     // check if we're aliasing
-    if ( _Str >= Data && _Str <= Data + Size ) {
-        diff = _Str - Data;
-        HK_ASSERT( Platform::Strlen( _Str ) < Size );
-        for ( i = 0; _Str[ i ]; i++ ) {
-            Data[ i ] = _Str[ i ];
+    if ( Str >= Data && Str <= Data + Size ) {
+        diff = Str - Data;
+        HK_ASSERT( Platform::Strlen( Str ) < Size );
+        for ( i = 0; Str[ i ]; i++ ) {
+            Data[ i ] = Str[ i ];
         }
         Data[ i ] = '\0';
         Size -= diff;
         return;
     }
 
-    const int newLen = Platform::Strlen( _Str );
+    const int newLen = Platform::Strlen( Str );
     GrowCapacity( newLen+1, false );
-    Platform::Strcpy( Data, Capacity, _Str );
+    Platform::Strcpy( Data, Capacity, Str );
     Size = newLen;
 }
 #endif
 
-void AString::Concat(AStringView _Str)
+void AString::Concat(AStringView Rhs)
 {
-    const int newLen = Size + _Str.Length();
+    const int newLen = Size + Rhs.Length();
     GrowCapacity(newLen + 1, true);
-    Platform::Memcpy(&Data[Size], _Str.ToPtr(), _Str.Length());
+    Platform::Memcpy(&Data[Size], Rhs.ToPtr(), Rhs.Length());
     Size       = newLen;
     Data[Size] = '\0';
 }
 
-void AString::Concat(char _Char)
+void AString::Concat(char Char)
 {
-    if (_Char == 0)
+    if (Char == 0)
     {
         return;
     }
 
     const int newLen = Size + 1;
     GrowCapacity(newLen + 1, true);
-    Data[Size++] = _Char;
+    Data[Size++] = Char;
     Data[Size]   = '\0';
 }
 
-void AString::Insert(AStringView _Str, int _Index)
+void AString::Insert(AStringView Str, int Index)
 {
     int i;
-    if (_Index < 0 || _Index > Size || _Str.IsEmpty())
+    if (Index < 0 || Index > Size || Str.IsEmpty())
     {
         return;
     }
-    const int textLength = _Str.Length();
+    const int textLength = Str.Length();
     GrowCapacity(Size + textLength + 1, true);
-    for (i = Size; i >= _Index; i--)
+    for (i = Size; i >= Index; i--)
     {
         Data[i + textLength] = Data[i];
     }
     for (i = 0; i < textLength; i++)
     {
-        Data[_Index + i] = _Str[i];
+        Data[Index + i] = Str[i];
     }
     Size += textLength;
 }
 
-void AString::Insert(char _Char, int _Index)
+void AString::Insert(char Char, int Index)
 {
-    if (_Index < 0 || _Index > Size)
+    if (Index < 0 || Index > Size)
     {
         return;
     }
-    if (_Char == 0)
+    if (Char == 0)
     {
         return;
     }
 
     GrowCapacity(Size + 2, true);
-    for (int i = Size; i >= _Index; i--)
+    for (int i = Size; i >= Index; i--)
     {
         Data[i + 1] = Data[i];
     }
-    Data[_Index] = _Char;
+    Data[Index] = Char;
     Size++;
 }
 
-void AString::Replace(AStringView _Str, int _Index)
+void AString::Replace(AStringView Str, int Index)
 {
-    if (_Index < 0 || _Index > Size)
+    if (Index < 0 || Index > Size)
     {
         return;
     }
 
-    const int newLen = _Index + _Str.Length();
+    const int newLen = Index + Str.Length();
     GrowCapacity(newLen + 1, true);
-    Platform::Memcpy(&Data[_Index], _Str.ToPtr(), _Str.Length());
+    Platform::Memcpy(&Data[Index], Str.ToPtr(), Str.Length());
     Size       = newLen;
     Data[Size] = '\0';
 }
@@ -184,26 +184,26 @@ void AString::Replace(AStringView _Substring, AStringView _NewStr)
     }
 }
 
-void AString::Cut(int _Index, int _Count)
+void AString::Cut(int Index, int Count)
 {
     int i;
-    if (_Count <= 0)
+    if (Count <= 0)
     {
         return;
     }
-    if (_Index < 0)
+    if (Index < 0)
     {
         return;
     }
-    if (_Index >= Size)
+    if (Index >= Size)
     {
         return;
     }
-    for (i = _Index + _Count; i < Size; i++)
+    for (i = Index + Count; i < Size; i++)
     {
-        Data[i - _Count] = Data[i];
+        Data[i - Count] = Data[i];
     }
-    Size       = i - _Count;
+    Size       = i - Count;
     Data[Size] = 0;
 }
 
@@ -296,12 +296,12 @@ void AString::ToUpper()
 }
 
 
-int AStringView::Icmp(AStringView _Str) const
+int AStringView::Icmp(AStringView Str) const
 {
     const char* s1 = Data;
     const char* e1 = Data + Size;
-    const char* s2 = _Str.Data;
-    const char* e2 = _Str.Data + _Str.Size;
+    const char* s2 = Str.Data;
+    const char* e2 = Str.Data + Str.Size;
 
     char c1, c2;
 
@@ -329,12 +329,12 @@ int AStringView::Icmp(AStringView _Str) const
     return 0;
 }
 
-int AStringView::Cmp(AStringView _Str) const
+int AStringView::Cmp(AStringView Str) const
 {
     const char* s1 = Data;
     const char* e1 = Data + Size;
-    const char* s2 = _Str.Data;
-    const char* e2 = _Str.Data + _Str.Size;
+    const char* s2 = Str.Data;
+    const char* e2 = Str.Data + Str.Size;
 
     char c1, c2;
 
@@ -351,19 +351,19 @@ int AStringView::Cmp(AStringView _Str) const
     return 0;
 }
 
-int AStringView::IcmpN(AStringView _Str, int _Num) const
+int AStringView::IcmpN(AStringView Str, int Num) const
 {
-    HK_ASSERT(_Num >= 0);
+    HK_ASSERT(Num >= 0);
 
     const char* s1 = Data;
     const char* e1 = Data + Size;
-    const char* s2 = _Str.Data;
-    const char* e2 = _Str.Data + _Str.Size;
+    const char* s2 = Str.Data;
+    const char* e2 = Str.Data + Str.Size;
 
     char c1, c2;
 
     do {
-        if (!_Num--)
+        if (!Num--)
         {
             return 0;
         }
@@ -391,19 +391,19 @@ int AStringView::IcmpN(AStringView _Str, int _Num) const
     return 0;
 }
 
-int AStringView::CmpN(AStringView _Str, int _Num) const
+int AStringView::CmpN(AStringView Str, int Num) const
 {
-    HK_ASSERT(_Num >= 0);
+    HK_ASSERT(Num >= 0);
 
     const char* s1 = Data;
     const char* e1 = Data + Size;
-    const char* s2 = _Str.Data;
-    const char* e2 = _Str.Data + _Str.Size;
+    const char* s2 = Str.Data;
+    const char* e2 = Str.Data + Str.Size;
 
     char c1, c2;
 
     do {
-        if (!_Num--)
+        if (!Num--)
         {
             return 0;
         }

@@ -53,10 +53,10 @@ public:
     {
     }
 
-    HK_FORCEINLINE AStringView(const char* _Str, int _Length) :
-        Data(_Str), Size(_Length)
+    HK_FORCEINLINE AStringView(const char* RawStr, int RawStrLen) :
+        Data(RawStr), Size(RawStrLen)
     {
-        HK_ASSERT(_Length >= 0);
+        HK_ASSERT(RawStrLen >= 0);
     }
 
     HK_FORCEINLINE AStringView(AString const& Str);
@@ -70,10 +70,10 @@ public:
     friend bool operator==(AStringView Lhs, AStringView Rhs);
     friend bool operator!=(AStringView Lhs, AStringView Rhs);
 
-    HK_FORCEINLINE const char& operator[](const int _Index) const
+    HK_FORCEINLINE const char& operator[](const int Index) const
     {
-        HK_ASSERT_((_Index >= 0) && (_Index <= Size), "AStringView[]");
-        return Data[_Index];
+        HK_ASSERT_((Index >= 0) && (Index <= Size), "AStringView[]");
+        return Data[Index];
     }
 
     AString ToString() const;
@@ -109,12 +109,12 @@ public:
     }
 
     /** Find the character. Return character position in string or -1. */
-    int Contains(char _Ch) const
+    int Contains(char Char) const
     {
         const char* end = Data + Size;
         for (const char* s = Data; s < end; s++)
         {
-            if (*s == _Ch)
+            if (*s == Char)
             {
                 return s - Data;
             }
@@ -195,10 +195,10 @@ public:
     int Cmp(AStringView Rhs) const;
 
     /** Compare the strings (case insensitive) */
-    int IcmpN(AStringView Rhs, int _Num) const;
+    int IcmpN(AStringView Rhs, int Num) const;
 
     /** Compare the strings (case sensitive) */
-    int CmpN(AStringView Rhs, int _Num) const;
+    int CmpN(AStringView Rhs, int Num) const;
 
     /** Path utility. Return index of the path end. */
     int FindPath() const
@@ -258,18 +258,18 @@ public:
     }
 
     /** Path utility. Check file extension. */
-    bool CompareExt(AStringView _Ext, bool _CaseInsensitive = true) const
+    bool CompareExt(AStringView Ext, bool bCaseInsensitive = true) const
     {
-        if (_Ext.IsEmpty())
+        if (Ext.IsEmpty())
         {
             return false;
         }
         const char* p   = Data + Size;
-        const char* ext = _Ext.Data + _Ext.Size;
-        if (_CaseInsensitive)
+        const char* ext = Ext.Data + Ext.Size;
+        if (bCaseInsensitive)
         {
             char c1, c2;
-            while (--ext >= _Ext.Data)
+            while (--ext >= Ext.Data)
             {
 
                 if (--p < Data)
@@ -299,7 +299,7 @@ public:
         }
         else
         {
-            while (--ext >= _Ext.Data)
+            while (--ext >= Ext.Data)
             {
                 if (--p < Data || *p != *ext)
                 {
@@ -352,22 +352,22 @@ public:
         return AStringView(p, Data + Size - p);
     }
 
-    AStringView TruncateHead(int _Count) const
+    AStringView TruncateHead(int Count) const
     {
-        if (_Count > Size)
+        if (Count > Size)
         {
-            _Count = Size;
+            Count = Size;
         }
-        return AStringView(Data + _Count, Size - _Count);
+        return AStringView(Data + Count, Size - Count);
     }
 
-    AStringView TruncateTail(int _Count) const
+    AStringView TruncateTail(int Count) const
     {
-        if (_Count > Size)
+        if (Count > Size)
         {
-            _Count = Size;
+            Count = Size;
         }
-        return AStringView(Data, Size - _Count);
+        return AStringView(Data, Size - Count);
     }
 
     /** Get string hash */
@@ -382,10 +382,10 @@ public:
         return Core::HashCase(Data, Size);
     }
 
-    HK_FORCEINLINE void Write(IBinaryStream& _Stream) const
+    HK_FORCEINLINE void Write(IBinaryStream& Stream) const
     {
-        _Stream.WriteUInt32(Size);
-        _Stream.WriteBuffer(Data, Size);
+        Stream.WriteUInt32(Size);
+        Stream.WriteBuffer(Data, Size);
     }
 
 private:
@@ -411,22 +411,24 @@ public:
     AString(AString const& Rhs);
     AString(AString&& Rhs) noexcept;
     AString(AStringView Rhs);
-    AString(const char* _Begin, const char* _End);
+    AString(const char* RawStr);
+    AString(const char* RawStrBegin, const char* RawStrEnd);
     ~AString();
 
-    const char& operator[](const int _Index) const;
-    char&       operator[](const int _Index);
+    const char& operator[](const int Index) const;
+    char&       operator[](const int Index);
 
     AString& operator=(AString const& Rhs);
     AString& operator=(AString&& Rhs) noexcept;
     AString& operator=(AStringView Rhs);
+    AString& operator=(const char* RawStr);
 
     friend AString operator+(AStringView Lhs, AStringView Rhs);
-    friend AString operator+(AStringView _Str, char _Char);
-    friend AString operator+(char _Char, AStringView _Str);
+    friend AString operator+(AStringView Lhs, char Char);
+    friend AString operator+(char Char, AStringView Rhs);
 
     AString& operator+=(AStringView Rhs);
-    AString& operator+=(char _Char);
+    AString& operator+=(char Char);
 
     /** Clear string but not free a memory */
     void Clear();
@@ -435,7 +437,7 @@ public:
     void Free();
 
     /** Set a new length for the string */
-    void Resize(int _Length);
+    void Resize(int NewLength);
 
     /** Return is string empty or not */
     bool IsEmpty() const;
@@ -459,45 +461,45 @@ public:
     void Concat(AStringView Rhs);
 
     /** Append the character */
-    void Concat(char _Char);
+    void Concat(char Char);
 
     /** Insert the string at specified index */
-    void Insert(AStringView _Str, int _Index);
+    void Insert(AStringView Str, int Index);
 
     /** Insert the character at specified index */
-    void Insert(char _Char, int _Index);
+    void Insert(char Char, int Index);
 
     /** Replace the string at specified index */
-    void Replace(AStringView _Str, int _Index);
+    void Replace(AStringView Str, int Index);
 
     /** Replace all substrings with a new string */
     void Replace(AStringView _Substring, AStringView _NewStr);
 
     /** Cut substring at specified index */
-    void Cut(int _Index, int _Count);
+    void Cut(int Index, int Count);
 
-    AStringView TruncateHead(int _Count) const
+    AStringView TruncateHead(int Count) const
     {
-        if (_Count > Size)
+        if (Count > Size)
         {
-            _Count = Size;
+            Count = Size;
         }
-        return AStringView(Data + _Count, Size - _Count);
+        return AStringView(Data + Count, Size - Count);
     }
 
-    AStringView TruncateTail(int _Count) const
+    AStringView TruncateTail(int Count) const
     {
-        if (_Count > Size)
+        if (Count > Size)
         {
-            _Count = Size;
+            Count = Size;
         }
-        return AStringView(Data, Size - _Count);
+        return AStringView(Data, Size - Count);
     }
 
     /** Find the character. Return character position in string or -1. */
-    HK_FORCEINLINE int Contains(char _Ch) const
+    HK_FORCEINLINE int Contains(char Char) const
     {
-        return AStringView(Data, Size).Contains(_Ch);
+        return AStringView(Data, Size).Contains(Char);
     }
 
     /** Find the substring. Return substring position in string or -1. */
@@ -547,15 +549,15 @@ public:
     }
 
     /** Compare the strings (case insensitive) */
-    HK_FORCEINLINE int IcmpN(AStringView Rhs, int _Num) const
+    HK_FORCEINLINE int IcmpN(AStringView Rhs, int Num) const
     {
-        return AStringView(Data, Size).IcmpN(Rhs, _Num);
+        return AStringView(Data, Size).IcmpN(Rhs, Num);
     }
 
     /** Compare the strings (case sensitive) */
-    HK_FORCEINLINE int CmpN(AStringView Rhs, int _Num) const
+    HK_FORCEINLINE int CmpN(AStringView Rhs, int Num) const
     {
-        return AStringView(Data, Size).CmpN(Rhs, _Num);
+        return AStringView(Data, Size).CmpN(Rhs, Num);
     }
 
     /** Skip trailing zeros for the numbers. */
@@ -603,16 +605,16 @@ public:
     }
 
     /** Path utility. Check file extension. */
-    HK_FORCEINLINE bool CompareExt(AStringView _Ext, bool _CaseInsensitive = true) const
+    HK_FORCEINLINE bool CompareExt(AStringView Ext, bool bCaseInsensitive = true) const
     {
-        return AStringView(Data, Size).CompareExt(_Ext, _CaseInsensitive);
+        return AStringView(Data, Size).CompareExt(Ext, bCaseInsensitive);
     }
 
     /** Path utility. Set file extension if not exists. */
-    void UpdateExt(AStringView _Extension);
+    void UpdateExt(AStringView Extension);
 
     /** Path utility. Add or replace existing file extension. */
-    void ReplaceExt(AStringView _Extension);
+    void ReplaceExt(AStringView Extension);
 
     /** Path utility. Return index where the extension begins. */
     HK_FORCEINLINE int FindExt() const
@@ -650,21 +652,21 @@ public:
         return Core::HashCase(Data, Size);
     }
 
-    void FromFile(IBinaryStream& _Stream);
+    void FromFile(IBinaryStream& Stream);
 
-    HK_FORCEINLINE void Write(IBinaryStream& _Stream) const
+    HK_FORCEINLINE void Write(IBinaryStream& Stream) const
     {
-        AStringView(Data, Size).Write(_Stream);
+        AStringView(Data, Size).Write(Stream);
     }
 
-    void Read(IBinaryStream& _Stream);
+    void Read(IBinaryStream& Stream);
 
     static const char* NullCString() { return ""; }
 
     static AString const& NullString() { return NullStr; }
 
 private:
-    void GrowCapacity(int _Capacity, bool _CopyOld);
+    void GrowCapacity(int _Capacity, bool bCopyOld);
 
 protected:
     char  Base[BASE_CAPACITY];
@@ -725,12 +727,22 @@ HK_FORCEINLINE AString::AString(AStringView Rhs) :
     Size         = newLen;
 }
 
-HK_FORCEINLINE AString::AString(const char* _Begin, const char* _End) :
+HK_FORCEINLINE AString::AString(const char* RawStr) :
     AString()
 {
-    const int newLen = _End - _Begin;
+    const int newLen = Platform::Strlen(RawStr);
     GrowCapacity(newLen + 1, false);
-    Platform::Memcpy(Data, _Begin, newLen);
+    Platform::Memcpy(Data, RawStr, newLen);
+    Data[newLen] = 0;
+    Size         = newLen;
+}
+
+HK_FORCEINLINE AString::AString(const char* RawStrBegin, const char* RawStrEnd) :
+    AString()
+{
+    const int newLen = RawStrEnd - RawStrBegin;
+    GrowCapacity(newLen + 1, false);
+    Platform::Memcpy(Data, RawStrBegin, newLen);
     Data[newLen] = 0;
     Size         = newLen;
 }
@@ -743,16 +755,16 @@ HK_FORCEINLINE AString::~AString()
     }
 }
 
-HK_FORCEINLINE const char& AString::operator[](const int _Index) const
+HK_FORCEINLINE const char& AString::operator[](const int Index) const
 {
-    HK_ASSERT_((_Index >= 0) && (_Index <= Size), "AString[]");
-    return Data[_Index];
+    HK_ASSERT_((Index >= 0) && (Index <= Size), "AString[]");
+    return Data[Index];
 }
 
-HK_FORCEINLINE char& AString::operator[](const int _Index)
+HK_FORCEINLINE char& AString::operator[](const int Index)
 {
-    HK_ASSERT_((_Index >= 0) && (_Index <= Size), "AString[]");
-    return Data[_Index];
+    HK_ASSERT_((Index >= 0) && (Index <= Size), "AString[]");
+    return Data[Index];
 }
 
 HK_FORCEINLINE AString& AString::operator=(AString const& Rhs)
@@ -802,6 +814,16 @@ HK_FORCEINLINE AString& AString::operator=(AStringView Rhs)
     return *this;
 }
 
+HK_FORCEINLINE AString& AString::operator=(const char* RawStr)
+{
+    const int newLen = Platform::Strlen(RawStr);
+    GrowCapacity(newLen + 1, false);
+    Platform::Memcpy(Data, RawStr, newLen);
+    Data[newLen] = 0;
+    Size         = newLen;
+    return *this;
+}
+
 HK_FORCEINLINE void AString::Clear()
 {
     Size    = 0;
@@ -827,29 +849,29 @@ HK_FORCEINLINE AString operator+(AStringView Lhs, AStringView Rhs)
     return result;
 }
 
-HK_FORCEINLINE AString operator+(AStringView _Str, char _Char)
+HK_FORCEINLINE AString operator+(AStringView Lhs, char Char)
 {
-    AString result(_Str);
-    result.Concat(_Char);
+    AString result(Lhs);
+    result.Concat(Char);
     return result;
 }
 
-HK_FORCEINLINE AString operator+(char _Char, AStringView _Str)
+HK_FORCEINLINE AString operator+(char Char, AStringView Rhs)
 {
-    AString result(_Str);
-    result.Concat(_Char);
+    AString result(Rhs);
+    result.Concat(Char);
     return result;
 }
 
-HK_FORCEINLINE AString& AString::operator+=(AStringView _Str)
+HK_FORCEINLINE AString& AString::operator+=(AStringView Rhs)
 {
-    Concat(_Str);
+    Concat(Rhs);
     return *this;
 }
 
-HK_FORCEINLINE AString& AString::operator+=(char _Char)
+HK_FORCEINLINE AString& AString::operator+=(char Char)
 {
-    Concat(_Char);
+    Concat(Char);
     return *this;
 }
 
@@ -882,14 +904,14 @@ HK_FORCEINLINE char* AString::ToPtr() const
     return Data;
 }
 
-HK_FORCEINLINE void AString::Resize(int _Length)
+HK_FORCEINLINE void AString::Resize(int NewLength)
 {
-    GrowCapacity(_Length + 1, true);
-    if (_Length > Size)
+    GrowCapacity(NewLength + 1, true);
+    if (NewLength > Size)
     {
-        Platform::Memset(&Data[Size], ' ', _Length - Size);
+        Platform::Memset(&Data[Size], ' ', NewLength - Size);
     }
-    Size       = _Length;
+    Size       = NewLength;
     Data[Size] = 0;
 }
 
@@ -898,28 +920,28 @@ HK_FORCEINLINE void AString::FixSeparator()
     Platform::FixSeparator(Data);
 }
 
-HK_FORCEINLINE void AString::ReplaceExt(AStringView _Extension)
+HK_FORCEINLINE void AString::ReplaceExt(AStringView Extension)
 {
     ClipExt();
-    Concat(_Extension);
+    Concat(Extension);
 }
 
-HK_FORCEINLINE void AString::FromFile(IBinaryStream& _Stream)
+HK_FORCEINLINE void AString::FromFile(IBinaryStream& Stream)
 {
-    _Stream.SeekEnd(0);
-    long fileSz = _Stream.Tell();
-    _Stream.SeekSet(0);
+    Stream.SeekEnd(0);
+    long fileSz = Stream.Tell();
+    Stream.SeekSet(0);
     GrowCapacity(fileSz + 1, false);
-    _Stream.ReadBuffer(Data, fileSz);
+    Stream.ReadBuffer(Data, fileSz);
     Data[fileSz] = 0;
     Size         = fileSz;
 }
 
-HK_FORCEINLINE void AString::Read(IBinaryStream& _Stream)
+HK_FORCEINLINE void AString::Read(IBinaryStream& Stream)
 {
-    int len = _Stream.ReadUInt32();
+    int len = Stream.ReadUInt32();
     GrowCapacity(len + 1, false);
-    _Stream.ReadBuffer(Data, len);
+    Stream.ReadBuffer(Data, len);
     Data[len] = 0;
     Size      = len;
 }
@@ -975,13 +997,13 @@ struct TSprintfBuffer
 {
     char Data[Size];
 
-    char* Sprintf(const char* _Format, ...)
+    char* Sprintf(const char* Format, ...)
     {
         static_assert(Size > 0, "Invalid buffer size");
-        HK_ASSERT(_Format);
+        HK_ASSERT(Format);
         va_list VaList;
-        va_start(VaList, _Format);
-        Platform::VSprintf(Data, Size, _Format, VaList);
+        va_start(VaList, Format);
+        Platform::VSprintf(Data, Size, Format, VaList);
         va_end(VaList);
         return Data;
     }

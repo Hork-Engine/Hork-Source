@@ -45,6 +45,7 @@ typedef unsigned int SNavPolyRef;
 
 class AWorld;
 class APhysicalBody;
+class ATerrainComponent;
 
 struct SNavPointRef
 {

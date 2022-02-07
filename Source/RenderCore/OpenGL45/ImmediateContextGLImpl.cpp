@@ -322,8 +322,8 @@ AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                 
 AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, AWindowPoolGL::SWindowGL Window, bool bMainContext) :
     IImmediateContext(pDevice),
     Window(Window),
-    bMainContext(bMainContext),
-    pContextGL(Window.GLContext)
+    pContextGL(Window.GLContext),
+    bMainContext(bMainContext)
 {
     SScopedContextGL scopedContext(this);
 

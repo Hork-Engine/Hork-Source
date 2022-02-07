@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "../Thread.h"
 #include <malloc.h>
+#include <cstring> // std::memcpy
 
 /*
 

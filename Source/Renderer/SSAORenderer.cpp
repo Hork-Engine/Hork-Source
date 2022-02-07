@@ -191,25 +191,25 @@ void ASSAORenderer::ResizeAO(int Width, int Height)
 
 void ASSAORenderer::AddDeinterleaveDepthPass(AFrameGraph& FrameGraph, FGTextureProxy* LinearDepth, FGTextureProxy** ppDeinterleaveDepthArray)
 {
-    static const char * textureViewName[] =
-    {
-            "Deinterleave Depth View 0",
-            "Deinterleave Depth View 1",
-            "Deinterleave Depth View 2",
-            "Deinterleave Depth View 3",
-            "Deinterleave Depth View 4",
-            "Deinterleave Depth View 5",
-            "Deinterleave Depth View 6",
-            "Deinterleave Depth View 7",
-            "Deinterleave Depth View 8",
-            "Deinterleave Depth View 9",
-            "Deinterleave Depth View 10",
-            "Deinterleave Depth View 11",
-            "Deinterleave Depth View 12",
-            "Deinterleave Depth View 13",
-            "Deinterleave Depth View 14",
-            "Deinterleave Depth View 15"
-    };
+//    static const char * textureViewName[] =
+//    {
+//            "Deinterleave Depth View 0",
+//            "Deinterleave Depth View 1",
+//            "Deinterleave Depth View 2",
+//            "Deinterleave Depth View 3",
+//            "Deinterleave Depth View 4",
+//            "Deinterleave Depth View 5",
+//            "Deinterleave Depth View 6",
+//            "Deinterleave Depth View 7",
+//            "Deinterleave Depth View 8",
+//            "Deinterleave Depth View 9",
+//            "Deinterleave Depth View 10",
+//            "Deinterleave Depth View 11",
+//            "Deinterleave Depth View 12",
+//            "Deinterleave Depth View 13",
+//            "Deinterleave Depth View 14",
+//            "Deinterleave Depth View 15"
+//    };
 
     FGTextureProxy* SSAODeinterleaveDepthArray_R = FrameGraph.AddExternalResource<FGTextureProxy>("SSAODeinterleaveDepthArray", SSAODeinterleaveDepthArray);
 

@@ -154,7 +154,15 @@ void* SysRealloc(void* _Bytes, size_t _SizeInBytes, int _Alignment)
 #ifdef HK_COMPILER_MSVC
     ptr = _aligned_realloc(_Bytes, _SizeInBytes, _Alignment);
 #else
-    ptr = aligned_realloc(_Bytes, _SizeInBytes, _Alignment);
+    // Need a workaround here :(
+    auto oldSize = malloc_usable_size(_Bytes);
+    if (oldSize >= _SizeInBytes && IsAlignedPtr(_Bytes, _Alignment))
+        return _Bytes;
+
+    ptr = aligned_alloc(_Alignment, _SizeInBytes);
+    if (ptr)
+        Platform::Memcpy(ptr, _Bytes, oldSize);
+    free(_Bytes);
 #endif
     if (!ptr)
     {

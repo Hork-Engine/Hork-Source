@@ -52,6 +52,8 @@ enum
 
 struct SEntryDecl;
 
+class AResourceManager;
+
 class AEngine : public IEventListener
 {
     HK_FORBID_COPY(AEngine)

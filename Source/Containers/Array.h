@@ -48,7 +48,7 @@ public:
 
     void Swap(int _Index1, int _Index2)
     {
-        std::swap((*this)[_Index1], (*this)[_Index2])
+        std::swap((*this)[_Index1], (*this)[_Index2]);
     }
 
     void Reverse()

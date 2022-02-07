@@ -35,21 +35,6 @@ SOFTWARE.
 #include <unordered_map>
 #include <unordered_set>
 
-template <typename T>
-struct SUnorderedMapHasher
-{
-    std::size_t operator()(T const& Key) const
-    {
-        return HashTraits::Hash(Key);
-    }
-};
-
-template <typename Key, typename Value>
-using TStdHashMap = std::unordered_map<Key, Value, SUnorderedMapHasher<Key>>;
-
-template <typename Key>
-using TStdHashSet = std::unordered_set<Key, SUnorderedMapHasher<Key>>;
-
 namespace HashTraits
 {
 
@@ -65,3 +50,19 @@ HK_FORCEINLINE std::size_t Hash(T const& Key)
 }
 
 } // namespace HashTraits
+
+template <typename T>
+struct SUnorderedMapHasher
+{
+    std::size_t operator()(T const& Key) const
+    {
+        return HashTraits::Hash(Key);
+    }
+};
+
+template <typename Key, typename Value>
+using TStdHashMap = std::unordered_map<Key, Value, SUnorderedMapHasher<Key>>;
+
+template <typename Key>
+using TStdHashSet = std::unordered_set<Key, SUnorderedMapHasher<Key>>;
+

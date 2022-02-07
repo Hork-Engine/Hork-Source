@@ -530,8 +530,6 @@ void ASkinnedComponent::UpdateBounds()
     UpdateWorldBounds();
 }
 
-static Float3x4 JointsBufferData[ASkeleton::MAX_JOINTS]; // TODO: thread_local for multithreaded update
-
 void ASkinnedComponent::GetSkeletonHandle(size_t& _SkeletonOffset, size_t& _SkeletonOffsetMB, size_t& _SkeletonSize)
 {
     _SkeletonOffset   = SkeletonOffset;

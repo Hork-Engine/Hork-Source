@@ -123,9 +123,6 @@ void AIrradianceGenerator::GenerateArray( int _CubemapsCount, ITexture ** _Cubem
 
     resourceTbl->BindBuffer( 0, ConstantBuffer );
 
-    SViewport viewport = {};
-    viewport.MaxDepth  = 1;
-
     ARenderPass & pass = frameGraph.AddTask< ARenderPass >( "Irradiance gen pass" );
 
     pass.SetRenderArea( size, size );
@@ -176,9 +173,6 @@ void AIrradianceGenerator::Generate( ITexture * _SourceCubemap, TRef< RenderCore
     GDevice->CreateResourceTable( &resourceTbl );
 
     resourceTbl->BindBuffer( 0, ConstantBuffer );
-
-    SViewport viewport = {};
-    viewport.MaxDepth  = 1;
 
     ARenderPass & pass = frameGraph.AddTask< ARenderPass >( "Irradiance gen pass" );
 

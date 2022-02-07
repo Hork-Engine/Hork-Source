@@ -123,9 +123,6 @@ void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITextur
 
     resourceTbl->BindBuffer( 0, ConstantBuffer );
 
-    SViewport viewport = {};
-    viewport.MaxDepth  = 1;
-
     int lodWidth = size;
 
     TStdVector< AString > strs( _MaxLod + 1 );
@@ -195,9 +192,6 @@ void AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap, TRef<
     resourceTbl->BindBuffer( 0, ConstantBuffer );
 
     ConstantBufferData.Roughness.Y = 0; // Offset for cubemap array layer
-
-    SViewport viewport = {};
-    viewport.MaxDepth  = 1;
 
     int lodWidth = size;
 

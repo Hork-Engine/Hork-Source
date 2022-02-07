@@ -98,6 +98,11 @@ struct ImVec4
 //   Do NOT use this class as a std::vector replacement in your own code! Many of the structures used by dear imgui can be safely initialized by a zero-memset.
 //-----------------------------------------------------------------------------
 
+#ifdef HK_COMPILER_GCC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+
 template<typename T>
 struct ImVector
 {
@@ -155,6 +160,10 @@ struct ImVector
     inline bool         find_erase_unsorted( const T& v ) { const T* it = find( v ); if ( it < Data + Size ) { erase_unsorted( it ); return true; } return false; }
     inline int          index_from_ptr( const T* it ) const { HK_ASSERT( it >= Data && it < Data + Size ); const ptrdiff_t off = it - Data; return (int)off; }
 };
+
+#ifdef HK_COMPILER_GCC
+#pragma GCC diagnostic pop
+#endif
 
 typedef int ImDrawListFlags;        // -> enum ImDrawListFlags_      // Flags: for ImDrawList
 

@@ -104,6 +104,8 @@ struct SCharEvent
 class IEventListener
 {
 public:
+    virtual ~IEventListener() {}
+
     virtual void OnKeyEvent(struct SKeyEvent const& _Event, double _TimeStamp) = 0;
 
     virtual void OnMouseButtonEvent(struct SMouseButtonEvent const& _Event, double _TimeStamp) = 0;

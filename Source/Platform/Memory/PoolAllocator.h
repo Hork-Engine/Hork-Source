@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#include "Memory.h"
 #include "../Logger.h"
 
 template <typename T, int MAX_BLOCK_SIZE = 1024, int ALIGNMENT = 16>

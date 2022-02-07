@@ -53,7 +53,7 @@ public:
 
         if (!block)
         {
-            size_t blockSize      = Math::Max<size_t>(_SizeInBytes, MIN_BLOCK_SIZE);
+            size_t blockSize      = std::max<size_t>(_SizeInBytes, MIN_BLOCK_SIZE);
             block                 = (SBlock*)GHeapMemory.Alloc(blockSize + sizeof(SBlock), 16);
             block->TotalAllocated = 0;
             block->Size           = blockSize;

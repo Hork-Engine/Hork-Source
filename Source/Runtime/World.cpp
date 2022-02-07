@@ -32,7 +32,7 @@ SOFTWARE.
 #include "Timer.h"
 #include "SkinnedComponent.h"
 #include "PointLightComponent.h"
-#include "vsd.h"
+#include "VSD.h"
 #include "Engine.h"
 
 #include <Platform/Logger.h>

@@ -32,8 +32,6 @@ SOFTWARE.
 
 #include <Platform/Memory/Memory.h>
 
-struct SWeakRefCounter;
-
 struct SZoneAllocator
 {
     void* Allocate(std::size_t _SizeInBytes)
@@ -45,6 +43,12 @@ struct SZoneAllocator
     {
         GZoneMemory.Free(_Bytes);
     }
+};
+
+struct SWeakRefCounter
+{
+    void* Object;
+    int   RefCount;
 };
 
 template <typename TAllocator>
@@ -332,12 +336,6 @@ TWeakRef
 Weak pointer
 
 */
-
-struct SWeakRefCounter
-{
-    void* Object;
-    int   RefCount;
-};
 
 class AWeakReference
 {

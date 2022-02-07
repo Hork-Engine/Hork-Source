@@ -43,11 +43,13 @@ enum FG_RENDER_TASK_PROXY_TYPE : uint8_t
     FG_RENDER_TASK_PROXY_TYPE_CUSTOM
 };
 
+class AFrameGraph;
+
 class FGRenderTaskBase
 {
 public:
     explicit FGRenderTaskBase(AFrameGraph* pFrameGraph, const char* Name, FG_RENDER_TASK_PROXY_TYPE ProxyType) :
-        pFrameGraph(pFrameGraph), Name(Name), ProxyType(ProxyType), ResourceRefs(0), bCulled(false)
+        pFrameGraph(pFrameGraph), Name(Name), ResourceRefs(0), bCulled(false), ProxyType(ProxyType)
     {
     }
 

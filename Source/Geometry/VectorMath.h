@@ -160,129 +160,6 @@ TVector3<T> ProjectVector(TVector3<T> const& vector, TVector3<T> const& normal)
     return vector - normal * Dot(vector, normal);
 }
 
-template <typename T>
-constexpr TVector2<T> Lerp(TVector2<T> const& s, TVector2<T> const& e, T f)
-{
-    return s + f * (e - s);
-}
-
-template <typename T>
-constexpr TVector3<T> Lerp(TVector3<T> const& s, TVector3<T> const& e, T f)
-{
-    return s + f * (e - s);
-}
-
-template <typename T>
-constexpr TVector4<T> Lerp(TVector4<T> const& s, TVector4<T> const& e, T f)
-{
-    return s + f * (e - s);
-}
-
-template <typename T>
-constexpr T Bilerp(T _A, T _B, T _C, T _D, TVector2<T> const& lerp)
-{
-    return _A * (T(1) - lerp.X) * (T(1) - lerp.Y) + _B * lerp.X * (T(1) - lerp.Y) + _C * (T(1) - lerp.X) * lerp.Y + _D * lerp.X * lerp.Y;
-}
-
-template <typename T>
-constexpr TVector2<T> Bilerp(TVector2<T> const& _A, TVector2<T> const& _B, TVector2<T> const& _C, TVector2<T> const& _D, TVector2<T> const& lerp)
-{
-    return _A * (T(1) - lerp.X) * (T(1) - lerp.Y) + _B * lerp.X * (T(1) - lerp.Y) + _C * (T(1) - lerp.X) * lerp.Y + _D * lerp.X * lerp.Y;
-}
-
-template <typename T>
-constexpr TVector3<T> Bilerp(TVector3<T> const& _A, TVector3<T> const& _B, TVector3<T> const& _C, TVector3<T> const& _D, TVector2<T> const& lerp)
-{
-    return _A * (T(1) - lerp.X) * (T(1) - lerp.Y) + _B * lerp.X * (T(1) - lerp.Y) + _C * (T(1) - lerp.X) * lerp.Y + _D * lerp.X * lerp.Y;
-}
-
-template <typename T>
-constexpr TVector4<T> Bilerp(TVector4<T> const& _A, TVector4<T> const& _B, TVector4<T> const& _C, TVector4<T> const& _D, TVector2<T> const& lerp)
-{
-    return _A * (T(1) - lerp.X) * (T(1) - lerp.Y) + _B * lerp.X * (T(1) - lerp.Y) + _C * (T(1) - lerp.X) * lerp.Y + _D * lerp.X * lerp.Y;
-}
-
-template <typename T>
-constexpr TVector2<T> Step(TVector2<T> const& vec, T edge)
-{
-    return TVector2<T>(vec.X < edge ? T(0) : T(1), vec.Y < edge ? T(0) : T(1));
-}
-
-template <typename T>
-constexpr TVector2<T> Step(TVector2<T> const& vec, TVector2<T> const& edge)
-{
-    return TVector2<T>(vec.X < edge.X ? T(0) : T(1), vec.Y < edge.Y ? T(0) : T(1));
-}
-
-template <typename T>
-HK_FORCEINLINE TVector2<T> SmoothStep(TVector2<T> const& vec, T edge0, T edge1)
-{
-    const T           denom = T(1) / (edge1 - edge0);
-    const TVector2<T> t     = Saturate((vec - edge0) * denom);
-    return t * t * (T(-2) * t + T(3));
-}
-
-template <typename T>
-HK_FORCEINLINE TVector2<T> SmoothStep(TVector2<T> const& vec, TVector2<T> const& edge0, TVector2<T> const& edge1)
-{
-    const TVector2<T> t = Saturate((vec - edge0) / (edge1 - edge0));
-    return t * t * (T(-2) * t + T(3));
-}
-
-template <typename T>
-constexpr TVector3<T> Step(TVector3<T> const& vec, T edge)
-{
-    return TVector3<T>(vec.X < edge ? T(0) : T(1), vec.Y < edge ? T(0) : T(1), vec.Z < edge ? T(0) : T(1));
-}
-
-template <typename T>
-constexpr TVector3<T> Step(TVector3<T> const& vec, TVector3<T> const& edge)
-{
-    return TVector3<T>(vec.X < edge.X ? T(0) : T(1), vec.Y < edge.Y ? T(0) : T(1), vec.Z < edge.Z ? T(0) : T(1));
-}
-
-template <typename T>
-HK_FORCEINLINE TVector3<T> SmoothStep(TVector3<T> const& vec, T edge0, T edge1)
-{
-    const T           denom = T(1) / (edge1 - edge0);
-    const TVector3<T> t     = Saturate((vec - edge0) * denom);
-    return t * t * (T(-2) * t + T(3));
-}
-
-template <typename T>
-HK_FORCEINLINE TVector3<T> SmoothStep(TVector3<T> const& vec, TVector3<T> const& edge0, TVector3<T> const& edge1)
-{
-    const TVector3<T> t = Saturate((vec - edge0) / (edge1 - edge0));
-    return t * t * (T(-2) * t + T(3));
-}
-
-template <typename T>
-constexpr TVector4<T> Step(TVector4<T> const& vec, T edge)
-{
-    return TVector4<T>(vec.X < edge ? T(0) : T(1), vec.Y < edge ? T(0) : T(1), vec.Z < edge ? T(0) : T(1), vec.W < edge ? T(0) : T(1));
-}
-
-template <typename T>
-constexpr TVector4<T> Step(TVector4<T> const& vec, TVector4<T> const& edge)
-{
-    return TVector4<T>(vec.X < edge.X ? T(0) : T(1), vec.Y < edge.Y ? T(0) : T(1), vec.Z < edge.Z ? T(0) : T(1), vec.W < edge.W ? T(0) : T(1));
-}
-
-template <typename T>
-HK_FORCEINLINE TVector4<T> SmoothStep(TVector4<T> const& vec, T edge0, T edge1)
-{
-    const T           denom = T(1) / (edge1 - edge0);
-    const TVector4<T> t     = Saturate((vec - edge0) * denom);
-    return t * t * (T(-2) * t + T(3));
-}
-
-template <typename T>
-HK_FORCEINLINE TVector4<T> SmoothStep(TVector4<T> const& vec, TVector4<T> const& edge0, TVector4<T> const& edge1)
-{
-    const TVector4<T> t = Saturate((vec - edge0) / (edge1 - edge0));
-    return t * t * (T(-2) * t + T(3));
-}
-
 } // namespace Math
 
 template <typename T, typename = TStdEnableIf<Math::IsReal<T>()>>
@@ -2095,6 +1972,129 @@ HK_FORCEINLINE TVector4<double> Saturate(TVector4<double> const& val)
     _mm_storer_pd(result2, _mm_min_pd(_mm_max_pd(_mm_set_pd(val.Z, val.W), _mm_setzero_pd()), _mm_set_pd(1.0, 1.0)));
 
     return TVector4<double>(result1[0], result1[1], result2[0], result2[1]);
+}
+
+template <typename T>
+constexpr TVector2<T> Lerp(TVector2<T> const& s, TVector2<T> const& e, T f)
+{
+    return s + f * (e - s);
+}
+
+template <typename T>
+constexpr TVector3<T> Lerp(TVector3<T> const& s, TVector3<T> const& e, T f)
+{
+    return s + f * (e - s);
+}
+
+template <typename T>
+constexpr TVector4<T> Lerp(TVector4<T> const& s, TVector4<T> const& e, T f)
+{
+    return s + f * (e - s);
+}
+
+template <typename T>
+constexpr T Bilerp(T _A, T _B, T _C, T _D, TVector2<T> const& lerp)
+{
+    return _A * (T(1) - lerp.X) * (T(1) - lerp.Y) + _B * lerp.X * (T(1) - lerp.Y) + _C * (T(1) - lerp.X) * lerp.Y + _D * lerp.X * lerp.Y;
+}
+
+template <typename T>
+constexpr TVector2<T> Bilerp(TVector2<T> const& _A, TVector2<T> const& _B, TVector2<T> const& _C, TVector2<T> const& _D, TVector2<T> const& lerp)
+{
+    return _A * (T(1) - lerp.X) * (T(1) - lerp.Y) + _B * lerp.X * (T(1) - lerp.Y) + _C * (T(1) - lerp.X) * lerp.Y + _D * lerp.X * lerp.Y;
+}
+
+template <typename T>
+constexpr TVector3<T> Bilerp(TVector3<T> const& _A, TVector3<T> const& _B, TVector3<T> const& _C, TVector3<T> const& _D, TVector2<T> const& lerp)
+{
+    return _A * (T(1) - lerp.X) * (T(1) - lerp.Y) + _B * lerp.X * (T(1) - lerp.Y) + _C * (T(1) - lerp.X) * lerp.Y + _D * lerp.X * lerp.Y;
+}
+
+template <typename T>
+constexpr TVector4<T> Bilerp(TVector4<T> const& _A, TVector4<T> const& _B, TVector4<T> const& _C, TVector4<T> const& _D, TVector2<T> const& lerp)
+{
+    return _A * (T(1) - lerp.X) * (T(1) - lerp.Y) + _B * lerp.X * (T(1) - lerp.Y) + _C * (T(1) - lerp.X) * lerp.Y + _D * lerp.X * lerp.Y;
+}
+
+template <typename T>
+constexpr TVector2<T> Step(TVector2<T> const& vec, T edge)
+{
+    return TVector2<T>(vec.X < edge ? T(0) : T(1), vec.Y < edge ? T(0) : T(1));
+}
+
+template <typename T>
+constexpr TVector2<T> Step(TVector2<T> const& vec, TVector2<T> const& edge)
+{
+    return TVector2<T>(vec.X < edge.X ? T(0) : T(1), vec.Y < edge.Y ? T(0) : T(1));
+}
+
+template <typename T>
+HK_FORCEINLINE TVector2<T> SmoothStep(TVector2<T> const& vec, T edge0, T edge1)
+{
+    const T           denom = T(1) / (edge1 - edge0);
+    const TVector2<T> t     = Saturate((vec - edge0) * denom);
+    return t * t * (T(-2) * t + T(3));
+}
+
+template <typename T>
+HK_FORCEINLINE TVector2<T> SmoothStep(TVector2<T> const& vec, TVector2<T> const& edge0, TVector2<T> const& edge1)
+{
+    const TVector2<T> t = Saturate((vec - edge0) / (edge1 - edge0));
+    return t * t * (T(-2) * t + T(3));
+}
+
+template <typename T>
+constexpr TVector3<T> Step(TVector3<T> const& vec, T edge)
+{
+    return TVector3<T>(vec.X < edge ? T(0) : T(1), vec.Y < edge ? T(0) : T(1), vec.Z < edge ? T(0) : T(1));
+}
+
+template <typename T>
+constexpr TVector3<T> Step(TVector3<T> const& vec, TVector3<T> const& edge)
+{
+    return TVector3<T>(vec.X < edge.X ? T(0) : T(1), vec.Y < edge.Y ? T(0) : T(1), vec.Z < edge.Z ? T(0) : T(1));
+}
+
+template <typename T>
+HK_FORCEINLINE TVector3<T> SmoothStep(TVector3<T> const& vec, T edge0, T edge1)
+{
+    const T           denom = T(1) / (edge1 - edge0);
+    const TVector3<T> t     = Saturate((vec - edge0) * denom);
+    return t * t * (T(-2) * t + T(3));
+}
+
+template <typename T>
+HK_FORCEINLINE TVector3<T> SmoothStep(TVector3<T> const& vec, TVector3<T> const& edge0, TVector3<T> const& edge1)
+{
+    const TVector3<T> t = Saturate((vec - edge0) / (edge1 - edge0));
+    return t * t * (T(-2) * t + T(3));
+}
+
+template <typename T>
+constexpr TVector4<T> Step(TVector4<T> const& vec, T edge)
+{
+    return TVector4<T>(vec.X < edge ? T(0) : T(1), vec.Y < edge ? T(0) : T(1), vec.Z < edge ? T(0) : T(1), vec.W < edge ? T(0) : T(1));
+}
+
+template <typename T>
+constexpr TVector4<T> Step(TVector4<T> const& vec, TVector4<T> const& edge)
+{
+    return TVector4<T>(vec.X < edge.X ? T(0) : T(1), vec.Y < edge.Y ? T(0) : T(1), vec.Z < edge.Z ? T(0) : T(1), vec.W < edge.W ? T(0) : T(1));
+}
+
+template <typename T>
+HK_FORCEINLINE TVector4<T> SmoothStep(TVector4<T> const& vec, T edge0, T edge1)
+{
+    const T           denom = T(1) / (edge1 - edge0);
+    const TVector4<T> t     = Saturate((vec - edge0) * denom);
+    return t * t * (T(-2) * t + T(3));
+}
+
+template <typename T>
+HK_FORCEINLINE TVector4<T> SmoothStep(TVector4<T> const& vec, TVector4<T> const& edge0, TVector4<T> const& edge1)
+{
+    const TVector4<T> t = Saturate((vec - edge0) / (edge1 - edge0));
+    return t * t * (T(-2) * t + T(3));
 }
 
 } // namespace Math
