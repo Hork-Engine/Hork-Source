@@ -233,9 +233,9 @@ public:
 
     AProperty(AClassMeta const& _ClassMeta, TYPE Type, const char* EnumList, const char* Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, uint32_t Flags) :
         Type(Type),
-        EnumList(EnumList),
         Name(Name),
         NameHash(Core::Hash(Name, Platform::Strlen(Name))),
+        EnumList(EnumList),
         Range(Range),
         Flags(Flags),
         Setter(std::move(Setter)),
@@ -561,19 +561,15 @@ private:
         [](ADummy* pObject, APackedValue const& PackedVal)                                                                                                                               \
         {                                                                                                                                                                                \
             using T        = decltype(ThisClass::Member);                                                                                                                                \
-            void* pAddress = (uint8_t*)pObject + offsetof(ThisClass, Member);                                                                                                            \
-            *(T*)pAddress  = UnpackObject<T>(PackedVal);                                                                                                                                 \
+            static_cast<ThisClass*>(pObject)->Member = UnpackObject<T>(PackedVal);                                                                                                       \
         },                                                                                                                                                                               \
         [](ADummy const* pObject) -> APackedValue                                                                                                                                        \
         {                                                                                                                                                                                \
-            using T              = decltype(ThisClass::Member);                                                                                                                          \
-            void const* pAddress = (uint8_t*)pObject + offsetof(ThisClass, Member);                                                                                                      \
-            return PackObject(*(T const*)pAddress);                                                                                                                                      \
+            return PackObject(static_cast<ThisClass const*>(pObject)->Member);                                                                                                      \
         },                                                                                                                                                                               \
         [](ADummy* Dst, ADummy const* Src)                                                                                                                                               \
         {                                                                                                                                                                                \
-            using T                                                                     = decltype(ThisClass::Member);                                                                   \
-            *(T*)((uint8_t*)static_cast<ThisClass*>(Dst) + offsetof(ThisClass, Member)) = *(T const*)((uint8_t const*)static_cast<ThisClass const*>(Src) + offsetof(ThisClass, Member)); \
+            static_cast<ThisClass*>(Dst)->Member = static_cast<ThisClass const*>(Src)->Member;                                                                                          \
         },                                                                                                                                                                               \
         Range,                                                                                                                                                                           \
         Flags);
