@@ -64,28 +64,15 @@ static const float  DEFAULT_ILLUMINANCE_IN_LUX  = 110000.0f;
 static const float  DEFAULT_TEMPERATURE         = 6590.0f;
 static const Float3 DEFAULT_COLOR(1.0f);
 
-//void RegisterClass(AClassMeta* ClassMeta)
-//{
-//    ClassMeta->AddAttribute<float>("Illuminance",
-//                                    [](ABaseObject* pObject, float Value)
-//                                    {
-//                                        static_cast<ADirectionalLightComponent*>(pObject)->SetIlluminance(Value);
-//                                    },
-//                                    [](ABaseObject* pObject) -> float
-//                                    {
-//                                        return static_cast<ADirectionalLightComponent*>(pObject)->GetIlluminance();
-//                                    },
-//}
-
 HK_BEGIN_CLASS_META(ADirectionalLightComponent)
-HK_ATTRIBUTE(Illuminance, float, SetIlluminance, GetIlluminance, AF_DEFAULT)
-HK_ATTRIBUTE(Color, Float3, SetColor, GetColor, AF_DEFAULT)
-HK_ATTRIBUTE(bCastShadow, bool, SetCastShadow, IsCastShadow, AF_DEFAULT)
-HK_ATTRIBUTE(ShadowMaxDistance, float, SetShadowMaxDistance, GetShadowMaxDistance, AF_DEFAULT)
-HK_ATTRIBUTE(ShadowCascadeResolution, int, SetShadowCascadeResolution, GetShadowCascadeResolution, AF_DEFAULT)
-HK_ATTRIBUTE(ShadowCascadeOffset, float, SetShadowCascadeOffset, GetShadowCascadeOffset, AF_DEFAULT)
-HK_ATTRIBUTE(ShadowCascadeSplitLambda, float, SetShadowCascadeSplitLambda, GetShadowCascadeSplitLambda, AF_DEFAULT)
-HK_ATTRIBUTE(MaxShadowCascades, int, SetMaxShadowCascades, GetMaxShadowCascades, AF_DEFAULT)
+HK_PROPERTY(IlluminanceInLux, SetIlluminance, GetIlluminance, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(Color, SetColor, GetColor, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(bCastShadow, SetCastShadow, IsCastShadow, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(ShadowMaxDistance, SetShadowMaxDistance, GetShadowMaxDistance, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(ShadowCascadeResolution, SetShadowCascadeResolution, GetShadowCascadeResolution, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(ShadowCascadeOffset, SetShadowCascadeOffset, GetShadowCascadeOffset, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(ShadowCascadeSplitLambda, SetShadowCascadeSplitLambda, GetShadowCascadeSplitLambda, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(MaxShadowCascades, SetMaxShadowCascades, GetMaxShadowCascades, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 ADirectionalLightComponent::ADirectionalLightComponent()
@@ -203,14 +190,6 @@ void ADirectionalLightComponent::OnTransformDirty()
 void ADirectionalLightComponent::SetColor(Float3 const& _Color)
 {
     Color                = _Color;
-    bEffectiveColorDirty = true;
-}
-
-void ADirectionalLightComponent::SetColor(float _R, float _G, float _B)
-{
-    Color.X              = _R;
-    Color.Y              = _G;
-    Color.Z              = _B;
     bEffectiveColorDirty = true;
 }
 

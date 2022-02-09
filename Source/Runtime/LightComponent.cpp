@@ -31,9 +31,8 @@ SOFTWARE.
 #include "LightComponent.h"
 
 HK_BEGIN_CLASS_META(ALightComponent)
-HK_ATTRIBUTE(Enabled, bool, SetEnabled, IsEnabled, AF_DEFAULT)
-//HK_ATTRIBUTE(Animation, ....) TODO
-HK_ATTRIBUTE(AnimationTime, float, SetAnimationTime, GetAnimationTime, AF_DEFAULT)
+HK_PROPERTY(bEnabled, SetEnabled, IsEnabled, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(AnimTime, SetAnimationTime, GetAnimationTime, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 ALightComponent::ALightComponent()

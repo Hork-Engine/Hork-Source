@@ -125,116 +125,134 @@ void APhysicalBodyMotionState::setWorldTransform(btTransform const& _CenterOfMas
     bDuringMotionStateUpdate = false;
 }
 
-HK_FORCEINLINE void SetAttributeFromString(EMotionBehavior& Attribute, AString const& String)
+template <>
+const char* GetEnumList<EMotionBehavior>()
 {
-    if (String == "STATIC")
-    {
-        Attribute = MB_STATIC;
-    }
-    else if (String == "SIMULATED")
-    {
-        Attribute = MB_SIMULATED;
-    }
-    else
-    {
-        Attribute = MB_KINEMATIC;
-    }
+    return "Static\0"
+           "Simulated\0"
+           "Kinematic\0\0";
 }
 
-void SetAttributeToString(EMotionBehavior Attribute, AString& String)
+template <>
+APackedValue PackObject(EMotionBehavior const& Val)
 {
-    switch (Attribute)
+    switch (Val)
     {
         case MB_STATIC:
-            String = "STATIC";
-            break;
+            return "Static";
         case MB_SIMULATED:
-            String = "SIMULATED";
-            break;
+            return "Simulated";
+        case MB_KINEMATIC:
+            return "Kinematic";
         default:
-            String = "KINEMATIC";
-            break;
+            HK_ASSERT(0);
+            return "Static";
     }
 }
 
-HK_FORCEINLINE void SetAttributeFromString(EAINavigationBehavior& Attribute, AString const& String)
+template <>
+EMotionBehavior UnpackObject(APackedValue const& PackedVal)
 {
-    if (String == "NONE")
+    if (PackedVal == "Static")
     {
-        Attribute = AI_NAVIGATION_BEHAVIOR_NONE;
+        return MB_STATIC;
     }
-    else if (String == "STATIC")
+    else if (PackedVal == "Simulated")
     {
-        Attribute = AI_NAVIGATION_BEHAVIOR_STATIC;
+        return MB_SIMULATED;
     }
-    else if (String == "STATIC NON WALKABLE")
+    else if (PackedVal == "Kinematic")
     {
-        Attribute = AI_NAVIGATION_BEHAVIOR_STATIC_NON_WALKABLE;
+        return MB_KINEMATIC;
     }
-    else if (String == "DYNAMIC")
-    {
-        Attribute = AI_NAVIGATION_BEHAVIOR_DYNAMIC;
-    }
-    else if (String == "DYNAMIC NON WALKABLE")
-    {
-        Attribute = AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE;
-    }
-    else
-    {
-        Attribute = AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE;
-    }
+    HK_ASSERT(0);
+    return MB_STATIC;
 }
 
-void SetAttributeToString(EAINavigationBehavior Attribute, AString& String)
+
+template <>
+const char* GetEnumList<EAINavigationBehavior>()
 {
-    switch (Attribute)
+    return "None\0"
+           "Static\0"
+           "Static Non Walkable\0"
+           "Dynamic\0"
+           "Dynamic Non Walkable\0\0";
+}
+
+template <>
+APackedValue PackObject(EAINavigationBehavior const& Val)
+{
+    switch (Val)
     {
         case AI_NAVIGATION_BEHAVIOR_NONE:
-            String = "NONE";
-            break;
+            return "None";
         case AI_NAVIGATION_BEHAVIOR_STATIC:
-            String = "STATIC";
-            break;
+            return "Static";
         case AI_NAVIGATION_BEHAVIOR_STATIC_NON_WALKABLE:
-            String = "STATIC_NON_WALKABLE";
-            break;
+            return "Static Non Walkable";
         case AI_NAVIGATION_BEHAVIOR_DYNAMIC:
-            String = "DYNAMIC";
-            break;
+            return "Dynamic";
         case AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE:
-            String = "DYNAMIC_NON_WALKABLE";
-            break;
+            return "Dynamic Non Walkable";
         default:
-            String = "DYNAMIC_NON_WALKABLE";
-            break;
+            HK_ASSERT(0);
+            return "None";
     }
+}
+
+template <>
+EAINavigationBehavior UnpackObject(APackedValue const& PackedVal)
+{
+    if (PackedVal == "None")
+    {
+        return AI_NAVIGATION_BEHAVIOR_NONE;
+    }
+    else if (PackedVal == "Static")
+    {
+        return AI_NAVIGATION_BEHAVIOR_STATIC;
+    }
+    else if (PackedVal == "Static Non Walkable")
+    {
+        return AI_NAVIGATION_BEHAVIOR_STATIC_NON_WALKABLE;
+    }
+    else if (PackedVal == "Dynamic")
+    {
+        return AI_NAVIGATION_BEHAVIOR_DYNAMIC;
+    }
+    else if (PackedVal == "Dynamic Non Walkable")
+    {
+        return AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE;
+    }
+    HK_ASSERT(0);
+    return AI_NAVIGATION_BEHAVIOR_NONE;
 }
 
 HK_BEGIN_CLASS_META(APhysicalBody)
-HK_ATTRIBUTE(bDispatchContactEvents, bool, SetDispatchContactEvents, ShouldDispatchContactEvents, AF_DEFAULT)
-HK_ATTRIBUTE(bDispatchOverlapEvents, bool, SetDispatchOverlapEvents, ShouldDispatchOverlapEvents, AF_DEFAULT)
-HK_ATTRIBUTE(bGenerateContactPoints, bool, SetGenerateContactPoints, ShouldGenerateContactPoints, AF_DEFAULT)
-HK_ATTRIBUTE_(bUseMeshCollision, AF_DEFAULT)
-HK_ATTRIBUTE(MotionBehavior, EMotionBehavior, SetMotionBehavior, GetMotionBehavior, AF_DEFAULT)
-HK_ATTRIBUTE(AINavigationBehavior, EAINavigationBehavior, SetAINavigationBehavior, GetAINavigationBehavior, AF_DEFAULT)
-HK_ATTRIBUTE(IsTrigger, bool, SetTrigger, IsTrigger, AF_DEFAULT)
-HK_ATTRIBUTE(DisableGravity, bool, SetDisableGravity, IsGravityDisabled, AF_DEFAULT)
-HK_ATTRIBUTE(OverrideWorldGravity, bool, SetOverrideWorldGravity, IsWorldGravityOverriden, AF_DEFAULT)
-HK_ATTRIBUTE(SelfGravity, Float3, SetSelfGravity, GetSelfGravity, AF_DEFAULT)
-HK_ATTRIBUTE(Mass, float, SetMass, GetMass, AF_DEFAULT)
-HK_ATTRIBUTE(CollisionGroup, int, SetCollisionGroup, GetCollisionGroup, AF_DEFAULT)
-HK_ATTRIBUTE(CollisionMask, int, SetCollisionMask, GetCollisionMask, AF_DEFAULT)
-HK_ATTRIBUTE(LinearSleepingThreshold, float, SetLinearSleepingThreshold, GetLinearSleepingThreshold, AF_DEFAULT)
-HK_ATTRIBUTE(LinearDamping, float, SetLinearDamping, GetLinearDamping, AF_DEFAULT)
-HK_ATTRIBUTE(AngularSleepingThreshold, float, SetAngularSleepingThreshold, GetAngularSleepingThreshold, AF_DEFAULT)
-HK_ATTRIBUTE(AngularDamping, float, SetAngularDamping, GetAngularDamping, AF_DEFAULT)
-HK_ATTRIBUTE(Friction, float, SetFriction, GetFriction, AF_DEFAULT)
-HK_ATTRIBUTE(AnisotropicFriction, Float3, SetAnisotropicFriction, GetAnisotropicFriction, AF_DEFAULT)
-HK_ATTRIBUTE(RollingFriction, float, SetRollingFriction, GetRollingFriction, AF_DEFAULT)
-HK_ATTRIBUTE(Restitution, float, SetRestitution, GetRestitution, AF_DEFAULT)
-HK_ATTRIBUTE(ContactProcessingThreshold, float, SetContactProcessingThreshold, GetContactProcessingThreshold, AF_DEFAULT)
-HK_ATTRIBUTE(CcdRadius, float, SetCcdRadius, GetCcdRadius, AF_DEFAULT)
-HK_ATTRIBUTE(CcdMotionThreshold, float, SetCcdMotionThreshold, GetCcdMotionThreshold, AF_DEFAULT)
+HK_PROPERTY2(bool, "bDispatchContactEvents", SetDispatchContactEvents, ShouldDispatchContactEvents, HK_PROPERTY_DEFAULT)
+HK_PROPERTY2(bool, "bDispatchOverlapEvents", SetDispatchOverlapEvents, ShouldDispatchOverlapEvents, HK_PROPERTY_DEFAULT)
+HK_PROPERTY2(bool, "bGenerateContactPoints", SetGenerateContactPoints, ShouldGenerateContactPoints, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bUseMeshCollision, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(MotionBehavior, SetMotionBehavior, GetMotionBehavior, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(AINavigationBehavior, SetAINavigationBehavior, GetAINavigationBehavior, HK_PROPERTY_DEFAULT)
+HK_PROPERTY2(bool, "IsTrigger", SetTrigger, IsTrigger, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(bDisableGravity, SetDisableGravity, IsGravityDisabled, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(bOverrideWorldGravity, SetOverrideWorldGravity, IsWorldGravityOverriden, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(SelfGravity, SetSelfGravity, GetSelfGravity, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(Mass, SetMass, GetMass, HK_PROPERTY_DEFAULT)
+HK_PROPERTY2(int, "CollisionGroup", SetCollisionGroup, GetCollisionGroup, HK_PROPERTY_DEFAULT)
+HK_PROPERTY2(int, "CollisionMask", SetCollisionMask, GetCollisionMask, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(LinearSleepingThreshold, SetLinearSleepingThreshold, GetLinearSleepingThreshold, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(LinearDamping, SetLinearDamping, GetLinearDamping, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(AngularSleepingThreshold, SetAngularSleepingThreshold, GetAngularSleepingThreshold, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(AngularDamping, SetAngularDamping, GetAngularDamping, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(Friction, SetFriction, GetFriction, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(AnisotropicFriction, SetAnisotropicFriction, GetAnisotropicFriction, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(RollingFriction, SetRollingFriction, GetRollingFriction, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(Restitution, SetRestitution, GetRestitution, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(ContactProcessingThreshold, SetContactProcessingThreshold, GetContactProcessingThreshold, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(CcdRadius, SetCcdRadius, GetCcdRadius, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(CcdMotionThreshold, SetCcdMotionThreshold, GetCcdMotionThreshold, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 APhysicalBody::APhysicalBody()

@@ -2656,18 +2656,18 @@ AActorScript* AActorScript::GetScript(asIScriptObject* pObject)
     return reinterpret_cast<AActorScript*>(pObject->GetObjectType()->GetUserData());
 }
 
-void AActorScript::SetAttributes(asIScriptObject* pObject, THashContainer<AString, AString> const& Attributes)
+void AActorScript::SetProperties(asIScriptObject* pObject, THashContainer<AString, AString> const& Properties)
 {
     // TODO
 }
 
-bool AActorScript::SetAttribute(asIScriptObject* pObject, AStringView AttributeName, AStringView AttributeValue)
+bool AActorScript::SetProperty(asIScriptObject* pObject, AStringView PropertyName, AStringView PropertyValue)
 {
     // TODO
     return false;
 }
 
-void AActorScript::CloneAttributes(asIScriptObject* Template, asIScriptObject* Destination)
+void AActorScript::CloneProperties(asIScriptObject* Template, asIScriptObject* Destination)
 {
     // TODO
 }

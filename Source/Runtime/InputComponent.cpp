@@ -46,11 +46,11 @@ AConsoleVar in_MouseAccel(_CTS("in_MouseAccel"), _CTS("0"));
 HK_CLASS_META(AInputMappings)
 
 HK_BEGIN_CLASS_META(AInputComponent)
-HK_ATTRIBUTE_(bIgnoreKeyboardEvents, AF_DEFAULT)
-HK_ATTRIBUTE_(bIgnoreMouseEvents, AF_DEFAULT)
-HK_ATTRIBUTE_(bIgnoreJoystickEvents, AF_DEFAULT)
-HK_ATTRIBUTE_(bIgnoreCharEvents, AF_DEFAULT)
-HK_ATTRIBUTE_(ControllerId, AF_DEFAULT)
+HK_PROPERTY_DIRECT(bIgnoreKeyboardEvents, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bIgnoreMouseEvents, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bIgnoreJoystickEvents, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bIgnoreCharEvents, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(ControllerId, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 struct AInputComponentStatic

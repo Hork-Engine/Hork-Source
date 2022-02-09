@@ -556,7 +556,7 @@ TRef< ADocObject > MGInput::Serialize() {
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_BEGIN_CLASS_META(MGNode)
-HK_ATTRIBUTE_(Location, AF_DEFAULT)
+HK_PROPERTY_DIRECT(Location, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 MGNode::MGNode(const char* _Name)
@@ -1578,7 +1578,7 @@ void MG2PINode::Compute(AMaterialBuildContext& _Context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_BEGIN_CLASS_META(MGBooleanNode)
-//HK_ATTRIBUTE_( bValue, AF_DEFAULT )
+//HK_PROPERTY_DIRECT( bValue, HK_PROPERTY_DEFAULT )
 HK_END_CLASS_META()
 
 MGBooleanNode::MGBooleanNode() :
@@ -1595,7 +1595,7 @@ void MGBooleanNode::Compute(AMaterialBuildContext& _Context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_BEGIN_CLASS_META(MGBoolean2Node)
-//HK_ATTRIBUTE_( bValue, AF_DEFAULT )
+//HK_PROPERTY_DIRECT( bValue, HK_PROPERTY_DEFAULT )
 HK_END_CLASS_META()
 
 MGBoolean2Node::MGBoolean2Node() :
@@ -1612,7 +1612,7 @@ void MGBoolean2Node::Compute(AMaterialBuildContext& _Context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_BEGIN_CLASS_META(MGBoolean3Node)
-//HK_ATTRIBUTE_( bValue, AF_DEFAULT )
+//HK_PROPERTY_DIRECT( bValue, HK_PROPERTY_DEFAULT )
 HK_END_CLASS_META()
 
 MGBoolean3Node::MGBoolean3Node() :
@@ -1629,7 +1629,7 @@ void MGBoolean3Node::Compute(AMaterialBuildContext& _Context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_BEGIN_CLASS_META(MGBoolean4Node)
-//HK_ATTRIBUTE_( bValue, AF_DEFAULT )
+//HK_PROPERTY_DIRECT( bValue, HK_PROPERTY_DEFAULT )
 HK_END_CLASS_META()
 
 MGBoolean4Node::MGBoolean4Node() :
@@ -1646,7 +1646,7 @@ void MGBoolean4Node::Compute(AMaterialBuildContext& _Context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_BEGIN_CLASS_META(MGFloatNode)
-HK_ATTRIBUTE_(Value, AF_DEFAULT)
+HK_PROPERTY_DIRECT(Value, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 MGFloatNode::MGFloatNode() :
@@ -1667,7 +1667,7 @@ void MGFloatNode::Compute(AMaterialBuildContext& _Context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_BEGIN_CLASS_META(MGFloat2Node)
-HK_ATTRIBUTE_(Value, AF_DEFAULT)
+HK_PROPERTY_DIRECT(Value, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 MGFloat2Node::MGFloat2Node() :
@@ -1684,7 +1684,7 @@ void MGFloat2Node::Compute(AMaterialBuildContext& _Context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_BEGIN_CLASS_META(MGFloat3Node)
-HK_ATTRIBUTE_(Value, AF_DEFAULT)
+HK_PROPERTY_DIRECT(Value, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 MGFloat3Node::MGFloat3Node() :
@@ -1701,7 +1701,7 @@ void MGFloat3Node::Compute(AMaterialBuildContext& _Context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_BEGIN_CLASS_META(MGFloat4Node)
-HK_ATTRIBUTE_(Value, AF_DEFAULT)
+HK_PROPERTY_DIRECT(Value, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 MGFloat4Node::MGFloat4Node() :
@@ -1845,7 +1845,7 @@ void MGUniformAddress::Compute(AMaterialBuildContext& _Context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_BEGIN_CLASS_META(MGSampler)
-HK_ATTRIBUTE_(bSwappedToBGR, AF_DEFAULT)
+HK_PROPERTY_DIRECT(bSwappedToBGR, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 MGSampler::MGSampler() :
@@ -2168,7 +2168,7 @@ void MGParallaxMapSampler::Compute(AMaterialBuildContext& _Context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_BEGIN_CLASS_META(MGSamplerVT)
-HK_ATTRIBUTE_(bSwappedToBGR, AF_DEFAULT)
+HK_PROPERTY_DIRECT(bSwappedToBGR, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 MGSamplerVT::MGSamplerVT() :

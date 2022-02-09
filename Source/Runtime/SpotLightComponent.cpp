@@ -45,10 +45,10 @@ static const float MIN_RADIUS               = 0.01f;
 AConsoleVar com_DrawSpotLights(_CTS("com_DrawSpotLights"), _CTS("0"), CVAR_CHEAT);
 
 HK_BEGIN_CLASS_META(ASpotLightComponent)
-HK_ATTRIBUTE(Radius, float, SetRadius, GetRadius, AF_DEFAULT)
-HK_ATTRIBUTE(InnerConeAngle, float, SetInnerConeAngle, GetInnerConeAngle, AF_DEFAULT)
-HK_ATTRIBUTE(OuterConeAngle, float, SetOuterConeAngle, GetOuterConeAngle, AF_DEFAULT)
-HK_ATTRIBUTE(SpotExponent, float, SetSpotExponent, GetSpotExponent, AF_DEFAULT)
+HK_PROPERTY(Radius, SetRadius, GetRadius, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(InnerConeAngle, SetInnerConeAngle, GetInnerConeAngle, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(OuterConeAngle, SetOuterConeAngle, GetOuterConeAngle, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(SpotExponent, SetSpotExponent, GetSpotExponent, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 ASpotLightComponent::ASpotLightComponent()

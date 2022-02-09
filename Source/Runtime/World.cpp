@@ -221,14 +221,14 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
     {
         TPodVector<AActorComponent*> components;
 
-        // Create components and set attributes
+        // Create components and set properties
         int componentIndex = 0;
         for (auto& componentDef : pActorDef->Components)
         {
             auto* component = actor->CreateComponent(componentDef.ClassMeta, componentDef.Name.CStr());
             if (component)
             {
-                component->SetAttributes(componentDef.AttributeHash);
+                component->SetProperties(componentDef.PropertyHash);
 
                 if (pActorDef->RootIndex == componentIndex)
                 {
@@ -272,9 +272,9 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
     actor->bTickPostPhysics    = initializer.bTickPostPhysics;
     actor->bLateUpdate         = initializer.bLateUpdate;
 
-    // Set attributes for the actor
+    // Set properties for the actor
     if (pActorDef)
-        SetAttributes(pActorDef->ActorAttributeHash);
+        SetProperties(pActorDef->ActorPropertyHash);
 
     // Create script
     AString& scriptModule = pActorDef ? pActorDef->ScriptModule : SpawnInfo.ScriptModule;
@@ -285,7 +285,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
         {
             if (pActorDef)
             {
-                AActorScript::SetAttributes(actor->ScriptModule, pActorDef->ScriptAttributeHash);
+                AActorScript::SetProperties(actor->ScriptModule, pActorDef->ScriptPropertyHash);
             }
         }
         else
@@ -310,21 +310,21 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
             return {};
         };
 
-        // Clone component attributes
+        // Clone component properties
         for (AActorComponent* component : actor->GetComponents())
         {
             AActorComponent* templateComponent = FindTemplateComponent(SpawnInfo.Template, component);
             if (templateComponent)
-                AClassMeta::CloneAttributes(templateComponent, component);
+                AClassMeta::CloneProperties(templateComponent, component);
         }
 
         if (actor->ScriptModule && SpawnInfo.Template->ScriptModule)
         {
-            AActorScript::CloneAttributes(SpawnInfo.Template->ScriptModule, actor->ScriptModule);
-            // TODO: Clone script attributes
+            AActorScript::CloneProperties(SpawnInfo.Template->ScriptModule, actor->ScriptModule);
+            // TODO: Clone script properties
         }
 
-        AClassMeta::CloneAttributes(SpawnInfo.Template, actor);
+        AClassMeta::CloneProperties(SpawnInfo.Template, actor);
     }
 
     if (SpawnInfo.Instigator)

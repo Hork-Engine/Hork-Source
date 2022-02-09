@@ -129,54 +129,54 @@ const AClassMeta* AObjectFactory::LookupClass(uint64_t _ClassId) const
     return IdTable[_ClassId];
 }
 
-AAttributeMeta const* AClassMeta::FindAttribute(AStringView _Name, bool _Recursive) const
+AProperty const* AClassMeta::FindProperty(AStringView _Name, bool bRecursive) const
 {
-    for (AAttributeMeta const* attrib = AttributesHead; attrib; attrib = attrib->Next())
+    for (AProperty const* prop = PropertyList; prop; prop = prop->Next())
     {
-        if (_Name == attrib->GetName())
+        if (_Name == prop->GetName())
         {
-            return attrib;
+            return prop;
         }
     }
-    if (_Recursive && pSuperClass)
+    if (bRecursive && pSuperClass)
     {
-        return pSuperClass->FindAttribute(_Name, true);
+        return pSuperClass->FindProperty(_Name, true);
     }
     return nullptr;
 }
 
-void AClassMeta::GetAttributes(TPodVector<AAttributeMeta const*>& _Attributes, bool _Recursive) const
+void AClassMeta::GetProperties(TPodVector<AProperty const*>& Properties, bool bRecursive) const
 {
-    if (_Recursive && pSuperClass)
+    if (bRecursive && pSuperClass)
     {
-        pSuperClass->GetAttributes(_Attributes, true);
+        pSuperClass->GetProperties(Properties, true);
     }
-    for (AAttributeMeta const* attrib = AttributesHead; attrib; attrib = attrib->Next())
+    for (AProperty const* prop = PropertyList; prop; prop = prop->Next())
     {
-        _Attributes.Append(attrib);
+        Properties.Append(prop);
     }
 }
 
-void AClassMeta::CloneAttributes_r(AClassMeta const* Meta, ADummy const* _Template, ADummy* _Destination)
+void AClassMeta::CloneProperties_r(AClassMeta const* Meta, ADummy const* _Template, ADummy* _Destination)
 {
     if (Meta)
     {
-        CloneAttributes_r(Meta->SuperClass(), _Template, _Destination);
+        CloneProperties_r(Meta->SuperClass(), _Template, _Destination);
 
-        for (AAttributeMeta const* attr = Meta->GetAttribList(); attr; attr = attr->Next())
+        for (AProperty const* prop = Meta->GetPropertyList(); prop; prop = prop->Next())
         {
-            attr->CopyValue(_Template, _Destination);
+            prop->CopyValue(_Destination, _Template);
         }
     }
 }
 
-void AClassMeta::CloneAttributes(ADummy const* _Template, ADummy* _Destination)
+void AClassMeta::CloneProperties(ADummy const* _Template, ADummy* _Destination)
 {
     if (&_Template->FinalClassMeta() != &_Destination->FinalClassMeta())
     {
-        GLogger.Printf("AClassMeta::CloneAttributes: Template is not an %s class\n", _Destination->FinalClassName());
+        GLogger.Printf("AClassMeta::CloneProperties: Template is not an %s class\n", _Destination->FinalClassName());
         return;
     }
 
-    CloneAttributes_r(&_Template->FinalClassMeta(), _Template, _Destination);
+    CloneProperties_r(&_Template->FinalClassMeta(), _Template, _Destination);
 }

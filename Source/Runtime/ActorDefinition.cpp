@@ -43,7 +43,7 @@ AActorDefinition::AActorDefinition()
 void AActorDefinition::InitializeFromDocument(ADocument const& Document)
 {
     TStdHashMap<uint64_t, int> componentIdMap;
-    TStdHashSet<AString> publicAttribNames;
+    TStdHashSet<AString> publicPropertyNames;
 
     auto* mActorClassName = Document.FindMember("classname");
     if (mActorClassName)
@@ -99,18 +99,18 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                 componentDef.Attach = 0;
             }
 
-            auto* mAttributes = mComponent->FindMember("attributes");
-            if (mAttributes)
+            auto* mProperties = mComponent->FindMember("properties");
+            if (mProperties)
             {
-                auto* mAttribContainer = mAttributes->GetArrayValues();
-                if (mAttribContainer)
+                auto* mPropertyContainer = mProperties->GetArrayValues();
+                if (mPropertyContainer)
                 {
-                    for (auto* mAttribute = mAttribContainer->GetListOfMembers(); mAttribute; mAttribute = mAttribute->GetNext())
+                    for (auto* mProperty = mPropertyContainer->GetListOfMembers(); mProperty; mProperty = mProperty->GetNext())
                     {
-                        auto* mAttribValue = mAttribute->GetArrayValues();
-                        if (mAttribValue)
+                        auto* mPropertyValue = mProperty->GetArrayValues();
+                        if (mPropertyValue)
                         {
-                            componentDef.AttributeHash.Insert(mAttribute->GetName(), mAttribValue->GetString());
+                            componentDef.PropertyHash.Insert(mProperty->GetName(), mPropertyValue->GetString());
                         }
                     }
                 }
@@ -179,40 +179,40 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
         }
     }
 
-    auto* mAttributes = Document.FindMember("attributes");
-    if (mAttributes)
+    auto* mProperties = Document.FindMember("properties");
+    if (mProperties)
     {
-        auto* mAttribContainer = mAttributes->GetArrayValues();
-        if (mAttribContainer)
+        auto* mPropertyContainer = mProperties->GetArrayValues();
+        if (mPropertyContainer)
         {
-            for (auto* mAttribute = mAttribContainer->GetListOfMembers(); mAttribute; mAttribute = mAttribute->GetNext())
+            for (auto* mProperty = mPropertyContainer->GetListOfMembers(); mProperty; mProperty = mProperty->GetNext())
             {
-                auto* mAttribValue = mAttribute->GetArrayValues();
-                if (mAttribValue)
+                auto* mPropertyValue = mProperty->GetArrayValues();
+                if (mPropertyValue)
                 {
-                    ActorAttributeHash.Insert(mAttribute->GetName(), mAttribValue->GetString());
+                    ActorPropertyHash.Insert(mProperty->GetName(), mPropertyValue->GetString());
                 }
             }
         }
     }
 
-    auto* mPublicAttribs = Document.FindMember("public_attributes");
-    if (mPublicAttribs)
+    auto* mPublicProperties = Document.FindMember("public_properties");
+    if (mPublicProperties)
     {
-        for (auto* mPublicAttrib = mPublicAttribs->GetArrayValues(); mPublicAttrib; mPublicAttrib = mPublicAttrib->GetNext())
+        for (auto* mPublicProperty = mPublicProperties->GetArrayValues(); mPublicProperty; mPublicProperty = mPublicProperty->GetNext())
         {
-            if (!mPublicAttrib->IsObject())
+            if (!mPublicProperty->IsObject())
                 continue;
 
-            auto* mAttribute = mPublicAttrib->FindMember("attribute");
-            if (!mAttribute)
+            auto* mProperty = mPublicProperty->FindMember("property");
+            if (!mProperty)
                 continue;
 
-            AString attributeName = mAttribute->GetString();
-            if (attributeName.IsEmpty())
+            AString propertyName = mProperty->GetString();
+            if (propertyName.IsEmpty())
                 continue;
 
-            auto* mPublicName = mPublicAttrib->FindMember("public_name");
+            auto* mPublicName = mPublicProperty->FindMember("public_name");
             if (!mPublicName)
                 continue;
 
@@ -220,7 +220,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             if (publicName.IsEmpty())
                 continue;
 
-            if (publicAttribNames.count(publicName))
+            if (publicPropertyNames.count(publicName))
             {
                 GLogger.Printf("WARNING: Unique public names expected\n");
                 continue;
@@ -228,7 +228,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
 
             int componentIndex = -1;
 
-            auto* mComponentId = mPublicAttrib->FindMember("component_id");
+            auto* mComponentId = mPublicProperty->FindMember("component_id");
             if (mComponentId)
             {
                 uint64_t componentId = Math::ToInt<uint64_t>(mComponentId->GetString());
@@ -242,13 +242,13 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                 componentIndex = it->second;
             }            
 
-            publicAttribNames.insert(publicName);
+            publicPropertyNames.insert(publicName);
 
-            SPublicAttriubte publicAttrib;
-            publicAttrib.ComponentIndex = componentIndex;
-            publicAttrib.AttributeName  = std::move(attributeName);
-            publicAttrib.PublicName     = std::move(publicName);
-            PublicAttributes.push_back(std::move(publicAttrib));
+            SPublicProperty publicProperty;
+            publicProperty.ComponentIndex = componentIndex;
+            publicProperty.PropertyName   = std::move(propertyName);
+            publicProperty.PublicName     = std::move(publicName);
+            PublicProperties.push_back(std::move(publicProperty));
         }
     }
 
@@ -262,40 +262,40 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
 
             ScriptModule = mModule ? mModule->GetString() : AString::NullString();
 
-            mAttributes = mScriptObj->FindMember("attributes");
-            if (mAttributes)
+            mProperties = mScriptObj->FindMember("properties");
+            if (mProperties)
             {
-                auto* mAttribContainer = mAttributes->GetArrayValues();
-                if (mAttribContainer)
+                auto* mPropertyContainer = mProperties->GetArrayValues();
+                if (mPropertyContainer)
                 {
-                    for (auto* mAttribute = mAttribContainer->GetListOfMembers(); mAttribute; mAttribute = mAttribute->GetNext())
+                    for (auto* mProperty = mPropertyContainer->GetListOfMembers(); mProperty; mProperty = mProperty->GetNext())
                     {
-                        auto* mAttribValue = mAttribute->GetArrayValues();
-                        if (mAttribValue)
+                        auto* mPropertyValue = mProperty->GetArrayValues();
+                        if (mPropertyValue)
                         {
-                            ScriptAttributeHash.Insert(mAttribute->GetName(), mAttribValue->GetString());
+                            ScriptPropertyHash.Insert(mProperty->GetName(), mPropertyValue->GetString());
                         }
                     }
                 }
             }
 
-            auto* mScriptPublicAttribs = mScriptObj->FindMember("public_attributes");
-            if (mScriptPublicAttribs)
+            auto* mScriptPublicProperties = mScriptObj->FindMember("public_properties");
+            if (mScriptPublicProperties)
             {
-                for (auto* mPublicAttrib = mScriptPublicAttribs->GetArrayValues(); mPublicAttrib; mPublicAttrib = mPublicAttrib->GetNext())
+                for (auto* mPublicProperty = mScriptPublicProperties->GetArrayValues(); mPublicProperty; mPublicProperty = mPublicProperty->GetNext())
                 {
-                    if (!mPublicAttrib->IsObject())
+                    if (!mPublicProperty->IsObject())
                         continue;
 
-                    auto* mAttribute = mPublicAttrib->FindMember("attribute");
-                    if (!mAttribute)
+                    auto* mProperty = mPublicProperty->FindMember("property");
+                    if (!mProperty)
                         continue;
 
-                    AString attributeName = mAttribute->GetString();
-                    if (attributeName.IsEmpty())
+                    AString propertyName = mProperty->GetString();
+                    if (propertyName.IsEmpty())
                         continue;
 
-                    auto* mPublicName = mPublicAttrib->FindMember("public_name");
+                    auto* mPublicName = mPublicProperty->FindMember("public_name");
                     if (!mPublicName)
                         continue;
 
@@ -303,18 +303,18 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                     if (publicName.IsEmpty())
                         continue;
 
-                    if (publicAttribNames.count(publicName))
+                    if (publicPropertyNames.count(publicName))
                     {
                         GLogger.Printf("WARNING: Unique public names expected\n");
                         continue;
                     }
 
-                    publicAttribNames.insert(publicName);
+                    publicPropertyNames.insert(publicName);
 
-                    SScriptPublicAttriubte publicAttrib;
-                    publicAttrib.AttributeName = std::move(attributeName);
-                    publicAttrib.PublicName    = std::move(publicName);
-                    ScriptPublicAttributes.push_back(std::move(publicAttrib));
+                    SScriptPublicProperty publicProperty;
+                    publicProperty.PropertyName = std::move(propertyName);
+                    publicProperty.PublicName   = std::move(publicName);
+                    ScriptPublicProperties.push_back(std::move(publicProperty));
                 }
             }
         }

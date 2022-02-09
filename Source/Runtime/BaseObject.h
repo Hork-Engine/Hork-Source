@@ -61,9 +61,9 @@ public:
     ABaseObject();
     virtual ~ABaseObject();
 
-    void SetAttributes(THashContainer<AString, AString> const& Attributes);
+    void SetProperties(THashContainer<AString, AString> const& Properties);
 
-    bool SetAttribute(AStringView AttributeName, AStringView AttributeValue);
+    bool SetProperty(AStringView PropertyName, AStringView PropertyValue);
 
     /** Add reference */
     void AddRef();
@@ -108,9 +108,9 @@ public:
         return static_cast<T*>(object);
     }
 
-    static ABaseObject* ConvertFromAttributeString(AClassMeta const& Meta, AString const& String)
+    static ABaseObject* FromPackedValue(AClassMeta const& Meta, APackedValue const& PackedVal)
     {
-        uint64_t id = Math::ToInt<uint64_t>(String);
+        uint64_t id = Math::ToInt<uint64_t>(PackedVal);
 
         ABaseObject* object = FindObject(id);
         if (!object)
@@ -124,14 +124,13 @@ public:
         return object;
     }
 
-    void ConvertToAttributeString(AString& String) const
+    void ToPackedValue(APackedValue& PackedVal) const
     {
-        String = Math::ToString(Id);
+        PackedVal = Math::ToString(Id);
     }
 
 private:
-    void LoadAttributes_r(AClassMeta const* Meta, ADocValue const* pObject);
-    void SetAttributes_r(AClassMeta const* Meta, THashContainer<AString, AString> const& Attributes);
+    void SetProperties_r(AClassMeta const* Meta, THashContainer<AString, AString> const& Properties);
 
     /** Custom object name */
     AString Name;
@@ -362,6 +361,7 @@ private:
     TStdVector<Callback> Callbacks;
 };
 
+#if 0
 template <typename T>
 void SetAttributeFromString(TRef<T>& Attribute, AString const& String)
 {
@@ -400,3 +400,4 @@ void SetAttributeToString(T* const& Attribute, AString& String)
         String = "0";
     }
 }
+#endif

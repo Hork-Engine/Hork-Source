@@ -284,7 +284,7 @@ asILockableSharedBool* AActor::ScriptGetWeakRefFlag()
     return pWeakRefFlag;
 }
 
-bool AActor::SetPublicAttribute(AStringView PublicName, AStringView Value)
+bool AActor::SetPublicProperty(AStringView PublicName, AStringView Value)
 {
     if (!pActorDef)
         return false;
@@ -299,33 +299,33 @@ bool AActor::SetPublicAttribute(AStringView PublicName, AStringView Value)
         return {};
     };
 
-    for (AActorDefinition::SPublicAttriubte const& attr : pActorDef->PublicAttributes)
+    for (AActorDefinition::SPublicProperty const& prop : pActorDef->PublicProperties)
     {
-        if (attr.PublicName == PublicName)
+        if (prop.PublicName == PublicName)
         {
-            if (attr.ComponentIndex != -1)
+            if (prop.ComponentIndex != -1)
             {
                 // NOTE: component->LocalId should match ComponentIndex
-                AActorComponent* component = FindComponent(pActorDef->Components[attr.ComponentIndex].ClassMeta, attr.ComponentIndex);
+                AActorComponent* component = FindComponent(pActorDef->Components[prop.ComponentIndex].ClassMeta, prop.ComponentIndex);
                 if (component)
                 {
-                    return component->SetAttribute(attr.AttributeName, Value);
+                    return component->SetProperty(prop.PropertyName, Value);
                 }
             }
             else
             {
-                return SetAttribute(attr.AttributeName, Value);
+                return SetProperty(prop.PropertyName, Value);
             }
         }
     }
 
     if (ScriptModule)
     {
-        for (AActorDefinition::SScriptPublicAttriubte const& attr : pActorDef->ScriptPublicAttributes)
+        for (AActorDefinition::SScriptPublicProperty const& prop : pActorDef->ScriptPublicProperties)
         {
-            if (attr.PublicName == PublicName)
+            if (prop.PublicName == PublicName)
             {
-                return AActorScript::SetAttribute(ScriptModule, attr.AttributeName, Value);
+                return AActorScript::SetProperty(ScriptModule, prop.PropertyName, Value);
             }
         }
     }

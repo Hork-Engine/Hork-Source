@@ -234,7 +234,7 @@ private:
     float AnglePitch;
     float AngleYaw;
 
-    // Attributes
+    // Properties
     float CapsuleRadius = 0.5f;
     float CapsuleHeight = 0.9f;
 

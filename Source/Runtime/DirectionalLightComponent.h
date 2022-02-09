@@ -49,7 +49,6 @@ public:
     float GetTemperature() const;
 
     void          SetColor(Float3 const& _Color);
-    void          SetColor(float _R, float _G, float _B);
     Float3 const& GetColor() const;
 
     /** Set light direction in local space */
@@ -71,13 +70,13 @@ public:
     bool IsCastShadow() const { return bCastShadow; }
 
     void SetShadowMaxDistance(float MaxDistance) { ShadowMaxDistance = MaxDistance; }
-    int  GetShadowMaxDistance() const { return ShadowMaxDistance; }
+    float GetShadowMaxDistance() const { return ShadowMaxDistance; }
 
     void SetShadowCascadeResolution(int Resolution) { ShadowCascadeResolution = Math::ToClosestPowerOfTwo(Resolution); }
     int  GetShadowCascadeResolution() const { return ShadowCascadeResolution; }
 
     void SetShadowCascadeOffset(float Offset) { ShadowCascadeOffset = Offset; }
-    int  GetShadowCascadeOffset() const { return ShadowCascadeOffset; }
+    float GetShadowCascadeOffset() const { return ShadowCascadeOffset; }
 
     void  SetShadowCascadeSplitLambda(float SplitLambda) { ShadowCascadeSplitLambda = SplitLambda; }
     float GetShadowCascadeSplitLambda() const { return ShadowCascadeSplitLambda; }

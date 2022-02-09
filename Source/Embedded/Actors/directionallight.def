@@ -7,56 +7,56 @@ components
 	}
 ]
 root "1"
-public_attributes
+public_properties
 [
 	{
 		component_id "1"
-		attribute "Enabled"
+		property "Enabled"
 		public_name "Enabled"
 	}
 	{
 		component_id "1"
-		attribute "AnimationTime"
+		property "AnimationTime"
 		public_name "AnimationTime"
 	}
 	{
 		component_id "1"
-		attribute "Illuminance"
+		property "Illuminance"
 		public_name "Illuminance"
 	}
 	{
 		component_id "1"
-		attribute "Color"
+		property "Color"
 		public_name "Color"
 	}
 	{
 		component_id "1"
-		attribute "bCastShadow"
+		property "bCastShadow"
 		public_name "bCastShadow"
 	}	
 	{
 		component_id "1"
-		attribute "ShadowMaxDistance"
+		property "ShadowMaxDistance"
 		public_name "ShadowMaxDistance"
 	}
 	{
 		component_id "1"
-		attribute "ShadowCascadeResolution"
+		property "ShadowCascadeResolution"
 		public_name "ShadowCascadeResolution"
 	}
 	{
 		component_id "1"
-		attribute "ShadowCascadeOffset"
+		property "ShadowCascadeOffset"
 		public_name "ShadowCascadeOffset"
 	}
 	{
 		component_id "1"
-		attribute "ShadowCascadeSplitLambda"
+		property "ShadowCascadeSplitLambda"
 		public_name "ShadowCascadeSplitLambda"
 	}	
 	{
 		component_id "1"
-		attribute "MaxShadowCascades"
+		property "MaxShadowCascades"
 		public_name "MaxShadowCascades"
 	}
 ]

@@ -99,22 +99,22 @@ ABaseObject* ABaseObject::FindObject(uint64_t _Id)
     return nullptr;
 }
 
-void ABaseObject::SetAttributes_r(AClassMeta const* Meta, THashContainer<AString, AString> const& Attributes)
+void ABaseObject::SetProperties_r(AClassMeta const* Meta, THashContainer<AString, AString> const& Properties)
 {
     if (Meta)
     {
-        SetAttributes_r(Meta->SuperClass(), Attributes);
+        SetProperties_r(Meta->SuperClass(), Properties);
 
-        for (AAttributeMeta const* attrib = Meta->GetAttribList(); attrib; attrib = attrib->Next())
+        for (AProperty const* prop = Meta->GetPropertyList(); prop; prop = prop->Next())
         {
-            int hash = attrib->GetNameHash();
+            int hash = prop->GetNameHash();
 
-            for (int i = Attributes.First(hash); i != -1; i = Attributes.Next(i))
+            for (int i = Properties.First(hash); i != -1; i = Properties.Next(i))
             {
-                if (!Attributes[i].first.Icmp(attrib->GetName()))
+                if (!Properties[i].first.Icmp(prop->GetName()))
                 {
-                    // Attribute found
-                    attrib->SetValue(this, Attributes[i].second);
+                    // Property found
+                    prop->SetValue(this, Properties[i].second);
                     break;
                 }
             }
@@ -122,22 +122,22 @@ void ABaseObject::SetAttributes_r(AClassMeta const* Meta, THashContainer<AString
     }
 }
 
-void ABaseObject::SetAttributes(THashContainer<AString, AString> const& Attributes)
+void ABaseObject::SetProperties(THashContainer<AString, AString> const& Properties)
 {
-    if (Attributes.IsEmpty())
+    if (Properties.IsEmpty())
     {
         return;
     }
-    SetAttributes_r(&FinalClassMeta(), Attributes);
+    SetProperties_r(&FinalClassMeta(), Properties);
 }
 
-bool ABaseObject::SetAttribute(AStringView AttributeName, AStringView AttributeValue)
+bool ABaseObject::SetProperty(AStringView PropertyName, AStringView PropertyValue)
 {
-    AAttributeMeta const* attrib = FinalClassMeta().FindAttribute(AttributeName, true);
-    if (!attrib)
+    AProperty const* prop = FinalClassMeta().FindProperty(PropertyName, true);
+    if (!prop)
         return false;
 
-    attrib->SetValue(this, AttributeValue);
+    prop->SetValue(this, PropertyValue);
     return true;
 }
 

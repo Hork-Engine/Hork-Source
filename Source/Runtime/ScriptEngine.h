@@ -67,9 +67,9 @@ public:
 
     static AActorScript* GetScript(asIScriptObject* pObject);
 
-    static void SetAttributes(asIScriptObject* pObject, THashContainer<AString, AString> const& Attributes);
-    static bool SetAttribute(asIScriptObject* pObject, AStringView AttributeName, AStringView AttributeValue);    
-    static void CloneAttributes(asIScriptObject* Template, asIScriptObject* Destination);
+    static void SetProperties(asIScriptObject* pObject, THashContainer<AString, AString> const& Properties);
+    static bool SetProperty(asIScriptObject* pObject, AStringView PropertyName, AStringView PropertyValue);    
+    static void CloneProperties(asIScriptObject* Template, asIScriptObject* Destination);
 
     AString const& GetModule() const { return Module; }
 

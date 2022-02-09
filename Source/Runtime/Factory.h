@@ -40,7 +40,7 @@ SOFTWARE.
 #include <Geometry/Quat.h>
 
 class AClassMeta;
-class AAttributeMeta;
+class AProperty;
 class ADummy;
 
 class AObjectFactory
@@ -87,7 +87,7 @@ class AClassMeta
     HK_FORBID_COPY(AClassMeta)
 
     friend class AObjectFactory;
-    friend class AAttributeMeta;
+    friend class AProperty;
 
 public:
     const uint64_t ClassId;
@@ -97,7 +97,7 @@ public:
     AClassMeta const*     SuperClass() const { return pSuperClass; }
     AClassMeta const*     Next() const { return pNext; }
     AObjectFactory const* Factory() const { return pFactory; }
-    AAttributeMeta const* GetAttribList() const { return AttributesHead; }
+    AProperty const*      GetPropertyList() const { return PropertyList; }
 
     bool IsSubclassOf(AClassMeta const& _Superclass) const
     {
@@ -117,11 +117,9 @@ public:
         return IsSubclassOf(_Superclass::ClassMeta());
     }
 
-    // TODO: class flags?
-
     virtual ADummy* CreateInstance() const = 0;
 
-    static void CloneAttributes(ADummy const* _Template, ADummy* _Destination);
+    static void CloneProperties(ADummy const* _Template, ADummy* _Destination);
 
     static AObjectFactory& DummyFactory()
     {
@@ -130,8 +128,8 @@ public:
     }
 
     // Utilites
-    AAttributeMeta const* FindAttribute(AStringView _Name, bool _Recursive) const;
-    void                  GetAttributes(TPodVector<AAttributeMeta const*>& _Attributes, bool _Recursive = true) const;
+    AProperty const* FindProperty(AStringView _Name, bool bRecursive) const;
+    void             GetProperties(TPodVector<AProperty const*>& Properties, bool bRecursive = true) const;
 
 protected:
     AClassMeta(AObjectFactory& _Factory, const char* _ClassName, AClassMeta const* _SuperClassMeta) :
@@ -140,22 +138,22 @@ protected:
         HK_ASSERT_(_Factory.FindClass(_ClassName) == NULL, "Class already defined");
         pNext            = _Factory.Classes;
         pSuperClass      = _SuperClassMeta;
-        AttributesHead   = nullptr;
-        AttributesTail   = nullptr;
+        PropertyList     = nullptr;
+        PropertyListTail = nullptr;
         _Factory.Classes = this;
         _Factory.NumClasses++;
         pFactory = &_Factory;
     }
 
 private:
-    static void CloneAttributes_r(AClassMeta const* Meta, ADummy const* _Template, ADummy* _Destination);
+    static void CloneProperties_r(AClassMeta const* Meta, ADummy const* _Template, ADummy* _Destination);
 
     const char*           ClassName;
     AClassMeta*           pNext;
     AClassMeta const*     pSuperClass;
     AObjectFactory const* pFactory;
-    AAttributeMeta const* AttributesHead;
-    AAttributeMeta const* AttributesTail;
+    AProperty const*      PropertyList;
+    AProperty const*      PropertyListTail;
 };
 
 HK_FORCEINLINE ADummy* AObjectFactory::CreateInstance(const char* _ClassName) const
@@ -175,235 +173,297 @@ HK_FORCEINLINE AClassMeta const* AObjectFactory::GetClassList() const
     return Classes;
 }
 
-class AAttributeMeta
+using APackedValue = AString;
+
+struct SPropertyRange
 {
-    HK_FORBID_COPY(AAttributeMeta)
+    int64_t MinIntegral = 0;
+    int64_t MaxIntegral = 0;
+    double  MinFloat    = 0;
+    double  MaxFloat    = 0;
+
+    bool IsUnbound() const
+    {
+        return MinIntegral == MaxIntegral && MinFloat == MaxFloat;
+    }
+};
+
+constexpr SPropertyRange Unbound()
+{
+    return SPropertyRange();
+}
+
+constexpr SPropertyRange RangeInt(int64_t MinIntegral, int64_t MaxIntegral)
+{
+    return {MinIntegral, MaxIntegral, static_cast<double>(MinIntegral), static_cast<double>(MaxIntegral)};
+}
+
+constexpr SPropertyRange RangeFloat(double MinFloat, double MaxFloat)
+{
+    return {static_cast<int64_t>(MinFloat), static_cast<int64_t>(MaxFloat), MinFloat, MaxFloat};
+}
+
+/*
+
+Property flags
+
+*/
+#define HK_PROPERTY_DEFAULT          0
+#define HK_PROPERTY_NON_SERIALIZABLE 1
+#define HK_PROPERTY_BITMASK          2
+
+class AProperty
+{
+    HK_FORBID_COPY(AProperty)
 
 public:
-    const char* GetName() const { return Name.c_str(); }
-    int         GetNameHash() const { return NameHash; }
-    uint32_t    GetFlags() const { return Flags; }
+    using SetterFun = void (*)(ADummy*, APackedValue const&);
+    using GetterFun = APackedValue (*)(ADummy const*);
+    using CopyFun   = void (*)(ADummy*, ADummy const*);
 
-    AAttributeMeta const* Next() const { return pNext; }
-    AAttributeMeta const* Prev() const { return pPrev; }
+    enum TYPE
+    {
+        NUMERIC_SIGNED,
+        NUMERIC_UNSIGNED,
+        NUMERIC_FLOAT,
+        ENUM,
+        STRING,
+        NON_TRIVIAL
+    };
 
-    AAttributeMeta(AClassMeta const& _ClassMeta, const char* _Name, uint32_t _Flags) :
-        Name(std::string(_ClassMeta.GetName()) + "." + _Name), NameHash(Core::Hash(Name.c_str(), Name.length())), Flags(_Flags)
+    AProperty(AClassMeta const& _ClassMeta, TYPE Type, const char* EnumList, const char* Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, uint32_t Flags) :
+        Type(Type),
+        EnumList(EnumList),
+        Name(Name),
+        NameHash(Core::Hash(Name, Platform::Strlen(Name))),
+        Range(Range),
+        Flags(Flags),
+        Setter(std::move(Setter)),
+        Getter(std::move(Getter)),
+        Copy(std::move(Copy))
+
     {
         AClassMeta& classMeta = const_cast<AClassMeta&>(_ClassMeta);
         pNext                 = nullptr;
-        pPrev                 = classMeta.AttributesTail;
+        pPrev                 = classMeta.PropertyListTail;
         if (pPrev)
         {
-            const_cast<AAttributeMeta*>(pPrev)->pNext = this;
+            const_cast<AProperty*>(pPrev)->pNext = this;
         }
         else
         {
-            classMeta.AttributesHead = this;
+            classMeta.PropertyList = this;
         }
-        classMeta.AttributesTail = this;
+        classMeta.PropertyListTail = this;
     }
 
-    // TODO: Min/Max range for integer or float attributes, support for enums
-
-    void SetValue(ADummy* _Object, AString const& _Value) const
+    void SetValue(ADummy* pObject, APackedValue const& PackedVal) const
     {
-        FromString(_Object, _Value);
+        Setter(pObject, PackedVal);
     }
 
-    void GetValue(ADummy* _Object, AString& _Value) const
+    APackedValue GetValue(ADummy const* pObject) const
     {
-        ToString(_Object, _Value);
+        return Getter(pObject);
     }
 
-    void CopyValue(ADummy const* _Src, ADummy* _Dst) const
+    void CopyValue(ADummy* Dst, ADummy const* Src) const
     {
-        Copy(_Src, _Dst);
+        return Copy(Dst, Src);
     }
+
+    const char*           GetName() const { return Name; }
+    int                   GetNameHash() const { return NameHash; }
+    const char*           GetEnumList() const { return EnumList; }
+    SPropertyRange const& GetRange() const { return Range; }
+    uint32_t              GetFlags() const { return Flags; }
+    AProperty const*      Next() const { return pNext; }
+    AProperty const*      Prev() const { return pPrev; }
 
 private:
-    std::string           Name;
-    int                   NameHash;
-    AAttributeMeta const* pNext;
-    AAttributeMeta const* pPrev;
-    uint32_t              Flags;
-
-protected:
-    std::function<void(ADummy*, AString const&)> FromString;
-    std::function<void(ADummy*, AString&)>       ToString;
-    std::function<void(ADummy const*, ADummy*)>  Copy;
+    TYPE             Type;
+    const char*      Name;
+    int              NameHash;
+    const char*      EnumList;
+    SPropertyRange   Range;
+    uint32_t         Flags;
+    SetterFun        Setter;
+    GetterFun        Getter;
+    CopyFun          Copy;
+    AProperty const* pNext;
+    AProperty const* pPrev;
 };
 
-
-template <typename AttributeType>
-void SetAttributeFromString(AttributeType& Attribute, AString const& String);
-
-
-HK_FORCEINLINE void SetAttributeFromString(uint8_t& Attribute, AString const& String)
+template <std::size_t N, typename T0, typename... Ts>
+struct _ArgumentTypeN
 {
-    Attribute = Math::ToInt<uint8_t>(String);
-}
-
-HK_FORCEINLINE void SetAttributeFromString(bool& Attribute, AString const& String)
-{
-    Attribute = !!Math::ToInt<uint8_t>(String);
-}
-
-HK_FORCEINLINE void SetAttributeFromString(int32_t& Attribute, AString const& String)
-{
-    Attribute = Math::ToInt<int32_t>(String);
-}
-
-HK_FORCEINLINE void SetAttributeFromString(float& Attribute, AString const& String)
-{
-    uint32_t i = Math::ToInt<uint32_t>(String);
-    Attribute  = *(float*)&i;
-}
-
-HK_FORCEINLINE void SetAttributeFromString(Float2& Attribute, AString const& String)
-{
-    uint32_t tmp[2];
-    sscanf(String.CStr(), "%d %d", &tmp[0], &tmp[1]);
-    for (int i = 0; i < 2; i++)
-    {
-        Attribute[i] = *(float*)&tmp[i];
-    }
-}
-
-HK_FORCEINLINE void SetAttributeFromString(Float3& Attribute, AString const& String)
-{
-    uint32_t tmp[3];
-    sscanf(String.CStr(), "%d %d %d", &tmp[0], &tmp[1], &tmp[2]);
-    for (int i = 0; i < 3; i++)
-    {
-        Attribute[i] = *(float*)&tmp[i];
-    }
-}
-
-HK_FORCEINLINE void SetAttributeFromString(Float4& Attribute, AString const& String)
-{
-    uint32_t tmp[4];
-    sscanf(String.CStr(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3]);
-    for (int i = 0; i < 4; i++)
-    {
-        Attribute[i] = *(float*)&tmp[i];
-    }
-}
-
-HK_FORCEINLINE void SetAttributeFromString(Quat& Attribute, AString const& String)
-{
-    uint32_t tmp[4];
-    sscanf(String.CStr(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3]);
-    for (int i = 0; i < 4; i++)
-    {
-        Attribute[i] = *(float*)&tmp[i];
-    }
-}
-
-HK_FORCEINLINE void SetAttributeFromString(AString& Attribute, AString const& String)
-{
-    Attribute = String;
-}
-
-
-template <typename AttributeType>
-void SetAttributeToString(AttributeType const& Attribute, AString& String);
-
-HK_FORCEINLINE void SetAttributeToString(uint8_t const& Attribute, AString& String)
-{
-    String = Math::ToString(Attribute);
-}
-
-HK_FORCEINLINE void SetAttributeToString(bool const& Attribute, AString& String)
-{
-    String = Math::ToString(Attribute);
-}
-
-HK_FORCEINLINE void SetAttributeToString(int32_t const& Attribute, AString& String)
-{
-    String = Math::ToString(Attribute);
-}
-
-HK_FORCEINLINE void SetAttributeToString(float const& Attribute, AString& String)
-{
-    String = Math::ToString(*((uint32_t*)&Attribute));
-}
-
-HK_FORCEINLINE void SetAttributeToString(Float2 const& Attribute, AString& String)
-{
-    String = Math::ToString(*((uint32_t*)&Attribute.X)) + " " + Math::ToString(*((uint32_t*)&Attribute.Y));
-    ;
-}
-
-HK_FORCEINLINE void SetAttributeToString(Float3 const& Attribute, AString& String)
-{
-    String = Math::ToString(*((uint32_t*)&Attribute.X)) + " " + Math::ToString(*((uint32_t*)&Attribute.Y)) + " " + Math::ToString(*((uint32_t*)&Attribute.Z));
-}
-
-HK_FORCEINLINE void SetAttributeToString(Float4 const& Attribute, AString& String)
-{
-    String = Math::ToString(*((uint32_t*)&Attribute.X)) + " " + Math::ToString(*((uint32_t*)&Attribute.Y)) + " " + Math::ToString(*((uint32_t*)&Attribute.Z)) + " " + Math::ToString(*((uint32_t*)&Attribute.W));
-}
-
-HK_FORCEINLINE void SetAttributeToString(Quat const& Attribute, AString& String)
-{
-    String = Math::ToString(*((uint32_t*)&Attribute.X)) + " " + Math::ToString(*((uint32_t*)&Attribute.Y)) + " " + Math::ToString(*((uint32_t*)&Attribute.Z)) + " " + Math::ToString(*((uint32_t*)&Attribute.W));
-}
-
-HK_FORCEINLINE void SetAttributeToString(AString const& Attribute, AString& String)
-{
-    String = Attribute;
-}
-
-template <typename ObjectType, typename AttributeType>
-class TAttributeMeta : public AAttributeMeta
-{
-    HK_FORBID_COPY(TAttributeMeta)
-
-public:
-    template <typename AttributeSetterType, typename AttributeGetterType>
-    TAttributeMeta(AClassMeta const& _ClassMeta, const char* _Name, void (ObjectType::*_Setter)(AttributeSetterType), AttributeGetterType (ObjectType::*_Getter)() const, int _Flags) :
-        AAttributeMeta(_ClassMeta, _Name, _Flags)
-    {
-        FromString = [_Setter](ADummy* _Object, AString const& _Value)
-        {
-            AttributeType Attribute;
-
-            SetAttributeFromString(Attribute, _Value);
-
-            (*static_cast<ObjectType*>(_Object).*_Setter)(Attribute);
-        };
-
-        ToString = [_Getter](ADummy* _Object, AString& _Value)
-        {
-            SetAttributeToString((*static_cast<ObjectType*>(_Object).*_Getter)(), _Value);
-        };
-
-        Copy = [_Setter, _Getter](ADummy const* _Src, ADummy* _Dst)
-        {
-            (*static_cast<ObjectType*>(_Dst).*_Setter)((*static_cast<ObjectType const*>(_Src).*_Getter)());
-        };
-    }
-
-    TAttributeMeta(AClassMeta const& _ClassMeta, const char* _Name, AttributeType* _AttribPointer, int _Flags) :
-        AAttributeMeta(_ClassMeta, _Name, _Flags)
-    {
-        FromString = [_AttribPointer](ADummy* _Object, AString const& _Value)
-        {
-            SetAttributeFromString(*(AttributeType*)((byte*)static_cast<ObjectType*>(_Object) + (size_t)_AttribPointer), _Value);
-        };
-
-        ToString = [_AttribPointer](ADummy* _Object, AString& _Value)
-        {
-            SetAttributeToString(*(AttributeType*)((byte*)static_cast<ObjectType*>(_Object) + (size_t)_AttribPointer), _Value);
-        };
-
-        Copy = [_AttribPointer](ADummy const* _Src, ADummy* _Dst)
-        {
-            *(AttributeType*)((byte*)static_cast<ObjectType*>(_Dst) + (size_t)_AttribPointer) = *(AttributeType const*)((byte const*)static_cast<ObjectType const*>(_Src) + (size_t)_AttribPointer);
-        };
-    }
+    using Type = typename _ArgumentTypeN<N - 1U, Ts...>::Type;
 };
+
+template <typename T0, typename... Ts>
+struct _ArgumentTypeN<0U, T0, Ts...>
+{
+    using Type = T0;
+};
+
+template <std::size_t, typename>
+struct TArgumentType;
+
+template <std::size_t N, typename Class, typename R, typename... As>
+struct TArgumentType<N, R (Class::*)(As...)>
+{
+    using Type = typename _ArgumentTypeN<N, As...>::Type;
+};
+
+template <typename>
+struct TReturnType;
+
+template <class Class, class R, class... As>
+struct TReturnType<R (Class::*)(As...) const>
+{
+    using Type = R;
+};
+
+template <class Class, class R, class... As>
+struct TReturnType<R (Class::*)(As...)>
+{
+    using Type = R;
+};
+
+template <typename T>
+const char* GetEnumList()
+{
+    return "";
+}
+
+template <typename T>
+APackedValue PackObject(T const&);
+
+template <typename T>
+T UnpackObject(APackedValue const&);
+
+template <typename T>
+constexpr AProperty::TYPE GetPropertyType()
+{
+    return std::is_enum<T>::value ?
+        AProperty::ENUM :
+        (std::is_arithmetic<T>::value ? (std::is_integral<T>::value ?
+                                             (std::is_unsigned<T>::value ? AProperty::NUMERIC_UNSIGNED : AProperty::NUMERIC_SIGNED) :
+                                             (AProperty::NUMERIC_FLOAT)) :
+                                        AProperty::NON_TRIVIAL);
+}
+
+template <> HK_FORCEINLINE APackedValue PackObject(bool const& Val) { return Val ? "1" : "0"; }
+template <> HK_FORCEINLINE APackedValue PackObject(uint8_t const& Val) { return Math::ToString(Val); }
+template <> HK_FORCEINLINE APackedValue PackObject(uint16_t const& Val) { return Math::ToString(Val); }
+template <> HK_FORCEINLINE APackedValue PackObject(uint32_t const& Val) { return Math::ToString(Val); }
+template <> HK_FORCEINLINE APackedValue PackObject(uint64_t const& Val) { return Math::ToString(Val); }
+template <> HK_FORCEINLINE APackedValue PackObject(int8_t const& Val) { return Math::ToString(Val); }
+template <> HK_FORCEINLINE APackedValue PackObject(int16_t const& Val) { return Math::ToString(Val); }
+template <> HK_FORCEINLINE APackedValue PackObject(int32_t const& Val) { return Math::ToString(Val); }
+template <> HK_FORCEINLINE APackedValue PackObject(int64_t const& Val) { return Math::ToString(Val); }
+template <> HK_FORCEINLINE APackedValue PackObject(float const& Val) { return Math::ToString(*((uint32_t*)&Val)); }
+template <> HK_FORCEINLINE APackedValue PackObject(double const& Val) { return Math::ToString(*((uint64_t*)&Val)); }
+
+template <typename VectorType>
+APackedValue PackVector(VectorType const& Vector)
+{
+    APackedValue packedVal;
+    for (auto i = 0; i < Vector.NumComponents(); i++)
+    {
+        packedVal += Math::ToString(*((uint32_t*)&Vector[i]));
+        if (i + 1 < Vector.NumComponents())
+            packedVal += " ";
+    }
+    return packedVal;
+}
+
+template <> HK_FORCEINLINE APackedValue PackObject(Float2 const& Val) { return PackVector(Val); }
+template <> HK_FORCEINLINE APackedValue PackObject(Float3 const& Val) { return PackVector(Val); }
+template <> HK_FORCEINLINE APackedValue PackObject(Float4 const& Val) { return PackVector(Val); }
+template <> HK_FORCEINLINE APackedValue PackObject(Quat const& Val) { return PackVector(Val); }
+
+template <> HK_FORCEINLINE bool     UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<uint64_t>(PackedVal) != 0; }
+template <> HK_FORCEINLINE uint8_t  UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<uint8_t>(PackedVal); }
+template <> HK_FORCEINLINE uint16_t UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<uint16_t>(PackedVal); }
+template <> HK_FORCEINLINE uint32_t UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<uint32_t>(PackedVal); }
+template <> HK_FORCEINLINE uint64_t UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<uint64_t>(PackedVal); }
+template <> HK_FORCEINLINE int8_t   UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<int8_t>(PackedVal); }
+template <> HK_FORCEINLINE int16_t  UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<int16_t>(PackedVal); }
+template <> HK_FORCEINLINE int32_t  UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<int32_t>(PackedVal); }
+template <> HK_FORCEINLINE int64_t  UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<int64_t>(PackedVal); }
+
+template <>
+HK_FORCEINLINE float UnpackObject(APackedValue const& PackedVal)
+{
+    uint32_t i = Math::ToInt<uint32_t>(PackedVal);
+    return *(float*)&i;
+}
+
+template <>
+HK_FORCEINLINE double UnpackObject(APackedValue const& PackedVal)
+{
+    uint64_t i = Math::ToInt<uint64_t>(PackedVal);
+    return *(double*)&i;
+}
+
+template <typename VectorType>
+VectorType UnpackVector(APackedValue const& PackedVal)
+{
+    uint32_t tmp[VectorType::NumComponents()] = {};
+
+    switch (VectorType::NumComponents())
+    {
+        case 2:
+            sscanf(PackedVal.CStr(), "%d %d", &tmp[0], &tmp[1]);
+            break;
+        case 3:
+            sscanf(PackedVal.CStr(), "%d %d %d", &tmp[0], &tmp[1], &tmp[2]);
+            break;
+        case 4:
+            sscanf(PackedVal.CStr(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3]);
+            break;
+    }
+
+    VectorType v;
+    for (auto i = 0; i < v.NumComponents(); i++)
+    {
+        v[i] = *(float*)&tmp[i];
+    }
+    return v;
+}
+
+template <> HK_FORCEINLINE Float2 UnpackObject(APackedValue const& PackedVal) { return UnpackVector<Float2>(PackedVal); }
+template <> HK_FORCEINLINE Float3 UnpackObject(APackedValue const& PackedVal) { return UnpackVector<Float3>(PackedVal); }
+template <> HK_FORCEINLINE Float4 UnpackObject(APackedValue const& PackedVal) { return UnpackVector<Float4>(PackedVal); }
+template <> HK_FORCEINLINE Quat   UnpackObject(APackedValue const& PackedVal) { return UnpackVector<Quat>(PackedVal); }
+
+template <>
+HK_FORCEINLINE APackedValue PackObject(AString const& Val)
+{
+    return Val;
+}
+
+template <>
+HK_FORCEINLINE AString UnpackObject(APackedValue const& PackedVal)
+{
+    return PackedVal;
+}
+
+template <typename T>
+APackedValue PackObject(T const& Val)
+{
+    return Val.Pack();
+}
+
+template <typename T>
+T UnpackObject(APackedValue const& PackedVal)
+{
+    T val;
+    val.Unpack(PackedVal);
+    return val;
+}
+
 
 #define _HK_GENERATED_CLASS_BODY()                    \
 public:                                               \
@@ -445,41 +505,6 @@ public:                                               \
         Allocator::Inst().Free(_Ptr);                 \
     }
 
-
-//template <typename T>
-//using EnableIfDerivedFromDummy = typename std::enable_if<std::is_base_of<class ADummy, T>::value, T>::type;
-//
-//template <typename T, EnableIfDerivedFromDummy<T>* = nullptr> class TObjectCreator
-//{
-//public:
-//    template <typename... TArgs>
-//    static T* CreateInstance(TArgs&&... _Args)
-//    {
-//        return new FinalClass(std::forward<TArgs>(_Args)...);
-//    }
-//
-//private:
-//    class FinalClass : private T
-//    {
-//        template <typename... TArgs>
-//        FinalClass(TArgs&&... _Args) :
-//            T(std::forward<TArgs>(_Args)...)
-//        {
-//        }
-//        ~FinalClass()
-//        {
-//        }
-//        virtual void FactoryImpl(typename T::SFactoryImplKey&&) override {}
-//        friend class TObjectCreator;
-//    };
-//};
-
-template <typename T, typename... TArgs> T* CreateInstanceOf(TArgs&&... _Args)
-{
-    //return TObjectCreator<T>::CreateInstance(std::forward<TArgs>(_Args)...);
-    return new T(std::forward<TArgs>(_Args)...);
-}
-
 #define HK_CLASS(_Class, _SuperClass) \
     HK_FACTORY_CLASS(AClassMeta::DummyFactory(), _Class, _SuperClass)
 
@@ -499,7 +524,7 @@ public:                                                                         
     public:                                                                               \
         ThisClassMeta() : AClassMeta(_Factory, HK_STRINGIFY(_Class), &Super::ClassMeta()) \
         {                                                                                 \
-            RegisterAttributes();                                                         \
+            RegisterProperties();                                                         \
         }                                                                                 \
         ADummy* CreateInstance() const override                                           \
         {                                                                                 \
@@ -507,7 +532,7 @@ public:                                                                         
         }                                                                                 \
                                                                                           \
     private:                                                                              \
-        void RegisterAttributes();                                                        \
+        void RegisterProperties();                                                        \
     };                                                                                    \
     _HK_GENERATED_CLASS_BODY()                                                            \
 private:
@@ -516,25 +541,100 @@ private:
 
 #define HK_BEGIN_CLASS_META(_Class)                               \
     AClassMeta const& _Class##__Meta = _Class::ClassMeta();       \
-    void              _Class::ThisClassMeta::RegisterAttributes() \
+    void              _Class::ThisClassMeta::RegisterProperties() \
     {
 
 #define HK_END_CLASS_META() \
     }
 
-#define HK_CLASS_META(_Class) HK_BEGIN_CLASS_META(_Class) \
-HK_END_CLASS_META()
+#define HK_CLASS_META(_Class)   \
+    HK_BEGIN_CLASS_META(_Class) \
+    HK_END_CLASS_META()
 
-#define HK_ATTRIBUTE(_Name, _Type, _Setter, _Getter, _Flags) \
-    static TAttributeMeta<ThisClass, _Type> const _Name##Meta(*this, HK_STRINGIFY(_Name), &ThisClass::_Setter, &ThisClass::_Getter, _Flags);
+/** Provides direct access to a class member. */
+#define HK_PROPERTY_DIRECT(Member, Flags)                                                                                                                                                     \
+    static AProperty const Property##Member(                                                                                                                                            \
+        *this,                                                                                                                                                                           \
+        GetPropertyType<decltype(ThisClass::Member)>(),                                                                                                                                 \
+        GetEnumList<decltype(ThisClass::Member)>(),                                                                                                                                      \
+        #Member,                                                                                                                                                                         \
+        [](ADummy* pObject, APackedValue const& PackedVal)                                                                                                                               \
+        {                                                                                                                                                                                \
+            using T        = decltype(ThisClass::Member);                                                                                                                                \
+            void* pAddress = (uint8_t*)pObject + offsetof(ThisClass, Member);                                                                                                            \
+            *(T*)pAddress  = UnpackObject<T>(PackedVal);                                                                                                                                 \
+        },                                                                                                                                                                               \
+        [](ADummy const* pObject) -> APackedValue                                                                                                                                        \
+        {                                                                                                                                                                                \
+            using T              = decltype(ThisClass::Member);                                                                                                                          \
+            void const* pAddress = (uint8_t*)pObject + offsetof(ThisClass, Member);                                                                                                      \
+            return PackObject(*(T const*)pAddress);                                                                                                                                      \
+        },                                                                                                                                                                               \
+        [](ADummy* Dst, ADummy const* Src)                                                                                                                                               \
+        {                                                                                                                                                                                \
+            using T                                                                     = decltype(ThisClass::Member);                                                                   \
+            *(T*)((uint8_t*)static_cast<ThisClass*>(Dst) + offsetof(ThisClass, Member)) = *(T const*)((uint8_t const*)static_cast<ThisClass const*>(Src) + offsetof(ThisClass, Member)); \
+        },                                                                                                                                                                               \
+        Flags);
 
-#define HK_ATTRIBUTE_(_Name, _Flags) \
-    static TAttributeMeta<ThisClass, decltype(((ThisClass*)0)->_Name)> const _Name##Meta(*this, HK_STRINGIFY(_Name), (&((ThisClass*)0)->_Name), _Flags);
+/** Provides access to a class member via a setter/getter. */
+#define HK_PROPERTY(Member, Setter, Getter, Flags)                                                                                                                                                                                                                       \
+    static AProperty const Property##Member(                                                                                                                                                                                                                             \
+        *this,                                                                                                                                                                                                                                                            \
+        GetPropertyType<decltype(ThisClass::Member)>(),                                                                                                                                                                                                                  \
+        GetEnumList<decltype(ThisClass::Member)>(),                                                                                                                                                                                                                       \
+        #Member,                                                                                                                                                                                                                                                          \
+        [](ADummy* pObject, APackedValue const& PackedVal)                                                                                                                                                                                                                \
+        {                                                                                                                                                                                                                                                                 \
+            using T = decltype(ThisClass::Member);                                                                                                                                                                                                                        \
+            static_assert(std::is_same<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type, T>::value || std::is_same<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type, T const&>::value, "Setter argument type does not match property type"); \
+            static_cast<ThisClass*>(pObject)->Setter(UnpackObject<T>(PackedVal));                                                                                                                                                                                         \
+        },                                                                                                                                                                                                                                                                \
+        [](ADummy const* pObject) -> APackedValue                                                                                                                                                                                                                         \
+        {                                                                                                                                                                                                                                                                 \
+            using T = decltype(ThisClass::Member);                                                                                                                                                                                                                        \
+            static_assert(std::is_same<TReturnType<decltype(&ThisClass::Getter)>::Type, T>::value || std::is_same<TReturnType<decltype(&ThisClass::Getter)>::Type, T const&>::value, "Getter return type does not match property type");                                 \
+            return PackObject(static_cast<ThisClass const*>(pObject)->Getter());                                                                                                                                                                                          \
+        },                                                                                                                                                                                                                                                                \
+        [](ADummy* Dst, ADummy const* Src)                                                                                                                                                                                                                                \
+        {                                                                                                                                                                                                                                                                 \
+            static_cast<ThisClass*>(Dst)->Setter(static_cast<ThisClass const*>(Src)->Getter());                                                                                                                                                                           \
+        },                                                                                                                                                                                                                                                                \
+        Flags);
 
-/* Attribute flags */
-#define AF_DEFAULT          0
-#define AF_NON_SERIALIZABLE 1
+/** Provides access to a class property via a setter/getter without a class member. */
+#define HK_PROPERTY2(MemberType, Name, Setter, Getter, Flags)                                                                                                                                                                                                            \
+    static AProperty const Property##Setter(                                                                                                                                                                                                                             \
+        *this,                                                                                                                                                                                                                                                            \
+        GetPropertyType<MemberType>(),                                                                                                                                                                                                                                   \
+        GetEnumList<MemberType>(),                                                                                                                                                                                                                                        \
+        Name,                                                                                                                                                                                                                                                             \
+        [](ADummy* pObject, APackedValue const& PackedVal)                                                                                                                                                                                                                \
+        {                                                                                                                                                                                                                                                                 \
+            using T = MemberType;                                                                                                                                                                                                                                         \
+            static_assert(std::is_same<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type, T>::value || std::is_same<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type, T const&>::value, "Setter argument type does not match property type"); \
+            static_cast<ThisClass*>(pObject)->Setter(UnpackObject<T>(PackedVal));                                                                                                                                                                                         \
+        },                                                                                                                                                                                                                                                                \
+        [](ADummy const* pObject) -> APackedValue                                                                                                                                                                                                                         \
+        {                                                                                                                                                                                                                                                                 \
+            using T = MemberType;                                                                                                                                                                                                                                         \
+            static_assert(std::is_same<TReturnType<decltype(&ThisClass::Getter)>::Type, T>::value || std::is_same<TReturnType<decltype(&ThisClass::Getter)>::Type, T const&>::value, "Getter return type does not match property type");                                 \
+            return PackObject(static_cast<ThisClass const*>(pObject)->Getter());                                                                                                                                                                                          \
+        },                                                                                                                                                                                                                                                                \
+        [](ADummy* Dst, ADummy const* Src)                                                                                                                                                                                                                                \
+        {                                                                                                                                                                                                                                                                 \
+            static_cast<ThisClass*>(Dst)->Setter(static_cast<ThisClass const*>(Src)->Getter());                                                                                                                                                                           \
+        },                                                                                                                                                                                                                                                                \
+        Flags);
 
+
+
+
+template <typename T, typename... TArgs>
+T* CreateInstanceOf(TArgs&&... _Args)
+{
+    return new T(std::forward<TArgs>(_Args)...);
+}
 
 /**
 
@@ -565,18 +665,13 @@ public:
         }
 
     private:
-        void RegisterAttributes();
+        void RegisterProperties();
     };
 
     ADummy() {}
     virtual ~ADummy() {}
 
     _HK_GENERATED_CLASS_BODY()
-
-private:
-    //struct SFactoryImplKey;
-    //virtual void FactoryImpl(SFactoryImplKey&&) = 0;
-    //template <typename T, EnableIfDerivedFromDummy<T>*> friend class TObjectCreator; // Allow TObjectCreator to access to SFactoryImplKey
 };
 
 template <typename T>

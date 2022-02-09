@@ -46,19 +46,19 @@ public:
         uint64_t                         Id;
         uint64_t                         Attach;
         int                              ParentIndex{-1};
-        THashContainer<AString, AString> AttributeHash;
+        THashContainer<AString, AString> PropertyHash;
     };
 
-    struct SPublicAttriubte
+    struct SPublicProperty
     {
         int     ComponentIndex;
-        AString AttributeName;
+        AString PropertyName;
         AString PublicName;
     };
 
-    struct SScriptPublicAttriubte
+    struct SScriptPublicProperty
     {
-        AString AttributeName;
+        AString PropertyName;
         AString PublicName;
     };
 
@@ -66,13 +66,13 @@ public:
     TStdVector<SComponentDef> Components;
     int                       RootIndex{-1};
 
-    THashContainer<AString, AString> ActorAttributeHash;
-    TStdVector<SPublicAttriubte> PublicAttributes;
+    THashContainer<AString, AString> ActorPropertyHash;
+    TStdVector<SPublicProperty>      PublicProperties;
 
     AString                          ScriptModule;
-    THashContainer<AString, AString> ScriptAttributeHash;
+    THashContainer<AString, AString> ScriptPropertyHash;
 
-    TStdVector<SScriptPublicAttriubte> ScriptPublicAttributes;
+    TStdVector<SScriptPublicProperty> ScriptPublicProperties;
 
 protected:
     AActorDefinition();

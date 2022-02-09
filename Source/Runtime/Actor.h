@@ -167,8 +167,8 @@ public:
 
     bool IsInEditor() const { return bInEditor; }
 
-    /** Set attribute value by it's public name. See actor definition. */
-    bool SetPublicAttribute(AStringView PublicName, AStringView Value);
+    /** Set property value by it's public name. See actor definition. */
+    bool SetPublicProperty(AStringView PublicName, AStringView Value);
 
     class asILockableSharedBool* ScriptGetWeakRefFlag();
 
