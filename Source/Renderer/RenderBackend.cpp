@@ -164,6 +164,47 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
         generator.Render(&GLookupBRDF);
     }
 
+    // TODO: This is a temporary workaround for IBL.
+    // We need to load environment maps from resources!
+    TRef<ITexture> cubemap;
+    STextureDesc   cubemapCI = {};
+    cubemapCI.SetFormat(TEXTURE_FORMAT_SRGB8);
+    cubemapCI.SetResolution(STextureResolutionCubemap(1));
+    cubemapCI.SetBindFlags(BIND_SHADER_RESOURCE);
+    GDevice->CreateTexture(cubemapCI, &cubemap);
+    for (int face = 0; face < 6; face++)
+    {
+        STextureRect rect = {};
+        rect.Offset.Z     = face;
+        rect.Dimension.X  = 1;
+        rect.Dimension.Y  = 1;
+        rect.Dimension.Z  = 1;
+
+        uint8_t color[4] = {10, 10, 10, 255};
+        cubemap->WriteRect(rect, FORMAT_UBYTE3, sizeof(color), 1, color);
+    }
+    ITexture* cubemaps[] = {cubemap};
+    {
+        AEnvProbeGenerator envProbeGenerator;
+        envProbeGenerator.GenerateArray(7, HK_ARRAY_SIZE(cubemaps), cubemaps, &GPrefilteredMap);
+        SSamplerDesc samplerCI;
+        samplerCI.Filter           = FILTER_MIPMAP_BILINEAR;
+        samplerCI.bCubemapSeamless = true;
+
+        GPrefilteredMapBindless = GPrefilteredMap->GetBindlessSampler(samplerCI);
+        GPrefilteredMap->MakeBindlessSamplerResident(GPrefilteredMapBindless, true);
+    }
+    {
+        AIrradianceGenerator irradianceGenerator;
+        irradianceGenerator.GenerateArray(HK_ARRAY_SIZE(cubemaps), cubemaps, &GIrradianceMap);
+        SSamplerDesc samplerCI;
+        samplerCI.Filter           = FILTER_LINEAR;
+        samplerCI.bCubemapSeamless = true;
+
+        GIrradianceMapBindless = GIrradianceMap->GetBindlessSampler(samplerCI);
+        GIrradianceMap->MakeBindlessSamplerResident(GIrradianceMapBindless, true);
+    }
+
     /////////////////////////////////////////////////////////////////////
     // test
     /////////////////////////////////////////////////////////////////////
@@ -351,31 +392,8 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 
     Texture* cubemaps[] = {&cubemap};
 #endif
-
-
-
-    {
-        AEnvProbeGenerator envProbeGenerator;
-        envProbeGenerator.GenerateArray(7, HK_ARRAY_SIZE(cubemaps), cubemaps, &GPrefilteredMap);
-        SSamplerDesc samplerCI;
-        samplerCI.Filter           = FILTER_MIPMAP_BILINEAR;
-        samplerCI.bCubemapSeamless = true;
-
-        GPrefilteredMapBindless = GPrefilteredMap->GetBindlessSampler(samplerCI);
-        GPrefilteredMap->MakeBindlessSamplerResident(GPrefilteredMapBindless, true);
-    }
-
-    {
-        AIrradianceGenerator irradianceGenerator;
-        irradianceGenerator.GenerateArray(HK_ARRAY_SIZE(cubemaps), cubemaps, &GIrradianceMap);
-        SSamplerDesc samplerCI;
-        samplerCI.Filter           = FILTER_LINEAR;
-        samplerCI.bCubemapSeamless = true;
-
-        GIrradianceMapBindless = GIrradianceMap->GetBindlessSampler(samplerCI);
-        GIrradianceMap->MakeBindlessSamplerResident(GIrradianceMapBindless, true);
-    }
-
+    #endif
+    #if 0
     SVirtualTextureCacheLayerInfo layer;
     layer.TextureFormat   = TEXTURE_FORMAT_SRGB8;
     layer.UploadFormat    = FORMAT_UBYTE3;
