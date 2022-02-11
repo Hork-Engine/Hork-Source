@@ -30,6 +30,7 @@ SOFTWARE.
 
 #pragma once
 
+#include <Platform/BaseTypes.h>
 #include <algorithm>
 
 /**
