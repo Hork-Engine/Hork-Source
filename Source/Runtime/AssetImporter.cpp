@@ -2616,7 +2616,7 @@ bool LoadSkyboxImages(SAssetSkyboxImportSettings const& ImportSettings, TArray<A
     return true;
 }
 
-bool ImportEnviornmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSettings, AStringView EnvmapFile)
+bool ImportEnvironmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSettings, AStringView EnvmapFile)
 {
     TArray<AImage, 6>   faces;
     int                 width;

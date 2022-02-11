@@ -34,7 +34,7 @@ SOFTWARE.
 #include <Renderer/RenderDefs.h>
 
 /**
-An environment map in terms of the engine is both an irradiance map for image-based lighting and a prefiltered specular map.
+An environment map in terms of the engine is both an irradiance map for image-based lighting and a prefiltered reflection map.
 */
 class AEnvironmentMap : public AResource
 {

@@ -107,9 +107,6 @@ struct SViewConstantBuffer
     float IsPerspective;
     float TessellationLevel;
 
-    //uint64_t PrefilteredMapSampler;
-    //uint64_t IrradianceMapSampler;
-
     uint64_t GlobalIrradianceMap;
     uint64_t GlobalReflectionMap;
 

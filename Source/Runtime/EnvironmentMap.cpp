@@ -154,7 +154,6 @@ bool AEnvironmentMap::LoadResource(IBinaryStream& Stream)
     int irradianceMapWidth = Stream.ReadUInt32();
     int reflectionMapWidth = Stream.ReadUInt32();
     int numReflectionMapMips = Math::Log2((uint32_t)reflectionMapWidth);
-    HK_ASSERT(numReflectionMapMips == 7);
 
     CreateTextures(irradianceMapWidth, reflectionMapWidth);
 
