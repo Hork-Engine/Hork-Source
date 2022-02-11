@@ -283,7 +283,7 @@ static HK_FORCEINLINE bool IsBGR(EImagePixelFormat _PixelFormat)
     return false;
 }
 
-bool AImage::Load(const char* _Path, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat)
+bool AImage::Load(AStringView _Path, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat)
 {
     AFileStream stream;
 

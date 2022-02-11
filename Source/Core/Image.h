@@ -113,8 +113,8 @@ public:
     AImage();
     ~AImage();
 
-    bool Load(const char* _Path, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2);
-    bool Load(IBinaryStream& _Stream, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2);
+    bool Load(AStringView _Path, SImageMipmapConfig const* _MipmapGen = nullptr, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2);
+    bool Load(IBinaryStream& _Stream, SImageMipmapConfig const* _MipmapGen = nullptr, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2);
 
     /** Source data must be float* or byte* according to specified pixel format */
     void FromRawData(const void* _Source, int _Width, int _Height, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat);
