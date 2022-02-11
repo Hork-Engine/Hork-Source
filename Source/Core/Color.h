@@ -164,6 +164,17 @@ struct Color4
     Color4 ToLinear() const;
     Color4 ToSRGB() const;
 
+     // String conversions
+    AString ToString(int precision = Math::FloatingPointPrecision<float>()) const
+    {
+        return AString("( ") + Math::ToString(R, precision) + " " + Math::ToString(G, precision) + " " + Math::ToString(B, precision) + " " + Math::ToString(A, precision) + " )";
+    }
+
+    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
+    {
+        return AString("( ") + Math::ToHexString(R, bLeadingZeros, bPrefix) + " " + Math::ToHexString(G, bLeadingZeros, bPrefix) + " " + Math::ToHexString(B, bLeadingZeros, bPrefix) + " " + Math::ToHexString(A, bLeadingZeros, bPrefix) + " )";
+    }
+
     static Color4 const& White()
     {
         static Color4 color(1.0f);
