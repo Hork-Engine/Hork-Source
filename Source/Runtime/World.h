@@ -45,6 +45,7 @@ class ACameraComponent;
 class ATimer;
 class ADebugRenderer;
 class AGameModule;
+class AEnvironmentMap;
 
 /** Actor spawn parameters */
 struct SActorSpawnInfo
@@ -237,11 +238,8 @@ public:
     /** Scale audio volume in the entire world */
     float GetAudioVolume() const { return AudioVolume; }
 
-    void SetGlobalIrradianceMap(int Index);
-    int  GetGlobalIrradianceMap() const { return GlobalIrradianceMap; }
-
-    void SetGlobalReflectionMap(int Index);
-    int  GetGlobalReflectionMap() const { return GlobalReflectionMap; }
+    void SetGlobalEnvironmentMap(AEnvironmentMap* EnvironmentMap);
+    AEnvironmentMap* GetGlobalEnvironmentMap() const { return GlobalEnvironmentMap; }
 
     /** Per-triangle raycast */
     bool Raycast(SWorldRaycastResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SWorldRaycastFilter const* _Filter = nullptr) const;
@@ -486,8 +484,7 @@ private:
     /** Scale audio volume in the entire world */
     float AudioVolume = 1.0f;
 
-    int GlobalIrradianceMap = 0;
-    int GlobalReflectionMap = 0;
+    TRef<AEnvironmentMap> GlobalEnvironmentMap;
 
     // Physics extension
     AWorldPhysics WorldPhysics;

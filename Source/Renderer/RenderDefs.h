@@ -500,6 +500,10 @@ enum ETexturePixelFormat : uint8_t
     TEXTURE_PF_MAX
 };
 
+RenderCore::DATA_FORMAT GetTextureDataFormat(ETexturePixelFormat PixelFormat);
+
+RenderCore::TEXTURE_FORMAT GetTextureFormat(ETexturePixelFormat PixelFormat);
+
 struct STexturePixelFormat
 {
     ETexturePixelFormat Data;
@@ -534,6 +538,16 @@ struct STexturePixelFormat
     void Write( IBinaryStream & _Stream ) const
     {
         _Stream.WriteUInt8( (uint8_t)Data );
+    }
+
+    RenderCore::DATA_FORMAT GetTextureDataFormat() const
+    {
+        return ::GetTextureDataFormat(Data);
+    }
+
+    RenderCore::TEXTURE_FORMAT GetTextureFormat() const
+    {
+        return ::GetTextureFormat(Data);
     }
 
     static bool GetAppropriatePixelFormat( EImagePixelFormat const & _ImagePixelFormat, STexturePixelFormat & _PixelFormat );
@@ -1142,10 +1156,8 @@ struct SProbeParameters
     Float3 Position;
     float  Radius;
 
-    unsigned int IrradianceMap;
-    unsigned int ReflectionMap;
-    unsigned int Pad0;
-    unsigned int Pad1;
+    uint64_t IrradianceMap;
+    uint64_t ReflectionMap;
 };
 
 
@@ -1342,8 +1354,8 @@ struct SRenderView
     int TerrainInstanceCount;
 
     /** Global reflection & irradiance */
-    int GlobalIrradianceMap;
-    int GlobalReflectionMap;
+    uint64_t GlobalIrradianceMap;
+    uint64_t GlobalReflectionMap;
 };
 
 

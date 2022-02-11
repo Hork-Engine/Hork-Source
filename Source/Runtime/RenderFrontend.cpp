@@ -35,11 +35,12 @@ SOFTWARE.
 #include "SkinnedComponent.h"
 #include "DirectionalLightComponent.h"
 #include "AnalyticLightComponent.h"
-#include "IBLComponent.h"
+#include "EnvironmentProbe.h"
 #include "TerrainComponent.h"
 #include "PlayerController.h"
 #include "WDesktop.h"
 #include "Engine.h"
+#include "EnvironmentMap.h"
 
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/ScopedTimer.h>
@@ -336,8 +337,23 @@ void ARenderFrontend::RenderView(int _Index)
 
     QueryVisiblePrimitives(world);
 
-    view->GlobalIrradianceMap = world->GetGlobalIrradianceMap();
-    view->GlobalReflectionMap = world->GetGlobalReflectionMap();
+    AEnvironmentMap* pEnvironmentMap = world->GetGlobalEnvironmentMap();
+
+    if (pEnvironmentMap)
+    {
+        view->GlobalIrradianceMap = pEnvironmentMap->GetIrradianceHandle();
+        view->GlobalReflectionMap = pEnvironmentMap->GetReflectionHandle();
+    }
+    else
+    {
+        if (!DummyEnvironmentMap)
+        {
+            DummyEnvironmentMap = CreateInstanceOf<AEnvironmentMap>();
+            DummyEnvironmentMap->InitializeDefaultObject();
+        }
+        view->GlobalIrradianceMap = DummyEnvironmentMap->GetIrradianceHandle();
+        view->GlobalReflectionMap = DummyEnvironmentMap->GetReflectionHandle();
+    }
 
     // Generate debug draw commands
     if (RP && RP->bDrawDebug)
@@ -768,12 +784,12 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
     ADrawable*               drawable;
     ATerrainComponent*       terrain;
     AAnalyticLightComponent* light;
-    AIBLComponent*           ibl;
+    AEnvironmentProbe*       envProbe;
     AStreamedMemoryGPU*      streamedMemory = FrameLoop->GetStreamedMemoryGPU();
     ARenderWorld&            renderWorld    = InWorld->GetRender();
 
     VisLights.Clear();
-    VisIBLs.Clear();
+    VisEnvProbes.Clear();
 
     for (SPrimitiveDef* primitive : VisPrimitives)
     {
@@ -810,16 +826,16 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
             continue;
         }
 
-        if (nullptr != (ibl = Upcast<AIBLComponent>(primitive->Owner)))
+        if (nullptr != (envProbe = Upcast<AEnvironmentProbe>(primitive->Owner)))
         {
-            if (!ibl->IsEnabled())
+            if (!envProbe->IsEnabled())
             {
                 continue;
             }
 
-            if (VisIBLs.Size() < MAX_PROBES)
+            if (VisEnvProbes.Size() < MAX_PROBES)
             {
-                VisIBLs.Append(ibl);
+                VisEnvProbes.Append(envProbe);
             }
             else
             {
@@ -922,7 +938,7 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
     }
 
     // Allocate probes
-    view->NumProbes         = VisIBLs.Size();
+    view->NumProbes         = VisEnvProbes.Size();
     view->ProbeStreamSize   = sizeof(SProbeParameters) * view->NumProbes;
     view->ProbeStreamHandle = view->ProbeStreamSize > 0 ?
         streamedMemory->AllocateConstant(view->ProbeStreamSize, nullptr) :
@@ -931,25 +947,25 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
 
     for (int i = 0; i < view->NumProbes; i++)
     {
-        ibl = VisIBLs[i];
+        envProbe = VisEnvProbes[i];
 
-        ibl->PackProbe(view->ViewMatrix, view->Probes[i]);
+        envProbe->PackProbe(view->ViewMatrix, view->Probes[i]);
 
         SItemInfo* info = LightVoxelizer.AllocItem();
         info->Type      = ITEM_TYPE_PROBE;
         info->ListIndex = i;
 
-        BvAxisAlignedBox const& AABB = ibl->GetWorldBounds();
+        BvAxisAlignedBox const& AABB = envProbe->GetWorldBounds();
         info->Mins                   = AABB.Mins;
         info->Maxs                   = AABB.Maxs;
 
         if (LightVoxelizer.IsSSE())
         {
-            info->ClipToBoxMatSSE = ibl->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
+            info->ClipToBoxMatSSE = envProbe->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
         }
         else
         {
-            info->ClipToBoxMat = ibl->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
+            info->ClipToBoxMat = envProbe->GetOBBTransformInverse() * view->ClusterViewProjectionInversed;
         }
     }
 

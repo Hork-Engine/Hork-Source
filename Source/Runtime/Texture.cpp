@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "Texture.h"
 #include "Asset.h"
+#include "AssetImporter.h"
 #include "Engine.h"
 
 #include <Platform/Logger.h>
@@ -47,124 +48,6 @@ static const char* TextureTypeName[] =
         "TEXTURE_CUBEMAP",
         "TEXTURE_CUBEMAP_ARRAY",
 };
-
-struct STextureFormatMapper
-{
-    TArray<RenderCore::DATA_FORMAT, TEXTURE_PF_MAX>    PixelFormatTable;
-    TArray<RenderCore::TEXTURE_FORMAT, TEXTURE_PF_MAX> InternalPixelFormatTable;
-
-    STextureFormatMapper()
-    {
-        using namespace RenderCore;
-
-        PixelFormatTable[TEXTURE_PF_R8_SNORM]  = FORMAT_BYTE1;
-        PixelFormatTable[TEXTURE_PF_RG8_SNORM] = FORMAT_BYTE2;
-        //PixelFormatTable[TEXTURE_PF_BGR8_SNORM] = FORMAT_BYTE3;
-        PixelFormatTable[TEXTURE_PF_BGRA8_SNORM] = FORMAT_BYTE4;
-
-        PixelFormatTable[TEXTURE_PF_R8_UNORM]  = FORMAT_UBYTE1;
-        PixelFormatTable[TEXTURE_PF_RG8_UNORM] = FORMAT_UBYTE2;
-        //PixelFormatTable[TEXTURE_PF_BGR8_UNORM] = FORMAT_UBYTE3;
-        PixelFormatTable[TEXTURE_PF_BGRA8_UNORM] = FORMAT_UBYTE4;
-
-        //PixelFormatTable[TEXTURE_PF_BGR8_SRGB] = FORMAT_UBYTE3;
-        PixelFormatTable[TEXTURE_PF_BGRA8_SRGB] = FORMAT_UBYTE4;
-
-        PixelFormatTable[TEXTURE_PF_R16I]  = FORMAT_SHORT1;
-        PixelFormatTable[TEXTURE_PF_RG16I] = FORMAT_SHORT2;
-        //PixelFormatTable[TEXTURE_PF_BGR16I] = FORMAT_SHORT3;
-        PixelFormatTable[TEXTURE_PF_BGRA16I] = FORMAT_SHORT4;
-
-        PixelFormatTable[TEXTURE_PF_R16UI]  = FORMAT_USHORT1;
-        PixelFormatTable[TEXTURE_PF_RG16UI] = FORMAT_USHORT2;
-        //PixelFormatTable[TEXTURE_PF_BGR16UI] = FORMAT_USHORT3;
-        PixelFormatTable[TEXTURE_PF_BGRA16UI] = FORMAT_USHORT4;
-
-        PixelFormatTable[TEXTURE_PF_R32I]    = FORMAT_INT1;
-        PixelFormatTable[TEXTURE_PF_RG32I]   = FORMAT_INT2;
-        PixelFormatTable[TEXTURE_PF_BGR32I]  = FORMAT_INT3;
-        PixelFormatTable[TEXTURE_PF_BGRA32I] = FORMAT_INT4;
-
-        PixelFormatTable[TEXTURE_PF_R32I]     = FORMAT_UINT1;
-        PixelFormatTable[TEXTURE_PF_RG32UI]   = FORMAT_UINT2;
-        PixelFormatTable[TEXTURE_PF_BGR32UI]  = FORMAT_UINT3;
-        PixelFormatTable[TEXTURE_PF_BGRA32UI] = FORMAT_UINT4;
-
-        PixelFormatTable[TEXTURE_PF_R16F]  = FORMAT_HALF1;
-        PixelFormatTable[TEXTURE_PF_RG16F] = FORMAT_HALF2;
-        //PixelFormatTable[TEXTURE_PF_BGR16F] = FORMAT_HALF3;
-        PixelFormatTable[TEXTURE_PF_BGRA16F] = FORMAT_HALF4;
-
-        PixelFormatTable[TEXTURE_PF_R32F]    = FORMAT_FLOAT1;
-        PixelFormatTable[TEXTURE_PF_RG32F]   = FORMAT_FLOAT2;
-        PixelFormatTable[TEXTURE_PF_BGR32F]  = FORMAT_FLOAT3;
-        PixelFormatTable[TEXTURE_PF_BGRA32F] = FORMAT_FLOAT4;
-
-        PixelFormatTable[TEXTURE_PF_R11F_G11F_B10F] = FORMAT_FLOAT3;
-
-        InternalPixelFormatTable[TEXTURE_PF_R8_SNORM]  = TEXTURE_FORMAT_R8_SNORM;
-        InternalPixelFormatTable[TEXTURE_PF_RG8_SNORM] = TEXTURE_FORMAT_RG8_SNORM;
-        //InternalPixelFormatTable[TEXTURE_PF_BGR8_SNORM] = TEXTURE_FORMAT_RGB8_SNORM;
-        InternalPixelFormatTable[TEXTURE_PF_BGRA8_SNORM] = TEXTURE_FORMAT_RGBA8_SNORM;
-
-        InternalPixelFormatTable[TEXTURE_PF_R8_UNORM]  = TEXTURE_FORMAT_R8;
-        InternalPixelFormatTable[TEXTURE_PF_RG8_UNORM] = TEXTURE_FORMAT_RG8;
-        //InternalPixelFormatTable[TEXTURE_PF_BGR8_UNORM] = TEXTURE_FORMAT_RGB8;
-        InternalPixelFormatTable[TEXTURE_PF_BGRA8_UNORM] = TEXTURE_FORMAT_RGBA8;
-
-        //InternalPixelFormatTable[TEXTURE_PF_BGR8_SRGB] = TEXTURE_FORMAT_SRGB8;
-        InternalPixelFormatTable[TEXTURE_PF_BGRA8_SRGB] = TEXTURE_FORMAT_SRGB8_ALPHA8;
-
-        InternalPixelFormatTable[TEXTURE_PF_R16I]  = TEXTURE_FORMAT_R16I;
-        InternalPixelFormatTable[TEXTURE_PF_RG16I] = TEXTURE_FORMAT_RG16I;
-        //InternalPixelFormatTable[TEXTURE_PF_BGR16I] = TEXTURE_FORMAT_RGB16I;
-        InternalPixelFormatTable[TEXTURE_PF_BGRA16I] = TEXTURE_FORMAT_RGBA16I;
-
-        InternalPixelFormatTable[TEXTURE_PF_R16UI]  = TEXTURE_FORMAT_R16UI;
-        InternalPixelFormatTable[TEXTURE_PF_RG16UI] = TEXTURE_FORMAT_RG16UI;
-        //InternalPixelFormatTable[TEXTURE_PF_BGR16UI] = TEXTURE_FORMAT_RGB16UI;
-        InternalPixelFormatTable[TEXTURE_PF_BGRA16UI] = TEXTURE_FORMAT_RGBA16UI;
-
-        InternalPixelFormatTable[TEXTURE_PF_R32I]    = TEXTURE_FORMAT_R32I;
-        InternalPixelFormatTable[TEXTURE_PF_RG32I]   = TEXTURE_FORMAT_RG32I;
-        InternalPixelFormatTable[TEXTURE_PF_BGR32I]  = TEXTURE_FORMAT_RGB32I;
-        InternalPixelFormatTable[TEXTURE_PF_BGRA32I] = TEXTURE_FORMAT_RGBA32I;
-
-        InternalPixelFormatTable[TEXTURE_PF_R32I]     = TEXTURE_FORMAT_R32UI;
-        InternalPixelFormatTable[TEXTURE_PF_RG32UI]   = TEXTURE_FORMAT_RG32UI;
-        InternalPixelFormatTable[TEXTURE_PF_BGR32UI]  = TEXTURE_FORMAT_RGB32UI;
-        InternalPixelFormatTable[TEXTURE_PF_BGRA32UI] = TEXTURE_FORMAT_RGBA32UI;
-
-        InternalPixelFormatTable[TEXTURE_PF_R16F]  = TEXTURE_FORMAT_R16F;
-        InternalPixelFormatTable[TEXTURE_PF_RG16F] = TEXTURE_FORMAT_RG16F;
-        //InternalPixelFormatTable[TEXTURE_PF_BGR16F] = TEXTURE_FORMAT_RGB16F;
-        InternalPixelFormatTable[TEXTURE_PF_BGRA16F] = TEXTURE_FORMAT_RGBA16F;
-
-        InternalPixelFormatTable[TEXTURE_PF_R32F]    = TEXTURE_FORMAT_R32F;
-        InternalPixelFormatTable[TEXTURE_PF_RG32F]   = TEXTURE_FORMAT_RG32F;
-        InternalPixelFormatTable[TEXTURE_PF_BGR32F]  = TEXTURE_FORMAT_RGB32F;
-        InternalPixelFormatTable[TEXTURE_PF_BGRA32F] = TEXTURE_FORMAT_RGBA32F;
-
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC1_RGB]        = TEXTURE_FORMAT_COMPRESSED_BC1_RGB;
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC1_SRGB]       = TEXTURE_FORMAT_COMPRESSED_BC1_SRGB;
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC2_RGBA]       = TEXTURE_FORMAT_COMPRESSED_BC2_RGBA;
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC2_SRGB_ALPHA] = TEXTURE_FORMAT_COMPRESSED_BC2_SRGB_ALPHA;
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC3_RGBA]       = TEXTURE_FORMAT_COMPRESSED_BC3_RGBA;
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC3_SRGB_ALPHA] = TEXTURE_FORMAT_COMPRESSED_BC3_SRGB_ALPHA;
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC4_R]          = TEXTURE_FORMAT_COMPRESSED_BC4_R;
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC4_R_SIGNED]   = TEXTURE_FORMAT_COMPRESSED_BC4_R_SIGNED;
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC5_RG]         = TEXTURE_FORMAT_COMPRESSED_BC5_RG;
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC5_RG_SIGNED]  = TEXTURE_FORMAT_COMPRESSED_BC5_RG_SIGNED;
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC6H]           = TEXTURE_FORMAT_COMPRESSED_BC6H;
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC6H_SIGNED]    = TEXTURE_FORMAT_COMPRESSED_BC6H_SIGNED;
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC7_RGBA]       = TEXTURE_FORMAT_COMPRESSED_BC7_RGBA;
-        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC7_SRGB_ALPHA] = TEXTURE_FORMAT_COMPRESSED_BC7_SRGB_ALPHA;
-
-        InternalPixelFormatTable[TEXTURE_PF_R11F_G11F_B10F] = TEXTURE_FORMAT_R11F_G11F_B10F;
-    }
-};
-
-static STextureFormatMapper TextureFormatMapper;
 
 HK_CLASS_META(ATexture)
 
@@ -216,58 +99,21 @@ bool ATexture::InitializeFromImage(AImage const& _Image)
     return true;
 }
 
-bool ATexture::InitializeCubemapFromImages(TArray<AImage const*, 6> const& _Faces)
+bool ATexture::InitializeCubemapFromImages(TArray<AImage, 6> const& _Faces)
 {
-    const void* faces[6];
-
-    int width = _Faces[0]->GetWidth();
-
-    for (int i = 0; i < 6; i++)
-    {
-
-        if (!_Faces[i]->GetData())
-        {
-            GLogger.Printf("ATexture::InitializeCubemapFromImages: empty image data\n");
-            return false;
-        }
-
-        if (_Faces[i]->GetWidth() != width || _Faces[i]->GetHeight() != width)
-        {
-            GLogger.Printf("ATexture::InitializeCubemapFromImages: faces with different sizes\n");
-            return false;
-        }
-
-        faces[i] = _Faces[i]->GetData();
-    }
-
+    int                 width;
     STexturePixelFormat pixelFormat;
 
-    if (!STexturePixelFormat::GetAppropriatePixelFormat(_Faces[0]->GetPixelFormat(), pixelFormat))
+    if (!ValidateCubemapFaces(_Faces, width, pixelFormat))
     {
         return false;
-    }
-
-    for (AImage const* faceImage : _Faces)
-    {
-        STexturePixelFormat facePF;
-
-        if (!STexturePixelFormat::GetAppropriatePixelFormat(faceImage->GetPixelFormat(), facePF))
-        {
-            return false;
-        }
-
-        if (pixelFormat != facePF)
-        {
-            GLogger.Printf("ATexture::InitializeCubemapFromImages: faces with different pixel formats\n");
-            return false;
-        }
     }
 
     InitializeCubemap(pixelFormat, 1, width);
 
     for (int face = 0; face < 6; face++)
     {
-        WriteTextureDataCubemap(0, 0, width, width, face, 0, (byte*)faces[face]);
+        WriteTextureDataCubemap(0, 0, width, width, face, 0, _Faces[face].GetData());
     }
 
     return true;
@@ -782,7 +628,7 @@ void ATexture::Initialize1D(STexturePixelFormat _PixelFormat, int _NumMipLevels,
 
     RenderCore::STextureDesc textureDesc;
     textureDesc.SetResolution(RenderCore::STextureResolution1D(_Width));
-    textureDesc.SetFormat(TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data]);
+    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
     textureDesc.SetMipLevels(_NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
@@ -804,7 +650,7 @@ void ATexture::Initialize1DArray(STexturePixelFormat _PixelFormat, int _NumMipLe
 
     RenderCore::STextureDesc textureDesc;
     textureDesc.SetResolution(RenderCore::STextureResolution1DArray(_Width, _ArraySize));
-    textureDesc.SetFormat(TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data]);
+    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
     textureDesc.SetMipLevels(_NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
@@ -826,7 +672,7 @@ void ATexture::Initialize2D(STexturePixelFormat _PixelFormat, int _NumMipLevels,
 
     RenderCore::STextureDesc textureDesc;
     textureDesc.SetResolution(RenderCore::STextureResolution2D(_Width, _Height));
-    textureDesc.SetFormat(TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data]);
+    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
     textureDesc.SetMipLevels(_NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
@@ -848,7 +694,7 @@ void ATexture::Initialize2DArray(STexturePixelFormat _PixelFormat, int _NumMipLe
 
     RenderCore::STextureDesc textureDesc;
     textureDesc.SetResolution(RenderCore::STextureResolution2DArray(_Width, _Height, _ArraySize));
-    textureDesc.SetFormat(TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data]);
+    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
     textureDesc.SetMipLevels(_NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
@@ -870,7 +716,7 @@ void ATexture::Initialize3D(STexturePixelFormat _PixelFormat, int _NumMipLevels,
 
     RenderCore::STextureDesc textureDesc;
     textureDesc.SetResolution(RenderCore::STextureResolution3D(_Width, _Height, _Depth));
-    textureDesc.SetFormat(TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data]);
+    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
     textureDesc.SetMipLevels(_NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
@@ -997,7 +843,7 @@ void ATexture::InitializeCubemap(STexturePixelFormat _PixelFormat, int _NumMipLe
 
     RenderCore::STextureDesc textureDesc;
     textureDesc.SetResolution(RenderCore::STextureResolutionCubemap(_Width));
-    textureDesc.SetFormat(TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data]);
+    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
     textureDesc.SetMipLevels(_NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
@@ -1019,7 +865,7 @@ void ATexture::InitializeCubemapArray(STexturePixelFormat _PixelFormat, int _Num
 
     RenderCore::STextureDesc textureDesc;
     textureDesc.SetResolution(RenderCore::STextureResolutionCubemapArray(_Width, _ArraySize));
-    textureDesc.SetFormat(TextureFormatMapper.InternalPixelFormatTable[_PixelFormat.Data]);
+    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
     textureDesc.SetMipLevels(_NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
@@ -1165,7 +1011,7 @@ bool ATexture::WriteArbitraryData(int _LocationX, int _LocationY, int _LocationZ
     rect.Dimension.Y     = _Height;
     rect.Dimension.Z     = _Depth;
 
-    TextureGPU->WriteRect(rect, TextureFormatMapper.PixelFormatTable[PixelFormat.Data], sizeInBytes, 1, _SysMem);
+    TextureGPU->WriteRect(rect, PixelFormat.GetTextureDataFormat(), sizeInBytes, 1, _SysMem);
 
     return true;
 }

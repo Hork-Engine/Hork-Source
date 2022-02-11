@@ -47,6 +47,9 @@ public:
     ARenderBackend(RenderCore::IDevice* pDevice);
     ~ARenderBackend();
 
+    void GenerateIrradianceMap(RenderCore::ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture);
+    void GenerateReflectionMap(RenderCore::ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture);
+
     void RenderFrame(AStreamedMemoryGPU* StreamedMemory, RenderCore::ITexture* pBackBuffer, SRenderFrame* pFrameData);
 
     void InitializeMaterial(AMaterialGPU* _Material, SMaterialDef const* _Def);

@@ -2530,39 +2530,73 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
 #endif
 }
 
-bool AAssetImporter::ImportSkybox(SAssetImportSettings const& _Settings)
+bool ValidateCubemapFaces(TArray<AImage, 6> const& Faces, int& Width, STexturePixelFormat& PixelFormat)
 {
-    AImage cubeFaces[6];
-
-    m_Settings = _Settings;
-
-    m_Settings.ImportFile = "Skybox";
-
-    if (!_Settings.bImportSkyboxExplicit)
+    for (int i = 0; i < 6; i++)
     {
-        return false;
-    }
-
-    if (_Settings.bSkyboxHDRI)
-    {
-        for (int i = 0; i < 6; i++)
+        if (!Faces[i].GetData())
         {
-            if (!cubeFaces[i].Load(_Settings.ExplicitSkyboxFaces[i], nullptr, IMAGE_PF_BGR32F))
+            GLogger.Printf("ValidateCubemapFaces: empty image data\n");
+            return false;
+        }
+
+        if (i == 0)
+        {
+            Width = Faces[0].GetWidth();
+
+            if (!STexturePixelFormat::GetAppropriatePixelFormat(Faces[0].GetPixelFormat(), PixelFormat))
             {
                 return false;
             }
         }
-        if (_Settings.SkyboxHDRIScale != 1.0f || _Settings.SkyboxHDRIPow != 1.0f)
+        else
+        {
+            STexturePixelFormat facePF;
+
+            if (!STexturePixelFormat::GetAppropriatePixelFormat(Faces[i].GetPixelFormat(), facePF))
+            {
+                return false;
+            }
+
+            if (PixelFormat != facePF)
+            {
+                GLogger.Printf("ValidateCubemapFaces: faces with different pixel formats\n");
+                return false;
+            }
+        }
+
+        if (Faces[i].GetWidth() != Width || Faces[i].GetHeight() != Width)
+        {
+            GLogger.Printf("ValidateCubemapFaces: faces with different sizes\n");
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool LoadSkyboxImages(SAssetSkyboxImportSettings const& ImportSettings, TArray<AImage, 6>& Faces)
+{
+    if (ImportSettings.bHDRI)
+    {
+        for (int i = 0; i < 6; i++)
+        {
+            if (!Faces[i].Load(ImportSettings.Faces[i], nullptr, IMAGE_PF_BGR32F))
+            {
+                return false;
+            }
+        }
+        if (ImportSettings.HDRIScale != 1.0f || ImportSettings.HDRIPow != 1.0f)
         {
             for (int i = 0; i < 6; i++)
             {
-                float* HDRI  = (float*)cubeFaces[i].GetData();
-                int    count = cubeFaces[i].GetWidth() * cubeFaces[i].GetHeight() * 3;
+                float* HDRI  = (float*)Faces[i].GetData();
+                int    count = Faces[i].GetWidth() * Faces[i].GetHeight() * 3;
                 for (int j = 0; j < count; j += 3)
                 {
-                    HDRI[j]     = Math::Pow(HDRI[j + 0] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow);
-                    HDRI[j + 1] = Math::Pow(HDRI[j + 1] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow);
-                    HDRI[j + 2] = Math::Pow(HDRI[j + 2] * _Settings.SkyboxHDRIScale, _Settings.SkyboxHDRIPow);
+                    HDRI[j]     = Math::Pow(HDRI[j + 0] * ImportSettings.HDRIScale, ImportSettings.HDRIPow);
+                    HDRI[j + 1] = Math::Pow(HDRI[j + 1] * ImportSettings.HDRIScale, ImportSettings.HDRIPow);
+                    HDRI[j + 2] = Math::Pow(HDRI[j + 2] * ImportSettings.HDRIScale, ImportSettings.HDRIPow);
                 }
             }
         }
@@ -2572,41 +2606,151 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& _Settings)
     {
         for (int i = 0; i < 6; i++)
         {
-            if (!cubeFaces[i].Load(_Settings.ExplicitSkyboxFaces[i], nullptr, IMAGE_PF_BGRA_GAMMA2))
+            if (!Faces[i].Load(ImportSettings.Faces[i], nullptr, IMAGE_PF_BGRA_GAMMA2))
             {
                 return false;
             }
         }
     }
 
-    STexturePixelFormat texturePixelFormat;
-    if (!STexturePixelFormat::GetAppropriatePixelFormat(cubeFaces[0].GetPixelFormat(), texturePixelFormat))
+    return true;
+}
+
+bool ImportEnviornmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSettings, AStringView EnvmapFile)
+{
+    TArray<AImage, 6>   faces;
+    int                 width;
+    STexturePixelFormat pixelFormat;
+    TRef<RenderCore::ITexture> SourceMap, IrradianceMap, ReflectionMap;
+
+    if (!LoadSkyboxImages(ImportSettings, faces))
     {
         return false;
     }
 
-    int width = cubeFaces[0].GetWidth();
-    for (int i = 1; i < 6; i++)
+    if (!ValidateCubemapFaces(faces, width, pixelFormat))
     {
+        return false;
+    }
 
-        // Check width
-        if (cubeFaces[i].GetWidth() != width || cubeFaces[i].GetHeight() != width)
+    RenderCore::STextureDesc textureDesc;
+    textureDesc.SetResolution(RenderCore::STextureResolutionCubemap(width));
+    textureDesc.SetFormat(pixelFormat.GetTextureFormat());
+    textureDesc.SetMipLevels(1);
+    textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
+
+    if (pixelFormat.NumComponents() == 1)
+    {
+        // Apply texture swizzle for single channel textures
+        textureDesc.Swizzle.R = RenderCore::TEXTURE_SWIZZLE_R;
+        textureDesc.Swizzle.G = RenderCore::TEXTURE_SWIZZLE_R;
+        textureDesc.Swizzle.B = RenderCore::TEXTURE_SWIZZLE_R;
+        textureDesc.Swizzle.A = RenderCore::TEXTURE_SWIZZLE_R;
+    }
+
+    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &SourceMap);
+
+    size_t sizeInBytes = (size_t)width * width * pixelFormat.SizeInBytesUncompressed();
+
+    RenderCore::STextureRect rect;
+    rect.Offset.X        = 0;
+    rect.Offset.Y        = 0;
+    rect.Offset.MipLevel = 0;
+    rect.Dimension.X     = width;
+    rect.Dimension.Y     = width;
+    rect.Dimension.Z     = 1;
+
+    for (int faceNum = 0; faceNum < 6; faceNum++)
+    {
+        rect.Offset.Z = faceNum;
+
+        SourceMap->WriteRect(rect, pixelFormat.GetTextureDataFormat(), sizeInBytes, 1, faces[faceNum].GetData());
+    }
+
+    GEngine->GetRenderBackend()->GenerateIrradianceMap(SourceMap, &IrradianceMap);
+    GEngine->GetRenderBackend()->GenerateReflectionMap(SourceMap, &ReflectionMap);
+
+    // Preform some validation
+    HK_ASSERT(IrradianceMap->GetDesc().Resolution.Width == IrradianceMap->GetDesc().Resolution.Height);
+    HK_ASSERT(ReflectionMap->GetDesc().Resolution.Width == ReflectionMap->GetDesc().Resolution.Height);
+    HK_ASSERT(IrradianceMap->GetDesc().Format == RenderCore::TEXTURE_FORMAT_RGB16F);
+    HK_ASSERT(ReflectionMap->GetDesc().Format == RenderCore::TEXTURE_FORMAT_RGB16F);
+
+    AFileStream f;
+
+    if (!f.OpenWrite(EnvmapFile))
+    {
+        GLogger.Printf("Failed to write %s\n", EnvmapFile.ToString().CStr());
+        return false;
+    }
+
+    f.WriteUInt32(FMT_FILE_TYPE_ENVMAP);
+    f.WriteUInt32(FMT_VERSION_ENVMAP);
+    f.WriteUInt32(IrradianceMap->GetWidth());
+    f.WriteUInt32(ReflectionMap->GetWidth());
+
+    // Choose max width for memory allocation
+    int maxSize = Math::Max(IrradianceMap->GetWidth(), ReflectionMap->GetWidth());
+
+    TPodVectorHeap<float> buffer(maxSize * maxSize * 3 * 6);
+
+    void* data = buffer.ToPtr();
+
+    int numFloats = IrradianceMap->GetWidth() * IrradianceMap->GetWidth() * 3 * 6;
+    IrradianceMap->Read(0, RenderCore::FORMAT_FLOAT3, numFloats * sizeof(float), 4, data);
+
+    // TODO: Store as F16
+    for (int i = 0 ; i < numFloats ; i++)
+    {
+        ((float*)data)[i] = Core::LittleFloat(((float*)data)[i]);
+    }
+
+    f.WriteBuffer(data, numFloats * sizeof(float));
+
+    for (int mipLevel = 0; mipLevel < ReflectionMap->GetDesc().NumMipLevels; mipLevel++)
+    {
+        int mipWidth = ReflectionMap->GetWidth() >> mipLevel;
+        HK_ASSERT(mipWidth > 0);
+
+        numFloats = mipWidth * mipWidth * 3 * 6;
+
+        ReflectionMap->Read(mipLevel, RenderCore::FORMAT_FLOAT3, numFloats * sizeof(float), 4, data);
+
+        // TODO: Store as F16
+        for (int i = 0; i < numFloats; i++)
         {
-            GLogger.Printf("AAssetImporter::ImportSkybox: faces with different sizes\n");
-            return false;
+            ((float*)data)[i] = Core::LittleFloat(((float*)data)[i]);
         }
 
-        // Check pixel format
-        STexturePixelFormat facePF;
-        if (!STexturePixelFormat::GetAppropriatePixelFormat(cubeFaces[i].GetPixelFormat(), facePF))
-        {
-            return false;
-        }
-        if (texturePixelFormat != facePF)
-        {
-            GLogger.Printf("AAssetImporter::ImportSkybox: faces with different pixel formats\n");
-            return false;
-        }
+        f.WriteBuffer(data, numFloats * sizeof(float));
+    }
+    return true;
+}
+
+bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
+{
+    TArray<AImage, 6>   faces;
+    int                 width;
+    STexturePixelFormat pixelFormat;
+
+    SAssetSkyboxImportSettings const& skyboxImport = ImportSettings.SkyboxImport;
+
+    m_Settings            = ImportSettings;
+    m_Settings.ImportFile = "Skybox";
+
+    if (!ImportSettings.bImportSkyboxExplicit)
+    {
+        return false;
+    }
+
+    if (!LoadSkyboxImages(skyboxImport, faces))
+    {
+        return false;
+    }
+
+    if (!ValidateCubemapFaces(faces, width, pixelFormat))
+    {
+        return false;
     }
 
     AFileStream f;
@@ -2631,13 +2775,13 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& _Settings)
     f.WriteUInt32(FMT_VERSION_TEXTURE);
     f.WriteCString(TextureGUID.CStr());
     f.WriteUInt32(textureType);
-    f.WriteObject(texturePixelFormat);
+    f.WriteObject(pixelFormat);
     f.WriteUInt32(w);
     f.WriteUInt32(h);
     f.WriteUInt32(d);
     f.WriteUInt32(numLods);
 
-    int      pixelSizeInBytes = texturePixelFormat.SizeInBytesUncompressed();
+    int      pixelSizeInBytes = pixelFormat.SizeInBytesUncompressed();
     uint32_t lodWidth;
 
     int lod = 0;
@@ -2652,13 +2796,13 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& _Settings)
 
     for (int face = 0; face < 6; face++)
     {
-        f.WriteBuffer(cubeFaces[face].GetData(), size);
+        f.WriteBuffer(faces[face].GetData(), size);
     }
 
     f.WriteUInt32(6); // num source files
     for (int i = 0; i < 6; i++)
     {
-        f.WriteCString(_Settings.ExplicitSkyboxFaces[i]); // source file
+        f.WriteObject(skyboxImport.Faces[i]); // source file
     }
 #if 0
     //
@@ -2679,7 +2823,7 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& _Settings)
 
     f.Printf( "Sources [\n" );
     for ( int i = 0 ; i < 6 ; i++ ) {
-        f.Printf( "\"%s\"\n", _Settings.ExplicitSkyboxFaces[i] ); // source file
+        f.Printf( "\"%s\"\n", skyboxImport.Faces[i] ); // source file
     }
     f.Printf( "]\n" );
 #endif

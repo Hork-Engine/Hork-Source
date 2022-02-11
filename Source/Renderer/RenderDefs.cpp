@@ -334,6 +334,138 @@ bool STexturePixelFormat::GetAppropriatePixelFormat( EImagePixelFormat const & _
     return true;
 }
 
+struct STextureFormatMapper
+{
+    TArray<RenderCore::DATA_FORMAT, TEXTURE_PF_MAX>    PixelFormatTable;
+    TArray<RenderCore::TEXTURE_FORMAT, TEXTURE_PF_MAX> InternalPixelFormatTable;
+
+    STextureFormatMapper()
+    {
+        using namespace RenderCore;
+
+        PixelFormatTable[TEXTURE_PF_R8_SNORM]  = FORMAT_BYTE1;
+        PixelFormatTable[TEXTURE_PF_RG8_SNORM] = FORMAT_BYTE2;
+        //PixelFormatTable[TEXTURE_PF_BGR8_SNORM] = FORMAT_BYTE3;
+        PixelFormatTable[TEXTURE_PF_BGRA8_SNORM] = FORMAT_BYTE4;
+
+        PixelFormatTable[TEXTURE_PF_R8_UNORM]  = FORMAT_UBYTE1;
+        PixelFormatTable[TEXTURE_PF_RG8_UNORM] = FORMAT_UBYTE2;
+        //PixelFormatTable[TEXTURE_PF_BGR8_UNORM] = FORMAT_UBYTE3;
+        PixelFormatTable[TEXTURE_PF_BGRA8_UNORM] = FORMAT_UBYTE4;
+
+        //PixelFormatTable[TEXTURE_PF_BGR8_SRGB] = FORMAT_UBYTE3;
+        PixelFormatTable[TEXTURE_PF_BGRA8_SRGB] = FORMAT_UBYTE4;
+
+        PixelFormatTable[TEXTURE_PF_R16I]  = FORMAT_SHORT1;
+        PixelFormatTable[TEXTURE_PF_RG16I] = FORMAT_SHORT2;
+        //PixelFormatTable[TEXTURE_PF_BGR16I] = FORMAT_SHORT3;
+        PixelFormatTable[TEXTURE_PF_BGRA16I] = FORMAT_SHORT4;
+
+        PixelFormatTable[TEXTURE_PF_R16UI]  = FORMAT_USHORT1;
+        PixelFormatTable[TEXTURE_PF_RG16UI] = FORMAT_USHORT2;
+        //PixelFormatTable[TEXTURE_PF_BGR16UI] = FORMAT_USHORT3;
+        PixelFormatTable[TEXTURE_PF_BGRA16UI] = FORMAT_USHORT4;
+
+        PixelFormatTable[TEXTURE_PF_R32I]    = FORMAT_INT1;
+        PixelFormatTable[TEXTURE_PF_RG32I]   = FORMAT_INT2;
+        PixelFormatTable[TEXTURE_PF_BGR32I]  = FORMAT_INT3;
+        PixelFormatTable[TEXTURE_PF_BGRA32I] = FORMAT_INT4;
+
+        PixelFormatTable[TEXTURE_PF_R32I]     = FORMAT_UINT1;
+        PixelFormatTable[TEXTURE_PF_RG32UI]   = FORMAT_UINT2;
+        PixelFormatTable[TEXTURE_PF_BGR32UI]  = FORMAT_UINT3;
+        PixelFormatTable[TEXTURE_PF_BGRA32UI] = FORMAT_UINT4;
+
+        PixelFormatTable[TEXTURE_PF_R16F]  = FORMAT_HALF1;
+        PixelFormatTable[TEXTURE_PF_RG16F] = FORMAT_HALF2;
+        //PixelFormatTable[TEXTURE_PF_BGR16F] = FORMAT_HALF3;
+        PixelFormatTable[TEXTURE_PF_BGRA16F] = FORMAT_HALF4;
+
+        PixelFormatTable[TEXTURE_PF_R32F]    = FORMAT_FLOAT1;
+        PixelFormatTable[TEXTURE_PF_RG32F]   = FORMAT_FLOAT2;
+        PixelFormatTable[TEXTURE_PF_BGR32F]  = FORMAT_FLOAT3;
+        PixelFormatTable[TEXTURE_PF_BGRA32F] = FORMAT_FLOAT4;
+
+        PixelFormatTable[TEXTURE_PF_R11F_G11F_B10F] = FORMAT_FLOAT3;
+
+        InternalPixelFormatTable[TEXTURE_PF_R8_SNORM]  = TEXTURE_FORMAT_R8_SNORM;
+        InternalPixelFormatTable[TEXTURE_PF_RG8_SNORM] = TEXTURE_FORMAT_RG8_SNORM;
+        //InternalPixelFormatTable[TEXTURE_PF_BGR8_SNORM] = TEXTURE_FORMAT_RGB8_SNORM;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA8_SNORM] = TEXTURE_FORMAT_RGBA8_SNORM;
+
+        InternalPixelFormatTable[TEXTURE_PF_R8_UNORM]  = TEXTURE_FORMAT_R8;
+        InternalPixelFormatTable[TEXTURE_PF_RG8_UNORM] = TEXTURE_FORMAT_RG8;
+        //InternalPixelFormatTable[TEXTURE_PF_BGR8_UNORM] = TEXTURE_FORMAT_RGB8;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA8_UNORM] = TEXTURE_FORMAT_RGBA8;
+
+        //InternalPixelFormatTable[TEXTURE_PF_BGR8_SRGB] = TEXTURE_FORMAT_SRGB8;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA8_SRGB] = TEXTURE_FORMAT_SRGB8_ALPHA8;
+
+        InternalPixelFormatTable[TEXTURE_PF_R16I]  = TEXTURE_FORMAT_R16I;
+        InternalPixelFormatTable[TEXTURE_PF_RG16I] = TEXTURE_FORMAT_RG16I;
+        //InternalPixelFormatTable[TEXTURE_PF_BGR16I] = TEXTURE_FORMAT_RGB16I;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA16I] = TEXTURE_FORMAT_RGBA16I;
+
+        InternalPixelFormatTable[TEXTURE_PF_R16UI]  = TEXTURE_FORMAT_R16UI;
+        InternalPixelFormatTable[TEXTURE_PF_RG16UI] = TEXTURE_FORMAT_RG16UI;
+        //InternalPixelFormatTable[TEXTURE_PF_BGR16UI] = TEXTURE_FORMAT_RGB16UI;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA16UI] = TEXTURE_FORMAT_RGBA16UI;
+
+        InternalPixelFormatTable[TEXTURE_PF_R32I]    = TEXTURE_FORMAT_R32I;
+        InternalPixelFormatTable[TEXTURE_PF_RG32I]   = TEXTURE_FORMAT_RG32I;
+        InternalPixelFormatTable[TEXTURE_PF_BGR32I]  = TEXTURE_FORMAT_RGB32I;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA32I] = TEXTURE_FORMAT_RGBA32I;
+
+        InternalPixelFormatTable[TEXTURE_PF_R32I]     = TEXTURE_FORMAT_R32UI;
+        InternalPixelFormatTable[TEXTURE_PF_RG32UI]   = TEXTURE_FORMAT_RG32UI;
+        InternalPixelFormatTable[TEXTURE_PF_BGR32UI]  = TEXTURE_FORMAT_RGB32UI;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA32UI] = TEXTURE_FORMAT_RGBA32UI;
+
+        InternalPixelFormatTable[TEXTURE_PF_R16F]  = TEXTURE_FORMAT_R16F;
+        InternalPixelFormatTable[TEXTURE_PF_RG16F] = TEXTURE_FORMAT_RG16F;
+        //InternalPixelFormatTable[TEXTURE_PF_BGR16F] = TEXTURE_FORMAT_RGB16F;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA16F] = TEXTURE_FORMAT_RGBA16F;
+
+        InternalPixelFormatTable[TEXTURE_PF_R32F]    = TEXTURE_FORMAT_R32F;
+        InternalPixelFormatTable[TEXTURE_PF_RG32F]   = TEXTURE_FORMAT_RG32F;
+        InternalPixelFormatTable[TEXTURE_PF_BGR32F]  = TEXTURE_FORMAT_RGB32F;
+        InternalPixelFormatTable[TEXTURE_PF_BGRA32F] = TEXTURE_FORMAT_RGBA32F;
+
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC1_RGB]        = TEXTURE_FORMAT_COMPRESSED_BC1_RGB;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC1_SRGB]       = TEXTURE_FORMAT_COMPRESSED_BC1_SRGB;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC2_RGBA]       = TEXTURE_FORMAT_COMPRESSED_BC2_RGBA;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC2_SRGB_ALPHA] = TEXTURE_FORMAT_COMPRESSED_BC2_SRGB_ALPHA;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC3_RGBA]       = TEXTURE_FORMAT_COMPRESSED_BC3_RGBA;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC3_SRGB_ALPHA] = TEXTURE_FORMAT_COMPRESSED_BC3_SRGB_ALPHA;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC4_R]          = TEXTURE_FORMAT_COMPRESSED_BC4_R;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC4_R_SIGNED]   = TEXTURE_FORMAT_COMPRESSED_BC4_R_SIGNED;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC5_RG]         = TEXTURE_FORMAT_COMPRESSED_BC5_RG;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC5_RG_SIGNED]  = TEXTURE_FORMAT_COMPRESSED_BC5_RG_SIGNED;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC6H]           = TEXTURE_FORMAT_COMPRESSED_BC6H;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC6H_SIGNED]    = TEXTURE_FORMAT_COMPRESSED_BC6H_SIGNED;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC7_RGBA]       = TEXTURE_FORMAT_COMPRESSED_BC7_RGBA;
+        InternalPixelFormatTable[TEXTURE_PF_COMPRESSED_BC7_SRGB_ALPHA] = TEXTURE_FORMAT_COMPRESSED_BC7_SRGB_ALPHA;
+
+        InternalPixelFormatTable[TEXTURE_PF_R11F_G11F_B10F] = TEXTURE_FORMAT_R11F_G11F_B10F;
+    }
+};
+
+static STextureFormatMapper const& GetTextureFormatMapper()
+{
+    static STextureFormatMapper TextureFormatMapper;
+    return TextureFormatMapper;
+}
+
+RenderCore::DATA_FORMAT GetTextureDataFormat(ETexturePixelFormat PixelFormat)
+{
+    return GetTextureFormatMapper().PixelFormatTable[PixelFormat];
+}
+
+RenderCore::TEXTURE_FORMAT GetTextureFormat(ETexturePixelFormat PixelFormat)
+{
+    return GetTextureFormatMapper().InternalPixelFormatTable[PixelFormat];
+}
+ 
 // TODO: this can be computed at compile-time
 float FRUSTUM_SLICE_SCALE = -( MAX_FRUSTUM_CLUSTERS_Z + FRUSTUM_SLICE_OFFSET ) / std::log2( (double)FRUSTUM_CLUSTER_ZFAR / FRUSTUM_CLUSTER_ZNEAR );
 float FRUSTUM_SLICE_BIAS  = std::log2( (double)FRUSTUM_CLUSTER_ZFAR ) * ( MAX_FRUSTUM_CLUSTERS_Z + FRUSTUM_SLICE_OFFSET ) / std::log2( (double)FRUSTUM_CLUSTER_ZFAR / FRUSTUM_CLUSTER_ZNEAR ) - FRUSTUM_SLICE_OFFSET;

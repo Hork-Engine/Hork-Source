@@ -28,7 +28,8 @@ SOFTWARE.
 
 */
 
-#include "IBLComponent.h"
+#include "EnvironmentProbe.h"
+#include "EnvironmentMap.h"
 #include "World.h"
 #include "DebugRenderer.h"
 
@@ -36,42 +37,97 @@ SOFTWARE.
 
 constexpr float DEFAULT_RADIUS = 1.0f;
 
-AConsoleVar com_DrawIBL(_CTS("com_DrawIBL"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawEnvironmentProbes(_CTS("com_DrawEnvironmentProbes"), _CTS("0"), CVAR_CHEAT);
 
-HK_CLASS_META(AIBLComponent)
+HK_CLASS_META(AEnvironmentProbe)
 
-AIBLComponent::AIBLComponent()
+AEnvironmentProbe::AEnvironmentProbe()
 {
+    AABBWorldBounds.Clear();
+    OBBTransformInverse.Clear();
+
+    Platform::ZeroMem(&Primitive, sizeof(Primitive));
+    Primitive.Owner      = this;
+    Primitive.Type       = VSD_PRIMITIVE_SPHERE;
+    Primitive.VisGroup   = VISIBILITY_GROUP_DEFAULT;
+    Primitive.QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+
     Radius = DEFAULT_RADIUS;
 
     UpdateWorldBounds();
 }
 
-void AIBLComponent::SetRadius(float _Radius)
+void AEnvironmentProbe::InitializeComponent()
+{
+    Super::InitializeComponent();
+
+    GetLevel()->AddPrimitive(&Primitive);
+}
+
+void AEnvironmentProbe::DeinitializeComponent()
+{
+    Super::DeinitializeComponent();
+
+    GetLevel()->RemovePrimitive(&Primitive);
+}
+
+void AEnvironmentProbe::SetVisibilityGroup(int InVisibilityGroup)
+{
+    Primitive.VisGroup = InVisibilityGroup;
+}
+
+int AEnvironmentProbe::GetVisibilityGroup() const
+{
+    return Primitive.VisGroup;
+}
+
+void AEnvironmentProbe::SetEnabled(bool _Enabled)
+{
+    bEnabled = _Enabled;
+
+    if (_Enabled)
+    {
+        Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE;
+        Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
+    }
+    else
+    {
+        Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
+        Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
+    }
+}
+
+void AEnvironmentProbe::SetRadius(float _Radius)
 {
     Radius = Math::Max(0.001f, _Radius);
 
     UpdateWorldBounds();
 }
 
-void AIBLComponent::SetIrradianceMap(int _Index)
+void AEnvironmentProbe::SetEnvironmentMap(AEnvironmentMap* _EnvironmentMap)
 {
-    IrradianceMap = _Index; // TODO: Clamp to possible range
+    EnvironmentMap = _EnvironmentMap;
+
+    if (EnvironmentMap)
+    {
+        IrradianceMapHandle = EnvironmentMap->GetIrradianceHandle();
+        ReflectionMapHandle = EnvironmentMap->GetReflectionHandle();
+    }
+    else
+    {
+        IrradianceMapHandle = 0;
+        ReflectionMapHandle = 0;
+    }
 }
 
-void AIBLComponent::SetReflectionMap(int _Index)
-{
-    ReflectionMap = _Index; // TODO: Clamp to possible range
-}
-
-void AIBLComponent::OnTransformDirty()
+void AEnvironmentProbe::OnTransformDirty()
 {
     Super::OnTransformDirty();
 
     UpdateWorldBounds();
 }
 
-void AIBLComponent::UpdateWorldBounds()
+void AEnvironmentProbe::UpdateWorldBounds()
 {
     SphereWorldBounds.Radius = Radius;
     SphereWorldBounds.Center = GetWorldPosition();
@@ -93,11 +149,11 @@ void AIBLComponent::UpdateWorldBounds()
     }
 }
 
-void AIBLComponent::DrawDebug(ADebugRenderer* InRenderer)
+void AEnvironmentProbe::DrawDebug(ADebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 
-    if (com_DrawIBL)
+    if (com_DrawEnvironmentProbes)
     {
         if (Primitive.VisPass == InRenderer->GetVisPass())
         {
@@ -110,10 +166,10 @@ void AIBLComponent::DrawDebug(ADebugRenderer* InRenderer)
     }
 }
 
-void AIBLComponent::PackProbe(Float4x4 const& InViewMatrix, SProbeParameters& Probe)
+void AEnvironmentProbe::PackProbe(Float4x4 const& InViewMatrix, SProbeParameters& Probe)
 {
     Probe.Position      = Float3(InViewMatrix * GetWorldPosition());
     Probe.Radius        = Radius;
-    Probe.IrradianceMap = IrradianceMap;
-    Probe.ReflectionMap = ReflectionMap;
+    Probe.IrradianceMap = IrradianceMapHandle;
+    Probe.ReflectionMap = ReflectionMapHandle;
 }

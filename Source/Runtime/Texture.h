@@ -119,7 +119,7 @@ public:
         InitializeCubemap(_PixelFormat, _NumMipLevels, _Width);
     }
 
-    ATexture(TArray<AImage const*, 6> const& _Faces)
+    ATexture(TArray<AImage, 6> const& _Faces)
     {
         InitializeCubemapFromImages(_Faces);
     }
@@ -157,7 +157,7 @@ public:
     void InitializeCubemap(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width);
 
     /** Create cubemap texture */
-    bool InitializeCubemapFromImages(TArray<AImage const*, 6> const& _Faces);
+    bool InitializeCubemapFromImages(TArray<AImage, 6> const& _Faces);
 
     /** Create empty cubemap array texture */
     void InitializeCubemapArray(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _ArraySize);

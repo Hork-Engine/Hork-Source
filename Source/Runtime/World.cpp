@@ -34,6 +34,7 @@ SOFTWARE.
 #include "PointLightComponent.h"
 #include "VSD.h"
 #include "Engine.h"
+#include "EnvironmentMap.h"
 
 #include <Platform/Logger.h>
 #include <Core/IntrusiveLinkedListMacro.h>
@@ -1140,12 +1141,7 @@ void AWorld::UpdateWorlds(float TimeStep)
     ALevel::PrimitiveLinkPool.CleanupEmptyBlocks();
 }
 
-void AWorld::SetGlobalIrradianceMap(int Index)
+void AWorld::SetGlobalEnvironmentMap(AEnvironmentMap* EnvironmentMap)
 {
-    GlobalIrradianceMap = Index;
-}
-
-void AWorld::SetGlobalReflectionMap(int Index)
-{
-    GlobalReflectionMap = Index;
+    GlobalEnvironmentMap = EnvironmentMap;
 }

@@ -88,12 +88,6 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
     //const float MipIndex = InNormalizedScreenCoord.x > 0.5 ? Roughness * ENV_MAP_MAX_LOD
     //                                                       : Roughness * Roughness * ENV_MAP_MAX_LOD;
     
-    vec3 Irradiance = vec3( 0.0 );
-    vec3 PrefilteredColor = vec3( 0.0 );
-#if 1
-    samplerCubeArray IrradianceMap = samplerCubeArray(IrradianceMapSampler); // TODO: Stop using bindless
-    samplerCubeArray PrefilteredMap = samplerCubeArray(PrefilteredMapSampler); // TODO: Stop using bindless
-    
     float MinDist = 9999;
     uint NearestProbe = 9999;
     
@@ -114,24 +108,24 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
             }
         }
     }
+	
+    vec3 Irradiance = vec3( 0.0 );
+    vec3 PrefilteredColor = vec3( 0.0 );
 
     if ( NearestProbe < 9999 ) {
         // Gather irradiance from cubemaps
-        Irradiance += texture( IrradianceMap, vec4( Normal, Probes[NearestProbe].IrradianceAndReflectionMaps.x ) ).rgb;
+        Irradiance += texture( samplerCube(Probes[NearestProbe].IrradianceAndReflectionMaps.xy), Normal ).rgb;
         
         // Gather prefiltered maps from cubemaps
-        PrefilteredColor += textureLod( PrefilteredMap, vec4( ReflectionVector, Probes[NearestProbe].IrradianceAndReflectionMaps.y ), MipIndex ).rgb;   
+        PrefilteredColor += textureLod( samplerCube(Probes[NearestProbe].IrradianceAndReflectionMaps.zw), ReflectionVector, MipIndex ).rgb;   
     }
     else {
         // Gather irradiance from cubemaps
-        Irradiance += texture( IrradianceMap, vec4( Normal, GlobalIrradianceAndReflection.x ) ).rgb;
+        Irradiance += texture( samplerCube(GlobalIrradianceAndReflection.xy), Normal ).rgb;
         
         // Gather prefiltered maps from cubemaps
-        PrefilteredColor += textureLod( PrefilteredMap, vec4( ReflectionVector, GlobalIrradianceAndReflection.y ), MipIndex ).rgb;   
+        PrefilteredColor += textureLod( samplerCube(GlobalIrradianceAndReflection.zw), ReflectionVector, MipIndex ).rgb;   
     }
-#else
-    //Irradiance += vec3(0.01); // just for test
-#endif
     
 #if defined WITH_SSLR && defined ALLOW_SSLR
     PrefilteredColor += FetchLocalReflection( R, Roughness );

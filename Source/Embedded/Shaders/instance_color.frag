@@ -79,7 +79,7 @@ struct SClusterLight
 struct SClusterProbe
 {
     vec4 PositionAndRadius;
-    uvec4 IrradianceAndReflectionMaps;  // x - Irradiance map index, y - Reflection map index, zw - unused
+    uvec4 IrradianceAndReflectionMaps;  // xy - Irradiance map index, zw - Reflection map index
 };
 
 #define MAX_LIGHTS 768

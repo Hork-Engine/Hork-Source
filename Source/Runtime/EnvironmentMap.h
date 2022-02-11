@@ -30,40 +30,42 @@ SOFTWARE.
 
 #pragma once
 
-#include "PunctualLightComponent.h"
+#include "Resource.h"
+#include <Renderer/RenderDefs.h>
 
-class AIBLComponent : public APunctualLightComponent
+/**
+An environment map in terms of the engine is both an irradiance map for image-based lighting and a prefiltered specular map.
+*/
+class AEnvironmentMap : public AResource
 {
-    HK_COMPONENT(AIBLComponent, APunctualLightComponent)
+    HK_CLASS(AEnvironmentMap, AResource)
 
 public:
-    void  SetRadius(float _Radius);
-    float GetRadius() const { return Radius; }
+    AEnvironmentMap()
+    {}
 
-    void SetIrradianceMap(int _Index);
-    int  GetIrradianceMap() const { return IrradianceMap; }
+    void InitializeFromImages(TArray<AImage, 6> const& Faces);
 
-    void SetReflectionMap(int _Index);
-    int  GetReflectionMap() const { return ReflectionMap; }
-
-    BvSphere const& GetSphereWorldBounds() const { return SphereWorldBounds; }
-
-    void PackProbe(Float4x4 const& InViewMatrix, struct SProbeParameters& Probe);
+    RenderCore::BindlessHandle GetIrradianceHandle() const { return IrradianceMapHandle; }
+    RenderCore::BindlessHandle GetReflectionHandle() const { return ReflectionMapHandle; }
 
 protected:
-    AIBLComponent();
+    /** Load resource from file */
+    bool LoadResource(IBinaryStream& Stream) override;
 
-    void OnTransformDirty() override;
-    void DrawDebug(ADebugRenderer* InRenderer) override;
+    /** Create internal resource */
+    void LoadInternalResource(const char* _Path) override;
+
+    const char* GetDefaultResourcePath() const override { return "/Default/EnvMaps/Default"; }
 
 private:
-    void UpdateWorldBounds();
+    void Purge();
+    void CreateTextures(int IrradianceMapWidth, int ReflectionMapWidth);
+    void UpdateSamplers();
 
-    BvSphere      SphereWorldBounds;
-    BvOrientedBox OBBWorldBounds;
+    TRef<RenderCore::ITexture> IrradianceMap;
+    TRef<RenderCore::ITexture> ReflectionMap;
 
-    float Radius;
-
-    int IrradianceMap = 0;
-    int ReflectionMap = 0;
+    RenderCore::BindlessHandle IrradianceMapHandle;
+    RenderCore::BindlessHandle ReflectionMapHandle;
 };

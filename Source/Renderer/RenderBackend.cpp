@@ -164,47 +164,6 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
         generator.Render(&GLookupBRDF);
     }
 
-    // TODO: This is a temporary workaround for IBL.
-    // We need to load environment maps from resources!
-    TRef<ITexture> cubemap;
-    STextureDesc   cubemapCI = {};
-    cubemapCI.SetFormat(TEXTURE_FORMAT_SRGB8);
-    cubemapCI.SetResolution(STextureResolutionCubemap(1));
-    cubemapCI.SetBindFlags(BIND_SHADER_RESOURCE);
-    GDevice->CreateTexture(cubemapCI, &cubemap);
-    for (int face = 0; face < 6; face++)
-    {
-        STextureRect rect = {};
-        rect.Offset.Z     = face;
-        rect.Dimension.X  = 1;
-        rect.Dimension.Y  = 1;
-        rect.Dimension.Z  = 1;
-
-        uint8_t color[4] = {10, 10, 10, 255};
-        cubemap->WriteRect(rect, FORMAT_UBYTE3, sizeof(color), 1, color);
-    }
-    ITexture* cubemaps[] = {cubemap};
-    {
-        AEnvProbeGenerator envProbeGenerator;
-        envProbeGenerator.GenerateArray(7, HK_ARRAY_SIZE(cubemaps), cubemaps, &GPrefilteredMap);
-        SSamplerDesc samplerCI;
-        samplerCI.Filter           = FILTER_MIPMAP_BILINEAR;
-        samplerCI.bCubemapSeamless = true;
-
-        GPrefilteredMapBindless = GPrefilteredMap->GetBindlessSampler(samplerCI);
-        GPrefilteredMap->MakeBindlessSamplerResident(GPrefilteredMapBindless, true);
-    }
-    {
-        AIrradianceGenerator irradianceGenerator;
-        irradianceGenerator.GenerateArray(HK_ARRAY_SIZE(cubemaps), cubemaps, &GIrradianceMap);
-        SSamplerDesc samplerCI;
-        samplerCI.Filter           = FILTER_LINEAR;
-        samplerCI.bCubemapSeamless = true;
-
-        GIrradianceMapBindless = GIrradianceMap->GetBindlessSampler(samplerCI);
-        GIrradianceMap->MakeBindlessSamplerResident(GIrradianceMapBindless, true);
-    }
-
     /////////////////////////////////////////////////////////////////////
     // test
     /////////////////////////////////////////////////////////////////////
@@ -250,149 +209,8 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 #endif
     }
 
-#if 1
-    TRef<ITexture> cubemap;
-    TRef<ITexture> cubemap2;
-    {
-        const char* Cubemap[6] = {
-            "DarkSky/rt.tga",
-            "DarkSky/lt.tga",
-            "DarkSky/up.tga",
-            "DarkSky/dn.tga",
-            "DarkSky/bk.tga",
-            "DarkSky/ft.tga"};
-        const char* Cubemap2[6] = {
-            "DarkSky/rt.tga",
-            "DarkSky/lt.tga",
-            "DarkSky/up.tga",
-            "DarkSky/dn.tga",
-            "DarkSky/bk.tga",
-            "DarkSky/ft.tga"};
-        AImage        rt, lt, up, dn, bk, ft;
-        AImage const* cubeFaces[6] = {&rt, &lt, &up, &dn, &bk, &ft};
-        rt.Load(Cubemap[0], nullptr, IMAGE_PF_BGR32F);
-        lt.Load(Cubemap[1], nullptr, IMAGE_PF_BGR32F);
-        up.Load(Cubemap[2], nullptr, IMAGE_PF_BGR32F);
-        dn.Load(Cubemap[3], nullptr, IMAGE_PF_BGR32F);
-        bk.Load(Cubemap[4], nullptr, IMAGE_PF_BGR32F);
-        ft.Load(Cubemap[5], nullptr, IMAGE_PF_BGR32F);
-#    if 0
-        const float HDRI_Scale = 4.0f;
-        const float HDRI_Pow = 1.1f;
-#    else
-        const float HDRI_Scale = 2;
-        const float HDRI_Pow   = 1;
-#    endif
-        for (int i = 0; i < 6; i++)
-        {
-            float* HDRI  = (float*)cubeFaces[i]->GetData();
-            int    count = cubeFaces[i]->GetWidth() * cubeFaces[i]->GetHeight() * 3;
-            for (int j = 0; j < count; j += 3)
-            {
-                HDRI[j]     = Math::Pow(HDRI[j + 0] * HDRI_Scale, HDRI_Pow);
-                HDRI[j + 1] = Math::Pow(HDRI[j + 1] * HDRI_Scale, HDRI_Pow);
-                HDRI[j + 2] = Math::Pow(HDRI[j + 2] * HDRI_Scale, HDRI_Pow);
-
-
-                //HDRI[j + 2]= HDRI[j + 1]= HDRI[j]=0.01f;
-            }
-        }
-        int          w                        = cubeFaces[0]->GetWidth();
-        STextureDesc cubemapCI                = {};
-        cubemapCI.SetFormat(TEXTURE_FORMAT_RGB32F);
-        cubemapCI.SetResolution(STextureResolutionCubemap(w));
-        cubemapCI.SetBindFlags(BIND_SHADER_RESOURCE);
-        GDevice->CreateTexture(cubemapCI, &cubemap);
-        for (int face = 0; face < 6; face++)
-        {
-            float* pSrc = (float*)cubeFaces[face]->GetData();
-
-            STextureRect rect = {};
-            rect.Offset.Z     = face;
-            rect.Dimension.X  = w;
-            rect.Dimension.Y  = w;
-            rect.Dimension.Z  = 1;
-
-            cubemap->WriteRect(rect, FORMAT_FLOAT3, w * w * 3 * sizeof(float), 1, pSrc);
-        }
-        rt.Load(Cubemap2[0], nullptr, IMAGE_PF_BGR32F);
-        lt.Load(Cubemap2[1], nullptr, IMAGE_PF_BGR32F);
-        up.Load(Cubemap2[2], nullptr, IMAGE_PF_BGR32F);
-        dn.Load(Cubemap2[3], nullptr, IMAGE_PF_BGR32F);
-        bk.Load(Cubemap2[4], nullptr, IMAGE_PF_BGR32F);
-        ft.Load(Cubemap2[5], nullptr, IMAGE_PF_BGR32F);
-        w                                     = cubeFaces[0]->GetWidth();
-        cubemapCI.SetResolution(STextureResolutionCubemap(w));
-        GDevice->CreateTexture(cubemapCI, &cubemap2);
-        for (int face = 0; face < 6; face++)
-        {
-            float* pSrc = (float*)cubeFaces[face]->GetData();
-
-            //Platform::Memset(pSrc,0, w*w*3*sizeof( float ) );
-            for (int y = 0; y < w; y++)
-                for (int x = 0; x < w; x++)
-                    pSrc[y * w * 3 + x * 3 + 0] = pSrc[y * w * 3 + x * 3 + 1] = pSrc[y * w * 3 + x * 3 + 2] = 0.02f;
-
-            STextureRect rect = {};
-            rect.Offset.Z     = face;
-            rect.Dimension.X  = w;
-            rect.Dimension.Y  = w;
-            rect.Dimension.Z  = 1;
-
-            cubemap2->WriteRect(rect, FORMAT_FLOAT3, w * w * 3 * sizeof(float), 1, pSrc);
-        }
-    }
-
-    ITexture* cubemaps[2] = {cubemap2, cubemap /*skybox*/};
-#else
-
-    Texture cubemap;
-    {
-        AImage img;
-
-        //img.Load( "052_hdrmaps_com_free.exr", NULL, IMAGE_PF_RGB16F );
-        //img.Load( "059_hdrmaps_com_free.exr", NULL, IMAGE_PF_RGB16F );
-        img.Load("087_hdrmaps_com_free.exr", NULL, IMAGE_PF_RGB16F);
-
-        ITexture                 source;
-        TextureStorageCreateInfo createInfo = {};
-        createInfo.Type                     = TEXTURE_2D;
-        createInfo.Format                   = TEXTURE_FORMAT_RGB16F;
-        createInfo.Resolution.Tex2D.Width   = img.GetWidth();
-        createInfo.Resolution.Tex2D.Height  = img.GetHeight();
-        createInfo.NumMipLevels             = 1;
-        source                              = GDevice->CreateTexture(createInfo);
-        source->Write(0, PIXEL_FORMAT_HALF_RGB, img.GetWidth() * img.GetHeight() * 3 * 2, 1, img.GetData());
-
-        const int cubemapResoultion = 1024;
-
-        ACubemapGenerator cubemapGenerator;
-        cubemapGenerator.Initialize();
-        cubemapGenerator.Generate(cubemap, TEXTURE_FORMAT_RGB16F, cubemapResoultion, &source);
-
-#    if 0
-        TextureRect rect;
-        rect.Offset.Lod = 0;
-        rect.Offset.X = 0;
-        rect.Offset.Y = 0;
-        rect.Dimension.X = cubemapResoultion;
-        rect.Dimension.Y = cubemapResoultion;
-        rect.Dimension.Z = 1;
-        void * data = GHeapMemory.Alloc( cubemapResoultion*cubemapResoultion*3*sizeof( float ) );
-        AFileStream f;
-        for ( int i = 0 ; i < 6 ; i++ ) {
-            rect.Offset.Z = i;
-            cubemap.ReadRect( rect, FORMAT_FLOAT3, cubemapResoultion*cubemapResoultion*3*sizeof( float ), 1, data );
-            f.OpenWrite( Platform::Fmt( "nightsky_%d.hdr", i ) );
-            WriteHDR( f, cubemapResoultion, cubemapResoultion, 3, (float*)data );
-        }
-        GHeapMemory.Free( data );
-#    endif
-    }
-
-    Texture* cubemaps[] = {&cubemap};
-#endif
     #endif
+
     #if 0
     SVirtualTextureCacheLayerInfo layer;
     layer.TextureFormat   = TEXTURE_FORMAT_SRGB8;
@@ -533,8 +351,18 @@ ARenderBackend::~ARenderBackend()
     GClusterLookup.Reset();
     GClusterItemTBO.Reset();
     GClusterItemBuffer.Reset();
-    GPrefilteredMap.Reset();
-    GIrradianceMap.Reset();
+}
+
+void ARenderBackend::GenerateIrradianceMap(ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture)
+{
+    AIrradianceGenerator irradianceGenerator;
+    irradianceGenerator.Generate(pCubemap, ppTexture);
+}
+
+void ARenderBackend::GenerateReflectionMap(ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture)
+{
+    AEnvProbeGenerator envProbeGenerator;
+    envProbeGenerator.Generate(7, pCubemap, ppTexture);
 }
 
 #if 0
@@ -856,9 +684,6 @@ void ARenderBackend::SetViewConstants(int ViewportIndex)
     pViewCBuf->SSLRMaxDist       = r_SSLRMaxDist.GetFloat();
     pViewCBuf->IsPerspective     = float(GRenderView->bPerspective);
     pViewCBuf->TessellationLevel = r_TessellationLevel.GetFloat() * Math::Lerp((float)GRenderView->Width, (float)GRenderView->Height, 0.5f);
-
-    pViewCBuf->PrefilteredMapSampler = GPrefilteredMapBindless;
-    pViewCBuf->IrradianceMapSampler  = GIrradianceMapBindless;
 
     pViewCBuf->DebugMode = r_DebugRenderMode.GetInteger();
 

@@ -75,7 +75,7 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     float GameRunningTimeSeconds;
     float GameplayTimeSeconds;
     
-    vec2 GlobalIrradianceAndReflection;
+    vec2 Pad;
     
     vec2 DynamicResolutionRatio;
     vec2 DynamicResolutionRatioP;
@@ -121,9 +121,8 @@ layout( binding = 0, std140 ) uniform UniformBuffer0
     float SSLRMaxDist;
     float IsPerspective;
     float TessellationLevel;
-    
-    uvec2 PrefilteredMapSampler;
-    uvec2 IrradianceMapSampler;
+	
+	uvec4 GlobalIrradianceAndReflection;
     
     uvec4 NumDirectionalLights;  // W - DebugMode, YZ - unused
     

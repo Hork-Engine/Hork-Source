@@ -40,7 +40,7 @@ SOFTWARE.
 #include "LightVoxelizer.h"
 
 class AAnalyticLightComponent;
-class AIBLComponent;
+class AEnvironmentProbe;
 class AMeshComponent;
 class ASkinnedComponent;
 class AProceduralMeshComponent;
@@ -105,7 +105,7 @@ private:
     TPodVector<SPrimitiveDef*>           VisPrimitives;
     TPodVector<SSurfaceDef*>             VisSurfaces;
     TPodVector<AAnalyticLightComponent*> VisLights;
-    TPodVector<AIBLComponent*>           VisIBLs;
+    TPodVector<AEnvironmentProbe*>       VisEnvProbes;
 
     int VisPass = 0;
 
@@ -128,6 +128,7 @@ private:
     ARenderingParameters* ViewRP;
 
     TRef<ATexture> PhotometricProfiles;
+    TRef<AEnvironmentMap> DummyEnvironmentMap;
 
     TRef<ATerrainMesh> TerrainMesh;
 

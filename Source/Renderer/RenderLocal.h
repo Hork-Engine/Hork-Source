@@ -70,8 +70,7 @@ struct SViewConstantBuffer
     float GameRunningTimeSeconds;
     float GameplayTimeSeconds;
 
-    float GlobalIrradianceMap;
-    float GlobalReflectionMap;
+    Float2 Pad;
 
     float DynamicResolutionRatioX;
     float DynamicResolutionRatioY;
@@ -108,8 +107,11 @@ struct SViewConstantBuffer
     float IsPerspective;
     float TessellationLevel;
 
-    uint64_t PrefilteredMapSampler;
-    uint64_t IrradianceMapSampler;
+    //uint64_t PrefilteredMapSampler;
+    //uint64_t IrradianceMapSampler;
+
+    uint64_t GlobalIrradianceMap;
+    uint64_t GlobalReflectionMap;
 
     int32_t NumDirectionalLights;
     int32_t Pad3;
@@ -234,14 +236,6 @@ extern TRef<RenderCore::IBuffer> GClusterItemBuffer;
 
 /** Cluster item references view */
 extern TRef<RenderCore::IBufferView> GClusterItemTBO;
-
-/** Irradiance texture array */
-extern TRef<RenderCore::ITexture> GIrradianceMap;
-extern RenderCore::BindlessHandle GIrradianceMapBindless;
-
-/** Reflections texture array */
-extern TRef<RenderCore::ITexture> GPrefilteredMap;
-extern RenderCore::BindlessHandle GPrefilteredMapBindless;
 
 struct SRenderViewContext
 {

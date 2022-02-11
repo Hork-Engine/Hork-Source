@@ -30,11 +30,25 @@ SOFTWARE.
 
 #pragma once
 
+#include <Containers/Array.h>
+
 #include "Animation.h"
 #include "Skeleton.h"
 #include "IndexedMesh.h"
 
 #include <unordered_map>
+
+struct SAssetSkyboxImportSettings
+{
+    /** Source files for skybox */
+    TArray<AString, 6> Faces;
+
+    /** Import skybox as HDRI image */
+    bool bHDRI{false};
+
+    float HDRIScale{1};
+    float HDRIPow{1};
+};
 
 struct SAssetImportSettings
 {
@@ -53,21 +67,14 @@ struct SAssetImportSettings
         RaycastPrimitivesPerLeaf = 16;
         bImportSkybox            = false;
         bImportSkyboxExplicit    = false;
-        bSkyboxHDRI              = false;
         Scale                    = 1.0f;
         Rotation                 = Quat::Identity();
-        SkyboxHDRIScale          = 1; // 4
-        SkyboxHDRIPow            = 1; // 1.1
-        Platform::ZeroMem(ExplicitSkyboxFaces, sizeof(ExplicitSkyboxFaces));
         bCreateSkyboxMaterialInstance = true;
         bAllowUnlitMaterials          = true;
     }
 
     /** Source file name */
     AString ImportFile;
-
-    /** Source files for skybox */
-    const char* ExplicitSkyboxFaces[6];
 
     /** Asset output directory */
     AString OutputPath;
@@ -95,9 +102,6 @@ struct SAssetImportSettings
 
     uint16_t RaycastPrimitivesPerLeaf;
 
-    /** Import skybox as HDRI image */
-    bool bSkyboxHDRI;
-
     /** Import skybox material instance */
     bool bCreateSkyboxMaterialInstance;
 
@@ -110,8 +114,7 @@ struct SAssetImportSettings
     /** Rotate models */
     Quat Rotation;
 
-    float SkyboxHDRIScale;
-    float SkyboxHDRIPow;
+    SAssetSkyboxImportSettings SkyboxImport;
 };
 
 class AAssetImporter
@@ -210,5 +213,12 @@ private:
     AGUID                       m_SkeletonGUID;
 };
 
+/** Perform cubemap face loading */
+bool LoadSkyboxImages(SAssetSkyboxImportSettings const& ImportSettings, TArray<AImage, 6>& Faces);
+
+/** Perform cubemap face validation */
+bool ValidateCubemapFaces(TArray<AImage, 6> const& Faces, int& Width, STexturePixelFormat& PixelFormat);
+
+bool ImportEnviornmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSettings, AStringView EnvmapFile);
 
 bool LoadLWO(IBinaryStream& InStream, float InScale, AMaterialInstance* (*GetMaterial)(const char* _Name), AIndexedMesh** IndexedMesh);
