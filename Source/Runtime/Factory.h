@@ -246,10 +246,9 @@ public:
         EnumDef(EnumDef),
         Range(Range),
         Flags(Flags),
-        Setter(std::move(Setter)),
-        Getter(std::move(Getter)),
-        Copy(std::move(Copy))
-
+        Setter(Setter),
+        Getter(Getter),
+        Copy(Copy)
     {
         AClassMeta& classMeta = const_cast<AClassMeta&>(ClassMeta);
         pNext                 = nullptr;
