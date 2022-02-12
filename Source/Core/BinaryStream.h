@@ -81,10 +81,9 @@ public:
         Read(pBuffer, capacity - 1);
         pBuffer[capacity - 1] = 0;
 
-        size_t skipBytes = size - (SizeInBytes - 1);
-        if (skipBytes > 0)
+        if (size > SizeInBytes - 1)
         {
-            SeekCur(skipBytes);
+            SeekCur(size - (SizeInBytes - 1));
         }
     }
 
