@@ -4,6 +4,9 @@ Game engine
 
 Developed for Quake-style 3D games, but it is possible to create games of other genres.
 
+[Join the Discord server](https://discord.gg/XsNKdcfv)
+
+
 ## A bit of history
 The beginning was laid a long time ago, the development of the latest version of the engine
 started from scratch in the fall of 2018. Before that, there were other versions that were not very successful.
