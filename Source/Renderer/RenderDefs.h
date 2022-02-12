@@ -319,11 +319,11 @@ struct SMeshVertexSkin
     uint8_t JointWeights[4];
 
     void Write( IBinaryStream & _Stream ) const {
-        _Stream.WriteBuffer( JointIndices, 8 );
+        _Stream.Write( JointIndices, 8 );
     }
 
     void Read( IBinaryStream & _Stream ) {
-        _Stream.ReadBuffer( JointIndices, 8 );
+        _Stream.Read( JointIndices, 8 );
     }
 };
 

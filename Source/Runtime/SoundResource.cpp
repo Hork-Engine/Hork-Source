@@ -161,7 +161,7 @@ bool ASoundResource::LoadResource(IBinaryStream& Stream)
     {
         size_t size = Stream.SizeInBytes();
         void*  data = GHunkMemory.Alloc(size);
-        Stream.ReadBuffer(data, size);
+        Stream.Read(data, size);
         bool bResult = InitializeFromMemory(Stream.GetFileName(), data, size);
         GHunkMemory.ClearLastHunk();
         return bResult;
@@ -202,11 +202,11 @@ bool ASoundResource::LoadResource(IBinaryStream& Stream)
 
         Stream.SeekEnd( 0 );
 
-        size_t sizeInBytes = Stream.Tell();
+        size_t sizeInBytes = Stream.GetOffset();
         void * pHeapPtr = (byte *)GHeapMemory.Alloc( sizeInBytes );
 
         Stream.Rewind();
-        Stream.ReadBuffer( pHeapPtr, sizeInBytes );
+        Stream.Read( pHeapPtr, sizeInBytes );
 
         pFileInMemory = MakeRef< SFileInMemory >( pHeapPtr, sizeInBytes );
 

@@ -450,7 +450,7 @@ bool APhotometricProfile::LoadResource(IBinaryStream& Stream)
         Stream.ReadObject(guid);
 
         Intensity = Stream.ReadFloat();
-        Stream.ReadBuffer(Data, sizeof(Data));
+        Stream.Read(Data, sizeof(Data));
     }
 
     return true;

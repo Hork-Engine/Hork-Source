@@ -108,8 +108,7 @@ AImage::~AImage()
 static int Stbi_Read(void* user, char* data, int size)
 {
     IBinaryStream* stream = (IBinaryStream*)user;
-    stream->ReadBuffer(data, size);
-    return stream->GetReadBytesCount();
+    return stream->Read(data, size);
 }
 
 static void Stbi_Skip(void* user, int n)
@@ -127,7 +126,7 @@ static int Stbi_Eof(void* user)
 static void Stbi_Write(void* context, void* data, int size)
 {
     IBinaryStream* stream = (IBinaryStream*)context;
-    stream->WriteBuffer(data, size);
+    stream->Write(data, size);
 }
 
 static HK_FORCEINLINE bool IsAuto(EImagePixelFormat _PixelFormat)
@@ -310,12 +309,12 @@ static void* LoadEXR(IBinaryStream& _Stream, int* w, int* h, int* channels, int 
 {
     HK_ASSERT(desiredchannels >= 0 && desiredchannels <= 4);
 
-    long streamOffset = _Stream.Tell();
+    size_t streamOffset = _Stream.GetOffset();
     _Stream.SeekEnd(0);
-    long  sizeInBytes = _Stream.Tell() - streamOffset;
+    size_t sizeInBytes = _Stream.GetOffset() - streamOffset;
     void* memory      = GHeapMemory.Alloc(sizeInBytes);
     _Stream.SeekSet(streamOffset);
-    _Stream.ReadBuffer(memory, sizeInBytes);
+    _Stream.Read(memory, sizeInBytes);
 
     float*      data;
     const char* err;
@@ -470,7 +469,7 @@ bool AImage::Load(IBinaryStream& _Stream, SImageMipmapConfig const* _MipmapGen, 
 
     numRequiredChannels = GetNumChannels(_PixelFormat);
 
-    long streamOffset = _Stream.Tell();
+    size_t streamOffset = _Stream.GetOffset();
 
     if (bHDRI)
     {
@@ -1206,6 +1205,7 @@ void ResizeImage(SImageResizeDesc const& InDesc, void* pScaledImage)
                      NULL);
 
     HK_ASSERT(result == 1);
+    HK_UNUSED(result);
 
     GHunkMemory.ClearToMark(hunkMark);
 }

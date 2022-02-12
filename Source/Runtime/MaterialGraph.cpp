@@ -2751,7 +2751,7 @@ static void GenerateBuiltinSource()
 
     AFileStream f;
     f.OpenWrite("material_builtin.glsl");
-    f.WriteBuffer(builtin.CStr(), builtin.Length());
+    f.Write(builtin.CStr(), builtin.Length());
 }
 
 static void WriteDebugShaders(SMaterialShader const* Shaders)
@@ -3105,10 +3105,13 @@ void MGMaterialGraph::CreateStageTransitions(SMaterialStageTransition&    Transi
         }
     }
 
+    #ifdef HK_DEBUG
     for (SVarying const& v : varyings)
     {
         HK_ASSERT(v.RefCount == 0);
     }
+    #endif
+
 #if 0
     AFileStream f;
     if ( !f.OpenWrite( "debug2.glsl" ) ) {

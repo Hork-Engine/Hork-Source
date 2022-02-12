@@ -39,8 +39,7 @@ static size_t Read( ma_decoder * pDecoder, void* pBufferOut, size_t bytesToRead 
 {
     IBinaryStream * file = (IBinaryStream *)pDecoder->pUserData;
 
-    file->ReadBuffer( pBufferOut, bytesToRead );
-    return file->GetReadBytesCount();
+    return file->Read( pBufferOut, bytesToRead );
 }
 
 static ma_bool32 Seek( ma_decoder * pDecoder, ma_int64 byteOffset, ma_seek_origin origin )

@@ -624,7 +624,7 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
     int hunkMark = GHunkMemory.SetHunkMark();
 
     void* buf = GHunkMemory.Alloc(size);
-    f.ReadBuffer(buf, size);
+    f.Read(buf, size);
 
     ALinearAllocatorGLTF allocator;
 
@@ -1874,7 +1874,7 @@ void AAssetImporter::WriteTexture(TextureInfo& tex)
 
         stride = lodWidth * lodHeight * pixelSizeInBytes;
 
-        f.WriteBuffer(pSrc, stride);
+        f.Write(pSrc, stride);
 
         pSrc += stride;
     }
@@ -2705,7 +2705,7 @@ bool ImportEnvironmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSetti
         ((float*)data)[i] = Core::LittleFloat(((float*)data)[i]);
     }
 
-    f.WriteBuffer(data, numFloats * sizeof(float));
+    f.Write(data, numFloats * sizeof(float));
 
     for (int mipLevel = 0; mipLevel < ReflectionMap->GetDesc().NumMipLevels; mipLevel++)
     {
@@ -2722,7 +2722,7 @@ bool ImportEnvironmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSetti
             ((float*)data)[i] = Core::LittleFloat(((float*)data)[i]);
         }
 
-        f.WriteBuffer(data, numFloats * sizeof(float));
+        f.Write(data, numFloats * sizeof(float));
     }
     return true;
 }
@@ -2792,11 +2792,11 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
     f.WriteUInt32(lodWidth);
     f.WriteUInt32(6); // lodDepth
 
-    size_t size = lodWidth * lodWidth * pixelSizeInBytes;
+    size_t size = (size_t)lodWidth * lodWidth * pixelSizeInBytes;
 
     for (int face = 0; face < 6; face++)
     {
-        f.WriteBuffer(faces[face].GetData(), size);
+        f.Write(faces[face].GetData(), size);
     }
 
     f.WriteUInt32(6); // num source files
@@ -2926,8 +2926,7 @@ static size_t lwRead(void* _Buffer, size_t _ElementSize, size_t _ElementCount, s
 
     size_t total = _ElementSize * _ElementCount;
 
-    stream->ReadBuffer(_Buffer, total);
-    return stream->GetReadBytesCount() / _ElementSize;
+    return stream->Read(_Buffer, total) / _ElementSize;
 }
 
 static int lwSeek(struct st_lwFile* _Stream, long _Offset, int _Origin)
@@ -2951,16 +2950,15 @@ static long lwTell(struct st_lwFile* _Stream)
 {
     IBinaryStream* stream = (IBinaryStream*)_Stream->UserData;
 
-    return stream->Tell();
+    return (long)stream->GetOffset();
 }
 
 static int lwGetc(struct st_lwFile* _Stream)
 {
     IBinaryStream* stream = (IBinaryStream*)_Stream->UserData;
 
-    uint8_t c = stream->ReadInt8();
-
-    if (stream->GetReadBytesCount() == 0)
+    uint8_t c;
+    if (stream->Read(&c, sizeof(c)) == 0)
     {
         _Stream->error = 1;
         return EOF;

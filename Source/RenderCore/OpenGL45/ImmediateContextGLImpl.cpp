@@ -4591,6 +4591,7 @@ bool AImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
     HK_ASSERT(Rectangle.Offset.X + Rectangle.Dimension.X <= pTexture->GetWidth());
     HK_ASSERT(Rectangle.Offset.Y + Rectangle.Dimension.Y <= pTexture->GetHeight());
     HK_ASSERT(Rectangle.Offset.Z + Rectangle.Dimension.Z <= maxDimensionZ);
+    HK_UNUSED(maxDimensionZ);
 
     if (!id)
     {

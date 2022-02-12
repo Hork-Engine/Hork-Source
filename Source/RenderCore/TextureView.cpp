@@ -37,6 +37,7 @@ namespace RenderCore
 ITextureView::ITextureView(STextureViewDesc const& TextureViewDesc, ITexture* pTexture) :
     IDeviceObject(pTexture->GetDevice(), PROXY_TYPE), Desc(TextureViewDesc), pTexture(pTexture)
 {
+#ifdef HK_DEBUG
     STextureDesc const& textureDesc = pTexture->GetDesc();
 
     HK_ASSERT(TextureViewDesc.ViewType != TEXTURE_VIEW_UNDEFINED);
@@ -79,6 +80,7 @@ ITextureView::ITextureView(STextureViewDesc const& TextureViewDesc, ITexture* pT
     }
 
     // TODO: Check internal formats compatibility
+#endif
 }
 
 uint32_t ITextureView::GetWidth() const

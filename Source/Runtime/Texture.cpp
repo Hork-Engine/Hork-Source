@@ -460,7 +460,7 @@ bool ATexture::LoadResource(IBinaryStream& Stream)
                 break;
             }
 
-            Stream.ReadBuffer(lodData, size);
+            Stream.Read(lodData, size);
 
             WriteArbitraryData(0, 0, /*layerNum*/ 0, lodWidth, lodHeight, lodDepth, n, lodData);
         }

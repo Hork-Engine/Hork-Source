@@ -166,7 +166,7 @@ bool AEnvironmentMap::LoadResource(IBinaryStream& Stream)
 
     int numFloats = irradianceMapWidth * irradianceMapWidth * 3 * 6;
 
-    Stream.ReadBuffer(data, numFloats * sizeof(float));
+    Stream.Read(data, numFloats * sizeof(float));
 
     for (int i = 0; i < numFloats; i++)
     {
@@ -182,7 +182,7 @@ bool AEnvironmentMap::LoadResource(IBinaryStream& Stream)
 
         numFloats = mipWidth * mipWidth * 3 * 6;
 
-        Stream.ReadBuffer(data, numFloats * sizeof(float));
+        Stream.Read(data, numFloats * sizeof(float));
 
         for (int i = 0; i < numFloats; i++)
         {

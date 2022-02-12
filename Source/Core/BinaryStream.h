@@ -49,27 +49,39 @@ public:
     virtual ~IBinaryStream()
     {}
 
-    const char* GetFileName() const
-    {
-        return Impl_GetFileName();
-    }
+    virtual const char* GetFileName() const = 0;
 
-    void ReadBuffer(void* _Buffer, int _SizeInBytes)
-    {
-        ReadBytesCount = Impl_Read(_Buffer, _SizeInBytes);
-    }
+    virtual size_t Read(void* pBuffer, size_t SizeInBytes) = 0;
 
-    void ReadCString(char* _Str, int _Sizeof)
+    virtual size_t Write(const void* pBuffer, size_t SizeInBytes) = 0;
+
+    virtual char* Gets(char* pBuffer, size_t SizeInBytes) = 0;
+
+    virtual void Flush() = 0;
+
+    virtual size_t GetOffset() = 0;
+
+    virtual bool SeekSet(int32_t Offset) = 0;
+
+    virtual bool SeekCur(int32_t Offset) = 0;
+
+    virtual bool SeekEnd(int32_t Offset) = 0;
+
+    virtual size_t SizeInBytes() = 0;
+
+    virtual bool Eof() = 0;
+
+    void ReadCString(char* pBuffer, size_t SizeInBytes)
     {
-        int32_t size     = ReadInt32();
-        int32_t capacity = size + 1;
-        if (capacity > _Sizeof)
-        {
-            capacity = _Sizeof;
-        }
-        ReadBuffer(_Str, capacity - 1);
-        _Str[capacity - 1] = 0;
-        int32_t skipBytes  = size - (_Sizeof - 1);
+        if (!SizeInBytes)
+            return;
+
+        size_t size     = ReadUInt32();
+        size_t capacity = std::min(size + 1, SizeInBytes);
+        Read(pBuffer, capacity - 1);
+        pBuffer[capacity - 1] = 0;
+
+        size_t skipBytes = size - (SizeInBytes - 1);
         if (skipBytes > 0)
         {
             SeekCur(skipBytes);
@@ -79,184 +91,184 @@ public:
     int8_t ReadInt8()
     {
         int8_t i;
-        ReadBuffer(&i, sizeof(i));
+        Read(&i, sizeof(i));
         return i;
     }
 
     template <typename T>
-    void ReadArrayInt8(T& _Array)
+    void ReadArrayInt8(T& Array)
     {
         uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate(size);
-        ReadInt8ToBuffer(_Array.ToPtr(), _Array.Size());
+        Array.ResizeInvalidate(size);
+        ReadInt8ToBuffer(Array.ToPtr(), Array.Size());
     }
 
-    void ReadInt8ToBuffer(int8_t* _Buffer, int _Count)
+    void ReadInt8ToBuffer(int8_t* pBuffer, int Count)
     {
-        ReadBuffer(_Buffer, _Count);
+        Read(pBuffer, Count);
     }
 
     uint8_t ReadUInt8()
     {
         uint8_t i;
-        ReadBuffer(&i, sizeof(i));
+        Read(&i, sizeof(i));
         return i;
     }
 
     template <typename T>
-    void ReadArrayUInt8(T& _Array)
+    void ReadArrayUInt8(T& Array)
     {
         uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate(size);
-        ReadUInt8ToBuffer(_Array.ToPtr(), _Array.Size());
+        Array.ResizeInvalidate(size);
+        ReadUInt8ToBuffer(Array.ToPtr(), Array.Size());
     }
 
-    void ReadUInt8ToBuffer(uint8_t* _Buffer, int _Count)
+    void ReadUInt8ToBuffer(uint8_t* pBuffer, int Count)
     {
-        ReadBuffer(_Buffer, _Count);
+        Read(pBuffer, Count);
     }
 
     int16_t ReadInt16()
     {
         int16_t i;
-        ReadBuffer(&i, sizeof(i));
+        Read(&i, sizeof(i));
         return Core::LittleWord(i);
     }
 
     template <typename T>
-    void ReadArrayInt16(T& _Array)
+    void ReadArrayInt16(T& Array)
     {
         uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate(size);
-        ReadInt16ToBuffer(_Array.ToPtr(), _Array.Size());
+        Array.ResizeInvalidate(size);
+        ReadInt16ToBuffer(Array.ToPtr(), Array.Size());
     }
 
-    void ReadInt16ToBuffer(int16_t* _Buffer, int _Count)
+    void ReadInt16ToBuffer(int16_t* pBuffer, int Count)
     {
-        ReadBuffer(_Buffer, _Count * sizeof(_Buffer[0]));
-        for (int i = 0; i < _Count; i++)
+        Read(pBuffer, Count * sizeof(pBuffer[0]));
+        for (int i = 0; i < Count; i++)
         {
-            _Buffer[i] = Core::LittleWord(_Buffer[i]);
+            pBuffer[i] = Core::LittleWord(pBuffer[i]);
         }
     }
 
     uint16_t ReadUInt16()
     {
         uint16_t i;
-        ReadBuffer(&i, sizeof(i));
+        Read(&i, sizeof(i));
         return Core::LittleWord(i);
     }
 
     template <typename T>
-    void ReadArrayUInt16(T& _Array)
+    void ReadArrayUInt16(T& Array)
     {
         uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate(size);
-        ReadUInt16ToBuffer(_Array.ToPtr(), _Array.Size());
+        Array.ResizeInvalidate(size);
+        ReadUInt16ToBuffer(Array.ToPtr(), Array.Size());
     }
 
-    void ReadUInt16ToBuffer(uint16_t* _Buffer, int _Count)
+    void ReadUInt16ToBuffer(uint16_t* pBuffer, int Count)
     {
-        ReadBuffer(_Buffer, _Count * sizeof(_Buffer[0]));
-        for (int i = 0; i < _Count; i++)
+        Read(pBuffer, Count * sizeof(pBuffer[0]));
+        for (int i = 0; i < Count; i++)
         {
-            _Buffer[i] = Core::LittleWord(_Buffer[i]);
+            pBuffer[i] = Core::LittleWord(pBuffer[i]);
         }
     }
 
     int32_t ReadInt32()
     {
         int32_t i;
-        ReadBuffer(&i, sizeof(i));
+        Read(&i, sizeof(i));
         return Core::LittleDWord(i);
     }
 
     template <typename T>
-    void ReadArrayInt32(T& _Array)
+    void ReadArrayInt32(T& Array)
     {
         uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate(size);
-        ReadInt32ToBuffer(_Array.ToPtr(), _Array.Size());
+        Array.ResizeInvalidate(size);
+        ReadInt32ToBuffer(Array.ToPtr(), Array.Size());
     }
 
-    void ReadInt32ToBuffer(int32_t* _Buffer, int _Count)
+    void ReadInt32ToBuffer(int32_t* pBuffer, int Count)
     {
-        ReadBuffer(_Buffer, _Count * sizeof(_Buffer[0]));
-        for (int i = 0; i < _Count; i++)
+        Read(pBuffer, Count * sizeof(pBuffer[0]));
+        for (int i = 0; i < Count; i++)
         {
-            _Buffer[i] = Core::LittleDWord(_Buffer[i]);
+            pBuffer[i] = Core::LittleDWord(pBuffer[i]);
         }
     }
 
     uint32_t ReadUInt32()
     {
         uint32_t i;
-        ReadBuffer(&i, sizeof(i));
+        Read(&i, sizeof(i));
         return Core::LittleDWord(i);
     }
 
     template <typename T>
-    void ReadArrayUInt32(T& _Array)
+    void ReadArrayUInt32(T& Array)
     {
         uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate(size);
-        ReadUInt32ToBuffer(_Array.ToPtr(), _Array.Size());
+        Array.ResizeInvalidate(size);
+        ReadUInt32ToBuffer(Array.ToPtr(), Array.Size());
     }
 
-    void ReadUInt32ToBuffer(uint32_t* _Buffer, int _Count)
+    void ReadUInt32ToBuffer(uint32_t* pBuffer, int Count)
     {
-        ReadBuffer(_Buffer, _Count * sizeof(_Buffer[0]));
-        for (int i = 0; i < _Count; i++)
+        Read(pBuffer, Count * sizeof(pBuffer[0]));
+        for (int i = 0; i < Count; i++)
         {
-            _Buffer[i] = Core::LittleDWord(_Buffer[i]);
+            pBuffer[i] = Core::LittleDWord(pBuffer[i]);
         }
     }
 
     int64_t ReadInt64()
     {
         int64_t i;
-        ReadBuffer(&i, sizeof(i));
+        Read(&i, sizeof(i));
         return Core::LittleDDWord(i);
     }
 
     template <typename T>
-    void ReadArrayInt64(T& _Array)
+    void ReadArrayInt64(T& Array)
     {
         uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate(size);
-        ReadInt64ToBuffer(_Array.ToPtr(), _Array.Size());
+        Array.ResizeInvalidate(size);
+        ReadInt64ToBuffer(Array.ToPtr(), Array.Size());
     }
 
-    void ReadInt64ToBuffer(int64_t* _Buffer, int _Count)
+    void ReadInt64ToBuffer(int64_t* pBuffer, int Count)
     {
-        ReadBuffer(_Buffer, _Count * sizeof(_Buffer[0]));
-        for (int i = 0; i < _Count; i++)
+        Read(pBuffer, Count * sizeof(pBuffer[0]));
+        for (int i = 0; i < Count; i++)
         {
-            _Buffer[i] = Core::LittleDDWord(_Buffer[i]);
+            pBuffer[i] = Core::LittleDDWord(pBuffer[i]);
         }
     }
 
     uint64_t ReadUInt64()
     {
         uint64_t i;
-        ReadBuffer(&i, sizeof(i));
+        Read(&i, sizeof(i));
         return Core::LittleDDWord(i);
     }
 
     template <typename T>
-    void ReadArrayUInt64(T& _Array)
+    void ReadArrayUInt64(T& Array)
     {
         uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate(size);
-        ReadUInt64ToBuffer(_Array.ToPtr(), _Array.Size());
+        Array.ResizeInvalidate(size);
+        ReadUInt64ToBuffer(Array.ToPtr(), Array.Size());
     }
 
-    void ReadUInt64ToBuffer(uint64_t* _Buffer, int _Count)
+    void ReadUInt64ToBuffer(uint64_t* pBuffer, int Count)
     {
-        ReadBuffer(_Buffer, _Count * sizeof(_Buffer[0]));
-        for (int i = 0; i < _Count; i++)
+        Read(pBuffer, Count * sizeof(pBuffer[0]));
+        for (int i = 0; i < Count; i++)
         {
-            _Buffer[i] = Core::LittleDDWord(_Buffer[i]);
+            pBuffer[i] = Core::LittleDDWord(pBuffer[i]);
         }
     }
 
@@ -267,19 +279,19 @@ public:
     }
 
     template <typename T>
-    void ReadArrayFloat(T& _Array)
+    void ReadArrayFloat(T& Array)
     {
         uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate(size);
-        ReadFloatToBuffer(_Array.ToPtr(), _Array.Size());
+        Array.ResizeInvalidate(size);
+        ReadFloatToBuffer(Array.ToPtr(), Array.Size());
     }
 
-    void ReadFloatToBuffer(float* _Buffer, int _Count)
+    void ReadFloatToBuffer(float* pBuffer, int Count)
     {
-        ReadBuffer(_Buffer, _Count * sizeof(_Buffer[0]));
-        for (int i = 0; i < _Count; i++)
+        Read(pBuffer, Count * sizeof(pBuffer[0]));
+        for (int i = 0; i < Count; i++)
         {
-            _Buffer[i] = Core::LittleFloat(_Buffer[i]);
+            pBuffer[i] = Core::LittleFloat(pBuffer[i]);
         }
     }
 
@@ -290,19 +302,19 @@ public:
     }
 
     template <typename T>
-    void ReadArrayDouble(T& _Array)
+    void ReadArrayDouble(T& Array)
     {
         uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate(size);
-        ReadDoubleToBuffer(_Array.ToPtr(), _Array.Size());
+        Array.ResizeInvalidate(size);
+        ReadDoubleToBuffer(Array.ToPtr(), Array.Size());
     }
 
-    void ReadDoubleToBuffer(double* _Buffer, int _Count)
+    void ReadDoubleToBuffer(double* pBuffer, int Count)
     {
-        ReadBuffer(_Buffer, _Count * sizeof(_Buffer[0]));
-        for (int i = 0; i < _Count; i++)
+        Read(pBuffer, Count * sizeof(pBuffer[0]));
+        for (int i = 0; i < Count; i++)
         {
-            _Buffer[i] = Core::LittleDouble(_Buffer[i]);
+            pBuffer[i] = Core::LittleDouble(pBuffer[i]);
         }
     }
 
@@ -312,151 +324,146 @@ public:
     }
 
     template <typename T>
-    void ReadObject(T& _Object)
+    void ReadObject(T& Object)
     {
-        _Object.Read(*this);
+        Object.Read(*this);
     }
 
     template <typename T>
-    void ReadArrayOfStructs(T& _Array)
+    void ReadArrayOfStructs(T& Array)
     {
         uint32_t size = ReadUInt32();
-        _Array.ResizeInvalidate(size);
-        for (int i = 0; i < _Array.Size(); i++)
+        Array.ResizeInvalidate(size);
+        for (int i = 0; i < Array.Size(); i++)
         {
-            ReadObject(_Array[i]);
+            ReadObject(Array[i]);
         }
     }
 
-    void WriteBuffer(const void* _Buffer, int _SizeInBytes)
+    void WriteCString(const char* pRawStr)
     {
-        WriteBytesCount = Impl_Write(_Buffer, _SizeInBytes);
-    }
-
-    void WriteCString(const char* _Str)
-    {
-        int len = Platform::Strlen(_Str);
+        int len = Platform::Strlen(pRawStr);
         WriteUInt32(len);
-        WriteBuffer(_Str, len);
+        Write(pRawStr, len);
     }
 
     void WriteInt8(int8_t i)
     {
-        WriteBuffer(&i, sizeof(i));
+        Write(&i, sizeof(i));
     }
 
     template <typename T>
-    void WriteArrayInt8(T const& _Array)
+    void WriteArrayInt8(T const& Array)
     {
-        WriteUInt32(_Array.Size());
-        WriteBuffer(_Array.ToPtr(), _Array.Size());
+        WriteUInt32(Array.Size());
+        Write(Array.ToPtr(), Array.Size());
     }
 
     void WriteUInt8(uint8_t i)
     {
-        WriteBuffer(&i, sizeof(i));
+        Write(&i, sizeof(i));
     }
 
     template <typename T>
-    void WriteArrayUInt8(T const& _Array)
+    void WriteArrayUInt8(T const& Array)
     {
-        WriteUInt32(_Array.Size());
-        WriteBuffer(_Array.ToPtr(), _Array.Size());
+        WriteUInt32(Array.Size());
+        Write(Array.ToPtr(), Array.Size());
     }
 
     void WriteInt16(int16_t i)
     {
         i = Core::LittleWord(i);
-        WriteBuffer(&i, sizeof(i));
+        Write(&i, sizeof(i));
     }
 
     template <typename T>
-    void WriteArrayInt16(T const& _Array)
+    void WriteArrayInt16(T const& Array)
     {
-        WriteUInt32(_Array.Size());
-        for (int i = 0; i < _Array.Size(); i++)
+        WriteUInt32(Array.Size());
+        for (int i = 0; i < Array.Size(); i++)
         {
-            WriteInt16(_Array[i]);
+            WriteInt16(Array[i]);
         }
     }
 
     void WriteUInt16(uint16_t i)
     {
         i = Core::LittleWord(i);
-        WriteBuffer(&i, sizeof(i));
+        Write(&i, sizeof(i));
     }
 
     template <typename T>
-    void WriteArrayUInt16(T const& _Array)
+    void WriteArrayUInt16(T const& Array)
     {
-        WriteUInt32(_Array.Size());
-        for (int i = 0; i < _Array.Size(); i++)
+        WriteUInt32(Array.Size());
+        for (int i = 0; i < Array.Size(); i++)
         {
-            WriteUInt16(_Array[i]);
+            WriteUInt16(Array[i]);
         }
     }
 
     void WriteInt32(int32_t i)
     {
         i = Core::LittleDWord(i);
-        WriteBuffer(&i, sizeof(i));
+        Write(&i, sizeof(i));
     }
 
     template <typename T>
-    void WriteArrayInt32(T const& _Array)
+    void WriteArrayInt32(T const& Array)
     {
-        WriteUInt32(_Array.Size());
-        for (int i = 0; i < _Array.Size(); i++)
+        WriteUInt32(Array.Size());
+        for (int i = 0; i < Array.Size(); i++)
         {
-            WriteInt32(_Array[i]);
+            WriteInt32(Array[i]);
         }
     }
 
     void WriteUInt32(uint32_t i)
     {
         i = Core::LittleDWord(i);
-        WriteBuffer(&i, sizeof(i));
+        Write(&i, sizeof(i));
     }
 
     template <typename T>
-    void WriteArrayUInt32(T const& _Array)
+    void WriteArrayUInt32(T const& Array)
     {
-        WriteUInt32(_Array.Size());
-        for (int i = 0; i < _Array.Size(); i++)
+        WriteUInt32(Array.Size());
+        for (int i = 0; i < Array.Size(); i++)
         {
-            WriteUInt32(_Array[i]);
+            WriteUInt32(Array[i]);
         }
     }
 
     void WriteInt64(int64_t i)
     {
         i = Core::LittleDDWord(i);
-        WriteBuffer(&i, sizeof(i));
+        Write(&i, sizeof(i));
     }
 
     template <typename T>
-    void WriteArrayInt64(T const& _Array)
+    void WriteArrayInt64(T const& Array)
     {
-        WriteUInt32(_Array.Size());
-        for (int i = 0; i < _Array.Size(); i++)
+        WriteUInt32(Array.Size());
+        for (int i = 0; i < Array.Size(); i++)
         {
-            WriteInt64(_Array[i]);
+            WriteInt64(Array[i]);
         }
     }
 
     void WriteUInt64(uint64_t i)
     {
         i = Core::LittleDDWord(i);
-        WriteBuffer(&i, sizeof(i));
+        Write(&i, sizeof(i));
     }
 
     template <typename T>
-    void WriteArrayUInt64(T const& _Array)
+    void WriteArrayUInt64(T const& Array)
     {
-        WriteUInt32(_Array.Size());
-        for (int i = 0; i < _Array.Size(); i++)
+        WriteUInt32(Array.Size());
+        for (int i = 0; i < Array.Size(); i++)
         {
-            WriteUInt64(_Array[i]);
+            WriteUInt64(Array[i]);
         }
     }
 
@@ -466,12 +473,12 @@ public:
     }
 
     template <typename T>
-    void WriteArrayFloat(T const& _Array)
+    void WriteArrayFloat(T const& Array)
     {
-        WriteUInt32(_Array.Size());
-        for (int i = 0; i < _Array.Size(); i++)
+        WriteUInt32(Array.Size());
+        for (int i = 0; i < Array.Size(); i++)
         {
-            WriteFloat(_Array[i]);
+            WriteFloat(Array[i]);
         }
     }
 
@@ -481,12 +488,12 @@ public:
     }
 
     template <typename T>
-    void WriteArrayDouble(T const& _Array)
+    void WriteArrayDouble(T const& Array)
     {
-        WriteUInt32(_Array.Size());
-        for (int i = 0; i < _Array.Size(); i++)
+        WriteUInt32(Array.Size());
+        for (int i = 0; i < Array.Size(); i++)
         {
-            WriteDouble(_Array[i]);
+            WriteDouble(Array[i]);
         }
     }
 
@@ -496,34 +503,19 @@ public:
     }
 
     template <typename T>
-    void WriteObject(T const& _Object)
+    void WriteObject(T const& Object)
     {
-        _Object.Write(*this);
+        Object.Write(*this);
     }
 
     template <typename T>
-    void WriteArrayOfStructs(T const& _Array)
+    void WriteArrayOfStructs(T const& Array)
     {
-        WriteUInt32(_Array.Size());
-        for (int i = 0; i < _Array.Size(); i++)
+        WriteUInt32(Array.Size());
+        for (int i = 0; i < Array.Size(); i++)
         {
-            WriteObject(_Array[i]);
+            WriteObject(Array[i]);
         }
-    }
-
-    char* Gets(char* _StrBuf, int _StrSz)
-    {
-        return Impl_Gets(_StrBuf, _StrSz);
-    }
-
-    void Flush()
-    {
-        Impl_Flush();
-    }
-
-    long Tell()
-    {
-        return Impl_Tell();
     }
 
     void Rewind()
@@ -531,58 +523,13 @@ public:
         SeekSet(0);
     }
 
-    bool SeekSet(long _Offset)
-    {
-        return Impl_SeekSet(_Offset);
-    }
-
-    bool SeekCur(long _Offset)
-    {
-        return Impl_SeekCur(_Offset);
-    }
-
-    bool SeekEnd(long _Offset)
-    {
-        return Impl_SeekEnd(_Offset);
-    }
-
-    size_t SizeInBytes()
-    {
-        return Impl_SizeInBytes();
-    }
-
-    bool Eof()
-    {
-        return Impl_Eof();
-    }
-
-    void Printf(const char* _Format, ...)
+    void Printf(const char* Format, ...)
     {
         extern thread_local char LogBuffer[16384]; // Use existing log buffer
         va_list                  VaList;
-        va_start(VaList, _Format);
-        int len = Platform::VSprintf(LogBuffer, sizeof(LogBuffer), _Format, VaList);
+        va_start(VaList, Format);
+        int len = Platform::VSprintf(LogBuffer, sizeof(LogBuffer), Format, VaList);
         va_end(VaList);
-        WriteBuffer(LogBuffer, len);
+        Write(LogBuffer, len);
     }
-
-    int GetReadBytesCount() const { return ReadBytesCount; }
-    int GetWriteBytesCount() const { return WriteBytesCount; }
-
-protected:
-    virtual const char* Impl_GetFileName() const                          = 0;
-    virtual int         Impl_Read(void* _Buffer, int _SizeInBytes)        = 0;
-    virtual int         Impl_Write(const void* _Buffer, int _SizeInBytes) = 0;
-    virtual char*       Impl_Gets(char* _StrBuf, int _StrSz)              = 0;
-    virtual void        Impl_Flush()                                      = 0;
-    virtual long        Impl_Tell()                                       = 0;
-    virtual bool        Impl_SeekSet(long _Offset)                        = 0;
-    virtual bool        Impl_SeekCur(long _Offset)                        = 0;
-    virtual bool        Impl_SeekEnd(long _Offset)                        = 0;
-    virtual size_t      Impl_SizeInBytes()                                = 0;
-    virtual bool        Impl_Eof()                                        = 0;
-
-    //private:
-    int ReadBytesCount  = 0;
-    int WriteBytesCount = 0;
 };

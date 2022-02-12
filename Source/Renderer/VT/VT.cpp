@@ -123,6 +123,7 @@ void SVirtualTextureFileHandle::Read( void * Data, unsigned int Size, uint64_t O
 
     HK_ASSERT( r != FALSE );
     HK_ASSERT( numberOfBytesRead == Size );
+    HK_UNUSED( r );
 }
 
 void SVirtualTextureFileHandle::Write( const void * Data, unsigned int Size, uint64_t Offset ) {
@@ -140,6 +141,7 @@ void SVirtualTextureFileHandle::Write( const void * Data, unsigned int Size, uin
 
     HK_ASSERT( r != FALSE );
     HK_ASSERT( numberOfBytesWritten == Size );
+    HK_UNUSED(r);
 }
 
 #else

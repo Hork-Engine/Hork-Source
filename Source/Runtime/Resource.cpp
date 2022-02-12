@@ -177,7 +177,7 @@ bool ABinaryResource::LoadResource(IBinaryStream& _Stream)
     }
 
     pBinaryData = GHeapMemory.Alloc(SizeInBytes + 1);
-    _Stream.ReadBuffer(pBinaryData, SizeInBytes);
+    _Stream.Read(pBinaryData, SizeInBytes);
     ((uint8_t*)pBinaryData)[SizeInBytes] = 0;
 
     return true;

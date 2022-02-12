@@ -385,7 +385,7 @@ public:
     HK_FORCEINLINE void Write(IBinaryStream& Stream) const
     {
         Stream.WriteUInt32(Size);
-        Stream.WriteBuffer(Data, Size);
+        Stream.Write(Data, Size);
     }
 
 private:
@@ -929,10 +929,10 @@ HK_FORCEINLINE void AString::ReplaceExt(AStringView Extension)
 HK_FORCEINLINE void AString::FromFile(IBinaryStream& Stream)
 {
     Stream.SeekEnd(0);
-    long fileSz = Stream.Tell();
+    size_t fileSz = Stream.GetOffset();
     Stream.SeekSet(0);
     GrowCapacity(fileSz + 1, false);
-    Stream.ReadBuffer(Data, fileSz);
+    Stream.Read(Data, fileSz);
     Data[fileSz] = 0;
     Size         = fileSz;
 }
@@ -941,7 +941,7 @@ HK_FORCEINLINE void AString::Read(IBinaryStream& Stream)
 {
     int len = Stream.ReadUInt32();
     GrowCapacity(len + 1, false);
-    Stream.ReadBuffer(Data, len);
+    Stream.Read(Data, len);
     Data[len] = 0;
     Size      = len;
 }

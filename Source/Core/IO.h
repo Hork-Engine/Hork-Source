@@ -46,13 +46,13 @@ class AArchive final
 
 public:
     AArchive();
-    AArchive(AStringView _ArchiveName, bool bResourcePack = false);
+    AArchive(AStringView ArchiveName, bool bResourcePack = false);
     AArchive(const void* pMemory, size_t SizeInBytes);
 
     ~AArchive();
 
     /** Open archive from file */
-    bool Open(AStringView _ArchiveName, bool bResourcePack = false);
+    bool Open(AStringView ArchiveName, bool bResourcePack = false);
 
     /** Open archive from memory */
     bool OpenFromMemory(const void* pMemory, size_t SizeInBytes);
@@ -67,27 +67,28 @@ public:
     int GetNumFiles() const;
 
     /** Get file index. Return -1 if file wasn't found */
-    int LocateFile(AStringView _FileName) const;
+    int LocateFile(AStringView FileName) const;
 
     /** Get file compressed and uncompressed size */
-    bool GetFileSize(int _FileIndex, size_t* _CompressedSize, size_t* _UncompressedSize) const;
+    bool GetFileSize(int FileIndex, size_t* pCompressedSize, size_t* pUncompressedSize) const;
 
     /** Get file name by index */
-    bool GetFileName(int _FileIndex, AString& FileName) const;
+    bool GetFileName(int FileIndex, AString& FileName) const;
 
     /** Decompress file to memory buffer */
-    bool ExtractFileToMemory(int _FileIndex, void* _MemoryBuffer, size_t _SizeInBytes) const;
+    bool ExtractFileToMemory(int FileIndex, void* pMemoryBuffer, size_t SizeInBytes) const;
 
     /** Decompress file to heap memory */
-    bool ExtractFileToHeapMemory(AStringView _FileName, void** _HeapMemoryPtr, int* _SizeInBytes) const;
+    bool ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes) const;
+
     /** Decompress file to heap memory */
-    bool ExtractFileToHeapMemory(int _FileIndex, void** _HeapMemoryPtr, int* _SizeInBytes) const;
+    bool ExtractFileToHeapMemory(int FileIndex, void** pHeapMemoryPtr, size_t* pSizeInBytes) const;
 
     /** Decompress file to hunk memory */
-    bool ExtractFileToHunkMemory(AStringView _FileName, void** _HunkMemoryPtr, int* _SizeInBytes, int* _HunkMark) const;
+    bool ExtractFileToHunkMemory(AStringView FileName, void** pHunkMemoryPtr, size_t* pSizeInBytes, int* pHunkMark) const;
 
 private:
-    void* Handle;
+    void* Handle{};
 };
 
 
@@ -107,32 +108,28 @@ public:
     {}
 
     AFileStream(AFileStream&& BinaryStream) noexcept :
-        Name(std::move(BinaryStream.Name)), Handle(BinaryStream.Handle), Mode(BinaryStream.Mode)
+        Name(std::move(BinaryStream.Name)), Mode(BinaryStream.Mode), Handle(BinaryStream.Handle), RWOffset(BinaryStream.RWOffset), FileSize(BinaryStream.FileSize)
     {
-        ReadBytesCount  = BinaryStream.ReadBytesCount;
-        WriteBytesCount = BinaryStream.WriteBytesCount;
-
-        BinaryStream.ReadBytesCount  = 0;
-        BinaryStream.WriteBytesCount = 0;
-
-        BinaryStream.Handle = nullptr;
-        BinaryStream.Mode   = FILE_OPEN_MODE_CLOSED;
+        BinaryStream.Mode     = FILE_OPEN_MODE_CLOSED;
+        BinaryStream.Handle   = nullptr;
+        BinaryStream.RWOffset = 0;
+        BinaryStream.FileSize = 0;
     }
 
     AFileStream& operator=(AFileStream&& BinaryStream) noexcept
     {
         Close();
 
-        ReadBytesCount  = BinaryStream.ReadBytesCount;
-        WriteBytesCount = BinaryStream.WriteBytesCount;
-        Name            = std::move(BinaryStream.Name);
-        Handle          = BinaryStream.Handle;
-        Mode            = BinaryStream.Mode;
+        Name     = std::move(BinaryStream.Name);
+        Mode     = BinaryStream.Mode;
+        Handle   = BinaryStream.Handle;
+        RWOffset = BinaryStream.RWOffset;
+        FileSize = BinaryStream.FileSize;
 
-        BinaryStream.ReadBytesCount  = 0;
-        BinaryStream.WriteBytesCount = 0;
-        BinaryStream.Handle          = nullptr;
-        BinaryStream.Mode            = FILE_OPEN_MODE_CLOSED;
+        BinaryStream.Mode     = FILE_OPEN_MODE_CLOSED;
+        BinaryStream.Handle   = nullptr;
+        BinaryStream.RWOffset = 0;
+        BinaryStream.FileSize = 0;
 
         return *this;
     }
@@ -140,13 +137,13 @@ public:
     ~AFileStream();
 
     /** Open file for read form specified path */
-    bool OpenRead(AStringView _FileName);
+    bool OpenRead(AStringView FileName);
 
     /** Open file for write */
-    bool OpenWrite(AStringView _FileName);
+    bool OpenWrite(AStringView FileName);
 
     /** Open file for append */
-    bool OpenAppend(AStringView _FileName);
+    bool OpenAppend(AStringView FileName);
 
     /** Close file */
     void Close();
@@ -154,23 +151,20 @@ public:
     /** Check is file opened */
     bool IsOpened() const { return Mode != FILE_OPEN_MODE_CLOSED; }
 
-protected:
-    const char* Impl_GetFileName() const override;
-    int         Impl_Read(void* _Buffer, int _SizeInBytes) override;
-    int         Impl_Write(const void* _Buffer, int _SizeInBytes) override;
-    char*       Impl_Gets(char* _StrBuf, int _StrSz) override;
-    void        Impl_Flush() override;
-    long        Impl_Tell() override;
-    bool        Impl_SeekSet(long _Offset) override;
-    bool        Impl_SeekCur(long _Offset) override;
-    bool        Impl_SeekEnd(long _Offset) override;
-    size_t      Impl_SizeInBytes() override;
-    bool        Impl_Eof() override;
+    const char* GetFileName() const override;
+    size_t      Read(void* pBuffer, size_t SizeInBytes) override;
+    size_t      Write(const void* pBuffer, size_t SizeInBytes) override;
+    char*       Gets(char* pBuffer, size_t SizeInBytes) override;
+    void        Flush() override;
+    size_t      GetOffset() override;
+    bool        SeekSet(int32_t Offset) override;
+    bool        SeekCur(int32_t Offset) override;
+    bool        SeekEnd(int32_t Offset) override;
+    size_t      SizeInBytes() override;
+    bool        Eof() override;
 
 private:
-    bool Open(AStringView _FileName, int _Mode);
-
-    enum FILE_OPEN_MODE
+    enum FILE_OPEN_MODE : uint8_t
     {
         FILE_OPEN_MODE_CLOSED,
         FILE_OPEN_MODE_READ,
@@ -178,9 +172,13 @@ private:
         FILE_OPEN_MODE_APPEND
     };
 
-    AString Name;
-    void*   Handle = nullptr;
-    int     Mode   = FILE_OPEN_MODE_CLOSED;
+    bool Open(AStringView FileName, FILE_OPEN_MODE Mode);
+
+    AString        Name;
+    FILE_OPEN_MODE Mode{FILE_OPEN_MODE_CLOSED};
+    FILE*          Handle{};
+    size_t         RWOffset{};
+    size_t         FileSize{};
 };
 
 
@@ -202,23 +200,20 @@ public:
     AMemoryStream(AMemoryStream&& BinaryStream) noexcept :
         Name(std::move(BinaryStream.Name)),
         Mode(BinaryStream.Mode),
-        MemoryBuffer(BinaryStream.MemoryBuffer),
-        MemoryBufferSize(BinaryStream.MemoryBufferSize),
-        bMemoryBufferOwner(BinaryStream.bMemoryBufferOwner),
-        MemoryBufferOffset(BinaryStream.MemoryBufferOffset),
-        Granularity(BinaryStream.Granularity)
+        pHeapPtr(BinaryStream.pHeapPtr),
+        HeapSize(BinaryStream.HeapSize),
+        ReservedSize(BinaryStream.ReservedSize),
+        RWOffset(BinaryStream.RWOffset),
+        Granularity(BinaryStream.Granularity),
+        bMemoryBufferOwner(BinaryStream.bMemoryBufferOwner)
     {
-        ReadBytesCount  = BinaryStream.ReadBytesCount;
-        WriteBytesCount = BinaryStream.WriteBytesCount;
-
-        BinaryStream.ReadBytesCount     = 0;
-        BinaryStream.WriteBytesCount    = 0;
         BinaryStream.Mode               = FILE_OPEN_MODE_CLOSED;
-        BinaryStream.MemoryBuffer       = nullptr;
-        BinaryStream.MemoryBufferSize   = 0;
-        BinaryStream.bMemoryBufferOwner = false;
-        BinaryStream.MemoryBufferOffset = 0;
+        BinaryStream.pHeapPtr           = nullptr;
+        BinaryStream.HeapSize           = 0;
+        BinaryStream.ReservedSize       = 0;
+        BinaryStream.RWOffset           = 0;
         BinaryStream.Granularity        = 0;
+        BinaryStream.bMemoryBufferOwner = false;
     }
 
     ~AMemoryStream();
@@ -227,42 +222,40 @@ public:
     {
         Close();
 
-        ReadBytesCount     = BinaryStream.ReadBytesCount;
-        WriteBytesCount    = BinaryStream.WriteBytesCount;
         Name               = std::move(BinaryStream.Name);
         Mode               = BinaryStream.Mode;
-        MemoryBuffer       = BinaryStream.MemoryBuffer;
-        MemoryBufferSize   = BinaryStream.MemoryBufferSize;
-        bMemoryBufferOwner = BinaryStream.bMemoryBufferOwner;
-        MemoryBufferOffset = BinaryStream.MemoryBufferOffset;
+        pHeapPtr           = BinaryStream.pHeapPtr;
+        HeapSize           = BinaryStream.HeapSize;
+        ReservedSize       = BinaryStream.ReservedSize;
+        RWOffset           = BinaryStream.RWOffset;
         Granularity        = BinaryStream.Granularity;
+        bMemoryBufferOwner = BinaryStream.bMemoryBufferOwner;
 
-        BinaryStream.ReadBytesCount     = 0;
-        BinaryStream.WriteBytesCount    = 0;
         BinaryStream.Mode               = FILE_OPEN_MODE_CLOSED;
-        BinaryStream.MemoryBuffer       = nullptr;
-        BinaryStream.MemoryBufferSize   = 0;
-        BinaryStream.bMemoryBufferOwner = false;
-        BinaryStream.MemoryBufferOffset = 0;
+        BinaryStream.pHeapPtr           = nullptr;
+        BinaryStream.HeapSize           = 0;
+        BinaryStream.ReservedSize       = 0;
+        BinaryStream.RWOffset           = 0;
         BinaryStream.Granularity        = 0;
+        BinaryStream.bMemoryBufferOwner = false;
 
         return *this;
     }
 
     /** Read from specified memory buffer */
-    bool OpenRead(AStringView _FileName, const void* _MemoryBuffer, size_t _SizeInBytes);
+    bool OpenRead(AStringView FileName, const void* pMemoryBuffer, size_t SizeInBytes);
 
     /** Read file from archive */
-    bool OpenRead(AStringView _FileName, AArchive const& _Archive);
+    bool OpenRead(AStringView FileName, AArchive const& Archive);
 
     /** Read file from archive */
-    bool OpenRead(int _FileIndex, AArchive const& _Archive);
+    bool OpenRead(int FileIndex, AArchive const& Archive);
 
     /** Write to specified memory buffer */
-    bool OpenWrite(AStringView _FileName, void* _MemoryBuffer, size_t _SizeInBytes);
+    bool OpenWrite(AStringView FileName, void* pMemoryBuffer, size_t SizeInBytes);
 
     /** Write to inner memory buffer */
-    bool OpenWrite(AStringView _FileName, size_t _ReservedSize = 32);
+    bool OpenWrite(AStringView FileName, size_t ReservedSize = 32);
 
     /** Close file */
     void Close();
@@ -270,43 +263,45 @@ public:
     /** Check is file opened */
     bool IsOpened() const { return Mode != FILE_OPEN_MODE_CLOSED; }
 
-    /** Grab memory buffer */
-    void* GrabMemory();
+    /** Get memory buffer */
+    void* GetHeapPtr();
+
+    size_t GetReservedSize() const;
 
     void SetGrowGranularity(int _Granularity) { Granularity = _Granularity; }
 
-protected:
-    const char* Impl_GetFileName() const override;
-    int         Impl_Read(void* _Buffer, int _SizeInBytes) override;
-    int         Impl_Write(const void* _Buffer, int _SizeInBytes) override;
-    char*       Impl_Gets(char* _StrBuf, int _StrSz) override;
-    void        Impl_Flush() override;
-    long        Impl_Tell() override;
-    bool        Impl_SeekSet(long _Offset) override;
-    bool        Impl_SeekCur(long _Offset) override;
-    bool        Impl_SeekEnd(long _Offset) override;
-    size_t      Impl_SizeInBytes() override;
-    bool        Impl_Eof() override;
+    const char* GetFileName() const override;
+    size_t      Read(void* pBuffer, size_t SizeInBytes) override;
+    size_t      Write(const void* pBuffer, size_t SizeInBytes) override;
+    char*       Gets(char* pBuffer, size_t SizeInBytes) override;
+    void        Flush() override;
+    size_t      GetOffset() override;
+    bool        SeekSet(int32_t Offset) override;
+    bool        SeekCur(int32_t Offset) override;
+    bool        SeekEnd(int32_t Offset) override;
+    size_t      SizeInBytes() override;
+    bool        Eof() override;
 
 private:
-    enum FILE_OPEN_MODE
+    enum FILE_OPEN_MODE : uint8_t
     {
         FILE_OPEN_MODE_CLOSED,
         FILE_OPEN_MODE_READ,
         FILE_OPEN_MODE_WRITE
     };
 
-    void* Alloc(size_t _SizeInBytes);
-    void* Realloc(void* _Data, size_t _SizeInBytes);
-    void  Free(void* _Data);
+    void* Alloc(size_t SizeInBytes);
+    void* Realloc(void* pMemory, size_t SizeInBytes);
+    void  Free(void* pMemory);
 
-    AString Name;
-    int     Mode               = FILE_OPEN_MODE_CLOSED;
-    byte*   MemoryBuffer       = nullptr;
-    int     MemoryBufferSize   = 0;
-    bool    bMemoryBufferOwner = false;
-    int     MemoryBufferOffset = 0;
-    int     Granularity        = 1024;
+    AString        Name;
+    FILE_OPEN_MODE Mode{FILE_OPEN_MODE_CLOSED};
+    byte*          pHeapPtr{};
+    size_t         HeapSize{};
+    size_t         ReservedSize{};
+    size_t         RWOffset{};
+    int            Granularity{1024};
+    bool           bMemoryBufferOwner{};
 };
 
 
@@ -314,19 +309,19 @@ namespace Core
 {
 
 /** Make file system directory */
-void MakeDir(const char* _Directory, bool _FileName);
+void MakeDir(AStringView Directory, bool bFileName);
 
 /** Check is file exists */
-bool IsFileExists(const char* _FileName);
+bool IsFileExists(AStringView FileName);
 
 /** Remove file from disk */
-void RemoveFile(const char* _FileName);
+void RemoveFile(AStringView FileName);
 
 using STraverseDirectoryCB = std::function<void(AStringView FileName, bool bIsDirectory)>;
 /** Traverse the directory */
 void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Callback);
 
 /** Write game resource pack */
-bool WriteResourcePack(const char* SourcePath, const char* ResultFile);
+bool WriteResourcePack(AStringView SourcePath, AStringView ResultFile);
 
 } // namespace Core

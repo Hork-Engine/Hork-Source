@@ -2485,7 +2485,7 @@ static int LoadScript(const char* SourceFileName, const char* IncludedFrom, CScr
 
     size_t bufferSize = f.SizeInBytes() + 1;
     char*  buffer     = (char*)GHunkMemory.Alloc(bufferSize);
-    f.ReadBuffer(buffer, bufferSize - 1);
+    f.Read(buffer, bufferSize - 1);
     buffer[bufferSize - 1] = 0;
 
     int r = pBuilder->AddSectionFromMemory(SourceFileName, buffer);
@@ -2634,6 +2634,11 @@ asIScriptContext* AScriptContextPool::PrepareContext(asIScriptFunction* pFunctio
 
     int r = pContext->Prepare(pFunction);
     HK_ASSERT(r >= 0);
+
+    if (!r)
+    {
+        GLogger.Printf("AScriptContextPool::PrepareContext: failed to prepare context '%s'\n", pFunction->GetName());
+    }
 
     return pContext;
 }

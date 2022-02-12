@@ -59,11 +59,13 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
         {
             if (i == 0)
             {
+                #ifdef HK_DEBUG
                 ITexture const* backBuffer = rtv->GetTexture();
 
                 HK_ASSERT(backBuffer->GetHandleNativeGL() == 0);
                 HK_ASSERT(Width == backBuffer->GetWidth());
                 HK_ASSERT(Height == backBuffer->GetHeight());
+                #endif
 
                 RTVs[0] = rtv;
 
@@ -96,11 +98,13 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
             }
             else
             {                
+                #ifdef HK_DEBUG
                 ITexture const* depthBuffer = dsv->GetTexture();
 
                 HK_ASSERT(depthBuffer->GetHandleNativeGL() == 0);
                 HK_ASSERT(Width == depthBuffer->GetWidth());
                 HK_ASSERT(Height == depthBuffer->GetHeight());
+                #endif
 
                 pDSV = dsv;
 

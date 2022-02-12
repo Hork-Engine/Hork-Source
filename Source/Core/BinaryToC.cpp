@@ -56,7 +56,7 @@ bool BinaryToC(const char* _SourceFile, const char* _DestFile, const char* _SymN
 
     size_t size = source.SizeInBytes();
     byte*  data = (byte*)GHeapMemory.Alloc(size);
-    source.ReadBuffer(data, size);
+    source.Read(data, size);
 
     WriteBinaryToC(dest, _SymName, data, size, _EncodeBase85);
 
@@ -83,7 +83,7 @@ bool BinaryToCompressedC(const char* _SourceFile, const char* _DestFile, const c
 
     size_t decompressedSize = source.SizeInBytes();
     byte*  decompressedData = (byte*)GHeapMemory.Alloc(decompressedSize);
-    source.ReadBuffer(decompressedData, decompressedSize);
+    source.Read(decompressedData, decompressedSize);
 
     size_t compressedSize = Core::ZMaxCompressedSize(decompressedSize);
     byte*  compressedData = (byte*)GHeapMemory.Alloc(compressedSize);

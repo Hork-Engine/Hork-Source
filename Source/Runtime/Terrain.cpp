@@ -115,7 +115,7 @@ bool ATerrain::LoadResource(IBinaryStream& Stream)
     }
 
     // Read most detailed lod
-    Stream.ReadBuffer(Heightmap[0], HeightmapResolution * HeightmapResolution * sizeof(float));
+    Stream.Read(Heightmap[0], HeightmapResolution * HeightmapResolution * sizeof(float));
 
     GenerateLods();
     UpdateTerrainBounds();

@@ -2375,7 +2375,7 @@ void AFont::LoadInternalResource(const char* _Path)
             CriticalError("Failed to create default font\n");
         }
 
-        InitializeFromMemoryTTF(f.GrabMemory(), f.SizeInBytes(), &createInfo);
+        InitializeFromMemoryTTF(f.GetHeapPtr(), f.SizeInBytes(), &createInfo);
 
         DrawOffset.Y = 1.0f;
         return;

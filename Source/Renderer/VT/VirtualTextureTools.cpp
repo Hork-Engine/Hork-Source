@@ -372,6 +372,7 @@ void VT_PutImageIntoPages( SVirtualTextureStructure & _Struct,
 
             HK_ASSERT_( pageIndexX < numVtPages, "VT_PutImageIntoPages" );
             HK_ASSERT_( pageIndexY < numVtPages, "VT_PutImageIntoPages" );
+            HK_UNUSED(numVtPages);
 
             unsigned int relativeIndex = QuadTreeGetRelativeFromXY( pageIndexX, pageIndexY, lod );
             unsigned int absoluteIndex = QuadTreeRelativeToAbsoluteIndex( relativeIndex, lod );
