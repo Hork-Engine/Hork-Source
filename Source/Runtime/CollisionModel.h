@@ -36,6 +36,48 @@ SOFTWARE.
 
 class AIndexedMeshSubpart;
 
+enum COLLISION_MASK : uint32_t
+{
+    CM_NOCOLLISION          = 0,
+    CM_WORLD_STATIC         = HK_BIT(0),
+    CM_WORLD_DYNAMIC        = HK_BIT(1),
+    CM_WORLD                = CM_WORLD_STATIC | CM_WORLD_DYNAMIC,
+    CM_PAWN                 = HK_BIT(2),
+    CM_PROJECTILE           = HK_BIT(3),
+    CM_TRIGGER              = HK_BIT(4),
+    CM_CHARACTER_CONTROLLER = HK_BIT(5),
+    CM_WATER                = HK_BIT(6),
+    CM_SOLID                = CM_WORLD_STATIC | CM_WORLD_DYNAMIC | CM_PAWN | CM_PROJECTILE | CM_CHARACTER_CONTROLLER,
+    CM_UNUSED7              = HK_BIT(7),
+    CM_UNUSED8              = HK_BIT(8),
+    CM_UNUSED9              = HK_BIT(9),
+    CM_UNUSED10             = HK_BIT(10),
+    CM_UNUSED11             = HK_BIT(11),
+    CM_UNUSED12             = HK_BIT(12),
+    CM_UNUSED13             = HK_BIT(13),
+    CM_UNUSED14             = HK_BIT(14),
+    CM_UNUSED15             = HK_BIT(15),
+    CM_UNUSED16             = HK_BIT(16),
+    CM_UNUSED17             = HK_BIT(17),
+    CM_UNUSED18             = HK_BIT(18),
+    CM_UNUSED19             = HK_BIT(19),
+    CM_UNUSED20             = HK_BIT(20),
+    CM_UNUSED21             = HK_BIT(21),
+    CM_UNUSED22             = HK_BIT(22),
+    CM_UNUSED23             = HK_BIT(23),
+    CM_UNUSED24             = HK_BIT(24),
+    CM_UNUSED25             = HK_BIT(25),
+    CM_UNUSED26             = HK_BIT(26),
+    CM_UNUSED27             = HK_BIT(27),
+    CM_UNUSED28             = HK_BIT(28),
+    CM_UNUSED29             = HK_BIT(29),
+    CM_UNUSED30             = HK_BIT(30),
+    CM_UNUSED31             = HK_BIT(31),
+    CM_ALL                  = 0xffffffff
+};
+
+HK_FLAG_ENUM_OPERATORS(COLLISION_MASK)
+
 enum COLLISION_SHAPE
 {
     COLLISION_SHAPE_SPHERE,
@@ -69,9 +111,9 @@ struct SCollisionMeshSubpart
 
 struct SCollisionBone
 {
-    int JointIndex{-1};
-    int CollisionGroup{0};
-    int CollisionMask{0};
+    int            JointIndex{-1};
+    COLLISION_MASK CollisionGroup{CM_NOCOLLISION};
+    COLLISION_MASK CollisionMask{CM_NOCOLLISION};
 };
 
 struct SCollisionSphereDef
@@ -232,9 +274,9 @@ struct ACollisionBody
 
 struct SBoneCollision
 {
-    int JointIndex;
-    int CollisionGroup;
-    int CollisionMask;
+    int                        JointIndex;
+    COLLISION_MASK             CollisionGroup;
+    COLLISION_MASK             CollisionMask;
     TUniqueRef<ACollisionBody> CollisionBody;
 };
 

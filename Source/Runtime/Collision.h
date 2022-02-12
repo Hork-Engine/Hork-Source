@@ -33,34 +33,7 @@ SOFTWARE.
 #include "Actor.h"
 #include "SceneComponent.h"
 #include "CollisionEvents.h"
-
-//CM_SOLID
-//CM_PLAYER_CLIP
-//CM_MONSTER_CLIP
-
-enum ECollisionMask
-{
-    CM_NOCOLLISION          = 0,
-    CM_WORLD_STATIC         = 1,
-    CM_WORLD_DYNAMIC        = 2,
-    CM_WORLD                = CM_WORLD_STATIC | CM_WORLD_DYNAMIC,
-    CM_PAWN                 = 4,
-    CM_PROJECTILE           = 8,
-    CM_TRIGGER              = 16,
-    CM_CHARACTER_CONTROLLER = 32,
-    CM_WATER                = 64,
-    CM_SOLID                = CM_WORLD_STATIC | CM_WORLD_DYNAMIC | CM_PAWN | CM_PROJECTILE | CM_CHARACTER_CONTROLLER,
-    CM_UNUSED7              = 128,
-    CM_UNUSED8              = 256,
-    CM_UNUSED9              = 512,
-    CM_UNUSED10             = 1024,
-    CM_UNUSED11             = 1024,
-    CM_UNUSED12             = 2048,
-    CM_UNUSED13             = 4096,
-    CM_UNUSED14             = 8192,
-    CM_UNUSED15             = 16384,
-    CM_ALL                  = 0xffffffff
-};
+#include "CollisionModel.h"
 
 class AHitProxy : public ABaseObject
 {
@@ -95,20 +68,20 @@ public:
 
     AWorld* GetWorld() const { return OwnerComponent->GetWorld(); }
 
-    /** Set collision group/layer. See ECollisionMask. */
-    void SetCollisionGroup(int _CollisionGroup);
+    /** Set collision group/layer. See COLLISION_MASK. */
+    void SetCollisionGroup(COLLISION_MASK _CollisionGroup);
 
-    /** Get collision group. See ECollisionMask. */
-    int GetCollisionGroup() const { return CollisionGroup; }
+    /** Get collision group. See COLLISION_MASK. */
+    COLLISION_MASK GetCollisionGroup() const { return CollisionGroup; }
 
-    /** Set collision mask. See ECollisionMask. */
-    void SetCollisionMask(int _CollisionMask);
+    /** Set collision mask. See COLLISION_MASK. */
+    void SetCollisionMask(COLLISION_MASK _CollisionMask);
 
-    /** Get collision mask. See ECollisionMask. */
-    int GetCollisionMask() const { return CollisionMask; }
+    /** Get collision mask. See COLLISION_MASK. */
+    COLLISION_MASK GetCollisionMask() const { return CollisionMask; }
 
-    /** Set collision group and mask. See ECollisionMask. */
-    void SetCollisionFilter(int _CollisionGroup, int _CollisionMask);
+    /** Set collision group and mask. See COLLISION_MASK. */
+    void SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask);
 
     /** Set actor to ignore collisions with this component */
     void AddCollisionIgnoreActor(AActor* _Actor);
@@ -143,8 +116,8 @@ private:
     ASceneComponent*   OwnerComponent  = nullptr;
     btCollisionObject* CollisionObject = nullptr;
 
-    int CollisionGroup = CM_WORLD_STATIC;
-    int CollisionMask  = CM_ALL;
+    COLLISION_MASK CollisionGroup = CM_WORLD_STATIC;
+    COLLISION_MASK CollisionMask  = CM_ALL;
 
     int JointIndex = 0;
 

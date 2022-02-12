@@ -67,20 +67,20 @@ public:
         return HitProxy->bGenerateContactPoints;
     }
 
-    /** Set collision group/layer. See ECollisionMask. */
-    void SetCollisionGroup(int _CollisionGroup);
+    /** Set collision group/layer. See COLLISION_MASK. */
+    void SetCollisionGroup(COLLISION_MASK _CollisionGroup);
 
-    /** Get collision group. See ECollisionMask. */
-    int GetCollisionGroup() const { return HitProxy->GetCollisionGroup(); }
+    /** Get collision group. See COLLISION_MASK. */
+    COLLISION_MASK GetCollisionGroup() const { return HitProxy->GetCollisionGroup(); }
 
-    /** Set collision mask. See ECollisionMask. */
-    void SetCollisionMask(int _CollisionMask);
+    /** Set collision mask. See COLLISION_MASK. */
+    void SetCollisionMask(COLLISION_MASK _CollisionMask);
 
-    /** Get collision mask. See ECollisionMask. */
-    int GetCollisionMask() const { return HitProxy->GetCollisionMask(); }
+    /** Get collision mask. See COLLISION_MASK. */
+    COLLISION_MASK GetCollisionMask() const { return HitProxy->GetCollisionMask(); }
 
-    /** Set collision group and mask. See ECollisionMask. */
-    void SetCollisionFilter(int _CollisionGroup, int _CollisionMask);
+    /** Set collision group and mask. See COLLISION_MASK. */
+    void SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask);
 
     /** Set actor to ignore collisions with this component */
     void AddCollisionIgnoreActor(AActor* _Actor);

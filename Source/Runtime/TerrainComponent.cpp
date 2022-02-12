@@ -531,17 +531,17 @@ float ATerrainComponent::SampleHeight(Float3 const& InPosition) const
     return Terrain->SampleHeight(x, z);
 }
 
-void ATerrainComponent::SetCollisionGroup(int _CollisionGroup)
+void ATerrainComponent::SetCollisionGroup(COLLISION_MASK _CollisionGroup)
 {
     HitProxy->SetCollisionGroup(_CollisionGroup);
 }
 
-void ATerrainComponent::SetCollisionMask(int _CollisionMask)
+void ATerrainComponent::SetCollisionMask(COLLISION_MASK _CollisionMask)
 {
     HitProxy->SetCollisionMask(_CollisionMask);
 }
 
-void ATerrainComponent::SetCollisionFilter(int _CollisionGroup, int _CollisionMask)
+void ATerrainComponent::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask)
 {
     HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
 }

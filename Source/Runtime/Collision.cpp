@@ -78,7 +78,7 @@ void AHitProxy::UpdateBroadphase()
     }
 }
 
-void AHitProxy::SetCollisionGroup(int _CollisionGroup)
+void AHitProxy::SetCollisionGroup(COLLISION_MASK _CollisionGroup)
 {
     if (CollisionGroup == _CollisionGroup)
     {
@@ -90,7 +90,7 @@ void AHitProxy::SetCollisionGroup(int _CollisionGroup)
     UpdateBroadphase();
 }
 
-void AHitProxy::SetCollisionMask(int _CollisionMask)
+void AHitProxy::SetCollisionMask(COLLISION_MASK _CollisionMask)
 {
     if (CollisionMask == _CollisionMask)
     {
@@ -102,7 +102,7 @@ void AHitProxy::SetCollisionMask(int _CollisionMask)
     UpdateBroadphase();
 }
 
-void AHitProxy::SetCollisionFilter(int _CollisionGroup, int _CollisionMask)
+void AHitProxy::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask)
 {
     if (CollisionGroup == _CollisionGroup && CollisionMask == _CollisionMask)
     {

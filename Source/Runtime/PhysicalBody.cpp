@@ -126,107 +126,75 @@ void APhysicalBodyMotionState::setWorldTransform(btTransform const& _CenterOfMas
 }
 
 template <>
-const char* GetEnumList<EMotionBehavior>()
+SEnumDef const* GetEnumDef<EMotionBehavior>()
 {
-    return "Static\0"
-           "Simulated\0"
-           "Kinematic\0\0";
+    static const SEnumDef EnumDef[] = {
+        {MB_STATIC, "Static"},
+        {MB_SIMULATED, "Simulated"},
+        {MB_KINEMATIC, "Kinematic"},
+        {0, nullptr}};
+    return EnumDef;
 }
+HK_REGISTER_ENUM(EMotionBehavior)
 
 template <>
-APackedValue PackObject(EMotionBehavior const& Val)
+SEnumDef const* GetEnumDef<EAINavigationBehavior>()
 {
-    switch (Val)
-    {
-        case MB_STATIC:
-            return "Static";
-        case MB_SIMULATED:
-            return "Simulated";
-        case MB_KINEMATIC:
-            return "Kinematic";
-        default:
-            HK_ASSERT(0);
-            return "Static";
-    }
+    static const SEnumDef EnumDef[] = {
+        {AI_NAVIGATION_BEHAVIOR_NONE, "None"},
+        {AI_NAVIGATION_BEHAVIOR_STATIC, "Static"},
+        {AI_NAVIGATION_BEHAVIOR_STATIC_NON_WALKABLE, "Static Non Walkable"},
+        {AI_NAVIGATION_BEHAVIOR_DYNAMIC, "Dynamic"},
+        {AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE, "Dynamic Non Walkable"},
+        {0, nullptr}};
+    return EnumDef;
 }
+HK_REGISTER_ENUM(EAINavigationBehavior)
 
 template <>
-EMotionBehavior UnpackObject(APackedValue const& PackedVal)
+SEnumDef const* GetEnumDef<COLLISION_MASK>()
 {
-    if (PackedVal == "Static")
-    {
-        return MB_STATIC;
-    }
-    else if (PackedVal == "Simulated")
-    {
-        return MB_SIMULATED;
-    }
-    else if (PackedVal == "Kinematic")
-    {
-        return MB_KINEMATIC;
-    }
-    HK_ASSERT(0);
-    return MB_STATIC;
+    static const SEnumDef EnumDef[] = { {CM_NOCOLLISION, "CM_NOCOLLISION"},
+                                        {CM_WORLD_STATIC, "CM_WORLD_STATIC"},
+                                        {CM_WORLD_DYNAMIC, "CM_WORLD_DYNAMIC"},
+                                        {CM_WORLD, "CM_WORLD"},
+                                        {CM_PAWN, "CM_PAWN"},
+                                        {CM_PROJECTILE, "CM_PROJECTILE"},
+                                        {CM_TRIGGER, "CM_TRIGGER"},
+                                        {CM_CHARACTER_CONTROLLER, "CM_CHARACTER_CONTROLLER"},
+                                        {CM_WATER, "CM_WATER"},
+                                        {CM_SOLID, "CM_SOLID"},
+                                        {CM_UNUSED7, "CM_UNUSED7"},
+                                        {CM_UNUSED8, "CM_UNUSED8" },
+                                        {CM_UNUSED9, "CM_UNUSED9"},
+                                        {CM_UNUSED10, "CM_UNUSED10"},
+                                        {CM_UNUSED11, "CM_UNUSED11"},
+                                        {CM_UNUSED12, "CM_UNUSED12"},
+                                        {CM_UNUSED13, "CM_UNUSED13"},
+                                        {CM_UNUSED14, "CM_UNUSED14"},
+                                        {CM_UNUSED15, "CM_UNUSED15"},
+                                        {CM_UNUSED16, "CM_UNUSED16"},
+                                        {CM_UNUSED17, "CM_UNUSED17"},
+                                        {CM_UNUSED18, "CM_UNUSED18"},
+                                        {CM_UNUSED19, "CM_UNUSED19"},
+                                        {CM_UNUSED20, "CM_UNUSED20"},
+                                        {CM_UNUSED21, "CM_UNUSED21"},
+                                        {CM_UNUSED22, "CM_UNUSED22"},
+                                        {CM_UNUSED23, "CM_UNUSED23"},
+                                        {CM_UNUSED24, "CM_UNUSED24"},
+                                        {CM_UNUSED25, "CM_UNUSED25"},
+                                        {CM_UNUSED26, "CM_UNUSED26"},
+                                        {CM_UNUSED27, "CM_UNUSED27"},
+                                        {CM_UNUSED28, "CM_UNUSED28"},
+                                        {CM_UNUSED29, "CM_UNUSED29"},
+                                        {CM_UNUSED30, "CM_UNUSED30"},
+                                        {CM_UNUSED31, "CM_UNUSED31"},
+                                        {CM_ALL, "CM_ALL"},
+                                        {0, nullptr}};
+    return EnumDef;
 }
+HK_REGISTER_ENUM(COLLISION_MASK)
 
-
-template <>
-const char* GetEnumList<EAINavigationBehavior>()
-{
-    return "None\0"
-           "Static\0"
-           "Static Non Walkable\0"
-           "Dynamic\0"
-           "Dynamic Non Walkable\0\0";
-}
-
-template <>
-APackedValue PackObject(EAINavigationBehavior const& Val)
-{
-    switch (Val)
-    {
-        case AI_NAVIGATION_BEHAVIOR_NONE:
-            return "None";
-        case AI_NAVIGATION_BEHAVIOR_STATIC:
-            return "Static";
-        case AI_NAVIGATION_BEHAVIOR_STATIC_NON_WALKABLE:
-            return "Static Non Walkable";
-        case AI_NAVIGATION_BEHAVIOR_DYNAMIC:
-            return "Dynamic";
-        case AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE:
-            return "Dynamic Non Walkable";
-        default:
-            HK_ASSERT(0);
-            return "None";
-    }
-}
-
-template <>
-EAINavigationBehavior UnpackObject(APackedValue const& PackedVal)
-{
-    if (PackedVal == "None")
-    {
-        return AI_NAVIGATION_BEHAVIOR_NONE;
-    }
-    else if (PackedVal == "Static")
-    {
-        return AI_NAVIGATION_BEHAVIOR_STATIC;
-    }
-    else if (PackedVal == "Static Non Walkable")
-    {
-        return AI_NAVIGATION_BEHAVIOR_STATIC_NON_WALKABLE;
-    }
-    else if (PackedVal == "Dynamic")
-    {
-        return AI_NAVIGATION_BEHAVIOR_DYNAMIC;
-    }
-    else if (PackedVal == "Dynamic Non Walkable")
-    {
-        return AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE;
-    }
-    HK_ASSERT(0);
-    return AI_NAVIGATION_BEHAVIOR_NONE;
-}
 
 HK_BEGIN_CLASS_META(APhysicalBody)
 HK_PROPERTY2(bool, "bDispatchContactEvents", SetDispatchContactEvents, ShouldDispatchContactEvents, HK_PROPERTY_DEFAULT)
@@ -240,8 +208,8 @@ HK_PROPERTY(bDisableGravity, SetDisableGravity, IsGravityDisabled, HK_PROPERTY_D
 HK_PROPERTY(bOverrideWorldGravity, SetOverrideWorldGravity, IsWorldGravityOverriden, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(SelfGravity, SetSelfGravity, GetSelfGravity, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(Mass, SetMass, GetMass, HK_PROPERTY_DEFAULT)
-HK_PROPERTY2(int, "CollisionGroup", SetCollisionGroup, GetCollisionGroup, HK_PROPERTY_DEFAULT)
-HK_PROPERTY2(int, "CollisionMask", SetCollisionMask, GetCollisionMask, HK_PROPERTY_DEFAULT)
+HK_PROPERTY2(COLLISION_MASK, "CollisionGroup", SetCollisionGroup, GetCollisionGroup, HK_PROPERTY_DEFAULT)
+HK_PROPERTY2(COLLISION_MASK, "CollisionMask", SetCollisionMask, GetCollisionMask, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(LinearSleepingThreshold, SetLinearSleepingThreshold, GetLinearSleepingThreshold, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(LinearDamping, SetLinearDamping, GetLinearDamping, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(AngularSleepingThreshold, SetAngularSleepingThreshold, GetAngularSleepingThreshold, HK_PROPERTY_DEFAULT)
@@ -1366,17 +1334,17 @@ void APhysicalBody::SetMass(float _Mass)
     UpdatePhysicsAttribs();
 }
 
-void APhysicalBody::SetCollisionGroup(int _CollisionGroup)
+void APhysicalBody::SetCollisionGroup(COLLISION_MASK _CollisionGroup)
 {
     HitProxy->SetCollisionGroup(_CollisionGroup);
 }
 
-void APhysicalBody::SetCollisionMask(int _CollisionMask)
+void APhysicalBody::SetCollisionMask(COLLISION_MASK _CollisionMask)
 {
     HitProxy->SetCollisionMask(_CollisionMask);
 }
 
-void APhysicalBody::SetCollisionFilter(int _CollisionGroup, int _CollisionMask)
+void APhysicalBody::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask)
 {
     HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
 }

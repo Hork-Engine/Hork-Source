@@ -175,6 +175,12 @@ HK_FORCEINLINE AClassMeta const* AObjectFactory::GetClassList() const
 
 using APackedValue = AString;
 
+struct SEnumDef
+{
+    int64_t     Value;
+    const char* HumanReadableName;
+};
+
 struct SPropertyRange
 {
     int64_t MinIntegral = 0;
@@ -212,6 +218,18 @@ Property flags
 #define HK_PROPERTY_NON_SERIALIZABLE 1
 #define HK_PROPERTY_BITMASK          2
 
+enum PROPERTY_TYPE
+{
+    PROPERTY_TYPE_BOOLEAN,
+    PROPERTY_TYPE_SIGNED_INT,
+    PROPERTY_TYPE_UNSIGNED_INT,
+    PROPERTY_TYPE_FLOAT32,
+    PROPERTY_TYPE_FLOAT64,
+    PROPERTY_TYPE_ENUM,
+    PROPERTY_TYPE_STRING,
+    PROPERTY_TYPE_NON_TRIVIAL
+};
+
 class AProperty
 {
     HK_FORBID_COPY(AProperty)
@@ -221,21 +239,11 @@ public:
     using GetterFun = APackedValue (*)(ADummy const*);
     using CopyFun   = void (*)(ADummy*, ADummy const*);
 
-    enum TYPE
-    {
-        NUMERIC_SIGNED,
-        NUMERIC_UNSIGNED,
-        NUMERIC_FLOAT,
-        ENUM,
-        STRING,
-        NON_TRIVIAL
-    };
-
-    AProperty(AClassMeta const& _ClassMeta, TYPE Type, const char* EnumList, const char* Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, uint32_t Flags) :
+    AProperty(AClassMeta const& _ClassMeta, PROPERTY_TYPE Type, SEnumDef const* EnumDef, const char* Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, uint32_t Flags) :
         Type(Type),
         Name(Name),
         NameHash(Core::Hash(Name, Platform::Strlen(Name))),
-        EnumList(EnumList),
+        EnumDef(EnumDef),
         Range(Range),
         Flags(Flags),
         Setter(std::move(Setter)),
@@ -274,17 +282,17 @@ public:
 
     const char*           GetName() const { return Name; }
     int                   GetNameHash() const { return NameHash; }
-    const char*           GetEnumList() const { return EnumList; }
+    SEnumDef const*       GetEnumDef() const { return EnumDef; }
     SPropertyRange const& GetRange() const { return Range; }
     uint32_t              GetFlags() const { return Flags; }
     AProperty const*      Next() const { return pNext; }
     AProperty const*      Prev() const { return pPrev; }
 
 private:
-    TYPE             Type;
+    PROPERTY_TYPE    Type;
     const char*      Name;
     int              NameHash;
-    const char*      EnumList;
+    SEnumDef const*  EnumDef;
     SPropertyRange   Range;
     uint32_t         Flags;
     SetterFun        Setter;
@@ -331,9 +339,37 @@ struct TReturnType<R (Class::*)(As...)>
 };
 
 template <typename T>
-const char* GetEnumList()
+SEnumDef const* GetEnumDef()
 {
-    return "";
+    return nullptr;
+}
+
+HK_INLINE APackedValue PackEnum(SEnumDef const* EnumDef, int64_t Value)
+{
+    if (EnumDef)
+    {
+        for (int i = 0; EnumDef[i].HumanReadableName; i++)
+        {
+            if (EnumDef[i].Value == Value)
+                return EnumDef[i].HumanReadableName;
+        }
+        HK_ASSERT(0);
+    }
+    return "[Undefined]";
+}
+
+HK_INLINE int64_t UnpackEnum(SEnumDef const* EnumDef, APackedValue const& PackedVal)
+{
+    if (EnumDef)
+    {
+        for (int i = 0; EnumDef[i].HumanReadableName; i++)
+        {
+            if (EnumDef[i].HumanReadableName == PackedVal)
+                return EnumDef[i].Value;
+        }
+        HK_ASSERT(0);
+    }
+    return 0;
 }
 
 template <typename T>
@@ -343,14 +379,47 @@ template <typename T>
 T UnpackObject(APackedValue const&);
 
 template <typename T>
-constexpr AProperty::TYPE GetPropertyType()
+constexpr PROPERTY_TYPE GetPropertyType()
 {
-    return std::is_enum<T>::value ?
-        AProperty::ENUM :
-        (std::is_arithmetic<T>::value ? (std::is_integral<T>::value ?
-                                             (std::is_unsigned<T>::value ? AProperty::NUMERIC_UNSIGNED : AProperty::NUMERIC_SIGNED) :
-                                             (AProperty::NUMERIC_FLOAT)) :
-                                        AProperty::NON_TRIVIAL);
+    // clang-format off
+    constexpr bool IsBoolean     = std::is_same<T, bool>::value;
+    constexpr bool IsEnum        = std::is_enum<T>::value;
+    constexpr bool IsString      = std::is_same<T, AString>::value;
+    constexpr bool IsSignedInt   = std::is_integral<T>::value && std::is_signed<T>::value;
+    constexpr bool IsUnsignedInt = std::is_integral<T>::value && std::is_unsigned<T>::value;
+    constexpr bool IsFloat32     = std::is_same<T, float>::value;
+    constexpr bool IsFloat64     = std::is_same<T, double>::value;
+
+    return IsBoolean ?
+            PROPERTY_TYPE_BOOLEAN :
+            (
+                IsEnum ?
+                PROPERTY_TYPE_ENUM :
+                (
+                    IsSignedInt ?
+                    PROPERTY_TYPE_SIGNED_INT :
+                    (
+                        IsUnsignedInt ?
+                        PROPERTY_TYPE_UNSIGNED_INT :
+                        (
+                            IsFloat32 ?
+                            PROPERTY_TYPE_FLOAT32 :
+                            (
+                                IsFloat64 ?
+                                PROPERTY_TYPE_FLOAT64 :
+                                (
+                                    IsString ?
+                                    PROPERTY_TYPE_STRING :
+                                    (
+                                        PROPERTY_TYPE_NON_TRIVIAL
+                                    )
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+    // clang-format on
 }
 
 template <> HK_FORCEINLINE APackedValue PackObject(bool const& Val) { return Val ? "1" : "0"; }
@@ -556,7 +625,7 @@ private:
     static AProperty const Property##Member(                                                                                                                                             \
         *this,                                                                                                                                                                           \
         GetPropertyType<decltype(ThisClass::Member)>(),                                                                                                                                  \
-        GetEnumList<decltype(ThisClass::Member)>(),                                                                                                                                      \
+        GetEnumDef<decltype(ThisClass::Member)>(),                                                                                                                                      \
         #Member,                                                                                                                                                                         \
         [](ADummy* pObject, APackedValue const& PackedVal)                                                                                                                               \
         {                                                                                                                                                                                \
@@ -582,7 +651,7 @@ private:
     static AProperty const Property##Member(                                                                                                                                                                                                                             \
         *this,                                                                                                                                                                                                                                                           \
         GetPropertyType<decltype(ThisClass::Member)>(),                                                                                                                                                                                                                  \
-        GetEnumList<decltype(ThisClass::Member)>(),                                                                                                                                                                                                                      \
+        GetEnumDef<decltype(ThisClass::Member)>(),                                                                                                                                                                                                                      \
         #Member,                                                                                                                                                                                                                                                         \
         [](ADummy* pObject, APackedValue const& PackedVal)                                                                                                                                                                                                               \
         {                                                                                                                                                                                                                                                                \
@@ -611,7 +680,7 @@ private:
     static AProperty const Property##Setter(                                                                                                                                                                                                                             \
         *this,                                                                                                                                                                                                                                                           \
         GetPropertyType<MemberType>(),                                                                                                                                                                                                                                   \
-        GetEnumList<MemberType>(),                                                                                                                                                                                                                                       \
+        GetEnumDef<MemberType>(),                                                                                                                                                                                                                                       \
         Name,                                                                                                                                                                                                                                                            \
         [](ADummy* pObject, APackedValue const& PackedVal)                                                                                                                                                                                                               \
         {                                                                                                                                                                                                                                                                \
@@ -635,6 +704,18 @@ private:
 /** Provides access to a class property via a setter/getter without a class member. */
 #define HK_PROPERTY2(MemberType, Name, Setter, Getter, Flags) HK_PROPERTY2_RANGE(MemberType, Name, Setter, Getter, Flags, RangeUnbound())
 
+
+#define HK_REGISTER_ENUM(EnumType)                                                   \
+    template <>                                                                      \
+    APackedValue PackObject(EnumType const& Val)                                     \
+    {                                                                                \
+        return PackEnum(GetEnumDef<EnumType>(), static_cast<int64_t>(Val));          \
+    }                                                                                \
+    template <>                                                                      \
+    EnumType UnpackObject(APackedValue const& PackedVal)                             \
+    {                                                                                \
+        return static_cast<EnumType>(UnpackEnum(GetEnumDef<EnumType>(), PackedVal)); \
+    }
 
 template <typename T, typename... TArgs>
 T* CreateInstanceOf(TArgs&&... _Args)

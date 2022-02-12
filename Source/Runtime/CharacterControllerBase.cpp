@@ -201,17 +201,17 @@ Float3 ACharacterControllerBase::GetCenterWorldPosition() const
     return worldPosition;
 }
 
-void ACharacterControllerBase::SetCollisionGroup(int _CollisionGroup)
+void ACharacterControllerBase::SetCollisionGroup(COLLISION_MASK _CollisionGroup)
 {
     HitProxy->SetCollisionGroup(_CollisionGroup);
 }
 
-void ACharacterControllerBase::SetCollisionMask(int _CollisionMask)
+void ACharacterControllerBase::SetCollisionMask(COLLISION_MASK _CollisionMask)
 {
     HitProxy->SetCollisionMask(_CollisionMask);
 }
 
-void ACharacterControllerBase::SetCollisionFilter(int _CollisionGroup, int _CollisionMask)
+void ACharacterControllerBase::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask)
 {
     HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
 }
@@ -903,17 +903,17 @@ void AProjectileExperimental::OnTransformDirty()
     }
 }
 
-void AProjectileExperimental::SetCollisionGroup(int _CollisionGroup)
+void AProjectileExperimental::SetCollisionGroup(COLLISION_MASK _CollisionGroup)
 {
     HitProxy->SetCollisionGroup(_CollisionGroup);
 }
 
-void AProjectileExperimental::SetCollisionMask(int _CollisionMask)
+void AProjectileExperimental::SetCollisionMask(COLLISION_MASK _CollisionMask)
 {
     HitProxy->SetCollisionMask(_CollisionMask);
 }
 
-void AProjectileExperimental::SetCollisionFilter(int _CollisionGroup, int _CollisionMask)
+void AProjectileExperimental::SetCollisionFilter(COLLISION_MASK _CollisionGroup, COLLISION_MASK _CollisionMask)
 {
     HitProxy->SetCollisionFilter(_CollisionGroup, _CollisionMask);
 }

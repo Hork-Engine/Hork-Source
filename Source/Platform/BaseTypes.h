@@ -214,9 +214,9 @@ extern void AssertFunction(const char* _File, int _Line, const char* _Function, 
 #endif
 #define HK_ASSERT(assertion)   HK_ASSERT_(assertion, nullptr)
 #define HK_STRINGIFY(text)     #text
-#define HK_BIT(sh)             (1 << (sh))
+#define HK_BIT(sh)             (1u << (sh))
 #define HK_BIT64(sh)           (uint64_t(1) << (sh))
-#define HK_HASBITi(v, bit_i)   ((v) & (1 << (bit_i)))
+#define HK_HASBITi(v, bit_i)   ((v) & (1u << (bit_i)))
 #define HK_HASBIT64i(v, bit_i) ((v) & (uint64_t(1) << (bit_i)))
 #define HK_HASFLAG(v, flag)    (((v) & (flag)) == (flag))
 #define HK_OFS(type, name)     offsetof(type, name) //(&(( type * )0)->name)
