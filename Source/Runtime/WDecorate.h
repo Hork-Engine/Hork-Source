@@ -69,7 +69,7 @@ class WTextDecorate : public WDecorate
     HK_CLASS(WTextDecorate, WDecorate)
 
 public:
-    WTextDecorate& SetText(const char* _Text);
+    WTextDecorate& SetText(AStringView _Text);
     WTextDecorate& SetFont(AFont* _Font);
     WTextDecorate& SetColor(Color4 const& _Color);
     WTextDecorate& SetHorizontalAlignment(EWidgetAlignment _Alignment);

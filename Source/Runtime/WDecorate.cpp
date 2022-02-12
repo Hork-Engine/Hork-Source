@@ -62,7 +62,7 @@ WTextDecorate::~WTextDecorate()
 {
 }
 
-WTextDecorate& WTextDecorate::SetText(const char* _Text)
+WTextDecorate& WTextDecorate::SetText(AStringView _Text)
 {
     Text = _Text;
     return *this;
