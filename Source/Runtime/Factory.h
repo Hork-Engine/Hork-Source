@@ -52,20 +52,20 @@ class AObjectFactory
     friend void DeinitializeFactories();
 
 public:
-    AObjectFactory(const char* _Tag);
+    AObjectFactory(const char* Tag);
     ~AObjectFactory();
 
     const char* GetTag() const { return Tag; }
 
-    ADummy* CreateInstance(const char* _ClassName) const;
-    ADummy* CreateInstance(uint64_t _ClassId) const;
+    ADummy* CreateInstance(const char* ClassName) const;
+    ADummy* CreateInstance(uint64_t ClassId) const;
 
     AClassMeta const* GetClassList() const;
 
-    AClassMeta const* FindClass(const char* _ClassName) const;
+    AClassMeta const* FindClass(const char* ClassName) const;
 
-    AClassMeta const* LookupClass(const char* _ClassName) const;
-    AClassMeta const* LookupClass(uint64_t _ClassId) const;
+    AClassMeta const* LookupClass(const char* ClassName) const;
+    AClassMeta const* LookupClass(uint64_t ClassId) const;
 
     uint64_t FactoryClassCount() const { return NumClasses; }
 
@@ -99,11 +99,11 @@ public:
     AObjectFactory const* Factory() const { return pFactory; }
     AProperty const*      GetPropertyList() const { return PropertyList; }
 
-    bool IsSubclassOf(AClassMeta const& _Superclass) const
+    bool IsSubclassOf(AClassMeta const& Superclass) const
     {
         for (AClassMeta const* meta = this; meta; meta = meta->SuperClass())
         {
-            if (meta->GetId() == _Superclass.GetId())
+            if (meta->GetId() == Superclass.GetId())
             {
                 return true;
             }
@@ -111,10 +111,10 @@ public:
         return false;
     }
 
-    template <typename _Superclass>
+    template <typename Superclass>
     bool IsSubclassOf() const
     {
-        return IsSubclassOf(_Superclass::ClassMeta());
+        return IsSubclassOf(Superclass::ClassMeta());
     }
 
     virtual ADummy* CreateInstance() const = 0;
@@ -132,17 +132,17 @@ public:
     void             GetProperties(TPodVector<AProperty const*>& Properties, bool bRecursive = true) const;
 
 protected:
-    AClassMeta(AObjectFactory& _Factory, const char* _ClassName, AClassMeta const* _SuperClassMeta) :
-        ClassId(_Factory.NumClasses + 1), ClassName(_ClassName)
+    AClassMeta(AObjectFactory& Factory, const char* ClassName, AClassMeta const* SuperClassMeta) :
+        ClassId(Factory.NumClasses + 1), ClassName(ClassName)
     {
-        HK_ASSERT_(_Factory.FindClass(_ClassName) == NULL, "Class already defined");
-        pNext            = _Factory.Classes;
-        pSuperClass      = _SuperClassMeta;
+        HK_ASSERT_(Factory.FindClass(ClassName) == NULL, "Class already defined");
+        pNext            = Factory.Classes;
+        pSuperClass      = SuperClassMeta;
         PropertyList     = nullptr;
         PropertyListTail = nullptr;
-        _Factory.Classes = this;
-        _Factory.NumClasses++;
-        pFactory = &_Factory;
+        Factory.Classes  = this;
+        Factory.NumClasses++;
+        pFactory = &Factory;
     }
 
 private:
@@ -156,15 +156,15 @@ private:
     AProperty const*      PropertyListTail;
 };
 
-HK_FORCEINLINE ADummy* AObjectFactory::CreateInstance(const char* _ClassName) const
+HK_FORCEINLINE ADummy* AObjectFactory::CreateInstance(const char* ClassName) const
 {
-    AClassMeta const* classMeta = LookupClass(_ClassName);
+    AClassMeta const* classMeta = LookupClass(ClassName);
     return classMeta ? classMeta->CreateInstance() : nullptr;
 }
 
-HK_FORCEINLINE ADummy* AObjectFactory::CreateInstance(uint64_t _ClassId) const
+HK_FORCEINLINE ADummy* AObjectFactory::CreateInstance(uint64_t ClassId) const
 {
-    AClassMeta const* classMeta = LookupClass(_ClassId);
+    AClassMeta const* classMeta = LookupClass(ClassId);
     return classMeta ? classMeta->CreateInstance() : nullptr;
 }
 
@@ -239,7 +239,7 @@ public:
     using GetterFun = APackedValue (*)(ADummy const*);
     using CopyFun   = void (*)(ADummy*, ADummy const*);
 
-    AProperty(AClassMeta const& _ClassMeta, PROPERTY_TYPE Type, SEnumDef const* EnumDef, const char* Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, uint32_t Flags) :
+    AProperty(AClassMeta const& ClassMeta, PROPERTY_TYPE Type, SEnumDef const* EnumDef, const char* Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, uint32_t Flags) :
         Type(Type),
         Name(Name),
         NameHash(Core::Hash(Name, Platform::Strlen(Name))),
@@ -251,7 +251,7 @@ public:
         Copy(std::move(Copy))
 
     {
-        AClassMeta& classMeta = const_cast<AClassMeta&>(_ClassMeta);
+        AClassMeta& classMeta = const_cast<AClassMeta&>(ClassMeta);
         pNext                 = nullptr;
         pPrev                 = classMeta.PropertyListTail;
         if (pPrev)
@@ -568,113 +568,113 @@ T UnpackObject(APackedValue const& PackedVal)
 }
 
 
-#define _HK_GENERATED_CLASS_BODY()                    \
-public:                                               \
-    static ThisClassMeta const& ClassMeta()           \
-    {                                                 \
-        static const ThisClassMeta __Meta;            \
-        return __Meta;                                \
-    }                                                 \
-    static AClassMeta const* SuperClass()             \
-    {                                                 \
-        return ClassMeta().SuperClass();              \
-    }                                                 \
-    static const char* ClassName()                    \
-    {                                                 \
-        return ClassMeta().GetName();                 \
-    }                                                 \
-    static uint64_t ClassId()                         \
-    {                                                 \
-        return ClassMeta().GetId();                   \
-    }                                                 \
-    virtual AClassMeta const& FinalClassMeta() const  \
-    {                                                 \
-        return ClassMeta();                           \
-    }                                                 \
-    virtual const char* FinalClassName() const        \
-    {                                                 \
-        return ClassName();                           \
-    }                                                 \
-    virtual uint64_t FinalClassId() const             \
-    {                                                 \
-        return ClassId();                             \
-    }                                                 \
-    void* operator new(size_t _SizeInBytes)           \
-    {                                                 \
-        return Allocator::Inst().Alloc(_SizeInBytes); \
-    }                                                 \
-    void operator delete(void* _Ptr)                  \
-    {                                                 \
-        Allocator::Inst().Free(_Ptr);                 \
+#define _HK_GENERATED_CLASS_BODY()                   \
+public:                                              \
+    static ThisClassMeta const& ClassMeta()          \
+    {                                                \
+        static const ThisClassMeta __Meta;           \
+        return __Meta;                               \
+    }                                                \
+    static AClassMeta const* SuperClass()            \
+    {                                                \
+        return ClassMeta().SuperClass();             \
+    }                                                \
+    static const char* ClassName()                   \
+    {                                                \
+        return ClassMeta().GetName();                \
+    }                                                \
+    static uint64_t ClassId()                        \
+    {                                                \
+        return ClassMeta().GetId();                  \
+    }                                                \
+    virtual AClassMeta const& FinalClassMeta() const \
+    {                                                \
+        return ClassMeta();                          \
+    }                                                \
+    virtual const char* FinalClassName() const       \
+    {                                                \
+        return ClassName();                          \
+    }                                                \
+    virtual uint64_t FinalClassId() const            \
+    {                                                \
+        return ClassId();                            \
+    }                                                \
+    void* operator new(size_t SizeInBytes)           \
+    {                                                \
+        return Allocator::Inst().Alloc(SizeInBytes); \
+    }                                                \
+    void operator delete(void* Ptr)                  \
+    {                                                \
+        Allocator::Inst().Free(Ptr);                 \
     }
 
-#define HK_CLASS(_Class, _SuperClass) \
-    HK_FACTORY_CLASS(AClassMeta::DummyFactory(), _Class, _SuperClass)
+#define HK_CLASS(Class, SuperClass) \
+    HK_FACTORY_CLASS(AClassMeta::DummyFactory(), Class, SuperClass)
 
-#define HK_FACTORY_CLASS(_Factory, _Class, _SuperClass) \
-    HK_FACTORY_CLASS_A(_Factory, _Class, _SuperClass, ADummy::Allocator)
+#define HK_FACTORY_CLASS(Factory, Class, SuperClass) \
+    HK_FACTORY_CLASS_A(Factory, Class, SuperClass, ADummy::Allocator)
 
-#define HK_FACTORY_CLASS_A(_Factory, _Class, _SuperClass, _Allocator)                     \
-    HK_FORBID_COPY(_Class)                                                                \
-    friend class ADummy;                                                                  \
-                                                                                          \
-public:                                                                                   \
-    typedef _SuperClass Super;                                                            \
-    typedef _Class      ThisClass;                                                        \
-    typedef _Allocator  Allocator;                                                        \
-    class ThisClassMeta : public AClassMeta                                               \
-    {                                                                                     \
-    public:                                                                               \
-        ThisClassMeta() : AClassMeta(_Factory, HK_STRINGIFY(_Class), &Super::ClassMeta()) \
-        {                                                                                 \
-            RegisterProperties();                                                         \
-        }                                                                                 \
-        ADummy* CreateInstance() const override                                           \
-        {                                                                                 \
-            return new ThisClass;                                                         \
-        }                                                                                 \
-                                                                                          \
-    private:                                                                              \
-        void RegisterProperties();                                                        \
-    };                                                                                    \
-    _HK_GENERATED_CLASS_BODY()                                                            \
+#define HK_FACTORY_CLASS_A(Factory, Class, SuperClass, _Allocator)                      \
+    HK_FORBID_COPY(Class)                                                               \
+    friend class ADummy;                                                                \
+                                                                                        \
+public:                                                                                 \
+    typedef SuperClass Super;                                                           \
+    typedef Class      ThisClass;                                                       \
+    typedef _Allocator Allocator;                                                       \
+    class ThisClassMeta : public AClassMeta                                             \
+    {                                                                                   \
+    public:                                                                             \
+        ThisClassMeta() : AClassMeta(Factory, HK_STRINGIFY(Class), &Super::ClassMeta()) \
+        {                                                                               \
+            RegisterProperties();                                                       \
+        }                                                                               \
+        ADummy* CreateInstance() const override                                         \
+        {                                                                               \
+            return new ThisClass;                                                       \
+        }                                                                               \
+                                                                                        \
+    private:                                                                            \
+        void RegisterProperties();                                                      \
+    };                                                                                  \
+    _HK_GENERATED_CLASS_BODY()                                                          \
 private:
 
 
 
-#define HK_BEGIN_CLASS_META(_Class)                               \
-    AClassMeta const& _Class##__Meta = _Class::ClassMeta();       \
-    void              _Class::ThisClassMeta::RegisterProperties() \
+#define HK_BEGIN_CLASS_META(Class)                               \
+    AClassMeta const& Class##__Meta = Class::ClassMeta();        \
+    void              Class::ThisClassMeta::RegisterProperties() \
     {
 
 #define HK_END_CLASS_META() \
     }
 
-#define HK_CLASS_META(_Class)   \
-    HK_BEGIN_CLASS_META(_Class) \
+#define HK_CLASS_META(Class)   \
+    HK_BEGIN_CLASS_META(Class) \
     HK_END_CLASS_META()
 
 /** Provides direct access to a class member. */
-#define HK_PROPERTY_DIRECT_RANGE(Member, Flags, Range)                                                                                                                                   \
-    static AProperty const Property##Member(                                                                                                                                             \
-        *this,                                                                                                                                                                           \
-        GetPropertyType<decltype(ThisClass::Member)>(),                                                                                                                                  \
-        _GetEnumDef<decltype(ThisClass::Member)>(),                                                                                                                                      \
-        #Member,                                                                                                                                                                         \
-        [](ADummy* pObject, APackedValue const& PackedVal)                                                                                                                               \
-        {                                                                                                                                                                                \
-            using T        = decltype(ThisClass::Member);                                                                                                                                \
-            static_cast<ThisClass*>(pObject)->Member = UnpackType<T>(PackedVal);                                                                                                       \
-        },                                                                                                                                                                               \
-        [](ADummy const* pObject) -> APackedValue                                                                                                                                        \
-        {                                                                                                                                                                                \
-            return PackType(static_cast<ThisClass const*>(pObject)->Member);                                                                                                      \
-        },                                                                                                                                                                               \
-        [](ADummy* Dst, ADummy const* Src)                                                                                                                                               \
-        {                                                                                                                                                                                \
-            static_cast<ThisClass*>(Dst)->Member = static_cast<ThisClass const*>(Src)->Member;                                                                                          \
-        },                                                                                                                                                                               \
-        Range,                                                                                                                                                                           \
+#define HK_PROPERTY_DIRECT_RANGE(Member, Flags, Range)                                         \
+    static AProperty const Property##Member(                                                   \
+        *this,                                                                                 \
+        GetPropertyType<decltype(ThisClass::Member)>(),                                        \
+        _GetEnumDef<decltype(ThisClass::Member)>(),                                            \
+        #Member,                                                                               \
+        [](ADummy* pObject, APackedValue const& PackedVal)                                     \
+        {                                                                                      \
+            using T                                  = decltype(ThisClass::Member);            \
+            static_cast<ThisClass*>(pObject)->Member = UnpackType<T>(PackedVal);               \
+        },                                                                                     \
+        [](ADummy const* pObject) -> APackedValue                                              \
+        {                                                                                      \
+            return PackType(static_cast<ThisClass const*>(pObject)->Member);                   \
+        },                                                                                     \
+        [](ADummy* Dst, ADummy const* Src)                                                     \
+        {                                                                                      \
+            static_cast<ThisClass*>(Dst)->Member = static_cast<ThisClass const*>(Src)->Member; \
+        },                                                                                     \
+        Range,                                                                                 \
         Flags);
 
 /** Provides direct access to a class member. */
@@ -691,13 +691,13 @@ private:
         {                                                                                                                                                                                                                                                                \
             using T = decltype(ThisClass::Member);                                                                                                                                                                                                                       \
             static_assert(std::is_same<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type, T>::value || std::is_same<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type, T const&>::value, "Setter argument type does not match property type"); \
-            static_cast<ThisClass*>(pObject)->Setter(UnpackType<T>(PackedVal));                                                                                                                                                                                        \
+            static_cast<ThisClass*>(pObject)->Setter(UnpackType<T>(PackedVal));                                                                                                                                                                                          \
         },                                                                                                                                                                                                                                                               \
         [](ADummy const* pObject) -> APackedValue                                                                                                                                                                                                                        \
         {                                                                                                                                                                                                                                                                \
             using T = decltype(ThisClass::Member);                                                                                                                                                                                                                       \
             static_assert(std::is_same<TReturnType<decltype(&ThisClass::Getter)>::Type, T>::value || std::is_same<TReturnType<decltype(&ThisClass::Getter)>::Type, T const&>::value, "Getter return type does not match property type");                                 \
-            return PackType(static_cast<ThisClass const*>(pObject)->Getter());                                                                                                                                                                                         \
+            return PackType(static_cast<ThisClass const*>(pObject)->Getter());                                                                                                                                                                                           \
         },                                                                                                                                                                                                                                                               \
         [](ADummy* Dst, ADummy const* Src)                                                                                                                                                                                                                               \
         {                                                                                                                                                                                                                                                                \
@@ -720,13 +720,13 @@ private:
         {                                                                                                                                                                                                                                                                \
             using T = MemberType;                                                                                                                                                                                                                                        \
             static_assert(std::is_same<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type, T>::value || std::is_same<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type, T const&>::value, "Setter argument type does not match property type"); \
-            static_cast<ThisClass*>(pObject)->Setter(UnpackType<T>(PackedVal));                                                                                                                                                                                        \
+            static_cast<ThisClass*>(pObject)->Setter(UnpackType<T>(PackedVal));                                                                                                                                                                                          \
         },                                                                                                                                                                                                                                                               \
         [](ADummy const* pObject) -> APackedValue                                                                                                                                                                                                                        \
         {                                                                                                                                                                                                                                                                \
             using T = MemberType;                                                                                                                                                                                                                                        \
             static_assert(std::is_same<TReturnType<decltype(&ThisClass::Getter)>::Type, T>::value || std::is_same<TReturnType<decltype(&ThisClass::Getter)>::Type, T const&>::value, "Getter return type does not match property type");                                 \
-            return PackType(static_cast<ThisClass const*>(pObject)->Getter());                                                                                                                                                                                         \
+            return PackType(static_cast<ThisClass const*>(pObject)->Getter());                                                                                                                                                                                           \
         },                                                                                                                                                                                                                                                               \
         [](ADummy* Dst, ADummy const* Src)                                                                                                                                                                                                                               \
         {                                                                                                                                                                                                                                                                \
@@ -739,9 +739,9 @@ private:
 #define HK_PROPERTY2(MemberType, Name, Setter, Getter, Flags) HK_PROPERTY2_RANGE(MemberType, Name, Setter, Getter, Flags, RangeUnbound())
 
 template <typename T, typename... TArgs>
-T* CreateInstanceOf(TArgs&&... _Args)
+T* CreateInstanceOf(TArgs&&... Args)
 {
-    return new T(std::forward<TArgs>(_Args)...);
+    return new T(std::forward<TArgs>(Args)...);
 }
 
 /**
@@ -783,11 +783,11 @@ public:
 };
 
 template <typename T>
-T* Upcast(ADummy* _Object)
+T* Upcast(ADummy* Object)
 {
-    if (_Object && _Object->FinalClassMeta().IsSubclassOf<T>())
+    if (Object && Object->FinalClassMeta().IsSubclassOf<T>())
     {
-        return static_cast<T*>(_Object);
+        return static_cast<T*>(Object);
     }
     return nullptr;
 }

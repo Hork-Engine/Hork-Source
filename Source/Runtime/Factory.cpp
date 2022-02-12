@@ -40,9 +40,6 @@ AObjectFactory* AObjectFactory::FactoryList = nullptr;
 
 void InitializeFactories()
 {
-    //for ( AObjectFactory * factory = AObjectFactory::FactoryList ; factory = factory->NextFactory ) {
-    //    ... do something
-    //}
 }
 
 void DeinitializeFactories()
@@ -55,8 +52,8 @@ void DeinitializeFactories()
     }
 }
 
-AObjectFactory::AObjectFactory(const char* _Tag) :
-    Tag(_Tag), Classes(nullptr), IdTable(nullptr), NumClasses(0)
+AObjectFactory::AObjectFactory(const char* Tag) :
+    Tag(Tag), Classes(nullptr), IdTable(nullptr), NumClasses(0)
 {
     NextFactory = FactoryList;
     FactoryList = this;
@@ -67,15 +64,15 @@ AObjectFactory::~AObjectFactory()
     HK_ASSERT(IdTable == nullptr);
 }
 
-const AClassMeta* AObjectFactory::FindClass(const char* _ClassName) const
+const AClassMeta* AObjectFactory::FindClass(const char* ClassName) const
 {
-    if (!*_ClassName)
+    if (!*ClassName)
     {
         return nullptr;
     }
     for (AClassMeta const* n = Classes; n; n = n->pNext)
     {
-        if (!Platform::Strcmp(n->GetName(), _ClassName))
+        if (!Platform::Strcmp(n->GetName(), ClassName))
         {
             return n;
         }
@@ -83,7 +80,7 @@ const AClassMeta* AObjectFactory::FindClass(const char* _ClassName) const
     return nullptr;
 }
 
-const AClassMeta* AObjectFactory::LookupClass(const char* _ClassName) const
+const AClassMeta* AObjectFactory::LookupClass(const char* ClassName) const
 {
     if (!NameTable.IsAllocated())
     {
@@ -94,11 +91,11 @@ const AClassMeta* AObjectFactory::LookupClass(const char* _ClassName) const
         }
     }
 
-    int i = NameTable.First(Core::Hash(_ClassName, Platform::Strlen(_ClassName)));
+    int i = NameTable.First(Core::Hash(ClassName, Platform::Strlen(ClassName)));
     for (; i != -1; i = NameTable.Next(i))
     {
         AClassMeta const* classMeta = LookupClass(i);
-        if (classMeta && !Platform::Strcmp(classMeta->GetName(), _ClassName))
+        if (classMeta && !Platform::Strcmp(classMeta->GetName(), ClassName))
         {
             return classMeta;
         }
@@ -107,9 +104,9 @@ const AClassMeta* AObjectFactory::LookupClass(const char* _ClassName) const
     return nullptr;
 }
 
-const AClassMeta* AObjectFactory::LookupClass(uint64_t _ClassId) const
+const AClassMeta* AObjectFactory::LookupClass(uint64_t ClassId) const
 {
-    if (_ClassId > NumClasses)
+    if (ClassId > NumClasses)
     {
         // invalid class id
         return nullptr;
@@ -126,21 +123,21 @@ const AClassMeta* AObjectFactory::LookupClass(uint64_t _ClassId) const
         }
     }
 
-    return IdTable[_ClassId];
+    return IdTable[ClassId];
 }
 
-AProperty const* AClassMeta::FindProperty(AStringView _Name, bool bRecursive) const
+AProperty const* AClassMeta::FindProperty(AStringView PropertyName, bool bRecursive) const
 {
     for (AProperty const* prop = PropertyList; prop; prop = prop->Next())
     {
-        if (_Name == prop->GetName())
+        if (PropertyName == prop->GetName())
         {
             return prop;
         }
     }
     if (bRecursive && pSuperClass)
     {
-        return pSuperClass->FindProperty(_Name, true);
+        return pSuperClass->FindProperty(PropertyName, true);
     }
     return nullptr;
 }
@@ -157,26 +154,26 @@ void AClassMeta::GetProperties(TPodVector<AProperty const*>& Properties, bool bR
     }
 }
 
-void AClassMeta::CloneProperties_r(AClassMeta const* Meta, ADummy const* _Template, ADummy* _Destination)
+void AClassMeta::CloneProperties_r(AClassMeta const* Meta, ADummy const* Template, ADummy* Destination)
 {
     if (Meta)
     {
-        CloneProperties_r(Meta->SuperClass(), _Template, _Destination);
+        CloneProperties_r(Meta->SuperClass(), Template, Destination);
 
         for (AProperty const* prop = Meta->GetPropertyList(); prop; prop = prop->Next())
         {
-            prop->CopyValue(_Destination, _Template);
+            prop->CopyValue(Destination, Template);
         }
     }
 }
 
-void AClassMeta::CloneProperties(ADummy const* _Template, ADummy* _Destination)
+void AClassMeta::CloneProperties(ADummy const* Template, ADummy* Destination)
 {
-    if (&_Template->FinalClassMeta() != &_Destination->FinalClassMeta())
+    if (&Template->FinalClassMeta() != &Destination->FinalClassMeta())
     {
-        GLogger.Printf("AClassMeta::CloneProperties: Template is not an %s class\n", _Destination->FinalClassName());
+        GLogger.Printf("AClassMeta::CloneProperties: Template is not an %s class\n", Destination->FinalClassName());
         return;
     }
 
-    CloneProperties_r(&_Template->FinalClassMeta(), _Template, _Destination);
+    CloneProperties_r(&Template->FinalClassMeta(), Template, Destination);
 }
