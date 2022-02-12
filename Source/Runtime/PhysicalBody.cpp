@@ -135,7 +135,6 @@ SEnumDef const* GetEnumDef<EMotionBehavior>()
         {0, nullptr}};
     return EnumDef;
 }
-HK_REGISTER_ENUM(EMotionBehavior)
 
 template <>
 SEnumDef const* GetEnumDef<EAINavigationBehavior>()
@@ -149,7 +148,6 @@ SEnumDef const* GetEnumDef<EAINavigationBehavior>()
         {0, nullptr}};
     return EnumDef;
 }
-HK_REGISTER_ENUM(EAINavigationBehavior)
 
 template <>
 SEnumDef const* GetEnumDef<COLLISION_MASK>()
@@ -193,8 +191,6 @@ SEnumDef const* GetEnumDef<COLLISION_MASK>()
                                         {0, nullptr}};
     return EnumDef;
 }
-HK_REGISTER_ENUM(COLLISION_MASK)
-
 
 HK_BEGIN_CLASS_META(APhysicalBody)
 HK_PROPERTY2(bool, "bDispatchContactEvents", SetDispatchContactEvents, ShouldDispatchContactEvents, HK_PROPERTY_DEFAULT)
