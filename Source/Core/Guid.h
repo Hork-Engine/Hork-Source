@@ -52,14 +52,14 @@ struct AGUID
 
     void Generate();
 
-    bool operator==(AGUID const& _Other) const
+    bool operator==(AGUID const& Rhs) const
     {
-        return Hi == _Other.Hi && Lo == _Other.Lo;
+        return Hi == Rhs.Hi && Lo == Rhs.Lo;
     }
 
-    bool operator!=(AGUID const& _Other) const
+    bool operator!=(AGUID const& Rhs) const
     {
-        return Hi != _Other.Hi || Lo != _Other.Lo;
+        return Hi != Rhs.Hi || Lo != Rhs.Lo;
     }
 
     // String conversions
@@ -84,26 +84,21 @@ struct AGUID
                              LoBytes[2], LoBytes[3], LoBytes[4], LoBytes[5], LoBytes[6], LoBytes[7]);
     }
 
-    AGUID& FromString(AString const& _String)
-    {
-        return FromString(_String.CStr());
-    }
-
-    AGUID& FromString(const char* _String);
+    AGUID& FromString(AStringView String);
 
     const byte* GetBytes() const { return &HiBytes[0]; }
     byte*       GetBytes() { return &HiBytes[0]; }
 
     // Byte serialization
-    void Write(IBinaryStream& _Stream) const
+    void Write(IBinaryStream& Stream) const
     {
-        _Stream.WriteUInt64(Hi);
-        _Stream.WriteUInt64(Lo);
+        Stream.WriteUInt64(Hi);
+        Stream.WriteUInt64(Lo);
     }
 
-    void Read(IBinaryStream& _Stream)
+    void Read(IBinaryStream& Stream)
     {
-        Hi = _Stream.ReadUInt64();
-        Lo = _Stream.ReadUInt64();
+        Hi = Stream.ReadUInt64();
+        Lo = Stream.ReadUInt64();
     }
 };

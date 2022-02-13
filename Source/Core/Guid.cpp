@@ -110,7 +110,7 @@ void AGUID::Generate()
 #    error "GenerateGUID is not implemented on current platform"
 #endif
 
-AGUID& AGUID::FromString(const char* _String)
+AGUID& AGUID::FromString(AStringView String)
 {
     char ch;
     int  n = 0;
@@ -119,7 +119,7 @@ AGUID& AGUID::FromString(const char* _String)
 
     byte* bytes = GetBytes();
 
-    for (const char* s = _String; *s && n < 32; s++)
+    for (const char* s = String.Begin(); s < String.End() && n < 32; s++)
     {
         if (*s == '-')
         {
