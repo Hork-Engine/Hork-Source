@@ -59,7 +59,7 @@ public:
 
     virtual void Flush() = 0;
 
-    virtual size_t GetOffset() = 0;
+    virtual size_t GetOffset() const = 0;
 
     virtual bool SeekSet(int32_t Offset) = 0;
 
@@ -67,9 +67,9 @@ public:
 
     virtual bool SeekEnd(int32_t Offset) = 0;
 
-    virtual size_t SizeInBytes() = 0;
+    virtual size_t SizeInBytes() const = 0;
 
-    virtual bool Eof() = 0;
+    virtual bool Eof() const = 0;
 
     void ReadCString(char* pBuffer, size_t SizeInBytes)
     {

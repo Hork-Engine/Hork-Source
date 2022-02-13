@@ -227,7 +227,7 @@ void AFileStream::Flush()
     fflush(Handle);
 }
 
-size_t AFileStream::GetOffset()
+size_t AFileStream::GetOffset() const
 {
     return RWOffset;
 }
@@ -327,7 +327,7 @@ bool AFileStream::SeekEnd(int32_t Offset)
     return r;
 }
 
-size_t AFileStream::SizeInBytes()
+size_t AFileStream::SizeInBytes() const
 {
     if (!HasFileSize())
     {
@@ -338,7 +338,7 @@ size_t AFileStream::SizeInBytes()
     return FileSize;
 }
 
-bool AFileStream::Eof()
+bool AFileStream::Eof() const
 {
     return feof(Handle) != 0;
 }
@@ -461,7 +461,7 @@ void AMemoryStream::Close()
     HeapSize           = 0;
     ReservedSize       = 0;
     RWOffset           = 0;
-    bMemoryBufferOwner = false;
+    bMemoryBufferOwner = true;
 }
 
 const char* AMemoryStream::GetFileName() const
@@ -558,7 +558,7 @@ void AMemoryStream::Flush()
     // nop
 }
 
-size_t AMemoryStream::GetOffset()
+size_t AMemoryStream::GetOffset() const
 {
     return RWOffset;
 }
@@ -599,7 +599,7 @@ bool AMemoryStream::SeekEnd(int32_t Offset)
     return true;
 }
 
-size_t AMemoryStream::SizeInBytes()
+size_t AMemoryStream::SizeInBytes() const
 {
     return HeapSize;
 }
@@ -609,7 +609,7 @@ size_t AMemoryStream::GetReservedSize() const
     return ReservedSize;
 }
 
-bool AMemoryStream::Eof()
+bool AMemoryStream::Eof() const
 {
     return RWOffset >= HeapSize;
 }

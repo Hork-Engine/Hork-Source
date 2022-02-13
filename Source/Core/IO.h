@@ -156,12 +156,12 @@ public:
     size_t      Write(const void* pBuffer, size_t SizeInBytes) override;
     char*       Gets(char* pBuffer, size_t SizeInBytes) override;
     void        Flush() override;
-    size_t      GetOffset() override;
+    size_t      GetOffset() const override;
     bool        SeekSet(int32_t Offset) override;
     bool        SeekCur(int32_t Offset) override;
     bool        SeekEnd(int32_t Offset) override;
-    size_t      SizeInBytes() override;
-    bool        Eof() override;
+    size_t      SizeInBytes() const override;
+    bool        Eof() const override;
 
 private:
     enum FILE_OPEN_MODE : uint8_t
@@ -178,7 +178,7 @@ private:
     FILE_OPEN_MODE Mode{FILE_OPEN_MODE_CLOSED};
     FILE*          Handle{};
     size_t         RWOffset{};
-    size_t         FileSize{};
+    mutable size_t FileSize{};
 };
 
 
@@ -213,7 +213,7 @@ public:
         BinaryStream.ReservedSize       = 0;
         BinaryStream.RWOffset           = 0;
         BinaryStream.Granularity        = 0;
-        BinaryStream.bMemoryBufferOwner = false;
+        BinaryStream.bMemoryBufferOwner = true;
     }
 
     ~AMemoryStream();
@@ -237,7 +237,7 @@ public:
         BinaryStream.ReservedSize       = 0;
         BinaryStream.RWOffset           = 0;
         BinaryStream.Granularity        = 0;
-        BinaryStream.bMemoryBufferOwner = false;
+        BinaryStream.bMemoryBufferOwner = true;
 
         return *this;
     }
@@ -275,12 +275,12 @@ public:
     size_t      Write(const void* pBuffer, size_t SizeInBytes) override;
     char*       Gets(char* pBuffer, size_t SizeInBytes) override;
     void        Flush() override;
-    size_t      GetOffset() override;
+    size_t      GetOffset() const override;
     bool        SeekSet(int32_t Offset) override;
     bool        SeekCur(int32_t Offset) override;
     bool        SeekEnd(int32_t Offset) override;
-    size_t      SizeInBytes() override;
-    bool        Eof() override;
+    size_t      SizeInBytes() const override;
+    bool        Eof() const override;
 
 private:
     enum FILE_OPEN_MODE : uint8_t
@@ -301,7 +301,7 @@ private:
     size_t         ReservedSize{};
     size_t         RWOffset{};
     int            Granularity{1024};
-    bool           bMemoryBufferOwner{};
+    bool           bMemoryBufferOwner{true};
 };
 
 
