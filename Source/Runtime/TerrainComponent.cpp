@@ -204,6 +204,14 @@ ATerrainComponent::ATerrainComponent()
     TerrainWorldTransformInv.SetIdentity();
 }
 
+ATerrainComponent::~ATerrainComponent()
+{
+    if (Terrain)
+    {
+        Terrain->RemoveListener(this);
+    }
+}
+
 void ATerrainComponent::SetVisibilityGroup(int InVisibilityGroup)
 {
     Primitive.VisGroup = InVisibilityGroup;

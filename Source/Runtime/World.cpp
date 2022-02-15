@@ -127,6 +127,16 @@ void AWorld::DestroyActors()
     {
         actor->Destroy();
     }
+
+    // Destroy actors from spawn queue
+    AActor* actor = PendingSpawnActors;
+    PendingSpawnActors = nullptr;
+    while (actor)
+    {
+        AActor* nextActor = actor->NextSpawnActor;
+        actor->Destroy();
+        actor = nextActor;
+    }
 }
 
 void AWorld::BuildNavigation(SAINavigationConfig const& _NavigationConfig)
@@ -588,15 +598,10 @@ void AWorld::SpawnActors()
     {
         AActor* nextActor = actor->NextSpawnActor;
 
-        actor->bSpawning = false;
+        if (!actor->IsPendingKill())
+        {
+            actor->bSpawning = false;
 
-        if (actor->IsPendingKill())
-        {
-            CleanupActor(actor);
-            actor->RemoveRef();
-        }
-        else
-        {
             // Add actor to world
             Actors.Append(actor);
             actor->IndexInWorldArrayOfActors = Actors.Size() - 1;
@@ -683,11 +688,11 @@ void AWorld::KillActors(bool bClearSpawnQueue)
                     PostPhysicsTickActors.Remove(PostPhysicsTickActors.IndexOf(actor)); // TODO: Optimize!
                 if (actor->bLateUpdate)
                     LateUpdateActors.Remove(LateUpdateActors.IndexOf(actor)); // TODO: Optimize!
-
-                CleanupActor(actor);
-
-                actor->RemoveRef();
             }
+
+            CleanupActor(actor);
+
+            actor->RemoveRef();
 
             actor = nextActor;
         }

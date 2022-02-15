@@ -70,6 +70,11 @@ ASkinnedComponent::ASkinnedComponent()
     Skeleton = SkeletonResource.GetObject();
 }
 
+ASkinnedComponent::~ASkinnedComponent()
+{
+    RemoveAnimationControllers();
+}
+
 void ASkinnedComponent::InitializeComponent()
 {
     Super::InitializeComponent();
@@ -80,8 +85,6 @@ void ASkinnedComponent::InitializeComponent()
 void ASkinnedComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
-
-    RemoveAnimationControllers();
 
     GetWorld()->GetRender().RemoveSkinnedMesh(this);
 }

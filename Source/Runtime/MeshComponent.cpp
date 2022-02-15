@@ -215,6 +215,11 @@ AMeshComponent::AMeshComponent()
     SetUseMeshCollision(true);
 }
 
+AMeshComponent::~AMeshComponent()
+{
+    ClearMaterials();
+}
+
 void AMeshComponent::InitializeComponent()
 {
     Super::InitializeComponent();
@@ -223,8 +228,6 @@ void AMeshComponent::InitializeComponent()
 void AMeshComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
-
-    ClearMaterials();
 }
 
 void AMeshComponent::SetAllowRaycast(bool _AllowRaycast)
@@ -671,8 +674,6 @@ void AProceduralMeshComponent::InitializeComponent()
 void AProceduralMeshComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
-
-    //ClearMaterials();
 }
 
 void AProceduralMeshComponent::SetAllowRaycast(bool _AllowRaycast)

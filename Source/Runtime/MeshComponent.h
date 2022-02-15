@@ -125,6 +125,7 @@ public:
 
 protected:
     AMeshComponent();
+    ~AMeshComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;

@@ -111,6 +111,7 @@ public:
 
 protected:
     ASoftMeshComponent();
+    ~ASoftMeshComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;

@@ -88,6 +88,7 @@ public:
 
 protected:
     ASkinnedComponent();
+    ~ASkinnedComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;

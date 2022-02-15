@@ -151,6 +151,7 @@ public:
 
 protected:
     ATerrainComponent();
+    ~ATerrainComponent();
 
     void InitializeComponent() override;
 

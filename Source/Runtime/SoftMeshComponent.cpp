@@ -57,6 +57,11 @@ ASoftMeshComponent::ASoftMeshComponent()
     //PrevTransformBasis.SetIdentity();
 }
 
+ASoftMeshComponent::~ASoftMeshComponent()
+{
+    DetachAllVertices();
+}
+
 void ASoftMeshComponent::InitializeComponent()
 {
     Super::InitializeComponent();
