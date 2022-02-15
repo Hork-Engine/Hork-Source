@@ -336,14 +336,20 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
                           [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
     {
         // Clearing don't work properly with dynamic resolution scale :(
-#if 0
-        if ( GRenderView->bClearBackground || r_RenderSnapshot ) {
-            unsigned int attachment = 0;
-            Cmd.ClearFramebufferAttachments( GRenderTarget.GetFramebuffer(), &attachment, 1, &clearValue, nullptr, nullptr );
-        }
-#endif
         IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
+#if 1
+        if ( GRenderView->bClearBackground ) {
+            unsigned int attachment = 0;
+
+            SClearColorValue clearValue;
+            clearValue.Float32[0] = GRenderView->BackgroundColor.X;
+            clearValue.Float32[1] = GRenderView->BackgroundColor.Y;
+            clearValue.Float32[2] = GRenderView->BackgroundColor.Z;
+            clearValue.Float32[3] = 0;
+            immediateCtx->ClearAttachments(RenderPassContext, &attachment, 1, &clearValue, nullptr, nullptr);
+        }
+#endif
         BindShadowMatrix();
 
         if ( r_SSLR ) {
