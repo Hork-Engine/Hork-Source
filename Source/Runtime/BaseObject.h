@@ -65,6 +65,12 @@ public:
 
     bool SetProperty(AStringView PropertyName, AStringView PropertyValue);
 
+    //bool SetProperty(AStringView PropertyName, AVariant const& PropertyValue);
+
+    AProperty const* FindProperty(AStringView PropertyName, bool bRecursive) const;
+
+    void GetProperties(TPodVector<AProperty const*>& Properties, bool bRecursive = true) const;
+
     /** Add reference */
     void AddRef();
 
@@ -108,26 +114,26 @@ public:
         return static_cast<T*>(object);
     }
 
-    static ABaseObject* FromPackedValue(AClassMeta const& Meta, APackedValue const& PackedVal)
-    {
-        uint64_t id = Math::ToInt<uint64_t>(PackedVal);
+    //static ABaseObject* FromPackedValue(AClassMeta const& Meta, APackedValue const& PackedVal)
+    //{
+    //    uint64_t id = Math::ToInt<uint64_t>(PackedVal);
 
-        ABaseObject* object = FindObject(id);
-        if (!object)
-        {
-            return nullptr;
-        }
-        if (object->FinalClassId() != Meta.GetId())
-        {
-            return nullptr;
-        }
-        return object;
-    }
+    //    ABaseObject* object = FindObject(id);
+    //    if (!object)
+    //    {
+    //        return nullptr;
+    //    }
+    //    if (object->FinalClassId() != Meta.GetId())
+    //    {
+    //        return nullptr;
+    //    }
+    //    return object;
+    //}
 
-    void ToPackedValue(APackedValue& PackedVal) const
-    {
-        PackedVal = Math::ToString(Id);
-    }
+    //void ToPackedValue(APackedValue& PackedVal) const
+    //{
+    //    PackedVal = Math::ToString(Id);
+    //}
 
 private:
     void SetProperties_r(AClassMeta const* Meta, THashContainer<AString, AString> const& Properties);
@@ -149,7 +155,7 @@ private:
     ABaseObject* PrevGarbageObject{};
 
     /** Total existing objects */
-    static uint64_t     TotalObjects;
+    static uint64_t TotalObjects;
 
     static ABaseObject* Objects;
     static ABaseObject* ObjectsTail;

@@ -3334,14 +3334,14 @@ int ATreeAABB::MarkRayOverlappingLeafs(Float3 const& _RayStart, Float3 const& _R
     return n;
 }
 
-void ATreeAABB::Read(IBinaryStream& _Stream)
+void ATreeAABB::Read(IBinaryStreamReadInterface& _Stream)
 {
     _Stream.ReadArrayOfStructs(Nodes);
     _Stream.ReadArrayUInt32(Indirection);
     _Stream.ReadObject(BoundingBox);
 }
 
-void ATreeAABB::Write(IBinaryStream& _Stream) const
+void ATreeAABB::Write(IBinaryStreamWriteInterface& _Stream) const
 {
     _Stream.WriteArrayOfStructs(Nodes);
     _Stream.WriteArrayUInt32(Indirection);

@@ -81,8 +81,8 @@ struct STransform
     void       InverseSelf();
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const;
-    void Read(IBinaryStream& stream);
+    void Write(IBinaryStreamWriteInterface& stream) const;
+    void Read(IBinaryStreamReadInterface& stream);
 };
 
 HK_FORCEINLINE STransform::STransform(Float3 const& position, Quat const& rotation, Float3 const& scale) :
@@ -383,14 +383,14 @@ HK_FORCEINLINE void STransform::InverseSelf()
     Scale = Float3(1.0f) / Scale;
 }
 
-HK_FORCEINLINE void STransform::Write(IBinaryStream& stream) const
+HK_FORCEINLINE void STransform::Write(IBinaryStreamWriteInterface& stream) const
 {
     Position.Write(stream);
     Rotation.Write(stream);
     Scale.Write(stream);
 }
 
-HK_FORCEINLINE void STransform::Read(IBinaryStream& stream)
+HK_FORCEINLINE void STransform::Read(IBinaryStreamReadInterface& stream)
 {
     Position.Read(stream);
     Rotation.Read(stream);

@@ -126,7 +126,7 @@ void APhysicalBodyMotionState::setWorldTransform(btTransform const& _CenterOfMas
 }
 
 template <>
-SEnumDef const* GetEnumDef<EMotionBehavior>()
+SEnumDef const* EnumDefinition<EMotionBehavior>()
 {
     static const SEnumDef EnumDef[] = {
         {MB_STATIC, "Static"},
@@ -137,7 +137,7 @@ SEnumDef const* GetEnumDef<EMotionBehavior>()
 }
 
 template <>
-SEnumDef const* GetEnumDef<EAINavigationBehavior>()
+SEnumDef const* EnumDefinition<EAINavigationBehavior>()
 {
     static const SEnumDef EnumDef[] = {
         {AI_NAVIGATION_BEHAVIOR_NONE, "None"},
@@ -150,7 +150,7 @@ SEnumDef const* GetEnumDef<EAINavigationBehavior>()
 }
 
 template <>
-SEnumDef const* GetEnumDef<COLLISION_MASK>()
+SEnumDef const* EnumDefinition<COLLISION_MASK>()
 {
     static const SEnumDef EnumDef[] = { {CM_NOCOLLISION, "CM_NOCOLLISION"},
                                         {CM_WORLD_STATIC, "CM_WORLD_STATIC"},
@@ -193,19 +193,19 @@ SEnumDef const* GetEnumDef<COLLISION_MASK>()
 }
 
 HK_BEGIN_CLASS_META(APhysicalBody)
-HK_PROPERTY2(bool, "bDispatchContactEvents", SetDispatchContactEvents, ShouldDispatchContactEvents, HK_PROPERTY_DEFAULT)
-HK_PROPERTY2(bool, "bDispatchOverlapEvents", SetDispatchOverlapEvents, ShouldDispatchOverlapEvents, HK_PROPERTY_DEFAULT)
-HK_PROPERTY2(bool, "bGenerateContactPoints", SetGenerateContactPoints, ShouldGenerateContactPoints, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(bDispatchContactEvents, SetDispatchContactEvents, ShouldDispatchContactEvents, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(bDispatchOverlapEvents, SetDispatchOverlapEvents, ShouldDispatchOverlapEvents, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(bGenerateContactPoints, SetGenerateContactPoints, ShouldGenerateContactPoints, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(bUseMeshCollision, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(MotionBehavior, SetMotionBehavior, GetMotionBehavior, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(AINavigationBehavior, SetAINavigationBehavior, GetAINavigationBehavior, HK_PROPERTY_DEFAULT)
-HK_PROPERTY2(bool, "IsTrigger", SetTrigger, IsTrigger, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(IsTrigger, SetTrigger, IsTrigger, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(bDisableGravity, SetDisableGravity, IsGravityDisabled, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(bOverrideWorldGravity, SetOverrideWorldGravity, IsWorldGravityOverriden, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(SelfGravity, SetSelfGravity, GetSelfGravity, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(Mass, SetMass, GetMass, HK_PROPERTY_DEFAULT)
-HK_PROPERTY2(COLLISION_MASK, "CollisionGroup", SetCollisionGroup, GetCollisionGroup, HK_PROPERTY_DEFAULT)
-HK_PROPERTY2(COLLISION_MASK, "CollisionMask", SetCollisionMask, GetCollisionMask, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(CollisionGroup, SetCollisionGroup, GetCollisionGroup, HK_PROPERTY_DEFAULT)
+HK_PROPERTY(CollisionMask, SetCollisionMask, GetCollisionMask, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(LinearSleepingThreshold, SetLinearSleepingThreshold, GetLinearSleepingThreshold, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(LinearDamping, SetLinearDamping, GetLinearDamping, HK_PROPERTY_DEFAULT)
 HK_PROPERTY(AngularSleepingThreshold, SetAngularSleepingThreshold, GetAngularSleepingThreshold, HK_PROPERTY_DEFAULT)

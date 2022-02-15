@@ -908,7 +908,7 @@ void AMaterialInstance::LoadInternalResource(const char* _Path)
         return;
     }
 #endif
-    if (!Platform::Stricmp(_Path, "/Default/MaterialInstance/BaseLight") || !Platform::Stricmp(_Path, "/Default/MaterialInstance/Default"))
+    if (!Platform::Stricmp(_Path, "/Default/MaterialInstance/BaseLight"))
     {
         static TStaticResourceFinder<AMaterial> MaterialResource(_CTS("/Default/Materials/BaseLight"));
         static TStaticResourceFinder<ATexture>  TextureResource(_CTS("/Common/grid8.png"));
@@ -934,7 +934,7 @@ void AMaterialInstance::LoadInternalResource(const char* _Path)
         UniformVectors[2] = Float4(0.0f);
         return;
     }
-    if (!Platform::Stricmp(_Path, "/Default/MaterialInstance/Dielectric"))
+    if (!Platform::Stricmp(_Path, "/Default/MaterialInstance/Dielectric") || !Platform::Stricmp(_Path, "/Default/MaterialInstance/Default"))
     {
         static TStaticResourceFinder<AMaterial> MaterialResource(_CTS("/Default/Materials/PBRMetallicRoughnessNoTex"));
 

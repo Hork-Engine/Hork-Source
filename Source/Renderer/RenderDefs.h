@@ -129,7 +129,8 @@ struct SMeshVertex
     int8_t      Handedness;       // 4 * 1 = 4 bytes      byte: 1 bytes
     uint8_t     Pad[3];
 
-    void Write( IBinaryStream & _Stream ) const {
+    void Write(IBinaryStreamWriteInterface& _Stream) const
+    {
         _Stream.WriteObject( Position );
         _Stream.WriteObject( GetTexCoord() );
         _Stream.WriteObject( GetTangent() );
@@ -137,7 +138,8 @@ struct SMeshVertex
         _Stream.WriteObject( GetNormal() );
     }
 
-    void Read( IBinaryStream & _Stream ) {
+    void Read(IBinaryStreamReadInterface& _Stream)
+    {
         Float2 texCoord;
         Float3 normal;
         Float3 tangent;
@@ -247,11 +249,13 @@ struct SMeshVertexUV
 {
     Float2 TexCoord;
 
-    void Write( IBinaryStream & _Stream ) const {
+    void Write(IBinaryStreamWriteInterface& _Stream) const
+    {
         _Stream.WriteObject( TexCoord );
     }
 
-    void Read( IBinaryStream & _Stream ) {
+    void Read(IBinaryStreamReadInterface& _Stream)
+    {
         _Stream.ReadObject( TexCoord );
     }
 
@@ -271,11 +275,13 @@ struct SMeshVertexLight
 {
     uint32_t VertexLight;
 
-    void Write( IBinaryStream & _Stream ) const {
+    void Write(IBinaryStreamWriteInterface& _Stream) const
+    {
         _Stream.WriteUInt32( VertexLight );
     }
 
-    void Read( IBinaryStream & _Stream ) {
+    void Read(IBinaryStreamReadInterface& _Stream)
+    {
         VertexLight = _Stream.ReadUInt32();
     }
 
@@ -318,11 +324,13 @@ struct SMeshVertexSkin
     uint8_t JointIndices[4];
     uint8_t JointWeights[4];
 
-    void Write( IBinaryStream & _Stream ) const {
+    void Write(IBinaryStreamWriteInterface& _Stream) const
+    {
         _Stream.Write( JointIndices, 8 );
     }
 
-    void Read( IBinaryStream & _Stream ) {
+    void Read(IBinaryStreamReadInterface& _Stream)
+    {
         _Stream.Read( JointIndices, 8 );
     }
 };
@@ -530,12 +538,12 @@ struct STexturePixelFormat
 
     int NumComponents() const;
 
-    void Read( IBinaryStream & _Stream )
+    void Read(IBinaryStreamReadInterface& _Stream)
     {
         Data = (ETexturePixelFormat)_Stream.ReadUInt8();
     }
 
-    void Write( IBinaryStream & _Stream ) const
+    void Write(IBinaryStreamWriteInterface& _Stream) const
     {
         _Stream.WriteUInt8( (uint8_t)Data );
     }

@@ -192,7 +192,7 @@ struct TPlane
     }
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
         struct Writer
         {
@@ -210,7 +210,7 @@ struct TPlane
         Writer(stream, D);
     }
 
-    void Read(IBinaryStream& stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
         struct Reader
         {

@@ -92,13 +92,13 @@ struct Bool2
     }
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
         stream.WriteBool(X);
         stream.WriteBool(Y);
     }
 
-    void Read(IBinaryStream& stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
         X = stream.ReadBool();
         Y = stream.ReadBool();
@@ -177,14 +177,14 @@ struct Bool3
     }
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
         stream.WriteBool(X);
         stream.WriteBool(Y);
         stream.WriteBool(Z);
     }
 
-    void Read(IBinaryStream& stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
         X = stream.ReadBool();
         Y = stream.ReadBool();
@@ -263,7 +263,7 @@ struct Bool4
     }
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
         stream.WriteBool(X);
         stream.WriteBool(Y);
@@ -271,7 +271,7 @@ struct Bool4
         stream.WriteBool(W);
     }
 
-    void Read(IBinaryStream& stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
         X = stream.ReadBool();
         Y = stream.ReadBool();

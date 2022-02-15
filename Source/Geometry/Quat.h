@@ -475,7 +475,7 @@ struct Quat
     }
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
         stream.WriteFloat(X);
         stream.WriteFloat(Y);
@@ -483,7 +483,7 @@ struct Quat
         stream.WriteFloat(W);
     }
 
-    void Read(IBinaryStream& stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
         X = stream.ReadFloat();
         Y = stream.ReadFloat();

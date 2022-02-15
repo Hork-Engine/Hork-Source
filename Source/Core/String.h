@@ -382,7 +382,7 @@ public:
         return Core::HashCase(Data, Size);
     }
 
-    HK_FORCEINLINE void Write(IBinaryStream& Stream) const
+    HK_FORCEINLINE void Write(IBinaryStreamWriteInterface& Stream) const
     {
         Stream.WriteUInt32(Size);
         Stream.Write(Data, Size);
@@ -654,12 +654,12 @@ public:
 
     void FromFile(IBinaryStream& Stream);
 
-    HK_FORCEINLINE void Write(IBinaryStream& Stream) const
+    HK_FORCEINLINE void Write(IBinaryStreamWriteInterface& Stream) const
     {
         AStringView(Data, Size).Write(Stream);
     }
 
-    void Read(IBinaryStream& Stream);
+    void Read(IBinaryStreamReadInterface& Stream);
 
     static const char* NullCString() { return ""; }
 
@@ -937,7 +937,7 @@ HK_FORCEINLINE void AString::FromFile(IBinaryStream& Stream)
     Size         = fileSz;
 }
 
-HK_FORCEINLINE void AString::Read(IBinaryStream& Stream)
+HK_FORCEINLINE void AString::Read(IBinaryStreamReadInterface& Stream)
 {
     int len = Stream.ReadUInt32();
     GrowCapacity(len + 1, false);

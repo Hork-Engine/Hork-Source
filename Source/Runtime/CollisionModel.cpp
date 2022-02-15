@@ -1007,7 +1007,7 @@ struct ACollisionTriangleSoupBVH : ACollisionBody
         GHeapMemory.HeapFree(buffer);
     }
 
-    void Write(IBinaryStream& _Stream) const
+    void Write(IBinaryStreamWriteInterface& _Stream) const
     {
         if (Data)
         {

@@ -114,7 +114,7 @@ void ABaseObject::SetProperties_r(AClassMeta const* Meta, THashContainer<AString
                 if (!Properties[i].first.Icmp(prop->GetName()))
                 {
                     // Property found
-                    prop->SetValue(this, Properties[i].second);
+                    prop->SetValue(this, AVariant(prop->GetType(), prop->GetEnum(), Properties[i].second));
                     break;
                 }
             }
@@ -137,8 +137,30 @@ bool ABaseObject::SetProperty(AStringView PropertyName, AStringView PropertyValu
     if (!prop)
         return false;
 
+    prop->SetValue(this, AVariant(prop->GetType(), prop->GetEnum(), PropertyValue));
+    return true;
+}
+
+#if 0
+bool ABaseObject::SetProperty(AStringView PropertyName, AVariant const& PropertyValue)
+{
+    AProperty const* prop = FinalClassMeta().FindProperty(PropertyName, true);
+    if (!prop)
+        return false;
+
     prop->SetValue(this, PropertyValue);
     return true;
+}
+#endif
+
+AProperty const* ABaseObject::FindProperty(AStringView PropertyName, bool bRecursive) const
+{
+    return FinalClassMeta().FindProperty(PropertyName, bRecursive);
+}
+
+void ABaseObject::GetProperties(TPodVector<AProperty const*>& Properties, bool bRecursive) const
+{
+    FinalClassMeta().GetProperties(Properties, bRecursive);
 }
 
 ABaseObject* AGarbageCollector::GarbageObjects     = nullptr;

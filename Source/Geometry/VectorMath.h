@@ -560,17 +560,16 @@ struct TVector2
     }
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
-
         struct Writer
         {
-            Writer(IBinaryStream& stream, const float& v)
+            Writer(IBinaryStreamWriteInterface& stream, const float& v)
             {
                 stream.WriteFloat(v);
             }
 
-            Writer(IBinaryStream& stream, const double& v)
+            Writer(IBinaryStreamWriteInterface& stream, const double& v)
             {
                 stream.WriteDouble(v);
             }
@@ -579,17 +578,16 @@ struct TVector2
         Writer(stream, Y);
     }
 
-    void Read(IBinaryStream& stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
-
         struct Reader
         {
-            Reader(IBinaryStream& stream, float& v)
+            Reader(IBinaryStreamReadInterface& stream, float& v)
             {
                 v = stream.ReadFloat();
             }
 
-            Reader(IBinaryStream& stream, double& v)
+            Reader(IBinaryStreamReadInterface& stream, double& v)
             {
                 v = stream.ReadDouble();
             }
@@ -1189,16 +1187,16 @@ struct TVector3
     }
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
         struct Writer
         {
-            Writer(IBinaryStream& stream, const float& v)
+            Writer(IBinaryStreamWriteInterface& stream, const float& v)
             {
                 stream.WriteFloat(v);
             }
 
-            Writer(IBinaryStream& stream, const double& v)
+            Writer(IBinaryStreamWriteInterface& stream, const double& v)
             {
                 stream.WriteDouble(v);
             }
@@ -1208,16 +1206,16 @@ struct TVector3
         Writer(stream, Z);
     }
 
-    void Read(IBinaryStream& stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
         struct Reader
         {
-            Reader(IBinaryStream& stream, float& v)
+            Reader(IBinaryStreamReadInterface& stream, float& v)
             {
                 v = stream.ReadFloat();
             }
 
-            Reader(IBinaryStream& stream, double& v)
+            Reader(IBinaryStreamReadInterface& stream, double& v)
             {
                 v = stream.ReadDouble();
             }
@@ -1689,17 +1687,16 @@ struct TVector4
     }
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
-
         struct Writer
         {
-            Writer(IBinaryStream& stream, const float& v)
+            Writer(IBinaryStreamWriteInterface& stream, const float& v)
             {
                 stream.WriteFloat(v);
             }
 
-            Writer(IBinaryStream& stream, const double& v)
+            Writer(IBinaryStreamWriteInterface& stream, const double& v)
             {
                 stream.WriteDouble(v);
             }
@@ -1710,17 +1707,16 @@ struct TVector4
         Writer(stream, W);
     }
 
-    void Read(IBinaryStream& stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
-
         struct Reader
         {
-            Reader(IBinaryStream& stream, float& v)
+            Reader(IBinaryStreamReadInterface& stream, float& v)
             {
                 v = stream.ReadFloat();
             }
 
-            Reader(IBinaryStream& stream, double& v)
+            Reader(IBinaryStreamReadInterface& stream, double& v)
             {
                 v = stream.ReadDouble();
             }
@@ -2335,13 +2331,13 @@ struct Float2x2
     }
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
         Col0.Write(stream);
         Col1.Write(stream);
     }
 
-    void Read(IBinaryStream& stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
         Col0.Read(stream);
         Col1.Read(stream);
@@ -2694,14 +2690,14 @@ struct Float3x3
     }
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
         Col0.Write(stream);
         Col1.Write(stream);
         Col2.Write(stream);
     }
 
-    void Read(IBinaryStream& stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
         Col0.Read(stream);
         Col1.Read(stream);
@@ -3310,7 +3306,7 @@ struct Float4x4
     }
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
         Col0.Write(stream);
         Col1.Write(stream);
@@ -3318,7 +3314,7 @@ struct Float4x4
         Col3.Write(stream);
     }
 
-    void Read(IBinaryStream& stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
         Col0.Read(stream);
         Col1.Read(stream);
@@ -4025,14 +4021,14 @@ struct Float3x4
     }
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
         Col0.Write(stream);
         Col1.Write(stream);
         Col2.Write(stream);
     }
 
-    void Read(IBinaryStream& stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
         Col0.Read(stream);
         Col1.Read(stream);

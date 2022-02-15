@@ -32,12 +32,10 @@ SOFTWARE.
 
 #include <Platform/Memory/Memory.h>
 #include <Core/HashFunc.h>
-#include <Core/String.h>
 #include <Core/Ref.h>
 #include <Containers/Hash.h>
 #include <Containers/PodVector.h>
-#include <Geometry/VectorMath.h>
-#include <Geometry/Quat.h>
+#include "Variant.h"
 
 class AClassMeta;
 class AProperty;
@@ -173,14 +171,6 @@ HK_FORCEINLINE AClassMeta const* AObjectFactory::GetClassList() const
     return Classes;
 }
 
-using APackedValue = AString;
-
-struct SEnumDef
-{
-    int64_t     Value;
-    const char* HumanReadableName;
-};
-
 struct SPropertyRange
 {
     int64_t MinIntegral = 0;
@@ -218,32 +208,20 @@ Property flags
 #define HK_PROPERTY_NON_SERIALIZABLE 1
 #define HK_PROPERTY_BITMASK          2
 
-enum PROPERTY_TYPE
-{
-    PROPERTY_TYPE_BOOLEAN,
-    PROPERTY_TYPE_SIGNED_INT,
-    PROPERTY_TYPE_UNSIGNED_INT,
-    PROPERTY_TYPE_FLOAT32,
-    PROPERTY_TYPE_FLOAT64,
-    PROPERTY_TYPE_ENUM,
-    PROPERTY_TYPE_STRING,
-    PROPERTY_TYPE_NON_TRIVIAL
-};
-
 class AProperty
 {
     HK_FORBID_COPY(AProperty)
 
 public:
-    using SetterFun = void (*)(ADummy*, APackedValue const&);
-    using GetterFun = APackedValue (*)(ADummy const*);
+    using SetterFun = void (*)(ADummy*, AVariant const&);
+    using GetterFun = AVariant (*)(ADummy const*);
     using CopyFun   = void (*)(ADummy*, ADummy const*);
 
-    AProperty(AClassMeta const& ClassMeta, PROPERTY_TYPE Type, SEnumDef const* EnumDef, const char* Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, uint32_t Flags) :
+    AProperty(AClassMeta const& ClassMeta, VARIANT_TYPE Type, SEnumDef const* EnumDef, const char* Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, uint32_t Flags) :
         Type(Type),
         Name(Name),
         NameHash(Core::Hash(Name, Platform::Strlen(Name))),
-        EnumDef(EnumDef),
+        pEnum(EnumDef),
         Range(Range),
         Flags(Flags),
         Setter(Setter),
@@ -264,12 +242,12 @@ public:
         classMeta.PropertyListTail = this;
     }
 
-    void SetValue(ADummy* pObject, APackedValue const& PackedVal) const
+    void SetValue(ADummy* pObject, AVariant const& Value) const
     {
-        Setter(pObject, PackedVal);
+        Setter(pObject, Value);
     }
 
-    APackedValue GetValue(ADummy const* pObject) const
+    AVariant GetValue(ADummy const* pObject) const
     {
         return Getter(pObject);
     }
@@ -279,20 +257,20 @@ public:
         return Copy(Dst, Src);
     }
 
-    PROPERTY_TYPE         GetType() const { return Type; }
+    VARIANT_TYPE          GetType() const { return Type; }
     const char*           GetName() const { return Name; }
     int                   GetNameHash() const { return NameHash; }
-    SEnumDef const*       GetEnumDef() const { return EnumDef; }
+    SEnumDef const*       GetEnum() const { return pEnum; }
     SPropertyRange const& GetRange() const { return Range; }
     uint32_t              GetFlags() const { return Flags; }
     AProperty const*      Next() const { return pNext; }
     AProperty const*      Prev() const { return pPrev; }
 
 private:
-    PROPERTY_TYPE    Type;
+    VARIANT_TYPE     Type;
     const char*      Name;
     int              NameHash;
-    SEnumDef const*  EnumDef;
+    SEnumDef const*  pEnum;
     SPropertyRange   Range;
     uint32_t         Flags;
     SetterFun        Setter;
@@ -337,235 +315,6 @@ struct TReturnType<R (Class::*)(As...)>
 {
     using Type = R;
 };
-
-template <typename T>
-SEnumDef const* GetEnumDef();
-
-HK_INLINE APackedValue PackEnum(SEnumDef const* EnumDef, int64_t Value)
-{
-    if (EnumDef)
-    {
-        for (int i = 0; EnumDef[i].HumanReadableName; i++)
-        {
-            if (EnumDef[i].Value == Value)
-                return EnumDef[i].HumanReadableName;
-        }
-        HK_ASSERT(0);
-    }
-    return "[Undefined]";
-}
-
-HK_INLINE int64_t UnpackEnum(SEnumDef const* EnumDef, APackedValue const& PackedVal)
-{
-    if (EnumDef)
-    {
-        for (int i = 0; EnumDef[i].HumanReadableName; i++)
-        {
-            if (EnumDef[i].HumanReadableName == PackedVal)
-                return EnumDef[i].Value;
-        }
-        HK_ASSERT(0);
-    }
-    return 0;
-}
-
-template <typename T>
-APackedValue PackObject(T const&);
-
-template <typename T>
-T UnpackObject(APackedValue const&);
-
-template <typename T>
-APackedValue PackType(T const& Val, typename std::enable_if<!std::is_enum<T>::value>::type* = 0)
-{
-    return PackObject(Val);
-}
-
-template <typename T>
-APackedValue PackType(T const& Val, typename std::enable_if<std::is_enum<T>::value>::type* = 0)
-{
-    return PackEnum(GetEnumDef<T>(), static_cast<int64_t>(Val));
-}
-
-template <typename T>
-T UnpackType(APackedValue const& PackedVal, typename std::enable_if<!std::is_enum<T>::value>::type* = 0)
-{
-    return UnpackObject<T>(PackedVal);
-}
-
-template <typename T>
-T UnpackType(APackedValue const& PackedVal, typename std::enable_if<std::is_enum<T>::value>::type* = 0)
-{
-    return static_cast<T>(UnpackEnum(GetEnumDef<T>(), PackedVal));
-}
-
-template <typename T>
-SEnumDef const* _GetEnumDef(typename std::enable_if<!std::is_enum<T>::value>::type* = 0)
-{
-    return nullptr;
-}
-
-template <typename T>
-SEnumDef const* _GetEnumDef(typename std::enable_if<std::is_enum<T>::value>::type* = 0)
-{
-    return GetEnumDef<T>();
-}
-
-template <typename T>
-constexpr PROPERTY_TYPE GetPropertyType()
-{
-    // clang-format off
-    constexpr bool IsBoolean     = std::is_same<T, bool>::value;
-    constexpr bool IsEnum        = std::is_enum<T>::value;
-    constexpr bool IsString      = std::is_same<T, AString>::value;
-    constexpr bool IsSignedInt   = std::is_integral<T>::value && std::is_signed<T>::value;
-    constexpr bool IsUnsignedInt = std::is_integral<T>::value && std::is_unsigned<T>::value;
-    constexpr bool IsFloat32     = std::is_same<T, float>::value;
-    constexpr bool IsFloat64     = std::is_same<T, double>::value;
-
-    return IsBoolean ?
-            PROPERTY_TYPE_BOOLEAN :
-            (
-                IsEnum ?
-                PROPERTY_TYPE_ENUM :
-                (
-                    IsSignedInt ?
-                    PROPERTY_TYPE_SIGNED_INT :
-                    (
-                        IsUnsignedInt ?
-                        PROPERTY_TYPE_UNSIGNED_INT :
-                        (
-                            IsFloat32 ?
-                            PROPERTY_TYPE_FLOAT32 :
-                            (
-                                IsFloat64 ?
-                                PROPERTY_TYPE_FLOAT64 :
-                                (
-                                    IsString ?
-                                    PROPERTY_TYPE_STRING :
-                                    (
-                                        PROPERTY_TYPE_NON_TRIVIAL
-                                    )
-                                )
-                            )
-                        )
-                    )
-                )
-            );
-    // clang-format on
-}
-
-template <> HK_FORCEINLINE APackedValue PackObject(bool const& Val) { return Val ? "1" : "0"; }
-template <> HK_FORCEINLINE APackedValue PackObject(uint8_t const& Val) { return Math::ToString(Val); }
-template <> HK_FORCEINLINE APackedValue PackObject(uint16_t const& Val) { return Math::ToString(Val); }
-template <> HK_FORCEINLINE APackedValue PackObject(uint32_t const& Val) { return Math::ToString(Val); }
-template <> HK_FORCEINLINE APackedValue PackObject(uint64_t const& Val) { return Math::ToString(Val); }
-template <> HK_FORCEINLINE APackedValue PackObject(int8_t const& Val) { return Math::ToString(Val); }
-template <> HK_FORCEINLINE APackedValue PackObject(int16_t const& Val) { return Math::ToString(Val); }
-template <> HK_FORCEINLINE APackedValue PackObject(int32_t const& Val) { return Math::ToString(Val); }
-template <> HK_FORCEINLINE APackedValue PackObject(int64_t const& Val) { return Math::ToString(Val); }
-template <> HK_FORCEINLINE APackedValue PackObject(float const& Val) { return Math::ToString(*((uint32_t*)&Val)); }
-template <> HK_FORCEINLINE APackedValue PackObject(double const& Val) { return Math::ToString(*((uint64_t*)&Val)); }
-
-template <typename VectorType>
-APackedValue PackVector(VectorType const& Vector)
-{
-    APackedValue packedVal;
-    for (auto i = 0; i < Vector.NumComponents(); i++)
-    {
-        packedVal += Math::ToString(*((uint32_t*)&Vector[i]));
-        if (i + 1 < Vector.NumComponents())
-            packedVal += " ";
-    }
-    return packedVal;
-}
-
-template <> HK_FORCEINLINE APackedValue PackObject(Float2 const& Val) { return PackVector(Val); }
-template <> HK_FORCEINLINE APackedValue PackObject(Float3 const& Val) { return PackVector(Val); }
-template <> HK_FORCEINLINE APackedValue PackObject(Float4 const& Val) { return PackVector(Val); }
-template <> HK_FORCEINLINE APackedValue PackObject(Quat const& Val) { return PackVector(Val); }
-
-template <> HK_FORCEINLINE bool     UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<uint64_t>(PackedVal) != 0; }
-template <> HK_FORCEINLINE uint8_t  UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<uint8_t>(PackedVal); }
-template <> HK_FORCEINLINE uint16_t UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<uint16_t>(PackedVal); }
-template <> HK_FORCEINLINE uint32_t UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<uint32_t>(PackedVal); }
-template <> HK_FORCEINLINE uint64_t UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<uint64_t>(PackedVal); }
-template <> HK_FORCEINLINE int8_t   UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<int8_t>(PackedVal); }
-template <> HK_FORCEINLINE int16_t  UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<int16_t>(PackedVal); }
-template <> HK_FORCEINLINE int32_t  UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<int32_t>(PackedVal); }
-template <> HK_FORCEINLINE int64_t  UnpackObject(APackedValue const& PackedVal) { return Math::ToInt<int64_t>(PackedVal); }
-
-template <>
-HK_FORCEINLINE float UnpackObject(APackedValue const& PackedVal)
-{
-    uint32_t i = Math::ToInt<uint32_t>(PackedVal);
-    return *(float*)&i;
-}
-
-template <>
-HK_FORCEINLINE double UnpackObject(APackedValue const& PackedVal)
-{
-    uint64_t i = Math::ToInt<uint64_t>(PackedVal);
-    return *(double*)&i;
-}
-
-template <typename VectorType>
-VectorType UnpackVector(APackedValue const& PackedVal)
-{
-    uint32_t tmp[VectorType::NumComponents()] = {};
-
-    switch (VectorType::NumComponents())
-    {
-        case 2:
-            sscanf(PackedVal.CStr(), "%d %d", &tmp[0], &tmp[1]);
-            break;
-        case 3:
-            sscanf(PackedVal.CStr(), "%d %d %d", &tmp[0], &tmp[1], &tmp[2]);
-            break;
-        case 4:
-            sscanf(PackedVal.CStr(), "%d %d %d %d", &tmp[0], &tmp[1], &tmp[2], &tmp[3]);
-            break;
-    }
-
-    VectorType v;
-    for (auto i = 0; i < v.NumComponents(); i++)
-    {
-        v[i] = *(float*)&tmp[i];
-    }
-    return v;
-}
-
-template <> HK_FORCEINLINE Float2 UnpackObject(APackedValue const& PackedVal) { return UnpackVector<Float2>(PackedVal); }
-template <> HK_FORCEINLINE Float3 UnpackObject(APackedValue const& PackedVal) { return UnpackVector<Float3>(PackedVal); }
-template <> HK_FORCEINLINE Float4 UnpackObject(APackedValue const& PackedVal) { return UnpackVector<Float4>(PackedVal); }
-template <> HK_FORCEINLINE Quat   UnpackObject(APackedValue const& PackedVal) { return UnpackVector<Quat>(PackedVal); }
-
-template <>
-HK_FORCEINLINE APackedValue PackObject(AString const& Val)
-{
-    return Val;
-}
-
-template <>
-HK_FORCEINLINE AString UnpackObject(APackedValue const& PackedVal)
-{
-    return PackedVal;
-}
-
-template <typename T>
-APackedValue PackObject(T const& Val)
-{
-    return Val.Pack();
-}
-
-template <typename T>
-T UnpackObject(APackedValue const& PackedVal)
-{
-    T val;
-    val.Unpack(PackedVal);
-    return val;
-}
-
 
 #define _HK_GENERATED_CLASS_BODY()                   \
 public:                                              \
@@ -654,88 +403,71 @@ private:
     HK_END_CLASS_META()
 
 /** Provides direct access to a class member. */
-#define HK_PROPERTY_DIRECT_RANGE(Member, Flags, Range)                                         \
-    static AProperty const Property##Member(                                                   \
-        *this,                                                                                 \
-        GetPropertyType<decltype(ThisClass::Member)>(),                                        \
-        _GetEnumDef<decltype(ThisClass::Member)>(),                                            \
-        #Member,                                                                               \
-        [](ADummy* pObject, APackedValue const& PackedVal)                                     \
-        {                                                                                      \
-            using T                                  = decltype(ThisClass::Member);            \
-            static_cast<ThisClass*>(pObject)->Member = UnpackType<T>(PackedVal);               \
-        },                                                                                     \
-        [](ADummy const* pObject) -> APackedValue                                              \
-        {                                                                                      \
-            return PackType(static_cast<ThisClass const*>(pObject)->Member);                   \
-        },                                                                                     \
-        [](ADummy* Dst, ADummy const* Src)                                                     \
-        {                                                                                      \
-            static_cast<ThisClass*>(Dst)->Member = static_cast<ThisClass const*>(Src)->Member; \
-        },                                                                                     \
-        Range,                                                                                 \
-        Flags);
+#define HK_PROPERTY_DIRECT_RANGE(Property, Flags, Range)                                               \
+    {                                                                                                  \
+        using PropertyType = decltype(ThisClass::Property);                                            \
+        static AProperty const decl_##Property(                                                        \
+            *this,                                                                                     \
+            VariantTraits::GetVariantType<PropertyType>(),                                             \
+            VariantTraits::GetVariantEnum<PropertyType>(),                                             \
+            #Property,                                                                                 \
+            [](ADummy* pObject, AVariant const& Value) {                                               \
+                auto* pValue = Value.Get<PropertyType>();                                              \
+                if (pValue)                                                                            \
+                {                                                                                      \
+                    static_cast<ThisClass*>(pObject)->Property = *pValue;                              \
+                }                                                                                      \
+            },                                                                                         \
+            [](ADummy const* pObject) -> AVariant {                                                    \
+                return static_cast<ThisClass const*>(pObject)->Property;                               \
+            },                                                                                         \
+            [](ADummy* Dst, ADummy const* Src) {                                                       \
+                static_cast<ThisClass*>(Dst)->Property = static_cast<ThisClass const*>(Src)->Property; \
+            },                                                                                         \
+            Range,                                                                                     \
+            Flags);                                                                                    \
+    }
 
 /** Provides direct access to a class member. */
-#define HK_PROPERTY_DIRECT(Member, Flags) HK_PROPERTY_DIRECT_RANGE(Member, Flags, RangeUnbound())
+#define HK_PROPERTY_DIRECT(Property, Flags) HK_PROPERTY_DIRECT_RANGE(Property, Flags, RangeUnbound())
 
-/** Provides access to a class member via a setter/getter. */
-#define HK_PROPERTY_RANGE(Member, Setter, Getter, Flags, Range)                                                                                                                                                                                                          \
-    static AProperty const Property##Member(                                                                                                                                                                                                                             \
-        *this,                                                                                                                                                                                                                                                           \
-        GetPropertyType<decltype(ThisClass::Member)>(),                                                                                                                                                                                                                  \
-        _GetEnumDef<decltype(ThisClass::Member)>(),                                                                                                                                                                                                                      \
-        #Member,                                                                                                                                                                                                                                                         \
-        [](ADummy* pObject, APackedValue const& PackedVal)                                                                                                                                                                                                               \
-        {                                                                                                                                                                                                                                                                \
-            using T = decltype(ThisClass::Member);                                                                                                                                                                                                                       \
-            static_assert(std::is_same<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type, T>::value || std::is_same<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type, T const&>::value, "Setter argument type does not match property type"); \
-            static_cast<ThisClass*>(pObject)->Setter(UnpackType<T>(PackedVal));                                                                                                                                                                                          \
-        },                                                                                                                                                                                                                                                               \
-        [](ADummy const* pObject) -> APackedValue                                                                                                                                                                                                                        \
-        {                                                                                                                                                                                                                                                                \
-            using T = decltype(ThisClass::Member);                                                                                                                                                                                                                       \
-            static_assert(std::is_same<TReturnType<decltype(&ThisClass::Getter)>::Type, T>::value || std::is_same<TReturnType<decltype(&ThisClass::Getter)>::Type, T const&>::value, "Getter return type does not match property type");                                 \
-            return PackType(static_cast<ThisClass const*>(pObject)->Getter());                                                                                                                                                                                           \
-        },                                                                                                                                                                                                                                                               \
-        [](ADummy* Dst, ADummy const* Src)                                                                                                                                                                                                                               \
-        {                                                                                                                                                                                                                                                                \
-            static_cast<ThisClass*>(Dst)->Setter(static_cast<ThisClass const*>(Src)->Getter());                                                                                                                                                                          \
-        },                                                                                                                                                                                                                                                               \
-        Range,                                                                                                                                                                                                                                                           \
-        Flags);
+template <class T>
+struct RemoveCVRef
+{
+    typedef std::remove_cv_t<std::remove_reference_t<T>> type;
+};
 
-/** Provides access to a class member via a setter/getter. */
-#define HK_PROPERTY(Member, Setter, Getter, Flags) HK_PROPERTY_RANGE(Member, Setter, Getter, Flags, RangeUnbound())
+/** Provides access to a property via a setter/getter. */
+#define HK_PROPERTY_RANGE(Property, Setter, Getter, Flags, Range)                                                   \
+    {                                                                                                               \
+        using PropertyType     = RemoveCVRef<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type>::type; \
+        using GetterReturnType = RemoveCVRef<TReturnType<decltype(&ThisClass::Getter)>::Type>::type;                \
+        static_assert(std::is_same<PropertyType, GetterReturnType>::value, "Setter and getter type mismatch");      \
+        static AProperty const decl_##Property(                                                                     \
+            *this,                                                                                                  \
+            VariantTraits::GetVariantType<PropertyType>(),                                                          \
+            VariantTraits::GetVariantEnum<PropertyType>(),                                                          \
+            #Property,                                                                                              \
+            [](ADummy* pObject, AVariant const& Value) {                                                            \
+                auto* pValue = Value.Get<PropertyType>();                                                           \
+                if (pValue)                                                                                         \
+                {                                                                                                   \
+                    static_cast<ThisClass*>(pObject)->Setter(*pValue);                                              \
+                }                                                                                                   \
+            },                                                                                                      \
+            [](ADummy const* pObject) -> AVariant {                                                                 \
+                return static_cast<ThisClass const*>(pObject)->Getter();                                            \
+            },                                                                                                      \
+            [](ADummy* Dst, ADummy const* Src) {                                                                    \
+                static_cast<ThisClass*>(Dst)->Setter(static_cast<ThisClass const*>(Src)->Getter());                 \
+            },                                                                                                      \
+            Range,                                                                                                  \
+            Flags);                                                                                                 \
+    }
 
-/** Provides access to a class property via a setter/getter without a class member. */
-#define HK_PROPERTY2_RANGE(MemberType, Name, Setter, Getter, Flags, Range)                                                                                                                                                                                               \
-    static AProperty const Property##Setter(                                                                                                                                                                                                                             \
-        *this,                                                                                                                                                                                                                                                           \
-        GetPropertyType<MemberType>(),                                                                                                                                                                                                                                   \
-        _GetEnumDef<MemberType>(),                                                                                                                                                                                                                                       \
-        Name,                                                                                                                                                                                                                                                            \
-        [](ADummy* pObject, APackedValue const& PackedVal)                                                                                                                                                                                                               \
-        {                                                                                                                                                                                                                                                                \
-            using T = MemberType;                                                                                                                                                                                                                                        \
-            static_assert(std::is_same<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type, T>::value || std::is_same<typename TArgumentType<0U, decltype(&ThisClass::Setter)>::Type, T const&>::value, "Setter argument type does not match property type"); \
-            static_cast<ThisClass*>(pObject)->Setter(UnpackType<T>(PackedVal));                                                                                                                                                                                          \
-        },                                                                                                                                                                                                                                                               \
-        [](ADummy const* pObject) -> APackedValue                                                                                                                                                                                                                        \
-        {                                                                                                                                                                                                                                                                \
-            using T = MemberType;                                                                                                                                                                                                                                        \
-            static_assert(std::is_same<TReturnType<decltype(&ThisClass::Getter)>::Type, T>::value || std::is_same<TReturnType<decltype(&ThisClass::Getter)>::Type, T const&>::value, "Getter return type does not match property type");                                 \
-            return PackType(static_cast<ThisClass const*>(pObject)->Getter());                                                                                                                                                                                           \
-        },                                                                                                                                                                                                                                                               \
-        [](ADummy* Dst, ADummy const* Src)                                                                                                                                                                                                                               \
-        {                                                                                                                                                                                                                                                                \
-            static_cast<ThisClass*>(Dst)->Setter(static_cast<ThisClass const*>(Src)->Getter());                                                                                                                                                                          \
-        },                                                                                                                                                                                                                                                               \
-        Range,                                                                                                                                                                                                                                                           \
-        Flags);
+/** Provides access to a property via a setter/getter. */
+#define HK_PROPERTY(Property, Setter, Getter, Flags) HK_PROPERTY_RANGE(Property, Setter, Getter, Flags, RangeUnbound())
 
-/** Provides access to a class property via a setter/getter without a class member. */
-#define HK_PROPERTY2(MemberType, Name, Setter, Getter, Flags) HK_PROPERTY2_RANGE(MemberType, Name, Setter, Getter, Flags, RangeUnbound())
 
 template <typename T, typename... TArgs>
 T* CreateInstanceOf(TArgs&&... Args)
@@ -748,7 +480,6 @@ T* CreateInstanceOf(TArgs&&... Args)
 ADummy
 
 Base factory object class.
-Needs to resolve class meta data.
 
 */
 class ADummy

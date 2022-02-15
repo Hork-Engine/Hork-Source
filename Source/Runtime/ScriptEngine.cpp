@@ -285,8 +285,8 @@ static void RegisterFloat2(asIScriptEngine* pEngine)
         constexpr Bool2 IsNan() const;
         constexpr Bool2 IsNormal() const;
         constexpr Bool2 IsDenormal() const;
-        void Write(IBinaryStream& _Stream) const;
-        void Read(IBinaryStream& _Stream);
+        void Write(IBinaryStreamWriteInterface& _Stream) const;
+        void Read(IBinaryStreamReadInterface& _Stream);
         static constexpr int   NumComponents() { return 2; }
         static TVector2 const& Zero();
 #endif
@@ -464,8 +464,8 @@ static void RegisterFloat3(asIScriptEngine* pEngine)
         constexpr Bool3 IsNan() const;
         constexpr Bool3 IsNormal() const;
         constexpr Bool3 IsDenormal() const;
-        void Write(IBinaryStream& _Stream) const;
-        void Read(IBinaryStream& _Stream);
+        void Write(IBinaryStreamWriteInterface& _Stream) const;
+        void Read(IBinaryStreamReadInterface& _Stream);
         static constexpr int   NumComponents();
         static TVector3 const& Zero();
     #endif
@@ -748,8 +748,8 @@ static void RegisterPlane(asIScriptEngine* pEngine)
 
     // TODO?
 #if 0
-    void Write(IBinaryStream& _Stream) const;
-    void Read(IBinaryStream& _Stream);
+    void Write(IBinaryStreamWriteInterface& _Stream) const;
+    void Read(IBinaryStreamReadInterface& _Stream);
 #endif
 }
 

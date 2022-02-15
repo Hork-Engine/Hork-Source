@@ -119,6 +119,7 @@ int EncodeUTF8Char( unsigned int _Ch, char _Encoded[4] ) {
 }
 #endif
 
+#if 0
 int WideCharDecodeUTF8(const char* _Unicode, SWideChar& _Ch)
 {
     const unsigned char* s = (const unsigned char*)_Unicode;
@@ -313,6 +314,71 @@ int WideCharDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, SWideChar&
     }
     _Ch = 0;
     return 0;
+}
+#endif
+
+int WideCharDecodeUTF8(const char* _Unicode, SWideChar& _Ch)
+{
+    return WideCharDecodeUTF8(_Unicode, nullptr, _Ch);
+}
+
+// Convert UTF-8 to 32-bit character, process single character input.
+// A nearly-branchless UTF-8 decoder, based on work of Christopher Wellons (https://github.com/skeeto/branchless-utf8).
+// We handle UTF-8 decoding error by skipping forward.
+int WideCharDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, SWideChar& _Ch)
+{
+    static const char lengths[32] = { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 2, 2, 3, 3, 4, 0 };
+    static const int masks[]  = { 0x00, 0x7f, 0x1f, 0x0f, 0x07 };
+    static const uint32_t mins[] = { 0x400000, 0, 0x80, 0x800, 0x10000 };
+    static const int shiftc[] = { 0, 18, 12, 6, 0 };
+    static const int shifte[] = { 0, 6, 4, 2, 0 };
+    int len = lengths[*(const unsigned char*)_Unicode >> 3];
+    int wanted = len + !len;
+
+    if (_UnicodeEnd == nullptr)
+        _UnicodeEnd = _Unicode + wanted; // Max length, nulls will be taken into account.
+
+    // Copy at most 'len' bytes, stop copying at 0 or past _UnicodeEnd. Branch predictor does a good job here,
+    // so it is fast even with excessive branching.
+    unsigned char s[4];
+    s[0] = _Unicode + 0 < _UnicodeEnd ? _Unicode[0] : 0;
+    s[1] = _Unicode + 1 < _UnicodeEnd ? _Unicode[1] : 0;
+    s[2] = _Unicode + 2 < _UnicodeEnd ? _Unicode[2] : 0;
+    s[3] = _Unicode + 3 < _UnicodeEnd ? _Unicode[3] : 0;
+
+    uint32_t c;
+
+    // Assume a four-byte character and load four bytes. Unused bits are shifted out.
+    c  = (uint32_t)(s[0] & masks[len]) << 18;
+    c |= (uint32_t)(s[1] & 0x3f) << 12;
+    c |= (uint32_t)(s[2] & 0x3f) <<  6;
+    c |= (uint32_t)(s[3] & 0x3f) <<  0;
+    c >>= shiftc[len];
+
+    // Accumulate the various error conditions.
+    int e = 0;
+    e  = (c < mins[len]) << 6; // non-canonical encoding
+    e |= ((c >> 11) == 0x1b) << 7;  // surrogate half?
+    e |= (c > 0xFFFF) << 8;  // out of range?
+    e |= (s[1] & 0xc0) >> 2;
+    e |= (s[2] & 0xc0) >> 4;
+    e |= (s[3]       ) >> 6;
+    e ^= 0x2a; // top two bits of each tail byte correct?
+    e >>= shifte[len];
+
+    if (e)
+    {
+        // No bytes are consumed when *_Unicode == 0 || _Unicode == _UnicodeEnd.
+        // One byte is consumed in case of invalid first byte of _Unicode.
+        // All available bytes (at most `len` bytes) are consumed on incomplete/invalid second to last bytes.
+        // Invalid or incomplete input may consume less bytes than wanted, therefore every byte has to be inspected in s.
+        wanted = std::min(wanted, !!s[0] + !!s[1] + !!s[2] + !!s[3]);
+        c = 0xFFFD;     // Invalid Unicode code point (standard value)
+    }
+
+    _Ch = c;
+
+    return wanted;
 }
 
 int WideStrDecodeUTF8(const char* _Unicode, SWideChar* _Str, int _MaxLength)

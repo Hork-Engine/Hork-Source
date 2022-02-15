@@ -33,31 +33,11 @@ SOFTWARE.
 #include "EndianSwap.h"
 #include <Platform/String.h>
 
-/**
-
-IBinaryStream
-
-Interface class for binary stream
-
-*/
-class IBinaryStream
+class IBinaryStreamSeekInterface
 {
 public:
-    IBinaryStream()
+    virtual ~IBinaryStreamSeekInterface()
     {}
-
-    virtual ~IBinaryStream()
-    {}
-
-    virtual const char* GetFileName() const = 0;
-
-    virtual size_t Read(void* pBuffer, size_t SizeInBytes) = 0;
-
-    virtual size_t Write(const void* pBuffer, size_t SizeInBytes) = 0;
-
-    virtual char* Gets(char* pBuffer, size_t SizeInBytes) = 0;
-
-    virtual void Flush() = 0;
 
     virtual size_t GetOffset() const = 0;
 
@@ -67,9 +47,22 @@ public:
 
     virtual bool SeekEnd(int32_t Offset) = 0;
 
-    virtual size_t SizeInBytes() const = 0;
+    void Rewind()
+    {
+        SeekSet(0);
+    }
+};
 
-    virtual bool Eof() const = 0;
+
+class IBinaryStreamReadInterface : public virtual IBinaryStreamSeekInterface
+{
+public:
+    virtual ~IBinaryStreamReadInterface()
+    {}
+
+    virtual size_t Read(void* pBuffer, size_t SizeInBytes) = 0;
+
+    virtual char* Gets(char* pBuffer, size_t SizeInBytes) = 0;
 
     void ReadCString(char* pBuffer, size_t SizeInBytes)
     {
@@ -338,6 +331,14 @@ public:
             ReadObject(Array[i]);
         }
     }
+};
+
+class IBinaryStreamWriteInterface : public virtual IBinaryStreamSeekInterface
+{
+public:
+    virtual size_t Write(const void* pBuffer, size_t SizeInBytes) = 0;
+
+    virtual void Flush() = 0;
 
     void WriteCString(const char* pRawStr)
     {
@@ -517,11 +518,6 @@ public:
         }
     }
 
-    void Rewind()
-    {
-        SeekSet(0);
-    }
-
     void Printf(const char* Format, ...)
     {
         extern thread_local char LogBuffer[16384]; // Use existing log buffer
@@ -531,4 +527,27 @@ public:
         va_end(VaList);
         Write(LogBuffer, len);
     }
+};
+
+/**
+
+IBinaryStream
+
+Interface class for binary stream
+
+*/
+class IBinaryStream : public IBinaryStreamReadInterface, public IBinaryStreamWriteInterface
+{
+public:
+    IBinaryStream()
+    {}
+
+    virtual ~IBinaryStream()
+    {}
+
+    virtual const char* GetFileName() const = 0;
+
+    virtual size_t SizeInBytes() const = 0;
+
+    virtual bool Eof() const = 0;
 };

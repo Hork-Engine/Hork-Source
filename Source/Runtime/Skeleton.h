@@ -52,14 +52,14 @@ struct SJoint
     /** Joint name */
     char Name[64];
 
-    void Write(IBinaryStream& _Stream) const
+    void Write(IBinaryStreamWriteInterface& _Stream) const
     {
         _Stream.WriteInt32(Parent);
         _Stream.WriteObject(LocalTransform);
         _Stream.WriteCString(Name);
     }
 
-    void Read(IBinaryStream& _Stream)
+    void Read(IBinaryStreamReadInterface& _Stream)
     {
         Parent = _Stream.ReadInt32();
         _Stream.ReadObject(LocalTransform);

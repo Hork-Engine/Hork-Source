@@ -308,13 +308,13 @@ struct BvAxisAlignedBox
     }
 
     // Byte serialization
-    void Write(IBinaryStream& stream) const
+    void Write(IBinaryStreamWriteInterface& stream) const
     {
         Mins.Write(stream);
         Maxs.Write(stream);
     }
 
-    void Read(IBinaryStream& stream)
+    void Read(IBinaryStreamReadInterface& stream)
     {
         Mins.Read(stream);
         Maxs.Read(stream);
