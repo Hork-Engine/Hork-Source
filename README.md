@@ -150,6 +150,7 @@ PBR (physically based).
 * cgltf (MIT license)
 * clipper (Boost Software License 1.0)
 * fastlz (MIT license)
+* fmt (MIT license)
 * glew (Modified BSD License, the Mesa 3-D License (MIT) and the Khronos License (MIT))
 * glutess (SGI FREE SOFTWARE LICENSE B Ver 2.0)
 * iesna (public domain)
