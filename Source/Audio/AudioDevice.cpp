@@ -64,7 +64,8 @@ AAudioDevice::AAudioDevice( int InSampleRate )
     int numdevs = SDL_GetNumAudioDevices( SDL_FALSE );
     if ( numdevs > 0  ) {
         LOG("Available audio devices:\n");
-        for ( int i = 0 ; i < numdrivers ; i++ ) {
+        for ( int i = 0 ; i < numdevs ; i++ )
+        {
             LOG("\t{}\n", SDL_GetAudioDeviceName(i, SDL_FALSE));
         }
     }
