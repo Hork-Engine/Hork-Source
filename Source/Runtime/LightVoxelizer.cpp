@@ -443,7 +443,7 @@ void ALightVoxelizer::Voxelize(AStreamedMemoryGPU* StreamedMemory, SRenderView* 
     {
         RV->ClusterPackedIndexCount = MAX_TOTAL_CLUSTER_ITEMS;
 
-        GLogger.Printf("MAX_TOTAL_CLUSTER_ITEMS hit\n");
+        LOG("MAX_TOTAL_CLUSTER_ITEMS hit\n");
     }
 
     // Shrink ClusterItems

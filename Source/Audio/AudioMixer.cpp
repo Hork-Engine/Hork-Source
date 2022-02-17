@@ -169,7 +169,7 @@ void AAudioMixer::Update()
 {
     if (bAsync)
     {
-        GLogger.Printf("AAudioMixer::Update: mixer is running in async thread\n");
+        LOG("AAudioMixer::Update: mixer is running in async thread\n");
         return;
     }
 
@@ -179,7 +179,7 @@ void AAudioMixer::Update()
 
     if (RenderFrame < frameNum)
     {
-        GLogger.Printf("AAudioMixer::Update: Missing frames %d\n", frameNum - RenderFrame);
+        LOG("AAudioMixer::Update: Missing frames {}\n", frameNum - RenderFrame);
 
         RenderFrame = frameNum;
     }

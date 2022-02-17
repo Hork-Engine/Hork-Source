@@ -125,7 +125,7 @@ start:
                 }
                 Cur++;
             }
-            GLogger("Warning: unclosed comment /* */\n");
+            LOG("Warning: unclosed comment /* */\n");
             return;
         }
     }
@@ -189,7 +189,7 @@ void ADocumentTokenizer::NextToken()
     {
         if (*Cur)
         {
-            GLogger.Print("undefined symbols in token\n");
+            LOG("undefined symbols in token\n");
             CurToken.Type = TOKEN_TYPE_UNKNOWN;
         }
         else
@@ -410,13 +410,13 @@ void ADocument::ParseArray(ADocValue** ppArrayHead, ADocValue** ppArrayTail)
                 Tokenizer.NextToken();
                 if (*ppArrayHead == nullptr)
                 {
-                    GLogger.Print("empty array\n");
+                    LOG("empty array\n");
                 }
                 break;
             }
             if (*token.Begin != '{')
             {
-                GLogger.Printf("unexpected bracket %c\n", *token.Begin);
+                LOG("unexpected bracket {}\n", *token.Begin);
                 bHasErrors = true;
                 break;
             }
@@ -472,7 +472,7 @@ void ADocument::ParseArray(ADocValue** ppArrayHead, ADocValue** ppArrayTail)
             continue;
         }
 
-        GLogger.Printf("unexpected %s\n", token.NamedType());
+        LOG("unexpected {}\n", token.NamedType());
         bHasErrors = true;
         break;
     }
@@ -492,7 +492,7 @@ static bool Expect(int Type, SToken const& Token)
 {
     if (Token.Type != Type)
     {
-        GLogger.Printf("unexpected %s found, expected %s\n", Token.NamedType(), TokenType[Type]);
+        LOG("unexpected {} found, expected {}\n", Token.NamedType(), TokenType[Type]);
         return false;
     }
     return true;
@@ -512,14 +512,14 @@ TRef<ADocObject> ADocument::ParseObject()
             {
                 if (value->MembersEnd == nullptr)
                 {
-                    GLogger.Print("empty object\n");
+                    LOG("empty object\n");
                     break;
                 }
                 Tokenizer.NextToken();
                 return value;
             }
 
-            GLogger.Printf("unexpected bracket %c\n", *token.Begin);
+            LOG("unexpected bracket {}\n", *token.Begin);
             break;
         }
 
@@ -588,7 +588,7 @@ TRef<ADocMember> ADocument::ParseMember(SToken const& MemberToken)
 
             return member;
         }
-        GLogger.Printf("unexpected bracket %c\n", *token.Begin);
+        LOG("unexpected bracket {}\n", *token.Begin);
         return TRef<ADocMember>();
     }
 
@@ -610,20 +610,20 @@ TRef<ADocMember> ADocument::ParseMember(SToken const& MemberToken)
         return member;
     }
 
-    GLogger.Printf("expected value, found %s\n", token.NamedType());
+    LOG("expected value, found {}\n", token.NamedType());
     return TRef<ADocMember>();
 }
 
 void ADocument::Print() const
 {
-    GLogger.Print("-------------- Document ----------------\n");
+    LOG("-------------- Document ----------------\n");
 
     for (ADocMember const* member = MembersHead; member; member = member->Next)
     {
         member->Print();
     }
 
-    GLogger.Print("----------------------------------------\n");
+    LOG("----------------------------------------\n");
 }
 
 AString ADocument::SerializeToString(SDocumentSerializeInfo const& SerializeInfo) const
@@ -803,7 +803,7 @@ ADocMember* ADocValue::AddString(const char* MemberName, const char* Str)
 {
     if (!IsObject())
     {
-        GLogger.Printf("ADocValue::AddString: called on non-object type\n");
+        LOG("ADocValue::AddString: called on non-object type\n");
         return nullptr;
     }
 
@@ -829,7 +829,7 @@ ADocMember* ADocValue::AddObject(const char* MemberName, ADocObject* Object)
 {
     if (!IsObject())
     {
-        GLogger.Printf("ADocValue::AddObject: called on non-object type\n");
+        LOG("ADocValue::AddObject: called on non-object type\n");
         return nullptr;
     }
 
@@ -849,7 +849,7 @@ ADocMember* ADocValue::AddArray(const char* ArrayName)
 {
     if (!IsObject())
     {
-        GLogger.Printf("ADocValue::AddArray: called on non-object type\n");
+        LOG("ADocValue::AddArray: called on non-object type\n");
         return nullptr;
     }
 
@@ -882,11 +882,11 @@ void ADocValue::AddMember(ADocMember* Member)
 
 void ADocValue::Print() const
 {
-    GLogger.Printf("Type: %s\n", IsString() ? "STRING" : "OBJECT");
+    LOG("Type: {}\n", IsString() ? "STRING" : "OBJECT");
 
     if (IsString())
     {
-        GLogger.Printf("%s\n", GetString().CStr());
+        LOG("{}\n", GetString());
         return;
     }
 
@@ -938,7 +938,7 @@ void ADocMember::AddValue(ADocValue* pValue)
 
 void ADocMember::Print() const
 {
-    GLogger.Printf("Member: %s\n", GetName().CStr());
+    LOG("Member: {}\n", GetName());
 
     for (ADocValue const* value = GetArrayValues(); value; value = value->GetNext())
     {

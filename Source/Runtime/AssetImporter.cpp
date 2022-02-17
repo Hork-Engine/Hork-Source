@@ -560,10 +560,10 @@ static bool IsChannelValid(cgltf_animation_channel* channel)
         case cgltf_animation_path_type_scale:
             break;
         case cgltf_animation_path_type_weights:
-            GLogger.Printf("Warning: animation path weights is not supported yet\n");
+            LOG("Warning: animation path weights is not supported yet\n");
             return false;
         default:
-            GLogger.Printf("Warning: unknown animation target path\n");
+            LOG("Warning: unknown animation target path\n");
             return false;
     }
 
@@ -574,7 +574,7 @@ static bool IsChannelValid(cgltf_animation_channel* channel)
         case cgltf_interpolation_type_cubic_spline:
             break;
         default:
-            GLogger.Printf("Warning: unknown interpolation type\n");
+            LOG("Warning: unknown interpolation type\n");
             return false;
     }
 
@@ -583,18 +583,18 @@ static bool IsChannelValid(cgltf_animation_channel* channel)
 
     if (animtimes->count == 0)
     {
-        GLogger.Printf("Warning: empty channel data\n");
+        LOG("Warning: empty channel data\n");
         return false;
     }
 
     if (sampler->interpolation == cgltf_interpolation_type_cubic_spline && animtimes->count != animdata->count * 3)
     {
-        GLogger.Printf("Warning: invalid channel data\n");
+        LOG("Warning: invalid channel data\n");
         return false;
     }
     else if (animtimes->count != animdata->count)
     {
-        GLogger.Printf("Warning: invalid channel data\n");
+        LOG("Warning: invalid channel data\n");
         return false;
     }
 
@@ -615,7 +615,7 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
     AFileStream f;
     if (!f.OpenRead(Source))
     {
-        GLogger.Printf("Couldn't open %s\n", Source.CStr());
+        LOG("Couldn't open {}\n", Source);
         return false;
     }
 
@@ -641,21 +641,21 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
     cgltf_result result = cgltf_parse(&options, buf, size, &data);
     if (result != cgltf_result_success)
     {
-        GLogger.Printf("Couldn't load %s : %s\n", Source.CStr(), GetErrorString(result));
+        LOG("Couldn't load {} : {}\n", Source, GetErrorString(result));
         goto fin;
     }
 
     result = cgltf_validate(data);
     if (result != cgltf_result_success)
     {
-        GLogger.Printf("Couldn't load %s : %s\n", Source.CStr(), GetErrorString(result));
+        LOG("Couldn't load {} : {}\n", Source, GetErrorString(result));
         goto fin;
     }
 
     result = cgltf_load_buffers(&options, data, m_Path.CStr());
     if (result != cgltf_result_success)
     {
-        GLogger.Printf("Couldn't load %s buffers : %s\n", Source.CStr(), GetErrorString(result));
+        LOG("Couldn't load {} buffers : {}\n", Source, GetErrorString(result));
         goto fin;
     }
 
@@ -689,7 +689,7 @@ void AAssetImporter::ReadSkeleton(cgltf_node* node, int parentIndex)
         Platform::Strcpy(joint.Name, sizeof(joint.Name), Platform::Fmt("unnamed_%d", m_Joints.Size() - 1));
     }
 
-    GLogger.Printf("ReadSkeleton: %s\n", node->name);
+    LOG("ReadSkeleton: {}\n", node->name);
 
     joint.Parent = parentIndex;
 
@@ -721,29 +721,29 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
     m_Skin.JointIndices.Clear();
     m_Skin.OffsetMatrices.Clear();
 
-    GLogger.Printf("%d scenes\n", Data->scenes_count);
-    GLogger.Printf("%d skins\n", Data->skins_count);
-    GLogger.Printf("%d meshes\n", Data->meshes_count);
-    GLogger.Printf("%d nodes\n", Data->nodes_count);
-    GLogger.Printf("%d cameras\n", Data->cameras_count);
-    GLogger.Printf("%d lights\n", Data->lights_count);
-    GLogger.Printf("%d materials\n", Data->materials_count);
+    LOG("{} scenes\n", Data->scenes_count);
+    LOG("{} skins\n", Data->skins_count);
+    LOG("{} meshes\n", Data->meshes_count);
+    LOG("{} nodes\n", Data->nodes_count);
+    LOG("{} cameras\n", Data->cameras_count);
+    LOG("{} lights\n", Data->lights_count);
+    LOG("{} materials\n", Data->materials_count);
 
     if (Data->extensions_used_count > 0)
     {
-        GLogger.Printf("Used extensions:\n");
+        LOG("Used extensions:\n");
         for (int i = 0; i < Data->extensions_used_count; i++)
         {
-            GLogger.Printf("    %s\n", Data->extensions_used[i]);
+            LOG("    {}\n", Data->extensions_used[i]);
         }
     }
 
     if (Data->extensions_required_count > 0)
     {
-        GLogger.Printf("Required extensions:\n");
+        LOG("Required extensions:\n");
         for (int i = 0; i < Data->extensions_required_count; i++)
         {
-            GLogger.Printf("    %s\n", Data->extensions_required[i]);
+            LOG("    {}\n", Data->extensions_required[i]);
         }
     }
 
@@ -770,7 +770,7 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
     {
         cgltf_scene* scene = &Data->scene[i];
 
-        GLogger.Printf("Scene \"%s\" nodes %d\n", scene->name, scene->nodes_count);
+        LOG("Scene \"{}\" nodes {}\n", scene->name, scene->nodes_count);
 
         for (int n = 0; n < scene->nodes_count; n++)
         {
@@ -831,7 +831,7 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
 #endif
 
             //            for ( int n = 0; n < Data->nodes_count; n++ ) {
-            //                GLogger.Printf( "NODE: %s\n", Data->nodes[n].name );
+            //                LOG( "NODE: {}\n", Data->nodes[n].name );
             //            }
 
             // Apply scaling by changing local joint position
@@ -882,7 +882,7 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
                 int nodeIndex = jointNode->camera ? (size_t)jointNode->camera - 1 : m_Joints.Size();
                 if (nodeIndex >= m_Joints.Size())
                 {
-                    GLogger.Print("Invalid skin\n");
+                    LOG("Invalid skin\n");
                     m_Skin.JointIndices[i] = 0;
                 }
                 else
@@ -893,8 +893,8 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
 
             m_BindposeBounds = CalcBindposeBounds(m_Vertices.ToPtr(), m_Weights.ToPtr(), m_Vertices.Size(), &m_Skin, m_Joints.ToPtr(), m_Joints.Size());
 
-            GLogger.Printf("Total skeleton nodes %d\n", m_Joints.Size());
-            GLogger.Printf("Total skinned nodes %d\n", m_Skin.JointIndices.Size());
+            LOG("Total skeleton nodes {}\n", m_Joints.Size());
+            LOG("Total skinned nodes {}\n", m_Skin.JointIndices.Size());
         }
 
         if (!m_Joints.IsEmpty() && m_Settings.bImportAnimations)
@@ -1127,7 +1127,7 @@ void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
     else if (Material->has_pbr_specular_glossiness)
     {
 
-        GLogger.Printf("Warning: pbr specular glossiness workflow is not supported yet\n");
+        LOG("Warning: pbr specular glossiness workflow is not supported yet\n");
 
         Info.NumTextures       = 5;
         Info.DefaultTexture[0] = "/Default/Textures/BaseColorWhite"; // diffuse
@@ -1211,18 +1211,18 @@ void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
 void AAssetImporter::ReadNode_r(cgltf_node* Node)
 {
 
-    //GLogger.Printf( "node \"%s\"\n", Node->name );
+    //LOG( "node \"{}\"\n", Node->name );
 
     //if ( Node->camera ) {
-    //    GLogger.Printf( "has camera\n" );
+    //    LOG( "has camera\n" );
     //}
 
     //if ( Node->light ) {
-    //    GLogger.Printf( "has light\n" );
+    //    LOG( "has light\n" );
     //}
 
     //if ( Node->weights ) {
-    //    GLogger.Printf( "has weights %d\n", Node->weights_count );
+    //    LOG( "has weights {}\n", Node->weights_count );
     //}
 
     if (m_Settings.bImportMeshes || m_Settings.bImportSkinning || m_Settings.bImportAnimations)
@@ -1282,7 +1282,7 @@ void AAssetImporter::ReadMesh(cgltf_mesh* Mesh, Float3x4 const& GlobalTransform,
 
         if (prim->type != cgltf_primitive_type_triangles)
         {
-            GLogger.Printf("Only triangle primitives supported\n");
+            LOG("Only triangle primitives supported\n");
             continue;
         }
 
@@ -1300,14 +1300,14 @@ void AAssetImporter::ReadMesh(cgltf_mesh* Mesh, Float3x4 const& GlobalTransform,
 
             if (attrib->data->is_sparse)
             {
-                GLogger.Printf("Warning: sparsed accessors are not supported\n");
+                LOG("Warning: sparsed accessors are not supported\n");
                 continue;
             }
 
             switch (attrib->type)
             {
                 case cgltf_attribute_type_invalid:
-                    GLogger.Printf("Warning: invalid attribute type\n");
+                    LOG("Warning: invalid attribute type\n");
                     continue;
 
                 case cgltf_attribute_type_position:
@@ -1346,31 +1346,31 @@ void AAssetImporter::ReadMesh(cgltf_mesh* Mesh, Float3x4 const& GlobalTransform,
 
         if (!position)
         {
-            GLogger.Printf("Warning: no positions\n");
+            LOG("Warning: no positions\n");
             continue;
         }
 
         if (position->type != cgltf_type_vec2 && position->type != cgltf_type_vec3)
         {
-            GLogger.Printf("Warning: invalid vertex positions\n");
+            LOG("Warning: invalid vertex positions\n");
             continue;
         }
 
         if (!texcoord)
         {
-            GLogger.Printf("Warning: no texcoords\n");
+            LOG("Warning: no texcoords\n");
         }
 
         if (texcoord && texcoord->type != cgltf_type_vec2)
         {
-            GLogger.Printf("Warning: invalid texcoords\n");
+            LOG("Warning: invalid texcoords\n");
             texcoord = nullptr;
         }
 
         int vertexCount = position->count;
         if (texcoord && texcoord->count != vertexCount)
         {
-            GLogger.Printf("Warning: texcoord count != position count\n");
+            LOG("Warning: texcoord count != position count\n");
             texcoord = nullptr;
         }
 
@@ -1440,7 +1440,7 @@ void AAssetImporter::ReadMesh(cgltf_mesh* Mesh, Float3x4 const& GlobalTransform,
         {
             // TODO: compute normals
 
-            GLogger.Printf("Warning: no normals\n");
+            LOG("Warning: no normals\n");
 
             for (int v = 0; v < vertexCount; v++)
             {
@@ -1521,7 +1521,7 @@ void AAssetImporter::ReadMesh(cgltf_mesh* Mesh, Float3x4 const& GlobalTransform,
     //    cgltf_float * w = &mesh->weights[ i ];
     //}
 
-    GLogger.Printf("Subparts %d, Primitives %d\n", m_Meshes.Size(), Mesh->primitives_count);
+    LOG("Subparts {}, Primitives {}\n", m_Meshes.Size(), Mesh->primitives_count);
 
     if (m_bSkeletal)
     {
@@ -1530,7 +1530,7 @@ void AAssetImporter::ReadMesh(cgltf_mesh* Mesh, Float3x4 const& GlobalTransform,
         if (numWeights != numVertices)
         {
 
-            GLogger.Printf("Warning: invalid mesh (num weights != num vertices)\n");
+            LOG("Warning: invalid mesh (num weights != num vertices)\n");
 
             m_Weights.Resize(numVertices);
 
@@ -1625,7 +1625,7 @@ void AAssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animati
         int nodeIndex = channel->target_node->camera ? (size_t)channel->target_node->camera - 1 : m_Joints.Size();
         if (nodeIndex >= m_Joints.Size())
         {
-            GLogger.Printf("Warning: joint %s is not found\n", channel->target_node->name);
+            LOG("Warning: joint {} is not found\n", channel->target_node->name);
             continue;
         }
 
@@ -1712,7 +1712,7 @@ void AAssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animati
 
                 break;
             default:
-                GLogger.Printf("Warning: Unsupported target path\n");
+                LOG("Warning: Unsupported target path\n");
                 break;
         }
 
@@ -1735,7 +1735,7 @@ void AAssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animati
                     sample_vec3(sampler, frameTime, transform.Scale);
                     break;
                 default:
-                    GLogger.Printf("Warning: Unsupported target path\n");
+                    LOG("Warning: Unsupported target path\n");
                     f = numFrames;
                     break;
             }
@@ -1825,7 +1825,7 @@ void AAssetImporter::WriteTexture(TextureInfo& tex)
 
     if (!f.OpenWrite(fileSystemPath))
     {
-        GLogger.Printf("Failed to write %s\n", fileName.CStr());
+        LOG("Failed to write {}\n", fileName);
         return;
     }
 
@@ -1893,12 +1893,12 @@ void AAssetImporter::WriteTexture(TextureInfo& tex)
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
-        GLogger.Printf( "Failed to write %s meta\n", fileName.CStr() );
+        LOG( "Failed to write {} meta\n", fileName );
         return;
     }
 
-    f.Printf( "GUID \"%s\"\n", tex.GUID.CStr() );
-    f.Printf( "Sources [ \"%s\" ]\n", sourceFileName.CStr() );
+    f.FormattedPrint( "GUID \"{}\"\n", tex.GUID );
+    f.FormattedPrint( "Sources [ \"{}\" ]\n", sourceFileName );
 #endif
 
 #if 0
@@ -1950,7 +1950,7 @@ void AAssetImporter::WriteMaterial(MaterialInfo const& m)
 
     if (!f.OpenWrite(fileSystemPath))
     {
-        GLogger.Printf("Failed to write %s\n", fileName.CStr());
+        LOG("Failed to write {}\n", fileName);
         return;
     }
 
@@ -1977,26 +1977,26 @@ void AAssetImporter::WriteMaterial(MaterialInfo const& m)
         f.WriteFloat( m.Uniforms[i] );
     }
 #else
-    f.Printf("Material \"%s\"\n", m.DefaultMaterial);
-    f.Printf("Textures [\n");
+    f.FormattedPrint("Material \"{}\"\n", m.DefaultMaterial);
+    f.FormattedPrint("Textures [\n");
     for (int i = 0; i < m.NumTextures; i++)
     {
         if (m.Textures[i])
         {
-            f.Printf("\"%s\"\n", GuidMap[m.Textures[i]->GUID.CStr()].CStr());
+            f.FormattedPrint("\"{}\"\n", GuidMap[m.Textures[i]->GUID.CStr()]);
         }
         else
         {
-            f.Printf("\"%s\"\n", m.DefaultTexture[i]);
+            f.FormattedPrint("\"{}\"\n", m.DefaultTexture[i]);
         }
     }
-    f.Printf("]\n");
-    f.Printf("Uniforms [\n");
+    f.FormattedPrint("]\n");
+    f.FormattedPrint("Uniforms [\n");
     for (int i = 0; i < MAX_MATERIAL_UNIFORMS; i++)
     {
-        f.Printf("\"%s\"\n", Math::ToString(m.Uniforms[i]).CStr());
+        f.FormattedPrint("\"{}\"\n", Math::ToString(m.Uniforms[i]));
     }
-    f.Printf("]\n");
+    f.FormattedPrint("]\n");
 #endif
 
 #if 0
@@ -2010,26 +2010,26 @@ void AAssetImporter::WriteMaterial(MaterialInfo const& m)
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
-        GLogger.Printf( "Failed to write %s meta\n", fileName.CStr() );
+        LOG( "Failed to write {} meta\n", fileName );
         return;
     }
 
-    f.Printf( "GUID \"%s\"\n", m.GUID.CStr() );
-    f.Printf( "Material \"%s\"\n", m.DefaultMaterial );
-    f.Printf( "Textures [\n" );
+    f.FormattedPrint( "GUID \"{}\"\n", m.GUID );
+    f.FormattedPrint( "Material \"{}\"\n", m.DefaultMaterial );
+    f.FormattedPrint( "Textures [\n" );
     for ( int i = 0 ; i < m.NumTextures ; i++ ) {
         if ( m.Textures[i] ) {
-            f.Printf( "\"%s\"\n", m.Textures[i]->GUID.CStr() );
+            f.FormattedPrint( "\"{}\"\n", m.Textures[i]->GUID );
         } else {
-            f.Printf( "\"%s\"\n", m.DefaultTexture[i] );
+            f.FormattedPrint( "\"{}\"\n", m.DefaultTexture[i] );
         }
     }
-    f.Printf( "]\n" );
-    f.Printf( "Uniforms [\n" );
+    f.FormattedPrint( "]\n" );
+    f.FormattedPrint( "Uniforms [\n" );
     for ( int i = 0 ; i < MAX_MATERIAL_UNIFORMS ; i++ ) {
-        f.Printf( "\"%s\"\n", Float(m.Uniforms[i]).ToString().CStr() );
+        f.FormattedPrint( "\"{}\"\n", Float(m.Uniforms[i]).ToString() );
     }
-    f.Printf( "]\n" );
+    f.FormattedPrint( "]\n" );
 #endif
 }
 
@@ -2107,7 +2107,7 @@ void AAssetImporter::WriteSkeleton()
 
         if (!f.OpenWrite(fileSystemPath))
         {
-            GLogger.Printf("Failed to write %s\n", fileName.CStr());
+            LOG("Failed to write {}\n", fileName);
             return;
         }
 
@@ -2129,11 +2129,11 @@ void AAssetImporter::WriteSkeleton()
         metaFilePath += ".asset_meta";
 
         if ( !f.OpenWrite( metaFilePath ) ) {
-            GLogger.Printf( "Failed to write %s meta\n", fileName.CStr() );
+            LOG( "Failed to write {} meta\n", fileName );
             return;
         }
 
-        f.Printf( "GUID \"%s\"\n", m_SkeletonGUID.CStr() );
+        f.FormattedPrint( "GUID \"{}\"\n", m_SkeletonGUID );
 #endif
     }
 }
@@ -2154,7 +2154,7 @@ void AAssetImporter::WriteAnimation(AnimationInfo const& Animation)
 
     if (!f.OpenWrite(fileSystemPath))
     {
-        GLogger.Printf("Failed to write %s\n", fileName.CStr());
+        LOG("Failed to write {}\n", fileName);
         return;
     }
 
@@ -2177,11 +2177,11 @@ void AAssetImporter::WriteAnimation(AnimationInfo const& Animation)
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
-        GLogger.Printf( "Failed to write %s meta\n", fileName.CStr() );
+        LOG( "Failed to write {} meta\n", fileName );
         return;
     }
 
-    f.Printf( "GUID \"%s\"\n", Animation.GUID.CStr() );
+    f.FormattedPrint( "GUID \"{}\"\n", Animation.GUID);
 #endif
 }
 
@@ -2199,7 +2199,7 @@ void AAssetImporter::WriteSingleModel()
 
     if (!f.OpenWrite(fileSystemPath))
     {
-        GLogger.Printf("Failed to write %s\n", fileName.CStr());
+        LOG("Failed to write {}\n", fileName);
         return;
     }
 
@@ -2319,26 +2319,26 @@ void AAssetImporter::WriteSingleModel()
 
     if (!f.OpenWrite(fileSystemPath))
     {
-        GLogger.Printf("Failed to write %s\n", fileName.CStr());
+        LOG("Failed to write {}\n", fileName);
         return;
     }
 
-    f.Printf("Mesh \"%s\"\n", GuidMap[GUID.CStr()].CStr());
+    f.FormattedPrint("Mesh \"{}\"\n", GuidMap[GUID.CStr()]);
 
     if (bSkinnedMesh)
     {
-        f.Printf("Skeleton \"%s\"\n", GuidMap[m_SkeletonGUID.ToString().CStr()].CStr());
+        f.FormattedPrint("Skeleton \"{}\"\n", GuidMap[m_SkeletonGUID.ToString().CStr()]);
     }
     else
     {
-        f.Printf("Skeleton \"%s\"\n", "/Default/Skeleton/Default");
+        f.FormattedPrint("Skeleton \"{}\"\n", "/Default/Skeleton/Default");
     }
-    f.Printf("Subparts [\n");
+    f.FormattedPrint("Subparts [\n");
     for (MeshInfo const& meshInfo : m_Meshes)
     {
-        f.Printf("\"%s\"\n", GuidMap[GetMaterialGUID(meshInfo.Material).CStr()].CStr());
+        f.FormattedPrint("\"{}\"\n", GuidMap[GetMaterialGUID(meshInfo.Material).CStr()].CStr());
     }
-    f.Printf("]\n");
+    f.FormattedPrint("]\n");
 
 #if 0
     //
@@ -2351,22 +2351,22 @@ void AAssetImporter::WriteSingleModel()
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
-        GLogger.Printf( "Failed to write %s meta\n", fileName.CStr() );
+        LOG( "Failed to write {} meta\n", fileName );
         return;
     }
 
-    f.Printf( "GUID \"%s\"\n", GUID.CStr() );
+    f.FormattedPrint( "GUID \"{}\"\n", GUID.CStr() );
 
     if ( bSkinnedMesh ) {
-        f.Printf( "Skeleton \"%s\"\n", m_SkeletonGUID.ToString().CStr() );
+        f.FormattedPrint( "Skeleton \"{}\"\n", m_SkeletonGUID );
     } else {
-        f.Printf( "Skeleton \"%s\"\n", "/Default/Skeleton/Default" );
+        f.FormattedPrint( "Skeleton \"{}\"\n", "/Default/Skeleton/Default" );
     }
-    f.Printf( "Subparts [\n" );
+    f.FormattedPrint( "Subparts [\n" );
     for ( MeshInfo const & meshInfo : m_Meshes ) {
-        f.Printf( "\"%s\"\n", GetMaterialGUID( meshInfo.Material ).CStr() );
+        f.FormattedPrint( "\"{}\"\n", GetMaterialGUID( meshInfo.Material ) );
     }
-    f.Printf( "]\n" );
+    f.FormattedPrint( "]\n" );
 #endif
 }
 
@@ -2386,7 +2386,7 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
 
     if (!f.OpenWrite(fileSystemPath))
     {
-        GLogger.Printf("Failed to write %s\n", fileName.CStr());
+        LOG("Failed to write {}\n", fileName);
         return;
     }
 
@@ -2484,23 +2484,23 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
 
     if (!f.OpenWrite(fileSystemPath))
     {
-        GLogger.Printf("Failed to write %s\n", fileName.CStr());
+        LOG("Failed to write {}\n", fileName);
         return;
     }
 
-    f.Printf("Mesh \"%s\"\n", GuidMap[Mesh.GUID.CStr()].CStr());
+    f.FormattedPrint("Mesh \"{}\"\n", GuidMap[Mesh.GUID.CStr()]);
 
     if (bSkinnedMesh)
     {
-        f.Printf("Skeleton \"%s\"\n", GuidMap[m_SkeletonGUID.ToString().CStr()].CStr());
+        f.FormattedPrint("Skeleton \"{}\"\n", GuidMap[m_SkeletonGUID.ToString().CStr()]);
     }
     else
     {
-        f.Printf("Skeleton \"%s\"\n", "/Default/Skeleton/Default");
+        f.FormattedPrint("Skeleton \"{}\"\n", "/Default/Skeleton/Default");
     }
-    f.Printf("Subparts [\n");
-    f.Printf("\"%s\"\n", GuidMap[GetMaterialGUID(Mesh.Material).CStr()].CStr());
-    f.Printf("]\n");
+    f.FormattedPrint("Subparts [\n");
+    f.FormattedPrint("\"{}\"\n", GuidMap[GetMaterialGUID(Mesh.Material).CStr()]);
+    f.FormattedPrint("]\n");
 
 #if 0
     //
@@ -2513,20 +2513,20 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
-        GLogger.Printf( "Failed to write %s meta\n", fileName.CStr() );
+        LOG( "Failed to write {} meta\n", fileName);
         return;
     }
 
-    f.Printf( "GUID \"%s\"\n", Mesh.GUID.CStr() );
+    f.FormattedPrint( "GUID \"{}\"\n", Mesh.GUID );
 
     if ( bSkinnedMesh ) {
-        f.Printf( "Skeleton \"%s\"\n", m_SkeletonGUID.ToString().CStr() );
+        f.FormattedPrint( "Skeleton \"{}\"\n", m_SkeletonGUID.ToString() );
     } else {
-        f.Printf( "Skeleton \"%s\"\n", "/Default/Skeleton/Default" );
+        f.FormattedPrint( "Skeleton \"{}\"\n", "/Default/Skeleton/Default" );
     }
-    f.Printf( "Subparts [\n" );
-    f.Printf( "\"%s\"\n", GetMaterialGUID( Mesh.Material ).CStr() );
-    f.Printf( "]\n" );
+    f.FormattedPrint( "Subparts [\n" );
+    f.FormattedPrint( "\"%s\"\n", GetMaterialGUID( Mesh.Material ) );
+    f.FormattedPrint( "]\n" );
 #endif
 }
 
@@ -2536,7 +2536,7 @@ bool ValidateCubemapFaces(TArray<AImage, 6> const& Faces, int& Width, STexturePi
     {
         if (!Faces[i].GetData())
         {
-            GLogger.Printf("ValidateCubemapFaces: empty image data\n");
+            LOG("ValidateCubemapFaces: empty image data\n");
             return false;
         }
 
@@ -2560,14 +2560,14 @@ bool ValidateCubemapFaces(TArray<AImage, 6> const& Faces, int& Width, STexturePi
 
             if (PixelFormat != facePF)
             {
-                GLogger.Printf("ValidateCubemapFaces: faces with different pixel formats\n");
+                LOG("ValidateCubemapFaces: faces with different pixel formats\n");
                 return false;
             }
         }
 
         if (Faces[i].GetWidth() != Width || Faces[i].GetHeight() != Width)
         {
-            GLogger.Printf("ValidateCubemapFaces: faces with different sizes\n");
+            LOG("ValidateCubemapFaces: faces with different sizes\n");
             return false;
         }
     }
@@ -2680,7 +2680,7 @@ bool ImportEnvironmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSetti
 
     if (!f.OpenWrite(EnvmapFile))
     {
-        GLogger.Printf("Failed to write %s\n", EnvmapFile.ToString().CStr());
+        LOG("Failed to write {}\n", EnvmapFile);
         return false;
     }
 
@@ -2759,7 +2759,7 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
 
     if (!f.OpenWrite(fileSystemPath))
     {
-        GLogger.Printf("Failed to write %s\n", fileName.CStr());
+        LOG("Failed to write {}\n", fileName);
         return false;
     }
 
@@ -2815,17 +2815,17 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
-        GLogger.Printf( "Failed to write %s meta\n", fileName.CStr() );
+        LOG( "Failed to write {} meta\n", fileName );
         return false;
     }
 
-    f.Printf( "GUID \"%s\"\n", TextureGUID.CStr() );
+    f.FormattedPrint( "GUID \"{}\"\n", TextureGUID );
 
-    f.Printf( "Sources [\n" );
+    f.FormattedPrint( "Sources [\n" );
     for ( int i = 0 ; i < 6 ; i++ ) {
-        f.Printf( "\"%s\"\n", skyboxImport.Faces[i] ); // source file
+        f.FormattedPrint( "\"{}\"\n", skyboxImport.Faces[i] ); // source file
     }
-    f.Printf( "]\n" );
+    f.FormattedPrint( "]\n" );
 #endif
 
     if (m_Settings.bCreateSkyboxMaterialInstance)
@@ -2844,7 +2844,7 @@ void AAssetImporter::WriteSkyboxMaterial(AGUID const& SkyboxTextureGUID)
 
     if (!f.OpenWrite(fileSystemPath))
     {
-        GLogger.Printf("Failed to write %s\n", fileName.CStr());
+        LOG("Failed to write {}\n", fileName);
         return;
     }
 
@@ -2869,10 +2869,10 @@ void AAssetImporter::WriteSkyboxMaterial(AGUID const& SkyboxTextureGUID)
         f.WriteFloat( 0.0f );
     }
 #else
-    f.Printf("Material \"/Default/Materials/Skybox\"\n");
-    f.Printf("Textures [\n");
-    f.Printf("\"%s\"\n", GuidMap[SkyboxTextureGUID.CStr()].CStr());
-    f.Printf("]\n");
+    f.FormattedPrint("Material \"/Default/Materials/Skybox\"\n");
+    f.FormattedPrint("Textures [\n");
+    f.FormattedPrint("\"{}\"\n", GuidMap[SkyboxTextureGUID.CStr()]);
+    f.FormattedPrint("]\n");
 #endif
 
 #if 0
@@ -2886,15 +2886,15 @@ void AAssetImporter::WriteSkyboxMaterial(AGUID const& SkyboxTextureGUID)
     metaFilePath += ".asset_meta";
 
     if ( !f.OpenWrite( metaFilePath ) ) {
-        GLogger.Printf( "Failed to write %s meta\n", fileName.CStr() );
+        LOG( "Failed to write {} meta\n", fileName );
         return;
     }
 
-    f.Printf( "GUID \"%s\"\n", GUID.CStr() );
-    f.Printf( "Material \"%s\"\n", "/Default/Materials/Skybox" );
-    f.Printf( "Textures [\n" );
-    f.Printf( "\"%s\"\n", SkyboxTextureGUID.CStr() );
-    f.Printf( "]\n" );
+    f.FormattedPrint( "GUID \"{}\"\n", GUID );
+    f.FormattedPrint( "Material \"{}\"\n", "/Default/Materials/Skybox" );
+    f.FormattedPrint( "Textures [\n" );
+    f.FormattedPrint( "\"{}\"\n", SkyboxTextureGUID );
+    f.FormattedPrint( "]\n" );
 #endif
 }
 
@@ -3267,7 +3267,7 @@ static bool CreateLWOMesh(lwObject* lwo, float InScale, AMaterialInstance* (*Get
 
             if (poly->nverts != 3)
             {
-                GLogger.Printf("CreateLWOMesh: polygon has %d verts, expected triangle\n", poly->nverts);
+                LOG("CreateLWOMesh: polygon has {} verts, expected triangle\n", poly->nverts);
                 continue;
             }
 

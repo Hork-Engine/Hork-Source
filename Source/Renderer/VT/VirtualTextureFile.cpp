@@ -45,7 +45,7 @@ AVirtualTextureFile::AVirtualTextureFile( const char * FileName )
     TextureResolutionLog2 = 0;
 
     if ( !FileHandle.OpenRead( FileName ) ) {
-        GLogger.Printf( "AVirtualTextureFile::ctor: couldn't open %s\n", FileName );
+        LOG("AVirtualTextureFile::ctor: couldn't open {}\n", FileName);
         return;
     }
 

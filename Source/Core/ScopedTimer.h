@@ -62,7 +62,7 @@ struct AScopedTimer
 
         if (rt_ScopedTimeCheck)
         {
-            GLogger.Printf("SCOPED_TIME_CHECK: %s : %d ms\n", Name, Platform::SysMilliseconds() - Milliseconds);
+            LOG("SCOPED_TIME_CHECK: {} : {} ms\n", Name, Platform::SysMilliseconds() - Milliseconds);
         }
     }
 };

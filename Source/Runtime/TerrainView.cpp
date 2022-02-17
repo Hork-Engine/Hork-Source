@@ -128,8 +128,8 @@ void ATerrainView::Update(AStreamedMemoryGPU* StreamedMemory, ATerrainMesh* Terr
 
     if (com_ShowTerrainMemoryUsage)
     {
-        GLogger.Printf("Instance buffer size in bytes %d\n", InstanceBuffer.Size() * sizeof(STerrainPatchInstance));
-        GLogger.Printf("Indirect buffer size in bytes %d\n", IndirectBuffer.Size() * sizeof(RenderCore::SDrawIndexedIndirectCmd));
+        LOG("Instance buffer size in bytes {}\n", InstanceBuffer.Size() * sizeof(STerrainPatchInstance));
+        LOG("Indirect buffer size in bytes {}\n", IndirectBuffer.Size() * sizeof(RenderCore::SDrawIndexedIndirectCmd));
     }
 }
 
@@ -810,7 +810,7 @@ void ATerrainView::AddPatches(ATerrainMesh* TerrainMesh, BvFrustum const& ViewFr
     AddPatchInstances(TerrainMesh->GetCrackPatch(), numCrackStrips);
 
 #if 0
-    GLogger.Printf( "Blocks %d/%d, gaps %d/%d, trims %d/%d, cracks %d/%d, total culled %d, total instances %d(%d)\n",
+    LOG( "Blocks {}/{}, gaps {}/{}, trims {}/{}, cracks {}/{}, total culled {}, total instances {}({})\n",
                     numCulledBlocks, numCulledBlocks+numBlocks,
                     numCulledGaps, numCulledGaps+numVertGaps+numHorGaps,
                     numCulledTrims, numCulledTrims+totalTrims,
@@ -1075,7 +1075,7 @@ void ATerrainView::DrawDebug(ADebugRenderer* InRenderer, ATerrainMesh* TerrainMe
         //currentDrawCall += delta;
     }
 
-    //GLogger.Printf( "Drawcalls %d\n", IndirectBuffer.Size() );
+    //LOG( "Drawcalls {}\n", IndirectBuffer.Size() );
 
 
 

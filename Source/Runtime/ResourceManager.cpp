@@ -103,7 +103,7 @@ AResource* AResourceManager::FindResource(AClassMeta const& _ClassMeta, const ch
         {
             if (&ResourceCache[i]->FinalClassMeta() != &_ClassMeta)
             {
-                GLogger.Printf("FindResource: %s class doesn't match meta data (%s vs %s)\n", _Alias, ResourceCache[i]->FinalClassName(), _ClassMeta.GetName());
+                LOG("FindResource: {} class doesn't match meta data ({} vs {})\n", _Alias, ResourceCache[i]->FinalClassName(), _ClassMeta.GetName());
                 _bMetadataMismatch = true;
                 return nullptr;
             }
@@ -148,7 +148,7 @@ AResource* AResourceManager::GetResource(AClassMeta const& _ClassMeta, const cha
         {
             if (&ResourceCache[i]->FinalClassMeta() != &_ClassMeta)
             {
-                GLogger.Printf("GetResource: %s class doesn't match meta data (%s vs %s)\n", _Alias, ResourceCache[i]->FinalClassName(), _ClassMeta.GetName());
+                LOG("GetResource: {} class doesn't match meta data ({} vs {})\n", _Alias, ResourceCache[i]->FinalClassName(), _ClassMeta.GetName());
 
                 if (_bMetadataMismatch)
                 {
@@ -208,7 +208,7 @@ AResource* AResourceManager::GetOrCreateResource(AClassMeta const& _ClassMeta, c
 
     if (resource)
     {
-        //GLogger.Printf( "CACHING %s: Name %s, Path: \"%s\"\n", resource->GetObjectNameCStr(), resource->FinalClassName(), resource->GetResourcePath().CStr() );
+        //DEBUG( "CACHING {}: Name {}, Path: \"{}\"\n", resource->GetObjectName(), resource->FinalClassName(), resource->GetResourcePath().CStr() );
 
         return resource;
     }
@@ -232,14 +232,14 @@ bool AResourceManager::RegisterResource(AResource* _Resource, const char* _Alias
 
     if (!_Resource->GetResourcePath().IsEmpty())
     {
-        GLogger.Printf("RegisterResource: Resource already registered (%s)\n", _Resource->GetResourcePath().CStr());
+        LOG("RegisterResource: Resource already registered ({})\n", _Resource->GetResourcePath());
         return false;
     }
 
     AResource* resource = FindResource(_Resource->FinalClassMeta(), _Alias, bMetadataMismatch, hash);
     if (resource || bMetadataMismatch)
     {
-        GLogger.Printf("RegisterResource: Resource with same alias already exists (%s)\n", _Alias);
+        LOG("RegisterResource: Resource with same alias already exists ({})\n", _Alias);
         return false;
     }
 
@@ -262,7 +262,7 @@ bool AResourceManager::UnregisterResource(AResource* _Resource)
         {
             if (&ResourceCache[i]->FinalClassMeta() != &_Resource->FinalClassMeta())
             {
-                GLogger.Printf("UnregisterResource: %s class doesn't match meta data (%s vs %s)\n", _Resource->GetResourcePath().CStr(), ResourceCache[i]->FinalClassName(), _Resource->FinalClassMeta().GetName());
+                LOG("UnregisterResource: {} class doesn't match meta data ({} vs {})\n", _Resource->GetResourcePath(), ResourceCache[i]->FinalClassName(), _Resource->FinalClassMeta().GetName());
                 return false;
             }
             break;
@@ -271,7 +271,7 @@ bool AResourceManager::UnregisterResource(AResource* _Resource)
 
     if (i == -1)
     {
-        GLogger.Printf("UnregisterResource: resource %s is not found\n", _Resource->GetResourcePath().CStr());
+        LOG("UnregisterResource: resource {} is not found\n", _Resource->GetResourcePath());
         return false;
     }
 

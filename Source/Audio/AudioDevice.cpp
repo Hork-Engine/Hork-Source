@@ -55,17 +55,17 @@ AAudioDevice::AAudioDevice( int InSampleRate )
 
     int numdrivers = SDL_GetNumAudioDrivers();
     if ( numdrivers > 0 ) {
-        GLogger.Printf( "Available audio drivers:\n" );
+        LOG("Available audio drivers:\n");
         for ( int i = 0 ; i < numdrivers ; i++ ) {
-            GLogger.Printf( "\t%s\n", SDL_GetAudioDriver( i ) );
+            LOG("\t{}\n", SDL_GetAudioDriver(i));
         }
     }
 
     int numdevs = SDL_GetNumAudioDevices( SDL_FALSE );
     if ( numdevs > 0  ) {
-        GLogger.Printf( "Available audio devices:\n" );
+        LOG("Available audio devices:\n");
         for ( int i = 0 ; i < numdrivers ; i++ ) {
-            GLogger.Printf( "\t%s\n", SDL_GetAudioDeviceName( i, SDL_FALSE ) );
+            LOG("\t{}\n", SDL_GetAudioDeviceName(i, SDL_FALSE));
         }
     }
 
@@ -160,14 +160,14 @@ AAudioDevice::AAudioDevice( int InSampleRate )
 
     SDL_PauseAudioDevice( AudioDeviceId, 0 );
 
-    GLogger.Printf( "Initialized audio : %d Hz, %d samples, %d channels\n", SampleRate, obtained.samples, Channels );
+    LOG("Initialized audio : {} Hz, {} samples, {} channels\n", SampleRate, obtained.samples, Channels);
 
     const char * audioDriver = SDL_GetCurrentAudioDriver();
     const char * audioDevice = SDL_GetAudioDeviceName( 0, SDL_FALSE );
 
-    GLogger.Printf( "Using audio driver: %s\n", audioDriver ? audioDriver : "Unknown" );
-    GLogger.Printf( "Using playback device: %s\n", audioDevice ? audioDevice : "Unknown" );
-    GLogger.Printf( "Audio buffer size: %d bytes\n", TransferBufferSizeInBytes );
+    LOG("Using audio driver: {}\n", audioDriver ? audioDriver : "Unknown");
+    LOG("Using playback device: {}\n", audioDevice ? audioDevice : "Unknown");
+    LOG("Audio buffer size: {} bytes\n", TransferBufferSizeInBytes);
 }
 
 AAudioDevice::~AAudioDevice()

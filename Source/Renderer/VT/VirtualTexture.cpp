@@ -52,7 +52,7 @@ AVirtualTexture::AVirtualTexture( const char * FileName, AVirtualTextureCache * 
     pCache = Cache;
 
     //if ( !IsCompatibleFormat( Cache ) ) {
-    //    GLogger.Printf( "AVirtualTexture::Load: incompatible file format\n" );
+    //    LOG( "AVirtualTexture::Load: incompatible file format\n" );
 
     //    Purge();
     //    return false;
@@ -190,7 +190,7 @@ void AVirtualTexture::UpdateBranch_r( int Lod, uint32_t PageIndex, uint16_t Bits
 
         }
         //else {
-        //    GLogger.Printf( "AVirtualTexture::UpdateBranch_r: optimizing..." );
+        //    LOG( "AVirtualTexture::UpdateBranch_r: optimizing..." );
         //}
     }
 }

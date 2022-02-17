@@ -82,42 +82,42 @@ WMenuPopup::~WMenuPopup()
 
 void WMenuPopup::SelectFirstItem()
 {
-    GLogger.Printf("SelectFirstItem\n");
+    DEBUG("SelectFirstItem\n");
 
     // TODO: ...
 }
 
 void WMenuPopup::SelectLastItem()
 {
-    GLogger.Printf("SelectLastItem\n");
+    DEBUG("SelectLastItem\n");
 
     // TODO: ...
 }
 
 void WMenuPopup::SelectNextItem()
 {
-    GLogger.Printf("SelectNextItem\n");
+    DEBUG("SelectNextItem\n");
 
     // TODO: ...
 }
 
 void WMenuPopup::SelectPrevItem()
 {
-    GLogger.Printf("SelectPrevItem\n");
+    DEBUG("SelectPrevItem\n");
 
     // TODO: ...
 }
 
 void WMenuPopup::SelectNextSubMenu()
 {
-    GLogger.Printf("SelectNextSubMenu\n");
+    DEBUG("SelectNextSubMenu\n");
 
     // TODO: ...
 }
 
 void WMenuPopup::SelectPrevSubMenu()
 {
-    GLogger.Printf("SelectPrevSubMenu\n");
+    DEBUG("SelectPrevSubMenu\n");
 
     // TODO: ...
 }

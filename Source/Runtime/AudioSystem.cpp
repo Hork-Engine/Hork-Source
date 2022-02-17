@@ -42,7 +42,7 @@ AConsoleVar Snd_RefreshRate(_CTS("Snd_RefreshRate"), _CTS("16"));
 
 AAudioSystem::AAudioSystem()
 {
-    GLogger.Printf("Initializing audio system...\n");
+    LOG("Initializing audio system...\n");
 
     pPlaybackDevice = MakeRef<AAudioDevice>(44100);
 
@@ -52,7 +52,7 @@ AAudioSystem::AAudioSystem()
 
 AAudioSystem::~AAudioSystem()
 {
-    GLogger.Printf("Deinitializing audio system...\n");
+    LOG("Deinitializing audio system...\n");
 }
 
 void AAudioSystem::Update(APlayerController* _Controller, float _TimeStep)

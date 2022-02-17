@@ -82,7 +82,7 @@ bool AMaterial::LoadResource(IBinaryStream& Stream)
 
     if (fileFormat != FMT_VERSION_MATERIAL)
     {
-        GLogger.Printf("Expected file format %d\n", FMT_VERSION_MATERIAL);
+        LOG("Expected file format {}\n", FMT_VERSION_MATERIAL);
         return false;
     }
 
@@ -90,7 +90,7 @@ bool AMaterial::LoadResource(IBinaryStream& Stream)
 
     if (fileVersion != FMT_VERSION_MATERIAL)
     {
-        GLogger.Printf("Expected file version %d\n", FMT_VERSION_MATERIAL);
+        LOG("Expected file version {}\n", FMT_VERSION_MATERIAL);
         return false;
     }
 
@@ -878,7 +878,7 @@ void AMaterial::LoadInternalResource(const char* _Path)
         return;
     }
 
-    GLogger.Printf("Unknown internal material %s\n", _Path);
+    LOG("Unknown internal material {}\n", _Path);
 
     //LoadInternalResource( "/Default/Materials/Unlit" );
     LoadInternalResource("/Default/Materials/BaseLight");
@@ -950,7 +950,7 @@ void AMaterialInstance::LoadInternalResource(const char* _Path)
         UniformVectors[2] = Float4(0.0f);
         return;
     }
-    GLogger.Printf("Unknown internal material instance %s\n", _Path);
+    LOG("Unknown internal material instance {}\n", _Path);
 
     LoadInternalResource("/Default/MaterialInstance/Default");
 }
@@ -964,7 +964,7 @@ bool AMaterialInstance::LoadResource(IBinaryStream& Stream)
 
     if (fileFormat != FMT_FILE_TYPE_MATERIAL_INSTANCE)
     {
-        //GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_MATERIAL_INSTANCE );
+        //LOG( "Expected file format {}\n", FMT_FILE_TYPE_MATERIAL_INSTANCE );
 
         Stream.Rewind();
         return LoadTextVersion(Stream);
@@ -974,7 +974,7 @@ bool AMaterialInstance::LoadResource(IBinaryStream& Stream)
 
     if (fileVersion != FMT_VERSION_MATERIAL_INSTANCE)
     {
-        GLogger.Printf("Expected file version %d\n", FMT_VERSION_MATERIAL_INSTANCE);
+        LOG("Expected file version {}\n", FMT_VERSION_MATERIAL_INSTANCE);
         return false;
     }
 

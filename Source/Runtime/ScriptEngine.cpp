@@ -43,7 +43,7 @@ SOFTWARE.
 
 void PrintMessage(std::string const& message)
 {
-    GLogger.Printf("%s\n", message.c_str());
+    LOG(message.c_str());
 }
 
 struct SScopedContext
@@ -82,9 +82,9 @@ struct SScopedContext
         {
             if (r == asEXECUTION_EXCEPTION)
             {
-                GLogger.Printf( "Exception: %s\n", Self->GetExceptionString() );
-                GLogger.Printf( "Function: %s\n", Self->GetExceptionFunction()->GetDeclaration() );
-                GLogger.Printf( "Line: %d\n", Self->GetExceptionLineNumber() );
+                LOG("Exception: {}\n", Self->GetExceptionString());
+                LOG("Function: {}\n", Self->GetExceptionFunction()->GetDeclaration());
+                LOG("Line: {}\n", Self->GetExceptionLineNumber());
 
                 // It is possible to print more information about the location of the
                 // exception, for example the call stack, values of variables, etc if
@@ -2471,7 +2471,7 @@ void AScriptEngine::MessageCallback(asSMessageInfo const& msg)
             break;
     }
 
-    GLogger.Printf("%s (%d, %d) : %s : %s\n", msg.section, msg.row, msg.col, type, msg.message);
+    LOG("{} ({}, {}) : {} : {}\n", msg.section, msg.row, msg.col, type, msg.message);
 
     if (msg.type == asMSGTYPE_ERROR)
         bHasCompileErrors = true;
@@ -2562,7 +2562,7 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
 
     if (pScript->Type == 0)
     {
-        GLogger.Printf( "Couldn't find the actor class for the type '%s'\n", ModuleName.CStr() );
+        LOG("Couldn't find the actor class for the type '{}'\n", ModuleName.CStr());
         return nullptr;
     }
 
@@ -2571,7 +2571,7 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
     pScript->M_FactoryFunc = type->GetFactoryByDecl(s.CStr());
     if (pScript->M_FactoryFunc == 0)
     {
-        GLogger.Printf("Couldn't find the appropriate factory for the type '%s'\n", ModuleName.CStr());
+        LOG("Couldn't find the appropriate factory for the type '{}'\n", ModuleName.CStr());
         return nullptr;
     }
 
@@ -2637,7 +2637,7 @@ asIScriptContext* AScriptContextPool::PrepareContext(asIScriptFunction* pFunctio
 
     if (!r)
     {
-        GLogger.Printf("AScriptContextPool::PrepareContext: failed to prepare context '%s'\n", pFunction->GetName());
+        LOG("AScriptContextPool::PrepareContext: failed to prepare context '{}'\n", pFunction->GetName());
     }
 
     return pContext;

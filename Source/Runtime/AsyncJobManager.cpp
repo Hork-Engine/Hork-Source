@@ -38,7 +38,7 @@ AAsyncJobManager::AAsyncJobManager(int _NumWorkerThreads, int _NumJobLists)
 {
     if (_NumWorkerThreads > MAX_WORKER_THREADS)
     {
-        GLogger.Printf("AAsyncJobManager::Initialize: NumWorkerThreads > MAX_WORKER_THREADS\n");
+        LOG("AAsyncJobManager::Initialize: NumWorkerThreads > MAX_WORKER_THREADS\n");
         _NumWorkerThreads = MAX_WORKER_THREADS;
     }
     else if (_NumWorkerThreads <= 0)
@@ -48,7 +48,7 @@ AAsyncJobManager::AAsyncJobManager(int _NumWorkerThreads, int _NumJobLists)
 
     HK_ASSERT(_NumJobLists >= 1 && _NumJobLists <= MAX_JOB_LISTS);
 
-    GLogger.Printf("Initializing async job manager ( %d worker threads, %d job lists )\n", _NumWorkerThreads, _NumJobLists);
+    LOG("Initializing async job manager ( {} worker threads, {} job lists )\n", _NumWorkerThreads, _NumJobLists);
 
     bTerminated = false;
 
@@ -73,7 +73,7 @@ AAsyncJobManager::AAsyncJobManager(int _NumWorkerThreads, int _NumJobLists)
 
 AAsyncJobManager::~AAsyncJobManager()
 {
-    GLogger.Printf("Deinitializing async job manager\n");
+    LOG("Deinitializing async job manager\n");
 
     NotifyThreads();
 
@@ -123,7 +123,7 @@ void AAsyncJobManager::WorkerThreadRoutine(int _ThreadId)
         NumActiveThreads.Decrement();
 #endif
 
-        //GLogger.Printf( "Thread waiting %d\n", _ThreadId );
+        //LOG( "Thread waiting {}\n", _ThreadId );
 
         EventNotify[_ThreadId].Wait();
 
@@ -195,7 +195,7 @@ void AAsyncJobManager::WorkerThreadRoutine(int _ThreadId)
     NumActiveThreads.Decrement();
 #endif
 
-    GLogger.Printf("Terminating worker thread (%d)\n", _ThreadId);
+    LOG("Terminating worker thread ({})\n", _ThreadId);
 }
 
 AAsyncJobList::AAsyncJobList()
@@ -219,7 +219,7 @@ void AAsyncJobList::AddJob(void (*_Callback)(void*), void* _Data)
 {
     if (JobPool.Size() == JobPool.Capacity())
     {
-        GLogger.Printf("Warning: AAsyncJobList::AddJob: job pool overflow, use SetMaxParallelJobs to reserve proper pool size (current size %d)\n", JobPool.Capacity());
+        LOG("Warning: AAsyncJobList::AddJob: job pool overflow, use SetMaxParallelJobs to reserve proper pool size (current size {})\n", JobPool.Capacity());
 
         SubmitAndWait();
         SetMaxParallelJobs(JobPool.Capacity() * 2);
@@ -285,7 +285,7 @@ void AAsyncJobList::Wait()
 
         if (NumPendingJobs > 0)
         {
-            GLogger.Printf("Warning: AAsyncJobList::Wait: NumPendingJobs > 0\n");
+            LOG("Warning: AAsyncJobList::Wait: NumPendingJobs > 0\n");
 
             JobPool.Remove(0, jobsCount);
 

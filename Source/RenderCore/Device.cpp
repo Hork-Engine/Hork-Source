@@ -39,7 +39,7 @@ IDevice::~IDevice()
 #ifdef HK_DEBUG
     for (IDeviceObject* pObject = ListHead; pObject; pObject=pObject->GetNext_DEBUG())
     {
-        GLogger.Printf("Uninitialized resource: '%s'\n", pObject->GetDebugName());
+        LOG("Uninitialized resource: '{}'\n", pObject->GetDebugName());
     }
     HK_ASSERT(ListHead == nullptr);
 
@@ -69,7 +69,7 @@ IDevice::~IDevice()
 
     for (int i = 0; i < DEVICE_OBJECT_TYPE_MAX; i++)
     {
-        GLogger.Printf("Object count %s: %d\n", name[i], GetObjectCount((DEVICE_OBJECT_PROXY_TYPE)i));
+        LOG("Object count {}: {}\n", name[i], GetObjectCount((DEVICE_OBJECT_PROXY_TYPE)i));
     }
 #endif
 }

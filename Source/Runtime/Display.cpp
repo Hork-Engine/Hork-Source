@@ -123,7 +123,7 @@ bool GetClosestDisplayMode(SDisplayInfo const& Display, int Width, int Height, i
     modeSDL.driverdata   = nullptr;
     if (!SDL_GetClosestDisplayMode(Display.Id, &modeSDL, &closestSDL) || closestSDL.format != modeSDL.format)
     {
-        GLogger.Printf("Couldn't find closest display mode to %d x %d %dHz\n", Width, Height, RefreshRate);
+        LOG("Couldn't find closest display mode to {} x {} {}Hz\n", Width, Height, RefreshRate);
         Platform::ZeroMem(&Mode, sizeof(Mode));
         return false;
     }

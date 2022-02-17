@@ -373,13 +373,13 @@ static bool ValidateDeviceKey(SInputDeviceKey const& DeviceKey)
 {
     if (DeviceKey.DeviceId >= MAX_INPUT_DEVICES)
     {
-        GLogger.Printf("ValidateDeviceKey: invalid device ID\n");
+        LOG("ValidateDeviceKey: invalid device ID\n");
         return false;
     }
 
     if (DeviceKey.KeyId >= Static.DeviceButtonLimits[DeviceKey.DeviceId])
     {
-        GLogger.Printf("ValidateDeviceKey: invalid key ID\n");
+        LOG("ValidateDeviceKey: invalid key ID\n");
         return false;
     }
 
@@ -696,17 +696,17 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
 
     if (DeviceKey.DeviceId == ID_KEYBOARD && DeviceKey.KeyId >= MAX_KEYBOARD_BUTTONS)
     {
-        GLogger.Printf("AInputComponent::SetButtonState: Invalid key\n");
+        LOG("AInputComponent::SetButtonState: Invalid key\n");
         return;
     }
     if (DeviceKey.DeviceId == ID_MOUSE && DeviceKey.KeyId >= MAX_MOUSE_BUTTONS)
     {
-        GLogger.Printf("AInputComponent::SetButtonState: Invalid mouse button\n");
+        LOG("AInputComponent::SetButtonState: Invalid mouse button\n");
         return;
     }
     if (DeviceKey.DeviceId >= ID_JOYSTICK_1 && DeviceKey.DeviceId <= ID_JOYSTICK_16 && DeviceKey.KeyId >= MAX_JOYSTICK_BUTTONS)
     {
-        GLogger.Printf("AInputComponent::SetButtonState: Invalid joystick button\n");
+        LOG("AInputComponent::SetButtonState: Invalid joystick button\n");
         return;
     }
 
@@ -837,7 +837,7 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
             }
             else
             {
-                GLogger.Printf("MAX_PRESSED_KEYS hit\n");
+                LOG("MAX_PRESSED_KEYS hit\n");
             }
         }
         else
@@ -885,17 +885,17 @@ bool AInputComponent::GetButtonState(SInputDeviceKey const& DeviceKey) const
 
     if (DeviceKey.DeviceId == ID_KEYBOARD && DeviceKey.KeyId >= MAX_KEYBOARD_BUTTONS)
     {
-        GLogger.Printf("AInputComponent::GetButtonState: Invalid key\n");
+        LOG("AInputComponent::GetButtonState: Invalid key\n");
         return false;
     }
     if (DeviceKey.DeviceId == ID_MOUSE && DeviceKey.KeyId >= MAX_MOUSE_BUTTONS)
     {
-        GLogger.Printf("AInputComponent::GetButtonState: Invalid mouse button\n");
+        LOG("AInputComponent::GetButtonState: Invalid mouse button\n");
         return false;
     }
     if (DeviceKey.DeviceId >= ID_JOYSTICK_1 && DeviceKey.DeviceId <= ID_JOYSTICK_16 && DeviceKey.KeyId >= MAX_JOYSTICK_BUTTONS)
     {
-        GLogger.Printf("AInputComponent::GetButtonState: Invalid joystick button\n");
+        LOG("AInputComponent::GetButtonState: Invalid joystick button\n");
         return false;
     }
 
@@ -962,7 +962,7 @@ float AInputComponent::GetMouseAxisState(int Axis)
 {
     if (Axis < 0 || Axis > 1)
     {
-        GLogger.Printf("AInputComponent::GetMouseAxisState: Invalid mouse axis num\n");
+        LOG("AInputComponent::GetMouseAxisState: Invalid mouse axis num\n");
         return 0.0f;
     }
     return MouseAxisState[MouseIndex][Axis];
@@ -972,12 +972,12 @@ void AInputComponent::SetJoystickAxisState(int Joystick, int Axis, float Value)
 {
     if (Joystick < 0 || Joystick >= MAX_JOYSTICKS_COUNT)
     {
-        GLogger.Printf("AInputComponent::SetJoystickAxisState: Invalid joystick num\n");
+        LOG("AInputComponent::SetJoystickAxisState: Invalid joystick num\n");
         return;
     }
     if (Axis < 0 || Axis >= MAX_JOYSTICK_AXES)
     {
-        GLogger.Printf("AInputComponent::SetJoystickAxisState: Invalid joystick axis num\n");
+        LOG("AInputComponent::SetJoystickAxisState: Invalid joystick axis num\n");
         return;
     }
     Static.JoystickAxisState[Joystick][Axis] = Value;
@@ -987,12 +987,12 @@ float AInputComponent::GetJoystickAxisState(int Joystick, int Axis)
 {
     if (Joystick < 0 || Joystick >= MAX_JOYSTICKS_COUNT)
     {
-        GLogger.Printf("AInputComponent::GetJoystickAxisState: Invalid joystick num\n");
+        LOG("AInputComponent::GetJoystickAxisState: Invalid joystick num\n");
         return 0.0f;
     }
     if (Axis < 0 || Axis >= MAX_JOYSTICK_AXES)
     {
-        GLogger.Printf("AInputComponent::GetJoystickAxisState: Invalid joystick axis num\n");
+        LOG("AInputComponent::GetJoystickAxisState: Invalid joystick axis num\n");
         return 0.0f;
     }
     return Static.JoystickAxisState[Joystick][Axis];
@@ -1013,7 +1013,7 @@ void AInputComponent::BindAxis(AStringView Axis, TCallback<void(float)> const& C
 
     if (AxisBindings.size() >= MAX_AXIS_BINDINGS)
     {
-        GLogger.Printf("MAX_AXIS_BINDINGS hit\n");
+        LOG("MAX_AXIS_BINDINGS hit\n");
         return;
     }
 
@@ -1058,7 +1058,7 @@ void AInputComponent::BindAction(AStringView Action, int Event, TCallback<void()
 {
     if (Event != IA_PRESS && Event != IA_RELEASE)
     {
-        GLogger.Printf("AInputComponent::BindAction: expected IE_Press or IE_Release event\n");
+        LOG("AInputComponent::BindAction: expected IE_Press or IE_Release event\n");
         return;
     }
 
@@ -1075,7 +1075,7 @@ void AInputComponent::BindAction(AStringView Action, int Event, TCallback<void()
 
     if (ActionBindings.size() >= MAX_ACTION_BINDINGS)
     {
-        GLogger.Printf("MAX_ACTION_BINDINGS hit\n");
+        LOG("MAX_ACTION_BINDINGS hit\n");
         return;
     }
 
@@ -1375,13 +1375,13 @@ void AInputMappings::MapAction(AStringView ActionName, SInputDeviceKey const& De
 
     if (DeviceKey.DeviceId >= ID_JOYSTICK_1 && DeviceKey.DeviceId <= ID_JOYSTICK_16 && DeviceKey.KeyId >= JOY_AXIS_BASE)
     {
-        GLogger.Printf("Cannot map joystick axis and action\n");
+        LOG("Cannot map joystick axis and action\n");
         return;
     }
 
     if (DeviceKey.DeviceId == ID_MOUSE && DeviceKey.KeyId >= MOUSE_AXIS_BASE)
     {
-        GLogger.Printf("Cannot map mouse axis and action\n");
+        LOG("Cannot map mouse axis and action\n");
         return;
     }
 

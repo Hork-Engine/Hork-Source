@@ -103,7 +103,7 @@ ATextureViewGLImpl::ATextureViewGLImpl(STextureViewDesc const& TextureViewDesc, 
                 {
                     glDeleteTextures(1, &id);
                 }
-                GLogger.Printf("ATextureViewGLImpl::ctor: failed to initialize texture view, incompatible texture formats\n");
+                LOG("ATextureViewGLImpl::ctor: failed to initialize texture view, incompatible texture formats\n");
                 return;
             }
 

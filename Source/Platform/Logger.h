@@ -30,41 +30,74 @@ SOFTWARE.
 
 #pragma once
 
-#include "BaseTypes.h"
+#include "Platform.h"
+#include "Format.h"
 
-enum LOGGER_LEVEL
+HK_FORCEINLINE void LOG(const char* Message)
 {
-    LOGGER_LEVEL_CRITICAL,
-    LOGGER_LEVEL_ERROR,
-    LOGGER_LEVEL_WARNING,
-    LOGGER_LEVEL_MESSAGE
-};
+    Platform::WriteDebugString(Message);
+    Platform::WriteLog(Message);
+    Platform::WriteConsole(Message);
+}
 
-class ALogger
+template <typename... T>
+HK_FORCEINLINE void LOG(fmt::format_string<T...> Format, T&&... args)
 {
-public:
-    void Critical(const char* _Format, ...);
-    void Error(const char* _Format, ...);
-    void Warning(const char* _Format, ...);
-    void DebugMessage(const char* _Format, ...);
-    void Printf(const char* _Format, ...);
-    void Print(const char* _Message);
-    void _Printf(int _Level, const char* _Format, ...);
+    fmt::memory_buffer buffer;
+    fmt::detail::vformat_to(buffer, fmt::string_view(Format), fmt::make_format_args(args...));
+    buffer.push_back('\0');
 
-    template <typename... TArgs>
-    void operator()(const char* _Format, TArgs... _Args)
-    {
-        Printf(_Format, std::forward<TArgs>(_Args)...);
-    }
+    Platform::WriteDebugString(buffer.data());
+    Platform::WriteLog(buffer.data());
+    Platform::WriteConsole(buffer.data());
+}
 
-    void SetMessageCallback(void (*_MessageCallback)(int, const char*, void*), void* _UserData);
+template <typename... T>
+HK_FORCEINLINE void CRITICAL(fmt::format_string<T...> Format, T&&... args)
+{
+    fmt::memory_buffer buffer;
+    fmt::detail::vformat_to(buffer, fmt::string_view(Format), fmt::make_format_args(args...));
+    buffer.push_back('\0');
 
-private:
-    void (*MessageCallback)(int, const char*, void*) = DefaultMessageCallback;
+    Platform::WriteDebugString(buffer.data());
+    Platform::WriteLog(buffer.data());
+    Platform::WriteConsole(buffer.data());
+}
 
-    static void DefaultMessageCallback(int, const char*, void*);
+template <typename... T>
+HK_FORCEINLINE void ERROR(fmt::format_string<T...> Format, T&&... args)
+{
+    fmt::memory_buffer buffer;
+    fmt::detail::vformat_to(buffer, fmt::string_view(Format), fmt::make_format_args(args...));
+    buffer.push_back('\0');
 
-    void* UserData = nullptr;
-};
+    Platform::WriteDebugString(buffer.data());
+    Platform::WriteLog(buffer.data());
+    Platform::WriteConsole(buffer.data());
+}
 
-extern ALogger GLogger;
+template <typename... T>
+HK_FORCEINLINE void WARNING(fmt::format_string<T...> Format, T&&... args)
+{
+    fmt::memory_buffer buffer;
+    fmt::detail::vformat_to(buffer, fmt::string_view(Format), fmt::make_format_args(args...));
+    buffer.push_back('\0');
+
+    Platform::WriteDebugString(buffer.data());
+    Platform::WriteLog(buffer.data());
+    Platform::WriteConsole(buffer.data());
+}
+
+template <typename... T>
+HK_FORCEINLINE void DEBUG(fmt::format_string<T...> Format, T&&... args)
+{
+#ifdef HK_DEBUG
+    fmt::memory_buffer buffer;
+    fmt::detail::vformat_to(buffer, fmt::string_view(Format), fmt::make_format_args(args...));
+    buffer.push_back('\0');
+
+    Platform::WriteDebugString(buffer.data());
+    Platform::WriteLog(buffer.data());
+    Platform::WriteConsole(buffer.data());
+#endif
+}

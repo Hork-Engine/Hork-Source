@@ -179,7 +179,7 @@ asIScriptObject* AWorld::CreateScriptModule(AString const& Module, AActor* Actor
             {
                 if (scriptModule->GetPropertyTypeId(i) != asTYPEID_BOOL)
                 {
-                    GLogger.Printf("WARNING: Expected type id 'bool' for bTickEvenWhenPaused\n");
+                    LOG("WARNING: Expected type id 'bool' for bTickEvenWhenPaused\n");
                     break;
                 }
 
@@ -201,7 +201,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
 {
     if (bPendingKill)
     {
-        GLogger.Printf("AWorld::SpawnActor: Attempting to spawn an actor from a destroyed world\n");
+        LOG("AWorld::SpawnActor: Attempting to spawn an actor from a destroyed world\n");
         return nullptr;
     }
 
@@ -217,7 +217,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
 
         if (actorClass->Factory() != &AActor::Factory())
         {
-            GLogger.Printf("AWorld::SpawnActor: wrong C++ actor class specified\n");
+            LOG("AWorld::SpawnActor: wrong C++ actor class specified\n");
             actorClass = &AActor::ClassMeta();
         }
     }
@@ -301,7 +301,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
         }
         else
         {
-            GLogger.Printf("WARNING: Unknown script module '%s'\n", scriptModule.CStr());
+            LOG("WARNING: Unknown script module '{}'\n", scriptModule);
         }
     }
 
@@ -386,19 +386,19 @@ AActor* AWorld::SpawnActor(SActorSpawnInfo const& _SpawnInfo)
 
     if (!spawnInfo.ActorClass)
     {
-        GLogger.Printf("AWorld::SpawnActor: invalid actor class\n");
+        LOG("AWorld::SpawnActor: invalid actor class\n");
         return nullptr;
     }
 
     if (spawnInfo.ActorClass->Factory() != &AActor::Factory())
     {
-        GLogger.Printf("AWorld::SpawnActor: not an actor class\n");
+        LOG("AWorld::SpawnActor: not an actor class\n");
         return nullptr;
     }
 
     if (spawnInfo.Template && spawnInfo.ActorClass != &spawnInfo.Template->FinalClassMeta())
     {
-        GLogger.Printf("AWorld::SpawnActor: SActorSpawnInfo::Template class doesn't match meta data\n");
+        LOG("AWorld::SpawnActor: SActorSpawnInfo::Template class doesn't match meta data\n");
         return nullptr;
     }
 
@@ -419,7 +419,7 @@ AActor* AWorld::SpawnActor2(AActorDefinition* pActorDef, STransform const& Spawn
 {
     if (!pActorDef)
     {
-        GLogger.Printf("AWorld::SpawnActor: invalid actor definition\n");
+        LOG("AWorld::SpawnActor: invalid actor definition\n");
     }
 
     SActorSpawnPrivate spawnInfo;
@@ -435,7 +435,7 @@ AActor* AWorld::SpawnActor2(AString const& ScriptModule, STransform const& Spawn
 {
     if (ScriptModule.IsEmpty())
     {
-        GLogger.Printf("AWorld::SpawnActor: invalid script module\n");
+        LOG("AWorld::SpawnActor: invalid script module\n");
     }
 
     SActorSpawnPrivate spawnInfo;
@@ -451,7 +451,7 @@ AActor* AWorld::SpawnActor2(AClassMeta const* ActorClass, STransform const& Spaw
 {
     if (!ActorClass)
     {
-        GLogger.Printf("AWorld::SpawnActor: invalid C++ module class\n");
+        LOG("AWorld::SpawnActor: invalid C++ module class\n");
         ActorClass = &AActor::ClassMeta();
     }
 
@@ -481,7 +481,7 @@ AActor* AWorld::SpawnActor2(AActor const* Template, STransform const& SpawnTrans
     }
     else
     {
-        GLogger.Printf("AWorld::SpawnActor: invalid template\n");
+        LOG("AWorld::SpawnActor: invalid template\n");
     }
 
     spawnInfo.ActorClass = Template ? &Template->FinalClassMeta() : &AActor::ClassMeta();
@@ -565,13 +565,13 @@ void AWorld::UpdatePauseStatus()
     {
         bPauseRequest = false;
         bPaused       = true;
-        GLogger.Printf("Game paused\n");
+        LOG("Game paused\n");
     }
     else if (bUnpauseRequest)
     {
         bUnpauseRequest = false;
         bPaused         = false;
-        GLogger.Printf("Game unpaused\n");
+        LOG("Game unpaused\n");
     }
 }
 
@@ -959,7 +959,7 @@ void AWorld::AddLevel(ALevel* _Level)
 {
     if (_Level->IsPersistentLevel())
     {
-        GLogger.Printf("AWorld::AddLevel: Can't add persistent level\n");
+        LOG("AWorld::AddLevel: Can't add persistent level\n");
         return;
     }
 
@@ -989,13 +989,13 @@ void AWorld::RemoveLevel(ALevel* _Level)
 
     if (_Level->IsPersistentLevel())
     {
-        GLogger.Printf("AWorld::AddLevel: Can't remove persistent level\n");
+        LOG("AWorld::AddLevel: Can't remove persistent level\n");
         return;
     }
 
     if (_Level->OwnerWorld != this)
     {
-        GLogger.Printf("AWorld::AddLevel: level is not in world\n");
+        LOG("AWorld::AddLevel: level is not in world\n");
         return;
     }
 

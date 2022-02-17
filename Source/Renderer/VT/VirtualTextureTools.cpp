@@ -93,7 +93,7 @@ SVirtualTextureLayer::SVirtualTextureLayer() {
 SVirtualTextureLayer::~SVirtualTextureLayer() {
     VT_FitPageData( *this, true );
     if ( NumCachedPages > 0 ) {
-        GLogger.Printf( "Warning: have not closed pages\n" );
+        LOG("Warning: have not closed pages\n");
     }
 
     // Удалить все оставшееся содержимое кеша
@@ -119,7 +119,7 @@ bool VT_MakeStructure( SVirtualTextureStructure & _Struct,
 
     int numTextureRectangles = _TextureRects.size();
     if ( !numTextureRectangles ) {
-        GLogger.Printf( "No texture rectangles\n" );
+        LOG("No texture rectangles\n");
         return false;
     }
 
@@ -218,7 +218,7 @@ void VT_FitPageData( SVirtualTextureLayer & Layer, bool _ForceFit ) {
     int totalDumped = 0;
     int totalCachedPages = Layer.NumCachedPages;
 
-    GLogger.Printf( "Fit page data...\n" );
+    LOG("Fit page data...\n");
 
     for ( auto it = Layer.Pages.begin() ; it != Layer.Pages.end() ; ) {
         SVirtualTextureLayer::SCachedPage * cachedPage = it->second;
@@ -231,7 +231,7 @@ void VT_FitPageData( SVirtualTextureLayer & Layer, bool _ForceFit ) {
 
         if ( cachedPage->bNeedToSave && Layer.bAllowDump ) {
             if ( totalDumped == 0 ) {
-                GLogger.Printf( "Dumping pages to disk...\n" );
+                LOG("Dumping pages to disk...\n");
             }
             if ( VT_DumpPageToDisk( Layer.Path.CStr(), it->first, cachedPage->Image ) ) {
                 totalDumped++;
@@ -243,7 +243,7 @@ void VT_FitPageData( SVirtualTextureLayer & Layer, bool _ForceFit ) {
         Layer.NumCachedPages--;
     }
 
-    GLogger.Printf( "Total dumped pages: %d from %d\n", totalDumped, totalCachedPages );
+    LOG("Total dumped pages: {} from {}\n", totalDumped, totalCachedPages);
 }
 
 SVirtualTextureLayer::SCachedPage * VT_OpenCachedPage( const SVirtualTextureStructure & _Struct, SVirtualTextureLayer & Layer, unsigned int _AbsoluteIndex, SVirtualTextureLayer::OpenMode _OpenMode, bool _NeedToSave ) {
@@ -278,12 +278,12 @@ SVirtualTextureLayer::SCachedPage * VT_OpenCachedPage( const SVirtualTextureStru
 
         bool bOpened = cachedPage->Image.OpenImage( fn.CStr(), _Struct.PageResolutionB, _Struct.PageResolutionB, Layer.NumChannels );
         if ( !bOpened ) {
-            GLogger.Printf( "VT_OpenCachedPage: can't open page\n" );
+            LOG("VT_OpenCachedPage: can't open page\n");
             delete cachedPage;
             return NULL;
         }
     } else {
-        GLogger.Printf( "VT_OpenCachedPage: unknown open mode\n" );
+        LOG("VT_OpenCachedPage: unknown open mode\n");
         delete cachedPage;
         return NULL;
     }
@@ -302,7 +302,7 @@ void VT_CloseCachedPage( SVirtualTextureLayer::SCachedPage * _CachedPage ) {
     }
     _CachedPage->Used--;
     if ( _CachedPage->Used < 0 ) {
-        GLogger.Printf( "Warning: VT_CloseCachedPage: trying to close closed page\n" );
+        LOG("Warning: VT_CloseCachedPage: trying to close closed page\n");
     }
 }
 
@@ -1196,7 +1196,7 @@ SFileOffset VT_WritePage( SVirtualTextureFileHandle * File, SFileOffset Offset, 
     for ( int Layer = 0 ; Layer < _NumLayers ; Layer++ ) {
         SVirtualTextureLayer::SCachedPage * cachedPage = VT_OpenCachedPage( _Struct, _Layers[ Layer ], _PageIndex, SVirtualTextureLayer::OpenActual, false );
         if ( !cachedPage ) {
-            GLogger.Printf( "VT_WritePage: couldn't open page Layer %d : %d\n", Layer, _PageIndex );
+            LOG("VT_WritePage: couldn't open page Layer {} : {}\n", Layer, _PageIndex);
             Offset += _Layers[Layer].SizeInBytes;
             continue;
         }
@@ -1245,7 +1245,7 @@ bool VT_WriteFile( const SVirtualTextureStructure & _Struct, int _MaxLods, SVirt
     Core::MakeDir( FileName, true );
 
     if ( !fileHandle.OpenWrite( FileName ) ) {
-        GLogger.Printf( "VT_WriteFile: couldn't write %s\n", FileName );
+        LOG("VT_WriteFile: couldn't write {}\n", FileName);
         return false;
     }
 

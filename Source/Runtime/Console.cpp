@@ -84,7 +84,7 @@ void AConsole::InsertUTF8Text(const char* _Utf8)
     int len = Core::UTF8StrLength(_Utf8);
     if (CmdLineLength + len >= MAX_CMD_LINE_CHARS)
     {
-        GLogger.Print("Text is too long to be copied to command line\n");
+        LOG("Text is too long to be copied to command line\n");
         return;
     }
 
@@ -259,7 +259,7 @@ void AConsole::KeyEvent(SKeyEvent const& _Event, ACommandContext& _CommandCtx, A
                     AddStoryLine(CmdLine, CmdLineLength);
                 }
 
-                GLogger.Printf("%s\n", result);
+                LOG("{}\n", result);
 
                 _CommandProcessor.Add(result);
                 _CommandProcessor.Add("\n");
@@ -510,7 +510,7 @@ void AConsole::WriteStoryLines()
     AFileStream f;
     if (!f.OpenWrite("console_story.txt"))
     {
-        GLogger.Printf("Failed to write console story\n");
+        LOG("Failed to write console story\n");
         return;
     }
 
@@ -525,7 +525,7 @@ void AConsole::WriteStoryLines()
 
         Core::WideStrEncodeUTF8(result, sizeof(result), StoryLines[n], StoryLines[n] + MAX_CMD_LINE_CHARS);
 
-        f.Printf("%s\n", result);
+        f.FormattedPrint("{}\n", result);
     }
 }
 

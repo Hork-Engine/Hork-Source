@@ -139,7 +139,7 @@ bool AEnvironmentMap::LoadResource(IBinaryStream& Stream)
 
     if (fileFormat != FMT_FILE_TYPE_ENVMAP)
     {
-        GLogger.Printf("Expected file format %d\n", FMT_FILE_TYPE_ENVMAP);
+        LOG("Expected file format {}\n", FMT_FILE_TYPE_ENVMAP);
         return false;
     }
 
@@ -147,7 +147,7 @@ bool AEnvironmentMap::LoadResource(IBinaryStream& Stream)
 
     if (fileVersion != FMT_VERSION_ENVMAP)
     {
-        GLogger.Printf("Expected file version %d\n", FMT_VERSION_ENVMAP);
+        LOG("Expected file version {}\n", FMT_VERSION_ENVMAP);
         return false;
     }
 

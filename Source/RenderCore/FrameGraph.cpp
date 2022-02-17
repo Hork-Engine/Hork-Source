@@ -199,24 +199,24 @@ void AFrameGraph::Build()
 
 void AFrameGraph::Debug()
 {
-    GLogger.Printf("---------- FrameGraph ----------\n");
+    LOG("---------- FrameGraph ----------\n");
     for (STimelineStep& step : Timeline)
     {
         for (int i = 0; i < step.NumAcquiredResources; i++)
         {
             FGResourceProxyBase* resource = AcquiredResources[step.FirstAcquiredResource + i];
-            GLogger.Printf("Acquire %s\n", resource->GetName());
+            LOG("Acquire {}\n", resource->GetName());
         }
 
-        GLogger.Printf("Execute %s\n", step.RenderTask->GetName());
+        LOG("Execute {}\n", step.RenderTask->GetName());
 
         for (int i = 0; i < step.NumReleasedResources; i++)
         {
             FGResourceProxyBase* resource = ReleasedResources[step.FirstReleasedResource + i];
-            GLogger.Printf("Release %s\n", resource->GetName());
+            LOG("Release {}\n", resource->GetName());
         }
     }
-    GLogger.Printf("--------------------------------\n");
+    LOG("--------------------------------\n");
 }
 
 void AFrameGraph::ExportGraphviz(const char* FileName)
@@ -228,10 +228,10 @@ void AFrameGraph::ExportGraphviz(const char* FileName)
         return;
     }
 
-    f.Printf("digraph framegraph \n{\n");
-    f.Printf("rankdir = LR\n");
-    f.Printf("bgcolor = black\n\n");
-    f.Printf("node [shape=rectangle, fontname=\"helvetica\", fontsize=12]\n\n");
+    f.FormattedPrint("digraph framegraph \n{{\n");
+    f.FormattedPrint("rankdir = LR\n");
+    f.FormattedPrint("bgcolor = black\n\n");
+    f.FormattedPrint("node [shape=rectangle, fontname=\"helvetica\", fontsize=12]\n\n");
 
     for (auto& resource : Resources)
     {
@@ -248,49 +248,49 @@ void AFrameGraph::ExportGraphviz(const char* FileName)
         {
             color = "steelblue";
         }
-        f.Printf("\"%s\" [label=\"%s\\nRefs: %d\\nID: %d\", style=filled, fillcolor=%s]\n",
+        f.FormattedPrint("\"{}\" [label=\"{}\\nRefs: {}\\nID: {}\", style=filled, fillcolor={}]\n",
                  resource->GetName(), resource->GetName(), resource->ResourceRefs, resource->GetId(),
                  color);
     }
-    f.Printf("\n");
+    f.FormattedPrint("\n");
 
     for (auto& task : RenderTasks)
     {
-        f.Printf("\"%s\" [label=\"%s\\nRefs: %d\", style=filled, fillcolor=darkorange]\n",
+        f.FormattedPrint("\"{}\" [label=\"{}\\nRefs: {}\", style=filled, fillcolor=darkorange]\n",
                  task->GetName(), task->GetName(), task->ResourceRefs);
 
         if (!task->ProducedResources.IsEmpty())
         {
-            f.Printf("\"%s\" -> { ", task->GetName());
+            f.FormattedPrint("\"{}\" -> {{ ", task->GetName());
             for (auto& resource : task->ProducedResources)
             {
-                f.Printf("\"%s\" ", resource->GetName());
+                f.FormattedPrint("\"{}\" ", resource->GetName());
             }
-            f.Printf("} [color=seagreen]\n");
+            f.FormattedPrint("}} [color=seagreen]\n");
         }
 
         if (!task->WriteResources.IsEmpty())
         {
-            f.Printf("\"%s\" -> { ", task->GetName());
+            f.FormattedPrint("\"{}\" -> {{ ", task->GetName());
             for (auto& resource : task->WriteResources)
             {
-                f.Printf("\"%s\" ", resource->GetName());
+                f.FormattedPrint("\"{}\" ", resource->GetName());
             }
-            f.Printf("} [color=gold]\n");
+            f.FormattedPrint("}} [color=gold]\n");
         }
     }
-    f.Printf("\n");
+    f.FormattedPrint("\n");
 
     for (auto& resource : Resources)
     {
-        f.Printf("\"%s\" -> { ", resource->GetName());
+        f.FormattedPrint("\"{}\" -> {{ ", resource->GetName());
         for (auto& task : resource->Readers)
         {
-            f.Printf("\"%s\" ", task->GetName());
+            f.FormattedPrint("\"{}\" ", task->GetName());
         }
-        f.Printf("} [color=skyblue]\n");
+        f.FormattedPrint("}} [color=skyblue]\n");
     }
-    f.Printf("}");
+    f.FormattedPrint("}}");
 }
 
 void AFrameGraph::ReleaseCapturedResources()

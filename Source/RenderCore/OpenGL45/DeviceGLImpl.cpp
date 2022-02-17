@@ -176,9 +176,9 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
     const char* driverVersion = (const char*)glGetString(GL_VERSION);
     driverVersion             = driverVersion ? driverVersion : "Unknown";
 
-    GLogger.Printf("Graphics vendor: %s\n", vendorString);
-    GLogger.Printf("Graphics adapter: %s\n", adapterString);
-    GLogger.Printf("Driver version: %s\n", driverVersion);
+    LOG("Graphics vendor: {}\n", vendorString);
+    LOG("Graphics adapter: {}\n", adapterString);
+    LOG("Driver version: {}\n", driverVersion);
 
     if (Platform::SubstringIcmp(vendorString, "NVIDIA") != -1)
     {
@@ -201,7 +201,7 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
     SDL_GetWindowSize( Desc.Window, &w, &h );
     if ( w < 1024 ) {
         for ( int i = 0 ; i < numExtensions ; i++ ) {
-            GLogger.Printf( "\t%s\n", (const char *)glGetStringi( GL_EXTENSIONS, i ) );
+            LOG( "\t{}\n", (const char *)glGetStringi( GL_EXTENSIONS, i ) );
         }
     }
     else
@@ -227,7 +227,7 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
                     Platform::Memcpy(&str[MaxExtensionLength], extName2, strLen2);
                     str[MaxExtensionLength + strLen2] = '\0';
 
-                    GLogger.Printf(" %s\n", str);
+                    LOG(" {}\n", str);
 
                     i += 2;
                     continue;
@@ -236,7 +236,7 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
                 // long extension name
             }
 
-            GLogger.Printf(" %s\n", extName1);
+            LOG(" {}\n", extName1);
             i += 1;
         }
     }
@@ -244,8 +244,8 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
 #if 0
     SMemoryInfo gpuMemoryInfo = GetGPUMemoryInfo();
     if ( gpuMemoryInfo.TotalAvailableMegabytes > 0 && gpuMemoryInfo.CurrentAvailableMegabytes > 0 ) {
-        GLogger.Printf( "Total available GPU memory: %d Megs\n", gpuMemoryInfo.TotalAvailableMegabytes );
-        GLogger.Printf( "Current available GPU memory: %d Megs\n", gpuMemoryInfo.CurrentAvailableMegabytes );
+        LOG( "Total available GPU memory: {} Megs\n", gpuMemoryInfo.TotalAvailableMegabytes );
+        LOG( "Current available GPU memory: {} Megs\n", gpuMemoryInfo.CurrentAvailableMegabytes );
     }
 #endif
 
@@ -270,17 +270,17 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
 
     if (!FindExtension("GL_EXT_texture_compression_s3tc"))
     {
-        GLogger.Printf("Warning: required extension GL_EXT_texture_compression_s3tc isn't supported\n");
+        LOG("Warning: required extension GL_EXT_texture_compression_s3tc isn't supported\n");
     }
 
     if (!FindExtension("GL_ARB_texture_compression_rgtc") && !FindExtension("GL_EXT_texture_compression_rgtc"))
     {
-        GLogger.Printf("Warning: required extension GL_ARB_texture_compression_rgtc/GL_EXT_texture_compression_rgtc isn't supported\n");
+        LOG("Warning: required extension GL_ARB_texture_compression_rgtc/GL_EXT_texture_compression_rgtc isn't supported\n");
     }
 
     if (!FindExtension("GL_EXT_texture_compression_rgtc"))
     {
-        GLogger.Printf("Warning: required extension GL_EXT_texture_compression_rgtc isn't supported\n");
+        LOG("Warning: required extension GL_EXT_texture_compression_rgtc isn't supported\n");
     }
 
 #if 0
@@ -302,21 +302,21 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
     DeviceCaps[DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT] = GL_GetInteger(GL_TEXTURE_BUFFER_OFFSET_ALIGNMENT);
     if (!DeviceCaps[DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT])
     {
-        GLogger.Printf("Warning: TextureBufferOffsetAlignment == 0, using default alignment (256)\n");
+        LOG("Warning: TextureBufferOffsetAlignment == 0, using default alignment (256)\n");
         DeviceCaps[DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT] = 256;
     }
 
     DeviceCaps[DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT] = GL_GetInteger(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT);
     if (!DeviceCaps[DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT])
     {
-        GLogger.Printf("Warning: ConstantBufferOffsetAlignment == 0, using default alignment (256)\n");
+        LOG("Warning: ConstantBufferOffsetAlignment == 0, using default alignment (256)\n");
         DeviceCaps[DEVICE_CAPS_CONSTANT_BUFFER_OFFSET_ALIGNMENT] = 256;
     }
 
     DeviceCaps[DEVICE_CAPS_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT] = GL_GetInteger(GL_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT);
     if (!DeviceCaps[DEVICE_CAPS_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT])
     {
-        GLogger.Printf("Warning: ShaderStorageBufferOffsetAlignment == 0, using default alignment (256)\n");
+        LOG("Warning: ShaderStorageBufferOffsetAlignment == 0, using default alignment (256)\n");
         DeviceCaps[DEVICE_CAPS_SHADER_STORAGE_BUFFER_OFFSET_ALIGNMENT] = 256;
     }
 
@@ -342,32 +342,32 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
     DeviceCaps[DEVICE_CAPS_MAX_PATCH_VERTICES]        = GL_GetInteger(GL_MAX_PATCH_VERTICES);
 
 #if 0
-    GLogger.Printf( "GL_MAX_TESS_CONTROL_INPUT_COMPONENTS %d\n", GL_GetInteger( GL_MAX_TESS_CONTROL_INPUT_COMPONENTS ) );
-    GLogger.Printf( "GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS %d\n", GL_GetInteger( GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS ) );
-    GLogger.Printf( "GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS %d\n", GL_GetInteger( GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS ) );
-    GLogger.Printf( "GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS %d\n", GL_GetInteger( GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS ) );
-    GLogger.Printf( "GL_MAX_TESS_GEN_LEVEL %d\n", GL_GetInteger( GL_MAX_TESS_GEN_LEVEL ) );
-    GLogger.Printf( "GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS %d\n", GL_GetInteger( GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS ) );
-    GLogger.Printf( "GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS %d\n", GL_GetInteger( GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS ) );
-    GLogger.Printf( "GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS %d\n", GL_GetInteger( GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS ) );
-    GLogger.Printf( "GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS %d\n", GL_GetInteger( GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS ) );
-    GLogger.Printf( "GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS %d\n", GL_GetInteger( GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS ) );
-    GLogger.Printf( "GL_MAX_TESS_PATCH_COMPONENTS %d\n", GL_GetInteger( GL_MAX_TESS_PATCH_COMPONENTS ) );
-    GLogger.Printf( "GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS %d\n", GL_GetInteger( GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS ) );
-    GLogger.Printf( "GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS %d\n", GL_GetInteger( GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS ) );
-    GLogger.Printf( "GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS %d\n", GL_GetInteger( GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS ) );
-    GLogger.Printf( "GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS %d\n", GL_GetInteger( GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS ) );
+    LOG( "GL_MAX_TESS_CONTROL_INPUT_COMPONENTS {}\n", GL_GetInteger( GL_MAX_TESS_CONTROL_INPUT_COMPONENTS ) );
+    LOG( "GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS {}\n", GL_GetInteger( GL_MAX_TESS_EVALUATION_INPUT_COMPONENTS ) );
+    LOG( "GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS {}\n", GL_GetInteger( GL_MAX_COMBINED_TESS_CONTROL_UNIFORM_COMPONENTS ) );
+    LOG( "GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS {}\n", GL_GetInteger( GL_MAX_COMBINED_TESS_EVALUATION_UNIFORM_COMPONENTS ) );
+    LOG( "GL_MAX_TESS_GEN_LEVEL {}\n", GL_GetInteger( GL_MAX_TESS_GEN_LEVEL ) );
+    LOG( "GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS {}\n", GL_GetInteger( GL_MAX_TESS_CONTROL_UNIFORM_COMPONENTS ) );
+    LOG( "GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS {}\n", GL_GetInteger( GL_MAX_TESS_EVALUATION_UNIFORM_COMPONENTS ) );
+    LOG( "GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS {}\n", GL_GetInteger( GL_MAX_TESS_CONTROL_TEXTURE_IMAGE_UNITS ) );
+    LOG( "GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS {}\n", GL_GetInteger( GL_MAX_TESS_EVALUATION_TEXTURE_IMAGE_UNITS ) );
+    LOG( "GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS {}\n", GL_GetInteger( GL_MAX_TESS_CONTROL_OUTPUT_COMPONENTS ) );
+    LOG( "GL_MAX_TESS_PATCH_COMPONENTS {}\n", GL_GetInteger( GL_MAX_TESS_PATCH_COMPONENTS ) );
+    LOG( "GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS {}\n", GL_GetInteger( GL_MAX_TESS_CONTROL_TOTAL_OUTPUT_COMPONENTS ) );
+    LOG( "GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS {}\n", GL_GetInteger( GL_MAX_TESS_EVALUATION_OUTPUT_COMPONENTS ) );
+    LOG( "GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS {}\n", GL_GetInteger( GL_MAX_TESS_CONTROL_UNIFORM_BLOCKS ) );
+    LOG( "GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS {}\n", GL_GetInteger( GL_MAX_TESS_EVALUATION_UNIFORM_BLOCKS ) );
 #endif
-    GLogger.Printf("Features:\n");
+    LOG("Features:\n");
     for (int i = 0; i < FEATURE_MAX; i++)
     {
-        GLogger.Printf("\t%s: %s\n", FeatureName[i], FeatureSupport[i] ? "Yes" : "No");
+        LOG("\t{}: {}\n", FeatureName[i], FeatureSupport[i] ? "Yes" : "No");
     }
 
-    GLogger.Printf("Device caps:\n");
+    LOG("Device caps:\n");
     for (int i = 0; i < DEVICE_CAPS_MAX; i++)
     {
-        GLogger.Printf("\t%s: %u\n", DeviceCapName[i], DeviceCaps[i]);
+        LOG("\t{}: {}\n", DeviceCapName[i], DeviceCaps[i]);
     }
 
     if (FeatureSupport[FEATURE_GPU_MEMORY_INFO])
@@ -378,12 +378,12 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
         int32_t evictionCount = GL_GetInteger(GL_GPU_MEMORY_INFO_EVICTION_COUNT_NVX);
         int32_t evictedMemory = GL_GetInteger(GL_GPU_MEMORY_INFO_EVICTED_MEMORY_NVX);
 
-        GLogger.Printf("Video memory info:\n");
-        GLogger.Printf("\tDedicated: %d Megs\n", dedicated >> 10);
-        GLogger.Printf("\tTotal available: %d Megs\n", totalAvail >> 10);
-        GLogger.Printf("\tCurrent available: %d Megs\n", currentAvail >> 10);
-        GLogger.Printf("\tEviction count: %d\n", evictionCount);
-        GLogger.Printf("\tEvicted memory: %d Megs\n", evictedMemory >> 10);
+        LOG("Video memory info:\n");
+        LOG("\tDedicated: {} Megs\n", dedicated >> 10);
+        LOG("\tTotal available: {} Megs\n", totalAvail >> 10);
+        LOG("\tCurrent available: {} Megs\n", currentAvail >> 10);
+        LOG("\tEviction count: {}\n", evictionCount);
+        LOG("\tEvicted memory: {} Megs\n", evictedMemory >> 10);
     }
 
     Allocator = pAllocator ? *pAllocator : DefaultAllocator;
@@ -541,7 +541,7 @@ int32_t ADeviceGLImpl::GetGPUMemoryTotalAvailable()
     }
     else
     {
-        GLogger.Printf("ADeviceGLImpl::GetGPUMemoryTotalAvailable: FEATURE_GPU_MEMORY_INFO is not supported by video driver\n");
+        LOG("ADeviceGLImpl::GetGPUMemoryTotalAvailable: FEATURE_GPU_MEMORY_INFO is not supported by video driver\n");
     }
     return 0;
 }
@@ -554,7 +554,7 @@ int32_t ADeviceGLImpl::GetGPUMemoryCurrentAvailable()
     }
     else
     {
-        GLogger.Printf("ADeviceGLImpl::GetGPUMemoryTotalAvailable: FEATURE_GPU_MEMORY_INFO is not supported by video driver\n");
+        LOG("ADeviceGLImpl::GetGPUMemoryTotalAvailable: FEATURE_GPU_MEMORY_INFO is not supported by video driver\n");
     }
     return 0;
 }
@@ -571,7 +571,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
     {
         desc.NumVertexBindings = MAX_VERTEX_BINDINGS;
 
-        GLogger.Printf("ADeviceGLImpl::GetVertexLayout: NumVertexBindings > MAX_VERTEX_BINDINGS\n");
+        LOG("ADeviceGLImpl::GetVertexLayout: NumVertexBindings > MAX_VERTEX_BINDINGS\n");
     }
     Platform::Memcpy(desc.VertexBindings, pVertexBindings, sizeof(desc.VertexBindings[0]) * desc.NumVertexBindings);
 
@@ -580,7 +580,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
     {
         desc.NumVertexAttribs = MAX_VERTEX_ATTRIBS;
 
-        GLogger.Printf("ADeviceGLImpl::GetVertexLayout: NumVertexAttribs > MAX_VERTEX_ATTRIBS\n");
+        LOG("ADeviceGLImpl::GetVertexLayout: NumVertexAttribs > MAX_VERTEX_ATTRIBS\n");
     }
     Platform::Memcpy(desc.VertexAttribs, pVertexAttribs, sizeof(desc.VertexAttribs[0]) * desc.NumVertexAttribs);
 
@@ -599,7 +599,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
 
         if (pVertexLayout->GetDesc() == desc)
         {
-            //GLogger.Printf( "Caching vertex layout\n" );
+            //LOG( "Caching vertex layout\n" );
             return pVertexLayout;
         }
     }
@@ -612,12 +612,12 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
 
         if (binding->InputSlot >= GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_BUFFER_SLOTS))
         {
-            GLogger.Printf("ADeviceGLImpl::GetVertexLayout: binding->InputSlot >= MaxVertexBufferSlots\n");
+            LOG("ADeviceGLImpl::GetVertexLayout: binding->InputSlot >= MaxVertexBufferSlots\n");
         }
 
         if (binding->Stride > GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_ATTRIB_STRIDE))
         {
-            GLogger.Printf("ADeviceGLImpl::GetVertexLayout: binding->Stride > MaxVertexAttribStride\n");
+            LOG("ADeviceGLImpl::GetVertexLayout: binding->Stride > MaxVertexAttribStride\n");
         }
     }
 
@@ -625,7 +625,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
     {
         if (attrib->Offset > GetDeviceCaps(DEVICE_CAPS_MAX_VERTEX_ATTRIB_RELATIVE_OFFSET))
         {
-            GLogger.Printf("ADeviceGLImpl::GetVertexLayout: attrib offset > MaxVertexAttribRelativeOffset\n");
+            LOG("ADeviceGLImpl::GetVertexLayout: attrib offset > MaxVertexAttribRelativeOffset\n");
         }
     }
 
@@ -638,7 +638,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
     VertexLayouts.Append(pVertexLayout);
     pVertexLayout->AddRef();
 
-    //GLogger.Printf("Create vertex layout, total %d\n", VertexLayouts.Size());
+    //LOG("Create vertex layout, total {}\n", VertexLayouts.Size());
 
     return pVertexLayout;
 }
@@ -654,7 +654,7 @@ SBlendingStateInfo const* ADeviceGLImpl::CachedBlendingState(SBlendingStateInfo 
 
         if (*state == _BlendingState)
         {
-            //GLogger.Printf( "Caching blending state\n" );
+            //LOG( "Caching blending state\n" );
             return state;
         }
     }
@@ -667,7 +667,7 @@ SBlendingStateInfo const* ADeviceGLImpl::CachedBlendingState(SBlendingStateInfo 
     BlendingHash.Insert(hash, i);
     BlendingStateCache.Append(state);
 
-    //GLogger.Printf( "Total blending states %d\n", i+1 );
+    //LOG( "Total blending states {}\n", i+1 );
 
     return state;
 }
@@ -683,7 +683,7 @@ SRasterizerStateInfo const* ADeviceGLImpl::CachedRasterizerState(SRasterizerStat
 
         if (*state == _RasterizerState)
         {
-            //GLogger.Printf( "Caching rasterizer state\n" );
+            //LOG( "Caching rasterizer state\n" );
             return state;
         }
     }
@@ -696,7 +696,7 @@ SRasterizerStateInfo const* ADeviceGLImpl::CachedRasterizerState(SRasterizerStat
     RasterizerHash.Insert(hash, i);
     RasterizerStateCache.Append(state);
 
-    //GLogger.Printf( "Total rasterizer states %d\n", i+1 );
+    //LOG( "Total rasterizer states {}\n", i+1 );
 
     return state;
 }
@@ -712,7 +712,7 @@ SDepthStencilStateInfo const* ADeviceGLImpl::CachedDepthStencilState(SDepthStenc
 
         if (*state == _DepthStencilState)
         {
-            //GLogger.Printf( "Caching depth stencil state\n" );
+            //LOG( "Caching depth stencil state\n" );
             return state;
         }
     }
@@ -725,7 +725,7 @@ SDepthStencilStateInfo const* ADeviceGLImpl::CachedDepthStencilState(SDepthStenc
     DepthStencilHash.Insert(hash, i);
     DepthStencilStateCache.Append(state);
 
-    //GLogger.Printf( "Total depth stencil states %d\n", i+1 );
+    //LOG( "Total depth stencil states {}\n", i+1 );
 
     return state;
 }
@@ -741,7 +741,7 @@ unsigned int ADeviceGLImpl::CachedSampler(SSamplerDesc const& SamplerDesc)
 
         if (sampler->Desc == SamplerDesc)
         {
-            //GLogger.Printf( "Caching sampler\n" );
+            //LOG( "Caching sampler\n" );
             return sampler->Id;
         }
     }
@@ -754,7 +754,7 @@ unsigned int ADeviceGLImpl::CachedSampler(SSamplerDesc const& SamplerDesc)
     SamplerHash.Insert(hash, i);
     SamplerCache.Append(sampler);
 
-    //GLogger.Printf( "Total samplers %d\n", i+1 );
+    //LOG( "Total samplers {}\n", i+1 );
 
     // 3.3 or GL_ARB_sampler_objects
 
@@ -804,7 +804,7 @@ bool ADeviceGLImpl::EnumerateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEX
 
     if (!FeatureSupport[FEATURE_SPARSE_TEXTURES])
     {
-        GLogger.Printf("ADeviceGLImpl::EnumerateSparseTexturePageSize: sparse textures are not supported by video driver\n");
+        LOG("ADeviceGLImpl::EnumerateSparseTexturePageSize: sparse textures are not supported by video driver\n");
         return false;
     }
 
@@ -1033,11 +1033,11 @@ static void DebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum s
         return;
     }
 
-    GLogger.Printf("-----------------------------------\n"
-                   "%s %s\n"
-                   "%s: %s (Id %d)\n"
-                   "-----------------------------------\n",
-                   sourceStr, typeStr, severityStr, message, id);
+    LOG("-----------------------------------\n"
+        "{} {}\n"
+        "{}: {} (Id {})\n"
+        "-----------------------------------\n",
+        sourceStr, typeStr, severityStr, message, id);
 }
 
 

@@ -120,7 +120,7 @@ public:
 
         if (FIXED_LENGTH)
         {
-            GLogger.Printf("TPodQueue::Push: queue overflow\n");
+            LOG("TPodQueue::Push: queue overflow\n");
             QueueTail++;
             QueueHead++;
             return &pQueue[(QueueHead - 1) & (MaxQueueLength - 1)];

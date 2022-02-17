@@ -270,16 +270,16 @@ protected:
         switch (category)
         {
             case RC_LOG_PROGRESS:
-                GLogger.Printf("%s", msg);
+                LOG(msg);
                 break;
             case RC_LOG_WARNING:
-                GLogger.Printf("%s", msg);
+                LOG(msg);
                 break;
             case RC_LOG_ERROR:
-                GLogger.Printf("%s", msg);
+                LOG(msg);
                 break;
             default:
-                GLogger.Printf("%s", msg);
+                LOG(msg);
                 break;
         }
     }
@@ -309,7 +309,7 @@ bool AAINavigationMesh::Initialize(SAINavigationConfig const& _NavigationConfig)
 
     if (_NavigationConfig.BoundingBox.IsEmpty())
     {
-        GLogger.Printf("AAINavigationMesh::Initialize: empty bounding box\n");
+        LOG("AAINavigationMesh::Initialize: empty bounding box\n");
         return false;
     }
 
@@ -319,20 +319,20 @@ bool AAINavigationMesh::Initialize(SAINavigationConfig const& _NavigationConfig)
 
     if (Initial.VertsPerPoly < 3)
     {
-        GLogger.Printf("NavVertsPerPoly < 3\n");
+        LOG("NavVertsPerPoly < 3\n");
 
         Initial.VertsPerPoly = 3;
     }
     else if (Initial.VertsPerPoly > DT_VERTS_PER_POLYGON)
     {
-        GLogger.Printf("NavVertsPerPoly > NAV_MAX_VERTS_PER_POLYGON\n");
+        LOG("NavVertsPerPoly > NAV_MAX_VERTS_PER_POLYGON\n");
 
         Initial.VertsPerPoly = DT_VERTS_PER_POLYGON;
     }
 
     if (Initial.MaxLayers > MAX_LAYERS)
     {
-        GLogger.Printf("MaxLayers > MAX_LAYERS\n");
+        LOG("MaxLayers > MAX_LAYERS\n");
         Initial.MaxLayers = MAX_LAYERS;
     }
 
@@ -366,7 +366,7 @@ bool AAINavigationMesh::Initialize(SAINavigationConfig const& _NavigationConfig)
     if (!NavMesh)
     {
         Purge();
-        GLogger.Printf("Failed on dtAllocNavMesh\n");
+        LOG("Failed on dtAllocNavMesh\n");
         return false;
     }
 
@@ -374,7 +374,7 @@ bool AAINavigationMesh::Initialize(SAINavigationConfig const& _NavigationConfig)
     if (dtStatusFailed(status))
     {
         Purge();
-        GLogger.Printf("Could not initialize navmesh\n");
+        LOG("Could not initialize navmesh\n");
         return false;
     }
 
@@ -382,7 +382,7 @@ bool AAINavigationMesh::Initialize(SAINavigationConfig const& _NavigationConfig)
     if (!NavQuery)
     {
         Purge();
-        GLogger.Printf("Failed on dtAllocNavMeshQuery\n");
+        LOG("Failed on dtAllocNavMeshQuery\n");
         return false;
     }
 
@@ -391,7 +391,7 @@ bool AAINavigationMesh::Initialize(SAINavigationConfig const& _NavigationConfig)
     if (dtStatusFailed(status))
     {
         Purge();
-        GLogger.Printf("Could not initialize navmesh query");
+        LOG("Could not initialize navmesh query");
         return false;
     }
 
@@ -417,7 +417,7 @@ bool AAINavigationMesh::Initialize(SAINavigationConfig const& _NavigationConfig)
         if (!TileCache)
         {
             Purge();
-            GLogger.Printf("Failed on dtAllocTileCache\n");
+            LOG("Failed on dtAllocTileCache\n");
             return false;
         }
 
@@ -430,7 +430,7 @@ bool AAINavigationMesh::Initialize(SAINavigationConfig const& _NavigationConfig)
         if (dtStatusFailed(status))
         {
             Purge();
-            GLogger.Printf("Could not initialize tile cache\n");
+            LOG("Could not initialize tile cache\n");
             return false;
         }
 
@@ -490,7 +490,7 @@ bool AAINavigationMesh::BuildTiles(Int2 const& _Mins, Int2 const& _Maxs)
 {
     if (!NavMesh)
     {
-        GLogger.Printf("AAINavigationMesh::BuildTiles: navmesh must be initialized\n");
+        LOG("AAINavigationMesh::BuildTiles: navmesh must be initialized\n");
         return false;
     }
 
@@ -666,14 +666,14 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
     temporal.Heightfield = rcAllocHeightfield();
     if (!temporal.Heightfield)
     {
-        GLogger.Printf("Failed on rcAllocHeightfield\n");
+        LOG("Failed on rcAllocHeightfield\n");
         return false;
     }
 
     if (!rcCreateHeightfield(&RecastContext, *temporal.Heightfield, config.width, config.height,
                              config.bmin, config.bmax, config.cs, config.ch))
     {
-        GLogger.Printf("Failed on rcCreateHeightfield\n");
+        LOG("Failed on rcCreateHeightfield\n");
         return false;
     }
 
@@ -704,7 +704,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
 
     if (!rasterized)
     {
-        GLogger.Printf("Failed on rcRasterizeTriangles\n");
+        LOG("Failed on rcRasterizeTriangles\n");
         return false;
     }
 
@@ -724,20 +724,20 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
     temporal.CompactHeightfield = rcAllocCompactHeightfield();
     if (!temporal.CompactHeightfield)
     {
-        GLogger.Printf("Failed on rcAllocCompactHeightfield\n");
+        LOG("Failed on rcAllocCompactHeightfield\n");
         return false;
     }
 
     if (!rcBuildCompactHeightfield(&RecastContext, config.walkableHeight, config.walkableClimb, *temporal.Heightfield, *temporal.CompactHeightfield))
     {
-        GLogger.Printf("Failed on rcBuildCompactHeightfield\n");
+        LOG("Failed on rcBuildCompactHeightfield\n");
         return false;
     }
 
     // Erode the walkable area by agent radius.
     if (!rcErodeWalkableArea(&RecastContext, config.walkableRadius, *temporal.CompactHeightfield))
     {
-        GLogger.Printf("AAINavigationMesh::Build: Failed on rcErodeWalkableArea\n");
+        LOG("AAINavigationMesh::Build: Failed on rcErodeWalkableArea\n");
         return false;
     }
 #if 1
@@ -858,14 +858,14 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
         // Prepare for region partitioning, by calculating distance field along the walkable surface.
         if (!rcBuildDistanceField(&RecastContext, *temporal.CompactHeightfield))
         {
-            GLogger.Printf("Could not build distance field\n");
+            LOG("Could not build distance field\n");
             return false;
         }
 
         // Partition the walkable surface into simple regions without holes.
         if (!rcBuildRegions(&RecastContext, *temporal.CompactHeightfield, config.borderSize /*0*/, config.minRegionArea, config.mergeRegionArea))
         {
-            GLogger.Printf("Could not build watershed regions\n");
+            LOG("Could not build watershed regions\n");
             return false;
         }
     }
@@ -875,7 +875,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
         // Monotone partitioning does not need distancefield.
         if (!rcBuildRegionsMonotone(&RecastContext, *temporal.CompactHeightfield, config.borderSize /*0*/, config.minRegionArea, config.mergeRegionArea))
         {
-            GLogger.Printf("Could not build monotone regions\n");
+            LOG("Could not build monotone regions\n");
             return false;
         }
     }
@@ -884,7 +884,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
         // Partition the walkable surface into simple regions without holes.
         if (!rcBuildLayerRegions(&RecastContext, *temporal.CompactHeightfield, config.borderSize /*0*/, config.minRegionArea))
         {
-            GLogger.Printf("Could not build layer regions\n");
+            LOG("Could not build layer regions\n");
             return false;
         }
     }
@@ -895,13 +895,13 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
         temporal.LayerSet = rcAllocHeightfieldLayerSet();
         if (!temporal.LayerSet)
         {
-            GLogger.Printf("Failed on rcAllocHeightfieldLayerSet\n");
+            LOG("Failed on rcAllocHeightfieldLayerSet\n");
             return false;
         }
 
         if (!rcBuildHeightfieldLayers(&RecastContext, *temporal.CompactHeightfield, config.borderSize, config.walkableHeight, *temporal.LayerSet))
         {
-            GLogger.Printf("Failed on rcBuildHeightfieldLayers\n");
+            LOG("Failed on rcBuildHeightfieldLayers\n");
             return false;
         }
 
@@ -934,7 +934,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
             dtStatus status = dtBuildTileCacheLayer(&TileCompressorCallback, &header, layer->heights, layer->areas, layer->cons, &tile->Data, &tile->Size);
             if (dtStatusFailed(status))
             {
-                GLogger.Printf("Failed on dtBuildTileCacheLayer\n");
+                LOG("Failed on dtBuildTileCacheLayer\n");
                 break;
             }
 
@@ -959,7 +959,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
             status = TileCache->buildNavMeshTile(ref, NavMesh);
             if (dtStatusFailed(status))
             {
-                GLogger.Printf("Failed to build navmesh tile %s\n", GetErrorStr(status).CStr());
+                LOG("Failed to build navmesh tile {}\n", GetErrorStr(status));
             }
 
             cacheLayerCount++;
@@ -1008,7 +1008,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
         temporal.ContourSet = rcAllocContourSet();
         if (!temporal.ContourSet)
         {
-            GLogger.Printf("Failed on rcAllocContourSet\n");
+            LOG("Failed on rcAllocContourSet\n");
             return false;
         }
 
@@ -1017,21 +1017,21 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
         // Create contours.
         if (!rcBuildContours(&RecastContext, *temporal.CompactHeightfield, config.maxSimplificationError, config.maxEdgeLen, *temporal.ContourSet))
         {
-            GLogger.Printf("Could not create contours\n");
+            LOG("Could not create contours\n");
             return false;
         }
 
         temporal.PolyMesh = rcAllocPolyMesh();
         if (!temporal.PolyMesh)
         {
-            GLogger.Printf("Failed on rcAllocPolyMesh\n");
+            LOG("Failed on rcAllocPolyMesh\n");
             return false;
         }
 
         // Build polygon navmesh from the contours.
         if (!rcBuildPolyMesh(&RecastContext, *temporal.ContourSet, config.maxVertsPerPoly, *temporal.PolyMesh))
         {
-            GLogger.Printf("Could not triangulate contours\n");
+            LOG("Could not triangulate contours\n");
             return false;
         }
 
@@ -1044,7 +1044,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
         temporal.PolyMeshDetail = rcAllocPolyMeshDetail();
         if (!temporal.PolyMeshDetail)
         {
-            GLogger.Printf("Failed on rcAllocPolyMeshDetail\n");
+            LOG("Failed on rcAllocPolyMeshDetail\n");
             return false;
         }
 
@@ -1056,7 +1056,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
                                    config.detailSampleMaxError,
                                    *temporal.PolyMeshDetail))
         {
-            GLogger.Printf("Could not build detail mesh\n");
+            LOG("Could not build detail mesh\n");
             return false;
         }
 
@@ -1163,10 +1163,10 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
 
             if (params.vertCount >= 0xffff)
             {
-                GLogger.Printf("vertCount >= 0xffff\n");
+                LOG("vertCount >= 0xffff\n");
             }
 
-            GLogger.Printf("Could not build navmesh tile\n");
+            LOG("Could not build navmesh tile\n");
             return false;
         }
 
@@ -1174,7 +1174,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
         if (dtStatusFailed(status))
         {
             dtFree(navData);
-            GLogger.Printf("Could not add tile to navmesh\n");
+            LOG("Could not add tile to navmesh\n");
             return false;
         }
     }
@@ -1315,14 +1315,14 @@ void AAINavigationMesh::AddObstacle(AAINavMeshObstacle* _Obstacle)
 
     if (dtStatusFailed(status))
     {
-        GLogger.Printf("Failed to add navmesh obstacle\n");
+        LOG("Failed to add navmesh obstacle\n");
         if (status & DT_OUT_OF_MEMORY)
         {
-            GLogger.Printf("DT_OUT_OF_MEMORY\n");
+            LOG("DT_OUT_OF_MEMORY\n");
         }
         return;
     }
-    GLogger.Printf("AddObstacle: %d\n", ref);
+    LOG("AddObstacle: {}\n", ref);
     _Obstacle->ObstacleRef = ref;
 }
 
@@ -1360,7 +1360,7 @@ void AAINavigationMesh::RemoveObstacle(AAINavMeshObstacle* _Obstacle)
 
     if (dtStatusFailed(status))
     {
-        GLogger.Printf("Failed to remove navmesh obstacle\n");
+        LOG("Failed to remove navmesh obstacle\n");
         return;
     }
 
@@ -1371,7 +1371,7 @@ void AAINavigationMesh::UpdateObstacle(AAINavMeshObstacle* _Obstacle)
 {
     if (!_Obstacle->ObstacleRef)
     {
-        GLogger.Printf("AAINavigationMesh::UpdateObstacle: obstacle is not in navmesh\n");
+        LOG("AAINavigationMesh::UpdateObstacle: obstacle is not in navmesh\n");
         return;
     }
 
@@ -2214,7 +2214,7 @@ int ANavigationMeshComponent::FixupCorridor( SNavPolyRef * _Path, const int _NPa
 //    Crowd = dtAllocCrowd();
 //    if ( !Crowd ) {
 //        Purge();
-//        GLogger.Printf( "Failed on dtAllocCrowd\n" );
+//        LOG( "Failed on dtAllocCrowd\n" );
 //        return false;
 //    }
 
@@ -2272,7 +2272,7 @@ void AAINavigationMesh::GatherNavigationGeometry(SNavigationGeometry& Geometry)
         body->GetCollisionWorldBounds(worldBounds);
         if (worldBounds.IsEmpty())
         {
-            GLogger.Printf("AAINavigationMesh::GatherNavigationGeometry: the body has no collision\n");
+            LOG("AAINavigationMesh::GatherNavigationGeometry: the body has no collision\n");
             continue;
         }
 

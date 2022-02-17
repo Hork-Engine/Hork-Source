@@ -150,6 +150,11 @@ include_directories(ThirdParty/angelscript_addon)
 set_target_properties(angelscript PROPERTIES FOLDER ThirdParty/angelscript)
 set_target_properties(angelscript_addon PROPERTIES FOLDER ThirdParty/angelscript)
 
+#
+# fmt
+#
+include_directories( ThirdParty/fmt/include )
+add_subdirectory( "ThirdParty/fmt" )
 
 #---------------------------------------------------------------------
 # Platform module
@@ -282,15 +287,16 @@ set( LIBRARIES
         Recast
         SDL2-static
         muFFT
-		miniaudio
-		miniz
-		fastlz
+        miniaudio
+        miniz
+        fastlz
         glutess
         polyclipping
         tinyexr
         cgltf
-		${ANGELSCRIPT_LIBRARY_NAME}
-		angelscript_addon
+        ${ANGELSCRIPT_LIBRARY_NAME}
+        angelscript_addon
+        fmt::fmt-header-only
 )
 
 if(UNIX)

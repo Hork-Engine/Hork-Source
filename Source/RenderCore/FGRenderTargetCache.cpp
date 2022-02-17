@@ -46,14 +46,14 @@ ITexture* FGRenderTargetCache::Acquire(STextureDesc const& TextureDesc)
 
         if (tex->GetDesc() == TextureDesc)
         {
-            //GLogger.Printf( "Reusing existing texture\n" );
+            //LOG( "Reusing existing texture\n" );
             FreeTextures.Erase(it);
             return tex;
         }
     }
 
     // Create new texture
-    //GLogger.Printf( "Create new texture ( in use %d, free %d )\n", Textures.Size()+1, FreeTextures.Size() );
+    //LOG( "Create new texture ( in use {}, free {} )\n", Textures.Size()+1, FreeTextures.Size() );
     TRef<ITexture> texture;
     pDevice->CreateTexture(TextureDesc, &texture);
     Textures.Append(texture);

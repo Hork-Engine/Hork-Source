@@ -516,7 +516,7 @@ void MGInput::Connect(MGOutput* pSlot)
     MGNode* node = pSlot->GetOwner();
     if (!node)
     {
-        GLogger.Printf("Node output is incomplete\n");
+        LOG("Node output is incomplete\n");
         return;
     }
     node->AddRef();
@@ -2764,8 +2764,8 @@ static void WriteDebugShaders(SMaterialShader const* Shaders)
 
     for (SMaterialShader const* s = Shaders; s; s = s->Next)
     {
-        f.Printf("//----------------------------------\n// %s\n//----------------------------------\n", s->SourceName);
-        f.Printf("%s\n", s->Code);
+        f.FormattedPrint("//----------------------------------\n// {}\n//----------------------------------\n", s->SourceName);
+        f.FormattedPrint("{}\n", s->Code);
     }
 }
 
@@ -3196,7 +3196,7 @@ void MGMaterialGraph::RegisterTextureSlot(MGTextureSlot* _Slot)
 {
     if (TextureSlots.Size() >= MAX_MATERIAL_TEXTURES)
     {
-        GLogger.Printf("AMaterialBuilder::RegisterTextureSlot: MAX_MATERIAL_TEXTURES hit\n");
+        LOG("AMaterialBuilder::RegisterTextureSlot: MAX_MATERIAL_TEXTURES hit\n");
         return;
     }
     _Slot->AddRef();

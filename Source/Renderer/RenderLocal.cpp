@@ -603,7 +603,7 @@ static bool LoadShaderWithInclude( SIncludeCtx * Ctx, AStringView FileName, AStr
     AString source;
 
     if ( !Ctx->LoadFile( FileName, source ) ) {
-        GLogger.Printf( "Couldn't load %s\n", FileName.ToString().CStr() );
+        LOG("Couldn't load {}\n", FileName);
         return false;
     }
 
@@ -757,7 +757,7 @@ void CreateShader( SHADER_TYPE _ShaderType, TPodVector< const char * > _SourcePt
     // Print sources
 #if 0
     for ( int i = 0 ; i < sources.Size() ; i++ ) {
-        GLogger.Printf( "%s\n", i, sources[i] );
+        LOG( "{} : {}\n", i, sources[i] );
     }
 #endif
 

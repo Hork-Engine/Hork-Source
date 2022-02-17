@@ -80,7 +80,7 @@ ASparseTextureGLImpl::ASparseTextureGLImpl(ADeviceGLImpl* pDevice, SSparseTextur
                                                              &PageSizeZ);
     if (!r)
     {
-        GLogger.Printf("ASparseTextureGLImpl::ctor: failed to find appropriate sparse texture page size\n");
+        LOG("ASparseTextureGLImpl::ctor: failed to find appropriate sparse texture page size\n");
         return;
     }
 

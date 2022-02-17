@@ -337,7 +337,7 @@ ATimer* AActor::AddTimer(TCallback<void()> const& Callback)
 {
     if (bPendingKill)
     {
-        GLogger.Printf("AActor::AddTimer: Attempting to add a timer to a destroyed actor\n");
+        LOG("AActor::AddTimer: Attempting to add a timer to a destroyed actor\n");
         return {};
     }
 
@@ -360,13 +360,13 @@ void AActor::RemoveTimer(ATimer* Timer)
 {
     if (!Timer)
     {
-        GLogger.Printf("Timer is null\n");
+        LOG("Timer is null\n");
         return;
     }
 
     if (!INTRUSIVE_EXISTS(Timer, NextInActor, PrevInActor, TimerList, TimerListTail))
     {
-        GLogger.Printf("Timer is not exists\n");
+        LOG("Timer is not exists\n");
         return;
     }
 

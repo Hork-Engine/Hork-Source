@@ -518,7 +518,7 @@ static void* MemoryHeap;
 
 static void TouchMemoryPages(void* _MemoryPointer, int _MemorySize)
 {
-    GLogger.Printf("Touching memory pages...\n");
+    LOG("Touching memory pages...\n");
 
     byte* p = (byte*)_MemoryPointer;
     for (int n = 0; n < 4; n++)
@@ -545,21 +545,21 @@ static void InitializeMemory(size_t ZoneSizeInMegabytes, size_t HunkSizeInMegaby
     SIZE_T dwMaximumWorkingSetSize = std::max(TotalMemorySizeInBytes, size_t(1024 << 20));
     if (!SetProcessWorkingSetSize(GetCurrentProcess(), dwMinimumWorkingSetSize, dwMaximumWorkingSetSize))
     {
-        GLogger.Printf("Failed on SetProcessWorkingSetSize\n");
+        LOG("Failed on SetProcessWorkingSetSize\n");
     }
 #endif
 
     SMemoryInfo physMemoryInfo = Platform::GetPhysMemoryInfo();
-    GLogger.Printf("Memory page size: %d bytes\n", physMemoryInfo.PageSize);
+    LOG("Memory page size: {} bytes\n", physMemoryInfo.PageSize);
     if (physMemoryInfo.TotalAvailableMegabytes > 0 && physMemoryInfo.CurrentAvailableMegabytes > 0)
     {
-        GLogger.Printf("Total available phys memory: %d Megs\n", physMemoryInfo.TotalAvailableMegabytes);
-        GLogger.Printf("Current available phys memory: %d Megs\n", physMemoryInfo.CurrentAvailableMegabytes);
+        LOG("Total available phys memory: {} Megs\n", physMemoryInfo.TotalAvailableMegabytes);
+        LOG("Current available phys memory: {} Megs\n", physMemoryInfo.CurrentAvailableMegabytes);
     }
 
-    GLogger.Printf("Zone memory size: %d Megs\n"
-                   "Hunk memory size: %d Megs\n",
-                   ZoneSizeInMegabytes, HunkSizeInMegabytes);
+    LOG("Zone memory size: {} Megs\n"
+        "Hunk memory size: {} Megs\n",
+        ZoneSizeInMegabytes, HunkSizeInMegabytes);
 
     GHeapMemory.Initialize();
 
@@ -709,18 +709,10 @@ void Initialize(SPlatformInitialize const& CoreInitialize)
         }
     }
 
-    GLogger.SetMessageCallback([](int Level, const char* Message, void* UserData)
-                               {
-                                   WriteDebugString(Message);
-                                   WriteLog(Message);
-                                   ConBuffer.Print(Message);
-                               },
-                               nullptr);
-
     SDL_LogSetOutputFunction(
         [](void* userdata, int category, SDL_LogPriority priority, const char* message)
         {
-            GLogger.Printf("SDL: %d : %s\n", category, message);
+            LOG("SDL: {} : {}\n", category, message);
         },
         NULL);
 
@@ -959,56 +951,56 @@ void PrintCPUFeatures()
 {
     SCPUInfo const* pCPUInfo = Platform::CPUInfo();
 
-    GLogger.Printf("CPU: %s\n", pCPUInfo->Intel ? "Intel" : "AMD");
-    GLogger.Print("CPU Features:");
-    if (pCPUInfo->MMX) GLogger.Print(" MMX");
-    if (pCPUInfo->x64) GLogger.Print(" x64");
-    if (pCPUInfo->ABM) GLogger.Print(" ABM");
-    if (pCPUInfo->RDRAND) GLogger.Print(" RDRAND");
-    if (pCPUInfo->BMI1) GLogger.Print(" BMI1");
-    if (pCPUInfo->BMI2) GLogger.Print(" BMI2");
-    if (pCPUInfo->ADX) GLogger.Print(" ADX");
-    if (pCPUInfo->MPX) GLogger.Print(" MPX");
-    if (pCPUInfo->PREFETCHWT1) GLogger.Print(" PREFETCHWT1");
-    GLogger.Print("\n");
-    GLogger.Print("Simd 128 bit:");
-    if (pCPUInfo->SSE) GLogger.Print(" SSE");
-    if (pCPUInfo->SSE2) GLogger.Print(" SSE2");
-    if (pCPUInfo->SSE3) GLogger.Print(" SSE3");
-    if (pCPUInfo->SSSE3) GLogger.Print(" SSSE3");
-    if (pCPUInfo->SSE4a) GLogger.Print(" SSE4a");
-    if (pCPUInfo->SSE41) GLogger.Print(" SSE4.1");
-    if (pCPUInfo->SSE42) GLogger.Print(" SSE4.2");
-    if (pCPUInfo->AES) GLogger.Print(" AES-NI");
-    if (pCPUInfo->SHA) GLogger.Print(" SHA");
-    GLogger.Print("\n");
-    GLogger.Print("Simd 256 bit:");
-    if (pCPUInfo->AVX) GLogger.Print(" AVX");
-    if (pCPUInfo->XOP) GLogger.Print(" XOP");
-    if (pCPUInfo->FMA3) GLogger.Print(" FMA3");
-    if (pCPUInfo->FMA4) GLogger.Print(" FMA4");
-    if (pCPUInfo->AVX2) GLogger.Print(" AVX2");
-    GLogger.Print("\n");
-    GLogger.Print("Simd 512 bit:");
-    if (pCPUInfo->AVX512_F) GLogger.Print(" AVX512-F");
-    if (pCPUInfo->AVX512_CD) GLogger.Print(" AVX512-CD");
-    if (pCPUInfo->AVX512_PF) GLogger.Print(" AVX512-PF");
-    if (pCPUInfo->AVX512_ER) GLogger.Print(" AVX512-ER");
-    if (pCPUInfo->AVX512_VL) GLogger.Print(" AVX512-VL");
-    if (pCPUInfo->AVX512_BW) GLogger.Print(" AVX512-BW");
-    if (pCPUInfo->AVX512_DQ) GLogger.Print(" AVX512-DQ");
-    if (pCPUInfo->AVX512_IFMA) GLogger.Print(" AVX512-IFMA");
-    if (pCPUInfo->AVX512_VBMI) GLogger.Print(" AVX512-VBMI");
-    GLogger.Print("\n");
-    GLogger.Print("OS: " HK_OS_STRING "\n");
-    GLogger.Print("OS Features:");
-    if (pCPUInfo->OS_64bit) GLogger.Print(" 64bit");
-    if (pCPUInfo->OS_AVX) GLogger.Print(" AVX");
-    if (pCPUInfo->OS_AVX512) GLogger.Print(" AVX512");
-    GLogger.Print("\n");
-    GLogger.Print("Endian: " HK_ENDIAN_STRING "\n");
+    LOG("CPU: {}\n", pCPUInfo->Intel ? "Intel" : "AMD");
+    LOG("CPU Features:");
+    if (pCPUInfo->MMX) LOG(" MMX");
+    if (pCPUInfo->x64) LOG(" x64");
+    if (pCPUInfo->ABM) LOG(" ABM");
+    if (pCPUInfo->RDRAND) LOG(" RDRAND");
+    if (pCPUInfo->BMI1) LOG(" BMI1");
+    if (pCPUInfo->BMI2) LOG(" BMI2");
+    if (pCPUInfo->ADX) LOG(" ADX");
+    if (pCPUInfo->MPX) LOG(" MPX");
+    if (pCPUInfo->PREFETCHWT1) LOG(" PREFETCHWT1");
+    LOG("\n");
+    LOG("Simd 128 bit:");
+    if (pCPUInfo->SSE) LOG(" SSE");
+    if (pCPUInfo->SSE2) LOG(" SSE2");
+    if (pCPUInfo->SSE3) LOG(" SSE3");
+    if (pCPUInfo->SSSE3) LOG(" SSSE3");
+    if (pCPUInfo->SSE4a) LOG(" SSE4a");
+    if (pCPUInfo->SSE41) LOG(" SSE4.1");
+    if (pCPUInfo->SSE42) LOG(" SSE4.2");
+    if (pCPUInfo->AES) LOG(" AES-NI");
+    if (pCPUInfo->SHA) LOG(" SHA");
+    LOG("\n");
+    LOG("Simd 256 bit:");
+    if (pCPUInfo->AVX) LOG(" AVX");
+    if (pCPUInfo->XOP) LOG(" XOP");
+    if (pCPUInfo->FMA3) LOG(" FMA3");
+    if (pCPUInfo->FMA4) LOG(" FMA4");
+    if (pCPUInfo->AVX2) LOG(" AVX2");
+    LOG("\n");
+    LOG("Simd 512 bit:");
+    if (pCPUInfo->AVX512_F) LOG(" AVX512-F");
+    if (pCPUInfo->AVX512_CD) LOG(" AVX512-CD");
+    if (pCPUInfo->AVX512_PF) LOG(" AVX512-PF");
+    if (pCPUInfo->AVX512_ER) LOG(" AVX512-ER");
+    if (pCPUInfo->AVX512_VL) LOG(" AVX512-VL");
+    if (pCPUInfo->AVX512_BW) LOG(" AVX512-BW");
+    if (pCPUInfo->AVX512_DQ) LOG(" AVX512-DQ");
+    if (pCPUInfo->AVX512_IFMA) LOG(" AVX512-IFMA");
+    if (pCPUInfo->AVX512_VBMI) LOG(" AVX512-VBMI");
+    LOG("\n");
+    LOG("OS: " HK_OS_STRING "\n");
+    LOG("OS Features:");
+    if (pCPUInfo->OS_64bit) LOG(" 64bit");
+    if (pCPUInfo->OS_AVX) LOG(" AVX");
+    if (pCPUInfo->OS_AVX512) LOG(" AVX512");
+    LOG("\n");
+    LOG("Endian: " HK_ENDIAN_STRING "\n");
 #ifdef HK_DEBUG
-    GLogger.Print("Compiler: " HK_COMPILER_STRING "\n");
+    LOG("Compiler: " HK_COMPILER_STRING "\n");
 #endif
 }
 
@@ -1060,6 +1052,11 @@ void WriteDebugString(const char* _Message)
 #        endif
 #    endif
 #endif
+}
+
+void WriteConsole(const char* Message)
+{
+    ConBuffer.Print(Message);
 }
 
 void* LoadDynamicLib(const char* _LibraryName)
@@ -1223,14 +1220,14 @@ void AssertFunction(const char* _File, int _Line, const char* _Function, const c
 
     bNestedFunctionCall = true;
 
-    // Printf is thread-safe function so we don't need to wrap it by a critical section
-    GLogger.Printf("===== Assertion failed =====\n"
-                   "At file %s, line %d\n"
-                   "Function: %s\n"
-                   "Assertion: %s\n"
-                   "%s%s"
-                   "============================\n",
-                   _File, _Line, _Function, _Assertion, _Comment ? _Comment : "", _Comment ? "\n" : "");
+    // LOG is thread-safe function so we don't need to wrap it by a critical section
+    LOG("===== Assertion failed =====\n"
+        "At file {}, line {}\n"
+        "Function: {}\n"
+        "Assertion: {}\n"
+        "{}{}"
+        "============================\n",
+        _File, _Line, _Function, _Assertion, _Comment ? _Comment : "", _Comment ? "\n" : "");
 
     SDL_SetRelativeMouseMode(SDL_FALSE); // FIXME: Is it threadsafe?
 

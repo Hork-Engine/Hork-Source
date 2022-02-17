@@ -471,7 +471,7 @@ void ATerrainComponent::OnTransformDirty()
 
     if (!IsInEditor())
     {
-        GLogger.Printf("WARNING: Set transform for terrain %s\n", GetObjectNameCStr());
+        LOG("WARNING: Set transform for terrain {}\n", GetObjectNameCStr());
     }
 
     // Update rigid body transform

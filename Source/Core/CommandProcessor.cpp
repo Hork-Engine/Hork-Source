@@ -85,7 +85,7 @@ void ACommandProcessor::Execute(ICommandContext& _Ctx)
             {
                 if (CmdbufPos >= Cmdbuf.Length())
                 {
-                    GLogger.Printf("ACommandProcessor::Execute: expected '*/'\n");
+                    LOG("ACommandProcessor::Execute: expected '*/'\n");
                     break;
                 }
 
@@ -139,7 +139,7 @@ void ACommandProcessor::Execute(ICommandContext& _Ctx)
             {
                 if (bQuoted)
                 {
-                    GLogger.Printf("ACommandProcessor::Execute: no closed quote\n");
+                    LOG("ACommandProcessor::Execute: no closed quote\n");
                 }
                 continue;
             }
@@ -151,7 +151,7 @@ void ACommandProcessor::Execute(ICommandContext& _Ctx)
                 {
                     if (bQuoted)
                     {
-                        GLogger.Printf("ACommandProcessor::Execute: no closed quote\n");
+                        LOG("ACommandProcessor::Execute: no closed quote\n");
                     }
                     break;
                 }
@@ -178,7 +178,7 @@ void ACommandProcessor::Execute(ICommandContext& _Ctx)
         }
         else
         {
-            GLogger.Printf("ACommandProcessor::Execute: MAX_ARGS hit\n");
+            LOG("ACommandProcessor::Execute: MAX_ARGS hit\n");
             CmdbufPos++;
         }
     }

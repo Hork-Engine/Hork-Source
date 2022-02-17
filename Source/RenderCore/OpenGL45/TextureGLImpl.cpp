@@ -265,14 +265,14 @@ BindlessHandle ATextureGLImpl::GetBindlessSampler(SSamplerDesc const& SamplerDes
 {
     if (!GetDevice()->IsFeatureSupported(FEATURE_BINDLESS_TEXTURE))
     {
-        GLogger.Printf("ATextureGLImpl::GetBindlessSampler: bindless textures are not supported by current hardware\n");
+        LOG("ATextureGLImpl::GetBindlessSampler: bindless textures are not supported by current hardware\n");
         return 0;
     }
 
     uint64_t bindlessHandle = glGetTextureSamplerHandleARB(GetHandleNativeGL(), static_cast<ADeviceGLImpl*>(GetDevice())->CachedSampler(SamplerDesc));
     if (!bindlessHandle)
     {
-        GLogger.Printf("ATextureGLImpl::GetBindlessSampler: couldn't get texture sampler handle\n");
+        LOG("ATextureGLImpl::GetBindlessSampler: couldn't get texture sampler handle\n");
         return 0;
     }
 

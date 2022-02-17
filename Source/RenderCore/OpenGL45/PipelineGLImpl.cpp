@@ -49,7 +49,7 @@ APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& De
         {
             if (desc->TypeOfComponent() == COMPONENT_HALF)
             {
-                GLogger.Printf("APipelineGLImpl::ctor: Half floats not supported by current hardware\n");
+                LOG("APipelineGLImpl::ctor: Half floats not supported by current hardware\n");
             }
         }
     }
@@ -75,7 +75,7 @@ APipelineGLImpl::APipelineGLImpl(ADeviceGLImpl* pDevice, SPipelineDesc const& De
 
         if (NumPatchVertices > pDevice->GetDeviceCaps(DEVICE_CAPS_MAX_PATCH_VERTICES))
         {
-            GLogger.Printf("APipelineGLImpl::ctor: num patch vertices > DEVICE_CAPS_MAX_PATCH_VERTICES\n");
+            LOG("APipelineGLImpl::ctor: num patch vertices > DEVICE_CAPS_MAX_PATCH_VERTICES\n");
         }
     }
 

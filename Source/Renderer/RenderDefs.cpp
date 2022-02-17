@@ -213,7 +213,7 @@ bool STexturePixelFormat::IsSRGB() const
 int STexturePixelFormat::SizeInBytesUncompressed() const
 {
     if ( IsCompressed() ) {
-        GLogger.Printf( "SizeInBytesUncompressed: called for compressed pixel format\n" );
+        LOG("SizeInBytesUncompressed: called for compressed pixel format\n");
         return 0;
     }
 
@@ -223,7 +223,7 @@ int STexturePixelFormat::SizeInBytesUncompressed() const
 int STexturePixelFormat::BlockSizeCompressed() const
 {
     if ( !IsCompressed() ) {
-        GLogger.Printf( "BlockSizeCompressed: called for uncompressed pixel format\n" );
+        LOG("BlockSizeCompressed: called for uncompressed pixel format\n");
         return 0;
     }
 
@@ -262,37 +262,37 @@ bool STexturePixelFormat::GetAppropriatePixelFormat( EImagePixelFormat const & _
         //case IMAGE_PF_RGB:
         //    _PixelFormat = TEXTURE_PF_BGRA8_UNORM;
         //    bNeedToAddAlpha = true;
-        //    GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+        //    LOG( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
         //    break;
         //case IMAGE_PF_RGB_GAMMA2:
         //    _PixelFormat = TEXTURE_PF_BGRA8_SRGB;
         //    bNeedToAddAlpha = true;
-        //    GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+        //    LOG( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
         //    break;
         //case IMAGE_PF_RGB16F:
         //    _PixelFormat = TEXTURE_PF_BGRA16F;
         //    bNeedToAddAlpha = true;
-        //    GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+        //    LOG( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
         //    break;
         case IMAGE_PF_RGB32F:
             _PixelFormat = TEXTURE_PF_BGR32F;
-            GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+            LOG("GetAppropriatePixelFormat: Waring: expect channel order BGR\n");
             break;
         case IMAGE_PF_RGBA:
             _PixelFormat = TEXTURE_PF_BGRA8_UNORM;
-            GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+            LOG("GetAppropriatePixelFormat: Waring: expect channel order BGR\n");
             break;
         case IMAGE_PF_RGBA_GAMMA2:
             _PixelFormat = TEXTURE_PF_BGRA8_SRGB;
-            GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+            LOG("GetAppropriatePixelFormat: Waring: expect channel order BGR\n");
             break;
         case IMAGE_PF_RGBA16F:
             _PixelFormat = TEXTURE_PF_BGRA16F;
-            GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+            LOG("GetAppropriatePixelFormat: Waring: expect channel order BGR\n");
             break;
         case IMAGE_PF_RGBA32F:
             _PixelFormat = TEXTURE_PF_BGRA32F;
-            GLogger.Printf( "GetAppropriatePixelFormat: Waring: expect channel order BGR\n" );
+            LOG("GetAppropriatePixelFormat: Waring: expect channel order BGR\n");
             break;
         //case IMAGE_PF_BGR:
         //    _PixelFormat = TEXTURE_PF_BGRA8_UNORM;
@@ -327,7 +327,7 @@ bool STexturePixelFormat::GetAppropriatePixelFormat( EImagePixelFormat const & _
         case IMAGE_PF_AUTO_16F:
         case IMAGE_PF_AUTO_32F:
         default:
-            GLogger.Printf( "GetAppropriatePixelFormat: invalid image\n" );
+            LOG("GetAppropriatePixelFormat: invalid image\n");
             return false;
     }
 

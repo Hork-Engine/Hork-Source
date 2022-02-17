@@ -74,7 +74,7 @@ ATerrain::ATerrain(int Resolution, const float* pData)
 {
     if (!IsPowerOfTwo(Resolution - 1))
     {
-        GLogger.Printf("ATerrain::ctor: invalid resolution\n");
+        LOG("ATerrain::ctor: invalid resolution\n");
         return;
     }
 
@@ -449,7 +449,7 @@ bool ATerrain::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, floa
 
     HeightfieldShape->performRaycast(&triangleRaycastCallback, btVectorToFloat3(RayStartLocal), btVectorToFloat3(RayStartLocal + RayDir * Distance));
 
-    //GLogger.Printf( "triangleRaycastCallback.IntersectionCount %d\n", triangleRaycastCallback.IntersectionCount );
+    //LOG( "triangleRaycastCallback.IntersectionCount {}\n", triangleRaycastCallback.IntersectionCount );
 
     if (triangleRaycastCallback.IntersectionCount > 0)
     {

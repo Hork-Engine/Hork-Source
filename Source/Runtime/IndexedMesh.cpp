@@ -235,14 +235,14 @@ bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
     member = doc.FindMember("Mesh");
     if (!member)
     {
-        GLogger.Printf("AIndexedMesh::LoadResource: invalid mesh\n");
+        LOG("AIndexedMesh::LoadResource: invalid mesh\n");
         return false;
     }
 
     AString meshFile = member->GetString();
     if (meshFile.IsEmpty())
     {
-        GLogger.Printf("AIndexedMesh::LoadResource: invalid mesh\n");
+        LOG("AIndexedMesh::LoadResource: invalid mesh\n");
         return false;
     }
 
@@ -251,14 +251,14 @@ bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
 
     if (!meshBinary->GetSizeInBytes())
     {
-        GLogger.Printf("AIndexedMesh::LoadResource: invalid mesh\n");
+        LOG("AIndexedMesh::LoadResource: invalid mesh\n");
         return false;
     }
 
     AMemoryStream meshData;
     if (!meshData.OpenRead(meshFile.CStr(), meshBinary->GetBinaryData(), meshBinary->GetSizeInBytes()))
     {
-        GLogger.Printf("AIndexedMesh::LoadResource: invalid mesh\n");
+        LOG("AIndexedMesh::LoadResource: invalid mesh\n");
         return false;
     }
 
@@ -266,7 +266,7 @@ bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
 
     if (fileFormat != FMT_FILE_TYPE_MESH)
     {
-        GLogger.Printf("Expected file format %d\n", FMT_FILE_TYPE_MESH);
+        LOG("Expected file format {}\n", FMT_FILE_TYPE_MESH);
         return false;
     }
 
@@ -274,7 +274,7 @@ bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
 
     if (fileVersion != FMT_VERSION_MESH)
     {
-        GLogger.Printf("Expected file version %d\n", FMT_VERSION_MESH);
+        LOG("Expected file version {}\n", FMT_VERSION_MESH);
         return false;
     }
 
@@ -443,14 +443,14 @@ bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
     uint32_t fileFormat = Stream.ReadUInt32();
 
     if ( fileFormat != FMT_FILE_TYPE_MESH ) {
-        GLogger.Printf( "Expected file format %d\n", FMT_FILE_TYPE_MESH );
+        LOG( "Expected file format {}\n", FMT_FILE_TYPE_MESH );
         return false;
     }
 
     uint32_t fileVersion = Stream.ReadUInt32();
 
     if ( fileVersion != FMT_VERSION_MESH ) {
-        GLogger.Printf( "Expected file version %d\n", FMT_VERSION_MESH );
+        LOG( "Expected file version {}\n", FMT_VERSION_MESH );
         return false;
     }
 
@@ -598,7 +598,7 @@ void AIndexedMesh::GenerateBVH(unsigned int PrimitivesPerLeaf)
 
     if (bSkinnedMesh)
     {
-        GLogger.Printf("AIndexedMesh::GenerateBVH: called for skinned mesh\n");
+        LOG("AIndexedMesh::GenerateBVH: called for skinned mesh\n");
         return;
     }
 
@@ -685,7 +685,7 @@ bool AIndexedMesh::SendVertexDataToGPU(int _VerticesCount, int _StartVertexLocat
 
     if (_StartVertexLocation + _VerticesCount > Vertices.Size())
     {
-        GLogger.Printf("AIndexedMesh::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr());
+        LOG("AIndexedMesh::SendVertexDataToGPU: Referencing outside of buffer ({})\n", GetObjectName());
         return false;
     }
 
@@ -705,7 +705,7 @@ bool AIndexedMesh::WriteVertexData(SMeshVertex const* _Vertices, int _VerticesCo
 
     if (_StartVertexLocation + _VerticesCount > Vertices.Size())
     {
-        GLogger.Printf("AIndexedMesh::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameCStr());
+        LOG("AIndexedMesh::WriteVertexData: Referencing outside of buffer ({})\n", GetObjectName());
         return false;
     }
 
@@ -723,7 +723,7 @@ bool AIndexedMesh::SendJointWeightsToGPU(int _VerticesCount, int _StartVertexLoc
 {
     if (!bSkinnedMesh)
     {
-        GLogger.Printf("AIndexedMesh::SendJointWeightsToGPU: Cannot write joint weights for static mesh\n");
+        LOG("AIndexedMesh::SendJointWeightsToGPU: Cannot write joint weights for static mesh\n");
         return false;
     }
 
@@ -734,7 +734,7 @@ bool AIndexedMesh::SendJointWeightsToGPU(int _VerticesCount, int _StartVertexLoc
 
     if (_StartVertexLocation + _VerticesCount > Weights.Size())
     {
-        GLogger.Printf("AIndexedMesh::SendJointWeightsToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr());
+        LOG("AIndexedMesh::SendJointWeightsToGPU: Referencing outside of buffer ({})\n", GetObjectName());
         return false;
     }
 
@@ -749,7 +749,7 @@ bool AIndexedMesh::WriteJointWeights(SMeshVertexSkin const* _Vertices, int _Vert
 {
     if (!bSkinnedMesh)
     {
-        GLogger.Printf("AIndexedMesh::WriteJointWeights: Cannot write joint weights for static mesh\n");
+        LOG("AIndexedMesh::WriteJointWeights: Cannot write joint weights for static mesh\n");
         return false;
     }
 
@@ -760,7 +760,7 @@ bool AIndexedMesh::WriteJointWeights(SMeshVertexSkin const* _Vertices, int _Vert
 
     if (_StartVertexLocation + _VerticesCount > Weights.Size())
     {
-        GLogger.Printf("AIndexedMesh::WriteJointWeights: Referencing outside of buffer (%s)\n", GetObjectNameCStr());
+        LOG("AIndexedMesh::WriteJointWeights: Referencing outside of buffer ({})\n", GetObjectName());
         return false;
     }
 
@@ -778,7 +778,7 @@ bool AIndexedMesh::SendIndexDataToGPU(int _IndexCount, int _StartIndexLocation)
 
     if (_StartIndexLocation + _IndexCount > Indices.Size())
     {
-        GLogger.Printf("AIndexedMesh::SendIndexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr());
+        LOG("AIndexedMesh::SendIndexDataToGPU: Referencing outside of buffer ({})\n", GetObjectName());
         return false;
     }
 
@@ -798,7 +798,7 @@ bool AIndexedMesh::WriteIndexData(unsigned int const* _Indices, int _IndexCount,
 
     if (_StartIndexLocation + _IndexCount > Indices.Size())
     {
-        GLogger.Printf("AIndexedMesh::WriteIndexData: Referencing outside of buffer (%s)\n", GetObjectNameCStr());
+        LOG("AIndexedMesh::WriteIndexData: Referencing outside of buffer ({})\n", GetObjectName());
         return false;
     }
 
@@ -1089,7 +1089,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         return;
     }
 
-    GLogger.Printf("Unknown internal mesh %s\n", _Path);
+    LOG("Unknown internal mesh {}\n", _Path);
 
     LoadInternalResource("/Default/Meshes/Box");
 }
@@ -1336,7 +1336,7 @@ bool AIndexedMeshSubpart::Raycast(Float3 const& _RayStart, Float3 const& _RayDir
     {
         if (bAABBTreeDirty)
         {
-            GLogger.Printf("AIndexedMeshSubpart::Raycast: bvh is outdated\n");
+            LOG("AIndexedMeshSubpart::Raycast: bvh is outdated\n");
             return false;
         }
 
@@ -1446,7 +1446,7 @@ bool AIndexedMeshSubpart::RaycastClosest(Float3 const& _RayStart, Float3 const& 
     {
         if (bAABBTreeDirty)
         {
-            GLogger.Printf("AIndexedMeshSubpart::RaycastClosest: bvh is outdated\n");
+            LOG("AIndexedMeshSubpart::RaycastClosest: bvh is outdated\n");
             return false;
         }
 
@@ -1617,7 +1617,7 @@ bool ALightmapUV::SendVertexDataToGPU(int _VerticesCount, int _StartVertexLocati
 
     if (_StartVertexLocation + _VerticesCount > Vertices.Size())
     {
-        GLogger.Printf("ALightmapUV::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr());
+        LOG("ALightmapUV::SendVertexDataToGPU: Referencing outside of buffer ({})\n", GetObjectName());
         return false;
     }
 
@@ -1637,7 +1637,7 @@ bool ALightmapUV::WriteVertexData(SMeshVertexUV const* _Vertices, int _VerticesC
 
     if (_StartVertexLocation + _VerticesCount > Vertices.Size())
     {
-        GLogger.Printf("ALightmapUV::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameCStr());
+        LOG("ALightmapUV::WriteVertexData: Referencing outside of buffer ({})\n", GetObjectName());
         return false;
     }
 
@@ -1719,7 +1719,7 @@ bool AVertexLight::SendVertexDataToGPU(int _VerticesCount, int _StartVertexLocat
 
     if (_StartVertexLocation + _VerticesCount > Vertices.Size())
     {
-        GLogger.Printf("AVertexLight::SendVertexDataToGPU: Referencing outside of buffer (%s)\n", GetObjectNameCStr());
+        LOG("AVertexLight::SendVertexDataToGPU: Referencing outside of buffer ({})\n", GetObjectName());
         return false;
     }
 
@@ -1739,7 +1739,7 @@ bool AVertexLight::WriteVertexData(SMeshVertexLight const* _Vertices, int _Verti
 
     if (_StartVertexLocation + _VerticesCount > Vertices.Size())
     {
-        GLogger.Printf("AVertexLight::WriteVertexData: Referencing outside of buffer (%s)\n", GetObjectNameCStr());
+        LOG("AVertexLight::WriteVertexData: Referencing outside of buffer ({})\n", GetObjectName());
         return false;
     }
 
@@ -3205,7 +3205,7 @@ void ATreeAABB::InitializeTriangleSoup(SMeshVertex const* _Vertices, unsigned in
     //    + Indirection.Reserved() * sizeof( Indirection[0] )
     //    + sizeof( *this );
 
-    //GLogger.Printf( "AABBTree memory usage: %i  %i\n", sz, sz2 );
+    //LOG( "AABBTree memory usage: {}  {}\n", sz, sz2 );
 }
 
 void ATreeAABB::InitializePrimitiveSoup(SPrimitiveDef const* _Primitives, unsigned int _PrimitiveCount, unsigned int _PrimitivesPerLeaf)

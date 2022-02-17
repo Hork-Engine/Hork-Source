@@ -111,7 +111,7 @@ ACircularBuffer::SChainBuffer * ACircularBuffer::Swap()
 
     Wait( pCurrent->Sync );
 
-    //GLogger.Printf( "Swap at %d\n", GFrameData->FrameNumber );
+    //LOG( "Swap at {}\n", GFrameData->FrameNumber );
 
     return pCurrent;
 }

@@ -392,7 +392,7 @@ int ALevel::MarkLeafs(int InViewLeaf)
 {
     if (VisibilityMethod != LEVEL_VISIBILITY_PVS)
     {
-        GLogger.Printf("ALevel::MarkLeafs: expect LEVEL_VISIBILITY_PVS\n");
+        LOG("ALevel::MarkLeafs: expect LEVEL_VISIBILITY_PVS\n");
         return ViewMark;
     }
 
@@ -524,7 +524,7 @@ Float3 ALevel::SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord)
             break;
         }
         default:
-            GLogger.Printf("ALevel::SampleLight: Unknown lightmap format\n");
+            LOG("ALevel::SampleLight: Unknown lightmap format\n");
             break;
     }
 
@@ -562,7 +562,7 @@ void ALevel::DrawDebug(ADebugRenderer* InRenderer)
     for ( BvAxisAlignedBox const & box : clusters ) {
         InRenderer->DrawAABB( box );
     }
-    //GLogger.Printf( "leafs %d clusters %d\n", Leafs.Size(), clusters.Size() );
+    //LOG( "leafs {} clusters {}\n", Leafs.Size(), clusters.Size() );
 #endif
 
     // Draw light portals

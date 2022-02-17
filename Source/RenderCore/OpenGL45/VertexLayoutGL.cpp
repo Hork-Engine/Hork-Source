@@ -43,7 +43,7 @@ std::unique_ptr<AVertexArrayObjectGL> AVertexLayoutGL::CreateVAO()
     glCreateVertexArrays(1, &vaoHandle);
     if (!vaoHandle)
     {
-        GLogger.Printf("AVertexLayoutGL::CreateVAO: couldn't create vertex array object\n");
+        LOG("AVertexLayoutGL::CreateVAO: couldn't create vertex array object\n");
 
         // Create a dummy vao
         return std::make_unique<AVertexArrayObjectGL>(0);

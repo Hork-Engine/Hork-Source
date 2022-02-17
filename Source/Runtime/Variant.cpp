@@ -51,7 +51,7 @@ AStringView GetToken(char* Token, size_t TokenSize, AStringView String, bool bCr
         {
             if (!bCrossLine)
             {
-                GLogger.Printf("Unexpected new line\n");
+                LOG("Unexpected new line\n");
                 return AStringView(p, (int)(end-p));
             }
         }
@@ -71,7 +71,7 @@ AStringView GetToken(char* Token, size_t TokenSize, AStringView String, bool bCr
             p++;
             if (!bCrossLine)
             {
-                GLogger.Printf("Unexpected new line\n");
+                LOG("Unexpected new line\n");
                 break;
             }
             continue;
@@ -82,7 +82,7 @@ AStringView GetToken(char* Token, size_t TokenSize, AStringView String, bool bCr
 
         if (token_p == &Token[TokenSize - 1])
         {
-            GLogger.Printf("Token buffer overflow\n");
+            LOG("Token buffer overflow\n");
             break;
         }
 
@@ -114,7 +114,7 @@ VectorType ParseVector(AStringView String, AStringView *NewString = nullptr)
     s = GetToken(token, sizeof(token), String);
     if (Platform::Strcmp(token, "("))
     {
-        GLogger.Printf("Expected '('\n");
+        LOG("Expected '('\n");
         return v;
     }
 
@@ -123,7 +123,7 @@ VectorType ParseVector(AStringView String, AStringView *NewString = nullptr)
         s = GetToken(token, sizeof(token), s);
         if (!token[0])
         {
-            GLogger.Printf("Expected value\n");
+            LOG("Expected value\n");
             return v;
         }
 
@@ -135,7 +135,7 @@ VectorType ParseVector(AStringView String, AStringView *NewString = nullptr)
     s = GetToken(token, sizeof(token), s);
     if (Platform::Strcmp(token, ")"))
     {
-        GLogger.Printf("Expected ')'\n");
+        LOG("Expected ')'\n");
     }
 
     return v;
@@ -154,7 +154,7 @@ MatrixType ParseMatrix(AStringView String)
     s = GetToken(token, sizeof(token), s);
     if (Platform::Strcmp(token, "("))
     {
-        GLogger.Printf("Expected '('\n");
+        LOG("Expected '('\n");
         return matrix;
     }
 
@@ -168,7 +168,7 @@ MatrixType ParseMatrix(AStringView String)
     s = GetToken(token, sizeof(token), s);
     if (Platform::Strcmp(token, ")"))
     {
-        GLogger.Printf("Expected ')'\n");
+        LOG("Expected ')'\n");
     }
 
     return matrix;
@@ -185,14 +185,14 @@ SResourceRef StringToResourceRef(AStringView String)
     s = GetToken(token, sizeof(token), s);
     if (Platform::Strcmp(token, "("))
     {
-        GLogger.Printf("Expected '('\n");
+        LOG("Expected '('\n");
         return {};
     }
 
     s = GetToken(token, sizeof(token), s);
     if (!token[0])
     {
-        GLogger.Printf("Expected resource type\n");
+        LOG("Expected resource type\n");
         return {};
     }
 
@@ -201,7 +201,7 @@ SResourceRef StringToResourceRef(AStringView String)
     s = GetToken(token, sizeof(token), s);
     if (!token[0])
     {
-        GLogger.Printf("Expected resource id\n");
+        LOG("Expected resource id\n");
         return {};
     }
 
@@ -210,7 +210,7 @@ SResourceRef StringToResourceRef(AStringView String)
     s = GetToken(token, sizeof(token), s);
     if (Platform::Strcmp(token, ")"))
     {
-        GLogger.Printf("Expected ')'\n");
+        LOG("Expected ')'\n");
     }
 
     return ref;

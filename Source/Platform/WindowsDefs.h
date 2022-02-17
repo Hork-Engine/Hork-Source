@@ -39,4 +39,6 @@ SOFTWARE.
 #undef FindResource
 #undef GetObject
 #undef GetCommandLine
+#undef WriteConsole
+#undef ERROR
 #endif

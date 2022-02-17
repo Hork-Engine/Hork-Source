@@ -1216,14 +1216,10 @@ void WTextEdit::OnKeyEvent(struct SKeyEvent const& _Event, double _TimeStamp)
                 break;
 
             case KEY_Z:
-
                 if (bAllowUndo && !bReadOnly)
                 {
-
                     if (bShortcutKey)
                     {
-                        GLogger.Printf("Undo\n");
-
                         PressKey(STB_TEXTEDIT_K_UNDO);
 
                         ClearSelection();
@@ -1231,9 +1227,6 @@ void WTextEdit::OnKeyEvent(struct SKeyEvent const& _Event, double _TimeStamp)
                     }
                     else if (bShiftShortcutOSX || (_Event.ModMask & (KMOD_MASK_SHIFT | KMOD_MASK_CONTROL)) == (KMOD_MASK_SHIFT | KMOD_MASK_CONTROL))
                     {
-
-                        GLogger.Printf("Redo\n");
-
                         PressKey(STB_TEXTEDIT_K_REDO);
 
                         ClearSelection();

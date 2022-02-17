@@ -128,7 +128,7 @@ void ASkinnedComponent::AddAnimationController(AAnimationController* _Controller
     {
         if (_Controller->Owner != this)
         {
-            GLogger.Printf("ASkinnedComponent::AddAnimationController: animation controller already added to other component\n");
+            LOG("ASkinnedComponent::AddAnimationController: animation controller already added to other component\n");
         }
         return;
     }
@@ -203,7 +203,7 @@ void ASkinnedComponent::MergeJointAnimations()
         if (SoftBody && bUpdateAbsoluteTransforms)
         {
 
-            //GLogger.Printf("Update abs matrices\n");
+            //LOG("Update abs matrices\n");
             TPodVector<SJoint> const& joints = Skeleton->GetJoints();
             for (int j = 0; j < joints.Size(); j++)
             {

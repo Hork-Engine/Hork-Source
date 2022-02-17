@@ -125,7 +125,7 @@ AVirtualTextureCache::AVirtualTextureCache(SVirtualTextureCacheCreateInfo const&
 
     bufferCI.SizeInBytes = AlignedSize * MAX_UPLOADS_PER_FRAME;
 
-    GLogger.Printf("Virtual texture cache transfer buffer size: %d kb\n", bufferCI.SizeInBytes >> 10);
+    LOG("Virtual texture cache transfer buffer size: {} kb\n", bufferCI.SizeInBytes >> 10);
 
     GDevice->CreateBuffer(bufferCI, nullptr, &TransferBuffer);
     TransferBuffer->SetDebugName("Virtual texture page transfer buffer");
@@ -201,7 +201,7 @@ bool AVirtualTextureCache::CreateTexture(const char* FileName, TRef<AVirtualText
 //    HK_ASSERT( pTexture && pTexture->pCache == this );
 
 //    if ( !pTexture || pTexture->pCache != this ) {
-//        GLogger.Printf( "AVirtualTextureCache::DestroyTexture: invalid texture\n" );
+//        LOG( "AVirtualTextureCache::DestroyTexture: invalid texture\n" );
 //        return;
 //    }
 
@@ -304,7 +304,7 @@ void AVirtualTextureCache::Update()
             maxPendingLRUs = Math::Max(maxPendingLRUs, texture->PendingUpdateLRU.Size());
             texture->PendingUpdateLRU.Clear(); // No need to update LRU
         }
-        //GLogger.Printf( "maxPendingLRUs %d\n", maxPendingLRUs );
+        //LOG( "maxPendingLRUs {}\n", maxPendingLRUs );
         return;
     }
 
@@ -329,7 +329,7 @@ void AVirtualTextureCache::Update()
         texture->PendingUpdateLRU.Clear();
     }
 
-    //GLogger.Printf( "maxPendingLRUs %d\n", maxPendingLRUs );
+    //LOG( "maxPendingLRUs {}\n", maxPendingLRUs );
 
     int numFirstReservedPages = 0; //1;  // first lod always must be in cache
     int currentCacheCapacity  = Math::Min<int>(PageCacheCapacity - numFirstReservedPages, Transfers.Size());
@@ -382,7 +382,7 @@ void AVirtualTextureCache::Update()
         {
             if (physPage->pInfo->Time + 4 >= time)
             {
-                GLogger.Printf("AVirtualTextureCache::UploadPages: texture cache thrashing\n");
+                LOG("AVirtualTextureCache::UploadPages: texture cache thrashing\n");
                 // TODO: move uploaded pages to temporary memory for fast re-upload later
                 DiscardTransfers(&Transfers[fetchIndex], Transfers.Size() - fetchIndex);
                 break;
@@ -417,10 +417,10 @@ void AVirtualTextureCache::Update()
 
     if (d_duplicates > 0)
     {
-        GLogger.Printf("Double streamed %d times\n", d_duplicates);
+        LOG("Double streamed {} times\n", d_duplicates);
     }
 
-    GLogger.Printf("Streamed per frame %d, uploaded %d, time %d microsec\n", Transfers.Size(), d_uploaded, Platform::SysMicroseconds() - uploadStartTime);
+    LOG("Streamed per frame {}, uploaded {}, time {} microsec\n", Transfers.Size(), d_uploaded, Platform::SysMicroseconds() - uploadStartTime);
 
     UnlockTransfers();
 

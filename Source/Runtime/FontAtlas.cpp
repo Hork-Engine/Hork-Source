@@ -2381,7 +2381,7 @@ void AFont::LoadInternalResource(const char* _Path)
         return;
     }
 
-    GLogger.Printf("Unknown internal font %s\n", _Path);
+    LOG("Unknown internal font {}\n", _Path);
 
     LoadInternalResource("/Default/Fonts/Default");
 }
@@ -2403,14 +2403,14 @@ bool AFont::LoadResource(IBinaryStream& Stream)
     ADocMember* fontMemb = doc.FindMember("Font");
     if (!fontMemb)
     {
-        GLogger.Printf("AFont::LoadResource: invalid font\n");
+        LOG("AFont::LoadResource: invalid font\n");
         return false;
     }
 
     AString fontFile = fontMemb->GetString();
     if (fontFile.IsEmpty())
     {
-        GLogger.Printf("AFont::LoadResource: invalid font\n");
+        LOG("AFont::LoadResource: invalid font\n");
         return false;
     }
 
@@ -2419,7 +2419,7 @@ bool AFont::LoadResource(IBinaryStream& Stream)
 
     if (!fontBinary->GetSizeInBytes())
     {
-        GLogger.Printf("AFont::LoadResource: invalid font\n");
+        LOG("AFont::LoadResource: invalid font\n");
         return false;
     }
 
@@ -2897,14 +2897,14 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
     const int fontOffset = stbtt_GetFontOffsetForIndex((const unsigned char*)_SysMem, cfg.FontNum);
     if (fontOffset < 0)
     {
-        GLogger.Printf("AFont::Build: Invalid font\n");
+        LOG("AFont::Build: Invalid font\n");
         return false;
     }
 
     stbtt_fontinfo fontInfo = {};
     if (!stbtt_InitFont(&fontInfo, (const unsigned char*)_SysMem, fontOffset))
     {
-        GLogger.Printf("AFont::Build: Invalid font\n");
+        LOG("AFont::Build: Invalid font\n");
         return false;
     }
 
@@ -2929,7 +2929,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
         {
             if (glyphsSet.GetBit(codepoint))
             {
-                GLogger.Printf("Warning: duplicated glyph\n");
+                LOG("Warning: duplicated glyph\n");
                 continue;
             }
 
@@ -2946,7 +2946,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
 
     if (totalGlyphsCount == 0)
     {
-        GLogger.Printf("AFont::Build: total glyph count = 0\n");
+        LOG("AFont::Build: total glyph count = 0\n");
         return false;
     }
 
@@ -3194,7 +3194,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
         }
         else
         {
-            GLogger.Printf("AFont::Build: Warning: couldn't create TAB glyph\n");
+            LOG("AFont::Build: Warning: couldn't create TAB glyph\n");
         }
     }
 
@@ -3205,7 +3205,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
     }
     else
     {
-        GLogger.Printf("AFont::Build: Warning: fallback character not found\n");
+        LOG("AFont::Build: Warning: fallback character not found\n");
     }
 
     FallbackGlyph    = &Glyphs[fallbackGlyphNum];

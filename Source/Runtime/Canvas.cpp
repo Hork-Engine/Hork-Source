@@ -139,7 +139,7 @@ void ACanvas::PopFont()
 {
     if (FontStack.IsEmpty())
     {
-        GLogger.Printf("ACanvas::PopFont: stack was corrupted\n");
+        LOG("ACanvas::PopFont: stack was corrupted\n");
         return;
     }
     DrawList.PopTextureID();

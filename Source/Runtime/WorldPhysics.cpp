@@ -499,7 +499,7 @@ void AWorldPhysics::DispatchContactAndOverlapEvents()
             }
             else
             {
-                //GLogger.Printf( "Assertion failed: bUnique\n" );
+                //LOG( "Assertion failed: bUnique\n" );
             }
         }
     }
@@ -1663,7 +1663,7 @@ bool AWorldPhysics::TraceConvex(SCollisionTraceResult& _Result, SConvexSweepTest
             margin   = _SweepTest.CollisionConvexHull->Margin;
             break;
         default:
-            GLogger.Printf("AWorld::TraceConvex: unsupported collision shape\n");
+            LOG("AWorld::TraceConvex: unsupported collision shape\n");
             return false;
     }
 

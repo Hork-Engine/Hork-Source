@@ -44,7 +44,7 @@ ABufferViewGLImpl::ABufferViewGLImpl(SBufferViewDesc const& Desc, ABufferGLImpl*
     GLuint bufferId = pSrcBuffer->GetHandleNativeGL();
     if (!bufferId)
     {
-        GLogger.Printf("ABufferViewGLImpl::ctor: invalid buffer handle\n");
+        LOG("ABufferViewGLImpl::ctor: invalid buffer handle\n");
         return;
     }
 
@@ -55,19 +55,19 @@ ABufferViewGLImpl::ABufferViewGLImpl(SBufferViewDesc const& Desc, ABufferGLImpl*
 
     if (!IsAligned(offset, GetDevice()->GetDeviceCaps(DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT)))
     {
-        GLogger.Printf("ABufferViewGLImpl::ctor: buffer offset is not aligned\n");
+        LOG("ABufferViewGLImpl::ctor: buffer offset is not aligned\n");
         return;
     }
 
     if (offset + sizeInBytes > pSrcBuffer->GetDesc().SizeInBytes)
     {
-        GLogger.Printf("ABufferViewGLImpl::ctor: invalid buffer range\n");
+        LOG("ABufferViewGLImpl::ctor: invalid buffer range\n");
         return;
     }
 
     if (sizeInBytes > GetDevice()->GetDeviceCaps(DEVICE_CAPS_BUFFER_VIEW_MAX_SIZE))
     {
-        GLogger.Printf("ABufferViewGLImpl::ctor: buffer view size > BUFFER_VIEW_MAX_SIZE\n");
+        LOG("ABufferViewGLImpl::ctor: buffer view size > BUFFER_VIEW_MAX_SIZE\n");
         return;
     }
 
@@ -106,19 +106,19 @@ void ABufferViewGLImpl::SetRange(size_t Offset, size_t SizeInBytes)
 {
     if (!IsAligned(Offset, GetDevice()->GetDeviceCaps(DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT)))
     {
-        GLogger.Printf("ABufferViewGLImpl::SetRange: buffer offset is not aligned\n");
+        LOG("ABufferViewGLImpl::SetRange: buffer offset is not aligned\n");
         return;
     }
 
     if (Offset + SizeInBytes > pSrcBuffer->GetDesc().SizeInBytes)
     {
-        GLogger.Printf("ABufferViewGLImpl::SetRange: invalid buffer range\n");
+        LOG("ABufferViewGLImpl::SetRange: invalid buffer range\n");
         return;
     }
 
     if (SizeInBytes > GetDevice()->GetDeviceCaps(DEVICE_CAPS_BUFFER_VIEW_MAX_SIZE))
     {
-        GLogger.Printf("ABufferViewGLImpl::SetRange: buffer view size > BUFFER_VIEW_MAX_SIZE\n");
+        LOG("ABufferViewGLImpl::SetRange: buffer view size > BUFFER_VIEW_MAX_SIZE\n");
         return;
     }
 

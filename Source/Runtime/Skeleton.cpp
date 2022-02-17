@@ -59,7 +59,7 @@ void ASkeleton::Initialize(SJoint* _Joints, int _JointsCount, BvAxisAlignedBox c
 
     if (_JointsCount < 0)
     {
-        GLogger.Printf("ASkeleton::Initialize: joints count < 0\n");
+        LOG("ASkeleton::Initialize: joints count < 0\n");
         _JointsCount = 0;
     }
 
@@ -83,7 +83,7 @@ void ASkeleton::LoadInternalResource(const char* _Path)
         return;
     }
 
-    GLogger.Printf("Unknown internal skeleton %s\n", _Path);
+    LOG("Unknown internal skeleton {}\n", _Path);
 
     LoadInternalResource("/Default/Skeleton/Default");
 }
@@ -94,7 +94,7 @@ bool ASkeleton::LoadResource(IBinaryStream& Stream)
 
     if (fileFormat != FMT_FILE_TYPE_SKELETON)
     {
-        GLogger.Printf("Expected file format %d\n", FMT_FILE_TYPE_SKELETON);
+        LOG("Expected file format {}\n", FMT_FILE_TYPE_SKELETON);
         return false;
     }
 
@@ -102,7 +102,7 @@ bool ASkeleton::LoadResource(IBinaryStream& Stream)
 
     if (fileVersion != FMT_VERSION_SKELETON)
     {
-        GLogger.Printf("Expected file version %d\n", FMT_VERSION_SKELETON);
+        LOG("Expected file version {}\n", FMT_VERSION_SKELETON);
         return false;
     }
 

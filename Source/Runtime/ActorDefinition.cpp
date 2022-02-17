@@ -53,7 +53,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
         {
             ActorClass = AActorComponent::Factory().LookupClass(className.CStr());
             if (!ActorClass)
-                GLogger.Printf("WARNING: Unknown C++ actor class '%s'\n", className.CStr());
+                LOG("WARNING: Unknown C++ actor class '{}'\n", className);
         }
     }
 
@@ -120,7 +120,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             {
                 if (componentIdMap.count(componentDef.Id) != 0)
                 {
-                    GLogger.Printf("WARNING: Found components with same id\n");
+                    LOG("WARNING: Found components with same id\n");
                 }
                 componentIdMap[componentDef.Id] = Components.Size();
             }
@@ -146,12 +146,12 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                 }
                 else
                 {
-                    GLogger.Printf("WARNING: Root component must be derived from ASceneComponent\n");
+                    LOG("WARNING: Root component must be derived from ASceneComponent\n");
                 }
             }
             else
             {
-                GLogger.Printf("WARNING: Specified root with unexisted id\n");
+                LOG("WARNING: Specified root with unexisted id\n");
             }
         }
     }
@@ -173,7 +173,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                 }
                 else
                 {
-                    GLogger.Printf("WARNING: Component can be attached only to other component derived from ASceneComponent\n");
+                    LOG("WARNING: Component can be attached only to other component derived from ASceneComponent\n");
                 }
             }
         }
@@ -222,7 +222,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
 
             if (publicPropertyNames.count(publicName))
             {
-                GLogger.Printf("WARNING: Unique public names expected\n");
+                LOG("WARNING: Unique public names expected\n");
                 continue;
             }
 
@@ -305,7 +305,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
 
                     if (publicPropertyNames.count(publicName))
                     {
-                        GLogger.Printf("WARNING: Unique public names expected\n");
+                        LOG("WARNING: Unique public names expected\n");
                         continue;
                     }
 

@@ -58,7 +58,7 @@ void AController::SetPawn(AActor* _Pawn)
 
     if (_Pawn && _Pawn->Controller)
     {
-        GLogger.Printf("Pawn already controlled by other controller\n");
+        LOG("Pawn already controlled by other controller\n");
         return;
     }
 

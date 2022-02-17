@@ -99,7 +99,7 @@ ABufferGLImpl::ABufferGLImpl(ADeviceGLImpl* pDevice, SBufferDesc const& Desc, co
     {
         glDeleteBuffers(1, &id);
 
-        GLogger.Printf("ABufferGLImpl::ctor: couldn't allocate buffer size %u bytes\n", Desc.SizeInBytes);
+        LOG("ABufferGLImpl::ctor: couldn't allocate buffer size {} bytes\n", Desc.SizeInBytes);
         return;
     }
 
@@ -134,7 +134,7 @@ bool ABufferGLImpl::Orphan()
 {
     if (GetDesc().bImmutableStorage)
     {
-        GLogger.Printf("Buffer::Orphan: expected mutable buffer\n");
+        LOG("Buffer::Orphan: expected mutable buffer\n");
         return false;
     }
 

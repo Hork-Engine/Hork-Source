@@ -67,7 +67,7 @@ bool ATexture::InitializeFromImage(AImage const& _Image)
 {
     if (!_Image.GetData())
     {
-        GLogger.Printf("ATexture::InitializeFromImage: empty image data\n");
+        LOG("ATexture::InitializeFromImage: empty image data\n");
         return false;
     }
 
@@ -299,7 +299,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    GLogger.Printf("Unknown internal texture %s\n", _Path);
+    LOG("Unknown internal texture {}\n", _Path);
 
     LoadInternalResource("/Default/Textures/Default2D");
 }
@@ -378,7 +378,7 @@ bool ATexture::LoadResource(IBinaryStream& Stream)
 
         if (fileFormat != FMT_FILE_TYPE_TEXTURE)
         {
-            GLogger.Printf("Expected file format %d\n", FMT_FILE_TYPE_TEXTURE);
+            LOG("Expected file format {}\n", FMT_FILE_TYPE_TEXTURE);
             return false;
         }
 
@@ -386,7 +386,7 @@ bool ATexture::LoadResource(IBinaryStream& Stream)
 
         if (fileVersion != FMT_VERSION_TEXTURE)
         {
-            GLogger.Printf("Expected file version %d\n", FMT_VERSION_TEXTURE);
+            LOG("Expected file version {}\n", FMT_VERSION_TEXTURE);
             return false;
         }
 
@@ -427,7 +427,7 @@ bool ATexture::LoadResource(IBinaryStream& Stream)
                 InitializeCubemapArray(texturePixelFormat, mipLevels, w, d);
                 break;
             default:
-                GLogger.Printf("ATexture::LoadResource: Unknown texture type %d\n", textureType);
+                LOG("ATexture::LoadResource: Unknown texture type {}\n", textureType);
                 return false;
         }
 
@@ -456,7 +456,7 @@ bool ATexture::LoadResource(IBinaryStream& Stream)
 
             if (size > maxSize)
             {
-                GLogger.Printf("ATexture::LoadResource invalid image %s\n", fn);
+                LOG("ATexture::LoadResource invalid image {}\n", fn);
                 break;
             }
 
@@ -913,7 +913,7 @@ bool ATexture::WriteTextureData1D(int _LocationX, int _Width, int _Lod, const vo
 {
     if (TextureType != TEXTURE_1D && TextureType != TEXTURE_1D_ARRAY)
     {
-        GLogger.Printf("ATexture::WriteTextureData1D: called for %s\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureData1D: called for {}\n", TextureTypeName[TextureType]);
         return false;
     }
     return WriteArbitraryData(_LocationX, 0, 0, _Width, 1, 1, _Lod, _SysMem);
@@ -923,7 +923,7 @@ bool ATexture::WriteTextureData1DArray(int _LocationX, int _Width, int _ArrayLay
 {
     if (TextureType != TEXTURE_1D_ARRAY)
     {
-        GLogger.Printf("ATexture::WriteTextureData1DArray: called for %s\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureData1DArray: called for {}\n", TextureTypeName[TextureType]);
         return false;
     }
     return WriteArbitraryData(_LocationX, 0, _ArrayLayer, _Width, 1, 1, _Lod, _SysMem);
@@ -933,7 +933,7 @@ bool ATexture::WriteTextureData2D(int _LocationX, int _LocationY, int _Width, in
 {
     if (TextureType != TEXTURE_2D && TextureType != TEXTURE_2D_ARRAY)
     {
-        GLogger.Printf("ATexture::WriteTextureData2D: called for %s\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureData2D: called for {}\n", TextureTypeName[TextureType]);
         return false;
     }
     return WriteArbitraryData(_LocationX, _LocationY, 0, _Width, _Height, 1, _Lod, _SysMem);
@@ -943,7 +943,7 @@ bool ATexture::WriteTextureData2DArray(int _LocationX, int _LocationY, int _Widt
 {
     if (TextureType != TEXTURE_2D_ARRAY)
     {
-        GLogger.Printf("ATexture::WriteTextureData2DArray: called for %s\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureData2DArray: called for {}\n", TextureTypeName[TextureType]);
         return false;
     }
     return WriteArbitraryData(_LocationX, _LocationY, _ArrayLayer, _Width, _Height, 1, _Lod, _SysMem);
@@ -953,7 +953,7 @@ bool ATexture::WriteTextureData3D(int _LocationX, int _LocationY, int _LocationZ
 {
     if (TextureType != TEXTURE_3D)
     {
-        GLogger.Printf("ATexture::WriteTextureData3D: called for %s\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureData3D: called for {}\n", TextureTypeName[TextureType]);
         return false;
     }
     return WriteArbitraryData(_LocationX, _LocationY, _LocationZ, _Width, _Height, _Depth, _Lod, _SysMem);
@@ -963,7 +963,7 @@ bool ATexture::WriteTextureDataCubemap(int _LocationX, int _LocationY, int _Widt
 {
     if (TextureType != TEXTURE_CUBEMAP && TextureType != TEXTURE_CUBEMAP_ARRAY)
     {
-        GLogger.Printf("ATexture::WriteTextureDataCubemap: called for %s\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureDataCubemap: called for {}\n", TextureTypeName[TextureType]);
         return false;
     }
     return WriteArbitraryData(_LocationX, _LocationY, _FaceIndex, _Width, _Height, 1, _Lod, _SysMem);
@@ -973,7 +973,7 @@ bool ATexture::WriteTextureDataCubemapArray(int _LocationX, int _LocationY, int 
 {
     if (TextureType != TEXTURE_CUBEMAP_ARRAY)
     {
-        GLogger.Printf("ATexture::WriteTextureDataCubemapArray: called for %s\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureDataCubemapArray: called for {}\n", TextureTypeName[TextureType]);
         return false;
     }
     return WriteArbitraryData(_LocationX, _LocationY, _ArrayLayer * 6 + _FaceIndex, _Width, _Height, 1, _Lod, _SysMem);
@@ -983,7 +983,7 @@ bool ATexture::WriteArbitraryData(int _LocationX, int _LocationY, int _LocationZ
 {
     if (!Width)
     {
-        GLogger.Printf("ATexture::WriteArbitraryData: texture is not initialized\n");
+        LOG("ATexture::WriteArbitraryData: texture is not initialized\n");
         return false;
     }
 

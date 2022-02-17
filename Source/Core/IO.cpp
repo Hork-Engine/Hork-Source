@@ -104,7 +104,7 @@ bool AFileStream::Open(AStringView FileName, FILE_OPEN_MODE _Mode)
     Name.FixPath();
     if (Name.Length() && Name[Name.Length() - 1] == '/')
     {
-        GLogger.Printf("Invalid file name %s\n", AString(FileName).CStr());
+        LOG("Invalid file name {}\n", FileName);
         Name.Clear();
         return false;
     }
@@ -134,7 +134,7 @@ bool AFileStream::Open(AStringView FileName, FILE_OPEN_MODE _Mode)
     FILE* f = OpenFile(Name.CStr(), fopen_mode);
     if (!f)
     {
-        GLogger.Printf("Couldn't open %s\n", Name.CStr());
+        LOG("Couldn't open {}\n", Name);
         Name.Clear();
         return false;
     }
@@ -178,7 +178,7 @@ size_t AFileStream::Read(void* pBuffer, size_t SizeInBytes)
 
     if (Mode != FILE_OPEN_MODE_READ)
     {
-        GLogger.Printf("Failed to read from %s (wrong mode)\n", Name.CStr());
+        LOG("Failed to read from {} (wrong mode)\n", Name);
     }
     else
     {
@@ -197,7 +197,7 @@ size_t AFileStream::Write(const void* pBuffer, size_t SizeInBytes)
 {
     if (Mode != FILE_OPEN_MODE_WRITE && Mode != FILE_OPEN_MODE_APPEND)
     {
-        GLogger.Printf("Failed to write %s (wrong mode)\n", Name.CStr());
+        LOG("Failed to write {} (wrong mode)\n", Name);
         return 0;
     }
 
@@ -211,7 +211,7 @@ char* AFileStream::Gets(char* pBuffer, size_t SizeInBytes)
 {
     if (Mode != FILE_OPEN_MODE_READ)
     {
-        GLogger.Printf("Failed to read from %s (wrong mode)\n", Name.CStr());
+        LOG("Failed to read from {} (wrong mode)\n", Name);
         return nullptr;
     }
 
@@ -382,7 +382,7 @@ bool AMemoryStream::OpenRead(AStringView FileName, AArchive const& Archive)
 
     if (!Archive.ExtractFileToHeapMemory(FileName, (void**)&pHeapPtr, &HeapSize))
     {
-        GLogger.Printf("Couldn't open %s\n", AString(FileName).CStr());
+        LOG("Couldn't open {}\n", FileName);
         return false;
     }
 
@@ -402,7 +402,7 @@ bool AMemoryStream::OpenRead(int FileIndex, AArchive const& Archive)
 
     if (!Archive.ExtractFileToHeapMemory(FileIndex, (void**)&pHeapPtr, &HeapSize))
     {
-        GLogger.Printf("Couldn't open %s\n", Name.CStr());
+        LOG("Couldn't open {}\n", Name);
         Name.Clear();
         return false;
     }
@@ -473,7 +473,7 @@ size_t AMemoryStream::Read(void* pBuffer, size_t SizeInBytes)
 {
     if (Mode != FILE_OPEN_MODE_READ)
     {
-        GLogger.Printf("Failed to read from %s (wrong mode)\n", Name.CStr());
+        LOG("Failed to read from {} (wrong mode)\n", Name);
         return 0;
     }
 
@@ -493,7 +493,7 @@ size_t AMemoryStream::Write(const void* pBuffer, size_t SizeInBytes)
 {
     if (Mode != FILE_OPEN_MODE_WRITE)
     {
-        GLogger.Printf("Failed to write %s (wrong mode)\n", Name.CStr());
+        LOG("Failed to write {} (wrong mode)\n", Name);
         return 0;
     }
 
@@ -502,7 +502,7 @@ size_t AMemoryStream::Write(const void* pBuffer, size_t SizeInBytes)
     {
         if (!bMemoryBufferOwner)
         {
-            GLogger.Printf("Failed to write %s (buffer overflowed)\n", Name.CStr());
+            LOG("Failed to write {} (buffer overflowed)\n", Name);
             return 0;
         }
         const int mod = requiredSize % Granularity;
@@ -519,7 +519,7 @@ char* AMemoryStream::Gets(char* pBuffer, size_t SizeInBytes)
 {
     if (Mode != FILE_OPEN_MODE_READ)
     {
-        GLogger.Printf("Failed to read from %s (wrong mode)\n", Name.CStr());
+        LOG("Failed to read from {} (wrong mode)\n", Name);
         return nullptr;
     }
 
@@ -660,7 +660,7 @@ bool AArchive::Open(AStringView ArchiveName, bool bResourcePack)
         const char* MAGIC = "ARESPACK";
         if (std::memcmp(&magic, MAGIC, sizeof(uint64_t)) != 0)
         {
-            GLogger.Printf("Invalid file format %s\n", ArchiveName);
+            LOG("Invalid file format {}\n", ArchiveName);
             return false;
         }
 
@@ -673,7 +673,7 @@ bool AArchive::Open(AStringView ArchiveName, bool bResourcePack)
     mz_bool status = mz_zip_reader_init_file_v2(&arch, AString(ArchiveName).CStr(), 0, fileStartOffset, archiveSize);
     if (!status)
     {
-        GLogger.Printf("Couldn't open archive %s\n", AString(ArchiveName).CStr());
+        LOG("Couldn't open archive {}\n", ArchiveName);
         return false;
     }
 
@@ -697,7 +697,7 @@ bool AArchive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
     mz_bool status = mz_zip_reader_init_mem(&arch, pMemory, SizeInBytes, 0);
     if (!status)
     {
-        GLogger.Printf("Couldn't open archive from memory\n");
+        LOG("Couldn't open archive from memory\n");
         return false;
     }
 
@@ -1057,10 +1057,10 @@ bool WriteResourcePack(AStringView SourcePath, AStringView ResultFile)
     path.FixSeparator();
     result.FixSeparator();
 
-    GLogger.Printf("==== WriteResourcePack ====\n"
-                   "Source '%s'\n"
-                   "Destination: '%s'\n",
-                   path.CStr(), result.CStr());
+    LOG("==== WriteResourcePack ====\n"
+        "Source '{}'\n"
+        "Destination: '{}'\n",
+        path, result);
 
     FILE* file = OpenFile(result.CStr(), "wb");
     if (!file)
@@ -1093,12 +1093,12 @@ bool WriteResourcePack(AStringView SourcePath, AStringView ResultFile)
 
                               AString fn = FileName.TruncateHead(path.Length() + 1);
 
-                              GLogger.Printf("Writing '%s'\n", fn.CStr());
+                              LOG("Writing '{}'\n", fn);
 
                               mz_bool status = mz_zip_writer_add_file(&zip, fn.CStr(), AString(FileName).CStr(), nullptr, 0, MZ_UBER_COMPRESSION);
                               if (!status)
                               {
-                                  GLogger.Printf("Failed to archive %s\n", AString(FileName).CStr());
+                                  LOG("Failed to archive {}\n", FileName);
                               }
                           });
 
@@ -1108,7 +1108,7 @@ bool WriteResourcePack(AStringView SourcePath, AStringView ResultFile)
 
     fclose(file);
 
-    GLogger.Printf("===========================\n");
+    LOG("===========================\n");
 
     return true;
 }

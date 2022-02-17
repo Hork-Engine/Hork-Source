@@ -56,26 +56,24 @@ SOFTWARE.
 // Miniz mz_compress2 provides better compression than default stb compression method
 HK_FORCEINLINE unsigned char* stbi_zlib_compress_override(unsigned char* data, int data_len, int* out_len, int quality)
 {
-    //GLogger.Printf( "stbi_zlib_compress_override %d\n", quality );
-    //GLogger.Printf( "stbi_zlib_compress_override data_len %d quality %d\n", data_len, quality );
     size_t buflen = Core::ZMaxCompressedSize(data_len);
-    //GLogger.Printf( "stbi_zlib_compress_override buflen %d\n", buflen );
+
     unsigned char* buf = (unsigned char*)STBIW_MALLOC(buflen);
     if (buf == NULL)
     {
-        GLogger.Printf("stbi_zlib_compress_override Malloc failed\n");
+        LOG("stbi_zlib_compress_override Malloc failed\n");
         return NULL;
     }
     if (!Core::ZCompress(buf, &buflen, data, data_len, PNG_COMPRESSION_LEVEL))
     {
-        GLogger.Printf("stbi_zlib_compress_override ZCompress failed\n");
+        LOG("stbi_zlib_compress_override ZCompress failed\n");
         STBIW_FREE(buf);
         return NULL;
     }
     *out_len = buflen;
     if (buflen == 0)
     { // compiler bug workaround (MSVC, Release)
-        GLogger.Printf("WritePNG: invalid compression\n");
+        LOG("WritePNG: invalid compression\n");
     }
     return buf;
 }
@@ -491,7 +489,7 @@ bool AImage::Load(IBinaryStream& _Stream, SImageMipmapConfig const* _MipmapGen, 
         {
             _Stream.SeekSet(streamOffset);
 
-            GLogger.Printf("AImage::Load: couldn't load %s\n", _Stream.GetFileName());
+            LOG("AImage::Load: couldn't load {}\n", _Stream.GetFileName());
             return false;
         }
     }

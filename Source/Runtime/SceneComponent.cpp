@@ -113,7 +113,7 @@ void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransfo
 
     if (_Parent == this)
     {
-        GLogger.Printf("ASceneComponent::Attach: Parent and child are same objects\n");
+        LOG("ASceneComponent::Attach: Parent and child are same objects\n");
         return;
     }
 
@@ -126,7 +126,7 @@ void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransfo
 
 #if 0
     if ( !IsSame( _Parent->GetParentActor(), GetParentActor() ) ) {
-        GLogger.Printf( "ASceneComponent::Attach: Parent and child are in different actors\n" );
+        LOG( "ASceneComponent::Attach: Parent and child are in different actors\n" );
         return;
     }
 #endif
@@ -134,7 +134,7 @@ void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransfo
     if (IsChild(_Parent, true))
     {
         // Object have desired parent in childs
-        GLogger.Printf("ASceneComponent::Attach: Recursive attachment\n");
+        LOG("ASceneComponent::Attach: Recursive attachment\n");
         return;
     }
 
@@ -260,7 +260,7 @@ int ASceneComponent::FindSocket(const char* _Name) const
             return socketIndex;
         }
     }
-    GLogger.Printf("Socket not found %s\n", _Name);
+    LOG("Socket not found {}\n", _Name);
     return -1;
 }
 

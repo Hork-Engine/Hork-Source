@@ -88,7 +88,7 @@ void ALexer::ErrorPrint(int _Err)
     AString str;
     MakeString(str, MSG_ERROR, GetError(_Err));
     str += "\n";
-    GLogger.Print(str.CStr());
+    LOG(str.CStr());
 }
 
 void ALexer::ErrorPrintf(const char* _Format, ...)
@@ -101,7 +101,7 @@ void ALexer::ErrorPrintf(const char* _Format, ...)
 
     AString str;
     MakeString(str, MSG_ERROR, text);
-    GLogger.Print(str.CStr());
+    LOG(str.CStr());
 }
 
 void ALexer::WarnPrintf(const char* _Format, ...)
@@ -114,7 +114,7 @@ void ALexer::WarnPrintf(const char* _Format, ...)
 
     AString str;
     MakeString(str, MSG_WARNING, text);
-    GLogger.Print(str.CStr());
+    LOG(str.CStr());
 }
 
 void ALexer::AddOperator(const char* _String)

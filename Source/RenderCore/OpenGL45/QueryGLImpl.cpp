@@ -51,7 +51,7 @@ AQueryPoolGLImpl::AQueryPoolGLImpl(ADeviceGLImpl* pDevice, SQueryPoolDesc const&
 
     if (!IdPool)
     {
-        GLogger.Printf("AQueryPoolGLImpl::ctor: out of memory\n");
+        LOG("AQueryPoolGLImpl::ctor: out of memory\n");
         return;
     }
 

@@ -44,13 +44,13 @@ bool BinaryToC(const char* _SourceFile, const char* _DestFile, const char* _SymN
 
     if (!source.OpenRead(_SourceFile))
     {
-        GLogger.Printf("Failed to open %s\n", _SourceFile);
+        LOG("Failed to open {}\n", _SourceFile);
         return false;
     }
 
     if (!dest.OpenWrite(_DestFile))
     {
-        GLogger.Printf("Failed to open %s\n", _DestFile);
+        LOG("Failed to open {}\n", _DestFile);
         return false;
     }
 
@@ -71,13 +71,13 @@ bool BinaryToCompressedC(const char* _SourceFile, const char* _DestFile, const c
 
     if (!source.OpenRead(_SourceFile))
     {
-        GLogger.Printf("Failed to open %s\n", _SourceFile);
+        LOG("Failed to open {}\n", _SourceFile);
         return false;
     }
 
     if (!dest.OpenWrite(_DestFile))
     {
-        GLogger.Printf("Failed to open %s\n", _DestFile);
+        LOG("Failed to open {}\n", _DestFile);
         return false;
     }
 
@@ -97,13 +97,13 @@ bool BinaryToCompressedC(const char* _SourceFile, const char* _DestFile, const c
     return true;
 }
 
-void WriteBinaryToC(IBinaryStream& Stream, const char* _SymName, const void* pData, size_t SizeInBytes, bool bEncodeBase85)
+void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, const char* _SymName, const void* pData, size_t SizeInBytes, bool bEncodeBase85)
 {
     const byte* bytes = (const byte*)pData;
 
     if (bEncodeBase85)
     {
-        Stream.Printf("static const char %s_Data_Base85[%d+1] =\n    \"", _SymName, (int)((SizeInBytes + 3) / 4) * 5);
+        Stream.FormattedPrint(HK_FMT("static const char {}_Data_Base85[{}+1] =\n    \""), _SymName, (int)((SizeInBytes + 3) / 4) * 5);
         char prev_c = 0;
         for (size_t i = 0; i < SizeInBytes; i += 4)
         {
@@ -112,36 +112,39 @@ void WriteBinaryToC(IBinaryStream& Stream, const char* _SymName, const void* pDa
             {
                 unsigned int x = (d % 85) + 35;
                 char         c = (x >= '\\') ? x + 1 : x;
-                Stream.Printf((c == '?' && prev_c == '?') ? "\\%c" : "%c", c);
+                if (c == '?' && prev_c == '?')
+                    Stream.FormattedPrint(HK_FMT("\\{}"), c);
+                else
+                    Stream.FormattedPrint(HK_FMT("{}"), c);
                 prev_c = c;
             }
             if ((i % 112) == 112 - 4)
-                Stream.Printf("\"\n    \"");
+                Stream.FormattedPrint(HK_FMT("\"\n    \""));
         }
-        Stream.Printf("\";\n\n");
+        Stream.FormattedPrint(HK_FMT("\";\n\n"));
     }
     else
     {
-        Stream.Printf("static const size_t %s_Size = %d;\n", _SymName, (int)SizeInBytes);
-        Stream.Printf("static const uint64_t %s_Data[%d] =\n{", _SymName, Align(SizeInBytes, 8));
+        Stream.FormattedPrint(HK_FMT("static const size_t {}_Size = {};\n"), _SymName, (int)SizeInBytes);
+        Stream.FormattedPrint(HK_FMT("static const uint64_t {}_Data[{}] =\n{{"), _SymName, Align(SizeInBytes, 8));
         int column = 0;
         for (size_t i = 0; i < SizeInBytes; i += 8)
         {
             uint64_t d = *(uint64_t*)(bytes + i);
             if ((column++ % 6) == 0)
             {
-                Stream.Printf("\n    0x%08x%08x", Math::INT64_HIGH_INT(d), Math::INT64_LOW_INT(d));
+                Stream.FormattedPrint(HK_FMT("\n    0x{:08x}{:08x}"), Math::INT64_HIGH_INT(d), Math::INT64_LOW_INT(d));
             }
             else
             {
-                Stream.Printf("0x%08x%08x", Math::INT64_HIGH_INT(d), Math::INT64_LOW_INT(d));
+                Stream.FormattedPrint(HK_FMT("0x{:08x}{:08x}"), Math::INT64_HIGH_INT(d), Math::INT64_LOW_INT(d));
             }
             if (i + 8 < SizeInBytes)
             {
-                Stream.Printf(", ");
+                Stream.FormattedPrint(HK_FMT(", "));
             }
         }
-        Stream.Printf("\n};\n\n");
+        Stream.FormattedPrint(HK_FMT("\n}};\n\n"));
     }
 }
 

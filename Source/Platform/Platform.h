@@ -181,10 +181,12 @@ SMemoryInfo GetPhysMemoryInfo();
 SProcessInfo const& GetProcessInfo();
 
 /** Write message to log file */
-void WriteLog(const char* _Message);
+void WriteLog(const char* Message);
 
 /** Write message to debug console */
-void WriteDebugString(const char* _Message);
+void WriteDebugString(const char* Message);
+
+void WriteConsole(const char* Message);
 
 /** Print CPU features using global logger */
 void PrintCPUFeatures();

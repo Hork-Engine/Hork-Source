@@ -30,8 +30,9 @@ SOFTWARE.
 
 #pragma once
 
-#include "EndianSwap.h"
+#include <Platform/EndianSwap.h>
 #include <Platform/String.h>
+#include <Platform/Format.h>
 
 class IBinaryStreamSeekInterface
 {
@@ -518,14 +519,12 @@ public:
         }
     }
 
-    void Printf(const char* Format, ...)
+    template <typename... T>
+    HK_FORCEINLINE void FormattedPrint(fmt::format_string<T...> Format, T&&... args)
     {
-        extern thread_local char LogBuffer[16384]; // Use existing log buffer
-        va_list                  VaList;
-        va_start(VaList, Format);
-        int len = Platform::VSprintf(LogBuffer, sizeof(LogBuffer), Format, VaList);
-        va_end(VaList);
-        Write(LogBuffer, len);
+        fmt::memory_buffer buffer;
+        fmt::detail::vformat_to(buffer, fmt::string_view(Format), fmt::make_format_args(args...));
+        Write(buffer.data(), buffer.size());
     }
 };
 

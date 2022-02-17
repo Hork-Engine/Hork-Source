@@ -122,14 +122,14 @@ bool ASoundResource::LoadResource(IBinaryStream& Stream)
         ADocMember* soundMemb = doc.FindMember("Sound");
         if (!soundMemb)
         {
-            GLogger.Printf("ASoundResource::LoadResource: invalid sound\n");
+            LOG("ASoundResource::LoadResource: invalid sound\n");
             return false;
         }
 
         AString fontFile = soundMemb->GetString();
         if (fontFile.IsEmpty())
         {
-            GLogger.Printf("ASoundResource::LoadResource: invalid sound\n");
+            LOG("ASoundResource::LoadResource: invalid sound\n");
             return false;
         }
 
@@ -138,7 +138,7 @@ bool ASoundResource::LoadResource(IBinaryStream& Stream)
 
         if (!soundBinary->GetSizeInBytes())
         {
-            GLogger.Printf("ASoundResource::LoadResource: invalid sound\n");
+            LOG("ASoundResource::LoadResource: invalid sound\n");
             return false;
         }
 
@@ -244,7 +244,7 @@ bool ASoundResource::InitializeFromMemory(const char* _Path, const void* _SysMem
     {
         CurStreamType = SOUND_STREAM_MEMORY;
 
-        GLogger.Printf("Using MemoryStreamed instead of FileStreamed as the file data is already in memory\n");
+        LOG("Using MemoryStreamed instead of FileStreamed as the file data is already in memory\n");
     }
 
     bool mono             = _pCreateInfo->bForceMono || device->GetChannels() == 1;

@@ -84,7 +84,7 @@ void AVSD::ProcessLevelVisibility(ALevel* InLevel)
 
         NodeViewMark = InLevel->MarkLeafs(leaf);
 
-        //GLogger.Printf( "NodeViewMark %d\n", NodeViewMark );
+        //DEBUG( "NodeViewMark {}\n", NodeViewMark );
 
         //HK_ASSERT( NodeViewMark != 0 );
 
@@ -233,22 +233,22 @@ void AVSD::QueryVisiblePrimitives(TPodVector<ALevel*> const& Levels, TPodVector<
     }
 
 #ifdef DEBUG_TRAVERSING_COUNTERS
-    GLogger.Printf("VSD: VisFrame %d\n", Dbg_SkippedByVisFrame);
-    GLogger.Printf("VSD: PlaneOfs %d\n", Dbg_SkippedByPlaneOffset);
-    GLogger.Printf("VSD: FaceCull %d\n", Dbg_CulledByDotProduct);
-    GLogger.Printf("VSD: AABBCull %d\n", Dbg_CulledByPrimitiveBounds);
-    GLogger.Printf("VSD: AABBCull (subparts) %d\n", Dbg_CulledSubpartsCount);
-    GLogger.Printf("VSD: Clipped %d\n", Dbg_ClippedPortals);
-    GLogger.Printf("VSD: PassedPortals %d\n", Dbg_PassedPortals);
-    GLogger.Printf("VSD: StackDeep %d\n", Dbg_StackDeep);
-    GLogger.Printf("VSD: CullMiss: %d\n", Dbg_CullMiss);
+    DEBUG("VSD: VisFrame {}\n", Dbg_SkippedByVisFrame);
+    DEBUG("VSD: PlaneOfs {}\n", Dbg_SkippedByPlaneOffset);
+    DEBUG("VSD: FaceCull {}\n", Dbg_CulledByDotProduct);
+    DEBUG("VSD: AABBCull {}\n", Dbg_CulledByPrimitiveBounds);
+    DEBUG("VSD: AABBCull (subparts) {}\n", Dbg_CulledSubpartsCount);
+    DEBUG("VSD: Clipped {}\n", Dbg_ClippedPortals);
+    DEBUG("VSD: PassedPortals {}\n", Dbg_PassedPortals);
+    DEBUG("VSD: StackDeep {}\n", Dbg_StackDeep);
+    DEBUG("VSD: CullMiss: {}\n", Dbg_CullMiss);
 #endif
 
     //QueryVisiblePrimitivesTime = GEngine->SysMicroseconds() - QueryVisiblePrimitivesTime;
 
-    //GLogger.Printf( "QueryVisiblePrimitivesTime: %d microsec\n", QueryVisiblePrimitivesTime );
+    //DEBUG( "QueryVisiblePrimitivesTime: {} microsec\n", QueryVisiblePrimitivesTime );
 
-    //GLogger.Printf( "Frustum culling time %d microsec. Culled %d from %d primitives. Submits %d\n", Dbg_FrustumCullingTime, Dbg_CulledByPrimitiveBounds, Dbg_TotalPrimitiveBounds, CullSubmits.Size() );
+    //DEBUG( "Frustum culling time {} microsec. Culled {} from {} primitives. Submits {}\n", Dbg_FrustumCullingTime, Dbg_CulledByPrimitiveBounds, Dbg_TotalPrimitiveBounds, CullSubmits.Size() );
 }
 
 void AVSD::FlowThroughPortals_r(SVisArea const* InArea)
@@ -260,7 +260,7 @@ void AVSD::FlowThroughPortals_r(SVisArea const* InArea)
 
     if (PortalStackPos == (MAX_PORTAL_STACK - 1))
     {
-        GLogger.Printf("MAX_PORTAL_STACK hit\n");
+        LOG("MAX_PORTAL_STACK hit\n");
         return;
     }
 
@@ -327,7 +327,7 @@ bool AVSD::CalcPortalStack(SPortalStack* OutStack, SPortalStack const* InPrevSta
 
         //for ( int i = 0 ; i < PortalStackPos ; i++ ) {
         //    if ( PortalStack[ i ].Portal == InPortal ) {
-        //        GLogger.Printf( "Recursive!\n" );
+        //        LOG( "Recursive!\n" );
         //    }
         //}
 
@@ -1617,7 +1617,7 @@ void AVSD::RaycastArea(SVisArea* InArea)
     if (InArea->VisMark == VisQueryMarker)
     {
         // Area raycast already processed
-        //GLogger.Printf( "Area raycast already processed\n" );
+        //LOG( "Area raycast already processed\n" );
         return;
     }
 
@@ -1758,7 +1758,7 @@ void AVSD::RaycastPrimitiveBounds(SVisArea* InArea)
     if (InArea->VisMark == VisQueryMarker)
     {
         // Area raycast already processed
-        //GLogger.Printf( "Area raycast already processed\n" );
+        //DEBUG( "Area raycast already processed\n" );
         return;
     }
 
@@ -2538,7 +2538,7 @@ bool AVSD::RaycastClosest(TPodVector<ALevel*> const& Levels, SWorldRaycastCloses
 #endif
     }
 
-    //GLogger.Printf( "NumHits %d\n", Raycast.NumHits );
+    //DEBUG( "NumHits %d\n", Raycast.NumHits );
 
     if (Raycast.HitProxyType == HIT_PROXY_TYPE_PRIMITIVE)
     {

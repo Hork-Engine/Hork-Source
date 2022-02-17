@@ -438,7 +438,7 @@ void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
                     const char* const operation) override
         {
 
-            GLogger.Printf("Overall progress %f, %s progress %f, %s progress %f\n",
+            LOG("Overall progress {}, {} progress {}, {} progress {}\n",
                            overallProgress, stage, stageProgress, operation, operationProgress);
         }
     };
@@ -447,7 +447,7 @@ void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
     public:
         void Log(const char* const msg) override
         {
-            GLogger.Printf("%s", msg);
+            LOG(msg);
         }
     };
 
@@ -563,7 +563,7 @@ void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
     }
     else
     {
-        GLogger.Printf("PerformConvexDecompositionVHACD: convex decomposition error\n");
+        LOG("PerformConvexDecompositionVHACD: convex decomposition error\n");
 
         _OutVertices.Clear();
         _OutIndices.Clear();

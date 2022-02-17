@@ -387,7 +387,7 @@ BvAxisAlignedBox AMeshComponent::GetSubpartWorldBounds(int _SubpartIndex) const
     AIndexedMeshSubpart const* subpart = const_cast<AMeshComponent*>(this)->Mesh->GetSubpart(_SubpartIndex);
     if (!subpart)
     {
-        GLogger.Printf("AMeshComponent::GetSubpartWorldBounds: invalid subpart index\n");
+        LOG("AMeshComponent::GetSubpartWorldBounds: invalid subpart index\n");
         return BvAxisAlignedBox::Empty();
     }
     return subpart->GetBoundingBox().Transform(GetWorldTransformMatrix());
@@ -463,7 +463,7 @@ static bool BrushRaycastCallback( SPrimitiveDef const * Self, Float3 const & InR
 
     HK_UNUSED( brush );
 
-    GLogger.Printf( "BrushRaycastCallback: todo\n" );
+    LOG( "BrushRaycastCallback: todo\n" );
     return false;
 }
 
@@ -499,7 +499,7 @@ static bool BrushRaycastClosestCallback( SPrimitiveDef const * Self, Float3 cons
 
     HK_UNUSED( brush );
 
-    GLogger.Printf( "BrushRaycastClosestCallback: todo\n" );
+    LOG( "BrushRaycastClosestCallback: todo\n" );
     return false;
 }
 

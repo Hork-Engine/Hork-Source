@@ -56,7 +56,7 @@ AShaderModuleGLImpl::AShaderModuleGLImpl(ADeviceGLImpl* pDevice, SHADER_TYPE _Sh
     ShaderBinaryData binaryData;
 
     if ( !CreateShaderBinaryData( pDevice, _ShaderType, _NumSources, _Sources, &binaryData ) ) {
-        GLogger.Printf( "AShaderModuleGLImpl::ctor: couldn't create shader binary data\n" );
+        LOG( "AShaderModuleGLImpl::ctor: couldn't create shader binary data\n" );
         return;
     }
 
@@ -124,22 +124,22 @@ static bool CheckLinkStatus(unsigned int NativeId, SHADER_TYPE ShaderType)
             switch (ShaderType)
             {
                 case VERTEX_SHADER:
-                    GLogger.Printf("VS: %s\n", errorLog);
+                    LOG("VS: {}\n", errorLog);
                     break;
                 case FRAGMENT_SHADER:
-                    GLogger.Printf("FS: %s\n", errorLog);
+                    LOG("FS: {}\n", errorLog);
                     break;
                 case TESS_CONTROL_SHADER:
-                    GLogger.Printf("TCS: %s\n", errorLog);
+                    LOG("TCS: {}\n", errorLog);
                     break;
                 case TESS_EVALUATION_SHADER:
-                    GLogger.Printf("TES: %s\n", errorLog);
+                    LOG("TES: {}\n", errorLog);
                     break;
                 case GEOMETRY_SHADER:
-                    GLogger.Printf("GS: %s\n", errorLog);
+                    LOG("GS: {}\n", errorLog);
                     break;
                 case COMPUTE_SHADER:
-                    GLogger.Printf("CS: %s\n", errorLog);
+                    LOG("CS: {}\n", errorLog);
                     break;
             }
         }
@@ -154,14 +154,14 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgramBin(SShaderBinaryData const
 {
     if (_BinaryData->BinaryFormat == SHADER_BINARY_FORMAT_SPIR_V_ARB && !GetDevice()->IsFeatureSupported(FEATURE_SPIR_V))
     {
-        GLogger.Printf("AShaderModuleGLImpl::CreateShaderProgramBin: SPIR-V binary format is not supported by video driver\n");
+        LOG("AShaderModuleGLImpl::CreateShaderProgramBin: SPIR-V binary format is not supported by video driver\n");
         return 0;
     }
 
     GLuint program = glCreateProgram();
     if (!program)
     {
-        GLogger.Printf("AShaderModuleGLImpl::CreateShaderProgramBin: failed to create shader program\n");
+        LOG("AShaderModuleGLImpl::CreateShaderProgramBin: failed to create shader program\n");
         return 0;
     }
 
@@ -190,7 +190,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgramBin(SShaderBinaryData const
             }
             else
             {
-                GLogger.Printf("AShaderModuleGLImpl::CreateShaderProgramBin: invalid compile status\n");
+                LOG("AShaderModuleGLImpl::CreateShaderProgramBin: invalid compile status\n");
             }
             glDeleteShader(shader);
         }
@@ -217,7 +217,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgramBin(SShaderBinaryData const
             }
             else
             {
-                GLogger.Printf("AShaderModuleGLImpl::CreateShaderProgramBin: invalid compile status\n");
+                LOG("AShaderModuleGLImpl::CreateShaderProgramBin: invalid compile status\n");
             }
             glDeleteShader(shader);
         }
@@ -226,7 +226,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgramBin(SShaderBinaryData const
 
     if (!CheckLinkStatus(program, _BinaryData->ShaderType))
     {
-        GLogger.Printf("AShaderModuleGLImpl::CreateShaderProgramBin: invalid link status\n");
+        LOG("AShaderModuleGLImpl::CreateShaderProgramBin: invalid link status\n");
         glDeleteProgram(program);
         return 0;
     }
@@ -246,7 +246,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgram(SHADER_TYPE        _Shader
     program = glCreateShaderProgramv(type, _NumStrings, _Strings); // v 4.1
     if (!program)
     {
-        GLogger.Printf("AShaderModuleGLImpl::CreateShaderProgram: failed to create shader program\n");
+        LOG("AShaderModuleGLImpl::CreateShaderProgram: failed to create shader program\n");
         return 0;
     }
 
@@ -255,7 +255,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgram(SHADER_TYPE        _Shader
     program = glCreateProgram();
     if (!program)
     {
-        GLogger.Printf("AShaderModuleGLImpl::CreateShaderProgram: failed to create shader program\n");
+        LOG("AShaderModuleGLImpl::CreateShaderProgram: failed to create shader program\n");
         return 0;
     }
 
@@ -278,7 +278,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgram(SHADER_TYPE        _Shader
         }
         else
         {
-            GLogger.Printf("AShaderModuleGLImpl::CreateShaderProgram: invalid compile status\n");
+            LOG("AShaderModuleGLImpl::CreateShaderProgram: invalid compile status\n");
         }
         glDeleteShader(shader);
     }
@@ -286,7 +286,7 @@ unsigned int AShaderModuleGLImpl::CreateShaderProgram(SHADER_TYPE        _Shader
 
     if (!CheckLinkStatus(program, _ShaderType))
     {
-        GLogger.Printf("AShaderModuleGLImpl::CreateShaderProgram: invalid link status\n");
+        LOG("AShaderModuleGLImpl::CreateShaderProgram: invalid link status\n");
         glDeleteProgram(program);
         return 0;
     }
@@ -328,7 +328,7 @@ bool AShaderModuleGLImpl::CreateShaderBinaryData(ADeviceGLImpl*     _Device,
     }
     else
     {
-        GLogger.Printf("AShaderModuleGLImpl::CreateShaderBinaryData: failed to retrieve shader program binary data\n");
+        LOG("AShaderModuleGLImpl::CreateShaderBinaryData: failed to retrieve shader program binary data\n");
         glDeleteProgram(id);
         return false;
     }

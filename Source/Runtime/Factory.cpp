@@ -171,7 +171,7 @@ void AClassMeta::CloneProperties(ADummy const* Template, ADummy* Destination)
 {
     if (&Template->FinalClassMeta() != &Destination->FinalClassMeta())
     {
-        GLogger.Printf("AClassMeta::CloneProperties: Template is not an %s class\n", Destination->FinalClassName());
+        LOG("AClassMeta::CloneProperties: Template is not an {} class\n", Destination->FinalClassName());
         return;
     }
 

@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Platform/Memory/Memory.h>
 #include <Platform/Path.h>
+#include <Platform/Format.h>
 
 #include "HashFunc.h"
 #include "BinaryStream.h"
@@ -1008,3 +1009,12 @@ struct TSprintfBuffer
         return Data;
     }
 };
+
+HK_FORMAT_DEF_(AString, "{}", v.CStr());
+HK_FORMAT_DEF_(AStringView, "{}", v.ToString());
+
+//template <> struct fmt::formatter<AString>
+//{
+//    constexpr auto                         parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+//    template <typename FormatContext> auto format(AString const& p, FormatContext& ctx) -> decltype(ctx.out()) { return format_to(ctx.out(), "{}", p.CStr()); }
+//};

@@ -113,7 +113,7 @@ void APhysicalBodyMotionState::setWorldTransform(btTransform const& _CenterOfMas
 {
     if (Self->MotionBehavior != MB_SIMULATED)
     {
-        GLogger.Printf("APhysicalBodyMotionState::SetWorldTransform for non-simulated %s\n", Self->GetObjectNameCStr());
+        LOG("APhysicalBodyMotionState::SetWorldTransform for non-simulated {}\n", Self->GetObjectName());
         return;
     }
 
@@ -339,7 +339,7 @@ public:
 
     void setWorldTransform(btTransform const& _CenterOfMassTransform) override
     {
-        GLogger.Printf("ABoneCollisionInstance::SetWorldTransform for bone\n");
+        LOG("ABoneCollisionInstance::SetWorldTransform for bone\n");
     }
 
     APhysicalBody* Self;
@@ -698,7 +698,7 @@ void APhysicalBody::OnTransformDirty()
 
                 if (!IsInEditor())
                 {
-                    GLogger.Printf("WARNING: Set transform for non-KINEMATIC body %s\n", GetObjectNameCStr());
+                    LOG("WARNING: Set transform for non-KINEMATIC body {}\n", GetObjectName());
                 }
             }
         }
@@ -718,7 +718,7 @@ void APhysicalBody::OnTransformDirty()
     {
         if (MotionBehavior != MB_KINEMATIC && !GetOwnerActor()->IsSpawning() && !IsInEditor())
         {
-            GLogger.Printf("WARNING: Set transform for non-KINEMATIC body %s\n", GetObjectNameCStr());
+            LOG("WARNING: Set transform for non-KINEMATIC body {}\n", GetObjectName());
         }
     }
 

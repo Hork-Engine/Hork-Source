@@ -258,7 +258,7 @@ Float3 AConvexHull::CalcNormal() const
 {
     if (NumPoints < 3)
     {
-        GLogger.Print("AConvexHull::CalcNormal: num points < 3\n");
+        LOG("AConvexHull::CalcNormal: num points < 3\n");
         return Float3(0);
     }
 
@@ -279,7 +279,7 @@ PlaneF AConvexHull::CalcPlane() const
 
     if (NumPoints < 3)
     {
-        GLogger.Print("AConvexHull::CalcPlane: num points < 3\n");
+        LOG("AConvexHull::CalcPlane: num points < 3\n");
         plane.Clear();
         return plane;
     }
@@ -302,7 +302,7 @@ Float3 AConvexHull::CalcCenter() const
     Float3 center(0);
     if (!NumPoints)
     {
-        GLogger.Print("AConvexHull::CalcCenter: no points in hull\n");
+        LOG("AConvexHull::CalcCenter: no points in hull\n");
         return center;
     }
     for (int i = 0; i < NumPoints; i++)

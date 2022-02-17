@@ -116,25 +116,25 @@ bool AConsoleVar::CanChangeValue() const
 {
     if (Flags & CVAR_READONLY)
     {
-        GLogger.Printf("%s is readonly\n", Name);
+        LOG("{} is readonly\n", Name);
         return false;
     }
 
     if ((Flags & CVAR_CHEAT) && !(EnvironmentFlags & CVAR_CHEATS_ALLOWED))
     {
-        GLogger.Printf("%s is cheat protected\n", Name);
+        LOG("{} is cheat protected\n", Name);
         return false;
     }
 
     if ((Flags & CVAR_SERVERONLY) && !(EnvironmentFlags & CVAR_SERVER_ACTIVE))
     {
-        GLogger.Printf("%s can be changed by server only\n", Name);
+        LOG("{} can be changed by server only\n", Name);
         return false;
     }
 
     if ((Flags & CVAR_NOINGAME) && (EnvironmentFlags & CVAR_INGAME_STATUS))
     {
-        GLogger.Printf("%s can't be changed in game\n", Name);
+        LOG("{} can't be changed in game\n", Name);
         return false;
     }
 
@@ -157,7 +157,7 @@ void AConsoleVar::SetString(const char* _String)
 
     if (Flags & CVAR_LATCHED)
     {
-        GLogger.Printf("%s restart required to change value\n", Name);
+        LOG("{} restart required to change value\n", Name);
 
         LatchedValue = _String;
     }
@@ -238,33 +238,33 @@ void AConsoleVar::SetLatched()
 
 void AConsoleVar::Print()
 {
-    GLogger.Printf("    %s", Name);
+    LOG("    {}", Name);
 
     if (*Comment)
     {
-        GLogger.Printf(" (%s)", Comment);
+        LOG(" ({})", Comment);
     }
 
-    GLogger.Printf("\n        [CURRENT \"%s\"]  [DEFAULT \"%s\"]", Value.CStr(), DefaultValue);
+    LOG("\n        [CURRENT \"{}\"]  [DEFAULT \"{}\"]", Value, DefaultValue);
 
     if ((Flags & CVAR_LATCHED) && !LatchedValue.IsEmpty())
     {
-        GLogger.Printf("  [LATCHED \"%s\"]\n", LatchedValue.CStr());
+        LOG("  [LATCHED \"{}\"]\n", LatchedValue);
     }
     else
     {
-        GLogger.Print("\n");
+        LOG("\n");
     }
 
     if (Flags & (CVAR_LATCHED | CVAR_READONLY | CVAR_NOSAVE | CVAR_CHEAT | CVAR_SERVERONLY | CVAR_NOINGAME))
     {
-        GLogger.Print("        [FLAGS");
-        if (Flags & CVAR_LATCHED) { GLogger.Print(" LATCHED"); }
-        if (Flags & CVAR_READONLY) { GLogger.Print(" READONLY"); }
-        if (Flags & CVAR_NOSAVE) { GLogger.Print(" NOSAVE"); }
-        if (Flags & CVAR_CHEAT) { GLogger.Print(" CHEAT"); }
-        if (Flags & CVAR_SERVERONLY) { GLogger.Print(" SERVERONLY"); }
-        if (Flags & CVAR_NOINGAME) { GLogger.Print(" NOINGAME"); }
-        GLogger.Print("]\n");
+        LOG("        [FLAGS");
+        if (Flags & CVAR_LATCHED) { LOG(" LATCHED"); }
+        if (Flags & CVAR_READONLY) { LOG(" READONLY"); }
+        if (Flags & CVAR_NOSAVE) { LOG(" NOSAVE"); }
+        if (Flags & CVAR_CHEAT) { LOG(" CHEAT"); }
+        if (Flags & CVAR_SERVERONLY) { LOG(" SERVERONLY"); }
+        if (Flags & CVAR_NOINGAME) { LOG(" NOINGAME"); }
+        LOG("]\n");
     }
 }

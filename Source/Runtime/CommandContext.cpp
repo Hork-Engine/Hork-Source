@@ -69,20 +69,20 @@ void ACommandContext::ExecuteCommand(ACommandProcessor const& _Proc)
         return;
     }
 
-    GLogger.Printf("Unknown command \"%s\"\n", name);
+    LOG("Unknown command \"{}\"\n", name);
 }
 
 void ACommandContext::AddCommand(const char* _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment)
 {
     if (!ACommandProcessor::IsValidCommandName(_Name))
     {
-        GLogger.Printf("ACommandContext::AddCommand: invalid command name\n");
+        LOG("ACommandContext::AddCommand: invalid command name\n");
         return;
     }
 
     if (AConsoleVar::FindVariable(_Name))
     {
-        GLogger.Printf("Name conflict: %s already registered as variable\n", _Name);
+        LOG("Name conflict: {} already registered as variable\n", _Name);
         return;
     }
 
@@ -90,7 +90,7 @@ void ACommandContext::AddCommand(const char* _Name, TCallback<void(ACommandProce
     {
         if (!cmd.GetName().Icmp(_Name))
         {
-            GLogger.Printf("Overriding %s command\n", _Name);
+            LOG("Overriding {} command\n", _Name);
 
             cmd.Override(_Callback, _Comment);
             return;
@@ -232,29 +232,29 @@ void ACommandContext::Print(const char* _Str, int _StrLen)
 
         std::sort(vars.Begin(), vars.End(), VarSortFunction);
 
-        GLogger.Printf("Total commands found: %d\n"
-                       "Total variables found: %d\n",
-                       cmds.Size(), vars.Size());
+        LOG("Total commands found: {}\n"
+            "Total variables found: {}\n",
+            cmds.Size(), vars.Size());
         for (ARuntimeCommand* cmd : cmds)
         {
             if (!cmd->GetComment().IsEmpty())
             {
-                GLogger.Printf("    %s (%s)\n", cmd->GetName().CStr(), cmd->GetComment().CStr());
+                LOG("    {} ({})\n", cmd->GetName(), cmd->GetComment());
             }
             else
             {
-                GLogger.Printf("    %s\n", cmd->GetName().CStr());
+                LOG("    {}\n", cmd->GetName());
             }
         }
         for (AConsoleVar* var : vars)
         {
             if (*var->GetComment())
             {
-                GLogger.Printf("    %s \"%s\" (%s)\n", var->GetName(), var->GetValue().CStr(), var->GetComment());
+                LOG("    {} \"{}\" ({})\n", var->GetName(), var->GetValue(), var->GetComment());
             }
             else
             {
-                GLogger.Printf("    %s \"%s\"\n", var->GetName(), var->GetValue().CStr());
+                LOG("    {} \"{}\"\n", var->GetName(), var->GetValue().CStr());
             }
         }
     }

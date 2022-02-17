@@ -67,7 +67,7 @@ bool FastLZCompress(byte* pCompressedData, size_t* pCompressedSize, byte const* 
     if (SourceSize < 16)
     {
         // too small buffer
-        GLogger.Printf("FastLZCompress: failed to compress, source size < 16 bytes!\n");
+        LOG("FastLZCompress: failed to compress, source size < 16 bytes!\n");
         return false;
     }
 

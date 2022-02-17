@@ -1138,7 +1138,7 @@ ACollisionModel::ACollisionModel(void const* pShapes)
                 AddConvexDecompositionVHACD((SCollisionConvexDecompositionVHACDDef const*)pShapes, numShapes);
                 break;
             default:
-                GLogger.Printf("ACollisionModel::Initialize: unknown shape type\n");
+                LOG("ACollisionModel::Initialize: unknown shape type\n");
                 pShapes = nullptr;
                 continue;
         }
@@ -1372,7 +1372,7 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
             {
                 if (hull)
                     hull->Destroy();
-                GLogger.Printf("ACollisionModel::AddConvexHull: hull is clipped off\n");
+                LOG("ACollisionModel::AddConvexHull: hull is clipped off\n");
                 return;
             }
 
@@ -1407,7 +1407,7 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
     }
     else
     {
-        GLogger.Printf("ACollisionModel::AddConvexHull: undefined geometry\n");
+        LOG("ACollisionModel::AddConvexHull: undefined geometry\n");
         return;
     }
 
@@ -1432,7 +1432,7 @@ void ACollisionModel::AddTriangleSoupBVH(SCollisionTriangleSoupBVHDef const* pSh
 {
     if (pShape->VertexStride <= 0)
     {
-        GLogger.Printf("ACollisionModel::AddTriangleSoupBVH: invalid VertexStride\n");
+        LOG("ACollisionModel::AddTriangleSoupBVH: invalid VertexStride\n");
         return;
     }
 
@@ -1540,7 +1540,7 @@ void ACollisionModel::AddTriangleSoupGimpact(SCollisionTriangleSoupGimpactDef co
 {
     if (pShape->VertexStride <= 0)
     {
-        GLogger.Printf("ACollisionModel::AddTriangleSoupGimpact: invalid VertexStride\n");
+        LOG("ACollisionModel::AddTriangleSoupGimpact: invalid VertexStride\n");
         return;
     }
 
@@ -1650,7 +1650,7 @@ void ACollisionModel::AddConvexDecomposition(SCollisionConvexDecompositionDef co
 
     if (pShape->VertexStride <= 0)
     {
-        GLogger.Printf("ACollisionModel::AddConvexDecomposition: invalid VertexStride\n");
+        LOG("ACollisionModel::AddConvexDecomposition: invalid VertexStride\n");
         return;
     }
 
@@ -1701,7 +1701,7 @@ void ACollisionModel::AddConvexDecompositionVHACD(SCollisionConvexDecompositionV
 
     if (pShape->VertexStride <= 0)
     {
-        GLogger.Printf("ACollisionModel::AddConvexDecompositionVHACD: invalid VertexStride\n");
+        LOG("ACollisionModel::AddConvexDecompositionVHACD: invalid VertexStride\n");
         return;
     }
 
@@ -1863,7 +1863,7 @@ void ACollisionInstance::GetCollisionBodyWorldBounds(int Index, Float3 const& Wo
 {
     if (Index < 0 || Index >= CompoundShape->getNumChildShapes())
     {
-        GLogger.Printf("ACollisionInstance::GetCollisionBodyWorldBounds: invalid index\n");
+        LOG("ACollisionInstance::GetCollisionBodyWorldBounds: invalid index\n");
 
         BoundingBox.Clear();
         return;
@@ -1887,7 +1887,7 @@ void ACollisionInstance::GetCollisionBodyLocalBounds(int Index, BvAxisAlignedBox
 {
     if (Index < 0 || Index >= CompoundShape->getNumChildShapes())
     {
-        GLogger.Printf("ACollisionInstance::GetCollisionBodyLocalBounds: invalid index\n");
+        LOG("ACollisionInstance::GetCollisionBodyLocalBounds: invalid index\n");
 
         BoundingBox.Clear();
         return;
@@ -1907,7 +1907,7 @@ float ACollisionInstance::GetCollisionBodyMargin(int Index) const
 {
     if (Index < 0 || Index >= CompoundShape->getNumChildShapes())
     {
-        GLogger.Printf("ACollisionInstance::GetCollisionBodyMargin: invalid index\n");
+        LOG("ACollisionInstance::GetCollisionBodyMargin: invalid index\n");
 
         return 0;
     }

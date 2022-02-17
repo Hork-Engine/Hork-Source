@@ -314,7 +314,7 @@ AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                 
     FramebufferHash.Insert(framebuffer->GetHash(), FramebufferCache.Size());
     FramebufferCache.emplace_back(std::move(framebuffer));
 
-    //GLogger.Printf( "Total framebuffers %d for %s hash 0x%08x\n", FramebufferCache.Size(), RenderPassName, hash );
+    //LOG( "Total framebuffers {} for {} hash {:08x}\n", FramebufferCache.Size(), RenderPassName, hash );
 
     return FramebufferCache.back().get();
 }
@@ -801,11 +801,11 @@ void AImmediateContextGLImpl::BindPipeline(IPipeline* _Pipeline)
         CurrentVertexLayout = CurrentPipeline->pVertexLayout;
         CurrentVAO = CurrentVertexLayout->GetVAO(this);
         glBindVertexArray(CurrentVAO->HandleGL);
-        //GLogger.Printf( "Binding vao %d\n", CurrentVAO->HandleGL );
+        //LOG( "Binding vao {}\n", CurrentVAO->HandleGL );
     }
     else
     {
-        //GLogger.Printf( "caching vao binding %d\n", CurrentVAO->HandleGL );
+        //LOG( "caching vao binding {}\n", CurrentVAO->HandleGL );
     }
 
     //
@@ -1255,7 +1255,7 @@ void AImmediateContextGLImpl::BindVertexBuffers( unsigned int _StartSlot,
     static_assert( sizeof( CurrentVAO->VertexBindingsStrides[0] ) == sizeof( GLsizei ), "Wrong type size" );
 
     if ( _StartSlot + _NumBuffers > GetDevice()->MaxVertexBufferSlots ) {
-        GLogger.Printf( "BindVertexBuffers: StartSlot + NumBuffers > MaxVertexBufferSlots\n" );
+        LOG( "BindVertexBuffers: StartSlot + NumBuffers > MaxVertexBufferSlots\n" );
         return;
     }
 
@@ -1757,7 +1757,7 @@ void AImmediateContextGLImpl::UpdateVertexBuffers()
         }
         else
         {
-            //GLogger.Printf( "Caching BindVertexBuffer %d\n", vertexBufferId );
+            //LOG( "Caching BindVertexBuffer {}\n", vertexBufferId );
         }
     }
 }
@@ -1771,11 +1771,11 @@ void AImmediateContextGLImpl::UpdateVertexAndIndexBuffers()
         glVertexArrayElementBuffer(CurrentVAO->HandleGL, IndexBufferHandle);
         CurrentVAO->IndexBufferUID = IndexBufferUID;
 
-        //GLogger.Printf( "BindIndexBuffer %d\n", indexBufferId );
+        //LOG( "BindIndexBuffer {}\n", indexBufferId );
     }
     else
     {
-        //GLogger.Printf( "Caching BindIndexBuffer %d\n", indexBufferId );
+        //LOG( "Caching BindIndexBuffer {}\n", indexBufferId );
     }
 }
 
@@ -2286,7 +2286,7 @@ void AImmediateContextGLImpl::BeginQuery(IQueryPool* _QueryPool, uint32_t _Query
 
     if (CurrentQueryUID[queryPool->QueryType] != 0)
     {
-        GLogger.Printf("AImmediateContextGLImpl::BeginQuery: missing EndQuery() for the target\n");
+        LOG("AImmediateContextGLImpl::BeginQuery: missing EndQuery() for the target\n");
         return;
     }
 
@@ -2312,7 +2312,7 @@ void AImmediateContextGLImpl::EndQuery(IQueryPool* _QueryPool, uint32_t _StreamI
 
     if (CurrentQueryUID[queryPool->QueryType] != _QueryPool->GetUID())
     {
-        GLogger.Printf("AImmediateContextGLImpl::EndQuery: missing BeginQuery() for the target\n");
+        LOG("AImmediateContextGLImpl::EndQuery: missing BeginQuery() for the target\n");
         return;
     }
 
@@ -2338,7 +2338,7 @@ void AImmediateContextGLImpl::RecordTimeStamp(IQueryPool* _QueryPool, uint32_t _
 
     if (queryPool->QueryType != QUERY_TYPE_TIMESTAMP)
     {
-        GLogger.Printf("AImmediateContextGLImpl::RecordTimeStamp: query pool target must be QUERY_TYPE_TIMESTAMP\n");
+        LOG("AImmediateContextGLImpl::RecordTimeStamp: query pool target must be QUERY_TYPE_TIMESTAMP\n");
         return;
     }
 
@@ -2389,7 +2389,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResultsAvailable(IQueryPool* _QueryPo
 
             if (_DstOffst + sizeof(uint64_t) > bufferSize)
             {
-                GLogger.Printf("AImmediateContextGLImpl::CopyQueryPoolResultsAvailable: out of buffer size\n");
+                LOG("AImmediateContextGLImpl::CopyQueryPoolResultsAvailable: out of buffer size\n");
                 break;
             }
 
@@ -2407,7 +2407,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResultsAvailable(IQueryPool* _QueryPo
 
             if (_DstOffst + sizeof(uint32_t) > bufferSize)
             {
-                GLogger.Printf("AImmediateContextGLImpl::CopyQueryPoolResultsAvailable: out of buffer size\n");
+                LOG("AImmediateContextGLImpl::CopyQueryPoolResultsAvailable: out of buffer size\n");
                 break;
             }
 
@@ -2439,7 +2439,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResults(IQueryPool*        _QueryPool
 
     if (_Flags & QUERY_RESULT_WITH_AVAILABILITY_BIT)
     {
-        GLogger.Printf("AImmediateContextGLImpl::CopyQueryPoolResults: ignoring flag QUERY_RESULT_WITH_AVAILABILITY_BIT. Use CopyQueryPoolResultsAvailable to get available status.\n");
+        LOG("AImmediateContextGLImpl::CopyQueryPoolResults: ignoring flag QUERY_RESULT_WITH_AVAILABILITY_BIT. Use CopyQueryPoolResultsAvailable to get available status.\n");
     }
 
     if (_Flags & QUERY_RESULT_64_BIT)
@@ -2452,7 +2452,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResults(IQueryPool*        _QueryPool
 
             if (_DstOffst + sizeof(uint64_t) > bufferSize)
             {
-                GLogger.Printf("AImmediateContextGLImpl::CopyQueryPoolResults: out of buffer size\n");
+                LOG("AImmediateContextGLImpl::CopyQueryPoolResults: out of buffer size\n");
                 break;
             }
 
@@ -2470,7 +2470,7 @@ void AImmediateContextGLImpl::CopyQueryPoolResults(IQueryPool*        _QueryPool
 
             if (_DstOffst + sizeof(uint32_t) > bufferSize)
             {
-                GLogger.Printf("AImmediateContextGLImpl::CopyQueryPoolResults: out of buffer size\n");
+                LOG("AImmediateContextGLImpl::CopyQueryPoolResults: out of buffer size\n");
                 break;
             }
 
@@ -3590,7 +3590,7 @@ bool AImmediateContextGLImpl::CopyFramebufferToTexture(ARenderPassContext&   Ren
 
     if (!ChooseReadBuffer(CurrentFramebuffer, _ColorAttachment))
     {
-        GLogger.Printf("AImmediateContextGLImpl::CopyFramebufferToTexture: invalid framebuffer attachment\n");
+        LOG("AImmediateContextGLImpl::CopyFramebufferToTexture: invalid framebuffer attachment\n");
         return false;
     }
 
@@ -3717,7 +3717,7 @@ void AImmediateContextGLImpl::CopyColorAttachmentToBuffer(ARenderPassContext& Re
 
     if (!ChooseReadBuffer(CurrentFramebuffer, attachmentNum))
     {
-        GLogger.Printf("AImmediateContextGLImpl::CopyFramebufferToBuffer: invalid framebuffer attachment\n");
+        LOG("AImmediateContextGLImpl::CopyFramebufferToBuffer: invalid framebuffer attachment\n");
         return;
     }
 
@@ -3783,7 +3783,7 @@ void AImmediateContextGLImpl::CopyDepthAttachmentToBuffer(ARenderPassContext& Re
 
     if (!CurrentFramebuffer->HasDepthStencilAttachment())
     {
-        GLogger.Printf("AImmediateContextGLImpl::CopyFramebufferDepthToBuffer: framebuffer has no depth-stencil attachment\n");
+        LOG("AImmediateContextGLImpl::CopyFramebufferDepthToBuffer: framebuffer has no depth-stencil attachment\n");
         return;
     }
 
@@ -3833,7 +3833,7 @@ bool AImmediateContextGLImpl::BlitFramebuffer(ARenderPassContext&   RenderPassCo
 
         if (!ChooseReadBuffer(CurrentFramebuffer, _ColorAttachment))
         {
-            GLogger.Printf("AImmediateContextGLImpl::BlitFramebuffer: invalid framebuffer attachment\n");
+            LOG("AImmediateContextGLImpl::BlitFramebuffer: invalid framebuffer attachment\n");
             return false;
         }
     }
@@ -4282,7 +4282,7 @@ bool AImmediateContextGLImpl::ReadFramebufferAttachment(ARenderPassContext& Rend
 {
     if (!ChooseReadBuffer(CurrentFramebuffer, _ColorAttachment))
     {
-        GLogger.Printf("Framebuffer::Read: invalid framebuffer attachment\n");
+        LOG("Framebuffer::Read: invalid framebuffer attachment\n");
         return false;
     }
 
@@ -4311,7 +4311,7 @@ bool AImmediateContextGLImpl::ReadFramebufferDepthStencilAttachment(ARenderPassC
 {
     if (!CurrentFramebuffer->HasDepthStencilAttachment())
     {
-        GLogger.Printf("AImmediateContextGLImpl::ReadFramebufferDepthStencilAttachment: framebuffer has no depth-stencil attachment\n");
+        LOG("AImmediateContextGLImpl::ReadFramebufferDepthStencilAttachment: framebuffer has no depth-stencil attachment\n");
         return false;
     }
 
@@ -4895,7 +4895,7 @@ void AImmediateContextGLImpl::SparseTextureCommitRect(ISparseTexture*     _Textu
 
     if (!id)
     {
-        GLogger.Printf("AImmediateContextGLImpl::SparseTextureCommitRect: null handle\n");
+        LOG("AImmediateContextGLImpl::SparseTextureCommitRect: null handle\n");
         return;
     }
 
@@ -5125,7 +5125,7 @@ void AImmediateContextGLImpl::SparseTextureUncommitRect(ISparseTexture* _Texture
 
     if (!id)
     {
-        GLogger.Printf("AImmediateContextGLImpl::SparseTextureUncommitRect: null handle\n");
+        LOG("AImmediateContextGLImpl::SparseTextureUncommitRect: null handle\n");
         return;
     }
 
@@ -5167,7 +5167,7 @@ void AImmediateContextGLImpl::GetQueryPoolResults(IQueryPool*        _QueryPool,
 
             if (ptr + sizeof(uint64_t) > end)
             {
-                GLogger.Printf("QueryPool::GetResults: out of data size\n");
+                LOG("QueryPool::GetResults: out of data size\n");
                 break;
             }
 
@@ -5217,7 +5217,7 @@ void AImmediateContextGLImpl::GetQueryPoolResults(IQueryPool*        _QueryPool,
 
             if (ptr + sizeof(uint32_t) > end)
             {
-                GLogger.Printf("QueryPool::GetResults: out of data size\n");
+                LOG("QueryPool::GetResults: out of data size\n");
                 break;
             }
 
@@ -5357,7 +5357,7 @@ void* AImmediateContextGLImpl::MapBufferRange(IBuffer*        _Buffer,
     {
         // At least on of the bits GL_MAP_READ_BIT or GL_MAP_WRITE_BIT
         // must be set
-        GLogger.Printf("AImmediateContextGLImpl::MapBufferRange: invalid map transfer function\n");
+        LOG("AImmediateContextGLImpl::MapBufferRange: invalid map transfer function\n");
         return nullptr;
     }
 
@@ -5366,7 +5366,7 @@ void* AImmediateContextGLImpl::MapBufferRange(IBuffer*        _Buffer,
         if (flags & GL_MAP_READ_BIT)
         {
             // This flag may not be used in combination with GL_MAP_READ_BIT.
-            GLogger.Printf("AImmediateContextGLImpl::MapBufferRange: MAP_NO_INVALIDATE may not be used in combination with MAP_TRANSFER_READ/MAP_TRANSFER_RW\n");
+            LOG("AImmediateContextGLImpl::MapBufferRange: MAP_NO_INVALIDATE may not be used in combination with MAP_TRANSFER_READ/MAP_TRANSFER_RW\n");
             return nullptr;
         }
 

@@ -75,7 +75,7 @@ bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int S
     ma_decoder decoder;
     ma_result result = ma_decoder_init( Read, Seek, &File, &config, &decoder );
     if ( result != MA_SUCCESS ) {
-        GLogger.Printf( "AMiniaudioDecoder::LoadFromFile: failed on %s\n", File.GetFileName() );
+        LOG("AMiniaudioDecoder::LoadFromFile: failed on {}\n", File.GetFileName());
         return false;
     }
 

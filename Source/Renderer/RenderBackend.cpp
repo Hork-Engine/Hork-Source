@@ -82,7 +82,7 @@ static void LoadSPIRV(void** BinaryCode, size_t* BinarySize)
 
 ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 {
-    GLogger.Printf("Initializing render backend...\n");
+    LOG("Initializing render backend...\n");
 
     GDevice = pDevice;
     rcmd = GDevice->GetImmediateContext();
@@ -258,7 +258,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     TPodVector<int> pageSizeZ; pageSizeZ.Resize( numPageSizes );
     GDevice->EnumerateSparseTexturePageSize( SPARSE_TEXTURE_2D_ARRAY, TEXTURE_FORMAT_RGBA8, &numPageSizes, pageSizeX.ToPtr(), pageSizeY.ToPtr(), pageSizeZ.ToPtr() );
     for ( int i = 0 ; i < numPageSizes ; i++ ) {
-        GLogger.Printf( "Sparse page size %d %d %d\n", pageSizeX[i], pageSizeY[i], pageSizeZ[i] );
+        LOG( "Sparse page size {} {} {}\n", pageSizeX[i], pageSizeY[i], pageSizeZ[i] );
     }
     }
 #    endif
@@ -290,7 +290,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     byte* mem = (byte*)malloc(sz);
     Platform::ZeroMem(mem, sz);
 
-    GLogger.Printf("\tTotal available after create: %d Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10);
+    LOG("\tTotal available after create: {} Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10);
 
     for (int i = 0; i < 10; i++)
     {
@@ -303,9 +303,9 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
         rect.Dimension.Y = texSize;
         rect.Dimension.Z = 1;
         sparseTexture->CommitRect(rect, FORMAT_UBYTE4, sz, 1, mem);
-        GLogger.Printf("\tTotal available after commit: %d Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10);
+        LOG("\tTotal available after commit: {} Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10);
         sparseTexture->UncommitRect(rect);
-        GLogger.Printf("\tTotal available after uncommit: %d Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10);
+        LOG("\tTotal available after uncommit: {} Megs\n", GDevice->GetGPUMemoryCurrentAvailable() >> 10);
     }
     free(mem);
 #    endif
@@ -334,14 +334,14 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 
 ARenderBackend::~ARenderBackend()
 {
-    GLogger.Printf("Deinitializing render backend...\n");
+    LOG("Deinitializing render backend...\n");
 
     //SDL_SetRelativeMouseMode( SDL_FALSE );
     //AVirtualTexture * vt = TestVT.GetObject();
     //TestVT.Reset();
     PhysCacheVT.Reset();
     FeedbackAnalyzerVT.Reset();
-    //GLogger.Printf( "VT ref count %d\n", vt->GetRefCount() );
+    //LOG( "VT ref count {}\n", vt->GetRefCount() );
 
     GCircularBuffer.Reset();
     GWhiteTexture.Reset();
@@ -562,14 +562,14 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
         rcmd->GetQueryPoolResult64(TimeStamp2, timeQueryFrame, &timeStamp2, QUERY_RESULT_WAIT_BIT);
         rcmd->GetQueryPoolResult64(TimeStamp1, timeQueryFrame, &timeStamp1, QUERY_RESULT_WAIT_BIT);
 
-        GLogger.Printf("GPU time %f ms\n", (double)(timeStamp2 - timeStamp1) / 1000000.0);
+        LOG("GPU time {} ms\n", (double)(timeStamp2 - timeStamp1) / 1000000.0);
 #else
         rcmd->EndQuery(TimeQuery);
 
         uint64_t timeQueryResult = 0;
         rcmd->GetQueryPoolResult64(TimeQuery, timeQueryFrame, &timeQueryResult, QUERY_RESULT_WAIT_BIT);
 
-        GLogger.Printf("GPU time %f ms\n", (double)timeQueryResult / 1000000.0);
+        LOG("GPU time {} ms\n", (double)timeQueryResult / 1000000.0);
 #endif
     }
 
@@ -688,7 +688,7 @@ void ARenderBackend::SetViewConstants(int ViewportIndex)
     pViewCBuf->DebugMode = r_DebugRenderMode.GetInteger();
 
     pViewCBuf->NumDirectionalLights = GRenderView->NumDirectionalLights;
-    //GLogger.Printf( "GRenderView->FirstDirectionalLight: %d\n", GRenderView->FirstDirectionalLight );
+    //LOG( "GRenderView->FirstDirectionalLight: {}\n", GRenderView->FirstDirectionalLight );
 
     for (int i = 0; i < GRenderView->NumDirectionalLights; i++)
     {

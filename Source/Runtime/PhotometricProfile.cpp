@@ -65,7 +65,7 @@ void APhotometricProfile::LoadInternalResource(const char* _Path)
         return;
     }
 
-    GLogger.Printf("Unknown internal resource %s\n", _Path);
+    LOG("Unknown internal resource {}\n", _Path);
 
     LoadInternalResource("/Default/PhotometricProfile/Default");
 }
@@ -139,7 +139,7 @@ static float SampleIES(IE_DATA const* iesData, float x, float y)
         int h = -1;
 
         //for ( int i = 0; i < iesData->photo.num_horz_angles; i++ ) {
-        //    GLogger.Printf( "Horizontal %d : %f\n", i, iesData->photo.horz_angles[i] );
+        //    LOG( "Horizontal {} : {}\n", i, iesData->photo.horz_angles[i] );
         //}
 
         // Find horizontal angle
@@ -320,7 +320,7 @@ static void TestIES(IE_DATA& PhotoData)
 
         float angle1 = (float)i / w * 180.0f;
 
-        //GLogger.Printf( "Sample angle %f\n", angle2 );
+        //LOG( "Sample angle {}\n", angle2 );
 
         float s = SampleIESAvgVertical(&PhotoData, angle1);
 
@@ -433,7 +433,7 @@ bool APhotometricProfile::LoadResource(IBinaryStream& Stream)
 
         if (fileFormat != FMT_FILE_TYPE_PHOTOMETRIC_PROFILE)
         {
-            GLogger.Printf("Expected file format %d\n", FMT_FILE_TYPE_PHOTOMETRIC_PROFILE);
+            LOG("Expected file format {}\n", FMT_FILE_TYPE_PHOTOMETRIC_PROFILE);
             return false;
         }
 
@@ -441,7 +441,7 @@ bool APhotometricProfile::LoadResource(IBinaryStream& Stream)
 
         if (fileVersion != FMT_VERSION_PHOTOMETRIC_PROFILE)
         {
-            GLogger.Printf("Expected file version %d\n", FMT_VERSION_PHOTOMETRIC_PROFILE);
+            LOG("Expected file version {}\n", FMT_VERSION_PHOTOMETRIC_PROFILE);
             return false;
         }
 

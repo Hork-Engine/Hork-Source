@@ -459,8 +459,6 @@ void WScroll::ScrollDelta(Float2 const& _Delta)
 
     SScrollbarGeometry const& geometry = GetScrollbarGeometry();
 
-    //GLogger.Printf("Scroll delta %s\n", _Delta.ToString().CStr() );
-
     SetScrollPosition(geometry.ContentPosition + _Delta);
 }
 

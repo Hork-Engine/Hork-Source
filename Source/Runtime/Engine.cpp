@@ -84,17 +84,17 @@ AEngine::AEngine() :
 
 static void PhysModulePrintFunction(const char* _Message)
 {
-    GLogger.Printf("PhysModule: %s", _Message);
+    LOG("PhysModule: {}", _Message);
 }
 
 static void PhysModuleWarningFunction(const char* _Message)
 {
-    GLogger.Warning("PhysModule: %s", _Message);
+    WARNING("PhysModule: {}", _Message);
 }
 
 static void PhysModuleErrorFunction(const char* _Message)
 {
-    GLogger.Error("PhysModule: %s", _Message);
+    ERROR("PhysModule: {}", _Message);
 }
 
 static void* PhysModuleAlignedAlloc(size_t _BytesCount, int _Alignment)
@@ -216,9 +216,9 @@ void AEngine::InitializeDirectories()
         }
     }
 
-    GLogger.Printf("Working directory: %s\n", GetWorkingDir().CStr());
-    GLogger.Printf("Root path: %s\n", GetRootPath().CStr());
-    GLogger.Printf("Executable: %s\n", GetExecutableName());
+    LOG("Working directory: {}\n", GetWorkingDir());
+    LOG("Root path: {}\n", GetRootPath());
+    LOG("Executable: {}\n", GetExecutableName());
 }
 
 void AEngine::Run(SEntryDecl const& _EntryDecl)
@@ -229,7 +229,7 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
 
     if (AThread::NumHardwareThreads)
     {
-        GLogger.Printf("Num hardware threads: %d\n", AThread::NumHardwareThreads);
+        LOG("Num hardware threads: {}\n", AThread::NumHardwareThreads);
     }
 
     int jobManagerThreadCount = AThread::NumHardwareThreads ? Math::Min(AThread::NumHardwareThreads, AAsyncJobManager::MAX_WORKER_THREADS) : AAsyncJobManager::MAX_WORKER_THREADS;
@@ -333,7 +333,7 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
     GameModule = CreateGameModule(_EntryDecl.ModuleClass);
     GameModule->AddRef();
 
-    GLogger.Printf("Created game module: %s\n", GameModule->FinalClassName());
+    LOG("Created game module: {}\n", GameModule->FinalClassName());
 
 #ifdef IMGUI_CONTEXT
     ImguiContext = CreateInstanceOf<AImguiContext>();
@@ -916,7 +916,7 @@ AArchive const& GetEmbeddedResources()
         EmbeddedResourcesArch = MakeUnique<AArchive>();
         if (!EmbeddedResourcesArch->OpenFromMemory(EmbeddedResources_Data, EmbeddedResources_Size))
         {
-            GLogger.Printf("Failed to open embedded resources\n");
+            LOG("Failed to open embedded resources\n");
         }
     }
     return *EmbeddedResourcesArch.GetObject();

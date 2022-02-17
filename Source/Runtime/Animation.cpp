@@ -132,7 +132,7 @@ bool ASkeletalAnimation::LoadResource(IBinaryStream& Stream)
 
     if (fileFormat != FMT_FILE_TYPE_ANIMATION)
     {
-        GLogger.Printf("Expected file format %d\n", FMT_FILE_TYPE_ANIMATION);
+        LOG("Expected file format {}\n", FMT_FILE_TYPE_ANIMATION);
         return false;
     }
 
@@ -140,7 +140,7 @@ bool ASkeletalAnimation::LoadResource(IBinaryStream& Stream)
 
     if (fileVersion != FMT_VERSION_ANIMATION)
     {
-        GLogger.Printf("Expected file version %d\n", FMT_VERSION_ANIMATION);
+        LOG("Expected file version {}\n", FMT_VERSION_ANIMATION);
         return false;
     }
 

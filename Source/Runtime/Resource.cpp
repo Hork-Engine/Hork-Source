@@ -86,7 +86,7 @@ bool AResource::LoadFromPath(const char* _Path)
             return LoadResource(f);
         }
 
-        GLogger.Printf("File not found /Root/%s\n", _Path);
+        LOG("File not found /Root/{}\n", _Path);
         return false;
     }
 
@@ -134,7 +134,7 @@ bool AResource::LoadFromPath(const char* _Path)
         AMemoryStream f;
         if (!f.OpenRead(_Path, Runtime::GetEmbeddedResources()))
         {
-            //GLogger.Printf( "Failed to open /Embedded/%s\n", _Path );
+            //LOG( "Failed to open /Embedded/{}\n", _Path );
             return false;
         }
 
@@ -142,7 +142,7 @@ bool AResource::LoadFromPath(const char* _Path)
     }
 
     // Invalid path
-    GLogger.Printf("Invalid path \"%s\"\n", _Path);
+    LOG("Invalid path \"{}\"\n", _Path);
     return false;
 }
 
@@ -172,7 +172,7 @@ bool ABinaryResource::LoadResource(IBinaryStream& _Stream)
     SizeInBytes = _Stream.SizeInBytes();
     if (!SizeInBytes)
     {
-        GLogger.Printf("ABinaryResource::LoadResource: empty file\n");
+        LOG("ABinaryResource::LoadResource: empty file\n");
         return false;
     }
 

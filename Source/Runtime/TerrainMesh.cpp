@@ -407,5 +407,5 @@ ATerrainMesh::ATerrainMesh(int InTextureSize)
     ci.SizeInBytes = IndexBuffer.Size() * sizeof(unsigned short);
     device->CreateBuffer(ci, IndexBuffer.ToPtr(), &IndexBufferGPU);
 
-    GLogger.Printf("Terrain Mesh: Total vertices %d, Total indices %d\n", VertexBuffer.Size(), IndexBuffer.Size());
+    LOG("Terrain Mesh: Total vertices {}, Total indices {}\n", VertexBuffer.Size(), IndexBuffer.Size());
 }

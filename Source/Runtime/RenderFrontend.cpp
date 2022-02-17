@@ -153,7 +153,7 @@ void ARenderFrontend::Render(AFrameLoop* InFrameLoop, ACanvas* InCanvas)
                   FrameData.TranslucentInstances.Begin() + (view->FirstTranslucentInstance + view->TranslucentInstanceCount),
                   InstanceSortFunction);
     }
-    //GLogger.Printf( "Sort instances time %d instances count %d\n", FrameLoop->SysMilliseconds() - t, FrameData.Instances.Size() + FrameData.ShadowInstances.Size() );
+    //LOG( "Sort instances time {} instances count {}\n", FrameLoop->SysMilliseconds() - t, FrameData.Instances.Size() + FrameData.ShadowInstances.Size() );
 
     if (DebugDraw.CommandsCount() > 0)
     {
@@ -416,7 +416,7 @@ void ARenderFrontend::RenderCanvas(ACanvas* InCanvas)
         // TextureId can contain a viewport index, material instance or gpu texture
         if (!cmd.TextureId)
         {
-            GLogger.Printf("ARenderFrontend::RenderCanvas: invalid command (TextureId==0)\n");
+            LOG("ARenderFrontend::RenderCanvas: invalid command (TextureId==0)\n");
             continue;
         }
 
@@ -466,7 +466,7 @@ void ARenderFrontend::RenderCanvas(ACanvas* InCanvas)
                 // Check material type
                 if (material->GetType() != MATERIAL_TYPE_HUD)
                 {
-                    GLogger.Printf("ARenderFrontend::RenderCanvas: expected MATERIAL_TYPE_HUD\n");
+                    LOG("ARenderFrontend::RenderCanvas: expected MATERIAL_TYPE_HUD\n");
                     continue;
                 }
 
@@ -490,7 +490,7 @@ void ARenderFrontend::RenderCanvas(ACanvas* InCanvas)
             }
 
             default:
-                GLogger.Printf("ARenderFrontend::RenderCanvas: unknown command type\n");
+                LOG("ARenderFrontend::RenderCanvas: unknown command type\n");
                 continue;
         }
 
@@ -821,7 +821,7 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
             }
             else
             {
-                GLogger.Printf("MAX_LIGHTS hit\n");
+                LOG("MAX_LIGHTS hit\n");
             }
             continue;
         }
@@ -839,12 +839,12 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
             }
             else
             {
-                GLogger.Printf("MAX_PROBES hit\n");
+                LOG("MAX_PROBES hit\n");
             }
             continue;
         }
 
-        GLogger.Printf("Unhandled primitive\n");
+        LOG("Unhandled primitive\n");
     }
 
     if (r_RenderSurfaces && !VisSurfaces.IsEmpty())
@@ -870,7 +870,7 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
 
         if (view->NumDirectionalLights >= MAX_DIRECTIONAL_LIGHTS)
         {
-            GLogger.Printf("MAX_DIRECTIONAL_LIGHTS hit\n");
+            LOG("MAX_DIRECTIONAL_LIGHTS hit\n");
             break;
         }
 
@@ -1661,7 +1661,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
 
             for (int n = 0; n < ShadowCasters.Size(); n++)
             {
-                //GLogger.Printf( "Cull result %f\n", *(float*)&ShadowCasterCullResult[n] );
+                //LOG( "Cull result {}\n", *(float*)&ShadowCasterCullResult[n] );
                 //ShadowCasters[n]->CascadeMask |= (1-ShadowCasterCullResult[n]) << i;
 
                 ShadowCasters[n]->CascadeMask |= (ShadowCasterCullResult[n] == 0) << cascadeIndex;
@@ -2207,5 +2207,5 @@ void ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Ra
         totalInstances += shadowMap->ShadowInstanceCount;
     }
 
-    //GLogger.Printf( "Total Instances %d, surfaces %d\n", totalInstances, totalSurfaces );
+    //LOG( "Total Instances {}, surfaces {}\n", totalInstances, totalSurfaces );
 }

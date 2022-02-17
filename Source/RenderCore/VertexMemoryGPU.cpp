@@ -73,7 +73,7 @@ void AVertexMemoryGPU::Deallocate(SVertexHandle* _Handle)
         return;
     }
 
-    //GLogger.Printf( "Deallocated buffer at block %d, offset %d, size %d\n", _Handle->GetBlockIndex(), _Handle->GetBlockOffset(), _Handle->Size );
+    //LOG( "Deallocated buffer at block {}, offset {}, size {}\n", _Handle->GetBlockIndex(), _Handle->GetBlockOffset(), _Handle->Size );
 
     SBlock* block = &Blocks[_Handle->GetBlockIndex()];
 
@@ -301,7 +301,7 @@ SVertexHandle* AVertexMemoryGPU::Allocate(size_t _SizeInBytes, const void* _Data
         BufferHandles[handle->GetBlockIndex()]->WriteRange(handle->GetBlockOffset(), handle->Size, _Data);
     }
 
-    //GLogger.Printf( "Allocated buffer at block %d, offset %d, size %d\n", handle->GetBlockIndex(), handle->GetBlockOffset(), handle->Size );
+    //LOG( "Allocated buffer at block {}, offset {}, size {}\n", handle->GetBlockIndex(), handle->GetBlockOffset(), handle->Size );
 
     return handle;
 }
@@ -389,20 +389,20 @@ void AVertexMemoryGPU::AddGPUBuffer()
 
     BufferHandles.Append(buffer);
 
-    GLogger.Printf("Allocated a new block (total blocks %d)\n", BufferHandles.Size());
+    LOG("Allocated a new block (total blocks {})\n", BufferHandles.Size());
 }
 
 void AVertexMemoryGPU::CheckMemoryLeaks()
 {
     for (SVertexHandle* handle : Handles)
     {
-        GLogger.Print("==== Vertex Memory Leak ====\n");
-        GLogger.Printf("Chunk Address: %u Size: %d\n", handle->Address, handle->Size);
+        LOG("==== Vertex Memory Leak ====\n");
+        LOG("Chunk Address: {} Size: {}\n", handle->Address, handle->Size);
     }
     for (SVertexHandle* handle : HugeHandles)
     {
-        GLogger.Print("==== Vertex Memory Leak ====\n");
-        GLogger.Printf("Chunk Address: %u Size: %d (Huge)\n", handle->Address, handle->Size);
+        LOG("==== Vertex Memory Leak ====\n");
+        LOG("Chunk Address: {} Size: {} (Huge)\n", handle->Address, handle->Size);
     }
 }
 

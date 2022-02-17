@@ -507,14 +507,14 @@ void ACharacterControllerBase::RecoverFromPenetration(float MaxPenetrationDepth,
 
             if (numPenetrationLoops > MaxIterations)
             {
-                GLogger.Printf("ACharacterControllerBase::RecoverFromPenetration: couldn't recover from penetration (num iterations %d)\n", numPenetrationLoops);
+                LOG("ACharacterControllerBase::RecoverFromPenetration: couldn't recover from penetration (num iterations {})\n", numPenetrationLoops);
                 break;
             }
         }
     }
     if (numPenetrationLoops > 0 && numPenetrationLoops <= MaxIterations)
     {
-        GLogger.Printf("Recovered from penetration, %d iterations\n", numPenetrationLoops);
+        LOG("Recovered from penetration, {} iterations\n", numPenetrationLoops);
     }
 }
 
@@ -593,7 +593,7 @@ bool ACharacterControllerBase::_RecoverFromPenetration(float MaxPenetrationDepth
                 }
                 else
                 {
-                    //GLogger.Printf("touching %f\n", dist);
+                    //LOG("touching {}\n", dist);
                 }
             }
 

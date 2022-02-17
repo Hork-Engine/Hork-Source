@@ -239,13 +239,13 @@ void AHitProxy::CollisionContactQuery(TPodVector<AHitProxy*>& _Result) const
 
     if (!CollisionObject)
     {
-        GLogger.Printf("AHitProxy::CollisionContactQuery: No collision object\n");
+        LOG("AHitProxy::CollisionContactQuery: No collision object\n");
         return;
     }
 
     if (!bInWorld)
     {
-        GLogger.Printf("AHitProxy::CollisionContactQuery: The body is not in world\n");
+        LOG("AHitProxy::CollisionContactQuery: The body is not in world\n");
         return;
     }
 
@@ -258,13 +258,13 @@ void AHitProxy::CollisionContactQueryActor(TPodVector<AActor*>& _Result) const
 
     if (!CollisionObject)
     {
-        GLogger.Printf("AHitProxy::CollisionContactQueryActor: No collision object\n");
+        LOG("AHitProxy::CollisionContactQueryActor: No collision object\n");
         return;
     }
 
     if (!bInWorld)
     {
-        GLogger.Printf("AHitProxy::CollisionContactQueryActor: The body is not in world\n");
+        LOG("AHitProxy::CollisionContactQueryActor: The body is not in world\n");
         return;
     }
 

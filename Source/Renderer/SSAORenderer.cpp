@@ -142,11 +142,11 @@ ASSAORenderer::ASSAORenderer()
     }
 
     //for ( int i = 0; i < HBAO_RANDOM_ELEMENTS; i++ ) {
-    //    GLogger.Printf( "vec2( %f, %f ),\n", float( i % 4 ) + 0.5f, float( i / 4 ) + 0.5f );
+    //    LOG( "vec2( {}, {} ),\n", float( i % 4 ) + 0.5f, float( i / 4 ) + 0.5f );
     //}
 
     //for ( int i = 0; i < HBAO_RANDOM_ELEMENTS; i++ ) {
-    //    GLogger.Printf( "vec4( %f, %f, %f, 0.0 ),\n", hbaoRandom[i].X, hbaoRandom[i].Y, hbaoRandom[i].Z );
+    //    LOG( "vec4( {}, {}, {}, 0.0 ),\n", hbaoRandom[i].X, hbaoRandom[i].Y, hbaoRandom[i].Z );
     //}
 
     GDevice->CreateTexture(STextureDesc()

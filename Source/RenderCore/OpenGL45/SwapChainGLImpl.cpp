@@ -73,7 +73,7 @@ void ASwapChainGLImpl::Present(int SwapInterval)
 
     if (pWindow->CurrentSwapInterval != SwapInterval)
     {
-        GLogger.Printf("Changing swap interval to %d\n", SwapInterval);
+        LOG("Changing swap interval to {}\n", SwapInterval);
 
         SDL_GL_SetSwapInterval(SwapInterval);
         pWindow->CurrentSwapInterval = SwapInterval;

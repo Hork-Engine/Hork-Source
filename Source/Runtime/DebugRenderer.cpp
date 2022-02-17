@@ -124,7 +124,7 @@ bool ADebugRenderer::PrimitiveReserve(EDebugDrawCmd _CmdName, int _NumVertices, 
     if (_NumVertices > MAX_PRIMITIVE_VERTS)
     {
         // TODO: split to several primitives
-        GLogger.Printf("ADebugRenderer::PrimitiveReserve: primitive has too many vertices\n");
+        LOG("ADebugRenderer::PrimitiveReserve: primitive has too many vertices\n");
         return false;
     }
 

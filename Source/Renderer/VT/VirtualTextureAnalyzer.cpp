@@ -91,7 +91,7 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
         {
             AMutexGurad criticalSection( EnqueLock );
 
-            GLogger.Printf( "Fetch page\n" );
+            LOG("Fetch page\n");
 
             QueueLoadPos = QueueLoadPos & (MAX_QUEUE_LENGTH - 1);
             quedPage = QuedPages[QueueLoadPos];
@@ -105,7 +105,7 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
 
         if ( !pTexture ) {
             // Reached end of queue
-            GLogger.Printf( "WaitForNewPages\n" );
+            LOG("WaitForNewPages\n");
             WaitForNewPages();
             continue;
         }
@@ -123,12 +123,12 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
         auto it = streamedPages.find( quedPage.PageIndex );
         if ( it != streamedPages.end() ) {
             if ( it->second + 1000 < time ) {
-                GLogger.Printf( "Re-load page\n" );
+                LOG("Re-load page\n");
                 it->second = time;
             }
             else {
                 // Page already loaded. Fetch next page
-                GLogger.Printf( "Page already loaded\n" );
+                LOG("Page already loaded\n");
                 continue;
             }
         }
@@ -136,7 +136,7 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
             streamedPages[quedPage.PageIndex] = time;
         }
 
-        GLogger.Printf( "Load\n" );
+        LOG("Load\n");
 
         SFileOffset physAddress = pTexture->GetPhysAddress( quedPage.PageIndex );
 
@@ -151,7 +151,7 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
 
         //int32_t pagePayLoad = Platform::SysMilliseconds() - time;
 
-        //GLogger.Printf( "pagePayLoad %d msec\n", pagePayLoad );
+        //LOG( "pagePayLoad {} msec\n", pagePayLoad );
 
         // Wait for test
         //AThread::WaitSeconds( 1 );
@@ -208,7 +208,7 @@ void AVirtualTextureFeedbackAnalyzer::Begin(AStreamedMemoryGPU* StreamedMemory)
 
     size_t size = VT_MAX_TEXTURE_UNITS * sizeof( SVirtualTextureUnit );
     if ( size > maxBlockSize ) {
-        GLogger.Printf( "AVirtualTextureFeedbackAnalyzer::Begin: constant buffer max block size hit\n" );
+        LOG("AVirtualTextureFeedbackAnalyzer::Begin: constant buffer max block size hit\n");
     }
 
     size_t offset = StreamedMemory->AllocateConstant(size);
@@ -417,7 +417,7 @@ void AVirtualTextureFeedbackAnalyzer::DecodePages()
         }
     }
 
-    //GLogger.Printf( "Num iterations: %d, uniqe pages %d, buffer size %d\n", numIterations, PendingPages.Size(), feedbackSize );
+    //LOG( "Num iterations: {}, uniqe pages {}, buffer size {}\n", numIterations, PendingPages.Size(), feedbackSize );
 
     if ( !PendingPages.IsEmpty() ) {
         PendingPagesHash.Clear();

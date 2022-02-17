@@ -434,42 +434,42 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
             // Called on iOS in applicationWillTerminate()
             // Called on Android in onDestroy()
             case SDL_APP_TERMINATING:
-                GLogger.Printf("PollEvent: Terminating\n");
+                LOG("PollEvent: Terminating\n");
                 break;
 
             // The application is low on memory, free memory if possible.
             // Called on iOS in applicationDidReceiveMemoryWarning()
             // Called on Android in onLowMemory()
             case SDL_APP_LOWMEMORY:
-                GLogger.Printf("PollEvent: Low memory\n");
+                LOG("PollEvent: Low memory\n");
                 break;
 
             // The application is about to enter the background
             // Called on iOS in applicationWillResignActive()
             // Called on Android in onPause()
             case SDL_APP_WILLENTERBACKGROUND:
-                GLogger.Printf("PollEvent: Will enter background\n");
+                LOG("PollEvent: Will enter background\n");
                 break;
 
             // The application did enter the background and may not get CPU for some time
             // Called on iOS in applicationDidEnterBackground()
             // Called on Android in onPause()
             case SDL_APP_DIDENTERBACKGROUND:
-                GLogger.Printf("PollEvent: Did enter background\n");
+                LOG("PollEvent: Did enter background\n");
                 break;
 
             // The application is about to enter the foreground
             // Called on iOS in applicationWillEnterForeground()
             // Called on Android in onResume()
             case SDL_APP_WILLENTERFOREGROUND:
-                GLogger.Printf("PollEvent: Will enter foreground\n");
+                LOG("PollEvent: Will enter foreground\n");
                 break;
 
             // The application is now interactive
             // Called on iOS in applicationDidBecomeActive()
             // Called on Android in onResume()
             case SDL_APP_DIDENTERFOREGROUND:
-                GLogger.Printf("PollEvent: Did enter foreground\n");
+                LOG("PollEvent: Did enter foreground\n");
                 break;
 
             // Display state change
@@ -482,28 +482,28 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
                         {
                             // The display is in landscape mode, with the right side up, relative to portrait mode
                             case SDL_ORIENTATION_LANDSCAPE:
-                                GLogger.Printf("PollEvent: Display orientation has changed to landscape mode\n");
+                                LOG("PollEvent: Display orientation has changed to landscape mode\n");
                                 break;
                             // The display is in landscape mode, with the left side up, relative to portrait mode
                             case SDL_ORIENTATION_LANDSCAPE_FLIPPED:
-                                GLogger.Printf("PollEvent: Display orientation has changed to flipped landscape mode\n");
+                                LOG("PollEvent: Display orientation has changed to flipped landscape mode\n");
                                 break;
                             // The display is in portrait mode
                             case SDL_ORIENTATION_PORTRAIT:
-                                GLogger.Printf("PollEvent: Display orientation has changed to portrait mode\n");
+                                LOG("PollEvent: Display orientation has changed to portrait mode\n");
                                 break;
                             // The display is in portrait mode, upside down
                             case SDL_ORIENTATION_PORTRAIT_FLIPPED:
-                                GLogger.Printf("PollEvent: Display orientation has changed to flipped portrait mode\n");
+                                LOG("PollEvent: Display orientation has changed to flipped portrait mode\n");
                                 break;
                             // The display orientation can't be determined
                             case SDL_ORIENTATION_UNKNOWN:
                             default:
-                                GLogger.Printf("PollEvent: The display orientation can't be determined\n");
+                                LOG("PollEvent: The display orientation can't be determined\n");
                                 break;
                         }
                     default:
-                        GLogger.Printf("PollEvent: Unknown display event type\n");
+                        LOG("PollEvent: Unknown display event type\n");
                         break;
                 }
                 break;
@@ -770,12 +770,12 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
 
             // Joystick trackball motion
             case SDL_JOYBALLMOTION:
-                GLogger.Printf("PollEvent: Joystick ball move\n");
+                LOG("PollEvent: Joystick ball move\n");
                 break;
 
             // Joystick hat position change
             case SDL_JOYHATMOTION:
-                GLogger.Printf("PollEvent: Joystick hat move\n");
+                LOG("PollEvent: Joystick hat move\n");
                 break;
 
             // Joystick button pressed
@@ -823,7 +823,7 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
                 {
                     HK_ASSERT_(0, "Invalid joystick id");
                 }
-                GLogger.Printf("PollEvent: Joystick added\n");
+                LOG("PollEvent: Joystick added\n");
                 break;
 
             // An opened joystick has been removed
@@ -843,99 +843,99 @@ void AFrameLoop::PollEvents(IEventListener* Listener)
                     HK_ASSERT_(0, "Invalid joystick id");
                 }
 
-                GLogger.Printf("PollEvent: Joystick removed\n");
+                LOG("PollEvent: Joystick removed\n");
                 break;
             }
 
             // Game controller axis motion
             case SDL_CONTROLLERAXISMOTION:
-                GLogger.Printf("PollEvent: Gamepad axis move\n");
+                LOG("PollEvent: Gamepad axis move\n");
                 break;
             // Game controller button pressed
             case SDL_CONTROLLERBUTTONDOWN:
-                GLogger.Printf("PollEvent: Gamepad button press\n");
+                LOG("PollEvent: Gamepad button press\n");
                 break;
             // Game controller button released
             case SDL_CONTROLLERBUTTONUP:
-                GLogger.Printf("PollEvent: Gamepad button release\n");
+                LOG("PollEvent: Gamepad button release\n");
                 break;
             // A new Game controller has been inserted into the system
             case SDL_CONTROLLERDEVICEADDED:
-                GLogger.Printf("PollEvent: Gamepad added\n");
+                LOG("PollEvent: Gamepad added\n");
                 break;
             // An opened Game controller has been removed
             case SDL_CONTROLLERDEVICEREMOVED:
-                GLogger.Printf("PollEvent: Gamepad removed\n");
+                LOG("PollEvent: Gamepad removed\n");
                 break;
             // The controller mapping was updated
             case SDL_CONTROLLERDEVICEREMAPPED:
-                GLogger.Printf("PollEvent: Gamepad device mapped\n");
+                LOG("PollEvent: Gamepad device mapped\n");
                 break;
 
             // Touch events
             case SDL_FINGERDOWN:
-                GLogger.Printf("PollEvent: Touch press\n");
+                LOG("PollEvent: Touch press\n");
                 break;
             case SDL_FINGERUP:
-                GLogger.Printf("PollEvent: Touch release\n");
+                LOG("PollEvent: Touch release\n");
                 break;
             case SDL_FINGERMOTION:
-                GLogger.Printf("PollEvent: Touch move\n");
+                LOG("PollEvent: Touch move\n");
                 break;
 
             // Gesture events
             case SDL_DOLLARGESTURE:
-                GLogger.Printf("PollEvent: Dollar gesture\n");
+                LOG("PollEvent: Dollar gesture\n");
                 break;
             case SDL_DOLLARRECORD:
-                GLogger.Printf("PollEvent: Dollar record\n");
+                LOG("PollEvent: Dollar record\n");
                 break;
             case SDL_MULTIGESTURE:
-                GLogger.Printf("PollEvent: Multigesture\n");
+                LOG("PollEvent: Multigesture\n");
                 break;
 
             // The clipboard changed
             case SDL_CLIPBOARDUPDATE:
-                GLogger.Printf("PollEvent: Clipboard update\n");
+                LOG("PollEvent: Clipboard update\n");
                 break;
 
             // The system requests a file open
             case SDL_DROPFILE:
-                GLogger.Printf("PollEvent: Drop file\n");
+                LOG("PollEvent: Drop file\n");
                 break;
             // text/plain drag-and-drop event
             case SDL_DROPTEXT:
-                GLogger.Printf("PollEvent: Drop text\n");
+                LOG("PollEvent: Drop text\n");
                 break;
             // A new set of drops is beginning (NULL filename)
             case SDL_DROPBEGIN:
-                GLogger.Printf("PollEvent: Drop begin\n");
+                LOG("PollEvent: Drop begin\n");
                 break;
             // Current set of drops is now complete (NULL filename)
             case SDL_DROPCOMPLETE:
-                GLogger.Printf("PollEvent: Drop complete\n");
+                LOG("PollEvent: Drop complete\n");
                 break;
 
             // A new audio device is available
             case SDL_AUDIODEVICEADDED:
-                GLogger.Printf("Audio %s device added: %s\n", event.adevice.iscapture ? "capture" : "playback", SDL_GetAudioDeviceName(event.adevice.which, event.adevice.iscapture));
+                LOG("Audio {} device added: {}\n", event.adevice.iscapture ? "capture" : "playback", SDL_GetAudioDeviceName(event.adevice.which, event.adevice.iscapture));
                 break;
             // An audio device has been removed
             case SDL_AUDIODEVICEREMOVED:
-                GLogger.Printf("Audio %s device removed: %s\n", event.adevice.iscapture ? "capture" : "playback", SDL_GetAudioDeviceName(event.adevice.which, event.adevice.iscapture));
+                LOG("Audio {} device removed: {}\n", event.adevice.iscapture ? "capture" : "playback", SDL_GetAudioDeviceName(event.adevice.which, event.adevice.iscapture));
                 break;
 
             // A sensor was updated
             case SDL_SENSORUPDATE:
-                GLogger.Printf("PollEvent: Sensor update\n");
+                LOG("PollEvent: Sensor update\n");
                 break;
 
             // The render targets have been reset and their contents need to be updated
             case SDL_RENDER_TARGETS_RESET:
-                GLogger.Printf("PollEvent: Render targets reset\n");
+                LOG("PollEvent: Render targets reset\n");
                 break;
             case SDL_RENDER_DEVICE_RESET:
-                GLogger.Printf("PollEvent: Render device reset\n");
+                LOG("PollEvent: Render device reset\n");
                 break;
         }
     }

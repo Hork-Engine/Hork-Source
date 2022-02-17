@@ -1149,7 +1149,6 @@ void WWidget::OnDrawEvent(ACanvas& _Canvas)
 
 void WWidget::OnTransformDirty()
 {
-    //GLogger.Printf( "Widget transform dirty\n" );
 }
 
 void WWidget::AdjustSizeAndPosition(Float2 const& _AvailableSize, Float2& _Size, Float2& _Position)

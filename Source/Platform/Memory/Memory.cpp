@@ -72,8 +72,6 @@ using TRASH_MARKER = uint16_t;
 
 static const TRASH_MARKER TrashMarker = 0xfeee;
 
-static ALogger MemLogger;
-
 //////////////////////////////////////////////////////////////////////////////////////////
 //
 // Heap Memory
@@ -408,8 +406,8 @@ void AHeapMemory::CheckMemoryLeaks()
     ASpinLockGuard lockGuard(Mutex);
     for (SHeapChunk* heap = HeapChain.pNext; heap != &HeapChain; heap = heap->pNext)
     {
-        MemLogger.Print("==== Heap Memory Leak ====\n");
-        MemLogger.Printf("Heap Address: %u Size: %d\n", (size_t)(heap + 1), heap->DataSize);
+        LOG("==== Heap Memory Leak ====\n");
+        LOG("Heap Address: {} Size: {}\n", (size_t)(heap + 1), heap->DataSize);
     }
 }
 
@@ -690,7 +688,7 @@ void AHunkMemory::CheckMemoryLeaks()
         // check memory trash
         if (MemoryBuffer->Cur && HunkTrashTest(MemoryBuffer->Cur))
         {
-            MemLogger.Print("AHunkMemory::CheckMemoryLeaks: Memory was trashed\n");
+            LOG("AHunkMemory::CheckMemoryLeaks: Memory was trashed\n");
         }
 
         SHunk* hunk = MemoryBuffer->Hunk;
@@ -701,8 +699,8 @@ void AHunkMemory::CheckMemoryLeaks()
         }
         while (hunk)
         {
-            MemLogger.Print("==== Hunk Memory Leak ====\n");
-            MemLogger.Printf("Hunk Address: %u Size: %d\n", (size_t)(hunk + 1), hunk->Size);
+            LOG("==== Hunk Memory Leak ====\n");
+            LOG("Hunk Address: {} Size: {}\n", (size_t)(hunk + 1), hunk->Size);
             hunk = hunk->pPrev;
         }
     }
@@ -969,7 +967,7 @@ void* AZoneMemory::Alloc(size_t _BytesCount)
     size_t size = (-cur->Size);
     if (localAddr == ZONE_MEMORY_LEAK_ADDRESS && size == ZONE_MEMORY_LEAK_SIZE)
     {
-        GLogger.Printf("Problem alloc\n");
+        LOG("Problem alloc\n");
 #        ifdef HK_OS_WIN32
         DebugBreak();
 #        else
@@ -1008,7 +1006,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
     if (chunk->DataSize >= _NewBytesCount)
     {
         // data is big enough
-        //MemLogger.Printf( "_BytesCount >= _NewBytesCount\n" );
+        //LOG( "_BytesCount >= _NewBytesCount\n" );
         return _Data;
     }
 
@@ -1017,7 +1015,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
 
     if (bFreed)
     {
-        //MemLogger.Printf( "freed pointer\n" );
+        //LOG( "freed pointer\n" );
         return Alloc(_NewBytesCount);
     }
 
@@ -1038,7 +1036,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
     }
     else
     {
-        //MemLogger.Printf( "Caching memcpy\n" );
+        //LOG( "Caching memcpy\n" );
     }
     GHunkMemory.ClearLastHunk();
 
@@ -1060,7 +1058,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
     if (chunk->DataSize >= _NewBytesCount)
     {
         // data is big enough
-        //MemLogger.Printf( "_BytesCount >= _NewBytesCount\n" );
+        //LOG( "_BytesCount >= _NewBytesCount\n" );
         return _Data;
     }
 
@@ -1069,7 +1067,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
 
     if (bFreed)
     {
-        //MemLogger.Printf( "freed pointer\n" );
+        //LOG( "freed pointer\n" );
         return Alloc(_NewBytesCount);
     }
 
@@ -1087,7 +1085,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
     if (requiredSize <= -chunk->Size)
     {
         // data is big enough
-        //MemLogger.Printf( "data is big enough\n" );
+        //LOG( "data is big enough\n" );
         return _Data;
     }
 
@@ -1163,7 +1161,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
 
         SetTrashMarker(chunk);
 
-        //MemLogger.Printf( "using next chunk\n" );
+        //LOG( "using next chunk\n" );
 
         HK_ASSERT(_Data == chunk + 1);
 
@@ -1191,7 +1189,7 @@ void* AZoneMemory::Realloc(void* _Data, int _NewBytesCount, bool _KeepOld)
         //free(d);
         //return _Data;
 #        if 1
-        //MemLogger.Printf( "reallocating new chunk with copy\n" );
+        //LOG( "reallocating new chunk with copy\n" );
 
         cur = FindFreeChunk(requiredSize);
         if (!cur)
@@ -1368,13 +1366,13 @@ void AZoneMemory::CheckMemoryLeaks()
             cur = rover;
             if (cur->Size < 0)
             {
-                MemLogger.Print("==== Zone Memory Leak ====\n");
-                MemLogger.Printf("Chunk Address: %u (Local: %u) Size: %d\n", (size_t)(cur + 1), (size_t)(cur + 1) - (size_t)GetZoneMemoryAddress(), (-cur->Size));
+                LOG("==== Zone Memory Leak ====\n");
+                LOG("Chunk Address: {} (Local: {}) Size: {}\n", (size_t)(cur + 1), (size_t)(cur + 1) - (size_t)GetZoneMemoryAddress(), (-cur->Size));
 
                 //int sz = -cur->Size;
                 //char * b = (char*)(cur+1);
                 //while ( sz-->0 ) {
-                //    MemLogger.Printf("%c",*b > 31 && *b < 127 ? *b : '?');
+                //    LOG("{}",*b > 31 && *b < 127 ? *b : '?');
                 //    b++;
                 //}
             }

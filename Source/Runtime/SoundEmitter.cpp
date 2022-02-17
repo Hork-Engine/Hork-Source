@@ -124,7 +124,7 @@ void ASoundEmitter::PlaySound(ASoundResource* SoundResource, int StartFrame, int
 {
     if (!IsInitialized())
     {
-        GLogger.Printf("ASoundEmitter::PlaySound: not initialized\n");
+        LOG("ASoundEmitter::PlaySound: not initialized\n");
         return;
     }
 
@@ -169,7 +169,7 @@ void ASoundEmitter::PlayOneShot(ASoundResource* SoundResource, float VolumeScale
 {
     if (!IsInitialized())
     {
-        GLogger.Printf("ASoundEmitter::PlayOneShot: not initialized\n");
+        LOG("ASoundEmitter::PlayOneShot: not initialized\n");
         return;
     }
 
@@ -233,13 +233,13 @@ bool ASoundEmitter::StartPlay(ASoundResource* SoundResource, int StartFrame, int
 {
     if (!SoundResource)
     {
-        GLogger.Printf("ASoundEmitter::StartPlay: No sound specified\n");
+        LOG("ASoundEmitter::StartPlay: No sound specified\n");
         return false;
     }
 
     if (SoundResource->GetFrameCount() == 0)
     {
-        GLogger.Printf("ASoundEmitter::StartPlay: Sound has no frames\n");
+        LOG("ASoundEmitter::StartPlay: Sound has no frames\n");
         return false;
     }
 
@@ -273,7 +273,7 @@ bool ASoundEmitter::StartPlay(ASoundResource* SoundResource, int StartFrame, int
     {
         if (!SoundResource->CreateStreamInstance(&streamInterface))
         {
-            GLogger.Printf("ASoundEmitter::StartPlay: Couldn't create audio stream instance\n");
+            LOG("ASoundEmitter::StartPlay: Couldn't create audio stream instance\n");
             return false;
         }
     }
@@ -281,7 +281,7 @@ bool ASoundEmitter::StartPlay(ASoundResource* SoundResource, int StartFrame, int
     {
         if (!SoundResource->GetAudioBuffer())
         {
-            GLogger.Printf("ASoundEmitter::StartPlay: Resource has no audio buffer\n");
+            LOG("ASoundEmitter::StartPlay: Resource has no audio buffer\n");
             return false;
         }
     }
@@ -339,13 +339,13 @@ void ASoundEmitter::AddToQueue(ASoundResource* SoundResource)
 {
     if (!SoundResource)
     {
-        GLogger.Printf("ASoundEmitter::AddToQueue: No sound specified\n");
+        LOG("ASoundEmitter::AddToQueue: No sound specified\n");
         return;
     }
 
     if (SoundResource->GetFrameCount() == 0)
     {
-        GLogger.Printf("ASoundEmitter::AddToQueue: Sound has no frames\n");
+        LOG("ASoundEmitter::AddToQueue: Sound has no frames\n");
         return;
     }
 
@@ -759,13 +759,13 @@ void ASoundEmitter::SpawnSound(ASoundResource* SoundResource, Float3 const& Spaw
 
     if (!SoundResource)
     {
-        GLogger.Printf("ASoundEmitter::SpawnSound: No sound specified\n");
+        LOG("ASoundEmitter::SpawnSound: No sound specified\n");
         return;
     }
 
     if (SoundResource->GetFrameCount() == 0)
     {
-        GLogger.Printf("ASoundEmitter::SpawnSound: Sound has no frames\n");
+        LOG("ASoundEmitter::SpawnSound: Sound has no frames\n");
         return;
     }
 
@@ -811,7 +811,7 @@ void ASoundEmitter::SpawnSound(ASoundResource* SoundResource, Float3 const& Spaw
     {
         if (!SoundResource->CreateStreamInstance(&streamInterface))
         {
-            GLogger.Printf("ASoundEmitter::SpawnSound: Couldn't create audio stream instance\n");
+            LOG("ASoundEmitter::SpawnSound: Couldn't create audio stream instance\n");
             return;
         }
     }
@@ -819,7 +819,7 @@ void ASoundEmitter::SpawnSound(ASoundResource* SoundResource, Float3 const& Spaw
     {
         if (!SoundResource->GetAudioBuffer())
         {
-            GLogger.Printf("ASoundEmitter::SpawnSound: Resource has no audio buffer\n");
+            LOG("ASoundEmitter::SpawnSound: Resource has no audio buffer\n");
             return;
         }
     }

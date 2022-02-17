@@ -364,7 +364,7 @@ void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVi
     int numDirLights = GRenderView->NumDirectionalLights;
     if (numDirLights > MAX_DIRECTIONAL_LIGHTS)
     {
-        GLogger.Printf("GRenderView->NumDirectionalLights > MAX_DIRECTIONAL_LIGHTS\n");
+        LOG("GRenderView->NumDirectionalLights > MAX_DIRECTIONAL_LIGHTS\n");
 
         numDirLights = MAX_DIRECTIONAL_LIGHTS;
     }
