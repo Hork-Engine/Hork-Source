@@ -31,14 +31,15 @@ SOFTWARE.
 #pragma once
 
 #include "LightComponent.h"
+#include <Core/IntrusiveLinkedListMacro.h>
 
 class ADirectionalLightComponent : public ALightComponent
 {
     HK_COMPONENT(ADirectionalLightComponent, ALightComponent)
 
-    friend class ARenderWorld;
-
 public:
+    TLink<ADirectionalLightComponent> Link;
+
     void  SetIlluminance(float IlluminanceInLux);
     float GetIlluminance() const;
 
@@ -88,9 +89,6 @@ public:
 
     void AddShadowmapCascades(class AStreamedMemoryGPU* StreamedMemory, struct SRenderView* View, size_t* ViewProjStreamHandle, int* pFirstCascade, int* pNumCascades);
 
-    ADirectionalLightComponent* GetNext() { return Next; }
-    ADirectionalLightComponent* GetPrev() { return Prev; }
-
 protected:
     ADirectionalLightComponent();
 
@@ -111,6 +109,4 @@ private:
     int                         MaxShadowCascades;
     int                         ShadowCascadeResolution;
     float                       ShadowCascadeSplitLambda;
-    ADirectionalLightComponent* Next;
-    ADirectionalLightComponent* Prev;
 };

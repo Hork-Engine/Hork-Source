@@ -2922,7 +2922,7 @@ static void lwFree(void* _Allocator, void* _Bytes)
 
 static size_t lwRead(void* _Buffer, size_t _ElementSize, size_t _ElementCount, struct st_lwFile* _Stream)
 {
-    IBinaryStream* stream = (IBinaryStream*)_Stream->UserData;
+    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)_Stream->UserData;
 
     size_t total = _ElementSize * _ElementCount;
 
@@ -2931,7 +2931,7 @@ static size_t lwRead(void* _Buffer, size_t _ElementSize, size_t _ElementCount, s
 
 static int lwSeek(struct st_lwFile* _Stream, long _Offset, int _Origin)
 {
-    IBinaryStream* stream = (IBinaryStream*)_Stream->UserData;
+    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)_Stream->UserData;
 
     switch (_Origin)
     {
@@ -2948,14 +2948,14 @@ static int lwSeek(struct st_lwFile* _Stream, long _Offset, int _Origin)
 
 static long lwTell(struct st_lwFile* _Stream)
 {
-    IBinaryStream* stream = (IBinaryStream*)_Stream->UserData;
+    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)_Stream->UserData;
 
     return (long)stream->GetOffset();
 }
 
 static int lwGetc(struct st_lwFile* _Stream)
 {
-    IBinaryStream* stream = (IBinaryStream*)_Stream->UserData;
+    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)_Stream->UserData;
 
     uint8_t c;
     if (stream->Read(&c, sizeof(c)) == 0)
@@ -3406,7 +3406,7 @@ static bool CreateLWOMesh(lwObject* lwo, float InScale, AMaterialInstance* (*Get
     return CreateIndexedMeshFromSurfaces(faces.ToPtr(), faces.Size(), modelVertices.ToPtr(), modelIndices.ToPtr(), IndexedMesh);
 }
 
-bool LoadLWO(IBinaryStream& InStream, float InScale, AMaterialInstance* (*GetMaterial)(const char* _Name), AIndexedMesh** IndexedMesh)
+bool LoadLWO(IBinaryStreamReadInterface& InStream, float InScale, AMaterialInstance* (*GetMaterial)(const char* _Name), AIndexedMesh** IndexedMesh)
 {
     lwFile              file;
     unsigned int        failID;

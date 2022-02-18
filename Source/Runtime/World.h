@@ -388,24 +388,23 @@ public:
     AWorld();
     ~AWorld();
 
+    /** Same as Actor->Destroy() */
+    static void DestroyActor(AActor* Actor);
+
+    /** Same as Component->Destroy() */
+    static void DestroyComponent(AActorComponent* Component);
+
+    void RegisterTimer(ATimer* Timer);
+
+    void UnregisterTimer(ATimer* Timer);
+
 protected:
     void Tick(float TimeStep);
 
 private:
-    // Allow actor to add self to pendingkill list
-    friend class AActor;
-    AActor* PendingKillActors = nullptr;
-
-    AActor* PendingSpawnActors = nullptr;
-
-    // Allow actor to register timers in the world
-    void RegisterTimer(ATimer* Timer);
-    void UnregisterTimer(ATimer* Timer);
-
-private:
-    // Allow actor component to add self to pendingkill list
-    friend class AActorComponent;
-    AActorComponent* PendingKillComponents = nullptr;
+    AActor*          PendingSpawnActors{};
+    AActor*          PendingKillActors{};
+    AActorComponent* PendingKillComponents{};
 
 private:
     struct SActorSpawnPrivate
@@ -439,6 +438,7 @@ private:
     void HandlePrePhysics(float TimeStep);
     void HandlePostPhysics(float TimeStep);
 
+    void InitializeAndPlay(AActor* Actor);
     void CleanupActor(AActor* Actor);
 
     void KillActors(bool bClearSpawnQueue = false);

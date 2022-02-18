@@ -79,6 +79,8 @@ class AActor : public ABaseObject
     HK_ACTOR(AActor, ABaseObject)
 
     friend class AWorld;
+    friend class AController;
+    friend class AWorldPhysics;
 
 public:
     /** Actor factory */
@@ -104,6 +106,8 @@ public:
     /** The root component is used to place an actor in the world.
     It is also used to set the actor's location during spawning. */
     ASceneComponent* GetRootComponent() const { return RootComponent; }
+
+    void ResetRootComponent() { RootComponent = nullptr; }
 
     /** The pawn camera is used to setup rendering. */
     ACameraComponent* GetPawnCamera() { return PawnCamera; }
@@ -190,13 +194,13 @@ protected:
 
     /** Called after constructor. Note that the actor is not yet in the world.
     The actor appears in the world only after spawn and just before calling BeginPlay().
-    Spawning occurs at the beginning of the next frame. */
-    virtual void Initialize(SActorInitializer& Initializer)
-    {
-        // NOTE: You can subscribe to actor events like this:
-        // Actor->E_OnBeginContact.Add(this, &MyActorController::HandleBeginContact)
-        // In the script, you just need to declare the OnBeginContact method
-    }
+    Spawning occurs at the beginning of the next frame.
+    NOTE: Here you can subscribe to actor events. For example, to react to a collision,
+    you need to subscribe to "Begin Contact" event like this:
+        E_OnBeginContact.Add(this, &MyActorController::HandleBeginContact)
+    In the script, you just need to declare the OnBeginContact method and similarly with other events.
+    */
+    virtual void Initialize(SActorInitializer& Initializer) {}
 
     /** Called when the actor enters the game */
     virtual void BeginPlay() {}
@@ -235,7 +239,6 @@ protected:
     void          RemoveAllTimers();
 
 private:
-    void InitializeAndPlay();
     void AddComponent(AActorComponent* Component, AStringView Name);
     void CallBeginPlay();
     void CallTick(float TimeStep);
@@ -278,10 +281,4 @@ private:
     bool bSpawning{true};
     bool bPendingKill{};
     bool bInEditor{};
-
-protected:
-    friend class ASceneComponent;
-    friend class AController;
-    friend class APlayerController;
-    friend class AWorldPhysics;
 };

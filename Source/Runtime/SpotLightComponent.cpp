@@ -32,6 +32,7 @@ SOFTWARE.
 #include "MeshComponent.h"
 #include "World.h"
 #include "DebugRenderer.h"
+#include "ResourceManager.h"
 
 #include <Core/ConsoleVar.h>
 
@@ -183,11 +184,11 @@ void ASpotLightComponent::UpdateWorldBounds()
         SphereWorldBounds.Center = WorldPos + SpotDir * SphereWorldBounds.Radius;
     }
 
-    Primitive.Sphere = SphereWorldBounds;
+    Primitive->Sphere = SphereWorldBounds;
 
     if (IsInitialized())
     {
-        GetLevel()->MarkPrimitive(&Primitive);
+        GetLevel()->MarkPrimitive(Primitive);
     }
 }
 
@@ -197,7 +198,7 @@ void ASpotLightComponent::DrawDebug(ADebugRenderer* InRenderer)
 
     if (com_DrawSpotLights)
     {
-        if (Primitive.VisPass == InRenderer->GetVisPass())
+        if (Primitive->VisPass == InRenderer->GetVisPass())
         {
             Float3   pos    = GetWorldPosition();
             Float3x3 orient = GetWorldRotation().ToMatrix3x3();

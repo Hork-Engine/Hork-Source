@@ -120,7 +120,7 @@ void ASkeletalAnimation::LoadInternalResource(const char* _Path)
     Purge();
 }
 
-bool ASkeletalAnimation::LoadResource(IBinaryStream& Stream)
+bool ASkeletalAnimation::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     AString guid;
 

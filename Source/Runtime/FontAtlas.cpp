@@ -2386,7 +2386,7 @@ void AFont::LoadInternalResource(const char* _Path)
     LoadInternalResource("/Default/Fonts/Default");
 }
 
-bool AFont::LoadResource(IBinaryStream& Stream)
+bool AFont::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     Purge();
 

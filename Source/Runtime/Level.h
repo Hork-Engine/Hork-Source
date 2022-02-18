@@ -53,13 +53,6 @@ struct SPrimitiveDef;
 struct SPortalLink;
 struct SPrimitiveLink;
 
-enum VISIBILITY_GROUP
-{
-    VISIBILITY_GROUP_DEFAULT = 1,
-    VISIBILITY_GROUP_SKYBOX  = 2,
-    VISIBILITY_GROUP_TERRAIN = 4
-};
-
 constexpr int MAX_AMBIENT_SOUNDS_IN_AREA = 4;
 
 struct SAudioArea
@@ -168,7 +161,7 @@ public:
     SVisArea OutdoorArea;
 
     /** Visibility method */
-    ELevelVisibilityMethod VisibilityMethod = LEVEL_VISIBILITY_PORTAL;
+    LEVEL_VISIBILITY_METHOD VisibilityMethod = LEVEL_VISIBILITY_PORTAL;
 
     /** Lightmap pixel format */
     ELightmapFormat LightmapFormat = LIGHTMAP_GRAYSCALED_HALF;
@@ -308,9 +301,14 @@ public:
 
     TPodVector<SLightPortalDef> const& GetLightPortals() const { return LightPortals; }
 
+    using APrimitivePool = TPoolAllocator<SPrimitiveDef>;
     using APrimitiveLinkPool = TPoolAllocator<SPrimitiveLink>;
 
+    static APrimitivePool PrimitivePool;
     static APrimitiveLinkPool PrimitiveLinkPool;
+
+    static SPrimitiveDef* AllocatePrimitive();
+    static void DeallocatePrimitive(SPrimitiveDef* Primitive);
 
     ALevel();
     ~ALevel();

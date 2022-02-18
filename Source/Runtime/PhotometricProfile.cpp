@@ -354,7 +354,7 @@ static void TestIES(IE_DATA& PhotoData)
     GHeapMemory.Free(data);
 }
 
-bool APhotometricProfile::LoadResource(IBinaryStream& Stream)
+bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     const char* fn = Stream.GetFileName();
 

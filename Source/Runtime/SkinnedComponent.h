@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "MeshComponent.h"
 #include "Skeleton.h"
+#include <Core/IntrusiveLinkedListMacro.h>
 
 class AAnimationController;
 
@@ -46,10 +47,11 @@ class ASkinnedComponent : public AMeshComponent
 {
     HK_COMPONENT(ASkinnedComponent, AMeshComponent)
 
-    friend class ARenderWorld;
     friend class AAnimationController;
 
 public:
+    TLink<ASkinnedComponent> Link;
+
     /** Allow raycasting */
     void SetAllowRaycast(bool _AllowRaycast) override {}
 
@@ -79,10 +81,6 @@ public:
 
     /** Get transform of the joint */
     Float3x4 const& GetJointTransform(int _JointIndex);
-
-    /** Iterate meshes in parent world */
-    ASkinnedComponent* GetNextSkinnedMesh() { return Next; }
-    ASkinnedComponent* GetPrevSkinnedMesh() { return Prev; }
 
     void GetSkeletonHandle(size_t& _SkeletonOffset, size_t& _SkeletonOffsetMB, size_t& _SkeletonSize);
 
@@ -123,9 +121,6 @@ private:
     TPodVector<Float3x4> RelativeTransforms;
 
     alignas(16) Float3x4 JointsBufferData[ASkeleton::MAX_JOINTS];
-
-    ASkinnedComponent* Next = nullptr;
-    ASkinnedComponent* Prev = nullptr;
 
     // Memory offset/size for the skeleton animation snapshot
     size_t SkeletonOffset   = 0;

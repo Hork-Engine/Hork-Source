@@ -321,7 +321,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
     }
 }
 
-bool AActorDefinition::LoadResource(IBinaryStream& Stream)
+bool AActorDefinition::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     AString actorDefScript;
     actorDefScript.FromFile(Stream);

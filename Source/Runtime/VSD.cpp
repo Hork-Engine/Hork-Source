@@ -715,7 +715,6 @@ void AVSD::CullPrimitives(SVisArea const* InArea, PlaneF const* InCullPlanes, co
 
     for (SPrimitiveLink* link = InArea->Links; link; link = link->NextInArea)
     {
-
         HK_ASSERT(link->Area == InArea);
 
         SPrimitiveDef* primitive = link->Primitive;

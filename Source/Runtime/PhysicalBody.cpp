@@ -34,6 +34,7 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 #include <Core/ConsoleVar.h>
+#include <Geometry/BV/BvIntersect.h>
 
 #include "BulletCompatibility.h"
 
@@ -269,7 +270,7 @@ void APhysicalBody::InitializeComponent()
     if (AINavigationBehavior != AI_NAVIGATION_BEHAVIOR_NONE)
     {
         AAINavigationMesh& NavigationMesh = GetWorld()->GetNavigationMesh();
-        NavigationMesh.AddNavigationGeometry(this);
+        NavigationMesh.NavigationPrimitives.Add(this);
     }
 }
 
@@ -280,7 +281,7 @@ void APhysicalBody::DeinitializeComponent()
     ClearBoneCollisions();
 
     AAINavigationMesh& NavigationMesh = GetWorld()->GetNavigationMesh();
-    NavigationMesh.RemoveNavigationGeometry(this);
+    NavigationMesh.NavigationPrimitives.Remove(this);
 
     Super::DeinitializeComponent();
 }
@@ -310,11 +311,11 @@ void APhysicalBody::SetAINavigationBehavior(EAINavigationBehavior _AINavigationB
     {
         AAINavigationMesh& NavigationMesh = GetWorld()->GetNavigationMesh();
 
-        NavigationMesh.RemoveNavigationGeometry(this);
+        NavigationMesh.NavigationPrimitives.Remove(this);
 
         if (AINavigationBehavior != AI_NAVIGATION_BEHAVIOR_NONE)
         {
-            NavigationMesh.AddNavigationGeometry(this);
+            NavigationMesh.NavigationPrimitives.Add(this);
         }
     }
 }
@@ -1543,5 +1544,224 @@ void APhysicalBody::DrawDebug(ADebugRenderer* InRenderer)
             InRenderer->SetDepthTest(false);
             btDrawCollisionObject(InRenderer, RigidBody);
         }
+    }
+}
+
+void APhysicalBody::GatherNavigationGeometry(SNavigationGeometry& Geometry) const
+{
+    BvAxisAlignedBox worldBounds;
+
+    bool bWalkable = !((AINavigationBehavior == AI_NAVIGATION_BEHAVIOR_STATIC_NON_WALKABLE) || (AINavigationBehavior == AI_NAVIGATION_BEHAVIOR_DYNAMIC_NON_WALKABLE));
+
+    //        if ( PhysicsBehavior != PB_STATIC ) {
+    //            // Generate navmesh only for static geometry
+    //            return;
+    //        }
+
+    GetCollisionWorldBounds(worldBounds);
+    if (worldBounds.IsEmpty())
+    {
+        LOG("APhysicalBody::GatherNavigationGeometry: the body has no collision\n");
+        return;
+    }
+
+    TPodVectorHeap<Float3>&       Vertices          = Geometry.Vertices;
+    TPodVectorHeap<unsigned int>& Indices           = Geometry.Indices;
+    TBitMask<>&                   WalkableTriangles = Geometry.WalkableMask;
+    BvAxisAlignedBox&             ResultBoundingBox = Geometry.BoundingBox;
+    BvAxisAlignedBox const*       pClipBoundingBox  = Geometry.pClipBoundingBox;
+
+    BvAxisAlignedBox             clippedBounds;
+    const Float3                 padding(0.001f);
+
+    if (pClipBoundingBox)
+    {
+        if (!BvGetBoxIntersection(worldBounds, *pClipBoundingBox, clippedBounds))
+        {
+            return;
+        }
+        // Apply a little padding
+        clippedBounds.Mins -= padding;
+        clippedBounds.Maxs += padding;
+        ResultBoundingBox.AddAABB(clippedBounds);
+    }
+    else
+    {
+        worldBounds.Mins -= padding;
+        worldBounds.Maxs += padding;
+        ResultBoundingBox.AddAABB(worldBounds);
+    }
+
+
+    TPodVectorHeap<Float3>       collisionVertices;
+    TPodVectorHeap<unsigned int> collisionIndices;
+
+    GatherCollisionGeometry(collisionVertices, collisionIndices);
+
+    if (collisionIndices.IsEmpty())
+    {
+        // Try to get from mesh
+        AMeshComponent const * mesh = Upcast<AMeshComponent>(this);
+
+        if (mesh && !mesh->IsSkinnedMesh())
+        {
+
+            AIndexedMesh* indexedMesh = mesh->GetMesh();
+
+            if (!indexedMesh->IsSkinned())
+            {
+                Float3x4 const& worldTransform = mesh->GetWorldTransformMatrix();
+
+                SMeshVertex const*  srcVertices = indexedMesh->GetVertices();
+                unsigned int const* srcIndices  = indexedMesh->GetIndices();
+
+                int firstVertex   = Vertices.Size();
+                int firstIndex    = Indices.Size();
+                int firstTriangle = Indices.Size() / 3;
+
+                // indexCount may be different from indexedMesh->GetIndexCount()
+                int indexCount = 0;
+                for (AIndexedMeshSubpart const* subpart : indexedMesh->GetSubparts())
+                {
+                    indexCount += subpart->GetIndexCount();
+                }
+
+                Vertices.Resize(firstVertex + indexedMesh->GetVertexCount());
+                Indices.Resize(firstIndex + indexCount);
+                WalkableTriangles.Resize(firstTriangle + indexCount / 3);
+
+                Float3*       pVertices = Vertices.ToPtr() + firstVertex;
+                unsigned int* pIndices  = Indices.ToPtr() + firstIndex;
+
+                for (int i = 0; i < indexedMesh->GetVertexCount(); i++)
+                {
+                    pVertices[i] = worldTransform * srcVertices[i].Position;
+                }
+
+                if (pClipBoundingBox)
+                {
+                    // Clip triangles
+                    unsigned int i0, i1, i2;
+                    int          triangleNum = 0;
+                    for (AIndexedMeshSubpart const* subpart : indexedMesh->GetSubparts())
+                    {
+                        const int numTriangles = subpart->GetIndexCount() / 3;
+                        for (int i = 0; i < numTriangles; i++)
+                        {
+                            i0 = firstVertex + subpart->GetBaseVertex() + srcIndices[subpart->GetFirstIndex() + i * 3 + 0];
+                            i1 = firstVertex + subpart->GetBaseVertex() + srcIndices[subpart->GetFirstIndex() + i * 3 + 1];
+                            i2 = firstVertex + subpart->GetBaseVertex() + srcIndices[subpart->GetFirstIndex() + i * 3 + 2];
+
+                            if (BvBoxOverlapTriangle_FastApproximation(clippedBounds, Vertices[i0], Vertices[i1], Vertices[i2]))
+                            {
+                                *pIndices++ = i0;
+                                *pIndices++ = i1;
+                                *pIndices++ = i2;
+
+                                if (bWalkable)
+                                {
+                                    WalkableTriangles.Mark(firstTriangle + triangleNum);
+                                }
+                                triangleNum++;
+                            }
+                        }
+                    }
+                    Indices.Resize(firstIndex + triangleNum * 3);
+                    WalkableTriangles.Resize(firstTriangle + triangleNum);
+                }
+                else
+                {
+                    int triangleNum = 0;
+                    for (AIndexedMeshSubpart const* subpart : indexedMesh->GetSubparts())
+                    {
+                        const int numTriangles = subpart->GetIndexCount() / 3;
+                        for (int i = 0; i < numTriangles; i++)
+                        {
+                            *pIndices++ = firstVertex + subpart->GetBaseVertex() + srcIndices[subpart->GetFirstIndex() + i * 3 + 0];
+                            *pIndices++ = firstVertex + subpart->GetBaseVertex() + srcIndices[subpart->GetFirstIndex() + i * 3 + 1];
+                            *pIndices++ = firstVertex + subpart->GetBaseVertex() + srcIndices[subpart->GetFirstIndex() + i * 3 + 2];
+
+                            if (bWalkable)
+                            {
+                                WalkableTriangles.Mark(firstTriangle + triangleNum);
+                            }
+                            triangleNum++;
+                        }
+                    }
+                }
+
+                //for ( int i = 0 ; i < indexedMesh->GetVertexCount() ; i++ ) {
+                //    pVertices[i].Y += 1; //debug
+                //}
+            }
+        }
+    }
+    else
+    {
+        Float3 const*       srcVertices = collisionVertices.ToPtr();
+        unsigned int const* srcIndices  = collisionIndices.ToPtr();
+
+        int firstVertex   = Vertices.Size();
+        int firstIndex    = Indices.Size();
+        int firstTriangle = Indices.Size() / 3;
+        int vertexCount   = collisionVertices.Size();
+        int indexCount    = collisionIndices.Size();
+
+        Vertices.Resize(firstVertex + vertexCount);
+        Indices.Resize(firstIndex + indexCount);
+        WalkableTriangles.Resize(firstTriangle + indexCount / 3);
+
+        Float3*       pVertices = Vertices.ToPtr() + firstVertex;
+        unsigned int* pIndices  = Indices.ToPtr() + firstIndex;
+
+        Platform::Memcpy(pVertices, srcVertices, vertexCount * sizeof(Float3));
+
+        if (pClipBoundingBox)
+        {
+            // Clip triangles
+            unsigned int i0, i1, i2;
+            const int    numTriangles = indexCount / 3;
+            int          triangleNum  = 0;
+            for (int i = 0; i < numTriangles; i++)
+            {
+                i0 = firstVertex + srcIndices[i * 3 + 0];
+                i1 = firstVertex + srcIndices[i * 3 + 1];
+                i2 = firstVertex + srcIndices[i * 3 + 2];
+
+                if (BvBoxOverlapTriangle_FastApproximation(clippedBounds, Vertices[i0], Vertices[i1], Vertices[i2]))
+                {
+                    *pIndices++ = i0;
+                    *pIndices++ = i1;
+                    *pIndices++ = i2;
+
+                    if (bWalkable)
+                    {
+                        WalkableTriangles.Mark(firstTriangle + triangleNum);
+                    }
+                    triangleNum++;
+                }
+            }
+            Indices.Resize(firstIndex + triangleNum * 3);
+            WalkableTriangles.Resize(firstTriangle + triangleNum);
+        }
+        else
+        {
+            const int numTriangles = indexCount / 3;
+            for (int i = 0; i < numTriangles; i++)
+            {
+                *pIndices++ = firstVertex + srcIndices[i * 3 + 0];
+                *pIndices++ = firstVertex + srcIndices[i * 3 + 1];
+                *pIndices++ = firstVertex + srcIndices[i * 3 + 2];
+
+                if (bWalkable)
+                {
+                    WalkableTriangles.Mark(firstTriangle + i);
+                }
+            }
+        }
+
+        //for ( int i = 0 ; i < vertexCount ; i++ ) {
+        //    pVertices[i].Y += 1; //debug
+        //}
     }
 }

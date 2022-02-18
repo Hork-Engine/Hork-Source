@@ -114,7 +114,7 @@ public:
     ~AImage();
 
     bool Load(AStringView _Path, SImageMipmapConfig const* _MipmapGen = nullptr, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2);
-    bool Load(IBinaryStream& _Stream, SImageMipmapConfig const* _MipmapGen = nullptr, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2);
+    bool Load(IBinaryStreamReadInterface& _Stream, SImageMipmapConfig const* _MipmapGen = nullptr, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2);
 
     /** Source data must be float* or byte* according to specified pixel format */
     void FromRawData(const void* _Source, int _Width, int _Height, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat);
@@ -210,20 +210,20 @@ void ComputeRequiredMemorySize(SSoftwareMipmapGenerator const& _Config, int& _Re
 void GenerateMipmaps(SSoftwareMipmapGenerator const& _Config, void* _Data);
 
 /** Write image in PNG format */
-bool WritePNG(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _BytesPerLine);
+bool WritePNG(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _BytesPerLine);
 
 /** Write image in BMP format */
-bool WriteBMP(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData);
+bool WriteBMP(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData);
 
 /** Write image in TGA format */
-bool WriteTGA(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData);
+bool WriteTGA(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData);
 
 /**
 Write image in JPG format.
 JPEG does ignore alpha channels in input data; quality is between 1 and 100.
 Higher quality looks better but results in a bigger image.
 */
-bool WriteJPG(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _Quality);
+bool WriteJPG(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _Quality);
 
 /** Write image in HDR format */
-bool WriteHDR(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const float* _ImageData);
+bool WriteHDR(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const float* _ImageData);

@@ -86,12 +86,12 @@ ADrawable::ADrawable()
     WorldBounds.Clear();
     OverrideBoundingBox.Clear();
 
-    Platform::ZeroMem(&Primitive, sizeof(Primitive));
-    Primitive.Owner                 = this;
-    Primitive.Type                  = VSD_PRIMITIVE_BOX;
-    Primitive.VisGroup              = VISIBILITY_GROUP_DEFAULT;
-    Primitive.QueryGroup            = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS | VSD_QUERY_MASK_SHADOW_CAST;
-    Primitive.EvaluateRaycastResult = EvaluateRaycastResult;
+    Primitive                        = ALevel::AllocatePrimitive();
+    Primitive->Owner                 = this;
+    Primitive->Type                  = VSD_PRIMITIVE_BOX;
+    Primitive->VisGroup              = VISIBILITY_GROUP_DEFAULT;
+    Primitive->QueryGroup            = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS | VSD_QUERY_MASK_SHADOW_CAST;
+    Primitive->EvaluateRaycastResult = EvaluateRaycastResult;
 
     bOverrideBounds = false;
     bSkinnedMesh    = false;
@@ -99,77 +99,72 @@ ADrawable::ADrawable()
     bAllowRaycast   = false;
 }
 
-void ADrawable::SetVisibilityGroup(int InVisibilityGroup)
+ADrawable::~ADrawable()
 {
-    Primitive.VisGroup = InVisibilityGroup;
-}
-
-int ADrawable::GetVisibilityGroup() const
-{
-    return Primitive.VisGroup;
+    ALevel::DeallocatePrimitive(Primitive);
 }
 
 void ADrawable::SetVisible(bool _Visible)
 {
     if (_Visible)
     {
-        Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE;
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
+        Primitive->QueryGroup |= VSD_QUERY_MASK_VISIBLE;
+        Primitive->QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
     }
     else
     {
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
-        Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
+        Primitive->QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
+        Primitive->QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
     }
 }
 
 bool ADrawable::IsVisible() const
 {
-    return !!(Primitive.QueryGroup & VSD_QUERY_MASK_VISIBLE);
+    return !!(Primitive->QueryGroup & VSD_QUERY_MASK_VISIBLE);
 }
 
 void ADrawable::SetHiddenInLightPass(bool _HiddenInLightPass)
 {
     if (_HiddenInLightPass)
     {
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
-        Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS;
+        Primitive->QueryGroup &= ~VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+        Primitive->QueryGroup |= VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS;
     }
     else
     {
-        Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS;
+        Primitive->QueryGroup |= VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+        Primitive->QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS;
     }
 }
 
 bool ADrawable::IsHiddenInLightPass() const
 {
-    return !(Primitive.QueryGroup & VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS);
+    return !(Primitive->QueryGroup & VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS);
 }
 
-void ADrawable::SetQueryGroup(int _UserQueryGroup)
+void ADrawable::SetQueryGroup(VSD_QUERY_MASK _UserQueryGroup)
 {
-    Primitive.QueryGroup |= _UserQueryGroup & 0xffff0000;
+    Primitive->QueryGroup |= VSD_QUERY_MASK(_UserQueryGroup & 0xffff0000);
 }
 
-void ADrawable::SetSurfaceFlags(uint8_t Flags)
+void ADrawable::SetSurfaceFlags(uint8_t _Flags)
 {
-    Primitive.Flags = Flags;
+    Primitive->Flags = _Flags;
 }
 
 uint8_t ADrawable::GetSurfaceFlags() const
 {
-    return Primitive.Flags;
+    return Primitive->Flags;
 }
 
 void ADrawable::SetFacePlane(PlaneF const& _Plane)
 {
-    Primitive.Face = _Plane;
+    Primitive->Face = _Plane;
 }
 
 PlaneF const& ADrawable::GetFacePlane() const
 {
-    return Primitive.Face;
+    return Primitive->Face;
 }
 
 void ADrawable::ForceOverrideBounds(bool _OverrideBounds)
@@ -215,13 +210,13 @@ void ADrawable::InitializeComponent()
 {
     Super::InitializeComponent();
 
-    GetLevel()->AddPrimitive(&Primitive);
+    GetLevel()->AddPrimitive(Primitive);
 
     UpdateWorldBounds();
 
     if (bCastShadow)
     {
-        GetWorld()->GetRender().AddShadowCaster(this);
+        GetWorld()->GetRender().ShadowCasters.Add(this);
     }
 }
 
@@ -229,11 +224,11 @@ void ADrawable::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
-    GetLevel()->RemovePrimitive(&Primitive);
+    GetLevel()->RemovePrimitive(Primitive);
 
     if (bCastShadow)
     {
-        GetWorld()->GetRender().RemoveShadowCaster(this);
+        GetWorld()->GetRender().ShadowCasters.Remove(this);
     }
 }
 
@@ -248,13 +243,13 @@ void ADrawable::SetCastShadow(bool _CastShadow)
 
     if (bCastShadow)
     {
-        Primitive.QueryGroup |= VSD_QUERY_MASK_SHADOW_CAST;
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_NO_SHADOW_CAST;
+        Primitive->QueryGroup |= VSD_QUERY_MASK_SHADOW_CAST;
+        Primitive->QueryGroup &= ~VSD_QUERY_MASK_NO_SHADOW_CAST;
     }
     else
     {
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_SHADOW_CAST;
-        Primitive.QueryGroup |= VSD_QUERY_MASK_NO_SHADOW_CAST;
+        Primitive->QueryGroup &= ~VSD_QUERY_MASK_SHADOW_CAST;
+        Primitive->QueryGroup |= VSD_QUERY_MASK_NO_SHADOW_CAST;
     }
 
     if (IsInitialized())
@@ -263,11 +258,11 @@ void ADrawable::SetCastShadow(bool _CastShadow)
 
         if (bCastShadow)
         {
-            RenderWorld.AddShadowCaster(this);
+            RenderWorld.ShadowCasters.Add(this);
         }
         else
         {
-            RenderWorld.RemoveShadowCaster(this);
+            RenderWorld.ShadowCasters.Remove(this);
         }
     }
 }
@@ -278,32 +273,32 @@ void ADrawable::UpdateWorldBounds()
 
     WorldBounds = boundingBox.Transform(GetWorldTransformMatrix());
 
-    Primitive.Box = WorldBounds;
+    Primitive->Box = WorldBounds;
 
     if (IsInitialized())
     {
-        GetLevel()->MarkPrimitive(&Primitive);
+        GetLevel()->MarkPrimitive(Primitive);
     }
 }
 
 void ADrawable::ForceOutdoor(bool _OutdoorSurface)
 {
-    if (Primitive.bIsOutdoor == _OutdoorSurface)
+    if (Primitive->bIsOutdoor == _OutdoorSurface)
     {
         return;
     }
 
-    Primitive.bIsOutdoor = _OutdoorSurface;
+    Primitive->bIsOutdoor = _OutdoorSurface;
 
     if (IsInitialized())
     {
-        GetLevel()->MarkPrimitive(&Primitive);
+        GetLevel()->MarkPrimitive(Primitive);
     }
 }
 
 bool ADrawable::IsOutdoor() const
 {
-    return Primitive.bIsOutdoor;
+    return Primitive->bIsOutdoor;
 }
 
 void ADrawable::PreRenderUpdate(SRenderFrontendDef const* _Def)
@@ -318,24 +313,24 @@ void ADrawable::PreRenderUpdate(SRenderFrontendDef const* _Def)
 
 bool ADrawable::Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits) const
 {
-    if (!Primitive.RaycastCallback)
+    if (!Primitive->RaycastCallback)
     {
         return false;
     }
 
     Hits.Clear();
 
-    return Primitive.RaycastCallback(&Primitive, InRayStart, InRayEnd, Hits);
+    return Primitive->RaycastCallback(Primitive, InRayStart, InRayEnd, Hits);
 }
 
 bool ADrawable::RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, STriangleHitResult& Hit) const
 {
-    if (!Primitive.RaycastClosestCallback)
+    if (!Primitive->RaycastClosestCallback)
     {
         return false;
     }
 
     SMeshVertex const* pVertices;
 
-    return Primitive.RaycastClosestCallback(&Primitive, InRayStart, InRayEnd, Hit, &pVertices);
+    return Primitive->RaycastClosestCallback(Primitive, InRayStart, InRayEnd, Hit, &pVertices);
 }

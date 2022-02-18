@@ -201,8 +201,8 @@ AMeshComponent::AMeshComponent()
 {
     DrawableType = DRAWABLE_STATIC_MESH;
 
-    Primitive.RaycastCallback        = RaycastCallback;
-    Primitive.RaycastClosestCallback = RaycastClosestCallback;
+    Primitive->RaycastCallback        = RaycastCallback;
+    Primitive->RaycastClosestCallback = RaycastClosestCallback;
 
     bAllowRaycast = true;
 
@@ -218,6 +218,8 @@ AMeshComponent::AMeshComponent()
 AMeshComponent::~AMeshComponent()
 {
     ClearMaterials();
+
+    Mesh->Listeners.Remove(this);
 }
 
 void AMeshComponent::InitializeComponent()
@@ -234,13 +236,13 @@ void AMeshComponent::SetAllowRaycast(bool _AllowRaycast)
 {
     if (_AllowRaycast)
     {
-        Primitive.RaycastCallback        = RaycastCallback;
-        Primitive.RaycastClosestCallback = RaycastClosestCallback;
+        Primitive->RaycastCallback        = RaycastCallback;
+        Primitive->RaycastClosestCallback = RaycastClosestCallback;
     }
     else
     {
-        Primitive.RaycastCallback        = nullptr;
-        Primitive.RaycastClosestCallback = nullptr;
+        Primitive->RaycastCallback        = nullptr;
+        Primitive->RaycastClosestCallback = nullptr;
     }
     bAllowRaycast = _AllowRaycast;
 }
@@ -252,7 +254,11 @@ void AMeshComponent::SetMesh(AIndexedMesh* _Mesh)
         return;
     }
 
+    Mesh->Listeners.Remove(this);
+
     Mesh = _Mesh;
+
+    Mesh->Listeners.Add(this);
 
     for (SSocket& socket : Sockets)
     {
@@ -403,13 +409,22 @@ void AMeshComponent::NotifyMeshChanged()
     OnMeshChanged();
 }
 
+void AMeshComponent::OnMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag)
+{
+    TRef<AIndexedMesh> curMesh = Mesh;
+
+    // Reset mesh
+    SetMesh(nullptr);
+    SetMesh(curMesh);
+}
+
 void AMeshComponent::DrawDebug(ADebugRenderer* InRenderer)
 {
     Super::DrawDebug(InRenderer);
 
     if (com_DrawIndexedMeshBVH)
     {
-        if (Primitive.VisPass == InRenderer->GetVisPass())
+        if (Primitive->VisPass == InRenderer->GetVisPass())
         {
             Mesh->DrawBVH(InRenderer, GetWorldTransformMatrix());
         }
@@ -417,7 +432,7 @@ void AMeshComponent::DrawDebug(ADebugRenderer* InRenderer)
 
     if (com_DrawMeshBounds)
     {
-        if (Primitive.VisPass == InRenderer->GetVisPass())
+        if (Primitive->VisPass == InRenderer->GetVisPass())
         {
             InRenderer->SetDepthTest(false);
 
@@ -504,8 +519,8 @@ static bool BrushRaycastClosestCallback( SPrimitiveDef const * Self, Float3 cons
 }
 
 ABrushComponent::ABrushComponent() {
-    Primitive.RaycastCallback = BrushRaycastCallback;
-    Primitive.RaycastClosestCallback = BrushRaycastClosestCallback;
+    primitive->RaycastCallback = BrushRaycastCallback;
+    primitive->RaycastClosestCallback = BrushRaycastClosestCallback;
 }
 
 void ABrushComponent::DrawDebug( ADebugRenderer * InRenderer ) {
@@ -513,7 +528,7 @@ void ABrushComponent::DrawDebug( ADebugRenderer * InRenderer ) {
 
     if ( RVDrawBrushBounds )
     {
-        if ( Primitive.VisPass == InRenderer->GetVisPass() )
+        if ( primitive->VisPass == InRenderer->GetVisPass() )
         {
             InRenderer->SetDepthTest( false );
             InRenderer->SetColor( Color4( 1, 0.5f, 0.5f, 1 ) );
@@ -652,8 +667,8 @@ AProceduralMeshComponent::AProceduralMeshComponent()
 {
     DrawableType = DRAWABLE_PROCEDURAL_MESH;
 
-    Primitive.RaycastCallback        = RaycastCallback_Procedural;
-    Primitive.RaycastClosestCallback = RaycastClosestCallback_Procedural;
+    Primitive->RaycastCallback        = RaycastCallback_Procedural;
+    Primitive->RaycastClosestCallback = RaycastClosestCallback_Procedural;
 
     bAllowRaycast = true;
 
@@ -680,13 +695,13 @@ void AProceduralMeshComponent::SetAllowRaycast(bool _AllowRaycast)
 {
     if (_AllowRaycast)
     {
-        Primitive.RaycastCallback        = RaycastCallback_Procedural;
-        Primitive.RaycastClosestCallback = RaycastClosestCallback_Procedural;
+        Primitive->RaycastCallback        = RaycastCallback_Procedural;
+        Primitive->RaycastClosestCallback = RaycastClosestCallback_Procedural;
     }
     else
     {
-        Primitive.RaycastCallback        = nullptr;
-        Primitive.RaycastClosestCallback = nullptr;
+        Primitive->RaycastCallback        = nullptr;
+        Primitive->RaycastClosestCallback = nullptr;
     }
     bAllowRaycast = _AllowRaycast;
 }
@@ -697,7 +712,7 @@ void AProceduralMeshComponent::DrawDebug(ADebugRenderer* InRenderer)
 
     if (com_DrawMeshBounds)
     {
-        if (Primitive.VisPass == InRenderer->GetVisPass())
+        if (Primitive->VisPass == InRenderer->GetVisPass())
         {
             InRenderer->SetDepthTest(false);
             InRenderer->SetColor(Color4(0.5f, 1, 0.5f, 1));

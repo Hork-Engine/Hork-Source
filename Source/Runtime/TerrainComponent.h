@@ -35,7 +35,7 @@ SOFTWARE.
 #include "Terrain.h"
 #include "Level.h"
 
-class ATerrainComponent : public ASceneComponent
+class ATerrainComponent : public ASceneComponent, private ANavigationPrimitive
 {
     HK_COMPONENT(ATerrainComponent, ASceneComponent)
 
@@ -94,11 +94,6 @@ public:
     /** Get terrain resource */
     ATerrain* GetTerrain() const { return Terrain; }
 
-    /** Visibility group to filter drawables during rendering */
-    void SetVisibilityGroup(int InVisibilityGroup);
-
-    int GetVisibilityGroup() const;
-
     void SetVisible(bool _Visible);
 
     bool IsVisible() const;
@@ -113,8 +108,6 @@ public:
     void SetTwoSidedSurface(bool bTwoSidedSurface);
 
     uint8_t GetSurfaceFlags() const;
-
-    SPrimitiveDef const* GetPrimitive() const { return &Primitive; }
 
     /** Allow raycasting */
     void SetAllowRaycast(bool _AllowRaycast);
@@ -142,9 +135,11 @@ public:
     Float3x4 const& GetTerrainWorldTransformInversed() const { return TerrainWorldTransformInv; }
 
     /** Get bounding box */
-    BvAxisAlignedBox const& GetWorldBounds() const { return Primitive.Box; }
+    BvAxisAlignedBox const& GetWorldBounds() const { return Primitive->Box; }
 
     void GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, TPodVectorHeap<Float3>& CollisionVertices, TPodVectorHeap<unsigned int>& CollisionIndices) const;
+
+    void GatherNavigationGeometry(SNavigationGeometry& Geometry) const override;
 
     /** Internal rigid body */
     class btRigidBody* GetRigidBody() const { return RigidBody; }
@@ -176,7 +171,7 @@ protected:
     // Internal rigid body
     btRigidBody* RigidBody{};
     // VSD primitive
-    SPrimitiveDef Primitive;
+    SPrimitiveDef* Primitive{};
     // Cached world transform
     Float3x4 TerrainWorldTransform;
     // Cached world transform inversed
@@ -187,8 +182,4 @@ protected:
     friend class ATerrain;
     ATerrainComponent* pNext{};
     ATerrainComponent* pPrev{};
-
-    friend class AAINavigationMesh;
-    ATerrainComponent* pNextNav{};
-    ATerrainComponent* pPrevNav{};
 };

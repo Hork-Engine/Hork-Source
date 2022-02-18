@@ -44,7 +44,7 @@ void AVirtualTextureResource::LoadInternalResource(const char* _Path)
 {
 }
 
-bool AVirtualTextureResource::LoadResource(IBinaryStream& _Stream)
+bool AVirtualTextureResource::LoadResource(IBinaryStreamReadInterface& _Stream)
 {
     // TODO:...
 

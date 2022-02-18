@@ -653,7 +653,7 @@ public:
         return Core::HashCase(Data, Size);
     }
 
-    void FromFile(IBinaryStream& Stream);
+    void FromFile(IBinaryStreamReadInterface& Stream);
 
     HK_FORCEINLINE void Write(IBinaryStreamWriteInterface& Stream) const
     {
@@ -927,7 +927,7 @@ HK_FORCEINLINE void AString::ReplaceExt(AStringView Extension)
     Concat(Extension);
 }
 
-HK_FORCEINLINE void AString::FromFile(IBinaryStream& Stream)
+HK_FORCEINLINE void AString::FromFile(IBinaryStreamReadInterface& Stream)
 {
     Stream.SeekEnd(0);
     size_t fileSz = Stream.GetOffset();

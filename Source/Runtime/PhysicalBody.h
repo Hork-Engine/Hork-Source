@@ -30,9 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include "SceneComponent.h"
 #include "Collision.h"
-#include "CollisionModel.h"
+#include "AINavigationMesh.h"
 
 class APhysicalBodyMotionState;
 class ABoneCollisionInstance;
@@ -74,14 +73,13 @@ struct SDebugDrawCache
     bool                         bDirty;
 };
 
-class APhysicalBody : public ASceneComponent
+class APhysicalBody : public ASceneComponent, private ANavigationPrimitive
 {
     HK_COMPONENT(APhysicalBody, ASceneComponent)
 
     friend struct SCollisionFilterCallback;
     friend class APhysicalBodyMotionState;
     friend class AWorldPhysics;
-    friend class AAINavigationMesh;
 
 public:
     AHitProxy* GetHitProxy() const
@@ -336,6 +334,8 @@ public:
 
     void CollisionContactQueryActor(TPodVector<AActor*>& _Result) const;
 
+    void GatherNavigationGeometry(SNavigationGeometry& Geometry) const override;
+
 protected:
     APhysicalBody();
 
@@ -383,16 +383,15 @@ private:
     APhysicalBodyMotionState*           MotionState = nullptr;
     TUniqueRef<SDebugDrawCache>         DebugDrawCache;
 
-    float  Mass                = 1.0f;
-    Float3 SelfGravity         = Float3(0.0f);
-    Float3 LinearFactor        = Float3(1);
-    float  LinearDamping       = 0.0f;
-    Float3 AngularFactor       = Float3(1);
-    float  AngularDamping      = 0.0f;
-    float  Friction            = 0.5f;
-    Float3 AnisotropicFriction = Float3(1);
-    float  RollingFriction     = 0.0f;
-    //float SpinningFriction = 0.0f;   // Torsional friction around contact normal
+    float                 Mass                       = 1.0f;
+    Float3                SelfGravity                = Float3(0.0f);
+    Float3                LinearFactor               = Float3(1);
+    float                 LinearDamping              = 0.0f;
+    Float3                AngularFactor              = Float3(1);
+    float                 AngularDamping             = 0.0f;
+    float                 Friction                   = 0.5f;
+    Float3                AnisotropicFriction        = Float3(1);
+    float                 RollingFriction            = 0.0f;
     float                 Restitution                = 0.0f;
     float                 ContactProcessingThreshold = 1e18f;
     float                 LinearSleepingThreshold    = 0.8f;
@@ -405,6 +404,7 @@ private:
     bool                  bOverrideWorldGravity      = false;
     bool                  bUseMeshCollision          = false;
     Float3                CachedScale                = Float3(1.0f);
+    //float               SpinningFriction           = 0.0f;   // Torsional friction around contact normal
 
     APhysicalBody* pNextNav{};
     APhysicalBody* pPrevNav{};

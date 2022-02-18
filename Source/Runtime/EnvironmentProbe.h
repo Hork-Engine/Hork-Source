@@ -45,11 +45,6 @@ public:
     void             SetEnvironmentMap(AEnvironmentMap* EnvironmentMap);
     AEnvironmentMap* GetEnvironmentMap() const { return EnvironmentMap; }
 
-    /** Rendering group to filter lights during rendering */
-    void SetVisibilityGroup(int InVisibilityGroup);
-
-    int GetVisibilityGroup() const;
-
     void SetEnabled(bool _Enabled);
 
     bool IsEnabled() const { return bEnabled; }
@@ -64,6 +59,7 @@ public:
 
 protected:
     AEnvironmentProbe();
+    ~AEnvironmentProbe();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
@@ -73,7 +69,7 @@ protected:
 private:
     void UpdateWorldBounds();
 
-    SPrimitiveDef    Primitive;
+    SPrimitiveDef*   Primitive;
     BvAxisAlignedBox AABBWorldBounds;
     Float4x4         OBBTransformInverse;
     BvSphere         SphereWorldBounds;

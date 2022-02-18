@@ -38,12 +38,14 @@ SOFTWARE.
 #include "Terrain.h"
 #include "TerrainMesh.h"
 #include "LightVoxelizer.h"
+#include "EnvironmentMap.h"
 
 class AAnalyticLightComponent;
 class AEnvironmentProbe;
 class AMeshComponent;
 class ASkinnedComponent;
 class AProceduralMeshComponent;
+class ADrawable;
 
 struct SRenderFrontendStat
 {

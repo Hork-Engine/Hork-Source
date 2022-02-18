@@ -34,11 +34,13 @@ SOFTWARE.
 #include <Platform/String.h>
 #include <Platform/Format.h>
 
-class IBinaryStreamSeekInterface
+class IBinaryStreamBaseInterface
 {
 public:
-    virtual ~IBinaryStreamSeekInterface()
+    virtual ~IBinaryStreamBaseInterface()
     {}
+
+    virtual size_t SizeInBytes() const = 0;
 
     virtual size_t GetOffset() const = 0;
 
@@ -52,10 +54,14 @@ public:
     {
         SeekSet(0);
     }
+
+    virtual bool Eof() const = 0;
+
+    virtual const char* GetFileName() const = 0;
 };
 
 
-class IBinaryStreamReadInterface : public virtual IBinaryStreamSeekInterface
+class IBinaryStreamReadInterface : public virtual IBinaryStreamBaseInterface
 {
 public:
     virtual ~IBinaryStreamReadInterface()
@@ -334,7 +340,7 @@ public:
     }
 };
 
-class IBinaryStreamWriteInterface : public virtual IBinaryStreamSeekInterface
+class IBinaryStreamWriteInterface : public virtual IBinaryStreamBaseInterface
 {
 public:
     virtual size_t Write(const void* pBuffer, size_t SizeInBytes) = 0;
@@ -526,27 +532,4 @@ public:
         fmt::detail::vformat_to(buffer, fmt::string_view(Format), fmt::make_format_args(args...));
         Write(buffer.data(), buffer.size());
     }
-};
-
-/**
-
-IBinaryStream
-
-Interface class for binary stream
-
-*/
-class IBinaryStream : public IBinaryStreamReadInterface, public IBinaryStreamWriteInterface
-{
-public:
-    IBinaryStream()
-    {}
-
-    virtual ~IBinaryStream()
-    {}
-
-    virtual const char* GetFileName() const = 0;
-
-    virtual size_t SizeInBytes() const = 0;
-
-    virtual bool Eof() const = 0;
 };

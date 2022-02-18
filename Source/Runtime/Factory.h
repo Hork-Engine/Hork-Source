@@ -522,5 +522,15 @@ T* Upcast(ADummy* Object)
     return nullptr;
 }
 
+template <typename T>
+T const* Upcast(ADummy const* Object)
+{
+    if (Object && Object->FinalClassMeta().IsSubclassOf<T>())
+    {
+        return static_cast<T const*>(Object);
+    }
+    return nullptr;
+}
+
 void InitializeFactories();
 void DeinitializeFactories();

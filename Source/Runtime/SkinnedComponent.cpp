@@ -63,8 +63,8 @@ ASkinnedComponent::ASkinnedComponent()
     bSkinnedMesh              = true;
 
     // Raycasting of skinned meshes is not supported yet
-    Primitive.RaycastCallback        = nullptr;
-    Primitive.RaycastClosestCallback = nullptr;
+    Primitive->RaycastCallback        = nullptr;
+    Primitive->RaycastClosestCallback = nullptr;
 
     static TStaticResourceFinder<ASkeleton> SkeletonResource(_CTS("/Default/Skeleton/Default"));
     Skeleton = SkeletonResource.GetObject();
@@ -79,14 +79,14 @@ void ASkinnedComponent::InitializeComponent()
 {
     Super::InitializeComponent();
 
-    GetWorld()->GetRender().AddSkinnedMesh(this);
+    GetWorld()->GetRender().SkinnedMeshes.Add(this);
 }
 
 void ASkinnedComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
-    GetWorld()->GetRender().RemoveSkinnedMesh(this);
+    GetWorld()->GetRender().SkinnedMeshes.Remove(this);
 }
 
 void ASkinnedComponent::OnMeshChanged()

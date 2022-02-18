@@ -52,7 +52,7 @@ protected:
     AResource() {}
 
     /** Load resource from file */
-    virtual bool LoadResource(IBinaryStream& _Stream) { return false; }
+    virtual bool LoadResource(IBinaryStreamReadInterface& _Stream) { return false; }
 
     /** Create internal resource */
     virtual void LoadInternalResource(const char* _Path) {}
@@ -100,7 +100,7 @@ protected:
     void Purge();
 
     /** Load resource from file */
-    bool LoadResource(IBinaryStream& _Stream) override;
+    bool LoadResource(IBinaryStreamReadInterface& _Stream) override;
 
     /** Create internal resource */
     void LoadInternalResource(const char* _Path) override;

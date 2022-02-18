@@ -99,7 +99,7 @@ AFileStream
 Read/Write to file
 
 */
-class AFileStream final : public IBinaryStream
+class AFileStream final : public IBinaryStreamReadInterface, public IBinaryStreamWriteInterface
 {
     HK_FORBID_COPY(AFileStream)
 
@@ -189,7 +189,7 @@ AMemoryStream
 Read/Write to memory
 
 */
-class AMemoryStream final : public IBinaryStream
+class AMemoryStream final : public IBinaryStreamReadInterface, public IBinaryStreamWriteInterface
 {
     HK_FORBID_COPY(AMemoryStream)
 

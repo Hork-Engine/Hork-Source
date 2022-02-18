@@ -268,6 +268,8 @@ protected:
     APlayerController();
     ~APlayerController();
 
+    void Initialize(SActorInitializer& Initializer);
+
     void OnPawnChanged() override;
 
 private:

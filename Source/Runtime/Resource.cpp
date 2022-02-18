@@ -165,7 +165,7 @@ void ABinaryResource::Purge()
     SizeInBytes = 0;
 }
 
-bool ABinaryResource::LoadResource(IBinaryStream& _Stream)
+bool ABinaryResource::LoadResource(IBinaryStreamReadInterface& _Stream)
 {
     Purge();
 

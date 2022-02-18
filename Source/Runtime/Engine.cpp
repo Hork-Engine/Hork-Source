@@ -425,6 +425,7 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
 
     AGarbageCollector::DeallocateObjects();
 
+    ALevel::PrimitivePool.Free();
     ALevel::PrimitiveLinkPool.Free();
 
     DeinitializeFactories();

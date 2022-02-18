@@ -31,11 +31,10 @@ SOFTWARE.
 #pragma once
 
 #include <Platform/BaseTypes.h>
+#include <Core/IntrusiveLinkedListMacro.h>
+#include "SkinnedComponent.h"
+#include "DirectionalLightComponent.h"
 
-class AWorld;
-class ADrawable;
-class ASkinnedComponent;
-class ADirectionalLightComponent;
 class ADebugRenderer;
 
 class ARenderWorld
@@ -43,40 +42,13 @@ class ARenderWorld
     HK_FORBID_COPY(ARenderWorld)
 
 public:
-    ARenderWorld();
-    virtual ~ARenderWorld() {}
+    TList<ASkinnedComponent>          SkinnedMeshes;
+    TList<ADrawable>                  ShadowCasters;
+    TList<ADirectionalLightComponent> DirectionalLights;
 
-    /** Get skinned meshes in the world */
-    ASkinnedComponent* GetSkinnedMeshes() { return SkinnedMeshList; }
+    ARenderWorld()
+    {}
 
-    /** Get all shadow casters in the world */
-    ADrawable* GetShadowCasters() { return ShadowCasters; }
-
-    /** Get directional lights in the world */
-    ADirectionalLightComponent* GetDirectionalLights() { return DirectionalLightList; }
-
-    void DrawDebug(ADebugRenderer* InRenderer);
-
-private:
-    friend class ADrawable;
-    void AddShadowCaster(ADrawable* InMesh);
-    void RemoveShadowCaster(ADrawable* InMesh);
-
-private:
-    friend class ASkinnedComponent;
-    void AddSkinnedMesh(ASkinnedComponent* InSkeleton);
-    void RemoveSkinnedMesh(ASkinnedComponent* InSkeleton);
-
-private:
-    friend class ADirectionalLightComponent;
-    void AddDirectionalLight(ADirectionalLightComponent* InLight);
-    void RemoveDirectionalLight(ADirectionalLightComponent* InLight);
-
-private:
-    ASkinnedComponent*          SkinnedMeshList          = nullptr;
-    ASkinnedComponent*          SkinnedMeshListTail      = nullptr;
-    ADrawable*                  ShadowCasters            = nullptr;
-    ADrawable*                  ShadowCastersTail        = nullptr;
-    ADirectionalLightComponent* DirectionalLightList     = nullptr;
-    ADirectionalLightComponent* DirectionalLightListTail = nullptr;
+    void DrawDebug(ADebugRenderer* InRenderer)
+    {}
 };

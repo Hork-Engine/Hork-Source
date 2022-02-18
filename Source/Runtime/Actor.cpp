@@ -53,20 +53,7 @@ AActor::AActor()
 
 void AActor::Destroy()
 {
-    if (bPendingKill)
-    {
-        return;
-    }
-
-    // Mark actor to remove it from the world
-    bPendingKill             = true;
-    NextPendingKillActor     = World->PendingKillActors;
-    World->PendingKillActors = this;
-
-    for (AActorComponent* component : Components)
-    {
-        component->Destroy();
-    }
+    AWorld::DestroyActor(this);
 }
 
 AActorComponent* AActor::CreateComponent(uint64_t _ClassId, AStringView InName)
@@ -140,59 +127,6 @@ AActorComponent* AActor::GetComponent(AClassMeta const* _ClassMeta)
         }
     }
     return nullptr;
-}
-
-void AActor::InitializeAndPlay()
-{
-    AWorld* world = GetWorld();
-
-    if (bCanEverTick)
-    {
-        world->TickingActors.Append(this);
-    }
-    if (bTickPrePhysics)
-    {
-        world->PrePhysicsTickActors.Append(this);
-    }
-    if (bTickPostPhysics)
-    {
-        world->PostPhysicsTickActors.Append(this);
-    }
-    if (bLateUpdate)
-    {
-        world->LateUpdateActors.Append(this);
-    }
-
-    for (ATimer* timer = TimerList; timer; timer = timer->NextInActor)
-    {
-        world->RegisterTimer(timer);
-    }
-
-    PreInitializeComponents();
-
-    for (AActorComponent* component : Components)
-    {
-        HK_ASSERT(!component->bInitialized);
-
-        component->InitializeComponent();
-        component->bInitialized = true;
-
-        if (component->bCanEverTick)
-        {
-            world->TickingComponents.Append(component);
-            component->bTicking = true;
-        }
-    }
-
-    PostInitializeComponents();
-
-    for (AActorComponent* component : Components)
-    {
-        HK_ASSERT(!component->IsPendingKill());
-        component->BeginPlay();
-    }
-
-    CallBeginPlay();
 }
 
 #define CALL_SCRIPT(Function)                                              \

@@ -32,6 +32,7 @@ SOFTWARE.
 #include "World.h"
 
 #include <Core/ConsoleVar.h>
+#include <Geometry/BV/BvIntersect.h>
 
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include "BulletCompatibility.h"
@@ -187,16 +188,16 @@ ATerrainComponent::ATerrainComponent()
 {
     HitProxy = CreateInstanceOf<AHitProxy>();
 
-    Platform::ZeroMem(&Primitive, sizeof(Primitive));
-    Primitive.Owner                  = this;
-    Primitive.Type                   = VSD_PRIMITIVE_BOX;
-    Primitive.VisGroup               = VISIBILITY_GROUP_TERRAIN;
-    Primitive.QueryGroup             = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS /* | VSD_QUERY_MASK_SHADOW_CAST*/;
-    Primitive.bIsOutdoor             = true;
-    Primitive.RaycastCallback        = RaycastCallback;
-    Primitive.RaycastClosestCallback = RaycastClosestCallback;
-    Primitive.EvaluateRaycastResult  = EvaluateRaycastResult;
-    Primitive.Box.Clear();
+    Primitive                         = ALevel::AllocatePrimitive();
+    Primitive->Owner                  = this;
+    Primitive->Type                   = VSD_PRIMITIVE_BOX;
+    Primitive->VisGroup               = VISIBILITY_GROUP_TERRAIN;
+    Primitive->QueryGroup             = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS /* | VSD_QUERY_MASK_SHADOW_CAST*/;
+    Primitive->bIsOutdoor             = true;
+    Primitive->RaycastCallback        = RaycastCallback;
+    Primitive->RaycastClosestCallback = RaycastClosestCallback;
+    Primitive->EvaluateRaycastResult  = EvaluateRaycastResult;
+    Primitive->Box.Clear();
 
     bAllowRaycast = true;
 
@@ -206,80 +207,72 @@ ATerrainComponent::ATerrainComponent()
 
 ATerrainComponent::~ATerrainComponent()
 {
+    ALevel::DeallocatePrimitive(Primitive);
+
     if (Terrain)
     {
         Terrain->RemoveListener(this);
     }
 }
 
-void ATerrainComponent::SetVisibilityGroup(int InVisibilityGroup)
-{
-    Primitive.VisGroup = InVisibilityGroup;
-}
-
-int ATerrainComponent::GetVisibilityGroup() const
-{
-    return Primitive.VisGroup;
-}
-
 void ATerrainComponent::SetVisible(bool _Visible)
 {
     if (_Visible)
     {
-        Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE;
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
+        Primitive->QueryGroup |= VSD_QUERY_MASK_VISIBLE;
+        Primitive->QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
     }
     else
     {
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
-        Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
+        Primitive->QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
+        Primitive->QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
     }
 }
 
 bool ATerrainComponent::IsVisible() const
 {
-    return !!(Primitive.QueryGroup & VSD_QUERY_MASK_VISIBLE);
+    return !!(Primitive->QueryGroup & VSD_QUERY_MASK_VISIBLE);
 }
 
 void ATerrainComponent::SetHiddenInLightPass(bool _HiddenInLightPass)
 {
     if (_HiddenInLightPass)
     {
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
-        Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS;
+        Primitive->QueryGroup &= ~VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+        Primitive->QueryGroup |= VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS;
     }
     else
     {
-        Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS;
+        Primitive->QueryGroup |= VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+        Primitive->QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE_IN_LIGHT_PASS;
     }
 }
 
 bool ATerrainComponent::IsHiddenInLightPass() const
 {
-    return !(Primitive.QueryGroup & VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS);
+    return !(Primitive->QueryGroup & VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS);
 }
 
 void ATerrainComponent::SetQueryGroup(int _UserQueryGroup)
 {
-    Primitive.QueryGroup |= _UserQueryGroup & 0xffff0000;
+    Primitive->QueryGroup |= VSD_QUERY_MASK(_UserQueryGroup & 0xffff0000);
 }
 
 void ATerrainComponent::SetTwoSidedSurface(bool bTwoSidedSurface)
 {
     if (bTwoSidedSurface)
     {
-        Primitive.Flags |= SURF_TWOSIDED;
+        Primitive->Flags |= SURF_TWOSIDED;
     }
     else
     {
-        Primitive.Flags &= ~SURF_TWOSIDED;
+        Primitive->Flags &= ~SURF_TWOSIDED;
     }
 }
 
 uint8_t ATerrainComponent::GetSurfaceFlags() const
 {
-    return Primitive.Flags;
+    return Primitive->Flags;
 }
 
 void ATerrainComponent::AddTerrainPhysics()
@@ -341,16 +334,16 @@ void ATerrainComponent::InitializeComponent()
 
     AddTerrainPhysics();
 
-    GetLevel()->AddPrimitive(&Primitive);
+    GetLevel()->AddPrimitive(Primitive);
 
     AAINavigationMesh & NavigationMesh = GetWorld()->GetNavigationMesh();
-    NavigationMesh.AddNavigationGeometry(this);
+    NavigationMesh.NavigationPrimitives.Add(this);
 }
 
 void ATerrainComponent::DeinitializeComponent()
 {
     AAINavigationMesh & NavigationMesh = GetWorld()->GetNavigationMesh();
-    NavigationMesh.RemoveNavigationGeometry(this);
+    NavigationMesh.NavigationPrimitives.Remove(this);
 
     if (Terrain)
     {
@@ -359,7 +352,7 @@ void ATerrainComponent::DeinitializeComponent()
 
     RemoveTerrainPhysics();
 
-    GetLevel()->RemovePrimitive(&Primitive);
+    GetLevel()->RemovePrimitive(Primitive);
 
     Super::DeinitializeComponent();
 }
@@ -404,37 +397,37 @@ void ATerrainComponent::SetAllowRaycast(bool _AllowRaycast)
 {
     if (_AllowRaycast)
     {
-        Primitive.RaycastCallback        = RaycastCallback;
-        Primitive.RaycastClosestCallback = RaycastClosestCallback;
+        Primitive->RaycastCallback        = RaycastCallback;
+        Primitive->RaycastClosestCallback = RaycastClosestCallback;
     }
     else
     {
-        Primitive.RaycastCallback        = nullptr;
-        Primitive.RaycastClosestCallback = nullptr;
+        Primitive->RaycastCallback        = nullptr;
+        Primitive->RaycastClosestCallback = nullptr;
     }
     bAllowRaycast = _AllowRaycast;
 }
 
 bool ATerrainComponent::Raycast(Float3 const& InRayStart, Float3 const& InRayEnd, TPodVector<STriangleHitResult>& Hits) const
 {
-    if (!Primitive.RaycastCallback)
+    if (!Primitive->RaycastCallback)
     {
         return false;
     }
 
     Hits.Clear();
 
-    return Primitive.RaycastCallback(&Primitive, InRayStart, InRayEnd, Hits);
+    return Primitive->RaycastCallback(Primitive, InRayStart, InRayEnd, Hits);
 }
 
 bool ATerrainComponent::RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, STriangleHitResult& Hit) const
 {
-    if (!Primitive.RaycastCallback)
+    if (!Primitive->RaycastCallback)
     {
         return false;
     }
 
-    return Primitive.RaycastClosestCallback(&Primitive, InRayStart, InRayEnd, Hit, nullptr);
+    return Primitive->RaycastClosestCallback(Primitive, InRayStart, InRayEnd, Hit, nullptr);
 }
 
 void ATerrainComponent::UpdateTransform()
@@ -458,7 +451,7 @@ void ATerrainComponent::UpdateWorldBounds()
         return;
     }
 
-    Primitive.Box = Terrain->GetBoundingBox().Transform(TerrainWorldTransform);
+    Primitive->Box = Terrain->GetBoundingBox().Transform(TerrainWorldTransform);
 
     // NOTE: Terrain is always in outdoor area. So we don't need to update primitive.
 }
@@ -570,11 +563,11 @@ void ATerrainComponent::DrawDebug(ADebugRenderer* InRenderer)
 
     if (com_DrawTerrainBounds && Terrain)
     {
-        if (Primitive.VisPass == InRenderer->GetVisPass())
+        if (Primitive->VisPass == InRenderer->GetVisPass())
         {
             InRenderer->SetDepthTest(false);
             InRenderer->SetColor(Color4(1, 0, 0, 1));
-            InRenderer->DrawAABB(Primitive.Box);
+            InRenderer->DrawAABB(Primitive->Box);
         }
     }
 }
@@ -594,6 +587,136 @@ void ATerrainComponent::GatherCollisionGeometry(BvAxisAlignedBox const& LocalBou
         for (int i = 0 ; i < numVerts ; i++)
         {
             CollisionVertices[firstVert + i] = transformMatrix * CollisionVertices[firstVert + i];
+        }
+    }
+}
+
+void ATerrainComponent::GatherNavigationGeometry(SNavigationGeometry& Geometry) const
+{
+    if (!Terrain)
+    {
+        return;
+    }
+
+    TPodVectorHeap<Float3>       collisionVertices;
+    TPodVectorHeap<unsigned int> collisionIndices;
+
+    TPodVectorHeap<Float3>&       Vertices          = Geometry.Vertices;
+    TPodVectorHeap<unsigned int>& Indices           = Geometry.Indices;
+    TBitMask<>&                   WalkableTriangles = Geometry.WalkableMask;
+    BvAxisAlignedBox&             ResultBoundingBox = Geometry.BoundingBox;
+    BvAxisAlignedBox const*       pClipBoundingBox  = Geometry.pClipBoundingBox;
+
+    Float3x4 const& worldTransform    = GetWorldTransformMatrix();
+    Float3x4        worldTransformInv = worldTransform.Inversed();
+
+    TPodVector<BvAxisAlignedBox> const& areas = Terrain->NavigationAreas;
+
+    // Gather terrain geometry from navigation areas
+    for (BvAxisAlignedBox const& areaBounds : areas)
+    {
+        collisionVertices.Clear();
+        collisionIndices.Clear();
+
+        if (pClipBoundingBox)
+        {
+            Float3 center   = pClipBoundingBox->Center();
+            Float3 halfSize = pClipBoundingBox->HalfSize();
+
+            BvOrientedBox obb;
+            obb.FromAxisAlignedBox(areaBounds, worldTransform);
+
+            // Early cut off - bounding boxes are not overlap
+            if (!BvOrientedBoxOverlapBox(obb, center, halfSize))
+            {
+                continue;
+            }
+
+            BvAxisAlignedBox clippedAreaBounds;
+
+            // Transform clipping box to local terrain space and calc intersection
+            BvAxisAlignedBox localClip = pClipBoundingBox->Transform(worldTransformInv);
+            if (!BvGetBoxIntersection(areaBounds, localClip, clippedAreaBounds))
+            {
+                // This should not be happen, but just in case
+                continue;
+            }
+
+            GatherCollisionGeometry(clippedAreaBounds, collisionVertices, collisionIndices);
+        }
+        else
+        {
+            GatherCollisionGeometry(areaBounds, collisionVertices, collisionIndices);
+        }
+
+        if (collisionIndices.IsEmpty())
+        {
+            continue;
+        }
+
+        Float3 const*       srcVertices = collisionVertices.ToPtr();
+        unsigned int const* srcIndices  = collisionIndices.ToPtr();
+
+        int firstVertex   = Vertices.Size();
+        int firstIndex    = Indices.Size();
+        int firstTriangle = Indices.Size() / 3;
+        int vertexCount   = collisionVertices.Size();
+        int indexCount    = collisionIndices.Size();
+
+        Vertices.Resize(firstVertex + vertexCount);
+        Indices.Resize(firstIndex + indexCount);
+        WalkableTriangles.Resize(firstTriangle + indexCount / 3);
+
+        Float3*       pVertices = Vertices.ToPtr() + firstVertex;
+        unsigned int* pIndices  = Indices.ToPtr() + firstIndex;
+
+        Platform::Memcpy(pVertices, srcVertices, vertexCount * sizeof(Float3));
+
+        if (pClipBoundingBox)
+        {
+            // Clip triangles
+            unsigned int i0, i1, i2;
+            const int    numTriangles = indexCount / 3;
+            int          triangleNum  = 0;
+            for (int i = 0; i < numTriangles; i++)
+            {
+                i0 = firstVertex + srcIndices[i * 3 + 0];
+                i1 = firstVertex + srcIndices[i * 3 + 1];
+                i2 = firstVertex + srcIndices[i * 3 + 2];
+
+                if (BvBoxOverlapTriangle_FastApproximation(*pClipBoundingBox, Vertices[i0], Vertices[i1], Vertices[i2]))
+                {
+                    *pIndices++ = i0;
+                    *pIndices++ = i1;
+                    *pIndices++ = i2;
+
+                    ResultBoundingBox.AddPoint(Vertices[i0]);
+                    ResultBoundingBox.AddPoint(Vertices[i1]);
+                    ResultBoundingBox.AddPoint(Vertices[i2]);
+
+                    WalkableTriangles.Mark(firstTriangle + triangleNum);
+
+                    triangleNum++;
+                }
+            }
+            Indices.Resize(firstIndex + triangleNum * 3);
+            WalkableTriangles.Resize(firstTriangle + triangleNum);
+        }
+        else
+        {
+            const int numTriangles = indexCount / 3;
+            for (int i = 0; i < numTriangles; i++, pIndices += 3)
+            {
+                pIndices[0] = firstVertex + srcIndices[i * 3 + 0];
+                pIndices[1] = firstVertex + srcIndices[i * 3 + 1];
+                pIndices[2] = firstVertex + srcIndices[i * 3 + 2];
+
+                ResultBoundingBox.AddPoint(Vertices[pIndices[0]]);
+                ResultBoundingBox.AddPoint(Vertices[pIndices[1]]);
+                ResultBoundingBox.AddPoint(Vertices[pIndices[2]]);
+
+                WalkableTriangles.Mark(firstTriangle + i);
+            }
         }
     }
 }

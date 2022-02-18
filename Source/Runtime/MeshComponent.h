@@ -33,7 +33,7 @@ SOFTWARE.
 #include "Texture.h"
 #include "Material.h"
 #include "IndexedMesh.h"
-#include "ResourceManager.h"
+//#include "ResourceManager.h"
 #include "Drawable.h"
 
 class ACameraComponent;
@@ -45,7 +45,7 @@ AMeshComponent
 Mesh component without skinning
 
 */
-class AMeshComponent : public ADrawable
+class AMeshComponent : public ADrawable,  private AIndexedMeshListener
 {
     HK_COMPONENT(AMeshComponent, ADrawable)
 
@@ -76,14 +76,6 @@ public:
     /** Set indexed mesh for the component */
     void SetMesh(AIndexedMesh* _Mesh);
 
-    /** Helper. Set indexed mesh by alias */
-    template <char... Chars>
-    void SetMesh(TCompileTimeString<Chars...> const& _Alias)
-    {
-        static TStaticResourceFinder<AIndexedMesh> Resource(_Alias);
-        SetMesh(Resource.GetObject());
-    }
-
     /** Get indexed mesh. Never return null */
     AIndexedMesh* GetMesh() const { return Mesh; }
 
@@ -96,27 +88,11 @@ public:
     /** Set material instance for subpart of the mesh */
     void SetMaterialInstance(int _SubpartIndex, AMaterialInstance* _Instance);
 
-    /** Helper. Set material instance by alias */
-    template <char... Chars>
-    void SetMaterialInstance(int _SubpartIndex, TCompileTimeString<Chars...> const& _Alias)
-    {
-        static TStaticResourceFinder<AMaterialInstance> Resource(_Alias);
-        SetMaterialInstance(_SubpartIndex, Resource.GetObject());
-    }
-
     /** Get material instance of subpart of the mesh. Never return null. */
     AMaterialInstance* GetMaterialInstance(int _SubpartIndex) const;
 
     /** Set material instance for subpart of the mesh */
     void SetMaterialInstance(AMaterialInstance* _Instance) { SetMaterialInstance(0, _Instance); }
-
-    /** Helper. Set material instance by alias */
-    template <char... Chars>
-    void SetMaterialInstance(TCompileTimeString<Chars...> const& _Alias)
-    {
-        static TStaticResourceFinder<AMaterialInstance> Resource(_Alias);
-        SetMaterialInstance(0, Resource.GetObject());
-    }
 
     /** Get material instance of subpart of the mesh. Never return null. */
     AMaterialInstance* GetMaterialInstance() const { return GetMaterialInstance(0); }
@@ -138,6 +114,7 @@ protected:
 
 private:
     void NotifyMeshChanged();
+    void OnMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag) override;
 
     AMaterialInstance* GetMaterialInstanceUnsafe(int _SubpartIndex) const;
 

@@ -33,36 +33,37 @@ SOFTWARE.
 #include "SceneComponent.h"
 #include "AnimationPattern.h"
 
-class ALightComponent : public ASceneComponent {
-    HK_COMPONENT( ALightComponent, ASceneComponent )
+class ALightComponent : public ASceneComponent
+{
+    HK_COMPONENT(ALightComponent, ASceneComponent)
 
 public:
-    virtual void SetEnabled( bool _Enabled );
+    virtual void SetEnabled(bool _Enabled);
 
     bool IsEnabled() const { return bEnabled; }
 
-    void SetAnimation( const char * _Pattern, float _Speed = 1.0f, float _Quantizer = 0.0f );
+    void SetAnimation(const char* _Pattern, float _Speed = 1.0f, float _Quantizer = 0.0f);
 
-    void SetAnimation( AAnimationPattern * _Animation );
+    void SetAnimation(AAnimationPattern* _Animation);
 
-    AAnimationPattern * GetAnimation() { return Animation; }
+    AAnimationPattern* GetAnimation() { return Animation; }
 
-    void SetAnimationTime( float _Time );
+    void SetAnimationTime(float _Time);
 
     float GetAnimationTime() const { return AnimTime; }
 
 protected:
     ALightComponent();
 
-    void TickComponent( float _TimeStep ) override;
+    void TickComponent(float _TimeStep) override;
 
     float GetAnimationBrightness() const { return AnimationBrightness; }
 
     mutable bool bEffectiveColorDirty = true;
 
 private:
-    bool bEnabled = true;
-    TRef< AAnimationPattern > Animation;
-    float AnimTime = 0.0f;
-    float AnimationBrightness = 1.0f;
+    bool                    bEnabled = true;
+    TRef<AAnimationPattern> Animation;
+    float                   AnimTime            = 0.0f;
+    float                   AnimationBrightness = 1.0f;
 };

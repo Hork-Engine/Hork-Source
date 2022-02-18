@@ -40,17 +40,18 @@ AController
 Base class for controllers
 
 */
-class AController : public AActor {
-    HK_ACTOR( AController, AActor )
+class AController : public AActor
+{
+    HK_ACTOR(AController, AActor)
 
 public:
     AController();
 
-    void SetPawn(AActor* _Pawn);
+    void    SetPawn(AActor* _Pawn);
     AActor* GetPawn() const { return Pawn; }
 
 protected:
-    void Tick(float _TimeStep) override;
+    void Initialize(SActorInitializer& Initializer) override;
 
 protected:
     virtual void OnPawnChanged() {}

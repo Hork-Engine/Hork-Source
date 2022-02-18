@@ -991,7 +991,7 @@ struct ACollisionTriangleSoupBVH : ACollisionBody
     }
 
 #ifdef BULLET_WORLD_IMPORTER
-    void Read(IBinaryStream& _Stream)
+    void Read(IBinaryStreamReadInterface& _Stream)
     {
         uint32_t bufferSize;
         _Stream >> bufferSize;
@@ -1163,7 +1163,7 @@ ACollisionModel::ACollisionModel(SCollisionModelCreateInfo const& CreateInfo) :
 ACollisionModel::~ACollisionModel()
 {}
 
-bool ACollisionModel::LoadResource(IBinaryStream& Stream)
+bool ACollisionModel::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     // TODO
     return false;

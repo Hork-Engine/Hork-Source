@@ -196,12 +196,12 @@ struct TPlane
     {
         struct Writer
         {
-            Writer(IBinaryStream& stream, float value)
+            Writer(IBinaryStreamWriteInterface& stream, float value)
             {
                 stream.WriteFloat(value);
             }
 
-            Writer(IBinaryStream& stream, double value)
+            Writer(IBinaryStreamWriteInterface& stream, double value)
             {
                 stream.WriteDouble(value);
             }
@@ -214,12 +214,12 @@ struct TPlane
     {
         struct Reader
         {
-            Reader(IBinaryStream& stream, float& value)
+            Reader(IBinaryStreamReadInterface& stream, float& value)
             {
                 value = stream.ReadFloat();
             }
 
-            Reader(IBinaryStream& stream, double& value)
+            Reader(IBinaryStreamReadInterface& stream, double& value)
             {
                 value = stream.ReadDouble();
             }

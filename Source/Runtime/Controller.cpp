@@ -34,41 +34,34 @@ SOFTWARE.
 HK_CLASS_META(AController)
 
 AController::AController()
+{}
+
+void AController::Initialize(SActorInitializer& Initializer)
 {
-    bCanEverTick        = true;
-    bTickEvenWhenPaused = true;
+    Super::Initialize(Initializer);
 }
 
-void AController::Tick(float TimeStep)
+void AController::SetPawn(AActor* pNewPawn)
 {
-    Super::Tick(TimeStep);
-
-    if (Pawn && Pawn->IsPendingKill())
-    {
-        SetPawn(nullptr);
-    }
-}
-
-void AController::SetPawn(AActor* _Pawn)
-{
-    if (IsSame(Pawn, _Pawn))
+    if (IsSame(Pawn, pNewPawn))
     {
         return;
     }
 
-    if (_Pawn && _Pawn->Controller)
+    if (pNewPawn && pNewPawn->GetController())
     {
-        LOG("Pawn already controlled by other controller\n");
+        LOG("The pawn is already controlled by another controller.\n");
         return;
     }
 
     if (Pawn)
     {
         Pawn->Controller = nullptr;
-        Pawn->OnInputLost();
+        if (!Pawn->IsPendingKill())
+            Pawn->OnInputLost();
     }
 
-    Pawn = _Pawn;
+    Pawn = pNewPawn;
 
     if (Pawn)
     {

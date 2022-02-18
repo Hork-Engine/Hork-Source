@@ -103,7 +103,7 @@ void ASoundResource::LoadInternalResource(const char* _Path)
     // TODO: ...
 }
 
-bool ASoundResource::LoadResource(IBinaryStream& Stream)
+bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     Purge();
 

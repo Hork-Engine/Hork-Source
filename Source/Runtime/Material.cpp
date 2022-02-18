@@ -76,7 +76,7 @@ void AMaterial::Purge()
     Def.RemoveShaders();
 }
 
-bool AMaterial::LoadResource(IBinaryStream& Stream)
+bool AMaterial::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     uint32_t fileFormat = Stream.ReadUInt32();
 
@@ -955,7 +955,7 @@ void AMaterialInstance::LoadInternalResource(const char* _Path)
     LoadInternalResource("/Default/MaterialInstance/Default");
 }
 
-bool AMaterialInstance::LoadResource(IBinaryStream& Stream)
+bool AMaterialInstance::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     uint32_t fileFormat;
     uint32_t fileVersion;
@@ -1008,7 +1008,7 @@ bool AMaterialInstance::LoadResource(IBinaryStream& Stream)
     return true;
 }
 
-bool AMaterialInstance::LoadTextVersion(IBinaryStream& Stream)
+bool AMaterialInstance::LoadTextVersion(IBinaryStreamReadInterface& Stream)
 {
     AString text;
     text.FromFile(Stream);

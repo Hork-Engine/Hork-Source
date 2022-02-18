@@ -637,8 +637,8 @@ static void RegisterFloat4(asIScriptEngine* pEngine)
     constexpr Bool4 IsNan() const;
     constexpr Bool4 IsNormal() const;
     constexpr Bool4 IsDenormal() const;
-    void Write(IBinaryStream & _Stream) const;
-    void Read(IBinaryStream & _Stream);
+    void Write(IBinaryStreamWriteInterface & _Stream) const;
+    void Read(IBinaryStreamReadInterface & _Stream);
     static constexpr int   NumComponents();
     static TVector4 const& Zero();
 #endif
@@ -901,8 +901,8 @@ static void RegisterFloat2x2(asIScriptEngine* pEngine)
 
     // TODO?
     #if 0
-    void                   Write(IBinaryStream & _Stream) const;
-    void                   Read(IBinaryStream & _Stream);
+    void                   Write(IBinaryStreamWriteInterface & _Stream) const;
+    void                   Read(IBinaryStreamReadInterface & _Stream);
     #endif
 }
 
@@ -1070,8 +1070,8 @@ static void RegisterFloat3x3(asIScriptEngine* pEngine)
 
 // TODO?
 #if 0
-    void                   Write(IBinaryStream & _Stream) const;
-    void                   Read(IBinaryStream & _Stream);
+    void                   Write(IBinaryStreamWriteInterface & _Stream) const;
+    void                   Read(IBinaryStreamReadInterface & _Stream);
 #endif
 }
 
@@ -1251,8 +1251,8 @@ static void RegisterFloat3x4(asIScriptEngine* pEngine)
 
 // TODO?
 #    if 0
-    void                   Write(IBinaryStream & _Stream) const;
-    void                   Read(IBinaryStream & _Stream);
+    void                   Write(IBinaryStreamWriteInterface & _Stream) const;
+    void                   Read(IBinaryStreamReadInterface & _Stream);
 #    endif
 }
 
@@ -1464,8 +1464,8 @@ static void RegisterFloat4x4(asIScriptEngine* pEngine)
                                     Float4x4 & _NegativeZ);
     static Float4x4 const* GetCubeFaceMatrices();
 
-    void                   Write(IBinaryStream & _Stream) const;
-    void                   Read(IBinaryStream & _Stream);
+    void                   Write(IBinaryStreamWriteInterface & _Stream) const;
+    void                   Read(IBinaryStreamReadInterface & _Stream);
 #endif
 }
 
@@ -1620,8 +1620,8 @@ static void RegisterQuat(asIScriptEngine* pEngine)
     Bool4 IsNan() const;
     Bool4 IsNormal() const;
     Bool4 NotEqual( Quat const & _Other ) const;
-    void Write( IBinaryStream & _Stream ) const;
-    void Read( IBinaryStream & _Stream );
+    void Write( IBinaryStreamWriteInterface & _Stream ) const;
+    void Read( IBinaryStreamReadInterface & _Stream );
     static constexpr int NumComponents();
     explicit constexpr Quat( Float4 const & _Value );
     HK_FORCEINLINE Quat operator*( float _Left, Quat const & _Right );
@@ -1728,8 +1728,8 @@ static void RegisterAngl(asIScriptEngine* pEngine)
     Bool3 IsNan() const;
     Bool3 IsNormal() const;
     Bool3 NotEqual( Angl const & _Other ) const;
-    void Write( IBinaryStream & _Stream ) const;
-    void Read( IBinaryStream & _Stream );
+    void Write( IBinaryStreamWriteInterface & _Stream ) const;
+    void Read( IBinaryStreamReadInterface & _Stream );
     static constexpr int NumComponents() { return 3; }
     static Angl const & Zero();
     explicit constexpr Angl( Float3 const & _Value );
@@ -1855,8 +1855,8 @@ static void RegisterTransform(asIScriptEngine* pEngine)
 // TODO?
 #if 0
     void GetVectors( Float3 * _Right, Float3 * _Up, Float3 * _Back ) const;
-    void Write( IBinaryStream & _Stream ) const;
-    void Read( IBinaryStream & _Stream );
+    void Write( IBinaryStreamWriteInterface & _Stream ) const;
+    void Read( IBinaryStreamReadInterface & _Stream );
 #endif
 }
 
@@ -1967,8 +1967,8 @@ static void RegisterAxisAlignedBox(asIScriptEngine* pEngine)
 #if 0
     void   GetVertices( Float3 _Vertices[8] ) const;
     static BvAxisAlignedBox const & Empty();
-    void Write( IBinaryStream & _Stream ) const;
-    void Read( IBinaryStream & _Stream );
+    void Write( IBinaryStreamWriteInterface & _Stream ) const;
+    void Read( IBinaryStreamReadInterface & _Stream );
 #endif
 }
 

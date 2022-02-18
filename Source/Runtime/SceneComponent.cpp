@@ -82,9 +82,9 @@ void ASceneComponent::DeinitializeComponent()
         }
     }
 
-    if (owner->RootComponent == this)
+    if (owner->GetRootComponent() == this)
     {
-        owner->RootComponent = nullptr;
+        owner->ResetRootComponent();
     }
 }
 
@@ -224,7 +224,7 @@ bool ASceneComponent::IsChild(ASceneComponent* _Child, bool _Recursive) const
 bool ASceneComponent::IsRoot() const
 {
     AActor* owner = GetOwnerActor();
-    return owner && owner->RootComponent == this;
+    return owner && owner->GetRootComponent() == this;
 }
 
 ASceneComponent* ASceneComponent::FindChild(const char* _UniqueName, bool _Recursive)

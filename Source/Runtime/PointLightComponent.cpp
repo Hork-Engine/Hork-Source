@@ -32,6 +32,7 @@ SOFTWARE.
 #include "MeshComponent.h"
 #include "World.h"
 #include "DebugRenderer.h"
+#include "ResourceManager.h"
 
 #include <Core/ConsoleVar.h>
 
@@ -99,11 +100,11 @@ void APointLightComponent::UpdateWorldBounds()
     Float4x4 OBBTransform = Float4x4::Translation(OBBWorldBounds.Center) * Float4x4::Scale(OBBWorldBounds.HalfSize);
     OBBTransformInverse   = OBBTransform.Inversed();
 
-    Primitive.Sphere = SphereWorldBounds;
+    Primitive->Sphere = SphereWorldBounds;
 
     if (IsInitialized())
     {
-        GetLevel()->MarkPrimitive(&Primitive);
+        GetLevel()->MarkPrimitive(Primitive);
     }
 }
 
@@ -113,7 +114,7 @@ void APointLightComponent::DrawDebug(ADebugRenderer* InRenderer)
 
     if (com_DrawPointLights)
     {
-        if (Primitive.VisPass == InRenderer->GetVisPass())
+        if (Primitive->VisPass == InRenderer->GetVisPass())
         {
             Float3 pos = GetWorldPosition();
 

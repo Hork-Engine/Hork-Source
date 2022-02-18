@@ -131,7 +131,7 @@ void AEnvironmentMap::UpdateSamplers()
     ReflectionMap->MakeBindlessSamplerResident(ReflectionMapHandle, true);
 }
 
-bool AEnvironmentMap::LoadResource(IBinaryStream& Stream)
+bool AEnvironmentMap::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     Purge();
 

@@ -75,7 +75,7 @@ public:
     ~AMaterial();
 
     /** Load resource from file */
-    bool LoadResource(IBinaryStream& Stream) override;
+    bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
     void LoadInternalResource(const char* _Path) override;
@@ -158,14 +158,14 @@ public:
 
 protected:
     /** Load resource from file */
-    bool LoadResource(IBinaryStream& _Stream) override;
+    bool LoadResource(IBinaryStreamReadInterface& _Stream) override;
 
     /** Create internal resource */
     void LoadInternalResource(const char* _Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/MaterialInstance/Default"; }
 
-    bool LoadTextVersion(IBinaryStream& Stream);
+    bool LoadTextVersion(IBinaryStreamReadInterface& Stream);
 
 private:
     TRef<AMaterial>               Material;

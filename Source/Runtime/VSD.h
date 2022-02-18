@@ -64,7 +64,7 @@ enum VSD_PRIMITIVE
     VSD_PRIMITIVE_SPHERE
 };
 
-enum VSD_QUERY_MASK
+enum VSD_QUERY_MASK : uint32_t
 {
     VSD_QUERY_MASK_VISIBLE   = 0x00000001,
     VSD_QUERY_MASK_INVISIBLE = 0x00000002,
@@ -107,7 +107,16 @@ enum VSD_QUERY_MASK
     VSD_QUERY_MASK_USER15 = 0x80000000,
 };
 
-enum ELevelVisibilityMethod
+HK_FLAG_ENUM_OPERATORS(VSD_QUERY_MASK)
+
+enum VISIBILITY_GROUP : uint32_t
+{
+    VISIBILITY_GROUP_DEFAULT = 1,
+    VISIBILITY_GROUP_SKYBOX  = 2,
+    VISIBILITY_GROUP_TERRAIN = 4
+};
+
+enum LEVEL_VISIBILITY_METHOD
 {
     LEVEL_VISIBILITY_PVS,
     LEVEL_VISIBILITY_PORTAL
@@ -116,35 +125,35 @@ enum ELevelVisibilityMethod
 struct SPrimitiveDef
 {
     /** Owner component */
-    ASceneComponent* Owner;
+    ASceneComponent* Owner{};
 
     /** List of areas where primitive located */
-    SPrimitiveLink* Links;
+    SPrimitiveLink* Links{};
 
     /** Next primitive in level */
-    SPrimitiveDef* Next;
+    SPrimitiveDef* Next{};
 
     /** Prev primitive in level */
-    SPrimitiveDef* Prev;
+    SPrimitiveDef* Prev{};
 
     /** Next primitive in update list */
-    SPrimitiveDef* NextUpd;
+    SPrimitiveDef* NextUpd{};
 
     /** Prev primitive in update list */
-    SPrimitiveDef* PrevUpd;
+    SPrimitiveDef* PrevUpd{};
 
     /** Callback for local raycast */
     bool (*RaycastCallback)(SPrimitiveDef const*            Self,
                             Float3 const&                   InRayStart,
                             Float3 const&                   InRayEnd,
-                            TPodVector<STriangleHitResult>& Hits);
+                            TPodVector<STriangleHitResult>& Hits) = nullptr;
 
     /** Callback for closest local raycast */
     bool (*RaycastClosestCallback)(SPrimitiveDef const* Self,
                                    Float3 const&        InRayStart,
                                    Float3 const&        InRayEnd,
                                    STriangleHitResult&  Hit,
-                                   SMeshVertex const**  pVertices);
+                                   SMeshVertex const**  pVertices) = nullptr;
 
     void (*EvaluateRaycastResult)(SPrimitiveDef*       Self,
                                   ALevel const*        LightingLevel,
@@ -156,40 +165,34 @@ struct SPrimitiveDef
                                   Float2 const&        HitUV,
                                   Float3*              Vertices,
                                   Float2&              TexCoord,
-                                  Float3&              LightmapSample);
+                                  Float3&              LightmapSample) = nullptr;
 
     /** Primitive type */
-    VSD_PRIMITIVE Type;
+    VSD_PRIMITIVE Type{VSD_PRIMITIVE_BOX};
 
-    /** Primitive bounding shape */
-    //union
-    //{
-    /** Used if type = VSD_PRIMITIVE_BOX */
+    /** Primitive bounding shape. Used if type = VSD_PRIMITIVE_BOX */
     BvAxisAlignedBox Box;
 
-    /** Used if type = VSD_PRIMITIVE_SPHERE */
+    /** Primitive bounding shape. Used if type = VSD_PRIMITIVE_SPHERE */
     BvSphere Sphere;
-    //};
 
     /** Face plane. Used to perform face culling for planar surfaces */
     PlaneF Face;
 
     /** Visibility query group. See VSD_QUERY_MASK enum. */
-    int QueryGroup;
+    VSD_QUERY_MASK QueryGroup{};
 
     /** Visibility group. See VISIBILITY_GROUP enum. */
-    int VisGroup;
+    VISIBILITY_GROUP VisGroup{VISIBILITY_GROUP_DEFAULT};
 
     /** Visibility/raycast processed marker. Used by VSD. */
-    int VisMark;
+    int VisMark{};
 
     /** Primitve marked as visible. Used by VSD. */
-    int VisPass;
-
-    //int BakeIndex;
+    int VisPass{};
 
     /** Surface flags (ESurfaceFlags) */
-    uint8_t Flags;
+    uint8_t Flags{};
 
     /** Is primitive outdoor/indoor */
     bool bIsOutdoor : 1;
@@ -197,7 +200,17 @@ struct SPrimitiveDef
     /** Is primitive pending to remove from level */
     bool bPendingRemove : 1;
 
-    SPrimitiveDef() = default;
+    SPrimitiveDef() : bIsOutdoor(false), bPendingRemove(false) {}
+
+    void SetVisibilityGroup(VISIBILITY_GROUP VisibilityGroup)
+    {
+        VisGroup = VisibilityGroup;
+    }
+
+    VISIBILITY_GROUP GetVisibilityGroup() const
+    {
+        return VisGroup;
+    }
 };
 
 struct SPrimitiveLink
@@ -302,7 +315,7 @@ struct SVisibilityQuery
     int VisibilityMask;
 
     /** Result filter */
-    int QueryMask;
+    VSD_QUERY_MASK QueryMask;
 
     // FIXME: add bool bQueryPrimitives, bool bQuerySurfaces?
 };
@@ -430,7 +443,7 @@ struct SWorldRaycastFilter
     /** Filter objects by mask */
     int VisibilityMask;
     /** VSD query mask */
-    int QueryMask;
+    VSD_QUERY_MASK QueryMask;
     /** Sort result by the distance */
     bool bSortByDistance;
 
@@ -660,7 +673,7 @@ private:
     int     CachedSignBits[MAX_CULL_PLANES]; // sign bits of ViewFrustum planes
 
     int     VisQueryMarker = 0;
-    int     VisQueryMask   = 0;
+    VSD_QUERY_MASK VisQueryMask   = VSD_QUERY_MASK(0);
     int     VisibilityMask = 0;
     ALevel* CurLevel;
     int     NodeViewMark;

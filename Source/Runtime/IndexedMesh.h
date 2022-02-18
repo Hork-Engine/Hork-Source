@@ -38,6 +38,7 @@ SOFTWARE.
 #include "Skeleton.h"
 
 #include <Geometry/Transform.h>
+#include <Core/IntrusiveLinkedListMacro.h>
 
 class AIndexedMesh;
 class ALevel;
@@ -320,11 +321,32 @@ struct ASkin
 };
 
 
+enum INDEXED_MESH_UPDATE_FLAG : uint8_t
+{
+    INDEXED_MESH_UPDATE_GEOMETRY = HK_BIT(0),
+    INDEXED_MESH_UPDATE_MATERIAL = HK_BIT(1),
+    INDEXED_MESH_UPDATE_COLLISION = HK_BIT(2),
+    INDEXED_MESH_UPDATE_BOUNDING_BOX = HK_BIT(3),
+    INDEXED_MESH_UPDATE_ALL = INDEXED_MESH_UPDATE_FLAG(~0),
+};
+
+HK_FLAG_ENUM_OPERATORS(INDEXED_MESH_UPDATE_FLAG)
+
+class AIndexedMeshListener
+{
+public:
+    TLink<AIndexedMeshListener> Link;
+
+    virtual void OnMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag) = 0;
+};
+
+
 /**
 
 AIndexedMesh
 
 Triangulated 3d surfaces with indexed vertices
+Note that if you modify the mesh, you must call the NotifyMeshResourceUpdate method to let the listeners know that the mesh has been updated.
 
 */
 class AIndexedMesh : public AResource
@@ -336,6 +358,8 @@ class AIndexedMesh : public AResource
     friend class AIndexedMeshSubpart;
 
 public:
+    TList<AIndexedMeshListener> Listeners;
+
     /** Allocate mesh */
     void Initialize(int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh = false);
 
@@ -500,12 +524,14 @@ public:
 
     void DrawBVH(ADebugRenderer* InRenderer, Float3x4 const& _TransformMatrix);
 
+    void NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag);
+
     AIndexedMesh();
     ~AIndexedMesh();
 
 protected:
     /** Load resource from file */
-    bool LoadResource(IBinaryStream& Stream) override;
+    bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
     void LoadInternalResource(const char* _Path) override;

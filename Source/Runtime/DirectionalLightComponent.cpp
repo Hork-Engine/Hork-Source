@@ -32,6 +32,7 @@ SOFTWARE.
 #include "MeshComponent.h"
 #include "World.h"
 #include "DebugRenderer.h"
+#include "ResourceManager.h"
 #include <Platform/Logger.h>
 #include <RenderCore/VertexMemoryGPU.h>
 
@@ -87,7 +88,6 @@ ADirectionalLightComponent::ADirectionalLightComponent()
     MaxShadowCascades        = DEFAULT_MAX_SHADOW_CASCADES;
     ShadowCascadeResolution  = 1024;
     ShadowCascadeSplitLambda = 0.5f;
-    Next = Prev = nullptr;
 }
 
 void ADirectionalLightComponent::OnCreateAvatar()
@@ -126,14 +126,14 @@ void ADirectionalLightComponent::InitializeComponent()
 {
     Super::InitializeComponent();
 
-    GetWorld()->GetRender().AddDirectionalLight(this);
+    GetWorld()->GetRender().DirectionalLights.Add(this);
 }
 
 void ADirectionalLightComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
-    GetWorld()->GetRender().RemoveDirectionalLight(this);
+    GetWorld()->GetRender().DirectionalLights.Remove(this);
 }
 
 void ADirectionalLightComponent::SetDirection(Float3 const& _Direction)

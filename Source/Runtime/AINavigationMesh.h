@@ -35,6 +35,7 @@ SOFTWARE.
 #include "BaseObject.h"
 #include "DebugRenderer.h"
 
+#include <Core/IntrusiveLinkedListMacro.h>
 #include <Containers/BitMask.h>
 
 #ifdef DT_POLYREF64
@@ -44,8 +45,6 @@ typedef unsigned int SNavPolyRef;
 #endif
 
 class AWorld;
-class APhysicalBody;
-class ATerrainComponent;
 
 struct SNavPointRef
 {
@@ -364,14 +363,19 @@ struct SAINavigationConfig
     BvAxisAlignedBox BoundingBox = BvAxisAlignedBox::Empty();
 };
 
+class ANavigationPrimitive
+{
+public:
+    TLink<ANavigationPrimitive> Link;
+
+    virtual void GatherNavigationGeometry(SNavigationGeometry& Geometry) const = 0;
+};
+
 class AAINavigationMesh
 {
     HK_FORBID_COPY(AAINavigationMesh)
 
 public:
-    AAINavigationMesh();
-    virtual ~AAINavigationMesh();
-
     /** Default query filter */
     ANavQueryFilter QueryFilter;
 
@@ -381,9 +385,14 @@ public:
     /** Navigation areas. You must rebuild navigation mesh if you change areas. */
     TPodVector<SAINavigationArea> NavigationAreas; // TODO: Components?
 
+    TList<ANavigationPrimitive> NavigationPrimitives;
+
     //
     // Public methods
     //
+
+    AAINavigationMesh();
+    virtual ~AAINavigationMesh();
 
     /** Initialize empty nav mesh. You must rebuild nav mesh after that. */
     bool Initialize(SAINavigationConfig const& _NavigationConfig);
@@ -548,24 +557,6 @@ public:
     void GatherNavigationGeometry(SNavigationGeometry& Geometry);
 
 private:
-    friend class APhysicalBody;
-
-    /** Add source geometry to build navigation mesh */
-    void AddNavigationGeometry(APhysicalBody* InPhysicalBody);
-
-    /** Remove source geometry to build navigation mesh */
-    void RemoveNavigationGeometry(APhysicalBody* InPhysicalBody);
-
-private:
-    friend class ATerrainComponent;
-
-    /** Add source geometry to build navigation mesh */
-    void AddNavigationGeometry(ATerrainComponent* InPhysicalBody);
-
-    /** Remove source geometry to build navigation mesh */
-    void RemoveNavigationGeometry(ATerrainComponent* InPhysicalBody);
-
-private:
     bool BuildTiles(Int2 const& _Mins, Int2 const& _Maxs);
     bool BuildTile(int _X, int _Z);
 
@@ -585,11 +576,6 @@ private:
     // For tile cache
     TUniqueRef<struct ADetourLinearAllocator> LinearAllocator;
     TUniqueRef<struct ADetourMeshProcess>     MeshProcess;
-
-    APhysicalBody*     NavigationGeometryList{};
-    APhysicalBody*     NavigationGeometryListTail{};
-    ATerrainComponent* TerrainList{};
-    ATerrainComponent* TerrainListTail{};
 
     // NavMesh areas
     //TPodVector< SAINavigationArea > Areas;

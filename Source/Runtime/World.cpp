@@ -125,7 +125,7 @@ void AWorld::DestroyActors()
 {
     for (AActor* actor : Actors)
     {
-        actor->Destroy();
+        DestroyActor(actor);
     }
 
     // Destroy actors from spawn queue
@@ -134,9 +134,50 @@ void AWorld::DestroyActors()
     while (actor)
     {
         AActor* nextActor = actor->NextSpawnActor;
-        actor->Destroy();
+        DestroyActor(actor);
         actor = nextActor;
     }
+}
+
+void AWorld::DestroyActor(AActor* Actor)
+{
+    if (Actor->bPendingKill)
+    {
+        return;
+    }
+
+    AWorld* world = Actor->World;
+
+    HK_ASSERT(world);
+
+    // Mark actor to remove it from the world
+    Actor->bPendingKill         = true;
+    Actor->NextPendingKillActor = world->PendingKillActors;
+    world->PendingKillActors    = Actor;
+
+    for (AActorComponent* component : Actor->Components)
+    {
+        DestroyComponent(component);
+    }
+}
+
+void AWorld::DestroyComponent(AActorComponent* Component)
+{
+    if (Component->bPendingKill)
+    {
+        return;
+    }
+
+    AWorld* world = Component->GetWorld();
+
+    HK_ASSERT(world);
+
+    // Mark component pending kill
+    Component->bPendingKill = true;
+
+    // Add component to pending kill list
+    Component->NextPendingKillComponent = world->PendingKillComponents;
+    world->PendingKillComponents        = Component;
 }
 
 void AWorld::BuildNavigation(SAINavigationConfig const& _NavigationConfig)
@@ -492,6 +533,57 @@ AActor* AWorld::SpawnActor2(AActor const* Template, STransform const& SpawnTrans
     return _SpawnActor2(spawnInfo, SpawnTransform);
 }
 
+void AWorld::InitializeAndPlay(AActor* Actor)
+{
+    if (Actor->bCanEverTick)
+    {
+        TickingActors.Append(Actor);
+    }
+    if (Actor->bTickPrePhysics)
+    {
+        PrePhysicsTickActors.Append(Actor);
+    }
+    if (Actor->bTickPostPhysics)
+    {
+        PostPhysicsTickActors.Append(Actor);
+    }
+    if (Actor->bLateUpdate)
+    {
+        LateUpdateActors.Append(Actor);
+    }
+
+    for (ATimer* timer = Actor->TimerList; timer; timer = timer->NextInActor)
+    {
+        RegisterTimer(timer);
+    }
+
+    Actor->PreInitializeComponents();
+
+    for (AActorComponent* component : Actor->Components)
+    {
+        HK_ASSERT(!component->bInitialized);
+
+        component->InitializeComponent();
+        component->bInitialized = true;
+
+        if (component->bCanEverTick)
+        {
+            TickingComponents.Append(component);
+            component->bTicking = true;
+        }
+    }
+
+    Actor->PostInitializeComponents();
+
+    for (AActorComponent* component : Actor->Components)
+    {
+        HK_ASSERT(!component->IsPendingKill());
+        component->BeginPlay();
+    }
+
+    Actor->CallBeginPlay();
+}
+
 void AWorld::CleanupActor(AActor* Actor)
 {
     E_OnActorSpawned.Remove(Actor);
@@ -608,7 +700,7 @@ void AWorld::SpawnActors()
             // Add actor to level
             actor->Level->Actors.Append(actor);
             actor->IndexInLevelArrayOfActors = actor->Level->Actors.Size() - 1;
-            actor->InitializeAndPlay();
+            InitializeAndPlay(actor);
 
             BroadcastActorSpawned(actor);
         }
@@ -847,7 +939,7 @@ void AWorld::UpdatePhysics(float TimeStep)
 
 void AWorld::UpdateSkinning()
 {
-    for (ASkinnedComponent* skinnedMesh = WorldRender.GetSkinnedMeshes(); skinnedMesh; skinnedMesh = skinnedMesh->GetNextSkinnedMesh())
+    for (TListIterator<ASkinnedComponent> skinnedMesh(WorldRender.SkinnedMeshes) ; skinnedMesh ; skinnedMesh++)
     {
         skinnedMesh->UpdateBounds();
     }

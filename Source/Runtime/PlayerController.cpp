@@ -44,22 +44,25 @@ HK_CLASS_META(ARenderingParameters)
 APlayerController* APlayerController::CurrentAudioListener = nullptr;
 
 APlayerController::APlayerController()
-{
-    InputComponent = CreateComponent<AInputComponent>("PlayerControllerInput");
-
-    bCanEverTick = true;
-
-    if (!CurrentAudioListener)
-    {
-        CurrentAudioListener = this;
-    }
-}
+{}
 
 APlayerController::~APlayerController()
 {
     if (CurrentAudioListener == this)
     {
         CurrentAudioListener = nullptr;
+    }
+}
+
+void APlayerController::Initialize(SActorInitializer& Initializer)
+{
+    Super::Initialize(Initializer);
+
+    InputComponent = CreateComponent<AInputComponent>("PlayerControllerInput");
+
+    if (!CurrentAudioListener)
+    {
+        CurrentAudioListener = this;
     }
 }
 

@@ -332,7 +332,7 @@ static bool IsHDRImageExtension(const char* pExtension)
     return !Platform::Stricmp(pExtension, ".hdr") || !Platform::Stricmp(pExtension, ".exr");
 }
 
-bool ATexture::LoadResource(IBinaryStream& Stream)
+bool ATexture::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     const char* fn = Stream.GetFileName();
 

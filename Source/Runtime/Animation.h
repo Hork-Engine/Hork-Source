@@ -108,7 +108,7 @@ public:
 
 protected:
     /** Load resource from file */
-    bool LoadResource(IBinaryStream& Stream) override;
+    bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
     void LoadInternalResource(const char* _Path) override;

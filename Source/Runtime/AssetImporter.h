@@ -221,4 +221,4 @@ bool ValidateCubemapFaces(TArray<AImage, 6> const& Faces, int& Width, STexturePi
 
 bool ImportEnvironmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSettings, AStringView EnvmapFile);
 
-bool LoadLWO(IBinaryStream& InStream, float InScale, AMaterialInstance* (*GetMaterial)(const char* _Name), AIndexedMesh** IndexedMesh);
+bool LoadLWO(IBinaryStreamReadInterface& InStream, float InScale, AMaterialInstance* (*GetMaterial)(const char* _Name), AIndexedMesh** IndexedMesh);

@@ -865,9 +865,8 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
     // Add directional lights
     view->NumShadowMapCascades  = 0;
     view->NumCascadedShadowMaps = 0;
-    for (ADirectionalLightComponent* dirlight = renderWorld.GetDirectionalLights(); dirlight; dirlight = dirlight->GetNext())
+    for (TListIterator<ADirectionalLightComponent> dirlight(renderWorld.DirectionalLights); dirlight; dirlight++)
     {
-
         if (view->NumDirectionalLights >= MAX_DIRECTIONAL_LIGHTS)
         {
             LOG("MAX_DIRECTIONAL_LIGHTS hit\n");
@@ -1607,7 +1606,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
 
     ARenderWorld& renderWorld = InWorld->GetRender();
 
-    for (ADrawable* component = renderWorld.GetShadowCasters(); component; component = component->GetNextShadowCaster())
+    for (TListIterator<ADrawable> component(renderWorld.ShadowCasters); component; component++)
     {
         if ((component->GetVisibilityGroup() & RenderDef.VisibilityMask) == 0)
         {
@@ -1615,7 +1614,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
         }
         //component->CascadeMask = 0;
 
-        ShadowCasters.Append(component);
+        ShadowCasters.Append(*component);
         ShadowBoxes.Append(component->GetWorldBounds());
     }
 

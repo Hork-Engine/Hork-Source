@@ -38,24 +38,30 @@ class APunctualLightComponent : public ALightComponent
     HK_COMPONENT(APunctualLightComponent, ALightComponent)
 
 public:
-    /** Rendering group to filter lights during rendering */
-    void SetVisibilityGroup(int InVisibilityGroup);
-
-    int GetVisibilityGroup() const;
-
     void SetEnabled(bool _Enabled) override;
 
     BvAxisAlignedBox const& GetWorldBounds() const { return AABBWorldBounds; }
 
     Float4x4 const& GetOBBTransformInverse() const { return OBBTransformInverse; }
 
+    void SetVisibilityGroup(VISIBILITY_GROUP VisibilityGroup)
+    {
+        Primitive->SetVisibilityGroup(VisibilityGroup);
+    }
+
+    VISIBILITY_GROUP GetVisibilityGroup() const
+    {
+        return Primitive->GetVisibilityGroup();
+    }
+
 protected:
     APunctualLightComponent();
+    ~APunctualLightComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
     BvAxisAlignedBox AABBWorldBounds;
     Float4x4         OBBTransformInverse;
-    SPrimitiveDef    Primitive;
+    SPrimitiveDef*   Primitive;
 };

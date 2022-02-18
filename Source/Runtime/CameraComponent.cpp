@@ -32,6 +32,7 @@ SOFTWARE.
 #include "MeshComponent.h"
 #include "Actor.h"
 #include "DebugRenderer.h"
+#include "ResourceManager.h"
 
 #include <Core/ConsoleVar.h>
 

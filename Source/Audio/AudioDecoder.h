@@ -42,6 +42,6 @@ struct SAudioFileInfo
 };
 
 /** Open audio file and read PCM frames to heap memory */
-bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void ** ppFrames = nullptr );
+bool LoadAudioFile( IBinaryStreamReadInterface & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void ** ppFrames = nullptr );
 
-bool CreateAudioBuffer( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, TRef< SAudioBuffer > * ppBuffer );
+bool CreateAudioBuffer( IBinaryStreamReadInterface & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, TRef< SAudioBuffer > * ppBuffer );

@@ -1283,7 +1283,7 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
     }
 }
 
-bool AInputMappings::LoadResource(IBinaryStream& Stream)
+bool AInputMappings::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     AString script;
     script.FromFile(Stream);

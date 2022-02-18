@@ -88,7 +88,7 @@ void ASkeleton::LoadInternalResource(const char* _Path)
     LoadInternalResource("/Default/Skeleton/Default");
 }
 
-bool ASkeleton::LoadResource(IBinaryStream& Stream)
+bool ASkeleton::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     uint32_t fileFormat = Stream.ReadUInt32();
 

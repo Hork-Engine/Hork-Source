@@ -98,7 +98,7 @@ ATerrain::ATerrain(int Resolution, const float* pData)
     NotifyTerrainModified();
 }
 
-bool ATerrain::LoadResource(IBinaryStream& Stream)
+bool ATerrain::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     Purge();
 

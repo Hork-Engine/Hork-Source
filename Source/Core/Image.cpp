@@ -105,25 +105,25 @@ AImage::~AImage()
 
 static int Stbi_Read(void* user, char* data, int size)
 {
-    IBinaryStream* stream = (IBinaryStream*)user;
+    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)user;
     return stream->Read(data, size);
 }
 
 static void Stbi_Skip(void* user, int n)
 {
-    IBinaryStream* stream = (IBinaryStream*)user;
+    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)user;
     stream->SeekCur(n);
 }
 
 static int Stbi_Eof(void* user)
 {
-    IBinaryStream* stream = (IBinaryStream*)user;
+    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)user;
     return stream->Eof();
 }
 
 static void Stbi_Write(void* context, void* data, int size)
 {
-    IBinaryStream* stream = (IBinaryStream*)context;
+    IBinaryStreamWriteInterface* stream = (IBinaryStreamWriteInterface*)context;
     stream->Write(data, size);
 }
 
@@ -303,7 +303,7 @@ HK_FORCEINLINE static byte FloatToByte(float _Color)
     return Math::Floor(Math::Saturate(_Color) * 255.0f + 0.5f);
 }
 
-static void* LoadEXR(IBinaryStream& _Stream, int* w, int* h, int* channels, int desiredchannels, bool ldr)
+static void* LoadEXR(IBinaryStreamReadInterface& _Stream, int* w, int* h, int* channels, int desiredchannels, bool ldr)
 {
     HK_ASSERT(desiredchannels >= 0 && desiredchannels <= 4);
 
@@ -458,7 +458,7 @@ static void* LoadEXR(IBinaryStream& _Stream, int* w, int* h, int* channels, int 
 
 #endif
 
-bool AImage::Load(IBinaryStream& _Stream, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat)
+bool AImage::Load(IBinaryStreamReadInterface& _Stream, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat)
 {
     const stbi_io_callbacks callbacks = {Stbi_Read, Stbi_Skip, Stbi_Eof};
     int                     w, h, numChannels, numRequiredChannels;
@@ -1208,27 +1208,27 @@ void ResizeImage(SImageResizeDesc const& InDesc, void* pScaledImage)
     GHunkMemory.ClearToMark(hunkMark);
 }
 
-bool WritePNG(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _BytesPerLine)
+bool WritePNG(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _BytesPerLine)
 {
     return !!stbi_write_png_to_func(Stbi_Write, &_Stream, _Width, _Height, _NumChannels, _ImageData, _BytesPerLine);
 }
 
-bool WriteBMP(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData)
+bool WriteBMP(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData)
 {
     return !!stbi_write_bmp_to_func(Stbi_Write, &_Stream, _Width, _Height, _NumChannels, _ImageData);
 }
 
-bool WriteTGA(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData)
+bool WriteTGA(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData)
 {
     return !!stbi_write_tga_to_func(Stbi_Write, &_Stream, _Width, _Height, _NumChannels, _ImageData);
 }
 
-bool WriteJPG(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _Quality)
+bool WriteJPG(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _Quality)
 {
     return !!stbi_write_jpg_to_func(Stbi_Write, &_Stream, _Width, _Height, _NumChannels, _ImageData, _Quality);
 }
 
-bool WriteHDR(IBinaryStream& _Stream, int _Width, int _Height, int _NumChannels, const float* _ImageData)
+bool WriteHDR(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const float* _ImageData)
 {
     return !!stbi_write_hdr_to_func(Stbi_Write, &_Stream, _Width, _Height, _NumChannels, _ImageData);
 }

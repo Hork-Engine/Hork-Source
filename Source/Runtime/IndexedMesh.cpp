@@ -164,7 +164,7 @@ void AIndexedMesh::InvalidateChannels()
     }
 }
 
-static AIndexedMeshSubpart* ReadIndexedMeshSubpart(IBinaryStream& f)
+static AIndexedMeshSubpart* ReadIndexedMeshSubpart(IBinaryStreamReadInterface& f)
 {
     AString  name;
     int32_t  baseVertex;
@@ -194,7 +194,7 @@ static AIndexedMeshSubpart* ReadIndexedMeshSubpart(IBinaryStream& f)
     return subpart;
 }
 
-static ASocketDef* ReadSocket(IBinaryStream& f)
+static ASocketDef* ReadSocket(IBinaryStreamReadInterface& f)
 {
     AString  name;
     uint32_t jointIndex;
@@ -214,9 +214,9 @@ static ASocketDef* ReadSocket(IBinaryStream& f)
     return socket;
 }
 
-bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
+bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    AScopedTimer ScopedTime(Stream.GetFileName());
+    //AScopedTimer ScopedTime(Stream.GetFileName());
 
     Purge();
 
@@ -236,6 +236,8 @@ bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
     if (!member)
     {
         LOG("AIndexedMesh::LoadResource: invalid mesh\n");
+
+        NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_ALL);
         return false;
     }
 
@@ -243,6 +245,8 @@ bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
     if (meshFile.IsEmpty())
     {
         LOG("AIndexedMesh::LoadResource: invalid mesh\n");
+
+        NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_ALL);
         return false;
     }
 
@@ -252,6 +256,8 @@ bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
     if (!meshBinary->GetSizeInBytes())
     {
         LOG("AIndexedMesh::LoadResource: invalid mesh\n");
+
+        NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_ALL);
         return false;
     }
 
@@ -259,6 +265,8 @@ bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
     if (!meshData.OpenRead(meshFile.CStr(), meshBinary->GetBinaryData(), meshBinary->GetSizeInBytes()))
     {
         LOG("AIndexedMesh::LoadResource: invalid mesh\n");
+
+        NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_ALL);
         return false;
     }
 
@@ -267,6 +275,8 @@ bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
     if (fileFormat != FMT_FILE_TYPE_MESH)
     {
         LOG("Expected file format {}\n", FMT_FILE_TYPE_MESH);
+
+        NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_ALL);
         return false;
     }
 
@@ -275,6 +285,8 @@ bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
     if (fileVersion != FMT_VERSION_MESH)
     {
         LOG("Expected file version {}\n", FMT_VERSION_MESH);
+
+        NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_ALL);
         return false;
     }
 
@@ -373,8 +385,7 @@ bool AIndexedMesh::LoadResource(IBinaryStream& Stream)
         GenerateRigidbodyCollisions(); // TODO: load collision from file
     }
 
-
-
+    NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_ALL);
 
 
 
@@ -1241,6 +1252,14 @@ void AIndexedMesh::DrawBVH(ADebugRenderer* InRenderer, Float3x4 const& _Transfor
     for (AIndexedMeshSubpart* subpart : Subparts)
     {
         subpart->DrawBVH(InRenderer, _TransformMatrix);
+    }
+}
+
+void AIndexedMesh::NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag)
+{
+    for (TListIterator<AIndexedMeshListener> it(Listeners) ; it ; it++)
+    {
+        it->OnMeshResourceUpdate(UpdateFlag);
     }
 }
 

@@ -37,14 +37,14 @@ SOFTWARE.
 
 static size_t Read( ma_decoder * pDecoder, void* pBufferOut, size_t bytesToRead )
 {
-    IBinaryStream * file = (IBinaryStream *)pDecoder->pUserData;
+    IBinaryStreamReadInterface * file = (IBinaryStreamReadInterface *)pDecoder->pUserData;
 
     return file->Read( pBufferOut, bytesToRead );
 }
 
 static ma_bool32 Seek( ma_decoder * pDecoder, ma_int64 byteOffset, ma_seek_origin origin )
 {
-    IBinaryStream * file = (IBinaryStream *)pDecoder->pUserData;
+    IBinaryStreamReadInterface * file = (IBinaryStreamReadInterface *)pDecoder->pUserData;
     bool result = false;
 
     switch ( origin )
@@ -63,7 +63,7 @@ static ma_bool32 Seek( ma_decoder * pDecoder, ma_int64 byteOffset, ma_seek_origi
     return result;
 }
 
-bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void ** ppFrames )
+bool LoadAudioFile( IBinaryStreamReadInterface & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void ** ppFrames )
 {
     Platform::ZeroMem(pAudioFileInfo, sizeof(*pAudioFileInfo));
     if ( ppFrames ) {
@@ -163,7 +163,7 @@ bool LoadAudioFile( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int S
     return pAudioFileInfo->FrameCount > 0;
 }
 
-bool CreateAudioBuffer( IBinaryStream & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, TRef< SAudioBuffer > * ppBuffer )
+bool CreateAudioBuffer( IBinaryStreamReadInterface & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, TRef< SAudioBuffer > * ppBuffer )
 {
     void * pFrames;
 

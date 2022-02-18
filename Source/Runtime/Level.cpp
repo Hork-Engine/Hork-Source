@@ -49,7 +49,20 @@ AConsoleVar com_DrawLevelPortals(_CTS("com_DrawLevelPortals"), _CTS("0"), CVAR_C
 
 HK_CLASS_META(ALevel)
 
+ALevel::APrimitivePool ALevel::PrimitivePool;
 ALevel::APrimitiveLinkPool ALevel::PrimitiveLinkPool;
+
+SPrimitiveDef* ALevel::AllocatePrimitive()
+{
+    SPrimitiveDef* primitive = new (PrimitivePool.Allocate()) SPrimitiveDef;
+    return primitive;
+}
+
+void ALevel::DeallocatePrimitive(SPrimitiveDef* Primitive)
+{
+    Primitive->~SPrimitiveDef();
+    PrimitivePool.Deallocate(Primitive);
+}
 
 ALevel::ALevel()
 {

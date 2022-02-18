@@ -33,6 +33,7 @@ SOFTWARE.
 #include "PlayerController.h"
 #include "World.h"
 #include "Engine.h"
+#include "ResourceManager.h"
 #include <Audio/AudioMixer.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 

@@ -86,15 +86,5 @@ void AActorComponent::RegisterComponent()
 
 void AActorComponent::Destroy()
 {
-    if (bPendingKill)
-    {
-        return;
-    }
-
-    // Mark component pending kill
-    bPendingKill = true;
-
-    // Add component to pending kill list
-    NextPendingKillComponent          = GetWorld()->PendingKillComponents;
-    GetWorld()->PendingKillComponents = this;
+    AWorld::DestroyComponent(this);
 }

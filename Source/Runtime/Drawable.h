@@ -33,6 +33,8 @@ SOFTWARE.
 #include "PhysicalBody.h"
 #include "Level.h"
 
+#include <Core/IntrusiveLinkedListMacro.h>
+
 struct SRenderFrontendDef;
 
 enum EDrawableType
@@ -54,9 +56,9 @@ class ADrawable : public APhysicalBody
 {
     HK_COMPONENT(ADrawable, APhysicalBody)
 
-    friend class ARenderWorld;
-
 public:
+    TLink<ADrawable> Link; // Shadow casters
+
     /** Render mesh to custom depth-stencil buffer. Render target must have custom depth-stencil buffer enabled */
     bool bCustomDepthStencilPass = false;
 
@@ -65,11 +67,6 @@ public:
 
     /** Experimental object outline */
     bool bOutline = false;
-
-    /** Visibility group to filter drawables during rendering */
-    void SetVisibilityGroup(int InVisibilityGroup);
-
-    int GetVisibilityGroup() const;
 
     void SetVisible(bool _Visible);
 
@@ -86,7 +83,7 @@ public:
     /** Is cast shadows enabled */
     bool IsCastShadow() const { return bCastShadow; }
 
-    void SetQueryGroup(int _UserQueryGroup);
+    void SetQueryGroup(VSD_QUERY_MASK _UserQueryGroup);
 
     void SetSurfaceFlags(uint8_t Flags);
 
@@ -130,22 +127,27 @@ public:
     /** Raycast the drawable */
     bool RaycastClosest(Float3 const& InRayStart, Float3 const& InRayEnd, STriangleHitResult& Hit) const;
 
-    SPrimitiveDef const* GetPrimitive() const { return &Primitive; }
+    void SetVisibilityGroup(VISIBILITY_GROUP VisibilityGroup)
+    {
+        Primitive->SetVisibilityGroup(VisibilityGroup);
+    }
+
+    VISIBILITY_GROUP GetVisibilityGroup() const
+    {
+        return Primitive->GetVisibilityGroup();
+    }
 
     EDrawableType GetDrawableType() const { return DrawableType; }
 
     /** Called before rendering. Don't call directly. */
     void PreRenderUpdate(SRenderFrontendDef const* _Def);
 
-    /** Iterate shadow casters in parent world */
-    ADrawable* GetNextShadowCaster() { return NextShadowCaster; }
-    ADrawable* GetPrevShadowCaster() { return PrevShadowCaster; }
-
     // Used during culling stage
     uint32_t CascadeMask = 0;
 
 protected:
     ADrawable();
+    ~ADrawable();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
@@ -158,10 +160,7 @@ protected:
 
     EDrawableType DrawableType = DRAWABLE_UNKNOWN;
 
-    ADrawable* NextShadowCaster = nullptr;
-    ADrawable* PrevShadowCaster = nullptr;
-
-    SPrimitiveDef Primitive;
+    SPrimitiveDef* Primitive;
 
     int VisFrame = -1;
 

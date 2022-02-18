@@ -46,39 +46,34 @@ AEnvironmentProbe::AEnvironmentProbe()
     AABBWorldBounds.Clear();
     OBBTransformInverse.Clear();
 
-    Platform::ZeroMem(&Primitive, sizeof(Primitive));
-    Primitive.Owner      = this;
-    Primitive.Type       = VSD_PRIMITIVE_SPHERE;
-    Primitive.VisGroup   = VISIBILITY_GROUP_DEFAULT;
-    Primitive.QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
+    Primitive = ALevel::AllocatePrimitive();
+    Primitive->Owner      = this;
+    Primitive->Type       = VSD_PRIMITIVE_SPHERE;
+    Primitive->VisGroup   = VISIBILITY_GROUP_DEFAULT;
+    Primitive->QueryGroup = VSD_QUERY_MASK_VISIBLE | VSD_QUERY_MASK_VISIBLE_IN_LIGHT_PASS;
 
     Radius = DEFAULT_RADIUS;
 
     UpdateWorldBounds();
 }
 
+AEnvironmentProbe::~AEnvironmentProbe()
+{
+    ALevel::DeallocatePrimitive(Primitive);
+}
+
 void AEnvironmentProbe::InitializeComponent()
 {
     Super::InitializeComponent();
 
-    GetLevel()->AddPrimitive(&Primitive);
+    GetLevel()->AddPrimitive(Primitive);
 }
 
 void AEnvironmentProbe::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
-    GetLevel()->RemovePrimitive(&Primitive);
-}
-
-void AEnvironmentProbe::SetVisibilityGroup(int InVisibilityGroup)
-{
-    Primitive.VisGroup = InVisibilityGroup;
-}
-
-int AEnvironmentProbe::GetVisibilityGroup() const
-{
-    return Primitive.VisGroup;
+    GetLevel()->RemovePrimitive(Primitive);
 }
 
 void AEnvironmentProbe::SetEnabled(bool _Enabled)
@@ -87,13 +82,13 @@ void AEnvironmentProbe::SetEnabled(bool _Enabled)
 
     if (_Enabled)
     {
-        Primitive.QueryGroup |= VSD_QUERY_MASK_VISIBLE;
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
+        Primitive->QueryGroup |= VSD_QUERY_MASK_VISIBLE;
+        Primitive->QueryGroup &= ~VSD_QUERY_MASK_INVISIBLE;
     }
     else
     {
-        Primitive.QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
-        Primitive.QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
+        Primitive->QueryGroup &= ~VSD_QUERY_MASK_VISIBLE;
+        Primitive->QueryGroup |= VSD_QUERY_MASK_INVISIBLE;
     }
 }
 
@@ -141,11 +136,11 @@ void AEnvironmentProbe::UpdateWorldBounds()
     Float4x4 OBBTransform = Float4x4::Translation(OBBWorldBounds.Center) * Float4x4::Scale(OBBWorldBounds.HalfSize);
     OBBTransformInverse   = OBBTransform.Inversed();
 
-    Primitive.Sphere = SphereWorldBounds;
+    Primitive->Sphere = SphereWorldBounds;
 
     if (IsInitialized())
     {
-        GetLevel()->MarkPrimitive(&Primitive);
+        GetLevel()->MarkPrimitive(Primitive);
     }
 }
 
@@ -155,7 +150,7 @@ void AEnvironmentProbe::DrawDebug(ADebugRenderer* InRenderer)
 
     if (com_DrawEnvironmentProbes)
     {
-        if (Primitive.VisPass == InRenderer->GetVisPass())
+        if (Primitive->VisPass == InRenderer->GetVisPass())
         {
             Float3 pos = GetWorldPosition();
 

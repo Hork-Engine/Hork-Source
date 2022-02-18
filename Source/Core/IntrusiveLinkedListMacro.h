@@ -110,3 +110,139 @@ Intrusive linked list macro
 
 #define INTRUSIVE_FOREACH(object, head_or_tail, next_or_prev) \
     for (auto* object = head_or_tail; object; object = object->next_or_prev)
+
+
+
+
+template <typename T>
+struct TLink
+{
+    T* Next{};
+    T* Prev{};
+};
+
+template<typename T>
+struct TListIterator;
+
+template<typename T>
+struct TListReverseIterator;
+
+template <typename T>
+struct TList : public ANoncopyable
+{
+    friend struct TListIterator<T>;
+    friend struct TListReverseIterator<T>;
+
+private:
+    T* Head{};
+    T* Tail{};
+
+public:
+    void Add(T* node)
+    {
+        INTRUSIVE_ADD_UNIQUE(node, Link.Next, Link.Prev, Head, Tail);
+    }
+
+    void Remove(T* node)
+    {
+        INTRUSIVE_REMOVE(node, Link.Next, Link.Prev, Head, Tail)
+    }
+
+    void Merge(TList<T>& other)
+    {
+        INTRUSIVE_MERGE(Link.Next, Link.Prev, Head, Tail, other.Head, other.Tail);
+    }
+
+    bool IsExists(T* node) const
+    {
+        return INTRUSIVE_EXISTS(node, Link.next, Link.prev, Head, Tail);
+    }
+
+    ~TList()
+    {
+        T* next;
+        for (auto* node = Head; node; node = next)
+        {
+            next = node->Link.Next;
+            node->Link.Next = nullptr;
+            node->Link.Prev = nullptr;
+        }
+    }
+};
+
+template<typename T>
+struct TListIterator
+{
+    TListIterator(TList<T>& list) :
+        Node(list.Head)
+    {}
+
+    operator bool() const
+    {
+        return Node != nullptr;
+    }
+
+    void operator++()
+    {
+        Node = Node->Link.Next;
+    }
+
+    void operator++(int)
+    {
+        Node = Node->Link.Next;
+    }
+
+    T* operator*() const
+    {
+        return Node;
+    }
+
+    T* operator->() const
+    {
+        return Node;
+    }
+
+    T* get()
+    {
+        return Node;
+    }
+
+private:
+    T* Node;
+};
+
+template<typename T>
+struct TListReverseIterator
+{
+    TListReverseIterator(TList<T>& list) :
+        Node(list.Tail)
+    {}
+
+    operator bool() const
+    {
+        return Node != nullptr;
+    }
+
+    void operator++()
+    {
+        Node = Node->Link.Prev;
+    }
+
+    void operator++(int)
+    {
+        Node = Node->Link.Prev;
+    }
+
+    T* operator*() const
+    {
+        return Node;
+    }
+
+    T* operator->() const
+    {
+        return Node;
+    }
+
+private:
+    T* Node;
+};
