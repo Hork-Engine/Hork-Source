@@ -610,6 +610,7 @@ public:
     ITexture(IDevice* pDevice, STextureDesc const& Desc) :
         IDeviceObject(pDevice, PROXY_TYPE), Desc(Desc)
     {
+#ifdef HK_DEBUG
         const auto AllowedBindings = BIND_SHADER_RESOURCE | BIND_RENDER_TARGET | BIND_DEPTH_STENCIL | BIND_UNORDERED_ACCESS;
 
         HK_ASSERT_(Desc.Resolution.Width > 0, "Invalid texture resolution");
@@ -627,6 +628,7 @@ public:
 
         HK_ASSERT_(Desc.NumMipLevels == 1 || (Desc.NumMipLevels > 1 && Desc.Type != TEXTURE_RECT_GL), "Mipmapping is not allowed for TEXTURE_RECT_GL");
         HK_ASSERT_(Desc.NumMipLevels == 1 || (Desc.NumMipLevels > 1 && Desc.Multisample.NumSamples == 1), "Mipmapping is not allowed for multisample texture");
+#endif
     }
 
     virtual BindlessHandle GetBindlessSampler(SSamplerDesc const& SamplerDesc)                = 0;

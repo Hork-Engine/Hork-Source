@@ -197,7 +197,11 @@ void AEngine::InitializeDirectories()
 #if defined HK_OS_WIN32
     SetCurrentDirectoryA(WorkingDir.CStr());
 #elif defined HK_OS_LINUX
-    chdir(WorkingDir.CStr());
+    int r = chdir(WorkingDir.CStr());
+    if (r != 0)
+    {
+        LOG("Cannot set working directory\n");
+    }
 #else
 #    error "InitializeDirectories not implemented under current platform"
 #endif

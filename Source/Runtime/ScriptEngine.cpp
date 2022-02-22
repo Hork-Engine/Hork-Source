@@ -51,7 +51,7 @@ struct SScopedContext
     HK_FORBID_COPY(SScopedContext)
 
     asIScriptContext* Self;
-    AScriptEngine* pEngine;
+    AScriptEngine*    pEngine;
 
     SScopedContext(AScriptEngine* pEngine, asIScriptObject* pObject, asIScriptFunction* pFunction) :
         pEngine(pEngine)
@@ -270,6 +270,8 @@ static void RegisterFloat2(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("Float2", "Float4 ToFloat4ZW(float, float) const", asFUNCTIONPR(Float2ToFloat4ZW, (Float2 const&, float, float), Float4), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
 
+    HK_UNUSED(r);
+
 
     // TODO?
 #if 0
@@ -452,8 +454,10 @@ static void RegisterFloat3(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("Float3", "Float4 ToFloat4(float=0) const", asFUNCTIONPR(Float3ToFloat4, (Float3 const&, float), Float4), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
 
-    // TODO?
-    #if 0
+    HK_UNUSED(r);
+
+// TODO?
+#if 0
         template <int _Shuffle>
         constexpr TVector2<T> Shuffle2() const;
         template <int _Shuffle>
@@ -468,7 +472,7 @@ static void RegisterFloat3(asIScriptEngine* pEngine)
         void Read(IBinaryStreamReadInterface& _Stream);
         static constexpr int   NumComponents();
         static TVector3 const& Zero();
-    #endif
+#endif
 }
 
 static void ConstructFloat4Default(Float4* p)
@@ -623,6 +627,8 @@ static void RegisterFloat4(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("Float4", "Float3 ToFloat3() const", asFUNCTIONPR(Float4ToFloat3, (Float4 const&), Float3), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
 
+    HK_UNUSED(r);
+
 // TODO?
 #if 0
     template <int Index>
@@ -647,7 +653,7 @@ static void RegisterFloat4(asIScriptEngine* pEngine)
 
 static void ConstructPlaneDefault(PlaneF* p)
 {
-    new (p) PlaneF({0,0,0}, 0);
+    new (p) PlaneF({0, 0, 0}, 0);
 }
 
 static void ConstructPlaneABCD(PlaneF* p, float A, float B, float C, float D)
@@ -737,15 +743,16 @@ static void RegisterPlane(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Plane", "Plane Snap(float, float) const", asMETHOD(PlaneF, Snap), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Plane", "Float4& ToFloat4()", asMETHODPR(PlaneF, ToFloat4, (), Float4&), asCALL_THISCALL);    
+    r = pEngine->RegisterObjectMethod("Plane", "Float4& ToFloat4()", asMETHODPR(PlaneF, ToFloat4, (), Float4&), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Plane", "const Float4& ToFloat4() const", asMETHODPR(PlaneF, ToFloat4, () const, Float4 const&), asCALL_THISCALL);    
+    r = pEngine->RegisterObjectMethod("Plane", "const Float4& ToFloat4() const", asMETHODPR(PlaneF, ToFloat4, () const, Float4 const&), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Plane", "string ToString(int=6) const", asFUNCTIONPR(PlaneToString, (PlaneF const&, int), std::string), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Plane", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(PlaneToHexString, (PlaneF const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
 
+    HK_UNUSED(r);
     // TODO?
 #if 0
     void Write(IBinaryStreamWriteInterface& _Stream) const;
@@ -899,11 +906,13 @@ static void RegisterFloat2x2(asIScriptEngine* pEngine)
     r = pEngine->RegisterGlobalFunction("Float2x2 GetDiagonal2x2(const Float2 &in)", asFUNCTIONPR(GetDiagonal2x2, (const Float2&), Float2x2), asCALL_CDECL);
     assert(r >= 0);
 
-    // TODO?
-    #if 0
+    HK_UNUSED(r);
+
+// TODO?
+#if 0
     void                   Write(IBinaryStreamWriteInterface & _Stream) const;
     void                   Read(IBinaryStreamReadInterface & _Stream);
-    #endif
+#endif
 }
 
 static void ConstructFloat3x3Default(Float3x3* p)
@@ -1068,6 +1077,8 @@ static void RegisterFloat3x3(asIScriptEngine* pEngine)
     r = pEngine->RegisterGlobalFunction("Float3x3 GetDiagonal3x3(const Float3 &in)", asFUNCTIONPR(GetDiagonal3x3, (const Float3&), Float3x3), asCALL_CDECL);
     assert(r >= 0);
 
+    HK_UNUSED(r);
+
 // TODO?
 #if 0
     void                   Write(IBinaryStreamWriteInterface & _Stream) const;
@@ -1161,7 +1172,7 @@ static void RegisterFloat3x4(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectBehaviour("Float3x4", asBEHAVE_CONSTRUCT, "void f(const Float4& in, const Float4& in, const Float4& in)", asFUNCTION(ConstructFloat3x4Vecs), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectBehaviour("Float3x4", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(Destruct<Float3x4>), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);    
+    assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x4", "Float4 &opIndex(int)", asFUNCTION(IndexOperator<Float3x4>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x4", "const Float4 &opIndex(int) const", asFUNCTION(IndexOperator<Float3x4>), asCALL_CDECL_OBJFIRST);
@@ -1201,11 +1212,11 @@ static void RegisterFloat3x4(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("Float3x4", "void Clear()", asMETHOD(Float3x4, Clear), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x4", "void SetIdentity()", asMETHOD(Float3x4, SetIdentity), asCALL_THISCALL);
-    assert(r >= 0);    
+    assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x4", "Float3x4 opMul(float) const", asMETHODPR(Float3x4, operator*, (float) const, Float3x4), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x4", "Float3x4 opDiv(float) const", asMETHODPR(Float3x4, operator/, (float) const, Float3x4), asCALL_THISCALL);
-    assert(r >= 0);    
+    assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x4", "Float3 opMul(const Float3 &in) const", asMETHODPR(Float3x4, operator*, (const Float3&) const, Float3), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x4", "Float3 opMul(const Float2 &in) const", asMETHODPR(Float3x4, operator*, (const Float2&) const, Float3), asCALL_THISCALL);
@@ -1227,7 +1238,7 @@ static void RegisterFloat3x4(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("Float3x4", "Float2x2 ToFloat2x2() const", asFUNCTIONPR(Float3x4ToFloat2x2, (Float3x4 const&), Float2x2), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x4", "Float3x3 ToFloat3x4() const", asFUNCTIONPR(Float3x4ToFloat3x3, (Float3x4 const&), Float3x3), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);    
+    assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x4", "Float4x4 ToFloat4x4() const", asFUNCTIONPR(Float3x4ToFloat4x4, (Float3x4 const&), Float4x4), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("Float3x4 GetTranslation3x4(const Float3 &in)", asFUNCTION(Float3x4::Translation), asCALL_CDECL);
@@ -1247,13 +1258,15 @@ static void RegisterFloat3x4(asIScriptEngine* pEngine)
     r = pEngine->RegisterGlobalFunction("Float3x4 GetDiagonal3x4(float)", asFUNCTIONPR(GetDiagonal3x4, (float), Float3x4), asCALL_CDECL);
     assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("Float3x4 GetDiagonal3x4(const Float3 &in)", asFUNCTIONPR(GetDiagonal3x4, (const Float3&), Float3x4), asCALL_CDECL);
-    assert(r >= 0);    
+    assert(r >= 0);
+
+    HK_UNUSED(r);
 
 // TODO?
-#    if 0
+#if 0
     void                   Write(IBinaryStreamWriteInterface & _Stream) const;
     void                   Read(IBinaryStreamReadInterface & _Stream);
-#    endif
+#endif
 }
 
 static void ConstructFloat4x4Default(Float4x4* p)
@@ -1406,7 +1419,7 @@ static void RegisterFloat4x4(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("Float4x4", "Float4x4 PerspectiveProjectionInverseFast() const", asMETHOD(Float4x4, PerspectiveProjectionInverseFast), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float4x4", "Float4x4 OrthoProjectionInverseFast() const", asMETHOD(Float4x4, OrthoProjectionInverseFast), asCALL_THISCALL);
-    assert(r >= 0);    
+    assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float4x4", "string ToString(int=6) const", asFUNCTIONPR(Float4x4ToString, (Float4x4 const&, int), std::string), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float4x4", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float4x4ToHexString, (Float4x4 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
@@ -1416,7 +1429,7 @@ static void RegisterFloat4x4(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("Float4x4", "Float3x4 ToFloat3x4() const", asFUNCTIONPR(Float4x4ToFloat3x4, (Float4x4 const&), Float3x4), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float4x4", "Float3x3 ToFloat4x4() const", asFUNCTIONPR(Float4x4ToFloat3x3, (Float4x4 const&), Float3x3), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);    
+    assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("Float4x4 GetTranslation4x4(const Float3 &in)", asFUNCTION(Float4x4::Translation), asCALL_CDECL);
     assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("Float4x4 GetScale4x4(const Float3 &in)", asFUNCTION(Float4x4::Scale), asCALL_CDECL);
@@ -1436,7 +1449,9 @@ static void RegisterFloat4x4(asIScriptEngine* pEngine)
     r = pEngine->RegisterGlobalFunction("Float4x4 GetDiagonal4x4(float)", asFUNCTIONPR(GetDiagonal4x4, (float), Float4x4), asCALL_CDECL);
     assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("Float4x4 GetDiagonal4x4(const Float4 &in)", asFUNCTIONPR(GetDiagonal4x4, (const Float4&), Float4x4), asCALL_CDECL);
-    assert(r >= 0);    
+    assert(r >= 0);
+
+    HK_UNUSED(r);
 
 // TODO?
 #if 0
@@ -1590,7 +1605,7 @@ static void RegisterQuat(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("Quat", "Float4x4 ToMatrix4x4() const", asMETHOD(Quat, ToMatrix4x4), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Quat", "void FromMatrix(const Float3x3 &in)", asMETHOD(Quat, FromMatrix), asCALL_THISCALL);
-    assert(r >= 0);    
+    assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Quat", "float Pitch() const", asMETHOD(Quat, Pitch), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Quat", "float Yaw() const", asMETHOD(Quat, Yaw), asCALL_THISCALL);
@@ -1613,6 +1628,8 @@ static void RegisterQuat(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("Quat Slerp(const Quat &in, const Quat &in, float)", asFUNCTION(Math::Slerp), asCALL_CDECL);
     assert(r >= 0);
+
+    HK_UNUSED(r);
 
 // TODO?
 #if 0
@@ -1676,7 +1693,7 @@ static void RegisterAngl(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("Angl", "float &opIndex(int)", asFUNCTION(IndexOperator<Angl>), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Angl", "const float &opIndex(int) const", asFUNCTION(IndexOperator<Angl>), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);    
+    assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Angl", "bool opEquals(const Angl &in) const", asMETHOD(Angl, operator==), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Angl", "bool CompareEps(const Angl &in, float) const", asMETHOD(Angl, CompareEps), asCALL_THISCALL);
@@ -1709,9 +1726,9 @@ static void RegisterAngl(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Angl", "Angl Delta(const Angl &in) const", asMETHOD(Angl, Delta), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Angl", "Float3& ToFloat3()", asMETHODPR(Angl, ToFloat3, (), Float3&), asCALL_THISCALL);    
+    r = pEngine->RegisterObjectMethod("Angl", "Float3& ToFloat3()", asMETHODPR(Angl, ToFloat3, (), Float3&), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Angl", "const Float3& ToFloat3() const", asMETHODPR(Angl, ToFloat3, () const, Float3 const&), asCALL_THISCALL);    
+    r = pEngine->RegisterObjectMethod("Angl", "const Float3& ToFloat3() const", asMETHODPR(Angl, ToFloat3, () const, Float3 const&), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Angl", "string ToString(int=6) const", asFUNCTIONPR(AnglToString, (Angl const&, int), std::string), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
@@ -1721,6 +1738,8 @@ static void RegisterAngl(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("float AngleNormalize180(float)", asFUNCTION(Angl::Normalize180), asCALL_CDECL);
     assert(r >= 0);
+
+    HK_UNUSED(r);
 
 // TODO?
 #if 0
@@ -1796,7 +1815,7 @@ static void RegisterTransform(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("STransform", "void SetAngles(const Angl &in)", asMETHODPR(STransform, SetAngles, (Angl const&), void), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("STransform", "void SetAngles(float, float, float)", asMETHODPR(STransform, SetAngles, (float, float, float), void), asCALL_THISCALL);
-    assert(r >= 0);    
+    assert(r >= 0);
     r = pEngine->RegisterObjectMethod("STransform", "Angl GetAngles() const", asMETHOD(STransform, GetAngles), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("STransform", "float GetPitch() const", asMETHOD(STransform, GetPitch), asCALL_THISCALL);
@@ -1844,13 +1863,15 @@ static void RegisterTransform(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("STransform", "void StepForward(float)", asMETHOD(STransform, StepForward), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("STransform", "void Step(const Float3 &in)", asMETHOD(STransform, Step), asCALL_THISCALL);
-    assert(r >= 0);    
+    assert(r >= 0);
     r = pEngine->RegisterObjectMethod("STransform", "STransform Inversed() const", asMETHOD(STransform, Inversed), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("STransform", "void InverseSelf()", asMETHOD(STransform, InverseSelf), asCALL_THISCALL);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("STransform", "STransform opMul(const STransform &in) const", asMETHODPR(STransform, operator*, (const STransform&) const, STransform), asCALL_THISCALL);
     assert(r >= 0);
+
+    HK_UNUSED(r);
 
 // TODO?
 #if 0
@@ -1963,6 +1984,8 @@ static void RegisterAxisAlignedBox(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("BvAxisAlignedBox", "BvAxisAlignedBox& opDivAssign(float)", asMETHODPR(BvAxisAlignedBox, operator/=, (float), BvAxisAlignedBox&), asCALL_THISCALL);
     assert(r >= 0);
 
+    HK_UNUSED(r);
+
     // TODO?
 #if 0
     void   GetVertices( Float3 _Vertices[8] ) const;
@@ -2019,6 +2042,7 @@ static void RegisterOrientedBox(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("BvOrientedBox", "void FromAxisAlignedBoxWithPadding(const BvAxisAlignedBox &in, const Float3x4 &in, float)", asMETHODPR(BvOrientedBox, FromAxisAlignedBoxWithPadding, (BvAxisAlignedBox const&, Float3x4 const&, float), void), asCALL_THISCALL);
     assert(r >= 0);
 
+    HK_UNUSED(r);
     // TODO?
 #if 0
     void GetVertices( Float3 _Vertices[8] ) const;
@@ -2092,6 +2116,7 @@ static void RegisterSphere(asIScriptEngine* pEngine)
     r = pEngine->RegisterObjectMethod("BvSphere", "float Dist(const Plane &in) const", asMETHOD(BvSphere, Dist), asCALL_THISCALL);
     assert(r >= 0);
 
+    HK_UNUSED(r);
     // TODO?
 #if 0
     explicit BvSphere( float _Radius );
@@ -2234,7 +2259,7 @@ void RegisterMath(asIScriptEngine* pEngine)
     r = pEngine->RegisterGlobalFunction("Float3 Clamp(const Float3 &in, const Float3 &in, const Float3 &in)", asFUNCTIONPR(Math::Clamp, (const Float3&, const Float3&, const Float3&), Float3), asCALL_CDECL);
     assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("Float4 Clamp(const Float4 &in, const Float4 &in, const Float4 &in)", asFUNCTIONPR(Math::Clamp, (const Float4&, const Float4&, const Float4&), Float4), asCALL_CDECL);
-    assert(r >= 0);    
+    assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("Float2 Saturate(const Float2 &in)", asFUNCTIONPR(Math::Saturate, (const Float2&), Float2), asCALL_CDECL);
     assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("Float3 Saturate(const Float3 &in)", asFUNCTIONPR(Math::Saturate, (const Float3&), Float3), asCALL_CDECL);
@@ -2242,97 +2267,97 @@ void RegisterMath(asIScriptEngine* pEngine)
     r = pEngine->RegisterGlobalFunction("Float4 Saturate(const Float4 &in)", asFUNCTIONPR(Math::Saturate, (const Float4&), Float4), asCALL_CDECL);
     assert(r >= 0);
 
-    r = pEngine->RegisterGlobalFunction("bool BvSphereOverlapSphere( const BvSphere & in, const BvSphere & in )", asFUNCTIONPR(BvSphereOverlapSphere, ( BvSphere const &, BvSphere const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvSphereOverlapSphere( const BvSphere & in, const BvSphere & in )", asFUNCTIONPR(BvSphereOverlapSphere, (BvSphere const&, BvSphere const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvSphereOverlapPoint( const BvSphere & in, const Float3 & in )", asFUNCTIONPR(BvSphereOverlapPoint, ( BvSphere const &, Float3 const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvSphereOverlapPoint( const BvSphere & in, const Float3 & in )", asFUNCTIONPR(BvSphereOverlapPoint, (BvSphere const&, Float3 const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvSphereOverlapTriangle( const BvSphere & in, const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvSphereOverlapTriangle, ( BvSphere const &, Float3 const &, Float3 const &, Float3 const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvSphereOverlapTriangle( const BvSphere & in, const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvSphereOverlapTriangle, (BvSphere const&, Float3 const&, Float3 const&, Float3 const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvSphereOverlapPlane( const BvSphere & in, const Plane & in )", asFUNCTIONPR(BvSphereOverlapPlane, ( BvSphere const &, PlaneF const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvSphereOverlapPlane( const BvSphere & in, const Plane & in )", asFUNCTIONPR(BvSphereOverlapPlane, (BvSphere const&, PlaneF const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("int BvSphereOverlapPlaneSideMask( const BvSphere & in, const Plane & in )", asFUNCTIONPR(BvSphereOverlapPlaneSideMask, ( BvSphere const & , PlaneF const & ), int), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("int BvSphereOverlapPlaneSideMask( const BvSphere & in, const Plane & in )", asFUNCTIONPR(BvSphereOverlapPlaneSideMask, (BvSphere const&, PlaneF const&), int), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapBox( const BvAxisAlignedBox & in, const BvAxisAlignedBox & in )", asFUNCTIONPR(BvBoxOverlapBox, ( BvAxisAlignedBox const &, BvAxisAlignedBox const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapBox( const BvAxisAlignedBox & in, const BvAxisAlignedBox & in )", asFUNCTIONPR(BvBoxOverlapBox, (BvAxisAlignedBox const&, BvAxisAlignedBox const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapBox2D( const Float2 & in, const Float2 & in, const Float2 & in, const Float2 & in )", asFUNCTIONPR(BvBoxOverlapBox2D, ( Float2 const & , Float2 const & , Float2 const & , Float2 const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapBox2D( const Float2 & in, const Float2 & in, const Float2 & in, const Float2 & in )", asFUNCTIONPR(BvBoxOverlapBox2D, (Float2 const&, Float2 const&, Float2 const&, Float2 const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapPoint( const BvAxisAlignedBox & in, const Float3 & in )", asFUNCTIONPR(BvBoxOverlapPoint, ( BvAxisAlignedBox const &, Float3 const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapPoint( const BvAxisAlignedBox & in, const Float3 & in )", asFUNCTIONPR(BvBoxOverlapPoint, (BvAxisAlignedBox const&, Float3 const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapSphere( const BvAxisAlignedBox & in, const BvSphere & in )", asFUNCTIONPR(BvBoxOverlapSphere, ( BvAxisAlignedBox const &, BvSphere const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapSphere( const BvAxisAlignedBox & in, const BvSphere & in )", asFUNCTIONPR(BvBoxOverlapSphere, (BvAxisAlignedBox const&, BvSphere const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapTriangle( const BvAxisAlignedBox & in, const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvBoxOverlapTriangle, ( BvAxisAlignedBox const &, Float3 const &, Float3 const &, Float3 const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapTriangle( const BvAxisAlignedBox & in, const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvBoxOverlapTriangle, (BvAxisAlignedBox const&, Float3 const&, Float3 const&, Float3 const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapTriangle_FastApproximation( const BvAxisAlignedBox & in, const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvBoxOverlapTriangle_FastApproximation, ( BvAxisAlignedBox const &, Float3 const &, Float3 const &, Float3 const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapTriangle_FastApproximation( const BvAxisAlignedBox & in, const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvBoxOverlapTriangle_FastApproximation, (BvAxisAlignedBox const&, Float3 const&, Float3 const&, Float3 const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvGetBoxIntersection( const BvAxisAlignedBox & in, const BvAxisAlignedBox & in, BvAxisAlignedBox & out )", asFUNCTIONPR(BvGetBoxIntersection, ( BvAxisAlignedBox const &, BvAxisAlignedBox const &, BvAxisAlignedBox & ), bool), asCALL_CDECL);    
+    r = pEngine->RegisterGlobalFunction("bool BvGetBoxIntersection( const BvAxisAlignedBox & in, const BvAxisAlignedBox & in, BvAxisAlignedBox & out )", asFUNCTIONPR(BvGetBoxIntersection, (BvAxisAlignedBox const&, BvAxisAlignedBox const&, BvAxisAlignedBox&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("int BvBoxOverlapPlaneSideMask( const Float3 & in, const Float3 & in, const Plane & in )", asFUNCTIONPR(BvBoxOverlapPlaneSideMask, ( Float3 const &, Float3 const &, PlaneF const & ), int), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("int BvBoxOverlapPlaneSideMask( const Float3 & in, const Float3 & in, const Plane & in )", asFUNCTIONPR(BvBoxOverlapPlaneSideMask, (Float3 const&, Float3 const&, PlaneF const&), int), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapPlane( const Float3 & in, const Float3 & in, const Plane & in )", asFUNCTIONPR(BvBoxOverlapPlane, ( Float3 const &, Float3 const &, PlaneF const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapPlane( const Float3 & in, const Float3 & in, const Plane & in )", asFUNCTIONPR(BvBoxOverlapPlane, (Float3 const&, Float3 const&, PlaneF const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapPlane( const BvAxisAlignedBox & in, const Plane & in )", asFUNCTIONPR(BvBoxOverlapPlane, ( BvAxisAlignedBox const &, PlaneF const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapPlane( const BvAxisAlignedBox & in, const Plane & in )", asFUNCTIONPR(BvBoxOverlapPlane, (BvAxisAlignedBox const&, PlaneF const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapPlaneFast( const BvAxisAlignedBox & in, const Plane & in, int, int )", asFUNCTIONPR(BvBoxOverlapPlaneFast, ( BvAxisAlignedBox const &, PlaneF const &, int, int ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvBoxOverlapPlaneFast( const BvAxisAlignedBox & in, const Plane & in, int, int )", asFUNCTIONPR(BvBoxOverlapPlaneFast, (BvAxisAlignedBox const&, PlaneF const&, int, int), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("int BvBoxOverlapPlaneSideMask( const BvAxisAlignedBox & in, const Plane & in, int, int )", asFUNCTIONPR(BvBoxOverlapPlaneSideMask, ( BvAxisAlignedBox const &, PlaneF const &, int, int ), int), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("int BvBoxOverlapPlaneSideMask( const BvAxisAlignedBox & in, const Plane & in, int, int )", asFUNCTIONPR(BvBoxOverlapPlaneSideMask, (BvAxisAlignedBox const&, PlaneF const&, int, int), int), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapOrientedBox( const BvOrientedBox & in, const BvOrientedBox & in )", asFUNCTIONPR(BvOrientedBoxOverlapOrientedBox, ( BvOrientedBox const &, BvOrientedBox const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapOrientedBox( const BvOrientedBox & in, const BvOrientedBox & in )", asFUNCTIONPR(BvOrientedBoxOverlapOrientedBox, (BvOrientedBox const&, BvOrientedBox const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapSphere( const BvOrientedBox & in, const BvSphere & in )", asFUNCTIONPR(BvOrientedBoxOverlapSphere, ( BvOrientedBox const &, BvSphere const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapSphere( const BvOrientedBox & in, const BvSphere & in )", asFUNCTIONPR(BvOrientedBoxOverlapSphere, (BvOrientedBox const&, BvSphere const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapBox( const BvOrientedBox & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvOrientedBoxOverlapBox, ( BvOrientedBox const &, Float3 const &, Float3 const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapBox( const BvOrientedBox & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvOrientedBoxOverlapBox, (BvOrientedBox const&, Float3 const&, Float3 const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapBox( const BvOrientedBox & in, const BvAxisAlignedBox & in )", asFUNCTIONPR(BvOrientedBoxOverlapBox, ( BvOrientedBox const &, BvAxisAlignedBox const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapBox( const BvOrientedBox & in, const BvAxisAlignedBox & in )", asFUNCTIONPR(BvOrientedBoxOverlapBox, (BvOrientedBox const&, BvAxisAlignedBox const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapTriangle( const BvOrientedBox & in, const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvOrientedBoxOverlapTriangle, ( BvOrientedBox const &, Float3 const &, Float3 const &, Float3 const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapTriangle( const BvOrientedBox & in, const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvOrientedBoxOverlapTriangle, (BvOrientedBox const&, Float3 const&, Float3 const&, Float3 const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapTriangle_FastApproximation( const BvOrientedBox & in, const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvOrientedBoxOverlapTriangle_FastApproximation, ( BvOrientedBox const &, Float3 const &, Float3 const &, Float3 const & ), bool), asCALL_CDECL);    
+    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapTriangle_FastApproximation( const BvOrientedBox & in, const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvOrientedBoxOverlapTriangle_FastApproximation, (BvOrientedBox const&, Float3 const&, Float3 const&, Float3 const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapPlane( const BvOrientedBox & in, const Plane & in )", asFUNCTIONPR(BvOrientedBoxOverlapPlane, ( BvOrientedBox const &, PlaneF const & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvOrientedBoxOverlapPlane( const BvOrientedBox & in, const Plane & in )", asFUNCTIONPR(BvOrientedBoxOverlapPlane, (BvOrientedBox const&, PlaneF const&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectSphere( const Float3 & in, const Float3 & in, const BvSphere & in, float & out, float & out )", asFUNCTIONPR(BvRayIntersectSphere, ( Float3 const &, Float3 const &, BvSphere const &, float &, float & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectSphere( const Float3 & in, const Float3 & in, const BvSphere & in, float & out, float & out )", asFUNCTIONPR(BvRayIntersectSphere, (Float3 const&, Float3 const&, BvSphere const&, float&, float&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectSphere( const Float3 & in, const Float3 & in, const BvSphere & in, float & out )", asFUNCTIONPR(BvRayIntersectSphere, ( Float3 const &, Float3 const &, BvSphere const &, float & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectSphere( const Float3 & in, const Float3 & in, const BvSphere & in, float & out )", asFUNCTIONPR(BvRayIntersectSphere, (Float3 const&, Float3 const&, BvSphere const&, float&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectBox( const Float3 & in, const Float3 & in, const BvAxisAlignedBox & in, float & out, float & out )", asFUNCTIONPR(BvRayIntersectBox, ( Float3 const &, Float3 const &, BvAxisAlignedBox const &, float &, float & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectBox( const Float3 & in, const Float3 & in, const BvAxisAlignedBox & in, float & out, float & out )", asFUNCTIONPR(BvRayIntersectBox, (Float3 const&, Float3 const&, BvAxisAlignedBox const&, float&, float&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectBox2D( const Float2 & in, const Float2 & in, const Float2 & in, const Float2 & in, float & out, float & out )", asFUNCTIONPR(BvRayIntersectBox2D, ( Float2 const &, Float2 const &, Float2 const &, Float2 const &, float &, float & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectBox2D( const Float2 & in, const Float2 & in, const Float2 & in, const Float2 & in, float & out, float & out )", asFUNCTIONPR(BvRayIntersectBox2D, (Float2 const&, Float2 const&, Float2 const&, Float2 const&, float&, float&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectOrientedBox( const Float3 & in, const Float3 & in, const BvOrientedBox & in, float & out, float & out )", asFUNCTIONPR(BvRayIntersectOrientedBox, ( Float3 const &, Float3 const &, BvOrientedBox const &, float &, float & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectOrientedBox( const Float3 & in, const Float3 & in, const BvOrientedBox & in, float & out, float & out )", asFUNCTIONPR(BvRayIntersectOrientedBox, (Float3 const&, Float3 const&, BvOrientedBox const&, float&, float&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectTriangle( const Float3 & in, const Float3 & in, const Float3 & in, const Float3 & in, const Float3 & in, float & out, float & out, float & out, bool=true )", asFUNCTIONPR(BvRayIntersectTriangle, ( Float3 const &, Float3 const &, Float3 const &, Float3 const &, Float3 const &, float &, float &, float &, bool ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectTriangle( const Float3 & in, const Float3 & in, const Float3 & in, const Float3 & in, const Float3 & in, float & out, float & out, float & out, bool=true )", asFUNCTIONPR(BvRayIntersectTriangle, (Float3 const&, Float3 const&, Float3 const&, Float3 const&, Float3 const&, float&, float&, float&, bool), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectPlane( const Float3 & in, const Float3 & in, const Plane & in, float & out )", asFUNCTIONPR(BvRayIntersectPlane, ( Float3 const &, Float3 const &, PlaneF const &, float & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectPlane( const Float3 & in, const Float3 & in, const Plane & in, float & out )", asFUNCTIONPR(BvRayIntersectPlane, (Float3 const&, Float3 const&, PlaneF const&, float&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectPlaneFront( const Float3 & in, const Float3 & in, const Plane & in, float & out )", asFUNCTIONPR(BvRayIntersectPlaneFront, ( Float3 const &, Float3 const &, PlaneF const &, float & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectPlaneFront( const Float3 & in, const Float3 & in, const Plane & in, float & out )", asFUNCTIONPR(BvRayIntersectPlaneFront, (Float3 const&, Float3 const&, PlaneF const&, float&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectPlaneBack( const Float3 & in, const Float3 & in, const Plane & in, float & out )", asFUNCTIONPR(BvRayIntersectPlaneBack, ( Float3 const &, Float3 const &, PlaneF const &, float & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectPlaneBack( const Float3 & in, const Float3 & in, const Plane & in, float & out )", asFUNCTIONPR(BvRayIntersectPlaneBack, (Float3 const&, Float3 const&, PlaneF const&, float&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectElipsoid( const Float3 & in, const Float3 & in, float _Radius, float, float, float & out, float & out )", asFUNCTIONPR(BvRayIntersectElipsoid, ( Float3 const &, Float3 const &, float, float, float, float &, float & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectElipsoid( const Float3 & in, const Float3 & in, float _Radius, float, float, float & out, float & out )", asFUNCTIONPR(BvRayIntersectElipsoid, (Float3 const&, Float3 const&, float, float, float, float&, float&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectElipsoid( const Float3 & in, const Float3 & in, float _Radius, float, float, float & out )", asFUNCTIONPR(BvRayIntersectElipsoid, ( Float3 const &, Float3 const &, float, float, float, float & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvRayIntersectElipsoid( const Float3 & in, const Float3 & in, float _Radius, float, float, float & out )", asFUNCTIONPR(BvRayIntersectElipsoid, (Float3 const&, Float3 const&, float, float, float, float&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("float BvShortestDistanceSqr( const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvShortestDistanceSqr, ( Float3 const &, Float3 const &, Float3 const & ), float), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("float BvShortestDistanceSqr( const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvShortestDistanceSqr, (Float3 const&, Float3 const&, Float3 const&), float), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvDistanceSqr( const Float3 & in, const Float3 & in, const Float3 & in, float & out )", asFUNCTIONPR(BvDistanceSqr, ( Float3 const &, Float3 const &, Float3 const &, float & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvDistanceSqr( const Float3 & in, const Float3 & in, const Float3 & in, float & out )", asFUNCTIONPR(BvDistanceSqr, (Float3 const&, Float3 const&, Float3 const&, float&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvIsPointOnSegment( const Float3 & in, const Float3 & in, const Float3 & in, float )", asFUNCTIONPR(BvIsPointOnSegment, ( Float3 const &, Float3 const &, Float3 const &, float ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvIsPointOnSegment( const Float3 & in, const Float3 & in, const Float3 & in, float )", asFUNCTIONPR(BvIsPointOnSegment, (Float3 const&, Float3 const&, Float3 const&, float), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("Float3 BvProjectPointOnLine( const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvProjectPointOnLine, ( Float3 const &, Float3 const &, Float3 const & ), Float3), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("Float3 BvProjectPointOnLine( const Float3 & in, const Float3 & in, const Float3 & in )", asFUNCTIONPR(BvProjectPointOnLine, (Float3 const&, Float3 const&, Float3 const&), Float3), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("float BvShortestDistanceSqr( const Float2 & in, const Float2 & in, const Float2 & in )", asFUNCTIONPR(BvShortestDistanceSqr, ( Float2 const &, Float2 const &, Float2 const & ), float), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("float BvShortestDistanceSqr( const Float2 & in, const Float2 & in, const Float2 & in )", asFUNCTIONPR(BvShortestDistanceSqr, (Float2 const&, Float2 const&, Float2 const&), float), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvDistanceSqr( const Float2 & in, const Float2 & in, const Float2 & in, float & out )", asFUNCTIONPR(BvDistanceSqr, ( Float2 const &, Float2 const &, Float2 const &, float & ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvDistanceSqr( const Float2 & in, const Float2 & in, const Float2 & in, float & out )", asFUNCTIONPR(BvDistanceSqr, (Float2 const&, Float2 const&, Float2 const&, float&), bool), asCALL_CDECL);
     assert(r >= 0);
-    r = pEngine->RegisterGlobalFunction("bool BvIsPointOnSegment( const Float2 & in, const Float2 & in, const Float2 & in, float )", asFUNCTIONPR(BvIsPointOnSegment, ( Float2 const &, Float2 const &, Float2 const &, float ), bool), asCALL_CDECL);
+    r = pEngine->RegisterGlobalFunction("bool BvIsPointOnSegment( const Float2 & in, const Float2 & in, const Float2 & in, float )", asFUNCTIONPR(BvIsPointOnSegment, (Float2 const&, Float2 const&, Float2 const&, float), bool), asCALL_CDECL);
     assert(r >= 0);
+
+    HK_UNUSED(r);
 
 
 
-    
-
-    // TODO
-    #if 0
+// TODO
+#if 0
     template <typename T, typename = TStdEnableIf<Math::IsReal<T>()>>
     constexpr TVector2<T> operator+(T _Left, TVector2<T> const& _Right);
 
@@ -2369,7 +2394,7 @@ void RegisterMath(asIScriptEngine* pEngine)
     bool BvOrientedBoxInsideConvex( BvOrientedBox const & b, PlaneF const * _Planes, int _PlaneCount );
     bool BvPointInConvexHullCCW( Float3 const & InPoint, Float3 const & InNormal, Float3 const * InPoints, int InNumPoints );
     bool BvPointInConvexHullCW( Float3 const & InPoint, Float3 const & InNormal, Float3 const * InPoints, int InNumPoints );
-    #endif
+#endif
 }
 
 
@@ -2420,7 +2445,7 @@ AScriptEngine::AScriptEngine(AWorld* pWorld) :
     r = pEngine->RegisterObjectMethod("AActor", "void ApplyDamage(const SActorDamage& in)", asMETHOD(AActor, ApplyDamage), asCALL_THISCALL);
     assert(r >= 0);
 
-    
+
     r = pEngine->RegisterObjectProperty("SActorDamage", "float Amount", offsetof(SActorDamage, Amount));
     assert(r >= 0);
     r = pEngine->RegisterObjectProperty("SActorDamage", "Float3 Position", offsetof(SActorDamage, Position));
@@ -2444,6 +2469,8 @@ AScriptEngine::AScriptEngine(AWorld* pWorld) :
 
     r = pEngine->RegisterGlobalProperty("AWorld world", pWorld);
     assert(r >= 0);
+
+    HK_UNUSED(r);
 }
 
 AScriptEngine::~AScriptEngine()
@@ -2579,7 +2606,7 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
     pScript->M_Tick            = type->GetMethodByDecl("void Tick(float TimeStep)");
     pScript->M_TickPrePhysics  = type->GetMethodByDecl("void TickPrePhysics(float TimeStep)");
     pScript->M_TickPostPhysics = type->GetMethodByDecl("void TickPostPhysics(float TimeStep)");
-    pScript->M_LateUpdate      = type->GetMethodByDecl("void LateUpdate(float TimeStep)");    
+    pScript->M_LateUpdate      = type->GetMethodByDecl("void LateUpdate(float TimeStep)");
     pScript->M_OnApplyDamage   = type->GetMethodByDecl("void OnApplyDamage(const SActorDamage& in Damage)");
 
     pScript->pEngine = this;
@@ -2731,7 +2758,7 @@ void AActorScript::OnApplyDamage(asIScriptObject* pObject, SActorDamage const& D
     if (M_OnApplyDamage)
     {
         SScopedContext ctx(pEngine, pObject, M_OnApplyDamage);
-        ctx->SetArgObject(0, (void *)&Damage);
+        ctx->SetArgObject(0, (void*)&Damage);
         ctx.ExecuteCall();
     }
 }

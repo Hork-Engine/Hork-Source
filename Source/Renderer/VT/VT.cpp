@@ -166,11 +166,13 @@ void SVirtualTextureFileHandle::Close() {
 }
 
 void SVirtualTextureFileHandle::Read( void * Data, unsigned int Size, uint64_t Offset ) {
-    pread64( iHandle, Data, Size, Offset );
+    auto r = pread64( iHandle, Data, Size, Offset );
+    HK_UNUSED(r);
 }
 
 void SVirtualTextureFileHandle::Write( const void * Data, unsigned int Size, uint64_t Offset ) {
-    pwrite64( iHandle, Data, Size, Offset );
+    auto r = pwrite64( iHandle, Data, Size, Offset );
+    HK_UNUSED(r);
 }
 
 #endif
