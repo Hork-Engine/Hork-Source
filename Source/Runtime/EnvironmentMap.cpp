@@ -86,6 +86,9 @@ void AEnvironmentMap::InitializeFromImages(TArray<AImage, 6> const& Faces)
     GEngine->GetRenderBackend()->GenerateIrradianceMap(cubemap, &IrradianceMap);
     GEngine->GetRenderBackend()->GenerateReflectionMap(cubemap, &ReflectionMap);
 
+    IrradianceMap->SetDebugName("Irradiance Map");
+    ReflectionMap->SetDebugName("Reflection Map");
+
     UpdateSamplers();
 }
 
@@ -113,6 +116,9 @@ void AEnvironmentMap::CreateTextures(int IrradianceMapWidth, int ReflectionMapWi
                                                   .SetMipLevels(Math::Log2((uint32_t)ReflectionMapWidth))
                                                   .SetBindFlags(BIND_SHADER_RESOURCE),
                                               &ReflectionMap);
+
+    IrradianceMap->SetDebugName("Irradiance Map");
+    ReflectionMap->SetDebugName("Reflection Map");
 
     UpdateSamplers();
 }
