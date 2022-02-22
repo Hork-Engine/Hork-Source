@@ -1424,17 +1424,3 @@ struct SRenderFrame
     size_t DbgVertexStreamOffset;
     size_t DbgIndexStreamOffset;
 };
-
-// TODO: Move this structure declaration to World/...
-struct SRenderFrontendDef
-{
-    SRenderView * View;
-    BvFrustum const * Frustum;
-    int VisibilityMask;
-    int FrameNumber;
-    int PolyCount;
-    int ShadowMapPolyCount;
-    //int LightPortalPolyCount;
-    //int TerrainPolyCount;
-    class AStreamedMemoryGPU *StreamedMemory;
-};

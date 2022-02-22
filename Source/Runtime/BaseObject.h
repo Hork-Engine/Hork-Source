@@ -85,9 +85,6 @@ public:
     /** Get object debug/editor or ingame name */
     AString const& GetObjectName() const { return Name; }
 
-    /** Get object debug/editor or ingame name */
-    const char* GetObjectNameCStr() const { return Name.CStr(); }
-
     /** Set weakref counter. Used by TWeakRef */
     void SetWeakRefCounter(SWeakRefCounter* _RefCounter) { WeakRefCounter = _RefCounter; }
 

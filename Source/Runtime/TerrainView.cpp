@@ -68,6 +68,7 @@ ATerrainView::ATerrainView(int InTextureSize) :
                                                                                   MAX_TERRAIN_LODS))
                              .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
     GEngine->GetRenderDevice()->CreateTexture(textureFormat, &ClipmapArray);
+    ClipmapArray->SetDebugName("Terrain Clipmap Array");
 
     auto normalMapFormat = RenderCore::STextureDesc()
                                .SetFormat(RenderCore::TEXTURE_FORMAT_RGBA8)
@@ -76,6 +77,7 @@ ATerrainView::ATerrainView(int InTextureSize) :
                                                                                     MAX_TERRAIN_LODS))
                                .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
     GEngine->GetRenderDevice()->CreateTexture(normalMapFormat, &NormalMapArray);
+    ClipmapArray->SetDebugName("Terrain Normal Map Array");
 }
 
 ATerrainView::~ATerrainView()
