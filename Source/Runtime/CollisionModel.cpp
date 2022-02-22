@@ -33,6 +33,7 @@ SOFTWARE.
 #include "ConvexDecomposition.h"
 
 #include <Platform/Logger.h>
+#include <Geometry/ConvexHull.h>
 
 #include "BulletCompatibility.h"
 
@@ -1373,7 +1374,7 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
                 if (hull)
                     hull->Destroy();
                 LOG("ACollisionModel::AddConvexHull: hull is clipped off\n");
-                return;
+                continue;
             }
 
             int firstIndex = body->Indices.Size();

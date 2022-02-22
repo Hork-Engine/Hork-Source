@@ -289,7 +289,9 @@ struct SCollisionModelCreateInfo
 
 class ACollisionInstance;
 
-// TODO: Collision model should be an immutable object
+/**
+NOTE: Collision model should be an immutable object
+*/
 class ACollisionModel : public AResource
 {
     HK_CLASS(ACollisionModel, AResource)
