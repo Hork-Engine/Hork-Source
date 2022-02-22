@@ -163,7 +163,7 @@ public:
         return End();
     }
 
-    bool IsExist(T const& _Element) const
+    bool IsExists(T const& _Element) const
     {
         for (int i = 0; i < ArraySize; i++)
         {
