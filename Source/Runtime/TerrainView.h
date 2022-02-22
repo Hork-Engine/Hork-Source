@@ -76,7 +76,7 @@ public:
 
     void SetTerrain(ATerrain* Mesh);
 
-    void Update(AStreamedMemoryGPU* StreamedMemory, class ATerrainMesh* TerrainMesh, Float3 const& ViewPosition, BvFrustum const& ViewFrustum);
+    void Update(class AStreamedMemoryGPU* StreamedMemory, class ATerrainMesh* TerrainMesh, Float3 const& ViewPosition, BvFrustum const& ViewFrustum);
 
     int GetTextureSize() const
     {

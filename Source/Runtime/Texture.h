@@ -222,6 +222,8 @@ public:
 
     RenderCore::ITexture* GetGPUResource() { return TextureGPU; }
 
+    void SetDebugName(AStringView DebugName);
+
     void Purge();
 
 protected:

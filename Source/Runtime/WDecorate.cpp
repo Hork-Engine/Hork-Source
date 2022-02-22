@@ -169,7 +169,7 @@ void WTextDecorate::OnDrawEvent(ACanvas& _Canvas)
     pos += GetOwner()->GetDesktopPosition();
 
     _Canvas.PushFont(font);
-    _Canvas.DrawTextUTF8(font->GetFontSize(), pos, Color, Text.Begin(), Text.End(), bWordWrap ? width : 0.0f);
+    _Canvas.DrawTextUTF8(font->GetFontSize(), pos, Color, Text, bWordWrap ? width : 0.0f);
     _Canvas.PopFont();
 }
 

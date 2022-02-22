@@ -132,7 +132,7 @@ void ACanvas::PushFont(AFont const* _Font)
 {
     SetCurrentFont(_Font);
     FontStack.Append(_Font);
-    DrawList.PushTextureID(_Font->GetTexture()->GetGPUResource());
+    DrawList.PushTextureID(_Font->GetTexture());
 }
 
 void ACanvas::PopFont()
@@ -212,33 +212,23 @@ void ACanvas::DrawCircleFilled(Float2 const& centre, float radius, Color4 const&
     DrawList.AddCircleFilled(centre, radius, col.GetDWord(), num_segments);
 }
 
-void ACanvas::DrawTextUTF8(Float2 const& pos, Color4 const& col, const char* _TextBegin, const char* _TextEnd, bool bShadow)
+void ACanvas::DrawTextUTF8(Float2 const& pos, Color4 const& col, AStringView Text, bool bShadow)
 {
-    DrawTextUTF8(DrawListSharedData.FontSize, pos, col, _TextBegin, _TextEnd, 0, nullptr, bShadow);
+    DrawTextUTF8(DrawListSharedData.FontSize, pos, col, Text, 0, nullptr, bShadow);
 }
 
-void ACanvas::DrawTextUTF8(float _FontSize, Float2 const& _Pos, Color4 const& _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const* _CPUFineClipRect, bool bShadow)
+void ACanvas::DrawTextUTF8(float _FontSize, Float2 const& _Pos, Color4 const& _Color, AStringView Text, float _WrapWidth, Float4 const* _CPUFineClipRect, bool bShadow)
 {
     if (bShadow)
     {
-        _DrawTextUTF8(_FontSize, _Pos + Float2(1, 1), Color4::Black(), _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect);
+        _DrawTextUTF8(_FontSize, _Pos + Float2(1, 1), Color4::Black(), Text, _WrapWidth, _CPUFineClipRect);
     }
-    _DrawTextUTF8(_FontSize, _Pos, _Color, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect);
+    _DrawTextUTF8(_FontSize, _Pos, _Color, Text, _WrapWidth, _CPUFineClipRect);
 }
 
-void ACanvas::_DrawTextUTF8(float _FontSize, Float2 const& _Pos, Color4 const& _Color, const char* _TextBegin, const char* _TextEnd, float _WrapWidth, Float4 const* _CPUFineClipRect)
+void ACanvas::_DrawTextUTF8(float _FontSize, Float2 const& _Pos, Color4 const& _Color, AStringView Text, float _WrapWidth, Float4 const* _CPUFineClipRect)
 {
-    if (_Color.IsTransparent())
-    {
-        return;
-    }
-
-    if (!_TextEnd)
-    {
-        _TextEnd = _TextBegin + strlen(_TextBegin);
-    }
-
-    if (_TextBegin == _TextEnd)
+    if (_Color.IsTransparent() || Text.IsEmpty())
     {
         return;
     }
@@ -250,9 +240,12 @@ void ACanvas::_DrawTextUTF8(float _FontSize, Float2 const& _Pos, Color4 const& _
         return;
     }
 
+    const char* text    = Text.Begin();
+    const char* textEnd = Text.End();
+
     uint32_t color = _Color.GetDWord();
 
-    HK_ASSERT(const_cast<AFont*>(font)->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back());
+    HK_ASSERT(const_cast<AFont*>(font)->GetTexture() == DrawList._TextureIdStack.back());
 
     Float4 clipRect = DrawList._ClipRectStack.back();
     if (_CPUFineClipRect)
@@ -263,7 +256,7 @@ void ACanvas::_DrawTextUTF8(float _FontSize, Float2 const& _Pos, Color4 const& _
         clipRect.W = Math::Min(clipRect.W, _CPUFineClipRect->W);
     }
 
-    //font->RenderText( &DrawList, _FontSize, _Pos, _Color, clipRect, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect != NULL );
+    //font->RenderText( &DrawList, _FontSize, _Pos, _Color, clipRect, text, textEnd, _WrapWidth, _CPUFineClipRect != NULL );
 
     Float2 const& fontOffset = font->GetDrawOffset();
 
@@ -282,39 +275,39 @@ void ACanvas::_DrawTextUTF8(float _FontSize, Float2 const& _Pos, Color4 const& _
     const char* wordWrapEOL = NULL;
 
     // Fast-forward to first visible line
-    const char* s = _TextBegin;
+    const char* s = text;
     if (y + lineHeight < clipRect.Y && !bWordWrap)
     {
-        while (y + lineHeight < clipRect.Y && s < _TextEnd)
+        while (y + lineHeight < clipRect.Y && s < textEnd)
         {
-            s = (const char*)memchr(s, '\n', _TextEnd - s);
-            s = s ? s + 1 : _TextEnd;
+            s = (const char*)memchr(s, '\n', textEnd - s);
+            s = s ? s + 1 : textEnd;
             y += lineHeight;
         }
     }
 
     // For large text, scan for the last visible line in order to avoid over-reserving in the call to PrimReserve()
     // Note that very large horizontal line will still be affected by the issue (e.g. a one megabyte string buffer without a newline will likely crash atm)
-    if (_TextEnd - s > 10000 && !bWordWrap)
+    if (textEnd - s > 10000 && !bWordWrap)
     {
         const char* s_end = s;
         float       y_end = y;
-        while (y_end < clipRect.W && s_end < _TextEnd)
+        while (y_end < clipRect.W && s_end < textEnd)
         {
-            s_end = (const char*)memchr(s_end, '\n', _TextEnd - s_end);
-            s_end = s_end ? s_end + 1 : _TextEnd;
+            s_end = (const char*)memchr(s_end, '\n', textEnd - s_end);
+            s_end = s_end ? s_end + 1 : textEnd;
             y_end += lineHeight;
         }
-        _TextEnd = s_end;
+        textEnd = s_end;
     }
-    if (s == _TextEnd)
+    if (s == textEnd)
     {
         return;
     }
 
     // Reserve vertices for remaining worse case (over-reserving is useful and easily amortized)
-    const int MaxVertices          = (int)(_TextEnd - s) * 4;
-    const int MaxIndices           = (int)(_TextEnd - s) * 6;
+    const int MaxVertices          = (int)(textEnd - s) * 4;
+    const int MaxIndices           = (int)(textEnd - s) * 6;
     const int ReservedIndicesCount = DrawList.IdxBuffer.Size + MaxIndices;
     DrawList.PrimReserve(MaxIndices, MaxVertices);
 
@@ -322,14 +315,14 @@ void ACanvas::_DrawTextUTF8(float _FontSize, Float2 const& _Pos, Color4 const& _
     ImDrawIdx*   pIndices    = DrawList._IdxWritePtr;
     unsigned int firstVertex = DrawList._VtxCurrentIdx;
 
-    while (s < _TextEnd)
+    while (s < textEnd)
     {
         if (bWordWrap)
         {
             // Calculate how far we can render. Requires two passes on the string data but keeps the code simple and not intrusive for what's essentially an uncommon feature.
             if (!wordWrapEOL)
             {
-                wordWrapEOL = font->CalcWordWrapPositionA(scale, s, _TextEnd, _WrapWidth - (x - pos.X));
+                wordWrapEOL = font->CalcWordWrapPositionA(scale, s, textEnd, _WrapWidth - (x - pos.X));
                 if (wordWrapEOL == s) // Wrap_width is too small to fit anything. Force displaying 1 character to minimize the height discontinuity.
                     wordWrapEOL++;    // +1 may not be a character start point in UTF-8 but it's ok because we use s >= word_wrap_eol below
             }
@@ -341,7 +334,7 @@ void ACanvas::_DrawTextUTF8(float _FontSize, Float2 const& _Pos, Color4 const& _
                 wordWrapEOL = NULL;
 
                 // Wrapping skips upcoming blanks
-                while (s < _TextEnd)
+                while (s < textEnd)
                 {
                     const char c = *s;
                     if (Core::CharIsBlank(c))
@@ -370,7 +363,7 @@ void ACanvas::_DrawTextUTF8(float _FontSize, Float2 const& _Pos, Color4 const& _
         }
         else
         {
-            s += Core::WideCharDecodeUTF8(s, _TextEnd, c);
+            s += Core::WideCharDecodeUTF8(s, textEnd, c);
             if (c == 0) // Malformed UTF-8?
                 break;
         }
@@ -524,7 +517,7 @@ void ACanvas::_DrawTextWChar(float _FontSize, Float2 const& _Pos, Color4 const& 
 
     uint32_t color = _Color.GetDWord();
 
-    HK_ASSERT(const_cast<AFont*>(font)->GetTexture()->GetGPUResource() == DrawList._TextureIdStack.back());
+    HK_ASSERT(const_cast<AFont*>(font)->GetTexture() == DrawList._TextureIdStack.back());
 
     Float4 clipRect = DrawList._ClipRectStack.back();
     if (_CPUFineClipRect)
@@ -879,14 +872,14 @@ void ACanvas::DrawCursor(EDrawCursor _Cursor, Float2 const& _Position, Color4 co
 
     if (font->GetMouseCursorTexData(_Cursor, &offset, &size, &uv[0], &uv[2]))
     {
-        Float2                pos       = _Position.Floor() - offset;
-        RenderCore::ITexture* textureId = font->GetTexture()->GetGPUResource();
-        const uint32_t        shadow    = _ShadowColor.GetDWord();
+        Float2                pos     = _Position.Floor() - offset;
+        RenderCore::ITexture* texture = font->GetTexture();
+        const uint32_t        shadow  = _ShadowColor.GetDWord();
         DrawList.PushClipRectFullScreen();
-        DrawList.AddImage(textureId, pos + Float2(1, 0) * _Scale, pos + Float2(1, 0) * _Scale + size * _Scale, uv[2], uv[3], shadow);
-        DrawList.AddImage(textureId, pos + Float2(2, 0) * _Scale, pos + Float2(2, 0) * _Scale + size * _Scale, uv[2], uv[3], shadow);
-        DrawList.AddImage(textureId, pos, pos + size * _Scale, uv[2], uv[3], _BorderColor.GetDWord());
-        DrawList.AddImage(textureId, pos, pos + size * _Scale, uv[0], uv[1], _Color.GetDWord());
+        DrawList.AddImage(texture, pos + Float2(1, 0) * _Scale, pos + Float2(1, 0) * _Scale + size * _Scale, uv[2], uv[3], shadow);
+        DrawList.AddImage(texture, pos + Float2(2, 0) * _Scale, pos + Float2(2, 0) * _Scale + size * _Scale, uv[2], uv[3], shadow);
+        DrawList.AddImage(texture, pos, pos + size * _Scale, uv[2], uv[3], _BorderColor.GetDWord());
+        DrawList.AddImage(texture, pos, pos + size * _Scale, uv[0], uv[1], _Color.GetDWord());
         DrawList.PopClipRect();
     }
 }

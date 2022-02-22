@@ -54,6 +54,19 @@ struct SRenderFrontendStat
     int FrontendTime;
 };
 
+struct SRenderFrontendDef
+{
+    SRenderView * View;
+    BvFrustum const * Frustum;
+    VISIBILITY_GROUP VisibilityMask;
+    int FrameNumber;
+    int PolyCount;
+    int ShadowMapPolyCount;
+    //int LightPortalPolyCount;
+    //int TerrainPolyCount;
+    class AStreamedMemoryGPU *StreamedMemory;
+};
+
 class ARenderFrontend : public ABaseObject
 {
     HK_CLASS(ARenderFrontend, ABaseObject)
@@ -129,7 +142,7 @@ private:
     SRenderFrontendDef    RenderDef;
     ARenderingParameters* ViewRP;
 
-    TRef<ATexture> PhotometricProfiles;
+    TRef<RenderCore::ITexture> PhotometricProfiles;
     TRef<AEnvironmentMap> DummyEnvironmentMap;
 
     TRef<ATerrainMesh> TerrainMesh;

@@ -79,14 +79,14 @@ void ASkinnedComponent::InitializeComponent()
 {
     Super::InitializeComponent();
 
-    GetWorld()->GetRender().SkinnedMeshes.Add(this);
+    GetWorld()->SkinningSystem.SkinnedMeshes.Add(this);
 }
 
 void ASkinnedComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
-    GetWorld()->GetRender().SkinnedMeshes.Remove(this);
+    GetWorld()->SkinningSystem.SkinnedMeshes.Remove(this);
 }
 
 void ASkinnedComponent::OnMeshChanged()

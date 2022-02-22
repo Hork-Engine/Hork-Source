@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "Drawable.h"
 #include "World.h"
+#include "RenderFrontend.h"
 #include <Core/IntrusiveLinkedListMacro.h>
 
 HK_CLASS_META(ADrawable)
@@ -86,7 +87,7 @@ ADrawable::ADrawable()
     WorldBounds.Clear();
     OverrideBoundingBox.Clear();
 
-    Primitive                        = ALevel::AllocatePrimitive();
+    Primitive                        = AVisibilitySystem::AllocatePrimitive();
     Primitive->Owner                 = this;
     Primitive->Type                  = VSD_PRIMITIVE_BOX;
     Primitive->VisGroup              = VISIBILITY_GROUP_DEFAULT;
@@ -101,7 +102,7 @@ ADrawable::ADrawable()
 
 ADrawable::~ADrawable()
 {
-    ALevel::DeallocatePrimitive(Primitive);
+    AVisibilitySystem::DeallocatePrimitive(Primitive);
 }
 
 void ADrawable::SetVisible(bool _Visible)
@@ -147,12 +148,12 @@ void ADrawable::SetQueryGroup(VSD_QUERY_MASK _UserQueryGroup)
     Primitive->QueryGroup |= VSD_QUERY_MASK(_UserQueryGroup & 0xffff0000);
 }
 
-void ADrawable::SetSurfaceFlags(uint8_t _Flags)
+void ADrawable::SetSurfaceFlags(SURFACE_FLAGS _Flags)
 {
     Primitive->Flags = _Flags;
 }
 
-uint8_t ADrawable::GetSurfaceFlags() const
+SURFACE_FLAGS ADrawable::GetSurfaceFlags() const
 {
     return Primitive->Flags;
 }
@@ -210,13 +211,13 @@ void ADrawable::InitializeComponent()
 {
     Super::InitializeComponent();
 
-    GetLevel()->AddPrimitive(Primitive);
+    GetWorld()->VisibilitySystem.AddPrimitive(Primitive);
 
     UpdateWorldBounds();
 
     if (bCastShadow)
     {
-        GetWorld()->GetRender().ShadowCasters.Add(this);
+        GetWorld()->LightingSystem.ShadowCasters.Add(this);
     }
 }
 
@@ -224,11 +225,11 @@ void ADrawable::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
-    GetLevel()->RemovePrimitive(Primitive);
+    GetWorld()->VisibilitySystem.RemovePrimitive(Primitive);
 
     if (bCastShadow)
     {
-        GetWorld()->GetRender().ShadowCasters.Remove(this);
+        GetWorld()->LightingSystem.ShadowCasters.Remove(this);
     }
 }
 
@@ -254,15 +255,15 @@ void ADrawable::SetCastShadow(bool _CastShadow)
 
     if (IsInitialized())
     {
-        ARenderWorld& RenderWorld = GetWorld()->GetRender();
+        ALightingSystem& LightingSystem = GetWorld()->LightingSystem;
 
         if (bCastShadow)
         {
-            RenderWorld.ShadowCasters.Add(this);
+            LightingSystem.ShadowCasters.Add(this);
         }
         else
         {
-            RenderWorld.ShadowCasters.Remove(this);
+            LightingSystem.ShadowCasters.Remove(this);
         }
     }
 }
@@ -277,7 +278,7 @@ void ADrawable::UpdateWorldBounds()
 
     if (IsInitialized())
     {
-        GetLevel()->MarkPrimitive(Primitive);
+        GetWorld()->VisibilitySystem.MarkPrimitive(Primitive);
     }
 }
 
@@ -292,7 +293,7 @@ void ADrawable::ForceOutdoor(bool _OutdoorSurface)
 
     if (IsInitialized())
     {
-        GetLevel()->MarkPrimitive(Primitive);
+        GetWorld()->VisibilitySystem.MarkPrimitive(Primitive);
     }
 }
 

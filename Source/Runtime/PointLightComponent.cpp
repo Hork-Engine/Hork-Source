@@ -104,7 +104,7 @@ void APointLightComponent::UpdateWorldBounds()
 
     if (IsInitialized())
     {
-        GetLevel()->MarkPrimitive(Primitive);
+        GetWorld()->VisibilitySystem.MarkPrimitive(Primitive);
     }
 }
 

@@ -33,22 +33,11 @@ SOFTWARE.
 #include <Platform/BaseTypes.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 #include "SkinnedComponent.h"
-#include "DirectionalLightComponent.h"
 
-class ADebugRenderer;
-
-class ARenderWorld
+class ASkinningSystem
 {
-    HK_FORBID_COPY(ARenderWorld)
-
 public:
-    TList<ASkinnedComponent>          SkinnedMeshes;
-    TList<ADrawable>                  ShadowCasters;
-    TList<ADirectionalLightComponent> DirectionalLights;
+    TList<ASkinnedComponent> SkinnedMeshes;
 
-    ARenderWorld()
-    {}
-
-    void DrawDebug(ADebugRenderer* InRenderer)
-    {}
+    void Update();
 };

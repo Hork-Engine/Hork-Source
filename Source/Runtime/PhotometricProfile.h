@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Resource.h"
+#include <RenderCore/Texture.h>
 
 class ATexture;
 
@@ -62,7 +63,7 @@ public:
     const byte* GetPhotometricData() const { return Data; }
 
     /** Internal */
-    void WritePhotometricData(ATexture* ProfileTexture, int FrameIndex);
+    void WritePhotometricData(RenderCore::ITexture* ProfileTexture, int FrameIndex);
     int  GetPhotometricProfileIndex() const { return PhotometricProfileIndex; }
 
 protected:

@@ -30,12 +30,12 @@ SOFTWARE.
 
 #pragma once
 
-#include "WorldPhysics.h"
+#include "PhysicsSystem.h"
 #include "AINavigationMesh.h"
+#include "SkinningSystem.h"
+#include "LightingSystem.h"
 #include "Level.h"
 #include "ScriptEngine.h"
-#include "RenderWorld.h"
-#include "VSD.h"
 
 #include <Platform/Platform.h>
 
@@ -117,6 +117,16 @@ public:
     /** Delegate to prepare for rendering */
     using AOnPrepareRenderFrontend = TEvent<ACameraComponent*, int>;
     AOnPrepareRenderFrontend E_OnPrepareRenderFrontend;
+
+    AVisibilitySystem VisibilitySystem;
+
+    APhysicsSystem PhysicsSystem;
+
+    AAINavigationMesh NavigationMesh;
+
+    ASkinningSystem SkinningSystem;
+
+    ALightingSystem LightingSystem;
 
     /** Create a new world */
     static AWorld* CreateWorld();
@@ -224,7 +234,7 @@ public:
     Float3 const& GetGravityVector() const;
 
     /** Is in physics update now */
-    bool IsDuringPhysicsUpdate() const { return WorldPhysics.bDuringPhysicsUpdate; }
+    bool IsDuringPhysicsUpdate() const { return PhysicsSystem.bDuringPhysicsUpdate; }
 
     /** Is world destroyed, but not removed yet. */
     bool IsPendingKill() const { return bPendingKill; }
@@ -242,144 +252,134 @@ public:
     AEnvironmentMap* GetGlobalEnvironmentMap() const { return GlobalEnvironmentMap; }
 
     /** Per-triangle raycast */
-    bool Raycast(SWorldRaycastResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SWorldRaycastFilter const* _Filter = nullptr) const;
+    bool Raycast(SWorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter = nullptr) const;
 
     /** Per-bounds raycast */
-    bool RaycastBounds(TPodVector<SBoxHitResult>& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SWorldRaycastFilter const* _Filter = nullptr) const;
+    bool RaycastBounds(TPodVector<SBoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter = nullptr) const;
 
     /** Per-triangle raycast */
-    bool RaycastClosest(SWorldRaycastClosestResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SWorldRaycastFilter const* _Filter = nullptr) const;
+    bool RaycastClosest(SWorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter = nullptr) const;
 
     /** Per-bounds raycast */
-    bool RaycastClosestBounds(SBoxHitResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SWorldRaycastFilter const* _Filter = nullptr) const;
+    bool RaycastClosestBounds(SBoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter = nullptr) const;
 
     /** Trace collision bodies */
-    bool Trace(TPodVector<SCollisionTraceResult>& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const
+    bool Trace(TPodVector<SCollisionTraceResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
     {
-        return WorldPhysics.Trace(_Result, _RayStart, _RayEnd, _QueryFilter);
+        return PhysicsSystem.Trace(Result, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceClosest(SCollisionTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const
+    bool TraceClosest(SCollisionTraceResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
     {
-        return WorldPhysics.TraceClosest(_Result, _RayStart, _RayEnd, _QueryFilter);
+        return PhysicsSystem.TraceClosest(Result, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceSphere(SCollisionTraceResult& _Result, float _Radius, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const
+    bool TraceSphere(SCollisionTraceResult& Result, float Radius, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
     {
-        return WorldPhysics.TraceSphere(_Result, _Radius, _RayStart, _RayEnd, _QueryFilter);
+        return PhysicsSystem.TraceSphere(Result, Radius, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceBox(SCollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const
+    bool TraceBox(SCollisionTraceResult& Result, Float3 const& Mins, Float3 const& Maxs, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
     {
-        return WorldPhysics.TraceBox(_Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter);
+        return PhysicsSystem.TraceBox(Result, Mins, Maxs, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceBox2(TPodVector<SCollisionTraceResult>& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const
+    bool TraceBox2(TPodVector<SCollisionTraceResult>& Result, Float3 const& Mins, Float3 const& Maxs, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
     {
-        return WorldPhysics.TraceBox2(_Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter);
+        return PhysicsSystem.TraceBox2(Result, Mins, Maxs, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceCylinder(SCollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const
+    bool TraceCylinder(SCollisionTraceResult& Result, Float3 const& Mins, Float3 const& Maxs, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
     {
-        return WorldPhysics.TraceCylinder(_Result, _Mins, _Maxs, _RayStart, _RayEnd, _QueryFilter);
+        return PhysicsSystem.TraceCylinder(Result, Mins, Maxs, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceCapsule(SCollisionTraceResult& _Result, float _CapsuleHeight, float CapsuleRadius, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const
+    bool TraceCapsule(SCollisionTraceResult& Result, float CapsuleHeight, float CapsuleRadius, Float3 const& RayStart, Float3 const& RayEnd, SCollisionQueryFilter const* QueryFilter = nullptr) const
     {
-        return WorldPhysics.TraceCapsule(_Result, _CapsuleHeight, CapsuleRadius, _RayStart, _RayEnd, _QueryFilter);
+        return PhysicsSystem.TraceCapsule(Result, CapsuleHeight, CapsuleRadius, RayStart, RayEnd, QueryFilter);
     }
 
     /** Trace collision bodies */
-    bool TraceConvex(SCollisionTraceResult& _Result, SConvexSweepTest const& _SweepTest) const
+    bool TraceConvex(SCollisionTraceResult& Result, SConvexSweepTest const& SweepTest) const
     {
-        return WorldPhysics.TraceConvex(_Result, _SweepTest);
+        return PhysicsSystem.TraceConvex(Result, SweepTest);
     }
 
     /** Query objects in sphere */
-    void QueryHitProxies(TPodVector<AHitProxy*>& _Result, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter = nullptr) const
+    void QueryHitProxies(TPodVector<AHitProxy*>& Result, Float3 const& Position, float Radius, SCollisionQueryFilter const* QueryFilter = nullptr) const
     {
-        WorldPhysics.QueryHitProxies_Sphere(_Result, _Position, _Radius, _QueryFilter);
+        PhysicsSystem.QueryHitProxies_Sphere(Result, Position, Radius, QueryFilter);
     }
 
     /** Query objects in box */
-    void QueryHitProxies(TPodVector<AHitProxy*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, SCollisionQueryFilter const* _QueryFilter = nullptr) const
+    void QueryHitProxies(TPodVector<AHitProxy*>& Result, Float3 const& Position, Float3 const& HalfExtents, SCollisionQueryFilter const* QueryFilter = nullptr) const
     {
-        WorldPhysics.QueryHitProxies_Box(_Result, _Position, _HalfExtents, _QueryFilter);
+        PhysicsSystem.QueryHitProxies_Box(Result, Position, HalfExtents, QueryFilter);
     }
 
     /** Query objects in AABB */
-    void QueryHitProxies(TPodVector<AHitProxy*>& _Result, BvAxisAlignedBox const& _BoundingBox, SCollisionQueryFilter const* _QueryFilter = nullptr) const
+    void QueryHitProxies(TPodVector<AHitProxy*>& Result, BvAxisAlignedBox const& BoundingBox, SCollisionQueryFilter const* QueryFilter = nullptr) const
     {
-        WorldPhysics.QueryHitProxies(_Result, _BoundingBox, _QueryFilter);
+        PhysicsSystem.QueryHitProxies(Result, BoundingBox, QueryFilter);
     }
 
     /** Query actors in sphere */
-    void QueryActors(TPodVector<AActor*>& _Result, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter = nullptr) const
+    void QueryActors(TPodVector<AActor*>& Result, Float3 const& Position, float Radius, SCollisionQueryFilter const* QueryFilter = nullptr) const
     {
-        WorldPhysics.QueryActors_Sphere(_Result, _Position, _Radius, _QueryFilter);
+        PhysicsSystem.QueryActors_Sphere(Result, Position, Radius, QueryFilter);
     }
 
     /** Query actors in box */
-    void QueryActors(TPodVector<AActor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, SCollisionQueryFilter const* _QueryFilter = nullptr) const
+    void QueryActors(TPodVector<AActor*>& Result, Float3 const& Position, Float3 const& HalfExtents, SCollisionQueryFilter const* QueryFilter = nullptr) const
     {
-        WorldPhysics.QueryActors_Box(_Result, _Position, _HalfExtents, _QueryFilter);
+        PhysicsSystem.QueryActors_Box(Result, Position, HalfExtents, QueryFilter);
     }
 
     /** Query actors in AABB */
-    void QueryActors(TPodVector<AActor*>& _Result, BvAxisAlignedBox const& _BoundingBox, SCollisionQueryFilter const* _QueryFilter = nullptr) const
+    void QueryActors(TPodVector<AActor*>& Result, BvAxisAlignedBox const& BoundingBox, SCollisionQueryFilter const* QueryFilter = nullptr) const
     {
-        WorldPhysics.QueryActors(_Result, _BoundingBox, _QueryFilter);
+        PhysicsSystem.QueryActors(Result, BoundingBox, QueryFilter);
     }
 
     /** Query collisions with sphere */
-    void QueryCollision_Sphere(TPodVector<SCollisionQueryResult>& _Result, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter) const
+    void QueryCollision_Sphere(TPodVector<SCollisionQueryResult>& Result, Float3 const& Position, float Radius, SCollisionQueryFilter const* QueryFilter) const
     {
-        WorldPhysics.QueryCollision_Sphere(_Result, _Position, _Radius, _QueryFilter);
+        PhysicsSystem.QueryCollision_Sphere(Result, Position, Radius, QueryFilter);
     }
 
     /** Query collisions with box */
-    void QueryCollision_Box(TPodVector<SCollisionQueryResult>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, SCollisionQueryFilter const* _QueryFilter) const
+    void QueryCollision_Box(TPodVector<SCollisionQueryResult>& Result, Float3 const& Position, Float3 const& HalfExtents, SCollisionQueryFilter const* QueryFilter) const
     {
-        WorldPhysics.QueryCollision_Box(_Result, _Position, _HalfExtents, _QueryFilter);
+        PhysicsSystem.QueryCollision_Box(Result, Position, HalfExtents, QueryFilter);
     }
 
     /** Query collisions with AABB */
-    void QueryCollision(TPodVector<SCollisionQueryResult>& _Result, BvAxisAlignedBox const& _BoundingBox, SCollisionQueryFilter const* _QueryFilter) const
+    void QueryCollision(TPodVector<SCollisionQueryResult>& Result, BvAxisAlignedBox const& BoundingBox, SCollisionQueryFilter const* QueryFilter) const
     {
-        WorldPhysics.QueryCollision(_Result, _BoundingBox, _QueryFilter);
+        PhysicsSystem.QueryCollision(Result, BoundingBox, QueryFilter);
     }
 
     /** Query visible primitives */
     void QueryVisiblePrimitives(TPodVector<SPrimitiveDef*>& VisPrimitives, TPodVector<SSurfaceDef*>& VisSurfs, int* VisPass, SVisibilityQuery const& InQuery);
 
+    /** Query vis areas by bounding box */
+    void QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<SVisArea*>& Areas);
+
+    /** Query vis areas by bounding sphere */
+    void QueryOverplapAreas(BvSphere const& Bounds, TPodVector<SVisArea*>& Areas);
+
     /** Apply amount of damage in specified radius */
-    void ApplyRadialDamage(float _DamageAmount, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter = nullptr);
+    void ApplyRadialDamage(float DamageAmount, Float3 const& Position, float Radius, SCollisionQueryFilter const* QueryFilter = nullptr);
 
     //
     // Internal
     //
-
-    // World physics. Used by a hit proxy.
-    AWorldPhysics& GetPhysics()
-    {
-        return WorldPhysics;
-    }
-
-    ARenderWorld& GetRender()
-    {
-        return WorldRender;
-    }
-
-    AAINavigationMesh& GetNavigationMesh()
-    {
-        return NavigationMesh;
-    }
 
     AScriptEngine* GetScriptEngine() { return ScriptEngine.get(); }
 
@@ -433,7 +433,6 @@ private:
     void UpdateLevels(float TimeStep);
     void UpdatePhysics(float TimeStep);
     void LateUpdate(float TimeStep);
-    void UpdateSkinning();
 
     void HandlePrePhysics(float TimeStep);
     void HandlePostPhysics(float TimeStep);
@@ -486,14 +485,6 @@ private:
 
     TRef<AEnvironmentMap> GlobalEnvironmentMap;
 
-    // Physics extension
-    AWorldPhysics WorldPhysics;
-    // Renderer extension
-    ARenderWorld WorldRender;
-    // Path finding extension
-    AAINavigationMesh NavigationMesh;
-    // Visible surface determinition
-    AVSD Vsd;
     // Script
     std::unique_ptr<AScriptEngine> ScriptEngine;
 };

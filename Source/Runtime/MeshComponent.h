@@ -161,31 +161,3 @@ protected:
     TRef<AProceduralMesh>   ProceduralMesh;
     TRef<AMaterialInstance> MaterialInstance;
 };
-
-#if 0
-class ABrushComponent : public ADrawable {
-    HK_COMPONENT( ABrushComponent, ADrawable )
-
-public:
-    /** Brush surfaces */
-    int FirstSurface;
-
-    /** Count of the brush surfaces */
-    int NumSurfaces;
-
-    void SetModel( ABrushModel * InBrushModel )
-    {
-        Model = InBrushModel;
-    }
-
-    ABrushModel * GetModel() { return Model; }
-
-protected:
-    ABrushComponent();
-
-    void DrawDebug( ADebugRenderer * InRenderer ) override;
-
-private:
-    TRef< ABrushModel > Model;
-};
-#endif

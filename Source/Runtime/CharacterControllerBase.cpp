@@ -103,7 +103,7 @@ void ACharacterControllerBase::InitializeComponent()
 
     bNeedToUpdateCapsule = false;
 
-    World = GetWorld()->GetPhysics().GetInternal();
+    World = GetWorld()->PhysicsSystem.GetInternal();
 
     GhostObject = new btPairCachingGhostObject;
     GhostObject->setUserPointer(HitProxy.GetObject());
@@ -842,7 +842,7 @@ void AProjectileExperimental::InitializeComponent()
 
     ConvexShape = new btCapsuleShapeZ(0.1f, 0.35f);
 
-    World = GetWorld()->GetPhysics().GetInternal();
+    World = GetWorld()->PhysicsSystem.GetInternal();
 
     //GhostObject = new btPairCachingGhostObject;
     GhostObject = new btGhostObject;

@@ -85,9 +85,9 @@ public:
 
     void SetQueryGroup(VSD_QUERY_MASK _UserQueryGroup);
 
-    void SetSurfaceFlags(uint8_t Flags);
+    void SetSurfaceFlags(SURFACE_FLAGS Flags);
 
-    uint8_t GetSurfaceFlags() const;
+    SURFACE_FLAGS GetSurfaceFlags() const;
 
     /** Used for face culling */
     void SetFacePlane(PlaneF const& _Plane);

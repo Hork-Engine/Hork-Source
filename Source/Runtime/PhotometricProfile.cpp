@@ -456,7 +456,7 @@ bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-void APhotometricProfile::WritePhotometricData(ATexture* ProfileTexture, int FrameIndex)
+void APhotometricProfile::WritePhotometricData(RenderCore::ITexture* ProfileTexture, int FrameIndex)
 {
     if (FrameNum == FrameIndex)
     {
@@ -466,7 +466,12 @@ void APhotometricProfile::WritePhotometricData(ATexture* ProfileTexture, int Fra
     FrameNum = FrameIndex;
     if (ProfileTexture)
     {
-        ProfileTexture->WriteTextureData1DArray(0, PHOTOMETRIC_DATA_SIZE, PhotometricProfileCounter, 0, Data);
+        RenderCore::STextureRect rect;
+        rect.Offset.Z = PhotometricProfileCounter;
+        rect.Dimension.X = PHOTOMETRIC_DATA_SIZE;
+        rect.Dimension.Y = 1;
+        rect.Dimension.Z = 1;
+        ProfileTexture->WriteRect(rect, RenderCore::FORMAT_UBYTE1, PHOTOMETRIC_DATA_SIZE, 4, Data);
         PhotometricProfileIndex   = PhotometricProfileCounter;
         PhotometricProfileCounter = (PhotometricProfileCounter + 1) & 0xff;
     }

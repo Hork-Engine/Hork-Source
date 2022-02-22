@@ -97,6 +97,8 @@ struct SItemInfo
     uint8_t Type;
 };
 
+class AStreamedMemoryGPU;
+
 class ALightVoxelizer
 {
 public:

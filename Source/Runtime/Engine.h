@@ -38,6 +38,7 @@ SOFTWARE.
 #include "World.h"
 #include "RenderFrontend.h"
 #include "AudioSystem.h"
+#include "AsyncJobManager.h"
 
 #include <Renderer/RenderBackend.h>
 #include <Core/Random.h>

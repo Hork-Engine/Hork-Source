@@ -28,4 +28,15 @@ SOFTWARE.
 
 */
 
-#include "RenderWorld.h"
+#pragma once
+
+#include <Platform/BaseTypes.h>
+#include <Core/IntrusiveLinkedListMacro.h>
+#include "DirectionalLightComponent.h"
+
+class ALightingSystem
+{
+public:    
+    TList<ADrawable>                  ShadowCasters;
+    TList<ADirectionalLightComponent> DirectionalLights;
+};

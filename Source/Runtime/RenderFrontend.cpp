@@ -53,6 +53,7 @@ AConsoleVar r_RenderTerrain(_CTS("r_RenderTerrain"), _CTS("1"), CVAR_CHEAT);
 AConsoleVar r_ResolutionScaleX(_CTS("r_ResolutionScaleX"), _CTS("1"));
 AConsoleVar r_ResolutionScaleY(_CTS("r_ResolutionScaleY"), _CTS("1"));
 AConsoleVar r_RenderLightPortals(_CTS("r_RenderLightPortals"), _CTS("1"));
+AConsoleVar r_VertexLight(_CTS("r_VertexLight"), _CTS("0"));
 
 AConsoleVar com_DrawFrustumClusters(_CTS("com_DrawFrustumClusters"), _CTS("0"), CVAR_CHEAT);
 
@@ -64,8 +65,13 @@ ARenderFrontend::ARenderFrontend()
 {
     TerrainMesh = MakeRef<ATerrainMesh>(TerrainTileSize);
 
-    PhotometricProfiles = CreateInstanceOf<ATexture>();
-    PhotometricProfiles->Initialize1DArray(TEXTURE_PF_R8_UNORM, 1, 256, 256);
+    GEngine->GetRenderDevice()->CreateTexture(RenderCore::STextureDesc{}
+                                                  .SetResolution(RenderCore::STextureResolution1DArray(256, 256))
+                                                  .SetFormat(RenderCore::TEXTURE_FORMAT_R8)
+                                                  .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE),
+                                              &PhotometricProfiles);
+
+    PhotometricProfiles->SetDebugName("Photometric Profiles");
 }
 
 ARenderFrontend::~ARenderFrontend()
@@ -286,7 +292,7 @@ void ARenderFrontend::RenderView(int _Index)
 
     view->VTFeedback = &RP->VTFeedback;
 
-    view->PhotometricProfiles = PhotometricProfiles->GetGPUResource();
+    view->PhotometricProfiles = PhotometricProfiles;
 
     view->NumShadowMapCascades     = 0;
     view->NumCascadedShadowMaps    = 0;
@@ -328,7 +334,7 @@ void ARenderFrontend::RenderView(int _Index)
     RenderDef.FrameNumber        = FrameNumber;
     RenderDef.View               = view;
     RenderDef.Frustum            = &camera->GetFrustum();
-    RenderDef.VisibilityMask     = RP ? RP->VisibilityMask : ~0;
+    RenderDef.VisibilityMask     = RP ? RP->VisibilityMask : VISIBILITY_GROUP_ALL;
     RenderDef.PolyCount          = 0;
     RenderDef.ShadowMapPolyCount = 0;
     RenderDef.StreamedMemory     = FrameLoop->GetStreamedMemoryGPU();
@@ -786,7 +792,7 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
     AAnalyticLightComponent* light;
     AEnvironmentProbe*       envProbe;
     AStreamedMemoryGPU*      streamedMemory = FrameLoop->GetStreamedMemoryGPU();
-    ARenderWorld&            renderWorld    = InWorld->GetRender();
+    ALightingSystem&         lightingSystem = InWorld->LightingSystem;
 
     VisLights.Clear();
     VisEnvProbes.Clear();
@@ -865,7 +871,7 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
     // Add directional lights
     view->NumShadowMapCascades  = 0;
     view->NumCascadedShadowMaps = 0;
-    for (TListIterator<ADirectionalLightComponent> dirlight(renderWorld.DirectionalLights); dirlight; dirlight++)
+    for (TListIterator<ADirectionalLightComponent> dirlight(lightingSystem.DirectionalLights); dirlight; dirlight++)
     {
         if (view->NumDirectionalLights >= MAX_DIRECTIONAL_LIGHTS)
         {
@@ -1103,10 +1109,11 @@ void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
     InComponent->RenderTransformMatrix = componentWorldTransform;
 
     ALevel* level = InComponent->GetLevel();
+    ALevelLighting* lighting = level->Lighting;
 
     AIndexedMeshSubpartArray const& subparts = mesh->GetSubparts();
 
-    bool bHasLightmap = InComponent->LightmapUVChannel && InComponent->LightmapBlock >= 0 && InComponent->LightmapBlock < level->Lightmaps.Size();
+    bool bHasLightmap = lighting && InComponent->LightmapUVChannel && InComponent->LightmapBlock >= 0 && InComponent->LightmapBlock < lighting->Lightmaps.Size() && !r_VertexLight;
 
     for (int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++)
     {
@@ -1151,7 +1158,7 @@ void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
         {
             InComponent->LightmapUVChannel->GetVertexBufferGPU(&instance->LightmapUVChannel, &instance->LightmapUVOffset);
             instance->LightmapOffset = InComponent->LightmapOffset;
-            instance->Lightmap       = level->Lightmaps[InComponent->LightmapBlock]->GetGPUResource();
+            instance->Lightmap       = lighting->Lightmaps[InComponent->LightmapBlock];
         }
         else
         {
@@ -1604,9 +1611,9 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
     ShadowCasters.Clear();
     ShadowBoxes.Clear();
 
-    ARenderWorld& renderWorld = InWorld->GetRender();
+    ALightingSystem& lightingSystem = InWorld->LightingSystem;
 
-    for (TListIterator<ADrawable> component(renderWorld.ShadowCasters); component; component++)
+    for (TListIterator<ADrawable> component(lightingSystem.ShadowCasters); component; component++)
     {
         if ((component->GetVisibilityGroup() & RenderDef.VisibilityMask) == 0)
         {
@@ -1650,7 +1657,6 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
         // TODO: Do it parallel (jobs)
         for (int cascadeIndex = 0; cascadeIndex < lightDef->NumCascades; cascadeIndex++)
         {
-
             frustum.FromMatrix(lightViewProjectionMatrices[cascadeIndex]);
 
             ShadowCasterCullResult.ZeroMem();
@@ -1698,10 +1704,14 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
         // Add static shadow casters
         for (ALevel* level : InWorld->GetArrayOfLevels())
         {
+            ALevelLighting* lighting = level->Lighting;
+
+            if (!lighting)
+                continue;
 
             // TODO: Perform culling for each shadow cascade, set CascadeMask
 
-            if (level->ShadowCasterVerts.IsEmpty())
+            if (!lighting->GetShadowCasterIndexCount())
             {
                 continue;
             }
@@ -1713,13 +1723,13 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
 
             instance->Material            = nullptr;
             instance->MaterialInstance    = nullptr;
-            instance->VertexBuffer        = level->GetShadowCasterVB();
+            instance->VertexBuffer        = lighting->GetShadowCasterVB();
             instance->VertexBufferOffset  = 0;
-            instance->IndexBuffer         = level->GetShadowCasterIB();
+            instance->IndexBuffer         = lighting->GetShadowCasterIB();
             instance->IndexBufferOffset   = 0;
             instance->WeightsBuffer       = nullptr;
             instance->WeightsBufferOffset = 0;
-            instance->IndexCount          = level->ShadowCasterIndices.Size();
+            instance->IndexCount          = lighting->GetShadowCasterIndexCount();
             instance->StartIndexLocation  = 0;
             instance->BaseVertexLocation  = 0;
             instance->SkeletonOffset      = 0;
@@ -1742,8 +1752,12 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
             // Add light portals
             for (ALevel* level : InWorld->GetArrayOfLevels())
             {
+                ALevelLighting* lighting = level->Lighting;
 
-                TPodVector<SLightPortalDef> const& lightPortals = level->GetLightPortals();
+                if (!lighting)
+                    continue;
+
+                TPodVector<SLightPortalDef> const& lightPortals = lighting->GetLightPortals();
 
                 if (lightPortals.IsEmpty())
                 {
@@ -1760,9 +1774,9 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
 
                     FrameData.LightPortals.Append(instance);
 
-                    instance->VertexBuffer       = level->GetLightPortalsVB();
+                    instance->VertexBuffer       = lighting->GetLightPortalsVB();
                     instance->VertexBufferOffset = 0;
-                    instance->IndexBuffer        = level->GetLightPortalsIB();
+                    instance->IndexBuffer        = lighting->GetLightPortalsIB();
                     instance->IndexBufferOffset  = 0;
                     instance->IndexCount         = lightPortal.NumIndices;
                     instance->StartIndexLocation = lightPortal.FirstIndex;
@@ -1837,7 +1851,6 @@ void ARenderFrontend::AddSurfaces(SSurfaceDef* const* Surfaces, int SurfaceCount
 
         if (!CanMergeSurfaces(merge, surfDef))
         {
-
             // Flush merged surfaces
             AddSurface(model->ParentLevel,
                        model->SurfaceMaterials[merge->MaterialIndex],
@@ -2034,9 +2047,11 @@ void ARenderFrontend::AddSurface(ALevel* Level, AMaterialInstance* MaterialInsta
     instance->LightmapOffset.Y = 0;
     instance->LightmapOffset.Z = 1;
     instance->LightmapOffset.W = 1;
-    if (_LightmapBlock >= 0 && _LightmapBlock < Level->Lightmaps.Size())
+
+    ALevelLighting* lighting = Level->Lighting;
+    if (lighting && _LightmapBlock >= 0 && _LightmapBlock < lighting->Lightmaps.Size() && !r_VertexLight)
     {
-        instance->Lightmap = Level->Lightmaps[_LightmapBlock]->GetGPUResource();
+        instance->Lightmap = lighting->Lightmaps[_LightmapBlock];
 
         streamedMemory->GetPhysicalBufferAndOffset(SurfaceStream.VertexUVAddr, &instance->LightmapUVChannel, &instance->LightmapUVOffset);
     }

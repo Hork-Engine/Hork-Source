@@ -1011,7 +1011,30 @@ bool ATexture::WriteArbitraryData(int _LocationX, int _LocationY, int _LocationZ
     rect.Dimension.Y     = _Height;
     rect.Dimension.Z     = _Depth;
 
-    TextureGPU->WriteRect(rect, PixelFormat.GetTextureDataFormat(), sizeInBytes, 1, _SysMem);
+    size_t rowWidth = Width * SizeInBytesUncompressed();
+
+    int rowAlignment;
+    if (IsAligned(rowWidth, 8))
+        rowAlignment = 8;
+    else if (IsAligned(rowWidth, 4))
+        rowAlignment = 4;
+    else if (IsAligned(rowWidth, 2))
+        rowAlignment = 2;
+    else
+        rowAlignment = 1;
+
+    TextureGPU->WriteRect(rect, PixelFormat.GetTextureDataFormat(), sizeInBytes, rowAlignment, _SysMem);
 
     return true;
+}
+
+void ATexture::SetDebugName(AStringView DebugName)
+{
+    if (!TextureGPU)
+    {
+        LOG("ATexture::SetDebugName: texture must be initialized\n");
+        return;
+    }
+
+    TextureGPU->SetDebugName(DebugName);
 }

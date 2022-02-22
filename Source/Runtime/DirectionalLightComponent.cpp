@@ -126,14 +126,14 @@ void ADirectionalLightComponent::InitializeComponent()
 {
     Super::InitializeComponent();
 
-    GetWorld()->GetRender().DirectionalLights.Add(this);
+    GetWorld()->LightingSystem.DirectionalLights.Add(this);
 }
 
 void ADirectionalLightComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
-    GetWorld()->GetRender().DirectionalLights.Remove(this);
+    GetWorld()->LightingSystem.DirectionalLights.Remove(this);
 }
 
 void ADirectionalLightComponent::SetDirection(Float3 const& _Direction)

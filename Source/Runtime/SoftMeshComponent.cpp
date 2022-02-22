@@ -77,7 +77,7 @@ void ASoftMeshComponent::DeinitializeComponent()
 
     if (SoftBody)
     {
-        btSoftRigidDynamicsWorld* physicsWorld = static_cast<btSoftRigidDynamicsWorld*>(GetWorld()->GetPhysics().GetInternal());
+        btSoftRigidDynamicsWorld* physicsWorld = static_cast<btSoftRigidDynamicsWorld*>(GetWorld()->PhysicsSystem.GetInternal());
         physicsWorld->removeSoftBody(SoftBody);
         delete SoftBody;
         SoftBody = nullptr;
@@ -103,7 +103,7 @@ void ASoftMeshComponent::RecreateSoftBody()
         return;
     }
 
-    btSoftRigidDynamicsWorld* physicsWorld = static_cast<btSoftRigidDynamicsWorld*>(GetWorld()->GetPhysics().GetInternal());
+    btSoftRigidDynamicsWorld* physicsWorld = static_cast<btSoftRigidDynamicsWorld*>(GetWorld()->PhysicsSystem.GetInternal());
 
     if (SoftBody)
     {
@@ -130,7 +130,7 @@ void ASoftMeshComponent::RecreateSoftBody()
         vtx[i] = btVectorToFloat3(skin.OffsetMatrices[i].DecomposeTranslation());
     }
 
-    SoftBody = new btSoftBody(GetWorld()->GetPhysics().GetSoftBodyWorldInfo(), vtx.size(), &vtx[0], 0);
+    SoftBody = new btSoftBody(GetWorld()->PhysicsSystem.GetSoftBodyWorldInfo(), vtx.size(), &vtx[0], 0);
     for (SSoftbodyLink const& link : softbodyLinks)
     {
         SoftBody->appendLink(link.Indices[0], link.Indices[1]);
@@ -333,7 +333,7 @@ void ASoftMeshComponent::UpdateAnchorPoints()
     if (bUpdateAnchors)
     {
 
-        auto* physicsWorld = GetWorld()->GetPhysics().GetInternal();
+        auto* physicsWorld = GetWorld()->PhysicsSystem.GetInternal();
 
         // Remove old anchors. FIXME: is it correct?
         SoftBody->m_collisionDisabledObjects.clear();

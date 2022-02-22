@@ -188,7 +188,7 @@ ATerrainComponent::ATerrainComponent()
 {
     HitProxy = CreateInstanceOf<AHitProxy>();
 
-    Primitive                         = ALevel::AllocatePrimitive();
+    Primitive                         = AVisibilitySystem::AllocatePrimitive();
     Primitive->Owner                  = this;
     Primitive->Type                   = VSD_PRIMITIVE_BOX;
     Primitive->VisGroup               = VISIBILITY_GROUP_TERRAIN;
@@ -197,7 +197,6 @@ ATerrainComponent::ATerrainComponent()
     Primitive->RaycastCallback        = RaycastCallback;
     Primitive->RaycastClosestCallback = RaycastClosestCallback;
     Primitive->EvaluateRaycastResult  = EvaluateRaycastResult;
-    Primitive->Box.Clear();
 
     bAllowRaycast = true;
 
@@ -207,7 +206,7 @@ ATerrainComponent::ATerrainComponent()
 
 ATerrainComponent::~ATerrainComponent()
 {
-    ALevel::DeallocatePrimitive(Primitive);
+    AVisibilitySystem::DeallocatePrimitive(Primitive);
 
     if (Terrain)
     {
@@ -334,15 +333,15 @@ void ATerrainComponent::InitializeComponent()
 
     AddTerrainPhysics();
 
-    GetLevel()->AddPrimitive(Primitive);
+    GetWorld()->VisibilitySystem.AddPrimitive(Primitive);
 
-    AAINavigationMesh & NavigationMesh = GetWorld()->GetNavigationMesh();
+    AAINavigationMesh & NavigationMesh = GetWorld()->NavigationMesh;
     NavigationMesh.NavigationPrimitives.Add(this);
 }
 
 void ATerrainComponent::DeinitializeComponent()
 {
-    AAINavigationMesh & NavigationMesh = GetWorld()->GetNavigationMesh();
+    AAINavigationMesh& NavigationMesh = GetWorld()->NavigationMesh;
     NavigationMesh.NavigationPrimitives.Remove(this);
 
     if (Terrain)
@@ -352,7 +351,7 @@ void ATerrainComponent::DeinitializeComponent()
 
     RemoveTerrainPhysics();
 
-    GetLevel()->RemovePrimitive(Primitive);
+    GetWorld()->VisibilitySystem.RemovePrimitive(Primitive);
 
     Super::DeinitializeComponent();
 }
@@ -464,7 +463,7 @@ void ATerrainComponent::OnTransformDirty()
 
     if (!IsInEditor())
     {
-        LOG("WARNING: Set transform for terrain {}\n", GetObjectNameCStr());
+        LOG("WARNING: Set transform for terrain {}\n", GetObjectName());
     }
 
     // Update rigid body transform

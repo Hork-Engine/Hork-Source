@@ -80,7 +80,7 @@ class AActor : public ABaseObject
 
     friend class AWorld;
     friend class AController;
-    friend class AWorldPhysics;
+    friend class APhysicsSystem;
 
 public:
     /** Actor factory */

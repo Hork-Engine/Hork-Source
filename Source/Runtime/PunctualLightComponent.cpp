@@ -39,7 +39,7 @@ APunctualLightComponent::APunctualLightComponent()
     AABBWorldBounds.Clear();
     OBBTransformInverse.Clear();
 
-    Primitive = ALevel::AllocatePrimitive();
+    Primitive             = AVisibilitySystem::AllocatePrimitive();
     Primitive->Owner      = this;
     Primitive->Type       = VSD_PRIMITIVE_SPHERE;
     Primitive->VisGroup   = VISIBILITY_GROUP_DEFAULT;
@@ -48,21 +48,21 @@ APunctualLightComponent::APunctualLightComponent()
 
 APunctualLightComponent::~APunctualLightComponent()
 {
-    ALevel::DeallocatePrimitive(Primitive);
+    AVisibilitySystem::DeallocatePrimitive(Primitive);
 }
 
 void APunctualLightComponent::InitializeComponent()
 {
     Super::InitializeComponent();
 
-    GetLevel()->AddPrimitive(Primitive);
+    GetWorld()->VisibilitySystem.AddPrimitive(Primitive);
 }
 
 void APunctualLightComponent::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
-    GetLevel()->RemovePrimitive(Primitive);
+    GetWorld()->VisibilitySystem.RemovePrimitive(Primitive);
 }
 
 void APunctualLightComponent::SetEnabled(bool _Enabled)

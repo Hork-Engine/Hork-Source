@@ -33,15 +33,14 @@ SOFTWARE.
 #include "Material.h"
 #include "SoundResource.h"
 #include "HitTest.h"
-#include "VSD.h"
 #include <Renderer/RenderDefs.h>
+#include "VisibilitySystem.h"
 
 class AActor;
 class AWorld;
 class ALevel;
 class ATexture;
 class ASceneComponent;
-class ABrushModel;
 class AConvexHull;
 class AIndexedMesh;
 class ALightmapUV;
@@ -52,6 +51,77 @@ struct SVisArea;
 struct SPrimitiveDef;
 struct SPortalLink;
 struct SPrimitiveLink;
+
+struct SLightingSystemCreateInfo
+{
+    ELightmapFormat        LightmapFormat;
+    void*                  LightData;
+    size_t                 LightDataSize;
+    int                    LightmapBlockWidth;
+    int                    LightmapBlockHeight;
+    int                    LightmapBlockCount;
+
+    // FUTURE: split shadow casters to chunks for culling
+    Float3 const*          ShadowCasterVertices;
+    int                    ShadowCasterVertexCount;
+    unsigned int const*    ShadowCasterIndices;
+    int                    ShadowCasterIndexCount;
+    SLightPortalDef const* LightPortals;
+    int                    LightPortalsCount;
+    Float3 const*          LightPortalVertices;
+    int                    LightPortalVertexCount;
+    unsigned int const*    LightPortalIndices;
+    int                    LightPortalIndexCount;
+};
+
+class ALevelLighting : public ARefCounted
+{
+public:
+    ALevelLighting(SLightingSystemCreateInfo const& CreateInfo);
+    ~ALevelLighting();
+
+    Float3 SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord) const;
+
+    /** Get shadow caster GPU buffers */
+    RenderCore::IBuffer* GetShadowCasterVB() { return ShadowCasterVB; }
+    RenderCore::IBuffer* GetShadowCasterIB() { return ShadowCasterIB; }
+
+    int GetShadowCasterIndexCount() const { return ShadowCasterIndexCount; }
+
+    /** Get light portals GPU buffers */
+    RenderCore::IBuffer* GetLightPortalsVB() { return LightPortalsVB; }
+    RenderCore::IBuffer* GetLightPortalsIB() { return LightPortalsIB; }
+
+    TPodVector<SLightPortalDef> const& GetLightPortals() const { return LightPortals; }
+
+    /** Lightmap pixel format */
+    ELightmapFormat LightmapFormat = LIGHTMAP_GRAYSCALED_HALF;
+
+    /** Lightmap atlas resolution */
+    int LightmapBlockWidth = 0;
+
+    /** Lightmap atlas resolution */
+    int LightmapBlockHeight = 0;
+
+    /** Lightmap raw data */
+    void* LightData = nullptr;
+
+    /** Static lightmaps (experimental). Indexed by lightmap block. */
+    TStdVector<TRef<RenderCore::ITexture>> Lightmaps;
+
+    TRef<RenderCore::IBuffer> ShadowCasterVB;
+    TRef<RenderCore::IBuffer> ShadowCasterIB;
+
+    TRef<RenderCore::IBuffer> LightPortalsVB;
+    TRef<RenderCore::IBuffer> LightPortalsIB;
+
+    int ShadowCasterIndexCount{};
+
+    /** Light portals */
+    TPodVector<SLightPortalDef>  LightPortals;
+    TPodVectorHeap<Float3>       LightPortalVertexBuffer;
+    TPodVectorHeap<unsigned int> LightPortalIndexBuffer;
+};
 
 constexpr int MAX_AMBIENT_SOUNDS_IN_AREA = 4;
 
@@ -64,60 +134,26 @@ struct SAudioArea
     uint8_t AmbientVolume[MAX_AMBIENT_SOUNDS_IN_AREA];
 };
 
-struct SLightPortalDef
+struct SLevelAudioCreateInfo
 {
-    /** First mesh vertex in array of vertices */
-    int FirstVert;
+    SAudioArea* AudioAreas;
+    int NumAudioAreas;
 
-    /** Mesh vertex count */
-    int NumVerts;
-
-    int FirstIndex;
-
-    int NumIndices;
+    TStdVector<TRef<ASoundResource>> AmbientSounds;
 };
 
-class ABrushModel : public ABaseObject
+class ALevelAudio : public ARefCounted
 {
-    HK_CLASS(ABrushModel, ABaseObject)
-
 public:
-    /** Baked surface definitions */
-    TPodVectorHeap<SSurfaceDef> Surfaces;
+    ALevelAudio(SLevelAudioCreateInfo const& CreateInfo);
 
-    /** Baked surface vertex data */
-    TPodVectorHeap<SMeshVertex> Vertices;
+    /** Baked audio */
+    TPodVector<SAudioArea> AudioAreas;
 
-    /** Baked surface vertex data */
-    TPodVectorHeap<SMeshVertexUV> LightmapVerts;
-
-    /** Baked surface vertex data */
-    TPodVectorHeap<SMeshVertexLight> VertexLight;
-
-    /** Baked surface triangle index data */
-    TPodVectorHeap<unsigned int> Indices;
-
-    /** Surface materials */
-    TStdVector<TRef<AMaterialInstance>> SurfaceMaterials;
-
-    /** Baked collision data */
-    //TRef< ACollisionModel > CollisionModel;
-
-    /** Lighting data will be used from that level. */
-    TWeakRef<ALevel> ParentLevel;
-
-    void Purge();
-
-    ABrushModel() {}
-    ~ABrushModel() {}
+    /** Ambient sounds */
+    TStdVector<TRef<ASoundResource>> AmbientSounds;
 };
 
-
-enum ELightmapFormat
-{
-    LIGHTMAP_GRAYSCALED_HALF,
-    LIGHTMAP_BGR_HALF
-};
 
 /**
 
@@ -134,97 +170,10 @@ class ALevel : public ABaseObject
     friend class AActor;
 
 public:
-    using AArrayOfNodes = TPodVector<SBinarySpaceNode>;
-    using AArrayOfLeafs = TPodVector<SBinarySpaceLeaf>;
-
-    template <typename T, typename... TArgs>
-    static TRef<ALevel> CreateLevel(TArgs&&... args)
-    {
-        TUniqueRef<T> ctor = MakeUnique<T>(std::forward<TArgs>(args)...);
-
-        return MakeRef<ALevel>(std::move(ctor));
-    }
-
-    /** BSP nodes */
-    AArrayOfNodes Nodes;
-
-    /** BSP leafs */
-    AArrayOfLeafs Leafs;
-
-    /** Node split planes */
-    TPodVector<SBinarySpacePlane> SplitPlanes;
-
-    /** Level indoor areas */
-    TPodVector<SVisArea> Areas;
-
-    /** Level outdoor area */
-    SVisArea OutdoorArea;
-
-    /** Visibility method */
-    LEVEL_VISIBILITY_METHOD VisibilityMethod = LEVEL_VISIBILITY_PORTAL;
-
-    /** Lightmap pixel format */
-    ELightmapFormat LightmapFormat = LIGHTMAP_GRAYSCALED_HALF;
-
-    /** Lightmap atlas resolution */
-    int LightmapBlockWidth = 0;
-
-    /** Lightmap atlas resolution */
-    int LightmapBlockHeight = 0;
-
-    /** Lightmap raw data */
-    void* LightData = nullptr;
-
-    /** PVS data */
-    byte* Visdata = nullptr;
-
-    /** Is PVS data compressed or not (ZRLE) */
-    bool bCompressedVisData = false;
-
-    /** Count of a clusters in PVS data */
-    int PVSClustersCount = 0;
-
-    /** Surface to area attachments */
-    TPodVector<int> AreaSurfaces;
-
-    /** Baked audio */
-    TPodVector<SAudioArea> AudioAreas;
-
-    /** Ambient sounds */
-    TStdVector<TRef<ASoundResource>> AmbientSounds;
-
-    /** Baked surface data */
-    TRef<ABrushModel> Model;
-
-    /** Static lightmaps (experimental). Indexed by lightmap block. */
-    TStdVector<TRef<ATexture>> Lightmaps;
-
-    /** Vertex buffer for baked static shadow casters
-    FUTURE: split to chunks for culling
-    */
-    TPodVectorHeap<Float3> ShadowCasterVerts;
-
-    /** Index buffer for baked static shadow casters */
-    TPodVectorHeap<unsigned int> ShadowCasterIndices;
-
-    /** Not movable primitives */
-    //TPodVector< SPrimitiveDef * > BakedPrimitives;
-
-    // TODO: Keep here static navigation geometry
-    // TODO: Octree/AABBtree for outdoor area
-
-    /** Create and link portals */
-    void CreatePortals(SPortalDef const* InPortals, int InPortalsCount, Float3 const* InHullVertices);
-
-    /** Create light portals */
-    void CreateLightPortals(SLightPortalDef const* InPortals, int InPortalsCount, Float3 const* InMeshVertices, int InVertexCount, unsigned int const* InMeshIndices, int InIndexCount);
-
-    /** Build level visibility */
-    void Initialize();
-
-    /** Purge level data */
-    void Purge();
-
+    TRef<AVisibilityLevel> Visibility;
+    TRef<ALevelLighting>   Lighting;
+    TRef<ALevelAudio>      Audio;
+    
     /** Level is persistent if created by owner world */
     bool IsPersistentLevel() const { return bIsPersistent; }
 
@@ -233,24 +182,6 @@ public:
 
     /** Get actors in level */
     TPodVector<AActor*> const& GetActors() const { return Actors; }
-
-    /** Get level indoor bounding box */
-    BvAxisAlignedBox const& GetIndoorBounds() const { return IndoorBounds; }
-
-    /** Get level areas */
-    TPodVector<SVisArea> const& GetAreas() const { return Areas; }
-
-    /** Get level outdoor area */
-    SVisArea const* GetOutdoorArea() const { return &OutdoorArea; }
-
-    /** Find level leaf */
-    int FindLeaf(Float3 const& _Position);
-
-    /** Find level area */
-    SVisArea* FindArea(Float3 const& _Position);
-
-    /** Mark potentially visible leafs. Uses PVS */
-    int MarkLeafs(int _ViewLeaf);
 
     /** Destroy all actors in the level */
     void DestroyActors();
@@ -276,134 +207,30 @@ public:
     /** Sample lightmap by texture coordinate */
     Float3 SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord) const;
 
-    /** Query vis areas by bounding box */
-    void QueryOverplapAreas(BvAxisAlignedBox const& InBounds, TPodVector<SVisArea*>& Areas);
-
-    /** Query vis areas by bounding sphere */
-    void QueryOverplapAreas(BvSphere const& InBounds, TPodVector<SVisArea*>& Areas);
-
-    /** Add primitive to the level */
-    void AddPrimitive(SPrimitiveDef* InPrimitive);
-
-    /** Remove primitive from the level */
-    void RemovePrimitive(SPrimitiveDef* InPrimitive);
-
-    /** Mark primitive dirty */
-    void MarkPrimitive(SPrimitiveDef* InPrimitive);
-
-    /** Get shadow caster GPU buffers */
-    RenderCore::IBuffer* GetShadowCasterVB() { return ShadowCasterVB; }
-    RenderCore::IBuffer* GetShadowCasterIB() { return ShadowCasterIB; }
-
-    /** Get light portals GPU buffers */
-    RenderCore::IBuffer* GetLightPortalsVB() { return LightPortalsVB; }
-    RenderCore::IBuffer* GetLightPortalsIB() { return LightPortalsIB; }
-
-    TPodVector<SLightPortalDef> const& GetLightPortals() const { return LightPortals; }
-
-    using APrimitivePool = TPoolAllocator<SPrimitiveDef>;
-    using APrimitiveLinkPool = TPoolAllocator<SPrimitiveLink>;
-
-    static APrimitivePool PrimitivePool;
-    static APrimitiveLinkPool PrimitiveLinkPool;
-
-    static SPrimitiveDef* AllocatePrimitive();
-    static void DeallocatePrimitive(SPrimitiveDef* Primitive);
+    
 
     ALevel();
     ~ALevel();
 
 protected:
-    /** Level ticking. Called by owner world. */
-    void Tick(float _TimeStep);
-
     /** Draw debug. Called by owner world. */
-    virtual void DrawDebug(ADebugRenderer* InRenderer);
+    void DrawDebug(ADebugRenderer* InRenderer);
 
 private:
-    template <typename T>
-    ALevel(TUniqueRef<T>&& ctor)
-    {
-        ctor->pNodes = &Nodes;
-        ctor->Build();
-    }
-
     /** Callback on add level to world. Called by owner world. */
     void OnAddLevelToWorld();
 
     /** Callback on remove level from world. Called by owner world. */
     void OnRemoveLevelFromWorld();
 
-    void QueryOverplapAreas_r(int InNodeIndex, BvAxisAlignedBox const& InBounds, TPodVector<SVisArea*>& Areas);
-    void QueryOverplapAreas_r(int InNodeIndex, BvSphere const& InBounds, TPodVector<SVisArea*>& Areas);
-
-    void AddBoxRecursive(int InNodeIndex, SPrimitiveDef* InPrimitive);
-    void AddSphereRecursive(int InNodeIndex, SPrimitiveDef* InPrimitive);
-
-    /** Link primitive to the level areas */
-    void LinkPrimitive(SPrimitiveDef* InPrimitive);
-
-    /** Unlink primitive from the level areas */
-    void UnlinkPrimitive(SPrimitiveDef* InPrimitive);
-
-    /** Mark all primitives in the level */
-    void MarkPrimitives();
-
-    /** Unmark all primitives in the level */
-    void UnmarkPrimitives();
-
-    void RemovePrimitives();
-
-    byte const* LeafPVS(SBinarySpaceLeaf const* _Leaf);
-
-    byte const* DecompressVisdata(byte const* _Data);
-
-    void PurgePortals();
-
-    void UpdatePrimitiveLinks();
-
-    void AddPrimitiveToArea(SVisArea* Area, SPrimitiveDef* Primitive);
-
     /** Parent world */
     AWorld* OwnerWorld = nullptr;
 
     bool bIsPersistent = false;
 
-    /** Level portals */
-    TPodVector<SVisPortal> Portals;
-
-    /** Links between the portals and areas */
-    TPodVector<SPortalLink> AreaLinks;
-
-    /** Light portals */
-    TPodVector<SLightPortalDef>  LightPortals;
-    TPodVectorHeap<Float3>       LightPortalVertexBuffer;
-    TPodVectorHeap<unsigned int> LightPortalIndexBuffer;
-
     /** Array of actors */
     TPodVector<AActor*> Actors;
 
-    BvAxisAlignedBox IndoorBounds;
-
     TPodVector<ALightmapUV*>  LightmapUVs;
     TPodVector<AVertexLight*> VertexLightChannels;
-
-    byte* DecompressedVisData = nullptr;
-
-    /** Node visitor mark */
-    int ViewMark = 0;
-
-    /** Cluster index for view origin */
-    int ViewCluster = -1;
-
-    TRef<RenderCore::IBuffer> ShadowCasterVB;
-    TRef<RenderCore::IBuffer> ShadowCasterIB;
-
-    TRef<RenderCore::IBuffer> LightPortalsVB;
-    TRef<RenderCore::IBuffer> LightPortalsIB;
-
-    SPrimitiveDef* PrimitiveList           = nullptr;
-    SPrimitiveDef* PrimitiveListTail       = nullptr;
-    SPrimitiveDef* PrimitiveUpdateList     = nullptr;
-    SPrimitiveDef* PrimitiveUpdateListTail = nullptr;
 };

@@ -46,7 +46,7 @@ AEnvironmentProbe::AEnvironmentProbe()
     AABBWorldBounds.Clear();
     OBBTransformInverse.Clear();
 
-    Primitive = ALevel::AllocatePrimitive();
+    Primitive             = AVisibilitySystem::AllocatePrimitive();
     Primitive->Owner      = this;
     Primitive->Type       = VSD_PRIMITIVE_SPHERE;
     Primitive->VisGroup   = VISIBILITY_GROUP_DEFAULT;
@@ -59,21 +59,21 @@ AEnvironmentProbe::AEnvironmentProbe()
 
 AEnvironmentProbe::~AEnvironmentProbe()
 {
-    ALevel::DeallocatePrimitive(Primitive);
+    AVisibilitySystem::DeallocatePrimitive(Primitive);
 }
 
 void AEnvironmentProbe::InitializeComponent()
 {
     Super::InitializeComponent();
 
-    GetLevel()->AddPrimitive(Primitive);
+    GetWorld()->VisibilitySystem.AddPrimitive(Primitive);
 }
 
 void AEnvironmentProbe::DeinitializeComponent()
 {
     Super::DeinitializeComponent();
 
-    GetLevel()->RemovePrimitive(Primitive);
+    GetWorld()->VisibilitySystem.RemovePrimitive(Primitive);
 }
 
 void AEnvironmentProbe::SetEnabled(bool _Enabled)
@@ -140,7 +140,7 @@ void AEnvironmentProbe::UpdateWorldBounds()
 
     if (IsInitialized())
     {
-        GetLevel()->MarkPrimitive(Primitive);
+        GetWorld()->VisibilitySystem.MarkPrimitive(Primitive);
     }
 }
 

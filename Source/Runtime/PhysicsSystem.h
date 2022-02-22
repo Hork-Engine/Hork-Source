@@ -168,9 +168,9 @@ struct SCollisionQueryResult
     }
 };
 
-class AWorldPhysics
+class APhysicsSystem
 {
-    HK_FORBID_COPY(AWorldPhysics)
+    HK_FORBID_COPY(APhysicsSystem)
 
 public:
     /** Physics refresh rate */
@@ -191,8 +191,8 @@ public:
 
     bool bDuringPhysicsUpdate = false;
 
-    AWorldPhysics();
-    virtual ~AWorldPhysics();
+    APhysicsSystem();
+    virtual ~APhysicsSystem();
 
     /** Trace collision bodies */
     bool Trace(TPodVector<SCollisionTraceResult>& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter = nullptr) const;

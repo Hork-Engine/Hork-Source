@@ -32,7 +32,6 @@ SOFTWARE.
 #include "Timer.h"
 #include "SkinnedComponent.h"
 #include "PointLightComponent.h"
-#include "VSD.h"
 #include "Engine.h"
 #include "EnvironmentMap.h"
 
@@ -54,14 +53,32 @@ AWorld::AWorld()
     PersistentLevel->OwnerWorld    = this;
     PersistentLevel->bIsPersistent = true;
     PersistentLevel->OnAddLevelToWorld();
+
+    SVisibilitySystemCreateInfo ci{};
+    PersistentLevel->Visibility = MakeRef<AVisibilityLevel>(ci);
     ArrayOfLevels.Append(PersistentLevel);
 
-    WorldPhysics.PrePhysicsCallback.Set(this, &AWorld::HandlePrePhysics);
-    WorldPhysics.PostPhysicsCallback.Set(this, &AWorld::HandlePostPhysics);
+    VisibilitySystem.RegisterLevel(PersistentLevel->Visibility);
+
+    PhysicsSystem.PrePhysicsCallback.Set(this, &AWorld::HandlePrePhysics);
+    PhysicsSystem.PostPhysicsCallback.Set(this, &AWorld::HandlePostPhysics);
 }
 
 AWorld::~AWorld()
 {
+    for (ALevel* level : ArrayOfLevels)
+    {
+        level->OnRemoveLevelFromWorld();
+
+        ArrayOfLevels.Remove(ArrayOfLevels.IndexOf(level));
+
+        VisibilitySystem.UnregisterLevel(level->Visibility);
+
+        level->OwnerWorld = nullptr;
+        level->RemoveRef();
+    }
+
+    //VisibilitySystem.UnregisterLevel(PersistentLevel->Visibility);
 }
 
 void AWorld::SetPaused(bool _Paused)
@@ -82,28 +99,28 @@ void AWorld::ResetGameplayTimer()
 
 void AWorld::SetPhysicsHertz(int _Hertz)
 {
-    WorldPhysics.PhysicsHertz = _Hertz;
+    PhysicsSystem.PhysicsHertz = _Hertz;
 }
 
 void AWorld::SetContactSolverSplitImpulse(bool _SplitImpulse)
 {
-    WorldPhysics.bContactSolverSplitImpulse = _SplitImpulse;
+    PhysicsSystem.bContactSolverSplitImpulse = _SplitImpulse;
 }
 
 void AWorld::SetContactSolverIterations(int _InterationsCount)
 {
-    WorldPhysics.NumContactSolverIterations = _InterationsCount;
+    PhysicsSystem.NumContactSolverIterations = _InterationsCount;
 }
 
 void AWorld::SetGravityVector(Float3 const& _Gravity)
 {
-    WorldPhysics.GravityVector = _Gravity;
-    WorldPhysics.bGravityDirty = true;
+    PhysicsSystem.GravityVector = _Gravity;
+    PhysicsSystem.bGravityDirty = true;
 }
 
 Float3 const& AWorld::GetGravityVector() const
 {
-    return WorldPhysics.GravityVector;
+    return PhysicsSystem.GravityVector;
 }
 
 void AWorld::Destroy()
@@ -896,10 +913,7 @@ void AWorld::UpdateActorsPostPhysics(float TimeStep)
 
 void AWorld::UpdateLevels(float TimeStep)
 {
-    for (ALevel* level : ArrayOfLevels)
-    {
-        level->Tick(TimeStep);
-    }
+    VisibilitySystem.UpdatePrimitiveLinks();
 }
 
 void AWorld::HandlePrePhysics(float TimeStep)
@@ -932,17 +946,9 @@ void AWorld::UpdatePhysics(float TimeStep)
         return;
     }
 
-    WorldPhysics.Simulate(TimeStep);
+    PhysicsSystem.Simulate(TimeStep);
 
     E_OnPostPhysicsUpdate.Dispatch(TimeStep);
-}
-
-void AWorld::UpdateSkinning()
-{
-    for (TListIterator<ASkinnedComponent> skinnedMesh(WorldRender.SkinnedMeshes) ; skinnedMesh ; skinnedMesh++)
-    {
-        skinnedMesh->UpdateBounds();
-    }
 }
 
 void AWorld::LateUpdate(float TimeStep)
@@ -987,7 +993,7 @@ void AWorld::Tick(float TimeStep)
     LateUpdate(TimeStep);
 
     // Tick skinning
-    UpdateSkinning();
+    SkinningSystem.Update();
 
     KillActors();
 
@@ -999,34 +1005,39 @@ void AWorld::Tick(float TimeStep)
     GameRunningTimeMicroAfterTick += frameDuration;
 }
 
-bool AWorld::Raycast(SWorldRaycastResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SWorldRaycastFilter const* _Filter) const
+bool AWorld::Raycast(SWorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter) const
 {
-    AVSD& vsd = const_cast<AVSD&>(Vsd);
-    return vsd.RaycastTriangles(const_cast<AWorld*>(this)->GetArrayOfLevels(), _Result, _RayStart, _RayEnd, _Filter);
+    return VisibilitySystem.RaycastTriangles(Result, RayStart, RayEnd, Filter);
 }
 
-bool AWorld::RaycastBounds(TPodVector<SBoxHitResult>& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SWorldRaycastFilter const* _Filter) const
+bool AWorld::RaycastBounds(TPodVector<SBoxHitResult>& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter) const
 {
-    AVSD& vsd = const_cast<AVSD&>(Vsd);
-    return vsd.RaycastBounds(const_cast<AWorld*>(this)->GetArrayOfLevels(), _Result, _RayStart, _RayEnd, _Filter);
+    return VisibilitySystem.RaycastBounds(Result, RayStart, RayEnd, Filter);
 }
 
-bool AWorld::RaycastClosest(SWorldRaycastClosestResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SWorldRaycastFilter const* _Filter) const
+bool AWorld::RaycastClosest(SWorldRaycastClosestResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter) const
 {
-    AVSD& vsd = const_cast<AVSD&>(Vsd);
-    return vsd.RaycastClosest(const_cast<AWorld*>(this)->GetArrayOfLevels(), _Result, _RayStart, _RayEnd, _Filter);
+    return VisibilitySystem.RaycastClosest(Result, RayStart, RayEnd, Filter);
 }
 
-bool AWorld::RaycastClosestBounds(SBoxHitResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SWorldRaycastFilter const* _Filter) const
+bool AWorld::RaycastClosestBounds(SBoxHitResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter) const
 {
-    AVSD& vsd = const_cast<AVSD&>(Vsd);
-    return vsd.RaycastClosestBounds(const_cast<AWorld*>(this)->GetArrayOfLevels(), _Result, _RayStart, _RayEnd, _Filter);
+    return VisibilitySystem.RaycastClosestBounds(Result, RayStart, RayEnd, Filter);
 }
 
-void AWorld::QueryVisiblePrimitives(TPodVector<SPrimitiveDef*>& VisPrimitives, TPodVector<SSurfaceDef*>& VisSurfs, int* VisPass, SVisibilityQuery const& InQuery)
+void AWorld::QueryVisiblePrimitives(TPodVector<SPrimitiveDef*>& VisPrimitives, TPodVector<SSurfaceDef*>& VisSurfs, int* VisPass, SVisibilityQuery const& Query)
 {
-    AVSD& vsd = const_cast<AVSD&>(Vsd);
-    vsd.QueryVisiblePrimitives(GetArrayOfLevels(), VisPrimitives, VisSurfs, VisPass, InQuery);
+    VisibilitySystem.QueryVisiblePrimitives(VisPrimitives, VisSurfs, VisPass, Query);
+}
+
+void AWorld::QueryOverplapAreas(BvAxisAlignedBox const& Bounds, TPodVector<SVisArea*>& Areas)
+{
+    VisibilitySystem.QueryOverplapAreas(Bounds, Areas);
+}
+
+void AWorld::QueryOverplapAreas(BvSphere const& Bounds, TPodVector<SVisArea*>& Areas)
+{
+    VisibilitySystem.QueryOverplapAreas(Bounds, Areas);
 }
 
 void AWorld::ApplyRadialDamage(float _DamageAmount, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter)
@@ -1070,6 +1081,8 @@ void AWorld::AddLevel(ALevel* _Level)
     _Level->AddRef();
     _Level->OnAddLevelToWorld();
     ArrayOfLevels.Append(_Level);
+
+    VisibilitySystem.RegisterLevel(_Level->Visibility);
 }
 
 void AWorld::RemoveLevel(ALevel* _Level)
@@ -1094,6 +1107,8 @@ void AWorld::RemoveLevel(ALevel* _Level)
     _Level->OnRemoveLevelFromWorld();
 
     ArrayOfLevels.Remove(ArrayOfLevels.IndexOf(_Level));
+
+    VisibilitySystem.UnregisterLevel(_Level->Visibility);
 
     _Level->OwnerWorld = nullptr;
     _Level->RemoveRef();
@@ -1129,21 +1144,19 @@ void AWorld::UnregisterTimer(ATimer* Timer)
 
 void AWorld::DrawDebug(ADebugRenderer* InRenderer)
 {
+    VisibilitySystem.DrawDebug(InRenderer);
+
     for (ALevel* level : ArrayOfLevels)
     {
         level->DrawDebug(InRenderer);
     }
-
-    Vsd.DrawDebug(InRenderer);
 
     for (AActor* actor : Actors)
     {
         actor->CallDrawDebug(InRenderer);
     }
 
-    WorldRender.DrawDebug(InRenderer);
-
-    WorldPhysics.DrawDebug(InRenderer);
+    PhysicsSystem.DrawDebug(InRenderer);
 
     NavigationMesh.DrawDebug(InRenderer);
 }
@@ -1185,13 +1198,13 @@ void AWorld::KillWorlds()
             world->KillActors(bClearSpawnQueue);
 
             // Remove all levels from the world including persistent level
-            for (ALevel* level : world->ArrayOfLevels)
-            {
-                level->OnRemoveLevelFromWorld();
-                level->OwnerWorld = nullptr;
-                level->RemoveRef();
-            }
-            world->ArrayOfLevels.Clear();
+            //for (ALevel* level : world->ArrayOfLevels)
+            //{
+            //    level->OnRemoveLevelFromWorld();
+            //    level->OwnerWorld = nullptr;
+            //    level->RemoveRef();
+            //}
+            //world->ArrayOfLevels.Clear();
 
             // Remove the world from the game
             Worlds.Remove(Worlds.IndexOf(world));
@@ -1235,7 +1248,8 @@ void AWorld::UpdateWorlds(float TimeStep)
 
     KillWorlds();
 
-    ALevel::PrimitiveLinkPool.CleanupEmptyBlocks();
+    AVisibilitySystem::PrimitivePool.CleanupEmptyBlocks();
+    AVisibilitySystem::PrimitiveLinkPool.CleanupEmptyBlocks();
 }
 
 void AWorld::SetGlobalEnvironmentMap(AEnvironmentMap* EnvironmentMap)

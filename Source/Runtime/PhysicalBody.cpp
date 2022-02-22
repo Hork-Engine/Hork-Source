@@ -269,7 +269,7 @@ void APhysicalBody::InitializeComponent()
 
     if (AINavigationBehavior != AI_NAVIGATION_BEHAVIOR_NONE)
     {
-        AAINavigationMesh& NavigationMesh = GetWorld()->GetNavigationMesh();
+        AAINavigationMesh& NavigationMesh = GetWorld()->NavigationMesh;
         NavigationMesh.NavigationPrimitives.Add(this);
     }
 }
@@ -280,7 +280,7 @@ void APhysicalBody::DeinitializeComponent()
 
     ClearBoneCollisions();
 
-    AAINavigationMesh& NavigationMesh = GetWorld()->GetNavigationMesh();
+    AAINavigationMesh& NavigationMesh = GetWorld()->NavigationMesh;
     NavigationMesh.NavigationPrimitives.Remove(this);
 
     Super::DeinitializeComponent();
@@ -309,13 +309,15 @@ void APhysicalBody::SetAINavigationBehavior(EAINavigationBehavior _AINavigationB
 
     if (IsInitialized())
     {
-        AAINavigationMesh& NavigationMesh = GetWorld()->GetNavigationMesh();
-
-        NavigationMesh.NavigationPrimitives.Remove(this);
+        AAINavigationMesh& NavigationMesh = GetWorld()->NavigationMesh;
 
         if (AINavigationBehavior != AI_NAVIGATION_BEHAVIOR_NONE)
         {
             NavigationMesh.NavigationPrimitives.Add(this);
+        }
+        else
+        {
+            NavigationMesh.NavigationPrimitives.Remove(this);
         }
     }
 }

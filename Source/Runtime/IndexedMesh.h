@@ -566,6 +566,8 @@ private:
     mutable bool                    bBoundingBoxDirty        = false;
 };
 
+class AStreamedMemoryGPU;
+struct SRenderFrontendDef;
 
 /**
 

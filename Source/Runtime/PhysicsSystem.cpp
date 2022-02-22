@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include "WorldPhysics.h"
+#include "PhysicsSystem.h"
 #include "TerrainComponent.h"
 #include "PhysicalBody.h"
 #include "Actor.h"
@@ -130,7 +130,7 @@ static bool CustomMaterialCombinerCallback(btManifoldPoint&                cp,
     return true;
 }
 
-void AWorldPhysics::GenerateContactPoints(int _ContactIndex, SCollisionContact& _Contact)
+void APhysicsSystem::GenerateContactPoints(int _ContactIndex, SCollisionContact& _Contact)
 {
     if (CacheContactPoints == _ContactIndex)
     {
@@ -204,7 +204,7 @@ void AWorldPhysics::GenerateContactPoints(int _ContactIndex, SCollisionContact& 
     }
 }
 
-AWorldPhysics::AWorldPhysics()
+APhysicsSystem::APhysicsSystem()
 {
     GravityVector = Float3(0.0f, -9.81f, 0.0f);
 
@@ -258,7 +258,7 @@ AWorldPhysics::AWorldPhysics()
 #endif
 }
 
-AWorldPhysics::~AWorldPhysics()
+APhysicsSystem::~APhysicsSystem()
 {
     RemoveCollisionContacts();
 
@@ -270,7 +270,7 @@ AWorldPhysics::~AWorldPhysics()
     GhostPairCallback.Reset();
 }
 
-void AWorldPhysics::RemoveCollisionContacts()
+void APhysicsSystem::RemoveCollisionContacts()
 {
 #ifdef REF_AWARE
     for (int i = 0; i < 2; i++)
@@ -292,17 +292,17 @@ void AWorldPhysics::RemoveCollisionContacts()
 #endif
 }
 
-void AWorldPhysics::AddPendingBody(AHitProxy* InPhysicalBody)
+void APhysicsSystem::AddPendingBody(AHitProxy* InPhysicalBody)
 {
     INTRUSIVE_ADD_UNIQUE(InPhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail);
 }
 
-void AWorldPhysics::RemovePendingBody(AHitProxy* InPhysicalBody)
+void APhysicsSystem::RemovePendingBody(AHitProxy* InPhysicalBody)
 {
     INTRUSIVE_REMOVE(InPhysicalBody, NextMarked, PrevMarked, PendingAddToWorldHead, PendingAddToWorldTail);
 }
 
-void AWorldPhysics::AddHitProxy(AHitProxy* HitProxy)
+void APhysicsSystem::AddHitProxy(AHitProxy* HitProxy)
 {
     if (!HitProxy)
     {
@@ -327,7 +327,7 @@ void AWorldPhysics::AddHitProxy(AHitProxy* HitProxy)
     }
 }
 
-void AWorldPhysics::RemoveHitProxy(AHitProxy* HitProxy)
+void APhysicsSystem::RemoveHitProxy(AHitProxy* HitProxy)
 {
     if (!HitProxy)
     {
@@ -349,7 +349,7 @@ void AWorldPhysics::RemoveHitProxy(AHitProxy* HitProxy)
     HitProxy->bInWorld = false;
 }
 
-void AWorldPhysics::AddPendingBodies()
+void APhysicsSystem::AddPendingBodies()
 {
     AHitProxy* next;
     for (AHitProxy* hitProxy = PendingAddToWorldHead; hitProxy; hitProxy = next)
@@ -377,7 +377,7 @@ void AWorldPhysics::AddPendingBodies()
     PendingAddToWorldHead = PendingAddToWorldTail = nullptr;
 }
 
-void AWorldPhysics::DispatchContactAndOverlapEvents()
+void APhysicsSystem::DispatchContactAndOverlapEvents()
 {
 #ifdef HK_COMPILER_MSVC
 #    pragma warning(disable : 4456)
@@ -936,18 +936,18 @@ void AWorldPhysics::DispatchContactAndOverlapEvents()
     }
 }
 
-void AWorldPhysics::OnPrePhysics(btDynamicsWorld* _World, float _TimeStep)
+void APhysicsSystem::OnPrePhysics(btDynamicsWorld* _World, float _TimeStep)
 {
-    AWorldPhysics* self = static_cast<AWorldPhysics*>(_World->getWorldUserInfo());
+    APhysicsSystem* self = static_cast<APhysicsSystem*>(_World->getWorldUserInfo());
 
     //self->AddPendingBodies();
 
     self->PrePhysicsCallback(_TimeStep);
 }
 
-void AWorldPhysics::OnPostPhysics(btDynamicsWorld* _World, float _TimeStep)
+void APhysicsSystem::OnPostPhysics(btDynamicsWorld* _World, float _TimeStep)
 {
-    AWorldPhysics* self = static_cast<AWorldPhysics*>(_World->getWorldUserInfo());
+    APhysicsSystem* self = static_cast<APhysicsSystem*>(_World->getWorldUserInfo());
 
     self->DispatchContactAndOverlapEvents();
 
@@ -955,7 +955,7 @@ void AWorldPhysics::OnPostPhysics(btDynamicsWorld* _World, float _TimeStep)
     self->FixedTickNumber++;
 }
 
-void AWorldPhysics::Simulate(float _TimeStep)
+void APhysicsSystem::Simulate(float _TimeStep)
 {
     AddPendingBodies();
 
@@ -990,7 +990,7 @@ void AWorldPhysics::Simulate(float _TimeStep)
 #endif
 }
 
-void AWorldPhysics::DrawDebug(ADebugRenderer* InRenderer)
+void APhysicsSystem::DrawDebug(ADebugRenderer* InRenderer)
 {
     int mode = 0;
     if (com_DrawContactPoints)
@@ -1377,7 +1377,7 @@ struct STraceConvexResultCallback : btCollisionWorld::ConvexResultCallback
     TPodVector<SCollisionTraceResult>& Result;
 };
 
-bool AWorldPhysics::Trace(TPodVector<SCollisionTraceResult>& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
+bool APhysicsSystem::Trace(TPodVector<SCollisionTraceResult>& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
 {
     if (!_QueryFilter)
     {
@@ -1400,7 +1400,7 @@ bool AWorldPhysics::Trace(TPodVector<SCollisionTraceResult>& _Result, Float3 con
     return !_Result.IsEmpty();
 }
 
-bool AWorldPhysics::TraceClosest(SCollisionTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
+bool APhysicsSystem::TraceClosest(SCollisionTraceResult& _Result, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
 {
     STraceClosestRayResultCallback hitResult(_QueryFilter, btVectorToFloat3(_RayStart), btVectorToFloat3(_RayEnd));
 
@@ -1421,7 +1421,7 @@ bool AWorldPhysics::TraceClosest(SCollisionTraceResult& _Result, Float3 const& _
     return true;
 }
 
-bool AWorldPhysics::TraceSphere(SCollisionTraceResult& _Result, float _Radius, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
+bool APhysicsSystem::TraceSphere(SCollisionTraceResult& _Result, float _Radius, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
 {
     STraceClosestConvexResultCallback hitResult(_QueryFilter);
 
@@ -1447,7 +1447,7 @@ bool AWorldPhysics::TraceSphere(SCollisionTraceResult& _Result, float _Radius, F
     return true;
 }
 
-bool AWorldPhysics::TraceBox(SCollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
+bool APhysicsSystem::TraceBox(SCollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
 {
     Float3 boxPosition = (_Maxs + _Mins) * 0.5f;
     Float3 halfExtents = (_Maxs - _Mins) * 0.5f;
@@ -1479,7 +1479,7 @@ bool AWorldPhysics::TraceBox(SCollisionTraceResult& _Result, Float3 const& _Mins
 }
 
 // TODO: Check TraceBox2 and add TraceSphere2, TraceCylinder2 etc
-bool AWorldPhysics::TraceBox2(TPodVector<SCollisionTraceResult>& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
+bool APhysicsSystem::TraceBox2(TPodVector<SCollisionTraceResult>& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
 {
     Float3 boxPosition = (_Maxs + _Mins) * 0.5f;
     Float3 halfExtents = (_Maxs - _Mins) * 0.5f;
@@ -1501,7 +1501,7 @@ bool AWorldPhysics::TraceBox2(TPodVector<SCollisionTraceResult>& _Result, Float3
     return !_Result.IsEmpty();
 }
 
-bool AWorldPhysics::TraceCylinder(SCollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
+bool APhysicsSystem::TraceCylinder(SCollisionTraceResult& _Result, Float3 const& _Mins, Float3 const& _Maxs, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
 {
     Float3 boxPosition = (_Maxs + _Mins) * 0.5f;
     Float3 halfExtents = (_Maxs - _Mins) * 0.5f;
@@ -1532,7 +1532,7 @@ bool AWorldPhysics::TraceCylinder(SCollisionTraceResult& _Result, Float3 const& 
     return true;
 }
 
-bool AWorldPhysics::TraceCapsule(SCollisionTraceResult& _Result, float _CapsuleHeight, float CapsuleRadius, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
+bool APhysicsSystem::TraceCapsule(SCollisionTraceResult& _Result, float _CapsuleHeight, float CapsuleRadius, Float3 const& _RayStart, Float3 const& _RayEnd, SCollisionQueryFilter const* _QueryFilter) const
 {
     STraceClosestConvexResultCallback hitResult(_QueryFilter);
 
@@ -1558,7 +1558,7 @@ bool AWorldPhysics::TraceCapsule(SCollisionTraceResult& _Result, float _CapsuleH
     return true;
 }
 
-bool AWorldPhysics::TraceConvex(SCollisionTraceResult& _Result, SConvexSweepTest const& _SweepTest) const
+bool APhysicsSystem::TraceConvex(SCollisionTraceResult& _Result, SConvexSweepTest const& _SweepTest) const
 {
     _Result.Clear();
 
@@ -1855,7 +1855,7 @@ static void CollisionShapeContactTest(btDiscreteDynamicsWorld const* InWorld, Fl
     //    physWorld->removeRigidBody( tempBody );
 }
 
-void AWorldPhysics::QueryHitProxies_Sphere(TPodVector<AHitProxy*>& _Result, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter) const
+void APhysicsSystem::QueryHitProxies_Sphere(TPodVector<AHitProxy*>& _Result, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter) const
 {
     SQueryCollisionObjectsCallback callback(_Result, _QueryFilter);
     btSphereShape                  shape(_Radius);
@@ -1863,7 +1863,7 @@ void AWorldPhysics::QueryHitProxies_Sphere(TPodVector<AHitProxy*>& _Result, Floa
     CollisionShapeContactTest(DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void AWorldPhysics::QueryHitProxies_Box(TPodVector<AHitProxy*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, SCollisionQueryFilter const* _QueryFilter) const
+void APhysicsSystem::QueryHitProxies_Box(TPodVector<AHitProxy*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, SCollisionQueryFilter const* _QueryFilter) const
 {
     SQueryCollisionObjectsCallback callback(_Result, _QueryFilter);
     btBoxShape                     shape(btVectorToFloat3(_HalfExtents));
@@ -1871,12 +1871,12 @@ void AWorldPhysics::QueryHitProxies_Box(TPodVector<AHitProxy*>& _Result, Float3 
     CollisionShapeContactTest(DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void AWorldPhysics::QueryHitProxies(TPodVector<AHitProxy*>& _Result, BvAxisAlignedBox const& _BoundingBox, SCollisionQueryFilter const* _QueryFilter) const
+void APhysicsSystem::QueryHitProxies(TPodVector<AHitProxy*>& _Result, BvAxisAlignedBox const& _BoundingBox, SCollisionQueryFilter const* _QueryFilter) const
 {
     QueryHitProxies_Box(_Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter);
 }
 
-void AWorldPhysics::QueryActors_Sphere(TPodVector<AActor*>& _Result, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter) const
+void APhysicsSystem::QueryActors_Sphere(TPodVector<AActor*>& _Result, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter) const
 {
     SQueryActorsCallback callback(_Result, _QueryFilter);
     btSphereShape        shape(_Radius);
@@ -1884,7 +1884,7 @@ void AWorldPhysics::QueryActors_Sphere(TPodVector<AActor*>& _Result, Float3 cons
     CollisionShapeContactTest(DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void AWorldPhysics::QueryActors_Box(TPodVector<AActor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, SCollisionQueryFilter const* _QueryFilter) const
+void APhysicsSystem::QueryActors_Box(TPodVector<AActor*>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, SCollisionQueryFilter const* _QueryFilter) const
 {
     SQueryActorsCallback callback(_Result, _QueryFilter);
     btBoxShape           shape(btVectorToFloat3(_HalfExtents));
@@ -1892,12 +1892,12 @@ void AWorldPhysics::QueryActors_Box(TPodVector<AActor*>& _Result, Float3 const& 
     CollisionShapeContactTest(DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void AWorldPhysics::QueryActors(TPodVector<AActor*>& _Result, BvAxisAlignedBox const& _BoundingBox, SCollisionQueryFilter const* _QueryFilter) const
+void APhysicsSystem::QueryActors(TPodVector<AActor*>& _Result, BvAxisAlignedBox const& _BoundingBox, SCollisionQueryFilter const* _QueryFilter) const
 {
     QueryActors_Box(_Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter);
 }
 
-void AWorldPhysics::QueryCollision_Sphere(TPodVector<SCollisionQueryResult>& _Result, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter) const
+void APhysicsSystem::QueryCollision_Sphere(TPodVector<SCollisionQueryResult>& _Result, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter) const
 {
     SQueryCollisionCallback callback(_Result, _QueryFilter);
     btSphereShape           shape(_Radius);
@@ -1905,7 +1905,7 @@ void AWorldPhysics::QueryCollision_Sphere(TPodVector<SCollisionQueryResult>& _Re
     CollisionShapeContactTest(DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void AWorldPhysics::QueryCollision_Box(TPodVector<SCollisionQueryResult>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, SCollisionQueryFilter const* _QueryFilter) const
+void APhysicsSystem::QueryCollision_Box(TPodVector<SCollisionQueryResult>& _Result, Float3 const& _Position, Float3 const& _HalfExtents, SCollisionQueryFilter const* _QueryFilter) const
 {
     SQueryCollisionCallback callback(_Result, _QueryFilter);
     btBoxShape              shape(btVectorToFloat3(_HalfExtents));
@@ -1913,7 +1913,7 @@ void AWorldPhysics::QueryCollision_Box(TPodVector<SCollisionQueryResult>& _Resul
     CollisionShapeContactTest(DynamicsWorld.GetObject(), _Position, &shape, callback);
 }
 
-void AWorldPhysics::QueryCollision(TPodVector<SCollisionQueryResult>& _Result, BvAxisAlignedBox const& _BoundingBox, SCollisionQueryFilter const* _QueryFilter) const
+void APhysicsSystem::QueryCollision(TPodVector<SCollisionQueryResult>& _Result, BvAxisAlignedBox const& _BoundingBox, SCollisionQueryFilter const* _QueryFilter) const
 {
     QueryCollision_Box(_Result, _BoundingBox.Center(), _BoundingBox.HalfSize(), _QueryFilter);
 }

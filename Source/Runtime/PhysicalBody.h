@@ -79,7 +79,7 @@ class APhysicalBody : public ASceneComponent, private ANavigationPrimitive
 
     friend struct SCollisionFilterCallback;
     friend class APhysicalBodyMotionState;
-    friend class AWorldPhysics;
+    friend class APhysicsSystem;
 
 public:
     AHitProxy* GetHitProxy() const

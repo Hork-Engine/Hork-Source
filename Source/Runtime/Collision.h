@@ -39,7 +39,7 @@ class AHitProxy : public ABaseObject
 {
     HK_CLASS(AHitProxy, ABaseObject)
 
-    friend class AWorldPhysics;
+    friend class APhysicsSystem;
 
 public:
     // Component events
