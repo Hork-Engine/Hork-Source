@@ -165,7 +165,7 @@ public:
         return ((int)c < WideCharAdvanceX.Size()) ? WideCharAdvanceX[(int)c] : FallbackAdvanceX;
     }
 
-    ATexture* GetTexture() const
+    RenderCore::ITexture* GetTexture() const
     {
         return AtlasTexture;
     }
@@ -224,7 +224,7 @@ private:
     // Texture coordinates to a white pixel
     Float2 TexUvWhitePixel = Float2(0.0f);
     // Texture object
-    TRef<ATexture> AtlasTexture;
+    TRef<RenderCore::ITexture> AtlasTexture;
     // Rectangles for packing custom texture data into the atlas.
     TPodVector<SFontCustomRect> CustomRects;
 };
