@@ -144,6 +144,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
         rect.Dimension.Z   = 1;
         const byte data[4] = {0xff, 0xff, 0xff, 0xff};
         GWhiteTexture->WriteRect(rect, FORMAT_UBYTE4, sizeof(data), 4, data);
+        GWhiteTexture->SetDebugName("White texture");
     }
 
     // Create cluster lookup 3D texture
@@ -154,6 +155,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
                                                                    MAX_FRUSTUM_CLUSTERS_Z))
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &GClusterLookup);
+    GClusterLookup->SetDebugName("Cluster Lookup");
 
 
     FeedbackAnalyzerVT  = MakeRef<AVirtualTextureFeedbackAnalyzer>();

@@ -21,6 +21,7 @@ AShadowMapRenderer::AShadowMapRenderer()
                                .SetResolution(STextureResolution2DArray(1, 1, 1))
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &DummyShadowMap);
+    DummyShadowMap->SetDebugName("Dummy Shadow Map");
 
     SClearValue clearValue;
     clearValue.Float1.R = 1.0f;

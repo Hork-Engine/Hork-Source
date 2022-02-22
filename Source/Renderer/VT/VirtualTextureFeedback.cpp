@@ -118,10 +118,12 @@ void AVirtualTextureFeedback::Begin( int Width, int Height )
                                    .SetFormat(TEXTURE_FORMAT_RGBA8)
                                    .SetResolution(STextureResolution2D(feedbackWidth, feedbackHeight)),
                                &FeedbackTexture);
+        FeedbackTexture->SetDebugName("VT Feedback Texture");
         GDevice->CreateTexture(STextureDesc()
                                    .SetFormat(FEEDBACK_DEPTH_FORMAT)
                                    .SetResolution(STextureResolution2D(feedbackWidth, feedbackHeight)),
                                &FeedbackDepth);
+        FeedbackTexture->SetDebugName("VT Feedback Depth");
     }
 
     size_t feedbackSizeInBytes = FeedbackSize[SwapIndex] * 4;

@@ -154,6 +154,7 @@ ASSAORenderer::ASSAORenderer()
                                .SetResolution(STextureResolution2D(HBAO_RANDOM_SIZE, HBAO_RANDOM_SIZE))
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &RandomMap);
+    RandomMap->SetDebugName("SSAO Random Map");
 
     RandomMap->Write(0, FORMAT_FLOAT3, sizeof(hbaoRandom), 1, hbaoRandom);
 }

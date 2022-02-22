@@ -31,10 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Core/Ref.h>
-
-#ifdef HK_DEBUG
-#    include <Core/String.h>
-#endif
+#include <Core/String.h>
 
 namespace RenderCore
 {
@@ -77,7 +74,7 @@ public:
 
     DEVICE_OBJECT_PROXY_TYPE GetProxyType() const { return ProxyType; }
 
-    void SetDebugName(const char* _DebugName)
+    void SetDebugName(AStringView _DebugName)
     {
 #ifdef HK_DEBUG
         DebugName = _DebugName;
