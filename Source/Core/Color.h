@@ -32,6 +32,42 @@ SOFTWARE.
 
 #include "BaseMath.h"
 
+HK_INLINE void EncodeRGBE(uint8_t RGBE[4], const float* LinearRGB)
+{
+    float maxcomp = Math::Max3(LinearRGB[0], LinearRGB[1], LinearRGB[2]);
+
+    if (maxcomp < 1e-32f)
+    {
+        RGBE[0] = RGBE[1] = RGBE[2] = RGBE[3] = 0;
+    }
+    else
+    {
+        int   exponent;
+        float normalize = frexp(maxcomp, &exponent) * 256.0f / maxcomp;
+
+        RGBE[0] = (unsigned char)(LinearRGB[0] * normalize);
+        RGBE[1] = (unsigned char)(LinearRGB[1] * normalize);
+        RGBE[2] = (unsigned char)(LinearRGB[2] * normalize);
+        RGBE[3] = (unsigned char)(exponent + 128);
+    }
+}
+
+HK_INLINE void DecodeRGBE(float* LinearRGB, const uint8_t RGBE[4])
+{
+    if (RGBE[3] != 0)
+    {
+        float scale  = ldexp(1.0f, RGBE[3] - (int)(128 + 8));
+        LinearRGB[0] = RGBE[0] * scale;
+        LinearRGB[1] = RGBE[1] * scale;
+        LinearRGB[2] = RGBE[2] * scale;
+    }
+    else
+    {
+        LinearRGB[0] = LinearRGB[1] = LinearRGB[2] = 0;
+    }
+}
+
+
 struct Color4
 {
     float R{1};
@@ -163,6 +199,20 @@ struct Color4
 
     Color4 ToLinear() const;
     Color4 ToSRGB() const;
+
+    /** Assume color is in linear space */
+    void SetRGBE(uint32_t RGBE)
+    {
+        DecodeRGBE(ToPtr(), (uint8_t const*)&RGBE);
+    }
+
+    /** Assume color is in linear space */
+    uint32_t GetRGBE() const
+    {
+        uint32_t rgbe;
+        EncodeRGBE((uint8_t*)&rgbe, ToPtr());
+        return rgbe;
+    }
 
      // String conversions
     AString ToString(int precision = Math::FloatingPointPrecision<float>()) const
@@ -645,39 +695,4 @@ HK_FORCEINLINE void Color4::GetCMYK(float& _Cyan, float& _Magenta, float& _Yello
 HK_FORCEINLINE float Color4::GetLuminance() const
 {
     return R * 0.2126f + G * 0.7152f + B * 0.0722f;
-}
-
-HK_INLINE void EncodeRGBE(uint8_t* RGBE, const float* LinearRGB)
-{
-    float maxcomp = Math::Max3(LinearRGB[0], LinearRGB[1], LinearRGB[2]);
-
-    if (maxcomp < 1e-32f)
-    {
-        RGBE[0] = RGBE[1] = RGBE[2] = RGBE[3] = 0;
-    }
-    else
-    {
-        int   exponent;
-        float normalize = frexp(maxcomp, &exponent) * 256.0f / maxcomp;
-
-        RGBE[0] = (unsigned char)(LinearRGB[0] * normalize);
-        RGBE[1] = (unsigned char)(LinearRGB[1] * normalize);
-        RGBE[2] = (unsigned char)(LinearRGB[2] * normalize);
-        RGBE[3] = (unsigned char)(exponent + 128);
-    }
-}
-
-HK_INLINE void DecodeRGBE(float* LinearRGB, const uint8_t* RGBE)
-{
-    if (RGBE[3] != 0)
-    {
-        float scale  = ldexp(1.0f, RGBE[3] - (int)(128 + 8));
-        LinearRGB[0] = RGBE[0] * scale;
-        LinearRGB[1] = RGBE[1] * scale;
-        LinearRGB[2] = RGBE[2] * scale;
-    }
-    else
-    {
-        LinearRGB[0] = LinearRGB[1] = LinearRGB[2] = 0;
-    }
 }
