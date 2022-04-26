@@ -54,6 +54,8 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
 
 void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers );
 
+void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, STextureSampler const* Samplers, int NumSamplers);
+
 void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, STextureSampler const * Samplers, int NumSamplers );
 
 void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, bool _Tessellation, STextureSampler const * Samplers, int NumSamplers );

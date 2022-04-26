@@ -140,7 +140,7 @@ bool AMaterial::LoadResource(IBinaryStreamReadInterface& Stream)
     {
         Stream.ReadObject(sourceName);
         Stream.ReadObject(sourceCode);
-        Def.AddShader(sourceName.CStr(), sourceCode);
+        Def.AddShader(sourceName, sourceCode);
     }
 
     CreateMaterial(&MaterialGPU, &Def);
@@ -199,14 +199,14 @@ bool WriteMaterial(AString const& _Path, SMaterialDef const* pDef)
     }
 
     int numShaders = 0;
-    for (SMaterialShader* s = pDef->Shaders; s; s = s->Next)
+    for (SPredefinedShaderSource* s = pDef->Shaders; s; s = s->pNext)
     {
         numShaders++;
     }
 
     f.WriteUInt16(numShaders);
 
-    for (SMaterialShader* s = pDef->Shaders; s; s = s->Next)
+    for (SPredefinedShaderSource* s = pDef->Shaders; s; s = s->pNext)
     {
         f.WriteObject(AString(s->SourceName));
         f.WriteObject(AString(s->Code));

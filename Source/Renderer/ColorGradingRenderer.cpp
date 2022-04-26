@@ -36,14 +36,14 @@ using namespace RenderCore;
 AColorGradingRenderer::AColorGradingRenderer()
 {
     SSamplerDesc samplerCI;
-    samplerCI.Filter = FILTER_NEAREST;// FILTER_LINEAR;
+    samplerCI.Filter   = FILTER_NEAREST; // FILTER_LINEAR;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
 
     SPipelineResourceLayout resourceLayout;
     resourceLayout.NumSamplers = 1;
-    resourceLayout.Samplers = &samplerCI;
+    resourceLayout.Samplers    = &samplerCI;
 
     SBufferInfo bufferInfo[2];
     bufferInfo[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
@@ -52,121 +52,110 @@ AColorGradingRenderer::AColorGradingRenderer()
     resourceLayout.Buffers = bufferInfo;
 
     resourceLayout.NumBuffers = 1;
-    CreateFullscreenQuadPipelineGS( &PipelineLUT,
-                                    "postprocess/colorgrading.vert",
-                                    "postprocess/colorgrading.frag",
-                                    "postprocess/colorgrading.geom",
-                                    &resourceLayout,
-                                    RenderCore::BLENDING_ALPHA );
+    AShaderFactory::CreateFullscreenQuadPipelineGS(&PipelineLUT,
+                                                   "postprocess/colorgrading.vert",
+                                                   "postprocess/colorgrading.frag",
+                                                   "postprocess/colorgrading.geom",
+                                                   &resourceLayout,
+                                                   RenderCore::BLENDING_ALPHA);
 
     resourceLayout.NumBuffers = 2;
-    CreateFullscreenQuadPipelineGS( &PipelineProcedural,
-                                    "postprocess/colorgrading.vert",
-                                    "postprocess/colorgrading_procedural.frag",
-                                    "postprocess/colorgrading.geom",
-                                    &resourceLayout,
-                                    RenderCore::BLENDING_ALPHA );
+    AShaderFactory::CreateFullscreenQuadPipelineGS(&PipelineProcedural,
+                                                   "postprocess/colorgrading.vert",
+                                                   "postprocess/colorgrading_procedural.frag",
+                                                   "postprocess/colorgrading.geom",
+                                                   &resourceLayout,
+                                                   RenderCore::BLENDING_ALPHA);
 }
 
-void AColorGradingRenderer::AddPass( AFrameGraph & FrameGraph, FGTextureProxy ** ppColorGrading )
+void AColorGradingRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy** ppColorGrading)
 {
-    if ( !GRenderView->CurrentColorGradingLUT ) {
+    if (!GRenderView->CurrentColorGradingLUT)
+    {
         *ppColorGrading = nullptr;
         return;
     }
 
     auto ColorGrading_R = FrameGraph.AddExternalResource<FGTextureProxy>("CurrentColorGradingLUT", GRenderView->CurrentColorGradingLUT);
 
-    if ( GRenderView->ColorGradingLUT )
+    if (GRenderView->ColorGradingLUT)
     {
         auto source = FrameGraph.AddExternalResource<FGTextureProxy>("ColorGradingLUT", GRenderView->ColorGradingLUT);
 
-        ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "Color Grading Pass" );
+        ARenderPass& renderPass = FrameGraph.AddTask<ARenderPass>("Color Grading Pass");
 
-        renderPass.SetRenderArea( 16, 16 );
+        renderPass.SetRenderArea(16, 16);
         renderPass.SetColorAttachments(
-        {
-            {
-                STextureAttachment(ColorGrading_R)
-                .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-            }
-        }
-        );
-        renderPass.AddResource( source, FG_RESOURCE_ACCESS_READ );
-        renderPass.AddSubpass( { 0 },
-                              [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
-        {
-            rtbl->BindTexture( 0, source->Actual() );
+            {{STextureAttachment(ColorGrading_R)
+                  .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD)}});
+        renderPass.AddResource(source, FG_RESOURCE_ACCESS_READ);
+        renderPass.AddSubpass({0},
+                              [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer) {
+                                  rtbl->BindTexture(0, source->Actual());
 
-            DrawSAQ(RenderPassContext.pImmediateContext, PipelineLUT);
-        } );
+                                  DrawSAQ(RenderPassContext.pImmediateContext, PipelineLUT);
+                              });
     }
     else
     {
-        ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "Color Grading Procedural Pass" );
+        ARenderPass& renderPass = FrameGraph.AddTask<ARenderPass>("Color Grading Procedural Pass");
 
-        renderPass.SetRenderArea( 16, 16 );
+        renderPass.SetRenderArea(16, 16);
         renderPass.SetColorAttachments(
-        {
-            {
-                STextureAttachment(ColorGrading_R)
-                .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-            }
-        }
-        );
-        renderPass.AddSubpass( { 0 },
-                              [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
-        {
-            struct SDrawCall
-            {
-                Float4 TemperatureScale;
-                Float4 TemperatureStrength;
-                Float4 Grain;
-                Float4 Gamma;
-                Float4 Lift;
-                Float4 Presaturation;
-                Float4 LuminanceNormalization;
-            };
+            {{STextureAttachment(ColorGrading_R)
+                  .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD)}});
+        renderPass.AddSubpass({0},
+                              [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer) {
+                                  struct SDrawCall
+                                  {
+                                      Float4 TemperatureScale;
+                                      Float4 TemperatureStrength;
+                                      Float4 Grain;
+                                      Float4 Gamma;
+                                      Float4 Lift;
+                                      Float4 Presaturation;
+                                      Float4 LuminanceNormalization;
+                                  };
 
-            SDrawCall * drawCall = MapDrawCallConstants< SDrawCall >();
+                                  SDrawCall* drawCall = MapDrawCallConstants<SDrawCall>();
 
-            drawCall->TemperatureScale.X = GRenderView->ColorGradingTemperatureScale.X;
-            drawCall->TemperatureScale.Y = GRenderView->ColorGradingTemperatureScale.Y;
-            drawCall->TemperatureScale.Z = GRenderView->ColorGradingTemperatureScale.Z;
-            drawCall->TemperatureScale.W = 0.0f;
+                                  drawCall->TemperatureScale.X = GRenderView->ColorGradingTemperatureScale.X;
+                                  drawCall->TemperatureScale.Y = GRenderView->ColorGradingTemperatureScale.Y;
+                                  drawCall->TemperatureScale.Z = GRenderView->ColorGradingTemperatureScale.Z;
+                                  drawCall->TemperatureScale.W = 0.0f;
 
-            drawCall->TemperatureStrength.X = GRenderView->ColorGradingTemperatureStrength.X;
-            drawCall->TemperatureStrength.Y = GRenderView->ColorGradingTemperatureStrength.Y;
-            drawCall->TemperatureStrength.Z = GRenderView->ColorGradingTemperatureStrength.Z;
-            drawCall->TemperatureStrength.W = 0.0f;
+                                  drawCall->TemperatureStrength.X = GRenderView->ColorGradingTemperatureStrength.X;
+                                  drawCall->TemperatureStrength.Y = GRenderView->ColorGradingTemperatureStrength.Y;
+                                  drawCall->TemperatureStrength.Z = GRenderView->ColorGradingTemperatureStrength.Z;
+                                  drawCall->TemperatureStrength.W = 0.0f;
 
-            drawCall->Grain.X = GRenderView->ColorGradingGrain.X * 2.0f;
-            drawCall->Grain.Y = GRenderView->ColorGradingGrain.Y * 2.0f;
-            drawCall->Grain.Z = GRenderView->ColorGradingGrain.Z * 2.0f;
-            drawCall->Grain.W = 0.0f;
+                                  drawCall->Grain.X = GRenderView->ColorGradingGrain.X * 2.0f;
+                                  drawCall->Grain.Y = GRenderView->ColorGradingGrain.Y * 2.0f;
+                                  drawCall->Grain.Z = GRenderView->ColorGradingGrain.Z * 2.0f;
+                                  drawCall->Grain.W = 0.0f;
 
-            drawCall->Gamma.X = 0.5f / Math::Max( GRenderView->ColorGradingGamma.X, 0.0001f );
-            drawCall->Gamma.Y = 0.5f / Math::Max( GRenderView->ColorGradingGamma.Y, 0.0001f );
-            drawCall->Gamma.Z = 0.5f / Math::Max( GRenderView->ColorGradingGamma.Z, 0.0001f );
-            drawCall->Gamma.W = 0.0f;
+                                  drawCall->Gamma.X = 0.5f / Math::Max(GRenderView->ColorGradingGamma.X, 0.0001f);
+                                  drawCall->Gamma.Y = 0.5f / Math::Max(GRenderView->ColorGradingGamma.Y, 0.0001f);
+                                  drawCall->Gamma.Z = 0.5f / Math::Max(GRenderView->ColorGradingGamma.Z, 0.0001f);
+                                  drawCall->Gamma.W = 0.0f;
 
-            drawCall->Lift.X = GRenderView->ColorGradingLift.X * 2.0f - 1.0f;
-            drawCall->Lift.Y = GRenderView->ColorGradingLift.Y * 2.0f - 1.0f;
-            drawCall->Lift.Z = GRenderView->ColorGradingLift.Z * 2.0f - 1.0f;
-            drawCall->Lift.W = 0.0f;
+                                  drawCall->Lift.X = GRenderView->ColorGradingLift.X * 2.0f - 1.0f;
+                                  drawCall->Lift.Y = GRenderView->ColorGradingLift.Y * 2.0f - 1.0f;
+                                  drawCall->Lift.Z = GRenderView->ColorGradingLift.Z * 2.0f - 1.0f;
+                                  drawCall->Lift.W = 0.0f;
 
-            drawCall->Presaturation.X = GRenderView->ColorGradingPresaturation.X;
-            drawCall->Presaturation.Y = GRenderView->ColorGradingPresaturation.Y;
-            drawCall->Presaturation.Z = GRenderView->ColorGradingPresaturation.Z;
-            drawCall->Presaturation.W = 0.0f;
+                                  drawCall->Presaturation.X = GRenderView->ColorGradingPresaturation.X;
+                                  drawCall->Presaturation.Y = GRenderView->ColorGradingPresaturation.Y;
+                                  drawCall->Presaturation.Z = GRenderView->ColorGradingPresaturation.Z;
+                                  drawCall->Presaturation.W = 0.0f;
 
-            drawCall->LuminanceNormalization.X = GRenderView->ColorGradingBrightnessNormalization;
-            drawCall->LuminanceNormalization.Y = 0.0f;
-            drawCall->LuminanceNormalization.Z = 0.0f;
-            drawCall->LuminanceNormalization.W = 0.0f;
+                                  drawCall->LuminanceNormalization.X = GRenderView->ColorGradingBrightnessNormalization;
+                                  drawCall->LuminanceNormalization.Y = 0.0f;
+                                  drawCall->LuminanceNormalization.Z = 0.0f;
+                                  drawCall->LuminanceNormalization.W = 0.0f;
 
-            DrawSAQ(RenderPassContext.pImmediateContext, PipelineProcedural);
-        } );
+                                  DrawSAQ(RenderPassContext.pImmediateContext, PipelineProcedural);
+                              });
     }
 
     *ppColorGrading = ColorGrading_R;

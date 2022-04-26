@@ -46,6 +46,35 @@ out gl_PerVertex
 //    layout( location = SHADOWMAP_PASS_VARYING_INSTANCE_ID ) out flat int VS_InstanceID;
 #endif
 
+#if defined MATERIAL_PASS_OMNI_SHADOWMAP
+
+#   include "$OMNI_SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$"
+#   include "$OMNI_SHADOWMAP_PASS_VERTEX_SAMPLERS$"
+
+#   if defined TESSELLATION_METHOD && defined DISPLACEMENT_AFFECT_SHADOW
+        layout( location = OMNI_SHADOWMAP_PASS_VARYING_POSITION ) out vec3 VS_Position;
+        layout( location = OMNI_SHADOWMAP_PASS_VARYING_NORMAL ) out vec3 VS_N;
+#   endif
+
+//    layout( location = OMNI_SHADOWMAP_PASS_VARYING_INSTANCE_ID ) out flat int VS_InstanceID;
+
+layout( binding = 3, std140 ) uniform OmniProjectionMatrixBuffer
+{
+    mat4 OmniProjectionMatrix;
+};
+
+    mat4 GetOmniProjectionMatrix()
+    {
+		const float znear = 0.1;
+		const float zfar = 1000;
+        return mat4(vec4(1, 0, 0, 0),
+                    vec4(0, -1, 0, 0),
+                    vec4(0, 0, znear / (zfar - znear), -1),
+                    vec4(0, 0, znear * zfar / (zfar - znear), 0));
+    }
+
+#endif
+
 #ifdef MATERIAL_PASS_DEPTH
 #   include "$DEPTH_PASS_VERTEX_OUTPUT_VARYINGS$"
 #   include "$DEPTH_PASS_VERTEX_SAMPLERS$"
@@ -154,6 +183,24 @@ void main() {
 //            gl_Position = CascadeViewProjection[ gl_InstanceID ] * gl_Position;
 #       endif
         //VS_InstanceID = gl_InstanceID;
+#   endif
+
+    // Built-in material code (omnidirectional shadowmap)
+
+#   ifdef MATERIAL_PASS_OMNI_SHADOWMAP
+#       include "$OMNI_SHADOWMAP_PASS_VERTEX_CODE$"
+#       if defined TESSELLATION_METHOD && defined DISPLACEMENT_AFFECT_SHADOW
+            // Position in world space. TODO: make tessellation in Player camera view space.
+            VS_Position = vec3( TransformMatrix * FinalVertexPos );
+            
+            mat3 NormalMatrix = mat3( transpose(inverse(TransformMatrix)) ); // TODO: Uniform?
+            
+            // Transform normal from model space to world space
+            VS_N = normalize( NormalMatrix * VertexNormal );
+#       else
+            // TODO: OmniProjectionMatrix * TransformMatrix can be precalculated on CPU
+            gl_Position = GetOmniProjectionMatrix() * (TransformMatrix * FinalVertexPos);
+#       endif
 #   endif
 
     // Built-in material code (depth)

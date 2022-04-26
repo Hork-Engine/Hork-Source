@@ -26,6 +26,8 @@ AShadowMapRenderer::AShadowMapRenderer()
     SClearValue clearValue;
     clearValue.Float1.R = 1.0f;
     rcmd->ClearTexture(DummyShadowMap, 0, FORMAT_FLOAT1, &clearValue);
+
+    CreateOmnidirectionalShadowMapPool();
 }
 
 void AShadowMapRenderer::CreatePipeline()
@@ -76,8 +78,8 @@ void AShadowMapRenderer::CreatePipeline()
     SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
 
-    CreateVertexShader("instance_shadowmap_default.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
-    CreateGeometryShader("instance_shadowmap_default.geom", pipelineCI.pGS);
+    AShaderFactory::CreateVertexShader("instance_shadowmap_default.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
+    AShaderFactory::CreateGeometryShader("instance_shadowmap_default.geom", pipelineCI.pGS);
 
     bool bVSM = false;
 
@@ -87,7 +89,7 @@ void AShadowMapRenderer::CreatePipeline()
 
     if (/*_ShadowMasking || */ bVSM)
     {
-        CreateFragmentShader("instance_shadowmap_default.frag", pipelineCI.pFS);
+        AShaderFactory::CreateFragmentShader("instance_shadowmap_default.frag", pipelineCI.pFS);
     }
 
     SBufferInfo bufferInfo[4];
@@ -138,8 +140,8 @@ void AShadowMapRenderer::CreateLightPortalPipeline()
     SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
     inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
 
-    CreateVertexShader("instance_lightportal.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
-    CreateGeometryShader("instance_lightportal.geom", pipelineCI.pGS);
+    AShaderFactory::CreateVertexShader("instance_lightportal.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS);
+    AShaderFactory::CreateGeometryShader("instance_lightportal.geom", pipelineCI.pGS);
 
 #if 0
     CreateFragmentShader( "instance_lightportal.frag", pipelineCI.pFS );
@@ -157,6 +159,37 @@ void AShadowMapRenderer::CreateLightPortalPipeline()
     GDevice->CreatePipeline(pipelineCI, &LightPortalPipeline);
 }
 
+AConsoleVar r_OminShadowmapBits(_CTS("r_OminShadowmapBits"), _CTS("16")); // Allowed 16, 24 or 32 bits
+AConsoleVar r_OminShadowmapResolution(_CTS("r_OminShadowmapResolution"), _CTS("1024"));
+
+void AShadowMapRenderer::CreateOmnidirectionalShadowMapPool()
+{
+    RenderCore::TEXTURE_FORMAT depthFormat;
+    if (r_OminShadowmapBits.GetInteger() <= 16)
+    {
+        depthFormat = TEXTURE_FORMAT_DEPTH16;
+    }
+    else if (r_OminShadowmapBits.GetInteger() <= 24)
+    {
+        depthFormat = TEXTURE_FORMAT_DEPTH24;
+    }
+    else
+    {
+        depthFormat = TEXTURE_FORMAT_DEPTH32;
+    }
+
+    int faceResolution = Math::ToClosestPowerOfTwo(r_OminShadowmapResolution.GetInteger());
+
+    int poolSize = 1;//256;
+    
+    GDevice->CreateTexture(
+        STextureDesc()
+            .SetFormat(depthFormat)
+            .SetResolution(STextureResolutionCubemapArray(faceResolution, poolSize))
+            .SetBindFlags(BIND_SHADER_RESOURCE | BIND_DEPTH_STENCIL),
+        &OmnidirectionalShadowMapArray);
+}
+
 bool AShadowMapRenderer::BindMaterialShadowMap(IImmediateContext* immediateCtx, SShadowRenderInstance const* instance)
 {
     AMaterialGPU* pMaterial = instance->Material;
@@ -166,6 +199,44 @@ bool AShadowMapRenderer::BindMaterialShadowMap(IImmediateContext* immediateCtx, 
         int bSkinned = instance->SkeletonSize > 0;
 
         IPipeline* pPipeline = pMaterial->ShadowPass[bSkinned];
+        if (!pPipeline)
+        {
+            return false;
+        }
+
+        immediateCtx->BindPipeline(pPipeline);
+
+        if (bSkinned)
+        {
+            immediateCtx->BindVertexBuffer(1, instance->WeightsBuffer, instance->WeightsBufferOffset);
+        }
+        else
+        {
+            immediateCtx->BindVertexBuffer(1, nullptr, 0);
+        }
+
+        BindTextures(instance->MaterialInstance, pMaterial->ShadowMapPassTextureCount);
+    }
+    else
+    {
+        immediateCtx->BindPipeline(StaticShadowCasterPipeline.GetObject());
+        immediateCtx->BindVertexBuffer(1, nullptr, 0);
+    }
+
+    BindVertexAndIndexBuffers(immediateCtx, instance);
+
+    return true;
+}
+
+bool AShadowMapRenderer::BindMaterialOmniShadowMap(IImmediateContext* immediateCtx, SShadowRenderInstance const* instance)
+{
+    AMaterialGPU* pMaterial = instance->Material;
+
+    if (pMaterial)
+    {
+        int bSkinned = instance->SkeletonSize > 0;
+
+        IPipeline* pPipeline = pMaterial->OmniShadowPass[bSkinned];
         if (!pPipeline)
         {
             return false;
@@ -372,110 +443,72 @@ void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SDirectionalLightInsta
     *ppShadowMapDepth = pass.GetDepthStencilAttachment().pResource;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#if 0
-AConsoleVar r_ShadowmapResolution( _CTS( "r_ShadowmapResolution" ), _CTS( "512" ) );
-AConsoleVar r_ShadowmapBits( _CTS( "r_ShadowmapBits" ), _CTS( "24" ) );
-#endif
-
-void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SLightParameters const* Light, FGTextureProxy** ppShadowMapDepth)
+void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SLightShadowmap const* ShadowMaps, int NumOmnidirectionalShadowMaps, FGTextureProxy** ppOmnidirectionalShadowMapArray)
 {
-#if 0
-    if ( Light->ShadowmapIndex < 0 ) {
-        AddDummyCubeShadowMap( FrameGraph, ppShadowMapDepth );
-        return;
+    FGTextureProxy* OmnidirectionalShadowMapArray_R = FrameGraph.AddExternalResource<FGTextureProxy>("OmnidirectionalShadowMapArray", OmnidirectionalShadowMapArray);
+
+    int faceResolution = OmnidirectionalShadowMapArray->GetWidth();
+
+    if (NumOmnidirectionalShadowMaps > OmnidirectionalShadowMapArray->GetSliceCount())
+    {
+        NumOmnidirectionalShadowMaps = OmnidirectionalShadowMapArray->GetSliceCount();
+        WARNING("Max omnidirectional shadow maps hit\n");
     }
 
-    int totalInstanceCount = 0;
-    for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
-        SLightShadowmap const * shadowMap = &GFrameData->LightShadowmaps[ Light->ShadowmapIndex ];
-        totalInstanceCount += shadowMap->ShadowInstanceCount;
-    }
+    for (int omniShadowMap = 0; omniShadowMap < NumOmnidirectionalShadowMaps; omniShadowMap++)
+    {
+        int shadowMapIndex = omniShadowMap * 6;
 
-    if ( totalInstanceCount == 0 ) {
-        AddDummyShadowMapCube( FrameGraph, ppShadowMapDepth );
-        return;
-    }
-
-    RenderCore::TEXTURE_FORMAT depthFormat;
-    if ( r_ShadowmapBits.GetInteger() <= 16 ) {
-        depthFormat = TEXTURE_FORMAT_DEPTH16;
-    }
-    else if ( r_ShadowmapBits.GetInteger() <= 24 ) {
-        depthFormat = TEXTURE_FORMAT_DEPTH24;
-    }
-    else {
-        depthFormat = TEXTURE_FORMAT_DEPTH32;
-    }
-
-    int faceResolution = Math::ToClosestPowerOfTwo( r_ShadowmapResolution.GetInteger() );
-
-    for ( int faceIndex = 0 ; faceIndex < 6 ; faceIndex++ ) {
-        SLightShadowmap const * shadowMap = &GFrameData->LightShadowmaps[ Light->ShadowmapIndex + faceIndex ];
-
-        ARenderPass & pass = FrameGraph.AddTask< ARenderPass >( "Point Shadow Map Pass" );
-
-        pass.SetRenderArea( faceResolution, faceResolution );
-
-        pass.SetDepthStencilAttachment(
+        for (int faceIndex = 0; faceIndex < 6; faceIndex++)
         {
-            "Shadow Face Depth texture",
-            MakeTexture( depthFormat, STextureResolution2DArray( faceResolution, faceResolution, totalCascades ) ),
-            RenderCore::SAttachmentInfo().SetLoadOp( ATTACHMENT_LOAD_OP_CLEAR )
-        } );
+            int                    sliceIndex = shadowMapIndex + faceIndex;
+            SLightShadowmap const* shadowMap  = &ShadowMaps[sliceIndex];
 
-        pass.SetDepthStencilClearValue( MakeClearDepthStencilValue( 1, 0 ) );
+            ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Omnidirectional Shadow Map Pass");
 
-        pass.AddSubpass( {}, // no color attachments
-                         [=]( ARenderPass const & RenderPass, ACommandBuffer const& CommandBuffer )
-        {
-            SetShadowFaceBinding( faceIndex );
+            pass.SetRenderArea(faceResolution, faceResolution);
 
-            SDrawIndexedCmd drawCmd;
-            drawCmd.StartInstanceLocation = 0;
-            drawCmd.InstanceCount = 1;
+            // Attach view
+            pass.SetDepthStencilAttachment(
+                {
+                    STextureAttachment(OmnidirectionalShadowMapArray_R)
+                        .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
+                        .SetSlice(sliceIndex)
+                        .SetClearValue(SClearDepthStencilValue(0, 0))
+                });
 
-            for ( int i = 0 ; i < shadowMap->ShadowInstanceCount ; i++ ) {
-                SShadowRenderInstance const * instance = GFrameData->ShadowInstances[shadowMap->FirstShadowInstance + i];
+            pass.AddSubpass({}, // no color attachments
+                            [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                            {
+                                IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-                if ( !BindMaterialShadowMap( instance ) ) {
-                    continue;
-                }
+                                SDrawIndexedCmd drawCmd;
+                                drawCmd.StartInstanceLocation = 0;
+                                drawCmd.InstanceCount         = 1;
 
-                // Bind textures
-                BindTextures( instance->MaterialInstance, instance->Material->ShadowMapPassTextureCount );
+                                BindOmniShadowProjection(faceIndex);
 
-                // Bind skeleton
-                BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
+                                for (int i = 0; i < shadowMap->ShadowInstanceCount; i++)
+                                {
+                                    SShadowRenderInstance const* instance = GFrameData->ShadowInstances[shadowMap->FirstShadowInstance + i];
 
-                // Set instance constants
-                SetShadowInstanceConstants( instance );
+                                    if (!BindMaterialOmniShadowMap(immediateCtx, instance))
+                                    {
+                                        continue;
+                                    }
 
-                drawCmd.IndexCountPerInstance = instance->IndexCount;
-                drawCmd.StartIndexLocation = instance->StartIndexLocation;
-                drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+                                    BindSkeleton(instance->SkeletonOffset, instance->SkeletonSize);
+                                    BindShadowInstanceConstants(instance, faceIndex, shadowMap->LightPosition);
 
-                immediateCtx->Draw( &drawCmd );
-            }
-        } );
+                                    drawCmd.IndexCountPerInstance = instance->IndexCount;
+                                    drawCmd.StartIndexLocation    = instance->StartIndexLocation;
+                                    drawCmd.BaseVertexLocation    = instance->BaseVertexLocation;
 
-        *ppShadowMapDepth = pass.GetDepthStencilAttachment().Resource;
+                                    immediateCtx->Draw(&drawCmd);
+                                }
+                            });
+        }
     }
-#endif
+
+    *ppOmnidirectionalShadowMapArray = OmnidirectionalShadowMapArray_R;
 }

@@ -80,9 +80,9 @@ ACubemapGenerator::ACubemapGenerator()
         }
     };
 
-    CreateVertexShader( "gen/cubemapgen.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
-    CreateGeometryShader( "gen/cubemapgen.geom", pipelineCI.pGS );
-    CreateFragmentShader( "gen/cubemapgen.frag", pipelineCI.pFS );
+    AShaderFactory::CreateVertexShader( "gen/cubemapgen.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    AShaderFactory::CreateGeometryShader( "gen/cubemapgen.geom", pipelineCI.pGS );
+    AShaderFactory::CreateFragmentShader( "gen/cubemapgen.frag", pipelineCI.pFS );
 
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBindings );
     pipelineCI.pVertexBindings = vertexBindings;

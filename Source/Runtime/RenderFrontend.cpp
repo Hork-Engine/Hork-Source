@@ -799,7 +799,6 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
 
     for (SPrimitiveDef* primitive : VisPrimitives)
     {
-
         // TODO: Replace upcasting by something better (virtual function?)
 
         if (nullptr != (drawable = Upcast<ADrawable>(primitive->Owner)))
@@ -909,6 +908,8 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
     view->PointLightsStreamSize   = sizeof(SLightParameters) * view->NumPointLights;
     view->PointLightsStreamHandle = view->PointLightsStreamSize > 0 ? streamedMemory->AllocateConstant(view->PointLightsStreamSize, nullptr) : 0;
     view->PointLights             = (SLightParameters*)streamedMemory->Map(view->PointLightsStreamHandle);
+    view->FirstOmnidirectionalShadowMap = FrameData.LightShadowmaps.Size();
+    view->NumOmnidirectionalShadowMaps  = 0;
 
     for (int i = 0; i < view->NumPointLights; i++)
     {
@@ -917,6 +918,13 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
         light->PackLight(view->ViewMatrix, view->PointLights[i]);
 
         AddLightShadowmap(light, view->PointLights[i].Radius, &view->PointLights[i].ShadowmapIndex);
+
+        if (view->PointLights[i].ShadowmapIndex != -1) // add
+        {
+            view->PointLights[i].ShadowmapIndex -= view->FirstOmnidirectionalShadowMap;
+            view->PointLights[i].ShadowmapIndex /= 6;
+            view->NumOmnidirectionalShadowMaps++;
+        }
 
         APhotometricProfile* profile = light->GetPhotometricProfile();
         if (profile)
@@ -1398,7 +1406,6 @@ void ARenderFrontend::AddShadowmap_StaticMesh(SLightShadowmap* ShadowMap, AMeshC
 
     for (int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++)
     {
-
         // FIXME: check subpart bounding box here
 
         AIndexedMeshSubpart* subpart = subparts[subpartIndex];
@@ -2119,17 +2126,17 @@ void ARenderFrontend::AddShadowmapSurface(SLightShadowmap* ShadowMap, AMaterialI
 
 void ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Radius, int* pShadowmapIndex)
 {
+    *pShadowmapIndex = -1;
+
     if (!Light->IsCastShadow())
     {
-        *pShadowmapIndex = -1;
         return;
     }
 
     AWorld* world = Light->GetWorld();
 
     Float4x4 const* cubeFaceMatrices = Float4x4::GetCubeFaceMatrices();
-    Float4x4        projMat          = Float4x4::PerspectiveRevCC(Math::_HALF_PI, Math::_HALF_PI, 0.1f, Radius);
-    //Float4x4 projMat = Float4x4::PerspectiveCC( Math::_HALF_PI, Math::_HALF_PI, 0.1f, Radius );
+    Float4x4        projMat          = Float4x4::PerspectiveRevCC_Cube(0.1f, 1000/*Radius*/);
 
     Float4x4 lightViewProjection;
     Float4x4 lightViewMatrix;
@@ -2140,15 +2147,21 @@ void ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Ra
 
     int shadowmapIndex = FrameData.LightShadowmaps.Size();
 
-    *pShadowmapIndex = shadowmapIndex;
-
     int totalInstances = 0;
     int totalSurfaces  = 0;
 
     for (int faceIndex = 0; faceIndex < 6; faceIndex++)
     {
-        lightViewMatrix    = cubeFaceMatrices[faceIndex];
-        lightViewMatrix[3] = Float4(Float3x3(lightViewMatrix) * -lightPos, 1.0f);
+        Float3x3 basis  = Float3x3(cubeFaceMatrices[faceIndex]);
+        Float3   origin = basis * (-lightPos);
+
+        lightViewMatrix[0] = Float4(basis[0], 0.0f);
+        lightViewMatrix[1] = Float4(basis[1], 0.0f);
+        lightViewMatrix[2] = Float4(basis[2], 0.0f);
+        lightViewMatrix[3] = Float4(origin, 1.0f);
+
+        //lightViewMatrix    = cubeFaceMatrices[faceIndex];
+        //lightViewMatrix[3] = Float4(Float3x3(lightViewMatrix) * -lightPos, 1.0f);
 
         lightViewProjection = projMat * lightViewMatrix;
 
@@ -2161,15 +2174,14 @@ void ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Ra
         shadowMap->ShadowInstanceCount = 0;
         shadowMap->FirstLightPortal    = FrameData.LightPortals.Size();
         shadowMap->LightPortalsCount   = 0;
+        shadowMap->LightPosition       = lightPos;
 
         for (SPrimitiveDef* primitive : VisPrimitives)
         {
-
             // TODO: Replace upcasting by something better (virtual function?)
 
             if (nullptr != (drawable = Upcast<ADrawable>(primitive->Owner)))
             {
-
                 drawable->CascadeMask = 1 << faceIndex;
 
                 switch (drawable->GetDrawableType())
@@ -2219,6 +2231,15 @@ void ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Ra
                   ShadowInstanceSortFunction);
 
         totalInstances += shadowMap->ShadowInstanceCount;
+    }
+
+    if (totalInstances == 0 && totalSurfaces == 0)
+    {
+        FrameData.LightShadowmaps.Resize(FrameData.LightShadowmaps.Size() - 6);
+    }
+    else
+    {
+        *pShadowmapIndex = shadowmapIndex;
     }
 
     //LOG( "Total Instances {}, surfaces {}\n", totalInstances, totalSurfaces );

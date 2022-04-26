@@ -74,7 +74,7 @@ AVirtualTextureFeedback::AVirtualTextureFeedback()
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers = &nearestSampler;
 
-    CreateFullscreenQuadPipeline( &DrawFeedbackPipeline, "drawfeedback.vert", "drawfeedback.frag", &resourceLayout );
+    AShaderFactory::CreateFullscreenQuadPipeline( &DrawFeedbackPipeline, "drawfeedback.vert", "drawfeedback.frag", &resourceLayout );
 }
 
 AVirtualTextureFeedback::~AVirtualTextureFeedback()
@@ -123,7 +123,7 @@ void AVirtualTextureFeedback::Begin( int Width, int Height )
                                    .SetFormat(FEEDBACK_DEPTH_FORMAT)
                                    .SetResolution(STextureResolution2D(feedbackWidth, feedbackHeight)),
                                &FeedbackDepth);
-        FeedbackTexture->SetDebugName("VT Feedback Depth");
+        FeedbackDepth->SetDebugName("VT Feedback Depth");
     }
 
     size_t feedbackSizeInBytes = FeedbackSize[SwapIndex] * 4;

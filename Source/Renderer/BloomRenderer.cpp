@@ -56,11 +56,11 @@ ABloomRenderer::ABloomRenderer()
     resourceLayout.NumBuffers  = HK_ARRAY_SIZE(bufferInfo);
     resourceLayout.Buffers     = bufferInfo;
 
-    CreateFullscreenQuadPipeline(&BrightPipeline, "postprocess/brightpass.vert", "postprocess/brightpass.frag", &resourceLayout);
-    CreateFullscreenQuadPipeline(&BlurPipeline, "postprocess/gauss.vert", "postprocess/gauss.frag", &resourceLayout);
+    AShaderFactory::CreateFullscreenQuadPipeline(&BrightPipeline, "postprocess/brightpass.vert", "postprocess/brightpass.frag", &resourceLayout);
+    AShaderFactory::CreateFullscreenQuadPipeline(&BlurPipeline, "postprocess/gauss.vert", "postprocess/gauss.frag", &resourceLayout);
 
     resourceLayout.NumBuffers = 0;
-    CreateFullscreenQuadPipeline(&CopyPipeline, "postprocess/copy.vert", "postprocess/copy.frag", &resourceLayout);
+    AShaderFactory::CreateFullscreenQuadPipeline(&CopyPipeline, "postprocess/copy.vert", "postprocess/copy.frag", &resourceLayout);
 }
 
 void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTexture, ABloomRenderer::STextures* pResult)

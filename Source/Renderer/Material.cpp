@@ -63,6 +63,7 @@ static SSamplerDesc ShadowDepthSamplerVSM;
 static SSamplerDesc ShadowDepthSamplerEVSM;
 static SSamplerDesc ShadowDepthSamplerPCSS0;
 static SSamplerDesc ShadowDepthSamplerPCSS1;
+static SSamplerDesc OmniShadowMapSampler;
 static SSamplerDesc IESSampler;
 static SSamplerDesc ClusterLookupSampler;
 static SSamplerDesc SSAOSampler;
@@ -143,6 +144,11 @@ void InitMaterialSamplers()
     ShadowDepthSamplerPCSS1.ComparisonFunc = CMPFUNC_LESS;
     ShadowDepthSamplerPCSS1.bCompareRefToTexture = true;
     ShadowDepthSamplerPCSS1.BorderColor[0] = ShadowDepthSamplerPCSS1.BorderColor[1] = ShadowDepthSamplerPCSS1.BorderColor[2] = ShadowDepthSamplerPCSS1.BorderColor[3] = 1.0f; // FIXME?
+
+    OmniShadowMapSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
+    OmniShadowMapSampler.AddressV = SAMPLER_ADDRESS_CLAMP;
+    OmniShadowMapSampler.AddressW = SAMPLER_ADDRESS_CLAMP;
+    OmniShadowMapSampler.Filter = FILTER_LINEAR;
 
     IESSampler.Filter = FILTER_LINEAR;
     IESSampler.AddressU = SAMPLER_ADDRESS_CLAMP;
@@ -551,7 +557,7 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     }
     sources.Append( vertexAttribsShaderString.CStr() );
     sources.Append( _SourceCode );
-    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
+    AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     if ( _Tessellation ) {
         sources.Clear();
@@ -560,7 +566,7 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
+        AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
@@ -568,7 +574,7 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
+        AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     if ( _AlphaMasking ) {
@@ -578,7 +584,7 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
+        AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
     }
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
@@ -646,7 +652,7 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     }
     sources.Append( vertexAttribsShaderString.CStr() );
     sources.Append( _SourceCode );
-    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
+    AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     if ( _Tessellation ) {
         sources.Clear();
@@ -656,7 +662,7 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
+        AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
@@ -665,7 +671,7 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
+        AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     sources.Clear();
@@ -675,7 +681,7 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
         sources.Append( "#define SKINNED_MESH\n" );
     }
     sources.Append( _SourceCode );
-    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
+    AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
@@ -750,7 +756,7 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     }
     sources.Append( vertexAttribsShaderString.CStr() );
     sources.Append( _SourceCode );
-    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
+    AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     sources.Clear();
     sources.Append( "#define MATERIAL_PASS_WIREFRAME\n" );
@@ -758,7 +764,7 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
         sources.Append( "#define SKINNED_MESH\n" );
     }
     sources.Append( _SourceCode );
-    CreateShader( GEOMETRY_SHADER, sources, pipelineCI.pGS );
+    AShaderFactory::CreateShader( GEOMETRY_SHADER, sources, pipelineCI.pGS );
 
     sources.Clear();
     sources.Append( "#define MATERIAL_PASS_WIREFRAME\n" );
@@ -766,7 +772,7 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
         sources.Append( "#define SKINNED_MESH\n" );
     }
     sources.Append( _SourceCode );
-    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
+    AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     if ( _Tessellation ) {
         sources.Clear();
@@ -775,7 +781,7 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
+        AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_WIREFRAME\n" );
@@ -783,7 +789,7 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
+        AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
@@ -850,7 +856,7 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     }
     sources.Append( vertexAttribsShaderString.CStr() );
     sources.Append( _SourceCode );
-    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
+    AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     sources.Clear();
     sources.Append( "#define MATERIAL_PASS_NORMALS\n" );
@@ -858,7 +864,7 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
         sources.Append( "#define SKINNED_MESH\n" );
     }
     sources.Append( _SourceCode );
-    CreateShader( GEOMETRY_SHADER, sources, pipelineCI.pGS );
+    AShaderFactory::CreateShader( GEOMETRY_SHADER, sources, pipelineCI.pGS );
 
     sources.Clear();
     sources.Append( "#define MATERIAL_PASS_NORMALS\n" );
@@ -866,7 +872,7 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
         sources.Append( "#define SKINNED_MESH\n" );
     }
     sources.Append( _SourceCode );
-    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
+    AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_POINTS;
@@ -911,12 +917,12 @@ void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char *
     sources.Append( "#define MATERIAL_PASS_COLOR\n" );
     sources.Append( vertexAttribsShaderString.CStr() );
     sources.Append( _SourceCode );
-    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
+    AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     sources.Clear();
     sources.Append( "#define MATERIAL_PASS_COLOR\n" );
     sources.Append( _SourceCode );
-    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
+    AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLES;
@@ -1023,13 +1029,13 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
         sources.Append( "#define SKINNED_MESH\n" );
         sources.Append( vertexAttribsShaderString.CStr() );
         sources.Append( _SourceCode );
-        CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
+        AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_COLOR\n" );
         sources.Append( "#define SKINNED_MESH\n" );
         sources.Append( _SourceCode );
-        CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
+        AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
         pipelineCI.NumVertexBindings = 2;
     }
@@ -1043,12 +1049,12 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
         sources.Append( "#define MATERIAL_PASS_COLOR\n" );
         sources.Append( vertexAttribsShaderString.CStr() );
         sources.Append( _SourceCode );
-        CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
+        AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_COLOR\n" );
         sources.Append( _SourceCode );
-        CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
+        AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
         pipelineCI.NumVertexBindings = 1;
     }
@@ -1060,7 +1066,7 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
+        AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_COLOR\n" );
@@ -1068,12 +1074,12 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
+        AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     pipelineCI.pVertexBindings = vertexBinding;
 
-    SSamplerDesc samplers[19];
+    SSamplerDesc samplers[20];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
     // lightmap is in last sample
@@ -1097,6 +1103,7 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     samplers[16] =
     samplers[17] =
     samplers[18] = ShadowDepthSamplerPCF;
+    samplers[19] = OmniShadowMapSampler;
 
     pipelineCI.ResourceLayout.NumSamplers = HK_ARRAY_SIZE( samplers );
     pipelineCI.ResourceLayout.Samplers = samplers;
@@ -1153,26 +1160,26 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     sources.Append( "#define USE_LIGHTMAP\n" );
     sources.Append( vertexAttribsShaderString.CStr() );
     sources.Append( _SourceCode );
-    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
+    AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     sources.Clear();
     sources.Append( "#define MATERIAL_PASS_COLOR\n" );
     sources.Append( "#define USE_LIGHTMAP\n" );
     sources.Append( _SourceCode );
-    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
+    AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     if ( _Tessellation ) {
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_COLOR\n" );
         sources.Append( "#define USE_LIGHTMAP\n" );
         sources.Append( _SourceCode );
-        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
+        AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_COLOR\n" );
         sources.Append( "#define USE_LIGHTMAP\n" );
         sources.Append( _SourceCode );
-        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
+        AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
@@ -1191,7 +1198,7 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
-    SSamplerDesc samplers[19];
+    SSamplerDesc samplers[20];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
     // lightmap is in last sample
@@ -1215,6 +1222,7 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     samplers[16] =
     samplers[17] =
     samplers[18] = ShadowDepthSamplerPCF;
+    samplers[19]             = OmniShadowMapSampler;
 
     pipelineCI.ResourceLayout.NumSamplers = HK_ARRAY_SIZE( samplers );
     pipelineCI.ResourceLayout.Samplers = samplers;
@@ -1271,26 +1279,26 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     sources.Append( "#define USE_VERTEX_LIGHT\n" );
     sources.Append( vertexAttribsShaderString.CStr() );
     sources.Append( _SourceCode );
-    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
+    AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     sources.Clear();
     sources.Append( "#define MATERIAL_PASS_COLOR\n" );
     sources.Append( "#define USE_VERTEX_LIGHT\n" );
     sources.Append( _SourceCode );
-    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
+    AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     if ( _Tessellation ) {
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_COLOR\n" );
         sources.Append( "#define USE_VERTEX_LIGHT\n" );
         sources.Append( _SourceCode );
-        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
+        AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_COLOR\n" );
         sources.Append( "#define USE_VERTEX_LIGHT\n" );
         sources.Append( _SourceCode );
-        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
+        AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
@@ -1309,7 +1317,7 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     pipelineCI.NumVertexBindings = HK_ARRAY_SIZE( vertexBinding );
     pipelineCI.pVertexBindings = vertexBinding;
 
-    SSamplerDesc samplers[19];
+    SSamplerDesc samplers[20];
 
     CopyMaterialSamplers( &samplers[0], Samplers, NumSamplers );
     // lightmap is in last sample
@@ -1333,6 +1341,7 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     samplers[16] =
     samplers[17] =
     samplers[18] = ShadowDepthSamplerPCF;
+    samplers[19]                          = OmniShadowMapSampler;
 
     pipelineCI.ResourceLayout.NumSamplers = HK_ARRAY_SIZE( samplers );
     pipelineCI.ResourceLayout.Samplers = samplers;
@@ -1412,7 +1421,7 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     }
     sources.Append( vertexAttribsShaderString.CStr() );
     sources.Append( _SourceCode );
-    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
+    AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     sources.Clear();
     sources.Append( "#define MATERIAL_PASS_SHADOWMAP\n" );
@@ -1420,7 +1429,7 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
         sources.Append( "#define SKINNED_MESH\n" );
     }
     sources.Append( _SourceCode );
-    CreateShader( GEOMETRY_SHADER, sources, pipelineCI.pGS );
+    AShaderFactory::CreateShader( GEOMETRY_SHADER, sources, pipelineCI.pGS );
 
     if ( _Tessellation ) {
         sources.Clear();
@@ -1429,7 +1438,7 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
+        AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_SHADOWMAP\n" );
@@ -1437,7 +1446,7 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
+        AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     bool bVSM = false;
@@ -1453,7 +1462,7 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
+        AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
     }
 
     SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
@@ -1475,6 +1484,120 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 
     GDevice->CreatePipeline( pipelineCI, ppPipeline );
 }
+
+void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, bool _ShadowMasking, bool _TwoSided, bool _Skinned, bool _Tessellation, STextureSampler const* Samplers, int NumSamplers)
+{
+    SPipelineDesc           pipelineCI;
+    TPodVector<const char*> sources;
+
+    SRasterizerStateInfo& rsd = pipelineCI.RS;
+    rsd.CullMode = _TwoSided ? POLYGON_CULL_DISABLED : POLYGON_CULL_FRONT;
+    //rsd.CullMode = POLYGON_CULL_DISABLED;
+
+    //BlendingStateInfo & bsd = pipelineCI.BS;
+    //bsd.RenderTargetSlots[0].ColorWriteMask = COLOR_WRITE_DISABLED;  // FIXME: there is no fragment shader, so we realy need to disable color mask?
+
+    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
+    dssd.DepthFunc               = CMPFUNC_GREATER;
+
+    SVertexBindingInfo vertexBinding[2] = {};
+
+    vertexBinding[0].InputSlot = 0;
+    vertexBinding[0].Stride    = sizeof(SMeshVertex);
+    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
+
+    vertexBinding[1].InputSlot = 1;
+    vertexBinding[1].Stride    = sizeof(SMeshVertexSkin);
+    vertexBinding[1].InputRate = INPUT_RATE_PER_VERTEX;
+
+    pipelineCI.NumVertexBindings = _Skinned ? 2 : 1;
+    pipelineCI.pVertexBindings   = vertexBinding;
+
+    if (_Skinned)
+    {
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(VertexAttribsSkinned);
+        pipelineCI.pVertexAttribs   = VertexAttribsSkinned;
+    }
+    else
+    {
+        pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(VertexAttribsStatic);
+        pipelineCI.pVertexAttribs   = VertexAttribsStatic;
+    }
+
+    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
+    inputAssembly.Topology                    = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
+
+    AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
+
+    sources.Clear();
+    sources.Append("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
+    if (_Skinned)
+    {
+        sources.Append("#define SKINNED_MESH\n");
+    }
+    sources.Append(vertexAttribsShaderString.CStr());
+    sources.Append(_SourceCode);
+    AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
+
+    if (_Tessellation)
+    {
+        sources.Clear();
+        sources.Append("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
+        if (_Skinned)
+        {
+            sources.Append("#define SKINNED_MESH\n");
+        }
+        sources.Append(_SourceCode);
+        AShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
+
+        sources.Clear();
+        sources.Append("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
+        if (_Skinned)
+        {
+            sources.Append("#define SKINNED_MESH\n");
+        }
+        sources.Append(_SourceCode);
+        AShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
+    }
+
+    bool bVSM = false;
+
+#if defined SHADOWMAP_VSM || defined SHADOWMAP_EVSM
+    bVSM = true;
+#endif
+
+    if (_ShadowMasking || bVSM)
+    {
+        sources.Clear();
+        sources.Append("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
+        if (_Skinned)
+        {
+            sources.Append("#define SKINNED_MESH\n");
+        }
+        sources.Append(_SourceCode);
+        AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
+    }
+
+    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
+
+    CopyMaterialSamplers(&samplers[0], Samplers, NumSamplers);
+
+    pipelineCI.ResourceLayout.NumSamplers = NumSamplers;
+    pipelineCI.ResourceLayout.Samplers    = samplers;
+
+    // TODO: Specify only used buffers
+    SBufferInfo buffers[4];
+    buffers[0].BufferBinding = BUFFER_BIND_CONSTANT; // view constants
+    buffers[1].BufferBinding = BUFFER_BIND_CONSTANT; // drawcall constants
+    buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
+    buffers[3].BufferBinding = BUFFER_BIND_CONSTANT; // shadow projection matrix
+
+    pipelineCI.ResourceLayout.NumBuffers = HK_ARRAY_SIZE(buffers);
+    pipelineCI.ResourceLayout.Buffers    = buffers;
+
+    GDevice->CreatePipeline(pipelineCI, ppPipeline);
+}
+
 
 void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char * _SourceCode, RenderCore::POLYGON_CULL _CullMode, bool _Skinned, STextureSampler const * Samplers, int NumSamplers )
 {
@@ -1513,13 +1636,13 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
         sources.Append( "#define SKINNED_MESH\n" );
         sources.Append( vertexAttribsShaderString.CStr() );
         sources.Append( _SourceCode );
-        CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
+        AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_FEEDBACK\n" );
         sources.Append( "#define SKINNED_MESH\n" );
         sources.Append( _SourceCode );
-        CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
+        AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
         pipelineCI.NumVertexBindings = 2;
     }
@@ -1533,12 +1656,12 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
         sources.Append( "#define MATERIAL_PASS_FEEDBACK\n" );
         sources.Append( vertexAttribsShaderString.CStr() );
         sources.Append( _SourceCode );
-        CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
+        AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_FEEDBACK\n" );
         sources.Append( _SourceCode );
-        CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
+        AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
         pipelineCI.NumVertexBindings = 1;
     }
@@ -1618,7 +1741,7 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     }
     sources.Append( vertexAttribsShaderString.CStr() );
     sources.Append( _SourceCode );
-    CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
+    AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     if ( _Tessellation ) {
         sources.Clear();
@@ -1627,7 +1750,7 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
+        AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
         sources.Append( "#define MATERIAL_PASS_OUTLINE\n" );
@@ -1635,7 +1758,7 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
             sources.Append( "#define SKINNED_MESH\n" );
         }
         sources.Append( _SourceCode );
-        CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
+        AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     sources.Clear();
@@ -1644,7 +1767,7 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
         sources.Append( "#define SKINNED_MESH\n" );
     }
     sources.Append( _SourceCode );
-    CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
+    AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = _Tessellation ? PRIMITIVE_PATCHES_3 : PRIMITIVE_TRIANGLES;
@@ -1697,7 +1820,7 @@ void CreateTerrainMaterialDepth( TRef< RenderCore::IPipeline > * ppPipeline )
     pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsTerrainInstanced );
     pipelineCI.pVertexAttribs = VertexAttribsTerrainInstanced;
 
-    CreateVertexShader( "terrain_depth.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
+    AShaderFactory::CreateVertexShader( "terrain_depth.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
@@ -1746,13 +1869,13 @@ void CreateTerrainMaterialLight( TRef< RenderCore::IPipeline > * ppPipeline )
     pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsTerrainInstanced );
     pipelineCI.pVertexAttribs = VertexAttribsTerrainInstanced;
 
-    CreateVertexShader( "terrain_color.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
-    CreateFragmentShader( "terrain_color.frag", pipelineCI.pFS );
+    AShaderFactory::CreateVertexShader( "terrain_color.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
+    AShaderFactory::CreateFragmentShader( "terrain_color.frag", pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;
 
-    SSamplerDesc samplers[19];
+    SSamplerDesc samplers[20];
 
     SSamplerDesc & clipmapSampler = samplers[0];
     clipmapSampler.Filter = FILTER_NEAREST;
@@ -1781,6 +1904,7 @@ void CreateTerrainMaterialLight( TRef< RenderCore::IPipeline > * ppPipeline )
     samplers[16] =
     samplers[17] =
     samplers[18] = ShadowDepthSamplerPCF;
+    samplers[19]             = OmniShadowMapSampler;
 
     pipelineCI.ResourceLayout.NumSamplers = HK_ARRAY_SIZE( samplers );
     pipelineCI.ResourceLayout.Samplers = samplers;
@@ -1830,9 +1954,9 @@ void CreateTerrainMaterialWireframe( TRef< RenderCore::IPipeline > * ppPipeline 
     pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE( VertexAttribsTerrainInstanced );
     pipelineCI.pVertexAttribs = VertexAttribsTerrainInstanced;
 
-    CreateVertexShader( "terrain_wireframe.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
-    CreateGeometryShader( "terrain_wireframe.geom", pipelineCI.pGS );
-    CreateFragmentShader( "terrain_wireframe.frag", pipelineCI.pFS );
+    AShaderFactory::CreateVertexShader( "terrain_wireframe.vert", pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs, pipelineCI.pVS );
+    AShaderFactory::CreateGeometryShader( "terrain_wireframe.geom", pipelineCI.pGS );
+    AShaderFactory::CreateFragmentShader( "terrain_wireframe.frag", pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLE_STRIP;

@@ -172,6 +172,30 @@ SOFTWARE.
 #   endif
 #endif // MATERIAL_PASS_SHADOWMAP
 
+#if defined MATERIAL_PASS_OMNI_SHADOWMAP
+#   include "instance_omni_shadowmap_uniforms.glsl"
+#   ifdef VERTEX_SHADER
+#       include "instance.vert"
+#   endif
+#   ifdef TESS_CONTROL_SHADER
+#       if TESSELLATION_METHOD == TESSELLATION_FLAT
+#           include "instance_omni_shadowmap.tcs"
+#       else
+#           include "instance_omni_shadowmap_pn.tcs"
+#       endif
+#   endif
+#   ifdef TESS_EVALUATION_SHADER
+#       if TESSELLATION_METHOD == TESSELLATION_FLAT
+#           include "instance_omni_shadowmap.tes"
+#       else
+#           include "instance_omni_shadowmap_pn.tes"
+#       endif
+#   endif
+#   ifdef FRAGMENT_SHADER
+#       include "instance_omni_shadowmap.frag"
+#   endif
+#endif // MATERIAL_PASS_OMNI_SHADOWMAP
+
 #if defined MATERIAL_PASS_OUTLINE
 #   include "instance_uniforms.glsl"
 #   ifdef VERTEX_SHADER

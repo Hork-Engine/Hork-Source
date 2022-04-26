@@ -3545,6 +3545,14 @@ struct Float4x4
                         0, 0, znear * zfar / (zfar - znear), 0);
     }
 
+    static HK_FORCEINLINE Float4x4 PerspectiveRevCC_Cube(float znear, float zfar)
+    {
+        return Float4x4(1, 0, 0, 0,
+                        0, -1, 0, 0,
+                        0, 0, znear / (zfar - znear), -1,
+                        0, 0, znear * zfar / (zfar - znear), 0);
+    }
+
     static HK_INLINE void GetCubeFaceMatrices(Float4x4& _PositiveX,
                                               Float4x4& _NegativeX,
                                               Float4x4& _PositiveY,

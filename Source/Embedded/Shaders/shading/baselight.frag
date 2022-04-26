@@ -87,6 +87,10 @@ vec3 CalcPointLightLighting( vec3 Normal, vec3 Specular, float SpecularPower )
     #define POINT_LIGHT 0
     #define SPOT_LIGHT  1
     
+	// TODO: Get shadow bias and smooth disk radius from light structure
+    const float ShadowBias = 0.015;
+    const float SmoothDiskRadius = 0.01;
+	
     for ( int i = 0 ; i < NumLights ; i++ ) {
         const uint indices = texelFetch( ClusterItemTBO, int( FirstIndex + i ) ).x;
         const uint lightIndex = indices & 0x3ff;
@@ -111,7 +115,15 @@ vec3 CalcPointLightLighting( vec3 Normal, vec3 Specular, float SpecularPower )
 //                Attenuation = CalcDistanceAttenuationSkyforge( Dist, 0.0, OuterRadius );
 //            }
             
-            float Shadow = 1;
+			#ifdef ALLOW_SHADOW_RECEIVE
+				float Shadow;
+				if (GetLightShadowmapIndex(lightIndex) != -1)
+					Shadow = SampleOmnidirectionalLightShadow(GetLightShadowmapIndex(lightIndex), -Vec, OuterRadius, ShadowBias, SmoothDiskRadius);
+				else
+					Shadow = 1;
+                #else
+                const float Shadow = 1.0;
+            #endif
 
             float LdotDir = dot( L, GetLightDirection( lightIndex ) );
 

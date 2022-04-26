@@ -47,7 +47,7 @@ layout( binding = 3, std140 ) uniform ShadowMatrixBuffer {
 };
 
 // Keep paddings, don't use vec3, keep in sync with cpp struct
-struct SClusterLight
+struct SClusterLight // TODO: rename to SLightParameters
 {
     vec4 PositionAndRadius;
     float CosHalfOuterConeAngle;
@@ -59,7 +59,7 @@ struct SClusterLight
     uint LightType;
     uint RenderMask;
     uint PhotometricProfile;
-    uint SClusterLight_Pad1;
+    uint ShadowmapIndex;
 };
 
 // Helpers to access light structure fields
@@ -74,6 +74,7 @@ struct SClusterLight
 #define GetLightColor( i ) LightBuffer[i].Color_IESLuminousIntensityScale.xyz
 #define GetLightRenderMask( i ) LightBuffer[i].RenderMask
 #define GetLightPhotometricProfile( i ) LightBuffer[i].PhotometricProfile
+#define GetLightShadowmapIndex( i ) LightBuffer[i].ShadowmapIndex
 //#define GetLightIESScale( i ) LightBuffer[i].Color_IESLuminousIntensityScale.w
 
 struct SClusterProbe
@@ -133,6 +134,7 @@ layout( binding = 12 ) uniform sampler2D AOLookup;
 layout( binding = 13 ) uniform usamplerBuffer ClusterItemTBO;
 layout( binding = 14 ) uniform usampler3D ClusterLookup; // TODO: Use bindless?
 layout( binding = 15 ) uniform sampler2DArrayShadow ShadowMap[MAX_DIRECTIONAL_LIGHTS]; // TODO: Use bindless?
+layout( binding = 19 ) uniform samplerCubeArray OmnidirectionalShadowMapArray;
 
 
 #ifdef USE_LIGHTMAP

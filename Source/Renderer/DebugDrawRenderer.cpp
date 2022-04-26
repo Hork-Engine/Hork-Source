@@ -72,8 +72,8 @@ ADebugDrawRenderer::ADebugDrawRenderer()
         }
     };
 
-    CreateVertexShader( "debugdraw.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
-    CreateFragmentShader( "debugdraw.frag", pipelineCI.pFS );
+    AShaderFactory::CreateVertexShader( "debugdraw.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    AShaderFactory::CreateFragmentShader( "debugdraw.frag", pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
 

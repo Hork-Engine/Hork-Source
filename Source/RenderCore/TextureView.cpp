@@ -66,7 +66,7 @@ ITextureView::ITextureView(STextureViewDesc const& TextureViewDesc, ITexture* pT
     }
     else if (TextureViewDesc.ViewType == TEXTURE_VIEW_RENDER_TARGET || TextureViewDesc.ViewType == TEXTURE_VIEW_DEPTH_STENCIL)
     {
-        HK_ASSERT(textureDesc.Type == TextureViewDesc.Type);
+        //HK_ASSERT(textureDesc.Type == TextureViewDesc.Type);
         HK_ASSERT(textureDesc.Format == TextureViewDesc.Format);
 
         HK_ASSERT(TextureViewDesc.NumMipLevels == 1);

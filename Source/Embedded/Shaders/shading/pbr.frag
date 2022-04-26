@@ -175,7 +175,7 @@ vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float Roughness
     }
     return Light;
 }
-
+#if 0
 vec3 CalcPointLightLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessSqr, vec3 Normal, float NdV, uint FirstIndex, uint NumLights )
 {
     vec3 Light = vec3(0.0);
@@ -243,6 +243,90 @@ vec3 CalcPointLightLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessS
 
     return Light;
 }
+#endif
+
+vec3 CalcOmnidirectionalLightingPBR(vec3 Diffuse, vec3 F0, float k, float RoughnessSqr, vec3 Normal, float NdV, uint FirstIndex, uint NumLights)
+{
+    #define POINT_LIGHT 0
+    #define SPOT_LIGHT  1
+    
+    vec3 light = vec3(0.0);
+    
+    // TODO: Get shadow bias and smooth disk radius from light structure
+    const float ShadowBias = 0.015;
+    const float SmoothDiskRadius = 0.01;
+
+    for (int i = 0 ; i < NumLights ; i++)
+    {
+        const uint indices = texelFetch(ClusterItemTBO, int(FirstIndex + i)).x;
+        const uint lightIndex = indices & 0x3ff;
+        const uint lightType = GetLightType(lightIndex);
+
+        const float OuterRadius = GetLightRadius(lightIndex);
+        const vec3 Vec = GetLightPosition(lightIndex) - VS_Position;
+        const float Dist = length( Vec ); // NOTE: We can use dot(Vec,Vec) to compute DistSqr instead of Dist
+        
+        if (Dist > 0.0 && Dist <= OuterRadius)
+        {
+            const vec3 L = Vec / Dist;
+
+            float NdL = saturate(dot(Normal, L));
+            if (NdL > 0.0)
+            {            
+                float Attenuation;
+                //if (InNormalizedScreenCoord.x > 1.0f-1.0f/4.0f)
+                //    Attenuation = CalcDistanceAttenuation(Dist, OuterRadius);
+                //else if (InNormalizedScreenCoord.x > 1.0f-2.0f/4.0f)
+                    Attenuation = CalcDistanceAttenuationFrostbite(Dist*Dist, GetLightInverseSquareRadius(lightIndex));
+                //else if ( InNormalizedScreenCoord.x > 1.0f-3.0f/4.0f)
+                //    Attenuation = CalcDistanceAttenuationUnreal(Dist, OuterRadius);
+                //else
+                //    Attenuation = CalcDistanceAttenuationSkyforge(Dist, 0.0, OuterRadius);
+            
+                #ifdef ALLOW_SHADOW_RECEIVE
+				float Shadow;
+				if (GetLightShadowmapIndex(lightIndex) != -1)
+					Shadow = SampleOmnidirectionalLightShadow(GetLightShadowmapIndex(lightIndex), -Vec, OuterRadius, ShadowBias, SmoothDiskRadius);
+				else
+					Shadow = 1;
+                #else
+                const float Shadow = 1.0;
+                #endif
+               
+                if (Shadow > 0.0)
+                {
+                    float LdotDir = dot(L, GetLightDirection(lightIndex));
+
+                    if (lightType == SPOT_LIGHT)
+                    {
+                        Attenuation *= CalcSpotAttenuation(LdotDir,
+                                                           GetLightCosHalfInnerConeAngle(lightIndex),
+                                                           GetLightCosHalfOuterConeAngle(lightIndex),
+                                                           GetLightSpotExponent(lightIndex));
+                    }
+
+                    #ifdef SUPPORT_PHOTOMETRIC_LIGHT            
+                    uint PhotometricProfile = GetLightPhotometricProfile(lightIndex);            
+                    if (PhotometricProfile < 0xffffffff)
+                    {
+                        Attenuation *= CalcPhotometricAttenuation(LdotDir, PhotometricProfile);// * GetLightIESScale(lightIndex);
+                    }            
+                    #endif
+
+                    Attenuation *= NdL * Shadow;
+			
+                    //Attenuation = floor(Attenuation * 256)/256;
+
+                    light += LightBRDF(Diffuse, F0, RoughnessSqr, Normal, L, NdL, NdV, k) * GetLightColor(lightIndex) * Attenuation;
+            
+                    //if (LdotDir<0.0) {Light=vec3(1,0,0);break;}
+                }
+            }
+        }
+    }
+
+    return light;
+}
 
 void MaterialPBRShader( vec3 BaseColor,
                         vec3 Normal,
@@ -300,7 +384,7 @@ void MaterialPBRShader( vec3 BaseColor,
     Light += CalcDirectionalLightingPBR( Diffuse, F0, k, RoughnessSqrClamped, Normal, GeometryNormal, NdV );
     
     // Accumulate point and spot lights
-    Light += CalcPointLightLightingPBR( Diffuse, F0, k, RoughnessSqrClamped, Normal, NdV, FirstIndex, NumLights );
+    Light += CalcOmnidirectionalLightingPBR( Diffuse, F0, k, RoughnessSqrClamped, Normal, NdV, FirstIndex, NumLights );
 
     // Apply ambient
     const vec3 Ambient = CalcAmbient( Albedo, R, Normal, NdV, F0, Roughness, AO, FirstIndex, NumProbes );
@@ -356,7 +440,7 @@ void MaterialPBRShader( vec3 BaseColor,
         FS_FragColor = vec4( CalcDirectionalLightingPBR( vec3(0.5/PI), F0, k, RoughnessSqrClamped, Normal, GeometryNormal, NdV ), 1.0 );
         break;
     case DEBUG_POINTLIGHT:
-        FS_FragColor = vec4( CalcPointLightLightingPBR( vec3(0.5/PI), F0, k, RoughnessSqrClamped, Normal, NdV, FirstIndex, NumLights ), 1.0 );
+        FS_FragColor = vec4( CalcOmnidirectionalLightingPBR( vec3(0.5/PI), F0, k, RoughnessSqrClamped, Normal, NdV, FirstIndex, NumLights ), 1.0 );
         break;
     //case DEBUG_TEXCOORDS:
     //    FS_FragColor = vec4( nsv_VS0_TexCoord.xy, 0.0, 1.0 );

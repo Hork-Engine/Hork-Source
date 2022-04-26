@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
-AConsoleVar r_LightTextureFormat( _CTS( "r_LightTextureFormat" ), _CTS( "0" ), 0, _CTS( "0 - R11F_G11F_B10F, 1 - RGB16F" ) );
+AConsoleVar r_LightTextureFormat(_CTS("r_LightTextureFormat"), _CTS("0"), 0, _CTS("0 - R11F_G11F_B10F, 1 - RGB16F"));
 
 using namespace RenderCore;
 
@@ -272,16 +272,18 @@ bool ALightRenderer::BindMaterialLightPass(IImmediateContext* immediateCtx, SRen
     return true;
 }
 
-void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
-                              FGTextureProxy * DepthTarget,
-                              FGTextureProxy * SSAOTexture,
-                              FGTextureProxy * ShadowMapDepth0,
-                              FGTextureProxy * ShadowMapDepth1,
-                              FGTextureProxy * ShadowMapDepth2,
-                              FGTextureProxy * ShadowMapDepth3,
-                              FGTextureProxy * LinearDepth,
-                              FGTextureProxy ** ppLight/*,
-                              FGTextureProxy ** ppVelocity*/)
+void ALightRenderer::AddPass(AFrameGraph&     FrameGraph,
+                             FGTextureProxy*  DepthTarget,
+                             FGTextureProxy*  SSAOTexture,
+                             FGTextureProxy*  ShadowMapDepth0,
+                             FGTextureProxy*  ShadowMapDepth1,
+                             FGTextureProxy*  ShadowMapDepth2,
+                             FGTextureProxy*  ShadowMapDepth3,
+                             FGTextureProxy*  OmnidirectionalShadowMapArray,
+                             FGTextureProxy*  LinearDepth,
+                             FGTextureProxy** ppLight /*,
+                              FGTextureProxy ** ppVelocity*/
+)
 {
     FGTextureProxy*    PhotometricProfiles_R = FrameGraph.AddExternalResource<FGTextureProxy>("Photometric Profiles", GRenderView->PhotometricProfiles);
     FGTextureProxy*    LookupBRDF_R          = FrameGraph.AddExternalResource<FGTextureProxy>("Lookup BRDF", GLookupBRDF);
@@ -291,33 +293,36 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
     FGTextureProxy*    ReflectionDepth_R     = FrameGraph.AddExternalResource<FGTextureProxy>("Reflection depth texture", GRenderView->DepthTexture);
 
     RenderCore::TEXTURE_FORMAT pf;
-    switch ( r_LightTextureFormat ) {
-    case 0:
-        // Pretty good. No significant visual difference between TEXTURE_FORMAT_RGB16F.
-        pf = TEXTURE_FORMAT_R11F_G11F_B10F;
-        break;
-    default:
-        pf = TEXTURE_FORMAT_RGB16F;
-        break;
+    switch (r_LightTextureFormat)
+    {
+        case 0:
+            // Pretty good. No significant visual difference between TEXTURE_FORMAT_RGB16F.
+            pf = TEXTURE_FORMAT_R11F_G11F_B10F;
+            break;
+        default:
+            pf = TEXTURE_FORMAT_RGB16F;
+            break;
     }
 
-    ARenderPass & opaquePass = FrameGraph.AddTask< ARenderPass >( "Opaque Pass" );
+    ARenderPass& opaquePass = FrameGraph.AddTask<ARenderPass>("Opaque Pass");
 
-    opaquePass.SetRenderArea( GRenderViewArea );
+    opaquePass.SetRenderArea(GRenderViewArea);
 
-    opaquePass.AddResource( SSAOTexture, FG_RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( PhotometricProfiles_R, FG_RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( LookupBRDF_R, FG_RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( ClusterItemTBO_R, FG_RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( ClusterLookup_R, FG_RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( ShadowMapDepth0, FG_RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( ShadowMapDepth1, FG_RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( ShadowMapDepth2, FG_RESOURCE_ACCESS_READ );
-    opaquePass.AddResource( ShadowMapDepth3, FG_RESOURCE_ACCESS_READ );
+    opaquePass.AddResource(SSAOTexture, FG_RESOURCE_ACCESS_READ);
+    opaquePass.AddResource(PhotometricProfiles_R, FG_RESOURCE_ACCESS_READ);
+    opaquePass.AddResource(LookupBRDF_R, FG_RESOURCE_ACCESS_READ);
+    opaquePass.AddResource(ClusterItemTBO_R, FG_RESOURCE_ACCESS_READ);
+    opaquePass.AddResource(ClusterLookup_R, FG_RESOURCE_ACCESS_READ);
+    opaquePass.AddResource(ShadowMapDepth0, FG_RESOURCE_ACCESS_READ);
+    opaquePass.AddResource(ShadowMapDepth1, FG_RESOURCE_ACCESS_READ);
+    opaquePass.AddResource(ShadowMapDepth2, FG_RESOURCE_ACCESS_READ);
+    opaquePass.AddResource(ShadowMapDepth3, FG_RESOURCE_ACCESS_READ);
+    opaquePass.AddResource(OmnidirectionalShadowMapArray, FG_RESOURCE_ACCESS_READ);
 
-    if ( r_SSLR ) {
-        opaquePass.AddResource( ReflectionColor_R, FG_RESOURCE_ACCESS_READ );
-        opaquePass.AddResource( ReflectionDepth_R, FG_RESOURCE_ACCESS_READ );
+    if (r_SSLR)
+    {
+        opaquePass.AddResource(ReflectionColor_R, FG_RESOURCE_ACCESS_READ);
+        opaquePass.AddResource(ReflectionDepth_R, FG_RESOURCE_ACCESS_READ);
     }
 
     opaquePass.SetColorAttachment(
@@ -326,228 +331,236 @@ void ALightRenderer::AddPass( AFrameGraph & FrameGraph,
                                .SetFormat(pf)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
- 
+
     opaquePass.SetDepthStencilAttachment(
         STextureAttachment(DepthTarget)
-        .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-    );
+            .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
 
-    opaquePass.AddSubpass( { 0 }, // color attachment refs
+    opaquePass.AddSubpass({0}, // color attachment refs
                           [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
-    {
-        // Clearing don't work properly with dynamic resolution scale :(
-        IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
+                          {
+                              // Clearing don't work properly with dynamic resolution scale :(
+                              IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
 #if 1
-        if ( GRenderView->bClearBackground ) {
-            unsigned int attachment = 0;
+                              if (GRenderView->bClearBackground)
+                              {
+                                  unsigned int attachment = 0;
 
-            SClearColorValue clearValue;
-            clearValue.Float32[0] = GRenderView->BackgroundColor.X;
-            clearValue.Float32[1] = GRenderView->BackgroundColor.Y;
-            clearValue.Float32[2] = GRenderView->BackgroundColor.Z;
-            clearValue.Float32[3] = 0;
-            immediateCtx->ClearAttachments(RenderPassContext, &attachment, 1, &clearValue, nullptr, nullptr);
-        }
+                                  SClearColorValue clearValue;
+                                  clearValue.Float32[0] = GRenderView->BackgroundColor.X;
+                                  clearValue.Float32[1] = GRenderView->BackgroundColor.Y;
+                                  clearValue.Float32[2] = GRenderView->BackgroundColor.Z;
+                                  clearValue.Float32[3] = 0;
+                                  immediateCtx->ClearAttachments(RenderPassContext, &attachment, 1, &clearValue, nullptr, nullptr);
+                              }
 #endif
-        BindShadowMatrix();
+                              BindShadowMatrix();
 
-        if ( r_SSLR ) {
-            rtbl->BindTexture( 8, ReflectionDepth_R->Actual() );
-            rtbl->BindTexture( 9, ReflectionColor_R->Actual() );
-        }
+                              if (r_SSLR)
+                              {
+                                  rtbl->BindTexture(8, ReflectionDepth_R->Actual());
+                                  rtbl->BindTexture(9, ReflectionColor_R->Actual());
+                              }
 
-        rtbl->BindTexture( 10, PhotometricProfiles_R->Actual() );
-        rtbl->BindTexture( 11, LookupBRDF_R->Actual() );
+                              rtbl->BindTexture(10, PhotometricProfiles_R->Actual());
+                              rtbl->BindTexture(11, LookupBRDF_R->Actual());
 
-        // Bind ambient occlusion
-        rtbl->BindTexture( 12, SSAOTexture->Actual() );
+                              // Bind ambient occlusion
+                              rtbl->BindTexture(12, SSAOTexture->Actual());
 
-        // Bind cluster index buffer
-        rtbl->BindTexture( 13, ClusterItemTBO_R->Actual() );
+                              // Bind cluster index buffer
+                              rtbl->BindTexture(13, ClusterItemTBO_R->Actual());
 
-        // Bind cluster lookup
-        rtbl->BindTexture( 14, ClusterLookup_R->Actual() );
+                              // Bind cluster lookup
+                              rtbl->BindTexture(14, ClusterLookup_R->Actual());
 
-        // Bind shadow map
-        rtbl->BindTexture( 15, ShadowMapDepth0->Actual() );
-        rtbl->BindTexture( 16, ShadowMapDepth1->Actual() );
-        rtbl->BindTexture( 17, ShadowMapDepth2->Actual() );
-        rtbl->BindTexture( 18, ShadowMapDepth3->Actual() );
+                              // Bind shadow map
+                              rtbl->BindTexture(15, ShadowMapDepth0->Actual());
+                              rtbl->BindTexture(16, ShadowMapDepth1->Actual());
+                              rtbl->BindTexture(17, ShadowMapDepth2->Actual());
+                              rtbl->BindTexture(18, ShadowMapDepth3->Actual());
+                              rtbl->BindTexture(19, OmnidirectionalShadowMapArray->Actual());
 
-        for ( int i = 0 ; i < GRenderView->TerrainInstanceCount ; i++ ) {
-            STerrainRenderInstance const * instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
+                              for (int i = 0; i < GRenderView->TerrainInstanceCount; i++)
+                              {
+                                  STerrainRenderInstance const* instance = GFrameData->TerrainInstances[GRenderView->FirstTerrainInstance + i];
 
-            STerrainInstanceConstantBuffer * drawCall = MapDrawCallConstants< STerrainInstanceConstantBuffer >();
-            drawCall->LocalViewProjection = instance->LocalViewProjection;
-            StoreFloat3x3AsFloat3x4Transposed( instance->ModelNormalToViewSpace, drawCall->ModelNormalToViewSpace );
-            drawCall->ViewPositionAndHeight = instance->ViewPositionAndHeight;
-            drawCall->TerrainClipMin = instance->ClipMin;
-            drawCall->TerrainClipMax = instance->ClipMax;
+                                  STerrainInstanceConstantBuffer* drawCall = MapDrawCallConstants<STerrainInstanceConstantBuffer>();
+                                  drawCall->LocalViewProjection            = instance->LocalViewProjection;
+                                  StoreFloat3x3AsFloat3x4Transposed(instance->ModelNormalToViewSpace, drawCall->ModelNormalToViewSpace);
+                                  drawCall->ViewPositionAndHeight = instance->ViewPositionAndHeight;
+                                  drawCall->TerrainClipMin        = instance->ClipMin;
+                                  drawCall->TerrainClipMax        = instance->ClipMax;
 
-            rtbl->BindTexture( 0, instance->Clipmaps );
-            rtbl->BindTexture( 1, instance->Normals );
-            immediateCtx->BindPipeline(GTerrainLightPipeline);
-            immediateCtx->BindVertexBuffer(0, instance->VertexBuffer);
-            immediateCtx->BindVertexBuffer(1, GStreamBuffer, instance->InstanceBufferStreamHandle);
-            immediateCtx->BindIndexBuffer(instance->IndexBuffer, INDEX_TYPE_UINT16);
-            immediateCtx->MultiDrawIndexedIndirect(instance->IndirectBufferDrawCount,
-                                            GStreamBuffer,
-                                            instance->IndirectBufferStreamHandle,
-                                            sizeof( SDrawIndexedIndirectCmd ) );
-        }
+                                  rtbl->BindTexture(0, instance->Clipmaps);
+                                  rtbl->BindTexture(1, instance->Normals);
+                                  immediateCtx->BindPipeline(GTerrainLightPipeline);
+                                  immediateCtx->BindVertexBuffer(0, instance->VertexBuffer);
+                                  immediateCtx->BindVertexBuffer(1, GStreamBuffer, instance->InstanceBufferStreamHandle);
+                                  immediateCtx->BindIndexBuffer(instance->IndexBuffer, INDEX_TYPE_UINT16);
+                                  immediateCtx->MultiDrawIndexedIndirect(instance->IndirectBufferDrawCount,
+                                                                         GStreamBuffer,
+                                                                         instance->IndirectBufferStreamHandle,
+                                                                         sizeof(SDrawIndexedIndirectCmd));
+                              }
 
-        SDrawIndexedCmd drawCmd;
-        drawCmd.InstanceCount = 1;
-        drawCmd.StartInstanceLocation = 0;
+                              SDrawIndexedCmd drawCmd;
+                              drawCmd.InstanceCount         = 1;
+                              drawCmd.StartInstanceLocation = 0;
 
-        for ( int i = 0 ; i < GRenderView->InstanceCount ; i++ ) {
-            SRenderInstance const * instance = GFrameData->Instances[GRenderView->FirstInstance + i];
+                              for (int i = 0; i < GRenderView->InstanceCount; i++)
+                              {
+                                  SRenderInstance const* instance = GFrameData->Instances[GRenderView->FirstInstance + i];
 
-            if (!BindMaterialLightPass(immediateCtx, instance))
-            {
-                continue;
-            }
+                                  if (!BindMaterialLightPass(immediateCtx, instance))
+                                  {
+                                      continue;
+                                  }
 
-            BindTextures( instance->MaterialInstance, instance->Material->LightPassTextureCount );
-            BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-            BindInstanceConstants( instance );
+                                  BindTextures(instance->MaterialInstance, instance->Material->LightPassTextureCount);
+                                  BindSkeleton(instance->SkeletonOffset, instance->SkeletonSize);
+                                  BindInstanceConstants(instance);
 
-            drawCmd.IndexCountPerInstance = instance->IndexCount;
-            drawCmd.StartIndexLocation = instance->StartIndexLocation;
-            drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+                                  drawCmd.IndexCountPerInstance = instance->IndexCount;
+                                  drawCmd.StartIndexLocation    = instance->StartIndexLocation;
+                                  drawCmd.BaseVertexLocation    = instance->BaseVertexLocation;
 
-            immediateCtx->Draw(&drawCmd);
+                                  immediateCtx->Draw(&drawCmd);
 
-            //if ( r_RenderSnapshot ) {
-            //    SaveSnapshot();
-            //}
-        }
-    } );
+                                  //if ( r_RenderSnapshot ) {
+                                  //    SaveSnapshot();
+                                  //}
+                              }
+                          });
 
-    FGTextureProxy * LightTexture = opaquePass.GetColorAttachments()[0].pResource;
+    FGTextureProxy* LightTexture = opaquePass.GetColorAttachments()[0].pResource;
 
-    if ( GRenderView->TranslucentInstanceCount ) {
-        ARenderPass & translucentPass = FrameGraph.AddTask< ARenderPass >( "Translucent Pass" );
+    if (GRenderView->TranslucentInstanceCount)
+    {
+        ARenderPass& translucentPass = FrameGraph.AddTask<ARenderPass>("Translucent Pass");
 
         translucentPass.SetRenderArea(GRenderViewArea);
 
-        translucentPass.AddResource( SSAOTexture, FG_RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( PhotometricProfiles_R, FG_RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( LookupBRDF_R, FG_RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( ClusterItemTBO_R, FG_RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( ClusterLookup_R, FG_RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( ShadowMapDepth0, FG_RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( ShadowMapDepth1, FG_RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( ShadowMapDepth2, FG_RESOURCE_ACCESS_READ );
-        translucentPass.AddResource( ShadowMapDepth3, FG_RESOURCE_ACCESS_READ );
+        translucentPass.AddResource(SSAOTexture, FG_RESOURCE_ACCESS_READ);
+        translucentPass.AddResource(PhotometricProfiles_R, FG_RESOURCE_ACCESS_READ);
+        translucentPass.AddResource(LookupBRDF_R, FG_RESOURCE_ACCESS_READ);
+        translucentPass.AddResource(ClusterItemTBO_R, FG_RESOURCE_ACCESS_READ);
+        translucentPass.AddResource(ClusterLookup_R, FG_RESOURCE_ACCESS_READ);
+        translucentPass.AddResource(ShadowMapDepth0, FG_RESOURCE_ACCESS_READ);
+        translucentPass.AddResource(ShadowMapDepth1, FG_RESOURCE_ACCESS_READ);
+        translucentPass.AddResource(ShadowMapDepth2, FG_RESOURCE_ACCESS_READ);
+        translucentPass.AddResource(ShadowMapDepth3, FG_RESOURCE_ACCESS_READ);
+        translucentPass.AddResource(OmnidirectionalShadowMapArray, FG_RESOURCE_ACCESS_READ);
 
-        if ( r_SSLR ) {
-            translucentPass.AddResource( ReflectionColor_R, FG_RESOURCE_ACCESS_READ );
-            translucentPass.AddResource( ReflectionDepth_R, FG_RESOURCE_ACCESS_READ );
+        if (r_SSLR)
+        {
+            translucentPass.AddResource(ReflectionColor_R, FG_RESOURCE_ACCESS_READ);
+            translucentPass.AddResource(ReflectionDepth_R, FG_RESOURCE_ACCESS_READ);
         }
 
         translucentPass.SetColorAttachment(
             STextureAttachment(LightTexture)
-            .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-        );
+                .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
 
         translucentPass.SetDepthStencilAttachment(
             STextureAttachment(DepthTarget)
-            .SetLoadOp( ATTACHMENT_LOAD_OP_LOAD )
-        );
+                .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
 
-        translucentPass.AddSubpass( { 0 }, // color attachment refs
+        translucentPass.AddSubpass({0}, // color attachment refs
                                    [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
-        {
-            IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
+                                   {
+                                       IImmediateContext* immediateCtx = RenderPassContext.pImmediateContext;
 
-            SDrawIndexedCmd drawCmd;
-            drawCmd.InstanceCount = 1;
-            drawCmd.StartInstanceLocation = 0;
+                                       SDrawIndexedCmd drawCmd;
+                                       drawCmd.InstanceCount         = 1;
+                                       drawCmd.StartInstanceLocation = 0;
 
-            BindShadowMatrix();
+                                       BindShadowMatrix();
 
-            if ( r_SSLR ) {
-                rtbl->BindTexture( 8, ReflectionDepth_R->Actual() );
-                rtbl->BindTexture( 9, ReflectionColor_R->Actual() );
-            }
+                                       if (r_SSLR)
+                                       {
+                                           rtbl->BindTexture(8, ReflectionDepth_R->Actual());
+                                           rtbl->BindTexture(9, ReflectionColor_R->Actual());
+                                       }
 
-            rtbl->BindTexture( 10, PhotometricProfiles_R->Actual() );
-            rtbl->BindTexture( 11, LookupBRDF_R->Actual() );
+                                       rtbl->BindTexture(10, PhotometricProfiles_R->Actual());
+                                       rtbl->BindTexture(11, LookupBRDF_R->Actual());
 
-            // Bind ambient occlusion
-            rtbl->BindTexture( 12, SSAOTexture->Actual() );
+                                       // Bind ambient occlusion
+                                       rtbl->BindTexture(12, SSAOTexture->Actual());
 
-            // Bind cluster index buffer
-            rtbl->BindTexture( 13, ClusterItemTBO_R->Actual() );
+                                       // Bind cluster index buffer
+                                       rtbl->BindTexture(13, ClusterItemTBO_R->Actual());
 
-            // Bind cluster lookup
-            rtbl->BindTexture( 14, ClusterLookup_R->Actual() );
+                                       // Bind cluster lookup
+                                       rtbl->BindTexture(14, ClusterLookup_R->Actual());
 
-            // Bind shadow map
-            rtbl->BindTexture( 15, ShadowMapDepth0->Actual() );
-            rtbl->BindTexture( 16, ShadowMapDepth1->Actual() );
-            rtbl->BindTexture( 17, ShadowMapDepth2->Actual() );
-            rtbl->BindTexture( 18, ShadowMapDepth3->Actual() );
+                                       // Bind shadow map
+                                       rtbl->BindTexture(15, ShadowMapDepth0->Actual());
+                                       rtbl->BindTexture(16, ShadowMapDepth1->Actual());
+                                       rtbl->BindTexture(17, ShadowMapDepth2->Actual());
+                                       rtbl->BindTexture(18, ShadowMapDepth3->Actual());
+                                       rtbl->BindTexture(19, OmnidirectionalShadowMapArray->Actual());
 
-            for ( int i = 0 ; i < GRenderView->TranslucentInstanceCount ; i++ ) {
-                SRenderInstance const * instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
+                                       for (int i = 0; i < GRenderView->TranslucentInstanceCount; i++)
+                                       {
+                                           SRenderInstance const* instance = GFrameData->TranslucentInstances[GRenderView->FirstTranslucentInstance + i];
 
-                if (!BindMaterialLightPass(immediateCtx, instance))
-                {
-                    continue;
-                }
+                                           if (!BindMaterialLightPass(immediateCtx, instance))
+                                           {
+                                               continue;
+                                           }
 
-                BindTextures( instance->MaterialInstance, instance->Material->LightPassTextureCount );
-                BindSkeleton( instance->SkeletonOffset, instance->SkeletonSize );
-                BindInstanceConstants( instance );
+                                           BindTextures(instance->MaterialInstance, instance->Material->LightPassTextureCount);
+                                           BindSkeleton(instance->SkeletonOffset, instance->SkeletonSize);
+                                           BindInstanceConstants(instance);
 
-                drawCmd.IndexCountPerInstance = instance->IndexCount;
-                drawCmd.StartIndexLocation = instance->StartIndexLocation;
-                drawCmd.BaseVertexLocation = instance->BaseVertexLocation;
+                                           drawCmd.IndexCountPerInstance = instance->IndexCount;
+                                           drawCmd.StartIndexLocation    = instance->StartIndexLocation;
+                                           drawCmd.BaseVertexLocation    = instance->BaseVertexLocation;
 
-                immediateCtx->Draw(&drawCmd);
+                                           immediateCtx->Draw(&drawCmd);
 
-                //if ( r_RenderSnapshot ) {
-                //    SaveSnapshot();
-                //}
-            }
-
-        } );
+                                           //if ( r_RenderSnapshot ) {
+                                           //    SaveSnapshot();
+                                           //}
+                                       }
+                                   });
 
         LightTexture = translucentPass.GetColorAttachments()[0].pResource;
     }
 
-    if ( r_SSLR ) {
+    if (r_SSLR)
+    {
         // TODO: We can store reflection color and depth in one texture
-        ACustomTask & task = FrameGraph.AddTask< ACustomTask >( "Copy Light Pass" );
-        task.AddResource( LightTexture, FG_RESOURCE_ACCESS_READ );
-        task.AddResource( LinearDepth, FG_RESOURCE_ACCESS_READ );
-        task.AddResource( ReflectionColor_R, FG_RESOURCE_ACCESS_WRITE );
-        task.AddResource( ReflectionDepth_R, FG_RESOURCE_ACCESS_WRITE );
-        task.SetFunction( [=]( ACustomTaskContext const & Task )
-        {
-            IImmediateContext* immediateCtx = Task.pImmediateContext;
+        ACustomTask& task = FrameGraph.AddTask<ACustomTask>("Copy Light Pass");
+        task.AddResource(LightTexture, FG_RESOURCE_ACCESS_READ);
+        task.AddResource(LinearDepth, FG_RESOURCE_ACCESS_READ);
+        task.AddResource(ReflectionColor_R, FG_RESOURCE_ACCESS_WRITE);
+        task.AddResource(ReflectionDepth_R, FG_RESOURCE_ACCESS_WRITE);
+        task.SetFunction([=](ACustomTaskContext const& Task)
+                         {
+                             IImmediateContext* immediateCtx = Task.pImmediateContext;
 
-            RenderCore::TextureCopy Copy = {};
-            Copy.SrcRect.Dimension.X = GRenderView->Width;
-            Copy.SrcRect.Dimension.Y = GRenderView->Height;
-            Copy.SrcRect.Dimension.Z = 1;
-            Copy.SrcRect.Offset.Y = Copy.DstOffset.Y = GetFrameResoultion().Height - GRenderView->Height;
+                             RenderCore::TextureCopy Copy = {};
+                             Copy.SrcRect.Dimension.X     = GRenderView->Width;
+                             Copy.SrcRect.Dimension.Y     = GRenderView->Height;
+                             Copy.SrcRect.Dimension.Z     = 1;
+                             Copy.SrcRect.Offset.Y = Copy.DstOffset.Y = GetFrameResoultion().Height - GRenderView->Height;
 
-            {
-            RenderCore::ITexture * pSource = LightTexture->Actual();
-            RenderCore::ITexture * pDest = ReflectionColor_R->Actual();
-            immediateCtx->CopyTextureRect(pSource, pDest, 1, &Copy);
-            }
+                             {
+                                 RenderCore::ITexture* pSource = LightTexture->Actual();
+                                 RenderCore::ITexture* pDest   = ReflectionColor_R->Actual();
+                                 immediateCtx->CopyTextureRect(pSource, pDest, 1, &Copy);
+                             }
 
-            {
-            RenderCore::ITexture * pSource = LinearDepth->Actual();
-            RenderCore::ITexture * pDest = ReflectionDepth_R->Actual();
-            immediateCtx->CopyTextureRect(pSource, pDest, 1, &Copy);
-            }
-        } );
+                             {
+                                 RenderCore::ITexture* pSource = LinearDepth->Actual();
+                                 RenderCore::ITexture* pDest   = ReflectionDepth_R->Actual();
+                                 immediateCtx->CopyTextureRect(pSource, pDest, 1, &Copy);
+                             }
+                         });
     }
 
     *ppLight = LightTexture;

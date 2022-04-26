@@ -35,6 +35,7 @@ SOFTWARE.
 #include <Core/ScopedTimer.h>
 
 extern AConsoleVar r_FXAA;
+extern AConsoleVar r_SMAA;
 
 AConsoleVar r_ShowNormals(_CTS("r_ShowNormals"), _CTS("0"), CVAR_CHEAT);
 AConsoleVar r_ShowFeedbackVT(_CTS("r_ShowFeedbackVT"), _CTS("0"));
@@ -67,11 +68,11 @@ AFrameRenderer::AFrameRenderer()
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &nearestSampler;
 
-    CreateFullscreenQuadPipeline(&LinearDepthPipe, "postprocess/linear_depth.vert", "postprocess/linear_depth.frag", &resourceLayout);
-    CreateFullscreenQuadPipeline(&LinearDepthPipe_ORTHO, "postprocess/linear_depth.vert", "postprocess/linear_depth_ortho.frag", &resourceLayout);
+    AShaderFactory::CreateFullscreenQuadPipeline(&LinearDepthPipe, "postprocess/linear_depth.vert", "postprocess/linear_depth.frag", &resourceLayout);
+    AShaderFactory::CreateFullscreenQuadPipeline(&LinearDepthPipe_ORTHO, "postprocess/linear_depth.vert", "postprocess/linear_depth_ortho.frag", &resourceLayout);
 
-    CreateFullscreenQuadPipeline(&ReconstructNormalPipe, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal.frag", &resourceLayout);
-    CreateFullscreenQuadPipeline(&ReconstructNormalPipe_ORTHO, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal_ortho.frag", &resourceLayout);
+    AShaderFactory::CreateFullscreenQuadPipeline(&ReconstructNormalPipe, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal.frag", &resourceLayout);
+    AShaderFactory::CreateFullscreenQuadPipeline(&ReconstructNormalPipe_ORTHO, "postprocess/reconstruct_normal.vert", "postprocess/reconstruct_normal_ortho.frag", &resourceLayout);
 
     SSamplerDesc motionBlurSamplers[3];
     motionBlurSamplers[0] = linearSampler;
@@ -81,12 +82,12 @@ AFrameRenderer::AFrameRenderer()
     resourceLayout.NumSamplers = HK_ARRAY_SIZE(motionBlurSamplers);
     resourceLayout.Samplers    = motionBlurSamplers;
 
-    CreateFullscreenQuadPipeline(&MotionBlurPipeline, "postprocess/motionblur.vert", "postprocess/motionblur.frag", &resourceLayout);
+    AShaderFactory::CreateFullscreenQuadPipeline(&MotionBlurPipeline, "postprocess/motionblur.vert", "postprocess/motionblur.frag", &resourceLayout);
 
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &linearSampler;
 
-    CreateFullscreenQuadPipeline(&OutlineBlurPipe, "postprocess/outlineblur.vert", "postprocess/outlineblur.frag", &resourceLayout);
+    AShaderFactory::CreateFullscreenQuadPipeline(&OutlineBlurPipe, "postprocess/outlineblur.vert", "postprocess/outlineblur.frag", &resourceLayout);
 
     SSamplerDesc outlineApplySamplers[2];
     outlineApplySamplers[0] = linearSampler;
@@ -96,7 +97,7 @@ AFrameRenderer::AFrameRenderer()
     resourceLayout.Samplers    = outlineApplySamplers;
 
     //CreateFullscreenQuadPipeline( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_COLOR_ADD );
-    CreateFullscreenQuadPipeline(&OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_ALPHA);
+    AShaderFactory::CreateFullscreenQuadPipeline(&OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_ALPHA);
 }
 
 void AFrameRenderer::AddLinearizeDepthPass(AFrameGraph& FrameGraph, FGTextureProxy* DepthTexture, FGTextureProxy** ppLinearDepth)
@@ -382,6 +383,9 @@ void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVi
         ShadowMapRenderer.AddDummyShadowMap(FrameGraph, &ShadowMapDepth[lightIndex]);
     }
 
+    FGTextureProxy* OmnidirectionalShadowMapArray;
+    ShadowMapRenderer.AddPass(FrameGraph, &GFrameData->LightShadowmaps[GRenderView->FirstOmnidirectionalShadowMap],
+                              GRenderView->NumOmnidirectionalShadowMaps, &OmnidirectionalShadowMapArray);
 
     FGTextureProxy *DepthTexture, *VelocityTexture;
     AddDepthPass(FrameGraph, &DepthTexture, &VelocityTexture);
@@ -403,7 +407,14 @@ void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVi
     }
 
     FGTextureProxy* LightTexture;
-    LightRenderer.AddPass(FrameGraph, DepthTexture, SSAOTexture, ShadowMapDepth[0], ShadowMapDepth[1], ShadowMapDepth[2], ShadowMapDepth[3], LinearDepth, &LightTexture);
+    LightRenderer.AddPass(FrameGraph, DepthTexture, SSAOTexture, ShadowMapDepth[0], ShadowMapDepth[1], ShadowMapDepth[2], ShadowMapDepth[3], OmnidirectionalShadowMapArray, LinearDepth, &LightTexture);
+
+    if (r_SMAA)
+    {
+        FGTextureProxy* AntialiasedTexture;
+        SmaaRenderer.AddPass(FrameGraph, LightTexture, &AntialiasedTexture);
+        LightTexture = AntialiasedTexture;
+    }
 
     if (r_MotionBlur)
     {
@@ -431,7 +442,8 @@ void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVi
     }
 
     FGTextureProxy* FinalTexture;
-    if (r_FXAA)
+
+    if (r_FXAA && !r_SMAA)
     {
         FxaaRenderer.AddPass(FrameGraph, PostprocessTexture, &FinalTexture);
     }

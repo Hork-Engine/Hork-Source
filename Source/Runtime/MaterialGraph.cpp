@@ -2754,7 +2754,7 @@ static void GenerateBuiltinSource()
     f.Write(builtin.CStr(), builtin.Length());
 }
 
-static void WriteDebugShaders(SMaterialShader const* Shaders)
+static void WriteDebugShaders(SPredefinedShaderSource const* Shaders)
 {
     AFileStream f;
     if (!f.OpenWrite("debug.glsl"))
@@ -2762,7 +2762,7 @@ static void WriteDebugShaders(SMaterialShader const* Shaders)
         return;
     }
 
-    for (SMaterialShader const* s = Shaders; s; s = s->Next)
+    for (SPredefinedShaderSource const* s = Shaders; s; s = s->pNext)
     {
         f.FormattedPrint("//----------------------------------\n// {}\n//----------------------------------\n", s->SourceName);
         f.FormattedPrint("{}\n", s->Code);
@@ -3485,6 +3485,64 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
         pDef->AddShader("$SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
         pDef->AddShader("$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", SamplersString(InGraph, shadowCtx.MaxTextureSlot));
         pDef->AddShader("$SHADOWMAP_PASS_FRAGMENT_CODE$", shadowCtx.SourceCode);
+    }
+
+    // Create omnidirectional shadowmap pass
+    {
+        AMaterialBuildContext    vertexCtx(InGraph, VERTEX_STAGE);
+        AMaterialBuildContext    tessControlCtx(InGraph, TESSELLATION_CONTROL_STAGE);
+        AMaterialBuildContext    tessEvalCtx(InGraph, TESSELLATION_EVAL_STAGE);
+        AMaterialBuildContext    shadowCtx(InGraph, SHADOWCAST_STAGE);
+        SMaterialStageTransition trans;
+
+        InGraph->CompileStage(vertexCtx);
+        InGraph->CompileStage(shadowCtx);
+
+        bool bTessShadowmap = (InGraph->TessellationMethod == TESSELLATION_PN) || (InGraph->TessellationMethod == TESSELLATION_FLAT && InGraph->bDisplacementAffectShadow);
+
+        if (bTessShadowmap)
+        {
+            InGraph->CompileStage(tessControlCtx);
+            InGraph->CompileStage(tessEvalCtx);
+        }
+
+        InGraph->CreateStageTransitions(trans,
+                                        &vertexCtx,
+                                        bTessShadowmap ? &tessControlCtx : nullptr,
+                                        bTessShadowmap ? &tessEvalCtx : nullptr,
+                                        nullptr,
+                                        shadowCtx.bHasShadowMask ? &shadowCtx : nullptr);
+
+        // NOTE: bShadowMapMasking and ShadowMapPassTextureCount should be same as in directional shadow map pass
+        pDef->bShadowMapMasking         = shadowCtx.bHasShadowMask;
+        pDef->ShadowMapPassTextureCount = trans.MaxTextureSlot + 1;
+        maxUniformAddress               = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
+
+        int locationIndex = trans.Varyings.Size();
+
+        //predefines += "#define OMNI_SHADOWMAP_PASS_VARYING_INSTANCE_ID " + Math::ToString( locationIndex++ ) + "\n";
+        predefines += "#define OMNI_SHADOWMAP_PASS_VARYING_POSITION " + Math::ToString(locationIndex++) + "\n";
+        predefines += "#define OMNI_SHADOWMAP_PASS_VARYING_NORMAL " + Math::ToString(locationIndex++) + "\n";
+
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_SAMPLERS$", SamplersString(InGraph, vertexCtx.MaxTextureSlot));
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
+
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TCS_SAMPLERS$", SamplersString(InGraph, tessControlCtx.MaxTextureSlot));
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TCS_CODE$", tessControlCtx.SourceCode);
+
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TES_SAMPLERS$", SamplersString(InGraph, tessEvalCtx.MaxTextureSlot));
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TES_CODE$", tessEvalCtx.SourceCode);
+
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", SamplersString(InGraph, shadowCtx.MaxTextureSlot));
+        pDef->AddShader("$OMNI_SHADOWMAP_PASS_FRAGMENT_CODE$", shadowCtx.SourceCode);
     }
 
     // Create light pass

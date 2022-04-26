@@ -68,6 +68,7 @@ AConsoleVar r_SSLRMaxDist(_CTS("r_SSLRMaxDist"), _CTS("10"));
 AConsoleVar r_SSLRSampleOffset(_CTS("r_SSLRSampleOffset"), _CTS("0.1"));
 AConsoleVar r_HBAO(_CTS("r_HBAO"), _CTS("1"), 0, _CTS("Required to rebuld materials to apply"));
 AConsoleVar r_FXAA(_CTS("r_FXAA"), _CTS("1"));
+AConsoleVar r_SMAA(_CTS("r_SMAA"), _CTS("1"));
 AConsoleVar r_ShowGPUTime(_CTS("r_ShowGPUTime"), _CTS("0"));
 
 void TestVT();
@@ -423,7 +424,7 @@ void ARenderBackend::InitializeMaterial(AMaterialGPU* Material, SMaterialDef con
 
     POLYGON_CULL cullMode = Def->bTwoSided ? POLYGON_CULL_DISABLED : POLYGON_CULL_FRONT;
 
-    AString code = LoadShader("material.glsl", Def->Shaders);
+    AString code = AShaderLoader{}.LoadShader("material.glsl", Def->Shaders);
 
     //{
     //    AFileStream fs;
@@ -449,6 +450,7 @@ void ARenderBackend::InitializeMaterial(AMaterialGPU* Material, SMaterialDef con
                 CreateWireframePassPipeline(&Material->WireframePass[i], code.CStr(), cullMode, bSkinned, bTessellation, Def->Samplers, Def->WireframePassTextureCount);
                 CreateNormalsPassPipeline(&Material->NormalsPass[i], code.CStr(), bSkinned, Def->Samplers, Def->NormalsPassTextureCount);
                 CreateShadowMapPassPipeline(&Material->ShadowPass[i], code.CStr(), Def->bShadowMapMasking, Def->bTwoSided, bSkinned, bTessellationShadowMap, Def->Samplers, Def->ShadowMapPassTextureCount);
+                CreateOmniShadowMapPassPipeline(&Material->OmniShadowPass[i], code.CStr(), Def->bShadowMapMasking, Def->bTwoSided, bSkinned, bTessellationShadowMap, Def->Samplers, Def->ShadowMapPassTextureCount);
                 CreateFeedbackPassPipeline(&Material->FeedbackPass[i], code.CStr(), cullMode, bSkinned, Def->Samplers, Def->LightPassTextureCount); // FIXME: Add FeedbackPassTextureCount
                 CreateOutlinePassPipeline(&Material->OutlinePass[i], code.CStr(), cullMode, bSkinned, bTessellation, Def->Samplers, Def->DepthPassTextureCount);
             }
@@ -675,7 +677,7 @@ void ARenderBackend::SetViewConstants(int ViewportIndex)
     pViewCBuf->BloomEnabled                = r_Bloom;                   // TODO: Get from GRenderView
     pViewCBuf->ToneMappingExposure         = r_ToneExposure.GetFloat(); // TODO: Get from GRenderView
     pViewCBuf->ColorGrading                = GRenderView->CurrentColorGradingLUT ? 1.0f : 0.0f;
-    pViewCBuf->FXAA                        = r_FXAA;
+    pViewCBuf->FXAA                        = r_FXAA && !r_SMAA;
     pViewCBuf->VignetteColorIntensity      = GRenderView->VignetteColorIntensity;
     pViewCBuf->VignetteOuterRadiusSqr      = GRenderView->VignetteOuterRadiusSqr;
     pViewCBuf->VignetteInnerRadiusSqr      = GRenderView->VignetteInnerRadiusSqr;

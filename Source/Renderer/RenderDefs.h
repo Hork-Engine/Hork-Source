@@ -43,10 +43,10 @@ SOFTWARE.
 //
 
 /** Max skeleton joints */
-constexpr int MAX_SKINNED_MESH_JOINTS               = 256;
+constexpr int MAX_SKINNED_MESH_JOINTS = 256;
 
 /** Max textures per material */
-constexpr int MAX_MATERIAL_TEXTURES                 = 11; // Reserved texture slots for AOLookup, ClusterItemTBO, ClusterLookup, ShadowMapShadow, Lightmap
+constexpr int MAX_MATERIAL_TEXTURES = 11; // Reserved texture slots for AOLookup, ClusterItemTBO, ClusterLookup, ShadowMapShadow, Lightmap
 
 /** Max directional lights per view */
 constexpr int MAX_DIRECTIONAL_LIGHTS = 4;
@@ -104,7 +104,7 @@ constexpr int MAX_CLUSTER_PROBES = MAX_CLUSTER_ITEMS;
 constexpr int MAX_TOTAL_CLUSTER_ITEMS = 512 * 1024; // NOTE: must be power of two // TODO: подобрать оптимальный размер
 
 /** Max lights per view. Indexed by 12 bit integer, limited by shader max constant buffer block size. */
-constexpr int MAX_LIGHTS = 768;//1024
+constexpr int MAX_LIGHTS = 768; //1024
 
 /** Max decals per view. Indexed by 12 bit integer. */
 constexpr int MAX_DECALS = 1024;
@@ -122,20 +122,20 @@ constexpr int MAX_ITEMS = MAX_LIGHTS + MAX_DECALS + MAX_PROBES;
 
 struct SMeshVertex
 {
-    Float3      Position;         // 4 * 3 = 12 bytes
-    uint16_t    TexCoord[2];      // 4 * 2 = 8 bytes      half: 4 bytes
-    uint16_t    Normal[3];        // 4 * 3 = 12 bytes     half: 6 bytes   byte: 3 bytes
-    uint16_t    Tangent[3];       // 4 * 3 = 12 bytes     half: 6 bytes   byte: 3 bytes
-    int8_t      Handedness;       // 4 * 1 = 4 bytes      byte: 1 bytes
-    uint8_t     Pad[3];
+    Float3   Position;    // 4 * 3 = 12 bytes
+    uint16_t TexCoord[2]; // 4 * 2 = 8 bytes      half: 4 bytes
+    uint16_t Normal[3];   // 4 * 3 = 12 bytes     half: 6 bytes   byte: 3 bytes
+    uint16_t Tangent[3];  // 4 * 3 = 12 bytes     half: 6 bytes   byte: 3 bytes
+    int8_t   Handedness;  // 4 * 1 = 4 bytes      byte: 1 bytes
+    uint8_t  Pad[3];
 
     void Write(IBinaryStreamWriteInterface& _Stream) const
     {
-        _Stream.WriteObject( Position );
-        _Stream.WriteObject( GetTexCoord() );
-        _Stream.WriteObject( GetTangent() );
-        _Stream.WriteFloat( (float)Handedness );
-        _Stream.WriteObject( GetNormal() );
+        _Stream.WriteObject(Position);
+        _Stream.WriteObject(GetTexCoord());
+        _Stream.WriteObject(GetTangent());
+        _Stream.WriteFloat((float)Handedness);
+        _Stream.WriteObject(GetNormal());
     }
 
     void Read(IBinaryStreamReadInterface& _Stream)
@@ -143,103 +143,115 @@ struct SMeshVertex
         Float2 texCoord;
         Float3 normal;
         Float3 tangent;
-        _Stream.ReadObject( Position );
-        _Stream.ReadObject( texCoord );
-        _Stream.ReadObject( tangent );
-        Handedness = ( _Stream.ReadFloat() > 0.0f ) ? 1 : -1;
-        _Stream.ReadObject( normal );
-        SetTexCoord( texCoord );
-        SetNormal( normal );
-        SetTangent( tangent );
+        _Stream.ReadObject(Position);
+        _Stream.ReadObject(texCoord);
+        _Stream.ReadObject(tangent);
+        Handedness = (_Stream.ReadFloat() > 0.0f) ? 1 : -1;
+        _Stream.ReadObject(normal);
+        SetTexCoord(texCoord);
+        SetNormal(normal);
+        SetTangent(tangent);
     }
 
-    void SetTexCoordNative( uint16_t S, uint16_t T ) {
+    void SetTexCoordNative(uint16_t S, uint16_t T)
+    {
         TexCoord[0] = S;
         TexCoord[1] = T;
     }
 
-    void SetTexCoord( float S, float T ) {
-        TexCoord[0] = Math::FloatToHalf( S );
-        TexCoord[1] = Math::FloatToHalf( T );
+    void SetTexCoord(float S, float T)
+    {
+        TexCoord[0] = Math::FloatToHalf(S);
+        TexCoord[1] = Math::FloatToHalf(T);
     }
 
-    void SetTexCoord( Float2 const & _TexCoord ) {
-        TexCoord[0] = Math::FloatToHalf( _TexCoord.X );
-        TexCoord[1] = Math::FloatToHalf( _TexCoord.Y );
+    void SetTexCoord(Float2 const& _TexCoord)
+    {
+        TexCoord[0] = Math::FloatToHalf(_TexCoord.X);
+        TexCoord[1] = Math::FloatToHalf(_TexCoord.Y);
     }
 
-    const Float2 GetTexCoord() const {
-        return Float2( Math::HalfToFloat( TexCoord[0] ), Math::HalfToFloat( TexCoord[1] ) );
+    const Float2 GetTexCoord() const
+    {
+        return Float2(Math::HalfToFloat(TexCoord[0]), Math::HalfToFloat(TexCoord[1]));
     }
 
-    void SetNormalNative( uint16_t X, uint16_t Y, uint16_t Z ) {
+    void SetNormalNative(uint16_t X, uint16_t Y, uint16_t Z)
+    {
         Normal[0] = X;
         Normal[1] = Y;
         Normal[2] = Z;
     }
 
-    void SetNormal( float X, float Y, float Z ) {
-        Normal[0] = Math::FloatToHalf( X );
-        Normal[1] = Math::FloatToHalf( Y );
-        Normal[2] = Math::FloatToHalf( Z );
+    void SetNormal(float X, float Y, float Z)
+    {
+        Normal[0] = Math::FloatToHalf(X);
+        Normal[1] = Math::FloatToHalf(Y);
+        Normal[2] = Math::FloatToHalf(Z);
     }
 
-    void SetNormal( Float3 const & _Normal ) {
-        Normal[0] = Math::FloatToHalf( _Normal.X );
-        Normal[1] = Math::FloatToHalf( _Normal.Y );
-        Normal[2] = Math::FloatToHalf( _Normal.Z );
+    void SetNormal(Float3 const& _Normal)
+    {
+        Normal[0] = Math::FloatToHalf(_Normal.X);
+        Normal[1] = Math::FloatToHalf(_Normal.Y);
+        Normal[2] = Math::FloatToHalf(_Normal.Z);
     }
 
-    const Float3 GetNormal() const {
-        return Float3( Math::HalfToFloat( Normal[0] ), Math::HalfToFloat( Normal[1] ), Math::HalfToFloat( Normal[2] ) );
+    const Float3 GetNormal() const
+    {
+        return Float3(Math::HalfToFloat(Normal[0]), Math::HalfToFloat(Normal[1]), Math::HalfToFloat(Normal[2]));
     }
 
-    void SetTangentNative( uint16_t X, uint16_t Y, uint16_t Z ) {
+    void SetTangentNative(uint16_t X, uint16_t Y, uint16_t Z)
+    {
         Tangent[0] = X;
         Tangent[1] = Y;
         Tangent[2] = Z;
     }
 
-    void SetTangent( float X, float Y, float Z ) {
-        Tangent[0] = Math::FloatToHalf( X );
-        Tangent[1] = Math::FloatToHalf( Y );
-        Tangent[2] = Math::FloatToHalf( Z );
+    void SetTangent(float X, float Y, float Z)
+    {
+        Tangent[0] = Math::FloatToHalf(X);
+        Tangent[1] = Math::FloatToHalf(Y);
+        Tangent[2] = Math::FloatToHalf(Z);
     }
 
-    void SetTangent( Float3 const & _Tangent ) {
-        Tangent[0] = Math::FloatToHalf( _Tangent.X );
-        Tangent[1] = Math::FloatToHalf( _Tangent.Y );
-        Tangent[2] = Math::FloatToHalf( _Tangent.Z );
+    void SetTangent(Float3 const& _Tangent)
+    {
+        Tangent[0] = Math::FloatToHalf(_Tangent.X);
+        Tangent[1] = Math::FloatToHalf(_Tangent.Y);
+        Tangent[2] = Math::FloatToHalf(_Tangent.Z);
     }
 
-    const Float3 GetTangent() const {
-        return Float3( Math::HalfToFloat( Tangent[0] ), Math::HalfToFloat( Tangent[1] ), Math::HalfToFloat( Tangent[2] ) );
+    const Float3 GetTangent() const
+    {
+        return Float3(Math::HalfToFloat(Tangent[0]), Math::HalfToFloat(Tangent[1]), Math::HalfToFloat(Tangent[2]));
     }
 
-    static SMeshVertex Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value = 0.5f );
+    static SMeshVertex Lerp(SMeshVertex const& _Vertex1, SMeshVertex const& _Vertex2, float _Value = 0.5f);
 };
 
-static_assert(sizeof( SMeshVertex ) == 32, "Keep 32b vertex size");
+static_assert(sizeof(SMeshVertex) == 32, "Keep 32b vertex size");
 
-HK_FORCEINLINE const SMeshVertex MakeMeshVertex( Float3 const & Position, Float2 const & TexCoord, Float3 const & Tangent, float Handedness, Float3 const & Normal )
+HK_FORCEINLINE const SMeshVertex MakeMeshVertex(Float3 const& Position, Float2 const& TexCoord, Float3 const& Tangent, float Handedness, Float3 const& Normal)
 {
     SMeshVertex v;
     v.Position = Position;
-    v.SetTexCoord( TexCoord );
-    v.SetNormal( Normal );
-    v.SetTangent( Tangent );
+    v.SetTexCoord(TexCoord);
+    v.SetNormal(Normal);
+    v.SetTangent(Tangent);
     v.Handedness = Handedness > 0.0f ? 1 : -1;
     return v;
 }
 
-HK_FORCEINLINE SMeshVertex SMeshVertex::Lerp( SMeshVertex const & _Vertex1, SMeshVertex const & _Vertex2, float _Value )
+HK_FORCEINLINE SMeshVertex SMeshVertex::Lerp(SMeshVertex const& _Vertex1, SMeshVertex const& _Vertex2, float _Value)
 {
     SMeshVertex Result;
 
-    Result.Position   = Math::Lerp( _Vertex1.Position, _Vertex2.Position, _Value );
-    Result.SetTexCoord( Math::Lerp( _Vertex1.GetTexCoord(), _Vertex2.GetTexCoord(), _Value ) );
-    Result.SetNormal( Math::Lerp( _Vertex1.GetNormal(), _Vertex2.GetNormal(), _Value ).Normalized() );
-    Result.SetTangent( Math::Lerp( _Vertex1.GetTangent(), _Vertex2.GetTangent(), _Value ).Normalized() );
+    Result.Position = Math::Lerp(_Vertex1.Position, _Vertex2.Position, _Value);
+    Result.SetTexCoord(Math::Lerp(_Vertex1.GetTexCoord(), _Vertex2.GetTexCoord(), _Value));
+    Result.SetNormal(Math::Lerp(_Vertex1.GetNormal(), _Vertex2.GetNormal(), _Value).Normalized());
+    Result.SetTangent(Math::Lerp(_Vertex1.GetTangent(), _Vertex2.GetTangent(), _Value).Normalized());
     Result.Handedness = _Value >= 0.5f ? _Vertex2.Handedness : _Vertex1.Handedness;
 
     return Result;
@@ -251,22 +263,22 @@ struct SMeshVertexUV
 
     void Write(IBinaryStreamWriteInterface& _Stream) const
     {
-        _Stream.WriteObject( TexCoord );
+        _Stream.WriteObject(TexCoord);
     }
 
     void Read(IBinaryStreamReadInterface& _Stream)
     {
-        _Stream.ReadObject( TexCoord );
+        _Stream.ReadObject(TexCoord);
     }
 
-    static SMeshVertexUV Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value = 0.5f );
+    static SMeshVertexUV Lerp(SMeshVertexUV const& _Vertex1, SMeshVertexUV const& _Vertex2, float _Value = 0.5f);
 };
 
-HK_FORCEINLINE SMeshVertexUV SMeshVertexUV::Lerp( SMeshVertexUV const & _Vertex1, SMeshVertexUV const & _Vertex2, float _Value )
+HK_FORCEINLINE SMeshVertexUV SMeshVertexUV::Lerp(SMeshVertexUV const& _Vertex1, SMeshVertexUV const& _Vertex2, float _Value)
 {
     SMeshVertexUV Result;
 
-    Result.TexCoord   = Math::Lerp( _Vertex1.TexCoord, _Vertex2.TexCoord, _Value );
+    Result.TexCoord = Math::Lerp(_Vertex1.TexCoord, _Vertex2.TexCoord, _Value);
 
     return Result;
 }
@@ -277,7 +289,7 @@ struct SMeshVertexLight
 
     void Write(IBinaryStreamWriteInterface& _Stream) const
     {
-        _Stream.WriteUInt32( VertexLight );
+        _Stream.WriteUInt32(VertexLight);
     }
 
     void Read(IBinaryStreamReadInterface& _Stream)
@@ -285,16 +297,16 @@ struct SMeshVertexLight
         VertexLight = _Stream.ReadUInt32();
     }
 
-    static SMeshVertexLight Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value = 0.5f );
+    static SMeshVertexLight Lerp(SMeshVertexLight const& _Vertex1, SMeshVertexLight const& _Vertex2, float _Value = 0.5f);
 };
 
-HK_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp( SMeshVertexLight const & _Vertex1, SMeshVertexLight const & _Vertex2, float _Value )
+HK_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp(SMeshVertexLight const& _Vertex1, SMeshVertexLight const& _Vertex2, float _Value)
 {
     SMeshVertexLight Result;
 
-    const byte * c0 = reinterpret_cast< const byte * >( &_Vertex1.VertexLight );
-    const byte * c1 = reinterpret_cast< const byte * >( &_Vertex2.VertexLight );
-    byte * r = reinterpret_cast< byte * >( &Result.VertexLight );
+    const byte* c0 = reinterpret_cast<const byte*>(&_Vertex1.VertexLight);
+    const byte* c1 = reinterpret_cast<const byte*>(&_Vertex2.VertexLight);
+    byte*       r  = reinterpret_cast<byte*>(&Result.VertexLight);
 
 #if 0
     r[0] = ( c0[0] + c1[0] ) >> 1;
@@ -306,14 +318,14 @@ HK_FORCEINLINE SMeshVertexLight SMeshVertexLight::Lerp( SMeshVertexLight const &
     float linearColor2[3];
     float resultColor[3];
 
-    DecodeRGBE( linearColor1, c0 );
-    DecodeRGBE( linearColor2, c1 );
+    DecodeRGBE(linearColor1, c0);
+    DecodeRGBE(linearColor2, c1);
 
-    resultColor[0] = Math::Lerp( linearColor1[0], linearColor2[0], _Value );
-    resultColor[1] = Math::Lerp( linearColor1[1], linearColor2[1], _Value );
-    resultColor[2] = Math::Lerp( linearColor1[2], linearColor2[2], _Value );
+    resultColor[0] = Math::Lerp(linearColor1[0], linearColor2[0], _Value);
+    resultColor[1] = Math::Lerp(linearColor1[1], linearColor2[1], _Value);
+    resultColor[2] = Math::Lerp(linearColor1[2], linearColor2[2], _Value);
 
-    EncodeRGBE( r, resultColor );
+    EncodeRGBE(r, resultColor);
 #endif
 
     return Result;
@@ -326,12 +338,12 @@ struct SMeshVertexSkin
 
     void Write(IBinaryStreamWriteInterface& _Stream) const
     {
-        _Stream.Write( JointIndices, 8 );
+        _Stream.Write(JointIndices, 8);
     }
 
     void Read(IBinaryStreamReadInterface& _Stream)
     {
-        _Stream.Read( JointIndices, 8 );
+        _Stream.Read(JointIndices, 8);
     }
 };
 
@@ -350,7 +362,7 @@ struct SHUDDrawVert
 
 struct SDebugVertex
 {
-    Float3 Position;
+    Float3   Position;
     uint32_t Color;
 };
 
@@ -360,14 +372,14 @@ struct SDebugVertex
 
 enum ENormalMapCompression
 {
-    NM_XYZ              = 0,
-    NM_XY               = 1,
-    NM_SPHEREMAP        = 2,
-    NM_STEREOGRAPHIC    = 3,
-    NM_PARABOLOID       = 4,
-    NM_QUARTIC          = 5,
-    NM_FLOAT            = 6,
-    NM_DXT5             = 7
+    NM_XYZ           = 0,
+    NM_XY            = 1,
+    NM_SPHEREMAP     = 2,
+    NM_STEREOGRAPHIC = 3,
+    NM_PARABOLOID    = 4,
+    NM_QUARTIC       = 5,
+    NM_FLOAT         = 6,
+    NM_DXT5          = 7
 };
 
 enum ETextureColorSpace
@@ -414,15 +426,15 @@ enum ETextureAddress
 
 struct STextureSampler
 {
-    ETextureType TextureType;
-    ETextureFilter Filter;
+    ETextureType    TextureType;
+    ETextureFilter  Filter;
     ETextureAddress AddressU;
     ETextureAddress AddressV;
     ETextureAddress AddressW;
-    float MipLODBias;
-    float Anisotropy;
-    float MinLod;
-    float MaxLod;
+    float           MipLODBias;
+    float           Anisotropy;
+    float           MinLod;
+    float           MaxLod;
 };
 
 /**
@@ -517,16 +529,16 @@ struct STexturePixelFormat
     ETexturePixelFormat Data;
 
     STexturePixelFormat() :
-        Data( TEXTURE_PF_BGRA8_SRGB ) {}
-    STexturePixelFormat( ETexturePixelFormat _PixelFormat ) :
-        Data( _PixelFormat ) {}
+        Data(TEXTURE_PF_BGRA8_SRGB) {}
+    STexturePixelFormat(ETexturePixelFormat _PixelFormat) :
+        Data(_PixelFormat) {}
 
-    void operator=( ETexturePixelFormat _PixelFormat ) { Data = _PixelFormat; }
+    void operator=(ETexturePixelFormat _PixelFormat) { Data = _PixelFormat; }
 
-    bool operator==( ETexturePixelFormat _PixelFormat ) const { return Data == _PixelFormat; }
-    bool operator==( STexturePixelFormat _PixelFormat ) const { return Data == _PixelFormat.Data; }
-    bool operator!=( ETexturePixelFormat _PixelFormat ) const { return Data != _PixelFormat; }
-    bool operator!=( STexturePixelFormat _PixelFormat ) const { return Data != _PixelFormat.Data; }
+    bool operator==(ETexturePixelFormat _PixelFormat) const { return Data == _PixelFormat; }
+    bool operator==(STexturePixelFormat _PixelFormat) const { return Data == _PixelFormat.Data; }
+    bool operator!=(ETexturePixelFormat _PixelFormat) const { return Data != _PixelFormat; }
+    bool operator!=(STexturePixelFormat _PixelFormat) const { return Data != _PixelFormat.Data; }
 
     bool IsCompressed() const;
 
@@ -545,7 +557,7 @@ struct STexturePixelFormat
 
     void Write(IBinaryStreamWriteInterface& _Stream) const
     {
-        _Stream.WriteUInt8( (uint8_t)Data );
+        _Stream.WriteUInt8((uint8_t)Data);
     }
 
     RenderCore::DATA_FORMAT GetTextureDataFormat() const
@@ -558,7 +570,7 @@ struct STexturePixelFormat
         return ::GetTextureFormat(Data);
     }
 
-    static bool GetAppropriatePixelFormat( EImagePixelFormat const & _ImagePixelFormat, STexturePixelFormat & _PixelFormat );
+    static bool GetAppropriatePixelFormat(EImagePixelFormat const& _ImagePixelFormat, STexturePixelFormat& _PixelFormat);
 };
 
 #if 0
@@ -665,19 +677,19 @@ Combine them in that way: material_priority | geometry_priority */
 enum ERenderingPriority : uint8_t
 {
     /** Weapon rendered first */
-    RENDERING_PRIORITY_WEAPON  = 0 << 4,
+    RENDERING_PRIORITY_WEAPON = 0 << 4,
 
     /** Default priority */
     RENDERING_PRIORITY_DEFAULT = 1 << 4,
 
-    RENDERING_PRIORITY_RESERVED2 = 2 << 4,
-    RENDERING_PRIORITY_RESERVED3 = 3 << 4,
-    RENDERING_PRIORITY_RESERVED4 = 4 << 4,
-    RENDERING_PRIORITY_RESERVED5 = 5 << 4,
-    RENDERING_PRIORITY_RESERVED6 = 6 << 4,
-    RENDERING_PRIORITY_RESERVED7 = 7 << 4,
-    RENDERING_PRIORITY_RESERVED8 = 8 << 4,
-    RENDERING_PRIORITY_RESERVED9 = 9 << 4,
+    RENDERING_PRIORITY_RESERVED2  = 2 << 4,
+    RENDERING_PRIORITY_RESERVED3  = 3 << 4,
+    RENDERING_PRIORITY_RESERVED4  = 4 << 4,
+    RENDERING_PRIORITY_RESERVED5  = 5 << 4,
+    RENDERING_PRIORITY_RESERVED6  = 6 << 4,
+    RENDERING_PRIORITY_RESERVED7  = 7 << 4,
+    RENDERING_PRIORITY_RESERVED8  = 8 << 4,
+    RENDERING_PRIORITY_RESERVED9  = 9 << 4,
     RENDERING_PRIORITY_RESERVED10 = 10 << 4,
     RENDERING_PRIORITY_RESERVED11 = 11 << 4,
     RENDERING_PRIORITY_RESERVED12 = 12 << 4,
@@ -685,22 +697,22 @@ enum ERenderingPriority : uint8_t
     RENDERING_PRIORITY_RESERVED14 = 14 << 4,
 
     /** Skybox rendered last */
-    RENDERING_PRIORITY_SKYBOX  = 15 << 4,
+    RENDERING_PRIORITY_SKYBOX = 15 << 4,
 
     /** Static geometry */
-    RENDERING_GEOMETRY_PRIORITY_STATIC  = 0,
+    RENDERING_GEOMETRY_PRIORITY_STATIC = 0,
 
     /** Static geometry */
     RENDERING_GEOMETRY_PRIORITY_DYNAMIC = 1,
 
-    RENDERING_GEOMETRY_PRIORITY_RESERVED2 = 2,
-    RENDERING_GEOMETRY_PRIORITY_RESERVED3 = 3,
-    RENDERING_GEOMETRY_PRIORITY_RESERVED4 = 4,
-    RENDERING_GEOMETRY_PRIORITY_RESERVED5 = 5,
-    RENDERING_GEOMETRY_PRIORITY_RESERVED6 = 6,
-    RENDERING_GEOMETRY_PRIORITY_RESERVED7 = 7,
-    RENDERING_GEOMETRY_PRIORITY_RESERVED8 = 8,
-    RENDERING_GEOMETRY_PRIORITY_RESERVED9 = 9,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED2  = 2,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED3  = 3,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED4  = 4,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED5  = 5,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED6  = 6,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED7  = 7,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED8  = 8,
+    RENDERING_GEOMETRY_PRIORITY_RESERVED9  = 9,
     RENDERING_GEOMETRY_PRIORITY_RESERVED10 = 10,
     RENDERING_GEOMETRY_PRIORITY_RESERVED11 = 11,
     RENDERING_GEOMETRY_PRIORITY_RESERVED12 = 12,
@@ -709,16 +721,16 @@ enum ERenderingPriority : uint8_t
     RENDERING_GEOMETRY_PRIORITY_RESERVED15 = 15
 };
 
-struct SMaterialShader
+struct SPredefinedShaderSource
 {
-    /** Pointer for next material source */
-    SMaterialShader * Next;
+    /** Pointer to next source */
+    SPredefinedShaderSource* pNext;
 
-    /** Pointer to source name */
-    char * SourceName;
+    /** The source name */
+    char* SourceName;
 
     /** Source code */
-    char * Code;
+    char* Code;
 };
 
 struct SMaterialDef
@@ -776,14 +788,14 @@ struct SMaterialDef
 
     /** Material samplers */
     STextureSampler Samplers[MAX_MATERIAL_TEXTURES];
-    int NumSamplers;
+    int             NumSamplers;
 
     /** Material shaders */
-    SMaterialShader * Shaders;
+    SPredefinedShaderSource* Shaders;
 
     SMaterialDef()
     {
-        Platform::ZeroMem( this, sizeof( *this ) );
+        Platform::ZeroMem(this, sizeof(*this));
     }
 
     ~SMaterialDef()
@@ -791,7 +803,7 @@ struct SMaterialDef
         RemoveShaders();
     }
 
-    void AddShader( const char * SourceName, AString const & SourceCode );
+    void AddShader(AStringView SourceName, AStringView SourceCode);
 
     void RemoveShaders();
 };
@@ -809,27 +821,28 @@ public:
     int NormalsPassTextureCount;
     int ShadowMapPassTextureCount;
 
-    TRef< RenderCore::IPipeline > DepthPass[2];
-    TRef< RenderCore::IPipeline > DepthVelocityPass[2];
-    TRef< RenderCore::IPipeline > WireframePass[2];
-    TRef< RenderCore::IPipeline > NormalsPass[2];
-    TRef< RenderCore::IPipeline > LightPass[2];
-    TRef< RenderCore::IPipeline > LightPassLightmap;
-    TRef< RenderCore::IPipeline > LightPassVertexLight;
-    TRef< RenderCore::IPipeline > ShadowPass[2];
-    TRef< RenderCore::IPipeline > FeedbackPass[2];
-    TRef< RenderCore::IPipeline > OutlinePass[2];
-    TRef< RenderCore::IPipeline > HUDPipeline;
+    TRef<RenderCore::IPipeline> DepthPass[2];
+    TRef<RenderCore::IPipeline> DepthVelocityPass[2];
+    TRef<RenderCore::IPipeline> WireframePass[2];
+    TRef<RenderCore::IPipeline> NormalsPass[2];
+    TRef<RenderCore::IPipeline> LightPass[2];
+    TRef<RenderCore::IPipeline> LightPassLightmap;
+    TRef<RenderCore::IPipeline> LightPassVertexLight;
+    TRef<RenderCore::IPipeline> ShadowPass[2];
+    TRef<RenderCore::IPipeline> OmniShadowPass[2];
+    TRef<RenderCore::IPipeline> FeedbackPass[2];
+    TRef<RenderCore::IPipeline> OutlinePass[2];
+    TRef<RenderCore::IPipeline> HUDPipeline;
 };
 
 struct SMaterialFrameData
 {
-    AMaterialGPU * Material;
-    RenderCore::ITexture * Textures[MAX_MATERIAL_TEXTURES];
-    int NumTextures;
-    Float4 UniformVectors[4];
-    int NumUniformVectors;
-    class AVirtualTextureResource * VirtualTexture;
+    AMaterialGPU*                  Material;
+    RenderCore::ITexture*          Textures[MAX_MATERIAL_TEXTURES];
+    int                            NumTextures;
+    Float4                         UniformVectors[4];
+    int                            NumUniformVectors;
+    class AVirtualTextureResource* VirtualTexture;
 };
 
 
@@ -854,10 +867,10 @@ enum EDebugDrawCmd
 struct SDebugDrawCmd
 {
     EDebugDrawCmd Type;
-    int FirstVertex;
-    int NumVertices;
-    int FirstIndex;
-    int NumIndices;
+    int           FirstVertex;
+    int           NumVertices;
+    int           FirstIndex;
+    int           NumIndices;
 };
 
 //
@@ -866,10 +879,10 @@ struct SDebugDrawCmd
 
 enum EHUDDrawCmd
 {
-    HUD_DRAW_CMD_ALPHA,     // fonts, primitves, textures with one alpha channel
-    HUD_DRAW_CMD_TEXTURE,   // textures
-    HUD_DRAW_CMD_MATERIAL,  // material instances (MATERIAL_TYPE_HUD)
-    HUD_DRAW_CMD_VIEWPORT,  // viewports
+    HUD_DRAW_CMD_ALPHA,    // fonts, primitves, textures with one alpha channel
+    HUD_DRAW_CMD_TEXTURE,  // textures
+    HUD_DRAW_CMD_MATERIAL, // material instances (MATERIAL_TYPE_HUD)
+    HUD_DRAW_CMD_VIEWPORT, // viewports
 
     HUD_DRAW_CMD_MAX
 };
@@ -902,24 +915,24 @@ struct SHUDDrawCmd
     Float2          ClipMins;
     Float2          ClipMaxs;
     EHUDDrawCmd     Type;
-    EColorBlending  Blending;           // only for type DRAW_CMD_TEXTURE and DRAW_CMD_VIEWPORT
-    EHUDSamplerType SamplerType;        // only for type DRAW_CMD_TEXTURE
+    EColorBlending  Blending;    // only for type DRAW_CMD_TEXTURE and DRAW_CMD_VIEWPORT
+    EHUDSamplerType SamplerType; // only for type DRAW_CMD_TEXTURE
 
     union
     {
-        RenderCore::ITexture * Texture;               // HUD_DRAW_CMD_TEXTURE, HUD_DRAW_CMD_ALPHA
-        SMaterialFrameData * MaterialFrameData;     // HUD_DRAW_CMD_MATERIAL
-        int                  ViewportIndex;         // HUD_DRAW_CMD_VIEWPORT
+        RenderCore::ITexture* Texture;           // HUD_DRAW_CMD_TEXTURE, HUD_DRAW_CMD_ALPHA
+        SMaterialFrameData*   MaterialFrameData; // HUD_DRAW_CMD_MATERIAL
+        int                   ViewportIndex;     // HUD_DRAW_CMD_VIEWPORT
     };
 };
 
 struct SHUDDrawList
 {
-    size_t          VertexStreamOffset;
-    size_t          IndexStreamOffset;
-    int             CommandsCount;
-    SHUDDrawCmd *   Commands;
-    SHUDDrawList *  pNext;
+    size_t        VertexStreamOffset;
+    size_t        IndexStreamOffset;
+    int           CommandsCount;
+    SHUDDrawCmd*  Commands;
+    SHUDDrawList* pNext;
 };
 
 
@@ -931,13 +944,13 @@ Directional light render instance
 struct SDirectionalLightInstance
 {
     Float4   ColorAndAmbientIntensity;
-    Float3x3 Matrix;            // Light rotation matrix
+    Float3x3 Matrix; // Light rotation matrix
     int      RenderMask;
     int      MaxShadowCascades; // Max allowed cascades for light
     int      ShadowmapIndex;
     int      ShadowCascadeResolution;
-    int      FirstCascade;      // First cascade offset
-    int      NumCascades;       // Current visible cascades count for light
+    int      FirstCascade;         // First cascade offset
+    int      NumCascades;          // Current visible cascades count for light
     size_t   ViewProjStreamHandle; // Transform from world space to light view projection for each cascade
 };
 
@@ -949,26 +962,26 @@ Render instance (opaque & translucent meshes)
 */
 struct SRenderInstance
 {
-    AMaterialGPU * Material;
-    SMaterialFrameData * MaterialInstance;
+    AMaterialGPU*       Material;
+    SMaterialFrameData* MaterialInstance;
 
-    RenderCore::IBuffer * VertexBuffer;
-    size_t VertexBufferOffset;
+    RenderCore::IBuffer* VertexBuffer;
+    size_t               VertexBufferOffset;
 
-    RenderCore::IBuffer * IndexBuffer;
-    size_t IndexBufferOffset;
+    RenderCore::IBuffer* IndexBuffer;
+    size_t               IndexBufferOffset;
 
-    RenderCore::IBuffer * WeightsBuffer;
-    size_t WeightsBufferOffset;
+    RenderCore::IBuffer* WeightsBuffer;
+    size_t               WeightsBufferOffset;
 
-    RenderCore::IBuffer * VertexLightChannel;
-    size_t VertexLightOffset;
+    RenderCore::IBuffer* VertexLightChannel;
+    size_t               VertexLightOffset;
 
-    RenderCore::IBuffer * LightmapUVChannel;
-    size_t LightmapUVOffset;
+    RenderCore::IBuffer* LightmapUVChannel;
+    size_t               LightmapUVOffset;
 
-    RenderCore::ITexture * Lightmap;
-    Float4 LightmapOffset;
+    RenderCore::ITexture* Lightmap;
+    Float4                LightmapOffset;
 
     Float4x4 Matrix;
     Float4x4 MatrixP;
@@ -985,20 +998,20 @@ struct SRenderInstance
 
     uint64_t SortKey;
 
-    uint8_t GetRenderingPriority() const {
+    uint8_t GetRenderingPriority() const
+    {
         return (SortKey >> 56) & 0xf0;
     }
 
-    uint8_t GetGeometryPriority() const {
+    uint8_t GetGeometryPriority() const
+    {
         return (SortKey >> 56) & 0x0f;
     }
 
-    void GenerateSortKey( uint8_t Priority, uint64_t Mesh ) {
+    void GenerateSortKey(uint8_t Priority, uint64_t Mesh)
+    {
         // NOTE: 8 bits are still unused. We can use it in future.
-        SortKey = ( (uint64_t)(Priority) << 56u)
-                | ((uint64_t)(Core::MurMur3Hash64( (uint64_t)Material ) & 0xffffu) << 40u)
-                | ((uint64_t)(Core::MurMur3Hash64( (uint64_t)MaterialInstance ) & 0xffffu) << 24u)
-                | ((uint64_t)(Core::MurMur3Hash64( Mesh ) & 0xffffu) << 8u);
+        SortKey = ((uint64_t)(Priority) << 56u) | ((uint64_t)(Core::MurMur3Hash64((uint64_t)Material) & 0xffffu) << 40u) | ((uint64_t)(Core::MurMur3Hash64((uint64_t)MaterialInstance) & 0xffffu) << 24u) | ((uint64_t)(Core::MurMur3Hash64(Mesh) & 0xffffu) << 8u);
     }
 };
 
@@ -1010,29 +1023,27 @@ Shadowmap render instance
 */
 struct SShadowRenderInstance
 {
-    AMaterialGPU * Material;
-    SMaterialFrameData * MaterialInstance;
-    RenderCore::IBuffer * VertexBuffer;
-    size_t VertexBufferOffset;
-    RenderCore::IBuffer * IndexBuffer;
-    size_t IndexBufferOffset;
-    RenderCore::IBuffer * WeightsBuffer;
-    size_t WeightsBufferOffset;
-    Float3x4 WorldTransformMatrix;
-    size_t SkeletonOffset;
-    size_t SkeletonSize;
-    unsigned int IndexCount;
-    unsigned int StartIndexLocation;
-    int          BaseVertexLocation;
-    uint16_t CascadeMask;            // Cascade mask for directional lights or face index for point/spot lights
-    uint64_t SortKey;
+    AMaterialGPU*        Material;
+    SMaterialFrameData*  MaterialInstance;
+    RenderCore::IBuffer* VertexBuffer;
+    size_t               VertexBufferOffset;
+    RenderCore::IBuffer* IndexBuffer;
+    size_t               IndexBufferOffset;
+    RenderCore::IBuffer* WeightsBuffer;
+    size_t               WeightsBufferOffset;
+    Float3x4             WorldTransformMatrix;
+    size_t               SkeletonOffset;
+    size_t               SkeletonSize;
+    unsigned int         IndexCount;
+    unsigned int         StartIndexLocation;
+    int                  BaseVertexLocation;
+    uint16_t             CascadeMask; // Cascade mask for directional lights or face index for point/spot lights
+    uint64_t             SortKey;
 
-    void GenerateSortKey( uint8_t Priority, uint64_t Mesh ) {
+    void GenerateSortKey(uint8_t Priority, uint64_t Mesh)
+    {
         // NOTE: 8 bits are still unused. We can use it in future.
-        SortKey = ( (uint64_t)(Priority) << 56u)
-                | ((uint64_t)(Core::MurMur3Hash64( (uint64_t)Material ) & 0xffffu) << 40u)
-                | ((uint64_t)(Core::MurMur3Hash64( (uint64_t)MaterialInstance ) & 0xffffu) << 24u)
-                | ((uint64_t)(Core::MurMur3Hash64( Mesh ) & 0xffffu) << 8u);
+        SortKey = ((uint64_t)(Priority) << 56u) | ((uint64_t)(Core::MurMur3Hash64((uint64_t)Material) & 0xffffu) << 40u) | ((uint64_t)(Core::MurMur3Hash64((uint64_t)MaterialInstance) & 0xffffu) << 24u) | ((uint64_t)(Core::MurMur3Hash64(Mesh) & 0xffffu) << 8u);
     }
 };
 
@@ -1044,13 +1055,13 @@ Light portal render instance
 */
 struct SLightPortalRenderInstance
 {
-    RenderCore::IBuffer * VertexBuffer;
-    size_t VertexBufferOffset;
-    RenderCore::IBuffer * IndexBuffer;
-    size_t IndexBufferOffset;
-    unsigned int IndexCount;
-    unsigned int StartIndexLocation;
-    int          BaseVertexLocation;
+    RenderCore::IBuffer* VertexBuffer;
+    size_t               VertexBufferOffset;
+    RenderCore::IBuffer* IndexBuffer;
+    size_t               IndexBufferOffset;
+    unsigned int         IndexCount;
+    unsigned int         StartIndexLocation;
+    int                  BaseVertexLocation;
 };
 
 
@@ -1066,6 +1077,8 @@ struct SLightShadowmap
 
     int FirstLightPortal;
     int LightPortalsCount;
+
+    Float3 LightPosition;
 };
 
 
@@ -1086,10 +1099,10 @@ texture3d RG32UI
 struct SClusterHeader
 {
     uint32_t FirstPackedIndex;
-    uint8_t NumProbes;
-    uint8_t NumDecals;
-    uint8_t NumLights;
-    uint8_t Pad0;
+    uint8_t  NumProbes;
+    uint8_t  NumDecals;
+    uint8_t  NumLights;
+    uint8_t  Pad0;
 };
 
 
@@ -1138,19 +1151,19 @@ struct SLightParameters
 
     float CosHalfOuterConeAngle;
     float CosHalfInnerConeAngle;
-    float InverseSquareRadius;      // 1 / (Radius*Radius)
+    float InverseSquareRadius; // 1 / (Radius*Radius)
     float Pad1;
 
-    Float3 Direction;   // For spot and photometric lights
-    float SpotExponent; // For spot lights
+    Float3 Direction;    // For spot and photometric lights
+    float  SpotExponent; // For spot lights
 
-    Float3 Color;       // Light color
-    float Pad2;
+    Float3 Color; // Light color
+    float  Pad2;
 
     unsigned int LightType;
     unsigned int RenderMask;
     unsigned int PhotometricProfile;
-    int ShadowmapIndex;
+    int          ShadowmapIndex;
 };
 
 
@@ -1176,9 +1189,9 @@ Terrain patch parameters
 */
 struct STerrainPatchInstance
 {
-    Int2 VertexScale;
-    Int2 VertexTranslate;
-    Int2 TexcoordOffset;
+    Int2   VertexScale;
+    Int2   VertexTranslate;
+    Int2   TexcoordOffset;
     Color4 QuadColor; // Just for debug. Will be removed later
 };
 
@@ -1190,18 +1203,18 @@ Terrain render instance
 */
 struct STerrainRenderInstance
 {
-    RenderCore::IBuffer * VertexBuffer;
-    RenderCore::IBuffer * IndexBuffer;
-    size_t InstanceBufferStreamHandle;
-    size_t IndirectBufferStreamHandle;
-    int IndirectBufferDrawCount;
-    RenderCore::ITexture * Clipmaps;
-    RenderCore::ITexture * Normals;
-    Float4 ViewPositionAndHeight;
-    Float4x4 LocalViewProjection;
-    Float3x3 ModelNormalToViewSpace;
-    Int2 ClipMin;
-    Int2 ClipMax;
+    RenderCore::IBuffer*  VertexBuffer;
+    RenderCore::IBuffer*  IndexBuffer;
+    size_t                InstanceBufferStreamHandle;
+    size_t                IndirectBufferStreamHandle;
+    int                   IndirectBufferDrawCount;
+    RenderCore::ITexture* Clipmaps;
+    RenderCore::ITexture* Normals;
+    Float4                ViewPositionAndHeight;
+    Float4x4              LocalViewProjection;
+    Float3x3              ModelNormalToViewSpace;
+    Int2                  ClipMin;
+    Int2                  ClipMax;
 };
 
 
@@ -1237,19 +1250,19 @@ struct SRenderView
     float GameplayTimeStep;
 
     /** View parameters */
-    Float3 ViewPosition;
-    Quat ViewRotation;
-    Float3 ViewRightVec;
-    Float3 ViewUpVec;
-    Float3 ViewDir;
+    Float3   ViewPosition;
+    Quat     ViewRotation;
+    Float3   ViewRightVec;
+    Float3   ViewUpVec;
+    Float3   ViewDir;
     Float4x4 ViewMatrix;
     Float4x4 ViewMatrixP;
-    float ViewZNear;
-    float ViewZFar;
-    float ViewFovX;
-    float ViewFovY;
-    Float2 ViewOrthoMins;
-    Float2 ViewOrthoMaxs;
+    float    ViewZNear;
+    float    ViewZFar;
+    float    ViewFovX;
+    float    ViewFovY;
+    Float2   ViewOrthoMins;
+    Float2   ViewOrthoMaxs;
     Float3x3 NormalToViewMatrix;
     Float4x4 ProjectionMatrix;
     Float4x4 ProjectionMatrixP;
@@ -1261,24 +1274,24 @@ struct SRenderView
     Float4x4 ClusterProjectionMatrix;
     Float4x4 ClusterViewProjection;
     Float4x4 ClusterViewProjectionInversed;
-    Float3 BackgroundColor;
-    bool bClearBackground;
-    bool bWireframe;
-    bool bPerspective;
-    bool bPadding1;
+    Float3   BackgroundColor;
+    bool     bClearBackground;
+    bool     bWireframe;
+    bool     bPerspective;
+    bool     bPadding1;
 
     /** Farthest distance to geometry in view */
     float MaxVisibleDistance;
 
     /** Vignette parameters */
     Float4 VignetteColorIntensity;
-    float VignetteOuterRadiusSqr;
-    float VignetteInnerRadiusSqr;
+    float  VignetteOuterRadiusSqr;
+    float  VignetteInnerRadiusSqr;
 
     /** Source color grading texture */
-    RenderCore::ITexture * ColorGradingLUT;
+    RenderCore::ITexture* ColorGradingLUT;
     /** Current color grading texture */
-    RenderCore::ITexture * CurrentColorGradingLUT;
+    RenderCore::ITexture* CurrentColorGradingLUT;
 
     /** Blending speed between current and source color grading textures */
     float ColorGradingAdaptationSpeed;
@@ -1290,22 +1303,22 @@ struct SRenderView
     Float3 ColorGradingPresaturation;
     Float3 ColorGradingTemperatureScale;
     Float3 ColorGradingTemperatureStrength;
-    float ColorGradingBrightnessNormalization;
+    float  ColorGradingBrightnessNormalization;
 
     /** Current exposure texture */
-    RenderCore::ITexture * CurrentExposure;
+    RenderCore::ITexture* CurrentExposure;
 
     /** Light photometric lookup map (IES) */
-    RenderCore::ITexture * PhotometricProfiles;
+    RenderCore::ITexture* PhotometricProfiles;
 
     /** Texture with light data */
-    RenderCore::ITexture * LightTexture;
+    RenderCore::ITexture* LightTexture;
 
     /** Texture with depth data */
-    RenderCore::ITexture * DepthTexture;
+    RenderCore::ITexture* DepthTexture;
 
     /** Virtual texture feedback data (experimental) */
-    class AVirtualTextureFeedback * VTFeedback;
+    class AVirtualTextureFeedback* VTFeedback;
 
     /** Total cascades for all shadow maps in view */
     int NumShadowMapCascades;
@@ -1333,29 +1346,32 @@ struct SRenderView
     int DebugDrawCommandCount;
 
     /** Transform from view clip space to texture space */
-    Float4x4 * ShadowMapMatrices;
-    size_t ShadowMapMatricesStreamHandle;
+    Float4x4* ShadowMapMatrices;
+    size_t    ShadowMapMatricesStreamHandle;
 
     /** Point and spot lights for render view */
-    SLightParameters * PointLights;
-    int NumPointLights;
-    size_t PointLightsStreamHandle;
-    size_t PointLightsStreamSize;
+    SLightParameters* PointLights;
+    int               NumPointLights;
+    size_t            PointLightsStreamHandle;
+    size_t            PointLightsStreamSize;
+
+    int FirstOmnidirectionalShadowMap;
+    int NumOmnidirectionalShadowMaps;
 
     /** Reflection probes for render view */
-    SProbeParameters * Probes;
-    int NumProbes;
-    size_t ProbeStreamHandle;
-    size_t ProbeStreamSize;
+    SProbeParameters* Probes;
+    int               NumProbes;
+    size_t            ProbeStreamHandle;
+    size_t            ProbeStreamSize;
 
     /** Cluster headers */
-    SClusterHeader * ClusterLookup;
-    size_t ClusterLookupStreamHandle;
+    SClusterHeader* ClusterLookup;
+    size_t          ClusterLookupStreamHandle;
 
     /** Cluster packed indices */
-    SClusterPackedIndex * ClusterPackedIndices;
-    size_t ClusterPackedIndicesStreamHandle;
-    int ClusterPackedIndexCount;
+    SClusterPackedIndex* ClusterPackedIndices;
+    size_t               ClusterPackedIndicesStreamHandle;
+    int                  ClusterPackedIndexCount;
 
     /** Terrain instances */
     int FirstTerrainInstance;
@@ -1394,33 +1410,33 @@ struct SRenderFrame
     Float4x4 CanvasOrthoProjection;
 
     /** Render views */
-    SRenderView * RenderViews;
+    SRenderView* RenderViews;
     /** Render view count */
     int NumViews;
 
     /** Opaque instances */
-    TPodVector< SRenderInstance *, 1024 > Instances;
+    TPodVector<SRenderInstance*, 1024> Instances;
     /** Translucent instances */
-    TPodVector< SRenderInstance *, 1024 > TranslucentInstances;
+    TPodVector<SRenderInstance*, 1024> TranslucentInstances;
     /** Outline instances */
-    TPodVector< SRenderInstance * > OutlineInstances;
+    TPodVector<SRenderInstance*> OutlineInstances;
     /** Shadowmap instances */
-    TPodVector< SShadowRenderInstance *, 1024 > ShadowInstances;
+    TPodVector<SShadowRenderInstance*, 1024> ShadowInstances;
     /** Light portal instances */
-    TPodVector< SLightPortalRenderInstance *, 1024 > LightPortals;
+    TPodVector<SLightPortalRenderInstance*, 1024> LightPortals;
     /** Directional light instances */
-    TPodVector< SDirectionalLightInstance * > DirectionalLights;
+    TPodVector<SDirectionalLightInstance*> DirectionalLights;
     /** Shadow maps */
-    TPodVector< SLightShadowmap > LightShadowmaps;
+    TPodVector<SLightShadowmap> LightShadowmaps;
     /** Terrain instances */
-    TPodVector< STerrainRenderInstance * > TerrainInstances;
+    TPodVector<STerrainRenderInstance*> TerrainInstances;
 
     /** Hud draw commands */
-    SHUDDrawList * DrawListHead;
-    SHUDDrawList * DrawListTail;
+    SHUDDrawList* DrawListHead;
+    SHUDDrawList* DrawListTail;
 
     /** Debug draw commands */
-    SDebugDrawCmd const * DbgCmds;
-    size_t DbgVertexStreamOffset;
-    size_t DbgIndexStreamOffset;
+    SDebugDrawCmd const* DbgCmds;
+    size_t               DbgVertexStreamOffset;
+    size_t               DbgIndexStreamOffset;
 };

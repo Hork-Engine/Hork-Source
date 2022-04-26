@@ -115,7 +115,7 @@ AVirtualTextureCache::AVirtualTextureCache(SVirtualTextureCacheCreateInfo const&
     resourceLayout.NumSamplers = 1;
     resourceLayout.Samplers    = &nearestSampler;
 
-    CreateFullscreenQuadPipeline(&DrawCachePipeline, "drawvtcache.vert", "drawvtcache.frag", &resourceLayout);
+    AShaderFactory::CreateFullscreenQuadPipeline(&DrawCachePipeline, "drawvtcache.vert", "drawvtcache.frag", &resourceLayout);
 
 #ifdef PAGE_STREAM_PBO
     SBufferDesc bufferCI           = {};

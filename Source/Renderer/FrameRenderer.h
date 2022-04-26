@@ -40,6 +40,7 @@ SOFTWARE.
 #include "ColorGradingRenderer.h"
 #include "PostprocessRenderer.h"
 #include "FxaaRenderer.h"
+#include "SmaaRenderer.h"
 #include "SSAORenderer.h"
 #include "ShadowMapRenderer.h"
 
@@ -62,7 +63,7 @@ private:
 
     void AddReconstrutNormalsPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppNormalTexture);
 
-    void AddMotionBlurPass(RenderCore::AFrameGraph&         FrameGraph,
+    void AddMotionBlurPass(RenderCore::AFrameGraph&    FrameGraph,
                            RenderCore::FGTextureProxy*  LightTexture,
                            RenderCore::FGTextureProxy*  VelocityTexture,
                            RenderCore::FGTextureProxy*  LinearDepth,
@@ -79,6 +80,7 @@ private:
     AColorGradingRenderer ColorGradingRenderer;
     APostprocessRenderer  PostprocessRenderer;
     AFxaaRenderer         FxaaRenderer;
+    ASmaaRenderer         SmaaRenderer;
     ASSAORenderer         SSAORenderer;
 
     TRef<RenderCore::IPipeline> LinearDepthPipe;

@@ -38,7 +38,7 @@ const int BRDF_TEXTURE_HEIGHT = 256;
 
 ABRDFGenerator::ABRDFGenerator()
 {
-    CreateFullscreenQuadPipeline(&Pipeline, "gen/brdfgen.vert", "gen/brdfgen.frag");
+    AShaderFactory::CreateFullscreenQuadPipeline(&Pipeline, "gen/brdfgen.vert", "gen/brdfgen.frag");
 }
 
 void ABRDFGenerator::Render(TRef<RenderCore::ITexture>* ppTexture)

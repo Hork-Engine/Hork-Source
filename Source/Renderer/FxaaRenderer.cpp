@@ -36,7 +36,7 @@ using namespace RenderCore;
 AFxaaRenderer::AFxaaRenderer()
 {
     SSamplerDesc samplerCI;
-    samplerCI.Filter = FILTER_LINEAR;
+    samplerCI.Filter   = FILTER_LINEAR;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressV = SAMPLER_ADDRESS_CLAMP;
     samplerCI.AddressW = SAMPLER_ADDRESS_CLAMP;
@@ -47,20 +47,20 @@ AFxaaRenderer::AFxaaRenderer()
     SPipelineResourceLayout resourceLayout;
 
     resourceLayout.NumSamplers = 1;
-    resourceLayout.Samplers = &samplerCI;
-    resourceLayout.NumBuffers = 1;
-    resourceLayout.Buffers = &bufferInfo;
+    resourceLayout.Samplers    = &samplerCI;
+    resourceLayout.NumBuffers  = 1;
+    resourceLayout.Buffers     = &bufferInfo;
 
-    CreateFullscreenQuadPipeline( &FxaaPipeline, "postprocess/fxaa.vert", "postprocess/fxaa.frag", &resourceLayout );
+    AShaderFactory::CreateFullscreenQuadPipeline(&FxaaPipeline, "postprocess/fxaa.vert", "postprocess/fxaa.frag", &resourceLayout);
 }
 
-void AFxaaRenderer::AddPass( AFrameGraph & FrameGraph, FGTextureProxy * SourceTexture, FGTextureProxy ** ppFxaaTexture )
+void AFxaaRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceTexture, FGTextureProxy** ppFxaaTexture)
 {
-    ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "FXAA Pass" );
+    ARenderPass& renderPass = FrameGraph.AddTask<ARenderPass>("FXAA Pass");
 
     renderPass.SetRenderArea(GRenderViewArea);
 
-    renderPass.AddResource( SourceTexture, FG_RESOURCE_ACCESS_READ );
+    renderPass.AddResource(SourceTexture, FG_RESOURCE_ACCESS_READ);
 
     renderPass.SetColorAttachment(
         STextureAttachment("FXAA texture",
@@ -69,14 +69,14 @@ void AFxaaRenderer::AddPass( AFrameGraph & FrameGraph, FGTextureProxy * SourceTe
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 
-    renderPass.AddSubpass( { 0 }, // color attachment refs
+    renderPass.AddSubpass({0}, // color attachment refs
                           [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
 
-    {
-        rtbl->BindTexture( 0, SourceTexture->Actual() );
+                          {
+                              rtbl->BindTexture(0, SourceTexture->Actual());
 
-        DrawSAQ(RenderPassContext.pImmediateContext, FxaaPipeline);
-    } );
+                              DrawSAQ(RenderPassContext.pImmediateContext, FxaaPipeline);
+                          });
 
     *ppFxaaTexture = renderPass.GetColorAttachments()[0].pResource;
 }

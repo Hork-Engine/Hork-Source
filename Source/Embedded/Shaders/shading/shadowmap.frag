@@ -237,3 +237,68 @@ vec3 DebugDirectionalLightCascades()
     }
     return Result;
 }
+
+float vector_to_depth_hack(vec3 vec)
+{
+    vec3 v = abs(vec);
+    return max(v.x, max(v.y, v.z));
+}
+
+float linearize_depth(float depth, float n, float f)
+{
+    return n * f / (depth * (f - n) + n);
+}
+    
+float SampleOmnidirectionalLightShadow(uint ShadowmapIndex, vec3 LightDir, float LightRadius, float ShadowBias, float SmoothDiskRadius)
+{
+    const float ShadowZNear = 0.1; // NOTE: Should match shadowmap projection matrix
+	const float ShadowZFar = 1000;//LightRadius
+
+    // Transform vector from view space to world space
+    const mat3 VectorTransformWS = mat3( vec3(WorldNormalToViewSpace0),
+                                            vec3(WorldNormalToViewSpace1),
+                                            vec3(WorldNormalToViewSpace2)
+                                           ); // TODO: Optimize this!
+										   
+	LightDir = VectorTransformWS * LightDir;
+    
+    float atten = 1;
+    float dist = vector_to_depth_hack(LightDir);
+    float biasedDist = dist - ShadowBias;
+	
+    if (SmoothDiskRadius > 0.0f)
+    {
+        const int NUM_SAMPLES = 20;
+
+        const vec3 directions[NUM_SAMPLES] =
+        {
+            vec3(1, 1, 1), vec3(1, -1, 1), vec3(-1, -1, 1), vec3(-1, 1, 1),
+            vec3(1, 1, -1), vec3(1, -1, -1), vec3(-1, -1, -1), vec3(-1, 1, -1),
+            vec3(1, 1, 0), vec3(1, -1, 0), vec3(-1, -1, 0), vec3(-1, 1, 0),
+            vec3(1, 0, 1), vec3(-1, 0, 1), vec3(1, 0, -1), vec3(-1, 0, -1),
+            vec3(0, 1, 1), vec3(0, -1, 1), vec3(0, -1, -1), vec3(0, 1, -1)
+        };
+
+        float accumulator = 0.0;
+
+        for (int i = 0; i < NUM_SAMPLES; ++i)
+        {
+            vec3 dir = LightDir + directions[i] * SmoothDiskRadius;
+            float cubemap_depth = texture(OmnidirectionalShadowMapArray, vec4(dir, ShadowmapIndex)).r;
+            cubemap_depth = linearize_depth(cubemap_depth, ShadowZNear, ShadowZFar);
+
+            accumulator += float(biasedDist > cubemap_depth);
+        }
+
+        atten = saturate(1.0 - accumulator / float(NUM_SAMPLES));
+    }
+    else
+    {
+        float cubemap_depth = texture(OmnidirectionalShadowMapArray, vec4(LightDir, ShadowmapIndex)).r;
+        cubemap_depth = linearize_depth(cubemap_depth, ShadowZNear, ShadowZFar);
+
+        atten = 1.0 - float(biasedDist > cubemap_depth);
+    }
+
+    return atten;
+}

@@ -35,11 +35,8 @@ SOFTWARE.
 #include "RenderBackend.h"
 #include "CircularBuffer.h"
 #include "SphereMesh.h"
-
-#define SHADOWMAP_PCF
-//#define SHADOWMAP_PCSS
-//#define SHADOWMAP_VSM
-//#define SHADOWMAP_EVSM
+#include "ShaderLoader.h"
+#include "ShaderFactory.h"
 
 struct SViewConstantBuffer
 {
@@ -258,6 +255,8 @@ RenderCore::STextureResolution2D GetFrameResoultion();
 
 void DrawSAQ(RenderCore::IImmediateContext* immediateCtx, RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
+void DrawSAQ_Triangle(RenderCore::IImmediateContext* immediateCtx, RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
+
 void DrawSphere(RenderCore::IImmediateContext* immediateCtx, RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
 void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, SRenderInstance const* Instance);
@@ -277,6 +276,7 @@ void BindInstanceConstants(SRenderInstance const* Instance);
 void BindInstanceConstantsFB(SRenderInstance const* Instance);
 
 void BindShadowInstanceConstants(SShadowRenderInstance const* Instance);
+void BindShadowInstanceConstants(SShadowRenderInstance const* Instance, int FaceIndex, Float3 const& LightPosition);
 
 void* MapDrawCallConstants(size_t SizeInBytes);
 
@@ -288,34 +288,9 @@ T* MapDrawCallConstants()
 
 void BindShadowMatrix();
 void BindShadowCascades(size_t StreamHandle);
+void BindOmniShadowProjection(int FaceIndex);
 
 void SaveSnapshot(RenderCore::ITexture& _Texture);
-
-AString LoadShader(AStringView FileName, SMaterialShader const* Predefined = nullptr);
-AString LoadShaderFromString(AStringView FileName, AStringView Source, SMaterialShader const* Predefined = nullptr);
-
-void CreateShader(RenderCore::SHADER_TYPE _ShaderType, TPodVector<const char*> _SourcePtrs, TRef<RenderCore::IShaderModule>& _Module);
-void CreateShader(RenderCore::SHADER_TYPE _ShaderType, const char* _SourcePtr, TRef<RenderCore::IShaderModule>& _Module);
-void CreateShader(RenderCore::SHADER_TYPE _ShaderType, AString const& _SourcePtr, TRef<RenderCore::IShaderModule>& _Module);
-
-void CreateVertexShader(AStringView FileName, RenderCore::SVertexAttribInfo const* _VertexAttribs, int _NumVertexAttribs, TRef<RenderCore::IShaderModule>& _Module);
-void CreateTessControlShader(AStringView FileName, TRef<RenderCore::IShaderModule>& _Module);
-void CreateTessEvalShader(AStringView FileName, TRef<RenderCore::IShaderModule>& _Module);
-void CreateGeometryShader(AStringView FileName, TRef<RenderCore::IShaderModule>& _Module);
-void CreateFragmentShader(AStringView FileName, TRef<RenderCore::IShaderModule>& _Module);
-
-void CreateFullscreenQuadPipeline(TRef<RenderCore::IPipeline>*               ppPipeline,
-                                  AStringView                                VertexShader,
-                                  AStringView                                FragmentShader,
-                                  RenderCore::SPipelineResourceLayout const* pResourceLayout = nullptr,
-                                  RenderCore::BLENDING_PRESET                BlendingPreset  = RenderCore::BLENDING_NO_BLEND);
-
-void CreateFullscreenQuadPipelineGS(TRef<RenderCore::IPipeline>*               ppPipeline,
-                                    AStringView                                VertexShader,
-                                    AStringView                                FragmentShader,
-                                    AStringView                                GeometryShader,
-                                    RenderCore::SPipelineResourceLayout const* pResourceLayout = nullptr,
-                                    RenderCore::BLENDING_PRESET                BlendingPreset  = RenderCore::BLENDING_NO_BLEND);
 
 HK_FORCEINLINE void StoreFloat3x3AsFloat3x4Transposed(Float3x3 const& _In, Float3x4& _Out)
 {

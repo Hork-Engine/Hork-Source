@@ -88,8 +88,8 @@ void ACanvasRenderer::CreatePresentViewPipeline()
         }
     };
 
-    CreateVertexShader( "canvas/presentview.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
-    CreateFragmentShader( "canvas/presentview.frag", pipelineCI.pFS );
+    AShaderFactory::CreateVertexShader( "canvas/presentview.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), pipelineCI.pVS );
+    AShaderFactory::CreateFragmentShader( "canvas/presentview.frag", pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLES;
@@ -181,8 +181,8 @@ void ACanvasRenderer::CreatePipelines()
 
     TRef< IShaderModule > vertexShaderModule, fragmentShaderModule;
 
-    CreateVertexShader( "canvas/canvas.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), vertexShaderModule );
-    CreateFragmentShader( "canvas/canvas.frag", fragmentShaderModule );
+    AShaderFactory::CreateVertexShader( "canvas/canvas.vert", vertexAttribs, HK_ARRAY_SIZE( vertexAttribs ), vertexShaderModule );
+    AShaderFactory::CreateFragmentShader( "canvas/canvas.frag", fragmentShaderModule );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
     inputAssembly.Topology = PRIMITIVE_TRIANGLES;

@@ -76,6 +76,8 @@ AResourceTableGLImpl::~AResourceTableGLImpl()
 {
 }
 
+//ITextureView* views[100];
+
 void AResourceTableGLImpl::BindTexture(unsigned int Slot, ITextureView* pShaderResourceView)
 {
     HK_ASSERT(Slot < MAX_SAMPLER_SLOTS);
@@ -87,11 +89,13 @@ void AResourceTableGLImpl::BindTexture(unsigned int Slot, ITextureView* pShaderR
         HK_ASSERT(pShaderResourceView->GetDesc().ViewType == TEXTURE_VIEW_SHADER_RESOURCE);
         TextureBindings[Slot]    = pShaderResourceView->GetHandleNativeGL();
         TextureBindingUIDs[Slot] = pShaderResourceView->GetUID();
+        //views[Slot] = pShaderResourceView;
     }
     else
     {
         TextureBindings[Slot]    = 0;
         TextureBindingUIDs[Slot] = 0;
+        //views[Slot] = nullptr;
     }
 }
 
@@ -268,6 +272,9 @@ AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                 
 
         if (pDepthStencilAttachment->bSingleSlice)
         {
+            if (viewDesc.Type == TEXTURE_CUBE_MAP_ARRAY) // FIXME
+                viewDesc.Type = TEXTURE_2D;
+
             viewDesc.FirstSlice = pDepthStencilAttachment->SliceNum;
             viewDesc.NumSlices  = 1;
         }
@@ -569,6 +576,8 @@ void AImmediateContextGLImpl::PolygonOffsetClampSafe(float _Slope, int _Bias, fl
 
 void AImmediateContextGLImpl::PackAlignment(unsigned int _Alignment)
 {
+    HK_ASSERT(_Alignment == 1 || _Alignment == 2 || _Alignment == 4 || _Alignment == 8);
+
     VerifyContext();
 
     if (PixelStore.PackAlignment != _Alignment)
@@ -580,6 +589,8 @@ void AImmediateContextGLImpl::PackAlignment(unsigned int _Alignment)
 
 void AImmediateContextGLImpl::UnpackAlignment(unsigned int _Alignment)
 {
+    HK_ASSERT(_Alignment == 1 || _Alignment == 2 || _Alignment == 4 || _Alignment == 8);
+
     VerifyContext();
 
     if (PixelStore.UnpackAlignment != _Alignment)
@@ -1782,6 +1793,16 @@ void AImmediateContextGLImpl::UpdateVertexAndIndexBuffers()
 void AImmediateContextGLImpl::UpdateShaderBindings()
 {
     // TODO: memcmp CurrentPipeline->TextureBindings, CurrentResourceTable->TextureBindings2
+
+    //LOG("NumSamplerObjects {}\n", CurrentPipeline->NumSamplerObjects);
+
+    //for (int i = 0 ; i < CurrentPipeline->NumSamplerObjects ; i++)
+    //{
+    //    if (views[i])
+    //        LOG("Sampler type: {} {}\n", views[i]->GetDesc().Type, views[i]->GetTexture()->GetDebugName());
+    //    else
+    //        LOG("Sampler type: null\n");
+    //}
 
     glBindTextures(0, CurrentPipeline->NumSamplerObjects, CurrentResourceTable->GetTextureBindings()); // 4.4
 
