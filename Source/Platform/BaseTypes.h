@@ -194,7 +194,7 @@ Suppress "Unused variable" warning
 
 */
 #define HK_UNUSED(x) ((void)x)
-
+#define HK_MAYBE_UNUSED(x) ((void)x)
 
 /*
 
