@@ -66,6 +66,6 @@ private:
     TRef<RenderCore::ITexture> IrradianceMap;
     TRef<RenderCore::ITexture> ReflectionMap;
 
-    RenderCore::BindlessHandle IrradianceMapHandle;
-    RenderCore::BindlessHandle ReflectionMapHandle;
+    RenderCore::BindlessHandle IrradianceMapHandle{};
+    RenderCore::BindlessHandle ReflectionMapHandle{};
 };
