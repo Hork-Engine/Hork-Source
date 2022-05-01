@@ -26,8 +26,6 @@ AShadowMapRenderer::AShadowMapRenderer()
     SClearValue clearValue;
     clearValue.Float1.R = 1.0f;
     rcmd->ClearTexture(DummyShadowMap, 0, FORMAT_FLOAT1, &clearValue);
-
-    CreateOmnidirectionalShadowMapPool();
 }
 
 void AShadowMapRenderer::CreatePipeline()
@@ -157,37 +155,6 @@ void AShadowMapRenderer::CreateLightPortalPipeline()
     pipelineCI.ResourceLayout.Buffers    = bufferInfo;
 
     GDevice->CreatePipeline(pipelineCI, &LightPortalPipeline);
-}
-
-AConsoleVar r_OminShadowmapBits(_CTS("r_OminShadowmapBits"), _CTS("16")); // Allowed 16, 24 or 32 bits
-AConsoleVar r_OminShadowmapResolution(_CTS("r_OminShadowmapResolution"), _CTS("1024"));
-
-void AShadowMapRenderer::CreateOmnidirectionalShadowMapPool()
-{
-    RenderCore::TEXTURE_FORMAT depthFormat;
-    if (r_OminShadowmapBits.GetInteger() <= 16)
-    {
-        depthFormat = TEXTURE_FORMAT_DEPTH16;
-    }
-    else if (r_OminShadowmapBits.GetInteger() <= 24)
-    {
-        depthFormat = TEXTURE_FORMAT_DEPTH24;
-    }
-    else
-    {
-        depthFormat = TEXTURE_FORMAT_DEPTH32;
-    }
-
-    int faceResolution = Math::ToClosestPowerOfTwo(r_OminShadowmapResolution.GetInteger());
-
-    int poolSize = 1;//256;
-    
-    GDevice->CreateTexture(
-        STextureDesc()
-            .SetFormat(depthFormat)
-            .SetResolution(STextureResolutionCubemapArray(faceResolution, poolSize))
-            .SetBindFlags(BIND_SHADER_RESOURCE | BIND_DEPTH_STENCIL),
-        &OmnidirectionalShadowMapArray);
 }
 
 bool AShadowMapRenderer::BindMaterialShadowMap(IImmediateContext* immediateCtx, SShadowRenderInstance const* instance)
@@ -443,15 +410,21 @@ void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SDirectionalLightInsta
     *ppShadowMapDepth = pass.GetDepthStencilAttachment().pResource;
 }
 
-void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SLightShadowmap const* ShadowMaps, int NumOmnidirectionalShadowMaps, FGTextureProxy** ppOmnidirectionalShadowMapArray)
+void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SLightShadowmap const* ShadowMaps, int NumOmnidirectionalShadowMaps, AOmnidirectionalShadowMapPool& Pool, FGTextureProxy** ppOmnidirectionalShadowMapArray)
 {
-    FGTextureProxy* OmnidirectionalShadowMapArray_R = FrameGraph.AddExternalResource<FGTextureProxy>("OmnidirectionalShadowMapArray", OmnidirectionalShadowMapArray);
+    FGTextureProxy* OmnidirectionalShadowMapArray_R = FrameGraph.AddExternalResource<FGTextureProxy>("OmnidirectionalShadowMapArray", Pool.GetTexture());
 
-    int faceResolution = OmnidirectionalShadowMapArray->GetWidth();
-
-    if (NumOmnidirectionalShadowMaps > OmnidirectionalShadowMapArray->GetSliceCount())
+    if (!NumOmnidirectionalShadowMaps)
     {
-        NumOmnidirectionalShadowMaps = OmnidirectionalShadowMapArray->GetSliceCount();
+        *ppOmnidirectionalShadowMapArray = OmnidirectionalShadowMapArray_R;
+        return;
+    }
+
+    int faceResolution = Pool.GetResolution();
+
+    if (NumOmnidirectionalShadowMaps > Pool.GetSize())
+    {
+        NumOmnidirectionalShadowMaps = Pool.GetSize();
         WARNING("Max omnidirectional shadow maps hit\n");
     }
 

@@ -105,7 +105,7 @@ private:
     void AddShadowmapSurfaces(SLightShadowmap* ShadowMap, SSurfaceDef* const* Surfaces, int SurfaceCount);
     void AddShadowmapSurface(SLightShadowmap* ShadowMap, AMaterialInstance* MaterialInstance, int _NumIndices, int _FirstIndex /*, int _RenderingOrder*/);
 
-    void AddLightShadowmap(AAnalyticLightComponent* Light, float Radius, int* pShadowmapIndex);
+    bool AddLightShadowmap(AAnalyticLightComponent* Light, float Radius);
 
     SRenderFrame   FrameData;
     ADebugRenderer DebugDraw;

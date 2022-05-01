@@ -384,8 +384,14 @@ void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVi
     }
 
     FGTextureProxy* OmnidirectionalShadowMapArray;
-    ShadowMapRenderer.AddPass(FrameGraph, &GFrameData->LightShadowmaps[GRenderView->FirstOmnidirectionalShadowMap],
-                              GRenderView->NumOmnidirectionalShadowMaps, &OmnidirectionalShadowMapArray);
+    if (GRenderView->NumOmnidirectionalShadowMaps > 0)
+    {
+        ShadowMapRenderer.AddPass(FrameGraph, &GFrameData->LightShadowmaps[GRenderView->FirstOmnidirectionalShadowMap], GRenderView->NumOmnidirectionalShadowMaps, OmniShadowMapPool, &OmnidirectionalShadowMapArray);
+    }
+    else
+    {
+        ShadowMapRenderer.AddPass(FrameGraph, nullptr, 0, OmniShadowMapPool, &OmnidirectionalShadowMapArray);
+    }
 
     FGTextureProxy *DepthTexture, *VelocityTexture;
     AddDepthPass(FrameGraph, &DepthTexture, &VelocityTexture);

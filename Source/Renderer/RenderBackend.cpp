@@ -412,6 +412,11 @@ int ARenderBackend::ClusterPackedIndicesAlignment() const
     return GDevice->GetDeviceCaps(DEVICE_CAPS_BUFFER_VIEW_OFFSET_ALIGNMENT);
 }
 
+int ARenderBackend::MaxOmnidirectionalShadowMapsPerView() const
+{
+    return FrameRenderer->GetOmniShadowMapPool().GetSize();
+}
+
 void ARenderBackend::InitializeMaterial(AMaterialGPU* Material, SMaterialDef const* Def)
 {
     Material->MaterialType              = Def->Type;

@@ -911,19 +911,27 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
     view->FirstOmnidirectionalShadowMap = FrameData.LightShadowmaps.Size();
     view->NumOmnidirectionalShadowMaps  = 0;
 
+    int maxOmnidirectionalShadowMaps = GEngine->GetRenderBackend()->MaxOmnidirectionalShadowMapsPerView();
+
     for (int i = 0; i < view->NumPointLights; i++)
     {
         light = VisLights[i];
 
         light->PackLight(view->ViewMatrix, view->PointLights[i]);
 
-        AddLightShadowmap(light, view->PointLights[i].Radius, &view->PointLights[i].ShadowmapIndex);
-
-        if (view->PointLights[i].ShadowmapIndex != -1) // add
+        if (view->NumOmnidirectionalShadowMaps < maxOmnidirectionalShadowMaps)
         {
-            view->PointLights[i].ShadowmapIndex -= view->FirstOmnidirectionalShadowMap;
-            view->PointLights[i].ShadowmapIndex /= 6;
-            view->NumOmnidirectionalShadowMaps++;
+            if (AddLightShadowmap(light, view->PointLights[i].Radius))
+            {
+                view->PointLights[i].ShadowmapIndex = view->NumOmnidirectionalShadowMaps;
+                view->NumOmnidirectionalShadowMaps++;
+            }
+            else
+                view->PointLights[i].ShadowmapIndex = -1;
+        }
+        else
+        {
+            LOG("maxOmnidirectionalShadowMaps hit\n");
         }
 
         APhotometricProfile* profile = light->GetPhotometricProfile();
@@ -2124,13 +2132,11 @@ void ARenderFrontend::AddShadowmapSurface(SLightShadowmap* ShadowMap, AMaterialI
     RenderDef.ShadowMapPolyCount += instance->IndexCount / 3;
 }
 
-void ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Radius, int* pShadowmapIndex)
+bool ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Radius)
 {
-    *pShadowmapIndex = -1;
-
     if (!Light->IsCastShadow())
     {
-        return;
+        return false;
     }
 
     AWorld* world = Light->GetWorld();
@@ -2144,8 +2150,6 @@ void ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Ra
     Float3 lightPos = Light->GetWorldPosition();
 
     ADrawable* drawable;
-
-    int shadowmapIndex = FrameData.LightShadowmaps.Size();
 
     int totalInstances = 0;
     int totalSurfaces  = 0;
@@ -2236,11 +2240,8 @@ void ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Ra
     if (totalInstances == 0 && totalSurfaces == 0)
     {
         FrameData.LightShadowmaps.Resize(FrameData.LightShadowmaps.Size() - 6);
-    }
-    else
-    {
-        *pShadowmapIndex = shadowmapIndex;
+        return false;
     }
 
-    //LOG( "Total Instances {}, surfaces {}\n", totalInstances, totalSurfaces );
+    return true;
 }

@@ -58,6 +58,8 @@ public:
 
     void Render(RenderCore::AFrameGraph& FrameGraph, bool bVirtualTexturing, class AVirtualTextureCache* PhysCacheVT, RenderCore::FGTextureProxy** ppFinalTexture);
 
+    AOmnidirectionalShadowMapPool const& GetOmniShadowMapPool() const { return OmniShadowMapPool; }
+
 private:
     void AddLinearizeDepthPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* DepthTexture, RenderCore::FGTextureProxy** ppLinearDepth);
 
@@ -82,6 +84,8 @@ private:
     AFxaaRenderer         FxaaRenderer;
     ASmaaRenderer         SmaaRenderer;
     ASSAORenderer         SSAORenderer;
+
+    AOmnidirectionalShadowMapPool OmniShadowMapPool;
 
     TRef<RenderCore::IPipeline> LinearDepthPipe;
     TRef<RenderCore::IPipeline> LinearDepthPipe_ORTHO;

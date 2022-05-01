@@ -56,6 +56,8 @@ public:
 
     int ClusterPackedIndicesAlignment() const;
 
+    int MaxOmnidirectionalShadowMapsPerView() const;
+
 private:
     void RenderView(int ViewportIndex, SRenderView* pRenderView, RenderCore::FGTextureProxy** ppViewTexture);
     void SetViewConstants(int ViewportIndex);
