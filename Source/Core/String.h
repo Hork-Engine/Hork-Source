@@ -67,6 +67,7 @@ public:
     AStringView& operator=(AStringView const& Rhs) = default;
 
     AStringView& operator=(AString const& Rhs);
+    AStringView& operator=(AStdString const& Rhs);
 
     friend bool operator==(AStringView Lhs, AStringView Rhs);
     friend bool operator!=(AStringView Lhs, AStringView Rhs);
@@ -962,6 +963,13 @@ HK_FORCEINLINE AStringView& AStringView::operator=(AString const& Rhs)
 {
     Data = Rhs.ToPtr();
     Size = Rhs.Length();
+    return *this;
+}
+
+HK_FORCEINLINE AStringView& AStringView::operator=(AStdString const& Rhs)
+{
+    Data = Rhs.c_str();
+    Size = Rhs.length();
     return *this;
 }
 
