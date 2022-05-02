@@ -847,8 +847,8 @@ void ALightVoxelizer::DrawVoxels(ADebugRenderer* InRenderer)
     int n = 0;
     for (Float3* lineP = DebugLinePoints.data(); n < DebugLinePoints.size(); lineP += 8, n += 8)
     {
-        InRenderer->DrawLine(lineP, 4, true);
-        InRenderer->DrawLine(lineP + 4, 4, true);
+        InRenderer->DrawLine(TArrayView<Float3>(lineP, 4), true);
+        InRenderer->DrawLine(TArrayView<Float3>(lineP + 4, 4), true);
         InRenderer->DrawLine(lineP[0], lineP[5]);
         InRenderer->DrawLine(lineP[1], lineP[4]);
         InRenderer->DrawLine(lineP[2], lineP[7]);

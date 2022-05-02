@@ -1574,7 +1574,7 @@ void AAINavigationMesh::DrawDebug(ADebugRenderer* InRenderer)
         //gen=true;
     }
     InRenderer->SetDepthTest(true);
-    InRenderer->DrawTriangleSoup(vertices.ToPtr(),vertices.Size(),sizeof(Float3),indices.ToPtr(),indices.Size(),false);
+    InRenderer->DrawTriangleSoup(vertices,indices,false);
 #endif
 }
 

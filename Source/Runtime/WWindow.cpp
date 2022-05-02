@@ -163,7 +163,7 @@ void WWindow::UpdateDragShape()
     vertices[2] = Float2(w, CaptionHeight);
     vertices[3] = Float2(0, CaptionHeight);
 
-    SetDragShape(vertices, 4);
+    SetDragShape(vertices);
 }
 
 void WWindow::UpdateMargin()

@@ -1328,7 +1328,7 @@ void AIndexedMeshSubpart::GenerateBVH(unsigned int PrimitivesPerLeaf)
     if (OwnerMesh)
     {
         AABBTree = CreateInstanceOf<ATreeAABB>();
-        AABBTree->InitializeTriangleSoup(OwnerMesh->Vertices.ToPtr(), OwnerMesh->Indices.ToPtr() + FirstIndex, IndexCount, BaseVertex, PrimitivesPerLeaf);
+        AABBTree->InitializeTriangleSoup(OwnerMesh->Vertices, {OwnerMesh->Indices.ToPtr() + FirstIndex, IndexCount}, BaseVertex, PrimitivesPerLeaf);
         bAABBTreeDirty = false;
     }
 }
@@ -3166,13 +3166,14 @@ ATreeAABB::ATreeAABB()
     BoundingBox.Clear();
 }
 
-void ATreeAABB::InitializeTriangleSoup(SMeshVertex const* _Vertices, unsigned int const* _Indices, unsigned int _IndexCount, int _BaseVertex, unsigned int _PrimitivesPerLeaf)
+void ATreeAABB::InitializeTriangleSoup(TArrayView<SMeshVertex> _Vertices, TArrayView<unsigned int> _Indices, int _BaseVertex, unsigned int _PrimitivesPerLeaf)
 {
     Purge();
 
     _PrimitivesPerLeaf = Math::Max(_PrimitivesPerLeaf, 16u);
 
-    int primCount = _IndexCount / 3;
+    int indexCount = _Indices.Size();
+    int primCount  = indexCount / 3;
 
     int numLeafs = (primCount + _PrimitivesPerLeaf - 1) / _PrimitivesPerLeaf;
 
@@ -3188,7 +3189,7 @@ void ATreeAABB::InitializeTriangleSoup(SMeshVertex const* _Vertices, unsigned in
     build.Primitives[2].ResizeInvalidate(primCount);
 
     int primitiveIndex = 0;
-    for (unsigned int i = 0; i < _IndexCount; i += 3, primitiveIndex++)
+    for (unsigned int i = 0; i < indexCount; i += 3, primitiveIndex++)
     {
         const size_t i0 = _Indices[i];
         const size_t i1 = _Indices[i + 1];
@@ -3227,29 +3228,30 @@ void ATreeAABB::InitializeTriangleSoup(SMeshVertex const* _Vertices, unsigned in
     //LOG( "AABBTree memory usage: {}  {}\n", sz, sz2 );
 }
 
-void ATreeAABB::InitializePrimitiveSoup(SPrimitiveDef const* _Primitives, unsigned int _PrimitiveCount, unsigned int _PrimitivesPerLeaf)
+void ATreeAABB::InitializePrimitiveSoup(TArrayView<SPrimitiveDef> _Primitives, unsigned int _PrimitivesPerLeaf)
 {
     Purge();
 
     _PrimitivesPerLeaf = Math::Max(_PrimitivesPerLeaf, 16u);
 
-    int numLeafs = (_PrimitiveCount + _PrimitivesPerLeaf - 1) / _PrimitivesPerLeaf;
+    int numPrimitives = _Primitives.Size();
+    int numLeafs      = (numPrimitives + _PrimitivesPerLeaf - 1) / _PrimitivesPerLeaf;
 
     Nodes.Clear();
     Nodes.ReserveInvalidate(numLeafs * 4);
 
-    Indirection.ResizeInvalidate(_PrimitiveCount);
+    Indirection.ResizeInvalidate(numPrimitives);
 
     SAABBTreeBuild build;
-    build.RightBounds.ResizeInvalidate(_PrimitiveCount);
-    build.Primitives[0].ResizeInvalidate(_PrimitiveCount);
-    build.Primitives[1].ResizeInvalidate(_PrimitiveCount);
-    build.Primitives[2].ResizeInvalidate(_PrimitiveCount);
+    build.RightBounds.ResizeInvalidate(numPrimitives);
+    build.Primitives[0].ResizeInvalidate(numPrimitives);
+    build.Primitives[1].ResizeInvalidate(numPrimitives);
+    build.Primitives[2].ResizeInvalidate(numPrimitives);
 
     int primitiveIndex;
-    for (primitiveIndex = 0; primitiveIndex < _PrimitiveCount; primitiveIndex++)
+    for (primitiveIndex = 0; primitiveIndex < numPrimitives; primitiveIndex++)
     {
-        SPrimitiveDef const* primitiveDef = _Primitives + primitiveIndex;
+        SPrimitiveDef const* primitiveDef = &_Primitives[primitiveIndex];
         SPrimitiveBounds&    primitive    = build.Primitives[0][primitiveIndex];
 
         switch (primitiveDef->Type)
@@ -3267,7 +3269,7 @@ void ATreeAABB::InitializePrimitiveSoup(SPrimitiveDef const* _Primitives, unsign
     }
 
     primitiveIndex = 0;
-    Subdivide(build, 0, 0, _PrimitiveCount, _PrimitivesPerLeaf, primitiveIndex);
+    Subdivide(build, 0, 0, numPrimitives, _PrimitivesPerLeaf, primitiveIndex);
     Nodes.ShrinkToFit();
 
     BoundingBox = Nodes[0].Bounds;

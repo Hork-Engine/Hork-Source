@@ -1404,8 +1404,7 @@ void APhysicalBody::DrawDebug(ADebugRenderer* InRenderer)
             {
                 InRenderer->SetColor(Color4(0, 1, 0, 0.5f));
 
-                InRenderer->DrawTriangleSoup(DebugDrawCache->Vertices.ToPtr(), DebugDrawCache->Vertices.Size(), sizeof(Float3),
-                                             DebugDrawCache->Indices.ToPtr(), DebugDrawCache->Indices.Size(), false);
+                InRenderer->DrawTriangleSoup(DebugDrawCache->Vertices, DebugDrawCache->Indices, false);
             }
         }
         else
@@ -1431,12 +1430,10 @@ void APhysicalBody::DrawDebug(ADebugRenderer* InRenderer)
                         break;
                 }
 
-                InRenderer->DrawTriangleSoup(DebugDrawCache->Vertices.ToPtr(), DebugDrawCache->Vertices.Size(), sizeof(Float3),
-                                             DebugDrawCache->Indices.ToPtr(), DebugDrawCache->Indices.Size(), false);
+                InRenderer->DrawTriangleSoup(DebugDrawCache->Vertices, DebugDrawCache->Indices, false);
 
                 InRenderer->SetColor(Color4(0, 0, 0, 1));
-                InRenderer->DrawTriangleSoupWireframe(DebugDrawCache->Vertices.ToPtr(), sizeof(Float3),
-                                                      DebugDrawCache->Indices.ToPtr(), DebugDrawCache->Indices.Size());
+                InRenderer->DrawTriangleSoupWireframe(DebugDrawCache->Vertices, DebugDrawCache->Indices);
             }
         }
     }

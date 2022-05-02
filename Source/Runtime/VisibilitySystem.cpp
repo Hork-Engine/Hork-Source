@@ -802,7 +802,7 @@ void AVisibilityLevel::DrawDebug(ADebugRenderer* InRenderer)
                         InRenderer->SetColor(Color4(0, 1, 0, 0.4f));
                     }
 
-                    InRenderer->DrawConvexPoly(p->Hull->Points, p->Hull->NumPoints, false);
+                    InRenderer->DrawConvexPoly({p->Hull->Points, p->Hull->NumPoints}, false);
                 }
             }
 
@@ -822,7 +822,7 @@ void AVisibilityLevel::DrawDebug(ADebugRenderer* InRenderer)
                         InRenderer->SetColor(Color4(0, 1, 0, 0.4f));
                     }
 
-                    InRenderer->DrawConvexPoly(p->Hull->Points, p->Hull->NumPoints, false);
+                    InRenderer->DrawConvexPoly({p->Hull->Points, p->Hull->NumPoints}, false);
                 }
             }
 #endif
