@@ -117,8 +117,7 @@ void ALevel::DrawDebug(ADebugRenderer* InRenderer)
 
     // Draw light portals
 #if 0
-    InRenderer->DrawTriangleSoup( LightPortalVertexBuffer.ToPtr(), LightPortalVertexBuffer.Size(),
-                                  sizeof(Float3), LightPortalIndexBuffer.ToPtr(), LightPortalIndexBuffer.Size() );
+    InRenderer->DrawTriangleSoup( LightPortalVertexBuffer, LightPortalIndexBuffer );
 #endif
 }
 

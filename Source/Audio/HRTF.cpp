@@ -420,6 +420,6 @@ void DrawHRTF( ADebugRenderer * InRenderer )
         sphereIndices = hrir.GetIndices();
     }
 
-    InRenderer->DrawTriangleSoupWireframe( sphereVerts.ToPtr(), sizeof( Float3 ), sphereIndices.ToPtr(), sphereIndices.Size() );
+    InRenderer->DrawTriangleSoupWireframe( sphereVerts, sphereIndices );
 }
 #endif

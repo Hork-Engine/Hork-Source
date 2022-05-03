@@ -366,12 +366,12 @@ WWidget& WWidget::SetMaxSize(Float2 const& _Size)
     return *this;
 }
 
-WWidget& WWidget::SetShape(Float2 const* _Vertices, int _NumVertices)
+WWidget& WWidget::SetShape(TArrayView<Float2> _Vertices)
 {
-    if (_NumVertices > 0)
+    if (!_Vertices.IsEmpty())
     {
-        Shape.ResizeInvalidate(_NumVertices);
-        Platform::Memcpy(Shape.ToPtr(), _Vertices, _NumVertices * sizeof(Shape[0]));
+        Shape.ResizeInvalidate(_Vertices.Size());
+        Platform::Memcpy(Shape.ToPtr(), _Vertices.ToPtr(), _Vertices.Size() * sizeof(Shape[0]));
     }
     else
     {
@@ -381,12 +381,12 @@ WWidget& WWidget::SetShape(Float2 const* _Vertices, int _NumVertices)
     return *this;
 }
 
-WWidget& WWidget::SetDragShape(Float2 const* _Vertices, int _NumVertices)
+WWidget& WWidget::SetDragShape(TArrayView<Float2> _Vertices)
 {
-    if (_NumVertices > 0)
+    if (!_Vertices.IsEmpty())
     {
-        DragShape.ResizeInvalidate(_NumVertices);
-        Platform::Memcpy(DragShape.ToPtr(), _Vertices, _NumVertices * sizeof(DragShape[0]));
+        DragShape.ResizeInvalidate(_Vertices.Size());
+        Platform::Memcpy(DragShape.ToPtr(), _Vertices.ToPtr(), _Vertices.Size() * sizeof(DragShape[0]));
     }
     else
     {

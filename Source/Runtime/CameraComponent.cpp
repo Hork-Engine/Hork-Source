@@ -389,10 +389,10 @@ void ACameraComponent::DrawDebug(ADebugRenderer* InRenderer)
         InRenderer->DrawLine(origin, v[3]);
         InRenderer->DrawLine(origin, v[1]);
         InRenderer->DrawLine(origin, v[2]);
-        InRenderer->DrawLine(v, 4, true);
+        InRenderer->DrawLine(v, true);
 
         InRenderer->SetColor(Color4(1, 1, 1, 0.3f));
         InRenderer->DrawTriangles(&faces[0][0], 4, sizeof(Float3), false);
-        InRenderer->DrawConvexPoly(v, 4, false);
+        InRenderer->DrawConvexPoly(v, false);
     }
 }

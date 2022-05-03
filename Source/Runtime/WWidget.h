@@ -30,6 +30,8 @@ SOFTWARE.
 
 #pragma once
 
+#include <Containers/ArrayView.h>
+
 #include "WCommon.h"
 #include "WDecorate.h"
 
@@ -207,10 +209,10 @@ public:
     WWidget& SetMaxSize(Float2 const& _Size);
 
     /** Custom clickable area */
-    WWidget& SetShape(Float2 const* _Vertices, int _NumVertices);
+    WWidget& SetShape(TArrayView<Float2> _Vertices);
 
     /** Custom drag area */
-    WWidget& SetDragShape(Float2 const* _Vertices, int _NumVertices);
+    WWidget& SetDragShape(TArrayView<Float2> _Vertices);
 
     /** Determines the padding of the client area within the widget */
     WWidget& SetMargin(float _Left, float _Top, float _Right, float _Bottom);

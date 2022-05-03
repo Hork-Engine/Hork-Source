@@ -227,6 +227,11 @@ void ADebugRenderer::DrawPoints(Float3 const* _Points, int _NumPoints, int _Stri
     }
 }
 
+void ADebugRenderer::DrawPoints(TArrayView<Float3> _Points)
+{
+    DrawPoints(_Points.ToPtr(), _Points.Size(), sizeof(Float3));
+}
+
 void ADebugRenderer::DrawLine(Float3 const& _P0, Float3 const& _P1)
 {
     EDebugDrawCmd   cmdName = bDepthTest ? DBG_DRAW_CMD_LINES_DEPTH_TEST : DBG_DRAW_CMD_LINES;
@@ -269,23 +274,23 @@ void ADebugRenderer::DrawDottedLine(Float3 const& _P0, Float3 const& _P1, float 
     }
 }
 
-void ADebugRenderer::DrawLine(Float3 const* _Points, int _NumPoints, bool _Closed)
+void ADebugRenderer::DrawLine(TArrayView<Float3> _Points, bool _Closed)
 {
-    if (_NumPoints < 2)
+    if (_Points.Size() < 2)
     {
         return;
     }
 
-    int numIndices = _Closed ? _NumPoints + 2 : _NumPoints + 1;
+    int numIndices = _Closed ? _Points.Size() + 2 : _Points.Size() + 1;
 
     EDebugDrawCmd   cmdName = bDepthTest ? DBG_DRAW_CMD_LINES_DEPTH_TEST : DBG_DRAW_CMD_LINES;
     SDebugDrawCmd*  cmd;
     SDebugVertex*   verts;
     unsigned short* indices;
 
-    if (PrimitiveReserve(cmdName, _NumPoints, numIndices, &cmd, &verts, &indices))
+    if (PrimitiveReserve(cmdName, _Points.Size(), numIndices, &cmd, &verts, &indices))
     {
-        for (int i = 0; i < _NumPoints; i++, verts++, indices++)
+        for (int i = 0; i < _Points.Size(); i++, verts++, indices++)
         {
             verts->Position = _Points[i];
             verts->Color    = CurrentColor;
@@ -299,19 +304,19 @@ void ADebugRenderer::DrawLine(Float3 const* _Points, int _NumPoints, bool _Close
 
         *indices = PRIMITIVE_RESTART_INDEX;
 
-        cmd->NumVertices += _NumPoints;
+        cmd->NumVertices += _Points.Size();
         cmd->NumIndices += numIndices;
     }
 }
 
-void ADebugRenderer::DrawConvexPoly(Float3 const* _Points, int _NumPoints, bool _TwoSided)
+void ADebugRenderer::DrawConvexPoly(TArrayView<Float3> _Points, bool _TwoSided)
 {
-    if (_NumPoints < 3)
+    if (_Points.Size() < 3)
     {
         return;
     }
 
-    int numTriangles = _NumPoints - 2;
+    int numTriangles = _Points.Size() - 2;
     int numIndices   = numTriangles * 3;
 
     if (_TwoSided)
@@ -324,9 +329,9 @@ void ADebugRenderer::DrawConvexPoly(Float3 const* _Points, int _NumPoints, bool 
     SDebugVertex*   verts;
     unsigned short* indices;
 
-    if (PrimitiveReserve(cmdName, _NumPoints, numIndices, &cmd, &verts, &indices))
+    if (PrimitiveReserve(cmdName, _Points.Size(), numIndices, &cmd, &verts, &indices))
     {
-        for (int i = 0; i < _NumPoints; i++, verts++)
+        for (int i = 0; i < _Points.Size(); i++, verts++)
         {
             verts->Position = _Points[i];
             verts->Color    = CurrentColor;
@@ -349,7 +354,7 @@ void ADebugRenderer::DrawConvexPoly(Float3 const* _Points, int _NumPoints, bool 
             }
         }
 
-        cmd->NumVertices += _NumPoints;
+        cmd->NumVertices += _Points.Size();
         cmd->NumIndices += numIndices;
     }
 }
@@ -404,6 +409,11 @@ void ADebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int
     }
 }
 
+void ADebugRenderer::DrawTriangleSoup(TArrayView<Float3> _Points, TArrayView<unsigned int> _Indices, bool _TwoSided)
+{
+    DrawTriangleSoup(_Points.ToPtr(), _Points.Size(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size(), _TwoSided);
+}
+
 void ADebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int _Stride, unsigned short const* _Indices, int _NumIndices, bool _TwoSided)
 {
     int numIndices = _NumIndices;
@@ -454,6 +464,11 @@ void ADebugRenderer::DrawTriangleSoup(Float3 const* _Points, int _NumPoints, int
     }
 }
 
+void ADebugRenderer::DrawTriangleSoup(TArrayView<Float3> _Points, TArrayView<unsigned short> _Indices, bool _TwoSided)
+{
+    DrawTriangleSoup(_Points.ToPtr(), _Points.Size(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size(), _TwoSided);
+}
+
 void ADebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, unsigned int const* _Indices, int _NumIndices)
 {
     Float3 points[3];
@@ -463,8 +478,13 @@ void ADebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Strid
         points[0] = *(Float3*)(pPoints + _Stride * _Indices[i + 0]);
         points[1] = *(Float3*)(pPoints + _Stride * _Indices[i + 1]);
         points[2] = *(Float3*)(pPoints + _Stride * _Indices[i + 2]);
-        DrawLine(points, 3, true);
+        DrawLine(points, true);
     }
+}
+
+void ADebugRenderer::DrawTriangleSoupWireframe(TArrayView<Float3> _Points, TArrayView<unsigned int> _Indices)
+{
+    DrawTriangleSoupWireframe(_Points.ToPtr(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size());
 }
 
 void ADebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Stride, unsigned short const* _Indices, int _NumIndices)
@@ -476,14 +496,19 @@ void ADebugRenderer::DrawTriangleSoupWireframe(Float3 const* _Points, int _Strid
         points[0] = *(Float3*)(pPoints + _Stride * _Indices[i + 0]);
         points[1] = *(Float3*)(pPoints + _Stride * _Indices[i + 1]);
         points[2] = *(Float3*)(pPoints + _Stride * _Indices[i + 2]);
-        DrawLine(points, 3, true);
+        DrawLine(points, true);
     }
+}
+
+void ADebugRenderer::DrawTriangleSoupWireframe(TArrayView<Float3> _Points, TArrayView<unsigned short> _Indices)
+{
+    DrawTriangleSoupWireframe(_Points.ToPtr(), sizeof(Float3), _Indices.ToPtr(), _Indices.Size());
 }
 
 void ADebugRenderer::DrawTriangle(Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, bool _TwoSided)
 {
     Float3 const Points[] = {_P0, _P1, _P2};
-    DrawConvexPoly(Points, 3, _TwoSided);
+    DrawConvexPoly(Points, _TwoSided);
 }
 
 void ADebugRenderer::DrawTriangles(Float3 const* _Triangles, int _NumTriangles, int _Stride, bool _TwoSided)
@@ -529,32 +554,33 @@ void ADebugRenderer::DrawTriangles(Float3 const* _Triangles, int _NumTriangles, 
 void ADebugRenderer::DrawQuad(Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, Float3 const& _P3, bool _TwoSided)
 {
     Float3 const Points[] = {_P0, _P1, _P2, _P3};
-    DrawConvexPoly(Points, 4, _TwoSided);
+    DrawConvexPoly(Points, _TwoSided);
 }
 
 void ADebugRenderer::DrawBox(Float3 const& _Position, Float3 const& _HalfExtents)
 {
-    Float3 const points[8] = {
+    Float3 const points[4] = {
         Float3(-_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
         Float3(_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
         Float3(_HalfExtents.X, _HalfExtents.Y, _HalfExtents.Z) + _Position,
-        Float3(-_HalfExtents.X, _HalfExtents.Y, _HalfExtents.Z) + _Position,
+        Float3(-_HalfExtents.X, _HalfExtents.Y, _HalfExtents.Z) + _Position};
+    Float3 const points2[4] = {
         Float3(-_HalfExtents.X, -_HalfExtents.Y, -_HalfExtents.Z) + _Position,
         Float3(_HalfExtents.X, -_HalfExtents.Y, -_HalfExtents.Z) + _Position,
         Float3(_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position,
         Float3(-_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position};
 
     // top face
-    DrawLine(points, 4, true);
+    DrawLine(points, true);
 
     // bottom face
-    DrawLine(&points[4], 4, true);
+    DrawLine(points2, true);
 
     // Edges
-    DrawLine(points[0], points[4]);
-    DrawLine(points[1], points[5]);
-    DrawLine(points[2], points[6]);
-    DrawLine(points[3], points[7]);
+    DrawLine(points[0], points2[0]);
+    DrawLine(points[1], points2[1]);
+    DrawLine(points[2], points2[2]);
+    DrawLine(points[3], points2[3]);
 }
 
 void ADebugRenderer::DrawBoxFilled(Float3 const& _Position, Float3 const& _HalfExtents, bool _TwoSided)
@@ -571,32 +597,33 @@ void ADebugRenderer::DrawBoxFilled(Float3 const& _Position, Float3 const& _HalfE
 
     unsigned short const indices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
 
-    DrawTriangleSoup(points, 8, sizeof(Float3), indices, 36, _TwoSided);
+    DrawTriangleSoup(points, indices, _TwoSided);
 }
 
 void ADebugRenderer::DrawOrientedBox(Float3 const& _Position, Float3x3 const& _Orientation, Float3 const& _HalfExtents)
 {
-    Float3 const points[8] = {
+    Float3 const points[4] = {
         _Orientation * Float3(-_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
         _Orientation * Float3(_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
         _Orientation * Float3(_HalfExtents.X, _HalfExtents.Y, _HalfExtents.Z) + _Position,
-        _Orientation * Float3(-_HalfExtents.X, _HalfExtents.Y, _HalfExtents.Z) + _Position,
+        _Orientation * Float3(-_HalfExtents.X, _HalfExtents.Y, _HalfExtents.Z) + _Position};
+    Float3 const points2[4] = {
         _Orientation * Float3(-_HalfExtents.X, -_HalfExtents.Y, -_HalfExtents.Z) + _Position,
         _Orientation * Float3(_HalfExtents.X, -_HalfExtents.Y, -_HalfExtents.Z) + _Position,
         _Orientation * Float3(_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position,
         _Orientation * Float3(-_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position};
 
     // top face
-    DrawLine(points, 4, true);
+    DrawLine(points, true);
 
     // bottom face
-    DrawLine(&points[4], 4, true);
+    DrawLine(points2, true);
 
     // Edges
-    DrawLine(points[0], points[4]);
-    DrawLine(points[1], points[5]);
-    DrawLine(points[2], points[6]);
-    DrawLine(points[3], points[7]);
+    DrawLine(points[0], points2[0]);
+    DrawLine(points[1], points2[1]);
+    DrawLine(points[2], points2[2]);
+    DrawLine(points[3], points2[3]);
 }
 
 void ADebugRenderer::DrawOrientedBoxFilled(Float3 const& _Position, Float3x3 const& _Orientation, Float3 const& _HalfExtents, bool _TwoSided)
@@ -613,7 +640,7 @@ void ADebugRenderer::DrawOrientedBoxFilled(Float3 const& _Position, Float3x3 con
 
     unsigned short const indices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
 
-    DrawTriangleSoup(points, 8, sizeof(Float3), indices, 36, _TwoSided);
+    DrawTriangleSoup(points, indices, _TwoSided);
 }
 
 void ADebugRenderer::DrawSphere(Float3 const& _Position, float _Radius)
@@ -753,7 +780,7 @@ void ADebugRenderer::DrawCircle(Float3 const& _Position, Float3 const& _UpVector
         points[i]         = _Position + Float3x3::RotationAroundNormal(Angle, _UpVector) * v;
     }
 
-    DrawLine(points, NumCirclePoints, true);
+    DrawLine(points, true);
 }
 
 void ADebugRenderer::DrawCircleFilled(Float3 const& _Position, Float3 const& _UpVector, const float& _Radius, bool _TwoSided)
@@ -771,7 +798,7 @@ void ADebugRenderer::DrawCircleFilled(Float3 const& _Position, Float3 const& _Up
         points[i]         = _Position + Float3x3::RotationAroundNormal(Angle, _UpVector) * v;
     }
 
-    DrawConvexPoly(points, NumCirclePoints, _TwoSided);
+    DrawConvexPoly(points, _TwoSided);
 }
 
 void ADebugRenderer::DrawCone(Float3 const& _Position, Float3x3 const& _Orientation, const float& _Radius, const float& _HalfAngle)
@@ -792,7 +819,7 @@ void ADebugRenderer::DrawCone(Float3 const& _Position, Float3x3 const& _Orientat
     }
 
     // Draw cone circle
-    DrawLine(points, NumCirclePoints, true);
+    DrawLine(points, true);
 
     // Draw cone faces (rays)
     for (int i = 0; i < NumCirclePoints; i += 2)
@@ -818,7 +845,7 @@ void ADebugRenderer::DrawCylinder(Float3 const& _Position, Float3x3 const& _Orie
     }
 
     // Draw bottom circle
-    DrawLine(points, NumCirclePoints, true);
+    DrawLine(points, true);
 
     // Draw faces (rays)
     for (int i = 0; i < NumCirclePoints; i += 2)
@@ -829,7 +856,7 @@ void ADebugRenderer::DrawCylinder(Float3 const& _Position, Float3x3 const& _Orie
     }
 
     // Draw top circle
-    DrawLine(points, NumCirclePoints, true);
+    DrawLine(points, true);
 }
 
 void ADebugRenderer::DrawCapsule(Float3 const& _Position, Float3x3 const& _Orientation, float _Radius, float _Height, int _UpAxis)
@@ -923,7 +950,7 @@ void ADebugRenderer::DrawPlane(Float3 const& _Normal, float _D, float _Length)
 
     DrawLine(points[0], points[2]);
     DrawLine(points[1], points[3]);
-    DrawLine(points, 4, true);
+    DrawLine(points, true);
 }
 
 void ADebugRenderer::DrawPlaneFilled(PlaneF const& _Plane, float _Length, bool _TwoSided)
@@ -945,5 +972,5 @@ void ADebugRenderer::DrawPlaneFilled(Float3 const& _Normal, float _D, float _Len
         center - (xvec + yvec) * _Length,
         center + (xvec - yvec) * _Length};
 
-    DrawConvexPoly(points, 4, _TwoSided);
+    DrawConvexPoly(points, _TwoSided);
 }

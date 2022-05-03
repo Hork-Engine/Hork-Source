@@ -110,9 +110,9 @@ class ATreeAABB : public ABaseObject
     HK_CLASS(ATreeAABB, ABaseObject)
 
 public:
-    void InitializeTriangleSoup(SMeshVertex const* _Vertices, unsigned int const* _Indices, unsigned int _IndexCount, int _BaseVertex, unsigned int _PrimitivesPerLeaf);
+    void InitializeTriangleSoup(TArrayView<SMeshVertex> _Vertices, TArrayView<unsigned int> _Indices, int _BaseVertex, unsigned int _PrimitivesPerLeaf);
 
-    void InitializePrimitiveSoup(SPrimitiveDef const* _Primitives, unsigned int _PrimitiveCount, unsigned int _PrimitivesPerLeaf);
+    void InitializePrimitiveSoup(TArrayView<SPrimitiveDef> _Primitives, unsigned int _PrimitivesPerLeaf);
 
     void Purge();
 
