@@ -3981,11 +3981,26 @@ void AImmediateContextGLImpl::ClearTexture(ITexture* _Texture, uint16_t _MipLeve
             break;
     };
 
-    glClearTexImage(_Texture->GetHandleNativeGL(),
-                    _MipLevel,
-                    format,
-                    TypeLUT[_Format].Type,
-                    _ClearValue);
+    if (GetDevice()->GetGraphicsVendor() == VENDOR_ATI && _Format == FORMAT_FLOAT1 && format == GL_DEPTH_COMPONENT)
+    {
+        // AMD Radeon driver bug workaround? TODO: Check with other video cards.
+        double       f   = _ClearValue->Float1.R;
+        unsigned int val = 0xffffffff * f;
+
+        glClearTexImage(_Texture->GetHandleNativeGL(),
+                        _MipLevel,
+                        format,
+                        GL_UNSIGNED_INT,
+                        &val);
+    }
+    else
+    {
+        glClearTexImage(_Texture->GetHandleNativeGL(),
+                        _MipLevel,
+                        format,
+                        TypeLUT[_Format].Type,
+                        _ClearValue);
+    }
 
     if (RasterizerState.bRasterizerDiscard)
     {
