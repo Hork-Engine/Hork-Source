@@ -170,7 +170,8 @@ PBR (physically based).
 * V-HACD (BSD 3-Clause license)
 * FXAA
 * SMAA
-is a general purpose allocator with excellent [performance](#performance) characteristics.
+* half.c
+
 See [details](ThridParty.md).
 
 
