@@ -58,7 +58,7 @@ void AConsole::SetFullscreen(bool _Fullscreen)
     bFullscreen = _Fullscreen;
 }
 
-void AConsole::CopyStoryLine(SWideChar const* _StoryLine)
+void AConsole::CopyStoryLine(WideChar const* _StoryLine)
 {
     CmdLineLength = 0;
     while (*_StoryLine && CmdLineLength < MAX_CMD_LINE_CHARS)
@@ -68,9 +68,9 @@ void AConsole::CopyStoryLine(SWideChar const* _StoryLine)
     CmdLinePos = CmdLineLength;
 }
 
-void AConsole::AddStoryLine(SWideChar* _Text, int _Length)
+void AConsole::AddStoryLine(WideChar* _Text, int _Length)
 {
-    SWideChar* storyLine = StoryLines[NumStoryLines++ & (MAX_STORY_LINES - 1)];
+    WideChar* storyLine = StoryLines[NumStoryLines++ & (MAX_STORY_LINES - 1)];
     Platform::Memcpy(storyLine, _Text, sizeof(_Text[0]) * Math::Min(_Length, MAX_CMD_LINE_CHARS));
     if (_Length < MAX_CMD_LINE_CHARS)
     {
@@ -95,7 +95,7 @@ void AConsole::InsertUTF8Text(const char* _Utf8)
 
     CmdLineLength += len;
 
-    SWideChar ch;
+    WideChar ch;
     int       byteLen;
     while (len-- > 0)
     {
@@ -114,10 +114,10 @@ void AConsole::InsertClipboardText()
     InsertUTF8Text(Platform::GetClipboard());
 }
 
-void AConsole::CompleteString(ACommandContext& _CommandCtx, const char* _Str)
+void AConsole::CompleteString(ACommandContext& _CommandCtx, AStringView _Str)
 {
     AString completion;
-    int     count = _CommandCtx.CompleteString(_Str, strlen(_Str), completion);
+    int     count = _CommandCtx.CompleteString(_Str, completion);
 
     if (completion.IsEmpty())
     {
@@ -126,7 +126,7 @@ void AConsole::CompleteString(ACommandContext& _CommandCtx, const char* _Str)
 
     if (count > 1)
     {
-        _CommandCtx.Print(_Str, CmdLinePos);
+        _CommandCtx.Print(_Str.GetSubstring(0, CmdLinePos));
     }
     else
     {
@@ -157,7 +157,7 @@ void AConsole::KeyEvent(SKeyEvent const& _Event, ACommandContext& _CommandCtx, A
     if (IsActive() && (_Event.Action == IA_PRESS || _Event.Action == IA_REPEAT))
     {
         int scrollDelta = 1;
-        if (_Event.ModMask & KMOD_MASK_CONTROL)
+        if (_Event.ModMask & MOD_MASK_CONTROL)
         {
             if (_Event.Key == KEY_HOME)
             {
@@ -187,7 +187,7 @@ void AConsole::KeyEvent(SKeyEvent const& _Event, ACommandContext& _CommandCtx, A
         switch (_Event.Key)
         {
             case KEY_LEFT:
-                if (_Event.ModMask & KMOD_MASK_CONTROL)
+                if (_Event.ModMask & MOD_MASK_CONTROL)
                 {
                     while (CmdLinePos > 0 && CmdLinePos <= CmdLineLength && CmdLine[CmdLinePos - 1] == ' ')
                     {
@@ -208,7 +208,7 @@ void AConsole::KeyEvent(SKeyEvent const& _Event, ACommandContext& _CommandCtx, A
                 }
                 break;
             case KEY_RIGHT:
-                if (_Event.ModMask & KMOD_MASK_CONTROL)
+                if (_Event.ModMask & MOD_MASK_CONTROL)
                 {
                     while (CmdLinePos < CmdLineLength && CmdLine[CmdLinePos] != ' ')
                     {
@@ -249,7 +249,7 @@ void AConsole::KeyEvent(SKeyEvent const& _Event, ACommandContext& _CommandCtx, A
                 }
                 break;
             case KEY_ENTER: {
-                char result[MAX_CMD_LINE_CHARS * 4 + 1]; // In worst case SWideChar transforms to 4 bytes,
+                char result[MAX_CMD_LINE_CHARS * 4 + 1]; // In worst case WideChar transforms to 4 bytes,
                                                          // one additional byte is reserved for trailing '\0'
 
                 Core::WideStrEncodeUTF8(result, sizeof(result), CmdLine, CmdLine + CmdLineLength);
@@ -303,13 +303,13 @@ void AConsole::KeyEvent(SKeyEvent const& _Event, ACommandContext& _CommandCtx, A
                 break;
             }
             case KEY_V:
-                if (_Event.ModMask & KMOD_MASK_CONTROL)
+                if (_Event.ModMask & MOD_MASK_CONTROL)
                 {
                     InsertClipboardText();
                 }
                 break;
             case KEY_TAB: {
-                char result[MAX_CMD_LINE_CHARS * 4 + 1]; // In worst case SWideChar transforms to 4 bytes,
+                char result[MAX_CMD_LINE_CHARS * 4 + 1]; // In worst case WideChar transforms to 4 bytes,
                                                          // one additional byte is reserved for trailing '\0'
 
                 Core::WideStrEncodeUTF8(result, sizeof(result), CmdLine, CmdLine + CmdLinePos);
@@ -393,7 +393,7 @@ void AConsole::DrawCmdLine(ACanvas* _Canvas, int x, int y, int MaxLineChars)
             break;
         }
 
-        SWideChar ch = CmdLine[n];
+        WideChar ch = CmdLine[n];
 
         if (ch <= ' ')
         {
@@ -485,7 +485,7 @@ void AConsole::Draw(ACanvas* _Canvas, float _TimeStep)
         }
 
         const int  offset = ((lock.MaxLines + lock.PrintLine - n - 1) % lock.MaxLines) * lock.MaxLineChars;
-        SWideChar* line   = &lock.pImage[offset];
+        WideChar* line   = &lock.pImage[offset];
 
         for (int j = 0; j < lock.MaxLineChars && *line; j++)
         {
@@ -514,7 +514,7 @@ void AConsole::WriteStoryLines()
         return;
     }
 
-    char result[MAX_CMD_LINE_CHARS * 4 + 1]; // In worst case SWideChar transforms to 4 bytes,
+    char result[MAX_CMD_LINE_CHARS * 4 + 1]; // In worst case WideChar transforms to 4 bytes,
                                              // one additional byte is reserved for trailing '\0'
 
     int numLines = Math::Min(MAX_STORY_LINES, NumStoryLines);
@@ -531,9 +531,9 @@ void AConsole::WriteStoryLines()
 
 void AConsole::ReadStoryLines()
 {
-    SWideChar wideStr[MAX_CMD_LINE_CHARS];
+    WideChar wideStr[MAX_CMD_LINE_CHARS];
     int       wideStrLength;
-    char      buf[MAX_CMD_LINE_CHARS * 3 + 2]; // In worst case SWideChar transforms to 3 bytes,
+    char      buf[MAX_CMD_LINE_CHARS * 3 + 2]; // In worst case WideChar transforms to 3 bytes,
                                                // two additional bytes are reserved for trailing '\n\0'
 
     AFileStream f;

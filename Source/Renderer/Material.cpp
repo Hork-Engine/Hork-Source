@@ -551,39 +551,39 @@ void CreateDepthPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
+    sources.Add( "#define MATERIAL_PASS_DEPTH\n" );
     if ( _Skinned ) {
-        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Add("#define SKINNED_MESH\n");
     }
-    sources.Append( vertexAttribsShaderString.CStr() );
-    sources.Append( _SourceCode );
+    sources.Add(vertexAttribsShaderString.CStr());
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     if ( _Tessellation ) {
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
+        sources.Add("#define MATERIAL_PASS_DEPTH\n");
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append( _SourceCode );
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
+        sources.Add("#define MATERIAL_PASS_DEPTH\n");
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append( _SourceCode );
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     if ( _AlphaMasking ) {
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
+        sources.Add("#define MATERIAL_PASS_DEPTH\n");
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append( _SourceCode );
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
     }
 
@@ -645,42 +645,42 @@ void CreateDepthVelocityPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
-    sources.Append( "#define DEPTH_WITH_VELOCITY_MAP\n" );
+    sources.Add("#define MATERIAL_PASS_DEPTH\n");
+    sources.Add("#define DEPTH_WITH_VELOCITY_MAP\n");
     if ( _Skinned ) {
-        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Add("#define SKINNED_MESH\n");
     }
-    sources.Append( vertexAttribsShaderString.CStr() );
-    sources.Append( _SourceCode );
+    sources.Add(vertexAttribsShaderString.CStr());
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     if ( _Tessellation ) {
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
-        sources.Append( "#define DEPTH_WITH_VELOCITY_MAP\n" );
+        sources.Add("#define MATERIAL_PASS_DEPTH\n");
+        sources.Add("#define DEPTH_WITH_VELOCITY_MAP\n");
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append( _SourceCode );
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
-        sources.Append( "#define DEPTH_WITH_VELOCITY_MAP\n" );
+        sources.Add("#define MATERIAL_PASS_DEPTH\n");
+        sources.Add("#define DEPTH_WITH_VELOCITY_MAP\n");
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append( _SourceCode );
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_DEPTH\n" );
-    sources.Append( "#define DEPTH_WITH_VELOCITY_MAP\n" );
+    sources.Add("#define MATERIAL_PASS_DEPTH\n");
+    sources.Add("#define DEPTH_WITH_VELOCITY_MAP\n");
     if ( _Skinned ) {
-        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Add("#define SKINNED_MESH\n");
     }
-    sources.Append( _SourceCode );
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
@@ -750,45 +750,45 @@ void CreateWireframePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_WIREFRAME\n" );
+    sources.Add("#define MATERIAL_PASS_WIREFRAME\n");
     if ( _Skinned ) {
-        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Add("#define SKINNED_MESH\n");
     }
-    sources.Append( vertexAttribsShaderString.CStr() );
-    sources.Append( _SourceCode );
+    sources.Add(vertexAttribsShaderString.CStr());
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_WIREFRAME\n" );
+    sources.Add("#define MATERIAL_PASS_WIREFRAME\n");
     if ( _Skinned ) {
-        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Add("#define SKINNED_MESH\n");
     }
-    sources.Append( _SourceCode );
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( GEOMETRY_SHADER, sources, pipelineCI.pGS );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_WIREFRAME\n" );
+    sources.Add("#define MATERIAL_PASS_WIREFRAME\n");
     if ( _Skinned ) {
-        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Add("#define SKINNED_MESH\n");
     }
-    sources.Append( _SourceCode );
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     if ( _Tessellation ) {
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_WIREFRAME\n" );
+        sources.Add("#define MATERIAL_PASS_WIREFRAME\n");
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append( _SourceCode );
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_WIREFRAME\n" );
+        sources.Add("#define MATERIAL_PASS_WIREFRAME\n");
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append( _SourceCode );
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
@@ -850,28 +850,28 @@ void CreateNormalsPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_NORMALS\n" );
+    sources.Add("#define MATERIAL_PASS_NORMALS\n");
     if ( _Skinned ) {
-        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Add("#define SKINNED_MESH\n");
     }
-    sources.Append( vertexAttribsShaderString.CStr() );
-    sources.Append( _SourceCode );
+    sources.Add(vertexAttribsShaderString.CStr());
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_NORMALS\n" );
+    sources.Add("#define MATERIAL_PASS_NORMALS\n");
     if ( _Skinned ) {
-        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Add("#define SKINNED_MESH\n");
     }
-    sources.Append( _SourceCode );
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( GEOMETRY_SHADER, sources, pipelineCI.pGS );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_NORMALS\n" );
+    sources.Add("#define MATERIAL_PASS_NORMALS\n");
     if ( _Skinned ) {
-        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Add("#define SKINNED_MESH\n");
     }
-    sources.Append( _SourceCode );
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
@@ -914,14 +914,14 @@ void CreateHUDPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const char *
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( VertexAttribsHUD, HK_ARRAY_SIZE( VertexAttribsHUD ) );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-    sources.Append( vertexAttribsShaderString.CStr() );
-    sources.Append( _SourceCode );
+    sources.Add("#define MATERIAL_PASS_COLOR\n");
+    sources.Add(vertexAttribsShaderString.CStr());
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-    sources.Append( _SourceCode );
+    sources.Add("#define MATERIAL_PASS_COLOR\n");
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;
@@ -1025,16 +1025,16 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
         AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-        sources.Append( "#define SKINNED_MESH\n" );
-        sources.Append( vertexAttribsShaderString.CStr() );
-        sources.Append( _SourceCode );
+        sources.Add("#define MATERIAL_PASS_COLOR\n");
+        sources.Add("#define SKINNED_MESH\n");
+        sources.Add(vertexAttribsShaderString.CStr());
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-        sources.Append( "#define SKINNED_MESH\n" );
-        sources.Append( _SourceCode );
+        sources.Add("#define MATERIAL_PASS_COLOR\n");
+        sources.Add("#define SKINNED_MESH\n");
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
         pipelineCI.NumVertexBindings = 2;
@@ -1046,14 +1046,14 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
         AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-        sources.Append( vertexAttribsShaderString.CStr() );
-        sources.Append( _SourceCode );
+        sources.Add("#define MATERIAL_PASS_COLOR\n");
+        sources.Add(vertexAttribsShaderString.CStr());
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-        sources.Append( _SourceCode );
+        sources.Add("#define MATERIAL_PASS_COLOR\n");
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
         pipelineCI.NumVertexBindings = 1;
@@ -1061,19 +1061,19 @@ void CreateLightPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, const 
 
     if ( _Tessellation ) {
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+        sources.Add("#define MATERIAL_PASS_COLOR\n");
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append( _SourceCode );
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
+        sources.Add("#define MATERIAL_PASS_COLOR\n");
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append( _SourceCode );
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
@@ -1156,29 +1156,29 @@ void CreateLightPassLightmapPipeline( TRef< RenderCore::IPipeline > * ppPipeline
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-    sources.Append( "#define USE_LIGHTMAP\n" );
-    sources.Append( vertexAttribsShaderString.CStr() );
-    sources.Append( _SourceCode );
+    sources.Add("#define MATERIAL_PASS_COLOR\n");
+    sources.Add("#define USE_LIGHTMAP\n");
+    sources.Add(vertexAttribsShaderString.CStr());
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-    sources.Append( "#define USE_LIGHTMAP\n" );
-    sources.Append( _SourceCode );
+    sources.Add("#define MATERIAL_PASS_COLOR\n");
+    sources.Add("#define USE_LIGHTMAP\n");
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     if ( _Tessellation ) {
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-        sources.Append( "#define USE_LIGHTMAP\n" );
-        sources.Append( _SourceCode );
+        sources.Add("#define MATERIAL_PASS_COLOR\n");
+        sources.Add("#define USE_LIGHTMAP\n");
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-        sources.Append( "#define USE_LIGHTMAP\n" );
-        sources.Append( _SourceCode );
+        sources.Add("#define MATERIAL_PASS_COLOR\n");
+        sources.Add("#define USE_LIGHTMAP\n");
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
@@ -1275,29 +1275,29 @@ void CreateLightPassVertexLightPipeline( TRef< RenderCore::IPipeline > * ppPipel
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-    sources.Append( "#define USE_VERTEX_LIGHT\n" );
-    sources.Append( vertexAttribsShaderString.CStr() );
-    sources.Append( _SourceCode );
+    sources.Add("#define MATERIAL_PASS_COLOR\n");
+    sources.Add("#define USE_VERTEX_LIGHT\n");
+    sources.Add(vertexAttribsShaderString.CStr());
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-    sources.Append( "#define USE_VERTEX_LIGHT\n" );
-    sources.Append( _SourceCode );
+    sources.Add("#define MATERIAL_PASS_COLOR\n");
+    sources.Add("#define USE_VERTEX_LIGHT\n");
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     if ( _Tessellation ) {
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-        sources.Append( "#define USE_VERTEX_LIGHT\n" );
-        sources.Append( _SourceCode );
+        sources.Add("#define MATERIAL_PASS_COLOR\n");
+        sources.Add("#define USE_VERTEX_LIGHT\n");
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_COLOR\n" );
-        sources.Append( "#define USE_VERTEX_LIGHT\n" );
-        sources.Append( _SourceCode );
+        sources.Add("#define MATERIAL_PASS_COLOR\n");
+        sources.Add("#define USE_VERTEX_LIGHT\n");
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
@@ -1415,37 +1415,37 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_SHADOWMAP\n" );
+    sources.Add("#define MATERIAL_PASS_SHADOWMAP\n");
     if ( _Skinned ) {
-        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Add("#define SKINNED_MESH\n");
     }
-    sources.Append( vertexAttribsShaderString.CStr() );
-    sources.Append( _SourceCode );
+    sources.Add(vertexAttribsShaderString.CStr());
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_SHADOWMAP\n" );
+    sources.Add("#define MATERIAL_PASS_SHADOWMAP\n");
     if ( _Skinned ) {
-        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Add("#define SKINNED_MESH\n");
     }
-    sources.Append( _SourceCode );
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader( GEOMETRY_SHADER, sources, pipelineCI.pGS );
 
     if ( _Tessellation ) {
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_SHADOWMAP\n" );
+        sources.Add("#define MATERIAL_PASS_SHADOWMAP\n");
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append( _SourceCode );
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_SHADOWMAP\n" );
+        sources.Add("#define MATERIAL_PASS_SHADOWMAP\n");
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append( _SourceCode );
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
@@ -1457,11 +1457,11 @@ void CreateShadowMapPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, co
 
     if ( _ShadowMasking || bVSM ) {
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_SHADOWMAP\n" );
+        sources.Add("#define MATERIAL_PASS_SHADOWMAP\n");
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append( _SourceCode );
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
     }
 
@@ -1530,33 +1530,33 @@ void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs);
 
     sources.Clear();
-    sources.Append("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
+    sources.Add("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
     if (_Skinned)
     {
-        sources.Append("#define SKINNED_MESH\n");
+        sources.Add("#define SKINNED_MESH\n");
     }
-    sources.Append(vertexAttribsShaderString.CStr());
-    sources.Append(_SourceCode);
+    sources.Add(vertexAttribsShaderString.CStr());
+    sources.Add(_SourceCode);
     AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
 
     if (_Tessellation)
     {
         sources.Clear();
-        sources.Append("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
+        sources.Add("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
         if (_Skinned)
         {
-            sources.Append("#define SKINNED_MESH\n");
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append(_SourceCode);
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader(TESS_CONTROL_SHADER, sources, pipelineCI.pTCS);
 
         sources.Clear();
-        sources.Append("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
+        sources.Add("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
         if (_Skinned)
         {
-            sources.Append("#define SKINNED_MESH\n");
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append(_SourceCode);
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader(TESS_EVALUATION_SHADER, sources, pipelineCI.pTES);
     }
 
@@ -1569,12 +1569,12 @@ void CreateOmniShadowMapPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, co
     if (_ShadowMasking || bVSM)
     {
         sources.Clear();
-        sources.Append("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
+        sources.Add("#define MATERIAL_PASS_OMNI_SHADOWMAP\n");
         if (_Skinned)
         {
-            sources.Append("#define SKINNED_MESH\n");
+            sources.Add("#define SKINNED_MESH\n");
         }
-        sources.Append(_SourceCode);
+        sources.Add(_SourceCode);
         AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
     }
 
@@ -1632,16 +1632,16 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
         AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_FEEDBACK\n" );
-        sources.Append( "#define SKINNED_MESH\n" );
-        sources.Append( vertexAttribsShaderString.CStr() );
-        sources.Append( _SourceCode );
+        sources.Add( "#define MATERIAL_PASS_FEEDBACK\n" );
+        sources.Add( "#define SKINNED_MESH\n" );
+        sources.Add( vertexAttribsShaderString.CStr() );
+        sources.Add( _SourceCode );
         AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_FEEDBACK\n" );
-        sources.Append( "#define SKINNED_MESH\n" );
-        sources.Append( _SourceCode );
+        sources.Add( "#define MATERIAL_PASS_FEEDBACK\n" );
+        sources.Add( "#define SKINNED_MESH\n" );
+        sources.Add( _SourceCode );
         AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
         pipelineCI.NumVertexBindings = 2;
@@ -1653,14 +1653,14 @@ void CreateFeedbackPassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, con
         AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_FEEDBACK\n" );
-        sources.Append( vertexAttribsShaderString.CStr() );
-        sources.Append( _SourceCode );
+        sources.Add( "#define MATERIAL_PASS_FEEDBACK\n" );
+        sources.Add( vertexAttribsShaderString.CStr() );
+        sources.Add( _SourceCode );
         AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_FEEDBACK\n" );
-        sources.Append( _SourceCode );
+        sources.Add( "#define MATERIAL_PASS_FEEDBACK\n" );
+        sources.Add( _SourceCode );
         AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
         pipelineCI.NumVertexBindings = 1;
@@ -1735,38 +1735,38 @@ void CreateOutlinePassPipeline( TRef< RenderCore::IPipeline > * ppPipeline, cons
     AString vertexAttribsShaderString = ShaderStringForVertexAttribs< AString >( pipelineCI.pVertexAttribs, pipelineCI.NumVertexAttribs );
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_OUTLINE\n" );
+    sources.Add( "#define MATERIAL_PASS_OUTLINE\n" );
     if ( _Skinned ) {
-        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Add( "#define SKINNED_MESH\n" );
     }
-    sources.Append( vertexAttribsShaderString.CStr() );
-    sources.Append( _SourceCode );
+    sources.Add( vertexAttribsShaderString.CStr() );
+    sources.Add( _SourceCode );
     AShaderFactory::CreateShader( VERTEX_SHADER, sources, pipelineCI.pVS );
 
     if ( _Tessellation ) {
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_OUTLINE\n" );
+        sources.Add( "#define MATERIAL_PASS_OUTLINE\n" );
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add( "#define SKINNED_MESH\n" );
         }
-        sources.Append( _SourceCode );
+        sources.Add( _SourceCode );
         AShaderFactory::CreateShader( TESS_CONTROL_SHADER, sources, pipelineCI.pTCS );
 
         sources.Clear();
-        sources.Append( "#define MATERIAL_PASS_OUTLINE\n" );
+        sources.Add( "#define MATERIAL_PASS_OUTLINE\n" );
         if ( _Skinned ) {
-            sources.Append( "#define SKINNED_MESH\n" );
+            sources.Add( "#define SKINNED_MESH\n" );
         }
-        sources.Append( _SourceCode );
+        sources.Add( _SourceCode );
         AShaderFactory::CreateShader( TESS_EVALUATION_SHADER, sources, pipelineCI.pTES );
     }
 
     sources.Clear();
-    sources.Append( "#define MATERIAL_PASS_OUTLINE\n" );
+    sources.Add( "#define MATERIAL_PASS_OUTLINE\n" );
     if ( _Skinned ) {
-        sources.Append( "#define SKINNED_MESH\n" );
+        sources.Add( "#define SKINNED_MESH\n" );
     }
-    sources.Append( _SourceCode );
+    sources.Add( _SourceCode );
     AShaderFactory::CreateShader( FRAGMENT_SHADER, sources, pipelineCI.pFS );
 
     SPipelineInputAssemblyInfo & inputAssembly = pipelineCI.IA;

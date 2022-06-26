@@ -136,7 +136,7 @@ static void ConstructContour(SClipperPath const& path, AClipperContour& contour)
     }
 }
 
-static void ComputeNode_r(ClipperLib::PolyNode const& node, TStdVector<SClipperPolygon>& polygons)
+static void ComputeNode_r(ClipperLib::PolyNode const& node, TVector<SClipperPolygon>& polygons)
 {
     SClipperPolygon polygon;
     AClipperContour hole;
@@ -150,7 +150,7 @@ static void ComputeNode_r(ClipperLib::PolyNode const& node, TStdVector<SClipperP
         if (child.IsHole() && !child.IsOpen())
         {
             ConstructContour(child.Contour, hole);
-            polygon.Holes.Append(hole);
+            polygon.Holes.Add(hole);
 
             // FIXME: May hole have childs?
             HK_ASSERT(child.ChildCount() == 0);
@@ -164,10 +164,10 @@ static void ComputeNode_r(ClipperLib::PolyNode const& node, TStdVector<SClipperP
         }
     }
 
-    polygons.Append(polygon);
+    polygons.Add(polygon);
 }
 
-static void ComputeContours(ClipperLib::PolyTree const& polygonTree, TStdVector<SClipperPolygon>& polygons)
+static void ComputeContours(ClipperLib::PolyTree const& polygonTree, TVector<SClipperPolygon>& polygons)
 {
     if (polygonTree.Contour.size() > 0 && !polygonTree.IsOpen())
     {
@@ -197,7 +197,7 @@ static void ComputeContours(ClipperLib::PolyTree const& polygonTree, TStdVector<
     }
 }
 
-bool APolyClipper::Execute(POLY_CLIP_TYPE clipType, TStdVector<SClipperPolygon>& polygons)
+bool APolyClipper::Execute(POLY_CLIP_TYPE clipType, TVector<SClipperPolygon>& polygons)
 {
     ClipperLib::PolyTree polygonTree;
 
@@ -212,7 +212,7 @@ bool APolyClipper::Execute(POLY_CLIP_TYPE clipType, TStdVector<SClipperPolygon>&
     return true;
 }
 
-bool APolyClipper::Execute(POLY_CLIP_TYPE clipType, TStdVector<AClipperContour>& contours)
+bool APolyClipper::Execute(POLY_CLIP_TYPE clipType, TVector<AClipperContour>& contours)
 {
     SClipperPaths resultPaths;
 

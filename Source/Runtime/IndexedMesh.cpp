@@ -52,7 +52,7 @@ HK_CLASS_META(AProceduralMesh)
 
 AIndexedMesh::AIndexedMesh()
 {
-    static TStaticResourceFinder<ASkeleton> SkeletonResource(_CTS("/Default/Skeleton/Default"));
+    static TStaticResourceFinder<ASkeleton> SkeletonResource("/Default/Skeleton/Default"s);
     Skeleton = SkeletonResource.GetObject();
 
     BoundingBox.Clear();
@@ -298,9 +298,9 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     bSkinnedMesh = meshData.ReadBool();
     //meshData.ReadBool(); // dummy (TODO: remove in the future)
     meshData.ReadObject(BoundingBox);
-    meshData.ReadArrayUInt32(Indices);
-    meshData.ReadArrayOfStructs(Vertices);
-    meshData.ReadArrayOfStructs(Weights);
+    meshData.ReadArray(Indices);
+    meshData.ReadArray(Vertices);
+    meshData.ReadArray(Weights);
     bRaycastBVH              = meshData.ReadBool();
     RaycastPrimitivesPerLeaf = meshData.ReadUInt16();
 
@@ -347,8 +347,8 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
 
     if (bSkinnedMesh)
     {
-        meshData.ReadArrayInt32(Skin.JointIndices);
-        meshData.ReadArrayOfStructs(Skin.OffsetMatrices);
+        meshData.ReadArray(Skin.JointIndices);
+        meshData.ReadArray(Skin.OffsetMatrices);
     }
 
     for (AIndexedMeshSubpart* subpart : Subparts)
@@ -406,7 +406,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
 
         bool bSkinned = asset.Weights.Size() == asset.Vertices.Size();
 
-        static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/PBRMetallicRoughness" ) );
+        static TStaticResourceFinder< AMaterial > MaterialResource("/Default/Materials/PBRMetallicRoughness"s);
 
         Initialize( asset.Vertices.Size(), asset.Indices.Size(), asset.Subparts.size(), bSkinned, false );
         WriteVertexData( asset.Vertices.ToPtr(), asset.Vertices.Size(), 0 );
@@ -588,7 +588,7 @@ void AIndexedMesh::GetWeightsBufferGPU(RenderCore::IBuffer** _Buffer, size_t* _O
 void AIndexedMesh::AddSocket(ASocketDef* _Socket)
 {
     _Socket->AddRef();
-    Sockets.Append(_Socket);
+    Sockets.Add(_Socket);
 }
 
 ASocketDef* AIndexedMesh::FindSocket(const char* _Name)
@@ -635,7 +635,7 @@ void AIndexedMesh::SetSkeleton(ASkeleton* _Skeleton)
 
     if (!Skeleton)
     {
-        static TStaticResourceFinder<ASkeleton> SkeletonResource(_CTS("/Default/Skeleton/Default"));
+        static TStaticResourceFinder<ASkeleton> SkeletonResource("/Default/Skeleton/Default"s);
         Skeleton = SkeletonResource.GetObject();
     }
 }
@@ -848,9 +848,9 @@ BvAxisAlignedBox const& AIndexedMesh::GetBoundingBox() const
 
 void AIndexedMesh::InitializeBoxMesh(const Float3& _Size, float _TexCoordScale)
 {
-    TPodVector<SMeshVertex>  vertices;
-    TPodVector<unsigned int> indices;
-    BvAxisAlignedBox         bounds;
+    TVertexBufferCPU<SMeshVertex> vertices;
+    TIndexBufferCPU<unsigned int> indices;
+    BvAxisAlignedBox      bounds;
 
     CreateBoxMesh(vertices, indices, bounds, _Size, _TexCoordScale);
 
@@ -863,9 +863,9 @@ void AIndexedMesh::InitializeBoxMesh(const Float3& _Size, float _TexCoordScale)
 
 void AIndexedMesh::InitializeSphereMesh(float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
 {
-    TPodVector<SMeshVertex>  vertices;
-    TPodVector<unsigned int> indices;
-    BvAxisAlignedBox         bounds;
+    TVertexBufferCPU<SMeshVertex> vertices;
+    TIndexBufferCPU<unsigned int> indices;
+    BvAxisAlignedBox      bounds;
 
     CreateSphereMesh(vertices, indices, bounds, _Radius, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs);
 
@@ -878,9 +878,9 @@ void AIndexedMesh::InitializeSphereMesh(float _Radius, float _TexCoordScale, int
 
 void AIndexedMesh::InitializePlaneMeshXZ(float _Width, float _Height, float _TexCoordScale)
 {
-    TPodVector<SMeshVertex>  vertices;
-    TPodVector<unsigned int> indices;
-    BvAxisAlignedBox         bounds;
+    TVertexBufferCPU<SMeshVertex> vertices;
+    TIndexBufferCPU<unsigned int> indices;
+    BvAxisAlignedBox      bounds;
 
     CreatePlaneMeshXZ(vertices, indices, bounds, _Width, _Height, _TexCoordScale);
 
@@ -893,9 +893,9 @@ void AIndexedMesh::InitializePlaneMeshXZ(float _Width, float _Height, float _Tex
 
 void AIndexedMesh::InitializePlaneMeshXY(float _Width, float _Height, float _TexCoordScale)
 {
-    TPodVector<SMeshVertex>  vertices;
-    TPodVector<unsigned int> indices;
-    BvAxisAlignedBox         bounds;
+    TVertexBufferCPU<SMeshVertex> vertices;
+    TIndexBufferCPU<unsigned int> indices;
+    BvAxisAlignedBox      bounds;
 
     CreatePlaneMeshXY(vertices, indices, bounds, _Width, _Height, _TexCoordScale);
 
@@ -908,9 +908,9 @@ void AIndexedMesh::InitializePlaneMeshXY(float _Width, float _Height, float _Tex
 
 void AIndexedMesh::InitializePatchMesh(Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
 {
-    TPodVector<SMeshVertex>  vertices;
-    TPodVector<unsigned int> indices;
-    BvAxisAlignedBox         bounds;
+    TVertexBufferCPU<SMeshVertex> vertices;
+    TIndexBufferCPU<unsigned int> indices;
+    BvAxisAlignedBox      bounds;
 
     CreatePatchMesh(vertices, indices, bounds,
                     Corner00, Corner10, Corner01, Corner11, _TexCoordScale, _TwoSided, _NumVerticalSubdivs, _NumHorizontalSubdivs);
@@ -924,9 +924,9 @@ void AIndexedMesh::InitializePatchMesh(Float3 const& Corner00, Float3 const& Cor
 
 void AIndexedMesh::InitializeCylinderMesh(float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs)
 {
-    TPodVector<SMeshVertex>  vertices;
-    TPodVector<unsigned int> indices;
-    BvAxisAlignedBox         bounds;
+    TVertexBufferCPU<SMeshVertex> vertices;
+    TIndexBufferCPU<unsigned int> indices;
+    BvAxisAlignedBox      bounds;
 
     CreateCylinderMesh(vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumSubdivs);
 
@@ -939,9 +939,9 @@ void AIndexedMesh::InitializeCylinderMesh(float _Radius, float _Height, float _T
 
 void AIndexedMesh::InitializeConeMesh(float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs)
 {
-    TPodVector<SMeshVertex>  vertices;
-    TPodVector<unsigned int> indices;
-    BvAxisAlignedBox         bounds;
+    TVertexBufferCPU<SMeshVertex> vertices;
+    TIndexBufferCPU<unsigned int> indices;
+    BvAxisAlignedBox      bounds;
 
     CreateConeMesh(vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumSubdivs);
 
@@ -954,9 +954,9 @@ void AIndexedMesh::InitializeConeMesh(float _Radius, float _Height, float _TexCo
 
 void AIndexedMesh::InitializeCapsuleMesh(float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
 {
-    TPodVector<SMeshVertex>  vertices;
-    TPodVector<unsigned int> indices;
-    BvAxisAlignedBox         bounds;
+    TVertexBufferCPU<SMeshVertex> vertices;
+    TIndexBufferCPU<unsigned int> indices;
+    BvAxisAlignedBox      bounds;
 
     CreateCapsuleMesh(vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs);
 
@@ -969,9 +969,9 @@ void AIndexedMesh::InitializeCapsuleMesh(float _Radius, float _Height, float _Te
 
 void AIndexedMesh::InitializeSkyboxMesh(const Float3& _Size, float _TexCoordScale)
 {
-    TPodVector<SMeshVertex>  vertices;
-    TPodVector<unsigned int> indices;
-    BvAxisAlignedBox         bounds;
+    TVertexBufferCPU<SMeshVertex> vertices;
+    TIndexBufferCPU<unsigned int> indices;
+    BvAxisAlignedBox      bounds;
 
     CreateSkyboxMesh(vertices, indices, bounds, _Size, _TexCoordScale);
 
@@ -984,9 +984,9 @@ void AIndexedMesh::InitializeSkyboxMesh(const Float3& _Size, float _TexCoordScal
 
 void AIndexedMesh::InitializeSkydomeMesh(float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs, bool _Hemisphere)
 {
-    TPodVector<SMeshVertex>  vertices;
-    TPodVector<unsigned int> indices;
-    BvAxisAlignedBox         bounds;
+    TVertexBufferCPU<SMeshVertex> vertices;
+    TIndexBufferCPU<unsigned int> indices;
+    BvAxisAlignedBox      bounds;
 
     CreateSkydomeMesh(vertices, indices, bounds, _Radius, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs, _Hemisphere);
 
@@ -997,10 +997,9 @@ void AIndexedMesh::InitializeSkydomeMesh(float _Radius, float _TexCoordScale, in
     Subparts[0]->BoundingBox = bounds;
 }
 
-void AIndexedMesh::LoadInternalResource(const char* _Path)
+void AIndexedMesh::LoadInternalResource(AStringView _Path)
 {
-
-    if (!Platform::Stricmp(_Path, "/Default/Meshes/Box"))
+    if (!_Path.Icmp("/Default/Meshes/Box"))
     {
         InitializeBoxMesh(Float3(1), 1);
 
@@ -1010,7 +1009,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Meshes/Sphere"))
+    if (!_Path.Icmp("/Default/Meshes/Sphere"))
     {
         InitializeSphereMesh(0.5f, 1);
 
@@ -1020,7 +1019,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Meshes/Cylinder"))
+    if (!_Path.Icmp("/Default/Meshes/Cylinder"))
     {
         InitializeCylinderMesh(0.5f, 1, 1);
 
@@ -1032,7 +1031,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Meshes/Cone"))
+    if (!_Path.Icmp("/Default/Meshes/Cone"))
     {
         InitializeConeMesh(0.5f, 1, 1);
 
@@ -1043,7 +1042,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Meshes/Capsule"))
+    if (!_Path.Icmp("/Default/Meshes/Capsule"))
     {
         InitializeCapsuleMesh(0.5f, 1.0f, 1);
 
@@ -1054,7 +1053,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Meshes/PlaneXZ"))
+    if (!_Path.Icmp("/Default/Meshes/PlaneXZ"))
     {
         InitializePlaneMeshXZ(256, 256, 256);
 
@@ -1068,7 +1067,7 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Meshes/PlaneXY"))
+    if (!_Path.Icmp("/Default/Meshes/PlaneXY"))
     {
         InitializePlaneMeshXY(256, 256, 256);
 
@@ -1082,19 +1081,19 @@ void AIndexedMesh::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Meshes/Skybox"))
+    if (!_Path.Icmp("/Default/Meshes/Skybox"))
     {
         InitializeSkyboxMesh(Float3(1), 1);
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Meshes/Skydome"))
+    if (!_Path.Icmp("/Default/Meshes/Skydome"))
     {
         InitializeSkydomeMesh(0.5f, 1, 32, 32, false);
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Meshes/SkydomeHemisphere"))
+    if (!_Path.Icmp("/Default/Meshes/SkydomeHemisphere"))
     {
         InitializeSkydomeMesh(0.5f, 1, 16, 32, true);
         return;
@@ -1155,8 +1154,8 @@ void AIndexedMesh::GenerateSoftbodyLinksFromFaces()
 {
     AScopedTimer ScopedTime("GenerateSoftbodyLinksFromFaces");
 
-    TPodVector<bool> checks;
-    unsigned int*    indices;
+    TVector<bool> checks;
+    unsigned int* indices;
 
     checks.Resize(Vertices.Size() * Vertices.Size());
     checks.ZeroMem();
@@ -1181,8 +1180,8 @@ void AIndexedMesh::GenerateSoftbodyLinksFromFaces()
                 // Mark link exits
                 checks[index_j_k] = checks[index_k_j] = true;
 
-                // Append link
-                SSoftbodyLink& link = SoftbodyLinks.Append();
+                // Add link
+                SSoftbodyLink& link = SoftbodyLinks.Add();
                 link.Indices[0]     = indices[j];
                 link.Indices[1]     = indices[k];
             }
@@ -1269,7 +1268,7 @@ AIndexedMeshSubpart::AIndexedMeshSubpart()
 {
     BoundingBox.Clear();
 
-    static TStaticResourceFinder<AMaterialInstance> DefaultMaterialInstance(_CTS("/Default/MaterialInstance/Default"));
+    static TStaticResourceFinder<AMaterialInstance> DefaultMaterialInstance("/Default/MaterialInstance/Default"s);
     MaterialInstance = DefaultMaterialInstance.GetObject();
 }
 
@@ -1306,7 +1305,7 @@ void AIndexedMeshSubpart::SetMaterialInstance(AMaterialInstance* _MaterialInstan
 
     if (!MaterialInstance)
     {
-        static TStaticResourceFinder<AMaterialInstance> DefaultMaterialInstance(_CTS("/Default/MaterialInstance/Default"));
+        static TStaticResourceFinder<AMaterialInstance> DefaultMaterialInstance("/Default/MaterialInstance/Default"s);
         MaterialInstance = DefaultMaterialInstance.GetObject();
     }
 }
@@ -1328,7 +1327,7 @@ void AIndexedMeshSubpart::GenerateBVH(unsigned int PrimitivesPerLeaf)
     if (OwnerMesh)
     {
         AABBTree = CreateInstanceOf<ATreeAABB>();
-        AABBTree->InitializeTriangleSoup(OwnerMesh->Vertices, {OwnerMesh->Indices.ToPtr() + FirstIndex, IndexCount}, BaseVertex, PrimitivesPerLeaf);
+        AABBTree->InitializeTriangleSoup(OwnerMesh->Vertices, {OwnerMesh->Indices.ToPtr() + FirstIndex, (size_t)IndexCount}, BaseVertex, PrimitivesPerLeaf);
         bAABBTreeDirty = false;
     }
 }
@@ -1387,7 +1386,7 @@ bool AIndexedMeshSubpart::Raycast(Float3 const& _RayStart, Float3 const& _RayDir
                     {
                         if (_Distance > d)
                         {
-                            STriangleHitResult& hitResult = _HitResult.Append();
+                            STriangleHitResult& hitResult = _HitResult.Add();
                             hitResult.Location            = _RayStart + _RayDir * d;
                             hitResult.Normal              = Math::Cross(v1 - v0, v2 - v0).Normalized();
                             hitResult.Distance            = d;
@@ -1431,7 +1430,7 @@ bool AIndexedMeshSubpart::Raycast(Float3 const& _RayStart, Float3 const& _RayDir
             {
                 if (_Distance > d)
                 {
-                    STriangleHitResult& hitResult = _HitResult.Append();
+                    STriangleHitResult& hitResult = _HitResult.Add();
                     hitResult.Location            = _RayStart + _RayDir * d;
                     hitResult.Normal              = Math::Cross(v1 - v0, v2 - v0).Normalized();
                     hitResult.Distance            = d;
@@ -1618,7 +1617,7 @@ void ALightmapUV::Initialize(AIndexedMesh* InSourceMesh, ALevel* InLightingLevel
     bInvalid      = false;
 
     IndexInArrayOfUVs = InSourceMesh->LightmapUVs.Size();
-    InSourceMesh->LightmapUVs.Append(this);
+    InSourceMesh->LightmapUVs.Add(this);
 
     Vertices.ResizeInvalidate(InSourceMesh->GetVertexCount());
 
@@ -1720,7 +1719,7 @@ void AVertexLight::Initialize(AIndexedMesh* InSourceMesh, ALevel* InLightingLeve
     bInvalid      = false;
 
     IndexInArrayOfChannels = InSourceMesh->VertexLightChannels.Size();
-    InSourceMesh->VertexLightChannels.Append(this);
+    InSourceMesh->VertexLightChannels.Add(this);
 
     Vertices.ResizeInvalidate(InSourceMesh->GetVertexCount());
 
@@ -1864,7 +1863,7 @@ bool AProceduralMesh::Raycast(Float3 const& _RayStart, Float3 const& _RayDir, fl
         {
             if (_Distance > d)
             {
-                STriangleHitResult& hitResult = _HitResult.Append();
+                STriangleHitResult& hitResult = _HitResult.Add();
                 hitResult.Location            = _RayStart + _RayDir * d;
                 hitResult.Normal              = Math::Cross(v1 - v0, v2 - v0).Normalized();
                 hitResult.Distance            = d;
@@ -1948,13 +1947,8 @@ void CalcTangentSpace(SMeshVertex* _VertexArray, unsigned int _NumVerts, unsigne
 {
     Float3 binormal, tangent;
 
-    TPodVector<Float3> binormals;
-    binormals.ResizeInvalidate(_NumVerts);
-    binormals.ZeroMem();
-
-    TPodVector<Float3> tangents;
-    tangents.ResizeInvalidate(_NumVerts);
-    tangents.ZeroMem();
+    TVector<Float3> binormals(_NumVerts);
+    TVector<Float3> tangents(_NumVerts);
 
     for (unsigned int i = 0; i < _NumIndices; i += 3)
     {
@@ -2123,7 +2117,7 @@ void CalcBoundingBoxes(SMeshVertex const*            InVertices,
     }
 }
 
-void CreateBoxMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, const Float3& _Size, float _TexCoordScale)
+void CreateBoxMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, const Float3& _Size, float _TexCoordScale)
 {
     constexpr unsigned int indices[6 * 6] =
         {
@@ -2150,115 +2144,115 @@ void CreateBoxMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>&
 
     SMeshVertex* pVerts = _Vertices.ToPtr();
 
-    uint16_t zero = 0;
-    uint16_t pos  = Math::FloatToHalf(1.0f);
-    uint16_t neg  = Math::FloatToHalf(-1.0f);
+    Half zero = 0.0f;
+    Half pos  = 1.0f;
+    Half neg  = -1.0f;
 
     pVerts[0 + 8 * 0].Position = Float3(mins.X, mins.Y, maxs.Z); // 0
-    pVerts[0 + 8 * 0].SetNormalNative(zero, zero, pos);
+    pVerts[0 + 8 * 0].SetNormal(zero, zero, pos);
     pVerts[0 + 8 * 0].SetTexCoord(Float2(0, 1) * _TexCoordScale);
 
     pVerts[1 + 8 * 0].Position = Float3(maxs.X, mins.Y, maxs.Z); // 1
-    pVerts[1 + 8 * 0].SetNormalNative(zero, zero, pos);
+    pVerts[1 + 8 * 0].SetNormal(zero, zero, pos);
     pVerts[1 + 8 * 0].SetTexCoord(Float2(1, 1) * _TexCoordScale);
 
     pVerts[2 + 8 * 0].Position = Float3(maxs.X, maxs.Y, maxs.Z); // 2
-    pVerts[2 + 8 * 0].SetNormalNative(zero, zero, pos);
+    pVerts[2 + 8 * 0].SetNormal(zero, zero, pos);
     pVerts[2 + 8 * 0].SetTexCoord(Float2(1, 0) * _TexCoordScale);
 
     pVerts[3 + 8 * 0].Position = Float3(mins.X, maxs.Y, maxs.Z); // 3
-    pVerts[3 + 8 * 0].SetNormalNative(zero, zero, pos);
+    pVerts[3 + 8 * 0].SetNormal(zero, zero, pos);
     pVerts[3 + 8 * 0].SetTexCoord(Float2(0, 0) * _TexCoordScale);
 
 
     pVerts[4 + 8 * 0].Position = Float3(maxs.X, mins.Y, mins.Z); // 4
-    pVerts[4 + 8 * 0].SetNormalNative(zero, zero, neg);
+    pVerts[4 + 8 * 0].SetNormal(zero, zero, neg);
     pVerts[4 + 8 * 0].SetTexCoord(Float2(0, 1) * _TexCoordScale);
 
     pVerts[5 + 8 * 0].Position = Float3(mins.X, mins.Y, mins.Z); // 5
-    pVerts[5 + 8 * 0].SetNormalNative(zero, zero, neg);
+    pVerts[5 + 8 * 0].SetNormal(zero, zero, neg);
     pVerts[5 + 8 * 0].SetTexCoord(Float2(1, 1) * _TexCoordScale);
 
     pVerts[6 + 8 * 0].Position = Float3(mins.X, maxs.Y, mins.Z); // 6
-    pVerts[6 + 8 * 0].SetNormalNative(zero, zero, neg);
+    pVerts[6 + 8 * 0].SetNormal(zero, zero, neg);
     pVerts[6 + 8 * 0].SetTexCoord(Float2(1, 0) * _TexCoordScale);
 
     pVerts[7 + 8 * 0].Position = Float3(maxs.X, maxs.Y, mins.Z); // 7
-    pVerts[7 + 8 * 0].SetNormalNative(zero, zero, neg);
+    pVerts[7 + 8 * 0].SetNormal(zero, zero, neg);
     pVerts[7 + 8 * 0].SetTexCoord(Float2(0, 0) * _TexCoordScale);
 
 
     pVerts[0 + 8 * 1].Position = Float3(mins.X, mins.Y, maxs.Z); // 0
-    pVerts[0 + 8 * 1].SetNormalNative(neg, zero, zero);
+    pVerts[0 + 8 * 1].SetNormal(neg, zero, zero);
     pVerts[0 + 8 * 1].SetTexCoord(Float2(1, 1) * _TexCoordScale);
 
     pVerts[1 + 8 * 1].Position = Float3(maxs.X, mins.Y, maxs.Z); // 1
-    pVerts[1 + 8 * 1].SetNormalNative(pos, zero, zero);
+    pVerts[1 + 8 * 1].SetNormal(pos, zero, zero);
     pVerts[1 + 8 * 1].SetTexCoord(Float2(0, 1) * _TexCoordScale);
 
     pVerts[2 + 8 * 1].Position = Float3(maxs.X, maxs.Y, maxs.Z); // 2
-    pVerts[2 + 8 * 1].SetNormalNative(pos, zero, zero);
+    pVerts[2 + 8 * 1].SetNormal(pos, zero, zero);
     pVerts[2 + 8 * 1].SetTexCoord(Float2(0, 0) * _TexCoordScale);
 
     pVerts[3 + 8 * 1].Position = Float3(mins.X, maxs.Y, maxs.Z); // 3
-    pVerts[3 + 8 * 1].SetNormalNative(neg, zero, zero);
+    pVerts[3 + 8 * 1].SetNormal(neg, zero, zero);
     pVerts[3 + 8 * 1].SetTexCoord(Float2(1, 0) * _TexCoordScale);
 
 
     pVerts[4 + 8 * 1].Position = Float3(maxs.X, mins.Y, mins.Z); // 4
-    pVerts[4 + 8 * 1].SetNormalNative(pos, zero, zero);
+    pVerts[4 + 8 * 1].SetNormal(pos, zero, zero);
     pVerts[4 + 8 * 1].SetTexCoord(Float2(1, 1) * _TexCoordScale);
 
     pVerts[5 + 8 * 1].Position = Float3(mins.X, mins.Y, mins.Z); // 5
-    pVerts[5 + 8 * 1].SetNormalNative(neg, zero, zero);
+    pVerts[5 + 8 * 1].SetNormal(neg, zero, zero);
     pVerts[5 + 8 * 1].SetTexCoord(Float2(0, 1) * _TexCoordScale);
 
     pVerts[6 + 8 * 1].Position = Float3(mins.X, maxs.Y, mins.Z); // 6
-    pVerts[6 + 8 * 1].SetNormalNative(neg, zero, zero);
+    pVerts[6 + 8 * 1].SetNormal(neg, zero, zero);
     pVerts[6 + 8 * 1].SetTexCoord(Float2(0, 0) * _TexCoordScale);
 
     pVerts[7 + 8 * 1].Position = Float3(maxs.X, maxs.Y, mins.Z); // 7
-    pVerts[7 + 8 * 1].SetNormalNative(pos, zero, zero);
+    pVerts[7 + 8 * 1].SetNormal(pos, zero, zero);
     pVerts[7 + 8 * 1].SetTexCoord(Float2(1, 0) * _TexCoordScale);
 
 
     pVerts[1 + 8 * 2].Position = Float3(maxs.X, mins.Y, maxs.Z); // 1
-    pVerts[1 + 8 * 2].SetNormalNative(zero, neg, zero);
+    pVerts[1 + 8 * 2].SetNormal(zero, neg, zero);
     pVerts[1 + 8 * 2].SetTexCoord(Float2(1, 0) * _TexCoordScale);
 
     pVerts[0 + 8 * 2].Position = Float3(mins.X, mins.Y, maxs.Z); // 0
-    pVerts[0 + 8 * 2].SetNormalNative(zero, neg, zero);
+    pVerts[0 + 8 * 2].SetNormal(zero, neg, zero);
     pVerts[0 + 8 * 2].SetTexCoord(Float2(0, 0) * _TexCoordScale);
 
     pVerts[5 + 8 * 2].Position = Float3(mins.X, mins.Y, mins.Z); // 5
-    pVerts[5 + 8 * 2].SetNormalNative(zero, neg, zero);
+    pVerts[5 + 8 * 2].SetNormal(zero, neg, zero);
     pVerts[5 + 8 * 2].SetTexCoord(Float2(0, 1) * _TexCoordScale);
 
     pVerts[4 + 8 * 2].Position = Float3(maxs.X, mins.Y, mins.Z); // 4
-    pVerts[4 + 8 * 2].SetNormalNative(zero, neg, zero);
+    pVerts[4 + 8 * 2].SetNormal(zero, neg, zero);
     pVerts[4 + 8 * 2].SetTexCoord(Float2(1, 1) * _TexCoordScale);
 
 
     pVerts[3 + 8 * 2].Position = Float3(mins.X, maxs.Y, maxs.Z); // 3
-    pVerts[3 + 8 * 2].SetNormalNative(zero, pos, zero);
+    pVerts[3 + 8 * 2].SetNormal(zero, pos, zero);
     pVerts[3 + 8 * 2].SetTexCoord(Float2(0, 1) * _TexCoordScale);
 
     pVerts[2 + 8 * 2].Position = Float3(maxs.X, maxs.Y, maxs.Z); // 2
-    pVerts[2 + 8 * 2].SetNormalNative(zero, pos, zero);
+    pVerts[2 + 8 * 2].SetNormal(zero, pos, zero);
     pVerts[2 + 8 * 2].SetTexCoord(Float2(1, 1) * _TexCoordScale);
 
     pVerts[7 + 8 * 2].Position = Float3(maxs.X, maxs.Y, mins.Z); // 7
-    pVerts[7 + 8 * 2].SetNormalNative(zero, pos, zero);
+    pVerts[7 + 8 * 2].SetNormal(zero, pos, zero);
     pVerts[7 + 8 * 2].SetTexCoord(Float2(1, 0) * _TexCoordScale);
 
     pVerts[6 + 8 * 2].Position = Float3(mins.X, maxs.Y, mins.Z); // 6
-    pVerts[6 + 8 * 2].SetNormalNative(zero, pos, zero);
+    pVerts[6 + 8 * 2].SetNormal(zero, pos, zero);
     pVerts[6 + 8 * 2].SetTexCoord(Float2(0, 0) * _TexCoordScale);
 
     CalcTangentSpace(_Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size());
 }
 
-void CreateSphereMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
+void CreateSphereMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
 {
     int          x, y;
     float        verticalAngle, horizontalAngle;
@@ -2324,7 +2318,7 @@ void CreateSphereMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned in
     CalcTangentSpace(_Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size());
 }
 
-void CreatePlaneMeshXZ(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Width, float _Height, float _TexCoordScale)
+void CreatePlaneMeshXZ(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Width, float _Height, float _TexCoordScale)
 {
     _Vertices.ResizeInvalidate(4);
     _Indices.ResizeInvalidate(6);
@@ -2353,7 +2347,7 @@ void CreatePlaneMeshXZ(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned i
     _Bounds.Maxs.Z = halfHeight;
 }
 
-void CreatePlaneMeshXY(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Width, float _Height, float _TexCoordScale)
+void CreatePlaneMeshXY(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Width, float _Height, float _TexCoordScale)
 {
     _Vertices.ResizeInvalidate(4);
     _Indices.ResizeInvalidate(6);
@@ -2382,9 +2376,8 @@ void CreatePlaneMeshXY(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned i
     _Bounds.Maxs.Z = 0.0f;
 }
 
-void CreatePatchMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
+void CreatePatchMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
 {
-
     _NumVerticalSubdivs   = Math::Max(_NumVerticalSubdivs, 2);
     _NumHorizontalSubdivs = Math::Max(_NumHorizontalSubdivs, 2);
 
@@ -2396,10 +2389,10 @@ void CreatePatchMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int
 
     Float3 normal = Math::Cross(Corner10 - Corner00, Corner01 - Corner00).Normalized();
 
-    uint16_t normalNative[3];
-    normalNative[0] = Math::FloatToHalf(normal.X);
-    normalNative[1] = Math::FloatToHalf(normal.Y);
-    normalNative[2] = Math::FloatToHalf(normal.Z);
+    Half normalNative[3];
+    normalNative[0] = normal.X;
+    normalNative[1] = normal.Y;
+    normalNative[2] = normal.Z;
 
     _Vertices.ResizeInvalidate(_TwoSided ? vertexCount << 1 : vertexCount);
     _Indices.ResizeInvalidate(_TwoSided ? indexCount << 1 : indexCount);
@@ -2420,7 +2413,7 @@ void CreatePatchMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int
 
             pVert->Position = Math::Lerp(py0, py1, lerpX);
             pVert->SetTexCoord(lerpX * _TexCoordScale, ty);
-            pVert->SetNormalNative(normalNative[0], normalNative[1], normalNative[2]);
+            pVert->SetNormal(normalNative[0], normalNative[1], normalNative[2]);
 
             ++pVert;
         }
@@ -2430,9 +2423,9 @@ void CreatePatchMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int
     {
         normal = -normal;
 
-        normalNative[0] = Math::FloatToHalf(normal.X);
-        normalNative[1] = Math::FloatToHalf(normal.Y);
-        normalNative[2] = Math::FloatToHalf(normal.Z);
+        normalNative[0] = normal.X;
+        normalNative[1] = normal.Y;
+        normalNative[2] = normal.Z;
 
         for (int y = 0; y < _NumVerticalSubdivs; ++y)
         {
@@ -2447,7 +2440,7 @@ void CreatePatchMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int
 
                 pVert->Position = Math::Lerp(py0, py1, lerpX);
                 pVert->SetTexCoord(lerpX * _TexCoordScale, ty);
-                pVert->SetNormalNative(normalNative[0], normalNative[1], normalNative[2]);
+                pVert->SetNormal(normalNative[0], normalNative[1], normalNative[2]);
 
                 ++pVert;
             }
@@ -2516,7 +2509,7 @@ void CreatePatchMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int
     _Bounds.AddPoint(Corner11);
 }
 
-void CreateCylinderMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs)
+void CreateCylinderMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs)
 {
     int          i, j;
     float        angle;
@@ -2543,14 +2536,15 @@ void CreateCylinderMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned 
 
     int firstVertex = 0;
 
-    uint16_t pos = Math::FloatToHalf(1.0f);
-    uint16_t neg = Math::FloatToHalf(-1.0f);
+    Half pos  = 1.0f;
+    Half neg  = -1.0f;
+    Half zero = 0.0f;
 
     for (j = 0; j <= _NumSubdivs; j++)
     {
         pVerts[firstVertex + j].Position = Float3(0.0f, -halfHeight, 0.0f);
         pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 0.0f) * _TexCoordScale);
-        pVerts[firstVertex + j].SetNormalNative(0, neg, 0);
+        pVerts[firstVertex + j].SetNormal(zero, neg, zero);
     }
     firstVertex += _NumSubdivs + 1;
 
@@ -2560,7 +2554,7 @@ void CreateCylinderMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned 
         Math::SinCos(angle, s, c);
         pVerts[firstVertex + j].Position = Float3(_Radius * c, -halfHeight, _Radius * s);
         pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 1.0f) * _TexCoordScale);
-        pVerts[firstVertex + j].SetNormalNative(0, neg, 0);
+        pVerts[firstVertex + j].SetNormal(zero, neg, zero);
         angle += angleStep;
     }
     firstVertex += _NumSubdivs + 1;
@@ -2593,7 +2587,7 @@ void CreateCylinderMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned 
         Math::SinCos(angle, s, c);
         pVerts[firstVertex + j].Position = Float3(_Radius * c, halfHeight, _Radius * s);
         pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 0.0f) * _TexCoordScale);
-        pVerts[firstVertex + j].SetNormalNative(0, pos, 0);
+        pVerts[firstVertex + j].SetNormal(zero, pos, zero);
         angle += angleStep;
     }
     firstVertex += _NumSubdivs + 1;
@@ -2602,7 +2596,7 @@ void CreateCylinderMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned 
     {
         pVerts[firstVertex + j].Position = Float3(0.0f, halfHeight, 0.0f);
         pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 1.0f) * _TexCoordScale);
-        pVerts[firstVertex + j].SetNormalNative(0, pos, 0);
+        pVerts[firstVertex + j].SetNormal(zero, pos, zero);
     }
     firstVertex += _NumSubdivs + 1;
 
@@ -2633,7 +2627,7 @@ void CreateCylinderMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned 
     CalcTangentSpace(_Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size());
 }
 
-void CreateConeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs)
+void CreateConeMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs)
 {
     int          i, j;
     float        angle;
@@ -2656,7 +2650,8 @@ void CreateConeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>
     _Bounds.Maxs.Z = _Radius;
     _Bounds.Maxs.Y = halfHeight;
 
-    uint16_t neg = Math::FloatToHalf(-1.0f);
+    Half neg = -1.0f;
+    Half zero = 0.0f;
 
     SMeshVertex* pVerts = _Vertices.ToPtr();
 
@@ -2666,7 +2661,7 @@ void CreateConeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>
     {
         pVerts[firstVertex + j].Position = Float3(0, -halfHeight, 0);
         pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 0.0f) * _TexCoordScale);
-        pVerts[firstVertex + j].SetNormalNative(0, neg, 0);
+        pVerts[firstVertex + j].SetNormal(zero, neg, zero);
     }
     firstVertex += _NumSubdivs + 1;
 
@@ -2676,7 +2671,7 @@ void CreateConeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>
         Math::SinCos(angle, s, c);
         pVerts[firstVertex + j].Position = Float3(_Radius * c, -halfHeight, _Radius * s);
         pVerts[firstVertex + j].SetTexCoord(Float2(j * invSubdivs, 1.0f) * _TexCoordScale);
-        pVerts[firstVertex + j].SetNormalNative(0, neg, 0);
+        pVerts[firstVertex + j].SetNormal(zero, neg, zero);
         ;
         angle += angleStep;
     }
@@ -2742,7 +2737,7 @@ void CreateConeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>
     CalcTangentSpace(_Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size());
 }
 
-void CreateCapsuleMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
+void CreateCapsuleMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
 {
     int          x, y, tcY;
     float        verticalAngle, horizontalAngle;
@@ -2842,7 +2837,7 @@ void CreateCapsuleMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned i
     CalcTangentSpace(_Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size());
 }
 
-void CreateSkyboxMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, const Float3& _Size, float _TexCoordScale)
+void CreateSkyboxMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, const Float3& _Size, float _TexCoordScale)
 {
     constexpr unsigned int indices[6 * 6] =
         {
@@ -2875,115 +2870,115 @@ void CreateSkyboxMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned in
 
     SMeshVertex* pVerts = _Vertices.ToPtr();
 
-    uint16_t zero = 0;
-    uint16_t pos  = Math::FloatToHalf(1.0f);
-    uint16_t neg  = Math::FloatToHalf(-1.0f);
+    Half     zero = 0.0f;
+    Half     pos  = 1.0f;
+    Half     neg  = -1.0f;
 
     pVerts[0 + 8 * 0].Position = Float3(mins.X, mins.Y, maxs.Z); // 0
-    pVerts[0 + 8 * 0].SetNormalNative(zero, zero, neg);
+    pVerts[0 + 8 * 0].SetNormal(zero, zero, neg);
     pVerts[0 + 8 * 0].SetTexCoord(Float2(0, 1) * _TexCoordScale);
 
     pVerts[1 + 8 * 0].Position = Float3(maxs.X, mins.Y, maxs.Z); // 1
-    pVerts[1 + 8 * 0].SetNormalNative(zero, zero, neg);
+    pVerts[1 + 8 * 0].SetNormal(zero, zero, neg);
     pVerts[1 + 8 * 0].SetTexCoord(Float2(1, 1) * _TexCoordScale);
 
     pVerts[2 + 8 * 0].Position = Float3(maxs.X, maxs.Y, maxs.Z); // 2
-    pVerts[2 + 8 * 0].SetNormalNative(zero, zero, neg);
+    pVerts[2 + 8 * 0].SetNormal(zero, zero, neg);
     pVerts[2 + 8 * 0].SetTexCoord(Float2(1, 0) * _TexCoordScale);
 
     pVerts[3 + 8 * 0].Position = Float3(mins.X, maxs.Y, maxs.Z); // 3
-    pVerts[3 + 8 * 0].SetNormalNative(zero, zero, neg);
+    pVerts[3 + 8 * 0].SetNormal(zero, zero, neg);
     pVerts[3 + 8 * 0].SetTexCoord(Float2(0, 0) * _TexCoordScale);
 
 
     pVerts[4 + 8 * 0].Position = Float3(maxs.X, mins.Y, mins.Z); // 4
-    pVerts[4 + 8 * 0].SetNormalNative(zero, zero, pos);
+    pVerts[4 + 8 * 0].SetNormal(zero, zero, pos);
     pVerts[4 + 8 * 0].SetTexCoord(Float2(0, 1) * _TexCoordScale);
 
     pVerts[5 + 8 * 0].Position = Float3(mins.X, mins.Y, mins.Z); // 5
-    pVerts[5 + 8 * 0].SetNormalNative(zero, zero, pos);
+    pVerts[5 + 8 * 0].SetNormal(zero, zero, pos);
     pVerts[5 + 8 * 0].SetTexCoord(Float2(1, 1) * _TexCoordScale);
 
     pVerts[6 + 8 * 0].Position = Float3(mins.X, maxs.Y, mins.Z); // 6
-    pVerts[6 + 8 * 0].SetNormalNative(zero, zero, pos);
+    pVerts[6 + 8 * 0].SetNormal(zero, zero, pos);
     pVerts[6 + 8 * 0].SetTexCoord(Float2(1, 0) * _TexCoordScale);
 
     pVerts[7 + 8 * 0].Position = Float3(maxs.X, maxs.Y, mins.Z); // 7
-    pVerts[7 + 8 * 0].SetNormalNative(zero, zero, pos);
+    pVerts[7 + 8 * 0].SetNormal(zero, zero, pos);
     pVerts[7 + 8 * 0].SetTexCoord(Float2(0, 0) * _TexCoordScale);
 
 
     pVerts[0 + 8 * 1].Position = Float3(mins.X, mins.Y, maxs.Z); // 0
-    pVerts[0 + 8 * 1].SetNormalNative(pos, zero, zero);
+    pVerts[0 + 8 * 1].SetNormal(pos, zero, zero);
     pVerts[0 + 8 * 1].SetTexCoord(Float2(1, 1) * _TexCoordScale);
 
     pVerts[1 + 8 * 1].Position = Float3(maxs.X, mins.Y, maxs.Z); // 1
-    pVerts[1 + 8 * 1].SetNormalNative(neg, zero, zero);
+    pVerts[1 + 8 * 1].SetNormal(neg, zero, zero);
     pVerts[1 + 8 * 1].SetTexCoord(Float2(0, 1) * _TexCoordScale);
 
     pVerts[2 + 8 * 1].Position = Float3(maxs.X, maxs.Y, maxs.Z); // 2
-    pVerts[2 + 8 * 1].SetNormalNative(neg, zero, zero);
+    pVerts[2 + 8 * 1].SetNormal(neg, zero, zero);
     pVerts[2 + 8 * 1].SetTexCoord(Float2(0, 0) * _TexCoordScale);
 
     pVerts[3 + 8 * 1].Position = Float3(mins.X, maxs.Y, maxs.Z); // 3
-    pVerts[3 + 8 * 1].SetNormalNative(pos, zero, zero);
+    pVerts[3 + 8 * 1].SetNormal(pos, zero, zero);
     pVerts[3 + 8 * 1].SetTexCoord(Float2(1, 0) * _TexCoordScale);
 
 
     pVerts[4 + 8 * 1].Position = Float3(maxs.X, mins.Y, mins.Z); // 4
-    pVerts[4 + 8 * 1].SetNormalNative(neg, zero, zero);
+    pVerts[4 + 8 * 1].SetNormal(neg, zero, zero);
     pVerts[4 + 8 * 1].SetTexCoord(Float2(1, 1) * _TexCoordScale);
 
     pVerts[5 + 8 * 1].Position = Float3(mins.X, mins.Y, mins.Z); // 5
-    pVerts[5 + 8 * 1].SetNormalNative(pos, zero, zero);
+    pVerts[5 + 8 * 1].SetNormal(pos, zero, zero);
     pVerts[5 + 8 * 1].SetTexCoord(Float2(0, 1) * _TexCoordScale);
 
     pVerts[6 + 8 * 1].Position = Float3(mins.X, maxs.Y, mins.Z); // 6
-    pVerts[6 + 8 * 1].SetNormalNative(pos, zero, zero);
+    pVerts[6 + 8 * 1].SetNormal(pos, zero, zero);
     pVerts[6 + 8 * 1].SetTexCoord(Float2(0, 0) * _TexCoordScale);
 
     pVerts[7 + 8 * 1].Position = Float3(maxs.X, maxs.Y, mins.Z); // 7
-    pVerts[7 + 8 * 1].SetNormalNative(neg, zero, zero);
+    pVerts[7 + 8 * 1].SetNormal(neg, zero, zero);
     pVerts[7 + 8 * 1].SetTexCoord(Float2(1, 0) * _TexCoordScale);
 
 
     pVerts[1 + 8 * 2].Position = Float3(maxs.X, mins.Y, maxs.Z); // 1
-    pVerts[1 + 8 * 2].SetNormalNative(zero, pos, zero);
+    pVerts[1 + 8 * 2].SetNormal(zero, pos, zero);
     pVerts[1 + 8 * 2].SetTexCoord(Float2(1, 0) * _TexCoordScale);
 
     pVerts[0 + 8 * 2].Position = Float3(mins.X, mins.Y, maxs.Z); // 0
-    pVerts[0 + 8 * 2].SetNormalNative(zero, pos, zero);
+    pVerts[0 + 8 * 2].SetNormal(zero, pos, zero);
     pVerts[0 + 8 * 2].SetTexCoord(Float2(0, 0) * _TexCoordScale);
 
     pVerts[5 + 8 * 2].Position = Float3(mins.X, mins.Y, mins.Z); // 5
-    pVerts[5 + 8 * 2].SetNormalNative(zero, pos, zero);
+    pVerts[5 + 8 * 2].SetNormal(zero, pos, zero);
     pVerts[5 + 8 * 2].SetTexCoord(Float2(0, 1) * _TexCoordScale);
 
     pVerts[4 + 8 * 2].Position = Float3(maxs.X, mins.Y, mins.Z); // 4
-    pVerts[4 + 8 * 2].SetNormalNative(zero, pos, zero);
+    pVerts[4 + 8 * 2].SetNormal(zero, pos, zero);
     pVerts[4 + 8 * 2].SetTexCoord(Float2(1, 1) * _TexCoordScale);
 
 
     pVerts[3 + 8 * 2].Position = Float3(mins.X, maxs.Y, maxs.Z); // 3
-    pVerts[3 + 8 * 2].SetNormalNative(zero, neg, zero);
+    pVerts[3 + 8 * 2].SetNormal(zero, neg, zero);
     pVerts[3 + 8 * 2].SetTexCoord(Float2(0, 1) * _TexCoordScale);
 
     pVerts[2 + 8 * 2].Position = Float3(maxs.X, maxs.Y, maxs.Z); // 2
-    pVerts[2 + 8 * 2].SetNormalNative(zero, neg, zero);
+    pVerts[2 + 8 * 2].SetNormal(zero, neg, zero);
     pVerts[2 + 8 * 2].SetTexCoord(Float2(1, 1) * _TexCoordScale);
 
     pVerts[7 + 8 * 2].Position = Float3(maxs.X, maxs.Y, mins.Z); // 7
-    pVerts[7 + 8 * 2].SetNormalNative(zero, neg, zero);
+    pVerts[7 + 8 * 2].SetNormal(zero, neg, zero);
     pVerts[7 + 8 * 2].SetTexCoord(Float2(1, 0) * _TexCoordScale);
 
     pVerts[6 + 8 * 2].Position = Float3(mins.X, maxs.Y, mins.Z); // 6
-    pVerts[6 + 8 * 2].SetNormalNative(zero, neg, zero);
+    pVerts[6 + 8 * 2].SetNormal(zero, neg, zero);
     pVerts[6 + 8 * 2].SetTexCoord(Float2(0, 0) * _TexCoordScale);
 
     CalcTangentSpace(_Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size());
 }
 
-void CreateSkydomeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs, bool _Hemisphere)
+void CreateSkydomeMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs, bool _Hemisphere)
 {
     int          x, y;
     float        verticalAngle, horizontalAngle;
@@ -3178,7 +3173,7 @@ void ATreeAABB::InitializeTriangleSoup(TArrayView<SMeshVertex> _Vertices, TArray
     int numLeafs = (primCount + _PrimitivesPerLeaf - 1) / _PrimitivesPerLeaf;
 
     Nodes.Clear();
-    Nodes.ReserveInvalidate(numLeafs * 4);
+    Nodes.Reserve(numLeafs * 4);
 
     Indirection.ResizeInvalidate(primCount);
 
@@ -3238,7 +3233,7 @@ void ATreeAABB::InitializePrimitiveSoup(TArrayView<SPrimitiveDef> _Primitives, u
     int numLeafs      = (numPrimitives + _PrimitivesPerLeaf - 1) / _PrimitivesPerLeaf;
 
     Nodes.Clear();
-    Nodes.ReserveInvalidate(numLeafs * 4);
+    Nodes.Reserve(numLeafs * 4);
 
     Indirection.ResizeInvalidate(numPrimitives);
 
@@ -3357,15 +3352,15 @@ int ATreeAABB::MarkRayOverlappingLeafs(Float3 const& _RayStart, Float3 const& _R
 
 void ATreeAABB::Read(IBinaryStreamReadInterface& _Stream)
 {
-    _Stream.ReadArrayOfStructs(Nodes);
-    _Stream.ReadArrayUInt32(Indirection);
+    _Stream.ReadArray(Nodes);
+    _Stream.ReadArray(Indirection);
     _Stream.ReadObject(BoundingBox);
 }
 
 void ATreeAABB::Write(IBinaryStreamWriteInterface& _Stream) const
 {
-    _Stream.WriteArrayOfStructs(Nodes);
-    _Stream.WriteArrayUInt32(Indirection);
+    _Stream.WriteArray(Nodes);
+    _Stream.WriteArray(Indirection);
     _Stream.WriteObject(BoundingBox);
 }
 
@@ -3376,7 +3371,7 @@ void ATreeAABB::Subdivide(SAABBTreeBuild& _Build, int _Axis, int _FirstPrimitive
 
     SPrimitiveBounds* pPrimitives = _Build.Primitives[_Axis].ToPtr() + _FirstPrimitive;
 
-    SNodeAABB& node = Nodes.Append();
+    SNodeAABB& node = Nodes.Add();
 
     CalcNodeBounds(pPrimitives, primCount, node.Bounds);
 

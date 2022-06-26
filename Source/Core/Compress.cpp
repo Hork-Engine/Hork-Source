@@ -127,7 +127,7 @@ bool ZDecompress(byte const* pCompressedData, size_t CompressedSize, byte* pDest
     return true;
 }
 
-bool ZDecompressToHeap(byte const* pCompressedData, size_t CompressedSize, byte** pDest, size_t* pDestSize)
+bool ZDecompressToHeap(byte const* pCompressedData, size_t CompressedSize, byte** pDest, size_t* pDestSize, MemoryHeap& Heap)
 {
     *pDest     = NULL;
     *pDestSize = 0;
@@ -149,7 +149,7 @@ bool ZDecompressToHeap(byte const* pCompressedData, size_t CompressedSize, byte*
     unsigned char chunk[1024];
 
     size_t allocated = Align(CompressedSize << 2, 16);
-    byte*  data      = (byte*)GHeapMemory.Alloc(allocated, 16);
+    byte*  data      = (byte*)Heap.Alloc(allocated, 16);
     size_t size      = 0;
 
     do {
@@ -161,7 +161,7 @@ bool ZDecompressToHeap(byte const* pCompressedData, size_t CompressedSize, byte*
             if (stream.total_out > allocated)
             {
                 allocated <<= 1;
-                data = (byte*)GHeapMemory.Realloc(data, allocated, 16, true);
+                data = (byte*)Heap.Realloc(data, allocated, 16);
             }
             Platform::Memcpy(data + size, chunk, stream.total_out - size);
         }
@@ -172,7 +172,7 @@ bool ZDecompressToHeap(byte const* pCompressedData, size_t CompressedSize, byte*
 
     if (status != MZ_STREAM_END && status != MZ_OK)
     {
-        GHeapMemory.Free(data);
+        Heap.Free(data);
         return false;
     }
 

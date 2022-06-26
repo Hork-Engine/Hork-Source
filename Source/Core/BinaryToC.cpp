@@ -38,72 +38,72 @@ SOFTWARE.
 namespace Core
 {
 
-bool BinaryToC(const char* _SourceFile, const char* _DestFile, const char* _SymName, bool _EncodeBase85)
+bool BinaryToC(AStringView SourceFile, AStringView DestFile, AStringView SymName, bool bEncodeBase85)
 {
     AFileStream source, dest;
 
-    if (!source.OpenRead(_SourceFile))
+    if (!source.OpenRead(SourceFile))
     {
-        LOG("Failed to open {}\n", _SourceFile);
+        LOG("Failed to open {}\n", SourceFile);
         return false;
     }
 
-    if (!dest.OpenWrite(_DestFile))
+    if (!dest.OpenWrite(DestFile))
     {
-        LOG("Failed to open {}\n", _DestFile);
+        LOG("Failed to open {}\n", DestFile);
         return false;
     }
 
     size_t size = source.SizeInBytes();
-    byte*  data = (byte*)GHeapMemory.Alloc(size);
+    byte*  data = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(size);
     source.Read(data, size);
 
-    WriteBinaryToC(dest, _SymName, data, size, _EncodeBase85);
+    WriteBinaryToC(dest, SymName, data, size, bEncodeBase85);
 
-    GHeapMemory.Free(data);
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
 
     return true;
 }
 
-bool BinaryToCompressedC(const char* _SourceFile, const char* _DestFile, const char* _SymName, bool _EncodeBase85)
+bool BinaryToCompressedC(AStringView SourceFile, AStringView DestFile, AStringView SymName, bool bEncodeBase85)
 {
     AFileStream source, dest;
 
-    if (!source.OpenRead(_SourceFile))
+    if (!source.OpenRead(SourceFile))
     {
-        LOG("Failed to open {}\n", _SourceFile);
+        LOG("Failed to open {}\n", SourceFile);
         return false;
     }
 
-    if (!dest.OpenWrite(_DestFile))
+    if (!dest.OpenWrite(DestFile))
     {
-        LOG("Failed to open {}\n", _DestFile);
+        LOG("Failed to open {}\n", DestFile);
         return false;
     }
 
     size_t decompressedSize = source.SizeInBytes();
-    byte*  decompressedData = (byte*)GHeapMemory.Alloc(decompressedSize);
+    byte*  decompressedData = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(decompressedSize);
     source.Read(decompressedData, decompressedSize);
 
     size_t compressedSize = Core::ZMaxCompressedSize(decompressedSize);
-    byte*  compressedData = (byte*)GHeapMemory.Alloc(compressedSize);
+    byte*  compressedData = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(compressedSize);
     Core::ZCompress(compressedData, &compressedSize, (byte*)decompressedData, decompressedSize, ZLIB_COMPRESS_UBER_COMPRESSION);
 
-    WriteBinaryToC(dest, _SymName, compressedData, compressedSize, _EncodeBase85);
+    WriteBinaryToC(dest, SymName, compressedData, compressedSize, bEncodeBase85);
 
-    GHeapMemory.Free(compressedData);
-    GHeapMemory.Free(decompressedData);
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(compressedData);
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(decompressedData);
 
     return true;
 }
 
-void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, const char* _SymName, const void* pData, size_t SizeInBytes, bool bEncodeBase85)
+void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, AStringView SymName, const void* pData, size_t SizeInBytes, bool bEncodeBase85)
 {
     const byte* bytes = (const byte*)pData;
 
     if (bEncodeBase85)
     {
-        Stream.FormattedPrint(HK_FMT("static const char {}_Data_Base85[{}+1] =\n    \""), _SymName, (int)((SizeInBytes + 3) / 4) * 5);
+        Stream.FormattedPrint(HK_FMT("static const char {}_Data_Base85[{}+1] =\n    \""), SymName, (int)((SizeInBytes + 3) / 4) * 5);
         char prev_c = 0;
         for (size_t i = 0; i < SizeInBytes; i += 4)
         {
@@ -125,8 +125,8 @@ void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, const char* _SymName, c
     }
     else
     {
-        Stream.FormattedPrint(HK_FMT("static const size_t {}_Size = {};\n"), _SymName, (int)SizeInBytes);
-        Stream.FormattedPrint(HK_FMT("static const uint64_t {}_Data[{}] =\n{{"), _SymName, Align(SizeInBytes, 8));
+        Stream.FormattedPrint(HK_FMT("static const size_t {}_Size = {};\n"), SymName, (int)SizeInBytes);
+        Stream.FormattedPrint(HK_FMT("static const uint64_t {}_Data[{}] =\n{{"), SymName, Align(SizeInBytes, 8));
         int column = 0;
         for (size_t i = 0; i < SizeInBytes; i += 8)
         {

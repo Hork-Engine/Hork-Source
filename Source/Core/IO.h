@@ -79,13 +79,10 @@ public:
     bool ExtractFileToMemory(int FileIndex, void* pMemoryBuffer, size_t SizeInBytes) const;
 
     /** Decompress file to heap memory */
-    bool ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes) const;
+    bool ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const;
 
     /** Decompress file to heap memory */
-    bool ExtractFileToHeapMemory(int FileIndex, void** pHeapMemoryPtr, size_t* pSizeInBytes) const;
-
-    /** Decompress file to hunk memory */
-    bool ExtractFileToHunkMemory(AStringView FileName, void** pHunkMemoryPtr, size_t* pSizeInBytes, int* pHunkMark) const;
+    bool ExtractFileToHeapMemory(int FileIndex, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const;
 
 private:
     void* Handle{};
@@ -309,7 +306,7 @@ namespace Core
 {
 
 /** Make file system directory */
-void MakeDir(AStringView Directory, bool bFileName);
+void CreateDirectory(AStringView Directory, bool bFileName);
 
 /** Check is file exists */
 bool IsFileExists(AStringView FileName);

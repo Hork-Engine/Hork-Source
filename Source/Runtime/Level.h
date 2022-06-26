@@ -107,7 +107,7 @@ public:
     void* LightData = nullptr;
 
     /** Static lightmaps (experimental). Indexed by lightmap block. */
-    TStdVector<TRef<RenderCore::ITexture>> Lightmaps;
+    TVector<TRef<RenderCore::ITexture>> Lightmaps;
 
     TRef<RenderCore::IBuffer> ShadowCasterVB;
     TRef<RenderCore::IBuffer> ShadowCasterIB;
@@ -119,8 +119,8 @@ public:
 
     /** Light portals */
     TPodVector<SLightPortalDef>  LightPortals;
-    TPodVectorHeap<Float3>       LightPortalVertexBuffer;
-    TPodVectorHeap<unsigned int> LightPortalIndexBuffer;
+    TVector<Float3>       LightPortalVertexBuffer;
+    TVector<unsigned int> LightPortalIndexBuffer;
 };
 
 constexpr int MAX_AMBIENT_SOUNDS_IN_AREA = 4;
@@ -139,7 +139,7 @@ struct SLevelAudioCreateInfo
     SAudioArea* AudioAreas;
     int NumAudioAreas;
 
-    TStdVector<TRef<ASoundResource>> AmbientSounds;
+    TVector<TRef<ASoundResource>> AmbientSounds;
 };
 
 class ALevelAudio : public ARefCounted
@@ -151,7 +151,7 @@ public:
     TPodVector<SAudioArea> AudioAreas;
 
     /** Ambient sounds */
-    TStdVector<TRef<ASoundResource>> AmbientSounds;
+    TVector<TRef<ASoundResource>> AmbientSounds;
 };
 
 

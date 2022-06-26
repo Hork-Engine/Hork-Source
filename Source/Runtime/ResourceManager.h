@@ -33,9 +33,6 @@ SOFTWARE.
 #include "Resource.h"
 #include "Engine.h"
 
-#include <Core/CompileTimeString.h>
-#include <Core/Guid.h>
-
 class AResourceManager
 {
 public:
@@ -49,42 +46,42 @@ public:
 
     /** Get or create resource. Return default object if fails. */
     template <typename T>
-    HK_FORCEINLINE T* GetOrCreateResource(const char* _Path)
+    HK_FORCEINLINE T* GetOrCreateResource(AStringView _Path)
     {
         return static_cast<T*>(GetOrCreateResource(T::ClassMeta(), _Path));
     }
 
     /** Get resource. Return default object if fails. */
     template <typename T>
-    HK_FORCEINLINE T* GetResource(const char* _Alias, bool* _bResourceFoundResult = nullptr, bool* _bMetadataMismatch = nullptr)
+    HK_FORCEINLINE T* GetResource(AStringView _Alias, bool* _bResourceFoundResult = nullptr, bool* _bMetadataMismatch = nullptr)
     {
         return static_cast<T*>(GetResource(T::ClassMeta(), _Alias, _bResourceFoundResult, _bMetadataMismatch));
     }
 
     /** Get or create resource. Return default object if fails. */
-    AResource* GetOrCreateResource(AClassMeta const& _ClassMeta, const char* _Path);
+    AResource* GetOrCreateResource(AClassMeta const& _ClassMeta, AStringView _Path);
 
     /** Get resource. Return default object if fails. */
-    AResource* GetResource(AClassMeta const& _ClassMeta, const char* _Alias, bool* _bResourceFoundResult = nullptr, bool* _bMetadataMismatch = nullptr);
+    AResource* GetResource(AClassMeta const& _ClassMeta, AStringView _Alias, bool* _bResourceFoundResult = nullptr, bool* _bMetadataMismatch = nullptr);
 
     /** Get resource meta. Return null if fails. */
-    AClassMeta const* GetResourceInfo(const char* _Alias);
+    AClassMeta const* GetResourceInfo(AStringView _Alias);
 
     /** Find resource in cache. Return null if fails. */
     template <typename T>
-    T* FindResource(const char* _Alias, bool& _bMetadataMismatch, int& _Hash)
+    T* FindResource(AStringView _Alias, bool& _bMetadataMismatch)
     {
-        return static_cast<T*>(FindResource(T::ClassMeta(), _Alias, _bMetadataMismatch, _Hash));
+        return static_cast<T*>(FindResource(T::ClassMeta(), _Alias, _bMetadataMismatch));
     }
 
     /** Find resource in cache. Return null if fails. */
-    AResource* FindResource(AClassMeta const& _ClassMeta, const char* _Alias, bool& _bMetadataMismatch, int& _Hash);
+    AResource* FindResource(AClassMeta const& _ClassMeta, AStringView _Alias, bool& _bMetadataMismatch);
 
     /** Find resource in cache. Return null if fails. */
-    AResource* FindResourceByAlias(const char* _Alias);
+    AResource* FindResourceByAlias(AStringView _Alias);
 
     /** Register object as resource. */
-    bool RegisterResource(AResource* _Resource, const char* _Alias);
+    bool RegisterResource(AResource* _Resource, AStringView _Alias);
 
     /** Unregister object as resource. */
     bool UnregisterResource(AResource* _Resource);
@@ -105,10 +102,9 @@ public:
     AArchive const* GetCommonResources() const { return CommonResources.GetObject(); }
 
 private:
-    TPodVector<AResource*>           ResourceCache;
-    THash<>                          ResourceHash;
-    TStdVector<TUniqueRef<AArchive>> ResourcePacks;
-    TUniqueRef<AArchive>             CommonResources;
+    TNameHash<AResource*>         ResourceCache;
+    TVector<TUniqueRef<AArchive>> ResourcePacks;
+    TUniqueRef<AArchive>          CommonResources;
 };
 
 
@@ -120,45 +116,45 @@ Helpers
 
 /** Get or create resource. Return default object if fails. */
 template <typename T>
-HK_FORCEINLINE T* GetOrCreateResource(const char* _Path)
+HK_FORCEINLINE T* GetOrCreateResource(AStringView _Path)
 {
     return GEngine->GetResourceManager()->GetOrCreateResource<T>(_Path);
 }
 
 /** Get resource. Return default object if fails. */
 template <typename T>
-HK_FORCEINLINE T* GetResource(const char* _Alias, bool* _bResourceFoundResult = nullptr, bool* _bMetadataMismatch = nullptr)
+HK_FORCEINLINE T* GetResource(AStringView _Alias, bool* _bResourceFoundResult = nullptr, bool* _bMetadataMismatch = nullptr)
 {
     return GEngine->GetResourceManager()->GetResource<T>(_Alias, _bResourceFoundResult, _bMetadataMismatch);
 }
 
 /** Get resource meta. Return null if fails. */
-HK_FORCEINLINE AClassMeta const* GetResourceInfo(const char* _Alias)
+HK_FORCEINLINE AClassMeta const* GetResourceInfo(AStringView _Alias)
 {
     return GEngine->GetResourceManager()->GetResourceInfo(_Alias);
 }
 
 /** Find resource in cache. Return null if fails. */
-HK_FORCEINLINE AResource* FindResource(AClassMeta const& _ClassMeta, const char* _Alias, bool& _bMetadataMismatch, int& _Hash)
+HK_FORCEINLINE AResource* FindResource(AClassMeta const& _ClassMeta, AStringView _Alias, bool& _bMetadataMismatch)
 {
-    return GEngine->GetResourceManager()->FindResource(_ClassMeta, _Alias, _bMetadataMismatch, _Hash);
+    return GEngine->GetResourceManager()->FindResource(_ClassMeta, _Alias, _bMetadataMismatch);
 }
 
 /** Find resource in cache. Return null if fails. */
 template <typename T>
-HK_FORCEINLINE T* FindResource(const char* _Alias, bool& _bMetadataMismatch, int& _Hash)
+HK_FORCEINLINE T* FindResource(AStringView _Alias, bool& _bMetadataMismatch)
 {
-    return static_cast<T*>(FindResource(T::ClassMeta(), _Alias, _bMetadataMismatch, _Hash));
+    return static_cast<T*>(FindResource(T::ClassMeta(), _Alias, _bMetadataMismatch));
 }
 
 /** Find resource in cache. Return null if fails. */
-HK_FORCEINLINE AResource* FindResourceByAlias(const char* _Alias)
+HK_FORCEINLINE AResource* FindResourceByAlias(AStringView _Alias)
 {
     return GEngine->GetResourceManager()->FindResourceByAlias(_Alias);
 }
 
 /** Register object as resource. */
-HK_FORCEINLINE bool RegisterResource(AResource* _Resource, const char* _Alias)
+HK_FORCEINLINE bool RegisterResource(AResource* _Resource, AStringView _Alias)
 {
     return GEngine->GetResourceManager()->RegisterResource(_Resource, _Alias);
 }
@@ -187,23 +183,15 @@ HK_FORCEINLINE void UnregisterResources()
 Static resource finder
 
 Usage:
-static TStaticResourceFinder< AIndexedMesh > Resource( _CTS( "/Root/Meshes/MyMesh.asset" ) );
+static TStaticResourceFinder< AIndexedMesh > Resource("/Root/Meshes/MyMesh.asset"s);
 AIndexedMesh * mesh = Resource.GetObject();
 
 */
 template <typename T>
 struct TStaticResourceFinder
 {
-
-    template <char... Chars>
-    TStaticResourceFinder(TCompileTimeString<Chars...> const& _Path) :
-        ResourcePath(_Path.CStr())
-    {
-        Object = GetOrCreateResource<T>(ResourcePath);
-    }
-
-    TStaticResourceFinder(const char* _Alias) :
-        ResourcePath(_Alias)
+    TStaticResourceFinder(AGlobalStringView _Path) :
+        ResourcePath(_Path)
     {
         Object = GetOrCreateResource<T>(ResourcePath);
     }
@@ -218,6 +206,6 @@ struct TStaticResourceFinder
     }
 
 private:
-    const char* ResourcePath;
+    AStringView ResourcePath;
     TWeakRef<T> Object;
 };

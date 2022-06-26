@@ -214,12 +214,12 @@ public:
     {
         if (pTokenMemory)
         {
-            GZoneMemory.Free(pTokenMemory);
+            Platform::GetHeapAllocator<HEAP_STRING>().Free(pTokenMemory);
         }
 
         int len = Platform::Strlen(Str);
 
-        pTokenMemory = GZoneMemory.Alloc(len + 1);
+        pTokenMemory = Platform::GetHeapAllocator<HEAP_STRING>().Alloc(len + 1);
         Platform::Memcpy(pTokenMemory, Str, len + 1);
 
         StrBegin = (const char*)pTokenMemory;
@@ -312,7 +312,7 @@ public:
             return AString(Values->StrBegin, Values->StrEnd);
         }
 
-        return AString::NullString();
+        return {};
     }
 
     /** Is string member */

@@ -73,11 +73,11 @@ void ASkeleton::Initialize(SJoint* _Joints, int _JointsCount, BvAxisAlignedBox c
     BindposeBounds = _BindposeBounds;
 }
 
-void ASkeleton::LoadInternalResource(const char* _Path)
+void ASkeleton::LoadInternalResource(AStringView _Path)
 {
     Purge();
 
-    if (!Platform::Stricmp(_Path, "/Default/Skeleton/Default"))
+    if (!_Path.Icmp("/Default/Skeleton/Default"))
     {
         Initialize(nullptr, 0, BvAxisAlignedBox::Empty());
         return;
@@ -111,7 +111,7 @@ bool ASkeleton::LoadResource(IBinaryStreamReadInterface& Stream)
     AString guid;
 
     Stream.ReadObject(guid);
-    Stream.ReadArrayOfStructs(Joints);
+    Stream.ReadArray(Joints);
     Stream.ReadObject(BindposeBounds);
 
     return true;

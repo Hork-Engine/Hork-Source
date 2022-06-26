@@ -37,7 +37,7 @@ SOFTWARE.
 
 constexpr float DEFAULT_RADIUS = 1.0f;
 
-AConsoleVar com_DrawEnvironmentProbes(_CTS("com_DrawEnvironmentProbes"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawEnvironmentProbes("com_DrawEnvironmentProbes"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(AEnvironmentProbe)
 

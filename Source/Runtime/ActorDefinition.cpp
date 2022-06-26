@@ -32,8 +32,6 @@ SOFTWARE.
 #include "Actor.h"
 #include "SceneComponent.h"
 
-#include <Containers/StdHash.h>
-
 HK_CLASS_META(AActorDefinition)
 
 AActorDefinition::AActorDefinition()
@@ -42,8 +40,8 @@ AActorDefinition::AActorDefinition()
 
 void AActorDefinition::InitializeFromDocument(ADocument const& Document)
 {
-    TStdHashMap<uint64_t, int> componentIdMap;
-    TStdHashSet<AString> publicPropertyNames;
+    THashMap<uint64_t, int> componentIdMap;
+    THashSet<AString> publicPropertyNames;
 
     auto* mActorClassName = Document.FindMember("classname");
     if (mActorClassName)
@@ -87,12 +85,12 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             componentDef.Name    = mComponentName ? mComponentName->GetString() : AString("Unnamed");
 
             auto* mComponentId = mComponent->FindMember("id");
-            componentDef.Id    = mComponentId ? Math::ToInt<uint64_t>(mComponentId->GetString()) : 0;
+            componentDef.Id    = mComponentId ? Core::ParseUInt64(mComponentId->GetString()) : 0;
 
             if (classMeta->IsSubclassOf<ASceneComponent>())
             {
                 auto* mComponentAttach = mComponent->FindMember("attach");
-                componentDef.Attach    = mComponentAttach ? Math::ToInt<uint64_t>(mComponentAttach->GetString()) : 0;
+                componentDef.Attach    = mComponentAttach ? Core::ParseUInt64(mComponentAttach->GetString()) : 0;
             }
             else
             {
@@ -110,7 +108,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                         auto* mPropertyValue = mProperty->GetArrayValues();
                         if (mPropertyValue)
                         {
-                            componentDef.PropertyHash.Insert(mProperty->GetName(), mPropertyValue->GetString());
+                            componentDef.PropertyHash[mProperty->GetName()] = mPropertyValue->GetString();
                         }
                     }
                 }
@@ -118,25 +116,25 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
 
             if (componentDef.Id)
             {
-                if (componentIdMap.count(componentDef.Id) != 0)
+                if (componentIdMap.Count(componentDef.Id) != 0)
                 {
                     LOG("WARNING: Found components with same id\n");
                 }
                 componentIdMap[componentDef.Id] = Components.Size();
             }
 
-            Components.push_back(std::move(componentDef));
+            Components.Add(std::move(componentDef));
         }
     }
 
     auto* mRoot = Document.FindMember("root");
     if (mRoot)
     {
-        uint64_t rootId = Math::ToInt<uint64_t>(mRoot->GetString());
+        uint64_t rootId = Core::ParseUInt64(mRoot->GetString());
         if (rootId)
         {
-            auto it = componentIdMap.find(rootId);
-            if (it != componentIdMap.end())
+            auto it = componentIdMap.Find(rootId);
+            if (it != componentIdMap.End())
             {
                 int            index        = it->second;
                 SComponentDef& componentDef = Components[index];
@@ -160,8 +158,8 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
     {
         if (componentDef.Attach)
         {
-            auto it = componentIdMap.find(componentDef.Attach);
-            if (it != componentIdMap.end())
+            auto it = componentIdMap.Find(componentDef.Attach);
+            if (it != componentIdMap.End())
             {
                 int index = it->second;
 
@@ -190,7 +188,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                 auto* mPropertyValue = mProperty->GetArrayValues();
                 if (mPropertyValue)
                 {
-                    ActorPropertyHash.Insert(mProperty->GetName(), mPropertyValue->GetString());
+                    ActorPropertyHash[mProperty->GetName()] = mPropertyValue->GetString();
                 }
             }
         }
@@ -220,7 +218,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             if (publicName.IsEmpty())
                 continue;
 
-            if (publicPropertyNames.count(publicName))
+            if (publicPropertyNames.Count(publicName))
             {
                 LOG("WARNING: Unique public names expected\n");
                 continue;
@@ -231,24 +229,24 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             auto* mComponentId = mPublicProperty->FindMember("component_id");
             if (mComponentId)
             {
-                uint64_t componentId = Math::ToInt<uint64_t>(mComponentId->GetString());
+                uint64_t componentId = Core::ParseUInt64(mComponentId->GetString());
                 if (!componentId)
                     continue;
 
-                auto it = componentIdMap.find(componentId);
-                if (it == componentIdMap.end())
+                auto it = componentIdMap.Find(componentId);
+                if (it == componentIdMap.End())
                     continue;
 
                 componentIndex = it->second;
             }            
 
-            publicPropertyNames.insert(publicName);
+            publicPropertyNames.Insert(publicName);
 
             SPublicProperty publicProperty;
             publicProperty.ComponentIndex = componentIndex;
             publicProperty.PropertyName   = std::move(propertyName);
             publicProperty.PublicName     = std::move(publicName);
-            PublicProperties.push_back(std::move(publicProperty));
+            PublicProperties.Add(std::move(publicProperty));
         }
     }
 
@@ -260,7 +258,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
         {
             auto* mModule = mScriptObj->FindMember("module");
 
-            ScriptModule = mModule ? mModule->GetString() : AString::NullString();
+            ScriptModule = mModule ? mModule->GetString() : "";
 
             mProperties = mScriptObj->FindMember("properties");
             if (mProperties)
@@ -273,7 +271,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                         auto* mPropertyValue = mProperty->GetArrayValues();
                         if (mPropertyValue)
                         {
-                            ScriptPropertyHash.Insert(mProperty->GetName(), mPropertyValue->GetString());
+                            ScriptPropertyHash[mProperty->GetName()] = mPropertyValue->GetString();
                         }
                     }
                 }
@@ -303,18 +301,18 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                     if (publicName.IsEmpty())
                         continue;
 
-                    if (publicPropertyNames.count(publicName))
+                    if (publicPropertyNames.Count(publicName))
                     {
                         LOG("WARNING: Unique public names expected\n");
                         continue;
                     }
 
-                    publicPropertyNames.insert(publicName);
+                    publicPropertyNames.Insert(publicName);
 
                     SScriptPublicProperty publicProperty;
                     publicProperty.PropertyName = std::move(propertyName);
                     publicProperty.PublicName   = std::move(publicName);
-                    ScriptPublicProperties.push_back(std::move(publicProperty));
+                    ScriptPublicProperties.Add(std::move(publicProperty));
                 }
             }
         }
@@ -338,7 +336,7 @@ bool AActorDefinition::LoadResource(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-void AActorDefinition::LoadInternalResource(const char* _Path)
+void AActorDefinition::LoadInternalResource(AStringView _Path)
 {
     // Empty resource
 }

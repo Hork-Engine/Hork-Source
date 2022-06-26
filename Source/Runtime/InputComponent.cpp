@@ -36,12 +36,12 @@ SOFTWARE.
 #include <Core/HashFunc.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 
-AConsoleVar in_MouseSensitivity(_CTS("in_MouseSensitivity"), _CTS("6.8"));
-AConsoleVar in_MouseSensX(_CTS("in_MouseSensX"), _CTS("0.022"));
-AConsoleVar in_MouseSensY(_CTS("in_MouseSensY"), _CTS("0.022"));
-AConsoleVar in_MouseFilter(_CTS("in_MouseFilter"), _CTS("1"));
-AConsoleVar in_MouseInvertY(_CTS("in_MouseInvertY"), _CTS("0"));
-AConsoleVar in_MouseAccel(_CTS("in_MouseAccel"), _CTS("0"));
+AConsoleVar in_MouseSensitivity("in_MouseSensitivity"s, "6.8"s);
+AConsoleVar in_MouseSensX("in_MouseSensX"s, "0.022"s);
+AConsoleVar in_MouseSensY("in_MouseSensY"s, "0.022"s);
+AConsoleVar in_MouseFilter("in_MouseFilter"s, "1"s);
+AConsoleVar in_MouseInvertY("in_MouseInvertY"s, "0"s);
+AConsoleVar in_MouseAccel("in_MouseAccel"s, "0"s);
 
 HK_CLASS_META(AInputMappings)
 
@@ -336,12 +336,12 @@ struct AInputComponentStatic
         InitJoyAxis(JOY_AXIS_31, "Joy Axis 31");
         InitJoyAxis(JOY_AXIS_32, "Joy Axis 32");
 
-        InitModifier(KMOD_SHIFT);
-        InitModifier(KMOD_CONTROL);
-        InitModifier(KMOD_ALT);
-        InitModifier(KMOD_SUPER);
-        InitModifier(KMOD_CAPS_LOCK);
-        InitModifier(KMOD_NUM_LOCK);
+        InitModifier(KEY_MOD_SHIFT);
+        InitModifier(KEY_MOD_CONTROL);
+        InitModifier(KEY_MOD_ALT);
+        InitModifier(KEY_MOD_SUPER);
+        InitModifier(KEY_MOD_CAPS_LOCK);
+        InitModifier(KEY_MOD_NUM_LOCK);
 
         InitController(CONTROLLER_PLAYER_1);
         InitController(CONTROLLER_PLAYER_2);
@@ -397,7 +397,7 @@ const char* AInputHelper::TranslateDevice(uint16_t DeviceId)
 
 const char* AInputHelper::TranslateModifier(int Modifier)
 {
-    if (Modifier < 0 || Modifier > KMOD_LAST)
+    if (Modifier < 0 || Modifier > KEY_MOD_LAST)
     {
         return "UNKNOWN";
     }
@@ -595,16 +595,18 @@ void AInputComponent::UpdateAxes(float TimeStep)
 
     bool bPaused = GetWorld()->IsPaused();
 
-    for (SAxisBinding& binding : AxisBindings)
+    for (auto& it : AxisBindingsHash)
     {
-        binding.AxisScale = 0.0f;
+        it.second.AxisScale = 0.0f;
     }
 
     for (SPressedKey* key = PressedKeys.ToPtr(); key < &PressedKeys[NumPressedKeys]; key++)
     {
-        if (key->HasAxis())
+        if (key->BindingType == EBindingType::Axis)
         {
-            AxisBindings[key->AxisBinding].AxisScale += key->AxisScale * TimeStep;
+            auto it = AxisBindingsHash.Find(key->Binding);
+            if (it != AxisBindingsHash.End())
+                it->second.AxisScale += key->AxisScale * TimeStep;
         }
     }
 
@@ -634,20 +636,23 @@ void AInputComponent::UpdateAxes(float TimeStep)
 
     int bindingVersion = BindingVersion;
 
-    for (SAxisBinding& binding : AxisBindings)
+    //for (SAxisBinding& binding : AxisBindings)
+    for (auto& it : AxisBindingsHash)
     {
+        SAxisBinding& binding = it.second;
+
         if (bPaused && !binding.bExecuteEvenWhenPaused)
         {
             continue;
         }
 
-        auto it = lockedMappings->GetAxisMappings().find(binding.Name);
-        if (it == lockedMappings->GetAxisMappings().end())
+        auto mappingIt = lockedMappings->GetAxisMappings().Find(it.first);
+        if (mappingIt == lockedMappings->GetAxisMappings().End())
         {
             continue;
         }
 
-        auto const& axisMappings = it->second;
+        auto const& axisMappings = mappingIt->second;
         for (auto const& mapping : axisMappings)
         {
             if (mapping.ControllerId != ControllerId)
@@ -725,6 +730,8 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
 
     int8_t* ButtonIndex = DeviceButtonDown[DeviceKey.DeviceId];
 
+    TCallback<void()> callback;
+
     if (Action == IA_PRESS)
     {
         if (ButtonIndex[DeviceKey.KeyId] == -1)
@@ -734,15 +741,13 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
                 SPressedKey& pressedKey  = PressedKeys[NumPressedKeys];
                 pressedKey.DeviceId      = DeviceKey.DeviceId;
                 pressedKey.Key           = DeviceKey.KeyId;
-                pressedKey.AxisBinding   = -1;
-                pressedKey.ActionBinding = -1;
-                pressedKey.AxisScale     = 0;
+                pressedKey.Unbind();
 
                 if (InputMappings)
                 {
-                    auto it = InputMappings->GetMappings().find(DeviceKey);
+                    auto it = InputMappings->GetMappings().Find(DeviceKey);
 
-                    if (it != InputMappings->GetMappings().end())
+                    if (it != InputMappings->GetMappings().End())
                     {
                         auto const& mappings = it->second;
 
@@ -765,7 +770,7 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
                                 continue;
                             }
 
-                            pressedKey.ActionBinding = GetActionBinding(mapping);
+                            pressedKey.BindAction(mapping.Name);
                             bUseActionMapping        = true;
                             break;
                         }
@@ -789,15 +794,15 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
                                     continue;
                                 }
 
-                                pressedKey.ActionBinding = GetActionBinding(mapping);
+                                pressedKey.BindAction(mapping.Name);
                                 bUseActionMapping        = true;
                                 break;
                             }
                         }
 
+                        // Find axis mapping
                         if (!bUseActionMapping)
                         {
-                            // Find axis mapping
                             for (AInputMappings::SMapping const& mapping : mappings)
                             {
                                 if (mapping.ControllerId != ControllerId)
@@ -809,8 +814,7 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
                                     continue;
                                 }
 
-                                pressedKey.AxisScale   = mapping.AxisScale;
-                                pressedKey.AxisBinding = GetAxisBinding(mapping);
+                                pressedKey.BindAxis(mapping.Name, mapping.AxisScale);
                                 break;
                             }
                         }
@@ -821,17 +825,20 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
 
                 NumPressedKeys++;
 
-                if (pressedKey.ActionBinding != -1)
+                if (pressedKey.BindingType == EBindingType::Action)
                 {
-                    SActionBinding& binding = ActionBindings[pressedKey.ActionBinding];
-
-                    if (GetWorld()->IsPaused() && !binding.bExecuteEvenWhenPaused)
+                    auto it = ActionBindingsHash.Find(pressedKey.Binding);
+                    if (it != ActionBindingsHash.End())
                     {
-                        pressedKey.ActionBinding = -1;
-                    }
-                    else
-                    {
-                        binding.Callback[IA_PRESS]();
+                        SActionBinding& binding = it->second;
+                        if (GetWorld()->IsPaused() && !binding.bExecuteEvenWhenPaused)
+                        {
+                            pressedKey.Unbind();
+                        }
+                        else
+                        {
+                            callback = binding.Callback[IA_PRESS];
+                        }
                     }
                 }
             }
@@ -852,10 +859,18 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
         if (ButtonIndex[DeviceKey.KeyId] != -1)
         {
             int index = ButtonIndex[DeviceKey.KeyId];
+            SPressedKey& pressedKey = PressedKeys[index];
 
-            int actionBinding = PressedKeys[index].ActionBinding;
+            if (pressedKey.BindingType == EBindingType::Action)
+            {
+                auto it = ActionBindingsHash.Find(pressedKey.Binding);
+                if (it != ActionBindingsHash.End())
+                {
+                    callback = it->second.Callback[IA_RELEASE];
+                }
+            }
 
-            DeviceButtonDown[PressedKeys[index].DeviceId][PressedKeys[index].Key] = -1;
+            DeviceButtonDown[pressedKey.DeviceId][pressedKey.Key] = -1;
 
             if (index != NumPressedKeys - 1)
             {
@@ -869,13 +884,10 @@ void AInputComponent::SetButtonState(SInputDeviceKey const& DeviceKey, int Actio
             // Pop back
             NumPressedKeys--;
             HK_ASSERT(NumPressedKeys >= 0);
-
-            if (actionBinding != -1)
-            {
-                ActionBindings[actionBinding].Callback[IA_RELEASE]();
-            }
         }
     }
+
+    callback();
 }
 
 bool AInputComponent::GetButtonState(SInputDeviceKey const& DeviceKey) const
@@ -927,7 +939,7 @@ bool AInputComponent::IsJoyDown(int JoystickId, uint16_t Button) const
     return GetButtonState({uint16_t(ID_JOYSTICK_1 + JoystickId), Button});
 }
 
-void AInputComponent::NotifyUnicodeCharacter(SWideChar UnicodeCharacter, int ModMask, double TimeStamp)
+void AInputComponent::NotifyUnicodeCharacter(WideChar UnicodeCharacter, int ModMask, double TimeStamp)
 {
     if (bIgnoreCharEvents)
     {
@@ -1000,58 +1012,32 @@ float AInputComponent::GetJoystickAxisState(int Joystick, int Axis)
 
 void AInputComponent::BindAxis(AStringView Axis, TCallback<void(float)> const& Callback, bool bExecuteEvenWhenPaused)
 {
-    int hash = Axis.HashCase();
+    SAxisBinding& binding = AxisBindingsHash[Axis];
 
-    for (int i = AxisBindingsHash.First(hash); i != -1; i = AxisBindingsHash.Next(i))
-    {
-        if (!AxisBindings[i].Name.Icmp(Axis))
-        {
-            AxisBindings[i].Callback = Callback;
-            return;
-        }
-    }
-
-    if (AxisBindings.size() >= MAX_AXIS_BINDINGS)
-    {
-        LOG("MAX_AXIS_BINDINGS hit\n");
-        return;
-    }
-
-    AxisBindingsHash.Insert(hash, AxisBindings.size());
-    SAxisBinding binding;
-    binding.Name                   = Axis;
     binding.Callback               = Callback;
     binding.AxisScale              = 0.0f;
     binding.bExecuteEvenWhenPaused = bExecuteEvenWhenPaused;
-    AxisBindings.Append(binding);
 
     BindingVersion++;
 }
 
 void AInputComponent::UnbindAxis(AStringView Axis)
 {
-    int hash = Axis.HashCase();
+    auto it = AxisBindingsHash.Find(Axis);
+    if (it == AxisBindingsHash.End())
+        return;
 
-    for (int i = AxisBindingsHash.First(hash); i != -1; i = AxisBindingsHash.Next(i))
+    for (SPressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
     {
-        if (!AxisBindings[i].Name.Icmp(Axis))
+        if (pressedKey->BindingType == EBindingType::Axis && !pressedKey->Binding.Icmp(Axis))
         {
-            AxisBindingsHash.RemoveIndex(hash, i);
-            auto it = AxisBindings.begin() + i;
-            AxisBindings.erase(it);
-            BindingVersion++;
-
-            for (SPressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
-            {
-                if (pressedKey->AxisBinding == i)
-                {
-                    pressedKey->AxisBinding = -1;
-                }
-            }
-
-            return;
+            pressedKey->Unbind();
         }
     }
+
+    AxisBindingsHash.Erase(it);
+
+    BindingVersion++;
 }
 
 void AInputComponent::BindAction(AStringView Action, int Event, TCallback<void()> const& Callback, bool bExecuteEvenWhenPaused)
@@ -1062,54 +1048,27 @@ void AInputComponent::BindAction(AStringView Action, int Event, TCallback<void()
         return;
     }
 
-    int hash = Action.HashCase();
+    SActionBinding& binding = ActionBindingsHash[Action];
 
-    for (int i = ActionBindingsHash.First(hash); i != -1; i = ActionBindingsHash.Next(i))
-    {
-        if (!ActionBindings[i].Name.Icmp(Action))
-        {
-            ActionBindings[i].Callback[Event] = Callback;
-            return;
-        }
-    }
-
-    if (ActionBindings.size() >= MAX_ACTION_BINDINGS)
-    {
-        LOG("MAX_ACTION_BINDINGS hit\n");
-        return;
-    }
-
-    ActionBindingsHash.Insert(hash, ActionBindings.size());
-    SActionBinding binding;
-    binding.Name                   = Action;
     binding.Callback[Event]        = Callback;
     binding.bExecuteEvenWhenPaused = bExecuteEvenWhenPaused;
-    ActionBindings.Append(binding);
 }
 
 void AInputComponent::UnbindAction(AStringView Action)
 {
-    int hash = Action.HashCase();
+    auto it = ActionBindingsHash.Find(Action);
+    if (it == ActionBindingsHash.End())
+        return;
 
-    for (int i = ActionBindingsHash.First(hash); i != -1; i = ActionBindingsHash.Next(i))
+    for (SPressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
     {
-        if (!ActionBindings[i].Name.Icmp(Action))
+        if (pressedKey->BindingType == EBindingType::Action && !pressedKey->Binding.Icmp(Action))
         {
-            ActionBindingsHash.RemoveIndex(hash, i);
-            auto it = ActionBindings.begin() + i;
-            ActionBindings.erase(it);
-
-            for (SPressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
-            {
-                if (pressedKey->ActionBinding == i)
-                {
-                    pressedKey->ActionBinding = -1;
-                }
-            }
-
-            return;
+            pressedKey->Unbind();
         }
     }
+
+    ActionBindingsHash.Erase(it);
 }
 
 void AInputComponent::UnbindAll()
@@ -1117,19 +1076,15 @@ void AInputComponent::UnbindAll()
     BindingVersion++;
 
     AxisBindingsHash.Clear();
-    AxisBindings.Clear();
-
     ActionBindingsHash.Clear();
-    ActionBindings.Clear();
 
     for (SPressedKey* pressedKey = PressedKeys.ToPtr(); pressedKey < &PressedKeys[NumPressedKeys]; pressedKey++)
     {
-        pressedKey->AxisBinding   = -1;
-        pressedKey->ActionBinding = -1;
+        pressedKey->Unbind();
     }
 }
 
-void AInputComponent::SetCharacterCallback(TCallback<void(SWideChar, int, double)> const& Callback, bool bExecuteEvenWhenPaused)
+void AInputComponent::SetCharacterCallback(TCallback<void(WideChar, int, double)> const& Callback, bool bExecuteEvenWhenPaused)
 {
     CharacterCallback                       = Callback;
     bCharacterCallbackExecuteEvenWhenPaused = bExecuteEvenWhenPaused;
@@ -1138,34 +1093,6 @@ void AInputComponent::SetCharacterCallback(TCallback<void(SWideChar, int, double
 void AInputComponent::UnsetCharacterCallback()
 {
     CharacterCallback.Clear();
-}
-
-int AInputComponent::GetAxisBinding(AInputMappings::SMapping const& Mapping) const
-{
-    AString const& name = Mapping.Name;
-
-    for (int i = AxisBindingsHash.First(Mapping.NameHash); i != -1; i = AxisBindingsHash.Next(i))
-    {
-        if (!AxisBindings[i].Name.Icmp(name))
-        {
-            return i;
-        }
-    }
-    return -1;
-}
-
-int AInputComponent::GetActionBinding(AInputMappings::SMapping const& Mapping) const
-{
-    AString const& name = Mapping.Name;
-
-    for (int i = ActionBindingsHash.First(Mapping.NameHash); i != -1; i = ActionBindingsHash.Next(i))
-    {
-        if (!ActionBindings[i].Name.Icmp(name))
-        {
-            return i;
-        }
-    }
-    return -1;
 }
 
 void AInputMappings::InitializeFromDocument(ADocument const& Document)
@@ -1222,7 +1149,7 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
             uint16_t deviceKey    = AInputHelper::LookupDeviceKey(deviceId, key.CStr());
             int      controllerId = AInputHelper::LookupController(controller.CStr());
 
-            float fScale = Math::ToFloat(scale.CStr());
+            float fScale = Core::ParseFloat(scale.CStr());
 
             MapAxis(name, {deviceId, deviceKey}, fScale, controllerId);
         }
@@ -1266,7 +1193,7 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
             ADocMember const* mModMask = mAction->FindMember("ModMask");
             if (mModMask)
             {
-                modMask = Math::ToInt<int32_t>(mModMask->GetString().CStr());
+                modMask = Core::ParseInt32(mModMask->GetString().CStr());
             }
 
             AString name       = mName->GetString();
@@ -1300,7 +1227,7 @@ bool AInputMappings::LoadResource(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-void AInputMappings::LoadInternalResource(const char* Path)
+void AInputMappings::LoadInternalResource(AStringView Path)
 {
     // Empty resource
 
@@ -1316,18 +1243,18 @@ void AInputMappings::MapAxis(AStringView AxisName, SInputDeviceKey const& Device
 
     SMapping mapping;
     mapping.Name         = AxisName;
-    mapping.NameHash     = mapping.Name.HashCase();
+    mapping.NameHash     = mapping.Name.HashCaseInsensitive();
     mapping.bAxis        = true;
     mapping.AxisScale    = AxisScale;
     mapping.ControllerId = ControllerId;
-    Mappings[DeviceKey].Append(std::move(mapping));
+    Mappings[DeviceKey].Add(std::move(mapping));
 
     SAxisMapping axisMapping;
     axisMapping.DeviceId     = DeviceKey.DeviceId;
     axisMapping.KeyId        = DeviceKey.KeyId;
     axisMapping.ControllerId = ControllerId;
     axisMapping.AxisScale    = AxisScale;
-    AxisMappings[AxisName].Append(axisMapping);
+    AxisMappings[AxisName].Add(axisMapping);
 }
 
 void AInputMappings::UnmapAxis(SInputDeviceKey const& DeviceKey)
@@ -1343,8 +1270,8 @@ void AInputMappings::UnmapAxis(SInputDeviceKey const& DeviceKey)
 
         if (mapping.bAxis)
         {
-            auto map_it = AxisMappings.find(mapping.Name);
-            HK_ASSERT(map_it != AxisMappings.end());
+            auto map_it = AxisMappings.Find(mapping.Name);
+            HK_ASSERT(map_it != AxisMappings.End());
 
             auto& axisMappingsVector = map_it->second;
             for (auto axis_it = axisMappingsVector.Begin(); axis_it != axisMappingsVector.End(); axis_it++)
@@ -1357,9 +1284,9 @@ void AInputMappings::UnmapAxis(SInputDeviceKey const& DeviceKey)
             }
             if (axisMappingsVector.IsEmpty())
             {
-                AxisMappings.erase(map_it);
+                AxisMappings.Erase(map_it);
             }
-            it = keyMappings.erase(it);
+            it = keyMappings.Erase(it);
         }
         else
         {
@@ -1389,12 +1316,12 @@ void AInputMappings::MapAction(AStringView ActionName, SInputDeviceKey const& De
 
     SMapping mapping;
     mapping.Name         = ActionName;
-    mapping.NameHash     = mapping.Name.HashCase();
+    mapping.NameHash     = mapping.Name.HashCaseInsensitive();
     mapping.bAxis        = false;
     mapping.AxisScale    = 0;
     mapping.ControllerId = ControllerId;
     mapping.ModMask      = ModMask & 0xff;
-    Mappings[DeviceKey].Append(std::move(mapping));
+    Mappings[DeviceKey].Add(std::move(mapping));
 }
 
 void AInputMappings::UnmapAction(SInputDeviceKey const& DeviceKey, int ModMask)
@@ -1410,7 +1337,7 @@ void AInputMappings::UnmapAction(SInputDeviceKey const& DeviceKey, int ModMask)
 
         if (!mapping.bAxis && mapping.ModMask == ModMask)
         {
-            it = keyMappings.erase(it);
+            it = keyMappings.Erase(it);
         }
         else
         {
@@ -1421,6 +1348,6 @@ void AInputMappings::UnmapAction(SInputDeviceKey const& DeviceKey, int ModMask)
 
 void AInputMappings::UnmapAll()
 {
-    Mappings.clear();
-    AxisMappings.clear();
+    Mappings.Clear();
+    AxisMappings.Clear();
 }

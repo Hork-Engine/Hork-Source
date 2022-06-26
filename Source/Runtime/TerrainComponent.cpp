@@ -37,7 +37,7 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
 #include "BulletCompatibility.h"
 
-AConsoleVar com_DrawTerrainBounds(_CTS("com_DrawTerrainBounds"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawTerrainBounds("com_DrawTerrainBounds"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(ATerrainComponent)
 
@@ -571,7 +571,7 @@ void ATerrainComponent::DrawDebug(ADebugRenderer* InRenderer)
     }
 }
 
-void ATerrainComponent::GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, TPodVectorHeap<Float3>& CollisionVertices, TPodVectorHeap<unsigned int>& CollisionIndices) const
+void ATerrainComponent::GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& CollisionVertices, TVector<unsigned int>& CollisionIndices) const
 {
     if (!Terrain)
         return;
@@ -597,11 +597,11 @@ void ATerrainComponent::GatherNavigationGeometry(SNavigationGeometry& Geometry) 
         return;
     }
 
-    TPodVectorHeap<Float3>       collisionVertices;
-    TPodVectorHeap<unsigned int> collisionIndices;
+    TVector<Float3>       collisionVertices;
+    TVector<unsigned int> collisionIndices;
 
-    TPodVectorHeap<Float3>&       Vertices          = Geometry.Vertices;
-    TPodVectorHeap<unsigned int>& Indices           = Geometry.Indices;
+    TVector<Float3>&       Vertices          = Geometry.Vertices;
+    TVector<unsigned int>& Indices           = Geometry.Indices;
     TBitMask<>&                   WalkableTriangles = Geometry.WalkableMask;
     BvAxisAlignedBox&             ResultBoundingBox = Geometry.BoundingBox;
     BvAxisAlignedBox const*       pClipBoundingBox  = Geometry.pClipBoundingBox;

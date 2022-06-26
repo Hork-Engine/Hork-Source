@@ -190,11 +190,11 @@ private:
     void         WriteMesh(MeshInfo const& Mesh);
     void         WriteSkyboxMaterial(AGUID const& SkyboxTextureGUID);
     AString      GeneratePhysicalPath(const char* DesiredName, const char* Extension);
-    AString      GetMaterialGUID(cgltf_material* Material);
+    AGUID        GetMaterialGUID(cgltf_material* Material);
     TextureInfo* FindTextureImage(struct cgltf_texture const* Texture);
     void         SetTextureProps(TextureInfo* Info, const char* Name, bool SRGB);
 
-    std::unordered_map<std::string, AString> GuidMap; // Guid -> file name
+    THashMap<AGUID, AString> GuidMap; // Guid -> file name
 
     SAssetImportSettings        m_Settings;
     AString                     m_Path;
@@ -205,8 +205,8 @@ private:
     TPodVector<unsigned int>    m_Indices;
     TPodVector<MeshInfo>        m_Meshes;
     TPodVector<TextureInfo>     m_Textures;
-    TStdVector<MaterialInfo>    m_Materials;
-    TStdVector<AnimationInfo>   m_Animations;
+    TVector<MaterialInfo>    m_Materials;
+    TVector<AnimationInfo>   m_Animations;
     TPodVector<SJoint>          m_Joints;
     ASkin                       m_Skin;
     BvAxisAlignedBox            m_BindposeBounds;

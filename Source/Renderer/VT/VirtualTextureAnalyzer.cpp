@@ -117,11 +117,9 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
 
         int64_t time = Platform::SysMilliseconds();
 
-        // NOTE: We can't use THash now becouse our allocators are not support multithreading
-        // for better performance.
-        std::unordered_map< uint32_t, int64_t > & streamedPages = pTexture->StreamedPages;
-        auto it = streamedPages.find( quedPage.PageIndex );
-        if ( it != streamedPages.end() ) {
+        THashMap< uint32_t, int64_t > & streamedPages = pTexture->StreamedPages;
+        auto it = streamedPages.Find( quedPage.PageIndex );
+        if ( it != streamedPages.End() ) {
             if ( it->second + 1000 < time ) {
                 LOG("Re-load page\n");
                 it->second = time;
@@ -182,7 +180,7 @@ void AVirtualTextureFeedbackAnalyzer::ClearQueue()
     QueueLoadPos = 0;
 }
 
-void AVirtualTextureFeedbackAnalyzer::SubmitPages( TPodVector< SPageDesc > const & Pages )
+void AVirtualTextureFeedbackAnalyzer::SubmitPages( TVector< SPageDesc > const & Pages )
 {
     HK_ASSERT( Pages.Size() < MAX_QUEUE_LENGTH );
 
@@ -376,7 +374,7 @@ void AVirtualTextureFeedbackAnalyzer::DecodePages()
             {
                 *pageInfo |= PF_PENDING;
 
-                auto & pageDesc = PendingPages.Append();
+                auto& pageDesc     = PendingPages.Add();
                 pageDesc.pTexture = pTexture;
                 pageDesc.Hash = hash;
                 pageDesc.Refs = 1;
@@ -395,23 +393,22 @@ void AVirtualTextureFeedbackAnalyzer::DecodePages()
                 }
             }
             #else
-            int i = PendingPagesHash.First( hash );
-            for ( ; i != -1 ; i = PendingPagesHash.Next( i ) ) {
-                if ( PendingPages[i].Hash == hash ) {
-                    //PendingPages[i].Refs++;
-                    PendingPages[i].Refs += refs;
-                    break;
-                }
+            auto it = PendingPageSet.Find(hash);
+            if (it != PendingPageSet.End())
+            {
+                auto n = it->second;
+                PendingPages[n].Refs += refs;
             }
-            if ( i == -1 ) {
-                auto & pageDesc = PendingPages.Append();
-                pageDesc.pTexture = pTexture;
-                pageDesc.Hash = hash;
-                pageDesc.Refs = refs;
+            else
+            {
+                auto& pageDesc     = PendingPages.Add();
+                pageDesc.pTexture  = pTexture;
+                pageDesc.Hash      = hash;
+                pageDesc.Refs      = refs;
                 pageDesc.PageIndex = absIndex;
                 //pageDesc.Lod = lod;
 
-                PendingPagesHash.Insert( hash, PendingPages.Size() - 1 );
+                PendingPageSet[hash] = PendingPages.Size() - 1;
             }
             #endif
         }
@@ -420,7 +417,7 @@ void AVirtualTextureFeedbackAnalyzer::DecodePages()
     //LOG( "Num iterations: {}, uniqe pages {}, buffer size {}\n", numIterations, PendingPages.Size(), feedbackSize );
 
     if ( !PendingPages.IsEmpty() ) {
-        PendingPagesHash.Clear();
+        PendingPageSet.Clear();
 
         #ifdef WITH_PENDING_FLAG
         // Unset pending flag
@@ -447,7 +444,7 @@ void AVirtualTextureFeedbackAnalyzer::DecodePages()
 
 void AVirtualTextureFeedbackAnalyzer::AddFeedbackData( int FeedbackSize, const void * FeedbackData )
 {
-    SFeedbackChain & feedback = Feedbacks.Append();
+    SFeedbackChain& feedback = Feedbacks.Add();
     feedback.Size = FeedbackSize;
     feedback.Data = FeedbackData;
 }

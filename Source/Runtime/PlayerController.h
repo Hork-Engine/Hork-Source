@@ -60,7 +60,7 @@ public:
     float  VignetteInnerRadiusSqr = 0.6f * 0.6f;
     VISIBILITY_GROUP VisibilityMask         = VISIBILITY_GROUP_ALL;
 
-    std::unordered_map<uint64_t, class ATerrainView*> TerrainViews; // TODO: Needs to be cleaned from time to time
+    THashMap<uint64_t, class ATerrainView*> TerrainViews; // TODO: Needs to be cleaned from time to time
 
     // TODO: TonemappingExposure, bTonemappingAutoExposure, TonemappingMethod:Disabled,Reinhard,Uncharted,etc
     // TODO: Wireframe color/line width

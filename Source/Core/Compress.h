@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Platform/BaseTypes.h>
+#include <Platform/Memory/Memory.h>
 
 /** Lightning-fast lossless compression */
 enum FASTLZ_COMPRESS
@@ -125,6 +126,6 @@ Zlib compression
 Decompress a block of compressed data.
 The source buffer and the compressed buffer can not overlap.
 */
-bool ZDecompressToHeap(byte const* pCompressedData, size_t CompressedSize, byte** pDest, size_t* pDestSize);
+bool ZDecompressToHeap(byte const* pCompressedData, size_t CompressedSize, byte** pDest, size_t* pDestSize, MemoryHeap& Heap);
 
 } // namespace Core

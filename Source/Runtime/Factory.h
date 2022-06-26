@@ -34,7 +34,7 @@ SOFTWARE.
 #include <Core/HashFunc.h>
 #include <Core/Ref.h>
 #include <Containers/Hash.h>
-#include <Containers/PodVector.h>
+#include <Containers/Vector.h>
 #include "Variant.h"
 
 class AClassMeta;
@@ -55,14 +55,14 @@ public:
 
     const char* GetTag() const { return Tag; }
 
-    ADummy* CreateInstance(const char* ClassName) const;
+    ADummy* CreateInstance(AStringView ClassName) const;
     ADummy* CreateInstance(uint64_t ClassId) const;
 
     AClassMeta const* GetClassList() const;
 
-    AClassMeta const* FindClass(const char* ClassName) const;
+    AClassMeta const* FindClass(AStringView ClassName) const;
 
-    AClassMeta const* LookupClass(const char* ClassName) const;
+    AClassMeta const* LookupClass(AStringView ClassName) const;
     AClassMeta const* LookupClass(uint64_t ClassId) const;
 
     uint64_t FactoryClassCount() const { return NumClasses; }
@@ -74,7 +74,7 @@ private:
     const char*            Tag;
     AClassMeta*            Classes;
     mutable AClassMeta**   IdTable;
-    mutable THash<>        NameTable;
+    mutable THashMap<AStringView, AClassMeta const*> LookupTable;
     uint64_t               NumClasses;
     AObjectFactory*        NextFactory;
     static AObjectFactory* FactoryList;
@@ -154,7 +154,7 @@ private:
     AProperty const*      PropertyListTail;
 };
 
-HK_FORCEINLINE ADummy* AObjectFactory::CreateInstance(const char* ClassName) const
+HK_FORCEINLINE ADummy* AObjectFactory::CreateInstance(AStringView ClassName) const
 {
     AClassMeta const* classMeta = LookupClass(ClassName);
     return classMeta ? classMeta->CreateInstance() : nullptr;
@@ -220,7 +220,6 @@ public:
     AProperty(AClassMeta const& ClassMeta, VARIANT_TYPE Type, SEnumDef const* EnumDef, const char* Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, uint32_t Flags) :
         Type(Type),
         Name(Name),
-        NameHash(Core::Hash(Name, Platform::Strlen(Name))),
         pEnum(EnumDef),
         Range(Range),
         Flags(Flags),
@@ -259,7 +258,6 @@ public:
 
     VARIANT_TYPE          GetType() const { return Type; }
     const char*           GetName() const { return Name; }
-    int                   GetNameHash() const { return NameHash; }
     SEnumDef const*       GetEnum() const { return pEnum; }
     SPropertyRange const& GetRange() const { return Range; }
     uint32_t              GetFlags() const { return Flags; }
@@ -269,7 +267,6 @@ public:
 private:
     VARIANT_TYPE     Type;
     const char*      Name;
-    int              NameHash;
     SEnumDef const*  pEnum;
     SPropertyRange   Range;
     uint32_t         Flags;
@@ -349,11 +346,11 @@ public:                                              \
     }                                                \
     void* operator new(size_t SizeInBytes)           \
     {                                                \
-        return Allocator::Inst().Alloc(SizeInBytes); \
+        return Allocator().allocate(SizeInBytes);    \
     }                                                \
     void operator delete(void* Ptr)                  \
     {                                                \
-        Allocator::Inst().Free(Ptr);                 \
+        Allocator().deallocate(Ptr);                 \
     }
 
 #define HK_CLASS(Class, SuperClass) \
@@ -488,7 +485,7 @@ class ADummy
 
 public:
     typedef ADummy         ThisClass;
-    typedef AZoneAllocator Allocator;
+    typedef Allocators::HeapMemoryAllocator<HEAP_WORLD_OBJECTS> Allocator;
     class ThisClassMeta : public AClassMeta
     {
     public:

@@ -31,17 +31,18 @@ SOFTWARE.
 #pragma once
 
 #include "BinaryStream.h"
+#include "String.h"
 
 namespace Core
 {
 
 /** Convert binary file to .c */
-bool BinaryToC(const char* _SourceFile, const char* _DestFile, const char* _SymName, bool _EncodeBase85);
+bool BinaryToC(AStringView SourceFile, AStringView DestFile, AStringView SymName, bool bEncodeBase85);
 
 /** Compress and convert binary file to .c */
-bool BinaryToCompressedC(const char* _SourceFile, const char* _DestFile, const char* _SymName, bool _EncodeBase85);
+bool BinaryToCompressedC(AStringView SourceFile, AStringView DestFile, AStringView SymName, bool bEncodeBase85);
 
 /** Write binary date to .c */
-void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, const char* _SymName, const void* pData, size_t SizeInBytes, bool bEncodeBase85);
+void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, AStringView SymName, const void* pData, size_t SizeInBytes, bool bEncodeBase85);
 
 } // namespace Core

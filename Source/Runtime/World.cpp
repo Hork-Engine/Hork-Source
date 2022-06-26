@@ -56,7 +56,7 @@ AWorld::AWorld()
 
     SVisibilitySystemCreateInfo ci{};
     PersistentLevel->Visibility = MakeRef<AVisibilityLevel>(ci);
-    ArrayOfLevels.Append(PersistentLevel);
+    ArrayOfLevels.Add(PersistentLevel);
 
     VisibilitySystem.RegisterLevel(PersistentLevel->Visibility);
 
@@ -306,7 +306,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
                 }
             }
             componentIndex++;
-            components.Append(component);
+            components.Add(component);
         }
 
         // Attach components
@@ -554,19 +554,19 @@ void AWorld::InitializeAndPlay(AActor* Actor)
 {
     if (Actor->bCanEverTick)
     {
-        TickingActors.Append(Actor);
+        TickingActors.Add(Actor);
     }
     if (Actor->bTickPrePhysics)
     {
-        PrePhysicsTickActors.Append(Actor);
+        PrePhysicsTickActors.Add(Actor);
     }
     if (Actor->bTickPostPhysics)
     {
-        PostPhysicsTickActors.Append(Actor);
+        PostPhysicsTickActors.Add(Actor);
     }
     if (Actor->bLateUpdate)
     {
-        LateUpdateActors.Append(Actor);
+        LateUpdateActors.Add(Actor);
     }
 
     for (ATimer* timer = Actor->TimerList; timer; timer = timer->NextInActor)
@@ -585,7 +585,7 @@ void AWorld::InitializeAndPlay(AActor* Actor)
 
         if (component->bCanEverTick)
         {
-            TickingComponents.Append(component);
+            TickingComponents.Add(component);
             component->bTicking = true;
         }
     }
@@ -712,10 +712,10 @@ void AWorld::SpawnActors()
             actor->bSpawning = false;
 
             // Add actor to world
-            Actors.Append(actor);
+            Actors.Add(actor);
             actor->IndexInWorldArrayOfActors = Actors.Size() - 1;
             // Add actor to level
-            actor->Level->Actors.Append(actor);
+            actor->Level->Actors.Add(actor);
             actor->IndexInLevelArrayOfActors = actor->Level->Actors.Size() - 1;
             InitializeAndPlay(actor);
 
@@ -1080,7 +1080,7 @@ void AWorld::AddLevel(ALevel* _Level)
     _Level->OwnerWorld = this;
     _Level->AddRef();
     _Level->OnAddLevelToWorld();
-    ArrayOfLevels.Append(_Level);
+    ArrayOfLevels.Add(_Level);
 
     VisibilitySystem.RegisterLevel(_Level->Visibility);
 }
@@ -1168,7 +1168,7 @@ AWorld* AWorld::CreateWorld()
     world->AddRef();
 
     // Add world to the game
-    Worlds.Append(world);
+    Worlds.Add(world);
 
     return world;
 }
@@ -1233,7 +1233,7 @@ void AWorld::UpdateWorlds(float TimeStep)
         if (!world->bTicking)
         {
             world->bTicking = true;
-            TickingWorlds.Append(world);
+            TickingWorlds.Add(world);
         }
     }
 

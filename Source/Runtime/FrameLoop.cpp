@@ -36,7 +36,7 @@ SOFTWARE.
 
 #include <SDL.h>
 
-AConsoleVar rt_SyncGPU(_CTS("rt_SyncGPU"), _CTS("0"));
+AConsoleVar rt_SyncGPU("rt_SyncGPU"s, "0"s);
 
 AFrameLoop::AFrameLoop(RenderCore::IDevice* RenderDevice) :
     RenderDevice(RenderDevice)
@@ -101,6 +101,8 @@ int AFrameLoop::SysFrameNumber() const
 
 void AFrameLoop::NewFrame(TPodVector<RenderCore::ISwapChain*> const& SwapChains, int SwapInterval)
 {
+    MemoryHeap::MemoryNewFrame();
+
     GPUSync->SetEvent();
 
     // Swap buffers for streamed memory
@@ -275,22 +277,22 @@ static HK_FORCEINLINE int FromKeymodSDL(Uint16 Mod)
 
     if (Mod & (KMOD_LSHIFT | KMOD_RSHIFT))
     {
-        modMask |= KMOD_MASK_SHIFT;
+        modMask |= MOD_MASK_SHIFT;
     }
 
     if (Mod & (KMOD_LCTRL | KMOD_RCTRL))
     {
-        modMask |= KMOD_MASK_CONTROL;
+        modMask |= MOD_MASK_CONTROL;
     }
 
     if (Mod & (KMOD_LALT | KMOD_RALT))
     {
-        modMask |= KMOD_MASK_ALT;
+        modMask |= MOD_MASK_ALT;
     }
 
     if (Mod & (KMOD_LGUI | KMOD_RGUI))
     {
-        modMask |= KMOD_MASK_SUPER;
+        modMask |= MOD_MASK_SUPER;
     }
 
     return modMask;
@@ -302,32 +304,32 @@ static HK_FORCEINLINE int FromKeymodSDL_Char(Uint16 Mod)
 
     if (Mod & (KMOD_LSHIFT | KMOD_RSHIFT))
     {
-        modMask |= KMOD_MASK_SHIFT;
+        modMask |= MOD_MASK_SHIFT;
     }
 
     if (Mod & (KMOD_LCTRL | KMOD_RCTRL))
     {
-        modMask |= KMOD_MASK_CONTROL;
+        modMask |= MOD_MASK_CONTROL;
     }
 
     if (Mod & (KMOD_LALT | KMOD_RALT))
     {
-        modMask |= KMOD_MASK_ALT;
+        modMask |= MOD_MASK_ALT;
     }
 
     if (Mod & (KMOD_LGUI | KMOD_RGUI))
     {
-        modMask |= KMOD_MASK_SUPER;
+        modMask |= MOD_MASK_SUPER;
     }
 
     if (Mod & KMOD_CAPS)
     {
-        modMask |= KMOD_MASK_CAPS_LOCK;
+        modMask |= MOD_MASK_CAPS_LOCK;
     }
 
     if (Mod & KMOD_NUM)
     {
-        modMask |= KMOD_MASK_NUM_LOCK;
+        modMask |= MOD_MASK_NUM_LOCK;
     }
 
     return modMask;

@@ -211,8 +211,8 @@ void AAsyncJobList::SetMaxParallelJobs(int _MaxParallelJobs)
 {
     HK_ASSERT(JobPool.IsEmpty());
 
-    JobPool.ReserveInvalidate(_MaxParallelJobs);
     JobPool.Clear();
+    JobPool.Reserve(_MaxParallelJobs);    
 }
 
 void AAsyncJobList::AddJob(void (*_Callback)(void*), void* _Data)
@@ -225,7 +225,7 @@ void AAsyncJobList::AddJob(void (*_Callback)(void*), void* _Data)
         SetMaxParallelJobs(JobPool.Capacity() * 2);
     }
 
-    SAsyncJob& job = JobPool.Append();
+    SAsyncJob& job = JobPool.Add();
     job.Callback   = _Callback;
     job.Data       = _Data;
     job.Next       = JobList;
@@ -287,7 +287,7 @@ void AAsyncJobList::Wait()
         {
             LOG("Warning: AAsyncJobList::Wait: NumPendingJobs > 0\n");
 
-            JobPool.Remove(0, jobsCount);
+            JobPool.RemoveRange(0, jobsCount);
 
             JobList = JobPool.ToPtr() + size_t(NumPendingJobs - 1);
             for (int i = 1; i < NumPendingJobs; i++)

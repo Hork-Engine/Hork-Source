@@ -33,9 +33,9 @@ SOFTWARE.
 #include <Core/Compress.h>
 #include <Platform/Logger.h>
 
-#define STBI_MALLOC(sz)                     GHeapMemory.Alloc(sz, 16)
-#define STBI_FREE(p)                        GHeapMemory.Free(p)
-#define STBI_REALLOC(p, newsz)              GHeapMemory.Realloc(p, newsz, 16, true)
+#define STBI_MALLOC(sz)                     Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(sz, 16)
+#define STBI_FREE(p)                        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(p)
+#define STBI_REALLOC(p, newsz)              Platform::GetHeapAllocator<HEAP_IMAGE>().Realloc(p, newsz, 16)
 #define STBI_REALLOC_SIZED(p, oldsz, newsz) STBI_REALLOC(p, newsz)
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_STATIC
@@ -43,9 +43,9 @@ SOFTWARE.
 #define STBI_NO_GIF // Maybe in future gif will be used, but not now
 #include "stb/stb_image.h"
 
-#define STBIW_MALLOC(sz)        GHeapMemory.Alloc(sz, 16)
-#define STBIW_FREE(p)           GHeapMemory.Free(p)
-#define STBIW_REALLOC(p, newsz) GHeapMemory.Realloc(p, newsz, 16, true)
+#define STBIW_MALLOC(sz)        Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(sz, 16)
+#define STBIW_FREE(p)           Platform::GetHeapAllocator<HEAP_IMAGE>().Free(p)
+#define STBIW_REALLOC(p, newsz) Platform::GetHeapAllocator<HEAP_IMAGE>().Realloc(p, newsz, 16)
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_STATIC
 #define STBI_WRITE_NO_STDIO
@@ -80,8 +80,8 @@ HK_FORCEINLINE unsigned char* stbi_zlib_compress_override(unsigned char* data, i
 
 #include "stb/stb_image_write.h"
 
-#define STBIR_MALLOC(sz, context) GHunkMemory.Alloc(sz)
-#define STBIR_FREE(p, context)
+#define STBIR_MALLOC(sz, context) Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(sz)
+#define STBIR_FREE(p, context)    Platform::GetHeapAllocator<HEAP_TEMP>().Free(p)
 #define STB_IMAGE_RESIZE_IMPLEMENTATION
 #define STB_IMAGE_RESIZE_STATIC
 #define STBIR_MAX_CHANNELS 4
@@ -90,13 +90,7 @@ HK_FORCEINLINE unsigned char* stbi_zlib_compress_override(unsigned char* data, i
 #define SUPPORT_EXR
 
 AImage::AImage()
-{
-    pRawData     = nullptr;
-    Width        = 0;
-    Height       = 0;
-    NumMipLevels = 0;
-    PixelFormat  = IMAGE_PF_AUTO_GAMMA2;
-}
+{}
 
 AImage::~AImage()
 {
@@ -280,18 +274,73 @@ static HK_FORCEINLINE bool IsBGR(EImagePixelFormat _PixelFormat)
     return false;
 }
 
-bool AImage::Load(AStringView _Path, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat)
+static HK_FORCEINLINE int GetBytesPerChannel(EImagePixelFormat PixelFormat)
+{
+    switch (PixelFormat)
+    {
+        case IMAGE_PF_AUTO:
+            return 1;
+        case IMAGE_PF_AUTO_GAMMA2:
+            return 1;
+        case IMAGE_PF_AUTO_16F:
+            return 2;
+        case IMAGE_PF_AUTO_32F:
+            return 4;
+        case IMAGE_PF_R:
+            return 1;
+        case IMAGE_PF_R16F:
+            return 2;
+        case IMAGE_PF_R32F:
+            return 4;
+        case IMAGE_PF_RG:
+            return 1;
+        case IMAGE_PF_RG16F:
+            return 2;
+        case IMAGE_PF_RG32F:
+            return 4;
+        //IMAGE_PF_RGB:
+        //IMAGE_PF_RGB_GAMMA2:
+        //IMAGE_PF_RGB16F:
+        case IMAGE_PF_RGB32F:
+            return 4;
+        case IMAGE_PF_RGBA:
+            return 1;
+        case IMAGE_PF_RGBA_GAMMA2:
+            return 1;
+        case IMAGE_PF_RGBA16F:
+            return 2;
+        case IMAGE_PF_RGBA32F:
+            return 4;
+        //IMAGE_PF_BGR:
+        //IMAGE_PF_BGR_GAMMA2:
+        //IMAGE_PF_BGR16F:
+        case IMAGE_PF_BGR32F:
+            return 4;
+        case IMAGE_PF_BGRA:
+            return 1;
+        case IMAGE_PF_BGRA_GAMMA2:
+            return 1;
+        case IMAGE_PF_BGRA16F:
+            return 2;
+        case IMAGE_PF_BGRA32F:
+            return 4;
+    }
+    HK_ASSERT(0);
+    return 0;
+}
+
+bool AImage::Load(AStringView Path, SImageMipmapConfig const* MipmapGen, EImagePixelFormat _PixelFormat)
 {
     AFileStream stream;
 
     Free();
 
-    if (!stream.OpenRead(_Path))
+    if (!stream.OpenRead(Path))
     {
         return false;
     }
 
-    return Load(stream, _MipmapGen, _PixelFormat);
+    return Load(stream, MipmapGen, _PixelFormat);
 }
 
 #ifdef SUPPORT_EXR
@@ -310,7 +359,7 @@ static void* LoadEXR(IBinaryStreamReadInterface& _Stream, int* w, int* h, int* c
     size_t streamOffset = _Stream.GetOffset();
     _Stream.SeekEnd(0);
     size_t sizeInBytes = _Stream.GetOffset() - streamOffset;
-    void* memory      = GHeapMemory.Alloc(sizeInBytes);
+    void*  memory      = Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(sizeInBytes);
     _Stream.SeekSet(streamOffset);
     _Stream.Read(memory, sizeInBytes);
 
@@ -321,7 +370,7 @@ static void* LoadEXR(IBinaryStreamReadInterface& _Stream, int* w, int* h, int* c
 
     int r = LoadEXRFromMemory(&data, w, h, (unsigned char*)memory, sizeInBytes, &err);
 
-    GHeapMemory.Free(memory);
+    Platform::GetHeapAllocator<HEAP_IMAGE>().Free(memory);
 
     if (r != TINYEXR_SUCCESS)
     {
@@ -465,7 +514,7 @@ bool AImage::Load(IBinaryStreamReadInterface& _Stream, SImageMipmapConfig const*
     bool                    bHDRI = IsHDRI(_PixelFormat);
     void*                   source;
 
-    numRequiredChannels = GetNumChannels(_PixelFormat);
+    numRequiredChannels = ::GetNumChannels(_PixelFormat);
 
     size_t streamOffset = _Stream.GetOffset();
 
@@ -682,7 +731,7 @@ void AImage::FromRawData(const void* _Source, int _Width, int _Height, SImageMip
     bool bHDRI        = IsHDRI(_PixelFormat);
     bool bLinearSpace = bHDRI || !IsGamma2(_PixelFormat);
     bool bHalf        = IsHalfFloat(_PixelFormat);
-    int  numChannels  = GetNumChannels(_PixelFormat);
+    int  numChannels  = ::GetNumChannels(_PixelFormat);
 
     Free();
 
@@ -698,7 +747,7 @@ void AImage::FromRawData(const void* _Source, int _Width, int _Height, SImageMip
     else
     {
         size_t sizeInBytes = Width * Height * numChannels * (bHDRI ? 4 : 1);
-        pRawData           = GHeapMemory.Alloc(sizeInBytes);
+        pRawData           = Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(sizeInBytes);
         Platform::Memcpy(pRawData, _Source, sizeInBytes);
     }
 
@@ -720,11 +769,11 @@ void AImage::FromRawData(const void* _Source, int _Width, int _Height, SImageMip
         int requiredMemorySize;
         ComputeRequiredMemorySize(mipmapGen, requiredMemorySize, NumMipLevels);
 
-        void* tmp = GHeapMemory.Alloc(requiredMemorySize);
+        void* tmp = Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(requiredMemorySize);
 
         GenerateMipmaps(mipmapGen, tmp);
 
-        GHeapMemory.Free(pRawData);
+        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(pRawData);
         pRawData = tmp;
     }
 
@@ -739,21 +788,78 @@ void AImage::FromRawData(const void* _Source, int _Width, int _Height, SImageMip
         }
         imageSize *= numChannels;
 
-        uint16_t* tmp = (uint16_t*)GHeapMemory.Alloc(imageSize * sizeof(uint16_t));
-        Math::FloatToHalf((float*)pRawData, tmp, imageSize);
-        GHeapMemory.Free(pRawData);
+        Half*        tmp  = (Half*)Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(imageSize * sizeof(Half));
+        const float* pIn  = (float*)pRawData;
+        Half*        pOut = tmp;
+        while (pOut < &tmp[imageSize])
+            *pOut++ = *pIn++;
+        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(pRawData);
         pRawData = tmp;
+    }
+}
+
+int AImage::GetBytesPerPixel() const
+{
+    return GetBytesPerChannel() * GetNumChannels();
+}
+
+int AImage::GetBytesPerChannel() const
+{
+    return ::GetBytesPerChannel(PixelFormat);
+}
+
+int AImage::GetNumChannels() const
+{
+    return ::GetBytesPerChannel(PixelFormat);
+}
+
+void AImage::FlipX()
+{
+    if (IsValid())
+    {
+        size_t bytesPerPixel = GetBytesPerPixel();
+        FlipImageX(pRawData, Width, Height, bytesPerPixel, bytesPerPixel * Width);
+    }
+}
+
+void AImage::FlipY()
+{
+    if (IsValid())
+    {
+        size_t bytesPerPixel = GetBytesPerPixel();
+        FlipImageY(pRawData, Width, Height, bytesPerPixel, bytesPerPixel * Width);
     }
 }
 
 void AImage::Free()
 {
-    GHeapMemory.Free(pRawData);
+    Platform::GetHeapAllocator<HEAP_IMAGE>().Free(pRawData);
     pRawData     = nullptr;
     Width        = 0;
     Height       = 0;
     NumMipLevels = 0;
     PixelFormat  = IMAGE_PF_AUTO_GAMMA2;
+}
+
+AImage LoadImage(AStringView Path, SImageMipmapConfig const* MipmapGen, EImagePixelFormat PixelFormat)
+{
+    AImage image;
+    image.Load(Path, MipmapGen, PixelFormat);
+    return image;
+}
+
+AImage LoadImage(IBinaryStreamReadInterface& Stream, SImageMipmapConfig const* MipmapGen, EImagePixelFormat PixelFormat)
+{
+    AImage image;
+    image.Load(Stream, MipmapGen, PixelFormat);
+    return image;
+}
+
+AImage CreateImage(const void* Source, int Width, int Height, SImageMipmapConfig const* MipmapGen, EImagePixelFormat PixelFormat)
+{
+    AImage image;
+    image.FromRawData(Source, Width, Height, MipmapGen, PixelFormat);
+    return image;
 }
 
 static void DownscaleSimpleAverage(int _CurWidth, int _CurHeight, int _NewWidth, int _NewHeight, int _NumChannels, int _AlphaChannel, bool _LinearSpace, const byte* _SrcData, byte* _DstData)
@@ -944,10 +1050,6 @@ static void GenerateMipmaps(const byte* ImageData, int ImageWidth, int ImageHeig
         MemoryOffset += MipWidth * MipHeight * NumChannels;
 
 #if 1
-        // NOTE: We assume that this function is called from main thread,
-        // so we can use advantage of hunk memory allocator
-        int hunkMark = GHunkMemory.SetHunkMark();
-
         stbir_resize(ImageData, CurWidth, CurHeight, NumChannels * CurWidth,
                      MipData, MipWidth, MipHeight, NumChannels * MipWidth,
                      STBIR_TYPE_UINT8,
@@ -958,8 +1060,6 @@ static void GenerateMipmaps(const byte* ImageData, int ImageWidth, int ImageHeig
                      (stbir_filter)Filter, (stbir_filter)Filter,
                      bLinearSpace ? STBIR_COLORSPACE_LINEAR : STBIR_COLORSPACE_SRGB,
                      NULL);
-
-        GHunkMemory.ClearToMark(hunkMark);
 #else
         DownscaleSimpleAverage(CurWidth, CurHeight, MipWidth, MipHeight, NumChannels, AlphaChannel, bLinearSpace, ImageData, MipData);
 #endif
@@ -999,10 +1099,6 @@ static void GenerateMipmapsHDRI(const float* ImageData, int ImageWidth, int Imag
         MemoryOffset += MipWidth * MipHeight * NumChannels;
 
 #if 1
-        // NOTE: We assume that this function is called from main thread,
-        // so we can use advantage of hunk memory allocator
-        int hunkMark = GHunkMemory.SetHunkMark();
-
         stbir_resize(ImageData, CurWidth, CurHeight, NumChannels * CurWidth * sizeof(float),
                      MipData, MipWidth, MipHeight, NumChannels * MipWidth * sizeof(float),
                      STBIR_TYPE_FLOAT,
@@ -1013,8 +1109,6 @@ static void GenerateMipmapsHDRI(const float* ImageData, int ImageWidth, int Imag
                      (stbir_filter)Filter, (stbir_filter)Filter,
                      STBIR_COLORSPACE_LINEAR,
                      NULL);
-
-        GHunkMemory.ClearToMark(hunkMark);
 #else
         DownscaleSimpleAverageHDRI(CurWidth, CurHeight, MipWidth, MipHeight, NumChannels, ImageData, MipData);
 #endif
@@ -1186,10 +1280,6 @@ void ResizeImage(SImageResizeDesc const& InDesc, void* pScaledImage)
     HK_ASSERT(IMAGE_DATA_TYPE_UINT32 == STBIR_TYPE_UINT32);
     HK_ASSERT(IMAGE_DATA_TYPE_FLOAT == STBIR_TYPE_FLOAT);
 
-    // NOTE: We assume that this function is called from main thread,
-    // so we can use advantage of hunk memory allocator
-    int hunkMark = GHunkMemory.SetHunkMark();
-
     int result =
         stbir_resize(InDesc.pImage, InDesc.Width, InDesc.Height, InDesc.NumChannels * InDesc.Width,
                      pScaledImage, InDesc.ScaledWidth, InDesc.ScaledHeight, InDesc.NumChannels * InDesc.ScaledWidth,
@@ -1204,8 +1294,6 @@ void ResizeImage(SImageResizeDesc const& InDesc, void* pScaledImage)
 
     HK_ASSERT(result == 1);
     HK_UNUSED(result);
-
-    GHunkMemory.ClearToMark(hunkMark);
 }
 
 bool WritePNG(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _BytesPerLine)

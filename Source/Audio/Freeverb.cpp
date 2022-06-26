@@ -70,7 +70,7 @@ AFreeverb::AFreeverb( int SampleRate )
 
     // Allocate memory for buffers
     MemorySize = capacity * sizeof( float );
-    pMemory = ( float * )GHeapMemory.ClearedAlloc( MemorySize );
+    pMemory    = (float*)Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(MemorySize, 16, MALLOC_ZERO);
 
     float * buffer = pMemory;
     for ( int i = 0 ; i < NUM_COMBs ; i++ ) {
@@ -110,7 +110,7 @@ AFreeverb::AFreeverb( int SampleRate )
 
 AFreeverb::~AFreeverb()
 {
-    GHeapMemory.Free( pMemory );
+    Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(pMemory);
 }
 
 void AFreeverb::Mute()

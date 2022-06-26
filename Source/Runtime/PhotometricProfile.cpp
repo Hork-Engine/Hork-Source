@@ -56,9 +56,9 @@ void APhotometricProfile::Initialize(const byte* InData, float InIntensity)
     Platform::Memcpy(Data, InData, sizeof(Data));
 }
 
-void APhotometricProfile::LoadInternalResource(const char* _Path)
+void APhotometricProfile::LoadInternalResource(AStringView _Path)
 {
-    if (!Platform::Stricmp(_Path, "/Default/PhotometricProfile/Default"))
+    if (!_Path.Icmp("/Default/PhotometricProfile/Default"))
     {
         Intensity = 1.0f;
         Platform::Memset(Data, 0xff, sizeof(Data));
@@ -274,7 +274,7 @@ static void TestIES(IE_DATA& PhotoData)
 {
     int   w = 512, h = 512;
     float scale = 1.0f;
-    byte* data  = (byte*)GHeapMemory.Alloc(w * h * 3);
+    byte* data  = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(w * h * 3);
     for (int y = 0; y < h; y++)
     {
         for (int x = 0; x < w; x++)
@@ -351,7 +351,7 @@ static void TestIES(IE_DATA& PhotoData)
         data[i * 3 + 2] = c;
     }
 
-    GHeapMemory.Free(data);
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
 }
 
 bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
@@ -367,11 +367,11 @@ bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
 
         context.calloc = [](size_t n, size_t sz)
         {
-            return GZoneMemory.ClearedAlloc(n * sz);
+            return Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(n * sz, 0, MALLOC_ZERO);
         };
         context.free = [](void* p)
         {
-            GZoneMemory.Free(p);
+            Platform::GetHeapAllocator<HEAP_TEMP>().Free(p);
         };
         context.rewind = [](void* userData)
         {

@@ -44,11 +44,11 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/ConsoleVar.h>
 
-AConsoleVar com_DrawLevelAreaBounds(_CTS("com_DrawLevelAreaBounds"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawLevelIndoorBounds(_CTS("com_DrawLevelIndoorBounds"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawLevelPortals(_CTS("com_DrawLevelPortals"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawLevelAreaBounds("com_DrawLevelAreaBounds"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawLevelIndoorBounds("com_DrawLevelIndoorBounds"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawLevelPortals("com_DrawLevelPortals"s, "0"s, CVAR_CHEAT);
 
-//AConsoleVar vsd_FrustumCullingType(_CTS("vsd_FrustumCullingType"), _CTS("0"), 0, _CTS("0 - combined, 1 - separate, 2 - simple"));
+//AConsoleVar vsd_FrustumCullingType("vsd_FrustumCullingType"s, "0"s, 0, "0 - combined, 1 - separate, 2 - simple"s);
 
 #define MAX_HULL_POINTS 128
 struct SPortalHull
@@ -160,7 +160,7 @@ AVisibilityLevel::AVisibilityLevel(SVisibilitySystemCreateInfo const& CreateInfo
     {
         VisibilityMethod = LEVEL_VISIBILITY_PVS;
 
-        Visdata = (byte*)GHeapMemory.Alloc(CreateInfo.PVS->VisdataSize);
+        Visdata = (byte*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(CreateInfo.PVS->VisdataSize);
         Platform::Memcpy(Visdata, CreateInfo.PVS->Visdata, CreateInfo.PVS->VisdataSize);
 
         bCompressedVisData = CreateInfo.PVS->bCompressedVisData;
@@ -185,7 +185,7 @@ AVisibilityLevel::AVisibilityLevel(SVisibilitySystemCreateInfo const& CreateInfo
     if (bCompressedVisData && Visdata && PVSClustersCount > 0)
     {
         // Allocate decompressed vis data
-        DecompressedVisData = (byte*)GHeapMemory.Alloc((PVSClustersCount + 7) >> 3);
+        DecompressedVisData = (byte*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc((PVSClustersCount + 7) >> 3);
     }
 
     AreaSurfaces.Resize(CreateInfo.NumAreaSurfaces);
@@ -196,8 +196,8 @@ AVisibilityLevel::AVisibilityLevel(SVisibilitySystemCreateInfo const& CreateInfo
 
 AVisibilityLevel::~AVisibilityLevel()
 {
-    GHeapMemory.Free(Visdata);
-    GHeapMemory.Free(DecompressedVisData);
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(Visdata);
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(DecompressedVisData);
 }
 
 void AVisibilityLevel::CreatePortals(SPortalDef const* InPortals, int InPortalsCount, Float3 const* InHullVertices)
@@ -456,10 +456,7 @@ void AVisibilityLevel::QueryOverplapAreas_r(int NodeIndex, BvAxisAlignedBox cons
         {
             // leaf
             SVisArea* area = Leafs[-1 - NodeIndex].Area;
-            if (!OverlappedAreas.IsExists(area))
-            {
-                OverlappedAreas.Append(area);
-            }
+            OverlappedAreas.AddUnique(area);
             return;
         }
 
@@ -494,10 +491,7 @@ void AVisibilityLevel::QueryOverplapAreas_r(int NodeIndex, BvSphere const& Bound
         {
             // leaf
             SVisArea* area = Leafs[-1 - NodeIndex].Area;
-            if (!OverlappedAreas.IsExists(area))
-            {
-                OverlappedAreas.Append(area);
-            }
+            OverlappedAreas.AddUnique(area);
             return;
         }
 
@@ -802,7 +796,7 @@ void AVisibilityLevel::DrawDebug(ADebugRenderer* InRenderer)
                         InRenderer->SetColor(Color4(0, 1, 0, 0.4f));
                     }
 
-                    InRenderer->DrawConvexPoly({p->Hull->Points, p->Hull->NumPoints}, false);
+                    InRenderer->DrawConvexPoly({p->Hull->Points, (size_t)p->Hull->NumPoints}, false);
                 }
             }
 
@@ -822,7 +816,7 @@ void AVisibilityLevel::DrawDebug(ADebugRenderer* InRenderer)
                         InRenderer->SetColor(Color4(0, 1, 0, 0.4f));
                     }
 
-                    InRenderer->DrawConvexPoly({p->Hull->Points, p->Hull->NumPoints}, false);
+                    InRenderer->DrawConvexPoly({p->Hull->Points, (size_t)p->Hull->NumPoints}, false);
                 }
             }
 #endif
@@ -1284,7 +1278,7 @@ bool AVisibilityLevel::CalcPortalStack(SPortalStack* OutStack, SPortalStack cons
     }
 
 #ifdef DEBUG_PORTAL_SCISSORS
-    DebugScissors.Append(OutStack->Scissor);
+    DebugScissors.Add(OutStack->Scissor);
 #endif
 
 #ifdef DEBUG_TRAVERSING_COUNTERS
@@ -1534,7 +1528,7 @@ void AVisibilityLevel::CullPrimitives(SVisArea const* InArea, PlaneF const* InCu
             // Mark as visible
             surf->VisPass = VisQueryMarker;
 
-            pQueryResult->pVisSurfs->Append(surf);
+            pQueryResult->pVisSurfs->Add(surf);
         }
     }
 
@@ -1602,8 +1596,8 @@ void AVisibilityLevel::CullPrimitives(SVisArea const* InArea, PlaneF const* InCu
                 else
                 {
                     // Prepare primitive for frustum culling
-                    BoxPrimitives.Append(primitive);
-                    BoundingBoxesSSE.Append() = primitive->Box;
+                    BoxPrimitives.Add(primitive);
+                    BoundingBoxesSSE.Add() = primitive->Box;
                     numBoxes++;
                     continue;
                 }
@@ -1629,7 +1623,7 @@ void AVisibilityLevel::CullPrimitives(SVisArea const* InArea, PlaneF const* InCu
         primitive->VisPass = VisQueryMarker;
 
         // Add primitive to vis list
-        pQueryResult->pVisPrimitives->Append(primitive);
+        pQueryResult->pVisPrimitives->Add(primitive);
     }
 
 /*!!!
@@ -1637,7 +1631,7 @@ void AVisibilityLevel::CullPrimitives(SVisArea const* InArea, PlaneF const* InCu
     {
         // Create job submit
 
-        SCullJobSubmit& submit = CullSubmits.Append();
+        SCullJobSubmit& submit = CullSubmits.Add();
 
         submit.First      = firstBoxPrimitive;
         submit.NumObjects = numBoxes;
@@ -1685,7 +1679,7 @@ void AVisibilityLevel::CullPrimitives(SVisArea const* InArea, PlaneF const* InCu
                         // Mark primitive visible
                         primitive->VisPass = VisQueryMarker;
 
-                        pQueryResult->pVisPrimitives->Append(primitive);
+                        pQueryResult->pVisPrimitives->Add(primitive);
                     }
                     else
                     {
@@ -1823,7 +1817,7 @@ void AVisibilityLevel::QueryVisiblePrimitives(TPodVector<AVisibilityLevel*> cons
                         // Mark primitive visible
                         primitive->VisPass = VisQueryMarker;
 
-                        QueryResult.pVisPrimitives->Append(primitive);
+                        QueryResult.pVisPrimitives->Add(primitive);
                     }
                     else
                     {
@@ -2015,7 +2009,7 @@ void AVisibilityLevel::RaycastSurface(SSurfaceDef* Self)
                 if (RayIntersectTriangleFast(pRaycast->RayStart, pRaycast->RayDir, v0, v1, v2, u, v))
                 {
 
-                    STriangleHitResult& hitResult = pRaycastResult->Hits.Append();
+                    STriangleHitResult& hitResult = pRaycastResult->Hits.Add();
                     hitResult.Location            = pRaycast->RayStart + pRaycast->RayDir * d;
                     hitResult.Normal              = Self->Face.Normal;
                     hitResult.Distance            = d;
@@ -2026,7 +2020,7 @@ void AVisibilityLevel::RaycastSurface(SSurfaceDef* Self)
                     hitResult.Indices[2]          = Self->FirstVertex + triangleIndices[2];
                     hitResult.Material            = brushModel->SurfaceMaterials[Self->MaterialIndex];
 
-                    SWorldRaycastPrimitive& rcPrimitive = pRaycastResult->Primitives.Append();
+                    SWorldRaycastPrimitive& rcPrimitive = pRaycastResult->Primitives.Add();
                     rcPrimitive.Object                  = nullptr;
                     rcPrimitive.FirstHit = rcPrimitive.ClosestHit = pRaycastResult->Hits.Size() - 1;
                     rcPrimitive.NumHits                           = 1;
@@ -2114,7 +2108,7 @@ void AVisibilityLevel::RaycastSurface(SSurfaceDef* Self)
                 {
                     if (pRaycast->RayLength > d)
                     {
-                        STriangleHitResult& hitResult = pRaycastResult->Hits.Append();
+                        STriangleHitResult& hitResult = pRaycastResult->Hits.Add();
                         hitResult.Location            = pRaycast->RayStart + pRaycast->RayDir * d;
                         hitResult.Normal              = Math::Cross(v1 - v0, v2 - v0).Normalized();
                         hitResult.Distance            = d;
@@ -2139,7 +2133,7 @@ void AVisibilityLevel::RaycastSurface(SSurfaceDef* Self)
 
             if (Self->VisPass == VisQueryMarker)
             {
-                SWorldRaycastPrimitive& rcPrimitive = pRaycastResult->Primitives.Append();
+                SWorldRaycastPrimitive& rcPrimitive = pRaycastResult->Primitives.Add();
                 rcPrimitive.Object                  = nullptr;
                 rcPrimitive.FirstHit                = firstHit;
                 rcPrimitive.NumHits                 = pRaycastResult->Hits.Size() - firstHit;
@@ -2200,7 +2194,7 @@ void AVisibilityLevel::RaycastPrimitive(SPrimitiveDef* Self)
                 }
             }
 
-            SWorldRaycastPrimitive& rcPrimitive = pRaycastResult->Primitives.Append();
+            SWorldRaycastPrimitive& rcPrimitive = pRaycastResult->Primitives.Add();
 
             rcPrimitive.Object     = Self->Owner;
             rcPrimitive.FirstHit   = firstHit;
@@ -2437,7 +2431,7 @@ void AVisibilityLevel::RaycastPrimitiveBounds(SVisArea* InArea)
             }
             else
             {
-                SBoxHitResult& hitResult = pBoundsRaycastResult->Append();
+                SBoxHitResult& hitResult = pBoundsRaycastResult->Add();
 
                 hitResult.Object      = nullptr;
                 hitResult.LocationMin = pRaycast->RayStart + pRaycast->RayDir * boxMin;
@@ -2528,7 +2522,7 @@ void AVisibilityLevel::RaycastPrimitiveBounds(SVisArea* InArea)
         }
         else
         {
-            SBoxHitResult& hitResult = pBoundsRaycastResult->Append();
+            SBoxHitResult& hitResult = pBoundsRaycastResult->Add();
 
             hitResult.Object      = primitive->Owner;
             hitResult.LocationMin = pRaycast->RayStart + pRaycast->RayDir * boxMin;
@@ -3422,10 +3416,10 @@ AVisibilitySystem::~AVisibilitySystem()
 
 void AVisibilitySystem::RegisterLevel(AVisibilityLevel* Level)
 {
-    if (Levels.IsExists(Level))
+    if (Levels.Contains(Level))
         return;
 
-    Levels.Append(Level);
+    Levels.Add(Level);
     Level->AddRef();
 
     MarkPrimitives();
@@ -3433,8 +3427,8 @@ void AVisibilitySystem::RegisterLevel(AVisibilityLevel* Level)
 
 void AVisibilitySystem::UnregisterLevel(AVisibilityLevel* Level)
 {
-    int i = Levels.IndexOf(Level);
-    if (i == -1)
+    auto i = Levels.IndexOf(Level);
+    if (i == Core::NPOS)
         return;
 
     Levels[i]->RemoveRef();

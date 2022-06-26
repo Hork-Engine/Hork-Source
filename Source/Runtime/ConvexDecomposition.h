@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Containers/PodVector.h>
+#include <Containers/Vector.h>
 #include <Geometry/Plane.h>
 
 struct SConvexHullDesc

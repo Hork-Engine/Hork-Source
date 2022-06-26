@@ -48,8 +48,8 @@ feedbackBuffer->End( Allocator, &FeedbackSize, &FeedbackData );
 
 using namespace RenderCore;
 
-AConsoleVar r_FeedbackResolutionFactorVT( _CTS( "r_FeedbackResolutionFactorVT" ), _CTS( "16" ) );
-AConsoleVar r_RenderFeedback( _CTS( "r_RenderFeedback" ), _CTS( "1" ) );
+AConsoleVar r_FeedbackResolutionFactorVT("r_FeedbackResolutionFactorVT"s, "16"s);
+AConsoleVar r_RenderFeedback("r_RenderFeedback"s, "1"s);
 
 // TODO: Move to project settings?
 //static const INTERNAL_PIXEL_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_DEPTH16;

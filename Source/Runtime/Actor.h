@@ -41,7 +41,7 @@ class ASceneComponent;
 class AInputComponent;
 class AController;
 
-using AArrayOfActorComponents = TPodVector<AActorComponent*, 8>;
+using AArrayOfActorComponents = TSmallVector<AActorComponent*, 8>;
 
 #define HK_ACTOR(_Class, _SuperClass) \
     HK_FACTORY_CLASS(AActor::Factory(), _Class, _SuperClass)

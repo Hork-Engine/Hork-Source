@@ -167,16 +167,16 @@ void APlayerController::TakeScreenshot()
             size_t sz = w * h * 4;
             if (sz > 0)
             {
-                void* p = GHunkMemory.Alloc(sz);
+                void* p = Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(sz);
                 GEngine->ReadScreenPixels(0, 0, w, h, sz, p);
                 FlipImageY(p, w, h, 4, w * 4);
                 static int  n = 0;
                 AFileStream f;
-                if (f.OpenWrite(Platform::Fmt("screenshots/%d.png", n++)))
+                if (f.OpenWrite(Core::Format("screenshots/{}.png", n++)))
                 {
                     WritePNG(f, w, h, 4, p, w * 4);
                 }
-                GHunkMemory.ClearLastHunk();
+                Platform::GetHeapAllocator<HEAP_TEMP>().Free(p);
             }
         }
     }
@@ -282,8 +282,8 @@ void APlayerController::UpdatePawnCamera()
 
 ARenderingParameters::ARenderingParameters()
 {
-    static uint16_t data[16][16][16][4];
-    static bool     dataInit = false;
+    static Half data[16][16][16][4];
+    static bool dataInit = false;
     if (!dataInit)
     {
         for (int z = 0; z < 16; z++)
@@ -292,9 +292,9 @@ ARenderingParameters::ARenderingParameters()
             {
                 for (int x = 0; x < 16; x++)
                 {
-                    data[z][y][x][0] = Math::FloatToHalf((float)z / 15.0f * 255.0f);
-                    data[z][y][x][1] = Math::FloatToHalf((float)y / 15.0f * 255.0f);
-                    data[z][y][x][2] = Math::FloatToHalf((float)x / 15.0f * 255.0f);
+                    data[z][y][x][0] = (float)z / 15.0f * 255.0f;
+                    data[z][y][x][1] = (float)y / 15.0f * 255.0f;
+                    data[z][y][x][2] = (float)x / 15.0f * 255.0f;
                     data[z][y][x][3] = 255;
                 }
             }

@@ -33,7 +33,7 @@ SOFTWARE.
 #include "VT.h"
 #include "RectangleBinPack.h"
 
-#include <unordered_map>
+#include <Containers/Hash.h>
 
 struct SVirtualTextureStructure
 {
@@ -80,12 +80,12 @@ struct SVirtualTextureLayer
 
         void * operator new(size_t size)
         {
-            return GZoneMemory.Alloc( size );
+            return Platform::GetHeapAllocator<HEAP_MISC>().Alloc(size);
         }
 
         void operator delete(void * p)
         {
-            GZoneMemory.Free( p );
+            Platform::GetHeapAllocator<HEAP_MISC>().Free(p);
         }
 
         SVirtualTextureImage  Image;
@@ -108,7 +108,7 @@ struct SVirtualTextureLayer
 
     void            (*PageCompressionMethod)( const void * _InputData, void * _OutputData );
 
-    std::unordered_map< unsigned int, SCachedPage * > Pages;
+    THashMap< unsigned int, SCachedPage * > Pages;
 
 };
 

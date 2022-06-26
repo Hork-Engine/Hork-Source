@@ -111,7 +111,7 @@ HK_INLINE void TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::Free()
     {
         SBlock* block = Blocks;
         Blocks        = block->Next;
-        GHeapMemory.Free(block);
+        Platform::GetHeapAllocator<HEAP_MISC>().Free(block);
     }
     CurBlock = nullptr;
     //FreeList = nullptr;
@@ -146,7 +146,7 @@ HK_INLINE void TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::CleanupEmptyBlocks(
             {
                 CurBlock = nullptr;
             }
-            GHeapMemory.Free(block);
+            Platform::GetHeapAllocator<HEAP_MISC>().Free(block);
             TotalBlocks--;
         }
         else
@@ -171,7 +171,7 @@ HK_INLINE void TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::CleanupEmptyBlocks(
 template <typename T, int MAX_BLOCK_SIZE, int ALIGNMENT>
 HK_INLINE typename TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::SBlock* TPoolAllocator<T, MAX_BLOCK_SIZE, ALIGNMENT>::AllocateBlock()
 {
-    SBlock* block   = (SBlock*)GHeapMemory.Alloc(sizeof(SBlock), ALIGNMENT);
+    SBlock* block   = (SBlock*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(SBlock), ALIGNMENT);
     block->FreeList = block->Chunks;
 #if 0
     for ( int i = 0 ; i < MAX_BLOCK_SIZE ; ++i ) {

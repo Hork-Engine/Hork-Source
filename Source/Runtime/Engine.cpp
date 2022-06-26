@@ -57,19 +57,19 @@ SOFTWARE.
 
 //#define IMGUI_CONTEXT
 
-static AConsoleVar com_ShowStat(_CTS("com_ShowStat"), _CTS("0"));
-static AConsoleVar com_ShowFPS(_CTS("com_ShowFPS"), _CTS("0"));
-static AConsoleVar com_SimulateCursorBallistics(_CTS("com_SimulateCursorBallistics"), _CTS("1"));
+static AConsoleVar com_ShowStat("com_ShowStat"s, "0"s);
+static AConsoleVar com_ShowFPS("com_ShowFPS"s, "0"s);
+static AConsoleVar com_SimulateCursorBallistics("com_SimulateCursorBallistics"s, "1"s);
 
-AConsoleVar rt_VidWidth(_CTS("rt_VidWidth"), _CTS("0"));
-AConsoleVar rt_VidHeight(_CTS("rt_VidHeight"), _CTS("0"));
+AConsoleVar rt_VidWidth("rt_VidWidth"s, "0"s);
+AConsoleVar rt_VidHeight("rt_VidHeight"s, "0"s);
 #ifdef HK_DEBUG
-AConsoleVar rt_VidFullscreen(_CTS("rt_VidFullscreen"), _CTS("0"));
+AConsoleVar rt_VidFullscreen("rt_VidFullscreen"s, "0"s);
 #else
-AConsoleVar rt_VidFullscreen(_CTS("rt_VidFullscreen"), _CTS("1"));
+AConsoleVar rt_VidFullscreen("rt_VidFullscreen"s, "1"s);
 #endif
 
-AConsoleVar rt_SwapInterval(_CTS("rt_SwapInterval"), _CTS("0"), 0, _CTS("1 - enable vsync, 0 - disable vsync, -1 - tearing"));
+AConsoleVar rt_SwapInterval("rt_SwapInterval"s, "0"s, 0, "1 - enable vsync, 0 - disable vsync, -1 - tearing"s);
 
 static int TotalAllocatedRenderCore = 0;
 
@@ -99,43 +99,28 @@ static void PhysModuleErrorFunction(const char* _Message)
 
 static void* PhysModuleAlignedAlloc(size_t _BytesCount, int _Alignment)
 {
-    HK_ASSERT(_Alignment <= 16);
-    return GZoneMemory.Alloc(_BytesCount);
+    return Platform::GetHeapAllocator<HEAP_PHYSICS>().Alloc(_BytesCount, _Alignment);
 }
 
 static void* PhysModuleAlloc(size_t _BytesCount)
 {
-    return GZoneMemory.Alloc(_BytesCount);
+    return Platform::GetHeapAllocator<HEAP_PHYSICS>().Alloc(_BytesCount);
 }
 
 static void PhysModuleFree(void* _Bytes)
 {
-    GZoneMemory.Free(_Bytes);
+    Platform::GetHeapAllocator<HEAP_PHYSICS>().Free(_Bytes);
 }
 
 static void* NavModuleAlloc(size_t _BytesCount, dtAllocHint _Hint)
 {
-    return GHeapMemory.Alloc(_BytesCount);
-    //return GZoneMemory.Alloc( _BytesCount );
+    return Platform::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(_BytesCount);
 }
 
 static void NavModuleFree(void* _Bytes)
 {
-    GHeapMemory.Free(_Bytes);
-    //GZoneMemory.Free( _Bytes );
+    Platform::GetHeapAllocator<HEAP_NAVIGATION>().Free(_Bytes);
 }
-
-#if 0
-static void *ImguiModuleAlloc( size_t _BytesCount, void * )
-{
-    return GZoneMemory.Alloc( _BytesCount );
-}
-
-static void ImguiModuleFree( void * _Bytes, void * )
-{
-    GZoneMemory.Free( _Bytes );
-}
-#endif
 
 static AGameModule* CreateGameModule(AClassMeta const* pClassMeta)
 {
@@ -191,8 +176,7 @@ void AEngine::InitializeDirectories()
 {
     SProcessInfo const& processInfo = Platform::GetProcessInfo();
 
-    WorkingDir = processInfo.Executable;
-    WorkingDir.ClipFilename();
+    WorkingDir = PathUtils::GetFilePath(processInfo.Executable);
 
 #if defined HK_OS_WIN32
     SetCurrentDirectoryA(WorkingDir.CStr());
@@ -213,7 +197,7 @@ void AEngine::InitializeDirectories()
     }
     else
     {
-        RootPath.FixSeparator();
+        PathUtils::FixSeparatorInplace(RootPath);
         if (RootPath[RootPath.Length() - 1] != '/')
         {
             RootPath += '/';
@@ -251,14 +235,14 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
         [](size_t _BytesCount)
     {
         TotalAllocatedRenderCore++;
-        return GZoneMemory.Alloc(_BytesCount);
+        return Platform::GetHeapAllocator<HEAP_RHI>().Alloc(_BytesCount);
     };
 
     allocator.Deallocate =
         [](void* _Bytes)
     {
         TotalAllocatedRenderCore--;
-        GZoneMemory.Free(_Bytes);
+        Platform::GetHeapAllocator<HEAP_RHI>().Free(_Bytes);
     };
 
     CreateLogicalDevice("OpenGL 4.5", &allocator, &RenderDevice);
@@ -305,11 +289,11 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
     InitializeFactories();
 
     // Init physics module
-    b3SetCustomPrintfFunc(PhysModulePrintFunction);
-    b3SetCustomWarningMessageFunc(PhysModuleWarningFunction);
-    b3SetCustomErrorMessageFunc(PhysModuleErrorFunction);
-    b3AlignedAllocSetCustom(PhysModuleAlloc, PhysModuleFree);
-    b3AlignedAllocSetCustomAligned(PhysModuleAlignedAlloc, PhysModuleFree);
+    //b3SetCustomPrintfFunc(PhysModulePrintFunction);
+    //b3SetCustomWarningMessageFunc(PhysModuleWarningFunction);
+    //b3SetCustomErrorMessageFunc(PhysModuleErrorFunction);
+    //b3AlignedAllocSetCustom(PhysModuleAlloc, PhysModuleFree);
+    //b3AlignedAllocSetCustomAligned(PhysModuleAlignedAlloc, PhysModuleFree);
     btAlignedAllocSetCustom(PhysModuleAlloc, PhysModuleFree);
     btAlignedAllocSetCustomAligned(PhysModuleAlignedAlloc, PhysModuleFree);
 
@@ -402,6 +386,8 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
         // Generate GPU commands
         RenderBackend->RenderFrame(FrameLoop->GetStreamedMemoryGPU(), pSwapChain->GetBackBuffer(), Renderer->GetFrameData());
 
+        SaveMemoryStats();
+
     } while (!IsPendingTerminate());
 
     bAllowInputEvents = false;
@@ -472,16 +458,69 @@ void AEngine::DrawCanvas()
     Canvas.End();
 }
 
+SMemoryStat GMemoryStat[HEAP_MAX];
+SMemoryStat GMemoryStatGlobal;
+
+const char* HeapName[HEAP_MAX] =
+{
+        "HEAP_STRING",
+        "HEAP_VECTOR",
+        "HEAP_HASH_SET",
+        "HEAP_HASH_MAP",
+        "HEAP_CPU_VERTEX_BUFFER",
+        "HEAP_CPU_INDEX_BUFFER",
+        "HEAP_IMAGE",
+        "HEAP_AUDIO_DATA",
+        "HEAP_RHI",
+        "HEAP_PHYSICS",
+        "HEAP_NAVIGATION",
+        "HEAP_TEMP",
+        "HEAP_MISC",
+        "HEAP_WORLD_OBJECTS",
+};
+
+void AEngine::SaveMemoryStats()
+{
+#define SHOW_HEAP_STAT(heap)                                              \
+    {                                                                     \
+        GMemoryStat[heap] = Platform::GetHeapAllocator<heap>().GetStat(); \
+    }
+
+    SHOW_HEAP_STAT(HEAP_STRING);
+    SHOW_HEAP_STAT(HEAP_VECTOR);
+    SHOW_HEAP_STAT(HEAP_HASH_SET);
+    SHOW_HEAP_STAT(HEAP_HASH_MAP);
+    SHOW_HEAP_STAT(HEAP_CPU_VERTEX_BUFFER);
+    SHOW_HEAP_STAT(HEAP_CPU_INDEX_BUFFER);
+    SHOW_HEAP_STAT(HEAP_IMAGE);
+    SHOW_HEAP_STAT(HEAP_AUDIO_DATA);
+    SHOW_HEAP_STAT(HEAP_RHI);
+    SHOW_HEAP_STAT(HEAP_PHYSICS);
+    SHOW_HEAP_STAT(HEAP_NAVIGATION);
+    SHOW_HEAP_STAT(HEAP_TEMP);
+    SHOW_HEAP_STAT(HEAP_MISC);
+    SHOW_HEAP_STAT(HEAP_WORLD_OBJECTS);
+
+    GMemoryStatGlobal = {};
+
+    for (int n = 0; n < HEAP_MAX; n++)
+    {
+        GMemoryStatGlobal.FrameAllocs += GMemoryStat[n].FrameAllocs;
+        GMemoryStatGlobal.FrameFrees += GMemoryStat[n].FrameFrees;
+        GMemoryStatGlobal.MemoryAllocated += GMemoryStat[n].MemoryAllocated;
+        GMemoryStatGlobal.MemoryAllocs += GMemoryStat[n].MemoryAllocs;
+        GMemoryStatGlobal.MemoryPeakAlloc += GMemoryStat[n].MemoryPeakAlloc;
+    }
+}
+
 void AEngine::ShowStats()
 {
-    static TStaticResourceFinder<AFont> Impact18(_CTS("/Root/impact18.font"));
+    static TStaticResourceFinder<AFont> Impact18("/Root/impact18.font"s);
     AFont*                              font = Impact18.GetObject();
 
     if (com_ShowStat)
     {
         SRenderFrame* frameData = Renderer->GetFrameData();
-
-        const size_t TotalMemorySizeInBytes = ((GZoneMemory.GetZoneMemorySizeInMegabytes() << 20) + (GHunkMemory.GetHunkMemorySizeInMegabytes() << 20) + FrameLoop->GetFrameMemorySize());
 
         SRenderFrontendStat const& stat = Renderer->GetStat();
 
@@ -491,37 +530,49 @@ void AEngine::ShowStats()
         const int   numLines = 13;
 
         Float2 pos(8, 8);
-        pos.Y = Canvas.GetHeight() - numLines * y_step;
+        
 
         Canvas.PushFont(font);
-        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Zone memory usage: %f KB / %d MB", GZoneMemory.GetTotalMemoryUsage() / 1024.0f, GZoneMemory.GetZoneMemorySizeInMegabytes()), true);
-        pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Hunk memory usage: %f KB / %d MB", GHunkMemory.GetTotalMemoryUsage() / 1024.0f, GHunkMemory.GetHunkMemorySizeInMegabytes()), true);
-        pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Frame memory usage: %f KB / %d MB (Max %f KB)", FrameLoop->GetFrameMemoryUsedPrev() / 1024.0f, FrameLoop->GetFrameMemorySize() >> 20, FrameLoop->GetMaxFrameMemoryUsage() / 1024.0f), true);
-        pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Frame memory usage (GPU): %f KB / %d MB (Max %f KB)", streamedMemory->GetUsedMemoryPrev() / 1024.0f, streamedMemory->GetAllocatedMemory() >> 20, streamedMemory->GetMaxMemoryUsage() / 1024.0f), true);
-        pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Vertex cache memory usage (GPU): %f KB / %d MB", VertexMemoryGPU->GetUsedMemory() / 1024.0f, VertexMemoryGPU->GetAllocatedMemory() >> 20), true);
-        pos.Y += y_step;
-        if (GHeapMemory.GetTotalMemoryUsage() > 0)
+
+        
+
+        
+
+        pos.Y = 100;
+        for (int n = 0; n < HEAP_MAX; n++)
         {
-            Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Heap memory usage: %f KB", (GHeapMemory.GetTotalMemoryUsage() - TotalMemorySizeInBytes) / 1024.0f), true);
+            SMemoryStat& memstat = GMemoryStat[n];
+
+            Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("{}\t\tHeap memory usage: {} KB / peak {} MB Allocs {}", HeapName[n], memstat.MemoryAllocated / 1024.0f, memstat.MemoryPeakAlloc / 1024.0f / 1024.0f, memstat.MemoryAllocs), true);
             pos.Y += y_step;
         }
-        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Visible instances: %d", frameData->Instances.Size()), true);
+
+        pos.Y = Canvas.GetHeight() - numLines * y_step;
+
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Heap memory usage: {} KB / peak {} MB Allocs {}", GMemoryStatGlobal.MemoryAllocated / 1024.0f, GMemoryStatGlobal.MemoryPeakAlloc / 1024.0f / 1024.0f, GMemoryStatGlobal.MemoryAllocs), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Visible shadow instances: %d", frameData->ShadowInstances.Size()), true);
+
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Frame allocs {} Frame frees {}", GMemoryStatGlobal.FrameAllocs, GMemoryStatGlobal.FrameFrees), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Visible dir lights: %d", frameData->DirectionalLights.Size()), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Frame memory usage: {} KB / {} MB (Max {} KB)", FrameLoop->GetFrameMemoryUsedPrev() / 1024.0f, FrameLoop->GetFrameMemorySize() >> 20, FrameLoop->GetMaxFrameMemoryUsage() / 1024.0f), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Polycount: %d", stat.PolyCount), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Frame memory usage (GPU): {} KB / {} MB (Max {} KB)", streamedMemory->GetUsedMemoryPrev() / 1024.0f, streamedMemory->GetAllocatedMemory() >> 20, streamedMemory->GetMaxMemoryUsage() / 1024.0f), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("ShadowMapPolyCount: %d", stat.ShadowMapPolyCount), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Vertex cache memory usage (GPU): {} KB / {} MB", VertexMemoryGPU->GetUsedMemory() / 1024.0f, VertexMemoryGPU->GetAllocatedMemory() >> 20), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Frontend time: %d msec", stat.FrontendTime), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Visible instances: {}", frameData->Instances.Size()), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Platform::Fmt("Audio channels: %d active, %d virtual", AudioSystem.GetMixer()->GetNumActiveChannels(), AudioSystem.GetMixer()->GetNumVirtualChannels()), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Visible shadow instances: {}", frameData->ShadowInstances.Size()), true);
+        pos.Y += y_step;
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Visible dir lights: {}", frameData->DirectionalLights.Size()), true);
+        pos.Y += y_step;
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Polycount: {}", stat.PolyCount), true);
+        pos.Y += y_step;
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("ShadowMapPolyCount: {}", stat.ShadowMapPolyCount), true);
+        pos.Y += y_step;
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Frontend time: {} msec", stat.FrontendTime), true);
+        pos.Y += y_step;
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Audio channels: {} active, {} virtual", AudioSystem.GetMixer()->GetNumActiveChannels(), AudioSystem.GetMixer()->GetNumVirtualChannels()), true);
 
         Canvas.PopFont();
     }
@@ -542,7 +593,7 @@ void AEngine::ShowStats()
         fps *= (1.0f / FPS_BUF);
         fps = 1.0f / (fps > 0.0f ? fps : 1.0f);
         Canvas.PushFont(font);
-        Canvas.DrawTextUTF8(Float2(10, 10), Color4::White(), Platform::Fmt("Frame time %.1f ms (FPS: %d, AVG %d)", FrameDurationInSeconds * 1000.0f, int(1.0f / FrameDurationInSeconds), int(fps + 0.5f)), true);
+        Canvas.DrawTextUTF8(Float2(10, 10), Color4::White(), Core::Format("Frame time {:.1} ms (FPS: {}, AVG {})", FrameDurationInSeconds * 1000.0f, int(1.0f / FrameDurationInSeconds), int(fps + 0.5f)), true);
         Canvas.PopFont();
     }
 }
@@ -566,7 +617,7 @@ void AEngine::OnKeyEvent(SKeyEvent const& _Event, double _TimeStamp)
     // Check Alt+Enter to toggle fullscreen/windowed mode
     if (GameModule->bToggleFullscreenAltEnter)
     {
-        if (_Event.Action == IA_PRESS && _Event.Key == KEY_ENTER && (HAS_MODIFIER(_Event.ModMask, KMOD_ALT)))
+        if (_Event.Action == IA_PRESS && _Event.Key == KEY_ENTER && (HAS_MODIFIER(_Event.ModMask, KEY_MOD_ALT)))
         {
             SVideoMode videoMode  = Window->GetVideoMode();
             videoMode.bFullscreen = !videoMode.bFullscreen;
@@ -952,7 +1003,7 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
     init.Argv = _Argv;
 #endif
     init.bAllowMultipleInstances = false;
-    init.ZoneSizeInMegabytes     = 256;
+    //init.ZoneSizeInMegabytes     = 256;
     init.HunkSizeInMegabytes     = 32;
     Platform::Initialize(init);
 

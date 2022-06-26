@@ -44,6 +44,12 @@ class AIndexedMesh;
 class ALevel;
 struct SVertexHandle;
 
+template <typename VertexType>
+using TVertexBufferCPU = TVector<VertexType, Allocators::HeapMemoryAllocator<HEAP_CPU_VERTEX_BUFFER>>;
+
+template <typename IndexType>
+using TIndexBufferCPU = TVector<IndexType, Allocators::HeapMemoryAllocator<HEAP_CPU_INDEX_BUFFER>>;
+
 /**
 
 ASocketDef
@@ -240,7 +246,7 @@ private:
     TRef<AIndexedMesh>            SourceMesh;
     TWeakRef<ALevel>              LightingLevel;
     int                           IndexInArrayOfUVs = -1;
-    TPodVectorHeap<SMeshVertexUV> Vertices;
+    TVertexBufferCPU<SMeshVertexUV> Vertices;
     bool                          bInvalid = false;
 };
 
@@ -287,13 +293,13 @@ private:
     TRef<AIndexedMesh>               SourceMesh;
     TWeakRef<ALevel>                 LightingLevel;
     int                              IndexInArrayOfChannels = -1;
-    TPodVectorHeap<SMeshVertexLight> Vertices;
+    TVertexBufferCPU<SMeshVertexLight> Vertices;
     bool                             bInvalid = false;
 };
 
-using ALightmapUVChannels      = TPodVector<ALightmapUV*, 1>;
-using AVertexLightChannels     = TPodVector<AVertexLight*, 1>;
-using AIndexedMeshSubpartArray = TPodVector<AIndexedMeshSubpart*, 1>;
+using ALightmapUVChannels      = TPodVector<ALightmapUV*>;
+using AVertexLightChannels     = TPodVector<AVertexLight*>;
+using AIndexedMeshSubpartArray = TPodVector<AIndexedMeshSubpart*>;
 
 struct SSoftbodyLink
 {
@@ -410,7 +416,7 @@ public:
     ASocketDef* FindSocket(const char* _Name);
 
     /** Get array of sockets */
-    TPodVector<ASocketDef*> const& GetSockets() const { return Sockets; }
+    TVector<ASocketDef*> const& GetSockets() const { return Sockets; }
 
     /** Set skeleton for the mesh. */
     void SetSkeleton(ASkeleton* _Skeleton);
@@ -534,7 +540,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(const char* _Path) override;
+    void LoadInternalResource(AStringView _Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Meshes/Box"; }
 
@@ -545,25 +551,27 @@ private:
     static void* GetIndexMemory(void* _This);
     static void* GetWeightMemory(void* _This);
 
-    SVertexHandle*                  VertexHandle  = nullptr;
-    SVertexHandle*                  IndexHandle   = nullptr;
-    SVertexHandle*                  WeightsHandle = nullptr;
-    AIndexedMeshSubpartArray        Subparts;
-    ALightmapUVChannels             LightmapUVs;
-    AVertexLightChannels            VertexLightChannels;
-    TPodVectorHeap<SMeshVertex>     Vertices;
-    TPodVectorHeap<SMeshVertexSkin> Weights;
-    TPodVectorHeap<unsigned int>    Indices;
-    TPodVector<ASocketDef*>         Sockets;
-    TRef<ASkeleton>                 Skeleton;
-    TRef<ACollisionModel>           CollisionModel;
-    TPodVector<SSoftbodyLink>       SoftbodyLinks;
-    TPodVector<SSoftbodyFace>       SoftbodyFaces;
-    ASkin                           Skin;
-    BvAxisAlignedBox                BoundingBox;
-    uint16_t                        RaycastPrimitivesPerLeaf = 16;
-    bool                            bSkinnedMesh             = false;
-    mutable bool                    bBoundingBoxDirty        = false;
+    SVertexHandle*            VertexHandle  = nullptr;
+    SVertexHandle*            IndexHandle   = nullptr;
+    SVertexHandle*            WeightsHandle = nullptr;
+    AIndexedMeshSubpartArray  Subparts;
+    ALightmapUVChannels       LightmapUVs;
+    AVertexLightChannels      VertexLightChannels;
+
+    TVertexBufferCPU<SMeshVertex>     Vertices;
+    TVertexBufferCPU<SMeshVertexSkin> Weights;
+    TIndexBufferCPU<unsigned int>     Indices;
+
+    TVector<ASocketDef*>      Sockets;
+    TRef<ASkeleton>           Skeleton;
+    TRef<ACollisionModel>     CollisionModel;
+    TPodVector<SSoftbodyLink> SoftbodyLinks;
+    TPodVector<SSoftbodyFace> SoftbodyFaces;
+    ASkin                     Skin;
+    BvAxisAlignedBox          BoundingBox;
+    uint16_t                  RaycastPrimitivesPerLeaf = 16;
+    bool                      bSkinnedMesh             = false;
+    mutable bool              bBoundingBoxDirty        = false;
 };
 
 class AStreamedMemoryGPU;
@@ -582,10 +590,10 @@ class AProceduralMesh : public ABaseObject
 
 public:
     /** Update vertex cache occasionally or every frame */
-    TPodVectorHeap<SMeshVertex, 32, 32> VertexCache;
+    TVertexBufferCPU<SMeshVertex> VertexCache;
 
     /** Update index cache occasionally or every frame */
-    TPodVectorHeap<unsigned int, 32, 32> IndexCache;
+    TIndexBufferCPU<unsigned int> IndexCache;
 
     /** Bounding box is used for raycast early exit and VSD culling */
     BvAxisAlignedBox BoundingBox;
@@ -626,25 +634,25 @@ Utilites
 
 */
 
-void CreateBoxMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, Float3 const& _Size, float _TexCoordScale);
+void CreateBoxMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, Float3 const& _Size, float _TexCoordScale);
 
-void CreateSphereMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs = 32, int _NumHorizontalSubdivs = 32);
+void CreateSphereMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs = 32, int _NumHorizontalSubdivs = 32);
 
-void CreatePlaneMeshXZ(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Width, float _Height, float _TexCoordScale);
+void CreatePlaneMeshXZ(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Width, float _Height, float _TexCoordScale);
 
-void CreatePlaneMeshXY(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Width, float _Height, float _TexCoordScale);
+void CreatePlaneMeshXY(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Width, float _Height, float _TexCoordScale);
 
-void CreatePatchMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs);
+void CreatePatchMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs);
 
-void CreateCylinderMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32);
+void CreateCylinderMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32);
 
-void CreateConeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32);
+void CreateConeMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32);
 
-void CreateCapsuleMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs = 6, int _NumHorizontalSubdivs = 8);
+void CreateCapsuleMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs = 6, int _NumHorizontalSubdivs = 8);
 
-void CreateSkyboxMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, Float3 const& _Size, float _TexCoordScale);
+void CreateSkyboxMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, Float3 const& _Size, float _TexCoordScale);
 
-void CreateSkydomeMesh(TPodVector<SMeshVertex>& _Vertices, TPodVector<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs = 32, int _NumHorizontalSubdivs = 32, bool _Hemisphere = true);
+void CreateSkydomeMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, float _Radius, float _TexCoordScale, int _NumVerticalSubdivs = 32, int _NumHorizontalSubdivs = 32, bool _Hemisphere = true);
 
 void CalcTangentSpace(SMeshVertex* _VertexArray, unsigned int _NumVerts, unsigned int const* _IndexArray, unsigned int _NumIndices);
 

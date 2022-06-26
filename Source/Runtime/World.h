@@ -65,7 +65,7 @@ struct SActorSpawnInfo
     SActorSpawnInfo() = delete;
 
     SActorSpawnInfo(AClassMeta const* _ActorTypeClassMeta) :
-        SpawnTransform(Float3::Zero(), Quat::Identity()), Level(nullptr), Instigator(nullptr), bInEditor(false), Template(nullptr), ActorTypeClassMeta(_ActorTypeClassMeta)
+        Level(nullptr), Instigator(nullptr), bInEditor(false), Template(nullptr), ActorTypeClassMeta(_ActorTypeClassMeta)
     {
     }
 

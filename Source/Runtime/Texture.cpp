@@ -119,9 +119,9 @@ bool ATexture::InitializeCubemapFromImages(TArray<AImage, 6> const& _Faces)
     return true;
 }
 
-void ATexture::LoadInternalResource(const char* _Path)
+void ATexture::LoadInternalResource(AStringView _Path)
 {
-    if (!Platform::Stricmp(_Path, "/Default/Textures/White"))
+    if (!_Path.Icmp("/Default/Textures/White"))
     {
         const byte data[4] = {255, 255, 255, 255};
 
@@ -131,7 +131,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Textures/Black"))
+    if (!_Path.Icmp("/Default/Textures/Black"))
     {
         const byte data[4] = {0, 0, 0, 255};
 
@@ -141,7 +141,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Textures/Gray"))
+    if (!_Path.Icmp("/Default/Textures/Gray"))
     {
         const byte data[4] = {127, 127, 127, 255};
 
@@ -151,7 +151,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Textures/BaseColorWhite") || !Platform::Stricmp(_Path, "/Default/Textures/Default2D"))
+    if (!_Path.Icmp("/Default/Textures/BaseColorWhite") || !_Path.Icmp("/Default/Textures/Default2D"))
     {
         const byte data[4] = {240, 240, 240, 255};
 
@@ -161,7 +161,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Textures/BaseColorBlack"))
+    if (!_Path.Icmp("/Default/Textures/BaseColorBlack"))
     {
         const byte data[4] = {30, 30, 30, 255};
 
@@ -171,7 +171,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Textures/Normal"))
+    if (!_Path.Icmp("/Default/Textures/Normal"))
     {
         const byte data[4] = {255, 127, 127, 255}; // Z Y X Alpha
 
@@ -181,7 +181,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Textures/DefaultCubemap"))
+    if (!_Path.Icmp("/Default/Textures/DefaultCubemap"))
     {
         constexpr Float3 dirs[6] = {
             Float3(1, 0, 0),
@@ -222,7 +222,7 @@ void ATexture::LoadInternalResource(const char* _Path)
     }
 #endif
 
-    if (!Platform::Stricmp(_Path, "/Default/Textures/LUT1") || !Platform::Stricmp(_Path, "/Default/Textures/Default3D"))
+    if (!_Path.Icmp("/Default/Textures/LUT1") || !_Path.Icmp("/Default/Textures/Default3D"))
     {
 
         constexpr SColorGradingPreset ColorGradingPreset1 = {
@@ -240,7 +240,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Textures/LUT2"))
+    if (!_Path.Icmp("/Default/Textures/LUT2"))
     {
         constexpr SColorGradingPreset ColorGradingPreset2 = {
             Float3(0.5f), // Gain
@@ -257,7 +257,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Textures/LUT3"))
+    if (!_Path.Icmp("/Default/Textures/LUT3"))
     {
         constexpr SColorGradingPreset ColorGradingPreset3 = {
             Float3(0.51f, 0.55f, 0.53f), // Gain
@@ -274,9 +274,9 @@ void ATexture::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Textures/LUT_Luminance"))
+    if (!_Path.Icmp("/Default/Textures/LUT_Luminance"))
     {
-        byte* data = (byte*)GHunkMemory.Alloc(16 * 16 * 16 * 4);
+        byte* data = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(16 * 16 * 16 * 4);
         for (int z = 0; z < 16; z++)
         {
             byte* depth = data + (size_t)z * (16 * 16 * 4);
@@ -294,7 +294,7 @@ void ATexture::LoadInternalResource(const char* _Path)
         Initialize3D(TEXTURE_PF_BGRA8_SRGB, 1, 16, 16, 16);
         WriteArbitraryData(0, 0, 0, 16, 16, 16, 0, data);
 
-        GHunkMemory.ClearLastHunk();
+        Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
 
         return;
     }
@@ -434,8 +434,7 @@ bool ATexture::LoadResource(IBinaryStreamReadInterface& Stream)
         uint32_t lodWidth, lodHeight, lodDepth;
         size_t   pixelSize = texturePixelFormat.SizeInBytesUncompressed();
         size_t   maxSize   = (size_t)w * h * d * pixelSize;
-        //byte * lodData = (byte *)GHunkMemory.HunkMemory( maxSize, 1 );
-        byte* lodData = (byte*)GHeapMemory.Alloc(maxSize, 1);
+        byte* lodData = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(maxSize);
 
         //int numLayers = 1;
 
@@ -466,11 +465,10 @@ bool ATexture::LoadResource(IBinaryStreamReadInterface& Stream)
         }
         //}
 
-        //GHunkMemory.ClearLastHunk();
-        GHeapMemory.Free(lodData);
+        Platform::GetHeapAllocator<HEAP_TEMP>().Free(lodData);
 
 #if 0
-        byte * buf = (byte *)GHeapMemory.Alloc( size );
+        byte * buf = (byte *)Platform::MemoryAllocSafe( size );
 
         Stream.Read( buf, size );
 
@@ -733,7 +731,7 @@ void ATexture::InitializeColorGradingLUT(const char* _Path)
     {
         const byte* p = static_cast<const byte*>(image.GetData());
 
-        byte* data = (byte*)GHunkMemory.Alloc(16 * 16 * 16 * 4);
+        byte* data = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(16 * 16 * 16 * 4);
 
         for (int y = 0; y < 16; y++)
         {
@@ -749,7 +747,7 @@ void ATexture::InitializeColorGradingLUT(const char* _Path)
         Initialize3D(TEXTURE_PF_BGRA8_SRGB, 1, 16, 16, 16);
         WriteArbitraryData(0, 0, 0, 16, 16, 16, 0, data);
 
-        GHunkMemory.ClearLastHunk();
+        Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
 
         return;
     }
@@ -800,7 +798,7 @@ void ATexture::InitializeColorGradingLUT(SColorGradingPreset const& _Preset)
 
     const float scale = 1.0f / 15.0f;
 
-    byte* data = (byte*)GHunkMemory.Alloc(16 * 16 * 16 * 4);
+    byte* data = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(16 * 16 * 16 * 4);
 
     for (int z = 0; z < 16; z++)
     {
@@ -827,7 +825,7 @@ void ATexture::InitializeColorGradingLUT(SColorGradingPreset const& _Preset)
 
     WriteArbitraryData(0, 0, 0, 16, 16, 16, 0, data);
 
-    GHunkMemory.ClearLastHunk();
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
 }
 
 void ATexture::InitializeCubemap(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width)

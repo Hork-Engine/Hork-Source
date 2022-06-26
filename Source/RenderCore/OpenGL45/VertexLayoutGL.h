@@ -49,24 +49,6 @@ public:
     {}
 };
 
-struct SVertexLayoutDescGL
-{
-    uint32_t           NumVertexBindings{};
-    SVertexBindingInfo VertexBindings[MAX_VERTEX_BINDINGS] = {};
-    uint32_t           NumVertexAttribs{};
-    SVertexAttribInfo  VertexAttribs[MAX_VERTEX_ATTRIBS] = {};
-
-    bool operator==(SVertexLayoutDescGL const& Rhs) const
-    {
-        return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
-    }
-
-    bool operator!=(SVertexLayoutDescGL const& Rhs) const
-    {
-        return !(operator==(Rhs));
-    }
-};
-
 class AVertexLayoutGL : public ARefCounted
 {
 public:
@@ -107,12 +89,12 @@ public:
     void DestroyVAO(AImmediateContextGLImpl* pContext);
 
 private:
-    [[nodiscard]] std::unique_ptr<AVertexArrayObjectGL> CreateVAO();
+    HK_NODISCARD std::unique_ptr<AVertexArrayObjectGL> CreateVAO();
 
-    std::unordered_map<uint32_t /* context id */, std::unique_ptr<AVertexArrayObjectGL>> VaoHandles;
-    std::unique_ptr<AVertexArrayObjectGL>                                                VaoHandleMainContext;
-    SVertexLayoutDescGL                                                                  Desc;
-    uint32_t                                                                             VertexBindingsStrides[MAX_VERTEX_BUFFER_SLOTS] = {};
+    THashMap<uint32_t /* context id */, std::unique_ptr<AVertexArrayObjectGL>> VaoHandles;
+    std::unique_ptr<AVertexArrayObjectGL>                                      VaoHandleMainContext;
+    SVertexLayoutDescGL                                                        Desc;
+    uint32_t                                                                   VertexBindingsStrides[MAX_VERTEX_BUFFER_SLOTS] = {};
 };
 
 } // namespace RenderCore

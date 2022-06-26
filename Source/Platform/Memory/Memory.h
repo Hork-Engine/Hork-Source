@@ -31,17 +31,78 @@ SOFTWARE.
 #pragma once
 
 #include "../Thread.h"
-#include <malloc.h>
 #include <cstring> // std::memcpy
 
-/*
+enum MEMORY_HEAP
+{
+    HEAP_STRING,
+    HEAP_VECTOR,
+    HEAP_HASH_SET,
+    HEAP_HASH_MAP,
+    HEAP_CPU_VERTEX_BUFFER,
+    HEAP_CPU_INDEX_BUFFER,
+    HEAP_IMAGE,
+    HEAP_AUDIO_DATA,
+    HEAP_RHI,
+    HEAP_PHYSICS,
+    HEAP_NAVIGATION,
+    HEAP_TEMP,
+    HEAP_MISC,
+    HEAP_WORLD_OBJECTS,
 
-Memory utilites
+    HEAP_MAX
+};
 
-*/
+enum MALLOC_FLAGS : uint32_t
+{
+    MALLOC_FLAGS_DEFAULT = 0,
+    MALLOC_ZERO    = HK_BIT(0),
+    MALLOC_DISCARD = HK_BIT(1)
+};
+
+HK_FLAG_ENUM_OPERATORS(MALLOC_FLAGS)
+
+struct SMemoryStat
+{
+    size_t FrameAllocs;
+    size_t FrameFrees;
+    size_t MemoryAllocated;
+    size_t MemoryAllocs;
+    size_t MemoryPeakAlloc;
+};
+
+struct MemoryHeap
+{
+    static void        MemoryNewFrame();
+    static void        MemoryCleanup();
+    static SMemoryStat MemoryGetStat();
+
+    void*       Alloc(size_t SizeInBytes, size_t Alignment = 16, MALLOC_FLAGS Flags = MALLOC_FLAGS_DEFAULT);
+    void*       Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment = 16, MALLOC_FLAGS Flags = MALLOC_FLAGS_DEFAULT);
+    void        Free(void* Ptr);
+    size_t      GetSize(void* Ptr);
+    SMemoryStat GetStat();
+
+private:
+    void* _Alloc(size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags);
+    void* _Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALLOC_FLAGS Flags);
+
+    AAtomicLong MemoryAllocated{};
+    AAtomicLong MemoryAllocs{};
+    AAtomicLong PeakAllocated{};
+    AAtomicLong PerFrameAllocs{};
+    AAtomicLong PerFrameFrees{};
+};
 
 namespace Platform
 {
+
+template <MEMORY_HEAP Heap>
+MemoryHeap& GetHeapAllocator()
+{
+    extern MemoryHeap MemoryHeaps[];
+    return MemoryHeaps[Heap];
+}
 
 /** Built-in memcpy function replacement */
 void _MemcpySSE(byte* _Dst, const byte* _Src, size_t _SizeInBytes);
@@ -97,423 +158,36 @@ HK_FORCEINLINE void* Memmove(void* _Dst, const void* _Src, size_t _SizeInBytes)
     return std::memmove(_Dst, _Src, _SizeInBytes);
 }
 
-
-void* SysAlloc(size_t _SizeInBytes, int _Alignment = 16);
-
-void* SysRealloc(void* _Bytes, size_t _SizeInBytes, int _Alignment = 16);
-
-void SysFree(void* _Bytes);
-
 } // namespace Platform
 
-/**
-
-AHeapMemory
-
-Allocates memory on heap
-
-*/
-class AHeapMemory final
-{
-    HK_FORBID_COPY(AHeapMemory)
-
-public:
-    AHeapMemory();
-    ~AHeapMemory();
-
-    /** Initialize memory (main thread only) */
-    void Initialize();
-
-    /** Deinitialize memory (main thread only) */
-    void Deinitialize();
-
-    /** Heap memory allocation (thread safe). Minimal alignment is 16. */
-    void* Alloc(size_t _BytesCount, int _Alignment = 16);
-
-    /** Heap memory allocation (thread safe) */
-    void* ClearedAlloc(size_t _BytesCount, int _Alignment = 16);
-
-    /** Tries to realloc existing buffer (thread safe) */
-    void* Realloc(void* _Data, int _NewBytesCount, int _NewAlignment, bool _KeepOld);
-
-    /** Heap memory deallocation (thread safe) */
-    void Free(void* _Bytes);
-
-    /** Check if memory was trashed (thread safe) */
-    void PointerTrashTest(void* _Bytes);
-
-    /** Clearing whole heap memory (main thread only) */
-    void Clear();
-
-    /** Statistics: current memory usage */
-    size_t GetTotalMemoryUsage();
-
-    /** Statistics: current memory usage overhead */
-    size_t GetTotalMemoryOverhead();
-
-    /** Statistics: max memory usage during memory using */
-    size_t GetMaxMemoryUsage();
-
-private:
-    void CheckMemoryLeaks();
-
-    void IncMemoryStatistics(size_t _MemoryUsage, size_t _Overhead);
-    void DecMemoryStatistics(size_t _MemoryUsage, size_t _Overhead);
-
-    mutable ASpinLock StatisticLock;
-    size_t            TotalMemoryUsage;
-    size_t            TotalMemoryOverhead;
-    size_t            MaxMemoryUsage;
-
-    struct SHeapChunk
-    {
-        SHeapChunk* pNext;
-        SHeapChunk* pPrev;
-        uint32_t    Size;
-        uint32_t    DataSize;
-        uint32_t    AlignOffset; // to keep heap aligned (one byte is enough for it)
-        uint32_t    Alignment;   // one byte is enough for it
-    };
-
-    SHeapChunk HeapChain;
-
-    ASpinLock Mutex;
-};
-
-HK_FORCEINLINE void* AHeapMemory::ClearedAlloc(size_t _BytesCount, int _Alignment)
-{
-    void* bytes = Alloc(_BytesCount, _Alignment);
-    Platform::ZeroMem(bytes, _BytesCount);
-    return bytes;
-}
-
-/**
-
-AHunkMemory
-
-For large temporary blocks like textures, meshes, etc
-
-Example:
-
-int Mark = HunkMemory.SetHunkMark();
-
-byte * buffer1 = HunkMemory.Alloc( bufferSize1 );
-byte * buffer2 = HunkMemory.Alloc( bufferSize2 );
-...
-
-HunkMemory.ClearToMark( Mark ); // here all buffers allocated after SetHunkMark will be deallocated
-
-Allocated chunks are aligned at 16-byte boundary.
-If you need other alignment, do it on top of the allocator.
-
-Only for main thread.
-
-*/
-class AHunkMemory final
-{
-    HK_FORBID_COPY(AHunkMemory)
-
-public:
-    AHunkMemory() {}
-
-    /** Initialize memory */
-    void Initialize(void* _MemoryAddress, int _SizeInMegabytes);
-
-    /** Deinitialize memory */
-    void Deinitialize();
-
-    void* GetHunkMemoryAddress() const;
-    int   GetHunkMemorySizeInMegabytes() const;
-
-    /** Hunk memory allocation */
-    void* Alloc(size_t _BytesCount);
-
-    /** Hunk memory allocation */
-    void* ClearedAlloc(size_t _BytesCount);
-
-    /** Memory control functions */
-    int  SetHunkMark();
-    void ClearToMark(int _Mark);
-    void Clear();
-
-    /** Clear last allocated hunk */
-    void ClearLastHunk();
-
-    /** Statistics: current memory usage */
-    size_t GetTotalMemoryUsage() const;
-
-    /** Statistics: current memory usage overhead */
-    size_t GetTotalMemoryOverhead() const;
-
-    /** Statistics: current free memory */
-    size_t GetTotalFreeMemory() const;
-
-    /** Statistics: max memory usage during memory using */
-    size_t GetMaxMemoryUsage() const;
-
-private:
-    void CheckMemoryLeaks();
-
-    void IncMemoryStatistics(size_t _MemoryUsage, size_t _Overhead);
-    void DecMemoryStatistics(size_t _MemoryUsage, size_t _Overhead);
-
-    struct SHunkMemory* MemoryBuffer = nullptr;
-
-    size_t TotalMemoryUsage    = 0;
-    size_t TotalMemoryOverhead = 0;
-    size_t MaxMemoryUsage      = 0;
-};
-
-HK_FORCEINLINE void* AHunkMemory::ClearedAlloc(size_t _BytesCount)
-{
-    void* bytes = Alloc(_BytesCount);
-    Platform::ZeroMem(bytes, _BytesCount);
-    return bytes;
-}
-
-/**
-
-AZoneMemory
-
-For small blocks, objects or strings.
-Allocated chunks are aligned at 16-byte boundary.
-If you need other alignment, do it on top of the allocator.
-
-Only for main thread.
-
-*/
-class AZoneMemory final
-{
-    HK_FORBID_COPY(AZoneMemory)
-
-public:
-    AZoneMemory() {}
-
-    /** Initialize memory */
-    void Initialize(void* _MemoryAddress, int _SizeInMegabytes);
-
-    /** Deinitialize memory */
-    void Deinitialize();
-
-    void* GetZoneMemoryAddress() const;
-    int   GetZoneMemorySizeInMegabytes() const;
-
-    /** Zone memory allocation */
-    void* Alloc(size_t _BytesCount);
-
-    /** Zone memory allocation */
-    void* ClearedAlloc(size_t _BytesCount);
-
-    /** Tries to realloc existing buffer */
-    void* Realloc(void* _Data, int _NewBytesCount, bool _KeepOld);
-
-    /** Zone memory deallocation */
-    void Free(void* _Bytes);
-
-    /** Clearing whole zone memory */
-    void Clear();
-
-    /** Statistics: current memory usage */
-    size_t GetTotalMemoryUsage() const;
-
-    /** Statistics: current memory usage overhead */
-    size_t GetTotalMemoryOverhead() const;
-
-    /** Statistics: current free memory */
-    size_t GetTotalFreeMemory() const;
-
-    /** Statistics: max memory usage during memory using */
-    size_t GetMaxMemoryUsage() const;
-
-private:
-    struct SZoneChunk* FindFreeChunk(int _RequiredSize);
-
-    void CheckMemoryLeaks();
-
-    void IncMemoryStatistics(size_t _MemoryUsage, size_t _Overhead);
-    void DecMemoryStatistics(size_t _MemoryUsage, size_t _Overhead);
-
-    struct SZoneBuffer* MemoryBuffer = nullptr;
-
-    mutable ASpinLock StatisticLock;
-    size_t            TotalMemoryUsage;
-    size_t            TotalMemoryOverhead;
-    size_t            MaxMemoryUsage;
-
-#ifdef HK_ZONE_MULTITHREADED_ALLOC
-    AThreadSync Sync;
-#endif
-};
-
-HK_FORCEINLINE void* AZoneMemory::ClearedAlloc(size_t _BytesCount)
-{
-    void* bytes = Alloc(_BytesCount);
-    Platform::ZeroMem(bytes, _BytesCount);
-    return bytes;
-}
-
-extern AHeapMemory GHeapMemory;
-extern AHunkMemory GHunkMemory;
-extern AZoneMemory GZoneMemory;
-
-/**
-
-TTemplateAllocator
-
-Allocator base interface
-
-*/
-template <typename T>
-class TTemplateAllocator : public ANoncopyable
-{
-public:
-    void* Alloc(size_t _BytesCount)
-    {
-        return static_cast<T*>(this)->ImplAlloc(_BytesCount);
-    }
-
-    void* ClearedAlloc(size_t _BytesCount)
-    {
-        void* bytes = static_cast<T*>(this)->ImplAlloc(_BytesCount);
-        Platform::ZeroMem(bytes, _BytesCount);
-        return bytes;
-    }
-
-    void* Realloc(void* _Data, size_t _NewBytesCount, bool _KeepOld)
-    {
-        return static_cast<T*>(this)->ImplRealloc(_Data, _NewBytesCount, _KeepOld);
-    }
-
-    void Free(void* _Bytes)
-    {
-        static_cast<T*>(this)->ImplFree(_Bytes);
-    }
-};
-
-/**
-
-AZoneAllocator
-
-Use for small objects
-
-*/
-class AZoneAllocator final : public TTemplateAllocator<AZoneAllocator>
-{
-public:
-    AZoneAllocator() {}
-
-    static AZoneAllocator& Inst()
-    {
-        static AZoneAllocator inst;
-        return inst;
-    }
-
-    void* ImplAlloc(size_t _BytesCount)
-    {
-        return GZoneMemory.Alloc(_BytesCount);
-    }
-
-    void* ImplRealloc(void* _Data, size_t _NewBytesCount, bool _KeepOld)
-    {
-        return GZoneMemory.Realloc(_Data, _NewBytesCount, _KeepOld);
-    }
-
-    void ImplFree(void* _Bytes)
-    {
-        GZoneMemory.Free(_Bytes);
-    }
-};
-
-/**
-
-AHeapAllocator
-
-Use for huge data allocation
-
-*/
-template <int Alignment>
-class AHeapAllocator final : public TTemplateAllocator<AHeapAllocator<Alignment>>
-{
-public:
-    AHeapAllocator() {}
-
-    static AHeapAllocator<Alignment>& Inst()
-    {
-        static AHeapAllocator<Alignment> inst;
-        return inst;
-    }
-
-    void* ImplAlloc(size_t _BytesCount)
-    {
-        return GHeapMemory.Alloc(_BytesCount, Alignment);
-    }
-
-    void* ImplRealloc(void* _Data, size_t _NewBytesCount, bool _KeepOld)
-    {
-        return GHeapMemory.Realloc(_Data, _NewBytesCount, Alignment, _KeepOld);
-    }
-
-    void ImplFree(void* _Bytes)
-    {
-        GHeapMemory.Free(_Bytes);
-    }
-};
-
-/**
-
-TStdZoneAllocator
-
-*/
-template <typename T>
-struct TStdZoneAllocator
-{
-    typedef T value_type;
-
-    TStdZoneAllocator() = default;
-    template <typename U> constexpr TStdZoneAllocator(TStdZoneAllocator<U> const&) noexcept {}
-
-    HK_NODISCARD T* allocate(std::size_t _Count) noexcept
-    {
-        HK_ASSERT(_Count <= std::numeric_limits<std::size_t>::max() / sizeof(T));
-
-        return static_cast<T*>(GZoneMemory.Alloc(_Count * sizeof(T)));
-    }
-
-    void deallocate(T* _Bytes, std::size_t _Count) noexcept
-    {
-        GZoneMemory.Free(_Bytes);
-    }
-};
-template <typename T, typename U> bool operator==(TStdZoneAllocator<T> const&, TStdZoneAllocator<U> const&) { return true; }
-template <typename T, typename U> bool operator!=(TStdZoneAllocator<T> const&, TStdZoneAllocator<U> const&) { return false; }
 
 /**
 
 TStdHeapAllocator
 
 */
-template <typename T>
+template <typename T, MEMORY_HEAP Heap>
 struct TStdHeapAllocator
 {
     typedef T value_type;
 
     TStdHeapAllocator() = default;
-    template <typename U> constexpr TStdHeapAllocator(TStdHeapAllocator<U> const&) noexcept {}
+    template <typename U> constexpr TStdHeapAllocator(TStdHeapAllocator<U, Heap> const&) noexcept {}
 
     HK_NODISCARD T* allocate(std::size_t _Count) noexcept
     {
         HK_ASSERT(_Count <= std::numeric_limits<std::size_t>::max() / sizeof(T));
 
-        return static_cast<T*>(GHeapMemory.Alloc(_Count * sizeof(T)));
+        return static_cast<T*>(Platform::GetHeapAllocator<Heap>().Alloc(_Count * sizeof(T)));
     }
 
     void deallocate(T* _Bytes, std::size_t _Count) noexcept
     {
-        GHeapMemory.Free(_Bytes);
+        Platform::GetHeapAllocator<Heap>().Free(_Bytes);
     }
 };
-template <typename T, typename U> bool operator==(TStdHeapAllocator<T> const&, TStdHeapAllocator<U> const&) { return true; }
-template <typename T, typename U> bool operator!=(TStdHeapAllocator<T> const&, TStdHeapAllocator<U> const&) { return false; }
+template <typename T, typename U, MEMORY_HEAP Heap> bool operator==(TStdHeapAllocator<T, Heap> const&, TStdHeapAllocator<U, Heap> const&) { return true; }
+template <typename T, typename U, MEMORY_HEAP Heap> bool operator!=(TStdHeapAllocator<T, Heap> const&, TStdHeapAllocator<U, Heap> const&) { return false; }
 
 
 /**
@@ -523,3 +197,73 @@ Dynamic Stack Memory
 */
 
 #define StackAlloc(_NumBytes) alloca(_NumBytes)
+
+
+namespace Allocators
+{
+
+using EASTLDummyAllocator = eastl::dummy_allocator;
+
+class MemoryAllocatorBase
+{
+public:
+    const char* get_name() const
+    {
+        return "MemoryAllocator";
+    }
+
+    void set_name(const char* pName)
+    {}
+};
+
+template <MEMORY_HEAP Heap>
+class HeapMemoryAllocator : public MemoryAllocatorBase
+{
+public:
+    explicit HeapMemoryAllocator(const char* pName = nullptr)
+    {}
+
+    HeapMemoryAllocator(HeapMemoryAllocator const& rhs)
+    {}
+
+    HeapMemoryAllocator(HeapMemoryAllocator const& x, const char* pName)
+    {}
+
+    HeapMemoryAllocator& operator=(HeapMemoryAllocator const& rhs)
+    {
+        return *this;
+    }
+
+    void* allocate(size_t n, int flags = 0)
+    {
+        return Platform::GetHeapAllocator<Heap>().Alloc(n, EASTL_SYSTEM_ALLOCATOR_MIN_ALIGNMENT);
+    }
+
+    void* allocate(size_t n, size_t alignment, size_t offset, int flags = 0)
+    {
+        return Platform::GetHeapAllocator<Heap>().Alloc(n, alignment);
+    }
+
+    void* reallocate(void* p, size_t n, bool copyOld)
+    {
+        return Platform::GetHeapAllocator<Heap>().Realloc(p, n, EASTL_SYSTEM_ALLOCATOR_MIN_ALIGNMENT, copyOld ? MALLOC_FLAGS_DEFAULT : MALLOC_DISCARD);
+    }
+
+    void deallocate(void* p, size_t n)
+    {
+        Platform::GetHeapAllocator<Heap>().Free(p);
+    }
+
+    void deallocate(void* p)
+    {
+        Platform::GetHeapAllocator<Heap>().Free(p);
+    }
+};
+
+template <MEMORY_HEAP Heap>
+HK_FORCEINLINE bool operator==(HeapMemoryAllocator<Heap> const&, HeapMemoryAllocator<Heap> const&) { return true; }
+
+template <MEMORY_HEAP Heap>
+HK_FORCEINLINE bool operator!=(HeapMemoryAllocator<Heap> const&, HeapMemoryAllocator<Heap> const&) { return false; }
+
+}

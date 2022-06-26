@@ -56,9 +56,6 @@ int Sprintf(char* _Buffer, size_t _Size, const char* _Format, ...);
 The return value is either the number of characters stored or -1 if truncation occurs. */
 int VSprintf(char* _Buffer, size_t _Size, const char* _Format, va_list _VaList);
 
-/** Format string on stack. Be careful to use it in nested calls (max allowed nested calls = 4) */
-char* Fmt(const char* _Format, ...);
-
 /** Concatenate strings */
 void Strcat(char* _Dest, size_t _Size, const char* _Src);
 

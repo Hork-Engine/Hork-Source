@@ -40,5 +40,7 @@ SOFTWARE.
 #undef GetObject
 #undef GetCommandLine
 #undef WriteConsole
+#undef CreateDirectory
+#undef LoadImage
 #undef ERROR
 #endif

@@ -166,7 +166,7 @@ bool AEnvironmentMap::LoadResource(IBinaryStreamReadInterface& Stream)
     // Choose max width for memory allocation
     int maxSize = Math::Max(irradianceMapWidth, reflectionMapWidth);
 
-    TPodVectorHeap<float> buffer(maxSize * maxSize * 3 * 6);
+    TVector<float> buffer(maxSize * maxSize * 3 * 6);
 
     void* data = buffer.ToPtr();
 
@@ -201,7 +201,7 @@ bool AEnvironmentMap::LoadResource(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-void AEnvironmentMap::LoadInternalResource(const char* _Path)
+void AEnvironmentMap::LoadInternalResource(AStringView _Path)
 {
     uint8_t color[4] = {10, 10, 10, 255};
 

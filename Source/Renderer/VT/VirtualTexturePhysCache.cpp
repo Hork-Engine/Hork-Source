@@ -40,7 +40,7 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-AConsoleVar r_ResetCacheVT(_CTS("r_ResetCacheVT"), _CTS("0"));
+AConsoleVar r_ResetCacheVT("r_ResetCacheVT"s, "0"s);
 
 AVirtualTextureCache::AVirtualTextureCache(SVirtualTextureCacheCreateInfo const& CreateInfo)
 {
@@ -77,8 +77,8 @@ AVirtualTextureCache::AVirtualTextureCache(SVirtualTextureCacheCreateInfo const&
     PageSizeInBytes = 0;
     AlignedSize     = 0;
 
-    PhysCacheLayers.resize(CreateInfo.NumLayers);
-    LayerInfo.resize(CreateInfo.NumLayers);
+    PhysCacheLayers.Resize(CreateInfo.NumLayers);
+    LayerInfo.Resize(CreateInfo.NumLayers);
     for (int i = 0; i < CreateInfo.NumLayers; i++)
     {
         GDevice->CreateTexture(STextureDesc()
@@ -190,7 +190,7 @@ bool AVirtualTextureCache::CreateTexture(const char* FileName, TRef<AVirtualText
 
     pTexture->AddRef();
 
-    VirtualTextures.Append(pTexture.GetObject());
+    VirtualTextures.Add(pTexture.GetObject());
 
     return true;
 }
@@ -210,7 +210,7 @@ bool AVirtualTextureCache::CreateTexture(const char* FileName, TRef<AVirtualText
 
 AVirtualTextureCache::SPageTransfer* AVirtualTextureCache::CreatePageTransfer()
 {
-    HK_ASSERT(LayerInfo.size() > 0);
+    HK_ASSERT(LayerInfo.Size() > 0);
 
     // TODO: break if thread was stopped
     do {
@@ -223,7 +223,7 @@ AVirtualTextureCache::SPageTransfer* AVirtualTextureCache::CreatePageTransfer()
 
             SPageTransfer* transfer = &PageTransfer[allocPoint];
 
-            for (int i = 0; i < LayerInfo.size(); i++)
+            for (int i = 0; i < LayerInfo.Size(); i++)
             {
                 transfer->Layers[i] = pTransferData + offset;
                 offset += Align(LayerInfo[i].PageSizeInBytes, 16);
@@ -240,7 +240,7 @@ AVirtualTextureCache::SPageTransfer* AVirtualTextureCache::CreatePageTransfer()
 void AVirtualTextureCache::MakePageTransferVisible(SPageTransfer* Transfer)
 {
     AMutexGurad criticalSection(TransfersMutex);
-    Transfers.Append(Transfer);
+    Transfers.Add(Transfer);
 }
 
 bool AVirtualTextureCache::LockTransfers()
@@ -286,7 +286,7 @@ void AVirtualTextureCache::ResetCache()
 
 void AVirtualTextureCache::Update()
 {
-    static int maxPendingLRUs = 0;
+    static size_t maxPendingLRUs = 0;
 
     if (r_ResetCacheVT)
     {
@@ -470,7 +470,7 @@ void AVirtualTextureCache::TransferPageData(SPageTransfer* Transfer, int PhysPag
 
     size_t offset = Transfer->Offset;
 
-    for (int layerIndex = 0; layerIndex < PhysCacheLayers.size(); layerIndex++)
+    for (int layerIndex = 0; layerIndex < PhysCacheLayers.Size(); layerIndex++)
     {
 #ifdef PAGE_STREAM_PBO
         rcmd->CopyBufferToTexture(TransferBuffer, PhysCacheLayers[layerIndex], rect, LayerInfo[layerIndex].UploadFormat, 0, offset, 1);
@@ -535,7 +535,7 @@ void AVirtualTextureCache::WaitForFences()
 
 void AVirtualTextureCache::Draw(AFrameGraph& FrameGraph, FGTextureProxy* RenderTarget, int LayerIndex)
 {
-    if (LayerIndex < 0 || LayerIndex >= PhysCacheLayers.size())
+    if (LayerIndex < 0 || LayerIndex >= PhysCacheLayers.Size())
     {
         return;
     }

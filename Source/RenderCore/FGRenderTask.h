@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "FGResource.h"
-#include <Containers/StdVector.h>
+#include <Containers/Vector.h>
 
 namespace RenderCore
 {
@@ -63,7 +63,7 @@ public:
 
     const char* GetName() const { return Name; }
 
-    TStdVector<std::unique_ptr<FGResourceProxyBase>> const& GetProducedResources() const
+    TVector<std::unique_ptr<FGResourceProxyBase>> const& GetProducedResources() const
     {
         return ProducedResources;
     }
@@ -74,17 +74,17 @@ public:
         switch (Access)
         {
             case FG_RESOURCE_ACCESS_READ:
-                pResource->Readers.Append(this);
-                ReadResources.Append(pResource);
+                pResource->Readers.Add(this);
+                ReadResources.Add(pResource);
                 break;
             case FG_RESOURCE_ACCESS_WRITE:
-                pResource->Writers.Append(this);
-                WriteResources.Append(pResource);
+                pResource->Writers.Add(this);
+                WriteResources.Add(pResource);
                 break;
             case FG_RESOURCE_ACCESS_READ_WRITE:
-                pResource->Readers.Append(this);
-                pResource->Writers.Append(this);
-                ReadWriteResources.Append(pResource);
+                pResource->Readers.Add(this);
+                pResource->Writers.Add(this);
+                ReadWriteResources.Add(pResource);
                 break;
         }
     }
@@ -99,7 +99,7 @@ protected:
 
     AFrameGraph*                                  pFrameGraph;
     const char*                                   Name;
-    TStdVector<std::unique_ptr<FGResourceProxyBase>> ProducedResources;
+    TVector<std::unique_ptr<FGResourceProxyBase>> ProducedResources;
     TPodVector<FGResourceProxyBase*>              ReadResources;
     TPodVector<FGResourceProxyBase*>              WriteResources;
     TPodVector<FGResourceProxyBase*>              ReadWriteResources;
@@ -124,11 +124,11 @@ public:
     {
         static_assert(std::is_same<typename TResourceProxy::ResourceDesc, TResourceDesc>::value, "Invalid TResourceDesc");
 
-        ProducedResources.emplace_back(std::make_unique<TResourceProxy>(FG_GenerateResourceId(pFrameGraph), Name, this, ResourceDesc));
+        ProducedResources.EmplaceBack(std::make_unique<TResourceProxy>(FG_GenerateResourceId(pFrameGraph), Name, this, ResourceDesc));
 
         if (ppResource)
         {
-            *ppResource = static_cast<TResourceProxy*>(ProducedResources.back().get());
+            *ppResource = static_cast<TResourceProxy*>(ProducedResources.Last().get());
         }
         return static_cast<TRenderTaskClass&>(*this);
     }

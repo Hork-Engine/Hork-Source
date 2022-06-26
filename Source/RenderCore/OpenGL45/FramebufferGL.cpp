@@ -38,8 +38,8 @@ SOFTWARE.
 namespace RenderCore
 {
 
-AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc, int Hash) :
-    Hash(Hash), Width(Desc.Width), Height(Desc.Height), NumColorAttachments(Desc.NumColorAttachments), bHasDepthStencilAttachment(Desc.pDepthStencilAttachment != nullptr)
+AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc) :
+    Width(Desc.Width), Height(Desc.Height), NumColorAttachments(Desc.NumColorAttachments), bHasDepthStencilAttachment(Desc.pDepthStencilAttachment != nullptr)
 {
     HK_ASSERT(Desc.Width != 0);
     HK_ASSERT(Desc.Height != 0);
@@ -225,17 +225,17 @@ AFramebufferGL::~AFramebufferGL()
     }
 }
 
-bool AFramebufferGL::IsAttachmentsOutdated() const
-{
-    for (int i = 0; i < NumColorAttachments; i++)
-    {
-        if (RTVs[i].IsExpired())
-        {
-            return true;
-        }
-    }
-
-    return bHasDepthStencilAttachment && pDSV.IsExpired();
-}
+//bool AFramebufferGL::IsAttachmentsOutdated() const
+//{
+//    for (int i = 0; i < NumColorAttachments; i++)
+//    {
+//        if (RTVs[i].IsExpired())
+//        {
+//            return true;
+//        }
+//    }
+//
+//    return bHasDepthStencilAttachment && pDSV.IsExpired();
+//}
 
 } // namespace RenderCore

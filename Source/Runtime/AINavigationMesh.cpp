@@ -57,10 +57,10 @@ SOFTWARE.
 #include <DebugDraw.h>
 #include <float.h>
 
-AConsoleVar com_DrawNavMeshBVTree(_CTS("com_DrawNavMeshBVTree"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawNavMeshNodes(_CTS("com_DrawNavMeshNodes"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawNavMesh(_CTS("com_DrawNavMesh"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawNavMeshTileBounds(_CTS("com_DrawNavMeshTileBounds"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawNavMeshBVTree("com_DrawNavMeshBVTree"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawNavMeshNodes("com_DrawNavMeshNodes"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawNavMesh("com_DrawNavMesh"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawNavMeshTileBounds("com_DrawNavMeshTileBounds"s, "0"s, CVAR_CHEAT);
 
 HK_VALIDATE_TYPE_SIZE(SNavPolyRef, sizeof(dtPolyRef));
 
@@ -131,12 +131,12 @@ struct ADetourLinearAllocator : public dtTileCacheAlloc
 
     void* operator new(size_t _SizeInBytes)
     {
-        return GZoneMemory.Alloc(_SizeInBytes);
+        return Platform::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(_SizeInBytes);
     }
 
     void operator delete(void* _Ptr)
     {
-        GZoneMemory.Free(_Ptr);
+        Platform::GetHeapAllocator<HEAP_NAVIGATION>().Free(_Ptr);
     }
 
     void reset() override
@@ -168,12 +168,12 @@ struct ADetourMeshProcess : public dtTileCacheMeshProcess
 
     void* operator new(size_t _SizeInBytes)
     {
-        return GZoneMemory.Alloc(_SizeInBytes);
+        return Platform::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(_SizeInBytes);
     }
 
     void operator delete(void* _Ptr)
     {
-        GZoneMemory.Free(_Ptr);
+        Platform::GetHeapAllocator<HEAP_NAVIGATION>().Free(_Ptr);
     }
 
     void process(struct dtNavMeshCreateParams* _Params, unsigned char* _PolyAreas, unsigned short* _PolyFlags) override
@@ -231,13 +231,13 @@ struct ADetourMeshProcess : public dtTileCacheMeshProcess
                 continue;
             }
 
-            OffMeshConVerts.Append(con.StartPosition);
-            OffMeshConVerts.Append(con.EndPosition);
-            OffMeshConRads.Append(con.Radius);
-            OffMeshConDirs.Append(con.bBidirectional ? DT_OFFMESH_CON_BIDIR : 0);
-            OffMeshConAreas.Append(con.AreaId);
-            OffMeshConFlags.Append(con.Flags);
-            OffMeshConId.Append(i); // FIXME?
+            OffMeshConVerts.Add(con.StartPosition);
+            OffMeshConVerts.Add(con.EndPosition);
+            OffMeshConRads.Add(con.Radius);
+            OffMeshConDirs.Add(con.bBidirectional ? DT_OFFMESH_CON_BIDIR : 0);
+            OffMeshConAreas.Add(con.AreaId);
+            OffMeshConFlags.Add(con.Flags);
+            OffMeshConId.Add(i); // FIXME?
 
             OffMeshConCount++;
         }
@@ -679,12 +679,10 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
 
     int trianglesCount = geometry.Indices.Size() / 3;
 
-    int hunkMark = GHunkMemory.SetHunkMark();
-
     // Allocate array that can hold triangle area types.
     // If you have multiple meshes you need to process, allocate
     // and array which can hold the max number of triangles you need to process.
-    unsigned char* triangleAreaTypes = (unsigned char*)GHunkMemory.ClearedAlloc(trianglesCount);
+    unsigned char* triangleAreaTypes = (unsigned char*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(trianglesCount, 16, MALLOC_ZERO);
 
     // Find triangles which are walkable based on their slope and rasterize them.
     // If your input data is multiple meshes, you can transform them here, calculate
@@ -700,7 +698,7 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
                                            *temporal.Heightfield,
                                            config.walkableClimb);
 
-    GHunkMemory.ClearToMark(hunkMark);
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(triangleAreaTypes);
 
     if (!rasterized)
     {
@@ -1110,13 +1108,13 @@ bool AAINavigationMesh::BuildTile(int _X, int _Z)
                 continue;
             }
 
-            offMeshConVerts.Append(con.StartPosition);
-            offMeshConVerts.Append(con.EndPosition);
-            offMeshConRads.Append(con.Radius);
-            offMeshConDirs.Append(con.bBidirectional ? DT_OFFMESH_CON_BIDIR : 0);
-            offMeshConAreas.Append(con.AreaId);
-            offMeshConFlags.Append(con.Flags);
-            offMeshConId.Append(i); // FIXME?
+            offMeshConVerts.Add(con.StartPosition);
+            offMeshConVerts.Add(con.EndPosition);
+            offMeshConRads.Add(con.Radius);
+            offMeshConDirs.Add(con.bBidirectional ? DT_OFFMESH_CON_BIDIR : 0);
+            offMeshConAreas.Add(con.AreaId);
+            offMeshConFlags.Add(con.Flags);
+            offMeshConId.Add(i); // FIXME?
 
             offMeshConCount++;
         }
@@ -1583,12 +1581,12 @@ class ANavQueryFilterPrivate : public dtQueryFilter
 public:
     void* operator new(size_t _SizeInBytes)
     {
-        return GZoneMemory.Alloc(_SizeInBytes);
+        return Platform::GetHeapAllocator<HEAP_NAVIGATION>().Alloc(_SizeInBytes);
     }
 
     void operator delete(void* _Ptr)
     {
-        GZoneMemory.Free(_Ptr);
+        Platform::GetHeapAllocator<HEAP_NAVIGATION>().Free(_Ptr);
     }
 };
 

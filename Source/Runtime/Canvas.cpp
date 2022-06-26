@@ -52,7 +52,7 @@ ACanvas::~ACanvas()
 
 AFont* ACanvas::GetDefaultFont()
 {
-    static TStaticResourceFinder<AFont> FontResource(_CTS("/Root/fonts/RobotoMono-Regular18.font"));
+    static TStaticResourceFinder<AFont> FontResource("/Root/fonts/RobotoMono-Regular18.font"s);
     return FontResource.GetObject();
 }
 
@@ -131,7 +131,7 @@ void ACanvas::SetCurrentFont(AFont const* _Font)
 void ACanvas::PushFont(AFont const* _Font)
 {
     SetCurrentFont(_Font);
-    FontStack.Append(_Font);
+    FontStack.Add(_Font);
     DrawList.PushTextureID(_Font->GetTexture());
 }
 
@@ -356,7 +356,7 @@ void ACanvas::_DrawTextUTF8(float _FontSize, Float2 const& _Pos, Color4 const& _
         }
 
         // Decode and advance source
-        SWideChar c = (SWideChar)*s;
+        WideChar c = (WideChar)*s;
         if (c < 0x80)
         {
             s += 1;
@@ -475,12 +475,12 @@ void ACanvas::_DrawTextUTF8(float _FontSize, Float2 const& _Pos, Color4 const& _
     DrawList._VtxCurrentIdx = (unsigned int)DrawList.VtxBuffer.Size;
 }
 
-void ACanvas::DrawTextWChar(Float2 const& pos, Color4 const& col, SWideChar const* _TextBegin, SWideChar const* _TextEnd, bool bShadow)
+void ACanvas::DrawTextWChar(Float2 const& pos, Color4 const& col, WideChar const* _TextBegin, WideChar const* _TextEnd, bool bShadow)
 {
     DrawTextWChar(DrawListSharedData.FontSize, pos, col, _TextBegin, _TextEnd, 0, nullptr, bShadow);
 }
 
-void ACanvas::DrawTextWChar(float _FontSize, Float2 const& _Pos, Color4 const& _Color, SWideChar const* _TextBegin, SWideChar const* _TextEnd, float _WrapWidth, Float4 const* _CPUFineClipRect, bool bShadow)
+void ACanvas::DrawTextWChar(float _FontSize, Float2 const& _Pos, Color4 const& _Color, WideChar const* _TextBegin, WideChar const* _TextEnd, float _WrapWidth, Float4 const* _CPUFineClipRect, bool bShadow)
 {
     if (bShadow)
     {
@@ -489,7 +489,7 @@ void ACanvas::DrawTextWChar(float _FontSize, Float2 const& _Pos, Color4 const& _
     _DrawTextWChar(_FontSize, _Pos, _Color, _TextBegin, _TextEnd, _WrapWidth, _CPUFineClipRect);
 }
 
-void ACanvas::_DrawTextWChar(float _FontSize, Float2 const& _Pos, Color4 const& _Color, SWideChar const* _TextBegin, SWideChar const* _TextEnd, float _WrapWidth, Float4 const* _CPUFineClipRect)
+void ACanvas::_DrawTextWChar(float _FontSize, Float2 const& _Pos, Color4 const& _Color, WideChar const* _TextBegin, WideChar const* _TextEnd, float _WrapWidth, Float4 const* _CPUFineClipRect)
 {
     if (_Color.IsTransparent())
     {
@@ -544,15 +544,15 @@ void ACanvas::_DrawTextWChar(float _FontSize, Float2 const& _Pos, Color4 const& 
     const float      scale       = _FontSize / font->GetFontSize();
     const float      lineHeight  = _FontSize;
     const bool       bWordWrap   = (_WrapWidth > 0.0f);
-    SWideChar const* wordWrapEOL = NULL;
+    WideChar const* wordWrapEOL = NULL;
 
     // Fast-forward to first visible line
-    SWideChar const* s = _TextBegin;
+    WideChar const* s = _TextBegin;
     if (y + lineHeight < clipRect.Y && !bWordWrap)
     {
         while (y + lineHeight < clipRect.Y && s < _TextEnd)
         {
-            s = (SWideChar const*)memchr(s, '\n', _TextEnd - s);
+            s = (WideChar const*)memchr(s, '\n', _TextEnd - s);
             s = s ? s + 1 : _TextEnd;
             y += lineHeight;
         }
@@ -562,11 +562,11 @@ void ACanvas::_DrawTextWChar(float _FontSize, Float2 const& _Pos, Color4 const& 
     // Note that very large horizontal line will still be affected by the issue (e.g. a one megabyte string buffer without a newline will likely crash atm)
     if (_TextEnd - s > 10000 && !bWordWrap)
     {
-        SWideChar const* s_end = s;
+        WideChar const* s_end = s;
         float            y_end = y;
         while (y_end < clipRect.W && s_end < _TextEnd)
         {
-            s_end = (SWideChar const*)memchr(s_end, '\n', _TextEnd - s_end);
+            s_end = (WideChar const*)memchr(s_end, '\n', _TextEnd - s_end);
             s_end = s_end ? s_end + 1 : _TextEnd;
             y_end += lineHeight;
         }
@@ -636,7 +636,7 @@ void ACanvas::_DrawTextWChar(float _FontSize, Float2 const& _Pos, Color4 const& 
         //    if ( c == 0 ) // Malformed UTF-8?
         //        break;
         //}
-        SWideChar c = *s;
+        WideChar c = *s;
         s++;
 
         if (c < 32)
@@ -751,7 +751,7 @@ void ACanvas::DrawChar(char _Ch, int _X, int _Y, float _Scale, Color4 const& _Co
     DrawWChar(_Ch, _X, _Y, _Scale, _Color);
 }
 
-void ACanvas::DrawWChar(SWideChar _Ch, int _X, int _Y, float _Scale, Color4 const& _Color)
+void ACanvas::DrawWChar(WideChar _Ch, int _X, int _Y, float _Scale, Color4 const& _Color)
 {
     if (_Color.IsTransparent())
     {
@@ -783,7 +783,7 @@ void ACanvas::DrawCharUTF8(const char* _Ch, int _X, int _Y, float _Scale, Color4
         return;
     }
 
-    SWideChar ch;
+    WideChar ch;
 
     if (!Core::WideCharDecodeUTF8(_Ch, ch))
     {
@@ -856,7 +856,7 @@ void ACanvas::DrawViewport(ACameraComponent* _Camera, ARenderingParameters* _RP,
 
     DrawList.AddImageRounded((void*)(size_t)(Viewports.Size() + 1), a, b, Float2(0.0f), Float2(1.0f), _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_VIEWPORT | (_Blending << 8));
 
-    SViewport& viewport      = Viewports.Append();
+    SViewport& viewport      = Viewports.Add();
     viewport.X               = _X;
     viewport.Y               = _Y;
     viewport.Width           = _W;

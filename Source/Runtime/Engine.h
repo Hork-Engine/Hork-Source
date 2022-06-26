@@ -196,6 +196,8 @@ private:
 
     void LoadConfigFile();
 
+    void SaveMemoryStats();
+
     AString                   WorkingDir;
     AString                   RootPath;
     SEntryDecl const*         pModuleDecl;

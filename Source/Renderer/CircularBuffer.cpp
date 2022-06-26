@@ -54,7 +54,7 @@ ACircularBuffer::ACircularBuffer( size_t InBufferSize )
                                     false); // unsynchronized
 
     if ( !pMappedMemory ) {
-        CriticalError( "ACircularBuffer::ctor: cannot initialize persistent mapped buffer size %d\n", bufferCI.SizeInBytes );
+        CriticalError( "ACircularBuffer::ctor: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes );
     }
 
     for ( int i = 0 ; i < SWAP_CHAIN_SIZE ; i++ ) {

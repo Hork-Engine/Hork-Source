@@ -36,31 +36,31 @@ template <typename T, int MAX_BUFFER_SIZE = 128>
 class TPodCircularBuffer
 {
 public:
-    T   Data[MAX_BUFFER_SIZE];
-    int Head;
-    int Sz;
+    T   m_Data[MAX_BUFFER_SIZE];
+    int m_Head;
+    int m_Size;
 
     TPodCircularBuffer() :
-        Head(0), Sz(0)
+        m_Head(0), m_Size(0)
     {
         static_assert(IsPowerOfTwo(MAX_BUFFER_SIZE), "Circular buffer size must be power of two");
 
-        Platform::ZeroMem(Data, sizeof(Data));
+        Platform::ZeroMem(m_Data, sizeof(m_Data));
     }
 
     bool IsEmpty() const
     {
-        return Sz == 0;
+        return m_Size == 0;
     }
 
     bool IsFull() const
     {
-        return Sz == MAX_BUFFER_SIZE;
+        return m_Size == MAX_BUFFER_SIZE;
     }
 
     int Size() const
     {
-        return Sz;
+        return m_Size;
     }
 
     int Capacity() const
@@ -72,59 +72,59 @@ public:
     {
         HK_ASSERT(Index >= 0 && Index < Size());
 
-        int offset = (Head + Index) & (MAX_BUFFER_SIZE - 1);
+        int offset = (m_Head + Index) & (MAX_BUFFER_SIZE - 1);
 
-        return Data[offset];
+        return m_Data[offset];
     }
 
     T const& operator[](int Index) const
     {
         HK_ASSERT(Index >= 0 && Index < Size());
 
-        int offset = (Head + Index) & (MAX_BUFFER_SIZE - 1);
+        int offset = (m_Head + Index) & (MAX_BUFFER_SIZE - 1);
 
-        return Data[offset];
+        return m_Data[offset];
     }
 
     void Append(T const& Element)
     {
-        int offset = (Head + Sz) & (MAX_BUFFER_SIZE - 1);
+        int offset = (m_Head + m_Size) & (MAX_BUFFER_SIZE - 1);
 
-        if (Sz == MAX_BUFFER_SIZE)
+        if (m_Size == MAX_BUFFER_SIZE)
         {
             // buffer is full
-            Head = (Head + 1) & (MAX_BUFFER_SIZE - 1);
+            m_Head = (m_Head + 1) & (MAX_BUFFER_SIZE - 1);
         }
         else
         {
-            Sz++;
+            m_Size++;
         }
 
-        Data[offset] = Element;
+        m_Data[offset] = Element;
     }
 
     void Clear()
     {
         Resize(0);
 
-        Head = 0;
+        m_Head = 0;
     }
 
     void Resize(int NewSize)
     {
         HK_ASSERT(NewSize >= 0 && NewSize <= MAX_BUFFER_SIZE);
 
-        if (NewSize < Sz)
+        if (NewSize < m_Size)
         {
-            for (int i = NewSize; i < Sz; i++)
+            for (int i = NewSize; i < m_Size; i++)
             {
-                int offset = (Head + i) & (MAX_BUFFER_SIZE - 1);
+                int offset = (m_Head + i) & (MAX_BUFFER_SIZE - 1);
 
-                Platform::ZeroMem(Data[offset], sizeof(T));
+                Platform::ZeroMem(m_Data[offset], sizeof(T));
             }
         }
 
-        Sz = NewSize;
+        m_Size = NewSize;
     }
 
     void PopBack()
@@ -134,10 +134,10 @@ public:
             return;
         }
 
-        int offset = (Head + Sz - 1) & (MAX_BUFFER_SIZE - 1);
-        Platform::ZeroMem(Data[offset], sizeof(T));
+        int offset = (m_Head + m_Size - 1) & (MAX_BUFFER_SIZE - 1);
+        Platform::ZeroMem(m_Data[offset], sizeof(T));
 
-        Sz--;
+        m_Size--;
     }
 
     void PopFront()
@@ -147,31 +147,31 @@ public:
             return;
         }
 
-        int offset = Head & (MAX_BUFFER_SIZE - 1);
-        Platform::ZeroMem(Data[offset], sizeof(T));
+        int offset = m_Head & (MAX_BUFFER_SIZE - 1);
+        Platform::ZeroMem(m_Data[offset], sizeof(T));
 
-        Head = (Head + 1) & (MAX_BUFFER_SIZE - 1);
-        Sz--;
+        m_Head = (m_Head + 1) & (MAX_BUFFER_SIZE - 1);
+        m_Size--;
     }
 
     void Remove(int Index)
     {
         HK_ASSERT(Index >= 0 && Index < Size());
 
-        int offset = (Head + Index) & (MAX_BUFFER_SIZE - 1);
+        int offset = (m_Head + Index) & (MAX_BUFFER_SIZE - 1);
 
-        int count = Sz - Index - 1;
+        int count = m_Size - Index - 1;
         for (int i = 0; i < count; i++)
         {
-            offset = (Head + Index + i) & (MAX_BUFFER_SIZE - 1);
+            offset = (m_Head + Index + i) & (MAX_BUFFER_SIZE - 1);
 
-            Data[offset] = Data[(offset + 1) & (MAX_BUFFER_SIZE - 1)];
+            m_Data[offset] = m_Data[(offset + 1) & (MAX_BUFFER_SIZE - 1)];
         }
 
-        offset = (Head + Sz - 1) & (MAX_BUFFER_SIZE - 1);
-        Platform::ZeroMem(Data[offset], sizeof(T));
+        offset = (m_Head + m_Size - 1) & (MAX_BUFFER_SIZE - 1);
+        Platform::ZeroMem(m_Data[offset], sizeof(T));
 
-        Sz--;
+        m_Size--;
     }
 };
 
@@ -180,29 +180,29 @@ template <typename T, int MAX_BUFFER_SIZE = 128>
 class TCircularRefBuffer
 {
 public:
-    TRef<T> Data[MAX_BUFFER_SIZE];
-    int     Head;
-    int     Sz;
+    TRef<T> m_Data[MAX_BUFFER_SIZE];
+    int     m_Head;
+    int     m_Size;
 
     TCircularRefBuffer() :
-        Head(0), Sz(0)
+        m_Head(0), m_Size(0)
     {
         static_assert(IsPowerOfTwo(MAX_BUFFER_SIZE), "Circular buffer size must be power of two");
     }
 
     bool IsEmpty() const
     {
-        return Sz == 0;
+        return m_Size == 0;
     }
 
     bool IsFull() const
     {
-        return Sz == MAX_BUFFER_SIZE;
+        return m_Size == MAX_BUFFER_SIZE;
     }
 
     int Size() const
     {
-        return Sz;
+        return m_Size;
     }
 
     int Capacity() const
@@ -214,59 +214,59 @@ public:
     {
         HK_ASSERT(Index >= 0 && Index < Size());
 
-        int offset = (Head + Index) & (MAX_BUFFER_SIZE - 1);
+        int offset = (m_Head + Index) & (MAX_BUFFER_SIZE - 1);
 
-        return Data[offset];
+        return m_Data[offset];
     }
 
     TRef<T> const& operator[](int Index) const
     {
         HK_ASSERT(Index >= 0 && Index < Size());
 
-        int offset = (Head + Index) & (MAX_BUFFER_SIZE - 1);
+        int offset = (m_Head + Index) & (MAX_BUFFER_SIZE - 1);
 
-        return Data[offset];
+        return m_Data[offset];
     }
 
     void Append(T* Element)
     {
-        int offset = (Head + Sz) & (MAX_BUFFER_SIZE - 1);
+        int offset = (m_Head + m_Size) & (MAX_BUFFER_SIZE - 1);
 
-        if (Sz == MAX_BUFFER_SIZE)
+        if (m_Size == MAX_BUFFER_SIZE)
         {
             // buffer is full
-            Head = (Head + 1) & (MAX_BUFFER_SIZE - 1);
+            m_Head = (m_Head + 1) & (MAX_BUFFER_SIZE - 1);
         }
         else
         {
-            Sz++;
+            m_Size++;
         }
 
-        Data[offset] = Element;
+        m_Data[offset] = Element;
     }
 
     void Clear()
     {
         Resize(0);
 
-        Head = 0;
+        m_Head = 0;
     }
 
     void Resize(int NewSize)
     {
         HK_ASSERT(NewSize >= 0 && NewSize <= MAX_BUFFER_SIZE);
 
-        if (NewSize < Sz)
+        if (NewSize < m_Size)
         {
-            for (int i = NewSize; i < Sz; i++)
+            for (int i = NewSize; i < m_Size; i++)
             {
-                int offset = (Head + i) & (MAX_BUFFER_SIZE - 1);
+                int offset = (m_Head + i) & (MAX_BUFFER_SIZE - 1);
 
-                Data[offset].Reset();
+                m_Data[offset].Reset();
             }
         }
 
-        Sz = NewSize;
+        m_Size = NewSize;
     }
 
     void PopBack()
@@ -276,10 +276,10 @@ public:
             return;
         }
 
-        int offset = (Head + Sz - 1) & (MAX_BUFFER_SIZE - 1);
-        Data[offset].Reset();
+        int offset = (m_Head + m_Size - 1) & (MAX_BUFFER_SIZE - 1);
+        m_Data[offset].Reset();
 
-        Sz--;
+        m_Size--;
     }
 
     void PopFront()
@@ -289,32 +289,32 @@ public:
             return;
         }
 
-        int offset = Head & (MAX_BUFFER_SIZE - 1);
-        Data[offset].Reset();
+        int offset = m_Head & (MAX_BUFFER_SIZE - 1);
+        m_Data[offset].Reset();
 
-        Head = (Head + 1) & (MAX_BUFFER_SIZE - 1);
-        Sz--;
+        m_Head = (m_Head + 1) & (MAX_BUFFER_SIZE - 1);
+        m_Size--;
     }
 
     void Remove(int Index)
     {
         HK_ASSERT(Index >= 0 && Index < Size());
 
-        int offset = (Head + Index) & (MAX_BUFFER_SIZE - 1);
+        int offset = (m_Head + Index) & (MAX_BUFFER_SIZE - 1);
 
-        Data[offset].Reset();
+        m_Data[offset].Reset();
 
-        int count = Sz - Index - 1;
+        int count = m_Size - Index - 1;
         for (int i = 0; i < count; i++)
         {
-            offset = (Head + Index + i) & (MAX_BUFFER_SIZE - 1);
+            offset = (m_Head + Index + i) & (MAX_BUFFER_SIZE - 1);
 
-            Data[offset] = Data[(offset + 1) & (MAX_BUFFER_SIZE - 1)];
+            m_Data[offset] = m_Data[(offset + 1) & (MAX_BUFFER_SIZE - 1)];
         }
 
-        offset = (Head + Sz - 1) & (MAX_BUFFER_SIZE - 1);
-        Data[offset].Reset();
+        offset = (m_Head + m_Size - 1) & (MAX_BUFFER_SIZE - 1);
+        m_Data[offset].Reset();
 
-        Sz--;
+        m_Size--;
     }
 };

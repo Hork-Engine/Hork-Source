@@ -57,7 +57,7 @@ void AConsoleBuffer::_Resize(int _VidWidth)
         NumLines = MaxLines;
     }
 
-    SWideChar* pNewImage = (pImage == ImageData[0]) ? ImageData[1] : ImageData[0];
+    WideChar* pNewImage = (pImage == ImageData[0]) ? ImageData[1] : ImageData[0];
 
     Platform::ZeroMem(pNewImage, sizeof(*pNewImage) * CON_IMAGE_SIZE);
 
@@ -82,7 +82,7 @@ void AConsoleBuffer::Print(const char* _Text)
 {
     const char* wordStr;
     int         wordLength;
-    SWideChar   ch;
+    WideChar   ch;
     int         byteLen;
 
     AMutexGurad syncGuard(Mutex);
@@ -186,9 +186,9 @@ void AConsoleBuffer::Print(const char* _Text)
     }
 }
 
-void AConsoleBuffer::WidePrint(SWideChar const* _Text)
+void AConsoleBuffer::WidePrint(WideChar const* _Text)
 {
-    SWideChar const* wordStr;
+    WideChar const* wordStr;
     int              wordLength;
 
     AMutexGurad syncGuard(Mutex);

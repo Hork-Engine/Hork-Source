@@ -3,7 +3,7 @@
 
 using namespace RenderCore;
 
-AConsoleVar r_ShadowCascadeBits(_CTS("r_ShadowCascadeBits"), _CTS("24")); // Allowed 16, 24 or 32 bits
+AConsoleVar r_ShadowCascadeBits("r_ShadowCascadeBits"s, "24"s); // Allowed 16, 24 or 32 bits
 
 static const float  EVSM_positiveExponent = 40.0;
 static const float  EVSM_negativeExponent = 5.0;

@@ -137,7 +137,7 @@ public:
     /** Get bounding box */
     BvAxisAlignedBox const& GetWorldBounds() const { return Primitive->Box; }
 
-    void GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, TPodVectorHeap<Float3>& CollisionVertices, TPodVectorHeap<unsigned int>& CollisionIndices) const;
+    void GatherCollisionGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& CollisionVertices, TVector<unsigned int>& CollisionIndices) const;
 
     void GatherNavigationGeometry(SNavigationGeometry& Geometry) const override;
 

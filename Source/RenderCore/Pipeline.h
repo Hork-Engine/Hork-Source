@@ -241,6 +241,11 @@ struct SBlendingStateInfo
 
     SBlendingStateInfo() = default;
 
+    uint32_t Hash() const
+    {
+        return Core::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
+    }
+
     bool operator==(SBlendingStateInfo const& Rhs) const
     {
         return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
@@ -304,6 +309,11 @@ struct SRasterizerStateInfo
 
     SRasterizerStateInfo() = default;
 
+    uint32_t Hash() const
+    {
+        return Core::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
+    }
+
     bool operator==(SRasterizerStateInfo const& Rhs) const
     {
         return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
@@ -355,6 +365,11 @@ struct SDepthStencilStateInfo
     SStencilTestInfo    BackFace;
 
     SDepthStencilStateInfo() = default;
+
+    uint32_t Hash() const
+    {
+        return Core::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
+    }
 
     bool operator==(SDepthStencilStateInfo const& Rhs) const
     {
@@ -585,7 +600,6 @@ TString ShaderStringForVertexAttribs(SVertexAttribInfo const* _VertexAttribs, in
 
     for (SVertexAttribInfo const* attrib = _VertexAttribs; attrib < &_VertexAttribs[_NumVertexAttribs]; attrib++, attribIndex++)
     {
-
         VERTEX_ATTRIB_COMPONENT typeOfComponent = attrib->TypeOfComponent();
 
         if (attrib->Mode == VAM_INTEGER && (typeOfComponent == COMPONENT_UBYTE || typeOfComponent == COMPONENT_USHORT || typeOfComponent == COMPONENT_UINT))

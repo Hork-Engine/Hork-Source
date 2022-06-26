@@ -85,8 +85,8 @@ struct SAINavigationHitResult
 
 struct SNavigationGeometry
 {
-    TPodVectorHeap<Float3>       Vertices;
-    TPodVectorHeap<unsigned int> Indices;
+    TVector<Float3>       Vertices;
+    TVector<unsigned int> Indices;
     BvAxisAlignedBox             BoundingBox;
     TBitMask<>                   WalkableMask;
     BvAxisAlignedBox const*      pClipBoundingBox;

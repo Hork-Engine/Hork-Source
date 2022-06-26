@@ -33,11 +33,11 @@ SOFTWARE.
 
 #include <Core/ConsoleVar.h>
 
-AConsoleVar r_MaterialDebugMode(_CTS("r_MaterialDebugMode"),
+AConsoleVar r_MaterialDebugMode("r_MaterialDebugMode"s,
 #ifdef HK_DEBUG
-                                _CTS("1"),
+                                "1"s,
 #else
-                                _CTS("0"),
+                                "0"s,
 #endif
                                 CVAR_CHEAT);
 
@@ -79,9 +79,9 @@ void AShaderFactory::CreateShader(SHADER_TYPE ShaderType, TPodVector<const char*
             break;
     }
 
-    predefines += "#define MAX_DIRECTIONAL_LIGHTS " + Math::ToString(MAX_DIRECTIONAL_LIGHTS) + "\n";
-    predefines += "#define MAX_SHADOW_CASCADES " + Math::ToString(MAX_SHADOW_CASCADES) + "\n";
-    predefines += "#define MAX_TOTAL_SHADOW_CASCADES_PER_VIEW " + Math::ToString(MAX_TOTAL_SHADOW_CASCADES_PER_VIEW) + "\n";
+    predefines += Core::Format("#define MAX_DIRECTIONAL_LIGHTS {}\n", MAX_DIRECTIONAL_LIGHTS);
+    predefines += Core::Format("#define MAX_SHADOW_CASCADES {}\n", MAX_SHADOW_CASCADES);
+    predefines += Core::Format("#define MAX_TOTAL_SHADOW_CASCADES_PER_VIEW {}\n", MAX_TOTAL_SHADOW_CASCADES_PER_VIEW);
 
 
 #ifdef SHADOWMAP_PCF
@@ -113,13 +113,14 @@ void AShaderFactory::CreateShader(SHADER_TYPE ShaderType, TPodVector<const char*
         predefines += "#define WITH_SSAO\n";
     }
 
-    sources.Append("#version 450\n");
-    sources.Append("#extension GL_ARB_bindless_texture : enable\n");
-    sources.Append(predefines.CStr());
-    sources.Append(Sources);
+    sources.Add("#version 450\n");
+    sources.Add("#extension GL_ARB_bindless_texture : enable\n");
+    sources.Add(predefines.CStr());
+    sources.Add(Sources);
 
     // Print sources
 #if 0
+    LOG("============================ SOURCE ==============================\n");
     for ( int i = 0 ; i < sources.Size() ; i++ ) {
         LOG( "{} : {}\n", i, sources[i] );
     }
@@ -133,7 +134,7 @@ void AShaderFactory::CreateShader(SHADER_TYPE ShaderType, TPodVector<const char*
 void AShaderFactory::CreateShader(SHADER_TYPE ShaderType, const char* Source, TRef<IShaderModule>& Module)
 {
     TPodVector<const char*> sources;
-    sources.Append(Source);
+    sources.Add(Source);
     CreateShader(ShaderType, sources, Module);
 }
 
@@ -152,8 +153,8 @@ void AShaderFactory::CreateVertexShader(AStringView FileName, SVertexAttribInfo 
     TPodVector<const char*> sources;
 
     if (!vertexAttribsShaderString.IsEmpty())
-        sources.Append(vertexAttribsShaderString.CStr());
-    sources.Append(source.CStr());
+        sources.Add(vertexAttribsShaderString.CStr());
+    sources.Add(source.CStr());
 
     CreateShader(VERTEX_SHADER, sources, Module);
 

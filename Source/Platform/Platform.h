@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "BaseTypes.h"
+#include "Format.h"
 
 struct SCommandLine
 {
@@ -138,7 +138,7 @@ struct SPlatformInitialize
     int         Argc                    = 0;
     const char* pCommandLine            = nullptr;
     bool        bAllowMultipleInstances = true;
-    size_t      ZoneSizeInMegabytes     = 256;
+    //size_t      ZoneSizeInMegabytes     = 256;
     size_t      HunkSizeInMegabytes     = 32;
 };
 
@@ -249,4 +249,14 @@ void GetCursorPosition(int& _X, int& _Y);
 } // namespace Platform
 
 /** Show critical error and exit */
-void CriticalError(const char* _Format, ...);
+void _CriticalError(const char* Text);
+
+template <typename... T>
+HK_FORCEINLINE void CriticalError(fmt::format_string<T...> Format, T&&... args)
+{
+    fmt::memory_buffer buffer;
+    fmt::detail::vformat_to(buffer, fmt::string_view(Format), fmt::make_format_args(args...));
+    buffer.push_back('\0');
+
+    _CriticalError(buffer.data());
+}

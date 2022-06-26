@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Containers/PodVector.h>
+#include <Containers/Vector.h>
 #include <Geometry/VectorMath.h>
 #include <RenderCore/FrameGraph.h>
 
@@ -82,7 +82,7 @@ public:
     Float4 const & GetPageTranslationOffsetAndScale() const { return PageTranslationOffsetAndScale; }
 
     /** Page layers in texture memory */
-    std::vector< TRef< RenderCore::ITexture > > & GetLayers() { return PhysCacheLayers; }
+    TVector< TRef< RenderCore::ITexture > > & GetLayers() { return PhysCacheLayers; }
 
     /** Called on every frame */
     void Update();
@@ -119,8 +119,8 @@ private:
     void WaitForFences();
 
     /** Physical page cache */
-    std::vector< TRef< RenderCore::ITexture > > PhysCacheLayers;
-    std::vector< SVirtualTextureCacheLayerInfo > LayerInfo;
+    TVector< TRef< RenderCore::ITexture > > PhysCacheLayers;
+    TVector<SVirtualTextureCacheLayerInfo> LayerInfo;
 
     using AVirtualTexturePtr = AVirtualTexture *;
 

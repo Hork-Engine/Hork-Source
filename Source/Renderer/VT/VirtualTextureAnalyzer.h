@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "VirtualTexture.h"
 
-#include <Containers/PodVector.h>
+#include <Containers/Vector.h>
 
 constexpr int VT_MAX_TEXTURE_UNITS = 256;
 
@@ -87,7 +87,7 @@ public:
 private:
     void DecodePages();
     void ClearQueue();
-    void SubmitPages( TPodVector< SPageDesc > const & Pages );
+    void SubmitPages( TVector< SPageDesc > const & Pages );
     void WaitForNewPages();
     void StreamThreadMain();
     static void StreamThreadMain( void * pData );
@@ -104,8 +104,8 @@ private:
     TPodVector< SFeedbackChain > Feedbacks;
 
     // Unique pages from feedback
-    TPodVector< SPageDesc > PendingPages;
-    THash<> PendingPagesHash;
+    THashMap<uint32_t, uint32_t> PendingPageSet;
+    TVector<SPageDesc>           PendingPages;
 
     // Page queue for async loading
     enum { MAX_QUEUE_LENGTH = 256 };

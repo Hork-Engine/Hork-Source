@@ -130,15 +130,15 @@ static void ConstructFloat2FromFloat2(Float2* p, Float2 const& other)
     new (p) Float2(other);
 }
 
-static std::string Float2ToString(Float2 const& self, int Precision)
-{
-    return self.ToString(Precision).CStr();
-}
+//static std::string Float2ToString(Float2 const& self, int Precision)
+//{
+//    return self.ToString(Precision).CStr();
+//}
 
-static std::string Float2ToHexString(Float2 const& self, bool bLeadingZeros, bool bPrefix)
-{
-    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
-}
+//static std::string Float2ToHexString(Float2 const& self, bool bLeadingZeros, bool bPrefix)
+//{
+//    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
+//}
 
 static Float3 Float2ToFloat3(Float2 const& self, float z)
 {
@@ -259,10 +259,10 @@ static void RegisterFloat2(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float2", "int VectorAxialType() const", asMETHOD(Float2, VectorAxialType), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float2", "string ToString(int=6) const", asFUNCTIONPR(Float2ToString, (Float2 const&, int), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float2", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float2ToHexString, (Float2 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float2", "string ToString(int=6) const", asFUNCTIONPR(Float2ToString, (Float2 const&, int), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float2", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float2ToHexString, (Float2 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float2", "Float3 ToFloat3(float=0) const", asFUNCTIONPR(Float2ToFloat3, (Float2 const&, float), Float3), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float2", "Float4 ToFloat4() const", asFUNCTIONPR(Float2ToFloat4, (Float2 const&), Float4), asCALL_CDECL_OBJFIRST);
@@ -309,15 +309,15 @@ static void ConstructFloat3FromFloat3(Float3* p, Float3 const& other)
     new (p) Float3(other);
 }
 
-static std::string Float3ToString(Float3 const& self, int Precision)
-{
-    return self.ToString(Precision).CStr();
-}
+//static std::string Float3ToString(Float3 const& self, int Precision)
+//{
+//    return self.ToString(Precision).CStr();
+//}
 
-static std::string Float3ToHexString(Float3 const& self, bool bLeadingZeros, bool bPrefix)
-{
-    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
-}
+//static std::string Float3ToHexString(Float3 const& self, bool bLeadingZeros, bool bPrefix)
+//{
+//    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
+//}
 
 static Float2 Float3ToFloat2(Float3 const& self)
 {
@@ -445,10 +445,10 @@ static void RegisterFloat3(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3", "void ComputeBasis(Float3 &out, Float3 &out) const", asMETHOD(Float3, ComputeBasis), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float3", "string ToString(int=6) const", asFUNCTIONPR(Float3ToString, (Float3 const&, int), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float3", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float3ToHexString, (Float3 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float3", "string ToString(int=6) const", asFUNCTIONPR(Float3ToString, (Float3 const&, int), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float3", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float3ToHexString, (Float3 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3", "Float2 ToFloat2() const", asFUNCTIONPR(Float3ToFloat2, (Float3 const&), Float2), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3", "Float4 ToFloat4(float=0) const", asFUNCTIONPR(Float3ToFloat4, (Float3 const&, float), Float4), asCALL_CDECL_OBJFIRST);
@@ -490,15 +490,15 @@ static void ConstructFloat4FromFloat4(Float4* p, Float4 const& other)
     new (p) Float4(other);
 }
 
-static std::string Float4ToString(Float4 const& self, int Precision)
-{
-    return self.ToString(Precision).CStr();
-}
+//static std::string Float4ToString(Float4 const& self, int Precision)
+//{
+//    return self.ToString(Precision).CStr();
+//}
 
-static std::string Float4ToHexString(Float4 const& self, bool bLeadingZeros, bool bPrefix)
-{
-    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
-}
+//static std::string Float4ToHexString(Float4 const& self, bool bLeadingZeros, bool bPrefix)
+//{
+//    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
+//}
 
 static Float2 Float4ToFloat2(Float4 const& self)
 {
@@ -618,10 +618,10 @@ static void RegisterFloat4(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float4", "int VectorAxialType() const", asMETHOD(Float4, VectorAxialType), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float4", "string ToString(int=6) const", asFUNCTIONPR(Float4ToString, (Float4 const&, int), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float4", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float4ToHexString, (Float4 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float4", "string ToString(int=6) const", asFUNCTIONPR(Float4ToString, (Float4 const&, int), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float4", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float4ToHexString, (Float4 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float4", "Float3 ToFloat2() const", asFUNCTIONPR(Float4ToFloat2, (Float4 const&), Float2), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float4", "Float3 ToFloat3() const", asFUNCTIONPR(Float4ToFloat3, (Float4 const&), Float3), asCALL_CDECL_OBJFIRST);
@@ -681,15 +681,15 @@ static void ConstructPlaneFromPlane(PlaneF* p, PlaneF const& Plane)
     new (p) PlaneF(Plane);
 }
 
-static std::string PlaneToString(PlaneF const& self, int Precision)
-{
-    return self.ToString(Precision).CStr();
-}
+//static std::string PlaneToString(PlaneF const& self, int Precision)
+//{
+//    return self.ToString(Precision).CStr();
+//}
 
-static std::string PlaneToHexString(PlaneF const& self, bool bLeadingZeros, bool bPrefix)
-{
-    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
-}
+//static std::string PlaneToHexString(PlaneF const& self, bool bLeadingZeros, bool bPrefix)
+//{
+//    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
+//}
 
 static void RegisterPlane(asIScriptEngine* pEngine)
 {
@@ -747,10 +747,10 @@ static void RegisterPlane(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Plane", "const Float4& ToFloat4() const", asMETHODPR(PlaneF, ToFloat4, () const, Float4 const&), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Plane", "string ToString(int=6) const", asFUNCTIONPR(PlaneToString, (PlaneF const&, int), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Plane", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(PlaneToHexString, (PlaneF const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Plane", "string ToString(int=6) const", asFUNCTIONPR(PlaneToString, (PlaneF const&, int), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Plane", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(PlaneToHexString, (PlaneF const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
 
     HK_UNUSED(r);
     // TODO?
@@ -817,15 +817,15 @@ static Float4x4 Float2x2ToFloat4x4(const Float2x2& self)
     return Float4x4(self);
 }
 
-static std::string Float2x2ToString(Float2x2 const& self, int Precision)
-{
-    return self.ToString(Precision).CStr();
-}
+//static std::string Float2x2ToString(Float2x2 const& self, int Precision)
+//{
+//    return self.ToString(Precision).CStr();
+//}
 
-static std::string Float2x2ToHexString(Float2x2 const& self, bool bLeadingZeros, bool bPrefix)
-{
-    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
-}
+//static std::string Float2x2ToHexString(Float2x2 const& self, bool bLeadingZeros, bool bPrefix)
+//{
+//    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
+//}
 
 static void RegisterFloat2x2(asIScriptEngine* pEngine)
 {
@@ -887,10 +887,10 @@ static void RegisterFloat2x2(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float2x2", "Float2x2& opDivAssign(float)", asMETHODPR(Float2x2, operator/=, (float), Float2x2&), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float2x2", "string ToString(int=6) const", asFUNCTIONPR(Float2x2ToString, (Float2x2 const&, int), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float2x2", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float2x2ToHexString, (Float2x2 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float2x2", "string ToString(int=6) const", asFUNCTIONPR(Float2x2ToString, (Float2x2 const&, int), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float2x2", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float2x2ToHexString, (Float2x2 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float2x2", "Float3x3 ToFloat3x3() const", asFUNCTIONPR(Float2x2ToFloat3x3, (Float2x2 const&), Float3x3), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float2x2", "Float3x4 ToFloat3x4() const", asFUNCTIONPR(Float2x2ToFloat3x4, (Float2x2 const&), Float3x4), asCALL_CDECL_OBJFIRST);
@@ -972,15 +972,15 @@ static Float3x3 GetDiagonal3x3(const Float3& Diagonal)
     return Float3x3(Diagonal);
 }
 
-static std::string Float3x3ToString(Float3x3 const& self, int Precision)
-{
-    return self.ToString(Precision).CStr();
-}
+//static std::string Float3x3ToString(Float3x3 const& self, int Precision)
+//{
+//    return self.ToString(Precision).CStr();
+//}
 
-static std::string Float3x3ToHexString(Float3x3 const& self, bool bLeadingZeros, bool bPrefix)
-{
-    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
-}
+//static std::string Float3x3ToHexString(Float3x3 const& self, bool bLeadingZeros, bool bPrefix)
+//{
+//    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
+//}
 
 static void RegisterFloat3x3(asIScriptEngine* pEngine)
 {
@@ -1050,10 +1050,10 @@ static void RegisterFloat3x3(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x3", "Float3x3 ViewInverseFast() const", asMETHOD(Float3x3, ViewInverseFast), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float3x3", "string ToString(int=6) const", asFUNCTIONPR(Float3x3ToString, (Float3x3 const&, int), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float3x3", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float3x3ToHexString, (Float3x3 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float3x3", "string ToString(int=6) const", asFUNCTIONPR(Float3x3ToString, (Float3x3 const&, int), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float3x3", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float3x3ToHexString, (Float3x3 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x3", "Float2x2 ToFloat2x2() const", asFUNCTIONPR(Float3x3ToFloat2x2, (Float3x3 const&), Float2x2), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x3", "Float3x4 ToFloat3x4() const", asFUNCTIONPR(Float3x3ToFloat3x4, (Float3x3 const&), Float3x4), asCALL_CDECL_OBJFIRST);
@@ -1143,15 +1143,15 @@ static Float3x4 GetDiagonal3x4(const Float3& Diagonal)
     return Float3x4(Diagonal);
 }
 
-static std::string Float3x4ToString(Float3x4 const& self, int Precision)
-{
-    return self.ToString(Precision).CStr();
-}
+//static std::string Float3x4ToString(Float3x4 const& self, int Precision)
+//{
+//    return self.ToString(Precision).CStr();
+//}
 
-static std::string Float3x4ToHexString(Float3x4 const& self, bool bLeadingZeros, bool bPrefix)
-{
-    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
-}
+//static std::string Float3x4ToHexString(Float3x4 const& self, bool bLeadingZeros, bool bPrefix)
+//{
+//    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
+//}
 
 static void RegisterFloat3x4(asIScriptEngine* pEngine)
 {
@@ -1231,10 +1231,10 @@ static void RegisterFloat3x4(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x4", "Float3x4& opDivAssign(float)", asMETHODPR(Float3x4, operator/=, (float), Float3x4&), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float3x4", "string ToString(int=6) const", asFUNCTIONPR(Float3x4ToString, (Float3x4 const&, int), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float3x4", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float3x4ToHexString, (Float3x4 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float3x4", "string ToString(int=6) const", asFUNCTIONPR(Float3x4ToString, (Float3x4 const&, int), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float3x4", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float3x4ToHexString, (Float3x4 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x4", "Float2x2 ToFloat2x2() const", asFUNCTIONPR(Float3x4ToFloat2x2, (Float3x4 const&), Float2x2), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float3x4", "Float3x3 ToFloat3x4() const", asFUNCTIONPR(Float3x4ToFloat3x3, (Float3x4 const&), Float3x3), asCALL_CDECL_OBJFIRST);
@@ -1326,15 +1326,15 @@ static Float4x4 GetDiagonal4x4(const Float4& Diagonal)
     return Float4x4(Diagonal);
 }
 
-static std::string Float4x4ToString(Float4x4 const& self, int Precision)
-{
-    return self.ToString(Precision).CStr();
-}
+//static std::string Float4x4ToString(Float4x4 const& self, int Precision)
+//{
+//    return self.ToString(Precision).CStr();
+//}
 
-static std::string Float4x4ToHexString(Float4x4 const& self, bool bLeadingZeros, bool bPrefix)
-{
-    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
-}
+//static std::string Float4x4ToHexString(Float4x4 const& self, bool bLeadingZeros, bool bPrefix)
+//{
+//    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
+//}
 
 static void RegisterFloat4x4(asIScriptEngine* pEngine)
 {
@@ -1420,10 +1420,10 @@ static void RegisterFloat4x4(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float4x4", "Float4x4 OrthoProjectionInverseFast() const", asMETHOD(Float4x4, OrthoProjectionInverseFast), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float4x4", "string ToString(int=6) const", asFUNCTIONPR(Float4x4ToString, (Float4x4 const&, int), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Float4x4", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float4x4ToHexString, (Float4x4 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float4x4", "string ToString(int=6) const", asFUNCTIONPR(Float4x4ToString, (Float4x4 const&, int), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Float4x4", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(Float4x4ToHexString, (Float4x4 const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float4x4", "Float2x2 ToFloat2x2() const", asFUNCTIONPR(Float4x4ToFloat2x2, (Float4x4 const&), Float2x2), asCALL_CDECL_OBJFIRST);
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Float4x4", "Float3x4 ToFloat3x4() const", asFUNCTIONPR(Float4x4ToFloat3x4, (Float4x4 const&), Float3x4), asCALL_CDECL_OBJFIRST);
@@ -1504,15 +1504,15 @@ static void ConstructQuatFromQuat(Quat* p, Quat const& other)
     new (p) Quat(other);
 }
 
-static std::string QuatToString(Quat const& self, int Precision)
-{
-    return self.ToString(Precision).CStr();
-}
+//static std::string QuatToString(Quat const& self, int Precision)
+//{
+//    return self.ToString(Precision).CStr();
+//}
 
-static std::string QuatToHexString(Quat const& self, bool bLeadingZeros, bool bPrefix)
-{
-    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
-}
+//static std::string QuatToHexString(Quat const& self, bool bLeadingZeros, bool bPrefix)
+//{
+//    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
+//}
 
 static void RegisterQuat(asIScriptEngine* pEngine)
 {
@@ -1612,10 +1612,10 @@ static void RegisterQuat(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Quat", "float Roll() const", asMETHOD(Quat, Roll), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Quat", "string ToString(int=6) const", asFUNCTIONPR(QuatToString, (Quat const&, int), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Quat", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(QuatToHexString, (Quat const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Quat", "string ToString(int=6) const", asFUNCTIONPR(QuatToString, (Quat const&, int), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Quat", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(QuatToHexString, (Quat const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("Quat GetRotationAroundNormalQuat(float, const Float3 &in)", asFUNCTION(Quat::RotationAroundNormal), asCALL_CDECL);
     assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("Quat GetRotationAroundVectorQuat(float, const Float3 &in)", asFUNCTION(Quat::RotationAroundVector), asCALL_CDECL);
@@ -1660,15 +1660,15 @@ static void ConstructAnglFromAngl(Angl* p, Angl const& other)
     new (p) Angl(other);
 }
 
-static std::string AnglToString(Angl const& self, int Precision)
-{
-    return self.ToString(Precision).CStr();
-}
+//static std::string AnglToString(Angl const& self, int Precision)
+//{
+//    return self.ToString(Precision).CStr();
+//}
 
-static std::string AnglToHexString(Angl const& self, bool bLeadingZeros, bool bPrefix)
-{
-    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
-}
+//static std::string AnglToHexString(Angl const& self, bool bLeadingZeros, bool bPrefix)
+//{
+//    return self.ToHexString(bLeadingZeros, bPrefix).CStr();
+//}
 
 static void RegisterAngl(asIScriptEngine* pEngine)
 {
@@ -1730,10 +1730,10 @@ static void RegisterAngl(asIScriptEngine* pEngine)
     assert(r >= 0);
     r = pEngine->RegisterObjectMethod("Angl", "const Float3& ToFloat3() const", asMETHODPR(Angl, ToFloat3, () const, Float3 const&), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Angl", "string ToString(int=6) const", asFUNCTIONPR(AnglToString, (Angl const&, int), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
-    r = pEngine->RegisterObjectMethod("Angl", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(AnglToHexString, (Angl const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
-    assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Angl", "string ToString(int=6) const", asFUNCTIONPR(AnglToString, (Angl const&, int), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
+    //r = pEngine->RegisterObjectMethod("Angl", "string ToHexString(bool=false, bool=false) const", asFUNCTIONPR(AnglToHexString, (Angl const&, bool, bool), std::string), asCALL_CDECL_OBJFIRST);
+    //assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("float AngleNormalize360(float)", asFUNCTION(Angl::Normalize360), asCALL_CDECL);
     assert(r >= 0);
     r = pEngine->RegisterGlobalFunction("float AngleNormalize180(float)", asFUNCTION(Angl::Normalize180), asCALL_CDECL);
@@ -2475,7 +2475,7 @@ AScriptEngine::AScriptEngine(AWorld* pWorld) :
 
 AScriptEngine::~AScriptEngine()
 {
-    Scripts.clear();
+    Scripts.Clear();
 
     if (pEngine)
         pEngine->ShutDownAndRelease();
@@ -2511,13 +2511,13 @@ static int LoadScript(const char* SourceFileName, const char* IncludedFrom, CScr
         return -1;
 
     size_t bufferSize = f.SizeInBytes() + 1;
-    char*  buffer     = (char*)GHunkMemory.Alloc(bufferSize);
+    char*  buffer     = (char*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(bufferSize);
     f.Read(buffer, bufferSize - 1);
     buffer[bufferSize - 1] = 0;
 
     int r = pBuilder->AddSectionFromMemory(SourceFileName, buffer);
 
-    GHunkMemory.ClearLastHunk();
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(buffer);
 
     return r;
 }
@@ -2613,9 +2613,9 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
 
     type->SetUserData(pScript.get());
 
-    Scripts.push_back(std::move(pScript));
+    Scripts.Add(std::move(pScript));
 
-    return Scripts.back().get();
+    return Scripts.Last().get();
 }
 
 asIScriptObject* AScriptEngine::CreateScriptInstance(AString const& ModuleName, AActor* pActor)
@@ -2680,7 +2680,7 @@ asIScriptContext* AScriptContextPool::PrepareContext(asIScriptObject* pScriptObj
 void AScriptContextPool::UnprepareContext(asIScriptContext* pContext)
 {
     pContext->Unprepare();
-    Contexts.Append(pContext);
+    Contexts.Add(pContext);
 }
 
 AActorScript* AActorScript::GetScript(asIScriptObject* pObject)
@@ -2688,7 +2688,7 @@ AActorScript* AActorScript::GetScript(asIScriptObject* pObject)
     return reinterpret_cast<AActorScript*>(pObject->GetObjectType()->GetUserData());
 }
 
-void AActorScript::SetProperties(asIScriptObject* pObject, THashContainer<AString, AString> const& Properties)
+void AActorScript::SetProperties(asIScriptObject* pObject, TStringHashMap<AString> const& Properties)
 {
     // TODO
 }

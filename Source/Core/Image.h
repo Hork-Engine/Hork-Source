@@ -113,6 +113,40 @@ public:
     AImage();
     ~AImage();
 
+    AImage(AImage&& Rhs) noexcept
+    {
+        pRawData     = Rhs.pRawData;
+        Width        = Rhs.Width;
+        Height       = Rhs.Height;
+        NumMipLevels = Rhs.NumMipLevels;
+        PixelFormat  = Rhs.PixelFormat;
+
+        Rhs.pRawData = nullptr;
+        Rhs.Width = 0;
+        Rhs.Height = 0;
+        Rhs.NumMipLevels = 0;
+        Rhs.PixelFormat = IMAGE_PF_AUTO_GAMMA2;
+    }
+
+    AImage& operator=(AImage&& Rhs) noexcept
+    {
+        Free();
+
+        pRawData     = Rhs.pRawData;
+        Width        = Rhs.Width;
+        Height       = Rhs.Height;
+        NumMipLevels = Rhs.NumMipLevels;
+        PixelFormat  = Rhs.PixelFormat;
+
+        Rhs.pRawData     = nullptr;
+        Rhs.Width        = 0;
+        Rhs.Height       = 0;
+        Rhs.NumMipLevels = 0;
+        Rhs.PixelFormat  = IMAGE_PF_AUTO_GAMMA2;
+
+        return *this;
+    }
+
     bool Load(AStringView _Path, SImageMipmapConfig const* _MipmapGen = nullptr, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2);
     bool Load(IBinaryStreamReadInterface& _Stream, SImageMipmapConfig const* _MipmapGen = nullptr, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2);
 
@@ -121,20 +155,35 @@ public:
 
     void Free();
 
+    bool IsValid() const
+    {
+        return pRawData != nullptr;
+    }
+
     void*             GetData() const { return pRawData; }
     int               GetWidth() const { return Width; }
     int               GetHeight() const { return Height; }
     int               GetNumMipLevels() const { return NumMipLevels; }
     EImagePixelFormat GetPixelFormat() const { return PixelFormat; }
 
+    /** Flip image horizontally */
+    void FlipX();
+
+    /** Flip image vertically */
+    void FlipY();
+
+    int GetBytesPerPixel() const;
+    int GetBytesPerChannel() const;
+    int GetNumChannels() const;
+
 private:
     void FromRawData(const void* _Source, int _Width, int _Height, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat, bool bReuseSourceBuffer);
 
-    void*             pRawData;
-    int               Width;
-    int               Height;
-    int               NumMipLevels;
-    EImagePixelFormat PixelFormat;
+    void*             pRawData{};
+    int               Width{};
+    int               Height{};
+    int               NumMipLevels{};
+    EImagePixelFormat PixelFormat{IMAGE_PF_AUTO_GAMMA2};
 };
 
 /*
@@ -142,6 +191,12 @@ private:
 Utilites
 
 */
+
+AImage LoadImage(AStringView Path, SImageMipmapConfig const* MipmapGen = nullptr, EImagePixelFormat PixelFormat = IMAGE_PF_AUTO_GAMMA2);
+AImage LoadImage(IBinaryStreamReadInterface& Stream, SImageMipmapConfig const* MipmapGen = nullptr, EImagePixelFormat PixelFormat = IMAGE_PF_AUTO_GAMMA2);
+
+/** Source data must be float* or byte* according to specified pixel format */
+AImage CreateImage(const void* Source, int Width, int Height, SImageMipmapConfig const* MipmapGen, EImagePixelFormat PixelFormat);
 
 /** Flip image horizontally */
 void FlipImageX(void* _ImageData, int _Width, int _Height, int _BytesPerPixel, int _BytesPerLine);

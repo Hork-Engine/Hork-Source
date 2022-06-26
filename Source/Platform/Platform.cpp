@@ -412,7 +412,9 @@ static void InitializeProcess()
 
     uint32_t appHash = SDBMHash(ProcessInfo.Executable, len);
 
-    ProcessMutex = CreateMutexA(NULL, FALSE, Platform::Fmt("angie_%u", appHash));
+    char pid[32];
+    Platform::Sprintf(pid, sizeof(pid), "hork_%x", appHash);
+    ProcessMutex = CreateMutexA(NULL, FALSE, pid);
     if (!ProcessMutex)
     {
         ProcessInfo.ProcessAttribute = PROCESS_COULDNT_CHECK_UNIQUE;
@@ -449,7 +451,9 @@ static void InitializeProcess()
     ProcessInfo.Executable[len] = 0;
 
     uint32_t appHash = SDBMHash(ProcessInfo.Executable, len);
-    int f = open(Platform::Fmt("/tmp/angie_%u.pid", appHash), O_RDWR | O_CREAT, 0666);
+    char pid[32];
+    Platform::Sprintf(pid, sizeof(pid), "/tmp/hork_%x.pid", appHash);
+    int f = open(pid, O_RDWR | O_CREAT, 0666);
     int locked = flock(f, LOCK_EX | LOCK_NB);
     if (locked)
     {
@@ -510,35 +514,9 @@ static void DeinitializeProcess()
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-namespace
+static void InitializeMemory(/*size_t ZoneSizeInMegabytes, */size_t HunkSizeInMegabytes)
 {
-
-volatile int MemoryChecksum;
-static void* MemoryHeap;
-
-static void TouchMemoryPages(void* _MemoryPointer, int _MemorySize)
-{
-    LOG("Touching memory pages...\n");
-
-    byte* p = (byte*)_MemoryPointer;
-    for (int n = 0; n < 4; n++)
-    {
-        for (int m = 0; m < (_MemorySize - 16 * 0x1000); m += 4)
-        {
-            MemoryChecksum += *(int32_t*)&p[m];
-            MemoryChecksum += *(int32_t*)&p[m + 16 * 0x1000];
-        }
-    }
-
-    //int j = _MemorySize >> 2;
-    //for ( int i = 0 ; i < j ; i += 64 ) {
-    //    MemoryChecksum += ( ( int32_t * )_MemoryPointer )[ i ];
-    //}
-}
-
-static void InitializeMemory(size_t ZoneSizeInMegabytes, size_t HunkSizeInMegabytes)
-{
-    const size_t TotalMemorySizeInBytes = (ZoneSizeInMegabytes + HunkSizeInMegabytes) << 20;
+    const size_t TotalMemorySizeInBytes = (/*ZoneSizeInMegabytes*/ + HunkSizeInMegabytes) << 20;
 
 #ifdef HK_OS_WIN32
     SIZE_T dwMinimumWorkingSetSize = TotalMemorySizeInBytes;
@@ -556,34 +534,11 @@ static void InitializeMemory(size_t ZoneSizeInMegabytes, size_t HunkSizeInMegaby
         LOG("Total available phys memory: {} Megs\n", physMemoryInfo.TotalAvailableMegabytes);
         LOG("Current available phys memory: {} Megs\n", physMemoryInfo.CurrentAvailableMegabytes);
     }
-
-    LOG("Zone memory size: {} Megs\n"
-        "Hunk memory size: {} Megs\n",
-        ZoneSizeInMegabytes, HunkSizeInMegabytes);
-
-    GHeapMemory.Initialize();
-
-    MemoryHeap = GHeapMemory.Alloc(TotalMemorySizeInBytes, 16);
-    Platform::ZeroMem(MemoryHeap, TotalMemorySizeInBytes);
-
-    //TouchMemoryPages( MemoryHeap, TotalMemorySizeInBytes );
-
-    void* ZoneMemory = MemoryHeap;
-    GZoneMemory.Initialize(ZoneMemory, ZoneSizeInMegabytes);
-
-    void* HunkMemory = (byte*)MemoryHeap + (ZoneSizeInMegabytes << 20);
-    GHunkMemory.Initialize(HunkMemory, HunkSizeInMegabytes);
 }
 
 static void DeinitializeMemory()
 {
-    GZoneMemory.Deinitialize();
-    GHunkMemory.Deinitialize();
-    GHeapMemory.Free(MemoryHeap);
-    GHeapMemory.Deinitialize();
 }
-
-} // namespace
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -725,7 +680,7 @@ void Initialize(SPlatformInitialize const& CoreInitialize)
 
     PrintCPUFeatures();
 
-    InitializeMemory(CoreInitialize.ZoneSizeInMegabytes, CoreInitialize.HunkSizeInMegabytes);
+    InitializeMemory(/*CoreInitialize.ZoneSizeInMegabytes, */CoreInitialize.HunkSizeInMegabytes);
 }
 
 void Deinitialize()
@@ -1182,23 +1137,13 @@ static void DisplayCriticalMessage(const char* _Message)
 
 } // namespace
 
-void CriticalError(const char* _Format, ...)
+void _CriticalError(const char* Text)
 {
-    char CriticalErrorMessage[4096];
-
-    va_list VaList;
-    va_start(VaList, _Format);
-    Platform::VSprintf(CriticalErrorMessage,
-                       sizeof(CriticalErrorMessage),
-                       _Format,
-                       VaList);
-    va_end(VaList);
-
-    DisplayCriticalMessage(CriticalErrorMessage);
+    DisplayCriticalMessage(Text);
 
     SDL_Quit();
 
-    GHeapMemory.Clear();
+    MemoryHeap::MemoryCleanup();
 
     DeinitializeProcess();
 

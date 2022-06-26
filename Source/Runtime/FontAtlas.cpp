@@ -50,7 +50,7 @@ static const bool bTexNoPowerOfTwoHeight = false;
 static const float DefaultFontSize = 13;
 
 // Replacement character if a glyph isn't found
-static const SWideChar FallbackChar = (SWideChar)'?';
+static const WideChar FallbackChar = (WideChar)'?';
 
 static EGlyphRange GGlyphRange = GLYPH_RANGE_DEFAULT;
 
@@ -63,8 +63,8 @@ static EGlyphRange GGlyphRange = GLYPH_RANGE_DEFAULT;
 #endif
 
 #ifndef STB_TRUETYPE_IMPLEMENTATION
-#    define STBTT_malloc(x, u) ((void)(u), GZoneMemory.Alloc(x))
-#    define STBTT_free(x, u)   ((void)(u), GZoneMemory.Free(x))
+#    define STBTT_malloc(x, u) ((void)(u), Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(x))
+#    define STBTT_free(x, u)   ((void)(u), Platform::GetHeapAllocator<HEAP_IMAGE>().Free(x))
 #    define STBTT_assert(x)    HK_ASSERT(x)
 #    define STBTT_fmod(x, y)   Math::FMod(x, y)
 #    define STBTT_sqrt(x)      std::sqrt(x)
@@ -127,7 +127,7 @@ static const Float2 CursorTexData[][3] =
 
 static const unsigned short* GetGlyphRangesDefault()
 {
-    static const SWideChar ranges[] =
+    static const WideChar ranges[] =
         {
             0x0020,
             0x00FF, // Basic Latin + Latin Supplement
@@ -138,7 +138,7 @@ static const unsigned short* GetGlyphRangesDefault()
 
 static const unsigned short* GetGlyphRangesKorean()
 {
-    static const SWideChar ranges[] =
+    static const WideChar ranges[] =
         {
             0x0020,
             0x00FF, // Basic Latin + Latin Supplement
@@ -151,11 +151,11 @@ static const unsigned short* GetGlyphRangesKorean()
     return &ranges[0];
 }
 
-static void UnpackAccumulativeOffsetsIntoRanges(int base_codepoint, const short* accumulative_offsets, int accumulative_offsets_count, SWideChar* out_ranges)
+static void UnpackAccumulativeOffsetsIntoRanges(int base_codepoint, const short* accumulative_offsets, int accumulative_offsets_count, WideChar* out_ranges)
 {
     for (int n = 0; n < accumulative_offsets_count; n++, out_ranges += 2)
     {
-        out_ranges[0] = out_ranges[1] = (SWideChar)(base_codepoint + accumulative_offsets[n]);
+        out_ranges[0] = out_ranges[1] = (WideChar)(base_codepoint + accumulative_offsets[n]);
         base_codepoint += accumulative_offsets[n];
     }
     out_ranges[0] = 0;
@@ -2115,14 +2115,14 @@ static const unsigned short* GetGlyphRangesJapanese()
             40,
             39,
         };
-    static SWideChar base_ranges[] = // not zero-terminated
+    static WideChar base_ranges[] = // not zero-terminated
         {
             0x0020, 0x00FF, // Basic Latin + Latin Supplement
             0x3000, 0x30FF, // CJK Symbols and Punctuations, Hiragana, Katakana
             0x31F0, 0x31FF, // Katakana Phonetic Extensions
             0xFF00, 0xFFEF  // Half-width characters
         };
-    static SWideChar full_ranges[HK_ARRAY_SIZE(base_ranges) + HK_ARRAY_SIZE(accumulative_offsets_from_0x4E00) * 2 + 1] = {0};
+    static WideChar full_ranges[HK_ARRAY_SIZE(base_ranges) + HK_ARRAY_SIZE(accumulative_offsets_from_0x4E00) * 2 + 1] = {0};
     if (!full_ranges[0])
     {
         Platform::Memcpy(full_ranges, base_ranges, sizeof(base_ranges));
@@ -2133,7 +2133,7 @@ static const unsigned short* GetGlyphRangesJapanese()
 
 static const unsigned short* GetGlyphRangesChineseFull()
 {
-    static const SWideChar ranges[] =
+    static const WideChar ranges[] =
         {
             0x0020,
             0x00FF, // Basic Latin + Latin Supplement
@@ -2199,7 +2199,7 @@ static const unsigned short* GetGlyphRangesChineseSimplifiedCommon()
             3, 2, 3, 1, 1, 2, 5, 1, 4, 15, 11, 19, 1, 1, 1, 1, 5, 4, 5, 1, 1, 2, 5, 3, 5, 12, 1, 2, 5, 1, 11, 1, 1, 15, 9, 1, 4, 5, 3, 26, 8, 2, 1, 3, 1, 1, 15, 19, 2, 12, 1, 2, 5, 2, 7, 2, 19, 2, 20, 6, 26, 7, 5,
             2, 2, 7, 34, 21, 13, 70, 2, 128, 1, 1, 2, 1, 1, 2, 1, 1, 3, 2, 2, 2, 15, 1, 4, 1, 3, 4, 42, 10, 6, 1, 49, 85, 8, 1, 2, 1, 1, 4, 4, 2, 3, 6, 1, 5, 7, 4, 3, 211, 4, 1, 2, 1, 2, 5, 1, 2, 4, 2, 2, 6, 5, 6,
             10, 3, 4, 48, 100, 6, 2, 16, 296, 5, 27, 387, 2, 2, 3, 7, 16, 8, 5, 38, 15, 39, 21, 9, 10, 3, 7, 59, 13, 27, 21, 47, 5, 21, 6};
-    static SWideChar base_ranges[] = // not zero-terminated
+    static WideChar base_ranges[] = // not zero-terminated
         {
             0x0020, 0x00FF, // Basic Latin + Latin Supplement
             0x2000, 0x206F, // General Punctuation
@@ -2207,7 +2207,7 @@ static const unsigned short* GetGlyphRangesChineseSimplifiedCommon()
             0x31F0, 0x31FF, // Katakana Phonetic Extensions
             0xFF00, 0xFFEF  // Half-width characters
         };
-    static SWideChar full_ranges[HK_ARRAY_SIZE(base_ranges) + HK_ARRAY_SIZE(accumulative_offsets_from_0x4E00) * 2 + 1] = {0};
+    static WideChar full_ranges[HK_ARRAY_SIZE(base_ranges) + HK_ARRAY_SIZE(accumulative_offsets_from_0x4E00) * 2 + 1] = {0};
     if (!full_ranges[0])
     {
         Platform::Memcpy(full_ranges, base_ranges, sizeof(base_ranges));
@@ -2218,7 +2218,7 @@ static const unsigned short* GetGlyphRangesChineseSimplifiedCommon()
 
 static const unsigned short* GetGlyphRangesCyrillic()
 {
-    static const SWideChar ranges[] =
+    static const WideChar ranges[] =
         {
             0x0020,
             0x00FF, // Basic Latin + Latin Supplement
@@ -2235,7 +2235,7 @@ static const unsigned short* GetGlyphRangesCyrillic()
 
 static const unsigned short* GetGlyphRangesThai()
 {
-    static const SWideChar ranges[] =
+    static const WideChar ranges[] =
         {
             0x0020,
             0x00FF, // Basic Latin
@@ -2250,7 +2250,7 @@ static const unsigned short* GetGlyphRangesThai()
 
 static const unsigned short* GetGlyphRangesVietnamese()
 {
-    static const SWideChar ranges[] =
+    static const WideChar ranges[] =
         {
             0x0020,
             0x00FF, // Basic Latin
@@ -2352,9 +2352,9 @@ void AFont::InitializeFromMemoryTTF(const void* _SysMem, size_t _SizeInBytes, SF
     AtlasTexture->Write(0, RenderCore::FORMAT_UBYTE1, TexWidth * TexHeight, IsAligned(TexWidth, 4) ? 4 : 1, TexPixelsAlpha8);
 }
 
-void AFont::LoadInternalResource(const char* _Path)
+void AFont::LoadInternalResource(AStringView _Path)
 {
-    if (!Platform::Stricmp(_Path, "/Default/Fonts/Default"))
+    if (!_Path.Icmp("/Default/Fonts/Default"))
     {
 
         // Load embedded ProggyClean.ttf
@@ -2439,50 +2439,50 @@ bool AFont::LoadResource(IBinaryStreamReadInterface& Stream)
     ADocMember* member;
 
     member             = doc.FindMember("FontNum");
-    createInfo.FontNum = member ? Math::ToInt<int>(member->GetString()) : 0;
+    createInfo.FontNum = member ? Core::ParseInt32(member->GetString()) : 0;
     createInfo.FontNum = Math::Max(createInfo.FontNum, 0);
 
     member                = doc.FindMember("SizePixels");
-    createInfo.SizePixels = member ? Math::ToInt<int>(member->GetString()) : 18;
+    createInfo.SizePixels = member ? Core::ParseInt32(member->GetString()) : 18;
     createInfo.SizePixels = Math::Clamp(createInfo.SizePixels, 6, 80);
 
     member                 = doc.FindMember("OversampleH");
-    createInfo.OversampleH = member ? Math::ToInt<int>(member->GetString()) : 3; // FIXME: 2 may be a better default?
+    createInfo.OversampleH = member ? Core::ParseInt32(member->GetString()) : 3; // FIXME: 2 may be a better default?
     createInfo.OversampleH = Math::Clamp(createInfo.OversampleH, 0, 10);
 
     member                 = doc.FindMember("OversampleV");
-    createInfo.OversampleV = member ? Math::ToInt<int>(member->GetString()) : 1;
+    createInfo.OversampleV = member ? Core::ParseInt32(member->GetString()) : 1;
     createInfo.OversampleV = Math::Clamp(createInfo.OversampleV, 0, 10);
 
     member                 = doc.FindMember("bPixelSnapH");
-    createInfo.bPixelSnapH = member ? Math::ToBool(member->GetString()) : false;
+    createInfo.bPixelSnapH = member ? Core::ParseBool(member->GetString()) : false;
 
     member                         = doc.FindMember("GlyphExtraSpacingX");
-    createInfo.GlyphExtraSpacing.X = member ? Math::ToFloat(member->GetString()) : 0.0f;
+    createInfo.GlyphExtraSpacing.X = member ? Core::ParseFloat(member->GetString()) : 0.0f;
     createInfo.GlyphExtraSpacing.X = Math::Clamp(createInfo.GlyphExtraSpacing.X, 0, 10);
 
     member                         = doc.FindMember("GlyphExtraSpacingY");
-    createInfo.GlyphExtraSpacing.Y = member ? Math::ToFloat(member->GetString()) : 0.0f;
+    createInfo.GlyphExtraSpacing.Y = member ? Core::ParseFloat(member->GetString()) : 0.0f;
     createInfo.GlyphExtraSpacing.Y = Math::Clamp(createInfo.GlyphExtraSpacing.Y, 0, 10);
 
     member                   = doc.FindMember("GlyphOffsetX");
-    createInfo.GlyphOffset.X = member ? Math::ToFloat(member->GetString()) : 0.0f;
+    createInfo.GlyphOffset.X = member ? Core::ParseFloat(member->GetString()) : 0.0f;
     createInfo.GlyphOffset.X = Math::Clamp(createInfo.GlyphOffset.X, 0, 10);
 
     member                   = doc.FindMember("GlyphOffsetY");
-    createInfo.GlyphOffset.Y = member ? Math::ToFloat(member->GetString()) : 0.0f;
+    createInfo.GlyphOffset.Y = member ? Core::ParseFloat(member->GetString()) : 0.0f;
     createInfo.GlyphOffset.Y = Math::Clamp(createInfo.GlyphOffset.Y, 0, 10);
 
     member                      = doc.FindMember("GlyphMinAdvanceX");
-    createInfo.GlyphMinAdvanceX = member ? Math::ToFloat(member->GetString()) : 0.0f;
+    createInfo.GlyphMinAdvanceX = member ? Core::ParseFloat(member->GetString()) : 0.0f;
     createInfo.GlyphMinAdvanceX = Math::Max(createInfo.GlyphMinAdvanceX, 0.0f);
 
     member                      = doc.FindMember("GlyphMaxAdvanceX");
-    createInfo.GlyphMaxAdvanceX = member ? Math::ToFloat(member->GetString()) : Math::MaxValue<float>();
+    createInfo.GlyphMaxAdvanceX = member ? Core::ParseFloat(member->GetString()) : Math::MaxValue<float>();
     createInfo.GlyphMaxAdvanceX = Math::Max(createInfo.GlyphMaxAdvanceX, createInfo.GlyphMinAdvanceX);
 
     member                        = doc.FindMember("RasterizerMultiply");
-    createInfo.RasterizerMultiply = member ? Math::ToFloat(member->GetString()) : 1.0f;
+    createInfo.RasterizerMultiply = member ? Core::ParseFloat(member->GetString()) : 1.0f;
     createInfo.RasterizerMultiply = Math::Clamp(createInfo.RasterizerMultiply, 0.0f, 10.0f);
 
     InitializeFromMemoryTTF(fontBinary->GetBinaryData(), fontBinary->GetSizeInBytes(), &createInfo);
@@ -2503,7 +2503,7 @@ void AFont::Purge()
     WideCharToGlyph.Free();
     CustomRects.Free();
     AtlasTexture = nullptr;
-    GHeapMemory.Free(TexPixelsAlpha8);
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(TexPixelsAlpha8);
     TexPixelsAlpha8 = nullptr;
 }
 
@@ -2568,7 +2568,7 @@ Float2 AFont::CalcTextSizeA(float _Size, float _MaxWidth, float _WrapWidth, cons
 
         // Decode and advance source
         const char* prev_s = s;
-        SWideChar   c      = (SWideChar)*s;
+        WideChar   c      = (WideChar)*s;
         if (c < 0x80)
         {
             s += 1;
@@ -2649,7 +2649,7 @@ const char* AFont::CalcWordWrapPositionA(float _Scale, const char* _Text, const 
     const char* s = _Text;
     while (s < _TextEnd)
     {
-        SWideChar   c = (SWideChar)*s;
+        WideChar   c = (WideChar)*s;
         const char* next_s;
         if (c < 0x80)
             next_s = s + 1;
@@ -2719,7 +2719,7 @@ const char* AFont::CalcWordWrapPositionA(float _Scale, const char* _Text, const 
     return s;
 }
 
-SWideChar const* AFont::CalcWordWrapPositionW(float _Scale, SWideChar const* _Text, SWideChar const* _TextEnd, float _WrapWidth) const
+WideChar const* AFont::CalcWordWrapPositionW(float _Scale, WideChar const* _Text, WideChar const* _TextEnd, float _WrapWidth) const
 {
     if (!IsValid())
     {
@@ -2746,19 +2746,19 @@ SWideChar const* AFont::CalcWordWrapPositionW(float _Scale, SWideChar const* _Te
     float blank_width = 0.0f;
     _WrapWidth /= _Scale; // We work with unscaled widths to avoid scaling every characters
 
-    SWideChar const* word_end      = _Text;
-    SWideChar const* prev_word_end = NULL;
+    WideChar const* word_end      = _Text;
+    WideChar const* prev_word_end = NULL;
     bool             inside_word   = true;
 
-    SWideChar const* s = _Text;
+    WideChar const* s = _Text;
     while (s < _TextEnd)
     {
-        SWideChar c = *s;
+        WideChar c = *s;
 
         if (c == 0)
             break;
 
-        SWideChar const* next_s = s + 1;
+        WideChar const* next_s = s + 1;
 
         if (c < 32)
         {
@@ -2918,11 +2918,11 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
         return false;
     }
 
-    SWideChar const* glyphRanges = GetGlyphRange(cfg.GlyphRange);
+    WideChar const* glyphRanges = GetGlyphRange(cfg.GlyphRange);
 
     // Measure highest codepoints
     int glyphsHighest = 0;
-    for (SWideChar const* range = glyphRanges; range[0] && range[1]; range += 2)
+    for (WideChar const* range = glyphRanges; range[0] && range[1]; range += 2)
     {
         glyphsHighest = Math::Max(glyphsHighest, (int)range[1]);
     }
@@ -2933,7 +2933,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
     ImBoolVector glyphsSet;
     glyphsSet.Resize(glyphsHighest + 1);
 
-    for (SWideChar const* range = glyphRanges; range[0] && range[1]; range += 2)
+    for (WideChar const* range = glyphRanges; range[0] && range[1]; range += 2)
     {
         for (unsigned int codepoint = range[0]; codepoint <= range[1]; codepoint++)
         {
@@ -2969,7 +2969,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
         if (int entries_32 = *it)
             for (int bit_n = 0; bit_n < 32; bit_n++)
                 if (entries_32 & (1u << bit_n))
-                    glyphsList.Append((int)((it - it_begin) << 5) + bit_n);
+                    glyphsList.Add((int)((it - it_begin) << 5) + bit_n);
     HK_ASSERT(glyphsList.Size() == totalGlyphsCount);
 
     // Allocate packing character data and flag packed characters buffer as non-packed (x0=y0=x1=y1=0)
@@ -3063,7 +3063,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
     // 7. Allocate texture
     TexHeight       = bTexNoPowerOfTwoHeight ? (TexHeight + 1) : Math::ToGreaterPowerOfTwo(TexHeight);
     TexUvScale      = Float2(1.0f / TexWidth, 1.0f / TexHeight);
-    TexPixelsAlpha8 = (unsigned char*)GHeapMemory.ClearedAlloc(TexWidth * TexHeight);
+    TexPixelsAlpha8 = (unsigned char*)Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(TexWidth * TexHeight, 16, MALLOC_ZERO);
     spc.pixels      = TexPixelsAlpha8;
     spc.height      = TexHeight;
 
@@ -3116,7 +3116,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
         stbtt_aligned_quad q;
         float              dummy_x = 0.0f, dummy_y = 0.0f;
         stbtt_GetPackedQuad(packedChars.ToPtr(), TexWidth, TexHeight, glyph_i, &dummy_x, &dummy_y, &q, 0);
-        AddGlyph(cfg, (SWideChar)codepoint, q.x0 + char_off_x, q.y0 + font_off_y, q.x1 + char_off_x, q.y1 + font_off_y, q.s0, q.t0, q.s1, q.t1, char_advance_x_mod);
+        AddGlyph(cfg, (WideChar)codepoint, q.x0 + char_off_x, q.y0 + font_off_y, q.x1 + char_off_x, q.y1 + font_off_y, q.s0, q.t0, q.s1, q.t1, char_advance_x_mod);
     }
 
     // Render into our custom data block
@@ -3153,7 +3153,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
         Float2 uv1 = Float2((float)(r.X + r.Width) * TexUvScale.X, (float)(r.Y + r.Height) * TexUvScale.Y);
 
         AddGlyph(cfg,
-                 (SWideChar)r.Id,
+                 (WideChar)r.Id,
                  r.GlyphOffset.X, r.GlyphOffset.Y,
                  r.GlyphOffset.X + r.Width, r.GlyphOffset.Y + r.Height,
                  uv0.X, uv0.Y, uv1.X, uv1.Y,
@@ -3198,7 +3198,7 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
             SFontGlyph tabGlyph = Glyphs[WideCharToGlyph[space]];
             tabGlyph.Codepoint  = codepoint;
             tabGlyph.AdvanceX *= TabSize;
-            Glyphs.Append(tabGlyph);
+            Glyphs.Add(tabGlyph);
             WideCharAdvanceX[codepoint] = tabGlyph.AdvanceX;
             WideCharToGlyph[codepoint]  = (unsigned short)(Glyphs.Size() - 1);
         }
@@ -3238,11 +3238,11 @@ bool AFont::Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo cons
 
 // x0/y0/x1/y1 are offset from the character upper-left layout position, in pixels. Therefore x0/y0 are often fairly close to zero.
 // Not to be mistaken with texture coordinates, which are held by u0/v0/u1/v1 in normalized format (0.0..1.0 on each texture axis).
-void AFont::AddGlyph(SFontCreateInfo const& cfg, SWideChar codepoint, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1, float advance_x)
+void AFont::AddGlyph(SFontCreateInfo const& cfg, WideChar codepoint, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1, float advance_x)
 {
     Glyphs.Resize(Glyphs.Size() + 1);
     SFontGlyph& glyph = Glyphs.Last();
-    glyph.Codepoint   = (SWideChar)codepoint;
+    glyph.Codepoint   = (WideChar)codepoint;
     glyph.X0          = x0;
     glyph.Y0          = y0;
     glyph.X1          = x1;
@@ -3270,6 +3270,6 @@ int AFont::AddCustomRect(unsigned int id, int width, int height)
     r.X = r.Y       = 0xFFFF;
     r.GlyphAdvanceX = 0.0f;
     r.GlyphOffset   = Float2(0, 0);
-    CustomRects.Append(r);
+    CustomRects.Add(r);
     return CustomRects.Size() - 1; // Return index
 }

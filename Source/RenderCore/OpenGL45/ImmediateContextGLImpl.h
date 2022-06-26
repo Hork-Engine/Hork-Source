@@ -95,6 +95,48 @@ private:
     ptrdiff_t    BufferBindingSizes[MAX_BUFFER_SLOTS];
 };
 
+struct SFrameBufferHash
+{
+    TStaticVector<TWeakRef<ITextureView>, MAX_COLOR_ATTACHMENTS> ColorAttachments;
+    TWeakRef<ITextureView>                                       pDepthStencilAttachment;
+
+    void AddColorAttachment(ITextureView* pTexView)
+    {
+        ColorAttachments.Add() = pTexView;
+    }
+
+    void SetDepthStencilAttachment(ITextureView* pTexView)
+    {
+        HK_ASSERT(!pDepthStencilAttachment);
+
+        pDepthStencilAttachment = pTexView;
+    }
+
+    uint32_t Hash() const
+    {
+        uint32_t hash{0};
+        for (int a = 0; a < ColorAttachments.Size(); a++)
+        {
+            hash = Core::Murmur3Hash32(ColorAttachments[a]->GetUID(), hash);
+        }
+        if (pDepthStencilAttachment)
+        {
+            hash = Core::Murmur3Hash32(pDepthStencilAttachment->GetUID(), hash);
+        }
+        return hash;
+    }
+
+    bool operator==(const SFrameBufferHash& other) const
+    {
+        if (ColorAttachments.Size() != other.ColorAttachments.Size())
+            return false;
+        for (size_t n = 0; n < ColorAttachments.Size(); n++)
+            if (ColorAttachments[n] != other.ColorAttachments[n])
+                return false;
+        return pDepthStencilAttachment == other.pDepthStencilAttachment;
+    }
+};
+
 class AFramebufferCacheGL : public ARefCounted
 {
 public:
@@ -102,11 +144,10 @@ public:
 
     void CleanupOutdatedFramebuffers();
 
-    AFramebufferGL* GetFramebuffer(const char* RenderPassName, TStdVector<STextureAttachment>& ColorAttachments, STextureAttachment* DepthStencilAttachment);
+    AFramebufferGL* GetFramebuffer(const char* RenderPassName, TVector<STextureAttachment>& ColorAttachments, STextureAttachment* DepthStencilAttachment);
 
 private:
-    THash<>                          FramebufferHash;
-    TStdVector<std::unique_ptr<AFramebufferGL>> FramebufferCache;
+    THashMap<SFrameBufferHash, std::unique_ptr<AFramebufferGL>> Framebuffers;
 };
 
 struct SRenderPassBeginGL
@@ -676,7 +717,7 @@ private:
 
     TRef<AFramebufferCacheGL> pFramebufferCache;
 
-    std::unordered_map<uint64_t, uint32_t> ProgramPipelines;
+    THashMap<uint64_t, uint32_t> ProgramPipelines;
 };
 
 struct SScopedContextGL

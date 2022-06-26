@@ -97,7 +97,7 @@ public:
 
     int GetJointIndex() const { return JointIndex; }
 
-    TPodVector<AActor*, 1> const& GetCollisionIgnoreActors() const { return CollisionIgnoreActors; }
+    TPodVector<AActor*> const& GetCollisionIgnoreActors() const { return CollisionIgnoreActors; }
 
     void CollisionContactQuery(TPodVector<AHitProxy*>& _Result) const;
 
@@ -125,7 +125,7 @@ private:
 
     bool bInWorld = false;
 
-    TPodVector<AActor*, 1> CollisionIgnoreActors;
+    TPodVector<AActor*> CollisionIgnoreActors;
 
     AHitProxy* NextMarked = nullptr;
     AHitProxy* PrevMarked = nullptr;

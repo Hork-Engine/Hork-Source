@@ -126,7 +126,7 @@ ALightmapUV* ALevel::CreateLightmapUVChannel(AIndexedMesh* InSourceMesh)
     ALightmapUV* lightmapUV = CreateInstanceOf<ALightmapUV>();
     lightmapUV->AddRef();
     lightmapUV->Initialize(InSourceMesh, this);
-    LightmapUVs.Append(lightmapUV);
+    LightmapUVs.Add(lightmapUV);
     return lightmapUV;
 }
 
@@ -145,7 +145,7 @@ AVertexLight* ALevel::CreateVertexLightChannel(AIndexedMesh* InSourceMesh)
     AVertexLight* vertexLight = CreateInstanceOf<AVertexLight>();
     vertexLight->AddRef();
     vertexLight->Initialize(InSourceMesh, this);
-    VertexLightChannels.Append(vertexLight);
+    VertexLightChannels.Add(vertexLight);
     return vertexLight;
 }
 
@@ -166,7 +166,7 @@ ALevelLighting::ALevelLighting(SLightingSystemCreateInfo const& CreateInfo)
     LightmapBlockHeight = CreateInfo.LightmapBlockHeight;
     if (CreateInfo.LightDataSize)
     {
-        LightData = GHeapMemory.Alloc(CreateInfo.LightDataSize);
+        LightData = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(CreateInfo.LightDataSize);
         Platform::Memcpy(LightData, CreateInfo.LightData, CreateInfo.LightDataSize);
 
         RenderCore::TEXTURE_FORMAT texFormat;
@@ -240,7 +240,7 @@ ALevelLighting::ALevelLighting(SLightingSystemCreateInfo const& CreateInfo)
 
 ALevelLighting::~ALevelLighting()
 {
-    GHeapMemory.Free(LightData);
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(LightData);
 }
 
 Float3 ALevelLighting::SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord) const
@@ -255,7 +255,7 @@ Float3 ALevelLighting::SampleLight(int InLightmapBlock, Float2 const& InLighmapT
     int numChannels = (LightmapFormat == LIGHTMAP_GRAYSCALED_HALF) ? 1 : 4;
     int blockSize   = LightmapBlockWidth * LightmapBlockHeight * numChannels;
 
-    const unsigned short* src = (const unsigned short*)LightData + InLightmapBlock * blockSize;
+    const Half* src = (const Half*)LightData + InLightmapBlock * blockSize;
 
     const float  sx = Math::Clamp(InLighmapTexcoord.X, 0.0f, 1.0f) * (LightmapBlockWidth - 1);
     const float  sy = Math::Clamp(InLighmapTexcoord.Y, 0.0f, 1.0f) * (LightmapBlockHeight - 1);
@@ -275,10 +275,10 @@ Float3 ALevelLighting::SampleLight(int InLightmapBlock, Float2 const& InLighmapT
     const int offset01 = (y1 * LightmapBlockWidth + x0) * numChannels;
     const int offset11 = (y1 * LightmapBlockWidth + x1) * numChannels;
 
-    const unsigned short* src00 = src + offset00;
-    const unsigned short* src10 = src + offset10;
-    const unsigned short* src01 = src + offset01;
-    const unsigned short* src11 = src + offset11;
+    const Half* src00 = src + offset00;
+    const Half* src10 = src + offset10;
+    const Half* src01 = src + offset01;
+    const Half* src11 = src + offset11;
 
     Float3 light(0);
 
@@ -286,14 +286,14 @@ Float3 ALevelLighting::SampleLight(int InLightmapBlock, Float2 const& InLighmapT
     {
         case LIGHTMAP_GRAYSCALED_HALF: {
             //light[0] = light[1] = light[2] = HalfToFloat(src00[0]);
-            light[0] = light[1] = light[2] = Math::Bilerp(Math::HalfToFloat(src00[0]), Math::HalfToFloat(src10[0]), Math::HalfToFloat(src01[0]), Math::HalfToFloat(src11[0]), lerp);
+            light[0] = light[1] = light[2] = Math::Bilerp(float(src00[0]), float(src10[0]), float(src01[0]), float(src11[0]), lerp);
             break;
         }
         case LIGHTMAP_BGR_HALF: {
             for (int i = 0; i < 3; i++)
             {
                 //light[2-i] = Math::HalfToFloat(src00[i]);
-                light[2 - i] = Math::Bilerp(Math::HalfToFloat(src00[i]), Math::HalfToFloat(src10[i]), Math::HalfToFloat(src01[i]), Math::HalfToFloat(src11[i]), lerp);
+                light[2 - i] = Math::Bilerp(float(src00[i]), float(src10[i]), float(src01[i]), float(src11[i]), lerp);
             }
             break;
         }

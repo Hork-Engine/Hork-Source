@@ -120,7 +120,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& _Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(const char* _Path) override;
+    void LoadInternalResource(AStringView _Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Sound/Default"; }
 

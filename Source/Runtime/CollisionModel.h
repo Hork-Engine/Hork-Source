@@ -269,7 +269,7 @@ struct ACollisionBody
     virtual ~ACollisionBody() {}
 
     virtual class btCollisionShape* Create(Float3 const& Scale) { return nullptr; }
-    virtual void                    GatherGeometry(TPodVectorHeap<Float3>& Vertices, TPodVectorHeap<unsigned int>& Indices, Float3x4 const& Transform) const {}
+    virtual void                    GatherGeometry(TVector<Float3>& Vertices, TVector<unsigned int>& Indices, Float3x4 const& Transform) const {}
 };
 
 struct SBoneCollision
@@ -306,9 +306,9 @@ public:
 
     bool IsEmpty() const { return CollisionBodies.IsEmpty(); }
 
-    TStdVector<SBoneCollision> const& GetBoneCollisions() const { return BoneCollisions; }
+    TVector<SBoneCollision> const& GetBoneCollisions() const { return BoneCollisions; }
 
-    void GatherGeometry(TPodVectorHeap<Float3>& Vertices, TPodVectorHeap<unsigned int>& Indices, Float3x4 const& Transform) const;
+    void GatherGeometry(TVector<Float3>& Vertices, TVector<unsigned int>& Indices, Float3x4 const& Transform) const;
 
     /** Create a scaled instance of the collision model. */
     TRef<ACollisionInstance> Instantiate(Float3 const& Scale);
@@ -318,7 +318,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(const char* Path) override;
+    void LoadInternalResource(AStringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/CollisionModel/Default"; }
 
@@ -335,9 +335,9 @@ private:
     void AddConvexDecomposition(SCollisionConvexDecompositionDef const* pShape, int& NumShapes);
     void AddConvexDecompositionVHACD(SCollisionConvexDecompositionVHACDDef const* pShape, int& NumShapes);
 
-    TStdVector<TUniqueRef<ACollisionBody>> CollisionBodies;
-    TStdVector<SBoneCollision>     BoneCollisions;
-    Float3                         CenterOfMass;
+    TVector<TUniqueRef<ACollisionBody>> CollisionBodies;
+    TVector<SBoneCollision>             BoneCollisions;
+    Float3                              CenterOfMass;
 
     // Collision instance has access to CollisionBodies
     friend class ACollisionInstance;

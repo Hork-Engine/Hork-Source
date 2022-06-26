@@ -71,7 +71,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(const char* _Path) override;
+    void LoadInternalResource(AStringView _Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/PhotometricProfile/Default"; }
 

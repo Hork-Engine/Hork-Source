@@ -41,12 +41,12 @@ class AActorDefinition : public AResource
 public:
     struct SComponentDef
     {
-        AClassMeta const*                ClassMeta;
-        AString                          Name;
-        uint64_t                         Id;
-        uint64_t                         Attach;
-        int                              ParentIndex{-1};
-        THashContainer<AString, AString> PropertyHash;
+        AClassMeta const*       ClassMeta;
+        AString                 Name;
+        uint64_t                Id;
+        uint64_t                Attach;
+        int                     ParentIndex{-1};
+        TStringHashMap<AString> PropertyHash;
     };
 
     struct SPublicProperty
@@ -62,17 +62,17 @@ public:
         AString PublicName;
     };
 
-    AClassMeta const*         ActorClass{nullptr};
-    TStdVector<SComponentDef> Components;
-    int                       RootIndex{-1};
+    AClassMeta const*      ActorClass{nullptr};
+    TVector<SComponentDef> Components;
+    int                    RootIndex{-1};
 
-    THashContainer<AString, AString> ActorPropertyHash;
-    TStdVector<SPublicProperty>      PublicProperties;
+    TStringHashMap<AString>  ActorPropertyHash;
+    TVector<SPublicProperty> PublicProperties;
 
-    AString                          ScriptModule;
-    THashContainer<AString, AString> ScriptPropertyHash;
+    AString                 ScriptModule;
+    TStringHashMap<AString> ScriptPropertyHash;
 
-    TStdVector<SScriptPublicProperty> ScriptPublicProperties;
+    TVector<SScriptPublicProperty> ScriptPublicProperties;
 
 protected:
     AActorDefinition();
@@ -81,7 +81,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(const char* _Path) override;
+    void LoadInternalResource(AStringView _Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/ActorDefinition/Default"; }
 

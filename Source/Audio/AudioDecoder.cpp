@@ -82,15 +82,16 @@ bool LoadAudioFile( IBinaryStreamReadInterface & File, SAudioFileInfo * pAudioFi
     pAudioFileInfo->Channels = decoder.outputChannels;
     pAudioFileInfo->SampleBits = bForce8Bit ? 8 : 16;
 
-    //byte temp[tempSize];
+    MemoryHeap& tempHeap = Platform::GetHeapAllocator<HEAP_TEMP>();
+    MemoryHeap& audioDataHeap = Platform::GetHeapAllocator<HEAP_AUDIO_DATA>();
 
     const size_t tempSize = 8192;
-    byte* temp = (byte*)GHeapMemory.Alloc(tempSize);
+    byte*        temp     = (byte*)tempHeap.Alloc(tempSize);
 
     if ( ppFrames ) {
         ma_uint64 totalFramesRead = 0;
         ma_uint64 framesCapacity = 0;
-        void* pFrames = NULL;
+        void* pFrames = nullptr;
         const int stride = ( pAudioFileInfo->SampleBits >> 3 ) * pAudioFileInfo->Channels;
         const ma_uint64 framesToReadRightNow = tempSize / stride;
         for ( ;; ) {
@@ -111,7 +112,7 @@ bool LoadAudioFile( IBinaryStreamReadInterface & File, SAudioFileInfo * pAudioFi
                 if ( newFramesBufferSize > MA_SIZE_MAX ) {
                     break;
                 }
-                pFrames = GHeapMemory.Realloc( pFrames, (size_t)newFramesBufferSize, 16, true );
+                pFrames        = audioDataHeap.Realloc(pFrames, (size_t)newFramesBufferSize, 16);
                 framesCapacity = newFramesCap;
             }
 
@@ -156,7 +157,7 @@ bool LoadAudioFile( IBinaryStreamReadInterface & File, SAudioFileInfo * pAudioFi
         }
     }
 
-    GHeapMemory.Free(temp);
+    tempHeap.Free(temp);
 
     ma_decoder_uninit( &decoder );
 

@@ -907,7 +907,7 @@ void WDesktop::GenerateDrawEvents(ACanvas& _Canvas)
         auto& tooltip = (*it);
         if (tooltip.IsExpired())
         {
-            it = Tooltips.erase(it);
+            it = Tooltips.Erase(it);
         }
         else
         {
@@ -950,7 +950,7 @@ void WDesktop::AddTooltip(WWidget* TooltipWidget)
         return;
     }
 
-    Tooltips.emplace_back(TooltipWidget);
+    Tooltips.EmplaceBack(TooltipWidget);
 }
 
 void WDesktop::RemoveTooltip(WWidget* TooltipWidget)
@@ -958,6 +958,6 @@ void WDesktop::RemoveTooltip(WWidget* TooltipWidget)
     auto it = std::find(Tooltips.begin(), Tooltips.end(), TooltipWidget);
     if (it != Tooltips.end())
     {
-        Tooltips.erase(it);
+        Tooltips.Erase(it);
     }
 }

@@ -59,6 +59,29 @@ public:
     TPodVector<SWindowGL> Pool;
 };
 
+struct SVertexLayoutDescGL
+{
+    uint32_t           NumVertexBindings{};
+    SVertexBindingInfo VertexBindings[MAX_VERTEX_BINDINGS] = {};
+    uint32_t           NumVertexAttribs{};
+    SVertexAttribInfo  VertexAttribs[MAX_VERTEX_ATTRIBS] = {};
+
+    uint32_t Hash() const
+    {
+        return Core::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
+    }
+
+    bool operator==(SVertexLayoutDescGL const& Rhs) const
+    {
+        return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
+    }
+
+    bool operator!=(SVertexLayoutDescGL const& Rhs) const
+    {
+        return !(operator==(Rhs));
+    }
+};
+
 class ADeviceGLImpl final : public IDevice
 {
 public:
@@ -119,7 +142,7 @@ public:
                                            SVertexAttribInfo const*  pVertexAttribs,
                                            uint32_t                  NumVertexAttribs);
 
-    TPodVector<AVertexLayoutGL*> const& GetVertexLayouts() const { return VertexLayouts; }
+    THashMap<SVertexLayoutDescGL, AVertexLayoutGL*> const& GetVertexLayouts() const { return VertexLayouts; }
 
     SBlendingStateInfo const*     CachedBlendingState(SBlendingStateInfo const& _BlendingState);
     SRasterizerStateInfo const*   CachedRasterizerState(SRasterizerStateInfo const& _RasterizerState);
@@ -134,20 +157,13 @@ private:
 
     TWeakRef<IGenericWindow> pMainWindow;
 
-    THash<>                      VertexLayoutsHash;
-    TPodVector<AVertexLayoutGL*> VertexLayouts;
+    THashMap<SVertexLayoutDescGL, AVertexLayoutGL*> VertexLayouts;
 
-    THash<>                         SamplerHash;
-    TPodVector<struct SamplerInfo*> SamplerCache;
+    THashMap<SSamplerDesc, struct SamplerInfo*> Samplers;
 
-    THash<>                         BlendingHash;
-    TPodVector<SBlendingStateInfo*> BlendingStateCache;
-
-    THash<>                           RasterizerHash;
-    TPodVector<SRasterizerStateInfo*> RasterizerStateCache;
-
-    THash<>                             DepthStencilHash;
-    TPodVector<SDepthStencilStateInfo*> DepthStencilStateCache;
+    THashMap<SBlendingStateInfo, SBlendingStateInfo*>         BlendingStates;
+    THashMap<SRasterizerStateInfo, SRasterizerStateInfo*>     RasterizerStates;
+    THashMap<SDepthStencilStateInfo, SDepthStencilStateInfo*> DepthStencilStates;
 
     AWindowPoolGL WindowPool;
     AWindowPoolGL::SWindowGL MainWindowHandle;

@@ -56,10 +56,10 @@ public:
     void ClearBuffer();
 
     /** Add text to the end of command buffer */
-    void Add(const char* _Text);
+    void Add(AStringView _Text);
 
     /** Insert text to current command buffer offset */
-    void Insert(const char* _Text);
+    void Insert(AStringView _Text);
 
     /** Execute with command context */
     void Execute(ICommandContext& _Ctx);

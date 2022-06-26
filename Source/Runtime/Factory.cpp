@@ -46,9 +46,9 @@ void DeinitializeFactories()
 {
     for (AObjectFactory* factory = AObjectFactory::FactoryList; factory; factory = factory->NextFactory)
     {
-        GZoneMemory.Free(factory->IdTable);
+        Platform::GetHeapAllocator<HEAP_MISC>().Free(factory->IdTable);
         factory->IdTable = nullptr;
-        factory->NameTable.Free();
+        factory->LookupTable.Clear();
     }
 }
 
@@ -64,15 +64,11 @@ AObjectFactory::~AObjectFactory()
     HK_ASSERT(IdTable == nullptr);
 }
 
-const AClassMeta* AObjectFactory::FindClass(const char* ClassName) const
+const AClassMeta* AObjectFactory::FindClass(AStringView ClassName) const
 {
-    if (!*ClassName)
-    {
-        return nullptr;
-    }
     for (AClassMeta const* n = Classes; n; n = n->pNext)
     {
-        if (!Platform::Strcmp(n->GetName(), ClassName))
+        if (!ClassName.Cmp(n->GetName()))
         {
             return n;
         }
@@ -80,28 +76,19 @@ const AClassMeta* AObjectFactory::FindClass(const char* ClassName) const
     return nullptr;
 }
 
-const AClassMeta* AObjectFactory::LookupClass(const char* ClassName) const
+const AClassMeta* AObjectFactory::LookupClass(AStringView ClassName) const
 {
-    if (!NameTable.IsAllocated())
+    if (LookupTable.IsEmpty())
     {
         // init name table
         for (AClassMeta* n = Classes; n; n = n->pNext)
         {
-            NameTable.Insert(Core::Hash(n->GetName(), Platform::Strlen(n->GetName())), n->GetId());
+            LookupTable[n->GetName()] = n;
         }
     }
 
-    int i = NameTable.First(Core::Hash(ClassName, Platform::Strlen(ClassName)));
-    for (; i != -1; i = NameTable.Next(i))
-    {
-        AClassMeta const* classMeta = LookupClass(i);
-        if (classMeta && !Platform::Strcmp(classMeta->GetName(), ClassName))
-        {
-            return classMeta;
-        }
-    }
-
-    return nullptr;
+    auto it = LookupTable.Find(ClassName);
+    return it != LookupTable.End() ? it->second : nullptr;
 }
 
 const AClassMeta* AObjectFactory::LookupClass(uint64_t ClassId) const
@@ -115,7 +102,7 @@ const AClassMeta* AObjectFactory::LookupClass(uint64_t ClassId) const
     if (!IdTable)
     {
         // init lookup table
-        IdTable    = (AClassMeta**)GZoneMemory.Alloc((NumClasses + 1) * sizeof(*IdTable));
+        IdTable    = (AClassMeta**)Platform::GetHeapAllocator<HEAP_MISC>().Alloc((NumClasses + 1) * sizeof(*IdTable));
         IdTable[0] = nullptr;
         for (AClassMeta* n = Classes; n; n = n->pNext)
         {
@@ -150,7 +137,7 @@ void AClassMeta::GetProperties(TPodVector<AProperty const*>& Properties, bool bR
     }
     for (AProperty const* prop = PropertyList; prop; prop = prop->Next())
     {
-        Properties.Append(prop);
+        Properties.Add(prop);
     }
 }
 

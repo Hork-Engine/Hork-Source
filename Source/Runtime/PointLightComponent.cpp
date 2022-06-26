@@ -39,7 +39,7 @@ SOFTWARE.
 static const float DEFAULT_RADIUS = 15; //1.0f;
 static const float MIN_RADIUS     = 0.01f;
 
-AConsoleVar com_DrawPointLights(_CTS("com_DrawPointLights"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawPointLights("com_DrawPointLights"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(APointLightComponent)
 
@@ -56,8 +56,8 @@ void APointLightComponent::OnCreateAvatar()
     Super::OnCreateAvatar();
 
     // TODO: Create mesh or sprite for point light avatar
-    static TStaticResourceFinder<AIndexedMesh>      Mesh(_CTS("/Default/Meshes/Sphere"));
-    static TStaticResourceFinder<AMaterialInstance> MaterialInstance(_CTS("AvatarMaterialInstance"));
+    static TStaticResourceFinder<AIndexedMesh>      Mesh("/Default/Meshes/Sphere"s);
+    static TStaticResourceFinder<AMaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
     AMeshComponent*                                 meshComponent = GetOwnerActor()->CreateComponent<AMeshComponent>("PointLightAvatar");
     meshComponent->SetMotionBehavior(MB_KINEMATIC);
     meshComponent->SetCollisionGroup(CM_NOCOLLISION);

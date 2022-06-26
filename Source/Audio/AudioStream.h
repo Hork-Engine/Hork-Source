@@ -49,7 +49,7 @@ public:
 
     ~SFileInMemory()
     {
-        GHeapMemory.Free( pHeapPtr );
+        Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free( pHeapPtr );
     }
 
     const void * GetHeapPtr() const

@@ -38,7 +38,7 @@ SOFTWARE.
 
 #include <Core/ConsoleVar.h>
 
-AConsoleVar com_DrawDirectionalLights(_CTS("com_DrawDirectionalLights"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawDirectionalLights("com_DrawDirectionalLights"s, "0"s, CVAR_CHEAT);
 
 static constexpr int MAX_CASCADE_SPLITS = MAX_SHADOW_CASCADES + 1;
 
@@ -95,8 +95,8 @@ void ADirectionalLightComponent::OnCreateAvatar()
     Super::OnCreateAvatar();
 
     // TODO: Create mesh or sprite for avatar
-    static TStaticResourceFinder<AIndexedMesh>      Mesh(_CTS("/Default/Meshes/Cylinder"));
-    static TStaticResourceFinder<AMaterialInstance> MaterialInstance(_CTS("AvatarMaterialInstance"));
+    static TStaticResourceFinder<AIndexedMesh>      Mesh("/Default/Meshes/Cylinder"s);
+    static TStaticResourceFinder<AMaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
     AMeshComponent*                                 meshComponent = GetOwnerActor()->CreateComponent<AMeshComponent>("DirectionalLightAvatar");
     meshComponent->SetMotionBehavior(MB_KINEMATIC);
     meshComponent->SetCollisionGroup(CM_NOCOLLISION);

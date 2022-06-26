@@ -78,7 +78,7 @@ AVirtualTexture::AVirtualTexture( const char * FileName, AVirtualTextureCache * 
     GDevice->CreateBuffer( bufferCI, nullptr, &IndirectionData );
     IndirectionData->SetDebugName( "Virtual texture indirection data" );
 #else
-    pIndirectionData = (uint16_t *)GHeapMemory.ClearedAlloc( sizeof( pIndirectionData[0] ) * AddressTable.TotalPages );
+    pIndirectionData = (uint16_t*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(pIndirectionData[0]) * AddressTable.TotalPages, 0, true);
 #endif
 
     Platform::ZeroMem( bDirtyLods, sizeof( bDirtyLods ) );
@@ -110,7 +110,7 @@ AVirtualTexture::~AVirtualTexture()
 #ifdef USE_PBO
     UnmapIndirectionData();
 #else
-    GHeapMemory.Free( pIndirectionData );
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(pIndirectionData);
     pIndirectionData = nullptr;
 #endif
 }
@@ -295,7 +295,7 @@ void AVirtualTexture::UpdateLRU( uint32_t AbsIndex )
     // NOTE: Assume that texture is registered in cache.
     // We don't check even validness of AbsIndex
     // Checks are disabled for performance issues
-    PendingUpdateLRU.Append( AbsIndex );
+    PendingUpdateLRU.Add(AbsIndex);
 }
 
 void AVirtualTexture::MakePageResident( uint32_t AbsIndex, int PhysPageIndex )

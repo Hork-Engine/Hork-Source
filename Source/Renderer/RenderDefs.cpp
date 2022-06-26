@@ -497,7 +497,7 @@ void SMaterialDef::AddShader(AStringView SourceName, AStringView SourceCode)
     int nameLength = SourceName.Length();
     int codeLength = SourceCode.Length();
 
-    SPredefinedShaderSource* s = (SPredefinedShaderSource*)GZoneMemory.Alloc(sizeof(SPredefinedShaderSource) + nameLength + 1 + codeLength + 1);
+    SPredefinedShaderSource* s = (SPredefinedShaderSource*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(SPredefinedShaderSource) + nameLength + 1 + codeLength + 1);
 
     s->SourceName = (char*)s + sizeof(SPredefinedShaderSource);
     s->Code       = (char*)s + sizeof(SPredefinedShaderSource) + nameLength + 1;
@@ -524,7 +524,7 @@ void SMaterialDef::RemoveShaders()
     for (SPredefinedShaderSource* s = Shaders; s; s = next)
     {
         next = s->pNext;
-        GZoneMemory.Free(s);
+        Platform::GetHeapAllocator<HEAP_MISC>().Free(s);
     }
     Shaders = nullptr;
 }

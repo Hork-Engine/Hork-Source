@@ -145,12 +145,12 @@ static bool FindExtension(const char* _Extension)
 
 static void* Allocate(size_t _BytesCount)
 {
-    return GZoneMemory.Alloc(_BytesCount);
+    return Platform::GetHeapAllocator<HEAP_RHI>().Alloc(_BytesCount);
 }
 
 static void Deallocate(void* _Bytes)
 {
-    GZoneMemory.Free(_Bytes);
+    Platform::GetHeapAllocator<HEAP_RHI>().Free(_Bytes);
 }
 
 static constexpr SAllocatorCallback DefaultAllocator = { Allocate, Deallocate };
@@ -408,34 +408,35 @@ ADeviceGLImpl::ADeviceGLImpl(SAllocatorCallback const* pAllocator)
 
 ADeviceGLImpl::~ADeviceGLImpl()
 {
-    for (SamplerInfo* sampler : SamplerCache)
+    for (auto& it : Samplers)
     {
+        SamplerInfo* sampler = it.second;
         glDeleteSamplers(1, &sampler->Id);
 
         Allocator.Deallocate(sampler);
     }
 
-    for (SBlendingStateInfo* state : BlendingStateCache)
+    for (auto& it : BlendingStates)
     {
-        Allocator.Deallocate(state);
+        Allocator.Deallocate(it.second);
     }
 
-    for (SRasterizerStateInfo* state : RasterizerStateCache)
+    for (auto& it : RasterizerStates)
     {
-        Allocator.Deallocate(state);
+        Allocator.Deallocate(it.second);
     }
 
-    for (SDepthStencilStateInfo* state : DepthStencilStateCache)
+    for (auto& it : DepthStencilStates)
     {
-        Allocator.Deallocate(state);
+        Allocator.Deallocate(it.second);
     }
 
     MainWindowHandle.ImmediateCtx->RemoveRef();
     WindowPool.Free(MainWindowHandle);
 
-    for (AVertexLayoutGL* pVertexLayout : VertexLayouts)
+    for (auto& it : VertexLayouts)
     {
-        pVertexLayout->RemoveRef();
+        it.second->RemoveRef();
     }
 }
 
@@ -590,18 +591,11 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
         desc.VertexAttribs[i].SemanticName = nullptr;
     }
 
-    int hash = Core::SDBMHash((const char*)&desc, sizeof(desc));
-
-    int i = VertexLayoutsHash.First(hash);
-    for (; i != -1; i = VertexLayoutsHash.Next(i))
+    AVertexLayoutGL*& vertexLayout = VertexLayouts[desc];
+    if (vertexLayout)
     {
-        AVertexLayoutGL* pVertexLayout = VertexLayouts[i];
-
-        if (pVertexLayout->GetDesc() == desc)
-        {
-            //LOG( "Caching vertex layout\n" );
-            return pVertexLayout;
-        }
+        //LOG("Caching vertex layout\n");
+        return vertexLayout;
     }
 
     // Validate
@@ -631,130 +625,78 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
 
     TRef<AVertexLayoutGL> pVertexLayout;
     pVertexLayout = MakeRef<AVertexLayoutGL>(desc);
-
-    i = VertexLayouts.Size();
-
-    VertexLayoutsHash.Insert(hash, i);
-    VertexLayouts.Append(pVertexLayout);
     pVertexLayout->AddRef();
+    vertexLayout = pVertexLayout;
 
-    //LOG("Create vertex layout, total {}\n", VertexLayouts.Size());
+    LOG("Create vertex layout, total {}\n", VertexLayouts.Size());
 
     return pVertexLayout;
 }
 
 SBlendingStateInfo const* ADeviceGLImpl::CachedBlendingState(SBlendingStateInfo const& _BlendingState)
 {
-    int hash = Core::SDBMHash((const char*)&_BlendingState, sizeof(_BlendingState));
-
-    int i = BlendingHash.First(hash);
-    for (; i != -1; i = BlendingHash.Next(i))
+    SBlendingStateInfo*& state = BlendingStates[_BlendingState];
+    if (state)
     {
-        SBlendingStateInfo const* state = BlendingStateCache[i];
-
-        if (*state == _BlendingState)
-        {
-            //LOG( "Caching blending state\n" );
-            return state;
-        }
+        //LOG( "Caching blending state\n" );
+        return state;
     }
 
-    SBlendingStateInfo* state = static_cast<SBlendingStateInfo*>(Allocator.Allocate(sizeof(SBlendingStateInfo)));
+    state = static_cast<SBlendingStateInfo*>(Allocator.Allocate(sizeof(SBlendingStateInfo)));
     Platform::Memcpy(state, &_BlendingState, sizeof(*state));
 
-    i = BlendingStateCache.Size();
-
-    BlendingHash.Insert(hash, i);
-    BlendingStateCache.Append(state);
-
-    //LOG( "Total blending states {}\n", i+1 );
+    //LOG( "Total blending states {}\n", BlendingStates.Size() );
 
     return state;
 }
 
 SRasterizerStateInfo const* ADeviceGLImpl::CachedRasterizerState(SRasterizerStateInfo const& _RasterizerState)
 {
-    int hash = Core::SDBMHash((const char*)&_RasterizerState, sizeof(_RasterizerState));
-
-    int i = RasterizerHash.First(hash);
-    for (; i != -1; i = RasterizerHash.Next(i))
+    SRasterizerStateInfo*& state = RasterizerStates[_RasterizerState];
+    if (state)
     {
-        SRasterizerStateInfo const* state = RasterizerStateCache[i];
-
-        if (*state == _RasterizerState)
-        {
-            //LOG( "Caching rasterizer state\n" );
-            return state;
-        }
+        //LOG( "Caching rasterizer state\n" );
+        return state;
     }
 
-    SRasterizerStateInfo* state = static_cast<SRasterizerStateInfo*>(Allocator.Allocate(sizeof(SRasterizerStateInfo)));
+    state = static_cast<SRasterizerStateInfo*>(Allocator.Allocate(sizeof(SRasterizerStateInfo)));
     Platform::Memcpy(state, &_RasterizerState, sizeof(*state));
 
-    i = RasterizerStateCache.Size();
-
-    RasterizerHash.Insert(hash, i);
-    RasterizerStateCache.Append(state);
-
-    //LOG( "Total rasterizer states {}\n", i+1 );
+    //LOG( "Total rasterizer states {}\n", RasterizerStates.Size() );
 
     return state;
 }
 
 SDepthStencilStateInfo const* ADeviceGLImpl::CachedDepthStencilState(SDepthStencilStateInfo const& _DepthStencilState)
 {
-    int hash = Core::SDBMHash((const char*)&_DepthStencilState, sizeof(_DepthStencilState));
-
-    int i = DepthStencilHash.First(hash);
-    for (; i != -1; i = DepthStencilHash.Next(i))
+    SDepthStencilStateInfo*& state = DepthStencilStates[_DepthStencilState];
+    if (state)
     {
-        SDepthStencilStateInfo const* state = DepthStencilStateCache[i];
-
-        if (*state == _DepthStencilState)
-        {
-            //LOG( "Caching depth stencil state\n" );
-            return state;
-        }
+        //LOG( "Caching depth stencil state\n" );
+        return state;
     }
 
-    SDepthStencilStateInfo* state = static_cast<SDepthStencilStateInfo*>(Allocator.Allocate(sizeof(SDepthStencilStateInfo)));
+    state = static_cast<SDepthStencilStateInfo*>(Allocator.Allocate(sizeof(SDepthStencilStateInfo)));
     Platform::Memcpy(state, &_DepthStencilState, sizeof(*state));
 
-    i = DepthStencilStateCache.Size();
-
-    DepthStencilHash.Insert(hash, i);
-    DepthStencilStateCache.Append(state);
-
-    //LOG( "Total depth stencil states {}\n", i+1 );
+    //LOG( "Total depth stencil states {}\n", DepthStencilStates.Size() );
 
     return state;
 }
 
 unsigned int ADeviceGLImpl::CachedSampler(SSamplerDesc const& SamplerDesc)
 {
-    int hash = Core::SDBMHash((const char*)&SamplerDesc, sizeof(SamplerDesc));
-
-    int i = SamplerHash.First(hash);
-    for (; i != -1; i = SamplerHash.Next(i))
+    SamplerInfo*& sampler = Samplers[SamplerDesc];
+    if (sampler)
     {
-        SamplerInfo const* sampler = SamplerCache[i];
-
-        if (sampler->Desc == SamplerDesc)
-        {
-            //LOG( "Caching sampler\n" );
-            return sampler->Id;
-        }
+        //LOG( "Caching sampler\n" );
+        return sampler->Id;
     }
 
-    SamplerInfo* sampler = static_cast<SamplerInfo*>(Allocator.Allocate(sizeof(SamplerInfo)));
+    sampler = static_cast<SamplerInfo*>(Allocator.Allocate(sizeof(SamplerInfo)));
     Platform::Memcpy(&sampler->Desc, &SamplerDesc, sizeof(sampler->Desc));
 
-    i = SamplerCache.Size();
-
-    SamplerHash.Insert(hash, i);
-    SamplerCache.Append(sampler);
-
-    //LOG( "Total samplers {}\n", i+1 );
+    //LOG( "Total samplers {}\n", Samplers.Size() );
 
     // 3.3 or GL_ARB_sampler_objects
 
@@ -1167,7 +1109,7 @@ AWindowPoolGL::SWindowGL AWindowPoolGL::NewWindow()
 void AWindowPoolGL::Destroy(AWindowPoolGL::SWindowGL Window)
 {
     SDL_HideWindow(Window.Handle);
-    Pool.Append(Window);
+    Pool.Add(Window);
 }
 
 void AWindowPoolGL::Free(AWindowPoolGL::SWindowGL Window)

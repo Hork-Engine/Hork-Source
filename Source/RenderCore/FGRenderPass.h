@@ -265,7 +265,7 @@ public:
     {
     }
 
-    TStdVector<SAttachmentRef> Refs;
+    TVector<SAttachmentRef> Refs;
     ARecordFunction            Function;
 };
 
@@ -287,13 +287,13 @@ public:
     {
         HK_ASSERT_(ColorAttachments.IsEmpty(), "Overwriting color attachments");
 
-        ColorAttachments.Append(InColorAttachment);
+        ColorAttachments.Add(InColorAttachment);
 
         AddAttachmentResources();
         return *this;
     }
 
-    ARenderPass& SetColorAttachments(TStdVector<STextureAttachment> InColorAttachments)
+    ARenderPass& SetColorAttachments(TVector<STextureAttachment> InColorAttachments)
     {
         HK_ASSERT_(ColorAttachments.IsEmpty(), "Overwriting color attachments");
 
@@ -343,7 +343,7 @@ public:
 
     ARenderPass& AddSubpass(std::initializer_list<SAttachmentRef> const& ColorAttachmentRefs, ARecordFunction RecordFunction)
     {
-        Subpasses.emplace_back(ColorAttachmentRefs, RecordFunction);
+        Subpasses.EmplaceBack(ColorAttachmentRefs, RecordFunction);
         return *this;
     }
 
@@ -354,12 +354,12 @@ public:
         return RenderArea;
     }
 
-    TStdVector<ASubpassInfo> const& GetSubpasses() const
+    TVector<ASubpassInfo> const& GetSubpasses() const
     {
         return Subpasses;
     }
 
-    TStdVector<STextureAttachment> const& GetColorAttachments() const
+    TVector<STextureAttachment> const& GetColorAttachments() const
     {
         return ColorAttachments;
     }
@@ -399,12 +399,12 @@ private:
         }
     }
 
-    TStdVector<STextureAttachment> ColorAttachments;
+    TVector<STextureAttachment> ColorAttachments;
     STextureAttachment             DepthStencilAttachment{nullptr};
     bool                           bHasDepthStencilAttachment = false;
     bool                           bRenderAreaSpecified       = false;
     SRect2D                        RenderArea;
-    TStdVector<ASubpassInfo>       Subpasses;
+    TVector<ASubpassInfo>       Subpasses;
 };
 
 } // namespace RenderCore

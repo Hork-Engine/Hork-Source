@@ -74,11 +74,11 @@ public:
     void ReadStoryLines();
 
 private:
-    void CopyStoryLine(SWideChar const* _StoryLine);
-    void AddStoryLine(SWideChar* _Text, int _Length);
+    void CopyStoryLine(WideChar const* _StoryLine);
+    void AddStoryLine(WideChar* _Text, int _Length);
     void InsertUTF8Text(const char* _Utf8);
     void InsertClipboardText();
-    void CompleteString(ACommandContext& _CommandCtx, const char* _Str);
+    void CompleteString(ACommandContext& _CommandCtx, AStringView _Str);
     void DrawCmdLine(ACanvas* _Canvas, int x, int y, int MaxLineChars);
 
     static const int MAX_CMD_LINE_CHARS = 256;
@@ -86,8 +86,8 @@ private:
 
     AConsoleBuffer* pConBuffer;
 
-    SWideChar CmdLine[MAX_CMD_LINE_CHARS];
-    SWideChar StoryLines[MAX_STORY_LINES][MAX_CMD_LINE_CHARS];
+    WideChar CmdLine[MAX_CMD_LINE_CHARS];
+    WideChar StoryLines[MAX_STORY_LINES][MAX_CMD_LINE_CHARS];
     float     ConHeight     = 0;
     int       CmdLineLength = 0;
     int       CmdLinePos    = 0;

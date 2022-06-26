@@ -32,7 +32,8 @@ SOFTWARE.
 
 #include "BaseTypes.h"
 
-#include <fmt/format.h>
+//#include <fmt/format.h>
+#include <fmt/core.h>
 
 #define _HK_FORMAT_GET_ARG1(_1)                                                                     v._1
 #define _HK_FORMAT_GET_ARG2(_1, _2)                                                                 v._1, v._2
@@ -61,12 +62,23 @@ SOFTWARE.
         template <typename FormatContext> auto format(ClassName const& v, FormatContext& ctx) -> decltype(ctx.out()) { return format_to(ctx.out(), FormatString, _HK_FORMAT_ARGS(__VA_ARGS__)); } \
     };
 
-#define HK_FORMAT_DEF_(ClassName, FormatString, ...)                                                                                                                                               \
-    template <> struct fmt::formatter<ClassName>                                                                                                                                                  \
-    {                                                                                                                                                                                             \
-        constexpr auto                         parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }                                                                  \
+#define HK_FORMAT_DEF_(ClassName, FormatString, ...)                                                                                                                             \
+    template <> struct fmt::formatter<ClassName>                                                                                                                                 \
+    {                                                                                                                                                                            \
+        constexpr auto                         parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }                                                 \
         template <typename FormatContext> auto format(ClassName const& v, FormatContext& ctx) -> decltype(ctx.out()) { return format_to(ctx.out(), FormatString, __VA_ARGS__); } \
     };
 
+#define HK_FORMAT_DEF_TO_STRING(ClassName)                                                                           \
+    template <> struct fmt::formatter<ClassName>                                                                     \
+    {                                                                                                                \
+        constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }             \
+                                                                                                                     \
+        template <typename FormatContext> auto format(ClassName const& v, FormatContext& ctx) -> decltype(ctx.out()) \
+        {                                                                                                            \
+            AString str = v.ToString();                                                                              \
+            return fmt::detail::copy_str<char, const char*>(v.Begin(), v.End(), ctx.out());                          \
+        }                                                                                                            \
+    };
 
 #define HK_FMT(X) FMT_STRING(X)

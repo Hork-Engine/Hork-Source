@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Platform/BaseTypes.h>
 
-typedef unsigned short SWideChar;
+typedef uint16_t WideChar;
 
 namespace Core
 {
@@ -43,20 +43,23 @@ int UTF8CharSizeInBytes(const char* _Unicode);
 /** Length of utf8 string */
 int UTF8StrLength(const char* _Unicode);
 
-/** Decode utf8 character to wide char */
-int WideCharDecodeUTF8(const char* _Unicode, SWideChar& _Ch);
+/** Length of utf8 string */
+int UTF8StrLength(const char* _Unicode, const char* _UnicodeEnd);
 
 /** Decode utf8 character to wide char */
-int WideCharDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, SWideChar& _Ch);
+int WideCharDecodeUTF8(const char* _Unicode, WideChar& _Ch);
+
+/** Decode utf8 character to wide char */
+int WideCharDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, WideChar& _Ch);
 
 /** Decode utf8 string to wide string */
-int WideStrDecodeUTF8(const char* _Unicode, SWideChar* _Str, int _MaxLength);
+int WideStrDecodeUTF8(const char* _Unicode, WideChar* _Str, int _MaxLength);
 
 /** Decode utf8 string to wide string */
-int WideStrDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, SWideChar* _Str, int _MaxLength);
+int WideStrDecodeUTF8(const char* _Unicode, const char* _UnicodeEnd, WideChar* _Str, int _MaxLength);
 
 /** Length of utf8 character in bytes */
-HK_FORCEINLINE int WideCharUTF8Bytes(SWideChar _Ch)
+HK_FORCEINLINE int WideCharUTF8Bytes(WideChar _Ch)
 {
     if (_Ch < 0x80) return 1;
     if (_Ch < 0x800) return 2;
@@ -66,19 +69,19 @@ HK_FORCEINLINE int WideCharUTF8Bytes(SWideChar _Ch)
 }
 
 /** Length of utf8 string in bytes */
-int WideStrUTF8Bytes(SWideChar const* _Str, SWideChar const* _StrEnd = nullptr);
+int WideStrUTF8Bytes(WideChar const* _Str, WideChar const* _StrEnd = nullptr);
 
 /** Length of wide string */
-int WideStrLength(SWideChar const* _Str);
+int WideStrLength(WideChar const* _Str);
 
 /** Encode wide character to utf8 char */
 int WideCharEncodeUTF8(char* _Buf, int _BufSize, unsigned int _Ch);
 
 /** Encode wide string to utf8 string */
-int WideStrEncodeUTF8(char* _Buf, int _BufSize, SWideChar const* _Str, SWideChar const* _StrEnd = nullptr);
+int WideStrEncodeUTF8(char* _Buf, int _BufSize, WideChar const* _Str, WideChar const* _StrEnd = nullptr);
 
 /** Check wide char is blank */
-HK_FORCEINLINE bool WideCharIsBlank(SWideChar _Ch) { return _Ch == ' ' || _Ch == '\t' || _Ch == 0x3000; }
+HK_FORCEINLINE bool WideCharIsBlank(WideChar _Ch) { return _Ch == ' ' || _Ch == '\t' || _Ch == 0x3000; }
 
 /** Check ascii char is blank */
 HK_FORCEINLINE bool CharIsBlank(char _Ch) { return _Ch == ' ' || _Ch == '\t'; }

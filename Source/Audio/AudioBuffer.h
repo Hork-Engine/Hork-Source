@@ -64,7 +64,7 @@ public:
 
     ~SAudioBuffer()
     {
-        GHeapMemory.Free( pFramesHeapPtr );
+        Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(pFramesHeapPtr);
     }
 
     /** Audio data */

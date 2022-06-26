@@ -83,7 +83,7 @@ void GetDisplayModes(SDisplayInfo const& Display, TPodVector<SDisplayMode>& Mode
 
         if (modeSDL.format == SDL_PIXELFORMAT_RGB888)
         {
-            SDisplayMode& mode = Modes.Append();
+            SDisplayMode& mode = Modes.Add();
 
             mode.Width       = modeSDL.w;
             mode.Height      = modeSDL.h;

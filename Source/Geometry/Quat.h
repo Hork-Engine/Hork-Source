@@ -463,17 +463,6 @@ struct Quat
         return std::atan2(2.0f * (X * Y + W * Z), W * W + X * X - Y * Y - Z * Z);
     }
 
-    // String conversions
-    AString ToString(int precision = -1) const
-    {
-        return AString("( ") + Math::ToString(X, precision) + " " + Math::ToString(Y, precision) + " " + Math::ToString(Z, precision) + " " + Math::ToString(W, precision) + " )";
-    }
-
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
-    {
-        return AString("( ") + Math::ToHexString(X, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Y, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Z, bLeadingZeros, bPrefix) + " " + Math::ToHexString(W, bLeadingZeros, bPrefix) + " )";
-    }
-
     // Byte serialization
     void Write(IBinaryStreamWriteInterface& stream) const
     {
@@ -560,3 +549,5 @@ HK_FORCEINLINE Quat Slerp(Quat const& qs, Quat const& qe, float f)
 }
 
 } // namespace Math
+
+HK_FORMAT_DEF_(Quat, "( {} {} {} {} )", v.X, v.Y, v.Z, v.W);

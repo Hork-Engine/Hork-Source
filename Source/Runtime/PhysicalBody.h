@@ -68,8 +68,8 @@ enum EAINavigationBehavior
 
 struct SDebugDrawCache
 {
-    TPodVectorHeap<Float3>       Vertices;
-    TPodVectorHeap<unsigned int> Indices;
+    TVector<Float3>       Vertices;
+    TVector<unsigned int> Indices;
     bool                         bDirty;
 };
 
@@ -328,7 +328,7 @@ public:
     int GetCollisionBodiesCount() const;
 
     /** Create 3d mesh model from collision body composition. Store coordinates in world space. */
-    void GatherCollisionGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices) const;
+    void GatherCollisionGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices) const;
 
     void CollisionContactQuery(TPodVector<AHitProxy*>& _Result) const;
 

@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Containers/PodVector.h>
+#include <Containers/Vector.h>
 #include <Core/Ref.h>
 
 //#define HK_ACTIVE_THREADS_COUNTERS
@@ -80,7 +80,7 @@ private:
 
     AAsyncJobManager* JobManager{nullptr};
 
-    TPodVector<SAsyncJob, 1024> JobPool;
+    TSmallVector<SAsyncJob, 1024> JobPool;
     SAsyncJob*                  JobList{nullptr};
     int                         NumPendingJobs{0};
 

@@ -82,7 +82,7 @@ TRef<IBuffer> GClusterItemBuffer;
 /** Cluster item references view */
 TRef<IBufferView> GClusterItemTBO;
 
-std::vector<SRenderViewContext> GRenderViewContext;
+TVector<SRenderViewContext> GRenderViewContext;
 
 AVirtualTextureFeedbackAnalyzer* GFeedbackAnalyzerVT;
 AVirtualTextureCache*            GPhysCacheVT{};
@@ -287,14 +287,12 @@ void SaveSnapshot(ITexture& _Texture)
     const int numchannels = 3;
     const int size        = w * h * numchannels;
 
-    int hunkMark = GHunkMemory.SetHunkMark();
-
-    byte* data = (byte*)GHunkMemory.Alloc(size);
+    byte* data = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(size);
 
 #if 0
     _Texture.Read( 0, PIXEL_FORMAT_BYTE_RGB, size, 1, data );
 #else
-    float* fdata = (float*)GHunkMemory.Alloc(size * sizeof(float));
+    float* fdata = (float*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(size * sizeof(float));
     _Texture.Read(0, FORMAT_FLOAT3, size * sizeof(float), 1, fdata);
     // to sRGB
     for (int i = 0; i < size; i++)
@@ -307,10 +305,11 @@ void SaveSnapshot(ITexture& _Texture)
 
     static int  n = 0;
     AFileStream f;
-    if (f.OpenWrite(Platform::Fmt("snapshots/%d.png", n++)))
+    if (f.OpenWrite(Core::Format("snapshots/{}.png", n++)))
     {
         WritePNG(f, w, h, numchannels, data, w * numchannels);
     }
 
-    GHunkMemory.ClearToMark(hunkMark);
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(fdata);
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
 }

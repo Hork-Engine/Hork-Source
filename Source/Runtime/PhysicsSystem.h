@@ -120,15 +120,17 @@ struct SConvexSweepTest
     SCollisionQueryFilter QueryFilter;
 };
 
+
+
 /** Collision contact */
 struct SCollisionContact
 {
     class btPersistentManifold* Manifold;
 
-    AActor*    ActorA;
-    AActor*    ActorB;
-    AHitProxy* ComponentA;
-    AHitProxy* ComponentB;
+    TRef<AActor>    ActorA;
+    TRef<AActor>    ActorB;
+    TRef<AHitProxy> ComponentA;
+    TRef<AHitProxy> ComponentB;
 
     bool bActorADispatchContactEvents;
     bool bActorBDispatchContactEvents;
@@ -139,14 +141,34 @@ struct SCollisionContact
     bool bComponentBDispatchContactEvents;
     bool bComponentADispatchOverlapEvents;
     bool bComponentBDispatchOverlapEvents;
+};
 
-    int Hash() const
+struct SContactKey
+{
+    uint64_t Id[2];
+
+    //SContactKey() = default;
+
+    explicit SContactKey(SCollisionContact const& Contact)
     {
-        uint32_t hash = Core::MurMur3Hash64(ComponentA->Id);
-        hash          = Core::MurMur3Hash64(ComponentB->Id, hash);
+        Id[0] = Contact.ComponentA->Id;
+        Id[1] = Contact.ComponentB->Id;
+    }
+
+    bool operator==(SContactKey const& Rhs) const
+    {
+        return Id[0] == Rhs.Id[0] && Id[1] == Rhs.Id[1];
+    }
+
+    uint32_t Hash() const
+    {
+        uint32_t hash = Core::Murmur3Hash64(Id[0]);
+        hash          = Core::Murmur3Hash64(Id[1], hash);
         return hash;
     }
 };
+
+
 
 struct SCollisionQueryResult
 {
@@ -287,8 +309,8 @@ private:
     TUniqueRef<class btSequentialImpulseConstraintSolver>       ConstraintSolver;
     TUniqueRef<class btGhostPairCallback>                       GhostPairCallback;
     struct btSoftBodyWorldInfo*                                 SoftBodyWorldInfo;
-    TPodVector<SCollisionContact>                               CollisionContacts[2];
-    THash<>                                                     ContactHash[2];
+    TVector<SCollisionContact>                                  CollisionContacts[2];
+    THashSet<SContactKey>                                       ContactHash[2];
     TPodVector<SContactPoint>                                   ContactPoints;
     AHitProxy*                                                  PendingAddToWorldHead = nullptr;
     AHitProxy*                                                  PendingAddToWorldTail = nullptr;

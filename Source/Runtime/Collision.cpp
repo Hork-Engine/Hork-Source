@@ -121,9 +121,9 @@ void AHitProxy::AddCollisionIgnoreActor(AActor* _Actor)
     {
         return;
     }
-    if (CollisionIgnoreActors.Find(_Actor) == CollisionIgnoreActors.End())
+    if (!CollisionIgnoreActors.Contains(_Actor))
     {
-        CollisionIgnoreActors.Append(_Actor);
+        CollisionIgnoreActors.Add(_Actor);
         _Actor->AddRef();
 
         UpdateBroadphase();
@@ -136,14 +136,12 @@ void AHitProxy::RemoveCollisionIgnoreActor(AActor* _Actor)
     {
         return;
     }
-    auto it = CollisionIgnoreActors.Find(_Actor);
-    if (it != CollisionIgnoreActors.End())
+    auto index = CollisionIgnoreActors.IndexOf(_Actor);
+    if (index != Core::NPOS)
     {
-        AActor* actor = *it;
+        _Actor->RemoveRef();
 
-        actor->RemoveRef();
-
-        CollisionIgnoreActors.RemoveSwap(it - CollisionIgnoreActors.Begin());
+        CollisionIgnoreActors.RemoveUnsorted(index);
 
         UpdateBroadphase();
     }
@@ -181,10 +179,7 @@ struct SContactQueryCallback : public btCollisionWorld::ContactResultCallback
 
     void AddUnique(AHitProxy* HitProxy)
     {
-        if (Result.Find(HitProxy) == Result.End())
-        {
-            Result.Append(HitProxy);
-        }
+        Result.AddUnique(HitProxy);
     }
 
     TPodVector<AHitProxy*>& Result;
@@ -223,10 +218,7 @@ struct SContactQueryActorCallback : public btCollisionWorld::ContactResultCallba
 
     void AddUnique(AActor* Actor)
     {
-        if (Result.Find(Actor) == Result.End())
-        {
-            Result.Append(Actor);
-        }
+        Result.AddUnique(Actor);
     }
 
     TPodVector<AActor*>& Result;

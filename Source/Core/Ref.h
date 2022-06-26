@@ -36,12 +36,12 @@ struct SZoneAllocator
 {
     void* Allocate(std::size_t _SizeInBytes)
     {
-        return GZoneMemory.Alloc(_SizeInBytes);
+        return Platform::GetHeapAllocator<HEAP_MISC>().Alloc(_SizeInBytes, 16);
     }
 
     void Deallocate(void* _Bytes)
     {
-        GZoneMemory.Free(_Bytes);
+        Platform::GetHeapAllocator<HEAP_MISC>().Free(_Bytes);
     }
 };
 
@@ -148,12 +148,12 @@ private:
 public:
     void* operator new(size_t _SizeInBytes)
     {
-        return GHeapMemory.Alloc(_SizeInBytes);
+        return Platform::GetHeapAllocator<HEAP_MISC>().Alloc(_SizeInBytes);
     }
 
     void operator delete(void* _Ptr)
     {
-        GHeapMemory.Free(_Ptr);
+        Platform::GetHeapAllocator<HEAP_MISC>().Free(_Ptr);
     }
 
     SInterlockedRef() :

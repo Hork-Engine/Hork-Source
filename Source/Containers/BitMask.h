@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include "PodVector.h"
+#include "Vector.h"
 
 /**
 
@@ -39,147 +39,165 @@ TBitMask
 Variable size bit mask
 
 */
-template <int BASE_CAPACITY_IN_BITS = 1024, int GRANULARITY_IN_BITS = 1024, typename Allocator = AZoneAllocator>
+template <size_t BaseCapacityInBits = 1024, typename OverflowAllocator = Allocators::HeapMemoryAllocator<HEAP_VECTOR>>
 class TBitMask
 {
 public:
     using T                                     = uint32_t;
-    static constexpr int BitCount               = sizeof(T) * 8;
-    static constexpr int BitWrapMask            = BitCount - 1;
-    static constexpr int BitExponent            = 5;
-    static constexpr int BaseCapacityInBytes    = BASE_CAPACITY_IN_BITS / BitCount + 1;
-    static constexpr int BaseGranularityInBytes = BASE_CAPACITY_IN_BITS / BitCount + 1;
+    static constexpr size_t BitCount            = sizeof(T) * 8;
+    static constexpr size_t BitWrapMask         = BitCount - 1;
+    static constexpr size_t BitExponent         = 5;
+    static constexpr size_t BaseCapacityInBytes = (BaseCapacityInBits & BitWrapMask) ? BaseCapacityInBits / BitCount + 1 : BaseCapacityInBits / BitCount;
 
-    TBitMask() :
-        NumBits(0) {}
-    TBitMask(TBitMask const& _BitMask) :
-        Bits(_BitMask.Bits), NumBits(_BitMask.NumBits) {}
-    ~TBitMask() {}
+    TBitMask()                = default;
+    TBitMask(TBitMask const&) = default;
 
-    void Clear()
+    TBitMask(TBitMask&& Rhs) :
+        m_Bits(std::move(Rhs.m_Bits)),
+        m_NumBits(Rhs.m_NumBits)
     {
-        Bits.Clear();
-        NumBits = 0;
+        Rhs.m_NumBits = 0;
     }
 
-    void Free()
+    HK_FORCEINLINE void Clear()
     {
-        Bits.Free();
-        NumBits = 0;
+        m_Bits.Clear();
+        m_NumBits = 0;
     }
 
-    void ShrinkToFit()
+    HK_FORCEINLINE void Free()
     {
-        Bits.ShrinkToFit();
+        m_Bits.Free();
+        m_NumBits = 0;
     }
 
-    void Reserve(int _NewCapacity)
+    HK_FORCEINLINE void ShrinkToFit()
     {
-        Bits.Reserve(_NewCapacity / BitCount + 1);
+        m_Bits.ShrinkToFit();
     }
 
-    void ReserveInvalidate(int _NewCapacity)
+    HK_FORCEINLINE void Reserve(size_t _NewCapacity)
     {
-        Bits.ReserveInvalidate(_NewCapacity / BitCount + 1);
+        size_t capacityWords = _NewCapacity / BitCount;
+        if (_NewCapacity & BitWrapMask)
+            ++capacityWords;
+        m_Bits.Reserve(capacityWords);
     }
 
-    bool IsEmpty() const
+    HK_FORCEINLINE bool IsEmpty() const
     {
-        return NumBits == 0;
+        return m_NumBits == 0;
     }
 
-    T*       ToPtr() { return Bits.ToPtr(); }
-    T const* ToPtr() const { return Bits.ToPtr(); }
+    HK_FORCEINLINE T*       ToPtr() { return m_Bits.ToPtr(); }
+    HK_FORCEINLINE T const* ToPtr() const { return m_Bits.ToPtr(); }
 
-    TBitMask& operator=(TBitMask const& _BitMask)
+    TBitMask& operator=(TBitMask const&) = default;
+
+    TBitMask& operator=(TBitMask&& Rhs)
     {
-        Bits    = _BitMask.Bits;
-        NumBits = _BitMask.NumBits;
-        return *this;
+        m_Bits = std::move(Rhs.m_Bits);
+        m_NumBits = Rhs.m_NumBits;
+        Rhs.m_NumBits = 0;
     }
 
-    void Resize(int _NumBits)
+    void Resize(size_t _NumBits)
     {
-        const int oldsize = Bits.Size();
-        const int newsize = _NumBits / BitCount + 1;
+        const size_t oldsize = m_Bits.Size();
+        const size_t newsize = _NumBits / BitCount + ((_NumBits & BitWrapMask) ? 1 : 0);
 
-        Bits.Resize(newsize);
+        m_Bits.Resize(newsize);
 
-        if (_NumBits > NumBits)
+        if (_NumBits > m_NumBits)
         {
-            Platform::ZeroMem(Bits.ToPtr() + oldsize, (newsize - oldsize) * sizeof(T));
+            Platform::ZeroMem(m_Bits.ToPtr() + oldsize, (newsize - oldsize) * sizeof(T));
 
-            const int clearBitsInWord = oldsize * BitCount;
-            for (int i = NumBits; i < clearBitsInWord; i++)
+            const size_t clearBitsInWord = oldsize * BitCount;
+            for (size_t i = m_NumBits; i < clearBitsInWord; i++)
             {
-                Bits[i >> BitExponent] &= ~(1 << (i & BitWrapMask));
+                m_Bits[i >> BitExponent] &= ~(1 << (i & BitWrapMask));
             }
         }
-        NumBits = _NumBits;
+        m_NumBits = _NumBits;
     }
 
-    void ResizeInvalidate(int _NumBits)
+    HK_FORCEINLINE void ResizeInvalidate(size_t _NumBits)
     {
-        Bits.ResizeInvalidate(_NumBits / BitCount + 1);
-        NumBits = _NumBits;
+        m_Bits.ResizeInvalidate(_NumBits / BitCount + ((_NumBits & BitWrapMask) ? 1 : 0));
+        m_NumBits = _NumBits;
     }
 
-    int Size() const
+    HK_FORCEINLINE size_t Size() const
     {
-        return NumBits;
+        return m_NumBits;
     }
 
-    int Capacity() const
+    HK_FORCEINLINE size_t Capacity() const
     {
-        return Bits.Capacity() * BitCount;
+        return m_Bits.Capacity() * BitCount;
     }
 
-    void MarkAll()
+    HK_FORCEINLINE void MarkAll()
     {
-        Bits.Memset(0xff);
+        Platform::Memset(m_Bits.ToPtr(), 0xff, m_Bits.Size() * sizeof(m_Bits[0]));
     }
 
-    void UnmarkAll()
+    HK_FORCEINLINE void UnmarkAll()
     {
-        Bits.Memset(0);
+        m_Bits.ZeroMem();
     }
 
-    void Mark(int _BitIndex)
+    HK_FORCEINLINE void Mark(size_t _BitIndex)
     {
         if (_BitIndex >= Size())
         {
             Resize(_BitIndex + 1);
         }
-        Bits[_BitIndex >> BitExponent] |= 1 << (_BitIndex & BitWrapMask);
+        m_Bits[_BitIndex >> BitExponent] |= 1 << (_BitIndex & BitWrapMask);
     }
 
-    void Unmark(int _BitIndex)
+    HK_FORCEINLINE void Unmark(size_t _BitIndex)
     {
         if (_BitIndex < Size())
         {
-            Bits[_BitIndex >> BitExponent] &= ~(1 << (_BitIndex & BitWrapMask));
+            m_Bits[_BitIndex >> BitExponent] &= ~(1 << (_BitIndex & BitWrapMask));
         }
     }
 
-    bool IsMarked(int _BitIndex) const
+    HK_FORCEINLINE bool IsMarked(size_t _BitIndex) const
     {
-        return _BitIndex < Size() && (Bits[_BitIndex >> BitExponent] & (1 << (_BitIndex & BitWrapMask)));
+        return _BitIndex < Size() && (m_Bits[_BitIndex >> BitExponent] & (1 << (_BitIndex & BitWrapMask)));
+    }
+
+    HK_FORCEINLINE void Swap(TBitMask& x)
+    {
+        Swap(m_Bits, x.m_Bits);
+        std::swap(m_NumBits, x.m_NumBits);
     }
 
     // Byte serialization
     void Write(IBinaryStreamWriteInterface& _Stream) const
     {
-        _Stream.WriteUInt32(NumBits);
-        _Stream.WriteArrayUInt32(Bits);
+        _Stream.WriteUInt32(m_NumBits);
+        _Stream.WriteArrayUInt32(m_Bits);
     }
 
     void Read(IBinaryStreamReadInterface& _Stream)
     {
-        NumBits = _Stream.ReadUInt32();
-        _Stream.ReadArrayUInt32(Bits);
+        m_NumBits = _Stream.ReadUInt32();
+        _Stream.ReadArrayUInt32(m_Bits);
     }
 
 private:
-    TPodVector<T, BaseCapacityInBytes, BaseGranularityInBytes, Allocator> Bits;
-    int                                                                   NumBits;
+    TSmallVector<T, BaseCapacityInBytes, OverflowAllocator> m_Bits;
+    size_t                                                  m_NumBits{};
 };
+
+namespace eastl
+{
+template <size_t BaseCapacityInBits, typename OverflowAllocator>
+HK_INLINE void swap(TBitMask<BaseCapacityInBits, OverflowAllocator>& lhs, TBitMask<BaseCapacityInBits, OverflowAllocator>& rhs)
+{
+    lhs.Swap(rhs);
+}
+} // namespace eastl

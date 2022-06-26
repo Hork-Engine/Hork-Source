@@ -31,165 +31,227 @@ SOFTWARE.
 #pragma once
 
 #include "Array.h"
-#include "PodVector.h"
+#include "Vector.h"
 
 template <typename T>
 class TArrayView
 {
 public:
-    typedef const T* ConstIterator;
+    using ValueType            = std::remove_cv_t<T>;
+    using Pointer              = T*;
+    using ConstPointer         = const T*;
+    using Reference            = T&;
+    using ConstReference       = const T&;
+    using Iterator             = T*;
+    using ConstIterator        = const T*;
+    using ReverseIterator      = eastl::reverse_iterator<Iterator>;
+    using ConstReverseIterator = eastl::reverse_iterator<ConstIterator>;
+    using SizeType             = size_t;
 
-    HK_FORCEINLINE TArrayView() :
-        ArrayData(nullptr), Size(0)
-    {
-    }
+    constexpr HK_FORCEINLINE TArrayView() :
+        m_Data(nullptr), m_Size(0)
+    {}
 
-    HK_FORCEINLINE TArrayView(T* _Data, int _Size) :
-        ArrayData(_Data), ArraySize(_Size)
-    {
-        HK_ASSERT(_Size >= 0);
-    }
+    constexpr HK_FORCEINLINE TArrayView(ConstPointer _Data, SizeType _Size) :
+        m_Data(_Data), m_Size(_Size)
+    {}
 
-    template <size_t N>
-    HK_FORCEINLINE TArrayView(T const (&Array)[N]) :
-        ArrayData(Array), ArraySize(N)
+    constexpr HK_FORCEINLINE TArrayView(ConstPointer pBegin, ConstPointer pEnd) :
+        m_Data(pBegin), m_Size(static_cast<SizeType>(pEnd - pBegin))
     {}
 
     template <size_t N>
-    HK_FORCEINLINE TArrayView(TArray<T, N> const& Array) :
-        ArrayData(Array.ToPtr()), ArraySize(Array.Size())
+    constexpr HK_FORCEINLINE TArrayView(T const (&Array)[N]) :
+        m_Data(Array), m_Size(N)
     {}
-
-    template <int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator>
-    HK_FORCEINLINE TArrayView(TPodVector<T, BASE_CAPACITY, GRANULARITY, Allocator> const& Vector) :
-        ArrayData(Vector.ToPtr()), ArraySize(Vector.Size())
-    {}
-
-    TArrayView(TArrayView const& Str) = default;
-    TArrayView& operator=(TArrayView const& Rhs) = default;
 
     template <size_t N>
-    TArrayView& operator=(TArray<T, N> const& Rhs)
+    constexpr HK_FORCEINLINE TArrayView(TArray<ValueType, N> const& Array) :
+        m_Data(Array.ToPtr()), m_Size(Array.Size())
+    {}
+
+    template <typename Allocator>
+    constexpr HK_FORCEINLINE TArrayView(TVector<ValueType, Allocator> const& Vector) :
+        m_Data(Vector.ToPtr()), m_Size(Vector.Size())
+    {}
+
+    template <size_t BaseCapacity, bool bEnableOverflow, typename OverflowAllocator>
+    constexpr HK_FORCEINLINE TArrayView(TFixedVector<ValueType, BaseCapacity, bEnableOverflow, OverflowAllocator> const& Vector) :
+        m_Data(Vector.ToPtr()), m_Size(Vector.Size())
+    {}
+
+    constexpr TArrayView(TArrayView const& Rhs) = default;
+    constexpr TArrayView& operator=(TArrayView const& Rhs) = default;
+
+    constexpr HK_FORCEINLINE bool operator==(TArrayView Rhs) const
     {
-        ArrayData = Rhs.ToPtr();
-        ArraySize = Rhs.Size();
-        return *this;
+        return (m_Size == Rhs.m_Size) && eastl::equal(begin(), end(), Rhs.begin());
     }
 
-    template <int BASE_CAPACITY = 32, int GRANULARITY = 32, typename Allocator>
-    TArrayView& operator=(TPodVector<T, BASE_CAPACITY, GRANULARITY, Allocator> const& Rhs)
+    constexpr HK_FORCEINLINE bool operator!=(TArrayView Rhs) const
     {
-        ArrayData = Rhs.ToPtr();
-        ArraySize = Rhs.Size();
-        return *this;
+        return (m_Size != Rhs.m_Size) || !eastl::equal(begin(), end(), Rhs.begin());
     }
 
-    bool operator==(TArrayView Rhs) const
+    constexpr HK_FORCEINLINE bool operator<(TArrayView Rhs) const
     {
-        if (ArraySize != Rhs.ArraySize)
-            return false;
-        for (int i = 0 ; i < ArraySize ; i++)
-            if (ArrayData[i] != Rhs.ArrayData[i])
-                return false;
-        return true;
+        return eastl::lexicographical_compare(begin(), end(), Rhs.begin(), Rhs.end());
     }
 
-    bool operator!=(TArrayView Rhs) const
+    constexpr HK_FORCEINLINE bool operator<=(TArrayView Rhs) const { return !(Rhs < *this); }
+
+    constexpr HK_FORCEINLINE bool operator>(TArrayView Rhs) const { return Rhs < *this; }
+
+    constexpr HK_FORCEINLINE bool operator>=(TArrayView Rhs) const { return !(*this < Rhs); }
+
+    constexpr HK_FORCEINLINE ConstPointer ToPtr() const
     {
-        return !(*this == Rhs);
+        return m_Data;
     }
 
-    T const* ToPtr() const
+    constexpr HK_FORCEINLINE SizeType Size() const
     {
-        return ArrayData;
+        return m_Size;
     }
 
-    int Size() const
+    constexpr HK_FORCEINLINE bool IsEmpty() const
     {
-        return ArraySize;
+        return m_Size == 0;
     }
 
-    bool IsEmpty() const
+    constexpr HK_FORCEINLINE ConstReference operator[](SizeType i) const
     {
-        return ArraySize == 0;
+        HK_ASSERT_(i < m_Size, "Undefined behavior accessing out of bounds");
+        return m_Data[i];
     }
 
-    T const& operator[](const int _Index) const
+    constexpr HK_FORCEINLINE ConstReference First() const
     {
-        HK_ASSERT_(_Index >= 0 && _Index < ArraySize, "TArrayView::operator[]");
-        return ArrayData[_Index];
+        HK_ASSERT_(m_Size > 0, "Undefined behavior accessing an empty ArrayView");
+        return m_Data[0];
     }
 
-    T const& Last() const
+    constexpr HK_FORCEINLINE ConstReference Last() const
     {
-        HK_ASSERT_(ArraySize > 0, "TArrayView::Last");
-        return ArrayData[ArraySize - 1];
+        HK_ASSERT_(m_Size > 0, "Undefined behavior accessing an empty ArrayView");
+        return m_Data[m_Size - 1];
     }
 
-    T const& First() const
+    constexpr HK_FORCEINLINE ConstIterator begin() const
     {
-        HK_ASSERT_(ArraySize > 0, "TArrayView::First");
-        return ArrayData[0];
+        return m_Data;
+    }
+    
+    constexpr HK_FORCEINLINE ConstIterator end() const
+    {
+        return m_Data + m_Size;
+    }
+    
+    constexpr HK_FORCEINLINE ConstIterator cbegin() const
+    {
+        return m_Data;
+    }
+    
+    constexpr HK_FORCEINLINE ConstIterator cend() const
+    {
+        return m_Data + m_Size;
+    }
+    
+    constexpr HK_FORCEINLINE ConstReverseIterator rbegin() const
+    {
+        return ConstReverseIterator(m_Data + m_Size);
+    }
+    
+    constexpr HK_FORCEINLINE ConstReverseIterator rend() const
+    {
+        return ConstReverseIterator(m_Data);
+    }
+    
+    constexpr HK_FORCEINLINE ConstReverseIterator crbegin() const
+    {
+        return ConstReverseIterator(m_Data + m_Size);
+    }
+    
+    constexpr HK_FORCEINLINE ConstReverseIterator crend() const
+    {
+        return ConstReverseIterator(m_Data);
     }
 
-    ConstIterator Begin() const
+    constexpr HK_FORCEINLINE ConstIterator Begin() const
     {
-        return ArrayData;
+        return begin();
     }
 
-    ConstIterator End() const
+    constexpr HK_FORCEINLINE ConstIterator End() const
     {
-        return ArrayData + ArraySize;
+        return end();
     }
 
-    /** foreach compatibility */
-    ConstIterator begin() const { return Begin(); }
-
-    /** foreach compatibility */
-    ConstIterator end() const { return End(); }
-
-    ConstIterator Find(T const& _Element) const
+    constexpr HK_FORCEINLINE ConstIterator CBegin() const
     {
-        return Find(Begin(), End(), _Element);
+        return cbegin();
     }
 
-    ConstIterator Find(ConstIterator _Begin, ConstIterator _End, const T& _Element) const
+    constexpr HK_FORCEINLINE ConstIterator CEnd() const
     {
-        for (auto It = _Begin; It != _End; It++)
-        {
-            if (*It == _Element)
-            {
-                return It;
-            }
-        }
-        return End();
+        return cend();
     }
 
-    bool IsExists(T const& _Element) const
+    constexpr HK_FORCEINLINE ConstReverseIterator RBegin() const
     {
-        for (int i = 0; i < ArraySize; i++)
-        {
-            if (ArrayData[i] == _Element)
-            {
-                return true;
-            }
-        }
-        return false;
+        return rbegin();
     }
 
-    int IndexOf(T const& _Element) const
+    constexpr HK_FORCEINLINE ConstReverseIterator REnd() const
     {
-        for (int i = 0; i < ArraySize; i++)
-        {
-            if (ArrayData[i] == _Element)
-            {
-                return i;
-            }
-        }
-        return -1;
+        return rend();
+    }
+
+    constexpr HK_FORCEINLINE ConstReverseIterator CRBegin() const
+    {
+        return crbegin();
+    }
+
+    constexpr HK_FORCEINLINE ConstReverseIterator CREnd() const
+    {
+        return crend();
+    }
+    
+    HK_FORCEINLINE ConstIterator Find(ValueType const& value) const
+    {
+        return eastl::find(begin(), end(), value);
+    }
+
+    HK_FORCEINLINE bool Contains(ValueType const& value) const
+    {
+        return eastl::find(begin(), end(), value) != end();
+    }
+
+    template <typename Predicate>
+    HK_FORCEINLINE bool Contains(ValueType const& value, Predicate predicate) const
+    {
+        return eastl::find(begin(), end(), value, predicate) != end();
+    }
+
+    HK_FORCEINLINE SizeType IndexOf(ValueType const& value) const
+    {
+        auto it = eastl::find(begin(), end(), value);
+        return it == end() ? Core::NPOS : (SizeType)(it - begin());
+    }
+
+    HK_FORCEINLINE TArrayView<T> GetSubView(SizeType first, SizeType count) const
+    {
+        HK_ASSERT_(first + count <= m_Size, "Undefined behavior accessing out of bounds");
+        return TArrayView<T>(m_Data + first, count);
+    }
+
+    HK_FORCEINLINE TArrayView<T> GetSubView(SizeType first) const
+    {
+        HK_ASSERT_(first <= m_Size, "Undefined behavior accessing out of bounds");
+        return TArrayView<T>(m_Data + first, m_Size - first);
     }
 
 private:
-    T const* ArrayData;
-    int ArraySize;
+    ConstPointer m_Data;
+    SizeType m_Size;
 };

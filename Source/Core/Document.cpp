@@ -56,7 +56,7 @@ ADocumentTokenizer::~ADocumentTokenizer()
 {
     if (!bInSitu)
     {
-        GZoneMemory.Free(Start);
+        Platform::GetHeapAllocator<HEAP_STRING>().Free(Start);
     }
 }
 
@@ -64,7 +64,7 @@ void ADocumentTokenizer::Reset(const char* pDocumentData, bool InSitu)
 {
     if (!bInSitu)
     {
-        GZoneMemory.Free(Start);
+        Platform::GetHeapAllocator<HEAP_STRING>().Free(Start);
         Cur = Start = (char*)"";
         LineNumber  = 1;
         bInSitu     = true;
@@ -78,7 +78,7 @@ void ADocumentTokenizer::Reset(const char* pDocumentData, bool InSitu)
     else
     {
         int n = Platform::Strlen(pDocumentData) + 1;
-        Start = (char*)GZoneMemory.Alloc(n);
+        Start = (char*)Platform::GetHeapAllocator<HEAP_STRING>().Alloc(n);
         Platform::Memcpy(Start, pDocumentData, n);
     }
     Cur        = Start;
@@ -229,15 +229,12 @@ AString ADocumentSerializer::InsertSpaces()
 
 AString ADocumentSerializer::SerializeValue(ADocValue const* Value)
 {
-    AString s;
-
     if (Value->IsString())
     {
-        s += "\"" + Value->GetString() + "\"";
-        return s;
+        return Core::Format("\"{}\"", Value->GetString());
     }
 
-    s += "{";
+    AString s("{");
 
     DocumentStack++;
     bool bSingleMember;
@@ -329,9 +326,9 @@ AString ADocumentSerializer::SerializeValueCompact(ADocValue const* Value)
 {
     if (Value->IsString())
     {
-        return AString("\"") + Value->GetString() + "\"";
+        return Core::Format("\"{}\"", Value->GetString());
     }
-    return AString("{") + SerializeObjectCompact(Value->GetListOfMembers()) + "}";
+    return Core::Format("{{{}}}", SerializeObjectCompact(Value->GetListOfMembers()));
 }
 
 AString ADocumentSerializer::SerializeMemberCompact(ADocMember const* Member)
@@ -778,7 +775,7 @@ ADocValue::~ADocValue()
 
     if (pTokenMemory)
     {
-        GZoneMemory.Free(pTokenMemory);
+        Platform::GetHeapAllocator<HEAP_STRING>().Free(pTokenMemory);
     }
 }
 

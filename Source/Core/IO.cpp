@@ -100,8 +100,7 @@ bool AFileStream::Open(AStringView FileName, FILE_OPEN_MODE _Mode)
 {
     Close();
 
-    Name = FileName;
-    Name.FixPath();
+    Name = PathUtils::FixPath(FileName);
     if (Name.Length() && Name[Name.Length() - 1] == '/')
     {
         LOG("Invalid file name {}\n", FileName);
@@ -111,7 +110,7 @@ bool AFileStream::Open(AStringView FileName, FILE_OPEN_MODE _Mode)
 
     if (_Mode == FILE_OPEN_MODE_WRITE || _Mode == FILE_OPEN_MODE_APPEND)
     {
-        Core::MakeDir(Name, true);
+        Core::CreateDirectory(Name, true);
     }
 
     const char* fopen_mode = "";
@@ -350,17 +349,17 @@ AMemoryStream::~AMemoryStream()
 
 void* AMemoryStream::Alloc(size_t SizeInBytes)
 {
-    return GHeapMemory.Alloc(SizeInBytes, 16);
+    return Platform::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes, 16);
 }
 
 void* AMemoryStream::Realloc(void* pMemory, size_t SizeInBytes)
 {
-    return GHeapMemory.Realloc(pMemory, SizeInBytes, 16, true);
+    return Platform::GetHeapAllocator<HEAP_MISC>().Realloc(pMemory, SizeInBytes, 16);
 }
 
 void AMemoryStream::Free(void* pMemory)
 {
-    GHeapMemory.Free(pMemory);
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(pMemory);
 }
 
 bool AMemoryStream::OpenRead(AStringView FileName, const void* pMemoryBuffer, size_t SizeInBytes)
@@ -380,7 +379,7 @@ bool AMemoryStream::OpenRead(AStringView FileName, AArchive const& Archive)
 {
     Close();
 
-    if (!Archive.ExtractFileToHeapMemory(FileName, (void**)&pHeapPtr, &HeapSize))
+    if (!Archive.ExtractFileToHeapMemory(FileName, (void**)&pHeapPtr, &HeapSize, Platform::GetHeapAllocator<HEAP_MISC>()))
     {
         LOG("Couldn't open {}\n", FileName);
         return false;
@@ -400,7 +399,7 @@ bool AMemoryStream::OpenRead(int FileIndex, AArchive const& Archive)
 
     Archive.GetFileName(FileIndex, Name);
 
-    if (!Archive.ExtractFileToHeapMemory(FileIndex, (void**)&pHeapPtr, &HeapSize))
+    if (!Archive.ExtractFileToHeapMemory(FileIndex, (void**)&pHeapPtr, &HeapSize, Platform::GetHeapAllocator<HEAP_MISC>()))
     {
         LOG("Couldn't open {}\n", Name);
         Name.Clear();
@@ -677,7 +676,7 @@ bool AArchive::Open(AStringView ArchiveName, bool bResourcePack)
         return false;
     }
 
-    Handle = GZoneMemory.Alloc(sizeof(mz_zip_archive));
+    Handle = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(mz_zip_archive));
     Platform::Memcpy(Handle, &arch, sizeof(arch));
 
     // Keep pointer valid
@@ -701,7 +700,7 @@ bool AArchive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
         return false;
     }
 
-    Handle = GZoneMemory.Alloc(sizeof(mz_zip_archive));
+    Handle = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(mz_zip_archive));
     Platform::Memcpy(Handle, &arch, sizeof(arch));
 
     // Keep pointer valid
@@ -719,7 +718,7 @@ void AArchive::Close()
 
     mz_zip_reader_end((mz_zip_archive*)Handle);
 
-    GZoneMemory.Free(Handle);
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(Handle);
     Handle = nullptr;
 }
 
@@ -788,7 +787,7 @@ bool AArchive::ExtractFileToMemory(int FileIndex, void* pMemoryBuffer, size_t Si
     return !!mz_zip_reader_extract_to_mem((mz_zip_archive*)Handle, FileIndex, pMemoryBuffer, SizeInBytes, 0);
 }
 
-bool AArchive::ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes) const
+bool AArchive::ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const
 {
     size_t uncompSize;
 
@@ -806,11 +805,11 @@ bool AArchive::ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryP
         return false;
     }
 
-    void* pBuf = GHeapMemory.Alloc(uncompSize);
+    void* pBuf = Heap.Alloc(uncompSize);
 
     if (!ExtractFileToMemory(fileIndex, pBuf, uncompSize))
     {
-        GHeapMemory.Free(pBuf);
+        Heap.Free(pBuf);
         return false;
     }
 
@@ -820,7 +819,7 @@ bool AArchive::ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryP
     return true;
 }
 
-bool AArchive::ExtractFileToHeapMemory(int FileIndex, void** pHeapMemoryPtr, size_t* pSizeInBytes) const
+bool AArchive::ExtractFileToHeapMemory(int FileIndex, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const
 {
     size_t uncompSize;
 
@@ -837,11 +836,11 @@ bool AArchive::ExtractFileToHeapMemory(int FileIndex, void** pHeapMemoryPtr, siz
         return false;
     }
 
-    void* pBuf = GHeapMemory.Alloc(uncompSize);
+    void* pBuf = Heap.Alloc(uncompSize);
 
     if (!ExtractFileToMemory(FileIndex, pBuf, uncompSize))
     {
-        GHeapMemory.Free(pBuf);
+        Heap.Free(pBuf);
         return false;
     }
 
@@ -851,45 +850,10 @@ bool AArchive::ExtractFileToHeapMemory(int FileIndex, void** pHeapMemoryPtr, siz
     return true;
 }
 
-bool AArchive::ExtractFileToHunkMemory(AStringView FileName, void** pHunkMemoryPtr, size_t* pSizeInBytes, int* pHunkMark) const
-{
-    size_t uncompSize;
-
-    *pHunkMark = GHunkMemory.SetHunkMark();
-
-    *pHunkMemoryPtr = nullptr;
-    *pSizeInBytes   = 0;
-
-    int fileIndex = LocateFile(FileName);
-    if (fileIndex < 0)
-    {
-        return false;
-    }
-
-    if (!GetFileSize(fileIndex, NULL, &uncompSize))
-    {
-        return false;
-    }
-
-    void* pBuf = GHunkMemory.Alloc(uncompSize);
-
-    if (!ExtractFileToMemory(fileIndex, pBuf, uncompSize))
-    {
-        GHunkMemory.ClearToMark(*pHunkMark);
-        return false;
-    }
-
-    *pHunkMemoryPtr = pBuf;
-    *pSizeInBytes   = uncompSize;
-
-    return true;
-}
-
-
 namespace Core
 {
 
-void MakeDir(AStringView Directory, bool bFileName)
+void CreateDirectory(AStringView Directory, bool bFileName)
 {
     size_t len = Directory.Length();
     if (!len)
@@ -897,7 +861,7 @@ void MakeDir(AStringView Directory, bool bFileName)
         return;
     }
     const char* dir = Directory.ToPtr();
-    char* tmpStr = (char*)GZoneMemory.Alloc(len + 1);
+    char*       tmpStr = (char*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(len + 1);
     Platform::Memcpy(tmpStr, dir, len + 1);
     char* p = tmpStr;
 #ifdef HK_OS_WIN32
@@ -928,20 +892,17 @@ void MakeDir(AStringView Directory, bool bFileName)
         mkdir(tmpStr, S_IRWXU | S_IRWXG | S_IRWXO);
 #endif
     }
-    GZoneMemory.Free(tmpStr);
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(tmpStr);
 }
 
 bool IsFileExists(AStringView FileName)
 {
-    AString s = FileName;
-    s.FixSeparator();
-    return access(s.CStr(), 0) == 0;
+    return access(PathUtils::FixSeparator(FileName).CStr(), 0) == 0;
 }
 
 void RemoveFile(AStringView FileName)
 {
-    AString s = FileName;
-    s.FixPath();
+    AString s = PathUtils::FixPath(FileName);
 #if defined HK_OS_LINUX
     ::remove(s.CStr());
 #elif defined HK_OS_WIN32
@@ -999,7 +960,7 @@ void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Cal
             }
             else
             {
-                Callback(Path + "/" + entry->d_name, false);
+                Callback(Path / entry->d_name, false);
             }
         }
         closedir(dir);
@@ -1040,7 +1001,7 @@ void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Cal
             }
             else
             {
-                Callback(Path + "/" + fd.cFileName, false);
+                Callback(Path / fd.cFileName, false);
             }
         } while (FindNextFileA(fh, &fd));
 
@@ -1051,11 +1012,8 @@ void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Cal
 
 bool WriteResourcePack(AStringView SourcePath, AStringView ResultFile)
 {
-    AString path = SourcePath;
-    AString result = ResultFile;
-
-    path.FixSeparator();
-    result.FixSeparator();
+    AString path = PathUtils::FixSeparator(SourcePath);
+    AString result = PathUtils::FixSeparator(ResultFile);
 
     LOG("==== WriteResourcePack ====\n"
         "Source '{}'\n"
@@ -1086,7 +1044,7 @@ bool WriteResourcePack(AStringView SourcePath, AStringView ResultFile)
                                   return;
                               }
 
-                              if (FileName.CompareExt(".resources", true))
+                              if (PathUtils::CompareExt(FileName, ".resources", true))
                               {
                                   return;
                               }

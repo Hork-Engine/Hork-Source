@@ -37,17 +37,17 @@ SOFTWARE.
 
 static const unsigned short RESET_INDEX = 0xffff;
 
-AConsoleVar com_TerrainMinLod(_CTS("com_TerrainMinLod"), _CTS("0"));
-AConsoleVar com_TerrainMaxLod(_CTS("com_TerrainMaxLod"), _CTS("5"));
-AConsoleVar com_ShowTerrainMemoryUsage(_CTS("com_ShowTerrainMemoryUsage"), _CTS("0"));
+AConsoleVar com_TerrainMinLod("com_TerrainMinLod"s, "0"s);
+AConsoleVar com_TerrainMaxLod("com_TerrainMaxLod"s, "5"s);
+AConsoleVar com_ShowTerrainMemoryUsage("com_ShowTerrainMemoryUsage"s, "0"s);
 
 ATerrainView::ATerrainView(int InTextureSize) :
     TextureSize(InTextureSize), TextureWrapMask(InTextureSize - 1), GapWidth(2), BlockWidth(TextureSize / 4 - 1), LodGridSize(TextureSize - 2), HalfGridSize(LodGridSize >> 1), ViewHeight(0.0f)
 {
     for (int i = 0; i < MAX_TERRAIN_LODS; i++)
     {
-        LodInfo[i].HeightMap = (Float2*)GHeapMemory.Alloc(TextureSize * TextureSize * sizeof(Float2));
-        LodInfo[i].NormalMap = (byte*)GHeapMemory.Alloc(TextureSize * TextureSize * 4);
+        LodInfo[i].HeightMap = (Float2*)Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(TextureSize * TextureSize * sizeof(Float2));
+        LodInfo[i].NormalMap = (byte*)Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(TextureSize * TextureSize * 4);
         LodInfo[i].LodIndex  = i;
 
         LodInfo[i].TextureOffset.X = 0;
@@ -84,8 +84,8 @@ ATerrainView::~ATerrainView()
 {
     for (int i = 0; i < MAX_TERRAIN_LODS; i++)
     {
-        GHeapMemory.Free(LodInfo[i].HeightMap);
-        GHeapMemory.Free(LodInfo[i].NormalMap);
+        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(LodInfo[i].HeightMap);
+        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(LodInfo[i].NormalMap);
     }
 }
 

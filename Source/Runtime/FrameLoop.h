@@ -97,7 +97,7 @@ struct SJoystickButtonEvent
 
 struct SCharEvent
 {
-    SWideChar UnicodeCharacter;
+    WideChar UnicodeCharacter;
     int       ModMask;
 };
 

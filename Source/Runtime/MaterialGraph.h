@@ -138,8 +138,8 @@ protected:
 private:
     //AGUID GUID;
     uint32_t                 ID;
-    TPodVector<MGInput*, 4>  Inputs;
-    TPodVector<MGOutput*, 1> Outputs;
+    TPodVector<MGInput*>  Inputs;
+    TPodVector<MGOutput*> Outputs;
     int                      Serial;
     bool                     bTouched;
     bool                     bSingleton;
@@ -959,7 +959,7 @@ public:
             }
         }
         MGNode* node = CreateInstanceOf<T>();
-        Nodes.Append(node);
+        Nodes.Add(node);
         node->AddRef();
         node->ID = ++NodeIdGen;
         return static_cast<T*>(node);

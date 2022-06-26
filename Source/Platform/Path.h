@@ -43,12 +43,12 @@ int CmpPathN(const char* _Path1, const char* _Path2, int _Num);
 void FixSeparator(char* _Path);
 
 /** Fix path string insitu: replace separator \\ to /, skip series of /,
-skip redunant sequinces of dir/../dir2 -> dir2.
+skip redunant sequences of dir/../dir2 -> dir2.
 Return length of optimized path. */
 int FixPath(char* _Path, int _Length);
 
 /** Fix path string insitu: replace separator \\ to /, skip series of /,
-skip redunant sequinces of dir/../dir2 -> dir2.
+skip redunant sequences of dir/../dir2 -> dir2.
 Return length of optimized path. */
 int FixPath(char* _Path);
 
@@ -62,6 +62,14 @@ int FindExt(const char* _Path);
 int FindExtWithoutDot(const char* _Path);
 
 /** Check char is a path separator */
-bool IsPathSeparator(char _Char);
+template <typename CharT>
+bool IsPathSeparator(CharT Ch)
+{
+#ifdef HK_OS_WIN32
+    return Ch == '/' || Ch == '\\';
+#else
+    return Ch == '/';
+#endif
+}
 
 } // namespace Platform

@@ -50,7 +50,7 @@ AAudioDevice::AAudioDevice( int InSampleRate )
     }
 
     if ( SDL_InitSubSystem( SDL_INIT_AUDIO ) < 0 ) {
-        CriticalError( "Failed to init audio system: %s\n", SDL_GetError() );
+        CriticalError( "Failed to init audio system: {}\n", SDL_GetError() );
     }
 
     int numdrivers = SDL_GetNumAudioDrivers();
@@ -116,12 +116,12 @@ AAudioDevice::AAudioDevice( int InSampleRate )
                 driver = "dummy";
                 SDL_setenv( "SDL_AUDIODRIVER", driver, SDL_TRUE );
                 if ( SDL_InitSubSystem( SDL_INIT_AUDIO ) < 0 ) {
-                    CriticalError( "Failed to init audio system: %s\n", SDL_GetError() );
+                    CriticalError( "Failed to init audio system: {}\n", SDL_GetError() );
                 }
                 continue;
             }
             // Should not happen
-            CriticalError( "Failed to open audio device: %s\n", SDL_GetError() );
+            CriticalError( "Failed to open audio device: {}\n", SDL_GetError() );
         }
 
         if ( obtained.format == desired.format ) {
@@ -142,7 +142,7 @@ AAudioDevice::AAudioDevice( int InSampleRate )
         AudioDeviceId = SDL_OpenAudioDevice( NULL, SDL_FALSE, &desired, &obtained, allowedChanges );
         if ( AudioDeviceId == 0 ) {
             // Should not happen
-            CriticalError( "Failed to open audio device: %s\n", SDL_GetError() );
+            CriticalError( "Failed to open audio device: {}\n", SDL_GetError() );
         }
     }
 
@@ -153,7 +153,7 @@ AAudioDevice::AAudioDevice( int InSampleRate )
     Samples = Math::ToGreaterPowerOfTwo( obtained.samples * obtained.channels * 10 );
     NumFrames = Samples >> ( Channels - 1 );
     TransferBufferSizeInBytes = Samples * (SampleBits / 8);
-    pTransferBuffer = (uint8_t *)GHeapMemory.Alloc( TransferBufferSizeInBytes );
+    pTransferBuffer           = (uint8_t*)Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(TransferBufferSizeInBytes);
     Platform::Memset( pTransferBuffer, SampleBits == 8 && !bSigned8 ? 0x80 : 0, TransferBufferSizeInBytes );
     TransferOffset = 0;
     PrevTransferOffset = 0;
@@ -175,7 +175,7 @@ AAudioDevice::~AAudioDevice()
 {
     SDL_CloseAudioDevice( AudioDeviceId );
 
-    GHeapMemory.Free( pTransferBuffer );
+    Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(pTransferBuffer);
 }
 
 void AAudioDevice::SetMixerCallback( std::function< void( uint8_t * pTransferBuffer, int TransferBufferSizeInFrames, int FrameNum, int MinFramesToRender ) > _MixerCallback )

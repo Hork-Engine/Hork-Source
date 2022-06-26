@@ -36,12 +36,10 @@ SOFTWARE.
 
 #include <Platform/Utf8.h>
 #include <Containers/Array.h>
-#include <Containers/StdHash.h>
+#include <Containers/Hash.h>
 #include <Core/ConsoleVar.h>
 
 constexpr int MAX_PRESSED_KEYS      = 128;
-constexpr int MAX_AXIS_BINDINGS     = 1024;
-constexpr int MAX_ACTION_BINDINGS   = 1024;
 constexpr int MAX_INPUT_CONTROLLERS = 16;
 
 enum INPUT_DEVICE
@@ -95,9 +93,9 @@ struct SInputDeviceKey
     uint16_t DeviceId;
     uint16_t KeyId;
 
-    int Hash() const
+    uint32_t Hash() const
     {
-        return Core::MurMur3Hash32(*(const int32_t*)&DeviceId);
+        return Core::Murmur3Hash32(*(const int32_t*)&DeviceId);
     }
 
     bool operator==(SInputDeviceKey const& Rhs) const
@@ -140,24 +138,24 @@ public:
 
     void UnmapAll();
 
-    TStdHashMap<SInputDeviceKey, TStdVector<SMapping>> const& GetMappings() const { return Mappings; }
+    THashMap<SInputDeviceKey, TVector<SMapping>> const& GetMappings() const { return Mappings; }
 
-    TStdHashMap<AString, TPodVector<SAxisMapping>> const& GetAxisMappings() const { return AxisMappings; }
+    TNameHash<TPodVector<SAxisMapping>> const& GetAxisMappings() const { return AxisMappings; }
 
 protected:
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(const char* Path) override;
+    void LoadInternalResource(AStringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/InputMappings/Default"; }
 
 private:
     void InitializeFromDocument(ADocument const& Document);
 
-    TStdHashMap<SInputDeviceKey, TStdVector<SMapping>> Mappings;
-    TStdHashMap<AString, TPodVector<SAxisMapping>>     AxisMappings;
+    THashMap<SInputDeviceKey, TVector<SMapping>> Mappings;
+    TNameHash<TPodVector<SAxisMapping>>          AxisMappings;
 };
 
 class AInputComponent : public AActorComponent
@@ -216,13 +214,13 @@ public:
 
     /** Set callback for input characters */
     template <typename T>
-    void SetCharacterCallback(T* Object, void (T::*Method)(SWideChar, int, double), bool bExecuteEvenWhenPaused = false)
+    void SetCharacterCallback(T* Object, void (T::*Method)(WideChar, int, double), bool bExecuteEvenWhenPaused = false)
     {
         SetCharacterCallback({Object, Method}, bExecuteEvenWhenPaused);
     }
 
     /** Set callback for input characters */
-    void SetCharacterCallback(TCallback<void(SWideChar, int, double)> const& Callback, bool bExecuteEvenWhenPaused = false);
+    void SetCharacterCallback(TCallback<void(WideChar, int, double)> const& Callback, bool bExecuteEvenWhenPaused = false);
 
     void UnsetCharacterCallback();
 
@@ -246,7 +244,7 @@ public:
 
     float GetMouseAxisState(int Axis);
 
-    void NotifyUnicodeCharacter(SWideChar UnicodeCharacter, int ModMask, double TimeStamp);
+    void NotifyUnicodeCharacter(WideChar UnicodeCharacter, int ModMask, double TimeStamp);
 
     AInputComponent* GetNext() { return Next; }
     AInputComponent* GetPrev() { return Prev; }
@@ -261,7 +259,7 @@ protected:
     struct SAxisBinding
     {
         /** Axis name */
-        AString Name;
+        //AString Name;
         /** Binding callback */
         TCallback<void(float)> Callback;
         /** Final axis value that will be passed to binding callback */
@@ -273,29 +271,44 @@ protected:
     struct SActionBinding
     {
         /** Action name */
-        AString Name;
+        //AString Name;
         /** Binding callback */
         TCallback<void()> Callback[2];
         /** Execute binding even when paused */
         bool bExecuteEvenWhenPaused;
     };
 
+    enum class EBindingType
+    {
+        Undefined,
+        Axis,
+        Action
+    };
+
     struct SPressedKey
     {
-        uint16_t Key;
-        int16_t  AxisBinding;
-        int16_t  ActionBinding;
-        float    AxisScale;
-        uint8_t  DeviceId;
+        uint16_t     Key;
+        AString      Binding;
+        EBindingType BindingType;
+        float        AxisScale;
+        uint8_t      DeviceId;
 
-        bool HasAxis() const
+        void BindAxis(AStringView Axis, float Scale)
         {
-            return AxisBinding != -1;
+            BindingType = EBindingType::Axis;
+            Binding     = Axis;
+            AxisScale   = Scale;
         }
 
-        bool HasAction() const
+        void BindAction(AStringView Action)
         {
-            return ActionBinding != -1;
+            BindingType = EBindingType::Axis;
+            Binding     = Action;
+        }
+
+        void Unbind()
+        {
+            BindingType = EBindingType::Undefined;
         }
     };
 
@@ -305,20 +318,12 @@ protected:
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
-    /** Return axis binding or -1 if axis is not binded */
-    int GetAxisBinding(AInputMappings::SMapping const& Mapping) const;
-
-    /** Return action binding or -1 if action is not binded */
-    int GetActionBinding(AInputMappings::SMapping const& Mapping) const;
-
     TRef<AInputMappings> InputMappings;
 
-    THash<>                  AxisBindingsHash;
-    TStdVector<SAxisBinding> AxisBindings;
-    int                      BindingVersion = 0;
+    int BindingVersion = 0;
 
-    THash<>                    ActionBindingsHash;
-    TStdVector<SActionBinding> ActionBindings;
+    TNameHash<SAxisBinding>   AxisBindingsHash;
+    TNameHash<SActionBinding> ActionBindingsHash;
 
     /** Array of pressed keys */
     TArray<SPressedKey, MAX_PRESSED_KEYS> PressedKeys    = {};
@@ -333,7 +338,7 @@ protected:
     TArray<Float2, 2> MouseAxisState;
     int               MouseIndex = 0;
 
-    TCallback<void(SWideChar, int, double)> CharacterCallback;
+    TCallback<void(WideChar, int, double)> CharacterCallback;
     bool                                    bCharacterCallbackExecuteEvenWhenPaused = false;
 
     // Global list of input components

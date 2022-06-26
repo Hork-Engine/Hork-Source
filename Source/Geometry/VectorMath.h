@@ -548,17 +548,6 @@ struct TVector2
         return (Math::Abs(Y) < T(0.00001)) ? AXIAL_TYPE_X : AXIAL_TYPE_NON_AXIAL;
     }
 
-    // String conversions
-    AString ToString(int precision = Math::FloatingPointPrecision<T>()) const
-    {
-        return AString("( ") + Math::ToString(X, precision) + " " + Math::ToString(Y, precision) + " )";
-    }
-
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
-    {
-        return AString("( ") + Math::ToHexString(X, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Y, bLeadingZeros, bPrefix) + " )";
-    }
-
     // Byte serialization
     void Write(IBinaryStreamWriteInterface& stream) const
     {
@@ -1175,17 +1164,6 @@ struct TVector3
         xvec = Math::Cross(yvec, *this);
     }
 
-    // String conversions
-    AString ToString(int precision = Math::FloatingPointPrecision<T>()) const
-    {
-        return AString("( ") + Math::ToString(X, precision) + " " + Math::ToString(Y, precision) + " " + Math::ToString(Z, precision) + " )";
-    }
-
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
-    {
-        return AString("( ") + Math::ToHexString(X, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Y, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Z, bLeadingZeros, bPrefix) + " )";
-    }
-
     // Byte serialization
     void Write(IBinaryStreamWriteInterface& stream) const
     {
@@ -1673,17 +1651,6 @@ struct TVector4
         }
 
         return AXIAL_TYPE_NON_AXIAL;
-    }
-
-    // String conversions
-    AString ToString(int precision = Math::FloatingPointPrecision<T>()) const
-    {
-        return AString("( ") + Math::ToString(X, precision) + " " + Math::ToString(Y, precision) + " " + Math::ToString(Z, precision) + " " + Math::ToString(W, precision) + " )";
-    }
-
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
-    {
-        return AString("( ") + Math::ToHexString(X, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Y, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Z, bLeadingZeros, bPrefix) + " " + Math::ToHexString(W, bLeadingZeros, bPrefix) + " )";
     }
 
     // Byte serialization
@@ -2319,17 +2286,6 @@ struct Float2x2
         return *this;
     }
 
-    // String conversions
-    AString ToString(int precision = Math::FloatingPointPrecision<float>()) const
-    {
-        return AString("( ") + Col0.ToString(precision) + " " + Col1.ToString(precision) + " )";
-    }
-
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
-    {
-        return AString("( ") + Col0.ToHexString(bLeadingZeros, bPrefix) + " " + Col1.ToHexString(bLeadingZeros, bPrefix) + " )";
-    }
-
     // Byte serialization
     void Write(IBinaryStreamWriteInterface& stream) const
     {
@@ -2676,17 +2632,6 @@ struct Float3x3
     HK_FORCEINLINE Float3x3 ViewInverseFast() const
     {
         return Transposed();
-    }
-
-    // String conversions
-    AString ToString(int precision = Math::FloatingPointPrecision<float>()) const
-    {
-        return AString("( ") + Col0.ToString(precision) + " " + Col1.ToString(precision) + " " + Col2.ToString(precision) + " )";
-    }
-
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
-    {
-        return AString("( ") + Col0.ToHexString(bLeadingZeros, bPrefix) + " " + Col1.ToHexString(bLeadingZeros, bPrefix) + " " + Col2.ToHexString(bLeadingZeros, bPrefix) + " )";
     }
 
     // Byte serialization
@@ -3292,17 +3237,6 @@ struct Float4x4
     {
         // TODO: ...
         return Inversed();
-    }
-
-    // String conversions
-    AString ToString(int precision = Math::FloatingPointPrecision<float>()) const
-    {
-        return AString("( ") + Col0.ToString(precision) + " " + Col1.ToString(precision) + " " + Col2.ToString(precision) + " " + Col3.ToString(precision) + " )";
-    }
-
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
-    {
-        return AString("( ") + Col0.ToHexString(bLeadingZeros, bPrefix) + " " + Col1.ToHexString(bLeadingZeros, bPrefix) + " " + Col2.ToHexString(bLeadingZeros, bPrefix) + " " + Col3.ToHexString(bLeadingZeros, bPrefix) + " )";
     }
 
     // Byte serialization
@@ -4017,17 +3951,6 @@ struct Float3x4
         return *this;
     }
 
-    // String conversions
-    AString ToString(int precision = Math::FloatingPointPrecision<float>()) const
-    {
-        return AString("( ") + Col0.ToString(precision) + " " + Col1.ToString(precision) + " " + Col2.ToString(precision) + " )";
-    }
-
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
-    {
-        return AString("( ") + Col0.ToHexString(bLeadingZeros, bPrefix) + " " + Col1.ToHexString(bLeadingZeros, bPrefix) + " " + Col2.ToHexString(bLeadingZeros, bPrefix) + " )";
-    }
-
     // Byte serialization
     void Write(IBinaryStreamWriteInterface& stream) const
     {
@@ -4237,3 +4160,14 @@ HK_INLINE bool UnprojectPoint(Float4x4 const& _ModelViewProjectionInversed,
 }
 
 } // namespace Math
+
+HK_FORMAT_DEF_(Float2, "( {} {} )", v.X, v.Y);
+HK_FORMAT_DEF_(Double2, "( {} {} )", v.X, v.Y);
+HK_FORMAT_DEF_(Float3, "( {} {} {} )", v.X, v.Y, v.Z);
+HK_FORMAT_DEF_(Double3, "( {} {} {} )", v.X, v.Y, v.Z);
+HK_FORMAT_DEF_(Float4, "( {} {} {} {} )", v.X, v.Y, v.Z, v.W);
+HK_FORMAT_DEF_(Double4, "( {} {} {} {} )", v.X, v.Y, v.Z, v.W);
+HK_FORMAT_DEF_(Float2x2, "( {} {} )", v.Col0, v.Col1);
+HK_FORMAT_DEF_(Float3x3, "( {} {} {} )", v.Col0, v.Col1, v.Col2);
+HK_FORMAT_DEF_(Float4x4, "( {} {} {} {} )", v.Col0, v.Col1, v.Col2, v.Col3);
+HK_FORMAT_DEF_(Float3x4, "( {} {} {} )", v.Col0, v.Col1, v.Col2);

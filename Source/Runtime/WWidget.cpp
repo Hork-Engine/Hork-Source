@@ -121,11 +121,11 @@ WWidget& WWidget::SetParent(WWidget* _Parent)
     UpdateDesktop_r(_Parent->Desktop);
 
     AddRef();
-    _Parent->Childs.Insert(0, this);
+    _Parent->Childs.InsertAt(0, this);
 
     BringOnTop(false);
 
-    Parent->LayoutSlots.Append(this);
+    Parent->LayoutSlots.Add(this);
     Parent->MarkVHLayoutDirty();
 
     if (Parent->bAutoWidth || Parent->bAutoHeight)
@@ -465,7 +465,7 @@ WWidget& WWidget::AddDecorate(WDecorate* _Decorate)
         {
             _Decorate->Owner->RemoveDecorate(_Decorate);
         }
-        Decorates.Append(_Decorate);
+        Decorates.Add(_Decorate);
         _Decorate->Owner = this;
         _Decorate->AddRef();
     }
@@ -474,9 +474,8 @@ WWidget& WWidget::AddDecorate(WDecorate* _Decorate)
 
 WWidget& WWidget::RemoveDecorate(WDecorate* _Decorate)
 {
-
-    int index = Decorates.IndexOf(_Decorate);
-    if (index != -1)
+    auto index = Decorates.IndexOf(_Decorate);
+    if (index != Core::NPOS)
     {
         Decorates.Remove(index);
         _Decorate->Owner = nullptr;
@@ -874,7 +873,7 @@ WWidget& WWidget::BringOnTop(bool _RecursiveForParents)
                 if (Parent->Childs.Last() != this)
                 {
                     Parent->Childs.Remove(Parent->Childs.IndexOf(this));
-                    Parent->Childs.Append(this);
+                    Parent->Childs.Add(this);
                 }
             }
             else
@@ -887,9 +886,9 @@ WWidget& WWidget::BringOnTop(bool _RecursiveForParents)
                 // bring before popup widgets
                 if (i >= 0 && Parent->Childs[i] != this)
                 {
-                    int index = Parent->Childs.IndexOf(this);
+                    auto index = Parent->Childs.IndexOf(this);
                     Parent->Childs.Remove(index);
-                    Parent->Childs.Insert(i, this);
+                    Parent->Childs.InsertAt(i, this);
                 }
             }
         }
@@ -903,9 +902,9 @@ WWidget& WWidget::BringOnTop(bool _RecursiveForParents)
             // bring before foreground widgets
             if (i >= 0 && Parent->Childs[i] != this)
             {
-                int index = Parent->Childs.IndexOf(this);
+                auto index = Parent->Childs.IndexOf(this);
                 Parent->Childs.Remove(index);
-                Parent->Childs.Insert(i, this);
+                Parent->Childs.InsertAt(i, this);
             }
         }
     }
@@ -1268,8 +1267,8 @@ void WWidget::GetCellRect(int _ColumnIndex, int _RowIndex, Float2& _Mins, Float2
 {
     const_cast<WWidget*>(this)->UpdateLayoutIfDirty();
 
-    int numColumns = Math::Min(ColumnsCount, Columns.Size());
-    int numRows    = Math::Min(RowsCount, Rows.Size());
+    int numColumns = Math::Min(ColumnsCount, (int)Columns.Size());
+    int numRows    = Math::Min(RowsCount, (int)Rows.Size());
 
     if (_ColumnIndex < 0 || _RowIndex < 0 || numColumns == 0 || numRows == 0)
     {
@@ -1465,8 +1464,8 @@ void WWidget::UpdateLayout()
 
     if (Layout == WIDGET_LAYOUT_GRID)
     {
-        int numColumns = Math::Min(ColumnsCount, Columns.Size());
-        int numRows    = Math::Min(RowsCount, Rows.Size());
+        int numColumns = Math::Min(ColumnsCount, (int)Columns.Size());
+        int numRows    = Math::Min(RowsCount, (int)Rows.Size());
 
         if (bAutoWidth)
         {
@@ -1684,7 +1683,7 @@ float WWidget::CalcContentWidth()
     // If the WIDGET_LAYOUT_GRID layout is set, then the window size is set equal to the grid size.
     else if (Layout == WIDGET_LAYOUT_GRID)
     {
-        int numColumns = Math::Min(ColumnsCount, Columns.Size());
+        int numColumns = Math::Min(ColumnsCount, (int)Columns.Size());
 
         if (numColumns == 0)
         {
@@ -1752,7 +1751,7 @@ float WWidget::CalcContentHeight()
     // If the WIDGET_LAYOUT_GRID layout is set, then the window size is set equal to the grid size.
     else if (Layout == WIDGET_LAYOUT_GRID)
     {
-        int numRows = Math::Min(RowsCount, Rows.Size());
+        int numRows = Math::Min(RowsCount, (int)Rows.Size());
 
         if (numRows == 0)
         {

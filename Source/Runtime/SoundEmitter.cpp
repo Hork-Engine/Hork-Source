@@ -89,8 +89,8 @@ void ASoundEmitter::OnCreateAvatar()
     Super::OnCreateAvatar();
 
     // TODO: Create mesh or sprite for avatar
-    static TStaticResourceFinder<AIndexedMesh>      Mesh(_CTS("/Default/Meshes/Sphere"));
-    static TStaticResourceFinder<AMaterialInstance> MaterialInstance(_CTS("AvatarMaterialInstance"));
+    static TStaticResourceFinder<AIndexedMesh>      Mesh("/Default/Meshes/Sphere"s);
+    static TStaticResourceFinder<AMaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
     AMeshComponent*                                 meshComponent = GetOwnerActor()->CreateComponent<AMeshComponent>("SoundEmitterAvatar");
     meshComponent->SetMotionBehavior(MB_KINEMATIC);
     meshComponent->SetCollisionGroup(CM_NOCOLLISION);

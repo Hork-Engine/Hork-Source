@@ -43,14 +43,14 @@ void ACommandProcessor::ClearBuffer()
     ArgsCount = 0;
 }
 
-void ACommandProcessor::Add(const char* _Text)
+void ACommandProcessor::Add(AStringView _Text)
 {
     Cmdbuf += _Text;
 }
 
-void ACommandProcessor::Insert(const char* _Text)
+void ACommandProcessor::Insert(AStringView _Text)
 {
-    Cmdbuf.Insert(_Text, CmdbufPos);
+    Cmdbuf.InsertAt(CmdbufPos, _Text);
 }
 
 void ACommandProcessor::Execute(ICommandContext& _Ctx)

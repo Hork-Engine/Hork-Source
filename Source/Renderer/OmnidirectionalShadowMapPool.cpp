@@ -3,8 +3,8 @@
 
 using namespace RenderCore;
 
-AConsoleVar r_OminShadowmapBits(_CTS("r_OminShadowmapBits"), _CTS("16")); // Allowed 16, 24 or 32 bits
-AConsoleVar r_OminShadowmapResolution(_CTS("r_OminShadowmapResolution"), _CTS("1024"));
+AConsoleVar r_OminShadowmapBits("r_OminShadowmapBits"s, "16"s); // Allowed 16, 24 or 32 bits
+AConsoleVar r_OminShadowmapResolution("r_OminShadowmapResolution"s, "1024"s);
 
 AOmnidirectionalShadowMapPool::AOmnidirectionalShadowMapPool()
 {

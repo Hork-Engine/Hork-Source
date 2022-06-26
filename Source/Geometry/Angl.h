@@ -257,17 +257,6 @@ struct Angl
         return angle * (360.0f / 65536.0f);
     }
 
-    // String conversions
-    AString ToString(int precision = -1) const
-    {
-        return AString("( ") + Math::ToString(Pitch, precision) + " " + Math::ToString(Yaw, precision) + " " + Math::ToString(Roll, precision) + " )";
-    }
-
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
-    {
-        return AString("( ") + Math::ToHexString(Pitch, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Yaw, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Roll, bLeadingZeros, bPrefix) + " )";
-    }
-
     // Byte serialization
     void Write(IBinaryStreamWriteInterface& stream) const
     {
@@ -297,3 +286,5 @@ HK_FORCEINLINE Angl operator*(float lhs, Angl const& rhs)
 {
     return Angl(lhs * rhs.Pitch, lhs * rhs.Yaw, lhs * rhs.Roll);
 }
+
+HK_FORMAT_DEF_(Angl, "( {} {} {} )", v.Pitch, v.Yaw, v.Roll);

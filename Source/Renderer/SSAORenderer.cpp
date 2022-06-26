@@ -33,11 +33,11 @@ SOFTWARE.
 
 #include <Core/Random.h>
 
-AConsoleVar r_HBAODeinterleaved(_CTS("r_HBAODeinterleaved"), _CTS("1"));
-AConsoleVar r_HBAOBlur(_CTS("r_HBAOBlur"), _CTS("1"));
-AConsoleVar r_HBAORadius(_CTS("r_HBAORadius"), _CTS("2"));
-AConsoleVar r_HBAOBias(_CTS("r_HBAOBias"), _CTS("0.1"));
-AConsoleVar r_HBAOPowExponent(_CTS("r_HBAOPowExponent"), _CTS("1.5"));
+AConsoleVar r_HBAODeinterleaved("r_HBAODeinterleaved"s, "1"s);
+AConsoleVar r_HBAOBlur("r_HBAOBlur"s, "1"s);
+AConsoleVar r_HBAORadius("r_HBAORadius"s, "2"s);
+AConsoleVar r_HBAOBias("r_HBAOBias"s, "0.1"s);
+AConsoleVar r_HBAOPowExponent("r_HBAOPowExponent"s, "1.5"s);
 
 using namespace RenderCore;
 

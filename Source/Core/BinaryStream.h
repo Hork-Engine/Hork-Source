@@ -90,231 +90,71 @@ public:
     int8_t ReadInt8()
     {
         int8_t i;
-        Read(&i, sizeof(i));
+        ReadWords(&i);
         return i;
-    }
-
-    template <typename T>
-    void ReadArrayInt8(T& Array)
-    {
-        uint32_t size = ReadUInt32();
-        Array.ResizeInvalidate(size);
-        ReadInt8ToBuffer(Array.ToPtr(), Array.Size());
-    }
-
-    void ReadInt8ToBuffer(int8_t* pBuffer, int Count)
-    {
-        Read(pBuffer, Count);
     }
 
     uint8_t ReadUInt8()
     {
         uint8_t i;
-        Read(&i, sizeof(i));
+        ReadWords(&i);
         return i;
-    }
-
-    template <typename T>
-    void ReadArrayUInt8(T& Array)
-    {
-        uint32_t size = ReadUInt32();
-        Array.ResizeInvalidate(size);
-        ReadUInt8ToBuffer(Array.ToPtr(), Array.Size());
-    }
-
-    void ReadUInt8ToBuffer(uint8_t* pBuffer, int Count)
-    {
-        Read(pBuffer, Count);
     }
 
     int16_t ReadInt16()
     {
         int16_t i;
-        Read(&i, sizeof(i));
-        return Core::LittleWord(i);
-    }
-
-    template <typename T>
-    void ReadArrayInt16(T& Array)
-    {
-        uint32_t size = ReadUInt32();
-        Array.ResizeInvalidate(size);
-        ReadInt16ToBuffer(Array.ToPtr(), Array.Size());
-    }
-
-    void ReadInt16ToBuffer(int16_t* pBuffer, int Count)
-    {
-        Read(pBuffer, Count * sizeof(pBuffer[0]));
-        for (int i = 0; i < Count; i++)
-        {
-            pBuffer[i] = Core::LittleWord(pBuffer[i]);
-        }
+        ReadWords(&i);
+        return i;
     }
 
     uint16_t ReadUInt16()
     {
         uint16_t i;
-        Read(&i, sizeof(i));
-        return Core::LittleWord(i);
-    }
-
-    template <typename T>
-    void ReadArrayUInt16(T& Array)
-    {
-        uint32_t size = ReadUInt32();
-        Array.ResizeInvalidate(size);
-        ReadUInt16ToBuffer(Array.ToPtr(), Array.Size());
-    }
-
-    void ReadUInt16ToBuffer(uint16_t* pBuffer, int Count)
-    {
-        Read(pBuffer, Count * sizeof(pBuffer[0]));
-        for (int i = 0; i < Count; i++)
-        {
-            pBuffer[i] = Core::LittleWord(pBuffer[i]);
-        }
+        ReadWords(&i);
+        return i;
     }
 
     int32_t ReadInt32()
     {
         int32_t i;
-        Read(&i, sizeof(i));
-        return Core::LittleDWord(i);
-    }
-
-    template <typename T>
-    void ReadArrayInt32(T& Array)
-    {
-        uint32_t size = ReadUInt32();
-        Array.ResizeInvalidate(size);
-        ReadInt32ToBuffer(Array.ToPtr(), Array.Size());
-    }
-
-    void ReadInt32ToBuffer(int32_t* pBuffer, int Count)
-    {
-        Read(pBuffer, Count * sizeof(pBuffer[0]));
-        for (int i = 0; i < Count; i++)
-        {
-            pBuffer[i] = Core::LittleDWord(pBuffer[i]);
-        }
+        ReadWords(&i);
+        return i;
     }
 
     uint32_t ReadUInt32()
     {
         uint32_t i;
-        Read(&i, sizeof(i));
-        return Core::LittleDWord(i);
-    }
-
-    template <typename T>
-    void ReadArrayUInt32(T& Array)
-    {
-        uint32_t size = ReadUInt32();
-        Array.ResizeInvalidate(size);
-        ReadUInt32ToBuffer(Array.ToPtr(), Array.Size());
-    }
-
-    void ReadUInt32ToBuffer(uint32_t* pBuffer, int Count)
-    {
-        Read(pBuffer, Count * sizeof(pBuffer[0]));
-        for (int i = 0; i < Count; i++)
-        {
-            pBuffer[i] = Core::LittleDWord(pBuffer[i]);
-        }
+        ReadWords(&i);
+        return i;
     }
 
     int64_t ReadInt64()
     {
         int64_t i;
-        Read(&i, sizeof(i));
-        return Core::LittleDDWord(i);
-    }
-
-    template <typename T>
-    void ReadArrayInt64(T& Array)
-    {
-        uint32_t size = ReadUInt32();
-        Array.ResizeInvalidate(size);
-        ReadInt64ToBuffer(Array.ToPtr(), Array.Size());
-    }
-
-    void ReadInt64ToBuffer(int64_t* pBuffer, int Count)
-    {
-        Read(pBuffer, Count * sizeof(pBuffer[0]));
-        for (int i = 0; i < Count; i++)
-        {
-            pBuffer[i] = Core::LittleDDWord(pBuffer[i]);
-        }
+        ReadWords(&i);
+        return i;
     }
 
     uint64_t ReadUInt64()
     {
         uint64_t i;
-        Read(&i, sizeof(i));
-        return Core::LittleDDWord(i);
-    }
-
-    template <typename T>
-    void ReadArrayUInt64(T& Array)
-    {
-        uint32_t size = ReadUInt32();
-        Array.ResizeInvalidate(size);
-        ReadUInt64ToBuffer(Array.ToPtr(), Array.Size());
-    }
-
-    void ReadUInt64ToBuffer(uint64_t* pBuffer, int Count)
-    {
-        Read(pBuffer, Count * sizeof(pBuffer[0]));
-        for (int i = 0; i < Count; i++)
-        {
-            pBuffer[i] = Core::LittleDDWord(pBuffer[i]);
-        }
+        ReadWords(&i);
+        return i;
     }
 
     float ReadFloat()
     {
-        uint32_t i = ReadUInt32();
-        return *(float*)&i;
-    }
-
-    template <typename T>
-    void ReadArrayFloat(T& Array)
-    {
-        uint32_t size = ReadUInt32();
-        Array.ResizeInvalidate(size);
-        ReadFloatToBuffer(Array.ToPtr(), Array.Size());
-    }
-
-    void ReadFloatToBuffer(float* pBuffer, int Count)
-    {
-        Read(pBuffer, Count * sizeof(pBuffer[0]));
-        for (int i = 0; i < Count; i++)
-        {
-            pBuffer[i] = Core::LittleFloat(pBuffer[i]);
-        }
+        float f;
+        ReadFloats(&f);
+        return f;
     }
 
     double ReadDouble()
     {
-        uint64_t i = ReadUInt64();
-        return *(double*)&i;
-    }
-
-    template <typename T>
-    void ReadArrayDouble(T& Array)
-    {
-        uint32_t size = ReadUInt32();
-        Array.ResizeInvalidate(size);
-        ReadDoubleToBuffer(Array.ToPtr(), Array.Size());
-    }
-
-    void ReadDoubleToBuffer(double* pBuffer, int Count)
-    {
-        Read(pBuffer, Count * sizeof(pBuffer[0]));
-        for (int i = 0; i < Count; i++)
-        {
-            pBuffer[i] = Core::LittleDouble(pBuffer[i]);
-        }
+        double f;
+        ReadFloats(&f);
+        return f;
     }
 
     bool ReadBool()
@@ -322,18 +162,84 @@ public:
         return !!ReadUInt8();
     }
 
+    template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
+    void ReadWords(T* pBuffer, const size_t Count = 1)
+    {
+        static_assert(sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8, "Unsupported integer");
+
+        Read(pBuffer, Count * sizeof(T));
+
+        //#ifndef HK_LITTLE_ENDIAN
+        switch (sizeof(T))
+        {
+            case 1:
+                break;
+            case 2:
+                for (size_t i = 0; i < Count; i++)
+                    pBuffer[i] = Core::LittleWord(pBuffer[i]);
+                break;
+            case 4:
+                for (size_t i = 0; i < Count; i++)
+                    pBuffer[i] = Core::LittleDWord(pBuffer[i]);
+                break;
+            case 8:
+                for (size_t i = 0; i < Count; i++)
+                    pBuffer[i] = Core::LittleDDWord(pBuffer[i]);
+                break;
+        }
+        //#endif
+    }
+
+    template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+    void ReadFloats(T* pBuffer, const size_t Count = 1)
+    {
+        static_assert(sizeof(T) == 4 || sizeof(T) == 8, "Unsupported floating point");
+
+        Read(pBuffer, Count * sizeof(T));
+
+        //#ifndef HK_LITTLE_ENDIAN
+        switch (sizeof(T))
+        {
+            case 4:
+                for (size_t i = 0; i < Count; i++)
+                    pBuffer[i] = Core::LittleFloat(pBuffer[i]);
+                break;
+            case 8:
+                for (size_t i = 0; i < Count; i++)
+                    pBuffer[i] = Core::LittleDouble(pBuffer[i]);
+                break;
+        }
+        //#endif
+    }  
+
     template <typename T>
     void ReadObject(T& Object)
     {
         Object.Read(*this);
     }
 
-    template <typename T>
-    void ReadArrayOfStructs(T& Array)
+    template <typename T, std::enable_if_t<std::is_integral<typename T::ValueType>::value, bool> = true>
+    void ReadArray(T& Array)
     {
         uint32_t size = ReadUInt32();
         Array.ResizeInvalidate(size);
-        for (int i = 0; i < Array.Size(); i++)
+        ReadWords(Array.ToPtr(), Array.Size());
+    }
+
+    template <typename T, std::enable_if_t<std::is_floating_point<typename T::ValueType>::value, bool> = true>
+    void ReadArray(T& Array)
+    {
+        uint32_t size = ReadUInt32();
+        Array.ResizeInvalidate(size);
+        ReadFloats(Array.ToPtr(), Array.Size());
+    }
+
+    template <typename T, std::enable_if_t<!std::is_integral<typename T::ValueType>::value && !std::is_floating_point<typename T::ValueType>::value, bool> = true>
+    void ReadArray(T& Array)
+    {
+        uint32_t size = ReadUInt32();
+        Array.ResizeInvalidate(size);
+        for (T::SizeType i = 0; i < Array.Size(); i++)
         {
             ReadObject(Array[i]);
         }
@@ -359,23 +265,9 @@ public:
         Write(&i, sizeof(i));
     }
 
-    template <typename T>
-    void WriteArrayInt8(T const& Array)
-    {
-        WriteUInt32(Array.Size());
-        Write(Array.ToPtr(), Array.Size());
-    }
-
     void WriteUInt8(uint8_t i)
     {
         Write(&i, sizeof(i));
-    }
-
-    template <typename T>
-    void WriteArrayUInt8(T const& Array)
-    {
-        WriteUInt32(Array.Size());
-        Write(Array.ToPtr(), Array.Size());
     }
 
     void WriteInt16(int16_t i)
@@ -384,30 +276,10 @@ public:
         Write(&i, sizeof(i));
     }
 
-    template <typename T>
-    void WriteArrayInt16(T const& Array)
-    {
-        WriteUInt32(Array.Size());
-        for (int i = 0; i < Array.Size(); i++)
-        {
-            WriteInt16(Array[i]);
-        }
-    }
-
     void WriteUInt16(uint16_t i)
     {
         i = Core::LittleWord(i);
         Write(&i, sizeof(i));
-    }
-
-    template <typename T>
-    void WriteArrayUInt16(T const& Array)
-    {
-        WriteUInt32(Array.Size());
-        for (int i = 0; i < Array.Size(); i++)
-        {
-            WriteUInt16(Array[i]);
-        }
     }
 
     void WriteInt32(int32_t i)
@@ -416,30 +288,10 @@ public:
         Write(&i, sizeof(i));
     }
 
-    template <typename T>
-    void WriteArrayInt32(T const& Array)
-    {
-        WriteUInt32(Array.Size());
-        for (int i = 0; i < Array.Size(); i++)
-        {
-            WriteInt32(Array[i]);
-        }
-    }
-
     void WriteUInt32(uint32_t i)
     {
         i = Core::LittleDWord(i);
         Write(&i, sizeof(i));
-    }
-
-    template <typename T>
-    void WriteArrayUInt32(T const& Array)
-    {
-        WriteUInt32(Array.Size());
-        for (int i = 0; i < Array.Size(); i++)
-        {
-            WriteUInt32(Array[i]);
-        }
     }
 
     void WriteInt64(int64_t i)
@@ -448,60 +300,22 @@ public:
         Write(&i, sizeof(i));
     }
 
-    template <typename T>
-    void WriteArrayInt64(T const& Array)
-    {
-        WriteUInt32(Array.Size());
-        for (int i = 0; i < Array.Size(); i++)
-        {
-            WriteInt64(Array[i]);
-        }
-    }
-
     void WriteUInt64(uint64_t i)
     {
         i = Core::LittleDDWord(i);
         Write(&i, sizeof(i));
     }
 
-    template <typename T>
-    void WriteArrayUInt64(T const& Array)
-    {
-        WriteUInt32(Array.Size());
-        for (int i = 0; i < Array.Size(); i++)
-        {
-            WriteUInt64(Array[i]);
-        }
-    }
-
     void WriteFloat(float f)
     {
-        WriteUInt32(*(uint32_t*)&f);
-    }
-
-    template <typename T>
-    void WriteArrayFloat(T const& Array)
-    {
-        WriteUInt32(Array.Size());
-        for (int i = 0; i < Array.Size(); i++)
-        {
-            WriteFloat(Array[i]);
-        }
+        f = Core::LittleFloat(f);
+        Write(&f, sizeof(f));
     }
 
     void WriteDouble(double f)
     {
-        WriteUInt64(*(uint64_t*)&f);
-    }
-
-    template <typename T>
-    void WriteArrayDouble(T const& Array)
-    {
-        WriteUInt32(Array.Size());
-        for (int i = 0; i < Array.Size(); i++)
-        {
-            WriteDouble(Array[i]);
-        }
+        f = Core::LittleDouble(f);
+        Write(&f, sizeof(f));
     }
 
     void WriteBool(bool b)
@@ -515,11 +329,58 @@ public:
         Object.Write(*this);
     }
 
-    template <typename T>
-    void WriteArrayOfStructs(T const& Array)
+    template <typename T, std::enable_if_t<std::is_integral<typename T::ValueType>::value, bool> = true>
+    void WriteArray(T& Array)
+    {
+        static_assert(sizeof(T::ValueType) == 4 || sizeof(T::ValueType) == 8, "Unsupported integer");
+
+        WriteUInt32(Array.Size());
+
+        switch (sizeof(T::ValueType))
+        {
+            case 1:
+                Write(Array.ToPtr(), Array.Size());
+                break;
+            case 2:
+                for (T::SizeType i = 0; i < Array.Size(); i++)
+                    WriteUInt16(Array[i]);
+                break;
+            case 4:
+                for (T::SizeType i = 0; i < Array.Size(); i++)
+                    WriteUInt32(Array[i]);
+                break;
+            case 8:
+                for (T::SizeType i = 0; i < Array.Size(); i++)
+                    WriteUInt64(Array[i]);
+                break;
+        }
+    }
+
+    template <typename T, std::enable_if_t<std::is_floating_point<typename T::ValueType>::value, bool> = true>
+    void WriteArray(T& Array)
+    {
+        static_assert(sizeof(T::ValueType) == 4 || sizeof(T::ValueType) == 8, "Unsupported floating point");
+
+        WriteUInt32(Array.Size());
+
+        switch (sizeof(T::ValueType))
+        {
+            case 4:
+                for (T::SizeType i = 0; i < Array.Size(); i++)
+                    WriteFloat(Array[i]);
+                break;
+            case 8:
+                for (T::SizeType i = 0; i < Array.Size(); i++)
+                    WriteDouble(Array[i]);
+                break;
+        }
+    }
+
+    template<typename T, std::enable_if_t<!std::is_integral<typename T::ValueType>::value && !std::is_floating_point<typename T::ValueType>::value, bool> = true>
+    void WriteArray(T const& Array)
     {
         WriteUInt32(Array.Size());
-        for (int i = 0; i < Array.Size(); i++)
+        for (T::SizeType i = 0; i < Array.Size(); i++)
         {
             WriteObject(Array[i]);
         }

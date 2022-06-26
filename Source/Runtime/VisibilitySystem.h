@@ -539,7 +539,7 @@ struct SSurfaceDef
         // NOTE: 8 bits are still unused. We can use it in future.
         SortKey = 0
             //| ((uint64_t)(RenderingOrder & 0xffu) << 56u)
-            | ((uint64_t)(Core::MurMur3Hash32((uint64_t)Model) & 0xffffu) << 40u) | ((uint64_t)(Core::MurMur3Hash32(MaterialIndex) & 0xffffu) << 24u) | ((uint64_t)(Core::MurMur3Hash32(LightmapBlock) & 0xffffu) << 8u);
+            | ((uint64_t)(Core::Murmur3Hash32((uint64_t)Model) & 0xffffu) << 40u) | ((uint64_t)(Core::Murmur3Hash32(MaterialIndex) & 0xffffu) << 24u) | ((uint64_t)(Core::Murmur3Hash32(LightmapBlock) & 0xffffu) << 8u);
     }
 };
 
@@ -616,22 +616,22 @@ class ABrushModel : public ABaseObject
 
 public:
     /** Baked surface definitions */
-    TPodVectorHeap<SSurfaceDef> Surfaces;
+    TVector<SSurfaceDef> Surfaces;
 
     /** Baked surface vertex data */
-    TPodVectorHeap<SMeshVertex> Vertices;
+    TVector<SMeshVertex> Vertices;
 
     /** Baked surface vertex data */
-    TPodVectorHeap<SMeshVertexUV> LightmapVerts;
+    TVector<SMeshVertexUV> LightmapVerts;
 
     /** Baked surface vertex data */
-    TPodVectorHeap<SMeshVertexLight> VertexLight;
+    TVector<SMeshVertexLight> VertexLight;
 
     /** Baked surface triangle index data */
-    TPodVectorHeap<unsigned int> Indices;
+    TVector<unsigned int> Indices;
 
     /** Surface materials */
-    TStdVector<TRef<AMaterialInstance>> SurfaceMaterials;
+    TVector<TRef<AMaterialInstance>> SurfaceMaterials;
 
     /** Lighting data will be used from that level. */
     TWeakRef<ALevel> ParentLevel;

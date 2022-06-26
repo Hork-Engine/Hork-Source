@@ -40,10 +40,10 @@ SOFTWARE.
 #include <BulletCollision/CollisionShapes/btCylinderShape.h>
 #include <BulletCollision/BroadphaseCollision/btCollisionAlgorithm.h>
 
-AConsoleVar com_DrawCharacterControllerCapsule(_CTS("com_DrawCharacterControllerCapsule"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_RecoverFromPenetration(_CTS("com_RecoverFromPenetration"), _CTS("1"));
-AConsoleVar com_UseGhostObjectSweepTest(_CTS("com_UseGhostObjectSweepTest"), _CTS("1"));
-AConsoleVar com_CharacterCcdPenetration(_CTS("com_CharacterCcdPenetration"), _CTS("0"));
+AConsoleVar com_DrawCharacterControllerCapsule("com_DrawCharacterControllerCapsule"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_RecoverFromPenetration("com_RecoverFromPenetration"s, "1"s);
+AConsoleVar com_UseGhostObjectSweepTest("com_UseGhostObjectSweepTest"s, "1"s);
+AConsoleVar com_CharacterCcdPenetration("com_CharacterCcdPenetration"s, "0"s);
 
 ATTRIBUTE_ALIGNED16(class)
 ACharacterControllerActionInterface : public btActionInterface
@@ -300,12 +300,12 @@ public:
         AActor* actor0 = hitProxy0->GetOwnerActor();
         AActor* actor1 = hitProxy1->GetOwnerActor();
 
-        if (hitProxy0->GetCollisionIgnoreActors().Find(actor1) != hitProxy0->GetCollisionIgnoreActors().End())
+        if (hitProxy0->GetCollisionIgnoreActors().Contains(actor1))
         {
             return false;
         }
 
-        if (hitProxy1->GetCollisionIgnoreActors().Find(actor0) != hitProxy1->GetCollisionIgnoreActors().End())
+        if (hitProxy1->GetCollisionIgnoreActors().Contains(actor0))
         {
             return false;
         }
@@ -383,12 +383,12 @@ public:
         AActor* actor0 = hitProxy0->GetOwnerActor();
         AActor* actor1 = hitProxy1->GetOwnerActor();
 
-        if (hitProxy0->GetCollisionIgnoreActors().Find(actor1) != hitProxy0->GetCollisionIgnoreActors().End())
+        if (hitProxy0->GetCollisionIgnoreActors().Contains(actor1))
         {
             return false;
         }
 
-        if (hitProxy1->GetCollisionIgnoreActors().Find(actor0) != hitProxy1->GetCollisionIgnoreActors().End())
+        if (hitProxy1->GetCollisionIgnoreActors().Contains(actor0))
         {
             return false;
         }
@@ -713,7 +713,7 @@ void ACharacterControllerBase::SlideMove(Float3 const& StartPos, Float3 const& L
         // Add touched objects
         if (pContacts && trace.HitProxy)
         {
-            SCharacterControllerContact& contact = pContacts->Append();
+            SCharacterControllerContact& contact = pContacts->Add();
             contact.HitProxy                     = trace.HitProxy;
             contact.Position                     = trace.Position;
             contact.Normal                       = trace.Normal;
@@ -1001,12 +1001,12 @@ public:
         AActor* actor0 = hitProxy0->GetOwnerActor();
         AActor* actor1 = hitProxy1->GetOwnerActor();
 
-        if (hitProxy0->GetCollisionIgnoreActors().Find(actor1) != hitProxy0->GetCollisionIgnoreActors().End())
+        if (hitProxy0->GetCollisionIgnoreActors().Contains(actor1))
         {
             return false;
         }
 
-        if (hitProxy1->GetCollisionIgnoreActors().Find(actor0) != hitProxy1->GetCollisionIgnoreActors().End())
+        if (hitProxy1->GetCollisionIgnoreActors().Contains(actor0))
         {
             return false;
         }

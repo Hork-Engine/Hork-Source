@@ -31,9 +31,9 @@ SOFTWARE.
 #include "BloomRenderer.h"
 #include "RenderLocal.h"
 
-AConsoleVar r_BloomTextureFormat(_CTS("r_BloomTextureFormat"), _CTS("0"), 0, _CTS("0 - R11F_G11F_B10F, 1 - RGB16F, 2 - RGB8"));
-AConsoleVar r_BloomStart(_CTS("r_BloomStart"), _CTS("1"));
-AConsoleVar r_BloomThreshold(_CTS("r_BloomThreshold"), _CTS("1"));
+AConsoleVar r_BloomTextureFormat("r_BloomTextureFormat"s, "0"s, 0, "0 - R11F_G11F_B10F, 1 - RGB16F, 2 - RGB8"s);
+AConsoleVar r_BloomStart("r_BloomStart"s, "1"s);
+AConsoleVar r_BloomThreshold("r_BloomThreshold"s, "1"s);
 
 using namespace RenderCore;
 

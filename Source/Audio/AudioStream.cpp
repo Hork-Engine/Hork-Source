@@ -54,7 +54,7 @@ SAudioStream::SAudioStream( SFileInMemory * _pFileInMemory, int _FrameCount, int
         CriticalError( "SAudioStream::ctor: expected 8, 16 or 32 sample bits\n" );
     }
 
-    Decoder = (ma_decoder *)GHeapMemory.Alloc( sizeof( *Decoder ) );
+    Decoder = (ma_decoder*)Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(sizeof(*Decoder));
 
     ma_decoder_config config = ma_decoder_config_init( format, _Channels, _SampleRate );
 
@@ -75,7 +75,7 @@ SAudioStream::SAudioStream( SFileInMemory * _pFileInMemory, int _FrameCount, int
 SAudioStream::~SAudioStream()
 {
     ma_decoder_uninit( Decoder );
-    GHeapMemory.Free( Decoder );
+    Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(Decoder);
 }
 
 void SAudioStream::SeekToFrame( int FrameNum )

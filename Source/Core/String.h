@@ -33,959 +33,1335 @@ SOFTWARE.
 #include <Platform/Memory/Memory.h>
 #include <Platform/Path.h>
 #include <Platform/Format.h>
+#include <Platform/Utf8.h>
 
 #include "HashFunc.h"
 #include "BinaryStream.h"
 
-class AString;
+using StringSizeType = uint32_t;
 
-using AStdString = std::basic_string<char, std::char_traits<char>, TStdZoneAllocator<char>>;
+static constexpr StringSizeType NullTerminatedBit = StringSizeType(1) << (sizeof(StringSizeType) * 8 - 1);
+static constexpr StringSizeType StringSizeMask    = ~NullTerminatedBit;
+static constexpr StringSizeType MaxStringSize     = StringSizeMask - 1;
 
-class AStringView
+template <typename CharT, typename Allocator>
+class TString;
+
+template <typename CharT>
+struct TGlobalStringView;
+
+template <typename CharT>
+class TStringView;
+
+/** Converts the given character to lowercase */
+template <typename CharT>
+CharT ToLower(CharT Ch)
+{
+    return (Ch >= 'A' && Ch <= 'Z') ? Ch - 'A' + 'a' : Ch;
+}
+
+/** Converts the given character to uppercase */
+template <typename CharT>
+CharT ToUpper(CharT Ch)
+{
+    return (Ch >= 'a' && Ch <= 'z') ? Ch - 'a' + 'A' : Ch;
+}
+
+template <typename CharT>
+uint32_t StringHash(const CharT* pRawStringBegin, const CharT* pRawStringEnd)
+{
+    // SDBM hash
+    uint32_t     hash = 0;
+    const CharT* p    = pRawStringBegin;
+    const CharT* end  = pRawStringEnd;
+    while (p < end)
+        hash = (*p++) + (hash << 6) + (hash << 16) - hash;
+    return hash;
+}
+
+template <typename CharT>
+uint32_t StringHashCaseInsensitive(const CharT* pRawStringBegin, const CharT* pRawStringEnd)
+{
+    // SDBM hash
+    uint32_t     hash = 0;
+    const CharT* p    = pRawStringBegin;
+    const CharT* end  = pRawStringEnd;
+    while (p < end)
+        hash = ToLower(*p++) + (hash << 6) + (hash << 16) - hash;
+    return hash;
+}
+
+template <typename CharT>
+StringSizeType StringLength(const CharT* pRawString)
+{
+    const CharT* p = pRawString;
+    while (*p)
+        ++p;
+    size_t size = (size_t)(p - pRawString);
+    HK_ASSERT(size <= MaxStringSize);
+    return static_cast<StringSizeType>(size);
+}
+
+template <typename CharT, typename Allocator>
+StringSizeType StringLength(TString<CharT, Allocator> const& Str)
+{
+    return Str.Size();
+}
+
+template <typename CharT>
+StringSizeType StringLength(const CharT* pRawStringBegin, const CharT* pRawStringEnd)
+{
+    HK_ASSERT(pRawStringBegin <= pRawStringEnd && (size_t)(pRawStringEnd - pRawStringBegin) <= MaxStringSize);
+    return (StringSizeType)(pRawStringEnd - pRawStringBegin);
+}
+
+template <typename CharT>
+StringSizeType StringLength(TGlobalStringView<CharT> const& Str)
+{
+    return StringLength(Str.CStr());
+}
+
+template <typename CharT>
+StringSizeType StringLength(TStringView<CharT> const& Str)
+{
+    return Str.Size();
+}
+
+template <typename CharT>
+struct TGlobalStringView
+{
+    const CharT* CStr() const
+    {
+        return pRawString;
+    }
+
+    // NOTE: Internal. Do not modify.
+    const CharT* pRawString;
+};
+
+using AGlobalStringView = TGlobalStringView<char>;
+using AGlobalStringViewW = TGlobalStringView<WideChar>;
+
+HK_FORCEINLINE AGlobalStringView operator"" s(const char* s, size_t sz)
+{
+    AGlobalStringView v;
+    v.pRawString = s;
+    return v;
+}
+
+template <typename CharT>
+class TStringView
 {
 public:
-    HK_FORCEINLINE AStringView() :
-        Data(""), Size(0)
+    static_assert(sizeof(CharT) == 1 || sizeof(CharT) == 2, "Only 8 and 16 bit characters supported");
+
+    using SizeType = StringSizeType;
+
+    static constexpr bool IsWideString()
     {
+        return sizeof(CharT) == 2;
     }
 
-    HK_FORCEINLINE AStringView(const char* Rhs) :
-        Data(Rhs), Size(Platform::Strlen(Rhs))
+    HK_FORCEINLINE TStringView() :
+        m_pData(""), m_Size(0 | NullTerminatedBit)
+    {}
+
+    HK_FORCEINLINE TStringView(std::nullptr_t) :
+        m_pData(""), m_Size(0 | NullTerminatedBit)
+    {}
+
+    HK_FORCEINLINE TStringView(const CharT* pRawString) :
+        m_pData(pRawString ? pRawString : ""), m_Size((pRawString ? StringLength(pRawString) : 0) | NullTerminatedBit)
+    {}
+
+    HK_FORCEINLINE TStringView(const CharT* pRawStringBegin, const CharT* pRawStringEnd, bool bNullTerminated = false) :
+        m_pData(pRawStringBegin), m_Size(StringLength(pRawStringBegin, pRawStringEnd))
     {
+        HK_ASSERT(pRawStringBegin != nullptr);
+        HK_ASSERT(pRawStringEnd != nullptr);
+        if (bNullTerminated)
+            m_Size |= NullTerminatedBit;
     }
 
-    HK_FORCEINLINE AStringView(const char* RawStr, int RawStrLen) :
-        Data(RawStr), Size(RawStrLen)
+    HK_FORCEINLINE TStringView(const CharT* pRawString, SizeType Size, bool bNullTerminated = false) :
+        m_pData(pRawString), m_Size(Size)
     {
-        HK_ASSERT(RawStrLen >= 0);
+        HK_ASSERT(Size <= MaxStringSize);
+        if (bNullTerminated)
+            m_Size |= NullTerminatedBit;
     }
 
-    HK_FORCEINLINE AStringView(AString const& Str);
-    HK_FORCEINLINE AStringView(AStdString const& Str);
+    template <typename Allocator>
+    HK_FORCEINLINE TStringView(TString<CharT, Allocator> const& Str) :
+        m_pData(Str.ToPtr()), m_Size(Str.Size() | NullTerminatedBit)
+    {}
 
-    AStringView(AStringView const& Str) = default;
-    AStringView& operator=(AStringView const& Rhs) = default;
+    HK_FORCEINLINE TStringView(TGlobalStringView<CharT> Str) :
+        m_pData(Str.CStr()), m_Size(StringLength(Str.CStr()) | NullTerminatedBit)
+    {}
 
-    AStringView& operator=(AString const& Rhs);
-    AStringView& operator=(AStdString const& Rhs);
+    TStringView(TStringView const& Str) = default;
 
-    friend bool operator==(AStringView Lhs, AStringView Rhs);
-    friend bool operator!=(AStringView Lhs, AStringView Rhs);
+    TStringView& operator=(TStringView const& Rhs) = default;
 
-    HK_FORCEINLINE const char& operator[](const int Index) const
+    template <typename Allocator>
+    TStringView& operator=(TString<CharT, Allocator> const& Rhs);
+
+    HK_FORCEINLINE CharT const& operator[](SizeType Index) const
     {
-        HK_ASSERT_((Index >= 0) && (Index <= Size), "AStringView[]");
-        return Data[Index];
+        HK_ASSERT_(Index < Size(), "Undefined behavior accessing out of bounds");
+        return m_pData[Index];
     }
 
-    AString ToString() const;
-
-    /** Return is string empty or not */
+    /** Is string empty. */
     HK_FORCEINLINE bool IsEmpty() const
     {
-        return Size == 0;
+        return Size() == 0;
     }
 
-    /** Return string length */
-    HK_FORCEINLINE int Length() const
+    /** The number of characters in the string. */
+    HK_FORCEINLINE SizeType Length() const
     {
-        return Size;
+        return m_Size & StringSizeMask;
     }
 
-    /** Pointer to the beggining of the string */
-    HK_FORCEINLINE const char* Begin() const
+    /** The number of characters in the string. */
+    HK_FORCEINLINE SizeType Size() const
     {
-        return Data;
+        return m_Size & StringSizeMask;
     }
 
-    /** Pointer to the ending of the string */
-    HK_FORCEINLINE const char* End() const
+    HK_FORCEINLINE bool IsNullTerminated() const
     {
-        return Data + Size;
+        return !!(m_Size & NullTerminatedBit);
     }
 
-    /** Get raw pointer */
-    HK_FORCEINLINE const char* ToPtr() const
+    /** Gives a raw pointer to the beginning of the substring. */
+    HK_FORCEINLINE const CharT* Begin() const
     {
-        return Data;
+        return m_pData;
     }
 
-    /** Find the character. Return character position in string or -1. */
-    int Contains(char Char) const
+    /** Gives a raw pointer to the end of the substring. */
+    HK_FORCEINLINE const CharT* End() const
     {
-        const char* end = Data + Size;
-        for (const char* s = Data; s < end; s++)
-        {
+        return m_pData + Size();
+    }
+
+    /** Gives a raw pointer to the beginning of the substring. */
+    HK_FORCEINLINE const CharT* ToPtr() const
+    {
+        return m_pData;
+    }
+
+    /** Finds a character. Returns the position of a character in a string, or -1. */
+    HK_NODISCARD SizeType Contains(CharT Char) const
+    {
+        for (const CharT *s = m_pData, *end = m_pData + Size(); s < end; s++)
             if (*s == Char)
-            {
-                return s - Data;
-            }
-        }
-        return -1;
+                return (SizeType)(s - m_pData);
+        return (SizeType)-1;
     }
 
-    /** Find the substring. Return substring position in string or -1. */
-    int FindSubstring(AStringView _Substring) const
+    /** Finds a substring. Returns the position of the substring in the string, or -1. */
+    HK_NODISCARD SizeType FindSubstring(TStringView Substr) const
     {
-        if (_Substring.IsEmpty())
+        size_t size = Substr.Size();
+        if (!size)
+            return (SizeType)-1;
+
+        const CharT* s   = m_pData;
+        const CharT* end = m_pData + Size();
+        while (s < end && (SizeType)(end - s) >= size)
         {
-            return -1;
-        }
-        const char* s   = Data;
-        const char* end = Data + Size;
-        while (s < end)
-        {
-            if (AStringView(s, end - s).CmpN(_Substring, _Substring.Length()) == 0)
-            {
-                return (int)(s - Data);
-            }
+            if (TStringView(s, end).CmpN(Substr, size) == 0)
+                return (SizeType)(s - m_pData);
             ++s;
         }
-        return -1;
+        return (SizeType)-1;
     }
 
-    /** Find the substring. Return substring position in string or -1. */
-    int FindSubstringIcmp(AStringView _Substring) const
+    /** Finds a substring. Returns the position of the substring in the string, or -1. */
+    HK_NODISCARD SizeType FindSubstringIcmp(TStringView Substr) const
     {
-        if (_Substring.IsEmpty())
+        size_t size = Substr.Size();
+        if (!size)
+            return (SizeType)-1;
+
+        const CharT* s   = m_pData;
+        const CharT* end = m_pData + Size();
+        while (s < end && (SizeType)(end - s) >= size)
         {
-            return -1;
-        }
-        const char* s   = Data;
-        const char* end = Data + Size;
-        while (*s)
-        {
-            if (AStringView(s, end - s).IcmpN(_Substring, _Substring.Length()) == 0)
-            {
-                return (int)(s - Data);
-            }
+            if (TStringView(s, end).IcmpN(Substr, size) == 0)
+                return (SizeType)(s - m_pData);
             ++s;
         }
-        return -1;
+        return (SizeType)-1;
     }
 
-    /** Get substring. */
-    AStringView GetSubstring(size_t _Pos, size_t _Size) const
+    HK_NODISCARD HK_FORCEINLINE TStringView GetSubstring(SizeType _Pos, SizeType _Size) const
     {
-        if (_Pos > _Size || _Size == 0)
-        {
-            return AStringView();
-        }
-
-        if (_Pos + _Size > Size)
-        {
-            _Size = Size - _Pos;
-        }
-
-        return AStringView(Data + _Pos, _Size);
+        HK_ASSERT_(_Pos + _Size <= Size(), "Undefined behavior accessing out of bounds");
+        return TStringView(m_pData + _Pos, _Size, IsNullTerminated() && (_Pos + _Size == Size()));
     }
 
-    HK_FORCEINLINE uint32_t HexToUInt32() const
+    HK_NODISCARD HK_FORCEINLINE TStringView GetSubstring(SizeType _Pos) const
     {
-        return Platform::HexToUInt32(Data, std::min(Size, 8));
+        HK_ASSERT_(_Pos <= Size(), "Undefined behavior accessing out of bounds");
+        return TStringView(m_pData + _Pos, Size() - _Pos, IsNullTerminated() && _Pos == 0);
     }
 
-    HK_FORCEINLINE uint64_t HexToUInt64() const
+    /** Compares strings (case insensitive). */
+    HK_NODISCARD int Icmp(TStringView Rhs) const;
+
+    /** Compares strings (case sensitive). */
+    HK_NODISCARD int Cmp(TStringView Rhs) const;
+
+    /** Compares strings (case insensitive). */
+    HK_NODISCARD int IcmpN(TStringView Rhs, SizeType Num) const;
+
+    /** Compares strings (case sensitive). */
+    HK_NODISCARD int CmpN(TStringView Rhs, SizeType Num) const;
+
+    HK_NODISCARD TStringView TruncateHead(SizeType Count) const
     {
-        return Platform::HexToUInt64(Data, std::min(Size, 16));
+        SizeType size = Size();
+        if (Count > size)
+            Count = size;
+        return TStringView(m_pData + Count, size - Count, IsNullTerminated());
     }
 
-    /** Compare the strings (case insensitive) */
-    int Icmp(AStringView Rhs) const;
-
-    /** Compare the strings (case sensitive) */
-    int Cmp(AStringView Rhs) const;
-
-    /** Compare the strings (case insensitive) */
-    int IcmpN(AStringView Rhs, int Num) const;
-
-    /** Compare the strings (case sensitive) */
-    int CmpN(AStringView Rhs, int Num) const;
-
-    /** Path utility. Return index of the path end. */
-    int FindPath() const
+    HK_NODISCARD TStringView TruncateTail(SizeType Count) const
     {
-        const char* p = Data + Size;
-        while (--p >= Data)
-        {
-            if (Platform::IsPathSeparator(*p))
-            {
-                return p - Data + 1;
-            }
-        }
-        return 0;
+        SizeType size = Size();
+        if (Count > size)
+            Count = size;
+        return TStringView(m_pData, size - Count, IsNullTerminated() && Count == 0);
     }
 
-    /** Path utility. Get filename without path. */
-    HK_FORCEINLINE AStringView GetFilenameNoPath() const
+    /** Gives a string hash. */
+    HK_NODISCARD HK_FORCEINLINE uint32_t Hash() const
     {
-        const char* p = Data + Size;
-        while (--p >= Data && !Platform::IsPathSeparator(*p))
-        {
-            ;
-        }
-        ++p;
-        return AStringView(p, Data + Size - p);
+        return StringHash(Begin(), End());
     }
 
-    /** Path utility. Get full filename without extension. */
-    HK_FORCEINLINE AStringView GetFilenameNoExt() const
+    /** Gives a string hash (case insensitive). */
+    HK_NODISCARD HK_FORCEINLINE uint32_t HashCaseInsensitive() const
     {
-        int         sz = Size;
-        const char* p  = Data + Size;
-        while (--p >= Data)
-        {
-            if (*p == '.')
-            {
-                sz = p - Data;
-                break;
-            }
-            if (Platform::IsPathSeparator(*p))
-            {
-                break; // no extension
-            }
-        }
-        return AStringView(Data, sz);
-    }
-
-    /** Path utility. Get path without file name. */
-    HK_FORCEINLINE AStringView GetFilePath() const
-    {
-        const char* p = Data + Size;
-        while (--p > Data && !Platform::IsPathSeparator(*p))
-        {
-            ;
-        }
-        return AStringView(Data, p - Data);
-    }
-
-    /** Path utility. Check file extension. */
-    bool CompareExt(AStringView Ext, bool bCaseInsensitive = true) const
-    {
-        if (Ext.IsEmpty())
-        {
-            return false;
-        }
-        const char* p   = Data + Size;
-        const char* ext = Ext.Data + Ext.Size;
-        if (bCaseInsensitive)
-        {
-            char c1, c2;
-            while (--ext >= Ext.Data)
-            {
-
-                if (--p < Data)
-                {
-                    return false;
-                }
-
-                c1 = *p;
-                c2 = *ext;
-
-                if (c1 != c2)
-                {
-                    if (c1 >= 'a' && c1 <= 'z')
-                    {
-                        c1 -= ('a' - 'A');
-                    }
-                    if (c2 >= 'a' && c2 <= 'z')
-                    {
-                        c2 -= ('a' - 'A');
-                    }
-                    if (c1 != c2)
-                    {
-                        return false;
-                    }
-                }
-            }
-        }
-        else
-        {
-            while (--ext >= Ext.Data)
-            {
-                if (--p < Data || *p != *ext)
-                {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    /** Path utility. Return index where the extension begins. */
-    int FindExt() const
-    {
-        const char* p = Data + Size;
-        while (--p >= Data && !Platform::IsPathSeparator(*p))
-        {
-            if (*p == '.')
-            {
-                return p - Data;
-            }
-        }
-        return Size;
-    }
-
-    /** Path utility. Return index where the extension begins after dot. */
-    int FindExtWithoutDot() const
-    {
-        const char* p = Data + Size;
-        while (--p >= Data && !Platform::IsPathSeparator(*p))
-        {
-            if (*p == '.')
-            {
-                return p - Data + 1;
-            }
-        }
-        return Size;
-    }
-
-    /** Path utility. Get filename extension. */
-    AStringView GetExt() const
-    {
-        const char* p = Data + FindExt();
-        return AStringView(p, Data + Size - p);
-    }
-
-    /** Path utility. Get filename extension without dot. */
-    AStringView GetExtWithoutDot() const
-    {
-        const char* p = Data + FindExtWithoutDot();
-        return AStringView(p, Data + Size - p);
-    }
-
-    AStringView TruncateHead(int Count) const
-    {
-        if (Count > Size)
-        {
-            Count = Size;
-        }
-        return AStringView(Data + Count, Size - Count);
-    }
-
-    AStringView TruncateTail(int Count) const
-    {
-        if (Count > Size)
-        {
-            Count = Size;
-        }
-        return AStringView(Data, Size - Count);
-    }
-
-    /** Get string hash */
-    HK_FORCEINLINE int Hash() const
-    {
-        return Core::Hash(Data, Size);
-    }
-
-    /** Get string hash case insensitive */
-    HK_FORCEINLINE int HashCase() const
-    {
-        return Core::HashCase(Data, Size);
+        return StringHashCaseInsensitive(Begin(), End());
     }
 
     HK_FORCEINLINE void Write(IBinaryStreamWriteInterface& Stream) const
     {
-        Stream.WriteUInt32(Size);
-        Stream.Write(Data, Size);
+        SizeType size = Size();
+        Stream.WriteUInt32(size);
+
+#if HK_BIG_ENDIAN
+        if (IsWideString())
+        {
+            for (SizeType i = 0; i < size; i++)
+                Stream.WriteUInt16(m_pData[i]);
+        }
+        else
+#else
+        {
+            Stream.Write(m_pData, size * sizeof(CharT));
+        }
+#endif
     }
 
 private:
-    const char* Data;
-    int         Size;
+    const CharT* m_pData;
+    SizeType     m_Size;
 };
 
-
-/**
-
-AString
-
-*/
-class AString final
+template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+class TString final
 {
-    using Allocator = AZoneAllocator;
-
 public:
-    static const int GRANULARITY   = 32;
-    static const int BASE_CAPACITY = 32;
+    static_assert(sizeof(CharT) == 1 || sizeof(CharT) == 2, "Only 8 and 16 bit characters supported");
 
-    AString();
-    AString(AString const& Rhs);
-    AString(AString&& Rhs) noexcept;
-    AString(AStringView Rhs);
-    AString(const char* RawStr);
-    AString(const char* RawStrBegin, const char* RawStrEnd);
-    ~AString();
+    using SizeType = typename TStringView<CharT>::SizeType;
 
-    const char& operator[](const int Index) const;
-    char&       operator[](const int Index);
+    static constexpr bool IsWideString()
+    {
+        return sizeof(CharT) == 2;
+    }
 
-    AString& operator=(AString const& Rhs);
-    AString& operator=(AString&& Rhs) noexcept;
-    AString& operator=(AStringView Rhs);
-    AString& operator=(const char* RawStr);
+    static const SizeType Granularity  = 32;
+    static const SizeType BaseCapacity = 32;
 
-    friend AString operator+(AStringView Lhs, AStringView Rhs);
-    friend AString operator+(AStringView Lhs, char Char);
-    friend AString operator+(char Char, AStringView Rhs);
+    TString();
+    TString(TString const& Rhs);
+    TString(TString&& Rhs) noexcept;
+    TString(TStringView<CharT> Rhs);
+    TString(const CharT* pRawString);
+    TString(const CharT* pRawStringBegin, const CharT* pRawStringEnd);
+    ~TString();
 
-    AString& operator+=(AStringView Rhs);
-    AString& operator+=(char Char);
+    CharT const& operator[](SizeType Index) const;
+    CharT&       operator[](SizeType Index);
 
-    /** Clear string but not free a memory */
+    TString& operator=(TString const& Rhs);
+    TString& operator=(TString&& Rhs) noexcept;
+    TString& operator=(TStringView<CharT> Rhs);
+    TString& operator=(const CharT* pRawString);
+
+    TString& operator+=(TStringView<CharT> Rhs);
+    TString& operator+=(CharT Char);
+
+    TString& operator/=(TStringView<CharT> Rhs);
+    TString& operator/=(TString const& Rhs);
+    TString& operator/=(const CharT* Rhs);
+
+    /** Clears the string, but does not free the memory. */
     void Clear();
 
-    /** Clear string and free a memory */
+    /** Clears the string and frees memory. */
     void Free();
 
-    /** Set a new length for the string */
-    void Resize(int NewLength);
+    /** Sets the new length of the string.
+        If the new number of characters is less than the current one, the string will be truncated.
+        If the new character count is greater than the current one, it will fill the newly added characters with spaces. */
+    void Resize(SizeType Size);
 
-    /** Return is string empty or not */
-    bool IsEmpty() const;
+    /** Reserve memory for the specified number of characters. */
+    void Reserve(SizeType NumCharacters);
 
-    /** Return string length */
-    int Length() const;
-
-    /** Get const char pointer of the string */
-    const char* CStr() const;
-
-    /** Pointer to the beggining of the string */
-    const char* Begin() const;
-
-    /** Pointer to the ending of the string */
-    const char* End() const;
-
-    /** Get raw pointer */
-    char* ToPtr() const;
-
-    /** Append the string */
-    void Concat(AStringView Rhs);
-
-    /** Append the character */
-    void Concat(char Char);
-
-    /** Insert the string at specified index */
-    void Insert(AStringView Str, int Index);
-
-    /** Insert the character at specified index */
-    void Insert(char Char, int Index);
-
-    /** Replace the string at specified index */
-    void Replace(AStringView Str, int Index);
-
-    /** Replace all substrings with a new string */
-    void Replace(AStringView _Substring, AStringView _NewStr);
-
-    /** Cut substring at specified index */
-    void Cut(int Index, int Count);
-
-    AStringView TruncateHead(int Count) const
+    /** Is string empty. */
+    HK_FORCEINLINE bool IsEmpty() const
     {
-        if (Count > Size)
-        {
-            Count = Size;
-        }
-        return AStringView(Data + Count, Size - Count);
+        return m_Size == 0;
     }
 
-    AStringView TruncateTail(int Count) const
+    /** The number of characters in the string. */
+    HK_FORCEINLINE SizeType Length() const
     {
-        if (Count > Size)
-        {
-            Count = Size;
-        }
-        return AStringView(Data, Size - Count);
+        return m_Size;
     }
 
-    /** Find the character. Return character position in string or -1. */
-    HK_FORCEINLINE int Contains(char Char) const
+    /** The number of characters in the string. */
+    HK_FORCEINLINE SizeType Size() const
     {
-        return AStringView(Data, Size).Contains(Char);
+        return m_Size;
     }
 
-    /** Find the substring. Return substring position in string or -1. */
-    HK_FORCEINLINE int FindSubstring(AStringView _Substring) const
+    /** Gives a raw pointer to the beginning of the string. */
+    const CharT* CStr() const;
+
+    /** Gives a raw pointer to the beginning of the string. */
+    const CharT* Begin() const;
+
+    /** Gives a raw pointer to the end of the string. */
+    const CharT* End() const;
+
+    /** Gives a raw pointer to the beginning of the string. */
+    CharT* ToPtr() const;
+
+    /** Adds a string to the end of a string. */
+    void Concat(TStringView<CharT> Rhs);
+
+    /** Adds a character to the end of a string. */
+    void Concat(CharT Char);
+
+    /** Inserts a string at the specified index. */
+    void InsertAt(SizeType Index, TStringView<CharT> Str);
+
+    /** Inserts a character at the specified index. */
+    void InsertAt(SizeType Index, CharT Char);
+
+    /** Replaces the string at the specified index. */
+    void ReplaceAt(SizeType Index, TStringView<CharT> Str);
+
+    /** Replaces all substrings with a new string. */
+    void Replace(TStringView<CharT> Substr, TStringView<CharT> NewStr);
+
+    /** Cuts the substring at the specified index. */
+    void Cut(SizeType Index, SizeType Count);
+
+    HK_NODISCARD TStringView<CharT> TruncateHead(SizeType Count) const
     {
-        return AStringView(Data, Size).FindSubstring(_Substring);
+        if (Count > m_Size)
+            Count = m_Size;
+        return TStringView<CharT>(m_pData + Count, m_Size - Count, true);
     }
 
-    /** Find the substring. Return substring position in string or -1. */
-    HK_FORCEINLINE int FindSubstringIcmp(AStringView _Substring) const
+    HK_NODISCARD TStringView<CharT> TruncateTail(SizeType Count) const
     {
-        return AStringView(Data, Size).FindSubstringIcmp(_Substring);
+        if (Count > m_Size)
+            Count = m_Size;
+        return TStringView<CharT>(m_pData, m_Size - Count, Count == 0);
+    }
+
+    /** Finds a character. Returns the position of a character in a string, or -1. */
+    HK_NODISCARD HK_FORCEINLINE SizeType Contains(CharT Char) const
+    {
+        return TStringView<CharT>(m_pData, m_Size).Contains(Char);
+    }
+
+    /** Finds a substring. Returns the position of the substring in the string, or -1. */
+    HK_NODISCARD HK_FORCEINLINE SizeType FindSubstring(TStringView<CharT> Substr) const
+    {
+        return TStringView<CharT>(m_pData, m_Size).FindSubstring(Substr);
+    }
+
+    /** Finds a substring. Returns the position of the substring in the string, or -1. */
+    HK_NODISCARD HK_FORCEINLINE SizeType FindSubstringIcmp(TStringView<CharT> Substr) const
+    {
+        return TStringView<CharT>(m_pData, m_Size).FindSubstringIcmp(Substr);
     }
 
     /** Get substring. */
-    HK_FORCEINLINE AStringView GetSubstring(size_t _Pos, size_t _Size) const
+    HK_NODISCARD HK_FORCEINLINE TStringView<CharT> GetSubstring(SizeType _Pos, SizeType _Size) const
     {
-        return AStringView(Data, Size).GetSubstring(_Pos, _Size);
+        return TStringView<CharT>(m_pData, m_Size, true).GetSubstring(_Pos, _Size);
     }
 
-    /** Convert to lower case */
-    void ToLower();
-
-    /** Convert to upper case */
-    void ToUpper();
-
-    HK_FORCEINLINE uint32_t HexToUInt32() const
+    /** Convert the string to lowercase. */
+    void ToLower()
     {
-        return AStringView(Data, Size).HexToUInt32();
+        CharT* p = m_pData;
+        while (*p)
+            *p = ::ToLower(*p), p++;
     }
 
-    HK_FORCEINLINE uint64_t HexToUInt64() const
+    /** Convert the string to uppercase. */
+    void ToUpper()
     {
-        return AStringView(Data, Size).HexToUInt64();
+        CharT* p = m_pData;
+        while (*p)
+            *p = ::ToUpper(*p), p++;
     }
 
-    /** Compare the strings (case insensitive) */
-    HK_FORCEINLINE int Icmp(AStringView Rhs) const
+    /** Compares strings (case insensitive). */
+    HK_NODISCARD HK_FORCEINLINE int Icmp(TStringView<CharT> Rhs) const
     {
-        return AStringView(Data, Size).Icmp(Rhs);
+        return TStringView<CharT>(m_pData, m_Size).Icmp(Rhs);
     }
 
-    /** Compare the strings (case sensitive) */
-    HK_FORCEINLINE int Cmp(AStringView Rhs) const
+    /** Compares strings (case sensitive). */
+    HK_NODISCARD HK_FORCEINLINE int Cmp(TStringView<CharT> Rhs) const
     {
-        return AStringView(Data, Size).Cmp(Rhs);
+        return TStringView<CharT>(m_pData, m_Size).Cmp(Rhs);
     }
 
-    /** Compare the strings (case insensitive) */
-    HK_FORCEINLINE int IcmpN(AStringView Rhs, int Num) const
+    /** Compares strings (case insensitive). */
+    HK_NODISCARD HK_FORCEINLINE int IcmpN(TStringView<CharT> Rhs, SizeType Num) const
     {
-        return AStringView(Data, Size).IcmpN(Rhs, Num);
+        return TStringView<CharT>(m_pData, m_Size).IcmpN(Rhs, Num);
     }
 
-    /** Compare the strings (case sensitive) */
-    HK_FORCEINLINE int CmpN(AStringView Rhs, int Num) const
+    /** Compares strings (case sensitive). */
+    HK_NODISCARD HK_FORCEINLINE int CmpN(TStringView<CharT> Rhs, SizeType Num) const
     {
-        return AStringView(Data, Size).CmpN(Rhs, Num);
+        return TStringView<CharT>(m_pData, m_Size).CmpN(Rhs, Num);
     }
 
-    /** Skip trailing zeros for the numbers. */
-    void ClipTrailingZeros();
-
-    /** Path utility. Fix OS-specific separator. */
-    void FixSeparator();
-
-    /** Path utility.
-    Fix path string insitu: replace separator \\ to /, skip series of /,
-    skip redunant sequinces of dir/../dir2 -> dir. */
-    void FixPath();
-
-    /** Path utility. Cut the path. */
-    void ClipPath();
-
-    /** Path utility. Get filename without path. */
-    HK_FORCEINLINE AStringView GetFilenameNoPath() const
+    /** Gives a string hash. */
+    HK_NODISCARD HK_FORCEINLINE uint32_t Hash() const
     {
-        return AStringView(Data, Size).GetFilenameNoPath();
+        return StringHash(Begin(), End());
     }
 
-    /** Path utility. Return index of the path end. */
-    HK_FORCEINLINE int FindPath() const
+    /** Gives a string hash (case insensitive). */
+    HK_NODISCARD HK_FORCEINLINE uint32_t HashCaseInsensitive() const
     {
-        return AStringView(Data, Size).FindPath();
+        return StringHashCaseInsensitive(Begin(), End());
     }
-
-    /** Path utility. Cut the extension. */
-    void ClipExt();
-
-    /** Path utility. Get full filename without extension. */
-    HK_FORCEINLINE AStringView GetFilenameNoExt() const
-    {
-        return AStringView(Data, Size).GetFilenameNoExt();
-    }
-
-    /** Path utility. Cut the file name. */
-    void ClipFilename();
-
-    /** Path utility. Get path without file name. */
-    HK_FORCEINLINE AStringView GetFilePath() const
-    {
-        return AStringView(Data, Size).GetFilePath();
-    }
-
-    /** Path utility. Check file extension. */
-    HK_FORCEINLINE bool CompareExt(AStringView Ext, bool bCaseInsensitive = true) const
-    {
-        return AStringView(Data, Size).CompareExt(Ext, bCaseInsensitive);
-    }
-
-    /** Path utility. Set file extension if not exists. */
-    void UpdateExt(AStringView Extension);
-
-    /** Path utility. Add or replace existing file extension. */
-    void ReplaceExt(AStringView Extension);
-
-    /** Path utility. Return index where the extension begins. */
-    HK_FORCEINLINE int FindExt() const
-    {
-        return AStringView(Data, Size).FindExt();
-    }
-
-    /** Path utility. Return index where the extension begins after dot. */
-    HK_FORCEINLINE int FindExtWithoutDot() const
-    {
-        return AStringView(Data, Size).FindExt();
-    }
-
-    /** Path utility. Get filename extension. */
-    HK_FORCEINLINE AStringView GetExt() const
-    {
-        return AStringView(Data, Size).GetExt();
-    }
-
-    /** Path utility. Get filename extension without dot. */
-    HK_FORCEINLINE AStringView GetExtWithoutDot() const
-    {
-        return AStringView(Data, Size).GetExtWithoutDot();
-    }
-
-    /** Get string hash */
-    HK_FORCEINLINE int Hash() const
-    {
-        return Core::Hash(Data, Size);
-    }
-
-    /** Get string hash case insensitive */
-    HK_FORCEINLINE int HashCase() const
-    {
-        return Core::HashCase(Data, Size);
-    }
-
-    void FromFile(IBinaryStreamReadInterface& Stream);
 
     HK_FORCEINLINE void Write(IBinaryStreamWriteInterface& Stream) const
     {
-        AStringView(Data, Size).Write(Stream);
+        TStringView<CharT>(m_pData, m_Size).Write(Stream);
     }
 
     void Read(IBinaryStreamReadInterface& Stream);
 
+    void FromFile(IBinaryStreamReadInterface& Stream);
+
     static const char* NullCString() { return ""; }
 
-    static AString const& NullString() { return NullStr; }
-
 private:
-    void GrowCapacity(int _Capacity, bool bCopyOld);
+    void Construct(const CharT* pRawString, SizeType Size);
+    void GrowCapacity(SizeType _Capacity, bool bCopyOld);
 
 protected:
-    char  Base[BASE_CAPACITY];
-    char* Data;
-    int   Capacity;
-    int   Size;
-
-private:
-    static const AString NullStr;
+    CharT    m_Base[BaseCapacity];
+    CharT*   m_pData    = m_Base;
+    SizeType m_Capacity = BaseCapacity;
+    SizeType m_Size     = 0;
 };
 
-HK_FORCEINLINE AString::AString() :
-    Data(Base), Capacity(BASE_CAPACITY), Size(0)
+template <typename CharT, typename Allocator>
+void TString<CharT, Allocator>::Construct(const CharT* pRawString, SizeType Size)
 {
-    Base[0] = 0;
+    HK_ASSERT(Size <= MaxStringSize);
+
+    GrowCapacity(Size + 1, false);
+
+    Platform::Memcpy(m_pData, pRawString, Size * sizeof(CharT));
+
+    m_pData[Size] = 0;
+    m_Size        = Size;
 }
 
-HK_FORCEINLINE AString::AString(AString const& Rhs) :
-    AString()
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator>::TString()
 {
-    const int newLen = Rhs.Length();
-    GrowCapacity(newLen + 1, false);
-    Platform::Memcpy(Data, Rhs.ToPtr(), newLen);
-    Data[newLen] = 0;
-    Size         = newLen;
+    m_Base[0] = 0;
 }
 
-HK_FORCEINLINE AString::AString(AString&& Rhs) noexcept
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator>::TString(TString<CharT, Allocator> const& Rhs)
 {
-    if (Rhs.Data == &Rhs.Base[0])
+    Construct(Rhs.ToPtr(), Rhs.Size());
+}
+
+template <typename CharT, typename Allocator>
+HK_INLINE TString<CharT, Allocator>::TString(TString<CharT, Allocator>&& Rhs) noexcept
+{
+    if (Rhs.m_pData == &Rhs.m_Base[0])
     {
-        Platform::Memcpy(Base, Rhs.Base, Rhs.Size);
-        Data       = Base;
-        Capacity   = Rhs.Capacity;
-        Size       = Rhs.Size;
-        Base[Size] = 0;
+        Platform::Memcpy(m_Base, Rhs.m_Base, Rhs.m_Size * sizeof(CharT));
+        m_pData        = m_Base;
+        m_Capacity     = Rhs.m_Capacity;
+        m_Size         = Rhs.m_Size;
+        m_Base[m_Size] = 0;
     }
     else
     {
-        Data     = Rhs.Data;
-        Capacity = Rhs.Capacity;
-        Size     = Rhs.Size;
+        m_pData    = Rhs.m_pData;
+        m_Capacity = Rhs.m_Capacity;
+        m_Size     = Rhs.m_Size;
 
-        Rhs.Data      = Rhs.Base;
-        Rhs.Capacity = BASE_CAPACITY;
+        Rhs.m_pData    = Rhs.m_Base;
+        Rhs.m_Capacity = BaseCapacity;
     }
-    Rhs.Size     = 0;
-    Rhs.Data[0] = '\0';
+    Rhs.m_Size     = 0;
+    Rhs.m_pData[0] = 0;
 }
 
-HK_FORCEINLINE AString::AString(AStringView Rhs) :
-    AString()
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator>::TString(TStringView<CharT> Rhs)
 {
-    const int newLen = Rhs.Length();
-    GrowCapacity(newLen + 1, false);
-    Platform::Memcpy(Data, Rhs.ToPtr(), newLen);
-    Data[newLen] = 0;
-    Size         = newLen;
+    Construct(Rhs.ToPtr(), Rhs.Size());
 }
 
-HK_FORCEINLINE AString::AString(const char* RawStr) :
-    AString()
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator>::TString(const CharT* pRawString)
 {
-    const int newLen = Platform::Strlen(RawStr);
-    GrowCapacity(newLen + 1, false);
-    Platform::Memcpy(Data, RawStr, newLen);
-    Data[newLen] = 0;
-    Size         = newLen;
+    Construct(pRawString, StringLength(pRawString));
 }
 
-HK_FORCEINLINE AString::AString(const char* RawStrBegin, const char* RawStrEnd) :
-    AString()
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator>::TString(const CharT* pRawStringBegin, const CharT* pRawStringEnd)
 {
-    const int newLen = RawStrEnd - RawStrBegin;
-    GrowCapacity(newLen + 1, false);
-    Platform::Memcpy(Data, RawStrBegin, newLen);
-    Data[newLen] = 0;
-    Size         = newLen;
+    Construct(pRawStringBegin, StringLength(pRawStringBegin, pRawStringEnd));
 }
 
-HK_FORCEINLINE AString::~AString()
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator>::~TString()
 {
-    if (Data != Base)
+    if (m_pData != m_Base)
     {
-        Allocator::Inst().Free(Data);
+        Allocator().deallocate(m_pData);
     }
 }
 
-HK_FORCEINLINE const char& AString::operator[](const int Index) const
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE CharT const& TString<CharT, Allocator>::operator[](SizeType Index) const
 {
-    HK_ASSERT_((Index >= 0) && (Index <= Size), "AString[]");
-    return Data[Index];
+    HK_ASSERT_(Index < m_Size, "Undefined behavior accessing out of bounds");
+    return m_pData[Index];
 }
 
-HK_FORCEINLINE char& AString::operator[](const int Index)
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE CharT& TString<CharT, Allocator>::operator[](SizeType Index)
 {
-    HK_ASSERT_((Index >= 0) && (Index <= Size), "AString[]");
-    return Data[Index];
+    HK_ASSERT_(Index < m_Size, "Undefined behavior accessing out of bounds");
+    return m_pData[Index];
 }
 
-HK_FORCEINLINE AString& AString::operator=(AString const& Rhs)
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator>& TString<CharT, Allocator>::operator=(TString<CharT, Allocator> const& Rhs)
 {
-    const int newLen = Rhs.Length();
-    GrowCapacity(newLen + 1, false);
-    Platform::Memcpy(Data, Rhs.ToPtr(), newLen);
-    Data[newLen] = 0;
-    Size         = newLen;
+    Construct(Rhs.ToPtr(), Rhs.Size());
     return *this;
 }
 
-HK_FORCEINLINE AString& AString::operator=(AString&& Rhs) noexcept
+template <typename CharT, typename Allocator>
+HK_INLINE TString<CharT, Allocator>& TString<CharT, Allocator>::operator=(TString<CharT, Allocator>&& Rhs) noexcept
 {
     Free();
 
-    if (Rhs.Data == &Rhs.Base[0])
+    if (Rhs.m_pData == &Rhs.m_Base[0])
     {
-        Platform::Memcpy(Base, Rhs.Base, Rhs.Size);
-        Data       = Base;
-        Capacity   = Rhs.Capacity;
-        Size       = Rhs.Size;
-        Base[Size] = 0;
+        Platform::Memcpy(m_Base, Rhs.m_Base, Rhs.m_Size * sizeof(CharT));
+        m_pData        = m_Base;
+        m_Capacity     = Rhs.m_Capacity;
+        m_Size         = Rhs.m_Size;
+        m_Base[m_Size] = 0;
     }
     else
     {
-        Data     = Rhs.Data;
-        Capacity = Rhs.Capacity;
-        Size     = Rhs.Size;
+        m_pData    = Rhs.m_pData;
+        m_Capacity = Rhs.m_Capacity;
+        m_Size     = Rhs.m_Size;
 
-        Rhs.Data      = Rhs.Base;
-        Rhs.Capacity = BASE_CAPACITY;
+        Rhs.m_pData    = Rhs.m_Base;
+        Rhs.m_Capacity = BaseCapacity;
     }
-    Rhs.Size     = 0;
-    Rhs.Data[0] = '\0';
+    Rhs.m_Size     = 0;
+    Rhs.m_pData[0] = 0;
 
     return *this;
 }
 
-HK_FORCEINLINE AString& AString::operator=(AStringView Rhs)
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator>& TString<CharT, Allocator>::operator=(TStringView<CharT> Rhs)
 {
-    const int newLen = Rhs.Length();
-    GrowCapacity(newLen + 1, false);
-    Platform::Memcpy(Data, Rhs.ToPtr(), newLen);
-    Data[newLen] = 0;
-    Size         = newLen;
+    Construct(Rhs.ToPtr(), Rhs.Size());
     return *this;
 }
 
-HK_FORCEINLINE AString& AString::operator=(const char* RawStr)
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator>& TString<CharT, Allocator>::operator=(const CharT* pRawString)
 {
-    const int newLen = Platform::Strlen(RawStr);
-    GrowCapacity(newLen + 1, false);
-    Platform::Memcpy(Data, RawStr, newLen);
-    Data[newLen] = 0;
-    Size         = newLen;
+    Construct(pRawString, StringLength(pRawString));
     return *this;
 }
 
-HK_FORCEINLINE void AString::Clear()
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE void TString<CharT, Allocator>::Clear()
 {
-    Size    = 0;
-    Data[0] = '\0';
+    m_Size     = 0;
+    m_pData[0] = 0;
 }
 
-HK_FORCEINLINE void AString::Free()
+template <typename CharT, typename Allocator>
+HK_INLINE void TString<CharT, Allocator>::Free()
 {
-    if (Data != Base)
+    if (m_pData != m_Base)
     {
-        Allocator::Inst().Free(Data);
-        Data     = Base;
-        Capacity = BASE_CAPACITY;
+        Allocator().deallocate(m_pData);
+        m_pData    = m_Base;
+        m_Capacity = BaseCapacity;
     }
-    Size    = 0;
-    Data[0] = '\0';
+    m_Size     = 0;
+    m_pData[0] = 0;
 }
 
-HK_FORCEINLINE AString operator+(AStringView Lhs, AStringView Rhs)
+template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+HK_FORCEINLINE TString<CharT, Allocator> ConcatStrings(TStringView<CharT> Lhs, TStringView<CharT> Rhs)
 {
-    AString result(Lhs);
+    TString<CharT, Allocator> result;
+    result.Reserve(Lhs.Size() + Rhs.Size());
+    result.Concat(Lhs);
     result.Concat(Rhs);
     return result;
 }
-
-HK_FORCEINLINE AString operator+(AStringView Lhs, char Char)
+template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+HK_FORCEINLINE TString<CharT, Allocator> operator+(TStringView<CharT> Lhs, TStringView<CharT> const& Rhs)
 {
-    AString result(Lhs);
-    result.Concat(Char);
-    return result;
+    return ConcatStrings<CharT, Allocator>(Lhs, Rhs);
+}
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator> operator+(TStringView<CharT> Lhs, TString<CharT, Allocator> const& Rhs)
+{
+    return ConcatStrings<CharT, Allocator>(Lhs, TStringView<CharT>(Rhs));
+}
+template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+HK_FORCEINLINE TString<CharT, Allocator> operator+(TStringView<CharT> Lhs, const CharT* Rhs)
+{
+    return ConcatStrings<CharT, Allocator>(Lhs, TStringView<CharT>(Rhs));
+}
+template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+HK_FORCEINLINE TString<CharT, Allocator> operator+(TStringView<CharT> Lhs, CharT Rhs)
+{
+    return ConcatStrings<CharT, Allocator>(Lhs, TStringView<CharT>(&Rhs, 1));
+}
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator> operator+(TString<CharT, Allocator> const& Lhs, TStringView<CharT> Rhs)
+{
+    return ConcatStrings<CharT, Allocator>(TStringView<CharT>(Lhs), Rhs);
+}
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator> operator+(TString<CharT, Allocator> const& Lhs, TString<CharT, Allocator> const& Rhs)
+{
+    return ConcatStrings<CharT, Allocator>(TStringView<CharT>(Lhs), TStringView<CharT>(Rhs));
+}
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator> operator+(TString<CharT, Allocator> const& Lhs, const CharT* Rhs)
+{
+    return ConcatStrings<CharT, Allocator>(TStringView<CharT>(Lhs), TStringView<CharT>(Rhs));
+}
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator> operator+(TString<CharT, Allocator> const& Lhs, CharT Rhs)
+{
+    return ConcatStrings<CharT, Allocator>(TStringView<CharT>(Lhs), TStringView<CharT>(&Rhs, 1));
+}
+template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+HK_FORCEINLINE TString<CharT, Allocator> operator+(const CharT* Lhs, TStringView<CharT> Rhs)
+{
+    return ConcatStrings<CharT, Allocator>(TStringView<CharT>(Lhs), Rhs);
+}
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator> operator+(const CharT* Lhs, TString<CharT, Allocator> const& Rhs)
+{
+    return ConcatStrings<CharT, Allocator>(TStringView<CharT>(Lhs), TStringView<CharT>(Rhs));
+}
+template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+HK_FORCEINLINE TString<CharT, Allocator> operator+(CharT Lhs, TStringView<CharT> Rhs)
+{
+    return ConcatStrings<CharT, Allocator>(TStringView<CharT>(&Lhs, 1), Rhs);
+}
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator> operator+(CharT Lhs, TString<CharT, Allocator> const& Rhs)
+{
+    return ConcatStrings<CharT, Allocator>(TStringView<CharT>(&Lhs, 1), TStringView<CharT>(Rhs));
 }
 
-HK_FORCEINLINE AString operator+(char Char, AStringView Rhs)
-{
-    AString result(Rhs);
-    result.Concat(Char);
-    return result;
-}
-
-HK_FORCEINLINE AString& AString::operator+=(AStringView Rhs)
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator>& TString<CharT, Allocator>::operator+=(TStringView<CharT> Rhs)
 {
     Concat(Rhs);
     return *this;
 }
-
-HK_FORCEINLINE AString& AString::operator+=(char Char)
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE TString<CharT, Allocator>& TString<CharT, Allocator>::operator+=(CharT Char)
 {
     Concat(Char);
     return *this;
 }
 
-HK_FORCEINLINE const char* AString::CStr() const
+template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+TString<CharT, Allocator> ConcatPaths(TStringView<CharT> Lhs, TStringView<CharT> Rhs)
 {
-    return Data;
+    auto size    = Lhs.Size();
+    auto rhsSize = Rhs.Size();
+    auto newSize = size + rhsSize + 1;
+
+    TString<CharT, Allocator> s;
+    s.Reserve(newSize);
+
+    s += Lhs;
+    if (size == 0 || Lhs.ToPtr()[size - 1] != '/')
+        s += '/';
+
+    const CharT* p;
+    const CharT* end;
+    for (p = Rhs.Begin(), end = Rhs.End(); p < end && *p == '/'; p++)
+    {}
+
+    if (Rhs.IsNullTerminated())
+        s += p;
+    else
+        s += TStringView<CharT>(p, end);
+
+    return s;
+}
+template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+TString<CharT, Allocator> operator/(TStringView<CharT> Lhs, TStringView<CharT> const& Rhs)
+{
+    return ConcatPaths<CharT, Allocator>(Lhs, TStringView<CharT>(Rhs));
+}
+template <typename CharT, typename Allocator>
+TString<CharT, Allocator> operator/(TStringView<CharT> Lhs, TString<CharT, Allocator> const& Rhs)
+{
+    return ConcatPaths<CharT, Allocator>(Lhs, TStringView<CharT>(Rhs));
+}
+template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+TString<CharT, Allocator> operator/(TStringView<CharT> Lhs, const CharT* Rhs)
+{
+    return ConcatPaths<CharT, Allocator>(Lhs, TStringView<CharT>(Rhs));
+}
+template <typename CharT, typename Allocator>
+TString<CharT, Allocator> operator/(TString<CharT, Allocator> const& Lhs, TString<CharT, Allocator> const& Rhs)
+{
+    return ConcatPaths<CharT, Allocator>(TStringView<CharT>(Lhs), TStringView<CharT>(Rhs));
+}
+template <typename CharT, typename Allocator>
+TString<CharT, Allocator> operator/(TString<CharT, Allocator> const& Lhs, TStringView<CharT> Rhs)
+{
+    return ConcatPaths<CharT, Allocator>(TStringView<CharT>(Lhs), Rhs);
+}
+template <typename CharT, typename Allocator>
+TString<CharT, Allocator> operator/(TString<CharT, Allocator> const& Lhs, const CharT* Rhs)
+{
+    return ConcatPaths<CharT, Allocator>(TStringView<CharT>(Lhs), TStringView<CharT>(Rhs));
+}
+template <typename CharT, typename Allocator>
+TString<CharT, Allocator> operator/(const CharT* Lhs, TString<CharT, Allocator> const& Rhs)
+{
+    return ConcatPaths<CharT, Allocator>(TStringView<CharT>(Lhs), TStringView<CharT>(Rhs));
+}
+template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+TString<CharT, Allocator> operator/(const CharT* Lhs, TStringView<CharT> Rhs)
+{
+    return ConcatPaths<CharT, Allocator>(TStringView<CharT>(Lhs), Rhs);
 }
 
-HK_FORCEINLINE const char* AString::Begin() const
+template <typename CharT, typename Allocator>
+TString<CharT, Allocator>& TString<CharT, Allocator>::operator/=(TStringView<CharT> Rhs)
 {
-    return Data;
+    auto size    = Size();
+    auto rhsSize = Rhs.Size();
+    auto newSize = size + rhsSize + 1;
+
+    Reserve(newSize);
+
+    if (size == 0 || Lhs.ToPtr()[size - 1] != '/')
+        Concat('/');
+
+    const CharT* p;
+    const CharT* end;
+    for (p = Rhs.Begin(), end = Rhs.End(); p < end && *p == '/'; p++)
+    {}
+
+    if (Rhs.IsNullTerminated())
+        Concat(p);
+    else
+        Concat(TStringView<CharT>(p, end));
+
+    return *this;
 }
-HK_FORCEINLINE const char* AString::End() const
+template <typename CharT, typename Allocator>
+TString<CharT, Allocator>& TString<CharT, Allocator>::operator/=(TString<CharT, Allocator> const& Rhs)
 {
-    return Data + Size;
+    return operator/=(TStringView<CharT>(Rhs));
+}
+template <typename CharT, typename Allocator>
+TString<CharT, Allocator>& TString<CharT, Allocator>::operator/=(const CharT* Rhs)
+{
+    return operator/=(TStringView<CharT>(Rhs));
 }
 
-HK_FORCEINLINE int AString::Length() const
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE const CharT* TString<CharT, Allocator>::CStr() const
 {
-    return Size;
+    return m_pData;
 }
 
-HK_FORCEINLINE bool AString::IsEmpty() const
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE const CharT* TString<CharT, Allocator>::Begin() const
 {
-    return Size == 0;
+    return m_pData;
 }
 
-HK_FORCEINLINE char* AString::ToPtr() const
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE const CharT* TString<CharT, Allocator>::End() const
 {
-    return Data;
+    return m_pData + m_Size;
 }
 
-HK_FORCEINLINE void AString::Resize(int NewLength)
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE CharT* TString<CharT, Allocator>::ToPtr() const
 {
-    GrowCapacity(NewLength + 1, true);
-    if (NewLength > Size)
+    return m_pData;
+}
+
+template <typename CharT, typename Allocator>
+HK_INLINE void TString<CharT, Allocator>::Resize(SizeType Size)
+{
+    if (Size > m_Size)
     {
-        Platform::Memset(&Data[Size], ' ', NewLength - Size);
+        Reserve(Size);
+
+        // Fill rest of the line by spaces
+        if (IsWideString())
+        {
+            CharT* p = &m_pData[m_Size];
+            CharT* e = &m_pData[Size];
+            while (p < e)
+                *p++ = ' ';
+        }
+        else
+        {
+            Platform::Memset(&m_pData[m_Size], ' ', Size - m_Size);
+        }
     }
-    Size       = NewLength;
-    Data[Size] = 0;
+    m_Size          = Size;
+    m_pData[m_Size] = 0;
 }
 
-HK_FORCEINLINE void AString::FixSeparator()
+template <typename CharT, typename Allocator>
+void TString<CharT, Allocator>::Reserve(SizeType NumCharacters)
 {
-    Platform::FixSeparator(Data);
+    HK_ASSERT(NumCharacters <= MaxStringSize);
+    GrowCapacity(NumCharacters + 1, true);
 }
 
-HK_FORCEINLINE void AString::ReplaceExt(AStringView Extension)
-{
-    ClipExt();
-    Concat(Extension);
-}
-
-HK_FORCEINLINE void AString::FromFile(IBinaryStreamReadInterface& Stream)
+template <typename CharT, typename Allocator>
+HK_INLINE void TString<CharT, Allocator>::FromFile(IBinaryStreamReadInterface& Stream)
 {
     Stream.SeekEnd(0);
     size_t fileSz = Stream.GetOffset();
     Stream.SeekSet(0);
-    GrowCapacity(fileSz + 1, false);
-    Stream.Read(Data, fileSz);
-    Data[fileSz] = 0;
-    Size         = fileSz;
+
+    SizeType size = fileSz / sizeof(CharT);
+    if (size > MaxStringSize)
+    {
+        LOG("Couldn't read entire string from file - string is too long\n");
+        size = MaxStringSize;
+    }
+    GrowCapacity(size + 1, false);
+
+#if HK_BIG_ENDIAN
+    if (IsWideString())
+    {
+        for (SizeType i = 0; i < size; i++)
+            m_pData[i] = Stream.ReadUInt16();
+    }
+    else
+#else
+    {
+        Stream.Read(m_pData, size * sizeof(CharT));
+    }
+#endif
+        m_pData[size] = 0;
+    m_Size = size;
 }
 
-HK_FORCEINLINE void AString::Read(IBinaryStreamReadInterface& Stream)
+template <typename CharT, typename Allocator>
+HK_INLINE void TString<CharT, Allocator>::Read(IBinaryStreamReadInterface& Stream)
 {
-    int len = Stream.ReadUInt32();
-    GrowCapacity(len + 1, false);
-    Stream.Read(Data, len);
-    Data[len] = 0;
-    Size      = len;
+    uint32_t len  = Stream.ReadUInt32();
+    SizeType size = len;
+
+    if (len > MaxStringSize)
+    {
+        LOG("Couldn't read entire string from file - string is too long\n");
+        size = MaxStringSize;
+    }
+
+    GrowCapacity(size + 1, false);
+
+#if HK_BIG_ENDIAN
+    if (IsWideString())
+    {
+        for (SizeType i = 0; i < size; i++)
+            m_pData[i] = Stream.ReadUInt16();
+    }
+    else
+#else
+    {
+        Stream.Read(m_pData, size * sizeof(CharT));
+    }
+#endif
+
+        if (len != size)
+    {
+        // Keep the correct offset
+        Stream.SeekCur((len - size) * sizeof(CharT));
+    }
+    m_pData[size] = 0;
+    m_Size        = size;
 }
 
-
-HK_FORCEINLINE AStringView::AStringView(AString const& Str) :
-    AStringView(Str.ToPtr(), Str.Length())
+template <typename CharT>
+template <typename Allocator>
+HK_FORCEINLINE TStringView<CharT>& TStringView<CharT>::operator=(TString<CharT, Allocator> const& Rhs)
 {
-}
-
-HK_FORCEINLINE AStringView::AStringView(AStdString const& Str) :
-    AStringView(Str.c_str(), Str.length())
-{
-}
-
-HK_FORCEINLINE AStringView& AStringView::operator=(AString const& Rhs)
-{
-    Data = Rhs.ToPtr();
-    Size = Rhs.Length();
+    m_pData = Rhs.ToPtr();
+    m_Size  = Rhs.Size();
+    m_Size |= NullTerminatedBit;
     return *this;
 }
 
-HK_FORCEINLINE AStringView& AStringView::operator=(AStdString const& Rhs)
+template <typename CharT>
+HK_FORCEINLINE bool operator==(TStringView<CharT> Lhs, TStringView<CharT> Rhs) { return Lhs.Cmp(Rhs) == 0; }
+template <typename CharT>
+HK_FORCEINLINE bool operator==(TStringView<CharT> Lhs, const CharT* Rhs) { return Lhs.Cmp(Rhs) == 0; }
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE bool operator==(TStringView<CharT> Lhs, TString<CharT, Allocator> const& Rhs) { return Lhs.Cmp(Rhs) == 0; }
+
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE bool operator==(TString<CharT, Allocator> const& Lhs, TString<CharT, Allocator> const& Rhs) { return Lhs.Cmp(Rhs) == 0; }
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE bool operator==(TString<CharT, Allocator> const& Lhs, const CharT* Rhs) { return Lhs.Cmp(Rhs) == 0; }
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE bool operator==(TString<CharT, Allocator> const& Lhs, TStringView<CharT> Rhs) { return Lhs.Cmp(Rhs) == 0; }
+
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE bool operator==(const CharT* Lhs, TString<CharT, Allocator> const& Rhs) { return Rhs.Cmp(Lhs) == 0; }
+template <typename CharT>
+HK_FORCEINLINE bool operator==(const CharT* Lhs, TStringView<CharT> Rhs) { return Rhs.Cmp(Lhs) == 0; }
+
+template <typename CharT>
+HK_FORCEINLINE bool operator!=(TStringView<CharT> Lhs, TStringView<CharT> Rhs) { return Lhs.Cmp(Rhs) != 0; }
+template <typename CharT>
+HK_FORCEINLINE bool operator!=(TStringView<CharT> Lhs, const CharT* Rhs) { return Lhs.Cmp(Rhs) != 0; }
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE bool operator!=(TStringView<CharT> Lhs, TString<CharT, Allocator> const& Rhs) { return Lhs.Cmp(Rhs) != 0; }
+
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE bool operator!=(TString<CharT, Allocator> const& Lhs, TString<CharT, Allocator> const& Rhs) { return Lhs.Cmp(Rhs) != 0; }
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE bool operator!=(TString<CharT, Allocator> const& Lhs, const CharT* Rhs) { return Lhs.Cmp(Rhs) != 0; }
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE bool operator!=(TString<CharT, Allocator> const& Lhs, TStringView<CharT> Rhs) { return Lhs.Cmp(Rhs) != 0; }
+
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE bool operator!=(const CharT* Lhs, TString<CharT, Allocator> const& Rhs) { return Rhs.Cmp(Lhs) != 0; }
+template <typename CharT>
+HK_FORCEINLINE bool operator!=(const CharT* Lhs, TStringView<CharT> Rhs) { return Rhs.Cmp(Lhs) != 0; }
+
+
+template <typename CharT, typename Allocator>
+void TString<CharT, Allocator>::GrowCapacity(SizeType _Capacity, bool bCopyOld)
 {
-    Data = Rhs.c_str();
-    Size = Rhs.length();
-    return *this;
+    if (_Capacity <= m_Capacity)
+        return;
+
+    SizeType mod = _Capacity % Granularity;
+    m_Capacity   = mod ? _Capacity + Granularity - mod : _Capacity;
+    if (m_pData == m_Base)
+    {
+        m_pData = (CharT*)Allocator().allocate(m_Capacity * sizeof(CharT));
+        if (bCopyOld)
+            Platform::Memcpy(m_pData, m_Base, (m_Size + 1) * sizeof(CharT));
+    }
+    else
+        m_pData = (CharT*)Allocator().reallocate(m_pData, m_Capacity * sizeof(CharT), bCopyOld);
 }
 
-HK_FORCEINLINE bool operator==(AStringView Lhs, AStringView Rhs)
+template <typename CharT, typename Allocator>
+void TString<CharT, Allocator>::Concat(TStringView<CharT> Rhs)
 {
-    return Lhs.Cmp(Rhs) == 0;
+    SizeType rhsSize = Rhs.Size();
+    if (rhsSize == 1)
+    {
+        Concat(Rhs[0]);
+        return;
+    }
+    SizeType size = m_Size + rhsSize;
+    Reserve(size);
+    Platform::Memcpy(&m_pData[m_Size], Rhs.ToPtr(), rhsSize * sizeof(CharT));
+    m_Size          = size;
+    m_pData[m_Size] = 0;
 }
 
-HK_FORCEINLINE bool operator!=(AStringView Lhs, AStringView Rhs)
+template <typename CharT, typename Allocator>
+void TString<CharT, Allocator>::Concat(CharT Ch)
 {
-    return Lhs.Cmp(Rhs) != 0;
+    if (Ch == 0)
+        return;
+    Reserve(m_Size + 1);
+    m_pData[m_Size++] = Ch;
+    m_pData[m_Size]   = 0;
 }
 
-HK_FORCEINLINE AString AStringView::ToString() const
+template <typename CharT, typename Allocator>
+void TString<CharT, Allocator>::InsertAt(SizeType Index, TStringView<CharT> Str)
 {
-    return AString(Data, Data + Size);
+    if (Index > m_Size || Str.IsEmpty())
+        return;
+
+    SizeType n = Str.Size();
+    Reserve(m_Size + n);
+
+    SizeType moveCount = m_Size - Index + 1;
+    CharT*   p         = &m_pData[m_Size];
+    for (SizeType i = 0; i < moveCount; ++i, --p)
+        *(p + n) = *p;
+    Platform::Memcpy(&m_pData[Index], Str.ToPtr(), n * sizeof(CharT));
+    m_Size += n;
+}
+
+template <typename CharT, typename Allocator>
+void TString<CharT, Allocator>::InsertAt(SizeType Index, CharT Char)
+{
+    if (Index > m_Size || Char == 0)
+        return;
+
+    Reserve(m_Size + 1);
+
+    SizeType moveCount = m_Size - Index + 1;
+    CharT*   p         = &m_pData[m_Size];
+    for (SizeType i = 0; i < moveCount; ++i, --p)
+        *(p + 1) = *p;
+    m_pData[Index] = Char;
+    m_Size++;
+}
+
+template <typename CharT, typename Allocator>
+void TString<CharT, Allocator>::ReplaceAt(SizeType Index, TStringView<CharT> Str)
+{
+    if (Index > m_Size || Str.IsEmpty())
+        return;
+    SizeType n    = Str.Size();
+    SizeType size = Index + n;
+    Reserve(size);
+    Platform::Memcpy(&m_pData[Index], Str.ToPtr(), n * sizeof(CharT));
+    m_Size          = size;
+    m_pData[m_Size] = 0;
+}
+
+template <typename CharT, typename Allocator>
+void TString<CharT, Allocator>::Replace(TStringView<CharT> Substr, TStringView<CharT> NewStr)
+{
+    if (Substr.IsEmpty())
+        return;
+
+    SizeType size = Substr.Size();
+    SizeType index;
+    SizeType offset = 0;
+    while ((SizeType)-1 != (index = TStringView<CharT>(m_pData + offset, m_Size - offset).FindSubstring(Substr)))
+    {
+        index += offset;
+
+        Cut(index, size);
+        InsertAt(index, NewStr);
+
+        offset = index + NewStr.Size();
+
+        HK_ASSERT(offset <= m_Size);
+    }
+}
+
+template <typename CharT, typename Allocator>
+void TString<CharT, Allocator>::Cut(SizeType Index, SizeType Count)
+{
+    if (Index >= m_Size || Count == 0)
+        return;
+    if (Index + Count > m_Size)
+        Count = m_Size - Index;
+
+    SizeType srcIndex = Index + Count;
+    Platform::Memcpy(m_pData + Index, m_pData + srcIndex, (m_Size - srcIndex + 1) * sizeof(CharT));
+
+    m_Size = m_Size - Count;
+}
+
+template <typename CharT>
+int TStringView<CharT>::Icmp(TStringView<CharT> Str) const
+{
+    const CharT* s1 = Begin();
+    const CharT* e1 = End();
+    const CharT* s2 = Str.Begin();
+    const CharT* e2 = Str.End();
+
+    CharT c1, c2;
+
+    using UnsignedCharT = std::make_unsigned<CharT>::type;
+
+    do {
+        c1 = s1 < e1 ? *s1++ : 0;
+        c2 = s2 < e2 ? *s2++ : 0;
+
+        if (c1 != c2)
+        {
+            if (c1 >= 'a' && c1 <= 'z')
+            {
+                c1 -= ('a' - 'A');
+            }
+            if (c2 >= 'a' && c2 <= 'z')
+            {
+                c2 -= ('a' - 'A');
+            }
+            if (c1 != c2)
+            {
+                return (int)((UnsignedCharT)c1 - (UnsignedCharT)c2);
+            }
+        }
+    } while (c1);
+
+    return 0;
+}
+
+template <typename CharT>
+int TStringView<CharT>::Cmp(TStringView<CharT> Str) const
+{
+    const CharT* s1 = Begin();
+    const CharT* e1 = End();
+    const CharT* s2 = Str.Begin();
+    const CharT* e2 = Str.End();
+
+    CharT c1, c2;
+
+    using UnsignedCharT = std::make_unsigned<CharT>::type;
+
+    do {
+        c1 = s1 < e1 ? *s1++ : 0;
+        c2 = s2 < e2 ? *s2++ : 0;
+
+        if (c1 != c2)
+        {
+            return (int)((UnsignedCharT)c1 - (UnsignedCharT)c2);
+        }
+    } while (c1);
+
+    return 0;
+}
+
+template <typename CharT>
+int TStringView<CharT>::IcmpN(TStringView<CharT> Str, SizeType Num) const
+{
+    const CharT* s1 = Begin();
+    const CharT* e1 = End();
+    const CharT* s2 = Str.Begin();
+    const CharT* e2 = Str.End();
+
+    CharT c1, c2;
+
+    using UnsignedCharT = std::make_unsigned<CharT>::type;
+
+    do {
+        if (!Num--)
+        {
+            return 0;
+        }
+
+        c1 = s1 < e1 ? *s1++ : 0;
+        c2 = s2 < e2 ? *s2++ : 0;
+
+        if (c1 != c2)
+        {
+            if (c1 >= 'a' && c1 <= 'z')
+            {
+                c1 -= ('a' - 'A');
+            }
+            if (c2 >= 'a' && c2 <= 'z')
+            {
+                c2 -= ('a' - 'A');
+            }
+            if (c1 != c2)
+            {
+                return (int)((UnsignedCharT)c1 - (UnsignedCharT)c2);
+            }
+        }
+    } while (c1);
+
+    return 0;
+}
+
+template <typename CharT>
+int TStringView<CharT>::CmpN(TStringView<CharT> Str, SizeType Num) const
+{
+    const CharT* s1 = Begin();
+    const CharT* e1 = End();
+    const CharT* s2 = Str.Begin();
+    const CharT* e2 = Str.End();
+
+    CharT c1, c2;
+
+    using UnsignedCharT = std::make_unsigned<CharT>::type;
+
+    do {
+        if (!Num--)
+        {
+            return 0;
+        }
+
+        c1 = s1 < e1 ? *s1++ : 0;
+        c2 = s2 < e2 ? *s2++ : 0;
+
+        if (c1 != c2)
+        {
+            return (int)((UnsignedCharT)c1 - (UnsignedCharT)c2);
+        }
+    } while (c1);
+
+    return 0;
 }
 
 
@@ -1001,7 +1377,7 @@ buffer.Sprintf( "%d %f", 10, 15.1f );
 AString s = TSprintfBuffer< 128 >().Sprintf( "%d %f", 10, 15.1f );
 
 */
-template <int Size>
+template <size_t Size>
 struct TSprintfBuffer
 {
     char Data[Size];
@@ -1018,11 +1394,638 @@ struct TSprintfBuffer
     }
 };
 
-HK_FORMAT_DEF_(AString, "{}", v.CStr());
-HK_FORMAT_DEF_(AStringView, "{}", v.ToString());
+using AString         = TString<char>;
+using AWideString     = TString<WideChar>;
+using AStringView     = TStringView<char>;
+using AWideStringView = TStringView<WideChar>;
 
-//template <> struct fmt::formatter<AString>
-//{
-//    constexpr auto                         parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
-//    template <typename FormatContext> auto format(AString const& p, FormatContext& ctx) -> decltype(ctx.out()) { return format_to(ctx.out(), "{}", p.CStr()); }
-//};
+namespace Core
+{
+
+HK_INLINE AString GetString(AWideStringView wideStr)
+{
+    const WideChar* s = wideStr.Begin();
+    const WideChar* e = wideStr.End();
+
+    auto size = Core::WideStrUTF8Bytes(s, e);
+
+    AString str;
+    str.Reserve(size);
+
+    char buf[4];
+    while (s < e)
+    {
+        int n = WideCharEncodeUTF8(buf, std::size(buf), *s++);
+        str.Concat(AStringView(buf, n));
+    }
+    return str;
+}
+
+HK_INLINE AString GetString(AGlobalStringViewW wideStr)
+{
+    const WideChar* s = wideStr.CStr();
+    const WideChar* e = s + StringLength(wideStr);
+
+    auto size = Core::WideStrUTF8Bytes(s, e);
+
+    AString str;
+    str.Reserve(size);
+
+    char buf[4];
+    while (s < e)
+    {
+        int n = WideCharEncodeUTF8(buf, std::size(buf), *s++);
+        str.Concat(AStringView(buf, n));
+    }
+    return str;
+}
+
+HK_INLINE AWideString GetWideString(AStringView utfStr)
+{
+    const char* s = utfStr.Begin();
+    const char* e = utfStr.End();
+
+    auto numCharacters = UTF8StrLength(s, e);
+
+    AWideString wideStr;
+    wideStr.Reserve(numCharacters);
+
+    WideChar ch;
+    while (s < e)
+    {
+        s += WideCharDecodeUTF8(s, e, ch);
+        wideStr.Concat(ch);
+    }
+    return wideStr;
+}
+
+HK_INLINE AWideString GetWideString(AGlobalStringView utfStr)
+{
+    const char* s = utfStr.CStr();
+    const char* e = s + StringLength(utfStr);
+
+    auto numCharacters = UTF8StrLength(s, e);
+
+    AWideString wideStr;
+    wideStr.Reserve(numCharacters);
+
+    WideChar ch;
+    while (s < e)
+    {
+        s += WideCharDecodeUTF8(s, e, ch);
+        wideStr.Concat(ch);
+    }
+    return wideStr;
+}
+
+template <typename... T>
+HK_INLINE AString Format(fmt::format_string<T...> Format, T&&... args)
+{
+    fmt::memory_buffer buffer;
+    fmt::detail::vformat_to(buffer, fmt::string_view(Format), fmt::make_format_args(args...));
+    return AString(buffer.begin(), buffer.end());
+}
+
+template <typename T>
+HK_INLINE AString ToString(T const& Val)
+{
+    return Core::Format("{}", Val);
+}
+
+template <typename T, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
+HK_INLINE AString ToHexString(T const& _Value, bool bLeadingZeros = false, bool bPrefix = false)
+{
+    TSprintfBuffer<32> value;
+    TSprintfBuffer<32> format;
+    const char*        prefixStr = bPrefix ? "0x" : "";
+
+    constexpr size_t typeSize = sizeof(T);
+    static_assert(typeSize == 1 || typeSize == 2 || typeSize == 4 || typeSize == 8, "ToHexString");
+
+    switch (typeSize)
+    {
+        case 1:
+            format.Sprintf(bLeadingZeros ? "%s%%02x" : "%s%%x", prefixStr);
+            return value.Sprintf(format.Data, *reinterpret_cast<const uint8_t*>(&_Value));
+        case 2:
+            format.Sprintf(bLeadingZeros ? "%s%%04x" : "%s%%x", prefixStr);
+            return value.Sprintf(format.Data, *reinterpret_cast<const uint16_t*>(&_Value));
+        case 4:
+            format.Sprintf(bLeadingZeros ? "%s%%08x" : "%s%%x", prefixStr);
+            return value.Sprintf(format.Data, *reinterpret_cast<const uint32_t*>(&_Value));
+        case 8: {
+            uint64_t Temp = *reinterpret_cast<const uint64_t*>(&_Value);
+            if (bLeadingZeros)
+            {
+                return value.Sprintf("%s%08x%08x", prefixStr, INT64_HIGH_INT(Temp), INT64_LOW_INT(Temp));
+            }
+            else
+            {
+                return value.Sprintf("%s%I64x", prefixStr, Temp);
+            }
+        }
+    }
+    return "";
+}
+
+template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
+T ParseNumber(AStringView View)
+{
+    T    val;
+    T    sign;
+    char c;
+
+    const char* s = View.Begin();
+    const char* e = View.End();
+
+    if (s == e)
+        return T(0);
+
+    if (*s == '-')
+    {
+        sign = std::is_signed<T>::value ? -1 : 1;
+        s++;
+    }
+    else
+    {
+        sign = 1;
+    }
+
+    val = 0;
+
+    // check for hex
+    if (s + 2 < e && s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
+    {
+        s += 2;
+        while (s < e)
+        {
+            c = *s++;
+            if (c >= '0' && c <= '9')
+            {
+                val = (val << 4) + c - '0';
+            }
+            else if (c >= 'a' && c <= 'f')
+            {
+                val = (val << 4) + c - 'a' + 10;
+            }
+            else if (c >= 'A' && c <= 'F')
+            {
+                val = (val << 4) + c - 'A' + 10;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return val * sign;
+    }
+
+    // check for character
+    if (s + 2 < e && s[0] == '\'')
+    {
+        return sign * T(s[1]);
+    }
+
+    while (s < e)
+    {
+        c = *s++;
+        if (c < '0' || c > '9')
+            break;
+        val = val * 10 + c - '0';
+    }
+
+    return val * sign;
+}
+
+template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+T ParseNumber(AStringView View)
+{
+    double val;
+    int    sign;
+    char   c;
+    int    decimal, total;
+
+    const char* s = View.Begin();
+    const char* e = View.End();
+
+    if (s == e)
+        return T(0);
+
+    if (*s == '-')
+    {
+        sign = -1;
+        s++;
+    }
+    else
+    {
+        sign = 1;
+    }
+
+    val = 0;
+
+    // check for hex
+    if (s + 2 < e && s[0] == '0' && (s[1] == 'x' || s[1] == 'X'))
+    {
+        s += 2;
+        while (s < e)
+        {
+            c = *s++;
+            if (c >= '0' && c <= '9')
+            {
+                val = (val * 16) + c - '0';
+            }
+            else if (c >= 'a' && c <= 'f')
+            {
+                val = (val * 16) + c - 'a' + 10;
+            }
+            else if (c >= 'A' && c <= 'F')
+            {
+                val = (val * 16) + c - 'A' + 10;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return val * sign;
+    }
+
+    // check for character
+    if (s + 2 < e && s[0] == '\'')
+    {
+        return sign * T(s[1]);
+    }
+
+    decimal = -1;
+    total   = 0;
+    while (s < e)
+    {
+        c = *s++;
+        if (c == '.')
+        {
+            decimal = total;
+            continue;
+        }
+        if (c < '0' || c > '9')
+        {
+            break;
+        }
+        val = val * 10 + c - '0';
+        total++;
+    }
+
+    if (decimal == -1)
+    {
+        return val * sign;
+    }
+    while (total > decimal)
+    {
+        val /= 10;
+        total--;
+    }
+
+    return val * sign;
+}
+
+HK_INLINE bool ParseBool(AStringView View)
+{
+    if (View == "0" || View == "false")
+        return false;
+    else if (View == "true")
+        return true;
+    else
+        return ParseNumber<int>(View) != 0;
+}
+
+HK_FORCEINLINE uint8_t ParseUInt8(AStringView View)
+{
+    return ParseNumber<uint8_t>(View);
+}
+
+HK_FORCEINLINE uint16_t ParseUInt16(AStringView View)
+{
+    return ParseNumber<uint16_t>(View);
+}
+
+HK_FORCEINLINE uint32_t ParseUInt32(AStringView View)
+{
+    return ParseNumber<uint32_t>(View);
+}
+
+HK_FORCEINLINE uint64_t ParseUInt64(AStringView View)
+{
+    return ParseNumber<uint64_t>(View);
+}
+
+HK_FORCEINLINE int8_t ParseInt8(AStringView View)
+{
+    return ParseNumber<int8_t>(View);
+}
+
+HK_FORCEINLINE int16_t ParseInt16(AStringView View)
+{
+    return ParseNumber<int16_t>(View);
+}
+
+HK_FORCEINLINE int32_t ParseInt32(AStringView View)
+{
+    return ParseNumber<int32_t>(View);
+}
+
+HK_FORCEINLINE int64_t ParseInt64(AStringView View)
+{
+    return ParseNumber<int64_t>(View);
+}
+
+HK_FORCEINLINE float ParseFloat(AStringView View)
+{
+    return ParseNumber<float>(View);
+}
+
+HK_FORCEINLINE double ParseDouble(AStringView View)
+{
+    return ParseNumber<double>(View);
+}
+
+} // namespace Core
+
+template <> struct fmt::formatter<TString<char>>
+{
+    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+
+    template <typename FormatContext> auto format(TString<char> const& v, FormatContext& ctx) -> decltype(ctx.out())
+    {
+        return fmt::detail::copy_str<char, const char*>(v.Begin(), v.End(), ctx.out());
+    }
+};
+template <> struct fmt::formatter<TStringView<char>>
+{
+    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+
+    template <typename FormatContext> auto format(TStringView<char> const& v, FormatContext& ctx) -> decltype(ctx.out())
+    {
+        return fmt::detail::copy_str<char, const char*>(v.Begin(), v.End(), ctx.out());
+    }
+};
+template <> struct fmt::formatter<TGlobalStringView<char>>
+{
+    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+
+    template <typename FormatContext> auto format(TGlobalStringView<char> const& v, FormatContext& ctx) -> decltype(ctx.out())
+    {
+        return fmt::detail::copy_str<char, const char*>(v.CStr(), v.CStr() + StringLength(v), ctx.out());
+    }
+};
+template <> struct fmt::formatter<TString<WideChar>>
+{
+    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+
+    template <typename FormatContext> auto format(TString<WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
+    {
+        AString str = Core::GetString(v);
+        return fmt::detail::copy_str<char, const char*>(str.Begin(), str.End(), ctx.out());
+    }
+};
+template <> struct fmt::formatter<TStringView<WideChar>>
+{
+    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+
+    template <typename FormatContext> auto format(TStringView<WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
+    {
+        AString str = Core::GetString(v);
+        return fmt::detail::copy_str<char, const char*>(str.Begin(), str.End(), ctx.out());
+    }
+};
+template <> struct fmt::formatter<TGlobalStringView<WideChar>>
+{
+    constexpr auto parse(format_parse_context& ctx) -> decltype(ctx.begin()) { return ctx.begin(); }
+
+    template <typename FormatContext> auto format(TGlobalStringView<WideChar> const& v, FormatContext& ctx) -> decltype(ctx.out())
+    {
+        AString str = Core::GetString(v);
+        return fmt::detail::copy_str<char, const char*>(str.Begin(), str.End(), ctx.out());
+    }
+};
+
+
+template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+struct TPathUtils
+{
+    TPathUtils() = delete;
+
+    /** Path utility. Return index of the path end. */
+    static StringSizeType FindPath(TStringView<CharT> Path)
+    {
+        const CharT* p = Path.End();
+        while (--p >= Path.Begin())
+            if (Platform::IsPathSeparator(*p))
+                return (StringSizeType)(p - Path.Begin() + 1);
+        return 0;
+    }
+
+    /** Path utility. Get filename without path. */
+    static TStringView<CharT> GetFilenameNoPath(TStringView<CharT> Path)
+    {
+        const CharT* e = Path.End();
+        const CharT* p = e;
+        while (--p >= Path.Begin() && !Platform::IsPathSeparator(*p))
+        {}
+        ++p;
+        return TStringView<CharT>(p, (StringSizeType)(e - p), Path.IsNullTerminated());
+    }
+
+    /** Path utility. Get full filename without extension. */
+    static TStringView<CharT> GetFilenameNoExt(TStringView<CharT> Path)
+    {
+        StringSizeType size = Path.Size();
+        const CharT*   p    = Path.Begin() + size;
+        while (--p >= Path.Begin())
+        {
+            if (*p == '.')
+            {
+                size = (StringSizeType)(p - Path.Begin());
+                break;
+            }
+            if (Platform::IsPathSeparator(*p))
+                break; // no extension
+        }
+        return TStringView<CharT>(Path.Begin(), size, Path.IsNullTerminated() && size == Path.Size());
+    }
+
+    /** Path utility. Get path without file name. */
+    static TStringView<CharT> GetFilePath(TStringView<CharT> Path)
+    {
+        const CharT* p = Path.End();
+        while (--p > Path.Begin() && !Platform::IsPathSeparator(*p))
+        {}
+        StringSizeType size = (StringSizeType)(p - Path.Begin());
+        return TStringView<CharT>(Path.Begin(), size, Path.IsNullTerminated() && size == Path.Size());
+    }
+
+    /** Path utility. Check file extension. */
+    static bool CompareExt(TStringView<CharT> Path, TStringView<CharT> Ext, bool bCaseInsensitive = true)
+    {
+        if (Ext.IsEmpty())
+            return false;
+
+        const CharT* p   = Path.End();
+        const CharT* ext = Ext.End();
+        if (bCaseInsensitive)
+        {
+            CharT c1, c2;
+            while (--ext >= Ext.Begin())
+            {
+                if (--p < Path.Begin())
+                    return false;
+
+                c1 = *p;
+                c2 = *ext;
+
+                if (c1 != c2)
+                {
+                    if (c1 >= 'a' && c1 <= 'z')
+                        c1 -= ('a' - 'A');
+                    if (c2 >= 'a' && c2 <= 'z')
+                        c2 -= ('a' - 'A');
+                    if (c1 != c2)
+                        return false;
+                }
+            }
+        }
+        else
+        {
+            while (--ext >= Ext.Begin())
+                if (--p < Path.Begin() || *p != *ext)
+                    return false;
+        }
+        return true;
+    }
+
+    /** Path utility. Return index where the extension begins. */
+    static StringSizeType FindExt(TStringView<CharT> Path)
+    {
+        StringSizeType size = Path.Size();
+        const CharT*   p    = Path.Begin() + size;
+        while (--p >= Path.Begin() && !Platform::IsPathSeparator(*p))
+            if (*p == '.')
+                return (StringSizeType)(p - Path.Begin());
+        return size;
+    }
+
+    /** Path utility. Return index where the extension begins after dot. */
+    static StringSizeType FindExtWithoutDot(TStringView<CharT> Path)
+    {
+        StringSizeType size = Path.Size();
+        const CharT*   p    = Path.Begin() + size;
+        while (--p >= Path.Begin() && !Platform::IsPathSeparator(*p))
+            if (*p == '.')
+                return (StringSizeType)(p - Path.Begin() + 1);
+        return size;
+    }
+
+    /** Path utility. Get filename extension. */
+    static TStringView<CharT> GetExt(TStringView<CharT> Path)
+    {
+        const CharT* p = Path.Begin() + FindExt(Path);
+        return TStringView<CharT>(p, (StringSizeType)(Path.End() - p), Path.IsNullTerminated());
+    }
+
+    /** Path utility. Get filename extension without dot. */
+    static TStringView<CharT> GetExtWithoutDot(TStringView<CharT> Path)
+    {
+        const CharT* p = Path.Begin() + FindExtWithoutDot(Path);
+        return TStringView<CharT>(p, (StringSizeType)(Path.End() - p), Path.IsNullTerminated());
+    }
+
+    /** Path utility. Fix OS-specific separator. */
+    static void FixSeparatorInplace(TString<CharT, Allocator>& Path)
+    {
+        CharT* p = Path.ToPtr();
+        while (*p)
+        {
+            if (*p == '\\')
+                *p = '/';
+            p++;
+        }
+    }
+
+    /** Path utility. Fix OS-specific separator. */
+    static TString<CharT, Allocator> FixSeparator(TStringView<CharT> Path)
+    {
+        TString<CharT, Allocator> fixedPath(Path);
+        FixSeparatorInplace(fixedPath);
+        return fixedPath;
+    }
+
+    /** Path utility.
+    Fix path string: replace separator \\ to /, skip series of /,
+    skip redunant sequences of dir/../dir2 -> dir. */
+    static void FixPathInplace(TString<CharT, Allocator>& Path)
+    {
+        StringSizeType newSize = Platform::FixPath(Path.ToPtr(), Path.Size());
+        Path.Resize(newSize);
+    }
+
+    /** Path utility.
+    Fix path string: replace separator \\ to /, skip series of /,
+    skip redunant sequences of dir/../dir2 -> dir. */
+    static TString<CharT, Allocator> FixPath(TStringView<CharT> Path)
+    {
+        TString<CharT, Allocator> fixedPath(Path);
+        StringSizeType            newSize = Platform::FixPath(fixedPath.ToPtr(), fixedPath.Size());
+        fixedPath.Resize(newSize);
+        return fixedPath;
+    }
+
+    /** Path utility. Add or replace existing file extension. */
+    static void SetExtensionInplace(TString<CharT, Allocator>& Path, TStringView<CharT> Extension, bool bReplace)
+    {
+        StringSizeType pos = FindExtWithoutDot(Path);
+        if (pos == Path.Size())
+        {
+            Path.Reserve(pos + Extension.Size() + 1);
+            Path += ".";
+            Path += Extension;
+        }
+        else
+        {
+            if (bReplace)
+            {
+                Path.Resize(pos);
+                Path += Extension;
+            }
+        }
+    }
+
+    /** Path utility. Add or replace existing file extension. */
+    static TString<CharT, Allocator> SetExtension(TStringView<CharT> Path, TStringView<CharT> Extension, bool bReplace)
+    {
+        StringSizeType pos = FindExtWithoutDot(Path);
+
+        if (pos == Path.Size())
+        {
+            TString<CharT, Allocator> newPath;
+            newPath.Reserve(pos + Extension.Size() + 1);
+            newPath += Path;
+            newPath += CharT('.');
+            newPath += Extension;
+            return newPath;
+        }
+
+        if (bReplace)
+        {
+            TStringView<CharT> filePath = Path.GetSubstring(0, pos);
+
+            TString<CharT, Allocator> newPath;
+            newPath.Reserve(filePath.Size() + Extension.Size());
+            newPath += filePath;
+            newPath += Extension;
+            return newPath;
+        }
+
+        return Path;
+    }
+};
+
+using PathUtils  = TPathUtils<char>;
+using PathUtilsW = TPathUtils<WideChar>;

@@ -80,17 +80,6 @@ struct Bool2
     constexpr bool Any() const { return (X | Y); }
     constexpr bool All() const { return (X & Y); }
 
-    // String conversions
-    AString ToString() const
-    {
-        return AString("( ") + Math::ToString(X) + " " + Math::ToString(Y) + " )";
-    }
-
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
-    {
-        return AString("( ") + Math::ToHexString(X, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Y, bLeadingZeros, bPrefix) + " )";
-    }
-
     // Byte serialization
     void Write(IBinaryStreamWriteInterface& stream) const
     {
@@ -164,17 +153,6 @@ struct Bool3
 
     constexpr bool Any() const { return (X | Y | Z); }
     constexpr bool All() const { return (X & Y & Z); }
-
-    // String conversions
-    AString ToString() const
-    {
-        return AString("( ") + Math::ToString(X) + " " + Math::ToString(Y) + " " + Math::ToString(Z) + " )";
-    }
-
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
-    {
-        return AString("( ") + Math::ToHexString(X, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Y, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Z, bLeadingZeros, bPrefix) + " )";
-    }
 
     // Byte serialization
     void Write(IBinaryStreamWriteInterface& stream) const
@@ -251,17 +229,6 @@ struct Bool4
     constexpr bool Any() const { return (X | Y | Z | W); }
     constexpr bool All() const { return (X & Y & Z & W); }
 
-    // String conversions
-    AString ToString() const
-    {
-        return AString("( ") + Math::ToString(X) + " " + Math::ToString(Y) + " " + Math::ToString(Z) + " " + Math::ToString(W) + " )";
-    }
-
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
-    {
-        return AString("( ") + Math::ToHexString(X, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Y, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Z, bLeadingZeros, bPrefix) + " " + Math::ToHexString(W, bLeadingZeros, bPrefix) + " )";
-    }
-
     // Byte serialization
     void Write(IBinaryStreamWriteInterface& stream) const
     {
@@ -287,3 +254,7 @@ struct Bool4
         return ZeroVec;
     }
 };
+
+HK_FORMAT_DEF_(Bool2, "( {} {} )", v.X, v.Y);
+HK_FORMAT_DEF_(Bool3, "( {} {} {} )", v.X, v.Y, v.Z);
+HK_FORMAT_DEF_(Bool4, "( {} {} {} {} )", v.X, v.Y, v.Z, v.W);

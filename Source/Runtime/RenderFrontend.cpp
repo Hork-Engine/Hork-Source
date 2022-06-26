@@ -45,17 +45,17 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/ScopedTimer.h>
 
-AConsoleVar r_FixFrustumClusters(_CTS("r_FixFrustumClusters"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar r_RenderView(_CTS("r_RenderView"), _CTS("1"), CVAR_CHEAT);
-AConsoleVar r_RenderSurfaces(_CTS("r_RenderSurfaces"), _CTS("1"), CVAR_CHEAT);
-AConsoleVar r_RenderMeshes(_CTS("r_RenderMeshes"), _CTS("1"), CVAR_CHEAT);
-AConsoleVar r_RenderTerrain(_CTS("r_RenderTerrain"), _CTS("1"), CVAR_CHEAT);
-AConsoleVar r_ResolutionScaleX(_CTS("r_ResolutionScaleX"), _CTS("1"));
-AConsoleVar r_ResolutionScaleY(_CTS("r_ResolutionScaleY"), _CTS("1"));
-AConsoleVar r_RenderLightPortals(_CTS("r_RenderLightPortals"), _CTS("1"));
-AConsoleVar r_VertexLight(_CTS("r_VertexLight"), _CTS("0"));
+AConsoleVar r_FixFrustumClusters("r_FixFrustumClusters"s, "0"s, CVAR_CHEAT);
+AConsoleVar r_RenderView("r_RenderView"s, "1"s, CVAR_CHEAT);
+AConsoleVar r_RenderSurfaces("r_RenderSurfaces"s, "1"s, CVAR_CHEAT);
+AConsoleVar r_RenderMeshes("r_RenderMeshes"s, "1"s, CVAR_CHEAT);
+AConsoleVar r_RenderTerrain("r_RenderTerrain"s, "1"s, CVAR_CHEAT);
+AConsoleVar r_ResolutionScaleX("r_ResolutionScaleX"s, "1"s);
+AConsoleVar r_ResolutionScaleY("r_ResolutionScaleY"s, "1"s);
+AConsoleVar r_RenderLightPortals("r_RenderLightPortals"s, "1"s);
+AConsoleVar r_VertexLight("r_VertexLight"s, "0"s);
 
-AConsoleVar com_DrawFrustumClusters(_CTS("com_DrawFrustumClusters"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawFrustumClusters("com_DrawFrustumClusters"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(ARenderFrontend)
 
@@ -443,7 +443,7 @@ void ARenderFrontend::RenderCanvas(ACanvas* InCanvas)
                 if (viewport->Width > 0 && viewport->Height > 0)
                 {
                     // Save pointer to viewport to array of viewports
-                    Viewports.Append(viewport);
+                    Viewports.Add(viewport);
 
                     // Set viewport index in array of viewports
                     dstCmd->ViewportIndex = Viewports.Size() - 1;
@@ -822,7 +822,7 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
 
             if (VisLights.Size() < MAX_LIGHTS)
             {
-                VisLights.Append(light);
+                VisLights.Add(light);
             }
             else
             {
@@ -840,7 +840,7 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
 
             if (VisEnvProbes.Size() < MAX_PROBES)
             {
-                VisEnvProbes.Append(envProbe);
+                VisEnvProbes.Add(envProbe);
             }
             else
             {
@@ -885,7 +885,7 @@ void ARenderFrontend::AddRenderInstances(AWorld* InWorld)
 
         SDirectionalLightInstance* instance = (SDirectionalLightInstance*)FrameLoop->AllocFrameMem(sizeof(SDirectionalLightInstance));
 
-        FrameData.DirectionalLights.Append(instance);
+        FrameData.DirectionalLights.Add(instance);
 
         dirlight->AddShadowmapCascades(FrameLoop->GetStreamedMemoryGPU(), view, &instance->ViewProjStreamHandle, &instance->FirstCascade, &instance->NumCascades);
 
@@ -1082,7 +1082,7 @@ void ARenderFrontend::AddTerrain(ATerrainComponent* InComponent)
 
     STerrainRenderInstance* instance = (STerrainRenderInstance*)FrameLoop->AllocFrameMem(sizeof(STerrainRenderInstance));
 
-    FrameData.TerrainInstances.Append(instance);
+    FrameData.TerrainInstances.Add(instance);
 
     instance->VertexBuffer               = TerrainMesh->GetVertexBufferGPU();
     instance->IndexBuffer                = TerrainMesh->GetIndexBufferGPU();
@@ -1148,18 +1148,18 @@ void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
 
         if (material->IsTranslucent())
         {
-            FrameData.TranslucentInstances.Append(instance);
+            FrameData.TranslucentInstances.Add(instance);
             RenderDef.View->TranslucentInstanceCount++;
         }
         else
         {
-            FrameData.Instances.Append(instance);
+            FrameData.Instances.Add(instance);
             RenderDef.View->InstanceCount++;
         }
 
         if (InComponent->bOutline)
         {
-            FrameData.OutlineInstances.Append(instance);
+            FrameData.OutlineInstances.Add(instance);
             RenderDef.View->OutlineInstanceCount++;
         }
 
@@ -1259,18 +1259,18 @@ void ARenderFrontend::AddSkinnedMesh(ASkinnedComponent* InComponent)
 
         if (material->IsTranslucent())
         {
-            FrameData.TranslucentInstances.Append(instance);
+            FrameData.TranslucentInstances.Add(instance);
             RenderDef.View->TranslucentInstanceCount++;
         }
         else
         {
-            FrameData.Instances.Append(instance);
+            FrameData.Instances.Add(instance);
             RenderDef.View->InstanceCount++;
         }
 
         if (InComponent->bOutline)
         {
-            FrameData.OutlineInstances.Append(instance);
+            FrameData.OutlineInstances.Add(instance);
             RenderDef.View->OutlineInstanceCount++;
         }
 
@@ -1350,18 +1350,18 @@ void ARenderFrontend::AddProceduralMesh(AProceduralMeshComponent* InComponent)
 
     if (material->IsTranslucent())
     {
-        FrameData.TranslucentInstances.Append(instance);
+        FrameData.TranslucentInstances.Add(instance);
         RenderDef.View->TranslucentInstanceCount++;
     }
     else
     {
-        FrameData.Instances.Append(instance);
+        FrameData.Instances.Add(instance);
         RenderDef.View->InstanceCount++;
     }
 
     if (InComponent->bOutline)
     {
-        FrameData.OutlineInstances.Append(instance);
+        FrameData.OutlineInstances.Add(instance);
         RenderDef.View->OutlineInstanceCount++;
     }
 
@@ -1434,7 +1434,7 @@ void ARenderFrontend::AddShadowmap_StaticMesh(SLightShadowmap* ShadowMap, AMeshC
         // Add render instance
         SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));
 
-        FrameData.ShadowInstances.Append(instance);
+        FrameData.ShadowInstances.Add(instance);
 
         instance->Material         = material->GetGPUResource();
         instance->MaterialInstance = materialInstanceFrameData;
@@ -1510,7 +1510,7 @@ void ARenderFrontend::AddShadowmap_SkinnedMesh(SLightShadowmap* ShadowMap, ASkin
         // Add render instance
         SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));
 
-        FrameData.ShadowInstances.Append(instance);
+        FrameData.ShadowInstances.Add(instance);
 
         instance->Material         = material->GetGPUResource();
         instance->MaterialInstance = materialInstanceFrameData;
@@ -1579,7 +1579,7 @@ void ARenderFrontend::AddShadowmap_ProceduralMesh(SLightShadowmap* ShadowMap, AP
     // Add render instance
     SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));
 
-    FrameData.ShadowInstances.Append(instance);
+    FrameData.ShadowInstances.Add(instance);
 
     instance->Material         = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
@@ -1636,8 +1636,8 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
         }
         //component->CascadeMask = 0;
 
-        ShadowCasters.Append(*component);
-        ShadowBoxes.Append(component->GetWorldBounds());
+        ShadowCasters.Add(*component);
+        ShadowBoxes.Add(component->GetWorldBounds());
     }
 
     ShadowBoxes.Resize(Align(ShadowBoxes.Size(), 4));
@@ -1659,7 +1659,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
 
         lightDef->ShadowmapIndex = FrameData.LightShadowmaps.Size();
 
-        SLightShadowmap* shadowMap = &FrameData.LightShadowmaps.Append();
+        SLightShadowmap* shadowMap = &FrameData.LightShadowmaps.Add();
 
         shadowMap->FirstShadowInstance = FrameData.ShadowInstances.Size();
         shadowMap->ShadowInstanceCount = 0;
@@ -1734,7 +1734,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
             // Add render instance
             SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));
 
-            FrameData.ShadowInstances.Append(instance);
+            FrameData.ShadowInstances.Add(instance);
 
             instance->Material            = nullptr;
             instance->MaterialInstance    = nullptr;
@@ -1787,7 +1787,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
 
                     SLightPortalRenderInstance* instance = (SLightPortalRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SLightPortalRenderInstance));
 
-                    FrameData.LightPortals.Append(instance);
+                    FrameData.LightPortals.Add(instance);
 
                     instance->VertexBuffer       = lighting->GetLightPortalsVB();
                     instance->VertexBufferOffset = 0;
@@ -2034,17 +2034,17 @@ void ARenderFrontend::AddSurface(ALevel* Level, AMaterialInstance* MaterialInsta
 
     if (material->IsTranslucent())
     {
-        FrameData.TranslucentInstances.Append(instance);
+        FrameData.TranslucentInstances.Add(instance);
         RenderDef.View->TranslucentInstanceCount++;
     }
     else
     {
-        FrameData.Instances.Append(instance);
+        FrameData.Instances.Add(instance);
         RenderDef.View->InstanceCount++;
     }
 
     //if ( bOutline ) {
-    //    FrameData.OutlineInstances.Append( instance );
+    //    FrameData.OutlineInstances.Add( instance );
     //    RenderDef.View->OutlineInstanceCount++;
     //}
 
@@ -2103,7 +2103,7 @@ void ARenderFrontend::AddShadowmapSurface(SLightShadowmap* ShadowMap, AMaterialI
     // Add render instance
     SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));
 
-    FrameData.ShadowInstances.Append(instance);
+    FrameData.ShadowInstances.Add(instance);
 
     instance->Material         = material->GetGPUResource();
     instance->MaterialInstance = materialInstanceFrameData;
@@ -2172,7 +2172,7 @@ bool ARenderFrontend::AddLightShadowmap(AAnalyticLightComponent* Light, float Ra
         // TODO: VSD не учитывает FarPlane для кулинга - исправить это
         QueryShadowCasters(world, lightViewProjection, lightPos, Float3x3(cubeFaceMatrices[faceIndex]), VisPrimitives, VisSurfaces);
 
-        SLightShadowmap* shadowMap = &FrameData.LightShadowmaps.Append();
+        SLightShadowmap* shadowMap = &FrameData.LightShadowmaps.Add();
 
         shadowMap->FirstShadowInstance = FrameData.ShadowInstances.Size();
         shadowMap->ShadowInstanceCount = 0;

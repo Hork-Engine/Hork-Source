@@ -163,19 +163,6 @@ int VSprintf(char* _Buffer, size_t _Size, const char* _Format, va_list _VaList)
     return stbsp_vsnprintf(_Buffer, _Size, _Format, _VaList);
 }
 
-char* Fmt(const char* _Format, ...)
-{
-    HK_ASSERT(_Format);
-    thread_local static char String[4][16384];
-    thread_local static int  Index = 0;
-    va_list                  VaList;
-    Index = (Index + 1) & 3; // for nested calls
-    va_start(VaList, _Format);
-    stbsp_vsnprintf(String[Index], sizeof(String[0]), _Format, VaList);
-    va_end(VaList);
-    return String[Index];
-}
-
 void Strcat(char* _Dest, size_t _Size, const char* _Src)
 {
     if (!_Dest || !_Src)

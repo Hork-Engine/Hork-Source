@@ -44,9 +44,9 @@ class WTextEdit : public WWidget
     friend class WTextEditProxy;
 
 public:
-    TWidgetEvent<SWideChar const*> E_OnEnterPress;
+    TWidgetEvent<WideChar const*> E_OnEnterPress;
     TWidgetEvent<>                 E_OnEscapePress;
-    TWidgetEvent<SWideChar const*> E_OnTyping;
+    TWidgetEvent<WideChar const*> E_OnTyping;
 
     WTextEdit& SetFont(AFont* _Font);
     WTextEdit& SetMaxChars(int _MaxChars);
@@ -124,11 +124,11 @@ public:
 
     WTextEdit& SetText(const char* _Text);
 
-    WTextEdit& SetText(const SWideChar* _Text);
+    WTextEdit& SetText(const WideChar* _Text);
 
-    SWideChar* GetText() { return TextData.ToPtr(); }
+    WideChar* GetText() { return TextData.ToPtr(); }
 
-    SWideChar const* GetText() const { return TextData.ToPtr(); }
+    WideChar const* GetText() const { return TextData.ToPtr(); }
 
     int GetTextLength() const;
 
@@ -144,7 +144,7 @@ public:
     // WTextEdit & SetSyntaxHighlighter( ISyntaxHighlighter * _SyntaxHighlighterInterface );
     // class ISyntaxHighlighter {
     // public:
-    //     virtual Color4 const & GetWordColor( SWideChar * _WordStart, SWideChar * _WordEnd ) = 0;
+    //     virtual Color4 const & GetWordColor( WideChar * _WordStart, WideChar * _WordEnd ) = 0;
     // };
 
     bool IsShortcutsAllowed() const override { return false; }
@@ -153,7 +153,7 @@ public:
     ~WTextEdit();
 
 protected:
-    virtual bool OnFilterCharacter(SWideChar& _Char) { return true; }
+    virtual bool OnFilterCharacter(WideChar& _Char) { return true; }
 
     void OnKeyEvent(struct SKeyEvent const& _Event, double _TimeStamp) override;
 
@@ -177,11 +177,11 @@ protected:
 
 private:
     void     PressKey(int _Key);
-    bool     FilterCharacter(SWideChar& _Char);
+    bool     FilterCharacter(WideChar& _Char);
     void     UpdateWidgetSize();
-    bool     InsertCharsProxy(int _Offset, SWideChar const* _Text, int _TextLength);
+    bool     InsertCharsProxy(int _Offset, WideChar const* _Text, int _TextLength);
     void     DeleteCharsProxy(int _First, int _Count);
-    bool     FindLineStartEnd(int _Cursor, SWideChar** _LineStart, SWideChar** _LineEnd);
+    bool     FindLineStartEnd(int _Cursor, WideChar** _LineStart, WideChar** _LineEnd);
     WScroll* GetScroll();
 
     Color4 SelectionColor;
@@ -189,7 +189,7 @@ private:
 
     TRef<AFont> Font;
 
-    TPodVector<SWideChar> TextData;
+    TPodVector<WideChar> TextData;
     int                   CurTextLength;
     int                   MaxChars;
     int                   CharacterFilter;

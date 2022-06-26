@@ -38,7 +38,7 @@ AConvexHull* AConvexHull::CreateEmpty(int maxPoints)
 {
     HK_ASSERT(maxPoints > 0);
     int          size = sizeof(AConvexHull) - sizeof(Points) + maxPoints * sizeof(Points[0]);
-    AConvexHull* hull = (AConvexHull*)GZoneMemory.Alloc(size);
+    AConvexHull* hull = (AConvexHull*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(size);
     hull->MaxPoints   = maxPoints;
     hull->NumPoints   = 0;
     return hull;
@@ -100,7 +100,7 @@ AConvexHull * AConvexHull::RecreateFromPoints( AConvexHull * oldHull, Float3 con
         // resize hull
         int oldSize = sizeof( AConvexHull ) - sizeof( Points ) + oldHull->MaxPoints * sizeof( Points[0] );
         int newSize = oldSize + ( numPoints - oldHull->MaxPoints ) * sizeof( Points[0] );
-        AConvexHull * hull = ( AConvexHull * )GZoneMemory.Realloc( oldHull, newSize, false );
+        AConvexHull * hull = ( AConvexHull * )Platform::MemoryReallocSafe( oldHull, newSize, false );
         hull->MaxPoints = numPoints;
         hull->NumPoints = numPoints;
         Platform::Memcpy( hull->Points, points, numPoints * sizeof( Float3 ) );
@@ -113,7 +113,7 @@ AConvexHull * AConvexHull::RecreateFromPoints( AConvexHull * oldHull, Float3 con
 
 void AConvexHull::Destroy()
 {
-    GZoneMemory.Free(this);
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(this);
 }
 
 AConvexHull* AConvexHull::Duplicate() const

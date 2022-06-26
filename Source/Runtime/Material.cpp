@@ -215,9 +215,9 @@ bool WriteMaterial(AString const& _Path, SMaterialDef const* pDef)
     return true;
 }
 
-void AMaterial::LoadInternalResource(const char* _Path)
+void AMaterial::LoadInternalResource(AStringView _Path)
 {
-    if (!Platform::Stricmp(_Path, "/Default/Materials/Unlit"))
+    if (!_Path.Icmp("/Default/Materials/Unlit"))
     {
         MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
 
@@ -239,7 +239,7 @@ void AMaterial::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Materials/UnlitMask"))
+    if (!_Path.Icmp("/Default/Materials/UnlitMask"))
     {
         MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
 
@@ -263,7 +263,7 @@ void AMaterial::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Materials/UnlitOpacity"))
+    if (!_Path.Icmp("/Default/Materials/UnlitOpacity"))
     {
         MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
 
@@ -286,7 +286,7 @@ void AMaterial::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Materials/BaseLight"))
+    if (!_Path.Icmp("/Default/Materials/BaseLight"))
     {
         MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
 
@@ -308,7 +308,7 @@ void AMaterial::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Materials/DefaultPBR"))
+    if (!_Path.Icmp("/Default/Materials/DefaultPBR"))
     {
         MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
 
@@ -358,7 +358,7 @@ void AMaterial::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Materials/PBRMetallicRoughness"))
+    if (!_Path.Icmp("/Default/Materials/PBRMetallicRoughness"))
     {
         MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
 
@@ -418,7 +418,7 @@ void AMaterial::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Materials/PBRMetallicRoughnessMask"))
+    if (!_Path.Icmp("/Default/Materials/PBRMetallicRoughnessMask"))
     {
         MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
 
@@ -480,7 +480,7 @@ void AMaterial::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Materials/PBRMetallicRoughnessOpacity"))
+    if (!_Path.Icmp("/Default/Materials/PBRMetallicRoughnessOpacity"))
     {
         MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
 
@@ -541,7 +541,7 @@ void AMaterial::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Materials/PBRMetallicRoughnessFactor"))
+    if (!_Path.Icmp("/Default/Materials/PBRMetallicRoughnessFactor"))
     {
         MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
 
@@ -633,7 +633,7 @@ void AMaterial::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Materials/PBRMetallicRoughnessFactorMask"))
+    if (!_Path.Icmp("/Default/Materials/PBRMetallicRoughnessFactorMask"))
     {
         MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
 
@@ -727,7 +727,7 @@ void AMaterial::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Materials/PBRMetallicRoughnessFactorOpacity"))
+    if (!_Path.Icmp("/Default/Materials/PBRMetallicRoughnessFactorOpacity"))
     {
         MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
 
@@ -820,7 +820,7 @@ void AMaterial::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Materials/PBRMetallicRoughnessNoTex"))
+    if (!_Path.Icmp("/Default/Materials/PBRMetallicRoughnessNoTex"))
     {
         MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
 
@@ -851,7 +851,7 @@ void AMaterial::LoadInternalResource(const char* _Path)
         return;
     }
 
-    if (!Platform::Stricmp(_Path, "/Default/Materials/Skybox"))
+    if (!_Path.Icmp("/Default/Materials/Skybox"))
     {
         MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
 
@@ -886,21 +886,21 @@ void AMaterial::LoadInternalResource(const char* _Path)
 
 AMaterialInstance::AMaterialInstance()
 {
-    static TStaticResourceFinder<AMaterial> MaterialResource(_CTS("/Default/Materials/Unlit"));
-    static TStaticResourceFinder<ATexture>  TextureResource(_CTS("/Common/grid8.png"));
+    static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/Unlit"s);
+    static TStaticResourceFinder<ATexture>  TextureResource("/Common/grid8.png"s);
 
     Material = MaterialResource.GetObject();
 
     SetTexture(0, TextureResource.GetObject());
 }
 
-void AMaterialInstance::LoadInternalResource(const char* _Path)
+void AMaterialInstance::LoadInternalResource(AStringView _Path)
 {
 #if 0
     if ( !Platform::Stricmp( _Path, "/Default/MaterialInstance/Default" ) )
     {
-        static TStaticResourceFinder< AMaterial > MaterialResource( _CTS( "/Default/Materials/Unlit" ) );
-        static TStaticResourceFinder< ATexture > TextureResource( _CTS( "/Common/grid8.png" ) );
+        static TStaticResourceFinder< AMaterial > MaterialResource("/Default/Materials/Unlit"s);
+        static TStaticResourceFinder< ATexture > TextureResource("/Common/grid8.png"s);
 
         Material = MaterialResource.GetObject();
 
@@ -908,19 +908,19 @@ void AMaterialInstance::LoadInternalResource(const char* _Path)
         return;
     }
 #endif
-    if (!Platform::Stricmp(_Path, "/Default/MaterialInstance/BaseLight"))
+    if (!_Path.Icmp("/Default/MaterialInstance/BaseLight"))
     {
-        static TStaticResourceFinder<AMaterial> MaterialResource(_CTS("/Default/Materials/BaseLight"));
-        static TStaticResourceFinder<ATexture>  TextureResource(_CTS("/Common/grid8.png"));
+        static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/BaseLight"s);
+        static TStaticResourceFinder<ATexture>  TextureResource("/Common/grid8.png"s);
 
         Material = MaterialResource.GetObject();
 
         SetTexture(0, TextureResource.GetObject());
         return;
     }
-    if (!Platform::Stricmp(_Path, "/Default/MaterialInstance/Metal"))
+    if (!_Path.Icmp("/Default/MaterialInstance/Metal"))
     {
-        static TStaticResourceFinder<AMaterial> MaterialResource(_CTS("/Default/Materials/PBRMetallicRoughnessNoTex"));
+        static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/PBRMetallicRoughnessNoTex"s);
 
         Material = MaterialResource.GetObject();
 
@@ -934,9 +934,9 @@ void AMaterialInstance::LoadInternalResource(const char* _Path)
         UniformVectors[2] = Float4(0.0f);
         return;
     }
-    if (!Platform::Stricmp(_Path, "/Default/MaterialInstance/Dielectric") || !Platform::Stricmp(_Path, "/Default/MaterialInstance/Default"))
+    if (!_Path.Icmp("/Default/MaterialInstance/Dielectric") || !_Path.Icmp("/Default/MaterialInstance/Default"))
     {
-        static TStaticResourceFinder<AMaterial> MaterialResource(_CTS("/Default/Materials/PBRMetallicRoughnessNoTex"));
+        static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/PBRMetallicRoughnessNoTex"s);
 
         Material = MaterialResource.GetObject();
 
@@ -1040,7 +1040,7 @@ bool AMaterialInstance::LoadTextVersion(IBinaryStreamReadInterface& Stream)
         int        uniformNum = 0;
         for (ADocValue* v = values; v && uniformNum < MAX_MATERIAL_UNIFORMS; v = v->GetNext())
         {
-            Uniforms[uniformNum++] = Math::ToFloat(v->GetString());
+            Uniforms[uniformNum++] = Core::ParseFloat(v->GetString());
         }
     }
 
@@ -1054,7 +1054,7 @@ void AMaterialInstance::SetMaterial(AMaterial* _Material)
 {
     if (!_Material)
     {
-        static TStaticResourceFinder<AMaterial> MaterialResource(_CTS("/Default/Materials/Unlit"));
+        static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/Unlit"s);
 
         Material = MaterialResource.GetObject();
     }

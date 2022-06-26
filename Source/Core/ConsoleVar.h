@@ -31,7 +31,6 @@ SOFTWARE.
 #pragma once
 
 #include "String.h"
-#include "CompileTimeString.h"
 
 enum CVAR_FLAGS
 {
@@ -65,21 +64,16 @@ class AConsoleVar final
 public:
     static int EnvironmentFlags;
 
-    template <char... NameChars>
-    AConsoleVar(TCompileTimeString<NameChars...> const& _Name) :
-        AConsoleVar(_Name.CStr(), "0", 0, "") {}
+    AConsoleVar(AGlobalStringView _Name) :
+        AConsoleVar(_Name, "0"s, 0, ""s) {}
 
-    template <char... NameChars, char... ValueChars>
-    AConsoleVar(TCompileTimeString<NameChars...> const& _Name, TCompileTimeString<ValueChars...> const& _Value) :
-        AConsoleVar(_Name.CStr(), _Value.CStr(), 0, "") {}
+    AConsoleVar(AGlobalStringView _Name, AGlobalStringView _Value) :
+        AConsoleVar(_Name, _Value, 0, ""s) {}
 
-    template <char... NameChars, char... ValueChars>
-    AConsoleVar(TCompileTimeString<NameChars...> const& _Name, TCompileTimeString<ValueChars...> const& _Value, uint16_t _Flags) :
-        AConsoleVar(_Name.CStr(), _Value.CStr(), _Flags, "") {}
+    AConsoleVar(AGlobalStringView _Name, AGlobalStringView _Value, uint16_t _Flags) :
+        AConsoleVar(_Name, _Value, _Flags, ""s) {}
 
-    template <char... NameChars, char... ValueChars, char... CommentChars>
-    AConsoleVar(TCompileTimeString<NameChars...> const& _Name, TCompileTimeString<ValueChars...> const& _Value, uint16_t _Flags, TCompileTimeString<CommentChars...> const& _Comment) :
-        AConsoleVar(_Name.CStr(), _Value.CStr(), _Flags, _Comment.CStr()) {}
+    AConsoleVar(AGlobalStringView _Name, AGlobalStringView _Value, uint16_t _Flags, AGlobalStringView _Comment);
 
     ~AConsoleVar();
 
@@ -117,9 +111,7 @@ public:
 
     bool IsNoInGame() const { return !!(Flags & CVAR_NOINGAME); }
 
-    void SetString(const char* _String);
-
-    void SetString(AString const& _String);
+    void SetString(AStringView _String);
 
     void SetBool(bool _Bool);
 
@@ -127,9 +119,7 @@ public:
 
     void SetFloat(float _Float);
 
-    void ForceString(const char* _String);
-
-    void ForceString(AString const& _String);
+    void ForceString(AStringView _String);
 
     void ForceBool(bool _Bool);
 
@@ -141,12 +131,7 @@ public:
 
     void Print();
 
-    AConsoleVar const& operator=(const char* _String)
-    {
-        SetString(_String);
-        return *this;
-    }
-    AConsoleVar const& operator=(AString const& _String)
+    AConsoleVar const& operator=(AStringView _String)
     {
         SetString(_String);
         return *this;
@@ -172,25 +157,20 @@ public:
 
     static AConsoleVar* GlobalVariableList();
 
-    static AConsoleVar* FindVariable(const char* _Name);
+    static AConsoleVar* FindVariable(AStringView _Name);
 
     // Internal
     static void AllocateVariables();
     static void FreeVariables();
 
 private:
-    AConsoleVar(const char* _Name,
-                     const char* _Value,
-                     uint16_t    _Flags,
-                     const char* _Comment);
-
     char const* const Name;
     char const* const DefaultValue;
     char const* const Comment;
     AString           Value;
     AString           LatchedValue;
-    int32_t           I32;
-    float             F32;
-    uint16_t          Flags;
-    AConsoleVar* Next;
+    int32_t           I32{};
+    float             F32{};
+    uint16_t          Flags{};
+    AConsoleVar*      Next;
 };

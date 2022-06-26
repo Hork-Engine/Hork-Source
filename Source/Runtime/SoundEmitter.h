@@ -189,7 +189,7 @@ struct SSoundSpawnInfo
     float ConeOuterAngle = 360;
 
     /** Direction of sound propagation */
-    Float3 Direction = Float3::Zero();
+    Float3 Direction;
 };
 
 class ASoundOneShot
@@ -439,7 +439,7 @@ private:
     static void UpdateSound(ASoundOneShot* Sound);
     static void FreeSound(ASoundOneShot* Sound);
 
-    using AQueue = TPodQueue<ASoundResource*, 1, false, AZoneAllocator>;
+    using AQueue = TPodQueue<ASoundResource*, 1, true>;
 
     AQueue AudioQueue;
 

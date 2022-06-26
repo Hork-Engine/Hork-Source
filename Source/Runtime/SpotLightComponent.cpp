@@ -43,7 +43,7 @@ static const float DEFAULT_SPOT_EXPONENT    = 1.0f;
 static const float MIN_CONE_ANGLE           = 1.0f;
 static const float MIN_RADIUS               = 0.01f;
 
-AConsoleVar com_DrawSpotLights(_CTS("com_DrawSpotLights"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawSpotLights("com_DrawSpotLights"s, "0"s, CVAR_CHEAT);
 
 HK_BEGIN_CLASS_META(ASpotLightComponent)
 HK_PROPERTY(Radius, SetRadius, GetRadius, HK_PROPERTY_DEFAULT)
@@ -70,8 +70,8 @@ void ASpotLightComponent::OnCreateAvatar()
     Super::OnCreateAvatar();
 
     // TODO: Create mesh or sprite for avatar
-    static TStaticResourceFinder<AIndexedMesh>      Mesh(_CTS("/Default/Meshes/Cone"));
-    static TStaticResourceFinder<AMaterialInstance> MaterialInstance(_CTS("AvatarMaterialInstance"));
+    static TStaticResourceFinder<AIndexedMesh>      Mesh("/Default/Meshes/Cone"s);
+    static TStaticResourceFinder<AMaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
     AMeshComponent*                                 meshComponent = GetOwnerActor()->CreateComponent<AMeshComponent>("SpotLightAvatar");
     meshComponent->SetMotionBehavior(MB_KINEMATIC);
     meshComponent->SetCollisionGroup(CM_NOCOLLISION);

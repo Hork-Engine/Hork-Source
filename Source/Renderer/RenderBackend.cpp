@@ -50,26 +50,26 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-AConsoleVar r_FrameGraphDebug(_CTS("r_FrameGraphDebug"), _CTS("0"));
-AConsoleVar r_RenderSnapshot(_CTS("r_RenderSnapshot"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar r_DebugRenderMode(_CTS("r_DebugRenderMode"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar r_BloomScale(_CTS("r_BloomScale"), _CTS("1"));
-AConsoleVar r_Bloom(_CTS("r_Bloom"), _CTS("1"));
-AConsoleVar r_BloomParam0(_CTS("r_BloomParam0"), _CTS("0.5"));
-AConsoleVar r_BloomParam1(_CTS("r_BloomParam1"), _CTS("0.3"));
-AConsoleVar r_BloomParam2(_CTS("r_BloomParam2"), _CTS("0.04"));
-AConsoleVar r_BloomParam3(_CTS("r_BloomParam3"), _CTS("0.01"));
-AConsoleVar r_ToneExposure(_CTS("r_ToneExposure"), _CTS("0.4"));
-AConsoleVar r_Brightness(_CTS("r_Brightness"), _CTS("1"));
-AConsoleVar r_TessellationLevel(_CTS("r_TessellationLevel"), _CTS("0.05"));
-AConsoleVar r_MotionBlur(_CTS("r_MotionBlur"), _CTS("1"));
-AConsoleVar r_SSLR(_CTS("r_SSLR"), _CTS("1"), 0, _CTS("Required to rebuld materials to apply"));
-AConsoleVar r_SSLRMaxDist(_CTS("r_SSLRMaxDist"), _CTS("10"));
-AConsoleVar r_SSLRSampleOffset(_CTS("r_SSLRSampleOffset"), _CTS("0.1"));
-AConsoleVar r_HBAO(_CTS("r_HBAO"), _CTS("1"), 0, _CTS("Required to rebuld materials to apply"));
-AConsoleVar r_FXAA(_CTS("r_FXAA"), _CTS("1"));
-AConsoleVar r_SMAA(_CTS("r_SMAA"), _CTS("1"));
-AConsoleVar r_ShowGPUTime(_CTS("r_ShowGPUTime"), _CTS("0"));
+AConsoleVar r_FrameGraphDebug("r_FrameGraphDebug"s, "0"s);
+AConsoleVar r_RenderSnapshot("r_RenderSnapshot"s, "0"s, CVAR_CHEAT);
+AConsoleVar r_DebugRenderMode("r_DebugRenderMode"s, "0"s, CVAR_CHEAT);
+AConsoleVar r_BloomScale("r_BloomScale"s, "1"s);
+AConsoleVar r_Bloom("r_Bloom"s, "1"s);
+AConsoleVar r_BloomParam0("r_BloomParam0"s, "0.5"s);
+AConsoleVar r_BloomParam1("r_BloomParam1"s, "0.3"s);
+AConsoleVar r_BloomParam2("r_BloomParam2"s, "0.04"s);
+AConsoleVar r_BloomParam3("r_BloomParam3"s, "0.01"s);
+AConsoleVar r_ToneExposure("r_ToneExposure"s, "0.4"s);
+AConsoleVar r_Brightness("r_Brightness"s, "1"s);
+AConsoleVar r_TessellationLevel("r_TessellationLevel"s, "0.05"s);
+AConsoleVar r_MotionBlur("r_MotionBlur"s, "1"s);
+AConsoleVar r_SSLR("r_SSLR"s, "1"s, 0, "Required to rebuld materials to apply"s);
+AConsoleVar r_SSLRMaxDist("r_SSLRMaxDist"s, "10"s);
+AConsoleVar r_SSLRSampleOffset("r_SSLRSampleOffset"s, "0.1"s);
+AConsoleVar r_HBAO("r_HBAO"s, "1"s, 0, "Required to rebuld materials to apply"s);
+AConsoleVar r_FXAA("r_FXAA"s, "1"s);
+AConsoleVar r_SMAA("r_SMAA"s, "1"s);
+AConsoleVar r_ShowGPUTime("r_ShowGPUTime"s, "0"s);
 
 void TestVT();
 
@@ -534,10 +534,10 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
     // TODO: Bind virtual textures in one place
     FeedbackAnalyzerVT->BindTexture(0, TestVT);
 
-    GRenderViewContext.clear();
-    GRenderViewContext.resize(GFrameData->NumViews);
+    GRenderViewContext.Clear();
+    GRenderViewContext.Resize(GFrameData->NumViews);
 
-    TPodVector<FGTextureProxy*> pRenderViewTexture(GFrameData->NumViews);
+    TSmallVector<FGTextureProxy*, 32> pRenderViewTexture(GFrameData->NumViews);
     for (int i = 0; i < GFrameData->NumViews; i++)
     {
         SRenderView* pRenderView = &GFrameData->RenderViews[i];

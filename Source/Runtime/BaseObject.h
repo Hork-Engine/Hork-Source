@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <Core/Document.h>
 #include <Core/Ref.h>
-#include <Containers/StdVector.h>
+#include <Containers/Vector.h>
 
 struct SWeakRefCounter;
 
@@ -61,7 +61,7 @@ public:
     ABaseObject();
     virtual ~ABaseObject();
 
-    void SetProperties(THashContainer<AString, AString> const& Properties);
+    void SetProperties(TStringHashMap<AString> const& Properties);
 
     bool SetProperty(AStringView PropertyName, AStringView PropertyValue);
 
@@ -129,11 +129,11 @@ public:
 
     //void ToPackedValue(APackedValue& PackedVal) const
     //{
-    //    PackedVal = Math::ToString(Id);
+    //    PackedVal = Core::ToString(Id);
     //}
 
 private:
-    void SetProperties_r(AClassMeta const* Meta, THashContainer<AString, AString> const& Properties);
+    void SetProperties_r(AClassMeta const* Meta, TStringHashMap<AString> const& Properties);
 
     /** Custom object name */
     AString Name;
@@ -285,7 +285,7 @@ struct TEvent
     void Add(T* _Object, void (T::*_Method)(TArgs...))
     {
         // Add callback
-        Callbacks.emplace_back(_Object, _Method);
+        Callbacks.EmplaceBack(_Object, _Method);
     }
 
     template <typename T>
@@ -295,7 +295,7 @@ struct TEvent
         {
             return;
         }
-        for (int i = Callbacks.size() - 1; i >= 0; i--)
+        for (int i = Callbacks.Size() - 1; i >= 0; i--)
         {
             Callback& callback = Callbacks[i];
 
@@ -323,7 +323,7 @@ struct TEvent
 
     void Dispatch(TArgs... _Args)
     {
-        for (int i = 0; i < Callbacks.size();)
+        for (int i = 0; i < Callbacks.Size();)
         {
             if (Callbacks[i].IsValid())
             {
@@ -333,7 +333,7 @@ struct TEvent
             else
             {
                 // Cleanup
-                Callbacks.erase(Callbacks.begin() + i);
+                Callbacks.Erase(Callbacks.begin() + i);
             }
         }
     }
@@ -341,7 +341,7 @@ struct TEvent
     template <typename TConditionalCallback>
     void DispatchConditional(TConditionalCallback const& _Condition, TArgs... _Args)
     {
-        for (int i = 0; i < Callbacks.size();)
+        for (int i = 0; i < Callbacks.Size();)
         {
             if (Callbacks[i].IsValid())
             {
@@ -355,13 +355,13 @@ struct TEvent
             else
             {
                 // Cleanup
-                Callbacks.erase(Callbacks.begin() + i);
+                Callbacks.Erase(Callbacks.begin() + i);
             }
         }
     }
 
 private:
-    TStdVector<Callback> Callbacks;
+    TVector<Callback> Callbacks;
 };
 
 #if 0

@@ -69,7 +69,7 @@ template <typename... TArgs>
 struct TWidgetEvent : TEvent<TArgs...>
 {};
 
-using AWidgetShape = TPodVector<Float2, 4>;
+using AWidgetShape = TSmallVector<Float2, 4>;
 
 #define WNew(Type)            (*CreateInstanceOf<Type>())
 #define WNewAssign(Val, Type) (*(Val = CreateInstanceOf<Type>()))
@@ -81,7 +81,7 @@ class WWidgetShareFocusGroup : public ABaseObject
     HK_CLASS(WWidgetShareFocusGroup, ABaseObject)
 
 public:
-    TStdVector<TWeakRef<WWidget>> Widgets;
+    TVector<TWeakRef<WWidget>> Widgets;
 
     WWidgetShareFocusGroup()
     {}
@@ -525,7 +525,7 @@ private:
     WDesktop*                 Desktop;
     WWidget*                  Parent;
     TPodVector<WWidget*>      Childs;
-    TPodVector<WDecorate*, 2> Decorates;
+    TSmallVector<WDecorate*, 2> Decorates;
     TPodVector<WWidget*>      LayoutSlots;
     AWidgetShape              Shape;
     AWidgetShape              DragShape;
@@ -549,8 +549,8 @@ private:
     float                     VerticalPadding;
     int                       ColumnsCount;
     int                       RowsCount;
-    TPodVector<SCell, 1>      Columns;
-    TPodVector<SCell, 1>      Rows;
+    TVector<SCell>            Columns;
+    TVector<SCell>            Rows;
     bool                      bFitColumns;
     bool                      bFitRows;
     bool                      bAutoWidth;

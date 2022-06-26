@@ -36,8 +36,8 @@ HK_CLASS_META(AGameModule)
 
 AGameModule::AGameModule()
 {
-    AddCommand("quit", {this, &AGameModule::Quit}, "Quit from application");
-    AddCommand("RebuildMaterials", {this, &AGameModule::RebuildMaterials}, "Rebuild materials");
+    AddCommand("quit"s, {this, &AGameModule::Quit}, "Quit from application"s);
+    AddCommand("RebuildMaterials"s, {this, &AGameModule::RebuildMaterials}, "Rebuild materials"s);
 }
 
 void AGameModule::OnGameClose()
@@ -45,12 +45,12 @@ void AGameModule::OnGameClose()
     GEngine->PostTerminateEvent();
 }
 
-void AGameModule::AddCommand(const char* _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment)
+void AGameModule::AddCommand(AGlobalStringView _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment)
 {
     CommandContext.AddCommand(_Name, _Callback, _Comment);
 }
 
-void AGameModule::RemoveCommand(const char* _Name)
+void AGameModule::RemoveCommand(AStringView _Name)
 {
     CommandContext.RemoveCommand(_Name);
 }

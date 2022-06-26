@@ -47,7 +47,7 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <RenderCore/VertexMemoryGPU.h>
 
-AConsoleVar com_DrawSkeleton(_CTS("com_DrawSkeleton"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawSkeleton("com_DrawSkeleton"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(ASkinnedComponent)
 
@@ -66,7 +66,7 @@ ASkinnedComponent::ASkinnedComponent()
     Primitive->RaycastCallback        = nullptr;
     Primitive->RaycastClosestCallback = nullptr;
 
-    static TStaticResourceFinder<ASkeleton> SkeletonResource(_CTS("/Default/Skeleton/Default"));
+    static TStaticResourceFinder<ASkeleton> SkeletonResource("/Default/Skeleton/Default"s);
     Skeleton = SkeletonResource.GetObject();
 }
 
@@ -134,7 +134,7 @@ void ASkinnedComponent::AddAnimationController(AAnimationController* _Controller
     }
     _Controller->Owner = this;
     _Controller->AddRef();
-    AnimControllers.Append(_Controller);
+    AnimControllers.Add(_Controller);
     bUpdateControllers = true;
 }
 

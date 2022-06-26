@@ -124,7 +124,7 @@ void ALexer::AddOperator(const char* _String)
     Platform::Strcpy(Op.Str, sizeof(Op.Str), _String);
     Op.Len = static_cast<int>(strlen(Op.Str));
 
-    Operators.Append(Op);
+    Operators.Add(Op);
 }
 
 int ALexer::CheckOperator(const char* _Ptr) const
@@ -720,12 +720,12 @@ int32_t ALexer::ExpectInteger(bool _CrossLine)
     }
     if (GetTokenType() == TOKEN_TYPE_INTEGER)
     {
-        return Math::ToInt<int32_t>(Token());
+        return Core::ParseInt32(Token());
     }
     if (GetTokenType() == TOKEN_TYPE_REAL)
     {
         WarnPrintf("conversion from 'real' to 'integer'\n");
-        return (int32_t)Math::ToFloat(Token());
+        return (int32_t)Core::ParseFloat(Token());
     }
 
     ErrorPrintf("expected integer, found '%s'\n", Token());
@@ -753,7 +753,7 @@ bool ALexer::ExpectBoolean(bool _CrossLine)
     }
     if (GetTokenType() == TOKEN_TYPE_INTEGER)
     {
-        return Math::ToInt<int32_t>(Token()) != 0;
+        return Core::ParseInt32(Token()) != 0;
     }
     if (GetTokenType() == TOKEN_TYPE_IDENTIFIER)
     {
@@ -770,7 +770,7 @@ bool ALexer::ExpectBoolean(bool _CrossLine)
     if (GetTokenType() == TOKEN_TYPE_REAL)
     {
         WarnPrintf("conversion from 'real' to 'boolean'\n");
-        return (int32_t)Math::ToFloat(Token()) != 0;
+        return (int32_t)Core::ParseFloat(Token()) != 0;
     }
 
     ErrorPrintf("expected boolean, found '%s'\n", Token());
@@ -801,7 +801,7 @@ float ALexer::ExpectFloat(bool _CrossLine)
         ErrorPrintf("expected real, found '%s'\n", Token());
         return 0;
     }
-    return Math::ToFloat(Token());
+    return Core::ParseFloat(Token());
 }
 
 double ALexer::ExpectDouble(bool _CrossLine)
@@ -828,7 +828,7 @@ double ALexer::ExpectDouble(bool _CrossLine)
         ErrorPrintf("expected real, found '%s'\n", Token());
         return 0;
     }
-    return Math::ToDouble(Token());
+    return Core::ParseDouble(Token());
 }
 
 bool ALexer::ExpectQuaternion(Quat& _DestQuat, bool _CrossLine)
@@ -898,7 +898,7 @@ bool ALexer::ExpectVector(float* _DestVector, int _NumComponents, bool _CrossLin
             return false;
         }
 
-        _DestVector[i] = Math::ToFloat(Token());
+        _DestVector[i] = Core::ParseFloat(Token());
     }
     return true;
 }
@@ -950,7 +950,7 @@ bool ALexer::ExpectDVector(double* _DestVector, int _NumComponents, bool _CrossL
             return false;
         }
 
-        _DestVector[i] = Math::ToDouble(Token());
+        _DestVector[i] = Core::ParseDouble(Token());
     }
     return true;
 }
@@ -1002,7 +1002,7 @@ bool ALexer::ExpectIVector(int* _DestVector, int _NumComponents, bool _CrossLine
             return false;
         }
 
-        _DestVector[i] = Math::ToInt<int64_t>(Token());
+        _DestVector[i] = Core::ParseInt64(Token());
     }
     return true;
 }

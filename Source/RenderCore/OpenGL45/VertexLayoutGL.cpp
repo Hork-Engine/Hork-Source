@@ -118,8 +118,8 @@ void AVertexLayoutGL::DestroyVAO(AImmediateContextGLImpl* pContext)
     }
     else
     {
-        auto it = VaoHandles.find(pContext->GetUID());
-        if (it != VaoHandles.end())
+        auto it = VaoHandles.Find(pContext->GetUID());
+        if (it != VaoHandles.End())
         {
             auto& vaoHandle = it->second;
             HK_ASSERT(vaoHandle);
@@ -127,7 +127,7 @@ void AVertexLayoutGL::DestroyVAO(AImmediateContextGLImpl* pContext)
             if (vaoHandle->HandleGL)
                 glDeleteVertexArrays(1, &vaoHandle->HandleGL);
 
-            VaoHandles.erase(it);
+            VaoHandles.Erase(it);
         }
     }
 }

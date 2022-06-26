@@ -42,7 +42,7 @@ AResourceManager::AResourceManager()
                                     return;
                                 }
 
-                                if (FileName.CompareExt(".resources"))
+                                if (PathUtils::CompareExt(FileName, ".resources"))
                                 {
                                     AddResourcePack(FileName);
                                 }
@@ -54,21 +54,16 @@ AResourceManager::AResourceManager()
 
 AResourceManager::~AResourceManager()
 {
-    for (int i = ResourceCache.Size() - 1; i >= 0; i--)
+    for (auto it : ResourceCache)
     {
-        ResourceCache[i]->RemoveRef();
+        AResource* resource = it.second;
+        resource->RemoveRef();
     }
-    ResourceCache.Free();
-    ResourceHash.Free();
-
-    ResourcePacks.Clear();
-
-    CommonResources.Reset();
 }
 
 void AResourceManager::AddResourcePack(AStringView FileName)
 {
-    ResourcePacks.emplace_back<TUniqueRef<AArchive>>(MakeUnique<AArchive>(FileName, true));
+    ResourcePacks.EmplaceBack<TUniqueRef<AArchive>>(MakeUnique<AArchive>(FileName, true));
 }
 
 bool AResourceManager::FindFile(AStringView FileName, AArchive** ppResourcePack, int* pFileIndex)
@@ -91,47 +86,37 @@ bool AResourceManager::FindFile(AStringView FileName, AArchive** ppResourcePack,
     return false;
 }
 
-AResource* AResourceManager::FindResource(AClassMeta const& _ClassMeta, const char* _Alias, bool& _bMetadataMismatch, int& _Hash)
+AResource* AResourceManager::FindResource(AClassMeta const& _ClassMeta, AStringView _Alias, bool& _bMetadataMismatch)
 {
-    _Hash = Core::HashCase(_Alias, Platform::Strlen(_Alias));
-
     _bMetadataMismatch = false;
 
-    for (int i = ResourceHash.First(_Hash); i != -1; i = ResourceHash.Next(i))
-    {
-        if (!ResourceCache[i]->GetResourcePath().Icmp(_Alias))
-        {
-            if (&ResourceCache[i]->FinalClassMeta() != &_ClassMeta)
-            {
-                LOG("FindResource: {} class doesn't match meta data ({} vs {})\n", _Alias, ResourceCache[i]->FinalClassName(), _ClassMeta.GetName());
-                _bMetadataMismatch = true;
-                return nullptr;
-            }
-            return ResourceCache[i];
-        }
-    }
-    return nullptr;
-}
+    auto it = ResourceCache.Find(_Alias);
+    if (it == ResourceCache.End())
+        return nullptr;
 
-AResource* AResourceManager::FindResourceByAlias(const char* _Alias)
-{
-    int hash = Core::HashCase(_Alias, Platform::Strlen(_Alias));
+    AResource* cachedResource = it->second;
 
-    for (int i = ResourceHash.First(hash); i != -1; i = ResourceHash.Next(i))
+    if (&cachedResource->FinalClassMeta() != &_ClassMeta)
     {
-        if (!ResourceCache[i]->GetResourcePath().Icmp(_Alias))
-        {
-            return ResourceCache[i];
-        }
+        LOG("FindResource: {} class doesn't match meta data ({} vs {})\n", _Alias, cachedResource->FinalClassName(), _ClassMeta.GetName());
+        _bMetadataMismatch = true;
+        return nullptr;
     }
 
-    return nullptr;
+    return cachedResource;
 }
 
-AResource* AResourceManager::GetResource(AClassMeta const& _ClassMeta, const char* _Alias, bool* _bResourceFoundResult, bool* _bMetadataMismatch)
+AResource* AResourceManager::FindResourceByAlias(AStringView _Alias)
 {
-    int hash = Core::HashCase(_Alias, Platform::Strlen(_Alias));
+    auto it = ResourceCache.Find(_Alias);
+    if (it == ResourceCache.End())
+        return nullptr;
 
+    return it->second;
+}
+
+AResource* AResourceManager::GetResource(AClassMeta const& _ClassMeta, AStringView _Alias, bool* _bResourceFoundResult, bool* _bMetadataMismatch)
+{
     if (_bResourceFoundResult)
     {
         *_bResourceFoundResult = false;
@@ -142,27 +127,25 @@ AResource* AResourceManager::GetResource(AClassMeta const& _ClassMeta, const cha
         *_bMetadataMismatch = false;
     }
 
-    for (int i = ResourceHash.First(hash); i != -1; i = ResourceHash.Next(i))
+    auto it = ResourceCache.Find(_Alias);
+    if (it != ResourceCache.End())
     {
-        if (!ResourceCache[i]->GetResourcePath().Icmp(_Alias))
+        AResource* cachedResource = it->second;
+        if (&cachedResource->FinalClassMeta() != &_ClassMeta)
         {
-            if (&ResourceCache[i]->FinalClassMeta() != &_ClassMeta)
-            {
-                LOG("GetResource: {} class doesn't match meta data ({} vs {})\n", _Alias, ResourceCache[i]->FinalClassName(), _ClassMeta.GetName());
+            LOG("GetResource: {} class doesn't match meta data ({} vs {})\n", _Alias, cachedResource->FinalClassName(), _ClassMeta.GetName());
 
-                if (_bMetadataMismatch)
-                {
-                    *_bMetadataMismatch = true;
-                }
-                break;
-            }
-
-            if (_bResourceFoundResult)
+            if (_bMetadataMismatch)
             {
-                *_bResourceFoundResult = true;
+                *_bMetadataMismatch = true;
             }
-            return ResourceCache[i];
         }
+
+        if (_bResourceFoundResult)
+        {
+            *_bResourceFoundResult = true;
+        }
+        return cachedResource;
     }
 
     // Never return nullptr, always create default object
@@ -174,30 +157,22 @@ AResource* AResourceManager::GetResource(AClassMeta const& _ClassMeta, const cha
     return resource;
 }
 
-AClassMeta const* AResourceManager::GetResourceInfo(const char* _Alias)
+AClassMeta const* AResourceManager::GetResourceInfo(AStringView _Alias)
 {
-    int hash = Core::HashCase(_Alias, Platform::Strlen(_Alias));
+    auto it = ResourceCache.Find(_Alias);
+    if (it == ResourceCache.End())
+        return nullptr;
 
-    for (int i = ResourceHash.First(hash); i != -1; i = ResourceHash.Next(i))
-    {
-        if (!ResourceCache[i]->GetResourcePath().Icmp(_Alias))
-        {
-            return &ResourceCache[i]->FinalClassMeta();
-        }
-    }
-
-    return nullptr;
+    return &it->second->FinalClassMeta();
 }
 
-AResource* AResourceManager::GetOrCreateResource(AClassMeta const& _ClassMeta, const char* _Path)
+AResource* AResourceManager::GetOrCreateResource(AClassMeta const& _ClassMeta, AStringView _Path)
 {
-    int  hash;
     bool bMetadataMismatch;
 
-    AResource* resource = FindResource(_ClassMeta, _Path, bMetadataMismatch, hash);
+    AResource* resource = FindResource(_ClassMeta, _Path, bMetadataMismatch);
     if (bMetadataMismatch)
     {
-
         // Never return null
 
         resource = static_cast<AResource*>(_ClassMeta.CreateInstance());
@@ -219,15 +194,13 @@ AResource* AResourceManager::GetOrCreateResource(AClassMeta const& _ClassMeta, c
     resource->SetObjectName(_Path);
     resource->InitializeFromFile(_Path);
 
-    ResourceHash.Insert(hash, ResourceCache.Size());
-    ResourceCache.Append(resource);
+    ResourceCache[_Path] = resource;
 
     return resource;
 }
 
-bool AResourceManager::RegisterResource(AResource* _Resource, const char* _Alias)
+bool AResourceManager::RegisterResource(AResource* _Resource, AStringView _Alias)
 {
-    int  hash;
     bool bMetadataMismatch;
 
     if (!_Resource->GetResourcePath().IsEmpty())
@@ -236,7 +209,7 @@ bool AResourceManager::RegisterResource(AResource* _Resource, const char* _Alias
         return false;
     }
 
-    AResource* resource = FindResource(_Resource->FinalClassMeta(), _Alias, bMetadataMismatch, hash);
+    AResource* resource = FindResource(_Resource->FinalClassMeta(), _Alias, bMetadataMismatch);
     if (resource || bMetadataMismatch)
     {
         LOG("RegisterResource: Resource with same alias already exists ({})\n", _Alias);
@@ -245,65 +218,61 @@ bool AResourceManager::RegisterResource(AResource* _Resource, const char* _Alias
 
     _Resource->AddRef();
     _Resource->SetResourcePath(_Alias);
-    ResourceHash.Insert(hash, ResourceCache.Size());
-    ResourceCache.Append(_Resource);
+
+    ResourceCache[_Alias] = _Resource;
 
     return true;
 }
 
 bool AResourceManager::UnregisterResource(AResource* _Resource)
 {
-    int hash = _Resource->GetResourcePath().HashCase();
-    int i;
-
-    for (i = ResourceHash.First(hash); i != -1; i = ResourceHash.Next(i))
-    {
-        if (!ResourceCache[i]->GetResourcePath().Icmp(_Resource->GetResourcePath()))
-        {
-            if (&ResourceCache[i]->FinalClassMeta() != &_Resource->FinalClassMeta())
-            {
-                LOG("UnregisterResource: {} class doesn't match meta data ({} vs {})\n", _Resource->GetResourcePath(), ResourceCache[i]->FinalClassName(), _Resource->FinalClassMeta().GetName());
-                return false;
-            }
-            break;
-        }
-    }
-
-    if (i == -1)
+    auto it = ResourceCache.Find(_Resource->GetResourcePath());
+    if (it == ResourceCache.End())
     {
         LOG("UnregisterResource: resource {} is not found\n", _Resource->GetResourcePath());
         return false;
     }
 
+    AResource* cachedResource = it->second;
+    if (&cachedResource->FinalClassMeta() != &_Resource->FinalClassMeta())
+    {
+        LOG("UnregisterResource: {} class doesn't match meta data ({} vs {})\n", _Resource->GetResourcePath(), cachedResource->FinalClassName(), _Resource->FinalClassMeta().GetName());
+        return false;
+    }
+
+    // FIXME: Match resource pointers/ids?
+
     _Resource->SetResourcePath("");
     _Resource->RemoveRef();
-    ResourceHash.RemoveIndex(hash, i);
-    ResourceCache.Remove(i);
+
+    ResourceCache.Erase(it);
+
     return true;
 }
 
 void AResourceManager::UnregisterResources(AClassMeta const& _ClassMeta)
 {
-    for (int i = ResourceCache.Size() - 1; i >= 0; i--)
+    for (auto it = ResourceCache.Begin(); it != ResourceCache.End() ; )
     {
-        if (ResourceCache[i]->FinalClassId() == _ClassMeta.GetId())
+        AResource* resource = it->second;
+        if (resource->FinalClassId() == _ClassMeta.GetId())
         {
-            AResource* resource = ResourceCache[i];
-
-            ResourceHash.RemoveIndex(resource->GetResourcePath().HashCase(), i);
-            ResourceCache.Remove(i);
-
+            it = ResourceCache.Erase(it);
             resource->RemoveRef();
+        }
+        else
+        {
+            ++it;
         }
     }
 }
 
 void AResourceManager::UnregisterResources()
 {
-    for (int i = ResourceCache.Size() - 1; i >= 0; i--)
+    for (auto it : ResourceCache)
     {
-        ResourceCache[i]->RemoveRef();
+        AResource* resource = it.second;
+        resource->RemoveRef();
     }
-    ResourceHash.Clear();
     ResourceCache.Clear();
 }

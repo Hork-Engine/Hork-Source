@@ -43,7 +43,7 @@ SOFTWARE.
 
 #define FILTER_SIZE_POW2
 
-AConsoleVar Snd_LerpHRTF( _CTS("Snd_LerpHRTF"), _CTS("1") );
+AConsoleVar Snd_LerpHRTF("Snd_LerpHRTF"s, "1"s);
 
 AAudioHRTF::AAudioHRTF( int SampleRate )
 {
@@ -87,7 +87,7 @@ AAudioHRTF::AAudioHRTF( int SampleRate )
     */
 
     Indices.Resize( indexCount );
-    f.ReadUInt32ToBuffer( Indices.ToPtr(), Indices.Size() );
+    f.ReadWords<uint32_t>( Indices.ToPtr(), Indices.Size() );
 
     /*
     Vertex format
@@ -106,7 +106,7 @@ AAudioHRTF::AAudioHRTF( int SampleRate )
     if ( sampleRateHRIR == SampleRate ) {
         // There is no need for resampling, so we just read it as is
 
-        TPodVectorHeap< float > framesIn;
+        TVector< float > framesIn;
         framesIn.Resize( FrameCount );
 
         FilterSize = FrameCount - 1 + HRTF_BLOCK_LENGTH; // M - 1 + L
@@ -123,10 +123,10 @@ AAudioHRTF::AAudioHRTF( int SampleRate )
             f.ReadObject( Vertices[i] );
             Vertices[i].X = -Vertices[i].X;
 
-            f.ReadFloatToBuffer( framesIn.ToPtr(), framesIn.Size() );
+            f.ReadFloats( framesIn.ToPtr(), framesIn.Size() );
             GenerateHRTF( framesIn.ToPtr(), framesIn.Size(), hrtfL.ToPtr() + i * FilterSize );
 
-            f.ReadFloatToBuffer( framesIn.ToPtr(), framesIn.Size() );
+            f.ReadFloats( framesIn.ToPtr(), framesIn.Size() );
             GenerateHRTF( framesIn.ToPtr(), framesIn.Size(), hrtfR.ToPtr() + i * FilterSize );
         }
     }
@@ -141,10 +141,10 @@ AAudioHRTF::AAudioHRTF( int SampleRate )
         ma_uint64 frameCountIn = FrameCount;
         ma_uint64 frameCountOut = ma_resampler_get_expected_output_frame_count( &resampler, FrameCount );
 
-        TPodVectorHeap< float > framesIn;
+        TVector< float > framesIn;
         framesIn.Resize( frameCountIn );
 
-        TPodVectorHeap< float > framesOut;
+        TVector< float > framesOut;
         framesOut.Resize( frameCountOut );
 
         FrameCount = frameCountOut;
@@ -162,7 +162,7 @@ AAudioHRTF::AAudioHRTF( int SampleRate )
             f.ReadObject( Vertices[i] );
             Vertices[i].X = -Vertices[i].X;
 
-            f.ReadFloatToBuffer( framesIn.ToPtr(), framesIn.Size() );
+            f.ReadFloats( framesIn.ToPtr(), framesIn.Size() );
 
             // ma_resampler_process_pcm_frames overwrite frameCountIn and frameCountOut, so we restore them before each call
             frameCountIn = framesIn.Size();
@@ -175,7 +175,7 @@ AAudioHRTF::AAudioHRTF( int SampleRate )
 
             GenerateHRTF( framesOut.ToPtr(), frameCountOut, hrtfL.ToPtr() + i * FilterSize );
 
-            f.ReadFloatToBuffer( framesIn.ToPtr(), framesIn.Size() );
+            f.ReadFloats( framesIn.ToPtr(), framesIn.Size() );
 
             // ma_resampler_process_pcm_frames overwrite frameCountIn and frameCountOut, so we restore them before each call
             frameCountIn = framesIn.Size();
@@ -406,8 +406,8 @@ void AAudioHRTF::ApplyHRTF( Float3 const & CurDir, Float3 const & NewDir, const 
 void DrawHRTF( ADebugRenderer * InRenderer )
 {
     static bool binit = false;
-    static TPodVectorHeap< Float3 > sphereVerts;
-    static TPodVectorHeap< uint32_t > sphereIndices;
+    static TVector< Float3 > sphereVerts;
+    static TVector< uint32_t > sphereIndices;
     if ( !binit ) {
         binit = true;
 

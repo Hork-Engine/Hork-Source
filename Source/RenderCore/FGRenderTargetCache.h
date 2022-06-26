@@ -46,7 +46,7 @@ public:
 
 private:
     TRef<IDevice>              pDevice;
-    TStdVector<TRef<ITexture>> Textures;     // All textures
+    TVector<TRef<ITexture>> Textures;     // All textures
     TPodVector<ITexture*>      FreeTextures; // Free list
 };
 

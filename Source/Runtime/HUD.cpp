@@ -62,7 +62,7 @@ void AHUD::DrawText(AFont* _Font, int x, int y, Color4 const& color, const char*
 
     const char* s = _Text;
     int         byteLen;
-    SWideChar   ch;
+    WideChar   ch;
     int         cx = x;
 
     Canvas->PushFont(_Font);

@@ -204,8 +204,8 @@ void ATextureGLImpl::CreateDefaultViews()
 
 ITextureView* ATextureGLImpl::GetTextureView(STextureViewDesc const& TextureViewDesc)
 {   
-    auto it = Views.find(TextureViewDesc);
-    if (it == Views.end())
+    auto it = Views.Find(TextureViewDesc);
+    if (it == Views.End())
     {
         TRef<ATextureViewGLImpl> textureView;
 
@@ -227,7 +227,7 @@ ATextureGLImpl::~ATextureGLImpl()
         HK_ASSERT_(it.second->GetRefCount() == 1, "WARNING: Someone keep a strong reference to the texture view");
     }
 #endif
-    Views.clear();
+    Views.Clear();
 
     for (BindlessHandle it : BindlessSamplers)
     {
@@ -246,7 +246,7 @@ ATextureGLImpl::~ATextureGLImpl()
 
 void ATextureGLImpl::MakeBindlessSamplerResident(BindlessHandle BindlessHandle, bool bResident)
 {
-    HK_ASSERT(BindlessSamplers.count(BindlessHandle) == 1);
+    HK_ASSERT(BindlessSamplers.Count(BindlessHandle) == 1);
 
     if (bResident)
         glMakeTextureHandleResidentARB(BindlessHandle);
@@ -256,7 +256,7 @@ void ATextureGLImpl::MakeBindlessSamplerResident(BindlessHandle BindlessHandle, 
 
 bool ATextureGLImpl::IsBindlessSamplerResident(BindlessHandle BindlessHandle)
 {
-    HK_ASSERT(BindlessSamplers.count(BindlessHandle) == 1);
+    HK_ASSERT(BindlessSamplers.Count(BindlessHandle) == 1);
 
     return !!glIsTextureHandleResidentARB(BindlessHandle);
 }
@@ -276,7 +276,7 @@ BindlessHandle ATextureGLImpl::GetBindlessSampler(SSamplerDesc const& SamplerDes
         return 0;
     }
 
-    BindlessSamplers.insert(bindlessHandle);
+    BindlessSamplers.Insert(bindlessHandle);
 
     return bindlessHandle;
 }

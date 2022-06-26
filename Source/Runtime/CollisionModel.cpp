@@ -182,7 +182,7 @@ struct ACollisionSphere : ACollisionBody
         return shape;
     }
 
-    void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
+    void GatherGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         float sinTheta, cosTheta, sinPhi, cosPhi;
 
@@ -249,7 +249,7 @@ struct ACollisionSphereRadii : ACollisionBody
         return shape;
     }
 
-    void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
+    void GatherGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         float sinTheta, cosTheta, sinPhi, cosPhi;
 
@@ -312,7 +312,7 @@ struct ACollisionBox : ACollisionBody
         return new btBoxShape(btVectorToFloat3(HalfExtents * Scale));
     }
 
-    void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
+    void GatherGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         unsigned int const indices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
 
@@ -361,7 +361,7 @@ struct ACollisionCylinder : ACollisionBody
         }
     }
 
-    void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
+    void GatherGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         float sinPhi, cosPhi;
         int   idxRadius, idxRadius2, idxHeight;
@@ -502,7 +502,7 @@ struct ACollisionCone : ACollisionBody
         }
     }
 
-    void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
+    void GatherGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         float sinPhi, cosPhi;
         int idxRadius, idxRadius2, idxHeight;
@@ -638,7 +638,7 @@ struct ACollisionCapsule : ACollisionBody
         }
     }
 
-    void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
+    void GatherGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         Float3x4 transform = Transform;
 
@@ -851,8 +851,8 @@ struct ACollisionCapsule : ACollisionBody
 
 struct ACollisionConvexHull : ACollisionBody
 {
-    TPodVectorHeap<Float3>       Vertices;
-    TPodVectorHeap<unsigned int> Indices;
+    TVector<Float3>       Vertices;
+    TVector<unsigned int> Indices;
 
     btCollisionShape* Create(Float3 const& Scale) override
     {
@@ -868,7 +868,7 @@ struct ACollisionConvexHull : ACollisionBody
 #endif
     }
 
-    void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
+    void GatherGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         if (_Vertices.IsEmpty())
         {
@@ -900,9 +900,9 @@ struct ACollisionConvexHull : ACollisionBody
 // ACollisionTriangleSoupBVH can be used only for static or kinematic objects
 struct ACollisionTriangleSoupBVH : ACollisionBody
 {
-    TPodVectorHeap<Float3>                Vertices;
-    TPodVectorHeap<unsigned int>          Indices;
-    TPodVectorHeap<SCollisionMeshSubpart> Subparts;
+    TVector<Float3>                Vertices;
+    TVector<unsigned int>          Indices;
+    TVector<SCollisionMeshSubpart> Subparts;
     BvAxisAlignedBox                      BoundingBox;
     TUniqueRef<AStridingMeshInterface>    pInterface;
 
@@ -913,7 +913,7 @@ struct ACollisionTriangleSoupBVH : ACollisionBody
         // TODO: Create GImpact mesh shape for dynamic objects
     }
 
-    void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
+    void GatherGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         if (Vertices.IsEmpty())
         {
@@ -996,7 +996,7 @@ struct ACollisionTriangleSoupBVH : ACollisionBody
     {
         uint32_t bufferSize;
         _Stream >> bufferSize;
-        byte* buffer = (byte*)GHeapMemory.Alloc(bufferSize);
+        byte* buffer = (byte*)Platform::MemoryAllocSafe(bufferSize);
         _Stream.Read(buffer, bufferSize);
 
         btBulletWorldImporter Importer(0);
@@ -1036,9 +1036,9 @@ private:
 
 struct ACollisionTriangleSoupGimpact : ACollisionBody
 {
-    TPodVectorHeap<Float3>                Vertices;
-    TPodVectorHeap<unsigned int>          Indices;
-    TPodVectorHeap<SCollisionMeshSubpart> Subparts;
+    TVector<Float3>                Vertices;
+    TVector<unsigned int>          Indices;
+    TVector<SCollisionMeshSubpart> Subparts;
     BvAxisAlignedBox                      BoundingBox;
     TUniqueRef<AStridingMeshInterface>    pInterface;
 
@@ -1054,7 +1054,7 @@ struct ACollisionTriangleSoupGimpact : ACollisionBody
         return shape;
     }
 
-    void GatherGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices, Float3x4 const& Transform) const override
+    void GatherGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices, Float3x4 const& Transform) const override
     {
         if (Vertices.IsEmpty())
         {
@@ -1170,7 +1170,7 @@ bool ACollisionModel::LoadResource(IBinaryStreamReadInterface& Stream)
     return false;
 }
 
-void ACollisionModel::LoadInternalResource(const char* Path)
+void ACollisionModel::LoadInternalResource(AStringView Path)
 {
     // TODO
 }
@@ -1190,13 +1190,13 @@ void ACollisionModel::AddSphere(SCollisionSphereDef const* pShape, int& NumShape
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.emplace_back(std::move(boneCol));
+        BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
         CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.emplace_back(std::move(body));
+        CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1216,13 +1216,13 @@ void ACollisionModel::AddSphereRadii(SCollisionSphereRadiiDef const* pShape, int
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.emplace_back(std::move(boneCol));
+        BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
         CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.emplace_back(std::move(body));
+        CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1242,13 +1242,13 @@ void ACollisionModel::AddBox(SCollisionBoxDef const* pShape, int& NumShapes)
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.emplace_back(std::move(boneCol));
+        BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
         CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.emplace_back(std::move(body));
+        CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1270,13 +1270,13 @@ void ACollisionModel::AddCylinder(SCollisionCylinderDef const* pShape, int& NumS
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.emplace_back(std::move(boneCol));
+        BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
         CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.emplace_back(std::move(body));
+        CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1298,13 +1298,13 @@ void ACollisionModel::AddCone(SCollisionConeDef const* pShape, int& NumShapes)
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.emplace_back(std::move(boneCol));
+        BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
         CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.emplace_back(std::move(body));
+        CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1326,13 +1326,13 @@ void ACollisionModel::AddCapsule(SCollisionCapsuleDef const* pShape, int& NumSha
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.emplace_back(std::move(boneCol));
+        BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
         CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.emplace_back(std::move(body));
+        CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1393,14 +1393,14 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
                 }
                 if (hasVert == body->Vertices.Size())
                 {
-                    body->Vertices.Append(hull->Points[v]);
+                    body->Vertices.Add(hull->Points[v]);
                 }
                 if (v > 2)
                 {
-                    body->Indices.Append(body->Indices[firstIndex]);
-                    body->Indices.Append(body->Indices[body->Indices.Size() - 2]);
+                    body->Indices.Add(body->Indices[firstIndex]);
+                    body->Indices.Add(body->Indices[body->Indices.Size() - 2]);
                 }
-                body->Indices.Append(hasVert);
+                body->Indices.Add(hasVert);
             }
 
             hull->Destroy();
@@ -1419,13 +1419,13 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.emplace_back(std::move(boneCol));
+        BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
         CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.emplace_back(std::move(body));
+        CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1534,7 +1534,7 @@ void ACollisionModel::AddTriangleSoupBVH(SCollisionTriangleSoupBVHDef const* pSh
     CenterOfMass += body->Position;
     NumShapes++;
 
-    CollisionBodies.emplace_back(std::move(body));
+    CollisionBodies.Add(std::move(body));
 }
 
 void ACollisionModel::AddTriangleSoupGimpact(SCollisionTriangleSoupGimpactDef const* pShape, int& NumShapes)
@@ -1640,7 +1640,7 @@ void ACollisionModel::AddTriangleSoupGimpact(SCollisionTriangleSoupGimpactDef co
     CenterOfMass += body->Position;
     NumShapes++;
 
-    CollisionBodies.emplace_back(std::move(body));
+    CollisionBodies.Add(std::move(body));
 }
 
 void ACollisionModel::AddConvexDecomposition(SCollisionConvexDecompositionDef const* pShape, int& NumShapes)
@@ -1746,7 +1746,7 @@ void ACollisionModel::AddConvexDecompositionVHACD(SCollisionConvexDecompositionV
     CenterOfMass = saveCenterOfMass;
 }
 
-void ACollisionModel::GatherGeometry(TPodVectorHeap<Float3>& Vertices, TPodVectorHeap<unsigned int>& Indices, Float3x4 const& Transform) const
+void ACollisionModel::GatherGeometry(TVector<Float3>& Vertices, TVector<unsigned int>& Indices, Float3x4 const& Transform) const
 {
     for (TUniqueRef<ACollisionBody> const& collisionBody : CollisionBodies)
     {

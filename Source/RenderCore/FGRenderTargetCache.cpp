@@ -59,7 +59,7 @@ ITexture* FGRenderTargetCache::Acquire(STextureDesc const& TextureDesc)
     #ifdef HK_DEBUG
     texture->SetDebugName("Render Target");
     #endif
-    Textures.Append(texture);
+    Textures.Add(texture);
     return texture;
 }
 
@@ -70,7 +70,7 @@ void FGRenderTargetCache::Release(ITexture* pTexture)
     {
         pTexture->Invalidate(mipLevel);
     }
-    FreeTextures.Append(pTexture);
+    FreeTextures.Add(pTexture);
 }
 
 } // namespace RenderCore

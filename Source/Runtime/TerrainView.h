@@ -136,14 +136,14 @@ private:
 
     STerrainPatchInstance& AddInstance()
     {
-        return InstanceBuffer.Append();
+        return InstanceBuffer.Add();
     }
 
     void AddPatchInstances(STerrainPatch const& Patch, int InstanceCount)
     {
         if (InstanceCount > 0)
         {
-            RenderCore::SDrawIndexedIndirectCmd& blocks = IndirectBuffer.Append();
+            RenderCore::SDrawIndexedIndirectCmd& blocks = IndirectBuffer.Add();
             blocks.IndexCountPerInstance                = Patch.IndexCount;
             blocks.InstanceCount                        = InstanceCount;
             blocks.StartIndexLocation                   = Patch.StartIndex;

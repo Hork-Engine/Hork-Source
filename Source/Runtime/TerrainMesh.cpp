@@ -69,10 +69,10 @@ static void CreateTriangleStripPatch(int NumQuadsX, int NumQuadsY, TPodVector<ST
     {
         for (int x = 0; x < NumQuadsX + 1; x++)
         {
-            Indices.Append(x + (y)*numVertsX);
-            Indices.Append(x + (y + 1) * numVertsX);
+            Indices.Add(x + (y)*numVertsX);
+            Indices.Add(x + (y + 1) * numVertsX);
         }
-        Indices.Append(RESET_INDEX);
+        Indices.Add(RESET_INDEX);
     }
 
     STerrainVertex* vert = Vertices.ToPtr();
@@ -135,37 +135,37 @@ ATerrainMesh::ATerrainMesh(int InTextureSize)
     int i = 0;
     for (int q = 0; q < (BlockWidth * 2 + GapWidth) + 1; q++)
     {
-        interiorTLVertices.Append(MakeVertex(q, 0));
-        interiorTLVertices.Append(MakeVertex(q, 1));
+        interiorTLVertices.Add(MakeVertex(q, 0));
+        interiorTLVertices.Add(MakeVertex(q, 1));
 
-        interiorTRVertices.Append(MakeVertex(q, 0));
-        interiorTRVertices.Append(MakeVertex(q, 1));
+        interiorTRVertices.Add(MakeVertex(q, 0));
+        interiorTRVertices.Add(MakeVertex(q, 1));
 
-        interiorBLVertices.Append(MakeVertex(q, BlockWidth * 2 + GapWidth - 1));
-        interiorBLVertices.Append(MakeVertex(q, BlockWidth * 2 + GapWidth));
+        interiorBLVertices.Add(MakeVertex(q, BlockWidth * 2 + GapWidth - 1));
+        interiorBLVertices.Add(MakeVertex(q, BlockWidth * 2 + GapWidth));
 
-        interiorBRVertices.Append(MakeVertex(q, BlockWidth * 2 + GapWidth - 1));
-        interiorBRVertices.Append(MakeVertex(q, BlockWidth * 2 + GapWidth));
+        interiorBRVertices.Add(MakeVertex(q, BlockWidth * 2 + GapWidth - 1));
+        interiorBRVertices.Add(MakeVertex(q, BlockWidth * 2 + GapWidth));
 
-        interiorTLIndices.Append(i);
-        interiorTLIndices.Append(i + 1);
+        interiorTLIndices.Add(i);
+        interiorTLIndices.Add(i + 1);
 
-        interiorTRIndices.Append(i);
-        interiorTRIndices.Append(i + 1);
+        interiorTRIndices.Add(i);
+        interiorTRIndices.Add(i + 1);
 
-        interiorBLIndices.Append(i);
-        interiorBLIndices.Append(i + 1);
+        interiorBLIndices.Add(i);
+        interiorBLIndices.Add(i + 1);
 
-        interiorBRIndices.Append(i);
-        interiorBRIndices.Append(i + 1);
+        interiorBRIndices.Add(i);
+        interiorBRIndices.Add(i + 1);
 
         i += 2;
     }
 
-    interiorTLIndices.Append(RESET_INDEX);
-    interiorTRIndices.Append(RESET_INDEX);
-    interiorBLIndices.Append(RESET_INDEX);
-    interiorBRIndices.Append(RESET_INDEX);
+    interiorTLIndices.Add(RESET_INDEX);
+    interiorTRIndices.Add(RESET_INDEX);
+    interiorBLIndices.Add(RESET_INDEX);
+    interiorBRIndices.Add(RESET_INDEX);
 
     int prev_a_tl = 1;
     int prev_b_tl = prev_a_tl + 2;
@@ -176,62 +176,62 @@ ATerrainMesh::ATerrainMesh(int InTextureSize)
     int q;
     for (q = 0; q < (BlockWidth * 2 + GapWidth) - 1; q++)
     {
-        interiorTLIndices.Append(prev_a_tl);
-        interiorTLIndices.Append(i);
-        interiorTLIndices.Append(prev_b_tl);
-        interiorTLIndices.Append(i + 1);
+        interiorTLIndices.Add(prev_a_tl);
+        interiorTLIndices.Add(i);
+        interiorTLIndices.Add(prev_b_tl);
+        interiorTLIndices.Add(i + 1);
         prev_a_tl = i;
         prev_b_tl = i + 1;
 
-        interiorTRIndices.Append(prev_a_tr);
-        interiorTRIndices.Append(i);
-        interiorTRIndices.Append(prev_b_tr);
-        interiorTRIndices.Append(i + 1);
+        interiorTRIndices.Add(prev_a_tr);
+        interiorTRIndices.Add(i);
+        interiorTRIndices.Add(prev_b_tr);
+        interiorTRIndices.Add(i + 1);
         prev_a_tr = i;
         prev_b_tr = i + 1;
 
         if (q < (BlockWidth * 2 + GapWidth) - 2)
         {
-            interiorTLIndices.Append(RESET_INDEX);
-            interiorTRIndices.Append(RESET_INDEX);
+            interiorTLIndices.Add(RESET_INDEX);
+            interiorTRIndices.Add(RESET_INDEX);
 
-            interiorBLIndices.Append(i);
-            interiorBLIndices.Append(i + 2);
-            interiorBLIndices.Append(i + 1);
-            interiorBLIndices.Append(i + 3);
-            interiorBLIndices.Append(RESET_INDEX);
+            interiorBLIndices.Add(i);
+            interiorBLIndices.Add(i + 2);
+            interiorBLIndices.Add(i + 1);
+            interiorBLIndices.Add(i + 3);
+            interiorBLIndices.Add(RESET_INDEX);
 
-            interiorBRIndices.Append(i);
-            interiorBRIndices.Append(i + 2);
-            interiorBRIndices.Append(i + 1);
-            interiorBRIndices.Append(i + 3);
-            interiorBRIndices.Append(RESET_INDEX);
+            interiorBRIndices.Add(i);
+            interiorBRIndices.Add(i + 2);
+            interiorBRIndices.Add(i + 1);
+            interiorBRIndices.Add(i + 3);
+            interiorBRIndices.Add(RESET_INDEX);
 
             i += 2;
         }
 
-        interiorTLVertices.Append(MakeVertex(0, q + 2));
-        interiorTLVertices.Append(MakeVertex(1, q + 2));
+        interiorTLVertices.Add(MakeVertex(0, q + 2));
+        interiorTLVertices.Add(MakeVertex(1, q + 2));
 
-        interiorTRVertices.Append(MakeVertex((BlockWidth * 2 + GapWidth) - 1, q + 2));
-        interiorTRVertices.Append(MakeVertex((BlockWidth * 2 + GapWidth), q + 2));
+        interiorTRVertices.Add(MakeVertex((BlockWidth * 2 + GapWidth) - 1, q + 2));
+        interiorTRVertices.Add(MakeVertex((BlockWidth * 2 + GapWidth), q + 2));
 
-        interiorBLVertices.Append(MakeVertex(0, q));
-        interiorBLVertices.Append(MakeVertex(1, q));
+        interiorBLVertices.Add(MakeVertex(0, q));
+        interiorBLVertices.Add(MakeVertex(1, q));
 
-        interiorBRVertices.Append(MakeVertex((BlockWidth * 2 + GapWidth) - 1, q));
-        interiorBRVertices.Append(MakeVertex((BlockWidth * 2 + GapWidth), q));
+        interiorBRVertices.Add(MakeVertex((BlockWidth * 2 + GapWidth) - 1, q));
+        interiorBRVertices.Add(MakeVertex((BlockWidth * 2 + GapWidth), q));
     }
 
-    interiorBLIndices.Append(i);
-    interiorBLIndices.Append(0);
-    interiorBLIndices.Append(i + 1);
-    interiorBLIndices.Append(2);
+    interiorBLIndices.Add(i);
+    interiorBLIndices.Add(0);
+    interiorBLIndices.Add(i + 1);
+    interiorBLIndices.Add(2);
 
-    interiorBRIndices.Append(i);
-    interiorBRIndices.Append(((BlockWidth * 2 + GapWidth) + 1) * 2 - 4);
-    interiorBRIndices.Append(i + 1);
-    interiorBRIndices.Append(((BlockWidth * 2 + GapWidth) + 1) * 2 - 2);
+    interiorBRIndices.Add(i);
+    interiorBRIndices.Add(((BlockWidth * 2 + GapWidth) + 1) * 2 - 4);
+    interiorBRIndices.Add(i + 1);
+    interiorBRIndices.Add(((BlockWidth * 2 + GapWidth) + 1) * 2 - 2);
 
     for (STerrainVertex& v : interiorTLVertices)
     {
@@ -262,31 +262,31 @@ ATerrainMesh::ATerrainMesh(int InTextureSize)
     y = BlockWidth * 2;
     for (x = 0; x < BlockWidth * 2 + 2; x++)
     {
-        interiorFinestIndices.Append(i++);
-        interiorFinestIndices.Append(i++);
+        interiorFinestIndices.Add(i++);
+        interiorFinestIndices.Add(i++);
 
-        interiorFinestVertices.Append(MakeVertex(x, y));
-        interiorFinestVertices.Append(MakeVertex(x, y + 1));
+        interiorFinestVertices.Add(MakeVertex(x, y));
+        interiorFinestVertices.Add(MakeVertex(x, y + 1));
     }
-    interiorFinestIndices.Append(RESET_INDEX);
+    interiorFinestIndices.Add(RESET_INDEX);
 
     x = BlockWidth * 2;
     for (y = 0; y < BlockWidth * 2; y++)
     {
-        interiorFinestIndices.Append(i);
-        interiorFinestIndices.Append(i + 2);
-        interiorFinestIndices.Append(i + 1);
-        interiorFinestIndices.Append(i + 3);
-        interiorFinestIndices.Append(RESET_INDEX);
+        interiorFinestIndices.Add(i);
+        interiorFinestIndices.Add(i + 2);
+        interiorFinestIndices.Add(i + 1);
+        interiorFinestIndices.Add(i + 3);
+        interiorFinestIndices.Add(RESET_INDEX);
 
-        interiorFinestVertices.Append(MakeVertex(x, y));
-        interiorFinestVertices.Append(MakeVertex(x + 1, y));
+        interiorFinestVertices.Add(MakeVertex(x, y));
+        interiorFinestVertices.Add(MakeVertex(x + 1, y));
 
         i += 2;
     }
 
-    interiorFinestVertices.Append(MakeVertex(x, y));
-    interiorFinestVertices.Append(MakeVertex(x + 1, y));
+    interiorFinestVertices.Add(MakeVertex(x, y));
+    interiorFinestVertices.Add(MakeVertex(x + 1, y));
 
     int debugOffset = 0; //-1;
 
@@ -294,54 +294,54 @@ ATerrainMesh::ATerrainMesh(int InTextureSize)
     int j = 0;
     for (i = 0; i < CrackTrianglesCount; i++)
     {
-        crackIndices.Append(i * 2);
-        crackIndices.Append(i * 2);
-        crackIndices.Append(i * 2 + 1);
-        crackIndices.Append(i * 2 + 2);
+        crackIndices.Add(i * 2);
+        crackIndices.Add(i * 2);
+        crackIndices.Add(i * 2 + 1);
+        crackIndices.Add(i * 2 + 2);
 
-        crackVertices.Append(MakeVertex(i * 2, j));
-        crackVertices.Append(MakeVertex(i * 2 + 1, j - debugOffset));
+        crackVertices.Add(MakeVertex(i * 2, j));
+        crackVertices.Add(MakeVertex(i * 2 + 1, j - debugOffset));
     }
     // right line
     j           = CrackTrianglesCount * 2;
     int vertOfs = crackVertices.Size();
     for (i = 0; i < CrackTrianglesCount; i++)
     {
-        crackIndices.Append(vertOfs + i * 2);
-        crackIndices.Append(vertOfs + i * 2);
-        crackIndices.Append(vertOfs + i * 2 + 1);
-        crackIndices.Append(vertOfs + i * 2 + 2);
+        crackIndices.Add(vertOfs + i * 2);
+        crackIndices.Add(vertOfs + i * 2);
+        crackIndices.Add(vertOfs + i * 2 + 1);
+        crackIndices.Add(vertOfs + i * 2 + 2);
 
-        crackVertices.Append(MakeVertex(j, i * 2));
-        crackVertices.Append(MakeVertex(j + debugOffset, i * 2 + 1));
+        crackVertices.Add(MakeVertex(j, i * 2));
+        crackVertices.Add(MakeVertex(j + debugOffset, i * 2 + 1));
     }
     // bottom line
     j       = CrackTrianglesCount * 2;
     vertOfs = crackVertices.Size();
     for (i = 0; i < CrackTrianglesCount; i++)
     {
-        crackIndices.Append(vertOfs + i * 2);
-        crackIndices.Append(vertOfs + i * 2);
-        crackIndices.Append(vertOfs + i * 2 + 1);
-        crackIndices.Append(vertOfs + i * 2 + 2);
+        crackIndices.Add(vertOfs + i * 2);
+        crackIndices.Add(vertOfs + i * 2);
+        crackIndices.Add(vertOfs + i * 2 + 1);
+        crackIndices.Add(vertOfs + i * 2 + 2);
 
-        crackVertices.Append(MakeVertex(j - i * 2, j));
-        crackVertices.Append(MakeVertex(j - i * 2 - 1, j + debugOffset));
+        crackVertices.Add(MakeVertex(j - i * 2, j));
+        crackVertices.Add(MakeVertex(j - i * 2 - 1, j + debugOffset));
     }
     // left line
     j       = CrackTrianglesCount * 2;
     vertOfs = crackVertices.Size();
     for (i = 0; i < CrackTrianglesCount; i++)
     {
-        crackIndices.Append(vertOfs + i * 2);
-        crackIndices.Append(vertOfs + i * 2);
-        crackIndices.Append(vertOfs + i * 2 + 1);
-        crackIndices.Append(vertOfs + i * 2 + 2);
+        crackIndices.Add(vertOfs + i * 2);
+        crackIndices.Add(vertOfs + i * 2);
+        crackIndices.Add(vertOfs + i * 2 + 1);
+        crackIndices.Add(vertOfs + i * 2 + 2);
 
-        crackVertices.Append(MakeVertex(0, j - i * 2));
-        crackVertices.Append(MakeVertex(-debugOffset, j - i * 2 - 1));
+        crackVertices.Add(MakeVertex(0, j - i * 2));
+        crackVertices.Add(MakeVertex(-debugOffset, j - i * 2 - 1));
     }
-    crackVertices.Append(MakeVertex(0, 0));
+    crackVertices.Add(MakeVertex(0, 0));
 
     // Reverse face culling
     crackVertices.Reverse();

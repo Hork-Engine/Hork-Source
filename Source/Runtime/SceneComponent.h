@@ -36,7 +36,7 @@ SOFTWARE.
 
 class ASceneComponent;
 
-using AArrayOfChildComponents = TPodVector<ASceneComponent*, 8>;
+using AArrayOfChildComponents = TSmallVector<ASceneComponent*, 8>;
 
 class ASocketDef;
 class ASkinnedComponent;
@@ -64,7 +64,7 @@ class ASceneComponent : public AActorComponent
 
 public:
     /** Attach to parent component */
-    void AttachTo(ASceneComponent* _Parent, const char* _Socket = nullptr, bool _KeepWorldTransform = false);
+    void AttachTo(ASceneComponent* _Parent, AStringView _Socket = {}, bool _KeepWorldTransform = false);
 
     /** Detach from parent component */
     void Detach(bool _KeepWorldTransform = false);
@@ -79,7 +79,7 @@ public:
     bool IsRoot() const;
 
     /** Find child by name */
-    ASceneComponent* FindChild(const char* _UniqueName, bool _Recursive);
+    ASceneComponent* FindChild(AStringView _UniqueName, bool _Recursive);
 
     /** Get reference to array of child components */
     AArrayOfChildComponents const& GetChilds() const { return Childs; }
@@ -88,7 +88,7 @@ public:
     ASceneComponent* GetParent() const { return AttachParent; }
 
     /** Get socket index by name */
-    int FindSocket(const char* _Name) const;
+    int FindSocket(AStringView _Name) const;
 
     /** Get socket transform matrix */
     Float3x4 GetSocketTransform(int _SocketIndex) const;
@@ -253,7 +253,7 @@ protected:
 
     virtual void OnTransformDirty() {}
 
-    using AArrayOfSockets = TPodVector<SSocket, 1>;
+    using AArrayOfSockets = TPodVector<SSocket>;
     AArrayOfSockets Sockets;
 
 private:

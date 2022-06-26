@@ -74,20 +74,15 @@ struct AGUID
                               LoBytes[2], LoBytes[3], LoBytes[4], LoBytes[5], LoBytes[6], LoBytes[7]);
     }
 
-    const char* CStr() const
-    {
-        return Platform::Fmt("%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
-                             HiBytes[0], HiBytes[1], HiBytes[2], HiBytes[3],
-                             HiBytes[4], HiBytes[5],
-                             HiBytes[6], HiBytes[7],
-                             LoBytes[0], LoBytes[1],
-                             LoBytes[2], LoBytes[3], LoBytes[4], LoBytes[5], LoBytes[6], LoBytes[7]);
-    }
-
     AGUID& FromString(AStringView String);
 
     const byte* GetBytes() const { return &HiBytes[0]; }
     byte*       GetBytes() { return &HiBytes[0]; }
+
+    uint32_t Hash() const
+    {
+        return Core::Murmur3Hash64(Hi, Core::Murmur3Hash64(Lo));
+    }
 
     // Byte serialization
     void Write(IBinaryStreamWriteInterface& Stream) const

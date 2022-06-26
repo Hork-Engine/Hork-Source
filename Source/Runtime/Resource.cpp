@@ -41,7 +41,7 @@ void AResource::InitializeDefaultObject()
     InitializeFromFile(GetDefaultResourcePath());
 }
 
-void AResource::InitializeFromFile(const char* _Path)
+void AResource::InitializeFromFile(AStringView _Path)
 {
     if (!LoadFromPath(_Path))
     {
@@ -49,17 +49,17 @@ void AResource::InitializeFromFile(const char* _Path)
     }
 }
 
-bool AResource::LoadFromPath(const char* _Path)
+bool AResource::LoadFromPath(AStringView _Path)
 {
-    if (!Platform::StricmpN(_Path, "/Default/", 9))
+    if (!_Path.IcmpN("/Default/", 9))
     {
         LoadInternalResource(_Path);
         return true;
     }
 
-    if (!Platform::StricmpN(_Path, "/Root/", 6))
+    if (!_Path.IcmpN("/Root/", 6))
     {
-        _Path += 6;
+        _Path = _Path.TruncateHead(6);
 
         // try to load from file system
         AString fileSystemPath = GEngine->GetRootPath() + _Path;
@@ -90,9 +90,9 @@ bool AResource::LoadFromPath(const char* _Path)
         return false;
     }
 
-    if (!Platform::StricmpN(_Path, "/Common/", 8))
+    if (!_Path.IcmpN("/Common/", 8))
     {
-        _Path += 1;
+        _Path = _Path.TruncateHead(1);
 
         // try to load from file system
         if (Core::IsFileExists(_Path))
@@ -107,16 +107,16 @@ bool AResource::LoadFromPath(const char* _Path)
 
         // try to load from resource pack
         AMemoryStream f;
-        if (!f.OpenRead(_Path + 7, *GEngine->GetResourceManager()->GetCommonResources()))
+        if (!f.OpenRead(_Path.TruncateHead(7), *GEngine->GetResourceManager()->GetCommonResources()))
         {
             return false;
         }
         return LoadResource(f);
     }
 
-    if (!Platform::StricmpN(_Path, "/FS/", 4))
+    if (!_Path.IcmpN("/FS/", 4))
     {
-        _Path += 4;
+        _Path = _Path.TruncateHead(4);
 
         AFileStream f;
         if (!f.OpenRead(_Path))
@@ -127,9 +127,9 @@ bool AResource::LoadFromPath(const char* _Path)
         return LoadResource(f);
     }
 
-    if (!Platform::StricmpN(_Path, "/Embedded/", 10))
+    if (!_Path.IcmpN("/Embedded/", 10))
     {
-        _Path += 10;
+        _Path = _Path.TruncateHead(10);
 
         AMemoryStream f;
         if (!f.OpenRead(_Path, Runtime::GetEmbeddedResources()))
@@ -159,7 +159,7 @@ ABinaryResource::~ABinaryResource()
 
 void ABinaryResource::Purge()
 {
-    GHeapMemory.Free(pBinaryData);
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(pBinaryData);
     pBinaryData = nullptr;
 
     SizeInBytes = 0;
@@ -176,14 +176,14 @@ bool ABinaryResource::LoadResource(IBinaryStreamReadInterface& _Stream)
         return false;
     }
 
-    pBinaryData = GHeapMemory.Alloc(SizeInBytes + 1);
+    pBinaryData = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes + 1);
     _Stream.Read(pBinaryData, SizeInBytes);
     ((uint8_t*)pBinaryData)[SizeInBytes] = 0;
 
     return true;
 }
 
-void ABinaryResource::LoadInternalResource(const char* _Path)
+void ABinaryResource::LoadInternalResource(AStringView _Path)
 {
     Purge();
 }

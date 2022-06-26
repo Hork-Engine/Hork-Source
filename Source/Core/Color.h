@@ -76,7 +76,7 @@ struct Color4
     float A{1};
 
     Color4() = default;
-    explicit constexpr Color4(float _Value) :
+    constexpr explicit Color4(float _Value) :
         R(_Value), G(_Value), B(_Value), A(_Value) {}
     constexpr Color4(float InR, float InG, float InB) :
         R(InR), G(InG), B(InB), A(1.0f) {}
@@ -214,45 +214,29 @@ struct Color4
         return rgbe;
     }
 
-     // String conversions
-    AString ToString(int precision = Math::FloatingPointPrecision<float>()) const
+    static constexpr Color4 White()
     {
-        return AString("( ") + Math::ToString(R, precision) + " " + Math::ToString(G, precision) + " " + Math::ToString(B, precision) + " " + Math::ToString(A, precision) + " )";
+        return Color4(1.0f);
     }
 
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
+    static constexpr Color4 Black()
     {
-        return AString("( ") + Math::ToHexString(R, bLeadingZeros, bPrefix) + " " + Math::ToHexString(G, bLeadingZeros, bPrefix) + " " + Math::ToHexString(B, bLeadingZeros, bPrefix) + " " + Math::ToHexString(A, bLeadingZeros, bPrefix) + " )";
+        return Color4(0.0f, 0.0f, 0.0f, 1.0f);
     }
 
-    static Color4 const& White()
+    static constexpr Color4 Red()
     {
-        static Color4 color(1.0f);
-        return color;
+        return Color4(1.0f, 0.0f, 0.0f, 1.0f);
     }
 
-    static Color4 const& Black()
+    static constexpr Color4 Green()
     {
-        static Color4 color(0.0f, 0.0f, 0.0f, 1.0f);
-        return color;
+        return Color4(0.0f, 1.0f, 0.0f, 1.0f);
     }
 
-    static Color4 const& Red()
+    static constexpr Color4 Blue()
     {
-        static Color4 color(1.0f, 0.0f, 0.0f, 1.0f);
-        return color;
-    }
-
-    static Color4 const& Green()
-    {
-        static Color4 color(0.0f, 1.0f, 0.0f, 1.0f);
-        return color;
-    }
-
-    static Color4 const& Blue()
-    {
-        static Color4 color(0.0f, 0.0f, 1.0f, 1.0f);
-        return color;
+        return Color4(0.0f, 0.0f, 1.0f, 1.0f);
     }
 
     static constexpr int NumComponents() { return 4; }
@@ -696,3 +680,5 @@ HK_FORCEINLINE float Color4::GetLuminance() const
 {
     return R * 0.2126f + G * 0.7152f + B * 0.0722f;
 }
+
+HK_FORMAT_DEF_(Color4, "( {} {} {} {} )", v.R, v.G, v.B, v.A);

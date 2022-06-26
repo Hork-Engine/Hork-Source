@@ -31,176 +31,281 @@ SOFTWARE.
 #pragma once
 
 #include <Platform/BaseTypes.h>
-#include <algorithm>
 
-/**
-
-TArray
-
-C array replacement
-
-*/
 template <typename T, size_t ArraySize>
-class TArray /*final*/
+struct TArray
 {
 public:
-    typedef T*       Iterator;
-    typedef const T* ConstIterator;
+    using ThisType             = TArray<T, ArraySize>;
+    using ValueType            = T;
+    using Reference            = ValueType&;
+    using ConstReference       = const ValueType&;
+    using Iterator             = ValueType*;
+    using ConstIterator        = const ValueType*;
+    using ReverseIterator      = eastl::reverse_iterator<Iterator>;
+    using ConstReverseIterator = eastl::reverse_iterator<ConstIterator>;
+    using SizeType             = eastl_size_t;
 
-    void Swap(int _Index1, int _Index2)
+public:
+    ValueType m_Data[ArraySize ? ArraySize : 1];
+
+public:
+    HK_FORCEINLINE void Fill(ValueType const& value)
     {
-        std::swap((*this)[_Index1], (*this)[_Index2]);
+        eastl::fill_n(&m_Data[0], ArraySize, value);
     }
 
-    void Reverse()
+    HK_FORCEINLINE void Swap(ThisType& x)
     {
-        const int HalfArrayLength     = ArraySize >> 1;
-        const int ArrayLengthMinusOne = ArraySize - 1;
-        for (int i = 0; i < HalfArrayLength; i++)
-        {
-            std::swap(ArrayData[i], ArrayData[ArrayLengthMinusOne - i]);
-        }
+        eastl::swap_ranges(&m_Data[0], &m_Data[ArraySize], &x.m_Data[0]);
     }
 
-    /** Reverse elements order in range [ _FirstIndex ; _LastIndex ) */
-    void Reverse(int _FirstIndex, int _LastIndex)
+    constexpr HK_FORCEINLINE bool IsEmpty() const
     {
-        HK_ASSERT_(_FirstIndex >= 0 && _FirstIndex < ArraySize, "TArray::Reverse: array index is out of bounds");
-        HK_ASSERT_(_LastIndex >= 0 && _LastIndex <= ArraySize, "TArray::Reverse: array index is out of bounds");
-        HK_ASSERT_(_FirstIndex < _LastIndex, "TArray::Reverse: invalid order");
-
-        const int HalfRangeLength   = (_LastIndex - _FirstIndex) >> 1;
-        const int LastIndexMinusOne = _LastIndex - 1;
-
-        for (int i = 0; i < HalfRangeLength; i++)
-        {
-            std::swap(ArrayData[_FirstIndex + i], ArrayData[LastIndexMinusOne - i]);
-        }
+        return (ArraySize == 0);
     }
 
-    T& operator[](const int _Index)
+    constexpr HK_FORCEINLINE SizeType Size() const
     {
-        HK_ASSERT_(_Index >= 0 && _Index < ArraySize, "TArray::operator[]");
-        return ArrayData[_Index];
+        return (SizeType)ArraySize;
     }
 
-    T const& operator[](const int _Index) const
+    constexpr HK_FORCEINLINE SizeType MaxSize() const
     {
-        HK_ASSERT_(_Index >= 0 && _Index < ArraySize, "TArray::operator[]");
-        return ArrayData[_Index];
+        return (SizeType)ArraySize;
     }
 
-    T& Last()
+    constexpr HK_FORCEINLINE T* ToPtr()
     {
-        HK_ASSERT_(ArraySize > 0, "TArray::Last");
-        return ArrayData[ArraySize - 1];
+        return m_Data;
     }
 
-    T const& Last() const
+    constexpr HK_FORCEINLINE const T* ToPtr() const
     {
-        HK_ASSERT_(ArraySize > 0, "TArray::Last");
-        return ArrayData[ArraySize - 1];
+        return m_Data;
     }
 
-    T& First()
+    constexpr HK_FORCEINLINE Reference operator[](SizeType i)
     {
-        HK_ASSERT_(ArraySize > 0, "TArray::First");
-        return ArrayData[0];
+        HK_ASSERT_(i < ArraySize, "Undefined behavior accessing out of bounds");
+        return m_Data[i];
     }
 
-    T const& First() const
+    constexpr HK_FORCEINLINE ConstReference operator[](SizeType i) const
     {
-        HK_ASSERT_(ArraySize > 0, "TArray::First");
-        return ArrayData[0];
+        HK_ASSERT_(i < ArraySize, "Undefined behavior accessing out of bounds");
+        return m_Data[i];
     }
 
-    Iterator Begin()
+    constexpr HK_FORCEINLINE ConstReference At(SizeType i) const
     {
-        return ArrayData;
+        HK_ASSERT_(i < ArraySize, "Undefined behavior accessing out of bounds");
+        return static_cast<ConstReference>(m_Data[i]);
     }
 
-    ConstIterator Begin() const
+    constexpr HK_FORCEINLINE Reference At(SizeType i)
     {
-        return ArrayData;
+        HK_ASSERT_(i < ArraySize, "Undefined behavior accessing out of bounds");
+        return static_cast<Reference>(m_Data[i]);
     }
 
-    Iterator End()
+    constexpr HK_FORCEINLINE Reference First()
     {
-        return ArrayData + ArraySize;
+        return m_Data[0];
     }
 
-    ConstIterator End() const
+    constexpr HK_FORCEINLINE ConstReference First() const
     {
-        return ArrayData + ArraySize;
+        return m_Data[0];
     }
 
-    /** foreach compatibility */
-    Iterator begin() { return Begin(); }
-
-    /** foreach compatibility */
-    ConstIterator begin() const { return Begin(); }
-
-    /** foreach compatibility */
-    Iterator end() { return End(); }
-
-    /** foreach compatibility */
-    ConstIterator end() const { return End(); }
-
-    ConstIterator Find(T const& _Element) const
+    constexpr HK_FORCEINLINE Reference Last()
     {
-        return Find(Begin(), End(), _Element);
+        return m_Data[ArraySize - 1];
     }
 
-    ConstIterator Find(ConstIterator _Begin, ConstIterator _End, const T& _Element) const
+    constexpr HK_FORCEINLINE ConstReference Last() const
     {
-        for (auto It = _Begin; It != _End; It++)
-        {
-            if (*It == _Element)
-            {
-                return It;
-            }
-        }
-        return End();
+        return m_Data[ArraySize - 1];
     }
 
-    bool IsExists(T const& _Element) const
+    constexpr HK_FORCEINLINE Iterator begin()
     {
-        for (int i = 0; i < ArraySize; i++)
-        {
-            if (ArrayData[i] == _Element)
-            {
-                return true;
-            }
-        }
-        return false;
+        return &m_Data[0];
+    }
+    constexpr HK_FORCEINLINE ConstIterator begin() const
+    {
+        return &m_Data[0];
+    }
+    constexpr HK_FORCEINLINE ConstIterator cbegin() const
+    {
+        return &m_Data[0];
+    }
+    constexpr HK_FORCEINLINE Iterator end()
+    {
+        return &m_Data[ArraySize];
+    }
+    constexpr HK_FORCEINLINE ConstIterator end() const
+    {
+        return &m_Data[ArraySize];
+    }
+    constexpr HK_FORCEINLINE ConstIterator cend() const
+    {
+        return &m_Data[ArraySize];
+    }
+    constexpr HK_FORCEINLINE ReverseIterator rbegin()
+    {
+        return ReverseIterator(&m_Data[ArraySize]);
+    }
+    constexpr HK_FORCEINLINE ConstReverseIterator rbegin() const
+    {
+        return ConstReverseIterator(&m_Data[ArraySize]);
+    }
+    constexpr HK_FORCEINLINE ConstReverseIterator crbegin() const
+    {
+        return ConstReverseIterator(&m_Data[ArraySize]);
+    }
+    constexpr HK_FORCEINLINE ReverseIterator rend()
+    {
+        return ReverseIterator(&m_Data[0]);
+    }
+    constexpr HK_FORCEINLINE ConstReverseIterator rend() const
+    {
+        return ConstReverseIterator(static_cast<const_iterator>(&m_Data[0]));
+    }
+    constexpr HK_FORCEINLINE ConstReverseIterator crend() const
+    {
+        return ConstReverseIterator(static_cast<const_iterator>(&m_Data[0]));
+    }
+    constexpr HK_FORCEINLINE Iterator Begin()
+    {
+        return begin();
+    }
+    constexpr HK_FORCEINLINE ConstIterator Begin() const
+    {
+        return begin();
+    }
+    constexpr HK_FORCEINLINE ConstIterator CBegin() const
+    {
+        return cbegin();
+    }
+    constexpr HK_FORCEINLINE Iterator End()
+    {
+        return end();
+    }
+    constexpr HK_FORCEINLINE ConstIterator End() const
+    {
+        return end();
+    }
+    constexpr HK_FORCEINLINE ConstIterator CEnd() const
+    {
+        return cend();
+    }
+    constexpr HK_FORCEINLINE ReverseIterator RBegin()
+    {
+        return rbegin();
+    }
+    constexpr HK_FORCEINLINE ConstReverseIterator RBegin() const
+    {
+        return rbegin();
+    }
+    constexpr HK_FORCEINLINE ConstReverseIterator CRBegin() const
+    {
+        return crbegin();
+    }
+    constexpr HK_FORCEINLINE ReverseIterator REnd()
+    {
+        return rend();
+    }
+    constexpr HK_FORCEINLINE ConstReverseIterator REnd() const
+    {
+        return rend();
+    }
+    constexpr HK_FORCEINLINE ConstReverseIterator CREnd() const
+    {
+        return crend();
     }
 
-    int IndexOf(T const& _Element) const
+    HK_FORCEINLINE void ZeroMem()
     {
-        for (int i = 0; i < ArraySize; i++)
-        {
-            if (ArrayData[i] == _Element)
-            {
-                return i;
-            }
-        }
-        return -1;
+        Platform::ZeroMem(ToPtr(), sizeof(ValueType) * Size());
     }
 
-    T* ToPtr()
+    HK_FORCEINLINE ConstIterator Find(ValueType const& value) const
     {
-        return ArrayData;
+        return eastl::find(begin(), end(), value);
     }
 
-    T const* ToPtr() const
+    HK_FORCEINLINE bool Contains(ValueType const& value) const
     {
-        return ArrayData;
+        return eastl::find(begin(), end(), value) != end();
     }
 
-    int Size() const
+    template <typename Predicate>
+    HK_FORCEINLINE bool Contains(ValueType const& value, Predicate predicate) const
     {
-        return ArraySize;
+        return eastl::find(begin(), end(), value, predicate) != end();
     }
 
-    T ArrayData[ArraySize];
+    HK_FORCEINLINE SizeType IndexOf(ValueType const& value) const
+    {
+        auto it = eastl::find(begin(), end(), value);
+        return it == end() ? Core::NPOS : (SizeType)(it - begin());
+    }
+
+    HK_FORCEINLINE void Reverse()
+    {
+        eastl::reverse(begin(), end());
+    }
+
+    HK_FORCEINLINE void ReverseRange(SizeType index, SizeType count)
+    {
+        eastl::reverse(begin() + index, begin() + (index + count));
+    }
 };
+
+
+template <typename T, size_t ArraySize>
+constexpr inline bool operator==(TArray<T, ArraySize> const& a, TArray<T, ArraySize> const& b)
+{
+    return eastl::equal(&a.m_Data[0], &a.m_Data[ArraySize], &b.m_Data[0]);
+}
+
+template <typename T, size_t ArraySize>
+constexpr inline bool operator<(TArray<T, ArraySize> const& a, TArray<T, ArraySize> const& b)
+{
+    return eastl::lexicographical_compare(&a.m_Data[0], &a.m_Data[ArraySize], &b.m_Data[0], &b.m_Data[ArraySize]);
+}
+
+template <typename T, size_t ArraySize>
+constexpr inline bool operator!=(TArray<T, ArraySize> const& a, TArray<T, ArraySize> const& b)
+{
+    return !eastl::equal(&a.m_Data[0], &a.m_Data[ArraySize], &b.m_Data[0]);
+}
+
+template <typename T, size_t ArraySize>
+constexpr inline bool operator>(TArray<T, ArraySize> const& a, TArray<T, ArraySize> const& b)
+{
+    return eastl::lexicographical_compare(&b.m_Data[0], &b.m_Data[ArraySize], &a.m_Data[0], &a.m_Data[ArraySize]);
+}
+
+template <typename T, size_t ArraySize>
+constexpr inline bool operator<=(TArray<T, ArraySize> const& a, TArray<T, ArraySize> const& b)
+{
+    return !eastl::lexicographical_compare(&b.m_Data[0], &b.m_Data[ArraySize], &a.m_Data[0], &a.m_Data[ArraySize]);
+}
+
+template <typename T, size_t ArraySize>
+constexpr inline bool operator>=(TArray<T, ArraySize> const& a, TArray<T, ArraySize> const& b)
+{
+    return !eastl::lexicographical_compare(&a.m_Data[0], &a.m_Data[ArraySize], &b.m_Data[0], &b.m_Data[ArraySize]);
+}
+
+namespace eastl
+{
+template <typename T, size_t ArraySize>
+inline void swap(TArray<T, ArraySize>& a, TArray<T, ArraySize>& b)
+{
+    eastl::swap_ranges(&a.m_Data[0], &a.m_Data[ArraySize], &b.m_Data[0]);
+}
+} // namespace eastl

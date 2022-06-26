@@ -32,9 +32,9 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
-//#include <bullet3/Extras/ConvexDecomposition/ConvexDecomposition.h>
-#include <ThirdParty/bullet3/Extras/HACD/hacdHACD.h>
-#include <VHACD.h>
+#include <hacdHACD.h>
+
+#include <VHACD/VHACD.h>
 
 HK_FORCEINLINE bool IsPointInsideConvexHull(Float3 const& _Point, PlaneF const* _Planes, int _NumPlanes, float _Margin)
 {
@@ -113,7 +113,7 @@ void ConvexHullPlanesFromVertices(Float3 const* _Vertices, int _NumVertices, TPo
 
                             if (AreVerticesBehindPlane(plane, _Vertices, _NumVertices, margin))
                             {
-                                _Planes.Append(plane);
+                                _Planes.Add(plane);
                             }
                         }
                     }
@@ -162,7 +162,7 @@ void ConvexHullVerticesFromPlanes(PlaneF const* _Planes, int _NumPlanes, TPodVec
 
                             if (IsPointInsideConvexHull(potentialVertex, _Planes, _NumPlanes, 0.01f))
                             {
-                                _Vertices.Append(potentialVertex);
+                                _Vertices.Add(potentialVertex);
                             }
                         }
                     }
@@ -211,7 +211,7 @@ void ConvexHullVerticesFromPlanes(PlaneF const* _Planes, int _NumPlanes, TPodVec
 //        float               mSphereVolume;      // volume of the best fit sphere
 //#endif
 
-//        SConvexHullDesc & hull = Hulls.Append();
+//        SConvexHullDesc & hull = Hulls.Add();
 
 //        hull.FirstVertex = Vertices.Length();
 //        hull.VertexCount = _Result.mHullVcount;
@@ -280,13 +280,11 @@ void PerformConvexDecomposition(Float3 const*                _Vertices,
                                 TPodVector<unsigned int>&    _OutIndices,
                                 TPodVector<SConvexHullDesc>& _OutHulls)
 {
-    int hunkMark = GHunkMemory.SetHunkMark();
-
     HACD::Vec3<HACD::Real>* points =
-        (HACD::Vec3<HACD::Real>*)GHunkMemory.Alloc(_VerticesCount * sizeof(HACD::Vec3<HACD::Real>));
+        (HACD::Vec3<HACD::Real>*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(_VerticesCount * sizeof(HACD::Vec3<HACD::Real>));
 
     HACD::Vec3<long>* triangles =
-        (HACD::Vec3<long>*)GHunkMemory.Alloc((_IndicesCount / 3) * sizeof(HACD::Vec3<long>));
+        (HACD::Vec3<long>*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc((_IndicesCount / 3) * sizeof(HACD::Vec3<long>));
 
     byte const* srcVertices = (byte const*)_Vertices;
     for (int i = 0; i < _VerticesCount; i++)
@@ -348,10 +346,10 @@ void PerformConvexDecomposition(Float3 const*                _Vertices,
     }
 
     HACD::Vec3<HACD::Real>* hullPoints =
-        (HACD::Vec3<HACD::Real>*)GHunkMemory.Alloc(maxPointsPerCluster * sizeof(HACD::Vec3<HACD::Real>));
+        (HACD::Vec3<HACD::Real>*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(maxPointsPerCluster * sizeof(HACD::Vec3<HACD::Real>));
 
     HACD::Vec3<long>* hullTriangles =
-        (HACD::Vec3<long>*)GHunkMemory.Alloc(maxTrianglesPerCluster * sizeof(HACD::Vec3<long>));
+        (HACD::Vec3<long>*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(maxTrianglesPerCluster * sizeof(HACD::Vec3<long>));
 
 
     _OutHulls.ResizeInvalidate(numClusters);
@@ -407,14 +405,11 @@ void PerformConvexDecomposition(Float3 const*                _Vertices,
         }
     }
 
-    GHunkMemory.ClearToMark(hunkMark);
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(points);
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(triangles);
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(hullPoints);
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(hullTriangles);
 }
-
-enum EVHACDMode
-{
-    VHACD_MODE_VOXEL       = 0, // recommended
-    VHACD_MODE_TETRAHEDRON = 1
-};
 
 void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
                                      int                          _VerticesCount,
@@ -433,13 +428,10 @@ void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
     public:
         void Update(const double      overallProgress,
                     const double      stageProgress,
-                    const double      operationProgress,
                     const char* const stage,
-                    const char* const operation) override
+                    const char*       operation) override
         {
-
-            LOG("Overall progress {}, {} progress {}, {} progress {}\n",
-                           overallProgress, stage, stageProgress, operation, operationProgress);
+            LOG("Overall progress {}, {} progress {}, operation: {}\n", overallProgress, stage, stageProgress, operation);
         }
     };
     class Logger : public VHACD::IVHACD::IUserLogger
@@ -457,49 +449,28 @@ void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
     VHACD::IVHACD* vhacd = VHACD::CreateVHACD();
 
     VHACD::IVHACD::Parameters params;
+    params.m_callback                         = &callback;                   // Optional user provided callback interface for progress
+    params.m_logger                           = &logger;                     // Optional user provided callback interface for log messages
+    params.m_taskRunner                       = nullptr;                     // Optional user provided interface for creating tasks
+    params.m_maxConvexHulls                   = 64;                          // The maximum number of convex hulls to produce
+    params.m_resolution                       = 400000;                      // The voxel resolution to use
+    params.m_minimumVolumePercentErrorAllowed = 1;                           // if the voxels are within 1% of the volume of the hull, we consider this a close enough approximation
+    params.m_maxRecursionDepth                = 14;                          // The maximum recursion depth
+    params.m_shrinkWrap                       = true;                        // Whether or not to shrinkwrap the voxel positions to the source mesh on output
+    params.m_fillMode                         = VHACD::FillMode::FLOOD_FILL; // How to fill the interior of the voxelized mesh //FLOOD_FILL SURFACE_ONLY RAYCAST_FILL
+    params.m_maxNumVerticesPerCH              = 64;                          // The maximum number of vertices allowed in any output convex hull
+    params.m_asyncACD                         = true;                        // Whether or not to run asynchronously, taking advantage of additonal cores
+    params.m_minEdgeLength                    = 2;                           // Once a voxel patch has an edge length of less than 4 on all 3 sides, we don't keep recursing
+    params.m_findBestPlane                    = false;                       // Whether or not to attempt to split planes along the best location. Experimental feature. False by default.
 
-    //    params.m_resolution = 80000000;//100000;
-    //    params.m_concavity = 0.00001;
-    //    params.m_planeDownsampling = 4;
-    //    params.m_convexhullDownsampling = 4;
-    //    params.m_alpha = 0.005;
-    //    params.m_beta = 0.005;
-    //    params.m_pca = 0;
-    //    params.m_mode = VHACD_MODE_VOXEL;
-    //    params.m_maxNumVerticesPerCH = 64;
-    //    params.m_minVolumePerCH = 0.0001;
-    params.m_callback = &callback;
-    params.m_logger   = &logger;
-    //    params.m_convexhullApproximation = true;
-    //    params.m_oclAcceleration = false;//true;
-    //    params.m_maxConvexHulls = 1024*10;
-    //    params.m_projectHullVertices = true; // This will project the output convex hull vertices onto the original source mesh to increase the floating point accuracy of the results
-
-    params.m_resolution              = 100000;
-    params.m_planeDownsampling       = 1;
-    params.m_convexhullDownsampling  = 1;
-    params.m_alpha                   = 0.0001;
-    params.m_beta                    = 0.0001;
-    params.m_pca                     = 0;
-    params.m_convexhullApproximation = false;
-    params.m_concavity               = 0.00000001;
-    params.m_mode                    = VHACD_MODE_VOXEL; //VHACD_MODE_TETRAHEDRON;
-    params.m_oclAcceleration         = false;
-    params.m_projectHullVertices     = false;
-
-    int hunkMark = GHunkMemory.SetHunkMark();
-
-    Double3* tempVertices = (Double3*)GHunkMemory.Alloc(_VerticesCount * sizeof(Double3));
-
-    byte const* srcVertices = (byte const*)_Vertices;
+    TVector<Double3> tempVertices(_VerticesCount);
+    byte const*      srcVertices = (byte const*)_Vertices;
     for (int i = 0; i < _VerticesCount; i++)
     {
         tempVertices[i] = Double3(*(Float3 const*)srcVertices);
-
         srcVertices += _VertexStride;
     }
-
-    bool bResult = vhacd->Compute((const double*)tempVertices, _VerticesCount, _Indices, _IndicesCount / 3, params);
+    bool bResult = vhacd->Compute(&tempVertices[0][0], _VerticesCount, _Indices, _IndicesCount / 3, params);
 
     if (bResult)
     {
@@ -572,6 +543,4 @@ void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
 
     vhacd->Clean();
     vhacd->Release();
-
-    GHunkMemory.ClearToMark(hunkMark);
 }

@@ -125,11 +125,11 @@ void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITextur
 
     int lodWidth = size;
 
-    TStdVector< AString > strs( _MaxLod + 1 );
+    TVector< AString > strs( _MaxLod + 1 );
 
     for ( int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1 ) {
 
-        strs[Lod] = "Envprobe LOD " + Math::ToString( Lod ) + " pass";
+        strs[Lod] = Core::Format("Envprobe LOD {} pass", Lod);
 
         ARenderPass & pass = frameGraph.AddTask< ARenderPass >( strs[Lod].CStr() );
 
@@ -195,11 +195,11 @@ void AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap, TRef<
 
     int lodWidth = size;
 
-    TStdVector< AString > strs( _MaxLod + 1 );
+    TVector< AString > strs( _MaxLod + 1 );
 
     for ( int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1 ) {
 
-        strs[Lod] = "Envprobe LOD " + Math::ToString( Lod ) + " pass";
+        strs[Lod] = Core::Format("Envprobe LOD {} pass", Lod);
 
         ARenderPass & pass = frameGraph.AddTask< ARenderPass >( strs[Lod].CStr() );
 

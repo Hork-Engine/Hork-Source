@@ -49,6 +49,11 @@ SOFTWARE.
 #include <functional>
 #include <type_traits>
 
+#include <EASTL/internal/config.h>
+#include <EASTL/internal/hashtable.h>
+#include <EASTL/fixed_vector.h>
+    
+
 /*
 
 Predefines:
@@ -140,6 +145,16 @@ HK_OS_STRING       - Operating system name (string)
 #    define HK_RELEASE
 #endif
 
+#ifndef HK_LIKELY
+#    if defined(__GNUC__) && (__GNUC__ >= 3)
+#        define HK_LIKELY(x)      __builtin_expect(!!(x), true)
+#        define HK_UNLIKELY(x) __builtin_expect(!!(x), false)
+#    else
+#        define HK_LIKELY(x)   (x)
+#        define HK_UNLIKELY(x) (x)
+#    endif
+#endif
+
 /*
 
 Function call
@@ -213,6 +228,14 @@ extern void AssertFunction(const char* _File, int _Line, const char* _Function, 
 #    define HK_ASSERT_(assertion, comment)
 #endif
 #define HK_ASSERT(assertion)   HK_ASSERT_(assertion, nullptr)
+
+#define HK_VERIFY(expression, message)  \
+    do                                  \
+    {                                   \
+        if (HK_UNLIKELY(!(expression))) \
+            CriticalError(message);     \
+    } while (false)
+
 #define HK_STRINGIFY(text)     #text
 #define HK_BIT(sh)             (1u << (sh))
 #define HK_BIT64(sh)           (uint64_t(1) << (sh))
@@ -298,6 +321,7 @@ HK_VALIDATE_TYPE_SIZE(uint16_t, 2)
 HK_VALIDATE_TYPE_SIZE(uint32_t, 4)
 HK_VALIDATE_TYPE_SIZE(uint64_t, 8)
 HK_VALIDATE_TYPE_SIZE(byte, 1)
+HK_VALIDATE_TYPE_SIZE(eastl_size_t, sizeof(size_t))
 
 // characters must be signed
 #if defined(_CHAR_UNSIGNED)
@@ -393,3 +417,13 @@ constexpr void* AlignPtr(void* Ptr, size_t Alignment)
     return (void*)(Align((size_t)Ptr, Alignment));
 #endif
 }
+
+
+namespace Core
+{
+template <typename T>
+HK_FORCEINLINE void Swap(T& a, T& b)
+{
+    eastl::swap(a, b);
+}
+} // namespace Core

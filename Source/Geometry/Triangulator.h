@@ -31,8 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Platform/Memory/LinearAllocator.h>
-#include <Containers/PodVector.h>
-#include <Containers/StdVector.h>
+#include <Containers/Vector.h>
 #include "VectorMath.h"
 
 class ATriangulatorBase
@@ -99,11 +98,11 @@ public:
     {
         ContourVertex*                             OuterContour;
         int                                        OuterContourVertexCount;
-        TStdVector<std::pair<ContourVertex*, int>> HoleContours;
+        TVector<std::pair<ContourVertex*, int>> HoleContours;
         Double3                                    Normal;
     };
 
-    TTriangulator(TStdVector<TriangleVertex>* pOutputStreamVertices, TPodVector<unsigned int>* pOutputStreamIndices);
+    TTriangulator(TVector<TriangleVertex>* pOutputStreamVertices, TPodVector<unsigned int>* pOutputStreamIndices);
 
     void Triangulate(SPolygon const* polygon);
 
@@ -120,7 +119,7 @@ private:
     TPodVector<unsigned int>* pIndexStream_;
 
     // Output vertices pointer
-    TStdVector<TriangleVertex>* pVertexStream_;
+    TVector<TriangleVertex>* pVertexStream_;
 
     // Offset to vertex stream
     int VertexOffset;
@@ -138,7 +137,7 @@ private:
 };
 
 template <typename ContourVertex, typename TriangleVertex>
-TTriangulator<ContourVertex, TriangleVertex>::TTriangulator(TStdVector<TriangleVertex>* pOutputStreamVertices, TPodVector<unsigned int>* pOutputStreamIndices) :
+TTriangulator<ContourVertex, TriangleVertex>::TTriangulator(TVector<TriangleVertex>* pOutputStreamVertices, TPodVector<unsigned int>* pOutputStreamIndices) :
     pIndexStream_(pOutputStreamIndices), pVertexStream_(pOutputStreamVertices)
 {
     SetCallback(CB_BEGIN_DATA, (SCallback)OnBeginData);

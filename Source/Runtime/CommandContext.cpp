@@ -48,7 +48,7 @@ void ACommandContext::ExecuteCommand(ACommandProcessor const& _Proc)
 
     for (ARuntimeCommand& cmd : Commands)
     {
-        if (!cmd.GetName().Icmp(name))
+        if (!Platform::Stricmp(cmd.GetName(), name))
         {
             cmd.Execute(_Proc);
             return;
@@ -72,9 +72,9 @@ void ACommandContext::ExecuteCommand(ACommandProcessor const& _Proc)
     LOG("Unknown command \"{}\"\n", name);
 }
 
-void ACommandContext::AddCommand(const char* _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment)
+void ACommandContext::AddCommand(AGlobalStringView _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment)
 {
-    if (!ACommandProcessor::IsValidCommandName(_Name))
+    if (!ACommandProcessor::IsValidCommandName(_Name.CStr()))
     {
         LOG("ACommandContext::AddCommand: invalid command name\n");
         return;
@@ -88,7 +88,7 @@ void ACommandContext::AddCommand(const char* _Name, TCallback<void(ACommandProce
 
     for (ARuntimeCommand& cmd : Commands)
     {
-        if (!cmd.GetName().Icmp(_Name))
+        if (!Platform::Stricmp(cmd.GetName(), _Name.CStr()))
         {
             LOG("Overriding {} command\n", _Name);
 
@@ -98,18 +98,18 @@ void ACommandContext::AddCommand(const char* _Name, TCallback<void(ACommandProce
     }
 
     // Register new command
-    Commands.emplace_back(_Name, _Callback, _Comment);
+    Commands.EmplaceBack(_Name, _Callback, _Comment);
 }
 
-void ACommandContext::RemoveCommand(const char* _Name)
+void ACommandContext::RemoveCommand(AStringView _Name)
 {
-    for (TStdVector<ARuntimeCommand>::iterator it = Commands.begin(); it != Commands.end(); it++)
+    for (TVector<ARuntimeCommand>::Iterator it = Commands.begin(); it != Commands.end(); it++)
     {
         ARuntimeCommand& command = *it;
 
-        if (!command.GetName().Icmp(_Name))
+        if (!_Name.Icmp(command.GetName()))
         {
-            Commands.erase(it);
+            Commands.Erase(it);
             return;
         }
     }
@@ -125,35 +125,37 @@ namespace
 
 HK_FORCEINLINE bool CompareChar(char _Ch1, char _Ch2)
 {
-    return tolower(_Ch1) == tolower(_Ch2);
+    return ToLower(_Ch1) == ToLower(_Ch2);
 }
 
 } // namespace
 
-int ACommandContext::CompleteString(const char* _Str, int _StrLen, AString& _Result)
+int ACommandContext::CompleteString(AStringView Str, AString& _Result)
 {
     int count = 0;
+    const char* s     = Str.Begin();
+    auto len   = Str.Size();
 
     _Result.Clear();
 
     // skip whitespaces
-    while (((*_Str < 32 && *_Str > 0) || *_Str == ' ' || *_Str == '\t') && _StrLen > 0)
+    while (((*s < 32 && *s > 0) || *s == ' ' || *s == '\t') && len > 0)
     {
-        _Str++;
-        _StrLen--;
+        s++;
+        len--;
     }
 
-    if (_StrLen <= 0 || !*_Str)
+    if (len == 0)
     {
         return 0;
     }
 
     for (ARuntimeCommand const& cmd : Commands)
     {
-        if (!cmd.GetName().IcmpN(_Str, _StrLen))
+        if (!Platform::StricmpN(cmd.GetName(), s, len))
         {
             int n;
-            int minLen = Math::Min(cmd.GetName().Length(), _Result.Length());
+            int minLen = Math::Min(StringLength(cmd.GetName()), _Result.Length());
             for (n = 0; n < minLen && CompareChar(cmd.GetName()[n], _Result[n]); n++) {}
             if (n == 0)
             {
@@ -169,10 +171,10 @@ int ACommandContext::CompleteString(const char* _Str, int _StrLen, AString& _Res
 
     for (AConsoleVar* var = AConsoleVar::GlobalVariableList(); var; var = var->GetNext())
     {
-        if (!Platform::StricmpN(var->GetName(), _Str, _StrLen))
+        if (!Platform::StricmpN(var->GetName(), s, len))
         {
             int n;
-            int minLen = Math::Min(Platform::Strlen(var->GetName()), _Result.Length());
+            int minLen = Math::Min(StringLength(var->GetName()), _Result.Length());
             for (n = 0; n < minLen && CompareChar(var->GetName()[n], _Result[n]); n++) {}
             if (n == 0)
             {
@@ -189,18 +191,18 @@ int ACommandContext::CompleteString(const char* _Str, int _StrLen, AString& _Res
     return count;
 }
 
-void ACommandContext::Print(const char* _Str, int _StrLen)
+void ACommandContext::Print(AStringView Str)
 {
     TPodVector<ARuntimeCommand*>  cmds;
     TPodVector<AConsoleVar*> vars;
 
-    if (_StrLen > 0)
+    if (!Str.IsEmpty())
     {
         for (ARuntimeCommand& cmd : Commands)
         {
-            if (!cmd.GetName().IcmpN(_Str, _StrLen))
+            if (!Str.IcmpN(cmd.GetName(), Str.Size()))
             {
-                cmds.Append(&cmd);
+                cmds.Add(&cmd);
             }
         }
 
@@ -208,7 +210,7 @@ void ACommandContext::Print(const char* _Str, int _StrLen)
         {
             bool operator()(ARuntimeCommand const* _A, ARuntimeCommand* _B)
             {
-                return _A->GetName().Icmp(_B->GetName()) < 0;
+                return Platform::Stricmp(_A->GetName(), _B->GetName()) < 0;
             }
         } CmdSortFunction;
 
@@ -216,9 +218,9 @@ void ACommandContext::Print(const char* _Str, int _StrLen)
 
         for (AConsoleVar* var = AConsoleVar::GlobalVariableList(); var; var = var->GetNext())
         {
-            if (!Platform::StricmpN(var->GetName(), _Str, _StrLen))
+            if (!Str.IcmpN(var->GetName(), Str.Size()))
             {
-                vars.Append(var);
+                vars.Add(var);
             }
         }
 
@@ -237,7 +239,7 @@ void ACommandContext::Print(const char* _Str, int _StrLen)
             cmds.Size(), vars.Size());
         for (ARuntimeCommand* cmd : cmds)
         {
-            if (!cmd->GetComment().IsEmpty())
+            if (*cmd->GetComment())
             {
                 LOG("    {} ({})\n", cmd->GetName(), cmd->GetComment());
             }
@@ -254,7 +256,7 @@ void ACommandContext::Print(const char* _Str, int _StrLen)
             }
             else
             {
-                LOG("    {} \"{}\"\n", var->GetName(), var->GetValue().CStr());
+                LOG("    {} \"{}\"\n", var->GetName(), var->GetValue());
             }
         }
     }

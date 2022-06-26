@@ -76,6 +76,7 @@ PBR (physically based).
 * Color grading (LUT, procedural)
 * Vegnette
 * FXAA
+* SMAA
 * HBAO
 * SSLR
 * Motion Blur (per-object, per-bone)
@@ -145,31 +146,33 @@ PBR (physically based).
 * MIT license
    
 ## Used third-party libraries
-* angelscript (zlib license)
-* bullet (zlib license)
+* AngelsSript (zlib license)
+* Bullet Physics (zlib license)
 * cgltf (MIT license)
-* clipper (Boost Software License 1.0)
-* fastlz (MIT license)
-* fmt (MIT license)
-* glew (Modified BSD License, the Mesa 3-D License (MIT) and the Khronos License (MIT))
+* Clipper (Boost Software License 1.0)
+* EASTL (BSD 3-Clause license)
+* FastLZ (MIT license)
+* {fmt} (MIT license)
+* GLEW (Modified BSD License, the Mesa 3-D License (MIT) and the Khronos License (MIT))
 * glutess (SGI FREE SOFTWARE LICENSE B Ver 2.0)
+* HACD
 * iesna (public domain)
-* imgui (MIT License)
+* Dear ImGui (MIT License)
 * lwo2 (public domain?)
+* mimalloc (MIT license)
 * miniaudio (public domain or MIT-0)
-* miniz (public domain)
-* mufft (MIT license)
-* recastnavigation (zlib License)
-* sdl2 (zlib license)
+* Miniz (public domain)
+* muFFT (MIT license)
+* Recast & Detour (zlib License)
+* SDL2 (zlib license)
 * stb (public domain)
-* tinyexr (BSD 3-Clause)
-* vhacd (BSD 3-Clause)
+* tinyexr (BSD 3-Clause license)
+* V-HACD (BSD 3-Clause license)
+* FXAA
+* SMAA
+is a general purpose allocator with excellent [performance](#performance) characteristics.
+See [details](ThridParty.md).
 
-## Some architectural solutions
-* STL-less.
-* Not using exceptions.
-* Code style C with classes.
-* Minimum use of third-party libraries.
 
 ## Planned features
 * Particle System

@@ -38,9 +38,9 @@ SOFTWARE.
 #include <Geometry/BV/BvIntersect.h>
 #include <Core/ConsoleVar.h>
 
-AConsoleVar com_DrawMeshBounds(_CTS("com_DrawMeshBounds"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawBrushBounds(_CTS("com_DrawBrushBounds"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawIndexedMeshBVH(_CTS("com_DrawIndexedMeshBVH"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawMeshBounds("com_DrawMeshBounds"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawBrushBounds("com_DrawBrushBounds"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawIndexedMeshBVH("com_DrawIndexedMeshBVH"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(AMeshComponent)
 
@@ -206,7 +206,7 @@ AMeshComponent::AMeshComponent()
 
     bAllowRaycast = true;
 
-    static TStaticResourceFinder<AIndexedMesh> MeshResource(_CTS("/Default/Meshes/Box"));
+    static TStaticResourceFinder<AIndexedMesh> MeshResource("/Default/Meshes/Box"s);
     Mesh   = MeshResource.GetObject();
     Bounds = Mesh->GetBoundingBox();
 
@@ -267,7 +267,7 @@ void AMeshComponent::SetMesh(AIndexedMesh* _Mesh)
 
     if (!Mesh)
     {
-        static TStaticResourceFinder<AIndexedMesh> MeshResource(_CTS("/Default/Meshes/Box"));
+        static TStaticResourceFinder<AIndexedMesh> MeshResource("/Default/Meshes/Box"s);
         Mesh = MeshResource.GetObject();
     }
 
@@ -275,7 +275,7 @@ void AMeshComponent::SetMesh(AIndexedMesh* _Mesh)
     Bounds = Mesh->GetBoundingBox();
 
     // Update sockets
-    TPodVector<ASocketDef*> const& socketDef = Mesh->GetSockets();
+    TVector<ASocketDef*> const& socketDef = Mesh->GetSockets();
     Sockets.ResizeInvalidate(socketDef.Size());
     for (int i = 0; i < socketDef.Size(); i++)
     {
@@ -382,7 +382,7 @@ AMaterialInstance* AMeshComponent::GetMaterialInstance(int _SubpartIndex) const
     AMaterialInstance* pInstance = GetMaterialInstanceUnsafe(_SubpartIndex);
     if (!pInstance)
     {
-        static TStaticResourceFinder<AMaterialInstance> DefaultInstance(_CTS("/Default/MaterialInstance/Default"));
+        static TStaticResourceFinder<AMaterialInstance> DefaultInstance("/Default/MaterialInstance/Default"s);
         pInstance = DefaultInstance.GetObject();
     }
     return pInstance;
@@ -676,7 +676,7 @@ AProceduralMeshComponent::AProceduralMeshComponent()
 
     //LightmapOffset.Z = LightmapOffset.W = 1;
 
-    //static TStaticResourceFinder< AIndexedMesh > MeshResource( _CTS( "/Default/Meshes/Box" ) );
+    //static TStaticResourceFinder< AIndexedMesh > MeshResource("/Default/Meshes/Box"s);
     //Mesh = MeshResource.GetObject();
     //Bounds = Mesh->GetBoundingBox();
 }
@@ -726,7 +726,7 @@ AMaterialInstance* AProceduralMeshComponent::GetMaterialInstance() const
     AMaterialInstance* pInstance = MaterialInstance;
     if (!pInstance)
     {
-        static TStaticResourceFinder<AMaterialInstance> DefaultInstance(_CTS("/Default/MaterialInstance/Default"));
+        static TStaticResourceFinder<AMaterialInstance> DefaultInstance("/Default/MaterialInstance/Default"s);
         pInstance = DefaultInstance.GetObject();
     }
     return pInstance;

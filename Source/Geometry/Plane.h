@@ -180,17 +180,6 @@ struct TPlane
     TVector4<T>&                 ToFloat4() { return *reinterpret_cast<TVector4<T>*>(this); }
     constexpr TVector4<T> const& ToFloat4() const { return *reinterpret_cast<const TVector4<T>*>(this); }
 
-    // String conversions
-    AString ToString(int precision = -1) const
-    {
-        return AString("( ") + Math::ToString(Normal.X, precision) + " " + Math::ToString(Normal.Y, precision) + " " + Math::ToString(Normal.Z, precision) + " " + Math::ToString(D, precision) + " )";
-    }
-
-    AString ToHexString(bool bLeadingZeros = false, bool bPrefix = false) const
-    {
-        return AString("( ") + Math::ToHexString(Normal.X, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Normal.Y, bLeadingZeros, bPrefix) + " " + Math::ToHexString(Normal.Z, bLeadingZeros, bPrefix) + " " + Math::ToHexString(D, bLeadingZeros, bPrefix) + " )";
-    }
-
     // Byte serialization
     void Write(IBinaryStreamWriteInterface& stream) const
     {
@@ -231,3 +220,6 @@ struct TPlane
 
 using PlaneF = TPlane<float>;
 using PlaneD = TPlane<double>;
+
+HK_FORMAT_DEF_(PlaneF, "( {} {} {} {} )", v.X, v.Y, v.Z, v.D);
+HK_FORMAT_DEF_(PlaneD, "( {} {} {} {} )", v.X, v.Y, v.Z, v.D);

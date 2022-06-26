@@ -30,401 +30,710 @@ SOFTWARE.
 
 #pragma once
 
-#include <Platform/Memory/Memory.h>
-#include "StdVector.h"
+/*
 
-template <int HashBucketsCount = 1024, typename Allocator = AZoneAllocator> // must be power of two
-class THash final
+THashMap
+TStringHashMap
+TNameHash
+THashSet
+
+*/
+
+#include <Core/String.h>
+
+namespace HashTraits
+{
+
+HK_FORCEINLINE std::size_t Hash(uint32_t Key)
+{
+    return std::hash<uint32_t>()(Key);
+}
+
+HK_FORCEINLINE std::size_t Hash(uint64_t Key)
+{
+    return std::hash<uint64_t>()(Key);
+}
+
+template <typename T>
+HK_FORCEINLINE std::size_t Hash(T const& Key)
+{
+    return Key.Hash();
+}
+
+} // namespace HashTraits
+
+template <typename T>
+struct Hasher
+{
+    std::size_t operator()(T const& Key) const
+    {
+        return HashTraits::Hash(Key);
+    }
+};
+
+struct NameHasher
+{
+    std::size_t operator()(AStringView ResourcePath) const
+    {
+        return ResourcePath.HashCaseInsensitive();
+    }
+
+    struct Compare
+    {
+        bool operator()(AStringView Lhs, AStringView Rhs) const
+        {
+            return !Lhs.Icmp(Rhs);
+        }
+    };
+};
+
+template <typename Key, typename Val, typename Hash = Hasher<Key>, typename Predicate = eastl::equal_to<Key>, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_HASH_MAP>, bool bCacheHashCode = false>
+class THashMap : public eastl::hashtable<Key, eastl::pair<const Key, Val>, Allocator, eastl::use_first<eastl::pair<const Key, Val>>, Predicate, Hash, eastl::mod_range_hashing, eastl::default_ranged_hash, eastl::prime_rehash_policy, bCacheHashCode, true, true>
 {
 public:
-    /** Change it to set up granularity. Granularity must be >= 1 */
-    int Granularity = 1024;
+    using Super            = eastl::hashtable<Key, eastl::pair<const Key, Val>, Allocator, eastl::use_first<eastl::pair<const Key, Val>>, Predicate, Hash, eastl::mod_range_hashing, eastl::default_ranged_hash, eastl::prime_rehash_policy, bCacheHashCode, true, true>;
+    using Iterator         = typename Super::iterator;
+    using ConstIterator    = typename Super::const_iterator;
+    using SizeType         = typename Super::size_type;
+    using InsertReturnType = typename Super::insert_return_type;
+    using HashCode         = typename Super::hash_code_t;
+    using AllocatorType    = typename Super::allocator_type;
+    using ValueType        = typename Super::value_type;
 
-    /** Change it to reallocate indices */
-    int NumBucketIndices = 0;
+    /** Default constructor. */
+    explicit THashMap(AllocatorType const& allocator = AllocatorType("HashMap")) :
+        Super(0, Hash(), eastl::mod_range_hashing(), eastl::default_ranged_hash(), Predicate(), eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
+    {}
 
-    THash() :
-        HashBuckets(const_cast<int*>(InvalidHashIndex)),
-        IndexChain(const_cast<int*>(InvalidHashIndex))
+    /** Constructor which creates an empty container, but start with nBucketCount buckets.
+        We default to a small nBucketCount value, though the user really should manually
+        specify an appropriate value in order to prevent memory from being reallocated. */
+    explicit THashMap(SizeType nBucketCount, const Hash& hashFunction = Hash(), const Predicate& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
+        Super(nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
+    {}
+
+    THashMap(THashMap const& x) :
+        Super(x)
+    {}
+
+    THashMap(THashMap&& x) :
+        Super(eastl::move(x))
+    {}
+
+    THashMap(THashMap&& x, AllocatorType const& allocator) :
+        Super(eastl::move(x), allocator)
+    {}
+
+    /** initializer_list - based constructor.
+        Allows for initializing with brace values (e.g. THashMap<int, char*> hm = { {3,"c"}, {4,"d"}, {5,"e"} }; ) */
+    THashMap(std::initializer_list<ValueType> ilist, SizeType nBucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
+        Super(ilist.begin(), ilist.end(), nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
+    {}
+
+    /** An input bucket count of <= 1 causes the bucket count to be equal to the number of
+        elements in the input range. */
+    template <typename ForwardIterator>
+    THashMap(ForwardIterator first, ForwardIterator last, SizeType nBucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashMap")) :
+        Super(first, last, nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_first<eastl::pair<const Key, Val>>(), allocator)
+    {}
+
+    HK_FORCEINLINE THashMap& operator=(const THashMap& x)
     {
-        static_assert(IsPowerOfTwo(HashBucketsCount), "Buckets count must be power of two");
+        return static_cast<THashMap&>(Super::operator=(x));
     }
 
-    ~THash()
+    HK_FORCEINLINE THashMap& operator=(std::initializer_list<ValueType> ilist)
     {
-        if (HashBuckets != InvalidHashIndex)
-        {
-            Allocator::Inst().Free(HashBuckets);
-        }
-
-        if (IndexChain != InvalidHashIndex)
-        {
-            Allocator::Inst().Free(IndexChain);
-        }
+        return static_cast<THashMap&>(Super::operator=(ilist));
     }
 
-    THash(THash const& Rhs) :
-        Granularity(Rhs.Granularity),
-        NumBucketIndices(Rhs.NumBucketIndices),
-        HashBuckets(const_cast<int*>(InvalidHashIndex)),
-        IndexChain(const_cast<int*>(InvalidHashIndex)),
-        LookupMask(Rhs.LookupMask),
-        IndexChainLength(Rhs.IndexChainLength)        
+    HK_FORCEINLINE THashMap& operator=(THashMap&& x)
     {
-        if (Rhs.IndexChain != InvalidHashIndex)
-        {
-            IndexChain = (int*)Allocator::Inst().Alloc(IndexChainLength * sizeof(*IndexChain));
-            Platform::Memcpy(IndexChain, Rhs.IndexChain, IndexChainLength * sizeof(*IndexChain));
-        }
-
-        if (Rhs.HashBuckets != InvalidHashIndex)
-        {
-            HashBuckets = (int*)Allocator::Inst().Alloc(HashBucketsCount * sizeof(*HashBuckets));
-            Platform::Memcpy(HashBuckets, Rhs.HashBuckets, HashBucketsCount * sizeof(*HashBuckets));
-        }
+        return static_cast<THashMap&>(Super::operator=(eastl::move(x)));
     }
 
-    THash(THash&& Rhs) noexcept :
-        Granularity(Rhs.Granularity),
-        NumBucketIndices(Rhs.NumBucketIndices),
-        HashBuckets(Rhs.HashBuckets),
-        IndexChain(Rhs.IndexChain),
-        LookupMask(Rhs.LookupMask),
-        IndexChainLength(Rhs.IndexChainLength)
+    /** This is an extension to the C++ standard.We insert a default - constructed
+        element with the given key. The reason for this is that we can avoid the
+        potentially expensive operation of creating and/or copying a Val
+        object on the stack. */
+    HK_FORCEINLINE InsertReturnType Insert(Key const& key)
     {
-        HashBuckets      = const_cast<int*>(InvalidHashIndex);
-        IndexChain       = const_cast<int*>(InvalidHashIndex);
-        LookupMask       = 0;
-        IndexChainLength = 0;
+        return Super::DoInsertKey(eastl::true_type(), key);
     }
 
-    THash& operator=(THash const& Rhs)
+    Val& At(Key const& k)
     {
-        Granularity      = Rhs.Granularity;
-        NumBucketIndices = Rhs.NumBucketIndices;
-        LookupMask       = Rhs.LookupMask;
-        IndexChainLength = Rhs.IndexChainLength;
-
-        if (Rhs.IndexChain != InvalidHashIndex)
-        {
-            if (IndexChain == InvalidHashIndex)
-                IndexChain = (int*)Allocator::Inst().Alloc(IndexChainLength * sizeof(*IndexChain));
-            else
-                IndexChain = (int*)Allocator::Inst().Realloc(IndexChain, IndexChainLength * sizeof(*IndexChain), false);
-
-            Platform::Memcpy(IndexChain, Rhs.IndexChain, IndexChainLength * sizeof(*IndexChain));
-        }
-        else
-        {
-            if (IndexChain != InvalidHashIndex)
-            {
-                Allocator::Inst().Free(IndexChain);
-                IndexChain = const_cast<int*>(InvalidHashIndex);
-            }
-        }        
-
-        if (Rhs.HashBuckets != InvalidHashIndex)
-        {
-            if (HashBuckets == InvalidHashIndex)
-            {
-                // first allocation
-                HashBuckets = (int*)Allocator::Inst().Alloc(HashBucketsCount * sizeof(*HashBuckets));
-            }
-
-            Platform::Memcpy(HashBuckets, Rhs.HashBuckets, HashBucketsCount * sizeof(*HashBuckets));
-        }
-        else
-        {
-            if (HashBuckets != InvalidHashIndex)
-            {
-                Allocator::Inst().Free(HashBuckets);
-                HashBuckets = const_cast<int*>(InvalidHashIndex);
-            }
-        }
-
-        return *this;
+        Iterator it = Super::find(k);
+        HK_ASSERT(it != Super::end())
+        return it->second;
     }
 
-    THash& operator=(THash&& Rhs) noexcept
+    Val const& At(Key const& k) const
     {
-        if (HashBuckets != InvalidHashIndex)
-        {
-            Allocator::Inst().Free(HashBuckets);
-        }
-
-        if (IndexChain != InvalidHashIndex)
-        {
-            Allocator::Inst().Free(IndexChain);
-        }
-
-        Granularity      = Rhs.Granularity;
-        NumBucketIndices = Rhs.NumBucketIndices;
-        HashBuckets      = Rhs.HashBuckets;
-        IndexChain       = Rhs.IndexChain;
-        LookupMask       = Rhs.LookupMask;
-        IndexChainLength = Rhs.IndexChainLength;
-
-        Rhs.HashBuckets      = const_cast<int*>(InvalidHashIndex);
-        Rhs.IndexChain       = const_cast<int*>(InvalidHashIndex);
-        Rhs.LookupMask       = 0;
-        Rhs.IndexChainLength = 0;
-
-        return *this;
+        ConstIterator it = Super::find(k);
+        HK_ASSERT(it != Super::end())
+        return it->second;
     }
 
-    void Clear()
+    HK_FORCEINLINE InsertReturnType Insert(Key&& key)
     {
-        if (HashBuckets != InvalidHashIndex)
-        {
-            Platform::Memset(HashBuckets, 0xff, HashBucketsCount * sizeof(*HashBuckets));
-        }
+        return Super::DoInsertKey(eastl::true_type(), eastl::move(key));
     }
 
-    void Free()
+    HK_FORCEINLINE Val& operator[](Key const& key)
     {
-        if (HashBuckets != InvalidHashIndex)
-        {
-            Allocator::Inst().Free(HashBuckets);
-            HashBuckets = const_cast<int*>(InvalidHashIndex);
-        }
-
-        if (IndexChain != InvalidHashIndex)
-        {
-            Allocator::Inst().Free(IndexChain);
-            IndexChain = const_cast<int*>(InvalidHashIndex);
-        }
-
-        LookupMask       = 0;
-        IndexChainLength = 0;
+        return (*Super::DoInsertKey(eastl::true_type(), key).first).second;
     }
 
-    void Insert(int _Key, int _Index)
+    HK_FORCEINLINE Val& operator[](Key&& key)
     {
-
-        if (HashBuckets == InvalidHashIndex)
-        {
-            // first allocation
-            //HashBuckets = ( int * )Allocator::Inst().AllocCleared1( HashBucketsCount * sizeof( *HashBuckets ), 0xffffffffffffffff );
-            HashBuckets = (int*)Allocator::Inst().Alloc(HashBucketsCount * sizeof(*HashBuckets));
-            Platform::Memset(HashBuckets, 0xff, HashBucketsCount * sizeof(*HashBuckets));
-            LookupMask = ~0;
-        }
-
-        if (NumBucketIndices > IndexChainLength)
-        {
-            GrowIndexChain(NumBucketIndices);
-        }
-
-        if (_Index >= IndexChainLength)
-        {
-            // Resize index chain
-
-            int       newIndexChainLength = _Index + 1;
-            const int mod                 = newIndexChainLength % Granularity;
-            newIndexChainLength           = mod == 0 ? newIndexChainLength : newIndexChainLength + Granularity - mod;
-
-            GrowIndexChain(newIndexChainLength);
-        }
-
-        _Key &= HashWrapAroundMask;
-        IndexChain[_Index] = HashBuckets[_Key];
-        HashBuckets[_Key]  = _Index;
+        // The Standard states that this function "inserts the value ValueType(std::move(key), Val())"
+        return (*Super::DoInsertKey(eastl::true_type(), eastl::move(key)).first).second;
     }
 
-    void Remove(int _Key, int _Index)
+    HK_FORCEINLINE void Reserve(SizeType elementCount)
     {
-        HK_ASSERT(_Index < IndexChainLength);
-
-        if (HashBuckets == InvalidHashIndex)
-        {
-            // Hash not allocated yet
-            return;
-        }
-
-        _Key &= HashWrapAroundMask;
-        if (HashBuckets[_Key] == _Index)
-        {
-            HashBuckets[_Key] = IndexChain[_Index];
-        }
-        else
-        {
-            for (int i = HashBuckets[_Key]; i != -1; i = IndexChain[i])
-            {
-                if (IndexChain[i] == _Index)
-                {
-                    IndexChain[i] = IndexChain[_Index];
-                    break;
-                }
-            }
-        }
-
-        IndexChain[_Index] = -1;
+        Super::reserve(elementCount);
     }
 
-    void InsertIndex(int _Key, int _Index)
+    HK_FORCEINLINE SizeType Size() const
     {
-        if (HashBuckets != InvalidHashIndex)
-        {
-            int max = _Index;
-            for (int i = 0; i < HashBucketsCount; i++)
-            {
-                if (HashBuckets[i] >= _Index)
-                {
-                    HashBuckets[i]++;
-                    max = std::max(max, HashBuckets[i]);
-                }
-            }
-            for (int i = 0; i < IndexChainLength; i++)
-            {
-                if (IndexChain[i] >= _Index)
-                {
-                    IndexChain[i]++;
-                    max = std::max(max, IndexChain[i]);
-                }
-            }
-            if (max >= IndexChainLength)
-            {
-                int       newIndexChainLength = max + 1;
-                const int mod                 = newIndexChainLength % Granularity;
-                newIndexChainLength           = mod == 0 ? newIndexChainLength : newIndexChainLength + Granularity - mod;
-
-                GrowIndexChain(newIndexChainLength);
-            }
-            for (int i = max; i > _Index; i--)
-            {
-                IndexChain[i] = IndexChain[i - 1];
-            }
-            IndexChain[_Index] = -1;
-        }
-        Insert(_Key, _Index);
+        return Super::size();
     }
 
-    void RemoveIndex(int _Key, int _Index)
+    HK_FORCEINLINE void Clear()
     {
-        Remove(_Key, _Index);
-
-        if (HashBuckets == InvalidHashIndex)
-        {
-            return;
-        }
-
-        int max = _Index;
-        for (int i = 0; i < HashBucketsCount; i++)
-        {
-            if (HashBuckets[i] >= _Index)
-            {
-                max = std::max(max, HashBuckets[i]);
-                HashBuckets[i]--;
-            }
-        }
-        for (int i = 0; i < IndexChainLength; i++)
-        {
-            if (IndexChain[i] >= _Index)
-            {
-                max = std::max(max, IndexChain[i]);
-                IndexChain[i]--;
-            }
-        }
-
-        HK_ASSERT(max < IndexChainLength);
-
-        for (int i = _Index; i < max; i++)
-        {
-            IndexChain[i] = IndexChain[i + 1];
-        }
-        IndexChain[max] = -1;
+        Super::clear();
     }
 
-    int First(int _Key) const
+    HK_FORCEINLINE SizeType Count(Key const& k) const
     {
-        return HashBuckets[_Key & HashWrapAroundMask & LookupMask];
+        return Super::count(k);
     }
 
-    int Next(int _Index) const
+    HK_FORCEINLINE bool IsEmpty() const
     {
-        HK_ASSERT(_Index < IndexChainLength);
-        return IndexChain[_Index & LookupMask];
+        return Super::empty();
     }
 
-    bool IsAllocated() const
+    template <class... Args> HK_FORCEINLINE InsertReturnType TryEmplace(Key const& k, Args&&... args)
     {
-        return /*HashBuckets != nullptr && */ HashBuckets != InvalidHashIndex;
+        return Super::try_emplace(k, std::forward<Args>(args)...);
     }
+
+    template <class... Args> HK_FORCEINLINE InsertReturnType TryEmplace(Key&& k, Args&&... args)
+    {
+        return Super::try_emplace(std::move(k), std::forward<Args>(args)...);
+    }
+
+    template <class... Args> HK_FORCEINLINE InsertReturnType Emplace(Args&&... args)
+    {
+        return Super::emplace(std::forward<Args>(args)...);
+    }
+
+    HK_FORCEINLINE Iterator Erase(ConstIterator i)
+    {
+        return Super::erase(i);
+    }
+
+    HK_FORCEINLINE Iterator Erase(ConstIterator first, ConstIterator last)
+    {
+        return Super::erase(first, last);
+    }
+
+    HK_FORCEINLINE SizeType Erase(Key const& k)
+    {
+        return Super::erase(k);
+    }
+
+    HK_FORCEINLINE Iterator Find(Key const& k)
+    {
+        return Super::find(k);
+    }
+
+    HK_FORCEINLINE ConstIterator Find(Key const& k) const
+    {
+        return Super::find(k);
+    }
+
+    HK_FORCEINLINE Iterator FindByHash(Key const& k, HashCode c)
+    {
+        return Super::find_by_hash(k, c);
+    }
+
+    HK_FORCEINLINE ConstIterator FindByHash(Key const& k, HashCode c) const
+    {
+        return Super::find_by_hash(k, c);
+    }
+
+    HK_FORCEINLINE bool Contains(Key const& k) const
+    {
+        return Super::find(k) != Super::end();
+    }
+
+    HK_FORCEINLINE void ResetLoseMemory()
+    {
+        Super::reset_lose_memory();
+    }
+
+    HK_FORCEINLINE SizeType GetBucketCount() const
+    {
+        return Super::bucket_count();
+    }
+
+    HK_FORCEINLINE SizeType GetBucketSize(SizeType n) const
+    {
+        return Super::bucket_size(n);
+    }
+
+    HK_FORCEINLINE void Swap(THashMap& x)
+    {
+        Super::swap(x);
+    }
+
+    HK_INLINE bool operator==(THashMap const& rhs) const
+    {
+        if (size() != rhs.size())
+            return false;
+        for (ConstIterator it = begin(), e = end(), e2 = rhs.end(); it != e; ++it)
+        {
+            ConstIterator it2 = rhs.find(it->first);
+            if ((it2 == e2) || !(*it == *it2))
+                return false;
+        }
+        return true;
+    }
+
+    HK_INLINE bool operator!=(THashMap const& rhs) const
+    {
+        return !(operator==(rhs));
+    }
+
+    HK_FORCEINLINE Iterator Begin()
+    {
+        return Super::begin();
+    }
+    HK_FORCEINLINE ConstIterator Begin() const
+    {
+        return Super::begin();
+    }
+    HK_FORCEINLINE ConstIterator CBegin() const
+    {
+        return Super::cbegin();
+    }
+    HK_FORCEINLINE Iterator End()
+    {
+        return Super::end();
+    }
+    HK_FORCEINLINE ConstIterator End() const
+    {
+        return Super::end();
+    }
+    HK_FORCEINLINE ConstIterator CEnd() const
+    {
+        return Super::cend();
+    }
+};
+
+namespace eastl
+{
+template <typename Key, typename Val, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode>
+HK_INLINE void swap(THashMap<Key, Val, Hash, Predicate, Allocator, bCacheHashCode>& lhs, THashMap<Key, Val, Hash, Predicate, Allocator, bCacheHashCode>& rhs)
+{
+    lhs.Swap(rhs);
+}
+} // namespace eastl
+
+
+template <typename Val, typename Hash = Hasher<AStringView>, typename Predicate = eastl::equal_to<AStringView>, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_HASH_MAP>>
+class TStringHashMap : public THashMap<AStringView, Val, Hash, Predicate, Allocator>
+{
+public:
+    using Super            = THashMap<AStringView, Val, Hash, Predicate, Allocator>;
+    using ThisType         = TStringHashMap<Val, Hash, Predicate, Allocator>;
+    using AllocatorType    = typename Super::Super::allocator_type;
+    using InsertReturnType = typename Super::Super::insert_return_type;
+    using Iterator         = typename Super::Super::iterator;
+    using ConstIterator = typename Super::Super::const_iterator;
+    using SizeType      = typename Super::Super::size_type;
+    using ValueType     = typename Super::Super::value_type;
+    using MappedType    = typename Val;
+
+    TStringHashMap(const AllocatorType& allocator = AllocatorType()) :
+        Super(allocator) {}
+    TStringHashMap(const TStringHashMap& src, const AllocatorType& allocator = AllocatorType());
+    ~TStringHashMap();
+    void Clear();
+    void Clear(bool clearBuckets);
+
+    ThisType& operator=(const ThisType& x);
+
+    InsertReturnType            Insert(AStringView key, const Val& value);
+    InsertReturnType            Insert(AStringView key);
+    eastl::pair<Iterator, bool> InsertOrAssign(AStringView key, const Val& value);
+    Iterator                    Erase(ConstIterator position);
+    SizeType                    Erase(AStringView key);
+    MappedType&                 operator[](AStringView key);
 
 private:
-    void GrowIndexChain(int _NewIndexChainLength)
-    {
-        if (IndexChain == InvalidHashIndex)
-        {
-            IndexChain = (int*)Allocator::Inst().Alloc(_NewIndexChainLength * sizeof(*IndexChain));
-            Platform::Memset(IndexChain, 0xff, _NewIndexChainLength * sizeof(*IndexChain));
-        }
-        else
-        {
-            IndexChain = (int*)Allocator::Inst().Realloc(IndexChain, _NewIndexChainLength * sizeof(*IndexChain), true);
-
-            int* pIndexChain = IndexChain + IndexChainLength * sizeof(*IndexChain);
-            Platform::Memset(pIndexChain, 0xff, (_NewIndexChainLength - IndexChainLength) * sizeof(*IndexChain));
-        }
-        IndexChainLength = _NewIndexChainLength;
-    }
-
-    int* HashBuckets;
-    int* IndexChain;
-    int  LookupMask       = 0; // Always 0 or ~0
-    int  IndexChainLength = 0;
-
-    constexpr static const int HashWrapAroundMask  = HashBucketsCount - 1;
-    constexpr static const int InvalidHashIndex[1] = {-1};
+    AStringView strduplicate(AStringView str);
 };
 
-template <int HashBucketsCount, typename Allocator>
-constexpr const int THash<HashBucketsCount, Allocator>::InvalidHashIndex[1];
 
-template <typename KeyType, typename ValueType, int HashBucketsCount = 1024, typename Allocator = AZoneAllocator>
-struct THashContainer
+template <typename Val, typename Hash, typename Predicate, typename Allocator>
+TStringHashMap<Val, Hash, Predicate, Allocator>::TStringHashMap(const TStringHashMap& src, const AllocatorType& allocator) :
+    Super(allocator)
 {
-    THash<HashBucketsCount, Allocator>        Hash;
-    TStdVector<std::pair<KeyType, ValueType>> Container;
+    for (ConstIterator i = src.begin(), e = src.end(); i != e; ++i)
+        Super::Super::insert(eastl::make_pair(strduplicate(i->first), i->second));
+}
 
-    std::pair<KeyType, ValueType>& operator[](int Index)
+template <typename Val, typename Hash, typename Predicate, typename Allocator>
+TStringHashMap<Val, Hash, Predicate, Allocator>::~TStringHashMap()
+{
+    Clear();
+}
+
+template <typename Val, typename Hash, typename Predicate, typename Allocator>
+void TStringHashMap<Val, Hash, Predicate, Allocator>::Clear()
+{
+    AllocatorType& allocator = Super::Super::get_allocator();
+    for (ConstIterator i = Super::Super::begin(), e = Super::Super::end(); i != e; ++i)
+        EASTLFree(allocator, (void*)i->first.ToPtr(), 0);
+    Super::Super::clear();
+}
+
+template <typename Val, typename Hash, typename Predicate, typename Allocator>
+void TStringHashMap<Val, Hash, Predicate, Allocator>::Clear(bool clearBuckets)
+{
+    AllocatorType& allocator = Super::Super::get_allocator();
+    for (ConstIterator i = Super::Super::begin(), e = Super::Super::end(); i != e; ++i)
+        EASTLFree(allocator, (void*)i->first.ToPtr(), 0);
+    Super::Super::clear(clearBuckets);
+}
+
+template <typename Val, typename Hash, typename Predicate, typename Allocator>
+typename TStringHashMap<Val, Hash, Predicate, Allocator>::ThisType&
+TStringHashMap<Val, Hash, Predicate, Allocator>::operator=(const ThisType& x)
+{
+    AllocatorType allocator = Super::Super::get_allocator();
+    this->~ThisType();
+    new (this) ThisType(x, allocator);
+    return *this;
+}
+
+template <typename Val, typename Hash, typename Predicate, typename Allocator>
+typename TStringHashMap<Val, Hash, Predicate, Allocator>::InsertReturnType
+TStringHashMap<Val, Hash, Predicate, Allocator>::Insert(AStringView key)
+{
+    return Insert(key, MappedType());
+}
+
+template <typename Val, typename Hash, typename Predicate, typename Allocator>
+typename TStringHashMap<Val, Hash, Predicate, Allocator>::InsertReturnType
+TStringHashMap<Val, Hash, Predicate, Allocator>::Insert(AStringView key, const Val& value)
+{
+    EASTL_ASSERT(key);
+    Iterator i = Super::Super::find(key);
+    if (i != Super::Super::end())
     {
-        return Container[Index];
+        InsertReturnType ret;
+        ret.first  = i;
+        ret.second = false;
+        return ret;
+    }
+    return Super::Super::insert(eastl::make_pair(strduplicate(key), value));
+}
+
+template <typename Val, typename Hash, typename Predicate, typename Allocator>
+eastl::pair<typename TStringHashMap<Val, Hash, Predicate, Allocator>::Iterator, bool>
+TStringHashMap<Val, Hash, Predicate, Allocator>::InsertOrAssign(AStringView key, const Val& value)
+{
+    Iterator i = Super::Super::find(key);
+    if (i != Super::Super::end())
+    {
+        return Super::Super::insert_or_assign(i->first, value);
+    }
+    else
+    {
+        return Super::Super::insert_or_assign(strduplicate(key), value);
+    }
+}
+
+template <typename Val, typename Hash, typename Predicate, typename Allocator>
+typename TStringHashMap<Val, Hash, Predicate, Allocator>::Iterator
+TStringHashMap<Val, Hash, Predicate, Allocator>::Erase(ConstIterator position)
+{
+    AStringView key    = position->first;
+    Iterator    result = Super::Super::erase(position);
+    EASTLFree(Super::Super::get_allocator(), (void*)key.ToPtr(), 0);
+    return result;
+}
+
+template <typename Val, typename Hash, typename Predicate, typename Allocator>
+typename TStringHashMap<Val, Hash, Predicate, Allocator>::SizeType
+TStringHashMap<Val, Hash, Predicate, Allocator>::Erase(AStringView key)
+{
+    const Iterator it(Super::Super::find(key));
+
+    if (it != Super::Super::end())
+    {
+        Erase(it);
+        return 1;
+    }
+    return 0;
+}
+
+template <typename Val, typename Hash, typename Predicate, typename Allocator>
+typename TStringHashMap<Val, Hash, Predicate, Allocator>::MappedType&
+TStringHashMap<Val, Hash, Predicate, Allocator>::operator[](AStringView key)
+{
+    using base_value_type = typename Super::Super::value_type;
+
+    EASTL_ASSERT(!key.IsEmpty());
+    Iterator i = Super::Super::find(key);
+    if (i != Super::Super::end())
+        return i->second;
+    return Super::Super::insert(base_value_type(eastl::pair_first_construct, strduplicate(key))).first->second;
+}
+
+template <typename Val, typename Hash, typename Predicate, typename Allocator>
+AStringView TStringHashMap<Val, Hash, Predicate, Allocator>::strduplicate(AStringView str)
+{
+    size_t len    = str.Size();
+    char*  result = (char*)EASTLAlloc(Super::Super::get_allocator(), len);
+    memcpy(result, str.ToPtr(), len);
+    return AStringView(result, len);
+}
+
+/** Case insensitive string hash map. */
+template <typename T>
+using TNameHash = TStringHashMap<T, NameHasher, NameHasher::Compare>;
+
+template <typename Val, typename Hash = Hasher<Val>, typename Predicate = eastl::equal_to<Val>, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_HASH_SET>, bool bCacheHashCode = false>
+class THashSet : public eastl::hashtable<Val, Val, Allocator, eastl::use_self<Val>, Predicate, Hash, eastl::mod_range_hashing, eastl::default_ranged_hash, eastl::prime_rehash_policy, bCacheHashCode, false, true>
+{
+public:
+    using Super            = eastl::hashtable<Val, Val, Allocator, eastl::use_self<Val>, Predicate, Hash, eastl::mod_range_hashing, eastl::default_ranged_hash, eastl::prime_rehash_policy, bCacheHashCode, false, true>;
+    using Iterator         = typename Super::iterator;
+    using ConstIterator    = typename Super::const_iterator;
+    using SizeType         = typename Super::size_type;
+    using InsertReturnType = typename Super::insert_return_type;
+    using HashCode         = typename Super::hash_code_t;
+    using AllocatorType    = typename Super::allocator_type;
+    using ValueType        = typename Super::value_type;
+
+    /** Default constructor. */
+    explicit THashSet(AllocatorType const& allocator = AllocatorType("HashSet")) :
+        Super(0, Hash(), eastl::mod_range_hashing(), eastl::default_ranged_hash(), Predicate(), eastl::use_self<Val>(), allocator)
+    {}
+
+    /** Constructor which creates an empty container, but start with nBucketCount buckets.
+        We default to a small nBucketCount value, though the user really should manually
+        specify an appropriate value in order to prevent memory from being reallocated. */
+    explicit THashSet(SizeType nBucketCount, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
+        Super(nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_self<Val>(), allocator)
+    {}
+
+    THashSet(THashSet const& x) :
+        Super(x)
+    {}
+
+    THashSet(THashSet&& x) :
+        Super(eastl::move(x))
+    {}
+
+    THashSet(THashSet&& x, AllocatorType const& allocator) :
+        Super(eastl::move(x), allocator)
+    {}
+
+    /** initializer_list - based constructor.
+        Allows for initializing with brace values (e.g. THashSet<int> hs = { 3, 4, 5, }; ) */
+    THashSet(std::initializer_list<ValueType> ilist, SizeType nBucketCount = 0, Hash const& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
+        Super(ilist.begin(), ilist.end(), nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_self<Val>(), allocator)
+    {}
+
+    /** An input bucket count of <= 1 causes the bucket count to be equal to the number of
+        elements in the input range. */
+    template <typename FowardIterator>
+    THashSet(FowardIterator first, FowardIterator last, SizeType nBucketCount = 0, const Hash& hashFunction = Hash(), Predicate const& predicate = Predicate(), AllocatorType const& allocator = AllocatorType("HashSet")) :
+        Super(first, last, nBucketCount, hashFunction, eastl::mod_range_hashing(), eastl::default_ranged_hash(), predicate, eastl::use_self<Val>(), allocator)
+    {}
+
+    THashSet& operator=(THashSet const& x)
+    {
+        return static_cast<THashSet&>(Super::operator=(x));
     }
 
-    std::pair<KeyType, ValueType> const& operator[](int Index) const
+    THashSet& operator=(std::initializer_list<ValueType> ilist)
     {
-        return Container[Index];
+        return static_cast<THashSet&>(Super::operator=(ilist));
     }
 
-    bool IsEmpty() const
+    THashSet& operator=(THashSet&& x)
     {
-        return Container.IsEmpty();
+        return static_cast<THashSet&>(Super::operator=(eastl::move(x)));
     }
 
-    int First(int KeyHash) const
+    HK_FORCEINLINE void Reserve(SizeType elementCount)
     {
-        return Hash.First(KeyHash);
+        Super::reserve(elementCode);
     }
 
-    int Next(int Index) const
+    HK_FORCEINLINE SizeType Size() const
     {
-        return Hash.Next(Index);
+        return Super::size();
     }
 
-    template <typename KeyTypeView>
-    void Insert(KeyTypeView const& Key, ValueType const& Value)
+    HK_FORCEINLINE void Clear()
     {
-        int hash = Key.Hash();
-        for (int i = Hash.First(hash); i != -1; i = Hash.Next(i))
+        Super::clear();
+    }
+
+    HK_FORCEINLINE SizeType Count(Val const& k) const
+    {
+        return Super::count(k);
+    }
+
+    HK_FORCEINLINE bool IsEmpty() const
+    {
+        return Super::empty();
+    }
+
+    HK_FORCEINLINE InsertReturnType Insert(Val const& v)
+    {
+        return Super::insert(v);
+    }
+
+    HK_FORCEINLINE InsertReturnType Insert(Val&& v)
+    {
+        return Super::insert(std::move(v));
+    }
+
+    template <class... Args> HK_FORCEINLINE InsertReturnType TryEmplace(Val const& k, Args&&... args)
+    {
+        return Super::try_emplace(k, std::forward<Args>(args)...);
+    }
+
+    template <class... Args> HK_FORCEINLINE InsertReturnType TryEmplace(Val&& k, Args&&... args)
+    {
+        return Super::try_emplace(std::move(k), std::forward<Args>(args)...);
+    }
+
+    template <class... Args> HK_FORCEINLINE InsertReturnType Emplace(Args&&... args)
+    {
+        return Super::emplace(std::forward<Args>(args)...);
+    }
+
+    HK_FORCEINLINE Iterator Erase(ConstIterator i)
+    {
+        return Super::erase(i);
+    }
+
+    HK_FORCEINLINE Iterator Erase(ConstIterator first, ConstIterator last)
+    {
+        return Super::erase(first, last);
+    }
+
+    HK_FORCEINLINE SizeType Erase(Val const& v)
+    {
+        return Super::erase(v);
+    }
+
+    HK_FORCEINLINE Iterator Find(Val const& v)
+    {
+        return Super::find(v);
+    }
+
+    HK_FORCEINLINE ConstIterator Find(Val const& v) const
+    {
+        return Super::find(v);
+    }
+
+    HK_FORCEINLINE Iterator FindByHash(HashCode c)
+    {
+        return Super::find_by_hash(c);
+    }
+
+    HK_FORCEINLINE ConstIterator FindByHash(HashCode c) const
+    {
+        return Super::find_by_hash(c);
+    }
+
+    HK_FORCEINLINE bool Contains(Val const& v) const
+    {
+        return Super::find(v) != Super::end();
+    }
+
+    HK_FORCEINLINE void ResetLoseMemory()
+    {
+        Super::reset_lose_memory();
+    }
+
+    HK_FORCEINLINE SizeType GetBucketCount() const
+    {
+        return Super::bucket_count();
+    }
+
+    HK_FORCEINLINE SizeType GetBucketSize(SizeType n) const
+    {
+        return Super::bucket_size(n);
+    }
+
+    HK_FORCEINLINE void Swap(THashSet& x)
+    {
+        Super::swap(x);
+    }
+
+    HK_INLINE bool operator==(THashSet const& rhs) const
+    {
+        if (size() != rhs.size())
+            return false;
+        for (ConstIterator it = begin(), e = end(), e2 = rhs.end(); it != e; ++it)
         {
-            if (Container[i].first == Key)
-            {
-                Container[i].second = Value;
-                return;
-            }
+            ConstIterator it2 = rhs.find(*it);
+            if ((it2 == e2) || !(*it == *it2))
+                return false;
         }
-        Hash.Insert(hash, Container.Size());
-        Container.Append(std::make_pair(Key, Value));
+        return true;
+    }
+
+    HK_INLINE bool operator!=(THashSet const& rhs) const
+    {
+        return !(operator==(rhs));
+    }
+
+    HK_FORCEINLINE Iterator Begin()
+    {
+        return Super::begin();
+    }
+    HK_FORCEINLINE ConstIterator Begin() const
+    {
+        return Super::begin();
+    }
+    HK_FORCEINLINE ConstIterator CBegin() const
+    {
+        return Super::cbegin();
+    }
+    HK_FORCEINLINE Iterator End()
+    {
+        return Super::end();
+    }
+    HK_FORCEINLINE ConstIterator End() const
+    {
+        return Super::end();
+    }
+    HK_FORCEINLINE ConstIterator CEnd() const
+    {
+        return Super::cend();
     }
 };
+
+namespace eastl
+{
+template <typename Val, typename Hash, typename Predicate, typename Allocator, bool bCacheHashCode>
+HK_INLINE void swap(THashSet<Val, Hash, Predicate, Allocator, bCacheHashCode>& lhs, THashSet<Val, Hash, Predicate, Allocator, bCacheHashCode>& rhs)
+{
+    lhs.Swap(rhs);
+}
+} // namespace eastl

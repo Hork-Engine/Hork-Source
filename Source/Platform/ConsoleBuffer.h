@@ -46,7 +46,7 @@ public:
     void Print(const char* _Text);
 
     /** Print WideChar text */
-    void WidePrint(SWideChar const* _Text);
+    void WidePrint(WideChar const* _Text);
 
     /** Clear text and reset scrolling */
     void Clear();
@@ -62,7 +62,7 @@ public:
 
     struct SLock
     {
-        SWideChar* pImage;
+        WideChar* pImage;
         int        Scroll;
         int        MaxLines;
         int        PrintLine;
@@ -80,8 +80,8 @@ private:
 
     static constexpr int CON_IMAGE_SIZE = 1024 * 1024;
 
-    SWideChar  ImageData[2][CON_IMAGE_SIZE];
-    SWideChar* pImage = ImageData[0];
+    WideChar  ImageData[2][CON_IMAGE_SIZE];
+    WideChar* pImage = ImageData[0];
     AMutex     Mutex;
     int        PrintLine    = 0;
     int        CurWidth     = 0;

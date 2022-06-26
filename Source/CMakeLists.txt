@@ -36,30 +36,51 @@ include_directories( ThirdParty )
 add_definitions( -DGLEW_STATIC )
 add_definitions( -DGLEW_NO_GLU )
 
-#
-# SDL2
-#
-set(SDL_RENDER OFF)
-add_subdirectory_with_folder( "ThirdParty/SDL" ThirdParty/SDL2 )
+find_package(OpenGL)
 
-#
-# Bullet Physics
-#
-option( USE_DOUBLE_PRECISION "Use double precision" OFF )
-option( USE_GRAPHICAL_BENCHMARK "Use Graphical Benchmark" ON )
-option( USE_SOFT_BODY_MULTI_BODY_DYNAMICS_WORLD "Use btSoftMultiBodyDynamicsWorld" OFF )
-option( BULLET2_USE_THREAD_LOCKS "Build Bullet 2 libraries with mutex locking around certain operations" OFF )
-option( USE_MSVC_INCREMENTAL_LINKING "Use MSVC Incremental Linking" OFF )
-option( USE_CUSTOM_VECTOR_MATH "Use custom vectormath library" OFF )
-option( BUILD_CPU_DEMOS "Build original Bullet CPU examples" OFF )
-option( USE_GLUT "Use Glut" OFF )
-option( BUILD_OPENGL3_DEMOS "Set when you want to build the OpenGL3+ demos" OFF )
-option( BUILD_BULLET2_DEMOS "Set when you want to build the Bullet 2 demos" OFF )
-option( BUILD_UNIT_TESTS "Build Unit Tests" OFF )
-option( BUILD_BULLET3 "Set when you want to build Bullet 3" OFF)
+message(STATUS "======================================================================")
+message(STATUS "USING SDL2")
+set(SDL_RENDER OFF CACHE BOOL "" FORCE)
+set(SDL_RENDER_D3D OFF CACHE BOOL "" FORCE)
+set(SDL_DIRECTX OFF CACHE BOOL "" FORCE)
+#set(SDL_OPENGL OFF CACHE BOOL "" FORCE)
+#set(SDL_OPENGLES OFF CACHE BOOL "" FORCE)
+set(SDL2_DISABLE_SDL2MAIN   ON CACHE BOOL "" FORCE)
+set(SDL2_DISABLE_INSTALL    ON CACHE BOOL "" FORCE)
+set(SDL2_DISABLE_UNINSTALL  ON CACHE BOOL "" FORCE)
+add_subdirectory_with_folder("ThirdParty/SDL" ThirdParty/SDL2)
+include_directories(ThirdParty/SDL2/include)
+
+message(STATUS "======================================================================")
+message(STATUS "USING MIMALLOC")
+#option(MI_OVERRIDE          "Override the standard malloc interface (e.g. define entry points for malloc() etc)" ON)
+set(MI_BUILD_SHARED OFF CACHE BOOL "" FORCE)
+set(MI_BUILD_OBJECT OFF CACHE BOOL "" FORCE)
+set(MI_OVERRIDE OFF CACHE BOOL "" FORCE)
+set(MI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+#option(MI_SKIP_COLLECT_ON_EXIT, "Skip collecting memory on program exit" OFF)
+add_subdirectory_with_folder("ThirdParty/mimalloc" ThirdParty/mimalloc)
+include_directories(ThirdParty/mimalloc/include)
+
+message(STATUS "======================================================================")
+message(STATUS "USING EASTL")
+add_subdirectory_with_folder("ThirdParty/EASTL" ThirdParty/EASTL)
+include_directories(ThirdParty/EASTL/include)
+include_directories(ThirdParty/EASTL/EABase/include/Common)
+
+message(STATUS "======================================================================")
+message(STATUS "USING FMT")
+include_directories( ThirdParty/fmt/include )
+add_subdirectory( "ThirdParty/fmt" )
+
+message(STATUS "======================================================================")
+message(STATUS "USING BULLET PHYSICS")
+set( USE_DOUBLE_PRECISION OFF CACHE BOOL "" FORCE)
+set( USE_SOFT_BODY_MULTI_BODY_DYNAMICS_WORLD OFF CACHE BOOL "" FORCE)
+set( BUILD_BULLET3 OFF CACHE BOOL "" FORCE)
 
 include_directories( ThirdParty/bullet3/src )
-add_subdirectory_with_folder( "ThirdParty/BulletPhysics" ThirdParty/bullet3 )
+add_subdirectory_with_folder("ThirdParty/BulletPhysics" ThirdParty/bullet3)
 
 set( HK_BULLET_LIBS
 BulletSoftBody
@@ -69,28 +90,32 @@ LinearMath
 #Bullet2FileLoader
 #BulletFileLoader
 #Bullet3Collision
-Bullet3Common
+#Bullet3Common
 #Bullet3Dynamics
 #Bullet3Geometry
 #Bullet3OpenCL_clew
 BulletInverseDynamics
-BulletInverseDynamicsUtils
-BulletWorldImporter
+#BulletInverseDynamicsUtils
+#BulletWorldImporter
 #BulletXmlWorldImporter
-ConvexDecomposition
-GIMPACTUtils
-HACD )
+#ConvexDecomposition
+#GIMPACTUtils
+)
 
-#
-# VHACD
-#
-include_directories( ThirdParty/VHACD )
-include_directories( ThirdParty/VHACD/public )
+
+message(STATUS "======================================================================")
+message(STATUS "USING HACD")
+include_directories( ThirdParty/HACD )
+add_subdirectory_with_folder( "ThirdParty/HACD" ThirdParty/HACD )
+
+message(STATUS "======================================================================")
+message(STATUS "USING VHACD")
+#include_directories( ThirdParty/VHACD )
+#include_directories( ThirdParty/VHACD/public )
 add_subdirectory_with_folder( "ThirdParty/VHACD" ThirdParty/VHACD )
 
-#
-# Recast&Detour
-#
+message(STATUS "======================================================================")
+message(STATUS "USING RECAST NAVIGATION")
 include_directories( ThirdParty/recastnavigation/DebugUtils/Include )
 include_directories( ThirdParty/recastnavigation/Detour/Include )
 include_directories( ThirdParty/recastnavigation/DetourCrowd/Include )
@@ -98,49 +123,40 @@ include_directories( ThirdParty/recastnavigation/DetourTileCache/Include )
 include_directories( ThirdParty/recastnavigation/Recast/Include )
 add_subdirectory_with_folder( "ThirdParty/recastnavigation" ThirdParty/recastnavigation )
 
-#
-# muFFT
-#
+message(STATUS "======================================================================")
+message(STATUS "USING muFFT")
 add_subdirectory_with_folder( "ThirdParty/muFFT" ThirdParty/muFFT )
 
-#
-# miniaudio
-#
+message(STATUS "======================================================================")
+message(STATUS "USING MINIAUDIO")
 add_subdirectory_with_folder( "ThirdParty/miniaudio" ThirdParty/miniaudio )
 
-#
-# miniz
-#
+message(STATUS "======================================================================")
+message(STATUS "USING MINIZ")
 add_subdirectory_with_folder( "ThirdParty/miniz" ThirdParty/miniz )
 
-#
-# fastlz
-#
+message(STATUS "======================================================================")
+message(STATUS "USING FASTLZ")
 add_subdirectory_with_folder( "ThirdParty/fastlz" ThirdParty/fastlz )
 
-#
-# glutess
-#
+message(STATUS "======================================================================")
+message(STATUS "USING GLUTESS")
 add_subdirectory_with_folder( "ThirdParty/glutess" ThirdParty/glutess )
 
-#
-# clipper
-#
+message(STATUS "======================================================================")
+message(STATUS "USING CLIPPER")
 add_subdirectory_with_folder( "ThirdParty/clipper" ThirdParty/clipper )
 
-#
-# tinyexr
-#
+message(STATUS "======================================================================")
+message(STATUS "USING TINYEXR")
 add_subdirectory_with_folder( "ThirdParty/tinyexr" ThirdParty/tinyexr )
 
-#
-# cgltf
-#
+message(STATUS "======================================================================")
+message(STATUS "USING CGLTF")
 add_subdirectory_with_folder( "ThirdParty/cgltf" ThirdParty/cgltf )
 
-#
-# AngelScript
-#
+message(STATUS "======================================================================")
+message(STATUS "USING ANGELSCRIPT")
 #add_subdirectory_with_folder( "ThirdParty/angelscript" ThirdParty/angelscript )
 
 add_subdirectory(ThirdParty/angelscript/projects/cmake angelscript)
@@ -150,11 +166,7 @@ include_directories(ThirdParty/angelscript_addon)
 set_target_properties(angelscript PROPERTIES FOLDER ThirdParty/angelscript)
 set_target_properties(angelscript_addon PROPERTIES FOLDER ThirdParty/angelscript)
 
-#
-# fmt
-#
-include_directories( ThirdParty/fmt/include )
-add_subdirectory( "ThirdParty/fmt" )
+
 
 #---------------------------------------------------------------------
 # Platform module
@@ -166,7 +178,7 @@ source_group( "Platform\\Memory" FILES ${PlatformMemory} )
 
 #---------------------------------------------------------------------
 # Core module
-file( GLOB Core Core/*.h Core/*.cpp )
+file( GLOB Core Core/*.h Core/*.cpp Core/*.c )
 file( GLOB CoreSTB Core/stb/*.h )
 
 source_group( "Core" FILES ${Core} )
@@ -281,12 +293,17 @@ ${Imgui}
 set_property( TARGET ${PROJECT} PROPERTY POSITION_INDEPENDENT_CODE ON )
 
 set( LIBRARIES
+		EASTL
+		fmt::fmt-header-only
         ${HK_BULLET_LIBS}
         ${OPENGL_gl_LIBRARY}
+#        vhacd
+        HACD
         vhacd
         Recast
         SDL2-static
         muFFT
+		mimalloc-static
         miniaudio
         miniz
         fastlz
@@ -296,7 +313,6 @@ set( LIBRARIES
         cgltf
         ${ANGELSCRIPT_LIBRARY_NAME}
         angelscript_addon
-        fmt::fmt-header-only
 )
 
 if(UNIX)

@@ -39,7 +39,7 @@ SOFTWARE.
 
 #include <angelscript.h>
 
-AConsoleVar com_DrawRootComponentAxis(_CTS("com_DrawRootComponentAxis"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawRootComponentAxis("com_DrawRootComponentAxis"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(AActor)
 
@@ -47,7 +47,7 @@ static uint32_t UniqueName = 0;
 
 AActor::AActor()
 {
-    SetObjectName("Actor" + Math::ToString(UniqueName));
+    SetObjectName(Core::Format("Actor{}", UniqueName));
     UniqueName++;
 }
 
@@ -89,7 +89,7 @@ void AActor::AddComponent(AActorComponent* Component, AStringView InName)
     Component->OwnerActor     = this;
     Component->LocalId        = ++ComponentLocalIdGen;
 
-    Components.Append(Component);
+    Components.Add(Component);
 }
 
 AActorComponent* AActor::GetComponent(uint64_t _ClassId)
@@ -235,7 +235,7 @@ bool AActor::SetPublicProperty(AStringView PublicName, AStringView Value)
 
     for (AActorDefinition::SPublicProperty const& prop : pActorDef->PublicProperties)
     {
-        if (prop.PublicName == PublicName)
+        if (PublicName == prop.PublicName)
         {
             if (prop.ComponentIndex != -1)
             {

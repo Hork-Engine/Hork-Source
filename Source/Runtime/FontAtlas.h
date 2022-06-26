@@ -49,7 +49,7 @@ enum EDrawCursor
 struct SFontGlyph
 {
     /** 0x0000..0xFFFF */
-    SWideChar Codepoint;
+    WideChar Codepoint;
     /** Distance to next character (data from font + GlyphExtraSpacing.X baked in). */
     float AdvanceX;
     /** Glyph corners. */
@@ -155,12 +155,12 @@ public:
         return TexUvWhitePixel;
     }
 
-    SFontGlyph const* GetGlyph(SWideChar c) const
+    SFontGlyph const* GetGlyph(WideChar c) const
     {
         return ((int)c < WideCharToGlyph.Size()) ? Glyphs.ToPtr() + WideCharToGlyph[(int)c] : FallbackGlyph;
     }
 
-    float GetCharAdvance(SWideChar c) const
+    float GetCharAdvance(WideChar c) const
     {
         return ((int)c < WideCharAdvanceX.Size()) ? WideCharAdvanceX[(int)c] : FallbackAdvanceX;
     }
@@ -176,7 +176,7 @@ public:
 
     const char* CalcWordWrapPositionA(float _Scale, const char* _Text, const char* _TextEnd, float _WrapWidth) const;
 
-    SWideChar const* CalcWordWrapPositionW(float _Scale, SWideChar const* _Text, SWideChar const* _TextEnd, float _WrapWidth) const;
+    WideChar const* CalcWordWrapPositionW(float _Scale, WideChar const* _Text, WideChar const* _TextEnd, float _WrapWidth) const;
 
     static void SetGlyphRanges(EGlyphRange _GlyphRange);
 
@@ -188,14 +188,14 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(const char* _Path) override;
+    void LoadInternalResource(AStringView _Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Fonts/Default"; }
 
 private:
     bool Build(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo const* _CreateInfo);
 
-    void AddGlyph(SFontCreateInfo const& cfg, SWideChar c, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1, float advance_x);
+    void AddGlyph(SFontCreateInfo const& cfg, WideChar c, float x0, float y0, float x1, float y1, float u0, float v0, float u1, float v1, float advance_x);
 
     int AddCustomRect(unsigned int id, int width, int height);
 

@@ -184,14 +184,14 @@ SVirtualTexturePIT::SVirtualTexturePIT() {
 }
 
 SVirtualTexturePIT::~SVirtualTexturePIT() {
-    GHeapMemory.Free( Data );
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(Data);
 }
 
 void SVirtualTexturePIT::Create( unsigned int InNumPages ) {
     HK_ASSERT_( InNumPages > 0, "SVirtualTexturePIT::create" );
     NumPages = InNumPages;
-    GHeapMemory.Free( Data );
-    Data = ( byte * )GHeapMemory.Alloc( NumPages );
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(Data);
+    Data       = (byte*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(NumPages);
     WritePages = NumPages;
 }
 
@@ -286,20 +286,20 @@ SVirtualTextureAddressTable::SVirtualTextureAddressTable() {
 }
 
 SVirtualTextureAddressTable::~SVirtualTextureAddressTable() {
-    GHeapMemory.Free( ByteOffsets );
-    GHeapMemory.Free( Table );
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(ByteOffsets);
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(Table);
 }
 
 void SVirtualTextureAddressTable::Create( int _NumLods ) {
-    GHeapMemory.Free( ByteOffsets );
-    GHeapMemory.Free( Table );
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(ByteOffsets);
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(Table);
 
     NumLods = _NumLods;
     TotalPages = QuadTreeCalcQuadTreeNodes( _NumLods );
     TableSize = _NumLods > 4 ? QuadTreeCalcQuadTreeNodes( _NumLods-4 ) : 0;
-    ByteOffsets = (byte *)GHeapMemory.Alloc( TotalPages );
+    ByteOffsets = (byte*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(TotalPages);
     if ( TableSize > 0 ) {
-        Table = (uint32_t *)GHeapMemory.Alloc( sizeof( Table[0] ) * TableSize );
+        Table = (uint32_t*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(Table[0]) * TableSize);
     } else {
         Table = NULL;
     }

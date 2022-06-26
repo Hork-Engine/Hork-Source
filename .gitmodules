@@ -1,0 +1,15 @@
+[submodule "Source/ThirdParty/EASTL"]
+	path = Source/ThirdParty/EASTL
+	url = https://github.com/0xc0de/EASTL.git
+[submodule "Source/ThirdParty/fmt"]
+	path = Source/ThirdParty/fmt
+	url = https://github.com/0xc0de/fmt.git
+[submodule "Source/ThirdParty/mimalloc"]
+	path = Source/ThirdParty/mimalloc
+	url = https://github.com/0xc0de/mimalloc.git
+[submodule "Source/ThirdParty/SDL2"]
+	path = Source/ThirdParty/SDL2
+	url = https://github.com/0xc0de/SDL2.git
+[submodule "Source/ThirdParty/bullet3"]
+	path = Source/ThirdParty/bullet3
+	url = https://github.com/0xc0de/bullet3.git

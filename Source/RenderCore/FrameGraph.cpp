@@ -52,7 +52,7 @@ void AFrameGraph::Build()
 
         if (resource->IsCaptured())
         {
-            CapturedResources.Append(resource);
+            CapturedResources.Add(resource);
         }
     }
 
@@ -68,7 +68,7 @@ void AFrameGraph::Build()
 
     FGResourceProxyBase* unreferencedResource;
 
-    while (UnreferencedResources.Pop(&unreferencedResource))
+    while (UnreferencedResources.Pop(unreferencedResource))
     {
 
         FGRenderTaskBase* creator = const_cast<FGRenderTaskBase*>(unreferencedResource->Creator);
@@ -127,16 +127,16 @@ void AFrameGraph::Build()
 
         for (auto& resource : task->ProducedResources)
         {
-            AcquiredResources.Append(const_cast<FGResourceProxyBase*>(resource.get()));
+            AcquiredResources.Add(const_cast<FGResourceProxyBase*>(resource.get()));
             if (resource->Readers.IsEmpty() && resource->Writers.IsEmpty() && !resource->IsCaptured())
             {
-                ReleasedResources.Append(const_cast<FGResourceProxyBase*>(resource.get()));
+                ReleasedResources.Add(const_cast<FGResourceProxyBase*>(resource.get()));
             }
         }
 
         ResourcesRW = task->ReadResources;
-        ResourcesRW.Append(task->WriteResources);
-        ResourcesRW.Append(task->ReadWriteResources);
+        ResourcesRW.Add(task->WriteResources);
+        ResourcesRW.Add(task->ReadWriteResources);
 
         for (FGResourceProxyBase* resource : ResourcesRW)
         {
@@ -180,14 +180,14 @@ void AFrameGraph::Build()
 
             if (bValid && RenderTasks[lastIndex] == task)
             {
-                ReleasedResources.Append(const_cast<FGResourceProxyBase*>(resource));
+                ReleasedResources.Add(const_cast<FGResourceProxyBase*>(resource));
             }
         }
 
         int numAcquiredResources = AcquiredResources.Size() - firstAcquiredResource;
         int numReleasedResources = ReleasedResources.Size() - firstReleasedResource;
 
-        STimelineStep& step = Timeline.Append();
+        STimelineStep& step = Timeline.Add();
 
         step.RenderTask            = task.get();
         step.FirstAcquiredResource = firstAcquiredResource;
@@ -219,7 +219,7 @@ void AFrameGraph::Debug()
     LOG("--------------------------------\n");
 }
 
-void AFrameGraph::ExportGraphviz(const char* FileName)
+void AFrameGraph::ExportGraphviz(AStringView FileName)
 {
     AFileStream f;
 

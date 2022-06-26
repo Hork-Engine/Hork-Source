@@ -171,41 +171,62 @@ void AResourceTableGLImpl::BindBuffer(int Slot, IBuffer const* pBuffer, size_t O
 
 void AFramebufferCacheGL::CleanupOutdatedFramebuffers()
 {
-    // Remove outdated framebuffers
-    for (int i = 0; i < FramebufferCache.Size();)
+    int totalRemoved = 0;
+    for (auto it = Framebuffers.begin(); it != Framebuffers.end();)
     {
-        if (FramebufferCache[i]->IsAttachmentsOutdated())
+        SFrameBufferHash const& fbHash = it->first;
+
+        bool outdated = false;
+
+        if (fbHash.pDepthStencilAttachment && fbHash.pDepthStencilAttachment.IsExpired())
         {
-            FramebufferHash.RemoveIndex(FramebufferCache[i]->GetHash(), i);
-            FramebufferCache.erase(FramebufferCache.begin() + i);
-            continue;
+            outdated = true;
         }
-        i++;
+        else
+        {
+            for (TWeakRef<ITextureView> const& att : fbHash.ColorAttachments)
+            {
+                if (att.IsExpired())
+                {
+                    outdated = true;
+                    break;
+                }
+            }
+        }
+
+        if (outdated)
+        {
+            it = Framebuffers.Erase(it);
+            totalRemoved++;
+        }
+        else
+            it++;
     }
+
+    if (totalRemoved)
+        LOG("Removed {} framebuffers\n", totalRemoved);
+
+    // Remove outdated framebuffers
+    //for (int i = 0; i < FramebufferCache.Size();)
+    //{
+    //    if (FramebufferCache[i]->IsAttachmentsOutdated())
+    //    {
+    //        FramebufferHash.RemoveIndex(FramebufferCache[i]->GetHash(), i);
+    //        FramebufferCache.Erase(FramebufferCache.begin() + i);
+    //        continue;
+    //    }
+    //    i++;
+    //}
 }
 
-//static int MakeHash(TArray<ITextureView*, MAX_COLOR_ATTACHMENTS> const& ColorAttachments,
-//                    int                                                 NumColorAttachments,
-//                    ITextureView*                                       pDepthStencilAttachment)
-//{
-//    uint32_t hash{0};
-//    for (int a = 0 ; a < NumColorAttachments ; a++)
-//    {
-//        hash = Core::MurMur3Hash32(ColorAttachments[a]->GetUID(), hash);
-//    }
-//    if (pDepthStencilAttachment)
-//    {
-//        hash = Core::MurMur3Hash32(pDepthStencilAttachment->GetUID(), hash);
-//    }
-//    return hash;
-//}
-
-AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                     RenderPassName,
-                                                    TStdVector<STextureAttachment>& ColorAttachments,
-                                                    STextureAttachment*             pDepthStencilAttachment)
+AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                  RenderPassName,
+                                                    TVector<STextureAttachment>& ColorAttachments,
+                                                    STextureAttachment*          pDepthStencilAttachment)
 {
     SFramebufferDescGL                           framebufferDesc;
     TArray<ITextureView*, MAX_COLOR_ATTACHMENTS> colorAttachments;
+
+    SFrameBufferHash fbHash;
  
     HK_ASSERT(ColorAttachments.Size() <= MAX_COLOR_ATTACHMENTS);
 
@@ -220,8 +241,6 @@ AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                 
     viewDesc.NumMipLevels  = 1;
     viewDesc.FirstSlice    = 0;
     viewDesc.NumSlices     = 0;
-
-    uint32_t hash{0};
 
     int rt = 0;
     for (STextureAttachment& attachment : ColorAttachments)
@@ -258,7 +277,7 @@ AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                 
 
         colorAttachments[rt++] = textureView;
 
-        hash = Core::MurMur3Hash32(textureView->GetUID(), hash);
+        fbHash.AddColorAttachment(textureView);
     }
 
     if (pDepthStencilAttachment)
@@ -299,31 +318,18 @@ AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                 
 
         framebufferDesc.pDepthStencilAttachment = textureView;
 
-        hash = Core::MurMur3Hash32(textureView->GetUID(), hash);
+        fbHash.SetDepthStencilAttachment(textureView);
     }
 
-    //int hash = MakeHash(ColorAttachments, pDepthStencilAttachment);
+    std::unique_ptr<AFramebufferGL>& result = Framebuffers[fbHash];
+    if (result)
+        return result.get();
 
-    for (int i = FramebufferHash.First(hash); i != -1; i = FramebufferHash.Next(i))
-    {
-        AFramebufferGL* framebuffer = FramebufferCache[i].get();
+    result = std::make_unique<AFramebufferGL>(framebufferDesc);
 
-        if (framebuffer->CompareWith(framebufferDesc))
-        {
-            return framebuffer;
-        }
-    }
+    LOG("Total framebuffers {} for {} hash {:08x}\n", Framebuffers.Size(), RenderPassName, fbHash.Hash());
 
-    // create new framebuffer
-
-    std::unique_ptr<AFramebufferGL> framebuffer = std::make_unique<AFramebufferGL>(framebufferDesc, hash);
-
-    FramebufferHash.Insert(framebuffer->GetHash(), FramebufferCache.Size());
-    FramebufferCache.emplace_back(std::move(framebuffer));
-
-    //LOG( "Total framebuffers {} for {} hash {:08x}\n", FramebufferCache.Size(), RenderPassName, hash );
-
-    return FramebufferCache.back().get();
+    return result.get();
 }
 
 AImmediateContextGLImpl::AImmediateContextGLImpl(ADeviceGLImpl* pDevice, AWindowPoolGL::SWindowGL Window, bool bMainContext) :
@@ -520,8 +526,9 @@ AImmediateContextGLImpl::~AImmediateContextGLImpl()
 
         glBindVertexArray(0);
 
-        for (AVertexLayoutGL* pVertexLayout : static_cast<ADeviceGLImpl*>(GetDevice())->GetVertexLayouts())
+        for (auto& it : static_cast<ADeviceGLImpl*>(GetDevice())->GetVertexLayouts())
         {
+            AVertexLayoutGL* pVertexLayout = it.second;
             pVertexLayout->DestroyVAO(this);
         }
 
@@ -5524,7 +5531,7 @@ void AImmediateContextGLImpl::ExecuteRenderPass(ARenderPass* pRenderPass)
     bool  bHasDepthStencilAttachment = pRenderPass->HasDepthStencilAttachment();
 
     AFramebufferGL* pFramebuffer = pFramebufferCache->GetFramebuffer(pRenderPass->GetName(),
-                                                                         const_cast<TStdVector<STextureAttachment>&>(colorAttachments),
+                                                                         const_cast<TVector<STextureAttachment>&>(colorAttachments),
                                                                          bHasDepthStencilAttachment ? const_cast<STextureAttachment*>(&depthStencilAttachment) : nullptr);
 
     if (pFramebuffer->IsDefault())
@@ -5635,12 +5642,12 @@ GLuint AImmediateContextGLImpl::CreateProgramPipeline(APipelineGLImpl* pPipeline
 #if 0
 void AImmediateContextGLImpl::DestroyProgramPipeline(APipelineGLImpl* pPipeline)
 {
-    auto it = ProgramPipelines.find(pPipeline->GetUID());
-    if (it == ProgramPipelines.end())
+    auto it = ProgramPipelines.Find(pPipeline->GetUID());
+    if (it == ProgramPipelines.End())
         return;
 
     GLuint pipelineId = it->second;
-    ProgramPipelines.erase(it);
+    ProgramPipelines.Erase(it);
 
     glDeleteProgramPipelines(1, &pipelineId);
 }
@@ -5662,8 +5669,8 @@ GLuint AImmediateContextGLImpl::GetProgramPipeline(APipelineGLImpl* pPipeline)
         return pipelineId;
     }
 
-    auto it = ProgramPipelines.find(pPipeline->GetUID());
-    if (it != ProgramPipelines.end())
+    auto it = ProgramPipelines.Find(pPipeline->GetUID());
+    if (it != ProgramPipelines.End())
     {
         return it->second;
     }

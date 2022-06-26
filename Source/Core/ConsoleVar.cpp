@@ -44,11 +44,11 @@ AConsoleVar* AConsoleVar::GlobalVariableList()
     return GlobalVars;
 }
 
-AConsoleVar* AConsoleVar::FindVariable(const char* _Name)
+AConsoleVar* AConsoleVar::FindVariable(AStringView _Name)
 {
     for (AConsoleVar* var = GlobalVars; var; var = var->GetNext())
     {
-        if (!Platform::Stricmp(var->GetName(), _Name))
+        if (!_Name.Icmp(var->GetName()))
         {
             return var;
         }
@@ -61,8 +61,8 @@ void AConsoleVar::AllocateVariables()
     for (AConsoleVar* var = GlobalVars; var; var = var->Next)
     {
         var->Value = var->DefaultValue;
-        var->I32   = Math::ToInt<int32_t>(var->Value);
-        var->F32   = Math::ToFloat(var->Value);
+        var->I32   = Core::ParseInt32(var->Value);
+        var->F32   = Core::ParseFloat(var->Value);
     }
     GVariableAllocated = true;
 }
@@ -77,11 +77,8 @@ void AConsoleVar::FreeVariables()
     GlobalVars = nullptr;
 }
 
-AConsoleVar::AConsoleVar(const char* _Name,
-                         const char* _Value,
-                         uint16_t    _Flags,
-                         const char* _Comment) :
-    Name(_Name ? _Name : ""), DefaultValue(_Value ? _Value : ""), Comment(_Comment ? _Comment : ""), Flags(_Flags)
+AConsoleVar::AConsoleVar(AGlobalStringView _Name, AGlobalStringView _Value, uint16_t _Flags, AGlobalStringView _Comment) :
+    Name(_Name.CStr()), DefaultValue(_Value.CStr()), Comment(_Comment.CStr()), Flags(_Flags)
 {
     HK_ASSERT(!GVariableAllocated);
     HK_ASSERT(ACommandProcessor::IsValidCommandName(Name));
@@ -141,7 +138,7 @@ bool AConsoleVar::CanChangeValue() const
     return true;
 }
 
-void AConsoleVar::SetString(const char* _String)
+void AConsoleVar::SetString(AStringView _String)
 {
     if (!CanChangeValue())
     {
@@ -167,11 +164,6 @@ void AConsoleVar::SetString(const char* _String)
     }
 }
 
-void AConsoleVar::SetString(AString const& _String)
-{
-    SetString(_String.CStr());
-}
-
 void AConsoleVar::SetBool(bool _Bool)
 {
     SetString(_Bool ? "1" : "0");
@@ -179,26 +171,21 @@ void AConsoleVar::SetBool(bool _Bool)
 
 void AConsoleVar::SetInteger(int32_t _Integer)
 {
-    SetString(Math::ToString(_Integer));
+    SetString(Core::ToString(_Integer));
 }
 
 void AConsoleVar::SetFloat(float _Float)
 {
-    SetString(Math::ToString(_Float));
+    SetString(Core::ToString(_Float));
 }
 
-void AConsoleVar::ForceString(const char* _String)
+void AConsoleVar::ForceString(AStringView _String)
 {
     Value = _String;
-    I32   = Math::ToInt<int32_t>(Value);
-    F32   = Math::ToFloat(Value);
+    I32   = Core::ParseInt32(Value);
+    F32   = Core::ParseFloat(Value);
     LatchedValue.Clear();
     MarkModified();
-}
-
-void AConsoleVar::ForceString(AString const& _String)
-{
-    ForceString(_String.CStr());
 }
 
 void AConsoleVar::ForceBool(bool _Bool)
@@ -208,12 +195,12 @@ void AConsoleVar::ForceBool(bool _Bool)
 
 void AConsoleVar::ForceInteger(int32_t _Integer)
 {
-    ForceString(Math::ToString(_Integer));
+    ForceString(Core::ToString(_Integer));
 }
 
 void AConsoleVar::ForceFloat(float _Float)
 {
-    ForceString(Math::ToString(_Float));
+    ForceString(Core::ToString(_Float));
 }
 
 void AConsoleVar::SetLatched()

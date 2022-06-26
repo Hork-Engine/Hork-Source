@@ -53,13 +53,13 @@ public:
         shortcut.Key     = Key;
         shortcut.ModMask = ModMask;
         shortcut.Binding = Binding;
-        Shortcuts.Append(shortcut);
+        Shortcuts.Add(shortcut);
     }
 
-    TStdVector<SShortcutInfo> const& GetShortcuts() const { return Shortcuts; }
+    TVector<SShortcutInfo> const& GetShortcuts() const { return Shortcuts; }
 
 private:
-    TStdVector<SShortcutInfo> Shortcuts;
+    TVector<SShortcutInfo> Shortcuts;
 };
 
 class WDesktop : public ABaseObject
@@ -209,7 +209,7 @@ private:
     TRef<WWidget>            MouseFocusWidget;
     TWeakRef<WWidget>        LastHoveredWidget;
     TRef<AShortcutContainer> ShortcutContainer;
-    TStdVector<TWeakRef<WWidget>> Tooltips;
+    TVector<TWeakRef<WWidget>> Tooltips;
     uint64_t                 MouseClickTime;
     Float2                   MouseClickPos;
     Float2                   DraggingCursor;

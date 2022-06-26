@@ -115,7 +115,7 @@ void ASkeletalAnimation::Initialize(int _FrameCount, float _FrameDelta, STransfo
     bIsAnimationValid = _FrameCount > 0 && !Channels.IsEmpty();
 }
 
-void ASkeletalAnimation::LoadInternalResource(const char* _Path)
+void ASkeletalAnimation::LoadInternalResource(AStringView _Path)
 {
     Purge();
 }
@@ -148,9 +148,9 @@ bool ASkeletalAnimation::LoadResource(IBinaryStreamReadInterface& Stream)
 
     float    frameDelta = Stream.ReadFloat();
     uint32_t frameCount = Stream.ReadUInt32();
-    Stream.ReadArrayOfStructs(channels);
-    Stream.ReadArrayOfStructs(transforms);
-    Stream.ReadArrayOfStructs(bounds);
+    Stream.ReadArray(channels);
+    Stream.ReadArray(transforms);
+    Stream.ReadArray(bounds);
 
     Initialize(frameCount, frameDelta,
                transforms.ToPtr(), transforms.Size(),

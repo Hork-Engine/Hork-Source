@@ -37,9 +37,9 @@ SOFTWARE.
 #define DECAL_ITEMS_OFFSET 256
 #define PROBE_ITEMS_OFFSET 512
 
-AConsoleVar com_ClusterSSE(_CTS("com_ClusterSSE"), _CTS("1"), CVAR_CHEAT);
-AConsoleVar com_ReverseNegativeZ(_CTS("com_ReverseNegativeZ"), _CTS("1"), CVAR_CHEAT);
-AConsoleVar com_FreezeFrustumClusters(_CTS("com_FreezeFrustumClusters"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_ClusterSSE("com_ClusterSSE"s, "1"s, CVAR_CHEAT);
+AConsoleVar com_ReverseNegativeZ("com_ReverseNegativeZ"s, "1"s, CVAR_CHEAT);
+AConsoleVar com_FreezeFrustumClusters("com_FreezeFrustumClusters"s, "0"s, CVAR_CHEAT);
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -774,14 +774,14 @@ void ALightVoxelizer::VoxelizeWork(int SliceIndex)
     }
 }
 
-void ALightVoxelizer::GatherVoxelGeometry(TStdVectorHeap<Float3>& LinePoints, Float4x4 const& ViewProjectionInversed)
+void ALightVoxelizer::GatherVoxelGeometry(TVector<Float3>& LinePoints, Float4x4 const& ViewProjectionInversed)
 {
     Float3  clusterMins;
     Float3  clusterMaxs;
     Float4  p[8];
     Float3* lineP;
 
-    LinePoints.clear();
+    LinePoints.Clear();
 
     for (int sliceIndex = 0; sliceIndex < MAX_FRUSTUM_CLUSTERS_Z; sliceIndex++)
     {
@@ -811,8 +811,8 @@ void ALightVoxelizer::GatherVoxelGeometry(TStdVectorHeap<Float3>& LinePoints, Fl
                     p[5] = Float4(clusterMins.X, clusterMins.Y, clusterMaxs.Z, 1.0f);
                     p[6] = Float4(clusterMins.X, clusterMaxs.Y, clusterMaxs.Z, 1.0f);
                     p[7] = Float4(clusterMaxs.X, clusterMaxs.Y, clusterMaxs.Z, 1.0f);
-                    LinePoints.resize(LinePoints.size() + 8);
-                    lineP = LinePoints.data() + LinePoints.size() - 8;
+                    LinePoints.Resize(LinePoints.Size() + 8);
+                    lineP = LinePoints.ToPtr() + LinePoints.Size() - 8;
                     for (int i = 0; i < 8; i++)
                     {
                         p[i]              = ViewProjectionInversed * p[i];
@@ -845,7 +845,7 @@ void ALightVoxelizer::DrawVoxels(ADebugRenderer* InRenderer)
         InRenderer->SetColor(Color4(1, 0, 0));
 
     int n = 0;
-    for (Float3* lineP = DebugLinePoints.data(); n < DebugLinePoints.size(); lineP += 8, n += 8)
+    for (Float3* lineP = DebugLinePoints.ToPtr(); n < DebugLinePoints.Size(); lineP += 8, n += 8)
     {
         InRenderer->DrawLine(TArrayView<Float3>(lineP, 4), true);
         InRenderer->DrawLine(TArrayView<Float3>(lineP + 4, 4), true);

@@ -121,7 +121,7 @@ private:
     TPodVector< uint32_t > PendingUpdateLRU;
 
     // Used only from stream thread to mark streamed pages
-    std::unordered_map< uint32_t, int64_t > StreamedPages;
+    THashMap<uint32_t, int64_t> StreamedPages;
 
     AVirtualTextureCache * pCache;
 

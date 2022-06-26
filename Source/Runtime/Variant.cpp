@@ -44,7 +44,7 @@ AStringView GetToken(char* Token, size_t TokenSize, AStringView String, bool bCr
     {
         if (p == end)
         {
-            return AStringView(p, (int)(end-p));
+            return AStringView(p, (StringSizeType)(end-p));
         }
 
         if (*p++ == '\n')
@@ -52,7 +52,7 @@ AStringView GetToken(char* Token, size_t TokenSize, AStringView String, bool bCr
             if (!bCrossLine)
             {
                 LOG("Unexpected new line\n");
-                return AStringView(p, (int)(end-p));
+                return AStringView(p, (StringSizeType)(end - p));
             }
         }
     }
@@ -93,7 +93,7 @@ AStringView GetToken(char* Token, size_t TokenSize, AStringView String, bool bCr
     }
     *token_p = 0;
 
-    return AStringView(p, (int)(end-p));
+    return AStringView(p, (StringSizeType)(end - p), String.IsNullTerminated());
 }
 
 
@@ -129,7 +129,7 @@ VectorType ParseVector(AStringView String, AStringView *NewString = nullptr)
 
         using ElementType = std::remove_reference_t<decltype(v[i])>;
 
-        v[i] = Math::ToReal<ElementType>(token);
+        v[i] = Core::ParseNumber<ElementType>(token);
     }
 
     s = GetToken(token, sizeof(token), s);
@@ -196,7 +196,7 @@ SResourceRef StringToResourceRef(AStringView String)
         return {};
     }
 
-    ref.ResourceType = Math::ToInt<uint32_t>(token);
+    ref.ResourceType = Core::ParseUInt32(token);
 
     s = GetToken(token, sizeof(token), s);
     if (!token[0])
@@ -205,7 +205,7 @@ SResourceRef StringToResourceRef(AStringView String)
         return {};
     }
 
-    ref.ResourceId = Math::ToInt<uint64_t>(token);
+    ref.ResourceId = Core::ParseUInt64(token);
 
     s = GetToken(token, sizeof(token), s);
     if (Platform::Strcmp(token, ")"))
@@ -223,37 +223,37 @@ void AVariant::SetFromString(VARIANT_TYPE _Type, SEnumDef const* EnumDef, AStrin
         case VARIANT_UNDEFINED:
             return;
         case VARIANT_BOOLEAN:
-            *this = Math::ToBool(String);
+            *this = Core::ParseBool(String);
             break;
         case VARIANT_INT8:
-            *this = Math::ToInt<int8_t>(String);
+            *this = Core::ParseInt8(String);
             break;
         case VARIANT_INT16:
-            *this = Math::ToInt<int16_t>(String);
+            *this = Core::ParseInt16(String);
             break;
         case VARIANT_INT32:
-            *this = Math::ToInt<int32_t>(String);
+            *this = Core::ParseInt32(String);
             break;
         case VARIANT_INT64:
-            *this = Math::ToInt<int64_t>(String);
+            *this = Core::ParseInt64(String);
             break;
         case VARIANT_UINT8:
-            *this = Math::ToInt<uint8_t>(String);
+            *this = Core::ParseUInt8(String);
             break;
         case VARIANT_UINT16:
-            *this = Math::ToInt<uint16_t>(String);
+            *this = Core::ParseUInt16(String);
             break;
         case VARIANT_UINT32:
-            *this = Math::ToInt<uint32_t>(String);
+            *this = Core::ParseUInt32(String);
             break;
         case VARIANT_UINT64:
-            *this = Math::ToInt<uint64_t>(String);
+            *this = Core::ParseUInt64(String);
             break;
         case VARIANT_FLOAT32:
-            *this = Math::ToFloat(String);
+            *this = Core::ParseFloat(String);
             break;
         case VARIANT_FLOAT64:
-            *this = Math::ToDouble(String);
+            *this = Core::ParseDouble(String);
             break;
         case VARIANT_FLOAT2:
             *this = ParseVector<Float2>(String);
@@ -301,47 +301,47 @@ AString AVariant::ToString() const
         case VARIANT_UNDEFINED:
             return "";
         case VARIANT_BOOLEAN:
-            return Math::ToString(*Get<bool>());
+            return Core::ToString(*Get<bool>());
         case VARIANT_INT8:
-            return Math::ToString(*Get<int8_t>());
+            return Core::ToString(*Get<int8_t>());
         case VARIANT_INT16:
-            return Math::ToString(*Get<int16_t>());
+            return Core::ToString(*Get<int16_t>());
         case VARIANT_INT32:
-            return Math::ToString(*Get<int32_t>());
+            return Core::ToString(*Get<int32_t>());
         case VARIANT_INT64:
-            return Math::ToString(*Get<int64_t>());
+            return Core::ToString(*Get<int64_t>());
         case VARIANT_UINT8:
-            return Math::ToString(*Get<uint8_t>());
+            return Core::ToString(*Get<uint8_t>());
         case VARIANT_UINT16:
-            return Math::ToString(*Get<uint16_t>());
+            return Core::ToString(*Get<uint16_t>());
         case VARIANT_UINT32:
-            return Math::ToString(*Get<uint32_t>());
+            return Core::ToString(*Get<uint32_t>());
         case VARIANT_UINT64:
-            return Math::ToString(*Get<uint64_t>());
+            return Core::ToString(*Get<uint64_t>());
         case VARIANT_FLOAT32:
-            return Math::ToString(*Get<float>());
+            return Core::ToString(*Get<float>());
         case VARIANT_FLOAT64:
-            return Math::ToString(*Get<double>());
+            return Core::ToString(*Get<double>());
         case VARIANT_FLOAT2:
-            return Get<Float2>()->ToString();
+            return Core::ToString(*Get<Float2>());
         case VARIANT_FLOAT3:
-            return Get<Float3>()->ToString();
+            return Core::ToString(*Get<Float3>());
         case VARIANT_FLOAT4:
-            return Get<Float4>()->ToString();
+            return Core::ToString(*Get<Float4>());
         case VARIANT_FLOAT2X2:
-            return Get<Float2x2>()->ToString();
+            return Core::ToString(*Get<Float2x2>());
         case VARIANT_FLOAT3X3:
-            return Get<Float3x3>()->ToString();
+            return Core::ToString(*Get<Float3x3>());
         case VARIANT_FLOAT3X4:
-            return Get<Float3x4>()->ToString();
+            return Core::ToString(*Get<Float3x4>());
         case VARIANT_FLOAT4X4:
-            return Get<Float4x4>()->ToString();
+            return Core::ToString(*Get<Float4x4>());
         case VARIANT_QUAT:
-            return Get<Quat>()->ToString();
+            return Core::ToString(*Get<Quat>());
         case VARIANT_STRING:
             return *Get<AString>();
         case VARIANT_RESOURCE_REF:
-            return Get<SResourceRef>()->ToString();
+            return Core::ToString(*Get<SResourceRef>());
         case VARIANT_ENUM:
             return FindEnumValue(EnumType.EnumDef, EnumType.EnumValue);
         default:

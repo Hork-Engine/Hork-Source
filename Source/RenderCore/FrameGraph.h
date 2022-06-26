@@ -35,7 +35,7 @@ SOFTWARE.
 #include "FGRenderTargetCache.h"
 
 #include <Core/String.h>
-#include <Containers/PodStack.h>
+#include <Containers/Stack.h>
 
 #include <RenderCore/Device.h>
 
@@ -75,22 +75,22 @@ public:
     template <typename TTask>
     TTask& AddTask(const char* Name)
     {
-        RenderTasks.emplace_back(std::make_unique<TTask>(this, Name));
-        return *static_cast<TTask*>(RenderTasks.back().get());
+        RenderTasks.EmplaceBack(std::make_unique<TTask>(this, Name));
+        return *static_cast<TTask*>(RenderTasks.Last().get());
     }
 
     template <typename T>
     T* AddExternalResource(const char* Name, typename T::ResourceType* Resource)
     {
-        ExternalResources.emplace_back(std::make_unique<T>(GenerateResourceId(), Name, Resource));
-        return static_cast<T*>(ExternalResources.back().get());
+        ExternalResources.EmplaceBack(std::make_unique<T>(GenerateResourceId(), Name, Resource));
+        return static_cast<T*>(ExternalResources.Last().get());
     }
 
     void Build();
 
     void Debug();
 
-    void ExportGraphviz(const char* FileName);
+    void ExportGraphviz(AStringView FileName);
 
     std::size_t GenerateResourceId() const
     {
@@ -135,13 +135,13 @@ private:
         {
             for (auto& resourcePtr : task->GetProducedResources())
             {
-                Resources.Append(resourcePtr.get());
+                Resources.Add(resourcePtr.get());
             }
         }
 
         for (auto& resourcePtr : ExternalResources)
         {
-            Resources.Append(resourcePtr.get());
+            Resources.Add(resourcePtr.get());
         }
     }
 
@@ -150,8 +150,8 @@ private:
     TRef<IDevice>             pDevice;
     TRef<FGRenderTargetCache> pRenderTargetCache;
 
-    TStdVector<std::unique_ptr<FGRenderTaskBase>>    RenderTasks;
-    TStdVector<std::unique_ptr<FGResourceProxyBase>> ExternalResources;
+    TVector<std::unique_ptr<FGRenderTaskBase>>    RenderTasks;
+    TVector<std::unique_ptr<FGResourceProxyBase>> ExternalResources;
     TPodVector<FGResourceProxyBase*>              Resources; // all resources
     TPodVector<FGResourceProxyBase*>              CapturedResources;
 
@@ -159,7 +159,7 @@ private:
     TPodVector<FGResourceProxyBase*> AcquiredResources, ReleasedResources;
 
     // Temporary data. Used for building
-    TPodStack<FGResourceProxyBase*>  UnreferencedResources;
+    TStack<FGResourceProxyBase*>     UnreferencedResources;
     TPodVector<FGResourceProxyBase*> ResourcesRW;
 
     mutable std::size_t IdGenerator = 0;

@@ -78,7 +78,7 @@ public:
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(const char* _Path) override;
+    void LoadInternalResource(AStringView _Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Materials/Unlit"; }
 
@@ -126,13 +126,6 @@ public:
     /** Set material */
     void SetMaterial(AMaterial* _Material);
 
-    ///** Helper. Set material by alias */
-    //template< char... Chars >
-    //void SetMaterial( TCompileTimeString<Chars...> const & _Alias ) {
-    //    static TStaticResourceFinder< AMaterial > Resource( _Alias );
-    //    SetMaterial( Resource.GetObject() );
-    //}
-
     /** Get material. Never return null. */
     AMaterial* GetMaterial() const;
 
@@ -140,13 +133,6 @@ public:
     void SetTexture(int _TextureSlot, ATexture* _Texture);
 
     ATexture* GetTexture(int _TextureSlot);
-
-    ///** Helper. Set texture for the slot */
-    //template< char... Chars >
-    //void SetTexture( int _TextureSlot, TCompileTimeString<Chars...> const & _Alias ) {
-    //    static TStaticResourceFinder< ATexture > Resource( _Alias );
-    //    SetTexture( _TextureSlot, Resource.GetObject() );
-    //}
 
     void SetVirtualTexture(AVirtualTextureResource* VirtualTex);
 
@@ -161,7 +147,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& _Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(const char* _Path) override;
+    void LoadInternalResource(AStringView _Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/MaterialInstance/Default"; }
 

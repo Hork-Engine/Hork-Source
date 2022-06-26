@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Geometry/VectorMath.h>
 #include <Geometry/Complex.h>
-#include <Containers/PodVector.h>
+#include <Containers/Vector.h>
 
 constexpr int HRTF_BLOCK_LENGTH = 128; // Keep it to a power of two
 
@@ -52,10 +52,10 @@ public:
     void ApplyHRTF( Float3 const & CurDir, Float3 const & NewDir, const float * pFrames, int FrameCount, float * pStream, Float3 & Dir );
 
     /** Sphere geometry vertics */
-    TPodVectorHeap< Float3 > const & GetVertices() const { return Vertices; }
+    TVector< Float3 > const & GetVertices() const { return Vertices; }
 
     /** Sphere geometry indices */
-    TPodVectorHeap< uint32_t > const & GetIndices() const { return Indices; }
+    TVector< uint32_t > const & GetIndices() const { return Indices; }
 
     /** Length of Head-Related Impulse Response (HRIR) */
     int GetFrameCount() const
@@ -85,10 +85,10 @@ private:
     /** HRTF FFT filter size in frames */
     int FilterSize = 0;
 
-    TPodVectorHeap< uint32_t > Indices;
-    TPodVectorHeap< Float3 > Vertices;
-    TPodVectorHeap< SComplex > hrtfL;
-    TPodVectorHeap< SComplex > hrtfR;
+    TVector< uint32_t > Indices;
+    TVector< Float3 > Vertices;
+    TVector< SComplex > hrtfL;
+    TVector< SComplex > hrtfR;
 
     void * ForwardFFT = nullptr;
     void * InverseFFT = nullptr;

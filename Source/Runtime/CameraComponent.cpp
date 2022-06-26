@@ -36,7 +36,7 @@ SOFTWARE.
 
 #include <Core/ConsoleVar.h>
 
-AConsoleVar com_DrawCameraFrustum(_CTS("com_DrawCameraFrustum"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawCameraFrustum("com_DrawCameraFrustum"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(ACameraComponent)
 
@@ -48,8 +48,8 @@ void ACameraComponent::OnCreateAvatar()
     Super::OnCreateAvatar();
 
     // TODO: Create mesh or sprite for avatar
-    static TStaticResourceFinder<AIndexedMesh>      Mesh(_CTS("/Default/Meshes/Box"));
-    static TStaticResourceFinder<AMaterialInstance> MaterialInstance(_CTS("AvatarMaterialInstance"));
+    static TStaticResourceFinder<AIndexedMesh>      Mesh("/Default/Meshes/Box"s);
+    static TStaticResourceFinder<AMaterialInstance> MaterialInstance("AvatarMaterialInstance"s);
 
     AMeshComponent* meshComponent = GetOwnerActor()->CreateComponent<AMeshComponent>("CameraAvatar");
     meshComponent->SetMotionBehavior(MB_KINEMATIC);

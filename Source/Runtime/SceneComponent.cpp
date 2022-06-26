@@ -38,7 +38,7 @@ SOFTWARE.
 
 #include <algorithm> // find
 
-AConsoleVar com_DrawSockets(_CTS("com_DrawSockets"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawSockets("com_DrawSockets"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(ASceneComponent)
 
@@ -88,11 +88,11 @@ void ASceneComponent::DeinitializeComponent()
     }
 }
 
-void ASceneComponent::AttachTo(ASceneComponent* _Parent, const char* _Socket, bool _KeepWorldTransform)
+void ASceneComponent::AttachTo(ASceneComponent* _Parent, AStringView _Socket, bool _KeepWorldTransform)
 {
     _AttachTo(_Parent, _KeepWorldTransform);
 
-    if (_Socket && AttachParent)
+    if (!_Socket.IsEmpty() && AttachParent)
     {
         int socketIndex = AttachParent->FindSocket(_Socket);
         if (SocketIndex != socketIndex)
@@ -151,7 +151,7 @@ void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransfo
         }
     }
 
-    _Parent->Childs.Append(this);
+    _Parent->Childs.Add(this);
     AttachParent = _Parent;
 
     if (_KeepWorldTransform)
@@ -227,7 +227,7 @@ bool ASceneComponent::IsRoot() const
     return owner && owner->GetRootComponent() == this;
 }
 
-ASceneComponent* ASceneComponent::FindChild(const char* _UniqueName, bool _Recursive)
+ASceneComponent* ASceneComponent::FindChild(AStringView _UniqueName, bool _Recursive)
 {
     for (ASceneComponent* child : Childs)
     {
@@ -251,7 +251,7 @@ ASceneComponent* ASceneComponent::FindChild(const char* _UniqueName, bool _Recur
     return nullptr;
 }
 
-int ASceneComponent::FindSocket(const char* _Name) const
+int ASceneComponent::FindSocket(AStringView _Name) const
 {
     for (int socketIndex = 0; socketIndex < Sockets.Size(); socketIndex++)
     {

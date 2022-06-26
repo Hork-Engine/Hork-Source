@@ -49,7 +49,7 @@ SVirtualTextureImage::SVirtualTextureImage() {
     Height = 0;
 }
 SVirtualTextureImage::~SVirtualTextureImage() {
-    GHeapMemory.Free( Data );
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(Data);
 }
 
 bool SVirtualTextureImage::OpenImage( const char * FileName, int InWidth, int InHeight, int InNumChannels ) {
@@ -76,7 +76,7 @@ bool SVirtualTextureImage::WriteImage( const char * FileName ) const {
 
 void SVirtualTextureImage::CreateEmpty( int InWidth, int InHeight, int InNumChannels ) {
     if ( Data == NULL || Width * Height * NumChannels != InWidth * InHeight * InNumChannels ) {
-        Data = ( byte * )GHeapMemory.Realloc( Data, InWidth * InHeight * InNumChannels, 16, false );
+        Data = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Realloc(Data, InWidth * InHeight * InNumChannels, 16, MALLOC_DISCARD);
     }
 
     Width = InWidth;
@@ -181,11 +181,7 @@ bool VT_MakeStructure( SVirtualTextureStructure & _Struct,
 }
 
 AString VT_FileNameFromRelative( const char * _OutputPath, unsigned int _RelativeIndex, int _Lod ) {
-    return AString( _OutputPath )
-            + Math::ToString( _Lod )
-            + "/"
-            + Math::ToString( _RelativeIndex )
-            + PAGE_EXTENSION;
+    return Core::Format("{}{}/{}{}", _OutputPath, _Lod, _RelativeIndex, PAGE_EXTENSION);
 }
 
 SVirtualTextureLayer::SCachedPage * VT_FindInCache( SVirtualTextureLayer & Layer, unsigned int _AbsoluteIndex ) {
@@ -630,7 +626,8 @@ static void VT_SynchronizePageBitfieldWithHDD_Lod( APageBitfield & BitField, int
 
     // TODO: Rewrite to support FindFirstFileW
 
-    if ( (fh = FindFirstFileA( (AString( _LodPath ) +  "*.png").CStr(), &fd )) != INVALID_HANDLE_VALUE ) {
+    if ((fh = FindFirstFileA(Core::Format("{}*.png", _LodPath).CStr(), &fd)) != INVALID_HANDLE_VALUE)
+    {
         do {
             int len = strlen( fd.cFileName );
             if ( len < 4 ) {
@@ -721,7 +718,7 @@ void VT_SynchronizePageBitfieldWithHDD( SVirtualTextureStructure & _Struct, SVir
     _Struct.PageBitfield.UnmarkAll();
 
     for ( int lod = 0 ; lod < _Struct.NumLods ; lod++ ) {
-        lodPath = Layer.Path + Math::ToString( lod ) + "/";
+        lodPath = Layer.Path + Core::ToString( lod ) + "/";
 
         VT_SynchronizePageBitfieldWithHDD_Lod( _Struct.PageBitfield, lod, lodPath.CStr() );
     }
@@ -1204,7 +1201,7 @@ SFileOffset VT_WritePage( SVirtualTextureFileHandle * File, SFileOffset Offset, 
         if ( _Layers[Layer].PageCompressionMethod ) {
 
             if ( !CompressedData ) {
-                CompressedData = ( byte * )GHeapMemory.Alloc( CompressedDataSize );
+                CompressedData = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(CompressedDataSize);
             }
 
             _Layers[Layer].PageCompressionMethod( cachedPage->Image.GetData(), CompressedData );
@@ -1228,7 +1225,7 @@ SFileOffset VT_WritePage( SVirtualTextureFileHandle * File, SFileOffset Offset, 
         VT_CloseCachedPage( cachedPage );
     }
 
-    GHeapMemory.Free( CompressedData );
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(CompressedData);
 
     return Offset;
 }
@@ -1242,7 +1239,7 @@ bool VT_WriteFile( const SVirtualTextureStructure & _Struct, int _MaxLods, SVirt
     uint32_t version = VT_FILE_ID;
     byte tmp;
 
-    Core::MakeDir( FileName, true );
+    Core::CreateDirectory(FileName, true);
 
     if ( !fileHandle.OpenWrite( FileName ) ) {
         LOG("VT_WriteFile: couldn't write {}\n", FileName);
@@ -1529,18 +1526,18 @@ bool VT_CreateVirtualTexture( const SVirtualTextureLayerDesc * _Layers,
                               unsigned int & _BinHeight,
                               int _MaxCachedPages ) {
 //_MaxCachedPages=1;// FIXME: for debug
-    Core::MakeDir( _OutputFileName, true );
+    Core::CreateDirectory(_OutputFileName, true);
 
     std::vector< SVirtualTextureLayer > vtLayers( _NumLayers );
 
     int pageDataNumPixelsB = ( 1 << _PageWidthLog2 ) * ( 1 << _PageWidthLog2 );
 
-    for ( int LayerIndex = 0 ; LayerIndex < _NumLayers ; LayerIndex++ ) {
-        AString layerPath = _TempDir;
-        layerPath += "/layer" + Math::ToString( LayerIndex ) + "/";
+    for ( int LayerIndex = 0 ; LayerIndex < _NumLayers ; LayerIndex++ )
+    {
+        AString layerPath = Core::Format("{}/layer{}/", _TempDir, LayerIndex);
 
         for ( int lodIndex = 0 ; lodIndex < _MaxLods ; lodIndex++ ) {
-            Core::MakeDir( ( layerPath + Math::ToString( lodIndex ) ).CStr(), false );
+            Core::CreateDirectory(Core::Format("{}{}", layerPath, lodIndex), false);
         }
 
         vtLayers[ LayerIndex ].NumCachedPages = 0;
@@ -1594,7 +1591,8 @@ bool VT_CreateVirtualTexture( const SVirtualTextureLayerDesc * _Layers,
 //VT_FitPageData( vtLayers[ layerIndex],true);// FIXME: for debug
     }
 
-    if ( !VT_WriteFile( vtStruct, _MaxLods, &vtLayers[0], vtLayers.size(), ( AString( _OutputFileName ) + ".vt3" ).CStr() ) ) {
+    if (!VT_WriteFile(vtStruct, _MaxLods, &vtLayers[0], vtLayers.size(), Core::Format("{}.vt3", _OutputFileName).CStr()))
+    {
         return false;
     }
 
@@ -1672,7 +1670,7 @@ void * LoadDiffuseImage( void * _RectUserData, int Width, int Height ) {
         return nullptr;
     }
 
-    void * pScaledImage = GHeapMemory.Alloc( Width * Height * 4 );
+    void* pScaledImage = Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(Width * Height * 4);
 
     // Scale source image to match required width and height
     SImageResizeDesc desc;
@@ -1700,7 +1698,7 @@ void * LoadDiffuseImage( void * _RectUserData, int Width, int Height ) {
 }
 
 void FreeImage( void * ImageData ) {
-    GHeapMemory.Free( ImageData );
+    Platform::GetHeapAllocator<HEAP_TEMP>().Free(ImageData);
 }
 
 #define VT_PAGE_SIZE_LOG2 7     // page size 128x128

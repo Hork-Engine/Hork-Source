@@ -43,7 +43,7 @@ SOFTWARE.
 
 #include "BulletCompatibility.h"
 
-AConsoleVar com_DrawSoftmeshFaces(_CTS("com_DrawSoftmeshFaces"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawSoftmeshFaces("com_DrawSoftmeshFaces"s, "0"s, CVAR_CHEAT);
 
 HK_CLASS_META(ASoftMeshComponent)
 
@@ -480,7 +480,7 @@ void ASoftMeshComponent::AttachVertex(int _VertexIndex, AAnchorComponent* _Ancho
     }
     else
     {
-        binding = &Anchors.Append();
+        binding = &Anchors.Add();
     }
 
     binding->VertexIndex = _VertexIndex;

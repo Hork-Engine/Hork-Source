@@ -99,7 +99,7 @@ ABaseObject* ABaseObject::FindObject(uint64_t _Id)
     return nullptr;
 }
 
-void ABaseObject::SetProperties_r(AClassMeta const* Meta, THashContainer<AString, AString> const& Properties)
+void ABaseObject::SetProperties_r(AClassMeta const* Meta, TStringHashMap<AString> const& Properties)
 {
     if (Meta)
     {
@@ -107,22 +107,17 @@ void ABaseObject::SetProperties_r(AClassMeta const* Meta, THashContainer<AString
 
         for (AProperty const* prop = Meta->GetPropertyList(); prop; prop = prop->Next())
         {
-            int hash = prop->GetNameHash();
-
-            for (int i = Properties.First(hash); i != -1; i = Properties.Next(i))
+            auto it = Properties.Find(prop->GetName());
+            if (it != Properties.End())
             {
-                if (!Properties[i].first.Icmp(prop->GetName()))
-                {
-                    // Property found
-                    prop->SetValue(this, AVariant(prop->GetType(), prop->GetEnum(), Properties[i].second));
-                    break;
-                }
+                // Property found
+                prop->SetValue(this, AVariant(prop->GetType(), prop->GetEnum(), it->second));
             }
         }
     }
 }
 
-void ABaseObject::SetProperties(THashContainer<AString, AString> const& Properties)
+void ABaseObject::SetProperties(TStringHashMap<AString> const& Properties)
 {
     if (Properties.IsEmpty())
     {

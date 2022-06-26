@@ -96,7 +96,7 @@ ESoundStreamType ASoundResource::GetStreamType() const
     return CurStreamType;
 }
 
-void ASoundResource::LoadInternalResource(const char* _Path)
+void ASoundResource::LoadInternalResource(AStringView _Path)
 {
     Purge();
 
@@ -147,23 +147,23 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
         ADocMember* member;
 
         member                = doc.FindMember("bStreamed");
-        createInfo.StreamType = member ? (Math::ToBool(member->GetString()) ? SOUND_STREAM_MEMORY : SOUND_STREAM_DISABLED) : SOUND_STREAM_DISABLED;
+        createInfo.StreamType = member ? (Core::ParseBool(member->GetString()) ? SOUND_STREAM_MEMORY : SOUND_STREAM_DISABLED) : SOUND_STREAM_DISABLED;
 
         member                = doc.FindMember("bForce8Bit");
-        createInfo.bForce8Bit = member ? Math::ToBool(member->GetString()) : false;
+        createInfo.bForce8Bit = member ? Core::ParseBool(member->GetString()) : false;
 
         member                = doc.FindMember("bForceMono");
-        createInfo.bForceMono = member ? Math::ToBool(member->GetString()) : false;
+        createInfo.bForceMono = member ? Core::ParseBool(member->GetString()) : false;
 
         return InitializeFromMemory(fontFile.CStr(), soundBinary->GetBinaryData(), soundBinary->GetSizeInBytes(), &createInfo);
     }
     else
     {
         size_t size = Stream.SizeInBytes();
-        void*  data = GHunkMemory.Alloc(size);
+        void*  data = Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(size);
         Stream.Read(data, size);
         bool bResult = InitializeFromMemory(Stream.GetFileName(), data, size);
-        GHunkMemory.ClearLastHunk();
+        Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
         return bResult;
     }
 
@@ -203,7 +203,7 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
         Stream.SeekEnd( 0 );
 
         size_t sizeInBytes = Stream.GetOffset();
-        void * pHeapPtr = (byte *)GHeapMemory.Alloc( sizeInBytes );
+        void * pHeapPtr = (byte *)Platform::MemoryAllocSafe( sizeInBytes );
 
         Stream.Rewind();
         Stream.Read( pHeapPtr, sizeInBytes );
@@ -280,7 +280,7 @@ bool ASoundResource::InitializeFromMemory(const char* _Path, const void* _SysMem
                 return false;
             }
 
-            void* pHeapPtr = GHeapMemory.Alloc(_SizeInBytes);
+            void* pHeapPtr = Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(_SizeInBytes);
             Platform::Memcpy(pHeapPtr, _SysMem, _SizeInBytes);
 
             pFileInMemory = MakeRef<SFileInMemory>(pHeapPtr, _SizeInBytes);

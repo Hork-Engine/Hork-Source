@@ -56,12 +56,11 @@ SOFTWARE.
 #endif
 
 #define SOFT_BODY_WORLD
-#define REF_AWARE
 
-AConsoleVar com_DrawContactPoints(_CTS("com_DrawContactPoints"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawConstraints(_CTS("com_DrawConstraints"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawConstraintLimits(_CTS("com_DrawConstraintLimits"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_NoPhysicsSimulation(_CTS("com_NoPhysicsSimulation"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawContactPoints("com_DrawContactPoints"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawConstraints("com_DrawConstraints"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawConstraintLimits("com_DrawConstraintLimits"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_NoPhysicsSimulation("com_NoPhysicsSimulation"s, "0"s, CVAR_CHEAT);
 
 static SCollisionQueryFilter DefaultCollisionQueryFilter;
 
@@ -87,12 +86,12 @@ struct SCollisionFilterCallback : public btOverlapFilterCallback
             AActor* actor0 = hitProxy0->GetOwnerActor();
             AActor* actor1 = hitProxy1->GetOwnerActor();
 
-            if (hitProxy0->GetCollisionIgnoreActors().Find(actor1) != hitProxy0->GetCollisionIgnoreActors().End())
+            if (hitProxy0->GetCollisionIgnoreActors().Contains(actor1))
             {
                 return false;
             }
 
-            if (hitProxy1->GetCollisionIgnoreActors().Find(actor0) != hitProxy1->GetCollisionIgnoreActors().End())
+            if (hitProxy1->GetCollisionIgnoreActors().Contains(actor0))
             {
                 return false;
             }
@@ -272,24 +271,14 @@ APhysicsSystem::~APhysicsSystem()
 
 void APhysicsSystem::RemoveCollisionContacts()
 {
-#ifdef REF_AWARE
     for (int i = 0; i < 2; i++)
     {
-        TPodVector<SCollisionContact>& currentContacts = CollisionContacts[i];
-        THash<>&                       contactHash     = ContactHash[i];
-
-        for (SCollisionContact& contact : currentContacts)
-        {
-            contact.ActorA->RemoveRef();
-            contact.ActorB->RemoveRef();
-            contact.ComponentA->RemoveRef();
-            contact.ComponentB->RemoveRef();
-        }
+        TVector<SCollisionContact>& currentContacts = CollisionContacts[i];
+        auto&                          contactHash  = ContactHash[i];
 
         currentContacts.Clear();
         contactHash.Clear();
     }
-#endif
 }
 
 void APhysicsSystem::AddPendingBody(AHitProxy* InPhysicalBody)
@@ -386,26 +375,14 @@ void APhysicsSystem::DispatchContactAndOverlapEvents()
     int curTickNumber  = FixedTickNumber & 1;
     int prevTickNumber = (FixedTickNumber + 1) & 1;
 
-    TPodVector<SCollisionContact>& currentContacts = CollisionContacts[curTickNumber];
-    TPodVector<SCollisionContact>& prevContacts    = CollisionContacts[prevTickNumber];
+    TVector<SCollisionContact>& currentContacts = CollisionContacts[curTickNumber];
+    TVector<SCollisionContact>& prevContacts    = CollisionContacts[prevTickNumber];
 
-    THash<>& contactHash     = ContactHash[curTickNumber];
-    THash<>& prevContactHash = ContactHash[prevTickNumber];
-
-    SCollisionContact contact;
+    auto& contactHash     = ContactHash[curTickNumber];
+    auto& prevContactHash = ContactHash[prevTickNumber];
 
     SOverlapEvent overlapEvent;
     SContactEvent contactEvent;
-
-#ifdef REF_AWARE
-    for (SCollisionContact& contact : currentContacts)
-    {
-        contact.ActorA->RemoveRef();
-        contact.ActorB->RemoveRef();
-        contact.ComponentA->RemoveRef();
-        contact.ComponentB->RemoveRef();
-    }
-#endif
 
     contactHash.Clear();
     currentContacts.Clear();
@@ -449,57 +426,35 @@ void APhysicsSystem::DispatchContactAndOverlapEvents()
         // Do not generate contact events if one of components is trigger
         bool bContactWithTrigger = objectA->IsTrigger() || objectB->IsTrigger();
 
+        SCollisionContact contact;
         contact.bComponentADispatchContactEvents = !bContactWithTrigger && objectA->bDispatchContactEvents && (objectA->E_OnBeginContact || objectA->E_OnEndContact || objectA->E_OnUpdateContact);
-
         contact.bComponentBDispatchContactEvents = !bContactWithTrigger && objectB->bDispatchContactEvents && (objectB->E_OnBeginContact || objectB->E_OnEndContact || objectB->E_OnUpdateContact);
-
         contact.bComponentADispatchOverlapEvents = objectA->IsTrigger() && objectA->bDispatchOverlapEvents && (objectA->E_OnBeginOverlap || objectA->E_OnEndOverlap || objectA->E_OnUpdateOverlap);
-
         contact.bComponentBDispatchOverlapEvents = objectB->IsTrigger() && objectB->bDispatchOverlapEvents && (objectB->E_OnBeginOverlap || objectB->E_OnEndOverlap || objectB->E_OnUpdateOverlap);
-
         contact.bActorADispatchContactEvents = !bContactWithTrigger && objectA->bDispatchContactEvents && (actorA->E_OnBeginContact || actorA->E_OnEndContact || actorA->E_OnUpdateContact);
-
         contact.bActorBDispatchContactEvents = !bContactWithTrigger && objectB->bDispatchContactEvents && (actorB->E_OnBeginContact || actorB->E_OnEndContact || actorB->E_OnUpdateContact);
-
         contact.bActorADispatchOverlapEvents = objectA->IsTrigger() && objectA->bDispatchOverlapEvents && (actorA->E_OnBeginOverlap || actorA->E_OnEndOverlap || actorA->E_OnUpdateOverlap);
-
         contact.bActorBDispatchOverlapEvents = objectB->IsTrigger() && objectB->bDispatchOverlapEvents && (actorB->E_OnBeginOverlap || actorB->E_OnEndOverlap || actorB->E_OnUpdateOverlap);
 
         if (contact.bComponentADispatchContactEvents || contact.bComponentBDispatchContactEvents || contact.bComponentADispatchOverlapEvents || contact.bComponentBDispatchOverlapEvents || contact.bActorADispatchContactEvents || contact.bActorBDispatchContactEvents || contact.bActorADispatchOverlapEvents || contact.bActorBDispatchOverlapEvents)
         {
-
             contact.ActorA     = actorA;
             contact.ActorB     = actorB;
             contact.ComponentA = objectA;
             contact.ComponentB = objectB;
             contact.Manifold   = contactManifold;
 
-            int hash = contact.Hash();
+            SContactKey key(contact);
 
-            bool bUnique = true;
-            for (int h = contactHash.First(hash); h != -1; h = contactHash.Next(h))
+            if (!contactHash.Contains(key))
             {
-                if (currentContacts[h].ComponentA->Id == objectA->Id && currentContacts[h].ComponentB->Id == objectB->Id)
-                {
-                    bUnique = false;
-                    break;
-                }
-            }
+                currentContacts.Add(std::move(contact));
 
-            if (bUnique)
-            {
-#ifdef REF_AWARE
-                actorA->AddRef();
-                actorB->AddRef();
-                objectA->AddRef();
-                objectB->AddRef();
-#endif
-                currentContacts.Append(contact);
-                contactHash.Insert(hash, currentContacts.Size() - 1);
+                contactHash.Insert(key);
             }
             else
             {
-                //LOG( "Assertion failed: bUnique\n" );
+                //LOG( "Contact duplicate\n" );
             }
         }
     }
@@ -582,26 +537,14 @@ void APhysicsSystem::DispatchContactAndOverlapEvents()
     {
         SCollisionContact& contact = currentContacts[i];
 
-        int  hash          = contact.Hash();
-        bool bFirstContact = true;
-
-        for (int h = prevContactHash.First(hash); h != -1; h = prevContactHash.Next(h))
-        {
-            if (prevContacts[h].ComponentA->Id == contact.ComponentA->Id && prevContacts[h].ComponentB->Id == contact.ComponentB->Id)
-            {
-                bFirstContact = false;
-                break;
-            }
-        }
+        bool bFirstContact = !prevContactHash.Contains(SContactKey(contact));
 
         //if ( !contact.ActorA->IsPendingKill() )
         {
             if (contact.bActorADispatchContactEvents)
             {
-
                 if (contact.ActorA->E_OnBeginContact || contact.ActorA->E_OnUpdateContact)
                 {
-
                     if (contact.ComponentA->bGenerateContactPoints)
                     {
                         GenerateContactPoints(i << 1, contact);
@@ -652,7 +595,6 @@ void APhysicsSystem::DispatchContactAndOverlapEvents()
         {
             if (contact.bComponentADispatchContactEvents)
             {
-
                 if (contact.ComponentA->E_OnBeginContact || contact.ComponentA->E_OnUpdateContact)
                 {
                     if (contact.ComponentA->bGenerateContactPoints)
@@ -814,18 +756,8 @@ void APhysicsSystem::DispatchContactAndOverlapEvents()
     for (int i = 0; i < prevContacts.Size(); i++)
     {
         SCollisionContact& contact = prevContacts[i];
-
-        int  hash         = contact.Hash();
-        bool bHaveContact = false;
-
-        for (int h = contactHash.First(hash); h != -1; h = contactHash.Next(h))
-        {
-            if (currentContacts[h].ComponentA->Id == contact.ComponentA->Id && currentContacts[h].ComponentB->Id == contact.ComponentB->Id)
-            {
-                bHaveContact = true;
-                break;
-            }
-        }
+        SContactKey        key(contact);
+        bool bHaveContact = contactHash.Contains(key);
 
         if (bHaveContact)
         {
@@ -834,7 +766,6 @@ void APhysicsSystem::DispatchContactAndOverlapEvents()
 
         if (contact.bActorADispatchContactEvents)
         {
-
             if (contact.ActorA->E_OnEndContact)
             {
                 contactEvent.SelfActor  = contact.ActorA;
@@ -1227,7 +1158,7 @@ struct STraceRayResultCallback : btCollisionWorld::RayResultCallback
 
         const btCollisionObject* hitCollisionObject = RayResult.m_collisionObject;
 
-        SCollisionTraceResult& hit = Result.Append();
+        SCollisionTraceResult& hit = Result.Add();
         hit.Clear();
         hit.HitProxy = static_cast<AHitProxy*>(hitCollisionObject->getUserPointer());
         hit.Position = RayStart + RayResult.m_hitFraction * RayDir;
@@ -1361,7 +1292,7 @@ struct STraceConvexResultCallback : btCollisionWorld::ConvexResultCallback
 
         const btCollisionObject* hitCollisionObject = ConvexResult.m_hitCollisionObject;
 
-        SCollisionTraceResult& hit = Result.Append();
+        SCollisionTraceResult& hit = Result.Add();
         hit.Clear();
         hit.HitProxy = static_cast<AHitProxy*>(hitCollisionObject->getUserPointer());
         hit.Position = btVectorToFloat3(ConvexResult.m_hitPointLocal);
@@ -1736,7 +1667,7 @@ struct SQueryCollisionObjectsCallback : public btCollisionWorld::ContactResultCa
                 return;
             }
         }
-        Result.Append(HitProxy);
+        Result.Add(HitProxy);
     }
 
     TPodVector<AHitProxy*>&      Result;
@@ -1780,7 +1711,7 @@ struct SQueryCollisionCallback : public btCollisionWorld::ContactResultCallback
 
     void AddContact(AHitProxy* HitProxy, btManifoldPoint& cp)
     {
-        SCollisionQueryResult& contact = Result.Append();
+        SCollisionQueryResult& contact = Result.Add();
 
         contact.HitProxy = HitProxy;
         contact.Position = btVectorToFloat3(cp.m_positionWorldOnB);
@@ -1834,10 +1765,7 @@ struct SQueryActorsCallback : public btCollisionWorld::ContactResultCallback
 
     void AddUnique(AActor* Actor)
     {
-        if (Result.Find(Actor) == Result.End())
-        {
-            Result.Append(Actor);
-        }
+        Result.AddUnique(Actor);
     }
 
     TPodVector<AActor*>&         Result;

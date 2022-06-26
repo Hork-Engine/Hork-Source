@@ -33,7 +33,7 @@ SOFTWARE.
 #include <Core/ConsoleVar.h>
 #include <Runtime/EmbeddedResources.h>
 
-AConsoleVar r_EmbeddedShaders(_CTS("r_EmbeddedShaders"), _CTS("0"));
+AConsoleVar r_EmbeddedShaders("r_EmbeddedShaders"s, "0"s);
 
 using namespace RenderCore;
 
@@ -53,7 +53,7 @@ struct SIncludeInfo
 
 static void AddInclude(SIncludeInfo*& list, SIncludeInfo*& prev, int offset, int end, const char* filename, int len, int next_line)
 {
-    SIncludeInfo* z  = (SIncludeInfo*)GZoneMemory.Alloc(sizeof(SIncludeInfo));
+    SIncludeInfo* z  = (SIncludeInfo*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(SIncludeInfo));
     z->Offset        = offset;
     z->End           = end;
     z->FileName      = filename;
@@ -77,7 +77,7 @@ static void FreeIncludes(SIncludeInfo* list)
     for (SIncludeInfo* includeInfo = list; includeInfo; includeInfo = next)
     {
         next = includeInfo->pNext;
-        GZoneMemory.Free(includeInfo);
+        Platform::GetHeapAllocator<HEAP_MISC>().Free(includeInfo);
     }
 }
 
@@ -199,7 +199,7 @@ AString AShaderLoader::LoadShader(AStringView FileName, SPredefinedShaderSource 
 
     if (!LoadShaderWithInclude(FileName, result))
     {
-        CriticalError("LoadShader: failed to open %s\n", FileName.ToString().CStr());
+        CriticalError("LoadShader: failed to open {}\n", FileName);
     }
 
     return result;
@@ -224,7 +224,7 @@ AString AShaderLoader::LoadShaderFromString(AStringView FileName, AStringView So
 
     if (!LoadShaderFromString(FileName, source, result))
     {
-        CriticalError("LoadShader: failed to open %s\n", FileName.ToString().CStr());
+        CriticalError("LoadShader: failed to open {}\n", FileName);
     }
 
     return result;
@@ -244,11 +244,11 @@ bool AShaderLoader::LoadFile(AStringView FileName, AString& Source)
     else
     {
         // Load shaders from sources
-        AString fn = __FILE__;
-        fn.ClipFilename();
+        AString fn = PathUtils::GetFilePath(__FILE__);
         fn += "/../Embedded/Shaders/";
         fn += FileName;
-        fn.FixPath();
+        PathUtils::FixPathInplace(fn);
+
         AFileStream f;
         if (!f.OpenRead(fn))
         {
@@ -322,7 +322,8 @@ bool AShaderLoader::LoadShaderFromString(AStringView FileName, AStringView Sourc
         sourceOffset = includeInfo->End;
     }
 
-    Out += AStringView(&Source[sourceOffset], Source.Length() - sourceOffset);
+    if (!Source.IsEmpty())
+        Out += AStringView(&Source[sourceOffset], Source.Length() - sourceOffset);
     FreeIncludes(includeList);
 
     return true;

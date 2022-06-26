@@ -30,8 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Containers/PodVector.h>
-#include <Containers/StdVector.h>
+#include <Containers/Vector.h>
 #include <Core/Ref.h>
 #include "VectorMath.h"
 
@@ -40,7 +39,7 @@ using AClipperContour = TPodVector<Double2>;
 struct SClipperPolygon
 {
     AClipperContour             Outer;
-    TStdVector<AClipperContour> Holes;
+    TVector<AClipperContour> Holes;
 };
 
 enum POLY_CLIP_TYPE
@@ -87,10 +86,10 @@ public:
     void AddClip3D(Double3 const* points, int pointsCount, bool closed = true);
 
     /** Execute and build polygons */
-    bool Execute(POLY_CLIP_TYPE clipType, TStdVector<SClipperPolygon>& polygons);
+    bool Execute(POLY_CLIP_TYPE clipType, TVector<SClipperPolygon>& polygons);
 
     /** Execute and build contours */
-    bool Execute(POLY_CLIP_TYPE clipType, TStdVector<AClipperContour>& contours);
+    bool Execute(POLY_CLIP_TYPE clipType, TVector<AClipperContour>& contours);
 
 private:
     TUniqueRef<ClipperLib::Clipper> clipper_;

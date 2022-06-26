@@ -86,7 +86,7 @@ ATerrain::ATerrain(int Resolution, const float* pData)
     for (int i = 0; i < HeightmapLods; i++)
     {
         int sz       = 1 << (HeightmapLods - i - 1);
-        Heightmap[i] = (float*)GHeapMemory.Alloc((sz + 1) * (sz + 1) * sizeof(float));
+        Heightmap[i] = (float*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc((sz + 1) * (sz + 1) * sizeof(float));
     }
 
     // Read most detailed lod
@@ -111,7 +111,7 @@ bool ATerrain::LoadResource(IBinaryStreamReadInterface& Stream)
     for (int i = 0; i < HeightmapLods; i++)
     {
         int sz       = 1 << (HeightmapLods - i - 1);
-        Heightmap[i] = (float*)GHeapMemory.Alloc((sz + 1) * (sz + 1) * sizeof(float));
+        Heightmap[i] = (float*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc((sz + 1) * (sz + 1) * sizeof(float));
     }
 
     // Read most detailed lod
@@ -125,7 +125,7 @@ bool ATerrain::LoadResource(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-void ATerrain::LoadInternalResource(const char* Path)
+void ATerrain::LoadInternalResource(AStringView Path)
 {
     Purge();
 
@@ -139,7 +139,7 @@ void ATerrain::LoadInternalResource(const char* Path)
     for (int i = 0; i < HeightmapLods; i++)
     {
         int sz       = 1 << (HeightmapLods - i - 1);
-        Heightmap[i] = (float*)GHeapMemory.ClearedAlloc(sizeof(float) * (sz + 1) * (sz + 1));
+        Heightmap[i] = (float*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(float) * (sz + 1) * (sz + 1), 0, MALLOC_ZERO);
     }
 
     MinHeight = -0.1f;
@@ -168,7 +168,7 @@ void ATerrain::Purge()
 {
     for (int i = 0; i < HeightmapLods; i++)
     {
-        GHeapMemory.Free(Heightmap[i]);
+        Platform::GetHeapAllocator<HEAP_MISC>().Free(Heightmap[i]);
     }
 
     HeightmapLods = 0;
@@ -307,7 +307,7 @@ bool ATerrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Dista
             float  d, u, v;
             if (BvRayIntersectTriangle(RayStart, RayDir, v0, v1, v2, d, u, v, bCullBackFace))
             {
-                STriangleHitResult& hit = Result->Append();
+                STriangleHitResult& hit = Result->Add();
                 hit.Location            = RayStart + RayDir * d;
                 hit.Normal              = Math::Cross(v1 - v0, v2 - v0).Normalized();
                 hit.UV.X                = u;
@@ -642,7 +642,7 @@ void ATerrain::NotifyTerrainModified()
     // TODO: Update terrain views
 }
 
-void ATerrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TPodVectorHeap<Float3>& Vertices, TPodVectorHeap<unsigned int>& Indices) const
+void ATerrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& Vertices, TVector<unsigned int>& Indices) const
 {
     if (!BvBoxOverlapBox(BoundingBox, LocalBounds))
     {
@@ -705,13 +705,13 @@ void ATerrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TPodVectorHea
             {
                 // emit triangle
 
-                Vertices.Append({x, h0, z});
-                Vertices.Append({x, h3, z + 1});
-                Vertices.Append({x + 1, h1, z});
+                Vertices.Add({x, h0, z});
+                Vertices.Add({x, h3, z + 1});
+                Vertices.Add({x + 1, h1, z});
 
-                Indices.Append(n);
-                Indices.Append(n + 1);
-                Indices.Append(n + 2);
+                Indices.Add(n);
+                Indices.Add(n + 1);
+                Indices.Add(n + 2);
                 n += 3;
             }
             else
@@ -725,22 +725,22 @@ void ATerrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TPodVectorHea
                 // emit triangle
                 if (firstTriangleCut)
                 {
-                    Vertices.Append({x + 1, h1, z});
-                    Vertices.Append({x, h3, z + 1});
-                    Vertices.Append({x + 1, h2, z + 1});
+                    Vertices.Add({x + 1, h1, z});
+                    Vertices.Add({x, h3, z + 1});
+                    Vertices.Add({x + 1, h2, z + 1});
 
-                    Indices.Append(n);
-                    Indices.Append(n + 1);
-                    Indices.Append(n + 2);
+                    Indices.Add(n);
+                    Indices.Add(n + 1);
+                    Indices.Add(n + 2);
                     n += 3;
                 }
                 else
                 {
-                    Vertices.Append({x + 1, h2, z + 1});
+                    Vertices.Add({x + 1, h2, z + 1});
 
-                    Indices.Append(n - 1);
-                    Indices.Append(n - 2);
-                    Indices.Append(n);
+                    Indices.Add(n - 1);
+                    Indices.Add(n - 2);
+                    Indices.Add(n);
                     n++;
                 }
             }

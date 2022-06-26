@@ -237,7 +237,7 @@ struct SRenderViewContext
     size_t ViewConstantBufferBindingBindingOffset;
     size_t ViewConstantBufferBindingBindingSize;
 };
-extern std::vector<SRenderViewContext> GRenderViewContext;
+extern TVector<SRenderViewContext> GRenderViewContext;
 
 
 extern AVirtualTextureFeedbackAnalyzer* GFeedbackAnalyzerVT;

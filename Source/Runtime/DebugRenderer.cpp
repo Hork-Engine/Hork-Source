@@ -147,7 +147,7 @@ bool ADebugRenderer::PrimitiveReserve(EDebugDrawCmd _CmdName, int _NumVertices, 
     if (Cmds.IsEmpty() || bSplit)
     {
         // Create first cmd or split
-        SDebugDrawCmd& cmd = Cmds.Append();
+        SDebugDrawCmd& cmd = Cmds.Add();
         cmd.Type           = _CmdName;
         cmd.FirstVertex    = FirstVertex;
         cmd.FirstIndex     = FirstIndex;
@@ -167,7 +167,7 @@ bool ADebugRenderer::PrimitiveReserve(EDebugDrawCmd _CmdName, int _NumVertices, 
     else if (Cmds.Last().Type != _CmdName)
     {
         // If last cmd has other type, create a new cmd
-        SDebugDrawCmd& cmd = Cmds.Append();
+        SDebugDrawCmd& cmd = Cmds.Add();
         cmd.Type           = _CmdName;
         cmd.FirstVertex    = FirstVertex;
         cmd.FirstIndex     = FirstIndex;
@@ -507,8 +507,8 @@ void ADebugRenderer::DrawTriangleSoupWireframe(TArrayView<Float3> _Points, TArra
 
 void ADebugRenderer::DrawTriangle(Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, bool _TwoSided)
 {
-    Float3 const Points[] = {_P0, _P1, _P2};
-    DrawConvexPoly(Points, _TwoSided);
+    Float3 points[] = {_P0, _P1, _P2};
+    DrawConvexPoly(points, _TwoSided);
 }
 
 void ADebugRenderer::DrawTriangles(Float3 const* _Triangles, int _NumTriangles, int _Stride, bool _TwoSided)
@@ -553,18 +553,18 @@ void ADebugRenderer::DrawTriangles(Float3 const* _Triangles, int _NumTriangles, 
 
 void ADebugRenderer::DrawQuad(Float3 const& _P0, Float3 const& _P1, Float3 const& _P2, Float3 const& _P3, bool _TwoSided)
 {
-    Float3 const Points[] = {_P0, _P1, _P2, _P3};
-    DrawConvexPoly(Points, _TwoSided);
+    Float3 points[] = {_P0, _P1, _P2, _P3};
+    DrawConvexPoly(points, _TwoSided);
 }
 
 void ADebugRenderer::DrawBox(Float3 const& _Position, Float3 const& _HalfExtents)
 {
-    Float3 const points[4] = {
+    Float3 points[4] = {
         Float3(-_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
         Float3(_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
         Float3(_HalfExtents.X, _HalfExtents.Y, _HalfExtents.Z) + _Position,
         Float3(-_HalfExtents.X, _HalfExtents.Y, _HalfExtents.Z) + _Position};
-    Float3 const points2[4] = {
+    Float3 points2[4] = {
         Float3(-_HalfExtents.X, -_HalfExtents.Y, -_HalfExtents.Z) + _Position,
         Float3(_HalfExtents.X, -_HalfExtents.Y, -_HalfExtents.Z) + _Position,
         Float3(_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position,
@@ -585,7 +585,7 @@ void ADebugRenderer::DrawBox(Float3 const& _Position, Float3 const& _HalfExtents
 
 void ADebugRenderer::DrawBoxFilled(Float3 const& _Position, Float3 const& _HalfExtents, bool _TwoSided)
 {
-    Float3 const points[8] = {
+    Float3 points[8] = {
         Float3(-_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
         Float3(_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
         Float3(_HalfExtents.X, _HalfExtents.Y, _HalfExtents.Z) + _Position,
@@ -595,19 +595,19 @@ void ADebugRenderer::DrawBoxFilled(Float3 const& _Position, Float3 const& _HalfE
         Float3(_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position,
         Float3(-_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position};
 
-    unsigned short const indices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
+    unsigned short indices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
 
     DrawTriangleSoup(points, indices, _TwoSided);
 }
 
 void ADebugRenderer::DrawOrientedBox(Float3 const& _Position, Float3x3 const& _Orientation, Float3 const& _HalfExtents)
 {
-    Float3 const points[4] = {
+    Float3 points[4] = {
         _Orientation * Float3(-_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
         _Orientation * Float3(_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
         _Orientation * Float3(_HalfExtents.X, _HalfExtents.Y, _HalfExtents.Z) + _Position,
         _Orientation * Float3(-_HalfExtents.X, _HalfExtents.Y, _HalfExtents.Z) + _Position};
-    Float3 const points2[4] = {
+    Float3 points2[4] = {
         _Orientation * Float3(-_HalfExtents.X, -_HalfExtents.Y, -_HalfExtents.Z) + _Position,
         _Orientation * Float3(_HalfExtents.X, -_HalfExtents.Y, -_HalfExtents.Z) + _Position,
         _Orientation * Float3(_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position,
@@ -628,7 +628,7 @@ void ADebugRenderer::DrawOrientedBox(Float3 const& _Position, Float3x3 const& _O
 
 void ADebugRenderer::DrawOrientedBoxFilled(Float3 const& _Position, Float3x3 const& _Orientation, Float3 const& _HalfExtents, bool _TwoSided)
 {
-    Float3 const points[8] = {
+    Float3 points[8] = {
         _Orientation * Float3(-_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
         _Orientation * Float3(_HalfExtents.X, _HalfExtents.Y, -_HalfExtents.Z) + _Position,
         _Orientation * Float3(_HalfExtents.X, _HalfExtents.Y, _HalfExtents.Z) + _Position,
@@ -638,7 +638,7 @@ void ADebugRenderer::DrawOrientedBoxFilled(Float3 const& _Position, Float3x3 con
         _Orientation * Float3(_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position,
         _Orientation * Float3(-_HalfExtents.X, -_HalfExtents.Y, _HalfExtents.Z) + _Position};
 
-    unsigned short const indices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
+    unsigned short indices[36] = {0, 3, 2, 2, 1, 0, 7, 4, 5, 5, 6, 7, 3, 7, 6, 6, 2, 3, 2, 6, 5, 5, 1, 2, 1, 5, 4, 4, 0, 1, 0, 4, 7, 7, 3, 0};
 
     DrawTriangleSoup(points, indices, _TwoSided);
 }
@@ -942,7 +942,7 @@ void ADebugRenderer::DrawPlane(Float3 const& _Normal, float _D, float _Length)
 
     center = _Normal * -_D;
 
-    Float3 const points[4] = {
+    Float3 points[4] = {
         center + (xvec + yvec) * _Length,
         center - (xvec - yvec) * _Length,
         center - (xvec + yvec) * _Length,
@@ -966,7 +966,7 @@ void ADebugRenderer::DrawPlaneFilled(Float3 const& _Normal, float _D, float _Len
 
     center = _Normal * _D;
 
-    Float3 const points[4] = {
+    Float3 points[4] = {
         center + (xvec + yvec) * _Length,
         center - (xvec - yvec) * _Length,
         center - (xvec + yvec) * _Length,

@@ -43,15 +43,15 @@ public:
     ACommandContext();
     ~ACommandContext();
 
-    void AddCommand(const char* _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment = "");
+    void AddCommand(AGlobalStringView _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment = ""s);
 
-    void RemoveCommand(const char* _Name);
+    void RemoveCommand(AStringView _Name);
 
     void RemoveCommands();
 
-    int CompleteString(const char* _Str, int _StrLen, AString& _Result);
+    int CompleteString(AStringView Str, AString& _Result);
 
-    void Print(const char* _Str, int _StrLen);
+    void Print(AStringView Str);
 
 protected:
     //
@@ -64,28 +64,27 @@ private:
     class ARuntimeCommand
     {
     public:
-        ARuntimeCommand(const char* _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment) :
-            Name(_Name), Comment(_Comment), Callback(_Callback)
-        {
-        }
+        ARuntimeCommand(AGlobalStringView _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment) :
+            Name(_Name.CStr()), Comment(_Comment.CStr()), Callback(_Callback)
+        {}
 
-        void Override(TCallback<void(ACommandProcessor const&)> const& _Callback, const char* _Comment)
+        void Override(TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment)
         {
-            Comment  = _Comment;
+            Comment  = _Comment.CStr();
             Callback = _Callback;
         }
 
-        AString const& GetName() const { return Name; }
+        const char* GetName() const { return Name; }
 
-        AString const& GetComment() const { return Comment; }
+        const char* GetComment() const { return Comment; }
 
         void Execute(ACommandProcessor const& _Proc) { Callback(_Proc); }
 
     private:
-        AString                                          Name;
-        AString                                          Comment;
+        const char*                               Name;
+        const char*                               Comment;
         TCallback<void(ACommandProcessor const&)> Callback;
     };
 
-    TStdVector<ARuntimeCommand> Commands;
+    TVector<ARuntimeCommand> Commands;
 };

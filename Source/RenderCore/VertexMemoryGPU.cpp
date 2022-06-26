@@ -95,7 +95,7 @@ void AVertexMemoryGPU::Deallocate(SVertexHandle* _Handle)
 
     UsedMemory -= chunkSize;
 
-    Handles.RemoveSwap(Handles.IndexOf(_Handle));
+    Handles.RemoveUnsorted(Handles.IndexOf(_Handle));
 
     HandlePool.Deallocate(_Handle);
 }
@@ -174,7 +174,7 @@ void AVertexMemoryGPU::Defragment(bool bDeallocateEmptyBlocks, bool bForceUpload
             SBlock newBlock;
             newBlock.AllocOffset = chunkSize;
             newBlock.UsedMemory  = chunkSize;
-            Blocks.Append(newBlock);
+            Blocks.Add(newBlock);
         }
     }
 
@@ -236,7 +236,7 @@ SVertexHandle* AVertexMemoryGPU::Allocate(size_t _SizeInBytes, const void* _Data
 
         if (!bAllowHugeAllocs)
         {
-            CriticalError("AVertexMemoryGPU::Allocate: huge alloc %d bytes\n", _SizeInBytes);
+            CriticalError("AVertexMemoryGPU::Allocate: huge alloc {} bytes\n", _SizeInBytes);
         }
 
         return AllocateHuge(_SizeInBytes, _Data, _GetMemoryCB, _UserPointer);
@@ -265,13 +265,13 @@ SVertexHandle* AVertexMemoryGPU::Allocate(size_t _SizeInBytes, const void* _Data
 
         if (MaxBlocks && Blocks.Size() >= MaxBlocks)
         {
-            CriticalError("AVertexMemoryGPU::Allocate: failed on allocation of %d bytes\n", _SizeInBytes);
+            CriticalError("AVertexMemoryGPU::Allocate: failed on allocation of {} bytes\n", _SizeInBytes);
         }
 
         SBlock newBlock;
         newBlock.AllocOffset = 0;
         newBlock.UsedMemory  = 0;
-        Blocks.Append(newBlock);
+        Blocks.Add(newBlock);
 
         i = Blocks.Size() - 1;
 
@@ -287,7 +287,7 @@ SVertexHandle* AVertexMemoryGPU::Allocate(size_t _SizeInBytes, const void* _Data
     handle->GetMemoryCB = _GetMemoryCB;
     handle->UserPointer = _UserPointer;
 
-    Handles.Append(handle);
+    Handles.Add(handle);
 
     size_t chunkSize = Align(_SizeInBytes, VERTEX_MEMORY_GPU_CHUNK_OFFSET_ALIGNMENT);
 
@@ -331,7 +331,7 @@ SVertexHandle* AVertexMemoryGPU::AllocateHuge(size_t _SizeInBytes, const void* _
 
     UsedMemoryHuge += _SizeInBytes;
 
-    HugeHandles.Append(handle);
+    HugeHandles.Add(handle);
 
     return handle;
 }
@@ -343,7 +343,7 @@ void AVertexMemoryGPU::DeallocateHuge(SVertexHandle* _Handle)
     RenderCore::IBuffer* buffer = (RenderCore::IBuffer*)_Handle->Address;
     buffer->RemoveRef();
 
-    HugeHandles.RemoveSwap(HugeHandles.IndexOf(_Handle));
+    HugeHandles.RemoveUnsorted(HugeHandles.IndexOf(_Handle));
 
     HandlePool.Deallocate(_Handle);
 }
@@ -387,7 +387,7 @@ void AVertexMemoryGPU::AddGPUBuffer()
 
     buffer->SetDebugName("Vertex memory block buffer");
 
-    BufferHandles.Append(buffer);
+    BufferHandles.Add(buffer);
 
     LOG("Allocated a new block (total blocks {})\n", BufferHandles.Size());
 }
@@ -430,7 +430,7 @@ AStreamedMemoryGPU::AStreamedMemoryGPU(RenderCore::IDevice* pDevice) :
 
     if (!pMappedMemory)
     {
-        CriticalError("AStreamedMemoryGPU::Initialize: cannot initialize persistent mapped buffer size %d\n", bufferCI.SizeInBytes);
+        CriticalError("AStreamedMemoryGPU::Initialize: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes);
     }
 
     Platform::ZeroMem(ChainBuffer, sizeof(ChainBuffer));
@@ -547,7 +547,7 @@ size_t AStreamedMemoryGPU::Allocate(size_t _SizeInBytes, int _Alignment, const v
 
     if (alignedOffset + _SizeInBytes > STREAMED_MEMORY_GPU_BLOCK_SIZE)
     {
-        CriticalError("AStreamedMemoryGPU::Allocate: failed on allocation of %d bytes\nIncrease STREAMED_MEMORY_GPU_BLOCK_SIZE\n", _SizeInBytes);
+        CriticalError("AStreamedMemoryGPU::Allocate: failed on allocation of {} bytes\nIncrease STREAMED_MEMORY_GPU_BLOCK_SIZE\n", _SizeInBytes);
     }
 
     LastAllocatedBlockSize = _SizeInBytes;

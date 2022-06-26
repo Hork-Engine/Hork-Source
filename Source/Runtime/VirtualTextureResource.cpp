@@ -40,7 +40,7 @@ AVirtualTextureResource::~AVirtualTextureResource()
 {
 }
 
-void AVirtualTextureResource::LoadInternalResource(const char* _Path)
+void AVirtualTextureResource::LoadInternalResource(AStringView _Path)
 {
 }
 

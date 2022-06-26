@@ -39,7 +39,7 @@ BvFrustum::BvFrustum()
 BvFrustum::~BvFrustum()
 {
 #ifdef HK_FRUSTUM_USE_SSE
-    GZoneMemory.Free(PlanesSSE);
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(PlanesSSE);
 #endif
 }
 
@@ -92,7 +92,7 @@ void BvFrustum::FromMatrix(Float4x4 const& matrix, bool bReversedDepth)
 #ifdef HK_FRUSTUM_USE_SSE
     if (!PlanesSSE)
     {
-        PlanesSSE = (sse_t*)GZoneMemory.Alloc(sizeof(sse_t));
+        PlanesSSE = (sse_t*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(sse_t), 16);
     }
 
     PlanesSSE->x[0] = _mm_set1_ps(planes_[0].Normal.X);

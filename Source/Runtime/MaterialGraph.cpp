@@ -65,7 +65,7 @@ public:
     bool                 bHasDisplacement;
     bool                 bHasAlphaMask;
     bool                 bHasShadowMask;
-    TStdVector<SVarying> InputVaryings;
+    TVector<SVarying> InputVaryings;
     int                  Serial;
 
     AMaterialBuildContext(MGMaterialGraph const* _Graph, EMaterialStage _Stage)
@@ -457,7 +457,7 @@ static const char* MakeDefaultNormal()
 
 AString AMaterialBuildContext::GenerateVariableName() const
 {
-    return AString("v") + Math::ToString(VariableName++);
+    return AString("v") + Core::ToString(VariableName++);
 }
 
 void AMaterialBuildContext::GenerateSourceCode(MGOutput* _Slot, AStringView _Expression, bool _AddBrackets)
@@ -546,7 +546,7 @@ TRef< ADocObject > MGInput::Serialize() {
 
     //if ( GetOwner() ) {
     //    object->AddString( "Slot", Slot->GetObjectName() );
-    //    object->AddString( "Node", Math::ToString( GetOwner()->GetId() ) );
+    //    object->AddString( "Node", Core::ToString( GetOwner()->GetId() ) );
     //}
 
     return object;
@@ -588,7 +588,7 @@ MGInput* MGNode::AddInput(const char* _Name)
     MGInput* In = CreateInstanceOf<MGInput>();
     In->AddRef();
     In->SetObjectName(_Name);
-    Inputs.Append(In);
+    Inputs.Add(In);
     return In;
 }
 
@@ -599,7 +599,7 @@ MGOutput* MGNode::AddOutput(const char* _Name, EMGNodeType _Type)
     Out->SetObjectName(_Name);
     Out->Type  = _Type;
     Out->Owner = this;
-    Outputs.Append(Out);
+    Outputs.Add(Out);
     return Out;
 }
 
@@ -683,7 +683,7 @@ TRef< ADocObject > MGNode::Serialize() {
     TRef< ADocObject > object = Super::Serialize();
 #    endif
 
-    object->AddString( "ID", Math::ToString( ID ) );
+    object->AddString( "ID", Core::ToString( ID ) );
 
     if ( !Inputs.IsEmpty() ) {
         ADocMember * array = object->AddArray( "Inputs" );
@@ -1589,7 +1589,7 @@ MGBooleanNode::MGBooleanNode() :
 
 void MGBooleanNode::Compute(AMaterialBuildContext& _Context)
 {
-    OutValue->Expression = Math::ToString(bValue);
+    OutValue->Expression = Core::ToString(bValue);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1606,7 +1606,7 @@ MGBoolean2Node::MGBoolean2Node() :
 
 void MGBoolean2Node::Compute(AMaterialBuildContext& _Context)
 {
-    _Context.GenerateSourceCode(OutValue, "bvec2( " + Math::ToString(bValue.X) + ", " + Math::ToString(bValue.Y) + " )", false);
+    _Context.GenerateSourceCode(OutValue, "bvec2( " + Core::ToString(bValue.X) + ", " + Core::ToString(bValue.Y) + " )", false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1623,7 +1623,7 @@ MGBoolean3Node::MGBoolean3Node() :
 
 void MGBoolean3Node::Compute(AMaterialBuildContext& _Context)
 {
-    _Context.GenerateSourceCode(OutValue, "bvec3( " + Math::ToString(bValue.X) + ", " + Math::ToString(bValue.Y) + ", " + Math::ToString(bValue.Z) + " )", false);
+    _Context.GenerateSourceCode(OutValue, "bvec3( " + Core::ToString(bValue.X) + ", " + Core::ToString(bValue.Y) + ", " + Core::ToString(bValue.Z) + " )", false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1640,7 +1640,7 @@ MGBoolean4Node::MGBoolean4Node() :
 
 void MGBoolean4Node::Compute(AMaterialBuildContext& _Context)
 {
-    _Context.GenerateSourceCode(OutValue, "bvec4( " + Math::ToString(bValue.X) + ", " + Math::ToString(bValue.Y) + ", " + Math::ToString(bValue.Z) + ", " + Math::ToString(bValue.W) + " )", false);
+    _Context.GenerateSourceCode(OutValue, "bvec4( " + Core::ToString(bValue.X) + ", " + Core::ToString(bValue.Y) + ", " + Core::ToString(bValue.Z) + ", " + Core::ToString(bValue.W) + " )", false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1657,7 +1657,7 @@ MGFloatNode::MGFloatNode() :
 
 void MGFloatNode::Compute(AMaterialBuildContext& _Context)
 {
-    OutValue->Expression = Math::ToString(Value);
+    OutValue->Expression = Core::ToString(Value);
     if (OutValue->Expression.Contains('.') == -1)
     {
         OutValue->Expression += ".0";
@@ -1678,7 +1678,7 @@ MGFloat2Node::MGFloat2Node() :
 
 void MGFloat2Node::Compute(AMaterialBuildContext& _Context)
 {
-    _Context.GenerateSourceCode(OutValue, "vec2( " + Math::ToString(Value.X) + ", " + Math::ToString(Value.Y) + " )", false);
+    _Context.GenerateSourceCode(OutValue, "vec2( " + Core::ToString(Value.X) + ", " + Core::ToString(Value.Y) + " )", false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1695,7 +1695,7 @@ MGFloat3Node::MGFloat3Node() :
 
 void MGFloat3Node::Compute(AMaterialBuildContext& _Context)
 {
-    _Context.GenerateSourceCode(OutValue, "vec3( " + Math::ToString(Value.X) + ", " + Math::ToString(Value.Y) + ", " + Math::ToString(Value.Z) + " )", false);
+    _Context.GenerateSourceCode(OutValue, "vec3( " + Core::ToString(Value.X) + ", " + Core::ToString(Value.Y) + ", " + Core::ToString(Value.Z) + " )", false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1712,7 +1712,7 @@ MGFloat4Node::MGFloat4Node() :
 
 void MGFloat4Node::Compute(AMaterialBuildContext& _Context)
 {
-    _Context.GenerateSourceCode(OutValue, "vec4( " + Math::ToString(Value.X) + ", " + Math::ToString(Value.Y) + ", " + Math::ToString(Value.Z) + ", " + Math::ToString(Value.W) + " )", false);
+    _Context.GenerateSourceCode(OutValue, "vec4( " + Core::ToString(Value.X) + ", " + Core::ToString(Value.Y) + ", " + Core::ToString(Value.Z) + ", " + Core::ToString(Value.W) + " )", false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1741,7 +1741,7 @@ void MGTextureSlot::Compute(AMaterialBuildContext& _Context)
 {
     if (GetSlotIndex() >= 0)
     {
-        Value->Expression = "tslot_" + Math::ToString(GetSlotIndex());
+        Value->Expression = "tslot_" + Core::ToString(GetSlotIndex());
 
         _Context.MaxTextureSlot = Math::Max(_Context.MaxTextureSlot, GetSlotIndex());
     }
@@ -1787,7 +1787,7 @@ void MGUniformAddress::Compute(AMaterialBuildContext& _Context)
         int location = addr / 4;
 
         Value->Type       = Type;
-        Value->Expression = "uaddr_" + Math::ToString(location);
+        Value->Expression = "uaddr_" + Core::ToString(location);
         switch (Type)
         {
             case AT_Float1:
@@ -1936,7 +1936,7 @@ void MGSampler::Compute(AMaterialBuildContext& _Context)
                     const char* sampleFunc = ChooseSampleFunction(ColorSpace);
 
                     RGBA->Expression = _Context.GenerateVariableName();
-                    _Context.SourceCode += "const vec4 " + RGBA->Expression + " = " + sampleFunc + "( tslot_" + Math::ToString(slotIndex) + ", " + MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, sampleType) + " )" + swizzleStr + ";\n";
+                    _Context.SourceCode += "const vec4 " + RGBA->Expression + " = " + sampleFunc + "( tslot_" + Core::ToString(slotIndex) + ", " + MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, sampleType) + " )" + swizzleStr + ";\n";
                     bValid = true;
                 }
             }
@@ -2060,7 +2060,7 @@ void MGNormalSampler::Compute(AMaterialBuildContext& _Context)
                     const char* sampleFunc = ChooseSampleFunction(Compression);
 
                     XYZ->Expression = _Context.GenerateVariableName();
-                    _Context.SourceCode += "const vec3 " + XYZ->Expression + " = " + sampleFunc + "( tslot_" + Math::ToString(slotIndex) + ", " + MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, sampleType) + " );\n";
+                    _Context.SourceCode += "const vec3 " + XYZ->Expression + " = " + sampleFunc + "( tslot_" + Core::ToString(slotIndex) + ", " + MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, sampleType) + " );\n";
                     bValid = true;
                 }
             }
@@ -2124,7 +2124,7 @@ void MGParallaxMapSampler::Compute(AMaterialBuildContext& _Context)
                     if (texCoordCon && TexCoord->ConnectedNode()->Build(_Context))
                     {
 
-                        AString sampler  = "tslot_" + Math::ToString(slotIndex);
+                        AString sampler  = "tslot_" + Core::ToString(slotIndex);
                         AString texCoord = MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, AT_Float2);
 
                         AString   displacementScale;
@@ -2191,7 +2191,7 @@ void MGSamplerVT::Compute(AMaterialBuildContext& _Context)
     RGBA->Expression = _Context.GenerateVariableName();
 
     _Context.SourceCode +=
-        "const vec4 " + RGBA->Expression + " = " + sampleFunc + "( vt_PhysCache" + Math::ToString(TextureLayer) + ", InPhysicalUV )" + swizzleStr + ";\n";
+        "const vec4 " + RGBA->Expression + " = " + sampleFunc + "( vt_PhysCache" + Core::ToString(TextureLayer) + ", InPhysicalUV )" + swizzleStr + ";\n";
 
     R->Expression   = RGBA->Expression + ".r";
     G->Expression   = RGBA->Expression + ".g";
@@ -2222,7 +2222,7 @@ void MGNormalSamplerVT::Compute(AMaterialBuildContext& _Context)
     XYZ->Expression = _Context.GenerateVariableName();
 
     _Context.SourceCode +=
-        "const vec3 " + XYZ->Expression + " = " + sampleFunc + "( vt_PhysCache" + Math::ToString(TextureLayer) + ", InPhysicalUV );\n";
+        "const vec3 " + XYZ->Expression + " = " + sampleFunc + "( vt_PhysCache" + Core::ToString(TextureLayer) + ", InPhysicalUV );\n";
 
     X->Expression = XYZ->Expression + ".x";
     Y->Expression = XYZ->Expression + ".y";
@@ -2283,7 +2283,7 @@ void MGInPosition::Compute(AMaterialBuildContext& _Context)
 
     if (_Context.GetStage() != VERTEX_STAGE)
     {
-        _Context.InputVaryings.Append(SVarying("V_Position", "VertexPosition", Value->Type));
+        _Context.InputVaryings.Add(SVarying("V_Position", "VertexPosition", Value->Type));
 
         Value->Expression = "V_Position";
     }
@@ -2315,7 +2315,7 @@ void MGInNormal::Compute(AMaterialBuildContext& _Context)
 
     if (_Context.GetStage() != VERTEX_STAGE)
     {
-        _Context.InputVaryings.Append(SVarying("V_Normal", "VertexNormal", Value->Type));
+        _Context.InputVaryings.Add(SVarying("V_Normal", "VertexNormal", Value->Type));
 
         Value->Expression = "V_Normal";
     }
@@ -2342,7 +2342,7 @@ void MGInColor::Compute(AMaterialBuildContext& _Context)
 
         if (_Context.GetStage() != VERTEX_STAGE)
         {
-            _Context.InputVaryings.Append(SVarying("V_Color", "InColor", Value->Type));
+            _Context.InputVaryings.Add(SVarying("V_Color", "InColor", Value->Type));
 
             Value->Expression = "V_Color";
         }
@@ -2372,7 +2372,7 @@ void MGInTexCoord::Compute(AMaterialBuildContext& _Context)
 {
     if (_Context.GetStage() != VERTEX_STAGE)
     {
-        _Context.InputVaryings.Append(SVarying("V_TexCoord", "InTexCoord", Value->Type));
+        _Context.InputVaryings.Add(SVarying("V_TexCoord", "InTexCoord", Value->Type));
 
         Value->Expression = "V_TexCoord";
     }
@@ -2537,7 +2537,7 @@ static AString SamplersString(MGMaterialGraph const* InGraph, int MaxtextureSlot
     {
         if (slot->GetSlotIndex() <= MaxtextureSlot)
         {
-            bindingStr = Math::ToString(slot->GetSlotIndex());
+            bindingStr = Core::ToString(slot->GetSlotIndex());
             s += "layout( binding = " + bindingStr + " ) uniform " + GetShaderType(slot->SamplerDesc.TextureType) + " tslot_" + bindingStr + ";\n";
         }
     }
@@ -2695,50 +2695,52 @@ static const char* builtin_saturate =
 
 static void GenerateBuiltinSource()
 {
+    TSprintfBuffer<4096> format;
+
     AString builtin;
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
     {
-        builtin += Platform::Fmt(texture_srgb_alpha, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
+        builtin += format.Sprintf(texture_srgb_alpha, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
     }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
     {
-        builtin += Platform::Fmt(texture_ycocg, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
+        builtin += format.Sprintf(texture_ycocg, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
     }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
     {
-        builtin += Platform::Fmt(texture_grayscaled, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
+        builtin += format.Sprintf(texture_grayscaled, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
     }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
     {
-        builtin += Platform::Fmt(texture_nm_xyz, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
+        builtin += format.Sprintf(texture_nm_xyz, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
     }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
     {
-        builtin += Platform::Fmt(texture_nm_xy, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
+        builtin += format.Sprintf(texture_nm_xy, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
     }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
     {
-        builtin += Platform::Fmt(texture_nm_spheremap, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
+        builtin += format.Sprintf(texture_nm_spheremap, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
     }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
     {
-        builtin += Platform::Fmt(texture_nm_stereographic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
+        builtin += format.Sprintf(texture_nm_stereographic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
     }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
     {
-        builtin += Platform::Fmt(texture_nm_paraboloid, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
+        builtin += format.Sprintf(texture_nm_paraboloid, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
     }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
     {
-        builtin += Platform::Fmt(texture_nm_quartic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
+        builtin += format.Sprintf(texture_nm_quartic, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
     }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
     {
-        builtin += Platform::Fmt(texture_nm_float, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
+        builtin += format.Sprintf(texture_nm_float, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
     }
     for (int i = 0; i < TEXTURE_TYPE_MAX; i++)
     {
-        builtin += Platform::Fmt(texture_nm_dxt5, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
+        builtin += format.Sprintf(texture_nm_dxt5, TextureTypeToShaderSampler[i][0], TextureTypeToShaderSampler[i][1]);
     }
 
     builtin += builtin_spheremap_coord;
@@ -2746,7 +2748,7 @@ static void GenerateBuiltinSource()
 
     for (int i = AT_Float1; i <= AT_Float4; i++)
     {
-        builtin += Platform::Fmt(builtin_saturate, VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i]);
+        builtin += format.Sprintf(builtin_saturate, VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i]);
     }
 
     AFileStream f;
@@ -2769,7 +2771,7 @@ static void WriteDebugShaders(SPredefinedShaderSource const* Shaders)
     }
 }
 
-static AString GenerateOutputVaryingsCode(TStdVector<SVarying> const& Varyings, const char* Prefix, bool bArrays)
+static AString GenerateOutputVaryingsCode(TVector<SVarying> const& Varyings, const char* Prefix, bool bArrays)
 {
     AString  s;
     uint32_t location = 0;
@@ -2777,7 +2779,7 @@ static AString GenerateOutputVaryingsCode(TStdVector<SVarying> const& Varyings, 
     {
         if (v.RefCount > 0)
         {
-            s += "layout( location = " + Math::ToString(location) + " ) out " + VariableTypeStr[v.VaryingType] + " " + Prefix + v.VaryingName;
+            s += "layout( location = " + Core::ToString(location) + " ) out " + VariableTypeStr[v.VaryingType] + " " + Prefix + v.VaryingName;
             if (bArrays)
                 s += "[]";
             s += ";\n";
@@ -2787,7 +2789,7 @@ static AString GenerateOutputVaryingsCode(TStdVector<SVarying> const& Varyings, 
     return s;
 }
 
-static AString GenerateInputVaryingsCode(TStdVector<SVarying> const& Varyings, const char* Prefix, bool bArrays)
+static AString GenerateInputVaryingsCode(TVector<SVarying> const& Varyings, const char* Prefix, bool bArrays)
 {
     AString  s;
     uint32_t location = 0;
@@ -2795,7 +2797,7 @@ static AString GenerateInputVaryingsCode(TStdVector<SVarying> const& Varyings, c
     {
         if (v.RefCount > 0)
         {
-            s += "layout( location = " + Math::ToString(location) + " ) in " + VariableTypeStr[v.VaryingType] + " " + Prefix + v.VaryingName;
+            s += "layout( location = " + Core::ToString(location) + " ) in " + VariableTypeStr[v.VaryingType] + " " + Prefix + v.VaryingName;
             if (bArrays)
                 s += "[]";
             s += ";\n";
@@ -2806,7 +2808,7 @@ static AString GenerateInputVaryingsCode(TStdVector<SVarying> const& Varyings, c
 }
 
 #if 0
-static void MergeVaryings( TStdVector< SVarying > const & A, TStdVector< SVarying > const & B, TStdVector< SVarying > & Result )
+static void MergeVaryings( TVector< SVarying > const & A, TVector< SVarying > const & B, TVector< SVarying > & Result )
 {
     Result = A;
     for ( int i = 0 ; i < B.Size() ; i++ ) {
@@ -2818,12 +2820,12 @@ static void MergeVaryings( TStdVector< SVarying > const & A, TStdVector< SVaryin
             }
         }
         if ( !bMatch ) {
-            Result.Append( B[i] );
+            Result.Add( B[i] );
         }
     }
 }
 
-static bool FindVarying( TStdVector< SVarying > const & Varyings, SVarying const & Var )
+static bool FindVarying( TVector< SVarying > const & Varyings, SVarying const & Var )
 {
     for ( int i = 0 ; i < Varyings.Size() ; i++ ) {
         if ( Var.VaryingName == Varyings[i].VaryingName ) {
@@ -2834,7 +2836,7 @@ static bool FindVarying( TStdVector< SVarying > const & Varyings, SVarying const
 }
 #endif
 
-static void AddVaryings(TStdVector<SVarying>& InOutResult, TStdVector<SVarying> const& B)
+static void AddVaryings(TVector<SVarying>& InOutResult, TVector<SVarying> const& B)
 {
     if (InOutResult.IsEmpty())
     {
@@ -2860,12 +2862,12 @@ static void AddVaryings(TStdVector<SVarying>& InOutResult, TStdVector<SVarying> 
         }
         if (!bMatch)
         {
-            InOutResult.Append(B[i]);
+            InOutResult.Add(B[i]);
         }
     }
 }
 
-static void RemoveVaryings(TStdVector<SVarying>& InOutResult, TStdVector<SVarying> const& B)
+static void RemoveVaryings(TVector<SVarying>& InOutResult, TVector<SVarying> const& B)
 {
     for (int i = 0; i < B.Size(); i++)
     {
@@ -2882,7 +2884,7 @@ static void RemoveVaryings(TStdVector<SVarying>& InOutResult, TStdVector<SVaryin
 
 struct SMaterialStageTransition
 {
-    TStdVector<SVarying> Varyings;
+    TVector<SVarying> Varyings;
     int                  MaxTextureSlot;
     int                  MaxUniformAddress;
 
@@ -2914,7 +2916,7 @@ void MGMaterialGraph::CreateStageTransitions(SMaterialStageTransition&    Transi
 {
     HK_ASSERT(VertexStage != nullptr);
 
-    TStdVector<SVarying>& varyings = Transition.Varyings;
+    TVector<SVarying>& varyings = Transition.Varyings;
 
     varyings.Clear();
 
@@ -3009,11 +3011,11 @@ void MGMaterialGraph::CreateStageTransitions(SMaterialStageTransition&    Transi
             {
                 if (v.RefCount > 0)
                 {
-                    Transition.TCS_OutputVaryingsCode += "layout( location = " + Math::ToString(patchLocation) + " ) out patch " + VariableTypeStr[v.VaryingType] + " TCS_" + v.VaryingName + "[3];\n";
+                    Transition.TCS_OutputVaryingsCode += "layout( location = " + Core::ToString(patchLocation) + " ) out patch " + VariableTypeStr[v.VaryingType] + " TCS_" + v.VaryingName + "[3];\n";
                     patchLocation += 3;
                 }
             }
-            patchLocationStr = "#define PATCH_LOCATION " + Math::ToString(patchLocation);
+            patchLocationStr = "#define PATCH_LOCATION " + Core::ToString(patchLocation);
             Transition.TCS_OutputVaryingsCode += patchLocationStr;
 
             for (SVarying const& v : varyings)
@@ -3043,7 +3045,7 @@ void MGMaterialGraph::CreateStageTransitions(SMaterialStageTransition&    Transi
                 if (v.RefCount > 0)
                 {
                     //Transition.TES_InputVaryingsCode += AString( VariableTypeStr[v.VaryingType] ) + " " + v.VaryingName + "[3];\n";
-                    Transition.TES_InputVaryingsCode += "layout( location = " + Math::ToString(patchLocation) + " ) in patch " + VariableTypeStr[v.VaryingType] + " TCS_" + v.VaryingName + "[3];\n";
+                    Transition.TES_InputVaryingsCode += "layout( location = " + Core::ToString(patchLocation) + " ) in patch " + VariableTypeStr[v.VaryingType] + " TCS_" + v.VaryingName + "[3];\n";
                     patchLocation += 3;
                 }
             }
@@ -3201,7 +3203,7 @@ void MGMaterialGraph::RegisterTextureSlot(MGTextureSlot* _Slot)
     }
     _Slot->AddRef();
     _Slot->SlotIndex = TextureSlots.Size();
-    TextureSlots.Append(_Slot);
+    TextureSlots.Add(_Slot);
 }
 
 #if 0
@@ -3338,7 +3340,7 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
         predefines += "#define ALLOW_MOTION_BLUR\n";
     }
 
-    predefines += "#define MOTION_BLUR_SCALE " + Math::ToString(Math::Saturate(InGraph->MotionBlurScale)) + "\n";
+    predefines += "#define MOTION_BLUR_SCALE " + Core::ToString(Math::Saturate(InGraph->MotionBlurScale)) + "\n";
 
     if (InGraph->bUseVirtualTexture)
     {
@@ -3398,11 +3400,11 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
 
         int locationIndex = trans.Varyings.Size();
 
-        predefines += "#define DEPTH_PASS_VARYING_POSITION " + Math::ToString(locationIndex++) + "\n";
-        predefines += "#define DEPTH_PASS_VARYING_NORMAL " + Math::ToString(locationIndex++) + "\n";
+        predefines += "#define DEPTH_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
+        predefines += "#define DEPTH_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
 
-        predefines += "#define DEPTH_PASS_VARYING_VERTEX_POSITION_CURRENT " + Math::ToString(locationIndex++) + "\n";
-        predefines += "#define DEPTH_PASS_VARYING_VERTEX_POSITION_PREVIOUS " + Math::ToString(locationIndex++) + "\n";
+        predefines += "#define DEPTH_PASS_VARYING_VERTEX_POSITION_CURRENT " + Core::ToString(locationIndex++) + "\n";
+        predefines += "#define DEPTH_PASS_VARYING_VERTEX_POSITION_PREVIOUS " + Core::ToString(locationIndex++) + "\n";
 
         pDef->AddShader("$DEPTH_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
         pDef->AddShader("$DEPTH_PASS_VERTEX_SAMPLERS$", SamplersString(InGraph, vertexCtx.MaxTextureSlot));
@@ -3458,9 +3460,9 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
 
         int locationIndex = trans.Varyings.Size();
 
-        //predefines += "#define SHADOWMAP_PASS_VARYING_INSTANCE_ID " + Math::ToString( locationIndex++ ) + "\n";
-        predefines += "#define SHADOWMAP_PASS_VARYING_POSITION " + Math::ToString(locationIndex++) + "\n";
-        predefines += "#define SHADOWMAP_PASS_VARYING_NORMAL " + Math::ToString(locationIndex++) + "\n";
+        //predefines += "#define SHADOWMAP_PASS_VARYING_INSTANCE_ID " + Core::ToString( locationIndex++ ) + "\n";
+        predefines += "#define SHADOWMAP_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
+        predefines += "#define SHADOWMAP_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
 
         pDef->AddShader("$SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
         pDef->AddShader("$SHADOWMAP_PASS_VERTEX_SAMPLERS$", SamplersString(InGraph, vertexCtx.MaxTextureSlot));
@@ -3520,9 +3522,9 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
 
         int locationIndex = trans.Varyings.Size();
 
-        //predefines += "#define OMNI_SHADOWMAP_PASS_VARYING_INSTANCE_ID " + Math::ToString( locationIndex++ ) + "\n";
-        predefines += "#define OMNI_SHADOWMAP_PASS_VARYING_POSITION " + Math::ToString(locationIndex++) + "\n";
-        predefines += "#define OMNI_SHADOWMAP_PASS_VARYING_NORMAL " + Math::ToString(locationIndex++) + "\n";
+        //predefines += "#define OMNI_SHADOWMAP_PASS_VARYING_INSTANCE_ID " + Core::ToString( locationIndex++ ) + "\n";
+        predefines += "#define OMNI_SHADOWMAP_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
+        predefines += "#define OMNI_SHADOWMAP_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
 
         pDef->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
         pDef->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_SAMPLERS$", SamplersString(InGraph, vertexCtx.MaxTextureSlot));
@@ -3574,20 +3576,20 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
 
         int locationIndex = trans.Varyings.Size();
 
-        predefines += "#define COLOR_PASS_VARYING_BAKED_LIGHT " + Math::ToString(locationIndex++) + "\n";
-        predefines += "#define COLOR_PASS_VARYING_TANGENT " + Math::ToString(locationIndex++) + "\n";
-        predefines += "#define COLOR_PASS_VARYING_BINORMAL " + Math::ToString(locationIndex++) + "\n";
-        predefines += "#define COLOR_PASS_VARYING_NORMAL " + Math::ToString(locationIndex++) + "\n";
-        predefines += "#define COLOR_PASS_VARYING_POSITION " + Math::ToString(locationIndex++) + "\n";
+        predefines += "#define COLOR_PASS_VARYING_BAKED_LIGHT " + Core::ToString(locationIndex++) + "\n";
+        predefines += "#define COLOR_PASS_VARYING_TANGENT " + Core::ToString(locationIndex++) + "\n";
+        predefines += "#define COLOR_PASS_VARYING_BINORMAL " + Core::ToString(locationIndex++) + "\n";
+        predefines += "#define COLOR_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
+        predefines += "#define COLOR_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
 
         if (InGraph->bUseVirtualTexture)
         {
-            predefines += "#define COLOR_PASS_VARYING_VT_TEXCOORD " + Math::ToString(locationIndex++) + "\n";
+            predefines += "#define COLOR_PASS_VARYING_VT_TEXCOORD " + Core::ToString(locationIndex++) + "\n";
         }
 
         pDef->LightmapSlot = lightCtx.MaxTextureSlot + 1;
 
-        predefines += "#define COLOR_PASS_TEXTURE_LIGHTMAP " + Math::ToString(pDef->LightmapSlot) + "\n";
+        predefines += "#define COLOR_PASS_TEXTURE_LIGHTMAP " + Core::ToString(pDef->LightmapSlot) + "\n";
 
         if (lightCtx.ParallaxSampler != -1)
         {
@@ -3608,7 +3610,7 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
                     break;
             }
 
-            predefines += "#define PARALLAX_SAMPLER tslot_" + Math::ToString(lightCtx.ParallaxSampler) + "\n";
+            predefines += "#define PARALLAX_SAMPLER tslot_" + Core::ToString(lightCtx.ParallaxSampler) + "\n";
         }
         else
         {
@@ -3667,8 +3669,8 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
 
         int locationIndex = trans.Varyings.Size();
 
-        predefines += "#define OUTLINE_PASS_VARYING_POSITION " + Math::ToString(locationIndex++) + "\n";
-        predefines += "#define OUTLINE_PASS_VARYING_NORMAL " + Math::ToString(locationIndex++) + "\n";
+        predefines += "#define OUTLINE_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
+        predefines += "#define OUTLINE_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
 
         pDef->AddShader("$OUTLINE_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
         pDef->AddShader("$OUTLINE_PASS_VERTEX_SAMPLERS$", SamplersString(InGraph, vertexCtx.MaxTextureSlot));
@@ -3719,8 +3721,8 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
 
         int locationIndex = trans.Varyings.Size();
 
-        predefines += "#define WIREFRAME_PASS_VARYING_POSITION " + Math::ToString(locationIndex++) + "\n";
-        predefines += "#define WIREFRAME_PASS_VARYING_NORMAL " + Math::ToString(locationIndex++) + "\n";
+        predefines += "#define WIREFRAME_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
+        predefines += "#define WIREFRAME_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
 
         pDef->AddShader("$WIREFRAME_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
         pDef->AddShader("$WIREFRAME_PASS_VERTEX_SAMPLERS$", SamplersString(InGraph, vertexCtx.MaxTextureSlot));

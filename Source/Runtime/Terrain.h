@@ -86,7 +86,7 @@ public:
 
     bool GetTriangle(float X, float Z, STerrainTriangle& Triangle) const;
 
-    void GatherGeometry(BvAxisAlignedBox const& LocalBounds, TPodVectorHeap<Float3>& Vertices, TPodVectorHeap<unsigned int>& Indices) const;
+    void GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& Vertices, TVector<unsigned int>& Indices) const;
 
     class btHeightfieldTerrainShape* GetHeightfieldShape() const { return HeightfieldShape.GetObject(); }
 
@@ -98,7 +98,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(const char* Path) override;
+    void LoadInternalResource(AStringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Terrain/Default"; }
 

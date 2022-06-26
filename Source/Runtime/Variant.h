@@ -65,12 +65,9 @@ struct SResourceRef
 {
     uint32_t ResourceType;
     uint64_t ResourceId;
-
-    AString ToString() const
-    {
-        return "( " + Math::ToString(ResourceType) + " " + Math::ToString(ResourceId) + " )";
-    }
 };
+
+HK_FORMAT_DEF_(SResourceRef, "( {} {} )", v.ResourceType, v.ResourceId)
 
 struct SEnumDef
 {
@@ -95,7 +92,7 @@ HK_INLINE int64_t EnumFromString(SEnumDef const* EnumDef, AStringView String)
 {
     for (SEnumDef const* e = EnumDef ; e->HumanReadableName ; e++)
     {
-        if (e->HumanReadableName == String)
+        if (String == e->HumanReadableName)
             return e->Value;
     }
     return 0;
@@ -424,3 +421,5 @@ public:
 
     AString ToString() const;
 };
+
+HK_FORMAT_DEF_TO_STRING(AVariant)

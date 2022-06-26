@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Core/Image.h>
 #include <Core/Color.h>
-#include <Containers/PodVector.h>
+#include <Containers/Vector.h>
 #include <Geometry/Quat.h>
 #include <Geometry/BV/BvFrustum.h>
 
@@ -123,9 +123,9 @@ constexpr int MAX_ITEMS = MAX_LIGHTS + MAX_DECALS + MAX_PROBES;
 struct SMeshVertex
 {
     Float3   Position;    // 4 * 3 = 12 bytes
-    uint16_t TexCoord[2]; // 4 * 2 = 8 bytes      half: 4 bytes
-    uint16_t Normal[3];   // 4 * 3 = 12 bytes     half: 6 bytes   byte: 3 bytes
-    uint16_t Tangent[3];  // 4 * 3 = 12 bytes     half: 6 bytes   byte: 3 bytes
+    Half     TexCoord[2]; // 4 * 2 = 8 bytes      half: 4 bytes
+    Half     Normal[3];   // 4 * 3 = 12 bytes     half: 6 bytes   byte: 3 bytes
+    Half     Tangent[3];  // 4 * 3 = 12 bytes     half: 6 bytes   byte: 3 bytes
     int8_t   Handedness;  // 4 * 1 = 4 bytes      byte: 1 bytes
     uint8_t  Pad[3];
 
@@ -153,79 +153,59 @@ struct SMeshVertex
         SetTangent(tangent);
     }
 
-    void SetTexCoordNative(uint16_t S, uint16_t T)
+    void SetTexCoord(Half S, Half T)
     {
         TexCoord[0] = S;
         TexCoord[1] = T;
     }
 
-    void SetTexCoord(float S, float T)
-    {
-        TexCoord[0] = Math::FloatToHalf(S);
-        TexCoord[1] = Math::FloatToHalf(T);
-    }
-
     void SetTexCoord(Float2 const& _TexCoord)
     {
-        TexCoord[0] = Math::FloatToHalf(_TexCoord.X);
-        TexCoord[1] = Math::FloatToHalf(_TexCoord.Y);
+        TexCoord[0] = _TexCoord.X;
+        TexCoord[1] = _TexCoord.Y;
     }
 
     const Float2 GetTexCoord() const
     {
-        return Float2(Math::HalfToFloat(TexCoord[0]), Math::HalfToFloat(TexCoord[1]));
+        return Float2(TexCoord[0], TexCoord[1]);
     }
 
-    void SetNormalNative(uint16_t X, uint16_t Y, uint16_t Z)
+    void SetNormal(Half X, Half Y, Half Z)
     {
         Normal[0] = X;
         Normal[1] = Y;
         Normal[2] = Z;
     }
 
-    void SetNormal(float X, float Y, float Z)
-    {
-        Normal[0] = Math::FloatToHalf(X);
-        Normal[1] = Math::FloatToHalf(Y);
-        Normal[2] = Math::FloatToHalf(Z);
-    }
-
     void SetNormal(Float3 const& _Normal)
     {
-        Normal[0] = Math::FloatToHalf(_Normal.X);
-        Normal[1] = Math::FloatToHalf(_Normal.Y);
-        Normal[2] = Math::FloatToHalf(_Normal.Z);
+        Normal[0] = _Normal.X;
+        Normal[1] = _Normal.Y;
+        Normal[2] = _Normal.Z;
     }
 
     const Float3 GetNormal() const
     {
-        return Float3(Math::HalfToFloat(Normal[0]), Math::HalfToFloat(Normal[1]), Math::HalfToFloat(Normal[2]));
+        return Float3(Normal[0], Normal[1], Normal[2]);
     }
 
-    void SetTangentNative(uint16_t X, uint16_t Y, uint16_t Z)
+    void SetTangent(Half X, Half Y, Half Z)
     {
         Tangent[0] = X;
         Tangent[1] = Y;
         Tangent[2] = Z;
     }
 
-    void SetTangent(float X, float Y, float Z)
-    {
-        Tangent[0] = Math::FloatToHalf(X);
-        Tangent[1] = Math::FloatToHalf(Y);
-        Tangent[2] = Math::FloatToHalf(Z);
-    }
-
     void SetTangent(Float3 const& _Tangent)
     {
-        Tangent[0] = Math::FloatToHalf(_Tangent.X);
-        Tangent[1] = Math::FloatToHalf(_Tangent.Y);
-        Tangent[2] = Math::FloatToHalf(_Tangent.Z);
+        Tangent[0] = _Tangent.X;
+        Tangent[1] = _Tangent.Y;
+        Tangent[2] = _Tangent.Z;
     }
 
     const Float3 GetTangent() const
     {
-        return Float3(Math::HalfToFloat(Tangent[0]), Math::HalfToFloat(Tangent[1]), Math::HalfToFloat(Tangent[2]));
+        return Float3(Tangent[0], Tangent[1], Tangent[2]);
     }
 
     static SMeshVertex Lerp(SMeshVertex const& _Vertex1, SMeshVertex const& _Vertex2, float _Value = 0.5f);
@@ -1011,7 +991,7 @@ struct SRenderInstance
     void GenerateSortKey(uint8_t Priority, uint64_t Mesh)
     {
         // NOTE: 8 bits are still unused. We can use it in future.
-        SortKey = ((uint64_t)(Priority) << 56u) | ((uint64_t)(Core::MurMur3Hash64((uint64_t)Material) & 0xffffu) << 40u) | ((uint64_t)(Core::MurMur3Hash64((uint64_t)MaterialInstance) & 0xffffu) << 24u) | ((uint64_t)(Core::MurMur3Hash64(Mesh) & 0xffffu) << 8u);
+        SortKey = ((uint64_t)(Priority) << 56u) | ((uint64_t)(Core::Murmur3Hash64((uint64_t)Material) & 0xffffu) << 40u) | ((uint64_t)(Core::Murmur3Hash64((uint64_t)MaterialInstance) & 0xffffu) << 24u) | ((uint64_t)(Core::Murmur3Hash64(Mesh) & 0xffffu) << 8u);
     }
 };
 
@@ -1043,7 +1023,7 @@ struct SShadowRenderInstance
     void GenerateSortKey(uint8_t Priority, uint64_t Mesh)
     {
         // NOTE: 8 bits are still unused. We can use it in future.
-        SortKey = ((uint64_t)(Priority) << 56u) | ((uint64_t)(Core::MurMur3Hash64((uint64_t)Material) & 0xffffu) << 40u) | ((uint64_t)(Core::MurMur3Hash64((uint64_t)MaterialInstance) & 0xffffu) << 24u) | ((uint64_t)(Core::MurMur3Hash64(Mesh) & 0xffffu) << 8u);
+        SortKey = ((uint64_t)(Priority) << 56u) | ((uint64_t)(Core::Murmur3Hash64((uint64_t)Material) & 0xffffu) << 40u) | ((uint64_t)(Core::Murmur3Hash64((uint64_t)MaterialInstance) & 0xffffu) << 24u) | ((uint64_t)(Core::Murmur3Hash64(Mesh) & 0xffffu) << 8u);
     }
 };
 
@@ -1415,15 +1395,15 @@ struct SRenderFrame
     int NumViews;
 
     /** Opaque instances */
-    TPodVector<SRenderInstance*, 1024> Instances;
+    TPodVector<SRenderInstance*> Instances;
     /** Translucent instances */
-    TPodVector<SRenderInstance*, 1024> TranslucentInstances;
+    TPodVector<SRenderInstance*> TranslucentInstances;
     /** Outline instances */
     TPodVector<SRenderInstance*> OutlineInstances;
     /** Shadowmap instances */
-    TPodVector<SShadowRenderInstance*, 1024> ShadowInstances;
+    TPodVector<SShadowRenderInstance*> ShadowInstances;
     /** Light portal instances */
-    TPodVector<SLightPortalRenderInstance*, 1024> LightPortals;
+    TPodVector<SLightPortalRenderInstance*> LightPortals;
     /** Directional light instances */
     TPodVector<SDirectionalLightInstance*> DirectionalLights;
     /** Shadow maps */

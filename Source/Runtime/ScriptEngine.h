@@ -31,8 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Core/String.h>
-#include <Containers/PodVector.h>
-#include <Containers/StdVector.h>
+#include <Containers/Vector.h>
 #include <Containers/Hash.h>
 
 class AActor;
@@ -67,7 +66,7 @@ public:
 
     static AActorScript* GetScript(asIScriptObject* pObject);
 
-    static void SetProperties(asIScriptObject* pObject, THashContainer<AString, AString> const& Properties);
+    static void SetProperties(asIScriptObject* pObject, TStringHashMap<AString> const& Properties);
     static bool SetProperty(asIScriptObject* pObject, AStringView PropertyName, AStringView PropertyValue);    
     static void CloneProperties(asIScriptObject* Template, asIScriptObject* Destination);
 
@@ -115,6 +114,6 @@ protected:
 
     asIScriptEngine* pEngine;
 
-    AScriptContextPool                        ContextPool;
-    TStdVector<std::unique_ptr<AActorScript>> Scripts;
+    AScriptContextPool                     ContextPool;
+    TVector<std::unique_ptr<AActorScript>> Scripts;
 };

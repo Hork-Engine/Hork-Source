@@ -37,9 +37,9 @@ SOFTWARE.
 extern AConsoleVar r_FXAA;
 extern AConsoleVar r_SMAA;
 
-AConsoleVar r_ShowNormals(_CTS("r_ShowNormals"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar r_ShowFeedbackVT(_CTS("r_ShowFeedbackVT"), _CTS("0"));
-AConsoleVar r_ShowCacheVT(_CTS("r_ShowCacheVT"), _CTS("-1"));
+AConsoleVar r_ShowNormals("r_ShowNormals"s, "0"s, CVAR_CHEAT);
+AConsoleVar r_ShowFeedbackVT("r_ShowFeedbackVT"s, "0"s);
+AConsoleVar r_ShowCacheVT("r_ShowCacheVT"s, "-1"s);
 
 using namespace RenderCore;
 

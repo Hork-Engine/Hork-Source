@@ -36,9 +36,9 @@ SOFTWARE.
 #include <Geometry/BV/BvOrientedBox.h>
 #include <Containers/ArrayView.h>
 
-using AArrayOfDebugVertices = TPodVectorHeap<SDebugVertex, 1024, 1024>;
-using AArrayOfDebugIndices  = TPodVectorHeap<unsigned short, 1024, 1024>;
-using AArrayOfDebugDrawCmds = TPodVectorHeap<SDebugDrawCmd>;
+using AArrayOfDebugVertices = TVector<SDebugVertex>;
+using AArrayOfDebugIndices  = TVector<unsigned short>;
+using AArrayOfDebugDrawCmds = TVector<SDebugDrawCmd>;
 
 class ADebugRenderer
 {

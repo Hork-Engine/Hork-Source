@@ -30,4 +30,4 @@ SOFTWARE.
 
 #include "ScopedTimer.h"
 
-AConsoleVar rt_ScopedTimeCheck(_CTS("rt_ScopedTimeCheck"), _CTS("0"));
+AConsoleVar rt_ScopedTimeCheck("rt_ScopedTimeCheck"s, "0"s);

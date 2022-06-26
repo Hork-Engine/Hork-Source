@@ -59,7 +59,7 @@ struct SFramebufferDescGL
 class AFramebufferGL
 {
 public:
-    AFramebufferGL(SFramebufferDescGL const& Desc, int Hash);
+    AFramebufferGL(SFramebufferDescGL const& Desc);
     ~AFramebufferGL();
 
     unsigned int GetHandleNativeGL() const { return FramebufferId; }
@@ -78,44 +78,44 @@ public:
 
     ITextureView const* GetDepthStencilAttachment() const { return pDSV; }
 
-    bool IsAttachmentsOutdated() const;
+    //bool IsAttachmentsOutdated() const;
 
-    int GetHash() const { return Hash; }
+    //int GetHash() const { return Hash; }
 
-    bool CompareWith(SFramebufferDescGL const& InDesc) const
-    {
-        if (InDesc.Width != Width ||
-            InDesc.Height != Height ||
-            InDesc.NumColorAttachments != NumColorAttachments ||
-            !!InDesc.pDepthStencilAttachment != bHasDepthStencilAttachment)
-        {
-            return false;
-        }
+    //bool CompareWith(SFramebufferDescGL const& InDesc) const
+    //{
+    //    if (InDesc.Width != Width ||
+    //        InDesc.Height != Height ||
+    //        InDesc.NumColorAttachments != NumColorAttachments ||
+    //        !!InDesc.pDepthStencilAttachment != bHasDepthStencilAttachment)
+    //    {
+    //        return false;
+    //    }
 
-        if (bHasDepthStencilAttachment)
-        {
-            if (pDSV.IsExpired())
-                return false;
+    //    if (bHasDepthStencilAttachment)
+    //    {
+    //        if (pDSV.IsExpired())
+    //            return false;
 
-            if (InDesc.pDepthStencilAttachment->GetUID() != pDSV->GetUID())
-                return false;
-        }
+    //        if (InDesc.pDepthStencilAttachment->GetUID() != pDSV->GetUID())
+    //            return false;
+    //    }
 
-        for (int a = 0; a < NumColorAttachments; a++)
-        {
-            if (RTVs[a].IsExpired())
-                return false;
+    //    for (int a = 0; a < NumColorAttachments; a++)
+    //    {
+    //        if (RTVs[a].IsExpired())
+    //            return false;
 
-            if (InDesc.pColorAttachments[a]->GetUID() != RTVs[a]->GetUID())
-                return false;
-        }
-        return true;
-    }
+    //        if (InDesc.pColorAttachments[a]->GetUID() != RTVs[a]->GetUID())
+    //            return false;
+    //    }
+    //    return true;
+    //}
 
 private:
     unsigned int FramebufferId = 0;
 
-    int Hash;
+    //int Hash;
 
     uint16_t Width;
     uint16_t Height;

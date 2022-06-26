@@ -54,7 +54,7 @@ public:
         if (!block)
         {
             size_t blockSize      = std::max<size_t>(_SizeInBytes, MIN_BLOCK_SIZE);
-            block                 = (SBlock*)GHeapMemory.Alloc(blockSize + sizeof(SBlock), 16);
+            block                 = (SBlock*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(blockSize + sizeof(SBlock), 16);
             block->TotalAllocated = 0;
             block->Size           = blockSize;
             block->Next           = Blocks;
@@ -78,7 +78,7 @@ public:
         for (SBlock* block = Blocks; block;)
         {
             SBlock* next = block->Next;
-            GHeapMemory.Free(block);
+            Platform::GetHeapAllocator<HEAP_MISC>().Free(block);
             block = next;
         }
         Blocks           = nullptr;

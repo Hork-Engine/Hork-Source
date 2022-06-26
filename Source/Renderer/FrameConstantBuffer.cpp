@@ -51,7 +51,7 @@ AFrameConstantBuffer::AFrameConstantBuffer( size_t InBufferSize )
                                  false ); // unsynchronized
 
     if ( !pMappedMemory ) {
-        CriticalError( "AFrameConstantBuffer::ctor: cannot initialize persistent mapped buffer size %d\n", bufferCI.SizeInBytes );
+        CriticalError( "AFrameConstantBuffer::ctor: cannot initialize persistent mapped buffer size {}\n", bufferCI.SizeInBytes );
     }
 
     for ( int i = 0 ; i < SWAP_CHAIN_SIZE ; i++ ) {
@@ -88,7 +88,7 @@ size_t AFrameConstantBuffer::Allocate( size_t InSize )
     size_t alignedOffset = Align( pChainBuffer->UsedMemory, UniformBufferOffsetAlignment );
 
     if ( alignedOffset + InSize > BufferSize ) {
-        CriticalError( "AFrameConstantBuffer::Allocate: failed on allocation of %d bytes\nIncrease buffer size\n", InSize );
+        CriticalError( "AFrameConstantBuffer::Allocate: failed on allocation of {} bytes\nIncrease buffer size\n", InSize );
     }
 
     pChainBuffer->UsedMemory = alignedOffset + InSize;

@@ -275,13 +275,4 @@ int FindExtWithoutDot(const char* _Path)
     return len;
 }
 
-bool IsPathSeparator(char _Char)
-{
-#ifdef HK_OS_WIN32
-    return _Char == '/' || _Char == '\\';
-#else
-    return _Char == '/';
-#endif
-}
-
 } // namespace Platform

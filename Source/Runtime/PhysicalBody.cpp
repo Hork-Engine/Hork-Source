@@ -42,16 +42,16 @@ SOFTWARE.
 #define MIN_MASS             0.001f
 #define MAX_MASS             1000.0f
 
-AConsoleVar com_DrawCollisionModel(_CTS("com_DrawCollisionModel"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawCollisionShapes(_CTS("com_DrawCollisionShapes"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawTriggers(_CTS("com_DrawTriggers"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawBoneCollisionShapes(_CTS("com_DrawBoneCollisionShapes"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawStaticCollisionBounds(_CTS("com_DrawStaticCollisionBounds"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawSimulatedCollisionBounds(_CTS("com_DrawSimulatedCollisionBounds"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawKinematicCollisionBounds(_CTS("com_DrawKinematicCollisionBounds"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawBoneCollisionBounds(_CTS("com_DrawBoneCollisionBounds"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawTriggerBounds(_CTS("com_DrawTriggerBounds"), _CTS("0"), CVAR_CHEAT);
-AConsoleVar com_DrawCenterOfMass(_CTS("com_DrawCenterOfMass"), _CTS("0"), CVAR_CHEAT);
+AConsoleVar com_DrawCollisionModel("com_DrawCollisionModel"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawCollisionShapes("com_DrawCollisionShapes"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawTriggers("com_DrawTriggers"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawBoneCollisionShapes("com_DrawBoneCollisionShapes"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawStaticCollisionBounds("com_DrawStaticCollisionBounds"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawSimulatedCollisionBounds("com_DrawSimulatedCollisionBounds"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawKinematicCollisionBounds("com_DrawKinematicCollisionBounds"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawBoneCollisionBounds("com_DrawBoneCollisionBounds"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawTriggerBounds("com_DrawTriggerBounds"s, "0"s, CVAR_CHEAT);
+AConsoleVar com_DrawCenterOfMass("com_DrawCenterOfMass"s, "0"s, CVAR_CHEAT);
 
 static constexpr bool bUseInternalEdgeUtility = true;
 
@@ -60,12 +60,12 @@ class AMotionState : public btMotionState
 public:
     void* operator new(size_t _SizeInBytes)
     {
-        return GZoneMemory.Alloc(_SizeInBytes);
+        return Platform::GetHeapAllocator<HEAP_PHYSICS>().Alloc(_SizeInBytes, 16);
     }
 
     void operator delete(void* _Ptr)
     {
-        GZoneMemory.Free(_Ptr);
+        Platform::GetHeapAllocator<HEAP_PHYSICS>().Free(_Ptr);
     }
 };
 
@@ -74,12 +74,12 @@ class APhysicalBodyMotionState : public AMotionState
 public:
     void* operator new(size_t _SizeInBytes)
     {
-        return GZoneMemory.Alloc(_SizeInBytes);
+        return Platform::GetHeapAllocator<HEAP_PHYSICS>().Alloc(_SizeInBytes, 16);
     }
 
     void operator delete(void* _Ptr)
     {
-        GZoneMemory.Free(_Ptr);
+        Platform::GetHeapAllocator<HEAP_PHYSICS>().Free(_Ptr);
     }
 
     APhysicalBodyMotionState() :
@@ -394,7 +394,7 @@ void APhysicalBody::CreateBoneCollisions()
 
     btRigidBody::btRigidBodyConstructionInfo constructInfo(0.0f, nullptr, nullptr);
 
-    TStdVector<SBoneCollision> const& boneCollisions = collisionModel->GetBoneCollisions();
+    TVector<SBoneCollision> const& boneCollisions = collisionModel->GetBoneCollisions();
 
     BoneCollisionInst.Resize(boneCollisions.Size());
     for (int i = 0; i < boneCollisions.Size(); i++)
@@ -1262,7 +1262,7 @@ int APhysicalBody::GetCollisionBodiesCount() const
     return CollisionInstance->GetCollisionBodiesCount();
 }
 
-void APhysicalBody::GatherCollisionGeometry(TPodVectorHeap<Float3>& _Vertices, TPodVectorHeap<unsigned int>& _Indices) const
+void APhysicalBody::GatherCollisionGeometry(TVector<Float3>& _Vertices, TVector<unsigned int>& _Indices) const
 {
     ACollisionModel const* collisionModel = GetCollisionModel();
     if (!collisionModel)
@@ -1564,8 +1564,8 @@ void APhysicalBody::GatherNavigationGeometry(SNavigationGeometry& Geometry) cons
         return;
     }
 
-    TPodVectorHeap<Float3>&       Vertices          = Geometry.Vertices;
-    TPodVectorHeap<unsigned int>& Indices           = Geometry.Indices;
+    TVector<Float3>&       Vertices          = Geometry.Vertices;
+    TVector<unsigned int>& Indices           = Geometry.Indices;
     TBitMask<>&                   WalkableTriangles = Geometry.WalkableMask;
     BvAxisAlignedBox&             ResultBoundingBox = Geometry.BoundingBox;
     BvAxisAlignedBox const*       pClipBoundingBox  = Geometry.pClipBoundingBox;
@@ -1592,8 +1592,8 @@ void APhysicalBody::GatherNavigationGeometry(SNavigationGeometry& Geometry) cons
     }
 
 
-    TPodVectorHeap<Float3>       collisionVertices;
-    TPodVectorHeap<unsigned int> collisionIndices;
+    TVector<Float3>       collisionVertices;
+    TVector<unsigned int> collisionIndices;
 
     GatherCollisionGeometry(collisionVertices, collisionIndices);
 

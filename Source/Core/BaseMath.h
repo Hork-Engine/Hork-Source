@@ -579,43 +579,87 @@ HK_FORCEINLINE int Log2(uint64_t value)
     return log2;
 }
 
-/** Return half float sign bit */
-constexpr int HalfFloatSignBits(uint16_t Value)
-{
-    return Value >> 15;
 }
 
-/** Return half float exponent */
-constexpr int HalfFloatExponent(uint16_t Value)
+extern "C" uint16_t half_from_float(uint32_t f);
+extern "C" uint32_t half_to_float(uint16_t h);
+extern "C" uint16_t half_add(uint16_t x, uint16_t y);
+extern "C" uint16_t half_mul(uint16_t x, uint16_t y);
+
+struct Half
 {
-    return (Value >> 10) & 0x1f;
-}
+    uint16_t v;
 
-/** Return half float mantissa */
-constexpr int HalfFloatMantissa(uint16_t Value)
+    Half() = default;
+
+    Half(Half const&) = default;
+
+    Half(uint16_t v) :
+        v(v)
+    {}
+
+    Half(float f) :
+        v(half_from_float(*reinterpret_cast<const uint32_t*>(&f)))
+    {}
+
+    Half& operator=(Half const&) = default;
+
+    Half& operator=(float f)
+    {
+        v = half_from_float(*reinterpret_cast<const uint32_t*>(&f));
+        return *this;
+    }
+
+    operator float() const
+    {
+        float f;
+        *reinterpret_cast<uint32_t*>(&f) = half_to_float(v);
+        return f;
+    }
+
+    Half& operator*=(Half const& rhs)
+    {
+        v = half_mul(v, rhs.v);
+        return *this;
+    }
+
+    Half& operator+=(Half const& rhs)
+    {
+        v = half_add(v, rhs.v);
+        return *this;
+    }
+
+    Half operator*(Half const& rhs)
+    {
+        return Half(half_mul(v, rhs.v));
+    }
+
+    Half operator+(Half const& rhs)
+    {
+        return Half(half_add(v, rhs.v));
+    }
+
+    /** Return half float sign bit */
+    int SignBits() const
+    {
+        return v >> 15;
+    }
+
+    /** Return half float exponent */
+    int Exponent() const
+    {
+        return (v >> 10) & 0x1f;
+    }
+
+    /** Return half float mantissa */
+    int Mantissa() const
+    {
+        return v & 0x3ff;
+    }
+};
+
+namespace Math
 {
-    return Value & 0x3ff;
-}
-
-uint16_t _FloatToHalf(const uint32_t& _I);
-
-uint32_t _HalfToFloat(const uint16_t& _I);
-
-void FloatToHalf(const float* _In, uint16_t* _Out, int _Count);
-
-void HalfToFloat(const uint16_t* _In, float* _Out, int _Count);
-
-HK_FORCEINLINE uint16_t FloatToHalf(float Value)
-{
-    return _FloatToHalf(*reinterpret_cast<const uint32_t*>(&Value));
-}
-
-HK_FORCEINLINE float HalfToFloat(const uint16_t& Value)
-{
-    float f;
-    *reinterpret_cast<uint32_t*>(&f) = _HalfToFloat(Value);
-    return f;
-}
 
 /** Return floating point exponent */
 HK_FORCEINLINE int Exponent(float Value)
@@ -998,7 +1042,7 @@ HK_FORCEINLINE T InvSqrt(T const& _Value)
     return _Value > _ZERO_TOLERANCE ? std::sqrt(T(1) / _Value) : _INFINITY;
 }
 
-// Дает большое значение при value == 0, приближенно эквивалентен 1/sqrt(x)
+// Approximately equivalent to 1/sqrt(x). Returns a large value when value == 0.
 HK_FORCEINLINE float RSqrt(const float& _Value)
 {
     float   Half   = _Value * 0.5f;
@@ -1103,250 +1147,6 @@ HK_FORCEINLINE float Atan2Fast(float _Y, float _X)
     return _Y < 0.0f ? -angle : angle;
 }
 
-
-// String conversion
-
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
-HK_FORCEINLINE T ToInt(const char* _String)
-{
-    T    val;
-    T    sign;
-    char c;
-
-    if (*_String == '-')
-    {
-        sign = IsSigned<T>() ? -1 : 1;
-        _String++;
-    }
-    else
-    {
-        sign = 1;
-    }
-
-    val = 0;
-
-    // check for hex
-    if (_String[0] == '0' && (_String[1] == 'x' || _String[1] == 'X'))
-    {
-        _String += 2;
-        while (1)
-        {
-            c = *_String++;
-            if (c >= '0' && c <= '9')
-            {
-                val = (val << 4) + c - '0';
-            }
-            else if (c >= 'a' && c <= 'f')
-            {
-                val = (val << 4) + c - 'a' + 10;
-            }
-            else if (c >= 'A' && c <= 'F')
-            {
-                val = (val << 4) + c - 'A' + 10;
-            }
-            else
-            {
-                return val * sign;
-            }
-        }
-    }
-
-    // check for character
-    if (_String[0] == '\'')
-    {
-        return sign * T(_String[1]);
-    }
-
-    while (1)
-    {
-        c = *_String++;
-        if (c < '0' || c > '9')
-        {
-            return val * sign;
-        }
-        val = val * 10 + c - '0';
-    }
-
-    return 0;
-}
-
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
-HK_FORCEINLINE T ToInt(AString const& _String)
-{
-    return ToInt<T>(_String.CStr());
-}
-
-template <typename T, typename = TStdEnableIf<IsReal<T>()>>
-HK_FORCEINLINE T ToReal(const char* _String)
-{
-    double val;
-    int    sign;
-    char   c;
-    int    decimal, total;
-
-    if (*_String == '-')
-    {
-        sign = -1;
-        _String++;
-    }
-    else
-    {
-        sign = 1;
-    }
-
-    val = 0;
-
-    // check for hex
-    if (_String[0] == '0' && (_String[1] == 'x' || _String[1] == 'X'))
-    {
-        _String += 2;
-        while (1)
-        {
-            c = *_String++;
-            if (c >= '0' && c <= '9')
-            {
-                val = (val * 16) + c - '0';
-            }
-            else if (c >= 'a' && c <= 'f')
-            {
-                val = (val * 16) + c - 'a' + 10;
-            }
-            else if (c >= 'A' && c <= 'F')
-            {
-                val = (val * 16) + c - 'A' + 10;
-            }
-            else
-            {
-                return val * sign;
-            }
-        }
-    }
-
-    // check for character
-    if (_String[0] == '\'')
-    {
-        return sign * T(_String[1]);
-    }
-
-    decimal = -1;
-    total   = 0;
-    while (1)
-    {
-        c = *_String++;
-        if (c == '.')
-        {
-            decimal = total;
-            continue;
-        }
-        if (c < '0' || c > '9')
-        {
-            break;
-        }
-        val = val * 10 + c - '0';
-        total++;
-    }
-
-    if (decimal == -1)
-    {
-        return val * sign;
-    }
-    while (total > decimal)
-    {
-        val /= 10;
-        total--;
-    }
-
-    return val * sign;
-}
-
-HK_FORCEINLINE bool ToBool(const char* _String)
-{
-    if (!Platform::Strcmp(_String, "0") || !Platform::Strcmp(_String, "false"))
-    {
-        return false;
-    }
-    else if (!Platform::Strcmp(_String, "true"))
-    {
-        return true;
-    }
-    else
-    {
-        return Math::ToInt<int>(_String) != 0;
-    }
-}
-
-HK_FORCEINLINE bool ToBool(AString const& _String)
-{
-    return ToBool(_String.CStr());
-}
-
-template <typename T, typename = TStdEnableIf<IsReal<T>()>>
-HK_FORCEINLINE T ToReal(AString const& _String)
-{
-    return ToReal<T>(_String.CStr());
-}
-
-HK_FORCEINLINE float ToFloat(const char* _String)
-{
-    return ToReal<float>(_String);
-}
-
-HK_FORCEINLINE float ToFloat(AString const& _String)
-{
-    return ToReal<float>(_String.CStr());
-}
-
-HK_FORCEINLINE double ToDouble(const char* _String)
-{
-    return ToReal<double>(_String);
-}
-
-HK_FORCEINLINE double ToDouble(AString const& _String)
-{
-    return ToReal<double>(_String.CStr());
-}
-
-template <typename T, typename = TStdEnableIf<IsIntegral<T>()>>
-AString ToString(T const& _Value)
-{
-    constexpr const char* format = IsSigned<T>() ? "%d" : "%u";
-    TSprintfBuffer<32>    buffer;
-    return buffer.Sprintf(format, _Value);
-}
-
-template <typename T, typename = TStdEnableIf<IsReal<T>()>>
-HK_FORCEINLINE AString ToString(T const& _Value, int _Precision = FloatingPointPrecision<T>())
-{
-    TSprintfBuffer<64> value;
-    if (_Precision >= 0)
-    {
-        TSprintfBuffer<64> format;
-        value.Sprintf(format.Sprintf("%%.%df", _Precision), _Value);
-    }
-    else
-    {
-        value.Sprintf("%f", _Value);
-    }
-    for (char* p = &value.Data[Platform::Strlen(value.Data) - 1]; p >= &value.Data[0]; p--)
-    {
-        if (*p != '0')
-        {
-            if (*p != '.')
-            {
-                p++;
-            }
-            *p = '\0';
-            return value.Data;
-        }
-    }
-    return value.Data;
-}
-
-HK_FORCEINLINE AString ToString(bool _Value)
-{
-    return _Value ? "true" : "false";
-}
-
 constexpr int32_t INT64_HIGH_INT(uint64_t i64)
 {
     return i64 >> 32;
@@ -1355,42 +1155,6 @@ constexpr int32_t INT64_HIGH_INT(uint64_t i64)
 constexpr int32_t INT64_LOW_INT(uint64_t i64)
 {
     return i64 & 0xFFFFFFFF;
-}
-
-template <typename T>
-HK_FORCEINLINE AString ToHexString(T const& _Value, bool bLeadingZeros = false, bool bPrefix = false)
-{
-    TSprintfBuffer<32> value;
-    TSprintfBuffer<32> format;
-    const char*        prefixStr = bPrefix ? "0x" : "";
-
-    constexpr size_t typeSize = sizeof(T);
-    static_assert(typeSize == 1 || typeSize == 2 || typeSize == 4 || typeSize == 8, "ToHexString");
-
-    switch (typeSize)
-    {
-        case 1:
-            format.Sprintf(bLeadingZeros ? "%s%%02x" : "%s%%x", prefixStr);
-            return value.Sprintf(format.Data, *reinterpret_cast<const uint8_t*>(&_Value));
-        case 2:
-            format.Sprintf(bLeadingZeros ? "%s%%04x" : "%s%%x", prefixStr);
-            return value.Sprintf(format.Data, *reinterpret_cast<const uint16_t*>(&_Value));
-        case 4:
-            format.Sprintf(bLeadingZeros ? "%s%%08x" : "%s%%x", prefixStr);
-            return value.Sprintf(format.Data, *reinterpret_cast<const uint32_t*>(&_Value));
-        case 8: {
-            uint64_t Temp = *reinterpret_cast<const uint64_t*>(&_Value);
-            if (bLeadingZeros)
-            {
-                return value.Sprintf("%s%08x%08x", prefixStr, INT64_HIGH_INT(Temp), INT64_LOW_INT(Temp));
-            }
-            else
-            {
-                return value.Sprintf("%s%I64x", prefixStr, Temp);
-            }
-        }
-    }
-    return "";
 }
 
 } // namespace Math

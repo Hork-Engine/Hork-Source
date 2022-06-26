@@ -546,6 +546,11 @@ struct SSamplerDesc
         return *this;
     }
 
+    uint32_t Hash() const
+    {
+        return Core::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
+    }
+
     bool operator==(SSamplerDesc const& Rhs) const
     {
         return std::memcmp(this, &Rhs, sizeof(*this)) == 0;

@@ -33,7 +33,7 @@ SOFTWARE.
 #include "AudioDevice.h"
 #include "AudioChannel.h"
 
-#include <Containers/PodVector.h>
+#include <Containers/Vector.h>
 #include <Core/ConsoleVar.h>
 
 class AAudioMixer
@@ -134,9 +134,9 @@ private:
     int    VolumeRampR[1024];
     int    VolumeRampSize;
 
-    TPodVectorHeap<uint8_t>     TempFrames;
-    TPodVectorHeap<float>       FramesF32;
-    TPodVectorHeap<SSamplePair> StreamF32;
+    TVector<uint8_t>     TempFrames;
+    TVector<float>       FramesF32;
+    TVector<SSamplePair> StreamF32;
 };
 
 extern AConsoleVar Snd_HRTF;

@@ -43,7 +43,7 @@ public:
     void InitializeDefaultObject();
 
     /** Initialize object from file */
-    void InitializeFromFile(const char* _Path);
+    void InitializeFromFile(AStringView _Path);
 
     /** Get physical resource path */
     AString const& GetResourcePath() const { return ResourcePath; }
@@ -55,18 +55,15 @@ protected:
     virtual bool LoadResource(IBinaryStreamReadInterface& _Stream) { return false; }
 
     /** Create internal resource */
-    virtual void LoadInternalResource(const char* _Path) {}
+    virtual void LoadInternalResource(AStringView _Path) {}
 
     virtual const char* GetDefaultResourcePath() const { return "/Default/UnknownResource"; }
 
 private:
-    bool LoadFromPath(const char* _Path);
+    bool LoadFromPath(AStringView _Path);
 
     /** Set physical resource path */
-    void SetResourcePath(const char* _ResourcePath) { ResourcePath = _ResourcePath; }
-
-    /** Set physical resource path */
-    void SetResourcePath(AString const& _ResourcePath) { ResourcePath = _ResourcePath; }
+    void SetResourcePath(AStringView _ResourcePath) { ResourcePath = _ResourcePath; }
 
     AString ResourceAlias;
     AString ResourcePath;
@@ -103,7 +100,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& _Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(const char* _Path) override;
+    void LoadInternalResource(AStringView _Path) override;
 
 private:
     void*  pBinaryData = nullptr;
