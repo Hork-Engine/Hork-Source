@@ -1003,8 +1003,7 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
     init.Argv = _Argv;
 #endif
     init.bAllowMultipleInstances = false;
-    //init.ZoneSizeInMegabytes     = 256;
-    init.HunkSizeInMegabytes     = 32;
+    init.ProcessWorkingSetSize = 1024 << 20; // FIXME: Choose appropriate size
     Platform::Initialize(init);
 
     AConsoleVar::AllocateVariables();

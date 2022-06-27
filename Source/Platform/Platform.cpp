@@ -514,13 +514,11 @@ static void DeinitializeProcess()
 //
 //////////////////////////////////////////////////////////////////////////////////////////
 
-static void InitializeMemory(/*size_t ZoneSizeInMegabytes, */size_t HunkSizeInMegabytes)
+static void InitializeMemory(size_t ProcessWorkingSetSize)
 {
-    const size_t TotalMemorySizeInBytes = (/*ZoneSizeInMegabytes*/ + HunkSizeInMegabytes) << 20;
-
 #ifdef HK_OS_WIN32
-    SIZE_T dwMinimumWorkingSetSize = TotalMemorySizeInBytes;
-    SIZE_T dwMaximumWorkingSetSize = std::max(TotalMemorySizeInBytes, size_t(1024 << 20));
+    SIZE_T dwMinimumWorkingSetSize = ProcessWorkingSetSize;
+    SIZE_T dwMaximumWorkingSetSize = std::max(ProcessWorkingSetSize, size_t(1024 << 20));
     if (!SetProcessWorkingSetSize(GetCurrentProcess(), dwMinimumWorkingSetSize, dwMaximumWorkingSetSize))
     {
         LOG("Failed on SetProcessWorkingSetSize\n");
@@ -680,7 +678,7 @@ void Initialize(SPlatformInitialize const& CoreInitialize)
 
     PrintCPUFeatures();
 
-    InitializeMemory(/*CoreInitialize.ZoneSizeInMegabytes, */CoreInitialize.HunkSizeInMegabytes);
+    InitializeMemory(CoreInitialize.ProcessWorkingSetSize);
 }
 
 void Deinitialize()
