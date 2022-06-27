@@ -30,6 +30,8 @@ SOFTWARE.
 
 #pragma once
 
+#include "BaseTypes.h"
+
 namespace Platform
 {
 
