@@ -628,7 +628,7 @@ AVertexLayoutGL* ADeviceGLImpl::GetVertexLayout(SVertexBindingInfo const* pVerte
     pVertexLayout->AddRef();
     vertexLayout = pVertexLayout;
 
-    LOG("Create vertex layout, total {}\n", VertexLayouts.Size());
+    //LOG("Create vertex layout, total {}\n", VertexLayouts.Size());
 
     return pVertexLayout;
 }

@@ -327,7 +327,7 @@ AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                 
 
     result = std::make_unique<AFramebufferGL>(framebufferDesc);
 
-    LOG("Total framebuffers {} for {} hash {:08x}\n", Framebuffers.Size(), RenderPassName, fbHash.Hash());
+    //LOG("Total framebuffers {} for {} hash {:08x}\n", Framebuffers.Size(), RenderPassName, fbHash.Hash());
 
     return result.get();
 }
