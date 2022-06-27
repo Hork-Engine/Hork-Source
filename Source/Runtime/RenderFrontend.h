@@ -127,7 +127,12 @@ private:
     // TODO: We can keep ready shadowCasters[] and boxes[]
     TPodVector<ADrawable*>          ShadowCasters;
     TPodVector<BvAxisAlignedBoxSSE> ShadowBoxes;
-    TPodVector<int>                 ShadowCasterCullResult;
+
+    struct alignas(16) CullResult
+    {
+        int32_t Result[4];
+    };
+    TPodVector<CullResult>                 ShadowCasterCullResult;
 
     struct SSurfaceStream
     {

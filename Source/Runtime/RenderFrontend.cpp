@@ -1642,7 +1642,7 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
 
     ShadowBoxes.Resize(Align(ShadowBoxes.Size(), 4));
 
-    ShadowCasterCullResult.ResizeInvalidate(ShadowBoxes.Size());
+    ShadowCasterCullResult.ResizeInvalidate(ShadowBoxes.Size() / 4);
 
     BvFrustum frustum;
 
@@ -1676,15 +1676,13 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
 
             ShadowCasterCullResult.ZeroMem();
 
-            frustum.CullBox_SSE(ShadowBoxes.ToPtr(), ShadowCasters.Size(), ShadowCasterCullResult.ToPtr());
+            frustum.CullBox_SSE(ShadowBoxes.ToPtr(), ShadowCasters.Size(), &ShadowCasterCullResult[0].Result[0]);
             //frustum.CullBox_Generic( ShadowBoxes.ToPtr(), ShadowCasters.Size(), ShadowCasterCullResult.ToPtr() );
 
-            for (int n = 0; n < ShadowCasters.Size(); n++)
+            for (int n = 0, n2 = 0; n < ShadowCasters.Size(); n+=4, n2++)
             {
-                //LOG( "Cull result {}\n", *(float*)&ShadowCasterCullResult[n] );
-                //ShadowCasters[n]->CascadeMask |= (1-ShadowCasterCullResult[n]) << i;
-
-                ShadowCasters[n]->CascadeMask |= (ShadowCasterCullResult[n] == 0) << cascadeIndex;
+                for (int t = 0 ; t < 4 && n + t < ShadowCasters.Size() ; t++)
+                    ShadowCasters[n + t]->CascadeMask |= (ShadowCasterCullResult[n2].Result[t] == 0) << cascadeIndex;
             }
         }
 

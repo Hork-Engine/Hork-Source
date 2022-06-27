@@ -201,6 +201,8 @@ void BvFrustum::CullSphere_SSE(BvSphereSSE const* bounds, int count, int* result
     const float* sphere_data_ptr = reinterpret_cast<const float*>(&bounds->Center[0]);
     int*         culling_res_sse = &result[0];
 
+    HK_ASSERT(IsAlignedPtr(result, 16));
+
     //to optimize calculations we gather xyzw elements in separate vectors
     __m128 zero_v = _mm_setzero_ps();
     int    i, j;
@@ -253,6 +255,8 @@ void BvFrustum::CullSphere_IgnoreZ_SSE(BvSphereSSE const* bounds, int count, int
 #ifdef HK_FRUSTUM_USE_SSE
     const float* sphere_data_ptr = reinterpret_cast<const float*>(&bounds->Center[0]);
     int*         culling_res_sse = &result[0];
+
+    HK_ASSERT(IsAlignedPtr(result, 16));
 
     //to optimize calculations we gather xyzw elements in separate vectors
     __m128 zero_v = _mm_setzero_ps();
@@ -307,6 +311,8 @@ void BvFrustum::CullBox_SSE(BvAxisAlignedBoxSSE const* bounds, int count, int* r
     const float* pBoundingBoxData = reinterpret_cast<const float*>(&bounds->Mins.X);
     int*         pCullingResult   = &result[0];
     int          i, j;
+
+    HK_ASSERT(IsAlignedPtr(result, 16));
 
     __m128 zero = _mm_setzero_ps();
 
@@ -383,6 +389,8 @@ void BvFrustum::CullBox_IgnoreZ_SSE(BvAxisAlignedBoxSSE const* bounds, int count
     const float* pBoundingBoxData = reinterpret_cast<const float*>(&bounds->Mins.X);
     int*         pCullingResult   = &result[0];
     int          i, j;
+
+    HK_ASSERT(IsAlignedPtr(result, 16));
 
     __m128 zero = _mm_setzero_ps();
 
