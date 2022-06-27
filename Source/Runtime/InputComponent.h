@@ -302,7 +302,7 @@ protected:
 
         void BindAction(AStringView Action)
         {
-            BindingType = EBindingType::Axis;
+            BindingType = EBindingType::Action;
             Binding     = Action;
         }
 
