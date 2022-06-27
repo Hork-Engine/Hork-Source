@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "IO.h"
+#include "HashFunc.h"
 
 struct AGUID
 {

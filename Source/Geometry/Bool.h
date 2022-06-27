@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Core/BaseMath.h>
+#include <Core/IO.h>
 
 struct Bool2
 {

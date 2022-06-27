@@ -349,8 +349,8 @@ public:
         Super::insert(begin(), first, last);
     }
 
-    template <typename Allocator>
-    HK_FORCEINLINE void Add(TVector<T, Allocator> const& vector)
+    template <typename RhsAllocator>
+    HK_FORCEINLINE void Add(TVector<T, RhsAllocator> const& vector)
     {
         Super::insert(end(), vector.begin(), vector.end());
     }
@@ -358,22 +358,22 @@ public:
     HK_FORCEINLINE void AddUnique(ValueType const& value)
     {
         if (eastl::find(begin(), end(), value) == end())
-            push_back(value);
+            Super::push_back(value);
     }
 
     HK_FORCEINLINE void Remove(SizeType index)
     {
-        erase(begin() + index);
+        Super::erase(begin() + index);
     }
 
     HK_FORCEINLINE void RemoveRange(SizeType index, SizeType count)
     {
-        erase(begin() + index, begin() + (index + count));
+        Super::erase(begin() + index, begin() + (index + count));
     }
 
     HK_FORCEINLINE void RemoveFirst()
     {
-        erase(begin());
+        Super::erase(begin());
     }
 
     HK_FORCEINLINE void RemoveLast()
@@ -394,7 +394,7 @@ public:
     /** An optimized removing of array element without memory moves. Just swaps last element with removed element. */
     HK_FORCEINLINE void RemoveUnsorted(SizeType index)
     {
-        erase_unsorted(begin() + index);
+        Super::erase_unsorted(begin() + index);
     }
 
     template <class... Args>
@@ -528,12 +528,12 @@ public:
 
     HK_INLINE bool operator==(ThisType const& rhs) const
     {
-        return ((Size() == rhs.Size()) && eastl::equal(begin(), end(), rhs.begin()));
+        return ((Super::size() == rhs.size()) && eastl::equal(begin(), end(), rhs.begin()));
     }
 
     HK_INLINE bool operator!=(ThisType const& rhs) const
     {
-        return ((Size() != rhs.Size()) || !eastl::equal(begin(), end(), rhs.begin()));
+        return ((Super::size() != rhs.size()) || !eastl::equal(begin(), end(), rhs.begin()));
     }
 
     HK_INLINE bool operator<(ThisType const& rhs) const
@@ -560,7 +560,8 @@ private:
     template <bool bUnsorted>
     void DoRemoveDuplicates()
     {
-        SizeType arraySize = size();
+        SizeType arraySize = Super::size();
+        Pointer  arrayData = Super::data();
         for (SizeType i = 0; i < arraySize; i++)
         {
             for (SizeType j = arraySize - 1; j > i; j--)
@@ -569,10 +570,10 @@ private:
                 {
                     // duplicate found
 
-                    if constexpr (bUnsorted)
-                        erase_unsorted(begin() + j);
+                    if (bUnsorted)
+                        Super::erase_unsorted(begin() + j);
                     else
-                        erase(begin() + j);
+                        Super::erase(begin() + j);
                     arraySize--;
                 }
             }
@@ -670,7 +671,7 @@ public:
 
     HK_FORCEINLINE void SetCapacity(SizeType n)
     {
-        Super::set_capacity(x);
+        Super::set_capacity(n);
     }
 
     HK_FORCEINLINE void Clear(bool freeOverflow)
@@ -728,8 +729,8 @@ public:
         Super::insert(begin(), first, last);
     }
 
-    template <typename T, size_t BaseCapacity, bool bEnableOverflow, typename Allocator>
-    HK_FORCEINLINE void Add(TFixedVector<T, BaseCapacity, bEnableOverflow, Allocator> const& vector)
+    template <size_t RhsBaseCapacity, bool RhsEnableOverflow, typename RhsAllocator>
+    HK_FORCEINLINE void Add(TFixedVector<T, RhsBaseCapacity, RhsEnableOverflow, RhsAllocator> const& vector)
     {
         Super::insert(end(), vector.begin(), vector.end());
     }
@@ -737,22 +738,22 @@ public:
     HK_FORCEINLINE void AddUnique(ValueType const& value)
     {
         if (eastl::find(begin(), end(), value) == end())
-            push_back(value);
+            Super::push_back(value);
     }
 
     HK_FORCEINLINE void Remove(SizeType index)
     {
-        erase(begin() + index);
+        Super::erase(begin() + index);
     }
 
     HK_FORCEINLINE void RemoveRange(SizeType index, SizeType count)
     {
-        erase(begin() + index, begin() + (index + count));
+        Super::erase(begin() + index, begin() + (index + count));
     }
 
     HK_FORCEINLINE void RemoveFirst()
     {
-        erase(begin());
+        Super::erase(begin());
     }
 
     HK_FORCEINLINE void RemoveLast()
@@ -773,7 +774,7 @@ public:
     /** An optimized removing of array element without memory moves. Just swaps last element with removed element. */
     HK_FORCEINLINE void RemoveUnsorted(SizeType index)
     {
-        erase_unsorted(begin() + index);
+        Super::erase_unsorted(begin() + index);
     }
 
     HK_FORCEINLINE void Assign(SizeType n, ValueType const& value)
@@ -1029,12 +1030,12 @@ public:
 
     HK_INLINE bool operator==(ThisType const& rhs) const
     {
-        return ((size() == rhs.size()) && eastl::equal(begin(), end(), rhs.begin()));
+        return ((Super::size() == rhs.size()) && eastl::equal(begin(), end(), rhs.begin()));
     }
 
     HK_INLINE bool operator!=(ThisType const& rhs) const
     {
-        return ((size() != rhs.size()) || !eastl::equal(begin(), end(), rhs.begin()));
+        return ((Super::size() != rhs.size()) || !eastl::equal(begin(), end(), rhs.begin()));
     }
 
     HK_INLINE bool operator<(ThisType const& rhs) const
@@ -1061,7 +1062,8 @@ private:
     template <bool bUnsorted>
     void DoRemoveDuplicates()
     {
-        SizeType arraySize = size();
+        SizeType arraySize = Super::size();
+        Pointer  arrayData = Super::data();
         for (SizeType i = 0; i < arraySize; i++)
         {
             for (SizeType j = arraySize - 1; j > i; j--)
@@ -1070,10 +1072,10 @@ private:
                 {
                     // duplicate found
 
-                    if constexpr (bUnsorted)
-                        erase_unsorted(begin() + j);
+                    if (bUnsorted)
+                        Super::erase_unsorted(begin() + j);
                     else
-                        erase(begin() + j);
+                        Super::erase(begin() + j);
                     arraySize--;
                 }
             }

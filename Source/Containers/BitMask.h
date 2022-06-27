@@ -179,13 +179,13 @@ public:
     void Write(IBinaryStreamWriteInterface& _Stream) const
     {
         _Stream.WriteUInt32(m_NumBits);
-        _Stream.WriteArrayUInt32(m_Bits);
+        _Stream.WriteArray(m_Bits);
     }
 
     void Read(IBinaryStreamReadInterface& _Stream)
     {
         m_NumBits = _Stream.ReadUInt32();
-        _Stream.ReadArrayUInt32(m_Bits);
+        _Stream.ReadArray(m_Bits);
     }
 
 private:

@@ -924,7 +924,7 @@ void RemoveFile(AStringView FileName)
 void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Callback)
 {
     AString fn;
-    DIR*    dir = opendir(Path.ToString().CStr());
+    DIR*    dir = opendir(Path.IsNullTerminated() ? Path.Begin() : AString(Path).CStr());
     if (dir)
     {
         while (1)

@@ -1,8 +1,8 @@
 #include "RectangleBinPack.h"
 #include <Core/BaseMath.h>
+#include <Platform/Memory/Memory.h>
 
 #include <limits>
-#include <memory.h>
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // The following functions compute (penalty) score values if a rect of the given size was placed into the

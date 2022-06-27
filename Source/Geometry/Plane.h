@@ -221,5 +221,5 @@ struct TPlane
 using PlaneF = TPlane<float>;
 using PlaneD = TPlane<double>;
 
-HK_FORMAT_DEF_(PlaneF, "( {} {} {} {} )", v.X, v.Y, v.Z, v.D);
-HK_FORMAT_DEF_(PlaneD, "( {} {} {} {} )", v.X, v.Y, v.Z, v.D);
+HK_FORMAT_DEF_(PlaneF, "( {} {} {} {} )", v.Normal.X, v.Normal.Y, v.Normal.Z, v.D);
+HK_FORMAT_DEF_(PlaneD, "( {} {} {} {} )", v.Normal.X, v.Normal.Y, v.Normal.Z, v.D);

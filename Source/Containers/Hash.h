@@ -164,14 +164,14 @@ public:
     Val& At(Key const& k)
     {
         Iterator it = Super::find(k);
-        HK_ASSERT(it != Super::end())
+        HK_ASSERT(it != Super::end());
         return it->second;
     }
 
     Val const& At(Key const& k) const
     {
         ConstIterator it = Super::find(k);
-        HK_ASSERT(it != Super::end())
+        HK_ASSERT(it != Super::end());
         return it->second;
     }
 
@@ -293,9 +293,9 @@ public:
 
     HK_INLINE bool operator==(THashMap const& rhs) const
     {
-        if (size() != rhs.size())
+        if (Super::size() != rhs.size())
             return false;
-        for (ConstIterator it = begin(), e = end(), e2 = rhs.end(); it != e; ++it)
+        for (ConstIterator it = Super::begin(), e = Super::end(), e2 = rhs.end(); it != e; ++it)
         {
             ConstIterator it2 = rhs.find(it->first);
             if ((it2 == e2) || !(*it == *it2))
@@ -357,7 +357,7 @@ public:
     using ConstIterator = typename Super::Super::const_iterator;
     using SizeType      = typename Super::Super::size_type;
     using ValueType     = typename Super::Super::value_type;
-    using MappedType    = typename Val;
+    using MappedType    = Val;
 
     TStringHashMap(const AllocatorType& allocator = AllocatorType()) :
         Super(allocator) {}
@@ -577,7 +577,7 @@ public:
 
     HK_FORCEINLINE void Reserve(SizeType elementCount)
     {
-        Super::reserve(elementCode);
+        Super::reserve(elementCount);
     }
 
     HK_FORCEINLINE SizeType Size() const
@@ -687,9 +687,9 @@ public:
 
     HK_INLINE bool operator==(THashSet const& rhs) const
     {
-        if (size() != rhs.size())
+        if (Super::size() != rhs.size())
             return false;
-        for (ConstIterator it = begin(), e = end(), e2 = rhs.end(); it != e; ++it)
+        for (ConstIterator it = Super::begin(), e = Super::end(), e2 = rhs.end(); it != e; ++it)
         {
             ConstIterator it2 = rhs.find(*it);
             if ((it2 == e2) || !(*it == *it2))

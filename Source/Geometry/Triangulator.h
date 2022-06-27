@@ -187,9 +187,9 @@ void TTriangulator<ContourVertex, TriangleVertex>::OnEndData(void* polygonData)
 
                 if (IsTriangleValid(v[0], v[1], v[2]))
                 {
-                    tr->pIndexStream_->Append(tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[j + 0]));
-                    tr->pIndexStream_->Append(tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[j + 1]));
-                    tr->pIndexStream_->Append(tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[j + 2]));
+                    tr->pIndexStream_->Add(tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[j + 0]));
+                    tr->pIndexStream_->Add(tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[j + 1]));
+                    tr->pIndexStream_->Add(tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[j + 2]));
                 }
             }
         }
@@ -214,9 +214,9 @@ void TTriangulator<ContourVertex, TriangleVertex>::OnEndData(void* polygonData)
                     ind[1] = tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[j + 1]);
                     ind[2] = tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[j + 2]);
 
-                    tr->pIndexStream_->Append(ind[0]);
-                    tr->pIndexStream_->Append(ind[1]);
-                    tr->pIndexStream_->Append(ind[2]);
+                    tr->pIndexStream_->Add(ind[0]);
+                    tr->pIndexStream_->Add(ind[1]);
+                    tr->pIndexStream_->Add(ind[2]);
                 }
 
                 v[1] = v[2];
@@ -237,9 +237,9 @@ void TTriangulator<ContourVertex, TriangleVertex>::OnEndData(void* polygonData)
 
                 if (IsTriangleValid(v[0], v[1], v[2]))
                 {
-                    tr->pIndexStream_->Append(tr->VertexOffset + tr->FindOrCreateVertex(vertex[0]));
-                    tr->pIndexStream_->Append(tr->VertexOffset + tr->FindOrCreateVertex(vertex[1]));
-                    tr->pIndexStream_->Append(tr->VertexOffset + tr->FindOrCreateVertex(vertex[2]));
+                    tr->pIndexStream_->Add(tr->VertexOffset + tr->FindOrCreateVertex(vertex[0]));
+                    tr->pIndexStream_->Add(tr->VertexOffset + tr->FindOrCreateVertex(vertex[1]));
+                    tr->pIndexStream_->Add(tr->VertexOffset + tr->FindOrCreateVertex(vertex[2]));
                 }
             }
         }
@@ -260,7 +260,7 @@ unsigned int TTriangulator<ContourVertex, TriangleVertex>::FindOrCreateVertex(Tr
             return i;
         }
     }
-    vertexCache_.Append(vertex);
+    vertexCache_.Add(vertex);
     return vertexCache_.Size() - 1;
 }
 
@@ -269,7 +269,7 @@ void TTriangulator<ContourVertex, TriangleVertex>::OnVertexData(void* data, void
 {
     TTriangulator<ContourVertex, TriangleVertex>* tr = static_cast<TTriangulator<ContourVertex, TriangleVertex>*>(polygonData);
 
-    tr->primitiveIndices_.Append(static_cast<TriangleVertex*>(data) /*tr->VertexOffset + tr->FindOrCreateVertex( static_cast< TriangleVertex * >( data ) )*/);
+    tr->primitiveIndices_.Add(static_cast<TriangleVertex*>(data) /*tr->VertexOffset + tr->FindOrCreateVertex( static_cast< TriangleVertex * >( data ) )*/);
 }
 
 template <typename ContourVertex, typename TriangleVertex>
@@ -289,8 +289,8 @@ void TTriangulator<ContourVertex, TriangleVertex>::OnCombineData(double position
         *static_cast<TriangleVertex*>(data[3]));
 
     *outData = v;
-    tr->vertexCache_.Append(v);
-    tr->allocatedVerts_.Append(v);
+    tr->vertexCache_.Add(v);
+    tr->allocatedVerts_.Add(v);
 }
 
 #ifdef HK_COMPILER_MSVC

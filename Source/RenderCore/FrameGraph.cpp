@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include "FrameGraph.h"
+#include <Core/IO.h>
 
 namespace RenderCore
 {

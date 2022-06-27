@@ -77,7 +77,7 @@ SOFTWARE.
         template <typename FormatContext> auto format(ClassName const& v, FormatContext& ctx) -> decltype(ctx.out()) \
         {                                                                                                            \
             AString str = v.ToString();                                                                              \
-            return fmt::detail::copy_str<char, const char*>(v.Begin(), v.End(), ctx.out());                          \
+            return fmt::detail::copy_str<char, const char*>(str.Begin(), str.End(), ctx.out());                      \
         }                                                                                                            \
     };
 

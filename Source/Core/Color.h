@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "BaseMath.h"
+#include <Platform/Format.h>
 
 HK_INLINE void EncodeRGBE(uint8_t RGBE[4], const float* LinearRGB)
 {

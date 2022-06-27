@@ -239,7 +239,7 @@ public:
     {
         uint32_t size = ReadUInt32();
         Array.ResizeInvalidate(size);
-        for (T::SizeType i = 0; i < Array.Size(); i++)
+        for (typename T::SizeType i = 0; i < Array.Size(); i++)
         {
             ReadObject(Array[i]);
         }
@@ -332,25 +332,27 @@ public:
     template <typename T, std::enable_if_t<std::is_integral<typename T::ValueType>::value, bool> = true>
     void WriteArray(T& Array)
     {
-        static_assert(sizeof(T::ValueType) == 4 || sizeof(T::ValueType) == 8, "Unsupported integer");
+        using ElementType = typename T::ValueType;
+
+        static_assert(sizeof(ElementType) == 4 || sizeof(ElementType) == 8, "Unsupported integer");
 
         WriteUInt32(Array.Size());
 
-        switch (sizeof(T::ValueType))
+        switch (sizeof(ElementType))
         {
             case 1:
                 Write(Array.ToPtr(), Array.Size());
                 break;
             case 2:
-                for (T::SizeType i = 0; i < Array.Size(); i++)
+                for (typename T::SizeType i = 0; i < Array.Size(); i++)
                     WriteUInt16(Array[i]);
                 break;
             case 4:
-                for (T::SizeType i = 0; i < Array.Size(); i++)
+                for (typename T::SizeType i = 0; i < Array.Size(); i++)
                     WriteUInt32(Array[i]);
                 break;
             case 8:
-                for (T::SizeType i = 0; i < Array.Size(); i++)
+                for (typename T::SizeType i = 0; i < Array.Size(); i++)
                     WriteUInt64(Array[i]);
                 break;
         }
@@ -359,18 +361,20 @@ public:
     template <typename T, std::enable_if_t<std::is_floating_point<typename T::ValueType>::value, bool> = true>
     void WriteArray(T& Array)
     {
-        static_assert(sizeof(T::ValueType) == 4 || sizeof(T::ValueType) == 8, "Unsupported floating point");
+        using ElementType = typename T::ValueType;
+
+        static_assert(sizeof(ElementType) == 4 || sizeof(ElementType) == 8, "Unsupported floating point");
 
         WriteUInt32(Array.Size());
 
-        switch (sizeof(T::ValueType))
+        switch (sizeof(ElementType))
         {
             case 4:
-                for (T::SizeType i = 0; i < Array.Size(); i++)
+                for (typename T::SizeType i = 0; i < Array.Size(); i++)
                     WriteFloat(Array[i]);
                 break;
             case 8:
-                for (T::SizeType i = 0; i < Array.Size(); i++)
+                for (typename T::SizeType i = 0; i < Array.Size(); i++)
                     WriteDouble(Array[i]);
                 break;
         }
@@ -380,7 +384,7 @@ public:
     void WriteArray(T const& Array)
     {
         WriteUInt32(Array.Size());
-        for (T::SizeType i = 0; i < Array.Size(); i++)
+        for (typename T::SizeType i = 0; i < Array.Size(); i++)
         {
             WriteObject(Array[i]);
         }

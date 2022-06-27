@@ -32,10 +32,10 @@ SOFTWARE.
 
 #include <Platform/Memory/Memory.h>
 #include <Platform/Path.h>
-#include <Platform/Format.h>
+#include <Platform/Logger.h>
 #include <Platform/Utf8.h>
 
-#include "HashFunc.h"
+#include "BaseMath.h"
 #include "BinaryStream.h"
 
 using StringSizeType = uint32_t;
@@ -909,7 +909,7 @@ TString<CharT, Allocator>& TString<CharT, Allocator>::operator/=(TStringView<Cha
 
     Reserve(newSize);
 
-    if (size == 0 || Lhs.ToPtr()[size - 1] != '/')
+    if (size == 0 || m_pData[size - 1] != '/')
         Concat('/');
 
     const CharT* p;
@@ -1242,7 +1242,7 @@ int TStringView<CharT>::Icmp(TStringView<CharT> Str) const
 
     CharT c1, c2;
 
-    using UnsignedCharT = std::make_unsigned<CharT>::type;
+    using UnsignedCharT = typename std::make_unsigned<CharT>::type;
 
     do {
         c1 = s1 < e1 ? *s1++ : 0;
@@ -1278,7 +1278,7 @@ int TStringView<CharT>::Cmp(TStringView<CharT> Str) const
 
     CharT c1, c2;
 
-    using UnsignedCharT = std::make_unsigned<CharT>::type;
+    using UnsignedCharT = typename std::make_unsigned<CharT>::type;
 
     do {
         c1 = s1 < e1 ? *s1++ : 0;
@@ -1303,7 +1303,7 @@ int TStringView<CharT>::IcmpN(TStringView<CharT> Str, SizeType Num) const
 
     CharT c1, c2;
 
-    using UnsignedCharT = std::make_unsigned<CharT>::type;
+    using UnsignedCharT = typename std::make_unsigned<CharT>::type;
 
     do {
         if (!Num--)
@@ -1344,7 +1344,7 @@ int TStringView<CharT>::CmpN(TStringView<CharT> Str, SizeType Num) const
 
     CharT c1, c2;
 
-    using UnsignedCharT = std::make_unsigned<CharT>::type;
+    using UnsignedCharT = typename std::make_unsigned<CharT>::type;
 
     do {
         if (!Num--)
@@ -1407,7 +1407,7 @@ HK_INLINE AString GetString(AWideStringView wideStr)
     const WideChar* s = wideStr.Begin();
     const WideChar* e = wideStr.End();
 
-    auto size = Core::WideStrUTF8Bytes(s, e);
+    auto size = WideStrUTF8Bytes(s, e);
 
     AString str;
     str.Reserve(size);
@@ -1415,7 +1415,7 @@ HK_INLINE AString GetString(AWideStringView wideStr)
     char buf[4];
     while (s < e)
     {
-        int n = WideCharEncodeUTF8(buf, std::size(buf), *s++);
+        int n = WideCharEncodeUTF8(buf, HK_ARRAY_SIZE(buf), *s++);
         str.Concat(AStringView(buf, n));
     }
     return str;
@@ -1426,7 +1426,7 @@ HK_INLINE AString GetString(AGlobalStringViewW wideStr)
     const WideChar* s = wideStr.CStr();
     const WideChar* e = s + StringLength(wideStr);
 
-    auto size = Core::WideStrUTF8Bytes(s, e);
+    auto size = WideStrUTF8Bytes(s, e);
 
     AString str;
     str.Reserve(size);
@@ -1434,7 +1434,7 @@ HK_INLINE AString GetString(AGlobalStringViewW wideStr)
     char buf[4];
     while (s < e)
     {
-        int n = WideCharEncodeUTF8(buf, std::size(buf), *s++);
+        int n = WideCharEncodeUTF8(buf, HK_ARRAY_SIZE(buf), *s++);
         str.Concat(AStringView(buf, n));
     }
     return str;
@@ -1489,7 +1489,7 @@ HK_INLINE AString Format(fmt::format_string<T...> Format, T&&... args)
 template <typename T>
 HK_INLINE AString ToString(T const& Val)
 {
-    return Core::Format("{}", Val);
+    return Format("{}", Val);
 }
 
 template <typename T, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>
@@ -1517,7 +1517,7 @@ HK_INLINE AString ToHexString(T const& _Value, bool bLeadingZeros = false, bool 
             uint64_t Temp = *reinterpret_cast<const uint64_t*>(&_Value);
             if (bLeadingZeros)
             {
-                return value.Sprintf("%s%08x%08x", prefixStr, INT64_HIGH_INT(Temp), INT64_LOW_INT(Temp));
+                return value.Sprintf("%s%08x%08x", prefixStr, Math::INT64_HIGH_INT(Temp), Math::INT64_LOW_INT(Temp));
             }
             else
             {

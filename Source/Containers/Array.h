@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Platform/BaseTypes.h>
+#include "Vector.h"
 
 template <typename T, size_t ArraySize>
 struct TArray
@@ -171,11 +171,11 @@ public:
     }
     constexpr HK_FORCEINLINE ConstReverseIterator rend() const
     {
-        return ConstReverseIterator(static_cast<const_iterator>(&m_Data[0]));
+        return ConstReverseIterator(static_cast<ConstIterator>(&m_Data[0]));
     }
     constexpr HK_FORCEINLINE ConstReverseIterator crend() const
     {
-        return ConstReverseIterator(static_cast<const_iterator>(&m_Data[0]));
+        return ConstReverseIterator(static_cast<ConstIterator>(&m_Data[0]));
     }
     constexpr HK_FORCEINLINE Iterator Begin()
     {
