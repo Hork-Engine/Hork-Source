@@ -169,7 +169,7 @@ public:
 
         Read(pBuffer, Count * sizeof(T));
 
-        //#ifndef HK_LITTLE_ENDIAN
+        #ifdef HK_BIG_ENDIAN
         switch (sizeof(T))
         {
             case 1:
@@ -187,7 +187,7 @@ public:
                     pBuffer[i] = Core::LittleDDWord(pBuffer[i]);
                 break;
         }
-        //#endif
+        #endif
     }
 
     template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
@@ -197,7 +197,7 @@ public:
 
         Read(pBuffer, Count * sizeof(T));
 
-        //#ifndef HK_LITTLE_ENDIAN
+        #ifdef HK_BIG_ENDIAN
         switch (sizeof(T))
         {
             case 4:
@@ -209,7 +209,7 @@ public:
                     pBuffer[i] = Core::LittleDouble(pBuffer[i]);
                 break;
         }
-        //#endif
+        #endif
     }  
 
     template <typename T>

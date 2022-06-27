@@ -356,7 +356,7 @@ public:
         SizeType size = Size();
         Stream.WriteUInt32(size);
 
-#if HK_BIG_ENDIAN
+#ifdef HK_BIG_ENDIAN
         if (IsWideString())
         {
             for (SizeType i = 0; i < size; i++)
@@ -1005,7 +1005,7 @@ HK_INLINE void TString<CharT, Allocator>::FromFile(IBinaryStreamReadInterface& S
     }
     GrowCapacity(size + 1, false);
 
-#if HK_BIG_ENDIAN
+#ifdef HK_BIG_ENDIAN
     if (IsWideString())
     {
         for (SizeType i = 0; i < size; i++)
@@ -1035,7 +1035,7 @@ HK_INLINE void TString<CharT, Allocator>::Read(IBinaryStreamReadInterface& Strea
 
     GrowCapacity(size + 1, false);
 
-#if HK_BIG_ENDIAN
+#ifdef HK_BIG_ENDIAN
     if (IsWideString())
     {
         for (SizeType i = 0; i < size; i++)
@@ -1048,7 +1048,7 @@ HK_INLINE void TString<CharT, Allocator>::Read(IBinaryStreamReadInterface& Strea
     }
 #endif
 
-        if (len != size)
+    if (len != size)
     {
         // Keep the correct offset
         Stream.SeekCur((len - size) * sizeof(CharT));
