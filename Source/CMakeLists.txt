@@ -21,10 +21,10 @@ function(add_subdirectory_with_folder _folder_name _folder)
     add_subdirectory(${_folder} ${ARGN})
     get_all_targets(_targets "${_folder}")
     foreach(_target IN LISTS _targets)
-        set_target_properties(
-            ${_target}
-            PROPERTIES FOLDER "${_folder_name}"
-        )
+        get_target_property(_type ${_target} TYPE)
+        if (NOT ${_type} STREQUAL "INTERFACE_LIBRARY")
+            set_target_properties(${_target} PROPERTIES FOLDER "${_folder_name}")
+        endif()
     endforeach()
 endfunction()
 
@@ -36,7 +36,7 @@ include_directories( ThirdParty )
 add_definitions( -DGLEW_STATIC )
 add_definitions( -DGLEW_NO_GLU )
 
-find_package(OpenGL)
+find_package(OpenGL REQUIRED)
 
 message(STATUS "======================================================================")
 message(STATUS "USING SDL2")
@@ -110,8 +110,6 @@ add_subdirectory_with_folder( "ThirdParty/HACD" ThirdParty/HACD )
 
 message(STATUS "======================================================================")
 message(STATUS "USING VHACD")
-#include_directories( ThirdParty/VHACD )
-#include_directories( ThirdParty/VHACD/public )
 add_subdirectory_with_folder( "ThirdParty/VHACD" ThirdParty/VHACD )
 
 message(STATUS "======================================================================")
@@ -296,8 +294,7 @@ set( LIBRARIES
 		EASTL
 		fmt::fmt-header-only
         ${HK_BULLET_LIBS}
-        ${OPENGL_gl_LIBRARY}
-#        vhacd
+        OpenGL::GL
         HACD
         vhacd
         Recast
@@ -317,6 +314,7 @@ set( LIBRARIES
 
 if(UNIX)
     set( LIBRARIES ${LIBRARIES} uuid )
+    set( LIBRARIES ${LIBRARIES} OpenGL::GLX )
 endif()
 
 target_link_libraries( ${PROJECT} ${LIBRARIES} )
