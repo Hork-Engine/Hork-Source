@@ -146,28 +146,28 @@ PBR (physically based).
 * MIT license
    
 ## Used third-party libraries
-* AngelsSript (zlib license)
-* Bullet Physics (zlib license)
-* cgltf (MIT license)
-* Clipper (Boost Software License 1.0)
-* EASTL (BSD 3-Clause license)
-* FastLZ (MIT license)
-* {fmt} (MIT license)
-* GLEW (Modified BSD License, the Mesa 3-D License (MIT) and the Khronos License (MIT))
-* glutess (SGI FREE SOFTWARE LICENSE B Ver 2.0)
+* AngelSript
+* Bullet Physics
+* cgltf
+* Clipper
+* Dear ImGui
+* EASTL
+* FastLZ
+* {fmt}
+* GLEW
+* glutess
 * HACD
-* iesna (public domain)
-* Dear ImGui (MIT License)
-* lwo2 (public domain?)
-* mimalloc (MIT license)
-* miniaudio (public domain or MIT-0)
-* Miniz (public domain)
-* muFFT (MIT license)
-* Recast & Detour (zlib License)
-* SDL2 (zlib license)
-* stb (public domain)
-* tinyexr (BSD 3-Clause license)
-* V-HACD (BSD 3-Clause license)
+* iesna
+* lwo2
+* mimalloc
+* miniaudio
+* Miniz
+* muFFT
+* Recast & Detour
+* SDL2
+* stb
+* tinyexr
+* V-HACD
 * FXAA
 * SMAA
 * half.c
