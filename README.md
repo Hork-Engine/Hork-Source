@@ -4,7 +4,7 @@ Game engine
 
 Developed for Quake-style 3D games, but it is possible to create games of other genres.
 
-[Join the Discord server](https://discord.gg/XsNKdcfv)
+[Join the Discord server](https://discord.gg/2spjtzAFrd)
 
 
 ## A bit of history
