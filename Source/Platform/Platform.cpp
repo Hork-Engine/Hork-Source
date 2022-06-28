@@ -662,6 +662,29 @@ void Initialize(SPlatformInitialize const& CoreInitialize)
         }
     }
 
+    PrintCPUFeatures();
+
+    InitializeMemory(CoreInitialize.ProcessWorkingSetSize);
+
+    SDL_SetMemoryFunctions(
+        [](size_t size) -> void*
+        {
+            return GetHeapAllocator<HEAP_MISC>().Alloc(size, 0);
+        },
+        [](size_t nmemb, size_t size) -> void*
+        {
+            return GetHeapAllocator<HEAP_MISC>().Alloc(nmemb * size, 0, MALLOC_ZERO);
+        },
+        [](void* mem, size_t size) -> void*
+        {
+            return GetHeapAllocator<HEAP_MISC>().Realloc(mem, size, 0);
+        },
+        [](void* mem)
+        {
+            GetHeapAllocator<HEAP_MISC>().Free(mem);
+        });
+
+
     SDL_LogSetOutputFunction(
         [](void* userdata, int category, SDL_LogPriority priority, const char* message)
         {
@@ -674,11 +697,7 @@ void Initialize(SPlatformInitialize const& CoreInitialize)
 
     StartMicroseconds = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now().time_since_epoch()).count();
     StartMilliseconds = StartMicroseconds * 0.001;
-    StartSeconds      = StartMicroseconds * 0.000001;    
-
-    PrintCPUFeatures();
-
-    InitializeMemory(CoreInitialize.ProcessWorkingSetSize);
+    StartSeconds      = StartMicroseconds * 0.000001;
 }
 
 void Deinitialize()
