@@ -48,8 +48,8 @@ set(SDL_DIRECTX OFF CACHE BOOL "" FORCE)
 set(SDL2_DISABLE_SDL2MAIN   ON CACHE BOOL "" FORCE)
 set(SDL2_DISABLE_INSTALL    ON CACHE BOOL "" FORCE)
 set(SDL2_DISABLE_UNINSTALL  ON CACHE BOOL "" FORCE)
-add_subdirectory_with_folder("ThirdParty/SDL" ThirdParty/SDL2)
 include_directories(ThirdParty/SDL2/include)
+add_subdirectory_with_folder("ThirdParty/SDL" ThirdParty/SDL2)
 
 message(STATUS "======================================================================")
 message(STATUS "USING MIMALLOC")
@@ -59,14 +59,14 @@ set(MI_BUILD_OBJECT OFF CACHE BOOL "" FORCE)
 set(MI_OVERRIDE OFF CACHE BOOL "" FORCE)
 set(MI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
 #option(MI_SKIP_COLLECT_ON_EXIT, "Skip collecting memory on program exit" OFF)
-add_subdirectory_with_folder("ThirdParty/mimalloc" ThirdParty/mimalloc)
 include_directories(ThirdParty/mimalloc/include)
+add_subdirectory_with_folder("ThirdParty/mimalloc" ThirdParty/mimalloc)
 
 message(STATUS "======================================================================")
 message(STATUS "USING EASTL")
-add_subdirectory_with_folder("ThirdParty/EASTL" ThirdParty/EASTL)
 include_directories(ThirdParty/EASTL/include)
 include_directories(ThirdParty/EASTL/EABase/include/Common)
+add_subdirectory_with_folder("ThirdParty/EASTL" ThirdParty/EASTL)
 
 message(STATUS "======================================================================")
 message(STATUS "USING FMT")
@@ -78,11 +78,10 @@ message(STATUS "USING BULLET PHYSICS")
 set( USE_DOUBLE_PRECISION OFF CACHE BOOL "" FORCE)
 set( USE_SOFT_BODY_MULTI_BODY_DYNAMICS_WORLD OFF CACHE BOOL "" FORCE)
 set( BUILD_BULLET3 OFF CACHE BOOL "" FORCE)
-
 include_directories( ThirdParty/bullet3/src )
 add_subdirectory_with_folder("ThirdParty/BulletPhysics" ThirdParty/bullet3)
 
-set( HK_BULLET_LIBS
+set (HK_BULLET_LIBS
 BulletSoftBody
 BulletDynamics
 BulletCollision
@@ -155,12 +154,10 @@ add_subdirectory_with_folder( "ThirdParty/cgltf" ThirdParty/cgltf )
 
 message(STATUS "======================================================================")
 message(STATUS "USING ANGELSCRIPT")
-#add_subdirectory_with_folder( "ThirdParty/angelscript" ThirdParty/angelscript )
-
-add_subdirectory(ThirdParty/angelscript/projects/cmake angelscript)
-add_subdirectory(ThirdParty/angelscript_addon angelscript_addon)
 include_directories(ThirdParty/angelscript/include)
 include_directories(ThirdParty/angelscript_addon)
+add_subdirectory(ThirdParty/angelscript/projects/cmake angelscript)
+add_subdirectory(ThirdParty/angelscript_addon angelscript_addon)
 set_target_properties(angelscript PROPERTIES FOLDER ThirdParty/angelscript)
 set_target_properties(angelscript_addon PROPERTIES FOLDER ThirdParty/angelscript)
 
@@ -283,33 +280,28 @@ ${Audio}
 
 ${Renderer}
 ${RendererVT}
-
-${Imgui}
 )
 
-# if shared
-set_property( TARGET ${PROJECT} PROPERTY POSITION_INDEPENDENT_CODE ON )
-
-set( LIBRARIES
-		EASTL
-		fmt::fmt-header-only
-        ${HK_BULLET_LIBS}
-        OpenGL::GL
-        HACD
-        vhacd
-        Recast
-        SDL2-static
-        muFFT
-		mimalloc-static
-        miniaudio
-        miniz
-        fastlz
-        glutess
-        polyclipping
-        tinyexr
-        cgltf
-        ${ANGELSCRIPT_LIBRARY_NAME}
-        angelscript_addon
+set (LIBRARIES
+EASTL
+fmt::fmt-header-only
+${HK_BULLET_LIBS}
+OpenGL::GL
+HACD
+vhacd
+Recast
+SDL2-static
+muFFT
+mimalloc-static
+miniaudio
+miniz
+fastlz
+glutess
+polyclipping
+tinyexr
+cgltf
+${ANGELSCRIPT_LIBRARY_NAME}
+angelscript_addon
 )
 
 if(UNIX)
