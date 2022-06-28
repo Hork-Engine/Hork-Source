@@ -593,9 +593,14 @@ struct Half
 
     Half(Half const&) = default;
 
-    Half(uint16_t v) :
-        v(v)
-    {}
+    Half(uint16_t v) = delete;
+
+    static Half MakeHalf(uint16_t val)
+    {
+        Half f;
+        f.v = val;
+        return f;
+    }
 
     Half(float f) :
         v(half_from_float(*reinterpret_cast<const uint32_t*>(&f)))
@@ -630,12 +635,12 @@ struct Half
 
     Half operator*(Half const& rhs)
     {
-        return Half(half_mul(v, rhs.v));
+        return MakeHalf(half_mul(v, rhs.v));
     }
 
     Half operator+(Half const& rhs)
     {
-        return Half(half_add(v, rhs.v));
+        return MakeHalf(half_add(v, rhs.v));
     }
 
     /** Return half float sign bit */
