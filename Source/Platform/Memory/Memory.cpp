@@ -418,7 +418,7 @@ void* MemoryHeap::_Realloc(void* Ptr, size_t SizeInBytes, size_t Alignment, MALL
 
     MemoryAllocated.Sub(mi_malloc_size(Ptr));
 
-    Ptr = mi_realloc_aligned(Ptr, SizeInBytes, Alignment);
+    Ptr = Alignment == 0 ? mi_realloc(Ptr, SizeInBytes) : mi_realloc_aligned(Ptr, SizeInBytes, Alignment);
     if (HK_LIKELY(Ptr))
     {
         HK_ASSERT(SizeInBytes <= mi_malloc_size(Ptr));
