@@ -10,6 +10,3 @@
 [submodule "Source/ThirdParty/bullet3"]
 	path = Source/ThirdParty/bullet3
 	url = https://github.com/0xc0de/bullet3.git
-[submodule "Source/ThirdParty/SDL2"]
-	path = Source/ThirdParty/SDL2
-	url = https://github.com/0xc0de/SDL2.git
