@@ -49,10 +49,18 @@ SOFTWARE.
 #include <functional>
 #include <type_traits>
 
+#ifdef __GNUC__
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
 #include <EASTL/internal/config.h>
 #include <EASTL/internal/hashtable.h>
 #include <EASTL/fixed_vector.h>
-    
+
+#ifdef __GNUC__
+#    pragma GCC diagnostic pop
+#endif
 
 /*
 

@@ -142,12 +142,21 @@ struct TGlobalStringView
 using AGlobalStringView = TGlobalStringView<char>;
 using AGlobalStringViewW = TGlobalStringView<WideChar>;
 
+#ifdef __GNUC__
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wliteral-suffix"
+#endif
+
 HK_FORCEINLINE AGlobalStringView operator"" s(const char* s, size_t sz)
 {
     AGlobalStringView v;
     v.pRawString = s;
     return v;
 }
+
+#ifdef __GNUC__
+#    pragma GCC diagnostic pop
+#endif
 
 template <typename CharT>
 class TStringView
