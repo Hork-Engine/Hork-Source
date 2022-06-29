@@ -512,7 +512,7 @@ void AEngine::SaveMemoryStats()
         GMemoryStatGlobal.MemoryPeakAlloc += GMemoryStat[n].MemoryPeakAlloc;
     }
 }
-
+#include <SDL.h>
 void AEngine::ShowStats()
 {
     static TStaticResourceFinder<AFont> Impact18("/Root/impact18.font"s);
@@ -549,14 +549,17 @@ void AEngine::ShowStats()
 
         pos.Y = Canvas.GetHeight() - numLines * y_step;
 
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("SDL Allocs (HEAP_MISC) {}", SDL_GetNumAllocations()), true);
+        pos.Y += y_step;
+
         Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Heap memory usage: {} KB / peak {} MB Allocs {}", GMemoryStatGlobal.MemoryAllocated / 1024.0f, GMemoryStatGlobal.MemoryPeakAlloc / 1024.0f / 1024.0f, GMemoryStatGlobal.MemoryAllocs), true);
         pos.Y += y_step;
 
         Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Frame allocs {} Frame frees {}", GMemoryStatGlobal.FrameAllocs, GMemoryStatGlobal.FrameFrees), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Frame memory usage: {} KB / {} MB (Max {} KB)", FrameLoop->GetFrameMemoryUsedPrev() / 1024.0f, FrameLoop->GetFrameMemorySize() >> 20, FrameLoop->GetMaxFrameMemoryUsage() / 1024.0f), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Frame memory usage: {} KB / {} MB (Peak {} KB)", FrameLoop->GetFrameMemoryUsedPrev() / 1024.0f, FrameLoop->GetFrameMemorySize() >> 20, FrameLoop->GetMaxFrameMemoryUsage() / 1024.0f), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Frame memory usage (GPU): {} KB / {} MB (Max {} KB)", streamedMemory->GetUsedMemoryPrev() / 1024.0f, streamedMemory->GetAllocatedMemory() >> 20, streamedMemory->GetMaxMemoryUsage() / 1024.0f), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Frame memory usage (GPU): {} KB / {} MB (Peak {} KB)", streamedMemory->GetUsedMemoryPrev() / 1024.0f, streamedMemory->GetAllocatedMemory() >> 20, streamedMemory->GetMaxMemoryUsage() / 1024.0f), true);
         pos.Y += y_step;
         Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Vertex cache memory usage (GPU): {} KB / {} MB", VertexMemoryGPU->GetUsedMemory() / 1024.0f, VertexMemoryGPU->GetAllocatedMemory() >> 20), true);
         pos.Y += y_step;

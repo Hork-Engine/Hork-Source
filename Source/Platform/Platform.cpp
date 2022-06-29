@@ -623,6 +623,19 @@ static int64_t StartMicroseconds;
 static char* Clipboard = nullptr;
 static AConsoleBuffer ConBuffer;
 
+void* operator new(std::size_t sz)
+{
+    if (void* ptr = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(std::max<size_t>(1, sz)))
+        return ptr;
+
+    throw std::bad_alloc{};
+}
+
+void operator delete(void* ptr) noexcept
+{
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(ptr);
+}
+
 namespace Platform
 {
 
