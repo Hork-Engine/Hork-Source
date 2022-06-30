@@ -1354,37 +1354,37 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
     }
     else if (pShape->pPlanes && pShape->PlaneCount)
     {
+        AConvexHull hull;
+        AConvexHull frontHull;
+        AConvexHull* phull = &hull;
+        AConvexHull* pfrontHull = &frontHull;
         for (int i = 0; i < pShape->PlaneCount; i++)
         {
-            AConvexHull* hull = AConvexHull::CreateForPlane(pShape->pPlanes[i]);
+            phull->FromPlane(pShape->pPlanes[i]);
 
-            for (int j = 0; j < pShape->PlaneCount && hull; j++)
+            for (int j = 0; j < pShape->PlaneCount && !phull->IsEmpty(); j++)
             {
                 if (i != j)
                 {
-                    AConvexHull* front;
-                    hull->Clip(-pShape->pPlanes[j], 0.001f, &front);
-                    hull->Destroy();
-                    hull = front;
+                    phull->Clip(-pShape->pPlanes[j], 0.001f, *pfrontHull);
+                    std::swap(phull, pfrontHull);
                 }
             }
 
-            if (!hull || hull->NumPoints < 3)
+            if (phull->NumPoints() < 3)
             {
-                if (hull)
-                    hull->Destroy();
                 LOG("ACollisionModel::AddConvexHull: hull is clipped off\n");
                 continue;
             }
 
             int firstIndex = body->Indices.Size();
-            for (int v = 0; v < hull->NumPoints; v++)
+            for (int v = 0, numPoints = phull->NumPoints(); v < numPoints; v++)
             {
                 int hasVert = body->Vertices.Size();
                 for (int t = 0; t < body->Vertices.Size(); t++)
                 {
                     Float3& vert = body->Vertices[t];
-                    if ((vert - hull->Points[v]).LengthSqr() > FLT_EPSILON)
+                    if ((vert - (*phull)[v]).LengthSqr() > FLT_EPSILON)
                     {
                         continue;
                     }
@@ -1393,7 +1393,7 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
                 }
                 if (hasVert == body->Vertices.Size())
                 {
-                    body->Vertices.Add(hull->Points[v]);
+                    body->Vertices.Add((*phull)[v]);
                 }
                 if (v > 2)
                 {
@@ -1402,8 +1402,6 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
                 }
                 body->Indices.Add(hasVert);
             }
-
-            hull->Destroy();
         }
     }
     else

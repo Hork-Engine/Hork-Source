@@ -202,13 +202,13 @@ AVisibilityLevel::~AVisibilityLevel()
 
 void AVisibilityLevel::CreatePortals(SPortalDef const* InPortals, int InPortalsCount, Float3 const* InHullVertices)
 {
-    AConvexHull* hull;
     PlaneF       hullPlane;
     SPortalLink* portalLink;
     int          portalLinkNum;
 
     Portals.ResizeInvalidate(InPortalsCount);
     AreaLinks.ResizeInvalidate(Portals.Size() << 1);
+    PortalHulls.ResizeInvalidate(InPortalsCount * 2);
 
     portalLinkNum = 0;
 
@@ -232,21 +232,25 @@ void AVisibilityLevel::CreatePortals(SPortalDef const* InPortals, int InPortalsC
 #else
         int id = 0;
 #endif
+        AConvexHull& hull = PortalHulls[i * 2];
+        AConvexHull& hullReversed = PortalHulls[i * 2 + 1];
 
-        hull      = AConvexHull::CreateFromPoints(InHullVertices + def->FirstVert, def->NumVerts);
-        hullPlane = hull->CalcPlane();
+        hull.FromPoints(InHullVertices + def->FirstVert, def->NumVerts);
+        hullReversed = hull.Reversed();
+
+        hullPlane = hull.CalcPlane();
 
         portalLink         = &AreaLinks[portalLinkNum++];
         portal.Portals[id] = portalLink;
         portalLink->ToArea = a2;
         if (id & 1)
         {
-            portalLink->Hull  = hull;
+            portalLink->Hull  = &hull;
             portalLink->Plane = hullPlane;
         }
         else
         {
-            portalLink->Hull  = hull->Reversed();
+            portalLink->Hull  = &hullReversed;
             portalLink->Plane = -hullPlane;
         }
         portalLink->Next   = a1->PortalList;
@@ -260,12 +264,12 @@ void AVisibilityLevel::CreatePortals(SPortalDef const* InPortals, int InPortalsC
         portalLink->ToArea = a1;
         if (id & 1)
         {
-            portalLink->Hull  = hull;
+            portalLink->Hull  = &hull;
             portalLink->Plane = hullPlane;
         }
         else
         {
-            portalLink->Hull  = hull->Reversed();
+            portalLink->Hull  = &hullReversed;
             portalLink->Plane = -hullPlane;
         }
         portalLink->Next   = a2->PortalList;
@@ -796,7 +800,7 @@ void AVisibilityLevel::DrawDebug(ADebugRenderer* InRenderer)
                         InRenderer->SetColor(Color4(0, 1, 0, 0.4f));
                     }
 
-                    InRenderer->DrawConvexPoly({p->Hull->Points, (size_t)p->Hull->NumPoints}, false);
+                    InRenderer->DrawConvexPoly(p->Hull->GetVector(), false);
                 }
             }
 
@@ -816,7 +820,7 @@ void AVisibilityLevel::DrawDebug(ADebugRenderer* InRenderer)
                         InRenderer->SetColor(Color4(0, 1, 0, 0.4f));
                     }
 
-                    InRenderer->DrawConvexPoly({p->Hull->Points, (size_t)p->Hull->NumPoints}, false);
+                    InRenderer->DrawConvexPoly(p->Hull->GetVector(), false);
                 }
             }
 #endif
@@ -1387,13 +1391,16 @@ SPortalHull* AVisibilityLevel::CalcPortalWinding(SPortalLink const* InPortal, SP
 
     int flip = 0;
 
-    // Clip portal hull by view plane
-    if (!ClipPolygonFast(InPortal->Hull->Points, InPortal->Hull->NumPoints, &PortalHull[flip], pQueryContext->ViewPlane, 0.0f))
-    {
-        HK_ASSERT(InPortal->Hull->NumPoints <= MAX_HULL_POINTS);
+    Float3 const* hullPoints = InPortal->Hull->GetPoints();
+    int           numPoints  = InPortal->Hull->NumPoints();
 
-        Platform::Memcpy(PortalHull[flip].Points, InPortal->Hull->Points, InPortal->Hull->NumPoints * sizeof(Float3));
-        PortalHull[flip].NumPoints = InPortal->Hull->NumPoints;
+    // Clip portal hull by view plane
+    if (!ClipPolygonFast(hullPoints, numPoints, &PortalHull[flip], pQueryContext->ViewPlane, 0.0f))
+    {
+        HK_ASSERT(numPoints <= MAX_HULL_POINTS);
+
+        Platform::Memcpy(PortalHull[flip].Points, hullPoints, numPoints * sizeof(Float3));
+        PortalHull[flip].NumPoints = numPoints;
     }
 
     if (PortalHull[flip].NumPoints >= 3)
@@ -2887,7 +2894,7 @@ void AVisibilityLevel::LevelRaycastPortals_r(SVisArea* InArea)
 
         const Float3 p = pRaycast->RayStart + pRaycast->RayDir * dist;
 
-        if (!BvPointInConvexHullCCW(p, portal->Plane.Normal, portal->Hull->Points, portal->Hull->NumPoints))
+        if (!BvPointInConvexHullCCW(p, portal->Plane.Normal, portal->Hull->GetPoints(), portal->Hull->NumPoints()))
         {
             continue;
         }
@@ -2960,7 +2967,7 @@ void AVisibilityLevel::LevelRaycastBoundsPortals_r(SVisArea* InArea)
 
         const Float3 p = pRaycast->RayStart + pRaycast->RayDir * dist;
 
-        if (!BvPointInConvexHullCCW(p, portal->Plane.Normal, portal->Hull->Points, portal->Hull->NumPoints))
+        if (!BvPointInConvexHullCCW(p, portal->Plane.Normal, portal->Hull->GetPoints(), portal->Hull->NumPoints()))
         {
             continue;
         }

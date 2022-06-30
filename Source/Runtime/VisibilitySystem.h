@@ -965,6 +965,8 @@ private:
     /** Level portals */
     TPodVector<SVisPortal> Portals;
 
+    TVector<AConvexHull> PortalHulls;
+
     /** Links between the portals and areas */
     TPodVector<SPortalLink> AreaLinks;
 

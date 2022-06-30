@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "Plane.h"
 #include "BV/BvAxisAlignedBox.h"
+#include <Containers/Vector.h>
 
 #define CONVEX_HULL_MAX_BOUNDS (5 * 1024)  //99999999999.0f
 #define CONVEX_HULL_MIN_BOUNDS (-5 * 1024) //99999999999.0f
@@ -44,31 +45,57 @@ enum PLANE_SIDE
     PLANE_SIDE_CROSS = 2
 };
 
-class AConvexHull final
+class AConvexHull
 {
-    HK_FORBID_COPY(AConvexHull)
-
-private:
-    int MaxPoints;
-
 public:
-    int    NumPoints;
-    Float3 Points[1];
+    AConvexHull() = default;
 
-private:
-    AConvexHull() {}
-    ~AConvexHull() {}
+    AConvexHull(AConvexHull const&) = default;
+    AConvexHull& operator=(AConvexHull const&) = default;
 
-public:
-    static AConvexHull* CreateEmpty(int maxPoints);
-    static AConvexHull* CreateForPlane(PlaneF const& plane, float maxExtents = CONVEX_HULL_MAX_BOUNDS);
-    static AConvexHull* CreateFromPoints(Float3 const* points, int numPoints);
+    AConvexHull(AConvexHull&&) = default;
+    AConvexHull& operator=(AConvexHull&&) = default;
 
-    void Destroy();
+    AConvexHull(PlaneF const& plane, float maxExtents = CONVEX_HULL_MAX_BOUNDS);
 
-    AConvexHull* Duplicate() const;
+    void FromPlane(PlaneF const& plane, float maxExtents = CONVEX_HULL_MAX_BOUNDS);
+    void FromPoints(Float3 const* points, size_t numPoints);
 
-    AConvexHull* Reversed() const;
+    Float3& operator[](size_t n)
+    {
+        return m_Points[n];
+    }
+
+    Float3 const& operator[](size_t n) const
+    {
+        return m_Points[n];
+    }
+
+    size_t NumPoints() const { return m_Points.Size(); }
+
+    bool IsEmpty() const { return m_Points.IsEmpty(); }
+
+    TVector<Float3>&       GetVector() { return m_Points; }
+    TVector<Float3> const& GetVector() const { return m_Points; }
+
+    Float3* GetPoints()
+    {
+        return m_Points.ToPtr();
+    }
+
+    Float3 const* GetPoints() const
+    {
+        return m_Points.ToPtr();
+    }
+
+    void Clear()
+    {
+        m_Points.Clear();
+    }
+
+    AConvexHull Reversed() const;
+
+    void Reverse();
 
     PLANE_SIDE Classify(PlaneF const& plane, float epsilon) const;
 
@@ -86,11 +113,10 @@ public:
 
     Float3 CalcCenter() const;
 
-    void Reverse();
+    PLANE_SIDE Split(PlaneF const& plane, float epsilon, AConvexHull& front, AConvexHull& back) const;
 
-    PLANE_SIDE Split(PlaneF const& plane, float epsilon, AConvexHull** ppFront, AConvexHull** ppBack) const;
+    PLANE_SIDE Clip(PlaneF const& plane, float epsilon, AConvexHull& front) const;
 
-    PLANE_SIDE Clip(PlaneF const& plane, float epsilon, AConvexHull** ppFront) const;
-
-    int GetMaxPoints() const { return MaxPoints; }
+private:
+    TVector<Float3> m_Points;
 };
