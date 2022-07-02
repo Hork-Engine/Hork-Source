@@ -402,7 +402,17 @@ private:
         }
         else
         {
-            AddResource(attachment.pResource, FG_RESOURCE_ACCESS_WRITE);
+            bool read  = attachment.LoadOp == ATTACHMENT_LOAD_OP_LOAD;
+            bool write = attachment.StoreOp == ATTACHMENT_STORE_OP_STORE;
+
+            if (read && write)
+                AddResource(attachment.pResource, FG_RESOURCE_ACCESS_READ_WRITE);
+            else if (read)
+                AddResource(attachment.pResource, FG_RESOURCE_ACCESS_READ);
+            else if (write)
+                AddResource(attachment.pResource, FG_RESOURCE_ACCESS_WRITE);
+            else
+                HK_ASSERT(0);
         }
     }
 
