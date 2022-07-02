@@ -47,7 +47,7 @@ static uint32_t UniqueName = 0;
 
 AActor::AActor()
 {
-    SetObjectName(Core::Format("Actor{}", UniqueName));
+    SetObjectName(HK_FORMAT("Actor{}", UniqueName));
     UniqueName++;
 }
 

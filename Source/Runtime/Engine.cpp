@@ -513,10 +513,13 @@ void AEngine::SaveMemoryStats()
     }
 }
 #include <SDL.h>
+
 void AEngine::ShowStats()
 {
     static TStaticResourceFinder<AFont> Impact18("/Root/impact18.font"s);
     AFont*                              font = Impact18.GetObject();
+
+    AFormatter fmt;
 
     if (com_ShowStat)
     {
@@ -535,7 +538,6 @@ void AEngine::ShowStats()
         Canvas.PushFont(font);
 
         
-
         
 
         pos.Y = 100;
@@ -543,39 +545,39 @@ void AEngine::ShowStats()
         {
             SMemoryStat& memstat = GMemoryStat[n];
 
-            Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("{}\t\tHeap memory usage: {} KB / peak {} MB Allocs {}", HeapName[n], memstat.MemoryAllocated / 1024.0f, memstat.MemoryPeakAlloc / 1024.0f / 1024.0f, memstat.MemoryAllocs), true);
+            Canvas.DrawTextUTF8(pos, Color4::White(), fmt("{}\t\tHeap memory usage: {} KB / peak {} MB Allocs {}", HeapName[n], memstat.MemoryAllocated / 1024.0f, memstat.MemoryPeakAlloc / 1024.0f / 1024.0f, memstat.MemoryAllocs), true);
             pos.Y += y_step;
         }
 
         pos.Y = Canvas.GetHeight() - numLines * y_step;
 
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("SDL Allocs (HEAP_MISC) {}", SDL_GetNumAllocations()), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("SDL Allocs (HEAP_MISC) {}", SDL_GetNumAllocations()), true);
         pos.Y += y_step;
 
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Heap memory usage: {} KB / peak {} MB Allocs {}", GMemoryStatGlobal.MemoryAllocated / 1024.0f, GMemoryStatGlobal.MemoryPeakAlloc / 1024.0f / 1024.0f, GMemoryStatGlobal.MemoryAllocs), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Heap memory usage: {} KB / peak {} MB Allocs {}", GMemoryStatGlobal.MemoryAllocated / 1024.0f, GMemoryStatGlobal.MemoryPeakAlloc / 1024.0f / 1024.0f, GMemoryStatGlobal.MemoryAllocs), true);
         pos.Y += y_step;
 
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Frame allocs {} Frame frees {}", GMemoryStatGlobal.FrameAllocs, GMemoryStatGlobal.FrameFrees), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Frame allocs {} Frame frees {}", GMemoryStatGlobal.FrameAllocs, GMemoryStatGlobal.FrameFrees), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Frame memory usage: {} KB / {} MB (Peak {} KB)", FrameLoop->GetFrameMemoryUsedPrev() / 1024.0f, FrameLoop->GetFrameMemorySize() >> 20, FrameLoop->GetMaxFrameMemoryUsage() / 1024.0f), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Frame memory usage: {} KB / {} MB (Peak {} KB)", FrameLoop->GetFrameMemoryUsedPrev() / 1024.0f, FrameLoop->GetFrameMemorySize() >> 20, FrameLoop->GetMaxFrameMemoryUsage() / 1024.0f), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Frame memory usage (GPU): {} KB / {} MB (Peak {} KB)", streamedMemory->GetUsedMemoryPrev() / 1024.0f, streamedMemory->GetAllocatedMemory() >> 20, streamedMemory->GetMaxMemoryUsage() / 1024.0f), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Frame memory usage (GPU): {} KB / {} MB (Peak {} KB)", streamedMemory->GetUsedMemoryPrev() / 1024.0f, streamedMemory->GetAllocatedMemory() >> 20, streamedMemory->GetMaxMemoryUsage() / 1024.0f), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Vertex cache memory usage (GPU): {} KB / {} MB", VertexMemoryGPU->GetUsedMemory() / 1024.0f, VertexMemoryGPU->GetAllocatedMemory() >> 20), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Vertex cache memory usage (GPU): {} KB / {} MB", VertexMemoryGPU->GetUsedMemory() / 1024.0f, VertexMemoryGPU->GetAllocatedMemory() >> 20), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Visible instances: {}", frameData->Instances.Size()), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Visible instances: {}", frameData->Instances.Size()), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Visible shadow instances: {}", frameData->ShadowInstances.Size()), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Visible shadow instances: {}", frameData->ShadowInstances.Size()), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Visible dir lights: {}", frameData->DirectionalLights.Size()), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Visible dir lights: {}", frameData->DirectionalLights.Size()), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Polycount: {}", stat.PolyCount), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Polycount: {}", stat.PolyCount), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("ShadowMapPolyCount: {}", stat.ShadowMapPolyCount), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("ShadowMapPolyCount: {}", stat.ShadowMapPolyCount), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Frontend time: {} msec", stat.FrontendTime), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Frontend time: {} msec", stat.FrontendTime), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), Core::Format("Audio channels: {} active, {} virtual", AudioSystem.GetMixer()->GetNumActiveChannels(), AudioSystem.GetMixer()->GetNumVirtualChannels()), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Audio channels: {} active, {} virtual", AudioSystem.GetMixer()->GetNumActiveChannels(), AudioSystem.GetMixer()->GetNumVirtualChannels()), true);
 
         Canvas.PopFont();
     }
@@ -596,7 +598,7 @@ void AEngine::ShowStats()
         fps *= (1.0f / FPS_BUF);
         fps = 1.0f / (fps > 0.0f ? fps : 1.0f);
         Canvas.PushFont(font);
-        Canvas.DrawTextUTF8(Float2(10, 10), Color4::White(), Core::Format("Frame time {:.1} ms (FPS: {}, AVG {})", FrameDurationInSeconds * 1000.0f, int(1.0f / FrameDurationInSeconds), int(fps + 0.5f)), true);
+        Canvas.DrawTextUTF8(Float2(10, 10), Color4::White(), fmt("Frame time {:.1} ms (FPS: {}, AVG {})", FrameDurationInSeconds * 1000.0f, int(1.0f / FrameDurationInSeconds), int(fps + 0.5f)), true);
         Canvas.PopFont();
     }
 }

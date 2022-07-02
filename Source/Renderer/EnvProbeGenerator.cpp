@@ -129,7 +129,7 @@ void AEnvProbeGenerator::GenerateArray( int _MaxLod, int _CubemapsCount, ITextur
 
     for ( int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1 ) {
 
-        strs[Lod] = Core::Format("Envprobe LOD {} pass", Lod);
+        strs[Lod] = HK_FORMAT("Envprobe LOD {} pass", Lod);
 
         ARenderPass & pass = frameGraph.AddTask< ARenderPass >( strs[Lod].CStr() );
 
@@ -199,7 +199,7 @@ void AEnvProbeGenerator::Generate( int _MaxLod, ITexture * _SourceCubemap, TRef<
 
     for ( int Lod = 0; lodWidth >= 1; Lod++, lodWidth >>= 1 ) {
 
-        strs[Lod] = Core::Format("Envprobe LOD {} pass", Lod);
+        strs[Lod] = HK_FORMAT("Envprobe LOD {} pass", Lod);
 
         ARenderPass & pass = frameGraph.AddTask< ARenderPass >( strs[Lod].CStr() );
 

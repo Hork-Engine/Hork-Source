@@ -1408,6 +1408,28 @@ using AWideString     = TString<WideChar>;
 using AStringView     = TStringView<char>;
 using AWideStringView = TStringView<WideChar>;
 
+class AFormatter
+{
+    fmt::memory_buffer m_Buffer;
+
+public:
+    template <typename... T>
+    HK_INLINE AStringView operator()(fmt::format_string<T...> Format, T&&... args)
+    {
+        m_Buffer.clear();
+        fmt::detail::vformat_to(m_Buffer, fmt::string_view(Format), fmt::make_format_args(args...));
+        return AStringView(m_Buffer.begin(), m_Buffer.end());
+    }
+
+    template <typename T>
+    AStringView ToString(T const& Val)
+    {
+        return (*this)("{}", Val);
+    }
+};
+
+#define HK_FORMAT(x, ...) AFormatter()(HK_FMT(x), __VA_ARGS__)
+
 namespace Core
 {
 
@@ -1487,18 +1509,12 @@ HK_INLINE AWideString GetWideString(AGlobalStringView utfStr)
     return wideStr;
 }
 
-template <typename... T>
-HK_INLINE AString Format(fmt::format_string<T...> Format, T&&... args)
-{
-    fmt::memory_buffer buffer;
-    fmt::detail::vformat_to(buffer, fmt::string_view(Format), fmt::make_format_args(args...));
-    return AString(buffer.begin(), buffer.end());
-}
+
 
 template <typename T>
 HK_INLINE AString ToString(T const& Val)
 {
-    return Format("{}", Val);
+    return AFormatter().ToString(Val);
 }
 
 template <typename T, std::enable_if_t<std::is_integral<T>::value || std::is_floating_point<T>::value, bool> = true>

@@ -683,7 +683,8 @@ void AAssetImporter::ReadSkeleton(cgltf_node* node, int parentIndex)
     }
     else
     {
-        Platform::Strcpy(joint.Name, sizeof(joint.Name), Core::Format("unnamed_{}", m_Joints.Size() - 1).CStr());
+        AString name = HK_FORMAT("unnamed_{}", m_Joints.Size() - 1);
+        Platform::Strcpy(joint.Name, sizeof(joint.Name), name.CStr());
     }
 
     LOG("ReadSkeleton: {}\n", node->name);
@@ -2243,7 +2244,7 @@ void AAssetImporter::WriteSingleModel()
         }
         else
         {
-            f.WriteObject(Core::Format("Subpart_{}", n));
+            f.WriteObject(HK_FORMAT("Subpart_{}", n));
         }
         f.WriteInt32(meshInfo.BaseVertex);
         f.WriteUInt32(meshInfo.FirstIndex);

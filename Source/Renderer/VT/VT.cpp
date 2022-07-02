@@ -41,46 +41,48 @@ SOFTWARE.
 
 #include <io.h>
 
-bool SVirtualTextureFileHandle::OpenRead( const char * FileName ) {
-    int n = MultiByteToWideChar( CP_UTF8, 0, FileName, -1, NULL, 0 );
+bool SVirtualTextureFileHandle::OpenRead(AStringView FileName)
+{
+    int n = MultiByteToWideChar(CP_UTF8, 0, FileName.ToPtr(), FileName.Size(), NULL, 0);
     if ( 0 == n ) {
         return false;
     }
 
     wchar_t * wFilename = (wchar_t *)StackAlloc( n * sizeof( wchar_t ) );
 
-    MultiByteToWideChar( CP_UTF8, 0, FileName, -1, wFilename, n );
+    MultiByteToWideChar(CP_UTF8, 0, FileName.ToPtr(), FileName.Size(), wFilename, n);
 
-    Handle = CreateFile( wFilename,
+    Handle = CreateFileW(wFilename,
                          GENERIC_READ,
                          0,
                          NULL,
                          OPEN_EXISTING,
                          FILE_ATTRIBUTE_NORMAL
                          | FILE_FLAG_RANDOM_ACCESS,
-                         NULL );
+                         NULL);
 
     return Handle != INVALID_HANDLE_VALUE;
 }
 
-bool SVirtualTextureFileHandle::OpenWrite( const char * FileName ) {
-    int n = MultiByteToWideChar( CP_UTF8, 0, FileName, -1, NULL, 0 );
+bool SVirtualTextureFileHandle::OpenWrite(AStringView FileName)
+{
+    int n = MultiByteToWideChar(CP_UTF8, 0, FileName.ToPtr(), FileName.Size(), NULL, 0);
     if ( 0 == n ) {
         return false;
     }
 
     wchar_t * wFilename = (wchar_t *)StackAlloc( n * sizeof( wchar_t ) );
 
-    MultiByteToWideChar( CP_UTF8, 0, FileName, -1, wFilename, n );
+    MultiByteToWideChar(CP_UTF8, 0, FileName.ToPtr(), FileName.Size(), wFilename, n);
 
-    Handle = CreateFile( wFilename,
+    Handle = CreateFileW(wFilename,
                          GENERIC_WRITE,
                          0,
                          NULL,
                          CREATE_ALWAYS,
                          FILE_ATTRIBUTE_NORMAL
                          | FILE_FLAG_RANDOM_ACCESS,
-                         NULL );
+                         NULL);
 
     return Handle != INVALID_HANDLE_VALUE;
 }
@@ -148,13 +150,15 @@ void SVirtualTextureFileHandle::Write( const void * Data, unsigned int Size, uin
 
 #include <unistd.h>
 
-bool SVirtualTextureFileHandle::OpenRead( const char * FileName ) {
-    iHandle = open( FileName, O_LARGEFILE | /*O_BINARY |*/O_RDONLY );
+bool SVirtualTextureFileHandle::OpenRead(AStringView FileName)
+{
+    iHandle = open(FileName.IsNullTerminated() ? FileName.Begin() : AString(FileName).CStr(), O_LARGEFILE | /*O_BINARY |*/ O_RDONLY);
     return iHandle >= 0;
 }
 
-bool SVirtualTextureFileHandle::OpenWrite( const char * FileName ) {
-    iHandle = open( FileName, O_LARGEFILE | O_WRONLY | O_CREAT | O_TRUNC, 0664 );
+bool SVirtualTextureFileHandle::OpenWrite(AStringView FileName)
+{
+    iHandle = open(FileName.IsNullTerminated() ? FileName.Begin() : AString(FileName).CStr(), O_LARGEFILE | O_WRONLY | O_CREAT | O_TRUNC, 0664);
     return iHandle >= 0;
 }
 

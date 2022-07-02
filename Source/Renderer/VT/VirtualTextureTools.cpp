@@ -181,7 +181,7 @@ bool VT_MakeStructure( SVirtualTextureStructure & _Struct,
 }
 
 AString VT_FileNameFromRelative( const char * _OutputPath, unsigned int _RelativeIndex, int _Lod ) {
-    return Core::Format("{}{}/{}{}", _OutputPath, _Lod, _RelativeIndex, PAGE_EXTENSION);
+    return HK_FORMAT("{}{}/{}{}", _OutputPath, _Lod, _RelativeIndex, PAGE_EXTENSION);
 }
 
 SVirtualTextureLayer::SCachedPage * VT_FindInCache( SVirtualTextureLayer & Layer, unsigned int _AbsoluteIndex ) {
@@ -626,7 +626,7 @@ static void VT_SynchronizePageBitfieldWithHDD_Lod( APageBitfield & BitField, int
 
     // TODO: Rewrite to support FindFirstFileW
 
-    if ((fh = FindFirstFileA(Core::Format("{}*.png", _LodPath).CStr(), &fd)) != INVALID_HANDLE_VALUE)
+    if ((fh = FindFirstFileA(AString(HK_FORMAT("{}*.png", _LodPath)).CStr(), &fd)) != INVALID_HANDLE_VALUE)
     {
         do {
             int len = strlen( fd.cFileName );
@@ -1230,7 +1230,7 @@ SFileOffset VT_WritePage( SVirtualTextureFileHandle * File, SFileOffset Offset, 
     return Offset;
 }
 
-bool VT_WriteFile( const SVirtualTextureStructure & _Struct, int _MaxLods, SVirtualTextureLayer * _Layers, int _NumLayers, const char * FileName ) {
+bool VT_WriteFile( const SVirtualTextureStructure & _Struct, int _MaxLods, SVirtualTextureLayer * _Layers, int _NumLayers, AStringView FileName ) {
     SVirtualTextureFileHandle fileHandle;
     SFileOffset fileOffset;
     SVirtualTexturePIT pit;
@@ -1534,10 +1534,10 @@ bool VT_CreateVirtualTexture( const SVirtualTextureLayerDesc * _Layers,
 
     for ( int LayerIndex = 0 ; LayerIndex < _NumLayers ; LayerIndex++ )
     {
-        AString layerPath = Core::Format("{}/layer{}/", _TempDir, LayerIndex);
+        AString layerPath = HK_FORMAT("{}/layer{}/", _TempDir, LayerIndex);
 
         for ( int lodIndex = 0 ; lodIndex < _MaxLods ; lodIndex++ ) {
-            Core::CreateDirectory(Core::Format("{}{}", layerPath, lodIndex), false);
+            Core::CreateDirectory(HK_FORMAT("{}{}", layerPath, lodIndex), false);
         }
 
         vtLayers[ LayerIndex ].NumCachedPages = 0;
@@ -1591,7 +1591,7 @@ bool VT_CreateVirtualTexture( const SVirtualTextureLayerDesc * _Layers,
 //VT_FitPageData( vtLayers[ layerIndex],true);// FIXME: for debug
     }
 
-    if (!VT_WriteFile(vtStruct, _MaxLods, &vtLayers[0], vtLayers.size(), Core::Format("{}.vt3", _OutputFileName).CStr()))
+    if (!VT_WriteFile(vtStruct, _MaxLods, &vtLayers[0], vtLayers.size(), HK_FORMAT("{}.vt3", _OutputFileName)))
     {
         return false;
     }

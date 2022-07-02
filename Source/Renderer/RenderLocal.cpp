@@ -305,7 +305,7 @@ void SaveSnapshot(ITexture& _Texture)
 
     static int  n = 0;
     AFileStream f;
-    if (f.OpenWrite(Core::Format("snapshots/{}.png", n++)))
+    if (f.OpenWrite(HK_FORMAT("snapshots/{}.png", n++)))
     {
         WritePNG(f, w, h, numchannels, data, w * numchannels);
     }

@@ -231,7 +231,7 @@ AString ADocumentSerializer::SerializeValue(ADocValue const* Value)
 {
     if (Value->IsString())
     {
-        return Core::Format("\"{}\"", Value->GetString());
+        return HK_FORMAT("\"{}\"", Value->GetString());
     }
 
     AString s("{");
@@ -326,9 +326,9 @@ AString ADocumentSerializer::SerializeValueCompact(ADocValue const* Value)
 {
     if (Value->IsString())
     {
-        return Core::Format("\"{}\"", Value->GetString());
+        return HK_FORMAT("\"{}\"", Value->GetString());
     }
-    return Core::Format("{{{}}}", SerializeObjectCompact(Value->GetListOfMembers()));
+    return HK_FORMAT("{{{}}}", SerializeObjectCompact(Value->GetListOfMembers()));
 }
 
 AString ADocumentSerializer::SerializeMemberCompact(ADocMember const* Member)

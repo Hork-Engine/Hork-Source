@@ -78,8 +78,8 @@ struct SVirtualTextureFileHandle
 
     bool IsInvalid() const { return Handle == (void *)(size_t)-1; }
 
-    bool OpenRead( const char * FileNamee );
-    bool OpenWrite( const char * FileName );
+    bool OpenRead(AStringView FileName);
+    bool OpenWrite(AStringView FileName);
     void Close();
     void Seek( uint64_t Offset );
     void Read( void * Data, unsigned int Size, uint64_t Offset );

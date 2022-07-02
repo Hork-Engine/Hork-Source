@@ -189,7 +189,7 @@ void VT_GenerateBorders( SVirtualTextureStructure & _struct, SVirtualTextureLaye
 SFileOffset VT_WritePage( SVirtualTextureFileHandle * File, SFileOffset _offset, const SVirtualTextureStructure & _Struct, SVirtualTextureLayer * _Layers, int _numLayers, unsigned int _PageIndex );
 
 // Пишет файл VT
-bool VT_WriteFile( const SVirtualTextureStructure & _struct, int _maxLods, SVirtualTextureLayer * _Layers, int _numLayers, const char * _fileName );
+bool VT_WriteFile( const SVirtualTextureStructure & _struct, int _maxLods, SVirtualTextureLayer * _Layers, int _numLayers, AStringView _fileName );
 
 struct SVirtualTextureLayerDesc {
     int     SizeInBytes;   // Размер страницы после компрессии

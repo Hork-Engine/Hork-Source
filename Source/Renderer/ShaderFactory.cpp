@@ -79,9 +79,9 @@ void AShaderFactory::CreateShader(SHADER_TYPE ShaderType, TPodVector<const char*
             break;
     }
 
-    predefines += Core::Format("#define MAX_DIRECTIONAL_LIGHTS {}\n", MAX_DIRECTIONAL_LIGHTS);
-    predefines += Core::Format("#define MAX_SHADOW_CASCADES {}\n", MAX_SHADOW_CASCADES);
-    predefines += Core::Format("#define MAX_TOTAL_SHADOW_CASCADES_PER_VIEW {}\n", MAX_TOTAL_SHADOW_CASCADES_PER_VIEW);
+    predefines += HK_FORMAT("#define MAX_DIRECTIONAL_LIGHTS {}\n", MAX_DIRECTIONAL_LIGHTS);
+    predefines += HK_FORMAT("#define MAX_SHADOW_CASCADES {}\n", MAX_SHADOW_CASCADES);
+    predefines += HK_FORMAT("#define MAX_TOTAL_SHADOW_CASCADES_PER_VIEW {}\n", MAX_TOTAL_SHADOW_CASCADES_PER_VIEW);
 
 
 #ifdef SHADOWMAP_PCF
