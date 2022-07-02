@@ -33,15 +33,13 @@ SOFTWARE.
 
 BvFrustum::BvFrustum()
 {
-    PlanesSSE = nullptr;
+#ifdef HK_FRUSTUM_USE_SSE
+    HK_ASSERT_(IsAlignedPtr(&m_SSEData, 16), "Invalid alignment");
+#endif
 }
 
 BvFrustum::~BvFrustum()
-{
-#ifdef HK_FRUSTUM_USE_SSE
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(PlanesSSE);
-#endif
-}
+{}
 
 void BvFrustum::FromMatrix(Float4x4 const& matrix, bool bReversedDepth)
 {
@@ -53,98 +51,93 @@ void BvFrustum::FromMatrix(Float4x4 const& matrix, bool bReversedDepth)
 
     Float4x4 m = bReversedDepth ? flipZ * matrix : matrix;
 
-    planes_[FRUSTUM_PLANE_RIGHT].Normal.X = m[0][3] - m[0][0];
-    planes_[FRUSTUM_PLANE_RIGHT].Normal.Y = m[1][3] - m[1][0];
-    planes_[FRUSTUM_PLANE_RIGHT].Normal.Z = m[2][3] - m[2][0];
-    planes_[FRUSTUM_PLANE_RIGHT].D        = m[3][3] - m[3][0];
-    planes_[FRUSTUM_PLANE_RIGHT].NormalizeSelf();
+    m_Planes[FRUSTUM_PLANE_RIGHT].Normal.X = m[0][3] - m[0][0];
+    m_Planes[FRUSTUM_PLANE_RIGHT].Normal.Y = m[1][3] - m[1][0];
+    m_Planes[FRUSTUM_PLANE_RIGHT].Normal.Z = m[2][3] - m[2][0];
+    m_Planes[FRUSTUM_PLANE_RIGHT].D        = m[3][3] - m[3][0];
+    m_Planes[FRUSTUM_PLANE_RIGHT].NormalizeSelf();
 
-    planes_[FRUSTUM_PLANE_LEFT].Normal.X = m[0][3] + m[0][0];
-    planes_[FRUSTUM_PLANE_LEFT].Normal.Y = m[1][3] + m[1][0];
-    planes_[FRUSTUM_PLANE_LEFT].Normal.Z = m[2][3] + m[2][0];
-    planes_[FRUSTUM_PLANE_LEFT].D        = m[3][3] + m[3][0];
-    planes_[FRUSTUM_PLANE_LEFT].NormalizeSelf();
+    m_Planes[FRUSTUM_PLANE_LEFT].Normal.X = m[0][3] + m[0][0];
+    m_Planes[FRUSTUM_PLANE_LEFT].Normal.Y = m[1][3] + m[1][0];
+    m_Planes[FRUSTUM_PLANE_LEFT].Normal.Z = m[2][3] + m[2][0];
+    m_Planes[FRUSTUM_PLANE_LEFT].D        = m[3][3] + m[3][0];
+    m_Planes[FRUSTUM_PLANE_LEFT].NormalizeSelf();
 
-    planes_[FRUSTUM_PLANE_TOP].Normal.X = m[0][3] + m[0][1];
-    planes_[FRUSTUM_PLANE_TOP].Normal.Y = m[1][3] + m[1][1];
-    planes_[FRUSTUM_PLANE_TOP].Normal.Z = m[2][3] + m[2][1];
-    planes_[FRUSTUM_PLANE_TOP].D        = m[3][3] + m[3][1];
-    planes_[FRUSTUM_PLANE_TOP].NormalizeSelf();
+    m_Planes[FRUSTUM_PLANE_TOP].Normal.X = m[0][3] + m[0][1];
+    m_Planes[FRUSTUM_PLANE_TOP].Normal.Y = m[1][3] + m[1][1];
+    m_Planes[FRUSTUM_PLANE_TOP].Normal.Z = m[2][3] + m[2][1];
+    m_Planes[FRUSTUM_PLANE_TOP].D        = m[3][3] + m[3][1];
+    m_Planes[FRUSTUM_PLANE_TOP].NormalizeSelf();
 
-    planes_[FRUSTUM_PLANE_BOTTOM].Normal.X = m[0][3] - m[0][1];
-    planes_[FRUSTUM_PLANE_BOTTOM].Normal.Y = m[1][3] - m[1][1];
-    planes_[FRUSTUM_PLANE_BOTTOM].Normal.Z = m[2][3] - m[2][1];
-    planes_[FRUSTUM_PLANE_BOTTOM].D        = m[3][3] - m[3][1];
-    planes_[FRUSTUM_PLANE_BOTTOM].NormalizeSelf();
+    m_Planes[FRUSTUM_PLANE_BOTTOM].Normal.X = m[0][3] - m[0][1];
+    m_Planes[FRUSTUM_PLANE_BOTTOM].Normal.Y = m[1][3] - m[1][1];
+    m_Planes[FRUSTUM_PLANE_BOTTOM].Normal.Z = m[2][3] - m[2][1];
+    m_Planes[FRUSTUM_PLANE_BOTTOM].D        = m[3][3] - m[3][1];
+    m_Planes[FRUSTUM_PLANE_BOTTOM].NormalizeSelf();
 
-    planes_[FRUSTUM_PLANE_FAR].Normal.X = m[0][3] - m[0][2];
-    planes_[FRUSTUM_PLANE_FAR].Normal.Y = m[1][3] - m[1][2];
-    planes_[FRUSTUM_PLANE_FAR].Normal.Z = m[2][3] - m[2][2];
-    planes_[FRUSTUM_PLANE_FAR].D        = m[3][3] - m[3][2];
-    planes_[FRUSTUM_PLANE_FAR].NormalizeSelf();
+    m_Planes[FRUSTUM_PLANE_FAR].Normal.X = m[0][3] - m[0][2];
+    m_Planes[FRUSTUM_PLANE_FAR].Normal.Y = m[1][3] - m[1][2];
+    m_Planes[FRUSTUM_PLANE_FAR].Normal.Z = m[2][3] - m[2][2];
+    m_Planes[FRUSTUM_PLANE_FAR].D        = m[3][3] - m[3][2];
+    m_Planes[FRUSTUM_PLANE_FAR].NormalizeSelf();
 
-    planes_[FRUSTUM_PLANE_NEAR].Normal.X = m[0][3] + m[0][2];
-    planes_[FRUSTUM_PLANE_NEAR].Normal.Y = m[1][3] + m[1][2];
-    planes_[FRUSTUM_PLANE_NEAR].Normal.Z = m[2][3] + m[2][2];
-    planes_[FRUSTUM_PLANE_NEAR].D        = m[3][3] + m[3][2];
-    planes_[FRUSTUM_PLANE_NEAR].NormalizeSelf();
+    m_Planes[FRUSTUM_PLANE_NEAR].Normal.X = m[0][3] + m[0][2];
+    m_Planes[FRUSTUM_PLANE_NEAR].Normal.Y = m[1][3] + m[1][2];
+    m_Planes[FRUSTUM_PLANE_NEAR].Normal.Z = m[2][3] + m[2][2];
+    m_Planes[FRUSTUM_PLANE_NEAR].D        = m[3][3] + m[3][2];
+    m_Planes[FRUSTUM_PLANE_NEAR].NormalizeSelf();
 
 #ifdef HK_FRUSTUM_USE_SSE
-    if (!PlanesSSE)
-    {
-        PlanesSSE = (sse_t*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(sse_t), 16);
-    }
+    m_SSEData.x[0]  = _mm_set1_ps(m_Planes[0].Normal.X);
+    m_SSEData.y[0]  = _mm_set1_ps(m_Planes[0].Normal.Y);
+    m_SSEData.z[0]  = _mm_set1_ps(m_Planes[0].Normal.Z);
+    m_SSEData.d[0]  = _mm_set1_ps(m_Planes[0].D);
 
-    PlanesSSE->x[0] = _mm_set1_ps(planes_[0].Normal.X);
-    PlanesSSE->y[0] = _mm_set1_ps(planes_[0].Normal.Y);
-    PlanesSSE->z[0] = _mm_set1_ps(planes_[0].Normal.Z);
-    PlanesSSE->d[0] = _mm_set1_ps(planes_[0].D);
+    m_SSEData.x[1]  = _mm_set1_ps(m_Planes[1].Normal.X);
+    m_SSEData.y[1]  = _mm_set1_ps(m_Planes[1].Normal.Y);
+    m_SSEData.z[1]  = _mm_set1_ps(m_Planes[1].Normal.Z);
+    m_SSEData.d[1]  = _mm_set1_ps(m_Planes[1].D);
 
-    PlanesSSE->x[1] = _mm_set1_ps(planes_[1].Normal.X);
-    PlanesSSE->y[1] = _mm_set1_ps(planes_[1].Normal.Y);
-    PlanesSSE->z[1] = _mm_set1_ps(planes_[1].Normal.Z);
-    PlanesSSE->d[1] = _mm_set1_ps(planes_[1].D);
+    m_SSEData.x[2]  = _mm_set1_ps(m_Planes[2].Normal.X);
+    m_SSEData.y[2]  = _mm_set1_ps(m_Planes[2].Normal.Y);
+    m_SSEData.z[2]  = _mm_set1_ps(m_Planes[2].Normal.Z);
+    m_SSEData.d[2]  = _mm_set1_ps(m_Planes[2].D);
 
-    PlanesSSE->x[2] = _mm_set1_ps(planes_[2].Normal.X);
-    PlanesSSE->y[2] = _mm_set1_ps(planes_[2].Normal.Y);
-    PlanesSSE->z[2] = _mm_set1_ps(planes_[2].Normal.Z);
-    PlanesSSE->d[2] = _mm_set1_ps(planes_[2].D);
+    m_SSEData.x[3]  = _mm_set1_ps(m_Planes[3].Normal.X);
+    m_SSEData.y[3]  = _mm_set1_ps(m_Planes[3].Normal.Y);
+    m_SSEData.z[3]  = _mm_set1_ps(m_Planes[3].Normal.Z);
+    m_SSEData.d[3]  = _mm_set1_ps(m_Planes[3].D);
 
-    PlanesSSE->x[3] = _mm_set1_ps(planes_[3].Normal.X);
-    PlanesSSE->y[3] = _mm_set1_ps(planes_[3].Normal.Y);
-    PlanesSSE->z[3] = _mm_set1_ps(planes_[3].Normal.Z);
-    PlanesSSE->d[3] = _mm_set1_ps(planes_[3].D);
+    m_SSEData.x[4]  = _mm_set1_ps(m_Planes[4].Normal.X);
+    m_SSEData.y[4]  = _mm_set1_ps(m_Planes[4].Normal.Y);
+    m_SSEData.z[4]  = _mm_set1_ps(m_Planes[4].Normal.Z);
+    m_SSEData.d[4]  = _mm_set1_ps(m_Planes[4].D);
 
-    PlanesSSE->x[4] = _mm_set1_ps(planes_[4].Normal.X);
-    PlanesSSE->y[4] = _mm_set1_ps(planes_[4].Normal.Y);
-    PlanesSSE->z[4] = _mm_set1_ps(planes_[4].Normal.Z);
-    PlanesSSE->d[4] = _mm_set1_ps(planes_[4].D);
-
-    PlanesSSE->x[5] = _mm_set1_ps(planes_[5].Normal.X);
-    PlanesSSE->y[5] = _mm_set1_ps(planes_[5].Normal.Y);
-    PlanesSSE->z[5] = _mm_set1_ps(planes_[5].Normal.Z);
-    PlanesSSE->d[5] = _mm_set1_ps(planes_[5].D);
+    m_SSEData.x[5]  = _mm_set1_ps(m_Planes[5].Normal.X);
+    m_SSEData.y[5]  = _mm_set1_ps(m_Planes[5].Normal.Y);
+    m_SSEData.z[5]  = _mm_set1_ps(m_Planes[5].Normal.Z);
+    m_SSEData.d[5]  = _mm_set1_ps(m_Planes[5].D);
 #endif
 }
 
 void BvFrustum::CornerVector_TR(Float3& vector) const
 {
-    vector = Math::Cross(planes_[FRUSTUM_PLANE_TOP].Normal, planes_[FRUSTUM_PLANE_RIGHT].Normal).Normalized();
+    vector = Math::Cross(m_Planes[FRUSTUM_PLANE_TOP].Normal, m_Planes[FRUSTUM_PLANE_RIGHT].Normal).Normalized();
 }
 
 void BvFrustum::CornerVector_TL(Float3& vector) const
 {
-    vector = Math::Cross(planes_[FRUSTUM_PLANE_LEFT].Normal, planes_[FRUSTUM_PLANE_TOP].Normal).Normalized();
+    vector = Math::Cross(m_Planes[FRUSTUM_PLANE_LEFT].Normal, m_Planes[FRUSTUM_PLANE_TOP].Normal).Normalized();
 }
 
 void BvFrustum::CornerVector_BR(Float3& vector) const
 {
-    vector = Math::Cross(planes_[FRUSTUM_PLANE_RIGHT].Normal, planes_[FRUSTUM_PLANE_BOTTOM].Normal).Normalized();
+    vector = Math::Cross(m_Planes[FRUSTUM_PLANE_RIGHT].Normal, m_Planes[FRUSTUM_PLANE_BOTTOM].Normal).Normalized();
 }
 
 void BvFrustum::CornerVector_BL(Float3& vector) const
 {
-    vector = Math::Cross(planes_[FRUSTUM_PLANE_BOTTOM].Normal, planes_[FRUSTUM_PLANE_LEFT].Normal).Normalized();
+    vector = Math::Cross(m_Planes[FRUSTUM_PLANE_BOTTOM].Normal, m_Planes[FRUSTUM_PLANE_LEFT].Normal).Normalized();
 }
 
 void BvFrustum::CullSphere_Generic(BvSphereSSE const* bounds, int count, int* result) const
@@ -155,7 +148,7 @@ void BvFrustum::CullSphere_Generic(BvSphereSSE const* bounds, int count, int* re
     for (BvSphereSSE const* Last = bounds + count; bounds < Last; bounds++)
     {
         inside = true;
-        for (p = planes_; p < planes_ + 6; p++)
+        for (p = m_Planes; p < m_Planes + 6; p++)
         {
             inside &= (Math::Dot(p->Normal, bounds->Center) + p->D > -bounds->Radius);
         }
@@ -171,7 +164,7 @@ void BvFrustum::CullSphere_IgnoreZ_Generic(BvSphereSSE const* bounds, int count,
     for (BvSphereSSE const* Last = bounds + count; bounds < Last; bounds++)
     {
         inside = true;
-        for (p = planes_; p < planes_ + 4; p++)
+        for (p = m_Planes; p < m_Planes + 4; p++)
         {
             inside &= (Math::Dot(p->Normal, bounds->Center) + p->D > -bounds->Radius);
         }
@@ -229,12 +222,12 @@ void BvFrustum::CullSphere_SSE(BvSphereSSE const* bounds, int count, int* result
         {
             //1. calc distance to plane dot(sphere_pos.Xyz, plane.Xyz) + plane.w
             //2. if distance < sphere radius, then sphere outside frustum
-            __m128 dot_x = _mm_mul_ps(spheres_pos_x, PlanesSSE->x[j]);
-            __m128 dot_y = _mm_mul_ps(spheres_pos_y, PlanesSSE->y[j]);
-            __m128 dot_z = _mm_mul_ps(spheres_pos_z, PlanesSSE->z[j]);
+            __m128 dot_x = _mm_mul_ps(spheres_pos_x, m_SSEData.x[j]);
+            __m128 dot_y = _mm_mul_ps(spheres_pos_y, m_SSEData.y[j]);
+            __m128 dot_z = _mm_mul_ps(spheres_pos_z, m_SSEData.z[j]);
 
             __m128 sum_xy            = _mm_add_ps(dot_x, dot_y);
-            __m128 sum_zw            = _mm_add_ps(dot_z, PlanesSSE->d[j]);
+            __m128 sum_zw            = _mm_add_ps(dot_z, m_SSEData.d[j]);
             __m128 distance_to_plane = _mm_add_ps(sum_xy, sum_zw);
 
             __m128 plane_res = _mm_cmple_ps(distance_to_plane, spheres_neg_radius); //dist < -sphere_r ?
@@ -284,12 +277,12 @@ void BvFrustum::CullSphere_IgnoreZ_SSE(BvSphereSSE const* bounds, int count, int
         {
             //1. calc distance to plane dot(sphere_pos.Xyz, plane.Xyz) + plane.w
             //2. if distance < sphere radius, then sphere outside frustum
-            __m128 dot_x = _mm_mul_ps(spheres_pos_x, PlanesSSE->x[j]);
-            __m128 dot_y = _mm_mul_ps(spheres_pos_y, PlanesSSE->y[j]);
-            __m128 dot_z = _mm_mul_ps(spheres_pos_z, PlanesSSE->z[j]);
+            __m128 dot_x = _mm_mul_ps(spheres_pos_x, m_SSEData.x[j]);
+            __m128 dot_y = _mm_mul_ps(spheres_pos_y, m_SSEData.y[j]);
+            __m128 dot_z = _mm_mul_ps(spheres_pos_z, m_SSEData.z[j]);
 
             __m128 sum_xy            = _mm_add_ps(dot_x, dot_y);
-            __m128 sum_zw            = _mm_add_ps(dot_z, PlanesSSE->d[j]);
+            __m128 sum_zw            = _mm_add_ps(dot_z, m_SSEData.d[j]);
             __m128 distance_to_plane = _mm_add_ps(sum_xy, sum_zw);
 
             __m128 plane_res = _mm_cmple_ps(distance_to_plane, spheres_neg_radius); //dist < -sphere_r ?
@@ -346,13 +339,13 @@ void BvFrustum::CullBox_SSE(BvAxisAlignedBoxSSE const* bounds, int count, int* r
             // Pick closest point to plane and check if it begind the plane. if yes - object outside frustum
 
             // Dot product, separate for each coordinate, for min & max aabb points
-            __m128 mins_mul_plane_x = _mm_mul_ps(aabb_min_x, PlanesSSE->x[j]);
-            __m128 mins_mul_plane_y = _mm_mul_ps(aabb_min_y, PlanesSSE->y[j]);
-            __m128 mins_mul_plane_z = _mm_mul_ps(aabb_min_z, PlanesSSE->z[j]);
+            __m128 mins_mul_plane_x = _mm_mul_ps(aabb_min_x, m_SSEData.x[j]);
+            __m128 mins_mul_plane_y = _mm_mul_ps(aabb_min_y, m_SSEData.y[j]);
+            __m128 mins_mul_plane_z = _mm_mul_ps(aabb_min_z, m_SSEData.z[j]);
 
-            __m128 maxs_mul_plane_x = _mm_mul_ps(aabb_max_x, PlanesSSE->x[j]);
-            __m128 maxs_mul_plane_y = _mm_mul_ps(aabb_max_y, PlanesSSE->y[j]);
-            __m128 maxs_mul_plane_z = _mm_mul_ps(aabb_max_z, PlanesSSE->z[j]);
+            __m128 maxs_mul_plane_x = _mm_mul_ps(aabb_max_x, m_SSEData.x[j]);
+            __m128 maxs_mul_plane_y = _mm_mul_ps(aabb_max_y, m_SSEData.y[j]);
+            __m128 maxs_mul_plane_z = _mm_mul_ps(aabb_max_z, m_SSEData.z[j]);
 
             // We have 8 box points, but we need pick closest point to plane.
             __m128 res_x = _mm_max_ps(mins_mul_plane_x, maxs_mul_plane_x);
@@ -361,7 +354,7 @@ void BvFrustum::CullBox_SSE(BvAxisAlignedBoxSSE const* bounds, int count, int* r
 
             // Distance to plane = dot( aabb_point.xyz, plane.xyz ) + plane.d
             __m128 sum_xy            = _mm_add_ps(res_x, res_y);
-            __m128 sum_zw            = _mm_add_ps(res_z, PlanesSSE->d[j]);
+            __m128 sum_zw            = _mm_add_ps(res_z, m_SSEData.d[j]);
             __m128 distance_to_plane = _mm_add_ps(sum_xy, sum_zw);
 
             // Dist from closest point to plane < 0 ?
@@ -424,13 +417,13 @@ void BvFrustum::CullBox_IgnoreZ_SSE(BvAxisAlignedBoxSSE const* bounds, int count
             // Pick closest point to plane and check if it begind the plane. if yes - object outside frustum
 
             // Dot product, separate for each coordinate, for min & max aabb points
-            __m128 mins_mul_plane_x = _mm_mul_ps(aabb_min_x, PlanesSSE->x[j]);
-            __m128 mins_mul_plane_y = _mm_mul_ps(aabb_min_y, PlanesSSE->y[j]);
-            __m128 mins_mul_plane_z = _mm_mul_ps(aabb_min_z, PlanesSSE->z[j]);
+            __m128 mins_mul_plane_x = _mm_mul_ps(aabb_min_x, m_SSEData.x[j]);
+            __m128 mins_mul_plane_y = _mm_mul_ps(aabb_min_y, m_SSEData.y[j]);
+            __m128 mins_mul_plane_z = _mm_mul_ps(aabb_min_z, m_SSEData.z[j]);
 
-            __m128 maxs_mul_plane_x = _mm_mul_ps(aabb_max_x, PlanesSSE->x[j]);
-            __m128 maxs_mul_plane_y = _mm_mul_ps(aabb_max_y, PlanesSSE->y[j]);
-            __m128 maxs_mul_plane_z = _mm_mul_ps(aabb_max_z, PlanesSSE->z[j]);
+            __m128 maxs_mul_plane_x = _mm_mul_ps(aabb_max_x, m_SSEData.x[j]);
+            __m128 maxs_mul_plane_y = _mm_mul_ps(aabb_max_y, m_SSEData.y[j]);
+            __m128 maxs_mul_plane_z = _mm_mul_ps(aabb_max_z, m_SSEData.z[j]);
 
             // We have 8 box points, but we need pick closest point to plane.
             __m128 res_x = _mm_max_ps(mins_mul_plane_x, maxs_mul_plane_x);
@@ -439,7 +432,7 @@ void BvFrustum::CullBox_IgnoreZ_SSE(BvAxisAlignedBoxSSE const* bounds, int count
 
             // Distance to plane = dot( aabb_point.xyz, plane.xyz ) + plane.d
             __m128 sum_xy            = _mm_add_ps(res_x, res_y);
-            __m128 sum_zw            = _mm_add_ps(res_z, PlanesSSE->d[j]);
+            __m128 sum_zw            = _mm_add_ps(res_z, m_SSEData.d[j]);
             __m128 distance_to_plane = _mm_add_ps(sum_xy, sum_zw);
 
             // Dist from closest point to plane < 0 ?
