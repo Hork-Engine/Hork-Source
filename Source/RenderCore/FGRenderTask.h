@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "FGResource.h"
 #include <Containers/Vector.h>
+#include <Platform/Memory/LinearAllocator.h>
 
 namespace RenderCore
 {
@@ -45,12 +46,19 @@ enum FG_RENDER_TASK_PROXY_TYPE : uint8_t
 
 class AFrameGraph;
 
-class FGRenderTaskBase
+class FGRenderTaskBase : public AFrameResource
 {
 public:
+    template <typename T>
+    using TFrameVector = TVector<T, Allocators::FrameMemoryAllocator>;
+
     explicit FGRenderTaskBase(AFrameGraph* pFrameGraph, const char* Name, FG_RENDER_TASK_PROXY_TYPE ProxyType) :
         pFrameGraph(pFrameGraph), Name(Name), ResourceRefs(0), bCulled(false), ProxyType(ProxyType)
     {
+        ProducedResources.Reserve(8);
+        ReadResources.Reserve(32);
+        WriteResources.Reserve(8);
+        ReadWriteResources.Reserve(8);
     }
 
     virtual ~FGRenderTaskBase() = default;
@@ -63,7 +71,7 @@ public:
 
     const char* GetName() const { return Name; }
 
-    TVector<std::unique_ptr<FGResourceProxyBase>> const& GetProducedResources() const
+    TFrameVector<std::unique_ptr<FGResourceProxyBase>> const& GetProducedResources() const
     {
         return ProducedResources;
     }
@@ -99,10 +107,10 @@ protected:
 
     AFrameGraph*                                  pFrameGraph;
     const char*                                   Name;
-    TVector<std::unique_ptr<FGResourceProxyBase>> ProducedResources;
-    TPodVector<FGResourceProxyBase*>              ReadResources;
-    TPodVector<FGResourceProxyBase*>              WriteResources;
-    TPodVector<FGResourceProxyBase*>              ReadWriteResources;
+    TFrameVector<std::unique_ptr<FGResourceProxyBase>> ProducedResources;
+    TFrameVector<FGResourceProxyBase*>            ReadResources;
+    TFrameVector<FGResourceProxyBase*>            WriteResources;
+    TFrameVector<FGResourceProxyBase*>            ReadWriteResources;
     int                                           ResourceRefs;
     bool                                          bCulled;
     FG_RENDER_TASK_PROXY_TYPE                     ProxyType;

@@ -220,7 +220,7 @@ void AFramebufferCacheGL::CleanupOutdatedFramebuffers()
 }
 
 AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                  RenderPassName,
-                                                    TVector<STextureAttachment>& ColorAttachments,
+                                                    TStaticVector<STextureAttachment, MAX_COLOR_ATTACHMENTS>& ColorAttachments,
                                                     STextureAttachment*          pDepthStencilAttachment)
 {
     SFramebufferDescGL                           framebufferDesc;
@@ -228,8 +228,6 @@ AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                 
 
     SFrameBufferHash fbHash;
  
-    HK_ASSERT(ColorAttachments.Size() <= MAX_COLOR_ATTACHMENTS);
-
     framebufferDesc.NumColorAttachments = ColorAttachments.Size();
     framebufferDesc.pColorAttachments   = colorAttachments.ToPtr();
 
@@ -5529,9 +5527,9 @@ void AImmediateContextGLImpl::ExecuteRenderPass(ARenderPass* pRenderPass)
     auto& colorAttachments           = pRenderPass->GetColorAttachments();
     auto& depthStencilAttachment     = pRenderPass->GetDepthStencilAttachment();
     bool  bHasDepthStencilAttachment = pRenderPass->HasDepthStencilAttachment();
-
+    
     AFramebufferGL* pFramebuffer = pFramebufferCache->GetFramebuffer(pRenderPass->GetName(),
-                                                                         const_cast<TVector<STextureAttachment>&>(colorAttachments),
+                                                                     const_cast<ARenderPass::AColorAttachments&>(colorAttachments),
                                                                          bHasDepthStencilAttachment ? const_cast<STextureAttachment*>(&depthStencilAttachment) : nullptr);
 
     if (pFramebuffer->IsDefault())

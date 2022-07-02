@@ -111,17 +111,17 @@ public:
         int               NumReleasedResources;
     };
 
-    TPodVector<STimelineStep> const& GetTimeline() const
+    TVector<STimelineStep> const& GetTimeline() const
     {
         return Timeline;
     }
 
-    TPodVector<FGResourceProxyBase*> const& GetAcquiredResources() const
+    TVector<FGResourceProxyBase*> const& GetAcquiredResources() const
     {
         return AcquiredResources;
     }
 
-    TPodVector<FGResourceProxyBase*> const& GetReleasedResources() const
+    TVector<FGResourceProxyBase*> const& GetReleasedResources() const
     {
         return ReleasedResources;
     }
@@ -152,15 +152,15 @@ private:
 
     TVector<std::unique_ptr<FGRenderTaskBase>>    RenderTasks;
     TVector<std::unique_ptr<FGResourceProxyBase>> ExternalResources;
-    TPodVector<FGResourceProxyBase*>              Resources; // all resources
-    TPodVector<FGResourceProxyBase*>              CapturedResources;
+    TVector<FGResourceProxyBase*>              Resources; // all resources
+    TVector<FGResourceProxyBase*>              CapturedResources;
 
-    TPodVector<STimelineStep>        Timeline;
-    TPodVector<FGResourceProxyBase*> AcquiredResources, ReleasedResources;
+    TVector<STimelineStep>        Timeline;
+    TVector<FGResourceProxyBase*> AcquiredResources, ReleasedResources;
 
     // Temporary data. Used for building
-    TStack<FGResourceProxyBase*>     UnreferencedResources;
-    TPodVector<FGResourceProxyBase*> ResourcesRW;
+    TStack<FGResourceProxyBase*>  UnreferencedResources;
+    TVector<FGResourceProxyBase*> ResourcesRW;
 
     mutable std::size_t IdGenerator = 0;
 };

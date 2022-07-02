@@ -135,7 +135,8 @@ void AFrameGraph::Build()
             }
         }
 
-        ResourcesRW = task->ReadResources;
+        ResourcesRW.Clear();
+        ResourcesRW.Add(task->ReadResources);
         ResourcesRW.Add(task->WriteResources);
         ResourcesRW.Add(task->ReadWriteResources);
 

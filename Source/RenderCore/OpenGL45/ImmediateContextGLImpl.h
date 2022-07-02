@@ -144,7 +144,7 @@ public:
 
     void CleanupOutdatedFramebuffers();
 
-    AFramebufferGL* GetFramebuffer(const char* RenderPassName, TVector<STextureAttachment>& ColorAttachments, STextureAttachment* DepthStencilAttachment);
+    AFramebufferGL* GetFramebuffer(const char* RenderPassName, TStaticVector<STextureAttachment, MAX_COLOR_ATTACHMENTS>& ColorAttachments, STextureAttachment* DepthStencilAttachment);
 
 private:
     THashMap<SFrameBufferHash, std::unique_ptr<AFramebufferGL>> Framebuffers;

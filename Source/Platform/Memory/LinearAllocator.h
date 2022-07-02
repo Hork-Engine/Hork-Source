@@ -449,6 +449,29 @@ public:
 HK_FORCEINLINE bool operator==(FrameMemoryAllocator const&, FrameMemoryAllocator const&) { return true; }
 HK_FORCEINLINE bool operator!=(FrameMemoryAllocator const&, FrameMemoryAllocator const&) { return false; }
 
+template <typename T>
+struct TStdFrameAllocator
+{
+    typedef T value_type;
+
+    TStdFrameAllocator() = default;
+    template <typename U> constexpr TStdFrameAllocator(TStdFrameAllocator<U> const&) noexcept {}
+
+    HK_NODISCARD T* allocate(std::size_t n) noexcept
+    {
+        HK_ASSERT(n <= std::numeric_limits<std::size_t>::max() / sizeof(T));
+
+        return static_cast<T*>(FrameMemoryAllocator::GetAllocator().Allocate(n * sizeof(T), alignof(T)));
+    }
+
+    void deallocate(T* p, std::size_t n) noexcept
+    {
+        FrameMemoryAllocator::GetAllocator().TryFree(p);
+    }
+};
+template <typename T, typename U> bool operator==(TStdFrameAllocator<T> const&, TStdFrameAllocator<U> const&) { return true; }
+template <typename T, typename U> bool operator!=(TStdFrameAllocator<T> const&, TStdFrameAllocator<U> const&) { return false; }
+
 } // namespace Allocators
 
 class AFrameResource

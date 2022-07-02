@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "BufferView.h"
 #include <Containers/Vector.h>
+#include <Platform/Memory/LinearAllocator.h>
 
 namespace RenderCore
 {
@@ -45,7 +46,7 @@ enum FG_RESOURCE_ACCESS
     FG_RESOURCE_ACCESS_READ_WRITE
 };
 
-class FGResourceProxyBase
+class FGResourceProxyBase : public AFrameResource
 {
 public:
     explicit FGResourceProxyBase(std::size_t ResourceId, const char* Name, FGRenderTaskBase* RenderTask, DEVICE_OBJECT_PROXY_TYPE ProxyType) :
@@ -104,8 +105,8 @@ private:
     const std::size_t                   Id;
     const char*                         Name;
     FGRenderTaskBase const*             Creator;
-    TPodVector<FGRenderTaskBase const*> Readers;
-    TPodVector<FGRenderTaskBase const*> Writers;
+    TSmallVector<FGRenderTaskBase const*, 8, Allocators::FrameMemoryAllocator> Readers;
+    TSmallVector<FGRenderTaskBase const*, 8, Allocators::FrameMemoryAllocator> Writers;
     int                                 ResourceRefs;
     bool                                bCaptured;
     DEVICE_OBJECT_PROXY_TYPE            ProxyType{DEVICE_OBJECT_TYPE_UNKNOWN};

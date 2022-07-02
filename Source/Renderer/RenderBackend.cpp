@@ -521,7 +521,7 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
 
     GFrameData = pFrameData;
 
-    FrameGraph->Clear();
+    //FrameGraph->Clear();
 
     //rcmd->SetSwapChainResolution( GFrameData->CanvasWidth, GFrameData->CanvasHeight );
 
@@ -556,6 +556,8 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
     {
         FrameGraph->Debug();
     }
+
+    FrameGraph->Clear();
 
     FeedbackAnalyzerVT->End();
 

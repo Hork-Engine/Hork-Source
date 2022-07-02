@@ -260,13 +260,13 @@ using ARecordFunction    = std::function<void(ARenderPassContext&, ACommandBuffe
 class ASubpassInfo
 {
 public:
-    ASubpassInfo(std::initializer_list<SAttachmentRef> const& ColorAttachmentRefs, ARecordFunction RecordFunction) :
-        Refs(ColorAttachmentRefs), Function(RecordFunction)
+    ASubpassInfo(std::initializer_list<SAttachmentRef> ColorAttachmentRefs, ARecordFunction RecordFunction) :
+        Refs(ColorAttachmentRefs), Function(std::move(RecordFunction))
     {
     }
 
-    TVector<SAttachmentRef> Refs;
-    ARecordFunction            Function;
+    TStaticVector<SAttachmentRef, MAX_COLOR_ATTACHMENTS> Refs;
+    ARecordFunction                                      Function;
 };
 
 class ARenderPass : public FGRenderTask<ARenderPass>
@@ -274,6 +274,9 @@ class ARenderPass : public FGRenderTask<ARenderPass>
     using Super = FGRenderTask<ARenderPass>;
 
 public:
+    using AColorAttachments = TStaticVector<STextureAttachment, MAX_COLOR_ATTACHMENTS>;
+    using ASubpassArray = TSmallVector<ASubpassInfo, 1, Allocators::FrameMemoryAllocator>;
+
     ARenderPass(AFrameGraph* pFrameGraph, const char* Name) :
         FGRenderTask(pFrameGraph, Name, FG_RENDER_TASK_PROXY_TYPE_RENDER_PASS)
     {}
@@ -293,11 +296,12 @@ public:
         return *this;
     }
 
-    ARenderPass& SetColorAttachments(TVector<STextureAttachment> InColorAttachments)
+    ARenderPass& SetColorAttachments(std::initializer_list<STextureAttachment> InColorAttachments)
     {
         HK_ASSERT_(ColorAttachments.IsEmpty(), "Overwriting color attachments");
-
-        ColorAttachments = std::move(InColorAttachments);
+        
+        for (auto& attachment : InColorAttachments)
+            ColorAttachments.Add(attachment);
 
         AddAttachmentResources();
         return *this;
@@ -341,9 +345,12 @@ public:
         return *this;
     }
 
-    ARenderPass& AddSubpass(std::initializer_list<SAttachmentRef> const& ColorAttachmentRefs, ARecordFunction RecordFunction)
+    template <typename Fn>
+    ARenderPass& AddSubpass(std::initializer_list<SAttachmentRef> ColorAttachmentRefs, Fn RecordFunction)
     {
-        Subpasses.EmplaceBack(ColorAttachmentRefs, RecordFunction);
+
+        ARecordFunction f(std::allocator_arg, Allocators::TStdFrameAllocator<char>{}, RecordFunction);
+        Subpasses.EmplaceBack(ColorAttachmentRefs, std::move(f));
         return *this;
     }
 
@@ -354,12 +361,12 @@ public:
         return RenderArea;
     }
 
-    TVector<ASubpassInfo> const& GetSubpasses() const
+    ASubpassArray const& GetSubpasses() const
     {
         return Subpasses;
     }
 
-    TVector<STextureAttachment> const& GetColorAttachments() const
+    AColorAttachments const& GetColorAttachments() const
     {
         return ColorAttachments;
     }
@@ -399,12 +406,12 @@ private:
         }
     }
 
-    TVector<STextureAttachment> ColorAttachments;
-    STextureAttachment             DepthStencilAttachment{nullptr};
-    bool                           bHasDepthStencilAttachment = false;
-    bool                           bRenderAreaSpecified       = false;
-    SRect2D                        RenderArea;
-    TVector<ASubpassInfo>       Subpasses;
+    AColorAttachments  ColorAttachments;
+    STextureAttachment DepthStencilAttachment{nullptr};
+    bool               bHasDepthStencilAttachment = false;
+    bool               bRenderAreaSpecified       = false;
+    SRect2D            RenderArea;
+    ASubpassArray      Subpasses;
 };
 
 } // namespace RenderCore

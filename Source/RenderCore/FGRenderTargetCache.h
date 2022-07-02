@@ -45,9 +45,9 @@ public:
     void Release(ITexture* pTexture);
 
 private:
-    TRef<IDevice>              pDevice;
+    TRef<IDevice>           pDevice;
     TVector<TRef<ITexture>> Textures;     // All textures
-    TPodVector<ITexture*>      FreeTextures; // Free list
+    TVector<ITexture*>      FreeTextures; // Free list
 };
 
 } // namespace RenderCore
