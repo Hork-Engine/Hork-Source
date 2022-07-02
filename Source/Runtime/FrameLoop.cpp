@@ -39,7 +39,8 @@ SOFTWARE.
 AConsoleVar rt_SyncGPU("rt_SyncGPU"s, "0"s);
 
 AFrameLoop::AFrameLoop(RenderCore::IDevice* RenderDevice) :
-    RenderDevice(RenderDevice)
+    RenderDevice(RenderDevice),
+    FrameMemory(Allocators::FrameMemoryAllocator::GetAllocator())
 {
     GPUSync           = MakeRef<AGPUSync>(RenderDevice->GetImmediateContext());
     StreamedMemoryGPU = MakeRef<AStreamedMemoryGPU>(RenderDevice);
@@ -136,7 +137,7 @@ void AFrameLoop::NewFrame(TPodVector<RenderCore::ISwapChain*> const& SwapChains,
     FrameMemoryUsedPrev = FrameMemory.GetTotalMemoryUsage();
 
     // Free frame memory for new frame
-    FrameMemory.Reset();
+    FrameMemory.ResetAndMerge();
 }
 
 #define FROM_SDL_TIMESTAMP(event) ((event).timestamp * 0.001)

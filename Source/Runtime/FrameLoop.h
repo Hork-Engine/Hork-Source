@@ -136,6 +136,12 @@ public:
     /** Allocate frame memory */
     void* AllocFrameMem(size_t _SizeInBytes);
 
+    template <typename T>
+    T* AllocFrameMem()
+    {
+        return FrameMemory.Allocate<T>();
+    }
+
     /** Return frame memory size in bytes */
     size_t GetFrameMemorySize() const;
 
@@ -174,7 +180,7 @@ private:
     int64_t FrameDuration;
     int     FrameNumber;
 
-    TLinearAllocator<> FrameMemory;
+    TLinearAllocator<>& FrameMemory;
     size_t             FrameMemoryUsedPrev = 0;
     size_t             MaxFrameMemoryUsage = 0;
 
