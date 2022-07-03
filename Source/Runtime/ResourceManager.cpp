@@ -90,11 +90,9 @@ AResource* AResourceManager::FindResource(AClassMeta const& _ClassMeta, AStringV
 {
     _bMetadataMismatch = false;
 
-    auto it = ResourceCache.Find(_Alias);
-    if (it == ResourceCache.End())
+    AResource* cachedResource = FindResourceByAlias(_Alias);
+    if (!cachedResource)
         return nullptr;
-
-    AResource* cachedResource = it->second;
 
     if (&cachedResource->FinalClassMeta() != &_ClassMeta)
     {
@@ -127,13 +125,12 @@ AResource* AResourceManager::GetResource(AClassMeta const& _ClassMeta, AStringVi
         *_bMetadataMismatch = false;
     }
 
-    auto it = ResourceCache.Find(_Alias);
-    if (it != ResourceCache.End())
+    AResource* resource = FindResourceByAlias(_Alias);
+    if (resource)
     {
-        AResource* cachedResource = it->second;
-        if (&cachedResource->FinalClassMeta() != &_ClassMeta)
+        if (&resource->FinalClassMeta() != &_ClassMeta)
         {
-            LOG("GetResource: {} class doesn't match meta data ({} vs {})\n", _Alias, cachedResource->FinalClassName(), _ClassMeta.GetName());
+            LOG("GetResource: {} class doesn't match meta data ({} vs {})\n", _Alias, resource->FinalClassName(), _ClassMeta.GetName());
 
             if (_bMetadataMismatch)
             {
@@ -145,13 +142,12 @@ AResource* AResourceManager::GetResource(AClassMeta const& _ClassMeta, AStringVi
         {
             *_bResourceFoundResult = true;
         }
-        return cachedResource;
+        return resource;
     }
 
     // Never return nullptr, always create default object
 
-    AResource* resource = static_cast<AResource*>(_ClassMeta.CreateInstance());
-
+    resource = static_cast<AResource*>(_ClassMeta.CreateInstance());
     resource->InitializeDefaultObject();
 
     return resource;
@@ -159,11 +155,8 @@ AResource* AResourceManager::GetResource(AClassMeta const& _ClassMeta, AStringVi
 
 AClassMeta const* AResourceManager::GetResourceInfo(AStringView _Alias)
 {
-    auto it = ResourceCache.Find(_Alias);
-    if (it == ResourceCache.End())
-        return nullptr;
-
-    return &it->second->FinalClassMeta();
+    AResource* resource = FindResourceByAlias(_Alias);
+    return resource ? &resource->FinalClassMeta() : nullptr;
 }
 
 AResource* AResourceManager::GetOrCreateResource(AClassMeta const& _ClassMeta, AStringView _Path)
@@ -183,7 +176,7 @@ AResource* AResourceManager::GetOrCreateResource(AClassMeta const& _ClassMeta, A
 
     if (resource)
     {
-        //DEBUG( "CACHING {}: Name {}, Path: \"{}\"\n", resource->GetObjectName(), resource->FinalClassName(), resource->GetResourcePath().CStr() );
+        //DEBUG( "CACHING {}: Name {}, Path: \"{}\"\n", resource->GetObjectName(), resource->FinalClassName(), resource->GetResourcePath() );
 
         return resource;
     }
