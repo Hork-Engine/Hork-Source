@@ -383,7 +383,7 @@ static void InitializeProcess()
     };
 
 #ifdef HK_OS_WIN32
-    int curLen = 1024;
+    int curLen = 256;
     int len    = 0;
 
     ProcessInfo.Executable = nullptr;
@@ -428,7 +428,7 @@ static void InitializeProcess()
         ProcessInfo.ProcessAttribute = PROCESS_UNIQUE;
     }
 #elif defined HK_OS_LINUX
-    int curLen = 1024;
+    int curLen = 256;
     int len = 0;
 
     ProcessInfo.Executable = nullptr;
@@ -510,36 +510,6 @@ static void DeinitializeProcess()
 
 //////////////////////////////////////////////////////////////////////////////////////////
 //
-// Memory
-//
-//////////////////////////////////////////////////////////////////////////////////////////
-
-static void InitializeMemory(size_t ProcessWorkingSetSize)
-{
-#ifdef HK_OS_WIN32
-    SIZE_T dwMinimumWorkingSetSize = ProcessWorkingSetSize;
-    SIZE_T dwMaximumWorkingSetSize = std::max(ProcessWorkingSetSize, size_t(1024 << 20));
-    if (!SetProcessWorkingSetSize(GetCurrentProcess(), dwMinimumWorkingSetSize, dwMaximumWorkingSetSize))
-    {
-        LOG("Failed on SetProcessWorkingSetSize\n");
-    }
-#endif
-
-    SMemoryInfo physMemoryInfo = Platform::GetPhysMemoryInfo();
-    LOG("Memory page size: {} bytes\n", physMemoryInfo.PageSize);
-    if (physMemoryInfo.TotalAvailableMegabytes > 0 && physMemoryInfo.CurrentAvailableMegabytes > 0)
-    {
-        LOG("Total available phys memory: {} Megs\n", physMemoryInfo.TotalAvailableMegabytes);
-        LOG("Current available phys memory: {} Megs\n", physMemoryInfo.CurrentAvailableMegabytes);
-    }
-}
-
-static void DeinitializeMemory()
-{
-}
-
-//////////////////////////////////////////////////////////////////////////////////////////
-//
 // CPU Info
 //
 //////////////////////////////////////////////////////////////////////////////////////////
@@ -611,9 +581,6 @@ static BOOL IsWow64()
 #endif
 
 
-
-
-
 static SCommandLine const* pCommandLine;
 
 static int64_t StartSeconds;
@@ -660,7 +627,7 @@ void Initialize(SPlatformInitialize const& CoreInitialize)
 
     SProcessInfo const& processInfo = Platform::GetProcessInfo();
 
-    if (!CoreInitialize.bAllowMultipleInstances && !pCommandLine->HasArg("-bAllowMultipleInstances"))
+    if (!pCommandLine->HasArg("-bAllowMultipleInstances"))
     {
         switch (processInfo.ProcessAttribute)
         {
@@ -677,7 +644,33 @@ void Initialize(SPlatformInitialize const& CoreInitialize)
 
     PrintCPUFeatures();
 
-    InitializeMemory(CoreInitialize.ProcessWorkingSetSize);
+#ifdef HK_OS_WIN32
+    size_t ProcessWorkingSetSizeMin = 192ull << 20;
+    size_t ProcessWorkingSetSizeMax = 1024ull << 20;
+
+    int n = Platform::CheckArg("-ProcessWorkingSetSize");
+    if (n != -1 && (n + 1) < Platform::GetArgc())
+    {
+        ProcessWorkingSetSizeMin = std::max(0, atoi(Platform::GetArgv()[n]));
+        ProcessWorkingSetSizeMax = std::max(0, atoi(Platform::GetArgv()[n + 1]));
+    }
+
+    if (ProcessWorkingSetSizeMin && ProcessWorkingSetSizeMax)
+    {
+        if (!SetProcessWorkingSetSize(GetCurrentProcess(), ProcessWorkingSetSizeMin, ProcessWorkingSetSizeMax))
+        {
+            LOG("Failed on SetProcessWorkingSetSize\n");
+        }
+    }
+#endif
+
+    SMemoryInfo physMemoryInfo = Platform::GetPhysMemoryInfo();
+    LOG("Memory page size: {} bytes\n", physMemoryInfo.PageSize);
+    if (physMemoryInfo.TotalAvailableMegabytes > 0 && physMemoryInfo.CurrentAvailableMegabytes > 0)
+    {
+        LOG("Total available phys memory: {} Megs\n", physMemoryInfo.TotalAvailableMegabytes);
+        LOG("Current available phys memory: {} Megs\n", physMemoryInfo.CurrentAvailableMegabytes);
+    }
 
     SDL_SetMemoryFunctions(
         [](size_t size) -> void*
@@ -715,11 +708,6 @@ void Initialize(SPlatformInitialize const& CoreInitialize)
 
 void Deinitialize()
 {
-    //SDocumentAllocator<ADocValue>::FreeMemoryPool();
-    //SDocumentAllocator<ADocMember>::FreeMemoryPool();
-
-    DeinitializeMemory();
-
     DeinitializeProcess();
 
     if (Clipboard)

@@ -138,9 +138,7 @@ void AEngine::LoadConfigFile()
     AFileStream f;
     if (f.OpenRead(configFile))
     {
-        AString data = f.AsString();
-
-        CommandProcessor.Add(data);
+        CommandProcessor.Add(f.AsString());
 
         class CommandContext : public ICommandContext
         {
@@ -314,8 +312,6 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
 
     // Process initial events
     FrameLoop->PollEvents(this);
-
-
 
     GameModule = CreateGameModule(_EntryDecl.ModuleClass);
     GameModule->AddRef();
@@ -1006,8 +1002,6 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
     init.Argc = _Argc;
     init.Argv = _Argv;
 #endif
-    init.bAllowMultipleInstances = false;
-    init.ProcessWorkingSetSize = 1024 << 20; // FIXME: Choose appropriate size
     Platform::Initialize(init);
 
     AConsoleVar::AllocateVariables();

@@ -137,8 +137,6 @@ struct SPlatformInitialize
     char**      Argv                    = nullptr;
     int         Argc                    = 0;
     const char* pCommandLine            = nullptr;
-    bool        bAllowMultipleInstances = true;
-    size_t      ProcessWorkingSetSize   = 1024 << 20;
 };
 
 class AConsoleBuffer;
