@@ -687,7 +687,7 @@ void AAssetImporter::ReadSkeleton(cgltf_node* node, int parentIndex)
         Platform::Strcpy(joint.Name, sizeof(joint.Name), name.CStr());
     }
 
-    LOG("ReadSkeleton: {}\n", node->name);
+    LOG("ReadSkeleton: {}\n", node->name ? node->name : "unnamed");
 
     joint.Parent = parentIndex;
 
@@ -768,7 +768,7 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
     {
         cgltf_scene* scene = &Data->scene[i];
 
-        LOG("Scene \"{}\" nodes {}\n", scene->name, scene->nodes_count);
+        LOG("Scene \"{}\" nodes {}\n", scene->name ? scene->name : "unnamed", scene->nodes_count);
 
         for (int n = 0; n < scene->nodes_count; n++)
         {
@@ -1833,7 +1833,7 @@ void AAssetImporter::WriteTexture(TextureInfo& tex)
     mipmapGen.EdgeMode            = MIPMAP_EDGE_WRAP;
     mipmapGen.Filter              = MIPMAP_FILTER_MITCHELL;
     mipmapGen.bPremultipliedAlpha = false;
-    if (!image.Load(sourceFileName.CStr(), &mipmapGen, tex.bSRGB ? IMAGE_PF_AUTO_GAMMA2 : IMAGE_PF_AUTO))
+    if (!image.Load(sourceFileName, &mipmapGen, tex.bSRGB ? IMAGE_PF_AUTO_GAMMA2 : IMAGE_PF_AUTO))
     {
         return;
     }
@@ -1851,7 +1851,7 @@ void AAssetImporter::WriteTexture(TextureInfo& tex)
 
     f.WriteUInt32(FMT_FILE_TYPE_TEXTURE);
     f.WriteUInt32(FMT_VERSION_TEXTURE);
-    f.WriteObject(tex.GUID.ToString());
+    f.WriteString(tex.GUID.ToString());
     f.WriteUInt32(textureType);
     f.WriteObject(texturePixelFormat);
     f.WriteUInt32(w);
@@ -1879,7 +1879,7 @@ void AAssetImporter::WriteTexture(TextureInfo& tex)
     }
 
     f.WriteUInt32(1); // num source files
-    f.WriteObject(sourceFileName);
+    f.WriteString(sourceFileName);
 
 #if 0
     //
@@ -2032,11 +2032,11 @@ void AAssetImporter::WriteMaterial(MaterialInfo const& m)
 #endif
 }
 
-static AString ValidateFileName(const char* FileName)
+static AString ValidateFileName(AStringView FileName)
 {
     AString ValidatedName = FileName;
 
-    for (int i = 0; i < ValidatedName.Length(); i++)
+    for (StringSizeType i = 0; i < ValidatedName.Size(); i++)
     {
         char& Ch = ValidatedName[i];
 
@@ -2058,7 +2058,7 @@ static AString ValidateFileName(const char* FileName)
     return ValidatedName;
 }
 
-AString AAssetImporter::GeneratePhysicalPath(const char* DesiredName, const char* Extension)
+AString AAssetImporter::GeneratePhysicalPath(AStringView DesiredName, AStringView Extension)
 {
     AString sourceName = PathUtils::GetFilenameNoExt(PathUtils::GetFilenameNoPath(m_Settings.ImportFile));
     AString validatedName = ValidateFileName(DesiredName);
@@ -2071,7 +2071,7 @@ AString AAssetImporter::GeneratePhysicalPath(const char* DesiredName, const char
 
     int uniqueNumber = 0;
 
-    while (Core::IsFileExists((GEngine->GetRootPath() + result).CStr()))
+    while (Core::IsFileExists(GEngine->GetRootPath() + result))
     {
         result = path + "_" + Core::ToString(++uniqueNumber) + Extension;
     }
@@ -2110,7 +2110,7 @@ void AAssetImporter::WriteSkeleton()
 
         f.WriteUInt32(FMT_FILE_TYPE_SKELETON);
         f.WriteUInt32(FMT_VERSION_SKELETON);
-        f.WriteObject(m_SkeletonGUID.ToString());
+        f.WriteString(m_SkeletonGUID.ToString());
         f.WriteArray(m_Joints);
         f.WriteObject(m_BindposeBounds);
 #if 0
@@ -2144,7 +2144,7 @@ void AAssetImporter::WriteAnimations()
 void AAssetImporter::WriteAnimation(AnimationInfo const& Animation)
 {
     AFileStream f;
-    AString     fileName       = GeneratePhysicalPath(Animation.Name.CStr(), ".animation");
+    AString     fileName       = GeneratePhysicalPath(Animation.Name, ".animation");
     AString     fileSystemPath = GEngine->GetRootPath() + fileName;
 
     if (!f.OpenWrite(fileSystemPath))
@@ -2155,7 +2155,7 @@ void AAssetImporter::WriteAnimation(AnimationInfo const& Animation)
 
     f.WriteUInt32(FMT_FILE_TYPE_ANIMATION);
     f.WriteUInt32(FMT_VERSION_ANIMATION);
-    f.WriteObject(Animation.GUID.ToString());
+    f.WriteString(Animation.GUID.ToString());
     f.WriteFloat(Animation.FrameDelta);
     f.WriteUInt32(Animation.FrameCount);
     f.WriteArray(Animation.Channels);
@@ -2216,7 +2216,7 @@ void AAssetImporter::WriteSingleModel()
 
     f.WriteUInt32(FMT_FILE_TYPE_MESH);
     f.WriteUInt32(FMT_VERSION_MESH);
-    f.WriteObject(GUID.ToString());
+    f.WriteString(GUID.ToString());
     f.WriteBool(bSkinnedMesh);
     //f.WriteBool( false );         // dynamic storage
     f.WriteObject(BoundingBox);
@@ -2240,11 +2240,11 @@ void AAssetImporter::WriteSingleModel()
     {
         if (meshInfo.Mesh->name)
         {
-            f.WriteCString(meshInfo.Mesh->name);
+            f.WriteString(meshInfo.Mesh->name);
         }
         else
         {
-            f.WriteObject(HK_FORMAT("Subpart_{}", n));
+            f.WriteString(HK_FORMAT("Subpart_{}", n));
         }
         f.WriteInt32(meshInfo.BaseVertex);
         f.WriteUInt32(meshInfo.FirstIndex);
@@ -2393,7 +2393,7 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
 
     f.WriteUInt32(FMT_FILE_TYPE_MESH);
     f.WriteUInt32(FMT_VERSION_MESH);
-    f.WriteObject(Mesh.GUID.ToString());
+    f.WriteString(Mesh.GUID.ToString());
     f.WriteBool(bSkinnedMesh);
     //f.WriteBool( false );         // dynamic storage
     f.WriteObject(Mesh.BoundingBox);
@@ -2433,11 +2433,11 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
     f.WriteUInt32(1); // subparts count
     if (Mesh.Mesh->name)
     {
-        f.WriteCString(Mesh.Mesh->name);
+        f.WriteString(Mesh.Mesh->name);
     }
     else
     {
-        f.WriteCString("Subpart_1");
+        f.WriteString("Subpart_1");
     }
     f.WriteInt32(0);  // base vertex
     f.WriteUInt32(0); // first index
@@ -2766,7 +2766,7 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
 
     f.WriteUInt32(FMT_FILE_TYPE_TEXTURE);
     f.WriteUInt32(FMT_VERSION_TEXTURE);
-    f.WriteObject(TextureGUID.ToString());
+    f.WriteString(TextureGUID.ToString());
     f.WriteUInt32(textureType);
     f.WriteObject(pixelFormat);
     f.WriteUInt32(w);
@@ -2795,7 +2795,7 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
     f.WriteUInt32(6); // num source files
     for (int i = 0; i < 6; i++)
     {
-        f.WriteObject(skyboxImport.Faces[i]); // source file
+        f.WriteString(skyboxImport.Faces[i]); // source file
     }
 #if 0
     //

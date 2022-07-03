@@ -356,11 +356,10 @@ static void TestIES(IE_DATA& PhotoData)
 
 bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    const char* fn = Stream.GetFileName();
+    AString const& fn = Stream.GetFileName();
+    AStringView extension = PathUtils::GetExt(fn);
 
-    int extOffset = Platform::FindExt(fn);
-
-    if (!Platform::Stricmp(&fn[extOffset], ".ies"))
+    if (!extension.Icmp(".ies"))
     {
         IE_Context context;
         IE_DATA    photoData;
@@ -445,9 +444,7 @@ bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
             return false;
         }
 
-        AString guid;
-
-        Stream.ReadObject(guid);
+        AString guid = Stream.ReadString();
 
         Intensity = Stream.ReadFloat();
         Stream.Read(Data, sizeof(Data));

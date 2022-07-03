@@ -32,7 +32,7 @@ SOFTWARE.
 #include <Platform/Logger.h>
 
 ALexer::ALexer() :
-    BufferName("<memory buffer>"), Ptr(AString::NullCString()), CurrentLine(0), bPrevToken(false), PrintFlags(PRINT_ALL)
+    BufferName("<memory buffer>"), Ptr(""), CurrentLine(0), bPrevToken(false), PrintFlags(PRINT_ALL)
 {
 }
 
@@ -43,7 +43,7 @@ ALexer::~ALexer()
 void ALexer::Initialize(const char* InBuffer, const char* InBufferName, int InPrint)
 {
     CurrentLine = 0;
-    Ptr         = InBuffer ? InBuffer : AString::NullCString();
+    Ptr         = InBuffer ? InBuffer : "";
     bPrevToken  = false;
     BufferName  = InBufferName ? InBufferName : "<memory buffer>";
     PrintFlags  = InPrint;
@@ -574,22 +574,22 @@ const char* ALexer::GetIdentifier(bool _CrossLine)
     int err = NextToken(_CrossLine);
     if (err == ERROR_EOF)
     {
-        return AString::NullCString();
+        return "";
     }
     if (err == ERROR_EOL)
     {
-        return AString::NullCString();
+        return "";
     }
     if (err != ERROR_NO)
     {
         ErrorPrint(err);
-        return AString::NullCString();
+        return "";
     }
 
     if (GetTokenType() != TOKEN_TYPE_IDENTIFIER)
     {
         ErrorPrintf("expected identifier, found '%s'\n", Token());
-        return AString::NullCString();
+        return "";
     }
     return Token();
 }
@@ -599,22 +599,22 @@ const char* ALexer::GetInteger(bool _CrossLine)
     int err = NextToken(_CrossLine);
     if (err == ERROR_EOF)
     {
-        return AString::NullCString();
+        return "";
     }
     if (err == ERROR_EOL)
     {
-        return AString::NullCString();
+        return "";
     }
     if (err != ERROR_NO)
     {
         ErrorPrint(err);
-        return AString::NullCString();
+        return "";
     }
 
     if (GetTokenType() != TOKEN_TYPE_INTEGER)
     {
         ErrorPrintf("expected integer, found '%s'\n", Token());
-        return AString::NullCString();
+        return "";
     }
     return Token();
 }
@@ -636,12 +636,12 @@ const char* ALexer::ExpectIdentifier(bool _CrossLine)
     }
     if (err != ERROR_NO)
     {
-        return AString::NullCString();
+        return "";
     }
     if (GetTokenType() != TOKEN_TYPE_IDENTIFIER)
     {
         ErrorPrintf("expected token, found '%s'\n", Token());
-        return AString::NullCString();
+        return "";
     }
     return Token();
 }
@@ -651,22 +651,22 @@ const char* ALexer::GetString(bool _CrossLine)
     int err = NextToken(_CrossLine);
     if (err == ERROR_EOF)
     {
-        return AString::NullCString();
+        return "";
     }
     if (err == ERROR_EOL)
     {
-        return AString::NullCString();
+        return "";
     }
     if (err != ERROR_NO)
     {
         ErrorPrint(err);
-        return AString::NullCString();
+        return "";
     }
 
     if (GetTokenType() != TOKEN_TYPE_STRING)
     {
         ErrorPrintf("expected string, found '%s'\n", Token());
-        return AString::NullCString();
+        return "";
     }
 
     return Token();
@@ -689,12 +689,12 @@ const char* ALexer::ExpectString(bool _CrossLine)
     }
     if (err != ERROR_NO)
     {
-        return AString::NullCString();
+        return "";
     }
     if (GetTokenType() != TOKEN_TYPE_STRING)
     {
         ErrorPrintf("expected string, found '%s'\n", Token());
-        return AString::NullCString();
+        return "";
     }
     return Token();
 }

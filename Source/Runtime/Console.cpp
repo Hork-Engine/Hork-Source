@@ -79,9 +79,9 @@ void AConsole::AddStoryLine(WideChar* _Text, int _Length)
     CurStoryLine = NumStoryLines;
 }
 
-void AConsole::InsertUTF8Text(const char* _Utf8)
+void AConsole::InsertUTF8Text(AStringView _Utf8)
 {
-    int len = Core::UTF8StrLength(_Utf8);
+    int len = Core::UTF8StrLength(_Utf8.Begin(), _Utf8.End());
     if (CmdLineLength + len >= MAX_CMD_LINE_CHARS)
     {
         LOG("Text is too long to be copied to command line\n");
@@ -95,16 +95,17 @@ void AConsole::InsertUTF8Text(const char* _Utf8)
 
     CmdLineLength += len;
 
+    const char* u8 = _Utf8.Begin();
     WideChar ch;
     int       byteLen;
     while (len-- > 0)
     {
-        byteLen = Core::WideCharDecodeUTF8(_Utf8, ch);
+        byteLen = Core::WideCharDecodeUTF8(u8, ch);
         if (!byteLen)
         {
             break;
         }
-        _Utf8 += byteLen;
+        u8 += byteLen;
         CmdLine[CmdLinePos++] = ch;
     }
 }
@@ -135,7 +136,7 @@ void AConsole::CompleteString(ACommandContext& _CommandCtx, AStringView _Str)
 
     CmdLinePos    = 0;
     CmdLineLength = 0;
-    InsertUTF8Text(completion.CStr());
+    InsertUTF8Text(completion);
 }
 
 void AConsole::KeyEvent(SKeyEvent const& _Event, ACommandContext& _CommandCtx, ACommandProcessor& _CommandProcessor)

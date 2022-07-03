@@ -189,7 +189,7 @@ private:
     void         WriteMeshes();
     void         WriteMesh(MeshInfo const& Mesh);
     void         WriteSkyboxMaterial(AGUID const& SkyboxTextureGUID);
-    AString      GeneratePhysicalPath(const char* DesiredName, const char* Extension);
+    AString      GeneratePhysicalPath(AStringView DesiredName, AStringView Extension);
     AGUID        GetMaterialGUID(cgltf_material* Material);
     TextureInfo* FindTextureImage(struct cgltf_texture const* Texture);
     void         SetTextureProps(TextureInfo* Info, const char* Name, bool SRGB);

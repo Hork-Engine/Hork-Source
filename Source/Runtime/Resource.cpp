@@ -41,29 +41,98 @@ void AResource::InitializeDefaultObject()
     InitializeFromFile(GetDefaultResourcePath());
 }
 
-void AResource::InitializeFromFile(AStringView _Path)
+void AResource::InitializeFromFile(AStringView Path)
 {
-    if (!LoadFromPath(_Path))
+    if (!LoadFromPath(Path))
     {
         InitializeDefaultObject();
     }
 }
 
-bool AResource::LoadFromPath(AStringView _Path)
+bool AResource::IsResourceExists(AStringView Path)
 {
-    if (!_Path.IcmpN("/Default/", 9))
+    if (!Path.IcmpN("/Default/", 9))
     {
-        LoadInternalResource(_Path);
+        return false;
+    }
+
+    if (!Path.IcmpN("/Root/", 6))
+    {
+        Path = Path.TruncateHead(6);
+
+        // find in file system
+        AString fileSystemPath = GEngine->GetRootPath() + Path;
+        if (Core::IsFileExists(fileSystemPath))
+            return true;
+
+        // find in resource pack
+        AArchive* resourcePack;
+        int       fileIndex;
+        if (GEngine->GetResourceManager()->FindFile(Path, &resourcePack, &fileIndex))
+            return true;
+
+        return false;
+    }
+
+    if (!Path.IcmpN("/Common/", 8))
+    {
+        Path = Path.TruncateHead(1);
+
+        // find in file system
+        if (Core::IsFileExists(Path))
+            return true;
+
+        Path = Path.TruncateHead(7);
+
+        // find in resource pack
+        AArchive const& archive = *GEngine->GetResourceManager()->GetCommonResources();
+        if (archive.LocateFile(Path) < 0)
+            return false;
+
         return true;
     }
 
-    if (!_Path.IcmpN("/Root/", 6))
+    if (!Path.IcmpN("/FS/", 4))
     {
-        _Path = _Path.TruncateHead(6);
+        Path = Path.TruncateHead(4);
+
+        if (Core::IsFileExists(Path))
+            return true;
+
+        return false;
+    }
+
+    if (!Path.IcmpN("/Embedded/", 10))
+    {
+        Path = Path.TruncateHead(10);
+
+        AArchive const& archive = Runtime::GetEmbeddedResources();
+        if (archive.LocateFile(Path) < 0)
+            return false;
+
+        return true;
+    }
+
+    // Invalid path
+    LOG("Invalid path \"{}\"\n", Path);
+    return false;
+}
+
+bool AResource::LoadFromPath(AStringView Path)
+{
+    if (!Path.IcmpN("/Default/", 9))
+    {
+        LoadInternalResource(Path);
+        return true;
+    }
+
+    if (!Path.IcmpN("/Root/", 6))
+    {
+        Path = Path.TruncateHead(6);
 
         // try to load from file system
-        AString fileSystemPath = GEngine->GetRootPath() + _Path;
-        if (Core::IsFileExists(fileSystemPath.CStr()))
+        AString fileSystemPath = GEngine->GetRootPath() + Path;
+        if (Core::IsFileExists(fileSystemPath))
         {
             AFileStream f;
             if (!f.OpenRead(fileSystemPath))
@@ -76,7 +145,7 @@ bool AResource::LoadFromPath(AStringView _Path)
         // try to load from resource pack
         AArchive* resourcePack;
         int       fileIndex;
-        if (GEngine->GetResourceManager()->FindFile(_Path, &resourcePack, &fileIndex))
+        if (GEngine->GetResourceManager()->FindFile(Path, &resourcePack, &fileIndex))
         {
             AMemoryStream f;
             if (!f.OpenRead(fileIndex, *resourcePack))
@@ -86,19 +155,19 @@ bool AResource::LoadFromPath(AStringView _Path)
             return LoadResource(f);
         }
 
-        LOG("File not found /Root/{}\n", _Path);
+        LOG("File not found /Root/{}\n", Path);
         return false;
     }
 
-    if (!_Path.IcmpN("/Common/", 8))
+    if (!Path.IcmpN("/Common/", 8))
     {
-        _Path = _Path.TruncateHead(1);
+        Path = Path.TruncateHead(1);
 
         // try to load from file system
-        if (Core::IsFileExists(_Path))
+        if (Core::IsFileExists(Path))
         {
             AFileStream f;
-            if (!f.OpenRead(_Path))
+            if (!f.OpenRead(Path))
             {
                 return false;
             }
@@ -107,19 +176,19 @@ bool AResource::LoadFromPath(AStringView _Path)
 
         // try to load from resource pack
         AMemoryStream f;
-        if (!f.OpenRead(_Path.TruncateHead(7), *GEngine->GetResourceManager()->GetCommonResources()))
+        if (!f.OpenRead(Path.TruncateHead(7), *GEngine->GetResourceManager()->GetCommonResources()))
         {
             return false;
         }
         return LoadResource(f);
     }
 
-    if (!_Path.IcmpN("/FS/", 4))
+    if (!Path.IcmpN("/FS/", 4))
     {
-        _Path = _Path.TruncateHead(4);
+        Path = Path.TruncateHead(4);
 
         AFileStream f;
-        if (!f.OpenRead(_Path))
+        if (!f.OpenRead(Path))
         {
             return false;
         }
@@ -127,14 +196,14 @@ bool AResource::LoadFromPath(AStringView _Path)
         return LoadResource(f);
     }
 
-    if (!_Path.IcmpN("/Embedded/", 10))
+    if (!Path.IcmpN("/Embedded/", 10))
     {
-        _Path = _Path.TruncateHead(10);
+        Path = Path.TruncateHead(10);
 
         AMemoryStream f;
-        if (!f.OpenRead(_Path, Runtime::GetEmbeddedResources()))
+        if (!f.OpenRead(Path, Runtime::GetEmbeddedResources()))
         {
-            //LOG( "Failed to open /Embedded/{}\n", _Path );
+            //LOG( "Failed to open /Embedded/{}\n", Path );
             return false;
         }
 
@@ -142,7 +211,7 @@ bool AResource::LoadFromPath(AStringView _Path)
     }
 
     // Invalid path
-    LOG("Invalid path \"{}\"\n", _Path);
+    LOG("Invalid path \"{}\"\n", Path);
     return false;
 }
 
@@ -183,7 +252,7 @@ bool ABinaryResource::LoadResource(IBinaryStreamReadInterface& _Stream)
     return true;
 }
 
-void ABinaryResource::LoadInternalResource(AStringView _Path)
+void ABinaryResource::LoadInternalResource(AStringView Path)
 {
     Purge();
 }

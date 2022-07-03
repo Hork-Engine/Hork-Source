@@ -2753,7 +2753,7 @@ static void GenerateBuiltinSource()
 
     AFileStream f;
     f.OpenWrite("material_builtin.glsl");
-    f.Write(builtin.CStr(), builtin.Length());
+    f.Write(builtin.CStr(), builtin.Size());
 }
 
 static void WriteDebugShaders(SPredefinedShaderSource const* Shaders)

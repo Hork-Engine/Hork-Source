@@ -63,7 +63,7 @@ class ASoundResource : public AResource
 
 public:
     /** Initialize from memory */
-    bool InitializeFromMemory(const char* _Path, const void* _SysMem, size_t _SizeInBytes, SSoundCreateInfo const* _pCreateInfo = nullptr);
+    bool InitializeFromMemory(AStringView _Path, const void* _SysMem, size_t _SizeInBytes, SSoundCreateInfo const* _pCreateInfo = nullptr);
 
     /** Create streaming instance */
     bool CreateStreamInstance(TRef<SAudioStream>* ppInterface);

@@ -77,7 +77,7 @@ void ADocumentTokenizer::Reset(const char* pDocumentData, bool InSitu)
     }
     else
     {
-        int n = Platform::Strlen(pDocumentData) + 1;
+        int n = StringLength(pDocumentData) + 1;
         Start = (char*)Platform::GetHeapAllocator<HEAP_STRING>().Alloc(n);
         Platform::Memcpy(Start, pDocumentData, n);
     }
@@ -449,7 +449,7 @@ void ADocument::ParseArray(ADocValue** ppArrayHead, ADocValue** ppArrayTail)
             // array element is string
 
             TRef<ADocString> value = MakeRef<ADocString>();
-            value->SetStringInsitu(token.Begin, token.End);
+            value->SetStringInsitu({token.Begin, token.End});
 
             // Add string to array
             value->AddRef();
@@ -595,7 +595,7 @@ TRef<ADocMember> ADocument::ParseMember(SToken const& MemberToken)
 
         // value is string
         TRef<ADocString> value = MakeRef<ADocString>();
-        value->SetStringInsitu(token.Begin, token.End);
+        value->SetStringInsitu({token.Begin, token.End});
 
         TRef<ADocMember> member = MakeRef<ADocMember>();
         member->NameBegin       = MemberToken.Begin;
@@ -671,12 +671,12 @@ void ADocument::DeserializeFromString(SDocumentDeserializeInfo const& Deserializ
     }
 }
 
-ADocMember* ADocument::AddString(const char* MemberName, const char* Str)
+ADocMember* ADocument::AddString(AGlobalStringView MemberName, AStringView Str)
 {
     // Create member
     TRef<ADocMember> member = MakeRef<ADocMember>();
-    member->NameBegin       = MemberName;
-    member->NameEnd         = MemberName + Platform::Strlen(MemberName);
+    member->NameBegin       = MemberName.CStr();
+    member->NameEnd         = MemberName.CStr() + StringLength(MemberName);
 
     // Create string
     TRef<ADocString> value = MakeRef<ADocString>();
@@ -691,12 +691,12 @@ ADocMember* ADocument::AddString(const char* MemberName, const char* Str)
     return member;
 }
 
-ADocMember* ADocument::AddObject(const char* MemberName, ADocObject* Object)
+ADocMember* ADocument::AddObject(AGlobalStringView MemberName, ADocObject* Object)
 {
     // Create member
     TRef<ADocMember> member = MakeRef<ADocMember>();
-    member->NameBegin       = MemberName;
-    member->NameEnd         = MemberName + Platform::Strlen(MemberName);
+    member->NameBegin       = MemberName.CStr();
+    member->NameEnd         = MemberName.CStr() + StringLength(MemberName);
 
     member->AddValue(Object);
 
@@ -705,11 +705,11 @@ ADocMember* ADocument::AddObject(const char* MemberName, ADocObject* Object)
     return member;
 }
 
-ADocMember* ADocument::AddArray(const char* ArrayName)
+ADocMember* ADocument::AddArray(AGlobalStringView ArrayName)
 {
     TRef<ADocMember> array = MakeRef<ADocMember>();
-    array->NameBegin       = ArrayName;
-    array->NameEnd         = ArrayName + Platform::Strlen(ArrayName);
+    array->NameBegin       = ArrayName.CStr();
+    array->NameEnd         = ArrayName.CStr() + StringLength(ArrayName);
 
     AddMember(array);
 
@@ -796,7 +796,7 @@ ADocMember const* ADocValue::FindMember(const char* Name) const
     return const_cast<ADocValue*>(this)->FindMember(Name);
 }
 
-ADocMember* ADocValue::AddString(const char* MemberName, const char* Str)
+ADocMember* ADocValue::AddString(AGlobalStringView MemberName, AStringView Str)
 {
     if (!IsObject())
     {
@@ -806,8 +806,8 @@ ADocMember* ADocValue::AddString(const char* MemberName, const char* Str)
 
     // Create member
     TRef<ADocMember> member = MakeRef<ADocMember>();
-    member->NameBegin       = MemberName;
-    member->NameEnd         = MemberName + Platform::Strlen(MemberName);
+    member->NameBegin       = MemberName.CStr();
+    member->NameEnd         = MemberName.CStr() + StringLength(MemberName);
 
     // Create string
     TRef<ADocString> value = MakeRef<ADocString>();
@@ -822,7 +822,7 @@ ADocMember* ADocValue::AddString(const char* MemberName, const char* Str)
     return member;
 }
 
-ADocMember* ADocValue::AddObject(const char* MemberName, ADocObject* Object)
+ADocMember* ADocValue::AddObject(AGlobalStringView MemberName, ADocObject* Object)
 {
     if (!IsObject())
     {
@@ -832,8 +832,8 @@ ADocMember* ADocValue::AddObject(const char* MemberName, ADocObject* Object)
 
     // Create member
     TRef<ADocMember> member = MakeRef<ADocMember>();
-    member->NameBegin       = MemberName;
-    member->NameEnd         = MemberName + Platform::Strlen(MemberName);
+    member->NameBegin       = MemberName.CStr();
+    member->NameEnd         = MemberName.CStr() + StringLength(MemberName);
 
     member->AddValue(Object);
 
@@ -842,7 +842,7 @@ ADocMember* ADocValue::AddObject(const char* MemberName, ADocObject* Object)
     return member;
 }
 
-ADocMember* ADocValue::AddArray(const char* ArrayName)
+ADocMember* ADocValue::AddArray(AGlobalStringView ArrayName)
 {
     if (!IsObject())
     {
@@ -851,8 +851,8 @@ ADocMember* ADocValue::AddArray(const char* ArrayName)
     }
 
     TRef<ADocMember> array = MakeRef<ADocMember>();
-    array->NameBegin       = ArrayName;
-    array->NameEnd         = ArrayName + Platform::Strlen(ArrayName);
+    array->NameBegin       = ArrayName.CStr();
+    array->NameEnd         = ArrayName.CStr() + StringLength(ArrayName);
 
     AddMember(array);
 

@@ -304,51 +304,49 @@ void ATexture::LoadInternalResource(AStringView _Path)
     LoadInternalResource("/Default/Textures/Default2D");
 }
 
-static bool IsImageExtension(const char* pExtension)
+static bool IsImageExtension(AStringView Extension)
 {
-    const char* extensionList[] = {".jpg",
-                                   ".jpeg",
-                                   ".png",
-                                   ".tga",
-                                   ".psd",
-                                   ".gif",
-                                   ".hdr",
-                                   ".exr",
-                                   ".pic",
-                                   ".pnm",
-                                   ".ppm",
-                                   ".pgm"};
-
-    for (int i = 0 ; i < HK_ARRAY_SIZE(extensionList) ; i++)
+    for (auto ext : {".jpg",
+                     ".jpeg",
+                     ".png",
+                     ".tga",
+                     ".psd",
+                     ".gif",
+                     ".hdr",
+                     ".exr",
+                     ".pic",
+                     ".pnm",
+                     ".ppm",
+                     ".pgm"})
     {
-        if (!Platform::Stricmp(pExtension, extensionList[i]))
+        if (!Extension.Icmp(ext))
             return true;
     }
     return false;
 }
 
-static bool IsHDRImageExtension(const char* pExtension)
+static bool IsHDRImageExtension(AStringView Extension)
 {
-    return !Platform::Stricmp(pExtension, ".hdr") || !Platform::Stricmp(pExtension, ".exr");
+    return !Extension.Icmp(".hdr") || !Extension.Icmp(".exr");
 }
 
 bool ATexture::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    const char* fn = Stream.GetFileName();
+    AString const& fn        = Stream.GetFileName();
+    AStringView    extension = PathUtils::GetExt(fn);
 
-    AScopedTimer ScopedTime(fn);
+    AScopedTimer ScopedTime(fn.CStr());
 
     AImage image;
 
-    int i = Platform::FindExt(fn);
-    if (IsImageExtension(&fn[i]))
+    if (IsImageExtension(extension))
     {
         SImageMipmapConfig mipmapGen;
         mipmapGen.EdgeMode            = MIPMAP_EDGE_WRAP;
         mipmapGen.Filter              = MIPMAP_FILTER_MITCHELL;
         mipmapGen.bPremultipliedAlpha = false;
 
-        if (IsHDRImageExtension(&fn[i]))
+        if (IsHDRImageExtension(extension))
         {
             if (!image.Load(Stream, &mipmapGen, IMAGE_PF_AUTO_16F))
             {
@@ -390,12 +388,11 @@ bool ATexture::LoadResource(IBinaryStreamReadInterface& Stream)
             return false;
         }
 
-        AString             guid;
         uint32_t            textureType;
         STexturePixelFormat texturePixelFormat;
         uint32_t            w, h, d, mipLevels;
 
-        Stream.ReadObject(guid);
+        AString guid = Stream.ReadString();
         textureType = Stream.ReadUInt32();
         Stream.ReadObject(texturePixelFormat);
         w         = Stream.ReadUInt32();

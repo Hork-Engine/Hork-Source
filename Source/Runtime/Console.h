@@ -76,7 +76,7 @@ public:
 private:
     void CopyStoryLine(WideChar const* _StoryLine);
     void AddStoryLine(WideChar* _Text, int _Length);
-    void InsertUTF8Text(const char* _Utf8);
+    void InsertUTF8Text(AStringView _Utf8);
     void InsertClipboardText();
     void CompleteString(ACommandContext& _CommandCtx, AStringView _Str);
     void DrawCmdLine(ACanvas* _Canvas, int x, int y, int MaxLineChars);

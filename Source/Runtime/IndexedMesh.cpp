@@ -174,7 +174,7 @@ static AIndexedMeshSubpart* ReadIndexedMeshSubpart(IBinaryStreamReadInterface& f
     //AString dummy;
     BvAxisAlignedBox boundingBox;
 
-    f.ReadObject(name);
+    name        = f.ReadString();
     baseVertex  = f.ReadInt32();
     firstIndex  = f.ReadUInt32();
     vertexCount = f.ReadUInt32();
@@ -189,18 +189,15 @@ static AIndexedMeshSubpart* ReadIndexedMeshSubpart(IBinaryStreamReadInterface& f
     subpart->SetFirstIndex(firstIndex);
     subpart->SetVertexCount(vertexCount);
     subpart->SetIndexCount(indexCount);
-    //subpart->SetMaterialInstance( GetOrCreateResource< AMaterialInstance >( materialInstance.CStr() ) );
+    //subpart->SetMaterialInstance( GetOrCreateResource< AMaterialInstance >( materialInstance ) );
     subpart->SetBoundingBox(boundingBox);
     return subpart;
 }
 
 static ASocketDef* ReadSocket(IBinaryStreamReadInterface& f)
 {
-    AString  name;
-    uint32_t jointIndex;
-
-    f.ReadObject(name);
-    jointIndex = f.ReadUInt32();
+    AString name = f.ReadString();
+    uint32_t jointIndex = f.ReadUInt32();
 
     ASocketDef* socket = CreateInstanceOf<ASocketDef>();
     socket->AddRef();
@@ -220,8 +217,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
 
     Purge();
 
-    AString text;
-    text.FromFile(Stream);
+    AString text = Stream.AsString();
 
     SDocumentDeserializeInfo deserializeInfo;
     deserializeInfo.pDocumentData = text.CStr();
@@ -251,7 +247,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     }
 
     ABinaryResource* meshBinary = CreateInstanceOf<ABinaryResource>();
-    meshBinary->InitializeFromFile(meshFile.CStr());
+    meshBinary->InitializeFromFile(meshFile);
 
     if (!meshBinary->GetSizeInBytes())
     {
@@ -262,7 +258,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     }
 
     AMemoryStream meshData;
-    if (!meshData.OpenRead(meshFile.CStr(), meshBinary->GetBinaryData(), meshBinary->GetSizeInBytes()))
+    if (!meshData.OpenRead(meshFile, meshBinary->GetBinaryData(), meshBinary->GetSizeInBytes()))
     {
         LOG("AIndexedMesh::LoadResource: invalid mesh\n");
 
@@ -292,8 +288,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
 
     bool bRaycastBVH;
 
-    AString guidStr;
-    meshData.ReadObject(guidStr);
+    AString guidStr = meshData.ReadString();
 
     bSkinnedMesh = meshData.ReadBool();
     //meshData.ReadBool(); // dummy (TODO: remove in the future)
@@ -318,7 +313,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
         int        subpartIndex = 0;
         for (ADocValue* v = values; v && subpartIndex < Subparts.Size(); v = v->GetNext())
         {
-            Subparts[subpartIndex]->SetMaterialInstance(GetOrCreateResource<AMaterialInstance>(v->GetString().CStr()));
+            Subparts[subpartIndex]->SetMaterialInstance(GetOrCreateResource<AMaterialInstance>(v->GetString()));
             subpartIndex++;
         }
     }
@@ -357,7 +352,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     }
 
     member = doc.FindMember("Skeleton");
-    SetSkeleton(GetOrCreateResource<ASkeleton>(member ? member->GetString().CStr() : "/Default/Skeleton/Default"));
+    SetSkeleton(GetOrCreateResource<ASkeleton>(member ? member->GetString() : "/Default/Skeleton/Default"));
 
     AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
@@ -400,7 +395,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     if ( !Core::Icmp( &_Path[i], ".gltf" ) ) {
         SMeshAsset asset;
 
-        if ( !LoadGeometryGLTF( _Path.CStr(), asset ) ) {
+        if ( !LoadGeometryGLTF( _Path, asset ) ) {
             return false;
         }
 
@@ -424,7 +419,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
             SMeshMaterial const & material = asset.Materials[j];
             for ( int n = 0; n < material.NumTextures; n++ ) {
                 SMaterialTexture const & texture = asset.Textures[material.Textures[n]];
-                ATexture * texObj = GetOrCreateResource< ATexture >( texture.FileName.CStr() );
+                ATexture * texObj = GetOrCreateResource< ATexture >( texture.FileName );
                 matInst->SetTexture( n, texObj );
             }
         }
@@ -515,7 +510,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
         subpart->OwnerMesh = this;
     }
 
-    SetSkeleton( GetOrCreateResource< ASkeleton >( skeleton.CStr() ) );
+    SetSkeleton( GetOrCreateResource< ASkeleton >( skeleton ) );
 
     AVertexMemoryGPU * vertexMemory = GEngine->GetVertexMemoryGPU();
 

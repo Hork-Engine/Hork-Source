@@ -96,9 +96,7 @@ bool AMaterial::LoadResource(IBinaryStreamReadInterface& Stream)
 
     Purge();
 
-    AString guid;
-
-    Stream.ReadObject(guid);
+    AString guid = Stream.ReadString();
 
     Def.Type                      = (EMaterialType)Stream.ReadUInt8();
     Def.Blending                  = (EColorBlending)Stream.ReadUInt8();
@@ -138,8 +136,8 @@ bool AMaterial::LoadResource(IBinaryStreamReadInterface& Stream)
     AString sourceName, sourceCode;
     for (int i = 0; i < numShaders; i++)
     {
-        Stream.ReadObject(sourceName);
-        Stream.ReadObject(sourceCode);
+        sourceName = Stream.ReadString();
+        sourceCode = Stream.ReadString();
         Def.AddShader(sourceName, sourceCode);
     }
 
@@ -163,7 +161,7 @@ bool WriteMaterial(AString const& _Path, SMaterialDef const* pDef)
 
     f.WriteUInt32(FMT_VERSION_MATERIAL);
     f.WriteUInt32(FMT_VERSION_MATERIAL);
-    f.WriteObject(guid.ToString());
+    f.WriteString(guid.ToString());
     f.WriteUInt8(pDef->Type);
     f.WriteUInt8(pDef->Blending);
     f.WriteUInt8(pDef->RenderingPriority);
@@ -208,8 +206,8 @@ bool WriteMaterial(AString const& _Path, SMaterialDef const* pDef)
 
     for (SPredefinedShaderSource* s = pDef->Shaders; s; s = s->pNext)
     {
-        f.WriteObject(AString(s->SourceName));
-        f.WriteObject(AString(s->Code));
+        f.WriteString(s->SourceName);
+        f.WriteString(s->Code);
     }
 
     return true;
@@ -978,19 +976,15 @@ bool AMaterialInstance::LoadResource(IBinaryStreamReadInterface& Stream)
         return false;
     }
 
-    AString guidStr;
-    AString materialGUID;
-    AString textureGUID;
-
-    Stream.ReadObject(guidStr);
-    Stream.ReadObject(materialGUID);
+    AString guidStr = Stream.ReadString();
+    AString materialGUID = Stream.ReadString();
 
     int texCount = Stream.ReadUInt32();
     for (int i = 0; i < texCount; i++)
     {
-        Stream.ReadObject(textureGUID);
+        AString textureGUID = Stream.ReadString();
 
-        SetTexture(i, GetOrCreateResource<ATexture>(textureGUID.CStr()));
+        SetTexture(i, GetOrCreateResource<ATexture>(textureGUID));
     }
 
     for (int i = texCount; i < MAX_MATERIAL_TEXTURES; i++)
@@ -1003,15 +997,14 @@ bool AMaterialInstance::LoadResource(IBinaryStreamReadInterface& Stream)
         Uniforms[i] = Stream.ReadFloat();
     }
 
-    SetMaterial(GetOrCreateResource<AMaterial>(materialGUID.CStr()));
+    SetMaterial(GetOrCreateResource<AMaterial>(materialGUID));
 
     return true;
 }
 
 bool AMaterialInstance::LoadTextVersion(IBinaryStreamReadInterface& Stream)
 {
-    AString text;
-    text.FromFile(Stream);
+    AString text = Stream.AsString();
 
     SDocumentDeserializeInfo deserializeInfo;
     deserializeInfo.pDocumentData = text.CStr();
@@ -1029,7 +1022,7 @@ bool AMaterialInstance::LoadTextVersion(IBinaryStreamReadInterface& Stream)
         int        texSlot = 0;
         for (ADocValue* v = values; v && texSlot < MAX_MATERIAL_TEXTURES; v = v->GetNext())
         {
-            SetTexture(texSlot++, GetOrCreateResource<ATexture>(v->GetString().CStr()));
+            SetTexture(texSlot++, GetOrCreateResource<ATexture>(v->GetString()));
         }
     }
 
@@ -1045,7 +1038,7 @@ bool AMaterialInstance::LoadTextVersion(IBinaryStreamReadInterface& Stream)
     }
 
     member = doc.FindMember("Material");
-    SetMaterial(GetOrCreateResource<AMaterial>(member ? member->GetString().CStr() : "/Default/Materials/Unlit"));
+    SetMaterial(GetOrCreateResource<AMaterial>(member ? member->GetString() : "/Default/Materials/Unlit"));
 
     return true;
 }

@@ -34,9 +34,9 @@ SOFTWARE.
 #include <Platform/Path.h>
 #include <Platform/Logger.h>
 #include <Platform/Utf8.h>
+#include <Platform/String.h>
 
 #include "BaseMath.h"
-#include "BinaryStream.h"
 
 using StringSizeType = uint32_t;
 
@@ -360,29 +360,18 @@ public:
         return StringHashCaseInsensitive(Begin(), End());
     }
 
-    HK_FORCEINLINE void Write(IBinaryStreamWriteInterface& Stream) const
-    {
-        SizeType size = Size();
-        Stream.WriteUInt32(size);
-
-#ifdef HK_BIG_ENDIAN
-        if (IsWideString())
-        {
-            for (SizeType i = 0; i < size; i++)
-                Stream.WriteUInt16(m_pData[i]);
-        }
-        else
-#else
-        {
-            Stream.Write(m_pData, size * sizeof(CharT));
-        }
-#endif
-    }
-
 private:
     const CharT* m_pData;
     SizeType     m_Size;
 };
+
+enum STRING_RESIZE_FLAGS : uint32_t
+{
+    STRING_RESIZE_DEFAULT        = 0,
+    STRING_RESIZE_NO_FILL_SPACES = HK_BIT(0)
+};
+
+HK_FLAG_ENUM_OPERATORS(STRING_RESIZE_FLAGS)
 
 template <typename CharT, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
 class TString final
@@ -432,7 +421,7 @@ public:
     /** Sets the new length of the string.
         If the new number of characters is less than the current one, the string will be truncated.
         If the new character count is greater than the current one, it will fill the newly added characters with spaces. */
-    void Resize(SizeType Size);
+    void Resize(SizeType Size, STRING_RESIZE_FLAGS Flags = STRING_RESIZE_DEFAULT);
 
     /** Reserve memory for the specified number of characters. */
     void Reserve(SizeType NumCharacters);
@@ -577,17 +566,6 @@ public:
     {
         return StringHashCaseInsensitive(Begin(), End());
     }
-
-    HK_FORCEINLINE void Write(IBinaryStreamWriteInterface& Stream) const
-    {
-        TStringView<CharT>(m_pData, m_Size).Write(Stream);
-    }
-
-    void Read(IBinaryStreamReadInterface& Stream);
-
-    void FromFile(IBinaryStreamReadInterface& Stream);
-
-    static const char* NullCString() { return ""; }
 
 private:
     void Construct(const CharT* pRawString, SizeType Size);
@@ -969,23 +947,26 @@ HK_FORCEINLINE CharT* TString<CharT, Allocator>::ToPtr() const
 }
 
 template <typename CharT, typename Allocator>
-HK_INLINE void TString<CharT, Allocator>::Resize(SizeType Size)
+HK_INLINE void TString<CharT, Allocator>::Resize(SizeType Size, STRING_RESIZE_FLAGS Flags)
 {
     if (Size > m_Size)
     {
         Reserve(Size);
 
-        // Fill rest of the line by spaces
-        if (IsWideString())
+        if (!(Flags & STRING_RESIZE_NO_FILL_SPACES))
         {
-            CharT* p = &m_pData[m_Size];
-            CharT* e = &m_pData[Size];
-            while (p < e)
-                *p++ = ' ';
-        }
-        else
-        {
-            Platform::Memset(&m_pData[m_Size], ' ', Size - m_Size);
+            // Fill rest of the line by spaces
+            if (IsWideString())
+            {
+                CharT* p = &m_pData[m_Size];
+                CharT* e = &m_pData[Size];
+                while (p < e)
+                    *p++ = ' ';
+            }
+            else
+            {
+                Platform::Memset(&m_pData[m_Size], ' ', Size - m_Size);
+            }
         }
     }
     m_Size          = Size;
@@ -997,73 +978,6 @@ void TString<CharT, Allocator>::Reserve(SizeType NumCharacters)
 {
     HK_ASSERT(NumCharacters <= MaxStringSize);
     GrowCapacity(NumCharacters + 1, true);
-}
-
-template <typename CharT, typename Allocator>
-HK_INLINE void TString<CharT, Allocator>::FromFile(IBinaryStreamReadInterface& Stream)
-{
-    Stream.SeekEnd(0);
-    size_t fileSz = Stream.GetOffset();
-    Stream.SeekSet(0);
-
-    SizeType size = fileSz / sizeof(CharT);
-    if (size > MaxStringSize)
-    {
-        LOG("Couldn't read entire string from file - string is too long\n");
-        size = MaxStringSize;
-    }
-    GrowCapacity(size + 1, false);
-
-#ifdef HK_BIG_ENDIAN
-    if (IsWideString())
-    {
-        for (SizeType i = 0; i < size; i++)
-            m_pData[i] = Stream.ReadUInt16();
-    }
-    else
-#else
-    {
-        Stream.Read(m_pData, size * sizeof(CharT));
-    }
-#endif
-        m_pData[size] = 0;
-    m_Size = size;
-}
-
-template <typename CharT, typename Allocator>
-HK_INLINE void TString<CharT, Allocator>::Read(IBinaryStreamReadInterface& Stream)
-{
-    uint32_t len  = Stream.ReadUInt32();
-    SizeType size = len;
-
-    if (len > MaxStringSize)
-    {
-        LOG("Couldn't read entire string from file - string is too long\n");
-        size = MaxStringSize;
-    }
-
-    GrowCapacity(size + 1, false);
-
-#ifdef HK_BIG_ENDIAN
-    if (IsWideString())
-    {
-        for (SizeType i = 0; i < size; i++)
-            m_pData[i] = Stream.ReadUInt16();
-    }
-    else
-#else
-    {
-        Stream.Read(m_pData, size * sizeof(CharT));
-    }
-#endif
-
-    if (len != size)
-    {
-        // Keep the correct offset
-        Stream.SeekCur((len - size) * sizeof(CharT));
-    }
-    m_pData[size] = 0;
-    m_Size        = size;
 }
 
 template <typename CharT>

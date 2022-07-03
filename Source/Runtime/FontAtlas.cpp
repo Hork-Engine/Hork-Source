@@ -2400,8 +2400,7 @@ bool AFont::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     Purge();
 
-    AString text;
-    text.FromFile(Stream);
+    AString text = Stream.AsString();
 
     SDocumentDeserializeInfo deserializeInfo;
     deserializeInfo.pDocumentData = text.CStr();
@@ -2425,7 +2424,7 @@ bool AFont::LoadResource(IBinaryStreamReadInterface& Stream)
     }
 
     ABinaryResource* fontBinary = CreateInstanceOf<ABinaryResource>();
-    fontBinary->InitializeFromFile(fontFile.CStr());
+    fontBinary->InitializeFromFile(fontFile);
 
     if (!fontBinary->GetSizeInBytes())
     {

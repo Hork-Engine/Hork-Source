@@ -31,8 +31,8 @@ SOFTWARE.
 #pragma once
 
 #include <Platform/EndianSwap.h>
-#include <Platform/String.h>
 #include <Platform/Format.h>
+#include "String.h"
 
 class IBinaryStreamBaseInterface
 {
@@ -57,7 +57,7 @@ public:
 
     virtual bool Eof() const = 0;
 
-    virtual const char* GetFileName() const = 0;
+    virtual AString const& GetFileName() const = 0;
 };
 
 
@@ -71,7 +71,7 @@ public:
 
     virtual char* Gets(char* pBuffer, size_t SizeInBytes) = 0;
 
-    void ReadCString(char* pBuffer, size_t SizeInBytes)
+    void ReadStringToBuffer(char* pBuffer, size_t SizeInBytes)
     {
         if (!SizeInBytes)
             return;
@@ -85,6 +85,86 @@ public:
         {
             SeekCur(size - (SizeInBytes - 1));
         }
+    }
+
+    template <typename CharT = char, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+    TString<CharT, Allocator> ReadString()
+    {
+        uint32_t len  = ReadUInt32();
+        StringSizeType size = len;
+
+        if (len > MaxStringSize)
+        {
+            LOG("Couldn't read entire string from file - string is too long\n");
+            size = MaxStringSize;
+        }
+
+        TString<CharT, Allocator> str;
+        str.Resize(size, STRING_RESIZE_NO_FILL_SPACES);
+
+        CharT* data = str.ToPtr();
+
+#ifdef HK_BIG_ENDIAN
+        if (IsWideString())
+        {
+            for (StringSizeType i = 0; i < size; i++)
+                data[i] = ReadUInt16();
+        }
+        else
+#else
+        {
+            Read(data, size * sizeof(CharT));
+        }
+#endif
+        if (len != size)
+        {
+            // Keep the correct offset
+            SeekCur((len - size) * sizeof(CharT));
+        }
+
+        return str;
+    }
+
+    /** Reads the rest of the file as a null-terminated string. */
+    template <typename CharT = char, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
+    TString<CharT, Allocator> AsString()
+    {
+        size_t offset = GetOffset();
+        SeekEnd(0);
+        size_t len = GetOffset() - offset;
+        SeekSet(offset);
+
+        StringSizeType size = len / sizeof(CharT);
+        if (size > MaxStringSize)
+        {
+            LOG("Couldn't read entire string from file - string is too long\n");
+            size = MaxStringSize;
+        }
+
+        TString<CharT, Allocator> str;
+        str.Resize(size, STRING_RESIZE_NO_FILL_SPACES);
+
+        CharT* data = str.ToPtr();
+
+#ifdef HK_BIG_ENDIAN
+        if (IsWideString())
+        {
+            for (StringSizeType i = 0; i < size; i++)
+                data[i] = ReadUInt16();
+        }
+        else
+#else
+        {
+            Read(data, size * sizeof(CharT));
+        }
+#endif
+        if (len != size)
+        {
+            // Keep the correct offset
+            SeekEnd(0);
+        }
+
+        return str;
     }
 
     int8_t ReadInt8()
@@ -253,11 +333,24 @@ public:
 
     virtual void Flush() = 0;
 
-    void WriteCString(const char* pRawStr)
+    void WriteString(AStringView Str)
     {
-        int len = Platform::Strlen(pRawStr);
-        WriteUInt32(len);
-        Write(pRawStr, len);
+        StringSizeType size = Str.Size();
+        WriteUInt32(size);
+        Write(Str.ToPtr(), size);
+    }
+
+    void WriteString(AWideStringView Str)
+    {
+        StringSizeType size = Str.Size();
+        WriteUInt32(size);
+
+#ifdef HK_BIG_ENDIAN
+        for (StringSizeType i = 0; i < size; i++)
+            WriteUInt16(Str[i]);
+#else
+        Write(Str.ToPtr(), size * sizeof(uint16_t));
+#endif
     }
 
     void WriteInt8(int8_t i)

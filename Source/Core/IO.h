@@ -148,7 +148,7 @@ public:
     /** Check is file opened */
     bool IsOpened() const { return Mode != FILE_OPEN_MODE_CLOSED; }
 
-    const char* GetFileName() const override;
+    AString const& GetFileName() const override;
     size_t      Read(void* pBuffer, size_t SizeInBytes) override;
     size_t      Write(const void* pBuffer, size_t SizeInBytes) override;
     char*       Gets(char* pBuffer, size_t SizeInBytes) override;
@@ -267,7 +267,7 @@ public:
 
     void SetGrowGranularity(int _Granularity) { Granularity = _Granularity; }
 
-    const char* GetFileName() const override;
+    AString const& GetFileName() const override;
     size_t      Read(void* pBuffer, size_t SizeInBytes) override;
     size_t      Write(const void* pBuffer, size_t SizeInBytes) override;
     char*       Gets(char* pBuffer, size_t SizeInBytes) override;

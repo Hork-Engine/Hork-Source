@@ -1145,11 +1145,11 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
             AString scale      = mScale->GetString();
             AString controller = mController->GetString();
 
-            uint16_t deviceId     = AInputHelper::LookupDevice(device.CStr());
-            uint16_t deviceKey    = AInputHelper::LookupDeviceKey(deviceId, key.CStr());
-            int      controllerId = AInputHelper::LookupController(controller.CStr());
+            uint16_t deviceId     = AInputHelper::LookupDevice(device);
+            uint16_t deviceKey    = AInputHelper::LookupDeviceKey(deviceId, key);
+            int      controllerId = AInputHelper::LookupController(controller);
 
-            float fScale = Core::ParseFloat(scale.CStr());
+            float fScale = Core::ParseFloat(scale);
 
             MapAxis(name, {deviceId, deviceKey}, fScale, controllerId);
         }
@@ -1193,7 +1193,7 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
             ADocMember const* mModMask = mAction->FindMember("ModMask");
             if (mModMask)
             {
-                modMask = Core::ParseInt32(mModMask->GetString().CStr());
+                modMask = Core::ParseInt32(mModMask->GetString());
             }
 
             AString name       = mName->GetString();
@@ -1201,9 +1201,9 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
             AString key        = mKey->GetString();
             AString controller = mController->GetString();
 
-            uint16_t deviceId     = AInputHelper::LookupDevice(device.CStr());
-            uint16_t deviceKey    = AInputHelper::LookupDeviceKey(deviceId, key.CStr());
-            int      controllerId = AInputHelper::LookupController(controller.CStr());
+            uint16_t deviceId     = AInputHelper::LookupDevice(device);
+            uint16_t deviceKey    = AInputHelper::LookupDeviceKey(deviceId, key);
+            int      controllerId = AInputHelper::LookupController(controller);
 
             MapAction(name, {deviceId, deviceKey}, modMask, controllerId);
         }
@@ -1212,8 +1212,7 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
 
 bool AInputMappings::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    AString script;
-    script.FromFile(Stream);
+    AString script = Stream.AsString();
 
     SDocumentDeserializeInfo deserializeInfo;
     deserializeInfo.bInsitu       = true;

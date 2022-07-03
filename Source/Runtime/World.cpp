@@ -294,7 +294,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
         int componentIndex = 0;
         for (auto& componentDef : pActorDef->Components)
         {
-            auto* component = actor->CreateComponent(componentDef.ClassMeta, componentDef.Name.CStr());
+            auto* component = actor->CreateComponent(componentDef.ClassMeta, componentDef.Name);
             if (component)
             {
                 component->SetProperties(componentDef.PropertyHash);
@@ -631,37 +631,6 @@ void AWorld::CleanupActor(AActor* Actor)
         Actor->ScriptModule = nullptr;
     }
 }
-
-
-
-
-
-//AString AWorld::GenerateActorUniqueName( const char * _Name )
-//{
-//    // TODO: optimize!
-//    if ( !FindActor( _Name ) ) {
-//        return _Name;
-//    }
-//    int uniqueNumber = 0;
-//    AString uniqueName;
-//    do {
-//        uniqueName.Resize( 0 );
-//        uniqueName.Concat( _Name );
-//        uniqueName.Concat( Int( ++uniqueNumber ).CStr() );
-//    } while ( FindActor( uniqueName.CStr() ) != nullptr );
-//    return uniqueName;
-//}
-
-//AActor * AWorld::FindActor( const char * _UniqueName )
-//{
-//    // TODO: Use hash!
-//    for ( AActor * actor : Actors ) {
-//        if ( !actor->GetName().Icmp( _UniqueName ) ) {
-//            return actor;
-//        }
-//    }
-//    return nullptr;
-//}
 
 void AWorld::BroadcastActorSpawned(AActor* _SpawnedActor)
 {

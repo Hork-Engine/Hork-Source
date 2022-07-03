@@ -122,8 +122,6 @@ void ASkeletalAnimation::LoadInternalResource(AStringView _Path)
 
 bool ASkeletalAnimation::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    AString guid;
-
     TPodVector<SAnimationChannel> channels;
     TPodVector<STransform>        transforms;
     TPodVector<BvAxisAlignedBox>  bounds;
@@ -144,7 +142,7 @@ bool ASkeletalAnimation::LoadResource(IBinaryStreamReadInterface& Stream)
         return false;
     }
 
-    Stream.ReadObject(guid);
+    AString guid = Stream.ReadString();
 
     float    frameDelta = Stream.ReadFloat();
     uint32_t frameCount = Stream.ReadUInt32();

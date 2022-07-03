@@ -107,10 +107,12 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     Purge();
 
-    if (!Platform::Stricmp(Stream.GetFileName() + Platform::FindExt(Stream.GetFileName()), ".sound"))
+    AString const& fn        = Stream.GetFileName();
+    AStringView    extension = PathUtils::GetExt(fn);
+
+    if (!extension.Icmp(".sound"))
     {
-        AString text;
-        text.FromFile(Stream);
+        AString text = Stream.AsString();
 
         SDocumentDeserializeInfo deserializeInfo;
         deserializeInfo.pDocumentData = text.CStr();
@@ -126,15 +128,15 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
             return false;
         }
 
-        AString fontFile = soundMemb->GetString();
-        if (fontFile.IsEmpty())
+        AString soundFile = soundMemb->GetString();
+        if (soundFile.IsEmpty())
         {
             LOG("ASoundResource::LoadResource: invalid sound\n");
             return false;
         }
 
         ABinaryResource* soundBinary = CreateInstanceOf<ABinaryResource>();
-        soundBinary->InitializeFromFile(fontFile.CStr());
+        soundBinary->InitializeFromFile(soundFile);
 
         if (!soundBinary->GetSizeInBytes())
         {
@@ -155,7 +157,7 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
         member                = doc.FindMember("bForceMono");
         createInfo.bForceMono = member ? Core::ParseBool(member->GetString()) : false;
 
-        return InitializeFromMemory(fontFile.CStr(), soundBinary->GetBinaryData(), soundBinary->GetSizeInBytes(), &createInfo);
+        return InitializeFromMemory(soundFile, soundBinary->GetBinaryData(), soundBinary->GetSizeInBytes(), &createInfo);
     }
     else
     {
@@ -223,7 +225,7 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
 #endif
 }
 
-bool ASoundResource::InitializeFromMemory(const char* _Path, const void* _SysMem, size_t _SizeInBytes, SSoundCreateInfo const* _pCreateInfo)
+bool ASoundResource::InitializeFromMemory(AStringView _Path, const void* _SysMem, size_t _SizeInBytes, SSoundCreateInfo const* _pCreateInfo)
 {
     static const SSoundCreateInfo defaultCI;
     if (!_pCreateInfo)

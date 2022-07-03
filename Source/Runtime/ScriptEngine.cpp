@@ -2589,7 +2589,7 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
 
     if (pScript->Type == 0)
     {
-        LOG("Couldn't find the actor class for the type '{}'\n", ModuleName.CStr());
+        LOG("Couldn't find the actor class for the type '{}'\n", ModuleName);
         return nullptr;
     }
 
@@ -2598,7 +2598,7 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
     pScript->M_FactoryFunc = type->GetFactoryByDecl(s.CStr());
     if (pScript->M_FactoryFunc == 0)
     {
-        LOG("Couldn't find the appropriate factory for the type '{}'\n", ModuleName.CStr());
+        LOG("Couldn't find the appropriate factory for the type '{}'\n", ModuleName);
         return nullptr;
     }
 

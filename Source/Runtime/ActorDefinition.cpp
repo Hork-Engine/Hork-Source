@@ -49,7 +49,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
         AString className = mActorClassName->GetString();
         if (!className.IsEmpty())
         {
-            ActorClass = AActorComponent::Factory().LookupClass(className.CStr());
+            ActorClass = AActorComponent::Factory().LookupClass(className);
             if (!ActorClass)
                 LOG("WARNING: Unknown C++ actor class '{}'\n", className);
         }
@@ -74,7 +74,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             if (className.IsEmpty())
                 continue;
 
-            AClassMeta const* classMeta = AActorComponent::Factory().LookupClass(className.CStr());
+            AClassMeta const* classMeta = AActorComponent::Factory().LookupClass(className);
             if (!classMeta)
                 continue;
 
@@ -321,8 +321,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
 
 bool AActorDefinition::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    AString actorDefScript;
-    actorDefScript.FromFile(Stream);
+    AString actorDefScript = Stream.AsString();
 
     SDocumentDeserializeInfo deserializeInfo;
     deserializeInfo.bInsitu       = true;

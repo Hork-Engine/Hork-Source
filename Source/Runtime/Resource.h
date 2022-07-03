@@ -43,10 +43,12 @@ public:
     void InitializeDefaultObject();
 
     /** Initialize object from file */
-    void InitializeFromFile(AStringView _Path);
+    void InitializeFromFile(AStringView Path);
 
     /** Get physical resource path */
     AString const& GetResourcePath() const { return ResourcePath; }
+
+    static bool IsResourceExists(AStringView Path);
 
 protected:
     AResource() {}
@@ -55,17 +57,16 @@ protected:
     virtual bool LoadResource(IBinaryStreamReadInterface& _Stream) { return false; }
 
     /** Create internal resource */
-    virtual void LoadInternalResource(AStringView _Path) {}
+    virtual void LoadInternalResource(AStringView Path) {}
 
     virtual const char* GetDefaultResourcePath() const { return "/Default/UnknownResource"; }
 
 private:
-    bool LoadFromPath(AStringView _Path);
+    bool LoadFromPath(AStringView Path);
 
     /** Set physical resource path */
     void SetResourcePath(AStringView _ResourcePath) { ResourcePath = _ResourcePath; }
 
-    AString ResourceAlias;
     AString ResourcePath;
 };
 

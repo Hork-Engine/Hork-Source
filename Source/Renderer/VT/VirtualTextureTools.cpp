@@ -1357,7 +1357,7 @@ void VT_RemoveHDDData( SVirtualTextureStructure & _Struct, SVirtualTextureLayer 
 
             fileName = VT_FileNameFromRelative( Layer.Path.CStr(), relativeIndex, lod );
 
-            Core::RemoveFile( fileName.CStr() );
+            Core::RemoveFile( fileName );
         }
     }
 }

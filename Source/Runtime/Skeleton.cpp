@@ -108,9 +108,8 @@ bool ASkeleton::LoadResource(IBinaryStreamReadInterface& Stream)
 
     Purge();
 
-    AString guid;
+    AString guid = Stream.ReadString();
 
-    Stream.ReadObject(guid);
     Stream.ReadArray(Joints);
     Stream.ReadObject(BindposeBounds);
 

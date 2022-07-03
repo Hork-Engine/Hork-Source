@@ -138,10 +138,9 @@ void AEngine::LoadConfigFile()
     AFileStream f;
     if (f.OpenRead(configFile))
     {
-        AString data;
-        data.FromFile(f);
+        AString data = f.AsString();
 
-        CommandProcessor.Add(data.CStr());
+        CommandProcessor.Add(data);
 
         class CommandContext : public ICommandContext
         {

@@ -56,14 +56,14 @@ struct SJoint
     {
         _Stream.WriteInt32(Parent);
         _Stream.WriteObject(LocalTransform);
-        _Stream.WriteCString(Name);
+        _Stream.WriteString(Name);
     }
 
     void Read(IBinaryStreamReadInterface& _Stream)
     {
         Parent = _Stream.ReadInt32();
         _Stream.ReadObject(LocalTransform);
-        _Stream.ReadCString(Name, sizeof(Name));
+        _Stream.ReadStringToBuffer(Name, sizeof(Name));
     }
 };
 

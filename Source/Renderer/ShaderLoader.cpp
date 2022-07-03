@@ -239,7 +239,7 @@ bool AShaderLoader::LoadFile(AStringView FileName, AString& Source)
         {
             return false;
         }
-        Source.FromFile(f);
+        Source = f.AsString();
     }
     else
     {
@@ -254,7 +254,7 @@ bool AShaderLoader::LoadFile(AStringView FileName, AString& Source)
         {
             return false;
         }
-        Source.FromFile(f);
+        Source = f.AsString();
     }
     return true;
 }

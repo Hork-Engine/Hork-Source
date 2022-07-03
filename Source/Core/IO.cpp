@@ -166,9 +166,9 @@ void AFileStream::Close()
     FileSize = 0;
 }
 
-const char* AFileStream::GetFileName() const
+AString const& AFileStream::GetFileName() const
 {
-    return Name.CStr();
+    return Name;
 }
 
 size_t AFileStream::Read(void* pBuffer, size_t SizeInBytes)
@@ -463,9 +463,9 @@ void AMemoryStream::Close()
     bMemoryBufferOwner = true;
 }
 
-const char* AMemoryStream::GetFileName() const
+AString const& AMemoryStream::GetFileName() const
 {
-    return Name.CStr();
+    return Name;
 }
 
 size_t AMemoryStream::Read(void* pBuffer, size_t SizeInBytes)
@@ -669,7 +669,7 @@ bool AArchive::Open(AStringView ArchiveName, bool bResourcePack)
 
     Platform::ZeroMem(&arch, sizeof(arch));
 
-    mz_bool status = mz_zip_reader_init_file_v2(&arch, AString(ArchiveName).CStr(), 0, fileStartOffset, archiveSize);
+    mz_bool status = mz_zip_reader_init_file_v2(&arch, ArchiveName.IsNullTerminated() ? ArchiveName.Begin() : AString(ArchiveName).CStr(), 0, fileStartOffset, archiveSize);
     if (!status)
     {
         LOG("Couldn't open archive {}\n", ArchiveName);
@@ -729,7 +729,7 @@ int AArchive::GetNumFiles() const
 
 int AArchive::LocateFile(AStringView FileName) const
 {
-    return mz_zip_reader_locate_file((mz_zip_archive*)Handle, AString(FileName).CStr(), NULL, 0);
+    return mz_zip_reader_locate_file((mz_zip_archive*)Handle, FileName.IsNullTerminated() ? FileName.Begin() : AString(FileName).CStr(), NULL, 0);
 }
 
 #define MZ_ZIP_CDH_COMPRESSED_SIZE_OFS   20
@@ -1053,7 +1053,7 @@ bool WriteResourcePack(AStringView SourcePath, AStringView ResultFile)
 
                               LOG("Writing '{}'\n", fn);
 
-                              mz_bool status = mz_zip_writer_add_file(&zip, fn.CStr(), AString(FileName).CStr(), nullptr, 0, MZ_UBER_COMPRESSION);
+                              mz_bool status = mz_zip_writer_add_file(&zip, fn.CStr(), FileName.IsNullTerminated() ? FileName.Begin() : AString(FileName).CStr(), nullptr, 0, MZ_UBER_COMPRESSION);
                               if (!status)
                               {
                                   LOG("Failed to archive {}\n", FileName);

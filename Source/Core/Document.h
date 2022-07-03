@@ -148,18 +148,13 @@ public:
     ADocMember const* FindMember(const char* Name) const;
 
     /** Add string member */
-    ADocMember* AddString(const char* MemberName, const char* Str);
-
-    ADocMember* AddString(const char* MemberName, AString const& Str)
-    {
-        return AddString(MemberName, Str.CStr());
-    }
+    ADocMember* AddString(AGlobalStringView MemberName, AStringView Str);
 
     /** Add object member */
-    ADocMember* AddObject(const char* MemberName, class ADocObject* Object);
+    ADocMember* AddObject(AGlobalStringView MemberName, class ADocObject* Object);
 
     /** Add array member */
-    ADocMember* AddArray(const char* ArrayName);
+    ADocMember* AddArray(AGlobalStringView ArrayName);
 
     /** Get next value inside array */
     ADocValue* GetNext()
@@ -210,26 +205,26 @@ public:
     }
 
     /** Set string value */
-    void SetString(const char* Str)
+    void SetString(AStringView Str)
     {
         if (pTokenMemory)
         {
             Platform::GetHeapAllocator<HEAP_STRING>().Free(pTokenMemory);
         }
 
-        int len = Platform::Strlen(Str);
+        StringSizeType len = Str.Size();
 
         pTokenMemory = Platform::GetHeapAllocator<HEAP_STRING>().Alloc(len + 1);
-        Platform::Memcpy(pTokenMemory, Str, len + 1);
+        Platform::Memcpy(pTokenMemory, Str.ToPtr(), len + 1);
 
         StrBegin = (const char*)pTokenMemory;
         StrEnd   = (const char*)pTokenMemory + len;
     }
 
-    void SetStringInsitu(const char* Begin, const char* End)
+    void SetStringInsitu(AStringView Str)
     {
-        StrBegin = Begin;
-        StrEnd   = End;
+        StrBegin = Str.Begin();
+        StrEnd   = Str.End();
     }
 
     /** Get string value */
@@ -406,18 +401,13 @@ public:
     ADocMember const* FindMember(const char* Name) const;
 
     /** Add global string member */
-    ADocMember* AddString(const char* MemberName, const char* Str);
-
-    ADocMember* AddString(const char* MemberName, AString const& Str)
-    {
-        return AddString(MemberName, Str.CStr());
-    }
+    ADocMember* AddString(AGlobalStringView MemberName, AStringView Str);
 
     /** Add global object member */
-    ADocMember* AddObject(const char* MemberName, ADocObject* Object);
+    ADocMember* AddObject(AGlobalStringView MemberName, ADocObject* Object);
 
     /** Add global array member */
-    ADocMember* AddArray(const char* ArrayName);
+    ADocMember* AddArray(AGlobalStringView ArrayName);
 
     void Print() const;
 
