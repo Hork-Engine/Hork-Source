@@ -1774,13 +1774,11 @@ struct SQueryActorsCallback : public btCollisionWorld::ContactResultCallback
 
 static void CollisionShapeContactTest(btDiscreteDynamicsWorld const* InWorld, Float3 const& InPosition, btCollisionShape* InShape, btCollisionWorld::ContactResultCallback& InCallback)
 {
-    TUniqueRef<btRigidBody> tempBody = MakeUnique<btRigidBody>(0.0f, nullptr, InShape);
-    tempBody->setWorldTransform(btTransform(btQuaternion::getIdentity(), btVectorToFloat3(InPosition)));
-    //    tempBody->activate();
+    btRigidBody tempBody(0.0f, nullptr, InShape);
+    tempBody.setWorldTransform(btTransform(btQuaternion::getIdentity(), btVectorToFloat3(InPosition)));
+
     btDiscreteDynamicsWorld* physWorld = const_cast<btDiscreteDynamicsWorld*>(InWorld);
-    //    physWorld->addRigidBody( tempBody );
-    physWorld->contactTest(tempBody.GetObject(), InCallback);
-    //    physWorld->removeRigidBody( tempBody );
+    physWorld->contactTest(&tempBody, InCallback);
 }
 
 void APhysicsSystem::QueryHitProxies_Sphere(TPodVector<AHitProxy*>& _Result, Float3 const& _Position, float _Radius, SCollisionQueryFilter const* _QueryFilter) const
