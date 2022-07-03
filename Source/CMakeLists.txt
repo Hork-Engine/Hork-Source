@@ -53,12 +53,10 @@ add_subdirectory_with_folder("ThirdParty/SDL" ThirdParty/SDL2)
 
 message(STATUS "======================================================================")
 message(STATUS "USING MIMALLOC")
-#option(MI_OVERRIDE          "Override the standard malloc interface (e.g. define entry points for malloc() etc)" ON)
 set(MI_BUILD_SHARED OFF CACHE BOOL "" FORCE)
 set(MI_BUILD_OBJECT OFF CACHE BOOL "" FORCE)
 set(MI_OVERRIDE OFF CACHE BOOL "" FORCE)
 set(MI_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-#option(MI_SKIP_COLLECT_ON_EXIT, "Skip collecting memory on program exit" OFF)
 include_directories(ThirdParty/mimalloc/include)
 add_subdirectory_with_folder("ThirdParty/mimalloc" ThirdParty/mimalloc)
 
