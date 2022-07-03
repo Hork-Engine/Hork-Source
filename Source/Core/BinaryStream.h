@@ -158,7 +158,7 @@ public:
             Read(data, size * sizeof(CharT));
         }
 #endif
-        if (len != size)
+        if (len != size * sizeof(CharT))
         {
             // Keep the correct offset
             SeekEnd(0);
