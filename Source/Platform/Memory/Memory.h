@@ -163,35 +163,6 @@ HK_FORCEINLINE void* Memmove(void* _Dst, const void* _Src, size_t _SizeInBytes)
 
 /**
 
-TStdHeapAllocator
-
-*/
-template <typename T, MEMORY_HEAP Heap>
-struct TStdHeapAllocator
-{
-    typedef T value_type;
-
-    TStdHeapAllocator() = default;
-    template <typename U> constexpr TStdHeapAllocator(TStdHeapAllocator<U, Heap> const&) noexcept {}
-
-    HK_NODISCARD T* allocate(std::size_t _Count) noexcept
-    {
-        HK_ASSERT(_Count <= std::numeric_limits<std::size_t>::max() / sizeof(T));
-
-        return static_cast<T*>(Platform::GetHeapAllocator<Heap>().Alloc(_Count * sizeof(T)));
-    }
-
-    void deallocate(T* _Bytes, std::size_t _Count) noexcept
-    {
-        Platform::GetHeapAllocator<Heap>().Free(_Bytes);
-    }
-};
-template <typename T, typename U, MEMORY_HEAP Heap> bool operator==(TStdHeapAllocator<T, Heap> const&, TStdHeapAllocator<U, Heap> const&) { return true; }
-template <typename T, typename U, MEMORY_HEAP Heap> bool operator!=(TStdHeapAllocator<T, Heap> const&, TStdHeapAllocator<U, Heap> const&) { return false; }
-
-
-/**
-
 Dynamic Stack Memory
 
 */
@@ -265,5 +236,29 @@ HK_FORCEINLINE bool operator==(HeapMemoryAllocator<Heap> const&, HeapMemoryAlloc
 
 template <MEMORY_HEAP Heap>
 HK_FORCEINLINE bool operator!=(HeapMemoryAllocator<Heap> const&, HeapMemoryAllocator<Heap> const&) { return false; }
+
+
+template <typename T, MEMORY_HEAP Heap>
+struct TStdHeapAllocator
+{
+    typedef T value_type;
+
+    TStdHeapAllocator() = default;
+    template <typename U> constexpr TStdHeapAllocator(TStdHeapAllocator<U, Heap> const&) noexcept {}
+
+    HK_NODISCARD T* allocate(std::size_t _Count) noexcept
+    {
+        HK_ASSERT(_Count <= std::numeric_limits<std::size_t>::max() / sizeof(T));
+
+        return static_cast<T*>(Platform::GetHeapAllocator<Heap>().Alloc(_Count * sizeof(T)));
+    }
+
+    void deallocate(T* _Bytes, std::size_t _Count) noexcept
+    {
+        Platform::GetHeapAllocator<Heap>().Free(_Bytes);
+    }
+};
+template <typename T, typename U, MEMORY_HEAP Heap> bool operator==(TStdHeapAllocator<T, Heap> const&, TStdHeapAllocator<U, Heap> const&) { return true; }
+template <typename T, typename U, MEMORY_HEAP Heap> bool operator!=(TStdHeapAllocator<T, Heap> const&, TStdHeapAllocator<U, Heap> const&) { return false; }
 
 }
