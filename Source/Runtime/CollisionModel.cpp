@@ -1367,7 +1367,7 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
                 if (i != j)
                 {
                     phull->Clip(-pShape->pPlanes[j], 0.001f, *pfrontHull);
-                    std::swap(phull, pfrontHull);
+                    Core::Swap(phull, pfrontHull);
                 }
             }
 
