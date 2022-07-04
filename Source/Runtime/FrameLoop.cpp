@@ -39,8 +39,8 @@ SOFTWARE.
 AConsoleVar rt_SyncGPU("rt_SyncGPU"s, "0"s);
 
 AFrameLoop::AFrameLoop(RenderCore::IDevice* RenderDevice) :
-    RenderDevice(RenderDevice),
-    FrameMemory(Allocators::FrameMemoryAllocator::GetAllocator())
+    FrameMemory(Allocators::FrameMemoryAllocator::GetAllocator()),
+    RenderDevice(RenderDevice)
 {
     GPUSync           = MakeRef<AGPUSync>(RenderDevice->GetImmediateContext());
     StreamedMemoryGPU = MakeRef<AStreamedMemoryGPU>(RenderDevice);
