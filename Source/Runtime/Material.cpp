@@ -252,6 +252,7 @@ void AMaterial::LoadInternalResource(AStringView _Path)
 
         graph->Color->Connect(textureSampler->RGBA);
         graph->AlphaMask->Connect(textureSampler->A);
+        graph->ShadowMask->Connect(textureSampler->A);
         graph->bTwoSided = true;
 
         graph->MaterialType = MATERIAL_TYPE_UNLIT;
@@ -276,8 +277,12 @@ void AMaterial::LoadInternalResource(AStringView _Path)
 
         graph->Color->Connect(textureSampler->RGBA);
         graph->Opacity->Connect(textureSampler->A);
+        // FIXME: ShadowMask?
 
         graph->MaterialType = MATERIAL_TYPE_UNLIT;
+        graph->Blending     = COLOR_BLENDING_ALPHA;
+        graph->bTranslucent = true;
+        graph->bTwoSided    = true;
         graph->RegisterTextureSlot(diffuseTexture);
 
         Initialize(graph);
@@ -465,6 +470,7 @@ void AMaterial::LoadInternalResource(AStringView _Path)
         graph->AmbientOcclusion->Connect(ambientSampler, "R");
         graph->Emissive->Connect(emissiveSampler, "RGBA");
         graph->AlphaMask->Connect(textureSampler->A);
+        graph->ShadowMask->Connect(textureSampler->A);
         graph->bTwoSided = true;
 
         graph->MaterialType = MATERIAL_TYPE_PBR;
@@ -527,8 +533,12 @@ void AMaterial::LoadInternalResource(AStringView _Path)
         graph->AmbientOcclusion->Connect(ambientSampler, "R");
         graph->Emissive->Connect(emissiveSampler, "RGBA");
         graph->Opacity->Connect(textureSampler->A);
+        graph->ShadowMask->Connect(textureSampler->A);
 
         graph->MaterialType = MATERIAL_TYPE_PBR;
+        graph->Blending     = COLOR_BLENDING_ALPHA;
+        graph->bTranslucent = true;
+        graph->bTwoSided    = true;
         graph->RegisterTextureSlot(diffuseTexture);
         graph->RegisterTextureSlot(metallicRoughnessTexture);
         graph->RegisterTextureSlot(normalTexture);
@@ -712,6 +722,7 @@ void AMaterial::LoadInternalResource(AStringView _Path)
         graph->AmbientOcclusion->Connect(ambientSampler, "R");
         graph->Emissive->Connect(emissiveMul, "Result");
         graph->AlphaMask->Connect(textureSampler->A);
+        graph->ShadowMask->Connect(textureSampler->A);
         graph->bTwoSided = true;
 
         graph->MaterialType = MATERIAL_TYPE_PBR;
@@ -806,8 +817,12 @@ void AMaterial::LoadInternalResource(AStringView _Path)
         graph->AmbientOcclusion->Connect(ambientSampler, "R");
         graph->Emissive->Connect(emissiveMul, "Result");
         graph->Opacity->Connect(textureSampler->A);
+        graph->ShadowMask->Connect(textureSampler->A);
 
         graph->MaterialType = MATERIAL_TYPE_PBR;
+        graph->Blending     = COLOR_BLENDING_ALPHA;
+        graph->bTranslucent = true;
+        graph->bTwoSided    = true;
         graph->RegisterTextureSlot(diffuseTexture);
         graph->RegisterTextureSlot(metallicRoughnessTexture);
         graph->RegisterTextureSlot(normalTexture);
