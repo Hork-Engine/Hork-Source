@@ -30,7 +30,6 @@ SOFTWARE.
 
 #pragma once
 
-#include <Platform/Memory/PoolAllocator.h>
 #include "String.h"
 #include "Ref.h"
 
@@ -80,32 +79,6 @@ private:
     SToken      CurToken;
 };
 
-//template< typename T >
-//struct SDocumentAllocator
-//{
-//    static TPoolAllocator< T > & GetMemoryPool()
-//    {
-//        static TPoolAllocator< T > MemoryPool;
-//        return MemoryPool;
-//    }
-//
-//    static void FreeMemoryPool()
-//    {
-//        GetMemoryPool().Free();
-//    }
-//
-//    void * Allocate( std::size_t _SizeInBytes )
-//    {
-//        HK_ASSERT( _SizeInBytes == sizeof( T ) );
-//        return GetMemoryPool().Allocate();
-//    }
-//
-//    void Deallocate( void * _Bytes )
-//    {
-//        GetMemoryPool().Deallocate( _Bytes );
-//    }
-//};
-
 struct SDocumentSerializeInfo
 {
     bool bCompactStringConversion;
@@ -119,7 +92,7 @@ struct SDocumentDeserializeInfo
 
 class ADocMember;
 
-class ADocValue : public ARefCounted //TRefCounted< SDocumentAllocator< ADocValue > >
+class ADocValue : public ARefCounted
 {
 public:
     enum
@@ -275,7 +248,7 @@ public:
     }
 };
 
-class ADocMember : public ARefCounted //TRefCounted< SDocumentAllocator< ADocMember > >
+class ADocMember : public ARefCounted
 {
 public:
     ADocMember()
