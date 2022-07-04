@@ -560,7 +560,7 @@ void AEngine::ShowStats()
         pos.Y += y_step;
         Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Vertex cache memory usage (GPU): {} KB / {} MB", VertexMemoryGPU->GetUsedMemory() / 1024.0f, VertexMemoryGPU->GetAllocatedMemory() >> 20), true);
         pos.Y += y_step;
-        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Visible instances: {}", frameData->Instances.Size()), true);
+        Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Visible instances: {}", frameData->Instances.Size() + frameData->TranslucentInstances.Size()), true);
         pos.Y += y_step;
         Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Visible shadow instances: {}", frameData->ShadowInstances.Size()), true);
         pos.Y += y_step;
@@ -593,7 +593,7 @@ void AEngine::ShowStats()
         fps *= (1.0f / FPS_BUF);
         fps = 1.0f / (fps > 0.0f ? fps : 1.0f);
         Canvas.PushFont(font);
-        Canvas.DrawTextUTF8(Float2(10, 10), Color4::White(), fmt("Frame time {:.1} ms (FPS: {}, AVG {})", FrameDurationInSeconds * 1000.0f, int(1.0f / FrameDurationInSeconds), int(fps + 0.5f)), true);
+        Canvas.DrawTextUTF8(Float2(10, 10), Color4::White(), fmt("Frame time {:.1f} ms (FPS: {}, AVG {})", FrameDurationInSeconds * 1000.0f, int(1.0f / FrameDurationInSeconds), int(fps + 0.5f)), true);
         Canvas.PopFont();
     }
 }
