@@ -595,7 +595,13 @@ void* operator new(std::size_t sz)
     if (void* ptr = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(std::max<size_t>(1, sz)))
         return ptr;
 
+    // By default, exceptions are disabled in Hork.
+#ifdef __cpp_exceptions
     throw std::bad_alloc{};
+#else
+    // Calling abort() to prevent compiler warnings.
+    std::abort();
+#endif
 }
 
 void operator delete(void* ptr) noexcept
