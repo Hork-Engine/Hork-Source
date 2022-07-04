@@ -72,13 +72,12 @@ vec3 FetchLocalReflection( vec3 ReflectionDir, float Roughness ) {
     
     //L = saturate(L * SSLRMaxDist);
     
-    vec3 reflectColor = textureLod( ReflectionColor, SampleCoord(UV), 0 ).rgb;
+    vec3 reflectColor = textureLod( ReflectionColor, SampleCoord(UV), Roughness*textureQueryLevels(ReflectionColor) ).rgb;
 
     vec2 coords = smoothstep( 0.2, 0.6, abs( vec2(0.5) - UV.xy ) );
     float screenFalloff = saturate( 1.0 - (coords.x + coords.y) );
     const float falloffExponent = 3.0;
     float falloff = pow( 1 - Roughness, falloffExponent ) * screenFalloff *  saturate(-ReflectionDir.z) / float(error);// * (1.0-L);
-    
     return clamp( reflectColor * falloff, 0.0, 20.0 );
 #else
     return vec3( 0.0 );

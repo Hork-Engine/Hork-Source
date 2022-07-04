@@ -553,6 +553,8 @@ void ALightRenderer::AddPass(AFrameGraph&     FrameGraph,
                                  RenderCore::ITexture* pSource = LightTexture->Actual();
                                  RenderCore::ITexture* pDest   = ReflectionColor_R->Actual();
                                  immediateCtx->CopyTextureRect(pSource, pDest, 1, &Copy);
+
+                                 immediateCtx->GenerateTextureMipLevels(pDest);
                              }
 
                              {

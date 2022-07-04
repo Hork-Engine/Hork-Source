@@ -114,8 +114,8 @@ private:
     SRenderFrontendStat Stat;
 
     TPodVector<SViewport const*> Viewports;
-    int                          MaxViewportWidth  = 0;
-    int                          MaxViewportHeight = 0;
+    uint32_t                     MaxViewportWidth  = 0;
+    uint32_t                     MaxViewportHeight = 0;
 
     TPodVector<SPrimitiveDef*>           VisPrimitives;
     TPodVector<SSurfaceDef*>             VisSurfaces;

@@ -144,18 +144,18 @@ public:
     // Internal (experimental)
     Float4x4 ProjectionMatrix; // last rendered projection
     Float4x4 ViewMatrix;       // last rendered view
+    float    ScaledWidth{};
+    float    ScaledHeight{};
 
     AVirtualTextureFeedback VTFeedback;
 
-    ATexture* GetLightTexture() { return LightTexture; }
-    ATexture* GetDepthTexture() { return DepthTexture; }
+    TRef<RenderCore::ITexture> LightTexture;
+    TRef<RenderCore::ITexture> DepthTexture;
 
 private:
     TRef<ATexture> ColorGradingLUT;
     TRef<ATexture> CurrentColorGradingLUT;
     TRef<ATexture> CurrentExposure;
-    TRef<ATexture> LightTexture;
-    TRef<ATexture> DepthTexture;
     Float3         ColorGradingGrain;
     Float3         ColorGradingGamma;
     Float3         ColorGradingLift;

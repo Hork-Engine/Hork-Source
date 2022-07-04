@@ -46,10 +46,8 @@ struct SViewport
     ARenderingParameters* RenderingParams;
     int                   X;
     int                   Y;
-    int                   Width;
-    int                   Height;
-    int                   ScaledWidth;
-    int                   ScaledHeight;
+    uint32_t              Width;
+    uint32_t              Height;
 };
 
 enum EDrawCornerFlags

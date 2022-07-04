@@ -1210,19 +1210,19 @@ struct SRenderView
     int ViewIndex;
 
     /** Viewport size (scaled by dynamic resolution) */
-    int Width;
+    uint32_t Width;
     /** Viewport size (scaled by dynamic resolution) */
-    int Height;
+    uint32_t Height;
 
     /** Viewport size on previous frame (scaled by dynamic resolution) */
-    int WidthP;
+    uint32_t WidthP;
     /** Viewport size on previous frame (scaled by dynamic resolution) */
-    int HeightP;
+    uint32_t HeightP;
 
     /** Real viewport size */
-    int WidthR;
+    uint32_t WidthR;
     /** Real viewport size */
-    int HeightR;
+    uint32_t HeightR;
 
     /** Time parameters */
     float GameRunningTimeSeconds;
@@ -1374,13 +1374,13 @@ struct SRenderFrame
     int FrameNumber;
 
     /** Render target max resolution */
-    int RenderTargetMaxWidth;
+    uint32_t RenderTargetMaxWidth;
     /** Render target max resolution */
-    int RenderTargetMaxHeight;
+    uint32_t RenderTargetMaxHeight;
     /** Render target max resolution at prev frame */
-    int RenderTargetMaxWidthP;
+    uint32_t RenderTargetMaxWidthP;
     /** Render target max resolution at prev frame */
-    int RenderTargetMaxHeightP;
+    uint32_t RenderTargetMaxHeightP;
 
     /** Canvas resolution */
     int CanvasWidth;
