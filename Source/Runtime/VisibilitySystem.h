@@ -34,6 +34,7 @@ SOFTWARE.
 #include "SoundResource.h"
 #include "HitTest.h"
 #include <Renderer/RenderDefs.h>
+#include <Platform/Memory/PoolAllocator.h>
 
 class AActor;
 class AWorld;
