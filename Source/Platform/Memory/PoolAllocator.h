@@ -47,6 +47,28 @@ public:
     TPoolAllocator();
     ~TPoolAllocator();
 
+    TPoolAllocator(TPoolAllocator&& Rhs) noexcept
+    {
+        Core::Swap(Blocks, Rhs.Blocks);
+        Core::Swap(CurBlock, Rhs.CurBlock);
+        //Core::Swap(FreeList, Rhs.FreeList);
+        Core::Swap(TotalChunks, Rhs.TotalChunks);
+        Core::Swap(TotalBlocks, Rhs.TotalBlocks);
+    }
+
+    TPoolAllocator& operator=(TPoolAllocator&& Rhs) noexcept
+    {
+        Free();
+
+        Core::Swap(Blocks, Rhs.Blocks);
+        Core::Swap(CurBlock, Rhs.CurBlock);
+        //Core::Swap(FreeList, Rhs.FreeList);
+        Core::Swap(TotalChunks, Rhs.TotalChunks);
+        Core::Swap(TotalBlocks, Rhs.TotalBlocks);
+
+        return *this;
+    }
+
     /** Allocates an object from the pool. Doesn't call constructors. */
     T* Allocate();
 
