@@ -255,13 +255,15 @@ public:
     int GetSubpassIndex() const { return SubpassIndex; }
 };
 
-using ARecordFunction    = std::function<void(ARenderPassContext&, ACommandBuffer&)>;
+// fixed_function is used to prevent memory allocations during frame rendering.
+using ARecordFunction = eastl::fixed_function<104, void(ARenderPassContext&, ACommandBuffer&)>;
 
 class ASubpassInfo
 {
 public:
-    ASubpassInfo(std::initializer_list<SAttachmentRef> ColorAttachmentRefs, ARecordFunction RecordFunction) :
-        Refs(ColorAttachmentRefs), Function(std::move(RecordFunction))
+    template <typename Fn>
+    ASubpassInfo(std::initializer_list<SAttachmentRef> ColorAttachmentRefs, Fn RecordFunction) :
+        Refs(ColorAttachmentRefs), Function(RecordFunction)
     {
     }
 
@@ -348,9 +350,7 @@ public:
     template <typename Fn>
     ARenderPass& AddSubpass(std::initializer_list<SAttachmentRef> ColorAttachmentRefs, Fn RecordFunction)
     {
-
-        ARecordFunction f(std::allocator_arg, Allocators::TStdFrameAllocator<char>{}, RecordFunction);
-        Subpasses.EmplaceBack(ColorAttachmentRefs, std::move(f));
+        Subpasses.EmplaceBack(ColorAttachmentRefs, RecordFunction);
         return *this;
     }
 

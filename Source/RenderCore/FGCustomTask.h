@@ -43,7 +43,8 @@ public:
     IImmediateContext* pImmediateContext;
 };
 
-using ATaskFunction = std::function<void(ACustomTaskContext const&)>;
+// fixed_function is used to prevent memory allocations during frame rendering.
+using ATaskFunction = eastl::fixed_function<64, void(ACustomTaskContext const&)>;
 
 class ACustomTask : public FGRenderTask<ACustomTask>
 {
@@ -60,7 +61,8 @@ public:
     ACustomTask& operator=(ACustomTask const&) = delete;
     ACustomTask& operator=(ACustomTask&&) = default;
 
-    ACustomTask& SetFunction(ATaskFunction RecordFunction)
+    template <typename Fn>
+    ACustomTask& SetFunction(Fn RecordFunction)
     {
         Function = RecordFunction;
         return *this;

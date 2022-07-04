@@ -57,6 +57,7 @@ SOFTWARE.
 #include <EASTL/internal/config.h>
 #include <EASTL/internal/hashtable.h>
 #include <EASTL/fixed_vector.h>
+#include <EASTL/fixed_function.h>
 
 #ifdef __GNUC__
 #    pragma GCC diagnostic pop
