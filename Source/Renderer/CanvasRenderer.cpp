@@ -233,7 +233,7 @@ void ACanvasRenderer::CreatePipelines()
     }
 }
 
-void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TPodVector<FGTextureProxy*>& pRenderViewTexture, ITexture* pBackBuffer)
+void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TSmallVector<FGTextureProxy*, 32>& pRenderViewTexture, ITexture* pBackBuffer)
 {
     if ( !GFrameData->DrawListHead ) {
         return;
@@ -252,7 +252,7 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TPodVector<FGTextureProxy*
                                 .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
     pass.SetRenderArea(GFrameData->CanvasWidth, GFrameData->CanvasHeight);
     pass.AddSubpass({0},
-                    [this, pRenderViewTexture](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [this, &pRenderViewTexture](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
                     {
                         struct SCanvasConstants
                         {

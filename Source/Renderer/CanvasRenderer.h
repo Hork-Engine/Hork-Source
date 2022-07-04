@@ -41,7 +41,7 @@ class ACanvasRenderer : public ARefCounted
 public:
     ACanvasRenderer();
 
-    void Render(RenderCore::AFrameGraph& FrameGraph, TPodVector<RenderCore::FGTextureProxy*>& pRenderViewTexture, RenderCore::ITexture* pBackBuffer);
+    void Render(RenderCore::AFrameGraph& FrameGraph, TSmallVector<RenderCore::FGTextureProxy*, 32>& pRenderViewTexture, RenderCore::ITexture* pBackBuffer);
 
 private:
     void CreatePresentViewPipeline();
