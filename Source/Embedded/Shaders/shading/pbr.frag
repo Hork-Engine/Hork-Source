@@ -401,16 +401,16 @@ void MaterialPBRShader( vec3 BaseColor,
 
     switch( DebugMode ) {
     case DEBUG_FULLBRIGHT:
-        FS_FragColor = vec4( BaseColor, 1.0 );
+        FS_FragColor.rgb = BaseColor;
         break;
     case DEBUG_NORMAL:
-        FS_FragColor = vec4( Normal*0.5+0.5, 1.0 );
+        FS_FragColor.rgb = Normal*0.5+0.5;
         break;
     case DEBUG_METALLIC:
-        FS_FragColor = vec4( vec3( Metallic ), 1.0 );
+        FS_FragColor.rgb = vec3( Metallic );
         break;
     case DEBUG_ROUGHNESS:
-        FS_FragColor = vec4( vec3( Roughness ), 1.0 );
+        FS_FragColor.rgb = vec3( Roughness );
         break;
     case DEBUG_AMBIENT:
 #if defined WITH_SSAO && defined ALLOW_SSAO
@@ -419,55 +419,55 @@ void MaterialPBRShader( vec3 BaseColor,
 
         AO *= textureLod( AOLookup, aotc, 0.0 ).x;
 #endif
-        FS_FragColor = vec4( vec3( AO ), 1.0 );
+        FS_FragColor.rgb = vec3( AO );
         break;
     case DEBUG_EMISSION:
-        FS_FragColor = vec4( Emissive, 1.0 );
+        FS_FragColor.rgb = Emissive;
         break;
     case DEBUG_LIGHTMAP:
 #ifdef USE_LIGHTMAP
-        FS_FragColor = vec4( Lightmap.rgb, 1.0 );
+        FS_FragColor.rgb = Lightmap.rgb;
 #else
-        FS_FragColor = vec4( 0.0, 0.0, 0.0, 1.0 );
+        FS_FragColor.rgb = vec3( 0.0 );
 #endif
         //FS_FragColor.xyz += MaterialAmbientLight;
         break;
     case DEBUG_VERTEX_LIGHT:
 #ifdef USE_VERTEX_LIGHT
-        FS_FragColor = vec4( VS_VertexLight, 1.0 );
+        FS_FragColor.rgb = VS_VertexLight;
 #else
-        FS_FragColor = vec4( 0.0, 0.0, 0.0, 1.0 );
+        FS_FragColor.rgb = vec3( 0.0 );
 #endif
         break;
     case DEBUG_DIRLIGHT:
-        FS_FragColor = vec4( CalcDirectionalLightingPBR( vec3(0.5/PI), F0, k, RoughnessSqrClamped, Normal, GeometryNormal, NdV ), 1.0 );
+        FS_FragColor.rgb = CalcDirectionalLightingPBR( vec3(0.5/PI), F0, k, RoughnessSqrClamped, Normal, GeometryNormal, NdV );
         break;
     case DEBUG_POINTLIGHT:
-        FS_FragColor = vec4( CalcOmnidirectionalLightingPBR( vec3(0.5/PI), F0, k, RoughnessSqrClamped, Normal, NdV, FirstIndex, NumLights ), 1.0 );
+        FS_FragColor.rgb = CalcOmnidirectionalLightingPBR( vec3(0.5/PI), F0, k, RoughnessSqrClamped, Normal, NdV, FirstIndex, NumLights );
         break;
     //case DEBUG_TEXCOORDS:
-    //    FS_FragColor = vec4( nsv_VS0_TexCoord.xy, 0.0, 1.0 );
+    //    FS_FragColor.rgb = vec3( nsv_VS0_TexCoord.xy, 0.0);
     //    break;
     case DEBUG_TEXNORMAL:
-//        FS_FragColor = vec4( N*0.5+0.5, 1.0 );
+//        FS_FragColor.rgb = N*0.5+0.5;
         break;
     case DEBUG_TBN_NORMAL:
-        FS_FragColor = vec4( GeometryNormal*0.5+0.5, 1.0 );
+        FS_FragColor.rgb = GeometryNormal*0.5+0.5;
         break;
     //case DEBUG_TBN_TANGENT:
-    //    FS_FragColor = vec4( VS_T*0.5+0.5, 1.0 );
+    //    FS_FragColor.rgb = VS_T*0.5+0.5;
     //    break;
     //case DEBUG_TBN_BINORMAL:
-    //    FS_FragColor = vec4( VS_B*0.5+0.5, 1.0 );
+    //    FS_FragColor.rgb = VS_B*0.5+0.5;
     //    break;
     case DEBUG_SPECULAR:
-        FS_FragColor = vec4( F0, 1.0 );
+        FS_FragColor.rgb = F0;
         break;
     case DEBUG_AMBIENT_LIGHT:
-        FS_FragColor = vec4( Ambient, 1.0 );
+        FS_FragColor.rgb = Ambient;
         break;
     case DEBUG_LIGHT_CASCADES:
-        FS_FragColor = vec4( FS_FragColor.rgb*0.3 + DebugDirectionalLightCascades(), 1.0 );
+        FS_FragColor.rgb = FS_FragColor.rgb*0.3 + DebugDirectionalLightCascades();
         break;
     case DEBUG_VT_BORDERS:
         #ifdef USE_VIRTUAL_TEXTURE
