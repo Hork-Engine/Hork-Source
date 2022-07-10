@@ -238,11 +238,21 @@ extern void AssertFunction(const char* _File, int _Line, const char* _Function, 
 #endif
 #define HK_ASSERT(assertion)   HK_ASSERT_(assertion, nullptr)
 
-#define HK_VERIFY(expression, message)  \
-    do                                  \
-    {                                   \
-        if (HK_UNLIKELY(!(expression))) \
-            CriticalError(message);     \
+#define HK_VERIFY(Expression, Message)                               \
+    do                                                               \
+    {                                                                \
+        if (HK_UNLIKELY(!(Expression)))                              \
+            CriticalError("{} Expected {}\n", Message, #Expression); \
+    } while (false)
+
+#define HK_VERIFY_R(Expression, Message)                   \
+    do                                                     \
+    {                                                      \
+        if (HK_UNLIKELY(!(Expression)))                    \
+        {                                                  \
+            LOG("{} Expected {}\n", Message, #Expression); \
+            return {};                                     \
+        }                                                  \
     } while (false)
 
 #define HK_STRINGIFY(text)     #text
@@ -435,4 +445,5 @@ HK_FORCEINLINE void Swap(T& a, T& b)
 {
     eastl::swap(a, b);
 }
+
 } // namespace Core
