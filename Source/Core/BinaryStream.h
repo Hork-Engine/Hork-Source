@@ -416,6 +416,57 @@ public:
         WriteUInt8(uint8_t(b));
     }
 
+    template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
+    void WriteWords(T* pBuffer, const size_t Count = 1)
+    {
+        static_assert(sizeof(T) == 1 || sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8, "Unsupported integer");
+
+#ifdef HK_LITTLE_ENDIAN
+        Write(pBuffer, Count * sizeof(T));
+#else
+        switch (sizeof(T))
+        {
+            case 1:
+                Write(Buffer, Count);
+                break;
+            case 2:
+                for (size_t i = 0; i < Count; i++)
+                    WriteUInt16(pBuffer[i]);
+                break;
+            case 4:
+                for (size_t i = 0; i < Count; i++)
+                    WriteUInt32(pBuffer[i]);
+                break;
+            case 8:
+                for (size_t i = 0; i < Count; i++)
+                    WriteUInt64(pBuffer[i]);
+                break;
+        }
+#endif
+    }
+
+    template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
+    void WriteFloats(T* pBuffer, const size_t Count = 1)
+    {
+        static_assert(sizeof(T) == 4 || sizeof(T) == 8, "Unsupported floating point");
+
+#ifdef HK_LITTLE_ENDIAN
+        Write(pBuffer, Count * sizeof(T));
+#else
+        switch (sizeof(T))
+        {
+            case 4:
+                for (size_t i = 0; i < Count; i++)
+                    WriteFloat(pBuffer[i]);
+                break;
+            case 8:
+                for (size_t i = 0; i < Count; i++)
+                    WriteDouble(pBuffer[i]);
+                break;
+        }
+#endif
+    }  
+
     template <typename T>
     void WriteObject(T const& Object)
     {
