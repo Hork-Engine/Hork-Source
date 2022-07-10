@@ -585,6 +585,18 @@ extern "C" uint32_t half_to_float(uint16_t h);
 extern "C" uint16_t half_add(uint16_t x, uint16_t y);
 extern "C" uint16_t half_mul(uint16_t x, uint16_t y);
 
+HK_FORCEINLINE uint16_t f32tof16(float f)
+{
+    return half_from_float(*reinterpret_cast<uint32_t*>(&f));
+}
+
+HK_FORCEINLINE float f16tof32(uint16_t f)
+{
+    uint32_t r = half_to_float(f);
+    return *reinterpret_cast<float*>(&r);
+}
+
+
 struct Half
 {
     uint16_t v;
@@ -603,22 +615,20 @@ struct Half
     }
 
     Half(float f) :
-        v(half_from_float(*reinterpret_cast<const uint32_t*>(&f)))
+        v(f32tof16(f))
     {}
 
     Half& operator=(Half const&) = default;
 
     Half& operator=(float f)
     {
-        v = half_from_float(*reinterpret_cast<const uint32_t*>(&f));
+        v = f32tof16(f);
         return *this;
     }
 
     operator float() const
     {
-        float f;
-        *reinterpret_cast<uint32_t*>(&f) = half_to_float(v);
-        return f;
+        return f16tof32(v);
     }
 
     Half& operator*=(Half const& rhs)
