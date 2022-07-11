@@ -91,7 +91,7 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
         {
             AMutexGurad criticalSection( EnqueLock );
 
-            LOG("Fetch page\n");
+            //LOG("Fetch page\n");
 
             QueueLoadPos = QueueLoadPos & (MAX_QUEUE_LENGTH - 1);
             quedPage = QuedPages[QueueLoadPos];
@@ -105,7 +105,7 @@ void AVirtualTextureFeedbackAnalyzer::StreamThreadMain()
 
         if ( !pTexture ) {
             // Reached end of queue
-            LOG("WaitForNewPages\n");
+            //LOG("WaitForNewPages\n");
             WaitForNewPages();
             continue;
         }
