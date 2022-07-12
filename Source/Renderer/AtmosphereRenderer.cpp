@@ -33,7 +33,7 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_RGB16F; // TODO: try compression
+static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_R11G11B10_FLOAT;
 
 AAtmosphereRenderer::AAtmosphereRenderer() {
     SBufferDesc bufferCI = {};

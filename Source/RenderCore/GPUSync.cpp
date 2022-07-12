@@ -61,15 +61,15 @@ void AGPUSync::Wait()
         IDevice* device = pImmediateContext->GetDevice();
 
         device->CreateTexture(STextureDesc()
-                                  .SetFormat(TEXTURE_FORMAT_RGBA8)
+                                  .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
                                   .SetResolution(STextureResolution2D(2, 2))
                                   .SetMipLevels(2),
                               &Texture);
 
-        pImmediateContext->WriteTexture(Texture, 0, FORMAT_UBYTE4, sizeof(data), 1, data);
+        pImmediateContext->WriteTexture(Texture, 0, sizeof(data), 1, data);
 
         device->CreateTexture(STextureDesc()
-                                  .SetFormat(TEXTURE_FORMAT_RGBA8)
+                                  .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
                                   .SetResolution(STextureResolution2D(1, 1))
                                   .SetMipLevels(1),
                               &Staging);
@@ -93,6 +93,6 @@ void AGPUSync::Wait()
         pImmediateContext->CopyTextureRect(Texture, Staging, 1, &copy);
 
         byte data[4];
-        pImmediateContext->ReadTexture(Staging, 0, FORMAT_UBYTE4, 4, 1, data);
+        pImmediateContext->ReadTexture(Staging, 0, 4, 4, data);
     }
 }

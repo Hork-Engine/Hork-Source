@@ -1664,31 +1664,30 @@ struct STextureLayers
 void * LoadDiffuseImage( void * _RectUserData, int Width, int Height ) {
     STextureLayers * layers = (STextureLayers *)_RectUserData;
 
-    AImage image;
+    ImageStorage image = CreateImage(layers->Diffuse, nullptr, IMAGE_STORAGE_FLAGS_DEFAULT, TEXTURE_FORMAT_SRGBA8_UNORM);
 
-    if ( !image.Load( layers->Diffuse, nullptr, IMAGE_PF_RGBA_GAMMA2 ) ) {
+    if (!image)
+    {
         return nullptr;
     }
 
     void* pScaledImage = Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(Width * Height * 4);
 
     // Scale source image to match required width and height
-    SImageResizeDesc desc;
-    desc.pImage = image.GetData();
-    desc.Width = image.GetWidth();
-    desc.Height = image.GetHeight();
-    desc.NumChannels = 4;
-    desc.AlphaChannel = 3;
-    desc.DataType = IMAGE_DATA_TYPE_UINT8;
-    desc.bPremultipliedAlpha = false;
-    desc.bLinearSpace = false;
-    desc.HorizontalEdgeMode = MIPMAP_EDGE_CLAMP;
-    desc.VerticalEdgeMode = MIPMAP_EDGE_CLAMP;
-    desc.HorizontalFilter = MIPMAP_FILTER_MITCHELL;
-    desc.VerticalFilter = MIPMAP_FILTER_MITCHELL;
-    desc.ScaledWidth = Width;
-    desc.ScaledHeight = Height;
-    ResizeImage( desc, pScaledImage );
+    ImageResampleParams resample;
+    resample.pImage              = image.GetData();
+    resample.Width               = image.GetDesc().Width;
+    resample.Height              = image.GetDesc().Height;
+    resample.Format              = TEXTURE_FORMAT_SRGBA8_UNORM;
+    resample.AlphaChannel        = 3;
+    resample.bPremultipliedAlpha = false;
+    resample.HorizontalEdgeMode  = IMAGE_RESAMPLE_EDGE_CLAMP;
+    resample.VerticalEdgeMode    = IMAGE_RESAMPLE_EDGE_CLAMP;
+    resample.HorizontalFilter    = IMAGE_RESAMPLE_FILTER_MITCHELL;
+    resample.VerticalFilter      = IMAGE_RESAMPLE_FILTER_MITCHELL;
+    resample.ScaledWidth         = Width;
+    resample.ScaledHeight        = Height;
+    ResampleImage(resample, pScaledImage);
 
     //AFileStream f;
     //f.OpenWrite("test.bmp");

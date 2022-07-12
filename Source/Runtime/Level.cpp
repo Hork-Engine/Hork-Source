@@ -169,8 +169,7 @@ ALevelLighting::ALevelLighting(SLightingSystemCreateInfo const& CreateInfo)
         LightData = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(CreateInfo.LightDataSize);
         Platform::Memcpy(LightData, CreateInfo.LightData, CreateInfo.LightDataSize);
 
-        RenderCore::TEXTURE_FORMAT texFormat;
-        RenderCore::DATA_FORMAT dataFormat;
+        TEXTURE_FORMAT texFormat;
         RenderCore::STextureSwizzle swizzle;
 
         size_t blockSize = sizeof(uint16_t) * LightmapBlockWidth * LightmapBlockHeight;
@@ -178,13 +177,11 @@ ALevelLighting::ALevelLighting(SLightingSystemCreateInfo const& CreateInfo)
         if (LightmapFormat == LIGHTMAP_BGR_HALF)
         {
             blockSize *= 4;
-            texFormat = RenderCore::TEXTURE_FORMAT_RGBA16F;
-            dataFormat = RenderCore::FORMAT_HALF4;
+            texFormat = TEXTURE_FORMAT_RGBA16_FLOAT; // TODO: Check TEXTURE_FORMAT_R11G11B10_FLOAT
         }
         else
         {
-            texFormat = RenderCore::TEXTURE_FORMAT_R16F;
-            dataFormat = RenderCore::FORMAT_HALF1;
+            texFormat = TEXTURE_FORMAT_R16_FLOAT;
             swizzle.R  = RenderCore::TEXTURE_SWIZZLE_R;
             swizzle.G  = RenderCore::TEXTURE_SWIZZLE_R;
             swizzle.B  = RenderCore::TEXTURE_SWIZZLE_R;
@@ -201,7 +198,7 @@ ALevelLighting::ALevelLighting(SLightingSystemCreateInfo const& CreateInfo)
                                                           .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE)
                                                           .SetSwizzle(swizzle),
                                                       &Lightmaps[blockNum]);
-            Lightmaps[blockNum]->Write(0, dataFormat, blockSize, 2, (byte*)LightData + blockNum * blockSize);
+            Lightmaps[blockNum]->Write(0, blockSize, 2, (byte*)LightData + blockNum * blockSize);
             Lightmaps[blockNum]->SetDebugName("Lightmap block");
         }
     }

@@ -373,18 +373,6 @@ enum ETextureColorSpace
     //TEXTURE_COLORSPACE_RGBA_UINT
 };
 
-enum ETextureType
-{
-    TEXTURE_1D,
-    TEXTURE_1D_ARRAY,
-    TEXTURE_2D,
-    TEXTURE_2D_ARRAY,
-    TEXTURE_3D,
-    TEXTURE_CUBEMAP,
-    TEXTURE_CUBEMAP_ARRAY,
-    TEXTURE_TYPE_MAX
-};
-
 enum ETextureFilter
 {
     TEXTURE_FILTER_LINEAR,
@@ -406,7 +394,7 @@ enum ETextureAddress
 
 struct STextureSampler
 {
-    ETextureType    TextureType;
+    TEXTURE_TYPE    TextureType;
     ETextureFilter  Filter;
     ETextureAddress AddressU;
     ETextureAddress AddressV;
@@ -415,142 +403,6 @@ struct STextureSampler
     float           Anisotropy;
     float           MinLod;
     float           MaxLod;
-};
-
-/**
-Texture pixel format
-*/
-enum ETexturePixelFormat : uint8_t
-{
-    TEXTURE_PF_R8_SNORM,
-    TEXTURE_PF_RG8_SNORM,
-    //TEXTURE_PF_BGR8_SNORM,
-    TEXTURE_PF_BGRA8_SNORM,
-
-    TEXTURE_PF_R8_UNORM,
-    TEXTURE_PF_RG8_UNORM,
-    //TEXTURE_PF_BGR8_UNORM,
-    TEXTURE_PF_BGRA8_UNORM,
-
-    //TEXTURE_PF_BGR8_SRGB,
-    TEXTURE_PF_BGRA8_SRGB,
-
-    TEXTURE_PF_R16I,
-    TEXTURE_PF_RG16I,
-    //TEXTURE_PF_BGR16I,
-    TEXTURE_PF_BGRA16I,
-
-    TEXTURE_PF_R16UI,
-    TEXTURE_PF_RG16UI,
-    //TEXTURE_PF_BGR16UI,
-    TEXTURE_PF_BGRA16UI,
-
-    TEXTURE_PF_R32I,
-    TEXTURE_PF_RG32I,
-    TEXTURE_PF_BGR32I,
-    TEXTURE_PF_BGRA32I,
-
-    TEXTURE_PF_R32UI,
-    TEXTURE_PF_RG32UI,
-    TEXTURE_PF_BGR32UI,
-    TEXTURE_PF_BGRA32UI,
-
-    TEXTURE_PF_R16F,
-    TEXTURE_PF_RG16F,
-    //TEXTURE_PF_BGR16F,
-    TEXTURE_PF_BGRA16F,
-
-    TEXTURE_PF_R32F,
-    TEXTURE_PF_RG32F,
-    TEXTURE_PF_BGR32F,
-    TEXTURE_PF_BGRA32F,
-
-    TEXTURE_PF_R11F_G11F_B10F,
-
-    // Compressed formats
-
-    // RGB
-    TEXTURE_PF_COMPRESSED_BC1_RGB,
-    TEXTURE_PF_COMPRESSED_BC1_SRGB,
-
-    // RGB A-4bit / RGB (not the best quality, it is better to use BC3)
-    TEXTURE_PF_COMPRESSED_BC2_RGBA,
-    TEXTURE_PF_COMPRESSED_BC2_SRGB_ALPHA,
-
-    // RGB A-8bit
-    TEXTURE_PF_COMPRESSED_BC3_RGBA,
-    TEXTURE_PF_COMPRESSED_BC3_SRGB_ALPHA,
-
-    // R single channel texture (use for metalmap, glossmap, etc)
-    TEXTURE_PF_COMPRESSED_BC4_R,
-    TEXTURE_PF_COMPRESSED_BC4_R_SIGNED,
-
-    // RG two channel texture (use for normal map or two grayscale maps)
-    TEXTURE_PF_COMPRESSED_BC5_RG,
-    TEXTURE_PF_COMPRESSED_BC5_RG_SIGNED,
-
-    // RGB half float HDR
-    TEXTURE_PF_COMPRESSED_BC6H,
-    TEXTURE_PF_COMPRESSED_BC6H_SIGNED,
-
-    // RGB[A], best quality, every block is compressed different
-    TEXTURE_PF_COMPRESSED_BC7_RGBA,
-    TEXTURE_PF_COMPRESSED_BC7_SRGB_ALPHA,
-
-    TEXTURE_PF_MAX
-};
-
-RenderCore::DATA_FORMAT GetTextureDataFormat(ETexturePixelFormat PixelFormat);
-
-RenderCore::TEXTURE_FORMAT GetTextureFormat(ETexturePixelFormat PixelFormat);
-
-struct STexturePixelFormat
-{
-    ETexturePixelFormat Data;
-
-    STexturePixelFormat() :
-        Data(TEXTURE_PF_BGRA8_SRGB) {}
-    STexturePixelFormat(ETexturePixelFormat _PixelFormat) :
-        Data(_PixelFormat) {}
-
-    void operator=(ETexturePixelFormat _PixelFormat) { Data = _PixelFormat; }
-
-    bool operator==(ETexturePixelFormat _PixelFormat) const { return Data == _PixelFormat; }
-    bool operator==(STexturePixelFormat _PixelFormat) const { return Data == _PixelFormat.Data; }
-    bool operator!=(ETexturePixelFormat _PixelFormat) const { return Data != _PixelFormat; }
-    bool operator!=(STexturePixelFormat _PixelFormat) const { return Data != _PixelFormat.Data; }
-
-    bool IsCompressed() const;
-
-    bool IsSRGB() const;
-
-    int SizeInBytesUncompressed() const;
-
-    int BlockSizeCompressed() const;
-
-    int NumComponents() const;
-
-    void Read(IBinaryStreamReadInterface& _Stream)
-    {
-        Data = (ETexturePixelFormat)_Stream.ReadUInt8();
-    }
-
-    void Write(IBinaryStreamWriteInterface& _Stream) const
-    {
-        _Stream.WriteUInt8((uint8_t)Data);
-    }
-
-    RenderCore::DATA_FORMAT GetTextureDataFormat() const
-    {
-        return ::GetTextureDataFormat(Data);
-    }
-
-    RenderCore::TEXTURE_FORMAT GetTextureFormat() const
-    {
-        return ::GetTextureFormat(Data);
-    }
-
-    static bool GetAppropriatePixelFormat(EImagePixelFormat const& _ImagePixelFormat, STexturePixelFormat& _PixelFormat);
 };
 
 #if 0

@@ -174,19 +174,12 @@ AFramebufferGL::AFramebufferGL(SFramebufferDescGL const& Desc) :
         // TODO: table
         switch (textureView->GetDesc().Format)
         {
-            case TEXTURE_FORMAT_STENCIL1:
-            case TEXTURE_FORMAT_STENCIL4:
-            case TEXTURE_FORMAT_STENCIL8:
-            case TEXTURE_FORMAT_STENCIL16:
-                attachmentName = GL_STENCIL_ATTACHMENT;
-                break;
-            case TEXTURE_FORMAT_DEPTH16:
-            case TEXTURE_FORMAT_DEPTH24:
-            case TEXTURE_FORMAT_DEPTH32:
+            case TEXTURE_FORMAT_D16:
+            case TEXTURE_FORMAT_D32:
                 attachmentName = GL_DEPTH_ATTACHMENT;
                 break;
-            case TEXTURE_FORMAT_DEPTH24_STENCIL8:
-            case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
+            case TEXTURE_FORMAT_D24S8:
+            case TEXTURE_FORMAT_D32S8:
                 attachmentName = GL_DEPTH_STENCIL_ATTACHMENT;
                 break;
             default:

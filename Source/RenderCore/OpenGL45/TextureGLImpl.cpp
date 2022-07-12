@@ -130,9 +130,6 @@ ATextureGLImpl::ATextureGLImpl(ADeviceGLImpl* pDevice, STextureDesc const& Textu
             case TEXTURE_CUBE_MAP_ARRAY:
                 glTextureStorage3D(id, TextureDesc.NumMipLevels, internalFormat, TextureDesc.Resolution.Width, TextureDesc.Resolution.Height, TextureDesc.Resolution.SliceCount);
                 break;
-            case TEXTURE_RECT_GL:
-                glTextureStorage2D(id, TextureDesc.NumMipLevels, internalFormat, TextureDesc.Resolution.Width, TextureDesc.Resolution.Height);
-                break;
         }
 
         //glTextureParameteri( id, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
@@ -322,11 +319,6 @@ void ATextureGLImpl::GetMipLevelInfo(uint16_t MipLevel, STextureMipLevelInfo* pI
             pInfo->Resoultion.Height     = pInfo->Resoultion.Width;
             pInfo->Resoultion.SliceCount = Desc.Resolution.SliceCount;
             break;
-        case TEXTURE_RECT_GL:
-            pInfo->Resoultion.Width      = Math::Max(1u, Desc.Resolution.Width >> MipLevel);
-            pInfo->Resoultion.Height     = Math::Max(1u, Desc.Resolution.Height >> MipLevel);
-            pInfo->Resoultion.SliceCount = 1;
-            break;
     }
 
     pInfo->bCompressed = bCompressed;
@@ -376,7 +368,6 @@ void ATextureGLImpl::InvalidateRect(uint32_t _NumRectangles, STextureRect const*
 }
 
 void ATextureGLImpl::Read(uint16_t     MipLevel,
-                          DATA_FORMAT  Format,
                           size_t       SizeInBytes,
                           unsigned int Alignment,
                           void*        pSysMem)
@@ -389,11 +380,10 @@ void ATextureGLImpl::Read(uint16_t     MipLevel,
     rect.Dimension.Y     = Math::Max(1u, GetHeight() >> MipLevel);
     rect.Dimension.Z     = GetSliceCount(MipLevel);
 
-    ReadRect(rect, Format, SizeInBytes, Alignment, pSysMem);
+    ReadRect(rect, SizeInBytes, Alignment, pSysMem);
 }
 
 void ATextureGLImpl::ReadRect(STextureRect const& Rectangle,
-                              DATA_FORMAT         Format,
                               size_t              SizeInBytes,
                               unsigned int        Alignment,
                               void*               pSysMem)
@@ -403,17 +393,16 @@ void ATextureGLImpl::ReadRect(STextureRect const& Rectangle,
         HK_ASSERT(pContext);
         
         SScopedContextGL scopedContext(pContext);
-        pContext->ReadTextureRect(this, Rectangle, Format, SizeInBytes, Alignment, pSysMem);
+        pContext->ReadTextureRect(this, Rectangle, SizeInBytes, Alignment, pSysMem);
     }
     else
     {
         AImmediateContextGLImpl* current = AImmediateContextGLImpl::GetCurrent();
-        current->ReadTextureRect(this, Rectangle, Format, SizeInBytes, Alignment, pSysMem);
+        current->ReadTextureRect(this, Rectangle, SizeInBytes, Alignment, pSysMem);
     }
 }
 
 bool ATextureGLImpl::Write(uint16_t     MipLevel,
-                           DATA_FORMAT  Type, // Specifies a pixel format for the input data
                            size_t       SizeInBytes,
                            unsigned int Alignment, // Specifies alignment of source data
                            const void*  pSysMem)
@@ -427,20 +416,18 @@ bool ATextureGLImpl::Write(uint16_t     MipLevel,
     rect.Dimension.Z     = GetSliceCount(MipLevel);
 
     return WriteRect(rect,
-                     Type,
                      SizeInBytes,
                      Alignment,
                      pSysMem);
 }
 
 bool ATextureGLImpl::WriteRect(STextureRect const& Rectangle,
-                               DATA_FORMAT         Format, // Specifies a pixel format for the input data
                                size_t              SizeInBytes,
                                unsigned int        Alignment, // Specifies alignment of source data
                                const void*         pSysMem)
 {
     AImmediateContextGLImpl* current = AImmediateContextGLImpl::GetCurrent();
-    return current->WriteTextureRect(this, Rectangle, Format, SizeInBytes, Alignment, pSysMem);
+    return current->WriteTextureRect(this, Rectangle, SizeInBytes, Alignment, pSysMem);
 }
 
 } // namespace RenderCore

@@ -31,7 +31,7 @@ SOFTWARE.
 #include "BloomRenderer.h"
 #include "RenderLocal.h"
 
-AConsoleVar r_BloomTextureFormat("r_BloomTextureFormat"s, "0"s, 0, "0 - R11F_G11F_B10F, 1 - RGB16F, 2 - RGB8"s);
+AConsoleVar r_BloomTextureFormat("r_BloomTextureFormat"s, "0"s, 0, "0 - R11F_G11F_B10F, 1 - RGBA16F, 2 - RGBA8"s);
 AConsoleVar r_BloomStart("r_BloomStart"s, "1"s);
 AConsoleVar r_BloomThreshold("r_BloomThreshold"s, "1"s);
 
@@ -65,19 +65,19 @@ ABloomRenderer::ABloomRenderer()
 
 void ABloomRenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* SourceTexture, ABloomRenderer::STextures* pResult)
 {
-    RenderCore::TEXTURE_FORMAT pf;
+    TEXTURE_FORMAT pf;
 
     switch (r_BloomTextureFormat.GetInteger())
     {
         case 0:
-            pf = RenderCore::TEXTURE_FORMAT_R11F_G11F_B10F;
+            pf = TEXTURE_FORMAT_R11G11B10_FLOAT;
             break;
         case 1:
-            pf = RenderCore::TEXTURE_FORMAT_RGB16F;
+            pf = TEXTURE_FORMAT_RGBA16_FLOAT;
             break;
         default:
-            // TODO: We can use RGB8 format, but it need some way of bloom compression to not lose in quality.
-            pf = RenderCore::TEXTURE_FORMAT_RGB8;
+            // TODO: We can use RGBA8 format, but it need some way of bloom compression to not lose in quality.
+            pf = TEXTURE_FORMAT_RGBA8_UNORM;
             break;
     }
 

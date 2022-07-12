@@ -67,7 +67,7 @@ ARenderFrontend::ARenderFrontend()
 
     GEngine->GetRenderDevice()->CreateTexture(RenderCore::STextureDesc{}
                                                   .SetResolution(RenderCore::STextureResolution1DArray(256, 256))
-                                                  .SetFormat(RenderCore::TEXTURE_FORMAT_R8)
+                                                  .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                                   .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE),
                                               &PhotometricProfiles);
 
@@ -285,7 +285,7 @@ void ARenderFrontend::RenderView(int _Index)
 
         RenderCore::STextureDesc textureDesc;
         textureDesc.SetResolution(RenderCore::STextureResolution2D(FrameData.RenderTargetMaxWidth, FrameData.RenderTargetMaxHeight));
-        textureDesc.SetFormat(RenderCore::TEXTURE_FORMAT_R11F_G11F_B10F);
+        textureDesc.SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT);
         textureDesc.SetMipLevels(numMips);
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE/* | RenderCore::BIND_RENDER_TARGET*/);
 
@@ -298,7 +298,7 @@ void ARenderFrontend::RenderView(int _Index)
     {
         RenderCore::STextureDesc textureDesc;
         textureDesc.SetResolution(RenderCore::STextureResolution2D(FrameData.RenderTargetMaxWidth, FrameData.RenderTargetMaxHeight));
-        textureDesc.SetFormat(RenderCore::TEXTURE_FORMAT_R32F);
+        textureDesc.SetFormat(TEXTURE_FORMAT_R32_FLOAT);
         textureDesc.SetMipLevels(1);
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE /* | RenderCore::BIND_RENDER_TARGET*/);
 

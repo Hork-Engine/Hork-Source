@@ -52,9 +52,8 @@ AConsoleVar r_FeedbackResolutionFactorVT("r_FeedbackResolutionFactorVT"s, "16"s)
 AConsoleVar r_RenderFeedback("r_RenderFeedback"s, "1"s);
 
 // TODO: Move to project settings?
-//static const INTERNAL_PIXEL_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_DEPTH16;
-static const TEXTURE_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_DEPTH24;
-//static const INTERNAL_PIXEL_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_DEPTH32;
+//static const INTERNAL_PIXEL_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_D16;
+static const TEXTURE_FORMAT FEEDBACK_DEPTH_FORMAT = TEXTURE_FORMAT_D32;
 
 AVirtualTextureFeedback::AVirtualTextureFeedback()
     : SwapIndex( 0 )
@@ -115,7 +114,7 @@ void AVirtualTextureFeedback::Begin( int Width, int Height )
     if ( !FeedbackTexture || FeedbackTexture->GetWidth() != feedbackWidth || FeedbackTexture->GetHeight() != feedbackHeight )
     {
         GDevice->CreateTexture(STextureDesc()
-                                   .SetFormat(TEXTURE_FORMAT_RGBA8)
+                                   .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
                                    .SetResolution(STextureResolution2D(feedbackWidth, feedbackHeight)),
                                &FeedbackTexture);
         FeedbackTexture->SetDebugName("VT Feedback Texture");

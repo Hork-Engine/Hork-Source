@@ -397,7 +397,7 @@ enum IMAGE_ACCESS_MODE : uint8_t
 struct SImageInfo
 {
     IMAGE_ACCESS_MODE AccessMode = IMAGE_ACCESS_READ;
-    TEXTURE_FORMAT    TextureFormat = TEXTURE_FORMAT_RGBA8; // FIXME: get texture format from texture?
+    TEXTURE_FORMAT    TextureFormat = TEXTURE_FORMAT_RGBA8_UNORM; // FIXME: get texture format from texture?
 };
 
 struct SBufferInfo

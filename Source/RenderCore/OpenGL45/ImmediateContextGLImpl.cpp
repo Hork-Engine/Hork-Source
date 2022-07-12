@@ -234,7 +234,7 @@ AFramebufferGL* AFramebufferCacheGL::GetFramebuffer(const char*                 
     STextureViewDesc viewDesc;
     viewDesc.ViewType      = TEXTURE_VIEW_RENDER_TARGET;
     viewDesc.Type          = TEXTURE_2D;
-    viewDesc.Format        = TEXTURE_FORMAT_RGBA8;
+    viewDesc.Format        = TEXTURE_FORMAT_RGBA8_UNORM;
     viewDesc.FirstMipLevel = 0;
     viewDesc.NumMipLevels  = 1;
     viewDesc.FirstSlice    = 0;
@@ -2828,22 +2828,8 @@ void AImmediateContextGLImpl::EndSubpass()
 
             switch (CurrentFramebuffer->GetDepthStencilAttachment()->GetDesc().Format)
             {
-                case TEXTURE_FORMAT_STENCIL1:
-                case TEXTURE_FORMAT_STENCIL4:
-                case TEXTURE_FORMAT_STENCIL8:
-                case TEXTURE_FORMAT_STENCIL16:
-                    if (CurrentFramebuffer->GetHandleNativeGL() == 0)
-                    {
-                        attachments[numAttachments++] = GL_STENCIL;
-                    }
-                    else
-                    {
-                        attachments[numAttachments++] = GL_STENCIL_ATTACHMENT;
-                    }
-                    break;
-                case TEXTURE_FORMAT_DEPTH16:
-                case TEXTURE_FORMAT_DEPTH24:
-                case TEXTURE_FORMAT_DEPTH32:
+                case TEXTURE_FORMAT_D16:
+                case TEXTURE_FORMAT_D32:
                     if (CurrentFramebuffer->GetHandleNativeGL() == 0)
                     {
                         attachments[numAttachments++] = GL_DEPTH;
@@ -2853,8 +2839,8 @@ void AImmediateContextGLImpl::EndSubpass()
                         attachments[numAttachments++] = GL_DEPTH_ATTACHMENT;
                     }
                     break;
-                case TEXTURE_FORMAT_DEPTH24_STENCIL8:
-                case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
+                case TEXTURE_FORMAT_D24S8:
+                case TEXTURE_FORMAT_D32S8:
                     if (CurrentFramebuffer->GetHandleNativeGL() == 0)
                     {
                         attachments[numAttachments++] = GL_DEPTH;
@@ -3494,9 +3480,6 @@ bool AImmediateContextGLImpl::CopyBufferToTexture(IBuffer const*      _SrcBuffer
             //                              _Format,
             //                              _SourceByteOffset );
             return false;
-        case TEXTURE_RECT_GL:
-            // FIXME: ???
-            return false;
         default:
             break;
     }
@@ -3632,7 +3615,7 @@ bool AImmediateContextGLImpl::CopyFramebufferToTexture(ARenderPassContext&   Ren
         {
             case TEXTURE_2D:
             case TEXTURE_2D_ARRAY:
-                // FIXME: в спецификации про multisample-типы ничего не сказано
+                // FIXME:
                 return false;
             default:;
         }
@@ -3649,7 +3632,17 @@ bool AImmediateContextGLImpl::CopyFramebufferToTexture(ARenderPassContext&   Ren
                                     _SrcRect.Width);
             break;
         }
-        case TEXTURE_1D_ARRAY:
+        case TEXTURE_1D_ARRAY: {
+            glCopyTextureSubImage2D(_DstTexture->GetHandleNativeGL(),
+                                    _Offset.MipLevel,
+                                    _Offset.X,
+                                    _Offset.Z,
+                                    _SrcRect.X,
+                                    _SrcRect.Y,
+                                    _SrcRect.Width,
+                                    1);
+            break;
+        }
         case TEXTURE_2D: {
             glCopyTextureSubImage2D(_DstTexture->GetHandleNativeGL(),
                                     _Offset.MipLevel,
@@ -3675,9 +3668,7 @@ bool AImmediateContextGLImpl::CopyFramebufferToTexture(ARenderPassContext&   Ren
             break;
         }
         case TEXTURE_CUBE_MAP: {
-            // FIXME: в спецификации не сказано, как с помощью glCopyTextureSubImage2D
-            // скопировать в грань кубической текстуры, поэтому используем обходной путь
-            // через glCopyTexSubImage2D
+            // FIXME: The specification does not say how to copy to the face of a cube texture using glCopyTextureSubImage2D, so we use the workaround via glCopyTexSubImage2D
 
             GLint currentBinding;
             GLint id = _DstTexture->GetHandleNativeGL();
@@ -3704,19 +3695,8 @@ bool AImmediateContextGLImpl::CopyFramebufferToTexture(ARenderPassContext&   Ren
             }
             break;
         }
-        case TEXTURE_RECT_GL: {
-            glCopyTextureSubImage2D(_DstTexture->GetHandleNativeGL(),
-                                    0,
-                                    _Offset.X,
-                                    _Offset.Y,
-                                    _SrcRect.X,
-                                    _SrcRect.Y,
-                                    _SrcRect.Width,
-                                    _SrcRect.Height);
-            break;
-        }
         case TEXTURE_CUBE_MAP_ARRAY:
-            // FIXME: в спецификации про этот тип ничего не сказано
+            // FIXME: The specification does not say anything about this texture type.
             return false;
     }
 
@@ -3773,21 +3753,13 @@ static void ChooseDepthStencilAttachmentFormatAndType(TEXTURE_FORMAT TextureForm
     SizeInBytes = 4; // FIXME
     switch (TextureFormat)
     {
-        case TEXTURE_FORMAT_STENCIL1:
-        case TEXTURE_FORMAT_STENCIL4:
-        case TEXTURE_FORMAT_STENCIL8:
-        case TEXTURE_FORMAT_STENCIL16:
-            Format = GL_STENCIL_INDEX;
-            Type   = GL_UNSIGNED_INT; // FIXME
-            break;
-        case TEXTURE_FORMAT_DEPTH16:
-        case TEXTURE_FORMAT_DEPTH24:
-        case TEXTURE_FORMAT_DEPTH32:
+        case TEXTURE_FORMAT_D16:
+        case TEXTURE_FORMAT_D32:
             Format = GL_DEPTH_COMPONENT;
             Type   = GL_FLOAT; // FIXME
             break;
-        case TEXTURE_FORMAT_DEPTH24_STENCIL8:
-        case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
+        case TEXTURE_FORMAT_D24S8:
+        case TEXTURE_FORMAT_D32S8:
             Format = GL_DEPTH_STENCIL;
             Type   = GL_FLOAT; // FIXME
             break;
@@ -3966,19 +3938,12 @@ void AImmediateContextGLImpl::ClearTexture(ITexture* _Texture, uint16_t _MipLeve
 
     switch (_Texture->GetDesc().Format)
     {
-        case TEXTURE_FORMAT_STENCIL1:
-        case TEXTURE_FORMAT_STENCIL4:
-        case TEXTURE_FORMAT_STENCIL8:
-        case TEXTURE_FORMAT_STENCIL16:
-            format = GL_STENCIL_INDEX;
-            break;
-        case TEXTURE_FORMAT_DEPTH16:
-        case TEXTURE_FORMAT_DEPTH24:
-        case TEXTURE_FORMAT_DEPTH32:
+        case TEXTURE_FORMAT_D16:
+        case TEXTURE_FORMAT_D32:
             format = GL_DEPTH_COMPONENT;
             break;
-        case TEXTURE_FORMAT_DEPTH24_STENCIL8:
-        case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
+        case TEXTURE_FORMAT_D24S8:
+        case TEXTURE_FORMAT_D32S8:
             format = GL_DEPTH_STENCIL;
             break;
         default:
@@ -4031,19 +3996,12 @@ void AImmediateContextGLImpl::ClearTextureRect(ITexture*           _Texture,
 
     switch (_Texture->GetDesc().Format)
     {
-        case TEXTURE_FORMAT_STENCIL1:
-        case TEXTURE_FORMAT_STENCIL4:
-        case TEXTURE_FORMAT_STENCIL8:
-        case TEXTURE_FORMAT_STENCIL16:
-            format = GL_STENCIL_INDEX;
-            break;
-        case TEXTURE_FORMAT_DEPTH16:
-        case TEXTURE_FORMAT_DEPTH24:
-        case TEXTURE_FORMAT_DEPTH32:
+        case TEXTURE_FORMAT_D16:
+        case TEXTURE_FORMAT_D32:
             format = GL_DEPTH_COMPONENT;
             break;
-        case TEXTURE_FORMAT_DEPTH24_STENCIL8:
-        case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
+        case TEXTURE_FORMAT_D24S8:
+        case TEXTURE_FORMAT_D32S8:
             format = GL_DEPTH_STENCIL;
             break;
         default:
@@ -4385,7 +4343,6 @@ bool AImmediateContextGLImpl::ReadFramebufferDepthStencilAttachment(ARenderPassC
 
 void AImmediateContextGLImpl::ReadTexture(ITexture*    pTexture,
                                           uint16_t     MipLevel,
-                                          DATA_FORMAT  Format,
                                           size_t       SizeInBytes,
                                           unsigned int Alignment,
                                           void*        pSysMem)
@@ -4398,47 +4355,28 @@ void AImmediateContextGLImpl::ReadTexture(ITexture*    pTexture,
     rect.Dimension.Y     = Math::Max(1u, pTexture->GetHeight() >> MipLevel);
     rect.Dimension.Z     = pTexture->GetSliceCount(MipLevel);
 
-    ReadTextureRect(pTexture, rect, Format, SizeInBytes, Alignment, pSysMem);
+    ReadTextureRect(pTexture, rect, SizeInBytes, Alignment, pSysMem);
 }
 
-static bool ChooseBackbufferReadFormat(ITexture* pTexture, DATA_FORMAT Format, GLenum& FormatGL, GLenum& TypeGL)
-{
-    switch (pTexture->GetDesc().Format)
+static constexpr GLenum ImageDataTypeLUT[] =
     {
-        case TEXTURE_FORMAT_STENCIL1:
-        case TEXTURE_FORMAT_STENCIL4:
-        case TEXTURE_FORMAT_STENCIL8:
-        case TEXTURE_FORMAT_STENCIL16:
-            FormatGL = GL_STENCIL_INDEX;
-            TypeGL   = GL_UNSIGNED_INT; // FIXME
-            return Format == FORMAT_UINT1;
-        case TEXTURE_FORMAT_DEPTH16:
-        case TEXTURE_FORMAT_DEPTH24:
-        case TEXTURE_FORMAT_DEPTH32:
-            FormatGL = GL_DEPTH_COMPONENT;
-            TypeGL   = GL_FLOAT; // FIXME
-            return Format == FORMAT_FLOAT1;
-        case TEXTURE_FORMAT_DEPTH24_STENCIL8:
-        case TEXTURE_FORMAT_DEPTH32F_STENCIL8:
-            FormatGL = GL_DEPTH_STENCIL;
-            TypeGL   = GL_FLOAT; // FIXME
-            return Format == FORMAT_FLOAT1;
-        case TEXTURE_FORMAT_RGBA8:
-        case TEXTURE_FORMAT_SRGB8_ALPHA8:
-            FormatGL = GL_BGRA;
-            TypeGL   = GL_UNSIGNED_BYTE;
-            return Format == FORMAT_UBYTE4;
-        default:
-            FormatGL = TypeLUT[Format].FormatBGR;
-            TypeGL   = TypeLUT[Format].Type;
-            break;
-    }
-    return false;
-}
+        0,
+        GL_UNSIGNED_BYTE,
+        GL_UNSIGNED_SHORT,
+        GL_UNSIGNED_INT,
+        GL_FLOAT,
+        GL_HALF_FLOAT,
+        GL_UNSIGNED_SHORT_4_4_4_4,
+        GL_UNSIGNED_SHORT_5_6_5,
+        GL_UNSIGNED_SHORT_5_5_5_1,
+        GL_UNSIGNED_INT_10_10_10_2,
+        GL_UNSIGNED_INT_10F_11F_11F_REV, //IMAGE_DATA_TYPE_ENCODED_R11G11B10F, // FIXME
+        GL_FLOAT, //IMAGE_DATA_TYPE_ENCODED_DEPTH,  // FIXME
+        0,        //IMAGE_DATA_TYPE_COMPRESSED
+};
 
 void AImmediateContextGLImpl::ReadTextureRect(ITexture*           pTexture,
                                               STextureRect const& Rectangle,
-                                              DATA_FORMAT         Format,
                                               size_t              SizeInBytes,
                                               unsigned int        Alignment,
                                               void*               pSysMem)
@@ -4447,7 +4385,9 @@ void AImmediateContextGLImpl::ReadTextureRect(ITexture*           pTexture,
 
     PackAlignment(Alignment);
 
-    GLsizei size = TypeLUT[Format].SizeInBytes * Rectangle.Dimension.X * Rectangle.Dimension.Y * Rectangle.Dimension.Z;
+    TextureFormatInfo const& info = GetTextureFormatInfo(pTexture->GetDesc().Format);
+
+    GLsizei size = info.BytesPerBlock * Rectangle.Dimension.X * Rectangle.Dimension.Y * Rectangle.Dimension.Z / info.BlockSize / info.BlockSize;
 
     HK_ASSERT(size == SizeInBytes);
     if (size > SizeInBytes)
@@ -4471,12 +4411,8 @@ void AImmediateContextGLImpl::ReadTextureRect(ITexture*           pTexture,
             HK_ASSERT(Rectangle.Offset.MipLevel == 0);
             HK_ASSERT(Rectangle.Dimension.Z == 1);
 
-            GLenum format, type;
-            if (!ChooseBackbufferReadFormat(pTexture, Format, format, type))
-            {
-                HK_ASSERT_(0, "AImmediateContextGLImpl::ReadTextureRect: Uncompatible data format");
-                return;
-            }
+            GLenum format = InternalFormatLUT[pTexture->GetDesc().Format].Format;
+            GLenum type   = ImageDataTypeLUT[info.DataType];
 
             if (Binding.ReadFramebuffer != 0)
             {
@@ -4507,8 +4443,8 @@ void AImmediateContextGLImpl::ReadTextureRect(ITexture*           pTexture,
             {
                 glGetTextureImage(id,
                                   Rectangle.Offset.MipLevel,
-                                  TypeLUT[Format].FormatBGR,
-                                  TypeLUT[Format].Type,
+                                  InternalFormatLUT[pTexture->GetDesc().Format].Format,
+                                  ImageDataTypeLUT[info.DataType],
                                   size,
                                   pSysMem);
             }
@@ -4528,12 +4464,8 @@ void AImmediateContextGLImpl::ReadTextureRect(ITexture*           pTexture,
             HK_ASSERT(Rectangle.Offset.Z == 0);
             HK_ASSERT(Rectangle.Dimension.Z == 1);
 
-            GLenum format, type;
-            if (!ChooseBackbufferReadFormat(pTexture, Format, format, type))
-            {
-                HK_ASSERT_(0, "AImmediateContextGLImpl::ReadTextureRect: Uncompatible data format");
-                return;
-            }
+            GLenum format = InternalFormatLUT[pTexture->GetDesc().Format].Format;
+            GLenum type   = ImageDataTypeLUT[info.DataType];
 
             if (Binding.ReadFramebuffer != 0)
             {
@@ -4579,8 +4511,8 @@ void AImmediateContextGLImpl::ReadTextureRect(ITexture*           pTexture,
                                      Rectangle.Dimension.X,
                                      Rectangle.Dimension.Y,
                                      Rectangle.Dimension.Z,
-                                     TypeLUT[Format].FormatBGR,
-                                     TypeLUT[Format].Type,
+                                     InternalFormatLUT[pTexture->GetDesc().Format].Format,
+                                     ImageDataTypeLUT[info.DataType],
                                      size,
                                      pSysMem);
             }
@@ -4590,7 +4522,6 @@ void AImmediateContextGLImpl::ReadTextureRect(ITexture*           pTexture,
 
 bool AImmediateContextGLImpl::WriteTexture(ITexture*    pTexture,
                                            uint16_t     MipLevel,
-                                           DATA_FORMAT  Type, // Specifies a pixel format for the input data
                                            size_t       SizeInBytes,
                                            unsigned int Alignment, // Specifies alignment of source data
                                            const void*  pSysMem)
@@ -4605,7 +4536,6 @@ bool AImmediateContextGLImpl::WriteTexture(ITexture*    pTexture,
 
     return WriteTextureRect(pTexture,
                             rect,
-                            Type,
                             SizeInBytes,
                             Alignment,
                             pSysMem);
@@ -4613,15 +4543,19 @@ bool AImmediateContextGLImpl::WriteTexture(ITexture*    pTexture,
 
 bool AImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
                                                STextureRect const& Rectangle,
-                                               DATA_FORMAT         Format, // Specifies a pixel format for the input data
                                                size_t              SizeInBytes,
                                                unsigned int        Alignment, // Specifies alignment of source data
                                                const void*         pSysMem)
 {
+    TextureFormatInfo const& info = GetTextureFormatInfo(pTexture->GetDesc().Format);
+
     GLuint id               = pTexture->GetHandleNativeGL();
     GLenum compressedFormat = InternalFormatLUT[pTexture->GetDesc().Format].InternalFormat;
-    GLenum format           = TypeLUT[Format].FormatBGR;
-    GLenum type             = TypeLUT[Format].Type;
+    GLenum format           = InternalFormatLUT[pTexture->GetDesc().Format].Format;
+    GLenum type             = ImageDataTypeLUT[info.DataType];
+
+    if (!SizeInBytes || !pSysMem)
+        return false;
 
     HK_ASSERT_(!static_cast<ATextureGLImpl*>(pTexture)->IsDummyTexture(),
                "Attempting to write raw data to OpenGL back buffer");
@@ -4822,7 +4756,7 @@ bool AImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
             }
             break;
         case TEXTURE_CUBE_MAP_ARRAY:
-            // FIXME: В спецификации ничего не сказано о возможности записи в данный тип текстурного таргета
+            // FIXME: The specification does not say anything about this texture type.
             if (pTexture->IsCompressed())
             {
                 //glCompressedTextureSubImage2D( id, Rectangle.Offset.MipLevel, Rectangle.Offset.X, Rectangle.Offset.Y, Rectangle.Dimension.X, Rectangle.Dimension.Y, format, SizeInBytes, pSysMem );
@@ -4851,33 +4785,6 @@ bool AImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
                                     Rectangle.Dimension.X,
                                     Rectangle.Dimension.Y,
                                     Rectangle.Dimension.Z,
-                                    format,
-                                    type,
-                                    pSysMem);
-            }
-            break;
-        case TEXTURE_RECT_GL:
-            // FIXME: В спецификации ничего не сказано о возможности записи в данный тип текстурного таргета
-            if (pTexture->IsCompressed())
-            {
-                glCompressedTextureSubImage2D(id,
-                                              Rectangle.Offset.MipLevel,
-                                              Rectangle.Offset.X,
-                                              Rectangle.Offset.Y,
-                                              Rectangle.Dimension.X,
-                                              Rectangle.Dimension.Y,
-                                              compressedFormat,
-                                              (GLsizei)SizeInBytes,
-                                              pSysMem);
-            }
-            else
-            {
-                glTextureSubImage2D(id,
-                                    Rectangle.Offset.MipLevel,
-                                    Rectangle.Offset.X,
-                                    Rectangle.Offset.Y,
-                                    Rectangle.Dimension.X,
-                                    Rectangle.Dimension.Y,
                                     format,
                                     type,
                                     pSysMem);
@@ -5110,33 +5017,6 @@ void AImmediateContextGLImpl::SparseTextureCommitRect(ISparseTexture*     _Textu
                                     _Rectangle.Dimension.X,
                                     _Rectangle.Dimension.Y,
                                     _Rectangle.Dimension.Z,
-                                    format,
-                                    type,
-                                    _SysMem);
-            }
-            break;
-        case SPARSE_TEXTURE_RECT_GL:
-            // FIXME: specs
-            if (_Texture->IsCompressed())
-            {
-                glCompressedTextureSubImage2D(id,
-                                              _Rectangle.Offset.MipLevel,
-                                              _Rectangle.Offset.X,
-                                              _Rectangle.Offset.Y,
-                                              _Rectangle.Dimension.X,
-                                              _Rectangle.Dimension.Y,
-                                              compressedFormat,
-                                              (GLsizei)_SizeInBytes,
-                                              _SysMem);
-            }
-            else
-            {
-                glTextureSubImage2D(id,
-                                    _Rectangle.Offset.MipLevel,
-                                    _Rectangle.Offset.X,
-                                    _Rectangle.Offset.Y,
-                                    _Rectangle.Dimension.X,
-                                    _Rectangle.Dimension.Y,
                                     format,
                                     type,
                                     _SysMem);

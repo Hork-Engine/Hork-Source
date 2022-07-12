@@ -57,8 +57,7 @@ ITextureView::ITextureView(STextureViewDesc const& TextureViewDesc, ITexture* pT
             ((textureDesc.Type == TEXTURE_2D_ARRAY)       && ((TextureViewDesc.Type == TEXTURE_2D || TextureViewDesc.Type == TEXTURE_2D_ARRAY))) ||
             ((textureDesc.Type == TEXTURE_3D)             && (TextureViewDesc.Type == TEXTURE_3D)) ||
             ((textureDesc.Type == TEXTURE_CUBE_MAP)       && (TextureViewDesc.Type == TEXTURE_CUBE_MAP || TextureViewDesc.Type == TEXTURE_2D || TextureViewDesc.Type == TEXTURE_2D_ARRAY || TextureViewDesc.Type == TEXTURE_CUBE_MAP_ARRAY)) ||
-            ((textureDesc.Type == TEXTURE_CUBE_MAP_ARRAY) && (TextureViewDesc.Type == TEXTURE_CUBE_MAP || TextureViewDesc.Type == TEXTURE_2D || TextureViewDesc.Type == TEXTURE_2D_ARRAY || TextureViewDesc.Type == TEXTURE_CUBE_MAP_ARRAY)) ||
-            ((textureDesc.Type == TEXTURE_RECT_GL)        && (TextureViewDesc.Type == TEXTURE_RECT_GL)),
+            ((textureDesc.Type == TEXTURE_CUBE_MAP_ARRAY) && (TextureViewDesc.Type == TEXTURE_CUBE_MAP || TextureViewDesc.Type == TEXTURE_2D || TextureViewDesc.Type == TEXTURE_2D_ARRAY || TextureViewDesc.Type == TEXTURE_CUBE_MAP_ARRAY)),
             "ITextureView::ctor: incompatible texture types");
         // clang-format on
 

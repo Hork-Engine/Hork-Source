@@ -35,14 +35,13 @@ SOFTWARE.
 
 HK_CLASS_META(AEnvironmentMap)
 
-void AEnvironmentMap::InitializeFromImages(TArray<AImage, 6> const& Faces)
+void AEnvironmentMap::InitializeFromImage(ImageStorage const& Image)
 {
-    int                 width;
-    STexturePixelFormat pixelFormat;
+    int width = Image.GetDesc().Width;
 
     Purge();
 
-    if (!ValidateCubemapFaces(Faces, width, pixelFormat))
+    if (Image.GetDesc().SliceCount < 6)
     {
         InitializeDefaultObject();
         return;
@@ -50,11 +49,11 @@ void AEnvironmentMap::InitializeFromImages(TArray<AImage, 6> const& Faces)
 
     RenderCore::STextureDesc textureDesc;
     textureDesc.SetResolution(RenderCore::STextureResolutionCubemap(width));
-    textureDesc.SetFormat(pixelFormat.GetTextureFormat());
+    textureDesc.SetFormat(Image.GetDesc().Format);
     textureDesc.SetMipLevels(1);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
-    if (pixelFormat.NumComponents() == 1)
+    if (Image.NumChannels() == 1)
     {
         // Apply texture swizzle for single channel textures
         textureDesc.Swizzle.R = RenderCore::TEXTURE_SWIZZLE_R;
@@ -65,8 +64,6 @@ void AEnvironmentMap::InitializeFromImages(TArray<AImage, 6> const& Faces)
 
     TRef<RenderCore::ITexture> cubemap;
     GEngine->GetRenderDevice()->CreateTexture(textureDesc, &cubemap);
-
-    size_t sizeInBytes = (size_t)width * width * pixelFormat.SizeInBytesUncompressed();
 
     RenderCore::STextureRect rect;
     rect.Offset.X        = 0;
@@ -80,7 +77,14 @@ void AEnvironmentMap::InitializeFromImages(TArray<AImage, 6> const& Faces)
     {
         rect.Offset.Z = faceNum;
 
-        cubemap->WriteRect(rect, pixelFormat.GetTextureDataFormat(), sizeInBytes, 1, Faces[faceNum].GetData());
+        ImageViewDesc    view;
+        view.FirstSlice  = faceNum;
+        view.SliceCount  = 1;
+        view.MipmapIndex = 0;
+
+        ImageSubresource subresource = Image.GetSubresource(view);
+
+        cubemap->WriteRect(rect, subresource.GetSizeInBytes(), 1, subresource.GetData());
     }
 
     GEngine->GetRenderBackend()->GenerateIrradianceMap(cubemap, &IrradianceMap);
@@ -105,13 +109,13 @@ void AEnvironmentMap::CreateTextures(int IrradianceMapWidth, int ReflectionMapWi
     using namespace RenderCore;
 
     GEngine->GetRenderDevice()->CreateTexture(STextureDesc()
-                                                  .SetFormat(TEXTURE_FORMAT_RGB16F)
+                                                  .SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT)
                                                   .SetResolution(STextureResolutionCubemap(IrradianceMapWidth))
                                                   .SetBindFlags(BIND_SHADER_RESOURCE),
                                               &IrradianceMap);
 
     GEngine->GetRenderDevice()->CreateTexture(STextureDesc()
-                                                  .SetFormat(TEXTURE_FORMAT_RGB16F)
+                                                  .SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT)
                                                   .SetResolution(STextureResolutionCubemap(ReflectionMapWidth))
                                                   .SetMipLevels(Math::Log2((uint32_t)ReflectionMapWidth))
                                                   .SetBindFlags(BIND_SHADER_RESOURCE),
@@ -166,36 +170,26 @@ bool AEnvironmentMap::LoadResource(IBinaryStreamReadInterface& Stream)
     // Choose max width for memory allocation
     int maxSize = Math::Max(irradianceMapWidth, reflectionMapWidth);
 
-    TVector<float> buffer(maxSize * maxSize * 3 * 6);
+    TVector<uint32_t> buffer(maxSize * maxSize * 6);
 
-    void* data = buffer.ToPtr();
+    uint32_t* data = buffer.ToPtr();
 
-    int numFloats = irradianceMapWidth * irradianceMapWidth * 3 * 6;
+    int numPixels = irradianceMapWidth * irradianceMapWidth * 6;
 
-    Stream.Read(data, numFloats * sizeof(float));
+    Stream.ReadWords<uint32_t>(data, numPixels);
 
-    for (int i = 0; i < numFloats; i++)
-    {
-        ((float*)data)[i] = Core::LittleFloat(((float*)data)[i]);
-    }
-    
-    IrradianceMap->Write(0, RenderCore::FORMAT_FLOAT3, numFloats * sizeof(float), 4, data);
+    IrradianceMap->Write(0, numPixels * sizeof(uint32_t), 4, data);
 
     for (int mipLevel = 0; mipLevel < numReflectionMapMips; mipLevel++)
     {
         int mipWidth = reflectionMapWidth >> mipLevel;
         HK_ASSERT(mipWidth > 0);
 
-        numFloats = mipWidth * mipWidth * 3 * 6;
+        numPixels = mipWidth * mipWidth * 6;
 
-        Stream.Read(data, numFloats * sizeof(float));
+        Stream.ReadWords<uint32_t>(data, numPixels);
 
-        for (int i = 0; i < numFloats; i++)
-        {
-            ((float*)data)[i] = Core::LittleFloat(((float*)data)[i]);
-        }
-
-        ReflectionMap->Write(mipLevel, RenderCore::FORMAT_FLOAT3, numFloats * sizeof(float), 4, data);
+        ReflectionMap->Write(mipLevel, numPixels * sizeof(uint32_t), 4, data);
     }
 
     return true;
@@ -203,11 +197,29 @@ bool AEnvironmentMap::LoadResource(IBinaryStreamReadInterface& Stream)
 
 void AEnvironmentMap::LoadInternalResource(AStringView _Path)
 {
-    uint8_t color[4] = {10, 10, 10, 255};
+    //uint8_t color[4] = {10, 10, 10, 255};
+    uint8_t color[4] = {0, 0, 0, 255};
 
-    TArray<AImage, 6> faces;
-    for (AImage& face : faces)
-        face.FromRawData(color, 1, 1, nullptr, IMAGE_PF_BGRA_GAMMA2);
+    ImageStorageDesc desc;
+
+    desc.Type       = TEXTURE_CUBE;
+    desc.Width      = 1;
+    desc.Height     = 1;
+    desc.SliceCount = 6;
+    desc.NumMipmaps = 1;
+    desc.Format     = TEXTURE_FORMAT_RGBA8_UNORM;
+    desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
+
+    ImageStorage storage(desc);
+
+    for (uint32_t slice = 0; slice < desc.SliceCount; ++slice)
+    {
+        ImageViewDesc view;
+        view.FirstSlice = slice;
+        view.SliceCount = 1;
+        view.MipmapIndex = 0;
+        storage.GetSubresource(view).Write(0, 0, 1, 1, color);
+    }
     
-    InitializeFromImages(faces);
+    InitializeFromImage(storage);
 }

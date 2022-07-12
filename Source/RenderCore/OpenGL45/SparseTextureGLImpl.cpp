@@ -94,7 +94,6 @@ ASparseTextureGLImpl::ASparseTextureGLImpl(ADeviceGLImpl* pDevice, SSparseTextur
     {
         case SPARSE_TEXTURE_2D:
         case SPARSE_TEXTURE_CUBE_MAP:
-        case SPARSE_TEXTURE_RECT_GL:
             glTextureStorage2D(id, Desc.NumMipLevels, internalFormat, Desc.Resolution.Width, Desc.Resolution.Height);
             break;
         case SPARSE_TEXTURE_2D_ARRAY:

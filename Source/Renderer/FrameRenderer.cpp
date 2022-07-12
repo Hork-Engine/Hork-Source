@@ -108,7 +108,7 @@ void AFrameRenderer::AddLinearizeDepthPass(AFrameGraph& FrameGraph, FGTexturePro
     linearizeDepthPass.SetColorAttachment(
         STextureAttachment("Linear depth texture",
                            STextureDesc()
-                               .SetFormat(RenderCore::TEXTURE_FORMAT_R32F)
+                               .SetFormat(TEXTURE_FORMAT_R32_FLOAT)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
     linearizeDepthPass.AddSubpass({0}, // color attachment refs
@@ -138,7 +138,7 @@ void AFrameRenderer::AddReconstrutNormalsPass(AFrameGraph& FrameGraph, FGTexture
     reconstructNormalPass.SetColorAttachment(
         STextureAttachment("Normal texture",
                            STextureDesc()
-                               .SetFormat(RenderCore::TEXTURE_FORMAT_RGB8)
+                               .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(RenderCore::ATTACHMENT_LOAD_OP_DONT_CARE));
     reconstructNormalPass.AddSubpass({0}, // color attachment refs
@@ -231,7 +231,7 @@ void AFrameRenderer::AddOutlinePass(AFrameGraph& FrameGraph, FGTextureProxy** pp
         return;
     }
 
-    RenderCore::TEXTURE_FORMAT pf = TEXTURE_FORMAT_RG8;
+    TEXTURE_FORMAT pf = TEXTURE_FORMAT_RG8_UNORM;
 
     ARenderPass& maskPass = FrameGraph.AddTask<ARenderPass>("Outline Pass");
 
@@ -301,7 +301,7 @@ void AFrameRenderer::AddOutlinePass(AFrameGraph& FrameGraph, FGTextureProxy** pp
 
 void AFrameRenderer::AddOutlineOverlayPass(AFrameGraph& FrameGraph, FGTextureProxy* RenderTarget, FGTextureProxy* OutlineMaskTexture)
 {
-    RenderCore::TEXTURE_FORMAT pf = TEXTURE_FORMAT_RG8;
+    TEXTURE_FORMAT pf = TEXTURE_FORMAT_RG8_UNORM;
 
     ARenderPass& blurPass = FrameGraph.AddTask<ARenderPass>("Outline Blur Pass");
 

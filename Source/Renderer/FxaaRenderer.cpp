@@ -65,7 +65,7 @@ void AFxaaRenderer::AddPass(AFrameGraph& FrameGraph, FGTextureProxy* SourceTextu
     renderPass.SetColorAttachment(
         STextureAttachment("FXAA texture",
                            STextureDesc()
-                               .SetFormat(RenderCore::TEXTURE_FORMAT_R11F_G11F_B10F)
+                               .SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 

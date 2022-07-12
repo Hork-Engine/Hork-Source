@@ -45,8 +45,8 @@ static const char* TextureTypeName[] =
         "TEXTURE_2D",
         "TEXTURE_2D_ARRAY",
         "TEXTURE_3D",
-        "TEXTURE_CUBEMAP",
-        "TEXTURE_CUBEMAP_ARRAY",
+        "TEXTURE_CUBE",
+        "TEXTURE_CUBE_ARRAY",
 };
 
 HK_CLASS_META(ATexture)
@@ -63,125 +63,124 @@ void ATexture::Purge()
 {
 }
 
-bool ATexture::InitializeFromImage(AImage const& _Image)
+bool ATexture::InitializeFromImage(ImageStorage const& Image)
 {
-    if (!_Image.GetData())
+    if (!Image)
     {
         LOG("ATexture::InitializeFromImage: empty image data\n");
         return false;
     }
 
-    STexturePixelFormat pixelFormat;
+    TEXTURE_FORMAT format = Image.GetDesc().Format;
 
-    if (!STexturePixelFormat::GetAppropriatePixelFormat(_Image.GetPixelFormat(), pixelFormat))
+    switch (Image.GetDesc().Type)
     {
-        return false;
-    }
+        case TEXTURE_1D:
+            Initialize1D(format, Image.GetDesc().NumMipmaps, Image.GetDesc().Width);
+            break;
+        case TEXTURE_1D_ARRAY:
+            Initialize1DArray(format, Image.GetDesc().NumMipmaps, Image.GetDesc().Width, Image.GetDesc().SliceCount);
+            break;
+        case TEXTURE_2D:
+            Initialize2D(format, Image.GetDesc().NumMipmaps, Image.GetDesc().Width, Image.GetDesc().Height);
+            break;
+        case TEXTURE_2D_ARRAY:
+            Initialize2DArray(format, Image.GetDesc().NumMipmaps, Image.GetDesc().Width, Image.GetDesc().Height, Image.GetDesc().SliceCount);
+            break;
+        case TEXTURE_3D:
+            Initialize2DArray(format, Image.GetDesc().NumMipmaps, Image.GetDesc().Width, Image.GetDesc().Height, Image.GetDesc().Depth);
+            break;
+        case TEXTURE_CUBE:
+            InitializeCubemap(format, Image.GetDesc().NumMipmaps, Image.GetDesc().Width);
+            break;
+        case TEXTURE_CUBE_ARRAY:
+            InitializeCubemapArray(format, Image.GetDesc().NumMipmaps, Image.GetDesc().Width, Image.GetDesc().SliceCount / 6);
+            break;
+        default:
+            HK_ASSERT(0);
+    };
 
-    Initialize2D(pixelFormat, _Image.GetNumMipLevels(), _Image.GetWidth(), _Image.GetHeight());
-
-    byte* pSrc = (byte*)_Image.GetData();
-    int   w, h, stride;
-    int   pixelSizeInBytes = pixelFormat.SizeInBytesUncompressed();
-
-    for (int lod = 0; lod < _Image.GetNumMipLevels(); lod++)
+    for (uint32_t slice = 0; slice < Image.GetDesc().SliceCount; ++slice)
     {
-        w = Math::Max(1, _Image.GetWidth() >> lod);
-        h = Math::Max(1, _Image.GetHeight() >> lod);
+        for (uint32_t mip = 0; mip < Image.GetDesc().NumMipmaps; ++mip)
+        {
+            ImageViewDesc view;
+            view.FirstSlice  = slice;
+            view.SliceCount  = 1;
+            view.MipmapIndex = mip;
 
-        stride = w * h * pixelSizeInBytes;
+            ImageSubresource subresource = Image.GetSubresource(view);
 
-        WriteTextureData2D(0, 0, w, h, lod, pSrc);
-
-        pSrc += stride;
+            WriteArbitraryData(0, 0, slice, subresource.GetWidth(), subresource.GetHeight(), 1, mip, subresource.GetData());
+        }
     }
 
     return true;
 }
 
-bool ATexture::InitializeCubemapFromImages(TArray<AImage, 6> const& _Faces)
+void ATexture::LoadInternalResource(AStringView Path)
 {
-    int                 width;
-    STexturePixelFormat pixelFormat;
-
-    if (!ValidateCubemapFaces(_Faces, width, pixelFormat))
-    {
-        return false;
-    }
-
-    InitializeCubemap(pixelFormat, 1, width);
-
-    for (int face = 0; face < 6; face++)
-    {
-        WriteTextureDataCubemap(0, 0, width, width, face, 0, _Faces[face].GetData());
-    }
-
-    return true;
-}
-
-void ATexture::LoadInternalResource(AStringView _Path)
-{
-    if (!_Path.Icmp("/Default/Textures/White"))
+    if (!Path.Icmp("/Default/Textures/White"))
     {
         const byte data[4] = {255, 255, 255, 255};
 
-        Initialize2D(TEXTURE_PF_BGRA8_UNORM, 1, 1, 1);
+        Initialize2D(TEXTURE_FORMAT_BGRA8_UNORM, 1, 1, 1);
         WriteTextureData2D(0, 0, 1, 1, 0, data);
 
         return;
     }
 
-    if (!_Path.Icmp("/Default/Textures/Black"))
+    if (!Path.Icmp("/Default/Textures/Black"))
     {
         const byte data[4] = {0, 0, 0, 255};
 
-        Initialize2D(TEXTURE_PF_BGRA8_UNORM, 1, 1, 1);
+        Initialize2D(TEXTURE_FORMAT_BGRA8_UNORM, 1, 1, 1);
         WriteTextureData2D(0, 0, 1, 1, 0, data);
 
         return;
     }
 
-    if (!_Path.Icmp("/Default/Textures/Gray"))
+    if (!Path.Icmp("/Default/Textures/Gray"))
     {
         const byte data[4] = {127, 127, 127, 255};
 
-        Initialize2D(TEXTURE_PF_BGRA8_UNORM, 1, 1, 1);
+        Initialize2D(TEXTURE_FORMAT_BGRA8_UNORM, 1, 1, 1);
         WriteTextureData2D(0, 0, 1, 1, 0, data);
 
         return;
     }
 
-    if (!_Path.Icmp("/Default/Textures/BaseColorWhite") || !_Path.Icmp("/Default/Textures/Default2D"))
+    if (!Path.Icmp("/Default/Textures/BaseColorWhite") || !Path.Icmp("/Default/Textures/Default2D"))
     {
         const byte data[4] = {240, 240, 240, 255};
 
-        Initialize2D(TEXTURE_PF_BGRA8_UNORM, 1, 1, 1);
+        Initialize2D(TEXTURE_FORMAT_BGRA8_UNORM, 1, 1, 1);
         WriteTextureData2D(0, 0, 1, 1, 0, data);
 
         return;
     }
 
-    if (!_Path.Icmp("/Default/Textures/BaseColorBlack"))
+    if (!Path.Icmp("/Default/Textures/BaseColorBlack"))
     {
         const byte data[4] = {30, 30, 30, 255};
 
-        Initialize2D(TEXTURE_PF_BGRA8_UNORM, 1, 1, 1);
+        Initialize2D(TEXTURE_FORMAT_BGRA8_UNORM, 1, 1, 1);
         WriteTextureData2D(0, 0, 1, 1, 0, data);
 
         return;
     }
 
-    if (!_Path.Icmp("/Default/Textures/Normal"))
+    if (!Path.Icmp("/Default/Textures/Normal"))
     {
         const byte data[4] = {255, 127, 127, 255}; // Z Y X Alpha
 
-        Initialize2D(TEXTURE_PF_BGRA8_UNORM, 1, 1, 1);
+        Initialize2D(TEXTURE_FORMAT_BGRA8_UNORM, 1, 1, 1);
         WriteTextureData2D(0, 0, 1, 1, 0, data);
 
         return;
     }
 
-    if (!_Path.Icmp("/Default/Textures/DefaultCubemap"))
+    if (!Path.Icmp("/Default/Textures/DefaultCubemap"))
     {
         constexpr Float3 dirs[6] = {
             Float3(1, 0, 0),
@@ -200,7 +199,7 @@ void ATexture::LoadInternalResource(AStringView _Path)
             data[i][3] = 255;
         }
 
-        InitializeCubemap(TEXTURE_PF_BGRA8_UNORM, 1, 1);
+        InitializeCubemap(TEXTURE_FORMAT_BGRA8_UNORM, 1, 1);
 
         for (int face = 0; face < 6; face++)
         {
@@ -209,20 +208,7 @@ void ATexture::LoadInternalResource(AStringView _Path)
         return;
     }
 
-#if 0
-    if ( !Platform::Stricmp( _Path, "/Default/Textures/BlackCubemap" ) ) {
-        const byte data[1] = {};
-
-        InitializeCubemap( TEXTURE_PF_R8, 1, 1 );
-
-        for ( int face = 0 ; face < 6 ; face++ ) {
-            WriteTextureDataCubemap( 0, 0, 1, 1, face, 0, data );
-        }
-        return;
-    }
-#endif
-
-    if (!_Path.Icmp("/Default/Textures/LUT1") || !_Path.Icmp("/Default/Textures/Default3D"))
+    if (!Path.Icmp("/Default/Textures/LUT1") || !Path.Icmp("/Default/Textures/Default3D"))
     {
 
         constexpr SColorGradingPreset ColorGradingPreset1 = {
@@ -240,7 +226,7 @@ void ATexture::LoadInternalResource(AStringView _Path)
         return;
     }
 
-    if (!_Path.Icmp("/Default/Textures/LUT2"))
+    if (!Path.Icmp("/Default/Textures/LUT2"))
     {
         constexpr SColorGradingPreset ColorGradingPreset2 = {
             Float3(0.5f), // Gain
@@ -257,7 +243,7 @@ void ATexture::LoadInternalResource(AStringView _Path)
         return;
     }
 
-    if (!_Path.Icmp("/Default/Textures/LUT3"))
+    if (!Path.Icmp("/Default/Textures/LUT3"))
     {
         constexpr SColorGradingPreset ColorGradingPreset3 = {
             Float3(0.51f, 0.55f, 0.53f), // Gain
@@ -274,7 +260,7 @@ void ATexture::LoadInternalResource(AStringView _Path)
         return;
     }
 
-    if (!_Path.Icmp("/Default/Textures/LUT_Luminance"))
+    if (!Path.Icmp("/Default/Textures/LUT_Luminance"))
     {
         byte* data = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(16 * 16 * 16 * 4);
         for (int z = 0; z < 16; z++)
@@ -291,7 +277,7 @@ void ATexture::LoadInternalResource(AStringView _Path)
                 }
             }
         }
-        Initialize3D(TEXTURE_PF_BGRA8_SRGB, 1, 16, 16, 16);
+        Initialize3D(TEXTURE_FORMAT_SBGRA8_UNORM, 1, 16, 16, 16);
         WriteArbitraryData(0, 0, 0, 16, 16, 16, 0, data);
 
         Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
@@ -299,7 +285,7 @@ void ATexture::LoadInternalResource(AStringView _Path)
         return;
     }
 
-    LOG("Unknown internal texture {}\n", _Path);
+    LOG("Unknown internal texture {}\n", Path);
 
     LoadInternalResource("/Default/Textures/Default2D");
 }
@@ -325,11 +311,6 @@ static bool IsImageExtension(AStringView Extension)
     return false;
 }
 
-static bool IsHDRImageExtension(AStringView Extension)
-{
-    return !Extension.Icmp(".hdr") || !Extension.Icmp(".exr");
-}
-
 bool ATexture::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     AString const& fn        = Stream.GetFileName();
@@ -337,252 +318,65 @@ bool ATexture::LoadResource(IBinaryStreamReadInterface& Stream)
 
     AScopedTimer ScopedTime(fn.CStr());
 
-    AImage image;
+    ImageStorage image;
 
     if (IsImageExtension(extension))
     {
-        SImageMipmapConfig mipmapGen;
-        mipmapGen.EdgeMode            = MIPMAP_EDGE_WRAP;
-        mipmapGen.Filter              = MIPMAP_FILTER_MITCHELL;
-        mipmapGen.bPremultipliedAlpha = false;
+        ImageMipmapConfig mipmapGen;
+        mipmapGen.EdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
+        mipmapGen.Filter   = IMAGE_RESAMPLE_FILTER_MITCHELL;
 
-        if (IsHDRImageExtension(extension))
-        {
-            if (!image.Load(Stream, &mipmapGen, IMAGE_PF_AUTO_16F))
-            {
-                return false;
-            }
-        }
-        else
-        {
-            if (!image.Load(Stream, &mipmapGen, IMAGE_PF_AUTO_GAMMA2))
-            {
-                return false;
-            }
-        }
-
-        if (!InitializeFromImage(image))
-        {
+        image = CreateImage(Stream, &mipmapGen, IMAGE_STORAGE_FLAGS_DEFAULT, TEXTURE_FORMAT_UNDEFINED);
+        if (!image)
             return false;
-        }
+
+        return InitializeFromImage(image);
     }
-    else
+
+    uint32_t fileFormat;
+    uint32_t fileVersion;
+
+    fileFormat = Stream.ReadUInt32();
+
+    if (fileFormat != FMT_FILE_TYPE_TEXTURE)
     {
-
-        uint32_t fileFormat;
-        uint32_t fileVersion;
-
-        fileFormat = Stream.ReadUInt32();
-
-        if (fileFormat != FMT_FILE_TYPE_TEXTURE)
-        {
-            LOG("Expected file format {}\n", FMT_FILE_TYPE_TEXTURE);
-            return false;
-        }
-
-        fileVersion = Stream.ReadUInt32();
-
-        if (fileVersion != FMT_VERSION_TEXTURE)
-        {
-            LOG("Expected file version {}\n", FMT_VERSION_TEXTURE);
-            return false;
-        }
-
-        uint32_t            textureType;
-        STexturePixelFormat texturePixelFormat;
-        uint32_t            w, h, d, mipLevels;
-
-        AString guid = Stream.ReadString();
-        textureType = Stream.ReadUInt32();
-        Stream.ReadObject(texturePixelFormat);
-        w         = Stream.ReadUInt32();
-        h         = Stream.ReadUInt32();
-        d         = Stream.ReadUInt32();
-        mipLevels = Stream.ReadUInt32();
-
-        switch (textureType)
-        {
-            case TEXTURE_1D:
-                Initialize1D(texturePixelFormat, mipLevels, w);
-                break;
-            case TEXTURE_1D_ARRAY:
-                Initialize1DArray(texturePixelFormat, mipLevels, w, h);
-                break;
-            case TEXTURE_2D:
-                Initialize2D(texturePixelFormat, mipLevels, w, h);
-                break;
-            case TEXTURE_2D_ARRAY:
-                Initialize2DArray(texturePixelFormat, mipLevels, w, h, d);
-                break;
-            case TEXTURE_3D:
-                Initialize3D(texturePixelFormat, mipLevels, w, h, d);
-                break;
-            case TEXTURE_CUBEMAP:
-                InitializeCubemap(texturePixelFormat, mipLevels, w);
-                break;
-            case TEXTURE_CUBEMAP_ARRAY:
-                InitializeCubemapArray(texturePixelFormat, mipLevels, w, d);
-                break;
-            default:
-                LOG("ATexture::LoadResource: Unknown texture type {}\n", textureType);
-                return false;
-        }
-
-        uint32_t lodWidth, lodHeight, lodDepth;
-        size_t   pixelSize = texturePixelFormat.SizeInBytesUncompressed();
-        size_t   maxSize   = (size_t)w * h * d * pixelSize;
-        byte* lodData = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(maxSize);
-
-        //int numLayers = 1;
-
-        //if ( textureType == TEXTURE_CUBEMAP ) {
-        //    numLayers = 6;
-        //} else if ( textureType == TEXTURE_CUBEMAP_ARRAY ) {
-        //    numLayers = d * 6;
-        //}
-        //
-        //for ( int layerNum = 0 ; layerNum < numLayers ; layerNum++ ) {
-        for (int n = 0; n < mipLevels; n++)
-        {
-            lodWidth  = Stream.ReadUInt32();
-            lodHeight = Stream.ReadUInt32();
-            lodDepth  = Stream.ReadUInt32();
-
-            size_t size = (size_t)lodWidth * lodHeight * lodDepth * pixelSize;
-
-            if (size > maxSize)
-            {
-                LOG("ATexture::LoadResource invalid image {}\n", fn);
-                break;
-            }
-
-            Stream.Read(lodData, size);
-
-            WriteArbitraryData(0, 0, /*layerNum*/ 0, lodWidth, lodHeight, lodDepth, n, lodData);
-        }
-        //}
-
-        Platform::GetHeapAllocator<HEAP_TEMP>().Free(lodData);
-
-#if 0
-        byte * buf = (byte *)Platform::MemoryAllocSafe( size );
-
-        Stream.Read( buf, size );
-
-        AMemoryStream ms;
-
-        if ( !ms.OpenRead( _Path, buf, size ) ) {
-            GHeapMemory.HeapFree( buf );
-            return false;
-        }
-
-        if ( !image.LoadLDRI( ms, bSRGB, true ) ) {
-            GHeapMemory.HeapFree( buf );
-            return false;
-        }
-
-        GHeapMemory.HeapFree( buf );
-
-        if ( !InitializeFromImage( image ) ) {
-            return false;
-        }
-#endif
+        LOG("Expected file format {}\n", FMT_FILE_TYPE_TEXTURE);
+        return false;
     }
 
-    return true;
+    fileVersion = Stream.ReadUInt32();
+
+    if (fileVersion != FMT_VERSION_TEXTURE)
+    {
+        LOG("Expected file version {}\n", FMT_VERSION_TEXTURE);
+        return false;
+    }
+
+    Stream.ReadObject(image);
+
+    return InitializeFromImage(image);
 }
 
 bool ATexture::IsCubemap() const
 {
-    return TextureType == TEXTURE_CUBEMAP || TextureType == TEXTURE_CUBEMAP_ARRAY;
+    return m_Type == TEXTURE_CUBE || m_Type == TEXTURE_CUBE_ARRAY;
 }
 
-size_t ATexture::TextureSizeInBytes1D(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _ArraySize)
+static void SetTextureSwizzle(TEXTURE_FORMAT const& Format, RenderCore::STextureSwizzle& _Swizzle)
 {
-    if (_PixelFormat.IsCompressed())
-    {
-        // TODO
-        HK_ASSERT(0);
-        return 0;
-    }
-    else
-    {
-        size_t sum = 0;
-        for (int i = 0; i < _NumMipLevels; i++)
-        {
-            sum += Math::Max(1, _Width);
-            _Width >>= 1;
-        }
-        return _PixelFormat.SizeInBytesUncompressed() * sum * Math::Max(_ArraySize, 1);
-    }
-}
+    TextureFormatInfo const& info = GetTextureFormatInfo(Format);
 
-size_t ATexture::TextureSizeInBytes2D(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _Height, int _ArraySize)
-{
-    if (_PixelFormat.IsCompressed())
-    {
-        // TODO
-        HK_ASSERT(0);
-        return 0;
-    }
-    else
-    {
-        size_t sum = 0;
-        for (int i = 0; i < _NumMipLevels; i++)
-        {
-            sum += (size_t)Math::Max(1, _Width) * Math::Max(1, _Height);
-            _Width >>= 1;
-            _Height >>= 1;
-        }
-        return _PixelFormat.SizeInBytesUncompressed() * sum * Math::Max(_ArraySize, 1);
-    }
-}
+    int numChannels = 0;
+    if (info.bHasRed)
+        ++numChannels;
+    if (info.bHasGreen)
+        ++numChannels;
+    if (info.bHasBlue)
+        ++numChannels;
+    if (info.bHasAlpha)
+        ++numChannels;
 
-size_t ATexture::TextureSizeInBytes3D(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _Height, int _Depth)
-{
-    if (_PixelFormat.IsCompressed())
-    {
-        // TODO
-        HK_ASSERT(0);
-        return 0;
-    }
-    else
-    {
-        size_t sum = 0;
-        for (int i = 0; i < _NumMipLevels; i++)
-        {
-            sum += (size_t)Math::Max(1, _Width) * Math::Max(1, _Height) * Math::Max(1, _Depth);
-            _Width >>= 1;
-            _Height >>= 1;
-            _Depth >>= 1;
-        }
-        return _PixelFormat.SizeInBytesUncompressed() * sum;
-    }
-}
-
-size_t ATexture::TextureSizeInBytesCubemap(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _ArraySize)
-{
-    if (_PixelFormat.IsCompressed())
-    {
-        // TODO
-        HK_ASSERT(0);
-        return 0;
-    }
-    else
-    {
-        size_t sum = 0;
-        for (int i = 0; i < _NumMipLevels; i++)
-        {
-            sum += (size_t)Math::Max(1, _Width) * Math::Max(1, _Width);
-            _Width >>= 1;
-        }
-        return _PixelFormat.SizeInBytesUncompressed() * sum * 6 * Math::Max(_ArraySize, 1);
-    }
-}
-
-static void SetTextureSwizzle(STexturePixelFormat const& _PixelFormat, RenderCore::STextureSwizzle& _Swizzle)
-{
-    switch (_PixelFormat.NumComponents())
+    switch (numChannels)
     {
         case 1:
             // Apply texture swizzle for single channel textures
@@ -610,121 +404,121 @@ static void SetTextureSwizzle(STexturePixelFormat const& _PixelFormat, RenderCor
     }
 }
 
-void ATexture::Initialize1D(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width)
+void ATexture::Initialize1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
 {
     Purge();
 
-    TextureType  = TEXTURE_1D;
-    PixelFormat  = _PixelFormat;
-    Width        = _Width;
-    Height       = 1;
-    Depth        = 1;
-    NumMipLevels = _NumMipLevels;
+    m_Type       = TEXTURE_1D;
+    m_Format     = Format;
+    m_Width      = Width;
+    m_Height     = 1;
+    m_Depth      = 1;
+    m_NumMipmaps = NumMipLevels;
 
     RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolution1D(_Width));
-    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
-    textureDesc.SetMipLevels(_NumMipLevels);
+    textureDesc.SetResolution(RenderCore::STextureResolution1D(Width));
+    textureDesc.SetFormat(Format);
+    textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(_PixelFormat, textureDesc.Swizzle);
+    SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &TextureGPU);
+    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 }
 
-void ATexture::Initialize1DArray(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _ArraySize)
+void ATexture::Initialize1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
 {
     Purge();
 
-    TextureType  = TEXTURE_1D_ARRAY;
-    PixelFormat  = _PixelFormat;
-    Width        = _Width;
-    Height       = _ArraySize;
-    Depth        = 1;
-    NumMipLevels = _NumMipLevels;
+    m_Type       = TEXTURE_1D_ARRAY;
+    m_Format     = Format;
+    m_Width      = Width;
+    m_Height     = 1;
+    m_Depth      = ArraySize;
+    m_NumMipmaps = NumMipLevels;
 
     RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolution1DArray(_Width, _ArraySize));
-    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
-    textureDesc.SetMipLevels(_NumMipLevels);
+    textureDesc.SetResolution(RenderCore::STextureResolution1DArray(Width, ArraySize));
+    textureDesc.SetFormat(Format);
+    textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(_PixelFormat, textureDesc.Swizzle);
+    SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &TextureGPU);
+    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 }
 
-void ATexture::Initialize2D(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _Height)
+void ATexture::Initialize2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height)
 {
     Purge();
 
-    TextureType  = TEXTURE_2D;
-    PixelFormat  = _PixelFormat;
-    Width        = _Width;
-    Height       = _Height;
-    Depth        = 1;
-    NumMipLevels = _NumMipLevels;
+    m_Type       = TEXTURE_2D;
+    m_Format     = Format;
+    m_Width      = Width;
+    m_Height     = Height;
+    m_Depth      = 1;
+    m_NumMipmaps = NumMipLevels;
 
     RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolution2D(_Width, _Height));
-    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
-    textureDesc.SetMipLevels(_NumMipLevels);
+    textureDesc.SetResolution(RenderCore::STextureResolution2D(Width, Height));
+    textureDesc.SetFormat(Format);
+    textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(_PixelFormat, textureDesc.Swizzle);
+    SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &TextureGPU);
+    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 }
 
-void ATexture::Initialize2DArray(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _Height, int _ArraySize)
+void ATexture::Initialize2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t ArraySize)
 {
     Purge();
 
-    TextureType  = TEXTURE_2D_ARRAY;
-    PixelFormat  = _PixelFormat;
-    Width        = _Width;
-    Height       = _Height;
-    Depth        = _ArraySize;
-    NumMipLevels = _NumMipLevels;
+    m_Type       = TEXTURE_2D_ARRAY;
+    m_Format     = Format;
+    m_Width      = Width;
+    m_Height     = Height;
+    m_Depth      = ArraySize;
+    m_NumMipmaps = NumMipLevels;
 
     RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolution2DArray(_Width, _Height, _ArraySize));
-    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
-    textureDesc.SetMipLevels(_NumMipLevels);
+    textureDesc.SetResolution(RenderCore::STextureResolution2DArray(Width, Height, ArraySize));
+    textureDesc.SetFormat(Format);
+    textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(_PixelFormat, textureDesc.Swizzle);
+    SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &TextureGPU);
+    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 }
 
-void ATexture::Initialize3D(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _Height, int _Depth)
+void ATexture::Initialize3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t Depth)
 {
     Purge();
 
-    TextureType  = TEXTURE_3D;
-    PixelFormat  = _PixelFormat;
-    Width        = _Width;
-    Height       = _Height;
-    Depth        = _Depth;
-    NumMipLevels = _NumMipLevels;
+    m_Type       = TEXTURE_3D;
+    m_Format     = Format;
+    m_Width      = Width;
+    m_Height     = Height;
+    m_Depth      = Depth;
+    m_NumMipmaps = NumMipLevels;
 
     RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolution3D(_Width, _Height, _Depth));
-    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
-    textureDesc.SetMipLevels(_NumMipLevels);
+    textureDesc.SetResolution(RenderCore::STextureResolution3D(Width, Height, Depth));
+    textureDesc.SetFormat(Format);
+    textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(_PixelFormat, textureDesc.Swizzle);
+    SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &TextureGPU);
+    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 }
 
-void ATexture::InitializeColorGradingLUT(const char* _Path)
+void ATexture::InitializeColorGradingLUT(AStringView Path)
 {
-    AImage image;
+    ImageStorage image = CreateImage(Path, nullptr, IMAGE_STORAGE_NO_ALPHA, TEXTURE_FORMAT_SBGRA8_UNORM);
 
-    if (image.Load(_Path, nullptr, IMAGE_PF_BGRA_GAMMA2))
+    if (image && image.GetDesc().Width == 16 * 16 && image.GetDesc().Height == 16)
     {
         const byte* p = static_cast<const byte*>(image.GetData());
 
@@ -741,7 +535,7 @@ void ATexture::InitializeColorGradingLUT(const char* _Path)
             }
         }
 
-        Initialize3D(TEXTURE_PF_BGRA8_SRGB, 1, 16, 16, 16);
+        Initialize3D(image.GetDesc().Format, 1, 16, 16, 16);
         WriteArbitraryData(0, 0, 0, 16, 16, 16, 0, data);
 
         Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
@@ -786,12 +580,12 @@ static Float3 ApplyColorGrading(SColorGradingPreset const& p, Color4 const& _Col
     return rgb;
 }
 
-void ATexture::InitializeColorGradingLUT(SColorGradingPreset const& _Preset)
+void ATexture::InitializeColorGradingLUT(SColorGradingPreset const& Preset)
 {
     Color4 color;
     Float3  result;
 
-    Initialize3D(TEXTURE_PF_BGRA8_SRGB, 1, 16, 16, 16);
+    Initialize3D(TEXTURE_FORMAT_SBGRA8_UNORM, 1, 16, 16, 16);
 
     const float scale = 1.0f / 15.0f;
 
@@ -809,7 +603,7 @@ void ATexture::InitializeColorGradingLUT(SColorGradingPreset const& _Preset)
             {
                 color.R = scale * x;
 
-                result = ApplyColorGrading(_Preset, color) * 255.0f;
+                result = ApplyColorGrading(Preset, color) * 255.0f;
 
                 byte* pixel = row + (size_t)x * 4;
                 pixel[0]    = Math::Clamp(result.Z, 0.0f, 255.0f);
@@ -825,188 +619,166 @@ void ATexture::InitializeColorGradingLUT(SColorGradingPreset const& _Preset)
     Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
 }
 
-void ATexture::InitializeCubemap(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width)
+void ATexture::InitializeCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
 {
     Purge();
 
-    TextureType  = TEXTURE_CUBEMAP;
-    PixelFormat  = _PixelFormat;
-    Width        = _Width;
-    Height       = _Width;
-    Depth        = 1;
-    NumMipLevels = _NumMipLevels;
+    m_Type       = TEXTURE_CUBE;
+    m_Format     = Format;
+    m_Width      = Width;
+    m_Height     = Width;
+    m_Depth      = 1;
+    m_NumMipmaps = NumMipLevels;
 
     RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolutionCubemap(_Width));
-    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
-    textureDesc.SetMipLevels(_NumMipLevels);
+    textureDesc.SetResolution(RenderCore::STextureResolutionCubemap(Width));
+    textureDesc.SetFormat(Format);
+    textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(_PixelFormat, textureDesc.Swizzle);
+    SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &TextureGPU);
+    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 }
 
-void ATexture::InitializeCubemapArray(STexturePixelFormat _PixelFormat, int _NumMipLevels, int _Width, int _ArraySize)
+void ATexture::InitializeCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
 {
     Purge();
 
-    TextureType  = TEXTURE_CUBEMAP_ARRAY;
-    PixelFormat  = _PixelFormat;
-    Width        = _Width;
-    Height       = _Width;
-    Depth        = _ArraySize;
-    NumMipLevels = _NumMipLevels;
+    m_Type       = TEXTURE_CUBE_ARRAY;
+    m_Format     = Format;
+    m_Width      = Width;
+    m_Height     = Width;
+    m_Depth      = ArraySize;
+    m_NumMipmaps = NumMipLevels;
 
     RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolutionCubemapArray(_Width, _ArraySize));
-    textureDesc.SetFormat(_PixelFormat.GetTextureFormat());
-    textureDesc.SetMipLevels(_NumMipLevels);
+    textureDesc.SetResolution(RenderCore::STextureResolutionCubemapArray(Width, ArraySize));
+    textureDesc.SetFormat(Format);
+    textureDesc.SetMipLevels(NumMipLevels);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
-    SetTextureSwizzle(_PixelFormat, textureDesc.Swizzle);
+    SetTextureSwizzle(Format, textureDesc.Swizzle);
 
-    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &TextureGPU);
+    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 }
 
-size_t ATexture::GetSizeInBytes() const
+uint32_t ATexture::GetArraySize() const
 {
-    switch (TextureType)
-    {
-        case TEXTURE_1D:
-            return ATexture::TextureSizeInBytes1D(PixelFormat, NumMipLevels, Width, 1);
-        case TEXTURE_1D_ARRAY:
-            return ATexture::TextureSizeInBytes1D(PixelFormat, NumMipLevels, Width, GetArraySize());
-        case TEXTURE_2D:
-            return ATexture::TextureSizeInBytes2D(PixelFormat, NumMipLevels, Width, Height, 1);
-        case TEXTURE_2D_ARRAY:
-            return ATexture::TextureSizeInBytes2D(PixelFormat, NumMipLevels, Width, Height, GetArraySize());
-        case TEXTURE_3D:
-            return ATexture::TextureSizeInBytes3D(PixelFormat, NumMipLevels, Width, Height, Depth);
-        case TEXTURE_CUBEMAP:
-            return ATexture::TextureSizeInBytesCubemap(PixelFormat, NumMipLevels, Width, 1);
-        case TEXTURE_CUBEMAP_ARRAY:
-            return ATexture::TextureSizeInBytesCubemap(PixelFormat, NumMipLevels, Width, GetArraySize());
-    }
-    return 0;
-}
-
-int ATexture::GetArraySize() const
-{
-    switch (TextureType)
+    switch (m_Type)
     {
         case TEXTURE_1D_ARRAY:
-            return Height;
         case TEXTURE_2D_ARRAY:
-        case TEXTURE_CUBEMAP_ARRAY:
-            return Depth;
+        case TEXTURE_CUBE_ARRAY:
+            return m_Depth;
     }
     return 1;
 }
 
-bool ATexture::WriteTextureData1D(int _LocationX, int _Width, int _Lod, const void* _SysMem)
+bool ATexture::WriteTextureData1D(uint32_t LocationX, uint32_t Width, uint32_t MipLevel, const void* pData)
 {
-    if (TextureType != TEXTURE_1D && TextureType != TEXTURE_1D_ARRAY)
+    if (m_Type != TEXTURE_1D && m_Type != TEXTURE_1D_ARRAY)
     {
-        LOG("ATexture::WriteTextureData1D: called for {}\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureData1D: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteArbitraryData(_LocationX, 0, 0, _Width, 1, 1, _Lod, _SysMem);
+    return WriteArbitraryData(LocationX, 0, 0, Width, 1, 1, MipLevel, pData);
 }
 
-bool ATexture::WriteTextureData1DArray(int _LocationX, int _Width, int _ArrayLayer, int _Lod, const void* _SysMem)
+bool ATexture::WriteTextureData1DArray(uint32_t LocationX, uint32_t Width, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData)
 {
-    if (TextureType != TEXTURE_1D_ARRAY)
+    if (m_Type != TEXTURE_1D_ARRAY)
     {
-        LOG("ATexture::WriteTextureData1DArray: called for {}\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureData1DArray: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteArbitraryData(_LocationX, 0, _ArrayLayer, _Width, 1, 1, _Lod, _SysMem);
+    return WriteArbitraryData(LocationX, 0, ArrayLayer, Width, 1, 1, MipLevel, pData);
 }
 
-bool ATexture::WriteTextureData2D(int _LocationX, int _LocationY, int _Width, int _Height, int _Lod, const void* _SysMem)
+bool ATexture::WriteTextureData2D(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t MipLevel, const void* pData)
 {
-    if (TextureType != TEXTURE_2D && TextureType != TEXTURE_2D_ARRAY)
+    if (m_Type != TEXTURE_2D && m_Type != TEXTURE_2D_ARRAY)
     {
-        LOG("ATexture::WriteTextureData2D: called for {}\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureData2D: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteArbitraryData(_LocationX, _LocationY, 0, _Width, _Height, 1, _Lod, _SysMem);
+    return WriteArbitraryData(LocationX, LocationY, 0, Width, Height, 1, MipLevel, pData);
 }
 
-bool ATexture::WriteTextureData2DArray(int _LocationX, int _LocationY, int _Width, int _Height, int _ArrayLayer, int _Lod, const void* _SysMem)
+bool ATexture::WriteTextureData2DArray(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData)
 {
-    if (TextureType != TEXTURE_2D_ARRAY)
+    if (m_Type != TEXTURE_2D_ARRAY)
     {
-        LOG("ATexture::WriteTextureData2DArray: called for {}\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureData2DArray: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteArbitraryData(_LocationX, _LocationY, _ArrayLayer, _Width, _Height, 1, _Lod, _SysMem);
+    return WriteArbitraryData(LocationX, LocationY, ArrayLayer, Width, Height, 1, MipLevel, pData);
 }
 
-bool ATexture::WriteTextureData3D(int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Depth, int _Lod, const void* _SysMem)
+bool ATexture::WriteTextureData3D(uint32_t LocationX, uint32_t LocationY, uint32_t LocationZ, uint32_t Width, uint32_t Height, uint32_t Depth, uint32_t MipLevel, const void* pData)
 {
-    if (TextureType != TEXTURE_3D)
+    if (m_Type != TEXTURE_3D)
     {
-        LOG("ATexture::WriteTextureData3D: called for {}\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureData3D: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteArbitraryData(_LocationX, _LocationY, _LocationZ, _Width, _Height, _Depth, _Lod, _SysMem);
+    return WriteArbitraryData(LocationX, LocationY, LocationZ, Width, Height, Depth, MipLevel, pData);
 }
 
-bool ATexture::WriteTextureDataCubemap(int _LocationX, int _LocationY, int _Width, int _Height, int _FaceIndex, int _Lod, const void* _SysMem)
+bool ATexture::WriteTextureDataCubemap(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t FaceIndex, uint32_t MipLevel, const void* pData)
 {
-    if (TextureType != TEXTURE_CUBEMAP && TextureType != TEXTURE_CUBEMAP_ARRAY)
+    if (m_Type != TEXTURE_CUBE && m_Type != TEXTURE_CUBE_ARRAY)
     {
-        LOG("ATexture::WriteTextureDataCubemap: called for {}\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureDataCubemap: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteArbitraryData(_LocationX, _LocationY, _FaceIndex, _Width, _Height, 1, _Lod, _SysMem);
+    return WriteArbitraryData(LocationX, LocationY, FaceIndex, Width, Height, 1, MipLevel, pData);
 }
 
-bool ATexture::WriteTextureDataCubemapArray(int _LocationX, int _LocationY, int _Width, int _Height, int _FaceIndex, int _ArrayLayer, int _Lod, const void* _SysMem)
+bool ATexture::WriteTextureDataCubemapArray(uint32_t LocationX, uint32_t LocationY, uint32_t Width, uint32_t Height, uint32_t FaceIndex, uint32_t ArrayLayer, uint32_t MipLevel, const void* pData)
 {
-    if (TextureType != TEXTURE_CUBEMAP_ARRAY)
+    if (m_Type != TEXTURE_CUBE_ARRAY)
     {
-        LOG("ATexture::WriteTextureDataCubemapArray: called for {}\n", TextureTypeName[TextureType]);
+        LOG("ATexture::WriteTextureDataCubemapArray: called for {}\n", TextureTypeName[m_Type]);
         return false;
     }
-    return WriteArbitraryData(_LocationX, _LocationY, _ArrayLayer * 6 + _FaceIndex, _Width, _Height, 1, _Lod, _SysMem);
+    return WriteArbitraryData(LocationX, LocationY, ArrayLayer * 6 + FaceIndex, Width, Height, 1, MipLevel, pData);
 }
 
-bool ATexture::WriteArbitraryData(int _LocationX, int _LocationY, int _LocationZ, int _Width, int _Height, int _Depth, int _Lod, const void* _SysMem)
+bool ATexture::WriteArbitraryData(uint32_t LocationX, uint32_t LocationY, uint32_t LocationZ, uint32_t Width, uint32_t Height, uint32_t Depth, uint32_t MipLevel, const void* pData)
 {
-    if (!Width)
+    if (!m_Width)
     {
         LOG("ATexture::WriteArbitraryData: texture is not initialized\n");
         return false;
     }
 
-    size_t sizeInBytes = (size_t)_Width * _Height * _Depth;
+    TextureFormatInfo const& info = GetTextureFormatInfo(m_Format);
 
-    if (IsCompressed())
+    if (info.BlockSize > 1)
     {
-        // TODO
-        HK_ASSERT(0);
-        return false;
+        // Compressed 3D textures are not supported
+        Depth = 1;
     }
-    else
-    {
-        sizeInBytes *= SizeInBytesUncompressed();
-    }
+
+    HK_ASSERT((LocationX % info.BlockSize) == 0);
+    HK_ASSERT((LocationY % info.BlockSize) == 0);
+    HK_ASSERT((Width % info.BlockSize) == 0);
+    HK_ASSERT((Height % info.BlockSize) == 0);
 
     // TODO: bounds check?
 
     RenderCore::STextureRect rect;
-    rect.Offset.X        = _LocationX;
-    rect.Offset.Y        = _LocationY;
-    rect.Offset.Z        = _LocationZ;
-    rect.Offset.MipLevel = _Lod;
-    rect.Dimension.X     = _Width;
-    rect.Dimension.Y     = _Height;
-    rect.Dimension.Z     = _Depth;
+    rect.Offset.X        = LocationX;
+    rect.Offset.Y        = LocationY;
+    rect.Offset.Z        = LocationZ;
+    rect.Offset.MipLevel = MipLevel;
+    rect.Dimension.X     = Width;
+    rect.Dimension.Y     = Height;
+    rect.Dimension.Z     = Depth;
 
-    size_t rowWidth = Width * SizeInBytesUncompressed();
+    size_t rowWidth    = Width / info.BlockSize * info.BytesPerBlock;
+    size_t sizeInBytes = rowWidth * Height / info.BytesPerBlock * Depth;
 
     int rowAlignment;
     if (IsAligned(rowWidth, 8))
@@ -1018,18 +790,18 @@ bool ATexture::WriteArbitraryData(int _LocationX, int _LocationY, int _LocationZ
     else
         rowAlignment = 1;
 
-    TextureGPU->WriteRect(rect, PixelFormat.GetTextureDataFormat(), sizeInBytes, rowAlignment, _SysMem);
+    m_TextureGPU->WriteRect(rect, sizeInBytes, rowAlignment, pData);
 
     return true;
 }
 
 void ATexture::SetDebugName(AStringView DebugName)
 {
-    if (!TextureGPU)
+    if (!m_TextureGPU)
     {
         LOG("ATexture::SetDebugName: texture must be initialized\n");
         return;
     }
 
-    TextureGPU->SetDebugName(DebugName);
+    m_TextureGPU->SetDebugName(DebugName);
 }

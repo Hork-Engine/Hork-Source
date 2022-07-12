@@ -104,7 +104,7 @@ ACubemapGenerator::ACubemapGenerator()
     GDevice->CreatePipeline( pipelineCI, &Pipeline );
 }
 
-void ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, ITexture ** _Sources, TRef< RenderCore::ITexture > * ppTextureArray )
+void ACubemapGenerator::GenerateArray( TEXTURE_FORMAT _Format, int _Resolution, int _SourcesCount, ITexture ** _Sources, TRef< RenderCore::ITexture > * ppTextureArray )
 {
     GDevice->CreateTexture(RenderCore::STextureDesc()
                                .SetFormat(_Format)
@@ -153,7 +153,7 @@ void ACubemapGenerator::GenerateArray( RenderCore::TEXTURE_FORMAT _Format, int _
     rcmd->ExecuteFrameGraph(&frameGraph);
 }
 
-void ACubemapGenerator::Generate( RenderCore::TEXTURE_FORMAT _Format, int _Resolution, ITexture * _Source, TRef< RenderCore::ITexture > * ppTexture )
+void ACubemapGenerator::Generate(TEXTURE_FORMAT _Format, int _Resolution, ITexture* _Source, TRef<RenderCore::ITexture>* ppTexture)
 {
     GDevice->CreateTexture(STextureDesc()
                                .SetFormat(_Format)

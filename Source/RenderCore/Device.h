@@ -151,10 +151,6 @@ public:
 
     virtual bool ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int* PageSizeIndex, int* PageSizeX = nullptr, int* PageSizeY = nullptr, int* PageSizeZ = nullptr) = 0;
 
-    virtual bool LookupImageFormat(const char* _FormatQualifier, TEXTURE_FORMAT* _Format) = 0;
-
-    virtual const char* LookupImageFormatQualifier(TEXTURE_FORMAT _Format) = 0;
-
     virtual SAllocatorCallback const& GetAllocator() const = 0;
 
     GRAPHICS_VENDOR GetGraphicsVendor() const

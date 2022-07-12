@@ -282,6 +282,7 @@ void BindOmniShadowProjection(int FaceIndex)
 
 void SaveSnapshot(ITexture& _Texture)
 {
+    #if 0
     const int w           = _Texture.GetWidth();
     const int h           = _Texture.GetHeight();
     const int numchannels = 3;
@@ -312,4 +313,5 @@ void SaveSnapshot(ITexture& _Texture)
 
     Platform::GetHeapAllocator<HEAP_TEMP>().Free(fdata);
     Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
+    #endif
 }

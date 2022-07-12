@@ -1760,7 +1760,7 @@ static constexpr const char* TextureTypeToShaderSampler[][2] = {
     {"samplerCube", "vec3"},
     {"samplerCubeArray", "vec4"}};
 
-static const char* GetShaderType(ETextureType _Type)
+static const char* GetShaderType(TEXTURE_TYPE _Type)
 {
     return TextureTypeToShaderSampler[_Type][0];
 }
@@ -1912,10 +1912,10 @@ void MGSampler::Compute(AMaterialBuildContext& _Context)
                 case TEXTURE_3D:
                     sampleType = AT_Float3;
                     break;
-                case TEXTURE_CUBEMAP:
+                case TEXTURE_CUBE:
                     sampleType = AT_Float3;
                     break;
-                case TEXTURE_CUBEMAP_ARRAY:
+                case TEXTURE_CUBE_ARRAY:
                     sampleType = AT_Float3;
                     break;
                 default:
@@ -2038,10 +2038,10 @@ void MGNormalSampler::Compute(AMaterialBuildContext& _Context)
                 case TEXTURE_3D:
                     sampleType = AT_Float3;
                     break;
-                case TEXTURE_CUBEMAP:
+                case TEXTURE_CUBE:
                     sampleType = AT_Float3;
                     break;
-                case TEXTURE_CUBEMAP_ARRAY:
+                case TEXTURE_CUBE_ARRAY:
                     sampleType = AT_Float3;
                     break;
                 default:

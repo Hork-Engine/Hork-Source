@@ -62,7 +62,7 @@ ATerrainView::ATerrainView(int InTextureSize) :
     MinViewLod = MaxViewLod = 0;
 
     auto textureFormat = RenderCore::STextureDesc()
-                             .SetFormat(RenderCore::TEXTURE_FORMAT_RG32F)
+                             .SetFormat(TEXTURE_FORMAT_RG32_FLOAT)
                              .SetResolution(RenderCore::STextureResolution2DArray(TextureSize,
                                                                                   TextureSize,
                                                                                   MAX_TERRAIN_LODS))
@@ -71,13 +71,13 @@ ATerrainView::ATerrainView(int InTextureSize) :
     ClipmapArray->SetDebugName("Terrain Clipmap Array");
 
     auto normalMapFormat = RenderCore::STextureDesc()
-                               .SetFormat(RenderCore::TEXTURE_FORMAT_RGBA8)
+                               .SetFormat(TEXTURE_FORMAT_BGRA8_UNORM)
                                .SetResolution(RenderCore::STextureResolution2DArray(TextureSize,
                                                                                     TextureSize,
                                                                                     MAX_TERRAIN_LODS))
                                .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
     GEngine->GetRenderDevice()->CreateTexture(normalMapFormat, &NormalMapArray);
-    ClipmapArray->SetDebugName("Terrain Normal Map Array");
+    NormalMapArray->SetDebugName("Terrain Normal Map Array");
 }
 
 ATerrainView::~ATerrainView()
@@ -1011,9 +1011,9 @@ void ATerrainView::UpdateTextures()
             lodInfo.MaxH += Margin;
 
             // TODO: Update only dirty regions
-            ClipmapArray->WriteRect(rect, RenderCore::FORMAT_FLOAT2, count * sizeof(Float2), 4, lodInfo.HeightMap);
+            ClipmapArray->WriteRect(rect, count * sizeof(Float2), 4, lodInfo.HeightMap);
 
-            NormalMapArray->WriteRect(rect, RenderCore::FORMAT_UBYTE4, count * 4, 4, lodInfo.NormalMap);
+            NormalMapArray->WriteRect(rect, count * 4, 4, lodInfo.NormalMap);
         }
     }
 }

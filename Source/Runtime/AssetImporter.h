@@ -36,20 +36,6 @@ SOFTWARE.
 #include "Skeleton.h"
 #include "IndexedMesh.h"
 
-#include <unordered_map>
-
-struct SAssetSkyboxImportSettings
-{
-    /** Source files for skybox */
-    TArray<AString, 6> Faces;
-
-    /** Import skybox as HDRI image */
-    bool bHDRI{false};
-
-    float HDRIScale{1};
-    float HDRIPow{1};
-};
-
 struct SAssetImportSettings
 {
     SAssetImportSettings()
@@ -114,7 +100,7 @@ struct SAssetImportSettings
     /** Rotate models */
     Quat Rotation;
 
-    SAssetSkyboxImportSettings SkyboxImport;
+    SkyboxImportSettings SkyboxImport;
 };
 
 class AAssetImporter
@@ -132,8 +118,10 @@ private:
         int                    FirstIndex;
         int                    IndexCount;
         struct cgltf_mesh*     Mesh;
+        struct cgltf_node*     Node;
         struct cgltf_material* Material;
         BvAxisAlignedBox       BoundingBox;
+        bool                   bSkinned;
     };
 
     struct TextureInfo
@@ -173,7 +161,7 @@ private:
     void         ReadMaterial(struct cgltf_material* Material, MaterialInfo& Info);
     void         ReadNode_r(struct cgltf_node* Node);
     void         ReadMesh(struct cgltf_node* Node);
-    void         ReadMesh(struct cgltf_mesh* Mesh, Float3x4 const& GlobalTransform, Float3x3 const& NormalMatrix);
+    void         ReadMesh(struct cgltf_node* Node, struct cgltf_mesh* Mesh, Float3x4 const& GlobalTransform, Float3x3 const& NormalMatrix);
     void         ReadAnimations(struct cgltf_data* Data);
     void         ReadAnimation(struct cgltf_animation* Anim, AnimationInfo& _Animation);
     void         ReadSkeleton(struct cgltf_node* node, int parentIndex = -1);
@@ -188,7 +176,7 @@ private:
     void         WriteSingleModel();
     void         WriteMeshes();
     void         WriteMesh(MeshInfo const& Mesh);
-    void         WriteSkyboxMaterial(AGUID const& SkyboxTextureGUID);
+    void         WriteSkyboxMaterial(AStringView SkyboxTexture);
     AString      GeneratePhysicalPath(AStringView DesiredName, AStringView Extension);
     AGUID        GetMaterialGUID(cgltf_material* Material);
     TextureInfo* FindTextureImage(struct cgltf_texture const* Texture);
@@ -213,12 +201,11 @@ private:
     AGUID                       m_SkeletonGUID;
 };
 
-/** Perform cubemap face loading */
-bool LoadSkyboxImages(SAssetSkyboxImportSettings const& ImportSettings, TArray<AImage, 6>& Faces);
+bool ImportEnvironmentMapForSkybox(ImageStorage const& Skybox, AStringView EnvmapFile);
+bool ImportEnvironmentMapForSkybox(SkyboxImportSettings const& ImportSettings, AStringView EnvmapFile);
 
-/** Perform cubemap face validation */
-bool ValidateCubemapFaces(TArray<AImage, 6> const& Faces, int& Width, STexturePixelFormat& PixelFormat);
+ImageStorage GenerateAtmosphereSkybox(uint32_t Resolution, Float3 const& LightDir);
 
-bool ImportEnvironmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSettings, AStringView EnvmapFile);
+bool SaveSkyboxTexture(AStringView FileName, ImageStorage& Image);
 
 bool LoadLWO(IBinaryStreamReadInterface& InStream, float InScale, AMaterialInstance* (*GetMaterial)(const char* _Name), AIndexedMesh** IndexedMesh);

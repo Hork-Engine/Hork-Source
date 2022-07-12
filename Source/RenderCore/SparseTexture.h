@@ -42,15 +42,13 @@ enum SPARSE_TEXTURE_TYPE : uint8_t
     SPARSE_TEXTURE_2D_ARRAY,
     SPARSE_TEXTURE_3D,
     SPARSE_TEXTURE_CUBE_MAP,
-    SPARSE_TEXTURE_CUBE_MAP_ARRAY,
-
-    SPARSE_TEXTURE_RECT_GL // Can be used only with OpenGL backend
+    SPARSE_TEXTURE_CUBE_MAP_ARRAY
 };
 
 struct SSparseTextureDesc
 {
     SPARSE_TEXTURE_TYPE Type       = SPARSE_TEXTURE_2D;
-    TEXTURE_FORMAT      Format     = TEXTURE_FORMAT_RGBA8;
+    TEXTURE_FORMAT      Format     = TEXTURE_FORMAT_RGBA8_UNORM;
     STextureResolution  Resolution = {};
     STextureSwizzle     Swizzle;
     uint16_t            NumMipLevels = 1;
@@ -122,13 +120,6 @@ struct SSparseTextureDesc
     SSparseTextureDesc& SetResolution(STextureResolutionCubemapArray const& InResolution)
     {
         Type       = SPARSE_TEXTURE_CUBE_MAP_ARRAY;
-        Resolution = InResolution;
-        return *this;
-    }
-
-    SSparseTextureDesc& SetResolution(STextureResolutionRectGL const& InResolution)
-    {
-        Type       = SPARSE_TEXTURE_RECT_GL;
         Resolution = InResolution;
         return *this;
     }

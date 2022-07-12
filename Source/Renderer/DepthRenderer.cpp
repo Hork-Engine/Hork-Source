@@ -84,7 +84,7 @@ void AddDepthPass( AFrameGraph & FrameGraph, FGTextureProxy ** ppDepthTexture, F
     depthPass.SetDepthStencilAttachment(
         STextureAttachment("Depth texture",
                            STextureDesc()
-                               .SetFormat(RenderCore::TEXTURE_FORMAT_DEPTH24_STENCIL8)
+                               .SetFormat(TEXTURE_FORMAT_D24S8)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR));
 
@@ -94,7 +94,7 @@ void AddDepthPass( AFrameGraph & FrameGraph, FGTextureProxy ** ppDepthTexture, F
         depthPass.SetColorAttachment(
             STextureAttachment("Velocity texture",
                                STextureDesc()
-                                   .SetFormat(TEXTURE_FORMAT_RG8)
+                                   .SetFormat(TEXTURE_FORMAT_RG8_UNORM)
                                    .SetResolution(GetFrameResoultion()))
                 .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR)
                 .SetClearValue(RenderCore::MakeClearColorValue(velocity.X, velocity.Y, 0.0f, 0.0f)));

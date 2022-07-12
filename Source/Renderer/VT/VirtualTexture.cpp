@@ -89,7 +89,7 @@ AVirtualTexture::AVirtualTexture( const char * FileName, AVirtualTextureCache * 
 
         GDevice->CreateTexture(
             STextureDesc()
-                .SetFormat(TEXTURE_FORMAT_RG8)
+                .SetFormat(TEXTURE_FORMAT_RG8_UNORM)
                 .SetResolution(STextureResolution2D(indirectionTableSize, indirectionTableSize))
                 .SetMipLevels(NumLods)
                 .SetBindFlags(BIND_SHADER_RESOURCE),

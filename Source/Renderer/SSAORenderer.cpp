@@ -120,7 +120,7 @@ ASSAORenderer::ASSAORenderer()
 
     const float NUM_DIRECTIONS = 8;
 
-    Float3 hbaoRandom[HBAO_RANDOM_ELEMENTS];
+    Half   hbaoRandom_Half[HBAO_RANDOM_ELEMENTS][4];
 
     for (int i = 0; i < HBAO_RANDOM_ELEMENTS; i++)
     {
@@ -134,11 +134,12 @@ ASSAORenderer::ASSAORenderer()
 
         Math::SinCos(angle, s, c);
 
-        hbaoRandom[i].X = c;
-        hbaoRandom[i].Y = s;
-        hbaoRandom[i].Z = r2;
+        //std::swap(hbaoRandom[i].X, hbaoRandom[i].Z); // Swap to BGR
 
-        std::swap(hbaoRandom[i].X, hbaoRandom[i].Z); // Swap to BGR
+        hbaoRandom_Half[i][0] = c;
+        hbaoRandom_Half[i][1] = s;
+        hbaoRandom_Half[i][2] = r2;
+        hbaoRandom_Half[i][3] = 1;
     }
 
     //for ( int i = 0; i < HBAO_RANDOM_ELEMENTS; i++ ) {
@@ -150,13 +151,13 @@ ASSAORenderer::ASSAORenderer()
     //}
 
     GDevice->CreateTexture(STextureDesc()
-                               .SetFormat(TEXTURE_FORMAT_RGB16F)
+                               .SetFormat(TEXTURE_FORMAT_RGBA16_FLOAT)
                                .SetResolution(STextureResolution2D(HBAO_RANDOM_SIZE, HBAO_RANDOM_SIZE))
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &RandomMap);
     RandomMap->SetDebugName("SSAO Random Map");
 
-    RandomMap->Write(0, FORMAT_FLOAT3, sizeof(hbaoRandom), 1, hbaoRandom);
+    RandomMap->Write(0, sizeof(hbaoRandom_Half), 1, hbaoRandom_Half);
 }
 
 void ASSAORenderer::ResizeAO(int Width, int Height)
@@ -171,7 +172,7 @@ void ASSAORenderer::ResizeAO(int Width, int Height)
 
         GDevice->CreateTexture(
             STextureDesc()
-                .SetFormat(TEXTURE_FORMAT_R32F)
+                .SetFormat(TEXTURE_FORMAT_R32_FLOAT)
                 .SetResolution(STextureResolution2DArray(AOQuarterWidth, AOQuarterHeight, HBAO_RANDOM_ELEMENTS))
                 .SetBindFlags(BIND_SHADER_RESOURCE),
             &SSAODeinterleaveDepthArray);
@@ -180,7 +181,7 @@ void ASSAORenderer::ResizeAO(int Width, int Height)
         //{
         //    STextureViewDesc desc;
         //    desc.Type          = RenderCore::TEXTURE_2D;
-        //    desc.Format        = TEXTURE_FORMAT_R32F;
+        //    desc.Format        = TEXTURE_FORMAT_R32_FLOAT;
         //    desc.FirstMipLevel = 0;
         //    desc.NumMipLevels  = 1;
         //    desc.FirstSlice    = i;
@@ -302,7 +303,7 @@ void ASSAORenderer::AddCacheAwareAOPass(AFrameGraph& FrameGraph, FGTextureProxy*
     cacheAwareAO.SetColorAttachment(
         STextureAttachment("SSAO Texture Array",
                            STextureDesc()
-                               .SetFormat(TEXTURE_FORMAT_R8)
+                               .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                .SetResolution(STextureResolution2DArray(AOQuarterWidth, AOQuarterHeight, HBAO_RANDOM_ELEMENTS)))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
     cacheAwareAO.AddSubpass({0}, // color attachment refs
@@ -367,7 +368,7 @@ void ASSAORenderer::AddReinterleavePass(AFrameGraph& FrameGraph, FGTextureProxy*
     reinterleavePass.SetColorAttachment(
         STextureAttachment("SSAO Texture",
                            STextureDesc()
-                               .SetFormat(TEXTURE_FORMAT_R8)
+                               .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                .SetResolution(STextureResolution2D(AOWidth, AOHeight))
                                .SetBindFlags(BIND_SHADER_RESOURCE))                               
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
@@ -394,7 +395,7 @@ void ASSAORenderer::AddSimpleAOPass(AFrameGraph& FrameGraph, FGTextureProxy* Lin
     pass.SetColorAttachment(
         STextureAttachment("SSAO Texture (Interleaved)",
                            STextureDesc()
-                               .SetFormat(TEXTURE_FORMAT_R8)
+                               .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                .SetResolution(STextureResolution2D(AOWidth, AOHeight)))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
     pass.AddSubpass({0}, // color attachment refs
@@ -459,7 +460,7 @@ void ASSAORenderer::AddAOBlurPass(AFrameGraph& FrameGraph, FGTextureProxy* SSAOT
     aoBlurXPass.SetColorAttachment(
         STextureAttachment("Temp SSAO Texture (Blur X)",
                            STextureDesc()
-                               .SetFormat(TEXTURE_FORMAT_R8)
+                               .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                .SetResolution(STextureResolution2D(AOWidth, AOHeight)))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
     aoBlurXPass.AddResource(SSAOTexture, FG_RESOURCE_ACCESS_READ);
@@ -490,7 +491,7 @@ void ASSAORenderer::AddAOBlurPass(AFrameGraph& FrameGraph, FGTextureProxy* SSAOT
     aoBlurYPass.SetColorAttachment(
         STextureAttachment("Blured SSAO Texture",
                            STextureDesc()
-                               .SetFormat(TEXTURE_FORMAT_R8)
+                               .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                .SetResolution(STextureResolution2D(AOWidth, AOHeight)))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
     aoBlurYPass.AddResource(TempSSAOTextureBlurX, FG_RESOURCE_ACCESS_READ);

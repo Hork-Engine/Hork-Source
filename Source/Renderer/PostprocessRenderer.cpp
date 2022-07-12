@@ -120,7 +120,7 @@ void APostprocessRenderer::AddPass( AFrameGraph & FrameGraph,
     renderPass.SetColorAttachment(
         STextureAttachment("Postprocess texture",
                            STextureDesc()
-                               .SetFormat(RenderCore::TEXTURE_FORMAT_RGBA16F)
+                               .SetFormat(TEXTURE_FORMAT_RGBA16_FLOAT)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 

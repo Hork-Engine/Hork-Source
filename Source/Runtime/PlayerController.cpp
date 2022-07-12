@@ -174,7 +174,7 @@ void APlayerController::TakeScreenshot()
                 AFileStream f;
                 if (f.OpenWrite(HK_FORMAT("screenshots/{}.png", n++)))
                 {
-                    WritePNG(f, w, h, 4, p, w * 4);
+                    WritePNG(f, w, h, 4, p);
                 }
                 Platform::GetHeapAllocator<HEAP_TEMP>().Free(p);
             }
@@ -301,12 +301,13 @@ ARenderingParameters::ARenderingParameters()
         }
         dataInit = true;
     }
-
-    CurrentColorGradingLUT = CreateInstanceOf<ATexture>(STexture3D{}, TEXTURE_PF_BGRA16F, 1, 16, 16, 16);
+    
+    CurrentColorGradingLUT = ATexture::Create3D(TEXTURE_FORMAT_RGBA16_FLOAT, 1, 16, 16, 16); // FIXME: bgra
     CurrentColorGradingLUT->WriteTextureData3D(0, 0, 0, 16, 16, 16, 0, data);
 
     const float initialExposure[2] = {30.0f / 255.0f, 30.0f / 255.0f};
-    CurrentExposure                = CreateInstanceOf<ATexture>(STexture2D{}, TEXTURE_PF_RG32F, 1, 1, 1);
+
+    CurrentExposure = ATexture::Create2D(TEXTURE_FORMAT_RG32_FLOAT, 1, 1, 1);
     CurrentExposure->WriteTextureData2D(0, 0, 1, 1, 0, initialExposure);
 
     SetColorGradingDefaults();

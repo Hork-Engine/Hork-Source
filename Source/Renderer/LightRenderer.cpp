@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
-AConsoleVar r_LightTextureFormat("r_LightTextureFormat"s, "0"s, 0, "0 - R11F_G11F_B10F, 1 - RGB16F"s);
+AConsoleVar r_LightTextureFormat("r_LightTextureFormat"s, "0"s, 0, "0 - R11F_G11F_B10F, 1 - RGBA16F"s);
 
 using namespace RenderCore;
 
@@ -178,7 +178,7 @@ void ALightRenderer::CreateLookupBRDF()
     }
 
     GDevice->CreateTexture(RenderCore::STextureDesc{}
-                               .SetFormat(RenderCore::TEXTURE_FORMAT_RG16F)
+                               .SetFormat(RenderCore::TEXTURE_FORMAT_RG16_FLOAT)
                                .SetResolution(STextureResolution2D(sizeX, sizeY))
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &LookupBRDF);
@@ -292,15 +292,15 @@ void ALightRenderer::AddPass(AFrameGraph&     FrameGraph,
     FGTextureProxy*    ReflectionColor_R     = FrameGraph.AddExternalResource<FGTextureProxy>("Reflection color texture", GRenderView->LightTexture);
     FGTextureProxy*    ReflectionDepth_R     = FrameGraph.AddExternalResource<FGTextureProxy>("Reflection depth texture", GRenderView->DepthTexture);
 
-    RenderCore::TEXTURE_FORMAT pf;
+    TEXTURE_FORMAT pf;
     switch (r_LightTextureFormat)
     {
         case 0:
-            // Pretty good. No significant visual difference between TEXTURE_FORMAT_RGB16F.
-            pf = TEXTURE_FORMAT_R11F_G11F_B10F;
+            // Pretty good. No significant visual difference between TEXTURE_FORMAT_RGBA16_FLOAT.
+            pf = TEXTURE_FORMAT_R11G11B10_FLOAT;
             break;
         default:
-            pf = TEXTURE_FORMAT_RGB16F;
+            pf = TEXTURE_FORMAT_RGBA16_FLOAT;
             break;
     }
 

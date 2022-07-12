@@ -51,7 +51,7 @@ void ABRDFGenerator::Render(TRef<RenderCore::ITexture>* ppTexture)
     pass.SetColorAttachments(
         {{STextureAttachment("Render target texture",
                              STextureDesc{}
-                                 .SetFormat(TEXTURE_FORMAT_RG16F)
+                                 .SetFormat(TEXTURE_FORMAT_RG16_FLOAT)
                                  .SetResolution(STextureResolution2D(BRDF_TEXTURE_WIDTH, BRDF_TEXTURE_HEIGHT))
                                  .SetBindFlags(BIND_SHADER_RESOURCE))
               .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE)}});

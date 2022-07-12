@@ -79,17 +79,17 @@ void ASmaaRenderer::CreateTextures()
 
     GDevice->CreateTexture(STextureDesc()
                                .SetResolution(STextureResolution2D(AREATEX_WIDTH, AREATEX_HEIGHT))
-                               .SetFormat(TEXTURE_FORMAT_RG8)
+                               .SetFormat(TEXTURE_FORMAT_RG8_UNORM)
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &AreaTex);
-    AreaTex->Write(0, FORMAT_UBYTE2, sizeof(areaTexBytes), 1, areaTexBytes);
+    AreaTex->Write(0, sizeof(areaTexBytes), 1, areaTexBytes);
 
     GDevice->CreateTexture(STextureDesc()
                                .SetResolution(STextureResolution2D(SEARCHTEX_WIDTH, SEARCHTEX_HEIGHT))
-                               .SetFormat(TEXTURE_FORMAT_R8)
+                               .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &SearchTex);
-    SearchTex->Write(0, FORMAT_UBYTE1, sizeof(searchTexBytes), 1, searchTexBytes);
+    SearchTex->Write(0, sizeof(searchTexBytes), 1, searchTexBytes);
 }
 
 void ASmaaRenderer::AddPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SourceTexture, RenderCore::FGTextureProxy** ppResultTexture)
@@ -117,7 +117,7 @@ void ASmaaRenderer::EdgeDetectionPass(AFrameGraph& FrameGraph, FGTextureProxy* S
     renderPass.SetColorAttachment(
         STextureAttachment("SMAA edge texture",
                            STextureDesc()
-                               .SetFormat(RenderCore::TEXTURE_FORMAT_RGBA8)
+                               .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR));
 
@@ -142,7 +142,7 @@ void ASmaaRenderer::BlendingWeightCalculationPass(AFrameGraph& FrameGraph, FGTex
     renderPass.SetColorAttachment(
         STextureAttachment("SMAA blend texture",
                            STextureDesc()
-                               .SetFormat(RenderCore::TEXTURE_FORMAT_RGBA8)
+                               .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR));
 
@@ -170,7 +170,7 @@ void ASmaaRenderer::NeighborhoodBlendingPass(AFrameGraph& FrameGraph, FGTextureP
     renderPass.SetColorAttachment(
         STextureAttachment("SMAA result texture",
                            STextureDesc()
-                               .SetFormat(RenderCore::TEXTURE_FORMAT_R11F_G11F_B10F/*TEXTURE_FORMAT_RGBA8*/)
+                               .SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT/*TEXTURE_FORMAT_RGBA8_UNORM*/)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 

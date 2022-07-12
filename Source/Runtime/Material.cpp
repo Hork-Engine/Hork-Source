@@ -121,7 +121,7 @@ bool AMaterial::LoadResource(IBinaryStreamReadInterface& Stream)
     Def.NumSamplers       = Stream.ReadUInt8();
     for (int i = 0; i < Def.NumSamplers; i++)
     {
-        Def.Samplers[i].TextureType = (ETextureType)Stream.ReadUInt8();
+        Def.Samplers[i].TextureType = (TEXTURE_TYPE)Stream.ReadUInt8();
         Def.Samplers[i].Filter      = (ETextureFilter)Stream.ReadUInt8();
         Def.Samplers[i].AddressU    = (ETextureAddress)Stream.ReadUInt8();
         Def.Samplers[i].AddressV    = (ETextureAddress)Stream.ReadUInt8();
@@ -539,6 +539,7 @@ void AMaterial::LoadInternalResource(AStringView _Path)
         graph->Blending     = COLOR_BLENDING_ALPHA;
         graph->bTranslucent = true;
         graph->bTwoSided    = true;
+
         graph->RegisterTextureSlot(diffuseTexture);
         graph->RegisterTextureSlot(metallicRoughnessTexture);
         graph->RegisterTextureSlot(normalTexture);
@@ -871,7 +872,7 @@ void AMaterial::LoadInternalResource(AStringView _Path)
         MGInPosition* inPosition = graph->AddNode<MGInPosition>();
 
         MGTextureSlot* cubemapTexture           = graph->AddNode<MGTextureSlot>();
-        cubemapTexture->SamplerDesc.TextureType = TEXTURE_CUBEMAP;
+        cubemapTexture->SamplerDesc.TextureType = TEXTURE_CUBE;
         cubemapTexture->SamplerDesc.Filter      = TEXTURE_FILTER_LINEAR;
         cubemapTexture->SamplerDesc.AddressU =
             cubemapTexture->SamplerDesc.AddressV =

@@ -400,28 +400,24 @@ public:
 
     void ReadTexture(ITexture*    pTexture,
                      uint16_t     MipLevel,
-                     DATA_FORMAT  Format,
                      size_t       SizeInBytes,
                      unsigned int Alignment,
                      void*        pSysMem) override;
 
     void ReadTextureRect(ITexture*           pTexture,
                          STextureRect const& Rectangle,
-                         DATA_FORMAT         Format,
                          size_t              SizeInBytes,
                          unsigned int        Alignment,
                          void*               pSysMem) override;
 
     bool WriteTexture(ITexture*    pTexture,
                       uint16_t     MipLevel,
-                      DATA_FORMAT  Format,
                       size_t       SizeInBytes,
                       unsigned int Alignment,
                       const void*  pSysMem) override;
 
     bool WriteTextureRect(ITexture*           pTexture,
                           STextureRect const& Rectangle,
-                          DATA_FORMAT         Format,
                           size_t              SizeInBytes,
                           unsigned int        Alignment,
                           const void*         pSysMem) override;

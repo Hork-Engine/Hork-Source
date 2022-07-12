@@ -30,160 +30,461 @@ SOFTWARE.
 
 #pragma once
 
-#include "IO.h"
+#include "RawImage.h"
 
-enum EMipmapEdgeMode
+#include <Containers/Array.h>
+
+enum TEXTURE_TYPE
 {
-    MIPMAP_EDGE_CLAMP   = 1,
-    MIPMAP_EDGE_REFLECT = 2,
-    MIPMAP_EDGE_WRAP    = 3,
-    MIPMAP_EDGE_ZERO    = 4,
+    TEXTURE_1D,
+    TEXTURE_1D_ARRAY,
+    TEXTURE_2D,
+    TEXTURE_2D_ARRAY,
+    TEXTURE_3D,
+    TEXTURE_CUBE,
+    TEXTURE_CUBE_ARRAY,
+
+    TEXTURE_TYPE_MAX
 };
 
-enum EMipmapFilter
+enum TEXTURE_FORMAT : uint8_t
 {
-    /** A trapezoid w/1-pixel wide ramps, same result as box for integer scale ratios */
-    MIPMAP_FILTER_BOX = 1,
-    /** On upsampling, produces same results as bilinear texture filtering */
-    MIPMAP_FILTER_TRIANGLE = 2,
-    /** The cubic b-spline (aka Mitchell-Netrevalli with B=1,C=0), gaussian-esque */
-    MIPMAP_FILTER_CUBICBSPLINE = 3,
-    /** An interpolating cubic spline */
-    MIPMAP_FILTER_CATMULLROM = 4,
-    /** Mitchell-Netrevalli filter with B=1/3, C=1/3 */
-    MIPMAP_FILTER_MITCHELL = 5
+    TEXTURE_FORMAT_UNDEFINED,
+
+    TEXTURE_FORMAT_R8_UINT,
+    TEXTURE_FORMAT_R8_SINT,
+    TEXTURE_FORMAT_R8_UNORM,
+    TEXTURE_FORMAT_R8_SNORM,
+
+    TEXTURE_FORMAT_RG8_UINT,
+    TEXTURE_FORMAT_RG8_SINT,
+    TEXTURE_FORMAT_RG8_UNORM,
+    TEXTURE_FORMAT_RG8_SNORM,
+
+    TEXTURE_FORMAT_R16_UINT,
+    TEXTURE_FORMAT_R16_SINT,
+    TEXTURE_FORMAT_R16_UNORM,
+    TEXTURE_FORMAT_R16_SNORM,
+    TEXTURE_FORMAT_R16_FLOAT,
+
+    TEXTURE_FORMAT_BGRA4_UNORM,
+    TEXTURE_FORMAT_B5G6R5_UNORM,
+    TEXTURE_FORMAT_B5G5R5A1_UNORM,
+
+    TEXTURE_FORMAT_RGBA8_UINT,
+    TEXTURE_FORMAT_RGBA8_SINT,
+    TEXTURE_FORMAT_RGBA8_UNORM,
+    TEXTURE_FORMAT_RGBA8_SNORM,
+    TEXTURE_FORMAT_BGRA8_UNORM,
+    TEXTURE_FORMAT_SRGBA8_UNORM,
+    TEXTURE_FORMAT_SBGRA8_UNORM,
+
+    TEXTURE_FORMAT_R10G10B10A2_UNORM,
+
+    TEXTURE_FORMAT_R11G11B10_FLOAT,
+
+    TEXTURE_FORMAT_RG16_UINT,
+    TEXTURE_FORMAT_RG16_SINT,
+    TEXTURE_FORMAT_RG16_UNORM,
+    TEXTURE_FORMAT_RG16_SNORM,
+    TEXTURE_FORMAT_RG16_FLOAT,
+
+    TEXTURE_FORMAT_R32_UINT,
+    TEXTURE_FORMAT_R32_SINT,
+    TEXTURE_FORMAT_R32_FLOAT,
+
+    TEXTURE_FORMAT_RGBA16_UINT,
+    TEXTURE_FORMAT_RGBA16_SINT,
+    TEXTURE_FORMAT_RGBA16_FLOAT,
+    TEXTURE_FORMAT_RGBA16_UNORM,
+    TEXTURE_FORMAT_RGBA16_SNORM,
+
+    TEXTURE_FORMAT_RG32_UINT,
+    TEXTURE_FORMAT_RG32_SINT,
+    TEXTURE_FORMAT_RG32_FLOAT,
+    TEXTURE_FORMAT_RGB32_UINT,
+    TEXTURE_FORMAT_RGB32_SINT,
+    TEXTURE_FORMAT_RGB32_FLOAT,
+    TEXTURE_FORMAT_RGBA32_UINT,
+    TEXTURE_FORMAT_RGBA32_SINT,
+    TEXTURE_FORMAT_RGBA32_FLOAT,
+
+    TEXTURE_FORMAT_D16,
+    TEXTURE_FORMAT_D24S8,
+    TEXTURE_FORMAT_X24G8_UINT,
+    TEXTURE_FORMAT_D32,
+    TEXTURE_FORMAT_D32S8,
+    TEXTURE_FORMAT_X32G8_UINT,
+
+    // RGB
+    TEXTURE_FORMAT_BC1_UNORM,
+    TEXTURE_FORMAT_BC1_UNORM_SRGB,
+
+    // RGB A-4bit / RGB (not the best quality, it is better to use BC3)
+    TEXTURE_FORMAT_BC2_UNORM,
+    TEXTURE_FORMAT_BC2_UNORM_SRGB,
+
+    // RGB A-8bit
+    TEXTURE_FORMAT_BC3_UNORM,
+    TEXTURE_FORMAT_BC3_UNORM_SRGB,
+
+    // R single channel texture (use for metalmap, glossmap, etc)
+    TEXTURE_FORMAT_BC4_UNORM,
+    TEXTURE_FORMAT_BC4_SNORM,
+
+    // RG two channel texture (use for normal map or two grayscale maps)
+    TEXTURE_FORMAT_BC5_UNORM,
+    TEXTURE_FORMAT_BC5_SNORM,
+
+    // RGB half float HDR
+    TEXTURE_FORMAT_BC6H_UFLOAT,
+    TEXTURE_FORMAT_BC6H_SFLOAT,
+
+    // RGB[A], best quality, every block is compressed different
+    TEXTURE_FORMAT_BC7_UNORM,
+    TEXTURE_FORMAT_BC7_UNORM_SRGB,
+
+    TEXTURE_FORMAT_MAX,
 };
 
-/** Software mipmap generator */
-struct SSoftwareMipmapGenerator
+enum TEXTURE_FORMAT_KIND : uint8_t
 {
-    const void*     SourceImage         = nullptr;
-    int             Width               = 0;
-    int             Height              = 0;
-    int             NumChannels         = 0;
-    int             AlphaChannel        = -1;
-    EMipmapEdgeMode EdgeMode            = MIPMAP_EDGE_WRAP;
-    EMipmapFilter   Filter              = MIPMAP_FILTER_MITCHELL;
-    bool            bLinearSpace        = false;
-    bool            bPremultipliedAlpha = false;
-    bool            bHDRI               = false;
+    TEXTURE_FORMAT_KIND_INTEGER,
+    TEXTURE_FORMAT_KIND_NORMALIZED,
+    TEXTURE_FORMAT_KIND_FLOAT,
+    TEXTURE_FORMAT_KIND_DEPTHSTENCIL
 };
 
-struct SImageMipmapConfig
+enum IMAGE_DATA_TYPE : uint8_t
 {
-    EMipmapEdgeMode EdgeMode            = MIPMAP_EDGE_WRAP;
-    EMipmapFilter   Filter              = MIPMAP_FILTER_MITCHELL;
-    bool            bPremultipliedAlpha = false;
+    IMAGE_DATA_TYPE_UNKNOWN,
+    IMAGE_DATA_TYPE_UINT8,
+    IMAGE_DATA_TYPE_UINT16,
+    IMAGE_DATA_TYPE_UINT32,
+    IMAGE_DATA_TYPE_FLOAT,
+    IMAGE_DATA_TYPE_HALF,
+    IMAGE_DATA_TYPE_ENCODED_R4G4B4A4,
+    IMAGE_DATA_TYPE_ENCODED_R5G6B5,
+    IMAGE_DATA_TYPE_ENCODED_R5G5B5A1,
+    IMAGE_DATA_TYPE_ENCODED_R10G10B10A2,
+    IMAGE_DATA_TYPE_ENCODED_R11G11B10F,
+    IMAGE_DATA_TYPE_ENCODED_DEPTH,
+    IMAGE_DATA_TYPE_COMPRESSED
 };
 
-enum EImagePixelFormat
+struct TextureFormatInfo
 {
-    IMAGE_PF_AUTO,
-    IMAGE_PF_AUTO_GAMMA2,
-    IMAGE_PF_AUTO_16F,
-    IMAGE_PF_AUTO_32F,
-    IMAGE_PF_R,
-    IMAGE_PF_R16F,
-    IMAGE_PF_R32F,
-    IMAGE_PF_RG,
-    IMAGE_PF_RG16F,
-    IMAGE_PF_RG32F,
-    //IMAGE_PF_RGB,
-    //IMAGE_PF_RGB_GAMMA2,
-    //IMAGE_PF_RGB16F,
-    IMAGE_PF_RGB32F,
-    IMAGE_PF_RGBA,
-    IMAGE_PF_RGBA_GAMMA2,
-    IMAGE_PF_RGBA16F,
-    IMAGE_PF_RGBA32F,
-    //IMAGE_PF_BGR,
-    //IMAGE_PF_BGR_GAMMA2,
-    //IMAGE_PF_BGR16F,
-    IMAGE_PF_BGR32F,
-    IMAGE_PF_BGRA,
-    IMAGE_PF_BGRA_GAMMA2,
-    IMAGE_PF_BGRA16F,
-    IMAGE_PF_BGRA32F
+    TEXTURE_FORMAT      Format;
+    const char*         Name;
+    uint8_t             BytesPerBlock;
+    uint8_t             BlockSize;
+    TEXTURE_FORMAT_KIND Kind;
+    IMAGE_DATA_TYPE     DataType;
+    bool                bHasRed : 1;
+    bool                bHasGreen : 1;
+    bool                bHasBlue : 1;
+    bool                bHasAlpha : 1;
+    bool                bHasDepth : 1;
+    bool                bHasStencil : 1;
+    bool                bSigned : 1;
+    bool                bSRGB : 1;
 };
 
-/** Image loader */
-class AImage
+TextureFormatInfo const& GetTextureFormatInfo(TEXTURE_FORMAT Format);
+
+HK_FORCEINLINE bool IsCompressedFormat(TEXTURE_FORMAT Format)
+{
+    return Format >= TEXTURE_FORMAT_BC1_UNORM && Format <= TEXTURE_FORMAT_BC7_UNORM_SRGB;
+}
+
+HK_FORCEINLINE bool IsDepthStencilFormat(TEXTURE_FORMAT Format)
+{
+    auto& info = GetTextureFormatInfo(Format);
+    return info.bHasDepth || info.bHasStencil;
+}
+
+enum IMAGE_STORAGE_FLAGS
+{
+    IMAGE_STORAGE_FLAGS_DEFAULT       = 0,
+    IMAGE_STORAGE_NO_ALPHA            = 1,
+    IMAGE_STORAGE_ALPHA_PREMULTIPLIED = 2,
+};
+
+HK_FLAG_ENUM_OPERATORS(IMAGE_STORAGE_FLAGS)
+
+struct ImageStorageDesc
+{
+    TEXTURE_TYPE Type{TEXTURE_2D};
+    uint32_t     Width{1};
+    uint32_t     Height{1};
+    union
+    {
+        uint32_t Depth{1};
+        uint32_t SliceCount;
+    };
+    uint32_t NumMipmaps{1};
+
+    TEXTURE_FORMAT Format{TEXTURE_FORMAT_UNDEFINED};
+
+    IMAGE_STORAGE_FLAGS Flags{IMAGE_STORAGE_FLAGS_DEFAULT};
+};
+
+struct ImageViewDesc
+{
+    uint32_t FirstSlice{};
+    uint32_t SliceCount{};
+    uint32_t MipmapIndex{};
+};
+
+class ImageSubresource
 {
 public:
-    AImage();
-    ~AImage();
+    ImageSubresource() = default;
 
-    AImage(AImage&& Rhs) noexcept
+    uint8_t* operator[](size_t SliceNum)
     {
-        pRawData     = Rhs.pRawData;
-        Width        = Rhs.Width;
-        Height       = Rhs.Height;
-        NumMipLevels = Rhs.NumMipLevels;
-        PixelFormat  = Rhs.PixelFormat;
-
-        Rhs.pRawData = nullptr;
-        Rhs.Width = 0;
-        Rhs.Height = 0;
-        Rhs.NumMipLevels = 0;
-        Rhs.PixelFormat = IMAGE_PF_AUTO_GAMMA2;
+        HK_ASSERT(SliceNum < m_Desc.SliceCount);
+        return m_pData + SliceNum * m_SliceStride;
     }
 
-    AImage& operator=(AImage&& Rhs) noexcept
+    uint8_t const* operator[](size_t SliceNum) const
     {
-        Free();
+        HK_ASSERT(SliceNum < m_Desc.SliceCount);
+        return m_pData + SliceNum * m_SliceStride;
+    }
 
-        pRawData     = Rhs.pRawData;
-        Width        = Rhs.Width;
-        Height       = Rhs.Height;
-        NumMipLevels = Rhs.NumMipLevels;
-        PixelFormat  = Rhs.PixelFormat;
+    operator bool() const
+    {
+        return m_SizeInBytes != 0;
+    }
 
-        Rhs.pRawData     = nullptr;
-        Rhs.Width        = 0;
-        Rhs.Height       = 0;
-        Rhs.NumMipLevels = 0;
-        Rhs.PixelFormat  = IMAGE_PF_AUTO_GAMMA2;
+    ImageViewDesc const& GetDesc() const { return m_Desc; }
+
+    void* GetData()
+    {
+        return m_pData;
+    }
+
+    void const* GetData() const
+    {
+        return m_pData;
+    }
+
+    size_t GetSizeInBytes() const
+    {
+        return m_SizeInBytes;
+    }
+
+    size_t GetSliceStide() const
+    {
+        return m_SliceStride;
+    }
+
+    uint32_t GetWidth() const
+    {
+        return m_Width;
+    }
+
+    uint32_t GetHeight() const
+    {
+        return m_Height;
+    }
+
+    bool Write(uint32_t X, uint32_t Y, uint32_t Width, uint32_t Height, void const* Bytes);
+
+    bool Read(uint32_t X, uint32_t Y, uint32_t Width, uint32_t Height, void* Bytes, size_t _SizeInBytes) const;
+
+    bool IsCompressed() const
+    {
+        return IsCompressedFormat(m_Format);
+    }
+
+    int NumChannels() const;
+
+    size_t GetBytesPerPixel() const;
+
+    size_t GetBlockSizeInBytes() const;
+
+    IMAGE_DATA_TYPE GetDataType() const;
+
+private:
+    ImageViewDesc  m_Desc;
+    uint8_t*       m_pData{};
+    size_t         m_SizeInBytes{};
+    size_t         m_SliceStride{};
+    uint32_t       m_Width{};
+    uint32_t       m_Height{};
+    TEXTURE_FORMAT m_Format{TEXTURE_FORMAT_UNDEFINED};
+
+    friend class ImageStorage;
+};
+
+struct TextureOffset
+{
+    uint32_t X{};
+    uint32_t Y{};
+    uint32_t Z{};
+    uint32_t MipLevel{};
+};
+
+/** Resampling edge mode for 2D/Array textures. */
+enum IMAGE_RESAMPLE_EDGE_MODE
+{
+    IMAGE_RESAMPLE_EDGE_CLAMP     = 1,
+    IMAGE_RESAMPLE_EDGE_REFLECT = 2,
+    IMAGE_RESAMPLE_EDGE_WRAP    = 3,
+    IMAGE_RESAMPLE_EDGE_ZERO    = 4,
+};
+
+/** Resampling filter for 2D/Array textures. */
+enum IMAGE_RESAMPLE_FILTER
+{
+    /** A trapezoid w/1-pixel wide ramps, same result as box for integer scale ratios */
+    IMAGE_RESAMPLE_FILTER_BOX = 1,
+    /** On upsampling, produces same results as bilinear texture filtering */
+    IMAGE_RESAMPLE_FILTER_TRIANGLE = 2,
+    /** The cubic b-spline (aka Mitchell-Netrevalli with B=1,C=0), gaussian-esque */
+    IMAGE_RESAMPLE_FILTER_CUBICBSPLINE = 3,
+    /** An interpolating cubic spline */
+    IMAGE_RESAMPLE_FILTER_CATMULLROM = 4,
+    /** Mitchell-Netrevalli filter with B=1/3, C=1/3 */
+    IMAGE_RESAMPLE_FILTER_MITCHELL = 5
+};
+
+/** Resampling filter for 3D textures (Not yet implemented. Reserved for future.) */
+enum IMAGE_RESAMPLE_FILTER_3D
+{
+    IMAGE_RESAMPLE_FILTER_3D_AVERAGE = 1,
+    IMAGE_RESAMPLE_FILTER_3D_MIN     = 2,
+    IMAGE_RESAMPLE_FILTER_3D_MAX     = 3,
+};
+
+struct ImageMipmapConfig
+{
+    /** Resampling edge mode for 2D/Array textures. */
+    IMAGE_RESAMPLE_EDGE_MODE EdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
+
+    /** Resampling filter for 2D/Array textures. */
+    IMAGE_RESAMPLE_FILTER    Filter   = IMAGE_RESAMPLE_FILTER_MITCHELL;
+
+    /** Resampling filter for 3D textures (Not yet implemented. Reserved for future.) */
+    IMAGE_RESAMPLE_FILTER_3D Filter3D = IMAGE_RESAMPLE_FILTER_3D_AVERAGE;
+};
+
+class ImageStorage
+{
+public:
+    ImageStorage() = default;
+
+    ImageStorage(ImageStorageDesc const& _Desc)
+    {
+        Reset(_Desc);
+    }
+
+    virtual ~ImageStorage()
+    {
+        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(m_pData);
+    }
+
+    ImageStorage(ImageStorage const& Rhs) = delete;
+    ImageStorage& operator=(ImageStorage const& Rhs) = delete;
+
+    ImageStorage(ImageStorage&& Rhs)
+    {
+        m_pData       = Rhs.m_pData;
+        m_SizeInBytes = Rhs.m_SizeInBytes;
+        m_Desc        = std::move(Rhs.m_Desc);
+
+        Rhs.m_pData       = nullptr;
+        Rhs.m_SizeInBytes = 0;
+    }
+
+    ImageStorage& operator=(ImageStorage&& Rhs)
+    {
+        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(m_pData);
+
+        m_pData       = Rhs.m_pData;
+        m_SizeInBytes = Rhs.m_SizeInBytes;
+        m_Desc        = std::move(Rhs.m_Desc);
+
+        Rhs.m_pData       = nullptr;
+        Rhs.m_SizeInBytes = 0;
 
         return *this;
     }
 
-    bool Load(AStringView _Path, SImageMipmapConfig const* _MipmapGen = nullptr, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2);
-    bool Load(IBinaryStreamReadInterface& _Stream, SImageMipmapConfig const* _MipmapGen = nullptr, EImagePixelFormat _PixelFormat = IMAGE_PF_AUTO_GAMMA2);
-
-    /** Source data must be float* or byte* according to specified pixel format */
-    void FromRawData(const void* _Source, int _Width, int _Height, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat);
-
-    void Free();
-
-    bool IsValid() const
+    void Swap(ImageStorage& Rhs)
     {
-        return pRawData != nullptr;
+        ImageStorage temp = std::move(Rhs);
+        Rhs               = std::move(*this);
+        *this             = std::move(temp);
     }
 
-    void*             GetData() const { return pRawData; }
-    int               GetWidth() const { return Width; }
-    int               GetHeight() const { return Height; }
-    int               GetNumMipLevels() const { return NumMipLevels; }
-    EImagePixelFormat GetPixelFormat() const { return PixelFormat; }
+    void Reset(ImageStorageDesc const& _Desc);
 
-    /** Flip image horizontally */
-    void FlipX();
+    void Reset();
 
-    /** Flip image vertically */
-    void FlipY();
+    bool WriteSubresource(TextureOffset const& Offset, uint32_t Width, uint32_t Height, void const* Bytes);
 
-    int GetBytesPerPixel() const;
-    int GetBytesPerChannel() const;
-    int GetNumChannels() const;
+    bool ReadSubresource(TextureOffset const& Offset, uint32_t Width, uint32_t Height, void* Bytes, size_t _SizeInBytes) const;
+
+    ImageSubresource GetSubresource(ImageViewDesc const& ViewDesc) const;
+
+    void* GetData()
+    {
+        return m_pData;
+    }
+
+    void const* GetData() const
+    {
+        return m_pData;
+    }
+
+    size_t GetSizeInBytes() const
+    {
+        return m_SizeInBytes;
+    }
+
+    bool IsEmpty() const
+    {
+        return m_SizeInBytes == 0;
+    }
+
+    operator bool() const
+    {
+        return m_SizeInBytes != 0;
+    }
+
+    ImageStorageDesc const& GetDesc() const
+    {
+        return m_Desc;
+    }
+
+    bool IsCompressed() const
+    {
+        return IsCompressedFormat(m_Desc.Format);
+    }
+
+    int NumChannels() const;
+
+    size_t GetBytesPerPixel() const;
+
+    size_t GetBlockSizeInBytes() const;
+
+    IMAGE_DATA_TYPE GetDataType() const;
+
+    bool GenerateMipmaps(uint32_t SliceIndex, ImageMipmapConfig const& MipmapConfig);
+    bool GenerateMipmaps(ImageMipmapConfig const& MipmapConfig);
+
+    void Write(IBinaryStreamWriteInterface& stream) const;
+    void Read(IBinaryStreamReadInterface& stream);
 
 private:
-    void FromRawData(const void* _Source, int _Width, int _Height, SImageMipmapConfig const* _MipmapGen, EImagePixelFormat _PixelFormat, bool bReuseSourceBuffer);
+    bool GenerateMipmaps3D(ImageMipmapConfig const& MipmapConfig);
 
-    void*             pRawData{};
-    int               Width{};
-    int               Height{};
-    int               NumMipLevels{};
-    EImagePixelFormat PixelFormat{IMAGE_PF_AUTO_GAMMA2};
+    uint8_t*         m_pData;
+    size_t           m_SizeInBytes;
+    ImageStorageDesc m_Desc;
 };
 
 /*
@@ -192,93 +493,59 @@ Utilites
 
 */
 
-AImage LoadImage(AStringView Path, SImageMipmapConfig const* MipmapGen = nullptr, EImagePixelFormat PixelFormat = IMAGE_PF_AUTO_GAMMA2);
-AImage LoadImage(IBinaryStreamReadInterface& Stream, SImageMipmapConfig const* MipmapGen = nullptr, EImagePixelFormat PixelFormat = IMAGE_PF_AUTO_GAMMA2);
-
-/** Source data must be float* or byte* according to specified pixel format */
-AImage CreateImage(const void* Source, int Width, int Height, SImageMipmapConfig const* MipmapGen, EImagePixelFormat PixelFormat);
-
-/** Flip image horizontally */
-void FlipImageX(void* _ImageData, int _Width, int _Height, int _BytesPerPixel, int _BytesPerLine);
-
-/** Flip image vertically */
-void FlipImageY(void* _ImageData, int _Width, int _Height, int _BytesPerPixel, int _BytesPerLine);
-
-/** Convert linear image to premultiplied alpha sRGB */
-void LinearToPremultipliedAlphaSRGB(const float* SourceImage,
-                                    int          Width,
-                                    int          Height,
-                                    bool         bOverbright,
-                                    float        fOverbright,
-                                    bool         bReplaceAlpha,
-                                    float        fReplaceAlpha,
-                                    byte*        sRGB);
-
-enum EImageDataType
-{
-    IMAGE_DATA_TYPE_UINT8,
-    IMAGE_DATA_TYPE_UINT16,
-    IMAGE_DATA_TYPE_UINT32,
-    IMAGE_DATA_TYPE_FLOAT
-};
-
-struct SImageResizeDesc
+struct ImageResampleParams
 {
     /** Source image */
     const void* pImage;
+    /** Data format */
+    TEXTURE_FORMAT Format;
     /** Source image width */
-    int Width;
+    uint32_t Width;
     /** Source image height */
-    int Height;
-    /** Source image channels count*/
-    int NumChannels;
+    uint32_t Height;
     /** Source image alpha channel index. Use -1 if image has no alpha channel. */
     int AlphaChannel;
-    /** Image data type */
-    EImageDataType DataType;
     /** Set this flag if your image has premultiplied alpha. Otherwise, will be
     used alpha-weighted resampling (effectively premultiplying, resampling, then unpremultiplying). */
     bool bPremultipliedAlpha;
-    /** Is your image in linear color space or sRGB. */
-    bool bLinearSpace;
     /** Scaling edge mode for horizontal axis */
-    EMipmapEdgeMode HorizontalEdgeMode;
+    IMAGE_RESAMPLE_EDGE_MODE HorizontalEdgeMode;
     /** Scaling edge mode for vertical axis */
-    EMipmapEdgeMode VerticalEdgeMode;
+    IMAGE_RESAMPLE_EDGE_MODE VerticalEdgeMode;
     /** Scaling filter for horizontal axis */
-    EMipmapFilter HorizontalFilter;
+    IMAGE_RESAMPLE_FILTER HorizontalFilter;
     /** Scaling filter for vertical axis */
-    EMipmapFilter VerticalFilter;
+    IMAGE_RESAMPLE_FILTER VerticalFilter;
     /** Scaled image width */
-    int ScaledWidth;
+    uint32_t ScaledWidth;
     /** Scaled image height */
-    int ScaledHeight;
+    uint32_t ScaledHeight;
 };
 
-/** Scale image */
-void ResizeImage(SImageResizeDesc const& InDesc, void* pScaledImage);
+/** Scale image. */
+bool ResampleImage(ImageResampleParams const& Desc, void* pDest);
 
-/** Calculate required size in bytes for mipmapped image */
-void ComputeRequiredMemorySize(SSoftwareMipmapGenerator const& _Config, int& _RequiredMemory, int& _NumMipLevels);
+/** Create image storage from raw image */
+ImageStorage CreateImage(ARawImage const& rawImage, bool bConvertHDRIToHalfFloat, ImageMipmapConfig const* pMipmapConfig = nullptr, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT);
 
-/** Generate image mipmaps */
-void GenerateMipmaps(SSoftwareMipmapGenerator const& _Config, void* _Data);
+/** Create image storage from file */
+ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig const* pMipmapConfig = nullptr, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, TEXTURE_FORMAT Format = TEXTURE_FORMAT_UNDEFINED);
 
-/** Write image in PNG format */
-bool WritePNG(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _BytesPerLine);
+/** Create image storage from file */
+ImageStorage CreateImage(AStringView FileName, ImageMipmapConfig const* pMipmapConfig = nullptr, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, TEXTURE_FORMAT Format = TEXTURE_FORMAT_UNDEFINED);
 
-/** Write image in BMP format */
-bool WriteBMP(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData);
+struct SkyboxImportSettings
+{
+    /** Source files for skybox */
+    TArray<AString, 6> Faces;
 
-/** Write image in TGA format */
-bool WriteTGA(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData);
+    /** Import skybox as HDRI image */
+    bool bHDRI{false};
 
-/**
-Write image in JPG format.
-JPEG does ignore alpha channels in input data; quality is between 1 and 100.
-Higher quality looks better but results in a bigger image.
-*/
-bool WriteJPG(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const void* _ImageData, int _Quality);
+    float HDRIScale{1};
+    float HDRIPow{1};
+};
 
-/** Write image in HDR format */
-bool WriteHDR(IBinaryStreamWriteInterface& _Stream, int _Width, int _Height, int _NumChannels, const float* _ImageData);
+ImageStorage LoadSkyboxImages(SkyboxImportSettings const& ImportSettings);
+
+uint32_t CalcNumMips(TEXTURE_FORMAT Format, uint32_t Width, uint32_t Height, uint32_t Depth = 1);

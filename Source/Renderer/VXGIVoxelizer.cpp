@@ -33,7 +33,7 @@ SOFTWARE.
 
 using namespace RenderCore;
 
-static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_RGB16F; // TODO: try compression
+static const TEXTURE_FORMAT TEX_FORMAT_SKY = TEXTURE_FORMAT_RGBA16_FLOAT; // TODO: try compression
 
 #define MAX_MIP_MAP_LEVELS 9
 #define MAX_VOXEL_RES 512
@@ -49,10 +49,10 @@ VXGIVoxelizer::VXGIVoxelizer() {
     framebufferCI.Height = VoxGridSize;
     GDevice->CreateFramebuffer( framebufferCI, &voxelFBO );
 
-    GDevice->CreateTexture( MakeTexture( TEXTURE_FORMAT_R32UI, STextureResolution2DArray( VoxGridSize, VoxGridSize, 3 ) ), &voxel2DTex );
+    GDevice->CreateTexture( MakeTexture( TEXTURE_FORMAT_R32_UINT, STextureResolution2DArray( VoxGridSize, VoxGridSize, 3 ) ), &voxel2DTex );
     // TODO: Sampler GL_TEXTURE_MIN_FILTER=GL_NEAREST, GL_TEXTURE_MAG_FILTER=GL_NEAREST, GL_TEXTURE_WRAP_S=GL_CLAMP_TO_EDGE, GL_TEXTURE_WRAP_T=GL_CLAMP_TO_EDGE
 
-    GDevice->CreateTexture( MakeTexture( TEXTURE_FORMAT_R32UI, STextureResolution3D( VoxGridSize, VoxGridSize, VoxGridSize ), STextureSwizzle(), numMipLevels + 1 ), &voxelTex );
+    GDevice->CreateTexture( MakeTexture( TEXTURE_FORMAT_R32_UINT, STextureResolution3D( VoxGridSize, VoxGridSize, VoxGridSize ), STextureSwizzle(), numMipLevels + 1 ), &voxelTex );
     // TODO: Sampler GL_TEXTURE_MIN_FILTER=GL_NEAREST_MIPMAP_NEAREST, GL_TEXTURE_MAG_FILTER=GL_NEAREST, GL_TEXTURE_WRAP_S=GL_CLAMP_TO_EDGE, GL_TEXTURE_WRAP_T=GL_CLAMP_TO_EDGE, GL_TEXTURE_WRAP_R=GL_CLAMP_TO_EDGE
     
     

@@ -780,7 +780,6 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
 
     if (m_bSkeletal)
     {
-
         if (Data->skins)
         {
             // FIXME: Only one skin per file supported now
@@ -828,10 +827,6 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
             }
 #endif
 
-            //            for ( int n = 0; n < Data->nodes_count; n++ ) {
-            //                LOG( "NODE: {}\n", Data->nodes[n].name );
-            //            }
-
             // Apply scaling by changing local joint position
             if (m_Settings.Scale != 1.0f)
             {
@@ -857,8 +852,8 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
             }
 
             // Read skin
-            m_Skin.JointIndices.Resize(skin->joints_count);
-            m_Skin.OffsetMatrices.Resize(skin->joints_count);
+            m_Skin.JointIndices.Resize(m_Joints.Size());
+            m_Skin.OffsetMatrices.Resize(m_Joints.Size());
 
             unpack_mat4_to_mat3x4(skin->inverse_bind_matrices, m_Skin.OffsetMatrices.ToPtr(), sizeof(m_Skin.OffsetMatrices[0]));
 
@@ -886,6 +881,37 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
                 else
                 {
                     m_Skin.JointIndices[i] = nodeIndex;
+                }
+            }
+
+            for (int i = skin->joints_count; i < m_Joints.Size(); i++)
+            {
+                m_Skin.OffsetMatrices[i].SetIdentity();
+
+                // Scale offset matrix
+                m_Skin.OffsetMatrices[i] = scaleMatrix * m_Skin.OffsetMatrices[i] * scaleMatrix.Inversed() * rotationInverse;
+
+                // Map skin onto joints
+                m_Skin.JointIndices[i] = i;
+            }
+
+            for (auto& mesh : m_Meshes)
+            {
+                if (!mesh.bSkinned)
+                {
+                    int nodeIndex = mesh.Node->camera ? (size_t)mesh.Node->camera - 1 : 0;
+
+                    for (int n = 0; n < mesh.VertexCount; n++)
+                    {
+                        m_Weights[mesh.BaseVertex + n].JointIndices[0] = nodeIndex;
+                        m_Weights[mesh.BaseVertex + n].JointIndices[1] = 0;
+                        m_Weights[mesh.BaseVertex + n].JointIndices[2] = 0;
+                        m_Weights[mesh.BaseVertex + n].JointIndices[3] = 0;
+                        m_Weights[mesh.BaseVertex + n].JointWeights[0] = 255;
+                        m_Weights[mesh.BaseVertex + n].JointWeights[1] = 0;
+                        m_Weights[mesh.BaseVertex + n].JointWeights[2] = 0;
+                        m_Weights[mesh.BaseVertex + n].JointWeights[3] = 0;
+                    }
                 }
             }
 
@@ -951,7 +977,6 @@ void AAssetImporter::SetTextureProps(TextureInfo* Info, const char* Name, bool S
 
 void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
 {
-
     Info.GUID.Generate();
     Info.Material        = Material;
     Info.DefaultMaterial = "/Default/Materials/Unlit";
@@ -960,7 +985,6 @@ void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
 
     if (Material->unlit && m_Settings.bAllowUnlitMaterials)
     {
-
         switch (Material->alpha_mode)
         {
             case cgltf_alpha_mode_opaque:
@@ -1124,7 +1148,6 @@ void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
     }
     else if (Material->has_pbr_specular_glossiness)
     {
-
         LOG("Warning: pbr specular glossiness workflow is not supported yet\n");
 
         Info.NumTextures       = 5;
@@ -1203,6 +1226,9 @@ void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
         SetTextureProps(Info.Textures[2], "Texture_Normal", false);
         SetTextureProps(Info.Textures[3], "Texture_Occlusion", true);
         SetTextureProps(Info.Textures[4], "Texture_Emissive", true);
+
+        //if (Material->alpha_mode == cgltf_alpha_mode_blend)
+        //    SetTextureProps(Info.Textures[5], "Texture_Opacity", true);
     }
 }
 
@@ -1253,10 +1279,10 @@ void AAssetImporter::ReadMesh(cgltf_node* Node)
     globalTransform   = rotation * Float3x4(temp.Transposed());
     globalTransform.DecomposeNormalMatrix(normalMatrix);
 
-    ReadMesh(mesh, Float3x4::Scale(Float3(m_Settings.Scale)) * globalTransform, normalMatrix);
+    ReadMesh(Node, mesh, Float3x4::Scale(Float3(m_Settings.Scale)) * globalTransform, normalMatrix);
 }
 
-void AAssetImporter::ReadMesh(cgltf_mesh* Mesh, Float3x4 const& GlobalTransform, Float3x3 const& NormalMatrix)
+void AAssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const& GlobalTransform, Float3x3 const& NormalMatrix)
 {
     struct ASortFunction
     {
@@ -1375,7 +1401,6 @@ void AAssetImporter::ReadMesh(cgltf_mesh* Mesh, Float3x4 const& GlobalTransform,
 
         if (!material || material != prim->material || !m_Settings.bMergePrimitives)
         {
-
             meshInfo = &m_Meshes.Add();
             meshInfo->GUID.Generate();
             meshInfo->BaseVertex  = m_Vertices.Size();
@@ -1385,6 +1410,9 @@ void AAssetImporter::ReadMesh(cgltf_mesh* Mesh, Float3x4 const& GlobalTransform,
             meshInfo->Mesh        = Mesh;
             meshInfo->Material    = prim->material;
             meshInfo->BoundingBox.Clear();
+
+            meshInfo->Node      = Node;
+            meshInfo->bSkinned = weights != nullptr;
 
             material = prim->material;
         }
@@ -1528,7 +1556,6 @@ void AAssetImporter::ReadMesh(cgltf_mesh* Mesh, Float3x4 const& GlobalTransform,
         int numVertices = m_Vertices.Size();
         if (numWeights != numVertices)
         {
-
             LOG("Warning: invalid mesh (num weights != num vertices)\n");
 
             m_Weights.Resize(numVertices);
@@ -1542,6 +1569,7 @@ void AAssetImporter::ReadMesh(cgltf_mesh* Mesh, Float3x4 const& GlobalTransform,
                     m_Weights[numWeights + i].JointIndices[j] = 0;
                     m_Weights[numWeights + i].JointWeights[j] = 0;
                 }
+                m_Weights[numWeights + i].JointWeights[0] = 255;
             }
         }
     }
@@ -1769,7 +1797,6 @@ Float3x4 CalcJointWorldTransform( SJoint const & InJoint, SJoint const * InJoint
 
 void AAssetImporter::WriteAssets()
 {
-
     if (m_Settings.bImportTextures)
     {
         WriteTextures();
@@ -1795,7 +1822,6 @@ void AAssetImporter::WriteAssets()
 
     if (m_Settings.bImportMeshes)
     {
-
         if (m_Settings.bSingleModel || m_bSkeletal)
         {
             WriteSingleModel();
@@ -1822,115 +1848,28 @@ void AAssetImporter::WriteTexture(TextureInfo& tex)
     AString     sourceFileName = m_Path + tex.Image->uri;
     AString     fileSystemPath = GEngine->GetRootPath() + fileName;
 
+    ImageMipmapConfig mipmapConfig;
+    mipmapConfig.EdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
+    mipmapConfig.Filter   = IMAGE_RESAMPLE_FILTER_MITCHELL;
+
+    ImageStorage image = CreateImage(sourceFileName, &mipmapConfig, IMAGE_STORAGE_FLAGS_DEFAULT, tex.bSRGB ? TEXTURE_FORMAT_SRGBA8_UNORM : TEXTURE_FORMAT_RGBA8_UNORM);
+    if (!image)
+        return;
+
     if (!f.OpenWrite(fileSystemPath))
     {
         LOG("Failed to write {}\n", fileName);
         return;
     }
 
-    AImage             image;
-    SImageMipmapConfig mipmapGen;
-    mipmapGen.EdgeMode            = MIPMAP_EDGE_WRAP;
-    mipmapGen.Filter              = MIPMAP_FILTER_MITCHELL;
-    mipmapGen.bPremultipliedAlpha = false;
-    if (!image.Load(sourceFileName, &mipmapGen, tex.bSRGB ? IMAGE_PF_AUTO_GAMMA2 : IMAGE_PF_AUTO))
-    {
-        return;
-    }
-
-    STexturePixelFormat texturePixelFormat;
-    if (!STexturePixelFormat::GetAppropriatePixelFormat(image.GetPixelFormat(), texturePixelFormat))
-    {
-        return;
-    }
-
     GuidMap[tex.GUID] = "/Root/" + fileName;
-
-    uint32_t textureType = TEXTURE_2D;
-    uint32_t w = image.GetWidth(), h = image.GetHeight(), d = 1, numLods = image.GetNumMipLevels();
 
     f.WriteUInt32(FMT_FILE_TYPE_TEXTURE);
     f.WriteUInt32(FMT_VERSION_TEXTURE);
-    f.WriteString(tex.GUID.ToString());
-    f.WriteUInt32(textureType);
-    f.WriteObject(texturePixelFormat);
-    f.WriteUInt32(w);
-    f.WriteUInt32(h);
-    f.WriteUInt32(d);
-    f.WriteUInt32(numLods);
-
-    int   pixelSizeInBytes = texturePixelFormat.SizeInBytesUncompressed();
-    int   stride;
-    byte* pSrc = (byte*)image.GetData();
-    for (int lod = 0; lod < numLods; lod++)
-    {
-        uint32_t lodWidth  = Math::Max(1, image.GetWidth() >> lod);
-        uint32_t lodHeight = Math::Max(1, image.GetHeight() >> lod);
-
-        f.WriteUInt32(lodWidth);
-        f.WriteUInt32(lodHeight);
-        f.WriteUInt32(1); // lodDepth
-
-        stride = lodWidth * lodHeight * pixelSizeInBytes;
-
-        f.Write(pSrc, stride);
-
-        pSrc += stride;
-    }
+    f.WriteObject(image);
 
     f.WriteUInt32(1); // num source files
     f.WriteString(sourceFileName);
-
-#if 0
-    //
-    // Write meta file
-    //
-
-    AString metaFilePath = fileSystemPath;
-
-    metaFilePath.ClipExt();
-    metaFilePath += ".asset_meta";
-
-    if ( !f.OpenWrite( metaFilePath ) ) {
-        LOG( "Failed to write {} meta\n", fileName );
-        return;
-    }
-
-    f.FormattedPrint( "GUID \"{}\"\n", tex.GUID );
-    f.FormattedPrint( "Sources [ \"{}\" ]\n", sourceFileName );
-#endif
-
-#if 0
-    // Write original image
-    AFileStream imageData;
-    if ( imageData.OpenRead( m_Path + tex.Image->uri ) ) {
-        size_t size = imageData.SizeInBytes();
-        byte * buf = (byte *)Platform::MemoryAllocSafe( size );
-        imageData.Read( buf, size );
-        f << size_t(size);
-        f.Write( buf, size );
-        GHeapMemory.HeapFree( buf );
-    } else {
-        f << size_t(0);
-    }
-#endif
-
-#if 0
-    // Write original image
-    AFileStream imageData;
-    const char * ext = &tex.Image->uri[AString::FindExt( tex.Image->uri )];
-    if ( !imageData.OpenRead( m_Path + tex.Image->uri ) ) {
-        return;
-    }
-    size_t size = imageData.SizeInBytes();
-    byte * buf = (byte *)Platform::MemoryAllocSafe( size );
-    imageData.Read( buf, size );
-    AFileStream imageOutput;
-    if ( imageOutput.OpenWrite( fileName + ext ) ) {
-        imageOutput.Write( buf, size );
-    }
-    GHeapMemory.HeapFree( buf );
-#endif
 }
 
 void AAssetImporter::WriteMaterials()
@@ -1955,27 +1894,6 @@ void AAssetImporter::WriteMaterial(MaterialInfo const& m)
 
     GuidMap[m.GUID] = "/Root/" + fileName;
 
-#if 0
-    f.WriteUInt32( FMT_FILE_TYPE_MATERIAL_INSTANCE );
-    f.WriteUInt32( FMT_VERSION_MATERIAL_INSTANCE );
-    f.WriteCString( m.GUID.CStr() );
-    f.WriteCString( m.DefaultMaterial ); // material GUID
-
-    f.WriteUInt32( m.NumTextures );
-
-    for ( int i = 0 ; i < m.NumTextures ; i++ ) {
-        if ( m.Textures[i] ) {
-            f.WriteCString( m.Textures[i]->GUID.CStr() );
-        } else {
-            f.WriteCString( m.DefaultTexture[i] );
-        }
-    }
-
-    // Uniforms
-    for ( int i = 0 ; i < 16 ; i++ ) {
-        f.WriteFloat( m.Uniforms[i] );
-    }
-#else
     f.FormattedPrint("Material \"{}\"\n", m.DefaultMaterial);
     f.FormattedPrint("Textures [\n");
     for (int i = 0; i < m.NumTextures; i++)
@@ -1996,40 +1914,6 @@ void AAssetImporter::WriteMaterial(MaterialInfo const& m)
         f.FormattedPrint("\"{}\"\n", Core::ToString(m.Uniforms[i]));
     }
     f.FormattedPrint("]\n");
-#endif
-
-#if 0
-    //
-    // Write meta file
-    //
-
-    AString metaFilePath = fileSystemPath;
-
-    metaFilePath.ClipExt();
-    metaFilePath += ".asset_meta";
-
-    if ( !f.OpenWrite( metaFilePath ) ) {
-        LOG( "Failed to write {} meta\n", fileName );
-        return;
-    }
-
-    f.FormattedPrint( "GUID \"{}\"\n", m.GUID );
-    f.FormattedPrint( "Material \"{}\"\n", m.DefaultMaterial );
-    f.FormattedPrint( "Textures [\n" );
-    for ( int i = 0 ; i < m.NumTextures ; i++ ) {
-        if ( m.Textures[i] ) {
-            f.FormattedPrint( "\"{}\"\n", m.Textures[i]->GUID );
-        } else {
-            f.FormattedPrint( "\"{}\"\n", m.DefaultTexture[i] );
-        }
-    }
-    f.FormattedPrint( "]\n" );
-    f.FormattedPrint( "Uniforms [\n" );
-    for ( int i = 0 ; i < MAX_MATERIAL_UNIFORMS ; i++ ) {
-        f.FormattedPrint( "\"{}\"\n", Float(m.Uniforms[i]).ToString() );
-    }
-    f.FormattedPrint( "]\n" );
-#endif
 }
 
 static AString ValidateFileName(AStringView FileName)
@@ -2093,7 +1977,6 @@ AGUID AAssetImporter::GetMaterialGUID(cgltf_material* Material)
 
 void AAssetImporter::WriteSkeleton()
 {
-
     if (!m_Joints.IsEmpty())
     {
         AFileStream f;
@@ -2113,23 +1996,6 @@ void AAssetImporter::WriteSkeleton()
         f.WriteString(m_SkeletonGUID.ToString());
         f.WriteArray(m_Joints);
         f.WriteObject(m_BindposeBounds);
-#if 0
-        //
-        // Write meta file
-        //
-
-        AString metaFilePath = fileSystemPath;
-
-        metaFilePath.ClipExt();
-        metaFilePath += ".asset_meta";
-
-        if ( !f.OpenWrite( metaFilePath ) ) {
-            LOG( "Failed to write {} meta\n", fileName );
-            return;
-        }
-
-        f.FormattedPrint( "GUID \"{}\"\n", m_SkeletonGUID );
-#endif
     }
 }
 
@@ -2161,28 +2027,10 @@ void AAssetImporter::WriteAnimation(AnimationInfo const& Animation)
     f.WriteArray(Animation.Channels);
     f.WriteArray(Animation.Transforms);
     f.WriteArray(Animation.Bounds);
-#if 0
-    //
-    // Write meta file
-    //
-
-    AString metaFilePath = fileSystemPath;
-
-    metaFilePath.ClipExt();
-    metaFilePath += ".asset_meta";
-
-    if ( !f.OpenWrite( metaFilePath ) ) {
-        LOG( "Failed to write {} meta\n", fileName );
-        return;
-    }
-
-    f.FormattedPrint( "GUID \"{}\"\n", Animation.GUID);
-#endif
 }
 
 void AAssetImporter::WriteSingleModel()
 {
-
     if (m_Meshes.IsEmpty())
     {
         return;
@@ -2218,7 +2066,6 @@ void AAssetImporter::WriteSingleModel()
     f.WriteUInt32(FMT_VERSION_MESH);
     f.WriteString(GUID.ToString());
     f.WriteBool(bSkinnedMesh);
-    //f.WriteBool( false );         // dynamic storage
     f.WriteObject(BoundingBox);
     f.WriteArray(m_Indices);
     f.WriteArray(m_Vertices);
@@ -2250,7 +2097,6 @@ void AAssetImporter::WriteSingleModel()
         f.WriteUInt32(meshInfo.FirstIndex);
         f.WriteUInt32(meshInfo.VertexCount);
         f.WriteUInt32(meshInfo.IndexCount);
-        //GetMaterialGUID( meshInfo.Material ).Write( f );
         f.WriteObject(meshInfo.BoundingBox);
 
         n++;
@@ -2276,13 +2122,8 @@ void AAssetImporter::WriteSingleModel()
 
     if (bSkinnedMesh)
     {
-        //f.WriteCString( m_SkeletonGUID.CStr() );
         f.WriteArray(m_Skin.JointIndices);
         f.WriteArray(m_Skin.OffsetMatrices);
-    }
-    else
-    {
-        //f.WriteCString( "/Default/Skeleton/Default" );
     }
 
     //if ( m_Settings.bGenerateStaticCollisions ) {
@@ -2333,35 +2174,6 @@ void AAssetImporter::WriteSingleModel()
         f.FormattedPrint("\"{}\"\n", GuidMap[GetMaterialGUID(meshInfo.Material)]);
     }
     f.FormattedPrint("]\n");
-
-#if 0
-    //
-    // Write meta file
-    //
-
-    AString metaFilePath = fileSystemPath;
-
-    metaFilePath.ClipExt();
-    metaFilePath += ".asset_meta";
-
-    if ( !f.OpenWrite( metaFilePath ) ) {
-        LOG( "Failed to write {} meta\n", fileName );
-        return;
-    }
-
-    f.FormattedPrint( "GUID \"{}\"\n", GUID.CStr() );
-
-    if ( bSkinnedMesh ) {
-        f.FormattedPrint( "Skeleton \"{}\"\n", m_SkeletonGUID );
-    } else {
-        f.FormattedPrint( "Skeleton \"{}\"\n", "/Default/Skeleton/Default" );
-    }
-    f.FormattedPrint( "Subparts [\n" );
-    for ( MeshInfo const & meshInfo : m_Meshes ) {
-        f.FormattedPrint( "\"{}\"\n", GetMaterialGUID( meshInfo.Material ) );
-    }
-    f.FormattedPrint( "]\n" );
-#endif
 }
 
 void AAssetImporter::WriteMeshes()
@@ -2395,7 +2207,6 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
     f.WriteUInt32(FMT_VERSION_MESH);
     f.WriteString(Mesh.GUID.ToString());
     f.WriteBool(bSkinnedMesh);
-    //f.WriteBool( false );         // dynamic storage
     f.WriteObject(Mesh.BoundingBox);
 
     f.WriteUInt32(Mesh.IndexCount);
@@ -2443,7 +2254,6 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
     f.WriteUInt32(0); // first index
     f.WriteUInt32(Mesh.VertexCount);
     f.WriteUInt32(Mesh.IndexCount);
-    //GetMaterialGUID( Mesh.Material ).Write( f );
     f.WriteObject(Mesh.BoundingBox);
 
     if (bRaycastBVH)
@@ -2463,13 +2273,8 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
 
     if (bSkinnedMesh)
     {
-        //f.WriteCString( m_SkeletonGUID.CStr() );
         f.WriteArray(m_Skin.JointIndices);
         f.WriteArray(m_Skin.OffsetMatrices);
-    }
-    else
-    {
-        //f.WriteCString( "/Default/Skeleton/Default" );
     }
 
     fileName       = GeneratePhysicalPath("mesh", ".mesh");
@@ -2494,145 +2299,27 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
     f.FormattedPrint("Subparts [\n");
     f.FormattedPrint("\"{}\"\n", GuidMap[GetMaterialGUID(Mesh.Material)]);
     f.FormattedPrint("]\n");
-
-#if 0
-    //
-    // Write meta file
-    //
-
-    AString metaFilePath = fileSystemPath;
-
-    metaFilePath.ClipExt();
-    metaFilePath += ".asset_meta";
-
-    if ( !f.OpenWrite( metaFilePath ) ) {
-        LOG( "Failed to write {} meta\n", fileName);
-        return;
-    }
-
-    f.FormattedPrint( "GUID \"{}\"\n", Mesh.GUID );
-
-    if ( bSkinnedMesh ) {
-        f.FormattedPrint( "Skeleton \"{}\"\n", m_SkeletonGUID.ToString() );
-    } else {
-        f.FormattedPrint( "Skeleton \"{}\"\n", "/Default/Skeleton/Default" );
-    }
-    f.FormattedPrint( "Subparts [\n" );
-    f.FormattedPrint( "\"%s\"\n", GetMaterialGUID( Mesh.Material ) );
-    f.FormattedPrint( "]\n" );
-#endif
 }
 
-bool ValidateCubemapFaces(TArray<AImage, 6> const& Faces, int& Width, STexturePixelFormat& PixelFormat)
+bool ImportEnvironmentMapForSkybox(ImageStorage const& Skybox, AStringView EnvmapFile)
 {
-    for (int i = 0; i < 6; i++)
-    {
-        if (!Faces[i].GetData())
-        {
-            LOG("ValidateCubemapFaces: empty image data\n");
-            return false;
-        }
-
-        if (i == 0)
-        {
-            Width = Faces[0].GetWidth();
-
-            if (!STexturePixelFormat::GetAppropriatePixelFormat(Faces[0].GetPixelFormat(), PixelFormat))
-            {
-                return false;
-            }
-        }
-        else
-        {
-            STexturePixelFormat facePF;
-
-            if (!STexturePixelFormat::GetAppropriatePixelFormat(Faces[i].GetPixelFormat(), facePF))
-            {
-                return false;
-            }
-
-            if (PixelFormat != facePF)
-            {
-                LOG("ValidateCubemapFaces: faces with different pixel formats\n");
-                return false;
-            }
-        }
-
-        if (Faces[i].GetWidth() != Width || Faces[i].GetHeight() != Width)
-        {
-            LOG("ValidateCubemapFaces: faces with different sizes\n");
-            return false;
-        }
-    }
-
-    return true;
-}
-
-bool LoadSkyboxImages(SAssetSkyboxImportSettings const& ImportSettings, TArray<AImage, 6>& Faces)
-{
-    if (ImportSettings.bHDRI)
-    {
-        for (int i = 0; i < 6; i++)
-        {
-            if (!Faces[i].Load(ImportSettings.Faces[i], nullptr, IMAGE_PF_BGR32F))
-            {
-                return false;
-            }
-        }
-        if (ImportSettings.HDRIScale != 1.0f || ImportSettings.HDRIPow != 1.0f)
-        {
-            for (int i = 0; i < 6; i++)
-            {
-                float* HDRI  = (float*)Faces[i].GetData();
-                int    count = Faces[i].GetWidth() * Faces[i].GetHeight() * 3;
-                for (int j = 0; j < count; j += 3)
-                {
-                    HDRI[j]     = Math::Pow(HDRI[j + 0] * ImportSettings.HDRIScale, ImportSettings.HDRIPow);
-                    HDRI[j + 1] = Math::Pow(HDRI[j + 1] * ImportSettings.HDRIScale, ImportSettings.HDRIPow);
-                    HDRI[j + 2] = Math::Pow(HDRI[j + 2] * ImportSettings.HDRIScale, ImportSettings.HDRIPow);
-                }
-            }
-        }
-        // TODO: Convert to 16F
-    }
-    else
-    {
-        for (int i = 0; i < 6; i++)
-        {
-            if (!Faces[i].Load(ImportSettings.Faces[i], nullptr, IMAGE_PF_BGRA_GAMMA2))
-            {
-                return false;
-            }
-        }
-    }
-
-    return true;
-}
-
-bool ImportEnvironmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSettings, AStringView EnvmapFile)
-{
-    TArray<AImage, 6>   faces;
-    int                 width;
-    STexturePixelFormat pixelFormat;
     TRef<RenderCore::ITexture> SourceMap, IrradianceMap, ReflectionMap;
 
-    if (!LoadSkyboxImages(ImportSettings, faces))
+    if (!Skybox || Skybox.GetDesc().Type != TEXTURE_CUBE)
     {
+        LOG("ImportEnvironmentMapForSkybox: invalid skybox\n");
         return false;
     }
 
-    if (!ValidateCubemapFaces(faces, width, pixelFormat))
-    {
-        return false;
-    }
+    int width = Skybox.GetDesc().Width;
 
     RenderCore::STextureDesc textureDesc;
     textureDesc.SetResolution(RenderCore::STextureResolutionCubemap(width));
-    textureDesc.SetFormat(pixelFormat.GetTextureFormat());
+    textureDesc.SetFormat(Skybox.GetDesc().Format);
     textureDesc.SetMipLevels(1);
     textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
 
-    if (pixelFormat.NumComponents() == 1)
+    if (Skybox.NumChannels() == 1)
     {
         // Apply texture swizzle for single channel textures
         textureDesc.Swizzle.R = RenderCore::TEXTURE_SWIZZLE_R;
@@ -2643,8 +2330,6 @@ bool ImportEnvironmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSetti
 
     GEngine->GetRenderDevice()->CreateTexture(textureDesc, &SourceMap);
 
-    size_t sizeInBytes = (size_t)width * width * pixelFormat.SizeInBytesUncompressed();
-
     RenderCore::STextureRect rect;
     rect.Offset.X        = 0;
     rect.Offset.Y        = 0;
@@ -2653,11 +2338,19 @@ bool ImportEnvironmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSetti
     rect.Dimension.Y     = width;
     rect.Dimension.Z     = 1;
 
+    ImageViewDesc view;
+    view.SliceCount  = 1;
+    view.MipmapIndex = 0;
+
     for (int faceNum = 0; faceNum < 6; faceNum++)
     {
         rect.Offset.Z = faceNum;
 
-        SourceMap->WriteRect(rect, pixelFormat.GetTextureDataFormat(), sizeInBytes, 1, faces[faceNum].GetData());
+        view.FirstSlice = faceNum;
+
+        ImageSubresource subresouce = Skybox.GetSubresource(view);
+        
+        SourceMap->WriteRect(rect, subresouce.GetSizeInBytes(), 1, subresouce.GetData());
     }
 
     GEngine->GetRenderBackend()->GenerateIrradianceMap(SourceMap, &IrradianceMap);
@@ -2666,8 +2359,8 @@ bool ImportEnvironmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSetti
     // Preform some validation
     HK_ASSERT(IrradianceMap->GetDesc().Resolution.Width == IrradianceMap->GetDesc().Resolution.Height);
     HK_ASSERT(ReflectionMap->GetDesc().Resolution.Width == ReflectionMap->GetDesc().Resolution.Height);
-    HK_ASSERT(IrradianceMap->GetDesc().Format == RenderCore::TEXTURE_FORMAT_RGB16F);
-    HK_ASSERT(ReflectionMap->GetDesc().Format == RenderCore::TEXTURE_FORMAT_RGB16F);
+    HK_ASSERT(IrradianceMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
+    HK_ASSERT(ReflectionMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
 
     AFileStream f;
 
@@ -2685,49 +2378,114 @@ bool ImportEnvironmentMapForSkybox(SAssetSkyboxImportSettings const& ImportSetti
     // Choose max width for memory allocation
     int maxSize = Math::Max(IrradianceMap->GetWidth(), ReflectionMap->GetWidth());
 
-    TVector<float> buffer(maxSize * maxSize * 3 * 6);
+    TVector<uint32_t> buffer(maxSize * maxSize * 6);
 
-    void* data = buffer.ToPtr();
+    uint32_t* data = buffer.ToPtr();
 
-    int numFloats = IrradianceMap->GetWidth() * IrradianceMap->GetWidth() * 3 * 6;
-    IrradianceMap->Read(0, RenderCore::FORMAT_FLOAT3, numFloats * sizeof(float), 4, data);
+    int numPixels = IrradianceMap->GetWidth() * IrradianceMap->GetWidth() * 6;
+    IrradianceMap->Read(0, numPixels * sizeof(uint32_t), 4, data);
 
-    // TODO: Store as F16
-    for (int i = 0 ; i < numFloats ; i++)
-    {
-        ((float*)data)[i] = Core::LittleFloat(((float*)data)[i]);
-    }
-
-    f.Write(data, numFloats * sizeof(float));
+    f.WriteWords<uint32_t>(data, numPixels);
 
     for (int mipLevel = 0; mipLevel < ReflectionMap->GetDesc().NumMipLevels; mipLevel++)
     {
         int mipWidth = ReflectionMap->GetWidth() >> mipLevel;
         HK_ASSERT(mipWidth > 0);
 
-        numFloats = mipWidth * mipWidth * 3 * 6;
+        numPixels = mipWidth * mipWidth * 6;
 
-        ReflectionMap->Read(mipLevel, RenderCore::FORMAT_FLOAT3, numFloats * sizeof(float), 4, data);
+        ReflectionMap->Read(mipLevel, numPixels * sizeof(uint32_t), 4, data);
 
-        // TODO: Store as F16
-        for (int i = 0; i < numFloats; i++)
-        {
-            ((float*)data)[i] = Core::LittleFloat(((float*)data)[i]);
-        }
+        f.WriteWords<uint32_t>(data, numPixels);
+    }
+    return true;
+}
 
-        f.Write(data, numFloats * sizeof(float));
+bool ImportEnvironmentMapForSkybox(SkyboxImportSettings const& ImportSettings, AStringView EnvmapFile)
+{
+    ImageStorage image = LoadSkyboxImages(ImportSettings);
+
+    if (!image)
+    {
+        return false;
+    }
+
+    return ImportEnvironmentMapForSkybox(image, EnvmapFile);
+}
+
+ImageStorage GenerateAtmosphereSkybox(uint32_t Resolution, Float3 const& LightDir)
+{
+    TRef<RenderCore::ITexture> skybox;
+    GEngine->GetRenderBackend()->GenerateSkybox(512, LightDir, &skybox);
+
+    int width = skybox->GetWidth();
+
+    RenderCore::STextureRect rect;
+    rect.Offset.X        = 0;
+    rect.Offset.Y        = 0;
+    rect.Offset.MipLevel = 0;
+    rect.Dimension.X     = width;
+    rect.Dimension.Y     = width;
+    rect.Dimension.Z     = 1;
+
+    ImageStorageDesc desc;
+    desc.Type       = TEXTURE_CUBE;
+    desc.Width      = width;
+    desc.Height     = width;
+    desc.SliceCount = 6;
+    desc.NumMipmaps = 1;
+    desc.Format     = skybox->GetDesc().Format;
+    desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
+
+    ImageStorage storage(desc);
+
+    for (int faceNum = 0; faceNum < 6; faceNum++)
+    {
+        ImageViewDesc view;
+        view.FirstSlice  = faceNum;
+        view.SliceCount  = 1;
+        view.MipmapIndex = 0;
+
+        ImageSubresource subresource = storage.GetSubresource(view);
+
+        rect.Offset.Z = faceNum;
+
+        skybox->ReadRect(rect, subresource.GetSizeInBytes(), 4, subresource.GetData());
+    }
+    return storage;
+}
+
+bool SaveSkyboxTexture(AStringView FileName, ImageStorage& Image)
+{
+    if (!Image || Image.GetDesc().Type != TEXTURE_CUBE)
+    {
+        LOG("SaveSkyboxTexture: invalid skybox\n");
+        return false;
+    }
+
+    AFileStream f;
+
+    if (!f.OpenWrite(FileName))
+    {
+        LOG("Failed to write {}\n", FileName);
+        return false;
+    }
+
+    f.WriteUInt32(FMT_FILE_TYPE_TEXTURE);
+    f.WriteUInt32(FMT_VERSION_TEXTURE);
+
+    f.WriteObject(Image);
+    
+    f.WriteUInt32(6); // num source files
+    for (int i = 0; i < 6; i++)
+    {
+        f.WriteString("Generated"); // source file
     }
     return true;
 }
 
 bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
 {
-    TArray<AImage, 6>   faces;
-    int                 width;
-    STexturePixelFormat pixelFormat;
-
-    SAssetSkyboxImportSettings const& skyboxImport = ImportSettings.SkyboxImport;
-
     m_Settings            = ImportSettings;
     m_Settings.ImportFile = "Skybox";
 
@@ -2736,15 +2494,9 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
         return false;
     }
 
-    if (!LoadSkyboxImages(skyboxImport, faces))
-    {
+    ImageStorage image = LoadSkyboxImages(ImportSettings.SkyboxImport);
+    if (!image)
         return false;
-    }
-
-    if (!ValidateCubemapFaces(faces, width, pixelFormat))
-    {
-        return false;
-    }
 
     AFileStream f;
     AString     fileName       = GeneratePhysicalPath("texture", ".texture");
@@ -2756,80 +2508,26 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
         return false;
     }
 
-    AGUID TextureGUID;
-    TextureGUID.Generate();
-
-    GuidMap[TextureGUID] = "/Root/" + fileName;
-
-    uint32_t textureType = TEXTURE_CUBEMAP;
-    uint32_t w = width, h = width, d = 6, numLods = 1;
-
     f.WriteUInt32(FMT_FILE_TYPE_TEXTURE);
     f.WriteUInt32(FMT_VERSION_TEXTURE);
-    f.WriteString(TextureGUID.ToString());
-    f.WriteUInt32(textureType);
-    f.WriteObject(pixelFormat);
-    f.WriteUInt32(w);
-    f.WriteUInt32(h);
-    f.WriteUInt32(d);
-    f.WriteUInt32(numLods);
 
-    int      pixelSizeInBytes = pixelFormat.SizeInBytesUncompressed();
-    uint32_t lodWidth;
-
-    int lod = 0;
-    //for ( int lod = 0 ; lod < numLods ; lod++ ) {
-    lodWidth = Math::Max(1, width >> lod);
-
-    f.WriteUInt32(lodWidth);
-    f.WriteUInt32(lodWidth);
-    f.WriteUInt32(6); // lodDepth
-
-    size_t size = (size_t)lodWidth * lodWidth * pixelSizeInBytes;
-
-    for (int face = 0; face < 6; face++)
-    {
-        f.Write(faces[face].GetData(), size);
-    }
+    f.WriteObject(image);
 
     f.WriteUInt32(6); // num source files
     for (int i = 0; i < 6; i++)
     {
-        f.WriteString(skyboxImport.Faces[i]); // source file
+        f.WriteString(ImportSettings.SkyboxImport.Faces[i]); // source file
     }
-#if 0
-    //
-    // Write meta file
-    //
-
-    AString metaFilePath = fileSystemPath;
-
-    metaFilePath.ClipExt();
-    metaFilePath += ".asset_meta";
-
-    if ( !f.OpenWrite( metaFilePath ) ) {
-        LOG( "Failed to write {} meta\n", fileName );
-        return false;
-    }
-
-    f.FormattedPrint( "GUID \"{}\"\n", TextureGUID );
-
-    f.FormattedPrint( "Sources [\n" );
-    for ( int i = 0 ; i < 6 ; i++ ) {
-        f.FormattedPrint( "\"{}\"\n", skyboxImport.Faces[i] ); // source file
-    }
-    f.FormattedPrint( "]\n" );
-#endif
 
     if (m_Settings.bCreateSkyboxMaterialInstance)
     {
-        WriteSkyboxMaterial(TextureGUID);
+        WriteSkyboxMaterial("/Root/" + fileName);
     }
 
     return true;
 }
 
-void AAssetImporter::WriteSkyboxMaterial(AGUID const& SkyboxTextureGUID)
+void AAssetImporter::WriteSkyboxMaterial(AStringView SkyboxTexture)
 {
     AFileStream f;
     AString     fileName       = GeneratePhysicalPath("matinst", ".minst");
@@ -2841,54 +2539,10 @@ void AAssetImporter::WriteSkyboxMaterial(AGUID const& SkyboxTextureGUID)
         return;
     }
 
-    AGUID GUID;
-    GUID.Generate();
-
-    GuidMap[GUID] = "/Root/" + fileName;
-
-#if 0
-    f.WriteUInt32( FMT_FILE_TYPE_MATERIAL_INSTANCE );
-    f.WriteUInt32( FMT_VERSION_MATERIAL_INSTANCE );
-    f.WriteCString( GUID.CStr() );
-    f.WriteCString( "/Default/Materials/Skybox" ); // material GUID
-
-    f.WriteUInt32( 1 ); // textures count
-
-    // texture
-    f.WriteCString( SkyboxTextureGUID.CStr() );
-
-    // Uniforms
-    for ( int i = 0 ; i < MAX_MATERIAL_UNIFORMS ; i++ ) {
-        f.WriteFloat( 0.0f );
-    }
-#else
     f.FormattedPrint("Material \"/Default/Materials/Skybox\"\n");
     f.FormattedPrint("Textures [\n");
-    f.FormattedPrint("\"{}\"\n", GuidMap[SkyboxTextureGUID]);
+    f.FormattedPrint("\"{}\"\n", SkyboxTexture);
     f.FormattedPrint("]\n");
-#endif
-
-#if 0
-    //
-    // Write meta file
-    //
-
-    AString metaFilePath = fileSystemPath;
-
-    metaFilePath.ClipExt();
-    metaFilePath += ".asset_meta";
-
-    if ( !f.OpenWrite( metaFilePath ) ) {
-        LOG( "Failed to write {} meta\n", fileName );
-        return;
-    }
-
-    f.FormattedPrint( "GUID \"{}\"\n", GUID );
-    f.FormattedPrint( "Material \"{}\"\n", "/Default/Materials/Skybox" );
-    f.FormattedPrint( "Textures [\n" );
-    f.FormattedPrint( "\"{}\"\n", SkyboxTextureGUID );
-    f.FormattedPrint( "]\n" );
-#endif
 }
 
 

@@ -926,14 +926,7 @@ void AEngine::ReadScreenPixels(uint16_t _X, uint16_t _Y, uint16_t _Width, uint16
     rect.Dimension.Y = _Height;
     rect.Dimension.Z = 1;
 
-    pBackBuffer->ReadRect(rect, RenderCore::FORMAT_UBYTE4, _SizeInBytes, 4, _SysMem);
-
-    // Swap to rgba
-    int count = _Width * _Height * 4;
-    for (int i = 0; i < count; i += 4)
-    {
-        std::swap(((uint8_t*)_SysMem)[i], ((uint8_t*)_SysMem)[i + 2]);
-    }
+    pBackBuffer->ReadRect(rect, _SizeInBytes, 4, _SysMem);
 }
 
 AString const& AEngine::GetWorkingDir()

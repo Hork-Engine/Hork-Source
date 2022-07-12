@@ -804,8 +804,7 @@ bool ADeviceGLImpl::ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE T
         case SPARSE_TEXTURE_2D:
         case SPARSE_TEXTURE_2D_ARRAY:
         case SPARSE_TEXTURE_CUBE_MAP:
-        case SPARSE_TEXTURE_CUBE_MAP_ARRAY:
-        case SPARSE_TEXTURE_RECT_GL: {
+        case SPARSE_TEXTURE_CUBE_MAP_ARRAY: {
             int* pageSizeX = (int*)StackAlloc(pageSizes * sizeof(int));
             int* pageSizeY = (int*)StackAlloc(pageSizes * sizeof(int));
             EnumerateSparseTexturePageSize(Type, Format, &pageSizes, pageSizeX, pageSizeY, nullptr);
@@ -865,25 +864,6 @@ bool ADeviceGLImpl::ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE T
     }
 
     return *PageSizeIndex != -1;
-}
-
-bool ADeviceGLImpl::LookupImageFormat(const char* _FormatQualifier, TEXTURE_FORMAT* _Format)
-{
-    int numFormats = sizeof(InternalFormatLUT) / sizeof(InternalFormatLUT[0]);
-    for (int i = 0; i < numFormats; i++)
-    {
-        if (!strcmp(InternalFormatLUT[i].ShaderImageFormatQualifier, _FormatQualifier))
-        {
-            *_Format = (TEXTURE_FORMAT)i;
-            return true;
-        }
-    }
-    return false;
-}
-
-const char* ADeviceGLImpl::LookupImageFormatQualifier(TEXTURE_FORMAT _Format)
-{
-    return InternalFormatLUT[_Format].ShaderImageFormatQualifier;
 }
 
 static void DebugMessageCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)

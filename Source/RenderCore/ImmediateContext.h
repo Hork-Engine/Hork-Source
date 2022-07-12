@@ -624,7 +624,7 @@ public:
                                      size_t              SourceByteOffset,          /// offset in source buffer
                                      unsigned int        Alignment) = 0;                    /// Specifies alignment of source data
 
-    /// Types supported: TEXTURE_1D, TEXTURE_1D_ARRAY, TEXTURE_2D, TEXTURE_2D_ARRAY, TEXTURE_3D, TEXTURE_CUBE_MAP, TEXTURE_CUBE_MAP_ARRAY or TEXTURE_RECT_GL
+    /// Types supported: TEXTURE_1D, TEXTURE_1D_ARRAY, TEXTURE_2D, TEXTURE_2D_ARRAY, TEXTURE_3D, TEXTURE_CUBE_MAP, TEXTURE_CUBE_MAP_ARRAY
     /// Texture cannot be multisample
     virtual void CopyTextureToBuffer(ITexture const*     pSrcTexture,
                                      IBuffer*            pDstBuffer,
@@ -670,7 +670,6 @@ public:
     /// Client-side call function. Read data to client memory.
     virtual void ReadTexture(ITexture*    pTexture,
                              uint16_t     MipLevel,
-                             DATA_FORMAT  Format,
                              size_t       SizeInBytes,
                              unsigned int Alignment,
                              void*        pSysMem) = 0;
@@ -678,7 +677,6 @@ public:
     /// Client-side call function. Read data to client memory.
     virtual void ReadTextureRect(ITexture*           pTexture,
                                  STextureRect const& Rectangle,
-                                 DATA_FORMAT         Format,
                                  size_t              SizeInBytes,
                                  unsigned int        Alignment,
                                  void*               pSysMem) = 0;
@@ -686,7 +684,6 @@ public:
     /// Client-side call function. Write data from client memory.
     virtual bool WriteTexture(ITexture*    pTexture,
                               uint16_t     MipLevel,
-                              DATA_FORMAT  Format,
                               size_t       SizeInBytes,
                               unsigned int Alignment,
                               const void*  pSysMem) = 0;
@@ -695,7 +692,6 @@ public:
     /// Client-side call function. Write data from client memory.
     virtual bool WriteTextureRect(ITexture*           pTexture,
                                   STextureRect const& Rectangle,
-                                  DATA_FORMAT         Format,
                                   size_t              SizeInBytes,
                                   unsigned int        Alignment,
                                   const void*         pSysMem) = 0;
@@ -823,11 +819,7 @@ public:
     // Render pass
     //
 
-    /// Only for TEXTURE_1D TEXTURE_1D_ARRAY TEXTURE_2D TEXTURE_2D_ARRAY TEXTURE_3D TEXTURE_CUBE_MAP TEXTURE_RECT_GL
-    /// Выборка элемента массива из TEXTURE_1D_ARRAY осуществляется через _OffsetY
-    /// Выборка элемента массива из TEXTURE_2D_ARRAY осуществляется через _OffsetZ
-    /// Выборка слоя из TEXTURE_3D осуществляется через _OffsetZ
-    /// Выборка грани кубической текстуры из TEXTURE_CUBE_MAP осуществляется через _OffsetZ
+    /// Only for TEXTURE_1D TEXTURE_1D_ARRAY TEXTURE_2D TEXTURE_2D_ARRAY TEXTURE_3D TEXTURE_CUBE_MAP
     virtual bool CopyFramebufferToTexture(ARenderPassContext&   RenderPassContext,
                                           ITexture*             pDstTexture,
                                           int                   ColorAttachment,

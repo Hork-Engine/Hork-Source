@@ -42,7 +42,7 @@ AExposureRenderer::AExposureRenderer()
     textureDesc.SetMipLevels(1);
     textureDesc.SetBindFlags(BIND_SHADER_RESOURCE);
 
-    textureDesc.SetFormat(TEXTURE_FORMAT_RG16F);
+    textureDesc.SetFormat(TEXTURE_FORMAT_RG16_FLOAT);
 
     textureDesc.SetResolution(STextureResolution2D(64, 64));
     GDevice->CreateTexture(textureDesc, &Luminance64);
@@ -65,9 +65,9 @@ AExposureRenderer::AExposureRenderer()
     byte defaultLum[2] = {30, 30}; // TODO: choose appropriate value
 
     textureDesc.SetResolution(STextureResolution2D(1, 1));
-    textureDesc.SetFormat(TEXTURE_FORMAT_RG8);
+    textureDesc.SetFormat(TEXTURE_FORMAT_RG8_UNORM);
     GDevice->CreateTexture(textureDesc, &DefaultLuminance);
-    DefaultLuminance->Write(0, FORMAT_UBYTE2, sizeof(defaultLum), 1, defaultLum);
+    DefaultLuminance->Write(0, sizeof(defaultLum), 1, defaultLum);
 
     SSamplerDesc samplerCI;
     samplerCI.AddressU = SAMPLER_ADDRESS_CLAMP;

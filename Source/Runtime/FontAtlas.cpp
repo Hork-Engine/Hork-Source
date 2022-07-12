@@ -2340,7 +2340,7 @@ void AFont::InitializeFromMemoryTTF(const void* _SysMem, size_t _SizeInBytes, SF
     // Create atlas texture
     GEngine->GetRenderDevice()->CreateTexture(RenderCore::STextureDesc{}
                                                   .SetResolution(RenderCore::STextureResolution2D(TexWidth, TexHeight))
-                                                  .SetFormat(RenderCore::TEXTURE_FORMAT_R8)
+                                                  .SetFormat(TEXTURE_FORMAT_R8_UNORM)
                                                   .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE)
                                                   .SetSwizzle(RenderCore::STextureSwizzle(RenderCore::TEXTURE_SWIZZLE_R,
                                                                                           RenderCore::TEXTURE_SWIZZLE_R,
@@ -2349,7 +2349,7 @@ void AFont::InitializeFromMemoryTTF(const void* _SysMem, size_t _SizeInBytes, SF
                                               &AtlasTexture);
 
     AtlasTexture->SetDebugName("Font Atlas Texture");
-    AtlasTexture->Write(0, RenderCore::FORMAT_UBYTE1, TexWidth * TexHeight, IsAligned(TexWidth, 4) ? 4 : 1, TexPixelsAlpha8);
+    AtlasTexture->Write(0, TexWidth * TexHeight, IsAligned(TexWidth, 4) ? 4 : 1, TexPixelsAlpha8);
 }
 
 void AFont::LoadInternalResource(AStringView _Path)

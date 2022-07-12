@@ -323,111 +323,111 @@ enum {
     CLEAR_TYPE_DEPTH_STENCIL,
 };
 
-struct TableInternalPixelFormat {
-    GLint  InternalFormat;
-    GLenum Format; // FIXME: Unused, can be removed
-    const char * ShaderImageFormatQualifier;
-    uint8_t ClearType;
+struct TableInternalPixelFormat
+{
+    GLint       InternalFormat;
+    GLenum      Format;
+    uint8_t     ClearType;
 };
 
 constexpr TableInternalPixelFormat InternalFormatLUT[] = {
-    { GL_R8,             GL_RED, "r8", CLEAR_TYPE_FLOAT32 },  //  8
-    { GL_R8_SNORM,       GL_RED, "r8_snorm", CLEAR_TYPE_FLOAT32 },  //  s8
-    { GL_R16,            GL_RED, "r16", CLEAR_TYPE_FLOAT32 },  //  16
-    { GL_R16_SNORM,      GL_RED, "r16_snorm", CLEAR_TYPE_FLOAT32 },  //  s16
-    { GL_RG8,            GL_RG, "rg8", CLEAR_TYPE_FLOAT32 },   //  8   8
-    { GL_RG8_SNORM,      GL_RG, "rg8_snorm", CLEAR_TYPE_FLOAT32 },   //  s8  s8
-    { GL_RG16,           GL_RG, "rg16", CLEAR_TYPE_FLOAT32 },   //  16  16
-    { GL_RG16_SNORM,     GL_RG, "rg16_snorm", CLEAR_TYPE_FLOAT32 },   //  s16 s16
-    { GL_R3_G3_B2,       GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  3  3  2
-    { GL_RGB4,           GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  4  4  4
-    { GL_RGB5,           GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  5  5  5
-    { GL_RGB8,           GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  8  8  8
-    { GL_RGB8_SNORM,     GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  s8  s8  s8
-    { GL_RGB10,          GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  10  10  10
-    { GL_RGB12,          GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  12  12  12
-    { GL_RGB16,          GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  16  16  16
-    { GL_RGB16_SNORM,    GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  s16  s16  s16
-    { GL_RGBA2,          GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  2  2  2  2
-    { GL_RGBA4,          GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  4  4  4  4
-    { GL_RGB5_A1,        GL_BGRA, "", CLEAR_TYPE_FLOAT32 }, //  5  5  5  1
-    { GL_RGBA8,          GL_BGRA, "rgba8", CLEAR_TYPE_FLOAT32 }, //  8  8  8  8
-    { GL_RGBA8_SNORM,    GL_BGRA, "rgba8_snorm", CLEAR_TYPE_FLOAT32 }, //  s8  s8  s8  s8
-    { GL_RGB10_A2,       GL_BGRA, "rgb10_a2", CLEAR_TYPE_FLOAT32 }, //  10  10  10  2
-    { GL_RGB10_A2UI,     GL_BGRA, "rgb10_a2ui", CLEAR_TYPE_UINT32 }, //  ui10  ui10  ui10  ui2
-    { GL_RGBA12,         GL_BGRA, "", CLEAR_TYPE_FLOAT32 }, //  12  12  12  12
-    { GL_RGBA16,         GL_BGRA, "rgba16", CLEAR_TYPE_FLOAT32 }, //  16  16  16  16
-    { GL_RGBA16_SNORM,   GL_BGRA, "rgba16_snorm", CLEAR_TYPE_FLOAT32 }, //  16  16  16  16
-    { GL_SRGB8,          GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  8  8  8
-    { GL_SRGB8_ALPHA8,   GL_BGRA, "", CLEAR_TYPE_FLOAT32 }, //  8  8  8  8
-    { GL_R16F,           GL_RED, "r16f", CLEAR_TYPE_FLOAT32 },  //  f16
-    { GL_RG16F,          GL_RG, "rg16f", CLEAR_TYPE_FLOAT32 },   //  f16  f16
-    { GL_RGB16F,         GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  f16  f16  f16
-    { GL_RGBA16F,        GL_BGRA, "rgba16f", CLEAR_TYPE_FLOAT32 }, //  f16  f16  f16  f16
-    { GL_R32F,           GL_RED, "r32f", CLEAR_TYPE_FLOAT32 },  //  f32
-    { GL_RG32F,          GL_RG, "rg32f", CLEAR_TYPE_FLOAT32 },   //  f32  f32
-    { GL_RGB32F,         GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  f32  f32  f32
-    { GL_RGBA32F,        GL_BGRA, "rgba32f", CLEAR_TYPE_FLOAT32 }, //  f32  f32  f32  f32
-    { GL_R11F_G11F_B10F, GL_BGR, "r11f_g11f_b10f", CLEAR_TYPE_FLOAT32 },  //  f11  f11  f10
-    { GL_RGB9_E5,        GL_BGR, "", CLEAR_TYPE_FLOAT32 },  //  9  9  9     5
-    { GL_R8I,            GL_RED, "r8i", CLEAR_TYPE_INT32 },  //  i8
-    { GL_R8UI,           GL_RED, "r8ui", CLEAR_TYPE_UINT32 },  //  ui8
-    { GL_R16I,           GL_RED, "r16i", CLEAR_TYPE_INT32 },  //  i16
-    { GL_R16UI,          GL_RED, "r16ui", CLEAR_TYPE_UINT32 },  //  ui16
-    { GL_R32I,           GL_RED, "r32i", CLEAR_TYPE_INT32 },  //  i32
-    { GL_R32UI,          GL_RED, "r32ui", CLEAR_TYPE_UINT32 },  //  ui32
-    { GL_RG8I,           GL_RG, "rg8i", CLEAR_TYPE_INT32 },   //  i8   i8
-    { GL_RG8UI,          GL_RG, "rg8ui", CLEAR_TYPE_UINT32 },   //  ui8   ui8
-    { GL_RG16I,          GL_RG, "rg16i", CLEAR_TYPE_INT32 },   //  i16   i16
-    { GL_RG16UI,         GL_RG, "rg16ui", CLEAR_TYPE_UINT32 },   //  ui16  ui16
-    { GL_RG32I,          GL_RG, "rg32i", CLEAR_TYPE_INT32 },   //  i32   i32
-    { GL_RG32UI,         GL_RG, "rg32ui", CLEAR_TYPE_UINT32 },   //  ui32  ui32
-    { GL_RGB8I,          GL_BGR, "", CLEAR_TYPE_INT32 },  //  i8   i8   i8
-    { GL_RGB8UI,         GL_BGR, "", CLEAR_TYPE_UINT32 },  //  ui8  ui8  ui8
-    { GL_RGB16I,         GL_BGR, "", CLEAR_TYPE_INT32 },  //  i16  i16  i16
-    { GL_RGB16UI,        GL_BGR, "", CLEAR_TYPE_UINT32 },  //  ui16 ui16 ui16
-    { GL_RGB32I,         GL_BGR, "", CLEAR_TYPE_INT32 },  //  i32  i32  i32
-    { GL_RGB32UI,        GL_BGR, "", CLEAR_TYPE_UINT32 },  //  ui32 ui32 ui32
-    { GL_RGBA8I,         GL_BGRA, "rgba8i", CLEAR_TYPE_INT32 }, //  i8   i8   i8   i8
-    { GL_RGBA8UI,        GL_BGRA, "rgba8ui", CLEAR_TYPE_UINT32 }, //  ui8  ui8  ui8  ui8
-    { GL_RGBA16I,        GL_BGRA, "rgba16i", CLEAR_TYPE_INT32 }, //  i16  i16  i16  i16
-    { GL_RGBA16UI,       GL_BGRA, "rgba16ui", CLEAR_TYPE_UINT32 }, //  ui16 ui16 ui16 ui16
-    { GL_RGBA32I,        GL_BGRA, "rgba32i", CLEAR_TYPE_INT32 }, //  i32  i32  i32  i32
-    { GL_RGBA32UI,       GL_BGRA, "rgba32ui", CLEAR_TYPE_UINT32 }, //  ui32 ui32 ui32 ui32
+    {0, 0, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_UNDEFINED,
 
-    // Compressed formats:
-    { GL_COMPRESSED_RGB_S3TC_DXT1_EXT,       GL_BGR, "", 0 },   // GL_EXT_texture_compression_s3tc
-    { GL_COMPRESSED_SRGB_S3TC_DXT1_EXT,      GL_BGR, "", 0 },  // GL_EXT_texture_compression_s3tc and GL_EXT_texture_sRGB supported
+    {GL_R8UI, GL_RED, CLEAR_TYPE_UINT32},      //TEXTURE_FORMAT_R8_UINT,
+    {GL_R8I, GL_RED, CLEAR_TYPE_INT32},        //TEXTURE_FORMAT_R8_SINT,
+    {GL_R8, GL_RED, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_R8_UNORM,
+    {GL_R8_SNORM, GL_RED, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_R8_SNORM,
 
-    { GL_COMPRESSED_RGBA_S3TC_DXT3_EXT,      GL_BGRA, "", 0 },  // GL_EXT_texture_compression_s3tc
-    { GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT,GL_BGRA, "", 0 }, // GL_EXT_texture_compression_s3tc and GL_EXT_texture_sRGB supported
+    {GL_RG8UI, GL_RG, CLEAR_TYPE_UINT32},      //TEXTURE_FORMAT_RG8_UINT,
+    {GL_RG8I, GL_RG, CLEAR_TYPE_INT32},        //TEXTURE_FORMAT_RG8_SINT,
+    {GL_RG8, GL_RG, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_RG8_UNORM,
+    {GL_RG8_SNORM, GL_RG, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_RG8_SNORM,
 
-    { GL_COMPRESSED_RGBA_S3TC_DXT5_EXT,      GL_BGRA, "", 0 },  // GL_EXT_texture_compression_s3tc
-    { GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT,GL_BGRA, "", 0 }, // GL_EXT_texture_compression_s3tc and GL_EXT_texture_sRGB supported
+    {GL_R16UI, GL_RED, CLEAR_TYPE_UINT32},      //TEXTURE_FORMAT_R16_UINT,
+    {GL_R16I, GL_RED, CLEAR_TYPE_INT32},        //TEXTURE_FORMAT_R16_SINT,
+    {GL_R16, GL_RED, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_R16_UNORM,
+    {GL_R16_SNORM, GL_RED, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_R16_SNORM,
+    {GL_R16F, GL_RED, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_R16_FLOAT,
 
-    { GL_COMPRESSED_RED_RGTC1,               GL_RED, "", 0 },  //  GL_ARB_texture_compression_rgtc or GL_EXT_texture_compression_rgtc
-    { GL_COMPRESSED_SIGNED_RED_RGTC1,        GL_RED, "", 0 },  //  GL_ARB_texture_compression_rgtc or GL_EXT_texture_compression_rgtc
+    {GL_RGBA4, GL_BGRA, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_BGRA4_UNORM,
+    {GL_RGB565, GL_BGR, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_B5G6R5_UNORM,
+    {GL_RGB5_A1, GL_BGRA, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_B5G5R5A1_UNORM,
 
-    { GL_COMPRESSED_RG_RGTC2,                GL_RG, "", 0 },   //  GL_ARB_texture_compression_rgtc or GL_EXT_texture_compression_rgtc
-    { GL_COMPRESSED_SIGNED_RG_RGTC2,         GL_RG, "", 0 },   //  GL_ARB_texture_compression_rgtc or GL_EXT_texture_compression_rgtc
+    {GL_RGBA8UI, GL_RGBA, CLEAR_TYPE_UINT32},       //TEXTURE_FORMAT_RGBA8_UINT,
+    {GL_RGBA8I, GL_RGBA, CLEAR_TYPE_INT32},         //TEXTURE_FORMAT_RGBA8_SINT,
+    {GL_RGBA8, GL_RGBA, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_RGBA8_UNORM,
+    {GL_RGBA8_SNORM, GL_RGBA, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_RGBA8_SNORM,
+    {GL_RGBA8, GL_BGRA, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_BGRA8_UNORM,
+    {GL_SRGB8_ALPHA8, GL_RGBA, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_SRGBA8_UNORM,
+    {GL_SRGB8_ALPHA8, GL_BGRA, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_SBGRA8_UNORM,
 
-    { GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT, GL_BGR, "", 0 },  //  4.2
-    { GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT,   GL_BGR, "", 0 },  //  4.2
+    {GL_RGB10_A2, GL_RGBA, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_R10G10B10A2_UNORM,
 
-    { GL_COMPRESSED_RGBA_BPTC_UNORM,         GL_BGRA, "", 0 }, //  4.2
-    { GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM,   GL_BGRA, "", 0 }, //  4.2
+    {GL_R11F_G11F_B10F, GL_RGB, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_R11G11B10_FLOAT,
 
-    // Depth and stencil formats:
-    { GL_STENCIL_INDEX1,                     GL_STENCIL_INDEX, "", CLEAR_TYPE_STENCIL_ONLY },
-    { GL_STENCIL_INDEX4,                     GL_STENCIL_INDEX, "", CLEAR_TYPE_STENCIL_ONLY },
-    { GL_STENCIL_INDEX8,                     GL_STENCIL_INDEX, "", CLEAR_TYPE_STENCIL_ONLY },
-    { GL_STENCIL_INDEX16,                    GL_STENCIL_INDEX, "", CLEAR_TYPE_STENCIL_ONLY },
-    { GL_DEPTH_COMPONENT16,                  GL_DEPTH_COMPONENT, "", CLEAR_TYPE_DEPTH_ONLY },
-    { GL_DEPTH_COMPONENT24,                  GL_DEPTH_COMPONENT, "", CLEAR_TYPE_DEPTH_ONLY },
-    { GL_DEPTH_COMPONENT32,                  GL_DEPTH_COMPONENT, "", CLEAR_TYPE_DEPTH_ONLY },
-    { GL_DEPTH24_STENCIL8,                   GL_DEPTH_STENCIL, "", CLEAR_TYPE_DEPTH_STENCIL },
-    { GL_DEPTH32F_STENCIL8,                  GL_DEPTH_STENCIL, "", CLEAR_TYPE_DEPTH_STENCIL }
+    {GL_RG16UI, GL_RG, CLEAR_TYPE_UINT32},      //TEXTURE_FORMAT_RG16_UINT,
+    {GL_RG16I, GL_RG, CLEAR_TYPE_INT32},        //TEXTURE_FORMAT_RG16_SINT,
+    {GL_RG16, GL_RG, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_RG16_UNORM,
+    {GL_RG16_SNORM, GL_RG, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_RG16_SNORM,
+    {GL_RG16F, GL_RG, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_RG16_FLOAT,
+
+    {GL_R32UI, GL_RED, CLEAR_TYPE_UINT32}, //TEXTURE_FORMAT_R32_UINT,
+    {GL_R32I, GL_RED, CLEAR_TYPE_INT32},    //TEXTURE_FORMAT_R32_SINT,
+    {GL_R32F, GL_RED, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_R32_FLOAT,
+
+    {GL_RGBA16UI, GL_RGBA, CLEAR_TYPE_UINT32},      //TEXTURE_FORMAT_RGBA16_UINT,
+    {GL_RGBA16I, GL_RGBA, CLEAR_TYPE_INT32},        //TEXTURE_FORMAT_RGBA16_SINT,
+    {GL_RGBA16F, GL_RGBA, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_RGBA16_FLOAT,
+    {GL_RGBA16, GL_RGBA, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_RGBA16_UNORM,
+    {GL_RGBA16_SNORM, GL_RGBA, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_RGBA16_SNORM,
+
+    {GL_RG32UI, GL_RG, CLEAR_TYPE_UINT32},      //TEXTURE_FORMAT_RG32_UINT,
+    {GL_RG32I, GL_RG, CLEAR_TYPE_INT32},        //TEXTURE_FORMAT_RG32_SINT,
+    {GL_RG32F, GL_RG, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_RG32_FLOAT,
+    {GL_RGB32UI, GL_RGB, CLEAR_TYPE_UINT32},    //TEXTURE_FORMAT_RGB32_UINT,
+    {GL_RGB32I, GL_RGB, CLEAR_TYPE_INT32},      //TEXTURE_FORMAT_RGB32_SINT,
+    {GL_RGB32F, GL_RGB, CLEAR_TYPE_FLOAT32},  //TEXTURE_FORMAT_RGB32_FLOAT,
+    {GL_RGBA32UI, GL_RGBA, CLEAR_TYPE_UINT32}, //TEXTURE_FORMAT_RGBA32_UINT,
+    {GL_RGBA32I, GL_RGBA, CLEAR_TYPE_INT32},    //TEXTURE_FORMAT_RGBA32_SINT,
+    {GL_RGBA32F, GL_RGBA, CLEAR_TYPE_FLOAT32}, //TEXTURE_FORMAT_RGBA32_FLOAT,
+
+    {GL_DEPTH_COMPONENT16, GL_DEPTH_COMPONENT, CLEAR_TYPE_DEPTH_ONLY}, //TEXTURE_FORMAT_D16,
+    {GL_DEPTH24_STENCIL8, GL_DEPTH_STENCIL, CLEAR_TYPE_DEPTH_STENCIL}, //TEXTURE_FORMAT_D24S8,
+    {0, 0, 0},                                       //TEXTURE_FORMAT_X24G8_UINT,
+    {GL_DEPTH_COMPONENT32, GL_DEPTH_COMPONENT, CLEAR_TYPE_DEPTH_ONLY}, //TEXTURE_FORMAT_D32,
+    {GL_DEPTH32F_STENCIL8, GL_DEPTH_STENCIL, CLEAR_TYPE_DEPTH_STENCIL}, //TEXTURE_FORMAT_D32S8,
+    {0, 0, 0},                                       //TEXTURE_FORMAT_X32G8_UINT,
+
+    // RGB
+    {GL_COMPRESSED_RGB_S3TC_DXT1_EXT, GL_RGB, 0}, //TEXTURE_FORMAT_BC1_UNORM,
+    {GL_COMPRESSED_SRGB_S3TC_DXT1_EXT, GL_RGB, 0}, //TEXTURE_FORMAT_BC1_UNORM_SRGB,
+
+    // RGB A-4bit / RGB (not the best quality, it is better to use BC3)
+    {GL_COMPRESSED_RGBA_S3TC_DXT3_EXT, GL_RGBA, 0}, //TEXTURE_FORMAT_BC2_UNORM,
+    {GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT, GL_RGBA, 0}, //TEXTURE_FORMAT_BC2_UNORM_SRGB,
+
+    // RGB A-8bit
+    {GL_COMPRESSED_RGBA_S3TC_DXT5_EXT, GL_RGBA, 0}, //TEXTURE_FORMAT_BC3_UNORM,
+    {GL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT, GL_RGBA, 0}, //TEXTURE_FORMAT_BC3_UNORM_SRGB,
+
+    // R single channel texture (use for metalmap, glossmap, etc)
+    {GL_COMPRESSED_RED_RGTC1, GL_RED, 0}, //TEXTURE_FORMAT_BC4_UNORM,
+    {GL_COMPRESSED_SIGNED_RED_RGTC1, GL_RED, 0}, //TEXTURE_FORMAT_BC4_SNORM,
+
+    // RG two channel texture (use for normal map or two grayscale maps)
+    {GL_COMPRESSED_RG_RGTC2, GL_RG, 0}, //TEXTURE_FORMAT_BC5_UNORM,
+    {GL_COMPRESSED_SIGNED_RG_RGTC2, GL_RG, 0}, //TEXTURE_FORMAT_BC5_SNORM,
+
+    // RGB half float HDR
+    {GL_COMPRESSED_RGB_BPTC_UNSIGNED_FLOAT, GL_RGB, 0}, //TEXTURE_FORMAT_BC6H_UFLOAT,
+    {GL_COMPRESSED_RGB_BPTC_SIGNED_FLOAT, GL_RGB, 0},   //TEXTURE_FORMAT_BC6H_SFLOAT,
+
+    // RGB[A], best quality, every block is compressed different
+    {GL_COMPRESSED_RGBA_BPTC_UNORM, GL_RGBA, 0}, //TEXTURE_FORMAT_BC7_UNORM,
+    {GL_COMPRESSED_SRGB_ALPHA_BPTC_UNORM, GL_RGBA, 0} //TEXTURE_FORMAT_BC7_UNORM_SRGB,
 };
+
+static_assert(HK_ARRAY_SIZE(InternalFormatLUT) == TEXTURE_FORMAT_MAX, "The texture format LUT doesn't have the right number of elements");
 
 /*
 

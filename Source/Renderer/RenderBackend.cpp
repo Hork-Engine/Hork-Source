@@ -135,7 +135,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     // Create white texture
     {
         GDevice->CreateTexture(STextureDesc()
-                                   .SetFormat(TEXTURE_FORMAT_RGBA8)
+                                   .SetFormat(TEXTURE_FORMAT_RGBA8_UNORM)
                                    .SetResolution(STextureResolution2D(1, 1))
                                    .SetBindFlags(BIND_SHADER_RESOURCE),
                                &GWhiteTexture);
@@ -144,13 +144,13 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
         rect.Dimension.Y   = 1;
         rect.Dimension.Z   = 1;
         const byte data[4] = {0xff, 0xff, 0xff, 0xff};
-        GWhiteTexture->WriteRect(rect, FORMAT_UBYTE4, sizeof(data), 4, data);
+        GWhiteTexture->WriteRect(rect, sizeof(data), 4, data);
         GWhiteTexture->SetDebugName("White texture");
     }
 
     // Create cluster lookup 3D texture
     GDevice->CreateTexture(STextureDesc()
-                               .SetFormat(TEXTURE_FORMAT_RG32UI)
+                               .SetFormat(TEXTURE_FORMAT_RG32_UINT)
                                .SetResolution(STextureResolution3D(MAX_FRUSTUM_CLUSTERS_X,
                                                                    MAX_FRUSTUM_CLUSTERS_Y,
                                                                    MAX_FRUSTUM_CLUSTERS_Z))
@@ -239,7 +239,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 #ifdef SPARSE_TEXTURE_TEST
 #    if 0
     {
-    SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture( TEXTURE_FORMAT_RGBA8, STextureResolution2D( 2048, 2048 ) );
+    SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture( TEXTURE_FORMAT_RGBA8_UNORM, STextureResolution2D( 2048, 2048 ) );
     TRef< ISparseTexture > sparseTexture;
     GDevice->CreateSparseTexture( sparseTextureCI, &sparseTexture );
 
@@ -255,11 +255,11 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 
     {
     int numPageSizes = 0;
-    GDevice->EnumerateSparseTexturePageSize( SPARSE_TEXTURE_2D_ARRAY, TEXTURE_FORMAT_RGBA8, &numPageSizes, nullptr, nullptr, nullptr );
+    GDevice->EnumerateSparseTexturePageSize( SPARSE_TEXTURE_2D_ARRAY, TEXTURE_FORMAT_RGBA8_UNORM, &numPageSizes, nullptr, nullptr, nullptr );
     TPodVector<int> pageSizeX; pageSizeX.Resize( numPageSizes );
     TPodVector<int> pageSizeY; pageSizeY.Resize( numPageSizes );
     TPodVector<int> pageSizeZ; pageSizeZ.Resize( numPageSizes );
-    GDevice->EnumerateSparseTexturePageSize( SPARSE_TEXTURE_2D_ARRAY, TEXTURE_FORMAT_RGBA8, &numPageSizes, pageSizeX.ToPtr(), pageSizeY.ToPtr(), pageSizeZ.ToPtr() );
+    GDevice->EnumerateSparseTexturePageSize( SPARSE_TEXTURE_2D_ARRAY, TEXTURE_FORMAT_RGBA8_UNORM, &numPageSizes, pageSizeX.ToPtr(), pageSizeY.ToPtr(), pageSizeZ.ToPtr() );
     for ( int i = 0 ; i < numPageSizes ; i++ ) {
         LOG( "Sparse page size {} {} {}\n", pageSizeX[i], pageSizeY[i], pageSizeZ[i] );
     }
@@ -273,7 +273,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     {
         numLods++;
     }
-    SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture(TEXTURE_FORMAT_RGBA8, STextureResolution2DArray(texSize, texSize, maxLayers), STextureSwizzle(), numLods);
+    SSparseTextureCreateInfo sparseTextureCI = MakeSparseTexture(TEXTURE_FORMAT_RGBA8_UNORM, STextureResolution2DArray(texSize, texSize, maxLayers), STextureSwizzle(), numLods);
 
     TRef<ISparseTexture> sparseTexture;
     GDevice->CreateSparseTexture(sparseTextureCI, &sparseTexture);
@@ -366,6 +366,12 @@ void ARenderBackend::GenerateReflectionMap(ITexture* pCubemap, TRef<RenderCore::
 {
     AEnvProbeGenerator envProbeGenerator;
     envProbeGenerator.Generate(7, pCubemap, ppTexture);
+}
+
+void ARenderBackend::GenerateSkybox(uint32_t Resolution, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture)
+{
+    AAtmosphereRenderer atmosphereRenderer;
+    atmosphereRenderer.Render(Resolution, LightDir, ppTexture);
 }
 
 #if 0

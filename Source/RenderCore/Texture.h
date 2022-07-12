@@ -33,6 +33,7 @@ SOFTWARE.
 #include "TextureView.h"
 
 #include <Core/BaseMath.h>
+#include <Core/Image.h>
 
 #include <memory.h>
 
@@ -148,17 +149,6 @@ struct STextureResolutionCubemapArray : STextureResolution
     }
 };
 
-struct STextureResolutionRectGL : STextureResolution
-{
-    STextureResolutionRectGL() = default;
-    STextureResolutionRectGL(uint32_t InWidth, uint32_t InHeight)
-    {
-        Width      = InWidth;
-        Height     = InWidth;
-        SliceCount = 1;
-    }
-};
-
 struct STextureOffset
 {
     uint16_t MipLevel = 0;
@@ -267,7 +257,7 @@ HK_FLAG_ENUM_OPERATORS(BIND_FLAG)
 struct STextureDesc
 {
     TEXTURE_TYPE            Type       = TEXTURE_2D;
-    TEXTURE_FORMAT          Format     = TEXTURE_FORMAT_RGBA8;
+    TEXTURE_FORMAT          Format     = TEXTURE_FORMAT_RGBA8_UNORM;
     BIND_FLAG               BindFlags  = BIND_NONE;
     STextureResolution      Resolution = {};
     STextureMultisampleInfo Multisample;
@@ -369,13 +359,6 @@ struct STextureDesc
     STextureDesc& SetResolution(STextureResolutionCubemapArray const& InResolution)
     {
         Type       = TEXTURE_CUBE_MAP_ARRAY;
-        Resolution = InResolution;
-        return *this;
-    }
-
-    STextureDesc& SetResolution(STextureResolutionRectGL const& InResolution)
-    {
-        Type       = TEXTURE_RECT_GL;
         Resolution = InResolution;
         return *this;
     }
@@ -631,7 +614,6 @@ public:
                        (Desc.Multisample.NumSamples > 1 && (Desc.Type == TEXTURE_2D || Desc.Type == TEXTURE_2D_ARRAY)),
                    "Multisample allowed only for 2D and 2DArray textures\n");
 
-        HK_ASSERT_(Desc.NumMipLevels == 1 || (Desc.NumMipLevels > 1 && Desc.Type != TEXTURE_RECT_GL), "Mipmapping is not allowed for TEXTURE_RECT_GL");
         HK_ASSERT_(Desc.NumMipLevels == 1 || (Desc.NumMipLevels > 1 && Desc.Multisample.NumSamples == 1), "Mipmapping is not allowed for multisample texture");
     }
 
@@ -681,25 +663,21 @@ public:
 
 
     virtual void Read(uint16_t     MipLevel,
-                      DATA_FORMAT  Format,
                       size_t       SizeInBytes,
                       unsigned int Alignment,
                       void*        pSysMem) = 0;
 
     virtual void ReadRect(STextureRect const& Rectangle,
-                          DATA_FORMAT         Format,
                           size_t              SizeInBytes,
                           unsigned int        Alignment,
                           void*               pSysMem) = 0;
 
     virtual bool Write(uint16_t     MipLevel,
-                       DATA_FORMAT  Format,
                        size_t       SizeInBytes,
                        unsigned int Alignment,
                        const void*  pSysMem) = 0;
 
     virtual bool WriteRect(STextureRect const& Rectangle,
-                           DATA_FORMAT         Format,
                            size_t              SizeInBytes,
                            unsigned int        Alignment,
                            const void*         pSysMem) = 0;
@@ -747,12 +725,6 @@ HK_INLINE int ITexture::CalcMaxMipLevels(TEXTURE_TYPE Type, STextureResolution c
 {
     uint32_t maxDimension = (Type == TEXTURE_3D) ? Math::Max3(Resolution.Width, Resolution.Height, Resolution.SliceCount) :
                                                    Math::Max(Resolution.Width, Resolution.Height);
-    if (Type == TEXTURE_RECT_GL)
-    {
-        // Texture rect does not support mipmapping
-        return maxDimension > 0 ? 1 : 0;
-    }
-
     return maxDimension > 0 ? Math::Log2(maxDimension) + 1 : 0;
 }
 

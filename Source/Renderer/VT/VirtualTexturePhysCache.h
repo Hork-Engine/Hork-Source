@@ -41,7 +41,7 @@ class AVirtualTexture;
 struct SVirtualTextureCacheLayerInfo
 {
     /** Pixel format on GPU */
-    RenderCore::TEXTURE_FORMAT TextureFormat;
+    TEXTURE_FORMAT TextureFormat;
     /** Upload pixel format */
     RenderCore::DATA_FORMAT UploadFormat;
     /** Page size in bytes for this layer */

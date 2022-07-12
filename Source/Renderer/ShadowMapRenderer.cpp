@@ -3,7 +3,7 @@
 
 using namespace RenderCore;
 
-AConsoleVar r_ShadowCascadeBits("r_ShadowCascadeBits"s, "24"s); // Allowed 16, 24 or 32 bits
+AConsoleVar r_ShadowCascadeBits("r_ShadowCascadeBits"s, "32"s); // Allowed 16, 32 bits
 
 static const float  EVSM_positiveExponent = 40.0;
 static const float  EVSM_negativeExponent = 5.0;
@@ -17,7 +17,7 @@ AShadowMapRenderer::AShadowMapRenderer()
     CreateLightPortalPipeline();
 
     GDevice->CreateTexture(STextureDesc()
-                               .SetFormat(TEXTURE_FORMAT_DEPTH16)
+                               .SetFormat(TEXTURE_FORMAT_D16)
                                .SetResolution(STextureResolution2DArray(1, 1, 1))
                                .SetBindFlags(BIND_SHADER_RESOURCE),
                            &DummyShadowMap);
@@ -305,18 +305,14 @@ void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SDirectionalLightInsta
     int cascadeResolution = Light->ShadowCascadeResolution;
     int totalCascades     = Light->NumCascades;
 
-    RenderCore::TEXTURE_FORMAT depthFormat;
+    TEXTURE_FORMAT depthFormat;
     if (r_ShadowCascadeBits.GetInteger() <= 16)
     {
-        depthFormat = TEXTURE_FORMAT_DEPTH16;
-    }
-    else if (r_ShadowCascadeBits.GetInteger() <= 24)
-    {
-        depthFormat = TEXTURE_FORMAT_DEPTH24;
+        depthFormat = TEXTURE_FORMAT_D16;
     }
     else
     {
-        depthFormat = TEXTURE_FORMAT_DEPTH32;
+        depthFormat = TEXTURE_FORMAT_D32;
     }
 
     ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("ShadowMap Pass");
@@ -334,9 +330,9 @@ void AShadowMapRenderer::AddPass(AFrameGraph& FrameGraph, SDirectionalLightInsta
 
 #if defined SHADOWMAP_EVSM || defined SHADOWMAP_VSM
 #    ifdef SHADOWMAP_EVSM
-    TexFormat = TEXTURE_FORMAT_RGBA32F,
+    TexFormat = TEXTURE_FORMAT_RGBA32_FLOAT,
 #    else
-    TexFormat = TEXTURE_FORMAT_RG32F,
+    TexFormat = TEXTURE_FORMAT_RG32_FLOAT,
 #    endif
     pass.SetColorAttachments(
         {

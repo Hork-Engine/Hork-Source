@@ -127,10 +127,6 @@ public:
 
     bool ChooseAppropriateSparseTexturePageSize(SPARSE_TEXTURE_TYPE Type, TEXTURE_FORMAT Format, int Width, int Height, int Depth, int* PageSizeIndex, int* PageSizeX = nullptr, int* PageSizeY = nullptr, int* PageSizeZ = nullptr) override;
 
-    bool LookupImageFormat(const char* _FormatQualifier, TEXTURE_FORMAT* _Format) override;
-
-    const char* LookupImageFormatQualifier(TEXTURE_FORMAT _Format) override;
-
     SAllocatorCallback const& GetAllocator() const override;
 
     //

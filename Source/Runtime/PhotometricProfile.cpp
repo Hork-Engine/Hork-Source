@@ -292,7 +292,7 @@ static void TestIES(IE_DATA& PhotoData)
     }
     AFileStream f;
     f.OpenWrite("ies.png");
-    WritePNG(f, w, h, 3, data, w * 3);
+    WritePNG(f, w, h, 3, data);
     for (int y = 0; y < h; y++)
     {
         for (int x = 0; x < w; x++)
@@ -309,7 +309,7 @@ static void TestIES(IE_DATA& PhotoData)
         }
     }
     f.OpenWrite("ies_avg.png");
-    WritePNG(f, w, h, 3, data, w * 3);
+    WritePNG(f, w, h, 3, data);
     float smin = Math::MaxValue<float>(), smax = Math::MinValue<float>();
     float linear[256];
     w = 256;
@@ -468,7 +468,7 @@ void APhotometricProfile::WritePhotometricData(RenderCore::ITexture* ProfileText
         rect.Dimension.X = PHOTOMETRIC_DATA_SIZE;
         rect.Dimension.Y = 1;
         rect.Dimension.Z = 1;
-        ProfileTexture->WriteRect(rect, RenderCore::FORMAT_UBYTE1, PHOTOMETRIC_DATA_SIZE, 4, Data);
+        ProfileTexture->WriteRect(rect, PHOTOMETRIC_DATA_SIZE, 4, Data);
         PhotometricProfileIndex   = PhotometricProfileCounter;
         PhotometricProfileCounter = (PhotometricProfileCounter + 1) & 0xff;
     }

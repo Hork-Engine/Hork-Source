@@ -44,12 +44,19 @@ public:
     AEnvironmentMap()
     {}
 
-    void InitializeFromImages(TArray<AImage, 6> const& Faces);
+    static AEnvironmentMap* CreateFromImage(ImageStorage const& Image)
+    {
+        AEnvironmentMap* envmap = CreateInstanceOf<AEnvironmentMap>();
+        envmap->InitializeFromImage(Image);
+        return envmap;
+    }
 
     RenderCore::BindlessHandle GetIrradianceHandle() const { return IrradianceMapHandle; }
     RenderCore::BindlessHandle GetReflectionHandle() const { return ReflectionMapHandle; }
 
 protected:
+    void InitializeFromImage(ImageStorage const& Image);
+
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
