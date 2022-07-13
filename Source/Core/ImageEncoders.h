@@ -32,6 +32,38 @@ SOFTWARE.
 
 #include "Image.h"
 
+namespace TextureBlockCompression
+{
+
+const uint32_t BC1_ENCODE_MAX_LEVEL = 18;
+
+const uint32_t BC2_ENCODE_MAX_LEVEL = 18;
+
+const uint32_t BC3_ENCODE_MAX_LEVEL = 18;
+
+//const uint32_t BC6_ENCODE_MAX_LEVEL = 4;
+
+const uint32_t BC7_ENCODE_MAX_LEVEL = 4;
+
+void Decode_BC1(void const* pSrc, void* pDest, size_t RowStride);
+void Decode_BC2(void const* pSrc, void* pDest, size_t RowStride);
+void Decode_BC3(void const* pSrc, void* pDest, size_t RowStride);
+void Decode_BC4(void const* pSrc, void* pDest, size_t RowStride);
+void Decode_BC5(void const* pSrc, void* pDest, size_t RowStride);
+void Decode_BC6h_f16(void const* pSrc, void* pDest, size_t RowStride, bool bSigned);
+void Decode_BC6h_f32(void const* pSrc, void* pDest, size_t RowStride, bool bSigned);
+void Decode_BC7(void const* pSrc, void* pDest, size_t RowStride);
+
+void Encode_BC1(void const* pSrc, void* pDest, uint32_t Level, bool b3ColorMode, bool bTransparentPixelsForBlack);
+void Encode_BC2(void const* pSrc, void* pDest, uint32_t Level);
+void Encode_BC3(void const* pSrc, void* pDest, uint32_t Level, bool bMaxQuality);
+void Encode_BC4(void const* pSrc, void* pDest, bool bMaxQuality);
+void Encode_BC5(void const* pSrc, void* pDest, bool bMaxQuality);
+void Encode_BC6(void const* pSrc, void* pDest, uint32_t Level);
+void Encode_BC7(void const* pSrc, void* pDest, uint32_t Level);
+
+} // namespace TextureBlockCompression
+
 HK_FORCEINLINE uint16_t pack_r4g4b4a4(uint8_t const* pixel)
 {
     uint16_t r = round(pixel[0] / 255.0f * 15.0f);
