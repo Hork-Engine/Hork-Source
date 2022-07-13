@@ -147,6 +147,8 @@ PBR (physically based).
    
 ## Used third-party libraries
 * AngelSript
+* bc7enc
+* bcdec
 * Bullet Physics
 * cgltf
 * Clipper
