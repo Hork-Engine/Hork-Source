@@ -151,6 +151,14 @@ message(STATUS "USING CGLTF")
 add_subdirectory_with_folder( "ThirdParty/cgltf" ThirdParty/cgltf )
 
 message(STATUS "======================================================================")
+message(STATUS "USING BC7ENC")
+add_subdirectory_with_folder( "ThirdParty/bc7enc_rdo" ThirdParty/bc7enc_rdo )
+
+message(STATUS "======================================================================")
+message(STATUS "USING BCDEC")
+add_subdirectory_with_folder( "ThirdParty/bcdec" ThirdParty/bcdec )
+
+message(STATUS "======================================================================")
 message(STATUS "USING ANGELSCRIPT")
 include_directories(ThirdParty/angelscript/include)
 include_directories(ThirdParty/angelscript_addon)
@@ -298,6 +306,8 @@ glutess
 polyclipping
 tinyexr
 cgltf
+bc7enc
+bcdec
 ${ANGELSCRIPT_LIBRARY_NAME}
 angelscript_addon
 )
