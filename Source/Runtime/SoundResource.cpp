@@ -157,16 +157,11 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
         member                = doc.FindMember("bForceMono");
         createInfo.bForceMono = member ? Core::ParseBool(member->GetString()) : false;
 
-        return InitializeFromMemory(soundFile, soundBinary->GetBinaryData(), soundBinary->GetSizeInBytes(), &createInfo);
+        return InitializeFromMemory(soundFile, BlobRef(soundBinary->GetBinaryData(), soundBinary->GetSizeInBytes()), &createInfo);
     }
     else
     {
-        size_t size = Stream.SizeInBytes();
-        void*  data = Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(size);
-        Stream.Read(data, size);
-        bool bResult = InitializeFromMemory(Stream.GetFileName(), data, size);
-        Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
-        return bResult;
+        return InitializeFromMemory(Stream.GetFileName(), Stream.AsBlob());
     }
 
 #if 0
@@ -225,7 +220,7 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
 #endif
 }
 
-bool ASoundResource::InitializeFromMemory(AStringView _Path, const void* _SysMem, size_t _SizeInBytes, SSoundCreateInfo const* _pCreateInfo)
+bool ASoundResource::InitializeFromMemory(AStringView _Path, BlobRef Memory, SSoundCreateInfo const* _pCreateInfo)
 {
     static const SSoundCreateInfo defaultCI;
     if (!_pCreateInfo)
@@ -257,7 +252,7 @@ bool ASoundResource::InitializeFromMemory(AStringView _Path, const void* _SysMem
         case SOUND_STREAM_DISABLED: {
             AMemoryStream f;
 
-            if (!f.OpenRead(_Path, _SysMem, _SizeInBytes))
+            if (!f.OpenRead(_Path, Memory.GetData(), Memory.Size()))
             {
                 return false;
             }
@@ -272,7 +267,7 @@ bool ASoundResource::InitializeFromMemory(AStringView _Path, const void* _SysMem
         case SOUND_STREAM_MEMORY: {
             AMemoryStream f;
 
-            if (!f.OpenRead(_Path, _SysMem, _SizeInBytes))
+            if (!f.OpenRead(_Path, Memory.GetData(), Memory.Size()))
             {
                 return false;
             }
@@ -282,10 +277,10 @@ bool ASoundResource::InitializeFromMemory(AStringView _Path, const void* _SysMem
                 return false;
             }
 
-            void* pHeapPtr = Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(_SizeInBytes);
-            Platform::Memcpy(pHeapPtr, _SysMem, _SizeInBytes);
+            void* pHeapPtr = Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(Memory.Size());
+            Platform::Memcpy(pHeapPtr, Memory.GetData(), Memory.Size());
 
-            pFileInMemory = MakeRef<SFileInMemory>(pHeapPtr, _SizeInBytes);
+            pFileInMemory = MakeRef<SFileInMemory>(pHeapPtr, Memory.Size());
 
             break;
         }

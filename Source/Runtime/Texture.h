@@ -116,10 +116,10 @@ public:
         return texture;
     }
 
-    static ATexture* CreateColorGradingLUT(AStringView Path)
+    static ATexture* CreateColorGradingLUT(IBinaryStreamReadInterface& Stream)
     {
         ATexture* texture = CreateInstanceOf<ATexture>();
-        texture->InitializeColorGradingLUT(Path);
+        texture->InitializeColorGradingLUT(Stream);
         return texture;
     }
 
@@ -196,7 +196,7 @@ protected:
     void Initialize3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t Depth);
 
     /** Create 3D color grading LUT */
-    void InitializeColorGradingLUT(AStringView Path);
+    void InitializeColorGradingLUT(IBinaryStreamReadInterface& Stream);
 
     /** Create 3D color grading LUT */
     void InitializeColorGradingLUT(SColorGradingPreset const& Preset);

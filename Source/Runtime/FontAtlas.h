@@ -128,7 +128,7 @@ class AFont : public AResource
 
 public:
     /** Initialize from memory */
-    void InitializeFromMemoryTTF(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo const* _pCreateInfo = nullptr);
+    void InitializeFromMemoryTTF(BlobRef Memory, SFontCreateInfo const* _pCreateInfo = nullptr);
 
     /** Purge font data */
     void Purge();

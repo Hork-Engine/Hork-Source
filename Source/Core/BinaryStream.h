@@ -33,6 +33,7 @@ SOFTWARE.
 #include <Platform/EndianSwap.h>
 #include <Platform/Format.h>
 #include "String.h"
+#include "HeapBlob.h"
 
 class IBinaryStreamBaseInterface
 {
@@ -165,6 +166,20 @@ public:
         }
 
         return str;
+    }
+
+    HeapBlob ReadBlob(size_t SizeInBytes)
+    {
+        HeapBlob blob(SizeInBytes);
+
+        Read(blob.GetData(), blob.Size());
+        return blob;
+    }
+
+    HeapBlob AsBlob()
+    {
+        Rewind();
+        return ReadBlob(SizeInBytes());
     }
 
     int8_t ReadInt8()
@@ -351,6 +366,11 @@ public:
 #else
         Write(Str.ToPtr(), size * sizeof(uint16_t));
 #endif
+    }
+
+    void Writelob(BlobRef Blob)
+    {
+        Write(Blob.GetData(), Blob.Size());
     }
 
     void WriteInt8(int8_t i)

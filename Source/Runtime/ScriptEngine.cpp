@@ -2510,16 +2510,7 @@ static int LoadScript(const char* SourceFileName, const char* IncludedFrom, CScr
     if (!f.OpenRead(SourceFileName))
         return -1;
 
-    size_t bufferSize = f.SizeInBytes() + 1;
-    char*  buffer     = (char*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(bufferSize);
-    f.Read(buffer, bufferSize - 1);
-    buffer[bufferSize - 1] = 0;
-
-    int r = pBuilder->AddSectionFromMemory(SourceFileName, buffer);
-
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(buffer);
-
-    return r;
+    return pBuilder->AddSectionFromMemory(SourceFileName, f.AsString().CStr());
 }
 
 AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)

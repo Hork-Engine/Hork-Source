@@ -34,6 +34,7 @@ SOFTWARE.
 #include <Core/BinaryToC.h>
 #include <Core/Compress.h>
 #include <Core/IO.h>
+#include <Core/HeapBlob.h>
 
 namespace Core
 {
@@ -54,13 +55,7 @@ bool BinaryToC(AStringView SourceFile, AStringView DestFile, AStringView SymName
         return false;
     }
 
-    size_t size = source.SizeInBytes();
-    byte*  data = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(size);
-    source.Read(data, size);
-
-    WriteBinaryToC(dest, SymName, data, size, bEncodeBase85);
-
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
+    WriteBinaryToC(dest, SymName, source.AsBlob(), bEncodeBase85);
 
     return true;
 }
@@ -81,31 +76,27 @@ bool BinaryToCompressedC(AStringView SourceFile, AStringView DestFile, AStringVi
         return false;
     }
 
-    size_t decompressedSize = source.SizeInBytes();
-    byte*  decompressedData = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(decompressedSize);
-    source.Read(decompressedData, decompressedSize);
+    HeapBlob decompressedData = source.AsBlob();
 
-    size_t compressedSize = Core::ZMaxCompressedSize(decompressedSize);
-    byte*  compressedData = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(compressedSize);
-    Core::ZCompress(compressedData, &compressedSize, (byte*)decompressedData, decompressedSize, ZLIB_COMPRESS_UBER_COMPRESSION);
+    size_t compressedSize = Core::ZMaxCompressedSize(decompressedData.Size());
+    HeapBlob compressedData(compressedSize);
+    Core::ZCompress((byte*)compressedData.GetData(), &compressedSize, (const byte*)decompressedData.GetData(), decompressedData.Size(), ZLIB_COMPRESS_UBER_COMPRESSION);
 
-    WriteBinaryToC(dest, SymName, compressedData, compressedSize, bEncodeBase85);
-
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(compressedData);
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(decompressedData);
+    WriteBinaryToC(dest, SymName, BlobRef(compressedData.GetData(), compressedSize), bEncodeBase85);
 
     return true;
 }
 
-void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, AStringView SymName, const void* pData, size_t SizeInBytes, bool bEncodeBase85)
+void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, AStringView SymName, BlobRef Blob, bool bEncodeBase85)
 {
-    const byte* bytes = (const byte*)pData;
+    const byte* bytes = (const byte*)Blob.GetData();
+    size_t      size  = Blob.Size();
 
     if (bEncodeBase85)
     {
-        Stream.FormattedPrint(HK_FMT("static const char {}_Data_Base85[{}+1] =\n    \""), SymName, (int)((SizeInBytes + 3) / 4) * 5);
+        Stream.FormattedPrint(HK_FMT("static const char {}_Data_Base85[{}+1] =\n    \""), SymName, (int)((size + 3) / 4) * 5);
         char prev_c = 0;
-        for (size_t i = 0; i < SizeInBytes; i += 4)
+        for (size_t i = 0; i < size; i += 4)
         {
             uint32_t d = *(uint32_t*)(bytes + i);
             for (int j = 0; j < 5; j++, d /= 85)
@@ -125,10 +116,10 @@ void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, AStringView SymName, co
     }
     else
     {
-        Stream.FormattedPrint(HK_FMT("static const size_t {}_Size = {};\n"), SymName, (int)SizeInBytes);
-        Stream.FormattedPrint(HK_FMT("static const uint64_t {}_Data[{}] =\n{{"), SymName, Align(SizeInBytes, 8));
+        Stream.FormattedPrint(HK_FMT("static const size_t {}_Size = {};\n"), SymName, (int)size);
+        Stream.FormattedPrint(HK_FMT("static const uint64_t {}_Data[{}] =\n{{"), SymName, Align(size, 8));
         int column = 0;
-        for (size_t i = 0; i < SizeInBytes; i += 8)
+        for (size_t i = 0; i < size; i += 8)
         {
             uint64_t d = *(uint64_t*)(bytes + i);
             if ((column++ % 6) == 0)
@@ -139,7 +130,7 @@ void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, AStringView SymName, co
             {
                 Stream.FormattedPrint(HK_FMT("0x{:08x}{:08x}"), Math::INT64_HIGH_INT(d), Math::INT64_LOW_INT(d));
             }
-            if (i + 8 < SizeInBytes)
+            if (i + 8 < size)
             {
                 Stream.FormattedPrint(HK_FMT(", "));
             }

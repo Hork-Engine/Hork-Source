@@ -618,10 +618,7 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
         return false;
     }
 
-    size_t size = f.SizeInBytes();
-
-    void* buf = Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(size);
-    f.Read(buf, size);
+    HeapBlob blob = f.AsBlob();
 
     ALinearAllocatorGLTF allocator;
 
@@ -635,7 +632,7 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
 
     cgltf_data* data = NULL;
 
-    cgltf_result result = cgltf_parse(&options, buf, size, &data);
+    cgltf_result result = cgltf_parse(&options, blob.GetData(), blob.Size(), &data);
     if (result != cgltf_result_success)
     {
         LOG("Couldn't load {} : {}\n", Source, GetErrorString(result));
@@ -663,8 +660,6 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
 fin:
 
     //cgltf_free( data );
-
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(buf);
 
     return ret;
 }

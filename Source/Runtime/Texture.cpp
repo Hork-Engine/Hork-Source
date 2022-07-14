@@ -262,7 +262,8 @@ void ATexture::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Textures/LUT_Luminance"))
     {
-        byte* data = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(16 * 16 * 16 * 4);
+        HeapBlob blob(16 * 16 * 16 * 4);
+        byte*    data = (byte*)blob.GetData();
         for (int z = 0; z < 16; z++)
         {
             byte* depth = data + (size_t)z * (16 * 16 * 4);
@@ -279,9 +280,6 @@ void ATexture::LoadInternalResource(AStringView Path)
         }
         Initialize3D(TEXTURE_FORMAT_SBGRA8_UNORM, 1, 16, 16, 16);
         WriteArbitraryData(0, 0, 0, 16, 16, 16, 0, data);
-
-        Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
-
         return;
     }
 
@@ -514,15 +512,16 @@ void ATexture::Initialize3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32
     GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
 }
 
-void ATexture::InitializeColorGradingLUT(AStringView Path)
+void ATexture::InitializeColorGradingLUT(IBinaryStreamReadInterface& Stream)
 {
-    ImageStorage image = CreateImage(Path, nullptr, IMAGE_STORAGE_NO_ALPHA, TEXTURE_FORMAT_SBGRA8_UNORM);
+    ImageStorage image = CreateImage(Stream, nullptr, IMAGE_STORAGE_NO_ALPHA, TEXTURE_FORMAT_SBGRA8_UNORM);
 
     if (image && image.GetDesc().Width == 16 * 16 && image.GetDesc().Height == 16)
     {
         const byte* p = static_cast<const byte*>(image.GetData());
 
-        byte* data = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(16 * 16 * 16 * 4);
+        HeapBlob blob(16 * 16 * 16 * 4);
+        byte*    data = (byte*)blob.GetData();
 
         for (int y = 0; y < 16; y++)
         {
@@ -537,8 +536,6 @@ void ATexture::InitializeColorGradingLUT(AStringView Path)
 
         Initialize3D(image.GetDesc().Format, 1, 16, 16, 16);
         WriteArbitraryData(0, 0, 0, 16, 16, 16, 0, data);
-
-        Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
 
         return;
     }
@@ -589,7 +586,8 @@ void ATexture::InitializeColorGradingLUT(SColorGradingPreset const& Preset)
 
     const float scale = 1.0f / 15.0f;
 
-    byte* data = (byte*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(16 * 16 * 16 * 4);
+    HeapBlob blob(16 * 16 * 16 * 4);
+    byte*    data = (byte*)blob.GetData();
 
     for (int z = 0; z < 16; z++)
     {
@@ -615,8 +613,6 @@ void ATexture::InitializeColorGradingLUT(SColorGradingPreset const& Preset)
     }
 
     WriteArbitraryData(0, 0, 0, 16, 16, 16, 0, data);
-
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(data);
 }
 
 void ATexture::InitializeCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)

@@ -2310,7 +2310,7 @@ AFont::~AFont()
     Purge();
 }
 
-void AFont::InitializeFromMemoryTTF(const void* _SysMem, size_t _SizeInBytes, SFontCreateInfo const* _pCreateInfo)
+void AFont::InitializeFromMemoryTTF(BlobRef Memory, SFontCreateInfo const* _pCreateInfo)
 {
     Purge();
 
@@ -2332,7 +2332,7 @@ void AFont::InitializeFromMemoryTTF(const void* _SysMem, size_t _SizeInBytes, SF
         defaultCreateInfo.RasterizerMultiply = 1.0f;
     }
 
-    if (!Build(_SysMem, _SizeInBytes, _pCreateInfo))
+    if (!Build(Memory.GetData(), Memory.Size(), _pCreateInfo))
     {
         return;
     }
@@ -2385,7 +2385,7 @@ void AFont::LoadInternalResource(AStringView _Path)
             CriticalError("Failed to create default font\n");
         }
 
-        InitializeFromMemoryTTF(f.GetHeapPtr(), f.SizeInBytes(), &createInfo);
+        InitializeFromMemoryTTF(BlobRef(f.GetHeapPtr(), f.SizeInBytes()), &createInfo);
 
         DrawOffset.Y = 1.0f;
         return;
@@ -2484,7 +2484,7 @@ bool AFont::LoadResource(IBinaryStreamReadInterface& Stream)
     createInfo.RasterizerMultiply = member ? Core::ParseFloat(member->GetString()) : 1.0f;
     createInfo.RasterizerMultiply = Math::Clamp(createInfo.RasterizerMultiply, 0.0f, 10.0f);
 
-    InitializeFromMemoryTTF(fontBinary->GetBinaryData(), fontBinary->GetSizeInBytes(), &createInfo);
+    InitializeFromMemoryTTF(BlobRef(fontBinary->GetBinaryData(), fontBinary->GetSizeInBytes()), &createInfo);
 
     return true;
 }

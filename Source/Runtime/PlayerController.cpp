@@ -167,16 +167,15 @@ void APlayerController::TakeScreenshot()
             size_t sz = w * h * 4;
             if (sz > 0)
             {
-                void* p = Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(sz);
-                GEngine->ReadScreenPixels(0, 0, w, h, sz, p);
-                FlipImageY(p, w, h, 4, w * 4);
+                HeapBlob pixels(sz);
+                GEngine->ReadScreenPixels(0, 0, w, h, sz, pixels.GetData());
+                FlipImageY(pixels.GetData(), w, h, 4, w * 4);
                 static int  n = 0;
                 AFileStream f;
                 if (f.OpenWrite(HK_FORMAT("screenshots/{}.png", n++)))
                 {
-                    WritePNG(f, w, h, 4, p);
+                    WritePNG(f, w, h, 4, pixels.GetData());
                 }
-                Platform::GetHeapAllocator<HEAP_TEMP>().Free(p);
             }
         }
     }

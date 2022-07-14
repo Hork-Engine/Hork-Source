@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "RawImage.h"
+#include "HeapBlob.h"
 
 #include <Containers/Array.h>
 
@@ -381,37 +382,14 @@ public:
         Reset(_Desc);
     }
 
-    virtual ~ImageStorage()
-    {
-        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(m_pData);
-    }
+    virtual ~ImageStorage() = default;
 
     ImageStorage(ImageStorage const& Rhs) = delete;
     ImageStorage& operator=(ImageStorage const& Rhs) = delete;
 
-    ImageStorage(ImageStorage&& Rhs)
-    {
-        m_pData       = Rhs.m_pData;
-        m_SizeInBytes = Rhs.m_SizeInBytes;
-        m_Desc        = std::move(Rhs.m_Desc);
+    ImageStorage(ImageStorage&& Rhs) = default;
 
-        Rhs.m_pData       = nullptr;
-        Rhs.m_SizeInBytes = 0;
-    }
-
-    ImageStorage& operator=(ImageStorage&& Rhs)
-    {
-        Platform::GetHeapAllocator<HEAP_IMAGE>().Free(m_pData);
-
-        m_pData       = Rhs.m_pData;
-        m_SizeInBytes = Rhs.m_SizeInBytes;
-        m_Desc        = std::move(Rhs.m_Desc);
-
-        Rhs.m_pData       = nullptr;
-        Rhs.m_SizeInBytes = 0;
-
-        return *this;
-    }
+    ImageStorage& operator=(ImageStorage&& Rhs) = default;
 
     void Swap(ImageStorage& Rhs)
     {
@@ -432,27 +410,27 @@ public:
 
     void* GetData()
     {
-        return m_pData;
+        return m_Data.GetData();
     }
 
     void const* GetData() const
     {
-        return m_pData;
+        return m_Data.GetData();
     }
 
     size_t GetSizeInBytes() const
     {
-        return m_SizeInBytes;
+        return m_Data.Size();
     }
 
     bool IsEmpty() const
     {
-        return m_SizeInBytes == 0;
+        return m_Data.IsEmpty();
     }
 
     operator bool() const
     {
-        return m_SizeInBytes != 0;
+        return !m_Data.IsEmpty();
     }
 
     ImageStorageDesc const& GetDesc() const
@@ -482,8 +460,7 @@ public:
 private:
     bool GenerateMipmaps3D(ImageMipmapConfig const& MipmapConfig);
 
-    uint8_t*         m_pData;
-    size_t           m_SizeInBytes;
+    HeapBlob         m_Data;
     ImageStorageDesc m_Desc;
 };
 

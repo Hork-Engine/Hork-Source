@@ -28,22 +28,47 @@ SOFTWARE.
 
 */
 
-#pragma once
-
-#include "BinaryStream.h"
-#include "String.h"
 #include "HeapBlob.h"
 
-namespace Core
+HeapBlob::~HeapBlob()
 {
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
+}
 
-/** Convert binary file to .c */
-bool BinaryToC(AStringView SourceFile, AStringView DestFile, AStringView SymName, bool bEncodeBase85);
+void HeapBlob::Reset(size_t SizeInBytes, void const* pData, MALLOC_FLAGS Flags)
+{
+    if (m_HeapSize == SizeInBytes)
+	{
+        if (pData && m_HeapSize > 0)
+            Platform::Memcpy(m_HeapPtr, pData, m_HeapSize);
+		return;
+	}
 
-/** Compress and convert binary file to .c */
-bool BinaryToCompressedC(AStringView SourceFile, AStringView DestFile, AStringView SymName, bool bEncodeBase85);
+	Platform::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
 
-/** Write binary date to .c */
-void WriteBinaryToC(IBinaryStreamWriteInterface& Stream, AStringView SymName, BlobRef Blob, bool bEncodeBase85);
+	m_HeapSize = SizeInBytes;
 
-} // namespace Core
+	if (SizeInBytes > 0)
+	{
+        m_HeapPtr = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes + 1, 16, Flags);
+        if (m_HeapPtr)
+		{
+            if (pData)
+                Platform::Memcpy(m_HeapPtr, pData, SizeInBytes);
+            ((uint8_t*)m_HeapPtr)[SizeInBytes] = 0;
+		}
+		else
+            m_HeapSize = 0;
+	}
+	else
+	{
+        m_HeapPtr = nullptr;
+	}
+}
+
+void HeapBlob::Reset()
+{
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
+    m_HeapPtr  = nullptr;
+    m_HeapSize = 0;
+}

@@ -69,10 +69,9 @@ AFreeverb::AFreeverb( int SampleRate )
     }
 
     // Allocate memory for buffers
-    MemorySize = capacity * sizeof( float );
-    pMemory    = (float*)Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(MemorySize, 16, MALLOC_ZERO);
+    MemoryBlob.Reset(capacity * sizeof(float), nullptr, MALLOC_ZERO);
 
-    float * buffer = pMemory;
+    float* buffer = (float*)MemoryBlob.GetData();
     for ( int i = 0 ; i < NUM_COMBs ; i++ ) {
         CombL[i].pBuffer = buffer;
         CombL[i].BufSize = combLengths[i];
@@ -108,18 +107,13 @@ AFreeverb::AFreeverb( int SampleRate )
     SetFreeze(false);
 }
 
-AFreeverb::~AFreeverb()
-{
-    Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Free(pMemory);
-}
-
 void AFreeverb::Mute()
 {
     if ( bFreeze ) {
         return;
     }
 
-    Platform::ZeroMem(pMemory, MemorySize);
+    MemoryBlob.ZeroMem();
 }
 
 void AFreeverb::ProcessReplace( float * inputL, float * inputR, float * outputL, float * outputR, int frameCount, int skip )

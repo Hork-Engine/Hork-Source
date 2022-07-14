@@ -346,7 +346,7 @@ void ImageStorage::Reset(ImageStorageDesc const& _Desc)
     HK_VERIFY(m_Desc.NumMipmaps == 1 || m_Desc.NumMipmaps == numMips, "ImageStorage: Invalid number of mipmaps");
 
     // Calc storage size
-    m_SizeInBytes = 0;
+    size_t sizeInBytes = 0;
     if (m_Desc.Type == TEXTURE_3D)
     {
         size_t bytesPerPixel = info.BytesPerBlock;
@@ -356,9 +356,9 @@ void ImageStorage::Reset(ImageStorageDesc const& _Desc)
             uint32_t h = std::max<uint32_t>(1, (m_Desc.Height >> i));
             uint32_t d = std::max<uint32_t>(1, (m_Desc.Depth >> i));
 
-            m_SizeInBytes += w * h * d;
+            sizeInBytes += w * h * d;
         }
-        m_SizeInBytes *= bytesPerPixel;
+        sizeInBytes *= bytesPerPixel;
     }
     else
     {
@@ -370,13 +370,13 @@ void ImageStorage::Reset(ImageStorageDesc const& _Desc)
                 uint32_t w = std::max<uint32_t>(blockSize, (m_Desc.Width >> i));
                 uint32_t h = std::max<uint32_t>(blockSize, (m_Desc.Height >> i));
 
-                m_SizeInBytes += w * h;
+                sizeInBytes += w * h;
             }
 
-            HK_ASSERT(m_SizeInBytes % (blockSize * blockSize) == 0);
-            m_SizeInBytes /= blockSize * blockSize;
-            m_SizeInBytes *= m_Desc.SliceCount;
-            m_SizeInBytes *= blockSizeInBytes;
+            HK_ASSERT(sizeInBytes % (blockSize * blockSize) == 0);
+            sizeInBytes /= blockSize * blockSize;
+            sizeInBytes *= m_Desc.SliceCount;
+            sizeInBytes *= blockSizeInBytes;
         }
         else
         {
@@ -386,22 +386,20 @@ void ImageStorage::Reset(ImageStorageDesc const& _Desc)
                 uint32_t w = std::max<uint32_t>(1, (m_Desc.Width >> i));
                 uint32_t h = std::max<uint32_t>(1, (m_Desc.Height >> i));
 
-                m_SizeInBytes += w * h;
+                sizeInBytes += w * h;
             }
 
-            m_SizeInBytes *= m_Desc.SliceCount;
-            m_SizeInBytes *= bytesPerPixel;
+            sizeInBytes *= m_Desc.SliceCount;
+            sizeInBytes *= bytesPerPixel;
         }
     }
 
-    m_pData = (uint8_t*)Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(m_SizeInBytes);
+    m_Data.Reset(sizeInBytes);
 }
 
 void ImageStorage::Reset()
 {
-    Platform::GetHeapAllocator<HEAP_IMAGE>().Free(m_pData);
-    m_pData       = nullptr;
-    m_SizeInBytes = 0;
+    m_Data.Reset();
 }
 
 bool ImageStorage::WriteSubresource(TextureOffset const& Offset, uint32_t Width, uint32_t Height, void const* Bytes)
@@ -508,7 +506,7 @@ ImageSubresource ImageStorage::GetSubresource(ImageViewDesc const& ViewDesc) con
 
     ImageSubresource view;
     view.m_Desc        = ViewDesc;
-    view.m_pData       = m_pData + offset;
+    view.m_pData       = (uint8_t*)m_Data.GetData() + offset;
     view.m_SliceStride = bCompressed ? w * h / (blockSize * blockSize) * blockSizeInBytes : w * h * blockSizeInBytes;
     view.m_SizeInBytes = view.m_SliceStride * ViewDesc.SliceCount;
     view.m_Width       = w;
@@ -585,9 +583,12 @@ static void GenerateMipmaps(ImageStorage& storage, uint32_t SliceIndex, IMAGE_RE
     uint32_t curWidth  = subresource.GetWidth();
     uint32_t curHeight = subresource.GetWidth();
 
-    size_t size     = d.GetRequiredMemorySize(curWidth, curHeight);
-    void*  tempBuf  = Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(size * 2);
-    void*  tempBuf2 = (uint8_t*)tempBuf + size;
+    size_t size = d.GetRequiredMemorySize(curWidth, curHeight);
+
+    HeapBlob blob(size * 2);
+
+    void* tempBuf  = blob.GetData();
+    void* tempBuf2 = (uint8_t*)tempBuf + size;
 
     d.Decode(tempBuf, subresource.GetData(), curWidth, curHeight);
 
@@ -627,8 +628,6 @@ static void GenerateMipmaps(ImageStorage& storage, uint32_t SliceIndex, IMAGE_RE
         curWidth  = mipWidth;
         curHeight = mipHeight;
     }
-
-    Platform::GetHeapAllocator<HEAP_IMAGE>().Free(tempBuf);
 }
 
 bool ImageStorage::GenerateMipmaps(uint32_t SliceIndex, ImageMipmapConfig const& MipmapConfig)
@@ -780,8 +779,8 @@ void ImageStorage::Write(IBinaryStreamWriteInterface& stream) const
     stream.WriteUInt32(m_Desc.NumMipmaps);
     stream.WriteUInt8(m_Desc.Format);
     stream.WriteUInt32(m_Desc.Flags);
-    stream.WriteUInt32(m_SizeInBytes);
-    stream.Write(m_pData, m_SizeInBytes);
+    stream.WriteUInt32(m_Data.Size());
+    stream.Write(m_Data.GetData(), m_Data.Size());
 }
 
 void ImageStorage::Read(IBinaryStreamReadInterface& stream)
@@ -795,12 +794,13 @@ void ImageStorage::Read(IBinaryStreamReadInterface& stream)
     m_Desc.NumMipmaps = stream.ReadUInt32();
     m_Desc.Format     = (TEXTURE_FORMAT)stream.ReadUInt8();
     m_Desc.Flags      = (IMAGE_STORAGE_FLAGS)stream.ReadUInt32();
-    m_SizeInBytes     = stream.ReadUInt32();
+
+    size_t sizeInBytes = stream.ReadUInt32();
 
     // TODO: Perform validation
 
-    m_pData = (uint8_t*)Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(m_SizeInBytes);
-    stream.Read(m_pData, m_SizeInBytes);
+    m_Data.Reset(sizeInBytes);
+    stream.Read(m_Data.GetData(), sizeInBytes);
 }
 
 ImageStorage CreateImage(ARawImage const& rawImage, bool bConvertHDRIToHalfFloat, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags)
@@ -1484,10 +1484,13 @@ static void ResampleImage(ImageResampleParams const& Desc, void* pDest)
 {
     Decoder d;
 
-    size_t size     = d.GetRequiredMemorySize(Desc.Width, Desc.Height);
-    size_t size2    = d.GetRequiredMemorySize(Desc.ScaledWidth, Desc.ScaledHeight);
-    void*  tempBuf  = Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(size + size2);
-    void*  tempBuf2 = (uint8_t*)tempBuf + size;
+    size_t size  = d.GetRequiredMemorySize(Desc.Width, Desc.Height);
+    size_t size2 = d.GetRequiredMemorySize(Desc.ScaledWidth, Desc.ScaledHeight);
+
+    HeapBlob blob(size + size2);
+
+    void* tempBuf  = blob.GetData();
+    void* tempBuf2 = (uint8_t*)tempBuf + size;
 
     d.Decode(tempBuf, Desc.pImage, Desc.Width, Desc.Height);
 
@@ -1514,8 +1517,6 @@ static void ResampleImage(ImageResampleParams const& Desc, void* pDest)
     HK_UNUSED(result);
 
     d.Encode(pDest, tempBuf2, Desc.ScaledWidth, Desc.ScaledHeight);
-
-    Platform::GetHeapAllocator<HEAP_IMAGE>().Free(tempBuf);
 }
 
 bool ResampleImage(ImageResampleParams const& Desc, void* pDest)

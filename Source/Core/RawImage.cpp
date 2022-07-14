@@ -31,6 +31,7 @@ SOFTWARE.
 #include <Core/RawImage.h>
 #include <Core/Color.h>
 #include <Core/Compress.h>
+#include <Core/HeapBlob.h>
 #include <Platform/Logger.h>
 
 #define STBI_MALLOC(sz)                     Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(sz, 16)
@@ -120,20 +121,16 @@ static void* LoadEXR(IBinaryStreamReadInterface& Stream, int* w, int* h, int* ch
     HK_ASSERT(desiredchannels >= 0 && desiredchannels <= 4);
 
     size_t streamOffset = Stream.GetOffset();
-    Stream.SeekEnd(0);
-    size_t sizeInBytes = Stream.GetOffset() - streamOffset;
-    void*  memory      = Platform::GetHeapAllocator<HEAP_IMAGE>().Alloc(sizeInBytes);
-    Stream.SeekSet(streamOffset);
-    Stream.Read(memory, sizeInBytes);
 
-    float*      data;
-    const char* err;
+    HeapBlob memory = Stream.ReadBlob(Stream.SizeInBytes() - streamOffset);
+
+    float* data;
 
     *channels = 0;
 
-    int r = LoadEXRFromMemory(&data, w, h, (unsigned char*)memory, sizeInBytes, &err);
+    int r = LoadEXRFromMemory(&data, w, h, (unsigned char*)memory.GetData(), memory.Size(), nullptr);
 
-    Platform::GetHeapAllocator<HEAP_IMAGE>().Free(memory);
+    memory.Reset();
 
     if (r != TINYEXR_SUCCESS)
     {

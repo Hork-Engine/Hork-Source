@@ -33,6 +33,7 @@ SOFTWARE.
 #pragma once
 
 #include <Platform/BaseTypes.h>
+#include <Core/HeapBlob.h>
 
 #define freeverb_Undenormalise( sample ) if(((*(unsigned int*)&sample)&0x7f800000)==0) sample=0.0f
 
@@ -131,7 +132,7 @@ public:
     const float InitialWidth = 1;
 
     AFreeverb( int SampleRate );
-    virtual ~AFreeverb();
+    virtual ~AFreeverb() = default;
 
     void Mute();
 
@@ -182,6 +183,5 @@ private:
     SAllPass AllPassL[NUM_ALL_PASSES];
     SAllPass AllPassR[NUM_ALL_PASSES];
 
-    float * pMemory;
-    size_t  MemorySize;
+    HeapBlob MemoryBlob;
 };
