@@ -38,32 +38,32 @@ HeapBlob::~HeapBlob()
 void HeapBlob::Reset(size_t SizeInBytes, void const* pData, MALLOC_FLAGS Flags)
 {
     if (m_HeapSize == SizeInBytes)
-	{
+    {
         if (pData && m_HeapSize > 0)
             Platform::Memcpy(m_HeapPtr, pData, m_HeapSize);
-		return;
-	}
+        return;
+    }
 
-	Platform::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(m_HeapPtr);
 
-	m_HeapSize = SizeInBytes;
+    m_HeapSize = SizeInBytes;
 
-	if (SizeInBytes > 0)
-	{
+    if (SizeInBytes > 0)
+    {
         m_HeapPtr = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes + 1, 16, Flags);
         if (m_HeapPtr)
-		{
+        {
             if (pData)
                 Platform::Memcpy(m_HeapPtr, pData, SizeInBytes);
             ((uint8_t*)m_HeapPtr)[SizeInBytes] = 0;
-		}
-		else
+        }
+        else
             m_HeapSize = 0;
-	}
-	else
-	{
+    }
+    else
+    {
         m_HeapPtr = nullptr;
-	}
+    }
 }
 
 void HeapBlob::Reset()

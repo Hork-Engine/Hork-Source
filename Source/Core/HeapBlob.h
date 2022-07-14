@@ -34,176 +34,176 @@ SOFTWARE.
 
 struct HeapBlob
 {
-	HeapBlob() = default;
+    HeapBlob() = default;
 
-	HeapBlob(size_t SizeInBytes, void const* pData = nullptr, MALLOC_FLAGS Flags = MALLOC_FLAGS_DEFAULT)
-	{
+    HeapBlob(size_t SizeInBytes, void const* pData = nullptr, MALLOC_FLAGS Flags = MALLOC_FLAGS_DEFAULT)
+    {
         Reset(SizeInBytes, pData, Flags);
-	}
+    }
 
-	HeapBlob(const HeapBlob&)  = delete;
+    HeapBlob(const HeapBlob&) = delete;
     HeapBlob const& operator=(HeapBlob const&) = delete;
 
-	~HeapBlob();
+    ~HeapBlob();
 
-	HeapBlob(HeapBlob&& Rhs) noexcept :
+    HeapBlob(HeapBlob&& Rhs) noexcept :
         m_HeapPtr(Rhs.m_HeapPtr), m_HeapSize(Rhs.m_HeapSize)
-	{
+    {
         Rhs.m_HeapPtr  = nullptr;
         Rhs.m_HeapSize = 0;
-	}
+    }
 
-	HeapBlob& operator=(HeapBlob&& Rhs) noexcept
-	{
+    HeapBlob& operator=(HeapBlob&& Rhs) noexcept
+    {
         m_HeapPtr      = Rhs.m_HeapPtr;
         m_HeapSize     = Rhs.m_HeapSize;
         Rhs.m_HeapPtr  = nullptr;
         Rhs.m_HeapSize = 0;
-		return *this;
-	}
+        return *this;
+    }
 
-	bool operator==(HeapBlob const& Rhs) const
-	{
+    bool operator==(HeapBlob const& Rhs) const
+    {
         if (m_HeapSize != Rhs.m_HeapSize)
-			return false;
+            return false;
         return !std::memcmp(m_HeapPtr, Rhs.m_HeapPtr, m_HeapSize);
-	}
+    }
 
-	bool operator!=(HeapBlob const& Rhs) const
-	{
+    bool operator!=(HeapBlob const& Rhs) const
+    {
         return !(*this == Rhs);
-	}
+    }
 
-	void* GetData() const
-	{
+    void* GetData() const
+    {
         return m_HeapPtr;
-	}
+    }
 
-	size_t Size() const
-	{
+    size_t Size() const
+    {
         return m_HeapSize;
-	}
+    }
 
-	bool IsEmpty() const
-	{
+    bool IsEmpty() const
+    {
         return m_HeapSize == 0;
-	}
+    }
 
-	operator bool() const
-	{
+    operator bool() const
+    {
         return m_HeapSize != 0;
-	}
+    }
 
-	void Reset(size_t SizeInBytes, void const* pData = nullptr, MALLOC_FLAGS Flags = MALLOC_FLAGS_DEFAULT);
+    void Reset(size_t SizeInBytes, void const* pData = nullptr, MALLOC_FLAGS Flags = MALLOC_FLAGS_DEFAULT);
 
-	void Reset();
+    void Reset();
 
-	HeapBlob Clone() const
-	{
+    HeapBlob Clone() const
+    {
         return HeapBlob(m_HeapSize, m_HeapPtr);
-	}
+    }
 
-	operator AStringView() const
-	{
+    operator AStringView() const
+    {
         return AStringView((const char*)m_HeapPtr, m_HeapSize);
-	}
+    }
 
-	char* ToRawString() const
-	{
+    char* ToRawString() const
+    {
         return (char*)m_HeapPtr;
-	}
+    }
 
-	AString ToString() const
-	{
+    AString ToString() const
+    {
         return m_HeapPtr ? (const char*)m_HeapPtr : "";
-	}
+    }
 
-	HK_FORCEINLINE void ZeroMem()
+    HK_FORCEINLINE void ZeroMem()
     {
         Platform::ZeroMem(m_HeapPtr, m_HeapSize);
     }
 
 private:
-	void* m_HeapPtr{};
+    void*  m_HeapPtr{};
     size_t m_HeapSize{};
 };
 
 struct BlobRef
 {
-	BlobRef() = default;
+    BlobRef() = default;
 
-	BlobRef(HeapBlob const& Blob) :
+    BlobRef(HeapBlob const& Blob) :
         m_HeapPtr(Blob.GetData()),
         m_HeapSize(Blob.Size())
-	{}
+    {}
 
-	BlobRef(void const* pData, size_t Size) :
+    BlobRef(void const* pData, size_t Size) :
         m_HeapPtr(pData),
         m_HeapSize(Size)
-	{
+    {
         assert(m_HeapSize == 0 || m_HeapPtr);
-	}
+    }
 
-	bool operator==(BlobRef const& Rhs) const
-	{
+    bool operator==(BlobRef const& Rhs) const
+    {
         if (m_HeapSize != Rhs.m_HeapSize)
-			return false;
+            return false;
 
-		return !std::memcmp(m_HeapPtr, Rhs.m_HeapPtr, m_HeapSize);
-	}
+        return !std::memcmp(m_HeapPtr, Rhs.m_HeapPtr, m_HeapSize);
+    }
 
-	bool operator!=(BlobRef const& Rhs) const
-	{
+    bool operator!=(BlobRef const& Rhs) const
+    {
         return !(*this == Rhs);
-	}
+    }
 
-	bool operator==(HeapBlob const& Rhs) const
-	{
+    bool operator==(HeapBlob const& Rhs) const
+    {
         if (m_HeapSize != Rhs.Size())
-			return false;
+            return false;
 
-		return !std::memcmp(m_HeapPtr, Rhs.GetData(), m_HeapSize);
-	}
+        return !std::memcmp(m_HeapPtr, Rhs.GetData(), m_HeapSize);
+    }
 
-	bool operator!=(HeapBlob const& Rhs) const
-	{
+    bool operator!=(HeapBlob const& Rhs) const
+    {
         return !(*this == Rhs);
-	}
+    }
 
-	void const* GetData() const
-	{
+    void const* GetData() const
+    {
         return m_HeapPtr;
-	}
+    }
 
-	size_t Size() const
-	{
+    size_t Size() const
+    {
         return m_HeapSize;
-	}
+    }
 
-	bool IsEmpty() const
-	{
+    bool IsEmpty() const
+    {
         return m_HeapSize == 0;
-	}
+    }
 
-	operator bool() const
-	{
+    operator bool() const
+    {
         return m_HeapSize != 0;
-	}
+    }
 
-	const char* ToRawString() const
-	{
+    const char* ToRawString() const
+    {
         return (const char*)m_HeapPtr;
-	}
+    }
 
-	AString ToString() const
-	{
+    AString ToString() const
+    {
         return m_HeapPtr ? (const char*)m_HeapPtr : "";
-	}
+    }
 
-	HeapBlob Clone() const
-	{
+    HeapBlob Clone() const
+    {
         return HeapBlob(m_HeapSize, m_HeapPtr);
-	}
+    }
 
 private:
     void const* m_HeapPtr{};
