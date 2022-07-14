@@ -31,13 +31,13 @@ SOFTWARE.
 #include "BvhTree.h"
 #include "BvIntersect.h"
 
-struct SPrimitiveBounds
+struct BvhPrimitiveBounds
 {
     BvAxisAlignedBox Bounds;
     int              PrimitiveIndex;
 };
 
-struct SBestSplitResult
+struct BvhBestSplit
 {
     int Axis;
     int PrimitiveIndex;
@@ -45,63 +45,63 @@ struct SBestSplitResult
 
 struct SAABBTreeBuild
 {
-    TPodVector<BvAxisAlignedBox> RightBounds;
-    TPodVector<SPrimitiveBounds> Primitives[3];
+    TPodVector<BvAxisAlignedBox>   RightBounds;
+    TPodVector<BvhPrimitiveBounds> Primitives[3];
 };
 
-static void CalcNodeBounds(SPrimitiveBounds const* _Primitives, int _PrimCount, BvAxisAlignedBox& _Bounds)
+static void CalcNodeBounds(BvhPrimitiveBounds const* Primitives, int PrimCount, BvAxisAlignedBox& Bounds)
 {
-    HK_ASSERT(_PrimCount > 0);
+    HK_ASSERT(PrimCount > 0);
 
-    SPrimitiveBounds const* primitive = _Primitives;
+    BvhPrimitiveBounds const* primitive = Primitives;
 
-    _Bounds = primitive->Bounds;
+    Bounds = primitive->Bounds;
 
     primitive++;
 
-    for (; primitive < &_Primitives[_PrimCount]; primitive++)
+    for (; primitive < &Primitives[PrimCount]; primitive++)
     {
-        _Bounds.AddAABB(primitive->Bounds);
+        Bounds.AddAABB(primitive->Bounds);
     }
 }
 
-static float CalcAABBVolume(BvAxisAlignedBox const& _Bounds)
+static float CalcAABBVolume(BvAxisAlignedBox const& Bounds)
 {
-    Float3 extents = _Bounds.Maxs - _Bounds.Mins;
+    Float3 extents = Bounds.Size();
     return extents.X * extents.Y * extents.Z;
 }
 
-static SBestSplitResult FindBestSplitPrimitive(SAABBTreeBuild& _Build, int _Axis, int _FirstPrimitive, int _PrimCount)
+static BvhBestSplit FindBestSplitPrimitive(SAABBTreeBuild& Build, int Axis, int FirstPrimitive, int PrimCount)
 {
     struct CompareBoundsMax
     {
-        CompareBoundsMax(const int _Axis) :
-            Axis(_Axis) {}
-        bool operator()(SPrimitiveBounds const& a, SPrimitiveBounds const& b) const
+        CompareBoundsMax(const int Axis) :
+            Axis(Axis) {}
+        bool operator()(BvhPrimitiveBounds const& a, BvhPrimitiveBounds const& b) const
         {
             return (a.Bounds.Maxs[Axis] < b.Bounds.Maxs[Axis]);
         }
         const int Axis;
     };
 
-    SPrimitiveBounds* primitives[3] = {
-        _Build.Primitives[0].ToPtr() + _FirstPrimitive,
-        _Build.Primitives[1].ToPtr() + _FirstPrimitive,
-        _Build.Primitives[2].ToPtr() + _FirstPrimitive};
+    BvhPrimitiveBounds* primitives[3] = {
+        Build.Primitives[0].ToPtr() + FirstPrimitive,
+        Build.Primitives[1].ToPtr() + FirstPrimitive,
+        Build.Primitives[2].ToPtr() + FirstPrimitive};
 
     for (int i = 0; i < 3; i++)
     {
-        if (i != _Axis)
+        if (i != Axis)
         {
-            Platform::Memcpy(primitives[i], primitives[_Axis], sizeof(SPrimitiveBounds) * _PrimCount);
+            Platform::Memcpy(primitives[i], primitives[Axis], sizeof(BvhPrimitiveBounds) * PrimCount);
         }
     }
 
     BvAxisAlignedBox right;
     BvAxisAlignedBox left;
 
-    SBestSplitResult result;
-    result.Axis = -1;
+    BvhBestSplit split;
+    split.Axis = -1;
 
     float bestSAH = Math::MaxValue<float>(); // Surface area heuristic
 
@@ -109,35 +109,35 @@ static SBestSplitResult FindBestSplitPrimitive(SAABBTreeBuild& _Build, int _Axis
 
     for (int axis = 0; axis < 3; axis++)
     {
-        SPrimitiveBounds* primBounds = primitives[axis];
+        BvhPrimitiveBounds* primBounds = primitives[axis];
 
-        std::sort(primBounds, primBounds + _PrimCount, CompareBoundsMax(axis));
+        std::sort(primBounds, primBounds + PrimCount, CompareBoundsMax(axis));
 
         right.Clear();
-        for (size_t i = _PrimCount - 1; i > 0; i--)
+        for (size_t i = PrimCount - 1; i > 0; i--)
         {
             right.AddAABB(primBounds[i].Bounds);
-            _Build.RightBounds[i - 1] = right;
+            Build.RightBounds[i - 1] = right;
         }
 
         left.Clear();
-        for (size_t i = 1; i < _PrimCount; i++)
+        for (size_t i = 1; i < PrimCount; i++)
         {
             left.AddAABB(primBounds[i - 1].Bounds);
 
-            float sah = emptyCost + CalcAABBVolume(left) * i + CalcAABBVolume(_Build.RightBounds[i - 1]) * (_PrimCount - i);
+            float sah = emptyCost + CalcAABBVolume(left) * i + CalcAABBVolume(Build.RightBounds[i - 1]) * (PrimCount - i);
             if (bestSAH > sah)
             {
                 bestSAH               = sah;
-                result.Axis           = axis;
-                result.PrimitiveIndex = i;
+                split.Axis            = axis;
+                split.PrimitiveIndex  = i;
             }
         }
     }
 
-    HK_ASSERT((result.Axis != -1) && (bestSAH < Math::MaxValue<float>()));
+    HK_ASSERT((split.Axis != -1) && (bestSAH < Math::MaxValue<float>()));
 
-    return result;
+    return split;
 }
 
 BvhTree::BvhTree()
@@ -175,7 +175,7 @@ BvhTree::BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride
         Float3 const& v1 = *(Float3 const*)((byte const*)Vertices + i1 * VertexStride);
         Float3 const& v2 = *(Float3 const*)((byte const*)Vertices + i2 * VertexStride);
 
-        SPrimitiveBounds& primitive = build.Primitives[0][primitiveIndex];
+        BvhPrimitiveBounds& primitive = build.Primitives[0][primitiveIndex];
         primitive.PrimitiveIndex    = i; //primitiveIndex * 3; // FIXME *3
 
         primitive.Bounds.Mins.X = Math::Min3(v0.X, v1.X, v2.X);
@@ -226,7 +226,7 @@ BvhTree::BvhTree(TArrayView<SPrimitiveDef> Primitives, unsigned int PrimitivesPe
     for (primitiveIndex = 0; primitiveIndex < numPrimitives; primitiveIndex++)
     {
         SPrimitiveDef const* primitiveDef = &Primitives[primitiveIndex];
-        SPrimitiveBounds&    primitive    = build.Primitives[0][primitiveIndex];
+        BvhPrimitiveBounds&    primitive    = build.Primitives[0][primitiveIndex];
 
         switch (primitiveDef->Type)
         {
@@ -343,7 +343,7 @@ void BvhTree::Subdivide(SAABBTreeBuild& Build, int Axis, int FirstPrimitive, int
     int primCount   = MaxPrimitive - FirstPrimitive;
     int curNodeInex = m_Nodes.Size();
 
-    SPrimitiveBounds* pPrimitives = Build.Primitives[Axis].ToPtr() + FirstPrimitive;
+    BvhPrimitiveBounds* pPrimitives = Build.Primitives[Axis].ToPtr() + FirstPrimitive;
 
     BvhNode& node = m_Nodes.Add();
 
@@ -366,12 +366,12 @@ void BvhTree::Subdivide(SAABBTreeBuild& Build, int Axis, int FirstPrimitive, int
     else
     {
         // Node
-        SBestSplitResult s = FindBestSplitPrimitive(Build, Axis, FirstPrimitive, primCount);
+        BvhBestSplit split = FindBestSplitPrimitive(Build, Axis, FirstPrimitive, primCount);
 
-        int mid = FirstPrimitive + s.PrimitiveIndex;
+        int mid = FirstPrimitive + split.PrimitiveIndex;
 
-        Subdivide(Build, s.Axis, FirstPrimitive, mid, PrimitivesPerLeaf, PrimitiveIndex);
-        Subdivide(Build, s.Axis, mid, MaxPrimitive, PrimitivesPerLeaf, PrimitiveIndex);
+        Subdivide(Build, split.Axis, FirstPrimitive, mid, PrimitivesPerLeaf, PrimitiveIndex);
+        Subdivide(Build, split.Axis, mid, MaxPrimitive, PrimitivesPerLeaf, PrimitiveIndex);
 
         int nextNode = m_Nodes.Size() - curNodeInex;
         node.Index   = -nextNode;

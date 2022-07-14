@@ -49,18 +49,18 @@ struct BvhNode
         return Index >= 0;
     }
 
-    void Read(IBinaryStreamReadInterface& _Stream)
+    void Read(IBinaryStreamReadInterface& Stream)
     {
-        _Stream.ReadObject(Bounds);
-        Index          = _Stream.ReadInt32();
-        PrimitiveCount = _Stream.ReadInt32();
+        Stream.ReadObject(Bounds);
+        Index          = Stream.ReadInt32();
+        PrimitiveCount = Stream.ReadInt32();
     }
 
-    void Write(IBinaryStreamWriteInterface& _Stream) const
+    void Write(IBinaryStreamWriteInterface& Stream) const
     {
-        _Stream.WriteObject(Bounds);
-        _Stream.WriteInt32(Index);
-        _Stream.WriteInt32(PrimitiveCount);
+        Stream.WriteObject(Bounds);
+        Stream.WriteInt32(Index);
+        Stream.WriteInt32(PrimitiveCount);
     }
 };
 
