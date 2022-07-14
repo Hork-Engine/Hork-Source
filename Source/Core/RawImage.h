@@ -233,3 +233,6 @@ bool WriteJPG(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Heig
 
 /** Write image in HDR format */
 bool WriteHDR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const float* pData);
+
+/** Write image in EXR format */
+bool WriteEXR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const float* pData, bool bSaveAsHalf = false);

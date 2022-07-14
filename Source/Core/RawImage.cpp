@@ -686,3 +686,107 @@ bool WriteHDR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Heig
 {
     return !!stbi_write_hdr_to_func(Stbi_Write, &Stream, Width, Height, NumChannels, pData);
 }
+
+bool WriteEXR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const float* pData, bool bSaveAsHalf)
+{
+#ifdef SUPPORT_EXR
+    EXRChannelInfo channels[4];
+    int            pixelTypes[4];
+    int            requestedPixelTypes[4];
+    float*         layers[4] = {0, 0, 0, 0};
+    uint32_t       numPixels   = Width * Height;
+
+    Platform::ZeroMem(channels, sizeof(channels));
+
+    if (NumChannels == 4)
+    {
+        Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "A");
+        Platform::Strcpy(channels[1].name, sizeof(channels[1].name), "B");
+        Platform::Strcpy(channels[2].name, sizeof(channels[2].name), "G");
+        Platform::Strcpy(channels[3].name, sizeof(channels[3].name), "R");
+    }
+    else if (NumChannels == 3)
+    {
+        Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "B");
+        Platform::Strcpy(channels[1].name, sizeof(channels[1].name), "G");
+        Platform::Strcpy(channels[2].name, sizeof(channels[2].name), "R");
+    }
+    else if (NumChannels == 1)
+    {
+        Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "A");
+    }
+    else
+    {
+        LOG("WriteEXR: Only R, RGB and RGBA images supported\n");
+        return false;
+    }
+
+    for (uint32_t i = 0; i < NumChannels; i++)
+    {
+        pixelTypes[i]          = TINYEXR_PIXELTYPE_FLOAT;
+        requestedPixelTypes[i] = bSaveAsHalf ? TINYEXR_PIXELTYPE_HALF : TINYEXR_PIXELTYPE_FLOAT;
+    }
+
+    HeapBlob channelData;
+    
+    if (NumChannels == 1)
+    {
+        layers[0] = const_cast<float*>(pData);
+    }
+    else
+    {
+        channelData.Reset(NumChannels * numPixels * sizeof(float));
+
+        layers[0] = (float *)channelData.GetData();
+        layers[1] = layers[0] + numPixels;
+        layers[2] = layers[0] + numPixels * 2;
+        layers[3] = layers[0] + numPixels * 3;
+
+        if (NumChannels == 4)
+        {
+            ExtractImageChannel(pData, layers[0], Width, Height, NumChannels, 3);    // A
+            ExtractImageChannel(pData, layers[1], Width, Height, NumChannels, 2);    // B
+            ExtractImageChannel(pData, layers[2], Width, Height, NumChannels, 1);    // G
+            ExtractImageChannel(pData, layers[3], Width, Height, NumChannels, 0);    // R
+        }
+        else if (NumChannels == 3)
+        {
+            ExtractImageChannel(pData, layers[0], Width, Height, NumChannels, 2);    // B
+            ExtractImageChannel(pData, layers[1], Width, Height, NumChannels, 1);    // G
+            ExtractImageChannel(pData, layers[2], Width, Height, NumChannels, 0);    // R
+        }
+    }
+
+    EXRImage image;
+    InitEXRImage(&image);
+
+    image.images       = reinterpret_cast<unsigned char**>(layers);
+    image.width        = Width;
+    image.height       = Height;
+    image.num_channels = NumChannels;
+
+    EXRHeader header;
+    InitEXRHeader(&header);
+
+    header.channels              = channels;
+    header.pixel_types           = pixelTypes;
+    header.num_channels          = NumChannels;
+    header.compression_type      = (Width < 16) && (Height < 16) ? TINYEXR_COMPRESSIONTYPE_NONE : TINYEXR_COMPRESSIONTYPE_ZIP;
+    header.requested_pixel_types = requestedPixelTypes;
+    
+    unsigned char* memory = nullptr;
+    size_t         size = SaveEXRImageToMemory(&image, &header, &memory, nullptr);
+
+    if (size == 0)
+        return false;
+
+    size_t bytesToWrite = Stream.Write(memory, size);
+
+    free(memory);
+
+    return bytesToWrite == size;
+#else
+    LOG("WriteEXR: EXR is not supported\n");
+    return false;
+#endif
+}
