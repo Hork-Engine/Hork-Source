@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "String.h"
 
-struct HeapBlob
+struct HeapBlob final
 {
     HeapBlob() = default;
 
