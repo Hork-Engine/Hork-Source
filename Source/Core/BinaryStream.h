@@ -126,16 +126,13 @@ public:
         return str;
     }
 
-    /** Reads the rest of the file as a null-terminated string. */
+    /** Reads the file as a null-terminated string. */
     template <typename CharT = char, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_STRING>>
     TString<CharT, Allocator> AsString()
     {
-        size_t offset = GetOffset();
-        SeekEnd(0);
-        size_t len = GetOffset() - offset;
-        SeekSet(offset);
+        Rewind();
 
-        StringSizeType size = len / sizeof(CharT);
+        StringSizeType size = SizeInBytes() / sizeof(CharT);
         if (size > MaxStringSize)
         {
             LOG("Couldn't read entire string from file - string is too long\n");
@@ -156,15 +153,11 @@ public:
         else
 #else
         {
-            Read(data, size * sizeof(CharT));
+            size_t numchars = Read(data, size * sizeof(CharT)) / sizeof(CharT);
+            if (numchars < size)
+                str.Resize(numchars);
         }
 #endif
-        if (len != size * sizeof(CharT))
-        {
-            // Keep the correct offset
-            SeekEnd(0);
-        }
-
         return str;
     }
 
