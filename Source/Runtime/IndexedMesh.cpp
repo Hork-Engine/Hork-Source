@@ -66,6 +66,13 @@ AIndexedMesh::~AIndexedMesh()
     HK_ASSERT(VertexLightChannels.IsEmpty());
 }
 
+AIndexedMesh* AIndexedMesh::Create(int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh)
+{
+    AIndexedMesh* mesh = CreateInstanceOf<AIndexedMesh>();
+    mesh->Initialize(_NumVertices, _NumIndices, _NumSubparts, _SkinnedMesh);
+    return mesh;
+}
+
 void AIndexedMesh::Initialize(int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh)
 {
     Purge();
@@ -246,8 +253,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
         return false;
     }
 
-    ABinaryResource* meshBinary = CreateInstanceOf<ABinaryResource>();
-    meshBinary->InitializeFromFile(meshFile);
+    ABinaryResource* meshBinary = AResource::CreateFromFile<ABinaryResource>(meshFile);
 
     if (!meshBinary->GetSizeInBytes())
     {
@@ -841,216 +847,221 @@ BvAxisAlignedBox const& AIndexedMesh::GetBoundingBox() const
     return BoundingBox;
 }
 
-void AIndexedMesh::InitializeBoxMesh(const Float3& _Size, float _TexCoordScale)
+AIndexedMesh* AIndexedMesh::CreateBox(const Float3& _Size, float _TexCoordScale)
 {
     TVertexBufferCPU<SMeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    CreateBoxMesh(vertices, indices, bounds, _Size, _TexCoordScale);
+    ::CreateBoxMesh(vertices, indices, bounds, _Size, _TexCoordScale);
 
-    Initialize(vertices.Size(), indices.Size(), 1);
-    WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
-    WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
+    mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    mesh->SetBoundingBox(0, bounds);
 
-    Subparts[0]->BoundingBox = bounds;
+    return mesh;
 }
 
-void AIndexedMesh::InitializeSphereMesh(float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
+AIndexedMesh* AIndexedMesh::CreateSphere(float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
 {
     TVertexBufferCPU<SMeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    CreateSphereMesh(vertices, indices, bounds, _Radius, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs);
+    ::CreateSphereMesh(vertices, indices, bounds, _Radius, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs);
 
-    Initialize(vertices.Size(), indices.Size(), 1);
-    WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
-    WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
+    mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    mesh->SetBoundingBox(0, bounds);
 
-    Subparts[0]->BoundingBox = bounds;
+    return mesh;
 }
 
-void AIndexedMesh::InitializePlaneMeshXZ(float _Width, float _Height, float _TexCoordScale)
+AIndexedMesh* AIndexedMesh::CreatePlaneXZ(float _Width, float _Height, float _TexCoordScale)
 {
     TVertexBufferCPU<SMeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    CreatePlaneMeshXZ(vertices, indices, bounds, _Width, _Height, _TexCoordScale);
+    ::CreatePlaneMeshXZ(vertices, indices, bounds, _Width, _Height, _TexCoordScale);
 
-    Initialize(vertices.Size(), indices.Size(), 1);
-    WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
-    WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
+    mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    mesh->SetBoundingBox(0, bounds);
 
-    Subparts[0]->BoundingBox = bounds;
+    return mesh;
 }
 
-void AIndexedMesh::InitializePlaneMeshXY(float _Width, float _Height, float _TexCoordScale)
+AIndexedMesh* AIndexedMesh::CreatePlaneXY(float _Width, float _Height, float _TexCoordScale)
 {
     TVertexBufferCPU<SMeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    CreatePlaneMeshXY(vertices, indices, bounds, _Width, _Height, _TexCoordScale);
+    ::CreatePlaneMeshXY(vertices, indices, bounds, _Width, _Height, _TexCoordScale);
 
-    Initialize(vertices.Size(), indices.Size(), 1);
-    WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
-    WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
+    mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    mesh->SetBoundingBox(0, bounds);
 
-    Subparts[0]->BoundingBox = bounds;
+    return mesh;
 }
 
-void AIndexedMesh::InitializePatchMesh(Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
+AIndexedMesh* AIndexedMesh::CreatePatch(Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
 {
     TVertexBufferCPU<SMeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    CreatePatchMesh(vertices, indices, bounds,
-                    Corner00, Corner10, Corner01, Corner11, _TexCoordScale, _TwoSided, _NumVerticalSubdivs, _NumHorizontalSubdivs);
+    ::CreatePatchMesh(vertices, indices, bounds,
+                      Corner00, Corner10, Corner01, Corner11, _TexCoordScale, _TwoSided, _NumVerticalSubdivs, _NumHorizontalSubdivs);
 
-    Initialize(vertices.Size(), indices.Size(), 1);
-    WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
-    WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
+    mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    mesh->SetBoundingBox(0, bounds);
 
-    Subparts[0]->BoundingBox = bounds;
+    return mesh;
 }
 
-void AIndexedMesh::InitializeCylinderMesh(float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs)
+AIndexedMesh* AIndexedMesh::CreateCylinder(float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs)
 {
     TVertexBufferCPU<SMeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    CreateCylinderMesh(vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumSubdivs);
+    ::CreateCylinderMesh(vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumSubdivs);
 
-    Initialize(vertices.Size(), indices.Size(), 1);
-    WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
-    WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
+    mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    mesh->SetBoundingBox(0, bounds);
 
-    Subparts[0]->BoundingBox = bounds;
+    return mesh;
 }
 
-void AIndexedMesh::InitializeConeMesh(float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs)
+AIndexedMesh* AIndexedMesh::CreateCone(float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs)
 {
     TVertexBufferCPU<SMeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    CreateConeMesh(vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumSubdivs);
+    ::CreateConeMesh(vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumSubdivs);
 
-    Initialize(vertices.Size(), indices.Size(), 1);
-    WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
-    WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
+    mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    mesh->SetBoundingBox(0, bounds);
 
-    Subparts[0]->BoundingBox = bounds;
+    return mesh;
 }
 
-void AIndexedMesh::InitializeCapsuleMesh(float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
+AIndexedMesh* AIndexedMesh::CreateCapsule(float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)
 {
     TVertexBufferCPU<SMeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    CreateCapsuleMesh(vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs);
+    ::CreateCapsuleMesh(vertices, indices, bounds, _Radius, _Height, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs);
 
-    Initialize(vertices.Size(), indices.Size(), 1);
-    WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
-    WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
+    mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    mesh->SetBoundingBox(0, bounds);
 
-    Subparts[0]->BoundingBox = bounds;
+    return mesh;
 }
 
-void AIndexedMesh::InitializeSkyboxMesh(const Float3& _Size, float _TexCoordScale)
+AIndexedMesh* AIndexedMesh::CreateSkybox(const Float3& _Size, float _TexCoordScale)
 {
     TVertexBufferCPU<SMeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    CreateSkyboxMesh(vertices, indices, bounds, _Size, _TexCoordScale);
+    ::CreateSkyboxMesh(vertices, indices, bounds, _Size, _TexCoordScale);
 
-    Initialize(vertices.Size(), indices.Size(), 1);
-    WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
-    WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
+    mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    mesh->SetBoundingBox(0, bounds);
 
-    Subparts[0]->BoundingBox = bounds;
+    return mesh;
 }
 
-void AIndexedMesh::InitializeSkydomeMesh(float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs, bool _Hemisphere)
+AIndexedMesh* AIndexedMesh::CreateSkydome(float _Radius, float _TexCoordScale, int _NumVerticalSubdivs, int _NumHorizontalSubdivs, bool _Hemisphere)
 {
     TVertexBufferCPU<SMeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
     BvAxisAlignedBox      bounds;
 
-    CreateSkydomeMesh(vertices, indices, bounds, _Radius, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs, _Hemisphere);
+    ::CreateSkydomeMesh(vertices, indices, bounds, _Radius, _TexCoordScale, _NumVerticalSubdivs, _NumHorizontalSubdivs, _Hemisphere);
 
-    Initialize(vertices.Size(), indices.Size(), 1);
-    WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
-    WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    AIndexedMesh* mesh = Create(vertices.Size(), indices.Size(), 1);
+    mesh->WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
+    mesh->WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    mesh->SetBoundingBox(0, bounds);
 
-    Subparts[0]->BoundingBox = bounds;
+    return mesh;
 }
 
 void AIndexedMesh::LoadInternalResource(AStringView _Path)
 {
+    TVertexBufferCPU<SMeshVertex> vertices;
+    TIndexBufferCPU<unsigned int> indices;
+    BvAxisAlignedBox              bounds;
+    ACollisionModel*              collisionModel = nullptr;
+
     if (!_Path.Icmp("/Default/Meshes/Box"))
     {
-        InitializeBoxMesh(Float3(1), 1);
+        ::CreateBoxMesh(vertices, indices, bounds, Float3(1), 1);
 
         SCollisionBoxDef box;
 
-        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&box));
-        return;
+        collisionModel = CreateInstanceOf<ACollisionModel>(&box);
     }
-
-    if (!_Path.Icmp("/Default/Meshes/Sphere"))
+    else if (!_Path.Icmp("/Default/Meshes/Sphere"))
     {
-        InitializeSphereMesh(0.5f, 1);
+        ::CreateSphereMesh(vertices, indices, bounds, 0.5f, 1);
 
         SCollisionSphereDef sphere;
 
-        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&sphere));
-        return;
+        collisionModel = CreateInstanceOf<ACollisionModel>(&sphere);
     }
-
-    if (!_Path.Icmp("/Default/Meshes/Cylinder"))
+    else if (!_Path.Icmp("/Default/Meshes/Cylinder"))
     {
-        InitializeCylinderMesh(0.5f, 1, 1);
+        ::CreateCylinderMesh(vertices, indices, bounds, 0.5f, 1, 1);
 
         SCollisionCylinderDef cylinder;
         cylinder.Radius = 0.5f;
         cylinder.Height = 0.5f;
 
-        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&cylinder));
-        return;
+        collisionModel = CreateInstanceOf<ACollisionModel>(&cylinder);
     }
-
-    if (!_Path.Icmp("/Default/Meshes/Cone"))
+    else if (!_Path.Icmp("/Default/Meshes/Cone"))
     {
-        InitializeConeMesh(0.5f, 1, 1);
+        ::CreateConeMesh(vertices, indices, bounds, 0.5f, 1, 1);
 
         SCollisionConeDef cone;
         cone.Radius = 0.5f;
 
-        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&cone));
-        return;
+        collisionModel = CreateInstanceOf<ACollisionModel>(&cone);
     }
-
-    if (!_Path.Icmp("/Default/Meshes/Capsule"))
+    else if (!_Path.Icmp("/Default/Meshes/Capsule"))
     {
-        InitializeCapsuleMesh(0.5f, 1.0f, 1);
+        ::CreateCapsuleMesh(vertices, indices, bounds, 0.5f, 1.0f, 1);
 
         SCollisionCapsuleDef capsule;
         capsule.Radius = 0.5f;
 
-        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&capsule));
-        return;
+        collisionModel = CreateInstanceOf<ACollisionModel>(&capsule);
     }
-
-    if (!_Path.Icmp("/Default/Meshes/PlaneXZ"))
+    else if (!_Path.Icmp("/Default/Meshes/PlaneXZ"))
     {
-        InitializePlaneMeshXZ(256, 256, 256);
+        ::CreatePlaneMeshXZ(vertices, indices, bounds, 256, 256, 256);
 
         SCollisionBoxDef box;
         box.HalfExtents.X = 128;
@@ -1058,13 +1069,11 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
         box.HalfExtents.Z = 128;
         box.Position.Y -= box.HalfExtents.Y;
 
-        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&box));
-        return;
+        collisionModel = CreateInstanceOf<ACollisionModel>(&box);
     }
-
-    if (!_Path.Icmp("/Default/Meshes/PlaneXY"))
+    else if (!_Path.Icmp("/Default/Meshes/PlaneXY"))
     {
-        InitializePlaneMeshXY(256, 256, 256);
+        ::CreatePlaneMeshXY(vertices, indices, bounds, 256, 256, 256);
 
         SCollisionBoxDef box;
         box.HalfExtents.X = 128;
@@ -1072,31 +1081,32 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
         box.HalfExtents.Z = 0.1f;
         box.Position.Z -= box.HalfExtents.Z;
 
-        SetCollisionModel(CreateInstanceOf<ACollisionModel>(&box));
-        return;
+        collisionModel = CreateInstanceOf<ACollisionModel>(&box);
     }
-
-    if (!_Path.Icmp("/Default/Meshes/Skybox"))
+    else if (!_Path.Icmp("/Default/Meshes/Skybox"))
     {
-        InitializeSkyboxMesh(Float3(1), 1);
-        return;
+        ::CreateSkyboxMesh(vertices, indices, bounds, Float3(1), 1);
     }
-
-    if (!_Path.Icmp("/Default/Meshes/Skydome"))
+    else if (!_Path.Icmp("/Default/Meshes/Skydome"))
     {
-        InitializeSkydomeMesh(0.5f, 1, 32, 32, false);
-        return;
+        ::CreateSkydomeMesh(vertices, indices, bounds, 0.5f, 1, 32, 32, false);
     }
-
-    if (!_Path.Icmp("/Default/Meshes/SkydomeHemisphere"))
+    else if (!_Path.Icmp("/Default/Meshes/SkydomeHemisphere"))
     {
-        InitializeSkydomeMesh(0.5f, 1, 16, 32, true);
-        return;
+        ::CreateSkydomeMesh(vertices, indices, bounds, 0.5f, 1, 16, 32, true);
+    }
+    else
+    {
+        LOG("Unknown internal mesh {}\n", _Path);
+
+        LoadInternalResource("/Default/Meshes/Box");
     }
 
-    LOG("Unknown internal mesh {}\n", _Path);
-
-    LoadInternalResource("/Default/Meshes/Box");
+    Initialize(vertices.Size(), indices.Size(), 1);
+    WriteVertexData(vertices.ToPtr(), vertices.Size(), 0);
+    WriteIndexData(indices.ToPtr(), indices.Size(), 0);
+    SetBoundingBox(0, bounds);
+    SetCollisionModel(collisionModel);
 }
 
 void AIndexedMesh::GenerateRigidbodyCollisions()
@@ -2335,10 +2345,10 @@ void CreatePlaneMeshXZ(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU
     CalcTangentSpace(_Vertices.ToPtr(), _Vertices.Size(), _Indices.ToPtr(), _Indices.Size());
 
     _Bounds.Mins.X = -halfWidth;
-    _Bounds.Mins.Y = 0.0f;
+    _Bounds.Mins.Y = -0.001f;
     _Bounds.Mins.Z = -halfHeight;
     _Bounds.Maxs.X = halfWidth;
-    _Bounds.Maxs.Y = 0.0f;
+    _Bounds.Maxs.Y = 0.001f;
     _Bounds.Maxs.Z = halfHeight;
 }
 
@@ -2365,10 +2375,10 @@ void CreatePlaneMeshXY(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU
 
     _Bounds.Mins.X = -halfWidth;
     _Bounds.Mins.Y = -halfHeight;
-    _Bounds.Mins.Z = 0.0f;
+    _Bounds.Mins.Z = -0.001f;
     _Bounds.Maxs.X = halfWidth;
     _Bounds.Maxs.Y = halfHeight;
-    _Bounds.Maxs.Z = 0.0f;
+    _Bounds.Maxs.Z = 0.001f;
 }
 
 void CreatePatchMesh(TVertexBufferCPU<SMeshVertex>& _Vertices, TIndexBufferCPU<unsigned int>& _Indices, BvAxisAlignedBox& _Bounds, Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs)

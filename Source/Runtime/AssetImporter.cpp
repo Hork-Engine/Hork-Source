@@ -2673,8 +2673,7 @@ static bool CreateIndexedMeshFromSurfaces(SFace const* InSurfaces, int InSurface
     //Float3x3 normalMatrix;
     //InPretransform.DecomposeNormalMatrix( normalMatrix );
 
-    AIndexedMesh* indexedMesh = CreateInstanceOf<AIndexedMesh>();
-    indexedMesh->Initialize(totalVerts, totalIndices, totalSubparts, false);
+    AIndexedMesh* indexedMesh = AIndexedMesh::Create(totalVerts, totalIndices, totalSubparts, false);
 
     SMeshVertex*  verts   = indexedMesh->GetVertices();
     unsigned int* indices = indexedMesh->GetIndices();

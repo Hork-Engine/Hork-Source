@@ -50,10 +50,12 @@ APhotometricProfile::~APhotometricProfile()
 {
 }
 
-void APhotometricProfile::Initialize(const byte* InData, float InIntensity)
+APhotometricProfile* APhotometricProfile::Create(void const* pData, float InIntensity)
 {
-    Intensity = InIntensity;
-    Platform::Memcpy(Data, InData, sizeof(Data));
+    APhotometricProfile* profile = CreateInstanceOf<APhotometricProfile>();
+    profile->Intensity             = InIntensity;
+    Platform::Memcpy(profile->Data, pData, sizeof(Data));
+    return profile;
 }
 
 void APhotometricProfile::LoadInternalResource(AStringView _Path)

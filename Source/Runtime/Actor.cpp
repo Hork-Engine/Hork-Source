@@ -233,14 +233,14 @@ bool AActor::SetPublicProperty(AStringView PublicName, AStringView Value)
         return {};
     };
 
-    for (AActorDefinition::SPublicProperty const& prop : pActorDef->PublicProperties)
+    for (AActorDefinition::SPublicProperty const& prop : pActorDef->GetPublicProperties())
     {
         if (PublicName == prop.PublicName)
         {
             if (prop.ComponentIndex != -1)
             {
                 // NOTE: component->LocalId should match ComponentIndex
-                AActorComponent* component = FindComponent(pActorDef->Components[prop.ComponentIndex].ClassMeta, prop.ComponentIndex);
+                AActorComponent* component = FindComponent(pActorDef->GetComponents()[prop.ComponentIndex].ClassMeta, prop.ComponentIndex);
                 if (component)
                 {
                     return component->SetProperty(prop.PropertyName, Value);
@@ -255,7 +255,7 @@ bool AActor::SetPublicProperty(AStringView PublicName, AStringView Value)
 
     if (ScriptModule)
     {
-        for (AActorDefinition::SScriptPublicProperty const& prop : pActorDef->ScriptPublicProperties)
+        for (AActorDefinition::SScriptPublicProperty const& prop : pActorDef->GetScriptPublicProperties())
         {
             if (prop.PublicName == PublicName)
             {

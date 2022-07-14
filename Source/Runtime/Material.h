@@ -49,8 +49,16 @@ class AMaterial : public AResource
     HK_CLASS(AMaterial, AResource)
 
 public:
+    AMaterial();
+    ~AMaterial();
+
     /** Initialize from graph */
-    void Initialize(MGMaterialGraph* Graph);
+    static AMaterial* Create(MGMaterialGraph* Graph)
+    {
+        AMaterial* material = CreateInstanceOf<AMaterial>();
+        material->Initialize(Graph);
+        return material;
+    }
 
     void Purge();
 
@@ -71,9 +79,7 @@ public:
 
     static void RebuildMaterials();
 
-    AMaterial();
-    ~AMaterial();
-
+protected:
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
@@ -83,6 +89,9 @@ public:
     const char* GetDefaultResourcePath() const override { return "/Default/Materials/Unlit"; }
 
 private:
+    /** Initialize from graph */
+    void Initialize(MGMaterialGraph* Graph);
+
     /** Material GPU representation */
     AMaterialGPU MaterialGPU;
 
@@ -95,13 +104,6 @@ private:
     AMaterial* pNext = nullptr;
     AMaterial* pPrev = nullptr;
 };
-
-HK_FORCEINLINE AMaterial* CreateMaterial(MGMaterialGraph* InGraph)
-{
-    AMaterial* material = CreateInstanceOf<AMaterial>();
-    material->Initialize(InGraph);
-    return material;
-}
 
 
 /**
@@ -123,6 +125,9 @@ public:
         Float4 UniformVectors[MAX_MATERIAL_UNIFORM_VECTORS];
     };
 
+    AMaterialInstance();
+    ~AMaterialInstance() {}
+
     /** Set material */
     void SetMaterial(AMaterial* _Material);
 
@@ -138,9 +143,6 @@ public:
 
     /** Internal. Used by render frontend */
     SMaterialFrameData* PreRenderUpdate(class AFrameLoop* FrameLoop, int _FrameNumber);
-
-    AMaterialInstance();
-    ~AMaterialInstance() {}
 
 protected:
     /** Load resource from file */

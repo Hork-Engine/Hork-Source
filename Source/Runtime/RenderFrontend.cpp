@@ -373,8 +373,7 @@ void ARenderFrontend::RenderView(int _Index)
     {
         if (!DummyEnvironmentMap)
         {
-            DummyEnvironmentMap = CreateInstanceOf<AEnvironmentMap>();
-            DummyEnvironmentMap->InitializeDefaultObject();
+            DummyEnvironmentMap = AResource::CreateDefault<AEnvironmentMap>();
         }
         view->GlobalIrradianceMap = DummyEnvironmentMap->GetIrradianceHandle();
         view->GlobalReflectionMap = DummyEnvironmentMap->GetReflectionHandle();

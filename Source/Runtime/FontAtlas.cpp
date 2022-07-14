@@ -2423,8 +2423,7 @@ bool AFont::LoadResource(IBinaryStreamReadInterface& Stream)
         return false;
     }
 
-    ABinaryResource* fontBinary = CreateInstanceOf<ABinaryResource>();
-    fontBinary->InitializeFromFile(fontFile);
+    ABinaryResource* fontBinary = AResource::CreateFromFile<ABinaryResource>(fontFile);
 
     if (!fontBinary->GetSizeInBytes())
     {

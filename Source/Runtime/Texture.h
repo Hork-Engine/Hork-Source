@@ -186,7 +186,7 @@ protected:
     /** Create empty 2D texture */
     void Initialize2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height);
 
-    /** Create 2D texture */
+    /** Create texture from image */
     bool InitializeFromImage(ImageStorage const& Image);
 
     /** Create empty 2D array texture */

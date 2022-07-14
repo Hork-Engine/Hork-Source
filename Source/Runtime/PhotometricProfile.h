@@ -53,7 +53,7 @@ public:
     APhotometricProfile();
     ~APhotometricProfile();
 
-    void Initialize(const byte* InData, float InIntensity);
+    static APhotometricProfile* Create(void const* pData, float InIntensity);
 
     void SetIntensity(float _Intensity) { Intensity = _Intensity; }
 

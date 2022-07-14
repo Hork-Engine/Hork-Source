@@ -135,8 +135,7 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
             return false;
         }
 
-        ABinaryResource* soundBinary = CreateInstanceOf<ABinaryResource>();
-        soundBinary->InitializeFromFile(soundFile);
+        ABinaryResource* soundBinary = AResource::CreateFromFile<ABinaryResource>(soundFile);
 
         if (!soundBinary->GetSizeInBytes())
         {
@@ -157,7 +156,7 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
         member                = doc.FindMember("bForceMono");
         createInfo.bForceMono = member ? Core::ParseBool(member->GetString()) : false;
 
-        return InitializeFromMemory(soundFile, BlobRef(soundBinary->GetBinaryData(), soundBinary->GetSizeInBytes()), &createInfo);
+        return InitializeFromMemory(soundFile, BlobRef(soundBinary->GetBinaryData(), soundBinary->GetSizeInBytes()), createInfo);
     }
     else
     {
@@ -220,14 +219,8 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
 #endif
 }
 
-bool ASoundResource::InitializeFromMemory(AStringView _Path, BlobRef Memory, SSoundCreateInfo const* _pCreateInfo)
+bool ASoundResource::InitializeFromMemory(AStringView _Path, BlobRef Memory, SSoundCreateInfo const& _CreateInfo)
 {
-    static const SSoundCreateInfo defaultCI;
-    if (!_pCreateInfo)
-    {
-        _pCreateInfo = &defaultCI;
-    }
-
     AAudioDevice* device = GEngine->GetAudioSystem()->GetPlaybackDevice();
 
     Purge();
@@ -236,7 +229,7 @@ bool ASoundResource::InitializeFromMemory(AStringView _Path, BlobRef Memory, SSo
 
     FileName = _Path;
 
-    CurStreamType = _pCreateInfo->StreamType;
+    CurStreamType = _CreateInfo.StreamType;
     if (CurStreamType == SOUND_STREAM_FILE)
     {
         CurStreamType = SOUND_STREAM_MEMORY;
@@ -244,7 +237,7 @@ bool ASoundResource::InitializeFromMemory(AStringView _Path, BlobRef Memory, SSo
         LOG("Using MemoryStreamed instead of FileStreamed as the file data is already in memory\n");
     }
 
-    bool mono             = _pCreateInfo->bForceMono || device->GetChannels() == 1;
+    bool mono             = _CreateInfo.bForceMono || device->GetChannels() == 1;
     int  deviceSampleRate = device->GetSampleRate();
 
     switch (CurStreamType)
@@ -257,7 +250,7 @@ bool ASoundResource::InitializeFromMemory(AStringView _Path, BlobRef Memory, SSo
                 return false;
             }
 
-            if (!CreateAudioBuffer(f, &AudioFileInfo, deviceSampleRate, mono, _pCreateInfo->bForce8Bit, &pBuffer))
+            if (!CreateAudioBuffer(f, &AudioFileInfo, deviceSampleRate, mono, _CreateInfo.bForce8Bit, &pBuffer))
             {
                 return false;
             }
@@ -272,7 +265,7 @@ bool ASoundResource::InitializeFromMemory(AStringView _Path, BlobRef Memory, SSo
                 return false;
             }
 
-            if (!LoadAudioFile(f, &AudioFileInfo, deviceSampleRate, mono, _pCreateInfo->bForce8Bit, nullptr))
+            if (!LoadAudioFile(f, &AudioFileInfo, deviceSampleRate, mono, _CreateInfo.bForce8Bit, nullptr))
             {
                 return false;
             }

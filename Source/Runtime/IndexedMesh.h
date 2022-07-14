@@ -366,38 +366,41 @@ class AIndexedMesh : public AResource
 public:
     TList<AIndexedMeshListener> Listeners;
 
+    AIndexedMesh();
+    ~AIndexedMesh();
+
     /** Allocate mesh */
-    void Initialize(int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh = false);
+    static AIndexedMesh* Create(int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh = false);
 
     /** Helper. Create box mesh */
-    void InitializeBoxMesh(Float3 const& _Size, float _TexCoordScale);
+    static AIndexedMesh* CreateBox(Float3 const& _Size, float _TexCoordScale);
 
     /** Helper. Create sphere mesh */
-    void InitializeSphereMesh(float _Radius, float _TexCoordScale, int _NumVerticalSubdivs = 32, int _NumHorizontalSubdivs = 32);
+    static AIndexedMesh* CreateSphere(float _Radius, float _TexCoordScale, int _NumVerticalSubdivs = 32, int _NumHorizontalSubdivs = 32);
 
     /** Helper. Create plane mesh */
-    void InitializePlaneMeshXZ(float _Width, float _Height, float _TexCoordScale);
+    static AIndexedMesh* CreatePlaneXZ(float _Width, float _Height, float _TexCoordScale);
 
     /** Helper. Create plane mesh */
-    void InitializePlaneMeshXY(float _Width, float _Height, float _TexCoordScale);
+    static AIndexedMesh* CreatePlaneXY(float _Width, float _Height, float _TexCoordScale);
 
     /** Helper. Create patch mesh */
-    void InitializePatchMesh(Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs);
+    static AIndexedMesh* CreatePatch(Float3 const& Corner00, Float3 const& Corner10, Float3 const& Corner01, Float3 const& Corner11, float _TexCoordScale, bool _TwoSided, int _NumVerticalSubdivs, int _NumHorizontalSubdivs);
 
     /** Helper. Create cylinder mesh */
-    void InitializeCylinderMesh(float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32);
+    static AIndexedMesh* CreateCylinder(float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32);
 
     /** Helper. Create cone mesh */
-    void InitializeConeMesh(float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32);
+    static AIndexedMesh* CreateCone(float _Radius, float _Height, float _TexCoordScale, int _NumSubdivs = 32);
 
     /** Helper. Create capsule mesh */
-    void InitializeCapsuleMesh(float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs = 6, int _NumHorizontalSubdivs = 8);
+    static AIndexedMesh* CreateCapsule(float _Radius, float _Height, float _TexCoordScale, int _NumVerticalSubdivs = 6, int _NumHorizontalSubdivs = 8);
 
     /** Helper. Create skybox mesh */
-    void InitializeSkyboxMesh(Float3 const& _Size, float _TexCoordScale);
+    static AIndexedMesh* CreateSkybox(Float3 const& _Size, float _TexCoordScale);
 
     /** Helper. Create skydome mesh */
-    void InitializeSkydomeMesh(float _Radius, float _TexCoordScale, int _NumVerticalSubdivs = 32, int _NumHorizontalSubdivs = 32, bool _Hemisphere = true);
+    static AIndexedMesh* CreateSkydome(float _Radius, float _TexCoordScale, int _NumVerticalSubdivs = 32, int _NumHorizontalSubdivs = 32, bool _Hemisphere = true);
 
     /** Purge model data */
     void Purge();
@@ -532,10 +535,9 @@ public:
 
     void NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag);
 
-    AIndexedMesh();
-    ~AIndexedMesh();
-
 protected:
+    void Initialize(int _NumVertices, int _NumIndices, int _NumSubparts, bool _SkinnedMesh = false);
+
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 

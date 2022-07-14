@@ -88,7 +88,12 @@ public:
     ASkeleton();
     ~ASkeleton();
 
-    void Initialize(SJoint* _Joints, int _JointsCount, BvAxisAlignedBox const& _BindposeBounds);
+    static ASkeleton* Create(SJoint* Joints, int JointsCount, BvAxisAlignedBox const& BindposeBounds)
+    {
+        ASkeleton* skeleton = CreateInstanceOf<ASkeleton>();
+        skeleton->Initialize(Joints, JointsCount, BindposeBounds);
+        return skeleton;
+    }
 
     void Purge();
 
@@ -99,6 +104,8 @@ public:
     BvAxisAlignedBox const& GetBindposeBounds() const { return BindposeBounds; }
 
 protected:
+    void Initialize(SJoint* _Joints, int _JointsCount, BvAxisAlignedBox const& _BindposeBounds);
+
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 

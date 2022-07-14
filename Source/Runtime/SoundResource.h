@@ -62,8 +62,16 @@ class ASoundResource : public AResource
     HK_CLASS(ASoundResource, AResource)
 
 public:
+    ASoundResource();
+    ~ASoundResource();
+
     /** Initialize from memory */
-    bool InitializeFromMemory(AStringView _Path, BlobRef Memory, SSoundCreateInfo const* _pCreateInfo = nullptr);
+    static ASoundResource* CreateFromMemory(AStringView Path, BlobRef Memory, SSoundCreateInfo const& CreateInfo = {})
+    {
+        ASoundResource* sound = CreateInstanceOf<ASoundResource>();
+        sound->InitializeFromMemory(Path, Memory, CreateInfo);
+        return sound;
+    }
 
     /** Create streaming instance */
     bool CreateStreamInstance(TRef<SAudioStream>* ppInterface);
@@ -112,15 +120,14 @@ public:
     /** Internal. Used by audio system to determine that audio data changed. */
     int GetRevision() const { return Revision; }
 
-    ASoundResource();
-    ~ASoundResource();
-
 protected:
+    bool InitializeFromMemory(AStringView Path, BlobRef Memory, SSoundCreateInfo const& pCreateInfo = {});
+
     /** Load resource from file */
-    bool LoadResource(IBinaryStreamReadInterface& _Stream) override;
+    bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView _Path) override;
+    void LoadInternalResource(AStringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/Sound/Default"; }
 

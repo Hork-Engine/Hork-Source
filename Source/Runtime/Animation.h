@@ -89,7 +89,12 @@ public:
     ASkeletalAnimation();
     ~ASkeletalAnimation();
 
-    void Initialize(int _FrameCount, float _FrameDelta, STransform const* _Transforms, int _TransformsCount, SAnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds);
+    static ASkeletalAnimation* Create(int _FrameCount, float _FrameDelta, STransform const* _Transforms, int _TransformsCount, SAnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds)
+    {
+        ASkeletalAnimation* anim = CreateInstanceOf<ASkeletalAnimation>();
+        anim->Initialize(_FrameCount, _FrameDelta, _Transforms, _TransformsCount, _AnimatedJoints, _NumAnimatedJoints, _Bounds);
+        return anim;
+    }
 
     void Purge();
 
@@ -107,6 +112,8 @@ public:
     bool                                IsValid() const { return bIsAnimationValid; }
 
 protected:
+    void Initialize(int _FrameCount, float _FrameDelta, STransform const* _Transforms, int _TransformsCount, SAnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds);
+
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 

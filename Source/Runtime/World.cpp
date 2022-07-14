@@ -269,9 +269,9 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
     AActorDefinition* pActorDef = SpawnInfo.ActorDef;
 
     // Override actor class
-    if (pActorDef && pActorDef->ActorClass)
+    if (pActorDef && pActorDef->GetActorClass())
     {
-        actorClass = pActorDef->ActorClass;
+        actorClass = pActorDef->GetActorClass();
 
         if (actorClass->Factory() != &AActor::Factory())
         {
@@ -292,14 +292,14 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
 
         // Create components and set properties
         int componentIndex = 0;
-        for (auto& componentDef : pActorDef->Components)
+        for (auto& componentDef : pActorDef->GetComponents())
         {
             auto* component = actor->CreateComponent(componentDef.ClassMeta, componentDef.Name);
             if (component)
             {
                 component->SetProperties(componentDef.PropertyHash);
 
-                if (pActorDef->RootIndex == componentIndex)
+                if (pActorDef->GetRootIndex() == componentIndex)
                 {
                     HK_ASSERT(component->FinalClassMeta().IsSubclassOf<ASceneComponent>());
                     actor->RootComponent = static_cast<ASceneComponent*>(component);
@@ -311,7 +311,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
 
         // Attach components
         componentIndex = 0;
-        for (auto& componentDef : pActorDef->Components)
+        for (auto& componentDef : pActorDef->GetComponents())
         {
             if (componentDef.ParentIndex != -1)
             {
@@ -343,10 +343,10 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
 
     // Set properties for the actor
     if (pActorDef)
-        SetProperties(pActorDef->ActorPropertyHash);
+        SetProperties(pActorDef->GetActorPropertyHash());
 
     // Create script
-    AString& scriptModule = pActorDef ? pActorDef->ScriptModule : SpawnInfo.ScriptModule;
+    AString const& scriptModule = pActorDef ? pActorDef->GetScriptModule() : SpawnInfo.ScriptModule;
     if (!scriptModule.IsEmpty())
     {
         actor->ScriptModule = CreateScriptModule(scriptModule, actor);
@@ -354,7 +354,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
         {
             if (pActorDef)
             {
-                AActorScript::SetProperties(actor->ScriptModule, pActorDef->ScriptPropertyHash);
+                AActorScript::SetProperties(actor->ScriptModule, pActorDef->GetScriptPropertyHash());
             }
         }
         else

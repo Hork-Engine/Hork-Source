@@ -127,8 +127,16 @@ class AFont : public AResource
     HK_CLASS(AFont, AResource)
 
 public:
+    AFont();
+    ~AFont();
+
     /** Initialize from memory */
-    void InitializeFromMemoryTTF(BlobRef Memory, SFontCreateInfo const* _pCreateInfo = nullptr);
+    static AFont* CreateFromMemoryTTF(BlobRef Memory, SFontCreateInfo const* pCreateInfo = nullptr)
+    {
+        AFont* font = CreateInstanceOf<AFont>();
+        font->InitializeFromMemoryTTF(Memory, pCreateInfo);
+        return font;
+    }
 
     /** Purge font data */
     void Purge();
@@ -181,8 +189,8 @@ public:
     static void SetGlyphRanges(EGlyphRange _GlyphRange);
 
 protected:
-    AFont();
-    ~AFont();
+    /** Initialize from memory */
+    void InitializeFromMemoryTTF(BlobRef Memory, SFontCreateInfo const* pCreateInfo = nullptr);
 
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;

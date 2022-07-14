@@ -39,11 +39,21 @@ class AResource : public ABaseObject
     friend class AResourceManager;
 
 public:
-    /** Initialize default object representation */
-    void InitializeDefaultObject();
+    template <typename ResourceType>
+    static ResourceType* CreateDefault()
+    {
+        ResourceType* resource = CreateInstanceOf<ResourceType>();
+        resource->InitializeDefaultObject();
+        return resource;
+    }
 
-    /** Initialize object from file */
-    void InitializeFromFile(AStringView Path);
+    template <typename ResourceType>
+    static ResourceType* CreateFromFile(AStringView Path)
+    {
+        ResourceType* resource = CreateInstanceOf<ResourceType>();
+        resource->InitializeFromFile(Path);
+        return resource;
+    }
 
     /** Get physical resource path */
     AString const& GetResourcePath() const { return ResourcePath; }
@@ -52,6 +62,12 @@ public:
 
 protected:
     AResource() {}
+
+    /** Initialize default object representation */
+    void InitializeDefaultObject();
+
+    /** Initialize object from file */
+    void InitializeFromFile(AStringView Path);
 
     /** Load resource from file */
     virtual bool LoadResource(IBinaryStreamReadInterface& _Stream) { return false; }
@@ -75,6 +91,9 @@ class ABinaryResource : public AResource
     HK_CLASS(ABinaryResource, AResource)
 
 public:
+    ABinaryResource();
+    ~ABinaryResource();
+
     void* GetBinaryData()
     {
         return pBinaryData;
@@ -89,10 +108,6 @@ public:
     {
         return pBinaryData ? (const char*)pBinaryData : "";
     }
-
-    ABinaryResource();
-    ~ABinaryResource();
-
 protected:
 
     void Purge();

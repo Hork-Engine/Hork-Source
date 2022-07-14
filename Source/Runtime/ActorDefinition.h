@@ -62,6 +62,40 @@ public:
         AString PublicName;
     };
 
+    AActorDefinition();
+
+    static AActorDefinition* CreateFromDocument(ADocument const& Document)
+    {
+        AActorDefinition* def = CreateInstanceOf<AActorDefinition>();
+        def->InitializeFromDocument(Document);
+        return def;
+    }
+
+    AClassMeta const* GetActorClass() const { return ActorClass; }
+
+    TVector<SComponentDef> const& GetComponents() const { return Components; }
+    int                           GetRootIndex() const { return RootIndex; }
+
+    TStringHashMap<AString> const&  GetActorPropertyHash() const { return ActorPropertyHash; }
+    TVector<SPublicProperty> const& GetPublicProperties() const { return PublicProperties; }
+
+    AString const& GetScriptModule() const { return ScriptModule; }
+
+    TStringHashMap<AString> const&        GetScriptPropertyHash() const { return ScriptPropertyHash; }
+    TVector<SScriptPublicProperty> const& GetScriptPublicProperties() const { return ScriptPublicProperties; }
+
+protected:
+    /** Load resource from file */
+    bool LoadResource(IBinaryStreamReadInterface& Stream) override;
+
+    /** Create internal resource */
+    void LoadInternalResource(AStringView _Path) override;
+
+    const char* GetDefaultResourcePath() const override { return "/Default/ActorDefinition/Default"; }
+
+private:
+    void InitializeFromDocument(ADocument const& Document);
+
     AClassMeta const*      ActorClass{nullptr};
     TVector<SComponentDef> Components;
     int                    RootIndex{-1};
@@ -73,19 +107,5 @@ public:
     TStringHashMap<AString> ScriptPropertyHash;
 
     TVector<SScriptPublicProperty> ScriptPublicProperties;
-
-protected:
-    AActorDefinition();
-
-    /** Load resource from file */
-    bool LoadResource(IBinaryStreamReadInterface& Stream) override;
-
-    /** Create internal resource */
-    void LoadInternalResource(AStringView _Path) override;
-
-    const char* GetDefaultResourcePath() const override { return "/Default/ActorDefinition/Default"; }
-
-private:
-    void InitializeFromDocument(ADocument const& Document);
 };
 
