@@ -139,10 +139,19 @@ void ADirectionalLightComponent::DeinitializeComponent()
 void ADirectionalLightComponent::SetDirection(Float3 const& _Direction)
 {
     Float3x3 orientation;
+    Float3   dir = -_Direction.Normalized();
 
-    orientation[2] = -_Direction.Normalized();
-    orientation[0] = Math::Cross(Float3(0.0f, 1.0f, 0.0f), orientation[2]).Normalized();
-    orientation[1] = Math::Cross(orientation[2], orientation[0]);
+    if (dir.X * dir.X + dir.Z * dir.Z == 0.0f)
+    {
+        orientation[0] = Float3(1, 0, 0);
+        orientation[1] = Float3(0, 0, -dir.Y);
+    }
+    else
+    {
+        orientation[0] = Math::Cross(Float3(0.0f, 1.0f, 0.0f), dir).Normalized();
+        orientation[1] = Math::Cross(dir, orientation[0]);
+    }
+    orientation[2] = dir;
 
     Quat rotation;
     rotation.FromMatrix(orientation);
