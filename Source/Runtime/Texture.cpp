@@ -773,7 +773,7 @@ bool ATexture::WriteArbitraryData(uint32_t LocationX, uint32_t LocationY, uint32
     rect.Dimension.Z     = Depth;
 
     size_t rowWidth    = Width / info.BlockSize * info.BytesPerBlock;
-    size_t sizeInBytes = rowWidth * Height / info.BytesPerBlock * Depth;
+    size_t sizeInBytes = rowWidth * Height / info.BlockSize * Depth;
 
     int rowAlignment;
     if (IsAligned(rowWidth, 8))

@@ -603,7 +603,7 @@ static void GenerateMipmaps(ImageStorage& storage, uint32_t SliceIndex, IMAGE_RE
     ImageSubresource subresource = storage.GetSubresource(subres);
 
     uint32_t curWidth  = subresource.GetWidth();
-    uint32_t curHeight = subresource.GetWidth();
+    uint32_t curHeight = subresource.GetHeight();
 
     size_t size = d.GetRequiredMemorySize(curWidth, curHeight);
 
@@ -632,7 +632,7 @@ static void GenerateMipmaps(ImageStorage& storage, uint32_t SliceIndex, IMAGE_RE
         uint32_t mipWidth  = subresource.GetWidth();
         uint32_t mipHeight = subresource.GetHeight();
 
-        stbir_resize(tempBuf, curWidth, curWidth, d.GetRowStride(curWidth),
+        stbir_resize(tempBuf, curWidth, curHeight, d.GetRowStride(curWidth),
                      tempBuf2, mipWidth, mipHeight, d.GetRowStride(mipWidth),
                      datatype,
                      numChannels,
@@ -721,7 +721,7 @@ bool ImageStorage::GenerateMipmaps(uint32_t SliceIndex, ImageMipmapConfig const&
     ImageSubresource subresource = GetSubresource(subres);
 
     uint32_t curWidth  = subresource.GetWidth();
-    uint32_t curHeight = subresource.GetWidth();
+    uint32_t curHeight = subresource.GetHeight();
 
     void* data = subresource.GetData();
 
@@ -745,7 +745,7 @@ bool ImageStorage::GenerateMipmaps(uint32_t SliceIndex, ImageMipmapConfig const&
         uint32_t mipWidth  = subresource.GetWidth();
         uint32_t mipHeight = subresource.GetHeight();
 
-        stbir_resize(data, curWidth, curWidth, curWidth * bpp,
+        stbir_resize(data, curWidth, curHeight, curWidth * bpp,
                      subresource.GetData(), mipWidth, mipHeight, mipWidth * bpp,
                      datatype,
                      numChannels,
@@ -1034,6 +1034,216 @@ ImageStorage CreateImage(ARawImage const& rawImage, bool bConvertHDRIToHalfFloat
     return storage;
 }
 
+// Input RGBA image, output BC1 compressed image
+void CompressBC1(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
+{
+    uint8_t const* src = (uint8_t const*)pSrc;
+    uint8_t*       dst = (uint8_t*)pDest;
+    uint8_t        block[4 * 4 * 4];
+    const uint32_t blockWidth       = 4;
+    const uint32_t bpp              = 4;
+    const uint32_t blockRowStride   = blockWidth * bpp;
+    const size_t   blockSizeInBytes = 8;
+    uint32_t       numBlocksX       = Width / blockWidth;
+    uint32_t       numBlocksY       = Height / blockWidth;
+    size_t         rowStride        = Width * bpp;
+    for (uint32_t by = 0; by < numBlocksY; by++)
+    {
+        uint32_t pixY = by * blockWidth;
+
+        for (uint32_t bx = 0; bx < numBlocksX; bx++)
+        {
+            uint8_t const* p = src + pixY * rowStride + bx * (blockWidth * bpp);
+
+            memcpy(block + blockRowStride * 0, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 1, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 2, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 3, p, blockRowStride);
+
+            TextureBlockCompression::Encode_BC1(block, dst, 5 /*TextureBlockCompression::BC1_ENCODE_MAX_LEVEL*/, false, false);
+
+            dst += blockSizeInBytes;
+        }
+    }
+}
+// Input RGBA image, output BC2 compressed image
+void CompressBC2(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
+{
+    uint8_t const* src = (uint8_t const*)pSrc;
+    uint8_t*       dst = (uint8_t*)pDest;
+    uint8_t        block[4 * 4 * 4];
+    const uint32_t blockWidth       = 4;
+    const uint32_t bpp              = 4;
+    const uint32_t blockRowStride   = blockWidth * bpp;
+    const size_t   blockSizeInBytes = 16;
+    uint32_t       numBlocksX       = Width / blockWidth;
+    uint32_t       numBlocksY       = Height / blockWidth;
+    size_t         rowStride        = Width * bpp;
+    for (uint32_t by = 0; by < numBlocksY; by++)
+    {
+        uint32_t pixY = by * blockWidth;
+
+        for (uint32_t bx = 0; bx < numBlocksX; bx++)
+        {
+            uint8_t const* p = src + pixY * rowStride + bx * (blockWidth * bpp);
+
+            memcpy(block + blockRowStride * 0, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 1, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 2, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 3, p, blockRowStride);
+
+            TextureBlockCompression::Encode_BC2(block, dst, 5 /*TextureBlockCompression::BC2_ENCODE_MAX_LEVEL*/);
+
+            dst += blockSizeInBytes;
+        }
+    }
+}
+// Input RGBA image, output BC3 compressed image
+void CompressBC3(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
+{
+    uint8_t const* src = (uint8_t const*)pSrc;
+    uint8_t*       dst = (uint8_t*)pDest;
+    uint8_t        block[4 * 4 * 4];
+    const uint32_t blockWidth       = 4;
+    const uint32_t bpp              = 4;
+    const uint32_t blockRowStride   = blockWidth * bpp;
+    const size_t   blockSizeInBytes = 16;
+    uint32_t       numBlocksX       = Width / blockWidth;
+    uint32_t       numBlocksY       = Height / blockWidth;
+    size_t         rowStride        = Width * bpp;
+    for (uint32_t by = 0; by < numBlocksY; by++)
+    {
+        uint32_t pixY = by * blockWidth;
+
+        for (uint32_t bx = 0; bx < numBlocksX; bx++)
+        {
+            uint8_t const* p = src + pixY * rowStride + bx * (blockWidth * bpp);
+
+            memcpy(block + blockRowStride * 0, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 1, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 2, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 3, p, blockRowStride);
+
+            TextureBlockCompression::Encode_BC3(block, dst, 5 /*TextureBlockCompression::BC3_ENCODE_MAX_LEVEL*/, true);
+
+            dst += blockSizeInBytes;
+        }
+    }
+}
+// Input R image, output BC4 compressed image
+void CompressBC4(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
+{
+    uint8_t const* src = (uint8_t const*)pSrc;
+    uint8_t*       dst = (uint8_t*)pDest;
+    uint8_t        block[4 * 4];
+    const uint32_t blockWidth       = 4;
+    const uint32_t bpp              = 1;
+    const uint32_t blockRowStride   = blockWidth * bpp;
+    const size_t   blockSizeInBytes = 8;
+    uint32_t       numBlocksX       = Width / blockWidth;
+    uint32_t       numBlocksY       = Height / blockWidth;
+    size_t         rowStride        = Width * bpp;
+    for (uint32_t by = 0; by < numBlocksY; by++)
+    {
+        uint32_t pixY = by * blockWidth;
+
+        for (uint32_t bx = 0; bx < numBlocksX; bx++)
+        {
+            uint8_t const* p = src + pixY * rowStride + bx * (blockWidth * bpp);
+
+            memcpy(block + blockRowStride * 0, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 1, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 2, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 3, p, blockRowStride);
+
+            TextureBlockCompression::Encode_BC4(block, dst, true);
+
+            dst += blockSizeInBytes;
+        }
+    }
+}
+// Input RG image, output BC5 compressed image
+void CompressBC5(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
+{
+    uint8_t const* src = (uint8_t const*)pSrc;
+    uint8_t*       dst = (uint8_t*)pDest;
+    uint8_t        block[4 * 4 * 2];
+    const uint32_t blockWidth       = 4;
+    const uint32_t bpp              = 2;
+    const uint32_t blockRowStride   = blockWidth * bpp;
+    const size_t   blockSizeInBytes = 16;
+    uint32_t       numBlocksX       = Width / blockWidth;
+    uint32_t       numBlocksY       = Height / blockWidth;
+    size_t         rowStride        = Width * bpp;
+    for (uint32_t by = 0; by < numBlocksY; by++)
+    {
+        uint32_t pixY = by * blockWidth;
+
+        for (uint32_t bx = 0; bx < numBlocksX; bx++)
+        {
+            uint8_t const* p = src + pixY * rowStride + bx * (blockWidth * bpp);
+
+            memcpy(block + blockRowStride * 0, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 1, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 2, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 3, p, blockRowStride);
+
+            TextureBlockCompression::Encode_BC5(block, dst, true);
+
+            dst += blockSizeInBytes;
+        }
+    }
+}
+// Input RGBA image, output BC7 compressed image
+void CompressBC7(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
+{
+    uint8_t const* src = (uint8_t const*)pSrc;
+    uint8_t*       dst = (uint8_t*)pDest;
+    uint8_t        block[4 * 4 * 4];
+    const uint32_t blockWidth       = 4;
+    const uint32_t bpp              = 4;
+    const uint32_t blockRowStride   = blockWidth * bpp;
+    const size_t   blockSizeInBytes = 16;
+    uint32_t       numBlocksX       = Width / blockWidth;
+    uint32_t       numBlocksY       = Height / blockWidth;
+    size_t         rowStride        = Width * bpp;
+    for (uint32_t by = 0; by < numBlocksY; by++)
+    {
+        uint32_t pixY = by * blockWidth;
+
+        for (uint32_t bx = 0; bx < numBlocksX; bx++)
+        {
+            uint8_t const* p = src + pixY * rowStride + bx * (blockWidth * bpp);
+
+            memcpy(block + blockRowStride * 0, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 1, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 2, p, blockRowStride);
+            p += rowStride;
+            memcpy(block + blockRowStride * 3, p, blockRowStride);
+
+            TextureBlockCompression::Encode_BC7(block, dst, 0 /*TextureBlockCompression::BC7_ENCODE_MAX_LEVEL*/);
+
+            dst += blockSizeInBytes;
+        }
+    }
+}
 ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags, TEXTURE_FORMAT Format)
 {
     switch (Format)
@@ -1070,7 +1280,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             ImageStorage storage(desc);
 
             ImageSubresourceDesc subres;
-            subres.SliceIndex    = 0;
+            subres.SliceIndex  = 0;
             subres.MipmapIndex = 0;
 
             ImageSubresource subresource = storage.GetSubresource(subres);
@@ -1099,7 +1309,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             ImageStorage storage(desc);
 
             ImageSubresourceDesc subres;
-            subres.SliceIndex    = 0;
+            subres.SliceIndex  = 0;
             subres.MipmapIndex = 0;
 
             ImageSubresource subresource = storage.GetSubresource(subres);
@@ -1128,7 +1338,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             ImageStorage storage(desc);
 
             ImageSubresourceDesc subres;
-            subres.SliceIndex    = 0;
+            subres.SliceIndex  = 0;
             subres.MipmapIndex = 0;
 
             ImageSubresource subresource = storage.GetSubresource(subres);
@@ -1157,7 +1367,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             ImageStorage storage(desc);
 
             ImageSubresourceDesc subres;
-            subres.SliceIndex    = 0;
+            subres.SliceIndex  = 0;
             subres.MipmapIndex = 0;
 
             ImageSubresource subresource = storage.GetSubresource(subres);
@@ -1192,7 +1402,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             ImageStorage storage(desc);
 
             ImageSubresourceDesc subres;
-            subres.SliceIndex    = 0;
+            subres.SliceIndex  = 0;
             subres.MipmapIndex = 0;
 
             ImageSubresource subresource = storage.GetSubresource(subres);
@@ -1221,7 +1431,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             ImageStorage storage(desc);
 
             ImageSubresourceDesc subres;
-            subres.SliceIndex    = 0;
+            subres.SliceIndex  = 0;
             subres.MipmapIndex = 0;
 
             ImageSubresource subresource = storage.GetSubresource(subres);
@@ -1250,7 +1460,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             ImageStorage storage(desc);
 
             ImageSubresourceDesc subres;
-            subres.SliceIndex    = 0;
+            subres.SliceIndex  = 0;
             subres.MipmapIndex = 0;
 
             ImageSubresource subresource = storage.GetSubresource(subres);
@@ -1287,7 +1497,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             ImageStorage storage(desc);
 
             ImageSubresourceDesc subres;
-            subres.SliceIndex    = 0;
+            subres.SliceIndex  = 0;
             subres.MipmapIndex = 0;
 
             ImageSubresource subresource = storage.GetSubresource(subres);
@@ -1331,7 +1541,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             ImageStorage storage(desc);
 
             ImageSubresourceDesc subres;
-            subres.SliceIndex    = 0;
+            subres.SliceIndex  = 0;
             subres.MipmapIndex = 0;
 
             ImageSubresource subresource = storage.GetSubresource(subres);
@@ -1375,26 +1585,155 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             break;
         case TEXTURE_FORMAT_BC1_UNORM:
         case TEXTURE_FORMAT_BC1_UNORM_SRGB:
-            // RGB+ 1bit alpha
         case TEXTURE_FORMAT_BC2_UNORM:
         case TEXTURE_FORMAT_BC2_UNORM_SRGB:
-            // RGB+ 4bit alpha (Deprecated, use BC3)
         case TEXTURE_FORMAT_BC3_UNORM:
         case TEXTURE_FORMAT_BC3_UNORM_SRGB:
-            // RGBA
         case TEXTURE_FORMAT_BC4_UNORM:
         case TEXTURE_FORMAT_BC4_SNORM:
-            // Grayscale
         case TEXTURE_FORMAT_BC5_UNORM:
         case TEXTURE_FORMAT_BC5_SNORM:
-            // RG textures
+        case TEXTURE_FORMAT_BC7_UNORM:
+        case TEXTURE_FORMAT_BC7_UNORM_SRGB: {
+            bool BC4 = Format == TEXTURE_FORMAT_BC4_UNORM || Format == TEXTURE_FORMAT_BC4_SNORM;
+            bool BC5 = Format == TEXTURE_FORMAT_BC5_UNORM || Format == TEXTURE_FORMAT_BC5_SNORM;
+
+            RAW_IMAGE_FORMAT rawImageFormat;
+            uint32_t bpp;
+            
+            if (BC4)
+            {
+                rawImageFormat = RAW_IMAGE_FORMAT_R8;
+                bpp            = 1;
+            }
+            else if (BC5)
+            {
+                rawImageFormat = RAW_IMAGE_FORMAT_R8_ALPHA;
+                bpp            = 2;
+            }
+            else
+            {
+                rawImageFormat = RAW_IMAGE_FORMAT_RGBA8;
+                bpp            = 4;
+            }
+
+            ARawImage rawImage = CreateRawImage(Stream, rawImageFormat);
+            if (!rawImage)
+                return {};
+
+            ImageStorageDesc desc;
+            desc.Type       = TEXTURE_2D;
+            desc.Format     = Format;
+            desc.Width      = rawImage.GetWidth();
+            desc.Height     = rawImage.GetHeight();
+            desc.SliceCount = 1;
+            desc.NumMipmaps = pMipmapConfig ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
+            desc.Flags      = Flags;
+
+            ImageStorage storage(desc);
+
+            ImageSubresourceDesc subres;
+            subres.SliceIndex  = 0;
+            subres.MipmapIndex = 0;
+
+            ImageSubresource subresource = storage.GetSubresource(subres);
+
+            void (*CompressionRoutine)(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height);
+            switch (Format)
+            {
+                case TEXTURE_FORMAT_BC1_UNORM:
+                case TEXTURE_FORMAT_BC1_UNORM_SRGB:
+                    CompressionRoutine = CompressBC1;
+                    break;
+                case TEXTURE_FORMAT_BC2_UNORM:
+                case TEXTURE_FORMAT_BC2_UNORM_SRGB:
+                    CompressionRoutine = CompressBC2;
+                    break;
+                case TEXTURE_FORMAT_BC3_UNORM:
+                case TEXTURE_FORMAT_BC3_UNORM_SRGB:
+                    CompressionRoutine = CompressBC3;
+                    break;
+                case TEXTURE_FORMAT_BC4_UNORM:
+                case TEXTURE_FORMAT_BC4_SNORM:
+                    CompressionRoutine = CompressBC4;
+                    break;
+                case TEXTURE_FORMAT_BC5_UNORM:
+                case TEXTURE_FORMAT_BC5_SNORM:
+                    CompressionRoutine = CompressBC5;
+                    break;
+                case TEXTURE_FORMAT_BC7_UNORM:
+                case TEXTURE_FORMAT_BC7_UNORM_SRGB:
+                    CompressionRoutine = CompressBC7;
+                    break;
+                default:
+                    HK_ASSERT(0);
+
+                    // Keep compiler happy
+                    CompressionRoutine = nullptr;
+                    break;
+            }
+
+            CompressionRoutine(rawImage.GetData(), subresource.GetData(), subresource.GetWidth(), subresource.GetHeight());
+
+            if (pMipmapConfig)
+            {
+                TextureFormatInfo const& info = GetTextureFormatInfo(Format);
+
+                uint32_t curWidth  = subresource.GetWidth();
+                uint32_t curHeight = subresource.GetHeight();
+
+                HeapBlob blob(std::max<uint32_t>(info.BlockSize, curWidth >> 1) * std::max<uint32_t>(info.BlockSize, curHeight >> 1) * bpp);
+
+                void* data = rawImage.GetData();
+                void* temp = blob.GetData();
+
+                IMAGE_RESAMPLE_EDGE_MODE resampleMode   = pMipmapConfig->EdgeMode;
+                IMAGE_RESAMPLE_FILTER    resampleFilter = pMipmapConfig->Filter;
+
+                int numChannels        = bpp;
+                int alphaChannel       = ((Flags & IMAGE_STORAGE_NO_ALPHA) || numChannels != 4) ? STBIR_ALPHA_CHANNEL_NONE : numChannels - 1;
+                int stbir_resize_flags = alphaChannel != STBIR_ALPHA_CHANNEL_NONE && (Flags & IMAGE_STORAGE_ALPHA_PREMULTIPLIED) ? STBIR_FLAG_ALPHA_PREMULTIPLIED : 0;
+
+                stbir_datatype   datatype   = STBIR_TYPE_UINT8;
+                stbir_colorspace colorspace = Format == TEXTURE_FORMAT_BC1_UNORM_SRGB ||
+                    Format == TEXTURE_FORMAT_BC2_UNORM_SRGB ||
+                    Format == TEXTURE_FORMAT_BC3_UNORM_SRGB ||
+                    Format == TEXTURE_FORMAT_BC7_UNORM_SRGB ? STBIR_COLORSPACE_SRGB : STBIR_COLORSPACE_LINEAR;
+
+                for (uint32_t i = 1; i < desc.NumMipmaps; ++i)
+                {
+                    subres.MipmapIndex = i;
+
+                    subresource = storage.GetSubresource(subres);
+
+                    uint32_t mipWidth  = subresource.GetWidth();
+                    uint32_t mipHeight = subresource.GetHeight();
+
+                    stbir_resize(data, curWidth, curHeight, curWidth * bpp,
+                                 temp, mipWidth, mipHeight, mipWidth * bpp,
+                                 datatype,
+                                 numChannels,
+                                 alphaChannel,
+                                 stbir_resize_flags,
+                                 (stbir_edge)resampleMode, (stbir_edge)resampleMode,
+                                 (stbir_filter)resampleFilter, (stbir_filter)resampleFilter,
+                                 colorspace,
+                                 NULL);
+
+                    curWidth  = mipWidth;
+                    curHeight = mipHeight;
+                    Core::Swap(data, temp);
+
+                    CompressionRoutine(data, subresource.GetData(), mipWidth, mipHeight);
+                }
+            }
+            return storage;
+        }
+
         case TEXTURE_FORMAT_BC6H_UFLOAT:
         case TEXTURE_FORMAT_BC6H_SFLOAT:
             // HDRI textures
-        case TEXTURE_FORMAT_BC7_UNORM:
-        case TEXTURE_FORMAT_BC7_UNORM_SRGB:
-            // RGBA with best quality
-            LOG("CreateImage: Run-time compression is not yet supported.\n");
+            LOG("CreateImage: BC6H run-time compression is not yet supported.\n");
             break;
         default:
             HK_ASSERT(0);
