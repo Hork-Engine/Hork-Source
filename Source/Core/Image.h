@@ -230,10 +230,9 @@ struct ImageStorageDesc
     IMAGE_STORAGE_FLAGS Flags{IMAGE_STORAGE_FLAGS_DEFAULT};
 };
 
-struct ImageViewDesc
+struct ImageSubresourceDesc
 {
-    uint32_t FirstSlice{};
-    uint32_t SliceCount{};
+    uint32_t SliceIndex{};
     uint32_t MipmapIndex{};
 };
 
@@ -242,24 +241,12 @@ class ImageSubresource
 public:
     ImageSubresource() = default;
 
-    uint8_t* operator[](size_t SliceNum)
-    {
-        HK_ASSERT(SliceNum < m_Desc.SliceCount);
-        return m_pData + SliceNum * m_SliceStride;
-    }
-
-    uint8_t const* operator[](size_t SliceNum) const
-    {
-        HK_ASSERT(SliceNum < m_Desc.SliceCount);
-        return m_pData + SliceNum * m_SliceStride;
-    }
-
     operator bool() const
     {
         return m_SizeInBytes != 0;
     }
 
-    ImageViewDesc const& GetDesc() const { return m_Desc; }
+    ImageSubresourceDesc const& GetDesc() const { return m_Desc; }
 
     void* GetData()
     {
@@ -274,11 +261,6 @@ public:
     size_t GetSizeInBytes() const
     {
         return m_SizeInBytes;
-    }
-
-    size_t GetSliceStide() const
-    {
-        return m_SliceStride;
     }
 
     uint32_t GetWidth() const
@@ -308,13 +290,15 @@ public:
 
     IMAGE_DATA_TYPE GetDataType() const;
 
+    ImageSubresource NextSlice() const;
+
 private:
-    ImageViewDesc  m_Desc;
+    ImageSubresourceDesc m_Desc;
     uint8_t*       m_pData{};
     size_t         m_SizeInBytes{};
-    size_t         m_SliceStride{};
     uint32_t       m_Width{};
     uint32_t       m_Height{};
+    uint32_t       m_SliceCount{};
     TEXTURE_FORMAT m_Format{TEXTURE_FORMAT_UNDEFINED};
 
     friend class ImageStorage;
@@ -391,6 +375,16 @@ public:
 
     ImageStorage& operator=(ImageStorage&& Rhs) = default;
 
+    ImageSubresource operator[](uint32_t SliceNum)
+    {
+        return GetSubresource({SliceNum, 0});
+    }
+
+    const ImageSubresource operator[](uint32_t SliceNum) const
+    {
+        return GetSubresource({SliceNum, 0});
+    }
+
     void Swap(ImageStorage& Rhs)
     {
         ImageStorage temp = std::move(Rhs);
@@ -398,7 +392,7 @@ public:
         *this             = std::move(temp);
     }
 
-    void Reset(ImageStorageDesc const& _Desc);
+    void Reset(ImageStorageDesc const& Desc);
 
     void Reset();
 
@@ -406,7 +400,7 @@ public:
 
     bool ReadSubresource(TextureOffset const& Offset, uint32_t Width, uint32_t Height, void* Bytes, size_t _SizeInBytes) const;
 
-    ImageSubresource GetSubresource(ImageViewDesc const& ViewDesc) const;
+    ImageSubresource GetSubresource(ImageSubresourceDesc const& Desc) const;
 
     void* GetData()
     {

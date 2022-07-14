@@ -2328,17 +2328,16 @@ bool ImportEnvironmentMapForSkybox(ImageStorage const& Skybox, AStringView Envma
     rect.Dimension.Y     = width;
     rect.Dimension.Z     = 1;
 
-    ImageViewDesc view;
-    view.SliceCount  = 1;
-    view.MipmapIndex = 0;
+    ImageSubresourceDesc subresDesc;
+    subresDesc.MipmapIndex = 0;
 
     for (int faceNum = 0; faceNum < 6; faceNum++)
     {
         rect.Offset.Z = faceNum;
 
-        view.FirstSlice = faceNum;
+        subresDesc.SliceIndex = faceNum;
 
-        ImageSubresource subresouce = Skybox.GetSubresource(view);
+        ImageSubresource subresouce = Skybox.GetSubresource(subresDesc);
         
         SourceMap->WriteRect(rect, subresouce.GetSizeInBytes(), 1, subresouce.GetData());
     }
@@ -2431,12 +2430,11 @@ ImageStorage GenerateAtmosphereSkybox(uint32_t Resolution, Float3 const& LightDi
 
     for (int faceNum = 0; faceNum < 6; faceNum++)
     {
-        ImageViewDesc view;
-        view.FirstSlice  = faceNum;
-        view.SliceCount  = 1;
-        view.MipmapIndex = 0;
+        ImageSubresourceDesc subresDesc;
+        subresDesc.SliceIndex = faceNum;
+        subresDesc.MipmapIndex = 0;
 
-        ImageSubresource subresource = storage.GetSubresource(view);
+        ImageSubresource subresource = storage.GetSubresource(subresDesc);
 
         rect.Offset.Z = faceNum;
 

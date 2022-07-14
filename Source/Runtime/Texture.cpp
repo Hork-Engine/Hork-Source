@@ -104,12 +104,11 @@ bool ATexture::InitializeFromImage(ImageStorage const& Image)
     {
         for (uint32_t mip = 0; mip < Image.GetDesc().NumMipmaps; ++mip)
         {
-            ImageViewDesc view;
-            view.FirstSlice  = slice;
-            view.SliceCount  = 1;
-            view.MipmapIndex = mip;
+            ImageSubresourceDesc desc;
+            desc.SliceIndex  = slice;
+            desc.MipmapIndex = mip;
 
-            ImageSubresource subresource = Image.GetSubresource(view);
+            ImageSubresource subresource = Image.GetSubresource(desc);
 
             WriteArbitraryData(0, 0, slice, subresource.GetWidth(), subresource.GetHeight(), 1, mip, subresource.GetData());
         }

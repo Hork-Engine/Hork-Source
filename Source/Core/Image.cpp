@@ -279,9 +279,29 @@ IMAGE_DATA_TYPE ImageSubresource::GetDataType() const
     return GetTextureFormatInfo(m_Format).DataType;
 }
 
-void ImageStorage::Reset(ImageStorageDesc const& _Desc)
+ImageSubresource ImageSubresource::NextSlice() const
 {
-    m_Desc = _Desc;
+    if (m_Desc.SliceIndex + 1 >= m_SliceCount)
+    {
+        return {};
+    }
+
+    ImageSubresource subresource;
+    subresource.m_Desc.SliceIndex  = m_Desc.SliceIndex + 1;
+    subresource.m_Desc.MipmapIndex = m_Desc.MipmapIndex;
+    subresource.m_pData            = m_pData + m_SizeInBytes;
+    subresource.m_SizeInBytes      = m_SizeInBytes;
+    subresource.m_Width            = m_Width;
+    subresource.m_Height           = m_Height;
+    subresource.m_SliceCount       = m_SliceCount;
+    subresource.m_Format           = m_Format;
+
+    return subresource;
+}
+
+void ImageStorage::Reset(ImageStorageDesc const& Desc)
+{
+    m_Desc = Desc;
 
     // Validation
     HK_VERIFY(m_Desc.Width >= 1, "ImageStorage: Invalid image size");
@@ -404,34 +424,33 @@ void ImageStorage::Reset()
 
 bool ImageStorage::WriteSubresource(TextureOffset const& Offset, uint32_t Width, uint32_t Height, void const* Bytes)
 {
-    ImageViewDesc viewDesc;
-    viewDesc.FirstSlice  = Offset.Z;
-    viewDesc.SliceCount  = 1;
-    viewDesc.MipmapIndex = Offset.MipLevel;
+    ImageSubresourceDesc desc;
+    desc.SliceIndex  = Offset.Z;
+    desc.MipmapIndex = Offset.MipLevel;
 
-    ImageSubresource view = GetSubresource(viewDesc);
-    HK_VERIFY_R(view, "WriteSubresource: Failed to get subresource");
+    ImageSubresource subresource = GetSubresource(desc);
+    HK_VERIFY_R(subresource, "WriteSubresource: Failed to get subresource");
 
-    return view.Write(Offset.X, Offset.Y, Width, Height, Bytes);
+    return subresource.Write(Offset.X, Offset.Y, Width, Height, Bytes);
 }
 
 bool ImageStorage::ReadSubresource(TextureOffset const& Offset, uint32_t Width, uint32_t Height, void* Bytes, size_t _SizeInBytes) const
 {
-    ImageViewDesc viewDesc;
-    viewDesc.FirstSlice  = Offset.Z;
-    viewDesc.SliceCount  = 1;
-    viewDesc.MipmapIndex = Offset.MipLevel;
+    ImageSubresourceDesc desc;
+    desc.SliceIndex  = Offset.Z;
+    desc.MipmapIndex = Offset.MipLevel;
 
-    ImageSubresource view = GetSubresource(viewDesc);
-    HK_VERIFY_R(view, "ReadSubresource: Failed to get subresource");
+    ImageSubresource subresource = GetSubresource(desc);
+    HK_VERIFY_R(subresource, "ReadSubresource: Failed to get subresource");
 
-    return view.Read(Offset.X, Offset.Y, Width, Height, Bytes, _SizeInBytes);
+    return subresource.Read(Offset.X, Offset.Y, Width, Height, Bytes, _SizeInBytes);
 }
 
-ImageSubresource ImageStorage::GetSubresource(ImageViewDesc const& ViewDesc) const
+ImageSubresource ImageStorage::GetSubresource(ImageSubresourceDesc const& Desc) const
 {
-    HK_VERIFY_R(ViewDesc.MipmapIndex < m_Desc.NumMipmaps, "GetSubresource: Invalid mipmap index");
-    HK_VERIFY_R(ViewDesc.SliceCount > 0, "GetSubresource: The slice count must be at least 1");
+    HK_VERIFY_R(Desc.MipmapIndex < m_Desc.NumMipmaps, "GetSubresource: Invalid mipmap index");
+
+    uint32_t maxSlices;
 
     TextureFormatInfo const& info = GetTextureFormatInfo(m_Desc.Format);
 
@@ -447,7 +466,7 @@ ImageSubresource ImageStorage::GetSubresource(ImageViewDesc const& ViewDesc) con
 
     if (m_Desc.Type == TEXTURE_3D)
     {
-        for (uint32_t i = 0; i < ViewDesc.MipmapIndex; i++)
+        for (uint32_t i = 0; i < Desc.MipmapIndex; i++)
         {
             w = std::max<uint32_t>(1, (m_Desc.Width >> i));
             h = std::max<uint32_t>(1, (m_Desc.Height >> i));
@@ -456,21 +475,25 @@ ImageSubresource ImageStorage::GetSubresource(ImageViewDesc const& ViewDesc) con
             offset += w * h * d * blockSizeInBytes;
         }
 
-        w = std::max<uint32_t>(1, (m_Desc.Width >> ViewDesc.MipmapIndex));
-        h = std::max<uint32_t>(1, (m_Desc.Height >> ViewDesc.MipmapIndex));
-        d = std::max<uint32_t>(1, (m_Desc.Depth >> ViewDesc.MipmapIndex));
+        w = std::max<uint32_t>(1, (m_Desc.Width >> Desc.MipmapIndex));
+        h = std::max<uint32_t>(1, (m_Desc.Height >> Desc.MipmapIndex));
+        d = std::max<uint32_t>(1, (m_Desc.Depth >> Desc.MipmapIndex));
 
-        HK_VERIFY_R(ViewDesc.FirstSlice + ViewDesc.SliceCount <= d, "GetSubresource: Depth slice is out of bounds");
+        maxSlices = d;
 
-        offset += ViewDesc.FirstSlice * w * h * blockSizeInBytes;
+        HK_VERIFY_R(Desc.SliceIndex < maxSlices, "GetSubresource: Depth slice is out of bounds");
+
+        offset += Desc.SliceIndex * w * h * blockSizeInBytes;
     }
     else
     {
-        HK_VERIFY_R(ViewDesc.FirstSlice + ViewDesc.SliceCount <= m_Desc.SliceCount, "GetSubresource: Array slice is out of bounds");
+        maxSlices = m_Desc.SliceCount;
+
+        HK_VERIFY_R(Desc.SliceIndex < maxSlices, "GetSubresource: Array slice is out of bounds");
 
         if (bCompressed)
         {
-            for (uint32_t i = 0; i < ViewDesc.MipmapIndex; i++)
+            for (uint32_t i = 0; i < Desc.MipmapIndex; i++)
             {
                 w = std::max<uint32_t>(blockSize, (m_Desc.Width >> i));
                 h = std::max<uint32_t>(blockSize, (m_Desc.Height >> i));
@@ -478,17 +501,17 @@ ImageSubresource ImageStorage::GetSubresource(ImageViewDesc const& ViewDesc) con
                 offset += w * h * m_Desc.SliceCount;
             }
 
-            w = std::max<uint32_t>(blockSize, (m_Desc.Width >> ViewDesc.MipmapIndex));
-            h = std::max<uint32_t>(blockSize, (m_Desc.Height >> ViewDesc.MipmapIndex));
+            w = std::max<uint32_t>(blockSize, (m_Desc.Width >> Desc.MipmapIndex));
+            h = std::max<uint32_t>(blockSize, (m_Desc.Height >> Desc.MipmapIndex));
 
-            offset += ViewDesc.FirstSlice * w * h;
+            offset += Desc.SliceIndex * w * h;
             HK_ASSERT(offset % (blockSize * blockSize) == 0);
             offset /= blockSize * blockSize;
             offset *= blockSizeInBytes;
         }
         else
         {
-            for (uint32_t i = 0; i < ViewDesc.MipmapIndex; i++)
+            for (uint32_t i = 0; i < Desc.MipmapIndex; i++)
             {
                 w = std::max<uint32_t>(1, (m_Desc.Width >> i));
                 h = std::max<uint32_t>(1, (m_Desc.Height >> i));
@@ -496,23 +519,23 @@ ImageSubresource ImageStorage::GetSubresource(ImageViewDesc const& ViewDesc) con
                 offset += w * h * m_Desc.SliceCount;
             }
 
-            w = std::max<uint32_t>(1, (m_Desc.Width >> ViewDesc.MipmapIndex));
-            h = std::max<uint32_t>(1, (m_Desc.Height >> ViewDesc.MipmapIndex));
+            w = std::max<uint32_t>(1, (m_Desc.Width >> Desc.MipmapIndex));
+            h = std::max<uint32_t>(1, (m_Desc.Height >> Desc.MipmapIndex));
 
-            offset += ViewDesc.FirstSlice * w * h;
+            offset += Desc.SliceIndex * w * h;
             offset *= blockSizeInBytes;
         }
     }
 
-    ImageSubresource view;
-    view.m_Desc        = ViewDesc;
-    view.m_pData       = (uint8_t*)m_Data.GetData() + offset;
-    view.m_SliceStride = bCompressed ? w * h / (blockSize * blockSize) * blockSizeInBytes : w * h * blockSizeInBytes;
-    view.m_SizeInBytes = view.m_SliceStride * ViewDesc.SliceCount;
-    view.m_Width       = w;
-    view.m_Height      = h;
-    view.m_Format      = m_Desc.Format;
-    return view;
+    ImageSubresource subres;
+    subres.m_Desc        = Desc;
+    subres.m_pData       = (uint8_t*)m_Data.GetData() + offset;
+    subres.m_SizeInBytes = bCompressed ? w * h / (blockSize * blockSize) * blockSizeInBytes : w * h * blockSizeInBytes;
+    subres.m_SliceCount  = maxSlices;
+    subres.m_Width       = w;
+    subres.m_Height      = h;
+    subres.m_Format      = m_Desc.Format;
+    return subres;
 }
 
 int ImageStorage::NumChannels() const
@@ -573,12 +596,11 @@ static void GenerateMipmaps(ImageStorage& storage, uint32_t SliceIndex, IMAGE_RE
 {
     Decoder d;
 
-    ImageViewDesc view;
-    view.FirstSlice  = SliceIndex;
-    view.SliceCount  = 1;
-    view.MipmapIndex = 0;
+    ImageSubresourceDesc subres;
+    subres.SliceIndex = SliceIndex;
+    subres.MipmapIndex = 0;
 
-    ImageSubresource subresource = storage.GetSubresource(view);
+    ImageSubresource subresource = storage.GetSubresource(subres);
 
     uint32_t curWidth  = subresource.GetWidth();
     uint32_t curHeight = subresource.GetWidth();
@@ -603,9 +625,9 @@ static void GenerateMipmaps(ImageStorage& storage, uint32_t SliceIndex, IMAGE_RE
 
     for (uint32_t i = 1; i < storage.GetDesc().NumMipmaps; ++i)
     {
-        view.MipmapIndex = i;
+        subres.MipmapIndex = i;
 
-        subresource = storage.GetSubresource(view);
+        subresource = storage.GetSubresource(subres);
 
         uint32_t mipWidth  = subresource.GetWidth();
         uint32_t mipHeight = subresource.GetHeight();
@@ -692,12 +714,11 @@ bool ImageStorage::GenerateMipmaps(uint32_t SliceIndex, ImageMipmapConfig const&
             return false;
     }
 
-    ImageViewDesc view;
-    view.FirstSlice  = SliceIndex;
-    view.SliceCount  = 1;
-    view.MipmapIndex = 0;
+    ImageSubresourceDesc subres;
+    subres.SliceIndex = SliceIndex;
+    subres.MipmapIndex = 0;
 
-    ImageSubresource subresource = GetSubresource(view);
+    ImageSubresource subresource = GetSubresource(subres);
 
     uint32_t curWidth  = subresource.GetWidth();
     uint32_t curHeight = subresource.GetWidth();
@@ -717,9 +738,9 @@ bool ImageStorage::GenerateMipmaps(uint32_t SliceIndex, ImageMipmapConfig const&
 
     for (uint32_t i = 1; i < m_Desc.NumMipmaps; ++i)
     {
-        view.MipmapIndex = i;
+        subres.MipmapIndex = i;
 
-        subresource = GetSubresource(view);
+        subresource = GetSubresource(subres);
 
         uint32_t mipWidth  = subresource.GetWidth();
         uint32_t mipHeight = subresource.GetHeight();
@@ -893,12 +914,11 @@ ImageStorage CreateImage(ARawImage const& rawImage, bool bConvertHDRIToHalfFloat
 
     ImageStorage storage(desc);
 
-    ImageViewDesc viewDesc;
-    viewDesc.FirstSlice  = 0;
-    viewDesc.SliceCount  = 1;
-    viewDesc.MipmapIndex = 0;
+    ImageSubresourceDesc subres;
+    subres.SliceIndex    = 0;
+    subres.MipmapIndex = 0;
 
-    ImageSubresource subresource = storage.GetSubresource(viewDesc);
+    ImageSubresource subresource = storage.GetSubresource(subres);
 
     if (!bAddAlphaChannel && !bSwapChannels)
     {
@@ -1049,12 +1069,11 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
             ImageStorage storage(desc);
 
-            ImageViewDesc viewDesc;
-            viewDesc.FirstSlice  = 0;
-            viewDesc.SliceCount  = 1;
-            viewDesc.MipmapIndex = 0;
+            ImageSubresourceDesc subres;
+            subres.SliceIndex    = 0;
+            subres.MipmapIndex = 0;
 
-            ImageSubresource subresource = storage.GetSubresource(viewDesc);
+            ImageSubresource subresource = storage.GetSubresource(subres);
 
             subresource.Write(0, 0, rawImage.GetWidth(), rawImage.GetHeight(), rawImage.GetData());
 
@@ -1079,12 +1098,11 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
             ImageStorage storage(desc);
 
-            ImageViewDesc viewDesc;
-            viewDesc.FirstSlice  = 0;
-            viewDesc.SliceCount  = 1;
-            viewDesc.MipmapIndex = 0;
+            ImageSubresourceDesc subres;
+            subres.SliceIndex    = 0;
+            subres.MipmapIndex = 0;
 
-            ImageSubresource subresource = storage.GetSubresource(viewDesc);
+            ImageSubresource subresource = storage.GetSubresource(subres);
 
             Decoder_R4G4B4A4().Encode(subresource.GetData(), rawImage.GetData(), rawImage.GetWidth(), rawImage.GetHeight());
 
@@ -1109,12 +1127,11 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
             ImageStorage storage(desc);
 
-            ImageViewDesc viewDesc;
-            viewDesc.FirstSlice  = 0;
-            viewDesc.SliceCount  = 1;
-            viewDesc.MipmapIndex = 0;
+            ImageSubresourceDesc subres;
+            subres.SliceIndex    = 0;
+            subres.MipmapIndex = 0;
 
-            ImageSubresource subresource = storage.GetSubresource(viewDesc);
+            ImageSubresource subresource = storage.GetSubresource(subres);
 
             Decoder_R5G6B5().Encode(subresource.GetData(), rawImage.GetData(), rawImage.GetWidth(), rawImage.GetHeight());
 
@@ -1139,12 +1156,11 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
             ImageStorage storage(desc);
 
-            ImageViewDesc viewDesc;
-            viewDesc.FirstSlice  = 0;
-            viewDesc.SliceCount  = 1;
-            viewDesc.MipmapIndex = 0;
+            ImageSubresourceDesc subres;
+            subres.SliceIndex    = 0;
+            subres.MipmapIndex = 0;
 
-            ImageSubresource subresource = storage.GetSubresource(viewDesc);
+            ImageSubresource subresource = storage.GetSubresource(subres);
 
             Decoder_R5G5B5A1().Encode(subresource.GetData(), rawImage.GetData(), rawImage.GetWidth(), rawImage.GetHeight());
 
@@ -1175,12 +1191,11 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
             ImageStorage storage(desc);
 
-            ImageViewDesc viewDesc;
-            viewDesc.FirstSlice  = 0;
-            viewDesc.SliceCount  = 1;
-            viewDesc.MipmapIndex = 0;
+            ImageSubresourceDesc subres;
+            subres.SliceIndex    = 0;
+            subres.MipmapIndex = 0;
 
-            ImageSubresource subresource = storage.GetSubresource(viewDesc);
+            ImageSubresource subresource = storage.GetSubresource(subres);
 
             subresource.Write(0, 0, rawImage.GetWidth(), rawImage.GetHeight(), rawImage.GetData());
 
@@ -1205,12 +1220,11 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
             ImageStorage storage(desc);
 
-            ImageViewDesc viewDesc;
-            viewDesc.FirstSlice  = 0;
-            viewDesc.SliceCount  = 1;
-            viewDesc.MipmapIndex = 0;
+            ImageSubresourceDesc subres;
+            subres.SliceIndex    = 0;
+            subres.MipmapIndex = 0;
 
-            ImageSubresource subresource = storage.GetSubresource(viewDesc);
+            ImageSubresource subresource = storage.GetSubresource(subres);
 
             Decoder_R10G10B10A2().Encode(subresource.GetData(), rawImage.GetData(), rawImage.GetWidth(), rawImage.GetHeight());
 
@@ -1235,12 +1249,11 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
             ImageStorage storage(desc);
 
-            ImageViewDesc viewDesc;
-            viewDesc.FirstSlice  = 0;
-            viewDesc.SliceCount  = 1;
-            viewDesc.MipmapIndex = 0;
+            ImageSubresourceDesc subres;
+            subres.SliceIndex    = 0;
+            subres.MipmapIndex = 0;
 
-            ImageSubresource subresource = storage.GetSubresource(viewDesc);
+            ImageSubresource subresource = storage.GetSubresource(subres);
 
             Decoder_R11G11B10F().Encode(subresource.GetData(), rawImage.GetData(), rawImage.GetWidth(), rawImage.GetHeight());
 
@@ -1273,12 +1286,11 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
             ImageStorage storage(desc);
 
-            ImageViewDesc viewDesc;
-            viewDesc.FirstSlice  = 0;
-            viewDesc.SliceCount  = 1;
-            viewDesc.MipmapIndex = 0;
+            ImageSubresourceDesc subres;
+            subres.SliceIndex    = 0;
+            subres.MipmapIndex = 0;
 
-            ImageSubresource subresource = storage.GetSubresource(viewDesc);
+            ImageSubresource subresource = storage.GetSubresource(subres);
 
             if (Format == TEXTURE_FORMAT_R16_FLOAT)
                 Decoder_R16F().Encode(subresource.GetData(), rawImage.GetData(), rawImage.GetWidth(), rawImage.GetHeight());
@@ -1318,12 +1330,11 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
             ImageStorage storage(desc);
 
-            ImageViewDesc viewDesc;
-            viewDesc.FirstSlice  = 0;
-            viewDesc.SliceCount  = 1;
-            viewDesc.MipmapIndex = 0;
+            ImageSubresourceDesc subres;
+            subres.SliceIndex    = 0;
+            subres.MipmapIndex = 0;
 
-            ImageSubresource subresource = storage.GetSubresource(viewDesc);
+            ImageSubresource subresource = storage.GetSubresource(subres);
 
             subresource.Write(0, 0, rawImage.GetWidth(), rawImage.GetHeight(), rawImage.GetData());
 
@@ -1432,14 +1443,13 @@ ImageStorage LoadSkyboxImages(SkyboxImportSettings const& ImportSettings)
 
         ImageStorage storage(desc);
 
-        ImageViewDesc viewDesc;
-        viewDesc.SliceCount  = 1;
-        viewDesc.MipmapIndex = 0;
+        ImageSubresourceDesc subres;
+        subres.MipmapIndex = 0;
         for (uint32_t i = 0; i < 6; i++)
         {
-            viewDesc.FirstSlice = i;
+            subres.SliceIndex = i;
 
-            ImageSubresource subresource = storage.GetSubresource(viewDesc);
+            ImageSubresource subresource = storage.GetSubresource(subres);
 
             if (ImportSettings.HDRIScale != 1.0f || ImportSettings.HDRIPow != 1.0f)
             {
@@ -1464,14 +1474,13 @@ ImageStorage LoadSkyboxImages(SkyboxImportSettings const& ImportSettings)
 
         ImageStorage storage(desc);
 
-        ImageViewDesc viewDesc;
-        viewDesc.SliceCount  = 1;
-        viewDesc.MipmapIndex = 0;
+        ImageSubresourceDesc subres;
+        subres.MipmapIndex = 0;
         for (uint32_t i = 0; i < 6; i++)
         {
-            viewDesc.FirstSlice = i;
+            subres.SliceIndex = i;
 
-            ImageSubresource subresource = storage.GetSubresource(viewDesc);
+            ImageSubresource subresource = storage.GetSubresource(subres);
             subresource.Write(0, 0, subresource.GetWidth(), subresource.GetHeight(), rawImage[i].GetData());
         }
 

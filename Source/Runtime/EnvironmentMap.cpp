@@ -77,12 +77,11 @@ void AEnvironmentMap::InitializeFromImage(ImageStorage const& Image)
     {
         rect.Offset.Z = faceNum;
 
-        ImageViewDesc    view;
-        view.FirstSlice  = faceNum;
-        view.SliceCount  = 1;
-        view.MipmapIndex = 0;
+        ImageSubresourceDesc desc;
+        desc.SliceIndex  = faceNum;
+        desc.MipmapIndex = 0;
 
-        ImageSubresource subresource = Image.GetSubresource(view);
+        ImageSubresource subresource = Image.GetSubresource(desc);
 
         cubemap->WriteRect(rect, subresource.GetSizeInBytes(), 1, subresource.GetData());
     }
@@ -212,13 +211,9 @@ void AEnvironmentMap::LoadInternalResource(AStringView _Path)
 
     ImageStorage storage(desc);
 
-    for (uint32_t slice = 0; slice < desc.SliceCount; ++slice)
+    for (ImageSubresource subresource = storage.GetSubresource({0, 0}); subresource; subresource.NextSlice())
     {
-        ImageViewDesc view;
-        view.FirstSlice = slice;
-        view.SliceCount = 1;
-        view.MipmapIndex = 0;
-        storage.GetSubresource(view).Write(0, 0, 1, 1, color);
+        subresource.Write(0, 0, 1, 1, color);
     }
     
     InitializeFromImage(storage);
