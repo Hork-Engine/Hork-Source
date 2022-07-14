@@ -63,19 +63,19 @@ public:
     void Purge();
 
     /** Get material type */
-    EMaterialType GetType() const { return Def.Type; }
+    EMaterialType GetType() const { return m_Def.Type; }
 
-    bool IsTranslucent() const { return Def.bTranslucent; }
+    bool IsTranslucent() const { return m_Def.bTranslucent; }
 
-    bool IsTwoSided() const { return Def.bTwoSided; }
+    bool IsTwoSided() const { return m_Def.bTwoSided; }
 
-    bool CanCastShadow() const { return !Def.bNoCastShadow; }
+    bool CanCastShadow() const { return !m_Def.bNoCastShadow; }
 
-    AMaterialGPU* GetGPUResource() { return &MaterialGPU; }
+    AMaterialGPU* GetGPUResource() { return &m_MaterialGPU; }
 
-    int GetNumUniformVectors() const { return Def.NumUniformVectors; }
+    int GetNumUniformVectors() const { return m_Def.NumUniformVectors; }
 
-    uint8_t GetRenderingPriority() const { return Def.RenderingPriority; }
+    uint8_t GetRenderingPriority() const { return m_Def.RenderingPriority; }
 
     static void RebuildMaterials();
 
@@ -93,16 +93,16 @@ private:
     void Initialize(MGMaterialGraph* Graph);
 
     /** Material GPU representation */
-    AMaterialGPU MaterialGPU;
+    AMaterialGPU m_MaterialGPU;
 
     /** Source graph */
-    TWeakRef<MGMaterialGraph> MaterialGraph;
+    TWeakRef<MGMaterialGraph> m_MaterialGraph;
 
     /** Material definition */
-    SMaterialDef Def;
+    SMaterialDef m_Def;
 
-    AMaterial* pNext = nullptr;
-    AMaterial* pPrev = nullptr;
+    AMaterial* m_pNext = nullptr;
+    AMaterial* m_pPrev = nullptr;
 };
 
 
@@ -129,36 +129,36 @@ public:
     ~AMaterialInstance() {}
 
     /** Set material */
-    void SetMaterial(AMaterial* _Material);
+    void SetMaterial(AMaterial* Material);
 
     /** Get material. Never return null. */
     AMaterial* GetMaterial() const;
 
     /** Set texture for the slot */
-    void SetTexture(int _TextureSlot, ATexture* _Texture);
+    void SetTexture(int TextureSlot, ATexture* Texture);
 
-    ATexture* GetTexture(int _TextureSlot);
+    ATexture* GetTexture(int TextureSlot);
 
     void SetVirtualTexture(AVirtualTextureResource* VirtualTex);
 
     /** Internal. Used by render frontend */
-    SMaterialFrameData* PreRenderUpdate(class AFrameLoop* FrameLoop, int _FrameNumber);
+    SMaterialFrameData* PreRenderUpdate(class AFrameLoop* FrameLoop, int FrameNumber);
 
 protected:
     /** Load resource from file */
-    bool LoadResource(IBinaryStreamReadInterface& _Stream) override;
+    bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView _Path) override;
+    void LoadInternalResource(AStringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/MaterialInstance/Default"; }
 
     bool LoadTextVersion(IBinaryStreamReadInterface& Stream);
 
 private:
-    TRef<AMaterial>               Material;
-    SMaterialFrameData*           FrameData = nullptr;
-    TRef<ATexture>                Textures[MAX_MATERIAL_TEXTURES];
-    TRef<AVirtualTextureResource> VirtualTexture;
-    int                           VisFrame = -1;
+    TRef<AMaterial>               m_Material;
+    SMaterialFrameData*           m_FrameData = nullptr;
+    TRef<ATexture>                m_Textures[MAX_MATERIAL_TEXTURES];
+    TRef<AVirtualTextureResource> m_VirtualTexture;
+    int                           m_VisFrame = -1;
 };

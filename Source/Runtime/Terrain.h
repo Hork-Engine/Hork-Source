@@ -60,18 +60,18 @@ public:
     */
     TPodVector<BvAxisAlignedBox> NavigationAreas;
 
-    float GetMinHeight() const { return MinHeight; }
+    float GetMinHeight() const { return m_MinHeight; }
 
-    float GetMaxHeight() const { return MaxHeight; }
+    float GetMaxHeight() const { return m_MaxHeight; }
 
     float ReadHeight(int X, int Z, int Lod) const;
 
     float SampleHeight(float X, float Z) const;
 
-    Int2 const& GetClipMin() const { return ClipMin; }
-    Int2 const& GetClipMax() const { return ClipMax; }
+    Int2 const& GetClipMin() const { return m_ClipMin; }
+    Int2 const& GetClipMax() const { return m_ClipMax; }
 
-    BvAxisAlignedBox const& GetBoundingBox() const { return BoundingBox; }
+    BvAxisAlignedBox const& GetBoundingBox() const { return m_BoundingBox; }
 
     /** Find ray intersection. Result is unordered by distance to save performance */
     bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<STriangleHitResult>& HitResult) const;
@@ -88,7 +88,7 @@ public:
 
     void GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& Vertices, TVector<unsigned int>& Indices) const;
 
-    class btHeightfieldTerrainShape* GetHeightfieldShape() const { return HeightfieldShape.GetObject(); }
+    class btHeightfieldTerrainShape* GetHeightfieldShape() const { return m_HeightfieldShape.GetObject(); }
 
     void AddListener(ATerrainComponent* Listener);
     void RemoveListener(ATerrainComponent* Listener);
@@ -109,17 +109,17 @@ private:
     void UpdateTerrainShape();
     void NotifyTerrainModified();
 
-    int                                   HeightmapResolution{};
-    int                                   HeightmapLods{};
-    TPodVector<float*>                    Heightmap;
-    float                                 MinHeight{};
-    float                                 MaxHeight{};
-    TUniqueRef<btHeightfieldTerrainShape> HeightfieldShape;
-    Int2                                  ClipMin;
-    Int2                                  ClipMax;
-    BvAxisAlignedBox                      BoundingBox;
+    int                                   m_HeightmapResolution{};
+    int                                   m_HeightmapLods{};
+    TPodVector<float*>                    m_Heightmap;
+    float                                 m_MinHeight{};
+    float                                 m_MaxHeight{};
+    TUniqueRef<btHeightfieldTerrainShape> m_HeightfieldShape;
+    Int2                                  m_ClipMin;
+    Int2                                  m_ClipMax;
+    BvAxisAlignedBox                      m_BoundingBox;
 
     // Terrain components that uses this resource
-    ATerrainComponent* Listeners{};
-    ATerrainComponent* ListenersTail{};
+    ATerrainComponent* m_Listeners{};
+    ATerrainComponent* m_ListenersTail{};
 };

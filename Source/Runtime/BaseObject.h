@@ -77,22 +77,22 @@ public:
     /** Remove reference */
     void RemoveRef();
 
-    int GetRefCount() const { return RefCount; }
+    int GetRefCount() const { return m_RefCount; }
 
     /** Set object debug/editor or ingame name */
-    void SetObjectName(AStringView _Name) { Name = _Name; }
+    void SetObjectName(AStringView Name) { m_Name = Name; }
 
     /** Get object debug/editor or ingame name */
-    AString const& GetObjectName() const { return Name; }
+    AString const& GetObjectName() const { return m_Name; }
 
     /** Set weakref counter. Used by TWeakRef */
-    void SetWeakRefCounter(SWeakRefCounter* _RefCounter) { WeakRefCounter = _RefCounter; }
+    void SetWeakRefCounter(SWeakRefCounter* _RefCounter) { m_WeakRefCounter = _RefCounter; }
 
     /** Get weakref counter. Used by TWeakRef */
-    SWeakRefCounter* GetWeakRefCounter() { return WeakRefCounter; }
+    SWeakRefCounter* GetWeakRefCounter() { return m_WeakRefCounter; }
 
     /** Get total existing objects */
-    static uint64_t GetTotalObjects() { return TotalObjects; }
+    static uint64_t GetTotalObjects() { return m_TotalObjects; }
 
     static ABaseObject* FindObject(uint64_t _Id);
 
@@ -111,51 +111,30 @@ public:
         return static_cast<T*>(object);
     }
 
-    //static ABaseObject* FromPackedValue(AClassMeta const& Meta, APackedValue const& PackedVal)
-    //{
-    //    uint64_t id = Math::ToInt<uint64_t>(PackedVal);
-
-    //    ABaseObject* object = FindObject(id);
-    //    if (!object)
-    //    {
-    //        return nullptr;
-    //    }
-    //    if (object->FinalClassId() != Meta.GetId())
-    //    {
-    //        return nullptr;
-    //    }
-    //    return object;
-    //}
-
-    //void ToPackedValue(APackedValue& PackedVal) const
-    //{
-    //    PackedVal = Core::ToString(Id);
-    //}
-
 private:
     void SetProperties_r(AClassMeta const* Meta, TStringHashMap<AString> const& Properties);
 
     /** Custom object name */
-    AString Name;
+    AString m_Name;
 
     /** Current refs count for this object */
-    int RefCount{};
+    int m_RefCount{};
 
-    SWeakRefCounter* WeakRefCounter{};
+    SWeakRefCounter* m_WeakRefCounter{};
 
     /** Object global list */
-    ABaseObject* NextObject{};
-    ABaseObject* PrevObject{};
+    ABaseObject* m_NextObject{};
+    ABaseObject* m_PrevObject{};
 
     /** Used by garbage collector to add this object to garbage list */
-    ABaseObject* NextGarbageObject{};
-    ABaseObject* PrevGarbageObject{};
+    ABaseObject* m_NextGarbageObject{};
+    ABaseObject* m_PrevGarbageObject{};
 
     /** Total existing objects */
-    static uint64_t TotalObjects;
+    static uint64_t m_TotalObjects;
 
-    static ABaseObject* Objects;
-    static ABaseObject* ObjectsTail;
+    static ABaseObject* m_Objects;
+    static ABaseObject* m_ObjectsTail;
 };
 
 /**
@@ -190,8 +169,8 @@ private:
     static void AddObject(ABaseObject* _Object);
     static void RemoveObject(ABaseObject* _Object);
 
-    static ABaseObject* GarbageObjects;
-    static ABaseObject* GarbageObjectsTail;
+    static ABaseObject* m_GarbageObjects;
+    static ABaseObject* m_GarbageObjectsTail;
 };
 
 /**
@@ -363,44 +342,3 @@ struct TEvent
 private:
     TVector<Callback> Callbacks;
 };
-
-#if 0
-template <typename T>
-void SetAttributeFromString(TRef<T>& Attribute, AString const& String)
-{
-    Attribute = static_cast<T*>(ABaseObject::ConvertFromAttributeString(T::ClassMeta(), String));
-}
-
-template <typename T>
-void SetAttributeToString(TRef<T> const& Attribute, AString& String)
-{
-    ABaseObject const* r = Attribute.GetObject();
-    if (r)
-    {
-        r->ConvertToAttributeString(String);
-    }
-    else
-    {
-        String = "0";
-    }
-}
-
-template <typename T>
-void SetAttributeFromString(T*& Attribute, AString const& String)
-{
-    Attribute = static_cast<T*>(ABaseObject::ConvertFromAttributeString(T::ClassMeta(), String));
-}
-
-template <typename T>
-void SetAttributeToString(T* const& Attribute, AString& String)
-{
-    if (Attribute)
-    {
-        Attribute->ConvertToAttributeString(String);
-    }
-    else
-    {
-        String = "0";
-    }
-}
-#endif

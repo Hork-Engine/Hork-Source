@@ -45,7 +45,6 @@ class AConvexHull;
 class AIndexedMesh;
 class ALightmapUV;
 class AVertexLight;
-class ATreeAABB;
 class ADebugRenderer;
 struct SVisArea;
 struct SPrimitiveDef;

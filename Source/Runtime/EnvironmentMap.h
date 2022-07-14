@@ -51,8 +51,8 @@ public:
         return envmap;
     }
 
-    RenderCore::BindlessHandle GetIrradianceHandle() const { return IrradianceMapHandle; }
-    RenderCore::BindlessHandle GetReflectionHandle() const { return ReflectionMapHandle; }
+    RenderCore::BindlessHandle GetIrradianceHandle() const { return m_IrradianceMapHandle; }
+    RenderCore::BindlessHandle GetReflectionHandle() const { return m_ReflectionMapHandle; }
 
 protected:
     void InitializeFromImage(ImageStorage const& Image);
@@ -61,7 +61,7 @@ protected:
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView _Path) override;
+    void LoadInternalResource(AStringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/EnvMaps/Default"; }
 
@@ -70,9 +70,9 @@ private:
     void CreateTextures(int IrradianceMapWidth, int ReflectionMapWidth);
     void UpdateSamplers();
 
-    TRef<RenderCore::ITexture> IrradianceMap;
-    TRef<RenderCore::ITexture> ReflectionMap;
+    TRef<RenderCore::ITexture> m_IrradianceMap;
+    TRef<RenderCore::ITexture> m_ReflectionMap;
 
-    RenderCore::BindlessHandle IrradianceMapHandle{};
-    RenderCore::BindlessHandle ReflectionMapHandle{};
+    RenderCore::BindlessHandle m_IrradianceMapHandle{};
+    RenderCore::BindlessHandle m_ReflectionMapHandle{};
 };

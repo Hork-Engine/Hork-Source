@@ -33,38 +33,38 @@ SOFTWARE.
 
 HK_CLASS_META(ABaseObject)
 
-uint64_t ABaseObject::TotalObjects = 0;
+uint64_t ABaseObject::m_TotalObjects = 0;
 
-ABaseObject* ABaseObject::Objects     = nullptr;
-ABaseObject* ABaseObject::ObjectsTail = nullptr;
+ABaseObject* ABaseObject::m_Objects   = nullptr;
+ABaseObject* ABaseObject::m_ObjectsTail = nullptr;
 
 static uint64_t GUniqueIdGenerator = 0;
 
 ABaseObject::ABaseObject() :
     Id(++GUniqueIdGenerator)
 {
-    INTRUSIVE_ADD(this, NextObject, PrevObject, Objects, ObjectsTail);
-    TotalObjects++;
+    INTRUSIVE_ADD(this, m_NextObject, m_PrevObject, m_Objects, m_ObjectsTail);
+    m_TotalObjects++;
     AGarbageCollector::AddObject(this);
 }
 
 ABaseObject::~ABaseObject()
 {
-    INTRUSIVE_REMOVE(this, NextObject, PrevObject, Objects, ObjectsTail);
+    INTRUSIVE_REMOVE(this, m_NextObject, m_PrevObject, m_Objects, m_ObjectsTail);
 
-    TotalObjects--;
+    m_TotalObjects--;
 
-    if (WeakRefCounter)
+    if (m_WeakRefCounter)
     {
-        WeakRefCounter->Object = nullptr;
+        m_WeakRefCounter->Object = nullptr;
     }
 }
 
 void ABaseObject::AddRef()
 {
-    HK_ASSERT_(RefCount != -666, "Calling AddRef() in destructor");
-    ++RefCount;
-    if (RefCount == 1)
+    HK_ASSERT_(m_RefCount != -666, "Calling AddRef() in destructor");
+    ++m_RefCount;
+    if (m_RefCount == 1)
     {
         AGarbageCollector::RemoveObject(this);
     }
@@ -72,13 +72,13 @@ void ABaseObject::AddRef()
 
 void ABaseObject::RemoveRef()
 {
-    HK_ASSERT_(RefCount != -666, "Calling RemoveRef() in destructor");
-    if (--RefCount == 0)
+    HK_ASSERT_(m_RefCount != -666, "Calling RemoveRef() in destructor");
+    if (--m_RefCount == 0)
     {
         AGarbageCollector::AddObject(this);
         return;
     }
-    HK_ASSERT(RefCount > 0);
+    HK_ASSERT(m_RefCount > 0);
 }
 
 ABaseObject* ABaseObject::FindObject(uint64_t _Id)
@@ -89,7 +89,7 @@ ABaseObject* ABaseObject::FindObject(uint64_t _Id)
     }
 
     // FIXME: use hash/map?
-    for (ABaseObject* object = Objects; object; object = object->NextObject)
+    for (ABaseObject* object = m_Objects; object; object = object->m_NextObject)
     {
         if (object->Id == _Id)
         {
@@ -158,32 +158,32 @@ void ABaseObject::GetProperties(TPodVector<AProperty const*>& Properties, bool b
     FinalClassMeta().GetProperties(Properties, bRecursive);
 }
 
-ABaseObject* AGarbageCollector::GarbageObjects     = nullptr;
-ABaseObject* AGarbageCollector::GarbageObjectsTail = nullptr;
+ABaseObject* AGarbageCollector::m_GarbageObjects     = nullptr;
+ABaseObject* AGarbageCollector::m_GarbageObjectsTail = nullptr;
 
 void AGarbageCollector::AddObject(ABaseObject* _Object)
 {
-    INTRUSIVE_ADD(_Object, NextGarbageObject, PrevGarbageObject, GarbageObjects, GarbageObjectsTail)
+    INTRUSIVE_ADD(_Object, m_NextGarbageObject, m_PrevGarbageObject, m_GarbageObjects, m_GarbageObjectsTail)
 }
 
 void AGarbageCollector::RemoveObject(ABaseObject* _Object)
 {
-    INTRUSIVE_REMOVE(_Object, NextGarbageObject, PrevGarbageObject, GarbageObjects, GarbageObjectsTail)
+    INTRUSIVE_REMOVE(_Object, m_NextGarbageObject, m_PrevGarbageObject, m_GarbageObjects, m_GarbageObjectsTail)
 }
 
 void AGarbageCollector::DeallocateObjects()
 {
-    while (GarbageObjects)
+    while (m_GarbageObjects)
     {
-        ABaseObject* object = GarbageObjects;
+        ABaseObject* object = m_GarbageObjects;
 
         // Mark RefCount to prevent using of AddRef/RemoveRef in the object destructor
-        object->RefCount = -666;
+        object->m_RefCount = -666;
 
         RemoveObject(object);
 
         delete object;
     }
 
-    GarbageObjectsTail = nullptr;
+    m_GarbageObjectsTail = nullptr;
 }

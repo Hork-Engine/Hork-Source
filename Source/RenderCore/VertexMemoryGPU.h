@@ -212,7 +212,7 @@ public:
     void* Map(size_t _StreamHandle);
 
     /** Get physical buffer and offset */
-    void GetPhysicalBufferAndOffset(size_t _StreamHandle, RenderCore::IBuffer** _Buffer, size_t* _Offset);
+    void GetPhysicalBufferAndOffset(size_t StreamHandle, RenderCore::IBuffer** ppBuffer, size_t* pOffset);
 
     /** Get physical buffer */
     RenderCore::IBuffer* GetBufferGPU();

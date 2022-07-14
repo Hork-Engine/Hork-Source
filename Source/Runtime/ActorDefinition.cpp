@@ -49,14 +49,14 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
         AString className = mActorClassName->GetString();
         if (!className.IsEmpty())
         {
-            ActorClass = AActorComponent::Factory().LookupClass(className);
-            if (!ActorClass)
+            m_ActorClass = AActorComponent::Factory().LookupClass(className);
+            if (!m_ActorClass)
                 LOG("WARNING: Unknown C++ actor class '{}'\n", className);
         }
     }
 
-    if (!ActorClass)
-        ActorClass = &AActor::ClassMeta();
+    if (!m_ActorClass)
+        m_ActorClass = &AActor::ClassMeta();
 
     auto* mComponents = Document.FindMember("components");
     if (mComponents)
@@ -120,10 +120,10 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                 {
                     LOG("WARNING: Found components with same id\n");
                 }
-                componentIdMap[componentDef.Id] = Components.Size();
+                componentIdMap[componentDef.Id] = m_Components.Size();
             }
 
-            Components.Add(std::move(componentDef));
+            m_Components.Add(std::move(componentDef));
         }
     }
 
@@ -137,10 +137,10 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             if (it != componentIdMap.End())
             {
                 int            index        = it->second;
-                SComponentDef& componentDef = Components[index];
+                SComponentDef& componentDef = m_Components[index];
                 if (componentDef.ClassMeta->IsSubclassOf<ASceneComponent>())
                 {
-                    RootIndex = index;
+                    m_RootIndex = index;
                 }
                 else
                 {
@@ -154,7 +154,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
         }
     }
 
-    for (SComponentDef& componentDef : Components)
+    for (SComponentDef& componentDef : m_Components)
     {
         if (componentDef.Attach)
         {
@@ -163,7 +163,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             {
                 int index = it->second;
 
-                SComponentDef& parentComponentDecl = Components[index];
+                SComponentDef& parentComponentDecl = m_Components[index];
                 if (parentComponentDecl.ClassMeta->IsSubclassOf<ASceneComponent>() && componentDef.Id != componentDef.Attach)
                 {
                     // TODO: Check cyclical relationship
@@ -188,7 +188,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                 auto* mPropertyValue = mProperty->GetArrayValues();
                 if (mPropertyValue)
                 {
-                    ActorPropertyHash[mProperty->GetName()] = mPropertyValue->GetString();
+                    m_ActorPropertyHash[mProperty->GetName()] = mPropertyValue->GetString();
                 }
             }
         }
@@ -246,7 +246,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             publicProperty.ComponentIndex = componentIndex;
             publicProperty.PropertyName   = std::move(propertyName);
             publicProperty.PublicName     = std::move(publicName);
-            PublicProperties.Add(std::move(publicProperty));
+            m_PublicProperties.Add(std::move(publicProperty));
         }
     }
 
@@ -258,7 +258,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
         {
             auto* mModule = mScriptObj->FindMember("module");
 
-            ScriptModule = mModule ? mModule->GetString() : "";
+            m_ScriptModule = mModule ? mModule->GetString() : "";
 
             mProperties = mScriptObj->FindMember("properties");
             if (mProperties)
@@ -271,7 +271,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                         auto* mPropertyValue = mProperty->GetArrayValues();
                         if (mPropertyValue)
                         {
-                            ScriptPropertyHash[mProperty->GetName()] = mPropertyValue->GetString();
+                            m_ScriptPropertyHash[mProperty->GetName()] = mPropertyValue->GetString();
                         }
                     }
                 }
@@ -312,7 +312,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                     SScriptPublicProperty publicProperty;
                     publicProperty.PropertyName = std::move(propertyName);
                     publicProperty.PublicName   = std::move(publicName);
-                    ScriptPublicProperties.Add(std::move(publicProperty));
+                    m_ScriptPublicProperties.Add(std::move(publicProperty));
                 }
             }
         }

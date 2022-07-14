@@ -302,11 +302,11 @@ public:
     ACollisionModel(SCollisionModelCreateInfo const& CreateInfo);
     ~ACollisionModel();
 
-    Float3 const& GetCenterOfMass() const { return CenterOfMass; }
+    Float3 const& GetCenterOfMass() const { return m_CenterOfMass; }
 
-    bool IsEmpty() const { return CollisionBodies.IsEmpty(); }
+    bool IsEmpty() const { return m_CollisionBodies.IsEmpty(); }
 
-    TVector<SBoneCollision> const& GetBoneCollisions() const { return BoneCollisions; }
+    TVector<SBoneCollision> const& GetBoneCollisions() const { return m_BoneCollisions; }
 
     void GatherGeometry(TVector<Float3>& Vertices, TVector<unsigned int>& Indices, Float3x4 const& Transform) const;
 
@@ -335,9 +335,9 @@ private:
     void AddConvexDecomposition(SCollisionConvexDecompositionDef const* pShape, int& NumShapes);
     void AddConvexDecompositionVHACD(SCollisionConvexDecompositionVHACDDef const* pShape, int& NumShapes);
 
-    TVector<TUniqueRef<ACollisionBody>> CollisionBodies;
-    TVector<SBoneCollision>             BoneCollisions;
-    Float3                              CenterOfMass;
+    TVector<TUniqueRef<ACollisionBody>> m_CollisionBodies;
+    TVector<SBoneCollision>             m_BoneCollisions;
+    Float3                              m_CenterOfMass;
 
     // Collision instance has access to CollisionBodies
     friend class ACollisionInstance;
@@ -352,7 +352,7 @@ public:
 
     Float3 CalculateLocalInertia(float Mass) const;
 
-    Float3 const& GetCenterOfMass() const { return CenterOfMass; }
+    Float3 const& GetCenterOfMass() const { return m_CenterOfMass; }
 
     void GetCollisionBodiesWorldBounds(Float3 const& WorldPosition, Quat const& WorldRotation, TPodVector<BvAxisAlignedBox>& BoundingBoxes) const;
 
@@ -366,11 +366,11 @@ public:
 
     int GetCollisionBodiesCount() const;
 
-    btCollisionShape* GetCollisionShape() const { return CollisionShape; }
+    btCollisionShape* GetCollisionShape() const { return m_CollisionShape; }
 
 private:
-    TRef<ACollisionModel>             Model;
-    TUniqueRef<class btCompoundShape> CompoundShape;
-    btCollisionShape*                 CollisionShape;
-    Float3                            CenterOfMass;
+    TRef<ACollisionModel>             m_Model;
+    TUniqueRef<class btCompoundShape> m_CompoundShape;
+    btCollisionShape*                 m_CollisionShape;
+    Float3                            m_CenterOfMass;
 };

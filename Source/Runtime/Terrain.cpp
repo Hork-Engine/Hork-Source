@@ -78,19 +78,19 @@ ATerrain::ATerrain(int Resolution, const float* pData)
         return;
     }
 
-    HeightmapResolution = Resolution;
+    m_HeightmapResolution = Resolution;
 
     // Allocate memory for terrain lods
-    HeightmapLods = Math::Log2((uint32_t)(HeightmapResolution - 1)) + 1;
-    Heightmap.Resize(HeightmapLods);
-    for (int i = 0; i < HeightmapLods; i++)
+    m_HeightmapLods = Math::Log2((uint32_t)(m_HeightmapResolution - 1)) + 1;
+    m_Heightmap.Resize(m_HeightmapLods);
+    for (int i = 0; i < m_HeightmapLods; i++)
     {
-        int sz       = 1 << (HeightmapLods - i - 1);
-        Heightmap[i] = (float*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc((sz + 1) * (sz + 1) * sizeof(float));
+        int sz         = 1 << (m_HeightmapLods - i - 1);
+        m_Heightmap[i] = (float*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc((sz + 1) * (sz + 1) * sizeof(float));
     }
 
     // Read most detailed lod
-    Platform::Memcpy(Heightmap[0], pData, HeightmapResolution * HeightmapResolution * sizeof(float));
+    Platform::Memcpy(m_Heightmap[0], pData, m_HeightmapResolution * m_HeightmapResolution * sizeof(float));
 
     GenerateLods();
     UpdateTerrainBounds();
@@ -103,19 +103,19 @@ bool ATerrain::LoadResource(IBinaryStreamReadInterface& Stream)
     Purge();
 
     // TODO: Heightmap resolution should be specified in asset file
-    HeightmapResolution = 4097;
+    m_HeightmapResolution = 4097;
 
     // Allocate memory for terrain lods
-    HeightmapLods = Math::Log2((uint32_t)(HeightmapResolution - 1)) + 1;
-    Heightmap.Resize(HeightmapLods);
-    for (int i = 0; i < HeightmapLods; i++)
+    m_HeightmapLods = Math::Log2((uint32_t)(m_HeightmapResolution - 1)) + 1;
+    m_Heightmap.Resize(m_HeightmapLods);
+    for (int i = 0; i < m_HeightmapLods; i++)
     {
-        int sz       = 1 << (HeightmapLods - i - 1);
-        Heightmap[i] = (float*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc((sz + 1) * (sz + 1) * sizeof(float));
+        int sz         = 1 << (m_HeightmapLods - i - 1);
+        m_Heightmap[i] = (float*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc((sz + 1) * (sz + 1) * sizeof(float));
     }
 
     // Read most detailed lod
-    Stream.Read(Heightmap[0], HeightmapResolution * HeightmapResolution * sizeof(float));
+    Stream.Read(m_Heightmap[0], m_HeightmapResolution * m_HeightmapResolution * sizeof(float));
 
     GenerateLods();
     UpdateTerrainBounds();
@@ -131,34 +131,34 @@ void ATerrain::LoadInternalResource(AStringView Path)
 
     // Create some dummy terrain
 
-    HeightmapResolution = 33;
+    m_HeightmapResolution = 33;
 
     // Allocate memory for terrain lods
-    HeightmapLods = Math::Log2((uint32_t)(HeightmapResolution - 1)) + 1;
-    Heightmap.Resize(HeightmapLods);
-    for (int i = 0; i < HeightmapLods; i++)
+    m_HeightmapLods = Math::Log2((uint32_t)(m_HeightmapResolution - 1)) + 1;
+    m_Heightmap.Resize(m_HeightmapLods);
+    for (int i = 0; i < m_HeightmapLods; i++)
     {
-        int sz       = 1 << (HeightmapLods - i - 1);
-        Heightmap[i] = (float*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(float) * (sz + 1) * (sz + 1), 0, MALLOC_ZERO);
+        int sz         = 1 << (m_HeightmapLods - i - 1);
+        m_Heightmap[i] = (float*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(float) * (sz + 1) * (sz + 1), 0, MALLOC_ZERO);
     }
 
-    MinHeight = -0.1f;
-    MaxHeight = 0.1f;
+    m_MinHeight = -0.1f;
+    m_MaxHeight = 0.1f;
 
     // Calc clipping region
-    int halfResolution = HeightmapResolution >> 1;
-    ClipMin.X          = halfResolution;
-    ClipMin.Y          = halfResolution;
-    ClipMax.X          = halfResolution;
-    ClipMax.Y          = halfResolution;
+    int halfResolution = m_HeightmapResolution >> 1;
+    m_ClipMin.X        = halfResolution;
+    m_ClipMin.Y        = halfResolution;
+    m_ClipMax.X          = halfResolution;
+    m_ClipMax.Y        = halfResolution;
 
     // Calc bounding box
-    BoundingBox.Mins.X = -ClipMin.X;
-    BoundingBox.Mins.Y = MinHeight;
-    BoundingBox.Mins.Z = -ClipMin.Y;
-    BoundingBox.Maxs.X = ClipMax.X;
-    BoundingBox.Maxs.Y = MaxHeight;
-    BoundingBox.Maxs.Z = ClipMax.Y;
+    m_BoundingBox.Mins.X = -m_ClipMin.X;
+    m_BoundingBox.Mins.Y = m_MinHeight;
+    m_BoundingBox.Mins.Z = -m_ClipMin.Y;
+    m_BoundingBox.Maxs.X = m_ClipMax.X;
+    m_BoundingBox.Maxs.Y = m_MaxHeight;
+    m_BoundingBox.Maxs.Z = m_ClipMax.Y;
 
     UpdateTerrainShape();
     NotifyTerrainModified();
@@ -166,26 +166,26 @@ void ATerrain::LoadInternalResource(AStringView Path)
 
 void ATerrain::Purge()
 {
-    for (int i = 0; i < HeightmapLods; i++)
+    for (int i = 0; i < m_HeightmapLods; i++)
     {
-        Platform::GetHeapAllocator<HEAP_MISC>().Free(Heightmap[i]);
+        Platform::GetHeapAllocator<HEAP_MISC>().Free(m_Heightmap[i]);
     }
 
-    HeightmapLods = 0;
-    Heightmap.Clear();
+    m_HeightmapLods = 0;
+    m_Heightmap.Clear();
 }
 
 void ATerrain::GenerateLods()
 {
     float h1, h2, h3, h4;
     int   x, y;
-    for (int i = 1; i < HeightmapLods; i++)
+    for (int i = 1; i < m_HeightmapLods; i++)
     {
-        float* lod    = Heightmap[i];
-        float* srcLod = Heightmap[i - 1];
+        float* lod    = m_Heightmap[i];
+        float* srcLod = m_Heightmap[i - 1];
 
-        int sz  = 1 << (HeightmapLods - i - 1);
-        int sz2 = 1 << (HeightmapLods - i);
+        int sz  = 1 << (m_HeightmapLods - i - 1);
+        int sz2 = 1 << (m_HeightmapLods - i);
 
         sz++;
         sz2++;
@@ -228,32 +228,32 @@ void ATerrain::GenerateLods()
 void ATerrain::UpdateTerrainBounds()
 {
     // Calc Min/Max height. TODO: should be specified in asset file
-    MinHeight = std::numeric_limits<float>::max();
-    MaxHeight = -std::numeric_limits<float>::max();
-    for (int y = 0; y < HeightmapResolution; y++)
+    m_MinHeight = std::numeric_limits<float>::max();
+    m_MaxHeight = -std::numeric_limits<float>::max();
+    for (int y = 0; y < m_HeightmapResolution; y++)
     {
-        for (int x = 0; x < HeightmapResolution; x++)
+        for (int x = 0; x < m_HeightmapResolution; x++)
         {
-            float h   = Heightmap[0][y * HeightmapResolution + x];
-            MinHeight = Math::Min(MinHeight, h);
-            MaxHeight = Math::Max(MaxHeight, h);
+            float h   = m_Heightmap[0][y * m_HeightmapResolution + x];
+            m_MinHeight = Math::Min(m_MinHeight, h);
+            m_MaxHeight = Math::Max(m_MaxHeight, h);
         }
     }
 
     // Calc clipping region
-    int halfResolution = HeightmapResolution >> 1;
-    ClipMin.X          = halfResolution;
-    ClipMin.Y          = halfResolution;
-    ClipMax.X          = halfResolution;
-    ClipMax.Y          = halfResolution;
+    int halfResolution = m_HeightmapResolution >> 1;
+    m_ClipMin.X          = halfResolution;
+    m_ClipMin.Y        = halfResolution;
+    m_ClipMax.X          = halfResolution;
+    m_ClipMax.Y          = halfResolution;
 
     // Calc bounding box
-    BoundingBox.Mins.X = -ClipMin.X;
-    BoundingBox.Mins.Y = MinHeight;
-    BoundingBox.Mins.Z = -ClipMin.Y;
-    BoundingBox.Maxs.X = ClipMax.X;
-    BoundingBox.Maxs.Y = MaxHeight;
-    BoundingBox.Maxs.Z = ClipMax.Y;
+    m_BoundingBox.Mins.X = -m_ClipMin.X;
+    m_BoundingBox.Mins.Y = m_MinHeight;
+    m_BoundingBox.Mins.Z = -m_ClipMin.Y;
+    m_BoundingBox.Maxs.X = m_ClipMax.X;
+    m_BoundingBox.Maxs.Y = m_MaxHeight;
+    m_BoundingBox.Maxs.Z = m_ClipMax.Y;
 }
 
 void ATerrain::UpdateTerrainShape()
@@ -268,23 +268,23 @@ void ATerrain::UpdateTerrainShape()
     */
 
     // Generate accelerated terrain collision shape
-    HeightfieldShape = MakeUnique<btHeightfieldTerrainShape>(HeightmapResolution, HeightmapResolution, Heightmap[0], 1, MinHeight, MaxHeight, 1, PHY_FLOAT, false /* bFlipQuadEdges */);
-    HeightfieldShape->buildAccelerator();
+    m_HeightfieldShape = MakeUnique<btHeightfieldTerrainShape>(m_HeightmapResolution, m_HeightmapResolution, m_Heightmap[0], 1, m_MinHeight, m_MaxHeight, 1, PHY_FLOAT, false /* bFlipQuadEdges */);
+    m_HeightfieldShape->buildAccelerator();
 }
 
 float ATerrain::ReadHeight(int X, int Z, int Lod) const
 {
-    if (Lod < 0 || Lod >= HeightmapLods)
+    if (Lod < 0 || Lod >= m_HeightmapLods)
         return 0.0f;
 
     int sampleX = X >> Lod;
     int sampleY = Z >> Lod;
 
-    int lodResoultion = (1 << (HeightmapLods - Lod - 1)) + 1;
+    int lodResoultion = (1 << (m_HeightmapLods - Lod - 1)) + 1;
 
     sampleX = Math::Clamp(sampleX + (lodResoultion >> 1), 0, (lodResoultion - 1));
     sampleY = Math::Clamp(sampleY + (lodResoultion >> 1), 0, (lodResoultion - 1));
-    return Heightmap[Lod][sampleY * lodResoultion + sampleX];
+    return m_Heightmap[Lod][sampleY * lodResoultion + sampleX];
 }
 
 bool ATerrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<STriangleHitResult>& HitResult) const
@@ -322,7 +322,7 @@ bool ATerrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Dista
         }
     };
 
-    if (!HeightfieldShape)
+    if (!m_HeightfieldShape)
         return false;
 
     float boxMin, boxMax;
@@ -333,12 +333,12 @@ bool ATerrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Dista
     invRayDir.Y = 1.0f / RayDir.Y;
     invRayDir.Z = 1.0f / RayDir.Z;
 
-    if (!BvRayIntersectBox(RayStart, invRayDir, BoundingBox, boxMin, boxMax) || boxMin >= Distance)
+    if (!BvRayIntersectBox(RayStart, invRayDir, m_BoundingBox, boxMin, boxMax) || boxMin >= Distance)
     {
         return false;
     }
 
-    Float3 ShapeOffset   = Float3(0.0f, (MinHeight + MaxHeight) * 0.5f, 0.0f);
+    Float3 ShapeOffset   = Float3(0.0f, (m_MinHeight + m_MaxHeight) * 0.5f, 0.0f);
     Float3 RayStartLocal = RayStart - ShapeOffset;
 
     ATriangleRaycastCallback triangleRaycastCallback;
@@ -347,7 +347,7 @@ bool ATerrain::Raycast(Float3 const& RayStart, Float3 const& RayDir, float Dista
     triangleRaycastCallback.Result        = &HitResult;
     triangleRaycastCallback.bCullBackFace = bCullBackFace;
 
-    HeightfieldShape->performRaycast(&triangleRaycastCallback, btVectorToFloat3(RayStartLocal), btVectorToFloat3(RayStartLocal + RayDir * Distance));
+    m_HeightfieldShape->performRaycast(&triangleRaycastCallback, btVectorToFloat3(RayStartLocal), btVectorToFloat3(RayStartLocal + RayDir * Distance));
 
     for (int i = HitResult.Size() - triangleRaycastCallback.IntersectionCount; i < HitResult.Size(); i++)
     {
@@ -421,7 +421,7 @@ bool ATerrain::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, floa
         }
     };
 
-    if (!HeightfieldShape)
+    if (!m_HeightfieldShape)
         return false;
 
     float boxMin, boxMax;
@@ -432,12 +432,12 @@ bool ATerrain::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, floa
     invRayDir.Y = 1.0f / RayDir.Y;
     invRayDir.Z = 1.0f / RayDir.Z;
 
-    if (!BvRayIntersectBox(RayStart, invRayDir, BoundingBox, boxMin, boxMax) || boxMin >= Distance)
+    if (!BvRayIntersectBox(RayStart, invRayDir, m_BoundingBox, boxMin, boxMax) || boxMin >= Distance)
     {
         return false;
     }
 
-    Float3 ShapeOffset   = Float3(0.0f, (MinHeight + MaxHeight) * 0.5f, 0.0f);
+    Float3 ShapeOffset   = Float3(0.0f, (m_MinHeight + m_MaxHeight) * 0.5f, 0.0f);
     Float3 RayStartLocal = RayStart - ShapeOffset;
 
     ATriangleRaycastCallback triangleRaycastCallback;
@@ -447,7 +447,7 @@ bool ATerrain::RaycastClosest(Float3 const& RayStart, Float3 const& RayDir, floa
     triangleRaycastCallback.Result        = &HitResult;
     triangleRaycastCallback.bCullBackFace = bCullBackFace;
 
-    HeightfieldShape->performRaycast(&triangleRaycastCallback, btVectorToFloat3(RayStartLocal), btVectorToFloat3(RayStartLocal + RayDir * Distance));
+    m_HeightfieldShape->performRaycast(&triangleRaycastCallback, btVectorToFloat3(RayStartLocal), btVectorToFloat3(RayStartLocal + RayDir * Distance));
 
     //LOG( "triangleRaycastCallback.IntersectionCount {}\n", triangleRaycastCallback.IntersectionCount );
 
@@ -464,14 +464,14 @@ float ATerrain::SampleHeight(float X, float Z) const
     float minX = Math::Floor(X);
     float minZ = Math::Floor(Z);
 
-    int quadX = minX + (HeightmapResolution >> 1);
-    int quadZ = minZ + (HeightmapResolution >> 1);
+    int quadX = minX + (m_HeightmapResolution >> 1);
+    int quadZ = minZ + (m_HeightmapResolution >> 1);
 
-    if (quadX < 0 || quadX >= HeightmapResolution - 1)
+    if (quadX < 0 || quadX >= m_HeightmapResolution - 1)
     {
         return 0.0f;
     }
-    if (quadZ < 0 || quadZ >= HeightmapResolution - 1)
+    if (quadZ < 0 || quadZ >= m_HeightmapResolution - 1)
     {
         return 0.0f;
     }
@@ -488,8 +488,8 @@ float ATerrain::SampleHeight(float X, float Z) const
 
     */
 
-    float h1 = Heightmap[0][quadZ * HeightmapResolution + quadX + 1];
-    float h3 = Heightmap[0][(quadZ + 1) * HeightmapResolution + quadX];
+    float h1 = m_Heightmap[0][quadZ * m_HeightmapResolution + quadX + 1];
+    float h3 = m_Heightmap[0][(quadZ + 1) * m_HeightmapResolution + quadX];
 
     float fx = X - minX;
     float fz = Z - minZ;
@@ -497,7 +497,7 @@ float ATerrain::SampleHeight(float X, float Z) const
     fz = 1.0f - fz;
     if (fx >= fz)
     {
-        float h2 = Heightmap[0][(quadZ + 1) * HeightmapResolution + quadX + 1];
+        float h2 = m_Heightmap[0][(quadZ + 1) * m_HeightmapResolution + quadX + 1];
         float u  = fz;
         float v  = fx - fz;
         float w  = 1.0f - fx;
@@ -505,7 +505,7 @@ float ATerrain::SampleHeight(float X, float Z) const
     }
     else
     {
-        float h0 = Heightmap[0][quadZ * HeightmapResolution + quadX];
+        float h0 = m_Heightmap[0][quadZ * m_HeightmapResolution + quadX];
         float u  = fz - fx;
         float v  = fx;
         float w  = 1.0f - fz;
@@ -518,14 +518,14 @@ bool ATerrain::GetTriangleVertices(float X, float Z, Float3& V0, Float3& V1, Flo
     float minX = Math::Floor(X);
     float minZ = Math::Floor(Z);
 
-    int quadX = minX + (HeightmapResolution >> 1);
-    int quadZ = minZ + (HeightmapResolution >> 1);
+    int quadX = minX + (m_HeightmapResolution >> 1);
+    int quadZ = minZ + (m_HeightmapResolution >> 1);
 
-    if (quadX < 0 || quadX >= HeightmapResolution - 1)
+    if (quadX < 0 || quadX >= m_HeightmapResolution - 1)
     {
         return false;
     }
-    if (quadZ < 0 || quadZ >= HeightmapResolution - 1)
+    if (quadZ < 0 || quadZ >= m_HeightmapResolution - 1)
     {
         return false;
     }
@@ -541,10 +541,10 @@ bool ATerrain::GetTriangleVertices(float X, float Z, Float3& V0, Float3& V1, Flo
     h3       h2
 
     */
-    float h0 = Heightmap[0][quadZ * HeightmapResolution + quadX];
-    float h1 = Heightmap[0][quadZ * HeightmapResolution + quadX + 1];
-    float h2 = Heightmap[0][(quadZ + 1) * HeightmapResolution + quadX + 1];
-    float h3 = Heightmap[0][(quadZ + 1) * HeightmapResolution + quadX];
+    float h0 = m_Heightmap[0][quadZ * m_HeightmapResolution + quadX];
+    float h1 = m_Heightmap[0][quadZ * m_HeightmapResolution + quadX + 1];
+    float h2 = m_Heightmap[0][(quadZ + 1) * m_HeightmapResolution + quadX + 1];
+    float h3 = m_Heightmap[0][(quadZ + 1) * m_HeightmapResolution + quadX];
 
     float maxX = minX + 1.0f;
     float maxZ = minZ + 1.0f;
@@ -598,7 +598,7 @@ bool ATerrain::GetNormal(float X, float Z, Float3& Normal) const
 
 bool ATerrain::GetTexcoord(float X, float Z, Float2& Texcoord) const
 {
-    const float invResolution = 1.0f / (HeightmapResolution - 1);
+    const float invResolution = 1.0f / (m_HeightmapResolution - 1);
 
     Texcoord.X = Math::Clamp(X * invResolution + 0.5f, 0.0f, 1.0f);
     Texcoord.Y = Math::Clamp(Z * invResolution + 0.5f, 0.0f, 1.0f);
@@ -624,17 +624,17 @@ bool ATerrain::GetTriangle(float X, float Z, STerrainTriangle& Triangle) const
 
 void ATerrain::AddListener(ATerrainComponent* Listener)
 {
-    INTRUSIVE_ADD_UNIQUE(Listener, pNext, pPrev, Listeners, ListenersTail);
+    INTRUSIVE_ADD_UNIQUE(Listener, pNext, pPrev, m_Listeners, m_ListenersTail);
 }
 
 void ATerrain::RemoveListener(ATerrainComponent* Listener)
 {
-    INTRUSIVE_REMOVE(Listener, pNext, pPrev, Listeners, ListenersTail);
+    INTRUSIVE_REMOVE(Listener, pNext, pPrev, m_Listeners, m_ListenersTail);
 }
 
 void ATerrain::NotifyTerrainModified()
 {
-    for (ATerrainComponent* component = Listeners; component; component = component->pNext)
+    for (ATerrainComponent* component = m_Listeners; component; component = component->pNext)
     {
         component->OnTerrainModified();
     }
@@ -644,7 +644,7 @@ void ATerrain::NotifyTerrainModified()
 
 void ATerrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float3>& Vertices, TVector<unsigned int>& Indices) const
 {
-    if (!BvBoxOverlapBox(BoundingBox, LocalBounds))
+    if (!BvBoxOverlapBox(m_BoundingBox, LocalBounds))
     {
         return;
     }
@@ -656,7 +656,7 @@ void ATerrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float
     float minY = LocalBounds.Mins.Y;
     float maxY = LocalBounds.Maxs.Y;
 
-    int halfResolution = HeightmapResolution >> 1;
+    int halfResolution = m_HeightmapResolution >> 1;
 
     int minQuadX = minX + halfResolution;
     int minQuadZ = minZ + halfResolution;
@@ -665,8 +665,8 @@ void ATerrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float
 
     minQuadX = Math::Max(minQuadX, 0);
     minQuadZ = Math::Max(minQuadZ, 0);
-    maxQuadX = Math::Min(maxQuadX, HeightmapResolution - 1);
-    maxQuadZ = Math::Min(maxQuadZ, HeightmapResolution - 1);
+    maxQuadX = Math::Min(maxQuadX, m_HeightmapResolution - 1);
+    maxQuadZ = Math::Min(maxQuadZ, m_HeightmapResolution - 1);
 
     int n = Vertices.Size();
 
@@ -674,8 +674,8 @@ void ATerrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float
     {
         float z = qz - halfResolution;
 
-        float h0 = Heightmap[0][qz * HeightmapResolution + minQuadX];
-        float h3 = Heightmap[0][(qz + 1) * HeightmapResolution + minQuadX];
+        float h0 = m_Heightmap[0][qz * m_HeightmapResolution + minQuadX];
+        float h3 = m_Heightmap[0][(qz + 1) * m_HeightmapResolution + minQuadX];
 
         for (int qx = minQuadX ; qx < maxQuadX ; qx++)
         {
@@ -693,8 +693,8 @@ void ATerrain::GatherGeometry(BvAxisAlignedBox const& LocalBounds, TVector<Float
 
             */
 
-            float h1 = Heightmap[0][qz * HeightmapResolution + qx + 1];            
-            float h2 = Heightmap[0][(qz + 1) * HeightmapResolution + qx + 1];
+            float h1 = m_Heightmap[0][qz * m_HeightmapResolution + qx + 1];            
+            float h2 = m_Heightmap[0][(qz + 1) * m_HeightmapResolution + qx + 1];
             
             bool firstTriangleCut = false;
 

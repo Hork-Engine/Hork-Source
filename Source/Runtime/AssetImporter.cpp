@@ -2099,17 +2099,13 @@ void AAssetImporter::WriteSingleModel()
 
     if (bRaycastBVH)
     {
-
-        ATreeAABB* aabbTree = CreateInstanceOf<ATreeAABB>();
-
         for (MeshInfo const& meshInfo : m_Meshes)
         {
             // Generate subpart BVH
-
-            aabbTree->InitializeTriangleSoup(m_Vertices, {m_Indices.ToPtr() + meshInfo.FirstIndex, (size_t)meshInfo.IndexCount}, meshInfo.BaseVertex, m_Settings.RaycastPrimitivesPerLeaf);
+            BvhTree aabbTree(TArrayView<SMeshVertex>(m_Vertices), {m_Indices.ToPtr() + meshInfo.FirstIndex, (size_t)meshInfo.IndexCount}, meshInfo.BaseVertex, m_Settings.RaycastPrimitivesPerLeaf);
 
             // Write subpart BVH
-            aabbTree->Write(f);
+            f.WriteObject(aabbTree);
         }
     }
 
@@ -2254,14 +2250,13 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
     if (bRaycastBVH)
     {
         // Generate subpart BVH
-        ATreeAABB* aabbTree = CreateInstanceOf<ATreeAABB>();
-        aabbTree->InitializeTriangleSoup({m_Vertices.ToPtr() + Mesh.BaseVertex, m_Vertices.Size() - Mesh.BaseVertex},
-                                         {m_Indices.ToPtr() + Mesh.FirstIndex, (size_t)Mesh.IndexCount},
-                                         0,
-                                         m_Settings.RaycastPrimitivesPerLeaf);
+        BvhTree aabbTree(TArrayView<SMeshVertex>(m_Vertices.ToPtr() + Mesh.BaseVertex, m_Vertices.Size() - Mesh.BaseVertex),
+                         TArrayView<unsigned int>(m_Indices.ToPtr() + Mesh.FirstIndex, (size_t)Mesh.IndexCount),
+                         0,
+                         m_Settings.RaycastPrimitivesPerLeaf);
 
         // Write subpart BVH
-        aabbTree->Write(f);
+        f.WriteObject(aabbTree);
     }
 
     f.WriteUInt32(0); // sockets count

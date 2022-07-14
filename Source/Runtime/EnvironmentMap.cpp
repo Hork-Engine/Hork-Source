@@ -87,21 +87,21 @@ void AEnvironmentMap::InitializeFromImage(ImageStorage const& Image)
         cubemap->WriteRect(rect, subresource.GetSizeInBytes(), 1, subresource.GetData());
     }
 
-    GEngine->GetRenderBackend()->GenerateIrradianceMap(cubemap, &IrradianceMap);
-    GEngine->GetRenderBackend()->GenerateReflectionMap(cubemap, &ReflectionMap);
+    GEngine->GetRenderBackend()->GenerateIrradianceMap(cubemap, &m_IrradianceMap);
+    GEngine->GetRenderBackend()->GenerateReflectionMap(cubemap, &m_ReflectionMap);
 
-    IrradianceMap->SetDebugName("Irradiance Map");
-    ReflectionMap->SetDebugName("Reflection Map");
+    m_IrradianceMap->SetDebugName("Irradiance Map");
+    m_ReflectionMap->SetDebugName("Reflection Map");
 
     UpdateSamplers();
 }
 
 void AEnvironmentMap::Purge()
 {
-    IrradianceMap.Reset();
-    ReflectionMap.Reset();
-    IrradianceMapHandle = 0;
-    ReflectionMapHandle = 0;
+    m_IrradianceMap.Reset();
+    m_ReflectionMap.Reset();
+    m_IrradianceMapHandle = 0;
+    m_ReflectionMapHandle = 0;
 }
 
 void AEnvironmentMap::CreateTextures(int IrradianceMapWidth, int ReflectionMapWidth)
@@ -112,17 +112,17 @@ void AEnvironmentMap::CreateTextures(int IrradianceMapWidth, int ReflectionMapWi
                                                   .SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT)
                                                   .SetResolution(STextureResolutionCubemap(IrradianceMapWidth))
                                                   .SetBindFlags(BIND_SHADER_RESOURCE),
-                                              &IrradianceMap);
+                                              &m_IrradianceMap);
 
     GEngine->GetRenderDevice()->CreateTexture(STextureDesc()
                                                   .SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT)
                                                   .SetResolution(STextureResolutionCubemap(ReflectionMapWidth))
                                                   .SetMipLevels(Math::Log2((uint32_t)ReflectionMapWidth))
                                                   .SetBindFlags(BIND_SHADER_RESOURCE),
-                                              &ReflectionMap);
+                                              &m_ReflectionMap);
 
-    IrradianceMap->SetDebugName("Irradiance Map");
-    ReflectionMap->SetDebugName("Reflection Map");
+    m_IrradianceMap->SetDebugName("Irradiance Map");
+    m_ReflectionMap->SetDebugName("Reflection Map");
 
     UpdateSamplers();
 }
@@ -133,12 +133,12 @@ void AEnvironmentMap::UpdateSamplers()
     samplerCI.bCubemapSeamless = true;
 
     samplerCI.Filter    = RenderCore::FILTER_LINEAR;
-    IrradianceMapHandle = IrradianceMap->GetBindlessSampler(samplerCI);
-    IrradianceMap->MakeBindlessSamplerResident(IrradianceMapHandle, true);
+    m_IrradianceMapHandle = m_IrradianceMap->GetBindlessSampler(samplerCI);
+    m_IrradianceMap->MakeBindlessSamplerResident(m_IrradianceMapHandle, true);
 
     samplerCI.Filter    = RenderCore::FILTER_MIPMAP_BILINEAR;
-    ReflectionMapHandle = ReflectionMap->GetBindlessSampler(samplerCI);
-    ReflectionMap->MakeBindlessSamplerResident(ReflectionMapHandle, true);
+    m_ReflectionMapHandle = m_ReflectionMap->GetBindlessSampler(samplerCI);
+    m_ReflectionMap->MakeBindlessSamplerResident(m_ReflectionMapHandle, true);
 }
 
 bool AEnvironmentMap::LoadResource(IBinaryStreamReadInterface& Stream)
@@ -178,7 +178,7 @@ bool AEnvironmentMap::LoadResource(IBinaryStreamReadInterface& Stream)
 
     Stream.ReadWords<uint32_t>(data, numPixels);
 
-    IrradianceMap->Write(0, numPixels * sizeof(uint32_t), 4, data);
+    m_IrradianceMap->Write(0, numPixels * sizeof(uint32_t), 4, data);
 
     for (int mipLevel = 0; mipLevel < numReflectionMapMips; mipLevel++)
     {
@@ -189,7 +189,7 @@ bool AEnvironmentMap::LoadResource(IBinaryStreamReadInterface& Stream)
 
         Stream.ReadWords<uint32_t>(data, numPixels);
 
-        ReflectionMap->Write(mipLevel, numPixels * sizeof(uint32_t), 4, data);
+        m_ReflectionMap->Write(mipLevel, numPixels * sizeof(uint32_t), 4, data);
     }
 
     return true;

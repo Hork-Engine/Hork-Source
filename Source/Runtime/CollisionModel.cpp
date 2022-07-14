@@ -1148,7 +1148,7 @@ ACollisionModel::ACollisionModel(void const* pShapes)
 
     if (numShapes)
     {
-        CenterOfMass /= numShapes;
+        m_CenterOfMass /= numShapes;
     }
 }
 
@@ -1157,7 +1157,7 @@ ACollisionModel::ACollisionModel(SCollisionModelCreateInfo const& CreateInfo) :
 {
     if (CreateInfo.bOverrideCenterOfMass)
     {
-        CenterOfMass = CreateInfo.CenterOfMass;
+        m_CenterOfMass = CreateInfo.CenterOfMass;
     }
 }
 
@@ -1190,13 +1190,13 @@ void ACollisionModel::AddSphere(SCollisionSphereDef const* pShape, int& NumShape
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.Add(std::move(boneCol));
+        m_BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
-        CenterOfMass += body->Position;
+        m_CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.Add(std::move(body));
+        m_CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1216,13 +1216,13 @@ void ACollisionModel::AddSphereRadii(SCollisionSphereRadiiDef const* pShape, int
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.Add(std::move(boneCol));
+        m_BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
-        CenterOfMass += body->Position;
+        m_CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.Add(std::move(body));
+        m_CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1242,13 +1242,13 @@ void ACollisionModel::AddBox(SCollisionBoxDef const* pShape, int& NumShapes)
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.Add(std::move(boneCol));
+        m_BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
-        CenterOfMass += body->Position;
+        m_CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.Add(std::move(body));
+        m_CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1270,13 +1270,13 @@ void ACollisionModel::AddCylinder(SCollisionCylinderDef const* pShape, int& NumS
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.Add(std::move(boneCol));
+        m_BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
-        CenterOfMass += body->Position;
+        m_CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.Add(std::move(body));
+        m_CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1298,13 +1298,13 @@ void ACollisionModel::AddCone(SCollisionConeDef const* pShape, int& NumShapes)
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.Add(std::move(boneCol));
+        m_BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
-        CenterOfMass += body->Position;
+        m_CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.Add(std::move(body));
+        m_CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1326,13 +1326,13 @@ void ACollisionModel::AddCapsule(SCollisionCapsuleDef const* pShape, int& NumSha
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.Add(std::move(boneCol));
+        m_BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
-        CenterOfMass += body->Position;
+        m_CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.Add(std::move(body));
+        m_CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1417,13 +1417,13 @@ void ACollisionModel::AddConvexHull(SCollisionConvexHullDef const* pShape, int& 
         boneCol.CollisionGroup = pShape->Bone.CollisionGroup;
         boneCol.CollisionMask  = pShape->Bone.CollisionMask;
         boneCol.CollisionBody  = std::move(body);
-        BoneCollisions.Add(std::move(boneCol));
+        m_BoneCollisions.Add(std::move(boneCol));
     }
     else
     {
-        CenterOfMass += body->Position;
+        m_CenterOfMass += body->Position;
         NumShapes++;
-        CollisionBodies.Add(std::move(body));
+        m_CollisionBodies.Add(std::move(body));
     }
 }
 
@@ -1529,10 +1529,10 @@ void ACollisionModel::AddTriangleSoupBVH(SCollisionTriangleSoupBVHDef const* pSh
 
     body->BuildBVH(pShape->bForceQuantizedAabbCompression);
 
-    CenterOfMass += body->Position;
+    m_CenterOfMass += body->Position;
     NumShapes++;
 
-    CollisionBodies.Add(std::move(body));
+    m_CollisionBodies.Add(std::move(body));
 }
 
 void ACollisionModel::AddTriangleSoupGimpact(SCollisionTriangleSoupGimpactDef const* pShape, int& NumShapes)
@@ -1635,10 +1635,10 @@ void ACollisionModel::AddTriangleSoupGimpact(SCollisionTriangleSoupGimpactDef co
         }
     }
 
-    CenterOfMass += body->Position;
+    m_CenterOfMass += body->Position;
     NumShapes++;
 
-    CollisionBodies.Add(std::move(body));
+    m_CollisionBodies.Add(std::move(body));
 }
 
 void ACollisionModel::AddConvexDecomposition(SCollisionConvexDecompositionDef const* pShape, int& NumShapes)
@@ -1668,9 +1668,9 @@ void ACollisionModel::AddConvexDecomposition(SCollisionConvexDecompositionDef co
         return;
     }
 
-    Float3 saveCenterOfMass = CenterOfMass;
+    Float3 saveCenterOfMass = m_CenterOfMass;
 
-    CenterOfMass.Clear();
+    m_CenterOfMass.Clear();
 
     int n{};
     for (SConvexHullDesc const& hull : hulls)
@@ -1687,8 +1687,8 @@ void ACollisionModel::AddConvexDecomposition(SCollisionConvexDecompositionDef co
         AddConvexHull(&hulldef, n);
     }
 
-    CenterOfMass /= n;
-    CenterOfMass += saveCenterOfMass;
+    m_CenterOfMass /= n;
+    m_CenterOfMass += saveCenterOfMass;
     NumShapes++;
 }
 
@@ -1720,11 +1720,11 @@ void ACollisionModel::AddConvexDecompositionVHACD(SCollisionConvexDecompositionV
         return;
     }
 
-    CenterOfMass += decompositionCenterOfMass;
+    m_CenterOfMass += decompositionCenterOfMass;
     NumShapes++;
 
     // Save current center of mass
-    Float3 saveCenterOfMass = CenterOfMass;
+    Float3 saveCenterOfMass = m_CenterOfMass;
 
     int n{};
     for (SConvexHullDesc const& hull : hulls)
@@ -1742,12 +1742,12 @@ void ACollisionModel::AddConvexDecompositionVHACD(SCollisionConvexDecompositionV
     }
 
     // Restore center of mass to ignore computations in AddConvexHull
-    CenterOfMass = saveCenterOfMass;
+    m_CenterOfMass = saveCenterOfMass;
 }
 
 void ACollisionModel::GatherGeometry(TVector<Float3>& Vertices, TVector<unsigned int>& Indices, Float3x4 const& Transform) const
 {
-    for (TUniqueRef<ACollisionBody> const& collisionBody : CollisionBodies)
+    for (TUniqueRef<ACollisionBody> const& collisionBody : m_CollisionBodies)
     {
         collisionBody->GatherGeometry(Vertices, Indices, Transform);
     }
@@ -1762,32 +1762,32 @@ ACollisionInstance::ACollisionInstance(ACollisionModel* CollisionModel, Float3 c
 {
     constexpr float POSITION_COMPARE_EPSILON{0.0001f};
 
-    Model         = CollisionModel;
-    CompoundShape = MakeUnique<btCompoundShape>();
-    CenterOfMass  = Scale * CollisionModel->GetCenterOfMass();
+    m_Model         = CollisionModel;
+    m_CompoundShape = MakeUnique<btCompoundShape>();
+    m_CenterOfMass  = Scale * CollisionModel->GetCenterOfMass();
 
-    if (!CollisionModel->CollisionBodies.IsEmpty())
+    if (!CollisionModel->m_CollisionBodies.IsEmpty())
     {
         btTransform     shapeTransform;
 
-        for (TUniqueRef<ACollisionBody> const& collisionBody : CollisionModel->CollisionBodies)
+        for (TUniqueRef<ACollisionBody> const& collisionBody : CollisionModel->m_CollisionBodies)
         {
             btCollisionShape* shape = collisionBody->Create(Scale);
 
             shape->setMargin(collisionBody->Margin);
 
-            shapeTransform.setOrigin(btVectorToFloat3(Scale * collisionBody->Position - CenterOfMass));
+            shapeTransform.setOrigin(btVectorToFloat3(Scale * collisionBody->Position - m_CenterOfMass));
             shapeTransform.setRotation(btQuaternionToQuat(collisionBody->Rotation));
 
-            CompoundShape->addChildShape(shapeTransform, shape);
+            m_CompoundShape->addChildShape(shapeTransform, shape);
         }
     }
 
-    int  numShapes    = CompoundShape->getNumChildShapes();
+    int  numShapes    = m_CompoundShape->getNumChildShapes();
     bool bUseCompound = !numShapes || numShapes > 1;
     if (!bUseCompound)
     {
-        btTransform const& childTransform = CompoundShape->getChildTransform(0);
+        btTransform const& childTransform = m_CompoundShape->getChildTransform(0);
 
         if (!btVectorToFloat3(childTransform.getOrigin()).CompareEps(Float3::Zero(), POSITION_COMPARE_EPSILON) || btQuaternionToQuat(childTransform.getRotation()) != Quat::Identity())
         {
@@ -1795,15 +1795,15 @@ ACollisionInstance::ACollisionInstance(ACollisionModel* CollisionModel, Float3 c
         }
     }
 
-    CollisionShape = bUseCompound ? CompoundShape.GetObject() : CompoundShape->getChildShape(0);
+    m_CollisionShape = bUseCompound ? m_CompoundShape.GetObject() : m_CompoundShape->getChildShape(0);
 }
 
 ACollisionInstance::~ACollisionInstance()
 {
-    int numShapes = CompoundShape->getNumChildShapes();
+    int numShapes = m_CompoundShape->getNumChildShapes();
     for (int i = numShapes - 1; i >= 0; i--)
     {
-        btCollisionShape* shape = CompoundShape->getChildShape(i);
+        btCollisionShape* shape = m_CompoundShape->getChildShape(i);
         delete shape;
     }
 }
@@ -1811,7 +1811,7 @@ ACollisionInstance::~ACollisionInstance()
 Float3 ACollisionInstance::CalculateLocalInertia(float Mass) const
 {
     btVector3 localInertia;
-    CollisionShape->calculateLocalInertia(Mass, localInertia);
+    m_CollisionShape->calculateLocalInertia(Mass, localInertia);
     return btVectorToFloat3(localInertia);
 }
 
@@ -1823,12 +1823,12 @@ void ACollisionInstance::GetCollisionBodiesWorldBounds(Float3 const& WorldPositi
     transform.setOrigin(btVectorToFloat3(WorldPosition));
     transform.setRotation(btQuaternionToQuat(WorldRotation));
 
-    int numShapes = CompoundShape->getNumChildShapes();
+    int numShapes = m_CompoundShape->getNumChildShapes();
     BoundingBoxes.ResizeInvalidate(numShapes);
 
     for (int i = 0; i < numShapes; i++)
     {
-        btCompoundShapeChild& shape = CompoundShape->getChildList()[i];
+        btCompoundShapeChild& shape = m_CompoundShape->getChildList()[i];
 
         shape.m_childShape->getAabb(transform * shape.m_transform, mins, maxs);
 
@@ -1847,11 +1847,11 @@ void ACollisionInstance::GetCollisionWorldBounds(Float3 const& WorldPosition, Qu
 
     BoundingBox.Clear();
 
-    int numShapes = CompoundShape->getNumChildShapes();
+    int numShapes = m_CompoundShape->getNumChildShapes();
 
     for (int i = 0; i < numShapes; i++)
     {
-        btCompoundShapeChild& shape = CompoundShape->getChildList()[i];
+        btCompoundShapeChild& shape = m_CompoundShape->getChildList()[i];
 
         shape.m_childShape->getAabb(transform * shape.m_transform, mins, maxs);
 
@@ -1861,7 +1861,7 @@ void ACollisionInstance::GetCollisionWorldBounds(Float3 const& WorldPosition, Qu
 
 void ACollisionInstance::GetCollisionBodyWorldBounds(int Index, Float3 const& WorldPosition, Quat const& WorldRotation, BvAxisAlignedBox& BoundingBox) const
 {
-    if (Index < 0 || Index >= CompoundShape->getNumChildShapes())
+    if (Index < 0 || Index >= m_CompoundShape->getNumChildShapes())
     {
         LOG("ACollisionInstance::GetCollisionBodyWorldBounds: invalid index\n");
 
@@ -1875,7 +1875,7 @@ void ACollisionInstance::GetCollisionBodyWorldBounds(int Index, Float3 const& Wo
     transform.setOrigin(btVectorToFloat3(WorldPosition));
     transform.setRotation(btQuaternionToQuat(WorldRotation));
 
-    btCompoundShapeChild& shape = CompoundShape->getChildList()[Index];
+    btCompoundShapeChild& shape = m_CompoundShape->getChildList()[Index];
 
     shape.m_childShape->getAabb(transform * shape.m_transform, mins, maxs);
 
@@ -1885,7 +1885,7 @@ void ACollisionInstance::GetCollisionBodyWorldBounds(int Index, Float3 const& Wo
 
 void ACollisionInstance::GetCollisionBodyLocalBounds(int Index, BvAxisAlignedBox& BoundingBox) const
 {
-    if (Index < 0 || Index >= CompoundShape->getNumChildShapes())
+    if (Index < 0 || Index >= m_CompoundShape->getNumChildShapes())
     {
         LOG("ACollisionInstance::GetCollisionBodyLocalBounds: invalid index\n");
 
@@ -1895,7 +1895,7 @@ void ACollisionInstance::GetCollisionBodyLocalBounds(int Index, BvAxisAlignedBox
 
     btVector3 mins, maxs;
 
-    btCompoundShapeChild& shape = CompoundShape->getChildList()[Index];
+    btCompoundShapeChild& shape = m_CompoundShape->getChildList()[Index];
 
     shape.m_childShape->getAabb(shape.m_transform, mins, maxs);
 
@@ -1905,19 +1905,19 @@ void ACollisionInstance::GetCollisionBodyLocalBounds(int Index, BvAxisAlignedBox
 
 float ACollisionInstance::GetCollisionBodyMargin(int Index) const
 {
-    if (Index < 0 || Index >= CompoundShape->getNumChildShapes())
+    if (Index < 0 || Index >= m_CompoundShape->getNumChildShapes())
     {
         LOG("ACollisionInstance::GetCollisionBodyMargin: invalid index\n");
 
         return 0;
     }
 
-    btCompoundShapeChild& shape = CompoundShape->getChildList()[Index];
+    btCompoundShapeChild& shape = m_CompoundShape->getChildList()[Index];
 
     return shape.m_childShape->getMargin();
 }
 
 int ACollisionInstance::GetCollisionBodiesCount() const
 {
-    return CompoundShape->getNumChildShapes();
+    return m_CompoundShape->getNumChildShapes();
 }

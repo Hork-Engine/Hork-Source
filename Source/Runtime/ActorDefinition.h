@@ -71,41 +71,41 @@ public:
         return def;
     }
 
-    AClassMeta const* GetActorClass() const { return ActorClass; }
+    AClassMeta const* GetActorClass() const { return m_ActorClass; }
 
-    TVector<SComponentDef> const& GetComponents() const { return Components; }
-    int                           GetRootIndex() const { return RootIndex; }
+    TVector<SComponentDef> const& GetComponents() const { return m_Components; }
+    int                           GetRootIndex() const { return m_RootIndex; }
 
-    TStringHashMap<AString> const&  GetActorPropertyHash() const { return ActorPropertyHash; }
-    TVector<SPublicProperty> const& GetPublicProperties() const { return PublicProperties; }
+    TStringHashMap<AString> const&  GetActorPropertyHash() const { return m_ActorPropertyHash; }
+    TVector<SPublicProperty> const& GetPublicProperties() const { return m_PublicProperties; }
 
-    AString const& GetScriptModule() const { return ScriptModule; }
+    AString const& GetScriptModule() const { return m_ScriptModule; }
 
-    TStringHashMap<AString> const&        GetScriptPropertyHash() const { return ScriptPropertyHash; }
-    TVector<SScriptPublicProperty> const& GetScriptPublicProperties() const { return ScriptPublicProperties; }
+    TStringHashMap<AString> const&        GetScriptPropertyHash() const { return m_ScriptPropertyHash; }
+    TVector<SScriptPublicProperty> const& GetScriptPublicProperties() const { return m_ScriptPublicProperties; }
 
 protected:
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView _Path) override;
+    void LoadInternalResource(AStringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/ActorDefinition/Default"; }
 
 private:
     void InitializeFromDocument(ADocument const& Document);
 
-    AClassMeta const*      ActorClass{nullptr};
-    TVector<SComponentDef> Components;
-    int                    RootIndex{-1};
+    AClassMeta const*      m_ActorClass{nullptr};
+    TVector<SComponentDef> m_Components;
+    int                    m_RootIndex{-1};
 
-    TStringHashMap<AString>  ActorPropertyHash;
-    TVector<SPublicProperty> PublicProperties;
+    TStringHashMap<AString>  m_ActorPropertyHash;
+    TVector<SPublicProperty> m_PublicProperties;
 
-    AString                 ScriptModule;
-    TStringHashMap<AString> ScriptPropertyHash;
+    AString                 m_ScriptModule;
+    TStringHashMap<AString> m_ScriptPropertyHash;
 
-    TVector<SScriptPublicProperty> ScriptPublicProperties;
+    TVector<SScriptPublicProperty> m_ScriptPublicProperties;
 };
 

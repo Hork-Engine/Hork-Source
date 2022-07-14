@@ -268,7 +268,7 @@ class AVariant final
         SEnumDef const* EnumDef;
     };
 
-    VARIANT_TYPE Type{VARIANT_UNDEFINED};
+    VARIANT_TYPE m_Type{VARIANT_UNDEFINED};
 
     union
     {
@@ -282,12 +282,12 @@ public:
 
     ~AVariant()
     {
-        if (Type == VARIANT_STRING)
+        if (m_Type == VARIANT_STRING)
             ((AString*)&RawData[0])->~AString();
     }
 
     AVariant(const char *Rhs) :
-        Type(VARIANT_STRING)
+        m_Type(VARIANT_STRING)
     {
         new (RawData) AString;
 
@@ -295,7 +295,7 @@ public:
     }
 
     AVariant(AStringView Rhs) :
-        Type(VARIANT_STRING)
+        m_Type(VARIANT_STRING)
     {
         new (RawData) AString;
 
@@ -304,7 +304,7 @@ public:
 
     template <typename T, std::enable_if_t<!std::is_enum<T>::value, bool> = true>
     AVariant(T const& Rhs) :
-        Type(VariantTraits::DeduceVariantType<T>())
+        m_Type(VariantTraits::DeduceVariantType<T>())
     {
         if (std::is_same<T, AString>())
         {
@@ -315,7 +315,7 @@ public:
 
     template <typename T, std::enable_if_t<std::is_enum<T>::value, bool> = true>
     AVariant(T const& Rhs) :
-        Type(VARIANT_ENUM)
+        m_Type(VARIANT_ENUM)
     {
         static_assert(sizeof(EnumType.EnumData) >= sizeof(T), "The enum type size must not exceed 64 bytes.");
 
@@ -324,19 +324,19 @@ public:
         EnumType.EnumDef = EnumDefinition<T>();
     }
 
-    AVariant(VARIANT_TYPE _Type, SEnumDef const* EnumDef, AStringView String)
+    AVariant(VARIANT_TYPE Type, SEnumDef const* EnumDef, AStringView String)
     {
-        SetFromString(_Type, EnumDef, String);
+        SetFromString(Type, EnumDef, String);
     }
 
     AVariant& operator=(const char* Rhs)
     {
-        if (Type != VARIANT_STRING)
+        if (m_Type != VARIANT_STRING)
         {
             new (RawData) AString;
         }
 
-        Type = VARIANT_STRING;
+        m_Type = VARIANT_STRING;
 
         *(AString*)&RawData[0] = Rhs;
         return *this;
@@ -344,12 +344,12 @@ public:
 
     AVariant& operator=(AStringView Rhs)
     {
-        if (Type != VARIANT_STRING)
+        if (m_Type != VARIANT_STRING)
         {
             new (RawData) AString;
         }
 
-        Type = VARIANT_STRING;
+        m_Type = VARIANT_STRING;
 
         *(AString*)&RawData[0] = Rhs;
         return *this;
@@ -360,18 +360,18 @@ public:
     {
         if (std::is_same<T, AString>())
         {
-            if (Type != VARIANT_STRING)
+            if (m_Type != VARIANT_STRING)
             {
                 new(RawData) AString;
             }
         }
         else
         {
-            if (Type == VARIANT_STRING)
+            if (m_Type == VARIANT_STRING)
                 ((AString*)&RawData[0])->~AString();
         }
 
-        Type = VariantTraits::DeduceVariantType<T>();
+        m_Type = VariantTraits::DeduceVariantType<T>();
 
         *(T*)&RawData[0] = Rhs;
         return *this;
@@ -380,10 +380,10 @@ public:
     template <typename T, std::enable_if_t<std::is_enum<T>::value, bool> = true>
     AVariant& operator=(T const& Rhs)
     {
-        if (Type == VARIANT_STRING)
+        if (m_Type == VARIANT_STRING)
             ((AString*)&RawData[0])->~AString();
 
-        Type = VARIANT_ENUM;
+        m_Type = VARIANT_ENUM;
 
         static_assert(sizeof(EnumType.EnumData) >= sizeof(T), "The enum type size must not exceed 64 bytes.");
 
@@ -397,7 +397,7 @@ public:
     template <typename T, std::enable_if_t<!std::is_enum<T>::value, bool> = true>
     T* Get() const
     {
-        if (VariantTraits::DeduceVariantType<T>() != Type)
+        if (VariantTraits::DeduceVariantType<T>() != m_Type)
             return {};
 
         return (T*)&RawData[0];
@@ -414,10 +414,10 @@ public:
 
     VARIANT_TYPE GetType() const
     {
-        return Type;
+        return m_Type;
     }
 
-    void SetFromString(VARIANT_TYPE _Type, SEnumDef const* EnumDef, AStringView String);
+    void SetFromString(VARIANT_TYPE Type, SEnumDef const* EnumDef, AStringView String);
 
     AString ToString() const;
 };

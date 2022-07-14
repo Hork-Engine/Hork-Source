@@ -228,26 +228,26 @@ ABinaryResource::~ABinaryResource()
 
 void ABinaryResource::Purge()
 {
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(pBinaryData);
-    pBinaryData = nullptr;
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(m_pBinaryData);
+    m_pBinaryData = nullptr;
 
-    SizeInBytes = 0;
+    m_SizeInBytes = 0;
 }
 
-bool ABinaryResource::LoadResource(IBinaryStreamReadInterface& _Stream)
+bool ABinaryResource::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     Purge();
 
-    SizeInBytes = _Stream.SizeInBytes();
-    if (!SizeInBytes)
+    m_SizeInBytes = Stream.SizeInBytes();
+    if (!m_SizeInBytes)
     {
         LOG("ABinaryResource::LoadResource: empty file\n");
         return false;
     }
 
-    pBinaryData = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes + 1);
-    _Stream.Read(pBinaryData, SizeInBytes);
-    ((uint8_t*)pBinaryData)[SizeInBytes] = 0;
+    m_pBinaryData = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(m_SizeInBytes + 1);
+    Stream.Read(m_pBinaryData, m_SizeInBytes);
+    ((uint8_t*)m_pBinaryData)[m_SizeInBytes] = 0;
 
     return true;
 }

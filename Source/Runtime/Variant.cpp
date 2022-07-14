@@ -216,9 +216,9 @@ SResourceRef StringToResourceRef(AStringView String)
     return ref;
 }
 
-void AVariant::SetFromString(VARIANT_TYPE _Type, SEnumDef const* EnumDef, AStringView String)
+void AVariant::SetFromString(VARIANT_TYPE Type, SEnumDef const* EnumDef, AStringView String)
 {
-    switch (_Type)
+    switch (Type)
     {
         case VARIANT_UNDEFINED:
             return;
@@ -296,7 +296,7 @@ void AVariant::SetFromString(VARIANT_TYPE _Type, SEnumDef const* EnumDef, AStrin
 
 AString AVariant::ToString() const
 {
-    switch (Type)
+    switch (m_Type)
     {
         case VARIANT_UNDEFINED:
             return "";

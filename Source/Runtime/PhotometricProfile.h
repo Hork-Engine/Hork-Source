@@ -53,32 +53,32 @@ public:
     APhotometricProfile();
     ~APhotometricProfile();
 
-    static APhotometricProfile* Create(void const* pData, float InIntensity);
+    static APhotometricProfile* Create(void const* pData, float Intensity);
 
-    void SetIntensity(float _Intensity) { Intensity = _Intensity; }
+    void SetIntensity(float Intensity) { m_Intensity = Intensity; }
 
     /** Get intensity scale to convert data to candelas */
-    float GetIntensity() const { return Intensity; }
+    float GetIntensity() const { return m_Intensity; }
 
-    const byte* GetPhotometricData() const { return Data; }
+    const byte* GetPhotometricData() const { return m_Data; }
 
     /** Internal */
     void WritePhotometricData(RenderCore::ITexture* ProfileTexture, int FrameIndex);
-    int  GetPhotometricProfileIndex() const { return PhotometricProfileIndex; }
+    int  GetPhotometricProfileIndex() const { return m_PhotometricProfileIndex; }
 
 protected:
     /** Load resource from file */
     bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView _Path) override;
+    void LoadInternalResource(AStringView Path) override;
 
     const char* GetDefaultResourcePath() const override { return "/Default/PhotometricProfile/Default"; }
 
-    int   PhotometricProfileIndex = 0;
-    int   FrameNum                = -1;
-    float Intensity               = 0.0f;
-    byte  Data[PHOTOMETRIC_DATA_SIZE];
+    int   m_PhotometricProfileIndex = 0;
+    int   m_FrameNum                = -1;
+    float m_Intensity               = 0.0f;
+    byte  m_Data[PHOTOMETRIC_DATA_SIZE];
 
-    static int PhotometricProfileCounter;
+    static int m_PhotometricProfileCounter;
 };

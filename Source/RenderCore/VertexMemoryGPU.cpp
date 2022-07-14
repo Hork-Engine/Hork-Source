@@ -490,10 +490,10 @@ void* AStreamedMemoryGPU::Map(size_t _StreamHandle)
     return (byte*)pMappedMemory + _StreamHandle;
 }
 
-void AStreamedMemoryGPU::GetPhysicalBufferAndOffset(size_t _StreamHandle, RenderCore::IBuffer** _Buffer, size_t* _Offset)
+void AStreamedMemoryGPU::GetPhysicalBufferAndOffset(size_t StreamHandle, RenderCore::IBuffer** ppBuffer, size_t* pOffset)
 {
-    *_Buffer = Buffer;
-    *_Offset = _StreamHandle;
+    *ppBuffer = Buffer;
+    *pOffset = StreamHandle;
 }
 
 RenderCore::IBuffer* AStreamedMemoryGPU::GetBufferGPU()

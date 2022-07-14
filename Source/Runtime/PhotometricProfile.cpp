@@ -39,35 +39,35 @@ SOFTWARE.
 
 HK_CLASS_META(APhotometricProfile)
 
-int APhotometricProfile::PhotometricProfileCounter = 0;
+int APhotometricProfile::m_PhotometricProfileCounter = 0;
 
 APhotometricProfile::APhotometricProfile()
 {
-    Platform::ZeroMem(Data, sizeof(Data));
+    Platform::ZeroMem(m_Data, sizeof(m_Data));
 }
 
 APhotometricProfile::~APhotometricProfile()
 {
 }
 
-APhotometricProfile* APhotometricProfile::Create(void const* pData, float InIntensity)
+APhotometricProfile* APhotometricProfile::Create(void const* pData, float Intensity)
 {
     APhotometricProfile* profile = CreateInstanceOf<APhotometricProfile>();
-    profile->Intensity             = InIntensity;
-    Platform::Memcpy(profile->Data, pData, sizeof(Data));
+    profile->m_Intensity         = Intensity;
+    Platform::Memcpy(profile->m_Data, pData, sizeof(profile->m_Data));
     return profile;
 }
 
-void APhotometricProfile::LoadInternalResource(AStringView _Path)
+void APhotometricProfile::LoadInternalResource(AStringView Path)
 {
-    if (!_Path.Icmp("/Default/PhotometricProfile/Default"))
+    if (!Path.Icmp("/Default/PhotometricProfile/Default"))
     {
-        Intensity = 1.0f;
-        Platform::Memset(Data, 0xff, sizeof(Data));
+        m_Intensity = 1.0f;
+        Platform::Memset(m_Data, 0xff, sizeof(m_Data));
         return;
     }
 
-    LOG("Unknown internal resource {}\n", _Path);
+    LOG("Unknown internal resource {}\n", Path);
 
     LoadInternalResource("/Default/PhotometricProfile/Default");
 }
@@ -391,7 +391,7 @@ bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
             return false;
         }
 
-        Intensity = 0.0f;
+        m_Intensity = 0.0f;
 
         float unnormalizedData[PHOTOMETRIC_DATA_SIZE];
 
@@ -405,20 +405,20 @@ bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
 #endif
             unnormalizedData[i] = SampleIESAvgVertical(&photoData, angle);
 
-            Intensity = Math::Max(Intensity, unnormalizedData[i]);
+            m_Intensity = Math::Max(m_Intensity, unnormalizedData[i]);
         }
 
-        const float normalizer = Intensity > 0.0f ? 1.0f / Intensity : 1.0f;
+        const float normalizer = m_Intensity > 0.0f ? 1.0f / m_Intensity : 1.0f;
         for (int i = 0; i < PHOTOMETRIC_DATA_SIZE; i++)
         {
-            //Data[i] = Math::Saturate( unnormalizedData[i] * normalizer ) * 255;
-            Data[i] = Math::Pow(Math::Saturate(unnormalizedData[i] * normalizer), 1.0f / 2.2f) * 255;
+            //m_Data[i] = Math::Saturate( unnormalizedData[i] * normalizer ) * 255;
+            m_Data[i] = Math::Pow(Math::Saturate(unnormalizedData[i] * normalizer), 1.0f / 2.2f) * 255;
             // TODO: Try sRGB
         }
 
         const float scale = photoData.lamp.multiplier * photoData.elec.ball_factor * photoData.elec.blp_factor;
 
-        Intensity *= scale;
+        m_Intensity *= scale;
 
         TestIES(photoData);
 
@@ -448,8 +448,8 @@ bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
 
         AString guid = Stream.ReadString();
 
-        Intensity = Stream.ReadFloat();
-        Stream.Read(Data, sizeof(Data));
+        m_Intensity = Stream.ReadFloat();
+        Stream.Read(m_Data, sizeof(m_Data));
     }
 
     return true;
@@ -457,21 +457,21 @@ bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
 
 void APhotometricProfile::WritePhotometricData(RenderCore::ITexture* ProfileTexture, int FrameIndex)
 {
-    if (FrameNum == FrameIndex)
+    if (m_FrameNum == FrameIndex)
     {
         // Already updated at this frame
         return;
     }
-    FrameNum = FrameIndex;
+    m_FrameNum = FrameIndex;
     if (ProfileTexture)
     {
         RenderCore::STextureRect rect;
-        rect.Offset.Z = PhotometricProfileCounter;
+        rect.Offset.Z    = m_PhotometricProfileCounter;
         rect.Dimension.X = PHOTOMETRIC_DATA_SIZE;
         rect.Dimension.Y = 1;
         rect.Dimension.Z = 1;
-        ProfileTexture->WriteRect(rect, PHOTOMETRIC_DATA_SIZE, 4, Data);
-        PhotometricProfileIndex   = PhotometricProfileCounter;
-        PhotometricProfileCounter = (PhotometricProfileCounter + 1) & 0xff;
+        ProfileTexture->WriteRect(rect, PHOTOMETRIC_DATA_SIZE, 4, m_Data);
+        m_PhotometricProfileIndex   = m_PhotometricProfileCounter;
+        m_PhotometricProfileCounter = (m_PhotometricProfileCounter + 1) & 0xff;
     }
 }

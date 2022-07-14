@@ -43,12 +43,12 @@ static AMaterial *GMaterials = nullptr, *GMaterialsTail = nullptr;
 
 AMaterial::AMaterial()
 {
-    INTRUSIVE_ADD(this, pNext, pPrev, GMaterials, GMaterialsTail);
+    INTRUSIVE_ADD(this, m_pNext, m_pPrev, GMaterials, GMaterialsTail);
 }
 
 AMaterial::~AMaterial()
 {
-    INTRUSIVE_REMOVE(this, pNext, pPrev, GMaterials, GMaterialsTail);
+    INTRUSIVE_REMOVE(this, m_pNext, m_pPrev, GMaterials, GMaterialsTail);
 }
 
 static void CreateMaterial(AMaterialGPU* Material, SMaterialDef const* Def)
@@ -58,22 +58,22 @@ static void CreateMaterial(AMaterialGPU* Material, SMaterialDef const* Def)
 
 void AMaterial::RebuildMaterials()
 {
-    for (AMaterial* material = GMaterials; material; material = material->pNext)
+    for (AMaterial* material = GMaterials; material; material = material->m_pNext)
     {
-        CreateMaterial(&material->MaterialGPU, &material->Def);
+        CreateMaterial(&material->m_MaterialGPU, &material->m_Def);
     }
 }
 
 void AMaterial::Initialize(MGMaterialGraph* Graph)
 {
-    CompileMaterialGraph(Graph, &Def);
+    CompileMaterialGraph(Graph, &m_Def);
 
-    CreateMaterial(&MaterialGPU, &Def);
+    CreateMaterial(&m_MaterialGPU, &m_Def);
 }
 
 void AMaterial::Purge()
 {
-    Def.RemoveShaders();
+    m_Def.RemoveShaders();
 }
 
 bool AMaterial::LoadResource(IBinaryStreamReadInterface& Stream)
@@ -98,38 +98,38 @@ bool AMaterial::LoadResource(IBinaryStreamReadInterface& Stream)
 
     AString guid = Stream.ReadString();
 
-    Def.Type                      = (EMaterialType)Stream.ReadUInt8();
-    Def.Blending                  = (EColorBlending)Stream.ReadUInt8();
-    Def.TessellationMethod        = (ETessellationMethod)Stream.ReadUInt8();
-    Def.RenderingPriority         = (ERenderingPriority)Stream.ReadUInt8();
-    Def.LightmapSlot              = (ETessellationMethod)Stream.ReadUInt16();
-    Def.DepthPassTextureCount     = Stream.ReadUInt8();
-    Def.LightPassTextureCount     = Stream.ReadUInt8();
-    Def.WireframePassTextureCount = Stream.ReadUInt8();
-    Def.NormalsPassTextureCount   = Stream.ReadUInt8();
-    Def.ShadowMapPassTextureCount = Stream.ReadUInt8();
-    Def.bHasVertexDeform          = Stream.ReadBool();
-    Def.bDepthTest_EXPERIMENTAL   = Stream.ReadBool();
-    Def.bNoCastShadow             = Stream.ReadBool();
-    Def.bAlphaMasking             = Stream.ReadBool();
-    Def.bShadowMapMasking         = Stream.ReadBool();
-    Def.bDisplacementAffectShadow = Stream.ReadBool();
-    //Def.bParallaxMappingSelfShadowing = Stream.ReadBool(); // TODO
-    Def.bTranslucent      = Stream.ReadBool();
-    Def.bTwoSided         = Stream.ReadBool();
-    Def.NumUniformVectors = Stream.ReadUInt8();
-    Def.NumSamplers       = Stream.ReadUInt8();
-    for (int i = 0; i < Def.NumSamplers; i++)
+    m_Def.Type                    = (EMaterialType)Stream.ReadUInt8();
+    m_Def.Blending                = (EColorBlending)Stream.ReadUInt8();
+    m_Def.TessellationMethod      = (ETessellationMethod)Stream.ReadUInt8();
+    m_Def.RenderingPriority       = (ERenderingPriority)Stream.ReadUInt8();
+    m_Def.LightmapSlot            = (ETessellationMethod)Stream.ReadUInt16();
+    m_Def.DepthPassTextureCount   = Stream.ReadUInt8();
+    m_Def.LightPassTextureCount   = Stream.ReadUInt8();
+    m_Def.WireframePassTextureCount = Stream.ReadUInt8();
+    m_Def.NormalsPassTextureCount   = Stream.ReadUInt8();
+    m_Def.ShadowMapPassTextureCount = Stream.ReadUInt8();
+    m_Def.bHasVertexDeform          = Stream.ReadBool();
+    m_Def.bDepthTest_EXPERIMENTAL   = Stream.ReadBool();
+    m_Def.bNoCastShadow             = Stream.ReadBool();
+    m_Def.bAlphaMasking             = Stream.ReadBool();
+    m_Def.bShadowMapMasking         = Stream.ReadBool();
+    m_Def.bDisplacementAffectShadow = Stream.ReadBool();
+    //m_Def.bParallaxMappingSelfShadowing = Stream.ReadBool(); // TODO
+    m_Def.bTranslucent    = Stream.ReadBool();
+    m_Def.bTwoSided       = Stream.ReadBool();
+    m_Def.NumUniformVectors = Stream.ReadUInt8();
+    m_Def.NumSamplers       = Stream.ReadUInt8();
+    for (int i = 0; i < m_Def.NumSamplers; i++)
     {
-        Def.Samplers[i].TextureType = (TEXTURE_TYPE)Stream.ReadUInt8();
-        Def.Samplers[i].Filter      = (ETextureFilter)Stream.ReadUInt8();
-        Def.Samplers[i].AddressU    = (ETextureAddress)Stream.ReadUInt8();
-        Def.Samplers[i].AddressV    = (ETextureAddress)Stream.ReadUInt8();
-        Def.Samplers[i].AddressW    = (ETextureAddress)Stream.ReadUInt8();
-        Def.Samplers[i].MipLODBias  = Stream.ReadFloat();
-        Def.Samplers[i].Anisotropy  = Stream.ReadFloat();
-        Def.Samplers[i].MinLod      = Stream.ReadFloat();
-        Def.Samplers[i].MaxLod      = Stream.ReadFloat();
+        m_Def.Samplers[i].TextureType = (TEXTURE_TYPE)Stream.ReadUInt8();
+        m_Def.Samplers[i].Filter      = (ETextureFilter)Stream.ReadUInt8();
+        m_Def.Samplers[i].AddressU    = (ETextureAddress)Stream.ReadUInt8();
+        m_Def.Samplers[i].AddressV    = (ETextureAddress)Stream.ReadUInt8();
+        m_Def.Samplers[i].AddressW    = (ETextureAddress)Stream.ReadUInt8();
+        m_Def.Samplers[i].MipLODBias  = Stream.ReadFloat();
+        m_Def.Samplers[i].Anisotropy  = Stream.ReadFloat();
+        m_Def.Samplers[i].MinLod      = Stream.ReadFloat();
+        m_Def.Samplers[i].MaxLod      = Stream.ReadFloat();
     }
 
     int     numShaders = Stream.ReadUInt16();
@@ -138,10 +138,10 @@ bool AMaterial::LoadResource(IBinaryStreamReadInterface& Stream)
     {
         sourceName = Stream.ReadString();
         sourceCode = Stream.ReadString();
-        Def.AddShader(sourceName, sourceCode);
+        m_Def.AddShader(sourceName, sourceCode);
     }
 
-    CreateMaterial(&MaterialGPU, &Def);
+    CreateMaterial(&m_MaterialGPU, &m_Def);
 
     return true;
 }
@@ -903,7 +903,7 @@ AMaterialInstance::AMaterialInstance()
     static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/Unlit"s);
     static TStaticResourceFinder<ATexture>  TextureResource("/Common/grid8.png"s);
 
-    Material = MaterialResource.GetObject();
+    m_Material = MaterialResource.GetObject();
 
     SetTexture(0, TextureResource.GetObject());
 }
@@ -927,7 +927,7 @@ void AMaterialInstance::LoadInternalResource(AStringView _Path)
         static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/BaseLight"s);
         static TStaticResourceFinder<ATexture>  TextureResource("/Common/grid8.png"s);
 
-        Material = MaterialResource.GetObject();
+        m_Material = MaterialResource.GetObject();
 
         SetTexture(0, TextureResource.GetObject());
         return;
@@ -936,7 +936,7 @@ void AMaterialInstance::LoadInternalResource(AStringView _Path)
     {
         static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/PBRMetallicRoughnessNoTex"s);
 
-        Material = MaterialResource.GetObject();
+        m_Material = MaterialResource.GetObject();
 
         // Base color
         UniformVectors[0] = Float4(0.8f, 0.8f, 0.8f, 1.0f);
@@ -952,7 +952,7 @@ void AMaterialInstance::LoadInternalResource(AStringView _Path)
     {
         static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/PBRMetallicRoughnessNoTex"s);
 
-        Material = MaterialResource.GetObject();
+        m_Material = MaterialResource.GetObject();
 
         // Base color
         UniformVectors[0] = Float4(0.8f, 0.8f, 0.8f, 1.0f);
@@ -1065,17 +1065,17 @@ void AMaterialInstance::SetMaterial(AMaterial* _Material)
     {
         static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/Unlit"s);
 
-        Material = MaterialResource.GetObject();
+        m_Material = MaterialResource.GetObject();
     }
     else
     {
-        Material = _Material;
+        m_Material = _Material;
     }
 }
 
 AMaterial* AMaterialInstance::GetMaterial() const
 {
-    return Material;
+    return m_Material;
 }
 
 void AMaterialInstance::SetTexture(int _TextureSlot, ATexture* _Texture)
@@ -1084,41 +1084,41 @@ void AMaterialInstance::SetTexture(int _TextureSlot, ATexture* _Texture)
     {
         return;
     }
-    Textures[_TextureSlot] = _Texture;
+    m_Textures[_TextureSlot] = _Texture;
 }
 
 ATexture* AMaterialInstance::GetTexture(int _TextureSlot)
 {
-    return Textures[_TextureSlot];
+    return m_Textures[_TextureSlot];
 }
 
 void AMaterialInstance::SetVirtualTexture(AVirtualTextureResource* VirtualTex)
 {
-    VirtualTexture = VirtualTex;
+    m_VirtualTexture = VirtualTex;
 }
 
 SMaterialFrameData* AMaterialInstance::PreRenderUpdate(AFrameLoop* FrameLoop, int _FrameNumber)
 {
-    if (VisFrame == _FrameNumber)
+    if (m_VisFrame == _FrameNumber)
     {
-        return FrameData;
+        return m_FrameData;
     }
 
-    VisFrame = _FrameNumber;
+    m_VisFrame = _FrameNumber;
 
-    FrameData = (SMaterialFrameData*)FrameLoop->AllocFrameMem(sizeof(SMaterialFrameData));
+    m_FrameData = (SMaterialFrameData*)FrameLoop->AllocFrameMem(sizeof(SMaterialFrameData));
 
-    FrameData->Material = Material->GetGPUResource();
+    m_FrameData->Material = m_Material->GetGPUResource();
 
-    RenderCore::ITexture** textures = FrameData->Textures;
-    FrameData->NumTextures          = 0;
+    RenderCore::ITexture** textures = m_FrameData->Textures;
+    m_FrameData->NumTextures        = 0;
 
     for (int i = 0; i < MAX_MATERIAL_TEXTURES; i++)
     {
-        if (Textures[i])
+        if (m_Textures[i])
         {
-            textures[i]            = Textures[i]->GetGPUResource();
-            FrameData->NumTextures = i + 1;
+            textures[i]            = m_Textures[i]->GetGPUResource();
+            m_FrameData->NumTextures = i + 1;
         }
         else
         {
@@ -1126,10 +1126,10 @@ SMaterialFrameData* AMaterialInstance::PreRenderUpdate(AFrameLoop* FrameLoop, in
         }
     }
 
-    FrameData->NumUniformVectors = Material->GetNumUniformVectors();
-    Platform::Memcpy(FrameData->UniformVectors, UniformVectors, sizeof(Float4) * FrameData->NumUniformVectors);
+    m_FrameData->NumUniformVectors = m_Material->GetNumUniformVectors();
+    Platform::Memcpy(m_FrameData->UniformVectors, UniformVectors, sizeof(Float4) * m_FrameData->NumUniformVectors);
 
-    FrameData->VirtualTexture = VirtualTexture.GetObject();
+    m_FrameData->VirtualTexture = m_VirtualTexture.GetObject();
 
-    return FrameData;
+    return m_FrameData;
 }

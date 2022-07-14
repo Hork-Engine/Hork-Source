@@ -56,7 +56,7 @@ public:
     }
 
     /** Get physical resource path */
-    AString const& GetResourcePath() const { return ResourcePath; }
+    AString const& GetResourcePath() const { return m_ResourcePath; }
 
     static bool IsResourceExists(AStringView Path);
 
@@ -81,9 +81,9 @@ private:
     bool LoadFromPath(AStringView Path);
 
     /** Set physical resource path */
-    void SetResourcePath(AStringView _ResourcePath) { ResourcePath = _ResourcePath; }
+    void SetResourcePath(AStringView _ResourcePath) { m_ResourcePath = _ResourcePath; }
 
-    AString ResourcePath;
+    AString m_ResourcePath;
 };
 
 class ABinaryResource : public AResource
@@ -96,29 +96,29 @@ public:
 
     void* GetBinaryData()
     {
-        return pBinaryData;
+        return m_pBinaryData;
     }
 
     size_t GetSizeInBytes() const
     {
-        return SizeInBytes;
+        return m_SizeInBytes;
     }
 
     const char* GetAsString() const
     {
-        return pBinaryData ? (const char*)pBinaryData : "";
+        return m_pBinaryData ? (const char*)m_pBinaryData : "";
     }
 protected:
 
     void Purge();
 
     /** Load resource from file */
-    bool LoadResource(IBinaryStreamReadInterface& _Stream) override;
+    bool LoadResource(IBinaryStreamReadInterface& Stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView _Path) override;
+    void LoadInternalResource(AStringView Path) override;
 
 private:
-    void*  pBinaryData = nullptr;
-    size_t SizeInBytes = 0;
+    void*  m_pBinaryData = nullptr;
+    size_t m_SizeInBytes = 0;
 };

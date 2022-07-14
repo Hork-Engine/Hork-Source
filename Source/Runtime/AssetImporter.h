@@ -193,8 +193,8 @@ private:
     TPodVector<unsigned int>    m_Indices;
     TPodVector<MeshInfo>        m_Meshes;
     TPodVector<TextureInfo>     m_Textures;
-    TVector<MaterialInfo>    m_Materials;
-    TVector<AnimationInfo>   m_Animations;
+    TVector<MaterialInfo>       m_Materials;
+    TVector<AnimationInfo>      m_Animations;
     TPodVector<SJoint>          m_Joints;
     ASkin                       m_Skin;
     BvAxisAlignedBox            m_BindposeBounds;
