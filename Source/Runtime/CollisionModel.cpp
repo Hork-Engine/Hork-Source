@@ -1664,6 +1664,7 @@ void ACollisionModel::AddConvexDecomposition(SCollisionConvexDecompositionDef co
 
     if (hulls.IsEmpty())
     {
+        LOG("ACollisionModel::AddConvexDecomposition: failed on convex decomposition\n");
         return;
     }
 

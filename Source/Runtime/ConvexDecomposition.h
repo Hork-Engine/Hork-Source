@@ -44,7 +44,7 @@ struct SConvexHullDesc
 
 void BakeCollisionMarginConvexHull(Float3 const* _InVertices, int _VertexCount, TPodVector<Float3>& _OutVertices, float _Margin = 0.01f);
 
-void PerformConvexDecomposition(Float3 const*                _Vertices,
+bool PerformConvexDecomposition(Float3 const*                _Vertices,
                                 int                          _VerticesCount,
                                 int                          _VertexStride,
                                 unsigned int const*          _Indices,
@@ -53,7 +53,7 @@ void PerformConvexDecomposition(Float3 const*                _Vertices,
                                 TPodVector<unsigned int>&    _OutIndices,
                                 TPodVector<SConvexHullDesc>& _OutHulls);
 
-void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
+bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
                                      int                          _VerticesCount,
                                      int                          _VertexStride,
                                      unsigned int const*          _Indices,

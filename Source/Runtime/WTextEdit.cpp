@@ -884,15 +884,7 @@ bool WTextEdit::Copy()
     WideChar* const start    = TextData.ToPtr() + startOfs;
     WideChar* const end      = TextData.ToPtr() + endOfs;
 
-    const int clipboardDataLen = Core::WideStrUTF8Bytes(start, end) + 1;
-
-    char* pClipboardData = (char*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(clipboardDataLen);
-
-    Core::WideStrEncodeUTF8(pClipboardData, clipboardDataLen, start, end);
-
-    Platform::SetClipboard(pClipboardData);
-
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(pClipboardData);
+    Platform::SetClipboard(Core::GetString(AWideStringView(start, end)).CStr());
 
     return true;
 }

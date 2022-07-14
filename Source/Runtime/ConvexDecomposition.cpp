@@ -271,7 +271,7 @@ void BakeCollisionMarginConvexHull(Float3 const* _InVertices, int _VertexCount, 
     ConvexHullVerticesFromPlanes(planes.ToPtr(), planes.Size(), _OutVertices);
 }
 
-void PerformConvexDecomposition(Float3 const*                _Vertices,
+bool PerformConvexDecomposition(Float3 const*                _Vertices,
                                 int                          _VerticesCount,
                                 int                          _VertexStride,
                                 unsigned int const*          _Indices,
@@ -280,11 +280,14 @@ void PerformConvexDecomposition(Float3 const*                _Vertices,
                                 TPodVector<unsigned int>&    _OutIndices,
                                 TPodVector<SConvexHullDesc>& _OutHulls)
 {
-    HACD::Vec3<HACD::Real>* points =
-        (HACD::Vec3<HACD::Real>*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(_VerticesCount * sizeof(HACD::Vec3<HACD::Real>));
+    _OutVertices.Clear();
+    _OutIndices.Clear();
+    _OutHulls.Clear();
 
-    HACD::Vec3<long>* triangles =
-        (HACD::Vec3<long>*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc((_IndicesCount / 3) * sizeof(HACD::Vec3<long>));
+    HK_VERIFY_R(_IndicesCount % 3 == 0, "PerformConvexDecomposition: The number of indices must be a multiple of 3");
+
+    TVector<HACD::Vec3<HACD::Real>> points(_VerticesCount);
+    TVector<HACD::Vec3<long>>       triangles(_IndicesCount / 3);
 
     byte const* srcVertices = (byte const*)_Vertices;
     for (int i = 0; i < _VerticesCount; i++)
@@ -303,9 +306,9 @@ void PerformConvexDecomposition(Float3 const*                _Vertices,
     }
 
     HACD::HACD hacd;
-    hacd.SetPoints(points);
+    hacd.SetPoints(points.ToPtr());
     hacd.SetNPoints(_VerticesCount);
-    hacd.SetTriangles(triangles);
+    hacd.SetTriangles(triangles.ToPtr());
     hacd.SetNTriangles(_IndicesCount / 3);
     //    hacd.SetCompacityWeight( 0.1 );
     //    hacd.SetVolumeWeight( 0.0 );
@@ -345,16 +348,12 @@ void PerformConvexDecomposition(Float3 const*                _Vertices,
         maxTrianglesPerCluster = Math::Max(maxTrianglesPerCluster, numTriangles);
     }
 
-    HACD::Vec3<HACD::Real>* hullPoints =
-        (HACD::Vec3<HACD::Real>*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(maxPointsPerCluster * sizeof(HACD::Vec3<HACD::Real>));
+    TVector<HACD::Vec3<HACD::Real>> hullPoints(maxPointsPerCluster);
+    TVector<HACD::Vec3<long>> hullTriangles(maxTrianglesPerCluster);
 
-    HACD::Vec3<long>* hullTriangles =
-        (HACD::Vec3<long>*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(maxTrianglesPerCluster * sizeof(HACD::Vec3<long>));
-
-
-    _OutHulls.ResizeInvalidate(numClusters);
-    _OutVertices.ResizeInvalidate(totalPoints);
-    _OutIndices.ResizeInvalidate(totalTriangles * 3);
+    _OutHulls.Resize(numClusters);
+    _OutVertices.Resize(totalPoints);
+    _OutIndices.Resize(totalTriangles * 3);
 
     totalPoints    = 0;
     totalTriangles = 0;
@@ -364,7 +363,7 @@ void PerformConvexDecomposition(Float3 const*                _Vertices,
         int numPoints    = hacd.GetNPointsCH(cluster);
         int numTriangles = hacd.GetNTrianglesCH(cluster);
 
-        hacd.GetCH(cluster, hullPoints, hullTriangles);
+        hacd.GetCH(cluster, hullPoints.ToPtr(), hullTriangles.ToPtr());
 
         SConvexHullDesc& hull = _OutHulls[cluster];
         hull.FirstVertex      = totalPoints;
@@ -405,13 +404,10 @@ void PerformConvexDecomposition(Float3 const*                _Vertices,
         }
     }
 
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(points);
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(triangles);
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(hullPoints);
-    Platform::GetHeapAllocator<HEAP_TEMP>().Free(hullTriangles);
+    return !_OutHulls.IsEmpty();
 }
 
-void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
+bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
                                      int                          _VerticesCount,
                                      int                          _VertexStride,
                                      unsigned int const*          _Indices,
@@ -421,8 +417,6 @@ void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
                                      TPodVector<SConvexHullDesc>& _OutHulls,
                                      Float3&                      _CenterOfMass)
 {
-
-
     class Callback : public VHACD::IVHACD::IUserCallback
     {
     public:
@@ -463,6 +457,12 @@ void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
     params.m_minEdgeLength                    = 2;                           // Once a voxel patch has an edge length of less than 4 on all 3 sides, we don't keep recursing
     params.m_findBestPlane                    = false;                       // Whether or not to attempt to split planes along the best location. Experimental feature. False by default.
 
+    _OutVertices.Clear();
+    _OutIndices.Clear();
+    _OutHulls.Clear();
+
+    HK_VERIFY_R(_IndicesCount % 3 == 0, "PerformConvexDecompositionVHACD: The number of indices must be a multiple of 3");
+
     TVector<Double3> tempVertices(_VerticesCount);
     byte const*      srcVertices = (byte const*)_Vertices;
     for (int i = 0; i < _VerticesCount; i++)
@@ -485,7 +485,7 @@ void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
         _CenterOfMass[2] = centerOfMass[2];
 
         VHACD::IVHACD::ConvexHull ch;
-        _OutHulls.ResizeInvalidate(vhacd->GetNConvexHulls());
+        _OutHulls.Resize(vhacd->GetNConvexHulls());
         int totalVertices = 0;
         int totalIndices  = 0;
         for (int i = 0; i < _OutHulls.Size(); i++)
@@ -506,8 +506,8 @@ void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
             totalIndices += hull.IndexCount;
         }
 
-        _OutVertices.ResizeInvalidate(totalVertices);
-        _OutIndices.ResizeInvalidate(totalIndices);
+        _OutVertices.Resize(totalVertices);
+        _OutIndices.Resize(totalIndices);
 
         for (int i = 0; i < _OutHulls.Size(); i++)
         {
@@ -535,12 +535,10 @@ void PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
     else
     {
         LOG("PerformConvexDecompositionVHACD: convex decomposition error\n");
-
-        _OutVertices.Clear();
-        _OutIndices.Clear();
-        _OutHulls.Clear();
     }
 
     vhacd->Clean();
     vhacd->Release();
+
+    return !_OutHulls.IsEmpty();
 }
