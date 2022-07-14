@@ -211,7 +211,7 @@ void AEnvironmentMap::LoadInternalResource(AStringView _Path)
 
     ImageStorage storage(desc);
 
-    for (ImageSubresource subresource = storage.GetSubresource({0, 0}); subresource; subresource.NextSlice())
+    for (ImageSubresource subresource = storage.GetSubresource({0, 0}); subresource; subresource = subresource.NextSlice())
     {
         subresource.Write(0, 0, 1, 1, color);
     }
