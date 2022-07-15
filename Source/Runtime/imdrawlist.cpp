@@ -1071,6 +1071,11 @@ void ImDrawList::AddImageRounded( ImTextureID user_texture_id, const ImVec2& a, 
 // FIXME: This may be a little confusing, trying to be a little too low-level/optimal instead of just doing vector swap..
 //-----------------------------------------------------------------------------
 
+#ifdef __GNUC__
+#    pragma GCC diagnostic push
+#    pragma GCC diagnostic ignored "-Wclass-memaccess"
+#endif
+
 void ImDrawListSplitter::ClearFreeMemory()
 {
     for ( int i = 0; i < _Channels.Size; i++ )
@@ -1117,6 +1122,10 @@ void ImDrawListSplitter::Split( ImDrawList* draw_list, int channels_count )
         }
     }
 }
+
+#ifdef __GNUC__
+#    pragma GCC diagnostic pop
+#endif
 
 static inline bool CanMergeDrawCommands( ImDrawCmd* a, ImDrawCmd* b )
 {

@@ -586,6 +586,8 @@ static stbir_datatype get_stbir_datatype(IMAGE_DATA_TYPE DataType)
             return STBIR_TYPE_UINT32;
         case IMAGE_DATA_TYPE_FLOAT:
             return STBIR_TYPE_FLOAT;
+        default:
+            break;
     }
     HK_ASSERT(0);
     return STBIR_TYPE_UINT8;

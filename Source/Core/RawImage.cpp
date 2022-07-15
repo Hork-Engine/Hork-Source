@@ -432,6 +432,8 @@ void ARawImage::SwapRGB()
             ::SwapRGB((float*)m_pData, m_Width, m_Height, NumChannels());
             break;
         }
+        default:
+            break;
     }
 }
 

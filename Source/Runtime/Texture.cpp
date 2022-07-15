@@ -666,6 +666,8 @@ uint32_t ATexture::GetArraySize() const
         case TEXTURE_2D_ARRAY:
         case TEXTURE_CUBE_ARRAY:
             return m_Depth;
+        default:
+            break;
     }
     return 1;
 }

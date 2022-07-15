@@ -102,9 +102,10 @@ if(UNIX)
         -Wno-strict-aliasing            # Don't warn about strict-aliasing rules
         -Wno-maybe-uninitialized
         -Wno-enum-compare
-        -Wno-reorder
         )
     set(HK_COMPILER_DEFINES "")
+	
+	set(CMAKE_CPP_FLAGS ${CMAKE_CPP_FLAGS} -Wno-reorder)
 endif()
 
 if(WIN32)
