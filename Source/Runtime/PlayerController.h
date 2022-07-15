@@ -274,7 +274,6 @@ protected:
 
 private:
     void TogglePause();
-    void TakeScreenshot();
 
     TRef<ARenderingParameters> RenderingParameters;
     TRef<AAudioParameters>     AudioParameters;
