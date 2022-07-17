@@ -105,7 +105,7 @@ if(UNIX)
         )
     set(HK_COMPILER_DEFINES "")
 	
-	set(CMAKE_CPP_FLAGS ${CMAKE_CPP_FLAGS} -Wno-reorder)
+    set(CMAKE_CPP_FLAGS ${CMAKE_CPP_FLAGS} -Wno-reorder)
 endif()
 
 if(WIN32)

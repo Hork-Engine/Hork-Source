@@ -117,31 +117,31 @@ enum TEXTURE_FORMAT : uint8_t
     TEXTURE_FORMAT_D32S8,
     TEXTURE_FORMAT_X32G8_UINT,
 
-    // RGB
+    // RGB - 8 bytes per block
     TEXTURE_FORMAT_BC1_UNORM,
     TEXTURE_FORMAT_BC1_UNORM_SRGB,
 
-    // RGB A-4bit / RGB (not the best quality, it is better to use BC3)
+    // RGB A-4bit / RGB (not the best quality, it is better to use BC3)  - 16 bytes per block
     TEXTURE_FORMAT_BC2_UNORM,
     TEXTURE_FORMAT_BC2_UNORM_SRGB,
 
-    // RGB A-8bit
+    // RGB A-8bit - 16 bytes per block
     TEXTURE_FORMAT_BC3_UNORM,
     TEXTURE_FORMAT_BC3_UNORM_SRGB,
 
-    // R single channel texture (use for metalmap, glossmap, etc)
+    // R single channel texture (use for metalmap, glossmap, etc)  - 8 bytes per block
     TEXTURE_FORMAT_BC4_UNORM,
     TEXTURE_FORMAT_BC4_SNORM,
 
-    // RG two channel texture (use for normal map or two grayscale maps)
+    // RG two channel texture (use for normal map or two grayscale maps)  - 16 bytes per block
     TEXTURE_FORMAT_BC5_UNORM,
     TEXTURE_FORMAT_BC5_SNORM,
 
-    // RGB half float HDR
+    // RGB half float HDR   - 16 bytes per block
     TEXTURE_FORMAT_BC6H_UFLOAT,
     TEXTURE_FORMAT_BC6H_SFLOAT,
 
-    // RGB[A], best quality, every block is compressed different
+    // RGB[A], best quality, every block is compressed different  - 16 bytes per block
     TEXTURE_FORMAT_BC7_UNORM,
     TEXTURE_FORMAT_BC7_UNORM_SRGB,
 
