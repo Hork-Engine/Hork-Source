@@ -19,3 +19,6 @@
 [submodule "Source/ThirdParty/bc7enc_rdo"]
 	path = Source/ThirdParty/bc7enc_rdo
 	url = https://github.com/0xc0de/bc7enc_rdo.git
+[submodule "Source/ThirdParty/bc6h_enc"]
+	path = Source/ThirdParty/bc6h_enc
+	url = https://github.com/0xc0de/bc6h_enc.git
