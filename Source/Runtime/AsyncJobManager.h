@@ -137,8 +137,6 @@ public:
 #endif
 
 private:
-    static void _WorkerThreadRoutine(void* _Data);
-
     void WorkerThreadRoutine(int _ThreadId);
 
     AThread WorkerThread[MAX_WORKER_THREADS];
@@ -154,14 +152,6 @@ private:
     int           NumJobLists{0};
 
     AAtomicInt TotalJobs{0};
-
-    struct SContext
-    {
-        AAsyncJobManager* JobManager;
-        int               ThreadId;
-    };
-
-    SContext Contexts[MAX_WORKER_THREADS];
 
     bool bTerminated{false};
 };

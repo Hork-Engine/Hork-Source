@@ -32,6 +32,31 @@ SOFTWARE.
 
 #include "Atomic.h"
 
+template <typename Callable, typename... Types>
+class TArgumentsWrapper
+{
+    Callable                           m_Callable;
+    std::tuple<std::decay_t<Types>...> m_Args;
+
+public:
+    TArgumentsWrapper(Callable&& _Callable, Types&&... _Args) :
+        m_Callable(std::forward<Callable>(_Callable)),
+        m_Args(std::forward<Types>(_Args)...)
+    {}
+
+    void operator()()
+    {
+        Invoke(std::make_index_sequence<sizeof...(Types)>{});
+    }
+
+private:
+    template <std::size_t... Indices>
+    void Invoke(std::index_sequence<Indices...>)
+    {
+        m_Callable(std::move(std::get<Indices>(m_Args))...);
+    }
+};
+
 /**
 
 AThread
@@ -46,8 +71,12 @@ class AThread final
 public:
     static const int NumHardwareThreads;
 
-    AThread()
+    AThread() = default;
+
+    template <class Fn, class... Args>
+    AThread(Fn&& _Fn, Args&&... _Args)
     {
+        Start(std::forward<Fn>(_Fn), std::forward<Args>(_Args)...);
     }
 
     ~AThread()
@@ -55,10 +84,27 @@ public:
         Join();
     }
 
-    void (*Routine)(void* _Data) = EmptyRoutine;
-    void* Data = nullptr;
+    AThread(AThread&& Rhs) noexcept :
+        m_Internal(Rhs.m_Internal)
+    {
+        Rhs.m_Internal = 0;
+    }
 
-    void Start(int IdealProcessor = -1);
+    AThread& operator=(AThread&& Rhs) noexcept
+    {
+        Join();
+        Core::Swap(m_Internal, Rhs.m_Internal);
+        return *this;
+    }
+
+    template <class Fn, class... Args>
+    void Start(Fn&& _Fn, Args&&... _Args)
+    {
+        Join();
+
+        auto* threadProc = new TArgumentsWrapper<Fn, Args...>(std::forward<Fn>(_Fn), std::forward<Args>(_Args)...);
+        CreateThread(&Invoker<std::remove_reference_t<decltype(*threadProc)>>, threadProc);
+    }
 
     void Join();
 
@@ -74,13 +120,33 @@ public:
     static void WaitMicroseconds(int _Microseconds);
 
 private:
+    #ifdef HK_OS_WIN32
+    using InvokerReturnType = unsigned;
+    #else
+    using InvokerReturnType = void*;
+    #endif
+
+    template <typename ThreadProc>
+    static InvokerReturnType Invoker(void* pData)
+    {
+        ThreadProc* threadProc = reinterpret_cast<ThreadProc*>(pData);
+        (*threadProc)();
+
+        EndThread();
+
+        delete threadProc;
+        return {};
+    }
+
+    static void EndThread();
+
+    void CreateThread(InvokerReturnType (*ThreadProc)(void*), void* pThreadData);
+
 #ifdef HK_OS_WIN32
-    void* Internal = nullptr;
+    void* m_Internal = nullptr;
 #else
-    pthread_t Internal = 0;
+    pthread_t m_Internal = 0;
 #endif
-    static void EmptyRoutine(void*)
-    {}
 };
 
 

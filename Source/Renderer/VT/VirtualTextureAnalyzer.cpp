@@ -45,9 +45,11 @@ AVirtualTextureFeedbackAnalyzer::AVirtualTextureFeedbackAnalyzer()
     Platform::ZeroMem( Textures, sizeof( Textures ) );
     Platform::ZeroMem( QuedPages, sizeof( QuedPages ) );
 
-    StreamThread.Routine = StreamThreadMain;
-    StreamThread.Data = this;
-    StreamThread.Start();
+    StreamThread = AThread(
+        [this]()
+        {
+            StreamThreadMain();
+        });
 }
 
 AVirtualTextureFeedbackAnalyzer::~AVirtualTextureFeedbackAnalyzer()
@@ -69,12 +71,6 @@ AVirtualTextureFeedbackAnalyzer::~AVirtualTextureFeedbackAnalyzer()
             }
         }
     }
-}
-
-void AVirtualTextureFeedbackAnalyzer::StreamThreadMain( void * pData )
-{
-    AVirtualTextureFeedbackAnalyzer * analyzer = (AVirtualTextureFeedbackAnalyzer *)pData;
-    analyzer->StreamThreadMain();
 }
 
 void AVirtualTextureFeedbackAnalyzer::WaitForNewPages()

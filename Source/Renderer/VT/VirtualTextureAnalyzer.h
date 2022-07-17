@@ -90,7 +90,6 @@ private:
     void SubmitPages( TVector< SPageDesc > const & Pages );
     void WaitForNewPages();
     void StreamThreadMain();
-    static void StreamThreadMain( void * pData );
 
     // Per-frame texture bindings
     AVirtualTexture * Textures[2][VT_MAX_TEXTURE_UNITS];

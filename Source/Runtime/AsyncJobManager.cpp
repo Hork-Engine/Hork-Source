@@ -63,11 +63,12 @@ AAsyncJobManager::AAsyncJobManager(int _NumWorkerThreads, int _NumJobLists)
     NumWorkerThreads = _NumWorkerThreads;
     for (int i = 0; i < NumWorkerThreads; i++)
     {
-        Contexts[i].JobManager  = this;
-        Contexts[i].ThreadId    = i;
-        WorkerThread[i].Routine = _WorkerThreadRoutine;
-        WorkerThread[i].Data    = (void*)&Contexts[i];
-        WorkerThread[i].Start();
+        WorkerThread[i] = AThread(
+            [this](int ThreadId)
+            {
+                WorkerThreadRoutine(ThreadId);
+            },
+            i);
     }
 }
 
@@ -98,13 +99,6 @@ void AAsyncJobManager::NotifyThreads()
     {
         EventNotify[i].Signal();
     }
-}
-
-void AAsyncJobManager::_WorkerThreadRoutine(void* _Data)
-{
-    SContext* context = (SContext*)_Data;
-
-    context->JobManager->WorkerThreadRoutine(context->ThreadId);
 }
 
 void AAsyncJobManager::WorkerThreadRoutine(int _ThreadId)

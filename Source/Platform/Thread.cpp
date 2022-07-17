@@ -40,57 +40,44 @@ SOFTWARE.
 
 const int AThread::NumHardwareThreads = std::thread::hardware_concurrency();
 
-void AThread::Start(int IdealProcessor)
+void AThread::CreateThread(InvokerReturnType (*ThreadProc)(void*), void* pThreadData)
 {
 #ifdef HK_OS_WIN32
     unsigned threadId;
-    Internal = (HANDLE)_beginthreadex(
-        NULL, // security
-        0,    // stack size
-        [](void* _Thread) -> unsigned
-        {
-            ((AThread*)_Thread)->Routine(((AThread*)_Thread)->Data);
-            _endthreadex(0);
-            return 0;
-        },
-        this,       // arg
-        0,          // init flag
-        &threadId); // thread address
-
-    //SetThreadPriority( Internal, THREAD_PRIORITY_HIGHEST );
-
-    if (IdealProcessor >= 0)
-    {
-        SetThreadIdealProcessor(Internal, IdealProcessor);
-    }
+    m_Internal = (HANDLE)_beginthreadex(
+        NULL,        // security
+        0,           // stack size
+        ThreadProc,  // proc
+        pThreadData, // arg
+        0,           // init flag
+        &threadId);  // thread address
 #else
-    pthread_create(
-        &Internal,
-        nullptr,
-        [](void* _Thread) -> void*
-        {
-            ((AThread*)_Thread)->Routine(((AThread*)_Thread)->Data);
-            return nullptr;
-        },
-        this);
+    pthread_create(&m_Internal, nullptr, ThreadProc, threadProc);
     HK_UNUSED(IdealProcessor);
+#endif
+}
+
+void AThread::EndThread()
+{
+#ifdef HK_OS_WIN32
+    _endthreadex(0);
 #endif
 }
 
 void AThread::Join()
 {
-    if (!Internal)
+    if (!m_Internal)
     {
         return;
     }
 
 #ifdef HK_OS_WIN32
-    WaitForSingleObject(Internal, INFINITE);
-    CloseHandle(Internal);
-    Internal = nullptr;
+    WaitForSingleObject(m_Internal, INFINITE);
+    CloseHandle(m_Internal);
+    m_Internal = nullptr;
 #else
-    pthread_join(Internal, NULL);
-    Internal = 0;
+    pthread_join(m_Internal, NULL);
+    m_Internal = 0;
 #endif
 }
 
