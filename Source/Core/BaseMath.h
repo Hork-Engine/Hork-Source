@@ -584,6 +584,7 @@ extern "C" uint16_t half_from_float(uint32_t f);
 extern "C" uint32_t half_to_float(uint16_t h);
 extern "C" uint16_t half_add(uint16_t x, uint16_t y);
 extern "C" uint16_t half_mul(uint16_t x, uint16_t y);
+extern "C" uint32_t fast_half_to_float(uint16_t h);
 
 HK_FORCEINLINE uint16_t f32tof16(float f)
 {
@@ -592,7 +593,11 @@ HK_FORCEINLINE uint16_t f32tof16(float f)
 
 HK_FORCEINLINE float f16tof32(uint16_t f)
 {
+    #if 0
     uint32_t r = half_to_float(f);
+    #else
+    uint32_t r = fast_half_to_float(f);
+    #endif
     return *reinterpret_cast<float*>(&r);
 }
 
