@@ -174,7 +174,7 @@ ALevelLighting::ALevelLighting(SLightingSystemCreateInfo const& CreateInfo)
 
         size_t blockSize = sizeof(uint16_t) * LightmapBlockWidth * LightmapBlockHeight;
 
-        if (LightmapFormat == LIGHTMAP_BGR_HALF)
+        if (LightmapFormat == LIGHTMAP_RGBA16_FLOAT)
         {
             blockSize *= 4;
             texFormat = TEXTURE_FORMAT_RGBA16_FLOAT; // TODO: Check TEXTURE_FORMAT_R11G11B10_FLOAT
@@ -249,7 +249,7 @@ Float3 ALevelLighting::SampleLight(int InLightmapBlock, Float2 const& InLighmapT
 
     HK_ASSERT(InLightmapBlock >= 0 && InLightmapBlock < Lightmaps.Size());
 
-    int numChannels = (LightmapFormat == LIGHTMAP_GRAYSCALED_HALF) ? 1 : 4;
+    int numChannels = (LightmapFormat == LIGHTMAP_GRAYSCALED16_FLOAT) ? 1 : 4;
     int blockSize   = LightmapBlockWidth * LightmapBlockHeight * numChannels;
 
     const Half* src = (const Half*)LightData + InLightmapBlock * blockSize;
@@ -281,16 +281,14 @@ Float3 ALevelLighting::SampleLight(int InLightmapBlock, Float2 const& InLighmapT
 
     switch (LightmapFormat)
     {
-        case LIGHTMAP_GRAYSCALED_HALF: {
-            //light[0] = light[1] = light[2] = HalfToFloat(src00[0]);
+        case LIGHTMAP_GRAYSCALED16_FLOAT: {
             light[0] = light[1] = light[2] = Math::Bilerp(float(src00[0]), float(src10[0]), float(src01[0]), float(src11[0]), lerp);
             break;
         }
-        case LIGHTMAP_BGR_HALF: {
+        case LIGHTMAP_RGBA16_FLOAT: {
             for (int i = 0; i < 3; i++)
             {
-                //light[2-i] = Math::HalfToFloat(src00[i]);
-                light[2 - i] = Math::Bilerp(float(src00[i]), float(src10[i]), float(src01[i]), float(src11[i]), lerp);
+                light[i] = Math::Bilerp(float(src00[i]), float(src10[i]), float(src01[i]), float(src11[i]), lerp);
             }
             break;
         }

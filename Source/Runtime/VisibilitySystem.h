@@ -641,10 +641,10 @@ public:
 };
 
 
-enum ELightmapFormat
+enum LIGHTMAP_FORMAT
 {
-    LIGHTMAP_GRAYSCALED_HALF,
-    LIGHTMAP_BGR_HALF
+    LIGHTMAP_GRAYSCALED16_FLOAT,
+    LIGHTMAP_RGBA16_FLOAT
 };
 
 struct SNodeBaseDef

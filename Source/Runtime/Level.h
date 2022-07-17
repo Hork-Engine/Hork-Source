@@ -53,7 +53,7 @@ struct SPrimitiveLink;
 
 struct SLightingSystemCreateInfo
 {
-    ELightmapFormat        LightmapFormat;
+    LIGHTMAP_FORMAT        LightmapFormat;
     void*                  LightData;
     size_t                 LightDataSize;
     int                    LightmapBlockWidth;
@@ -94,7 +94,7 @@ public:
     TPodVector<SLightPortalDef> const& GetLightPortals() const { return LightPortals; }
 
     /** Lightmap pixel format */
-    ELightmapFormat LightmapFormat = LIGHTMAP_GRAYSCALED_HALF;
+    LIGHTMAP_FORMAT LightmapFormat = LIGHTMAP_GRAYSCALED16_FLOAT;
 
     /** Lightmap atlas resolution */
     int LightmapBlockWidth = 0;
