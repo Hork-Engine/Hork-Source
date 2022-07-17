@@ -243,7 +243,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
         return false;
     }
 
-    AString meshFile = member->GetString();
+    auto meshFile = member->GetStringView();
     if (meshFile.IsEmpty())
     {
         LOG("AIndexedMesh::LoadResource: invalid mesh\n");
@@ -317,7 +317,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
         int        subpartIndex = 0;
         for (ADocValue* v = values; v && subpartIndex < m_Subparts.Size(); v = v->GetNext())
         {
-            m_Subparts[subpartIndex]->SetMaterialInstance(GetOrCreateResource<AMaterialInstance>(v->GetString()));
+            m_Subparts[subpartIndex]->SetMaterialInstance(GetOrCreateResource<AMaterialInstance>(v->GetStringView()));
             subpartIndex++;
         }
     }
@@ -353,7 +353,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     }
 
     member = doc.FindMember("Skeleton");
-    SetSkeleton(GetOrCreateResource<ASkeleton>(member ? member->GetString() : "/Default/Skeleton/Default"));
+    SetSkeleton(GetOrCreateResource<ASkeleton>(member ? member->GetStringView() : "/Default/Skeleton/Default"));
 
     AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 

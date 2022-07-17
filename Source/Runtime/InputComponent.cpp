@@ -1139,11 +1139,11 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
                 continue;
             }
 
-            AString name       = mName->GetString();
-            AString device     = mDevice->GetString();
-            AString key        = mKey->GetString();
-            AString scale      = mScale->GetString();
-            AString controller = mController->GetString();
+            auto name       = mName->GetStringView();
+            auto device     = mDevice->GetStringView();
+            auto key        = mKey->GetStringView();
+            auto scale      = mScale->GetStringView();
+            auto controller = mController->GetStringView();
 
             uint16_t deviceId     = AInputHelper::LookupDevice(device);
             uint16_t deviceKey    = AInputHelper::LookupDeviceKey(deviceId, key);
@@ -1193,13 +1193,13 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
             ADocMember const* mModMask = mAction->FindMember("ModMask");
             if (mModMask)
             {
-                modMask = Core::ParseInt32(mModMask->GetString());
+                modMask = Core::ParseInt32(mModMask->GetStringView());
             }
 
-            AString name       = mName->GetString();
-            AString device     = mDevice->GetString();
-            AString key        = mKey->GetString();
-            AString controller = mController->GetString();
+            auto name       = mName->GetStringView();
+            auto device     = mDevice->GetStringView();
+            auto key        = mKey->GetStringView();
+            auto controller = mController->GetStringView();
 
             uint16_t deviceId     = AInputHelper::LookupDevice(device);
             uint16_t deviceKey    = AInputHelper::LookupDeviceKey(deviceId, key);

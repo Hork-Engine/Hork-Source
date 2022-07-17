@@ -2416,7 +2416,7 @@ bool AFont::LoadResource(IBinaryStreamReadInterface& Stream)
         return false;
     }
 
-    AString fontFile = fontMemb->GetString();
+    auto fontFile = fontMemb->GetStringView();
     if (fontFile.IsEmpty())
     {
         LOG("AFont::LoadResource: invalid font\n");
@@ -2437,50 +2437,50 @@ bool AFont::LoadResource(IBinaryStreamReadInterface& Stream)
     ADocMember* member;
 
     member             = doc.FindMember("FontNum");
-    createInfo.FontNum = member ? Core::ParseInt32(member->GetString()) : 0;
+    createInfo.FontNum = member ? Core::ParseInt32(member->GetStringView()) : 0;
     createInfo.FontNum = Math::Max(createInfo.FontNum, 0);
 
     member                = doc.FindMember("SizePixels");
-    createInfo.SizePixels = member ? Core::ParseInt32(member->GetString()) : 18;
+    createInfo.SizePixels = member ? Core::ParseInt32(member->GetStringView()) : 18;
     createInfo.SizePixels = Math::Clamp(createInfo.SizePixels, 6, 80);
 
     member                 = doc.FindMember("OversampleH");
-    createInfo.OversampleH = member ? Core::ParseInt32(member->GetString()) : 3; // FIXME: 2 may be a better default?
+    createInfo.OversampleH = member ? Core::ParseInt32(member->GetStringView()) : 3; // FIXME: 2 may be a better default?
     createInfo.OversampleH = Math::Clamp(createInfo.OversampleH, 0, 10);
 
     member                 = doc.FindMember("OversampleV");
-    createInfo.OversampleV = member ? Core::ParseInt32(member->GetString()) : 1;
+    createInfo.OversampleV = member ? Core::ParseInt32(member->GetStringView()) : 1;
     createInfo.OversampleV = Math::Clamp(createInfo.OversampleV, 0, 10);
 
     member                 = doc.FindMember("bPixelSnapH");
-    createInfo.bPixelSnapH = member ? Core::ParseBool(member->GetString()) : false;
+    createInfo.bPixelSnapH = member ? Core::ParseBool(member->GetStringView()) : false;
 
     member                         = doc.FindMember("GlyphExtraSpacingX");
-    createInfo.GlyphExtraSpacing.X = member ? Core::ParseFloat(member->GetString()) : 0.0f;
+    createInfo.GlyphExtraSpacing.X = member ? Core::ParseFloat(member->GetStringView()) : 0.0f;
     createInfo.GlyphExtraSpacing.X = Math::Clamp(createInfo.GlyphExtraSpacing.X, 0, 10);
 
     member                         = doc.FindMember("GlyphExtraSpacingY");
-    createInfo.GlyphExtraSpacing.Y = member ? Core::ParseFloat(member->GetString()) : 0.0f;
+    createInfo.GlyphExtraSpacing.Y = member ? Core::ParseFloat(member->GetStringView()) : 0.0f;
     createInfo.GlyphExtraSpacing.Y = Math::Clamp(createInfo.GlyphExtraSpacing.Y, 0, 10);
 
     member                   = doc.FindMember("GlyphOffsetX");
-    createInfo.GlyphOffset.X = member ? Core::ParseFloat(member->GetString()) : 0.0f;
+    createInfo.GlyphOffset.X = member ? Core::ParseFloat(member->GetStringView()) : 0.0f;
     createInfo.GlyphOffset.X = Math::Clamp(createInfo.GlyphOffset.X, 0, 10);
 
     member                   = doc.FindMember("GlyphOffsetY");
-    createInfo.GlyphOffset.Y = member ? Core::ParseFloat(member->GetString()) : 0.0f;
+    createInfo.GlyphOffset.Y = member ? Core::ParseFloat(member->GetStringView()) : 0.0f;
     createInfo.GlyphOffset.Y = Math::Clamp(createInfo.GlyphOffset.Y, 0, 10);
 
     member                      = doc.FindMember("GlyphMinAdvanceX");
-    createInfo.GlyphMinAdvanceX = member ? Core::ParseFloat(member->GetString()) : 0.0f;
+    createInfo.GlyphMinAdvanceX = member ? Core::ParseFloat(member->GetStringView()) : 0.0f;
     createInfo.GlyphMinAdvanceX = Math::Max(createInfo.GlyphMinAdvanceX, 0.0f);
 
     member                      = doc.FindMember("GlyphMaxAdvanceX");
-    createInfo.GlyphMaxAdvanceX = member ? Core::ParseFloat(member->GetString()) : Math::MaxValue<float>();
+    createInfo.GlyphMaxAdvanceX = member ? Core::ParseFloat(member->GetStringView()) : Math::MaxValue<float>();
     createInfo.GlyphMaxAdvanceX = Math::Max(createInfo.GlyphMaxAdvanceX, createInfo.GlyphMinAdvanceX);
 
     member                        = doc.FindMember("RasterizerMultiply");
-    createInfo.RasterizerMultiply = member ? Core::ParseFloat(member->GetString()) : 1.0f;
+    createInfo.RasterizerMultiply = member ? Core::ParseFloat(member->GetStringView()) : 1.0f;
     createInfo.RasterizerMultiply = Math::Clamp(createInfo.RasterizerMultiply, 0.0f, 10.0f);
 
     InitializeFromMemoryTTF(BlobRef(fontBinary->GetBinaryData(), fontBinary->GetSizeInBytes()), &createInfo);

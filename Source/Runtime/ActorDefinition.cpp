@@ -46,7 +46,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
     auto* mActorClassName = Document.FindMember("classname");
     if (mActorClassName)
     {
-        AString className = mActorClassName->GetString();
+        auto className = mActorClassName->GetStringView();
         if (!className.IsEmpty())
         {
             m_ActorClass = AActorComponent::Factory().LookupClass(className);
@@ -70,7 +70,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             if (!mClassName)
                 continue;
 
-            AString className = mClassName->GetString();
+            auto className = mClassName->GetStringView();
             if (className.IsEmpty())
                 continue;
 
@@ -82,15 +82,15 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             componentDef.ClassMeta = classMeta;
 
             auto* mComponentName = mComponent->FindMember("name");
-            componentDef.Name    = mComponentName ? mComponentName->GetString() : AString("Unnamed");
+            componentDef.Name    = mComponentName ? mComponentName->GetStringView() : "Unnamed";
 
             auto* mComponentId = mComponent->FindMember("id");
-            componentDef.Id    = mComponentId ? Core::ParseUInt64(mComponentId->GetString()) : 0;
+            componentDef.Id    = mComponentId ? Core::ParseUInt64(mComponentId->GetStringView()) : 0;
 
             if (classMeta->IsSubclassOf<ASceneComponent>())
             {
                 auto* mComponentAttach = mComponent->FindMember("attach");
-                componentDef.Attach    = mComponentAttach ? Core::ParseUInt64(mComponentAttach->GetString()) : 0;
+                componentDef.Attach    = mComponentAttach ? Core::ParseUInt64(mComponentAttach->GetStringView()) : 0;
             }
             else
             {
@@ -108,7 +108,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                         auto* mPropertyValue = mProperty->GetArrayValues();
                         if (mPropertyValue)
                         {
-                            componentDef.PropertyHash[mProperty->GetName()] = mPropertyValue->GetString();
+                            componentDef.PropertyHash[mProperty->GetName()] = mPropertyValue->GetStringView();
                         }
                     }
                 }
@@ -130,7 +130,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
     auto* mRoot = Document.FindMember("root");
     if (mRoot)
     {
-        uint64_t rootId = Core::ParseUInt64(mRoot->GetString());
+        uint64_t rootId = Core::ParseUInt64(mRoot->GetStringView());
         if (rootId)
         {
             auto it = componentIdMap.Find(rootId);
@@ -188,7 +188,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                 auto* mPropertyValue = mProperty->GetArrayValues();
                 if (mPropertyValue)
                 {
-                    m_ActorPropertyHash[mProperty->GetName()] = mPropertyValue->GetString();
+                    m_ActorPropertyHash[mProperty->GetName()] = mPropertyValue->GetStringView();
                 }
             }
         }
@@ -206,7 +206,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             if (!mProperty)
                 continue;
 
-            AString propertyName = mProperty->GetString();
+            auto propertyName = mProperty->GetStringView();
             if (propertyName.IsEmpty())
                 continue;
 
@@ -214,7 +214,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             if (!mPublicName)
                 continue;
 
-            AString publicName = mPublicName->GetString();
+            auto publicName = mPublicName->GetStringView();
             if (publicName.IsEmpty())
                 continue;
 
@@ -229,7 +229,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             auto* mComponentId = mPublicProperty->FindMember("component_id");
             if (mComponentId)
             {
-                uint64_t componentId = Core::ParseUInt64(mComponentId->GetString());
+                uint64_t componentId = Core::ParseUInt64(mComponentId->GetStringView());
                 if (!componentId)
                     continue;
 
@@ -258,7 +258,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
         {
             auto* mModule = mScriptObj->FindMember("module");
 
-            m_ScriptModule = mModule ? mModule->GetString() : "";
+            m_ScriptModule = mModule ? mModule->GetStringView() : "";
 
             mProperties = mScriptObj->FindMember("properties");
             if (mProperties)
@@ -271,7 +271,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                         auto* mPropertyValue = mProperty->GetArrayValues();
                         if (mPropertyValue)
                         {
-                            m_ScriptPropertyHash[mProperty->GetName()] = mPropertyValue->GetString();
+                            m_ScriptPropertyHash[mProperty->GetName()] = mPropertyValue->GetStringView();
                         }
                     }
                 }
@@ -289,7 +289,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                     if (!mProperty)
                         continue;
 
-                    AString propertyName = mProperty->GetString();
+                    auto propertyName = mProperty->GetStringView();
                     if (propertyName.IsEmpty())
                         continue;
 
@@ -297,7 +297,7 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
                     if (!mPublicName)
                         continue;
 
-                    AString publicName = mPublicName->GetString();
+                    auto publicName = mPublicName->GetStringView();
                     if (publicName.IsEmpty())
                         continue;
 

@@ -231,7 +231,7 @@ AString ADocumentSerializer::SerializeValue(ADocValue const* Value)
 {
     if (Value->IsString())
     {
-        return HK_FORMAT("\"{}\"", Value->GetString());
+        return HK_FORMAT("\"{}\"", Value->GetStringView());
     }
 
     AString s("{");
@@ -326,7 +326,7 @@ AString ADocumentSerializer::SerializeValueCompact(ADocValue const* Value)
 {
     if (Value->IsString())
     {
-        return HK_FORMAT("\"{}\"", Value->GetString());
+        return HK_FORMAT("\"{}\"", Value->GetStringView());
     }
     return HK_FORMAT("{{{}}}", SerializeObjectCompact(Value->GetListOfMembers()));
 }
@@ -883,7 +883,7 @@ void ADocValue::Print() const
 
     if (IsString())
     {
-        LOG("{}\n", GetString());
+        LOG("{}\n", GetStringView());
         return;
     }
 

@@ -201,9 +201,9 @@ public:
     }
 
     /** Get string value */
-    AString GetString() const
+    AStringView GetStringView() const
     {
-        return AString(StrBegin, StrEnd);
+        return AStringView(StrBegin, StrEnd);
     }
 
     void Print() const;
@@ -273,11 +273,11 @@ public:
     }
 
     /** Get member value as string if possible */
-    AString GetString() const
+    AStringView GetStringView() const
     {
         if (IsString())
         {
-            return AString(Values->StrBegin, Values->StrEnd);
+            return AStringView(Values->StrBegin, Values->StrEnd);
         }
 
         return {};

@@ -1038,7 +1038,7 @@ bool AMaterialInstance::LoadTextVersion(IBinaryStreamReadInterface& Stream)
         int        texSlot = 0;
         for (ADocValue* v = values; v && texSlot < MAX_MATERIAL_TEXTURES; v = v->GetNext())
         {
-            SetTexture(texSlot++, GetOrCreateResource<ATexture>(v->GetString()));
+            SetTexture(texSlot++, GetOrCreateResource<ATexture>(v->GetStringView()));
         }
     }
 
@@ -1049,12 +1049,12 @@ bool AMaterialInstance::LoadTextVersion(IBinaryStreamReadInterface& Stream)
         int        uniformNum = 0;
         for (ADocValue* v = values; v && uniformNum < MAX_MATERIAL_UNIFORMS; v = v->GetNext())
         {
-            Uniforms[uniformNum++] = Core::ParseFloat(v->GetString());
+            Uniforms[uniformNum++] = Core::ParseFloat(v->GetStringView());
         }
     }
 
     member = doc.FindMember("Material");
-    SetMaterial(GetOrCreateResource<AMaterial>(member ? member->GetString() : "/Default/Materials/Unlit"));
+    SetMaterial(GetOrCreateResource<AMaterial>(member ? member->GetStringView() : "/Default/Materials/Unlit"));
 
     return true;
 }
