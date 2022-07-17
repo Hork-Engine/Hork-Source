@@ -1036,218 +1036,9 @@ ImageStorage CreateImage(ARawImage const& rawImage, bool bConvertHDRIToHalfFloat
     return storage;
 }
 
-// Input RGBA image, output BC1 compressed image
-void CompressBC1(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
-{
-    uint8_t const* src = (uint8_t const*)pSrc;
-    uint8_t*       dst = (uint8_t*)pDest;
-    uint8_t        block[4 * 4 * 4];
-    const uint32_t blockWidth       = 4;
-    const uint32_t bpp              = 4;
-    const uint32_t blockRowStride   = blockWidth * bpp;
-    const size_t   blockSizeInBytes = 8;
-    uint32_t       numBlocksX       = Width / blockWidth;
-    uint32_t       numBlocksY       = Height / blockWidth;
-    size_t         rowStride        = Width * bpp;
-    for (uint32_t by = 0; by < numBlocksY; by++)
-    {
-        uint32_t pixY = by * blockWidth;
-
-        for (uint32_t bx = 0; bx < numBlocksX; bx++)
-        {
-            uint8_t const* p = src + pixY * rowStride + bx * (blockWidth * bpp);
-
-            memcpy(block + blockRowStride * 0, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 1, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 2, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 3, p, blockRowStride);
-
-            TextureBlockCompression::Encode_BC1(block, dst, 5 /*TextureBlockCompression::BC1_ENCODE_MAX_LEVEL*/, false, false);
-
-            dst += blockSizeInBytes;
-        }
-    }
-}
-// Input RGBA image, output BC2 compressed image
-void CompressBC2(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
-{
-    uint8_t const* src = (uint8_t const*)pSrc;
-    uint8_t*       dst = (uint8_t*)pDest;
-    uint8_t        block[4 * 4 * 4];
-    const uint32_t blockWidth       = 4;
-    const uint32_t bpp              = 4;
-    const uint32_t blockRowStride   = blockWidth * bpp;
-    const size_t   blockSizeInBytes = 16;
-    uint32_t       numBlocksX       = Width / blockWidth;
-    uint32_t       numBlocksY       = Height / blockWidth;
-    size_t         rowStride        = Width * bpp;
-    for (uint32_t by = 0; by < numBlocksY; by++)
-    {
-        uint32_t pixY = by * blockWidth;
-
-        for (uint32_t bx = 0; bx < numBlocksX; bx++)
-        {
-            uint8_t const* p = src + pixY * rowStride + bx * (blockWidth * bpp);
-
-            memcpy(block + blockRowStride * 0, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 1, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 2, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 3, p, blockRowStride);
-
-            TextureBlockCompression::Encode_BC2(block, dst, 5 /*TextureBlockCompression::BC2_ENCODE_MAX_LEVEL*/);
-
-            dst += blockSizeInBytes;
-        }
-    }
-}
-// Input RGBA image, output BC3 compressed image
-void CompressBC3(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
-{
-    uint8_t const* src = (uint8_t const*)pSrc;
-    uint8_t*       dst = (uint8_t*)pDest;
-    uint8_t        block[4 * 4 * 4];
-    const uint32_t blockWidth       = 4;
-    const uint32_t bpp              = 4;
-    const uint32_t blockRowStride   = blockWidth * bpp;
-    const size_t   blockSizeInBytes = 16;
-    uint32_t       numBlocksX       = Width / blockWidth;
-    uint32_t       numBlocksY       = Height / blockWidth;
-    size_t         rowStride        = Width * bpp;
-    for (uint32_t by = 0; by < numBlocksY; by++)
-    {
-        uint32_t pixY = by * blockWidth;
-
-        for (uint32_t bx = 0; bx < numBlocksX; bx++)
-        {
-            uint8_t const* p = src + pixY * rowStride + bx * (blockWidth * bpp);
-
-            memcpy(block + blockRowStride * 0, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 1, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 2, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 3, p, blockRowStride);
-
-            TextureBlockCompression::Encode_BC3(block, dst, 5 /*TextureBlockCompression::BC3_ENCODE_MAX_LEVEL*/, true);
-
-            dst += blockSizeInBytes;
-        }
-    }
-}
-// Input R image, output BC4 compressed image
-void CompressBC4(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
-{
-    uint8_t const* src = (uint8_t const*)pSrc;
-    uint8_t*       dst = (uint8_t*)pDest;
-    uint8_t        block[4 * 4];
-    const uint32_t blockWidth       = 4;
-    const uint32_t bpp              = 1;
-    const uint32_t blockRowStride   = blockWidth * bpp;
-    const size_t   blockSizeInBytes = 8;
-    uint32_t       numBlocksX       = Width / blockWidth;
-    uint32_t       numBlocksY       = Height / blockWidth;
-    size_t         rowStride        = Width * bpp;
-    for (uint32_t by = 0; by < numBlocksY; by++)
-    {
-        uint32_t pixY = by * blockWidth;
-
-        for (uint32_t bx = 0; bx < numBlocksX; bx++)
-        {
-            uint8_t const* p = src + pixY * rowStride + bx * (blockWidth * bpp);
-
-            memcpy(block + blockRowStride * 0, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 1, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 2, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 3, p, blockRowStride);
-
-            TextureBlockCompression::Encode_BC4(block, dst, true);
-
-            dst += blockSizeInBytes;
-        }
-    }
-}
-// Input RG image, output BC5 compressed image
-void CompressBC5(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
-{
-    uint8_t const* src = (uint8_t const*)pSrc;
-    uint8_t*       dst = (uint8_t*)pDest;
-    uint8_t        block[4 * 4 * 2];
-    const uint32_t blockWidth       = 4;
-    const uint32_t bpp              = 2;
-    const uint32_t blockRowStride   = blockWidth * bpp;
-    const size_t   blockSizeInBytes = 16;
-    uint32_t       numBlocksX       = Width / blockWidth;
-    uint32_t       numBlocksY       = Height / blockWidth;
-    size_t         rowStride        = Width * bpp;
-    for (uint32_t by = 0; by < numBlocksY; by++)
-    {
-        uint32_t pixY = by * blockWidth;
-
-        for (uint32_t bx = 0; bx < numBlocksX; bx++)
-        {
-            uint8_t const* p = src + pixY * rowStride + bx * (blockWidth * bpp);
-
-            memcpy(block + blockRowStride * 0, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 1, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 2, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 3, p, blockRowStride);
-
-            TextureBlockCompression::Encode_BC5(block, dst, true);
-
-            dst += blockSizeInBytes;
-        }
-    }
-}
-// Input RGBA image, output BC7 compressed image
-void CompressBC7(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
-{
-    uint8_t const* src = (uint8_t const*)pSrc;
-    uint8_t*       dst = (uint8_t*)pDest;
-    uint8_t        block[4 * 4 * 4];
-    const uint32_t blockWidth       = 4;
-    const uint32_t bpp              = 4;
-    const uint32_t blockRowStride   = blockWidth * bpp;
-    const size_t   blockSizeInBytes = 16;
-    uint32_t       numBlocksX       = Width / blockWidth;
-    uint32_t       numBlocksY       = Height / blockWidth;
-    size_t         rowStride        = Width * bpp;
-    for (uint32_t by = 0; by < numBlocksY; by++)
-    {
-        uint32_t pixY = by * blockWidth;
-
-        for (uint32_t bx = 0; bx < numBlocksX; bx++)
-        {
-            uint8_t const* p = src + pixY * rowStride + bx * (blockWidth * bpp);
-
-            memcpy(block + blockRowStride * 0, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 1, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 2, p, blockRowStride);
-            p += rowStride;
-            memcpy(block + blockRowStride * 3, p, blockRowStride);
-
-            TextureBlockCompression::Encode_BC7(block, dst, 0 /*TextureBlockCompression::BC7_ENCODE_MAX_LEVEL*/);
-
-            dst += blockSizeInBytes;
-        }
-    }
-}
 ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags, TEXTURE_FORMAT Format)
 {
+    using namespace TextureBlockCompression;
     switch (Format)
     {
         case TEXTURE_FORMAT_UNDEFINED: {
@@ -1731,12 +1522,85 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             }
             return storage;
         }
-
         case TEXTURE_FORMAT_BC6H_UFLOAT:
-        case TEXTURE_FORMAT_BC6H_SFLOAT:
-            // HDRI textures
-            LOG("CreateImage: BC6H run-time compression is not yet supported.\n");
-            break;
+        case TEXTURE_FORMAT_BC6H_SFLOAT: {
+            ARawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_RGBA32_FLOAT);
+            if (!rawImage)
+                return {};
+
+            ImageStorageDesc desc;
+            desc.Type       = TEXTURE_2D;
+            desc.Format     = Format;
+            desc.Width      = rawImage.GetWidth();
+            desc.Height     = rawImage.GetHeight();
+            desc.SliceCount = 1;
+            desc.NumMipmaps = pMipmapConfig ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
+            desc.Flags      = Flags;
+
+            ImageStorage storage(desc);
+
+            ImageSubresourceDesc subres;
+            subres.SliceIndex  = 0;
+            subres.MipmapIndex = 0;
+
+            ImageSubresource subresource = storage.GetSubresource(subres);
+
+            bool bSigned = (Format == TEXTURE_FORMAT_BC6H_SFLOAT);
+            CompressBC6h(rawImage.GetData(), subresource.GetData(), subresource.GetWidth(), subresource.GetHeight(), bSigned);
+
+            if (pMipmapConfig)
+            {
+                TextureFormatInfo const& info = GetTextureFormatInfo(Format);
+
+                uint32_t bpp = 4 * sizeof(float);
+
+                uint32_t curWidth  = subresource.GetWidth();
+                uint32_t curHeight = subresource.GetHeight();
+
+                HeapBlob blob(std::max<uint32_t>(info.BlockSize, curWidth >> 1) * std::max<uint32_t>(info.BlockSize, curHeight >> 1) * bpp);
+
+                void* data = rawImage.GetData();
+                void* temp = blob.GetData();
+
+                IMAGE_RESAMPLE_EDGE_MODE resampleMode   = pMipmapConfig->EdgeMode;
+                IMAGE_RESAMPLE_FILTER    resampleFilter = pMipmapConfig->Filter;
+
+                const int numChannels        = 4;
+                const int alphaChannel       = STBIR_ALPHA_CHANNEL_NONE;
+                const int stbir_resize_flags = 0;
+
+                const stbir_datatype   datatype   = STBIR_TYPE_FLOAT;
+                const stbir_colorspace colorspace = STBIR_COLORSPACE_LINEAR;
+
+                for (uint32_t i = 1; i < desc.NumMipmaps; ++i)
+                {
+                    subres.MipmapIndex = i;
+
+                    subresource = storage.GetSubresource(subres);
+
+                    uint32_t mipWidth  = subresource.GetWidth();
+                    uint32_t mipHeight = subresource.GetHeight();
+
+                    stbir_resize(data, curWidth, curHeight, curWidth * bpp,
+                                 temp, mipWidth, mipHeight, mipWidth * bpp,
+                                 datatype,
+                                 numChannels,
+                                 alphaChannel,
+                                 stbir_resize_flags,
+                                 (stbir_edge)resampleMode, (stbir_edge)resampleMode,
+                                 (stbir_filter)resampleFilter, (stbir_filter)resampleFilter,
+                                 colorspace,
+                                 NULL);
+
+                    curWidth  = mipWidth;
+                    curHeight = mipHeight;
+                    Core::Swap(data, temp);
+
+                    CompressBC6h(data, subresource.GetData(), mipWidth, mipHeight, bSigned);
+                }
+            }
+            return storage;
+        }
         default:
             HK_ASSERT(0);
             break;

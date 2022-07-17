@@ -59,8 +59,30 @@ void Encode_BC2(void const* pSrc, void* pDest, uint32_t Level);
 void Encode_BC3(void const* pSrc, void* pDest, uint32_t Level, bool bMaxQuality);
 void Encode_BC4(void const* pSrc, void* pDest, bool bMaxQuality);
 void Encode_BC5(void const* pSrc, void* pDest, bool bMaxQuality);
-void Encode_BC6(void const* pSrc, void* pDest, uint32_t Level);
+void Encode_BC6h_f16(void const* pSrc, void* pDest, bool bSigned);
+void Encode_BC6h_f32(void const* pSrc, void* pDest, bool bSigned);
 void Encode_BC7(void const* pSrc, void* pDest, uint32_t Level);
+
+// Input RGBA8 image, output BC1 compressed image
+void CompressBC1(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height);
+
+// Input RGBA8 image, output BC2 compressed image
+void CompressBC2(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height);
+
+// Input RGBA8 image, output BC3 compressed image
+void CompressBC3(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height);
+
+// Input R8 image, output BC4 compressed image
+void CompressBC4(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height);
+
+// Input RG8 image, output BC5 compressed image
+void CompressBC5(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height);
+
+// Input RGBA32_FLOAT image, output BC6 compressed image
+void CompressBC6h(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height, bool bSigned);
+
+// Input RGBA8 image, output BC7 compressed image
+void CompressBC7(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height);
 
 } // namespace TextureBlockCompression
 
