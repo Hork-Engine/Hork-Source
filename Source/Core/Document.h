@@ -33,20 +33,20 @@ SOFTWARE.
 #include "String.h"
 #include "Ref.h"
 
-enum ETokenType
+enum DOCUMENT_TOKEN_TYPE
 {
-    TOKEN_TYPE_UNKNOWN,
-    TOKEN_TYPE_EOF,
-    TOKEN_TYPE_BRACKET,
-    TOKEN_TYPE_MEMBER,
-    TOKEN_TYPE_STRING
+    DOCUMENT_TOKEN_UNKNOWN,
+    DOCUMENT_TOKEN_EOF,
+    DOCUMENT_TOKEN_BRACKET,
+    DOCUMENT_TOKEN_MEMBER,
+    DOCUMENT_TOKEN_STRING
 };
 
 struct SToken
 {
     const char* Begin = "";
     const char* End   = "";
-    int         Type  = TOKEN_TYPE_UNKNOWN;
+    int         Type  = DOCUMENT_TOKEN_UNKNOWN;
 
     const char* NamedType() const;
 };
@@ -101,33 +101,10 @@ public:
         TYPE_OBJECT
     };
 
-    ADocValue(int InType)
-    {
-        Members    = nullptr;
-        MembersEnd = nullptr;
-        Next       = nullptr;
-        Prev       = nullptr;
-        Type       = InType;
-        StrBegin = StrEnd = "";
-        pTokenMemory      = nullptr;
-    }
-
+    ADocValue(int Type);
     ~ADocValue();
 
     AString SerializeToString(SDocumentSerializeInfo const& SerializeInfo) const;
-
-    /** Find child member */
-    ADocMember*       FindMember(const char* Name);
-    ADocMember const* FindMember(const char* Name) const;
-
-    /** Add string member */
-    ADocMember* AddString(AGlobalStringView MemberName, AStringView Str);
-
-    /** Add object member */
-    ADocMember* AddObject(AGlobalStringView MemberName, class ADocObject* Object);
-
-    /** Add array member */
-    ADocMember* AddArray(AGlobalStringView ArrayName);
 
     /** Get next value inside array */
     ADocValue* GetNext()
@@ -153,18 +130,6 @@ public:
         return Prev;
     }
 
-    /** Get members inside the object */
-    ADocMember* GetListOfMembers()
-    {
-        return Members;
-    }
-
-    /** Get members inside the object */
-    ADocMember const* GetListOfMembers() const
-    {
-        return Members;
-    }
-
     /** Is string value */
     bool IsString() const
     {
@@ -180,18 +145,10 @@ public:
     /** Set string value */
     void SetString(AStringView Str)
     {
-        if (pTokenMemory)
-        {
-            Platform::GetHeapAllocator<HEAP_STRING>().Free(pTokenMemory);
-        }
+        Value = Str;
 
-        StringSizeType len = Str.Size();
-
-        pTokenMemory = Platform::GetHeapAllocator<HEAP_STRING>().Alloc(len + 1);
-        Platform::Memcpy(pTokenMemory, Str.ToPtr(), len + 1);
-
-        StrBegin = (const char*)pTokenMemory;
-        StrEnd   = (const char*)pTokenMemory + len;
+        StrBegin = Value.Begin();
+        StrEnd   = Value.End();
     }
 
     void SetStringInsitu(AStringView Str)
@@ -206,70 +163,91 @@ public:
         return AStringView(StrBegin, StrEnd);
     }
 
+    ADocMember* FindMember(AStringView Name);
+
+    ADocMember const* FindMember(AStringView Name) const;
+
+    bool GetBool(AStringView Name, bool Default = false) const;
+
+    uint8_t GetUInt8(AStringView Name, uint8_t Default = 0) const;
+
+    uint16_t GetUInt16(AStringView Name, uint16_t Default = 0) const;
+
+    uint32_t GetUInt32(AStringView Name, uint32_t Default = 0) const;
+
+    uint64_t GetUInt64(AStringView Name, uint64_t Default = 0) const;
+
+    int8_t GetInt8(AStringView Name, int8_t Default = 0) const;
+
+    int16_t GetInt16(AStringView Name, int16_t Default = 0) const;
+
+    int32_t GetInt32(AStringView Name, int32_t Default = 0) const;
+
+    int64_t GetInt64(AStringView Name, int64_t Default = 0) const;
+
+    float GetFloat(AStringView Name, float Default = 0) const;
+
+    double GetDouble(AStringView Name, double Default = 0) const;
+
+    AStringView GetString(AStringView Name) const;
+
+    void Clear();
+
+    /** Add string */
+    ADocMember* AddString(AGlobalStringView Name, AStringView Str);
+
+    /** Add object */
+    ADocMember* AddObject(AGlobalStringView Name, ADocValue* Object);
+
+    /** Add array */
+    ADocMember* AddArray(AGlobalStringView Name);
+
+    /** Get members inside the object */
+    ADocMember* GetListOfMembers()
+    {
+        return MembersHead;
+    }
+
+    /** Get members inside the object */
+    ADocMember const* GetListOfMembers() const
+    {
+        return MembersHead;
+    }
+
     void Print() const;
 
 private:
     void AddMember(ADocMember* Member);
 
-protected:
     int Type;
 
-private:
     const char* StrBegin; // string data for TYPE_STRING
     const char* StrEnd;   // string data for TYPE_STRING
 
-    void* pTokenMemory;
+    AString Value;
 
-    ADocMember* Members;    // for TYPE_OBJECT list of members
-    ADocMember* MembersEnd; // for TYPE_OBJECT list of members
-
-    ADocValue* Next;
-    ADocValue* Prev;
+    ADocMember* MembersHead{};
+    ADocMember* MembersTail{};
+    ADocValue* Next{};
+    ADocValue* Prev{};
 
     friend class ADocument;
     friend class ADocMember;
 };
 
-class ADocString : public ADocValue
-{
-public:
-    ADocString() :
-        ADocValue(TYPE_STRING)
-    {
-    }
-};
-
-class ADocObject : public ADocValue
-{
-public:
-    ADocObject() :
-        ADocValue(TYPE_OBJECT)
-    {
-    }
-};
-
 class ADocMember : public ARefCounted
 {
 public:
-    ADocMember()
-    {
-        NameBegin = "";
-        NameEnd   = "";
-        Values    = nullptr;
-        ValuesEnd = nullptr;
-        Next      = nullptr;
-        Prev      = nullptr;
-    }
-
+    ADocMember();
     ~ADocMember();
 
     /** Add value to array */
     void AddValue(ADocValue* _Value);
 
     /** Get member name */
-    AString GetName() const
+    AStringView GetName() const
     {
-        return AString(NameBegin, NameEnd);
+        return AStringView(NameBegin, NameEnd);
     }
 
     /** Get member value as string if possible */
@@ -286,23 +264,18 @@ public:
     /** Is string member */
     bool IsString() const
     {
-        return HasSingleValue() && Values->IsString();
+        return !IsArray() && Values && Values->IsString();
     }
 
     /** Is object member */
     bool IsObject() const
     {
-        return HasSingleValue() && Values->IsObject();
+        return !IsArray() && Values && Values->IsObject();
     }
 
-    /** Is array member */
-    bool HasSingleValue() const
+    bool IsArray() const
     {
-        if (!Values || Values->Next)
-        {
-            return false;
-        }
-        return true;
+        return (Values && Values->Next);
     }
 
     /** Get next member inside object */
@@ -347,57 +320,27 @@ private:
     const char* NameBegin;
     const char* NameEnd;
 
-    ADocValue* Values;
-    ADocValue* ValuesEnd;
+    ADocValue* Values{};
+    ADocValue* ValuesEnd{};
 
-    ADocMember* Next;
-    ADocMember* Prev;
+    ADocMember* Next{};
+    ADocMember* Prev{};
 
     friend class ADocument;
     friend class ADocValue;
 };
 
-class ADocument : public ARefCounted
+class ADocument : public ADocValue
 {
 public:
     ADocument();
-    ~ADocument();
-
-    void Clear();
-
-    AString SerializeToString(SDocumentSerializeInfo const& SerializeInfo) const;
 
     void DeserializeFromString(SDocumentDeserializeInfo const& DeserializeInfo);
 
-    /** Find global member */
-    ADocMember*       FindMember(const char* Name);
-    ADocMember const* FindMember(const char* Name) const;
-
-    /** Add global string member */
-    ADocMember* AddString(AGlobalStringView MemberName, AStringView Str);
-
-    /** Add global object member */
-    ADocMember* AddObject(AGlobalStringView MemberName, ADocObject* Object);
-
-    /** Add global array member */
-    ADocMember* AddArray(AGlobalStringView ArrayName);
-
-    void Print() const;
-
 private:
-    TRef<ADocObject> ParseObject();
+    TRef<ADocValue>  ParseObject();
     TRef<ADocMember> ParseMember(SToken const& MemberToken);
     void             ParseArray(ADocValue** ppArrayHead, ADocValue** ppArrayTail);
 
-    /** Add global member */
-    void AddMember(ADocMember* Member);
-
     ADocumentTokenizer Tokenizer;
-
-    /** Global members */
-    ADocMember* MembersHead = nullptr;
-    ADocMember* MembersTail = nullptr;
-
-    friend class ADocMember;
-    friend class ADocValue;
 };
