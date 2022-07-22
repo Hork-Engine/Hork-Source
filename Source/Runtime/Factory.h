@@ -80,6 +80,8 @@ private:
     static AObjectFactory* FactoryList;
 };
 
+using APropertyList = TSmallVector<AProperty const*, 32>;
+
 class AClassMeta
 {
     HK_FORBID_COPY(AClassMeta)
@@ -127,7 +129,7 @@ public:
 
     // Utilites
     AProperty const* FindProperty(AStringView PropertyName, bool bRecursive) const;
-    void             GetProperties(TPodVector<AProperty const*>& Properties, bool bRecursive = true) const;
+    void             GetProperties(APropertyList& Properties, bool bRecursive = true) const;
 
 protected:
     AClassMeta(AObjectFactory& Factory, const char* ClassName, AClassMeta const* SuperClassMeta) :
@@ -244,6 +246,11 @@ public:
     void SetValue(ADummy* pObject, AVariant const& Value) const
     {
         Setter(pObject, Value);
+    }
+
+    void SetValue(ADummy* pObject, AStringView Value) const
+    {
+        SetValue(pObject, AVariant(GetType(), GetEnum(), Value));
     }
 
     AVariant GetValue(ADummy const* pObject) const

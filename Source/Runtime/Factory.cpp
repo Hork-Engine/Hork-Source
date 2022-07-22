@@ -129,7 +129,7 @@ AProperty const* AClassMeta::FindProperty(AStringView PropertyName, bool bRecurs
     return nullptr;
 }
 
-void AClassMeta::GetProperties(TPodVector<AProperty const*>& Properties, bool bRecursive) const
+void AClassMeta::GetProperties(APropertyList& Properties, bool bRecursive) const
 {
     if (bRecursive && pSuperClass)
     {

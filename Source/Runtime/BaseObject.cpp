@@ -132,7 +132,7 @@ bool ABaseObject::SetProperty(AStringView PropertyName, AStringView PropertyValu
     if (!prop)
         return false;
 
-    prop->SetValue(this, AVariant(prop->GetType(), prop->GetEnum(), PropertyValue));
+    prop->SetValue(this, PropertyValue);
     return true;
 }
 
