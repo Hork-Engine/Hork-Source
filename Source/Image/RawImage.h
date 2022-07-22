@@ -30,7 +30,8 @@ SOFTWARE.
 
 #pragma once
 
-#include "IO.h"
+#include <Core/IO.h>
+#include <Geometry/VectorMath.h>
 
 enum RAW_IMAGE_FORMAT
 {
@@ -56,13 +57,15 @@ class ARawImage
 public:
     ARawImage() = default;
 
-    ARawImage(void* pData, uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format) :
-        m_pData(pData), m_Width(Width), m_Height(Height), m_Format(Format)
+    ARawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, void* pData = nullptr)
     {
-        HK_ASSERT(pData);
-        HK_ASSERT(Width);
-        HK_ASSERT(Height);
-        HK_ASSERT(Format != RAW_IMAGE_FORMAT_UNDEFINED);
+        Reset(Width, Height, Format, pData);
+    }
+
+    ARawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color)
+    {
+        Reset(Width, Height, Format);
+        Clear(Color);
     }
 
     virtual ~ARawImage()
@@ -107,6 +110,21 @@ public:
     void Reset(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, void const* pData = nullptr);
 
     void Reset();
+
+    void SetExternalData(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, void* pData)
+    {
+        m_pData  = pData;
+        m_Width  = Width;
+        m_Height = Height;
+        m_Format = Format;
+
+        HK_ASSERT(pData);
+        HK_ASSERT(Width);
+        HK_ASSERT(Height);
+        HK_ASSERT(Format != RAW_IMAGE_FORMAT_UNDEFINED);
+    }
+
+    void Clear(Float4 const& Color);
 
     operator bool() const
     {
@@ -167,6 +185,8 @@ private:
 
 ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Format = RAW_IMAGE_FORMAT_UNDEFINED);
 ARawImage CreateRawImage(AStringView FileName, RAW_IMAGE_FORMAT Format = RAW_IMAGE_FORMAT_UNDEFINED);
+
+ARawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color);
 
 /** Flip image horizontally */
 void FlipImageX(void* pData, uint32_t Width, uint32_t Height, size_t BytesPerPixel, size_t RowStride);

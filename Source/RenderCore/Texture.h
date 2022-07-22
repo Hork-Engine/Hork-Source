@@ -32,11 +32,6 @@ SOFTWARE.
 
 #include "TextureView.h"
 
-#include <Core/BaseMath.h>
-#include <Core/Image.h>
-
-#include <memory.h>
-
 namespace RenderCore
 {
 

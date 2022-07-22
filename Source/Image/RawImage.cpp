@@ -28,7 +28,7 @@ SOFTWARE.
 
 */
 
-#include <Core/RawImage.h>
+#include <Image/RawImage.h>
 #include <Core/Color.h>
 #include <Core/Compress.h>
 #include <Core/HeapBlob.h>
@@ -138,7 +138,7 @@ static void* LoadEXR(IBinaryStreamReadInterface& Stream, int* w, int* h, int* ch
         return nullptr;
     }
 
-    int numChannels = 4;
+    const int numChannels = 4;
 
     *channels = numChannels;
 
@@ -150,7 +150,7 @@ static void* LoadEXR(IBinaryStreamReadInterface& Stream, int* w, int* h, int* ch
     {
         if (desiredchannels != 0 && desiredchannels != numChannels)
         {
-            result        = STBI_MALLOC((*w) * (*h) * desiredchannels);
+            result           = STBI_MALLOC((*w) * (*h) * desiredchannels);
             uint8_t* pResult = (uint8_t*)result;
             if (desiredchannels == 1)
             {
@@ -164,7 +164,7 @@ static void* LoadEXR(IBinaryStreamReadInterface& Stream, int* w, int* h, int* ch
                 for (int i = 0; i < pixcount; i += numChannels)
                 {
                     *pResult++ = LinearToSRGB_UChar(data[i]);
-                    *pResult++ = numChannels > 1 ? LinearToSRGB_UChar(data[i + 1]) : 0;
+                    *pResult++ = FloatToByte(data[i + 3]); // store alpha in second channel
                 }
             }
             else if (desiredchannels == 3)
@@ -172,43 +172,26 @@ static void* LoadEXR(IBinaryStreamReadInterface& Stream, int* w, int* h, int* ch
                 for (int i = 0; i < pixcount; i += numChannels)
                 {
                     *pResult++ = LinearToSRGB_UChar(data[i]);
-                    *pResult++ = numChannels > 1 ? LinearToSRGB_UChar(data[i + 1]) : 0;
-                    *pResult++ = numChannels > 2 ? LinearToSRGB_UChar(data[i + 2]) : 0;
+                    *pResult++ = LinearToSRGB_UChar(data[i + 1]);
+                    *pResult++ = LinearToSRGB_UChar(data[i + 2]);
                 }
             }
             else
             {
-                for (int i = 0; i < pixcount; i += numChannels)
-                {
-                    *pResult++ = LinearToSRGB_UChar(data[i]);
-                    *pResult++ = numChannels > 1 ? LinearToSRGB_UChar(data[i + 1]) : 0;
-                    *pResult++ = numChannels > 2 ? LinearToSRGB_UChar(data[i + 2]) : 0;
-                    *pResult++ = numChannels > 3 ? FloatToByte(data[i + 3]) * 255 : 255;
-                }
+                HK_ASSERT(0);
             }
         }
         else
         {
             result = STBI_MALLOC((*w) * (*h) * numChannels);
 
-            int numColorChannels = Math::Min(numChannels, 3);
-
             uint8_t* pResult = (uint8_t*)result;
-            for (int i = 0; i < pixcount; i += numChannels, pResult += numChannels)
+            for (int i = 0; i < pixcount; i += numChannels)
             {
-                for (int c = 0; c < numColorChannels; c++)
-                {
-                    pResult[c] = LinearToSRGB_UChar(data[i + c]);
-                }
-            }
-
-            if (numChannels == 4)
-            {
-                pResult = (uint8_t*)result;
-                for (int i = 0; i < pixcount; i += numChannels, pResult += numChannels)
-                {
-                    pResult[3] = FloatToByte(data[i + 3]);
-                }
+                *pResult++ = LinearToSRGB_UChar(data[i]);
+                *pResult++ = LinearToSRGB_UChar(data[i + 1]);
+                *pResult++ = LinearToSRGB_UChar(data[i + 2]);
+                *pResult++ = FloatToByte(data[i + 3]);
             }
         }
     }
@@ -230,7 +213,7 @@ static void* LoadEXR(IBinaryStreamReadInterface& Stream, int* w, int* h, int* ch
                 for (int i = 0; i < pixcount; i += numChannels)
                 {
                     *pResult++ = data[i];
-                    *pResult++ = numChannels > 1 ? data[i + 1] : 0;
+                    *pResult++ = data[i + 3]; // store alpha in second channel
                 }
             }
             else if (desiredchannels == 3)
@@ -238,19 +221,13 @@ static void* LoadEXR(IBinaryStreamReadInterface& Stream, int* w, int* h, int* ch
                 for (int i = 0; i < pixcount; i += numChannels)
                 {
                     *pResult++ = data[i];
-                    *pResult++ = numChannels > 1 ? data[i + 1] : 0;
-                    *pResult++ = numChannels > 2 ? data[i + 2] : 0;
+                    *pResult++ = data[i + 1];
+                    *pResult++ = data[i + 2];
                 }
             }
             else
             {
-                for (int i = 0; i < pixcount; i += numChannels)
-                {
-                    *pResult++ = data[i];
-                    *pResult++ = numChannels > 1 ? data[i + 1] : 0;
-                    *pResult++ = numChannels > 2 ? data[i + 2] : 0;
-                    *pResult++ = numChannels > 3 ? data[i + 3] : 1;
-                }
+                HK_ASSERT(0);
             }
         }
         else
@@ -380,6 +357,112 @@ size_t ARawImage::GetBytesPerPixel() const
     return RawImageFormatLUT[m_Format].BytesPerPixel;
 }
 
+void ARawImage::Clear(Float4 const& Color)
+{
+    if (m_Format == RAW_IMAGE_FORMAT_UNDEFINED)
+        return;
+
+    uint8_t unsignedInt8[4];
+
+    unsignedInt8[0] = Math::Saturate(Color[0]) * 255.0f;
+    unsignedInt8[1] = Math::Saturate(Color[1]) * 255.0f;
+    unsignedInt8[2] = Math::Saturate(Color[2]) * 255.0f;
+    unsignedInt8[3] = Math::Saturate(Color[3]) * 255.0f;
+
+    uint32_t pixCount = m_Width * m_Height;
+
+    switch (m_Format)
+    {
+        case RAW_IMAGE_FORMAT_R8:
+            Platform::Memset(m_pData, unsignedInt8[0], pixCount);
+            break;
+        case RAW_IMAGE_FORMAT_R8_ALPHA:
+            for (uint32_t n = 0; n < pixCount; ++n)
+            {
+                ((uint8_t*)m_pData)[n * 2 + 0] = unsignedInt8[0];
+                ((uint8_t*)m_pData)[n * 2 + 1] = unsignedInt8[3];
+            }
+            break;
+        case RAW_IMAGE_FORMAT_RGB8:
+            for (uint32_t n = 0; n < pixCount; ++n)
+            {
+                ((uint8_t*)m_pData)[n * 3 + 0] = unsignedInt8[0];
+                ((uint8_t*)m_pData)[n * 3 + 1] = unsignedInt8[1];
+                ((uint8_t*)m_pData)[n * 3 + 2] = unsignedInt8[2];
+            }
+            break;
+        case RAW_IMAGE_FORMAT_BGR8:
+            for (uint32_t n = 0; n < pixCount; ++n)
+            {
+                ((uint8_t*)m_pData)[n * 3 + 0] = unsignedInt8[2];
+                ((uint8_t*)m_pData)[n * 3 + 1] = unsignedInt8[1];
+                ((uint8_t*)m_pData)[n * 3 + 2] = unsignedInt8[0];
+            }
+            break;
+        case RAW_IMAGE_FORMAT_RGBA8:
+            for (uint32_t n = 0; n < pixCount; ++n)
+            {
+                ((uint8_t*)m_pData)[n * 4 + 0] = unsignedInt8[0];
+                ((uint8_t*)m_pData)[n * 4 + 1] = unsignedInt8[1];
+                ((uint8_t*)m_pData)[n * 4 + 2] = unsignedInt8[2];
+                ((uint8_t*)m_pData)[n * 4 + 3] = unsignedInt8[3];
+            }
+            break;
+        case RAW_IMAGE_FORMAT_BGRA8:
+            for (uint32_t n = 0; n < pixCount; ++n)
+            {
+                ((uint8_t*)m_pData)[n * 4 + 0] = unsignedInt8[2];
+                ((uint8_t*)m_pData)[n * 4 + 1] = unsignedInt8[1];
+                ((uint8_t*)m_pData)[n * 4 + 2] = unsignedInt8[0];
+                ((uint8_t*)m_pData)[n * 4 + 3] = unsignedInt8[3];
+            }
+            break;
+        case RAW_IMAGE_FORMAT_R32_FLOAT:
+            for (uint32_t n = 0; n < pixCount; ++n)
+            {
+                ((float*)m_pData)[n] = Color[0];
+            }
+            break;
+        case RAW_IMAGE_FORMAT_R32_ALPHA_FLOAT:
+            for (uint32_t n = 0; n < pixCount; ++n)
+            {
+                ((Float2*)m_pData)[n] = Float2(Color[0], Color[3]);
+            }
+            break;
+        case RAW_IMAGE_FORMAT_RGB32_FLOAT:
+            for (uint32_t n = 0; n < pixCount; ++n)
+            {
+                ((Float3*)m_pData)[n] = Float3(Color);
+            }
+            break;
+        case RAW_IMAGE_FORMAT_BGR32_FLOAT:
+            for (uint32_t n = 0; n < pixCount; ++n)
+            {
+                ((float*)m_pData)[n * 3 + 0] = Color[2];
+                ((float*)m_pData)[n * 3 + 1] = Color[1];
+                ((float*)m_pData)[n * 3 + 2] = Color[0];
+            }
+            break;
+        case RAW_IMAGE_FORMAT_RGBA32_FLOAT:
+            for (uint32_t n = 0; n < pixCount; ++n)
+            {
+                ((Float4*)m_pData)[n] = Color;
+            }
+            break;
+        case RAW_IMAGE_FORMAT_BGRA32_FLOAT:
+            for (uint32_t n = 0; n < pixCount; ++n)
+            {
+                ((float*)m_pData)[n * 4 + 0] = Color[2];
+                ((float*)m_pData)[n * 4 + 1] = Color[1];
+                ((float*)m_pData)[n * 4 + 2] = Color[0];
+                ((float*)m_pData)[n * 4 + 3] = Color[3];
+            }
+            break;
+        default:
+            HK_ASSERT(0);
+    }
+}
+
 void ARawImage::FlipX()
 {
     if (m_pData)
@@ -437,9 +520,38 @@ void ARawImage::SwapRGB()
     }
 }
 
-static bool IsHDRImageExtension(AStringView Extension)
+static bool IsEXR(IBinaryStreamReadInterface& Stream)
 {
-    return !Extension.Icmp(".hdr") || !Extension.Icmp(".exr");
+#ifdef SUPPORT_EXR
+    size_t streamOffset = Stream.GetOffset();
+
+    const size_t kEXRVersionSize = 8;
+
+    unsigned char buf[kEXRVersionSize];
+    if (Stream.Read(buf, sizeof(buf)) != sizeof(buf))
+    {
+        Stream.SeekSet(streamOffset);
+        return false;
+    }
+    Stream.SeekSet(streamOffset);
+
+    EXRVersion version;
+    return ParseEXRVersionFromMemory(&version, buf, sizeof(buf)) == TINYEXR_SUCCESS;
+#else
+    return false;
+#endif
+}
+
+static bool IsHDR(IBinaryStreamReadInterface& Stream)
+{
+    const stbi_io_callbacks callbacks = {Stbi_Read, Stbi_Skip, Stbi_Eof};
+
+    size_t streamOffset = Stream.GetOffset();
+
+    bool result = stbi_is_hdr_from_callbacks(&callbacks, &Stream) != 0;
+
+    Stream.SeekSet(streamOffset);
+    return result;
 }
 
 ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Format)
@@ -452,7 +564,7 @@ ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Fo
     switch (Format)
     {
         case RAW_IMAGE_FORMAT_UNDEFINED:
-            bHDRI = IsHDRImageExtension(PathUtils::GetExt(Stream.GetFileName()));
+            bHDRI = IsHDR(Stream) || IsEXR(Stream);
             break;
         case RAW_IMAGE_FORMAT_R8:
         case RAW_IMAGE_FORMAT_R8_ALPHA:
@@ -548,7 +660,10 @@ ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Fo
         }
     }
 
-    return ARawImage(source, w, h, Format);
+    ARawImage image;
+    image.SetExternalData(w, h, Format, source);
+
+    return image;
 }
 
 ARawImage CreateRawImage(AStringView FileName, RAW_IMAGE_FORMAT Format)
@@ -558,6 +673,17 @@ ARawImage CreateRawImage(AStringView FileName, RAW_IMAGE_FORMAT Format)
         return {};
 
     return CreateRawImage(stream, Format);
+}
+
+ARawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color)
+{
+    if (Format == RAW_IMAGE_FORMAT_UNDEFINED)
+    {
+        LOG("CreateEmptyRawImage: Expected valid image format\n");
+        return {};
+    }
+
+    return ARawImage(Width, Height, Format, Color);
 }
 
 
@@ -696,41 +822,50 @@ bool WriteEXR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Heig
     int            pixelTypes[4];
     int            requestedPixelTypes[4];
     float*         layers[4] = {0, 0, 0, 0};
-    uint32_t       numPixels   = Width * Height;
+    uint32_t       numPixels = Width * Height;
+    uint32_t       numWriteChannels;
 
     Platform::ZeroMem(channels, sizeof(channels));
 
-    if (NumChannels == 4)
+    switch (NumChannels)
     {
-        Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "A");
-        Platform::Strcpy(channels[1].name, sizeof(channels[1].name), "B");
-        Platform::Strcpy(channels[2].name, sizeof(channels[2].name), "G");
-        Platform::Strcpy(channels[3].name, sizeof(channels[3].name), "R");
-    }
-    else if (NumChannels == 3)
-    {
-        Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "B");
-        Platform::Strcpy(channels[1].name, sizeof(channels[1].name), "G");
-        Platform::Strcpy(channels[2].name, sizeof(channels[2].name), "R");
-    }
-    else if (NumChannels == 1)
-    {
-        Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "A");
-    }
-    else
-    {
-        LOG("WriteEXR: Only R, RGB and RGBA images supported\n");
-        return false;
+        case 1:
+            Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "A");
+            numWriteChannels = 1;
+            break;
+        case 2:
+            Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "A");
+            Platform::Strcpy(channels[1].name, sizeof(channels[1].name), "B");
+            Platform::Strcpy(channels[2].name, sizeof(channels[2].name), "G");
+            Platform::Strcpy(channels[3].name, sizeof(channels[3].name), "R");
+            numWriteChannels = 4;
+            break;
+        case 3:
+            Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "B");
+            Platform::Strcpy(channels[1].name, sizeof(channels[1].name), "G");
+            Platform::Strcpy(channels[2].name, sizeof(channels[2].name), "R");
+            numWriteChannels = 3;
+            break;
+        case 4:
+            Platform::Strcpy(channels[0].name, sizeof(channels[0].name), "A");
+            Platform::Strcpy(channels[1].name, sizeof(channels[1].name), "B");
+            Platform::Strcpy(channels[2].name, sizeof(channels[2].name), "G");
+            Platform::Strcpy(channels[3].name, sizeof(channels[3].name), "R");
+            numWriteChannels = 4;
+            break;
+        default:
+            LOG("WriteEXR: Unsupported channel count {}\n", NumChannels);
+            return false;
     }
 
-    for (uint32_t i = 0; i < NumChannels; i++)
+    for (uint32_t i = 0; i < numWriteChannels; i++)
     {
         pixelTypes[i]          = TINYEXR_PIXELTYPE_FLOAT;
         requestedPixelTypes[i] = bSaveAsHalf ? TINYEXR_PIXELTYPE_HALF : TINYEXR_PIXELTYPE_FLOAT;
     }
 
     HeapBlob channelData;
-    
+
     if (NumChannels == 1)
     {
         layers[0] = const_cast<float*>(pData);
@@ -739,23 +874,30 @@ bool WriteEXR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Heig
     {
         channelData.Reset(NumChannels * numPixels * sizeof(float));
 
-        layers[0] = (float *)channelData.GetData();
+        layers[0] = (float*)channelData.GetData();
         layers[1] = layers[0] + numPixels;
         layers[2] = layers[0] + numPixels * 2;
         layers[3] = layers[0] + numPixels * 3;
 
-        if (NumChannels == 4)
+        if (NumChannels == 2)
         {
-            ExtractImageChannel(pData, layers[0], Width, Height, NumChannels, 3);    // A
-            ExtractImageChannel(pData, layers[1], Width, Height, NumChannels, 2);    // B
-            ExtractImageChannel(pData, layers[2], Width, Height, NumChannels, 1);    // G
-            ExtractImageChannel(pData, layers[3], Width, Height, NumChannels, 0);    // R
+            ExtractImageChannel(pData, layers[0], Width, Height, NumChannels, 1); // A
+            ExtractImageChannel(pData, layers[1], Width, Height, NumChannels, 0); // B
+            layers[2] = layers[1];
+            layers[3] = layers[1];
         }
         else if (NumChannels == 3)
         {
-            ExtractImageChannel(pData, layers[0], Width, Height, NumChannels, 2);    // B
-            ExtractImageChannel(pData, layers[1], Width, Height, NumChannels, 1);    // G
-            ExtractImageChannel(pData, layers[2], Width, Height, NumChannels, 0);    // R
+            ExtractImageChannel(pData, layers[0], Width, Height, NumChannels, 2); // B
+            ExtractImageChannel(pData, layers[1], Width, Height, NumChannels, 1); // G
+            ExtractImageChannel(pData, layers[2], Width, Height, NumChannels, 0); // R
+        }
+        else if (NumChannels == 4)
+        {
+            ExtractImageChannel(pData, layers[0], Width, Height, NumChannels, 3); // A
+            ExtractImageChannel(pData, layers[1], Width, Height, NumChannels, 2); // B
+            ExtractImageChannel(pData, layers[2], Width, Height, NumChannels, 1); // G
+            ExtractImageChannel(pData, layers[3], Width, Height, NumChannels, 0); // R
         }
     }
 
@@ -765,19 +907,19 @@ bool WriteEXR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Heig
     image.images       = reinterpret_cast<unsigned char**>(layers);
     image.width        = Width;
     image.height       = Height;
-    image.num_channels = NumChannels;
+    image.num_channels = numWriteChannels;
 
     EXRHeader header;
     InitEXRHeader(&header);
 
     header.channels              = channels;
     header.pixel_types           = pixelTypes;
-    header.num_channels          = NumChannels;
+    header.num_channels          = numWriteChannels;
     header.compression_type      = (Width < 16) && (Height < 16) ? TINYEXR_COMPRESSIONTYPE_NONE : TINYEXR_COMPRESSIONTYPE_ZIP;
     header.requested_pixel_types = requestedPixelTypes;
-    
+
     unsigned char* memory = nullptr;
-    size_t         size = SaveEXRImageToMemory(&image, &header, &memory, nullptr);
+    size_t         size   = SaveEXRImageToMemory(&image, &header, &memory, nullptr);
 
     if (size == 0)
         return false;

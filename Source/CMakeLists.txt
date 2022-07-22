@@ -180,10 +180,8 @@ source_group( "Platform\\Memory" FILES ${PlatformMemory} )
 #---------------------------------------------------------------------
 # Core module
 file( GLOB Core Core/*.h Core/*.cpp Core/*.c )
-file( GLOB CoreSTB Core/stb/*.h )
 
 source_group( "Core" FILES ${Core} )
-source_group( "Core\\stb" FILES ${CoreSTB} )
 
 #---------------------------------------------------------------------
 # Containers module
@@ -196,6 +194,15 @@ file( GLOB Geometry Geometry/*.h Geometry/*.cpp )
 file( GLOB GeometryBV Geometry/BV/*.h Geometry/BV/*.cpp )
 source_group( "Geometry" FILES ${Geometry} )
 source_group( "Geometry\\BV" FILES ${GeometryBV} )
+
+#---------------------------------------------------------------------
+# Image module
+file( GLOB Image Image/*.h Image/*.cpp )
+file( GLOB ImageSTB Core/stb/*.h )
+
+source_group( "Image" FILES ${Image} )
+source_group( "Image\\stb" FILES ${CoreSTB} )
+#---------------------------------------------------------------------
 
 #---------------------------------------------------------------------
 # Render core module
@@ -265,12 +272,14 @@ ${Platform}
 ${PlatformMemory}
 
 ${Core}
-${CoreSTB}
 
 ${Containers}
 
 ${Geometry}
 ${GeometryBV}
+
+${Image}
+${ImageSTB}
 
 ${RenderCore}
 ${RenderCoreOpenGL45}

@@ -36,7 +36,6 @@ SOFTWARE.
 #include "WViewport.h"
 #include "WDesktop.h"
 #include "Engine.h"
-#include <Core/Image.h>
 
 HK_CLASS_META(APlayerController)
 HK_CLASS_META(ARenderingParameters)

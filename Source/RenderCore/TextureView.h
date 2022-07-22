@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "DeviceObject.h"
 #include <Core/HashFunc.h>
-#include <Core/Image.h>
+#include <Image/Image.h>
 
 namespace RenderCore
 {

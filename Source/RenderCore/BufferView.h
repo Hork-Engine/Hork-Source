@@ -32,7 +32,6 @@ SOFTWARE.
 
 #include "DeviceObject.h"
 #include "Texture.h"
-#include <Core/Image.h>
 
 namespace RenderCore
 {

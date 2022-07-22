@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "RawImage.h"
-#include "HeapBlob.h"
+#include <Core/HeapBlob.h>
 
 #include <Containers/Array.h>
 

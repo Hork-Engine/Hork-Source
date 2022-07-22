@@ -41,8 +41,6 @@ const uint32_t BC2_ENCODE_MAX_LEVEL = 18;
 
 const uint32_t BC3_ENCODE_MAX_LEVEL = 18;
 
-//const uint32_t BC6_ENCODE_MAX_LEVEL = 4;
-
 const uint32_t BC7_ENCODE_MAX_LEVEL = 4;
 
 void Decode_BC1(void const* pSrc, void* pDest, size_t RowStride);

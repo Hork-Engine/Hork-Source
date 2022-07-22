@@ -36,7 +36,6 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/ScopedTimer.h>
-#include <Core/Image.h>
 
 static const char* TextureTypeName[] =
     {

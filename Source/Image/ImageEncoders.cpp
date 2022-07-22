@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "ImageEncoders.h"
-#include "ScopedTimer.h"
+#include <Core/ScopedTimer.h>
 
 #include <bc7enc_rdo/rgbcx.h>
 #include <bc7enc_rdo/bc7decomp.h>
@@ -554,8 +554,111 @@ void CompressBC7(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
     }
 }
 
+#if 0
+void DecompressBC6h(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height, bool bSigned)
+{
+    //AScopedTimer timer("CompressBC6h");
+
+    //uint8_t const* src = (uint8_t const*)pSrc;
+    //uint8_t*       dst = (uint8_t*)pDest;
+    //uint8_t        block[4 * 4 * 4 * sizeof(float)];
+    const uint32_t blockWidth = 4;
+    const uint32_t bpp        = 3 * sizeof(float);
+    //const uint32_t blockRowStride   = blockWidth * bpp;
+    //const size_t   blockSizeInBytes = 16;
+    uint32_t numBlocksX = Width / blockWidth;
+    uint32_t numBlocksY = Height / blockWidth;
+    size_t   rowStride  = Width * bpp;
+
+    const int num_threads = 16;
+
+    AThread threads[num_threads];
+
+    struct ThreadData
+    {
+        uint32_t    firstBlock;
+        uint32_t    numBlocks;
+        uint32_t    numBlocksX;
+        uint32_t    numBlocksY;
+        size_t      rowStride;
+        void const* pSrc;
+        void*       pDest;
+        bool        bSigned;
+    };
+
+    uint32_t numBlocks       = numBlocksX * numBlocksY;
+    uint32_t blocksPerThread = numBlocks / num_threads;
+    uint32_t firstBlock      = 0;
+
+    AAtomicInt counter{};
+
+    ThreadData data[num_threads];
+    for (int i = 0; i < num_threads; i++)
+    {
+        data[i].firstBlock = firstBlock;
+        data[i].numBlocks  = blocksPerThread;
+        data[i].numBlocksX = numBlocksX;
+        data[i].numBlocksY = numBlocksY;
+        data[i].rowStride  = rowStride;
+        data[i].pSrc       = pSrc;
+        data[i].pDest      = pDest;
+        data[i].bSigned    = bSigned;
+        firstBlock += blocksPerThread;
+
+        threads[i] = AThread(
+            [](ThreadData& data, uint32_t numBlocks, AAtomicInt& counter)
+            {
+                const uint32_t blockWidth       = 4;
+                const uint32_t bpp              = 3 * sizeof(float);
+                const size_t   blockSizeInBytes = 16;
+
+                float block[4][4 * 4];
+
+                for (uint32_t blockIndex = 0; blockIndex < data.numBlocks; blockIndex++)
+                {
+                    uint32_t i = blockIndex + data.firstBlock;
+
+                    uint32_t bx = i % data.numBlocksX;
+                    uint32_t by = i / data.numBlocksX;
+
+                    uint8_t const* src = (uint8_t const*)data.pSrc + i * blockSizeInBytes;
+                    uint8_t*       p   = (uint8_t*)data.pDest + by * blockWidth * data.rowStride + bx * (blockWidth * bpp);
+
+                    bc6h_enc::DecodeBC6HS(block, src);
+
+                    for (int t = 0; t < 4; t++)
+                    {
+                        for (int k = 0; k < 4; k++)
+                        {
+                            ((float*)p)[k * 3 + 0] = block[t][k * 4 + 0];
+                            ((float*)p)[k * 3 + 1] = block[t][k * 4 + 1];
+                            ((float*)p)[k * 3 + 2] = block[t][k * 4 + 2];
+                        }
+                        p += data.rowStride;
+                    }
+
+                    //TextureBlockCompression::Decode_BC6h_f32(src, p, data.rowStride, data.bSigned);
+
+                    int n = counter.Increment();
+                    if (!(n % 512))
+                        LOG("Blocks processed {} from {}\n", n, numBlocks);
+                }
+            },
+            std::ref(data[i]), numBlocks, std::ref(counter));
+    }
+
+    for (int i = 0; i < num_threads; i++)
+    {
+        threads[i].Join();
+    }
+}
+#endif
+
 } // namespace TextureBlockCompression
 
+
+// Perfect Quantization of DXT endpoints
+// https://gist.github.com/castano/c92c7626f288f9e99e158520b14a61cf
 
 const float pack_midpoints5[32] = {
     0.015686f, 0.047059f, 0.078431f, 0.111765f, 0.145098f, 0.176471f, 0.207843f, 0.241176f, 0.274510f, 0.305882f, 0.337255f, 0.370588f, 0.403922f, 0.435294f, 0.466667f, 0.5f,
@@ -581,3 +684,4 @@ const float pack_midpoints6[64] = {
     }
     midpoints6[63] = FLT_MAX;
 }*/
+

@@ -35,7 +35,6 @@ SOFTWARE.
 #include "iesna/iesna.h"
 
 #include <Platform/Logger.h>
-#include <Core/Image.h>
 
 HK_CLASS_META(APhotometricProfile)
 
