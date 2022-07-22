@@ -38,6 +38,9 @@ enum VARIANT_TYPE : uint32_t
 {
     VARIANT_UNDEFINED,
     VARIANT_BOOLEAN,
+    VARIANT_BOOL2,
+    VARIANT_BOOL3,
+    VARIANT_BOOL4,
     VARIANT_INT8,
     VARIANT_INT16,
     VARIANT_INT32,
@@ -106,6 +109,21 @@ template<typename T> VARIANT_TYPE DeduceVariantType();
 template<> HK_FORCEINLINE VARIANT_TYPE DeduceVariantType<bool>()
 {
     return VARIANT_BOOLEAN;
+}
+
+template <> HK_FORCEINLINE VARIANT_TYPE DeduceVariantType<Bool2>()
+{
+    return VARIANT_BOOL2;
+}
+
+template <> HK_FORCEINLINE VARIANT_TYPE DeduceVariantType<Bool3>()
+{
+    return VARIANT_BOOL3;
+}
+
+template <> HK_FORCEINLINE VARIANT_TYPE DeduceVariantType<Bool4>()
+{
+    return VARIANT_BOOL4;
 }
 
 template<> HK_FORCEINLINE VARIANT_TYPE DeduceVariantType<int8_t>()
@@ -240,6 +258,9 @@ class AVariant final
 {
     static constexpr size_t SizeOf =
         std::max({sizeof(bool),
+                  sizeof(Bool2),
+                  sizeof(Bool3),
+                  sizeof(Bool4),
                   sizeof(int8_t),
                   sizeof(int16_t),
                   sizeof(int32_t),
@@ -420,6 +441,198 @@ public:
     void SetFromString(VARIANT_TYPE Type, SEnumDef const* EnumDef, AStringView String);
 
     AString ToString() const;
+
+private:
+    void SetEnum(SEnumDef const* EnumDef, int64_t EnumValue)
+    {
+        if (m_Type == VARIANT_STRING)
+            ((AString*)&RawData[0])->~AString();
+
+        m_Type = VARIANT_ENUM;
+
+        *(int64_t*)&EnumType.EnumData[0] = EnumValue;
+        EnumType.EnumValue               = EnumValue;
+        EnumType.EnumDef                 = EnumDef;
+    }
 };
 
 HK_FORMAT_DEF_TO_STRING(AVariant)
+
+
+// TODO: Move to Parse.h?
+
+#include <Containers/Vector.h>
+
+HK_INLINE AStringView GetToken(AStringView& Token, AStringView String, bool bCrossLine = true)
+{
+    const char* p   = String.Begin();
+    const char* end = String.End();
+
+    Token = AStringView(String.Begin(), String.Begin());
+
+    // skip space
+    while (*p <= 32 && *p >= 0)
+    {
+        if (p == end)
+        {
+            return AStringView(p, (StringSizeType)(end - p));
+        }
+
+        if (*p++ == '\n')
+        {
+            if (!bCrossLine)
+            {
+                LOG("Unexpected new line\n");
+                return AStringView(p, (StringSizeType)(end - p));
+            }
+        }
+    }
+
+    const char* token_begin = String.Begin();
+    const char* token_p = String.Begin();
+    while (!(*p <= 32 && *p >= 0))
+    {
+        if (p == end)
+            break;
+
+        if (*p == '\n')
+        {
+            ++p;
+            if (!bCrossLine)
+            {
+                LOG("Unexpected new line\n");
+                break;
+            }
+            continue;
+        }
+
+        if ((*p == '(' || *p == ')') && !Token.IsEmpty())
+            break;
+
+        ++token_p;
+        ++p;
+
+        if (!Token.IsEmpty() && (Token[0] == '(' || Token[0] == ')'))
+            break;
+    }
+
+    Token = AStringView(token_begin, token_p);
+
+    return AStringView(p, (StringSizeType)(end - p), String.IsNullTerminated());
+}
+
+
+template <typename VectorType>
+HK_INLINE VectorType ParseVector(AStringView String, AStringView* NewString = nullptr)
+{
+    VectorType v;
+
+    AStringView token;
+    AStringView tmp;
+
+    if (!NewString)
+        NewString = &tmp;
+
+    AStringView& s = *NewString;
+
+    s = GetToken(token, String);
+    if (!token.Compare("("))
+    {
+        LOG("Expected '('\n");
+        return v;
+    }
+
+    for (int i = 0; i < v.NumComponents(); i++)
+    {
+        s = GetToken(token, s);
+        if (token.IsEmpty())
+        {
+            LOG("Expected value\n");
+            return v;
+        }
+
+        using ElementType = std::remove_reference_t<decltype(v[i])>;
+
+        v[i] = Core::ParseNumber<ElementType>(token);
+    }
+
+    s = GetToken(token, s);
+    if (!token.Compare(")"))
+    {
+        LOG("Expected ')'\n");
+    }
+
+    return v;
+}
+
+// Parses a vector of variable length. Returns false if there were errors.
+HK_INLINE bool ParseVector(AStringView String, TVector<AStringView>& v)
+{
+    AStringView token;
+
+    v.Clear();
+
+    AStringView s = GetToken(token, String);
+    if (!token.Compare("("))
+    {
+        v.Add(token);
+        return true;
+    }
+
+    do
+    {
+        s = GetToken(token, s);
+        if (token.IsEmpty())
+        {
+            LOG("ParseVector: Expected value\n");
+            return false;
+        }
+
+        if (token.Compare(")"))
+        {
+            return true;
+        }
+
+        v.Add(token);
+    } while (1);
+
+    s = GetToken(token, s);
+    if (!token.Compare(")"))
+    {
+        LOG("ParseVector: Expected ')'\n");
+        return false;
+    }
+
+    return true;
+}
+
+template <typename MatrixType>
+HK_INLINE MatrixType ParseMatrix(AStringView String)
+{
+    MatrixType matrix(1);
+
+    AStringView token;
+    AStringView s = String;
+
+    s = GetToken(token, s);
+    if (!token.Compare("("))
+    {
+        LOG("Expected '('\n");
+        return matrix;
+    }
+
+    for (int i = 0; i < matrix.NumComponents(); i++)
+    {
+        using ElementType = std::remove_reference_t<decltype(matrix[i])>;
+
+        matrix[i] = ParseVector<ElementType>(s, &s);
+    }
+
+    s = GetToken(token, s);
+    if (!token.Compare(")"))
+    {
+        LOG("Expected ')'\n");
+    }
+
+    return matrix;
+}

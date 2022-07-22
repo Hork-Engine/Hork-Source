@@ -32,165 +32,22 @@ SOFTWARE.
 
 #include <Platform/Logger.h>
 
-AStringView GetToken(char* Token, size_t TokenSize, AStringView String, bool bCrossLine = true)
-{
-    const char* p = String.Begin();
-    const char* end = String.End();
-
-    Token[0] = 0;
-
-    // skip space
-    while (*p <= 32 && *p >= 0)
-    {
-        if (p == end)
-        {
-            return AStringView(p, (StringSizeType)(end-p));
-        }
-
-        if (*p++ == '\n')
-        {
-            if (!bCrossLine)
-            {
-                LOG("Unexpected new line\n");
-                return AStringView(p, (StringSizeType)(end - p));
-            }
-        }
-    }
-
-    // copy token
-    char* token_p = Token;
-    while (!(*p <= 32 && *p >= 0))
-    {
-        if (p == end)
-        {
-            break;
-        }
-
-        if (*p == '\n')
-        {
-            p++;
-            if (!bCrossLine)
-            {
-                LOG("Unexpected new line\n");
-                break;
-            }
-            continue;
-        }
-
-        if ((*p == '(' || *p == ')') && Token[0])
-            break;
-
-        if (token_p == &Token[TokenSize - 1])
-        {
-            LOG("Token buffer overflow\n");
-            break;
-        }
-
-        *token_p++ = *p++;
-
-        if (Token[0] == '(' || Token[0] == ')')
-            break;
-    }
-    *token_p = 0;
-
-    return AStringView(p, (StringSizeType)(end - p), String.IsNullTerminated());
-}
-
-
-template <typename VectorType>
-VectorType ParseVector(AStringView String, AStringView *NewString = nullptr)
-{
-    VectorType v;
-
-    char token[128];
-
-    AStringView tmp;
-
-    if (!NewString)
-        NewString = &tmp;
-
-    AStringView& s = *NewString;
-
-    s = GetToken(token, sizeof(token), String);
-    if (Platform::Strcmp(token, "("))
-    {
-        LOG("Expected '('\n");
-        return v;
-    }
-
-    for (int i = 0 ; i < v.NumComponents() ; i++)
-    {
-        s = GetToken(token, sizeof(token), s);
-        if (!token[0])
-        {
-            LOG("Expected value\n");
-            return v;
-        }
-
-        using ElementType = std::remove_reference_t<decltype(v[i])>;
-
-        v[i] = Core::ParseNumber<ElementType>(token);
-    }
-
-    s = GetToken(token, sizeof(token), s);
-    if (Platform::Strcmp(token, ")"))
-    {
-        LOG("Expected ')'\n");
-    }
-
-    return v;
-}
-
-
-template <typename MatrixType>
-MatrixType ParseMatrix(AStringView String)
-{
-    MatrixType matrix(1);
-
-    char token[128];
-
-    AStringView s = String;
-
-    s = GetToken(token, sizeof(token), s);
-    if (Platform::Strcmp(token, "("))
-    {
-        LOG("Expected '('\n");
-        return matrix;
-    }
-
-    for (int i = 0 ; i < matrix.NumComponents() ; i++)
-    {
-        using ElementType = std::remove_reference_t<decltype(matrix[i])>;
-
-        matrix[i] = ParseVector<ElementType>(s, &s);
-    }
-
-    s = GetToken(token, sizeof(token), s);
-    if (Platform::Strcmp(token, ")"))
-    {
-        LOG("Expected ')'\n");
-    }
-
-    return matrix;
-}
-
 SResourceRef StringToResourceRef(AStringView String)
 {
     SResourceRef ref;
 
-    char token[128];
-
+    AStringView token;
     AStringView s = String;
 
-    s = GetToken(token, sizeof(token), s);
-    if (Platform::Strcmp(token, "("))
+    s = GetToken(token, s);
+    if (!token.Compare("("))
     {
         LOG("Expected '('\n");
         return {};
     }
 
-    s = GetToken(token, sizeof(token), s);
-    if (!token[0])
+    s = GetToken(token, s);
+    if (token.IsEmpty())
     {
         LOG("Expected resource type\n");
         return {};
@@ -198,8 +55,8 @@ SResourceRef StringToResourceRef(AStringView String)
 
     ref.ResourceType = Core::ParseUInt32(token);
 
-    s = GetToken(token, sizeof(token), s);
-    if (!token[0])
+    s = GetToken(token, s);
+    if (token.IsEmpty())
     {
         LOG("Expected resource id\n");
         return {};
@@ -207,8 +64,8 @@ SResourceRef StringToResourceRef(AStringView String)
 
     ref.ResourceId = Core::ParseUInt64(token);
 
-    s = GetToken(token, sizeof(token), s);
-    if (Platform::Strcmp(token, ")"))
+    s = GetToken(token, s);
+    if (!token.Compare(")"))
     {
         LOG("Expected ')'\n");
     }
@@ -224,6 +81,15 @@ void AVariant::SetFromString(VARIANT_TYPE Type, SEnumDef const* EnumDef, AString
             return;
         case VARIANT_BOOLEAN:
             *this = Core::ParseBool(String);
+            break;
+        case VARIANT_BOOL2:
+            *this = ParseVector<Bool2>(String);
+            break;
+        case VARIANT_BOOL3:
+            *this = ParseVector<Bool3>(String);
+            break;
+        case VARIANT_BOOL4:
+            *this = ParseVector<Bool4>(String);
             break;
         case VARIANT_INT8:
             *this = Core::ParseInt8(String);
@@ -287,7 +153,7 @@ void AVariant::SetFromString(VARIANT_TYPE Type, SEnumDef const* EnumDef, AString
             break;
         case VARIANT_ENUM:
             HK_ASSERT(EnumDef);
-            *this = EnumFromString(EnumDef, String);
+            SetEnum(EnumDef, EnumFromString(EnumDef, String));
             break;
         default:
             HK_ASSERT(0);
@@ -302,6 +168,12 @@ AString AVariant::ToString() const
             return "";
         case VARIANT_BOOLEAN:
             return Core::ToString(*Get<bool>());
+        case VARIANT_BOOL2:
+            return Core::ToString(*Get<Bool2>());
+        case VARIANT_BOOL3:
+            return Core::ToString(*Get<Bool3>());
+        case VARIANT_BOOL4:
+            return Core::ToString(*Get<Bool4>());
         case VARIANT_INT8:
             return Core::ToString(*Get<int8_t>());
         case VARIANT_INT16:
