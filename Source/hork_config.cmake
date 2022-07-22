@@ -126,6 +126,7 @@ if(WIN32)
         /wd4611
         /wd4714             # Ignore "force inline warning"
         /wd4996             # Ignore "deprecated functions"
+		/wd26812            # Suppress C++ code analysis warning C26812
         /Zc:threadSafeInit  # Thread-safe statics
         /utf-8
         /FC                 # __FILE__ contains full path
