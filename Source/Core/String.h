@@ -222,6 +222,11 @@ public:
         return m_pData[Index];
     }
 
+    HK_FORCEINLINE operator bool() const
+    {
+        return !IsEmpty();
+    }
+
     /** Is string empty. */
     HK_FORCEINLINE bool IsEmpty() const
     {
@@ -308,6 +313,19 @@ public:
         return (SizeType)-1;
     }
 
+    HK_NODISCARD SizeType FindCharacter(CharT Char) const
+    {
+        const CharT* s   = m_pData;
+        const CharT* end = m_pData + Size();
+        while (s < end)
+        {
+            if (*s == Char)
+                return (SizeType)(s - m_pData);
+            ++s;
+        }
+        return (SizeType)-1;
+    }
+
     HK_NODISCARD HK_FORCEINLINE TStringView GetSubstring(SizeType _Pos, SizeType _Size) const
     {
         HK_ASSERT_(_Pos + _Size <= Size(), "Undefined behavior accessing out of bounds");
@@ -332,6 +350,36 @@ public:
     /** Compares strings (case sensitive). */
     HK_NODISCARD int CmpN(TStringView Rhs, SizeType Num) const;
 
+    HK_NODISCARD bool Icompare(TStringView Rhs) const
+    {
+        SizeType size = Size();
+
+        if (size != Rhs.Size())
+            return false;
+
+        for (SizeType n = 0; n < size; n++)
+        {
+            if (ToLower(m_pData[n]) != ToLower(Rhs.m_pData[n]))
+                return false;
+        }
+        return true;
+    }
+
+    HK_NODISCARD bool Compare(TStringView Rhs) const
+    {
+        SizeType size = Size();
+
+        if (size != Rhs.Size())
+            return false;
+
+        for (SizeType n = 0; n < size; n++)
+        {
+            if (m_pData[n] != Rhs.m_pData[n])
+                return false;
+        }
+        return true;
+    }
+
     HK_NODISCARD TStringView TruncateHead(SizeType Count) const
     {
         SizeType size = Size();
@@ -345,7 +393,7 @@ public:
         SizeType size = Size();
         if (Count > size)
             Count = size;
-        return TStringView(m_pData, size - Count, IsNullTerminated() && Count == 0);
+        return TStringView(m_pData, Count, IsNullTerminated() && Count == size);
     }
 
     /** Gives a string hash. */
@@ -488,7 +536,7 @@ public:
     {
         if (Count > m_Size)
             Count = m_Size;
-        return TStringView<CharT>(m_pData, m_Size - Count, Count == 0);
+        return TStringView<CharT>(m_pData, Count, Count == m_Size);
     }
 
     /** Finds a character. Returns the position of a character in a string, or -1. */
@@ -507,6 +555,11 @@ public:
     HK_NODISCARD HK_FORCEINLINE SizeType FindSubstringIcmp(TStringView<CharT> Substr) const
     {
         return TStringView<CharT>(m_pData, m_Size).FindSubstringIcmp(Substr);
+    }
+
+    HK_NODISCARD SizeType FindCharacter(CharT Char) const
+    {
+        return TStringView<CharT>(m_pData, m_Size).FindCharacter(Char);
     }
 
     /** Get substring. */
@@ -553,6 +606,16 @@ public:
     HK_NODISCARD HK_FORCEINLINE int CmpN(TStringView<CharT> Rhs, SizeType Num) const
     {
         return TStringView<CharT>(m_pData, m_Size).CmpN(Rhs, Num);
+    }
+
+    HK_NODISCARD HK_FORCEINLINE bool Icompare(TStringView<CharT> Rhs) const
+    {
+        return TStringView<CharT>(m_pData, m_Size).Icompare(Rhs);
+    }
+
+    HK_NODISCARD HK_FORCEINLINE bool Compare(TStringView<CharT> Rhs) const
+    {
+        return TStringView<CharT>(m_pData, m_Size).Compare(Rhs);
     }
 
     /** Gives a string hash. */
@@ -1470,6 +1533,13 @@ HK_INLINE AString ToHexString(T const& _Value, bool bLeadingZeros = false, bool 
 template <typename T, std::enable_if_t<std::is_integral<T>::value, bool> = true>
 T ParseNumber(AStringView View)
 {
+    // Cast from boolean
+    if (View.Icompare("false"))
+        return 0;
+    else if (View.Icompare("true"))
+        return 1;
+
+
     T    val;
     T    sign;
     char c;
@@ -1628,12 +1698,7 @@ T ParseNumber(AStringView View)
 
 HK_INLINE bool ParseBool(AStringView View)
 {
-    if (View == "0" || View == "false")
-        return false;
-    else if (View == "true")
-        return true;
-    else
-        return ParseNumber<int>(View) != 0;
+    return ParseNumber<int>(View) != 0;
 }
 
 HK_FORCEINLINE uint8_t ParseUInt8(AStringView View)
