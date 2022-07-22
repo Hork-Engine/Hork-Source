@@ -210,6 +210,11 @@ struct TStaticResourceFinder
         return GetObject();
     }
 
+    T* operator->()
+    {
+        return GetObject();
+    }
+
 private:
     AStringView ResourcePath;
     TWeakRef<T> Object;
