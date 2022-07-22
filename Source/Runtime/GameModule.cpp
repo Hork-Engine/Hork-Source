@@ -62,5 +62,5 @@ void AGameModule::Quit(ACommandProcessor const& _Proc)
 
 void AGameModule::RebuildMaterials(ACommandProcessor const& _Proc)
 {
-    AMaterial::RebuildMaterials();
+    AMaterial::UpdateGpuMaterials();
 }

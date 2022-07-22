@@ -31,108 +31,262 @@ SOFTWARE.
 #include "MaterialGraph.h"
 #include <Platform/Logger.h>
 
-enum EMaterialStage
+template <>
+SEnumDef const* EnumDefinition<TEXTURE_TYPE>()
 {
-    VERTEX_STAGE,
-    TESSELLATION_CONTROL_STAGE,
-    TESSELLATION_EVAL_STAGE,
-    GEOMETRY_STAGE,
-    DEPTH_STAGE,
-    LIGHT_STAGE,
-    SHADOWCAST_STAGE
+    static const SEnumDef EnumDef[] = {
+        {TEXTURE_1D, "1D"},
+        {TEXTURE_1D_ARRAY, "1D Array"},
+        {TEXTURE_2D, "2D"},
+        {TEXTURE_2D_ARRAY, "2D Array"},
+        {TEXTURE_3D, "3D"},
+        {TEXTURE_CUBE, "Cube"},
+        {TEXTURE_CUBE_ARRAY, "Cube Array"},
+        {0, nullptr}};
+    return EnumDef;
+}
+template <>
+SEnumDef const* EnumDefinition<MATERIAL_TYPE>()
+{
+    static const SEnumDef EnumDef[] = {
+        {MATERIAL_TYPE_UNLIT, "Unlit"},
+        {MATERIAL_TYPE_BASELIGHT, "BaseLight"},
+        {MATERIAL_TYPE_PBR, "PBR"},
+        {MATERIAL_TYPE_HUD, "HUD"},
+        {MATERIAL_TYPE_POSTPROCESS, "Postprocess"},
+        {0, nullptr}};
+    return EnumDef;
+}
+template <>
+SEnumDef const* EnumDefinition<TESSELLATION_METHOD>()
+{
+    static const SEnumDef EnumDef[] = {
+        {TESSELLATION_DISABLED, "Disabled"},
+        {TESSELLATION_FLAT, "Flat"},
+        {TESSELLATION_PN, "PN"},
+        {0, nullptr}};
+    return EnumDef;
+}
+template <>
+SEnumDef const* EnumDefinition<BLENDING_MODE>()
+{
+    static const SEnumDef EnumDef[] = {
+        {COLOR_BLENDING_ALPHA, "Alpha"},
+        {COLOR_BLENDING_DISABLED, "Disabled"},
+        {COLOR_BLENDING_PREMULTIPLIED_ALPHA, "Premultiplied Alpha"},
+        {COLOR_BLENDING_COLOR_ADD, "Color Add"},
+        {COLOR_BLENDING_MULTIPLY, "Multiply"},
+        {COLOR_BLENDING_SOURCE_TO_DEST, "Source To Dest"},
+        {COLOR_BLENDING_ADD_MUL, "Add Multiply"},
+        {COLOR_BLENDING_ADD_ALPHA, "Add Alpha"},
+        {0, nullptr}};
+    return EnumDef;
+}
+template <>
+SEnumDef const* EnumDefinition<PARALLAX_TECHNIQUE>()
+{
+    static const SEnumDef EnumDef[] = {
+        {PARALLAX_TECHNIQUE_DISABLED, "Disabled"},
+        {PARALLAX_TECHNIQUE_POM, "POM"},
+        {PARALLAX_TECHNIQUE_RPM, "RPM"},
+        {0, nullptr}};
+    return EnumDef;
+}
+template <>
+SEnumDef const* EnumDefinition<MATERIAL_DEPTH_HACK>()
+{
+    static const SEnumDef EnumDef[] = {
+        {MATERIAL_DEPTH_HACK_NONE, "None"},
+        {MATERIAL_DEPTH_HACK_WEAPON, "Weapon"},
+        {MATERIAL_DEPTH_HACK_SKYBOX, "Skybox"},
+        {0, nullptr}};
+    return EnumDef;
+}
+template <>
+SEnumDef const* EnumDefinition<ETextureFilter>()
+{
+    static const SEnumDef EnumDef[] = {
+        {TEXTURE_FILTER_LINEAR, "Linear"},
+        {TEXTURE_FILTER_NEAREST, "Nearest"},
+        {TEXTURE_FILTER_MIPMAP_NEAREST, "Mipmap Nearest"},
+        {TEXTURE_FILTER_MIPMAP_BILINEAR, "Bilinear"},
+        {TEXTURE_FILTER_MIPMAP_NLINEAR, "NLinear"},
+        {TEXTURE_FILTER_MIPMAP_TRILINEAR, "Trilinear"},
+        {0, nullptr}};
+    return EnumDef;
+}
+template <>
+SEnumDef const* EnumDefinition<ETextureAddress>()
+{
+    static const SEnumDef EnumDef[] = {
+        {TEXTURE_ADDRESS_WRAP, "Wrap"},
+        {TEXTURE_ADDRESS_MIRROR, "Mirror"},
+        {TEXTURE_ADDRESS_CLAMP, "Clamp"},
+        {TEXTURE_ADDRESS_BORDER, "Border"},
+        {TEXTURE_ADDRESS_MIRROR_ONCE, "Mirror Once"},
+        {0, nullptr}};
+    return EnumDef;
+}
+template <>
+SEnumDef const* EnumDefinition<MG_VALUE_TYPE>()
+{
+    static const SEnumDef EnumDef[] = {
+        {MG_VALUE_TYPE_UNDEFINED, "Undefined"},
+        {MG_VALUE_TYPE_FLOAT1, "float"},
+        {MG_VALUE_TYPE_FLOAT2, "float2"},
+        {MG_VALUE_TYPE_FLOAT3, "float3"},
+        {MG_VALUE_TYPE_FLOAT4, "float4"},
+        {MG_VALUE_TYPE_BOOL1, "bool"},
+        {MG_VALUE_TYPE_BOOL2, "bool2"},
+        {MG_VALUE_TYPE_BOOL3, "bool3"},
+        {MG_VALUE_TYPE_BOOL4, "bool4"},
+        {0, nullptr}};
+    return EnumDef;
+}
+template <>
+SEnumDef const* EnumDefinition<MG_UNIFORM_TYPE>()
+{
+    static const SEnumDef EnumDef[] = {
+        {MG_UNIFORM_TYPE_UNDEFINED, "Undefined"},
+        {MG_UNIFORM_TYPE_FLOAT1, "float"},
+        {MG_UNIFORM_TYPE_FLOAT2, "float2"},
+        {MG_UNIFORM_TYPE_FLOAT3, "float3"},
+        {MG_UNIFORM_TYPE_FLOAT4, "float4"},
+        {0, nullptr}};
+    return EnumDef;
+}
+template <>
+SEnumDef const* EnumDefinition<ETextureColorSpace>()
+{
+    static const SEnumDef EnumDef[] = {
+        {TEXTURE_COLORSPACE_RGBA, "RGBA"},
+        {TEXTURE_COLORSPACE_SRGB_ALPHA, "SRGBA"},
+        {TEXTURE_COLORSPACE_YCOCG, "YCoCg"},
+        {TEXTURE_COLORSPACE_GRAYSCALED, "Grayscaled"},
+        {0, nullptr}};
+    return EnumDef;
+}
+template <>
+SEnumDef const* EnumDefinition<ENormalMapCompression>()
+{
+    static const SEnumDef EnumDef[] = {
+        {NM_XYZ, "XYZ"},
+        {NM_XY, "XY"},
+        {NM_SPHEREMAP, "Spheremap"},
+        {NM_STEREOGRAPHIC, "Stereographic"},
+        {NM_PARABOLOID, "Paraboloid"},
+        {NM_QUARTIC, "Quartic"},
+        {NM_FLOAT, "Float"},
+        {NM_BC3, "BC3"},
+        {0, nullptr}};
+    return EnumDef;
+}
+
+enum MATERIAL_STAGE
+{
+    MATERIAL_STAGE_VERTEX,
+    MATERIAL_STAGE_TESSELLATION_CONTROL,
+    MATERIAL_STAGE_TESSELLATION_EVAL,
+    MATERIAL_STAGE_GEOMETRY,
+    MATERIAL_STAGE_DEPTH,
+    MATERIAL_STAGE_LIGHT,
+    MATERIAL_STAGE_SHADOWCAST
 };
 
 struct SVarying
 {
-    SVarying(const char* Name, const char* Source, EMGNodeType Type) :
+    SVarying(AStringView Name, AStringView Source, MG_VALUE_TYPE Type) :
         VaryingName(Name), VaryingSource(Source), VaryingType(Type), RefCount(0)
-    {
-    }
-    AString     VaryingName;
-    AString     VaryingSource;
-    EMGNodeType VaryingType;
-    int         RefCount;
+    {}
+
+    AString       VaryingName;
+    AString       VaryingSource;
+    MG_VALUE_TYPE VaryingType;
+    int           RefCount;
 };
 
 class AMaterialBuildContext
 {
 public:
-    AString              SourceCode;
-    int                  MaxTextureSlot;
-    int                  MaxUniformAddress;
-    int                  ParallaxSampler;
-    bool                 bHasVertexDeform;
-    bool                 bHasDisplacement;
-    bool                 bHasAlphaMask;
-    bool                 bHasShadowMask;
+    AString           SourceCode;
+    int               MaxTextureSlot{-1};
+    int               MaxUniformAddress{-1};
+    int               ParallaxSampler{-1};
+    bool              bHasVertexDeform{};
+    bool              bHasDisplacement{};
+    bool              bHasAlphaMask{};
+    bool              bHasShadowMask{};
     TVector<SVarying> InputVaryings;
-    int                  Serial;
+    int               Serial{};
 
-    AMaterialBuildContext(MGMaterialGraph const* _Graph, EMaterialStage _Stage)
+    AMaterialBuildContext(MGMaterialGraph const* Graph, MATERIAL_STAGE Stage) :
+        m_Graph(Graph), m_Stage(Stage)
+    {}
+
+    int GetBuildSerial() const
     {
-        Graph             = _Graph;
-        VariableName      = 0;
-        Stage             = _Stage;
-        MaxTextureSlot    = -1;
-        MaxUniformAddress = -1;
-        ParallaxSampler   = -1;
-        bHasVertexDeform  = false;
-        bHasDisplacement  = false;
-        bHasAlphaMask     = false;
-        bHasShadowMask    = false;
+        return Serial;
     }
 
-    int GetBuildSerial() const { return Serial; }
-
     AString GenerateVariableName() const;
-    void    GenerateSourceCode(MGOutput* _Slot, AStringView _Expression, bool _AddBrackets);
 
-    EMaterialStage GetStage() const { return Stage; }
+    void GenerateSourceCode(MGOutput& Slot, AStringView Expression, bool bAddBrackets);
 
-    EMaterialType GetMaterialType() const { return Graph->MaterialType; }
+    MATERIAL_STAGE GetStage() const
+    {
+        return m_Stage;
+    }
 
-    MGMaterialGraph const* GetGraph() { return Graph; }
+    MATERIAL_TYPE GetMaterialType() const
+    {
+        return m_Graph->MaterialType;
+    }
+
+    MGMaterialGraph const* GetGraph()
+    {
+        return m_Graph;
+    }
 
 private:
-    mutable int            VariableName = 0;
-    EMaterialStage         Stage;
-    MGMaterialGraph const* Graph;
+    mutable int            m_VariableName{};
+    MATERIAL_STAGE         m_Stage;
+    MGMaterialGraph const* m_Graph;
 };
 
 static constexpr const char* VariableTypeStr[] = {
-    "vec4",  // AT_Unknown
-    "float", // AT_Float1
-    "vec2",  // AT_Float2
-    "vec3",  // AT_Float3
-    "vec4",  // AT_Float4
-    "bool",  // AT_Bool1
-    "bvec2", // AT_Bool2
-    "bvec3", // AT_Bool3
-    "bvec4", // AT_Bool4
+    "vec4",  // MG_VALUE_TYPE_UNDEFINED
+    "float", // MG_VALUE_TYPE_FLOAT1
+    "vec2",  // MG_VALUE_TYPE_FLOAT2
+    "vec3",  // MG_VALUE_TYPE_FLOAT3
+    "vec4",  // MG_VALUE_TYPE_FLOAT4
+    "bool",  // MG_VALUE_TYPE_BOOL1
+    "bvec2", // MG_VALUE_TYPE_BOOL2
+    "bvec3", // MG_VALUE_TYPE_BOOL3
+    "bvec4", // MG_VALUE_TYPE_BOOL4
 };
 
-enum EMGVectorType
+enum MG_VECTOR_TYPE
 {
-    VEC_UNKNOWN,
-    VEC1,
-    VEC2,
-    VEC3,
-    VEC4
+    MG_VECTOR_UNDEFINED,
+    MG_VECTOR_VEC1,
+    MG_VECTOR_VEC2,
+    MG_VECTOR_VEC3,
+    MG_VECTOR_VEC4
 };
 
-enum EMGComponentType
+enum MG_COMPONENT_TYPE
 {
-    COMP_UNKNOWN,
-    COMP_FLOAT,
-    COMP_BOOL
+    MG_COMPONENT_UNKNOWN,
+    MG_COMPONENT_FLOAT,
+    MG_COMPONENT_BOOL
 };
 
-static bool IsTypeComponent(EMGNodeType InType)
+static bool IsTypeComponent(MG_VALUE_TYPE InType)
 {
     switch (InType)
     {
-        case AT_Float1:
-        case AT_Bool1:
+        case MG_VALUE_TYPE_FLOAT1:
+        case MG_VALUE_TYPE_BOOL1:
             return true;
         default:
             break;
@@ -140,58 +294,58 @@ static bool IsTypeComponent(EMGNodeType InType)
     return false;
 }
 
-static bool IsTypeVector(EMGNodeType InType)
+static bool IsTypeVector(MG_VALUE_TYPE InType)
 {
     return !IsTypeComponent(InType);
 }
 
-static EMGComponentType GetTypeComponent(EMGNodeType InType)
+static MG_COMPONENT_TYPE GetTypeComponent(MG_VALUE_TYPE InType)
 {
     switch (InType)
     {
-        case AT_Float1:
-        case AT_Float2:
-        case AT_Float3:
-        case AT_Float4:
-            return COMP_FLOAT;
-        case AT_Bool1:
-        case AT_Bool2:
-        case AT_Bool3:
-        case AT_Bool4:
-            return COMP_BOOL;
+        case MG_VALUE_TYPE_FLOAT1:
+        case MG_VALUE_TYPE_FLOAT2:
+        case MG_VALUE_TYPE_FLOAT3:
+        case MG_VALUE_TYPE_FLOAT4:
+            return MG_COMPONENT_FLOAT;
+        case MG_VALUE_TYPE_BOOL1:
+        case MG_VALUE_TYPE_BOOL2:
+        case MG_VALUE_TYPE_BOOL3:
+        case MG_VALUE_TYPE_BOOL4:
+            return MG_COMPONENT_BOOL;
         default:
             break;
     }
-    return COMP_UNKNOWN;
+    return MG_COMPONENT_UNKNOWN;
 }
 
-static EMGVectorType GetTypeVector(EMGNodeType InType)
+static MG_VECTOR_TYPE GetTypeVector(MG_VALUE_TYPE Type)
 {
-    switch (InType)
+    switch (Type)
     {
-        case AT_Float1:
-        case AT_Bool1:
-            return VEC1;
-        case AT_Float2:
-        case AT_Bool2:
-            return VEC2;
-        case AT_Float3:
-        case AT_Bool3:
-            return VEC3;
-        case AT_Float4:
-        case AT_Bool4:
-            return VEC4;
+        case MG_VALUE_TYPE_FLOAT1:
+        case MG_VALUE_TYPE_BOOL1:
+            return MG_VECTOR_VEC1;
+        case MG_VALUE_TYPE_FLOAT2:
+        case MG_VALUE_TYPE_BOOL2:
+            return MG_VECTOR_VEC2;
+        case MG_VALUE_TYPE_FLOAT3:
+        case MG_VALUE_TYPE_BOOL3:
+            return MG_VECTOR_VEC3;
+        case MG_VALUE_TYPE_FLOAT4:
+        case MG_VALUE_TYPE_BOOL4:
+            return MG_VECTOR_VEC4;
         default:
             break;
     }
-    return VEC_UNKNOWN;
+    return MG_VECTOR_UNDEFINED;
 }
 
-static bool IsArithmeticType(EMGNodeType InType)
+static bool IsArithmeticType(MG_VALUE_TYPE Type)
 {
-    switch (GetTypeComponent(InType))
+    switch (GetTypeComponent(Type))
     {
-        case COMP_FLOAT:
+        case MG_COMPONENT_FLOAT:
             return true;
         default:
             break;
@@ -200,47 +354,50 @@ static bool IsArithmeticType(EMGNodeType InType)
     return false;
 }
 
-static EMGNodeType ToFloatType(EMGNodeType InType)
+static MG_VALUE_TYPE ToFloatType(MG_VALUE_TYPE Type)
 {
-    switch (InType)
+    switch (Type)
     {
-        case AT_Float1:
-        case AT_Float2:
-        case AT_Float3:
-        case AT_Float4:
-            return InType;
-        case AT_Bool1:
-            return AT_Float1;
-        case AT_Bool2:
-            return AT_Float2;
-        case AT_Bool3:
-            return AT_Float3;
-        case AT_Bool4:
-            return AT_Float4;
+        case MG_VALUE_TYPE_FLOAT1:
+        case MG_VALUE_TYPE_FLOAT2:
+        case MG_VALUE_TYPE_FLOAT3:
+        case MG_VALUE_TYPE_FLOAT4:
+            return Type;
+        case MG_VALUE_TYPE_BOOL1:
+            return MG_VALUE_TYPE_FLOAT1;
+        case MG_VALUE_TYPE_BOOL2:
+            return MG_VALUE_TYPE_FLOAT2;
+        case MG_VALUE_TYPE_BOOL3:
+            return MG_VALUE_TYPE_FLOAT3;
+        case MG_VALUE_TYPE_BOOL4:
+            return MG_VALUE_TYPE_FLOAT4;
         default:
             break;
     }
-    return AT_Float1;
+    return MG_VALUE_TYPE_FLOAT1;
 }
 
-enum EVectorCastFlags
+enum MG_VECTOR_CAST_FLAGS : uint8_t
 {
-    VECTOR_CAST_IDENTITY_X  = HK_BIT(0),
-    VECTOR_CAST_IDENTITY_Y  = HK_BIT(1),
-    VECTOR_CAST_IDENTITY_Z  = HK_BIT(2),
-    VECTOR_CAST_IDENTITY_W  = HK_BIT(3),
-    VECTOR_CAST_EXPAND_VEC1 = HK_BIT(4),
+    MG_VECTOR_CAST_UNDEFINED   = 0,
+    MG_VECTOR_CAST_IDENTITY_X  = HK_BIT(0),
+    MG_VECTOR_CAST_IDENTITY_Y  = HK_BIT(1),
+    MG_VECTOR_CAST_IDENTITY_Z  = HK_BIT(2),
+    MG_VECTOR_CAST_IDENTITY_W  = HK_BIT(3),
+    MG_VECTOR_CAST_EXPAND_VEC1 = HK_BIT(4),
 };
 
-static AString MakeVectorCast(AString const& _Expression, EMGNodeType _TypeFrom, EMGNodeType _TypeTo, int VectorCastFlags = 0)
+HK_FLAG_ENUM_OPERATORS(MG_VECTOR_CAST_FLAGS)
+
+static AString MakeVectorCast(AString const& Expression, MG_VALUE_TYPE TypeFrom, MG_VALUE_TYPE TypeTo, MG_VECTOR_CAST_FLAGS VectorCastFlags = MG_VECTOR_CAST_UNDEFINED)
 {
-    if (_TypeFrom == _TypeTo || _TypeTo == AT_Unknown)
+    if (TypeFrom == TypeTo || TypeTo == MG_VALUE_TYPE_UNDEFINED)
     {
-        return _Expression;
+        return Expression;
     }
 
-    EMGComponentType componentFrom = GetTypeComponent(_TypeFrom);
-    EMGComponentType componentTo   = GetTypeComponent(_TypeTo);
+    MG_COMPONENT_TYPE componentFrom = GetTypeComponent(TypeFrom);
+    MG_COMPONENT_TYPE componentTo   = GetTypeComponent(TypeTo);
 
     bool bSameComponentType = componentFrom == componentTo;
 
@@ -248,11 +405,11 @@ static AString MakeVectorCast(AString const& _Expression, EMGNodeType _TypeFrom,
     const char* one  = "1";
     switch (componentTo)
     {
-        case COMP_FLOAT:
+        case MG_COMPONENT_FLOAT:
             zero = "0.0";
             one  = "1.0";
             break;
-        case COMP_BOOL:
+        case MG_COMPONENT_BOOL:
             zero = "false";
             one  = "true";
             break;
@@ -260,60 +417,60 @@ static AString MakeVectorCast(AString const& _Expression, EMGNodeType _TypeFrom,
             HK_ASSERT(0);
     }
 
-    AString defX = VectorCastFlags & VECTOR_CAST_IDENTITY_X ? one : zero;
-    AString defY = VectorCastFlags & VECTOR_CAST_IDENTITY_Y ? one : zero;
-    AString defZ = VectorCastFlags & VECTOR_CAST_IDENTITY_Z ? one : zero;
-    AString defW = VectorCastFlags & VECTOR_CAST_IDENTITY_W ? one : zero;
+    AString defX = VectorCastFlags & MG_VECTOR_CAST_IDENTITY_X ? one : zero;
+    AString defY = VectorCastFlags & MG_VECTOR_CAST_IDENTITY_Y ? one : zero;
+    AString defZ = VectorCastFlags & MG_VECTOR_CAST_IDENTITY_Z ? one : zero;
+    AString defW = VectorCastFlags & MG_VECTOR_CAST_IDENTITY_W ? one : zero;
 
-    EMGVectorType vecType = GetTypeVector(_TypeFrom);
+    MG_VECTOR_TYPE vecType = GetTypeVector(TypeFrom);
 
     switch (vecType)
     {
-        case VEC_UNKNOWN:
-            switch (_TypeTo)
+        case MG_VECTOR_UNDEFINED:
+            switch (TypeTo)
             {
-                case AT_Float1:
+                case MG_VALUE_TYPE_FLOAT1:
                     return defX;
-                case AT_Float2:
+                case MG_VALUE_TYPE_FLOAT2:
                     return "vec2( " + defX + ", " + defY + " )";
-                case AT_Float3:
+                case MG_VALUE_TYPE_FLOAT3:
                     return "vec3( " + defX + ", " + defY + ", " + defZ + " )";
-                case AT_Float4:
+                case MG_VALUE_TYPE_FLOAT4:
                     return "vec4( " + defX + ", " + defY + ", " + defZ + ", " + defW + " )";
-                case AT_Bool1:
+                case MG_VALUE_TYPE_BOOL1:
                     return defX;
-                case AT_Bool2:
+                case MG_VALUE_TYPE_BOOL2:
                     return "bvec2( " + defX + ", " + defY + " )";
-                case AT_Bool3:
+                case MG_VALUE_TYPE_BOOL3:
                     return "bvec3( " + defX + ", " + defY + ", " + defZ + " )";
-                case AT_Bool4:
+                case MG_VALUE_TYPE_BOOL4:
                     return "bvec4( " + defX + ", " + defY + ", " + defZ + ", " + defW + " )";
                 default:
                     break;
             }
             break;
-        case VEC1:
-            if (VectorCastFlags & VECTOR_CAST_EXPAND_VEC1)
+        case MG_VECTOR_VEC1:
+            if (VectorCastFlags & MG_VECTOR_CAST_EXPAND_VEC1)
             {
                 // Conversion like: vecN( in, in, ... )
-                switch (_TypeTo)
+                switch (TypeTo)
                 {
-                    case AT_Float1:
-                        return bSameComponentType ? _Expression : "float( " + _Expression + " )";
-                    case AT_Float2:
-                        return bSameComponentType ? "vec2( " + _Expression + " )" : "vec2( float(" + _Expression + ") )";
-                    case AT_Float3:
-                        return bSameComponentType ? "vec3( " + _Expression + " )" : "vec3( float(" + _Expression + ") )";
-                    case AT_Float4:
-                        return bSameComponentType ? "vec4( " + _Expression + " )" : "vec4( float(" + _Expression + ") )";
-                    case AT_Bool1:
-                        return bSameComponentType ? _Expression : "bool(" + _Expression + ")";
-                    case AT_Bool2:
-                        return bSameComponentType ? "bvec2( " + _Expression + " )" : "bvec2( bool(" + _Expression + ") )";
-                    case AT_Bool3:
-                        return bSameComponentType ? "bvec3( " + _Expression + " )" : "bvec3( bool(" + _Expression + ") )";
-                    case AT_Bool4:
-                        return bSameComponentType ? "bvec4( " + _Expression + " )" : "bvec4( bool(" + _Expression + ") )";
+                    case MG_VALUE_TYPE_FLOAT1:
+                        return bSameComponentType ? Expression : "float( " + Expression + " )";
+                    case MG_VALUE_TYPE_FLOAT2:
+                        return bSameComponentType ? "vec2( " + Expression + " )" : "vec2( float(" + Expression + ") )";
+                    case MG_VALUE_TYPE_FLOAT3:
+                        return bSameComponentType ? "vec3( " + Expression + " )" : "vec3( float(" + Expression + ") )";
+                    case MG_VALUE_TYPE_FLOAT4:
+                        return bSameComponentType ? "vec4( " + Expression + " )" : "vec4( float(" + Expression + ") )";
+                    case MG_VALUE_TYPE_BOOL1:
+                        return bSameComponentType ? Expression : "bool(" + Expression + ")";
+                    case MG_VALUE_TYPE_BOOL2:
+                        return bSameComponentType ? "bvec2( " + Expression + " )" : "bvec2( bool(" + Expression + ") )";
+                    case MG_VALUE_TYPE_BOOL3:
+                        return bSameComponentType ? "bvec3( " + Expression + " )" : "bvec3( bool(" + Expression + ") )";
+                    case MG_VALUE_TYPE_BOOL4:
+                        return bSameComponentType ? "bvec4( " + Expression + " )" : "bvec4( bool(" + Expression + ") )";
                     default:
                         break;
                 }
@@ -322,94 +479,94 @@ static AString MakeVectorCast(AString const& _Expression, EMGNodeType _TypeFrom,
             else
             {
                 // Conversion like: vecN( in, defY, defZ, defW )
-                switch (_TypeTo)
+                switch (TypeTo)
                 {
-                    case AT_Float1:
-                        return bSameComponentType ? _Expression : "float( " + _Expression + " )";
-                    case AT_Float2:
-                        return bSameComponentType ? "vec2( " + _Expression + ", " + defY + " )" : "vec2( float(" + _Expression + "), " + defY + " )";
-                    case AT_Float3:
-                        return bSameComponentType ? "vec3( " + _Expression + ", " + defY + ", " + defZ + " )" : "vec3( float(" + _Expression + "), " + defY + ", " + defZ + " )";
-                    case AT_Float4:
-                        return bSameComponentType ? "vec4( " + _Expression + ", " + defY + ", " + defZ + ", " + defW + " )" : "vec4( float(" + _Expression + "), " + defY + ", " + defZ + ", " + defW + " )";
-                    case AT_Bool1:
-                        return bSameComponentType ? _Expression : "bool( " + _Expression + " )";
-                    case AT_Bool2:
-                        return bSameComponentType ? "bvec2( " + _Expression + ", " + defY + " )" : "bvec2( bool(" + _Expression + "), " + defY + " )";
-                    case AT_Bool3:
-                        return bSameComponentType ? "bvec3( " + _Expression + ", " + defY + ", " + defZ + " )" : "bvec3( bool(" + _Expression + "), " + defY + ", " + defZ + " )";
-                    case AT_Bool4:
-                        return bSameComponentType ? "bvec4( " + _Expression + ", " + defY + ", " + defZ + ", " + defW + " )" : "bvec4( bool(" + _Expression + "), " + defY + ", " + defZ + ", " + defW + " )";
+                    case MG_VALUE_TYPE_FLOAT1:
+                        return bSameComponentType ? Expression : "float( " + Expression + " )";
+                    case MG_VALUE_TYPE_FLOAT2:
+                        return bSameComponentType ? "vec2( " + Expression + ", " + defY + " )" : "vec2( float(" + Expression + "), " + defY + " )";
+                    case MG_VALUE_TYPE_FLOAT3:
+                        return bSameComponentType ? "vec3( " + Expression + ", " + defY + ", " + defZ + " )" : "vec3( float(" + Expression + "), " + defY + ", " + defZ + " )";
+                    case MG_VALUE_TYPE_FLOAT4:
+                        return bSameComponentType ? "vec4( " + Expression + ", " + defY + ", " + defZ + ", " + defW + " )" : "vec4( float(" + Expression + "), " + defY + ", " + defZ + ", " + defW + " )";
+                    case MG_VALUE_TYPE_BOOL1:
+                        return bSameComponentType ? Expression : "bool( " + Expression + " )";
+                    case MG_VALUE_TYPE_BOOL2:
+                        return bSameComponentType ? "bvec2( " + Expression + ", " + defY + " )" : "bvec2( bool(" + Expression + "), " + defY + " )";
+                    case MG_VALUE_TYPE_BOOL3:
+                        return bSameComponentType ? "bvec3( " + Expression + ", " + defY + ", " + defZ + " )" : "bvec3( bool(" + Expression + "), " + defY + ", " + defZ + " )";
+                    case MG_VALUE_TYPE_BOOL4:
+                        return bSameComponentType ? "bvec4( " + Expression + ", " + defY + ", " + defZ + ", " + defW + " )" : "bvec4( bool(" + Expression + "), " + defY + ", " + defZ + ", " + defW + " )";
                     default:
                         break;
                 }
                 break;
             }
-        case VEC2:
-            switch (_TypeTo)
+        case MG_VECTOR_VEC2:
+            switch (TypeTo)
             {
-                case AT_Float1:
-                    return bSameComponentType ? _Expression + ".x" : "float( " + _Expression + ".x )";
-                case AT_Float2:
-                    return bSameComponentType ? _Expression : "vec2( " + _Expression + " )";
-                case AT_Float3:
-                    return bSameComponentType ? "vec3( " + _Expression + ", " + defZ + " )" : "vec3( vec2(" + _Expression + "), " + defZ + " )";
-                case AT_Float4:
-                    return bSameComponentType ? "vec4( " + _Expression + ", " + defZ + ", " + defW + " )" : "vec4( vec2(" + _Expression + "), " + defZ + ", " + defW + " )";
-                case AT_Bool1:
-                    return bSameComponentType ? _Expression + ".x" : "bool(" + _Expression + ".x )";
-                case AT_Bool2:
-                    return bSameComponentType ? _Expression : "bvec2( " + _Expression + " )";
-                case AT_Bool3:
-                    return bSameComponentType ? "bvec3( " + _Expression + ", " + defZ + " )" : "bvec3( bvec2(" + _Expression + "), " + defZ + " )";
-                case AT_Bool4:
-                    return bSameComponentType ? "bvec4( " + _Expression + ", " + defZ + ", " + defW + " )" : "bvec4( bvec2(" + _Expression + "), " + defZ + ", " + defW + " )";
+                case MG_VALUE_TYPE_FLOAT1:
+                    return bSameComponentType ? Expression + ".x" : "float( " + Expression + ".x )";
+                case MG_VALUE_TYPE_FLOAT2:
+                    return bSameComponentType ? Expression : "vec2( " + Expression + " )";
+                case MG_VALUE_TYPE_FLOAT3:
+                    return bSameComponentType ? "vec3( " + Expression + ", " + defZ + " )" : "vec3( vec2(" + Expression + "), " + defZ + " )";
+                case MG_VALUE_TYPE_FLOAT4:
+                    return bSameComponentType ? "vec4( " + Expression + ", " + defZ + ", " + defW + " )" : "vec4( vec2(" + Expression + "), " + defZ + ", " + defW + " )";
+                case MG_VALUE_TYPE_BOOL1:
+                    return bSameComponentType ? Expression + ".x" : "bool(" + Expression + ".x )";
+                case MG_VALUE_TYPE_BOOL2:
+                    return bSameComponentType ? Expression : "bvec2( " + Expression + " )";
+                case MG_VALUE_TYPE_BOOL3:
+                    return bSameComponentType ? "bvec3( " + Expression + ", " + defZ + " )" : "bvec3( bvec2(" + Expression + "), " + defZ + " )";
+                case MG_VALUE_TYPE_BOOL4:
+                    return bSameComponentType ? "bvec4( " + Expression + ", " + defZ + ", " + defW + " )" : "bvec4( bvec2(" + Expression + "), " + defZ + ", " + defW + " )";
                 default:
                     break;
             }
             break;
-        case VEC3:
-            switch (_TypeTo)
+        case MG_VECTOR_VEC3:
+            switch (TypeTo)
             {
-                case AT_Float1:
-                    return bSameComponentType ? _Expression + ".x" : "float( " + _Expression + ".x )";
-                case AT_Float2:
-                    return bSameComponentType ? _Expression + ".xy" : "vec2( " + _Expression + ".xy )";
-                case AT_Float3:
-                    return bSameComponentType ? _Expression : "vec3( " + _Expression + " )";
-                case AT_Float4:
-                    return bSameComponentType ? "vec4( " + _Expression + ", " + defW + " )" : "vec4( vec3(" + _Expression + "), " + defW + " )";
-                case AT_Bool1:
-                    return bSameComponentType ? _Expression + ".x" : "bool(" + _Expression + ".x)";
-                case AT_Bool2:
-                    return bSameComponentType ? _Expression + ".xy" : "bvec2(" + _Expression + ".xy)";
-                case AT_Bool3:
-                    return bSameComponentType ? _Expression : "bvec3( " + _Expression + " )";
-                case AT_Bool4:
-                    return bSameComponentType ? "bvec4( " + _Expression + ", " + defW + " )" : "bvec4( bvec3(" + _Expression + "), " + defW + " )";
+                case MG_VALUE_TYPE_FLOAT1:
+                    return bSameComponentType ? Expression + ".x" : "float( " + Expression + ".x )";
+                case MG_VALUE_TYPE_FLOAT2:
+                    return bSameComponentType ? Expression + ".xy" : "vec2( " + Expression + ".xy )";
+                case MG_VALUE_TYPE_FLOAT3:
+                    return bSameComponentType ? Expression : "vec3( " + Expression + " )";
+                case MG_VALUE_TYPE_FLOAT4:
+                    return bSameComponentType ? "vec4( " + Expression + ", " + defW + " )" : "vec4( vec3(" + Expression + "), " + defW + " )";
+                case MG_VALUE_TYPE_BOOL1:
+                    return bSameComponentType ? Expression + ".x" : "bool(" + Expression + ".x)";
+                case MG_VALUE_TYPE_BOOL2:
+                    return bSameComponentType ? Expression + ".xy" : "bvec2(" + Expression + ".xy)";
+                case MG_VALUE_TYPE_BOOL3:
+                    return bSameComponentType ? Expression : "bvec3( " + Expression + " )";
+                case MG_VALUE_TYPE_BOOL4:
+                    return bSameComponentType ? "bvec4( " + Expression + ", " + defW + " )" : "bvec4( bvec3(" + Expression + "), " + defW + " )";
                 default:
                     break;
             }
             break;
-        case VEC4:
-            switch (_TypeTo)
+        case MG_VECTOR_VEC4:
+            switch (TypeTo)
             {
-                case AT_Float1:
-                    return bSameComponentType ? _Expression + ".x" : "float( " + _Expression + ".x )";
-                case AT_Float2:
-                    return bSameComponentType ? _Expression + ".xy" : "vec2( " + _Expression + ".xy )";
-                case AT_Float3:
-                    return bSameComponentType ? _Expression + ".xyz" : "vec3( " + _Expression + ".xyz )";
-                case AT_Float4:
-                    return bSameComponentType ? _Expression : "vec4( " + _Expression + " )";
-                case AT_Bool1:
-                    return bSameComponentType ? _Expression + ".x" : "bool(" + _Expression + ".x )";
-                case AT_Bool2:
-                    return bSameComponentType ? _Expression + ".xy" : "bvec2(" + _Expression + ".xy )";
-                case AT_Bool3:
-                    return bSameComponentType ? _Expression + ".xyz" : "bvec3(" + _Expression + ".xyz )";
-                case AT_Bool4:
-                    return bSameComponentType ? _Expression : "bvec4(" + _Expression + ")";
+                case MG_VALUE_TYPE_FLOAT1:
+                    return bSameComponentType ? Expression + ".x" : "float( " + Expression + ".x )";
+                case MG_VALUE_TYPE_FLOAT2:
+                    return bSameComponentType ? Expression + ".xy" : "vec2( " + Expression + ".xy )";
+                case MG_VALUE_TYPE_FLOAT3:
+                    return bSameComponentType ? Expression + ".xyz" : "vec3( " + Expression + ".xyz )";
+                case MG_VALUE_TYPE_FLOAT4:
+                    return bSameComponentType ? Expression : "vec4( " + Expression + " )";
+                case MG_VALUE_TYPE_BOOL1:
+                    return bSameComponentType ? Expression + ".x" : "bool(" + Expression + ".x )";
+                case MG_VALUE_TYPE_BOOL2:
+                    return bSameComponentType ? Expression + ".xy" : "bvec2(" + Expression + ".xy )";
+                case MG_VALUE_TYPE_BOOL3:
+                    return bSameComponentType ? Expression + ".xyz" : "bvec3(" + Expression + ".xyz )";
+                case MG_VALUE_TYPE_BOOL4:
+                    return bSameComponentType ? Expression : "bvec4(" + Expression + ")";
                 default:
                     break;
             }
@@ -418,33 +575,32 @@ static AString MakeVectorCast(AString const& _Expression, EMGNodeType _TypeFrom,
 
     HK_ASSERT(0);
 
-    return _Expression;
+    return Expression;
 }
 
-static const char* MakeEmptyVector(EMGNodeType InType)
+static const char* MakeEmptyVector(MG_VALUE_TYPE InType)
 {
     switch (InType)
     {
-        case AT_Float1:
+        case MG_VALUE_TYPE_FLOAT1:
             return "0.0";
-        case AT_Float2:
+        case MG_VALUE_TYPE_FLOAT2:
             return "vec2( 0.0 )";
-        case AT_Float3:
+        case MG_VALUE_TYPE_FLOAT3:
             return "vec3( 0.0 )";
-        case AT_Float4:
+        case MG_VALUE_TYPE_FLOAT4:
             return "vec4( 0.0 )";
-        case AT_Bool1:
+        case MG_VALUE_TYPE_BOOL1:
             return "false";
-        case AT_Bool2:
+        case MG_VALUE_TYPE_BOOL2:
             return "bvec2( false )";
-        case AT_Bool3:
+        case MG_VALUE_TYPE_BOOL3:
             return "bvec3( false )";
-        case AT_Bool4:
+        case MG_VALUE_TYPE_BOOL4:
             return "bvec4( false )";
         default:
             break;
     };
-
     return "0.0";
 }
 
@@ -457,101 +613,28 @@ static const char* MakeDefaultNormal()
 
 AString AMaterialBuildContext::GenerateVariableName() const
 {
-    return AString("v") + Core::ToString(VariableName++);
+    return AString("v") + Core::ToString(m_VariableName++);
 }
 
-void AMaterialBuildContext::GenerateSourceCode(MGOutput* _Slot, AStringView _Expression, bool _AddBrackets)
+void AMaterialBuildContext::GenerateSourceCode(MGOutput& Slot, AStringView Expression, bool bAddBrackets)
 {
-    if (_Slot->Usages > 1)
+    if (Slot.Usages > 1)
     {
-        _Slot->Expression = GenerateVariableName();
-        SourceCode += "const " + AString(VariableTypeStr[_Slot->Type]) + " " + _Slot->Expression + " = " + _Expression + ";\n";
+        Slot.Expression = GenerateVariableName();
+        SourceCode += "const " + AString(VariableTypeStr[Slot.Type]) + " " + Slot.Expression + " = " + Expression + ";\n";
     }
     else
     {
-        if (_AddBrackets)
+        if (bAddBrackets)
         {
-            _Slot->Expression = "( " + _Expression + " )";
+            Slot.Expression = "( " + Expression + " )";
         }
         else
         {
-            _Slot->Expression = _Expression;
+            Slot.Expression = Expression;
         }
     }
 }
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-HK_CLASS_META(MGOutput)
-HK_CLASS_META(MGInput)
-
-MGInput::MGInput()
-{
-}
-
-MGInput::~MGInput()
-{
-    Disconnect();
-}
-
-void MGInput::Connect(MGNode* pNode, const char* SlotName)
-{
-    if (pNode)
-    {
-        Connect(pNode->FindOutput(SlotName));
-    }
-    else
-    {
-        Disconnect();
-    }
-}
-
-void MGInput::Connect(MGOutput* pSlot)
-{
-    if (!pSlot)
-    {
-        Disconnect();
-        return;
-    }
-    MGNode* node = pSlot->GetOwner();
-    if (!node)
-    {
-        LOG("Node output is incomplete\n");
-        return;
-    }
-    node->AddRef();
-    Slot = pSlot;
-}
-
-void MGInput::Disconnect()
-{
-    if (Slot)
-    {
-        MGNode* node = Slot->GetOwner();
-        node->RemoveRef();
-        Slot.Reset();
-    }
-}
-
-MGOutput* MGInput::GetConnection()
-{
-    return Slot;
-}
-
-#if 0
-TRef< ADocObject > MGInput::Serialize() {
-    TRef< ADocObject > object = MakeRef< ADocObject >();
-
-    object->AddString( "Name", GetObjectName() );
-
-    //if ( GetOwner() ) {
-    //    object->AddString( "Slot", Slot->GetObjectName() );
-    //    object->AddString( "Node", Core::ToString( GetOwner()->GetId() ) );
-    //}
-
-    return object;
-}
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -559,55 +642,111 @@ HK_BEGIN_CLASS_META(MGNode)
 HK_PROPERTY_DIRECT(Location, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-MGNode::MGNode(const char* _Name)
-{
-    ID         = 0;
-    Serial     = 0;
-    bTouched   = false;
-    bSingleton = false;
+HK_BEGIN_CLASS_META(MGSingleton)
+HK_END_CLASS_META()
 
-    SetObjectName(_Name);
+MGNode::MGNode(AStringView Name)
+{
+    SetObjectName(Name);
 }
 
-MGNode::~MGNode()
+void MGNode::ParseProperties(ADocValue const* document)
 {
-    for (MGInput* In : Inputs)
+    APropertyList properties;
+
+    GetProperties(properties);
+
+    for (AProperty const* prop : properties)
     {
-        In->RemoveRef();
+        AStringView value = document->GetString(prop->GetName());
+        if (!value)
+            continue;
+
+        prop->SetValue(this, value);
     }
+}
 
-    for (MGOutput* Out : Outputs)
+void MGNode::SetInputs(std::initializer_list<MGInput*> Inputs)
+{
+    m_Inputs = Inputs;
+}
+
+void MGNode::SetOutputs(std::initializer_list<MGOutput*> Outputs)
+{
+    m_Outputs = Outputs;
+    for (MGOutput* output : m_Outputs)
     {
-        Out->Owner = nullptr;
-        Out->RemoveRef();
+        output->m_Owner = this;
     }
 }
 
-MGInput* MGNode::AddInput(const char* _Name)
+MGNode& MGNode::BindInput(AStringView InputSlot, MGNode* Node)
 {
-    MGInput* In = CreateInstanceOf<MGInput>();
-    In->AddRef();
-    In->SetObjectName(_Name);
-    Inputs.Add(In);
-    return In;
+    if (Node)
+        return BindInput(InputSlot, *Node);
+
+    UnbindInput(InputSlot);
+    return *this;
 }
 
-MGOutput* MGNode::AddOutput(const char* _Name, EMGNodeType _Type)
+MGNode& MGNode::BindInput(AStringView InputSlot, MGNode& Node)
 {
-    MGOutput* Out = CreateInstanceOf<MGOutput>();
-    Out->AddRef();
-    Out->SetObjectName(_Name);
-    Out->Type  = _Type;
-    Out->Owner = this;
-    Outputs.Add(Out);
-    return Out;
-}
-
-MGOutput* MGNode::FindOutput(const char* _Name)
-{
-    for (MGOutput* Out : Outputs)
+    MGOutput* output = Node.FindOutput("Value");
+    if (!output)
+        output = Node.FindOutput("Result");
+    if (!output)
+        output = Node.FindOutput("RGBA");
+    if (!output)
     {
-        if (!Out->GetObjectName().Cmp(_Name))
+        LOG("MGNode::BuildInput: Couldn't deduce an output slot\n");
+        return *this;
+    }
+    return BindInput(InputSlot, output);
+}
+
+MGNode& MGNode::BindInput(AStringView InputSlot, MGOutput& pSlot)
+{
+    return BindInput(InputSlot, &pSlot);
+}
+MGNode& MGNode::BindInput(AStringView InputSlot, MGOutput* pSlot)
+{
+    for (auto input : m_Inputs)
+    {
+        if (!InputSlot.Icmp(input->GetName()))
+        {
+            if (!pSlot)
+            {
+                // Unbind
+                input->m_Slot = nullptr;
+                input->m_SlotNode.Reset();
+                return *this;
+            }
+
+            MGNode* node = pSlot->m_Owner;
+            if (!node)
+            {
+                LOG("MGNode::BindInput: Node output is incomplete\n");
+                return *this;
+            }
+            input->m_Slot     = pSlot;
+            input->m_SlotNode = node;
+            return *this;
+        }
+    }
+    LOG("MGNode::Input: Unknown input slot {}\n", InputSlot);
+    return *this;
+}
+
+void MGNode::UnbindInput(AStringView InputSlot)
+{
+    BindInput(InputSlot, (MGOutput*)nullptr);
+}
+
+MGOutput* MGNode::FindOutput(AStringView _Name)
+{
+    for (MGOutput* Out : m_Outputs)
+    {
+        if (!Out->GetName().Icmp(_Name))
         {
             return Out;
         }
@@ -615,250 +754,226 @@ MGOutput* MGNode::FindOutput(const char* _Name)
     return nullptr;
 }
 
-bool MGNode::Build(AMaterialBuildContext& _Context)
+bool MGNode::Build(AMaterialBuildContext& Context)
 {
-    if (Serial == _Context.GetBuildSerial())
+    if (m_Serial == Context.GetBuildSerial())
     {
         return true;
     }
 
-    //if ( !(Stages & _Context.GetStageMask() ) ) {
+    //if ( !(Stages & Context.GetStageMask() ) ) {
     //    return false;
     //}
 
-    Serial = _Context.GetBuildSerial();
+    m_Serial = Context.GetBuildSerial();
 
-    Compute(_Context);
+    Compute(Context);
     return true;
 }
 
-void MGNode::ResetConnections(AMaterialBuildContext const& _Context)
+void MGNode::ResetConnections(AMaterialBuildContext const& Context)
 {
-    if (!bTouched)
+    if (!m_bTouched)
     {
         return;
     }
 
-    bTouched = false;
+    m_bTouched = false;
 
-    for (MGInput* in : Inputs)
+    for (MGInput* in : m_Inputs)
     {
         MGOutput* out = in->GetConnection();
         if (out)
         {
             MGNode* node = in->ConnectedNode();
-            node->ResetConnections(_Context);
+            node->ResetConnections(Context);
             out->Usages = 0;
         }
     }
 }
 
-void MGNode::TouchConnections(AMaterialBuildContext const& _Context)
+void MGNode::TouchConnections(AMaterialBuildContext const& Context)
 {
-    if (bTouched)
+    if (m_bTouched)
     {
         return;
     }
 
-    bTouched = true;
+    m_bTouched = true;
 
-    for (MGInput* in : Inputs)
+    for (MGInput* in : m_Inputs)
     {
         MGOutput* out = in->GetConnection();
         if (out)
         {
             MGNode* node = in->ConnectedNode();
-            node->TouchConnections(_Context);
+            node->TouchConnections(Context);
             out->Usages++;
         }
     }
 }
 
-#if 0
-TRef< ADocObject > MGNode::Serialize() {
-#    if 0
-    TRef< ADocumentObject > object = MakeRef< ADocumentObject >();
-    object->AddString( "ClassName", FinalClassName() );
-#    else
-    TRef< ADocObject > object = Super::Serialize();
-#    endif
-
-    object->AddString( "ID", Core::ToString( ID ) );
-
-    if ( !Inputs.IsEmpty() ) {
-        ADocMember * array = object->AddArray( "Inputs" );
-        for ( MGInput * in : Inputs ) {
-            TRef< ADocObject > inputObject = in->Serialize();
-            array->AddValue( inputObject );
-        }
-    }
-    return object;
-}
-#endif
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-static AString MakeExpression(AMaterialBuildContext& _Context, MGInput* Input, EMGNodeType DesiredType, AStringView DefaultExpression, int VectorCastFlags = 0)
+static AString MakeExpression(AMaterialBuildContext& Context, MGInput& Input, MG_VALUE_TYPE DesiredType, AStringView DefaultExpression, MG_VECTOR_CAST_FLAGS VectorCastFlags = MG_VECTOR_CAST_UNDEFINED)
 {
-    MGOutput* connection = Input->GetConnection();
+    MGOutput* connection = Input.GetConnection();
 
-    if (connection && Input->ConnectedNode()->Build(_Context))
+    if (connection && Input.ConnectedNode()->Build(Context))
     {
         return MakeVectorCast(connection->Expression, connection->Type, DesiredType, VectorCastFlags);
     }
 
-    return DefaultExpression; //MakeEmptyVector( DesiredType );
+    return DefaultExpression; //MakeEmptyVector(DesiredType);
 }
 
-void MGMaterialGraph::Compute(AMaterialBuildContext& _Context)
+void MGMaterialGraph::Compute(AMaterialBuildContext& Context)
 {
-    Super::Compute(_Context);
+    Super::Compute(Context);
 
-    switch (_Context.GetStage())
+    switch (Context.GetStage())
     {
-        case VERTEX_STAGE:
-            ComputeVertexStage(_Context);
+        case MATERIAL_STAGE_VERTEX:
+            ComputeVertexStage(Context);
             break;
-        case TESSELLATION_CONTROL_STAGE:
-            ComputeTessellationControlStage(_Context);
+        case MATERIAL_STAGE_TESSELLATION_CONTROL:
+            ComputeTessellationControlStage(Context);
             break;
-        case TESSELLATION_EVAL_STAGE:
-            ComputeTessellationEvalStage(_Context);
+        case MATERIAL_STAGE_TESSELLATION_EVAL:
+            ComputeTessellationEvalStage(Context);
             break;
-        case GEOMETRY_STAGE:
+        case MATERIAL_STAGE_GEOMETRY:
             break;
-        case DEPTH_STAGE:
-            ComputeDepthStage(_Context);
+        case MATERIAL_STAGE_DEPTH:
+            ComputeDepthStage(Context);
             break;
-        case LIGHT_STAGE:
-            ComputeLightStage(_Context);
+        case MATERIAL_STAGE_LIGHT:
+            ComputeLightStage(Context);
             break;
-        case SHADOWCAST_STAGE:
-            ComputeShadowCastStage(_Context);
+        case MATERIAL_STAGE_SHADOWCAST:
+            ComputeShadowCastStage(Context);
             break;
     }
 }
 
-void MGMaterialGraph::ComputeVertexStage(AMaterialBuildContext& _Context)
+void MGMaterialGraph::ComputeVertexStage(AMaterialBuildContext& Context)
 {
-    MGOutput* positionCon = VertexDeform->GetConnection();
+    MGOutput* positionCon = VertexDeform.GetConnection();
 
-    _Context.bHasVertexDeform = false;
+    Context.bHasVertexDeform = false;
 
     //AString TransformMatrix;
-    //if ( _Context.GetMaterialType() == MATERIAL_TYPE_HUD ) {
+    //if ( Context.GetMaterialType() == MATERIAL_TYPE_HUD ) {
     //    TransformMatrix = "OrthoProjection";
     //} else {
     //    TransformMatrix = "TransformMatrix";
     //}
 
-    if (positionCon && VertexDeform->ConnectedNode()->Build(_Context))
+    if (positionCon && VertexDeform.ConnectedNode()->Build(Context))
     {
-
         if (positionCon->Expression != "VertexPosition")
         {
-            _Context.bHasVertexDeform = true;
+            Context.bHasVertexDeform = true;
         }
 
-        AString expression = MakeVectorCast(positionCon->Expression, positionCon->Type, AT_Float4, VECTOR_CAST_IDENTITY_W);
+        AString expression = MakeVectorCast(positionCon->Expression, positionCon->Type, MG_VALUE_TYPE_FLOAT4, MG_VECTOR_CAST_IDENTITY_W);
 
-        _Context.SourceCode += "vec4 FinalVertexPos = " + expression + ";\n";
+        Context.SourceCode += "vec4 FinalVertexPos = " + expression + ";\n";
     }
     else
     {
-        _Context.SourceCode += "vec4 FinalVertexPos = vec4( VertexPosition, 1.0 );\n";
+        Context.SourceCode += "vec4 FinalVertexPos = vec4( VertexPosition, 1.0 );\n";
     }
 }
 
-void MGMaterialGraph::ComputeDepthStage(AMaterialBuildContext& _Context)
+void MGMaterialGraph::ComputeDepthStage(AMaterialBuildContext& Context)
 {
-    ComputeAlphaMask(_Context);
+    ComputeAlphaMask(Context);
 }
 
-void MGMaterialGraph::ComputeLightStage(AMaterialBuildContext& _Context)
+void MGMaterialGraph::ComputeLightStage(AMaterialBuildContext& Context)
 {
     AString expression;
 
     // Color
-    expression = MakeExpression(_Context, Color, AT_Float4, MakeEmptyVector(AT_Float4), VECTOR_CAST_EXPAND_VEC1);
-    _Context.SourceCode += "vec4 BaseColor = " + expression + ";\n";
+    expression = MakeExpression(Context, Color, MG_VALUE_TYPE_FLOAT4, MakeEmptyVector(MG_VALUE_TYPE_FLOAT4), MG_VECTOR_CAST_EXPAND_VEC1);
+    Context.SourceCode += "vec4 BaseColor = " + expression + ";\n";
 
-    if (_Context.GetMaterialType() == MATERIAL_TYPE_PBR || _Context.GetMaterialType() == MATERIAL_TYPE_BASELIGHT)
+    if (Context.GetMaterialType() == MATERIAL_TYPE_PBR || Context.GetMaterialType() == MATERIAL_TYPE_BASELIGHT)
     {
         // Normal
-        expression = MakeExpression(_Context, Normal, AT_Float3, MakeDefaultNormal());
-        _Context.SourceCode += "vec3 MaterialNormal = " + expression + ";\n";
+        expression = MakeExpression(Context, Normal, MG_VALUE_TYPE_FLOAT3, MakeDefaultNormal());
+        Context.SourceCode += "vec3 MaterialNormal = " + expression + ";\n";
 
         // Emissive
-        expression = MakeExpression(_Context, Emissive, AT_Float3, MakeEmptyVector(AT_Float3), VECTOR_CAST_EXPAND_VEC1);
-        _Context.SourceCode += "vec3 MaterialEmissive = " + expression + ";\n";
+        expression = MakeExpression(Context, Emissive, MG_VALUE_TYPE_FLOAT3, MakeEmptyVector(MG_VALUE_TYPE_FLOAT3), MG_VECTOR_CAST_EXPAND_VEC1);
+        Context.SourceCode += "vec3 MaterialEmissive = " + expression + ";\n";
 
         // Specular
-        expression = MakeExpression(_Context, Specular, AT_Float3, MakeEmptyVector(AT_Float3), VECTOR_CAST_EXPAND_VEC1);
-        _Context.SourceCode += "vec3 MaterialSpecular = " + expression + ";\n";
+        expression = MakeExpression(Context, Specular, MG_VALUE_TYPE_FLOAT3, MakeEmptyVector(MG_VALUE_TYPE_FLOAT3), MG_VECTOR_CAST_EXPAND_VEC1);
+        Context.SourceCode += "vec3 MaterialSpecular = " + expression + ";\n";
 
         // Ambient Light
-        expression = MakeExpression(_Context, AmbientLight, AT_Float3, MakeEmptyVector(AT_Float3), VECTOR_CAST_EXPAND_VEC1);
-        _Context.SourceCode += "vec3 MaterialAmbientLight = " + expression + ";\n";
+        expression = MakeExpression(Context, AmbientLight, MG_VALUE_TYPE_FLOAT3, MakeEmptyVector(MG_VALUE_TYPE_FLOAT3), MG_VECTOR_CAST_EXPAND_VEC1);
+        Context.SourceCode += "vec3 MaterialAmbientLight = " + expression + ";\n";
     }
 
-    if (_Context.GetMaterialType() == MATERIAL_TYPE_PBR)
+    if (Context.GetMaterialType() == MATERIAL_TYPE_PBR)
     {
         // Metallic
-        expression = MakeExpression(_Context, Metallic, AT_Float1, MakeEmptyVector(AT_Float1));
-        _Context.SourceCode += "float MaterialMetallic = saturate( " + expression + " );\n";
+        expression = MakeExpression(Context, Metallic, MG_VALUE_TYPE_FLOAT1, MakeEmptyVector(MG_VALUE_TYPE_FLOAT1));
+        Context.SourceCode += "float MaterialMetallic = saturate( " + expression + " );\n";
 
         // Roughness
-        expression = MakeExpression(_Context, Roughness, AT_Float1, "1.0");
-        _Context.SourceCode += "float MaterialRoughness = saturate( " + expression + " );\n";
+        expression = MakeExpression(Context, Roughness, MG_VALUE_TYPE_FLOAT1, "1.0");
+        Context.SourceCode += "float MaterialRoughness = saturate( " + expression + " );\n";
 
         // Ambient Occlusion
-        expression = MakeExpression(_Context, AmbientOcclusion, AT_Float1, "1.0");
-        _Context.SourceCode += "float MaterialAmbientOcclusion = saturate( " + expression + " );\n";
+        expression = MakeExpression(Context, AmbientOcclusion, MG_VALUE_TYPE_FLOAT1, "1.0");
+        Context.SourceCode += "float MaterialAmbientOcclusion = saturate( " + expression + " );\n";
     }
 
     // Opacity
-    if (_Context.GetGraph()->bTranslucent)
+    if (Context.GetGraph()->bTranslucent)
     {
-        expression = MakeExpression(_Context, Opacity, AT_Float1, "1.0");
-        _Context.SourceCode += "float Opacity = saturate( " + expression + " );\n";
+        expression = MakeExpression(Context, Opacity, MG_VALUE_TYPE_FLOAT1, "1.0");
+        Context.SourceCode += "float Opacity = saturate( " + expression + " );\n";
     }
     else
     {
-        _Context.SourceCode += "const float Opacity = 1.0;\n";
+        Context.SourceCode += "const float Opacity = 1.0;\n";
     }
 
-    ComputeAlphaMask(_Context);
+    ComputeAlphaMask(Context);
 }
 
-void MGMaterialGraph::ComputeShadowCastStage(AMaterialBuildContext& _Context)
+void MGMaterialGraph::ComputeShadowCastStage(AMaterialBuildContext& Context)
 {
-    //ComputeAlphaMask( _Context );
+    //ComputeAlphaMask( Context );
 
-    MGOutput* con = ShadowMask->GetConnection();
+    MGOutput* con = ShadowMask.GetConnection();
 
-    if (con && ShadowMask->ConnectedNode()->Build(_Context))
+    if (con && ShadowMask.ConnectedNode()->Build(Context))
     {
-
-        _Context.bHasShadowMask = true;
+        Context.bHasShadowMask = true;
 
         switch (con->Type)
         {
-            case AT_Float1:
-                _Context.SourceCode += "if ( " + con->Expression + " < 0.5 ) discard;\n";
+            case MG_VALUE_TYPE_FLOAT1:
+                Context.SourceCode += "if ( " + con->Expression + " < 0.5 ) discard;\n";
                 break;
-            case AT_Float2:
-            case AT_Float3:
-            case AT_Float4:
-                _Context.SourceCode += "if ( " + con->Expression + ".x < 0.5 ) discard;\n";
+            case MG_VALUE_TYPE_FLOAT2:
+            case MG_VALUE_TYPE_FLOAT3:
+            case MG_VALUE_TYPE_FLOAT4:
+                Context.SourceCode += "if ( " + con->Expression + ".x < 0.5 ) discard;\n";
                 break;
-            case AT_Bool1:
-                _Context.SourceCode += "if ( " + con->Expression + " == false ) discard;\n";
+            case MG_VALUE_TYPE_BOOL1:
+                Context.SourceCode += "if ( " + con->Expression + " == false ) discard;\n";
                 break;
-            case AT_Bool2:
-            case AT_Bool3:
-            case AT_Bool4:
-                _Context.SourceCode += "if ( " + con->Expression + ".x == false ) discard;\n";
+            case MG_VALUE_TYPE_BOOL2:
+            case MG_VALUE_TYPE_BOOL3:
+            case MG_VALUE_TYPE_BOOL4:
+                Context.SourceCode += "if ( " + con->Expression + ".x == false ) discard;\n";
                 break;
             default:
                 break;
@@ -866,69 +981,67 @@ void MGMaterialGraph::ComputeShadowCastStage(AMaterialBuildContext& _Context)
     }
 }
 
-void MGMaterialGraph::ComputeTessellationControlStage(AMaterialBuildContext& _Context)
+void MGMaterialGraph::ComputeTessellationControlStage(AMaterialBuildContext& Context)
 {
-    MGOutput* tessFactorCon = TessellationFactor->GetConnection();
+    MGOutput* tessFactorCon = TessellationFactor.GetConnection();
 
-    if (tessFactorCon && TessellationFactor->ConnectedNode()->Build(_Context))
+    if (tessFactorCon && TessellationFactor.ConnectedNode()->Build(Context))
     {
-        AString expression = MakeVectorCast(tessFactorCon->Expression, tessFactorCon->Type, AT_Float1);
+        AString expression = MakeVectorCast(tessFactorCon->Expression, tessFactorCon->Type, MG_VALUE_TYPE_FLOAT1);
 
-        _Context.SourceCode += "float TessellationFactor = " + expression + ";\n";
+        Context.SourceCode += "float TessellationFactor = " + expression + ";\n";
     }
     else
     {
-        _Context.SourceCode += "const float TessellationFactor = 1.0;\n";
+        Context.SourceCode += "const float TessellationFactor = 1.0;\n";
     }
 }
 
-void MGMaterialGraph::ComputeTessellationEvalStage(AMaterialBuildContext& _Context)
+void MGMaterialGraph::ComputeTessellationEvalStage(AMaterialBuildContext& Context)
 {
-    MGOutput* displacementCon = Displacement->GetConnection();
+    MGOutput* displacementCon = Displacement.GetConnection();
 
-    _Context.bHasDisplacement = false;
+    Context.bHasDisplacement = false;
 
-    if (displacementCon && Displacement->ConnectedNode()->Build(_Context))
+    if (displacementCon && Displacement.ConnectedNode()->Build(Context))
     {
+        Context.bHasDisplacement = true;
 
-        _Context.bHasDisplacement = true;
+        AString expression = MakeVectorCast(displacementCon->Expression, displacementCon->Type, MG_VALUE_TYPE_FLOAT1);
 
-        AString expression = MakeVectorCast(displacementCon->Expression, displacementCon->Type, AT_Float1);
-
-        _Context.SourceCode += "float Displacement = " + expression + ";\n";
+        Context.SourceCode += "float Displacement = " + expression + ";\n";
     }
     else
     {
-        _Context.SourceCode += "const float Displacement = 0.0;\n";
+        Context.SourceCode += "const float Displacement = 0.0;\n";
     }
 }
 
-void MGMaterialGraph::ComputeAlphaMask(AMaterialBuildContext& _Context)
+void MGMaterialGraph::ComputeAlphaMask(AMaterialBuildContext& Context)
 {
-    MGOutput* con = AlphaMask->GetConnection();
+    MGOutput* con = AlphaMask.GetConnection();
 
-    if (con && AlphaMask->ConnectedNode()->Build(_Context))
+    if (con && AlphaMask.ConnectedNode()->Build(Context))
     {
-
-        _Context.bHasAlphaMask = true;
+        Context.bHasAlphaMask = true;
 
         switch (con->Type)
         {
-            case AT_Float1:
-                _Context.SourceCode += "if ( " + con->Expression + " < 0.5 ) discard;\n";
+            case MG_VALUE_TYPE_FLOAT1:
+                Context.SourceCode += "if ( " + con->Expression + " < 0.5 ) discard;\n";
                 break;
-            case AT_Float2:
-            case AT_Float3:
-            case AT_Float4:
-                _Context.SourceCode += "if ( " + con->Expression + ".x < 0.5 ) discard;\n";
+            case MG_VALUE_TYPE_FLOAT2:
+            case MG_VALUE_TYPE_FLOAT3:
+            case MG_VALUE_TYPE_FLOAT4:
+                Context.SourceCode += "if ( " + con->Expression + ".x < 0.5 ) discard;\n";
                 break;
-            case AT_Bool1:
-                _Context.SourceCode += "if ( " + con->Expression + " == false ) discard;\n";
+            case MG_VALUE_TYPE_BOOL1:
+                Context.SourceCode += "if ( " + con->Expression + " == false ) discard;\n";
                 break;
-            case AT_Bool2:
-            case AT_Bool3:
-            case AT_Bool4:
-                _Context.SourceCode += "if ( " + con->Expression + ".x == false ) discard;\n";
+            case MG_VALUE_TYPE_BOOL2:
+            case MG_VALUE_TYPE_BOOL3:
+            case MG_VALUE_TYPE_BOOL4:
+                Context.SourceCode += "if ( " + con->Expression + ".x == false ) discard;\n";
                 break;
             default:
                 break;
@@ -943,86 +1056,79 @@ HK_CLASS_META( MGProjectionNode )
 
 MGProjectionNode::MGProjectionNode() : Super( "Projection" ) {
     Vector = AddInput( "Vector" );
-    Result = AddOutput( "Result", AT_Float4 );
+    Result = AddOutput( "Result", MG_VALUE_TYPE_FLOAT4 );
 }
 
-void MGProjectionNode::Compute( AMaterialBuildContext & _Context ) {
-    AString expression = "TransformMatrix * " + MakeExpression( _Context, Vector, AT_Float4, MakeEmptyVector( AT_Float4 ), VECTOR_CAST_IDENTITY_W );
+void MGProjectionNode::Compute( AMaterialBuildContext & Context ) {
+    AString expression = "TransformMatrix * " + MakeExpression( Context, Vector, MG_VALUE_TYPE_FLOAT4, MakeEmptyVector( MG_VALUE_TYPE_FLOAT4 ), MG_VECTOR_CAST_IDENTITY_W );
 
-    _Context.GenerateSourceCode( Result, expression, true );
+    Context.GenerateSourceCode( Result, expression, true );
 }
 #endif
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_CLASS_META(MGLengthNode)
+HK_CLASS_META(MGLength)
 
-MGLengthNode::MGLengthNode() :
+MGLength::MGLength() :
     Super("Length")
 {
-    Value  = AddInput("Value");
-    Result = AddOutput("Result", AT_Float1);
+    SetSlots({&Value}, {&Result});
 }
 
-void MGLengthNode::Compute(AMaterialBuildContext& _Context)
+void MGLength::Compute(AMaterialBuildContext& Context)
 {
-    MGOutput* inputConnection = Value->GetConnection();
+    MGOutput* inputConnection = Value.GetConnection();
 
-    if (inputConnection && Value->ConnectedNode()->Build(_Context))
+    if (inputConnection && Value.ConnectedNode()->Build(Context))
     {
-
-        EMGNodeType type = ToFloatType(inputConnection->Type);
+        MG_VALUE_TYPE type = ToFloatType(inputConnection->Type);
 
         AString expression = MakeVectorCast(inputConnection->Expression, inputConnection->Type, type);
 
-        if (type == AT_Float1)
+        if (type == MG_VALUE_TYPE_FLOAT1)
         {
-            _Context.GenerateSourceCode(Result, expression, false);
+            Context.GenerateSourceCode(Result, expression, false);
         }
         else
         {
-            _Context.GenerateSourceCode(Result, "length( " + expression + " )", false);
+            Context.GenerateSourceCode(Result, "length( " + expression + " )", false);
         }
     }
     else
     {
-        Result->Expression = "0.0";
+        Result.Expression = "0.0";
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_CLASS_META(MGDecomposeVectorNode)
+HK_CLASS_META(MGDecomposeVector)
 
-MGDecomposeVectorNode::MGDecomposeVectorNode() :
+MGDecomposeVector::MGDecomposeVector() :
     Super("Decompose Vector")
 {
-    Vector = AddInput("Vector");
-    X      = AddOutput("X", AT_Unknown);
-    Y      = AddOutput("Y", AT_Unknown);
-    Z      = AddOutput("Z", AT_Unknown);
-    W      = AddOutput("W", AT_Unknown);
+    SetSlots({&Vector}, {&X, &Y, &Z, &W});
 }
 
-void MGDecomposeVectorNode::Compute(AMaterialBuildContext& _Context)
+void MGDecomposeVector::Compute(AMaterialBuildContext& Context)
 {
-    MGOutput* inputConnection = Vector->GetConnection();
+    MGOutput* inputConnection = Vector.GetConnection();
 
-    if (inputConnection && Vector->ConnectedNode()->Build(_Context))
+    if (inputConnection && Vector.ConnectedNode()->Build(Context))
     {
-
-        EMGComponentType componentType = GetTypeComponent(inputConnection->Type);
+        MG_COMPONENT_TYPE componentType = GetTypeComponent(inputConnection->Type);
 
         const char* zero = "0";
 
         switch (componentType)
         {
-            case COMP_FLOAT:
-                X->Type = Y->Type = Z->Type = W->Type = AT_Float1;
-                zero                                  = "0.0";
+            case MG_COMPONENT_FLOAT:
+                X.Type = Y.Type = Z.Type = W.Type = MG_VALUE_TYPE_FLOAT1;
+                zero                              = "0.0";
                 break;
-            case COMP_BOOL:
-                X->Type = Y->Type = Z->Type = W->Type = AT_Bool1;
-                zero                                  = "false";
+            case MG_COMPONENT_BOOL:
+                X.Type = Y.Type = Z.Type = W.Type = MG_VALUE_TYPE_BOOL1;
+                zero                              = "false";
                 break;
             default:
                 HK_ASSERT(0);
@@ -1031,38 +1137,38 @@ void MGDecomposeVectorNode::Compute(AMaterialBuildContext& _Context)
 
         switch (GetTypeVector(inputConnection->Type))
         {
-            case VEC1: {
-                _Context.GenerateSourceCode(X, inputConnection->Expression, false);
-                Y->Expression = zero;
-                Z->Expression = zero;
-                W->Expression = zero;
+            case MG_VECTOR_VEC1: {
+                Context.GenerateSourceCode(X, inputConnection->Expression, false);
+                Y.Expression = zero;
+                Z.Expression = zero;
+                W.Expression = zero;
                 break;
             }
-            case VEC2: {
-                AString temp = "temp_" + _Context.GenerateVariableName();
-                _Context.SourceCode += "const " + AString(VariableTypeStr[inputConnection->Type]) + " " + temp + " = " + inputConnection->Expression + ";\n";
-                X->Expression = temp + ".x";
-                Y->Expression = temp + ".y";
-                Z->Expression = zero;
-                W->Expression = zero;
+            case MG_VECTOR_VEC2: {
+                AString temp = "temp_" + Context.GenerateVariableName();
+                Context.SourceCode += "const " + AString(VariableTypeStr[inputConnection->Type]) + " " + temp + " = " + inputConnection->Expression + ";\n";
+                X.Expression = temp + ".x";
+                Y.Expression = temp + ".y";
+                Z.Expression = zero;
+                W.Expression = zero;
             }
             break;
-            case VEC3: {
-                AString temp = "temp_" + _Context.GenerateVariableName();
-                _Context.SourceCode += "const " + AString(VariableTypeStr[inputConnection->Type]) + " " + temp + " = " + inputConnection->Expression + ";\n";
-                X->Expression = temp + ".x";
-                Y->Expression = temp + ".y";
-                Z->Expression = temp + ".z";
-                W->Expression = zero;
+            case MG_VECTOR_VEC3: {
+                AString temp = "temp_" + Context.GenerateVariableName();
+                Context.SourceCode += "const " + AString(VariableTypeStr[inputConnection->Type]) + " " + temp + " = " + inputConnection->Expression + ";\n";
+                X.Expression = temp + ".x";
+                Y.Expression = temp + ".y";
+                Z.Expression = temp + ".z";
+                W.Expression = zero;
             }
             break;
-            case VEC4: {
-                AString temp = "temp_" + _Context.GenerateVariableName();
-                _Context.SourceCode += "const " + AString(VariableTypeStr[inputConnection->Type]) + " " + temp + " = " + inputConnection->Expression + ";\n";
-                X->Expression = temp + ".x";
-                Y->Expression = temp + ".y";
-                Z->Expression = temp + ".z";
-                W->Expression = temp + ".w";
+            case MG_VECTOR_VEC4: {
+                AString temp = "temp_" + Context.GenerateVariableName();
+                Context.SourceCode += "const " + AString(VariableTypeStr[inputConnection->Type]) + " " + temp + " = " + inputConnection->Expression + ";\n";
+                X.Expression = temp + ".x";
+                Y.Expression = temp + ".y";
+                Z.Expression = temp + ".z";
+                W.Expression = temp + ".w";
             }
             break;
             default:
@@ -1072,39 +1178,35 @@ void MGDecomposeVectorNode::Compute(AMaterialBuildContext& _Context)
     }
     else
     {
-        X->Type = Y->Type = Z->Type = W->Type = AT_Float1;
-        X->Expression                         = "0.0";
-        Y->Expression                         = "0.0";
-        Z->Expression                         = "0.0";
-        W->Expression                         = "0.0";
+        X.Type = Y.Type = Z.Type = W.Type = MG_VALUE_TYPE_FLOAT1;
+        X.Expression                      = "0.0";
+        Y.Expression                      = "0.0";
+        Z.Expression                      = "0.0";
+        W.Expression                      = "0.0";
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_CLASS_META(MGMakeVectorNode)
+HK_CLASS_META(MGMakeVector)
 
-MGMakeVectorNode::MGMakeVectorNode() :
+MGMakeVector::MGMakeVector() :
     Super("Make Vector")
 {
-    X      = AddInput("X");
-    Y      = AddInput("Y");
-    Z      = AddInput("Z");
-    W      = AddInput("W");
-    Result = AddOutput("Result", AT_Unknown);
+    SetSlots({&X, &Y, &Z, &W}, {&Result});
 }
 
-void MGMakeVectorNode::Compute(AMaterialBuildContext& _Context)
+void MGMakeVector::Compute(AMaterialBuildContext& Context)
 {
-    MGOutput* XConnection = X->GetConnection();
-    MGOutput* YConnection = Y->GetConnection();
-    MGOutput* ZConnection = Z->GetConnection();
-    MGOutput* WConnection = W->GetConnection();
+    MGOutput* XConnection = X.GetConnection();
+    MGOutput* YConnection = Y.GetConnection();
+    MGOutput* ZConnection = Z.GetConnection();
+    MGOutput* WConnection = W.GetConnection();
 
-    bool XValid = XConnection && X->ConnectedNode()->Build(_Context) && IsTypeComponent(XConnection->Type);
-    bool YValid = YConnection && Y->ConnectedNode()->Build(_Context) && IsTypeComponent(YConnection->Type);
-    bool ZValid = ZConnection && Z->ConnectedNode()->Build(_Context) && IsTypeComponent(ZConnection->Type);
-    bool WValid = WConnection && W->ConnectedNode()->Build(_Context) && IsTypeComponent(WConnection->Type);
+    bool XValid = XConnection && X.ConnectedNode()->Build(Context) && IsTypeComponent(XConnection->Type);
+    bool YValid = YConnection && Y.ConnectedNode()->Build(Context) && IsTypeComponent(YConnection->Type);
+    bool ZValid = ZConnection && Z.ConnectedNode()->Build(Context) && IsTypeComponent(ZConnection->Type);
+    bool WValid = WConnection && W.ConnectedNode()->Build(Context) && IsTypeComponent(WConnection->Type);
 
     int numComponents = 4;
     if (!WValid)
@@ -1126,20 +1228,20 @@ void MGMakeVectorNode::Compute(AMaterialBuildContext& _Context)
 
     if (numComponents == 0)
     {
-        Result->Type       = AT_Float1;
-        Result->Expression = "0.0";
+        Result.Type       = MG_VALUE_TYPE_FLOAT1;
+        Result.Expression = "0.0";
         return;
     }
 
     if (numComponents == 1)
     {
-        Result->Type = XConnection->Type;
-        _Context.GenerateSourceCode(Result, XConnection->Expression, false);
+        Result.Type = XConnection->Type;
+        Context.GenerateSourceCode(Result, XConnection->Expression, false);
         return;
     }
 
     // Result type is depends on first valid component type
-    EMGNodeType resultType;
+    MG_VALUE_TYPE resultType;
     if (XValid)
     {
         resultType = XConnection->Type;
@@ -1158,20 +1260,20 @@ void MGMakeVectorNode::Compute(AMaterialBuildContext& _Context)
     }
     else
     {
-        resultType = AT_Float1;
+        resultType = MG_VALUE_TYPE_FLOAT1;
         HK_ASSERT(0);
     }
-    Result->Type = EMGNodeType(resultType + numComponents - 1);
+    Result.Type = MG_VALUE_TYPE(resultType + numComponents - 1);
 
     AString resultTypeStr;
     AString defaultVal = "0";
     switch (resultType)
     {
-        case AT_Float1:
+        case MG_VALUE_TYPE_FLOAT1:
             resultTypeStr = "float";
             defaultVal    = "0.0";
             break;
-        case AT_Bool1:
+        case MG_VALUE_TYPE_BOOL1:
             resultTypeStr = "bool";
             defaultVal    = "false";
             break;
@@ -1195,42 +1297,35 @@ void MGMakeVectorNode::Compute(AMaterialBuildContext& _Context)
         ((resultType == WConnection->Type) ? WConnection->Expression : (resultTypeStr + "(" + WConnection->Expression + ")")) :
         defaultVal;
 
-    switch (Result->Type)
+    switch (Result.Type)
     {
-        case AT_Float2:
-
-            _Context.GenerateSourceCode(Result,
+        case MG_VALUE_TYPE_FLOAT2:
+            Context.GenerateSourceCode(Result,
                                         "vec2( " + typeCastX + ", " + typeCastY + " )",
                                         false);
             break;
-
-        case AT_Float3:
-            _Context.GenerateSourceCode(Result,
+        case MG_VALUE_TYPE_FLOAT3:
+            Context.GenerateSourceCode(Result,
                                         "vec3( " + typeCastX + ", " + typeCastY + ", " + typeCastZ + " )",
                                         false);
             break;
-
-        case AT_Float4:
-            _Context.GenerateSourceCode(Result,
+        case MG_VALUE_TYPE_FLOAT4:
+            Context.GenerateSourceCode(Result,
                                         "vec4( " + typeCastX + ", " + typeCastY + ", " + typeCastZ + ", " + typeCastW + " )",
                                         false);
             break;
-
-        case AT_Bool2:
-
-            _Context.GenerateSourceCode(Result,
+        case MG_VALUE_TYPE_BOOL2:
+            Context.GenerateSourceCode(Result,
                                         "bvec2( " + typeCastX + ", " + typeCastY + " )",
                                         false);
             break;
-
-        case AT_Bool3:
-            _Context.GenerateSourceCode(Result,
+        case MG_VALUE_TYPE_BOOL3:
+            Context.GenerateSourceCode(Result,
                                         "bvec3( " + typeCastX + ", " + typeCastY + ", " + typeCastZ + " )",
                                         false);
             break;
-
-        case AT_Bool4:
-            _Context.GenerateSourceCode(Result,
+        case MG_VALUE_TYPE_BOOL4:
+            Context.GenerateSourceCode(Result,
                                         "bvec4( " + typeCastX + ", " + typeCastY + ", " + typeCastZ + ", " + typeCastW + " )",
                                         false);
             break;
@@ -1244,47 +1339,45 @@ void MGMakeVectorNode::Compute(AMaterialBuildContext& _Context)
 
 HK_CLASS_META(MGArithmeticFunction1)
 HK_CLASS_META(MGSaturate)
-HK_CLASS_META(MGSinusNode)
-HK_CLASS_META(MGCosinusNode)
-HK_CLASS_META(MGFractNode)
-HK_CLASS_META(MGNegateNode)
-HK_CLASS_META(MGNormalizeNode)
+HK_CLASS_META(MGSinus)
+HK_CLASS_META(MGCosinus)
+HK_CLASS_META(MGFract)
+HK_CLASS_META(MGNegate)
+HK_CLASS_META(MGNormalize)
 
 MGArithmeticFunction1::MGArithmeticFunction1()
 {
     HK_ASSERT(0);
 }
 
-MGArithmeticFunction1::MGArithmeticFunction1(EArithmeticFunction _Function, const char* _Name) :
-    Super(_Name), Function(_Function)
+MGArithmeticFunction1::MGArithmeticFunction1(FUNCTION _Function, AStringView Name) :
+    Super(Name), m_Function(_Function)
 {
-    Value = AddInput("Value");
-
-    Result = AddOutput("Result", AT_Unknown);
+    SetSlots({&Value}, {&Result});
 }
 
-void MGArithmeticFunction1::Compute(AMaterialBuildContext& _Context)
+void MGArithmeticFunction1::Compute(AMaterialBuildContext& Context)
 {
-    MGOutput* connectionA = Value->GetConnection();
+    MGOutput* connectionA = Value.GetConnection();
 
-    if (connectionA && Value->ConnectedNode()->Build(_Context))
+    if (connectionA && Value.ConnectedNode()->Build(Context))
     {
 
         // Result type depends on input type
         if (!IsArithmeticType(connectionA->Type))
         {
-            Result->Type = ToFloatType(connectionA->Type);
+            Result.Type = ToFloatType(connectionA->Type);
         }
         else
         {
-            Result->Type = connectionA->Type;
+            Result.Type = connectionA->Type;
         }
 
-        AString expressionA = MakeVectorCast(connectionA->Expression, connectionA->Type, Result->Type);
+        AString expressionA = MakeVectorCast(connectionA->Expression, connectionA->Type, Result.Type);
 
         AString expression;
 
-        switch (Function)
+        switch (m_Function)
         {
             case Saturate:
                 expression = "saturate( " + expressionA + " )";
@@ -1302,10 +1395,10 @@ void MGArithmeticFunction1::Compute(AMaterialBuildContext& _Context)
                 expression = "(-" + expressionA + ")";
                 break;
             case Normalize:
-                if (Result->Type == AT_Float1)
+                if (Result.Type == MG_VALUE_TYPE_FLOAT1)
                 {
                     expression = "1.0";
-                    //} else if ( Result->Type == AT_Integer1 ) { // If there will be integer types
+                    //} else if ( Result.Type == AT_Integer1 ) { // If there will be integer types
                     //    expression = "1";
                 }
                 else
@@ -1317,26 +1410,26 @@ void MGArithmeticFunction1::Compute(AMaterialBuildContext& _Context)
                 HK_ASSERT(0);
         }
 
-        _Context.GenerateSourceCode(Result, expression, false);
+        Context.GenerateSourceCode(Result, expression, false);
     }
     else
     {
-        Result->Type = AT_Float4;
+        Result.Type = MG_VALUE_TYPE_FLOAT4;
 
-        _Context.GenerateSourceCode(Result, MakeEmptyVector(Result->Type), false);
+        Context.GenerateSourceCode(Result, MakeEmptyVector(Result.Type), false);
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_CLASS_META(MGArithmeticFunction2)
-HK_CLASS_META(MGMulNode)
-HK_CLASS_META(MGDivNode)
-HK_CLASS_META(MGAddNode)
-HK_CLASS_META(MGSubNode)
-HK_CLASS_META(MGStepNode)
-HK_CLASS_META(MGPowNode)
-HK_CLASS_META(MGModNode)
+HK_CLASS_META(MGMul)
+HK_CLASS_META(MGDiv)
+HK_CLASS_META(MGAdd)
+HK_CLASS_META(MGSub)
+HK_CLASS_META(MGStep)
+HK_CLASS_META(MGPow)
+HK_CLASS_META(MGMod)
 HK_CLASS_META(MGMin)
 HK_CLASS_META(MGMax)
 
@@ -1345,39 +1438,36 @@ MGArithmeticFunction2::MGArithmeticFunction2()
     HK_ASSERT(0);
 }
 
-MGArithmeticFunction2::MGArithmeticFunction2(EArithmeticFunction _Function, const char* _Name) :
-    Super(_Name), Function(_Function)
+MGArithmeticFunction2::MGArithmeticFunction2(FUNCTION Function, AStringView Name) :
+    Super(Name), m_Function(Function)
 {
-    ValueA = AddInput("A");
-    ValueB = AddInput("B");
-
-    Result = AddOutput("Result", AT_Unknown);
+    SetSlots({&ValueA, &ValueB}, {&Result});
 }
 
-void MGArithmeticFunction2::Compute(AMaterialBuildContext& _Context)
+void MGArithmeticFunction2::Compute(AMaterialBuildContext& Context)
 {
-    MGOutput* connectionA = ValueA->GetConnection();
-    MGOutput* connectionB = ValueB->GetConnection();
+    MGOutput* connectionA = ValueA.GetConnection();
+    MGOutput* connectionB = ValueB.GetConnection();
 
-    if (connectionA && ValueA->ConnectedNode()->Build(_Context) && connectionB && ValueB->ConnectedNode()->Build(_Context))
+    if (connectionA && ValueA.ConnectedNode()->Build(Context) && connectionB && ValueB.ConnectedNode()->Build(Context))
     {
 
         // Result type depends on input type
         if (!IsArithmeticType(connectionA->Type))
         {
-            Result->Type = ToFloatType(connectionA->Type);
+            Result.Type = ToFloatType(connectionA->Type);
         }
         else
         {
-            Result->Type = connectionA->Type;
+            Result.Type = connectionA->Type;
         }
 
-        AString expressionA = MakeVectorCast(connectionA->Expression, connectionA->Type, Result->Type);
-        AString expressionB = MakeVectorCast(connectionB->Expression, connectionB->Type, Result->Type, VECTOR_CAST_EXPAND_VEC1);
+        AString expressionA = MakeVectorCast(connectionA->Expression, connectionA->Type, Result.Type);
+        AString expressionB = MakeVectorCast(connectionB->Expression, connectionB->Type, Result.Type, MG_VECTOR_CAST_EXPAND_VEC1);
 
         AString expression;
 
-        switch (Function)
+        switch (m_Function)
         {
             case Add:
                 expression = "(" + expressionA + " + " + expressionB + ")";
@@ -1410,21 +1500,21 @@ void MGArithmeticFunction2::Compute(AMaterialBuildContext& _Context)
                 HK_ASSERT(0);
         }
 
-        _Context.GenerateSourceCode(Result, expression, false);
+        Context.GenerateSourceCode(Result, expression, false);
     }
     else
     {
-        Result->Type = AT_Float4;
+        Result.Type = MG_VALUE_TYPE_FLOAT4;
 
-        _Context.GenerateSourceCode(Result, MakeEmptyVector(Result->Type), false);
+        Context.GenerateSourceCode(Result, MakeEmptyVector(Result.Type), false);
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_CLASS_META(MGArithmeticFunction3)
-HK_CLASS_META(MGMADNode)
-HK_CLASS_META(MGLerpNode)
+HK_CLASS_META(MGMAD)
+HK_CLASS_META(MGLerp)
 HK_CLASS_META(MGClamp)
 
 MGArithmeticFunction3::MGArithmeticFunction3()
@@ -1432,42 +1522,38 @@ MGArithmeticFunction3::MGArithmeticFunction3()
     HK_ASSERT(0);
 }
 
-MGArithmeticFunction3::MGArithmeticFunction3(EArithmeticFunction _Function, const char* _Name) :
-    Super(_Name), Function(_Function)
+MGArithmeticFunction3::MGArithmeticFunction3(FUNCTION Function, AStringView Name) :
+    Super(Name), m_Function(Function)
 {
-    ValueA = AddInput("A");
-    ValueB = AddInput("B");
-    ValueC = AddInput("C");
-
-    Result = AddOutput("Result", AT_Unknown);
+    SetSlots({&ValueA, &ValueB, &ValueC}, {&Result});
 }
 
-void MGArithmeticFunction3::Compute(AMaterialBuildContext& _Context)
+void MGArithmeticFunction3::Compute(AMaterialBuildContext& Context)
 {
-    MGOutput* connectionA = ValueA->GetConnection();
-    MGOutput* connectionB = ValueB->GetConnection();
-    MGOutput* connectionC = ValueC->GetConnection();
+    MGOutput* connectionA = ValueA.GetConnection();
+    MGOutput* connectionB = ValueB.GetConnection();
+    MGOutput* connectionC = ValueC.GetConnection();
 
-    if (connectionA && ValueA->ConnectedNode()->Build(_Context) && connectionB && ValueB->ConnectedNode()->Build(_Context) && connectionC && ValueC->ConnectedNode()->Build(_Context))
+    if (connectionA && ValueA.ConnectedNode()->Build(Context) && connectionB && ValueB.ConnectedNode()->Build(Context) && connectionC && ValueC.ConnectedNode()->Build(Context))
     {
 
         // Result type depends on input type
         if (!IsArithmeticType(connectionA->Type))
         {
-            Result->Type = ToFloatType(connectionA->Type);
+            Result.Type = ToFloatType(connectionA->Type);
         }
         else
         {
-            Result->Type = connectionA->Type;
+            Result.Type = connectionA->Type;
         }
 
-        AString expressionA = MakeVectorCast(connectionA->Expression, connectionA->Type, Result->Type);
-        AString expressionB = MakeVectorCast(connectionB->Expression, connectionB->Type, Result->Type, VECTOR_CAST_EXPAND_VEC1);
-        AString expressionC = MakeVectorCast(connectionC->Expression, connectionC->Type, Result->Type, VECTOR_CAST_EXPAND_VEC1);
+        AString expressionA = MakeVectorCast(connectionA->Expression, connectionA->Type, Result.Type);
+        AString expressionB = MakeVectorCast(connectionB->Expression, connectionB->Type, Result.Type, MG_VECTOR_CAST_EXPAND_VEC1);
+        AString expressionC = MakeVectorCast(connectionC->Expression, connectionC->Type, Result.Type, MG_VECTOR_CAST_EXPAND_VEC1);
 
         AString expression;
 
-        switch (Function)
+        switch (m_Function)
         {
             case Mad:
                 expression = "(" + expressionA + " * " + expressionB + " + " + expressionC + ")";
@@ -1482,12 +1568,12 @@ void MGArithmeticFunction3::Compute(AMaterialBuildContext& _Context)
                 HK_ASSERT(0);
         }
 
-        _Context.GenerateSourceCode(Result, expression, false);
+        Context.GenerateSourceCode(Result, expression, false);
     }
     else
     {
-        Result->Type = AT_Float4;
-        _Context.GenerateSourceCode(Result, MakeEmptyVector(Result->Type), false);
+        Result.Type = MG_VALUE_TYPE_FLOAT4;
+        Context.GenerateSourceCode(Result, MakeEmptyVector(Result.Type), false);
     }
 }
 
@@ -1498,23 +1584,22 @@ HK_CLASS_META(MGSpheremapCoord)
 MGSpheremapCoord::MGSpheremapCoord() :
     Super("Spheremap Coord")
 {
-    Dir      = AddInput("Dir");
-    TexCoord = AddOutput("TexCoord", AT_Float2);
+    SetSlots({&Dir}, {&TexCoord});
 }
 
-void MGSpheremapCoord::Compute(AMaterialBuildContext& _Context)
+void MGSpheremapCoord::Compute(AMaterialBuildContext& Context)
 {
-    MGOutput* connectionDir = Dir->GetConnection();
+    MGOutput* connectionDir = Dir.GetConnection();
 
-    if (connectionDir && Dir->ConnectedNode()->Build(_Context))
+    if (connectionDir && Dir.ConnectedNode()->Build(Context))
     {
-        AString expressionDir = MakeVectorCast(connectionDir->Expression, connectionDir->Type, AT_Float3);
+        AString expressionDir = MakeVectorCast(connectionDir->Expression, connectionDir->Type, MG_VALUE_TYPE_FLOAT3);
 
-        _Context.GenerateSourceCode(TexCoord, "builtin_spheremap_coord( " + expressionDir + " )", true);
+        Context.GenerateSourceCode(TexCoord, "builtin_spheremap_coord( " + expressionDir + " )", true);
     }
     else
     {
-        _Context.GenerateSourceCode(TexCoord, MakeEmptyVector(AT_Float2), false);
+        Context.GenerateSourceCode(TexCoord, MakeEmptyVector(MG_VALUE_TYPE_FLOAT2), false);
     }
 }
 
@@ -1525,229 +1610,232 @@ HK_CLASS_META(MGLuminance)
 MGLuminance::MGLuminance() :
     Super("Luminance")
 {
-    LinearColor = AddInput("LinearColor");
-    Luminance   = AddOutput("Luminance", AT_Float1);
+    SetSlots({&LinearColor}, {&Luminance});
 }
 
-void MGLuminance::Compute(AMaterialBuildContext& _Context)
+void MGLuminance::Compute(AMaterialBuildContext& Context)
 {
-    MGOutput* connectionColor = LinearColor->GetConnection();
+    MGOutput* connectionColor = LinearColor.GetConnection();
 
-    if (connectionColor && LinearColor->ConnectedNode()->Build(_Context))
+    if (connectionColor && LinearColor.ConnectedNode()->Build(Context))
     {
-        AString expressionColor = MakeVectorCast(connectionColor->Expression, connectionColor->Type, AT_Float4, VECTOR_CAST_EXPAND_VEC1);
+        AString expressionColor = MakeVectorCast(connectionColor->Expression, connectionColor->Type, MG_VALUE_TYPE_FLOAT4, MG_VECTOR_CAST_EXPAND_VEC1);
 
-        _Context.GenerateSourceCode(Luminance, "builtin_luminance( " + expressionColor + " )", false);
+        Context.GenerateSourceCode(Luminance, "builtin_luminance( " + expressionColor + " )", false);
     }
     else
     {
-        _Context.GenerateSourceCode(Luminance, MakeEmptyVector(AT_Float1), false);
+        Context.GenerateSourceCode(Luminance, MakeEmptyVector(MG_VALUE_TYPE_FLOAT1), false);
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGPINode)
-HK_END_CLASS_META()
+HK_CLASS_META(MGPI)
 
-MGPINode::MGPINode() :
+MGPI::MGPI() :
     Super("PI")
 {
-    OutValue = AddOutput("Value", AT_Float1);
+    SetSlots({}, {&Value});
 }
 
-void MGPINode::Compute(AMaterialBuildContext& _Context)
+void MGPI::Compute(AMaterialBuildContext& Context)
 {
-    OutValue->Expression = "3.1415926";
+    Value.Expression = "3.1415926";
 }
 
-HK_BEGIN_CLASS_META(MG2PINode)
-HK_END_CLASS_META()
+HK_CLASS_META(MG2PI)
 
-MG2PINode::MG2PINode() :
+MG2PI::MG2PI() :
     Super("2PI")
 {
-    OutValue = AddOutput("Value", AT_Float1);
+    SetSlots({}, {&Value});
 }
 
-void MG2PINode::Compute(AMaterialBuildContext& _Context)
+void MG2PI::Compute(AMaterialBuildContext& Context)
 {
-    OutValue->Expression = "6.2831853";
-}
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-
-HK_BEGIN_CLASS_META(MGBooleanNode)
-//HK_PROPERTY_DIRECT( bValue, HK_PROPERTY_DEFAULT )
-HK_END_CLASS_META()
-
-MGBooleanNode::MGBooleanNode() :
-    Super("Boolean")
-{
-    OutValue = AddOutput("Value", AT_Bool1);
-}
-
-void MGBooleanNode::Compute(AMaterialBuildContext& _Context)
-{
-    OutValue->Expression = Core::ToString(bValue);
+    Value.Expression = "6.2831853";
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGBoolean2Node)
-//HK_PROPERTY_DIRECT( bValue, HK_PROPERTY_DEFAULT )
+HK_BEGIN_CLASS_META(MGBoolean)
+HK_PROPERTY_DIRECT(bValue, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-MGBoolean2Node::MGBoolean2Node() :
-    Super("Boolean2")
+MGBoolean::MGBoolean(bool v) :
+    Super("Boolean"),
+    bValue(v)
 {
-    OutValue = AddOutput("Value", AT_Bool2);
+    SetSlots({}, {&Value});
 }
 
-void MGBoolean2Node::Compute(AMaterialBuildContext& _Context)
+void MGBoolean::Compute(AMaterialBuildContext& Context)
 {
-    _Context.GenerateSourceCode(OutValue, "bvec2( " + Core::ToString(bValue.X) + ", " + Core::ToString(bValue.Y) + " )", false);
+    Value.Expression = Core::ToString(bValue);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGBoolean3Node)
-//HK_PROPERTY_DIRECT( bValue, HK_PROPERTY_DEFAULT )
+HK_BEGIN_CLASS_META(MGBoolean2)
+HK_PROPERTY_DIRECT(bValue, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-MGBoolean3Node::MGBoolean3Node() :
-    Super("Boolean3")
+MGBoolean2::MGBoolean2(Bool2 const& v) :
+    Super("Boolean2"),
+    bValue(v)
 {
-    OutValue = AddOutput("Value", AT_Bool3);
+    SetSlots({}, {&Value});
 }
 
-void MGBoolean3Node::Compute(AMaterialBuildContext& _Context)
+void MGBoolean2::Compute(AMaterialBuildContext& Context)
 {
-    _Context.GenerateSourceCode(OutValue, "bvec3( " + Core::ToString(bValue.X) + ", " + Core::ToString(bValue.Y) + ", " + Core::ToString(bValue.Z) + " )", false);
+    Context.GenerateSourceCode(Value, "bvec2( " + Core::ToString(bValue.X) + ", " + Core::ToString(bValue.Y) + " )", false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGBoolean4Node)
-//HK_PROPERTY_DIRECT( bValue, HK_PROPERTY_DEFAULT )
+HK_BEGIN_CLASS_META(MGBoolean3)
+HK_PROPERTY_DIRECT(bValue, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-MGBoolean4Node::MGBoolean4Node() :
-    Super("Boolean4")
+MGBoolean3::MGBoolean3(Bool3 const& v) :
+    Super("Boolean3"),
+    bValue(v)
 {
-    OutValue = AddOutput("Value", AT_Bool4);
+    SetSlots({}, {&Value});
 }
 
-void MGBoolean4Node::Compute(AMaterialBuildContext& _Context)
+void MGBoolean3::Compute(AMaterialBuildContext& Context)
 {
-    _Context.GenerateSourceCode(OutValue, "bvec4( " + Core::ToString(bValue.X) + ", " + Core::ToString(bValue.Y) + ", " + Core::ToString(bValue.Z) + ", " + Core::ToString(bValue.W) + " )", false);
+    Context.GenerateSourceCode(Value, "bvec3( " + Core::ToString(bValue.X) + ", " + Core::ToString(bValue.Y) + ", " + Core::ToString(bValue.Z) + " )", false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGFloatNode)
-HK_PROPERTY_DIRECT(Value, HK_PROPERTY_DEFAULT)
+HK_BEGIN_CLASS_META(MGBoolean4)
+HK_PROPERTY_DIRECT(bValue, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-MGFloatNode::MGFloatNode() :
-    Super("Float")
+MGBoolean4::MGBoolean4(Bool4 const& v) :
+    Super("Boolean4"),
+    bValue(v)
 {
-    OutValue = AddOutput("Value", AT_Float1);
+    SetSlots({}, {&Value});
 }
 
-void MGFloatNode::Compute(AMaterialBuildContext& _Context)
+void MGBoolean4::Compute(AMaterialBuildContext& Context)
 {
-    OutValue->Expression = Core::ToString(Value);
-    if (OutValue->Expression.Contains('.') == -1)
+    Context.GenerateSourceCode(Value, "bvec4( " + Core::ToString(bValue.X) + ", " + Core::ToString(bValue.Y) + ", " + Core::ToString(bValue.Z) + ", " + Core::ToString(bValue.W) + " )", false);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
+HK_BEGIN_CLASS_META(MGFloat)
+HK_PROPERTY_DIRECT(fValue, HK_PROPERTY_DEFAULT)
+HK_END_CLASS_META()
+
+MGFloat::MGFloat(float fValue) :
+    Super("Float"),
+    fValue(fValue)
+{
+    SetSlots({}, {&Value});
+}
+
+void MGFloat::Compute(AMaterialBuildContext& Context)
+{
+    Value.Expression = Core::ToString(fValue);
+    if (Value.Expression.Contains('.') == -1)
     {
-        OutValue->Expression += ".0";
+        Value.Expression += ".0";
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGFloat2Node)
-HK_PROPERTY_DIRECT(Value, HK_PROPERTY_DEFAULT)
+HK_BEGIN_CLASS_META(MGFloat2)
+HK_PROPERTY_DIRECT(fValue, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-MGFloat2Node::MGFloat2Node() :
-    Super("Float2")
+MGFloat2::MGFloat2(Float2 const& fValue) :
+    Super("Float2"),
+    fValue(fValue)
 {
-    OutValue = AddOutput("Value", AT_Float2);
+    SetSlots({}, {&Value});
 }
 
-void MGFloat2Node::Compute(AMaterialBuildContext& _Context)
+void MGFloat2::Compute(AMaterialBuildContext& Context)
 {
-    _Context.GenerateSourceCode(OutValue, "vec2( " + Core::ToString(Value.X) + ", " + Core::ToString(Value.Y) + " )", false);
+    Context.GenerateSourceCode(Value, "vec2( " + Core::ToString(fValue.X) + ", " + Core::ToString(fValue.Y) + " )", false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGFloat3Node)
-HK_PROPERTY_DIRECT(Value, HK_PROPERTY_DEFAULT)
+HK_BEGIN_CLASS_META(MGFloat3)
+HK_PROPERTY_DIRECT(fValue, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-MGFloat3Node::MGFloat3Node() :
-    Super("Float3")
+MGFloat3::MGFloat3(Float3 const& fValue) :
+    Super("Float3"),
+    fValue(fValue)
 {
-    OutValue = AddOutput("Value", AT_Float3);
+    SetSlots({}, {&Value});
 }
 
-void MGFloat3Node::Compute(AMaterialBuildContext& _Context)
+void MGFloat3::Compute(AMaterialBuildContext& Context)
 {
-    _Context.GenerateSourceCode(OutValue, "vec3( " + Core::ToString(Value.X) + ", " + Core::ToString(Value.Y) + ", " + Core::ToString(Value.Z) + " )", false);
+    Context.GenerateSourceCode(Value, "vec3( " + Core::ToString(fValue.X) + ", " + Core::ToString(fValue.Y) + ", " + Core::ToString(fValue.Z) + " )", false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGFloat4Node)
-HK_PROPERTY_DIRECT(Value, HK_PROPERTY_DEFAULT)
+HK_BEGIN_CLASS_META(MGFloat4)
+HK_PROPERTY_DIRECT(fValue, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-MGFloat4Node::MGFloat4Node() :
-    Super("Float4")
+MGFloat4::MGFloat4(Float4 const& fValue) :
+    Super("Float4"),
+    fValue(fValue)
 {
-    OutValue = AddOutput("Value", AT_Float4);
+    SetSlots({}, {&Value});
 }
 
-void MGFloat4Node::Compute(AMaterialBuildContext& _Context)
+void MGFloat4::Compute(AMaterialBuildContext& Context)
 {
-    _Context.GenerateSourceCode(OutValue, "vec4( " + Core::ToString(Value.X) + ", " + Core::ToString(Value.Y) + ", " + Core::ToString(Value.Z) + ", " + Core::ToString(Value.W) + " )", false);
+    Context.GenerateSourceCode(Value, "vec4( " + Core::ToString(fValue.X) + ", " + Core::ToString(fValue.Y) + ", " + Core::ToString(fValue.Z) + ", " + Core::ToString(fValue.W) + " )", false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_CLASS_META(MGTextureSlot)
+HK_BEGIN_CLASS_META(MGTextureSlot)
+HK_PROPERTY_DIRECT(TextureType, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(Filter, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(AddressU, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(AddressV, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(AddressW, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(MipLODBias, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(Anisotropy, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(MinLod, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(MaxLod, HK_PROPERTY_DEFAULT)
+HK_END_CLASS_META()
 
 MGTextureSlot::MGTextureSlot() :
     Super("Texture Slot")
 {
-    SamplerDesc.TextureType = TEXTURE_2D;
-    SamplerDesc.Filter      = TEXTURE_FILTER_LINEAR;
-    SamplerDesc.AddressU    = TEXTURE_ADDRESS_WRAP;
-    SamplerDesc.AddressV    = TEXTURE_ADDRESS_WRAP;
-    SamplerDesc.AddressW    = TEXTURE_ADDRESS_WRAP;
-    SamplerDesc.MipLODBias  = 0;
-    SamplerDesc.Anisotropy  = 16;
-    SamplerDesc.MinLod      = -1000;
-    SamplerDesc.MaxLod      = 1000;
-
-    SlotIndex = -1;
-
-    Value = AddOutput("Value", AT_Unknown);
+    SetSlots({}, {&Value});
 }
 
-void MGTextureSlot::Compute(AMaterialBuildContext& _Context)
+void MGTextureSlot::Compute(AMaterialBuildContext& Context)
 {
     if (GetSlotIndex() >= 0)
     {
-        Value->Expression = "tslot_" + Core::ToString(GetSlotIndex());
+        Value.Expression = "tslot_" + Core::ToString(GetSlotIndex());
 
-        _Context.MaxTextureSlot = Math::Max(_Context.MaxTextureSlot, GetSlotIndex());
+        Context.MaxTextureSlot = Math::Max(Context.MaxTextureSlot, GetSlotIndex());
     }
     else
     {
-        Value->Expression.Clear();
+        Value.Expression.Clear();
     }
 }
 
@@ -1767,98 +1855,102 @@ static const char* GetShaderType(TEXTURE_TYPE _Type)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_CLASS_META(MGUniformAddress)
+HK_BEGIN_CLASS_META(MGUniformAddress)
+HK_PROPERTY_DIRECT(UniformType, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(Address, HK_PROPERTY_DEFAULT)
+HK_END_CLASS_META()
 
 MGUniformAddress::MGUniformAddress() :
-    Super("Texture Slot")
+    Super("Uniform Address")
 {
-    Type    = AT_Float4;
-    Address = 0;
-
-    Value = AddOutput("Value", Type);
+    SetSlots({}, {&Value});
 }
 
-void MGUniformAddress::Compute(AMaterialBuildContext& _Context)
+void MGUniformAddress::Compute(AMaterialBuildContext& Context)
 {
     if (Address >= 0)
     {
-
         int addr     = Math::Clamp(Address, 0, 15);
         int location = addr / 4;
 
-        Value->Type       = Type;
-        Value->Expression = "uaddr_" + Core::ToString(location);
-        switch (Type)
+        Value.Expression = "uaddr_" + Core::ToString(location);
+        switch (UniformType)
         {
-            case AT_Float1:
+            case MG_UNIFORM_TYPE_FLOAT1:
+                Value.Type = MG_VALUE_TYPE_FLOAT1;
                 switch (addr & 3)
                 {
-                    case 0: Value->Expression += ".x"; break;
-                    case 1: Value->Expression += ".y"; break;
-                    case 2: Value->Expression += ".z"; break;
-                    case 3: Value->Expression += ".w"; break;
+                    case 0: Value.Expression += ".x"; break;
+                    case 1: Value.Expression += ".y"; break;
+                    case 2: Value.Expression += ".z"; break;
+                    case 3: Value.Expression += ".w"; break;
                 }
                 break;
 
-            case AT_Float2:
+            case MG_UNIFORM_TYPE_FLOAT2:
+                Value.Type = MG_VALUE_TYPE_FLOAT2;
                 switch (addr & 3)
                 {
-                    case 0: Value->Expression += ".xy"; break;
-                    case 1: Value->Expression += ".yz"; break;
-                    case 2: Value->Expression += ".zw"; break;
-                    case 3: Value->Expression += ".ww"; break; // FIXME: error?
+                    case 0: Value.Expression += ".xy"; break;
+                    case 1: Value.Expression += ".yz"; break;
+                    case 2: Value.Expression += ".zw"; break;
+                    case 3: Value.Expression += ".ww"; break; // FIXME: error?
                 }
                 break;
 
-            case AT_Float3:
+            case MG_UNIFORM_TYPE_FLOAT3:
+                Value.Type = MG_VALUE_TYPE_FLOAT3;
                 switch (addr & 3)
                 {
-                    case 0: Value->Expression += ".xyz"; break;
-                    case 1: Value->Expression += ".yzw"; break;
-                    case 2: Value->Expression += ".www"; break; // FIXME: error?
-                    case 3: Value->Expression += ".www"; break; // FIXME: error?
+                    case 0: Value.Expression += ".xyz"; break;
+                    case 1: Value.Expression += ".yzw"; break;
+                    case 2: Value.Expression += ".www"; break; // FIXME: error?
+                    case 3: Value.Expression += ".www"; break; // FIXME: error?
                 }
                 break;
 
-            case AT_Float4:
+            case MG_UNIFORM_TYPE_FLOAT4:
+                Value.Type = MG_VALUE_TYPE_FLOAT4;
                 switch (addr & 3)
                 {
-                    case 1: Value->Expression += ".yzww"; break; // FIXME: error?
-                    case 2: Value->Expression += ".wwww"; break; // FIXME: error?
-                    case 3: Value->Expression += ".wwww"; break; // FIXME: error?
+                    case 1: Value.Expression += ".yzww"; break; // FIXME: error?
+                    case 2: Value.Expression += ".wwww"; break; // FIXME: error?
+                    case 3: Value.Expression += ".wwww"; break; // FIXME: error?
                 }
                 break;
 
             default:
-                HK_ASSERT(0);
+                LOG("Unknown uniform type\n");
+
+                Value.Type = MG_VALUE_TYPE_FLOAT4;
+                switch (addr & 3)
+                {
+                    case 1: Value.Expression += ".yzww"; break; // FIXME: error?
+                    case 2: Value.Expression += ".wwww"; break; // FIXME: error?
+                    case 3: Value.Expression += ".wwww"; break; // FIXME: error?
+                }
                 break;
         }
 
-        _Context.MaxUniformAddress = Math::Max(_Context.MaxUniformAddress, location);
+        Context.MaxUniformAddress = Math::Max(Context.MaxUniformAddress, location);
     }
     else
     {
-        Value->Expression.Clear();
+        Value.Expression.Clear();
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGSampler)
+HK_BEGIN_CLASS_META(MGTextureLoad)
 HK_PROPERTY_DIRECT(bSwappedToBGR, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(ColorSpace, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-MGSampler::MGSampler() :
+MGTextureLoad::MGTextureLoad() :
     Super("Texture Sampler")
 {
-    TextureSlot = AddInput("TextureSlot");
-    TexCoord    = AddInput("TexCoord");
-    R           = AddOutput("R", AT_Float1);
-    G           = AddOutput("G", AT_Float1);
-    B           = AddOutput("B", AT_Float1);
-    A           = AddOutput("A", AT_Float1);
-    RGBA        = AddOutput("RGBA", AT_Float4);
-    RGB         = AddOutput("RGB", AT_Float3);
+    SetSlots({&Texture, &TexCoord}, {&R, &G, &B, &A, &RGB, &RGBA});
 }
 
 static const char* ChooseSampleFunction(ETextureColorSpace _ColorSpace)
@@ -1878,45 +1970,45 @@ static const char* ChooseSampleFunction(ETextureColorSpace _ColorSpace)
     }
 }
 
-void MGSampler::Compute(AMaterialBuildContext& _Context)
+void MGTextureLoad::Compute(AMaterialBuildContext& Context)
 {
     bool bValid = false;
 
-    MGOutput* texSlotCon = TextureSlot->GetConnection();
+    MGOutput* texSlotCon = Texture.GetConnection();
     if (texSlotCon)
     {
 
-        MGNode* node = TextureSlot->ConnectedNode();
-        if (node->FinalClassId() == MGTextureSlot::ClassId() && node->Build(_Context))
+        MGNode* node = Texture.ConnectedNode();
+        if (node->FinalClassId() == MGTextureSlot::ClassId() && node->Build(Context))
         {
 
             MGTextureSlot* texSlot = static_cast<MGTextureSlot*>(node);
 
-            EMGNodeType sampleType = AT_Float2;
+            MG_VALUE_TYPE sampleType = MG_VALUE_TYPE_FLOAT2;
 
             // TODO: table?
-            switch (texSlot->SamplerDesc.TextureType)
+            switch (texSlot->TextureType)
             {
                 case TEXTURE_1D:
-                    sampleType = AT_Float1;
+                    sampleType = MG_VALUE_TYPE_FLOAT1;
                     break;
                 case TEXTURE_1D_ARRAY:
-                    sampleType = AT_Float2;
+                    sampleType = MG_VALUE_TYPE_FLOAT2;
                     break;
                 case TEXTURE_2D:
-                    sampleType = AT_Float2;
+                    sampleType = MG_VALUE_TYPE_FLOAT2;
                     break;
                 case TEXTURE_2D_ARRAY:
-                    sampleType = AT_Float3;
+                    sampleType = MG_VALUE_TYPE_FLOAT3;
                     break;
                 case TEXTURE_3D:
-                    sampleType = AT_Float3;
+                    sampleType = MG_VALUE_TYPE_FLOAT3;
                     break;
                 case TEXTURE_CUBE:
-                    sampleType = AT_Float3;
+                    sampleType = MG_VALUE_TYPE_FLOAT3;
                     break;
                 case TEXTURE_CUBE_ARRAY:
-                    sampleType = AT_Float3;
+                    sampleType = MG_VALUE_TYPE_FLOAT3;
                     break;
                 default:
                     HK_ASSERT(0);
@@ -1926,17 +2018,17 @@ void MGSampler::Compute(AMaterialBuildContext& _Context)
             if (slotIndex != -1)
             {
 
-                MGOutput* texCoordCon = TexCoord->GetConnection();
+                MGOutput* texCoordCon = TexCoord.GetConnection();
 
-                if (texCoordCon && TexCoord->ConnectedNode()->Build(_Context))
+                if (texCoordCon && TexCoord.ConnectedNode()->Build(Context))
                 {
 
                     const char* swizzleStr = bSwappedToBGR ? ".bgra" : "";
 
                     const char* sampleFunc = ChooseSampleFunction(ColorSpace);
 
-                    RGBA->Expression = _Context.GenerateVariableName();
-                    _Context.SourceCode += "const vec4 " + RGBA->Expression + " = " + sampleFunc + "( tslot_" + Core::ToString(slotIndex) + ", " + MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, sampleType) + " )" + swizzleStr + ";\n";
+                    RGBA.Expression = Context.GenerateVariableName();
+                    Context.SourceCode += "const vec4 " + RGBA.Expression + " = " + sampleFunc + "( tslot_" + Core::ToString(slotIndex) + ", " + MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, sampleType) + " )" + swizzleStr + ";\n";
                     bValid = true;
                 }
             }
@@ -1945,38 +2037,34 @@ void MGSampler::Compute(AMaterialBuildContext& _Context)
 
     if (bValid)
     {
-        R->Expression   = RGBA->Expression + ".r";
-        G->Expression   = RGBA->Expression + ".g";
-        B->Expression   = RGBA->Expression + ".b";
-        A->Expression   = RGBA->Expression + ".a";
-        RGB->Expression = RGBA->Expression + ".rgb";
+        R.Expression   = RGBA.Expression + ".r";
+        G.Expression   = RGBA.Expression + ".g";
+        B.Expression   = RGBA.Expression + ".b";
+        A.Expression   = RGBA.Expression + ".a";
+        RGB.Expression = RGBA.Expression + ".rgb";
     }
     else
     {
-        _Context.GenerateSourceCode(RGBA, MakeEmptyVector(AT_Float4), false);
+        Context.GenerateSourceCode(RGBA, MakeEmptyVector(MG_VALUE_TYPE_FLOAT4), false);
 
-        R->Expression   = "0.0";
-        G->Expression   = "0.0";
-        B->Expression   = "0.0";
-        A->Expression   = "0.0";
-        RGB->Expression = "vec3(0.0)";
+        R.Expression   = "0.0";
+        G.Expression   = "0.0";
+        B.Expression   = "0.0";
+        A.Expression   = "0.0";
+        RGB.Expression = "vec3(0.0)";
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGNormalSampler)
+HK_BEGIN_CLASS_META(MGNormalLoad)
+HK_PROPERTY_DIRECT(Compression, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-MGNormalSampler::MGNormalSampler() :
+MGNormalLoad::MGNormalLoad() :
     Super("Normal Sampler")
 {
-    TextureSlot = AddInput("TextureSlot");
-    TexCoord    = AddInput("TexCoord");
-    X           = AddOutput("X", AT_Float1);
-    Y           = AddOutput("Y", AT_Float1);
-    Z           = AddOutput("Z", AT_Float1);
-    XYZ         = AddOutput("XYZ", AT_Float3);
+    SetSlots({&Texture, &TexCoord}, {&X, &Y, &Z, &XYZ});
 }
 
 static const char* ChooseSampleFunction(ENormalMapCompression _Compression)
@@ -1997,52 +2085,52 @@ static const char* ChooseSampleFunction(ENormalMapCompression _Compression)
             return "texture_nm_quartic";
         case NM_FLOAT:
             return "texture_nm_float";
-        case NM_DXT5:
+        case NM_BC3:
             return "texture_nm_dxt5";
         default:
             return "texture_nm_xyz";
     }
 }
 
-void MGNormalSampler::Compute(AMaterialBuildContext& _Context)
+void MGNormalLoad::Compute(AMaterialBuildContext& Context)
 {
     bool bValid = false;
 
-    MGOutput* texSlotCon = TextureSlot->GetConnection();
+    MGOutput* texSlotCon = Texture.GetConnection();
     if (texSlotCon)
     {
 
-        MGNode* node = TextureSlot->ConnectedNode();
-        if (node->FinalClassId() == MGTextureSlot::ClassId() && node->Build(_Context))
+        MGNode* node = Texture.ConnectedNode();
+        if (node->FinalClassId() == MGTextureSlot::ClassId() && node->Build(Context))
         {
 
             MGTextureSlot* texSlot = static_cast<MGTextureSlot*>(node);
 
-            EMGNodeType sampleType = AT_Float2;
+            MG_VALUE_TYPE sampleType = MG_VALUE_TYPE_FLOAT2;
 
             // TODO: table?
-            switch (texSlot->SamplerDesc.TextureType)
+            switch (texSlot->TextureType)
             {
                 case TEXTURE_1D:
-                    sampleType = AT_Float1;
+                    sampleType = MG_VALUE_TYPE_FLOAT1;
                     break;
                 case TEXTURE_1D_ARRAY:
-                    sampleType = AT_Float2;
+                    sampleType = MG_VALUE_TYPE_FLOAT2;
                     break;
                 case TEXTURE_2D:
-                    sampleType = AT_Float2;
+                    sampleType = MG_VALUE_TYPE_FLOAT2;
                     break;
                 case TEXTURE_2D_ARRAY:
-                    sampleType = AT_Float3;
+                    sampleType = MG_VALUE_TYPE_FLOAT3;
                     break;
                 case TEXTURE_3D:
-                    sampleType = AT_Float3;
+                    sampleType = MG_VALUE_TYPE_FLOAT3;
                     break;
                 case TEXTURE_CUBE:
-                    sampleType = AT_Float3;
+                    sampleType = MG_VALUE_TYPE_FLOAT3;
                     break;
                 case TEXTURE_CUBE_ARRAY:
-                    sampleType = AT_Float3;
+                    sampleType = MG_VALUE_TYPE_FLOAT3;
                     break;
                 default:
                     HK_ASSERT(0);
@@ -2052,15 +2140,15 @@ void MGNormalSampler::Compute(AMaterialBuildContext& _Context)
             if (slotIndex != -1)
             {
 
-                MGOutput* texCoordCon = TexCoord->GetConnection();
+                MGOutput* texCoordCon = TexCoord.GetConnection();
 
-                if (texCoordCon && TexCoord->ConnectedNode()->Build(_Context))
+                if (texCoordCon && TexCoord.ConnectedNode()->Build(Context))
                 {
 
                     const char* sampleFunc = ChooseSampleFunction(Compression);
 
-                    XYZ->Expression = _Context.GenerateVariableName();
-                    _Context.SourceCode += "const vec3 " + XYZ->Expression + " = " + sampleFunc + "( tslot_" + Core::ToString(slotIndex) + ", " + MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, sampleType) + " );\n";
+                    XYZ.Expression = Context.GenerateVariableName();
+                    Context.SourceCode += "const vec3 " + XYZ.Expression + " = " + sampleFunc + "( tslot_" + Core::ToString(slotIndex) + ", " + MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, sampleType) + " );\n";
                     bValid = true;
                 }
             }
@@ -2069,69 +2157,64 @@ void MGNormalSampler::Compute(AMaterialBuildContext& _Context)
 
     if (bValid)
     {
-        X->Expression = XYZ->Expression + ".x";
-        Y->Expression = XYZ->Expression + ".y";
-        Z->Expression = XYZ->Expression + ".z";
+        X.Expression = XYZ.Expression + ".x";
+        Y.Expression = XYZ.Expression + ".y";
+        Z.Expression = XYZ.Expression + ".z";
     }
     else
     {
-        _Context.GenerateSourceCode(XYZ, MakeDefaultNormal(), false);
+        Context.GenerateSourceCode(XYZ, MakeDefaultNormal(), false);
 
-        X->Expression = "0.0";
-        Y->Expression = "0.0";
-        Z->Expression = "0.0";
+        X.Expression = "0.0";
+        Y.Expression = "0.0";
+        Z.Expression = "0.0";
     }
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGParallaxMapSampler)
+HK_BEGIN_CLASS_META(MGParallaxMapLoad)
 HK_END_CLASS_META()
 
-MGParallaxMapSampler::MGParallaxMapSampler() :
+MGParallaxMapLoad::MGParallaxMapLoad() :
     Super("Parallax Map Sampler")
 {
-    TextureSlot       = AddInput("TextureSlot");
-    TexCoord          = AddInput("TexCoord");
-    DisplacementScale = AddInput("DisplacementScale");
-    //SelfShadowing = AddInput( "SelfShadowing" );
-    Result = AddOutput("Result", AT_Float2);
+    SetSlots({&Texture, &TexCoord, &DisplacementScale}, {&Result});
 }
 
-void MGParallaxMapSampler::Compute(AMaterialBuildContext& _Context)
+void MGParallaxMapLoad::Compute(AMaterialBuildContext& Context)
 {
     bool bValid = false;
 
-    MGOutput* texSlotCon = TextureSlot->GetConnection();
+    MGOutput* texSlotCon = Texture.GetConnection();
     if (texSlotCon)
     {
-
-        MGNode* node = TextureSlot->ConnectedNode();
-        if (node->FinalClassId() == MGTextureSlot::ClassId() && node->Build(_Context))
+        MGNode* node = Texture.ConnectedNode();
+        if (node->FinalClassId() == MGTextureSlot::ClassId() && node->Build(Context))
         {
 
             MGTextureSlot* texSlot = static_cast<MGTextureSlot*>(node);
 
-            if (texSlot->SamplerDesc.TextureType == TEXTURE_2D)
+            if (texSlot->TextureType == TEXTURE_2D)
             {
                 int32_t slotIndex = texSlot->GetSlotIndex();
                 if (slotIndex != -1)
                 {
 
-                    MGOutput* texCoordCon = TexCoord->GetConnection();
+                    MGOutput* texCoordCon = TexCoord.GetConnection();
 
-                    if (texCoordCon && TexCoord->ConnectedNode()->Build(_Context))
+                    if (texCoordCon && TexCoord.ConnectedNode()->Build(Context))
                     {
 
                         AString sampler  = "tslot_" + Core::ToString(slotIndex);
-                        AString texCoord = MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, AT_Float2);
+                        AString texCoord = MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, MG_VALUE_TYPE_FLOAT2);
 
                         AString   displacementScale;
-                        MGOutput* displacementScaleCon = DisplacementScale->GetConnection();
-                        if (displacementScaleCon && DisplacementScale->ConnectedNode()->Build(_Context))
+                        MGOutput* displacementScaleCon = DisplacementScale.GetConnection();
+                        if (displacementScaleCon && DisplacementScale.ConnectedNode()->Build(Context))
                         {
-                            displacementScale = MakeVectorCast(displacementScaleCon->Expression, displacementScaleCon->Type, AT_Float1);
+                            displacementScale = MakeVectorCast(displacementScaleCon->Expression, displacementScaleCon->Type, MG_VALUE_TYPE_FLOAT1);
                         }
                         else
                         {
@@ -2139,20 +2222,20 @@ void MGParallaxMapSampler::Compute(AMaterialBuildContext& _Context)
                         }
 
                         //AString selfShadowing;
-                        //MGOutput * selfShadowingCon = SelfShadowing->GetConnection();
-                        //if ( selfShadowingCon && SelfShadowing->ConnectedNode()->Build( _Context ) ) {
-                        //    selfShadowing = MakeVectorCast( selfShadowingCon->Expression, selfShadowingCon->Type, AT_Bool1 );
+                        //MGOutput * selfShadowingCon = SelfShadowing.GetConnection();
+                        //if ( selfShadowingCon && SelfShadowing.ConnectedNode()->Build( Context ) ) {
+                        //    selfShadowing = MakeVectorCast( selfShadowingCon->Expression, selfShadowingCon->Type, MG_VALUE_TYPE_BOOL1 );
                         //} else {
-                        //    selfShadowing = MakeEmptyVector( AT_Bool1 );
+                        //    selfShadowing = MakeEmptyVector( MG_VALUE_TYPE_BOOL1 );
                         //}
 
-                        Result->Expression = _Context.GenerateVariableName();
-                        _Context.SourceCode += "const vec2 " + Result->Expression +
+                        Result.Expression = Context.GenerateVariableName();
+                        Context.SourceCode += "const vec2 " + Result.Expression +
                             " = ParallaxMapping( " + texCoord + ", " + displacementScale + " );\n";
 
                         bValid = true;
 
-                        _Context.ParallaxSampler = slotIndex;
+                        Context.ParallaxSampler = slotIndex;
                     }
                 }
             }
@@ -2161,72 +2244,66 @@ void MGParallaxMapSampler::Compute(AMaterialBuildContext& _Context)
 
     if (!bValid)
     {
-        _Context.GenerateSourceCode(Result, MakeEmptyVector(AT_Float2), false);
+        Context.GenerateSourceCode(Result, MakeEmptyVector(MG_VALUE_TYPE_FLOAT2), false);
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGSamplerVT)
+HK_BEGIN_CLASS_META(MGVirtualTextureLoad)
+HK_PROPERTY_DIRECT(TextureLayer, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(ColorSpace, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(bSwappedToBGR, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-MGSamplerVT::MGSamplerVT() :
+MGVirtualTextureLoad::MGVirtualTextureLoad() :
     Super("Virtual Texture Sampler")
 {
-    TextureLayer = 0;
-    R            = AddOutput("R", AT_Float1);
-    G            = AddOutput("G", AT_Float1);
-    B            = AddOutput("B", AT_Float1);
-    A            = AddOutput("A", AT_Float1);
-    RGBA         = AddOutput("RGBA", AT_Float4);
-    RGB          = AddOutput("RGB", AT_Float3);
+    SetSlots({}, {&R, &G, &B, &A, &RGB, &RGBA});
 }
 
-void MGSamplerVT::Compute(AMaterialBuildContext& _Context)
+void MGVirtualTextureLoad::Compute(AMaterialBuildContext& Context)
 {
     const char* swizzleStr = bSwappedToBGR ? ".bgra" : "";
     const char* sampleFunc = ChooseSampleFunction(ColorSpace);
 
-    RGBA->Expression = _Context.GenerateVariableName();
+    RGBA.Expression = Context.GenerateVariableName();
 
-    _Context.SourceCode +=
-        "const vec4 " + RGBA->Expression + " = " + sampleFunc + "( vt_PhysCache" + Core::ToString(TextureLayer) + ", InPhysicalUV )" + swizzleStr + ";\n";
+    Context.SourceCode +=
+        "const vec4 " + RGBA.Expression + " = " + sampleFunc + "( vt_PhysCache" + Core::ToString(TextureLayer) + ", InPhysicalUV )" + swizzleStr + ";\n";
 
-    R->Expression   = RGBA->Expression + ".r";
-    G->Expression   = RGBA->Expression + ".g";
-    B->Expression   = RGBA->Expression + ".b";
-    A->Expression   = RGBA->Expression + ".a";
-    RGB->Expression = RGBA->Expression + ".rgb";
+    R.Expression   = RGBA.Expression + ".r";
+    G.Expression   = RGBA.Expression + ".g";
+    B.Expression   = RGBA.Expression + ".b";
+    A.Expression   = RGBA.Expression + ".a";
+    RGB.Expression = RGBA.Expression + ".rgb";
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_BEGIN_CLASS_META(MGNormalSamplerVT)
+HK_BEGIN_CLASS_META(MGVirtualTextureNormalLoad)
+HK_PROPERTY_DIRECT(TextureLayer, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(Compression, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
-MGNormalSamplerVT::MGNormalSamplerVT() :
+MGVirtualTextureNormalLoad::MGVirtualTextureNormalLoad() :
     Super("Virtual Texture Normal Sampler")
 {
-    TextureLayer = 0;
-    X            = AddOutput("X", AT_Float1);
-    Y            = AddOutput("Y", AT_Float1);
-    Z            = AddOutput("Z", AT_Float1);
-    XYZ          = AddOutput("XYZ", AT_Float3);
+    SetSlots({}, {&X, &Y, &Z, &XYZ});
 }
 
-void MGNormalSamplerVT::Compute(AMaterialBuildContext& _Context)
+void MGVirtualTextureNormalLoad::Compute(AMaterialBuildContext& Context)
 {
     const char* sampleFunc = ChooseSampleFunction(Compression);
 
-    XYZ->Expression = _Context.GenerateVariableName();
+    XYZ.Expression = Context.GenerateVariableName();
 
-    _Context.SourceCode +=
-        "const vec3 " + XYZ->Expression + " = " + sampleFunc + "( vt_PhysCache" + Core::ToString(TextureLayer) + ", InPhysicalUV );\n";
+    Context.SourceCode +=
+        "const vec3 " + XYZ.Expression + " = " + sampleFunc + "( vt_PhysCache" + Core::ToString(TextureLayer) + ", InPhysicalUV );\n";
 
-    X->Expression = XYZ->Expression + ".x";
-    Y->Expression = XYZ->Expression + ".y";
-    Z->Expression = XYZ->Expression + ".z";
+    X.Expression = XYZ.Expression + ".x";
+    Y.Expression = XYZ.Expression + ".y";
+    Z.Expression = XYZ.Expression + ".z";
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2236,26 +2313,17 @@ HK_CLASS_META(MGInFragmentCoord)
 MGInFragmentCoord::MGInFragmentCoord() :
     Super("InFragmentCoord")
 {
-    MGOutput* OutValue   = AddOutput("Value", AT_Float4);
-    OutValue->Expression = "gl_FragCoord";
+    SetSlots({}, {&Value, &X, &Y, &Z, &W, &XY});
 
-    MGOutput* OutValueX   = AddOutput("X", AT_Float1);
-    OutValueX->Expression = "gl_FragCoord.x";
-
-    MGOutput* OutValueY   = AddOutput("Y", AT_Float1);
-    OutValueY->Expression = "gl_FragCoord.y";
-
-    MGOutput* OutValueZ   = AddOutput("Z", AT_Float1);
-    OutValueZ->Expression = "gl_FragCoord.z";
-
-    MGOutput* OutValueW   = AddOutput("W", AT_Float1);
-    OutValueW->Expression = "gl_FragCoord.w";
-
-    MGOutput* OutValueXY   = AddOutput("Position", AT_Float2);
-    OutValueXY->Expression = "gl_FragCoord.xy";
+    Value.Expression = "gl_FragCoord";
+    X.Expression     = "gl_FragCoord.x";
+    Y.Expression     = "gl_FragCoord.y";
+    Z.Expression     = "gl_FragCoord.z";
+    W.Expression     = "gl_FragCoord.w";
+    XY.Expression    = "gl_FragCoord.xy";
 }
 
-void MGInFragmentCoord::Compute(AMaterialBuildContext& _Context)
+void MGInFragmentCoord::Compute(AMaterialBuildContext& Context)
 {
     // TODO: Case for vertex stage
 }
@@ -2267,29 +2335,29 @@ HK_CLASS_META(MGInPosition)
 MGInPosition::MGInPosition() :
     Super("InPosition")
 {
-    Value = AddOutput("Value", AT_Unknown);
+    SetSlots({}, {&Value});
 }
 
-void MGInPosition::Compute(AMaterialBuildContext& _Context)
+void MGInPosition::Compute(AMaterialBuildContext& Context)
 {
-    if (_Context.GetMaterialType() == MATERIAL_TYPE_HUD)
+    if (Context.GetMaterialType() == MATERIAL_TYPE_HUD)
     {
-        Value->Type = AT_Float2;
+        Value.Type = MG_VALUE_TYPE_FLOAT2;
     }
     else
     {
-        Value->Type = AT_Float3;
+        Value.Type = MG_VALUE_TYPE_FLOAT3;
     }
 
-    if (_Context.GetStage() != VERTEX_STAGE)
+    if (Context.GetStage() != MATERIAL_STAGE_VERTEX)
     {
-        _Context.InputVaryings.Add(SVarying("V_Position", "VertexPosition", Value->Type));
+        Context.InputVaryings.Add(SVarying("V_Position", "VertexPosition", Value.Type));
 
-        Value->Expression = "V_Position";
+        Value.Expression = "V_Position";
     }
     else
     {
-        _Context.GenerateSourceCode(Value, "VertexPosition", false);
+        Context.GenerateSourceCode(Value, "VertexPosition", false);
     }
 }
 
@@ -2300,28 +2368,26 @@ HK_CLASS_META(MGInNormal)
 MGInNormal::MGInNormal() :
     Super("InNormal")
 {
-    Value       = AddOutput("Value", AT_Unknown);
-    Value->Type = AT_Float3;
+    SetSlots({}, {&Value});
 }
 
-void MGInNormal::Compute(AMaterialBuildContext& _Context)
+void MGInNormal::Compute(AMaterialBuildContext& Context)
 {
-
-    //if ( _Context.GetMaterialType() == MATERIAL_TYPE_HUD ) {
-    //    Value->Type = AT_Float2;
+    //if ( Context.GetMaterialType() == MATERIAL_TYPE_HUD ) {
+    //    Value.Type = MG_VALUE_TYPE_FLOAT2;
     //} else {
-    //    Value->Type = AT_Float3;
+    //    Value.Type = MG_VALUE_TYPE_FLOAT3;
     //}
 
-    if (_Context.GetStage() != VERTEX_STAGE)
+    if (Context.GetStage() != MATERIAL_STAGE_VERTEX)
     {
-        _Context.InputVaryings.Add(SVarying("V_Normal", "VertexNormal", Value->Type));
+        Context.InputVaryings.Add(SVarying("V_Normal", "VertexNormal", Value.Type));
 
-        Value->Expression = "V_Normal";
+        Value.Expression = "V_Normal";
     }
     else
     {
-        Value->Expression = "VertexNormal";
+        Value.Expression = "VertexNormal";
     }
 }
 
@@ -2332,29 +2398,28 @@ HK_CLASS_META(MGInColor)
 MGInColor::MGInColor() :
     Super("InColor")
 {
-    Value = AddOutput("Value", AT_Float4);
+    SetSlots({}, {&Value});
 }
 
-void MGInColor::Compute(AMaterialBuildContext& _Context)
+void MGInColor::Compute(AMaterialBuildContext& Context)
 {
-    if (_Context.GetMaterialType() == MATERIAL_TYPE_HUD)
+    if (Context.GetMaterialType() == MATERIAL_TYPE_HUD)
     {
-
-        if (_Context.GetStage() != VERTEX_STAGE)
+        if (Context.GetStage() != MATERIAL_STAGE_VERTEX)
         {
-            _Context.InputVaryings.Add(SVarying("V_Color", "InColor", Value->Type));
+            Context.InputVaryings.Add(SVarying("V_Color", "InColor", Value.Type));
 
-            Value->Expression = "V_Color";
+            Value.Expression = "V_Color";
         }
         else
         {
 
-            Value->Expression = "InColor";
+            Value.Expression = "InColor";
         }
     }
     else
     {
-        Value->Expression = "vec4(1.0)";
+        Value.Expression = "vec4(1.0)";
     }
 }
 
@@ -2365,38 +2430,23 @@ HK_CLASS_META(MGInTexCoord)
 MGInTexCoord::MGInTexCoord() :
     Super("InTexCoord")
 {
-    Value = AddOutput("Value", AT_Float2);
+    SetSlots({}, {&Value});
 }
 
-void MGInTexCoord::Compute(AMaterialBuildContext& _Context)
+void MGInTexCoord::Compute(AMaterialBuildContext& Context)
 {
-    if (_Context.GetStage() != VERTEX_STAGE)
+    if (Context.GetStage() != MATERIAL_STAGE_VERTEX)
     {
-        _Context.InputVaryings.Add(SVarying("V_TexCoord", "InTexCoord", Value->Type));
+        Context.InputVaryings.Add(SVarying("V_TexCoord", "InTexCoord", Value.Type));
 
-        Value->Expression = "V_TexCoord";
+        Value.Expression = "V_TexCoord";
     }
     else
     {
-        Value->Expression = "InTexCoord";
+        Value.Expression = "InTexCoord";
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////
-#if 0
-HK_CLASS_META( MGMaterialInLightmapTexCoord )
-
-MGMaterialInLightmapTexCoord::MGMaterialInLightmapTexCoord() {
-    Name = "InLightmapTexCoord";
-    Stages = VERTEX_STAGE_BIT;
-
-    MGOutput * OutValue = NewOutput( "Value", AT_Float2 );
-    OutValue->Expression = "InLightmapTexCoord";
-}
-
-void MGMaterialInLightmapTexCoord::Compute( AMaterialBuildContext & _Context ) {
-}
-#endif
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_CLASS_META(MGInTimer)
@@ -2404,14 +2454,14 @@ HK_CLASS_META(MGInTimer)
 MGInTimer::MGInTimer() :
     Super("InTimer")
 {
-    GameRunningTimeSeconds             = AddOutput("GameRunningTimeSeconds", AT_Float1);
-    GameRunningTimeSeconds->Expression = "GameRunningTimeSeconds";
+    SetSlots({}, {&GameRunningTimeSeconds, &GameplayTimeSeconds});
 
-    GameplayTimeSeconds             = AddOutput("GameplayTimeSeconds", AT_Float1);
-    GameplayTimeSeconds->Expression = "GameplayTimeSeconds";
+    GameRunningTimeSeconds.Expression = "GameRunningTimeSeconds";
+
+    GameplayTimeSeconds.Expression = "GameplayTimeSeconds";
 }
 
-void MGInTimer::Compute(AMaterialBuildContext& _Context)
+void MGInTimer::Compute(AMaterialBuildContext& Context)
 {
 }
 
@@ -2422,11 +2472,12 @@ HK_CLASS_META(MGInViewPosition)
 MGInViewPosition::MGInViewPosition() :
     Super("InViewPosition")
 {
-    MGOutput* Val   = AddOutput("Value", AT_Float3);
-    Val->Expression = "ViewPosition.xyz";
+    SetSlots({}, {&Value});
+
+    Value.Expression = "ViewPosition.xyz";
 }
 
-void MGInViewPosition::Compute(AMaterialBuildContext& _Context)
+void MGInViewPosition::Compute(AMaterialBuildContext& Context)
 {
 }
 
@@ -2438,38 +2489,32 @@ HK_CLASS_META(MGCondLess)
 MGCondLess::MGCondLess() :
     Super("Cond A < B")
 {
-    ValueA = AddInput("A");
-    ValueB = AddInput("B");
-
-    True  = AddInput("True");
-    False = AddInput("False");
-
-    Result = AddOutput("Result", AT_Unknown);
+    SetSlots({&ValueA, &ValueB, &True, &False}, {&Result});
 }
 
-void MGCondLess::Compute(AMaterialBuildContext& _Context)
+void MGCondLess::Compute(AMaterialBuildContext& Context)
 {
-    MGOutput* connectionA     = ValueA->GetConnection();
-    MGOutput* connectionB     = ValueB->GetConnection();
-    MGOutput* connectionTrue  = True->GetConnection();
-    MGOutput* connectionFalse = False->GetConnection();
+    MGOutput* connectionA     = ValueA.GetConnection();
+    MGOutput* connectionB     = ValueB.GetConnection();
+    MGOutput* connectionTrue  = True.GetConnection();
+    MGOutput* connectionFalse = False.GetConnection();
 
     AString expression;
 
-    if (connectionA && connectionB && connectionTrue && connectionFalse && ValueA->ConnectedNode()->Build(_Context) && ValueB->ConnectedNode()->Build(_Context) && True->ConnectedNode()->Build(_Context) && False->ConnectedNode()->Build(_Context))
+    if (connectionA && connectionB && connectionTrue && connectionFalse && ValueA.ConnectedNode()->Build(Context) && ValueB.ConnectedNode()->Build(Context) && True.ConnectedNode()->Build(Context) && False.ConnectedNode()->Build(Context))
     {
         if (connectionA->Type != connectionB->Type || connectionTrue->Type != connectionFalse->Type || !IsArithmeticType(connectionA->Type))
         {
-            Result->Type = AT_Float4;
-            expression   = MakeEmptyVector(AT_Float4);
+            Result.Type = MG_VALUE_TYPE_FLOAT4;
+            expression  = MakeEmptyVector(MG_VALUE_TYPE_FLOAT4);
         }
         else
         {
-            Result->Type = connectionTrue->Type;
+            Result.Type = connectionTrue->Type;
 
             AString cond;
 
-            if (connectionA->Type == AT_Float1)
+            if (connectionA->Type == MG_VALUE_TYPE_FLOAT1)
             {
                 cond = "step( " + connectionB->Expression + ", " + connectionA->Expression + " )";
 
@@ -2477,13 +2522,13 @@ void MGCondLess::Compute(AMaterialBuildContext& _Context)
             }
             else
             {
-                if (Result->Type == AT_Float1)
+                if (Result.Type == MG_VALUE_TYPE_FLOAT1)
                 {
                     cond = "float( all( lessThan( " + connectionA->Expression + ", " + connectionB->Expression + " ) ) )";
                 }
                 else
                 {
-                    cond = AString(VariableTypeStr[Result->Type]) + "( float( all( lessThan( " + connectionA->Expression + ", " + connectionB->Expression + " ) ) ) )";
+                    cond = AString(VariableTypeStr[Result.Type]) + "( float( all( lessThan( " + connectionA->Expression + ", " + connectionB->Expression + " ) ) ) )";
                 }
 
                 expression = "mix( " + connectionFalse->Expression + ", " + connectionTrue->Expression + ", " + cond + " )";
@@ -2492,53 +2537,52 @@ void MGCondLess::Compute(AMaterialBuildContext& _Context)
     }
     else
     {
-        Result->Type = AT_Float4;
-        expression   = MakeEmptyVector(AT_Float4);
+        Result.Type = MG_VALUE_TYPE_FLOAT4;
+        expression  = MakeEmptyVector(MG_VALUE_TYPE_FLOAT4);
     }
 
-    _Context.GenerateSourceCode(Result, expression, false);
+    Context.GenerateSourceCode(Result, expression, false);
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_CLASS_META(MGAtmosphereNode)
+HK_CLASS_META(MGAtmosphere)
 
-MGAtmosphereNode::MGAtmosphereNode() :
+MGAtmosphere::MGAtmosphere() :
     Super("Atmosphere Scattering")
 {
-    Dir    = AddInput("Dir");
-    Result = AddOutput("Result", AT_Float4);
+    SetSlots({&Dir}, {&Result});
 }
 
-void MGAtmosphereNode::Compute(AMaterialBuildContext& _Context)
+void MGAtmosphere::Compute(AMaterialBuildContext& Context)
 {
-    MGOutput* dirConnection = Dir->GetConnection();
+    MGOutput* dirConnection = Dir.GetConnection();
 
-    if (dirConnection && Dir->ConnectedNode()->Build(_Context))
+    if (dirConnection && Dir.ConnectedNode()->Build(Context))
     {
-        AString expression = MakeVectorCast(dirConnection->Expression, dirConnection->Type, AT_Float3);
-        _Context.GenerateSourceCode(Result, "vec4( atmosphere( normalize(" + expression + "), normalize(vec3(0.5,0.5,-1)) ), 1.0 )", false);
+        AString expression = MakeVectorCast(dirConnection->Expression, dirConnection->Type, MG_VALUE_TYPE_FLOAT3);
+        Context.GenerateSourceCode(Result, "vec4( atmosphere( normalize(" + expression + "), normalize(vec3(0.5,0.5,-1)) ), 1.0 )", false);
     }
     else
     {
-        Result->Expression = MakeEmptyVector(AT_Float4);
+        Result.Expression = MakeEmptyVector(MG_VALUE_TYPE_FLOAT4);
     }
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-static AString SamplersString(MGMaterialGraph const* InGraph, int MaxtextureSlot)
+AString MGMaterialGraph::SamplersString(int MaxtextureSlot)
 {
     AString s;
     AString bindingStr;
 
-    for (MGTextureSlot* slot : InGraph->GetTextureSlots())
+    for (MGTextureSlot* slot : GetTextures())
     {
         if (slot->GetSlotIndex() <= MaxtextureSlot)
         {
             bindingStr = Core::ToString(slot->GetSlotIndex());
-            s += "layout( binding = " + bindingStr + " ) uniform " + GetShaderType(slot->SamplerDesc.TextureType) + " tslot_" + bindingStr + ";\n";
+            s += "layout( binding = " + bindingStr + " ) uniform " + GetShaderType(slot->TextureType) + " tslot_" + bindingStr + ";\n";
         }
     }
     return s;
@@ -2746,7 +2790,7 @@ static void GenerateBuiltinSource()
     builtin += builtin_spheremap_coord;
     builtin += builtin_luminance;
 
-    for (int i = AT_Float1; i <= AT_Float4; i++)
+    for (int i = MG_VALUE_TYPE_FLOAT1; i <= MG_VALUE_TYPE_FLOAT4; i++)
     {
         builtin += format.Sprintf(builtin_saturate, VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i]);
     }
@@ -2756,7 +2800,7 @@ static void GenerateBuiltinSource()
     f.Write(builtin.CStr(), builtin.Size());
 }
 
-static void WriteDebugShaders(SPredefinedShaderSource const* Shaders)
+static void WriteDebugShaders(TVector<SMaterialSource> const& Shaders)
 {
     AFileStream f;
     if (!f.OpenWrite("debug.glsl"))
@@ -2764,14 +2808,14 @@ static void WriteDebugShaders(SPredefinedShaderSource const* Shaders)
         return;
     }
 
-    for (SPredefinedShaderSource const* s = Shaders; s; s = s->pNext)
+    for (SMaterialSource const& shader : Shaders)
     {
-        f.FormattedPrint("//----------------------------------\n// {}\n//----------------------------------\n", s->SourceName);
-        f.FormattedPrint("{}\n", s->Code);
+        f.FormattedPrint("//----------------------------------\n// {}\n//----------------------------------\n", shader.SourceName);
+        f.FormattedPrint("{}\n", shader.Code);
     }
 }
 
-static AString GenerateOutputVaryingsCode(TVector<SVarying> const& Varyings, const char* Prefix, bool bArrays)
+static AString GenerateOutputVaryingsCode(TVector<SVarying> const& Varyings, AStringView Prefix, bool bArrays)
 {
     AString  s;
     uint32_t location = 0;
@@ -2789,7 +2833,7 @@ static AString GenerateOutputVaryingsCode(TVector<SVarying> const& Varyings, con
     return s;
 }
 
-static AString GenerateInputVaryingsCode(TVector<SVarying> const& Varyings, const char* Prefix, bool bArrays)
+static AString GenerateInputVaryingsCode(TVector<SVarying> const& Varyings, AStringView Prefix, bool bArrays)
 {
     AString  s;
     uint32_t location = 0;
@@ -2885,8 +2929,8 @@ static void RemoveVaryings(TVector<SVarying>& InOutResult, TVector<SVarying> con
 struct SMaterialStageTransition
 {
     TVector<SVarying> Varyings;
-    int                  MaxTextureSlot;
-    int                  MaxUniformAddress;
+    int               MaxTextureSlot;
+    int               MaxUniformAddress;
 
     AString VS_OutputVaryingsCode;
     AString VS_CopyVaryingsCode;
@@ -3107,12 +3151,12 @@ void MGMaterialGraph::CreateStageTransitions(SMaterialStageTransition&    Transi
         }
     }
 
-    #ifdef HK_DEBUG
+#ifdef HK_DEBUG
     for (SVarying const& v : varyings)
     {
         HK_ASSERT(v.RefCount == 0);
     }
-    #endif
+#endif
 
 #if 0
     AFileStream f;
@@ -3147,37 +3191,35 @@ void MGMaterialGraph::CreateStageTransitions(SMaterialStageTransition&    Transi
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-HK_CLASS_META(MGMaterialGraph)
+HK_BEGIN_CLASS_META(MGMaterialGraph)
+HK_PROPERTY_DIRECT(MaterialType, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(TessellationMethod, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(Blending, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(ParallaxTechnique, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(DepthHack, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(MotionBlurScale, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bDepthTest, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bTranslucent, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bTwoSided, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bNoLightmap, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bAllowScreenSpaceReflections, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bAllowScreenAmbientOcclusion, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bAllowShadowReceive, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bDisplacementAffectShadow, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bParallaxMappingSelfShadowing, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bPerBoneMotionBlur, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(bUseVirtualTexture, HK_PROPERTY_DEFAULT)
+HK_END_CLASS_META()
 
 MGMaterialGraph::MGMaterialGraph() :
     Super("Material Graph")
 {
-    Color              = AddInput("Color");
-    Normal             = AddInput("Normal");
-    Metallic           = AddInput("Metallic");
-    Roughness          = AddInput("Roughness");
-    AmbientOcclusion   = AddInput("AmbientOcclusion");
-    AmbientLight       = AddInput("AmbientLight");
-    Emissive           = AddInput("Emissive");
-    Specular           = AddInput("Specular");
-    Opacity            = AddInput("Opacity");
-    VertexDeform       = AddInput("VertexDeform");
-    AlphaMask          = AddInput("AlphaMask");
-    ShadowMask         = AddInput("ShadowMask");
-    Displacement       = AddInput("Displacement");
-    TessellationFactor = AddInput("TessellationFactor");
-
-    NodeIdGen = 0;
+    SetSlots({&Color, &Normal, &Metallic, &Roughness, &AmbientOcclusion, &AmbientLight, &Emissive, &Specular, &Opacity, &VertexDeform, &AlphaMask, &ShadowMask, &Displacement, &TessellationFactor}, {});
 }
 
 MGMaterialGraph::~MGMaterialGraph()
 {
-    for (MGTextureSlot* sampler : TextureSlots)
-    {
-        sampler->RemoveRef();
-    }
-
-    for (MGNode* node : Nodes)
+    for (MGNode* node : m_Nodes)
     {
         node->RemoveRef();
     }
@@ -3194,57 +3236,41 @@ void MGMaterialGraph::CompileStage(AMaterialBuildContext& ctx)
     Build(ctx);
 }
 
-void MGMaterialGraph::RegisterTextureSlot(MGTextureSlot* _Slot)
+TRef<ACompiledMaterial> MGMaterialGraph::Compile()
 {
-    if (TextureSlots.Size() >= MAX_MATERIAL_TEXTURES)
+    int n = 0;
+    for (auto textureSlot : GetTextures())
     {
-        LOG("AMaterialBuilder::RegisterTextureSlot: MAX_MATERIAL_TEXTURES hit\n");
-        return;
-    }
-    _Slot->AddRef();
-    _Slot->SlotIndex = TextureSlots.Size();
-    TextureSlots.Add(_Slot);
-}
-
-#if 0
-TRef< ADocObject > MGMaterialGraph::Serialize() {
-    TRef< ADocObject > object = MakeRef< ADocObject >();
-
-    if ( !Nodes.IsEmpty() ) {
-        ADocMember * array = object->AddArray( "Nodes" );
-
-        for ( MGNode * node : Nodes ) {
-            TRef< ADocObject > nodeObject = node->Serialize();
-            array->AddValue( nodeObject );
+        if (!textureSlot)
+        {
+            LOG("Uninitialized texture slot {}\n", n);
+            return {};
         }
+        n++;
     }
 
-    return object;
-}
-#endif
-
-void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
-{
     int maxUniformAddress = -1;
 
-    pDef->Type                      = InGraph->MaterialType;
-    pDef->Blending                  = InGraph->Blending;
-    pDef->TessellationMethod        = InGraph->TessellationMethod;
-    pDef->RenderingPriority         = RENDERING_PRIORITY_DEFAULT;
-    pDef->bDepthTest_EXPERIMENTAL   = InGraph->bDepthTest;
-    pDef->bDisplacementAffectShadow = InGraph->bDisplacementAffectShadow;
-    //pDef->bParallaxMappingSelfShadowing = InGraph->bParallaxMappingSelfShadowing;
-    pDef->bTranslucent      = InGraph->bTranslucent;
-    pDef->bTwoSided         = InGraph->bTwoSided;
-    pDef->bAlphaMasking     = false;
-    pDef->bShadowMapMasking = false;
-    pDef->bHasVertexDeform  = false;
-    pDef->bNoCastShadow     = false;
-    pDef->LightmapSlot      = 0;
+    TRef<ACompiledMaterial> material = MakeRef<ACompiledMaterial>();
+
+    material->Type                      = MaterialType;
+    material->Blending                  = Blending;
+    material->TessellationMethod        = TessellationMethod;
+    material->RenderingPriority         = RENDERING_PRIORITY_DEFAULT;
+    material->bDepthTest_EXPERIMENTAL   = bDepthTest;
+    material->bDisplacementAffectShadow = bDisplacementAffectShadow;
+    //material->bParallaxMappingSelfShadowing = bParallaxMappingSelfShadowing;
+    material->bTranslucent      = bTranslucent;
+    material->bTwoSided         = bTwoSided;
+    material->bAlphaMasking     = false;
+    material->bShadowMapMasking = false;
+    material->bHasVertexDeform  = false;
+    material->bNoCastShadow     = false;
+    material->LightmapSlot      = 0;
 
     AString predefines;
 
-    switch (InGraph->MaterialType)
+    switch (MaterialType)
     {
         case MATERIAL_TYPE_UNLIT:
             predefines += "#define MATERIAL_TYPE_UNLIT\n";
@@ -3265,7 +3291,7 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
             HK_ASSERT(0);
     }
 
-    switch (InGraph->TessellationMethod)
+    switch (TessellationMethod)
     {
         case TESSELLATION_FLAT:
             predefines += "#define TESSELLATION_METHOD TESSELLATION_FLAT\n";
@@ -3277,126 +3303,126 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
             break;
     }
 
-    if (InGraph->DepthHack == MATERIAL_DEPTH_HACK_WEAPON)
+    if (DepthHack == MATERIAL_DEPTH_HACK_WEAPON)
     {
-        predefines += "#define WEAPON_DEPTH_HACK\n";
-        pDef->bNoCastShadow     = true;
-        pDef->RenderingPriority = RENDERING_PRIORITY_WEAPON;
+        //predefines += "#define WEAPON_DEPTH_HACK\n";
+        material->bNoCastShadow     = true;
+        material->RenderingPriority = RENDERING_PRIORITY_WEAPON;
     }
-    else if (InGraph->DepthHack == MATERIAL_DEPTH_HACK_SKYBOX)
+    else if (DepthHack == MATERIAL_DEPTH_HACK_SKYBOX)
     {
         predefines += "#define SKYBOX_DEPTH_HACK\n";
-        pDef->bNoCastShadow     = true;
-        pDef->RenderingPriority = RENDERING_PRIORITY_SKYBOX;
+        material->bNoCastShadow     = true;
+        material->RenderingPriority = RENDERING_PRIORITY_SKYBOX;
     }
 
-    if (InGraph->bTranslucent)
+    if (bTranslucent)
     {
         predefines += "#define TRANSLUCENT\n";
     }
 
-    if (InGraph->bTwoSided)
+    if (bTwoSided)
     {
         predefines += "#define TWOSIDED\n";
     }
 
-    if (InGraph->bNoLightmap)
+    if (bNoLightmap)
     {
         predefines += "#define NO_LIGHTMAP\n";
     }
 
-    if (InGraph->bAllowScreenSpaceReflections)
+    if (bAllowScreenSpaceReflections)
     {
         predefines += "#define ALLOW_SSLR\n";
     }
 
-    if (InGraph->bAllowScreenAmbientOcclusion)
+    if (bAllowScreenAmbientOcclusion)
     {
         predefines += "#define ALLOW_SSAO\n";
     }
 
-    if (InGraph->bAllowShadowReceive)
+    if (bAllowShadowReceive)
     {
         predefines += "#define ALLOW_SHADOW_RECEIVE\n";
     }
 
-    if (InGraph->bDisplacementAffectShadow)
+    if (bDisplacementAffectShadow)
     {
         predefines += "#define DISPLACEMENT_AFFECT_SHADOW\n";
     }
 
-    if (InGraph->bParallaxMappingSelfShadowing)
+    if (bParallaxMappingSelfShadowing)
     {
         predefines += "#define PARALLAX_SELF_SHADOW\n";
     }
 
-    if (InGraph->bPerBoneMotionBlur)
+    if (bPerBoneMotionBlur)
     {
         predefines += "#define PER_BONE_MOTION_BLUR\n";
     }
 
-    if (InGraph->MotionBlurScale > 0.0f && !InGraph->bTranslucent)
+    if (MotionBlurScale > 0.0f && !bTranslucent)
     {
         predefines += "#define ALLOW_MOTION_BLUR\n";
     }
 
-    predefines += "#define MOTION_BLUR_SCALE " + Core::ToString(Math::Saturate(InGraph->MotionBlurScale)) + "\n";
+    predefines += "#define MOTION_BLUR_SCALE " + Core::ToString(Math::Saturate(MotionBlurScale)) + "\n";
 
-    if (InGraph->bUseVirtualTexture)
+    if (bUseVirtualTexture)
     {
         predefines += "#define USE_VIRTUAL_TEXTURE\n";
         predefines += "#define VT_LAYERS 1\n"; // TODO: Add based on material
     }
 
-    if (!InGraph->bDepthTest /*|| InGraph->bTranslucent */)
+    if (!bDepthTest /*|| bTranslucent */)
     {
-        pDef->bNoCastShadow = true;
+        material->bNoCastShadow = true;
     }
 
-    if (InGraph->Blending == COLOR_BLENDING_PREMULTIPLIED_ALPHA)
+    if (Blending == COLOR_BLENDING_PREMULTIPLIED_ALPHA)
     {
         predefines += "#define PREMULTIPLIED_ALPHA\n";
     }
 
-    bool bTess = InGraph->TessellationMethod != TESSELLATION_DISABLED;
+    bool bTess = TessellationMethod != TESSELLATION_DISABLED;
 
     // TODO:
     // if there is no specific vertex deformation / tessellation / alpha masking or other non-trivial material feature,
     // then use default shader/pipeline for corresponding material pass.
     // This is optimization of switching between pipelines.
-    // pDef->bDepthPassDefaultPipeline
-    // pDef->bShadowMapPassDefaultPipeline
-    // pDef->bWireframePassDefaultPipeline
-    // pDef->bNormalsPassDefaultPipeline
+    // material->bDepthPassDefaultPipeline
+    // material->bShadowMapPassDefaultPipeline
+    // material->bWireframePassDefaultPipeline
+    // material->bNormalsPassDefaultPipeline
 
     // Create depth pass
     {
-        AMaterialBuildContext    vertexCtx(InGraph, VERTEX_STAGE);
-        AMaterialBuildContext    tessControlCtx(InGraph, TESSELLATION_CONTROL_STAGE);
-        AMaterialBuildContext    tessEvalCtx(InGraph, TESSELLATION_EVAL_STAGE);
-        AMaterialBuildContext    depthCtx(InGraph, DEPTH_STAGE);
+        AMaterialBuildContext    vertexCtx(this, MATERIAL_STAGE_VERTEX);
+        AMaterialBuildContext    tessControlCtx(this, MATERIAL_STAGE_TESSELLATION_CONTROL);
+        AMaterialBuildContext    tessEvalCtx(this, MATERIAL_STAGE_TESSELLATION_EVAL);
+        AMaterialBuildContext    depthCtx(this, MATERIAL_STAGE_DEPTH);
         SMaterialStageTransition trans;
 
-        InGraph->CompileStage(vertexCtx);
-        InGraph->CompileStage(depthCtx);
+        CompileStage(vertexCtx);
+        CompileStage(depthCtx);
 
         if (bTess)
         {
-            InGraph->CompileStage(tessControlCtx);
-            InGraph->CompileStage(tessEvalCtx);
+            CompileStage(tessControlCtx);
+            CompileStage(tessEvalCtx);
         }
 
-        InGraph->CreateStageTransitions(trans,
-                                        &vertexCtx,
-                                        bTess ? &tessControlCtx : nullptr,
-                                        bTess ? &tessEvalCtx : nullptr,
-                                        nullptr,
-                                        /*depthCtx.bHasAlphaMask ? */ &depthCtx /* : nullptr*/);
+        CreateStageTransitions(trans,
+                               &vertexCtx,
+                               bTess ? &tessControlCtx : nullptr,
+                               bTess ? &tessEvalCtx : nullptr,
+                               nullptr,
+                               /*depthCtx.bHasAlphaMask ? */ &depthCtx /* : nullptr*/);
 
-        pDef->bHasVertexDeform      = vertexCtx.bHasVertexDeform;
-        pDef->bAlphaMasking         = depthCtx.bHasAlphaMask;
-        pDef->DepthPassTextureCount = trans.MaxTextureSlot + 1;
-        maxUniformAddress           = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
+        material->bHasVertexDeform      = vertexCtx.bHasVertexDeform;
+        material->bAlphaMasking         = depthCtx.bHasAlphaMask;
+        material->DepthPassTextureCount = trans.MaxTextureSlot + 1;
+        maxUniformAddress               = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
 
         int locationIndex = trans.Varyings.Size();
 
@@ -3406,57 +3432,57 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
         predefines += "#define DEPTH_PASS_VARYING_VERTEX_POSITION_CURRENT " + Core::ToString(locationIndex++) + "\n";
         predefines += "#define DEPTH_PASS_VARYING_VERTEX_POSITION_PREVIOUS " + Core::ToString(locationIndex++) + "\n";
 
-        pDef->AddShader("$DEPTH_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
-        pDef->AddShader("$DEPTH_PASS_VERTEX_SAMPLERS$", SamplersString(InGraph, vertexCtx.MaxTextureSlot));
-        pDef->AddShader("$DEPTH_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
+        material->AddShader("$DEPTH_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
+        material->AddShader("$DEPTH_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddShader("$DEPTH_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
 
-        pDef->AddShader("$DEPTH_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
-        pDef->AddShader("$DEPTH_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
-        pDef->AddShader("$DEPTH_PASS_TCS_SAMPLERS$", SamplersString(InGraph, tessControlCtx.MaxTextureSlot));
-        pDef->AddShader("$DEPTH_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
-        pDef->AddShader("$DEPTH_PASS_TCS_CODE$", tessControlCtx.SourceCode);
+        material->AddShader("$DEPTH_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
+        material->AddShader("$DEPTH_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
+        material->AddShader("$DEPTH_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
+        material->AddShader("$DEPTH_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
+        material->AddShader("$DEPTH_PASS_TCS_CODE$", tessControlCtx.SourceCode);
 
-        pDef->AddShader("$DEPTH_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
-        pDef->AddShader("$DEPTH_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
-        pDef->AddShader("$DEPTH_PASS_TES_SAMPLERS$", SamplersString(InGraph, tessEvalCtx.MaxTextureSlot));
-        pDef->AddShader("$DEPTH_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
-        pDef->AddShader("$DEPTH_PASS_TES_CODE$", tessEvalCtx.SourceCode);
+        material->AddShader("$DEPTH_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
+        material->AddShader("$DEPTH_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
+        material->AddShader("$DEPTH_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
+        material->AddShader("$DEPTH_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
+        material->AddShader("$DEPTH_PASS_TES_CODE$", tessEvalCtx.SourceCode);
 
-        pDef->AddShader("$DEPTH_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
-        pDef->AddShader("$DEPTH_PASS_FRAGMENT_SAMPLERS$", SamplersString(InGraph, depthCtx.MaxTextureSlot));
-        pDef->AddShader("$DEPTH_PASS_FRAGMENT_CODE$", depthCtx.SourceCode);
+        material->AddShader("$DEPTH_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
+        material->AddShader("$DEPTH_PASS_FRAGMENT_SAMPLERS$", SamplersString(depthCtx.MaxTextureSlot));
+        material->AddShader("$DEPTH_PASS_FRAGMENT_CODE$", depthCtx.SourceCode);
     }
 
     // Create shadowmap pass
     {
-        AMaterialBuildContext    vertexCtx(InGraph, VERTEX_STAGE);
-        AMaterialBuildContext    tessControlCtx(InGraph, TESSELLATION_CONTROL_STAGE);
-        AMaterialBuildContext    tessEvalCtx(InGraph, TESSELLATION_EVAL_STAGE);
-        AMaterialBuildContext    geometryCtx(InGraph, GEOMETRY_STAGE);
-        AMaterialBuildContext    shadowCtx(InGraph, SHADOWCAST_STAGE);
+        AMaterialBuildContext    vertexCtx(this, MATERIAL_STAGE_VERTEX);
+        AMaterialBuildContext    tessControlCtx(this, MATERIAL_STAGE_TESSELLATION_CONTROL);
+        AMaterialBuildContext    tessEvalCtx(this, MATERIAL_STAGE_TESSELLATION_EVAL);
+        AMaterialBuildContext    geometryCtx(this, MATERIAL_STAGE_GEOMETRY);
+        AMaterialBuildContext    shadowCtx(this, MATERIAL_STAGE_SHADOWCAST);
         SMaterialStageTransition trans;
 
-        InGraph->CompileStage(vertexCtx);
-        InGraph->CompileStage(shadowCtx);
+        CompileStage(vertexCtx);
+        CompileStage(shadowCtx);
 
-        bool bTessShadowmap = (InGraph->TessellationMethod == TESSELLATION_PN) || (InGraph->TessellationMethod == TESSELLATION_FLAT && InGraph->bDisplacementAffectShadow);
+        bool bTessShadowmap = (TessellationMethod == TESSELLATION_PN) || (TessellationMethod == TESSELLATION_FLAT && bDisplacementAffectShadow);
 
         if (bTessShadowmap)
         {
-            InGraph->CompileStage(tessControlCtx);
-            InGraph->CompileStage(tessEvalCtx);
+            CompileStage(tessControlCtx);
+            CompileStage(tessEvalCtx);
         }
 
-        InGraph->CreateStageTransitions(trans,
-                                        &vertexCtx,
-                                        bTessShadowmap ? &tessControlCtx : nullptr,
-                                        bTessShadowmap ? &tessEvalCtx : nullptr,
-                                        &geometryCtx,
-                                        shadowCtx.bHasShadowMask ? &shadowCtx : nullptr);
+        CreateStageTransitions(trans,
+                               &vertexCtx,
+                               bTessShadowmap ? &tessControlCtx : nullptr,
+                               bTessShadowmap ? &tessEvalCtx : nullptr,
+                               &geometryCtx,
+                               shadowCtx.bHasShadowMask ? &shadowCtx : nullptr);
 
-        pDef->bShadowMapMasking         = shadowCtx.bHasShadowMask;
-        pDef->ShadowMapPassTextureCount = trans.MaxTextureSlot + 1;
-        maxUniformAddress               = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
+        material->bShadowMapMasking         = shadowCtx.bHasShadowMask;
+        material->ShadowMapPassTextureCount = trans.MaxTextureSlot + 1;
+        maxUniformAddress                   = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
 
         int locationIndex = trans.Varyings.Size();
 
@@ -3464,61 +3490,61 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
         predefines += "#define SHADOWMAP_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
         predefines += "#define SHADOWMAP_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
 
-        pDef->AddShader("$SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
-        pDef->AddShader("$SHADOWMAP_PASS_VERTEX_SAMPLERS$", SamplersString(InGraph, vertexCtx.MaxTextureSlot));
-        pDef->AddShader("$SHADOWMAP_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
+        material->AddShader("$SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
+        material->AddShader("$SHADOWMAP_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddShader("$SHADOWMAP_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
 
-        pDef->AddShader("$SHADOWMAP_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
-        pDef->AddShader("$SHADOWMAP_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
-        pDef->AddShader("$SHADOWMAP_PASS_TCS_SAMPLERS$", SamplersString(InGraph, tessControlCtx.MaxTextureSlot));
-        pDef->AddShader("$SHADOWMAP_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
-        pDef->AddShader("$SHADOWMAP_PASS_TCS_CODE$", tessControlCtx.SourceCode);
+        material->AddShader("$SHADOWMAP_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
+        material->AddShader("$SHADOWMAP_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
+        material->AddShader("$SHADOWMAP_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
+        material->AddShader("$SHADOWMAP_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
+        material->AddShader("$SHADOWMAP_PASS_TCS_CODE$", tessControlCtx.SourceCode);
 
-        pDef->AddShader("$SHADOWMAP_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
-        pDef->AddShader("$SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
-        pDef->AddShader("$SHADOWMAP_PASS_TES_SAMPLERS$", SamplersString(InGraph, tessEvalCtx.MaxTextureSlot));
-        pDef->AddShader("$SHADOWMAP_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
-        pDef->AddShader("$SHADOWMAP_PASS_TES_CODE$", tessEvalCtx.SourceCode);
+        material->AddShader("$SHADOWMAP_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
+        material->AddShader("$SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
+        material->AddShader("$SHADOWMAP_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
+        material->AddShader("$SHADOWMAP_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
+        material->AddShader("$SHADOWMAP_PASS_TES_CODE$", tessEvalCtx.SourceCode);
 
-        pDef->AddShader("$SHADOWMAP_PASS_GEOMETRY_INPUT_VARYINGS$", trans.GS_InputVaryingsCode);
-        pDef->AddShader("$SHADOWMAP_PASS_GEOMETRY_OUTPUT_VARYINGS$", trans.GS_OutputVaryingsCode);
-        pDef->AddShader("$SHADOWMAP_PASS_GEOMETRY_COPY_VARYINGS$", trans.GS_CopyVaryingsCode);
+        material->AddShader("$SHADOWMAP_PASS_GEOMETRY_INPUT_VARYINGS$", trans.GS_InputVaryingsCode);
+        material->AddShader("$SHADOWMAP_PASS_GEOMETRY_OUTPUT_VARYINGS$", trans.GS_OutputVaryingsCode);
+        material->AddShader("$SHADOWMAP_PASS_GEOMETRY_COPY_VARYINGS$", trans.GS_CopyVaryingsCode);
 
-        pDef->AddShader("$SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
-        pDef->AddShader("$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", SamplersString(InGraph, shadowCtx.MaxTextureSlot));
-        pDef->AddShader("$SHADOWMAP_PASS_FRAGMENT_CODE$", shadowCtx.SourceCode);
+        material->AddShader("$SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
+        material->AddShader("$SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", SamplersString(shadowCtx.MaxTextureSlot));
+        material->AddShader("$SHADOWMAP_PASS_FRAGMENT_CODE$", shadowCtx.SourceCode);
     }
 
     // Create omnidirectional shadowmap pass
     {
-        AMaterialBuildContext    vertexCtx(InGraph, VERTEX_STAGE);
-        AMaterialBuildContext    tessControlCtx(InGraph, TESSELLATION_CONTROL_STAGE);
-        AMaterialBuildContext    tessEvalCtx(InGraph, TESSELLATION_EVAL_STAGE);
-        AMaterialBuildContext    shadowCtx(InGraph, SHADOWCAST_STAGE);
+        AMaterialBuildContext    vertexCtx(this, MATERIAL_STAGE_VERTEX);
+        AMaterialBuildContext    tessControlCtx(this, MATERIAL_STAGE_TESSELLATION_CONTROL);
+        AMaterialBuildContext    tessEvalCtx(this, MATERIAL_STAGE_TESSELLATION_EVAL);
+        AMaterialBuildContext    shadowCtx(this, MATERIAL_STAGE_SHADOWCAST);
         SMaterialStageTransition trans;
 
-        InGraph->CompileStage(vertexCtx);
-        InGraph->CompileStage(shadowCtx);
+        CompileStage(vertexCtx);
+        CompileStage(shadowCtx);
 
-        bool bTessShadowmap = (InGraph->TessellationMethod == TESSELLATION_PN) || (InGraph->TessellationMethod == TESSELLATION_FLAT && InGraph->bDisplacementAffectShadow);
+        bool bTessShadowmap = (TessellationMethod == TESSELLATION_PN) || (TessellationMethod == TESSELLATION_FLAT && bDisplacementAffectShadow);
 
         if (bTessShadowmap)
         {
-            InGraph->CompileStage(tessControlCtx);
-            InGraph->CompileStage(tessEvalCtx);
+            CompileStage(tessControlCtx);
+            CompileStage(tessEvalCtx);
         }
 
-        InGraph->CreateStageTransitions(trans,
-                                        &vertexCtx,
-                                        bTessShadowmap ? &tessControlCtx : nullptr,
-                                        bTessShadowmap ? &tessEvalCtx : nullptr,
-                                        nullptr,
-                                        shadowCtx.bHasShadowMask ? &shadowCtx : nullptr);
+        CreateStageTransitions(trans,
+                               &vertexCtx,
+                               bTessShadowmap ? &tessControlCtx : nullptr,
+                               bTessShadowmap ? &tessEvalCtx : nullptr,
+                               nullptr,
+                               shadowCtx.bHasShadowMask ? &shadowCtx : nullptr);
 
         // NOTE: bShadowMapMasking and ShadowMapPassTextureCount should be same as in directional shadow map pass
-        pDef->bShadowMapMasking         = shadowCtx.bHasShadowMask;
-        pDef->ShadowMapPassTextureCount = trans.MaxTextureSlot + 1;
-        maxUniformAddress               = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
+        material->bShadowMapMasking         = shadowCtx.bHasShadowMask;
+        material->ShadowMapPassTextureCount = trans.MaxTextureSlot + 1;
+        maxUniformAddress                   = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
 
         int locationIndex = trans.Varyings.Size();
 
@@ -3526,53 +3552,53 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
         predefines += "#define OMNI_SHADOWMAP_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
         predefines += "#define OMNI_SHADOWMAP_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
 
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_SAMPLERS$", SamplersString(InGraph, vertexCtx.MaxTextureSlot));
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
+        material->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
+        material->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddShader("$OMNI_SHADOWMAP_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
 
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TCS_SAMPLERS$", SamplersString(InGraph, tessControlCtx.MaxTextureSlot));
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TCS_CODE$", tessControlCtx.SourceCode);
+        material->AddShader("$OMNI_SHADOWMAP_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
+        material->AddShader("$OMNI_SHADOWMAP_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
+        material->AddShader("$OMNI_SHADOWMAP_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
+        material->AddShader("$OMNI_SHADOWMAP_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
+        material->AddShader("$OMNI_SHADOWMAP_PASS_TCS_CODE$", tessControlCtx.SourceCode);
 
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TES_SAMPLERS$", SamplersString(InGraph, tessEvalCtx.MaxTextureSlot));
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_TES_CODE$", tessEvalCtx.SourceCode);
+        material->AddShader("$OMNI_SHADOWMAP_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
+        material->AddShader("$OMNI_SHADOWMAP_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
+        material->AddShader("$OMNI_SHADOWMAP_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
+        material->AddShader("$OMNI_SHADOWMAP_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
+        material->AddShader("$OMNI_SHADOWMAP_PASS_TES_CODE$", tessEvalCtx.SourceCode);
 
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", SamplersString(InGraph, shadowCtx.MaxTextureSlot));
-        pDef->AddShader("$OMNI_SHADOWMAP_PASS_FRAGMENT_CODE$", shadowCtx.SourceCode);
+        material->AddShader("$OMNI_SHADOWMAP_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
+        material->AddShader("$OMNI_SHADOWMAP_PASS_FRAGMENT_SAMPLERS$", SamplersString(shadowCtx.MaxTextureSlot));
+        material->AddShader("$OMNI_SHADOWMAP_PASS_FRAGMENT_CODE$", shadowCtx.SourceCode);
     }
 
     // Create light pass
     {
-        AMaterialBuildContext    vertexCtx(InGraph, VERTEX_STAGE);
-        AMaterialBuildContext    tessControlCtx(InGraph, TESSELLATION_CONTROL_STAGE);
-        AMaterialBuildContext    tessEvalCtx(InGraph, TESSELLATION_EVAL_STAGE);
-        AMaterialBuildContext    lightCtx(InGraph, LIGHT_STAGE);
+        AMaterialBuildContext    vertexCtx(this, MATERIAL_STAGE_VERTEX);
+        AMaterialBuildContext    tessControlCtx(this, MATERIAL_STAGE_TESSELLATION_CONTROL);
+        AMaterialBuildContext    tessEvalCtx(this, MATERIAL_STAGE_TESSELLATION_EVAL);
+        AMaterialBuildContext    lightCtx(this, MATERIAL_STAGE_LIGHT);
         SMaterialStageTransition trans;
 
-        InGraph->CompileStage(vertexCtx);
-        InGraph->CompileStage(lightCtx);
+        CompileStage(vertexCtx);
+        CompileStage(lightCtx);
 
         if (bTess)
         {
-            InGraph->CompileStage(tessControlCtx);
-            InGraph->CompileStage(tessEvalCtx);
+            CompileStage(tessControlCtx);
+            CompileStage(tessEvalCtx);
         }
 
-        InGraph->CreateStageTransitions(trans,
-                                        &vertexCtx,
-                                        bTess ? &tessControlCtx : nullptr,
-                                        bTess ? &tessEvalCtx : nullptr,
-                                        nullptr,
-                                        &lightCtx);
+        CreateStageTransitions(trans,
+                               &vertexCtx,
+                               bTess ? &tessControlCtx : nullptr,
+                               bTess ? &tessEvalCtx : nullptr,
+                               nullptr,
+                               &lightCtx);
 
-        pDef->LightPassTextureCount = trans.MaxTextureSlot + 1;
-        maxUniformAddress           = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
+        material->LightPassTextureCount = trans.MaxTextureSlot + 1;
+        maxUniformAddress               = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
 
         int locationIndex = trans.Varyings.Size();
 
@@ -3582,18 +3608,18 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
         predefines += "#define COLOR_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
         predefines += "#define COLOR_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
 
-        if (InGraph->bUseVirtualTexture)
+        if (bUseVirtualTexture)
         {
             predefines += "#define COLOR_PASS_VARYING_VT_TEXCOORD " + Core::ToString(locationIndex++) + "\n";
         }
 
-        pDef->LightmapSlot = lightCtx.MaxTextureSlot + 1;
+        material->LightmapSlot = lightCtx.MaxTextureSlot + 1;
 
-        predefines += "#define COLOR_PASS_TEXTURE_LIGHTMAP " + Core::ToString(pDef->LightmapSlot) + "\n";
+        predefines += "#define COLOR_PASS_TEXTURE_LIGHTMAP " + Core::ToString(material->LightmapSlot) + "\n";
 
         if (lightCtx.ParallaxSampler != -1)
         {
-            switch (InGraph->ParallaxTechnique)
+            switch (ParallaxTechnique)
             {
                 case PARALLAX_TECHNIQUE_POM:
                     predefines += "#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_POM\n";
@@ -3617,54 +3643,54 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
             predefines += "#define PARALLAX_TECHNIQUE PARALLAX_TECHNIQUE_DISABLED\n";
         }
 
-        pDef->AddShader("$COLOR_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
-        pDef->AddShader("$COLOR_PASS_VERTEX_SAMPLERS$", SamplersString(InGraph, vertexCtx.MaxTextureSlot));
-        pDef->AddShader("$COLOR_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
+        material->AddShader("$COLOR_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
+        material->AddShader("$COLOR_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddShader("$COLOR_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
 
-        pDef->AddShader("$COLOR_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
-        pDef->AddShader("$COLOR_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
-        pDef->AddShader("$COLOR_PASS_TCS_SAMPLERS$", SamplersString(InGraph, tessControlCtx.MaxTextureSlot));
-        pDef->AddShader("$COLOR_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
-        pDef->AddShader("$COLOR_PASS_TCS_CODE$", tessControlCtx.SourceCode);
+        material->AddShader("$COLOR_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
+        material->AddShader("$COLOR_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
+        material->AddShader("$COLOR_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
+        material->AddShader("$COLOR_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
+        material->AddShader("$COLOR_PASS_TCS_CODE$", tessControlCtx.SourceCode);
 
-        pDef->AddShader("$COLOR_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
-        pDef->AddShader("$COLOR_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
-        pDef->AddShader("$COLOR_PASS_TES_SAMPLERS$", SamplersString(InGraph, tessEvalCtx.MaxTextureSlot));
-        pDef->AddShader("$COLOR_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
-        pDef->AddShader("$COLOR_PASS_TES_CODE$", tessEvalCtx.SourceCode);
+        material->AddShader("$COLOR_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
+        material->AddShader("$COLOR_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
+        material->AddShader("$COLOR_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
+        material->AddShader("$COLOR_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
+        material->AddShader("$COLOR_PASS_TES_CODE$", tessEvalCtx.SourceCode);
 
-        pDef->AddShader("$COLOR_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
-        pDef->AddShader("$COLOR_PASS_FRAGMENT_SAMPLERS$", SamplersString(InGraph, lightCtx.MaxTextureSlot));
-        pDef->AddShader("$COLOR_PASS_FRAGMENT_CODE$", lightCtx.SourceCode);
+        material->AddShader("$COLOR_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
+        material->AddShader("$COLOR_PASS_FRAGMENT_SAMPLERS$", SamplersString(lightCtx.MaxTextureSlot));
+        material->AddShader("$COLOR_PASS_FRAGMENT_CODE$", lightCtx.SourceCode);
     }
 
     // Create outline pass
     {
-        AMaterialBuildContext    vertexCtx(InGraph, VERTEX_STAGE);
-        AMaterialBuildContext    tessControlCtx(InGraph, TESSELLATION_CONTROL_STAGE);
-        AMaterialBuildContext    tessEvalCtx(InGraph, TESSELLATION_EVAL_STAGE);
-        AMaterialBuildContext    depthCtx(InGraph, DEPTH_STAGE);
+        AMaterialBuildContext    vertexCtx(this, MATERIAL_STAGE_VERTEX);
+        AMaterialBuildContext    tessControlCtx(this, MATERIAL_STAGE_TESSELLATION_CONTROL);
+        AMaterialBuildContext    tessEvalCtx(this, MATERIAL_STAGE_TESSELLATION_EVAL);
+        AMaterialBuildContext    depthCtx(this, MATERIAL_STAGE_DEPTH);
         SMaterialStageTransition trans;
 
-        InGraph->CompileStage(vertexCtx);
-        InGraph->CompileStage(depthCtx);
+        CompileStage(vertexCtx);
+        CompileStage(depthCtx);
 
         if (bTess)
         {
-            InGraph->CompileStage(tessControlCtx);
-            InGraph->CompileStage(tessEvalCtx);
+            CompileStage(tessControlCtx);
+            CompileStage(tessEvalCtx);
         }
 
-        InGraph->CreateStageTransitions(trans,
-                                        &vertexCtx,
-                                        bTess ? &tessControlCtx : nullptr,
-                                        bTess ? &tessEvalCtx : nullptr,
-                                        nullptr,
-                                        &depthCtx);
+        CreateStageTransitions(trans,
+                               &vertexCtx,
+                               bTess ? &tessControlCtx : nullptr,
+                               bTess ? &tessEvalCtx : nullptr,
+                               nullptr,
+                               &depthCtx);
 
-        //pDef->bHasVertexDeform = vertexCtx.bHasVertexDeform;
-        //pDef->bAlphaMasking = depthCtx.bHasAlphaMask;
-        //pDef->DepthPassTextureCount = trans.MaxTextureSlot + 1;
+        //material->bHasVertexDeform = vertexCtx.bHasVertexDeform;
+        //material->bAlphaMasking = depthCtx.bHasAlphaMask;
+        //material->DepthPassTextureCount = trans.MaxTextureSlot + 1;
         maxUniformAddress = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
 
         int locationIndex = trans.Varyings.Size();
@@ -3672,114 +3698,451 @@ void CompileMaterialGraph(MGMaterialGraph* InGraph, SMaterialDef* pDef)
         predefines += "#define OUTLINE_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
         predefines += "#define OUTLINE_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
 
-        pDef->AddShader("$OUTLINE_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
-        pDef->AddShader("$OUTLINE_PASS_VERTEX_SAMPLERS$", SamplersString(InGraph, vertexCtx.MaxTextureSlot));
-        pDef->AddShader("$OUTLINE_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
+        material->AddShader("$OUTLINE_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
+        material->AddShader("$OUTLINE_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddShader("$OUTLINE_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
 
-        pDef->AddShader("$OUTLINE_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
-        pDef->AddShader("$OUTLINE_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
-        pDef->AddShader("$OUTLINE_PASS_TCS_SAMPLERS$", SamplersString(InGraph, tessControlCtx.MaxTextureSlot));
-        pDef->AddShader("$OUTLINE_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
-        pDef->AddShader("$OUTLINE_PASS_TCS_CODE$", tessControlCtx.SourceCode);
+        material->AddShader("$OUTLINE_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
+        material->AddShader("$OUTLINE_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
+        material->AddShader("$OUTLINE_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
+        material->AddShader("$OUTLINE_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
+        material->AddShader("$OUTLINE_PASS_TCS_CODE$", tessControlCtx.SourceCode);
 
-        pDef->AddShader("$OUTLINE_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
-        pDef->AddShader("$OUTLINE_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
-        pDef->AddShader("$OUTLINE_PASS_TES_SAMPLERS$", SamplersString(InGraph, tessEvalCtx.MaxTextureSlot));
-        pDef->AddShader("$OUTLINE_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
-        pDef->AddShader("$OUTLINE_PASS_TES_CODE$", tessEvalCtx.SourceCode);
+        material->AddShader("$OUTLINE_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
+        material->AddShader("$OUTLINE_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode);
+        material->AddShader("$OUTLINE_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
+        material->AddShader("$OUTLINE_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
+        material->AddShader("$OUTLINE_PASS_TES_CODE$", tessEvalCtx.SourceCode);
 
-        pDef->AddShader("$OUTLINE_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
-        pDef->AddShader("$OUTLINE_PASS_FRAGMENT_SAMPLERS$", SamplersString(InGraph, depthCtx.MaxTextureSlot));
-        pDef->AddShader("$OUTLINE_PASS_FRAGMENT_CODE$", depthCtx.SourceCode);
+        material->AddShader("$OUTLINE_PASS_FRAGMENT_INPUT_VARYINGS$", trans.FS_InputVaryingsCode);
+        material->AddShader("$OUTLINE_PASS_FRAGMENT_SAMPLERS$", SamplersString(depthCtx.MaxTextureSlot));
+        material->AddShader("$OUTLINE_PASS_FRAGMENT_CODE$", depthCtx.SourceCode);
     }
 
     // Create wireframe pass
     {
-        AMaterialBuildContext    vertexCtx(InGraph, VERTEX_STAGE);
-        AMaterialBuildContext    tessControlCtx(InGraph, TESSELLATION_CONTROL_STAGE);
-        AMaterialBuildContext    tessEvalCtx(InGraph, TESSELLATION_EVAL_STAGE);
-        AMaterialBuildContext    geometryCtx(InGraph, GEOMETRY_STAGE);
+        AMaterialBuildContext    vertexCtx(this, MATERIAL_STAGE_VERTEX);
+        AMaterialBuildContext    tessControlCtx(this, MATERIAL_STAGE_TESSELLATION_CONTROL);
+        AMaterialBuildContext    tessEvalCtx(this, MATERIAL_STAGE_TESSELLATION_EVAL);
+        AMaterialBuildContext    geometryCtx(this, MATERIAL_STAGE_GEOMETRY);
         SMaterialStageTransition trans;
 
-        InGraph->CompileStage(vertexCtx);
+        CompileStage(vertexCtx);
 
         if (bTess)
         {
-            InGraph->CompileStage(tessControlCtx);
-            InGraph->CompileStage(tessEvalCtx);
+            CompileStage(tessControlCtx);
+            CompileStage(tessEvalCtx);
         }
 
-        InGraph->CreateStageTransitions(trans,
-                                        &vertexCtx,
-                                        bTess ? &tessControlCtx : nullptr,
-                                        bTess ? &tessEvalCtx : nullptr,
-                                        &geometryCtx,
-                                        nullptr);
+        CreateStageTransitions(trans,
+                               &vertexCtx,
+                               bTess ? &tessControlCtx : nullptr,
+                               bTess ? &tessEvalCtx : nullptr,
+                               &geometryCtx,
+                               nullptr);
 
-        pDef->WireframePassTextureCount = trans.MaxTextureSlot + 1;
-        maxUniformAddress               = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
+        material->WireframePassTextureCount = trans.MaxTextureSlot + 1;
+        maxUniformAddress                   = Math::Max(maxUniformAddress, trans.MaxUniformAddress);
 
         int locationIndex = trans.Varyings.Size();
 
         predefines += "#define WIREFRAME_PASS_VARYING_POSITION " + Core::ToString(locationIndex++) + "\n";
         predefines += "#define WIREFRAME_PASS_VARYING_NORMAL " + Core::ToString(locationIndex++) + "\n";
 
-        pDef->AddShader("$WIREFRAME_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
-        pDef->AddShader("$WIREFRAME_PASS_VERTEX_SAMPLERS$", SamplersString(InGraph, vertexCtx.MaxTextureSlot));
-        pDef->AddShader("$WIREFRAME_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
+        material->AddShader("$WIREFRAME_PASS_VERTEX_OUTPUT_VARYINGS$", trans.VS_OutputVaryingsCode);
+        material->AddShader("$WIREFRAME_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddShader("$WIREFRAME_PASS_VERTEX_CODE$", vertexCtx.SourceCode + trans.VS_CopyVaryingsCode);
 
-        pDef->AddShader("$WIREFRAME_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
-        pDef->AddShader("$WIREFRAME_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
-        pDef->AddShader("$WIREFRAME_PASS_TCS_SAMPLERS$", SamplersString(InGraph, tessControlCtx.MaxTextureSlot));
-        pDef->AddShader("$WIREFRAME_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
-        pDef->AddShader("$WIREFRAME_PASS_TCS_CODE$", tessControlCtx.SourceCode);
+        material->AddShader("$WIREFRAME_PASS_TCS_INPUT_VARYINGS$", trans.TCS_InputVaryingsCode);
+        material->AddShader("$WIREFRAME_PASS_TCS_OUTPUT_VARYINGS$", trans.TCS_OutputVaryingsCode);
+        material->AddShader("$WIREFRAME_PASS_TCS_SAMPLERS$", SamplersString(tessControlCtx.MaxTextureSlot));
+        material->AddShader("$WIREFRAME_PASS_TCS_COPY_VARYINGS$", trans.TCS_CopyVaryingsCode);
+        material->AddShader("$WIREFRAME_PASS_TCS_CODE$", tessControlCtx.SourceCode);
 
-        pDef->AddShader("$WIREFRAME_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
-        //pDef->AddShader( "$WIREFRAME_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode );
-        pDef->AddShader("$WIREFRAME_PASS_TES_SAMPLERS$", SamplersString(InGraph, tessEvalCtx.MaxTextureSlot));
-        pDef->AddShader("$WIREFRAME_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
-        pDef->AddShader("$WIREFRAME_PASS_TES_CODE$", tessEvalCtx.SourceCode);
+        material->AddShader("$WIREFRAME_PASS_TES_INPUT_VARYINGS$", trans.TES_InputVaryingsCode);
+        //material->AddShader( "$WIREFRAME_PASS_TES_OUTPUT_VARYINGS$", trans.TES_OutputVaryingsCode );
+        material->AddShader("$WIREFRAME_PASS_TES_SAMPLERS$", SamplersString(tessEvalCtx.MaxTextureSlot));
+        material->AddShader("$WIREFRAME_PASS_TES_INTERPOLATE$", trans.TES_CopyVaryingsCode);
+        material->AddShader("$WIREFRAME_PASS_TES_CODE$", tessEvalCtx.SourceCode);
 
-        //pDef->AddShader( "$WIREFRAME_PASS_GEOMETRY_INPUT_VARYINGS$", geometryCtx.InputVaryingsCode );
-        //pDef->AddShader( "$WIREFRAME_PASS_GEOMETRY_OUTPUT_VARYINGS$", geometryCtx.OutputVaryingsCode );
-        //pDef->AddShader( "$WIREFRAME_PASS_GEOMETRY_COPY_VARYINGS$", geometryCtx.CopyVaryingsCode );
+        //material->AddShader( "$WIREFRAME_PASS_GEOMETRY_INPUT_VARYINGS$", geometryCtx.InputVaryingsCode );
+        //material->AddShader( "$WIREFRAME_PASS_GEOMETRY_OUTPUT_VARYINGS$", geometryCtx.OutputVaryingsCode );
+        //material->AddShader( "$WIREFRAME_PASS_GEOMETRY_COPY_VARYINGS$", geometryCtx.CopyVaryingsCode );
     }
 
     // Create normals debugging pass
     {
         // Normals pass. Vertex stage
-        AMaterialBuildContext vertexCtx(InGraph, VERTEX_STAGE);
-        InGraph->CompileStage(vertexCtx);
+        AMaterialBuildContext vertexCtx(this, MATERIAL_STAGE_VERTEX);
+        CompileStage(vertexCtx);
 
-        pDef->NormalsPassTextureCount = vertexCtx.MaxTextureSlot + 1;
+        material->NormalsPassTextureCount = vertexCtx.MaxTextureSlot + 1;
 
         maxUniformAddress = Math::Max(maxUniformAddress, vertexCtx.MaxUniformAddress);
 
-        pDef->AddShader("$NORMALS_PASS_VERTEX_SAMPLERS$", SamplersString(InGraph, vertexCtx.MaxTextureSlot));
-        pDef->AddShader("$NORMALS_PASS_VERTEX_CODE$", vertexCtx.SourceCode);
+        material->AddShader("$NORMALS_PASS_VERTEX_SAMPLERS$", SamplersString(vertexCtx.MaxTextureSlot));
+        material->AddShader("$NORMALS_PASS_VERTEX_CODE$", vertexCtx.SourceCode);
     }
 
-    if (pDef->bHasVertexDeform)
+    if (material->bHasVertexDeform)
     {
         predefines += "#define HAS_VERTEX_DEFORM\n";
     }
 
-    pDef->AddShader("$PREDEFINES$", predefines);
+    material->AddShader("$PREDEFINES$", predefines);
 
-    pDef->NumUniformVectors = maxUniformAddress + 1;
-    pDef->NumSamplers       = 0;
-    pDef->NumSamplers       = Math::Max(pDef->NumSamplers, pDef->DepthPassTextureCount);
-    pDef->NumSamplers       = Math::Max(pDef->NumSamplers, pDef->LightPassTextureCount);
-    pDef->NumSamplers       = Math::Max(pDef->NumSamplers, pDef->WireframePassTextureCount);
-    pDef->NumSamplers       = Math::Max(pDef->NumSamplers, pDef->NormalsPassTextureCount);
-    pDef->NumSamplers       = Math::Max(pDef->NumSamplers, pDef->ShadowMapPassTextureCount);
+    material->NumUniformVectors = maxUniformAddress + 1;
 
-    for (int i = 0; i < pDef->NumSamplers; i++)
+    int numSamplers{};
+    numSamplers = 0;
+    numSamplers = Math::Max(numSamplers, material->DepthPassTextureCount);
+    numSamplers = Math::Max(numSamplers, material->LightPassTextureCount);
+    numSamplers = Math::Max(numSamplers, material->WireframePassTextureCount);
+    numSamplers = Math::Max(numSamplers, material->NormalsPassTextureCount);
+    numSamplers = Math::Max(numSamplers, material->ShadowMapPassTextureCount);
+
+    material->Samplers.Resize(numSamplers);
+    for (int i = 0; i < numSamplers; i++)
     {
-        pDef->Samplers[i] = InGraph->GetTextureSlots()[i]->SamplerDesc;
+        MGTextureSlot* textureSlot = GetTextures()[i];
+
+        material->Samplers[i].TextureType = textureSlot->TextureType;
+        material->Samplers[i].Filter      = textureSlot->Filter;
+        material->Samplers[i].AddressU    = textureSlot->AddressU;
+        material->Samplers[i].AddressV    = textureSlot->AddressV;
+        material->Samplers[i].AddressW    = textureSlot->AddressW;
+        material->Samplers[i].MipLODBias  = textureSlot->MipLODBias;
+        material->Samplers[i].Anisotropy  = textureSlot->Anisotropy;
+        material->Samplers[i].MinLod      = textureSlot->MinLod;
+        material->Samplers[i].MaxLod      = textureSlot->MaxLod;
     }
 
 #if 0
-    WriteDebugShaders( pDef->Shaders );
+    WriteDebugShaders( material->Shaders );
 #endif
+
+    return material;
+}
+
+enum MG_NODE_FLAGS
+{
+    MG_NODE_DEFAULT = 0,
+    MG_NODE_SINGLETON = HK_BIT(0)
+};
+HK_FLAG_ENUM_OPERATORS(MG_NODE_FLAGS)
+class MGNodeRegistry
+{
+public:
+    struct NodeType
+    {
+        AClassMeta const* NodeClass{};
+        MG_NODE_FLAGS     Flags{};
+
+        operator bool() const
+        {
+            return NodeClass != nullptr;
+        }
+    };
+    TStringHashMap<NodeType> m_Types;
+
+    void Register(AClassMeta const& NodeClass, AStringView Name, MG_NODE_FLAGS Flags = MG_NODE_DEFAULT)
+    {
+        HK_ASSERT(NodeClass.IsSubclassOf<MGNode>());
+        m_Types[Name] = {&NodeClass, Flags};
+    }
+
+    NodeType FindType(AStringView Name) const
+    {
+        auto it = m_Types.Find(Name);
+        if (it == m_Types.End())
+            return {};
+        return it->second;
+    }
+
+    MGNodeRegistry()
+    {
+        Register(MGInTexCoord::ClassMeta(), "InTexCoord", MG_NODE_SINGLETON);
+        Register(MGTextureLoad::ClassMeta(), "TextureLoad");
+        Register(MGNormalLoad::ClassMeta(), "NormalLoad");
+        Register(MGUniformAddress::ClassMeta(), "UniformAddress");
+        
+    }
+
+    TVector<AStringView> GetTypes() const
+    {
+        TVector<AStringView> types;
+        for (auto& it : m_Types)
+        {
+            types.Add(it.first);
+        }
+        std::sort(types.Begin(), types.End(), [](AStringView Lhs, AStringView Rhs)
+                  { return Lhs.Icmp(Rhs); });
+        return types;
+    }
+};
+
+MGNodeRegistry GMaterialNodeRegistry;
+
+MGNode* MGMaterialGraph::Add(AStringView Name)
+{
+    MGNodeRegistry::NodeType nodeType = GMaterialNodeRegistry.FindType(Name);
+    if (!nodeType)
+    {
+        LOG("Unknown node class {}\n", Name);
+        return nullptr;
+    }
+
+    AClassMeta const* nodeClass = nodeType.NodeClass;
+
+    if (nodeType.Flags & MG_NODE_SINGLETON)
+    {
+        for (MGNode* node : m_Nodes)
+        {
+            if (node->FinalClassId() == nodeClass->ClassId)
+            {
+                return node;
+            }
+        }
+    }
+
+    MGNode* node = static_cast<MGNode*>(nodeClass->CreateInstance());
+    m_Nodes.Add(node);
+    node->AddRef();
+    node->m_ID = ++m_NodeIdGen;
+    return node;
+}
+
+MGTextureSlot* MGMaterialGraph::GetTexture(uint32_t Slot)
+{
+    if (Slot >= MAX_MATERIAL_TEXTURES)
+    {
+        LOG("MGMaterialGraph::GetTexture: MAX_MATERIAL_TEXTURES hit\n");
+        return nullptr;
+    }
+
+    while (m_TextureSlots.Size() <= Slot)
+        m_TextureSlots.Add(nullptr);
+
+    if (!m_TextureSlots[Slot])
+    {
+        m_TextureSlots[Slot] = CreateInstanceOf<MGTextureSlot>();
+        m_TextureSlots[Slot]->AddRef();
+        m_TextureSlots[Slot]->m_ID        = ++m_NodeIdGen;
+        m_TextureSlots[Slot]->m_SlotIndex = Slot;
+
+        m_Nodes.Add(m_TextureSlots[Slot]);
+    }
+
+    return m_TextureSlots[Slot];
+}
+
+MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Stream)
+{
+    AString documentData = Stream.AsString();
+
+    SDocumentDeserializeInfo deserializeInfo;
+    deserializeInfo.pDocumentData = documentData.CStr();
+    deserializeInfo.bInsitu       = true;
+
+    ADocument document;
+    document.DeserializeFromString(deserializeInfo);
+
+    ADocMember* mVersion = document.FindMember("version");
+    if (!mVersion || Core::ParseInt32(mVersion->GetStringView()) != 1)
+    {
+        LOG("MGMaterialGraph::LoadFromFile: unknown version\n");
+        return nullptr;
+    }
+
+    MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+
+   
+    auto mTextureSlots = document.FindMember("textures");
+
+    TStringHashMap<uint32_t> textureSlots;
+
+    if (mTextureSlots)
+    {
+        uint32_t slot = 0;
+        for (auto object = mTextureSlots->GetArrayValues(); object; object = object->GetNext())
+        {
+            auto* textureSlot = graph->GetTexture(slot);
+
+            textureSlot->ParseProperties(object);
+
+            slot++;
+
+            AStringView id = object->GetString("id");
+            if (id)
+            {
+                if (textureSlots.Contains(id))
+                {
+                    LOG("Texture redefinition {}\n", id);
+                    continue;
+                }
+
+                textureSlots[id] = slot - 1;
+            }
+        }
+    }
+
+    struct NodeInfo
+    {
+        ADocValue const* Object;
+        MGNode*          Node;
+    };
+
+    TStringHashMap<NodeInfo> nodes;
+
+    nodes["__root__"].Node   = graph;
+    nodes["__root__"].Object = &document;
+
+    auto mNodes = document.FindMember("nodes");
+    for (auto object = mNodes->GetArrayValues(); object; object = object->GetNext())
+    {
+        auto id = object->GetString("id");
+        if (!id)
+        {
+            LOG("Invalid node id\n");
+            continue;
+        }
+
+        if (nodes.Contains(id))
+        {
+            LOG("Node with id {} already exists\n", id);
+            continue;
+        }
+
+        AStringView nodeType = object->GetString("type");
+
+        MGNode* node = graph->Add(nodeType);
+        if (!node)
+        {
+            LOG("Unknown node type {}\n", nodeType);
+            continue;
+        }
+
+        NodeInfo& info = nodes[id];
+
+        info.Object = object;
+        info.Node   = node;        
+    }
+
+    TVector<AStringView> vector;
+    vector.Reserve(4);
+
+    // Resolve connections
+    for (auto& it : nodes)
+    {
+        NodeInfo& info = it.second;
+        MGNode*   node = info.Node;
+
+        node->ParseProperties(info.Object);
+        
+        TVector<MGInput*> const& inputs = node->GetInputs();
+
+        for (MGInput* input : inputs)
+        {
+            AStringView connection = info.Object->GetString("$" + input->GetName());
+
+            if (!connection)
+            {
+                // undefined
+                continue;
+            }
+
+            // Parse explicit number
+            if (connection[0] == '=')
+            {
+                AStringView number = connection.GetSubstring(1);
+
+                if (ParseVector(number, vector) && !vector.IsEmpty() && vector.Size() <= 4)
+                {
+                    bool bIsBoolean = vector[0].Compare("true") || vector[0].Compare("false");
+                    int  n          = vector.Size();
+                    Float4 v;
+
+                    for (int i = 0; i < n; i++)
+                        v[i] = Core::ParseFloat(vector[i]);
+
+                    switch (n)
+                    {
+                        case 1:
+                            if (bIsBoolean)
+                                node->BindInput(input->GetName(), graph->Add2<MGBoolean>(v[0]));
+                            else
+                                node->BindInput(input->GetName(), graph->Add2<MGFloat>(v[0]));
+                            break;
+                        case 2:
+                            if (bIsBoolean)
+                                node->BindInput(input->GetName(), graph->Add2<MGBoolean2>(Bool2(v[0], v[1])));
+                            else
+                                node->BindInput(input->GetName(), graph->Add2<MGFloat2>(Float2(v)));
+                            break;
+                        case 3:
+                            if (bIsBoolean)
+                                node->BindInput(input->GetName(), graph->Add2<MGBoolean3>(Bool3(v[0], v[1], v[2])));
+                            else
+                                node->BindInput(input->GetName(), graph->Add2<MGFloat3>(Float3(v)));
+                            break;
+                        case 4:
+                            if (bIsBoolean)
+                                node->BindInput(input->GetName(), graph->Add2<MGBoolean4>(Bool4(v[0], v[1], v[2], v[3])));
+                            else
+                                node->BindInput(input->GetName(), graph->Add2<MGFloat4>(v));
+                            break;
+                    }
+                }
+                else
+                    LOG("Invalid value {}\n", number);
+                continue;
+            }
+
+            // Parse node_name.output
+            StringSizeType n = connection.FindCharacter('.');
+            if (n != -1)
+            {
+                AStringView connectedNode = connection.TruncateTail(n);
+                AStringView output        = connection.TruncateHead(n + 1);
+
+                auto nit = nodes.Find(connectedNode);
+                if (nit == nodes.End())
+                {
+                    LOG("Node {} not found\n", connectedNode);
+                    continue;
+                }
+
+                MGOutput* out = nit->second.Node->FindOutput(output);
+                if (!out)
+                {
+                    LOG("Node {} doesn't contain {} output\n", connectedNode, output);
+                    continue;
+                }
+
+                node->BindInput(input->GetName(), out);
+                continue;
+            }
+
+            // Parse node_name with default output
+            auto nit = nodes.Find(connection);
+            if (nit != nodes.End())
+            {
+                node->BindInput(input->GetName(), nit->second.Node);
+                continue;
+            }
+
+            // Parse texture slot
+            auto texit = textureSlots.Find(connection);
+            if (texit != textureSlots.End())
+            {
+                node->BindInput(input->GetName(), graph->GetTexture(texit->second));
+                continue;
+            }
+
+            LOG("Node {} not found\n", connection);
+        }
+    }
+
+    return graph;
 }

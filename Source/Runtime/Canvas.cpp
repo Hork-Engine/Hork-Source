@@ -102,7 +102,7 @@ void ACanvas::PopClipRect()
     DrawList.PopClipRect();
 }
 
-void ACanvas::PushBlendingState(EColorBlending _Blending)
+void ACanvas::PushBlendingState(BLENDING_MODE _Blending)
 {
     DrawList.PushBlendingState(HUD_DRAW_CMD_ALPHA | (_Blending << 8));
 }
@@ -793,17 +793,17 @@ void ACanvas::DrawCharUTF8(const char* _Ch, int _X, int _Y, float _Scale, Color4
     DrawWChar(ch, _X, _Y, _Scale, _Color);
 }
 
-void ACanvas::DrawTexture(ATexture* _Texture, int _X, int _Y, int _W, int _H, Float2 const& _UV0, Float2 const& _UV1, Color4 const& _Color, EColorBlending _Blending, EHUDSamplerType _SamplerType)
+void ACanvas::DrawTexture(ATexture* _Texture, int _X, int _Y, int _W, int _H, Float2 const& _UV0, Float2 const& _UV1, Color4 const& _Color, BLENDING_MODE _Blending, EHUDSamplerType _SamplerType)
 {
     DrawList.AddImage(_Texture->GetGPUResource(), ImVec2(_X, _Y), ImVec2(_X + _W, _Y + _H), _UV0, _UV1, _Color.GetDWord(), HUD_DRAW_CMD_TEXTURE | (_Blending << 8) | (_SamplerType << 16));
 }
 
-void ACanvas::DrawTextureQuad(ATexture* _Texture, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const& _UV0, Float2 const& _UV1, Float2 const& _UV2, Float2 const& _UV3, Color4 const& _Color, EColorBlending _Blending, EHUDSamplerType _SamplerType)
+void ACanvas::DrawTextureQuad(ATexture* _Texture, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const& _UV0, Float2 const& _UV1, Float2 const& _UV2, Float2 const& _UV3, Color4 const& _Color, BLENDING_MODE _Blending, EHUDSamplerType _SamplerType)
 {
     DrawList.AddImageQuad(_Texture->GetGPUResource(), ImVec2(_X0, _Y0), ImVec2(_X1, _Y1), ImVec2(_X2, _Y2), ImVec2(_X3, _Y3), _UV0, _UV1, _UV2, _UV3, _Color.GetDWord(), HUD_DRAW_CMD_TEXTURE | (_Blending << 8) | (_SamplerType << 16));
 }
 
-void ACanvas::DrawTextureRounded(ATexture* _Texture, int _X, int _Y, int _W, int _H, Float2 const& _UV0, Float2 const& _UV1, Color4 const& _Color, float _Rounding, int _RoundingCorners, EColorBlending _Blending, EHUDSamplerType _SamplerType)
+void ACanvas::DrawTextureRounded(ATexture* _Texture, int _X, int _Y, int _W, int _H, Float2 const& _UV0, Float2 const& _UV1, Color4 const& _Color, float _Rounding, int _RoundingCorners, BLENDING_MODE _Blending, EHUDSamplerType _SamplerType)
 {
     DrawList.AddImageRounded(_Texture->GetGPUResource(), ImVec2(_X, _Y), ImVec2(_X + _W, _Y + _H), _UV0, _UV1, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_TEXTURE | (_Blending << 8) | (_SamplerType << 16));
 }
@@ -823,7 +823,7 @@ void ACanvas::DrawMaterialRounded(AMaterialInstance* _MaterialInstance, int _X, 
     DrawList.AddImageRounded(_MaterialInstance, ImVec2(_X, _Y), ImVec2(_X + _W, _Y + _H), _UV0, _UV1, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_MATERIAL);
 }
 
-void ACanvas::DrawViewport(ACameraComponent* _Camera, ARenderingParameters* _RP, int _X, int _Y, int _W, int _H, Color4 const& _Color, float _Rounding, int _RoundingCorners, EColorBlending _Blending)
+void ACanvas::DrawViewport(ACameraComponent* _Camera, ARenderingParameters* _RP, int _X, int _Y, int _W, int _H, Color4 const& _Color, float _Rounding, int _RoundingCorners, BLENDING_MODE _Blending)
 {
     if (!_Camera)
     {

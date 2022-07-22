@@ -30,7 +30,6 @@ SOFTWARE.
 
 #include "VirtualTextureFeedback.h"
 #include "../RenderLocal.h"
-#include "../Material.h"
 
 /*
 

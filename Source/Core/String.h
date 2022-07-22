@@ -1609,6 +1609,12 @@ T ParseNumber(AStringView View)
 template <typename T, std::enable_if_t<std::is_floating_point<T>::value, bool> = true>
 T ParseNumber(AStringView View)
 {
+    // Cast from boolean
+    if (View.Icompare("false"))
+        return 0;
+    else if (View.Icompare("true"))
+        return 1;
+
     double val;
     int    sign;
     char   c;

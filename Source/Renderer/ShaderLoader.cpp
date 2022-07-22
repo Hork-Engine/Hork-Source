@@ -184,9 +184,9 @@ start:
     }
 }
 
-AString AShaderLoader::LoadShader(AStringView FileName, SPredefinedShaderSource const* _Predefined)
+AString AShaderLoader::LoadShader(AStringView FileName, TArrayView<SMaterialSource> Predefined)
 {
-    Predefined = _Predefined;
+    m_Predefined = Predefined;
 
     AString result;
 #ifdef CSTYLE_LINE_DIRECTIVE
@@ -205,9 +205,9 @@ AString AShaderLoader::LoadShader(AStringView FileName, SPredefinedShaderSource 
     return result;
 }
 
-AString AShaderLoader::LoadShaderFromString(AStringView FileName, AStringView Source, SPredefinedShaderSource const* _Predefined)
+AString AShaderLoader::LoadShaderFromString(AStringView FileName, AStringView Source, TArrayView<SMaterialSource> Predefined)
 {
-    Predefined = _Predefined;
+    m_Predefined = Predefined;
 
     AString result;
 #ifdef CSTYLE_LINE_DIRECTIVE
@@ -269,7 +269,7 @@ bool AShaderLoader::LoadShaderFromString(AStringView FileName, AStringView Sourc
     {
         Out += AStringView(&Source[sourceOffset], includeInfo->Offset - sourceOffset);
 
-        if (Predefined && includeInfo->FileName[0] == '$')
+        if (!m_Predefined.IsEmpty() && includeInfo->FileName[0] == '$')
         {
             // predefined source
 #ifdef CSTYLE_LINE_DIRECTIVE
@@ -279,16 +279,19 @@ bool AShaderLoader::LoadShaderFromString(AStringView FileName, AStringView Sourc
 #else
             Out += "#line 1\n";
 #endif
-            SPredefinedShaderSource const* s;
-            for (s = Predefined; s; s = s->pNext)
+            AStringView includeFn = AStringView(includeInfo->FileName, includeInfo->Length);
+
+            SMaterialSource const* src = nullptr;
+            for (SMaterialSource const& s : m_Predefined)
             {
-                if (!Platform::StricmpN(s->SourceName, includeInfo->FileName, includeInfo->Length))
+                if (!s.SourceName.Icmp(includeFn))
                 {
+                    src = &s;
                     break;
                 }
             }
 
-            if (!s || !LoadShaderFromString(FileName, AStringView(s->Code), Out))
+            if (!src || !LoadShaderFromString(FileName, src->Code, Out))
             {
                 FreeIncludes(includeList);
                 return false;

@@ -30,7 +30,7 @@ SOFTWARE.
 
 #pragma once
 
-#include <Core/Image.h>
+#include <Image/Image.h>
 #include <Core/Color.h>
 #include <Containers/Vector.h>
 #include <Geometry/Quat.h>
@@ -47,6 +47,9 @@ constexpr int MAX_SKINNED_MESH_JOINTS = 256;
 
 /** Max textures per material */
 constexpr int MAX_MATERIAL_TEXTURES = 11; // Reserved texture slots for AOLookup, ClusterItemTBO, ClusterLookup, ShadowMapShadow, Lightmap
+
+constexpr int MAX_MATERIAL_UNIFORMS        = 16;
+constexpr int MAX_MATERIAL_UNIFORM_VECTORS = 16 >> 2;
 
 /** Max directional lights per view */
 constexpr int MAX_DIRECTIONAL_LIGHTS = 4;
@@ -359,7 +362,7 @@ enum ENormalMapCompression
     NM_PARABOLOID    = 4,
     NM_QUARTIC       = 5,
     NM_FLOAT         = 6,
-    NM_DXT5          = 7
+    NM_BC3           = 7
 };
 
 enum ETextureColorSpace
@@ -405,69 +408,12 @@ struct STextureSampler
     float           MaxLod;
 };
 
-#if 0
-enum ETextureGroup
-{
-
-    //
-    // Albedo color map
-    //
-
-    Color,
-    Color_sRGB_16bit,
-    Color_Compressed,           // BC4, BC5, BC3
-    Color_Compressed_BC7,
-    Color_Compressed_YCoCg,     // DXT5 (BC3)
-    //Color_Compressed_BC1,
-    //Color_Compressed_BC1a,
-
-    //
-    // Normal maps (linear)
-    //
-
-    NormalMap_XY_8bit,         // x 8bit, y 8bit
-    NormalMap_XYZ_8bit,        // x 8bit, y 8bit, z 8bit
-    NormalMap_SphereMap_8bit,  // x 8bit, y 8bit sphere mapped
-    NormalMap_Float16,         // x float16, y float16
-    NormalMap_Float32,         // x float32, y float32
-    NormalMap_Compressed_BC1,
-    NormalMap_Compressed_BC5_Orthographic,       // BC5 compressed x, y
-    NormalMap_Compressed_BC5_Stereographic,       // BC5 compressed x, y
-    NormalMap_Compressed_BC5_Paraboloid,       // BC5 compressed x, y
-    NormalMap_Compressed_BC5_Quartic,       // BC5 compressed x, y
-    NormalMap_Compressed_DXT5,      // same as BC3n?, TODO: compare my compressor with NVidia compressor
-
-    //
-    // Linear single channel grayscaled images like Metallic, Roughness
-    //
-
-    Grayscaled,
-    Grayscaled_Compressed_BC4,
-
-    //
-    // High dynamic range images (linear)
-    //
-
-    HDRI_Grayscaled_Compressed_BC6H,
-    HDRI_16,
-    HDRI_32,
-    HDRI_Compressed_BC6H
-
-    //
-    // Integer maps (not supported yet)
-    //
-
-    //SignedInteger,        // Unnormalized, uncompressed R,RG,RGB,RGBA/8,16,32
-    //UnsignedInteger,      // Unnormalized, uncompressed R,RG,RGB,RGBA/8,16,32
-
-};
-#endif
 
 //
 // Material
 //
 
-enum EMaterialType
+enum MATERIAL_TYPE
 {
     MATERIAL_TYPE_UNLIT,
     MATERIAL_TYPE_BASELIGHT,
@@ -476,14 +422,14 @@ enum EMaterialType
     MATERIAL_TYPE_POSTPROCESS
 };
 
-enum EMaterialDepthHack
+enum MATERIAL_DEPTH_HACK
 {
     MATERIAL_DEPTH_HACK_NONE,
     MATERIAL_DEPTH_HACK_WEAPON,
     MATERIAL_DEPTH_HACK_SKYBOX
 };
 
-enum EColorBlending
+enum BLENDING_MODE
 {
     COLOR_BLENDING_ALPHA,
     COLOR_BLENDING_DISABLED,
@@ -497,7 +443,7 @@ enum EColorBlending
     COLOR_BLENDING_MAX
 };
 
-enum ETessellationMethod : uint8_t
+enum TESSELLATION_METHOD : uint8_t
 {
     TESSELLATION_DISABLED,
     TESSELLATION_FLAT,
@@ -553,40 +499,46 @@ enum ERenderingPriority : uint8_t
     RENDERING_GEOMETRY_PRIORITY_RESERVED15 = 15
 };
 
-struct SPredefinedShaderSource
+struct SMaterialSource
 {
-    /** Pointer to next source */
-    SPredefinedShaderSource* pNext;
-
     /** The source name */
-    char* SourceName;
+    AString SourceName;
 
     /** Source code */
-    char* Code;
+    AString Code;
 };
 
-struct SMaterialDef
+class ACompiledMaterial : public ARefCounted
 {
+public:
     /** Material type (Unlit,baselight,pbr,etc) */
-    EMaterialType Type;
+    MATERIAL_TYPE Type{MATERIAL_TYPE_PBR};
 
     /** Blending mode (FIXME: only for UNLIT materials?) */
-    EColorBlending Blending;
+    BLENDING_MODE Blending{COLOR_BLENDING_DISABLED};
 
-    ETessellationMethod TessellationMethod;
+    TESSELLATION_METHOD TessellationMethod{TESSELLATION_DISABLED};
 
-    ERenderingPriority RenderingPriority;
+    ERenderingPriority RenderingPriority{RENDERING_PRIORITY_DEFAULT};
 
     /** Lightmap binding unit */
-    int LightmapSlot;
+    uint32_t LightmapSlot{};
 
     /** Texture binding count for different passes. This allow renderer to optimize sampler/texture bindings
     during rendering. */
-    int DepthPassTextureCount;
-    int LightPassTextureCount;
-    int WireframePassTextureCount;
-    int NormalsPassTextureCount;
-    int ShadowMapPassTextureCount;
+    int DepthPassTextureCount{};
+    int LightPassTextureCount{};
+    int WireframePassTextureCount{};
+    int NormalsPassTextureCount{};
+    int ShadowMapPassTextureCount{};
+
+    int NumUniformVectors{};
+
+    /** Material samplers */
+    TStaticVector<STextureSampler, MAX_MATERIAL_TEXTURES> Samplers;
+
+    /** Material shaders */
+    TVector<SMaterialSource> Shaders;
 
     /** Have vertex deformation in vertex stage. This flag allow renderer to optimize pipeline switching
     during rendering. */
@@ -616,56 +568,133 @@ struct SMaterialDef
     /** Disable backface culling */
     bool bTwoSided : 1;
 
-    int NumUniformVectors;
-
-    /** Material samplers */
-    STextureSampler Samplers[MAX_MATERIAL_TEXTURES];
-    int             NumSamplers;
-
-    /** Material shaders */
-    SPredefinedShaderSource* Shaders;
-
-    SMaterialDef()
+    ACompiledMaterial()
     {
-        Platform::ZeroMem(this, sizeof(*this));
+        bHasVertexDeform          = false;
+        bDepthTest_EXPERIMENTAL   = false;
+        bNoCastShadow             = false;
+        bAlphaMasking             = false;
+        bShadowMapMasking         = false;
+        bDisplacementAffectShadow = false;
+        bTranslucent              = false;
+        bTwoSided                 = false;
     }
 
-    ~SMaterialDef()
+    ACompiledMaterial(IBinaryStreamReadInterface& Stream)
     {
-        RemoveShaders();
+        Read(Stream);
     }
 
-    void AddShader(AStringView SourceName, AStringView SourceCode);
+    ~ACompiledMaterial() = default;
 
-    void RemoveShaders();
+    ACompiledMaterial(ACompiledMaterial&& Rhs) noexcept = default;
+
+    ACompiledMaterial& operator=(ACompiledMaterial&& Rhs) noexcept = default;
+
+    void AddShader(AStringView SourceName, AStringView SourceCode)
+    {
+        Shaders.Add({SourceName, SourceCode});
+    }
+
+    void Read(IBinaryStreamReadInterface& Stream)
+    {
+        Type                      = (MATERIAL_TYPE)Stream.ReadUInt8();
+        Blending                  = (BLENDING_MODE)Stream.ReadUInt8();
+        TessellationMethod        = (TESSELLATION_METHOD)Stream.ReadUInt8();
+        RenderingPriority         = (ERenderingPriority)Stream.ReadUInt8();
+        LightmapSlot              = Stream.ReadUInt16();
+        DepthPassTextureCount     = Stream.ReadUInt8();
+        LightPassTextureCount     = Stream.ReadUInt8();
+        WireframePassTextureCount = Stream.ReadUInt8();
+        NormalsPassTextureCount   = Stream.ReadUInt8();
+        ShadowMapPassTextureCount = Stream.ReadUInt8();
+        bHasVertexDeform          = Stream.ReadBool();
+        bDepthTest_EXPERIMENTAL   = Stream.ReadBool();
+        bNoCastShadow             = Stream.ReadBool();
+        bAlphaMasking             = Stream.ReadBool();
+        bShadowMapMasking         = Stream.ReadBool();
+        bDisplacementAffectShadow = Stream.ReadBool();
+        //bParallaxMappingSelfShadowing = Stream.ReadBool(); // TODO
+        bTranslucent      = Stream.ReadBool();
+        bTwoSided         = Stream.ReadBool();
+        NumUniformVectors = Stream.ReadUInt8();
+
+        Samplers.Clear();
+        Samplers.Resize(Stream.ReadUInt8());
+        for (auto& sampler : Samplers)
+        {
+            sampler.TextureType = (TEXTURE_TYPE)Stream.ReadUInt8();
+            sampler.Filter      = (ETextureFilter)Stream.ReadUInt8();
+            sampler.AddressU    = (ETextureAddress)Stream.ReadUInt8();
+            sampler.AddressV    = (ETextureAddress)Stream.ReadUInt8();
+            sampler.AddressW    = (ETextureAddress)Stream.ReadUInt8();
+            sampler.MipLODBias  = Stream.ReadFloat();
+            sampler.Anisotropy  = Stream.ReadFloat();
+            sampler.MinLod      = Stream.ReadFloat();
+            sampler.MaxLod      = Stream.ReadFloat();
+        }
+
+        auto numShaders = Stream.ReadUInt16();
+
+        Shaders.Clear();
+        Shaders.Reserve(numShaders);
+
+        AString sourceName, sourceCode;
+        for (int i = 0; i < numShaders; i++)
+        {
+            sourceName = Stream.ReadString();
+            sourceCode = Stream.ReadString();
+            AddShader(sourceName, sourceCode);
+        }
+    }
+
+    void Write(IBinaryStreamWriteInterface& Stream) const
+    {
+        Stream.WriteUInt8(Type);
+        Stream.WriteUInt8(Blending);
+        Stream.WriteUInt8(RenderingPriority);
+        Stream.WriteUInt8(TessellationMethod);
+        Stream.WriteUInt16(LightmapSlot);
+        Stream.WriteUInt8(DepthPassTextureCount);
+        Stream.WriteUInt8(LightPassTextureCount);
+        Stream.WriteUInt8(WireframePassTextureCount);
+        Stream.WriteUInt8(NormalsPassTextureCount);
+        Stream.WriteUInt8(ShadowMapPassTextureCount);
+        Stream.WriteBool(bHasVertexDeform);
+        Stream.WriteBool(bDepthTest_EXPERIMENTAL);
+        Stream.WriteBool(bNoCastShadow);
+        Stream.WriteBool(bAlphaMasking);
+        Stream.WriteBool(bShadowMapMasking);
+        Stream.WriteBool(bDisplacementAffectShadow);
+        //Stream.WriteBool( bParallaxMappingSelfShadowing ); // TODO
+        Stream.WriteBool(bTranslucent);
+        Stream.WriteBool(bTwoSided);
+        Stream.WriteUInt8(NumUniformVectors);
+        Stream.WriteUInt8(Samplers.Size());
+        for (auto& sampler : Samplers)
+        {
+            Stream.WriteUInt8(sampler.TextureType);
+            Stream.WriteUInt8(sampler.Filter);
+            Stream.WriteUInt8(sampler.AddressU);
+            Stream.WriteUInt8(sampler.AddressV);
+            Stream.WriteUInt8(sampler.AddressW);
+            Stream.WriteFloat(sampler.MipLODBias);
+            Stream.WriteFloat(sampler.Anisotropy);
+            Stream.WriteFloat(sampler.MinLod);
+            Stream.WriteFloat(sampler.MaxLod);
+        }
+
+        Stream.WriteUInt16(Samplers.Size());
+
+        for (SMaterialSource const& s : Shaders)
+        {
+            Stream.WriteString(s.SourceName);
+            Stream.WriteString(s.Code);
+        }
+    }    
 };
 
-class AMaterialGPU
-{
-public:
-    EMaterialType MaterialType;
-
-    int LightmapSlot;
-
-    int DepthPassTextureCount;
-    int LightPassTextureCount;
-    int WireframePassTextureCount;
-    int NormalsPassTextureCount;
-    int ShadowMapPassTextureCount;
-
-    TRef<RenderCore::IPipeline> DepthPass[2];
-    TRef<RenderCore::IPipeline> DepthVelocityPass[2];
-    TRef<RenderCore::IPipeline> WireframePass[2];
-    TRef<RenderCore::IPipeline> NormalsPass[2];
-    TRef<RenderCore::IPipeline> LightPass[2];
-    TRef<RenderCore::IPipeline> LightPassLightmap;
-    TRef<RenderCore::IPipeline> LightPassVertexLight;
-    TRef<RenderCore::IPipeline> ShadowPass[2];
-    TRef<RenderCore::IPipeline> OmniShadowPass[2];
-    TRef<RenderCore::IPipeline> FeedbackPass[2];
-    TRef<RenderCore::IPipeline> OutlinePass[2];
-    TRef<RenderCore::IPipeline> HUDPipeline;
-};
+class AMaterialGPU;
 
 struct SMaterialFrameData
 {
@@ -747,7 +776,7 @@ struct SHUDDrawCmd
     Float2          ClipMins;
     Float2          ClipMaxs;
     EHUDDrawCmd     Type;
-    EColorBlending  Blending;    // only for type DRAW_CMD_TEXTURE and DRAW_CMD_VIEWPORT
+    BLENDING_MODE  Blending;    // only for type DRAW_CMD_TEXTURE and DRAW_CMD_VIEWPORT
     EHUDSamplerType SamplerType; // only for type DRAW_CMD_TEXTURE
 
     union

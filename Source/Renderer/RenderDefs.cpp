@@ -30,8 +30,6 @@ SOFTWARE.
 
 #include "RenderDefs.h"
 
-#include <Platform/Logger.h>
-
 // TODO: this can be computed at compile-time
 float FRUSTUM_SLICE_SCALE = -(MAX_FRUSTUM_CLUSTERS_Z + FRUSTUM_SLICE_OFFSET) / std::log2((double)FRUSTUM_CLUSTER_ZFAR / FRUSTUM_CLUSTER_ZNEAR);
 float FRUSTUM_SLICE_BIAS  = std::log2((double)FRUSTUM_CLUSTER_ZFAR) * (MAX_FRUSTUM_CLUSTERS_Z + FRUSTUM_SLICE_OFFSET) / std::log2((double)FRUSTUM_CLUSTER_ZFAR / FRUSTUM_CLUSTER_ZNEAR) - FRUSTUM_SLICE_OFFSET;
@@ -55,39 +53,3 @@ struct SFrustumSliceZClipInitializer
 
 static SFrustumSliceZClipInitializer FrustumSliceZClipInitializer;
 
-void SMaterialDef::AddShader(AStringView SourceName, AStringView SourceCode)
-{
-    int nameLength = SourceName.Length();
-    int codeLength = SourceCode.Length();
-
-    SPredefinedShaderSource* s = (SPredefinedShaderSource*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(SPredefinedShaderSource) + nameLength + 1 + codeLength + 1);
-
-    s->SourceName = (char*)s + sizeof(SPredefinedShaderSource);
-    s->Code       = (char*)s + sizeof(SPredefinedShaderSource) + nameLength + 1;
-    Platform::Memcpy(s->SourceName, SourceName.ToPtr(), nameLength);
-    Platform::Memcpy(s->Code, SourceCode.ToPtr(), codeLength);
-    s->SourceName[nameLength] = 0;
-    s->Code[codeLength] = 0;
-
-    if (!Shaders)
-    {
-        Shaders  = s;
-        s->pNext = nullptr;
-    }
-    else
-    {
-        s->pNext = Shaders;
-        Shaders  = s;
-    }
-}
-
-void SMaterialDef::RemoveShaders()
-{
-    SPredefinedShaderSource* next;
-    for (SPredefinedShaderSource* s = Shaders; s; s = next)
-    {
-        next = s->pNext;
-        Platform::GetHeapAllocator<HEAP_MISC>().Free(s);
-    }
-    Shaders = nullptr;
-}

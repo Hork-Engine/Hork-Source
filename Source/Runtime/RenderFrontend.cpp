@@ -449,7 +449,7 @@ void ARenderFrontend::RenderCanvas(ACanvas* InCanvas)
         dstCmd->StartIndexLocation = cmd.IdxOffset;
         dstCmd->BaseVertexLocation = cmd.VtxOffset;
         dstCmd->Type               = (EHUDDrawCmd)(cmd.BlendingState & 0xff);
-        dstCmd->Blending           = (EColorBlending)((cmd.BlendingState >> 8) & 0xff);
+        dstCmd->Blending           = (BLENDING_MODE)((cmd.BlendingState >> 8) & 0xff);
         dstCmd->SamplerType        = (EHUDSamplerType)((cmd.BlendingState >> 16) & 0xff);
 
         switch (dstCmd->Type)
@@ -628,7 +628,7 @@ void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
         dstCmd->IndexCount = pCmd->ElemCount;
         dstCmd->StartIndexLocation = startIndexLocation;
         dstCmd->Type = (EHUDDrawCmd)( pCmd->BlendingState & 0xff );
-        dstCmd->Blending = (EColorBlending)( ( pCmd->BlendingState >> 8 ) & 0xff );
+        dstCmd->Blending = (BLENDING_MODE)( ( pCmd->BlendingState >> 8 ) & 0xff );
         dstCmd->SamplerType = (EHUDSamplerType)( ( pCmd->BlendingState >> 16 ) & 0xff );
 
         startIndexLocation += pCmd->ElemCount;
@@ -1442,7 +1442,7 @@ void ARenderFrontend::AddShadowmap_StaticMesh(SLightShadowmap* ShadowMap, AMeshC
         AMaterial* material = materialInstance->GetMaterial();
 
         // Prevent rendering of instances with disabled shadow casting
-        if (!material->CanCastShadow())
+        if (!material->IsShadowCastEnabled())
         {
             continue;
         }
@@ -1518,7 +1518,7 @@ void ARenderFrontend::AddShadowmap_SkinnedMesh(SLightShadowmap* ShadowMap, ASkin
         AMaterial* material = materialInstance->GetMaterial();
 
         // Prevent rendering of instances with disabled shadow casting
-        if (!material->CanCastShadow())
+        if (!material->IsShadowCastEnabled())
         {
             continue;
         }
@@ -1574,7 +1574,7 @@ void ARenderFrontend::AddShadowmap_ProceduralMesh(SLightShadowmap* ShadowMap, AP
     AMaterial* material = materialInstance->GetMaterial();
 
     // Prevent rendering of instances with disabled shadow casting
-    if (!material->CanCastShadow())
+    if (!material->IsShadowCastEnabled())
     {
         return;
     }
@@ -1945,7 +1945,7 @@ void ARenderFrontend::AddShadowmapSurfaces(SLightShadowmap* ShadowMap, SSurfaceD
     {
         SSurfaceDef const* surfDef = Surfaces[i];
 
-        if (!surfDef->Model->SurfaceMaterials[surfDef->MaterialIndex]->GetMaterial()->CanCastShadow())
+        if (!surfDef->Model->SurfaceMaterials[surfDef->MaterialIndex]->GetMaterial()->IsShadowCastEnabled())
         {
             continue;
         }
@@ -1979,7 +1979,7 @@ void ARenderFrontend::AddShadowmapSurfaces(SLightShadowmap* ShadowMap, SSurfaceD
     {
         SSurfaceDef const* surfDef = Surfaces[i];
 
-        if (!surfDef->Model->SurfaceMaterials[surfDef->MaterialIndex]->GetMaterial()->CanCastShadow())
+        if (!surfDef->Model->SurfaceMaterials[surfDef->MaterialIndex]->GetMaterial()->IsShadowCastEnabled())
         {
             continue;
         }

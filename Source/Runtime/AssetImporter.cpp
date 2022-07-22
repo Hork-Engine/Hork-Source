@@ -33,25 +33,12 @@ SOFTWARE.
 #include "ResourceManager.h"
 #include "Engine.h"
 #include <Core/Guid.h>
-#include <Core/Image.h>
+#include <Image/Image.h>
+#include <Image/ImageEncoders.h>
 #include <Platform/Logger.h>
 #include <Platform/Memory/LinearAllocator.h>
 
 #include <cgltf/cgltf.h>
-
-constexpr int MAX_MEMORY_GLTF = 16 << 20;
-
-using ALinearAllocatorGLTF = TLinearAllocator<MAX_MEMORY_GLTF>;
-
-static void* cgltf_alloc(void* user, cgltf_size size)
-{
-    ALinearAllocatorGLTF& Allocator = *static_cast<ALinearAllocatorGLTF*>(user);
-    return Allocator.Allocate(size);
-}
-
-static void cgltf_free(void* user, void* ptr)
-{
-}
 
 static void unpack_vec2_or_vec3(cgltf_accessor* acc, Float3* output, size_t stride)
 {
@@ -620,14 +607,22 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
 
     HeapBlob blob = f.AsBlob();
 
+    constexpr int MAX_MEMORY_GLTF = 16 << 20;
+    using ALinearAllocatorGLTF = TLinearAllocator<MAX_MEMORY_GLTF>;
+
     ALinearAllocatorGLTF allocator;
 
     cgltf_options options;
 
     Platform::ZeroMem(&options, sizeof(options));
 
-    options.memory.alloc     = cgltf_alloc;
-    options.memory.free      = cgltf_free;
+    options.memory.alloc = [](void* user, cgltf_size size)
+    {
+        ALinearAllocatorGLTF& Allocator = *static_cast<ALinearAllocatorGLTF*>(user);
+        return Allocator.Allocate(size);
+    };
+    options.memory.free = [](void* user, void* ptr)
+    {};
     options.memory.user_data = &allocator;
 
     cgltf_data* data = NULL;
@@ -636,32 +631,28 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
     if (result != cgltf_result_success)
     {
         LOG("Couldn't load {} : {}\n", Source, GetErrorString(result));
-        goto fin;
+        return false;
     }
 
     result = cgltf_validate(data);
     if (result != cgltf_result_success)
     {
         LOG("Couldn't load {} : {}\n", Source, GetErrorString(result));
-        goto fin;
+        return false;
     }
 
     result = cgltf_load_buffers(&options, data, m_Path.CStr());
     if (result != cgltf_result_success)
     {
         LOG("Couldn't load {} buffers : {}\n", Source, GetErrorString(result));
-        goto fin;
+        return false;
     }
 
     ret = ReadGLTF(data);
 
     WriteAssets();
 
-fin:
-
-    //cgltf_free( data );
-
-    return ret;
+    return true;
 }
 
 void AAssetImporter::ReadSkeleton(cgltf_node* node, int parentIndex)
@@ -1041,9 +1032,9 @@ void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
             diffuseTexture->SamplerDesc.AddressU = ChooseSamplerWrap( sampler->wrap_s );
             diffuseTexture->SamplerDesc.AddressV = ChooseSamplerWrap( sampler->wrap_t );
 
-            MGSampler * textureSampler = graph->AddNode< MGSampler >();
+            MGTextureLoad * textureSampler = graph->AddNode< MGTextureLoad >();
             textureSampler->TexCoord->Connect( materialVertexStage, "TexCoord" );
-            textureSampler->TextureSlot->Connect( diffuseTexture, "Value" );
+            textureSampler->Texture->Connect( diffuseTexture, "Value" );
 
             MGFragmentStage * materialFragmentStage = graph->AddNode< MGFragmentStage >();
             materialFragmentStage->Color->Connect( textureSampler, "RGBA" );
@@ -1132,7 +1123,8 @@ void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
         SetTextureProps(Info.Textures[0], "Texture_BaseColor", true);
         SetTextureProps(Info.Textures[1], "Texture_MetallicRoughness", false);
         SetTextureProps(Info.Textures[2], "Texture_Normal", false);
-        SetTextureProps(Info.Textures[3], "Texture_Occlusion", true);
+        if (Info.Textures[3] != Info.Textures[1])
+            SetTextureProps(Info.Textures[3], "Texture_Occlusion", true);
         SetTextureProps(Info.Textures[4], "Texture_Emissive", true);
 
         // TODO: create material graph
@@ -1848,6 +1840,7 @@ void AAssetImporter::WriteTexture(TextureInfo& tex)
     mipmapConfig.Filter   = IMAGE_RESAMPLE_FILTER_MITCHELL;
 
     ImageStorage image = CreateImage(sourceFileName, &mipmapConfig, IMAGE_STORAGE_FLAGS_DEFAULT, tex.bSRGB ? TEXTURE_FORMAT_SRGBA8_UNORM : TEXTURE_FORMAT_RGBA8_UNORM);
+    //ImageStorage image = CreateImage(sourceFileName, &mipmapConfig, IMAGE_STORAGE_FLAGS_DEFAULT, tex.bSRGB ? TEXTURE_FORMAT_BC6H_UFLOAT : TEXTURE_FORMAT_RGBA8_UNORM);
     if (!image)
         return;
 
@@ -2423,10 +2416,14 @@ ImageStorage GenerateAtmosphereSkybox(uint32_t Resolution, Float3 const& LightDi
     desc.Height     = width;
     desc.SliceCount = 6;
     desc.NumMipmaps = 1;
+    //desc.Format     = TEXTURE_FORMAT_BC6H_UFLOAT;
     desc.Format     = skybox->GetDesc().Format;
     desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
 
     ImageStorage storage(desc);
+
+    //size_t   sz = width * width * 4 * sizeof(float);
+    //HeapBlob blob(sz);
 
     for (int faceNum = 0; faceNum < 6; faceNum++)
     {
@@ -2439,6 +2436,18 @@ ImageStorage GenerateAtmosphereSkybox(uint32_t Resolution, Float3 const& LightDi
         rect.Offset.Z = faceNum;
 
         skybox->ReadRect(rect, subresource.GetSizeInBytes(), 4, subresource.GetData());
+
+        //skybox->ReadRect(rect, blob.Size(), 4, blob.GetData());
+
+        //TextureBlockCompression::CompressBC6h(blob.GetData(), subresource.GetData(), width, width, false);
+
+        //blob.ZeroMem();
+
+        //DecompressBC6h(subresource.GetData(), blob.GetData(), width, width, false);
+
+        //AFileStream f;
+        //f.OpenWrite(HK_FORMAT("Face{}.exr", faceNum));
+        //WriteEXR(f, width, width, 3, (const float*)blob.GetData(), true);
     }
     return storage;
 }

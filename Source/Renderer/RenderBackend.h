@@ -53,8 +53,6 @@ public:
 
     void RenderFrame(AStreamedMemoryGPU* StreamedMemory, RenderCore::ITexture* pBackBuffer, SRenderFrame* pFrameData);
 
-    void InitializeMaterial(AMaterialGPU* _Material, SMaterialDef const* _Def);
-
     int ClusterPackedIndicesAlignment() const;
 
     int MaxOmnidirectionalShadowMapsPerView() const;

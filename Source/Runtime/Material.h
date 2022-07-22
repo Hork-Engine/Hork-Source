@@ -30,14 +30,13 @@ SOFTWARE.
 
 #pragma once
 
-//#include "ResourceManager.h"
 #include "Texture.h"
 #include "VirtualTextureResource.h"
 
-#define MAX_MATERIAL_UNIFORMS        16
-#define MAX_MATERIAL_UNIFORM_VECTORS (16 >> 2)
+#include <Core/IntrusiveLinkedListMacro.h>
+#include <Renderer/GpuMaterial.h>
 
-class MGMaterialGraph;
+class AMaterialInstance;
 
 /**
 
@@ -50,34 +49,70 @@ class AMaterial : public AResource
 
 public:
     AMaterial();
+    AMaterial(ACompiledMaterial* pCompiledMaterial);
+
     ~AMaterial();
 
-    /** Initialize from graph */
-    static AMaterial* Create(MGMaterialGraph* Graph)
+    /** Create a new material instance. */
+    AMaterialInstance* Instantiate();
+
+    /** Find texture slot by name */
+    uint32_t GetTextureSlotByName(AStringView Name) const;
+
+    /** Find constant offset by name */
+    uint32_t GetConstantOffsetByName(AStringView Name) const;
+
+    uint32_t NumTextureSlots() const;
+
+    uint32_t NumUniformVectors() const { return m_pCompiledMaterial->NumUniformVectors; }
+
+    MATERIAL_TYPE GetType() const { return m_pCompiledMaterial->Type; }
+
+    BLENDING_MODE GetBlendingMode() const { return m_pCompiledMaterial->Blending; }
+
+    TESSELLATION_METHOD GetTessellationMethod() const { return m_pCompiledMaterial->TessellationMethod; }
+
+    uint8_t GetRenderingPriority() const { return m_pCompiledMaterial->RenderingPriority; }
+
+    /** Have vertex deformation in vertex stage. This flag allow renderer to optimize pipeline switching
+    during rendering. */
+    bool HasVertexDeform() const { return m_pCompiledMaterial->bHasVertexDeform; }
+
+    /** Experimental. Depth testing. */
+    bool IsDepthTestEnabled() const { return m_pCompiledMaterial->bDepthTest_EXPERIMENTAL; }
+
+    /** Shadow casting */
+    bool IsShadowCastEnabled() const { return !m_pCompiledMaterial->bNoCastShadow; }
+
+    /** Alpha masking */
+    bool IsAlphaMaskingEnabled() const { return m_pCompiledMaterial->bAlphaMasking;  }
+
+    /** Shadow map masking */
+    bool IsShadowMapMaskingEnabled() const { return m_pCompiledMaterial->bShadowMapMasking; }
+
+    /** Tessellation for shadow maps */
+    bool IsDisplacementAffectShadow() const { return m_pCompiledMaterial->bDisplacementAffectShadow; }
+
+    /** Is translusent */
+    bool IsTranslucent() const { return m_pCompiledMaterial->bTranslucent; }
+
+    /** Is face culling disabled */
+    bool IsTwoSided() const { return m_pCompiledMaterial->bTwoSided; }
+
+    AMaterialGPU* GetGPUResource() { return m_GpuMaterial; }
+
+    void UpdateGpuMaterial()
     {
-        AMaterial* material = CreateInstanceOf<AMaterial>();
-        material->Initialize(Graph);
-        return material;
+        m_GpuMaterial = MakeRef<AMaterialGPU>(m_pCompiledMaterial);
     }
 
-    void Purge();
-
-    /** Get material type */
-    EMaterialType GetType() const { return m_Def.Type; }
-
-    bool IsTranslucent() const { return m_Def.bTranslucent; }
-
-    bool IsTwoSided() const { return m_Def.bTwoSided; }
-
-    bool CanCastShadow() const { return !m_Def.bNoCastShadow; }
-
-    AMaterialGPU* GetGPUResource() { return &m_MaterialGPU; }
-
-    int GetNumUniformVectors() const { return m_Def.NumUniformVectors; }
-
-    uint8_t GetRenderingPriority() const { return m_Def.RenderingPriority; }
-
-    static void RebuildMaterials();
+    static void UpdateGpuMaterials()
+    {
+        for (TListIterator<AMaterial> it(MaterialRegistry); it; it++)
+        {
+            it->UpdateGpuMaterial();
+        }
+    }
 
 protected:
     /** Load resource from file */
@@ -89,20 +124,14 @@ protected:
     const char* GetDefaultResourcePath() const override { return "/Default/Materials/Unlit"; }
 
 private:
-    /** Initialize from graph */
-    void Initialize(MGMaterialGraph* Graph);
+    TRef<AMaterialGPU>      m_GpuMaterial;
+    TRef<ACompiledMaterial> m_pCompiledMaterial;
 
-    /** Material GPU representation */
-    AMaterialGPU m_MaterialGPU;
+    TLink<AMaterial>        Link;
+    static TList<AMaterial> MaterialRegistry;
 
-    /** Source graph */
-    TWeakRef<MGMaterialGraph> m_MaterialGraph;
-
-    /** Material definition */
-    SMaterialDef m_Def;
-
-    AMaterial* m_pNext = nullptr;
-    AMaterial* m_pPrev = nullptr;
+    friend struct TList<AMaterial>;
+    friend struct TListIterator<AMaterial>;
 };
 
 
@@ -116,29 +145,37 @@ class AMaterialInstance : public AResource
     HK_CLASS(AMaterialInstance, AResource)
 
 public:
-    union
-    {
-        /** Instance uniforms */
-        float Uniforms[MAX_MATERIAL_UNIFORMS];
-
-        /** Instance uniform vectors */
-        Float4 UniformVectors[MAX_MATERIAL_UNIFORM_VECTORS];
-    };
-
     AMaterialInstance();
-    ~AMaterialInstance() {}
+    AMaterialInstance(AMaterial* pMaterial);
 
-    /** Set material */
-    void SetMaterial(AMaterial* Material);
+    void SetTexture(AStringView Name, ATexture* pTexture);
+
+    void SetTexture(uint32_t Slot, ATexture* pTexture);
+
+    void UnsetTextures();
+
+    void SetConstant(AStringView Name, float Value);
+
+    void SetConstant(uint32_t Offset, float Value);
+
+    void SetVector(AStringView Name, Float4 const& Value);
+
+    void SetVector(uint32_t Offset, Float4 const& Value);
+
+    uint32_t GetTextureSlotByName(AStringView Name) const;
+
+    uint32_t GetConstantOffsetByName(AStringView Name) const;
+
+    uint32_t NumTextureSlots() const;
 
     /** Get material. Never return null. */
     AMaterial* GetMaterial() const;
 
-    /** Set texture for the slot */
-    void SetTexture(int TextureSlot, ATexture* Texture);
+    ATexture* GetTexture(uint32_t Slot);
+    float     GetConstant(uint32_t Offset);
+    Float4 const& GetVector(uint32_t Offset);
 
-    ATexture* GetTexture(int TextureSlot);
-
+    // Experimental:
     void SetVirtualTexture(AVirtualTextureResource* VirtualTex);
 
     /** Internal. Used by render frontend */
@@ -156,9 +193,17 @@ protected:
     bool LoadTextVersion(IBinaryStreamReadInterface& Stream);
 
 private:
-    TRef<AMaterial>               m_Material;
-    SMaterialFrameData*           m_FrameData = nullptr;
+    TRef<AMaterial>               m_pMaterial;
     TRef<ATexture>                m_Textures[MAX_MATERIAL_TEXTURES];
     TRef<AVirtualTextureResource> m_VirtualTexture;
-    int                           m_VisFrame = -1;
+    union
+    {
+        /** Instance uniforms */
+        float m_Uniforms[MAX_MATERIAL_UNIFORMS];
+
+        /** Instance uniform vectors */
+        Float4 m_UniformVectors[MAX_MATERIAL_UNIFORM_VECTORS];
+    };
+    SMaterialFrameData* m_FrameData = nullptr;
+    int                 m_VisFrame  = -1;
 };

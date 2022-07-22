@@ -288,7 +288,7 @@ WImageDecorate& WImageDecorate::SetTexture(ATexture* _Texture)
     return *this;
 }
 
-WImageDecorate& WImageDecorate::SetColorBlending(EColorBlending _Blending)
+WImageDecorate& WImageDecorate::SetColorBlending(BLENDING_MODE _Blending)
 {
     ColorBlending = _Blending;
     return *this;

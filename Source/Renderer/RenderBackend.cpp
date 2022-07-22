@@ -29,7 +29,6 @@ SOFTWARE.
 */
 
 #include "RenderLocal.h"
-#include "Material.h"
 #include "CanvasRenderer.h"
 #include "VT/VirtualTextureFeedback.h"
 #include "IrradianceGenerator.h"
@@ -44,7 +43,6 @@ SOFTWARE.
 
 #include <Platform/WindowsDefs.h>
 #include <Platform/Logger.h>
-#include <Core/Image.h>
 
 #include <SDL.h>
 
@@ -81,6 +79,10 @@ static void LoadSPIRV(void** BinaryCode, size_t* BinarySize)
     *BinarySize = 0;
 }
 
+TRef<RenderCore::IPipeline> CreateTerrainMaterialDepth();
+TRef<RenderCore::IPipeline> CreateTerrainMaterialLight();
+TRef<RenderCore::IPipeline> CreateTerrainMaterialWireframe();
+
 ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
 {
     LOG("Initializing render backend...\n");
@@ -88,8 +90,6 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     GDevice = pDevice;
     rcmd = GDevice->GetImmediateContext();
     rtbl = rcmd->GetRootResourceTable();
-
-    InitMaterialSamplers();
 
     FrameGraph = MakeRef<AFrameGraph>(GDevice);
 
@@ -325,13 +325,13 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     #endif
 
 
-    CreateTerrainMaterialDepth(&TerrainDepthPipeline);
+    TerrainDepthPipeline = CreateTerrainMaterialDepth();
     GTerrainDepthPipeline = TerrainDepthPipeline;
 
-    CreateTerrainMaterialLight(&TerrainLightPipeline);
+    TerrainLightPipeline = CreateTerrainMaterialLight();
     GTerrainLightPipeline = TerrainLightPipeline;
 
-    CreateTerrainMaterialWireframe(&TerrainWireframePipeline);
+    TerrainWireframePipeline = CreateTerrainMaterialWireframe();
     GTerrainWireframePipeline = TerrainWireframePipeline;
 }
 
@@ -421,66 +421,6 @@ int ARenderBackend::ClusterPackedIndicesAlignment() const
 int ARenderBackend::MaxOmnidirectionalShadowMapsPerView() const
 {
     return FrameRenderer->GetOmniShadowMapPool().GetSize();
-}
-
-void ARenderBackend::InitializeMaterial(AMaterialGPU* Material, SMaterialDef const* Def)
-{
-    Material->MaterialType              = Def->Type;
-    Material->LightmapSlot              = Def->LightmapSlot;
-    Material->DepthPassTextureCount     = Def->DepthPassTextureCount;
-    Material->LightPassTextureCount     = Def->LightPassTextureCount;
-    Material->WireframePassTextureCount = Def->WireframePassTextureCount;
-    Material->NormalsPassTextureCount   = Def->NormalsPassTextureCount;
-    Material->ShadowMapPassTextureCount = Def->ShadowMapPassTextureCount;
-
-    POLYGON_CULL cullMode = Def->bTwoSided ? POLYGON_CULL_DISABLED : POLYGON_CULL_FRONT;
-
-    AString code = AShaderLoader{}.LoadShader("material.glsl", Def->Shaders);
-
-    //{
-    //    AFileStream fs;
-    //    fs.OpenWrite( "test.txt" );
-    //    fs.WriteBuffer( code.CStr(), code.Length() );
-    //}
-
-    bool bTessellation          = Def->TessellationMethod != TESSELLATION_DISABLED;
-    bool bTessellationShadowMap = bTessellation && Def->bDisplacementAffectShadow;
-
-    switch (Material->MaterialType)
-    {
-        case MATERIAL_TYPE_PBR:
-        case MATERIAL_TYPE_BASELIGHT:
-        case MATERIAL_TYPE_UNLIT: {
-            for (int i = 0; i < 2; i++)
-            {
-                bool bSkinned = !!i;
-
-                CreateDepthPassPipeline(&Material->DepthPass[i], code.CStr(), Def->bAlphaMasking, cullMode, bSkinned, bTessellation, Def->Samplers, Def->DepthPassTextureCount);
-                CreateDepthVelocityPassPipeline(&Material->DepthVelocityPass[i], code.CStr(), cullMode, bSkinned, bTessellation, Def->Samplers, Def->DepthPassTextureCount);
-                CreateLightPassPipeline(&Material->LightPass[i], code.CStr(), cullMode, bSkinned, Def->bDepthTest_EXPERIMENTAL, Def->bTranslucent, Def->Blending, bTessellation, Def->Samplers, Def->LightPassTextureCount);
-                CreateWireframePassPipeline(&Material->WireframePass[i], code.CStr(), cullMode, bSkinned, bTessellation, Def->Samplers, Def->WireframePassTextureCount);
-                CreateNormalsPassPipeline(&Material->NormalsPass[i], code.CStr(), bSkinned, Def->Samplers, Def->NormalsPassTextureCount);
-                CreateShadowMapPassPipeline(&Material->ShadowPass[i], code.CStr(), Def->bShadowMapMasking, Def->bTwoSided, bSkinned, bTessellationShadowMap, Def->Samplers, Def->ShadowMapPassTextureCount);
-                CreateOmniShadowMapPassPipeline(&Material->OmniShadowPass[i], code.CStr(), Def->bShadowMapMasking, Def->bTwoSided, bSkinned, bTessellationShadowMap, Def->Samplers, Def->ShadowMapPassTextureCount);
-                CreateFeedbackPassPipeline(&Material->FeedbackPass[i], code.CStr(), cullMode, bSkinned, Def->Samplers, Def->LightPassTextureCount); // FIXME: Add FeedbackPassTextureCount
-                CreateOutlinePassPipeline(&Material->OutlinePass[i], code.CStr(), cullMode, bSkinned, bTessellation, Def->Samplers, Def->DepthPassTextureCount);
-            }
-
-            if (Material->MaterialType != MATERIAL_TYPE_UNLIT)
-            {
-                CreateLightPassLightmapPipeline(&Material->LightPassLightmap, code.CStr(), cullMode, Def->bDepthTest_EXPERIMENTAL, Def->bTranslucent, Def->Blending, bTessellation, Def->Samplers, Def->LightPassTextureCount);
-                CreateLightPassVertexLightPipeline(&Material->LightPassVertexLight, code.CStr(), cullMode, Def->bDepthTest_EXPERIMENTAL, Def->bTranslucent, Def->Blending, bTessellation, Def->Samplers, Def->LightPassTextureCount);
-            }
-            break;
-        }
-        case MATERIAL_TYPE_HUD:
-        case MATERIAL_TYPE_POSTPROCESS: {
-            CreateHUDPipeline(&Material->HUDPipeline, code.CStr(), Def->Samplers, Def->NumSamplers);
-            break;
-        }
-        default:
-            HK_ASSERT(0);
-    }
 }
 
 void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* pBackBuffer, SRenderFrame* pFrameData)

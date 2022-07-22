@@ -31,19 +31,41 @@ SOFTWARE.
 #pragma once
 
 #include "RenderDefs.h"
-#include <Containers/ArrayView.h>
 
-class AShaderLoader
+class AMaterialGPU : public ARefCounted
 {
 public:
-    AString LoadShader(AStringView FileName, TArrayView<SMaterialSource> Predefined = {});
-    AString LoadShaderFromString(AStringView FileName, AStringView Source, TArrayView<SMaterialSource> Predefined = {});
+    AMaterialGPU(ACompiledMaterial const* pCompiledMaterial);
 
-protected:
-    virtual bool LoadFile(AStringView FileName, AString& Source);
-    bool LoadShaderFromString(AStringView FileName, AStringView Source, AString& Out);
-    bool LoadShaderWithInclude(AStringView FileName, AString& Out);
+    AMaterialGPU(AMaterialGPU&& Rhs) = default;
+    AMaterialGPU& operator=(AMaterialGPU&& Rhs) = default;
 
-    /** Predefined shaders */
-    TArrayView<SMaterialSource> m_Predefined;
+    // Internal. Do not modify:
+
+    MATERIAL_TYPE MaterialType{MATERIAL_TYPE_PBR};
+
+    int LightmapSlot{};
+
+    int DepthPassTextureCount{};
+    int LightPassTextureCount{};
+    int WireframePassTextureCount{};
+    int NormalsPassTextureCount{};
+    int ShadowMapPassTextureCount{};
+
+    using PipelineRef = TRef<RenderCore::IPipeline>;
+
+    // NOTE: 0 - Static geometry, 1 - Skinned geometry
+
+    PipelineRef DepthPass[2];
+    PipelineRef DepthVelocityPass[2];
+    PipelineRef WireframePass[2];
+    PipelineRef NormalsPass[2];
+    PipelineRef LightPass[2];
+    PipelineRef LightPassLightmap;
+    PipelineRef LightPassVertexLight;
+    PipelineRef ShadowPass[2];
+    PipelineRef OmniShadowPass[2];
+    PipelineRef FeedbackPass[2];
+    PipelineRef OutlinePass[2];
+    PipelineRef HUDPipeline;
 };

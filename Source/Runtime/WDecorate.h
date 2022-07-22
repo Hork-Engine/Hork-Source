@@ -131,7 +131,7 @@ public:
     WImageDecorate& SetRounding(float _Rounding);
     WImageDecorate& SetRoundingCorners(EDrawCornerFlags _RoundingCorners);
     WImageDecorate& SetTexture(ATexture* _Texture);
-    WImageDecorate& SetColorBlending(EColorBlending _Blending);
+    WImageDecorate& SetColorBlending(BLENDING_MODE _Blending);
     WImageDecorate& SetSamplerType(EHUDSamplerType _SamplerType);
     WImageDecorate& SetOffset(Float2 const& _Offset);
     WImageDecorate& SetSize(Float2 const& _Size);
@@ -151,7 +151,7 @@ private:
     float            Rounding;
     EDrawCornerFlags RoundingCorners;
     TRef<ATexture>   Texture;
-    EColorBlending   ColorBlending;
+    BLENDING_MODE   ColorBlending;
     EHUDSamplerType  SamplerType;
     Float2           Offset;
     Float2           Size;

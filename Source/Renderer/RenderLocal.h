@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include <Core/ConsoleVar.h>
 
+#include "GpuMaterial.h"
 #include "RenderBackend.h"
 #include "CircularBuffer.h"
 #include "SphereMesh.h"

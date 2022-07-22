@@ -1659,7 +1659,7 @@ struct STextureLayers
     Float2 UVOffset;
 };
 
-#include <Core/Image.h>
+#include <Image/Image.h>
 
 void * LoadDiffuseImage( void * _RectUserData, int Width, int Height ) {
     STextureLayers * layers = (STextureLayers *)_RectUserData;

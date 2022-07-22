@@ -87,7 +87,7 @@ public:
     Float2 const& GetClipMaxs() const { return *(Float2*)&DrawList._ClipRectStack.back().z; }
 
     // Primitive blending
-    void PushBlendingState(EColorBlending _Blending);
+    void PushBlendingState(BLENDING_MODE _Blending);
     void PopBlendingState();
 
     // Font
@@ -122,9 +122,9 @@ public:
     void DrawCharUTF8(const char* _Ch, int _X, int _Y, float _Scale, Color4 const& _Color);
 
     // Texture
-    void DrawTexture(ATexture* _Texture, int _X, int _Y, int _W, int _H, Float2 const& _UV0 = Float2(0, 0), Float2 const& _UV1 = Float2(1, 1), Color4 const& _Color = Color4(1.0F), EColorBlending _Blending = COLOR_BLENDING_ALPHA, EHUDSamplerType _SamplerType = HUD_SAMPLER_TILED_LINEAR);
-    void DrawTextureQuad(ATexture* _Texture, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const& _UV0 = Float2(0, 0), Float2 const& _UV1 = Float2(1, 0), Float2 const& _UV2 = Float2(1, 1), Float2 const& _UV3 = Float2(0, 1), Color4 const& _Color = Color4(1.0F), EColorBlending _Blending = COLOR_BLENDING_ALPHA, EHUDSamplerType _SamplerType = HUD_SAMPLER_TILED_LINEAR);
-    void DrawTextureRounded(ATexture* _Texture, int _X, int _Y, int _W, int _H, Float2 const& _UV0, Float2 const& _UV1, Color4 const& _Color, float _Rounding, int _RoundingCorners = CORNER_ROUND_ALL, EColorBlending _Blending = COLOR_BLENDING_ALPHA, EHUDSamplerType _SamplerType = HUD_SAMPLER_TILED_LINEAR);
+    void DrawTexture(ATexture* _Texture, int _X, int _Y, int _W, int _H, Float2 const& _UV0 = Float2(0, 0), Float2 const& _UV1 = Float2(1, 1), Color4 const& _Color = Color4(1.0F), BLENDING_MODE _Blending = COLOR_BLENDING_ALPHA, EHUDSamplerType _SamplerType = HUD_SAMPLER_TILED_LINEAR);
+    void DrawTextureQuad(ATexture* _Texture, int _X0, int _Y0, int _X1, int _Y1, int _X2, int _Y2, int _X3, int _Y3, Float2 const& _UV0 = Float2(0, 0), Float2 const& _UV1 = Float2(1, 0), Float2 const& _UV2 = Float2(1, 1), Float2 const& _UV3 = Float2(0, 1), Color4 const& _Color = Color4(1.0F), BLENDING_MODE _Blending = COLOR_BLENDING_ALPHA, EHUDSamplerType _SamplerType = HUD_SAMPLER_TILED_LINEAR);
+    void DrawTextureRounded(ATexture* _Texture, int _X, int _Y, int _W, int _H, Float2 const& _UV0, Float2 const& _UV1, Color4 const& _Color, float _Rounding, int _RoundingCorners = CORNER_ROUND_ALL, BLENDING_MODE _Blending = COLOR_BLENDING_ALPHA, EHUDSamplerType _SamplerType = HUD_SAMPLER_TILED_LINEAR);
 
     // Material
     void DrawMaterial(AMaterialInstance* _MaterialInstance, int _X, int _Y, int _W, int _H, Float2 const& _UV0 = Float2(0, 0), Float2 const& _UV1 = Float2(1, 1), Color4 const& _Color = Color4::White());
@@ -132,7 +132,7 @@ public:
     void DrawMaterialRounded(AMaterialInstance* _MaterialInstance, int _X, int _Y, int _W, int _H, Float2 const& _UV0, Float2 const& _UV1, Color4 const& _Color, float _Rounding, int _RoundingCorners = CORNER_ROUND_ALL);
 
     // Viewport
-    void DrawViewport(ACameraComponent* _Camera, ARenderingParameters* _RP, int _X, int _Y, int _W, int _H, Color4 const& _Color = Color4::White(), float _Rounding = 0.0f, int _RoundingCorners = CORNER_ROUND_ALL, EColorBlending _Blending = COLOR_BLENDING_DISABLED);
+    void DrawViewport(ACameraComponent* _Camera, ARenderingParameters* _RP, int _X, int _Y, int _W, int _H, Color4 const& _Color = Color4::White(), float _Rounding = 0.0f, int _RoundingCorners = CORNER_ROUND_ALL, BLENDING_MODE _Blending = COLOR_BLENDING_DISABLED);
 
     // Cursor
     void DrawCursor(EDrawCursor _Cursor, Float2 const& _Position, Color4 const& _Color, Color4 const& _BorderColor, Color4 const& _ShadowColor, const float _Scale = 1.0f);
