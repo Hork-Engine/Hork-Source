@@ -198,10 +198,10 @@ source_group( "Geometry\\BV" FILES ${GeometryBV} )
 #---------------------------------------------------------------------
 # Image module
 file( GLOB Image Image/*.h Image/*.cpp )
-file( GLOB ImageSTB Core/stb/*.h )
+file( GLOB ImageSTB Image/stb/*.h )
 
 source_group( "Image" FILES ${Image} )
-source_group( "Image\\stb" FILES ${CoreSTB} )
+source_group( "Image\\stb" FILES ${ImageSTB} )
 #---------------------------------------------------------------------
 
 #---------------------------------------------------------------------
