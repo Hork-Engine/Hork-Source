@@ -186,7 +186,12 @@ private:
 ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Format = RAW_IMAGE_FORMAT_UNDEFINED);
 ARawImage CreateRawImage(AStringView FileName, RAW_IMAGE_FORMAT Format = RAW_IMAGE_FORMAT_UNDEFINED);
 
+bool IsHDRImage(IBinaryStreamReadInterface& Stream);
+
 ARawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color);
+
+ARawImage LoadNormalMapAsRawVectors(IBinaryStreamReadInterface& Stream);
+ARawImage LoadNormalMapAsRawVectors(AStringView FileName);
 
 /** Flip image horizontally */
 void FlipImageX(void* pData, uint32_t Width, uint32_t Height, size_t BytesPerPixel, size_t RowStride);
@@ -256,3 +261,6 @@ bool WriteHDR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Heig
 
 /** Write image in EXR format */
 bool WriteEXR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const float* pData, bool bSaveAsHalf = false);
+
+bool WriteImage(AStringView FileName, uint32_t Width, uint32_t Height, uint32_t NumChannels, const void* pData);
+bool WriteImageHDRI(AStringView FileName, uint32_t Width, uint32_t Height, uint32_t NumChannels, const float* pData);

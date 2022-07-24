@@ -49,10 +49,22 @@ SOFTWARE.
 #define STBIW_REALLOC(p, newsz) Platform::GetHeapAllocator<HEAP_IMAGE>().Realloc(p, newsz, 16)
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_STATIC
-#define STBI_WRITE_NO_STDIO
+//#define STBI_WRITE_NO_STDIO
 #define STBIW_ZLIB_COMPRESS      stbi_zlib_compress_override                   // Override compression method
 #define STBIW_CRC32(buffer, len) Core::Crc32(Core::CRC32_INITIAL, buffer, len) // Override crc32 method
 #define PNG_COMPRESSION_LEVEL    8
+
+struct StbImageInit
+{
+    StbImageInit()
+    {
+        // Do not perform gamma space conversion
+        stbi_hdr_to_ldr_gamma(1.0f);
+        stbi_ldr_to_hdr_gamma(1.0f);
+    }
+};
+
+static StbImageInit __StbImageInit;
 
 // Miniz mz_compress2 provides better compression than default stb compression method
 HK_FORCEINLINE unsigned char* stbi_zlib_compress_override(unsigned char* data, int data_len, int* out_len, int quality)
@@ -111,9 +123,9 @@ static void Stbi_Write(void* context, void* data, int size)
 
 #    include <tinyexr/tinyexr.h>
 
-HK_FORCEINLINE static uint8_t FloatToByte(float _Color)
+HK_FORCEINLINE static uint8_t FloatToU8(float f)
 {
-    return Math::Floor(Math::Saturate(_Color) * 255.0f + 0.5f);
+    return Math::Round(Math::Saturate(f) * 255.0f);
 }
 
 static void* LoadEXR(IBinaryStreamReadInterface& Stream, int* w, int* h, int* channels, int desiredchannels, bool ldr)
@@ -156,24 +168,24 @@ static void* LoadEXR(IBinaryStreamReadInterface& Stream, int* w, int* h, int* ch
             {
                 for (int i = 0; i < pixcount; i += numChannels)
                 {
-                    *pResult++ = LinearToSRGB_UChar(data[i]);
+                    *pResult++ = FloatToU8(data[i]);
                 }
             }
             else if (desiredchannels == 2)
             {
                 for (int i = 0; i < pixcount; i += numChannels)
                 {
-                    *pResult++ = LinearToSRGB_UChar(data[i]);
-                    *pResult++ = FloatToByte(data[i + 3]); // store alpha in second channel
+                    *pResult++ = FloatToU8(data[i]);
+                    *pResult++ = FloatToU8(data[i + 3]); // store alpha in second channel
                 }
             }
             else if (desiredchannels == 3)
             {
                 for (int i = 0; i < pixcount; i += numChannels)
                 {
-                    *pResult++ = LinearToSRGB_UChar(data[i]);
-                    *pResult++ = LinearToSRGB_UChar(data[i + 1]);
-                    *pResult++ = LinearToSRGB_UChar(data[i + 2]);
+                    *pResult++ = FloatToU8(data[i]);
+                    *pResult++ = FloatToU8(data[i + 1]);
+                    *pResult++ = FloatToU8(data[i + 2]);
                 }
             }
             else
@@ -188,10 +200,10 @@ static void* LoadEXR(IBinaryStreamReadInterface& Stream, int* w, int* h, int* ch
             uint8_t* pResult = (uint8_t*)result;
             for (int i = 0; i < pixcount; i += numChannels)
             {
-                *pResult++ = LinearToSRGB_UChar(data[i]);
-                *pResult++ = LinearToSRGB_UChar(data[i + 1]);
-                *pResult++ = LinearToSRGB_UChar(data[i + 2]);
-                *pResult++ = FloatToByte(data[i + 3]);
+                *pResult++ = FloatToU8(data[i]);
+                *pResult++ = FloatToU8(data[i + 1]);
+                *pResult++ = FloatToU8(data[i + 2]);
+                *pResult++ = FloatToU8(data[i + 3]);
             }
         }
     }
@@ -554,6 +566,11 @@ static bool IsHDR(IBinaryStreamReadInterface& Stream)
     return result;
 }
 
+bool IsHDRImage(IBinaryStreamReadInterface& Stream)
+{
+    return IsHDR(Stream) || IsEXR(Stream);
+}
+
 ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Format)
 {
     const stbi_io_callbacks callbacks = {Stbi_Read, Stbi_Skip, Stbi_Eof};
@@ -564,7 +581,7 @@ ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Fo
     switch (Format)
     {
         case RAW_IMAGE_FORMAT_UNDEFINED:
-            bHDRI = IsHDR(Stream) || IsEXR(Stream);
+            bHDRI = IsHDRImage(Stream);
             break;
         case RAW_IMAGE_FORMAT_R8:
         case RAW_IMAGE_FORMAT_R8_ALPHA:
@@ -686,6 +703,34 @@ ARawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT 
     return ARawImage(Width, Height, Format, Color);
 }
 
+ARawImage LoadNormalMapAsRawVectors(IBinaryStreamReadInterface& Stream)
+{
+    ARawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_RGB32_FLOAT);
+    if (!rawImage)
+        return {};
+
+    Float3* pNormal = (Float3*)rawImage.GetData();
+    Float3* end     = pNormal + rawImage.GetWidth() * rawImage.GetHeight();
+
+    while (pNormal < end)
+    {
+        *pNormal = *pNormal * 2.0f - 1.0f;
+        pNormal->NormalizeSelf();
+        ++pNormal;
+    }
+    return rawImage;
+}
+
+ARawImage LoadNormalMapAsRawVectors(AStringView FileName)
+{
+    AFileStream f;
+    if (!f.OpenRead(FileName))
+    {
+        LOG("LoadNormalMapAsRawVectors: couldn't open {}\n", FileName);
+        return {};
+    }
+    return LoadNormalMapAsRawVectors(f);
+}
 
 static void MemSwap(uint8_t* Block, size_t BlockSz, uint8_t* _Ptr1, uint8_t* _Ptr2, size_t _Size)
 {
@@ -786,7 +831,7 @@ void LinearToPremultipliedAlphaSRGB(const float* pSrc,
         dst[0] = LinearToSRGB_UChar(r);
         dst[1] = LinearToSRGB_UChar(g);
         dst[2] = LinearToSRGB_UChar(b);
-        dst[3] = FloatToByte(src[3]);
+        dst[3] = FloatToU8(src[3]);
     }
 }
 
@@ -933,4 +978,72 @@ bool WriteEXR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Heig
     LOG("WriteEXR: EXR is not supported\n");
     return false;
 #endif
+}
+
+bool WriteImage(AStringView FileName, uint32_t Width, uint32_t Height, uint32_t NumChannels, const void* pData)
+{
+    AStringView ext = PathUtils::GetExt(FileName);
+
+    if (ext.Icompare(".hdr") || ext.Icompare(".exr"))
+    {
+        LOG("WriteImage: Use WriteImgeHDRI to save as .hdr or .exr\n");
+        return false;
+    }
+
+    if (!(ext.Icompare(".png") || ext.Icompare(".bmp") || ext.Icompare(".tga") || ext.Icompare(".jpg") || ext.Icompare(".jpeg")))
+    {
+        LOG("WriteImage: Unknown image extension {}\n", FileName);
+        return false;
+    }
+
+    AFileStream f;
+    if (!f.OpenWrite(FileName))
+        return false;
+
+    bool result = false;
+
+    if (ext.Icompare(".png"))
+        result = WritePNG(f, Width, Height, NumChannels, pData);
+    else if (ext.Icompare(".bmp"))
+        result = WriteBMP(f, Width, Height, NumChannels, pData);
+    else if (ext.Icompare(".tga"))
+        result = WriteTGA(f, Width, Height, NumChannels, pData);
+    else if (ext.Icompare(".jpg") || ext.Icompare(".jpeg"))
+        result = WriteJPG(f, Width, Height, NumChannels, pData, 0.95f);
+
+    if (!result)
+    {
+        LOG("WriteImage: Failed to write image {}\n", FileName);
+    }
+    
+    return result;
+}
+
+bool WriteImageHDRI(AStringView FileName, uint32_t Width, uint32_t Height, uint32_t NumChannels, const float* pData)
+{
+    AStringView ext = PathUtils::GetExt(FileName);
+
+    if (!(ext.Icompare(".hdr") || ext.Icompare(".exr")))
+    {
+        LOG("WriteImageHDRI: Expected .hdr or .exr extension\n");
+        return false;
+    }
+
+    AFileStream f;
+    if (!f.OpenWrite(FileName))
+        return false;
+
+    bool result = false;
+
+    if (ext.Icompare(".hdr"))
+        result = WriteHDR(f, Width, Height, NumChannels, pData);
+    else if (ext.Icompare(".exr"))
+        result = WriteEXR(f, Width, Height, NumChannels, pData, true);
+
+    if (!result)
+    {
+        LOG("WriteImageHDRI: Failed to write image {}\n", FileName);
+    }
+
+    return result;
 }
