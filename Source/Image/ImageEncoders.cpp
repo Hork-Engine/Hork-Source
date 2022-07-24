@@ -685,3 +685,110 @@ const float pack_midpoints6[64] = {
     midpoints6[63] = FLT_MAX;
 }*/
 
+
+
+// Assume normals already normalized
+ARawImage PackNormalsRGBA_BC1_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
+{
+    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_RGBA8);
+
+    uint8_t* data = (uint8_t*)image.GetData();
+    for (uint32_t n = 0, count = Width * Height; n < count; ++n)
+    {
+        data[n * 4 + 0] = Math::Round(Math::Saturate(Normals[n].X * 0.5f + 0.5f) * 255.0f);
+        data[n * 4 + 1] = Math::Round(Math::Saturate(Normals[n].Y * 0.5f + 0.5f) * 255.0f);
+        data[n * 4 + 2] = Math::Round(Math::Saturate(Normals[n].Z * 0.5f + 0.5f) * 255.0f);
+        data[n * 4 + 3] = 255; // FIXME
+    }
+
+    return image;
+}
+
+// Assume normals already normalized
+ARawImage PackNormalsRG_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
+{
+    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_R8_ALPHA);
+
+    uint8_t* data = (uint8_t*)image.GetData();
+    for (uint32_t n = 0, count = Width * Height; n < count; ++n)
+    {
+        data[n * 2 + 0] = Math::Round(Math::Saturate(Normals[n].X * 0.5f + 0.5f) * 255.0f);
+        data[n * 2 + 1] = Math::Round(Math::Saturate(Normals[n].Y * 0.5f + 0.5f) * 255.0f);
+    }
+
+    return image;
+}
+
+// Assume normals already normalized
+ARawImage PackNormalsSpheremap_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
+{
+    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_R8_ALPHA);
+
+    uint8_t* data = (uint8_t*)image.GetData();
+    for (uint32_t n = 0, count = Width * Height; n < count; ++n)
+    {
+        float denom = 1.0f / Math::Sqrt(Normals[n].Z * 8.0f + 8.0f);
+
+        data[n * 2 + 0] = Math::Round(Math::Saturate(Normals[n].X * denom + 0.5f) * 255.0f);
+        data[n * 2 + 1] = Math::Round(Math::Saturate(Normals[n].Y * denom + 0.5f) * 255.0f);
+    }
+
+    return image;
+}
+
+// Assume normals already normalized
+ARawImage PackNormalsStereographic_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
+{
+    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_R8_ALPHA);
+
+    uint8_t* data = (uint8_t*)image.GetData();
+    for (uint32_t n = 0, count = Width * Height; n < count; ++n)
+    {
+        data[n * 2 + 0] = Math::Round(Math::Saturate(Normals[n].X / (1.0f + Normals[n].Z) * 0.5f + 0.5f) * 255.0f);
+        data[n * 2 + 1] = Math::Round(Math::Saturate(Normals[n].Y / (1.0f + Normals[n].Z) * 0.5f + 0.5f) * 255.0f);
+    }
+
+    return image;
+}
+
+// Assume normals already normalized
+ARawImage PackNormalsParaboloid_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
+{
+    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_R8_ALPHA);
+
+    uint8_t* data = (uint8_t*)image.GetData();
+    for (uint32_t n = 0, count = Width * Height; n < count; ++n)
+    {
+        float nx           = Normals[n].X;
+        float ny           = Normals[n].Y;
+        float a            = (nx * nx) + (ny * ny);
+        float b            = Normals[n].Z;
+        float c            = -1.0f;
+        float discriminant = b * b - 4.0f * a * c;
+        float t            = (-b + sqrtf(discriminant)) / (2.0f * a);
+        nx                 = nx * t;
+        ny                 = ny * t;
+
+        data[n * 2 + 0] = Math::Round(Math::Saturate(nx * 0.5f + 0.5f) * 255.0f);
+        data[n * 2 + 1] = Math::Round(Math::Saturate(ny * 0.5f + 0.5f) * 255.0f);
+    }
+
+    return image;
+}
+
+// Assume normals already normalized
+ARawImage PackNormalsRGBA_BC3_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height)
+{
+    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_RGBA8);
+
+    uint8_t* data = (uint8_t*)image.GetData();
+    for (uint32_t n = 0, count = Width * Height; n < count; ++n)
+    {
+        data[n * 4 + 0] = 255; // FIXME
+        data[n * 4 + 1] = Math::Round(Math::Saturate(Normals[n][1] * 0.5f + 0.5f) * 255.0f);
+        data[n * 4 + 2] = Math::Round(Math::Saturate(Normals[n][2] * 0.5f + 0.5f) * 255.0f);
+        data[n * 4 + 3] = Math::Round(Math::Saturate(Normals[n][0] * 0.5f + 0.5f) * 255.0f);
+    }
+
+    return image;
+}

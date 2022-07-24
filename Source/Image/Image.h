@@ -173,6 +173,16 @@ enum IMAGE_DATA_TYPE : uint8_t
     IMAGE_DATA_TYPE_COMPRESSED
 };
 
+enum NORMAL_MAP_PACK
+{
+    NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE          = 0,
+    NORMAL_MAP_PACK_RG_BC5_COMPATIBLE            = 1,
+    NORMAL_MAP_PACK_SPHEREMAP_BC5_COMPATIBLE     = 2,
+    NORMAL_MAP_PACK_STEREOGRAPHIC_BC5_COMPATIBLE = 3,
+    NORMAL_MAP_PACK_PARABOLOID_BC5_COMPATIBLE    = 4,
+    NORMAL_MAP_PACK_RGBA_BC3_COMPATIBLE          = 5
+};
+
 struct TextureFormatInfo
 {
     TEXTURE_FORMAT      Format;
@@ -504,6 +514,9 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
 /** Create image storage from file */
 ImageStorage CreateImage(AStringView FileName, ImageMipmapConfig const* pMipmapConfig = nullptr, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, TEXTURE_FORMAT Format = TEXTURE_FORMAT_UNDEFINED);
+
+ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
+ImageStorage CreateNormalMap(AStringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
 
 struct SkyboxImportSettings
 {

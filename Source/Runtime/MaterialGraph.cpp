@@ -167,17 +167,15 @@ SEnumDef const* EnumDefinition<ETextureColorSpace>()
     return EnumDef;
 }
 template <>
-SEnumDef const* EnumDefinition<ENormalMapCompression>()
+SEnumDef const* EnumDefinition<NORMAL_MAP_PACK>()
 {
     static const SEnumDef EnumDef[] = {
-        {NM_XYZ, "XYZ"},
-        {NM_XY, "XY"},
-        {NM_SPHEREMAP, "Spheremap"},
-        {NM_STEREOGRAPHIC, "Stereographic"},
-        {NM_PARABOLOID, "Paraboloid"},
-        {NM_QUARTIC, "Quartic"},
-        {NM_FLOAT, "Float"},
-        {NM_BC3, "BC3"},
+        {NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE, "RGBx"},
+        {NORMAL_MAP_PACK_RG_BC5_COMPATIBLE, "RG"},
+        {NORMAL_MAP_PACK_SPHEREMAP_BC5_COMPATIBLE, "Spheremap (RG)"},
+        {NORMAL_MAP_PACK_STEREOGRAPHIC_BC5_COMPATIBLE, "Stereographic (RG)"},
+        {NORMAL_MAP_PACK_PARABOLOID_BC5_COMPATIBLE, "Paraboloid (RG)"},
+        {NORMAL_MAP_PACK_RGBA_BC3_COMPATIBLE, "xGBR"},
         {0, nullptr}};
     return EnumDef;
 }
@@ -691,17 +689,12 @@ MGNode& MGNode::BindInput(AStringView InputSlot, MGNode* Node)
 
 MGNode& MGNode::BindInput(AStringView InputSlot, MGNode& Node)
 {
-    MGOutput* output = Node.FindOutput("Value");
-    if (!output)
-        output = Node.FindOutput("Result");
-    if (!output)
-        output = Node.FindOutput("RGBA");
-    if (!output)
+    if (Node.m_Outputs.IsEmpty())
     {
-        LOG("MGNode::BuildInput: Couldn't deduce an output slot\n");
+        LOG("MGNode::BindInput: Node '{}' has no output slots\n", Node.GetObjectName());
         return *this;
     }
-    return BindInput(InputSlot, output);
+    return BindInput(InputSlot, Node.m_Outputs[0]);
 }
 
 MGNode& MGNode::BindInput(AStringView InputSlot, MGOutput& pSlot)
@@ -1950,7 +1943,7 @@ HK_END_CLASS_META()
 MGTextureLoad::MGTextureLoad() :
     Super("Texture Sampler")
 {
-    SetSlots({&Texture, &TexCoord}, {&R, &G, &B, &A, &RGB, &RGBA});
+    SetSlots({&Texture, &TexCoord}, {&RGBA, &RGB, &R, &G, &B, &A});
 }
 
 static const char* ChooseSampleFunction(ETextureColorSpace _ColorSpace)
@@ -2058,34 +2051,34 @@ void MGTextureLoad::Compute(AMaterialBuildContext& Context)
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
 HK_BEGIN_CLASS_META(MGNormalLoad)
-HK_PROPERTY_DIRECT(Compression, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(Pack, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 MGNormalLoad::MGNormalLoad() :
     Super("Normal Sampler")
 {
-    SetSlots({&Texture, &TexCoord}, {&X, &Y, &Z, &XYZ});
+    SetSlots({&Texture, &TexCoord}, {&XYZ, &X, &Y, &Z});
 }
 
-static const char* ChooseSampleFunction(ENormalMapCompression _Compression)
+static const char* ChooseSampleFunction(NORMAL_MAP_PACK Pack)
 {
-    switch (_Compression)
+    switch (Pack)
     {
-        case NM_XYZ:
+        case NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE:
             return "texture_nm_xyz";
-        case NM_XY:
+        case NORMAL_MAP_PACK_RG_BC5_COMPATIBLE:
             return "texture_nm_xy";
-        case NM_SPHEREMAP:
+        case NORMAL_MAP_PACK_SPHEREMAP_BC5_COMPATIBLE:
             return "texture_nm_spheremap";
-        case NM_STEREOGRAPHIC:
+        case NORMAL_MAP_PACK_STEREOGRAPHIC_BC5_COMPATIBLE:
             return "texture_nm_stereographic";
-        case NM_PARABOLOID:
+        case NORMAL_MAP_PACK_PARABOLOID_BC5_COMPATIBLE:
             return "texture_nm_paraboloid";
-        case NM_QUARTIC:
-            return "texture_nm_quartic";
-        case NM_FLOAT:
-            return "texture_nm_float";
-        case NM_BC3:
+        //case NM_QUARTIC:
+        //    return "texture_nm_quartic";
+        //case NM_FLOAT:
+        //    return "texture_nm_float";
+        case NORMAL_MAP_PACK_RGBA_BC3_COMPATIBLE:
             return "texture_nm_dxt5";
         default:
             return "texture_nm_xyz";
@@ -2145,7 +2138,7 @@ void MGNormalLoad::Compute(AMaterialBuildContext& Context)
                 if (texCoordCon && TexCoord.ConnectedNode()->Build(Context))
                 {
 
-                    const char* sampleFunc = ChooseSampleFunction(Compression);
+                    const char* sampleFunc = ChooseSampleFunction(Pack);
 
                     XYZ.Expression = Context.GenerateVariableName();
                     Context.SourceCode += "const vec3 " + XYZ.Expression + " = " + sampleFunc + "( tslot_" + Core::ToString(slotIndex) + ", " + MakeVectorCast(texCoordCon->Expression, texCoordCon->Type, sampleType) + " );\n";
@@ -2283,7 +2276,7 @@ void MGVirtualTextureLoad::Compute(AMaterialBuildContext& Context)
 
 HK_BEGIN_CLASS_META(MGVirtualTextureNormalLoad)
 HK_PROPERTY_DIRECT(TextureLayer, HK_PROPERTY_DEFAULT)
-HK_PROPERTY_DIRECT(Compression, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(Pack, HK_PROPERTY_DEFAULT)
 HK_END_CLASS_META()
 
 MGVirtualTextureNormalLoad::MGVirtualTextureNormalLoad() :
@@ -2294,7 +2287,7 @@ MGVirtualTextureNormalLoad::MGVirtualTextureNormalLoad() :
 
 void MGVirtualTextureNormalLoad::Compute(AMaterialBuildContext& Context)
 {
-    const char* sampleFunc = ChooseSampleFunction(Compression);
+    const char* sampleFunc = ChooseSampleFunction(Pack);
 
     XYZ.Expression = Context.GenerateVariableName();
 

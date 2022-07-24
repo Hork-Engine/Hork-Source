@@ -86,19 +86,19 @@ void CompressBC7(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height)
 
 HK_FORCEINLINE uint16_t pack_r4g4b4a4(uint8_t const* pixel)
 {
-    uint16_t r = round(pixel[0] / 255.0f * 15.0f);
-    uint16_t g = round(pixel[1] / 255.0f * 15.0f);
-    uint16_t b = round(pixel[2] / 255.0f * 15.0f);
-    uint16_t a = round(pixel[3] / 255.0f * 15.0f);
+    uint16_t r = Math::Round(pixel[0] / 255.0f * 15.0f);
+    uint16_t g = Math::Round(pixel[1] / 255.0f * 15.0f);
+    uint16_t b = Math::Round(pixel[2] / 255.0f * 15.0f);
+    uint16_t a = Math::Round(pixel[3] / 255.0f * 15.0f);
     return (r << 12) | (g << 8) | (b << 4) | a;
 }
 
 HK_FORCEINLINE void unpack_r4g4b4a4(uint16_t pack, uint8_t* pixel)
 {
-    pixel[0] = round((pack >> 12) / 15.0f * 255.0f);
-    pixel[1] = round(((pack >> 8) & 0xf) / 15.0f * 255.0f);
-    pixel[2] = round(((pack >> 4) & 0xf) / 15.0f * 255.0f);
-    pixel[3] = round((pack & 0xf) / 15.0f * 255.0f);
+    pixel[0] = Math::Round((pack >> 12) / 15.0f * 255.0f);
+    pixel[1] = Math::Round(((pack >> 8) & 0xf) / 15.0f * 255.0f);
+    pixel[2] = Math::Round(((pack >> 4) & 0xf) / 15.0f * 255.0f);
+    pixel[3] = Math::Round((pack & 0xf) / 15.0f * 255.0f);
 }
 
 extern const float pack_midpoints5[32];
@@ -146,28 +146,28 @@ HK_FORCEINLINE void unpack_r5g6b5(uint16_t pack, uint8_t* pixel)
 
 HK_FORCEINLINE uint16_t pack_r5g5b5a1(uint8_t const* pixel)
 {
-    uint16_t r = round(pixel[0] / 255.0f * 31.0f);
-    uint16_t g = round(pixel[1] / 255.0f * 31.0f);
-    uint16_t b = round(pixel[2] / 255.0f * 31.0f);
-    uint16_t a = round(pixel[3] / 255.0f);
+    uint16_t r = Math::Round(pixel[0] / 255.0f * 31.0f);
+    uint16_t g = Math::Round(pixel[1] / 255.0f * 31.0f);
+    uint16_t b = Math::Round(pixel[2] / 255.0f * 31.0f);
+    uint16_t a = Math::Round(pixel[3] / 255.0f);
     return (r << 11) | (g << 6) | (b << 1) | a;
 }
 
 HK_FORCEINLINE void unpack_r5g5b5a1(uint16_t pack, uint8_t* pixel)
 {
-    pixel[0] = round((pack >> 11) / 31.0f * 255.0f);
-    pixel[1] = round(((pack >> 6) & 0x1f) / 31.0f * 255.0f);
-    pixel[2] = round(((pack >> 1) & 0x1f) / 31.0f * 255.0f);
+    pixel[0] = Math::Round((pack >> 11) / 31.0f * 255.0f);
+    pixel[1] = Math::Round(((pack >> 6) & 0x1f) / 31.0f * 255.0f);
+    pixel[2] = Math::Round(((pack >> 1) & 0x1f) / 31.0f * 255.0f);
     pixel[3] = ((pack & 1) << 8) - (pack & 1);
 }
 
 HK_FORCEINLINE uint32_t pack_r10g10b10a2(float const* pixel)
 {
     // FIXME: Is it correct?
-    uint32_t r = round(pixel[0] * 1023.0f);
-    uint32_t g = round(pixel[1] * 1023.0f);
-    uint32_t b = round(pixel[2] * 1023.0f);
-    uint32_t a = round(pixel[3] * 3.0f);
+    uint32_t r = Math::Round(pixel[0] * 1023.0f);
+    uint32_t g = Math::Round(pixel[1] * 1023.0f);
+    uint32_t b = Math::Round(pixel[2] * 1023.0f);
+    uint32_t a = Math::Round(pixel[3] * 3.0f);
     return (a << 30) | (r << 20) | (g << 10) | b;
 }
 
@@ -523,3 +523,22 @@ struct Decoder_HalfFloat
 using Decoder_R16F = Decoder_HalfFloat<1>;
 using Decoder_RG16F = Decoder_HalfFloat<2>;
 using Decoder_RGBA16F = Decoder_HalfFloat<4>;
+
+
+// Assume normals already normalized
+ARawImage PackNormalsRGBA_BC1_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
+
+// Assume normals already normalized
+ARawImage PackNormalsRG_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
+
+// Assume normals already normalized
+ARawImage PackNormalsSpheremap_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
+
+// Assume normals already normalized
+ARawImage PackNormalsStereographic_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
+
+// Assume normals already normalized
+ARawImage PackNormalsParaboloid_BC5_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
+
+// Assume normals already normalized
+ARawImage PackNormalsRGBA_BC3_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);

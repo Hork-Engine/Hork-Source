@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "BaseObject.h"
 #include <Core/Guid.h>
+#include <Image/Image.h>
 
 #include "Material.h"
 
@@ -718,12 +719,12 @@ class MGTextureLoad : public MGNode
     MGInput Texture{"Texture"};
     MGInput TexCoord{"TexCoord"};
 
+    MGOutput RGBA{"RGBA", MG_VALUE_TYPE_FLOAT4};
+    MGOutput RGB{"RGB", MG_VALUE_TYPE_FLOAT3};
     MGOutput R{"R", MG_VALUE_TYPE_FLOAT1};
     MGOutput G{"G", MG_VALUE_TYPE_FLOAT1};
     MGOutput B{"B", MG_VALUE_TYPE_FLOAT1};
     MGOutput A{"A", MG_VALUE_TYPE_FLOAT1};
-    MGOutput RGB{"RGB", MG_VALUE_TYPE_FLOAT3};
-    MGOutput RGBA{"RGBA", MG_VALUE_TYPE_FLOAT4};
 
 public:
     bool               bSwappedToBGR = false;
@@ -742,13 +743,13 @@ class MGNormalLoad : public MGNode
     MGInput Texture{"Texture"};
     MGInput TexCoord{"TexCoord"};
 
+    MGOutput XYZ{"XYZ", MG_VALUE_TYPE_FLOAT3};
     MGOutput X{"X", MG_VALUE_TYPE_FLOAT1};
     MGOutput Y{"Y", MG_VALUE_TYPE_FLOAT1};
     MGOutput Z{"Z", MG_VALUE_TYPE_FLOAT1};
-    MGOutput XYZ{"XYZ", MG_VALUE_TYPE_FLOAT3};
 
 public:
-    ENormalMapCompression Compression = NM_XYZ;
+    NORMAL_MAP_PACK Pack = NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE;
 
     MGNormalLoad();
 
@@ -807,7 +808,7 @@ class MGVirtualTextureNormalLoad : public MGNode
 
 public:
     int                   TextureLayer{0};
-    ENormalMapCompression Compression = NM_XYZ;
+    NORMAL_MAP_PACK Pack = NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE;
 
     MGVirtualTextureNormalLoad();
 

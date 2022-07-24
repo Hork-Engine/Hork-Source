@@ -244,7 +244,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         auto& normalSampler = graph->Add2<MGNormalLoad>();
         normalSampler.BindInput("TexCoord", inTexCoord);
         normalSampler.BindInput("Texture", normalTexture);
-        normalSampler.Compression = NM_XYZ;
+        normalSampler.Pack = NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE;
 
         auto& metallicSampler = graph->Add2<MGTextureLoad>();
         metallicSampler.BindInput("TexCoord", inTexCoord);
@@ -294,7 +294,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         auto& normalSampler = graph->Add2<MGNormalLoad>();
         normalSampler.BindInput("TexCoord", inTexCoord);
         normalSampler.BindInput("Texture", normalTexture);
-        normalSampler.Compression = NM_XYZ;
+        normalSampler.Pack = NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE;
 
         auto& metallicRoughnessSampler = graph->Add2<MGTextureLoad>();
         metallicRoughnessSampler.BindInput("TexCoord", inTexCoord);
@@ -350,7 +350,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         auto& normalSampler = graph->Add2<MGNormalLoad>();
         normalSampler.BindInput("TexCoord", inTexCoord);
         normalSampler.BindInput("Texture", normalTexture);
-        normalSampler.Compression = NM_XYZ;
+        normalSampler.Pack = NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE;
 
         auto& metallicRoughnessSampler = graph->Add2<MGTextureLoad>();
         metallicRoughnessSampler.BindInput("TexCoord", inTexCoord);
@@ -409,7 +409,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         auto& normalSampler = graph->Add2<MGNormalLoad>();
         normalSampler.BindInput("TexCoord", inTexCoord);
         normalSampler.BindInput("Texture", normalTexture);
-        normalSampler.Compression = NM_XYZ;
+        normalSampler.Pack = NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE;
 
         auto& metallicRoughnessSampler = graph->Add2<MGTextureLoad>();
         metallicRoughnessSampler.BindInput("TexCoord", inTexCoord);
@@ -470,7 +470,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         auto& normalSampler = graph->Add2<MGNormalLoad>();
         normalSampler.BindInput("TexCoord", inTexCoord);
         normalSampler.BindInput("Texture", normalTexture);
-        normalSampler.Compression = NM_XYZ;
+        normalSampler.Pack = NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE;
 
         auto& metallicRoughnessSampler = graph->Add2<MGTextureLoad>();
         metallicRoughnessSampler.BindInput("TexCoord", inTexCoord);
@@ -558,7 +558,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         auto& normalSampler = graph->Add2<MGNormalLoad>();
         normalSampler.BindInput("TexCoord", inTexCoord);
         normalSampler.BindInput("Texture", normalTexture);
-        normalSampler.Compression = NM_XYZ;
+        normalSampler.Pack = NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE;
 
         auto& metallicRoughnessSampler = graph->Add2<MGTextureLoad>();
         metallicRoughnessSampler.BindInput("TexCoord", inTexCoord);
@@ -649,7 +649,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
         auto& normalSampler = graph->Add2<MGNormalLoad>();
         normalSampler.BindInput("TexCoord", inTexCoord);
         normalSampler.BindInput("Texture", normalTexture);
-        normalSampler.Compression = NM_XYZ;
+        normalSampler.Pack = NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE;
 
         auto& metallicRoughnessSampler = graph->Add2<MGTextureLoad>();
         metallicRoughnessSampler.BindInput("TexCoord", inTexCoord);

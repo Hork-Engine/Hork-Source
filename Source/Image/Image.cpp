@@ -1800,8 +1800,8 @@ bool ResampleImage(ImageResampleParams const& Desc, void* pDest)
         numChannels++;
 
     int result =
-        stbir_resize(Desc.pImage, Desc.Width, Desc.Height, numChannels * Desc.Width,
-                     pDest, Desc.ScaledWidth, Desc.ScaledHeight, numChannels * Desc.ScaledWidth,
+        stbir_resize(Desc.pImage, Desc.Width, Desc.Height, Desc.Width * info.BytesPerBlock,
+                     pDest, Desc.ScaledWidth, Desc.ScaledHeight, Desc.ScaledWidth * info.BytesPerBlock,
                      get_stbir_datatype(info.DataType),
                      numChannels,
                      Desc.AlphaChannel,
@@ -1815,4 +1815,137 @@ bool ResampleImage(ImageResampleParams const& Desc, void* pDest)
     HK_UNUSED(result);
 
     return true;
+}
+
+// Assume normals already normalized
+static ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t Height, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter)
+{
+    using namespace TextureBlockCompression;
+
+    // clang-format off
+    struct CompressInfo
+    {
+        ARawImage        (*PackRoutine)(Float3 const* Normals, uint32_t Width, uint32_t Height);
+        void             (*CompressionRoutine)(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height);
+        TEXTURE_FORMAT   CompressedFormat;
+        TEXTURE_FORMAT   UncompressedFormat;
+        int              NumChannels;
+        RAW_IMAGE_FORMAT ValidateFormat;
+    };
+    constexpr CompressInfo compressInfo[] = {
+        PackNormalsRGBA_BC1_Compatible,          CompressBC1, TEXTURE_FORMAT_BC1_UNORM, TEXTURE_FORMAT_RGBA8_UNORM, 4, RAW_IMAGE_FORMAT_RGBA8,    // NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE
+        PackNormalsRG_BC5_Compatible,            CompressBC5, TEXTURE_FORMAT_BC5_UNORM, TEXTURE_FORMAT_RG8_UNORM,   2, RAW_IMAGE_FORMAT_R8_ALPHA, // NORMAL_MAP_PACK_RG_BC5_COMPATIBLE
+        PackNormalsSpheremap_BC5_Compatible,     CompressBC5, TEXTURE_FORMAT_BC5_UNORM, TEXTURE_FORMAT_RG8_UNORM,   2, RAW_IMAGE_FORMAT_R8_ALPHA, // NORMAL_MAP_PACK_SPHEREMAP_BC5_COMPATIBLE
+        PackNormalsStereographic_BC5_Compatible, CompressBC5, TEXTURE_FORMAT_BC5_UNORM, TEXTURE_FORMAT_RG8_UNORM,   2, RAW_IMAGE_FORMAT_R8_ALPHA, // NORMAL_MAP_PACK_STEREOGRAPHIC_BC5_COMPATIBLE
+        PackNormalsParaboloid_BC5_Compatible,    CompressBC5, TEXTURE_FORMAT_BC5_UNORM, TEXTURE_FORMAT_RG8_UNORM,   2, RAW_IMAGE_FORMAT_R8_ALPHA, // NORMAL_MAP_PACK_PARABOLOID_BC5_COMPATIBLE
+        PackNormalsRGBA_BC3_Compatible,          CompressBC3, TEXTURE_FORMAT_BC3_UNORM, TEXTURE_FORMAT_RGBA8_UNORM, 4, RAW_IMAGE_FORMAT_RGBA8,    // NORMAL_MAP_PACK_RGBA_BC3_COMPATIBLE
+    };
+    // clang-format on
+
+    CompressInfo const& compress = compressInfo[Pack];
+
+    ARawImage source = compress.PackRoutine(pNormals, Width, Height);
+
+    HK_ASSERT(compress.ValidateFormat == source.GetFormat());
+    if (compress.ValidateFormat != source.GetFormat())
+    {
+        LOG("GenerateMipmapsAndCompressNormalMap: Uncompatible raw image format\n");
+        return {};
+    }
+
+    ImageStorageDesc desc;
+    desc.Type       = TEXTURE_2D;
+    desc.Format     = bUseCompression ? compress.CompressedFormat : compress.UncompressedFormat;
+    desc.Width      = source.GetWidth();
+    desc.Height     = source.GetHeight();
+    desc.SliceCount = 1;
+    desc.NumMipmaps = CalcNumMips(desc.Format, desc.Width, desc.Height);
+    desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
+
+    ImageStorage storage(desc);
+
+    ImageSubresourceDesc subres;
+    subres.SliceIndex  = 0;
+    subres.MipmapIndex = 0;
+
+    ImageSubresource subresource = storage.GetSubresource(subres);
+
+    if (!bUseCompression)
+    {
+        subresource.Write(0, 0, source.GetWidth(), source.GetHeight(), source.GetData());
+
+        ImageMipmapConfig mipmapConfig;
+        mipmapConfig.EdgeMode = ResampleEdgeMode;
+        mipmapConfig.Filter   = ResampleFilter;
+        storage.GenerateMipmaps(mipmapConfig);
+
+        return storage;
+    }
+
+    const uint32_t bpp = compress.NumChannels;
+
+    compress.CompressionRoutine(source.GetData(), subresource.GetData(), subresource.GetWidth(), subresource.GetHeight());
+
+    TextureFormatInfo const& info = GetTextureFormatInfo(desc.Format);
+
+    uint32_t curWidth  = subresource.GetWidth();
+    uint32_t curHeight = subresource.GetHeight();
+
+    HeapBlob blob(std::max<uint32_t>(info.BlockSize, curWidth >> 1) * std::max<uint32_t>(info.BlockSize, curHeight >> 1) * bpp);
+
+    void* data = source.GetData();
+    void* temp = blob.GetData();
+
+    for (uint32_t i = 1; i < desc.NumMipmaps; ++i)
+    {
+        subres.MipmapIndex = i;
+
+        subresource = storage.GetSubresource(subres);
+
+        uint32_t mipWidth  = subresource.GetWidth();
+        uint32_t mipHeight = subresource.GetHeight();
+
+        stbir_resize(data, curWidth, curHeight, curWidth * bpp,
+                     temp, mipWidth, mipHeight, mipWidth * bpp,
+                     STBIR_TYPE_UINT8,
+                     bpp,
+                     STBIR_ALPHA_CHANNEL_NONE,
+                     0,
+                     (stbir_edge)ResampleEdgeMode, (stbir_edge)ResampleEdgeMode,
+                     (stbir_filter)ResampleFilter, (stbir_filter)ResampleFilter,
+                     STBIR_COLORSPACE_LINEAR,
+                     NULL);
+
+        curWidth  = mipWidth;
+        curHeight = mipHeight;
+        Core::Swap(data, temp);
+
+        compress.CompressionRoutine(data, subresource.GetData(), mipWidth, mipHeight);
+    }
+
+    return storage;
+}
+
+ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
+{
+    ARawImage rawImage = LoadNormalMapAsRawVectors(Stream);
+    if (!rawImage)
+        return {};
+
+    HK_ASSERT(rawImage.GetFormat() == RAW_IMAGE_FORMAT_RGB32_FLOAT);
+
+    // FIXME: Should we call PackNormals### for each mip level?
+
+    const IMAGE_RESAMPLE_FILTER ResampleFilter = IMAGE_RESAMPLE_FILTER_MITCHELL; // TODO: Check what filter is better for normal maps
+
+    return CreateNormalMap((Float3 const*)rawImage.GetData(), rawImage.GetWidth(), rawImage.GetHeight(), Pack, bUseCompression, ResampleEdgeMode, ResampleFilter);
+}
+
+ImageStorage CreateNormalMap(AStringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
+{
+    AFileStream stream;
+    if (!stream.OpenRead(FileName))
+        return {};
+
+    return CreateNormalMap(FileName, Pack, bUseCompression, ResampleEdgeMode);
 }

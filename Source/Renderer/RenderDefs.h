@@ -349,22 +349,6 @@ struct SDebugVertex
     uint32_t Color;
 };
 
-//
-// Texture formats
-//
-
-enum ENormalMapCompression
-{
-    NM_XYZ           = 0,
-    NM_XY            = 1,
-    NM_SPHEREMAP     = 2,
-    NM_STEREOGRAPHIC = 3,
-    NM_PARABOLOID    = 4,
-    NM_QUARTIC       = 5,
-    NM_FLOAT         = 6,
-    NM_BC3           = 7
-};
-
 enum ETextureColorSpace
 {
     TEXTURE_COLORSPACE_RGBA,
