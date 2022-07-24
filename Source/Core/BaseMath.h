@@ -798,13 +798,13 @@ constexpr T Lerp(T const& _From, T const& _To, T const& _Mix)
 template <typename T>
 HK_FORCEINLINE T Round(T const& Value)
 {
-    return Floor(Value + T(0.5));
+    return std::round(Value);
 }
 
 template <typename T>
 HK_FORCEINLINE T RoundN(T const& Value, T const& _N)
 {
-    return Floor(Value * _N + T(0.5)) / _N;
+    return std::round(Value * _N) / _N;
 }
 
 template <typename T>
