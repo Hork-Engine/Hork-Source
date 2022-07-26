@@ -317,7 +317,8 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
         int        subpartIndex = 0;
         for (ADocValue* v = values; v && subpartIndex < m_Subparts.Size(); v = v->GetNext())
         {
-            m_Subparts[subpartIndex]->SetMaterialInstance(GetOrCreateResource<AMaterialInstance>(v->GetStringView()));
+            if (v->GetStringView())
+                m_Subparts[subpartIndex]->SetMaterialInstance(GetOrCreateResource<AMaterialInstance>(v->GetStringView()));
             subpartIndex++;
         }
     }
