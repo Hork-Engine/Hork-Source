@@ -243,6 +243,11 @@ struct Decoder_R4G4B4A4
         return false;
     }
 
+    constexpr bool HasAlpha() const
+    {
+        return true;
+    }
+
     // Row stride for decoded image
     size_t GetRowStride(uint32_t w) const
     {
@@ -294,6 +299,11 @@ struct Decoder_R5G6B5
     }
 
     constexpr bool IsSRGB() const
+    {
+        return false;
+    }
+
+    constexpr bool HasAlpha() const
     {
         return false;
     }
@@ -353,6 +363,11 @@ struct Decoder_R5G5B5A1
         return false;
     }
 
+    constexpr bool HasAlpha() const
+    {
+        return true;
+    }
+
     // Row stride for decoded image
     size_t GetRowStride(uint32_t w) const
     {
@@ -406,6 +421,11 @@ struct Decoder_R10G10B10A2
     constexpr bool IsSRGB() const
     {
         return false;
+    }
+
+    constexpr bool HasAlpha() const
+    {
+        return true;
     }
 
     // Row stride for decoded image
@@ -463,6 +483,11 @@ struct Decoder_R11G11B10F
         return false;
     }
 
+    constexpr bool HasAlpha() const
+    {
+        return false;
+    }
+
     // Row stride for decoded image
     size_t GetRowStride(uint32_t w) const
     {
@@ -471,7 +496,7 @@ struct Decoder_R11G11B10F
 };
 
 // Half float <-> float
-template <uint32_t NumChannels>
+template <uint32_t NumChannels, bool bHasAlpha>
 struct Decoder_HalfFloat
 {
     // Size for decoded image
@@ -513,6 +538,11 @@ struct Decoder_HalfFloat
         return false;
     }
 
+    constexpr bool HasAlpha() const
+    {
+        return bHasAlpha;
+    }
+
     // Row stride for decoded image
     size_t GetRowStride(uint32_t w) const
     {
@@ -520,9 +550,9 @@ struct Decoder_HalfFloat
     }
 };
 
-using Decoder_R16F = Decoder_HalfFloat<1>;
-using Decoder_RG16F = Decoder_HalfFloat<2>;
-using Decoder_RGBA16F = Decoder_HalfFloat<4>;
+using Decoder_R16F = Decoder_HalfFloat<1, false>;
+using Decoder_RG16F = Decoder_HalfFloat<2, false>;
+using Decoder_RGBA16F = Decoder_HalfFloat<4, true>;
 
 
 // Assume normals already normalized
