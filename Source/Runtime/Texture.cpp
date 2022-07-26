@@ -67,6 +67,7 @@ bool ATexture::InitializeFromImage(ImageStorage const& Image)
     if (!Image)
     {
         LOG("ATexture::InitializeFromImage: empty image data\n");
+        InitializeDefaultObject();
         return false;
     }
 
