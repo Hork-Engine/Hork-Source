@@ -52,6 +52,14 @@ enum RAW_IMAGE_FORMAT
     RAW_IMAGE_FORMAT_BGRA32_FLOAT
 };
 
+struct RawImageFormatInfo
+{
+    uint8_t NumChannels;
+    uint8_t BytesPerPixel;
+};
+
+RawImageFormatInfo const& GetRawImageFormatInfo(RAW_IMAGE_FORMAT Format);
+
 class ARawImage
 {
 public:
@@ -176,6 +184,13 @@ public:
     /** Swap Red and Green channels. */
     void SwapRGB();
 
+    void InvertChannel(uint32_t ChannelIndex);
+
+    void InvertRed() { InvertChannel(0); }
+    void InvertGreen() { InvertChannel(1); }
+    void InvertBlue() { InvertChannel(2); }
+    void InvertAlpha() { InvertChannel(3); }
+
 private:
     void*            m_pData{};
     uint32_t         m_Width{};
@@ -264,3 +279,5 @@ bool WriteEXR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Heig
 
 bool WriteImage(AStringView FileName, uint32_t Width, uint32_t Height, uint32_t NumChannels, const void* pData);
 bool WriteImageHDRI(AStringView FileName, uint32_t Width, uint32_t Height, uint32_t NumChannels, const float* pData);
+
+bool WriteImage(AStringView FileName, ARawImage const& Image);

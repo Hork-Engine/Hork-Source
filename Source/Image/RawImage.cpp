@@ -256,12 +256,6 @@ static void* LoadEXR(IBinaryStreamReadInterface& Stream, int* w, int* h, int* ch
 
 #endif
 
-struct RawImageFormatInfo
-{
-    uint8_t NumChannels;
-    uint8_t BytesPerPixel;
-};
-
 // clang-format off
 static const RawImageFormatInfo RawImageFormatLUT[] =
 {
@@ -282,6 +276,11 @@ static const RawImageFormatInfo RawImageFormatLUT[] =
         4, 16, // RAW_IMAGE_FORMAT_BGRA32_FLOAT
 };
 // clang-format on
+
+RawImageFormatInfo const& GetRawImageFormatInfo(RAW_IMAGE_FORMAT Format)
+{
+    return RawImageFormatLUT[Format];
+}
 
 static size_t CalcRawImageSize(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format)
 {
@@ -525,6 +524,52 @@ void ARawImage::SwapRGB()
         case RAW_IMAGE_FORMAT_RGBA32_FLOAT:
         case RAW_IMAGE_FORMAT_BGRA32_FLOAT: {
             ::SwapRGB((float*)m_pData, m_Width, m_Height, NumChannels());
+            break;
+        }
+        default:
+            break;
+    }
+}
+
+template <typename T>
+void InvertChannel(T* pData, uint32_t Width, uint32_t Height, uint32_t NumChannels, uint32_t ChannelIndex, const T MaxValue)
+{
+    if (ChannelIndex >= NumChannels)
+    {
+        LOG("ARawImage::InvertChannel: channel index is out of range\n");
+        return;
+    }
+
+    T* d   = pData;
+    T* d_e = d + Width * Height * NumChannels;
+    while (d < d_e)
+    {
+        d[ChannelIndex] = MaxValue - d[ChannelIndex];
+        d += NumChannels;
+    }
+}
+
+void ARawImage::InvertChannel(uint32_t ChannelIndex)
+{
+    switch (m_Format)
+    {
+        case RAW_IMAGE_FORMAT_R8:
+        case RAW_IMAGE_FORMAT_R8_ALPHA:
+        case RAW_IMAGE_FORMAT_RGB8:
+        case RAW_IMAGE_FORMAT_BGR8:
+        case RAW_IMAGE_FORMAT_RGBA8:
+        case RAW_IMAGE_FORMAT_BGRA8: {
+            ::InvertChannel((uint8_t*)m_pData, m_Width, m_Height, NumChannels(), ChannelIndex, uint8_t(255));
+            break;
+        }
+
+        case RAW_IMAGE_FORMAT_R32_FLOAT:
+        case RAW_IMAGE_FORMAT_R32_ALPHA_FLOAT:
+        case RAW_IMAGE_FORMAT_RGB32_FLOAT:
+        case RAW_IMAGE_FORMAT_BGR32_FLOAT:
+        case RAW_IMAGE_FORMAT_RGBA32_FLOAT:
+        case RAW_IMAGE_FORMAT_BGRA32_FLOAT: {
+            ::InvertChannel((float*)m_pData, m_Width, m_Height, NumChannels(), ChannelIndex, 1.0f);
             break;
         }
         default:
@@ -1046,4 +1091,52 @@ bool WriteImageHDRI(AStringView FileName, uint32_t Width, uint32_t Height, uint3
     }
 
     return result;
+}
+
+bool WriteImage(AStringView FileName, ARawImage const& Image)
+{
+    bool bHDRI = false;
+    switch (Image.GetFormat())
+    {
+        case RAW_IMAGE_FORMAT_R8:
+        case RAW_IMAGE_FORMAT_R8_ALPHA:
+        case RAW_IMAGE_FORMAT_RGB8:
+        case RAW_IMAGE_FORMAT_BGR8:
+        case RAW_IMAGE_FORMAT_RGBA8:
+        case RAW_IMAGE_FORMAT_BGRA8:
+            break;
+        case RAW_IMAGE_FORMAT_R32_FLOAT:
+        case RAW_IMAGE_FORMAT_R32_ALPHA_FLOAT:
+        case RAW_IMAGE_FORMAT_RGB32_FLOAT:
+        case RAW_IMAGE_FORMAT_BGR32_FLOAT:
+        case RAW_IMAGE_FORMAT_RGBA32_FLOAT:
+        case RAW_IMAGE_FORMAT_BGRA32_FLOAT:
+            bHDRI = true;
+            break;
+        default:
+            LOG("WriteImage: unknown image format\n");
+            return false;
+    }
+
+    AStringView ext = PathUtils::GetExt(FileName);
+    bool        bHDRIExt = ext.Icompare(".hdr") || ext.Icompare(".exr");
+
+    if (!bHDRI)
+    {
+        if (bHDRIExt)
+        {
+            LOG("WriteImage: attempted to save LDR image in HDRI format {}\n", FileName);
+            return false;
+        }
+        return WriteImage(FileName, Image.GetWidth(), Image.GetHeight(), Image.NumChannels(), Image.GetData());
+    }
+    else
+    {
+        if (!bHDRIExt)
+        {
+            LOG("WriteImage: attempted to save HDR image in LDR format {}\n", FileName);
+            return false;
+        }
+        return WriteImageHDRI(FileName, Image.GetWidth(), Image.GetHeight(), Image.NumChannels(), (const float*)Image.GetData());
+    }
 }
