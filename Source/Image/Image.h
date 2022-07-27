@@ -582,7 +582,7 @@ struct NormalRoughnessImportSettings
     // Mipmapping
     IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
 };
-// Output normal map in format RGB32_FLOAT or RG32_FLOAT (depends on pack), roughness map - R32_FLOAT
+
 bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, ImageStorage& NormalMapImage, ImageStorage& RoughnessMapImage);
 
 struct SkyboxImportSettings

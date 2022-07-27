@@ -2322,7 +2322,6 @@ ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, ui
     return compressedImage;
 }
 
-// Output normal map in format RGB32_FLOAT or RG32_FLOAT (depends on pack), roughness map - R32_FLOAT
 bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, ImageStorage& NormalMapImage, ImageStorage& RoughnessMapImage)
 {
     using namespace TextureBlockCompression;
