@@ -698,7 +698,7 @@ ARawImage PackNormalsRGBA_BC1_Compatible(Float3 const* Normals, uint32_t Width, 
         data[n * 4 + 0] = Math::Round(Math::Saturate(Normals[n].X * 0.5f + 0.5f) * 255.0f);
         data[n * 4 + 1] = Math::Round(Math::Saturate(Normals[n].Y * 0.5f + 0.5f) * 255.0f);
         data[n * 4 + 2] = Math::Round(Math::Saturate(Normals[n].Z * 0.5f + 0.5f) * 255.0f);
-        data[n * 4 + 3] = 255; // FIXME
+        data[n * 4 + 3] = 255;
     }
 
     return image;
@@ -784,11 +784,93 @@ ARawImage PackNormalsRGBA_BC3_Compatible(Float3 const* Normals, uint32_t Width, 
     uint8_t* data = (uint8_t*)image.GetData();
     for (uint32_t n = 0, count = Width * Height; n < count; ++n)
     {
-        data[n * 4 + 0] = 255; // FIXME
+        data[n * 4 + 0] = 255;
         data[n * 4 + 1] = Math::Round(Math::Saturate(Normals[n][1] * 0.5f + 0.5f) * 255.0f);
         data[n * 4 + 2] = Math::Round(Math::Saturate(Normals[n][2] * 0.5f + 0.5f) * 255.0f);
         data[n * 4 + 3] = Math::Round(Math::Saturate(Normals[n][0] * 0.5f + 0.5f) * 255.0f);
     }
 
     return image;
+}
+
+Float3 UnpackNormalRGBA_BC1_Compatible(void const* pData, uint32_t Index)
+{
+    uint8_t const* data = (uint8_t const*)pData + Index * 4;
+
+    Float3 n;
+    n.X = (data[0] / 255.0f) * 2.0f - 1.0f;
+    n.Y = (data[1] / 255.0f) * 2.0f - 1.0f;
+    n.Z = (data[2] / 255.0f) * 2.0f - 1.0f;
+
+    return n;
+}
+
+Float3 UnpackNormalRG_BC5_Compatible(void const* pData, uint32_t Index)
+{
+    uint8_t const* data = (uint8_t const*)pData + Index * 2;
+
+    Float3 n;
+    n.X = (data[0] / 255.0f) * 2.0f - 1.0f;
+    n.Y = (data[1] / 255.0f) * 2.0f - 1.0f;
+    n.Z = Math::Sqrt(1.0f - (n.X * n.X + n.Y * n.Y));
+
+    return n;
+}
+
+Float3 UnpackNormalSpheremap_BC5_Compatible(void const* pData, uint32_t Index)
+{
+    uint8_t const* data = (uint8_t const*)pData + Index * 2;
+
+    float x = (data[0] / 255.0f) * 4.0f - 2.0f;
+    float y = (data[1] / 255.0f) * 4.0f - 2.0f;
+    float f = x * x + y * y;
+
+    float s = Math::Sqrt(1.0f - f / 4.0f);
+
+    Float3 n;
+    n.X = x * s;
+    n.Y = y * s;
+    n.Z = 1.0f - f / 2.0f;
+
+    return n;
+}
+
+Float3 UnpackNormalStereographic_BC5_Compatible(void const* pData, uint32_t Index)
+{
+    uint8_t const* data = (uint8_t const*)pData + Index * 2;
+
+    Float3 n;
+
+    n.X = (data[0] / 255.0f) * 2.0f - 1.0f;
+    n.Y = (data[1] / 255.0f) * 2.0f - 1.0f;
+
+    float denom = 2.0f / (1 + Math::Saturate(n.X * n.X + n.Y * n.Y));
+
+    n.X *= denom;
+    n.Y *= denom;
+    n.Z = denom - 1.0f;
+    return n;
+}
+
+Float3 UnpackNormalParaboloid_BC5_Compatible(void const* pData, uint32_t Index)
+{
+    uint8_t const* data = (uint8_t const*)pData + Index * 2;
+
+    Float3 n;
+
+    n.X = (data[0] / 255.0f) * 2.0f - 1.0f;
+    n.Y = (data[1] / 255.0f) * 2.0f - 1.0f;
+    n.Z = 1.0f - Math::Saturate(n.X * n.X + n.Y * n.Y);
+    return n;
+}
+
+Float3 UnpackNormalRGBA_BC3_Compatible(void const* pData, uint32_t Index)
+{
+    uint8_t const* data = (uint8_t const*)pData + Index * 4;
+
+    Float3 n;
+    n.X = data[3] / 255.0f * 2.0f - 1.0f;
+    n.Y = data[1] / 255.0f * 2.0f - 1.0f;
+    n.Z = data[2] / 255.0f * 2.0f - 1.0f;
+    return n;
 }

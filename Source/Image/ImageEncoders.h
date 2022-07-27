@@ -572,3 +572,15 @@ ARawImage PackNormalsParaboloid_BC5_Compatible(Float3 const* Normals, uint32_t W
 
 // Assume normals already normalized
 ARawImage PackNormalsRGBA_BC3_Compatible(Float3 const* Normals, uint32_t Width, uint32_t Height);
+
+Float3 UnpackNormalRGBA_BC1_Compatible(void const* pData, uint32_t Index);
+
+Float3 UnpackNormalRG_BC5_Compatible(void const* pData, uint32_t Index);
+
+Float3 UnpackNormalSpheremap_BC5_Compatible(void const* pData, uint32_t Index);
+
+Float3 UnpackNormalStereographic_BC5_Compatible(void const* pData, uint32_t Index);
+
+Float3 UnpackNormalParaboloid_BC5_Compatible(void const* pData, uint32_t Index);
+
+Float3 UnpackNormalRGBA_BC3_Compatible(void const* pData, uint32_t Index);

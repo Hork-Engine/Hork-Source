@@ -477,37 +477,76 @@ Utilites
 struct ImageResampleParams
 {
     /** Source image */
-    const void* pImage;
+    const void* pImage = nullptr;
     /** Data format */
-    TEXTURE_FORMAT Format;
+    TEXTURE_FORMAT Format = TEXTURE_FORMAT_UNDEFINED;
     /** Source image width */
-    uint32_t Width;
+    uint32_t Width = 0;
     /** Source image height */
-    uint32_t Height;
-    /** Source image alpha channel index. Use -1 if image has no alpha channel. */
-    int AlphaChannel;
+    uint32_t Height = 0;
+    /** Is image has alpha. If enabled, the last texture channel is interpreted as alpha. */
+    bool bHasAlpha = false;
     /** Set this flag if your image has premultiplied alpha. Otherwise, will be
     used alpha-weighted resampling (effectively premultiplying, resampling, then unpremultiplying). */
-    bool bPremultipliedAlpha;
+    bool bPremultipliedAlpha = false;
     /** Scaling edge mode for horizontal axis */
-    IMAGE_RESAMPLE_EDGE_MODE HorizontalEdgeMode;
+    IMAGE_RESAMPLE_EDGE_MODE HorizontalEdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
     /** Scaling edge mode for vertical axis */
-    IMAGE_RESAMPLE_EDGE_MODE VerticalEdgeMode;
+    IMAGE_RESAMPLE_EDGE_MODE VerticalEdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
     /** Scaling filter for horizontal axis */
-    IMAGE_RESAMPLE_FILTER HorizontalFilter;
+    IMAGE_RESAMPLE_FILTER HorizontalFilter = IMAGE_RESAMPLE_FILTER_MITCHELL;
     /** Scaling filter for vertical axis */
-    IMAGE_RESAMPLE_FILTER VerticalFilter;
+    IMAGE_RESAMPLE_FILTER VerticalFilter = IMAGE_RESAMPLE_FILTER_MITCHELL;
     /** Scaled image width */
-    uint32_t ScaledWidth;
+    uint32_t ScaledWidth = 0;
     /** Scaled image height */
-    uint32_t ScaledHeight;
+    uint32_t ScaledHeight = 0;
 };
 
 /** Scale image. */
 bool ResampleImage(ImageResampleParams const& Desc, void* pDest);
 
+enum RAW_IMAGE_RESAMPLE_FLAG
+{
+    RAW_IMAGE_RESAMPLE_FLAG_DEFAULT        = 0,
+    RAW_IMAGE_RESAMPLE_HAS_ALPHA           = HK_BIT(0),
+    RAW_IMAGE_RESAMPLE_ALPHA_PREMULTIPLIED = HK_BIT(1),
+    RAW_IMAGE_RESAMPLE_COLORSPACE_SRGB     = HK_BIT(2),
+};
+HK_FLAG_ENUM_OPERATORS(RAW_IMAGE_RESAMPLE_FLAG);
+
+struct RawImageResampleParams
+{
+    RAW_IMAGE_RESAMPLE_FLAG Flags = RAW_IMAGE_RESAMPLE_FLAG_DEFAULT;
+    /** Scaling edge mode for horizontal axis */
+    IMAGE_RESAMPLE_EDGE_MODE HorizontalEdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
+    /** Scaling edge mode for vertical axis */
+    IMAGE_RESAMPLE_EDGE_MODE VerticalEdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
+    /** Scaling filter for horizontal axis */
+    IMAGE_RESAMPLE_FILTER HorizontalFilter = IMAGE_RESAMPLE_FILTER_MITCHELL;
+    /** Scaling filter for vertical axis */
+    IMAGE_RESAMPLE_FILTER VerticalFilter = IMAGE_RESAMPLE_FILTER_MITCHELL;
+    /** Scaled image width */
+    uint32_t ScaledWidth = 0;
+    /** Scaled image height */
+    uint32_t ScaledHeight = 0;
+};
+
+/** Scale image. */
+ARawImage ResampleRawImage(ARawImage const& Source, RawImageResampleParams const& Desc);
+
+enum IMAGE_IMPORT_FLAGS
+{
+    IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT        = HK_BIT(0),
+    IMAGE_IMPORT_USE_COMPRESSION                 = HK_BIT(1),
+    IMAGE_IMPORT_ALLOW_HDRI_COMPRESSION          = HK_BIT(2),
+    IMAGE_IMPORT_ASSUME_8BIT_RGB_IMAGES_ARE_SRGB = HK_BIT(3),
+    IMAGE_IMPORT_FLAGS_DEFAULT                   = IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT | IMAGE_IMPORT_ASSUME_8BIT_RGB_IMAGES_ARE_SRGB
+};
+HK_FLAG_ENUM_OPERATORS(IMAGE_IMPORT_FLAGS)
+
 /** Create image storage from raw image */
-ImageStorage CreateImage(ARawImage const& rawImage, bool bConvertHDRIToHalfFloat, ImageMipmapConfig const* pMipmapConfig = nullptr, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT);
+ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, IMAGE_IMPORT_FLAGS ImportFlags = IMAGE_IMPORT_FLAGS_DEFAULT);
 
 /** Create image storage from file */
 ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig const* pMipmapConfig = nullptr, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, TEXTURE_FORMAT Format = TEXTURE_FORMAT_UNDEFINED);
@@ -515,8 +554,36 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 /** Create image storage from file */
 ImageStorage CreateImage(AStringView FileName, ImageMipmapConfig const* pMipmapConfig = nullptr, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, TEXTURE_FORMAT Format = TEXTURE_FORMAT_UNDEFINED);
 
-ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
-ImageStorage CreateNormalMap(AStringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
+ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
+ImageStorage CreateNormalMap(AStringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
+
+// Assume normals already normalized. The width and height of the normal map must be a multiple of blockSize if compression is enabled.
+ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t Height, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter);
+
+// The width and height of the roughness map must be a multiple of blockSize if compression is enabled.
+ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, uint32_t Height, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter);
+
+struct NormalRoughnessImportSettings
+{
+    AStringView NormalMap;
+    AStringView RoughnessMap;
+
+    // Result normal map packing
+    NORMAL_MAP_PACK Pack = NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE;
+
+    bool bConvertFromDirectXNormalMap = false;
+
+    // Compress normal map: BC1, BC3 or BC5 - depends on packing type.
+    bool bCompressNormals = false;
+
+    // Compress roughness map (BC4)
+    bool bCompressRoughness_BC4 = false;
+
+    // Mipmapping
+    IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
+};
+// Output normal map in format RGB32_FLOAT or RG32_FLOAT (depends on pack), roughness map - R32_FLOAT
+bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, ImageStorage& NormalMapImage, ImageStorage& RoughnessMapImage);
 
 struct SkyboxImportSettings
 {
@@ -530,6 +597,6 @@ struct SkyboxImportSettings
     float HDRIPow{1};
 };
 
-ImageStorage LoadSkyboxImages(SkyboxImportSettings const& ImportSettings);
+ImageStorage LoadSkyboxImages(SkyboxImportSettings const& Settings);
 
 uint32_t CalcNumMips(TEXTURE_FORMAT Format, uint32_t Width, uint32_t Height, uint32_t Depth = 1);

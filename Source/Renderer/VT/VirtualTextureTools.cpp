@@ -1679,7 +1679,7 @@ void * LoadDiffuseImage( void * _RectUserData, int Width, int Height ) {
     resample.Width               = image.GetDesc().Width;
     resample.Height              = image.GetDesc().Height;
     resample.Format              = TEXTURE_FORMAT_SRGBA8_UNORM;
-    resample.AlphaChannel        = 3;
+    resample.bHasAlpha           = true;
     resample.bPremultipliedAlpha = false;
     resample.HorizontalEdgeMode  = IMAGE_RESAMPLE_EDGE_CLAMP;
     resample.VerticalEdgeMode    = IMAGE_RESAMPLE_EDGE_CLAMP;

@@ -131,15 +131,21 @@ TextureFormatInfo const& GetTextureFormatInfo(TEXTURE_FORMAT Format)
 
 uint32_t CalcNumMips(TEXTURE_FORMAT Format, uint32_t Width, uint32_t Height, uint32_t Depth)
 {
+    HK_ASSERT(Width > 0);
+    HK_ASSERT(Height > 0);
+    HK_ASSERT(Depth > 0);
+
+    TextureFormatInfo const& info = GetTextureFormatInfo(Format);
+
     bool bCompressed = IsCompressedFormat(Format);
 
-    const uint32_t blockSize = 4;
+    const uint32_t blockSize = info.BlockSize;
 
     if (bCompressed)
     {
         HK_VERIFY_R(Depth == 1, "CalcNumMips: Compressed 3D textures are not supported");
-        HK_VERIFY_R(Width >= blockSize && (Width % blockSize) == 0, "CalcNumMips: Width must be a multiple of blockSize for compressed textures");
-        HK_VERIFY_R(Height >= blockSize && (Height % blockSize) == 0, "CalcNumMips: Height must be a multiple of blockSize for compressed textures");
+        HK_VERIFY_R((Width % blockSize) == 0, "CalcNumMips: Width must be a multiple of blockSize for compressed textures");
+        HK_VERIFY_R((Height % blockSize) == 0, "CalcNumMips: Height must be a multiple of blockSize for compressed textures");
     }
 
     uint32_t numMips = 0;
@@ -148,8 +154,7 @@ uint32_t CalcNumMips(TEXTURE_FORMAT Format, uint32_t Width, uint32_t Height, uin
     if (bCompressed)
         sz /= blockSize;
 
-    while ((sz >>= 1) > 0)
-        numMips++;
+    numMips = Math::Log2(sz) + 1;
 
     return numMips;
 }
@@ -348,8 +353,8 @@ void ImageStorage::Reset(ImageStorageDesc const& Desc)
         HK_VERIFY(m_Desc.Type != TEXTURE_1D, "ImageStorage: Compressed 1D textures are not supported");
         HK_VERIFY(m_Desc.Type != TEXTURE_1D_ARRAY, "ImageStorage: Compressed 1D textures are not supported");
         HK_VERIFY(m_Desc.Type != TEXTURE_3D, "ImageStorage: Compressed 3D textures are not supported");
-        HK_VERIFY(m_Desc.Width >= blockSize && (m_Desc.Width % blockSize) == 0, "ImageStorage: Width must be a multiple of blockSize for compressed textures");
-        HK_VERIFY(m_Desc.Height >= blockSize && (m_Desc.Height % blockSize) == 0, "ImageStorage: Height must be a multiple of blockSize for compressed textures");
+        HK_VERIFY((m_Desc.Width % blockSize) == 0, "ImageStorage: Width must be a multiple of blockSize for compressed textures");
+        HK_VERIFY((m_Desc.Height % blockSize) == 0, "ImageStorage: Height must be a multiple of blockSize for compressed textures");
     }
 
     uint32_t numMips = 0;
@@ -360,8 +365,7 @@ void ImageStorage::Reset(ImageStorageDesc const& Desc)
     if (bCompressed)
         sz /= blockSize;
 
-    while ((sz >>= 1) > 0)
-        numMips++;
+    numMips = Math::Log2(sz) + 1;
 
     HK_VERIFY(m_Desc.NumMipmaps == 1 || m_Desc.NumMipmaps == numMips, "ImageStorage: Invalid number of mipmaps");
 
@@ -619,7 +623,7 @@ static void GenerateMipmaps(ImageStorage& storage, uint32_t SliceIndex, IMAGE_RE
     IMAGE_STORAGE_FLAGS flags = storage.GetDesc().Flags;
 
     int numChannels        = d.GetNumChannels();
-    int alphaChannel       = ((flags & IMAGE_STORAGE_NO_ALPHA) || numChannels != 4) ? STBIR_ALPHA_CHANNEL_NONE : numChannels - 1;
+    int alphaChannel       = ((flags & IMAGE_STORAGE_NO_ALPHA) || !d.HasAlpha()) ? STBIR_ALPHA_CHANNEL_NONE : numChannels - 1;
     int stbir_resize_flags = alphaChannel != STBIR_ALPHA_CHANNEL_NONE && (flags & IMAGE_STORAGE_ALPHA_PREMULTIPLIED) ? STBIR_FLAG_ALPHA_PREMULTIPLIED : 0;
 
     stbir_datatype   datatype   = get_stbir_datatype(d.GetDataType());
@@ -662,7 +666,9 @@ bool ImageStorage::GenerateMipmaps(uint32_t SliceIndex, ImageMipmapConfig const&
     if (m_Desc.Type == TEXTURE_3D)
         return false;
 
-    IMAGE_DATA_TYPE DataType = GetTextureFormatInfo(m_Desc.Format).DataType;
+    TextureFormatInfo const& info = GetTextureFormatInfo(m_Desc.Format);
+
+    IMAGE_DATA_TYPE DataType = info.DataType;
 
     IMAGE_RESAMPLE_EDGE_MODE resampleMode   = MipmapConfig.EdgeMode;
     IMAGE_RESAMPLE_FILTER    resampleFilter = MipmapConfig.Filter;
@@ -730,7 +736,7 @@ bool ImageStorage::GenerateMipmaps(uint32_t SliceIndex, ImageMipmapConfig const&
     IMAGE_STORAGE_FLAGS flags = m_Desc.Flags;
 
     int numChannels        = NumChannels();
-    int alphaChannel       = ((flags & IMAGE_STORAGE_NO_ALPHA) || numChannels != 4) ? STBIR_ALPHA_CHANNEL_NONE : numChannels - 1;
+    int alphaChannel       = ((flags & IMAGE_STORAGE_NO_ALPHA) || !info.bHasAlpha) ? STBIR_ALPHA_CHANNEL_NONE : numChannels - 1;
     int stbir_resize_flags = alphaChannel != STBIR_ALPHA_CHANNEL_NONE && (flags & IMAGE_STORAGE_ALPHA_PREMULTIPLIED) ? STBIR_FLAG_ALPHA_PREMULTIPLIED : 0;
 
     stbir_datatype   datatype   = get_stbir_datatype(DataType);
@@ -826,14 +832,17 @@ void ImageStorage::Read(IBinaryStreamReadInterface& stream)
     stream.Read(m_Data.GetData(), sizeInBytes);
 }
 
-ImageStorage CreateImage(ARawImage const& rawImage, bool bConvertHDRIToHalfFloat, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags)
+ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags, IMAGE_IMPORT_FLAGS ImportFlags)
 {
     if (!rawImage)
         return {};
 
     TEXTURE_FORMAT format;
+    TEXTURE_FORMAT compressionFormat = TEXTURE_FORMAT_UNDEFINED;
     bool           bAddAlphaChannel = false;
     bool           bSwapChannels    = false;
+    bool           bSwapChannelsIfCompressed = false;
+    ARawImage      tempImage;
 
     switch (rawImage.GetFormat())
     {
@@ -843,100 +852,242 @@ ImageStorage CreateImage(ARawImage const& rawImage, bool bConvertHDRIToHalfFloat
             return {};
 
         case RAW_IMAGE_FORMAT_R8:
-            bConvertHDRIToHalfFloat = false;
-            format                  = TEXTURE_FORMAT_R8_UNORM;
+            ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT;
+            format            = TEXTURE_FORMAT_R8_UNORM;
+            compressionFormat = TEXTURE_FORMAT_BC4_UNORM;
             break;
 
         case RAW_IMAGE_FORMAT_R8_ALPHA:
-            bConvertHDRIToHalfFloat = false;
+            ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT;
             format                  = TEXTURE_FORMAT_RG8_UNORM;
+            compressionFormat       = TEXTURE_FORMAT_BC5_UNORM;
             break;
 
         case RAW_IMAGE_FORMAT_RGB8:
             bAddAlphaChannel        = true;
-            bConvertHDRIToHalfFloat = false;
-            format                  = TEXTURE_FORMAT_SRGBA8_UNORM;
+            ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT;
+            if (ImportFlags & IMAGE_IMPORT_ASSUME_8BIT_RGB_IMAGES_ARE_SRGB)
+            {
+                format            = TEXTURE_FORMAT_SRGBA8_UNORM;
+                compressionFormat = TEXTURE_FORMAT_BC1_UNORM_SRGB; // Use BC1 as no alpha channel is used.
+            }
+            else
+            {
+                format            = TEXTURE_FORMAT_RGBA8_UNORM;
+                compressionFormat = TEXTURE_FORMAT_BC1_UNORM; // Use BC1 as no alpha channel is used.
+            }
             break;
 
         case RAW_IMAGE_FORMAT_BGR8:
             bAddAlphaChannel        = true;
-            bConvertHDRIToHalfFloat = false;
-            format                  = TEXTURE_FORMAT_SBGRA8_UNORM;
+            ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT;
+            if (ImportFlags & IMAGE_IMPORT_ASSUME_8BIT_RGB_IMAGES_ARE_SRGB)
+            {
+                format            = TEXTURE_FORMAT_SBGRA8_UNORM;
+                compressionFormat = TEXTURE_FORMAT_BC1_UNORM_SRGB; // Use BC1 as no alpha channel is used.
+            }
+            else
+            {
+                format                    = TEXTURE_FORMAT_BGRA8_UNORM;
+                compressionFormat         = TEXTURE_FORMAT_BC1_UNORM; // Use BC1 as no alpha channel is used.
+                bSwapChannelsIfCompressed = true;
+            }
             break;
 
         case RAW_IMAGE_FORMAT_RGBA8:
-            bConvertHDRIToHalfFloat = false;
-            format                  = TEXTURE_FORMAT_SRGBA8_UNORM;
+            ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT;
+            if (ImportFlags & IMAGE_IMPORT_ASSUME_8BIT_RGB_IMAGES_ARE_SRGB)
+            {
+                format = TEXTURE_FORMAT_SRGBA8_UNORM;
+
+                if (Flags & IMAGE_STORAGE_NO_ALPHA)
+                    compressionFormat = TEXTURE_FORMAT_BC1_UNORM_SRGB;
+                else
+                    compressionFormat = TEXTURE_FORMAT_BC3_UNORM_SRGB;
+            }
+            else
+            {
+                format = TEXTURE_FORMAT_RGBA8_UNORM;
+
+                if (Flags & IMAGE_STORAGE_NO_ALPHA)
+                    compressionFormat = TEXTURE_FORMAT_BC1_UNORM;
+                else
+                    compressionFormat = TEXTURE_FORMAT_BC3_UNORM;
+            }
             break;
 
         case RAW_IMAGE_FORMAT_BGRA8:
-            bConvertHDRIToHalfFloat = false;
-            format                  = TEXTURE_FORMAT_SBGRA8_UNORM;
+            ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT;
+            if (ImportFlags & IMAGE_IMPORT_ASSUME_8BIT_RGB_IMAGES_ARE_SRGB)
+            {
+                format = TEXTURE_FORMAT_SBGRA8_UNORM;
+
+                if (Flags & IMAGE_STORAGE_NO_ALPHA)
+                    compressionFormat = TEXTURE_FORMAT_BC1_UNORM_SRGB;
+                else
+                    compressionFormat = TEXTURE_FORMAT_BC3_UNORM_SRGB;
+            }
+            else
+            {
+                format = TEXTURE_FORMAT_BGRA8_UNORM;
+
+                if (Flags & IMAGE_STORAGE_NO_ALPHA)
+                    compressionFormat = TEXTURE_FORMAT_BC1_UNORM;
+                else
+                    compressionFormat = TEXTURE_FORMAT_BC3_UNORM;
+                bSwapChannelsIfCompressed = true;
+            }
             break;
 
         case RAW_IMAGE_FORMAT_R32_FLOAT:
-            format = bConvertHDRIToHalfFloat ? TEXTURE_FORMAT_R16_FLOAT : TEXTURE_FORMAT_R32_FLOAT;
+            if (ImportFlags & IMAGE_IMPORT_USE_COMPRESSION)
+                ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT; // because BC6h compression takes f32 as input
+            format = ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT ? TEXTURE_FORMAT_R16_FLOAT : TEXTURE_FORMAT_R32_FLOAT;
+            // There is no analogue of the compression format
             break;
 
         case RAW_IMAGE_FORMAT_R32_ALPHA_FLOAT:
-            format = bConvertHDRIToHalfFloat ? TEXTURE_FORMAT_RG16_FLOAT : TEXTURE_FORMAT_RG32_FLOAT;
+            if (ImportFlags & IMAGE_IMPORT_USE_COMPRESSION)
+                ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT; // because BC6h compression takes f32 as input
+            format = ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT ? TEXTURE_FORMAT_RG16_FLOAT : TEXTURE_FORMAT_RG32_FLOAT;
+            // There is no analogue of the compression format
             break;
 
         case RAW_IMAGE_FORMAT_RGB32_FLOAT:
-            format = bConvertHDRIToHalfFloat ? TEXTURE_FORMAT_RGBA16_FLOAT : TEXTURE_FORMAT_RGB32_FLOAT;
-            if (bConvertHDRIToHalfFloat)
-                bAddAlphaChannel = true;
+            if ((ImportFlags & IMAGE_IMPORT_USE_COMPRESSION) && (ImportFlags & IMAGE_IMPORT_ALLOW_HDRI_COMPRESSION))
+            {
+                ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT; // because BC6h compression takes f32 as input
+                bAddAlphaChannel        = true;
+                format                  = TEXTURE_FORMAT_RGBA32_FLOAT;
+                compressionFormat       = TEXTURE_FORMAT_BC6H_UFLOAT;
+            }
+            else
+            {
+                format = ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT ? TEXTURE_FORMAT_RGBA16_FLOAT : TEXTURE_FORMAT_RGB32_FLOAT;
+                if (ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT)
+                    bAddAlphaChannel = true;
+            }
             break;
 
         case RAW_IMAGE_FORMAT_BGR32_FLOAT:
             bSwapChannels = true;
-            format        = bConvertHDRIToHalfFloat ? TEXTURE_FORMAT_RGBA16_FLOAT : TEXTURE_FORMAT_RGB32_FLOAT;
-            if (bConvertHDRIToHalfFloat)
-                bAddAlphaChannel = true;
+            if ((ImportFlags & IMAGE_IMPORT_USE_COMPRESSION) && (ImportFlags & IMAGE_IMPORT_ALLOW_HDRI_COMPRESSION))
+            {
+                ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT; // because BC6h compression takes f32 as input
+                bAddAlphaChannel        = true;
+                format                  = TEXTURE_FORMAT_RGBA32_FLOAT;
+                compressionFormat       = TEXTURE_FORMAT_BC6H_UFLOAT;
+            }
+            else
+            {
+                format = ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT ? TEXTURE_FORMAT_RGBA16_FLOAT : TEXTURE_FORMAT_RGB32_FLOAT;
+                if (ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT)
+                    bAddAlphaChannel = true;
+            }
             break;
 
         case RAW_IMAGE_FORMAT_RGBA32_FLOAT:
-            format = bConvertHDRIToHalfFloat ? TEXTURE_FORMAT_RGBA16_FLOAT : TEXTURE_FORMAT_RGBA32_FLOAT;
+            if ((ImportFlags & IMAGE_IMPORT_USE_COMPRESSION) && (ImportFlags & IMAGE_IMPORT_ALLOW_HDRI_COMPRESSION))
+            {
+                ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT; // because BC6h compression takes f32 as input
+                format                  = TEXTURE_FORMAT_RGBA32_FLOAT;
+                compressionFormat       = TEXTURE_FORMAT_BC6H_UFLOAT; // NOTE: If we use BC6h compression, we lose the alpha channel.
+            }
+            else
+            {
+                format = ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT ? TEXTURE_FORMAT_RGBA16_FLOAT : TEXTURE_FORMAT_RGBA32_FLOAT;
+            }
             break;
 
         case RAW_IMAGE_FORMAT_BGRA32_FLOAT:
             bSwapChannels = true;
-            format        = bConvertHDRIToHalfFloat ? TEXTURE_FORMAT_RGBA16_FLOAT : TEXTURE_FORMAT_RGBA32_FLOAT;
+            if ((ImportFlags & IMAGE_IMPORT_USE_COMPRESSION) && (ImportFlags & IMAGE_IMPORT_ALLOW_HDRI_COMPRESSION))
+            {
+                ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT; // because BC6h compression takes f32 as input
+                format                  = TEXTURE_FORMAT_RGBA32_FLOAT;
+                compressionFormat       = TEXTURE_FORMAT_BC6H_UFLOAT; // NOTE: If we use BC6h compression, we lose the alpha channel.
+            }
+            else
+            {
+                format = ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT ? TEXTURE_FORMAT_RGBA16_FLOAT : TEXTURE_FORMAT_RGBA32_FLOAT;
+            }
             break;
     }
+
+    if (compressionFormat == TEXTURE_FORMAT_UNDEFINED)
+        ImportFlags &= ~IMAGE_IMPORT_USE_COMPRESSION;
+
+    TextureFormatInfo const& info = GetTextureFormatInfo(compressionFormat);
+
+    bool bUseTempImage = false;
+    if ((ImportFlags & IMAGE_IMPORT_USE_COMPRESSION) && ((rawImage.GetWidth() % info.BlockSize) || (rawImage.GetHeight() % info.BlockSize)))
+    {
+        RawImageResampleParams resample;
+
+        resample.HorizontalEdgeMode = resample.VerticalEdgeMode = pMipmapConfig ? pMipmapConfig->EdgeMode : IMAGE_RESAMPLE_EDGE_WRAP;
+        resample.HorizontalFilter = resample.VerticalFilter = pMipmapConfig ? pMipmapConfig->Filter : IMAGE_RESAMPLE_FILTER_MITCHELL;
+
+        resample.Flags = RAW_IMAGE_RESAMPLE_FLAG_DEFAULT;
+        if (info.bSRGB)
+            resample.Flags |= RAW_IMAGE_RESAMPLE_COLORSPACE_SRGB;
+        if (rawImage.NumChannels() == 4 && !(Flags & IMAGE_STORAGE_NO_ALPHA))
+        {
+            resample.Flags |= RAW_IMAGE_RESAMPLE_HAS_ALPHA;
+
+            if (Flags & IMAGE_STORAGE_ALPHA_PREMULTIPLIED)
+                resample.Flags |= RAW_IMAGE_RESAMPLE_ALPHA_PREMULTIPLIED;
+        }
+        resample.ScaledWidth  = Align(rawImage.GetWidth(), info.BlockSize);
+        resample.ScaledHeight = Align(rawImage.GetHeight(), info.BlockSize);
+
+        tempImage = ResampleRawImage(rawImage, resample);
+        if (bSwapChannelsIfCompressed)
+            tempImage.SwapRGB();
+
+        bUseTempImage = true;
+    }
+    else if ((ImportFlags & IMAGE_IMPORT_USE_COMPRESSION) && bSwapChannelsIfCompressed)
+    {
+        tempImage = rawImage.Clone();
+        tempImage.SwapRGB();
+
+        bUseTempImage = true;
+    }
+
+    ARawImage const& sourceImage = bUseTempImage ? tempImage : rawImage;
 
     ImageStorageDesc desc;
     desc.Type       = TEXTURE_2D;
     desc.Format     = format;
-    desc.Width      = rawImage.GetWidth();
-    desc.Height     = rawImage.GetHeight();
+    desc.Width      = sourceImage.GetWidth();
+    desc.Height     = sourceImage.GetHeight();
     desc.SliceCount = 1;
     desc.NumMipmaps = pMipmapConfig ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
     desc.Flags      = Flags;
 
-    ImageStorage storage(desc);
+    ImageStorage uncompressedImage(desc);
 
     ImageSubresourceDesc subres;
-    subres.SliceIndex    = 0;
+    subres.SliceIndex  = 0;
     subres.MipmapIndex = 0;
 
-    ImageSubresource subresource = storage.GetSubresource(subres);
+    ImageSubresource subresource = uncompressedImage.GetSubresource(subres);
 
     if (!bAddAlphaChannel && !bSwapChannels)
     {
         // Fast path
-        if (bConvertHDRIToHalfFloat)
+        if (ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT)
         {
-            switch (storage.NumChannels())
+            switch (uncompressedImage.NumChannels())
             {
                 case 1:
-                    Decoder_R16F().Encode(subresource.GetData(), rawImage.GetData(), subresource.GetWidth(), subresource.GetHeight());
+                    Decoder_R16F().Encode(subresource.GetData(), sourceImage.GetData(), subresource.GetWidth(), subresource.GetHeight());
                     break;
                 case 2:
-                    Decoder_RG16F().Encode(subresource.GetData(), rawImage.GetData(), subresource.GetWidth(), subresource.GetHeight());
+                    Decoder_RG16F().Encode(subresource.GetData(), sourceImage.GetData(), subresource.GetWidth(), subresource.GetHeight());
                     break;
                 case 4:
-                    Decoder_RGBA16F().Encode(subresource.GetData(), rawImage.GetData(), subresource.GetWidth(), subresource.GetHeight());
+                    Decoder_RGBA16F().Encode(subresource.GetData(), sourceImage.GetData(), subresource.GetWidth(), subresource.GetHeight());
                     break;
                 default:
                     // Never happen
@@ -946,7 +1097,7 @@ ImageStorage CreateImage(ARawImage const& rawImage, bool bConvertHDRIToHalfFloat
         }
         else
         {
-            subresource.Write(0, 0, rawImage.GetWidth(), rawImage.GetHeight(), rawImage.GetData());
+            subresource.Write(0, 0, sourceImage.GetWidth(), sourceImage.GetHeight(), sourceImage.GetData());
         }
     }
     else
@@ -955,16 +1106,16 @@ ImageStorage CreateImage(ARawImage const& rawImage, bool bConvertHDRIToHalfFloat
         const int g = 1;
         const int b = bSwapChannels ? 0 : 2;
 
-        int dstNumChannels = storage.NumChannels();
-        int srcNumChannels = rawImage.NumChannels();
+        int dstNumChannels = uncompressedImage.NumChannels();
+        int srcNumChannels = sourceImage.NumChannels();
 
         HK_ASSERT(dstNumChannels >= 3 && srcNumChannels >= 3);
 
-        if (bConvertHDRIToHalfFloat)
+        if (ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT)
         {
             uint16_t*      dst   = (uint16_t*)subresource.GetData();
-            uint16_t*      dst_e = dst + subresource.GetWidth() * subresource.GetHeight() * storage.NumChannels();
-            float const*   src   = (float const*)rawImage.GetData();
+            uint16_t*      dst_e = dst + subresource.GetWidth() * subresource.GetHeight() * uncompressedImage.NumChannels();
+            float const*   src   = (float const*)sourceImage.GetData();
             const uint16_t one   = f32tof16(1);
 
             while (dst < dst_e)
@@ -987,8 +1138,8 @@ ImageStorage CreateImage(ARawImage const& rawImage, bool bConvertHDRIToHalfFloat
             if (dataType == IMAGE_DATA_TYPE_UINT8)
             {
                 uint8_t*       dst   = (uint8_t*)subresource.GetData();
-                uint8_t*       dst_e = dst + subresource.GetWidth() * subresource.GetHeight() * storage.NumChannels();
-                uint8_t const* src   = (uint8_t const*)rawImage.GetData();
+                uint8_t*       dst_e = dst + subresource.GetWidth() * subresource.GetHeight() * uncompressedImage.NumChannels();
+                uint8_t const* src   = (uint8_t const*)sourceImage.GetData();
 
                 while (dst < dst_e)
                 {
@@ -1006,8 +1157,8 @@ ImageStorage CreateImage(ARawImage const& rawImage, bool bConvertHDRIToHalfFloat
             else if (dataType == IMAGE_DATA_TYPE_FLOAT)
             {
                 float*       dst   = (float*)subresource.GetData();
-                float*       dst_e = dst + subresource.GetWidth() * subresource.GetHeight() * storage.NumChannels();
-                float const* src   = (float const*)rawImage.GetData();
+                float*       dst_e = dst + subresource.GetWidth() * subresource.GetHeight() * uncompressedImage.NumChannels();
+                float const* src   = (float const*)sourceImage.GetData();
 
                 while (dst < dst_e)
                 {
@@ -1031,9 +1182,59 @@ ImageStorage CreateImage(ARawImage const& rawImage, bool bConvertHDRIToHalfFloat
     }
 
     if (pMipmapConfig)
-        storage.GenerateMipmaps(*pMipmapConfig);
+        uncompressedImage.GenerateMipmaps(*pMipmapConfig);
 
-    return storage;
+    if (!(ImportFlags & IMAGE_IMPORT_USE_COMPRESSION))
+        return uncompressedImage;
+
+    desc.Format     = compressionFormat;
+    desc.NumMipmaps = CalcNumMips(desc.Format, desc.Width, desc.Height);
+
+    ImageStorage compressedImage(desc);
+
+    for (uint32_t level = 0; level < desc.NumMipmaps; ++level)
+    {
+        ImageSubresource src = uncompressedImage.GetSubresource({0, level});
+        ImageSubresource dst = compressedImage.GetSubresource({0, level});
+
+        HK_ASSERT(src.GetWidth() == dst.GetWidth() && src.GetHeight() == dst.GetHeight());
+
+        switch (desc.Format)
+        {
+            case TEXTURE_FORMAT_BC1_UNORM:
+                HK_ASSERT(uncompressedImage.GetDesc().Format == TEXTURE_FORMAT_RGBA8_UNORM || uncompressedImage.GetDesc().Format == TEXTURE_FORMAT_BGRA8_UNORM);
+                TextureBlockCompression::CompressBC1(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+                break;
+            case TEXTURE_FORMAT_BC1_UNORM_SRGB:
+                HK_ASSERT(uncompressedImage.GetDesc().Format == TEXTURE_FORMAT_SRGBA8_UNORM || uncompressedImage.GetDesc().Format == TEXTURE_FORMAT_SBGRA8_UNORM);
+                TextureBlockCompression::CompressBC1(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+                break;
+            case TEXTURE_FORMAT_BC3_UNORM:
+                HK_ASSERT(uncompressedImage.GetDesc().Format == TEXTURE_FORMAT_RGBA8_UNORM || uncompressedImage.GetDesc().Format == TEXTURE_FORMAT_BGRA8_UNORM);
+                TextureBlockCompression::CompressBC3(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+                break;
+            case TEXTURE_FORMAT_BC3_UNORM_SRGB:
+                HK_ASSERT(uncompressedImage.GetDesc().Format == TEXTURE_FORMAT_SRGBA8_UNORM || uncompressedImage.GetDesc().Format == TEXTURE_FORMAT_SBGRA8_UNORM);
+                TextureBlockCompression::CompressBC3(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+                break;
+            case TEXTURE_FORMAT_BC4_UNORM:
+                HK_ASSERT(uncompressedImage.GetDesc().Format == TEXTURE_FORMAT_R8_UNORM);                
+                TextureBlockCompression::CompressBC4(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+                break;
+            case TEXTURE_FORMAT_BC5_UNORM:
+                HK_ASSERT(uncompressedImage.GetDesc().Format == TEXTURE_FORMAT_RG8_UNORM);                
+                TextureBlockCompression::CompressBC5(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+                break;            
+            case TEXTURE_FORMAT_BC6H_UFLOAT:
+                HK_ASSERT(uncompressedImage.GetDesc().Format == TEXTURE_FORMAT_RGBA32_FLOAT);
+                TextureBlockCompression::CompressBC6h(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight(), false);
+                break;
+            default:
+                HK_ASSERT(0); // Never happen
+        }
+    }
+
+    return compressedImage;
 }
 
 ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags, TEXTURE_FORMAT Format)
@@ -1046,8 +1247,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             if (!rawImage)
                 return {};
 
-            const bool bConvertHDRIToHalfFloat = true;
-            return CreateImage(rawImage, bConvertHDRIToHalfFloat, pMipmapConfig, Flags);
+            return CreateImage(rawImage, pMipmapConfig, Flags, IMAGE_IMPORT_FLAGS_DEFAULT);
         }
         case TEXTURE_FORMAT_R8_UINT:
         case TEXTURE_FORMAT_R8_SINT:
@@ -1414,6 +1614,30 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             if (!rawImage)
                 return {};
 
+            TextureFormatInfo const& info = GetTextureFormatInfo(Format);
+
+            // Image must be block aligned
+            if ((rawImage.GetWidth() % info.BlockSize) || (rawImage.GetHeight() % info.BlockSize))
+            {
+                RawImageResampleParams resample;
+                resample.ScaledWidth = Align(rawImage.GetWidth(), info.BlockSize);
+                resample.ScaledHeight = Align(rawImage.GetHeight(), info.BlockSize);
+                resample.HorizontalEdgeMode = resample.VerticalEdgeMode = pMipmapConfig ? pMipmapConfig->EdgeMode : IMAGE_RESAMPLE_EDGE_WRAP;
+                resample.HorizontalFilter = resample.VerticalFilter = pMipmapConfig ? pMipmapConfig->Filter : IMAGE_RESAMPLE_FILTER_MITCHELL;
+
+                resample.Flags = RAW_IMAGE_RESAMPLE_FLAG_DEFAULT;
+                if (info.bSRGB)
+                    resample.Flags |= RAW_IMAGE_RESAMPLE_COLORSPACE_SRGB;
+                if (info.bHasAlpha && !(Flags & IMAGE_STORAGE_NO_ALPHA))
+                {
+                    resample.Flags |= RAW_IMAGE_RESAMPLE_HAS_ALPHA;
+
+                    if (Flags & IMAGE_STORAGE_ALPHA_PREMULTIPLIED)
+                        resample.Flags |= RAW_IMAGE_RESAMPLE_ALPHA_PREMULTIPLIED;
+                }
+                rawImage = ResampleRawImage(rawImage, resample);
+            }
+
             ImageStorageDesc desc;
             desc.Type       = TEXTURE_2D;
             desc.Format     = Format;
@@ -1470,8 +1694,6 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
             if (pMipmapConfig)
             {
-                TextureFormatInfo const& info = GetTextureFormatInfo(Format);
-
                 uint32_t curWidth  = subresource.GetWidth();
                 uint32_t curHeight = subresource.GetHeight();
 
@@ -1484,7 +1706,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
                 IMAGE_RESAMPLE_FILTER    resampleFilter = pMipmapConfig->Filter;
 
                 int numChannels        = bpp;
-                int alphaChannel       = ((Flags & IMAGE_STORAGE_NO_ALPHA) || numChannels != 4) ? STBIR_ALPHA_CHANNEL_NONE : numChannels - 1;
+                int alphaChannel       = ((Flags & IMAGE_STORAGE_NO_ALPHA) || !info.bHasAlpha) ? STBIR_ALPHA_CHANNEL_NONE : numChannels - 1;
                 int stbir_resize_flags = alphaChannel != STBIR_ALPHA_CHANNEL_NONE && (Flags & IMAGE_STORAGE_ALPHA_PREMULTIPLIED) ? STBIR_FLAG_ALPHA_PREMULTIPLIED : 0;
 
                 stbir_datatype   datatype   = STBIR_TYPE_UINT8;
@@ -1528,6 +1750,20 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             if (!rawImage)
                 return {};
 
+            TextureFormatInfo const& info = GetTextureFormatInfo(Format);
+
+            // Image must be block aligned
+            if ((rawImage.GetWidth() % info.BlockSize) || (rawImage.GetHeight() % info.BlockSize))
+            {
+                RawImageResampleParams resample;
+                resample.ScaledWidth = Align(rawImage.GetWidth(), info.BlockSize);
+                resample.ScaledHeight = Align(rawImage.GetHeight(), info.BlockSize);
+                resample.HorizontalEdgeMode = resample.VerticalEdgeMode = pMipmapConfig ? pMipmapConfig->EdgeMode : IMAGE_RESAMPLE_EDGE_WRAP;
+                resample.HorizontalFilter = resample.VerticalFilter = pMipmapConfig ? pMipmapConfig->Filter : IMAGE_RESAMPLE_FILTER_MITCHELL;
+                resample.Flags = RAW_IMAGE_RESAMPLE_FLAG_DEFAULT;
+                rawImage = ResampleRawImage(rawImage, resample);
+            }
+
             ImageStorageDesc desc;
             desc.Type       = TEXTURE_2D;
             desc.Format     = Format;
@@ -1550,8 +1786,6 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
             if (pMipmapConfig)
             {
-                TextureFormatInfo const& info = GetTextureFormatInfo(Format);
-
                 uint32_t bpp = 4 * sizeof(float);
 
                 uint32_t curWidth  = subresource.GetWidth();
@@ -1617,13 +1851,13 @@ ImageStorage CreateImage(AStringView FileName, ImageMipmapConfig const* pMipmapC
     return CreateImage(stream, pMipmapConfig, Flags, Format);
 }
 
-ImageStorage LoadSkyboxImages(SkyboxImportSettings const& ImportSettings)
+ImageStorage LoadSkyboxImages(SkyboxImportSettings const& Settings)
 {
     ARawImage rawImage[6];
 
     for (uint32_t i = 0; i < 6; i++)
     {
-        rawImage[i] = CreateRawImage(ImportSettings.Faces[i], ImportSettings.bHDRI ? RAW_IMAGE_FORMAT_RGB32_FLOAT : RAW_IMAGE_FORMAT_RGBA8);
+        rawImage[i] = CreateRawImage(Settings.Faces[i], Settings.bHDRI ? RAW_IMAGE_FORMAT_RGB32_FLOAT : RAW_IMAGE_FORMAT_RGBA8);
         if (!rawImage[i])
             return {};
 
@@ -1642,7 +1876,7 @@ ImageStorage LoadSkyboxImages(SkyboxImportSettings const& ImportSettings)
     desc.NumMipmaps = 1;
     desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
 
-    if (ImportSettings.bHDRI)
+    if (Settings.bHDRI)
     {
         desc.Format = TEXTURE_FORMAT_R11G11B10_FLOAT;
 
@@ -1656,15 +1890,15 @@ ImageStorage LoadSkyboxImages(SkyboxImportSettings const& ImportSettings)
 
             ImageSubresource subresource = storage.GetSubresource(subres);
 
-            if (ImportSettings.HDRIScale != 1.0f || ImportSettings.HDRIPow != 1.0f)
+            if (Settings.HDRIScale != 1.0f || Settings.HDRIPow != 1.0f)
             {
                 float* HDRI  = (float*)rawImage[i].GetData();
                 int    count = rawImage[i].GetWidth() * rawImage[i].GetHeight() * 3;
                 for (int j = 0; j < count; j += 3)
                 {
-                    HDRI[j]     = Math::Pow(HDRI[j + 0] * ImportSettings.HDRIScale, ImportSettings.HDRIPow);
-                    HDRI[j + 1] = Math::Pow(HDRI[j + 1] * ImportSettings.HDRIScale, ImportSettings.HDRIPow);
-                    HDRI[j + 2] = Math::Pow(HDRI[j + 2] * ImportSettings.HDRIScale, ImportSettings.HDRIPow);
+                    HDRI[j]     = Math::Pow(HDRI[j + 0] * Settings.HDRIScale, Settings.HDRIPow);
+                    HDRI[j + 1] = Math::Pow(HDRI[j + 1] * Settings.HDRIScale, Settings.HDRIPow);
+                    HDRI[j + 2] = Math::Pow(HDRI[j + 2] * Settings.HDRIScale, Settings.HDRIPow);
                 }
             }
 
@@ -1709,7 +1943,7 @@ static void ResampleImage(ImageResampleParams const& Desc, void* pDest)
     d.Decode(tempBuf, Desc.pImage, Desc.Width, Desc.Height);
 
     int numChannels        = d.GetNumChannels();
-    int alphaChannel       = Desc.AlphaChannel >= 0 && Desc.AlphaChannel < numChannels ? Desc.AlphaChannel : STBIR_ALPHA_CHANNEL_NONE;
+    int alphaChannel       = Desc.bHasAlpha ? numChannels - 1 : STBIR_ALPHA_CHANNEL_NONE;
     int stbir_resize_flags = alphaChannel != STBIR_ALPHA_CHANNEL_NONE && Desc.bPremultipliedAlpha ? STBIR_FLAG_ALPHA_PREMULTIPLIED : 0;
 
     stbir_datatype   datatype   = get_stbir_datatype(d.GetDataType());
@@ -1736,6 +1970,24 @@ static void ResampleImage(ImageResampleParams const& Desc, void* pDest)
 bool ResampleImage(ImageResampleParams const& Desc, void* pDest)
 {
     TextureFormatInfo const& info = GetTextureFormatInfo(Desc.Format);
+
+    if (!Desc.pImage)
+    {
+        LOG("ResampleRawImage: invalid source\n");
+        return false;
+    }
+
+    if (!pDest)
+    {
+        LOG("ResampleRawImage: invalid dest\n");
+        return false;
+    }
+
+    if (Desc.Width == 0 || Desc.Height == 0 || Desc.ScaledWidth == 0 || Desc.ScaledHeight == 0)
+    {
+        LOG("ResampleRawImage: invalid size\n");
+        return false;
+    }
 
     switch (info.DataType)
     {
@@ -1799,12 +2051,14 @@ bool ResampleImage(ImageResampleParams const& Desc, void* pDest)
     if (info.bHasStencil)
         numChannels++;
 
+    int alphaChannel = Desc.bHasAlpha ? numChannels - 1 : STBIR_ALPHA_CHANNEL_NONE;
+
     int result =
         stbir_resize(Desc.pImage, Desc.Width, Desc.Height, Desc.Width * info.BytesPerBlock,
                      pDest, Desc.ScaledWidth, Desc.ScaledHeight, Desc.ScaledWidth * info.BytesPerBlock,
                      get_stbir_datatype(info.DataType),
                      numChannels,
-                     Desc.AlphaChannel,
+                     alphaChannel,
                      Desc.bPremultipliedAlpha ? STBIR_FLAG_ALPHA_PREMULTIPLIED : 0,
                      (stbir_edge)Desc.HorizontalEdgeMode, (stbir_edge)Desc.VerticalEdgeMode,
                      (stbir_filter)Desc.HorizontalFilter, (stbir_filter)Desc.VerticalFilter,
@@ -1817,8 +2071,82 @@ bool ResampleImage(ImageResampleParams const& Desc, void* pDest)
     return true;
 }
 
-// Assume normals already normalized
-static ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t Height, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter)
+ARawImage ResampleRawImage(ARawImage const& Source, RawImageResampleParams const& Desc)
+{
+    if (!Source)
+    {
+        LOG("ResampleRawImage: source is invalid\n");
+        return {};
+    }
+
+    if (Desc.ScaledWidth == 0 || Desc.ScaledHeight == 0)
+    {
+        LOG("ResampleRawImage: invalid size\n");
+        return {};
+    }
+
+    stbir_datatype datatype;
+
+    switch (Source.GetFormat())
+    {
+        case RAW_IMAGE_FORMAT_R8:
+        case RAW_IMAGE_FORMAT_R8_ALPHA:
+        case RAW_IMAGE_FORMAT_RGB8:
+        case RAW_IMAGE_FORMAT_BGR8:
+        case RAW_IMAGE_FORMAT_RGBA8:
+        case RAW_IMAGE_FORMAT_BGRA8:
+            datatype = STBIR_TYPE_UINT8;
+            break;
+
+        case RAW_IMAGE_FORMAT_R32_FLOAT:
+        case RAW_IMAGE_FORMAT_R32_ALPHA_FLOAT:
+        case RAW_IMAGE_FORMAT_RGB32_FLOAT:
+        case RAW_IMAGE_FORMAT_BGR32_FLOAT:
+        case RAW_IMAGE_FORMAT_RGBA32_FLOAT:
+        case RAW_IMAGE_FORMAT_BGRA32_FLOAT:
+            datatype = STBIR_TYPE_FLOAT;
+            break;
+
+        default:
+            LOG("ResampleRawImage: invalid image format\n");
+            return {};
+    }
+
+    ARawImage dest(Desc.ScaledWidth, Desc.ScaledHeight, Source.GetFormat());
+
+    RawImageFormatInfo const& info = GetRawImageFormatInfo(Source.GetFormat());
+
+    int result =
+            stbir_resize(Source.GetData(), Source.GetWidth(), Source.GetHeight(), Source.GetWidth() * info.BytesPerPixel,
+                         dest.GetData(), dest.GetWidth(), dest.GetHeight(), dest.GetWidth() * info.BytesPerPixel,
+                         datatype,
+                         Source.NumChannels(),
+                         (Desc.Flags & RAW_IMAGE_RESAMPLE_HAS_ALPHA) ? Source.NumChannels() - 1 : STBIR_ALPHA_CHANNEL_NONE,
+                         (Desc.Flags & RAW_IMAGE_RESAMPLE_HAS_ALPHA) && (Desc.Flags & RAW_IMAGE_RESAMPLE_ALPHA_PREMULTIPLIED) ? STBIR_FLAG_ALPHA_PREMULTIPLIED : 0,
+                         (stbir_edge)Desc.HorizontalEdgeMode, (stbir_edge)Desc.VerticalEdgeMode,
+                         (stbir_filter)Desc.HorizontalFilter, (stbir_filter)Desc.VerticalFilter,
+                         (Desc.Flags & RAW_IMAGE_RESAMPLE_COLORSPACE_SRGB) ? STBIR_COLORSPACE_SRGB : STBIR_COLORSPACE_LINEAR,
+                         NULL);
+
+    HK_ASSERT(result == 1);
+    HK_UNUSED(result);
+
+    return dest;
+}
+
+static void NormalizeVectors(Float3* pVectors, size_t Count)
+{
+    Float3* end = pVectors + Count;
+    while (pVectors < end)
+    {
+        *pVectors = *pVectors * 2.0f - 1.0f;
+        pVectors->NormalizeSelf();
+        ++pVectors;
+    }
+}
+
+// Assume normals already normalized. The width and height of the normal map must be a multiple of blockSize if compression is enabled.
+ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t Height, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter)
 {
     using namespace TextureBlockCompression;
 
@@ -1829,21 +2157,28 @@ static ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint
         void             (*CompressionRoutine)(void const* pSrc, void* pDest, uint32_t Width, uint32_t Height);
         TEXTURE_FORMAT   CompressedFormat;
         TEXTURE_FORMAT   UncompressedFormat;
-        int              NumChannels;
         RAW_IMAGE_FORMAT ValidateFormat;
     };
     constexpr CompressInfo compressInfo[] = {
-        PackNormalsRGBA_BC1_Compatible,          CompressBC1, TEXTURE_FORMAT_BC1_UNORM, TEXTURE_FORMAT_RGBA8_UNORM, 4, RAW_IMAGE_FORMAT_RGBA8,    // NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE
-        PackNormalsRG_BC5_Compatible,            CompressBC5, TEXTURE_FORMAT_BC5_UNORM, TEXTURE_FORMAT_RG8_UNORM,   2, RAW_IMAGE_FORMAT_R8_ALPHA, // NORMAL_MAP_PACK_RG_BC5_COMPATIBLE
-        PackNormalsSpheremap_BC5_Compatible,     CompressBC5, TEXTURE_FORMAT_BC5_UNORM, TEXTURE_FORMAT_RG8_UNORM,   2, RAW_IMAGE_FORMAT_R8_ALPHA, // NORMAL_MAP_PACK_SPHEREMAP_BC5_COMPATIBLE
-        PackNormalsStereographic_BC5_Compatible, CompressBC5, TEXTURE_FORMAT_BC5_UNORM, TEXTURE_FORMAT_RG8_UNORM,   2, RAW_IMAGE_FORMAT_R8_ALPHA, // NORMAL_MAP_PACK_STEREOGRAPHIC_BC5_COMPATIBLE
-        PackNormalsParaboloid_BC5_Compatible,    CompressBC5, TEXTURE_FORMAT_BC5_UNORM, TEXTURE_FORMAT_RG8_UNORM,   2, RAW_IMAGE_FORMAT_R8_ALPHA, // NORMAL_MAP_PACK_PARABOLOID_BC5_COMPATIBLE
-        PackNormalsRGBA_BC3_Compatible,          CompressBC3, TEXTURE_FORMAT_BC3_UNORM, TEXTURE_FORMAT_RGBA8_UNORM, 4, RAW_IMAGE_FORMAT_RGBA8,    // NORMAL_MAP_PACK_RGBA_BC3_COMPATIBLE
+        PackNormalsRGBA_BC1_Compatible,          CompressBC1, TEXTURE_FORMAT_BC1_UNORM, TEXTURE_FORMAT_RGBA8_UNORM, RAW_IMAGE_FORMAT_RGBA8,    // NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE
+        PackNormalsRG_BC5_Compatible,            CompressBC5, TEXTURE_FORMAT_BC5_UNORM, TEXTURE_FORMAT_RG8_UNORM,   RAW_IMAGE_FORMAT_R8_ALPHA, // NORMAL_MAP_PACK_RG_BC5_COMPATIBLE
+        PackNormalsSpheremap_BC5_Compatible,     CompressBC5, TEXTURE_FORMAT_BC5_UNORM, TEXTURE_FORMAT_RG8_UNORM,   RAW_IMAGE_FORMAT_R8_ALPHA, // NORMAL_MAP_PACK_SPHEREMAP_BC5_COMPATIBLE
+        PackNormalsStereographic_BC5_Compatible, CompressBC5, TEXTURE_FORMAT_BC5_UNORM, TEXTURE_FORMAT_RG8_UNORM,   RAW_IMAGE_FORMAT_R8_ALPHA, // NORMAL_MAP_PACK_STEREOGRAPHIC_BC5_COMPATIBLE
+        PackNormalsParaboloid_BC5_Compatible,    CompressBC5, TEXTURE_FORMAT_BC5_UNORM, TEXTURE_FORMAT_RG8_UNORM,   RAW_IMAGE_FORMAT_R8_ALPHA, // NORMAL_MAP_PACK_PARABOLOID_BC5_COMPATIBLE
+        PackNormalsRGBA_BC3_Compatible,          CompressBC3, TEXTURE_FORMAT_BC3_UNORM, TEXTURE_FORMAT_RGBA8_UNORM, RAW_IMAGE_FORMAT_RGBA8,    // NORMAL_MAP_PACK_RGBA_BC3_COMPATIBLE
     };
     // clang-format on
 
     CompressInfo const& compress = compressInfo[Pack];
 
+    uint32_t blockSize = GetTextureFormatInfo(compressInfo[Pack].CompressedFormat).BlockSize;
+    if (bUseCompression && ((Width % blockSize) || (Height % blockSize)))
+    {
+        LOG("CreateNormalMap: The width and height of the normal map must be a multiple of blockSize if compression is enabled.\n");
+        return {};
+    }
+
+    // FIXME: Should we call PackRoutine for each mip level?
     ARawImage source = compress.PackRoutine(pNormals, Width, Height);
 
     HK_ASSERT(compress.ValidateFormat == source.GetFormat());
@@ -1855,97 +2190,309 @@ static ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint
 
     ImageStorageDesc desc;
     desc.Type       = TEXTURE_2D;
-    desc.Format     = bUseCompression ? compress.CompressedFormat : compress.UncompressedFormat;
+    desc.Format     = compress.UncompressedFormat;
     desc.Width      = source.GetWidth();
     desc.Height     = source.GetHeight();
     desc.SliceCount = 1;
     desc.NumMipmaps = CalcNumMips(desc.Format, desc.Width, desc.Height);
     desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
 
-    ImageStorage storage(desc);
+    ImageStorage uncompressedImage(desc);
 
     ImageSubresourceDesc subres;
     subres.SliceIndex  = 0;
     subres.MipmapIndex = 0;
 
-    ImageSubresource subresource = storage.GetSubresource(subres);
+    ImageSubresource subresource = uncompressedImage.GetSubresource(subres);
+
+    subresource.Write(0, 0, source.GetWidth(), source.GetHeight(), source.GetData());
+
+    ImageMipmapConfig mipmapConfig;
+    mipmapConfig.EdgeMode = ResampleEdgeMode;
+    mipmapConfig.Filter   = ResampleFilter;
+    uncompressedImage.GenerateMipmaps(mipmapConfig);
 
     if (!bUseCompression)
     {
-        subresource.Write(0, 0, source.GetWidth(), source.GetHeight(), source.GetData());
-
-        ImageMipmapConfig mipmapConfig;
-        mipmapConfig.EdgeMode = ResampleEdgeMode;
-        mipmapConfig.Filter   = ResampleFilter;
-        storage.GenerateMipmaps(mipmapConfig);
-
-        return storage;
+        return uncompressedImage;
     }
 
-    const uint32_t bpp = compress.NumChannels;
+    desc.Format = compress.CompressedFormat;
+    desc.NumMipmaps = CalcNumMips(desc.Format, desc.Width, desc.Height);
+    ImageStorage compressedImage(desc);
 
-    compress.CompressionRoutine(source.GetData(), subresource.GetData(), subresource.GetWidth(), subresource.GetHeight());
-
-    TextureFormatInfo const& info = GetTextureFormatInfo(desc.Format);
-
-    uint32_t curWidth  = subresource.GetWidth();
-    uint32_t curHeight = subresource.GetHeight();
-
-    HeapBlob blob(std::max<uint32_t>(info.BlockSize, curWidth >> 1) * std::max<uint32_t>(info.BlockSize, curHeight >> 1) * bpp);
-
-    void* data = source.GetData();
-    void* temp = blob.GetData();
-
-    for (uint32_t i = 1; i < desc.NumMipmaps; ++i)
+    for (uint32_t level = 0; level < desc.NumMipmaps; ++level)
     {
-        subres.MipmapIndex = i;
+        ImageSubresource src = uncompressedImage.GetSubresource({0, level});
+        ImageSubresource dst = compressedImage.GetSubresource({0, level});
 
-        subresource = storage.GetSubresource(subres);
+        HK_ASSERT(src.GetWidth() == dst.GetWidth() && src.GetHeight() == dst.GetHeight());
 
-        uint32_t mipWidth  = subresource.GetWidth();
-        uint32_t mipHeight = subresource.GetHeight();
-
-        stbir_resize(data, curWidth, curHeight, curWidth * bpp,
-                     temp, mipWidth, mipHeight, mipWidth * bpp,
-                     STBIR_TYPE_UINT8,
-                     bpp,
-                     STBIR_ALPHA_CHANNEL_NONE,
-                     0,
-                     (stbir_edge)ResampleEdgeMode, (stbir_edge)ResampleEdgeMode,
-                     (stbir_filter)ResampleFilter, (stbir_filter)ResampleFilter,
-                     STBIR_COLORSPACE_LINEAR,
-                     NULL);
-
-        curWidth  = mipWidth;
-        curHeight = mipHeight;
-        Core::Swap(data, temp);
-
-        compress.CompressionRoutine(data, subresource.GetData(), mipWidth, mipHeight);
+        compress.CompressionRoutine(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
     }
-
-    return storage;
+    return compressedImage;
 }
 
-ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
+ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
 {
-    ARawImage rawImage = LoadNormalMapAsRawVectors(Stream);
+    const IMAGE_RESAMPLE_FILTER ResampleFilter = IMAGE_RESAMPLE_FILTER_TRIANGLE; //IMAGE_RESAMPLE_FILTER_MITCHELL; // TODO: Check what filter is better for normal maps
+
+    ARawImage rawImage = CreateRawImage(Stream, RAW_IMAGE_FORMAT_RGB32_FLOAT);
     if (!rawImage)
         return {};
 
-    HK_ASSERT(rawImage.GetFormat() == RAW_IMAGE_FORMAT_RGB32_FLOAT);
+    if (bConvertFromDirectXNormalMap)
+        rawImage.InvertChannel(1);
 
-    // FIXME: Should we call PackNormals### for each mip level?
+    // NOTE: Currently all compression methods have blockSize = 4
+    const uint32_t blockSize = 4;
 
-    const IMAGE_RESAMPLE_FILTER ResampleFilter = IMAGE_RESAMPLE_FILTER_MITCHELL; // TODO: Check what filter is better for normal maps
+    if (bUseCompression && (rawImage.GetWidth() % blockSize) || (rawImage.GetHeight() % blockSize))
+    {
+        RawImageResampleParams resample;
+        resample.HorizontalEdgeMode = resample.VerticalEdgeMode = ResampleEdgeMode;
+        resample.HorizontalFilter = resample.VerticalFilter = ResampleFilter;
+
+        rawImage = ResampleRawImage(rawImage, resample);
+    }
+
+    NormalizeVectors((Float3*)rawImage.GetData(), rawImage.GetWidth() * rawImage.GetHeight());
 
     return CreateNormalMap((Float3 const*)rawImage.GetData(), rawImage.GetWidth(), rawImage.GetHeight(), Pack, bUseCompression, ResampleEdgeMode, ResampleFilter);
 }
 
-ImageStorage CreateNormalMap(AStringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
+ImageStorage CreateNormalMap(AStringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
 {
     AFileStream stream;
     if (!stream.OpenRead(FileName))
         return {};
 
-    return CreateNormalMap(FileName, Pack, bUseCompression, ResampleEdgeMode);
+    return CreateNormalMap(FileName, Pack, bUseCompression, bConvertFromDirectXNormalMap, ResampleEdgeMode);
+}
+
+ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, uint32_t Height, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter)
+{
+    using namespace TextureBlockCompression;
+
+    uint32_t blockSize = GetTextureFormatInfo(TEXTURE_FORMAT_BC4_UNORM).BlockSize;
+    if (bUseCompression && ((Width % blockSize) || (Height % blockSize)))
+    {
+        LOG("CreateRoughnessMap: The width and height of the roughness map must be a multiple of blockSize if compression is enabled.\n");
+        return {};
+    }
+
+    ImageStorageDesc desc;
+    desc.Type       = TEXTURE_2D;
+    desc.Format     = TEXTURE_FORMAT_R8_UNORM;
+    desc.Width      = Width;
+    desc.Height     = Height;
+    desc.SliceCount = 1;
+    desc.NumMipmaps = CalcNumMips(desc.Format, desc.Width, desc.Height);
+    desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
+
+    ImageStorage     uncompressedImage(desc);
+    ImageSubresource subresource = uncompressedImage.GetSubresource({0, 0});
+
+    subresource.Write(0, 0, Width, Height, pRoughnessMap);
+
+    ImageMipmapConfig mipmapConfig;
+    mipmapConfig.EdgeMode = ResampleEdgeMode;
+    mipmapConfig.Filter   = ResampleFilter;
+    uncompressedImage.GenerateMipmaps(mipmapConfig);
+
+    if (!bUseCompression)
+    {
+        return uncompressedImage;
+    }
+
+    desc.Format = TEXTURE_FORMAT_BC4_UNORM;
+    desc.NumMipmaps = CalcNumMips(desc.Format, desc.Width, desc.Height);
+
+    ImageStorage compressedImage(desc);
+
+    for (uint32_t level = 0; level < desc.NumMipmaps; ++level)
+    {
+        ImageSubresource src = uncompressedImage.GetSubresource({0, level});
+        ImageSubresource dst = compressedImage.GetSubresource({0, level});
+
+        HK_ASSERT(src.GetWidth() == dst.GetWidth() && src.GetHeight() == dst.GetHeight());
+
+        CompressBC4(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+    }
+    return compressedImage;
+}
+
+// Output normal map in format RGB32_FLOAT or RG32_FLOAT (depends on pack), roughness map - R32_FLOAT
+bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, ImageStorage& NormalMapImage, ImageStorage& RoughnessMapImage)
+{
+    using namespace TextureBlockCompression;
+
+    const IMAGE_RESAMPLE_FILTER NormalMapResampleFilter    = IMAGE_RESAMPLE_FILTER_TRIANGLE; // TODO: Check what filter is better for normal maps
+    const IMAGE_RESAMPLE_FILTER RoughnessMapResampleFilter = IMAGE_RESAMPLE_FILTER_TRIANGLE;
+
+    ARawImage roughnessImage = CreateRawImage(Settings.RoughnessMap, RAW_IMAGE_FORMAT_R8);
+    if (!roughnessImage)
+        return {};
+
+    // NOTE: Currently all compression methods have blockSize = 4
+    const uint32_t blockSize = 4;
+
+    if (Settings.bCompressRoughness_BC4)
+    {
+        if ((roughnessImage.GetWidth() % blockSize) || (roughnessImage.GetHeight() % blockSize))
+        {
+            RawImageResampleParams resample;
+            resample.HorizontalEdgeMode = Settings.ResampleEdgeMode;
+            resample.VerticalEdgeMode   = Settings.ResampleEdgeMode;
+            resample.HorizontalFilter   = RoughnessMapResampleFilter;
+            resample.VerticalFilter     = RoughnessMapResampleFilter;
+            resample.ScaledWidth        = Align(roughnessImage.GetWidth(), blockSize);
+            resample.ScaledHeight       = Align(roughnessImage.GetHeight(), blockSize);
+
+            roughnessImage = ResampleRawImage(roughnessImage, resample);
+        }
+    }
+
+    ARawImage normalMapImageUnscaled = CreateRawImage(Settings.NormalMap, RAW_IMAGE_FORMAT_RGB32_FLOAT);
+    if (!normalMapImageUnscaled)
+        return {};
+
+    if (Settings.bConvertFromDirectXNormalMap)
+        normalMapImageUnscaled.InvertGreen();
+
+    ARawImage normalMapImageScaled;
+    bool      normalMapRescaled = false;
+
+    if (normalMapImageUnscaled.GetWidth() != roughnessImage.GetWidth() || normalMapImageUnscaled.GetHeight() != roughnessImage.GetHeight())
+    {
+        RawImageResampleParams resample;
+        resample.HorizontalEdgeMode = Settings.ResampleEdgeMode;
+        resample.VerticalEdgeMode   = Settings.ResampleEdgeMode;
+        resample.HorizontalFilter   = NormalMapResampleFilter;
+        resample.VerticalFilter     = NormalMapResampleFilter;
+        resample.ScaledWidth        = roughnessImage.GetWidth();
+        resample.ScaledHeight       = roughnessImage.GetHeight();
+
+        normalMapImageScaled = ResampleRawImage(normalMapImageUnscaled, resample);
+
+        normalMapRescaled = true;
+    }
+
+    ARawImage& normalMapImage = normalMapRescaled ? normalMapImageScaled : normalMapImageUnscaled;
+
+    // Normalize normal map
+    NormalizeVectors((Float3*)normalMapImage.GetData(), normalMapImage.GetWidth() * normalMapImage.GetHeight());
+
+    ImageStorage roughnessMapUncompressed = CreateRoughnessMap((uint8_t const*)roughnessImage.GetData(), roughnessImage.GetWidth(), roughnessImage.GetHeight(), false, Settings.ResampleEdgeMode, RoughnessMapResampleFilter);
+
+    ARawImage averageNormals;
+
+    // Update roughness
+    for (uint32_t level = 1; level < roughnessMapUncompressed.GetDesc().NumMipmaps; ++level)
+    {
+        ImageSubresource roughness = roughnessMapUncompressed.GetSubresource({0, level});        
+
+        RawImageResampleParams resample;
+        resample.Flags              = RAW_IMAGE_RESAMPLE_FLAG_DEFAULT;
+        resample.HorizontalEdgeMode = Settings.ResampleEdgeMode;
+        resample.VerticalEdgeMode   = Settings.ResampleEdgeMode;
+        resample.HorizontalFilter   = NormalMapResampleFilter;
+        resample.VerticalFilter     = NormalMapResampleFilter;
+        resample.ScaledWidth        = roughness.GetWidth();
+        resample.ScaledHeight       = roughness.GetHeight();
+
+        averageNormals = ResampleRawImage(level == 1 ? normalMapImage : averageNormals, resample);
+
+        uint32_t pixCount = roughness.GetWidth() * roughness.GetHeight();
+        for (uint32_t i = 0; i < pixCount; i++)
+        {
+            Float3 n = ((Float3*)averageNormals.GetData())[i];
+
+            float r2 = n.LengthSqr();
+            if (r2 > 0.0f && r2 < 1.0f)
+            {
+                #if 1
+                // vMF
+                // Equation from http://graphicrants.blogspot.com/2018/05/normal-map-filtering-using-vmf-part-3.html
+                float variance = 2.0f * Math::RSqrt(r2) * (1.0f - r2) / (3.0f - r2);
+
+                float roughnessVal = ((uint8_t*)roughness.GetData())[i] / 255.0f;
+
+                ((uint8_t*)roughness.GetData())[i] = Math::Round(Math::Saturate(Math::Sqrt(roughnessVal * roughnessVal + variance)) * 255.0f);
+                #else
+                auto RoughnessToSpecPower = [](float Roughness) -> float
+                {
+                    return 2.0f / (Roughness * Roughness) - 2.0f;
+                };
+                auto SpecPowerToRoughness = [](float Spec) -> float
+                {
+                    return sqrt(2.0f / (Spec + 2.0f));
+                };
+
+                // Toksvig
+                // https://blog.selfshadow.com/2011/07/22/specular-showdown/
+                float r         = sqrt(r2);
+                float specPower = RoughnessToSpecPower(Math::Max<uint8_t>(((uint8_t*)roughness.GetData())[i], 1) / 255.0f);
+                float ft        = r / Math::Lerp(specPower, 1.0f, r);
+
+                ((uint8_t*)roughness.GetData())[i] = Math::Round(Math::Saturate(SpecPowerToRoughness(ft * specPower)) * 255.0f);
+                #endif
+            }
+        }
+    }
+
+    if (Settings.bCompressRoughness_BC4)
+    {
+        ImageStorageDesc desc;
+        desc.Type       = TEXTURE_2D;
+        desc.Format     = TEXTURE_FORMAT_BC4_UNORM;
+        desc.Width      = roughnessMapUncompressed.GetDesc().Width;
+        desc.Height     = roughnessMapUncompressed.GetDesc().Height;
+        desc.SliceCount = 1;
+        desc.NumMipmaps = CalcNumMips(desc.Format, desc.Width, desc.Height);
+        desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
+
+        ImageStorage roughnessMapCompressed(desc);
+
+        for (uint32_t level = 0; level < desc.NumMipmaps; ++level)
+        {
+            ImageSubresource src = roughnessMapUncompressed.GetSubresource({0, level});
+            ImageSubresource dst = roughnessMapCompressed.GetSubresource({0, level});
+
+            HK_ASSERT(src.GetWidth() == dst.GetWidth() && src.GetHeight() == dst.GetHeight());
+
+            CompressBC4(src.GetData(), dst.GetData(), dst.GetWidth(), dst.GetHeight());
+        }
+
+        RoughnessMapImage = std::move(roughnessMapCompressed);
+    }
+    else
+    {
+        RoughnessMapImage = std::move(roughnessMapUncompressed);
+    }
+
+    if (Settings.bCompressNormals && ((normalMapImageUnscaled.GetWidth() % blockSize) || (normalMapImageUnscaled.GetHeight() % blockSize)))
+    {
+        RawImageResampleParams resample;
+        resample.HorizontalEdgeMode = Settings.ResampleEdgeMode;
+        resample.VerticalEdgeMode   = Settings.ResampleEdgeMode;
+        resample.HorizontalFilter   = NormalMapResampleFilter;
+        resample.VerticalFilter     = NormalMapResampleFilter;
+        resample.ScaledWidth        = Align(normalMapImageUnscaled.GetWidth(), blockSize);
+        resample.ScaledHeight       = Align(normalMapImageUnscaled.GetHeight(), blockSize);
+
+        normalMapImageUnscaled = ResampleRawImage(normalMapImageUnscaled, resample);
+
+        // Normalize normal map
+        NormalizeVectors((Float3*)normalMapImageUnscaled.GetData(), normalMapImageUnscaled.GetWidth() * normalMapImageUnscaled.GetHeight());
+    }
+    else if (normalMapRescaled)
+    {
+        // Normalize normal map
+        NormalizeVectors((Float3*)normalMapImageUnscaled.GetData(), normalMapImageUnscaled.GetWidth() * normalMapImageUnscaled.GetHeight());
+    }
+
+    NormalMapImage = CreateNormalMap((Float3 const*)normalMapImageUnscaled.GetData(), normalMapImageUnscaled.GetWidth(), normalMapImageUnscaled.GetHeight(), Settings.Pack, Settings.bCompressNormals, Settings.ResampleEdgeMode, NormalMapResampleFilter);
+
+    return true;
 }
