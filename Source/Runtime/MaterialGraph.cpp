@@ -3857,11 +3857,55 @@ public:
 
     MGNodeRegistry()
     {
-        Register(MGInTexCoord::ClassMeta(), "InTexCoord", MG_NODE_SINGLETON);
+        Register(MGSaturate::ClassMeta(), "Saturate");
+        Register(MGSinus::ClassMeta(), "Sinus");
+        Register(MGCosinus::ClassMeta(), "Cosinus");
+        Register(MGFract::ClassMeta(), "Fract");
+        Register(MGNegate::ClassMeta(), "Negate");
+        Register(MGNormalize::ClassMeta(), "Normalize");
+        Register(MGMul::ClassMeta(), "Mul");
+        Register(MGDiv::ClassMeta(), "Div");
+        Register(MGAdd::ClassMeta(), "Add");
+        Register(MGSub::ClassMeta(), "Sub");
+        Register(MGMAD::ClassMeta(), "MAD");
+        Register(MGStep::ClassMeta(), "Step");
+        Register(MGPow::ClassMeta(), "Pow");
+        Register(MGMod::ClassMeta(), "Mod");
+        Register(MGMin::ClassMeta(), "Min");
+        Register(MGMax::ClassMeta(), "Max");
+        Register(MGLerp::ClassMeta(), "Lerp");
+        Register(MGClamp::ClassMeta(), "Clamp");
+        Register(MGLength::ClassMeta(), "Length");
+        Register(MGDecomposeVector::ClassMeta(), "DecomposeVector");
+        Register(MGMakeVector::ClassMeta(), "MakeVector");
+        Register(MGSpheremapCoord::ClassMeta(), "SpheremapCoord");
+        Register(MGLuminance::ClassMeta(), "Luminance");
+        Register(MGPI::ClassMeta(), "PI");
+        Register(MG2PI::ClassMeta(), "2PI");
+        Register(MGBoolean::ClassMeta(), "Boolean");
+        Register(MGBoolean2::ClassMeta(), "Boolean2");
+        Register(MGBoolean3::ClassMeta(), "Boolean3");
+        Register(MGBoolean4::ClassMeta(), "Boolean4");
+        Register(MGFloat::ClassMeta(), "Float");
+        Register(MGFloat2::ClassMeta(), "Float2");
+        Register(MGFloat3::ClassMeta(), "Float3");
+        Register(MGFloat4::ClassMeta(), "Float4");
+        Register(MGTextureSlot::ClassMeta(), "TextureSlot");
+        Register(MGUniformAddress::ClassMeta(), "UniformAddress");
         Register(MGTextureLoad::ClassMeta(), "TextureLoad");
         Register(MGNormalLoad::ClassMeta(), "NormalLoad");
-        Register(MGUniformAddress::ClassMeta(), "UniformAddress");
-        
+        Register(MGParallaxMapLoad::ClassMeta(), "ParallaxMapLoad", MG_NODE_SINGLETON);
+        Register(MGVirtualTextureLoad::ClassMeta(), "VirtualTextureLoad");
+        Register(MGVirtualTextureNormalLoad::ClassMeta(), "VirtualTextureNormalLoad");
+        Register(MGInFragmentCoord::ClassMeta(), "InFragmentCoord", MG_NODE_SINGLETON);
+        Register(MGInPosition::ClassMeta(), "InPosition", MG_NODE_SINGLETON);
+        Register(MGInNormal::ClassMeta(), "InNormal", MG_NODE_SINGLETON);
+        Register(MGInColor::ClassMeta(), "InColor", MG_NODE_SINGLETON);
+        Register(MGInTexCoord::ClassMeta(), "InTexCoord", MG_NODE_SINGLETON);
+        Register(MGInTimer::ClassMeta(), "InTimer", MG_NODE_SINGLETON);
+        Register(MGInViewPosition::ClassMeta(), "InViewPosition", MG_NODE_SINGLETON);
+        Register(MGCondLess::ClassMeta(), "CondLess");
+        Register(MGAtmosphere::ClassMeta(), "Atmosphere");
     }
 
     TVector<AStringView> GetTypes() const
