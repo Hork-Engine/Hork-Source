@@ -2286,13 +2286,13 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
     f.FormattedPrint("]\n");
 }
 
-bool ImportEnvironmentMapForSkybox(ImageStorage const& Skybox, AStringView EnvmapFile)
+bool GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, AStringView EnvmapFile)
 {
     TRef<RenderCore::ITexture> SourceMap, IrradianceMap, ReflectionMap;
 
     if (!Skybox || Skybox.GetDesc().Type != TEXTURE_CUBE)
     {
-        LOG("ImportEnvironmentMapForSkybox: invalid skybox\n");
+        LOG("GenerateAndSaveEnvironmentMap: invalid skybox\n");
         return false;
     }
 
@@ -2384,7 +2384,7 @@ bool ImportEnvironmentMapForSkybox(ImageStorage const& Skybox, AStringView Envma
     return true;
 }
 
-bool ImportEnvironmentMapForSkybox(SkyboxImportSettings const& ImportSettings, AStringView EnvmapFile)
+bool GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, AStringView EnvmapFile)
 {
     ImageStorage image = LoadSkyboxImages(ImportSettings);
 
@@ -2393,7 +2393,7 @@ bool ImportEnvironmentMapForSkybox(SkyboxImportSettings const& ImportSettings, A
         return false;
     }
 
-    return ImportEnvironmentMapForSkybox(image, EnvmapFile);
+    return GenerateAndSaveEnvironmentMap(image, EnvmapFile);
 }
 
 ImageStorage GenerateAtmosphereSkybox(uint32_t Resolution, Float3 const& LightDir)

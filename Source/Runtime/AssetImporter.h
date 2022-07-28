@@ -201,8 +201,8 @@ private:
     AGUID                       m_SkeletonGUID;
 };
 
-bool ImportEnvironmentMapForSkybox(ImageStorage const& Skybox, AStringView EnvmapFile);
-bool ImportEnvironmentMapForSkybox(SkyboxImportSettings const& ImportSettings, AStringView EnvmapFile);
+bool GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, AStringView EnvmapFile);
+bool GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, AStringView EnvmapFile);
 
 ImageStorage GenerateAtmosphereSkybox(uint32_t Resolution, Float3 const& LightDir);
 
