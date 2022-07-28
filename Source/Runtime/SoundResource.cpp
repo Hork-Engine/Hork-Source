@@ -107,7 +107,7 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     Purge();
 
-    AString const& fn        = Stream.GetFileName();
+    AString const& fn        = Stream.GetName();
     AStringView    extension = PathUtils::GetExt(fn);
 
     if (!extension.Icmp(".sound"))
@@ -160,7 +160,7 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
     }
     else
     {
-        return InitializeFromMemory(Stream.GetFileName(), Stream.AsBlob());
+        return InitializeFromMemory(Stream.GetName(), Stream.AsBlob());
     }
 
 #if 0
@@ -243,38 +243,21 @@ bool ASoundResource::InitializeFromMemory(AStringView _Path, BlobRef Memory, SSo
     switch (CurStreamType)
     {
         case SOUND_STREAM_DISABLED: {
-            AMemoryStream f;
-
-            if (!f.OpenRead(_Path, Memory.GetData(), Memory.Size()))
+            if (!CreateAudioBuffer(AFile::OpenRead(_Path, Memory.GetData(), Memory.Size()).ReadInterface(), &AudioFileInfo, deviceSampleRate, mono, _CreateInfo.bForce8Bit, &pBuffer))
             {
                 return false;
             }
-
-            if (!CreateAudioBuffer(f, &AudioFileInfo, deviceSampleRate, mono, _CreateInfo.bForce8Bit, &pBuffer))
-            {
-                return false;
-            }
-
             break;
         }
         case SOUND_STREAM_MEMORY: {
-            AMemoryStream f;
-
-            if (!f.OpenRead(_Path, Memory.GetData(), Memory.Size()))
+            if (!LoadAudioFile(AFile::OpenRead(_Path, Memory.GetData(), Memory.Size()).ReadInterface(), &AudioFileInfo, deviceSampleRate, mono, _CreateInfo.bForce8Bit, nullptr))
             {
                 return false;
             }
-
-            if (!LoadAudioFile(f, &AudioFileInfo, deviceSampleRate, mono, _CreateInfo.bForce8Bit, nullptr))
-            {
-                return false;
-            }
-
             void* pHeapPtr = Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(Memory.Size());
             Platform::Memcpy(pHeapPtr, Memory.GetData(), Memory.Size());
 
             pFileInMemory = MakeRef<SFileInMemory>(pHeapPtr, Memory.Size());
-
             break;
         }
         default:

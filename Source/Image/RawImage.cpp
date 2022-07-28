@@ -618,6 +618,9 @@ bool IsHDRImage(IBinaryStreamReadInterface& Stream)
 
 ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Format)
 {
+    if (!Stream.IsValid())
+        return {};
+
     const stbi_io_callbacks callbacks = {Stbi_Read, Stbi_Skip, Stbi_Eof};
 
     int numRequiredChannels = RawImageFormatLUT[Format].NumChannels;
@@ -670,7 +673,7 @@ ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Fo
         {
             Stream.SeekSet(streamOffset);
 
-            LOG("CreateRawImage: couldn't load {}\n", Stream.GetFileName());
+            LOG("CreateRawImage: couldn't load {}\n", Stream.GetName());
             return {};
         }
     }
@@ -730,11 +733,7 @@ ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Fo
 
 ARawImage CreateRawImage(AStringView FileName, RAW_IMAGE_FORMAT Format)
 {
-    AFileStream stream;
-    if (!stream.OpenRead(FileName))
-        return {};
-
-    return CreateRawImage(stream, Format);
+    return CreateRawImage(AFile::OpenRead(FileName).ReadInterface(), Format);
 }
 
 ARawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color)
@@ -768,8 +767,8 @@ ARawImage LoadNormalMapAsRawVectors(IBinaryStreamReadInterface& Stream)
 
 ARawImage LoadNormalMapAsRawVectors(AStringView FileName)
 {
-    AFileStream f;
-    if (!f.OpenRead(FileName))
+    AFile f = AFile::OpenRead(FileName);
+    if (!f)
     {
         LOG("LoadNormalMapAsRawVectors: couldn't open {}\n", FileName);
         return {};
@@ -1041,8 +1040,8 @@ bool WriteImage(AStringView FileName, uint32_t Width, uint32_t Height, uint32_t 
         return false;
     }
 
-    AFileStream f;
-    if (!f.OpenWrite(FileName))
+    AFile f = AFile::OpenWrite(FileName);
+    if (!f)
         return false;
 
     bool result = false;
@@ -1074,8 +1073,8 @@ bool WriteImageHDRI(AStringView FileName, uint32_t Width, uint32_t Height, uint3
         return false;
     }
 
-    AFileStream f;
-    if (!f.OpenWrite(FileName))
+    AFile f = AFile::OpenWrite(FileName);
+    if (!f)
         return false;
 
     bool result = false;

@@ -2378,9 +2378,8 @@ void AFont::LoadInternalResource(AStringView _Path)
         createInfo.GlyphMaxAdvanceX   = Math::MaxValue<float>();
         createInfo.RasterizerMultiply = 1.0f;
 
-        AMemoryStream f;
-
-        if (!f.OpenRead("Fonts/ProggyClean.ttf", Runtime::GetEmbeddedResources()))
+        AFile f = AFile::OpenRead("Fonts/ProggyClean.ttf", Runtime::GetEmbeddedResources());
+        if (!f)
         {
             CriticalError("Failed to create default font\n");
         }

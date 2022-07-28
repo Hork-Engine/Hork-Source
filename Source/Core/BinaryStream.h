@@ -34,12 +34,14 @@ SOFTWARE.
 #include <Platform/Format.h>
 #include "String.h"
 #include "HeapBlob.h"
+#include "Ref.h"
 
-class IBinaryStreamBaseInterface
+class IBinaryStreamBaseInterface : public ARefCounted
 {
 public:
-    virtual ~IBinaryStreamBaseInterface()
-    {}
+    virtual ~IBinaryStreamBaseInterface() = default;
+
+    virtual bool IsValid() const = 0;
 
     virtual size_t SizeInBytes() const = 0;
 
@@ -58,15 +60,14 @@ public:
 
     virtual bool Eof() const = 0;
 
-    virtual AString const& GetFileName() const = 0;
+    virtual AString const& GetName() const = 0;
 };
 
 
 class IBinaryStreamReadInterface : public virtual IBinaryStreamBaseInterface
 {
 public:
-    virtual ~IBinaryStreamReadInterface()
-    {}
+    virtual ~IBinaryStreamReadInterface() = default;
 
     virtual size_t Read(void* pBuffer, size_t SizeInBytes) = 0;
 

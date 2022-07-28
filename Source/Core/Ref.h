@@ -32,50 +32,23 @@ SOFTWARE.
 
 #include <Platform/Memory/Memory.h>
 
-struct SZoneAllocator
-{
-    void* Allocate(std::size_t _SizeInBytes)
-    {
-        return Platform::GetHeapAllocator<HEAP_MISC>().Alloc(_SizeInBytes, 16);
-    }
-
-    void Deallocate(void* _Bytes)
-    {
-        Platform::GetHeapAllocator<HEAP_MISC>().Free(_Bytes);
-    }
-};
-
 struct SWeakRefCounter
 {
     void* Object;
     int   RefCount;
 };
 
-template <typename TAllocator>
-struct TRefCounted
+class ARefCounted
 {
 private:
-    int RefCount;
+    int RefCount{1};
 
     SWeakRefCounter* WeakRefCounter = nullptr;
 
 public:
-    void* operator new(size_t _SizeInBytes)
-    {
-        return TAllocator().Allocate(_SizeInBytes);
-    }
+    ARefCounted() = default;
 
-    void operator delete(void* _Ptr)
-    {
-        TAllocator().Deallocate(_Ptr);
-    }
-
-    TRefCounted() :
-        RefCount(1)
-    {
-    }
-
-    virtual ~TRefCounted()
+    virtual ~ARefCounted()
     {
         if (WeakRefCounter)
         {
@@ -84,10 +57,10 @@ public:
     }
 
     /** Non-copyable pattern */
-    TRefCounted(TRefCounted<TAllocator> const&) = delete;
+    ARefCounted(ARefCounted const&) = delete;
 
     /** Non-copyable pattern */
-    TRefCounted& operator=(TRefCounted<TAllocator> const&) = delete;
+    ARefCounted& operator=(ARefCounted const&) = delete;
 
     /** Add reference */
     inline void AddRef()
@@ -126,14 +99,11 @@ public:
     }
 };
 
-using ARefCounted = TRefCounted<SZoneAllocator>;
-
 
 /**
 
 SInterlockedRef
 
-Uses heap memory allocator because it's thread safe.
 Reference counter is interlocked variable.
 
 */
@@ -143,27 +113,12 @@ struct SInterlockedRef
 
 private:
     /** Reference counter */
-    AAtomicInt RefCount;
+    AAtomicInt RefCount{1};
 
 public:
-    void* operator new(size_t _SizeInBytes)
-    {
-        return Platform::GetHeapAllocator<HEAP_MISC>().Alloc(_SizeInBytes);
-    }
+    SInterlockedRef() = default;
 
-    void operator delete(void* _Ptr)
-    {
-        Platform::GetHeapAllocator<HEAP_MISC>().Free(_Ptr);
-    }
-
-    SInterlockedRef() :
-        RefCount(1)
-    {
-    }
-
-    virtual ~SInterlockedRef()
-    {
-    }
+    virtual ~SInterlockedRef() = default;
 
     /** Add reference. */
     HK_FORCEINLINE void AddRef()
@@ -565,15 +520,11 @@ template <typename T>
 class TUniqueRef
 {
 public:
-    TUniqueRef() :
-        Object(nullptr)
-    {
-    }
+    TUniqueRef() = default;
 
     explicit TUniqueRef(T* InPtr) :
         Object(InPtr)
-    {
-    }
+    {}
 
     TUniqueRef(TUniqueRef<T> const&) = delete;
     TUniqueRef& operator=(TUniqueRef<T> const&) = delete;
@@ -581,8 +532,7 @@ public:
     template <typename T2>
     TUniqueRef(TUniqueRef<T2>&& _Rhs) :
         Object(_Rhs.Detach())
-    {
-    }
+    {}
 
     ~TUniqueRef()
     {
@@ -644,7 +594,7 @@ public:
     }
 
 private:
-    T* Object;
+    T* Object{};
 };
 
 template <typename T, typename... Args>

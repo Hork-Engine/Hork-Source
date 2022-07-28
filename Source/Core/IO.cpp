@@ -45,24 +45,24 @@ SOFTWARE.
 
 #include <miniz/miniz.h>
 
-AFileStream::~AFileStream()
+AFile::~AFile()
 {
     Close();
 }
 
-bool AFileStream::OpenRead(AStringView FileName)
+AFile AFile::OpenRead(AStringView FileName)
 {
-    return Open(FileName, FILE_OPEN_MODE_READ);
+    return OpenFromFileSystem(FileName, FILE_TYPE_READ_FILE_SYSTEM);
 }
 
-bool AFileStream::OpenWrite(AStringView FileName)
+AFile AFile::OpenWrite(AStringView FileName)
 {
-    return Open(FileName, FILE_OPEN_MODE_WRITE);
+    return OpenFromFileSystem(FileName, FILE_TYPE_WRITE_FILE_SYSTEM);
 }
 
-bool AFileStream::OpenAppend(AStringView FileName)
+AFile AFile::OpenAppend(AStringView FileName)
 {
-    return Open(FileName, FILE_OPEN_MODE_APPEND);
+    return OpenFromFileSystem(FileName, FILE_TYPE_APPEND_FILE_SYSTEM);
 }
 
 static FILE* OpenFile(const char* FileName, const char* Mode)
@@ -96,542 +96,487 @@ static FILE* OpenFile(const char* FileName, const char* Mode)
     return f;
 }
 
-bool AFileStream::Open(AStringView FileName, FILE_OPEN_MODE _Mode)
+AFile AFile::OpenFromFileSystem(AStringView FileName, FILE_TYPE Type)
 {
-    Close();
+    AFile f;
 
-    Name = PathUtils::FixPath(FileName);
-    if (Name.Length() && Name[Name.Length() - 1] == '/')
+    f.m_Name = PathUtils::FixPath(FileName);
+    if (f.m_Name.Length() && f.m_Name[f.m_Name.Length() - 1] == '/')
     {
         LOG("Invalid file name {}\n", FileName);
-        Name.Clear();
-        return false;
+        return {};
     }
 
-    if (_Mode == FILE_OPEN_MODE_WRITE || _Mode == FILE_OPEN_MODE_APPEND)
+    if (Type == FILE_TYPE_WRITE_FILE_SYSTEM || Type == FILE_TYPE_APPEND_FILE_SYSTEM)
     {
-        Core::CreateDirectory(Name, true);
+        Core::CreateDirectory(f.m_Name, true);
     }
 
     const char* fopen_mode = "";
 
-    switch (_Mode)
+    switch (Type)
     {
-        case FILE_OPEN_MODE_READ:
+        case FILE_TYPE_READ_FILE_SYSTEM:
             fopen_mode = "rb";
             break;
-        case FILE_OPEN_MODE_WRITE:
+        case FILE_TYPE_WRITE_FILE_SYSTEM:
             fopen_mode = "wb";
             break;
-        case FILE_OPEN_MODE_APPEND:
+        case FILE_TYPE_APPEND_FILE_SYSTEM:
             fopen_mode = "ab";
             break;
         default:
             HK_ASSERT(0);
+            return {};
     }
 
-    FILE* f = OpenFile(Name.CStr(), fopen_mode);
-    if (!f)
+    f.m_Handle = ::OpenFile(f.m_Name.CStr(), fopen_mode);
+    if (!f.m_Handle)
     {
-        LOG("Couldn't open {}\n", Name);
-        Name.Clear();
-        return false;
+        LOG("Couldn't open {}\n", f.m_Name);
+        return {};
     }
 
-    Handle = f;
-    Mode   = _Mode;
+    f.m_Type = Type;
 
-    if (Mode == FILE_OPEN_MODE_READ)
+    if (f.m_Type == FILE_TYPE_READ_FILE_SYSTEM)
     {
-        FileSize = ~0ull;
+        f.m_FileSize = ~0ull;
     }
 
-    return true;
+    return f;
 }
 
-void AFileStream::Close()
+void AFile::Close()
 {
-    if (Mode == FILE_OPEN_MODE_CLOSED)
+    if (m_Type == FILE_TYPE_UNDEFINED)
     {
         return;
     }
 
-    Name.Clear();
-    Mode = FILE_OPEN_MODE_CLOSED;
-
-    fclose(Handle);
-    Handle = nullptr;
-
-    RWOffset = 0;
-    FileSize = 0;
-}
-
-AString const& AFileStream::GetFileName() const
-{
-    return Name;
-}
-
-size_t AFileStream::Read(void* pBuffer, size_t SizeInBytes)
-{
-    size_t bytesToRead{0};
-
-    if (Mode != FILE_OPEN_MODE_READ)
+    if (IsFileSystem())
     {
-        LOG("Failed to read from {} (wrong mode)\n", Name);
+        fclose(m_Handle);
     }
     else
     {
-        bytesToRead = fread(pBuffer, 1, SizeInBytes, Handle);
+        if (m_bMemoryBufferOwner)
+        {
+            Free(m_pHeapPtr);
+        }
+    }
+
+    m_Name.Clear();
+    m_Type               = FILE_TYPE_UNDEFINED;
+    m_RWOffset           = 0;
+    m_FileSize           = 0;
+    m_Handle             = nullptr;
+    m_ReservedSize       = 0;
+    m_bMemoryBufferOwner = true;
+}
+
+size_t AFile::Read(void* pBuffer, size_t SizeInBytes)
+{
+    size_t bytesToRead{};
+
+    if (!IsReadable())
+    {
+        LOG("Reading from {} is not allowed. The file must be opened in read mode.\n", m_Name);
+    }
+    else
+    {
+        if (IsFileSystem())
+        {
+            bytesToRead = fread(pBuffer, 1, SizeInBytes, m_Handle);
+        }
+        else
+        {
+            bytesToRead = std::min(SizeInBytes, m_FileSize - m_RWOffset);
+            Platform::Memcpy(pBuffer, m_pHeapPtr + m_RWOffset, bytesToRead);
+        }
     }
 
     SizeInBytes -= bytesToRead;
     if (SizeInBytes)
         Platform::ZeroMem((uint8_t*)pBuffer + bytesToRead, SizeInBytes);
 
-    RWOffset += bytesToRead;
+    m_RWOffset += bytesToRead;
     return bytesToRead;
 }
 
-size_t AFileStream::Write(const void* pBuffer, size_t SizeInBytes)
+size_t AFile::Write(const void* pBuffer, size_t SizeInBytes)
 {
-    if (Mode != FILE_OPEN_MODE_WRITE && Mode != FILE_OPEN_MODE_APPEND)
+    size_t bytesToWrite{};
+
+    if (!IsWritable())
     {
-        LOG("Failed to write {} (wrong mode)\n", Name);
+        LOG("Writing to {} is not allowed. The file must be opened in write mode.\n", m_Name);
         return 0;
     }
 
-    size_t bytesToWrite = fwrite(pBuffer, 1, SizeInBytes, Handle);
-    RWOffset += bytesToWrite;
-    FileSize = std::max(FileSize, RWOffset);
+    if (IsFileSystem())
+    {
+        bytesToWrite = fwrite(pBuffer, 1, SizeInBytes, m_Handle);
+    }
+    else
+    {
+        size_t requiredSize = m_RWOffset + SizeInBytes;
+        if (requiredSize > m_ReservedSize)
+        {
+            if (!m_bMemoryBufferOwner)
+            {
+                LOG("Failed to write {} (buffer overflowed)\n", m_Name);
+                return 0;
+            }
+            const int mod  = requiredSize % m_Granularity;
+            m_ReservedSize = mod ? requiredSize + m_Granularity - mod : requiredSize;
+            m_pHeapPtr     = (byte*)Realloc(m_pHeapPtr, m_ReservedSize);
+        }
+        Platform::Memcpy(m_pHeapPtr + m_RWOffset, pBuffer, SizeInBytes);
+        bytesToWrite = SizeInBytes;
+    }
+
+    m_RWOffset += bytesToWrite;
+    m_FileSize = std::max(m_FileSize, m_RWOffset);
     return bytesToWrite;
 }
 
-char* AFileStream::Gets(char* pBuffer, size_t SizeInBytes)
+char* AFile::Gets(char* pBuffer, size_t SizeInBytes)
 {
-    if (Mode != FILE_OPEN_MODE_READ)
+    if (!IsReadable())
     {
-        LOG("Failed to read from {} (wrong mode)\n", Name);
+        LOG("Reading from {} is not allowed. The file must be opened in read mode.\n", m_Name);
         return nullptr;
     }
 
-    pBuffer = fgets(pBuffer, SizeInBytes, Handle);
+    if (IsFileSystem())
+    {
+        pBuffer = fgets(pBuffer, SizeInBytes, m_Handle);
 
-    RWOffset = ftell(Handle);
+        m_RWOffset = ftell(m_Handle);
+    }
+    else
+    {
+        if (SizeInBytes == 0 || m_RWOffset >= m_FileSize)
+        {
+            return nullptr;
+        }
+
+        size_t maxChars = SizeInBytes - 1;
+        if (m_RWOffset + maxChars > m_FileSize)
+        {
+            maxChars = m_FileSize - m_RWOffset;
+        }
+
+        char *memoryPointer, *memory = (char*)&m_pHeapPtr[m_RWOffset];
+        char* stringPointer = pBuffer;
+
+        for (memoryPointer = memory; memoryPointer < &memory[maxChars]; memoryPointer++)
+        {
+            if (*memoryPointer == '\n')
+            {
+                *stringPointer++ = *memoryPointer++;
+                break;
+            }
+            *stringPointer++ = *memoryPointer;
+        }
+
+        *stringPointer = '\0';
+        m_RWOffset += memoryPointer - memory;
+    }
 
     return pBuffer;
 }
 
-void AFileStream::Flush()
+void AFile::Flush()
 {
-    fflush(Handle);
-}
-
-size_t AFileStream::GetOffset() const
-{
-    return RWOffset;
-}
-
-#define HasFileSize() (FileSize != ~0ull)
-
-bool AFileStream::SeekSet(int32_t Offset)
-{
-    RWOffset = std::max(int32_t{0}, Offset);
-
-    if (HasFileSize())
+    if (IsFileSystem() && IsWritable())
     {
-        if (RWOffset > FileSize)
-            RWOffset = FileSize;
+        fflush(m_Handle);
     }
-
-    bool r = fseek(Handle, RWOffset, SEEK_SET) == 0;
-    if (!r)
-        RWOffset = ftell(Handle);
-
-    return r;
 }
 
-bool AFileStream::SeekCur(int32_t Offset)
+size_t AFile::GetOffset() const
 {
-    bool r;
+    return m_RWOffset;
+}
 
-    if (Offset < 0 && -Offset > RWOffset)
-    {
-        // Rewind
-        RWOffset = 0;
+#define HasFileSize() (m_FileSize != ~0ull)
 
-        r = fseek(Handle, 0, SEEK_SET) == 0;
-    }
-    else
+bool AFile::SeekSet(int32_t Offset)
+{
+    if (!IsOpened())
+        return false;
+
+    m_RWOffset = std::max(int32_t{0}, Offset);
+
+    if (IsFileSystem())
     {
         if (HasFileSize())
         {
-            if (RWOffset + Offset > FileSize)
-            {
-                Offset = FileSize - RWOffset;
-            }
+            if (m_RWOffset > m_FileSize)
+                m_RWOffset = m_FileSize;
         }
 
-        RWOffset += Offset;
+        bool r = fseek(m_Handle, m_RWOffset, SEEK_SET) == 0;
+        if (!r)
+            m_RWOffset = ftell(m_Handle);
 
-        r = fseek(Handle, Offset, SEEK_CUR) == 0;
+        return r;
     }
-
-    if (!r)
+    else
     {
-        RWOffset = ftell(Handle);
+        if (m_RWOffset > m_FileSize)
+            m_RWOffset = m_FileSize;
+        return true;
     }
-
-    return r;
 }
 
-bool AFileStream::SeekEnd(int32_t Offset)
+bool AFile::SeekCur(int32_t Offset)
 {
-    bool r;
+    if (!IsOpened())
+        return false;
 
-    if (Offset >= 0)
+    if (IsFileSystem())
     {
-        Offset = 0;
+        bool r;
 
-        r = fseek(Handle, 0, SEEK_END) == 0;
-
-        if (r && HasFileSize())
+        if (Offset < 0 && -Offset > m_RWOffset)
         {
-            RWOffset = FileSize;
+            // Rewind
+            m_RWOffset = 0;
+
+            r = fseek(m_Handle, 0, SEEK_SET) == 0;
         }
         else
         {
-            RWOffset = ftell(Handle);
-            if (r)
-                FileSize = RWOffset;
+            if (HasFileSize())
+            {
+                if (m_RWOffset + Offset > m_FileSize)
+                {
+                    Offset = m_FileSize - m_RWOffset;
+                }
+            }
+
+            m_RWOffset += Offset;
+
+            r = fseek(m_Handle, Offset, SEEK_CUR) == 0;
+        }
+
+        if (!r)
+        {
+            m_RWOffset = ftell(m_Handle);
         }
 
         return r;
     }
-
-    if (HasFileSize() && -Offset >= FileSize)
+    else
     {
-        // Rewind
-        RWOffset = 0;
-        r        = fseek(Handle, 0, SEEK_SET) == 0;
+        if (Offset < 0 && -Offset > m_RWOffset)
+        {
+            m_RWOffset = 0;
+        }
+        else
+        {
+            size_t prevOffset = m_RWOffset;
+            m_RWOffset += Offset;
+            if (m_RWOffset > m_FileSize || (Offset > 0 && prevOffset > m_RWOffset))
+                m_RWOffset = m_FileSize;
+        }
+        return true;
+    }
+}
 
-        if (!r)
-            RWOffset = ftell(Handle);
+bool AFile::SeekEnd(int32_t Offset)
+{
+    if (!IsOpened())
+        return false;
+
+    if (IsFileSystem())
+    {
+        bool r;
+
+        if (Offset >= 0)
+        {
+            Offset = 0;
+
+            r = fseek(m_Handle, 0, SEEK_END) == 0;
+
+            if (r && HasFileSize())
+            {
+                m_RWOffset = m_FileSize;
+            }
+            else
+            {
+                m_RWOffset = ftell(m_Handle);
+                if (r)
+                    m_FileSize = m_RWOffset;
+            }
+
+            return r;
+        }
+
+        if (HasFileSize() && -Offset >= m_FileSize)
+        {
+            // Rewind
+            m_RWOffset = 0;
+            r          = fseek(m_Handle, 0, SEEK_SET) == 0;
+
+            if (!r)
+                m_RWOffset = ftell(m_Handle);
+
+            return r;
+        }
+
+        r          = fseek(m_Handle, Offset, SEEK_END) == 0;
+        m_RWOffset = ftell(m_Handle);
 
         return r;
     }
-
-    r = fseek(Handle, Offset, SEEK_END) == 0;
-    RWOffset = ftell(Handle);
-
-    return r;
-}
-
-size_t AFileStream::SizeInBytes() const
-{
-    if (!HasFileSize())
+    else
     {
-        fseek(Handle, 0, SEEK_END);
-        FileSize = ftell(Handle);
-        fseek(Handle, RWOffset, SEEK_SET);
+        if (Offset >= 0)
+            m_RWOffset = m_FileSize;
+        else if (-Offset > m_FileSize)
+            m_RWOffset = 0;
+        else
+            m_RWOffset = m_FileSize + Offset;
+        return true;
     }
-    return FileSize;
 }
 
-bool AFileStream::Eof() const
+size_t AFile::SizeInBytes() const
 {
-    return feof(Handle) != 0;
+    if (!IsOpened())
+        return 0;
+
+    if (IsFileSystem())
+    {
+        if (!HasFileSize())
+        {
+            fseek(m_Handle, 0, SEEK_END);
+            m_FileSize = ftell(m_Handle);
+            fseek(m_Handle, m_RWOffset, SEEK_SET);
+        }
+    }
+    return m_FileSize;
 }
 
-AMemoryStream::~AMemoryStream()
+bool AFile::Eof() const
 {
-    Close();
+    if (!IsOpened())
+        return false;
+
+    if (IsFileSystem())
+        return feof(m_Handle) != 0;
+    else
+        return m_RWOffset >= m_FileSize;
 }
 
-void* AMemoryStream::Alloc(size_t SizeInBytes)
+void* AFile::Alloc(size_t SizeInBytes)
 {
     return Platform::GetHeapAllocator<HEAP_MISC>().Alloc(SizeInBytes, 16);
 }
 
-void* AMemoryStream::Realloc(void* pMemory, size_t SizeInBytes)
+void* AFile::Realloc(void* pMemory, size_t SizeInBytes)
 {
     return Platform::GetHeapAllocator<HEAP_MISC>().Realloc(pMemory, SizeInBytes, 16);
 }
 
-void AMemoryStream::Free(void* pMemory)
+void AFile::Free(void* pMemory)
 {
     Platform::GetHeapAllocator<HEAP_MISC>().Free(pMemory);
 }
 
-bool AMemoryStream::OpenRead(AStringView FileName, const void* pMemoryBuffer, size_t SizeInBytes)
+AFile AFile::OpenRead(AStringView FileName, const void* pMemoryBuffer, size_t SizeInBytes)
 {
-    Close();
+    AFile f;
 
-    Name               = FileName;
-    Mode               = FILE_OPEN_MODE_READ;
-    pHeapPtr           = reinterpret_cast<byte*>(const_cast<void*>(pMemoryBuffer));
-    HeapSize           = SizeInBytes;
-    ReservedSize       = SizeInBytes;
-    bMemoryBufferOwner = false;
-    return true;
+    f.m_Name               = FileName;
+    f.m_Type               = FILE_TYPE_READ_MEMORY;
+    f.m_pHeapPtr           = reinterpret_cast<byte*>(const_cast<void*>(pMemoryBuffer));
+    f.m_FileSize           = SizeInBytes;
+    f.m_ReservedSize       = SizeInBytes;
+    f.m_bMemoryBufferOwner = false;
+
+    return f;
 }
 
-bool AMemoryStream::OpenRead(AStringView FileName, AArchive const& Archive)
+AFile AFile::OpenRead(AStringView FileName, AArchive const& Archive)
 {
-    Close();
+    AFile f;
 
-    if (!Archive.ExtractFileToHeapMemory(FileName, (void**)&pHeapPtr, &HeapSize, Platform::GetHeapAllocator<HEAP_MISC>()))
+    if (!Archive.ExtractFileToHeapMemory(FileName, (void**)&f.m_pHeapPtr, &f.m_FileSize, Platform::GetHeapAllocator<HEAP_MISC>()))
     {
         LOG("Couldn't open {}\n", FileName);
-        return false;
+        return {};
     }
 
-    Name               = FileName;
-    Mode               = FILE_OPEN_MODE_READ;
-    ReservedSize       = HeapSize;
-    bMemoryBufferOwner = true;
-    
-    return true;
+    f.m_Name               = FileName;
+    f.m_Type               = FILE_TYPE_READ_MEMORY;
+    f.m_ReservedSize       = f.m_FileSize;
+    f.m_bMemoryBufferOwner = true;
+
+    return f;
 }
 
-bool AMemoryStream::OpenRead(int FileIndex, AArchive const& Archive)
+AFile AFile::OpenRead(int FileIndex, AArchive const& Archive)
 {
-    Close();
+    AFile f;
 
-    Archive.GetFileName(FileIndex, Name);
+    Archive.GetFileName(FileIndex, f.m_Name);
 
-    if (!Archive.ExtractFileToHeapMemory(FileIndex, (void**)&pHeapPtr, &HeapSize, Platform::GetHeapAllocator<HEAP_MISC>()))
+    if (!Archive.ExtractFileToHeapMemory(FileIndex, (void**)&f.m_pHeapPtr, &f.m_FileSize, Platform::GetHeapAllocator<HEAP_MISC>()))
     {
-        LOG("Couldn't open {}\n", Name);
-        Name.Clear();
-        return false;
+        LOG("Couldn't open {}\n", f.m_Name);
+        return {};
     }
 
-    Mode               = FILE_OPEN_MODE_READ;
-    ReservedSize       = HeapSize;
-    bMemoryBufferOwner = true;
+    f.m_Type               = FILE_TYPE_READ_MEMORY;
+    f.m_ReservedSize       = f.m_FileSize;
+    f.m_bMemoryBufferOwner = true;
 
-    return true;
+    return f;
 }
 
-bool AMemoryStream::OpenWrite(AStringView FileName, void* pMemoryBuffer, size_t SizeInBytes)
+AFile AFile::OpenWrite(AStringView StreamName, void* pMemoryBuffer, size_t SizeInBytes)
 {
-    Close();
+    AFile f;
 
-    Name               = FileName;
-    Mode               = FILE_OPEN_MODE_WRITE;
-    pHeapPtr           = reinterpret_cast<byte*>(pMemoryBuffer);
-    HeapSize           = 0;
-    ReservedSize       = SizeInBytes;
-    bMemoryBufferOwner = false;
-    
-    return true;
+    f.m_Name               = StreamName;
+    f.m_Type               = FILE_TYPE_WRITE_MEMORY;
+    f.m_pHeapPtr           = reinterpret_cast<byte*>(pMemoryBuffer);
+    f.m_FileSize           = 0;
+    f.m_ReservedSize       = SizeInBytes;
+    f.m_bMemoryBufferOwner = false;
+
+    return f;
 }
 
-bool AMemoryStream::OpenWrite(AStringView FileName, size_t _ReservedSize)
+AFile AFile::OpenWriteToMemory(AStringView StreamName, size_t _ReservedSize)
 {
-    Close();
+    AFile f;
 
-    Name               = FileName;
-    Mode               = FILE_OPEN_MODE_WRITE;
-    pHeapPtr           = (byte*)Alloc(_ReservedSize);
-    HeapSize           = 0;
-    ReservedSize       = _ReservedSize;
-    bMemoryBufferOwner = true;
-    
-    return true;
+    f.m_Name               = StreamName;
+    f.m_Type               = FILE_TYPE_WRITE_MEMORY;
+    f.m_pHeapPtr           = (byte*)Alloc(_ReservedSize);
+    f.m_FileSize           = 0;
+    f.m_ReservedSize       = _ReservedSize;
+    f.m_bMemoryBufferOwner = true;
+
+    return f;
 }
 
-void AMemoryStream::Close()
+size_t AFile::GetMemoryReservedSize() const
 {
-    if (Mode == FILE_OPEN_MODE_CLOSED)
-    {
-        return;
-    }
-
-    Name.Clear();
-    Mode = FILE_OPEN_MODE_CLOSED;
-
-    if (bMemoryBufferOwner)
-    {
-        Free(pHeapPtr);
-    }
-
-    pHeapPtr           = nullptr;
-    HeapSize           = 0;
-    ReservedSize       = 0;
-    RWOffset           = 0;
-    bMemoryBufferOwner = true;
+    return m_ReservedSize;
 }
 
-AString const& AMemoryStream::GetFileName() const
+void* AFile::GetHeapPtr()
 {
-    return Name;
-}
-
-size_t AMemoryStream::Read(void* pBuffer, size_t SizeInBytes)
-{
-    if (Mode != FILE_OPEN_MODE_READ)
-    {
-        LOG("Failed to read from {} (wrong mode)\n", Name);
-        return 0;
-    }
-
-    size_t bytesToRead = std::min(SizeInBytes, HeapSize - RWOffset);
-
-    Platform::Memcpy(pBuffer, pHeapPtr + RWOffset, bytesToRead);
-    RWOffset += bytesToRead;
-
-    SizeInBytes -= bytesToRead;
-    if (SizeInBytes)
-        Platform::ZeroMem((uint8_t*)pBuffer + bytesToRead, SizeInBytes);
-
-    return bytesToRead;
-}
-
-size_t AMemoryStream::Write(const void* pBuffer, size_t SizeInBytes)
-{
-    if (Mode != FILE_OPEN_MODE_WRITE)
-    {
-        LOG("Failed to write {} (wrong mode)\n", Name);
-        return 0;
-    }
-
-    size_t requiredSize = RWOffset + SizeInBytes;
-    if (requiredSize > ReservedSize)
-    {
-        if (!bMemoryBufferOwner)
-        {
-            LOG("Failed to write {} (buffer overflowed)\n", Name);
-            return 0;
-        }
-        const int mod = requiredSize % Granularity;
-        ReservedSize  = mod ? requiredSize + Granularity - mod : requiredSize;
-        pHeapPtr      = (byte*)Realloc(pHeapPtr, ReservedSize);
-    }
-    Platform::Memcpy(pHeapPtr + RWOffset, pBuffer, SizeInBytes);
-    RWOffset += SizeInBytes;
-    HeapSize = std::max(HeapSize, RWOffset);
-    return SizeInBytes;
-}
-
-char* AMemoryStream::Gets(char* pBuffer, size_t SizeInBytes)
-{
-    if (Mode != FILE_OPEN_MODE_READ)
-    {
-        LOG("Failed to read from {} (wrong mode)\n", Name);
+    if (IsFileSystem())
         return nullptr;
-    }
-
-    if (SizeInBytes == 0 || RWOffset >= HeapSize)
-    {
-        return nullptr;
-    }
-
-    size_t maxChars = SizeInBytes - 1;
-    if (RWOffset + maxChars > HeapSize)
-    {
-        maxChars = HeapSize - RWOffset;
-    }
-
-    char *memoryPointer, *memory = (char*)&pHeapPtr[RWOffset];
-    char* stringPointer = pBuffer;
-
-    for (memoryPointer = memory; memoryPointer < &memory[maxChars]; memoryPointer++)
-    {
-        if (*memoryPointer == '\n')
-        {
-            *stringPointer++ = *memoryPointer++;
-            break;
-        }
-        *stringPointer++ = *memoryPointer;
-    }
-
-    *stringPointer = '\0';
-    RWOffset += memoryPointer - memory;
-
-    return pBuffer;
-}
-
-void AMemoryStream::Flush()
-{
-    // nop
-}
-
-size_t AMemoryStream::GetOffset() const
-{
-    return RWOffset;
-}
-
-bool AMemoryStream::SeekSet(int32_t Offset)
-{
-    Offset = std::max(int32_t{0}, Offset);
-    if (Offset > HeapSize)
-        Offset = HeapSize;
-    RWOffset = Offset;
-    return true;
-}
-
-bool AMemoryStream::SeekCur(int32_t Offset)
-{
-    if (Offset < 0 && -Offset > RWOffset)
-    {
-        RWOffset = 0;
-    }
-    else
-    {
-        size_t prevOffset = RWOffset;
-        RWOffset += Offset;
-        if (RWOffset > HeapSize || (Offset > 0 && prevOffset > RWOffset))
-            RWOffset = HeapSize;
-    }
-    return true;
-}
-
-bool AMemoryStream::SeekEnd(int32_t Offset)
-{
-    if (Offset >= 0)
-        RWOffset = HeapSize;
-    else if (-Offset > HeapSize)
-        RWOffset = 0;
-    else
-        RWOffset = HeapSize + Offset;
-    return true;
-}
-
-size_t AMemoryStream::SizeInBytes() const
-{
-    return HeapSize;
-}
-
-size_t AMemoryStream::GetReservedSize() const
-{
-    return ReservedSize;
-}
-
-bool AMemoryStream::Eof() const
-{
-    return RWOffset >= HeapSize;
-}
-
-void* AMemoryStream::GetHeapPtr()
-{
-    return pHeapPtr;
-}
-
-
-AArchive::AArchive()
-{}
-
-AArchive::AArchive(AStringView ArchiveName, bool bResourcePack) :
-    AArchive()
-{
-    Open(ArchiveName, bResourcePack);
-}
-
-AArchive::AArchive(const void* pMemory, size_t SizeInBytes) :
-    AArchive()
-{
-    OpenFromMemory(pMemory, SizeInBytes);
+    return m_pHeapPtr;
 }
 
 AArchive::~AArchive()
@@ -639,20 +584,18 @@ AArchive::~AArchive()
     Close();
 }
 
-bool AArchive::Open(AStringView ArchiveName, bool bResourcePack)
+AArchive AArchive::Open(AStringView ArchiveName, bool bResourcePack)
 {
     mz_zip_archive arch;
     mz_uint64      fileStartOffset = 0;
     mz_uint64      archiveSize     = 0;
 
-    Close();
-
     if (bResourcePack)
     {
-        AFileStream f;
-        if (!f.OpenRead(ArchiveName))
+        AFile f = AFile::OpenRead(ArchiveName);
+        if (!f)
         {
-            return false;
+            return {};
         }
 
         uint64_t    magic = f.ReadUInt64();
@@ -660,7 +603,7 @@ bool AArchive::Open(AStringView ArchiveName, bool bResourcePack)
         if (std::memcmp(&magic, MAGIC, sizeof(uint64_t)) != 0)
         {
             LOG("Invalid file format {}\n", ArchiveName);
-            return false;
+            return {};
         }
 
         fileStartOffset += sizeof(magic);
@@ -673,22 +616,21 @@ bool AArchive::Open(AStringView ArchiveName, bool bResourcePack)
     if (!status)
     {
         LOG("Couldn't open archive {}\n", ArchiveName);
-        return false;
+        return {};
     }
 
-    Handle = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(mz_zip_archive));
-    Platform::Memcpy(Handle, &arch, sizeof(arch));
+    AArchive archive;
+    archive.m_Handle = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(mz_zip_archive));
+    Platform::Memcpy(archive.m_Handle, &arch, sizeof(arch));
 
     // Keep pointer valid
-    ((mz_zip_archive*)Handle)->m_pIO_opaque = Handle;
+    ((mz_zip_archive*)archive.m_Handle)->m_pIO_opaque = archive.m_Handle;
 
-    return true;
+    return archive;
 }
 
-bool AArchive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
+AArchive AArchive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
 {
-    Close();
-
     mz_zip_archive arch;
 
     Platform::ZeroMem(&arch, sizeof(arch));
@@ -697,39 +639,40 @@ bool AArchive::OpenFromMemory(const void* pMemory, size_t SizeInBytes)
     if (!status)
     {
         LOG("Couldn't open archive from memory\n");
-        return false;
+        return {};
     }
 
-    Handle = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(mz_zip_archive));
-    Platform::Memcpy(Handle, &arch, sizeof(arch));
+    AArchive archive;
+    archive.m_Handle = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(mz_zip_archive));
+    Platform::Memcpy(archive.m_Handle, &arch, sizeof(arch));
 
     // Keep pointer valid
-    ((mz_zip_archive*)Handle)->m_pIO_opaque = Handle;
+    ((mz_zip_archive*)archive.m_Handle)->m_pIO_opaque = archive.m_Handle;
 
-    return true;
+    return archive;
 }
 
 void AArchive::Close()
 {
-    if (!Handle)
+    if (!m_Handle)
     {
         return;
     }
 
-    mz_zip_reader_end((mz_zip_archive*)Handle);
+    mz_zip_reader_end((mz_zip_archive*)m_Handle);
 
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(Handle);
-    Handle = nullptr;
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(m_Handle);
+    m_Handle = nullptr;
 }
 
 int AArchive::GetNumFiles() const
 {
-    return mz_zip_reader_get_num_files((mz_zip_archive*)Handle);
+    return mz_zip_reader_get_num_files((mz_zip_archive*)m_Handle);
 }
 
 int AArchive::LocateFile(AStringView FileName) const
 {
-    return mz_zip_reader_locate_file((mz_zip_archive*)Handle, FileName.IsNullTerminated() ? FileName.Begin() : AString(FileName).CStr(), NULL, 0);
+    return mz_zip_reader_locate_file((mz_zip_archive*)m_Handle, FileName.IsNullTerminated() ? FileName.Begin() : AString(FileName).CStr(), NULL, 0);
 }
 
 #define MZ_ZIP_CDH_COMPRESSED_SIZE_OFS   20
@@ -740,7 +683,7 @@ int AArchive::LocateFile(AStringView FileName) const
 bool AArchive::GetFileSize(int FileIndex, size_t* pCompressedSize, size_t* pUncompressedSize) const
 {
     // All checks are processd in mz_zip_get_cdh
-    const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)Handle, FileIndex);
+    const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)m_Handle, FileIndex);
     if (!p)
     {
         return false;
@@ -761,7 +704,7 @@ bool AArchive::GetFileSize(int FileIndex, size_t* pCompressedSize, size_t* pUnco
 bool AArchive::GetFileName(int FileIndex, AString& FileName) const
 {
     // All checks are processd in mz_zip_get_cdh
-    const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)Handle, FileIndex);
+    const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)m_Handle, FileIndex);
     if (!p)
     {
         return false;
@@ -784,7 +727,7 @@ bool AArchive::GetFileName(int FileIndex, AString& FileName) const
 bool AArchive::ExtractFileToMemory(int FileIndex, void* pMemoryBuffer, size_t SizeInBytes) const
 {
     // All checks are processd in mz_zip_reader_extract_to_mem
-    return !!mz_zip_reader_extract_to_mem((mz_zip_archive*)Handle, FileIndex, pMemoryBuffer, SizeInBytes, 0);
+    return !!mz_zip_reader_extract_to_mem((mz_zip_archive*)m_Handle, FileIndex, pMemoryBuffer, SizeInBytes, 0);
 }
 
 bool AArchive::ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const
@@ -860,7 +803,7 @@ void CreateDirectory(AStringView Directory, bool bFileName)
     {
         return;
     }
-    const char* dir = Directory.ToPtr();
+    const char* dir    = Directory.ToPtr();
     char*       tmpStr = (char*)Platform::GetHeapAllocator<HEAP_TEMP>().Alloc(len + 1);
     Platform::Memcpy(tmpStr, dir, len + 1);
     char* p = tmpStr;
@@ -1012,7 +955,7 @@ void TraverseDirectory(AStringView Path, bool bSubDirs, STraverseDirectoryCB Cal
 
 bool WriteResourcePack(AStringView SourcePath, AStringView ResultFile)
 {
-    AString path = PathUtils::FixSeparator(SourcePath);
+    AString path   = PathUtils::FixSeparator(SourcePath);
     AString result = PathUtils::FixSeparator(ResultFile);
 
     LOG("==== WriteResourcePack ====\n"

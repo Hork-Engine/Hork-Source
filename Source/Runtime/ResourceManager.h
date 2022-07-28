@@ -42,7 +42,7 @@ public:
     void AddResourcePack(AStringView FileName);
 
     /** Find file in resource packs */
-    bool FindFile(AStringView FileName, AArchive** ppResourcePack, int* pFileIndex);
+    bool FindFile(AStringView FileName, int* pResourcePackIndex, int* pFileIndex) const;
 
     /** Get or create resource. Return default object if fails. */
     template <typename T>
@@ -99,12 +99,16 @@ public:
     /** Unregister all resources. */
     void UnregisterResources();
 
-    AArchive const* GetCommonResources() const { return CommonResources.GetObject(); }
+    TVector<AArchive> const& GetResourcePacks() const { return ResourcePacks; }
+    AArchive const& GetCommonResources() const { return CommonResources; }
+
+    bool  IsResourceExists(AStringView Path);
+    AFile OpenResource(AStringView Path);
 
 private:
-    TNameHash<AResource*>         ResourceCache;
-    TVector<TUniqueRef<AArchive>> ResourcePacks;
-    TUniqueRef<AArchive>          CommonResources;
+    TNameHash<AResource*> ResourceCache;
+    TVector<AArchive>     ResourcePacks;
+    AArchive              CommonResources;
 };
 
 

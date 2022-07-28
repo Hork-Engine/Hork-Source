@@ -291,8 +291,9 @@ static void TestIES(IE_DATA& PhotoData)
             data[y * w * 3 + x * 3 + 2] = c;
         }
     }
-    AFileStream f;
-    f.OpenWrite("ies.png");
+    AFile f = AFile::OpenWrite("ies.png");
+    if (!f)
+        return;
     WritePNG(f, w, h, 3, data);
     for (int y = 0; y < h; y++)
     {
@@ -309,7 +310,9 @@ static void TestIES(IE_DATA& PhotoData)
             data[y * w * 3 + x * 3 + 2] = c;
         }
     }
-    f.OpenWrite("ies_avg.png");
+    f = AFile::OpenWrite("ies_avg.png");
+    if (!f)
+        return;
     WritePNG(f, w, h, 3, data);
     float smin = Math::MaxValue<float>(), smax = Math::MinValue<float>();
     float linear[256];
@@ -357,7 +360,7 @@ static void TestIES(IE_DATA& PhotoData)
 
 bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    AString const& fn = Stream.GetFileName();
+    AString const& fn = Stream.GetName();
     AStringView extension = PathUtils::GetExt(fn);
 
     if (!extension.Icmp(".ies"))
@@ -375,12 +378,12 @@ bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
         };
         context.rewind = [](void* userData)
         {
-            AFileStream* f = (AFileStream*)userData;
+            IBinaryStreamReadInterface* f = (IBinaryStreamReadInterface*)userData;
             f->Rewind();
         };
         context.fgets = [](char* pbuf, size_t size, void* userData)
         {
-            AFileStream* f = (AFileStream*)userData;
+            IBinaryStreamReadInterface* f = (IBinaryStreamReadInterface*)userData;
             return f->Gets(pbuf, size);
         };
         context.userData = &Stream;

@@ -232,14 +232,10 @@ AString AShaderLoader::LoadShaderFromString(AStringView FileName, AStringView So
 
 bool AShaderLoader::LoadFile(AStringView FileName, AString& Source)
 {
+    AFile f;
     if (r_EmbeddedShaders)
     {
-        AMemoryStream f;
-        if (!f.OpenRead("Shaders/" + FileName, Runtime::GetEmbeddedResources()))
-        {
-            return false;
-        }
-        Source = f.AsString();
+        f = AFile::OpenRead("Shaders/" + FileName, Runtime::GetEmbeddedResources());
     }
     else
     {
@@ -249,13 +245,11 @@ bool AShaderLoader::LoadFile(AStringView FileName, AString& Source)
         fn += FileName;
         PathUtils::FixPathInplace(fn);
 
-        AFileStream f;
-        if (!f.OpenRead(fn))
-        {
-            return false;
-        }
-        Source = f.AsString();
+        f = AFile::OpenRead(fn);
     }
+    if (!f)
+        return false;
+    Source = f.AsString();
     return true;
 }
 

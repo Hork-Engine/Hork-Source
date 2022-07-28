@@ -1240,6 +1240,10 @@ ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMi
 ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags, TEXTURE_FORMAT Format)
 {
     using namespace TextureBlockCompression;
+
+    if (!Stream.IsValid())
+        return {};
+
     switch (Format)
     {
         case TEXTURE_FORMAT_UNDEFINED: {
@@ -1844,11 +1848,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
 ImageStorage CreateImage(AStringView FileName, ImageMipmapConfig const* pMipmapConfig, IMAGE_STORAGE_FLAGS Flags, TEXTURE_FORMAT Format)
 {
-    AFileStream stream;
-    if (!stream.OpenRead(FileName))
-        return {};
-
-    return CreateImage(stream, pMipmapConfig, Flags, Format);
+    return CreateImage(AFile::OpenRead(FileName).ReadInterface(), pMipmapConfig, Flags, Format);
 }
 
 ImageStorage LoadSkyboxImages(SkyboxImportSettings const& Settings)
@@ -2184,7 +2184,7 @@ ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t He
     HK_ASSERT(compress.ValidateFormat == source.GetFormat());
     if (compress.ValidateFormat != source.GetFormat())
     {
-        LOG("GenerateMipmapsAndCompressNormalMap: Uncompatible raw image format\n");
+        LOG("CreateNormalMap: Uncompatible raw image format\n");
         return {};
     }
 
@@ -2263,11 +2263,7 @@ ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK
 
 ImageStorage CreateNormalMap(AStringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
 {
-    AFileStream stream;
-    if (!stream.OpenRead(FileName))
-        return {};
-
-    return CreateNormalMap(FileName, Pack, bUseCompression, bConvertFromDirectXNormalMap, ResampleEdgeMode);
+    return CreateNormalMap(AFile::OpenRead(FileName).ReadInterface(), Pack, bUseCompression, bConvertFromDirectXNormalMap, ResampleEdgeMode);
 }
 
 ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, uint32_t Height, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter)
@@ -2408,7 +2404,7 @@ bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, Ima
             Float3 n = ((Float3*)averageNormals.GetData())[i];
 
             float r2 = n.LengthSqr();
-            if (r2 > 0.0f && r2 < 1.0f)
+            if (r2 > 1e-8f && r2 < 1.0f)
             {
                 #if 1
                 // vMF

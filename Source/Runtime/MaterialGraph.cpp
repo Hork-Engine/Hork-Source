@@ -2788,15 +2788,15 @@ static void GenerateBuiltinSource()
         builtin += format.Sprintf(builtin_saturate, VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i], VariableTypeStr[i]);
     }
 
-    AFileStream f;
-    f.OpenWrite("material_builtin.glsl");
-    f.Write(builtin.CStr(), builtin.Size());
+    AFile f = AFile::OpenWrite("material_builtin.glsl");
+    if (f)
+        f.Write(builtin.CStr(), builtin.Size());
 }
 
 static void WriteDebugShaders(TVector<SMaterialSource> const& Shaders)
 {
-    AFileStream f;
-    if (!f.OpenWrite("debug.glsl"))
+    AFile f = AFile::OpenWrite("debug.glsl");
+    if (!f)
     {
         return;
     }
@@ -3152,32 +3152,34 @@ void MGMaterialGraph::CreateStageTransitions(SMaterialStageTransition&    Transi
 #endif
 
 #if 0
-    AFileStream f;
-    if ( !f.OpenWrite( "debug2.glsl" ) ) {
-        return;
-    }
+    AFile f = AFile::OpenWrite("debug2.glsl");
+    if (f)
+    {
+        f.Printf("VERTEX VARYINGS:\n%s\n", VertexStage->OutputVaryingsCode.CStr());
 
-    f.Printf( "VERTEX VARYINGS:\n%s\n", VertexStage->OutputVaryingsCode.CStr() );
+        if (TessEvalStage && TessControlStage)
+        {
+            f.Printf("TCS INPUT VARYINGS:\n%s\n", TessControlStage->InputVaryingsCode.CStr());
+            f.Printf("TCS OUTPUT VARYINGS:\n%s\n", TessControlStage->OutputVaryingsCode.CStr());
+            f.Printf("TCS COPY VARYINGS:\n%s\n", TessControlStage->CopyVaryingsCode.CStr());
 
-    if ( TessEvalStage && TessControlStage ) {
-        f.Printf( "TCS INPUT VARYINGS:\n%s\n", TessControlStage->InputVaryingsCode.CStr() );
-        f.Printf( "TCS OUTPUT VARYINGS:\n%s\n", TessControlStage->OutputVaryingsCode.CStr() );
-        f.Printf( "TCS COPY VARYINGS:\n%s\n", TessControlStage->CopyVaryingsCode.CStr() );
+            f.Printf("TES INPUT VARYINGS:\n%s\n", TessEvalStage->InputVaryingsCode.CStr());
+            f.Printf("TES OUTPUT VARYINGS:\n%s\n", TessEvalStage->OutputVaryingsCode.CStr());
+            f.Printf("TES COPY VARYINGS:\n%s\n", TessEvalStage->CopyVaryingsCode.CStr());
+        }
 
-        f.Printf( "TES INPUT VARYINGS:\n%s\n", TessEvalStage->InputVaryingsCode.CStr() );
-        f.Printf( "TES OUTPUT VARYINGS:\n%s\n", TessEvalStage->OutputVaryingsCode.CStr() );
-        f.Printf( "TES COPY VARYINGS:\n%s\n", TessEvalStage->CopyVaryingsCode.CStr() );
-    }
+        if (GeometryStage)
+        {
+            f.Printf("GS INPUT VARYINGS:\n%s\n", GeometryStage->InputVaryingsCode.CStr());
+            f.Printf("GS OUTPUT VARYINGS:\n%s\n", GeometryStage->OutputVaryingsCode.CStr());
+            f.Printf("GS COPY VARYINGS:\n%s\n", GeometryStage->CopyVaryingsCode.CStr());
+        }
 
-    if ( GeometryStage ) {
-        f.Printf( "GS INPUT VARYINGS:\n%s\n", GeometryStage->InputVaryingsCode.CStr() );
-        f.Printf( "GS OUTPUT VARYINGS:\n%s\n", GeometryStage->OutputVaryingsCode.CStr() );
-        f.Printf( "GS COPY VARYINGS:\n%s\n", GeometryStage->CopyVaryingsCode.CStr() );
-    }
-
-    if ( FragmentStage ) {
-        f.Printf( "FS INPUT VARYINGS:\n%s\n", FragmentStage->InputVaryingsCode.CStr() );
-        f.Printf( "FS COPY VARYINGS:\n%s\n", FragmentStage->CopyVaryingsCode.CStr() );
+        if (FragmentStage)
+        {
+            f.Printf("FS INPUT VARYINGS:\n%s\n", FragmentStage->InputVaryingsCode.CStr());
+            f.Printf("FS COPY VARYINGS:\n%s\n", FragmentStage->CopyVaryingsCode.CStr());
+        }
     }
 #endif
 }
@@ -3932,6 +3934,9 @@ MGTextureSlot* MGMaterialGraph::GetTexture(uint32_t Slot)
 
 MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Stream)
 {
+    if (!Stream.IsValid())
+        return nullptr;
+
     AString documentData = Stream.AsString();
 
     SDocumentDeserializeInfo deserializeInfo;

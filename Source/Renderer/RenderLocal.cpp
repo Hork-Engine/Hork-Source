@@ -305,8 +305,8 @@ void SaveSnapshot(ITexture& _Texture)
     FlipImageY(data, w, h, numchannels, w * numchannels);
 
     static int  n = 0;
-    AFileStream f;
-    if (f.OpenWrite(HK_FORMAT("snapshots/{}.png", n++)))
+    AFile f = AFile::OpenWrite(HK_FORMAT("snapshots/{}.png", n++);
+    if (f)
     {
         WritePNG(f, w, h, numchannels, data, w * numchannels);
     }

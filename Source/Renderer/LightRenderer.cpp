@@ -139,15 +139,14 @@ static Float2 IntegrateBRDF( float NdotV, float roughness )
 
 void ALightRenderer::CreateLookupBRDF()
 {
-    AFileStream f;
-
     int sizeX = 512;
     int sizeY = 256; // enough for roughness
     int sizeInBytes = sizeX*sizeY*sizeof( Float2 );
 
     Float2 * data = (Float2 *)GHunkMemory.Alloc( sizeInBytes );
 
-    if ( !f.OpenRead( "brdf.bin" ) ) {
+    AFile f = AFile::OpenRead( "brdf.bin" );
+    if ( !f ) {
         Float2 * pdata = data;
         for ( int y = 1 ; y <= sizeY ; y++ ) {
             float v = float( y ) / (sizeY);
@@ -158,7 +157,8 @@ void ALightRenderer::CreateLookupBRDF()
         }
 
         // Debug image
-        //if ( f.OpenWrite( "brdf.png" ) ) {
+        //f = AFile::OpenWrite( "brdf.png" );
+        //if ( f ) {
         //    byte * b = (byte *)GHunkMemory.Alloc( sizeX*sizeY*3 );
         //    for ( int n = sizeX*sizeY, i = 0 ; i < n ; i++ ) {
         //        b[i*3] = Math::Saturate( data[i].X ) * 255;
@@ -169,7 +169,8 @@ void ALightRenderer::CreateLookupBRDF()
         //    GHunkMemory.ClearLastHunk();
         //}
 
-        if ( f.OpenWrite( "brdf.bin" ) ) {
+        f = AFile::OpenWrite( "brdf.bin" );
+        if ( f ) {
             f.WriteBuffer( data, sizeInBytes );
         }
     }

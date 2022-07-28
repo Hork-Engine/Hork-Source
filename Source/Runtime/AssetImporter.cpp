@@ -598,8 +598,8 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
     m_Path = PathUtils::GetFilePath(InSettings.ImportFile);
     m_Path += "/";
 
-    AFileStream f;
-    if (!f.OpenRead(Source))
+    AFile f = AFile::OpenRead(Source);
+    if (!f)
     {
         LOG("Couldn't open {}\n", Source);
         return false;
@@ -1830,7 +1830,6 @@ void AAssetImporter::WriteTextures()
 
 void AAssetImporter::WriteTexture(TextureInfo& tex)
 {
-    AFileStream f;
     AString     fileName       = GeneratePhysicalPath(tex.Image->name && *tex.Image->name ? tex.Image->name : "texture", ".texture");
     AString     sourceFileName = m_Path + tex.Image->uri;
     AString     fileSystemPath = GEngine->GetRootPath() + fileName;
@@ -1844,7 +1843,8 @@ void AAssetImporter::WriteTexture(TextureInfo& tex)
     if (!image)
         return;
 
-    if (!f.OpenWrite(fileSystemPath))
+    AFile f = AFile::OpenWrite(fileSystemPath);
+    if (!f)
     {
         LOG("Failed to write {}\n", fileName);
         return;
@@ -1870,11 +1870,11 @@ void AAssetImporter::WriteMaterials()
 
 void AAssetImporter::WriteMaterial(MaterialInfo const& m)
 {
-    AFileStream f;
     AString     fileName       = GeneratePhysicalPath("matinst", ".minst");
     AString     fileSystemPath = GEngine->GetRootPath() + fileName;
 
-    if (!f.OpenWrite(fileSystemPath))
+    AFile f = AFile::OpenWrite(fileSystemPath);
+    if (!f)
     {
         LOG("Failed to write {}\n", fileName);
         return;
@@ -1967,11 +1967,11 @@ void AAssetImporter::WriteSkeleton()
 {
     if (!m_Joints.IsEmpty())
     {
-        AFileStream f;
         AString     fileName       = GeneratePhysicalPath("skeleton", ".skeleton");
         AString     fileSystemPath = GEngine->GetRootPath() + fileName;
 
-        if (!f.OpenWrite(fileSystemPath))
+        AFile f = AFile::OpenWrite(fileSystemPath);
+        if (!f)
         {
             LOG("Failed to write {}\n", fileName);
             return;
@@ -1997,11 +1997,11 @@ void AAssetImporter::WriteAnimations()
 
 void AAssetImporter::WriteAnimation(AnimationInfo const& Animation)
 {
-    AFileStream f;
     AString     fileName       = GeneratePhysicalPath(Animation.Name, ".animation");
     AString     fileSystemPath = GEngine->GetRootPath() + fileName;
 
-    if (!f.OpenWrite(fileSystemPath))
+    AFile f = AFile::OpenWrite(fileSystemPath);
+    if (!f)
     {
         LOG("Failed to write {}\n", fileName);
         return;
@@ -2024,11 +2024,11 @@ void AAssetImporter::WriteSingleModel()
         return;
     }
 
-    AFileStream f;
     AString     fileName       = GeneratePhysicalPath("mesh", ".mesh_data");
     AString     fileSystemPath = GEngine->GetRootPath() + fileName;
 
-    if (!f.OpenWrite(fileSystemPath))
+    AFile f = AFile::OpenWrite(fileSystemPath);
+    if (!f)
     {
         LOG("Failed to write {}\n", fileName);
         return;
@@ -2136,7 +2136,8 @@ void AAssetImporter::WriteSingleModel()
     fileName       = GeneratePhysicalPath("mesh", ".mesh");
     fileSystemPath = GEngine->GetRootPath() + fileName;
 
-    if (!f.OpenWrite(fileSystemPath))
+    f = AFile::OpenWrite(fileSystemPath);
+    if (!f)
     {
         LOG("Failed to write {}\n", fileName);
         return;
@@ -2170,11 +2171,11 @@ void AAssetImporter::WriteMeshes()
 
 void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
 {
-    AFileStream f;
     AString     fileName       = GeneratePhysicalPath(Mesh.Mesh->name ? Mesh.Mesh->name : "mesh", ".mesh_data");
     AString     fileSystemPath = GEngine->GetRootPath() + fileName;
 
-    if (!f.OpenWrite(fileSystemPath))
+    AFile f = AFile::OpenWrite(fileSystemPath);
+    if (!f)
     {
         LOG("Failed to write {}\n", fileName);
         return;
@@ -2263,7 +2264,8 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
     fileName       = GeneratePhysicalPath("mesh", ".mesh");
     fileSystemPath = GEngine->GetRootPath() + fileName;
 
-    if (!f.OpenWrite(fileSystemPath))
+    f = AFile::OpenWrite(fileSystemPath);
+    if (!f)
     {
         LOG("Failed to write {}\n", fileName);
         return;
@@ -2344,9 +2346,8 @@ bool ImportEnvironmentMapForSkybox(ImageStorage const& Skybox, AStringView Envma
     HK_ASSERT(IrradianceMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
     HK_ASSERT(ReflectionMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
 
-    AFileStream f;
-
-    if (!f.OpenWrite(EnvmapFile))
+    AFile f = AFile::OpenWrite(EnvmapFile);
+    if (!f)
     {
         LOG("Failed to write {}\n", EnvmapFile);
         return false;
@@ -2445,8 +2446,7 @@ ImageStorage GenerateAtmosphereSkybox(uint32_t Resolution, Float3 const& LightDi
 
         //DecompressBC6h(subresource.GetData(), blob.GetData(), width, width, false);
 
-        //AFileStream f;
-        //f.OpenWrite(HK_FORMAT("Face{}.exr", faceNum));
+        //AFile f = AFile::OpenWrite(HK_FORMAT("Face{}.exr", faceNum));
         //WriteEXR(f, width, width, 3, (const float*)blob.GetData(), true);
     }
     return storage;
@@ -2460,9 +2460,8 @@ bool SaveSkyboxTexture(AStringView FileName, ImageStorage& Image)
         return false;
     }
 
-    AFileStream f;
-
-    if (!f.OpenWrite(FileName))
+    AFile f = AFile::OpenWrite(FileName);
+    if (!f)
     {
         LOG("Failed to write {}\n", FileName);
         return false;
@@ -2495,11 +2494,11 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
     if (!image)
         return false;
 
-    AFileStream f;
     AString     fileName       = GeneratePhysicalPath("texture", ".texture");
     AString     fileSystemPath = GEngine->GetRootPath() + fileName;
 
-    if (!f.OpenWrite(fileSystemPath))
+    AFile f = AFile::OpenWrite(fileSystemPath);
+    if (!f)
     {
         LOG("Failed to write {}\n", fileName);
         return false;
@@ -2526,11 +2525,11 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
 
 void AAssetImporter::WriteSkyboxMaterial(AStringView SkyboxTexture)
 {
-    AFileStream f;
     AString     fileName       = GeneratePhysicalPath("matinst", ".minst");
     AString     fileSystemPath = GEngine->GetRootPath() + fileName;
 
-    if (!f.OpenWrite(fileSystemPath))
+    AFile f = AFile::OpenWrite(fileSystemPath);
+    if (!f)
     {
         LOG("Failed to write {}\n", fileName);
         return;

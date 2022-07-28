@@ -135,8 +135,8 @@ void AEngine::LoadConfigFile()
 {
     AString configFile = GetRootPath() + "config.cfg";
 
-    AFileStream f;
-    if (f.OpenRead(configFile))
+    AFile f = AFile::OpenRead(configFile);
+    if (f)
     {
         CommandProcessor.Add(f.AsString());
 
@@ -954,7 +954,7 @@ RenderCore::IDevice* AEngine::GetRenderDevice()
 extern "C" const size_t   EmbeddedResources_Size;
 extern "C" const uint64_t EmbeddedResources_Data[];
 
-static TUniqueRef<AArchive> EmbeddedResourcesArch;
+static AArchive EmbeddedResourcesArch;
 
 namespace Runtime
 {
@@ -962,13 +962,13 @@ AArchive const& GetEmbeddedResources()
 {
     if (!EmbeddedResourcesArch)
     {
-        EmbeddedResourcesArch = MakeUnique<AArchive>();
-        if (!EmbeddedResourcesArch->OpenFromMemory(EmbeddedResources_Data, EmbeddedResources_Size))
+        EmbeddedResourcesArch = AArchive::OpenFromMemory(EmbeddedResources_Data, EmbeddedResources_Size);
+        if (!EmbeddedResourcesArch)
         {
             LOG("Failed to open embedded resources\n");
         }
     }
-    return *EmbeddedResourcesArch.GetObject();
+    return EmbeddedResourcesArch;
 }
 } // namespace Runtime
 
@@ -1001,7 +1001,7 @@ void RunEngine(int _Argc, char** _Argv, SEntryDecl const& EntryDecl)
 
     MakeUnique<AEngine>()->Run(EntryDecl);
 
-    EmbeddedResourcesArch.Reset();
+    EmbeddedResourcesArch.Close();
 
     AConsoleVar::FreeVariables();
 

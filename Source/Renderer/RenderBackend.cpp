@@ -175,43 +175,6 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
         VXGIVoxelizer vox;
         vox.Render();
     }
-
-    TRef<ITexture> skybox;
-    {
-        AAtmosphereRenderer atmosphereRenderer;
-        atmosphereRenderer.Render(512, Float3(-0.5f, -2, -10), &skybox);
-#if 0
-        STextureRect rect = {};
-        rect.Dimension.X = rect.Dimension.Y = skybox->GetWidth();
-        rect.Dimension.Z = 1;
-
-        int hunkMark = GHunkMemory.SetHunkMark();
-        float * data = (float *)GHunkMemory.Alloc( 512*512*3*sizeof( *data ) );
-        //byte * ucdata = (byte *)GHunkMemory.Alloc( 512*512*3 );
-        for ( int i = 0 ; i < 6 ; i++ ) {
-            rect.Offset.Z = i;
-            skybox->ReadRect( rect, FORMAT_FLOAT3, 512*512*3*sizeof( *data ), 1, data ); // TODO: check half float
-
-            //FlipImageY( data, 512, 512, 3*sizeof(*data), 512*3*sizeof( *data ) );
-
-            for ( int p = 0; p<512*512*3; p += 3 ) {
-                std::swap( data[p], data[p+2] );
-                //ucdata[p] = Math::Clamp( data[p] * 255.0f, 0.0f, 255.0f );
-                //ucdata[p+1] = Math::Clamp( data[p+1] * 255.0f, 0.0f, 255.0f );
-                //ucdata[p+2] = Math::Clamp( data[p+2] * 255.0f, 0.0f, 255.0f );
-            }
-
-            AFileStream f;
-            //f.OpenWrite( Platform::Fmt( "skyface%d.png", i ) );
-            //WritePNG( f, rect.Dimension.X, rect.Dimension.Y, 3, ucdata, rect.Dimension.X * 3 );
-
-            f.OpenWrite( Platform::Fmt( "xskyface%d.hdr", i ) );
-            WriteHDR( f, rect.Dimension.X, rect.Dimension.Y, 3, data );
-        }
-        GHunkMemory.ClearToMark( hunkMark );
-#endif
-    }
-
     #endif
 
     #if 0

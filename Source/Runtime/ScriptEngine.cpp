@@ -2506,8 +2506,8 @@ void AScriptEngine::MessageCallback(asSMessageInfo const& msg)
 
 static int LoadScript(const char* SourceFileName, const char* IncludedFrom, CScriptBuilder* pBuilder)
 {
-    AFileStream f;
-    if (!f.OpenRead(SourceFileName))
+    AFile f = AFile::OpenRead(SourceFileName);
+    if (!f)
         return -1;
 
     return pBuilder->AddSectionFromMemory(SourceFileName, f.AsString().CStr());

@@ -108,9 +108,8 @@ bool AMaterial::LoadResource(IBinaryStreamReadInterface& Stream)
 
 bool WriteMaterial(AString const& Path, ACompiledMaterial const* pCompiledMaterial)
 {
-    AFileStream f;
-
-    if (!f.OpenWrite(Path))
+    AFile f = AFile::OpenWrite(Path);
+    if (!f)
     {
         return false;
     }

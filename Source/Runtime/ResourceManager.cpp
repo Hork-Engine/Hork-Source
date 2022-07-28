@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "ResourceManager.h"
 #include "GameModule.h"
+#include "EmbeddedResources.h"
 #include <Platform/Logger.h>
 
 AResourceManager::AResourceManager()
@@ -48,8 +49,7 @@ AResourceManager::AResourceManager()
                                 }
                             });
 
-    CommonResources = MakeUnique<AArchive>();
-    CommonResources->Open("common.resources", true);
+    CommonResources = AArchive::Open("common.resources", true);
 }
 
 AResourceManager::~AResourceManager()
@@ -63,23 +63,23 @@ AResourceManager::~AResourceManager()
 
 void AResourceManager::AddResourcePack(AStringView FileName)
 {
-    ResourcePacks.EmplaceBack<TUniqueRef<AArchive>>(MakeUnique<AArchive>(FileName, true));
+    ResourcePacks.EmplaceBack<AArchive>(AArchive::Open(FileName, true));
 }
 
-bool AResourceManager::FindFile(AStringView FileName, AArchive** ppResourcePack, int* pFileIndex)
+bool AResourceManager::FindFile(AStringView FileName, int* pResourcePackIndex, int* pFileIndex) const
 {
-    *ppResourcePack = nullptr;
-    *pFileIndex     = -1;
+    *pResourcePackIndex = -1;
+    *pFileIndex         = -1;
 
     for (int i = ResourcePacks.Size() - 1; i >= 0; i--)
     {
-        TUniqueRef<AArchive>& pack = ResourcePacks[i];
+        AArchive const& pack = ResourcePacks[i];
 
-        int index = pack->LocateFile(FileName);
+        int index = pack.LocateFile(FileName);
         if (index != -1)
         {
-            *ppResourcePack = pack.GetObject();
-            *pFileIndex     = index;
+            *pResourcePackIndex = i;
+            *pFileIndex         = index;
             return true;
         }
     }
@@ -268,4 +268,128 @@ void AResourceManager::UnregisterResources()
         resource->RemoveRef();
     }
     ResourceCache.Clear();
+}
+
+bool AResourceManager::IsResourceExists(AStringView Path)
+{
+    if (!Path.IcmpN("/Default/", 9))
+    {
+        return false;
+    }
+
+    if (!Path.IcmpN("/Root/", 6))
+    {
+        Path = Path.TruncateHead(6);
+
+        // find in file system
+        AString fileSystemPath = GEngine->GetRootPath() + Path;
+        if (Core::IsFileExists(fileSystemPath))
+            return true;
+
+        // find in resource pack
+        int resourcePack;
+        int fileIndex;
+        if (FindFile(Path, &resourcePack, &fileIndex))
+            return true;
+
+        return false;
+    }
+
+    if (!Path.IcmpN("/Common/", 8))
+    {
+        Path = Path.TruncateHead(1);
+
+        // find in file system
+        if (Core::IsFileExists(Path))
+            return true;
+
+        Path = Path.TruncateHead(7);
+
+        // find in resource pack
+        if (CommonResources.LocateFile(Path) < 0)
+            return false;
+
+        return true;
+    }
+
+    if (!Path.IcmpN("/FS/", 4))
+    {
+        Path = Path.TruncateHead(4);
+
+        if (Core::IsFileExists(Path))
+            return true;
+
+        return false;
+    }
+
+    if (!Path.IcmpN("/Embedded/", 10))
+    {
+        Path = Path.TruncateHead(10);
+
+        AArchive const& archive = Runtime::GetEmbeddedResources();
+        if (archive.LocateFile(Path) < 0)
+            return false;
+
+        return true;
+    }
+
+    LOG("Invalid path \"{}\"\n", Path);
+    return false;
+}
+
+AFile AResourceManager::OpenResource(AStringView Path)
+{
+    if (!Path.IcmpN("/Root/", 6))
+    {
+        Path = Path.TruncateHead(6);
+
+        // try to load from file system
+        AString fileSystemPath = GEngine->GetRootPath() + Path;
+        if (Core::IsFileExists(fileSystemPath))
+        {
+            return AFile::OpenRead(fileSystemPath);
+        }
+
+        // try to load from resource pack
+        int resourcePack;
+        int fileIndex;
+        if (FindFile(Path, &resourcePack, &fileIndex))
+        {
+            return AFile::OpenRead(fileIndex, ResourcePacks[resourcePack]);
+        }
+
+        LOG("File not found /Root/{}\n", Path);
+        return {};
+    }
+
+    if (!Path.IcmpN("/Common/", 8))
+    {
+        Path = Path.TruncateHead(1);
+
+        // try to load from file system
+        if (Core::IsFileExists(Path))
+        {
+            return AFile::OpenRead(Path);
+        }
+
+        // try to load from resource pack
+        return AFile::OpenRead(Path.TruncateHead(7), CommonResources);
+    }
+
+    if (!Path.IcmpN("/FS/", 4))
+    {
+        Path = Path.TruncateHead(4);
+
+        return AFile::OpenRead(Path);
+    }
+
+    if (!Path.IcmpN("/Embedded/", 10))
+    {
+        Path = Path.TruncateHead(10);
+
+        return AFile::OpenRead(Path, Runtime::GetEmbeddedResources());
+    }
+
+    LOG("Invalid path \"{}\"\n", Path);
+    return {};
 }

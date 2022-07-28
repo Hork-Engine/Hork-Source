@@ -49,75 +49,6 @@ void AResource::InitializeFromFile(AStringView Path)
     }
 }
 
-bool AResource::IsResourceExists(AStringView Path)
-{
-    if (!Path.IcmpN("/Default/", 9))
-    {
-        return false;
-    }
-
-    if (!Path.IcmpN("/Root/", 6))
-    {
-        Path = Path.TruncateHead(6);
-
-        // find in file system
-        AString fileSystemPath = GEngine->GetRootPath() + Path;
-        if (Core::IsFileExists(fileSystemPath))
-            return true;
-
-        // find in resource pack
-        AArchive* resourcePack;
-        int       fileIndex;
-        if (GEngine->GetResourceManager()->FindFile(Path, &resourcePack, &fileIndex))
-            return true;
-
-        return false;
-    }
-
-    if (!Path.IcmpN("/Common/", 8))
-    {
-        Path = Path.TruncateHead(1);
-
-        // find in file system
-        if (Core::IsFileExists(Path))
-            return true;
-
-        Path = Path.TruncateHead(7);
-
-        // find in resource pack
-        AArchive const& archive = *GEngine->GetResourceManager()->GetCommonResources();
-        if (archive.LocateFile(Path) < 0)
-            return false;
-
-        return true;
-    }
-
-    if (!Path.IcmpN("/FS/", 4))
-    {
-        Path = Path.TruncateHead(4);
-
-        if (Core::IsFileExists(Path))
-            return true;
-
-        return false;
-    }
-
-    if (!Path.IcmpN("/Embedded/", 10))
-    {
-        Path = Path.TruncateHead(10);
-
-        AArchive const& archive = Runtime::GetEmbeddedResources();
-        if (archive.LocateFile(Path) < 0)
-            return false;
-
-        return true;
-    }
-
-    // Invalid path
-    LOG("Invalid path \"{}\"\n", Path);
-    return false;
-}
-
 bool AResource::LoadFromPath(AStringView Path)
 {
     if (!Path.IcmpN("/Default/", 9))
@@ -126,93 +57,11 @@ bool AResource::LoadFromPath(AStringView Path)
         return true;
     }
 
-    if (!Path.IcmpN("/Root/", 6))
-    {
-        Path = Path.TruncateHead(6);
-
-        // try to load from file system
-        AString fileSystemPath = GEngine->GetRootPath() + Path;
-        if (Core::IsFileExists(fileSystemPath))
-        {
-            AFileStream f;
-            if (!f.OpenRead(fileSystemPath))
-            {
-                return false;
-            }
-            return LoadResource(f);
-        }
-
-        // try to load from resource pack
-        AArchive* resourcePack;
-        int       fileIndex;
-        if (GEngine->GetResourceManager()->FindFile(Path, &resourcePack, &fileIndex))
-        {
-            AMemoryStream f;
-            if (!f.OpenRead(fileIndex, *resourcePack))
-            {
-                return false;
-            }
-            return LoadResource(f);
-        }
-
-        LOG("File not found /Root/{}\n", Path);
+    AFile f = GEngine->GetResourceManager()->OpenResource(Path);
+    if (!f)
         return false;
-    }
 
-    if (!Path.IcmpN("/Common/", 8))
-    {
-        Path = Path.TruncateHead(1);
-
-        // try to load from file system
-        if (Core::IsFileExists(Path))
-        {
-            AFileStream f;
-            if (!f.OpenRead(Path))
-            {
-                return false;
-            }
-            return LoadResource(f);
-        }
-
-        // try to load from resource pack
-        AMemoryStream f;
-        if (!f.OpenRead(Path.TruncateHead(7), *GEngine->GetResourceManager()->GetCommonResources()))
-        {
-            return false;
-        }
-        return LoadResource(f);
-    }
-
-    if (!Path.IcmpN("/FS/", 4))
-    {
-        Path = Path.TruncateHead(4);
-
-        AFileStream f;
-        if (!f.OpenRead(Path))
-        {
-            return false;
-        }
-
-        return LoadResource(f);
-    }
-
-    if (!Path.IcmpN("/Embedded/", 10))
-    {
-        Path = Path.TruncateHead(10);
-
-        AMemoryStream f;
-        if (!f.OpenRead(Path, Runtime::GetEmbeddedResources()))
-        {
-            //LOG( "Failed to open /Embedded/{}\n", Path );
-            return false;
-        }
-
-        return LoadResource(f);
-    }
-
-    // Invalid path
-    LOG("Invalid path \"{}\"\n", Path);
-    return false;
+    return LoadResource(f);
 }
 
 HK_CLASS_META(ABinaryResource)

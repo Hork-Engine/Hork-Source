@@ -223,9 +223,8 @@ void AFrameGraph::Debug()
 
 void AFrameGraph::ExportGraphviz(AStringView FileName)
 {
-    AFileStream f;
-
-    if (!f.OpenWrite(FileName))
+    AFile f = AFile::OpenWrite(FileName);
+    if (!f)
     {
         return;
     }

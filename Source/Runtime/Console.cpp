@@ -508,8 +508,8 @@ void AConsole::WriteStoryLines()
         return;
     }
 
-    AFileStream f;
-    if (!f.OpenWrite("console_story.txt"))
+    AFile f = AFile::OpenWrite("console_story.txt");
+    if (!f)
     {
         LOG("Failed to write console story\n");
         return;
@@ -537,8 +537,8 @@ void AConsole::ReadStoryLines()
     char      buf[MAX_CMD_LINE_CHARS * 3 + 2]; // In worst case WideChar transforms to 3 bytes,
                                                // two additional bytes are reserved for trailing '\n\0'
 
-    AFileStream f;
-    if (!f.OpenRead("console_story.txt"))
+    AFile f = AFile::OpenRead("console_story.txt");
+    if (!f)
     {
         return;
     }

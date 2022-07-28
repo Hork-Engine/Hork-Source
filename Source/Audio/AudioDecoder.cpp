@@ -35,81 +35,89 @@ SOFTWARE.
 
 #include <miniaudio/miniaudio.h>
 
-static size_t Read( ma_decoder * pDecoder, void* pBufferOut, size_t bytesToRead )
+static size_t Read(ma_decoder* pDecoder, void* pBufferOut, size_t bytesToRead)
 {
-    IBinaryStreamReadInterface * file = (IBinaryStreamReadInterface *)pDecoder->pUserData;
+    IBinaryStreamReadInterface* file = (IBinaryStreamReadInterface*)pDecoder->pUserData;
 
-    return file->Read( pBufferOut, bytesToRead );
+    return file->Read(pBufferOut, bytesToRead);
 }
 
-static ma_bool32 Seek( ma_decoder * pDecoder, ma_int64 byteOffset, ma_seek_origin origin )
+static ma_bool32 Seek(ma_decoder* pDecoder, ma_int64 byteOffset, ma_seek_origin origin)
 {
-    IBinaryStreamReadInterface * file = (IBinaryStreamReadInterface *)pDecoder->pUserData;
-    bool result = false;
+    IBinaryStreamReadInterface* file   = (IBinaryStreamReadInterface*)pDecoder->pUserData;
+    bool                        result = false;
 
-    switch ( origin )
+    switch (origin)
     {
-    case ma_seek_origin_start:
-        result = file->SeekSet( byteOffset );
-        break;
-    case ma_seek_origin_current:
-        result = file->SeekCur( byteOffset );
-        break;
-    case ma_seek_origin_end:  // Not used by decoders.
-        result = file->SeekEnd( byteOffset );
-        break;
+        case ma_seek_origin_start:
+            result = file->SeekSet(byteOffset);
+            break;
+        case ma_seek_origin_current:
+            result = file->SeekCur(byteOffset);
+            break;
+        case ma_seek_origin_end: // Not used by decoders.
+            result = file->SeekEnd(byteOffset);
+            break;
     }
 
     return result;
 }
 
-bool LoadAudioFile( IBinaryStreamReadInterface & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void ** ppFrames )
+bool LoadAudioFile(IBinaryStreamReadInterface& File, SAudioFileInfo* pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, void** ppFrames)
 {
     Platform::ZeroMem(pAudioFileInfo, sizeof(*pAudioFileInfo));
-    if ( ppFrames ) {
+    if (ppFrames)
+    {
         *ppFrames = nullptr;
     }
 
-    ma_decoder_config config = ma_decoder_config_init( bForce8Bit ? ma_format_u8 : ma_format_s16, bForceMono ? 1 : 0, SampleRate );
+    ma_decoder_config config = ma_decoder_config_init(bForce8Bit ? ma_format_u8 : ma_format_s16, bForceMono ? 1 : 0, SampleRate);
 
     ma_decoder decoder;
-    ma_result result = ma_decoder_init( Read, Seek, &File, &config, &decoder );
-    if ( result != MA_SUCCESS ) {
-        LOG("AMiniaudioDecoder::LoadFromFile: failed on {}\n", File.GetFileName());
+    ma_result  result = ma_decoder_init(Read, Seek, &File, &config, &decoder);
+    if (result != MA_SUCCESS)
+    {
+        LOG("AMiniaudioDecoder::LoadFromFile: failed on {}\n", File.GetName());
         return false;
     }
 
-    pAudioFileInfo->Channels = decoder.outputChannels;
+    pAudioFileInfo->Channels   = decoder.outputChannels;
     pAudioFileInfo->SampleBits = bForce8Bit ? 8 : 16;
 
-    MemoryHeap& tempHeap = Platform::GetHeapAllocator<HEAP_TEMP>();
+    MemoryHeap& tempHeap      = Platform::GetHeapAllocator<HEAP_TEMP>();
     MemoryHeap& audioDataHeap = Platform::GetHeapAllocator<HEAP_AUDIO_DATA>();
 
     const size_t tempSize = 8192;
     byte*        temp     = (byte*)tempHeap.Alloc(tempSize);
 
-    if ( ppFrames ) {
-        ma_uint64 totalFramesRead = 0;
-        ma_uint64 framesCapacity = 0;
-        void* pFrames = nullptr;
-        const int stride = ( pAudioFileInfo->SampleBits >> 3 ) * pAudioFileInfo->Channels;
+    if (ppFrames)
+    {
+        ma_uint64       totalFramesRead      = 0;
+        ma_uint64       framesCapacity       = 0;
+        void*           pFrames              = nullptr;
+        const int       stride               = (pAudioFileInfo->SampleBits >> 3) * pAudioFileInfo->Channels;
         const ma_uint64 framesToReadRightNow = tempSize / stride;
-        for ( ;; ) {
-            ma_uint64 framesJustRead = ma_decoder_read_pcm_frames( &decoder, temp, framesToReadRightNow );
-            if ( framesJustRead == 0 ) {
+        for (;;)
+        {
+            ma_uint64 framesJustRead = ma_decoder_read_pcm_frames(&decoder, temp, framesToReadRightNow);
+            if (framesJustRead == 0)
+            {
                 break;
             }
 
             ma_uint64 currentFrameCount = totalFramesRead + framesJustRead;
 
             // resize dest buffer
-            if ( framesCapacity < currentFrameCount ) {
+            if (framesCapacity < currentFrameCount)
+            {
                 ma_uint64 newFramesCap = framesCapacity * 2;
-                if ( newFramesCap < currentFrameCount ) {
+                if (newFramesCap < currentFrameCount)
+                {
                     newFramesCap = currentFrameCount;
                 }
                 ma_uint64 newFramesBufferSize = newFramesCap * stride;
-                if ( newFramesBufferSize > MA_SIZE_MAX ) {
+                if (newFramesBufferSize > MA_SIZE_MAX)
+                {
                     break;
                 }
                 pFrames        = audioDataHeap.Realloc(pFrames, (size_t)newFramesBufferSize, 16);
@@ -117,11 +125,12 @@ bool LoadAudioFile( IBinaryStreamReadInterface & File, SAudioFileInfo * pAudioFi
             }
 
             // Copy frames
-            Platform::Memcpy( (ma_int8 *)pFrames + totalFramesRead*stride, temp, (size_t)(framesJustRead*stride) );
+            Platform::Memcpy((ma_int8*)pFrames + totalFramesRead * stride, temp, (size_t)(framesJustRead * stride));
             totalFramesRead += framesJustRead;
 
             // Check EOF
-            if ( framesJustRead != framesToReadRightNow ) {
+            if (framesJustRead != framesToReadRightNow)
+            {
                 // EOF reached
                 break;
             }
@@ -131,24 +140,29 @@ bool LoadAudioFile( IBinaryStreamReadInterface & File, SAudioFileInfo * pAudioFi
 
         *ppFrames = pFrames;
     }
-    else {
-        pAudioFileInfo->FrameCount = ma_decoder_get_length_in_pcm_frames( &decoder ); // For MP3's, this will decode the entire file
+    else
+    {
+        pAudioFileInfo->FrameCount = ma_decoder_get_length_in_pcm_frames(&decoder); // For MP3's, this will decode the entire file
 
         // ma_decoder_get_length_in_pcm_frames will always return 0 for Vorbis decoders.
         // This is due to a limitation with stb_vorbis in push mode which is what miniaudio
         // uses internally.
-        if ( pAudioFileInfo->FrameCount == 0 ) { // stb_vorbis :(
-            ma_uint64 totalFramesRead = 0;
-            const int stride = (pAudioFileInfo->SampleBits >> 3) * pAudioFileInfo->Channels;
+        if (pAudioFileInfo->FrameCount == 0)
+        { // stb_vorbis :(
+            ma_uint64       totalFramesRead      = 0;
+            const int       stride               = (pAudioFileInfo->SampleBits >> 3) * pAudioFileInfo->Channels;
             const ma_uint64 framesToReadRightNow = tempSize / stride;
-            for ( ;; ) {
-                ma_uint64 framesJustRead = ma_decoder_read_pcm_frames( &decoder, temp, framesToReadRightNow );
-                if ( framesJustRead == 0 ) {
+            for (;;)
+            {
+                ma_uint64 framesJustRead = ma_decoder_read_pcm_frames(&decoder, temp, framesToReadRightNow);
+                if (framesJustRead == 0)
+                {
                     break;
                 }
                 totalFramesRead += framesJustRead;
                 // Check EOF
-                if ( framesJustRead != framesToReadRightNow ) {
+                if (framesJustRead != framesToReadRightNow)
+                {
                     break;
                 }
             }
@@ -159,20 +173,24 @@ bool LoadAudioFile( IBinaryStreamReadInterface & File, SAudioFileInfo * pAudioFi
 
     tempHeap.Free(temp);
 
-    ma_decoder_uninit( &decoder );
+    ma_decoder_uninit(&decoder);
 
     return pAudioFileInfo->FrameCount > 0;
 }
 
-bool CreateAudioBuffer( IBinaryStreamReadInterface & File, SAudioFileInfo * pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, TRef< SAudioBuffer > * ppBuffer )
+bool CreateAudioBuffer(IBinaryStreamReadInterface& File, SAudioFileInfo* pAudioFileInfo, int SampleRate, bool bForceMono, bool bForce8Bit, TRef<SAudioBuffer>* ppBuffer)
 {
-    void * pFrames;
+    void* pFrames;
 
-    if ( !LoadAudioFile( File, pAudioFileInfo, SampleRate, bForceMono, bForce8Bit, &pFrames ) ) {
+    if (!File.IsValid())
+        return false;
+
+    if (!LoadAudioFile(File, pAudioFileInfo, SampleRate, bForceMono, bForce8Bit, &pFrames))
+    {
         return false;
     }
 
-    *ppBuffer = MakeRef< SAudioBuffer >( pAudioFileInfo->FrameCount, pAudioFileInfo->Channels, pAudioFileInfo->SampleBits, pFrames );
+    *ppBuffer = MakeRef<SAudioBuffer>(pAudioFileInfo->FrameCount, pAudioFileInfo->Channels, pAudioFileInfo->SampleBits, pFrames);
 
     return true;
 }

@@ -394,9 +394,7 @@ void VT_PutImageIntoPages( SVirtualTextureStructure & _Struct,
 
             _Struct.PageBitfield.Mark( absoluteIndex );
 
-            //AFileStream f;
-            //f.OpenWrite( Platform::Fmt("page_%d_%d.bmp",x,y) );
-            //WriteBMP( f, _Struct.PageResolutionB, _Struct.PageResolutionB, Layer.NumChannels, cachedPage->Image.GetData() );
+            //WriteImage( HK_FORMAT("page_{}_{}.bmp",x,y), _Struct.PageResolutionB, _Struct.PageResolutionB, Layer.NumChannels, cachedPage->Image.GetData() );
 
             VT_CloseCachedPage( cachedPage );
         }
@@ -600,9 +598,7 @@ void VT_MakeLods( SVirtualTextureStructure & _Struct, SVirtualTextureLayer & Lay
                 VT_Downsample( _Struct, Layer, pages, cachedPage->Image.GetData() );
                 _Struct.PageBitfield.Mark( absoluteIndex );
 
-                //AFileStream f;
-                //f.OpenWrite( Platform::Fmt("page_%d.bmp", absoluteIndex ) );
-                //WriteBMP( f, _Struct.PageResolutionB, _Struct.PageResolutionB, Layer.NumChannels, cachedPage->Image.GetData() );
+                //WriteImage( HK_FORMAT("page_{}.bmp", absoluteIndex), _Struct.PageResolutionB, _Struct.PageResolutionB, Layer.NumChannels, cachedPage->Image.GetData() );
 
                 VT_CloseCachedPage( cachedPage );
 
@@ -1168,9 +1164,7 @@ void VT_GenerateBordersLod( SVirtualTextureStructure & _Struct, SVirtualTextureL
         VT_GenerateBorder_DL( _Struct, Layer, i, _Lod, ImageData );
         VT_GenerateBorder_DR( _Struct, Layer, i, _Lod, ImageData );
 
-        //AFileStream f;
-        //f.OpenWrite( Platform::Fmt("page_%d.bmp", pageIndex ) );
-        //WriteBMP( f, _Struct.PageResolutionB, _Struct.PageResolutionB, Layer.NumChannels, cachedPage->Image.GetData() );
+        //WriteImage( HK_FORMAT("page_{}.bmp", pageIndex), _Struct.PageResolutionB, _Struct.PageResolutionB, Layer.NumChannels, cachedPage->Image.GetData() );
 
         VT_CloseCachedPage( cachedPage );
     }
@@ -1211,10 +1205,7 @@ SFileOffset VT_WritePage( SVirtualTextureFileHandle * File, SFileOffset Offset, 
             //Platform::ZeroMem( CompressedData, _Layers[Layer].SizeInBytes );
             //File->Read( CompressedData, _Layers[Layer].SizeInBytes, Offset );
 
-            
-            //AFileStream f;
-            //f.OpenWrite( Platform::Fmt( "page_%d_%d.bmp", Layer, Offset ) );
-            //WriteBMP( f, 128, 128, 3, CompressedData );
+            //WriteImage( HK_FORMAT("page_{}_{}.bmp", Layer, Offset), 128, 128, 3, CompressedData );
         } else {
             File->Write( cachedPage->Image.GetData(), _Layers[Layer].SizeInBytes, Offset );
         }
@@ -1688,10 +1679,6 @@ void * LoadDiffuseImage( void * _RectUserData, int Width, int Height ) {
     resample.ScaledWidth         = Width;
     resample.ScaledHeight        = Height;
     ResampleImage(resample, pScaledImage);
-
-    //AFileStream f;
-    //f.OpenWrite("test.bmp");
-    //WriteBMP( f, Width, Height, 4, pScaledImage );
 
     return pScaledImage;
 }

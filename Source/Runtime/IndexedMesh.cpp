@@ -262,8 +262,8 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
         return false;
     }
 
-    AMemoryStream meshData;
-    if (!meshData.OpenRead(meshFile, meshBinary->GetBinaryData(), meshBinary->GetSizeInBytes()))
+    AFile meshData = AFile::OpenRead(meshFile, meshBinary->GetBinaryData(), meshBinary->GetSizeInBytes());
+    if (!meshData)
     {
         LOG("AIndexedMesh::LoadResource: invalid mesh\n");
 

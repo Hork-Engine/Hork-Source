@@ -58,8 +58,6 @@ public:
     /** Get physical resource path */
     AString const& GetResourcePath() const { return m_ResourcePath; }
 
-    static bool IsResourceExists(AStringView Path);
-
 protected:
     AResource() {}
 

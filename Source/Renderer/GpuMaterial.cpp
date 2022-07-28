@@ -2001,9 +2001,8 @@ AMaterialGPU::AMaterialGPU(ACompiledMaterial const* pCompiledMaterial)
     AString code = AShaderLoader{}.LoadShader("material.glsl", pCompiledMaterial->Shaders);
 
     //{
-    //    AFileStream fs;
-    //    fs.OpenWrite( "test.txt" );
-    //    fs.WriteBuffer( code.CStr(), code.Length() );
+    //    AFile f = AFile::OpenWrite( "test.txt" );
+    //    f.WriteBuffer( code.CStr(), code.Length() );
     //}
 
     bool bTessellation          = pCompiledMaterial->TessellationMethod != TESSELLATION_DISABLED;

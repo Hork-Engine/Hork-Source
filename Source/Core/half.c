@@ -368,8 +368,9 @@ static FastHalfToFloat GFastHalfToFloat;
 #    include "IO.h"
 void WriteTables()
 {
-    AFileStream f;
-    f.OpenWrite("half.cpp");
+    AFile f = AFile::OpenWrite("half.cpp");
+    if (!f)
+        return;
     f.FormattedPrint("static uint32_t MantissaTable[2048] = {{\n");
     for (int i = 0; i < 2048; i+=8)
     {

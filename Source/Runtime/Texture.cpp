@@ -310,7 +310,7 @@ static bool IsImageExtension(AStringView Extension)
 
 bool ATexture::LoadResource(IBinaryStreamReadInterface& Stream)
 {
-    AString const& fn        = Stream.GetFileName();
+    AString const& fn        = Stream.GetName();
     AStringView    extension = PathUtils::GetExt(fn);
 
     AScopedTimer ScopedTime(fn.CStr());

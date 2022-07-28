@@ -41,15 +41,15 @@ namespace Core
 
 bool BinaryToC(AStringView SourceFile, AStringView DestFile, AStringView SymName, bool bEncodeBase85)
 {
-    AFileStream source, dest;
-
-    if (!source.OpenRead(SourceFile))
+    AFile source = AFile::OpenRead(SourceFile);
+    if (!source)
     {
         LOG("Failed to open {}\n", SourceFile);
         return false;
     }
 
-    if (!dest.OpenWrite(DestFile))
+    AFile dest = AFile::OpenWrite(DestFile);
+    if (!dest)
     {
         LOG("Failed to open {}\n", DestFile);
         return false;
@@ -62,15 +62,15 @@ bool BinaryToC(AStringView SourceFile, AStringView DestFile, AStringView SymName
 
 bool BinaryToCompressedC(AStringView SourceFile, AStringView DestFile, AStringView SymName, bool bEncodeBase85)
 {
-    AFileStream source, dest;
-
-    if (!source.OpenRead(SourceFile))
+    AFile source = AFile::OpenRead(SourceFile);
+    if (!source)
     {
         LOG("Failed to open {}\n", SourceFile);
         return false;
     }
 
-    if (!dest.OpenWrite(DestFile))
+    AFile dest = AFile::OpenWrite(DestFile);
+    if (!dest)
     {
         LOG("Failed to open {}\n", DestFile);
         return false;
