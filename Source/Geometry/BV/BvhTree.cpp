@@ -37,13 +37,13 @@ struct BvhPrimitiveBounds
     int              PrimitiveIndex;
 };
 
-struct BvhBestSplit
+struct BvhSplit
 {
     int Axis;
     int PrimitiveIndex;
 };
 
-struct SAABBTreeBuild
+struct BvhBuildContext
 {
     TPodVector<BvAxisAlignedBox>   RightBounds;
     TPodVector<BvhPrimitiveBounds> Primitives[3];
@@ -71,7 +71,7 @@ static float CalcAABBVolume(BvAxisAlignedBox const& Bounds)
     return extents.X * extents.Y * extents.Z;
 }
 
-static BvhBestSplit FindBestSplitPrimitive(SAABBTreeBuild& Build, int Axis, int FirstPrimitive, int PrimCount)
+static BvhSplit FindBestSplitPrimitive(BvhBuildContext& Build, int Axis, int FirstPrimitive, int PrimCount)
 {
     struct CompareBoundsMax
     {
@@ -100,7 +100,7 @@ static BvhBestSplit FindBestSplitPrimitive(SAABBTreeBuild& Build, int Axis, int 
     BvAxisAlignedBox right;
     BvAxisAlignedBox left;
 
-    BvhBestSplit split;
+    BvhSplit split;
     split.Axis = -1;
 
     float bestSAH = Math::MaxValue<float>(); // Surface area heuristic
@@ -158,7 +158,7 @@ BvhTree::BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride
 
     m_Indirection.ResizeInvalidate(primCount);
 
-    SAABBTreeBuild build;
+    BvhBuildContext build;
     build.RightBounds.ResizeInvalidate(primCount);
     build.Primitives[0].ResizeInvalidate(primCount);
     build.Primitives[1].ResizeInvalidate(primCount);
@@ -201,7 +201,7 @@ BvhTree::BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride
     //    + m_Indirection.Reserved() * sizeof( m_Indirection[0] )
     //    + sizeof( *this );
 
-    //LOG( "AABBTree memory usage: {}  {}\n", sz, sz2 );
+    //LOG( "BvhTree memory usage: {}  {}\n", sz, sz2 );
 }
 
 #if 0
@@ -216,7 +216,7 @@ BvhTree::BvhTree(TArrayView<SPrimitiveDef> Primitives, unsigned int PrimitivesPe
 
     m_Indirection.ResizeInvalidate(numPrimitives);
 
-    SAABBTreeBuild build;
+    BvhBuildContext build;
     build.RightBounds.ResizeInvalidate(numPrimitives);
     build.Primitives[0].ResizeInvalidate(numPrimitives);
     build.Primitives[1].ResizeInvalidate(numPrimitives);
@@ -294,8 +294,6 @@ int BvhTree::MarkRayOverlappingLeafs(Float3 const& RayStart, Float3 const& RayEn
         return 0;
     }
 
-    //rayDir = rayDir / rayLength;
-
     invRayDir.X = 1.0f / rayDir.X;
     invRayDir.Y = 1.0f / rayDir.Y;
     invRayDir.Z = 1.0f / rayDir.Z;
@@ -338,27 +336,26 @@ void BvhTree::Write(IBinaryStreamWriteInterface& Stream) const
     Stream.WriteObject(m_BoundingBox);
 }
 
-void BvhTree::Subdivide(SAABBTreeBuild& Build, int Axis, int FirstPrimitive, int MaxPrimitive, unsigned int PrimitivesPerLeaf, int& PrimitiveIndex)
+void BvhTree::Subdivide(BvhBuildContext& Build, int Axis, int FirstPrimitive, int LastPrimitive, unsigned int PrimitivesPerLeaf, int& PrimitiveIndex)
 {
-    int primCount   = MaxPrimitive - FirstPrimitive;
-    int curNodeInex = m_Nodes.Size();
-
     BvhPrimitiveBounds* pPrimitives = Build.Primitives[Axis].ToPtr() + FirstPrimitive;
+    int primCount   = LastPrimitive - FirstPrimitive;
 
-    BvhNode& node = m_Nodes.Add();
+    int curNodeInex = m_Nodes.Size();
+    m_Nodes.EmplaceBack();
 
-    CalcNodeBounds(pPrimitives, primCount, node.Bounds);
+    CalcNodeBounds(pPrimitives, primCount, m_Nodes[curNodeInex].Bounds);
 
     if (primCount <= PrimitivesPerLeaf)
     {
         // Leaf
 
-        node.Index          = PrimitiveIndex;
-        node.PrimitiveCount = primCount;
+        m_Nodes[curNodeInex].Index = PrimitiveIndex;
+        m_Nodes[curNodeInex].PrimitiveCount = primCount;
 
         for (int i = 0; i < primCount; ++i)
         {
-            m_Indirection[PrimitiveIndex + i] = pPrimitives[i].PrimitiveIndex; // * 3; // FIXME * 3
+            m_Indirection[PrimitiveIndex + i] = pPrimitives[i].PrimitiveIndex;
         }
 
         PrimitiveIndex += primCount;
@@ -366,14 +363,14 @@ void BvhTree::Subdivide(SAABBTreeBuild& Build, int Axis, int FirstPrimitive, int
     else
     {
         // Node
-        BvhBestSplit split = FindBestSplitPrimitive(Build, Axis, FirstPrimitive, primCount);
+        BvhSplit split = FindBestSplitPrimitive(Build, Axis, FirstPrimitive, primCount);
 
         int mid = FirstPrimitive + split.PrimitiveIndex;
 
         Subdivide(Build, split.Axis, FirstPrimitive, mid, PrimitivesPerLeaf, PrimitiveIndex);
-        Subdivide(Build, split.Axis, mid, MaxPrimitive, PrimitivesPerLeaf, PrimitiveIndex);
+        Subdivide(Build, split.Axis, mid, LastPrimitive, PrimitivesPerLeaf, PrimitiveIndex);
 
         int nextNode = m_Nodes.Size() - curNodeInex;
-        node.Index   = -nextNode;
+        m_Nodes[curNodeInex].Index   = -nextNode;
     }
 }

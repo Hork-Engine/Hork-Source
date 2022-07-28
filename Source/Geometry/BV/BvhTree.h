@@ -105,7 +105,7 @@ public:
 private:
     BvhTree(Float3 const* Vertices, size_t NumVertices, size_t VertexStride, TArrayView<unsigned int> Indices, int BaseVertex, unsigned int PrimitivesPerLeaf);
 
-    void Subdivide(struct SAABBTreeBuild& Build, int Axis, int FirstPrimitive, int MaxPrimitive, unsigned int PrimitivesPerLeaf, int& PrimitiveIndex);
+    void Subdivide(struct BvhBuildContext& Build, int Axis, int FirstPrimitive, int LastPrimitive, unsigned int PrimitivesPerLeaf, int& PrimitiveIndex);
 
     TVector<BvhNode>      m_Nodes;
     TVector<unsigned int> m_Indirection;
