@@ -890,8 +890,8 @@ ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMi
             {
                 format                    = TEXTURE_FORMAT_BGRA8_UNORM;
                 compressionFormat         = TEXTURE_FORMAT_BC1_UNORM; // Use BC1 as no alpha channel is used.
-                bSwapChannelsIfCompressed = true;
             }
+            bSwapChannelsIfCompressed = true;
             break;
 
         case RAW_IMAGE_FORMAT_RGBA8:
@@ -935,8 +935,8 @@ ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMi
                     compressionFormat = TEXTURE_FORMAT_BC1_UNORM;
                 else
                     compressionFormat = TEXTURE_FORMAT_BC3_UNORM;
-                bSwapChannelsIfCompressed = true;
             }
+            bSwapChannelsIfCompressed = true;
             break;
 
         case RAW_IMAGE_FORMAT_R32_FLOAT:
