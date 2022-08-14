@@ -31,6 +31,7 @@ SOFTWARE.
 #include "Variant.h"
 
 #include <Platform/Logger.h>
+#include <Core/Parse.h>
 
 SResourceRef StringToResourceRef(AStringView String)
 {

@@ -34,6 +34,7 @@ SOFTWARE.
 #include "MaterialGraph.h"
 #include "Engine.h"
 #include <Platform/Logger.h>
+#include <Core/Parse.h>
 
 HK_CLASS_META(AMaterial)
 HK_CLASS_META(AMaterialInstance)

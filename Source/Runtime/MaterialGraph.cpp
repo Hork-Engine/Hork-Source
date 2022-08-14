@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "MaterialGraph.h"
 #include <Platform/Logger.h>
+#include <Core/Parse.h>
 
 template <>
 SEnumDef const* EnumDefinition<TEXTURE_TYPE>()

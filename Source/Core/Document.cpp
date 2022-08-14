@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include <Core/Document.h>
+#include <Core/Parse.h>
 #include <Platform/Logger.h>
 
 static const char* TokenType[] = {
@@ -45,42 +46,42 @@ const char* SToken::NamedType() const
 
 ADocumentTokenizer::ADocumentTokenizer()
 {
-    Cur = Start = (char*)"";
-    LineNumber  = 1;
-    bInSitu     = true;
+    m_Cur = m_Start = (char*)"";
+    m_LineNumber    = 1;
+    m_bInSitu       = true;
 }
 
 ADocumentTokenizer::~ADocumentTokenizer()
 {
-    if (!bInSitu)
+    if (!m_bInSitu)
     {
-        Platform::GetHeapAllocator<HEAP_STRING>().Free(Start);
+        Platform::GetHeapAllocator<HEAP_STRING>().Free(m_Start);
     }
 }
 
 void ADocumentTokenizer::Reset(const char* pDocumentData, bool InSitu)
 {
-    if (!bInSitu)
+    if (!m_bInSitu)
     {
-        Platform::GetHeapAllocator<HEAP_STRING>().Free(Start);
-        Cur = Start = (char*)"";
-        LineNumber  = 1;
-        bInSitu     = true;
+        Platform::GetHeapAllocator<HEAP_STRING>().Free(m_Start);
+        m_Cur = m_Start = (char*)"";
+        m_LineNumber    = 1;
+        m_bInSitu       = true;
     }
 
-    bInSitu = InSitu;
-    if (bInSitu)
+    m_bInSitu = InSitu;
+    if (m_bInSitu)
     {
-        Start = const_cast<char*>(pDocumentData);
+        m_Start = const_cast<char*>(pDocumentData);
     }
     else
     {
         int n = StringLength(pDocumentData) + 1;
-        Start = (char*)Platform::GetHeapAllocator<HEAP_STRING>().Alloc(n);
-        Platform::Memcpy(Start, pDocumentData, n);
+        m_Start = (char*)Platform::GetHeapAllocator<HEAP_STRING>().Alloc(n);
+        Platform::Memcpy(m_Start, pDocumentData, n);
     }
-    Cur        = Start;
-    LineNumber = 1;
+    m_Cur        = m_Start;
+    m_LineNumber = 1;
 
     // Go to first token
     NextToken();
@@ -89,39 +90,39 @@ void ADocumentTokenizer::Reset(const char* pDocumentData, bool InSitu)
 void ADocumentTokenizer::SkipWhitespaces()
 {
 start:
-    while (*Cur == ' ' || *Cur == '\t' || *Cur == '\n' || *Cur == '\r')
+    while (*m_Cur == ' ' || *m_Cur == '\t' || *m_Cur == '\n' || *m_Cur == '\r')
     {
-        if (*Cur == '\n')
+        if (*m_Cur == '\n')
         {
-            LineNumber++;
+            m_LineNumber++;
         }
-        Cur++;
+        m_Cur++;
     }
-    if (*Cur == '/')
+    if (*m_Cur == '/')
     {
-        if (*(Cur + 1) == '/')
+        if (*(m_Cur + 1) == '/')
         {
-            Cur += 2;
+            m_Cur += 2;
             // go to next line
-            while (*Cur && *Cur != '\n')
-                Cur++;
+            while (*m_Cur && *m_Cur != '\n')
+                m_Cur++;
             goto start;
         }
-        if (*(Cur + 1) == '*')
+        if (*(m_Cur + 1) == '*')
         {
-            Cur += 2;
-            while (*Cur)
+            m_Cur += 2;
+            while (*m_Cur)
             {
-                if (*Cur == '\n')
+                if (*m_Cur == '\n')
                 {
-                    LineNumber++;
+                    m_LineNumber++;
                 }
-                else if (*Cur == '*' && *(Cur + 1) == '/')
+                else if (*m_Cur == '*' && *(m_Cur + 1) == '/')
                 {
-                    Cur += 2;
+                    m_Cur += 2;
                     goto start;
                 }
-                Cur++;
+                m_Cur++;
             }
             LOG("Warning: unclosed comment /* */\n");
             return;
@@ -135,70 +136,70 @@ void ADocumentTokenizer::NextToken()
     SkipWhitespaces();
 
     // Check string
-    if (*Cur == '\"')
+    if (*m_Cur == '\"')
     {
-        Cur++;
-        CurToken.Begin = Cur;
+        m_Cur++;
+        m_CurToken.Begin = m_Cur;
         for (;;)
         {
-            if (*Cur == '\"' && *(Cur - 1) != '\\')
+            if (*m_Cur == '\"' && *(m_Cur - 1) != '\\')
             {
                 break;
             }
 
-            if (*Cur == 0)
+            if (*m_Cur == 0)
             {
                 // unexpected eof
-                CurToken.Begin = CurToken.End = "";
-                CurToken.Type                 = DOCUMENT_TOKEN_UNKNOWN;
+                m_CurToken.Begin = m_CurToken.End = "";
+                m_CurToken.Type                   = DOCUMENT_TOKEN_UNKNOWN;
                 return;
             }
-            if (*Cur == '\n')
+            if (*m_Cur == '\n')
             {
                 // unexpected eol
-                CurToken.Begin = CurToken.End = "";
-                CurToken.Type                 = DOCUMENT_TOKEN_UNKNOWN;
+                m_CurToken.Begin = m_CurToken.End = "";
+                m_CurToken.Type                   = DOCUMENT_TOKEN_UNKNOWN;
                 return;
             }
-            Cur++;
+            m_Cur++;
         }
-        CurToken.End  = Cur++;
-        CurToken.Type = DOCUMENT_TOKEN_STRING;
+        m_CurToken.End = m_Cur++;
+        m_CurToken.Type = DOCUMENT_TOKEN_STRING;
         return;
     }
 
     // Check brackets
-    if (*Cur == '{' || *Cur == '}' || *Cur == '[' || *Cur == ']')
+    if (*m_Cur == '{' || *m_Cur == '}' || *m_Cur == '[' || *m_Cur == ']')
     {
-        CurToken.Begin = Cur;
-        CurToken.End   = ++Cur;
-        CurToken.Type  = DOCUMENT_TOKEN_BRACKET;
+        m_CurToken.Begin = m_Cur;
+        m_CurToken.End   = ++m_Cur;
+        m_CurToken.Type  = DOCUMENT_TOKEN_BRACKET;
         return;
     }
 
     // Check member
-    CurToken.Begin = Cur;
-    while ((*Cur >= 'a' && *Cur <= 'z') || (*Cur >= 'A' && *Cur <= 'Z') || (*Cur >= '0' && *Cur <= '9') || *Cur == '_' || *Cur == '.' || *Cur == '$')
+    m_CurToken.Begin = m_Cur;
+    while ((*m_Cur >= 'a' && *m_Cur <= 'z') || (*m_Cur >= 'A' && *m_Cur <= 'Z') || (*m_Cur >= '0' && *m_Cur <= '9') || *m_Cur == '_' || *m_Cur == '.' || *m_Cur == '$')
     {
-        Cur++;
+        m_Cur++;
     }
-    CurToken.End = Cur;
-    if (CurToken.Begin == CurToken.End)
+    m_CurToken.End = m_Cur;
+    if (m_CurToken.Begin == m_CurToken.End)
     {
-        if (*Cur)
+        if (*m_Cur)
         {
             LOG("undefined symbols in token\n");
-            CurToken.Type = DOCUMENT_TOKEN_UNKNOWN;
+            m_CurToken.Type = DOCUMENT_TOKEN_UNKNOWN;
         }
         else
         {
-            CurToken.Type = DOCUMENT_TOKEN_EOF;
+            m_CurToken.Type = DOCUMENT_TOKEN_EOF;
         }
         return;
     }
     else
     {
-        CurToken.Type = DOCUMENT_TOKEN_MEMBER;
+        m_CurToken.Type = DOCUMENT_TOKEN_MEMBER;
     }
 }
 
@@ -364,17 +365,17 @@ AString ADocumentSerializer::SerializeObjectCompact(ADocMember const* Members)
     return s;
 }
 
-ADocValue::ADocValue(int Type) :
-    Type(Type)
+ADocValue::ADocValue(TYPE Type) :
+    m_Type(Type)
 {
-    StrBegin = StrEnd = "";
+    m_StrBegin = m_StrEnd = "";
 }
 
 ADocValue::~ADocValue()
 {
-    for (ADocMember* member = MembersHead; member;)
+    for (ADocMember* member = m_MembersHead; member;)
     {
-        ADocMember* next = member->Next;
+        ADocMember* next = member->GetNext();
         member->RemoveRef();
         member = next;
     }
@@ -382,7 +383,7 @@ ADocValue::~ADocValue()
 
 ADocMember* ADocValue::FindMember(AStringView Name)
 {
-    for (ADocMember* member = MembersHead; member; member = member->GetNext())
+    for (ADocMember* member = m_MembersHead; member; member = member->GetNext())
     {
         if (Name.Icompare(member->GetName()))
         {
@@ -495,15 +496,15 @@ AStringView ADocValue::GetString(AStringView Name) const
 
 void ADocValue::Clear()
 {
-    for (ADocMember* member = MembersHead; member;)
+    for (ADocMember* member = m_MembersHead; member;)
     {
-        ADocMember* next = member->Next;
+        ADocMember* next = member->m_Next;
         member->RemoveRef();
         member = next;
     }
 
-    MembersHead = nullptr;
-    MembersTail = nullptr;
+    m_MembersHead = nullptr;
+    m_MembersTail = nullptr;
 }
 
 ADocMember* ADocValue::AddString(AGlobalStringView Name, AStringView Str)
@@ -516,8 +517,8 @@ ADocMember* ADocValue::AddString(AGlobalStringView Name, AStringView Str)
 
     // Create member
     TRef<ADocMember> member = MakeRef<ADocMember>();
-    member->NameBegin       = Name.CStr();
-    member->NameEnd         = Name.CStr() + StringLength(Name);
+    member->m_NameBegin     = Name.CStr();
+    member->m_NameEnd       = Name.CStr() + StringLength(Name);
 
     // Create string
     TRef<ADocValue> value = MakeRef<ADocValue>(TYPE_STRING);
@@ -542,8 +543,8 @@ ADocMember* ADocValue::AddObject(AGlobalStringView Name, ADocValue* Object)
 
     // Create member
     TRef<ADocMember> member = MakeRef<ADocMember>();
-    member->NameBegin       = Name.CStr();
-    member->NameEnd         = Name.CStr() + StringLength(Name);
+    member->m_NameBegin     = Name.CStr();
+    member->m_NameEnd       = Name.CStr() + StringLength(Name);
 
     member->AddValue(Object);
 
@@ -561,8 +562,8 @@ ADocMember* ADocValue::AddArray(AGlobalStringView ArrayName)
     }
 
     TRef<ADocMember> array = MakeRef<ADocMember>();
-    array->NameBegin       = ArrayName.CStr();
-    array->NameEnd         = ArrayName.CStr() + StringLength(ArrayName);
+    array->m_NameBegin     = ArrayName.CStr();
+    array->m_NameEnd       = ArrayName.CStr() + StringLength(ArrayName);
 
     AddMember(array);
 
@@ -571,20 +572,20 @@ ADocMember* ADocValue::AddArray(AGlobalStringView ArrayName)
 
 void ADocValue::AddMember(ADocMember* Member)
 {
-    HK_ASSERT(Type == ADocValue::TYPE_OBJECT);
+    HK_ASSERT(m_Type == ADocValue::TYPE_OBJECT);
 
     Member->AddRef();
 
-    Member->Prev = MembersTail;
-    if (Member->Prev != nullptr)
+    Member->m_Prev = m_MembersTail;
+    if (Member->m_Prev != nullptr)
     {
-        Member->Prev->Next = Member;
+        Member->m_Prev->m_Next = Member;
     }
     else
     {
-        MembersHead = Member;
+        m_MembersHead = Member;
     }
-    MembersTail = Member;
+    m_MembersTail = Member;
 }
 
 void ADocValue::Print() const
@@ -618,14 +619,14 @@ AString ADocValue::SerializeToString(SDocumentSerializeInfo const& SerializeInfo
 
 ADocMember::ADocMember()
 {
-    NameBegin = NameEnd = "";
+    m_NameBegin = m_NameEnd = "";
 }
 
 ADocMember::~ADocMember()
 {
-    for (ADocValue* value = Values; value;)
+    for (ADocValue* value = m_Values; value;)
     {
-        ADocValue* next = value->Next;
+        ADocValue* next = value->m_Next;
         value->RemoveRef();
         value = next;
     }
@@ -633,18 +634,18 @@ ADocMember::~ADocMember()
 
 void ADocMember::AddValue(ADocValue* pValue)
 {
-    HK_ASSERT(pValue->Next == nullptr && pValue->Prev == nullptr);
+    HK_ASSERT(pValue->m_Next == nullptr && pValue->m_Prev == nullptr);
     pValue->AddRef();
-    pValue->Prev = ValuesEnd;
-    if (pValue->Prev != nullptr)
+    pValue->m_Prev = m_ValuesEnd;
+    if (pValue->m_Prev != nullptr)
     {
-        pValue->Prev->Next = pValue;
+        pValue->m_Prev->m_Next = pValue;
     }
     else
     {
-        Values = pValue;
+        m_Values = pValue;
     }
-    ValuesEnd = pValue;
+    m_ValuesEnd = pValue;
 }
 
 void ADocMember::Print() const
@@ -670,13 +671,13 @@ void ADocument::ParseArray(ADocValue** ppArrayHead, ADocValue** ppArrayTail)
 
     while (1)
     {
-        SToken token = Tokenizer.GetToken();
+        SToken token = m_Tokenizer.GetToken();
 
         if (token.Type == DOCUMENT_TOKEN_BRACKET)
         {
             if (*token.Begin == ']')
             {
-                Tokenizer.NextToken();
+                m_Tokenizer.NextToken();
                 if (*ppArrayHead == nullptr)
                 {
                     LOG("empty array\n");
@@ -690,7 +691,7 @@ void ADocument::ParseArray(ADocValue** ppArrayHead, ADocValue** ppArrayTail)
                 break;
             }
 
-            Tokenizer.NextToken();
+            m_Tokenizer.NextToken();
 
             // array element is object
             TRef<ADocValue> object = ParseObject();
@@ -702,10 +703,10 @@ void ADocument::ParseArray(ADocValue** ppArrayHead, ADocValue** ppArrayTail)
 
             // add object to array
             object->AddRef();
-            object->Prev = *ppArrayTail;
-            if (object->Prev != nullptr)
+            object->m_Prev = *ppArrayTail;
+            if (object->m_Prev != nullptr)
             {
-                object->Prev->Next = object;
+                object->m_Prev->m_Next = object;
             }
             else
             {
@@ -725,10 +726,10 @@ void ADocument::ParseArray(ADocValue** ppArrayHead, ADocValue** ppArrayTail)
 
             // Add string to array
             value->AddRef();
-            value->Prev = *ppArrayTail;
-            if (value->Prev != nullptr)
+            value->m_Prev = *ppArrayTail;
+            if (value->m_Prev != nullptr)
             {
-                value->Prev->Next = value;
+                value->m_Prev->m_Next = value;
             }
             else
             {
@@ -736,7 +737,7 @@ void ADocument::ParseArray(ADocValue** ppArrayHead, ADocValue** ppArrayTail)
             }
             *ppArrayTail = value;
 
-            Tokenizer.NextToken();
+            m_Tokenizer.NextToken();
 
             continue;
         }
@@ -750,7 +751,7 @@ void ADocument::ParseArray(ADocValue** ppArrayHead, ADocValue** ppArrayTail)
     {
         for (ADocValue* value = *ppArrayHead; value;)
         {
-            ADocValue* next = value->Next;
+            ADocValue* next = value->m_Next;
             value->RemoveRef();
             value = next;
         }
@@ -759,7 +760,7 @@ void ADocument::ParseArray(ADocValue** ppArrayHead, ADocValue** ppArrayTail)
     }
 }
 
-static bool Expect(int Type, SToken const& Token)
+static bool Expect(DOCUMENT_TOKEN_TYPE Type, SToken const& Token)
 {
     if (Token.Type != Type)
     {
@@ -775,18 +776,18 @@ TRef<ADocValue> ADocument::ParseObject()
 
     while (1)
     {
-        SToken token = Tokenizer.GetToken();
+        SToken token = m_Tokenizer.GetToken();
 
         if (token.Type == DOCUMENT_TOKEN_BRACKET)
         {
             if (*token.Begin == '}')
             {
-                if (value->MembersTail == nullptr)
+                if (value->m_MembersTail == nullptr)
                 {
                     LOG("empty object\n");
                     break;
                 }
-                Tokenizer.NextToken();
+                m_Tokenizer.NextToken();
                 return value;
             }
 
@@ -800,7 +801,7 @@ TRef<ADocValue> ADocument::ParseObject()
             break;
         }
 
-        Tokenizer.NextToken();
+        m_Tokenizer.NextToken();
 
         TRef<ADocMember> member = ParseMember(token);
         if (member == nullptr)
@@ -816,14 +817,14 @@ TRef<ADocValue> ADocument::ParseObject()
 
 TRef<ADocMember> ADocument::ParseMember(SToken const& MemberToken)
 {
-    SToken token = Tokenizer.GetToken();
+    SToken token = m_Tokenizer.GetToken();
 
     if (token.Type == DOCUMENT_TOKEN_BRACKET)
     {
         if (*token.Begin == '[')
         {
             // value is array
-            Tokenizer.NextToken();
+            m_Tokenizer.NextToken();
 
             ADocValue *arrayHead, *arrayTail;
             ParseArray(&arrayHead, &arrayTail);
@@ -833,16 +834,16 @@ TRef<ADocMember> ADocument::ParseMember(SToken const& MemberToken)
             }
 
             TRef<ADocMember> member = MakeRef<ADocMember>();
-            member->NameBegin       = MemberToken.Begin;
-            member->NameEnd         = MemberToken.End;
-            member->Values          = arrayHead;
-            member->ValuesEnd       = arrayTail;
+            member->m_NameBegin     = MemberToken.Begin;
+            member->m_NameEnd       = MemberToken.End;
+            member->m_Values        = arrayHead;
+            member->m_ValuesEnd     = arrayTail;
             return member;
         }
         if (*token.Begin == '{')
         {
             // value is object
-            Tokenizer.NextToken();
+            m_Tokenizer.NextToken();
 
             TRef<ADocValue> object = ParseObject();
             if (object == nullptr)
@@ -851,9 +852,9 @@ TRef<ADocMember> ADocument::ParseMember(SToken const& MemberToken)
             }
 
             TRef<ADocMember> member = MakeRef<ADocMember>();
-            member->NameBegin       = MemberToken.Begin;
-            member->NameEnd         = MemberToken.End;
-            member->Values = member->ValuesEnd = object;
+            member->m_NameBegin     = MemberToken.Begin;
+            member->m_NameEnd       = MemberToken.End;
+            member->m_Values = member->m_ValuesEnd = object;
 
             object->AddRef();
 
@@ -865,16 +866,16 @@ TRef<ADocMember> ADocument::ParseMember(SToken const& MemberToken)
 
     if (token.Type == DOCUMENT_TOKEN_STRING)
     {
-        Tokenizer.NextToken();
+        m_Tokenizer.NextToken();
 
         // value is string
         TRef<ADocValue> value = MakeRef<ADocValue>(TYPE_STRING);
         value->SetStringInsitu({token.Begin, token.End});
 
         TRef<ADocMember> member = MakeRef<ADocMember>();
-        member->NameBegin       = MemberToken.Begin;
-        member->NameEnd         = MemberToken.End;
-        member->Values = member->ValuesEnd = value;
+        member->m_NameBegin     = MemberToken.Begin;
+        member->m_NameEnd       = MemberToken.End;
+        member->m_Values = member->m_ValuesEnd = value;
 
         value->AddRef();
 
@@ -889,11 +890,11 @@ void ADocument::DeserializeFromString(SDocumentDeserializeInfo const& Deserializ
 {
     Clear();
 
-    Tokenizer.Reset(DeserializeInfo.pDocumentData, DeserializeInfo.bInsitu);
+    m_Tokenizer.Reset(DeserializeInfo.pDocumentData, DeserializeInfo.bInsitu);
 
     while (1)
     {
-        SToken token = Tokenizer.GetToken();
+        SToken token = m_Tokenizer.GetToken();
         if (token.Type == DOCUMENT_TOKEN_EOF || token.Type == DOCUMENT_TOKEN_UNKNOWN)
         {
             break;
@@ -906,7 +907,7 @@ void ADocument::DeserializeFromString(SDocumentDeserializeInfo const& Deserializ
             break;
         }
 
-        Tokenizer.NextToken();
+        m_Tokenizer.NextToken();
 
         TRef<ADocMember> member = ParseMember(token);
         if (member == nullptr)

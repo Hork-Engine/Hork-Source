@@ -34,6 +34,8 @@ SOFTWARE.
 #include <Platform/Memory/Memory.h>
 #include <Platform/Logger.h>
 
+#include <Core/Parse.h>
+
 #include <Audio/AudioDevice.h>
 #include <Audio/AudioDecoder.h>
 

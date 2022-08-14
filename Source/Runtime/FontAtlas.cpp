@@ -39,6 +39,7 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/Base85.h>
 #include <Core/Compress.h>
+#include <Core/Parse.h>
 
 // Padding between glyphs within texture in pixels. Defaults to 1. If your rendering method doesn't rely on bilinear filtering you may set this to 0.
 static const int TexGlyphPadding = 1;

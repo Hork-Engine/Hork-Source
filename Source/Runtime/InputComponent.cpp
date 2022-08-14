@@ -35,6 +35,7 @@ SOFTWARE.
 #include <Platform/Platform.h>
 #include <Core/HashFunc.h>
 #include <Core/IntrusiveLinkedListMacro.h>
+#include <Core/Parse.h>
 
 AConsoleVar in_MouseSensitivity("in_MouseSensitivity"s, "6.8"s);
 AConsoleVar in_MouseSensX("in_MouseSensX"s, "0.022"s);

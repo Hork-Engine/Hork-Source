@@ -31,6 +31,7 @@ SOFTWARE.
 #include "ConsoleVar.h"
 #include "CommandProcessor.h"
 #include "BaseMath.h"
+#include "Parse.h"
 
 #include <Platform/Logger.h>
 
@@ -61,8 +62,8 @@ void AConsoleVar::AllocateVariables()
     for (AConsoleVar* var = GlobalVars; var; var = var->Next)
     {
         var->Value = var->DefaultValue;
-        var->I32   = Core::ParseInt32(var->Value);
-        var->F32   = Core::ParseFloat(var->Value);
+        var->F32   = Core::ParseCvar(var->Value);
+        var->I32   = static_cast<int32_t>(var->F32);
     }
     GVariableAllocated = true;
 }
@@ -182,8 +183,8 @@ void AConsoleVar::SetFloat(float _Float)
 void AConsoleVar::ForceString(AStringView _String)
 {
     Value = _String;
-    I32   = Core::ParseInt32(Value);
-    F32   = Core::ParseFloat(Value);
+    F32   = Core::ParseCvar(Value);
+    I32   = static_cast<int32_t>(F32);
     LatchedValue.Clear();
     MarkModified();
 }

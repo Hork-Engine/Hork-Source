@@ -155,6 +155,7 @@ PBR (physically based).
 * Dear ImGui
 * EASTL
 * FastLZ
+* fast_float
 * {fmt}
 * GLEW
 * glutess

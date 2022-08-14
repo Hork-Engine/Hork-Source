@@ -32,6 +32,8 @@ SOFTWARE.
 #include "Actor.h"
 #include "SceneComponent.h"
 
+#include <Core/Parse.h>
+
 HK_CLASS_META(AActorDefinition)
 
 AActorDefinition::AActorDefinition()

@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include <Geometry/Lexer.h>
 #include <Platform/Logger.h>
+#include <Core/Parse.h>
 
 ALexer::ALexer() :
     BufferName("<memory buffer>"), Ptr(""), CurrentLine(0), bPrevToken(false), PrintFlags(PRINT_ALL)
