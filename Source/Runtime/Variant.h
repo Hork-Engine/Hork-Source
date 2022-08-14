@@ -298,8 +298,7 @@ class AVariant final
     };
 
 public:
-    AVariant()
-    {}
+    AVariant() = default;
 
     ~AVariant()
     {
