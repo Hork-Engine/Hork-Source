@@ -565,8 +565,8 @@ ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, ui
 
 struct NormalRoughnessImportSettings
 {
-    AStringView NormalMap;
-    AStringView RoughnessMap;
+    AString NormalMap;
+    AString RoughnessMap;
 
     // Result normal map packing
     NORMAL_MAP_PACK Pack = NORMAL_MAP_PACK_RGBA_BC1_COMPATIBLE;
@@ -581,6 +581,14 @@ struct NormalRoughnessImportSettings
 
     // Mipmapping
     IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
+    
+    enum ROUGHNESS_BAKE
+    {
+        ROUGHNESS_BAKE_vMF,
+        ROUGHNESS_BAKE_TOKSVIG
+    };
+    
+    ROUGHNESS_BAKE RoughnessBake = ROUGHNESS_BAKE_vMF;
 };
 
 bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, ImageStorage& NormalMapImage, ImageStorage& RoughnessMapImage);

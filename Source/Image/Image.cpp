@@ -386,36 +386,22 @@ void ImageStorage::Reset(ImageStorageDesc const& Desc)
     }
     else
     {
-        if (bCompressed)
+        for (uint32_t i = 0; i < m_Desc.NumMipmaps; i++)
         {
-            size_t blockSizeInBytes = info.BytesPerBlock;
-            for (uint32_t i = 0; i < m_Desc.NumMipmaps; i++)
-            {
-                uint32_t w = std::max<uint32_t>(blockSize, (m_Desc.Width >> i));
-                uint32_t h = std::max<uint32_t>(blockSize, (m_Desc.Height >> i));
+            uint32_t w = std::max<uint32_t>(blockSize, (m_Desc.Width >> i));
+            uint32_t h = std::max<uint32_t>(blockSize, (m_Desc.Height >> i));
 
-                sizeInBytes += w * h;
-            }
-
+            sizeInBytes += w * h;
+        }
+            
+        if (blockSize > 1)
+        {
             HK_ASSERT(sizeInBytes % (blockSize * blockSize) == 0);
             sizeInBytes /= blockSize * blockSize;
-            sizeInBytes *= m_Desc.SliceCount;
-            sizeInBytes *= blockSizeInBytes;
         }
-        else
-        {
-            size_t bytesPerPixel = info.BytesPerBlock;
-            for (uint32_t i = 0; i < m_Desc.NumMipmaps; i++)
-            {
-                uint32_t w = std::max<uint32_t>(1, (m_Desc.Width >> i));
-                uint32_t h = std::max<uint32_t>(1, (m_Desc.Height >> i));
-
-                sizeInBytes += w * h;
-            }
-
-            sizeInBytes *= m_Desc.SliceCount;
-            sizeInBytes *= bytesPerPixel;
-        }
+        
+        sizeInBytes *= m_Desc.SliceCount;
+        sizeInBytes *= info.BytesPerBlock;
     }
 
     m_Data.Reset(sizeInBytes);
@@ -495,40 +481,26 @@ ImageSubresource ImageStorage::GetSubresource(ImageSubresourceDesc const& Desc) 
 
         HK_VERIFY_R(Desc.SliceIndex < maxSlices, "GetSubresource: Array slice is out of bounds");
 
-        if (bCompressed)
+        for (uint32_t i = 0; i < Desc.MipmapIndex; i++)
         {
-            for (uint32_t i = 0; i < Desc.MipmapIndex; i++)
-            {
-                w = std::max<uint32_t>(blockSize, (m_Desc.Width >> i));
-                h = std::max<uint32_t>(blockSize, (m_Desc.Height >> i));
+            w = std::max<uint32_t>(blockSize, (m_Desc.Width >> i));
+            h = std::max<uint32_t>(blockSize, (m_Desc.Height >> i));
 
-                offset += w * h * m_Desc.SliceCount;
-            }
-
-            w = std::max<uint32_t>(blockSize, (m_Desc.Width >> Desc.MipmapIndex));
-            h = std::max<uint32_t>(blockSize, (m_Desc.Height >> Desc.MipmapIndex));
-
-            offset += Desc.SliceIndex * w * h;
+            offset += w * h * m_Desc.SliceCount;
+        }
+        
+        w = std::max<uint32_t>(blockSize, (m_Desc.Width >> Desc.MipmapIndex));
+        h = std::max<uint32_t>(blockSize, (m_Desc.Height >> Desc.MipmapIndex));
+        
+        offset += Desc.SliceIndex * w * h;
+        
+        if (blockSize > 1)
+        {
             HK_ASSERT(offset % (blockSize * blockSize) == 0);
             offset /= blockSize * blockSize;
-            offset *= blockSizeInBytes;
         }
-        else
-        {
-            for (uint32_t i = 0; i < Desc.MipmapIndex; i++)
-            {
-                w = std::max<uint32_t>(1, (m_Desc.Width >> i));
-                h = std::max<uint32_t>(1, (m_Desc.Height >> i));
-
-                offset += w * h * m_Desc.SliceCount;
-            }
-
-            w = std::max<uint32_t>(1, (m_Desc.Width >> Desc.MipmapIndex));
-            h = std::max<uint32_t>(1, (m_Desc.Height >> Desc.MipmapIndex));
-
-            offset += Desc.SliceIndex * w * h;
-            offset *= blockSizeInBytes;
-        }
+        
+        offset *= blockSizeInBytes;
     }
 
     ImageSubresource subres;
@@ -2406,32 +2378,35 @@ bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, Ima
             float r2 = n.LengthSqr();
             if (r2 > 1e-8f && r2 < 1.0f)
             {
-                #if 1
-                // vMF
-                // Equation from http://graphicrants.blogspot.com/2018/05/normal-map-filtering-using-vmf-part-3.html
-                float variance = 2.0f * Math::RSqrt(r2) * (1.0f - r2) / (3.0f - r2);
-
-                float roughnessVal = ((uint8_t*)roughness.GetData())[i] / 255.0f;
-
-                ((uint8_t*)roughness.GetData())[i] = Math::Round(Math::Saturate(Math::Sqrt(roughnessVal * roughnessVal + variance)) * 255.0f);
-                #else
-                auto RoughnessToSpecPower = [](float Roughness) -> float
+                if (Settings.RoughnessBake == NormalRoughnessImportSettings::ROUGHNESS_BAKE_vMF)
                 {
-                    return 2.0f / (Roughness * Roughness) - 2.0f;
-                };
-                auto SpecPowerToRoughness = [](float Spec) -> float
+                    // vMF
+                    // Equation from http://graphicrants.blogspot.com/2018/05/normal-map-filtering-using-vmf-part-3.html
+                    float variance = 2.0f * Math::RSqrt(r2) * (1.0f - r2) / (3.0f - r2);
+
+                    float roughnessVal = ((uint8_t*)roughness.GetData())[i] / 255.0f;
+
+                    ((uint8_t*)roughness.GetData())[i] = Math::Round(Math::Saturate(Math::Sqrt(roughnessVal * roughnessVal + variance)) * 255.0f);
+                }
+                else
                 {
-                    return sqrt(2.0f / (Spec + 2.0f));
-                };
+                    auto RoughnessToSpecPower = [](float Roughness) -> float
+                    {
+                        return 2.0f / (Roughness * Roughness) - 2.0f;
+                    };
+                    auto SpecPowerToRoughness = [](float Spec) -> float
+                    {
+                        return sqrt(2.0f / (Spec + 2.0f));
+                    };
 
-                // Toksvig
-                // https://blog.selfshadow.com/2011/07/22/specular-showdown/
-                float r         = sqrt(r2);
-                float specPower = RoughnessToSpecPower(Math::Max<uint8_t>(((uint8_t*)roughness.GetData())[i], 1) / 255.0f);
-                float ft        = r / Math::Lerp(specPower, 1.0f, r);
+                    // Toksvig
+                    // https://blog.selfshadow.com/2011/07/22/specular-showdown/
+                    float r         = sqrt(r2);
+                    float specPower = RoughnessToSpecPower(Math::Max<uint8_t>(((uint8_t*)roughness.GetData())[i], 1) / 255.0f);
+                    float ft        = r / Math::Lerp(specPower, 1.0f, r);
 
-                ((uint8_t*)roughness.GetData())[i] = Math::Round(Math::Saturate(SpecPowerToRoughness(ft * specPower)) * 255.0f);
-                #endif
+                    ((uint8_t*)roughness.GetData())[i] = Math::Round(Math::Saturate(SpecPowerToRoughness(ft * specPower)) * 255.0f);
+                }
             }
         }
     }
