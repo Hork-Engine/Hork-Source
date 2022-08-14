@@ -155,7 +155,7 @@ void ACanvas::DrawLine(Float2 const& a, Float2 const& b, Color4 const& col, floa
     }
 }
 
-void ACanvas::DrawRect(Float2 const& a, Float2 const& b, Color4 const& col, float rounding, int _RoundingCorners, float thickness)
+void ACanvas::DrawRect(Float2 const& a, Float2 const& b, Color4 const& col, float rounding, CORNER_ROUND_FLAGS _RoundingCorners, float thickness)
 {
     if (thickness > 0)
     {
@@ -163,7 +163,7 @@ void ACanvas::DrawRect(Float2 const& a, Float2 const& b, Color4 const& col, floa
     }
 }
 
-void ACanvas::DrawRectFilled(Float2 const& a, Float2 const& b, Color4 const& col, float rounding, int _RoundingCorners)
+void ACanvas::DrawRectFilled(Float2 const& a, Float2 const& b, Color4 const& col, float rounding, CORNER_ROUND_FLAGS _RoundingCorners)
 {
     DrawList.AddRectFilled(a, b, col.GetDWord(), rounding, _RoundingCorners);
 }
@@ -803,7 +803,7 @@ void ACanvas::DrawTextureQuad(ATexture* _Texture, int _X0, int _Y0, int _X1, int
     DrawList.AddImageQuad(_Texture->GetGPUResource(), ImVec2(_X0, _Y0), ImVec2(_X1, _Y1), ImVec2(_X2, _Y2), ImVec2(_X3, _Y3), _UV0, _UV1, _UV2, _UV3, _Color.GetDWord(), HUD_DRAW_CMD_TEXTURE | (_Blending << 8) | (_SamplerType << 16));
 }
 
-void ACanvas::DrawTextureRounded(ATexture* _Texture, int _X, int _Y, int _W, int _H, Float2 const& _UV0, Float2 const& _UV1, Color4 const& _Color, float _Rounding, int _RoundingCorners, BLENDING_MODE _Blending, EHUDSamplerType _SamplerType)
+void ACanvas::DrawTextureRounded(ATexture* _Texture, int _X, int _Y, int _W, int _H, Float2 const& _UV0, Float2 const& _UV1, Color4 const& _Color, float _Rounding, CORNER_ROUND_FLAGS _RoundingCorners, BLENDING_MODE _Blending, EHUDSamplerType _SamplerType)
 {
     DrawList.AddImageRounded(_Texture->GetGPUResource(), ImVec2(_X, _Y), ImVec2(_X + _W, _Y + _H), _UV0, _UV1, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_TEXTURE | (_Blending << 8) | (_SamplerType << 16));
 }
@@ -818,12 +818,12 @@ void ACanvas::DrawMaterialQuad(AMaterialInstance* _MaterialInstance, int _X0, in
     DrawList.AddImageQuad(_MaterialInstance, ImVec2(_X0, _Y0), ImVec2(_X1, _Y1), ImVec2(_X2, _Y2), ImVec2(_X3, _Y3), _UV0, _UV1, _UV2, _UV3, _Color.GetDWord(), HUD_DRAW_CMD_MATERIAL);
 }
 
-void ACanvas::DrawMaterialRounded(AMaterialInstance* _MaterialInstance, int _X, int _Y, int _W, int _H, Float2 const& _UV0, Float2 const& _UV1, Color4 const& _Color, float _Rounding, int _RoundingCorners)
+void ACanvas::DrawMaterialRounded(AMaterialInstance* _MaterialInstance, int _X, int _Y, int _W, int _H, Float2 const& _UV0, Float2 const& _UV1, Color4 const& _Color, float _Rounding, CORNER_ROUND_FLAGS _RoundingCorners)
 {
     DrawList.AddImageRounded(_MaterialInstance, ImVec2(_X, _Y), ImVec2(_X + _W, _Y + _H), _UV0, _UV1, _Color.GetDWord(), _Rounding, _RoundingCorners, HUD_DRAW_CMD_MATERIAL);
 }
 
-void ACanvas::DrawViewport(ACameraComponent* _Camera, ARenderingParameters* _RP, int _X, int _Y, int _W, int _H, Color4 const& _Color, float _Rounding, int _RoundingCorners, BLENDING_MODE _Blending)
+void ACanvas::DrawViewport(ACameraComponent* _Camera, ARenderingParameters* _RP, int _X, int _Y, int _W, int _H, Color4 const& _Color, float _Rounding, CORNER_ROUND_FLAGS _RoundingCorners, BLENDING_MODE _Blending)
 {
     if (!_Camera)
     {

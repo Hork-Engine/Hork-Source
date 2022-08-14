@@ -221,7 +221,7 @@ WBorderDecorate& WBorderDecorate::SetRounding(float _Rounding)
     return *this;
 }
 
-WBorderDecorate& WBorderDecorate::SetRoundingCorners(EDrawCornerFlags _RoundingCorners)
+WBorderDecorate& WBorderDecorate::SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners)
 {
     RoundingCorners = _RoundingCorners;
     return *this;
@@ -276,7 +276,7 @@ WImageDecorate& WImageDecorate::SetRounding(float _Rounding)
     return *this;
 }
 
-WImageDecorate& WImageDecorate::SetRoundingCorners(EDrawCornerFlags _RoundingCorners)
+WImageDecorate& WImageDecorate::SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners)
 {
     RoundingCorners = _RoundingCorners;
     return *this;

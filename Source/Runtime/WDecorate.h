@@ -105,7 +105,7 @@ public:
     WBorderDecorate& SetBackgroundColor(Color4 const& _Color);
     WBorderDecorate& SetThickness(float _Thickness);
     WBorderDecorate& SetRounding(float _Rounding);
-    WBorderDecorate& SetRoundingCorners(EDrawCornerFlags _RoundingCorners);
+    WBorderDecorate& SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners);
 
     WBorderDecorate();
     ~WBorderDecorate();
@@ -114,12 +114,12 @@ protected:
     void OnDrawEvent(ACanvas& _Canvas) override;
 
 private:
-    Color4           Color;
-    Color4           BgColor;
-    EDrawCornerFlags RoundingCorners;
-    float            Rounding;
-    float            Thickness;
-    bool             bFillBackgrond;
+    Color4             Color;
+    Color4             BgColor;
+    CORNER_ROUND_FLAGS RoundingCorners;
+    float              Rounding;
+    float              Thickness;
+    bool               bFillBackgrond;
 };
 
 class WImageDecorate : public WDecorate
@@ -129,7 +129,7 @@ class WImageDecorate : public WDecorate
 public:
     WImageDecorate& SetColor(Color4 const& _Color);
     WImageDecorate& SetRounding(float _Rounding);
-    WImageDecorate& SetRoundingCorners(EDrawCornerFlags _RoundingCorners);
+    WImageDecorate& SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners);
     WImageDecorate& SetTexture(ATexture* _Texture);
     WImageDecorate& SetColorBlending(BLENDING_MODE _Blending);
     WImageDecorate& SetSamplerType(EHUDSamplerType _SamplerType);
@@ -147,17 +147,17 @@ protected:
     void OnDrawEvent(ACanvas& _Canvas) override;
 
 private:
-    Color4           Color;
-    float            Rounding;
-    EDrawCornerFlags RoundingCorners;
-    TRef<ATexture>   Texture;
-    BLENDING_MODE   ColorBlending;
-    EHUDSamplerType  SamplerType;
-    Float2           Offset;
-    Float2           Size;
-    Float2           UV0;
-    Float2           UV1;
-    bool             bUseOriginalSize;
-    EWidgetAlignment HorizontalAlignment;
-    EWidgetAlignment VerticalAlignment;
+    Color4             Color;
+    float              Rounding;
+    CORNER_ROUND_FLAGS RoundingCorners;
+    TRef<ATexture>     Texture;
+    BLENDING_MODE      ColorBlending;
+    EHUDSamplerType    SamplerType;
+    Float2             Offset;
+    Float2             Size;
+    Float2             UV0;
+    Float2             UV1;
+    bool               bUseOriginalSize;
+    EWidgetAlignment   HorizontalAlignment;
+    EWidgetAlignment   VerticalAlignment;
 };

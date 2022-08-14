@@ -146,7 +146,7 @@ WWindow& WWindow::SetRounding(float _Rounding)
     return *this;
 }
 
-WWindow& WWindow::SetRoundingCorners(EDrawCornerFlags _RoundingCorners)
+WWindow& WWindow::SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners)
 {
     RoundingCorners = _RoundingCorners;
     return *this;
@@ -247,10 +247,9 @@ void WWindow::OnDrawEvent(ACanvas& _Canvas)
 
     if (!BgColor.IsTransparent())
     {
-
         AWidgetShape const& windowShape = GetShape();
 
-        int bgCorners = 0;
+        CORNER_ROUND_FLAGS bgCorners = CORNER_ROUND_NONE;
         if (!IsMaximized())
         {
             if (RoundingCorners & CORNER_ROUND_BOTTOM_LEFT)
@@ -265,12 +264,10 @@ void WWindow::OnDrawEvent(ACanvas& _Canvas)
 
         if (windowShape.IsEmpty())
         {
-
             _Canvas.DrawRectFilled(mins + Float2(0, CaptionHeight), maxs, BgColor, BorderRounding, bgCorners);
         }
         else
         {
-
             // TODO: Draw triangulated concave polygon
 
             _Canvas.DrawRectFilled(mins + Float2(0, CaptionHeight), maxs, BgColor, BorderRounding, bgCorners);
@@ -282,12 +279,11 @@ void WWindow::OnDrawEvent(ACanvas& _Canvas)
     // Draw border
     if (bWindowBorder)
     {
-
         AWidgetShape const& windowShape = GetShape();
 
         if (windowShape.IsEmpty())
         {
-            _Canvas.DrawRect(mins, maxs, BorderColor, BorderRounding, !IsMaximized() ? RoundingCorners : 0, BorderThickness);
+            _Canvas.DrawRect(mins, maxs, BorderColor, BorderRounding, !IsMaximized() ? RoundingCorners : CORNER_ROUND_NONE, BorderThickness);
         }
         else
         {
@@ -301,7 +297,7 @@ void WWindow::OnDrawEvent(ACanvas& _Canvas)
         float  width       = GetCurrentSize().X;
         Float2 captionSize = Float2(width, CaptionHeight);
 
-        int captionCorners = 0;
+        CORNER_ROUND_FLAGS captionCorners = CORNER_ROUND_NONE;
         if (!IsMaximized())
         {
             if (RoundingCorners & CORNER_ROUND_TOP_LEFT)

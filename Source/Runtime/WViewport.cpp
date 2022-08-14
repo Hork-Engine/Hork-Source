@@ -189,7 +189,7 @@ void WViewport::OnDrawEvent(ACanvas& InCanvas)
         if (pawn)
         {
             InCanvas.DrawViewport(pawn->GetPawnCamera(), PlayerController->GetRenderingParameters(),
-                                  pos.X, pos.Y, size.X, size.Y, Color4::White(), 0, -1, COLOR_BLENDING_DISABLED);
+                                  pos.X, pos.Y, size.X, size.Y, Color4::White(), 0, CORNER_ROUND_NONE, COLOR_BLENDING_DISABLED);
         }
 
         AHUD* hud = PlayerController->GetHUD();

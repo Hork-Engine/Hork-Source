@@ -240,7 +240,7 @@ WTextButton& WTextButton::SetRounding(float _Rounding)
     return *this;
 }
 
-WTextButton& WTextButton::SetRoundingCorners(EDrawCornerFlags _RoundingCorners)
+WTextButton& WTextButton::SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners)
 {
     RoundingCorners = _RoundingCorners;
     return *this;

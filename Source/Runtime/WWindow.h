@@ -51,7 +51,7 @@ public:
     WWindow& SetBorderThickness(float _Thickness);
     WWindow& SetBackgroundColor(Color4 const& _Color);
     WWindow& SetRounding(float _Rounding);
-    WWindow& SetRoundingCorners(EDrawCornerFlags _RoundingCorners);
+    WWindow& SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners);
 
     WWindow();
     ~WWindow();
@@ -67,21 +67,21 @@ private:
     void UpdateDragShape();
     void UpdateMargin();
 
-    AString          CaptionText;
-    float            CaptionHeight;
-    TRef<AFont>      Font;
-    Color4           TextColor;
-    Float2           TextOffset;
-    bool             bWordWrap;
-    EWidgetAlignment TextHorizontalAlignment;
-    EWidgetAlignment TextVerticalAlignment;
-    Color4           CaptionColor;
-    Color4           CaptionColorNotActive;
-    Color4           BorderColor;
-    Color4           BgColor;
-    EDrawCornerFlags RoundingCorners;
-    float            BorderRounding;
-    float            BorderThickness;
-    bool             bWindowBorder;
-    bool             bCaptionBorder;
+    AString            CaptionText;
+    float              CaptionHeight;
+    TRef<AFont>        Font;
+    Color4             TextColor;
+    Float2             TextOffset;
+    bool               bWordWrap;
+    EWidgetAlignment   TextHorizontalAlignment;
+    EWidgetAlignment   TextVerticalAlignment;
+    Color4             CaptionColor;
+    Color4             CaptionColorNotActive;
+    Color4             BorderColor;
+    Color4             BgColor;
+    CORNER_ROUND_FLAGS RoundingCorners;
+    float              BorderRounding;
+    float              BorderThickness;
+    bool               bWindowBorder;
+    bool               bCaptionBorder;
 };
