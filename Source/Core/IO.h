@@ -33,6 +33,44 @@ SOFTWARE.
 #include "BinaryStream.h"
 #include "String.h"
 
+struct AFileHandle
+{
+    AFileHandle() = default;
+    
+    constexpr explicit AFileHandle(int h) :
+        h(h)
+    {}
+    
+    operator bool() const
+    {
+        return h != -1;
+    }
+    
+    bool IsValid() const
+    {
+        return h != -1;
+    }
+    
+    operator int() const
+    {
+        return h;
+    }
+
+    void Reset()
+    {
+        h = -1;
+    }
+    
+    constexpr static AFileHandle Invalid()
+    {
+        return AFileHandle(-1);
+    }
+    
+private:
+    int h{-1};
+};
+
+
 /**
 
 AArchive
@@ -77,27 +115,29 @@ public:
 
     /** Check is archive opened */
     bool IsOpened() const { return !!m_Handle; }
+    
+    bool IsClosed() const { return !m_Handle; }
 
     /** Get total files in archive */
     int GetNumFiles() const;
 
-    /** Get file index. Return -1 if file wasn't found */
-    int LocateFile(AStringView FileName) const;
+    /** Get file handle. Returns an invalid handle if file wasn't found. */
+    AFileHandle LocateFile(AStringView FileName) const;
 
     /** Get file compressed and uncompressed size */
-    bool GetFileSize(int FileIndex, size_t* pCompressedSize, size_t* pUncompressedSize) const;
+    bool GetFileSize(AFileHandle FileHandle, size_t* pCompressedSize, size_t* pUncompressedSize) const;
 
     /** Get file name by index */
-    bool GetFileName(int FileIndex, AString& FileName) const;
+    bool GetFileName(AFileHandle FileHandle, AString& FileName) const;
 
     /** Decompress file to memory buffer */
-    bool ExtractFileToMemory(int FileIndex, void* pMemoryBuffer, size_t SizeInBytes) const;
+    bool ExtractFileToMemory(AFileHandle FileHandle, void* pMemoryBuffer, size_t SizeInBytes) const;
 
     /** Decompress file to heap memory */
     bool ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const;
 
     /** Decompress file to heap memory */
-    bool ExtractFileToHeapMemory(int FileIndex, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const;
+    bool ExtractFileToHeapMemory(AFileHandle FileHandle, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const;
 
 private:
     void* m_Handle{};
@@ -116,7 +156,7 @@ public:
     static AFile OpenRead(AStringView FileName, AArchive const& Archive);
 
     /** Read file from archive by file index. */
-    static AFile OpenRead(int FileIndex, AArchive const& Archive);
+    static AFile OpenRead(AFileHandle FileHandle, AArchive const& Archive);
 
     /** Open file for writing. */
     static AFile OpenWrite(AStringView FileName);

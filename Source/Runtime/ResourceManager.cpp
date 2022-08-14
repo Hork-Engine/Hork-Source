@@ -66,20 +66,20 @@ void AResourceManager::AddResourcePack(AStringView FileName)
     ResourcePacks.EmplaceBack<AArchive>(AArchive::Open(FileName, true));
 }
 
-bool AResourceManager::FindFile(AStringView FileName, int* pResourcePackIndex, int* pFileIndex) const
+bool AResourceManager::FindFile(AStringView FileName, int* pResourcePackIndex, AFileHandle* pFileHandle) const
 {
     *pResourcePackIndex = -1;
-    *pFileIndex         = -1;
+    pFileHandle->Reset();
 
     for (int i = ResourcePacks.Size() - 1; i >= 0; i--)
     {
         AArchive const& pack = ResourcePacks[i];
 
-        int index = pack.LocateFile(FileName);
-        if (index != -1)
+        AFileHandle handle = pack.LocateFile(FileName);
+        if (handle.IsValid())
         {
             *pResourcePackIndex = i;
-            *pFileIndex         = index;
+            *pFileHandle        = handle;
             return true;
         }
     }
@@ -288,8 +288,8 @@ bool AResourceManager::IsResourceExists(AStringView Path)
 
         // find in resource pack
         int resourcePack;
-        int fileIndex;
-        if (FindFile(Path, &resourcePack, &fileIndex))
+        AFileHandle fileHandle;
+        if (FindFile(Path, &resourcePack, &fileHandle))
             return true;
 
         return false;
@@ -306,7 +306,7 @@ bool AResourceManager::IsResourceExists(AStringView Path)
         Path = Path.TruncateHead(7);
 
         // find in resource pack
-        if (CommonResources.LocateFile(Path) < 0)
+        if (!CommonResources.LocateFile(Path).IsValid())
             return false;
 
         return true;
@@ -327,7 +327,7 @@ bool AResourceManager::IsResourceExists(AStringView Path)
         Path = Path.TruncateHead(10);
 
         AArchive const& archive = Runtime::GetEmbeddedResources();
-        if (archive.LocateFile(Path) < 0)
+        if (!archive.LocateFile(Path).IsValid())
             return false;
 
         return true;
@@ -352,10 +352,10 @@ AFile AResourceManager::OpenResource(AStringView Path)
 
         // try to load from resource pack
         int resourcePack;
-        int fileIndex;
-        if (FindFile(Path, &resourcePack, &fileIndex))
+        AFileHandle fileHandle;
+        if (FindFile(Path, &resourcePack, &fileHandle))
         {
-            return AFile::OpenRead(fileIndex, ResourcePacks[resourcePack]);
+            return AFile::OpenRead(fileHandle, ResourcePacks[resourcePack]);
         }
 
         LOG("File not found /Root/{}\n", Path);

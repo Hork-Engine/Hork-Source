@@ -520,13 +520,13 @@ AFile AFile::OpenRead(AStringView FileName, AArchive const& Archive)
     return f;
 }
 
-AFile AFile::OpenRead(int FileIndex, AArchive const& Archive)
+AFile AFile::OpenRead(AFileHandle FileHandle, AArchive const& Archive)
 {
     AFile f;
 
-    Archive.GetFileName(FileIndex, f.m_Name);
+    Archive.GetFileName(FileHandle, f.m_Name);
 
-    if (!Archive.ExtractFileToHeapMemory(FileIndex, (void**)&f.m_pHeapPtr, &f.m_FileSize, Platform::GetHeapAllocator<HEAP_MISC>()))
+    if (!Archive.ExtractFileToHeapMemory(FileHandle, (void**)&f.m_pHeapPtr, &f.m_FileSize, Platform::GetHeapAllocator<HEAP_MISC>()))
     {
         LOG("Couldn't open {}\n", f.m_Name);
         return {};
@@ -553,15 +553,15 @@ AFile AFile::OpenWrite(AStringView StreamName, void* pMemoryBuffer, size_t SizeI
     return f;
 }
 
-AFile AFile::OpenWriteToMemory(AStringView StreamName, size_t _ReservedSize)
+AFile AFile::OpenWriteToMemory(AStringView StreamName, size_t ReservedSize)
 {
     AFile f;
 
     f.m_Name               = StreamName;
     f.m_Type               = FILE_TYPE_WRITE_MEMORY;
-    f.m_pHeapPtr           = (byte*)Alloc(_ReservedSize);
+    f.m_pHeapPtr           = (byte*)Alloc(ReservedSize);
     f.m_FileSize           = 0;
-    f.m_ReservedSize       = _ReservedSize;
+    f.m_ReservedSize       = ReservedSize;
     f.m_bMemoryBufferOwner = true;
 
     return f;
@@ -670,9 +670,9 @@ int AArchive::GetNumFiles() const
     return mz_zip_reader_get_num_files((mz_zip_archive*)m_Handle);
 }
 
-int AArchive::LocateFile(AStringView FileName) const
+AFileHandle AArchive::LocateFile(AStringView FileName) const
 {
-    return mz_zip_reader_locate_file((mz_zip_archive*)m_Handle, FileName.IsNullTerminated() ? FileName.Begin() : AString(FileName).CStr(), NULL, 0);
+    return AFileHandle(mz_zip_reader_locate_file((mz_zip_archive*)m_Handle, FileName.IsNullTerminated() ? FileName.Begin() : AString(FileName).CStr(), NULL, 0));
 }
 
 #define MZ_ZIP_CDH_COMPRESSED_SIZE_OFS   20
@@ -680,10 +680,10 @@ int AArchive::LocateFile(AStringView FileName) const
 #define MZ_ZIP_CDH_FILENAME_LEN_OFS      28
 #define MZ_ZIP_CENTRAL_DIR_HEADER_SIZE   46
 
-bool AArchive::GetFileSize(int FileIndex, size_t* pCompressedSize, size_t* pUncompressedSize) const
+bool AArchive::GetFileSize(AFileHandle FileHandle, size_t* pCompressedSize, size_t* pUncompressedSize) const
 {
     // All checks are processd in mz_zip_get_cdh
-    const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)m_Handle, FileIndex);
+    const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)m_Handle, int(FileHandle));
     if (!p)
     {
         return false;
@@ -701,10 +701,10 @@ bool AArchive::GetFileSize(int FileIndex, size_t* pCompressedSize, size_t* pUnco
     return true;
 }
 
-bool AArchive::GetFileName(int FileIndex, AString& FileName) const
+bool AArchive::GetFileName(AFileHandle FileHandle, AString& FileName) const
 {
     // All checks are processd in mz_zip_get_cdh
-    const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)m_Handle, FileIndex);
+    const mz_uint8* p = mz_zip_get_cdh_public((mz_zip_archive*)m_Handle, int(FileHandle));
     if (!p)
     {
         return false;
@@ -724,10 +724,10 @@ bool AArchive::GetFileName(int FileIndex, AString& FileName) const
     return true;
 }
 
-bool AArchive::ExtractFileToMemory(int FileIndex, void* pMemoryBuffer, size_t SizeInBytes) const
+bool AArchive::ExtractFileToMemory(AFileHandle FileHandle, void* pMemoryBuffer, size_t SizeInBytes) const
 {
     // All checks are processd in mz_zip_reader_extract_to_mem
-    return !!mz_zip_reader_extract_to_mem((mz_zip_archive*)m_Handle, FileIndex, pMemoryBuffer, SizeInBytes, 0);
+    return !!mz_zip_reader_extract_to_mem((mz_zip_archive*)m_Handle, int(FileHandle), pMemoryBuffer, SizeInBytes, 0);
 }
 
 bool AArchive::ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const
@@ -737,20 +737,20 @@ bool AArchive::ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryP
     *pHeapMemoryPtr = nullptr;
     *pSizeInBytes   = 0;
 
-    int fileIndex = LocateFile(FileName);
-    if (fileIndex < 0)
+    AFileHandle fileHandle = LocateFile(FileName);
+    if (!fileHandle)
     {
         return false;
     }
 
-    if (!GetFileSize(fileIndex, NULL, &uncompSize))
+    if (!GetFileSize(fileHandle, NULL, &uncompSize))
     {
         return false;
     }
 
     void* pBuf = Heap.Alloc(uncompSize);
 
-    if (!ExtractFileToMemory(fileIndex, pBuf, uncompSize))
+    if (!ExtractFileToMemory(fileHandle, pBuf, uncompSize))
     {
         Heap.Free(pBuf);
         return false;
@@ -762,26 +762,26 @@ bool AArchive::ExtractFileToHeapMemory(AStringView FileName, void** pHeapMemoryP
     return true;
 }
 
-bool AArchive::ExtractFileToHeapMemory(int FileIndex, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const
+bool AArchive::ExtractFileToHeapMemory(AFileHandle FileHandle, void** pHeapMemoryPtr, size_t* pSizeInBytes, MemoryHeap& Heap) const
 {
     size_t uncompSize;
 
     *pHeapMemoryPtr = nullptr;
     *pSizeInBytes   = 0;
 
-    if (FileIndex < 0)
+    if (!FileHandle)
     {
         return false;
     }
 
-    if (!GetFileSize(FileIndex, NULL, &uncompSize))
+    if (!GetFileSize(FileHandle, NULL, &uncompSize))
     {
         return false;
     }
 
     void* pBuf = Heap.Alloc(uncompSize);
 
-    if (!ExtractFileToMemory(FileIndex, pBuf, uncompSize))
+    if (!ExtractFileToMemory(FileHandle, pBuf, uncompSize))
     {
         Heap.Free(pBuf);
         return false;

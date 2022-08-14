@@ -42,7 +42,7 @@ public:
     void AddResourcePack(AStringView FileName);
 
     /** Find file in resource packs */
-    bool FindFile(AStringView FileName, int* pResourcePackIndex, int* pFileIndex) const;
+    bool FindFile(AStringView FileName, int* pResourcePackIndex, AFileHandle* pFileHandle) const;
 
     /** Get or create resource. Return default object if fails. */
     template <typename T>
