@@ -30,10 +30,10 @@ SOFTWARE.
 
 #include "CollisionModel.h"
 #include "IndexedMesh.h"
-#include "ConvexDecomposition.h"
 
 #include <Platform/Logger.h>
 #include <Geometry/ConvexHull.h>
+#include <Geometry/ConvexDecomposition.h>
 
 #include "BulletCompatibility.h"
 
