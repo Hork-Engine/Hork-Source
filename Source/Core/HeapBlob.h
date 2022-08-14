@@ -55,6 +55,7 @@ struct HeapBlob final
 
     HeapBlob& operator=(HeapBlob&& Rhs) noexcept
     {
+        Reset();
         m_HeapPtr      = Rhs.m_HeapPtr;
         m_HeapSize     = Rhs.m_HeapSize;
         Rhs.m_HeapPtr  = nullptr;
