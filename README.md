@@ -46,6 +46,7 @@ One of the engine versions was called Unity and was developed in 2002. It was a 
 * Diffuse per-vertex light
 * Dynamic per-pixel lighting
 * Cascaded shadow maps (PSSM+PCF)
+* Omnidirectional shadow maps
 * Photometric profiles
 
 ## Material system
@@ -67,6 +68,8 @@ PBR (physically based).
 * Batching
 * sRGB
 * Premultiplied alpha
+* Specular Antialiasing (Toksvig, vMF baked to Roughness)
+* Texture compression BC1-7
 * Virtual texturing
 
 ## Postprocess effects
@@ -89,7 +92,7 @@ PBR (physically based).
 
 ## Asset importing and resource management
 * 3D modelling formats (GLTF, LWO)
-* Different image formats (PNG, PSD, PNM, PIC, JPG, BMP, TGA, HDR, EXR)
+* Different image formats (WEBP, PNG, PSD, PNM, PIC, JPG, BMP, TGA, HDR, EXR)
 * Fonts (TTF)
 * Photometric profiles (IES)
 
@@ -129,6 +132,7 @@ PBR (physically based).
 ## 2D
 * Widget system GUI
 * Canvas (low level 2D rendering api)
+* SVG rendering
 * Materials
 * Blending
 
@@ -161,6 +165,7 @@ PBR (physically based).
 * glutess
 * HACD
 * iesna
+* libwebp
 * lunasvg (freetype, plutovg as part of lunasvg)
 * lwo2
 * mimalloc
@@ -179,18 +184,17 @@ PBR (physically based).
 See [details](ThridParty.md).
 
 
-## Planned features
+## Planned features / WIP
 * Particle System
 * Global Illumination
-* Toksvig
 * Decals
 * Area lights
 * Directional lightmaps (radiocity?)
 * Built-in lightmapper
-* LODs
-* Terrain
+* Mesh LODs
+* Terrain texturing
 * Water
-* Vegetation
+* Foliage
 * Imposters
 * Subsurface scattering
 * Postprocess materials
@@ -202,7 +206,7 @@ See [details](ThridParty.md).
 * Antialiasing (MSAA, TXAA)
 * Multisampling for debug renderer
 * Text and icons for debug renderer
-* Occlusion culling imprevements: Software Occlusion Culling, HiZ, or someting like this
+* Occlusion culling improvements: Software Occlusion Culling, HiZ, or someting like this
 * Navmesh: dynamic obstacles, areas, area connections, crowd
 * Audio: effects
 * Physics: soft body, constraints, ragdoll, character controller

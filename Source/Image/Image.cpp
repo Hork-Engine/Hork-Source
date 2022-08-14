@@ -837,6 +837,7 @@ ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMi
 
         case RAW_IMAGE_FORMAT_RGB8:
             bAddAlphaChannel        = true;
+            Flags |= IMAGE_STORAGE_NO_ALPHA;
             ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT;
             if (ImportFlags & IMAGE_IMPORT_ASSUME_8BIT_RGB_IMAGES_ARE_SRGB)
             {
@@ -852,6 +853,7 @@ ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMi
 
         case RAW_IMAGE_FORMAT_BGR8:
             bAddAlphaChannel        = true;
+            Flags |= IMAGE_STORAGE_NO_ALPHA;
             ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT;
             if (ImportFlags & IMAGE_IMPORT_ASSUME_8BIT_RGB_IMAGES_ARE_SRGB)
             {
@@ -929,6 +931,7 @@ ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMi
             if ((ImportFlags & IMAGE_IMPORT_USE_COMPRESSION) && (ImportFlags & IMAGE_IMPORT_ALLOW_HDRI_COMPRESSION))
             {
                 ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT; // because BC6h compression takes f32 as input
+                Flags |= IMAGE_STORAGE_NO_ALPHA;
                 bAddAlphaChannel        = true;
                 format                  = TEXTURE_FORMAT_RGBA32_FLOAT;
                 compressionFormat       = TEXTURE_FORMAT_BC6H_UFLOAT;
@@ -937,7 +940,10 @@ ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMi
             {
                 format = ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT ? TEXTURE_FORMAT_RGBA16_FLOAT : TEXTURE_FORMAT_RGB32_FLOAT;
                 if (ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT)
+                {
+                    Flags |= IMAGE_STORAGE_NO_ALPHA;
                     bAddAlphaChannel = true;
+                }
             }
             break;
 
@@ -946,6 +952,7 @@ ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMi
             if ((ImportFlags & IMAGE_IMPORT_USE_COMPRESSION) && (ImportFlags & IMAGE_IMPORT_ALLOW_HDRI_COMPRESSION))
             {
                 ImportFlags &= ~IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT; // because BC6h compression takes f32 as input
+                Flags |= IMAGE_STORAGE_NO_ALPHA;
                 bAddAlphaChannel        = true;
                 format                  = TEXTURE_FORMAT_RGBA32_FLOAT;
                 compressionFormat       = TEXTURE_FORMAT_BC6H_UFLOAT;
@@ -954,7 +961,10 @@ ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMi
             {
                 format = ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT ? TEXTURE_FORMAT_RGBA16_FLOAT : TEXTURE_FORMAT_RGB32_FLOAT;
                 if (ImportFlags & IMAGE_IMPORT_STORE_HDRI_AS_HALF_FLOAT)
+                {
+                    Flags |= IMAGE_STORAGE_NO_ALPHA;
                     bAddAlphaChannel = true;
+                }
             }
             break;
 

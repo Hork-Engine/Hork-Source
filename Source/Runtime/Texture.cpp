@@ -287,37 +287,15 @@ void ATexture::LoadInternalResource(AStringView Path)
     LoadInternalResource("/Default/Textures/Default2D");
 }
 
-static bool IsImageExtension(AStringView Extension)
-{
-    for (auto ext : {".jpg",
-                     ".jpeg",
-                     ".png",
-                     ".tga",
-                     ".psd",
-                     ".gif",
-                     ".hdr",
-                     ".exr",
-                     ".pic",
-                     ".pnm",
-                     ".ppm",
-                     ".pgm"})
-    {
-        if (!Extension.Icmp(ext))
-            return true;
-    }
-    return false;
-}
-
 bool ATexture::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     AString const& fn        = Stream.GetName();
-    AStringView    extension = PathUtils::GetExt(fn);
 
     AScopedTimer ScopedTime(fn.CStr());
 
     ImageStorage image;
 
-    if (IsImageExtension(extension))
+    if (GetImageFileFormat(fn) != IMAGE_FILE_FORMAT_UNKNOWN)
     {
         ImageMipmapConfig mipmapGen;
         mipmapGen.EdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;

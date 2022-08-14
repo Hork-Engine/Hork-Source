@@ -782,7 +782,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 AMaterialInstance::AMaterialInstance()
 {
     static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/Unlit"s);
-    static TStaticResourceFinder<ATexture>  TextureResource("/Common/grid8.png"s);
+    static TStaticResourceFinder<ATexture>  TextureResource("/Common/grid8.webp"s);
 
     m_pMaterial = MaterialResource;
     SetTexture(0, TextureResource);
@@ -796,7 +796,7 @@ AMaterialInstance::AMaterialInstance(AMaterial* pMaterial) :
     if (!pMaterial)
     {
         static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/Unlit"s);
-        static TStaticResourceFinder<ATexture>  TextureResource("/Common/grid8.png"s);
+        static TStaticResourceFinder<ATexture>  TextureResource("/Common/grid8.webp"s);
 
         m_pMaterial = MaterialResource;
         SetTexture(0, TextureResource);
@@ -808,7 +808,7 @@ void AMaterialInstance::LoadInternalResource(AStringView Path)
     if (!Path.Icmp("/Default/MaterialInstance/BaseLight"))
     {
         static TStaticResourceFinder<AMaterial> MaterialResource("/Default/Materials/BaseLight"s);
-        static TStaticResourceFinder<ATexture>  TextureResource("/Common/grid8.png"s);
+        static TStaticResourceFinder<ATexture>  TextureResource("/Common/grid8.webp"s);
 
         m_pMaterial = MaterialResource;
 

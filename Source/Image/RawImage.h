@@ -121,6 +121,8 @@ public:
 
     void SetExternalData(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, void* pData)
     {
+        Reset();
+        
         m_pData  = pData;
         m_Width  = Width;
         m_Height = Height;
@@ -203,7 +205,26 @@ ARawImage CreateRawImage(AStringView FileName, RAW_IMAGE_FORMAT Format = RAW_IMA
 ARawImage CreateRawImage(class SvgDocument const& Document, uint32_t Width, uint32_t Height, Float4 const& BackgroundColor = Float4::Zero());
 ARawImage CreateRawImageFromSVG(IBinaryStreamReadInterface& Stream, Float2 const& Scale = Float2(1.0f), Float4 const& BackgroundColor = Float4::Zero());
 
-bool IsHDRImage(IBinaryStreamReadInterface& Stream);
+enum IMAGE_FILE_FORMAT
+{
+    IMAGE_FILE_FORMAT_UNKNOWN,
+    IMAGE_FILE_FORMAT_JPEG,
+    IMAGE_FILE_FORMAT_PNG,
+    IMAGE_FILE_FORMAT_TGA,
+    IMAGE_FILE_FORMAT_BMP,
+    IMAGE_FILE_FORMAT_PSD,
+    IMAGE_FILE_FORMAT_PIC,
+    IMAGE_FILE_FORMAT_PNM,
+    IMAGE_FILE_FORMAT_WEBP,
+    IMAGE_FILE_FORMAT_HDR,
+    IMAGE_FILE_FORMAT_EXR
+};
+
+/** Reads an image file format from the stream. */
+IMAGE_FILE_FORMAT GetImageFileFormat(IBinaryStreamReadInterface& Stream);
+
+/** Selects an image file format from the file name. */
+IMAGE_FILE_FORMAT GetImageFileFormat(AStringView FileName);
 
 ARawImage CreateEmptyRawImage(uint32_t Width, uint32_t Height, RAW_IMAGE_FORMAT Format, Float4 const& Color);
 
@@ -257,6 +278,35 @@ void ExtractImageChannel(T const* pSrc, T* pDest, uint32_t Width, uint32_t Heigh
     CopyImageChannel<T>(pSrc, pDest, Width, Height, NumChannels, 1, Channel, 0);
 }
 
+struct ImageWriteConfig
+{
+    /** Image width */
+    uint32_t    Width{};
+
+    /** Image height */
+    uint32_t    Height{};
+
+    /** Number of channels (Red, Red_Alpha, RGB, RGBA).
+    NOTE: JPEG does ignore alpha channels in input data.
+    */
+    uint32_t    NumChannels{};
+
+    /** Image data */
+    const void* pData{};
+
+    /** Quality is between 0 and 1.
+    JPEG higher quality looks better but results in a bigger image.
+    WebP for lossy, 0 gives the smallest size and 1 the largest. For lossless, this parameter is the amount of effort put into the compression:
+    0 is the fastest but gives larger files compared to the slowest, but best, 1.*/
+    float       Quality{1.0f};
+
+    /** Lossy is only supported for WebP. JPEG is lossy by default, other formats are lossless. */
+    bool        bLossless{true};
+
+    /** This option allows to write the EXR floating point image as float16. For other formats, this option is irrelevant. */
+    bool        bSaveExrAsHalf{false};
+};
+
 /** Write image in PNG format. */
 bool WritePNG(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const void* pData);
 
@@ -279,7 +329,14 @@ bool WriteHDR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Heig
 /** Write image in EXR format */
 bool WriteEXR(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const float* pData, bool bSaveAsHalf = false);
 
-bool WriteImage(AStringView FileName, uint32_t Width, uint32_t Height, uint32_t NumChannels, const void* pData);
-bool WriteImageHDRI(AStringView FileName, uint32_t Width, uint32_t Height, uint32_t NumChannels, const float* pData);
+/**
+Write image in WEBP format.
+Quality is between 0 and 1. For lossy, 0 gives the smallest size and 1 the largest. For lossless, this
+parameter is the amount of effort put into the compression: 0 is the fastest but gives larger files compared to the slowest, but best, 1.
+*/
+bool WriteWEBP(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Height, uint32_t NumChannels, const void* pData, float Quality = 1.0f, bool bLossless = true);
+
+bool WriteImage(AStringView FileName, ImageWriteConfig const& Config);
+bool WriteImageHDRI(AStringView FileName, ImageWriteConfig const& Config);
 
 bool WriteImage(AStringView FileName, ARawImage const& Image);

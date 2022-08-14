@@ -163,6 +163,11 @@ message(STATUS "USING LUNASVG")
 add_subdirectory_with_folder( "ThirdParty/lunasvg" ThirdParty/lunasvg )
 
 message(STATUS "======================================================================")
+message(STATUS "USING WEBP")
+include_directories(ThirdParty/WebP/src)
+add_subdirectory_with_folder( "ThirdParty/WebP" ThirdParty/WebP )
+
+message(STATUS "======================================================================")
 message(STATUS "USING ANGELSCRIPT")
 include_directories(ThirdParty/angelscript/include)
 include_directories(ThirdParty/angelscript_addon)
@@ -322,6 +327,7 @@ cgltf
 bc7enc
 bcdec
 lunasvg
+webp
 ${ANGELSCRIPT_LIBRARY_NAME}
 angelscript_addon
 )
