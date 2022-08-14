@@ -38,30 +38,11 @@ HK_CLASS_META(ADummy)
 
 AObjectFactory* AObjectFactory::FactoryList = nullptr;
 
-void InitializeFactories()
-{
-}
-
-void DeinitializeFactories()
-{
-    for (AObjectFactory* factory = AObjectFactory::FactoryList; factory; factory = factory->NextFactory)
-    {
-        Platform::GetHeapAllocator<HEAP_MISC>().Free(factory->IdTable);
-        factory->IdTable = nullptr;
-        factory->LookupTable.Clear();
-    }
-}
-
 AObjectFactory::AObjectFactory(const char* Tag) :
-    Tag(Tag), Classes(nullptr), IdTable(nullptr), NumClasses(0)
+    Tag(Tag), Classes(nullptr), NumClasses(0)
 {
     NextFactory = FactoryList;
     FactoryList = this;
-}
-
-AObjectFactory::~AObjectFactory()
-{
-    HK_ASSERT(IdTable == nullptr);
 }
 
 const AClassMeta* AObjectFactory::FindClass(AStringView ClassName) const
@@ -99,10 +80,10 @@ const AClassMeta* AObjectFactory::LookupClass(uint64_t ClassId) const
         return nullptr;
     }
 
-    if (!IdTable)
+    if (IdTable.IsEmpty())
     {
         // init lookup table
-        IdTable    = (AClassMeta**)Platform::GetHeapAllocator<HEAP_MISC>().Alloc((NumClasses + 1) * sizeof(*IdTable));
+        IdTable.Resize(NumClasses + 1);
         IdTable[0] = nullptr;
         for (AClassMeta* n = Classes; n; n = n->pNext)
         {

@@ -41,17 +41,15 @@ class AClassMeta;
 class AProperty;
 class ADummy;
 
-class AObjectFactory
+class AObjectFactory final
 {
     HK_FORBID_COPY(AObjectFactory)
 
     friend class AClassMeta;
-    friend void InitializeFactories();
-    friend void DeinitializeFactories();
 
 public:
     AObjectFactory(const char* Tag);
-    ~AObjectFactory();
+    ~AObjectFactory() = default;
 
     const char* GetTag() const { return Tag; }
 
@@ -73,7 +71,7 @@ public:
 private:
     const char*            Tag;
     AClassMeta*            Classes;
-    mutable AClassMeta**   IdTable;
+    mutable TVector<AClassMeta*> IdTable;
     mutable THashMap<AStringView, AClassMeta const*> LookupTable;
     uint64_t               NumClasses;
     AObjectFactory*        NextFactory;
@@ -206,9 +204,15 @@ constexpr SPropertyRange RangeFloat(double MinFloat, double MaxFloat)
 Property flags
 
 */
-#define HK_PROPERTY_DEFAULT          0
-#define HK_PROPERTY_NON_SERIALIZABLE 1
-#define HK_PROPERTY_BITMASK          2
+enum HK_PROPERTY_FLAGS : uint32_t
+{
+    HK_PROPERTY_DEFAULT          = 0,
+    HK_PROPERTY_NON_SERIALIZABLE = HK_BIT(0),
+    HK_PROPERTY_BITMASK          = HK_BIT(1)
+};
+
+HK_FLAG_ENUM_OPERATORS(HK_PROPERTY_FLAGS)
+
 
 class AProperty
 {
@@ -219,7 +223,7 @@ public:
     using GetterFun = AVariant (*)(ADummy const*);
     using CopyFun   = void (*)(ADummy*, ADummy const*);
 
-    AProperty(AClassMeta const& ClassMeta, VARIANT_TYPE Type, SEnumDef const* EnumDef, const char* Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, uint32_t Flags) :
+    AProperty(AClassMeta const& ClassMeta, VARIANT_TYPE Type, SEnumDef const* EnumDef, const char* Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, HK_PROPERTY_FLAGS Flags) :
         Type(Type),
         Name(Name),
         pEnum(EnumDef),
@@ -267,21 +271,21 @@ public:
     const char*           GetName() const { return Name; }
     SEnumDef const*       GetEnum() const { return pEnum; }
     SPropertyRange const& GetRange() const { return Range; }
-    uint32_t              GetFlags() const { return Flags; }
+    HK_PROPERTY_FLAGS     GetFlags() const { return Flags; }
     AProperty const*      Next() const { return pNext; }
     AProperty const*      Prev() const { return pPrev; }
 
 private:
-    VARIANT_TYPE     Type;
-    const char*      Name;
-    SEnumDef const*  pEnum;
-    SPropertyRange   Range;
-    uint32_t         Flags;
-    SetterFun        Setter;
-    GetterFun        Getter;
-    CopyFun          Copy;
-    AProperty const* pNext;
-    AProperty const* pPrev;
+    VARIANT_TYPE      Type;
+    const char*       Name;
+    SEnumDef const*   pEnum;
+    SPropertyRange    Range;
+    HK_PROPERTY_FLAGS Flags;
+    SetterFun         Setter;
+    GetterFun         Getter;
+    CopyFun           Copy;
+    AProperty const*  pNext;
+    AProperty const*  pPrev;
 };
 
 template <std::size_t N, typename T0, typename... Ts>
@@ -535,6 +539,3 @@ T const* Upcast(ADummy const* Object)
     }
     return nullptr;
 }
-
-void InitializeFactories();
-void DeinitializeFactories();

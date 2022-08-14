@@ -283,8 +283,6 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
 
     Console.ReadStoryLines();
 
-    InitializeFactories();
-
     // Init physics module
     //b3SetCustomPrintfFunc(PhysModulePrintFunction);
     //b3SetCustomWarningMessageFunc(PhysModuleWarningFunction);
@@ -412,8 +410,6 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
 
     AVisibilitySystem::PrimitivePool.Free();
     AVisibilitySystem::PrimitiveLinkPool.Free();
-
-    DeinitializeFactories();
 
     Console.WriteStoryLines();
 }
