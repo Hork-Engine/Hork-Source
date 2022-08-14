@@ -159,6 +159,10 @@ message(STATUS "USING BCDEC")
 add_subdirectory_with_folder( "ThirdParty/bcdec" ThirdParty/bcdec )
 
 message(STATUS "======================================================================")
+message(STATUS "USING LUNASVG")
+add_subdirectory_with_folder( "ThirdParty/lunasvg" ThirdParty/lunasvg )
+
+message(STATUS "======================================================================")
 message(STATUS "USING ANGELSCRIPT")
 include_directories(ThirdParty/angelscript/include)
 include_directories(ThirdParty/angelscript_addon)
@@ -317,6 +321,7 @@ tinyexr
 cgltf
 bc7enc
 bcdec
+lunasvg
 ${ANGELSCRIPT_LIBRARY_NAME}
 angelscript_addon
 )

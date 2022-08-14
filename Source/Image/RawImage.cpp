@@ -29,6 +29,7 @@ SOFTWARE.
 */
 
 #include <Image/RawImage.h>
+#include <Image/SvgDocument.h>
 #include <Core/Color.h>
 #include <Core/Compress.h>
 #include <Core/HeapBlob.h>
@@ -1138,4 +1139,35 @@ bool WriteImage(AStringView FileName, ARawImage const& Image)
         }
         return WriteImageHDRI(FileName, Image.GetWidth(), Image.GetHeight(), Image.NumChannels(), (const float*)Image.GetData());
     }
+}
+
+ARawImage CreateRawImage(SvgDocument const& Document, uint32_t Width, uint32_t Height, Float4 const& BackgroundColor)
+{
+    if (!Document)
+        return {};
+
+    if (Width == 0 || Height == 0)
+        return {};
+
+    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_BGRA8);
+    image.Clear(BackgroundColor);
+
+    Document.RenderToImage(image.GetData(), image.GetWidth(), image.GetHeight(), image.GetWidth() * image.GetHeight() * image.GetBytesPerPixel());
+
+    return image;
+}
+
+ARawImage CreateRawImageFromSVG(IBinaryStreamReadInterface& Stream, Float2 const& Scale, Float4 const& BackgroundColor)
+{
+    if (Scale.X <= 0.0f || Scale.Y <= 0.0f)
+        return {};
+
+    SvgDocument document = CreateSVG(Stream);
+    if (!document)
+        return {};
+
+    uint32_t w = document.GetWidth() * Scale.X;
+    uint32_t h = document.GetHeight() * Scale.Y;
+
+    return CreateRawImage(document, w, h, BackgroundColor);
 }

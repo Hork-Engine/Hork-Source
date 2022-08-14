@@ -160,6 +160,7 @@ PBR (physically based).
 * glutess
 * HACD
 * iesna
+* lunasvg (freetype, plutovg as part of lunasvg)
 * lwo2
 * mimalloc
 * miniaudio
