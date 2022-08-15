@@ -355,6 +355,9 @@ void ImageStorage::Reset(ImageStorageDesc const& Desc)
         HK_VERIFY(m_Desc.Type != TEXTURE_3D, "ImageStorage: Compressed 3D textures are not supported");
         HK_VERIFY((m_Desc.Width % blockSize) == 0, "ImageStorage: Width must be a multiple of blockSize for compressed textures");
         HK_VERIFY((m_Desc.Height % blockSize) == 0, "ImageStorage: Height must be a multiple of blockSize for compressed textures");
+
+        HK_VERIFY(m_Desc.NumMipmaps == 1 || IsPowerOfTwo(m_Desc.Width), "ImageStorage: Width must be a power of two for compressed mipmapped textures");
+        HK_VERIFY(m_Desc.NumMipmaps == 1 || IsPowerOfTwo(m_Desc.Height), "ImageStorage: Width must be a power of two for compressed mipmapped textures");
     }
 
     uint32_t numMips = 0;
@@ -1002,38 +1005,48 @@ ImageStorage CreateImage(ARawImage const& rawImage, ImageMipmapConfig const* pMi
     TextureFormatInfo const& info = GetTextureFormatInfo(compressionFormat);
 
     bool bUseTempImage = false;
-    if ((ImportFlags & IMAGE_IMPORT_USE_COMPRESSION) && ((rawImage.GetWidth() % info.BlockSize) || (rawImage.GetHeight() % info.BlockSize)))
+
+    if (ImportFlags & IMAGE_IMPORT_USE_COMPRESSION)
     {
-        RawImageResampleParams resample;
+        bool bMipmapped = pMipmapConfig != nullptr;
 
-        resample.HorizontalEdgeMode = resample.VerticalEdgeMode = pMipmapConfig ? pMipmapConfig->EdgeMode : IMAGE_RESAMPLE_EDGE_WRAP;
-        resample.HorizontalFilter = resample.VerticalFilter = pMipmapConfig ? pMipmapConfig->Filter : IMAGE_RESAMPLE_FILTER_MITCHELL;
+        uint32_t requiredWidth  = bMipmapped ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(rawImage.GetWidth()), info.BlockSize) : Align(rawImage.GetWidth(), info.BlockSize);
+        uint32_t requiredHeight = bMipmapped ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(rawImage.GetHeight()), info.BlockSize) : Align(rawImage.GetHeight(), info.BlockSize);
 
-        resample.Flags = RAW_IMAGE_RESAMPLE_FLAG_DEFAULT;
-        if (info.bSRGB)
-            resample.Flags |= RAW_IMAGE_RESAMPLE_COLORSPACE_SRGB;
-        if (rawImage.NumChannels() == 4 && !(Flags & IMAGE_STORAGE_NO_ALPHA))
+        if (rawImage.GetWidth() != requiredWidth || rawImage.GetHeight() != requiredHeight)
         {
-            resample.Flags |= RAW_IMAGE_RESAMPLE_HAS_ALPHA;
+            RawImageResampleParams resample;
 
-            if (Flags & IMAGE_STORAGE_ALPHA_PREMULTIPLIED)
-                resample.Flags |= RAW_IMAGE_RESAMPLE_ALPHA_PREMULTIPLIED;
+            resample.HorizontalEdgeMode = resample.VerticalEdgeMode = pMipmapConfig ? pMipmapConfig->EdgeMode : IMAGE_RESAMPLE_EDGE_WRAP;
+            resample.HorizontalFilter = resample.VerticalFilter = pMipmapConfig ? pMipmapConfig->Filter : IMAGE_RESAMPLE_FILTER_MITCHELL;
+
+            resample.Flags = RAW_IMAGE_RESAMPLE_FLAG_DEFAULT;
+            if (info.bSRGB)
+                resample.Flags |= RAW_IMAGE_RESAMPLE_COLORSPACE_SRGB;
+            if (rawImage.NumChannels() == 4 && !(Flags & IMAGE_STORAGE_NO_ALPHA))
+            {
+                resample.Flags |= RAW_IMAGE_RESAMPLE_HAS_ALPHA;
+
+                if (Flags & IMAGE_STORAGE_ALPHA_PREMULTIPLIED)
+                    resample.Flags |= RAW_IMAGE_RESAMPLE_ALPHA_PREMULTIPLIED;
+            }
+
+            resample.ScaledWidth  = requiredWidth;
+            resample.ScaledHeight = requiredHeight;
+
+            tempImage = ResampleRawImage(rawImage, resample);
+            if (bSwapChannelsIfCompressed)
+                tempImage.SwapRGB();
+
+            bUseTempImage = true;
         }
-        resample.ScaledWidth  = Align(rawImage.GetWidth(), info.BlockSize);
-        resample.ScaledHeight = Align(rawImage.GetHeight(), info.BlockSize);
-
-        tempImage = ResampleRawImage(rawImage, resample);
-        if (bSwapChannelsIfCompressed)
+        else if (bSwapChannelsIfCompressed)
+        {
+            tempImage = rawImage.Clone();
             tempImage.SwapRGB();
 
-        bUseTempImage = true;
-    }
-    else if ((ImportFlags & IMAGE_IMPORT_USE_COMPRESSION) && bSwapChannelsIfCompressed)
-    {
-        tempImage = rawImage.Clone();
-        tempImage.SwapRGB();
-
-        bUseTempImage = true;
+            bUseTempImage = true;
+        }
     }
 
     ARawImage const& sourceImage = bUseTempImage ? tempImage : rawImage;
@@ -1602,12 +1615,17 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
             TextureFormatInfo const& info = GetTextureFormatInfo(Format);
 
+            bool bMipmapped = pMipmapConfig != nullptr;
+
+            uint32_t requiredWidth  = bMipmapped ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(rawImage.GetWidth()), info.BlockSize) : Align(rawImage.GetWidth(), info.BlockSize);
+            uint32_t requiredHeight = bMipmapped ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(rawImage.GetHeight()), info.BlockSize) : Align(rawImage.GetHeight(), info.BlockSize);
+
             // Image must be block aligned
-            if ((rawImage.GetWidth() % info.BlockSize) || (rawImage.GetHeight() % info.BlockSize))
+            if (rawImage.GetWidth() != requiredWidth || rawImage.GetHeight() != requiredHeight)
             {
                 RawImageResampleParams resample;
-                resample.ScaledWidth = Align(rawImage.GetWidth(), info.BlockSize);
-                resample.ScaledHeight = Align(rawImage.GetHeight(), info.BlockSize);
+                resample.ScaledWidth        = requiredWidth;
+                resample.ScaledHeight       = requiredHeight;
                 resample.HorizontalEdgeMode = resample.VerticalEdgeMode = pMipmapConfig ? pMipmapConfig->EdgeMode : IMAGE_RESAMPLE_EDGE_WRAP;
                 resample.HorizontalFilter = resample.VerticalFilter = pMipmapConfig ? pMipmapConfig->Filter : IMAGE_RESAMPLE_FILTER_MITCHELL;
 
@@ -1630,7 +1648,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             desc.Width      = rawImage.GetWidth();
             desc.Height     = rawImage.GetHeight();
             desc.SliceCount = 1;
-            desc.NumMipmaps = pMipmapConfig ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
+            desc.NumMipmaps = bMipmapped ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
             desc.Flags      = Flags;
 
             ImageStorage storage(desc);
@@ -1738,15 +1756,20 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 
             TextureFormatInfo const& info = GetTextureFormatInfo(Format);
 
+            bool bMipmapped = pMipmapConfig != nullptr;
+
+            uint32_t requiredWidth  = bMipmapped ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(rawImage.GetWidth()), info.BlockSize) : Align(rawImage.GetWidth(), info.BlockSize);
+            uint32_t requiredHeight = bMipmapped ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(rawImage.GetHeight()), info.BlockSize) : Align(rawImage.GetHeight(), info.BlockSize);
+
             // Image must be block aligned
-            if ((rawImage.GetWidth() % info.BlockSize) || (rawImage.GetHeight() % info.BlockSize))
+            if (rawImage.GetWidth() != requiredWidth || rawImage.GetHeight() != requiredHeight)
             {
                 RawImageResampleParams resample;
-                resample.ScaledWidth = Align(rawImage.GetWidth(), info.BlockSize);
-                resample.ScaledHeight = Align(rawImage.GetHeight(), info.BlockSize);
+                resample.ScaledWidth        = requiredWidth;
+                resample.ScaledHeight       = requiredHeight;
                 resample.HorizontalEdgeMode = resample.VerticalEdgeMode = pMipmapConfig ? pMipmapConfig->EdgeMode : IMAGE_RESAMPLE_EDGE_WRAP;
-                resample.HorizontalFilter = resample.VerticalFilter = pMipmapConfig ? pMipmapConfig->Filter : IMAGE_RESAMPLE_FILTER_MITCHELL;
-                resample.Flags = RAW_IMAGE_RESAMPLE_FLAG_DEFAULT;
+                resample.HorizontalFilter   = resample.VerticalFilter = pMipmapConfig ? pMipmapConfig->Filter : IMAGE_RESAMPLE_FILTER_MITCHELL;
+                resample.Flags              = RAW_IMAGE_RESAMPLE_FLAG_DEFAULT;
                 rawImage = ResampleRawImage(rawImage, resample);
             }
 
@@ -1756,7 +1779,7 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
             desc.Width      = rawImage.GetWidth();
             desc.Height     = rawImage.GetHeight();
             desc.SliceCount = 1;
-            desc.NumMipmaps = pMipmapConfig ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
+            desc.NumMipmaps = bMipmapped ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
             desc.Flags      = Flags;
 
             ImageStorage storage(desc);
@@ -2128,7 +2151,7 @@ static void NormalizeVectors(Float3* pVectors, size_t Count)
 }
 
 // Assume normals already normalized. The width and height of the normal map must be a multiple of blockSize if compression is enabled.
-ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t Height, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter)
+ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t Height, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter)
 {
     using namespace TextureBlockCompression;
 
@@ -2154,9 +2177,13 @@ ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t He
     CompressInfo const& compress = compressInfo[Pack];
 
     uint32_t blockSize = GetTextureFormatInfo(compressInfo[Pack].CompressedFormat).BlockSize;
-    if (bUseCompression && ((Width % blockSize) || (Height % blockSize)))
+
+    uint32_t requiredWidth  = bMipmapped ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(Width), blockSize) : Align(Width, blockSize);
+    uint32_t requiredHeight = bMipmapped ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(Height), blockSize) : Align(Height, blockSize);
+
+    if (bUseCompression && ((Width != requiredWidth) || (Height != requiredHeight)))
     {
-        LOG("CreateNormalMap: The width and height of the normal map must be a multiple of blockSize if compression is enabled.\n");
+        LOG("CreateNormalMap: The width and height of the normal map must be a power of two and a multiple of blockSize if compression is enabled.\n");
         return {};
     }
 
@@ -2176,7 +2203,7 @@ ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t He
     desc.Width      = source.GetWidth();
     desc.Height     = source.GetHeight();
     desc.SliceCount = 1;
-    desc.NumMipmaps = CalcNumMips(desc.Format, desc.Width, desc.Height);
+    desc.NumMipmaps = bMipmapped ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
     desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
 
     ImageStorage uncompressedImage(desc);
@@ -2189,10 +2216,13 @@ ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t He
 
     subresource.Write(0, 0, source.GetWidth(), source.GetHeight(), source.GetData());
 
-    ImageMipmapConfig mipmapConfig;
-    mipmapConfig.EdgeMode = ResampleEdgeMode;
-    mipmapConfig.Filter   = ResampleFilter;
-    uncompressedImage.GenerateMipmaps(mipmapConfig);
+    if (bMipmapped)
+    {
+        ImageMipmapConfig mipmapConfig;
+        mipmapConfig.EdgeMode = ResampleEdgeMode;
+        mipmapConfig.Filter   = ResampleFilter;
+        uncompressedImage.GenerateMipmaps(mipmapConfig);
+    }
 
     if (!bUseCompression)
     {
@@ -2200,7 +2230,7 @@ ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t He
     }
 
     desc.Format = compress.CompressedFormat;
-    desc.NumMipmaps = CalcNumMips(desc.Format, desc.Width, desc.Height);
+    desc.NumMipmaps = bMipmapped ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
     ImageStorage compressedImage(desc);
 
     for (uint32_t level = 0; level < desc.NumMipmaps; ++level)
@@ -2215,7 +2245,7 @@ ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t He
     return compressedImage;
 }
 
-ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
+ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
 {
     const IMAGE_RESAMPLE_FILTER ResampleFilter = IMAGE_RESAMPLE_FILTER_TRIANGLE; //IMAGE_RESAMPLE_FILTER_MITCHELL; // TODO: Check what filter is better for normal maps
 
@@ -2224,38 +2254,48 @@ ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK
         return {};
 
     if (bConvertFromDirectXNormalMap)
-        rawImage.InvertChannel(1);
+        rawImage.InvertGreen();
 
     // NOTE: Currently all compression methods have blockSize = 4
     const uint32_t blockSize = 4;
 
-    if (bUseCompression && (rawImage.GetWidth() % blockSize) || (rawImage.GetHeight() % blockSize))
+    uint32_t requiredWidth  = bMipmapped ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(rawImage.GetWidth()), blockSize) : Align(rawImage.GetWidth(), blockSize);
+    uint32_t requiredHeight = bMipmapped ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(rawImage.GetHeight()), blockSize) : Align(rawImage.GetHeight(), blockSize);
+
+    if (bUseCompression && ((rawImage.GetWidth() != requiredWidth) || (rawImage.GetHeight() != requiredHeight)))
     {
         RawImageResampleParams resample;
         resample.HorizontalEdgeMode = resample.VerticalEdgeMode = ResampleEdgeMode;
         resample.HorizontalFilter = resample.VerticalFilter = ResampleFilter;
+
+        resample.ScaledWidth = requiredWidth;
+        resample.ScaledHeight = requiredHeight;
 
         rawImage = ResampleRawImage(rawImage, resample);
     }
 
     NormalizeVectors((Float3*)rawImage.GetData(), rawImage.GetWidth() * rawImage.GetHeight());
 
-    return CreateNormalMap((Float3 const*)rawImage.GetData(), rawImage.GetWidth(), rawImage.GetHeight(), Pack, bUseCompression, ResampleEdgeMode, ResampleFilter);
+    return CreateNormalMap((Float3 const*)rawImage.GetData(), rawImage.GetWidth(), rawImage.GetHeight(), Pack, bUseCompression, bMipmapped, ResampleEdgeMode, ResampleFilter);
 }
 
-ImageStorage CreateNormalMap(AStringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
+ImageStorage CreateNormalMap(AStringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode)
 {
-    return CreateNormalMap(AFile::OpenRead(FileName).ReadInterface(), Pack, bUseCompression, bConvertFromDirectXNormalMap, ResampleEdgeMode);
+    return CreateNormalMap(AFile::OpenRead(FileName).ReadInterface(), Pack, bUseCompression, bMipmapped, bConvertFromDirectXNormalMap, ResampleEdgeMode);
 }
 
-ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, uint32_t Height, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter)
+ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, uint32_t Height, bool bUseCompression, bool bMipmapped, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter)
 {
     using namespace TextureBlockCompression;
 
     uint32_t blockSize = GetTextureFormatInfo(TEXTURE_FORMAT_BC4_UNORM).BlockSize;
-    if (bUseCompression && ((Width % blockSize) || (Height % blockSize)))
+
+    uint32_t requiredWidth  = bMipmapped ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(Width), blockSize) : Align(Width, blockSize);
+    uint32_t requiredHeight = bMipmapped ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(Height), blockSize) : Align(Height, blockSize);
+
+    if (bUseCompression && ((Width != requiredWidth) || (Height != requiredHeight)))
     {
-        LOG("CreateRoughnessMap: The width and height of the roughness map must be a multiple of blockSize if compression is enabled.\n");
+        LOG("CreateRoughnessMap: The width and height of the roughness map must be a power of two and a multiple of blockSize if compression is enabled.\n");
         return {};
     }
 
@@ -2265,7 +2305,7 @@ ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, ui
     desc.Width      = Width;
     desc.Height     = Height;
     desc.SliceCount = 1;
-    desc.NumMipmaps = CalcNumMips(desc.Format, desc.Width, desc.Height);
+    desc.NumMipmaps = bMipmapped ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
     desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
 
     ImageStorage     uncompressedImage(desc);
@@ -2273,10 +2313,13 @@ ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, ui
 
     subresource.Write(0, 0, Width, Height, pRoughnessMap);
 
-    ImageMipmapConfig mipmapConfig;
-    mipmapConfig.EdgeMode = ResampleEdgeMode;
-    mipmapConfig.Filter   = ResampleFilter;
-    uncompressedImage.GenerateMipmaps(mipmapConfig);
+    if (bMipmapped)
+    {
+        ImageMipmapConfig mipmapConfig;
+        mipmapConfig.EdgeMode = ResampleEdgeMode;
+        mipmapConfig.Filter   = ResampleFilter;
+        uncompressedImage.GenerateMipmaps(mipmapConfig);
+    }
 
     if (!bUseCompression)
     {
@@ -2284,7 +2327,7 @@ ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, ui
     }
 
     desc.Format = TEXTURE_FORMAT_BC4_UNORM;
-    desc.NumMipmaps = CalcNumMips(desc.Format, desc.Width, desc.Height);
+    desc.NumMipmaps = bMipmapped ? CalcNumMips(desc.Format, desc.Width, desc.Height) : 1;
 
     ImageStorage compressedImage(desc);
 
@@ -2299,6 +2342,7 @@ ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, ui
     }
     return compressedImage;
 }
+
 
 bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, ImageStorage& NormalMapImage, ImageStorage& RoughnessMapImage)
 {
@@ -2316,31 +2360,33 @@ bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, Ima
 
     if (Settings.bCompressRoughness_BC4)
     {
-        if ((roughnessImage.GetWidth() % blockSize) || (roughnessImage.GetHeight() % blockSize))
+        uint32_t requiredWidth  = Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(roughnessImage.GetWidth()), blockSize);
+        uint32_t requiredHeight = Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(roughnessImage.GetHeight()), blockSize);
+
+        if ((roughnessImage.GetWidth() != requiredWidth) || (roughnessImage.GetHeight() != requiredHeight))
         {
             RawImageResampleParams resample;
             resample.HorizontalEdgeMode = Settings.ResampleEdgeMode;
             resample.VerticalEdgeMode   = Settings.ResampleEdgeMode;
             resample.HorizontalFilter   = RoughnessMapResampleFilter;
             resample.VerticalFilter     = RoughnessMapResampleFilter;
-            resample.ScaledWidth        = Align(roughnessImage.GetWidth(), blockSize);
-            resample.ScaledHeight       = Align(roughnessImage.GetHeight(), blockSize);
+            resample.ScaledWidth        = requiredWidth;
+            resample.ScaledHeight       = requiredHeight;
 
             roughnessImage = ResampleRawImage(roughnessImage, resample);
         }
     }
 
-    ARawImage normalMapImageUnscaled = CreateRawImage(Settings.NormalMap, RAW_IMAGE_FORMAT_RGB32_FLOAT);
-    if (!normalMapImageUnscaled)
+    ARawImage normalMapSource = CreateRawImage(Settings.NormalMap, RAW_IMAGE_FORMAT_RGB32_FLOAT);
+    if (!normalMapSource)
         return {};
 
     if (Settings.bConvertFromDirectXNormalMap)
-        normalMapImageUnscaled.InvertGreen();
+        normalMapSource.InvertGreen();
 
-    ARawImage normalMapImageScaled;
-    bool      normalMapRescaled = false;
+    ARawImage normalMapImage;
 
-    if (normalMapImageUnscaled.GetWidth() != roughnessImage.GetWidth() || normalMapImageUnscaled.GetHeight() != roughnessImage.GetHeight())
+    if (normalMapSource.GetWidth() != roughnessImage.GetWidth() || normalMapSource.GetHeight() != roughnessImage.GetHeight())
     {
         RawImageResampleParams resample;
         resample.HorizontalEdgeMode = Settings.ResampleEdgeMode;
@@ -2350,17 +2396,17 @@ bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, Ima
         resample.ScaledWidth        = roughnessImage.GetWidth();
         resample.ScaledHeight       = roughnessImage.GetHeight();
 
-        normalMapImageScaled = ResampleRawImage(normalMapImageUnscaled, resample);
-
-        normalMapRescaled = true;
+        normalMapImage = ResampleRawImage(normalMapSource, resample);
     }
-
-    ARawImage& normalMapImage = normalMapRescaled ? normalMapImageScaled : normalMapImageUnscaled;
+    else
+    {
+        normalMapImage = normalMapSource.Clone();
+    }
 
     // Normalize normal map
     NormalizeVectors((Float3*)normalMapImage.GetData(), normalMapImage.GetWidth() * normalMapImage.GetHeight());
 
-    ImageStorage roughnessMapUncompressed = CreateRoughnessMap((uint8_t const*)roughnessImage.GetData(), roughnessImage.GetWidth(), roughnessImage.GetHeight(), false, Settings.ResampleEdgeMode, RoughnessMapResampleFilter);
+    ImageStorage roughnessMapUncompressed = CreateRoughnessMap((uint8_t const*)roughnessImage.GetData(), roughnessImage.GetWidth(), roughnessImage.GetHeight(), false, true, Settings.ResampleEdgeMode, RoughnessMapResampleFilter);
 
     ARawImage averageNormals;
 
@@ -2451,28 +2497,30 @@ bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, Ima
         RoughnessMapImage = std::move(roughnessMapUncompressed);
     }
 
-    if (Settings.bCompressNormals && ((normalMapImageUnscaled.GetWidth() % blockSize) || (normalMapImageUnscaled.GetHeight() % blockSize)))
+    uint32_t requiredNormalMapWidth  = Settings.bCompressNormals ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(normalMapSource.GetWidth()), blockSize) : normalMapSource.GetWidth();
+    uint32_t requiredNormalMapHeight = Settings.bCompressNormals ? Math::Max<uint32_t>(Math::ToClosestPowerOfTwo(normalMapSource.GetHeight()), blockSize) : normalMapSource.GetHeight();
+
+    if (requiredNormalMapWidth == normalMapImage.GetWidth() && requiredNormalMapHeight == normalMapImage.GetHeight())
+    {
+        // Use normalMapImage
+    }
+    else if (((normalMapSource.GetWidth() != requiredNormalMapWidth) || (normalMapSource.GetHeight() != requiredNormalMapHeight)))
     {
         RawImageResampleParams resample;
         resample.HorizontalEdgeMode = Settings.ResampleEdgeMode;
         resample.VerticalEdgeMode   = Settings.ResampleEdgeMode;
         resample.HorizontalFilter   = NormalMapResampleFilter;
         resample.VerticalFilter     = NormalMapResampleFilter;
-        resample.ScaledWidth        = Align(normalMapImageUnscaled.GetWidth(), blockSize);
-        resample.ScaledHeight       = Align(normalMapImageUnscaled.GetHeight(), blockSize);
+        resample.ScaledWidth        = requiredNormalMapWidth;
+        resample.ScaledHeight       = requiredNormalMapHeight;
 
-        normalMapImageUnscaled = ResampleRawImage(normalMapImageUnscaled, resample);
+        normalMapImage = ResampleRawImage(normalMapSource, resample);
 
         // Normalize normal map
-        NormalizeVectors((Float3*)normalMapImageUnscaled.GetData(), normalMapImageUnscaled.GetWidth() * normalMapImageUnscaled.GetHeight());
-    }
-    else if (normalMapRescaled)
-    {
-        // Normalize normal map
-        NormalizeVectors((Float3*)normalMapImageUnscaled.GetData(), normalMapImageUnscaled.GetWidth() * normalMapImageUnscaled.GetHeight());
+        NormalizeVectors((Float3*)normalMapImage.GetData(), normalMapImage.GetWidth() * normalMapImage.GetHeight());
     }
 
-    NormalMapImage = CreateNormalMap((Float3 const*)normalMapImageUnscaled.GetData(), normalMapImageUnscaled.GetWidth(), normalMapImageUnscaled.GetHeight(), Settings.Pack, Settings.bCompressNormals, Settings.ResampleEdgeMode, NormalMapResampleFilter);
+    NormalMapImage = CreateNormalMap((Float3 const*)normalMapImage.GetData(), normalMapImage.GetWidth(), normalMapImage.GetHeight(), Settings.Pack, Settings.bCompressNormals, true, Settings.ResampleEdgeMode, NormalMapResampleFilter);
 
     return true;
 }

@@ -751,6 +751,58 @@ void ARawImage::InvertChannel(uint32_t ChannelIndex)
     }
 }
 
+void ARawImage::PremultiplyAlpha()
+{
+    if (m_Format != RAW_IMAGE_FORMAT_RGBA8 && m_Format != RAW_IMAGE_FORMAT_BGRA8)
+    {
+        LOG("ARawImage::PremultiplyAlpha: Expected image format RAW_IMAGE_FORMAT_RGBA8 or RAW_IMAGE_FORMAT_BGRA8\n");
+        return;
+    }
+
+    uint8_t* data   = (uint8_t*)m_pData;
+    uint8_t* data_e = (uint8_t*)m_pData + (size_t)m_Width * m_Height * 4;
+
+    while (data < data_e)
+    {
+        if (data[3] != 255)
+        {
+            float scale = data[3] / 255.0f;
+
+            data[0] = LinearToSRGB_UChar(LinearFromSRGB_UChar(data[0]) * scale);
+            data[1] = LinearToSRGB_UChar(LinearFromSRGB_UChar(data[1]) * scale);
+            data[2] = LinearToSRGB_UChar(LinearFromSRGB_UChar(data[2]) * scale);
+        }
+
+        data += 4;
+    }
+}
+
+void ARawImage::UnpremultiplyAlpha()
+{
+    if (m_Format != RAW_IMAGE_FORMAT_RGBA8 && m_Format != RAW_IMAGE_FORMAT_BGRA8)
+    {
+        LOG("ARawImage::UnpremultiplyAlpha: Expected image format RAW_IMAGE_FORMAT_RGBA8 or RAW_IMAGE_FORMAT_BGRA8\n");
+        return;
+    }
+
+    uint8_t* data   = (uint8_t*)m_pData;
+    uint8_t* data_e = (uint8_t*)m_pData + (size_t)m_Width * m_Height * 4;
+
+    while (data < data_e)
+    {
+        if (data[3] != 0)
+        {
+            float scale = 255.0f / data[3];
+
+            data[0] = LinearToSRGB_UChar(LinearFromSRGB_UChar(data[0]) * scale);
+            data[1] = LinearToSRGB_UChar(LinearFromSRGB_UChar(data[1]) * scale);
+            data[2] = LinearToSRGB_UChar(LinearFromSRGB_UChar(data[2]) * scale);
+        }
+
+        data += 4;
+    }
+}
+
 static bool IsTga(IBinaryStreamReadInterface& Stream)
 {
     // From stb_image
@@ -1532,7 +1584,9 @@ bool WriteWEBP(IBinaryStreamWriteInterface& Stream, uint32_t Width, uint32_t Hei
         return false;
     }
     config.lossless = int(bLossless);
-    config.exact = 1; // Preserve RGB values under transparency, as they may be wanted.
+
+    // Preserve the exact RGB values under transparent area
+    config.exact = 1;
 	
     pic.use_argb = 1;
     pic.width = Width;

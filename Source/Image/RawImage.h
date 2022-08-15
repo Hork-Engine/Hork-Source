@@ -193,6 +193,14 @@ public:
     void InvertBlue() { InvertChannel(2); }
     void InvertAlpha() { InvertChannel(3); }
 
+    /** Premultiplies the RGB with the alpha channel. The image is assumed to be in the sRGB color space.
+    Only allowed for RAW_IMAGE_FORMAT_RGBA8 and RAW_IMAGE_FORMAT_BGRA8 image formats. */
+    void PremultiplyAlpha();
+
+    /** Unpremultiplies the RGB with the alpha channel. The image is assumed to be in the sRGB color space.
+    Only allowed for RAW_IMAGE_FORMAT_RGBA8 and RAW_IMAGE_FORMAT_BGRA8 image formats. */
+    void UnpremultiplyAlpha();
+
 private:
     void*            m_pData{};
     uint32_t         m_Width{};
@@ -200,9 +208,16 @@ private:
     RAW_IMAGE_FORMAT m_Format{RAW_IMAGE_FORMAT_UNDEFINED};
 };
 
+/** Create image from stream. */
 ARawImage CreateRawImage(IBinaryStreamReadInterface& Stream, RAW_IMAGE_FORMAT Format = RAW_IMAGE_FORMAT_UNDEFINED);
+
+/** Create image from file. */
 ARawImage CreateRawImage(AStringView FileName, RAW_IMAGE_FORMAT Format = RAW_IMAGE_FORMAT_UNDEFINED);
+
+/** Create image from SVG. The resulting image is premultiplied with an alpha channel. */
 ARawImage CreateRawImage(class SvgDocument const& Document, uint32_t Width, uint32_t Height, Float4 const& BackgroundColor = Float4::Zero());
+
+/** Create image from SVG. The resulting image is premultiplied with an alpha channel. */
 ARawImage CreateRawImageFromSVG(IBinaryStreamReadInterface& Stream, Float2 const& Scale = Float2(1.0f), Float4 const& BackgroundColor = Float4::Zero());
 
 enum IMAGE_FILE_FORMAT

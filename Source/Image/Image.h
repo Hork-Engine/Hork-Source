@@ -218,7 +218,7 @@ enum IMAGE_STORAGE_FLAGS
 {
     IMAGE_STORAGE_FLAGS_DEFAULT       = 0,
     IMAGE_STORAGE_NO_ALPHA            = 1,
-    IMAGE_STORAGE_ALPHA_PREMULTIPLIED = 2,
+    IMAGE_STORAGE_ALPHA_PREMULTIPLIED = 2
 };
 
 HK_FLAG_ENUM_OPERATORS(IMAGE_STORAGE_FLAGS)
@@ -554,14 +554,14 @@ ImageStorage CreateImage(IBinaryStreamReadInterface& Stream, ImageMipmapConfig c
 /** Create image storage from file */
 ImageStorage CreateImage(AStringView FileName, ImageMipmapConfig const* pMipmapConfig = nullptr, IMAGE_STORAGE_FLAGS Flags = IMAGE_STORAGE_FLAGS_DEFAULT, TEXTURE_FORMAT Format = TEXTURE_FORMAT_UNDEFINED);
 
-ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
-ImageStorage CreateNormalMap(AStringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
+ImageStorage CreateNormalMap(IBinaryStreamReadInterface& Stream, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
+ImageStorage CreateNormalMap(AStringView FileName, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, bool bConvertFromDirectXNormalMap, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode);
 
 // Assume normals already normalized. The width and height of the normal map must be a multiple of blockSize if compression is enabled.
-ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t Height, NORMAL_MAP_PACK Pack, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter);
+ImageStorage CreateNormalMap(Float3 const* pNormals, uint32_t Width, uint32_t Height, NORMAL_MAP_PACK Pack, bool bUseCompression, bool bMipmapped, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter);
 
 // The width and height of the roughness map must be a multiple of blockSize if compression is enabled.
-ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, uint32_t Height, bool bUseCompression, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter);
+ImageStorage CreateRoughnessMap(uint8_t const* pRoughnessMap, uint32_t Width, uint32_t Height, bool bUseCompression, bool bMipmapped, IMAGE_RESAMPLE_EDGE_MODE ResampleEdgeMode, IMAGE_RESAMPLE_FILTER ResampleFilter);
 
 struct NormalRoughnessImportSettings
 {
