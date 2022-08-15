@@ -938,28 +938,30 @@ void MGMaterialGraph::ComputeLightStage(AMaterialBuildContext& Context)
         Context.SourceCode += "const float Opacity = 1.0;\n";
     }
 
-    ComputeAlphaMask(Context);
+    // NOTE. It is not necessary to calculate an alpha mask for opaque materials, but there may still be cases where translucent materials use an alpha test.
+    if (bTranslucent)
+        ComputeAlphaMask(Context);
 }
 
 void MGMaterialGraph::ComputeShadowCastStage(AMaterialBuildContext& Context)
 {
-    //ComputeAlphaMask( Context );
-
     MGOutput* con = ShadowMask.GetConnection();
 
     if (con && ShadowMask.ConnectedNode()->Build(Context))
     {
         Context.bHasShadowMask = true;
 
+        AString cutoff = Core::ToString(AlphaMaskCutOff); // FIXME: Add ShadowMaskCutOff?
+
         switch (con->Type)
         {
             case MG_VALUE_TYPE_FLOAT1:
-                Context.SourceCode += "if ( " + con->Expression + " < 0.5 ) discard;\n";
+                Context.SourceCode += "if ( " + con->Expression + " < " + cutoff + " ) discard;\n";
                 break;
             case MG_VALUE_TYPE_FLOAT2:
             case MG_VALUE_TYPE_FLOAT3:
             case MG_VALUE_TYPE_FLOAT4:
-                Context.SourceCode += "if ( " + con->Expression + ".x < 0.5 ) discard;\n";
+                Context.SourceCode += "if ( " + con->Expression + ".x < " + cutoff + " ) discard;\n";
                 break;
             case MG_VALUE_TYPE_BOOL1:
                 Context.SourceCode += "if ( " + con->Expression + " == false ) discard;\n";
@@ -1019,15 +1021,17 @@ void MGMaterialGraph::ComputeAlphaMask(AMaterialBuildContext& Context)
     {
         Context.bHasAlphaMask = true;
 
+        AString cutoff = Core::ToString(AlphaMaskCutOff);
+
         switch (con->Type)
         {
             case MG_VALUE_TYPE_FLOAT1:
-                Context.SourceCode += "if ( " + con->Expression + " < 0.5 ) discard;\n";
+                Context.SourceCode += "if ( " + con->Expression + " < " + cutoff + " ) discard;\n";
                 break;
             case MG_VALUE_TYPE_FLOAT2:
             case MG_VALUE_TYPE_FLOAT3:
             case MG_VALUE_TYPE_FLOAT4:
-                Context.SourceCode += "if ( " + con->Expression + ".x < 0.5 ) discard;\n";
+                Context.SourceCode += "if ( " + con->Expression + ".x < " + cutoff + " ) discard;\n";
                 break;
             case MG_VALUE_TYPE_BOOL1:
                 Context.SourceCode += "if ( " + con->Expression + " == false ) discard;\n";
@@ -3194,6 +3198,7 @@ HK_PROPERTY_DIRECT(Blending, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(ParallaxTechnique, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(DepthHack, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(MotionBlurScale, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(AlphaMaskCutOff, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(bDepthTest, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(bTranslucent, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(bTwoSided, HK_PROPERTY_DEFAULT)

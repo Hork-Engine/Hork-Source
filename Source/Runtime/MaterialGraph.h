@@ -987,6 +987,8 @@ public:
 
     float MotionBlurScale = 1.0f;
 
+    float AlphaMaskCutOff = 0.5f;
+
     bool bDepthTest = true;
 
     bool bTranslucent = false;
