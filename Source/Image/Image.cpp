@@ -1860,9 +1860,32 @@ ImageStorage LoadSkyboxImages(SkyboxImportSettings const& Settings)
 {
     ARawImage rawImage[6];
 
+    bool bHDRI = Settings.Format == SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT || Settings.Format == SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT;
+
+    RAW_IMAGE_FORMAT rawImageFormat;
+    switch (Settings.Format)
+    {
+        case SKYBOX_IMPORT_TEXTURE_FORMAT_SRGBA8_UNORM:
+        case SKYBOX_IMPORT_TEXTURE_FORMAT_BC1_UNORM_SRGB:
+            rawImageFormat = RAW_IMAGE_FORMAT_RGBA8;
+            break;
+        case SKYBOX_IMPORT_TEXTURE_FORMAT_SBGRA8_UNORM:
+            rawImageFormat = RAW_IMAGE_FORMAT_BGRA8;
+            break;
+        case SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT:
+            rawImageFormat = RAW_IMAGE_FORMAT_RGB32_FLOAT;
+            break;
+        case SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT:
+            rawImageFormat = RAW_IMAGE_FORMAT_RGBA32_FLOAT;
+            break;
+        default:
+            LOG("LoadSkyboxImages: unexpected texture format specified\n");
+            return {};
+    }
+
     for (uint32_t i = 0; i < 6; i++)
     {
-        rawImage[i] = CreateRawImage(Settings.Faces[i], Settings.bHDRI ? RAW_IMAGE_FORMAT_RGB32_FLOAT : RAW_IMAGE_FORMAT_RGBA8);
+        rawImage[i] = CreateRawImage(Settings.Faces[i], rawImageFormat);
         if (!rawImage[i])
             return {};
 
@@ -1873,63 +1896,90 @@ ImageStorage LoadSkyboxImages(SkyboxImportSettings const& Settings)
         }
     }
 
+    TextureFormatInfo const& info = GetTextureFormatInfo((TEXTURE_FORMAT)Settings.Format);
+
+    uint32_t w = Align(rawImage[0].GetWidth(), info.BlockSize);
+    uint32_t h = Align(rawImage[0].GetHeight(), info.BlockSize);
+
+    if (w != rawImage[0].GetWidth() || h != rawImage[0].GetHeight())
+    {
+        RawImageResampleParams resample;
+
+        resample.HorizontalEdgeMode = resample.VerticalEdgeMode = IMAGE_RESAMPLE_EDGE_CLAMP;
+        resample.HorizontalFilter = resample.VerticalFilter = IMAGE_RESAMPLE_FILTER_MITCHELL;
+
+        resample.Flags = RAW_IMAGE_RESAMPLE_FLAG_DEFAULT;
+
+        if (info.bSRGB)
+            resample.Flags |= RAW_IMAGE_RESAMPLE_COLORSPACE_SRGB;
+
+        resample.ScaledWidth  = w;
+        resample.ScaledHeight = h;
+
+        for (uint32_t i = 0; i < 6; i++)
+        {
+            rawImage[i] = ResampleRawImage(rawImage[i], resample);
+        }        
+    }
+
+    if (bHDRI && Settings.HDRIScale != 1.0f || Settings.HDRIPow != 1.0f)
+    {
+        int    numChannels = rawImage[0].NumChannels();
+        size_t count = (size_t)w * h * numChannels;
+
+        for (uint32_t i = 0; i < 6; i++)
+        {
+            float* data = (float*)rawImage[i].GetData();
+            
+            for (size_t j = 0; j < count; j += numChannels)
+            {
+                data[j]     = Math::Pow(data[j + 0] * Settings.HDRIScale, Settings.HDRIPow);
+                data[j + 1] = Math::Pow(data[j + 1] * Settings.HDRIScale, Settings.HDRIPow);
+                data[j + 2] = Math::Pow(data[j + 2] * Settings.HDRIScale, Settings.HDRIPow);
+            }
+        }
+    }
+
     ImageStorageDesc desc;
     desc.Type       = TEXTURE_CUBE;
-    desc.Width      = rawImage[0].GetWidth();
-    desc.Height     = rawImage[0].GetHeight();
+    desc.Width      = w;
+    desc.Height     = h;
     desc.SliceCount = 6;
     desc.NumMipmaps = 1;
     desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
+    desc.Format     = (TEXTURE_FORMAT)Settings.Format;
 
-    if (Settings.bHDRI)
+    ImageStorage storage(desc);
+
+    ImageSubresourceDesc subres;
+    subres.MipmapIndex = 0;
+    for (uint32_t i = 0; i < 6; i++)
     {
-        desc.Format = TEXTURE_FORMAT_R11G11B10_FLOAT;
+        subres.SliceIndex = i;
 
-        ImageStorage storage(desc);
+        ImageSubresource subresource = storage.GetSubresource(subres);
 
-        ImageSubresourceDesc subres;
-        subres.MipmapIndex = 0;
-        for (uint32_t i = 0; i < 6; i++)
+        switch (Settings.Format)
         {
-            subres.SliceIndex = i;
-
-            ImageSubresource subresource = storage.GetSubresource(subres);
-
-            if (Settings.HDRIScale != 1.0f || Settings.HDRIPow != 1.0f)
-            {
-                float* HDRI  = (float*)rawImage[i].GetData();
-                int    count = rawImage[i].GetWidth() * rawImage[i].GetHeight() * 3;
-                for (int j = 0; j < count; j += 3)
-                {
-                    HDRI[j]     = Math::Pow(HDRI[j + 0] * Settings.HDRIScale, Settings.HDRIPow);
-                    HDRI[j + 1] = Math::Pow(HDRI[j + 1] * Settings.HDRIScale, Settings.HDRIPow);
-                    HDRI[j + 2] = Math::Pow(HDRI[j + 2] * Settings.HDRIScale, Settings.HDRIPow);
-                }
-            }
-
-            Decoder_R11G11B10F().Encode(subresource.GetData(), rawImage[i].GetData(), subresource.GetWidth(), subresource.GetHeight());
+            case SKYBOX_IMPORT_TEXTURE_FORMAT_SRGBA8_UNORM:
+            case SKYBOX_IMPORT_TEXTURE_FORMAT_SBGRA8_UNORM:
+                subresource.Write(0, 0, subresource.GetWidth(), subresource.GetHeight(), rawImage[i].GetData());
+                break;
+            case SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT:
+                Decoder_R11G11B10F().Encode(subresource.GetData(), rawImage[i].GetData(), subresource.GetWidth(), subresource.GetHeight());
+                break;
+            case SKYBOX_IMPORT_TEXTURE_FORMAT_BC1_UNORM_SRGB:
+                TextureBlockCompression::CompressBC1(rawImage[i].GetData(), subresource.GetData(), subresource.GetWidth(), subresource.GetHeight());
+                break;
+            case SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT:
+                TextureBlockCompression::CompressBC6h(rawImage[i].GetData(), subresource.GetData(), subresource.GetWidth(), subresource.GetHeight(), false);
+                break;
+            default:
+                HK_ASSERT(0);
         }
-
-        return storage;
     }
-    else
-    {
-        desc.Format = TEXTURE_FORMAT_SRGBA8_UNORM;
 
-        ImageStorage storage(desc);
-
-        ImageSubresourceDesc subres;
-        subres.MipmapIndex = 0;
-        for (uint32_t i = 0; i < 6; i++)
-        {
-            subres.SliceIndex = i;
-
-            ImageSubresource subresource = storage.GetSubresource(subres);
-            subresource.Write(0, 0, subresource.GetWidth(), subresource.GetHeight(), rawImage[i].GetData());
-        }
-
-        return storage;
-    }
+    return storage;
 }
 
 template <typename Decoder>

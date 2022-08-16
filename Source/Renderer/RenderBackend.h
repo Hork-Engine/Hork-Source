@@ -49,7 +49,7 @@ public:
 
     void GenerateIrradianceMap(RenderCore::ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture);
     void GenerateReflectionMap(RenderCore::ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture);
-    void GenerateSkybox(uint32_t Resolution, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture);
+    void GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture);
 
     void RenderFrame(AStreamedMemoryGPU* StreamedMemory, RenderCore::ITexture* pBackBuffer, SRenderFrame* pFrameData);
 

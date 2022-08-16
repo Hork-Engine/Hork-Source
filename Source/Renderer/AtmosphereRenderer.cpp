@@ -99,7 +99,7 @@ AAtmosphereRenderer::AAtmosphereRenderer() {
     GDevice->CreatePipeline( pipelineCI, &Pipeline );
 }
 
-void AAtmosphereRenderer::Render( int CubemapWidth, Float3 const & LightDir, TRef< RenderCore::ITexture > * ppTexture )
+void AAtmosphereRenderer::Render(TEXTURE_FORMAT Format, int CubemapWidth, Float3 const & LightDir, TRef< RenderCore::ITexture > * ppTexture )
 {
     AFrameGraph frameGraph( GDevice );
     ARenderPass & pass = frameGraph.AddTask< ARenderPass >( "Atmosphere pass" );
@@ -111,7 +111,7 @@ void AAtmosphereRenderer::Render( int CubemapWidth, Float3 const & LightDir, TRe
             {
                 STextureAttachment("Render target texture",
                                     STextureDesc()
-                                        .SetFormat( TEX_FORMAT_SKY )
+                                 .SetFormat(Format)
                                         .SetResolution(STextureResolutionCubemap(CubemapWidth))
                 )
                 .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE)

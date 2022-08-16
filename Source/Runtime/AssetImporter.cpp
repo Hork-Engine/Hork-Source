@@ -2396,37 +2396,63 @@ bool GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, A
     return GenerateAndSaveEnvironmentMap(image, EnvmapFile);
 }
 
-ImageStorage GenerateAtmosphereSkybox(uint32_t Resolution, Float3 const& LightDir)
+ImageStorage GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir)
 {
-    TRef<RenderCore::ITexture> skybox;
-    GEngine->GetRenderBackend()->GenerateSkybox(512, LightDir, &skybox);
+    TEXTURE_FORMAT renderFormat;
 
-    int width = skybox->GetWidth();
+    switch (Format)
+    {
+        case SKYBOX_IMPORT_TEXTURE_FORMAT_SRGBA8_UNORM:
+        case SKYBOX_IMPORT_TEXTURE_FORMAT_BC1_UNORM_SRGB:
+            renderFormat = TEXTURE_FORMAT_SRGBA8_UNORM;
+            break;
+        case SKYBOX_IMPORT_TEXTURE_FORMAT_SBGRA8_UNORM:
+            renderFormat = TEXTURE_FORMAT_SBGRA8_UNORM;
+            break;
+        case SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT:
+            renderFormat = TEXTURE_FORMAT_R11G11B10_FLOAT;
+            break;
+        case SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT:
+            renderFormat = TEXTURE_FORMAT_RGBA32_FLOAT;
+            break;
+        default:
+            LOG("GenerateAtmosphereSkybox: unexpected texture format\n");
+            return{};
+    }
+
+    TextureFormatInfo const& info = GetTextureFormatInfo((TEXTURE_FORMAT)Format);
+
+    if (Resolution % info.BlockSize)
+    {
+        LOG("GenerateAtmosphereSkybox: skybox resolution must be block aligned\n");
+        return {};
+    }
+
+    TRef<RenderCore::ITexture> skybox;
+    GEngine->GetRenderBackend()->GenerateSkybox(renderFormat, Resolution, LightDir, &skybox);
 
     RenderCore::STextureRect rect;
     rect.Offset.X        = 0;
     rect.Offset.Y        = 0;
     rect.Offset.MipLevel = 0;
-    rect.Dimension.X     = width;
-    rect.Dimension.Y     = width;
+    rect.Dimension.X     = Resolution;
+    rect.Dimension.Y     = Resolution;
     rect.Dimension.Z     = 1;
 
     ImageStorageDesc desc;
     desc.Type       = TEXTURE_CUBE;
-    desc.Width      = width;
-    desc.Height     = width;
+    desc.Width      = Resolution;
+    desc.Height     = Resolution;
     desc.SliceCount = 6;
     desc.NumMipmaps = 1;
-    //desc.Format     = TEXTURE_FORMAT_BC6H_UFLOAT;
-    desc.Format     = skybox->GetDesc().Format;
+    desc.Format     = (TEXTURE_FORMAT)Format;
     desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
 
     ImageStorage storage(desc);
 
-    //size_t   sz = width * width * 4 * sizeof(float);
-    //HeapBlob blob(sz);
+    HeapBlob temp;
 
-    for (int faceNum = 0; faceNum < 6; faceNum++)
+    for (uint32_t faceNum = 0; faceNum < 6; faceNum++)
     {
         ImageSubresourceDesc subresDesc;
         subresDesc.SliceIndex = faceNum;
@@ -2436,18 +2462,30 @@ ImageStorage GenerateAtmosphereSkybox(uint32_t Resolution, Float3 const& LightDi
 
         rect.Offset.Z = faceNum;
 
-        skybox->ReadRect(rect, subresource.GetSizeInBytes(), 4, subresource.GetData());
+        switch (Format)
+        {
+            case SKYBOX_IMPORT_TEXTURE_FORMAT_SRGBA8_UNORM:
+            case SKYBOX_IMPORT_TEXTURE_FORMAT_SBGRA8_UNORM:
+            case SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT:
+                skybox->ReadRect(rect, subresource.GetSizeInBytes(), 4, subresource.GetData());
+                break;
+            case SKYBOX_IMPORT_TEXTURE_FORMAT_BC1_UNORM_SRGB:
+                if (!temp)
+                    temp.Reset(Resolution * Resolution * 4);
 
-        //skybox->ReadRect(rect, blob.Size(), 4, blob.GetData());
+                skybox->ReadRect(rect, temp.Size(), 4, temp.GetData());
+                TextureBlockCompression::CompressBC1(temp.GetData(), subresource.GetData(), Resolution, Resolution);
+                break;
+            case SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT:
+                if (!temp)
+                    temp.Reset(Resolution * Resolution * 4 * sizeof(float));
 
-        //TextureBlockCompression::CompressBC6h(blob.GetData(), subresource.GetData(), width, width, false);
-
-        //blob.ZeroMem();
-
-        //DecompressBC6h(subresource.GetData(), blob.GetData(), width, width, false);
-
-        //AFile f = AFile::OpenWrite(HK_FORMAT("Face{}.exr", faceNum));
-        //WriteEXR(f, width, width, 3, (const float*)blob.GetData(), true);
+                skybox->ReadRect(rect, temp.Size(), 4, temp.GetData());
+                TextureBlockCompression::CompressBC6h(temp.GetData(), subresource.GetData(), Resolution, Resolution, false);
+                break;
+            default:
+                HK_ASSERT(0);
+        }
     }
     return storage;
 }

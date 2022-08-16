@@ -593,13 +593,22 @@ struct NormalRoughnessImportSettings
 
 bool CreateNormalAndRoughness(NormalRoughnessImportSettings const& Settings, ImageStorage& NormalMapImage, ImageStorage& RoughnessMapImage);
 
+// NOTE: You can use any supported TEXTURE_FORMAT_* for the skybox. But LoadSkyboxImages only supports these formats because they are the most common.
+enum SKYBOX_IMPORT_TEXTURE_FORMAT
+{
+    SKYBOX_IMPORT_TEXTURE_FORMAT_SRGBA8_UNORM    = TEXTURE_FORMAT_SRGBA8_UNORM,
+    SKYBOX_IMPORT_TEXTURE_FORMAT_SBGRA8_UNORM    = TEXTURE_FORMAT_SBGRA8_UNORM,
+    SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT = TEXTURE_FORMAT_R11G11B10_FLOAT,
+    SKYBOX_IMPORT_TEXTURE_FORMAT_BC1_UNORM_SRGB  = TEXTURE_FORMAT_BC1_UNORM_SRGB,
+    SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT     = TEXTURE_FORMAT_BC6H_UFLOAT
+};
+
 struct SkyboxImportSettings
 {
     /** Source files for skybox */
     TArray<AString, 6> Faces;
 
-    /** Import skybox as HDRI image */
-    bool bHDRI{false};
+    SKYBOX_IMPORT_TEXTURE_FORMAT Format{SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT};
 
     float HDRIScale{1};
     float HDRIPow{1};

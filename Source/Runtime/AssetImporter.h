@@ -204,7 +204,7 @@ private:
 bool GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, AStringView EnvmapFile);
 bool GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, AStringView EnvmapFile);
 
-ImageStorage GenerateAtmosphereSkybox(uint32_t Resolution, Float3 const& LightDir);
+ImageStorage GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir);
 
 bool SaveSkyboxTexture(AStringView FileName, ImageStorage& Image);
 

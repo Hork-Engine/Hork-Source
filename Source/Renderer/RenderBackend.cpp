@@ -331,10 +331,10 @@ void ARenderBackend::GenerateReflectionMap(ITexture* pCubemap, TRef<RenderCore::
     envProbeGenerator.Generate(7, pCubemap, ppTexture);
 }
 
-void ARenderBackend::GenerateSkybox(uint32_t Resolution, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture)
+void ARenderBackend::GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture)
 {
     AAtmosphereRenderer atmosphereRenderer;
-    atmosphereRenderer.Render(Resolution, LightDir, ppTexture);
+    atmosphereRenderer.Render(Format, Resolution, LightDir, ppTexture);
 }
 
 #if 0
