@@ -216,7 +216,7 @@ AString AVariant::ToString() const
         case VARIANT_RESOURCE_REF:
             return Core::ToString(*Get<SResourceRef>());
         case VARIANT_ENUM:
-            return FindEnumValue(EnumType.EnumDef, EnumType.EnumValue);
+            return FindEnumValue(m_EnumType.EnumDef, m_EnumType.EnumValue);
         default:
             HK_ASSERT(0);
     }

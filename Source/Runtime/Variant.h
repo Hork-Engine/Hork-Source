@@ -293,8 +293,8 @@ class AVariant final
 
     union
     {
-        alignas(16) uint8_t RawData[SizeOf];
-        SEnumType EnumType;
+        alignas(16) uint8_t m_RawData[SizeOf];
+        SEnumType m_EnumType;
     };
 
 public:
@@ -302,24 +302,113 @@ public:
 
     ~AVariant()
     {
-        if (m_Type == VARIANT_STRING)
-            ((AString*)&RawData[0])->~AString();
+        Reset();
+    }
+
+    AVariant(AVariant const& Rhs) :
+        m_Type(Rhs.m_Type)
+    {
+        switch (Rhs.m_Type)
+        {
+            case VARIANT_STRING:
+                new (m_RawData) AString;
+                *(AString*)&m_RawData[0] = *(AString*)&Rhs.m_RawData[0];
+                break;
+            case VARIANT_ENUM:
+                m_EnumType = Rhs.m_EnumType;
+                break;
+            case VARIANT_UNDEFINED:
+                break;
+            default:
+                Platform::Memcpy(m_RawData, Rhs.m_RawData, sizeof(m_RawData));
+                break;
+        }
+    }
+
+    AVariant& operator=(AVariant const& Rhs)
+    {
+        Reset();
+
+        m_Type = Rhs.m_Type;
+
+        switch (Rhs.m_Type)
+        {
+            case VARIANT_STRING:
+                new (m_RawData) AString;
+                *(AString*)&m_RawData[0] = *(AString*)&Rhs.m_RawData[0];
+                break;
+            case VARIANT_ENUM:
+                m_EnumType = Rhs.m_EnumType;
+                break;
+            case VARIANT_UNDEFINED:
+                break;
+            default:
+                Platform::Memcpy(m_RawData, Rhs.m_RawData, sizeof(m_RawData));
+                break;
+        }
+        return *this;
+    }
+
+    AVariant(AVariant&& Rhs) noexcept :
+        m_Type(Rhs.m_Type)
+    {
+        switch (Rhs.m_Type)
+        {
+            case VARIANT_STRING:
+                new (m_RawData) AString(std::move(*(AString*)&Rhs.m_RawData[0]));
+                break;
+            case VARIANT_ENUM:
+                m_EnumType = Rhs.m_EnumType;
+                break;
+            case VARIANT_UNDEFINED:
+                break;
+            default:
+                Platform::Memcpy(m_RawData, Rhs.m_RawData, sizeof(m_RawData));
+                break;
+        }
+
+        Rhs.m_Type = VARIANT_UNDEFINED;
+    }
+
+    AVariant& operator=(AVariant&& Rhs) noexcept
+    {
+        Reset();
+
+        m_Type = Rhs.m_Type;
+
+        switch (Rhs.m_Type)
+        {
+            case VARIANT_STRING:
+                new (m_RawData) AString(std::move(*(AString*)&Rhs.m_RawData[0]));
+                break;
+            case VARIANT_ENUM:
+                m_EnumType = Rhs.m_EnumType;
+                break;
+            case VARIANT_UNDEFINED:
+                break;
+            default:
+                Platform::Memcpy(m_RawData, Rhs.m_RawData, sizeof(m_RawData));
+                break;
+        }
+
+        Rhs.m_Type = VARIANT_UNDEFINED;
+        return *this;
     }
 
     AVariant(const char *Rhs) :
         m_Type(VARIANT_STRING)
     {
-        new (RawData) AString;
+        new (m_RawData) AString;
 
-        *(AString*)&RawData[0] = Rhs;
+        *(AString*)&m_RawData[0] = Rhs;
     }
 
     AVariant(AStringView Rhs) :
         m_Type(VARIANT_STRING)
     {
-        new (RawData) AString;
+        new (m_RawData) AString;
 
-        *(AString*)&RawData[0] = Rhs;
+        *(AString*)&m_RawData[0] = Rhs;
     }
 
     template <typename T, std::enable_if_t<!std::is_enum<T>::value, bool> = true>
@@ -328,20 +417,20 @@ public:
     {
         if (std::is_same<T, AString>())
         {
-            new(RawData) AString;
+            new (m_RawData) AString;
         }
-        *(T*)&RawData[0] = Rhs;
+        *(T*)&m_RawData[0] = Rhs;
     }
 
     template <typename T, std::enable_if_t<std::is_enum<T>::value, bool> = true>
     AVariant(T const& Rhs) :
         m_Type(VARIANT_ENUM)
     {
-        static_assert(sizeof(EnumType.EnumData) >= sizeof(T), "The enum type size must not exceed 64 bytes.");
+        static_assert(sizeof(m_EnumType.EnumData) >= sizeof(T), "The enum type size must not exceed 64 bytes.");
 
-        *(T*)&EnumType.EnumData[0] = Rhs;
-        EnumType.EnumValue = Rhs;
-        EnumType.EnumDef = EnumDefinition<T>();
+        *(T*)&m_EnumType.EnumData[0] = Rhs;
+        m_EnumType.EnumValue         = Rhs;
+        m_EnumType.EnumDef           = EnumDefinition<T>();
     }
 
     AVariant(VARIANT_TYPE Type, SEnumDef const* EnumDef, AStringView String)
@@ -353,12 +442,12 @@ public:
     {
         if (m_Type != VARIANT_STRING)
         {
-            new (RawData) AString;
+            new (m_RawData) AString;
         }
 
         m_Type = VARIANT_STRING;
 
-        *(AString*)&RawData[0] = Rhs;
+        *(AString*)&m_RawData[0] = Rhs;
         return *this;
     }
 
@@ -366,12 +455,12 @@ public:
     {
         if (m_Type != VARIANT_STRING)
         {
-            new (RawData) AString;
+            new (m_RawData) AString;
         }
 
         m_Type = VARIANT_STRING;
 
-        *(AString*)&RawData[0] = Rhs;
+        *(AString*)&m_RawData[0] = Rhs;
         return *this;
     }
 
@@ -382,18 +471,18 @@ public:
         {
             if (m_Type != VARIANT_STRING)
             {
-                new(RawData) AString;
+                new (m_RawData) AString;
             }
         }
         else
         {
             if (m_Type == VARIANT_STRING)
-                ((AString*)&RawData[0])->~AString();
+                ((AString*)&m_RawData[0])->~AString();
         }
 
         m_Type = VariantTraits::DeduceVariantType<T>();
 
-        *(T*)&RawData[0] = Rhs;
+        *(T*)&m_RawData[0] = Rhs;
         return *this;
     }
 
@@ -401,15 +490,15 @@ public:
     AVariant& operator=(T const& Rhs)
     {
         if (m_Type == VARIANT_STRING)
-            ((AString*)&RawData[0])->~AString();
+            ((AString*)&m_RawData[0])->~AString();
 
         m_Type = VARIANT_ENUM;
 
-        static_assert(sizeof(EnumType.EnumData) >= sizeof(T), "The enum type size must not exceed 64 bytes.");
+        static_assert(sizeof(m_EnumType.EnumData) >= sizeof(T), "The enum type size must not exceed 64 bytes.");
 
-        *(T*)&EnumType.EnumData[0] = Rhs;
-        EnumType.EnumValue = Rhs;
-        EnumType.EnumDef = EnumDefinition<T>();
+        *(T*)&m_EnumType.EnumData[0] = Rhs;
+        m_EnumType.EnumValue         = Rhs;
+        m_EnumType.EnumDef           = EnumDefinition<T>();
 
         return *this;
     }
@@ -420,16 +509,16 @@ public:
         if (VariantTraits::DeduceVariantType<T>() != m_Type)
             return {};
 
-        return (T*)&RawData[0];
+        return (T*)&m_RawData[0];
     }
 
     template <typename T, std::enable_if_t<std::is_enum<T>::value, bool> = true>
     T* Get() const
     {
-        if (EnumDefinition<T>() != EnumType.EnumDef)
+        if (EnumDefinition<T>() != m_EnumType.EnumDef)
             return {};
 
-        return (T*)&EnumType.EnumData[0];
+        return (T*)&m_EnumType.EnumData[0];
     }
 
     VARIANT_TYPE GetType() const
@@ -439,19 +528,26 @@ public:
 
     void SetFromString(VARIANT_TYPE Type, SEnumDef const* EnumDef, AStringView String);
 
+    void Reset()
+    {
+        if (m_Type == VARIANT_STRING)
+            ((AString*)&m_RawData[0])->~AString();
+        m_Type = VARIANT_UNDEFINED;
+    }
+
     AString ToString() const;
 
 private:
     void SetEnum(SEnumDef const* EnumDef, int64_t EnumValue)
     {
         if (m_Type == VARIANT_STRING)
-            ((AString*)&RawData[0])->~AString();
+            ((AString*)&m_RawData[0])->~AString();
 
         m_Type = VARIANT_ENUM;
 
-        *(int64_t*)&EnumType.EnumData[0] = EnumValue;
-        EnumType.EnumValue               = EnumValue;
-        EnumType.EnumDef                 = EnumDef;
+        *(int64_t*)&m_EnumType.EnumData[0] = EnumValue;
+        m_EnumType.EnumValue               = EnumValue;
+        m_EnumType.EnumDef                 = EnumDef;
     }
 };
 
