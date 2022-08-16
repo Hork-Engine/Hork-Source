@@ -434,17 +434,17 @@ enum TESSELLATION_METHOD : uint8_t
     TESSELLATION_PN
 };
 
-/** Mixed material and geometry rendering priorities.
-Combine them in that way: material_priority | geometry_priority */
-enum ERenderingPriority : uint8_t
+/** Rendering priorities for materials. RENDERING_PRIORITY is mixed with RENDERING_GEOMETRY_PRIORITY. */
+enum RENDERING_PRIORITY : uint8_t
 {
     /** Weapon rendered first */
     RENDERING_PRIORITY_WEAPON = 0 << 4,
 
-    /** Default priority */
-    RENDERING_PRIORITY_DEFAULT = 1 << 4,
+    RENDERING_PRIORITY_FOLIAGE  = 1 << 4,
 
-    RENDERING_PRIORITY_RESERVED2  = 2 << 4,
+    /** Default priority */
+    RENDERING_PRIORITY_DEFAULT    = 2 << 4,
+
     RENDERING_PRIORITY_RESERVED3  = 3 << 4,
     RENDERING_PRIORITY_RESERVED4  = 4 << 4,
     RENDERING_PRIORITY_RESERVED5  = 5 << 4,
@@ -460,11 +460,15 @@ enum ERenderingPriority : uint8_t
 
     /** Skybox rendered last */
     RENDERING_PRIORITY_SKYBOX = 15 << 4,
+};
 
+/** Rendering priorities for geometry. RENDERING_PRIORITY is mixed with RENDERING_GEOMETRY_PRIORITY. */
+enum RENDERING_GEOMETRY_PRIORITY : uint8_t
+{
     /** Static geometry */
     RENDERING_GEOMETRY_PRIORITY_STATIC = 0,
 
-    /** Static geometry */
+    /** Dynamic geometry */
     RENDERING_GEOMETRY_PRIORITY_DYNAMIC = 1,
 
     RENDERING_GEOMETRY_PRIORITY_RESERVED2  = 2,
@@ -503,7 +507,7 @@ public:
 
     TESSELLATION_METHOD TessellationMethod{TESSELLATION_DISABLED};
 
-    ERenderingPriority RenderingPriority{RENDERING_PRIORITY_DEFAULT};
+    RENDERING_PRIORITY RenderingPriority{RENDERING_PRIORITY_DEFAULT};
 
     /** Lightmap binding unit */
     uint32_t LightmapSlot{};
@@ -585,7 +589,7 @@ public:
         Type                      = (MATERIAL_TYPE)Stream.ReadUInt8();
         Blending                  = (BLENDING_MODE)Stream.ReadUInt8();
         TessellationMethod        = (TESSELLATION_METHOD)Stream.ReadUInt8();
-        RenderingPriority         = (ERenderingPriority)Stream.ReadUInt8();
+        RenderingPriority         = (RENDERING_PRIORITY)Stream.ReadUInt8();
         LightmapSlot              = Stream.ReadUInt16();
         DepthPassTextureCount     = Stream.ReadUInt8();
         LightPassTextureCount     = Stream.ReadUInt8();

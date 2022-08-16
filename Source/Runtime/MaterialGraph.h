@@ -976,6 +976,8 @@ public:
     /** Tessellation type */
     TESSELLATION_METHOD TessellationMethod = TESSELLATION_DISABLED;
 
+    RENDERING_PRIORITY RenderingPriority = RENDERING_PRIORITY_DEFAULT;
+
     /** Blending mode */
     BLENDING_MODE Blending = COLOR_BLENDING_DISABLED;
 

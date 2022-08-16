@@ -69,6 +69,30 @@ SEnumDef const* EnumDefinition<TESSELLATION_METHOD>()
     return EnumDef;
 }
 template <>
+SEnumDef const* EnumDefinition<RENDERING_PRIORITY>()
+{
+    static const SEnumDef EnumDef[] = {
+        {RENDERING_PRIORITY_WEAPON, "Weapon"},
+        {RENDERING_PRIORITY_FOLIAGE, "Foliage"},
+        {RENDERING_PRIORITY_DEFAULT, "Default"},
+        {RENDERING_PRIORITY_RESERVED3, "Reserved3"},
+        {RENDERING_PRIORITY_RESERVED4, "Reserved4"},
+        {RENDERING_PRIORITY_RESERVED5, "Reserved5"},
+        {RENDERING_PRIORITY_RESERVED6, "Reserved6"},
+        {RENDERING_PRIORITY_RESERVED7, "Reserved7"},
+        {RENDERING_PRIORITY_RESERVED8, "Reserved8"},
+        {RENDERING_PRIORITY_RESERVED9, "Reserved9"},
+        {RENDERING_PRIORITY_RESERVED10, "Reserved10"},
+        {RENDERING_PRIORITY_RESERVED11, "Reserved11"},
+        {RENDERING_PRIORITY_RESERVED12, "Reserved12"},
+        {RENDERING_PRIORITY_RESERVED13, "Reserved13"},
+        {RENDERING_PRIORITY_RESERVED14, "Reserved14"},
+        {RENDERING_PRIORITY_SKYBOX, "Skybox"},
+        {0, nullptr}};
+    return EnumDef;
+};
+
+template <>
 SEnumDef const* EnumDefinition<BLENDING_MODE>()
 {
     static const SEnumDef EnumDef[] = {
@@ -3194,6 +3218,7 @@ void MGMaterialGraph::CreateStageTransitions(SMaterialStageTransition&    Transi
 HK_BEGIN_CLASS_META(MGMaterialGraph)
 HK_PROPERTY_DIRECT(MaterialType, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(TessellationMethod, HK_PROPERTY_DEFAULT)
+HK_PROPERTY_DIRECT(RenderingPriority, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(Blending, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(ParallaxTechnique, HK_PROPERTY_DEFAULT)
 HK_PROPERTY_DIRECT(DepthHack, HK_PROPERTY_DEFAULT)
@@ -3304,17 +3329,25 @@ TRef<ACompiledMaterial> MGMaterialGraph::Compile()
             break;
     }
 
+    material->RenderingPriority = RenderingPriority;
+
     if (DepthHack == MATERIAL_DEPTH_HACK_WEAPON)
     {
-        //predefines += "#define WEAPON_DEPTH_HACK\n";
+        predefines += "#define WEAPON_DEPTH_HACK\n";
         material->bNoCastShadow     = true;
         material->RenderingPriority = RENDERING_PRIORITY_WEAPON;
+
+        if (RenderingPriority != RENDERING_PRIORITY_DEFAULT && RenderingPriority != RENDERING_PRIORITY_WEAPON)
+            LOG("MATERIAL_DEPTH_HACK_WEAPON overrides RenderingPriority with RENDERING_PRIORITY_WEAPON.\n");
     }
     else if (DepthHack == MATERIAL_DEPTH_HACK_SKYBOX)
     {
         predefines += "#define SKYBOX_DEPTH_HACK\n";
         material->bNoCastShadow     = true;
         material->RenderingPriority = RENDERING_PRIORITY_SKYBOX;
+
+        if (RenderingPriority != RENDERING_PRIORITY_DEFAULT && RenderingPriority != RENDERING_PRIORITY_SKYBOX)
+            LOG("MATERIAL_DEPTH_HACK_SKYBOX overrides RenderingPriority with RENDERING_PRIORITY_SKYBOX.\n");
     }
 
     if (bTranslucent)
