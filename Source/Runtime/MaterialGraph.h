@@ -33,8 +33,7 @@ SOFTWARE.
 #include "BaseObject.h"
 #include <Core/Guid.h>
 #include <Image/Image.h>
-
-#include "Material.h"
+#include <Renderer/RenderDefs.h>
 
 class MGNode;
 class MGMaterialGraph;
