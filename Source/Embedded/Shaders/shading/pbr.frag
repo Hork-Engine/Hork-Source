@@ -54,12 +54,12 @@ vec3 LightBRDF( vec3 Diffuse, vec3 F0, float RoughnessSqr, vec3 Normal, vec3 L, 
 
 vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughness, float AO, uint FirstIndex, uint NumProbes )
 {
-#if defined WITH_SSAO && defined ALLOW_SSAO
-    // Sample ambient occlusion
-    vec2 aotc = min( vec2(InScreenUV.x,1.0-InScreenUV.y), vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();    
-    aotc.y = 1.0 - aotc.y;
-    AO *= textureLod( AOLookup, aotc, 0.0 ).x;
-#endif
+//#if defined WITH_SSAO && defined ALLOW_SSAO
+//    // Sample ambient occlusion
+//    vec2 aotc = min( vec2(InScreenUV.x,1.0-InScreenUV.y), vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();    
+//    aotc.y = 1.0 - aotc.y;
+//    AO *= textureLod( AOLookup, aotc, 0.0 ).x;
+//#endif
 
     // Calc fresnel
     const vec3 F = FresnelSchlick_Roughness( F0, NdV, Roughness );
@@ -137,7 +137,7 @@ vec3 CalcAmbient( vec3 Albedo, vec3 R, vec3 N, float NdV, vec3 F0, float Roughne
     const vec3 Diffuse = Irradiance * Albedo;
     const vec3 Specular = PrefilteredColor * ( F * EnvBRDF.x + EnvBRDF.y );
     
-    return mad( kD, Diffuse, Specular ) * AO;
+    return mad( kD, Diffuse, Specular );// * AO;
 }
 
 vec3 CalcDirectionalLightingPBR( vec3 Diffuse, vec3 F0, float k, float RoughnessSqr, vec3 Normal, vec3 GeometryNormal, float NdV )
@@ -365,7 +365,7 @@ void MaterialPBRShader( vec3 BaseColor,
     const float RoughnessSqrClamped = max( 0.001, RoughnessSqr );
     const float NdV = clamp( dot( Normal, InViewspaceToEyeVec ), 0.001, 1.0 );
 
-    vec3 Light = Emissive;
+    vec3 Light = vec3(0);
 
 #ifndef NO_LIGHTMAP
     #ifdef USE_LIGHTMAP
@@ -382,7 +382,14 @@ void MaterialPBRShader( vec3 BaseColor,
     
     //const float k = RoughnessSqr * 0.5f; //  IBL
     const float k = (Roughness + 1) * (Roughness + 1) * 0.125; // Direct light
-    
+	
+#if defined WITH_SSAO && defined ALLOW_SSAO
+    // Sample ambient occlusion
+    vec2 aotc = min( vec2(InScreenUV.x,1.0-InScreenUV.y), vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();    
+    aotc.y = 1.0 - aotc.y;
+    AO *= textureLod( AOLookup, aotc, 0.0 ).x;
+#endif
+
     // Accumulate directional lights
     Light += CalcDirectionalLightingPBR( Diffuse, F0, k, RoughnessSqrClamped, Normal, GeometryNormal, NdV );
     
@@ -391,8 +398,11 @@ void MaterialPBRShader( vec3 BaseColor,
 
     // Apply ambient
     const vec3 Ambient = CalcAmbient( Albedo, R, Normal, NdV, F0, Roughness, AO, FirstIndex, NumProbes );
-
     Light += Ambient;
+
+	Light *= AO;
+	
+	Light += Emissive;
 
     FS_FragColor = vec4( Light, Opacity );
 
