@@ -31,8 +31,8 @@ SOFTWARE.
 #include "Animation.h"
 #include "Skeleton.h"
 #include "IndexedMesh.h"
-#include "Asset.h"
 
+#include <Assets/Asset.h>
 #include <Platform/Logger.h>
 
 HK_CLASS_META(ASkeletalAnimation)
@@ -128,17 +128,17 @@ bool ASkeletalAnimation::LoadResource(IBinaryStreamReadInterface& Stream)
 
     uint32_t fileFormat = Stream.ReadUInt32();
 
-    if (fileFormat != FMT_FILE_TYPE_ANIMATION)
+    if (fileFormat != ASSET_ANIMATION)
     {
-        LOG("Expected file format {}\n", FMT_FILE_TYPE_ANIMATION);
+        LOG("Expected file format {}\n", ASSET_ANIMATION);
         return false;
     }
 
     uint32_t fileVersion = Stream.ReadUInt32();
 
-    if (fileVersion != FMT_VERSION_ANIMATION)
+    if (fileVersion != ASSET_VERSION_ANIMATION)
     {
-        LOG("Expected file version {}\n", FMT_VERSION_ANIMATION);
+        LOG("Expected file version {}\n", ASSET_VERSION_ANIMATION);
         return false;
     }
 

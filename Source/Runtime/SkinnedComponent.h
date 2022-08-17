@@ -120,7 +120,7 @@ private:
     TPodVector<Float3x4> AbsoluteTransforms;
     TPodVector<Float3x4> RelativeTransforms;
 
-    alignas(16) Float3x4 JointsBufferData[ASkeleton::MAX_JOINTS];
+    alignas(16) Float3x4 JointsBufferData[MAX_SKELETON_JOINTS];
 
     // Memory offset/size for the skeleton animation snapshot
     size_t SkeletonOffset   = 0;

@@ -29,11 +29,11 @@ SOFTWARE.
 */
 
 #include "PhotometricProfile.h"
-#include "Asset.h"
 #include "Texture.h"
 
 #include "iesna/iesna.h"
 
+#include <Assets/Asset.h>
 #include <Platform/Logger.h>
 
 HK_CLASS_META(APhotometricProfile)
@@ -434,17 +434,17 @@ bool APhotometricProfile::LoadResource(IBinaryStreamReadInterface& Stream)
 
         fileFormat = Stream.ReadUInt32();
 
-        if (fileFormat != FMT_FILE_TYPE_PHOTOMETRIC_PROFILE)
+        if (fileFormat != ASSET_PHOTOMETRIC_PROFILE)
         {
-            LOG("Expected file format {}\n", FMT_FILE_TYPE_PHOTOMETRIC_PROFILE);
+            LOG("Expected file format {}\n", ASSET_PHOTOMETRIC_PROFILE);
             return false;
         }
 
         fileVersion = Stream.ReadUInt32();
 
-        if (fileVersion != FMT_VERSION_PHOTOMETRIC_PROFILE)
+        if (fileVersion != ASSET_VERSION_PHOTOMETRIC_PROFILE)
         {
-            LOG("Expected file version {}\n", FMT_VERSION_PHOTOMETRIC_PROFILE);
+            LOG("Expected file version {}\n", ASSET_VERSION_PHOTOMETRIC_PROFILE);
             return false;
         }
 

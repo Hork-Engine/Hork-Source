@@ -30,20 +30,22 @@ SOFTWARE.
 
 #pragma once
 
-constexpr uint32_t FMT_FILE_TYPE_MESH                = 1;
-constexpr uint32_t FMT_FILE_TYPE_SKELETON            = 2;
-constexpr uint32_t FMT_FILE_TYPE_ANIMATION           = 3;
-constexpr uint32_t FMT_FILE_TYPE_MATERIAL_INSTANCE   = 4;
-constexpr uint32_t FMT_FILE_TYPE_MATERIAL            = 5;
-constexpr uint32_t FMT_FILE_TYPE_TEXTURE             = 6;
-constexpr uint32_t FMT_FILE_TYPE_PHOTOMETRIC_PROFILE = 7;
-constexpr uint32_t FMT_FILE_TYPE_ENVMAP              = 8;
+#include <Geometry/VertexFormat.h>
 
-constexpr uint32_t FMT_VERSION_MESH                = 1;
-constexpr uint32_t FMT_VERSION_SKELETON            = 1;
-constexpr uint32_t FMT_VERSION_ANIMATION           = 1;
-constexpr uint32_t FMT_VERSION_MATERIAL_INSTANCE   = 1;
-constexpr uint32_t FMT_VERSION_MATERIAL            = 1;
-constexpr uint32_t FMT_VERSION_TEXTURE             = 2;
-constexpr uint32_t FMT_VERSION_PHOTOMETRIC_PROFILE = 1;
-constexpr uint32_t FMT_VERSION_ENVMAP              = 2;
+namespace Geometry
+{
+
+void CalcTangentSpace(SMeshVertex* VertexArray, unsigned int NumVerts, unsigned int const* IndexArray, unsigned int NumIndices);
+
+/** binormal = cross( normal, tangent ) * handedness */
+HK_FORCEINLINE float CalcHandedness(Float3 const& Tangent, Float3 const& Binormal, Float3 const& Normal)
+{
+    return (Math::Dot(Math::Cross(Normal, Tangent), Binormal) < 0.0f) ? -1.0f : 1.0f;
+}
+
+HK_FORCEINLINE Float3 CalcBinormal(Float3 const& Tangent, Float3 const& Normal, float Handedness)
+{
+    return Math::Cross(Normal, Tangent).Normalized() * Handedness;
+}
+
+} // namespace Geometry

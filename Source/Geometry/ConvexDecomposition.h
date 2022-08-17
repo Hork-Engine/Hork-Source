@@ -42,6 +42,9 @@ struct SConvexHullDesc
     Float3 Centroid;
 };
 
+namespace Geometry
+{
+
 void BakeCollisionMarginConvexHull(Float3 const* _InVertices, int _VertexCount, TPodVector<Float3>& _OutVertices, float _Margin = 0.01f);
 
 bool PerformConvexDecomposition(Float3 const*                _Vertices,
@@ -63,4 +66,8 @@ bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
                                      TPodVector<SConvexHullDesc>& _OutHulls,
                                      Float3&                      _CenterOfMass);
 
+void ConvexHullPlanesFromVertices(Float3 const* _Vertices, int _NumVertices, TPodVector<PlaneF>& _Planes);
+
 void ConvexHullVerticesFromPlanes(PlaneF const* _Planes, int _NumPlanes, TPodVector<Float3>& _Vertices);
+
+} // namespace Geometry

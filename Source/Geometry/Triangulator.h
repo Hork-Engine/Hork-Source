@@ -64,7 +64,7 @@ protected:
 
 private:
     // Tesselator handle
-    void* tesselator_;
+    void* m_Tesselator;
 };
 
 namespace TriangulatorTraits
@@ -102,7 +102,7 @@ public:
         Double3                                    Normal;
     };
 
-    TTriangulator(TVector<TriangleVertex>* pOutputStreamVertices, TPodVector<unsigned int>* pOutputStreamIndices);
+    TTriangulator(TVector<TriangleVertex>* pOutputStreamVertices, TVector<unsigned int>* pOutputStreamIndices);
 
     void Triangulate(SPolygon const* polygon);
 
@@ -116,29 +116,29 @@ private:
     unsigned int FindOrCreateVertex(TriangleVertex* vertex);
 
     // Output indices pointer
-    TPodVector<unsigned int>* pIndexStream_;
+    TVector<unsigned int>* m_pIndexStream;
 
     // Output vertices pointer
-    TVector<TriangleVertex>* pVertexStream_;
+    TVector<TriangleVertex>* m_pVertexStream;
 
     // Offset to vertex stream
-    int VertexOffset;
+    int m_VertexOffset;
 
     // Current filling contour
-    TPodVector<TriangleVertex*> primitiveIndices_;
-    int                         currentTopology_;
+    TVector<TriangleVertex*> m_PrimitiveIndices;
+    int                         m_CurrentTopology;
 
     // Vertex cache
-    TPodVector<TriangleVertex*> vertexCache_;
+    TVector<TriangleVertex*> m_VertexCache;
 
     // Temporary allocated verts
-    TLinearAllocator<Align(sizeof(TriangleVertex), 16) * 1024> vertexAllocator_;
-    TPodVector<TriangleVertex*>                                allocatedVerts_;
+    TLinearAllocator<Align(sizeof(TriangleVertex), 16) * 1024> m_VertexAllocator;
+    TVector<TriangleVertex*>                                   m_AllocatedVerts;
 };
 
 template <typename ContourVertex, typename TriangleVertex>
-TTriangulator<ContourVertex, TriangleVertex>::TTriangulator(TVector<TriangleVertex>* pOutputStreamVertices, TPodVector<unsigned int>* pOutputStreamIndices) :
-    pIndexStream_(pOutputStreamIndices), pVertexStream_(pOutputStreamVertices)
+TTriangulator<ContourVertex, TriangleVertex>::TTriangulator(TVector<TriangleVertex>* pOutputStreamVertices, TVector<unsigned int>* pOutputStreamIndices) :
+    m_pIndexStream(pOutputStreamIndices), m_pVertexStream(pOutputStreamVertices)
 {
     SetCallback(CB_BEGIN_DATA, (SCallback)OnBeginData);
     SetCallback(CB_END_DATA, (SCallback)OnEndData);
@@ -151,8 +151,8 @@ void TTriangulator<ContourVertex, TriangleVertex>::OnBeginData(uint32_t topology
 {
     TTriangulator<ContourVertex, TriangleVertex>* tr = static_cast<TTriangulator<ContourVertex, TriangleVertex>*>(polygonData);
 
-    tr->primitiveIndices_.Clear();
-    tr->currentTopology_ = topology;
+    tr->m_PrimitiveIndices.Clear();
+    tr->m_CurrentTopology = topology;
 }
 
 template <typename ContourVertex, typename TriangleVertex>
@@ -168,68 +168,68 @@ void TTriangulator<ContourVertex, TriangleVertex>::OnEndData(void* polygonData)
 {
     TTriangulator<ContourVertex, TriangleVertex>* tr = static_cast<TTriangulator<ContourVertex, TriangleVertex>*>(polygonData);
 
-    if (tr->primitiveIndices_.Size() > 2)
+    if (tr->m_PrimitiveIndices.Size() > 2)
     {
         const int TRIANGLES      = 0x0004;
         const int TRIANGLE_STRIP = 0x0005;
         const int TRIANGLE_FAN   = 0x0006;
 
-        int     numIndices = tr->primitiveIndices_.Size();
+        int     numIndices = tr->m_PrimitiveIndices.Size();
         Double3 v[3];
 
-        if (tr->currentTopology_ == TRIANGLES)
+        if (tr->m_CurrentTopology == TRIANGLES)
         {
             for (int j = 0; j < numIndices; j += 3)
             {
-                TriangulatorTraits::TriangleVertexPosition(v[0], *tr->primitiveIndices_[j + 0]);
-                TriangulatorTraits::TriangleVertexPosition(v[1], *tr->primitiveIndices_[j + 1]);
-                TriangulatorTraits::TriangleVertexPosition(v[2], *tr->primitiveIndices_[j + 2]);
+                TriangulatorTraits::TriangleVertexPosition(v[0], *tr->m_PrimitiveIndices[j + 0]);
+                TriangulatorTraits::TriangleVertexPosition(v[1], *tr->m_PrimitiveIndices[j + 1]);
+                TriangulatorTraits::TriangleVertexPosition(v[2], *tr->m_PrimitiveIndices[j + 2]);
 
                 if (IsTriangleValid(v[0], v[1], v[2]))
                 {
-                    tr->pIndexStream_->Add(tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[j + 0]));
-                    tr->pIndexStream_->Add(tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[j + 1]));
-                    tr->pIndexStream_->Add(tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[j + 2]));
+                    tr->m_pIndexStream->Add(tr->m_VertexOffset + tr->FindOrCreateVertex(tr->m_PrimitiveIndices[j + 0]));
+                    tr->m_pIndexStream->Add(tr->m_VertexOffset + tr->FindOrCreateVertex(tr->m_PrimitiveIndices[j + 1]));
+                    tr->m_pIndexStream->Add(tr->m_VertexOffset + tr->FindOrCreateVertex(tr->m_PrimitiveIndices[j + 2]));
                 }
             }
         }
-        else if (tr->currentTopology_ == TRIANGLE_FAN)
+        else if (tr->m_CurrentTopology == TRIANGLE_FAN)
         {
             unsigned int ind[3] = {std::numeric_limits<unsigned int>::max(), 0, 0};
 
-            TriangulatorTraits::TriangleVertexPosition(v[0], *tr->primitiveIndices_[0]);
-            TriangulatorTraits::TriangleVertexPosition(v[1], *tr->primitiveIndices_[1]);
+            TriangulatorTraits::TriangleVertexPosition(v[0], *tr->m_PrimitiveIndices[0]);
+            TriangulatorTraits::TriangleVertexPosition(v[1], *tr->m_PrimitiveIndices[1]);
 
             for (int j = 0; j < numIndices - 2; j++)
             {
-                TriangulatorTraits::TriangleVertexPosition(v[2], *tr->primitiveIndices_[j + 2]);
+                TriangulatorTraits::TriangleVertexPosition(v[2], *tr->m_PrimitiveIndices[j + 2]);
 
                 if (IsTriangleValid(v[0], v[1], v[2]))
                 {
                     if (ind[0] == std::numeric_limits<unsigned int>::max())
                     {
-                        ind[0] = tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[0]);
+                        ind[0] = tr->m_VertexOffset + tr->FindOrCreateVertex(tr->m_PrimitiveIndices[0]);
                     }
 
-                    ind[1] = tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[j + 1]);
-                    ind[2] = tr->VertexOffset + tr->FindOrCreateVertex(tr->primitiveIndices_[j + 2]);
+                    ind[1] = tr->m_VertexOffset + tr->FindOrCreateVertex(tr->m_PrimitiveIndices[j + 1]);
+                    ind[2] = tr->m_VertexOffset + tr->FindOrCreateVertex(tr->m_PrimitiveIndices[j + 2]);
 
-                    tr->pIndexStream_->Add(ind[0]);
-                    tr->pIndexStream_->Add(ind[1]);
-                    tr->pIndexStream_->Add(ind[2]);
+                    tr->m_pIndexStream->Add(ind[0]);
+                    tr->m_pIndexStream->Add(ind[1]);
+                    tr->m_pIndexStream->Add(ind[2]);
                 }
 
                 v[1] = v[2];
             }
         }
-        else if (tr->currentTopology_ == TRIANGLE_STRIP)
+        else if (tr->m_CurrentTopology == TRIANGLE_STRIP)
         {
             TriangleVertex* vertex[3];
             for (int j = 0; j < numIndices - 2; j++)
             {
-                vertex[0] = tr->primitiveIndices_[j + (j & 1)];
-                vertex[1] = tr->primitiveIndices_[j - (j & 1) + 1];
-                vertex[2] = tr->primitiveIndices_[j + 2];
+                vertex[0] = tr->m_PrimitiveIndices[j + (j & 1)];
+                vertex[1] = tr->m_PrimitiveIndices[j - (j & 1) + 1];
+                vertex[2] = tr->m_PrimitiveIndices[j + 2];
 
                 TriangulatorTraits::TriangleVertexPosition(v[0], *vertex[0]);
                 TriangulatorTraits::TriangleVertexPosition(v[1], *vertex[1]);
@@ -237,31 +237,31 @@ void TTriangulator<ContourVertex, TriangleVertex>::OnEndData(void* polygonData)
 
                 if (IsTriangleValid(v[0], v[1], v[2]))
                 {
-                    tr->pIndexStream_->Add(tr->VertexOffset + tr->FindOrCreateVertex(vertex[0]));
-                    tr->pIndexStream_->Add(tr->VertexOffset + tr->FindOrCreateVertex(vertex[1]));
-                    tr->pIndexStream_->Add(tr->VertexOffset + tr->FindOrCreateVertex(vertex[2]));
+                    tr->m_pIndexStream->Add(tr->m_VertexOffset + tr->FindOrCreateVertex(vertex[0]));
+                    tr->m_pIndexStream->Add(tr->m_VertexOffset + tr->FindOrCreateVertex(vertex[1]));
+                    tr->m_pIndexStream->Add(tr->m_VertexOffset + tr->FindOrCreateVertex(vertex[2]));
                 }
             }
         }
 
-        tr->primitiveIndices_.Clear();
+        tr->m_PrimitiveIndices.Clear();
     }
 }
 
 template <typename ContourVertex, typename TriangleVertex>
 unsigned int TTriangulator<ContourVertex, TriangleVertex>::FindOrCreateVertex(TriangleVertex* vertex)
 {
-    int verticesCount = vertexCache_.Size();
+    int verticesCount = m_VertexCache.Size();
     for (int i = 0; i < verticesCount; i++)
     {
         // Compare pointers
-        if (vertexCache_[i] == vertex)
+        if (m_VertexCache[i] == vertex)
         {
             return i;
         }
     }
-    vertexCache_.Add(vertex);
-    return vertexCache_.Size() - 1;
+    m_VertexCache.Add(vertex);
+    return m_VertexCache.Size() - 1;
 }
 
 template <typename ContourVertex, typename TriangleVertex>
@@ -269,7 +269,7 @@ void TTriangulator<ContourVertex, TriangleVertex>::OnVertexData(void* data, void
 {
     TTriangulator<ContourVertex, TriangleVertex>* tr = static_cast<TTriangulator<ContourVertex, TriangleVertex>*>(polygonData);
 
-    tr->primitiveIndices_.Add(static_cast<TriangleVertex*>(data) /*tr->VertexOffset + tr->FindOrCreateVertex( static_cast< TriangleVertex * >( data ) )*/);
+    tr->m_PrimitiveIndices.Add(static_cast<TriangleVertex*>(data) /*tr->m_VertexOffset + tr->FindOrCreateVertex( static_cast< TriangleVertex * >( data ) )*/);
 }
 
 template <typename ContourVertex, typename TriangleVertex>
@@ -277,7 +277,7 @@ void TTriangulator<ContourVertex, TriangleVertex>::OnCombineData(double position
 {
     TTriangulator<ContourVertex, TriangleVertex>* tr = static_cast<TTriangulator<ContourVertex, TriangleVertex>*>(polygonData);
 
-    TriangleVertex* v = new (tr->vertexAllocator_.Allocate(sizeof(TriangleVertex))) TriangleVertex;
+    TriangleVertex* v = new (tr->m_VertexAllocator.Allocate(sizeof(TriangleVertex))) TriangleVertex;
 
     TriangulatorTraits::CombineVertex<TriangleVertex>(
         *v,
@@ -289,8 +289,8 @@ void TTriangulator<ContourVertex, TriangleVertex>::OnCombineData(double position
         *static_cast<TriangleVertex*>(data[3]));
 
     *outData = v;
-    tr->vertexCache_.Add(v);
-    tr->allocatedVerts_.Add(v);
+    tr->m_VertexCache.Add(v);
+    tr->m_AllocatedVerts.Add(v);
 }
 
 #ifdef HK_COMPILER_MSVC
@@ -303,7 +303,7 @@ void TTriangulator<ContourVertex, TriangleVertex>::Triangulate(SPolygon const* p
 {
     Double3 tmpPosition;
 
-    VertexOffset = pVertexStream_->Size();
+    m_VertexOffset = m_pVertexStream->Size();
 
     SetNormal(polygon->Normal);
 
@@ -338,23 +338,23 @@ void TTriangulator<ContourVertex, TriangleVertex>::Triangulate(SPolygon const* p
     EndPolygon();
 
     // Fill vertices
-    pVertexStream_->Resize(VertexOffset + vertexCache_.Size());
-    TriangleVertex* pVertex = pVertexStream_->ToPtr() + VertexOffset;
-    for (TriangleVertex const* v : vertexCache_)
+    m_pVertexStream->Resize(m_VertexOffset + m_VertexCache.Size());
+    TriangleVertex* pVertex = m_pVertexStream->ToPtr() + m_VertexOffset;
+    for (TriangleVertex const* v : m_VertexCache)
     {
         TriangulatorTraits::CopyVertex(*pVertex, *v);
         pVertex++;
     }
 
     // Call dtor for allocated vertices
-    for (TriangleVertex* v : allocatedVerts_)
+    for (TriangleVertex* v : m_AllocatedVerts)
     {
         v->~TriangleVertex();
     }
 
-    vertexCache_.Clear();
-    allocatedVerts_.Clear();
-    vertexAllocator_.Free();
+    m_VertexCache.Clear();
+    m_AllocatedVerts.Clear();
+    m_VertexAllocator.Free();
 }
 
 #ifdef HK_COMPILER_MSVC

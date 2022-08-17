@@ -30,8 +30,8 @@ SOFTWARE.
 
 #include "Skeleton.h"
 #include "IndexedMesh.h"
-#include "Asset.h"
 
+#include <Assets/Asset.h>
 #include <Platform/Logger.h>
 
 HK_CLASS_META(ASkeleton)
@@ -92,17 +92,17 @@ bool ASkeleton::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     uint32_t fileFormat = Stream.ReadUInt32();
 
-    if (fileFormat != FMT_FILE_TYPE_SKELETON)
+    if (fileFormat != ASSET_SKELETON)
     {
-        LOG("Expected file format {}\n", FMT_FILE_TYPE_SKELETON);
+        LOG("Expected file format {}\n", ASSET_SKELETON);
         return false;
     }
 
     uint32_t fileVersion = Stream.ReadUInt32();
 
-    if (fileVersion != FMT_VERSION_SKELETON)
+    if (fileVersion != ASSET_VERSION_SKELETON)
     {
-        LOG("Expected file version {}\n", FMT_VERSION_SKELETON);
+        LOG("Expected file version {}\n", ASSET_VERSION_SKELETON);
         return false;
     }
 

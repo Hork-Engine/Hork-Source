@@ -29,10 +29,9 @@ SOFTWARE.
 */
 
 #include "Texture.h"
-#include "Asset.h"
-#include "AssetImporter.h"
 #include "Engine.h"
 
+#include <Assets/Asset.h>
 #include <Platform/Logger.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/ScopedTimer.h>
@@ -313,17 +312,17 @@ bool ATexture::LoadResource(IBinaryStreamReadInterface& Stream)
 
     fileFormat = Stream.ReadUInt32();
 
-    if (fileFormat != FMT_FILE_TYPE_TEXTURE)
+    if (fileFormat != ASSET_TEXTURE)
     {
-        LOG("Expected file format {}\n", FMT_FILE_TYPE_TEXTURE);
+        LOG("Expected file format {}\n", ASSET_TEXTURE);
         return false;
     }
 
     fileVersion = Stream.ReadUInt32();
 
-    if (fileVersion != FMT_VERSION_TEXTURE)
+    if (fileVersion != ASSET_VERSION_TEXTURE)
     {
-        LOG("Expected file version {}\n", FMT_VERSION_TEXTURE);
+        LOG("Expected file version {}\n", ASSET_VERSION_TEXTURE);
         return false;
     }
 

@@ -38,10 +38,10 @@ SOFTWARE.
 #include "World.h"
 #include "DebugRenderer.h"
 #include "ResourceManager.h"
-#include "Asset.h"
 #include "Animation.h"
 #include "BulletCompatibility.h"
 
+#include <Assets/Asset.h>
 #include <Platform/Logger.h>
 #include <Core/ConsoleVar.h>
 #include <Core/IntrusiveLinkedListMacro.h>

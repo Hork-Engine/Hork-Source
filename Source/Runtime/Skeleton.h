@@ -33,39 +33,7 @@ SOFTWARE.
 #include "Resource.h"
 #include <Core/Guid.h>
 #include <Geometry/BV/BvAxisAlignedBox.h>
-
-/**
-
-SJoint
-
-Joint properties
-
-*/
-struct SJoint
-{
-    /** Parent node index. For root = -1 */
-    int32_t Parent;
-
-    /** Joint local transform */
-    Float3x4 LocalTransform;
-
-    /** Joint name */
-    char Name[64];
-
-    void Write(IBinaryStreamWriteInterface& _Stream) const
-    {
-        _Stream.WriteInt32(Parent);
-        _Stream.WriteObject(LocalTransform);
-        _Stream.WriteString(Name);
-    }
-
-    void Read(IBinaryStreamReadInterface& _Stream)
-    {
-        Parent = _Stream.ReadInt32();
-        _Stream.ReadObject(LocalTransform);
-        _Stream.ReadStringToBuffer(Name, sizeof(Name));
-    }
-};
+#include <Geometry/Skinning.h>
 
 
 /**
@@ -80,11 +48,6 @@ class ASkeleton : public AResource
     HK_CLASS(ASkeleton, AResource)
 
 public:
-    enum
-    {
-        MAX_JOINTS = 256
-    };
-
     ASkeleton();
     ~ASkeleton();
 

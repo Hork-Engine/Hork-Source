@@ -33,46 +33,7 @@ SOFTWARE.
 #include "Resource.h"
 #include <Geometry/BV/BvAxisAlignedBox.h>
 #include <Geometry/Transform.h>
-
-
-/**
-
-SAnimationChannel
-
-Animation for single joint
-
-*/
-struct SAnimationChannel
-{
-    /** Joint index in skeleton */
-    int32_t JointIndex;
-
-    /** Joint frames */
-    int32_t TransformOffset;
-
-    bool bHasPosition : 1;
-    bool bHasRotation : 1;
-    bool bHasScale : 1;
-
-    void Read(IBinaryStreamReadInterface& _Stream)
-    {
-        JointIndex      = _Stream.ReadInt32();
-        TransformOffset = _Stream.ReadInt32();
-
-        uint8_t bitMask = _Stream.ReadUInt8();
-
-        bHasPosition = (bitMask >> 0) & 1;
-        bHasRotation = (bitMask >> 1) & 1;
-        bHasScale    = (bitMask >> 2) & 1;
-    }
-
-    void Write(IBinaryStreamWriteInterface& _Stream) const
-    {
-        _Stream.WriteInt32(JointIndex);
-        _Stream.WriteInt32(TransformOffset);
-        _Stream.WriteUInt8((uint8_t(bHasPosition) << 0) | (uint8_t(bHasRotation) << 1) | (uint8_t(bHasScale) << 2));
-    }
-};
+#include <Geometry/Skinning.h>
 
 /**
 

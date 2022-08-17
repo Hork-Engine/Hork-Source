@@ -34,11 +34,11 @@ SOFTWARE.
 #include <Core/Ref.h>
 #include "VectorMath.h"
 
-using AClipperContour = TPodVector<Double2>;
+using AClipperContour = TVector<Double2>;
 
 struct SClipperPolygon
 {
-    AClipperContour             Outer;
+    AClipperContour          Outer;
     TVector<AClipperContour> Holes;
 };
 
@@ -65,7 +65,7 @@ public:
     void SetTransform(Float3x3 const& transform3D);
 
     /** Transform matrix for 2D <-> 3D conversion */
-    Float3x3 const& GetTransform() const { return transform3D_; }
+    Float3x3 const& GetTransform() const { return m_Transform3D; }
 
     /** Set transform matrix from polygon normal */
     void SetTransformFromNormal(Float3 const& normal);
@@ -92,7 +92,7 @@ public:
     bool Execute(POLY_CLIP_TYPE clipType, TVector<AClipperContour>& contours);
 
 private:
-    TUniqueRef<ClipperLib::Clipper> clipper_;
-    Float3x3                        transform3D_;
-    Float3x3                        invTransform3D_;
+    TUniqueRef<ClipperLib::Clipper> m_pImpl;
+    Float3x3                        m_Transform3D;
+    Float3x3                        m_InvTransform3D;
 };

@@ -29,10 +29,11 @@ SOFTWARE.
 */
 
 #include "Material.h"
-#include "Asset.h"
 #include "ResourceManager.h"
 #include "MaterialGraph.h"
 #include "Engine.h"
+
+#include <Assets/Asset.h>
 #include <Platform/Logger.h>
 #include <Core/Parse.h>
 
@@ -87,17 +88,17 @@ bool AMaterial::LoadResource(IBinaryStreamReadInterface& Stream)
 {
     uint32_t fileFormat = Stream.ReadUInt32();
 
-    if (fileFormat != FMT_VERSION_MATERIAL)
+    if (fileFormat != ASSET_VERSION_MATERIAL)
     {
-        LOG("Expected file format {}\n", FMT_VERSION_MATERIAL);
+        LOG("Expected file format {}\n", ASSET_VERSION_MATERIAL);
         return false;
     }
 
     uint32_t fileVersion = Stream.ReadUInt32();
 
-    if (fileVersion != FMT_VERSION_MATERIAL)
+    if (fileVersion != ASSET_VERSION_MATERIAL)
     {
-        LOG("Expected file version {}\n", FMT_VERSION_MATERIAL);
+        LOG("Expected file version {}\n", ASSET_VERSION_MATERIAL);
         return false;
     }
 
@@ -115,8 +116,8 @@ bool WriteMaterial(AString const& Path, ACompiledMaterial const* pCompiledMateri
         return false;
     }
 
-    f.WriteUInt32(FMT_VERSION_MATERIAL);
-    f.WriteUInt32(FMT_VERSION_MATERIAL);
+    f.WriteUInt32(ASSET_VERSION_MATERIAL);
+    f.WriteUInt32(ASSET_VERSION_MATERIAL);
 
     pCompiledMaterial->Write(f);
 
@@ -859,9 +860,9 @@ bool AMaterialInstance::LoadResource(IBinaryStreamReadInterface& Stream)
 
     fileFormat = Stream.ReadUInt32();
 
-    if (fileFormat != FMT_FILE_TYPE_MATERIAL_INSTANCE)
+    if (fileFormat != ASSET_MATERIAL_INSTANCE)
     {
-        //LOG( "Expected file format {}\n", FMT_FILE_TYPE_MATERIAL_INSTANCE );
+        //LOG( "Expected file format {}\n", ASSET_MATERIAL_INSTANCE );
 
         Stream.Rewind();
         return LoadTextVersion(Stream);
@@ -869,9 +870,9 @@ bool AMaterialInstance::LoadResource(IBinaryStreamReadInterface& Stream)
 
     fileVersion = Stream.ReadUInt32();
 
-    if (fileVersion != FMT_VERSION_MATERIAL_INSTANCE)
+    if (fileVersion != ASSET_VERSION_MATERIAL_INSTANCE)
     {
-        LOG("Expected file version {}\n", FMT_VERSION_MATERIAL_INSTANCE);
+        LOG("Expected file version {}\n", ASSET_VERSION_MATERIAL_INSTANCE);
         return false;
     }
 

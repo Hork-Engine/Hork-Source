@@ -51,6 +51,10 @@ public:
     void GenerateReflectionMap(RenderCore::ITexture* pCubemap, TRef<RenderCore::ITexture>* ppTexture);
     void GenerateSkybox(TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir, TRef<RenderCore::ITexture>* ppTexture);
 
+    bool         GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, AStringView EnvmapFile);
+    bool         GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, AStringView EnvmapFile);
+    ImageStorage GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir);
+
     void RenderFrame(AStreamedMemoryGPU* StreamedMemory, RenderCore::ITexture* pBackBuffer, SRenderFrame* pFrameData);
 
     int ClusterPackedIndicesAlignment() const;

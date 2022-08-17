@@ -36,6 +36,9 @@ SOFTWARE.
 
 #include <VHACD/VHACD.h>
 
+namespace
+{
+
 HK_FORCEINLINE bool IsPointInsideConvexHull(Float3 const& _Point, PlaneF const* _Planes, int _NumPlanes, float _Margin)
 {
     for (int i = 0; i < _NumPlanes; i++)
@@ -72,6 +75,11 @@ static bool AreVerticesBehindPlane(PlaneF const& _Plane, Float3 const* _Vertices
     }
     return true;
 }
+
+} // namespace
+
+namespace Geometry
+{
 
 void ConvexHullPlanesFromVertices(Float3 const* _Vertices, int _NumVertices, TPodVector<PlaneF>& _Planes)
 {
@@ -349,7 +357,7 @@ bool PerformConvexDecomposition(Float3 const*                _Vertices,
     }
 
     TVector<HACD::Vec3<HACD::Real>> hullPoints(maxPointsPerCluster);
-    TVector<HACD::Vec3<long>> hullTriangles(maxTrianglesPerCluster);
+    TVector<HACD::Vec3<long>>       hullTriangles(maxTrianglesPerCluster);
 
     _OutHulls.Resize(numClusters);
     _OutVertices.Resize(totalPoints);
@@ -542,3 +550,5 @@ bool PerformConvexDecompositionVHACD(Float3 const*                _Vertices,
 
     return !_OutHulls.IsEmpty();
 }
+
+} // namespace Geometry

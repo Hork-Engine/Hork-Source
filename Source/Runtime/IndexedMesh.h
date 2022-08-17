@@ -37,7 +37,6 @@ SOFTWARE.
 #include "CollisionModel.h"
 #include "Skeleton.h"
 
-#include <Geometry/Transform.h>
 #include <Geometry/BV/BvhTree.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 
@@ -238,22 +237,6 @@ struct SSoftbodyFace
 {
     unsigned int Indices[3];
 };
-
-
-/**
-
-ASkin
-
-*/
-struct ASkin
-{
-    /** Index of the joint in skeleton */
-    TPodVector<int32_t> JointIndices;
-
-    /** Transform vertex to joint-space */
-    TPodVector<Float3x4> OffsetMatrices;
-};
-
 
 enum INDEXED_MESH_UPDATE_FLAG : uint8_t
 {
@@ -583,35 +566,3 @@ void CreateCapsuleMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
 void CreateSkyboxMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale);
 
 void CreateSkydomeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs = 32, int NumHorizontalSubdivs = 32, bool bHemisphere = true);
-
-void CalcTangentSpace(SMeshVertex* VertexArray, unsigned int NumVerts, unsigned int const* IndexArray, unsigned int NumIndices);
-
-/** binormal = cross( normal, tangent ) * handedness */
-HK_FORCEINLINE float CalcHandedness(Float3 const& Tangent, Float3 const& Binormal, Float3 const& Normal)
-{
-    return (Math::Dot(Math::Cross(Normal, Tangent), Binormal) < 0.0f) ? -1.0f : 1.0f;
-}
-
-HK_FORCEINLINE Float3 CalcBinormal(Float3 const& Tangent, Float3 const& Normal, float Handedness)
-{
-    return Math::Cross(Normal, Tangent).Normalized() * Handedness;
-}
-
-BvAxisAlignedBox CalcBindposeBounds(SMeshVertex const*     Vertices,
-                                    SMeshVertexSkin const* Weights,
-                                    int                    VertexCount,
-                                    ASkin const*           Skin,
-                                    SJoint*                Joints,
-                                    int                    JointsCount);
-
-void CalcBoundingBoxes(SMeshVertex const*              Vertices,
-                       SMeshVertexSkin const*          Weights,
-                       int                             VertexCount,
-                       ASkin const*                    Skin,
-                       SJoint const*                   Joints,
-                       int                             NumJoints,
-                       uint32_t                        FrameCount,
-                       struct SAnimationChannel const* Channels,
-                       int                             ChannelsCount,
-                       STransform const*               Transforms,
-                       TPodVector<BvAxisAlignedBox>&   Bounds);

@@ -1653,14 +1653,14 @@ void ACollisionModel::AddConvexDecomposition(SCollisionConvexDecompositionDef co
         return;
     }
 
-    ::PerformConvexDecomposition(pShape->pVertices,
-                                 pShape->VerticesCount,
-                                 pShape->VertexStride,
-                                 pShape->pIndices,
-                                 pShape->IndicesCount,
-                                 hullVertices,
-                                 hullIndices,
-                                 hulls);
+    Geometry::PerformConvexDecomposition(pShape->pVertices,
+                                         pShape->VerticesCount,
+                                         pShape->VertexStride,
+                                         pShape->pIndices,
+                                         pShape->IndicesCount,
+                                         hullVertices,
+                                         hullIndices,
+                                         hulls);
 
     if (hulls.IsEmpty())
     {
@@ -1705,15 +1705,15 @@ void ACollisionModel::AddConvexDecompositionVHACD(SCollisionConvexDecompositionV
         return;
     }
 
-    ::PerformConvexDecompositionVHACD(pShape->pVertices,
-                                      pShape->VerticesCount,
-                                      pShape->VertexStride,
-                                      pShape->pIndices,
-                                      pShape->IndicesCount,
-                                      hullVertices,
-                                      hullIndices,
-                                      hulls,
-                                      decompositionCenterOfMass);
+    Geometry::PerformConvexDecompositionVHACD(pShape->pVertices,
+                                              pShape->VerticesCount,
+                                              pShape->VertexStride,
+                                              pShape->pIndices,
+                                              pShape->IndicesCount,
+                                              hullVertices,
+                                              hullIndices,
+                                              hulls,
+                                              decompositionCenterOfMass);
 
     if (hulls.IsEmpty())
     {

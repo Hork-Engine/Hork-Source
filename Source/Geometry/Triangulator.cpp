@@ -34,50 +34,50 @@ SOFTWARE.
 
 ATriangulatorBase::ATriangulatorBase()
 {
-    tesselator_ = gluNewTess();
+    m_Tesselator = gluNewTess();
 }
 
 ATriangulatorBase::~ATriangulatorBase()
 {
-    gluDeleteTess(static_cast<GLUtesselator*>(tesselator_));
+    gluDeleteTess(static_cast<GLUtesselator*>(m_Tesselator));
 }
 
 void ATriangulatorBase::SetCallback(uint32_t name, SCallback callback)
 {
-    gluTessCallback(static_cast<GLUtesselator*>(tesselator_), name, callback);
+    gluTessCallback(static_cast<GLUtesselator*>(m_Tesselator), name, callback);
 }
 
 void ATriangulatorBase::SetBoundary(bool flag)
 {
-    gluTessProperty(static_cast<GLUtesselator*>(tesselator_), GLU_TESS_BOUNDARY_ONLY, flag);
+    gluTessProperty(static_cast<GLUtesselator*>(m_Tesselator), GLU_TESS_BOUNDARY_ONLY, flag);
 }
 
 void ATriangulatorBase::SetNormal(Double3 const& normal)
 {
-    gluTessNormal(static_cast<GLUtesselator*>(tesselator_), normal.X, normal.Y, normal.Z);
+    gluTessNormal(static_cast<GLUtesselator*>(m_Tesselator), normal.X, normal.Y, normal.Z);
 }
 
 void ATriangulatorBase::BeginPolygon(void* data)
 {
-    gluTessBeginPolygon(static_cast<GLUtesselator*>(tesselator_), data);
+    gluTessBeginPolygon(static_cast<GLUtesselator*>(m_Tesselator), data);
 }
 
 void ATriangulatorBase::EndPolygon()
 {
-    gluTessEndPolygon(static_cast<GLUtesselator*>(tesselator_));
+    gluTessEndPolygon(static_cast<GLUtesselator*>(m_Tesselator));
 }
 
 void ATriangulatorBase::BeginContour()
 {
-    gluTessBeginContour(static_cast<GLUtesselator*>(tesselator_));
+    gluTessBeginContour(static_cast<GLUtesselator*>(m_Tesselator));
 }
 
 void ATriangulatorBase::EndContour()
 {
-    gluTessEndContour(static_cast<GLUtesselator*>(tesselator_));
+    gluTessEndContour(static_cast<GLUtesselator*>(m_Tesselator));
 }
 
 void ATriangulatorBase::ProcessVertex(Double3& vertex, const void* data)
 {
-    gluTessVertex(static_cast<GLUtesselator*>(tesselator_), &vertex.X, const_cast<void*>(data));
+    gluTessVertex(static_cast<GLUtesselator*>(m_Tesselator), &vertex.X, const_cast<void*>(data));
 }

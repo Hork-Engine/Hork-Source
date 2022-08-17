@@ -29,8 +29,8 @@ SOFTWARE.
 */
 
 #include "EnvironmentMap.h"
-#include "Asset.h"
-#include "AssetImporter.h"
+#include <Assets/Asset.h>
+
 #include "Engine.h"
 
 HK_CLASS_META(AEnvironmentMap)
@@ -146,17 +146,17 @@ bool AEnvironmentMap::LoadResource(IBinaryStreamReadInterface& Stream)
 
     uint32_t fileFormat = Stream.ReadUInt32();
 
-    if (fileFormat != FMT_FILE_TYPE_ENVMAP)
+    if (fileFormat != ASSET_ENVMAP)
     {
-        LOG("Expected file format {}\n", FMT_FILE_TYPE_ENVMAP);
+        LOG("Expected file format {}\n", ASSET_ENVMAP);
         return false;
     }
 
     uint32_t fileVersion = Stream.ReadUInt32();
 
-    if (fileVersion != FMT_VERSION_ENVMAP)
+    if (fileVersion != ASSET_VERSION_ENVMAP)
     {
-        LOG("Expected file version {}\n", FMT_VERSION_ENVMAP);
+        LOG("Expected file version {}\n", ASSET_VERSION_ENVMAP);
         return false;
     }
 

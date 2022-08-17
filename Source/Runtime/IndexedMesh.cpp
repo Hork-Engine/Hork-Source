@@ -29,16 +29,17 @@ SOFTWARE.
 */
 
 #include "IndexedMesh.h"
-#include "Asset.h"
 #include "Animation.h"
 #include "Level.h"
 #include "ResourceManager.h"
 #include "Engine.h"
 
+#include <Assets/Asset.h>
 #include <Platform/Logger.h>
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/ScopedTimer.h>
 #include <Geometry/BV/BvIntersect.h>
+#include <Geometry/TangentSpace.h>
 
 HK_CLASS_META(AIndexedMesh)
 HK_CLASS_META(AIndexedMeshSubpart)
@@ -273,9 +274,9 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
 
     uint32_t fileFormat = meshData.ReadUInt32();
 
-    if (fileFormat != FMT_FILE_TYPE_MESH)
+    if (fileFormat != ASSET_MESH)
     {
-        LOG("Expected file format {}\n", FMT_FILE_TYPE_MESH);
+        LOG("Expected file format {}\n", ASSET_MESH);
 
         NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_ALL);
         return false;
@@ -283,9 +284,9 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
 
     uint32_t fileVersion = meshData.ReadUInt32();
 
-    if (fileVersion != FMT_VERSION_MESH)
+    if (fileVersion != ASSET_VERSION_MESH)
     {
-        LOG("Expected file version {}\n", FMT_VERSION_MESH);
+        LOG("Expected file version {}\n", ASSET_VERSION_MESH);
 
         NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_ALL);
         return false;
@@ -1790,180 +1791,6 @@ bool AProceduralMesh::RaycastClosest(Float3 const& RayStart, Float3 const& RayDi
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void CalcTangentSpace(SMeshVertex* VertexArray, unsigned int NumVerts, unsigned int const* IndexArray, unsigned int NumIndices)
-{
-    Float3 binormal, tangent;
-
-    TVector<Float3> binormals(NumVerts);
-    TVector<Float3> tangents(NumVerts);
-
-    for (unsigned int i = 0; i < NumIndices; i += 3)
-    {
-        const unsigned int a = IndexArray[i];
-        const unsigned int b = IndexArray[i + 1];
-        const unsigned int c = IndexArray[i + 2];
-
-        Float3 e1  = VertexArray[b].Position - VertexArray[a].Position;
-        Float3 e2  = VertexArray[c].Position - VertexArray[a].Position;
-        Float2 et1 = VertexArray[b].GetTexCoord() - VertexArray[a].GetTexCoord();
-        Float2 et2 = VertexArray[c].GetTexCoord() - VertexArray[a].GetTexCoord();
-
-        const float denom = et1.X * et2.Y - et1.Y * et2.X;
-        const float scale = (fabsf(denom) < 0.0001f) ? 1.0f : (1.0 / denom);
-        tangent           = (e1 * et2.Y - e2 * et1.Y) * scale;
-        binormal          = (e2 * et1.X - e1 * et2.X) * scale;
-
-        tangents[a] += tangent;
-        tangents[b] += tangent;
-        tangents[c] += tangent;
-
-        binormals[a] += binormal;
-        binormals[b] += binormal;
-        binormals[c] += binormal;
-    }
-
-    for (int i = 0; i < NumVerts; i++)
-    {
-        const Float3  n = VertexArray[i].GetNormal();
-        Float3 const& t = tangents[i];
-        VertexArray[i].SetTangent((t - n * Math::Dot(n, t)).Normalized());
-        VertexArray[i].Handedness = (int8_t)CalcHandedness(t, binormals[i].Normalized(), n);
-    }
-}
-
-
-BvAxisAlignedBox CalcBindposeBounds(SMeshVertex const*     Vertices,
-                                    SMeshVertexSkin const* Weights,
-                                    int                    VertexCount,
-                                    ASkin const*           Skin,
-                                    SJoint*                Joints,
-                                    int                    JointsCount)
-{
-    Float3x4 absoluteTransforms[ASkeleton::MAX_JOINTS + 1];
-    Float3x4 vertexTransforms[ASkeleton::MAX_JOINTS];
-
-    BvAxisAlignedBox BindposeBounds;
-
-    BindposeBounds.Clear();
-
-    absoluteTransforms[0].SetIdentity();
-    for (unsigned int j = 0; j < JointsCount; j++)
-    {
-        SJoint const& joint = Joints[j];
-
-        absoluteTransforms[j + 1] = absoluteTransforms[joint.Parent + 1] * joint.LocalTransform;
-    }
-
-    for (unsigned int j = 0; j < Skin->JointIndices.Size(); j++)
-    {
-        int jointIndex = Skin->JointIndices[j];
-
-        vertexTransforms[j] = absoluteTransforms[jointIndex + 1] * Skin->OffsetMatrices[j];
-    }
-
-    for (int v = 0; v < VertexCount; v++)
-    {
-        Float4 const           position = Float4(Vertices[v].Position, 1.0f);
-        SMeshVertexSkin const& w        = Weights[v];
-
-        const float weights[4] = {w.JointWeights[0] / 255.0f, w.JointWeights[1] / 255.0f, w.JointWeights[2] / 255.0f, w.JointWeights[3] / 255.0f};
-
-        Float4 const* t = &vertexTransforms[0][0];
-
-        BindposeBounds.AddPoint(
-            Math::Dot((t[w.JointIndices[0] * 3 + 0] * weights[0] + t[w.JointIndices[1] * 3 + 0] * weights[1] + t[w.JointIndices[2] * 3 + 0] * weights[2] + t[w.JointIndices[3] * 3 + 0] * weights[3]), position),
-
-            Math::Dot((t[w.JointIndices[0] * 3 + 1] * weights[0] + t[w.JointIndices[1] * 3 + 1] * weights[1] + t[w.JointIndices[2] * 3 + 1] * weights[2] + t[w.JointIndices[3] * 3 + 1] * weights[3]), position),
-
-            Math::Dot((t[w.JointIndices[0] * 3 + 2] * weights[0] + t[w.JointIndices[1] * 3 + 2] * weights[1] + t[w.JointIndices[2] * 3 + 2] * weights[2] + t[w.JointIndices[3] * 3 + 2] * weights[3]), position));
-    }
-
-    return BindposeBounds;
-}
-
-void CalcBoundingBoxes(SMeshVertex const*            Vertices,
-                       SMeshVertexSkin const*        Weights,
-                       int                           VertexCount,
-                       ASkin const*                  Skin,
-                       SJoint const*                 Joints,
-                       int                           NumJoints,
-                       uint32_t                      FrameCount,
-                       SAnimationChannel const*      Channels,
-                       int                           ChannelsCount,
-                       STransform const*             Transforms,
-                       TPodVector<BvAxisAlignedBox>& Bounds)
-{
-    Float3x4             absoluteTransforms[ASkeleton::MAX_JOINTS + 1];
-    TPodVector<Float3x4> relativeTransforms[ASkeleton::MAX_JOINTS];
-    Float3x4             vertexTransforms[ASkeleton::MAX_JOINTS];
-
-    Bounds.ResizeInvalidate(FrameCount);
-
-    for (int i = 0; i < ChannelsCount; i++)
-    {
-        SAnimationChannel const& anim = Channels[i];
-
-        relativeTransforms[anim.JointIndex].ResizeInvalidate(FrameCount);
-
-        for (int frameNum = 0; frameNum < FrameCount; frameNum++)
-        {
-
-            STransform const& transform = Transforms[anim.TransformOffset + frameNum];
-
-            transform.ComputeTransformMatrix(relativeTransforms[anim.JointIndex][frameNum]);
-        }
-    }
-
-    for (int frameNum = 0; frameNum < FrameCount; frameNum++)
-    {
-
-        BvAxisAlignedBox& bounds = Bounds[frameNum];
-
-        bounds.Clear();
-
-        absoluteTransforms[0].SetIdentity();
-        for (unsigned int j = 0; j < NumJoints; j++)
-        {
-            SJoint const& joint = Joints[j];
-
-            Float3x4 const& parentTransform = absoluteTransforms[joint.Parent + 1];
-
-            if (relativeTransforms[j].IsEmpty())
-            {
-                absoluteTransforms[j + 1] = parentTransform * joint.LocalTransform;
-            }
-            else
-            {
-                absoluteTransforms[j + 1] = parentTransform * relativeTransforms[j][frameNum];
-            }
-        }
-
-        for (unsigned int j = 0; j < Skin->JointIndices.Size(); j++)
-        {
-            int jointIndex = Skin->JointIndices[j];
-
-            vertexTransforms[j] = absoluteTransforms[jointIndex + 1] * Skin->OffsetMatrices[j];
-        }
-
-        for (int v = 0; v < VertexCount; v++)
-        {
-            Float4 const           position = Float4(Vertices[v].Position, 1.0f);
-            SMeshVertexSkin const& w        = Weights[v];
-
-            const float weights[4] = {w.JointWeights[0] / 255.0f, w.JointWeights[1] / 255.0f, w.JointWeights[2] / 255.0f, w.JointWeights[3] / 255.0f};
-
-            Float4 const* t = &vertexTransforms[0][0];
-
-            bounds.AddPoint(
-                Math::Dot((t[w.JointIndices[0] * 3 + 0] * weights[0] + t[w.JointIndices[1] * 3 + 0] * weights[1] + t[w.JointIndices[2] * 3 + 0] * weights[2] + t[w.JointIndices[3] * 3 + 0] * weights[3]), position),
-
-                Math::Dot((t[w.JointIndices[0] * 3 + 1] * weights[0] + t[w.JointIndices[1] * 3 + 1] * weights[1] + t[w.JointIndices[2] * 3 + 1] * weights[2] + t[w.JointIndices[3] * 3 + 1] * weights[3]), position),
-
-                Math::Dot((t[w.JointIndices[0] * 3 + 2] * weights[0] + t[w.JointIndices[1] * 3 + 2] * weights[1] + t[w.JointIndices[2] * 3 + 2] * weights[2] + t[w.JointIndices[3] * 3 + 2] * weights[3]), position));
-        }
-    }
-}
-
 void CreateBoxMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale)
 {
     constexpr unsigned int indices[6 * 6] =
@@ -2096,7 +1923,7 @@ void CreateBoxMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsi
     pVerts[6 + 8 * 2].SetNormal(zero, pos, zero);
     pVerts[6 + 8 * 2].SetTexCoord(Float2(0, 0) * TexCoordScale);
 
-    CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
 void CreateSphereMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
@@ -2162,7 +1989,7 @@ void CreateSphereMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<u
         }
     }
 
-    CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
 void CreatePlaneMeshXZ(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, float TexCoordScale)
@@ -2184,7 +2011,7 @@ void CreatePlaneMeshXZ(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
     constexpr unsigned int indices[6] = {0, 1, 2, 2, 3, 0};
     Platform::Memcpy(Indices.ToPtr(), &indices, sizeof(indices));
 
-    CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 
     Bounds.Mins.X  = -halfWidth;
     Bounds.Mins.Y  = -0.001f;
@@ -2213,7 +2040,7 @@ void CreatePlaneMeshXY(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
     constexpr unsigned int indices[6] = {0, 1, 2, 2, 3, 0};
     Platform::Memcpy(Indices.ToPtr(), &indices, sizeof(indices));
 
-    CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 
     Bounds.Mins.X  = -halfWidth;
     Bounds.Mins.Y  = -halfHeight;
@@ -2347,7 +2174,7 @@ void CreatePatchMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<un
         }
     }
 
-    CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 
     Bounds.Clear();
     Bounds.AddPoint(Corner00);
@@ -2471,7 +2298,7 @@ void CreateCylinderMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU
         firstVertex += (NumSubdivs + 1) * 2;
     }
 
-    CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
 void CreateConeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumSubdivs)
@@ -2581,7 +2408,7 @@ void CreateConeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<uns
 
     HK_ASSERT(pIndices == Indices.ToPtr() + Indices.Size());
 
-    CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
 void CreateCapsuleMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float Height, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs)
@@ -2681,7 +2508,7 @@ void CreateCapsuleMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
         }
     }
 
-    CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
 void CreateSkyboxMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, Float3 const& Extents, float TexCoordScale)
@@ -2822,7 +2649,7 @@ void CreateSkyboxMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<u
     pVerts[6 + 8 * 2].SetNormal(zero, neg, zero);
     pVerts[6 + 8 * 2].SetTexCoord(Float2(0, 0) * TexCoordScale);
 
-    CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
 void CreateSkydomeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Radius, float TexCoordScale, int NumVerticalSubdivs, int NumHorizontalSubdivs, bool bHemisphere)
@@ -2889,5 +2716,5 @@ void CreateSkydomeMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
         }
     }
 
-    CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
+    Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }

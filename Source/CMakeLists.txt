@@ -214,6 +214,13 @@ source_group( "Image\\stb" FILES ${ImageSTB} )
 #---------------------------------------------------------------------
 
 #---------------------------------------------------------------------
+# Assets module
+file( GLOB Assets Assets/*.h Assets/*.cpp )
+
+source_group( "Assets" FILES ${Assets} )
+#---------------------------------------------------------------------
+
+#---------------------------------------------------------------------
 # Render core module
 file( GLOB RenderCore RenderCore/*.h RenderCore/*.cpp )
 file( GLOB RenderCoreOpenGL45 RenderCore/OpenGL45/*.h RenderCore/OpenGL45/*.cpp )
@@ -228,12 +235,10 @@ source_group( "RenderCore\\FrameGraph" FILES ${RenderCoreFrameGraph} )
 #---------------------------------------------------------------------
 # Runtime module
 file( GLOB Runtime Runtime/*.h Runtime/*.cpp )
-file( GLOB RuntimeLWO Runtime/lwo/*.h Runtime/lwo/*.c )
 file( GLOB RuntimeIESNA Runtime/iesna/*.h Runtime/iesna/*.c )
 file( GLOB RuntimeSTB Runtime/stb/*.h Runtime/stb/*.c )
 
 source_group( "Runtime" FILES ${Runtime} )
-source_group( "Runtime\\lwo" FILES ${RuntimeLWO} )
 source_group( "Runtime\\iesna" FILES ${RuntimeIESNA} )
 source_group( "Runtime\\stb" FILES ${RuntimeSTB} )
 
@@ -290,13 +295,14 @@ ${GeometryBV}
 ${Image}
 ${ImageSTB}
 
+${Assets}
+
 ${RenderCore}
 ${RenderCoreOpenGL45}
 ${RenderCoreOpenGL45GL}
 ${RenderCoreFrameGraph}
 
 ${Runtime}
-${RuntimeLWO}
 ${RuntimeIESNA}
 ${RuntimeSTB}
 

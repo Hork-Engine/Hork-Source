@@ -91,7 +91,7 @@ PBR (physically based).
 * BSP
 
 ## Asset importing and resource management
-* 3D modelling formats (GLTF, LWO)
+* 3D models (GLTF)
 * Different image formats (WEBP, PNG, PSD, PNM, PIC, JPG, BMP, TGA, HDR, EXR)
 * Fonts (TTF)
 * Photometric profiles (IES)
@@ -167,7 +167,6 @@ PBR (physically based).
 * iesna
 * libwebp
 * lunasvg (freetype, plutovg as part of lunasvg)
-* lwo2
 * mimalloc
 * miniaudio
 * Miniz

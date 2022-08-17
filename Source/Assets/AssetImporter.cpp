@@ -30,15 +30,124 @@ SOFTWARE.
 
 #include "AssetImporter.h"
 #include "Asset.h"
-#include "ResourceManager.h"
-#include "Engine.h"
-#include <Core/Guid.h>
-#include <Image/Image.h>
-#include <Image/ImageEncoders.h>
+
 #include <Platform/Logger.h>
 #include <Platform/Memory/LinearAllocator.h>
+#include <Containers/Hash.h>
+#include <Geometry/Transform.h>
+#include <Geometry/Skinning.h>
+#include <Geometry/VertexFormat.h>
+#include <Geometry/BV/BvAxisAlignedBox.h>
+#include <Geometry/TangentSpace.h>
+#include <Geometry/BV/BvhTree.h>
+#include <Image/ImageEncoders.h>
 
 #include <cgltf/cgltf.h>
+
+class AssetImporter
+{
+public:
+    bool ImportGLTF(AssetImportSettings const& Settings);
+    bool ImportSkybox(AssetImportSettings const& Settings);
+
+private:
+    struct MeshInfo
+    {
+        int                    BaseVertex;
+        int                    VertexCount;
+        int                    FirstIndex;
+        int                    IndexCount;
+        struct cgltf_mesh*     Mesh;
+        struct cgltf_node*     Node;
+        struct cgltf_material* Material;
+        BvAxisAlignedBox       BoundingBox;
+        bool                   bSkinned;
+    };
+
+    struct TextureInfo
+    {
+        AString             PathToWrite;
+        bool                bSRGB;
+        struct cgltf_image* Image;
+    };
+
+    struct MaterialInfo
+    {
+        AString                PathToWrite;
+        struct cgltf_material* Material;
+        //class MGMaterialGraph * Graph;
+        const char* DefaultMaterial;
+
+        TVector<TextureInfo*> Textures;
+
+        float Uniforms[16];
+
+        THashMap<uint32_t, const char*> DefaultTexture;
+    };
+
+    struct AnimationInfo
+    {
+        AString                    Name;
+        float                      FrameDelta; // fixed time delta between frames
+        uint32_t                   FrameCount; // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
+        TVector<SAnimationChannel> Channels;
+        TVector<STransform>        Transforms;
+        TVector<BvAxisAlignedBox>  Bounds;
+    };
+
+    bool         ReadGLTF(struct cgltf_data* Data);
+    void         ReadMaterial(struct cgltf_material* Material, MaterialInfo& Info);
+    void         ReadNode_r(struct cgltf_node* Node);
+    void         ReadMesh(struct cgltf_node* Node);
+    void         ReadMesh(struct cgltf_node* Node, struct cgltf_mesh* Mesh, Float3x4 const& GlobalTransform, Float3x3 const& NormalMatrix);
+    void         ReadAnimations(struct cgltf_data* Data);
+    void         ReadAnimation(struct cgltf_animation* Anim, AnimationInfo& _Animation);
+    void         ReadSkeleton(struct cgltf_node* node, int parentIndex = -1);
+    void         WriteAssets();
+    void         WriteTextures();
+    void         WriteTexture(TextureInfo& tex);
+    void         WriteMaterials();
+    void         WriteMaterial(MaterialInfo& m);
+    void         WriteSkeleton();
+    void         WriteAnimations();
+    void         WriteAnimation(AnimationInfo const& Animation);
+    void         WriteSingleModel();
+    void         WriteMeshes();
+    void         WriteMesh(MeshInfo const& Mesh);
+    void         WriteSkyboxMaterial(AStringView SkyboxTexture);
+    AString      GeneratePhysicalPath(AStringView DesiredName, AStringView Extension);
+    AString      GetMaterialPath(cgltf_material* Material);
+    TextureInfo* FindTextureImage(struct cgltf_texture const* Texture);
+    void         SetTextureProps(TextureInfo* Info, const char* Name, bool SRGB);
+
+    AssetImportSettings      m_Settings;
+    AString                  m_Path;
+    struct cgltf_data*       m_Data;
+    bool                     m_bSkeletal;
+    TVector<SMeshVertex>     m_Vertices;
+    TVector<SMeshVertexSkin> m_Weights;
+    TVector<unsigned int>    m_Indices;
+    TVector<MeshInfo>        m_Meshes;
+    TVector<TextureInfo>     m_Textures;
+    TVector<MaterialInfo>    m_Materials;
+    TVector<AnimationInfo>   m_Animations;
+    TVector<SJoint>          m_Joints;
+    ASkin                    m_Skin;
+    BvAxisAlignedBox         m_BindposeBounds;
+    AString                  m_SkeletonPath;
+};
+
+bool ImportGLTF(AssetImportSettings const& Settings)
+{
+    AssetImporter importer;
+    return importer.ImportGLTF(Settings);
+}
+
+bool ImportSkybox(AssetImportSettings const& Settings)
+{
+    AssetImporter importer;
+    return importer.ImportSkybox(Settings);
+}
 
 static void unpack_vec2_or_vec3(cgltf_accessor* acc, Float3* output, size_t stride)
 {
@@ -302,10 +411,10 @@ static void unpack_joints(cgltf_accessor* acc, SMeshVertexSkin* weights)
     {
         cgltf_accessor_read_float(acc, i, indices, 4);
 
-        weights->JointIndices[0] = Math::Clamp<int>(indices[0], 0, ASkeleton::MAX_JOINTS);
-        weights->JointIndices[1] = Math::Clamp<int>(indices[1], 0, ASkeleton::MAX_JOINTS);
-        weights->JointIndices[2] = Math::Clamp<int>(indices[2], 0, ASkeleton::MAX_JOINTS);
-        weights->JointIndices[3] = Math::Clamp<int>(indices[3], 0, ASkeleton::MAX_JOINTS);
+        weights->JointIndices[0] = Math::Clamp<int>(indices[0], 0, MAX_SKELETON_JOINTS);
+        weights->JointIndices[1] = Math::Clamp<int>(indices[1], 0, MAX_SKELETON_JOINTS);
+        weights->JointIndices[2] = Math::Clamp<int>(indices[2], 0, MAX_SKELETON_JOINTS);
+        weights->JointIndices[3] = Math::Clamp<int>(indices[3], 0, MAX_SKELETON_JOINTS);
     }
 }
 
@@ -529,8 +638,7 @@ static const char* GetErrorString(cgltf_result code)
             return "IO error";
         case cgltf_result_out_of_memory:
             return "Out of memory";
-        default:
-            ;
+        default:;
     }
 
     return "Unknown error";
@@ -588,14 +696,14 @@ static bool IsChannelValid(cgltf_animation_channel* channel)
     return true;
 }
 
-bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
+bool AssetImporter::ImportGLTF(AssetImportSettings const& Settings)
 {
     bool           ret    = false;
-    AString const& Source = InSettings.ImportFile;
+    AString const& Source = Settings.ImportFile;
 
-    m_Settings = InSettings;
+    m_Settings = Settings;
 
-    m_Path = PathUtils::GetFilePath(InSettings.ImportFile);
+    m_Path = PathUtils::GetFilePath(Settings.ImportFile);
     m_Path += "/";
 
     AFile f = AFile::OpenRead(Source);
@@ -608,7 +716,7 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
     HeapBlob blob = f.AsBlob();
 
     constexpr int MAX_MEMORY_GLTF = 16 << 20;
-    using ALinearAllocatorGLTF = TLinearAllocator<MAX_MEMORY_GLTF>;
+    using ALinearAllocatorGLTF    = TLinearAllocator<MAX_MEMORY_GLTF>;
 
     ALinearAllocatorGLTF allocator;
 
@@ -621,8 +729,8 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
         ALinearAllocatorGLTF& Allocator = *static_cast<ALinearAllocatorGLTF*>(user);
         return Allocator.Allocate(size);
     };
-    options.memory.free = [](void* user, void* ptr)
-    {};
+    options.memory.free = [](void* user, void* ptr) {
+    };
     options.memory.user_data = &allocator;
 
     cgltf_data* data = NULL;
@@ -655,7 +763,7 @@ bool AAssetImporter::ImportGLTF(SAssetImportSettings const& InSettings)
     return true;
 }
 
-void AAssetImporter::ReadSkeleton(cgltf_node* node, int parentIndex)
+void AssetImporter::ReadSkeleton(cgltf_node* node, int parentIndex)
 {
     SJoint&  joint = m_Joints.Add();
     Float4x4 localTransform;
@@ -688,7 +796,7 @@ void AAssetImporter::ReadSkeleton(cgltf_node* node, int parentIndex)
     }
 }
 
-bool AAssetImporter::ReadGLTF(cgltf_data* Data)
+bool AssetImporter::ReadGLTF(cgltf_data* Data)
 {
     m_Data      = Data;
     m_bSkeletal = Data->skins_count > 0 && m_Settings.bImportSkinning;
@@ -736,7 +844,6 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
         m_Textures.Resize(Data->images_count);
         for (int i = 0; i < Data->images_count; i++)
         {
-            m_Textures[i].GUID.Generate();
             m_Textures[i].Image = &Data->images[i];
         }
     }
@@ -771,8 +878,6 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
             // FIXME: Only one skin per file supported now
             // TODO: for ( int i = 0; i < Data->skins_count; i++ ) {
             cgltf_skin* skin = &Data->skins[0];
-
-            m_SkeletonGUID.Generate();
 
             m_Joints.Clear();
 #if 0
@@ -901,7 +1006,7 @@ bool AAssetImporter::ReadGLTF(cgltf_data* Data)
                 }
             }
 
-            m_BindposeBounds = CalcBindposeBounds(m_Vertices.ToPtr(), m_Weights.ToPtr(), m_Vertices.Size(), &m_Skin, m_Joints.ToPtr(), m_Joints.Size());
+            m_BindposeBounds = Geometry::CalcBindposeBounds(m_Vertices.ToPtr(), m_Weights.ToPtr(), m_Vertices.Size(), &m_Skin, m_Joints.ToPtr(), m_Joints.Size());
 
             LOG("Total skeleton nodes {}\n", m_Joints.Size());
             LOG("Total skinned nodes {}\n", m_Skin.JointIndices.Size());
@@ -932,7 +1037,7 @@ static ETextureAddress ChooseSamplerWrap( int Wrap ) {
 }
 #endif
 
-AAssetImporter::TextureInfo* AAssetImporter::FindTextureImage(cgltf_texture const* Texture)
+AssetImporter::TextureInfo* AssetImporter::FindTextureImage(cgltf_texture const* Texture)
 {
     if (!Texture)
     {
@@ -948,7 +1053,7 @@ AAssetImporter::TextureInfo* AAssetImporter::FindTextureImage(cgltf_texture cons
     return nullptr;
 }
 
-void AAssetImporter::SetTextureProps(TextureInfo* Info, const char* Name, bool SRGB)
+void AssetImporter::SetTextureProps(TextureInfo* Info, const char* Name, bool SRGB)
 {
     if (Info)
     {
@@ -961,12 +1066,11 @@ void AAssetImporter::SetTextureProps(TextureInfo* Info, const char* Name, bool S
     }
 }
 
-void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
+void AssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
 {
-    Info.GUID.Generate();
     Info.Material        = Material;
     Info.DefaultMaterial = "/Default/Materials/Unlit";
-    Info.NumTextures     = 0;
+    Info.Textures.Clear();
     Platform::ZeroMem(Info.Uniforms, sizeof(Info.Uniforms));
 
     if (Material->unlit && m_Settings.bAllowUnlitMaterials)
@@ -984,20 +1088,19 @@ void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
                 break;
         }
 
-        Info.NumTextures       = 1;
         Info.DefaultTexture[0] = "/Default/Textures/BaseColorWhite";
 
         if (Material->has_pbr_metallic_roughness)
         {
-            Info.Textures[0] = FindTextureImage(Material->pbr_metallic_roughness.base_color_texture.texture);
+            Info.Textures.Add(FindTextureImage(Material->pbr_metallic_roughness.base_color_texture.texture));
         }
         else if (Material->has_pbr_specular_glossiness)
         {
-            Info.Textures[0] = FindTextureImage(Material->pbr_specular_glossiness.diffuse_texture.texture);
+            Info.Textures.Add(FindTextureImage(Material->pbr_specular_glossiness.diffuse_texture.texture));
         }
         else
         {
-            Info.Textures[0] = nullptr;
+            Info.Textures.Add(nullptr);
         }
 
         SetTextureProps(Info.Textures[0], "Texture_BaseColor", true);
@@ -1053,7 +1156,7 @@ void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
     else if (Material->has_pbr_metallic_roughness)
     {
 
-        Info.NumTextures       = 5;
+        Info.Textures.ResizeInvalidate(5);
         Info.DefaultTexture[0] = "/Default/Textures/BaseColorWhite"; // base color
         Info.DefaultTexture[1] = "/Default/Textures/White";          // metallic&roughness
         Info.DefaultTexture[2] = "/Default/Textures/Normal";         // normal
@@ -1137,7 +1240,7 @@ void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
     {
         LOG("Warning: pbr specular glossiness workflow is not supported yet\n");
 
-        Info.NumTextures       = 5;
+        Info.Textures.ResizeInvalidate(5);
         Info.DefaultTexture[0] = "/Default/Textures/BaseColorWhite"; // diffuse
         Info.DefaultTexture[1] = "/Default/Textures/White";          // specular&glossiness
         Info.DefaultTexture[2] = "/Default/Textures/Normal";         // normal
@@ -1219,9 +1322,8 @@ void AAssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
     }
 }
 
-void AAssetImporter::ReadNode_r(cgltf_node* Node)
+void AssetImporter::ReadNode_r(cgltf_node* Node)
 {
-
     //LOG( "node \"{}\"\n", Node->name );
 
     //if ( Node->camera ) {
@@ -1249,7 +1351,7 @@ void AAssetImporter::ReadNode_r(cgltf_node* Node)
     }
 }
 
-void AAssetImporter::ReadMesh(cgltf_node* Node)
+void AssetImporter::ReadMesh(cgltf_node* Node)
 {
     cgltf_mesh* mesh = Node->mesh;
 
@@ -1269,7 +1371,7 @@ void AAssetImporter::ReadMesh(cgltf_node* Node)
     ReadMesh(Node, mesh, Float3x4::Scale(Float3(m_Settings.Scale)) * globalTransform, normalMatrix);
 }
 
-void AAssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const& GlobalTransform, Float3x3 const& NormalMatrix)
+void AssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const& GlobalTransform, Float3x3 const& NormalMatrix)
 {
     struct ASortFunction
     {
@@ -1285,7 +1387,7 @@ void AAssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const
 
     MeshInfo* meshInfo = nullptr;
 
-    const Half pos = 1.0f;
+    const Half pos  = 1.0f;
     const Half zero = 0.0f;
 
     for (int i = 0; i < Mesh->primitives_count; i++)
@@ -1389,7 +1491,6 @@ void AAssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const
         if (!material || material != prim->material || !m_Settings.bMergePrimitives)
         {
             meshInfo = &m_Meshes.Add();
-            meshInfo->GUID.Generate();
             meshInfo->BaseVertex  = m_Vertices.Size();
             meshInfo->FirstIndex  = m_Indices.Size();
             meshInfo->VertexCount = 0;
@@ -1398,7 +1499,7 @@ void AAssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const
             meshInfo->Material    = prim->material;
             meshInfo->BoundingBox.Clear();
 
-            meshInfo->Node      = Node;
+            meshInfo->Node     = Node;
             meshInfo->bSkinned = weights != nullptr;
 
             material = prim->material;
@@ -1473,7 +1574,7 @@ void AAssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const
 
             if (texcoord)
             {
-                CalcTangentSpace(m_Vertices.ToPtr() + meshInfo->BaseVertex, m_Vertices.Size() - meshInfo->BaseVertex, m_Indices.ToPtr() + firstIndex, indexCount);
+                Geometry::CalcTangentSpace(m_Vertices.ToPtr() + meshInfo->BaseVertex, m_Vertices.Size() - meshInfo->BaseVertex, m_Indices.ToPtr() + firstIndex, indexCount);
             }
             else
             {
@@ -1562,7 +1663,7 @@ void AAssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const
     }
 }
 
-void AAssetImporter::ReadAnimations(cgltf_data* Data)
+void AssetImporter::ReadAnimations(cgltf_data* Data)
 {
     m_Animations.Resize(Data->animations_count);
     for (int animIndex = 0; animIndex < Data->animations_count; animIndex++)
@@ -1571,21 +1672,21 @@ void AAssetImporter::ReadAnimations(cgltf_data* Data)
 
         ReadAnimation(&Data->animations[animIndex], animation);
 
-        CalcBoundingBoxes(m_Vertices.ToPtr(),
-                          m_Weights.ToPtr(),
-                          m_Vertices.Size(),
-                          &m_Skin,
-                          m_Joints.ToPtr(),
-                          m_Joints.Size(),
-                          animation.FrameCount,
-                          animation.Channels.ToPtr(),
-                          animation.Channels.Size(),
-                          animation.Transforms.ToPtr(),
-                          animation.Bounds);
+        Geometry::CalcBoundingBoxes(m_Vertices.ToPtr(),
+                                    m_Weights.ToPtr(),
+                                    m_Vertices.Size(),
+                                    &m_Skin,
+                                    m_Joints.ToPtr(),
+                                    m_Joints.Size(),
+                                    animation.FrameCount,
+                                    animation.Channels.ToPtr(),
+                                    animation.Channels.Size(),
+                                    animation.Transforms.ToPtr(),
+                                    animation.Bounds);
     }
 }
 
-void AAssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animation)
+void AssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animation)
 {
     const int framesPerSecond = 30;
     //    float gcd = 0;
@@ -1619,7 +1720,6 @@ void AAssetImporter::ReadAnimation(cgltf_animation* Anim, AnimationInfo& Animati
 
     float frameDelta = maxDuration / numFrames;
 
-    Animation.GUID.Generate();
     Animation.Name       = Anim->name ? Anim->name : "Animation";
     Animation.FrameDelta = frameDelta;
     Animation.FrameCount = numFrames; // frames count, animation duration is FrameDelta * ( FrameCount - 1 )
@@ -1782,7 +1882,7 @@ Float3x4 CalcJointWorldTransform( SJoint const & InJoint, SJoint const * InJoint
 }
 #endif
 
-void AAssetImporter::WriteAssets()
+void AssetImporter::WriteAssets()
 {
     if (m_Settings.bImportTextures)
     {
@@ -1820,7 +1920,7 @@ void AAssetImporter::WriteAssets()
     }
 }
 
-void AAssetImporter::WriteTextures()
+void AssetImporter::WriteTextures()
 {
     for (TextureInfo& tex : m_Textures)
     {
@@ -1828,11 +1928,11 @@ void AAssetImporter::WriteTextures()
     }
 }
 
-void AAssetImporter::WriteTexture(TextureInfo& tex)
+void AssetImporter::WriteTexture(TextureInfo& tex)
 {
-    AString     fileName       = GeneratePhysicalPath(tex.Image->name && *tex.Image->name ? tex.Image->name : "texture", ".texture");
-    AString     sourceFileName = m_Path + tex.Image->uri;
-    AString     fileSystemPath = GEngine->GetRootPath() + fileName;
+    AString fileName       = GeneratePhysicalPath(tex.Image->name && *tex.Image->name ? tex.Image->name : "texture", ".texture");
+    AString sourceFileName = m_Path + tex.Image->uri;
+    AString fileSystemPath = m_Settings.RootPath + fileName;
 
     ImageMipmapConfig mipmapConfig;
     mipmapConfig.EdgeMode = IMAGE_RESAMPLE_EDGE_WRAP;
@@ -1850,17 +1950,17 @@ void AAssetImporter::WriteTexture(TextureInfo& tex)
         return;
     }
 
-    GuidMap[tex.GUID] = "/Root/" + fileName;
+    tex.PathToWrite   = "/Root/" + fileName;
 
-    f.WriteUInt32(FMT_FILE_TYPE_TEXTURE);
-    f.WriteUInt32(FMT_VERSION_TEXTURE);
+    f.WriteUInt32(ASSET_TEXTURE);
+    f.WriteUInt32(ASSET_VERSION_TEXTURE);
     f.WriteObject(image);
 
     f.WriteUInt32(1); // num source files
     f.WriteString(sourceFileName);
 }
 
-void AAssetImporter::WriteMaterials()
+void AssetImporter::WriteMaterials()
 {
     for (MaterialInfo& m : m_Materials)
     {
@@ -1868,10 +1968,10 @@ void AAssetImporter::WriteMaterials()
     }
 }
 
-void AAssetImporter::WriteMaterial(MaterialInfo const& m)
+void AssetImporter::WriteMaterial(MaterialInfo& m)
 {
-    AString     fileName       = GeneratePhysicalPath("matinst", ".minst");
-    AString     fileSystemPath = GEngine->GetRootPath() + fileName;
+    AString fileName       = GeneratePhysicalPath("matinst", ".minst");
+    AString fileSystemPath = m_Settings.RootPath + fileName;
 
     AFile f = AFile::OpenWrite(fileSystemPath);
     if (!f)
@@ -1880,24 +1980,24 @@ void AAssetImporter::WriteMaterial(MaterialInfo const& m)
         return;
     }
 
-    GuidMap[m.GUID] = "/Root/" + fileName;
+    m.PathToWrite   = "/Root/" + fileName;
 
     f.FormattedPrint("Material \"{}\"\n", m.DefaultMaterial);
     f.FormattedPrint("Textures [\n");
-    for (int i = 0; i < m.NumTextures; i++)
+    for (uint32_t i = 0; i < m.Textures.Size(); i++)
     {
         if (m.Textures[i])
         {
-            f.FormattedPrint("\"{}\"\n", GuidMap[m.Textures[i]->GUID]);
+            f.FormattedPrint("\"{}\"\n", m.Textures[i]->PathToWrite);
         }
         else
         {
-            f.FormattedPrint("\"{}\"\n", m.DefaultTexture[i]);
+            f.FormattedPrint("\"{}\"\n", m.DefaultTexture.At(i));
         }
     }
     f.FormattedPrint("]\n");
     f.FormattedPrint("Uniforms [\n");
-    for (int i = 0; i < MAX_MATERIAL_UNIFORMS; i++)
+    for (int i = 0; i < HK_ARRAY_SIZE(m.Uniforms); i++)
     {
         f.FormattedPrint("\"{}\"\n", Core::ToString(m.Uniforms[i]));
     }
@@ -1930,9 +2030,9 @@ static AString ValidateFileName(AStringView FileName)
     return ValidatedName;
 }
 
-AString AAssetImporter::GeneratePhysicalPath(AStringView DesiredName, AStringView Extension)
+AString AssetImporter::GeneratePhysicalPath(AStringView DesiredName, AStringView Extension)
 {
-    AString sourceName = PathUtils::GetFilenameNoExt(PathUtils::GetFilenameNoPath(m_Settings.ImportFile));
+    AString sourceName    = PathUtils::GetFilenameNoExt(PathUtils::GetFilenameNoPath(m_Settings.ImportFile));
     AString validatedName = ValidateFileName(DesiredName);
 
     sourceName.ToLower();
@@ -1943,7 +2043,7 @@ AString AAssetImporter::GeneratePhysicalPath(AStringView DesiredName, AStringVie
 
     int uniqueNumber = 0;
 
-    while (Core::IsFileExists(GEngine->GetRootPath() + result))
+    while (Core::IsFileExists(m_Settings.RootPath + result))
     {
         result = path + "_" + Core::ToString(++uniqueNumber) + Extension;
     }
@@ -1951,24 +2051,24 @@ AString AAssetImporter::GeneratePhysicalPath(AStringView DesiredName, AStringVie
     return result;
 }
 
-AGUID AAssetImporter::GetMaterialGUID(cgltf_material* Material)
+AString AssetImporter::GetMaterialPath(cgltf_material* Material)
 {
     for (MaterialInfo& m : m_Materials)
     {
         if (m.Material == Material)
         {
-            return m.GUID;
+            return m.PathToWrite;
         }
     }
     return {};
 }
 
-void AAssetImporter::WriteSkeleton()
+void AssetImporter::WriteSkeleton()
 {
     if (!m_Joints.IsEmpty())
     {
-        AString     fileName       = GeneratePhysicalPath("skeleton", ".skeleton");
-        AString     fileSystemPath = GEngine->GetRootPath() + fileName;
+        AString fileName       = GeneratePhysicalPath("skeleton", ".skeleton");
+        AString fileSystemPath = m_Settings.RootPath + fileName;
 
         AFile f = AFile::OpenWrite(fileSystemPath);
         if (!f)
@@ -1977,17 +2077,17 @@ void AAssetImporter::WriteSkeleton()
             return;
         }
 
-        GuidMap[m_SkeletonGUID] = "/Root/" + fileName;
+        m_SkeletonPath = "/Root/" + fileName;
 
-        f.WriteUInt32(FMT_FILE_TYPE_SKELETON);
-        f.WriteUInt32(FMT_VERSION_SKELETON);
-        f.WriteString(m_SkeletonGUID.ToString());
+        f.WriteUInt32(ASSET_SKELETON);
+        f.WriteUInt32(ASSET_VERSION_SKELETON);
+        f.WriteString(""); // TODO: remove
         f.WriteArray(m_Joints);
         f.WriteObject(m_BindposeBounds);
     }
 }
 
-void AAssetImporter::WriteAnimations()
+void AssetImporter::WriteAnimations()
 {
     for (AnimationInfo& animation : m_Animations)
     {
@@ -1995,10 +2095,10 @@ void AAssetImporter::WriteAnimations()
     }
 }
 
-void AAssetImporter::WriteAnimation(AnimationInfo const& Animation)
+void AssetImporter::WriteAnimation(AnimationInfo const& Animation)
 {
-    AString     fileName       = GeneratePhysicalPath(Animation.Name, ".animation");
-    AString     fileSystemPath = GEngine->GetRootPath() + fileName;
+    AString fileName       = GeneratePhysicalPath(Animation.Name, ".animation");
+    AString fileSystemPath = m_Settings.RootPath + fileName;
 
     AFile f = AFile::OpenWrite(fileSystemPath);
     if (!f)
@@ -2007,9 +2107,9 @@ void AAssetImporter::WriteAnimation(AnimationInfo const& Animation)
         return;
     }
 
-    f.WriteUInt32(FMT_FILE_TYPE_ANIMATION);
-    f.WriteUInt32(FMT_VERSION_ANIMATION);
-    f.WriteString(Animation.GUID.ToString());
+    f.WriteUInt32(ASSET_ANIMATION);
+    f.WriteUInt32(ASSET_VERSION_ANIMATION);
+    f.WriteString(""); // TODO: remove
     f.WriteFloat(Animation.FrameDelta);
     f.WriteUInt32(Animation.FrameCount);
     f.WriteArray(Animation.Channels);
@@ -2017,15 +2117,15 @@ void AAssetImporter::WriteAnimation(AnimationInfo const& Animation)
     f.WriteArray(Animation.Bounds);
 }
 
-void AAssetImporter::WriteSingleModel()
+void AssetImporter::WriteSingleModel()
 {
     if (m_Meshes.IsEmpty())
     {
         return;
     }
 
-    AString     fileName       = GeneratePhysicalPath("mesh", ".mesh_data");
-    AString     fileSystemPath = GEngine->GetRootPath() + fileName;
+    AString fileName       = GeneratePhysicalPath("mesh", ".mesh_data");
+    AString fileSystemPath = m_Settings.RootPath + fileName;
 
     AFile f = AFile::OpenWrite(fileSystemPath);
     if (!f)
@@ -2034,10 +2134,7 @@ void AAssetImporter::WriteSingleModel()
         return;
     }
 
-    AGUID GUID;
-    GUID.Generate();
-
-    GuidMap[GUID] = "/Root/" + fileName;
+    AString pathToWrite = "/Root/" + fileName;
 
     bool bSkinnedMesh = m_bSkeletal;
 
@@ -2050,9 +2147,9 @@ void AAssetImporter::WriteSingleModel()
 
     bool bRaycastBVH = m_Settings.bGenerateRaycastBVH && !bSkinnedMesh;
 
-    f.WriteUInt32(FMT_FILE_TYPE_MESH);
-    f.WriteUInt32(FMT_VERSION_MESH);
-    f.WriteString(GUID.ToString());
+    f.WriteUInt32(ASSET_MESH);
+    f.WriteUInt32(ASSET_VERSION_MESH);
+    f.WriteString(""); // TODO: remove
     f.WriteBool(bSkinnedMesh);
     f.WriteObject(BoundingBox);
     f.WriteArray(m_Indices);
@@ -2111,7 +2208,7 @@ void AAssetImporter::WriteSingleModel()
     }
 
     //if ( m_Settings.bGenerateStaticCollisions ) {
-    //TPodVector< ACollisionTriangleSoupData::SSubpart > subparts;
+    //TVector< ACollisionTriangleSoupData::SSubpart > subparts;
 
     //subparts.Resize( m_Meshes.Size() );
     //for ( int i = 0 ; i < subparts.Size() ; i++ ) {
@@ -2134,7 +2231,7 @@ void AAssetImporter::WriteSingleModel()
 
 
     fileName       = GeneratePhysicalPath("mesh", ".mesh");
-    fileSystemPath = GEngine->GetRootPath() + fileName;
+    fileSystemPath = m_Settings.RootPath + fileName;
 
     f = AFile::OpenWrite(fileSystemPath);
     if (!f)
@@ -2143,11 +2240,11 @@ void AAssetImporter::WriteSingleModel()
         return;
     }
 
-    f.FormattedPrint("Mesh \"{}\"\n", GuidMap[GUID]);
+    f.FormattedPrint("Mesh \"{}\"\n", pathToWrite);
 
     if (bSkinnedMesh)
     {
-        f.FormattedPrint("Skeleton \"{}\"\n", GuidMap[m_SkeletonGUID]);
+        f.FormattedPrint("Skeleton \"{}\"\n", m_SkeletonPath);
     }
     else
     {
@@ -2156,12 +2253,12 @@ void AAssetImporter::WriteSingleModel()
     f.FormattedPrint("Subparts [\n");
     for (MeshInfo const& meshInfo : m_Meshes)
     {
-        f.FormattedPrint("\"{}\"\n", GuidMap[GetMaterialGUID(meshInfo.Material)]);
+        f.FormattedPrint("\"{}\"\n", GetMaterialPath(meshInfo.Material));
     }
     f.FormattedPrint("]\n");
 }
 
-void AAssetImporter::WriteMeshes()
+void AssetImporter::WriteMeshes()
 {
     for (MeshInfo& meshInfo : m_Meshes)
     {
@@ -2169,10 +2266,10 @@ void AAssetImporter::WriteMeshes()
     }
 }
 
-void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
+void AssetImporter::WriteMesh(MeshInfo const& Mesh)
 {
-    AString     fileName       = GeneratePhysicalPath(Mesh.Mesh->name ? Mesh.Mesh->name : "mesh", ".mesh_data");
-    AString     fileSystemPath = GEngine->GetRootPath() + fileName;
+    AString fileName       = GeneratePhysicalPath(Mesh.Mesh->name ? Mesh.Mesh->name : "mesh", ".mesh_data");
+    AString fileSystemPath = m_Settings.RootPath + fileName;
 
     AFile f = AFile::OpenWrite(fileSystemPath);
     if (!f)
@@ -2184,13 +2281,13 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
     bool bSkinnedMesh = m_bSkeletal;
     HK_ASSERT(bSkinnedMesh == false);
 
-    GuidMap[Mesh.GUID] = "/Root/" + fileName;
+    AString pathToMesh = "/Root/" + fileName;
 
     bool bRaycastBVH = m_Settings.bGenerateRaycastBVH;
 
-    f.WriteUInt32(FMT_FILE_TYPE_MESH);
-    f.WriteUInt32(FMT_VERSION_MESH);
-    f.WriteString(Mesh.GUID.ToString());
+    f.WriteUInt32(ASSET_MESH);
+    f.WriteUInt32(ASSET_VERSION_MESH);
+    f.WriteString(""); // TODO: remove
     f.WriteBool(bSkinnedMesh);
     f.WriteObject(Mesh.BoundingBox);
 
@@ -2262,7 +2359,7 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
     }
 
     fileName       = GeneratePhysicalPath("mesh", ".mesh");
-    fileSystemPath = GEngine->GetRootPath() + fileName;
+    fileSystemPath = m_Settings.RootPath + fileName;
 
     f = AFile::OpenWrite(fileSystemPath);
     if (!f)
@@ -2271,226 +2368,22 @@ void AAssetImporter::WriteMesh(MeshInfo const& Mesh)
         return;
     }
 
-    f.FormattedPrint("Mesh \"{}\"\n", GuidMap[Mesh.GUID]);
+    f.FormattedPrint("Mesh \"{}\"\n", pathToMesh);
 
     if (bSkinnedMesh)
     {
-        f.FormattedPrint("Skeleton \"{}\"\n", GuidMap[m_SkeletonGUID]);
+        f.FormattedPrint("Skeleton \"{}\"\n", m_SkeletonPath);
     }
     else
     {
         f.FormattedPrint("Skeleton \"{}\"\n", "/Default/Skeleton/Default");
     }
     f.FormattedPrint("Subparts [\n");
-    f.FormattedPrint("\"{}\"\n", GuidMap[GetMaterialGUID(Mesh.Material)]);
+    f.FormattedPrint("\"{}\"\n", GetMaterialPath(Mesh.Material));
     f.FormattedPrint("]\n");
 }
 
-bool GenerateAndSaveEnvironmentMap(ImageStorage const& Skybox, AStringView EnvmapFile)
-{
-    TRef<RenderCore::ITexture> SourceMap, IrradianceMap, ReflectionMap;
-
-    if (!Skybox || Skybox.GetDesc().Type != TEXTURE_CUBE)
-    {
-        LOG("GenerateAndSaveEnvironmentMap: invalid skybox\n");
-        return false;
-    }
-
-    int width = Skybox.GetDesc().Width;
-
-    RenderCore::STextureDesc textureDesc;
-    textureDesc.SetResolution(RenderCore::STextureResolutionCubemap(width));
-    textureDesc.SetFormat(Skybox.GetDesc().Format);
-    textureDesc.SetMipLevels(1);
-    textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE);
-
-    if (Skybox.NumChannels() == 1)
-    {
-        // Apply texture swizzle for single channel textures
-        textureDesc.Swizzle.R = RenderCore::TEXTURE_SWIZZLE_R;
-        textureDesc.Swizzle.G = RenderCore::TEXTURE_SWIZZLE_R;
-        textureDesc.Swizzle.B = RenderCore::TEXTURE_SWIZZLE_R;
-        textureDesc.Swizzle.A = RenderCore::TEXTURE_SWIZZLE_R;
-    }
-
-    GEngine->GetRenderDevice()->CreateTexture(textureDesc, &SourceMap);
-
-    RenderCore::STextureRect rect;
-    rect.Offset.X        = 0;
-    rect.Offset.Y        = 0;
-    rect.Offset.MipLevel = 0;
-    rect.Dimension.X     = width;
-    rect.Dimension.Y     = width;
-    rect.Dimension.Z     = 1;
-
-    ImageSubresourceDesc subresDesc;
-    subresDesc.MipmapIndex = 0;
-
-    for (int faceNum = 0; faceNum < 6; faceNum++)
-    {
-        rect.Offset.Z = faceNum;
-
-        subresDesc.SliceIndex = faceNum;
-
-        ImageSubresource subresouce = Skybox.GetSubresource(subresDesc);
-        
-        SourceMap->WriteRect(rect, subresouce.GetSizeInBytes(), 1, subresouce.GetData());
-    }
-
-    GEngine->GetRenderBackend()->GenerateIrradianceMap(SourceMap, &IrradianceMap);
-    GEngine->GetRenderBackend()->GenerateReflectionMap(SourceMap, &ReflectionMap);
-
-    // Preform some validation
-    HK_ASSERT(IrradianceMap->GetDesc().Resolution.Width == IrradianceMap->GetDesc().Resolution.Height);
-    HK_ASSERT(ReflectionMap->GetDesc().Resolution.Width == ReflectionMap->GetDesc().Resolution.Height);
-    HK_ASSERT(IrradianceMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
-    HK_ASSERT(ReflectionMap->GetDesc().Format == TEXTURE_FORMAT_R11G11B10_FLOAT);
-
-    AFile f = AFile::OpenWrite(EnvmapFile);
-    if (!f)
-    {
-        LOG("Failed to write {}\n", EnvmapFile);
-        return false;
-    }
-
-    f.WriteUInt32(FMT_FILE_TYPE_ENVMAP);
-    f.WriteUInt32(FMT_VERSION_ENVMAP);
-    f.WriteUInt32(IrradianceMap->GetWidth());
-    f.WriteUInt32(ReflectionMap->GetWidth());
-
-    // Choose max width for memory allocation
-    int maxSize = Math::Max(IrradianceMap->GetWidth(), ReflectionMap->GetWidth());
-
-    TVector<uint32_t> buffer(maxSize * maxSize * 6);
-
-    uint32_t* data = buffer.ToPtr();
-
-    int numPixels = IrradianceMap->GetWidth() * IrradianceMap->GetWidth() * 6;
-    IrradianceMap->Read(0, numPixels * sizeof(uint32_t), 4, data);
-
-    f.WriteWords<uint32_t>(data, numPixels);
-
-    for (int mipLevel = 0; mipLevel < ReflectionMap->GetDesc().NumMipLevels; mipLevel++)
-    {
-        int mipWidth = ReflectionMap->GetWidth() >> mipLevel;
-        HK_ASSERT(mipWidth > 0);
-
-        numPixels = mipWidth * mipWidth * 6;
-
-        ReflectionMap->Read(mipLevel, numPixels * sizeof(uint32_t), 4, data);
-
-        f.WriteWords<uint32_t>(data, numPixels);
-    }
-    return true;
-}
-
-bool GenerateAndSaveEnvironmentMap(SkyboxImportSettings const& ImportSettings, AStringView EnvmapFile)
-{
-    ImageStorage image = LoadSkyboxImages(ImportSettings);
-
-    if (!image)
-    {
-        return false;
-    }
-
-    return GenerateAndSaveEnvironmentMap(image, EnvmapFile);
-}
-
-ImageStorage GenerateAtmosphereSkybox(SKYBOX_IMPORT_TEXTURE_FORMAT Format, uint32_t Resolution, Float3 const& LightDir)
-{
-    TEXTURE_FORMAT renderFormat;
-
-    switch (Format)
-    {
-        case SKYBOX_IMPORT_TEXTURE_FORMAT_SRGBA8_UNORM:
-        case SKYBOX_IMPORT_TEXTURE_FORMAT_BC1_UNORM_SRGB:
-            renderFormat = TEXTURE_FORMAT_SRGBA8_UNORM;
-            break;
-        case SKYBOX_IMPORT_TEXTURE_FORMAT_SBGRA8_UNORM:
-            renderFormat = TEXTURE_FORMAT_SBGRA8_UNORM;
-            break;
-        case SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT:
-            renderFormat = TEXTURE_FORMAT_R11G11B10_FLOAT;
-            break;
-        case SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT:
-            renderFormat = TEXTURE_FORMAT_RGBA32_FLOAT;
-            break;
-        default:
-            LOG("GenerateAtmosphereSkybox: unexpected texture format\n");
-            return{};
-    }
-
-    TextureFormatInfo const& info = GetTextureFormatInfo((TEXTURE_FORMAT)Format);
-
-    if (Resolution % info.BlockSize)
-    {
-        LOG("GenerateAtmosphereSkybox: skybox resolution must be block aligned\n");
-        return {};
-    }
-
-    TRef<RenderCore::ITexture> skybox;
-    GEngine->GetRenderBackend()->GenerateSkybox(renderFormat, Resolution, LightDir, &skybox);
-
-    RenderCore::STextureRect rect;
-    rect.Offset.X        = 0;
-    rect.Offset.Y        = 0;
-    rect.Offset.MipLevel = 0;
-    rect.Dimension.X     = Resolution;
-    rect.Dimension.Y     = Resolution;
-    rect.Dimension.Z     = 1;
-
-    ImageStorageDesc desc;
-    desc.Type       = TEXTURE_CUBE;
-    desc.Width      = Resolution;
-    desc.Height     = Resolution;
-    desc.SliceCount = 6;
-    desc.NumMipmaps = 1;
-    desc.Format     = (TEXTURE_FORMAT)Format;
-    desc.Flags      = IMAGE_STORAGE_NO_ALPHA;
-
-    ImageStorage storage(desc);
-
-    HeapBlob temp;
-
-    for (uint32_t faceNum = 0; faceNum < 6; faceNum++)
-    {
-        ImageSubresourceDesc subresDesc;
-        subresDesc.SliceIndex = faceNum;
-        subresDesc.MipmapIndex = 0;
-
-        ImageSubresource subresource = storage.GetSubresource(subresDesc);
-
-        rect.Offset.Z = faceNum;
-
-        switch (Format)
-        {
-            case SKYBOX_IMPORT_TEXTURE_FORMAT_SRGBA8_UNORM:
-            case SKYBOX_IMPORT_TEXTURE_FORMAT_SBGRA8_UNORM:
-            case SKYBOX_IMPORT_TEXTURE_FORMAT_R11G11B10_FLOAT:
-                skybox->ReadRect(rect, subresource.GetSizeInBytes(), 4, subresource.GetData());
-                break;
-            case SKYBOX_IMPORT_TEXTURE_FORMAT_BC1_UNORM_SRGB:
-                if (!temp)
-                    temp.Reset(Resolution * Resolution * 4);
-
-                skybox->ReadRect(rect, temp.Size(), 4, temp.GetData());
-                TextureBlockCompression::CompressBC1(temp.GetData(), subresource.GetData(), Resolution, Resolution);
-                break;
-            case SKYBOX_IMPORT_TEXTURE_FORMAT_BC6H_UFLOAT:
-                if (!temp)
-                    temp.Reset(Resolution * Resolution * 4 * sizeof(float));
-
-                skybox->ReadRect(rect, temp.Size(), 4, temp.GetData());
-                TextureBlockCompression::CompressBC6h(temp.GetData(), subresource.GetData(), Resolution, Resolution, false);
-                break;
-            default:
-                HK_ASSERT(0);
-        }
-    }
-    return storage;
-}
-
-bool SaveSkyboxTexture(AStringView FileName, ImageStorage& Image)
+bool SaveSkyboxTexture(AStringView FileName, ImageStorage const& Image)
 {
     if (!Image || Image.GetDesc().Type != TEXTURE_CUBE)
     {
@@ -2505,11 +2398,11 @@ bool SaveSkyboxTexture(AStringView FileName, ImageStorage& Image)
         return false;
     }
 
-    f.WriteUInt32(FMT_FILE_TYPE_TEXTURE);
-    f.WriteUInt32(FMT_VERSION_TEXTURE);
+    f.WriteUInt32(ASSET_TEXTURE);
+    f.WriteUInt32(ASSET_VERSION_TEXTURE);
 
     f.WriteObject(Image);
-    
+
     f.WriteUInt32(6); // num source files
     for (int i = 0; i < 6; i++)
     {
@@ -2518,22 +2411,22 @@ bool SaveSkyboxTexture(AStringView FileName, ImageStorage& Image)
     return true;
 }
 
-bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
+bool AssetImporter::ImportSkybox(AssetImportSettings const& Settings)
 {
-    m_Settings            = ImportSettings;
+    m_Settings            = Settings;
     m_Settings.ImportFile = "Skybox";
 
-    if (!ImportSettings.bImportSkyboxExplicit)
+    if (!Settings.bImportSkyboxExplicit)
     {
         return false;
     }
 
-    ImageStorage image = LoadSkyboxImages(ImportSettings.SkyboxImport);
+    ImageStorage image = LoadSkyboxImages(Settings.SkyboxImport);
     if (!image)
         return false;
 
-    AString     fileName       = GeneratePhysicalPath("texture", ".texture");
-    AString     fileSystemPath = GEngine->GetRootPath() + fileName;
+    AString fileName       = GeneratePhysicalPath("texture", ".texture");
+    AString fileSystemPath = m_Settings.RootPath + fileName;
 
     AFile f = AFile::OpenWrite(fileSystemPath);
     if (!f)
@@ -2542,15 +2435,15 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
         return false;
     }
 
-    f.WriteUInt32(FMT_FILE_TYPE_TEXTURE);
-    f.WriteUInt32(FMT_VERSION_TEXTURE);
+    f.WriteUInt32(ASSET_TEXTURE);
+    f.WriteUInt32(ASSET_VERSION_TEXTURE);
 
     f.WriteObject(image);
 
     f.WriteUInt32(6); // num source files
     for (int i = 0; i < 6; i++)
     {
-        f.WriteString(ImportSettings.SkyboxImport.Faces[i]); // source file
+        f.WriteString(Settings.SkyboxImport.Faces[i]); // source file
     }
 
     if (m_Settings.bCreateSkyboxMaterialInstance)
@@ -2561,10 +2454,10 @@ bool AAssetImporter::ImportSkybox(SAssetImportSettings const& ImportSettings)
     return true;
 }
 
-void AAssetImporter::WriteSkyboxMaterial(AStringView SkyboxTexture)
+void AssetImporter::WriteSkyboxMaterial(AStringView SkyboxTexture)
 {
-    AString     fileName       = GeneratePhysicalPath("matinst", ".minst");
-    AString     fileSystemPath = GEngine->GetRootPath() + fileName;
+    AString fileName       = GeneratePhysicalPath("matinst", ".minst");
+    AString fileSystemPath = m_Settings.RootPath + fileName;
 
     AFile f = AFile::OpenWrite(fileSystemPath);
     if (!f)
@@ -2577,541 +2470,4 @@ void AAssetImporter::WriteSkyboxMaterial(AStringView SkyboxTexture)
     f.FormattedPrint("Textures [\n");
     f.FormattedPrint("\"{}\"\n", SkyboxTexture);
     f.FormattedPrint("]\n");
-}
-
-
-
-
-
-#include "lwo/lwo2.h"
-
-#define MAX_MEMORY_LWO (16 << 10)
-
-using ALinearAllocatorLWO = TLinearAllocator<MAX_MEMORY_LWO>;
-
-static void* lwAlloc(void* _Allocator, size_t _Size)
-{
-    ALinearAllocatorLWO& Allocator = *static_cast<ALinearAllocatorLWO*>(_Allocator);
-    void*                ptr       = Allocator.Allocate(_Size);
-    Platform::ZeroMem(ptr, _Size);
-    return ptr;
-}
-
-static void lwFree(void* _Allocator, void* _Bytes)
-{
-}
-
-static size_t lwRead(void* _Buffer, size_t _ElementSize, size_t _ElementCount, struct st_lwFile* _Stream)
-{
-    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)_Stream->UserData;
-
-    size_t total = _ElementSize * _ElementCount;
-
-    return stream->Read(_Buffer, total) / _ElementSize;
-}
-
-static int lwSeek(struct st_lwFile* _Stream, long _Offset, int _Origin)
-{
-    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)_Stream->UserData;
-
-    switch (_Origin)
-    {
-        case SEEK_CUR:
-            return stream->SeekCur(_Offset) ? 0 : -1;
-        case SEEK_SET:
-            return stream->SeekSet(_Offset) ? 0 : -1;
-        case SEEK_END:
-            return stream->SeekEnd(_Offset) ? 0 : -1;
-    }
-
-    return -1;
-}
-
-static long lwTell(struct st_lwFile* _Stream)
-{
-    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)_Stream->UserData;
-
-    return (long)stream->GetOffset();
-}
-
-static int lwGetc(struct st_lwFile* _Stream)
-{
-    IBinaryStreamReadInterface* stream = (IBinaryStreamReadInterface*)_Stream->UserData;
-
-    uint8_t c;
-    if (stream->Read(&c, sizeof(c)) == 0)
-    {
-        _Stream->error = 1;
-        return EOF;
-    }
-
-    return c;
-}
-
-struct SFace
-{
-    BvAxisAlignedBox Bounds;
-
-    int FirstVertex;
-    int NumVertices;
-
-    int FirstIndex;
-    int NumIndices;
-
-    AMaterialInstance* MaterialInst;
-};
-
-static bool CreateIndexedMeshFromSurfaces(SFace const* InSurfaces, int InSurfaceCount, SMeshVertex const* InVertices, unsigned int const* InIndices, AIndexedMesh** IndexedMesh)
-{
-    int totalVerts    = 0;
-    int totalIndices  = 0;
-    int totalSubparts = 0;
-
-    if (!InSurfaceCount)
-    {
-        return false;
-    }
-
-    TPodVector<SFace const*> surfaces;
-    for (int j = 0; j < InSurfaceCount; j++)
-    {
-        surfaces.Add(&InSurfaces[j]);
-    }
-
-    struct SSortFunction
-    {
-        bool operator()(SFace const* _A, SFace const* _B)
-        {
-            return (_A->MaterialInst < _B->MaterialInst);
-        }
-    } SortFunction;
-
-    auto CanMergeSurfaces = [](SFace const* InFirst, SFace const* InSecond) -> bool
-    {
-        return (InFirst->MaterialInst == InSecond->MaterialInst);
-    };
-
-    std::sort(surfaces.Begin(), surfaces.End(), SortFunction);
-
-    SFace const* merge = surfaces[0];
-    totalSubparts      = 1;
-    for (int j = 0; j < surfaces.Size(); j++)
-    {
-        SFace const* surf = surfaces[j];
-
-        totalVerts += surf->NumVertices;
-        totalIndices += surf->NumIndices;
-
-        if (!CanMergeSurfaces(surf, merge))
-        {
-            totalSubparts++;
-            merge = surf;
-        }
-    }
-
-    //Float3x3 normalMatrix;
-    //InPretransform.DecomposeNormalMatrix( normalMatrix );
-
-    AIndexedMesh* indexedMesh = AIndexedMesh::Create(totalVerts, totalIndices, totalSubparts, false);
-
-    SMeshVertex*  verts   = indexedMesh->GetVertices();
-    unsigned int* indices = indexedMesh->GetIndices();
-
-    int              baseVertex         = 0;
-    int              firstIndex         = 0;
-    int              subpartVertexCount = 0;
-    int              subpartIndexCount  = 0;
-    BvAxisAlignedBox subpartBounds;
-
-    merge            = surfaces[0];
-    int subpartIndex = 0;
-    subpartBounds.Clear();
-    for (int j = 0; j < surfaces.Size(); j++)
-    {
-        SFace const* surf = surfaces[j];
-
-        if (!CanMergeSurfaces(surf, merge))
-        {
-
-            AIndexedMeshSubpart* subpart = indexedMesh->GetSubpart(subpartIndex);
-            subpart->SetBaseVertex(baseVertex);
-            subpart->SetFirstIndex(firstIndex);
-            subpart->SetVertexCount(subpartVertexCount);
-            subpart->SetIndexCount(subpartIndexCount);
-            subpart->SetMaterialInstance(merge->MaterialInst);
-            subpart->SetBoundingBox(subpartBounds);
-
-            CalcTangentSpace(indexedMesh->GetVertices() + baseVertex, subpartVertexCount, indexedMesh->GetIndices() + firstIndex, subpartIndexCount);
-
-            // Begin new subpart
-            firstIndex += subpartIndexCount;
-            baseVertex += subpartVertexCount;
-            subpartIndexCount  = 0;
-            subpartVertexCount = 0;
-            merge              = surfaces[j];
-            subpartIndex++;
-            subpartBounds.Clear();
-        }
-
-        for (int v = 0; v < surf->NumVertices; v++, verts++)
-        {
-            *verts = InVertices[surf->FirstVertex + v];
-            subpartBounds.AddPoint(verts->Position);
-        }
-
-        for (int v = 0; v < surf->NumIndices;)
-        {
-            *indices++ = subpartVertexCount + InIndices[surf->FirstIndex + v++]; // - surf->FirstVertex;
-            *indices++ = subpartVertexCount + InIndices[surf->FirstIndex + v++]; // - surf->FirstVertex;
-            *indices++ = subpartVertexCount + InIndices[surf->FirstIndex + v++]; // - surf->FirstVertex;
-        }
-
-        subpartVertexCount += surf->NumVertices;
-        subpartIndexCount += surf->NumIndices;
-    }
-
-    AIndexedMeshSubpart* subpart = indexedMesh->GetSubpart(subpartIndex);
-    subpart->SetBaseVertex(baseVertex);
-    subpart->SetFirstIndex(firstIndex);
-    subpart->SetVertexCount(subpartVertexCount);
-    subpart->SetIndexCount(subpartIndexCount);
-    subpart->SetMaterialInstance(merge->MaterialInst);
-    subpart->SetBoundingBox(subpartBounds);
-
-    CalcTangentSpace(indexedMesh->GetVertices() + baseVertex, subpartVertexCount, indexedMesh->GetIndices() + firstIndex, subpartIndexCount);
-
-    indexedMesh->SendVertexDataToGPU(totalVerts, 0);
-    indexedMesh->SendIndexDataToGPU(totalIndices, 0);
-
-    *IndexedMesh = indexedMesh;
-
-    return true;
-}
-
-static bool CreateLWOMesh(lwObject* lwo, float InScale, AMaterialInstance* (*GetMaterial)(const char* _Name), AIndexedMesh** IndexedMesh)
-{
-#define USE_COLOR
-
-    lwSurface* lwoSurf;
-    int        j, k;
-    Float3     normal;
-
-#ifdef USE_COLOR
-    byte color[4];
-#endif
-
-    if (!lwo->surf)
-    {
-        return false;
-    }
-
-    if (!lwo->layer)
-    {
-        return false;
-    }
-
-    lwLayer* layer = lwo->layer;
-
-    if (layer->point.count <= 0)
-    {
-        // no vertex data
-        return false;
-    }
-
-    TPodVector<Float3> verts;
-
-    verts.Resize(layer->point.count);
-    for (j = 0; j < layer->point.count; j++)
-    {
-        verts[j].X = layer->point.pt[j].pos[0];
-        verts[j].Y = layer->point.pt[j].pos[1];
-        verts[j].Z = -layer->point.pt[j].pos[2];
-    }
-
-    int numUVs = 0;
-    if (layer->nvmaps)
-    {
-        for (lwVMap* vm = layer->vmap; vm; vm = vm->next)
-        {
-            if (vm->type == LWID_('T', 'X', 'U', 'V'))
-            {
-                numUVs += vm->nverts;
-            }
-        }
-    }
-
-    TPodVector<Float2> texCoors;
-    texCoors.Resize(numUVs);
-    int offset = 0;
-    for (lwVMap* vm = layer->vmap; vm; vm = vm->next)
-    {
-        if (vm->type == LWID_('T', 'X', 'U', 'V'))
-        {
-            vm->offset = offset;
-            for (k = 0; k < vm->nverts; k++)
-            {
-                texCoors[k + offset].X = vm->val[k][0];
-                texCoors[k + offset].Y = 1.0f - vm->val[k][1];
-            }
-            offset += vm->nverts;
-        }
-    }
-    if (!numUVs)
-    {
-        texCoors.Resize(1);
-        texCoors[0] = Float2(0.0f);
-        numUVs      = 1;
-    }
-
-    TPodVector<int> vertexMap;
-    TPodVector<int> texcoordMap;
-
-    vertexMap.Resize(layer->point.count);
-    for (j = 0; j < layer->point.count; j++)
-    {
-        vertexMap[j] = j;
-    }
-
-    texcoordMap.Resize(numUVs);
-    for (j = 0; j < numUVs; j++)
-    {
-        texcoordMap[j] = j;
-    }
-
-    struct SMatchVert
-    {
-        int    v;
-        int    uv;
-        Float3 normal;
-#ifdef USE_COLOR
-        byte color[4];
-#endif
-        SMatchVert* next;
-    };
-
-    TPodVector<SMatchVert*> matchHash;
-    TPodVector<SMatchVert>  tempVertices;
-    SMatchVert *            lastmv, *mv;
-
-    TPodVector<SFace>        faces;
-    TPodVector<SMeshVertex>  modelVertices;
-    TPodVector<unsigned int> modelIndices;
-
-    int numFaces = 0;
-    for (lwoSurf = lwo->surf; lwoSurf; lwoSurf = lwoSurf->next)
-    {
-        if (layer->polygon.count > 0)
-        {
-            numFaces++;
-        }
-    }
-
-    faces.Resize(numFaces);
-
-    int faceIndex = 0;
-
-    for (lwoSurf = lwo->surf; lwoSurf; lwoSurf = lwoSurf->next)
-    {
-        bool bMatchNormals = true;
-
-        if (layer->polygon.count <= 0)
-        {
-            continue;
-        }
-
-        SFace& face = faces[faceIndex++];
-
-        int firstVert   = modelVertices.Size();
-        int firstIndex  = modelIndices.Size();
-        int numVertices = 0;
-        int numIndices  = 0;
-
-        tempVertices.ResizeInvalidate(layer->polygon.count * 3);
-        tempVertices.ZeroMem();
-
-        modelIndices.Resize(firstIndex + layer->polygon.count * 3);
-
-        unsigned int* pindices = modelIndices.ToPtr() + firstIndex;
-
-        matchHash.ResizeInvalidate(layer->point.count);
-        matchHash.ZeroMem();
-
-        for (j = 0; j < layer->polygon.count; j++)
-        {
-            lwPolygon* poly = &layer->polygon.pol[j];
-
-            if (poly->surf != lwoSurf)
-            {
-                continue;
-            }
-
-            if (poly->nverts != 3)
-            {
-                LOG("CreateLWOMesh: polygon has {} verts, expected triangle\n", poly->nverts);
-                continue;
-            }
-
-            for (k = 0; k < 3; k++)
-            {
-
-                int v    = vertexMap[poly->v[k].index];
-                normal.X = poly->v[k].norm[0];
-                normal.Y = poly->v[k].norm[1];
-                normal.Z = -poly->v[k].norm[2];
-                normal.NormalizeFix();
-
-                int uv = 0;
-
-#ifdef USE_COLOR
-                color[0] = lwoSurf->color.rgb[0] * 255;
-                color[1] = lwoSurf->color.rgb[1] * 255;
-                color[2] = lwoSurf->color.rgb[2] * 255;
-                color[3] = 255;
-#endif
-
-                // Set attributes from the vertex
-                lwPoint* pt = &layer->point.pt[poly->v[k].index];
-                for (int nvm = 0; nvm < pt->nvmaps; nvm++)
-                {
-                    lwVMapPt* vm = &pt->vm[nvm];
-
-                    if (vm->vmap->type == LWID_('T', 'X', 'U', 'V'))
-                    {
-                        uv = texcoordMap[vm->index + vm->vmap->offset];
-                    }
-#ifdef USE_COLOR
-                    if (vm->vmap->type == LWID_('R', 'G', 'B', 'A'))
-                    {
-                        for (int chan = 0; chan < 4; chan++)
-                        {
-                            color[chan] = 255 * vm->vmap->val[vm->index][chan];
-                        }
-                    }
-#endif
-                }
-
-                // Override with polygon attributes
-                for (int nvm = 0; nvm < poly->v[k].nvmaps; nvm++)
-                {
-                    lwVMapPt* vm = &poly->v[k].vm[nvm];
-
-                    if (vm->vmap->type == LWID_('T', 'X', 'U', 'V'))
-                    {
-                        uv = texcoordMap[vm->index + vm->vmap->offset];
-                    }
-#ifdef USE_COLOR
-                    if (vm->vmap->type == LWID_('R', 'G', 'B', 'A'))
-                    {
-                        for (int chan = 0; chan < 4; chan++)
-                        {
-                            color[chan] = 255 * vm->vmap->val[vm->index][chan];
-                        }
-                    }
-#endif
-                }
-
-                // find a matching vert
-                for (lastmv = NULL, mv = matchHash[v]; mv != NULL; lastmv = mv, mv = mv->next)
-                {
-                    if (mv->uv != uv)
-                    {
-                        continue;
-                    }
-#ifdef USE_COLOR
-                    if (*(unsigned*)mv->color != *(unsigned*)color)
-                    {
-                        continue;
-                    }
-#endif
-                    if (!bMatchNormals || mv->normal.CompareEps(normal, 0.0001f))
-                    {
-                        //if ( mv->normal * normal > normalEpsilon ) {
-                        break;
-                    }
-                }
-                if (!mv)
-                {
-                    // allocate a new match vert and link to hash chain
-                    mv         = &tempVertices[numVertices++];
-                    mv->v      = v;
-                    mv->uv     = uv;
-                    mv->normal = normal;
-#ifdef USE_COLOR
-                    *(unsigned*)mv->color = *(unsigned*)color;
-#endif
-                    mv->next = NULL;
-                    if (lastmv)
-                    {
-                        lastmv->next = mv;
-                    }
-                    else
-                    {
-                        matchHash[v] = mv;
-                    }
-                }
-
-                pindices[numIndices++] = mv - tempVertices.ToPtr(); //pindices;
-            }
-        }
-
-        for (j = 0; j < numIndices; j += 3)
-        {
-            std::swap(pindices[j], pindices[j + 2]);
-        }
-
-        modelVertices.Resize(firstVert + numVertices);
-
-        face.Bounds.Clear();
-
-        // Copy vertices
-        SMeshVertex* pvert = modelVertices.ToPtr() + firstVert;
-        for (j = 0; j < numVertices; j++, pvert++)
-        {
-            mv              = &tempVertices[j];
-            pvert->Position = verts[mv->v];
-            pvert->SetTexCoord(texCoors[mv->uv]);
-            pvert->SetNormal(mv->normal);
-            pvert->Position *= InScale;
-            //*(unsigned *)pvert->color = *(unsigned *)mv->color;
-            face.Bounds.AddPoint(pvert->Position);
-        }
-
-        face.FirstVertex  = firstVert;
-        face.FirstIndex   = firstIndex;
-        face.NumVertices  = numVertices;
-        face.NumIndices   = numIndices;
-        face.MaterialInst = GetMaterial(lwoSurf->name);
-    }
-
-    return CreateIndexedMeshFromSurfaces(faces.ToPtr(), faces.Size(), modelVertices.ToPtr(), modelIndices.ToPtr(), IndexedMesh);
-}
-
-bool LoadLWO(IBinaryStreamReadInterface& InStream, float InScale, AMaterialInstance* (*GetMaterial)(const char* _Name), AIndexedMesh** IndexedMesh)
-{
-    lwFile              file;
-    unsigned int        failID;
-    int                 failPos;
-    ALinearAllocatorLWO Allocator;
-
-    file.Read      = lwRead;
-    file.Seek      = lwSeek;
-    file.Tell      = lwTell;
-    file.Getc      = lwGetc;
-    file.Alloc     = lwAlloc;
-    file.Free      = lwFree;
-    file.UserData  = &InStream;
-    file.Allocator = &Allocator;
-    file.error     = 0;
-
-    lwObject* lwo = lwGetObject(&file, &failID, &failPos);
-    if (!lwo)
-    {
-        return false;
-    }
-
-    bool ret = CreateLWOMesh(lwo, InScale, GetMaterial, IndexedMesh);
-
-    // We don't call lwFreeObject becouse our linear allocator frees it automatically.
-
-    return ret;
 }
