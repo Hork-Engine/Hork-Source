@@ -164,7 +164,6 @@ PBR (physically based).
 * GLEW
 * glutess
 * HACD
-* iesna
 * libwebp
 * lunasvg (freetype, plutovg as part of lunasvg)
 * mimalloc

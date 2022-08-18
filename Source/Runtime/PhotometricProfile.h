@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "Resource.h"
 #include <RenderCore/Texture.h>
+#include <Image/PhotometricData.h>
 
 class ATexture;
 
@@ -45,11 +46,6 @@ class APhotometricProfile : public AResource
     HK_CLASS(APhotometricProfile, AResource)
 
 public:
-    enum
-    {
-        PHOTOMETRIC_DATA_SIZE = 256
-    };
-
     APhotometricProfile();
     ~APhotometricProfile();
 

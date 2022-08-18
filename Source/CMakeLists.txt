@@ -235,11 +235,9 @@ source_group( "RenderCore\\FrameGraph" FILES ${RenderCoreFrameGraph} )
 #---------------------------------------------------------------------
 # Runtime module
 file( GLOB Runtime Runtime/*.h Runtime/*.cpp )
-file( GLOB RuntimeIESNA Runtime/iesna/*.h Runtime/iesna/*.c )
 file( GLOB RuntimeSTB Runtime/stb/*.h Runtime/stb/*.c )
 
 source_group( "Runtime" FILES ${Runtime} )
-source_group( "Runtime\\iesna" FILES ${RuntimeIESNA} )
 source_group( "Runtime\\stb" FILES ${RuntimeSTB} )
 
 #---------------------------------------------------------------------
@@ -303,7 +301,6 @@ ${RenderCoreOpenGL45GL}
 ${RenderCoreFrameGraph}
 
 ${Runtime}
-${RuntimeIESNA}
 ${RuntimeSTB}
 
 ${Audio}

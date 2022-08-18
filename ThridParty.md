@@ -630,13 +630,6 @@ AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
 ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-# IESNA
-
-Copyright 1995-1998 byHeart Consultants Limited
-Permission: The following source code is copyrighted. However, it may be freely
-copied, redistributed, and modified for personal use or for royalty-free inclusion
-in commercial programs.
-
 # half
 
 Branch-free implementation of half-precision (16 bit) floating point
