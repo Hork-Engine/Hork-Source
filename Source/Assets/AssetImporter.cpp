@@ -2502,11 +2502,6 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
         Float2 TexCoord;
         Float3 Normal;
 
-        std::size_t Hash() const
-        {
-            return Core::Murmur3Hash(reinterpret_cast<const char*>(this), sizeof(*this));
-        }
-
         Vertex() = default;
         Vertex(Float3 const& Position, Float2 const& TexCoord, Float3 const& Normal) :
             Position(Position), TexCoord(TexCoord), Normal(Normal)
@@ -2514,12 +2509,18 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
 
         bool operator==(Vertex const& Rhs) const
         {
-            return memcmp(this, &Rhs, sizeof(*this)) == 0;
+            return Position == Rhs.Position && TexCoord == Rhs.TexCoord && Normal == Rhs.Normal;
+        }
+
+        std::size_t Hash() const
+        {
+            return (uint32_t(Position.X * 100) * 73856093) ^ (uint32_t(Position.Y * 100) * 19349663) ^ (uint32_t(Position.Z * 100) * 83492791);
         }
     };
 
     THashMap<unsigned int, TVector<Vertex>> vertexList;
     THashMap<Vertex, unsigned int>          vertexHash;
+    bool                                    bUnsupportedVertexCount = false;
 
     for (unsigned int groupIndex = 0; groupIndex < pMesh->group_count; ++groupIndex)
     {
@@ -2534,88 +2535,36 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
 
             TVector<Vertex>& vertices = vertexList[material];
 
-            if (vertexCount == 4)
+            if (vertexCount == 3)
             {
+                for (unsigned int vertexIndex = 0; vertexIndex < vertexCount; ++vertexIndex)
+                {
+                    fastObjIndex index = groupIndices[indexNum++];
+
+                    Vertex& v = vertices.Add();
+
+                    v.Position.X = pMesh->positions[index.p * 3 + 0];
+                    v.Position.Y = pMesh->positions[index.p * 3 + 1];
+                    v.Position.Z = pMesh->positions[index.p * 3 + 2];
+
+                    v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
+                    v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
+
+                    v.Normal.X = pMesh->normals[index.n * 3 + 0];
+                    v.Normal.Y = pMesh->normals[index.n * 3 + 1];
+                    v.Normal.Z = pMesh->normals[index.n * 3 + 2];
+                }
+            }
+            else if (vertexCount == 4)
+            {
+                const int quadIndices[6] = {0, 1, 2, 2, 3, 0};
+
                 for (unsigned int vertexIndex = 0; vertexIndex < vertexCount / 4; vertexIndex += 4, indexNum += 4)
                 {
-                    fastObjIndex index = groupIndices[indexNum + 0];
+                    for (int vIndex = 0; vIndex < 6; ++vIndex)
                     {
-                        Vertex& v = vertices.Add();
-
-                        v.Position.X = pMesh->positions[index.p * 3 + 0];
-                        v.Position.Y = pMesh->positions[index.p * 3 + 1];
-                        v.Position.Z = pMesh->positions[index.p * 3 + 2];
-
-                        v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
-                        v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
-
-                        v.Normal.X = pMesh->normals[index.n * 3 + 0];
-                        v.Normal.Y = pMesh->normals[index.n * 3 + 1];
-                        v.Normal.Z = pMesh->normals[index.n * 3 + 2];
-                    }
-
-                    index = groupIndices[indexNum + 1];
-                    {
-                        Vertex& v = vertices.Add();
-
-                        v.Position.X = pMesh->positions[index.p * 3 + 0];
-                        v.Position.Y = pMesh->positions[index.p * 3 + 1];
-                        v.Position.Z = pMesh->positions[index.p * 3 + 2];
-
-                        v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
-                        v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
-
-                        v.Normal.X = pMesh->normals[index.n * 3 + 0];
-                        v.Normal.Y = pMesh->normals[index.n * 3 + 1];
-                        v.Normal.Z = pMesh->normals[index.n * 3 + 2];
-                    }
-                    index = groupIndices[indexNum + 2];
-                    {
-                        Vertex& v = vertices.Add();
-
-                        v.Position.X = pMesh->positions[index.p * 3 + 0];
-                        v.Position.Y = pMesh->positions[index.p * 3 + 1];
-                        v.Position.Z = pMesh->positions[index.p * 3 + 2];
-
-                        v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
-                        v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
-
-                        v.Normal.X = pMesh->normals[index.n * 3 + 0];
-                        v.Normal.Y = pMesh->normals[index.n * 3 + 1];
-                        v.Normal.Z = pMesh->normals[index.n * 3 + 2];
-                    }
-                    {
-                        Vertex& v = vertices.Add();
-
-                        v.Position.X = pMesh->positions[index.p * 3 + 0];
-                        v.Position.Y = pMesh->positions[index.p * 3 + 1];
-                        v.Position.Z = pMesh->positions[index.p * 3 + 2];
-
-                        v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
-                        v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
-
-                        v.Normal.X = pMesh->normals[index.n * 3 + 0];
-                        v.Normal.Y = pMesh->normals[index.n * 3 + 1];
-                        v.Normal.Z = pMesh->normals[index.n * 3 + 2];
-                    }
-                    index = groupIndices[indexNum + 3];
-                    {
-                        Vertex& v = vertices.Add();
-
-                        v.Position.X = pMesh->positions[index.p * 3 + 0];
-                        v.Position.Y = pMesh->positions[index.p * 3 + 1];
-                        v.Position.Z = pMesh->positions[index.p * 3 + 2];
-
-                        v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
-                        v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
-
-                        v.Normal.X = pMesh->normals[index.n * 3 + 0];
-                        v.Normal.Y = pMesh->normals[index.n * 3 + 1];
-                        v.Normal.Z = pMesh->normals[index.n * 3 + 2];
-                    }
-                    index = groupIndices[indexNum];
-                    {
-                        Vertex& v = vertices.Add();
+                        fastObjIndex index = groupIndices[indexNum + quadIndices[vIndex]];
+                        Vertex&      v     = vertices.Add();
 
                         v.Position.X = pMesh->positions[index.p * 3 + 0];
                         v.Position.Y = pMesh->positions[index.p * 3 + 1];
@@ -2630,28 +2579,14 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
                     }
                 }
             }
-
-            if (vertexCount != 3)
-                continue;//LOG("vertexCount = {}\n", vertexCount);
-
-            for (unsigned int vertexIndex = 0; vertexIndex < vertexCount; ++vertexIndex)
-            {
-                fastObjIndex index = groupIndices[indexNum++];
-
-                Vertex& v = vertices.Add();
-
-                v.Position.X = pMesh->positions[index.p * 3 + 0];
-                v.Position.Y = pMesh->positions[index.p * 3 + 1];
-                v.Position.Z = pMesh->positions[index.p * 3 + 2];
-
-                v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
-                v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
-
-                v.Normal.X = pMesh->normals[index.n * 3 + 0];
-                v.Normal.Y = pMesh->normals[index.n * 3 + 1];
-                v.Normal.Z = pMesh->normals[index.n * 3 + 2];
-            }
+            else
+                bUnsupportedVertexCount = true;
         }
+    }
+
+    if (bUnsupportedVertexCount)
+    {
+        LOG("AssetImporter::ReadOBJ: The mesh contains polygons with an unsupported number of vertices. Polygons are expected to have 3 or 4 vertices.\n");
     }
 
     TStringHashMap<unsigned int> uniqueMaterials;
@@ -2694,6 +2629,9 @@ bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
     {
         unsigned int     materialNum = it.first;
         TVector<Vertex>& vertices = it.second;
+
+        if (vertices.IsEmpty())
+            continue;
 
         fastObjMaterial const* pMaterial = &pMesh->materials[materialNum];
 
