@@ -151,6 +151,10 @@ message(STATUS "USING CGLTF")
 add_subdirectory_with_folder( "ThirdParty/cgltf" ThirdParty/cgltf )
 
 message(STATUS "======================================================================")
+message(STATUS "USING FAST_OBJ")
+add_subdirectory_with_folder( "ThirdParty/fast_obj" ThirdParty/fast_obj )
+
+message(STATUS "======================================================================")
 message(STATUS "USING BC7ENC")
 add_subdirectory_with_folder( "ThirdParty/bc7enc_rdo" ThirdParty/bc7enc_rdo )
 
@@ -327,6 +331,7 @@ glutess
 polyclipping
 tinyexr
 cgltf
+fast_obj
 bc7enc
 bcdec
 lunasvg

@@ -91,13 +91,13 @@ PBR (physically based).
 * BSP
 
 ## Asset importing and resource management
-* 3D models (GLTF)
+* 3D models (GLTF, OBJ)
 * Different image formats (WEBP, PNG, PSD, PNM, PIC, JPG, BMP, TGA, HDR, EXR)
 * Fonts (TTF)
 * Photometric profiles (IES)
 
 ## Audio
-* Decoders ogg, flac, mp3, wav
+* Decoders OGG, FLAC, MP3, WAV
 * Streaming support
 * 2D and 3D / HRTF
 * Unlimited audio sources
@@ -160,6 +160,7 @@ PBR (physically based).
 * EASTL
 * FastLZ
 * fast_float
+* fast_obj
 * {fmt}
 * GLEW
 * glutess

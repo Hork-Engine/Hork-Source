@@ -41,47 +41,51 @@ SOFTWARE.
 #include <Geometry/TangentSpace.h>
 #include <Geometry/BV/BvhTree.h>
 #include <Image/ImageEncoders.h>
+#include <Core/HashFunc.h>
 
 #include <cgltf/cgltf.h>
+#include <fast_obj/fast_obj.h>
 
 class AssetImporter
 {
 public:
     bool ImportGLTF(AssetImportSettings const& Settings);
+    bool ImportOBJ(AssetImportSettings const& Settings);
     bool ImportSkybox(AssetImportSettings const& Settings);
 
 private:
     struct MeshInfo
     {
-        int                    BaseVertex;
-        int                    VertexCount;
-        int                    FirstIndex;
-        int                    IndexCount;
-        struct cgltf_mesh*     Mesh;
-        struct cgltf_node*     Node;
-        struct cgltf_material* Material;
-        BvAxisAlignedBox       BoundingBox;
-        bool                   bSkinned;
+        int              BaseVertex{};
+        int              VertexCount{};
+        int              FirstIndex{};
+        int              IndexCount{};
+        AString          UniqueName;
+        cgltf_node*      NodeGltf{};
+        int              MaterialNum{};
+        BvAxisAlignedBox BoundingBox;
+        bool             bSkinned{};
     };
 
     struct TextureInfo
     {
-        AString             PathToWrite;
-        bool                bSRGB;
-        struct cgltf_image* Image;
+        AString Name;
+        AString Path;
+        AString PathToWrite;
+        bool    bSRGB{};
     };
 
     struct MaterialInfo
     {
-        AString                PathToWrite;
-        struct cgltf_material* Material;
-        //class MGMaterialGraph * Graph;
-        const char* DefaultMaterial;
+        MaterialInfo()
+        {
+            Platform::ZeroMem(Uniforms, sizeof(Uniforms));
+        }
 
-        TVector<TextureInfo*> Textures;
-
-        float Uniforms[16];
-
+        AString                         PathToWrite;
+        const char*                     DefaultMaterial{""};
+        TVector<TextureInfo*>           Textures;
+        float                           Uniforms[16];
         THashMap<uint32_t, const char*> DefaultTexture;
     };
 
@@ -95,14 +99,15 @@ private:
         TVector<BvAxisAlignedBox>  Bounds;
     };
 
-    bool         ReadGLTF(struct cgltf_data* Data);
-    void         ReadMaterial(struct cgltf_material* Material, MaterialInfo& Info);
-    void         ReadNode_r(struct cgltf_node* Node);
-    void         ReadMesh(struct cgltf_node* Node);
-    void         ReadMesh(struct cgltf_node* Node, struct cgltf_mesh* Mesh, Float3x4 const& GlobalTransform, Float3x3 const& NormalMatrix);
-    void         ReadAnimations(struct cgltf_data* Data);
-    void         ReadAnimation(struct cgltf_animation* Anim, AnimationInfo& _Animation);
-    void         ReadSkeleton(struct cgltf_node* node, int parentIndex = -1);
+    bool         ReadGLTF(cgltf_data* Data);
+    void         ReadMaterial(cgltf_material* Material);
+    void         ReadNode_r(cgltf_node* Node);
+    void         ReadMesh(cgltf_node* Node);
+    void         ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const& GlobalTransform, Float3x3 const& NormalMatrix);
+    void         ReadAnimations(cgltf_data* Data);
+    void         ReadAnimation(cgltf_animation* Anim, AnimationInfo& _Animation);
+    void         ReadSkeleton(cgltf_node* node, int parentIndex = -1);
+    bool         ReadOBJ(fastObjMesh* pMesh);
     void         WriteAssets();
     void         WriteTextures();
     void         WriteTexture(TextureInfo& tex);
@@ -116,13 +121,13 @@ private:
     void         WriteMesh(MeshInfo const& Mesh);
     void         WriteSkyboxMaterial(AStringView SkyboxTexture);
     AString      GeneratePhysicalPath(AStringView DesiredName, AStringView Extension);
-    AString      GetMaterialPath(cgltf_material* Material);
-    TextureInfo* FindTextureImage(struct cgltf_texture const* Texture);
+    int          MapGltfMaterial(cgltf_material* Material);
+    TextureInfo* FindTextureImageGltf(cgltf_texture const* Texture);
     void         SetTextureProps(TextureInfo* Info, const char* Name, bool SRGB);
 
     AssetImportSettings      m_Settings;
     AString                  m_Path;
-    struct cgltf_data*       m_Data;
+    cgltf_data*              m_Data;
     bool                     m_bSkeletal;
     TVector<SMeshVertex>     m_Vertices;
     TVector<SMeshVertexSkin> m_Weights;
@@ -141,6 +146,12 @@ bool ImportGLTF(AssetImportSettings const& Settings)
 {
     AssetImporter importer;
     return importer.ImportGLTF(Settings);
+}
+
+bool ImportOBJ(AssetImportSettings const& Settings)
+{
+    AssetImporter importer;
+    return importer.ImportOBJ(Settings);
 }
 
 bool ImportSkybox(AssetImportSettings const& Settings)
@@ -801,17 +812,7 @@ bool AssetImporter::ReadGLTF(cgltf_data* Data)
     m_Data      = Data;
     m_bSkeletal = Data->skins_count > 0 && m_Settings.bImportSkinning;
 
-    m_Vertices.Clear();
-    m_Weights.Clear();
-    m_Indices.Clear();
-    m_Meshes.Clear();
-    m_Animations.Clear();
-    m_Textures.Clear();
-    m_Materials.Clear();
-    m_Joints.Clear();
     m_BindposeBounds.Clear();
-    m_Skin.JointIndices.Clear();
-    m_Skin.OffsetMatrices.Clear();
 
     LOG("{} scenes\n", Data->scenes_count);
     LOG("{} skins\n", Data->skins_count);
@@ -844,16 +845,19 @@ bool AssetImporter::ReadGLTF(cgltf_data* Data)
         m_Textures.Resize(Data->images_count);
         for (int i = 0; i < Data->images_count; i++)
         {
-            m_Textures[i].Image = &Data->images[i];
+            if (Data->images[i].name)
+                m_Textures[i].Name = Data->images[i].name;
+
+            m_Textures[i].Path = Data->images[i].uri;
         }
     }
 
     if (m_Settings.bImportMaterials)
     {
-        m_Materials.Resize(Data->materials_count);
+        m_Materials.Reserve(Data->materials_count);
         for (int i = 0; i < Data->materials_count; i++)
         {
-            ReadMaterial(&Data->materials[i], m_Materials[i]);
+            ReadMaterial(&Data->materials[i]);
         }
     }
 
@@ -990,7 +994,7 @@ bool AssetImporter::ReadGLTF(cgltf_data* Data)
             {
                 if (!mesh.bSkinned)
                 {
-                    int nodeIndex = mesh.Node->camera ? (size_t)mesh.Node->camera - 1 : 0;
+                    int nodeIndex = mesh.NodeGltf->camera ? (size_t)mesh.NodeGltf->camera - 1 : 0;
 
                     for (int n = 0; n < mesh.VertexCount; n++)
                     {
@@ -1037,19 +1041,13 @@ static ETextureAddress ChooseSamplerWrap( int Wrap ) {
 }
 #endif
 
-AssetImporter::TextureInfo* AssetImporter::FindTextureImage(cgltf_texture const* Texture)
+AssetImporter::TextureInfo* AssetImporter::FindTextureImageGltf(cgltf_texture const* Texture)
 {
     if (!Texture)
-    {
         return nullptr;
-    }
-    for (TextureInfo& texInfo : m_Textures)
-    {
-        if (texInfo.Image == Texture->image)
-        {
-            return &texInfo;
-        }
-    }
+    for (int i = 0; i < m_Data->images_count; i++)
+        if (&m_Data->images[i] == Texture->image)
+            return &m_Textures[i];
     return nullptr;
 }
 
@@ -1059,51 +1057,48 @@ void AssetImporter::SetTextureProps(TextureInfo* Info, const char* Name, bool SR
     {
         Info->bSRGB = SRGB;
 
-        if (!Info->Image->name || !*Info->Image->name)
-        {
-            Info->Image->name = const_cast<char*>(Name);
-        }
+        if (Info->Name.IsEmpty())
+            Info->Name = Name;
     }
 }
 
-void AssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
+void AssetImporter::ReadMaterial(cgltf_material* Material)
 {
-    Info.Material        = Material;
-    Info.DefaultMaterial = "/Default/Materials/Unlit";
-    Info.Textures.Clear();
-    Platform::ZeroMem(Info.Uniforms, sizeof(Info.Uniforms));
+    MaterialInfo& matInfo = m_Materials.Add();
+
+    matInfo.DefaultMaterial = "/Default/Materials/Unlit";
 
     if (Material->unlit && m_Settings.bAllowUnlitMaterials)
     {
         switch (Material->alpha_mode)
         {
             case cgltf_alpha_mode_opaque:
-                Info.DefaultMaterial = "/Default/Materials/Unlit";
+                matInfo.DefaultMaterial = "/Default/Materials/Unlit";
                 break;
             case cgltf_alpha_mode_mask:
-                Info.DefaultMaterial = "/Default/Materials/UnlitMask";
+                matInfo.DefaultMaterial = "/Default/Materials/UnlitMask";
                 break;
             case cgltf_alpha_mode_blend:
-                Info.DefaultMaterial = "/Default/Materials/UnlitOpacity";
+                matInfo.DefaultMaterial = "/Default/Materials/UnlitOpacity";
                 break;
         }
 
-        Info.DefaultTexture[0] = "/Default/Textures/BaseColorWhite";
+        matInfo.DefaultTexture[0] = "/Default/Textures/BaseColorWhite";
 
         if (Material->has_pbr_metallic_roughness)
         {
-            Info.Textures.Add(FindTextureImage(Material->pbr_metallic_roughness.base_color_texture.texture));
+            matInfo.Textures.Add(FindTextureImageGltf(Material->pbr_metallic_roughness.base_color_texture.texture));
         }
         else if (Material->has_pbr_specular_glossiness)
         {
-            Info.Textures.Add(FindTextureImage(Material->pbr_specular_glossiness.diffuse_texture.texture));
+            matInfo.Textures.Add(FindTextureImageGltf(Material->pbr_specular_glossiness.diffuse_texture.texture));
         }
         else
         {
-            Info.Textures.Add(nullptr);
+            matInfo.Textures.Add(nullptr);
         }
 
-        SetTextureProps(Info.Textures[0], "Texture_BaseColor", true);
+        SetTextureProps(matInfo.Textures[0], "Texture_BaseColor", true);
 
         // TODO: create material graph
 
@@ -1147,21 +1142,21 @@ void AssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
             graph->MaterialType = MATERIAL_TYPE_UNLIT;
             graph->RegisterTextureSlot( diffuseTexture );
 
-            Info.Graph = graph;
+            matInfo.Graph = graph;
         } else {
-            Info.Graph = nullptr; // Will be used default material
+            matInfo.Graph = nullptr; // Will be used default material
         }
 #endif
     }
     else if (Material->has_pbr_metallic_roughness)
     {
 
-        Info.Textures.ResizeInvalidate(5);
-        Info.DefaultTexture[0] = "/Default/Textures/BaseColorWhite"; // base color
-        Info.DefaultTexture[1] = "/Default/Textures/White";          // metallic&roughness
-        Info.DefaultTexture[2] = "/Default/Textures/Normal";         // normal
-        Info.DefaultTexture[3] = "/Default/Textures/White";          // occlusion
-        Info.DefaultTexture[4] = "/Default/Textures/Black";          // emissive
+        matInfo.Textures.ResizeInvalidate(5);
+        matInfo.DefaultTexture[0] = "/Default/Textures/BaseColorWhite"; // base color
+        matInfo.DefaultTexture[1] = "/Default/Textures/White";          // metallic&roughness
+        matInfo.DefaultTexture[2] = "/Default/Textures/Normal";         // normal
+        matInfo.DefaultTexture[3] = "/Default/Textures/White";          // occlusion
+        matInfo.DefaultTexture[4] = "/Default/Textures/Black";          // emissive
 
         bool emissiveFactor = Material->emissive_factor[0] > 0.0f || Material->emissive_factor[1] > 0.0f || Material->emissive_factor[2] > 0.0f;
 
@@ -1169,7 +1164,7 @@ void AssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
 
         if (emissiveFactor)
         {
-            Info.DefaultTexture[4] = "/Default/Textures/White"; // emissive
+            matInfo.DefaultTexture[4] = "/Default/Textures/White"; // emissive
         }
 
         if (factor)
@@ -1177,58 +1172,58 @@ void AssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
             switch (Material->alpha_mode)
             {
                 case cgltf_alpha_mode_opaque:
-                    Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactor";
+                    matInfo.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactor";
                     break;
                 case cgltf_alpha_mode_mask:
-                    Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactorMask";
+                    matInfo.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactorMask";
                     break;
                 case cgltf_alpha_mode_blend:
-                    Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactorOpacity";
+                    matInfo.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactorOpacity";
                     break;
             }
 
-            Info.Uniforms[0] = Material->pbr_metallic_roughness.base_color_factor[0];
-            Info.Uniforms[1] = Material->pbr_metallic_roughness.base_color_factor[1];
-            Info.Uniforms[2] = Material->pbr_metallic_roughness.base_color_factor[2];
-            Info.Uniforms[3] = Material->pbr_metallic_roughness.base_color_factor[3];
+            matInfo.Uniforms[0] = Material->pbr_metallic_roughness.base_color_factor[0];
+            matInfo.Uniforms[1] = Material->pbr_metallic_roughness.base_color_factor[1];
+            matInfo.Uniforms[2] = Material->pbr_metallic_roughness.base_color_factor[2];
+            matInfo.Uniforms[3] = Material->pbr_metallic_roughness.base_color_factor[3];
 
-            Info.Uniforms[4] = Material->pbr_metallic_roughness.metallic_factor;
-            Info.Uniforms[5] = Material->pbr_metallic_roughness.roughness_factor;
-            Info.Uniforms[6] = 0;
-            Info.Uniforms[7] = 0;
+            matInfo.Uniforms[4] = Material->pbr_metallic_roughness.metallic_factor;
+            matInfo.Uniforms[5] = Material->pbr_metallic_roughness.roughness_factor;
+            matInfo.Uniforms[6] = 0;
+            matInfo.Uniforms[7] = 0;
 
-            Info.Uniforms[8]  = Material->emissive_factor[0];
-            Info.Uniforms[9]  = Material->emissive_factor[1];
-            Info.Uniforms[10] = Material->emissive_factor[2];
+            matInfo.Uniforms[8] = Material->emissive_factor[0];
+            matInfo.Uniforms[9] = Material->emissive_factor[1];
+            matInfo.Uniforms[10] = Material->emissive_factor[2];
         }
         else
         {
             switch (Material->alpha_mode)
             {
                 case cgltf_alpha_mode_opaque:
-                    Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughness";
+                    matInfo.DefaultMaterial = "/Default/Materials/PBRMetallicRoughness";
                     break;
                 case cgltf_alpha_mode_mask:
-                    Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessMask";
+                    matInfo.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessMask";
                     break;
                 case cgltf_alpha_mode_blend:
-                    Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessOpacity";
+                    matInfo.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessOpacity";
                     break;
             }
         }
 
-        Info.Textures[0] = FindTextureImage(Material->pbr_metallic_roughness.base_color_texture.texture);
-        Info.Textures[1] = FindTextureImage(Material->pbr_metallic_roughness.metallic_roughness_texture.texture);
-        Info.Textures[2] = FindTextureImage(Material->normal_texture.texture);
-        Info.Textures[3] = FindTextureImage(Material->occlusion_texture.texture);
-        Info.Textures[4] = FindTextureImage(Material->emissive_texture.texture);
+        matInfo.Textures[0] = FindTextureImageGltf(Material->pbr_metallic_roughness.base_color_texture.texture);
+        matInfo.Textures[1] = FindTextureImageGltf(Material->pbr_metallic_roughness.metallic_roughness_texture.texture);
+        matInfo.Textures[2] = FindTextureImageGltf(Material->normal_texture.texture);
+        matInfo.Textures[3] = FindTextureImageGltf(Material->occlusion_texture.texture);
+        matInfo.Textures[4] = FindTextureImageGltf(Material->emissive_texture.texture);
 
-        SetTextureProps(Info.Textures[0], "Texture_BaseColor", true);
-        SetTextureProps(Info.Textures[1], "Texture_MetallicRoughness", false);
-        SetTextureProps(Info.Textures[2], "Texture_Normal", false);
-        if (Info.Textures[3] != Info.Textures[1])
-            SetTextureProps(Info.Textures[3], "Texture_Occlusion", true);
-        SetTextureProps(Info.Textures[4], "Texture_Emissive", true);
+        SetTextureProps(matInfo.Textures[0], "Texture_BaseColor", true);
+        SetTextureProps(matInfo.Textures[1], "Texture_MetallicRoughness", false);
+        SetTextureProps(matInfo.Textures[2], "Texture_Normal", false);
+        if (matInfo.Textures[3] != matInfo.Textures[1])
+            SetTextureProps(matInfo.Textures[3], "Texture_Occlusion", true);
+        SetTextureProps(matInfo.Textures[4], "Texture_Emissive", true);
 
         // TODO: create material graph
 
@@ -1240,12 +1235,12 @@ void AssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
     {
         LOG("Warning: pbr specular glossiness workflow is not supported yet\n");
 
-        Info.Textures.ResizeInvalidate(5);
-        Info.DefaultTexture[0] = "/Default/Textures/BaseColorWhite"; // diffuse
-        Info.DefaultTexture[1] = "/Default/Textures/White";          // specular&glossiness
-        Info.DefaultTexture[2] = "/Default/Textures/Normal";         // normal
-        Info.DefaultTexture[3] = "/Default/Textures/White";          // occlusion
-        Info.DefaultTexture[4] = "/Default/Textures/Black";          // emissive
+        matInfo.Textures.ResizeInvalidate(5);
+        matInfo.DefaultTexture[0] = "/Default/Textures/BaseColorWhite"; // diffuse
+        matInfo.DefaultTexture[1] = "/Default/Textures/White";          // specular&glossiness
+        matInfo.DefaultTexture[2] = "/Default/Textures/Normal";         // normal
+        matInfo.DefaultTexture[3] = "/Default/Textures/White";          // occlusion
+        matInfo.DefaultTexture[4] = "/Default/Textures/Black";          // emissive
 
         bool emissiveFactor = Material->emissive_factor[0] > 0.0f || Material->emissive_factor[1] > 0.0f || Material->emissive_factor[2] > 0.0f;
 
@@ -1253,7 +1248,7 @@ void AssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
 
         if (emissiveFactor)
         {
-            Info.DefaultTexture[4] = "/Default/Textures/White"; // emissive
+            matInfo.DefaultTexture[4] = "/Default/Textures/White"; // emissive
         }
 
         if (factor)
@@ -1261,64 +1256,64 @@ void AssetImporter::ReadMaterial(cgltf_material* Material, MaterialInfo& Info)
             switch (Material->alpha_mode)
             {
                 case cgltf_alpha_mode_opaque:
-                    Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactor";
+                    matInfo.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactor";
                     break;
                 case cgltf_alpha_mode_mask:
-                    Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactorMask";
+                    matInfo.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactorMask";
                     break;
                 case cgltf_alpha_mode_blend:
-                    Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactorOpacity";
+                    matInfo.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessFactorOpacity";
                     break;
             }
 
-            //Info.DefaultMaterial = "/Default/Materials/PBRSpecularGlossinessFactor";
+            //matInfo.DefaultMaterial = "/Default/Materials/PBRSpecularGlossinessFactor";
 
-            Info.Uniforms[0] = Material->pbr_specular_glossiness.diffuse_factor[0];
-            Info.Uniforms[1] = Material->pbr_specular_glossiness.diffuse_factor[1];
-            Info.Uniforms[2] = Material->pbr_specular_glossiness.diffuse_factor[2];
-            Info.Uniforms[3] = Material->pbr_specular_glossiness.diffuse_factor[3];
+            matInfo.Uniforms[0] = Material->pbr_specular_glossiness.diffuse_factor[0];
+            matInfo.Uniforms[1] = Material->pbr_specular_glossiness.diffuse_factor[1];
+            matInfo.Uniforms[2] = Material->pbr_specular_glossiness.diffuse_factor[2];
+            matInfo.Uniforms[3] = Material->pbr_specular_glossiness.diffuse_factor[3];
 
-            Info.Uniforms[4] = Material->pbr_specular_glossiness.specular_factor[0];
-            Info.Uniforms[5] = Material->pbr_specular_glossiness.glossiness_factor;
-            Info.Uniforms[6] = 0;
-            Info.Uniforms[7] = 0;
+            matInfo.Uniforms[4] = Material->pbr_specular_glossiness.specular_factor[0];
+            matInfo.Uniforms[5] = Material->pbr_specular_glossiness.glossiness_factor;
+            matInfo.Uniforms[6] = 0;
+            matInfo.Uniforms[7] = 0;
 
-            Info.Uniforms[8]  = Material->emissive_factor[0];
-            Info.Uniforms[9]  = Material->emissive_factor[1];
-            Info.Uniforms[10] = Material->emissive_factor[2];
+            matInfo.Uniforms[8] = Material->emissive_factor[0];
+            matInfo.Uniforms[9] = Material->emissive_factor[1];
+            matInfo.Uniforms[10] = Material->emissive_factor[2];
         }
         else
         {
             switch (Material->alpha_mode)
             {
                 case cgltf_alpha_mode_opaque:
-                    Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughness";
+                    matInfo.DefaultMaterial = "/Default/Materials/PBRMetallicRoughness";
                     break;
                 case cgltf_alpha_mode_mask:
-                    Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessMask";
+                    matInfo.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessMask";
                     break;
                 case cgltf_alpha_mode_blend:
-                    Info.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessOpacity";
+                    matInfo.DefaultMaterial = "/Default/Materials/PBRMetallicRoughnessOpacity";
                     break;
             }
 
-            //Info.DefaultMaterial = "/Default/Materials/PBRSpecularGlossiness";
+            //matInfo.DefaultMaterial = "/Default/Materials/PBRSpecularGlossiness";
         }
 
-        Info.Textures[0] = FindTextureImage(Material->pbr_specular_glossiness.diffuse_texture.texture);
-        Info.Textures[1] = FindTextureImage(Material->pbr_specular_glossiness.specular_glossiness_texture.texture);
-        Info.Textures[2] = FindTextureImage(Material->normal_texture.texture);
-        Info.Textures[3] = FindTextureImage(Material->occlusion_texture.texture);
-        Info.Textures[4] = FindTextureImage(Material->emissive_texture.texture);
+        matInfo.Textures[0] = FindTextureImageGltf(Material->pbr_specular_glossiness.diffuse_texture.texture);
+        matInfo.Textures[1] = FindTextureImageGltf(Material->pbr_specular_glossiness.specular_glossiness_texture.texture);
+        matInfo.Textures[2] = FindTextureImageGltf(Material->normal_texture.texture);
+        matInfo.Textures[3] = FindTextureImageGltf(Material->occlusion_texture.texture);
+        matInfo.Textures[4] = FindTextureImageGltf(Material->emissive_texture.texture);
 
-        SetTextureProps(Info.Textures[0], "Texture_Diffuse", true);
-        SetTextureProps(Info.Textures[1], "Texture_SpecularGlossiness", false);
-        SetTextureProps(Info.Textures[2], "Texture_Normal", false);
-        SetTextureProps(Info.Textures[3], "Texture_Occlusion", true);
-        SetTextureProps(Info.Textures[4], "Texture_Emissive", true);
+        SetTextureProps(matInfo.Textures[0], "Texture_Diffuse", true);
+        SetTextureProps(matInfo.Textures[1], "Texture_SpecularGlossiness", false);
+        SetTextureProps(matInfo.Textures[2], "Texture_Normal", false);
+        SetTextureProps(matInfo.Textures[3], "Texture_Occlusion", true);
+        SetTextureProps(matInfo.Textures[4], "Texture_Emissive", true);
 
         //if (Material->alpha_mode == cgltf_alpha_mode_blend)
-        //    SetTextureProps(Info.Textures[5], "Texture_Opacity", true);
+        //    SetTextureProps(matInfo.Textures[5], "Texture_Opacity", true);
     }
 }
 
@@ -1490,16 +1485,16 @@ void AssetImporter::ReadMesh(cgltf_node* Node, cgltf_mesh* Mesh, Float3x4 const&
 
         if (!material || material != prim->material || !m_Settings.bMergePrimitives)
         {
-            meshInfo = &m_Meshes.Add();
+            meshInfo              = &m_Meshes.Add();
             meshInfo->BaseVertex  = m_Vertices.Size();
             meshInfo->FirstIndex  = m_Indices.Size();
             meshInfo->VertexCount = 0;
             meshInfo->IndexCount  = 0;
-            meshInfo->Mesh        = Mesh;
-            meshInfo->Material    = prim->material;
+            meshInfo->UniqueName  = Mesh->name;
+            meshInfo->MaterialNum = MapGltfMaterial(prim->material);
             meshInfo->BoundingBox.Clear();
 
-            meshInfo->Node     = Node;
+            meshInfo->NodeGltf = Node;
             meshInfo->bSkinned = weights != nullptr;
 
             material = prim->material;
@@ -1930,8 +1925,8 @@ void AssetImporter::WriteTextures()
 
 void AssetImporter::WriteTexture(TextureInfo& tex)
 {
-    AString fileName       = GeneratePhysicalPath(tex.Image->name && *tex.Image->name ? tex.Image->name : "texture", ".texture");
-    AString sourceFileName = m_Path + tex.Image->uri;
+    AString fileName       = GeneratePhysicalPath(!tex.Name.IsEmpty() ? tex.Name : "texture", ".texture");
+    AString sourceFileName = m_Path + tex.Path;
     AString fileSystemPath = m_Settings.RootPath + fileName;
 
     ImageMipmapConfig mipmapConfig;
@@ -1950,7 +1945,7 @@ void AssetImporter::WriteTexture(TextureInfo& tex)
         return;
     }
 
-    tex.PathToWrite   = "/Root/" + fileName;
+    tex.PathToWrite = "/Root/" + fileName;
 
     f.WriteUInt32(ASSET_TEXTURE);
     f.WriteUInt32(ASSET_VERSION_TEXTURE);
@@ -1980,7 +1975,7 @@ void AssetImporter::WriteMaterial(MaterialInfo& m)
         return;
     }
 
-    m.PathToWrite   = "/Root/" + fileName;
+    m.PathToWrite = "/Root/" + fileName;
 
     f.FormattedPrint("Material \"{}\"\n", m.DefaultMaterial);
     f.FormattedPrint("Textures [\n");
@@ -2051,16 +2046,14 @@ AString AssetImporter::GeneratePhysicalPath(AStringView DesiredName, AStringView
     return result;
 }
 
-AString AssetImporter::GetMaterialPath(cgltf_material* Material)
+int AssetImporter::MapGltfMaterial(cgltf_material* pMaterial)
 {
-    for (MaterialInfo& m : m_Materials)
+    for (int i = 0; i < m_Data->materials_count; ++i)
     {
-        if (m.Material == Material)
-        {
-            return m.PathToWrite;
-        }
+        if (pMaterial == &m_Data->materials[i])
+            return i;
     }
-    return {};
+    return -1;
 }
 
 void AssetImporter::WriteSkeleton()
@@ -2170,9 +2163,9 @@ void AssetImporter::WriteSingleModel()
     uint32_t n = 0;
     for (MeshInfo const& meshInfo : m_Meshes)
     {
-        if (meshInfo.Mesh->name)
+        if (!meshInfo.UniqueName.IsEmpty())
         {
-            f.WriteString(meshInfo.Mesh->name);
+            f.WriteString(meshInfo.UniqueName);
         }
         else
         {
@@ -2251,9 +2244,11 @@ void AssetImporter::WriteSingleModel()
         f.FormattedPrint("Skeleton \"{}\"\n", "/Default/Skeleton/Default");
     }
     f.FormattedPrint("Subparts [\n");
+    AString dummy;
     for (MeshInfo const& meshInfo : m_Meshes)
     {
-        f.FormattedPrint("\"{}\"\n", GetMaterialPath(meshInfo.Material));
+        AString materialPath = meshInfo.MaterialNum >= 0 ? m_Materials[meshInfo.MaterialNum].PathToWrite : dummy;
+        f.FormattedPrint("\"{}\"\n", materialPath);
     }
     f.FormattedPrint("]\n");
 }
@@ -2268,7 +2263,7 @@ void AssetImporter::WriteMeshes()
 
 void AssetImporter::WriteMesh(MeshInfo const& Mesh)
 {
-    AString fileName       = GeneratePhysicalPath(Mesh.Mesh->name ? Mesh.Mesh->name : "mesh", ".mesh_data");
+    AString fileName       = GeneratePhysicalPath(!Mesh.UniqueName.IsEmpty() ? Mesh.UniqueName : "mesh", ".mesh_data");
     AString fileSystemPath = m_Settings.RootPath + fileName;
 
     AFile f = AFile::OpenWrite(fileSystemPath);
@@ -2324,9 +2319,9 @@ void AssetImporter::WriteMesh(MeshInfo const& Mesh)
     f.WriteBool(bRaycastBVH); // only for static meshes
     f.WriteUInt16(m_Settings.RaycastPrimitivesPerLeaf);
     f.WriteUInt32(1); // subparts count
-    if (Mesh.Mesh->name)
+    if (!Mesh.UniqueName.IsEmpty())
     {
-        f.WriteString(Mesh.Mesh->name);
+        f.WriteString(Mesh.UniqueName);
     }
     else
     {
@@ -2379,7 +2374,9 @@ void AssetImporter::WriteMesh(MeshInfo const& Mesh)
         f.FormattedPrint("Skeleton \"{}\"\n", "/Default/Skeleton/Default");
     }
     f.FormattedPrint("Subparts [\n");
-    f.FormattedPrint("\"{}\"\n", GetMaterialPath(Mesh.Material));
+    AString        dummy;
+    AString const& materialPath = Mesh.MaterialNum >= 0 ? m_Materials[Mesh.MaterialNum].PathToWrite : dummy;
+    f.FormattedPrint("\"{}\"\n", materialPath);
     f.FormattedPrint("]\n");
 }
 
@@ -2470,4 +2467,279 @@ void AssetImporter::WriteSkyboxMaterial(AStringView SkyboxTexture)
     f.FormattedPrint("Textures [\n");
     f.FormattedPrint("\"{}\"\n", SkyboxTexture);
     f.FormattedPrint("]\n");
+}
+
+bool AssetImporter::ImportOBJ(AssetImportSettings const& Settings)
+{
+    AString const& Source = Settings.ImportFile;
+
+    m_Settings = Settings;
+
+    m_Path = PathUtils::GetFilePath(Settings.ImportFile);
+    m_Path += "/";
+
+    fastObjMesh* mesh = fast_obj_read(Source.CStr());
+    if (!mesh)
+    {
+        LOG("Failed to load {}\n", Source);
+        return false;
+    }
+
+    ReadOBJ(mesh);
+
+    fast_obj_destroy(mesh);
+
+    WriteAssets();
+
+    return true;
+}
+
+bool AssetImporter::ReadOBJ(fastObjMesh* pMesh)
+{
+    struct Vertex
+    {
+        Float3 Position;
+        Float2 TexCoord;
+        Float3 Normal;
+
+        std::size_t Hash() const
+        {
+            return Core::Murmur3Hash(reinterpret_cast<const char*>(this), sizeof(*this));
+        }
+
+        Vertex() = default;
+        Vertex(Float3 const& Position, Float2 const& TexCoord, Float3 const& Normal) :
+            Position(Position), TexCoord(TexCoord), Normal(Normal)
+        {}
+
+        bool operator==(Vertex const& Rhs) const
+        {
+            return memcmp(this, &Rhs, sizeof(*this)) == 0;
+        }
+    };
+
+    THashMap<unsigned int, TVector<Vertex>> vertexList;
+    THashMap<Vertex, unsigned int>          vertexHash;
+
+    for (unsigned int groupIndex = 0; groupIndex < pMesh->group_count; ++groupIndex)
+    {
+        fastObjGroup const* group        = &pMesh->groups[groupIndex];
+        fastObjIndex const* groupIndices = &pMesh->indices[group->index_offset];
+
+        unsigned int indexNum = 0;
+        for (unsigned int faceIndex = 0; faceIndex < group->face_count; ++faceIndex)
+        {
+            unsigned int vertexCount = pMesh->face_vertices[group->face_offset + faceIndex];
+            unsigned int material    = pMesh->face_materials[group->face_offset + faceIndex];
+
+            TVector<Vertex>& vertices = vertexList[material];
+
+            if (vertexCount == 4)
+            {
+                for (unsigned int vertexIndex = 0; vertexIndex < vertexCount / 4; vertexIndex += 4, indexNum += 4)
+                {
+                    fastObjIndex index = groupIndices[indexNum + 0];
+                    {
+                        Vertex& v = vertices.Add();
+
+                        v.Position.X = pMesh->positions[index.p * 3 + 0];
+                        v.Position.Y = pMesh->positions[index.p * 3 + 1];
+                        v.Position.Z = pMesh->positions[index.p * 3 + 2];
+
+                        v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
+                        v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
+
+                        v.Normal.X = pMesh->normals[index.n * 3 + 0];
+                        v.Normal.Y = pMesh->normals[index.n * 3 + 1];
+                        v.Normal.Z = pMesh->normals[index.n * 3 + 2];
+                    }
+
+                    index = groupIndices[indexNum + 1];
+                    {
+                        Vertex& v = vertices.Add();
+
+                        v.Position.X = pMesh->positions[index.p * 3 + 0];
+                        v.Position.Y = pMesh->positions[index.p * 3 + 1];
+                        v.Position.Z = pMesh->positions[index.p * 3 + 2];
+
+                        v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
+                        v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
+
+                        v.Normal.X = pMesh->normals[index.n * 3 + 0];
+                        v.Normal.Y = pMesh->normals[index.n * 3 + 1];
+                        v.Normal.Z = pMesh->normals[index.n * 3 + 2];
+                    }
+                    index = groupIndices[indexNum + 2];
+                    {
+                        Vertex& v = vertices.Add();
+
+                        v.Position.X = pMesh->positions[index.p * 3 + 0];
+                        v.Position.Y = pMesh->positions[index.p * 3 + 1];
+                        v.Position.Z = pMesh->positions[index.p * 3 + 2];
+
+                        v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
+                        v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
+
+                        v.Normal.X = pMesh->normals[index.n * 3 + 0];
+                        v.Normal.Y = pMesh->normals[index.n * 3 + 1];
+                        v.Normal.Z = pMesh->normals[index.n * 3 + 2];
+                    }
+                    {
+                        Vertex& v = vertices.Add();
+
+                        v.Position.X = pMesh->positions[index.p * 3 + 0];
+                        v.Position.Y = pMesh->positions[index.p * 3 + 1];
+                        v.Position.Z = pMesh->positions[index.p * 3 + 2];
+
+                        v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
+                        v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
+
+                        v.Normal.X = pMesh->normals[index.n * 3 + 0];
+                        v.Normal.Y = pMesh->normals[index.n * 3 + 1];
+                        v.Normal.Z = pMesh->normals[index.n * 3 + 2];
+                    }
+                    index = groupIndices[indexNum + 3];
+                    {
+                        Vertex& v = vertices.Add();
+
+                        v.Position.X = pMesh->positions[index.p * 3 + 0];
+                        v.Position.Y = pMesh->positions[index.p * 3 + 1];
+                        v.Position.Z = pMesh->positions[index.p * 3 + 2];
+
+                        v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
+                        v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
+
+                        v.Normal.X = pMesh->normals[index.n * 3 + 0];
+                        v.Normal.Y = pMesh->normals[index.n * 3 + 1];
+                        v.Normal.Z = pMesh->normals[index.n * 3 + 2];
+                    }
+                    index = groupIndices[indexNum];
+                    {
+                        Vertex& v = vertices.Add();
+
+                        v.Position.X = pMesh->positions[index.p * 3 + 0];
+                        v.Position.Y = pMesh->positions[index.p * 3 + 1];
+                        v.Position.Z = pMesh->positions[index.p * 3 + 2];
+
+                        v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
+                        v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
+
+                        v.Normal.X = pMesh->normals[index.n * 3 + 0];
+                        v.Normal.Y = pMesh->normals[index.n * 3 + 1];
+                        v.Normal.Z = pMesh->normals[index.n * 3 + 2];
+                    }
+                }
+            }
+
+            if (vertexCount != 3)
+                continue;//LOG("vertexCount = {}\n", vertexCount);
+
+            for (unsigned int vertexIndex = 0; vertexIndex < vertexCount; ++vertexIndex)
+            {
+                fastObjIndex index = groupIndices[indexNum++];
+
+                Vertex& v = vertices.Add();
+
+                v.Position.X = pMesh->positions[index.p * 3 + 0];
+                v.Position.Y = pMesh->positions[index.p * 3 + 1];
+                v.Position.Z = pMesh->positions[index.p * 3 + 2];
+
+                v.TexCoord.X = pMesh->texcoords[index.t * 2 + 0];
+                v.TexCoord.Y = pMesh->texcoords[index.t * 2 + 1];
+
+                v.Normal.X = pMesh->normals[index.n * 3 + 0];
+                v.Normal.Y = pMesh->normals[index.n * 3 + 1];
+                v.Normal.Z = pMesh->normals[index.n * 3 + 2];
+            }
+        }
+    }
+
+    TStringHashMap<unsigned int> uniqueMaterials;
+    TVector<fastObjMaterial const*> materialList;
+
+    for (auto& it : vertexList)
+    {
+        unsigned int materialNum = it.first;
+
+        HK_ASSERT(materialNum < pMesh->material_count);
+        fastObjMaterial const* pMaterial = &pMesh->materials[materialNum];
+
+        if (uniqueMaterials.Count(pMaterial->map_Kd.path) == 0)
+        {
+            uniqueMaterials[pMaterial->map_Kd.path] = materialList.Size();
+            materialList.Add(pMaterial);
+        }
+    }
+
+    m_Materials.Reserve(materialList.Size());
+    m_Textures.Reserve(materialList.Size());
+
+    for (unsigned int materialNum = 0; materialNum < materialList.Size(); ++materialNum)
+    {
+        TextureInfo& texInfo = m_Textures.Add();
+
+        texInfo.bSRGB = true;
+        texInfo.Path  = materialList[materialNum]->map_Kd.name;//.path;
+
+        MaterialInfo& matInfo = m_Materials.Add();
+
+        matInfo.DefaultMaterial = "/Default/Materials/Unlit";
+        matInfo.Textures.Add(&texInfo);
+    }
+
+    unsigned int baseVertex = 0;
+    unsigned int firstIndex = 0;
+
+    for (auto& it : vertexList)
+    {
+        unsigned int     materialNum = it.first;
+        TVector<Vertex>& vertices = it.second;
+
+        fastObjMaterial const* pMaterial = &pMesh->materials[materialNum];
+
+        BvAxisAlignedBox bounds;
+        bounds.Clear();
+
+        vertexHash.Clear();
+        for (Vertex const& v : vertices)
+        {
+            auto vertexIt = vertexHash.Find(v);
+            if (vertexIt == vertexHash.End())
+            {
+                vertexHash[v] = m_Vertices.Size() - baseVertex;
+
+                SMeshVertex& meshVert = m_Vertices.Add();
+
+                meshVert.Position = v.Position * m_Settings.Scale;
+                meshVert.SetTexCoord(Float2(v.TexCoord.X,1.0f-v.TexCoord.Y));
+                meshVert.SetNormal(v.Normal);
+
+                bounds.AddPoint(meshVert.Position);
+            }
+        }
+
+        unsigned int vertexCount = m_Vertices.Size() - baseVertex;
+        unsigned int indexCount  = vertices.Size();
+
+        m_Indices.Resize(firstIndex + indexCount);
+        for (unsigned int i = 0; i < indexCount; ++i)
+            m_Indices[firstIndex + i] = vertexHash[vertices[i]];
+
+        MeshInfo& meshInfo = m_Meshes.Add();
+        meshInfo.BaseVertex  = baseVertex;
+        meshInfo.VertexCount = vertexCount;
+        meshInfo.FirstIndex  = firstIndex;
+        meshInfo.IndexCount  = indexCount;
+        meshInfo.MaterialNum = uniqueMaterials[pMaterial->map_Kd.path];
+        meshInfo.BoundingBox = bounds;
+
+        baseVertex += vertexCount;
+        firstIndex += indexCount;
+
+        Geometry::CalcTangentSpace(m_Vertices.ToPtr() + meshInfo.BaseVertex, meshInfo.VertexCount, m_Indices.ToPtr() + meshInfo.FirstIndex, meshInfo.IndexCount);
+    }
+
+    m_bSkeletal = false;
+
+    return true;
 }

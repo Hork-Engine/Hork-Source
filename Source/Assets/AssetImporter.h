@@ -103,6 +103,7 @@ struct AssetImportSettings
 };
 
 bool ImportGLTF(AssetImportSettings const& Settings);
+bool ImportOBJ(AssetImportSettings const& Settings);
 bool ImportSkybox(AssetImportSettings const& Settings);
 
 bool SaveSkyboxTexture(AStringView FileName, ImageStorage const& Image);
