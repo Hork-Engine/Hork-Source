@@ -117,11 +117,11 @@ struct SFrameBufferHash
         uint32_t hash{0};
         for (int a = 0; a < ColorAttachments.Size(); a++)
         {
-            hash = Core::Murmur3Hash32(ColorAttachments[a]->GetUID(), hash);
+            hash = HashTraits::Murmur3Hash32(ColorAttachments[a]->GetUID(), hash);
         }
         if (pDepthStencilAttachment)
         {
-            hash = Core::Murmur3Hash32(pDepthStencilAttachment->GetUID(), hash);
+            hash = HashTraits::Murmur3Hash32(pDepthStencilAttachment->GetUID(), hash);
         }
         return hash;
     }

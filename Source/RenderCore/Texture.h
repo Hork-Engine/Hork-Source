@@ -424,22 +424,18 @@ struct SSamplerDesc
     SAMPLER_ADDRESS_MODE AddressV = SAMPLER_ADDRESS_WRAP;
     SAMPLER_ADDRESS_MODE AddressW = SAMPLER_ADDRESS_WRAP;
 
-    float MipLODBias = 0;
-
     uint8_t MaxAnisotropy = 0;
 
     /** a function that compares sampled data against existing sampled data */
     COMPARISON_FUNCTION ComparisonFunc = CMPFUNC_LEQUAL;
 
     bool bCompareRefToTexture = false;
+    bool bCubemapSeamless     = false;
 
+    float MipLODBias     = 0;
+    float MinLOD         = 0;
+    float MaxLOD         = 1000.0f;
     float BorderColor[4] = {0, 0, 0, 0};
-
-    float MinLOD = 0;
-
-    float MaxLOD = 1000.0f;
-
-    bool bCubemapSeamless = false;
 
     SSamplerDesc& SetFilter(SAMPLER_FILTER InFilter)
     {
@@ -524,11 +520,6 @@ struct SSamplerDesc
         return *this;
     }
 
-    uint32_t Hash() const
-    {
-        return Core::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
-    }
-
     bool operator==(SSamplerDesc const& Rhs) const
     {
         return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
@@ -537,6 +528,26 @@ struct SSamplerDesc
     bool operator!=(SSamplerDesc const& Rhs) const
     {
         return !(operator==(Rhs));
+    }
+
+    uint32_t Hash() const
+    {
+        // clang-format off
+        static_assert(sizeof(*this) == sizeof(Filter) +
+            sizeof(AddressU) +
+            sizeof(AddressV) +
+            sizeof(AddressW) +
+            sizeof(MaxAnisotropy) + 
+            sizeof(ComparisonFunc) + 
+            sizeof(bCompareRefToTexture) + 
+            sizeof(bCubemapSeamless) + 
+            sizeof(MipLODBias) + 
+            sizeof(MinLOD) + 
+            sizeof(MaxLOD) + 
+            sizeof(BorderColor), "Unexpected alignment");
+        // clang-format on
+
+        return HashTraits::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
     }
 };
 

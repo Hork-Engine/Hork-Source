@@ -95,7 +95,7 @@ struct SInputDeviceKey
 
     uint32_t Hash() const
     {
-        return Core::Murmur3Hash32(*(const int32_t*)&DeviceId);
+        return HashTraits::Murmur3Hash32(*(const int32_t*)&DeviceId);
     }
 
     bool operator==(SInputDeviceKey const& Rhs) const

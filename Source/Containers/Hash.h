@@ -40,27 +40,7 @@ THashSet
 */
 
 #include <Core/String.h>
-
-namespace HashTraits
-{
-
-HK_FORCEINLINE std::size_t Hash(uint32_t Key)
-{
-    return std::hash<uint32_t>()(Key);
-}
-
-HK_FORCEINLINE std::size_t Hash(uint64_t Key)
-{
-    return std::hash<uint64_t>()(Key);
-}
-
-template <typename T>
-HK_FORCEINLINE std::size_t Hash(T const& Key)
-{
-    return Key.Hash();
-}
-
-} // namespace HashTraits
+#include <Core/HashFunc.h>
 
 template <typename T>
 struct Hasher

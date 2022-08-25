@@ -66,19 +66,34 @@ struct SVertexLayoutDescGL
     uint32_t           NumVertexAttribs{};
     SVertexAttribInfo  VertexAttribs[MAX_VERTEX_ATTRIBS] = {};
 
-    uint32_t Hash() const
-    {
-        return Core::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
-    }
-
     bool operator==(SVertexLayoutDescGL const& Rhs) const
     {
-        return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
+        if (NumVertexBindings != Rhs.NumVertexBindings)
+            return false;
+        if (NumVertexAttribs != Rhs.NumVertexAttribs)
+            return false;
+        for (uint32_t i = 0; i < NumVertexBindings; ++i)
+            if (VertexBindings[i] != Rhs.VertexBindings[i])
+                return false;
+        for (uint32_t i = 0; i < NumVertexAttribs; ++i)
+            if (VertexAttribs[i] != Rhs.VertexAttribs[i])
+                return false;
+        return true;
     }
 
     bool operator!=(SVertexLayoutDescGL const& Rhs) const
     {
         return !(operator==(Rhs));
+    }
+
+    uint32_t Hash() const
+    {
+        uint32_t h{};
+        for (uint32_t i = 0; i < NumVertexBindings; ++i)
+            h = HashTraits::HashCombine(h, VertexBindings[i]);
+        for (uint32_t i = 0; i < NumVertexAttribs; ++i)
+            h = HashTraits::HashCombine(h, VertexAttribs[i]);
+        return h;
     }
 };
 

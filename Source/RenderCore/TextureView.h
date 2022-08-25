@@ -65,6 +65,7 @@ struct STextureViewDesc
     TEXTURE_VIEW   ViewType = TEXTURE_VIEW_UNDEFINED;
     TEXTURE_TYPE   Type     = TEXTURE_2D;
     TEXTURE_FORMAT Format   = TEXTURE_FORMAT_RGBA8_UNORM;
+    uint8_t        Pad = 0;
 
     uint16_t FirstMipLevel = 0;
     uint16_t NumMipLevels  = 0;
@@ -90,6 +91,12 @@ struct STextureViewDesc
     {
         return !(operator==(Rhs));
     }
+
+    uint32_t Hash() const
+    {
+        static_assert(sizeof(*this) == 12, "Unexpected alignment");
+        return HashTraits::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
+    }
 };
 
 class ITextureView : public IDeviceObject
@@ -113,13 +120,3 @@ private:
 };
 
 } // namespace RenderCore
-
-namespace HashTraits
-{
-
-HK_FORCEINLINE std::size_t Hash(RenderCore::STextureViewDesc const& Desc)
-{
-    return Core::SDBMHash(reinterpret_cast<const char*>(&Desc), sizeof(Desc));
-}
-
-} // namespace HashTraits

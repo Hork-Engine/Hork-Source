@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Platform/BaseTypes.h>
 
-namespace Core
+namespace HashTraits
 {
 
 /** Algorithm is used in the open source SDBM project */
@@ -131,4 +131,35 @@ HK_FORCEINLINE uint32_t Murmur3Hash64(uint64_t key, uint32_t seed = 0)
     return h;
 }
 
-} // namespace Core
+HK_FORCEINLINE uint32_t Hash(bool Key)
+{
+    return std::hash<bool>()(Key);
+}
+HK_FORCEINLINE uint32_t Hash(uint8_t Key)
+{
+    return std::hash<uint8_t>()(Key);
+}
+HK_FORCEINLINE uint32_t Hash(uint16_t Key)
+{
+    return std::hash<uint16_t>()(Key);
+}
+HK_FORCEINLINE uint32_t Hash(uint32_t Key)
+{
+    return std::hash<uint32_t>()(Key);
+}
+HK_FORCEINLINE uint32_t Hash(uint64_t Key)
+{
+    return std::hash<uint64_t>()(Key);
+}
+template <typename T>
+HK_FORCEINLINE uint32_t Hash(T const& Key)
+{
+    return Key.Hash();
+}
+template <typename T>
+HK_FORCEINLINE uint32_t HashCombine(uint32_t seed, T const& v)
+{
+    return seed ^ (Hash(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+}
+
+} // namespace HashTraits

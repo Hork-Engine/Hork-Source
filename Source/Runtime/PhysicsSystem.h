@@ -162,8 +162,8 @@ struct SContactKey
 
     uint32_t Hash() const
     {
-        uint32_t hash = Core::Murmur3Hash64(Id[0]);
-        hash          = Core::Murmur3Hash64(Id[1], hash);
+        uint32_t hash = HashTraits::Murmur3Hash64(Id[0]);
+        hash          = HashTraits::Murmur3Hash64(Id[1], hash);
         return hash;
     }
 };

@@ -82,7 +82,7 @@ struct AGUID
 
     uint32_t Hash() const
     {
-        return Core::Murmur3Hash64(Hi, Core::Murmur3Hash64(Lo));
+        return HashTraits::Murmur3Hash64(Hi, HashTraits::Murmur3Hash64(Lo));
     }
 
     // Byte serialization

@@ -166,6 +166,36 @@ struct SRenderTargetBlendingInfo
     SRenderTargetBlendingInfo() = default;
 
     void SetBlendingPreset(BLENDING_PRESET _Preset);
+
+    bool operator==(SRenderTargetBlendingInfo const& Rhs) const
+    {
+        return (Op.ColorRGB == Rhs.Op.ColorRGB &&
+                Op.Alpha == Rhs.Op.Alpha &&
+                Func.SrcFactorRGB == Rhs.Func.SrcFactorRGB &&
+                Func.DstFactorRGB == Rhs.Func.DstFactorRGB &&
+                Func.SrcFactorAlpha == Rhs.Func.SrcFactorAlpha &&
+                Func.DstFactorAlpha == Rhs.Func.DstFactorAlpha &&
+                bBlendEnable == Rhs.bBlendEnable &&
+                ColorWriteMask == Rhs.ColorWriteMask);
+    }
+
+    bool operator!=(SRenderTargetBlendingInfo const& Rhs) const
+    {
+        return !(operator==(Rhs));
+    }
+
+    uint32_t Hash() const
+    {
+        // clang-format off
+        static_assert(sizeof(*this) ==
+            sizeof(Op) +
+            sizeof(Func) +
+            sizeof(bBlendEnable) +
+            sizeof(ColorWriteMask), "Unexpected alignment");
+        // clang-format on
+
+        return HashTraits::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
+    }
 };
 
 HK_INLINE void SRenderTargetBlendingInfo::SetBlendingPreset(BLENDING_PRESET _Preset)
@@ -241,19 +271,35 @@ struct SBlendingStateInfo
 
     SBlendingStateInfo() = default;
 
-    uint32_t Hash() const
-    {
-        return Core::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
-    }
-
     bool operator==(SBlendingStateInfo const& Rhs) const
     {
-        return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
+        if (bSampleAlphaToCoverage != Rhs.bSampleAlphaToCoverage ||
+            bIndependentBlendEnable != Rhs.bIndependentBlendEnable ||
+            LogicOp != Rhs.LogicOp)
+        {
+            return false;
+        }
+
+        for (int i = 0; i < MAX_COLOR_ATTACHMENTS; ++i)
+            if (RenderTargetSlots[i] != Rhs.RenderTargetSlots[i])
+                return false;
+
+        return true;
     }
 
     bool operator!=(SBlendingStateInfo const& Rhs) const
     {
         return !(operator==(Rhs));
+    }
+
+    uint32_t Hash() const
+    {
+        uint32_t h = HashTraits::HashCombine(HashTraits::HashCombine(HashTraits::Hash(bSampleAlphaToCoverage), bIndependentBlendEnable), uint8_t(LogicOp));
+
+        for (int i = 0; i < MAX_COLOR_ATTACHMENTS; ++i)
+            h = HashTraits::HashCombine(h, RenderTargetSlots[i]);
+
+        return h;
     }
 };
 
@@ -276,9 +322,9 @@ enum POLYGON_CULL : uint8_t
 
 struct SRasterizerStateInfo
 {
-    POLYGON_FILL FillMode        = POLYGON_FILL_SOLID;
-    POLYGON_CULL CullMode        = POLYGON_CULL_BACK;
-    bool         bFrontClockwise = false;
+    POLYGON_FILL FillMode; // POLYGON_FILL_SOLID;
+    POLYGON_CULL CullMode; // POLYGON_CULL_BACK;
+    bool         bFrontClockwise;
 
     struct
     {
@@ -291,37 +337,51 @@ struct SRasterizerStateInfo
                       |_  max(MaxDepthSlope x Slope + r * Bias, Clamp),   if Clamp < 0.
 
         */
-        float Slope = 0;
-        int   Bias  = 0;
-        float Clamp = 0;
+        float Slope;
+        int   Bias;
+        float Clamp;
     } DepthOffset;
 
     // If enabled, the −wc ≤ zc ≤ wc plane equation is ignored by view volume clipping
     // (effectively, there is no near or far plane clipping). See viewport->MinDepth, viewport->MaxDepth.
-    bool bDepthClampEnable = false;
-                                    
-    bool bScissorEnable         = false;
-    bool bMultisampleEnable     = false;
-    bool bAntialiasedLineEnable = false;
+    bool bDepthClampEnable;
+
+    bool bScissorEnable;
+    bool bMultisampleEnable;
+    bool bAntialiasedLineEnable;
 
     // If enabled, primitives are discarded after the optional transform feedback stage, but before rasterization
-    bool bRasterizerDiscard     = false;
+    bool bRasterizerDiscard;
 
-    SRasterizerStateInfo() = default;
-
-    uint32_t Hash() const
+    SRasterizerStateInfo()
     {
-        return Core::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
+        // NOTE: Call ZeroMem to clear the garbage int the paddings for the correct hashing.
+        Platform::ZeroMem(this, sizeof(*this));
     }
 
     bool operator==(SRasterizerStateInfo const& Rhs) const
     {
-        return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
+        return (FillMode == Rhs.FillMode &&
+                CullMode == Rhs.CullMode &&
+                bFrontClockwise == Rhs.bFrontClockwise &&
+                DepthOffset.Slope == Rhs.DepthOffset.Slope &&
+                DepthOffset.Bias == Rhs.DepthOffset.Bias &&
+                DepthOffset.Clamp == Rhs.DepthOffset.Clamp &&
+                bDepthClampEnable == Rhs.bDepthClampEnable &&
+                bScissorEnable == Rhs.bScissorEnable &&
+                bMultisampleEnable == Rhs.bMultisampleEnable &&
+                bAntialiasedLineEnable == Rhs.bAntialiasedLineEnable &&
+                bRasterizerDiscard == Rhs.bRasterizerDiscard);
     }
 
     bool operator!=(SRasterizerStateInfo const& Rhs) const
     {
         return !(operator==(Rhs));
+    }
+
+    uint32_t Hash() const
+    {
+        return HashTraits::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
     }
 };
 
@@ -351,34 +411,66 @@ struct SStencilTestInfo
     //int              Reference = 0;
 
     SStencilTestInfo() = default;
+
+    bool operator==(SStencilTestInfo const& Rhs) const
+    {
+        return (StencilFailOp == Rhs.StencilFailOp &&
+                DepthFailOp == Rhs.DepthFailOp &&
+                DepthPassOp == Rhs.DepthPassOp &&
+                StencilFunc == Rhs.StencilFunc);
+    }
 };
 
 struct SDepthStencilStateInfo
 {
-    bool                bDepthEnable     = true;
-    bool                bDepthWrite      = true;
-    COMPARISON_FUNCTION DepthFunc        = CMPFUNC_LESS;
-    bool                bStencilEnable   = false;
-    uint8_t             StencilReadMask  = DEFAULT_STENCIL_READ_MASK;
-    uint8_t             StencilWriteMask = DEFAULT_STENCIL_WRITE_MASK;
+    bool                bDepthEnable;//     = true;
+    bool                bDepthWrite;  //      = true;
+    COMPARISON_FUNCTION DepthFunc;   //        = CMPFUNC_LESS;
+    bool                bStencilEnable; //   = false;
+    uint8_t             StencilReadMask; //  = DEFAULT_STENCIL_READ_MASK;
+    uint8_t             StencilWriteMask; // = DEFAULT_STENCIL_WRITE_MASK;
     SStencilTestInfo    FrontFace;
     SStencilTestInfo    BackFace;
 
-    SDepthStencilStateInfo() = default;
-
-    uint32_t Hash() const
+    SDepthStencilStateInfo()
     {
-        return Core::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
+        // NOTE: Call ZeroMem to clear the garbage in the paddings for the correct hashing.
+        Platform::ZeroMem(this, sizeof(*this));
+
+        bDepthEnable            = true;
+        bDepthWrite             = true;
+        DepthFunc               = CMPFUNC_LESS;
+        StencilReadMask         = DEFAULT_STENCIL_READ_MASK;
+        StencilWriteMask        = DEFAULT_STENCIL_WRITE_MASK;
+        FrontFace.StencilFailOp = STENCIL_OP_KEEP;
+        FrontFace.DepthFailOp   = STENCIL_OP_KEEP;
+        FrontFace.DepthPassOp   = STENCIL_OP_KEEP;
+        FrontFace.StencilFunc   = CMPFUNC_ALWAYS;
+        BackFace.StencilFailOp  = STENCIL_OP_KEEP;
+        BackFace.DepthFailOp    = STENCIL_OP_KEEP;
+        BackFace.DepthPassOp    = STENCIL_OP_KEEP;
+        BackFace.StencilFunc    = CMPFUNC_ALWAYS;
     }
 
     bool operator==(SDepthStencilStateInfo const& Rhs) const
     {
-        return std::memcmp(this, &Rhs, sizeof(*this)) == 0;
+        return (bDepthEnable == Rhs.bDepthEnable &&
+                bDepthWrite == Rhs.bDepthWrite &&
+                DepthFunc == Rhs.DepthFunc &&
+                StencilReadMask == Rhs.StencilReadMask &&
+                StencilWriteMask == Rhs.StencilWriteMask &&
+                FrontFace == Rhs.FrontFace &&
+                BackFace == Rhs.BackFace);
     }
 
     bool operator!=(SDepthStencilStateInfo const& Rhs) const
     {
         return !(operator==(Rhs));
+    }
+
+    uint32_t Hash() const
+    {
+        return HashTraits::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
     }
 };
 
@@ -542,9 +634,32 @@ enum VERTEX_INPUT_RATE : uint8_t
 
 struct SVertexBindingInfo
 {
-    uint8_t           InputSlot = 0;                     /// vertex buffer binding
-    uint32_t          Stride    = 0;                     /// vertex stride
     VERTEX_INPUT_RATE InputRate = INPUT_RATE_PER_VERTEX; /// per vertex / per instance
+    uint8_t           InputSlot = 0;                     /// vertex buffer binding
+    uint16_t          Pad       = 0;
+    uint32_t          Stride    = 0;                     /// vertex stride
+
+    SVertexBindingInfo() = default;
+
+    SVertexBindingInfo(uint8_t InputSlot, uint32_t Stride, VERTEX_INPUT_RATE InputRate = INPUT_RATE_PER_VERTEX) :
+        InputRate(InputRate), InputSlot(InputSlot), Stride(Stride)
+    {}
+
+    bool operator==(SVertexBindingInfo const& Rhs) const
+    {
+        return InputRate == Rhs.InputRate && InputSlot == Rhs.InputSlot && Stride == Rhs.Stride;
+    }
+
+    bool operator!=(SVertexBindingInfo const& Rhs) const
+    {
+        return !(operator==(Rhs));
+    }
+
+    uint32_t Hash() const
+    {
+        static_assert(sizeof(*this) == 8, "Unexpected alignment");
+        return HashTraits::SDBMHash(reinterpret_cast<const char*>(this), sizeof(*this));
+    }
 };
 
 struct SVertexAttribInfo
@@ -575,6 +690,28 @@ struct SVertexAttribInfo
 
     /// Components are normalized
     bool IsNormalized() const { return !!(Type & VertexAttribType_NormalizedBit()); }
+
+    bool operator==(SVertexAttribInfo const& Rhs) const
+    {
+        // NOTE: We intentionally do not compare SemanticName.
+        return (Location == Rhs.Location &&
+                InputSlot == Rhs.InputSlot &&
+                Type == Rhs.Type &&
+                Mode == Rhs.Mode &&
+                InstanceDataStepRate == Rhs.InstanceDataStepRate &&
+                Offset == Rhs.Offset);
+    }
+
+    bool operator!=(SVertexAttribInfo const& Rhs) const
+    {
+        return !(operator==(Rhs));
+    }
+
+    uint32_t Hash() const
+    {
+        // NOTE: We intentionally do not hash SemanticName.
+        return HashTraits::HashCombine(HashTraits::HashCombine(HashTraits::HashCombine(HashTraits::HashCombine(HashTraits::HashCombine(HashTraits::Hash(Location), InputSlot), uint8_t(Type)), uint8_t(Mode)), InstanceDataStepRate), Offset);
+    }
 };
 
 //
