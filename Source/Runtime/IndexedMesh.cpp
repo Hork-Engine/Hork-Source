@@ -42,10 +42,6 @@ SOFTWARE.
 #include <Geometry/TangentSpace.h>
 
 HK_CLASS_META(AIndexedMesh)
-HK_CLASS_META(AIndexedMeshSubpart)
-HK_CLASS_META(ALightmapUV)
-HK_CLASS_META(AVertexLight)
-HK_CLASS_META(ASocketDef)
 HK_CLASS_META(AProceduralMesh)
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -63,7 +59,6 @@ AIndexedMesh::~AIndexedMesh()
     Purge();
 
     HK_ASSERT(m_LightmapUVs.IsEmpty());
-    HK_ASSERT(m_VertexLightChannels.IsEmpty());
 }
 
 AIndexedMesh* AIndexedMesh::Create(int NumVertices, int NumIndices, int NumSubparts, bool bSkinnedMesh)
@@ -100,10 +95,8 @@ void AIndexedMesh::Initialize(int NumVertices, int NumIndices, int NumSubparts, 
     m_Subparts.ResizeInvalidate(NumSubparts);
     for (int i = 0; i < NumSubparts; i++)
     {
-        AIndexedMeshSubpart* subpart = CreateInstanceOf<AIndexedMeshSubpart>();
-        subpart->AddRef();
-        subpart->m_OwnerMesh = this;
-        m_Subparts[i]      = subpart;
+        m_Subparts[i]              = CreateInstanceOf<AIndexedMeshSubpart>();
+        m_Subparts[i]->m_OwnerMesh = this;
     }
 
     if (NumSubparts == 1)
@@ -114,8 +107,20 @@ void AIndexedMesh::Initialize(int NumVertices, int NumIndices, int NumSubparts, 
         subpart->m_VertexCount       = m_Vertices.Size();
         subpart->m_IndexCount        = m_Indices.Size();
     }
+}
 
-    InvalidateChannels();
+void AIndexedMesh::AddLightmapUVs()
+{
+    if (m_LightmapUVs.Size() == m_Vertices.Size())
+        return;
+
+    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+
+    if (m_LightmapUVsGPU)
+        vertexMemory->Deallocate(m_LightmapUVsGPU);
+
+    m_LightmapUVsGPU = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(SMeshVertexUV), nullptr, GetLightmapUVMemory, this);
+    m_LightmapUVs.Resize(m_Vertices.Size());
 }
 
 void AIndexedMesh::Purge()
@@ -127,8 +132,6 @@ void AIndexedMesh::Purge()
     }
 
     m_Subparts.Clear();
-
-    InvalidateChannels();
 
     for (ASocketDef* socket : m_Sockets)
     {
@@ -145,6 +148,7 @@ void AIndexedMesh::Purge()
     m_Vertices.Free();
     m_Weights.Free();
     m_Indices.Free();
+    m_LightmapUVs.Free();
 
     AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
@@ -156,66 +160,9 @@ void AIndexedMesh::Purge()
 
     vertexMemory->Deallocate(m_WeightsHandle);
     m_WeightsHandle = nullptr;
-}
 
-void AIndexedMesh::InvalidateChannels()
-{
-    for (ALightmapUV* channel : m_LightmapUVs)
-    {
-        channel->Invalidate();
-    }
-
-    for (AVertexLight* channel : m_VertexLightChannels)
-    {
-        channel->Invalidate();
-    }
-}
-
-static AIndexedMeshSubpart* ReadIndexedMeshSubpart(IBinaryStreamReadInterface& f)
-{
-    AString  name;
-    int32_t  baseVertex;
-    uint32_t firstIndex;
-    uint32_t vertexCount;
-    uint32_t indexCount;
-    //AString dummy;
-    BvAxisAlignedBox boundingBox;
-
-    name        = f.ReadString();
-    baseVertex  = f.ReadInt32();
-    firstIndex  = f.ReadUInt32();
-    vertexCount = f.ReadUInt32();
-    indexCount  = f.ReadUInt32();
-    //f.ReadObject( dummy ); // deprecated field
-    f.ReadObject(boundingBox);
-
-    AIndexedMeshSubpart* subpart = CreateInstanceOf<AIndexedMeshSubpart>();
-    subpart->AddRef();
-    subpart->SetObjectName(name);
-    subpart->SetBaseVertex(baseVertex);
-    subpart->SetFirstIndex(firstIndex);
-    subpart->SetVertexCount(vertexCount);
-    subpart->SetIndexCount(indexCount);
-    //subpart->SetMaterialInstance( GetOrCreateResource< AMaterialInstance >( materialInstance ) );
-    subpart->SetBoundingBox(boundingBox);
-    return subpart;
-}
-
-static ASocketDef* ReadSocket(IBinaryStreamReadInterface& f)
-{
-    AString name = f.ReadString();
-    uint32_t jointIndex = f.ReadUInt32();
-
-    ASocketDef* socket = CreateInstanceOf<ASocketDef>();
-    socket->AddRef();
-    socket->SetObjectName(name);
-    socket->JointIndex = jointIndex;
-
-    f.ReadObject(socket->Position);
-    f.ReadObject(socket->Scale);
-    f.ReadObject(socket->Rotation);
-
-    return socket;
+    vertexMemory->Deallocate(m_LightmapUVsGPU);
+    m_LightmapUVsGPU = nullptr;
 }
 
 bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
@@ -308,7 +255,8 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     m_Subparts.ResizeInvalidate(subpartsCount);
     for (int i = 0; i < m_Subparts.Size(); i++)
     {
-        m_Subparts[i] = ReadIndexedMeshSubpart(meshData);
+        m_Subparts[i] = CreateInstanceOf<AIndexedMeshSubpart>();
+        m_Subparts[i]->Read(meshData);
     }
 
     member = doc.FindMember("Subparts");
@@ -340,7 +288,9 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     m_Sockets.ResizeInvalidate(socketsCount);
     for (int i = 0; i < m_Sockets.Size(); i++)
     {
-        m_Sockets[i] = ReadSocket(meshData);
+        ASocketDef* socket = CreateInstanceOf<ASocketDef>();
+        socket->Read(meshData);
+        m_Sockets[i] = socket;
     }
 
     if (m_bSkinnedMesh)
@@ -374,9 +324,9 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
         SendJointWeightsToGPU(m_Weights.Size(), 0);
     }
 
-    m_bBoundingBoxDirty = false;
+    // TODO: Load lightmapUVs
 
-    InvalidateChannels();
+    m_bBoundingBoxDirty = false;
 
     if (!m_bSkinnedMesh)
     {
@@ -401,6 +351,11 @@ void* AIndexedMesh::GetIndexMemory(void* _This)
 void* AIndexedMesh::GetWeightMemory(void* _This)
 {
     return static_cast<AIndexedMesh*>(_This)->GetWeights();
+}
+
+void* AIndexedMesh::GetLightmapUVMemory(void* _This)
+{
+    return static_cast<AIndexedMesh*>(_This)->GetLigtmapUVs();
 }
 
 void AIndexedMesh::GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
@@ -430,8 +385,22 @@ void AIndexedMesh::GetWeightsBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* p
     }
 }
 
+void AIndexedMesh::GetLightmapUVsGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
+{
+    if (m_LightmapUVsGPU)
+    {
+        AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+        vertexMemory->GetPhysicalBufferAndOffset(m_LightmapUVsGPU, ppBuffer, pOffset);
+    }
+}
+
 void AIndexedMesh::AddSocket(ASocketDef* pSocket)
 {
+    if (!pSocket)
+    {
+        LOG("AIndexedMesh::AddSocket: nullptr\n");
+        return;
+    }
     pSocket->AddRef();
     m_Sockets.Add(pSocket);
 }
@@ -440,7 +409,7 @@ ASocketDef* AIndexedMesh::FindSocket(AStringView Name)
 {
     for (ASocketDef* socket : m_Sockets)
     {
-        if (socket->GetObjectName().Icmp(Name))
+        if (!socket->Name.Icmp(Name))
         {
             return socket;
         }
@@ -623,6 +592,48 @@ bool AIndexedMesh::WriteJointWeights(SMeshVertexSkin const* Vertices, int Vertic
     Platform::Memcpy(m_Weights.ToPtr() + StartVertexLocation, Vertices, VerticesCount * sizeof(SMeshVertexSkin));
 
     return SendJointWeightsToGPU(VerticesCount, StartVertexLocation);
+}
+
+bool AIndexedMesh::SendLightmapUVsToGPU(int VerticesCount, int StartVertexLocation)
+{
+    if (!VerticesCount)
+    {
+        return true;
+    }
+
+    if (StartVertexLocation + VerticesCount > m_Vertices.Size())
+    {
+        LOG("AIndexedMesh::SendLightmapUVsToGPU: Referencing outside of buffer ({})\n", GetObjectName());
+        return false;
+    }
+
+    AddLightmapUVs();
+
+    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+
+    vertexMemory->Update(m_LightmapUVsGPU, StartVertexLocation * sizeof(SMeshVertexUV), VerticesCount * sizeof(SMeshVertexUV), m_LightmapUVs.ToPtr() + StartVertexLocation);
+
+    return true;
+}
+
+bool AIndexedMesh::WriteLightmapUVsData(SMeshVertexUV const* UVs, int VerticesCount, int StartVertexLocation)
+{
+    if (!VerticesCount)
+    {
+        return true;
+    }
+
+    if (StartVertexLocation + VerticesCount > m_Vertices.Size())
+    {
+        LOG("AIndexedMesh::WriteLightmapUVsData: Referencing outside of buffer ({})\n", GetObjectName());
+        return false;
+    }
+
+    AddLightmapUVs();
+
+    Platform::Memcpy(m_LightmapUVs.ToPtr() + StartVertexLocation, UVs, VerticesCount * sizeof(SMeshVertexUV));
+
+    return SendVertexDataToGPU(VerticesCount, StartVertexLocation);
 }
 
 bool AIndexedMesh::SendIndexDataToGPU(int _IndexCount, int _StartIndexLocation)
@@ -1424,156 +1435,41 @@ void AIndexedMeshSubpart::DrawBVH(ADebugRenderer* pRenderer, Float3x4 const& Tra
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////
-
-ALightmapUV::ALightmapUV()
+void AIndexedMeshSubpart::Read(IBinaryStreamReadInterface& stream)
 {
-}
+    m_Name        = stream.ReadString();
+    m_BaseVertex  = stream.ReadInt32();
+    m_FirstIndex  = stream.ReadUInt32();
+    m_VertexCount = stream.ReadUInt32();
+    m_IndexCount  = stream.ReadUInt32();
 
-ALightmapUV::~ALightmapUV()
-{
-    Purge();
-}
+    stream.ReadObject(m_BoundingBox);
 
-void ALightmapUV::Purge()
-{
-    if (m_SourceMesh)
+    m_bAABBTreeDirty = true;
+
+    if (m_OwnerMesh)
     {
-        m_SourceMesh->m_LightmapUVs[m_IndexInArrayOfUVs]                      = m_SourceMesh->m_LightmapUVs[m_SourceMesh->m_LightmapUVs.Size() - 1];
-        m_SourceMesh->m_LightmapUVs[m_IndexInArrayOfUVs]->m_IndexInArrayOfUVs = m_IndexInArrayOfUVs;
-        m_IndexInArrayOfUVs                                                   = -1;
-        m_SourceMesh->m_LightmapUVs.RemoveLast();
-        m_SourceMesh.Reset();
+        m_OwnerMesh->m_bBoundingBoxDirty = true;
     }
-
-    m_LightingLevel.Reset();
-
-    m_Vertices.Free();
-
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
-
-    vertexMemory->Deallocate(m_VertexBufferGPU);
-    m_VertexBufferGPU = nullptr;
-}
-
-void ALightmapUV::Initialize(AIndexedMesh* pSourceMesh, ALevel* pLightingLevel)
-{
-    Purge();
-
-    m_SourceMesh    = pSourceMesh;
-    m_LightingLevel = pLightingLevel;
-    m_bInvalid      = false;
-
-    m_IndexInArrayOfUVs = pSourceMesh->m_LightmapUVs.Size();
-    pSourceMesh->m_LightmapUVs.Add(this);
-
-    m_Vertices.ResizeInvalidate(pSourceMesh->GetVertexCount());
-
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
-
-    m_VertexBufferGPU = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(SMeshVertexUV), nullptr, GetVertexMemory, this);
-}
-
-bool ALightmapUV::SendVertexDataToGPU(int VerticesCount, int StartVertexLocation)
-{
-    if (!VerticesCount)
-    {
-        return true;
-    }
-
-    if (StartVertexLocation + VerticesCount > m_Vertices.Size())
-    {
-        LOG("ALightmapUV::SendVertexDataToGPU: Referencing outside of buffer ({})\n", GetObjectName());
-        return false;
-    }
-
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
-
-    vertexMemory->Update(m_VertexBufferGPU, StartVertexLocation * sizeof(SMeshVertexUV), VerticesCount * sizeof(SMeshVertexUV), m_Vertices.ToPtr() + StartVertexLocation);
-
-    return true;
-}
-
-bool ALightmapUV::WriteVertexData(SMeshVertexUV const* Vertices, int VerticesCount, int StartVertexLocation)
-{
-    if (!VerticesCount)
-    {
-        return true;
-    }
-
-    if (StartVertexLocation + VerticesCount > m_Vertices.Size())
-    {
-        LOG("ALightmapUV::WriteVertexData: Referencing outside of buffer ({})\n", GetObjectName());
-        return false;
-    }
-
-    Platform::Memcpy(m_Vertices.ToPtr() + StartVertexLocation, Vertices, VerticesCount * sizeof(SMeshVertexUV));
-
-    return SendVertexDataToGPU(VerticesCount, StartVertexLocation);
-}
-
-void ALightmapUV::GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset)
-{
-    if (m_VertexBufferGPU)
-    {
-        AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
-        vertexMemory->GetPhysicalBufferAndOffset(m_VertexBufferGPU, ppBuffer, pOffset);
-    }
-}
-
-void* ALightmapUV::GetVertexMemory(void* _This)
-{
-    return static_cast<ALightmapUV*>(_This)->GetVertices();
 }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
-AVertexLight::AVertexLight()
+AVertexLight::AVertexLight(AIndexedMesh* pSourceMesh)
 {
-}
-
-AVertexLight::~AVertexLight()
-{
-    Purge();
-}
-
-void AVertexLight::Purge()
-{
-    if (m_SourceMesh)
-    {
-        m_SourceMesh->m_VertexLightChannels[m_IndexInArrayOfChannels]                           = m_SourceMesh->m_VertexLightChannels[m_SourceMesh->m_VertexLightChannels.Size() - 1];
-        m_SourceMesh->m_VertexLightChannels[m_IndexInArrayOfChannels]->m_IndexInArrayOfChannels = m_IndexInArrayOfChannels;
-        m_IndexInArrayOfChannels                                                                = -1;
-        m_SourceMesh->m_VertexLightChannels.RemoveLast();
-        m_SourceMesh.Reset();
-    }
-
-    m_LightingLevel.Reset();
-
-    m_Vertices.Free();
-
-    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
-
-    vertexMemory->Deallocate(m_VertexBufferGPU);
-    m_VertexBufferGPU = nullptr;
-}
-
-void AVertexLight::Initialize(AIndexedMesh* pSourceMesh, ALevel* pLightingLevel)
-{
-    Purge();
-
-    m_SourceMesh    = pSourceMesh;
-    m_LightingLevel = pLightingLevel;
-    m_bInvalid      = false;
-
-    m_IndexInArrayOfChannels = pSourceMesh->m_VertexLightChannels.Size();
-    pSourceMesh->m_VertexLightChannels.Add(this);
-
     m_Vertices.ResizeInvalidate(pSourceMesh->GetVertexCount());
 
     AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
 
     m_VertexBufferGPU = vertexMemory->AllocateVertex(m_Vertices.Size() * sizeof(SMeshVertexLight), nullptr, GetVertexMemory, this);
+}
+
+AVertexLight::~AVertexLight()
+{
+    AVertexMemoryGPU* vertexMemory = GEngine->GetVertexMemoryGPU();
+
+    vertexMemory->Deallocate(m_VertexBufferGPU);
+    m_VertexBufferGPU = nullptr;
 }
 
 bool AVertexLight::SendVertexDataToGPU(int VerticesCount, int StartVertexLocation)
@@ -1585,7 +1481,7 @@ bool AVertexLight::SendVertexDataToGPU(int VerticesCount, int StartVertexLocatio
 
     if (StartVertexLocation + VerticesCount > m_Vertices.Size())
     {
-        LOG("AVertexLight::SendVertexDataToGPU: Referencing outside of buffer ({})\n", GetObjectName());
+        LOG("AVertexLight::SendVertexDataToGPU: Referencing outside of buffer\n");
         return false;
     }
 
@@ -1605,7 +1501,7 @@ bool AVertexLight::WriteVertexData(SMeshVertexLight const* Vertices, int Vertice
 
     if (StartVertexLocation + VerticesCount > m_Vertices.Size())
     {
-        LOG("AVertexLight::WriteVertexData: Referencing outside of buffer ({})\n", GetObjectName());
+        LOG("AVertexLight::WriteVertexData: Referencing outside of buffer\n");
         return false;
     }
 

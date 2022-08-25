@@ -58,7 +58,7 @@ Modify NavMesh
 
 static const unsigned short RESET_INDEX = 0xffff;
 
-static void CreateTriangleStripPatch(int NumQuadsX, int NumQuadsY, TPodVector<STerrainVertex>& Vertices, TPodVector<unsigned short>& Indices)
+static void CreateTriangleStripPatch(int NumQuadsX, int NumQuadsY, TVector<STerrainVertex>& Vertices, TVector<unsigned short>& Indices)
 {
     int numVertsX = NumQuadsX + 1;
     int numVertsY = NumQuadsY + 1;
@@ -97,24 +97,24 @@ HK_FORCEINLINE STerrainVertex MakeVertex(short X, short Y)
 
 ATerrainMesh::ATerrainMesh(int InTextureSize)
 {
-    TPodVector<STerrainVertex> blockVerts;
-    TPodVector<unsigned short> blockIndices;
-    TPodVector<STerrainVertex> horGapVertices;
-    TPodVector<unsigned short> horGapIndices;
-    TPodVector<STerrainVertex> vertGapVertices;
-    TPodVector<unsigned short> vertGapIndices;
-    TPodVector<STerrainVertex> interiorTLVertices;
-    TPodVector<STerrainVertex> interiorTRVertices;
-    TPodVector<STerrainVertex> interiorBLVertices;
-    TPodVector<STerrainVertex> interiorBRVertices;
-    TPodVector<STerrainVertex> interiorFinestVertices;
-    TPodVector<unsigned short> interiorTLIndices;
-    TPodVector<unsigned short> interiorTRIndices;
-    TPodVector<unsigned short> interiorBLIndices;
-    TPodVector<unsigned short> interiorBRIndices;
-    TPodVector<unsigned short> interiorFinestIndices;
-    TPodVector<STerrainVertex> crackVertices;
-    TPodVector<unsigned short> crackIndices;
+    TVector<STerrainVertex> blockVerts;
+    TVector<unsigned short> blockIndices;
+    TVector<STerrainVertex> horGapVertices;
+    TVector<unsigned short> horGapIndices;
+    TVector<STerrainVertex> vertGapVertices;
+    TVector<unsigned short> vertGapIndices;
+    TVector<STerrainVertex> interiorTLVertices;
+    TVector<STerrainVertex> interiorTRVertices;
+    TVector<STerrainVertex> interiorBLVertices;
+    TVector<STerrainVertex> interiorBRVertices;
+    TVector<STerrainVertex> interiorFinestVertices;
+    TVector<unsigned short> interiorTLIndices;
+    TVector<unsigned short> interiorTRIndices;
+    TVector<unsigned short> interiorBLIndices;
+    TVector<unsigned short> interiorBRIndices;
+    TVector<unsigned short> interiorFinestIndices;
+    TVector<STerrainVertex> crackVertices;
+    TVector<unsigned short> crackIndices;
 
     HK_ASSERT(IsPowerOfTwo(InTextureSize));
 
@@ -372,7 +372,7 @@ ATerrainMesh::ATerrainMesh(int InTextureSize)
     int firstVert  = 0;
     int firstIndex = 0;
 
-    auto AddPatch = [&](STerrainPatch& Patch, TPodVector<STerrainVertex> const& VB, TPodVector<unsigned short> const& IB)
+    auto AddPatch = [&](STerrainPatch& Patch, TVector<STerrainVertex> const& VB, TVector<unsigned short> const& IB)
     {
         Patch.BaseVertex = firstVert;
         Patch.StartIndex = firstIndex;

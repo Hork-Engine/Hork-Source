@@ -255,7 +255,7 @@ int ASceneComponent::FindSocket(AStringView _Name) const
 {
     for (int socketIndex = 0; socketIndex < Sockets.Size(); socketIndex++)
     {
-        if (!Sockets[socketIndex].SocketDef->GetObjectName().Icmp(_Name))
+        if (!Sockets[socketIndex].SocketDef->Name.Icmp(_Name))
         {
             return socketIndex;
         }

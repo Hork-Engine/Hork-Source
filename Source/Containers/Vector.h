@@ -1101,4 +1101,4 @@ template <typename T, size_t BaseCapacity, typename OverflowAllocator = Allocato
 using TSmallVector = TFixedVector<T, BaseCapacity, true, OverflowAllocator>;
 
 template <typename T, typename Allocator = Allocators::HeapMemoryAllocator<HEAP_VECTOR>>
-using TPodVector = TFixedVector<T, 32, true, Allocator>;
+using TPodVector = TFixedVector<T, 32, true, Allocator>; // TODO: Deprecated. Remove this

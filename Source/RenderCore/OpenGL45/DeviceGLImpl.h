@@ -56,7 +56,7 @@ public:
 
     SWindowGL NewWindow();
 
-    TPodVector<SWindowGL> Pool;
+    TSmallVector<SWindowGL, 8> Pool;
 };
 
 struct SVertexLayoutDescGL

@@ -44,8 +44,8 @@ ASphereMesh::ASphereMesh( int _HDiv, int _VDiv )
 
     HK_ASSERT_( numVerts < 65536, "Too many vertices" );
 
-    TPodVector< Float3 > vertices;
-    TPodVector< unsigned short > indices;
+    TVector< Float3 > vertices;
+    TVector< unsigned short > indices;
 
     vertices.Resize( numVerts );
     indices.Resize( numIndices );

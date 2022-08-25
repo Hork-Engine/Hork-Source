@@ -42,9 +42,9 @@ SOFTWARE.
 
 HK_CLASS_META(AWorld)
 
-AWorld*             AWorld::PendingKillWorlds = nullptr;
-TPodVector<AWorld*> AWorld::Worlds;
-TPodVector<AWorld*> AWorld::TickingWorlds;
+AWorld*          AWorld::PendingKillWorlds = nullptr;
+TVector<AWorld*> AWorld::Worlds;
+TVector<AWorld*> AWorld::TickingWorlds;
 
 AWorld::AWorld()
 {

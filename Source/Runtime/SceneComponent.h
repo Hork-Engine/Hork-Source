@@ -253,7 +253,7 @@ protected:
 
     virtual void OnTransformDirty() {}
 
-    using AArrayOfSockets = TPodVector<SSocket>;
+    using AArrayOfSockets = TVector<SSocket>;
     AArrayOfSockets Sockets;
 
 private:

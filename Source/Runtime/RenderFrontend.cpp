@@ -1147,11 +1147,14 @@ void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
 
     AIndexedMeshSubpartArray const& subparts = mesh->GetSubparts();
 
-    bool bHasLightmap = lighting && InComponent->LightmapUVChannel && InComponent->LightmapBlock >= 0 && InComponent->LightmapBlock < lighting->Lightmaps.Size() && !r_VertexLight;
+    bool bHasLightmap = (lighting &&
+                         InComponent->bHasLightmap &&
+                         InComponent->LightmapBlock < lighting->Lightmaps.Size() &&
+                         !r_VertexLight &&
+                         mesh->HasLightmapUVs());
 
     for (int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++)
     {
-
         AIndexedMeshSubpart* subpart = subparts[subpartIndex];
 
         AMaterialInstance* materialInstance = InComponent->GetMaterialInstance(subpartIndex);
@@ -1190,7 +1193,7 @@ void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
 
         if (bHasLightmap)
         {
-            InComponent->LightmapUVChannel->GetVertexBufferGPU(&instance->LightmapUVChannel, &instance->LightmapUVOffset);
+            mesh->GetLightmapUVsGPU(&instance->LightmapUVChannel, &instance->LightmapUVOffset);
             instance->LightmapOffset = InComponent->LightmapOffset;
             instance->Lightmap       = lighting->Lightmaps[InComponent->LightmapBlock];
         }
@@ -1200,9 +1203,13 @@ void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
             instance->Lightmap          = nullptr;
         }
 
-        if (InComponent->VertexLightChannel)
+        if (InComponent->bHasVertexLight)
         {
-            InComponent->VertexLightChannel->GetVertexBufferGPU(&instance->VertexLightChannel, &instance->VertexLightOffset);
+            AVertexLight* vertexLight = level->GetVertexLight(InComponent->VertexLightChannel);
+            if (vertexLight && vertexLight->GetVertexCount() == mesh->GetVertexCount())
+            {
+                vertexLight->GetVertexBufferGPU(&instance->VertexLightChannel, &instance->VertexLightOffset);
+            }
         }
         else
         {

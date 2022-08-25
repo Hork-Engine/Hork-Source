@@ -43,7 +43,6 @@ class ATexture;
 class ASceneComponent;
 class AConvexHull;
 class AIndexedMesh;
-class ALightmapUV;
 class AVertexLight;
 class ADebugRenderer;
 struct SVisArea;
@@ -185,28 +184,21 @@ public:
     /** Destroy all actors in the level */
     void DestroyActors();
 
-    /** Create lightmap channel for a mesh to store lighmap UVs */
-    ALightmapUV* CreateLightmapUVChannel(AIndexedMesh* InSourceMesh);
-
     /** Create vertex light channel for a mesh to store light colors */
-    AVertexLight* CreateVertexLightChannel(AIndexedMesh* InSourceMesh);
+    uint32_t AddVertexLightChannel(AIndexedMesh* InSourceMesh);
 
-    /** Remove all lightmap channels inside the level */
-    void RemoveLightmapUVChannels();
+    void RemoveVertexLightChannel(uint32_t VertexLightChannel);
 
     /** Remove all vertex light channels inside the level */
     void RemoveVertexLightChannels();
 
-    /** Get all lightmap channels inside the level */
-    TPodVector<ALightmapUV*> const& GetLightmapUVChannels() const { return LightmapUVs; }
+    AVertexLight* GetVertexLight(uint32_t VertexLightChannel);
 
     /** Get all vertex light channels inside the level */
-    TPodVector<AVertexLight*> const& GetVertexLightChannels() const { return VertexLightChannels; }
+    TVector<AVertexLight*> const& GetVertexLightChannels() const { return VertexLightChannels; }
 
     /** Sample lightmap by texture coordinate */
     Float3 SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord) const;
-
-    
 
     ALevel();
     ~ALevel();
@@ -230,6 +222,6 @@ private:
     /** Array of actors */
     TPodVector<AActor*> Actors;
 
-    TPodVector<ALightmapUV*>  LightmapUVs;
-    TPodVector<AVertexLight*> VertexLightChannels;
+    TVector<AVertexLight*> VertexLightChannels;
+    TVector<uint32_t> FreeVertexLightChannels;
 };

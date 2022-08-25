@@ -81,7 +81,7 @@ public:
     void DestroyWorlds() { return AWorld::DestroyWorlds(); }
 
     /** Helper. Get all existing worlds */
-    TPodVector<AWorld*> const& GetWorlds() { return AWorld::GetWorlds(); }
+    TVector<AWorld*> const& GetWorlds() { return AWorld::GetWorlds(); }
 
     /** Get scale for Retina displays */
     Float2 const& GetRetinaScale() const { return RetinaScale; }

@@ -44,8 +44,6 @@ class ASceneComponent;
 class ABrushModel;
 class AConvexHull;
 class AIndexedMesh;
-class ALightmapUV;
-class AVertexLight;
 class ADebugRenderer;
 struct SVisArea;
 struct SPrimitiveDef;

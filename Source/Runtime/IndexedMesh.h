@@ -41,7 +41,6 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 
 class AIndexedMesh;
-class ALevel;
 struct SVertexHandle;
 
 template <typename VertexType>
@@ -57,19 +56,22 @@ ASocketDef
 Socket for attaching
 
 */
-class ASocketDef : public ABaseObject
+class ASocketDef : public ARefCounted
 {
-    HK_CLASS(ASocketDef, ABaseObject)
-
 public:
-    Float3 Position;
-    Float3 Scale;
-    Quat   Rotation;
-    int    JointIndex;
+    AString Name;
+    Float3  Position;
+    Float3  Scale = Float3(1);
+    Quat    Rotation;
+    int     JointIndex{-1};
 
-    ASocketDef() :
-        Position(0.0f), Scale(1.0f), Rotation(Quat::Identity()), JointIndex(-1)
+    void Read(IBinaryStreamReadInterface& stream)
     {
+        Name       = stream.ReadString();
+        JointIndex = stream.ReadUInt32();
+        stream.ReadObject(Position);
+        stream.ReadObject(Scale);
+        stream.ReadObject(Rotation);
     }
 };
 
@@ -80,15 +82,23 @@ AIndexedMeshSubpart
 Part of indexed mesh (submesh / element)
 
 */
-class AIndexedMeshSubpart : public ABaseObject
+class AIndexedMeshSubpart : public ARefCounted
 {
-    HK_CLASS(AIndexedMeshSubpart, ABaseObject)
-
     friend class AIndexedMesh;
 
 public:
     AIndexedMeshSubpart();
     ~AIndexedMeshSubpart();
+
+    void SetName(AStringView Name)
+    {
+        m_Name = Name;
+    }
+
+    AString const& GetName() const
+    {
+        return m_Name;
+    }
 
     void SetBaseVertex(int BaseVertex);
     void SetFirstIndex(int FirstIndex);
@@ -118,6 +128,8 @@ public:
 
     void DrawBVH(ADebugRenderer* pRenderer, Float3x4 const& TransformMatrix);
 
+    void Read(IBinaryStreamReadInterface& stream);
+
 private:
     AIndexedMesh*            m_OwnerMesh = nullptr;
     BvAxisAlignedBox         m_BoundingBox;
@@ -128,53 +140,7 @@ private:
     TRef<AMaterialInstance>  m_MaterialInstance;
     std::unique_ptr<BvhTree> m_bvhTree;
     bool                     m_bAABBTreeDirty = false;
-};
-
-/**
-
-ALightmapUV
-
-Lightmap UV channel
-
-*/
-class ALightmapUV : public ABaseObject
-{
-    HK_CLASS(ALightmapUV, ABaseObject)
-
-    friend class AIndexedMesh;
-
-public:
-    void Initialize(AIndexedMesh* pSourceMesh, ALevel* pLightingLevel);
-    void Purge();
-
-    SMeshVertexUV*       GetVertices() { return m_Vertices.ToPtr(); }
-    SMeshVertexUV const* GetVertices() const { return m_Vertices.ToPtr(); }
-    int                  GetVertexCount() const { return m_Vertices.Size(); }
-
-    bool SendVertexDataToGPU(int VerticesCount, int StartVertexLocation);
-    bool WriteVertexData(SMeshVertexUV const* Vertices, int VerticesCount, int StartVertexLocation);
-
-    void GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
-
-    AIndexedMesh* GetSourceMesh() { return m_SourceMesh; }
-
-    ALevel* GetLightingLevel() { return m_LightingLevel; }
-
-    ALightmapUV();
-    ~ALightmapUV();
-
-protected:
-    void Invalidate() { m_bInvalid = true; }
-
-private:
-    static void* GetVertexMemory(void* _This);
-
-    SVertexHandle*                  m_VertexBufferGPU = nullptr;
-    TRef<AIndexedMesh>              m_SourceMesh;
-    TWeakRef<ALevel>                m_LightingLevel;
-    int                             m_IndexInArrayOfUVs = -1;
-    TVertexBufferCPU<SMeshVertexUV> m_Vertices;
-    bool                            m_bInvalid = false;
+    AString                  m_Name;
 };
 
 /**
@@ -184,15 +150,11 @@ AVertexLight
 Vertex light channel
 
 */
-class AVertexLight : public ABaseObject
+class AVertexLight : public ARefCounted
 {
-    HK_CLASS(AVertexLight, ABaseObject)
-
-    friend class AIndexedMesh;
-
 public:
-    void Initialize(AIndexedMesh* pSourceMesh, ALevel* pLightingLevel);
-    void Purge();
+    AVertexLight(AIndexedMesh* pSourceMesh);
+    ~AVertexLight();
 
     SMeshVertexLight*       GetVertices() { return m_Vertices.ToPtr(); }
     SMeshVertexLight const* GetVertices() const { return m_Vertices.ToPtr(); }
@@ -203,30 +165,14 @@ public:
 
     void GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
 
-    AIndexedMesh* GetSourceMesh() { return m_SourceMesh; }
-
-    ALevel* GetLightingLevel() { return m_LightingLevel; }
-
-    AVertexLight();
-    ~AVertexLight();
-
-protected:
-    void Invalidate() { m_bInvalid = true; }
-
 private:
     static void* GetVertexMemory(void* _This);
 
     SVertexHandle*                     m_VertexBufferGPU = nullptr;
-    TRef<AIndexedMesh>                 m_SourceMesh;
-    TWeakRef<ALevel>                   m_LightingLevel;
-    int                                m_IndexInArrayOfChannels = -1;
     TVertexBufferCPU<SMeshVertexLight> m_Vertices;
-    bool                               m_bInvalid = false;
 };
 
-using ALightmapUVChannels      = TPodVector<ALightmapUV*>;
-using AVertexLightChannels     = TPodVector<AVertexLight*>;
-using AIndexedMeshSubpartArray = TPodVector<AIndexedMeshSubpart*>;
+using AIndexedMeshSubpartArray = TVector<AIndexedMeshSubpart*>;
 
 struct SSoftbodyLink
 {
@@ -270,8 +216,6 @@ class AIndexedMesh : public AResource
 {
     HK_CLASS(AIndexedMesh, AResource)
 
-    friend class ALightmapUV;
-    friend class AVertexLight;
     friend class AIndexedMeshSubpart;
 
 public:
@@ -373,6 +317,9 @@ public:
     /** Get weights for vertex skinning */
     SMeshVertexSkin const* GetWeights() const { return m_Weights.ToPtr(); }
 
+    SMeshVertexUV* GetLigtmapUVs() { return m_LightmapUVs.ToPtr(); }
+    SMeshVertexUV const* GetLigtmapUVs() const { return m_LightmapUVs.ToPtr(); }
+
     /** Get mesh indices */
     unsigned int* GetIndices() { return m_Indices.ToPtr(); }
 
@@ -391,12 +338,6 @@ public:
     /** Max primitives per leaf. For raycasting */
     unsigned int GetRaycastPrimitivesPerLeaf() const { return m_RaycastPrimitivesPerLeaf; }
 
-    /** Get all lightmap channels for the mesh */
-    ALightmapUVChannels const& GetLightmapUVChannels() const { return m_LightmapUVs; }
-
-    /** Get all vertex light channels for the mesh */
-    AVertexLightChannels const& GetVertexLightChannels() const { return m_VertexLightChannels; }
-
     /** Write vertices at location and send them to GPU */
     bool SendVertexDataToGPU(int VerticesCount, int StartVertexLocation);
 
@@ -408,6 +349,9 @@ public:
 
     /** Write joint weights at location and send them to GPU */
     bool WriteJointWeights(SMeshVertexSkin const* Vertices, int VerticesCount, int StartVertexLocation);
+
+    bool SendLightmapUVsToGPU(int VerticesCount, int StartVertexLocation);
+    bool WriteLightmapUVsData(SMeshVertexUV const* UVs, int VerticesCount, int StartVertexLocation);
 
     /** Write indices at location and send them to GPU */
     bool SendIndexDataToGPU(int IndexCount, int StartIndexLocation);
@@ -423,6 +367,7 @@ public:
     void GetVertexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
     void GetIndexBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
     void GetWeightsBufferGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
+    void GetLightmapUVsGPU(RenderCore::IBuffer** ppBuffer, size_t* pOffset);
 
     /** Check ray intersection. Result is unordered by distance to save performance */
     bool Raycast(Float3 const& RayStart, Float3 const& RayDir, float Distance, bool bCullBackFace, TPodVector<STriangleHitResult>& HitResult) const;
@@ -446,6 +391,8 @@ public:
 
     void NotifyMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag);
 
+    bool HasLightmapUVs() const { return m_LightmapUVsGPU != nullptr; }
+
 protected:
     void Initialize(int NumVertices, int NumIndices, int NumSubparts, bool bSkinnedMesh = false);
 
@@ -458,18 +405,20 @@ protected:
     const char* GetDefaultResourcePath() const override { return "/Default/Meshes/Box"; }
 
 private:
-    void InvalidateChannels();
-
     static void* GetVertexMemory(void* _This);
     static void* GetIndexMemory(void* _This);
     static void* GetWeightMemory(void* _This);
+    static void* GetLightmapUVMemory(void* _This);
+
+    void AddLightmapUVs();
 
     SVertexHandle*            m_VertexHandle  = nullptr;
     SVertexHandle*            m_IndexHandle   = nullptr;
     SVertexHandle*            m_WeightsHandle = nullptr;
     AIndexedMeshSubpartArray  m_Subparts;
-    ALightmapUVChannels       m_LightmapUVs;
-    AVertexLightChannels      m_VertexLightChannels;
+
+    SVertexHandle*                  m_LightmapUVsGPU = nullptr;
+    TVertexBufferCPU<SMeshVertexUV> m_LightmapUVs;
 
     TVertexBufferCPU<SMeshVertex>     m_Vertices;
     TVertexBufferCPU<SMeshVertexSkin> m_Weights;

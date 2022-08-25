@@ -45,8 +45,8 @@ struct BvhSplit
 
 struct BvhBuildContext
 {
-    TPodVector<BvAxisAlignedBox>   RightBounds;
-    TPodVector<BvhPrimitiveBounds> Primitives[3];
+    TVector<BvAxisAlignedBox>   RightBounds;
+    TVector<BvhPrimitiveBounds> Primitives[3];
 };
 
 static void CalcNodeBounds(BvhPrimitiveBounds const* Primitives, int PrimCount, BvAxisAlignedBox& Bounds)

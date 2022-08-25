@@ -135,7 +135,7 @@ public:
     static void DestroyWorlds();
 
     /** Get array of worlds */
-    static TPodVector<AWorld*> const& GetWorlds() { return Worlds; }
+    static TVector<AWorld*> const& GetWorlds() { return Worlds; }
 
     /** Tick the worlds */
     static void UpdateWorlds(float TimeStep);
@@ -183,7 +183,7 @@ public:
     AActor* SpawnActor2(AActor const* Template, STransform const& SpawnTransform = {}, AActor* Instigator = {}, ALevel* Level = {}, bool bInEditor = {});
 
     /** Get all actors in the world */
-    TPodVector<AActor*> const& GetActors() const { return Actors; }
+    TVector<AActor*> const& GetActors() const { return Actors; }
 
     /** Destroy this world */
     void Destroy();
@@ -201,7 +201,7 @@ public:
     ALevel* GetPersistentLevel() { return PersistentLevel; }
 
     /** Get all levels in the world */
-    TPodVector<ALevel*> const& GetArrayOfLevels() const { return ArrayOfLevels; }
+    TVector<ALevel*> const& GetArrayOfLevels() const { return ArrayOfLevels; }
 
     /** Pause the game. Freezes world and actor ticking since the next game tick. */
     void SetPaused(bool _Paused);
@@ -442,12 +442,12 @@ private:
 
     void KillActors(bool bClearSpawnQueue = false);
 
-    TPodVector<AActor*>          Actors;
-    TPodVector<AActor*>          TickingActors;
-    TPodVector<AActor*>          PrePhysicsTickActors;
-    TPodVector<AActor*>          PostPhysicsTickActors;
-    TPodVector<AActor*>          LateUpdateActors;
-    TPodVector<AActorComponent*> TickingComponents;
+    TVector<AActor*>          Actors;
+    TVector<AActor*>          TickingActors;
+    TVector<AActor*>          PrePhysicsTickActors;
+    TVector<AActor*>          PostPhysicsTickActors;
+    TVector<AActor*>          LateUpdateActors;
+    TVector<AActorComponent*> TickingComponents;
 
     bool bPauseRequest       = false;
     bool bUnpauseRequest     = false;
@@ -473,12 +473,12 @@ private:
     static AWorld* PendingKillWorlds;
 
     // All existing worlds
-    static TPodVector<AWorld*> Worlds;
+    static TVector<AWorld*> Worlds;
     // The worlds that are ticking
-    static TPodVector<AWorld*> TickingWorlds;
+    static TVector<AWorld*> TickingWorlds;
 
-    TRef<ALevel>        PersistentLevel;
-    TPodVector<ALevel*> ArrayOfLevels;
+    TRef<ALevel>     PersistentLevel;
+    TVector<ALevel*> ArrayOfLevels;
 
     /** Scale audio volume in the entire world */
     float AudioVolume = 1.0f;
@@ -614,8 +614,8 @@ struct TActorIterator2
     }
 
 private:
-    TPodVector<AActor*> const& Actors;
-    int                        i;
+    TVector<AActor*> const& Actors;
+    int                     i;
 };
 
 /*

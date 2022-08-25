@@ -51,16 +51,16 @@ class AMeshComponent : public ADrawable,  private AIndexedMeshListener
 
 public:
     /** Lightmap atlas index */
-    int LightmapBlock = 0;
+    uint32_t LightmapBlock = 0;
 
     /** Lighmap channel UV offset and scale */
     Float4 LightmapOffset = Float4(0, 0, 1, 1);
 
-    /** Lightmap UV channel */
-    TRef<ALightmapUV> LightmapUVChannel;
+    bool bHasLightmap = false;
 
     /** Baked vertex light channel */
-    TRef<AVertexLight> VertexLightChannel;
+    uint32_t VertexLightChannel = 0;
+    bool     bHasVertexLight = false;
 
     /** Flipbook animation page offset */
     unsigned int SubpartBaseVertexOffset = 0;

@@ -92,7 +92,7 @@ private:
     TRef<RenderCore::IBuffer> IndexBufferGPU;
 
     /** Vertex buffer in CPU. We keep it only for debug draw */
-    TPodVector<STerrainVertex> VertexBuffer;
+    TVector<STerrainVertex> VertexBuffer;
     /** Index buffer in CPU. We keep it only for debug draw */
-    TPodVector<unsigned short> IndexBuffer;
+    TVector<unsigned short> IndexBuffer;
 };

@@ -51,7 +51,6 @@ ALevel::ALevel()
 
 ALevel::~ALevel()
 {
-    RemoveLightmapUVChannels();
 }
 
 void ALevel::OnAddLevelToWorld()
@@ -121,42 +120,51 @@ void ALevel::DrawDebug(ADebugRenderer* InRenderer)
 #endif
 }
 
-ALightmapUV* ALevel::CreateLightmapUVChannel(AIndexedMesh* InSourceMesh)
+uint32_t ALevel::AddVertexLightChannel(AIndexedMesh* InSourceMesh)
 {
-    ALightmapUV* lightmapUV = CreateInstanceOf<ALightmapUV>();
-    lightmapUV->AddRef();
-    lightmapUV->Initialize(InSourceMesh, this);
-    LightmapUVs.Add(lightmapUV);
-    return lightmapUV;
-}
-
-void ALevel::RemoveLightmapUVChannels()
-{
-    for (ALightmapUV* lightmapUV : LightmapUVs)
+    uint32_t handle;
+    if (!FreeVertexLightChannels.IsEmpty())
     {
-        lightmapUV->Purge();
-        lightmapUV->RemoveRef();
+        handle = FreeVertexLightChannels.Last();
+        FreeVertexLightChannels.RemoveLast();
     }
-    LightmapUVs.Free();
+    else
+    {
+        handle = VertexLightChannels.Size();
+        VertexLightChannels.Add();
+    }
+
+    VertexLightChannels[handle] = CreateInstanceOf<AVertexLight>(InSourceMesh);
+
+    return handle;
 }
 
-AVertexLight* ALevel::CreateVertexLightChannel(AIndexedMesh* InSourceMesh)
+void ALevel::RemoveVertexLightChannel(uint32_t VertexLightChannel)
 {
-    AVertexLight* vertexLight = CreateInstanceOf<AVertexLight>();
-    vertexLight->AddRef();
-    vertexLight->Initialize(InSourceMesh, this);
-    VertexLightChannels.Add(vertexLight);
-    return vertexLight;
+    if (VertexLightChannel >= VertexLightChannels.Size() || VertexLightChannels[VertexLightChannel] == nullptr)
+        return;
+
+    VertexLightChannels[VertexLightChannel]->RemoveRef();
+    VertexLightChannels[VertexLightChannel] = nullptr;
+
+    FreeVertexLightChannels.Add(VertexLightChannel);
 }
 
 void ALevel::RemoveVertexLightChannels()
 {
     for (AVertexLight* vertexLight : VertexLightChannels)
     {
-        vertexLight->Purge();
         vertexLight->RemoveRef();
     }
     VertexLightChannels.Free();
+    FreeVertexLightChannels.Free();
+}
+
+AVertexLight* ALevel::GetVertexLight(uint32_t VertexLightChannel)
+{
+    if (VertexLightChannel < VertexLightChannels.Size())
+        return VertexLightChannels[VertexLightChannel];
+    return nullptr;
 }
 
 ALevelLighting::ALevelLighting(SLightingSystemCreateInfo const& CreateInfo)
