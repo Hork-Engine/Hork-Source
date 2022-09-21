@@ -562,9 +562,9 @@ struct TActorIterator
     }
 
 private:
-    TPodVector<AActor*> const& Actors;
-    T*                         Actor;
-    int                        i;
+    TVector<AActor*> const& Actors;
+    T*                      Actor;
+    int                     i;
 };
 
 /*
@@ -740,6 +740,6 @@ struct TComponentIterator2
     }
 
 private:
-    TPodVector<AActorComponent*> const& Components;
-    int                                 i;
+    AArrayOfActorComponents const& Components;
+    int                            i;
 };
