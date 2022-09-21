@@ -105,9 +105,9 @@ public:
 
     bool IsCursorVisible() const { return bCursorVisible; }
 
-    void SetCursor(EDrawCursor _Cursor) { Cursor = _Cursor; }
+    void SetCursor(DRAW_CURSOR _Cursor) { Cursor = _Cursor; }
 
-    EDrawCursor GetCursor() const { return Cursor; }
+    DRAW_CURSOR GetCursor() const { return Cursor; }
 
     WDesktop& SetDrawBackground(bool _DrawBackground)
     {
@@ -215,7 +215,7 @@ private:
     Float2                   DraggingCursor;
     Float2                   DraggingWidgetPos;
     Float2                   CursorPosition;
-    EDrawCursor              Cursor;
+    DRAW_CURSOR              Cursor;
     bool                     bCursorVisible;
     bool                     bDrawBackground;
 };

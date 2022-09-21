@@ -43,6 +43,24 @@ WViewport::~WViewport()
 {
 }
 
+WViewport& WViewport::SetRounding(RoundingDesc const& rounding)
+{
+    Rounding = rounding;
+    return *this;
+}
+
+WViewport& WViewport::SetTint(Color4 const& tintColor)
+{
+    TintColor = tintColor;
+    return *this;
+}
+
+WViewport& WViewport::SetComposite(CANVAS_COMPOSITE composite)
+{
+    Composite = composite;
+    return *this;
+}
+
 void WViewport::OnTransformDirty()
 {
     Super::OnTransformDirty();
@@ -188,16 +206,29 @@ void WViewport::OnDrawEvent(ACanvas& InCanvas)
         AActor* pawn = PlayerController->GetPawn();
         if (pawn)
         {
-            InCanvas.DrawViewport(pawn->GetPawnCamera(), PlayerController->GetRenderingParameters(),
-                                  pos.X, pos.Y, size.X, size.Y, Color4::White(), 0, CORNER_ROUND_NONE, COLOR_BLENDING_DISABLED);
+            DrawViewportDesc desc;
+
+            desc.pCamera          = pawn->GetPawnCamera();
+            desc.pRenderingParams = PlayerController->GetRenderingParameters();
+            desc.X                = pos.X;
+            desc.Y                = pos.Y;
+            desc.W                = size.X;
+            desc.H                = size.Y;
+            desc.Rounding         = Rounding;
+            desc.Angle            = 0;
+            desc.TintColor        = TintColor;
+            desc.Composite        = Composite;
+
+            InCanvas.DrawViewport(desc);
         }
 
         AHUD* hud = PlayerController->GetHUD();
         if (hud)
         {
-            InCanvas.PushClipRect(mins, maxs, true);
+            InCanvas.Push();
+            InCanvas.IntersectScissor(mins, maxs);
             hud->Draw(&InCanvas, pos.X, pos.Y, size.X, size.Y);
-            InCanvas.PopClipRect();
+            InCanvas.Pop();
         }
     }
 

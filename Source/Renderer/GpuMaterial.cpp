@@ -384,29 +384,6 @@ static const SVertexAttribInfo VertexAttribsStaticVertexLight[] = {
      0, // InstanceDataStepRate
      HK_OFS(SMeshVertexLight, VertexLight)}};
 
-static const SVertexAttribInfo VertexAttribsHUD[] = {
-    {"InPosition",
-     0, // location
-     0, // buffer input slot
-     VAT_FLOAT2,
-     VAM_FLOAT,
-     0, // InstanceDataStepRate
-     HK_OFS(SHUDDrawVert, Position)},
-    {"InTexCoord",
-     1, // location
-     0, // buffer input slot
-     VAT_FLOAT2,
-     VAM_FLOAT,
-     0, // InstanceDataStepRate
-     HK_OFS(SHUDDrawVert, TexCoord)},
-    {"InColor",
-     2, // location
-     0, // buffer input slot
-     VAT_UBYTE4N,
-     VAM_FLOAT,
-     0, // InstanceDataStepRate
-     HK_OFS(SHUDDrawVert, Color)}};
-
 static const SVertexAttribInfo VertexAttribsTerrain[] = {
     {"InPosition",
      0, // location
@@ -852,66 +829,6 @@ void CreateNormalsPassPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const ch
     buffers[2].BufferBinding = BUFFER_BIND_CONSTANT; // skeleton
 
     pipelineCI.ResourceLayout.NumBuffers = _Skinned ? 3 : 2;
-    pipelineCI.ResourceLayout.Buffers    = buffers;
-
-    GDevice->CreatePipeline(pipelineCI, ppPipeline);
-}
-
-void CreateHUDPipeline(TRef<RenderCore::IPipeline>* ppPipeline, const char* _SourceCode, STextureSampler const* Samplers, int NumSamplers)
-{
-    SPipelineDesc           pipelineCI;
-    TPodVector<const char*> sources;
-
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
-    rsd.CullMode              = POLYGON_CULL_DISABLED;
-    rsd.bScissorEnable        = true;
-
-    SBlendingStateInfo& bsd = pipelineCI.BS;
-    bsd.RenderTargetSlots[0].SetBlendingPreset(BLENDING_ALPHA);
-
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
-    dssd.bDepthEnable            = false;
-    dssd.bDepthWrite             = false;
-
-    AString vertexAttribsShaderString = ShaderStringForVertexAttribs<AString>(VertexAttribsHUD, HK_ARRAY_SIZE(VertexAttribsHUD));
-
-    sources.Clear();
-    sources.Add("#define MATERIAL_PASS_COLOR\n");
-    sources.Add(vertexAttribsShaderString.CStr());
-    sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(VERTEX_SHADER, sources, pipelineCI.pVS);
-
-    sources.Clear();
-    sources.Add("#define MATERIAL_PASS_COLOR\n");
-    sources.Add(_SourceCode);
-    AShaderFactory::CreateShader(FRAGMENT_SHADER, sources, pipelineCI.pFS);
-
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
-
-    SVertexBindingInfo vertexBinding[1] = {};
-
-    vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(SHUDDrawVert);
-    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
-
-    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE(vertexBinding);
-    pipelineCI.pVertexBindings   = vertexBinding;
-
-    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(VertexAttribsHUD);
-    pipelineCI.pVertexAttribs   = VertexAttribsHUD;
-
-    SSamplerDesc samplers[MAX_SAMPLER_SLOTS];
-
-    CopyMaterialSamplers(&samplers[0], Samplers, NumSamplers);
-
-    pipelineCI.ResourceLayout.NumSamplers = NumSamplers;
-    pipelineCI.ResourceLayout.Samplers    = samplers;
-
-    SBufferInfo buffers[2];
-    buffers[0].BufferBinding             = BUFFER_BIND_CONSTANT; // view constants
-    buffers[1].BufferBinding             = BUFFER_BIND_CONSTANT; // drawcall constants
-    pipelineCI.ResourceLayout.NumBuffers = 2;
     pipelineCI.ResourceLayout.Buffers    = buffers;
 
     GDevice->CreatePipeline(pipelineCI, ppPipeline);
@@ -2037,7 +1954,9 @@ AMaterialGPU::AMaterialGPU(ACompiledMaterial const* pCompiledMaterial)
         }
         case MATERIAL_TYPE_HUD:
         case MATERIAL_TYPE_POSTPROCESS: {
+            #if 0
             CreateHUDPipeline(&HUDPipeline, code.CStr(), pCompiledMaterial->Samplers.ToPtr(), pCompiledMaterial->Samplers.Size());
+            #endif
             break;
         }
         default:

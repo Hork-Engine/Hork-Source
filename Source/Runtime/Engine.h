@@ -33,7 +33,7 @@ SOFTWARE.
 #include "FrameLoop.h"
 #include "Console.h"
 #include "GameModule.h"
-#include "FontAtlas.h"
+#include "Font.h"
 #include "WDesktop.h"
 #include "World.h"
 #include "RenderFrontend.h"
@@ -188,8 +188,6 @@ private:
 
     void DrawCanvas();
 
-    //void UpdateImgui();
-
     void ShowStats();
 
     void InitializeDirectories();
@@ -207,8 +205,6 @@ private:
     Float2 RetinaScale;
 
     bool bIsWindowVisible = false;
-
-    //class AImguiContext * ImguiContext;
 
     /** Frame update duration */
     float FrameDurationInSeconds = 0;

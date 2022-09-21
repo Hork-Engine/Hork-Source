@@ -45,10 +45,11 @@ class WTextEdit : public WWidget
 
 public:
     TWidgetEvent<WideChar const*> E_OnEnterPress;
-    TWidgetEvent<>                 E_OnEscapePress;
+    TWidgetEvent<>                E_OnEscapePress;
     TWidgetEvent<WideChar const*> E_OnTyping;
 
     WTextEdit& SetFont(AFont* _Font);
+    WTextEdit& SetFontSize(float _Size);
     WTextEdit& SetMaxChars(int _MaxChars);
     WTextEdit& SetFilterDecimal(bool _Enabled);
     WTextEdit& SetFilterHexadecimal(bool _Enabled);
@@ -138,7 +139,9 @@ public:
 
     int GetSelectionEnd() const;
 
-    AFont const* GetFont() const;
+    AFont* GetFont() const;
+
+    float GetFontSize() const;
 
     // FUTURE:
     // WTextEdit & SetSyntaxHighlighter( ISyntaxHighlighter * _SyntaxHighlighterInterface );
@@ -190,19 +193,20 @@ private:
     TRef<AFont> Font;
 
     TPodVector<WideChar> TextData;
-    int                   CurTextLength;
-    int                   MaxChars;
-    int                   CharacterFilter;
-    int                   InsertSpacesOnTab;
-    bool                  bSingleLine;
-    bool                  bReadOnly;
-    bool                  bPassword;
-    bool                  bCtrlEnterForNewLine;
-    bool                  bAllowTabInput;
-    bool                  bAllowUndo;
-    bool                  bCustomCharFilter;
-    bool                  bStartDragging;
-    bool                  bShouldKeepSelection;
-    STB_TexteditState*    Stb;
-    int                   TempCursor;
+    int                  CurTextLength;
+    int                  MaxChars;
+    int                  CharacterFilter;
+    int                  InsertSpacesOnTab;
+    bool                 bSingleLine;
+    bool                 bReadOnly;
+    bool                 bPassword;
+    bool                 bCtrlEnterForNewLine;
+    bool                 bAllowTabInput;
+    bool                 bAllowUndo;
+    bool                 bCustomCharFilter;
+    bool                 bStartDragging;
+    bool                 bShouldKeepSelection;
+    STB_TexteditState*   Stb;
+    int                  TempCursor;
+    float                FontSize{20};
 };

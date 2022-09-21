@@ -99,8 +99,6 @@ void ARenderFrontend::Render(AFrameLoop* InFrameLoop, ACanvas* InCanvas)
     FrameLoop = InFrameLoop;
 
     FrameData.FrameNumber = FrameNumber = FrameLoop->SysFrameNumber();
-    FrameData.DrawListHead              = nullptr;
-    FrameData.DrawListTail              = nullptr;
 
     Stat.FrontendTime       = Platform::SysMilliseconds();
     Stat.PolyCount          = 0;
@@ -110,9 +108,25 @@ void ARenderFrontend::Render(AFrameLoop* InFrameLoop, ACanvas* InCanvas)
     MaxViewportHeight = 1;
     Viewports.Clear();
 
-    RenderCanvas(InCanvas);
+    for (auto& viewport : InCanvas->GetViewports())
+    {
+        HK_ASSERT(viewport.Width > 0 && viewport.Height > 0);
 
-    //RenderImgui();
+        // Calc max viewport size
+        MaxViewportWidth  = Math::Max(MaxViewportWidth, viewport.Width);
+        MaxViewportHeight = Math::Max(MaxViewportHeight, viewport.Height);
+
+        Viewports.Add(&viewport);
+    }
+
+    AStreamedMemoryGPU* streamedMemory = FrameLoop->GetStreamedMemoryGPU();
+
+    FrameData.CanvasDrawData = InCanvas->GetDrawData();
+
+    if (FrameData.CanvasDrawData->VertexCount > 0)
+        FrameData.CanvasVertexData = streamedMemory->AllocateVertex(FrameData.CanvasDrawData->VertexCount * sizeof(CanvasVertex), FrameData.CanvasDrawData->Vertices);
+    else
+        FrameData.CanvasVertexData = 0;
 
     FrameData.RenderTargetMaxWidthP  = FrameData.RenderTargetMaxWidth;
     FrameData.RenderTargetMaxHeightP = FrameData.RenderTargetMaxHeight;
@@ -163,11 +177,9 @@ void ARenderFrontend::Render(AFrameLoop* InFrameLoop, ACanvas* InCanvas)
 
     if (DebugDraw.CommandsCount() > 0)
     {
-        AStreamedMemoryGPU* streamedMemory = FrameLoop->GetStreamedMemoryGPU();
-
         FrameData.DbgCmds               = DebugDraw.GetCmds().ToPtr();
         FrameData.DbgVertexStreamOffset = streamedMemory->AllocateVertex(DebugDraw.GetVertices().Size() * sizeof(SDebugVertex), DebugDraw.GetVertices().ToPtr());
-        FrameData.DbgIndexStreamOffset  = streamedMemory->AllocateVertex(DebugDraw.GetIndices().Size() * sizeof(unsigned short), DebugDraw.GetIndices().ToPtr());
+        FrameData.DbgIndexStreamOffset = streamedMemory->AllocateIndex(DebugDraw.GetIndices().Size() * sizeof(unsigned short), DebugDraw.GetIndices().ToPtr());
     }
 
     Stat.FrontendTime = Platform::SysMilliseconds() - Stat.FrontendTime;
@@ -409,283 +421,6 @@ void ARenderFrontend::RenderView(int _Index)
         DebugDraw.EndRenderView();
     }
 }
-
-void ARenderFrontend::RenderCanvas(ACanvas* InCanvas)
-{
-    ImDrawList const* srcList = &InCanvas->GetDrawList();
-
-    if (srcList->VtxBuffer.empty())
-    {
-        return;
-    }
-
-    // Allocate draw list
-    SHUDDrawList* drawList = (SHUDDrawList*)FrameLoop->AllocFrameMem(sizeof(SHUDDrawList));
-
-    AStreamedMemoryGPU* streamedMemory = FrameLoop->GetStreamedMemoryGPU();
-
-    // Copy vertex data
-    drawList->VertexStreamOffset = streamedMemory->AllocateVertex(sizeof(SHUDDrawVert) * srcList->VtxBuffer.Size, srcList->VtxBuffer.Data);
-    drawList->IndexStreamOffset  = streamedMemory->AllocateIndex(sizeof(unsigned short) * srcList->IdxBuffer.Size, srcList->IdxBuffer.Data);
-
-    // Allocate commands
-    drawList->Commands = (SHUDDrawCmd*)FrameLoop->AllocFrameMem(sizeof(SHUDDrawCmd) * srcList->CmdBuffer.Size);
-
-    drawList->CommandsCount = 0;
-
-    // Parse ImDrawCmd, create HUDDrawCmd-s
-    SHUDDrawCmd* dstCmd = drawList->Commands;
-    for (ImDrawCmd const& cmd : srcList->CmdBuffer)
-    {
-        // TextureId can contain a viewport index, material instance or gpu texture
-        if (!cmd.TextureId)
-        {
-            LOG("ARenderFrontend::RenderCanvas: invalid command (TextureId==0)\n");
-            continue;
-        }
-
-        Platform::Memcpy(&dstCmd->ClipMins, &cmd.ClipRect, sizeof(Float4));
-        dstCmd->IndexCount         = cmd.ElemCount;
-        dstCmd->StartIndexLocation = cmd.IdxOffset;
-        dstCmd->BaseVertexLocation = cmd.VtxOffset;
-        dstCmd->Type               = (EHUDDrawCmd)(cmd.BlendingState & 0xff);
-        dstCmd->Blending           = (BLENDING_MODE)((cmd.BlendingState >> 8) & 0xff);
-        dstCmd->SamplerType        = (EHUDSamplerType)((cmd.BlendingState >> 16) & 0xff);
-
-        switch (dstCmd->Type)
-        {
-            case HUD_DRAW_CMD_VIEWPORT: {
-                // Unpack viewport
-                SViewport const* viewport = &InCanvas->GetViewports()[(size_t)cmd.TextureId - 1];
-
-                if (viewport->Width > 0 && viewport->Height > 0)
-                {
-                    // Save pointer to viewport to array of viewports
-                    Viewports.Add(viewport);
-
-                    // Set viewport index in array of viewports
-                    dstCmd->ViewportIndex = Viewports.Size() - 1;
-
-                    // Calc max viewport size
-                    MaxViewportWidth  = Math::Max(MaxViewportWidth, viewport->Width);
-                    MaxViewportHeight = Math::Max(MaxViewportHeight, viewport->Height);
-                }
-
-                break;
-            }
-
-            case HUD_DRAW_CMD_MATERIAL: {
-                // Unpack material instance
-                AMaterialInstance* materialInstance = static_cast<AMaterialInstance*>(cmd.TextureId);
-
-                // In normal case materialInstance never be null
-                HK_ASSERT(materialInstance);
-
-                // Get material
-                AMaterial* material = materialInstance->GetMaterial();
-
-                // GetMaterial never return null
-                HK_ASSERT(material);
-
-                // Check material type
-                if (material->GetType() != MATERIAL_TYPE_HUD)
-                {
-                    LOG("ARenderFrontend::RenderCanvas: expected MATERIAL_TYPE_HUD\n");
-                    continue;
-                }
-
-                // Update material frame data
-                dstCmd->MaterialFrameData = materialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
-
-                if (!dstCmd->MaterialFrameData)
-                {
-                    // Out of frame memory?
-                    continue;
-                }
-
-                break;
-            }
-
-            case HUD_DRAW_CMD_TEXTURE:
-            case HUD_DRAW_CMD_ALPHA: {
-                // Unpack texture
-                dstCmd->Texture = (RenderCore::ITexture*)cmd.TextureId;
-                break;
-            }
-
-            default:
-                LOG("ARenderFrontend::RenderCanvas: unknown command type\n");
-                continue;
-        }
-
-        // Switch to next cmd
-        dstCmd++;
-        drawList->CommandsCount++;
-    }
-
-    // Add drawList
-    SHUDDrawList* prev     = FrameData.DrawListTail;
-    drawList->pNext        = nullptr;
-    FrameData.DrawListTail = drawList;
-    if (prev)
-    {
-        prev->pNext = drawList;
-    }
-    else
-    {
-        FrameData.DrawListHead = drawList;
-    }
-}
-
-#if 0
-
-void ARenderFrontend::RenderImgui() {
-    ImDrawData * drawData = ImGui::GetDrawData();
-    if ( drawData && drawData->CmdListsCount > 0 ) {
-        // Avoid rendering when minimized, scale coordinates for retina displays (screen coordinates != framebuffer coordinates)
-        int fb_width = drawData->DisplaySize.x * drawData->FramebufferScale.x;
-        int fb_height = drawData->DisplaySize.y * drawData->FramebufferScale.y;
-        if ( fb_width == 0 || fb_height == 0 ) {
-            return;
-        }
-
-        if ( drawData->FramebufferScale.x != 1.0f || drawData->FramebufferScale.y != 1.0f ) {
-            drawData->ScaleClipRects( drawData->FramebufferScale );
-        }
-
-        bool bDrawMouseCursor = true;
-
-        if ( bDrawMouseCursor ) {
-            ImGuiMouseCursor cursor = ImGui::GetCurrentContext()->MouseCursor;
-
-            ImDrawList * drawList = drawData->CmdLists[ drawData->CmdListsCount - 1 ];
-            if ( cursor != ImGuiMouseCursor_None )
-            {
-                HK_ASSERT( cursor > ImGuiMouseCursor_None && cursor < ImGuiMouseCursor_COUNT );
-
-                const ImU32 col_shadow = IM_COL32( 0, 0, 0, 48 );
-                const ImU32 col_border = IM_COL32( 0, 0, 0, 255 );          // Black
-                const ImU32 col_fill = IM_COL32( 255, 255, 255, 255 );    // White
-
-                Float2 pos = AInputComponent::GetCursorPosition();
-                float scale = 1.0f;
-
-                ImFontAtlas* font_atlas = drawList->_Data->Font->ContainerAtlas;
-                Float2 offset, size, uv[ 4 ];
-                if ( font_atlas->GetMouseCursorTexData( cursor, (ImVec2*)&offset, (ImVec2*)&size, (ImVec2*)&uv[ 0 ], (ImVec2*)&uv[ 2 ] ) ) {
-                    pos -= offset;
-                    const ImTextureID tex_id = font_atlas->TexID;
-                    drawList->PushClipRectFullScreen();
-                    drawList->PushTextureID( tex_id );
-                    drawList->AddImage( tex_id, pos + Float2( 1, 0 )*scale, pos + Float2( 1, 0 )*scale + size*scale, uv[ 2 ], uv[ 3 ], col_shadow );
-                    drawList->AddImage( tex_id, pos + Float2( 2, 0 )*scale, pos + Float2( 2, 0 )*scale + size*scale, uv[ 2 ], uv[ 3 ], col_shadow );
-                    drawList->AddImage( tex_id, pos, pos + size*scale, uv[ 2 ], uv[ 3 ], col_border );
-                    drawList->AddImage( tex_id, pos, pos + size*scale, uv[ 0 ], uv[ 1 ], col_fill );
-                    drawList->PopTextureID();
-                    drawList->PopClipRect();
-                }
-            }
-        }
-
-        for ( int n = 0; n < drawData->CmdListsCount ; n++ ) {
-            RenderImgui( drawData->CmdLists[ n ] );
-        }
-    }
-}
-
-void ARenderFrontend::RenderImgui( ImDrawList const * _DrawList ) {
-    ImDrawList const * srcList = _DrawList;
-
-    if ( srcList->VtxBuffer.empty() ) {
-        return;
-    }
-
-    SHUDDrawList * drawList = ( SHUDDrawList * )FrameLoop->AllocFrameMem( sizeof( SHUDDrawList ) );
-
-    drawList->VerticesCount = srcList->VtxBuffer.size();
-    drawList->IndicesCount = srcList->IdxBuffer.size();
-    drawList->CommandsCount = srcList->CmdBuffer.size();
-
-    int bytesCount = sizeof( SHUDDrawVert ) * drawList->VerticesCount;
-    drawList->Vertices = ( SHUDDrawVert * )FrameLoop->AllocFrameMem( bytesCount );
-
-    Platform::Memcpy( drawList->Vertices, srcList->VtxBuffer.Data, bytesCount );
-
-    bytesCount = sizeof( unsigned short ) * drawList->IndicesCount;
-    drawList->Indices = ( unsigned short * )FrameLoop->AllocFrameMem( bytesCount );
-
-    Platform::Memcpy( drawList->Indices, srcList->IdxBuffer.Data, bytesCount );
-
-    bytesCount = sizeof( SHUDDrawCmd ) * drawList->CommandsCount;
-    drawList->Commands = ( SHUDDrawCmd * )FrameLoop->AllocFrameMem( bytesCount );
-
-    int startIndexLocation = 0;
-
-    SHUDDrawCmd * dstCmd = drawList->Commands;
-    for ( const ImDrawCmd * pCmd = srcList->CmdBuffer.begin() ; pCmd != srcList->CmdBuffer.end() ; pCmd++ ) {
-
-        Platform::Memcpy( &dstCmd->ClipMins, &pCmd->ClipRect, sizeof( Float4 ) );
-        dstCmd->IndexCount = pCmd->ElemCount;
-        dstCmd->StartIndexLocation = startIndexLocation;
-        dstCmd->Type = (EHUDDrawCmd)( pCmd->BlendingState & 0xff );
-        dstCmd->Blending = (BLENDING_MODE)( ( pCmd->BlendingState >> 8 ) & 0xff );
-        dstCmd->SamplerType = (EHUDSamplerType)( ( pCmd->BlendingState >> 16 ) & 0xff );
-
-        startIndexLocation += pCmd->ElemCount;
-
-        HK_ASSERT( pCmd->TextureId );
-
-        switch ( dstCmd->Type ) {
-        case HUD_DRAW_CMD_VIEWPORT:
-        {
-            drawList->CommandsCount--;
-            continue;
-        }
-
-        case HUD_DRAW_CMD_MATERIAL:
-        {
-            AMaterialInstance * materialInstance = static_cast< AMaterialInstance * >( pCmd->TextureId );
-            HK_ASSERT( materialInstance );
-
-            AMaterial * material = materialInstance->GetMaterial();
-            HK_ASSERT( material );
-
-            if ( material->GetType() != MATERIAL_TYPE_HUD ) {
-                drawList->CommandsCount--;
-                continue;
-            }
-
-            dstCmd->MaterialFrameData = materialInstance->PreRenderUpdate( FrameNumber );
-            HK_ASSERT( dstCmd->MaterialFrameData );
-
-            dstCmd++;
-
-            break;
-        }
-        case HUD_DRAW_CMD_TEXTURE:
-        case HUD_DRAW_CMD_ALPHA:
-        {
-            dstCmd->Texture = (RenderCore::ITexture *)pCmd->TextureId;
-            dstCmd++;
-            break;
-        }
-        default:
-            HK_ASSERT( 0 );
-            break;
-        }
-    }
-
-    SHUDDrawList * prev = FrameData.DrawListTail;
-    drawList->pNext = nullptr;
-    FrameData.DrawListTail = drawList;
-    if ( prev ) {
-        prev->pNext = drawList;
-    } else {
-        FrameData.DrawListHead = drawList;
-    }
-}
-
-#endif
 
 void ARenderFrontend::QueryVisiblePrimitives(AWorld* InWorld)
 {

@@ -28,12 +28,12 @@ SOFTWARE.
 
 */
 
-//#include "base/viewuniforms.glsl"
-
 layout( binding = 0, std140 ) uniform UniformBuffer0
 {
     // Ortho projection for canvas rendering
     mat4 OrthoProjection;
+	
+	vec4 ViewSize;
 };
 
 out gl_PerVertex
@@ -42,10 +42,11 @@ out gl_PerVertex
 };
 
 layout( location = 0 ) noperspective out vec2 VS_TexCoord;
-layout( location = 1 ) out vec4 VS_Color;
+layout( location = 1 ) noperspective out vec2 VS_Position;
 
 void main() {
     gl_Position = OrthoProjection * vec4( InPosition, 0.0, 1.0 );
     VS_TexCoord = InTexCoord;
-    VS_Color = InColor;
+	
+	VS_Position = InPosition;
 }

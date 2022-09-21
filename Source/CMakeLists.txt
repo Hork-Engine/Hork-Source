@@ -240,9 +240,11 @@ source_group( "RenderCore\\FrameGraph" FILES ${RenderCoreFrameGraph} )
 # Runtime module
 file( GLOB Runtime Runtime/*.h Runtime/*.cpp )
 file( GLOB RuntimeSTB Runtime/stb/*.h Runtime/stb/*.c )
+file( GLOB RuntimeNanoVG Runtime/nanovg/*.h Runtime/nanovg/*.c )
 
 source_group( "Runtime" FILES ${Runtime} )
 source_group( "Runtime\\stb" FILES ${RuntimeSTB} )
+source_group( "Runtime\\nanovg" FILES ${RuntimeNanoVG} )
 
 #---------------------------------------------------------------------
 # Audio module
@@ -306,6 +308,7 @@ ${RenderCoreFrameGraph}
 
 ${Runtime}
 ${RuntimeSTB}
+${RuntimeNanoVG}
 
 ${Audio}
 

@@ -71,11 +71,13 @@ class WTextDecorate : public WDecorate
 public:
     WTextDecorate& SetText(AStringView _Text);
     WTextDecorate& SetFont(AFont* _Font);
+    WTextDecorate& SetFontSize(float _FontSize);
     WTextDecorate& SetColor(Color4 const& _Color);
     WTextDecorate& SetHorizontalAlignment(EWidgetAlignment _Alignment);
     WTextDecorate& SetVerticalAlignment(EWidgetAlignment _Alignment);
     WTextDecorate& SetWordWrap(bool _WordWrap);
     WTextDecorate& SetOffset(Float2 const& _Offset);
+    WTextDecorate& SetShadow(bool bShadow);
 
     WTextDecorate();
     ~WTextDecorate();
@@ -83,16 +85,18 @@ public:
 protected:
     void OnDrawEvent(ACanvas& _Canvas) override;
 
-    AFont const* GetFont() const;
+    AFont* GetFont() const;
 
 private:
     TRef<AFont>      Font;
+    float            FontSize{20};
     AString          Text;
     Color4           Color;
     Float2           Offset;
     bool             bWordWrap;
     EWidgetAlignment HorizontalAlignment;
     EWidgetAlignment VerticalAlignment;
+    bool             bShadow = false;
 };
 
 class WBorderDecorate : public WDecorate
@@ -104,8 +108,12 @@ public:
     WBorderDecorate& SetFillBackground(bool _FillBackgrond);
     WBorderDecorate& SetBackgroundColor(Color4 const& _Color);
     WBorderDecorate& SetThickness(float _Thickness);
-    WBorderDecorate& SetRounding(float _Rounding);
-    WBorderDecorate& SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners);
+    WBorderDecorate& SetRoundingTL(float _Rounding);
+    WBorderDecorate& SetRoundingTR(float _Rounding);
+    WBorderDecorate& SetRoundingBL(float _Rounding);
+    WBorderDecorate& SetRoundingBR(float _Rounding);
+    WBorderDecorate& SetRounding(float roundingTL, float roundingTR, float roundingBL, float roundingBR);
+    WBorderDecorate& SetRounding(float rounding);
 
     WBorderDecorate();
     ~WBorderDecorate();
@@ -116,8 +124,7 @@ protected:
 private:
     Color4             Color;
     Color4             BgColor;
-    CORNER_ROUND_FLAGS RoundingCorners;
-    float              Rounding;
+    RoundingDesc       Rounding;
     float              Thickness;
     bool               bFillBackgrond;
 };
@@ -127,18 +134,28 @@ class WImageDecorate : public WDecorate
     HK_CLASS(WImageDecorate, WDecorate)
 
 public:
-    WImageDecorate& SetColor(Color4 const& _Color);
-    WImageDecorate& SetRounding(float _Rounding);
-    WImageDecorate& SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners);
+    WImageDecorate& SetTint(Color4 const& tintColor);
+    WImageDecorate& SetRoundingTL(float _Rounding);
+    WImageDecorate& SetRoundingTR(float _Rounding);
+    WImageDecorate& SetRoundingBL(float _Rounding);
+    WImageDecorate& SetRoundingBR(float _Rounding);
+    WImageDecorate& SetRounding(float roundingTL, float roundingTR, float roundingBL, float roundingBR);
+    WImageDecorate& SetRounding(float rounding);
+    WImageDecorate& SetAngle(float angle);
     WImageDecorate& SetTexture(ATexture* _Texture);
-    WImageDecorate& SetColorBlending(BLENDING_MODE _Blending);
-    WImageDecorate& SetSamplerType(EHUDSamplerType _SamplerType);
+    WImageDecorate& SetComposite(CANVAS_COMPOSITE composite);
     WImageDecorate& SetOffset(Float2 const& _Offset);
     WImageDecorate& SetSize(Float2 const& _Size);
     WImageDecorate& SetHorizontalAlignment(EWidgetAlignment _Alignment);
     WImageDecorate& SetVerticalAlignment(EWidgetAlignment _Alignment);
     WImageDecorate& SetUseOriginalSize(bool _UseOriginalSize);
-    WImageDecorate& SetUVs(Float2 const& _UV0, Float2 const& _UV1);
+    WImageDecorate& SetUVOffset(Float2 const& UVOffset);
+    WImageDecorate& SetUVScale(Float2 const& UVScale);
+    WImageDecorate& SetTiledX(bool bTiledX);
+    WImageDecorate& SetTiledY(bool bTiledY);
+    WImageDecorate& SetFlipY(bool bFlipY);
+    WImageDecorate& SetAlphaPremultiplied(bool bAlphaPremultiplied);
+    WImageDecorate& SetNearestFilter(bool bNearestFilter);
 
     WImageDecorate();
     ~WImageDecorate();
@@ -147,17 +164,21 @@ protected:
     void OnDrawEvent(ACanvas& _Canvas) override;
 
 private:
-    Color4             Color;
-    float              Rounding;
-    CORNER_ROUND_FLAGS RoundingCorners;
+    Color4             TintColor;
+    RoundingDesc       Rounding;
+    float              Angle{};
     TRef<ATexture>     Texture;
-    BLENDING_MODE      ColorBlending;
-    EHUDSamplerType    SamplerType;
+    CANVAS_COMPOSITE   Composite = CANVAS_COMPOSITE_SOURCE_OVER;
     Float2             Offset;
     Float2             Size;
-    Float2             UV0;
-    Float2             UV1;
-    bool               bUseOriginalSize;
+    Float2             m_UVOffset{0, 0};
+    Float2             m_UVScale{1, 1};
     EWidgetAlignment   HorizontalAlignment;
     EWidgetAlignment   VerticalAlignment;
+    bool               bTiledX : 1;
+    bool               bTiledY : 1;
+    bool               bFlipY : 1;
+    bool               bAlphaPremultiplied : 1;
+    bool               bNearestFilter : 1;
+    bool               bUseOriginalSize : 1;
 };

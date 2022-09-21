@@ -88,11 +88,11 @@ private:
 
     WideChar CmdLine[MAX_CMD_LINE_CHARS];
     WideChar StoryLines[MAX_STORY_LINES][MAX_CMD_LINE_CHARS];
-    float     ConHeight     = 0;
-    int       CmdLineLength = 0;
-    int       CmdLinePos    = 0;
-    int       NumStoryLines = 0;
-    int       CurStoryLine  = 0;
-    bool      bDown         = false;
-    bool      bFullscreen   = false;
+    float    ConHeight     = 0;
+    int      CmdLineLength = 0;
+    int      CmdLinePos    = 0;
+    int      NumStoryLines = 0;
+    int      CurStoryLine  = 0;
+    bool     bDown         = false;
+    bool     bFullscreen   = false;
 };

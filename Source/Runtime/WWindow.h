@@ -40,6 +40,7 @@ public:
     WWindow& SetCaptionText(const char* _CaptionText);
     WWindow& SetCaptionHeight(float _CaptionHeight);
     WWindow& SetCaptionFont(AFont* _Font);
+    WWindow& SetCaptionFontSize(float _FontSize);
     WWindow& SetTextColor(Color4 const& _Color);
     WWindow& SetTextHorizontalAlignment(EWidgetAlignment _Alignment);
     WWindow& SetTextVerticalAlignment(EWidgetAlignment _Alignment);
@@ -50,8 +51,7 @@ public:
     WWindow& SetBorderColor(Color4 const& _Color);
     WWindow& SetBorderThickness(float _Thickness);
     WWindow& SetBackgroundColor(Color4 const& _Color);
-    WWindow& SetRounding(float _Rounding);
-    WWindow& SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners);
+    WWindow& SetRounding(RoundingDesc const& _Rounding);
 
     WWindow();
     ~WWindow();
@@ -60,8 +60,8 @@ protected:
     void OnTransformDirty() override;
     void OnDrawEvent(ACanvas& _Canvas) override;
 
-    Float2       GetTextPositionWithAlignment(ACanvas& _Canvas) const;
-    AFont const* GetFont() const;
+    Float2 GetTextPositionWithAlignment(TextBounds const& textBounds) const;
+    AFont* GetFont() const;
 
 private:
     void UpdateDragShape();
@@ -70,6 +70,7 @@ private:
     AString            CaptionText;
     float              CaptionHeight;
     TRef<AFont>        Font;
+    float              FontSize{20};
     Color4             TextColor;
     Float2             TextOffset;
     bool               bWordWrap;
@@ -79,8 +80,7 @@ private:
     Color4             CaptionColorNotActive;
     Color4             BorderColor;
     Color4             BgColor;
-    CORNER_ROUND_FLAGS RoundingCorners;
-    float              BorderRounding;
+    RoundingDesc       BorderRounding;
     float              BorderThickness;
     bool               bWindowBorder;
     bool               bCaptionBorder;

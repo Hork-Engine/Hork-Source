@@ -67,5 +67,7 @@ public:
     PipelineRef OmniShadowPass[2];
     PipelineRef FeedbackPass[2];
     PipelineRef OutlinePass[2];
+    #if 0
     PipelineRef HUDPipeline;
+    #endif
 };

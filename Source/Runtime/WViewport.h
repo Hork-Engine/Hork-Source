@@ -44,6 +44,10 @@ public:
     WViewport();
     ~WViewport();
 
+    WViewport& SetRounding(RoundingDesc const& rounding);
+    WViewport& SetTint(Color4 const& tintColor);
+    WViewport& SetComposite(CANVAS_COMPOSITE composite);
+
 protected:
     void OnTransformDirty() override;
 
@@ -69,4 +73,7 @@ protected:
 
 private:
     TRef<APlayerController> PlayerController;
+    RoundingDesc            Rounding;
+    Color4                  TintColor;
+    CANVAS_COMPOSITE        Composite = CANVAS_COMPOSITE_COPY;
 };

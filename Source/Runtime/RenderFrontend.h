@@ -83,7 +83,6 @@ public:
     SRenderFrontendStat const& GetStat() const { return Stat; }
 
 private:
-    void RenderCanvas(ACanvas* InCanvas);
     void RenderView(int _Index);
 
     void QueryVisiblePrimitives(AWorld* InWorld);

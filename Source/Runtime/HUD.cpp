@@ -58,14 +58,13 @@ void AHUD::DrawText(AFont* _Font, int x, int y, Color4 const& color, const char*
     const int CharacterWidth  = 8;
     const int CharacterHeight = 16;
 
-    const float scale = (float)CharacterHeight / _Font->GetFontSize();
-
     const char* s = _Text;
     int         byteLen;
     WideChar   ch;
     int         cx = x;
 
-    Canvas->PushFont(_Font);
+    Canvas->FontFace(_Font);
+    Canvas->FontSize(CharacterHeight);
 
     while (*s)
     {
@@ -90,10 +89,8 @@ void AHUD::DrawText(AFont* _Font, int x, int y, Color4 const& color, const char*
             continue;
         }
 
-        Canvas->DrawWChar(ch, cx, y, scale, color);
+        Canvas->DrawWChar(ch, cx, y, color);
 
         cx += CharacterWidth;
     }
-
-    Canvas->PopFont();
 }

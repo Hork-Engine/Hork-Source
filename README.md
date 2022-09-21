@@ -156,7 +156,6 @@ PBR (physically based).
 * Bullet Physics
 * cgltf
 * Clipper
-* Dear ImGui
 * EASTL
 * FastLZ
 * fast_float
@@ -171,6 +170,7 @@ PBR (physically based).
 * miniaudio
 * Miniz
 * muFFT
+* nanovg
 * Recast & Detour
 * SDL2
 * stb

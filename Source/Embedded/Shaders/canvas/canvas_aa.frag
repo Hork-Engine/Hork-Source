@@ -28,23 +28,5 @@ SOFTWARE.
 
 */
 
-#include "base/viewuniforms.glsl"
-
-layout( location = 0 ) out vec4 FS_FragColor;
-
-layout( location = 0 ) centroid noperspective in vec2 VS_TexCoord;
-layout( location = 1 ) in vec4 VS_Color;
-
-layout( binding = 0 ) uniform sampler2D Smp_Source;
-
-void main() {
-    // Adjust texture coordinates for dynamic resolution
-#if 1 // Nearest filtering
-    vec2 tc = min( VS_TexCoord, vec2(1.0) - GetViewportSizeInverted() ) * GetDynamicResolutionRatio();
-#else // Linear filtering
-    vec2 tc = min( VS_TexCoord, vec2(1.0) ) * GetDynamicResolutionRatio();
-#endif
-    tc.y = 1.0 - tc.y;
-    
-    FS_FragColor = VS_Color * texture( Smp_Source, tc );
-}
+#define EDGE_AA
+#include "canvas/canvas.frag"

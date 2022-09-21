@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "Actor.h"
-#include "FontAtlas.h"
+#include "Font.h"
 
 class APlayerController;
 class ACanvas;

@@ -44,8 +44,8 @@ WWindow::WWindow()
     CaptionColor            = Color4(0.1f, 0.4f, 0.8f);
     CaptionColorNotActive   = Color4(0.15f, 0.15f, 0.15f);
     BorderColor             = Color4(1, 1, 1, 0.5f);
-    RoundingCorners         = CORNER_ROUND_TOP;
-    BorderRounding          = 8;
+    BorderRounding.RoundingTL = 8;
+    BorderRounding.RoundingTR = 8;
     BorderThickness         = 2;
     bWindowBorder           = true;
     bCaptionBorder          = true;
@@ -76,6 +76,12 @@ WWindow& WWindow::SetCaptionHeight(float _CaptionHeight)
 WWindow& WWindow::SetCaptionFont(AFont* _Font)
 {
     Font = _Font;
+    return *this;
+}
+
+WWindow& WWindow::SetCaptionFontSize(float _FontSize)
+{
+    FontSize = _FontSize;
     return *this;
 }
 
@@ -140,15 +146,9 @@ WWindow& WWindow::SetBackgroundColor(Color4 const& _Color)
     return *this;
 }
 
-WWindow& WWindow::SetRounding(float _Rounding)
+WWindow& WWindow::SetRounding(RoundingDesc const& _Rounding)
 {
     BorderRounding = _Rounding;
-    return *this;
-}
-
-WWindow& WWindow::SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners)
-{
-    RoundingCorners = _RoundingCorners;
     return *this;
 }
 
@@ -183,15 +183,14 @@ void WWindow::OnTransformDirty()
     UpdateDragShape();
 }
 
-Float2 WWindow::GetTextPositionWithAlignment(ACanvas& _Canvas) const
+Float2 WWindow::GetTextPositionWithAlignment(TextBounds const& textBounds) const
 {
     Float2 pos;
 
     const float width  = GetCurrentSize().X;
     const float height = CaptionHeight;
 
-    AFont const* font = GetFont();
-    Float2       size = font->CalcTextSizeA(font->GetFontSize(), width, bWordWrap ? width : 0.0f, CaptionText.Begin(), CaptionText.End());
+    Float2 size(textBounds.Width(), textBounds.Height());
 
     if (TextHorizontalAlignment == WIDGET_ALIGNMENT_LEFT)
     {
@@ -234,7 +233,7 @@ Float2 WWindow::GetTextPositionWithAlignment(ACanvas& _Canvas) const
     return pos;
 }
 
-AFont const* WWindow::GetFont() const
+AFont* WWindow::GetFont() const
 {
     return Font ? Font : ACanvas::GetDefaultFont();
 }
@@ -249,28 +248,21 @@ void WWindow::OnDrawEvent(ACanvas& _Canvas)
     {
         AWidgetShape const& windowShape = GetShape();
 
-        CORNER_ROUND_FLAGS bgCorners = CORNER_ROUND_NONE;
-        if (!IsMaximized())
-        {
-            if (RoundingCorners & CORNER_ROUND_BOTTOM_LEFT)
-            {
-                bgCorners |= CORNER_ROUND_BOTTOM_LEFT;
-            }
-            if (RoundingCorners & CORNER_ROUND_BOTTOM_RIGHT)
-            {
-                bgCorners |= CORNER_ROUND_BOTTOM_RIGHT;
-            }
-        }
-
         if (windowShape.IsEmpty())
         {
-            _Canvas.DrawRectFilled(mins + Float2(0, CaptionHeight), maxs, BgColor, BorderRounding, bgCorners);
+            RoundingDesc backgroundRounding;
+
+            if (!IsMaximized())
+            {
+                backgroundRounding.RoundingBL = BorderRounding.RoundingBL;
+                backgroundRounding.RoundingBR = BorderRounding.RoundingBR;
+            }
+
+            _Canvas.DrawRectFilled(mins + Float2(0, CaptionHeight), maxs, BgColor, backgroundRounding);
         }
         else
         {
-            // TODO: Draw triangulated concave polygon
-
-            _Canvas.DrawRectFilled(mins + Float2(0, CaptionHeight), maxs, BgColor, BorderRounding, bgCorners);
+            _Canvas.DrawPolyFilled(windowShape.ToPtr(), windowShape.Size(), BgColor);
         }
     }
 
@@ -283,7 +275,14 @@ void WWindow::OnDrawEvent(ACanvas& _Canvas)
 
         if (windowShape.IsEmpty())
         {
-            _Canvas.DrawRect(mins, maxs, BorderColor, BorderRounding, !IsMaximized() ? RoundingCorners : CORNER_ROUND_NONE, BorderThickness);
+            if (IsMaximized())
+            {
+                _Canvas.DrawRect(mins, maxs, BorderColor, BorderThickness);
+            }
+            else
+            {
+                _Canvas.DrawRect(mins, maxs, BorderColor, BorderThickness, BorderRounding);
+            }
         }
         else
         {
@@ -297,17 +296,11 @@ void WWindow::OnDrawEvent(ACanvas& _Canvas)
         float  width       = GetCurrentSize().X;
         Float2 captionSize = Float2(width, CaptionHeight);
 
-        CORNER_ROUND_FLAGS captionCorners = CORNER_ROUND_NONE;
+        RoundingDesc captionRounding;
         if (!IsMaximized())
         {
-            if (RoundingCorners & CORNER_ROUND_TOP_LEFT)
-            {
-                captionCorners |= CORNER_ROUND_TOP_LEFT;
-            }
-            if (RoundingCorners & CORNER_ROUND_TOP_RIGHT)
-            {
-                captionCorners |= CORNER_ROUND_TOP_RIGHT;
-            }
+            captionRounding.RoundingTL = BorderRounding.RoundingTL;
+            captionRounding.RoundingTR = BorderRounding.RoundingTR;
         }
 
         WWidget* focus = GetDesktop()->GetFocusWidget();
@@ -316,28 +309,33 @@ void WWindow::OnDrawEvent(ACanvas& _Canvas)
         // Draw caption
         if (focus)
         {
-            _Canvas.DrawRectFilled(mins, mins + captionSize, CaptionColor, BorderRounding, captionCorners);
+            _Canvas.DrawRectFilled(mins, mins + captionSize, CaptionColor, captionRounding);
         }
         else
         {
-            _Canvas.DrawRectFilled(mins, mins + captionSize, CaptionColorNotActive, BorderRounding, captionCorners);
+            _Canvas.DrawRectFilled(mins, mins + captionSize, CaptionColorNotActive, captionRounding);
         }
 
         // Draw caption border
         if (bCaptionBorder)
         {
-            _Canvas.DrawRect(mins, mins + captionSize, BorderColor, BorderRounding, captionCorners, BorderThickness);
+            _Canvas.DrawRect(mins, mins + captionSize, BorderColor, BorderThickness, captionRounding);
         }
 
         // Draw caption text
         if (!CaptionText.IsEmpty())
         {
-            AFont const* font = GetFont();
-            _Canvas.PushFont(font);
-            _Canvas.PushClipRect(mins, mins + captionSize, true);
-            _Canvas.DrawTextUTF8(font->GetFontSize(), mins + GetTextPositionWithAlignment(_Canvas), TextColor, CaptionText, bWordWrap ? width : 0.0f);
-            _Canvas.PopClipRect();
-            _Canvas.PopFont();
+            AFont* font = GetFont();
+            _Canvas.FontFace(font);
+            _Canvas.FontSize(FontSize);
+            TextBounds textBounds;
+            _Canvas.GetTextBoxBounds(0, 0, width, CaptionText, textBounds);
+            Float2 offset = GetTextPositionWithAlignment(textBounds);
+            _Canvas.IntersectScissor(mins, mins + captionSize);
+            if (bWordWrap)
+                _Canvas.DrawTextWrapUTF8(mins + offset, TextColor, CaptionText, width);
+            else
+                _Canvas.DrawTextUTF8(mins + offset, TextColor, CaptionText);
         }
     }
 }

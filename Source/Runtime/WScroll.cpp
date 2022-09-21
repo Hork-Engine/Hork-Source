@@ -704,7 +704,7 @@ void WScroll::OnDrawEvent(ACanvas& _Canvas)
         // Draw slider
         if (geometry.HSliderMaxs.X > geometry.HSliderMins.X && geometry.HSliderMaxs.Y > geometry.HSliderMins.Y)
         {
-            _Canvas.DrawRectFilled(geometry.HSliderMins, geometry.HSliderMaxs, SliderColor, SliderRounding);
+            _Canvas.DrawRectFilled(geometry.HSliderMins, geometry.HSliderMaxs, SliderColor, RoundingDesc(SliderRounding));
         }
     }
 
@@ -734,7 +734,7 @@ void WScroll::OnDrawEvent(ACanvas& _Canvas)
         // Draw slider
         if (geometry.VSliderMaxs.X > geometry.VSliderMins.X && geometry.VSliderMaxs.Y > geometry.VSliderMins.Y)
         {
-            _Canvas.DrawRectFilled(geometry.VSliderMins, geometry.VSliderMaxs, SliderColor, SliderRounding);
+            _Canvas.DrawRectFilled(geometry.VSliderMins, geometry.VSliderMaxs, SliderColor, RoundingDesc(SliderRounding));
         }
     }
 }

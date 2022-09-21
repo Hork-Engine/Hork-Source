@@ -499,7 +499,6 @@ void WDesktop::GenerateMouseButtonEvents(struct SMouseButtonEvent const& _Event,
 
     if (_Event.Action == IA_PRESS)
     {
-
         if (Popup)
         {
             Float2 mins, maxs;
@@ -538,7 +537,6 @@ void WDesktop::GenerateMouseButtonEvents(struct SMouseButtonEvent const& _Event,
         }
         if (widget && widget->IsVisible())
         {
-
             widget->SetFocus();
             widget->BringOnTop();
 
@@ -546,10 +544,8 @@ void WDesktop::GenerateMouseButtonEvents(struct SMouseButtonEvent const& _Event,
             uint64_t clickTime        = newMouseTimeMsec - MouseClickTime;
             if (IsSame(MouseClickWidget, widget) && clickTime < DOUBLECLICKTIME_MSEC && CursorPosition.X > MouseClickPos.X - DOUBLECLICKHALFSIZE && CursorPosition.X < MouseClickPos.X + DOUBLECLICKHALFSIZE && CursorPosition.Y > MouseClickPos.Y - DOUBLECLICKHALFSIZE && CursorPosition.Y < MouseClickPos.Y + DOUBLECLICKHALFSIZE)
             {
-
                 if (!widget->IsDisabled())
                 {
-
                     if (_Event.Button == 0)
                     {
                         if (widget->GetStyle() & WIDGET_STYLE_RESIZABLE)
@@ -683,7 +679,6 @@ bool WDesktop::HandleDraggingWidget()
 
     if (DraggingWidget->GetStyle() & WIDGET_STYLE_RESIZABLE)
     {
-
         if (DraggingWidget->IsMaximized())
         {
             DraggingWidget->SetNormal();
@@ -736,7 +731,6 @@ bool WDesktop::HandleDraggingWidget()
 
 void WDesktop::GenerateMouseMoveEvents(struct SMouseMoveEvent const& _Event, double _TimeStamp)
 {
-
     if (HandleDraggingWidget())
     {
         return;
@@ -782,7 +776,6 @@ void WDesktop::GenerateMouseMoveEvents(struct SMouseMoveEvent const& _Event, dou
 
     if (widget)
     {
-
         if (!widget->IsDisabled())
         {
             widget->ForwardMouseMoveEvent(_Event, _TimeStamp);
@@ -889,7 +882,11 @@ void WDesktop::GenerateDrawEvents(ACanvas& _Canvas)
     Float2 mins, maxs;
     Root->GetDesktopRect(mins, maxs, false);
 
-    _Canvas.PushClipRect(mins, maxs);
+    _Canvas.Push(CANVAS_SAVE_RESET);
+
+    _Canvas.TextAlign(CANVAS_TEXT_ALIGN_LEFT | CANVAS_TEXT_ALIGN_TOP);
+
+    _Canvas.Scissor(mins, maxs);
 
     if (bDrawBackground)
     {
@@ -916,9 +913,7 @@ void WDesktop::GenerateDrawEvents(ACanvas& _Canvas)
         }
     }
 
-    //_Canvas.DrawCircleFilled( CursorPosition, 5.0f, Color4(1,0,0) );
-
-    _Canvas.PopClipRect();
+    _Canvas.Pop();
 }
 
 void WDesktop::MarkTransformDirty()
@@ -928,13 +923,15 @@ void WDesktop::MarkTransformDirty()
 
 void WDesktop::OnDrawBackground(ACanvas& _Canvas)
 {
-    _Canvas.DrawRectFilled(_Canvas.GetClipMins(), _Canvas.GetClipMaxs(), Color4(0.03f, 0.03f, 0.03f, 1.0f));
-    //_Canvas.DrawRectFilled( _Canvas.GetClipMins(), _Canvas.GetClipMaxs(), Color4::Black() );
+    Float2 sz = Root->GetSize();
+
+    _Canvas.DrawRectFilled(Float2(0.0f), sz, Color4(0.03f, 0.03f, 0.03f, 1.0f));
 }
 
 void WDesktop::DrawCursor(ACanvas& _Canvas)
 {
-    _Canvas.DrawCursor(Cursor, CursorPosition, Color4::White(), Color4(0, 0, 0, 1), Color4(0, 0, 0, 0.3f));
+    _Canvas.ResetScissor();
+    _Canvas.DrawCursor(Cursor, CursorPosition);
 }
 
 void WDesktop::SetShortcuts(AShortcutContainer* _ShortcutContainer)

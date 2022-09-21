@@ -74,6 +74,12 @@ WTextDecorate& WTextDecorate::SetFont(AFont* _Font)
     return *this;
 }
 
+WTextDecorate& WTextDecorate::SetFontSize(float _FontSize)
+{
+    FontSize = _FontSize;
+    return *this;
+}
+
 WTextDecorate& WTextDecorate::SetColor(Color4 const& _Color)
 {
     Color = _Color;
@@ -104,7 +110,13 @@ WTextDecorate& WTextDecorate::SetOffset(Float2 const& _Offset)
     return *this;
 }
 
-AFont const* WTextDecorate::GetFont() const
+WTextDecorate& WTextDecorate::SetShadow(bool _bShadow)
+{
+    bShadow = _bShadow;
+    return *this;
+}
+
+AFont* WTextDecorate::GetFont() const
 {
     return Font ? Font : ACanvas::GetDefaultFont();
 }
@@ -113,10 +125,18 @@ void WTextDecorate::OnDrawEvent(ACanvas& _Canvas)
 {
     Float2       ownerSize = GetOwner()->GetCurrentSize();
     float        width     = ownerSize.X;
-    AFont const* font      = GetFont();
+    AFont* font      = GetFont();
+
+    _Canvas.FontFace(font);
+    _Canvas.FontSize(FontSize);
+
+    TextBounds textBounds;
+    _Canvas.GetTextBoxBounds(0, 0, ownerSize.X, Text, textBounds);
+
+    Float2 size(textBounds.Width(), textBounds.Height());
 
     Float2 pos;
-    Float2 size = font->CalcTextSizeA(font->GetFontSize(), ownerSize.X, bWordWrap ? ownerSize.X : 0.0f, Text.Begin(), Text.End());
+    //Float2 size = font->CalcTextSizeA(font->GetFontSize(), ownerSize.X, bWordWrap ? ownerSize.X : 0.0f, Text.Begin(), Text.End());
 
     if (HorizontalAlignment == WIDGET_ALIGNMENT_LEFT)
     {
@@ -168,9 +188,13 @@ void WTextDecorate::OnDrawEvent(ACanvas& _Canvas)
 
     pos += GetOwner()->GetDesktopPosition();
 
-    _Canvas.PushFont(font);
-    _Canvas.DrawTextUTF8(font->GetFontSize(), pos, Color, Text, bWordWrap ? width : 0.0f);
-    _Canvas.PopFont();
+    if (bWordWrap)
+        _Canvas.DrawTextWrapUTF8(pos, Color, Text, width, bShadow);
+    else
+    {
+        // Called DrawTextWrapUTF8 to allow new line character ('\n')
+        _Canvas.DrawTextWrapUTF8(pos, Color, Text, Math::MaxValue<float>(), bShadow);
+    }
 }
 
 
@@ -182,8 +206,6 @@ WBorderDecorate::WBorderDecorate()
     Color           = Color4::White();
     BgColor         = Color4::Black();
     bFillBackgrond  = false;
-    Rounding        = 0;
-    RoundingCorners = CORNER_ROUND_ALL;
     Thickness       = 1;
 }
 
@@ -215,15 +237,45 @@ WBorderDecorate& WBorderDecorate::SetThickness(float _Thickness)
     return *this;
 }
 
-WBorderDecorate& WBorderDecorate::SetRounding(float _Rounding)
+WBorderDecorate& WBorderDecorate::SetRoundingTL(float _Rounding)
 {
-    Rounding = _Rounding;
+    Rounding.RoundingTL = _Rounding;
     return *this;
 }
 
-WBorderDecorate& WBorderDecorate::SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners)
+WBorderDecorate& WBorderDecorate::SetRoundingTR(float _Rounding)
 {
-    RoundingCorners = _RoundingCorners;
+    Rounding.RoundingTR = _Rounding;
+    return *this;
+}
+
+WBorderDecorate& WBorderDecorate::SetRoundingBL(float _Rounding)
+{
+    Rounding.RoundingBL = _Rounding;
+    return *this;
+}
+
+WBorderDecorate& WBorderDecorate::SetRoundingBR(float _Rounding)
+{
+    Rounding.RoundingBR = _Rounding;
+    return *this;
+}
+
+WBorderDecorate& WBorderDecorate::SetRounding(float roundingTL, float roundingTR, float roundingBL, float roundingBR)
+{
+    Rounding.RoundingTL = roundingTL;
+    Rounding.RoundingTR = roundingTR;
+    Rounding.RoundingBL = roundingBL;
+    Rounding.RoundingBR = roundingBR;
+    return *this;
+}
+
+WBorderDecorate& WBorderDecorate::SetRounding(float rounding)
+{
+    Rounding.RoundingTL = rounding;
+    Rounding.RoundingTR = rounding;
+    Rounding.RoundingBL = rounding;
+    Rounding.RoundingBR = rounding;
     return *this;
 }
 
@@ -235,10 +287,10 @@ void WBorderDecorate::OnDrawEvent(ACanvas& _Canvas)
 
     if (bFillBackgrond)
     {
-        _Canvas.DrawRectFilled(mins, maxs, BgColor, Rounding, RoundingCorners);
+        _Canvas.DrawRectFilled(mins, maxs, BgColor, Rounding);
     }
 
-    _Canvas.DrawRect(mins, maxs, Color, Rounding, RoundingCorners, Thickness);
+    _Canvas.DrawRect(mins, maxs, Color, Thickness, Rounding);
 }
 
 
@@ -246,39 +298,74 @@ HK_CLASS_META(WImageDecorate)
 
 WImageDecorate::WImageDecorate()
 {
-    Color               = Color4::White();
-    Rounding            = 0;
-    RoundingCorners     = CORNER_ROUND_ALL;
-    ColorBlending       = COLOR_BLENDING_ALPHA;
-    SamplerType         = HUD_SAMPLER_TILED_LINEAR;
-    bUseOriginalSize    = false;
+    TintColor           = Color4::White();
     HorizontalAlignment = WIDGET_ALIGNMENT_NONE;
     VerticalAlignment   = WIDGET_ALIGNMENT_NONE;
     Offset              = Float2(0.0f);
     Size                = Float2(32, 32);
-    UV0                 = Float2(0, 0);
-    UV1                 = Float2(1, 1);
+    bTiledX             = true;
+    bTiledY             = true;
+    bFlipY              = false;
+    bAlphaPremultiplied = false;
+    bNearestFilter      = false;
+    bUseOriginalSize    = false;
 }
 
 WImageDecorate::~WImageDecorate()
 {
 }
 
-WImageDecorate& WImageDecorate::SetColor(Color4 const& _Color)
+WImageDecorate& WImageDecorate::SetTint(Color4 const& tintColor)
 {
-    Color = _Color;
+    TintColor = tintColor;
     return *this;
 }
 
-WImageDecorate& WImageDecorate::SetRounding(float _Rounding)
+WImageDecorate& WImageDecorate::SetRoundingTL(float _Rounding)
 {
-    Rounding = _Rounding;
+    Rounding.RoundingTL = _Rounding;
     return *this;
 }
 
-WImageDecorate& WImageDecorate::SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners)
+WImageDecorate& WImageDecorate::SetRoundingTR(float _Rounding)
 {
-    RoundingCorners = _RoundingCorners;
+    Rounding.RoundingTR = _Rounding;
+    return *this;
+}
+
+WImageDecorate& WImageDecorate::SetRoundingBL(float _Rounding)
+{
+    Rounding.RoundingBL = _Rounding;
+    return *this;
+}
+
+WImageDecorate& WImageDecorate::SetRoundingBR(float _Rounding)
+{
+    Rounding.RoundingBR = _Rounding;
+    return *this;
+}
+
+WImageDecorate& WImageDecorate::SetRounding(float roundingTL, float roundingTR, float roundingBL, float roundingBR)
+{
+    Rounding.RoundingTL = roundingTL;
+    Rounding.RoundingTR = roundingTR;
+    Rounding.RoundingBL = roundingBL;
+    Rounding.RoundingBR = roundingBR;
+    return *this;
+}
+
+WImageDecorate& WImageDecorate::SetRounding(float rounding)
+{
+    Rounding.RoundingTL = rounding;
+    Rounding.RoundingTR = rounding;
+    Rounding.RoundingBL = rounding;
+    Rounding.RoundingBR = rounding;
+    return *this;
+}
+
+WImageDecorate& WImageDecorate::SetAngle(float angle)
+{
+    Angle = angle;
     return *this;
 }
 
@@ -288,15 +375,9 @@ WImageDecorate& WImageDecorate::SetTexture(ATexture* _Texture)
     return *this;
 }
 
-WImageDecorate& WImageDecorate::SetColorBlending(BLENDING_MODE _Blending)
+WImageDecorate& WImageDecorate::SetComposite(CANVAS_COMPOSITE composite)
 {
-    ColorBlending = _Blending;
-    return *this;
-}
-
-WImageDecorate& WImageDecorate::SetSamplerType(EHUDSamplerType _SamplerType)
-{
-    SamplerType = _SamplerType;
+    Composite = composite;
     return *this;
 }
 
@@ -330,10 +411,45 @@ WImageDecorate& WImageDecorate::SetUseOriginalSize(bool _UseOriginalSize)
     return *this;
 }
 
-WImageDecorate& WImageDecorate::SetUVs(Float2 const& _UV0, Float2 const& _UV1)
+WImageDecorate& WImageDecorate::SetUVOffset(Float2 const& UVOffset)
 {
-    UV0 = _UV0;
-    UV1 = _UV1;
+    m_UVOffset = UVOffset;
+    return *this;
+}
+
+WImageDecorate& WImageDecorate::SetUVScale(Float2 const& UVScale)
+{
+    m_UVScale = UVScale;
+    return *this;
+}
+
+WImageDecorate& WImageDecorate::SetTiledX(bool _bTiledX)
+{
+    bTiledX = _bTiledX;
+    return *this;
+}
+
+WImageDecorate& WImageDecorate::SetTiledY(bool _bTiledY)
+{
+    bTiledY = _bTiledY;
+    return *this;
+}
+
+WImageDecorate& WImageDecorate::SetFlipY(bool _bFlipY)
+{
+    bFlipY = _bFlipY;
+    return *this;
+}
+
+WImageDecorate& WImageDecorate::SetAlphaPremultiplied(bool _bAlphaPremultiplied)
+{
+    bAlphaPremultiplied = _bAlphaPremultiplied;
+    return *this;
+}
+
+WImageDecorate& WImageDecorate::SetNearestFilter(bool _bNearestFilter)
+{
+    bNearestFilter = _bNearestFilter;
     return *this;
 }
 
@@ -421,5 +537,23 @@ void WImageDecorate::OnDrawEvent(ACanvas& _Canvas)
 
     pos += GetOwner()->GetDesktopPosition();
 
-    _Canvas.DrawTextureRounded(Texture, pos.X, pos.Y, size.X, size.Y, UV0, UV1, Color, Rounding, RoundingCorners, ColorBlending, SamplerType);
+    DrawTextureDesc desc;
+    desc.pTexture            = Texture;
+    desc.X                   = pos.X;
+    desc.Y                   = pos.Y;
+    desc.W                   = size.X;
+    desc.H                   = size.Y;
+    desc.Rounding            = Rounding;
+    desc.Angle               = Angle;
+    desc.TintColor           = TintColor;
+    desc.UVOffset            = m_UVOffset;
+    desc.UVScale             = m_UVScale;
+    desc.Composite           = Composite;
+    desc.bTiledX             = bTiledX;
+    desc.bTiledY             = bTiledY;
+    desc.bFlipY              = bFlipY;
+    desc.bAlphaPremultiplied = bAlphaPremultiplied;
+    desc.bNearestFilter      = bNearestFilter;
+
+    _Canvas.DrawTexture(desc);
 }

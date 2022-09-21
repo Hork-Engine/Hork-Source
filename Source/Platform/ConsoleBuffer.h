@@ -37,7 +37,7 @@ class AConsoleBuffer
 {
 public:
     static constexpr int Padding        = 8;
-    static constexpr int CharacterWidth = 10; //8;
+    static constexpr int CharacterWidth = 14;
 
     /** Set console width */
     void Resize(int _VidWidth);

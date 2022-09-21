@@ -970,11 +970,9 @@ void WWidget::Draw_r(ACanvas& _Canvas, Float2 const& _ClipMins, Float2 const& _C
         return; // invalid rect
     }
 
-    _Canvas.PushClipRect(mins, maxs);
+    _Canvas.Scissor(mins, maxs);
 
     OnDrawEvent(_Canvas);
-
-    _Canvas.PopClipRect();
 
     ApplyMargins(rectMins, rectMaxs, GetMargin());
 

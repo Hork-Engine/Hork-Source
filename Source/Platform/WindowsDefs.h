@@ -42,5 +42,6 @@ SOFTWARE.
 #undef WriteConsole
 #undef CreateDirectory
 #undef LoadImage
+#undef GetTextMetrics
 #undef ERROR
 #endif

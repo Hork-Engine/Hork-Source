@@ -304,7 +304,6 @@ void WSlider::OnDrawEvent(ACanvas& _Canvas)
     // Draw slider
     if (geometry.SliderMaxs.X > geometry.SliderMins.X && geometry.SliderMaxs.Y > geometry.SliderMins.Y)
     {
-        const float SliderRounding = 4.0f;
-        _Canvas.DrawRectFilled(geometry.SliderMins, geometry.SliderMaxs, SliderColor, SliderRounding);
+        _Canvas.DrawRectFilled(geometry.SliderMins, geometry.SliderMaxs, SliderColor, RoundingDesc(4.0f));
     }
 }

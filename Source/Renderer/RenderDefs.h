@@ -126,13 +126,6 @@ struct STerrainVertex
     /*unsigned*/ short Y;
 };
 
-struct SHUDDrawVert
-{
-    Float2   Position;
-    Float2   TexCoord;
-    uint32_t Color;
-};
-
 struct SDebugVertex
 {
     Float3   Position;
@@ -513,65 +506,177 @@ struct SDebugDrawCmd
 };
 
 //
-// HUD
+// CANVAS
 //
 
-enum EHUDDrawCmd
+enum CANVAS_SHADER_TYPE
 {
-    HUD_DRAW_CMD_ALPHA,    // fonts, primitves, textures with one alpha channel
-    HUD_DRAW_CMD_TEXTURE,  // textures
-    HUD_DRAW_CMD_MATERIAL, // material instances (MATERIAL_TYPE_HUD)
-    HUD_DRAW_CMD_VIEWPORT, // viewports
-
-    HUD_DRAW_CMD_MAX
+    CANVAS_SHADER_FILLGRAD,
+    CANVAS_SHADER_FILLIMG,
+    CANVAS_SHADER_SIMPLE,
+    CANVAS_SHADER_IMAGE
 };
 
-enum EHUDSamplerType
+enum CANVAS_IMAGE_FLAGS : uint32_t
 {
-    HUD_SAMPLER_TILED_LINEAR,
-    HUD_SAMPLER_TILED_NEAREST,
+    CANVAS_IMAGE_DEFAULT = 0,
+    CANVAS_IMAGE_REPEATX = 1 << 1,       // Repeat image in X direction.
+    CANVAS_IMAGE_REPEATY = 1 << 2,       // Repeat image in Y direction.
+    CANVAS_IMAGE_FLIPY = 1 << 3,         // Flips (inverses) image in Y direction when rendered.
+    CANVAS_IMAGE_PREMULTIPLIED = 1 << 4, // Image data has premultiplied alpha.
+    CANVAS_IMAGE_NEAREST = 1 << 5,       // Image interpolation is Nearest instead Linear
 
-    HUD_SAMPLER_MIRROR_LINEAR,
-    HUD_SAMPLER_MIRROR_NEAREST,
-
-    HUD_SAMPLER_CLAMPED_LINEAR,
-    HUD_SAMPLER_CLAMPED_NEAREST,
-
-    HUD_SAMPLER_BORDER_LINEAR,
-    HUD_SAMPLER_BORDER_NEAREST,
-
-    HUD_SAMPLER_MIRROR_ONCE_LINEAR,
-    HUD_SAMPLER_MIRROR_ONCE_NEAREST,
-
-    HUD_SAMPLER_MAX
+    // Internal
+    _CANVAS_IMAGE_VIEWPORT_INDEX = HK_BIT(31)
 };
 
-struct SHUDDrawCmd
-{
-    unsigned int    IndexCount;
-    unsigned int    StartIndexLocation;
-    unsigned int    BaseVertexLocation;
-    Float2          ClipMins;
-    Float2          ClipMaxs;
-    EHUDDrawCmd     Type;
-    BLENDING_MODE  Blending;    // only for type DRAW_CMD_TEXTURE and DRAW_CMD_VIEWPORT
-    EHUDSamplerType SamplerType; // only for type DRAW_CMD_TEXTURE
+HK_FLAG_ENUM_OPERATORS(CANVAS_IMAGE_FLAGS)
 
-    union
-    {
-        RenderCore::ITexture* Texture;           // HUD_DRAW_CMD_TEXTURE, HUD_DRAW_CMD_ALPHA
-        SMaterialFrameData*   MaterialFrameData; // HUD_DRAW_CMD_MATERIAL
-        int                   ViewportIndex;     // HUD_DRAW_CMD_VIEWPORT
-    };
+struct alignas(16) CanvasUniforms
+{
+    Color4 innerCol;
+    Color4 outerCol;
+
+    float scissorMat[12]; // matrices are actually 3 vec4s
+    float paintMat[12];
+
+    float scissorExt[2];
+    float scissorScale[2];
+
+    float extent[2];
+    float radius;
+    float feather;
+
+    float strokeMult;
+    float strokeThr;
+    int texType;
+    int type;
 };
 
-struct SHUDDrawList
+enum CANVAS_DRAW_COMMAND : uint8_t
 {
-    size_t        VertexStreamOffset;
-    size_t        IndexStreamOffset;
-    int           CommandsCount;
-    SHUDDrawCmd*  Commands;
-    SHUDDrawList* pNext;
+    CANVAS_DRAW_COMMAND_NONE = 0,
+    CANVAS_DRAW_COMMAND_FILL,
+    CANVAS_DRAW_COMMAND_CONVEXFILL,
+    CANVAS_DRAW_COMMAND_STROKE,
+    CANVAS_DRAW_COMMAND_STENCIL_STROKE,
+    CANVAS_DRAW_COMMAND_TRIANGLES
+};
+
+enum CANVAS_COMPOSITE : uint8_t
+{
+    /**
+    Display the source image wherever the source image is opaque.
+    Display the destination image elsewhere.
+    */
+    CANVAS_COMPOSITE_SOURCE_OVER,
+
+    /**
+    Display the source image wherever both the source image and destination image are opaque.
+    Display transparency elsewhere.
+    */
+    CANVAS_COMPOSITE_SOURCE_IN,
+
+    /**
+    The source image is copied out of the destination image.
+    The source image is displayed where the source is opaque and the destination is transparent.
+    Other regions are transparent.
+    */
+    CANVAS_COMPOSITE_SOURCE_OUT,
+
+    /**
+    Display the source image wherever both images are opaque.
+    Display the destination image wherever the destination image is opaque but the source image is transparent.
+    Display transparency elsewhere.
+    */
+    CANVAS_COMPOSITE_ATOP,
+
+    /**
+    Display the source image wherever the source image is opaque.
+    Display the destination image elsewhere.
+    lighter	A plus B
+    */
+    CANVAS_COMPOSITE_DESTINATION_OVER,
+
+    /**
+    Display the source image wherever both the source image and destination image are opaque.
+    Display transparency elsewhere.
+    */
+    CANVAS_COMPOSITE_DESTINATION_IN,
+
+    /**
+    The source image is copied out of the destination image.
+    The source image is displayed where the source is opaque and the destination is transparent.
+    Other regions are transparent.
+    */
+    CANVAS_COMPOSITE_DESTINATION_OUT,
+
+    /**
+    Display the source image wherever both images are opaque.
+    Display the destination image wherever the destination image is opaque but the source image is transparent.
+    Display transparency elsewhere.
+    */
+    CANVAS_COMPOSITE_DESTINATION_ATOP,
+
+    /**
+    Display the sum of the source image and destination image, with color values approaching 255 (100%) as a limit.
+    */
+    CANVAS_COMPOSITE_LIGHTER,
+
+    /**
+    Display the source image instead of the destination image.
+    */
+    CANVAS_COMPOSITE_COPY,
+
+    /**
+    Exclusive OR of the source image and destination image.
+    */
+    CANVAS_COMPOSITE_XOR,
+
+    CANVAS_COMPOSITE_LAST = CANVAS_COMPOSITE_XOR
+};
+
+struct CanvasDrawCmd
+{
+    RenderCore::ITexture* pTexture;
+    CANVAS_DRAW_COMMAND   Type;
+    CANVAS_COMPOSITE      Composite;
+    CANVAS_IMAGE_FLAGS    TextureFlags;
+    int                   FirstPath;
+    int                   PathCount;
+    int                   FirstVertex;
+    int                   VertexCount;
+    int                   UniformOffset;
+};
+
+struct CanvasPath
+{
+    int FillOffset;
+    int FillCount;
+    int StrokeOffset;
+    int StrokeCount;
+};
+
+struct CanvasVertex
+{
+    float x, y, u, v;
+};
+
+class CanvasDrawData
+{
+public:
+    CanvasDrawCmd* DrawCommands{};
+    int            MaxDrawCommands{};
+    int            NumDrawCommands{};
+    CanvasPath*    Paths{};
+    int            MaxPaths{};
+    int            NumPaths{};
+    CanvasVertex*  Vertices{};
+    int            MaxVerts{};
+    int            VertexCount{};
+    uint8_t*       Uniforms{};
+    int            MaxUniforms{};
+    int            UniformCount{};
 };
 
 
@@ -1070,9 +1175,9 @@ struct SRenderFrame
     /** Terrain instances */
     TPodVector<STerrainRenderInstance*> TerrainInstances;
 
-    /** Hud draw commands */
-    SHUDDrawList* DrawListHead;
-    SHUDDrawList* DrawListTail;
+    /** Canvas draw commands */
+    CanvasDrawData const* CanvasDrawData;
+    size_t CanvasVertexData;
 
     /** Debug draw commands */
     SDebugDrawCmd const* DbgCmds;

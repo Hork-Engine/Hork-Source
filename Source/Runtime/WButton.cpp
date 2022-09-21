@@ -188,7 +188,6 @@ WTextButton::WTextButton()
     TextColor       = Color4::White();
     BorderColor     = Color4(0, 0, 0, 0.5f);
     Rounding        = 8;
-    RoundingCorners = CORNER_ROUND_ALL;
     BorderThickness = 1;
     TextAlign       = WIDGET_BUTTON_TEXT_ALIGN_CENTER;
     Font            = ACanvas::GetDefaultFont();
@@ -240,12 +239,6 @@ WTextButton& WTextButton::SetRounding(float _Rounding)
     return *this;
 }
 
-WTextButton& WTextButton::SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners)
-{
-    RoundingCorners = _RoundingCorners;
-    return *this;
-}
-
 WTextButton& WTextButton::SetBorderThickness(float _BorderThickness)
 {
     BorderThickness = _BorderThickness;
@@ -291,13 +284,18 @@ void WTextButton::OnDrawEvent(ACanvas& _Canvas)
     float width  = GetAvailableWidth();
     float height = GetAvailableHeight();
 
-    _Canvas.DrawRectFilled(mins, maxs, bgColor, Rounding, RoundingCorners);
+    RoundingDesc roundingDesc(Rounding);
+
+    _Canvas.DrawRectFilled(mins, maxs, bgColor, roundingDesc);
     if (BorderThickness > 0.0f)
     {
-        _Canvas.DrawRect(mins, maxs, BorderColor, Rounding, RoundingCorners, BorderThickness);
+        _Canvas.DrawRect(mins, maxs, BorderColor, BorderThickness, roundingDesc);
     }
 
-    Float2 size = Font->CalcTextSizeA(Font->GetFontSize(), width, 0, Text.Begin(), Text.End());
+    TextBounds textBounds;
+    _Canvas.GetTextBoxBounds(0, 0, width, Text, textBounds);
+
+    Float2 size(textBounds.Width(), textBounds.Height());
 
     Float2 pos = mins;
     pos.Y += (height - size.Y) * 0.5f;
@@ -317,9 +315,8 @@ void WTextButton::OnDrawEvent(ACanvas& _Canvas)
         }
     }
 
-    _Canvas.PushFont(Font);
-    _Canvas.DrawTextUTF8(pos, TextColor, Text.Begin(), Text.End());
-    _Canvas.PopFont();
+    _Canvas.FontFace(Font);
+    _Canvas.DrawTextUTF8(pos, TextColor, Text);
 }
 
 
@@ -377,6 +374,13 @@ void WImageButton::OnDrawEvent(ACanvas& _Canvas)
 
         GetDesktopRect(mins, maxs, true);
 
-        _Canvas.DrawTexture(bgImage, mins.X, mins.Y, maxs.X - mins.X, maxs.Y - mins.Y);
+        DrawTextureDesc desc;
+        desc.pTexture = bgImage;
+        desc.X        = mins.X;
+        desc.Y        = mins.Y;
+        desc.W        = maxs.X - mins.X;
+        desc.H        = maxs.Y - mins.Y;
+
+        _Canvas.DrawTexture(desc);
     }
 }

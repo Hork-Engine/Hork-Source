@@ -106,7 +106,6 @@ public:
     WTextButton& SetTextColor(Color4 const& _Color);
     WTextButton& SetBorderColor(Color4 const& _Color);
     WTextButton& SetRounding(float _Rounding);
-    WTextButton& SetRoundingCorners(CORNER_ROUND_FLAGS _RoundingCorners);
     WTextButton& SetBorderThickness(float _Thickness);
     WTextButton& SetTextAlign(EWidgetButtonTextAlign _TextAlign);
     WTextButton& SetFont(AFont* _Font);
@@ -125,7 +124,6 @@ private:
     Color4                 PressedColor;
     Color4                 TextColor;
     Color4                 BorderColor;
-    CORNER_ROUND_FLAGS     RoundingCorners;
     EWidgetButtonTextAlign TextAlign;
     AString                Text;
     float                  Rounding;

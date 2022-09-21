@@ -55,8 +55,6 @@ SOFTWARE.
 #    include <unistd.h> // chdir
 #endif
 
-//#define IMGUI_CONTEXT
-
 static AConsoleVar com_ShowStat("com_ShowStat"s, "0"s);
 static AConsoleVar com_ShowFPS("com_ShowFPS"s, "0"s);
 static AConsoleVar com_SimulateCursorBallistics("com_SimulateCursorBallistics"s, "1"s);
@@ -294,17 +292,12 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
 
     // Init recast navigation module
     dtAllocSetCustom(NavModuleAlloc, NavModuleFree);
-#if 0
-    // Init Imgui allocators
-    ImGui::SetAllocatorFunctions( ImguiModuleAlloc, ImguiModuleFree, NULL );
-#endif
+
     ResourceManager = MakeUnique<AResourceManager>();
 
     Renderer = CreateInstanceOf<ARenderFrontend>();
 
     RenderBackend = MakeRef<ARenderBackend>(RenderDevice);
-
-    AFont::SetGlyphRanges(GLYPH_RANGE_CYRILLIC);
 
     FrameLoop = MakeRef<AFrameLoop>(RenderDevice);
 
@@ -315,12 +308,6 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
     GameModule->AddRef();
 
     LOG("Created game module: {}\n", GameModule->FinalClassName());
-
-#ifdef IMGUI_CONTEXT
-    ImguiContext = CreateInstanceOf<AImguiContext>();
-    ImguiContext->SetFont(ACanvas::GetDefaultFont());
-    ImguiContext->AddRef();
-#endif
 
     bAllowInputEvents = true;
 
@@ -366,10 +353,6 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
         // Update input
         UpdateInput();
 
-#ifdef IMGUI_CONTEXT
-        // Imgui test
-        UpdateImgui();
-#endif
         // Draw widgets, HUD, etc
         DrawCanvas();
 
@@ -395,11 +378,6 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
 
     ASoundEmitter::ClearOneShotSounds();
 
-#ifdef IMGUI_CONTEXT
-    ImguiContext->RemoveRef();
-    ImguiContext = nullptr;
-#endif
-
     RenderBackend.Reset();
 
     Renderer.Reset();
@@ -418,7 +396,7 @@ void AEngine::DrawCanvas()
 {
     SVideoMode const& videoMode = Window->GetVideoMode();
 
-    Canvas.Begin(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
+    Canvas.NewFrame(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
 
     if (IsWindowVisible())
     {
@@ -445,8 +423,6 @@ void AEngine::DrawCanvas()
 
         ShowStats();
     }
-
-    Canvas.End();
 }
 
 SMemoryStat GMemoryStat[HEAP_MAX];
@@ -507,10 +483,11 @@ void AEngine::SaveMemoryStats()
 
 void AEngine::ShowStats()
 {
-    static TStaticResourceFinder<AFont> Impact18("/Root/impact18.font"s);
-    AFont*                              font = Impact18.GetObject();
+    static TStaticResourceFinder<AFont> font("/Root/fonts/RobotoMono/RobotoMono-Regular.ttf"s);
 
     AFormatter fmt;
+
+    Canvas.ResetScissor();
 
     if (com_ShowStat)
     {
@@ -520,16 +497,13 @@ void AEngine::ShowStats()
 
         AStreamedMemoryGPU* streamedMemory = FrameLoop->GetStreamedMemoryGPU();
 
-        const float y_step   = 22;
+        const float y_step = 40;
         const int   numLines = 13;
 
         Float2 pos(8, 8);
         
-
-        Canvas.PushFont(font);
-
-        
-        
+        Canvas.FontFace(font);
+        Canvas.FontSize(24);
 
         pos.Y = 100;
         for (int n = 0; n < HEAP_MAX; n++)
@@ -569,8 +543,6 @@ void AEngine::ShowStats()
         Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Frontend time: {} msec", stat.FrontendTime), true);
         pos.Y += y_step;
         Canvas.DrawTextUTF8(pos, Color4::White(), fmt("Audio channels: {} active, {} virtual", AudioSystem.GetMixer()->GetNumActiveChannels(), AudioSystem.GetMixer()->GetNumVirtualChannels()), true);
-
-        Canvas.PopFont();
     }
 
     if (com_ShowFPS)
@@ -588,9 +560,9 @@ void AEngine::ShowStats()
             fps += fpsavg[i];
         fps *= (1.0f / FPS_BUF);
         fps = 1.0f / (fps > 0.0f ? fps : 1.0f);
-        Canvas.PushFont(font);
-        Canvas.DrawTextUTF8(Float2(10, 10), Color4::White(), fmt("Frame time {:.1f} ms (FPS: {}, AVG {})", FrameDurationInSeconds * 1000.0f, int(1.0f / FrameDurationInSeconds), int(fps + 0.5f)), true);
-        Canvas.PopFont();
+        Canvas.FontFace(font);
+        Canvas.FontSize(24);
+        Canvas.DrawTextUTF8(Float2(10, 30), Color4::White(), fmt("Frame time {:.1f} ms (FPS: {}, AVG {})", FrameDurationInSeconds * 1000.0f, int(1.0f / FrameDurationInSeconds), int(fps + 0.5f)), true);
     }
 }
 
@@ -620,10 +592,6 @@ void AEngine::OnKeyEvent(SKeyEvent const& _Event, double _TimeStamp)
             PostChangeVideoMode(videoMode);
         }
     }
-
-#ifdef IMGUI_CONTEXT
-    ImguiContext->OnKeyEvent(_Event);
-#endif
 
     DeveloperKeys(_Event);
 
@@ -656,10 +624,6 @@ void AEngine::OnMouseButtonEvent(SMouseButtonEvent const& _Event, double _TimeSt
         return;
     }
 
-#ifdef IMGUI_CONTEXT
-    ImguiContext->OnMouseButtonEvent(_Event);
-#endif
-
     if (Console.IsActive() && _Event.Action != IA_RELEASE)
     {
         return;
@@ -677,10 +641,6 @@ void AEngine::OnMouseWheelEvent(SMouseWheelEvent const& _Event, double _TimeStam
     {
         return;
     }
-
-#ifdef IMGUI_CONTEXT
-    ImguiContext->OnMouseWheelEvent(_Event);
-#endif
 
     Console.MouseWheelEvent(_Event);
     if (Console.IsActive())
@@ -781,10 +741,6 @@ void AEngine::OnCharEvent(SCharEvent const& _Event, double _TimeStamp)
     {
         return;
     }
-
-#ifdef IMGUI_CONTEXT
-    ImguiContext->OnCharEvent(_Event);
-#endif
 
     Console.CharEvent(_Event);
     if (Console.IsActive())

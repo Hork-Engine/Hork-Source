@@ -369,10 +369,6 @@ void AConsole::DrawCmdLine(ACanvas* _Canvas, int x, int y, int MaxLineChars)
 {
     Color4 const& charColor = Color4::White();
 
-    //AFont * font = _Canvas->GetCurrentFont();
-
-    const float scale = 1; //(float)CharacterHeight / font->GetFontSize();
-
     int cx = x;
 
     int offset = CmdLinePos + 1 - MaxLineChars;
@@ -402,7 +398,7 @@ void AConsole::DrawCmdLine(ACanvas* _Canvas, int x, int y, int MaxLineChars)
             continue;
         }
 
-        _Canvas->DrawWChar(ch, cx, y, scale, charColor);
+        _Canvas->DrawWChar(ch, cx, y, charColor);
 
         cx += AConsoleBuffer::CharacterWidth;
     }
@@ -411,7 +407,7 @@ void AConsole::DrawCmdLine(ACanvas* _Canvas, int x, int y, int MaxLineChars)
     {
         cx = x + (CmdLinePos - offset) * AConsoleBuffer::CharacterWidth;
 
-        _Canvas->DrawWChar('_', cx, y, scale, charColor);
+        _Canvas->DrawWChar('_', cx, y, charColor);
     }
 }
 
@@ -444,13 +440,19 @@ void AConsole::Draw(ACanvas* _Canvas, float _TimeStep)
         ConHeight = 2;
     }
 
-    AFont const* font = _Canvas->GetCurrentFont();
+    AFont* font = _Canvas->GetDefaultFont();
 
-    const int fontVStride = font->GetFontSize() + 4;
-    //const int fontVStride = CharacterHeight + 4;
-    const int   cmdLineH      = fontVStride;
-    const float halfVidHeight = (_Canvas->GetHeight() >> 1) * ConHeight;
-    const int   numVisLines   = Math::Ceil((halfVidHeight - cmdLineH) / fontVStride);
+    const float fontSize = AConsoleBuffer::CharacterWidth;
+
+    _Canvas->ResetScissor();
+    _Canvas->FontFace(font);
+    _Canvas->FontSize(fontSize);
+
+    const int   verticalSpace  = 4;
+    const int   verticalStride = fontSize + verticalSpace;
+    const int   cmdLineH       = verticalStride;
+    const float halfVidHeight  = (_Canvas->GetHeight() >> 1) * ConHeight;
+    const int   numVisLines    = Math::Ceil((halfVidHeight - cmdLineH) / verticalStride);
 
     const Color4 c1(0, 0, 0, 1.0f);
     const Color4 c2(0, 0, 0, 0.0f);
@@ -462,20 +464,18 @@ void AConsole::Draw(ACanvas* _Canvas, float _TimeStep)
     }
     else
     {
-        _Canvas->DrawRectFilledMultiColor(Float2(0, 0), Float2(_Canvas->GetWidth(), halfVidHeight), c1, c2, c2, c1);
+        _Canvas->DrawRectFilledGradient(Float2(0, 0), Float2(_Canvas->GetWidth(), halfVidHeight), c1, c2);
     }
     _Canvas->DrawLine(Float2(0, halfVidHeight), Float2(_Canvas->GetWidth(), halfVidHeight), Color4::White(), 2.0f);
 
     int x = AConsoleBuffer::Padding;
-    int y = halfVidHeight - fontVStride;
-
-    const float scale = 1; //(float)CharacterHeight / font->GetFontSize();
+    int y = halfVidHeight - verticalSpace;
 
     AConsoleBuffer::SLock lock = pConBuffer->Lock();
 
     DrawCmdLine(_Canvas, x, y, lock.MaxLineChars);
 
-    y -= cmdLineH;
+    y -= verticalStride;
 
     for (int i = 0; i < numVisLines; i++)
     {
@@ -490,12 +490,12 @@ void AConsole::Draw(ACanvas* _Canvas, float _TimeStep)
 
         for (int j = 0; j < lock.MaxLineChars && *line; j++)
         {
-            _Canvas->DrawWChar(*line++, x, y, scale, charColor);
+            _Canvas->DrawWChar(*line++, x, y, charColor);
 
             x += AConsoleBuffer::CharacterWidth;
         }
         x = AConsoleBuffer::Padding;
-        y -= fontVStride;
+        y -= verticalStride;
     }
 
     pConBuffer->Unlock();
