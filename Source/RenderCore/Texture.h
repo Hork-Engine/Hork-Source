@@ -686,7 +686,9 @@ public:
     virtual bool WriteRect(STextureRect const& Rectangle,
                            size_t              SizeInBytes,
                            unsigned int        Alignment,
-                           const void*         pSysMem) = 0;
+                           const void*         pSysMem,
+                           size_t              RowPitch   = 0,
+                           size_t              DepthPitch = 0) = 0;
 
     //
     // Utilites

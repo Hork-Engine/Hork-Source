@@ -243,6 +243,12 @@ ATextureGLImpl::~ATextureGLImpl()
 
 void ATextureGLImpl::MakeBindlessSamplerResident(BindlessHandle BindlessHandle, bool bResident)
 {
+    if (!BindlessHandle)
+    {
+        LOG("ATextureGLImpl::MakeBindlessSamplerResident: invalid handle\n");
+        return;
+    }
+
     HK_ASSERT(BindlessSamplers.Count(BindlessHandle) == 1);
 
     if (bResident)
@@ -253,6 +259,12 @@ void ATextureGLImpl::MakeBindlessSamplerResident(BindlessHandle BindlessHandle, 
 
 bool ATextureGLImpl::IsBindlessSamplerResident(BindlessHandle BindlessHandle)
 {
+    if (!BindlessHandle)
+    {
+        LOG("ATextureGLImpl::IsBindlessSamplerResident: invalid handle\n");
+        return false;
+    }
+
     HK_ASSERT(BindlessSamplers.Count(BindlessHandle) == 1);
 
     return !!glIsTextureHandleResidentARB(BindlessHandle);
@@ -265,6 +277,8 @@ BindlessHandle ATextureGLImpl::GetBindlessSampler(SSamplerDesc const& SamplerDes
         LOG("ATextureGLImpl::GetBindlessSampler: bindless textures are not supported by current hardware\n");
         return 0;
     }
+
+    HK_ASSERT(GetHandleNativeGL());
 
     uint64_t bindlessHandle = glGetTextureSamplerHandleARB(GetHandleNativeGL(), static_cast<ADeviceGLImpl*>(GetDevice())->CachedSampler(SamplerDesc));
     if (!bindlessHandle)
@@ -424,10 +438,12 @@ bool ATextureGLImpl::Write(uint16_t     MipLevel,
 bool ATextureGLImpl::WriteRect(STextureRect const& Rectangle,
                                size_t              SizeInBytes,
                                unsigned int        Alignment, // Specifies alignment of source data
-                               const void*         pSysMem)
+                               const void*         pSysMem,
+                               size_t              RowPitch,
+                               size_t              DepthPitch)
 {
     AImmediateContextGLImpl* current = AImmediateContextGLImpl::GetCurrent();
-    return current->WriteTextureRect(this, Rectangle, SizeInBytes, Alignment, pSysMem);
+    return current->WriteTextureRect(this, Rectangle, SizeInBytes, Alignment, pSysMem, RowPitch, DepthPitch);
 }
 
 } // namespace RenderCore

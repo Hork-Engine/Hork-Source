@@ -56,11 +56,11 @@ public:
     /** Lighmap channel UV offset and scale */
     Float4 LightmapOffset = Float4(0, 0, 1, 1);
 
-    bool bHasLightmap = false;
-
     /** Baked vertex light channel */
     uint32_t VertexLightChannel = 0;
-    bool     bHasVertexLight = false;
+
+    bool bHasLightmap    = false;
+    bool bHasVertexLight = false;
 
     /** Flipbook animation page offset */
     unsigned int SubpartBaseVertexOffset = 0;

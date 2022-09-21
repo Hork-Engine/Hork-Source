@@ -4047,8 +4047,27 @@ void AImmediateContextGLImpl::ClearAttachments(ARenderPassContext&            Re
 
     if (framebufferId == 0)
     {
-        // TODO: Clear attachments for default framebuffer
-        HK_ASSERT(framebufferId);
+        // Clear attachments for default framebuffer
+
+        GLbitfield bitfield = 0;
+
+        if (_NumColorAttachments > 0 && _ColorAttachments[0] == 0 && _ColorClearValues)
+        {
+            bitfield |= GL_COLOR_BUFFER_BIT;
+            glClearColor(_ColorClearValues->Float32[0], _ColorClearValues->Float32[1], _ColorClearValues->Float32[2], _ColorClearValues->Float32[3]);
+        }
+
+        if (_DepthStencilClearValue)
+        {
+            bitfield |= GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT;
+            glClearDepth(_DepthStencilClearValue->Depth);
+            glClearStencil(_DepthStencilClearValue->Stencil);
+        }
+
+        if (bitfield)
+            glClear(bitfield);
+
+        return;
     }
 
     bool    bScissorEnabled    = RasterizerState.bScissorEnable;
@@ -4545,7 +4564,9 @@ bool AImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
                                                STextureRect const& Rectangle,
                                                size_t              SizeInBytes,
                                                unsigned int        Alignment, // Specifies alignment of source data
-                                               const void*         pSysMem)
+                                               const void*         pSysMem,
+                                               size_t              RowPitch,
+                                               size_t              DepthPitch)
 {
     TextureFormatInfo const& info = GetTextureFormatInfo(pTexture->GetDesc().Format);
 
@@ -4574,6 +4595,18 @@ bool AImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
     }
 
     UnpackAlignment(Alignment);
+
+    if (RowPitch)
+    {
+        HK_ASSERT_((RowPitch % info.BytesPerBlock) == 0, "RowPitch must be a multiple of the pixel size");
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, RowPitch / info.BytesPerBlock);
+    }
+
+    if (DepthPitch)
+    {
+        HK_ASSERT_((DepthPitch % RowPitch) == 0, "DepthPitch must be a multiple of RowPitch");
+        glPixelStorei(GL_UNPACK_IMAGE_HEIGHT, DepthPitch / RowPitch);
+    }
 
     switch (pTexture->GetDesc().Type)
     {
@@ -4790,6 +4823,16 @@ bool AImmediateContextGLImpl::WriteTextureRect(ITexture*           pTexture,
                                     pSysMem);
             }
             break;
+    }
+
+    if (RowPitch)
+    {
+        glPixelStorei(GL_UNPACK_ROW_LENGTH, 0);
+    }
+
+    if (DepthPitch)
+    {
+        glPixelStorei(GL_UNPACK_IMAGE_HEIGHT, 0);
     }
 
     return true;
