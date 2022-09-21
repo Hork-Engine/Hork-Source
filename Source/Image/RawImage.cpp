@@ -1152,8 +1152,7 @@ ARawImage CreateRawImage(SvgDocument const& Document, uint32_t Width, uint32_t H
     if (Width == 0 || Height == 0)
         return {};
 
-    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_BGRA8);
-    image.Clear(BackgroundColor);
+    ARawImage image(Width, Height, RAW_IMAGE_FORMAT_BGRA8, BackgroundColor);
 
     Document.RenderToImage(image.GetData(), image.GetWidth(), image.GetHeight(), image.GetWidth() * image.GetHeight() * image.GetBytesPerPixel());
 
