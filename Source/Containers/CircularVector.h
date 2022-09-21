@@ -32,19 +32,19 @@ SOFTWARE.
 
 #include <Platform/BaseTypes.h>
 
-template <typename T, uint32_t MAX_CAPACITY = 128>
+template <typename T, uint32_t MaxCapacity = 128>
 class TCircularVector
 {
 public:
     using Reference      = T&;
     using ConstReference = T const&;
     using SizeType       = uint32_t;
-    using ThisType       = TCircularVector<T, MAX_CAPACITY>;
+    using ThisType       = TCircularVector<T, MaxCapacity>;
 
     TCircularVector() :
         m_Head(0), m_Size(0)
     {
-        static_assert(IsPowerOfTwo(MAX_CAPACITY), "Circular vector size must be power of two");
+        static_assert(IsPowerOfTwo(MaxCapacity), "Circular vector size must be power of two");
     }
 
     TCircularVector(std::initializer_list<T> list) :
@@ -55,17 +55,17 @@ public:
     }
 
     TCircularVector(ThisType const& Rhs) :
-        m_Head(Rhs.Size() & (MAX_CAPACITY - 1)), m_Size(Rhs.Size())
+        m_Head(Rhs.Size() & (MaxCapacity - 1)), m_Size(Rhs.Size())
     {
         for (SizeType i = 0; i < m_Size; ++i)
-            Construct(i, *Rhs.InternalGet((Rhs.m_Head + i) & (MAX_CAPACITY - 1)));
+            Construct(i, *Rhs.InternalGet((Rhs.m_Head + i) & (MaxCapacity - 1)));
     }
 
     TCircularVector(ThisType&& Rhs) noexcept :
-        m_Head(Rhs.Size() & (MAX_CAPACITY - 1)), m_Size(Rhs.Size())
+        m_Head(Rhs.Size() & (MaxCapacity - 1)), m_Size(Rhs.Size())
     {
         for (SizeType i = 0; i < m_Size; ++i)
-            Construct(i, std::move(*Rhs.InternalGet((Rhs.m_Head + i) & (MAX_CAPACITY - 1))));
+            Construct(i, std::move(*Rhs.InternalGet((Rhs.m_Head + i) & (MaxCapacity - 1))));
 
         Rhs.m_Head = 0;
         Rhs.m_Size = 0;
@@ -75,18 +75,18 @@ public:
     {
         Resize(0);
 
-        m_Head = Rhs.m_Size & (MAX_CAPACITY - 1);
+        m_Head = Rhs.m_Size & (MaxCapacity - 1);
         m_Size = Rhs.m_Size;
 
         for (SizeType i = 0; i < m_Size; ++i)
-            Construct(i, *Rhs.InternalGet((Rhs.m_Head + i) & (MAX_CAPACITY - 1)));
+            Construct(i, *Rhs.InternalGet((Rhs.m_Head + i) & (MaxCapacity - 1)));
     }
 
     virtual ~TCircularVector()
     {
         for (SizeType i = 0; i < m_Size; ++i)
         {
-            SizeType offset = (m_Head + i) & (MAX_CAPACITY - 1);
+            SizeType offset = (m_Head + i) & (MaxCapacity - 1);
             Destruct(offset);
         }
     }
@@ -98,7 +98,7 @@ public:
 
     bool IsFull() const
     {
-        return m_Size == MAX_CAPACITY;
+        return m_Size == MaxCapacity;
     }
 
     SizeType Size() const
@@ -108,14 +108,14 @@ public:
 
     SizeType Capacity() const
     {
-        return MAX_CAPACITY;
+        return MaxCapacity;
     }
 
     Reference operator[](SizeType index)
     {
         HK_ASSERT(index < Size());
 
-        SizeType offset = (m_Head + index) & (MAX_CAPACITY - 1);
+        SizeType offset = (m_Head + index) & (MaxCapacity - 1);
         return *InternalGet(offset);
     }
 
@@ -123,7 +123,7 @@ public:
     {
         HK_ASSERT(index < Size());
 
-        SizeType offset = (m_Head + index) & (MAX_CAPACITY - 1);
+        SizeType offset = (m_Head + index) & (MaxCapacity - 1);
         return *InternalGet(offset);
     }
 
@@ -153,13 +153,13 @@ public:
 
     void Resize(SizeType NewSize)
     {
-        HK_ASSERT(NewSize >= 0 && NewSize <= MAX_CAPACITY);
+        HK_ASSERT(NewSize >= 0 && NewSize <= MaxCapacity);
 
         if (NewSize < m_Size)
         {
             for (SizeType i = NewSize; i < m_Size; ++i)
             {
-                SizeType offset = (m_Head + i) & (MAX_CAPACITY - 1);
+                SizeType offset = (m_Head + i) & (MaxCapacity - 1);
                 Destruct(offset);
             }
         }
@@ -167,7 +167,7 @@ public:
         {
             for (SizeType i = m_Size; i < NewSize; ++i)
             {
-                SizeType offset = (m_Head + i) & (MAX_CAPACITY - 1);
+                SizeType offset = (m_Head + i) & (MaxCapacity - 1);
                 Construct(offset);
             }
         }
@@ -179,7 +179,7 @@ public:
     {
         HK_ASSERT(!IsEmpty());
 
-        SizeType offset = m_Head & (MAX_CAPACITY - 1);
+        SizeType offset = m_Head & (MaxCapacity - 1);
         return *InternalGet(offset);
     }
 
@@ -187,7 +187,7 @@ public:
     {
         HK_ASSERT(!IsEmpty());
 
-        SizeType offset = m_Head & (MAX_CAPACITY - 1);
+        SizeType offset = m_Head & (MaxCapacity - 1);
         return *InternalGet(offset);
     }
 
@@ -195,7 +195,7 @@ public:
     {
         HK_ASSERT(!IsEmpty());
 
-        SizeType offset = (m_Head + m_Size - 1) & (MAX_CAPACITY - 1);
+        SizeType offset = (m_Head + m_Size - 1) & (MaxCapacity - 1);
         return *InternalGet(offset);
     }
 
@@ -203,7 +203,7 @@ public:
     {
         HK_ASSERT(!IsEmpty());
 
-        SizeType offset = (m_Head + m_Size - 1) & (MAX_CAPACITY - 1);
+        SizeType offset = (m_Head + m_Size - 1) & (MaxCapacity - 1);
         return *InternalGet(offset);
     }
 
@@ -212,7 +212,7 @@ public:
         if (IsEmpty())
             return;
 
-        SizeType offset = (m_Head + m_Size - 1) & (MAX_CAPACITY - 1);
+        SizeType offset = (m_Head + m_Size - 1) & (MaxCapacity - 1);
         Destruct(offset);
         --m_Size;
     }
@@ -222,10 +222,10 @@ public:
         if (IsEmpty())
             return;
 
-        SizeType offset = m_Head & (MAX_CAPACITY - 1);
+        SizeType offset = m_Head & (MaxCapacity - 1);
         Destruct(offset);
 
-        m_Head = (m_Head + 1) & (MAX_CAPACITY - 1);
+        m_Head = (m_Head + 1) & (MaxCapacity - 1);
         --m_Size;
     }
 
@@ -233,30 +233,30 @@ public:
     {
         HK_ASSERT(index < Size());
 
-        SizeType offset = (m_Head + index) & (MAX_CAPACITY - 1);
+        SizeType offset = (m_Head + index) & (MaxCapacity - 1);
 
         SizeType count = m_Size - index - 1;
         for (SizeType i = 0; i < count; ++i)
         {
-            offset = (m_Head + index + i) & (MAX_CAPACITY - 1);
+            offset = (m_Head + index + i) & (MaxCapacity - 1);
 
-            *InternalGet(offset) = std::move(*InternalGet((offset + 1) & (MAX_CAPACITY - 1)));
+            *InternalGet(offset) = std::move(*InternalGet((offset + 1) & (MaxCapacity - 1)));
         }
         --m_Size;
     }
 
 private:
-    alignas(alignof(T)) uint8_t m_MemoryBuffer[MAX_CAPACITY][sizeof(T)];
+    alignas(alignof(T)) uint8_t m_MemoryBuffer[MaxCapacity][sizeof(T)];
     SizeType m_Head;
     SizeType m_Size;
 
     SizeType Allocate()
     {
-        SizeType offset = (m_Head + m_Size) & (MAX_CAPACITY - 1);
-        if (m_Size == MAX_CAPACITY)
+        SizeType offset = (m_Head + m_Size) & (MaxCapacity - 1);
+        if (m_Size == MaxCapacity)
         {
             // buffer is full
-            m_Head = (m_Head + 1) & (MAX_CAPACITY - 1);
+            m_Head = (m_Head + 1) & (MaxCapacity - 1);
             Destruct(offset);
         }
         else
