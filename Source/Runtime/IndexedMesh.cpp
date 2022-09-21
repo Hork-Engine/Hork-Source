@@ -633,7 +633,7 @@ bool AIndexedMesh::WriteLightmapUVsData(SMeshVertexUV const* UVs, int VerticesCo
 
     Platform::Memcpy(m_LightmapUVs.ToPtr() + StartVertexLocation, UVs, VerticesCount * sizeof(SMeshVertexUV));
 
-    return SendVertexDataToGPU(VerticesCount, StartVertexLocation);
+    return SendLightmapUVsToGPU(VerticesCount, StartVertexLocation);
 }
 
 bool AIndexedMesh::SendIndexDataToGPU(int _IndexCount, int _StartIndexLocation)
