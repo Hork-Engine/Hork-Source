@@ -152,6 +152,14 @@ HK_FORCEINLINE T* FindResource(AStringView _Alias, bool& _bMetadataMismatch)
 }
 
 /** Find resource in cache. Return null if fails. */
+template <typename T>
+HK_FORCEINLINE T* FindResource(AStringView _Alias)
+{
+    bool bMetadataMismatch;
+    return static_cast<T*>(FindResource(T::ClassMeta(), _Alias, bMetadataMismatch));
+}
+
+/** Find resource in cache. Return null if fails. */
 HK_FORCEINLINE AResource* FindResourceByAlias(AStringView _Alias)
 {
     return GEngine->GetResourceManager()->FindResourceByAlias(_Alias);
