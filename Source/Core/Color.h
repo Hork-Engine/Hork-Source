@@ -682,4 +682,10 @@ HK_FORCEINLINE float Color4::GetLuminance() const
     return R * 0.2126f + G * 0.7152f + B * 0.0722f;
 }
 
+HK_INLINE Color4 MakeColorU8(uint8_t _Red, uint8_t _Green, uint8_t _Blue, uint8_t _Alpha)
+{
+    const float scale = 1.0f / 255.0f;
+    return Color4(_Red * scale, _Green * scale, _Blue * scale, _Alpha * scale);
+}
+
 HK_FORMAT_DEF_(Color4, "( {} {} {} {} )", v.R, v.G, v.B, v.A);
