@@ -100,6 +100,11 @@ public:
         Array.EmplaceBack(std::forward<Args>(args)...);
     }
 
+    HK_FORCEINLINE T& Push()
+    {
+        return Array.Add();
+    }
+
     HK_FORCEINLINE bool Pop(Reference _Val)
     {
         if (IsEmpty())
