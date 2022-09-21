@@ -279,6 +279,22 @@ public:
         return *this;
     }
 
+    void Attach(T* _Rhs)
+    {
+        if (Object == _Rhs)
+            return;
+        if (Object)
+            Object->RemoveRef();
+        Object = _Rhs;
+    }
+
+    T* Detach()
+    {
+        T* ptr = Object;
+        Object = nullptr;
+        return ptr;
+    }
+
 private:
     T* Object;
 };
@@ -601,4 +617,22 @@ template <typename T, typename... Args>
 TUniqueRef<T> MakeUnique(Args&&... args)
 {
     return TUniqueRef<T>(new T(std::forward<Args>(args)...));
+}
+
+template <typename T>
+TRef<T> GetSharedInstance()
+{
+    static TWeakRef<T> weakPtr;
+    TRef<T>            strongPtr;
+
+    if (weakPtr.IsExpired())
+    {
+        strongPtr = MakeRef<T>();
+        weakPtr   = strongPtr;
+    }
+    else
+    {
+        strongPtr = weakPtr;
+    }
+    return strongPtr;
 }
