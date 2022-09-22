@@ -36,46 +36,46 @@ SOFTWARE.
 AResourceManager::AResourceManager()
 {
     Core::TraverseDirectory(GEngine->GetRootPath(), false,
-                            [this](AStringView FileName, bool bIsDirectory)
+                            [this](AStringView fileName, bool bIsDirectory)
                             {
                                 if (bIsDirectory)
                                 {
                                     return;
                                 }
 
-                                if (PathUtils::CompareExt(FileName, ".resources"))
+                                if (PathUtils::CompareExt(fileName, ".resources"))
                                 {
-                                    AddResourcePack(FileName);
+                                    AddResourcePack(fileName);
                                 }
                             });
 
-    CommonResources = AArchive::Open("common.resources", true);
+    m_CommonResources = AArchive::Open("common.resources", true);
 }
 
 AResourceManager::~AResourceManager()
 {
-    for (auto it : ResourceCache)
+    for (auto it : m_ResourceCache)
     {
         AResource* resource = it.second;
         resource->RemoveRef();
     }
 }
 
-void AResourceManager::AddResourcePack(AStringView FileName)
+void AResourceManager::AddResourcePack(AStringView fileName)
 {
-    ResourcePacks.EmplaceBack<AArchive>(AArchive::Open(FileName, true));
+    m_ResourcePacks.EmplaceBack<AArchive>(AArchive::Open(fileName, true));
 }
 
-bool AResourceManager::FindFile(AStringView FileName, int* pResourcePackIndex, AFileHandle* pFileHandle) const
+bool AResourceManager::FindFile(AStringView fileName, int* pResourcePackIndex, AFileHandle* pFileHandle) const
 {
     *pResourcePackIndex = -1;
     pFileHandle->Reset();
 
-    for (int i = ResourcePacks.Size() - 1; i >= 0; i--)
+    for (int i = m_ResourcePacks.Size() - 1; i >= 0; i--)
     {
-        AArchive const& pack = ResourcePacks[i];
+        AArchive const& pack = m_ResourcePacks[i];
 
-        AFileHandle handle = pack.LocateFile(FileName);
+        AFileHandle handle = pack.LocateFile(fileName);
         if (handle.IsValid())
         {
             *pResourcePackIndex = i;
@@ -86,89 +86,89 @@ bool AResourceManager::FindFile(AStringView FileName, int* pResourcePackIndex, A
     return false;
 }
 
-AResource* AResourceManager::FindResource(AClassMeta const& _ClassMeta, AStringView _Alias, bool& _bMetadataMismatch)
+AResource* AResourceManager::FindResource(AClassMeta const& classMeta, AStringView path, bool& bMetadataMismatch)
 {
-    _bMetadataMismatch = false;
+    bMetadataMismatch = false;
 
-    AResource* cachedResource = FindResourceByAlias(_Alias);
+    AResource* cachedResource = FindResource(path);
     if (!cachedResource)
         return nullptr;
 
-    if (&cachedResource->FinalClassMeta() != &_ClassMeta)
+    if (&cachedResource->FinalClassMeta() != &classMeta)
     {
-        LOG("FindResource: {} class doesn't match meta data ({} vs {})\n", _Alias, cachedResource->FinalClassName(), _ClassMeta.GetName());
-        _bMetadataMismatch = true;
+        LOG("FindResource: {} class doesn't match meta data ({} vs {})\n", path, cachedResource->FinalClassName(), classMeta.GetName());
+        bMetadataMismatch = true;
         return nullptr;
     }
 
     return cachedResource;
 }
 
-AResource* AResourceManager::FindResourceByAlias(AStringView _Alias)
+AResource* AResourceManager::FindResource(AStringView path)
 {
-    auto it = ResourceCache.Find(_Alias);
-    if (it == ResourceCache.End())
+    auto it = m_ResourceCache.Find(path);
+    if (it == m_ResourceCache.End())
         return nullptr;
 
     return it->second;
 }
 
-AResource* AResourceManager::GetResource(AClassMeta const& _ClassMeta, AStringView _Alias, bool* _bResourceFoundResult, bool* _bMetadataMismatch)
+AResource* AResourceManager::GetResource(AClassMeta const& classMeta, AStringView path, bool* bResourceFoundResult, bool* bMetadataMismatch)
 {
-    if (_bResourceFoundResult)
+    if (bResourceFoundResult)
     {
-        *_bResourceFoundResult = false;
+        *bResourceFoundResult = false;
     }
 
-    if (_bMetadataMismatch)
+    if (bMetadataMismatch)
     {
-        *_bMetadataMismatch = false;
+        *bMetadataMismatch = false;
     }
 
-    AResource* resource = FindResourceByAlias(_Alias);
+    AResource* resource = FindResource(path);
     if (resource)
     {
-        if (&resource->FinalClassMeta() != &_ClassMeta)
+        if (&resource->FinalClassMeta() != &classMeta)
         {
-            LOG("GetResource: {} class doesn't match meta data ({} vs {})\n", _Alias, resource->FinalClassName(), _ClassMeta.GetName());
+            LOG("GetResource: {} class doesn't match meta data ({} vs {})\n", path, resource->FinalClassName(), classMeta.GetName());
 
-            if (_bMetadataMismatch)
+            if (bMetadataMismatch)
             {
-                *_bMetadataMismatch = true;
+                *bMetadataMismatch = true;
             }
         }
 
-        if (_bResourceFoundResult)
+        if (bResourceFoundResult)
         {
-            *_bResourceFoundResult = true;
+            *bResourceFoundResult = true;
         }
         return resource;
     }
 
     // Never return nullptr, always create default object
 
-    resource = static_cast<AResource*>(_ClassMeta.CreateInstance());
+    resource = static_cast<AResource*>(classMeta.CreateInstance());
     resource->InitializeDefaultObject();
 
     return resource;
 }
 
-AClassMeta const* AResourceManager::GetResourceInfo(AStringView _Alias)
+AClassMeta const* AResourceManager::GetResourceInfo(AStringView path)
 {
-    AResource* resource = FindResourceByAlias(_Alias);
+    AResource* resource = FindResource(path);
     return resource ? &resource->FinalClassMeta() : nullptr;
 }
 
-AResource* AResourceManager::GetOrCreateResource(AClassMeta const& _ClassMeta, AStringView _Path)
+AResource* AResourceManager::GetOrCreateResource(AClassMeta const& classMeta, AStringView path, RESOURCE_FLAGS flags)
 {
     bool bMetadataMismatch;
 
-    AResource* resource = FindResource(_ClassMeta, _Path, bMetadataMismatch);
+    AResource* resource = FindResource(classMeta, path, bMetadataMismatch);
     if (bMetadataMismatch)
     {
         // Never return null
 
-        resource = static_cast<AResource*>(_ClassMeta.CreateInstance());
+        resource = static_cast<AResource*>(classMeta.CreateInstance());
         resource->InitializeDefaultObject();
 
         return resource;
@@ -181,76 +181,88 @@ AResource* AResourceManager::GetOrCreateResource(AClassMeta const& _ClassMeta, A
         return resource;
     }
 
-    resource = static_cast<AResource*>(_ClassMeta.CreateInstance());
+    resource = static_cast<AResource*>(classMeta.CreateInstance());
     resource->AddRef();
-    resource->SetResourcePath(_Path);
-    resource->SetObjectName(_Path);
-    resource->InitializeFromFile(_Path);
+    resource->SetResourcePath(path);
+    resource->SetResourceFlags(flags);
+    resource->SetObjectName(path);
+    resource->InitializeFromFile(path);
 
-    ResourceCache[_Path] = resource;
+    m_ResourceCache[path] = resource;
 
     return resource;
 }
 
-bool AResourceManager::RegisterResource(AResource* _Resource, AStringView _Alias)
+bool AResourceManager::RegisterResource(AResource* resource, AStringView path)
 {
     bool bMetadataMismatch;
 
-    if (!_Resource->GetResourcePath().IsEmpty())
+    if (resource->IsManualResource() || !resource->GetResourcePath().IsEmpty())
     {
-        LOG("RegisterResource: Resource already registered ({})\n", _Resource->GetResourcePath());
+        LOG("RegisterResource: Resource already registered ({})\n", resource->GetResourcePath());
         return false;
     }
 
-    AResource* resource = FindResource(_Resource->FinalClassMeta(), _Alias, bMetadataMismatch);
-    if (resource || bMetadataMismatch)
+    AResource* cachedResource = FindResource(resource->FinalClassMeta(), path, bMetadataMismatch);
+    if (cachedResource || bMetadataMismatch)
     {
-        LOG("RegisterResource: Resource with same alias already exists ({})\n", _Alias);
+        LOG("RegisterResource: Resource with same path already exists ({})\n", path);
         return false;
     }
 
-    _Resource->AddRef();
-    _Resource->SetResourcePath(_Alias);
+    resource->AddRef();
+    resource->SetResourcePath(path);
+    resource->SetManualResource(true);
 
-    ResourceCache[_Alias] = _Resource;
+    m_ResourceCache[path] = resource;
 
     return true;
 }
 
-bool AResourceManager::UnregisterResource(AResource* _Resource)
+bool AResourceManager::UnregisterResource(AResource* resource)
 {
-    auto it = ResourceCache.Find(_Resource->GetResourcePath());
-    if (it == ResourceCache.End())
+    if (!resource->IsManualResource())
     {
-        LOG("UnregisterResource: resource {} is not found\n", _Resource->GetResourcePath());
+        LOG("UnregisterResource: Resource {} is not manual\n", resource->GetResourcePath());
+        return false;
+    }
+
+    auto it = m_ResourceCache.Find(resource->GetResourcePath());
+    if (it == m_ResourceCache.End())
+    {
+        LOG("UnregisterResource: Resource {} is not found\n", resource->GetResourcePath());
         return false;
     }
 
     AResource* cachedResource = it->second;
-    if (&cachedResource->FinalClassMeta() != &_Resource->FinalClassMeta())
+    if (&cachedResource->FinalClassMeta() != &resource->FinalClassMeta())
     {
-        LOG("UnregisterResource: {} class doesn't match meta data ({} vs {})\n", _Resource->GetResourcePath(), cachedResource->FinalClassName(), _Resource->FinalClassMeta().GetName());
+        LOG("UnregisterResource: {} class doesn't match meta data ({} vs {})\n", resource->GetResourcePath(), cachedResource->FinalClassName(), resource->FinalClassMeta().GetName());
         return false;
     }
 
     // FIXME: Match resource pointers/ids?
 
-    _Resource->SetResourcePath("");
-    _Resource->RemoveRef();
+    resource->SetResourcePath("");
+    resource->SetManualResource(false);
+    resource->RemoveRef();
 
-    ResourceCache.Erase(it);
+    m_ResourceCache.Erase(it);
 
     return true;
 }
 
-void AResourceManager::UnregisterResources(AClassMeta const& _ClassMeta)
+void AResourceManager::UnregisterResources(AClassMeta const& classMeta)
 {
-    for (auto it = ResourceCache.Begin(); it != ResourceCache.End() ; )
+    for (auto it = m_ResourceCache.Begin(); it != m_ResourceCache.End();)
     {
         AResource* resource = it->second;
-        if (resource->FinalClassId() == _ClassMeta.GetId())
+        if (resource->IsManualResource() && resource->FinalClassId() == classMeta.GetId())
         {
-            it = ResourceCache.Erase(it);
+            resource->SetManualResource(false);
+            resource->SetResourcePath("");
+
+            it = m_ResourceCache.Erase(it);
             resource->RemoveRef();
         }
         else
@@ -262,89 +274,116 @@ void AResourceManager::UnregisterResources(AClassMeta const& _ClassMeta)
 
 void AResourceManager::UnregisterResources()
 {
-    for (auto it : ResourceCache)
+    for (auto it = m_ResourceCache.Begin(); it != m_ResourceCache.End();)
     {
-        AResource* resource = it.second;
-        resource->RemoveRef();
+        AResource* resource = it->second;
+        if (resource->IsManualResource())
+        {
+            resource->SetManualResource(false);
+            resource->SetResourcePath("");
+
+            it = m_ResourceCache.Erase(it);
+            resource->RemoveRef();
+        }
+        else
+        {
+            ++it;
+        }
     }
-    ResourceCache.Clear();
 }
 
-bool AResourceManager::IsResourceExists(AStringView Path)
+void AResourceManager::RemoveUnreferencedResources()
 {
-    if (!Path.IcmpN("/Default/", 9))
+    for (auto it = m_ResourceCache.Begin(); it != m_ResourceCache.End();)
+    {
+        AResource* resource = it->second;
+        if (resource->GetRefCount() == 1 && !resource->IsManualResource() && !resource->IsPersistent())
+        {
+            it = m_ResourceCache.Erase(it);
+            resource->RemoveRef();
+        }
+        else
+        {
+            ++it;
+        }
+    }
+}
+
+bool AResourceManager::IsResourceExists(AStringView path)
+{
+    if (!path.IcmpN("/Default/", 9))
     {
         return false;
     }
 
-    if (!Path.IcmpN("/Root/", 6))
+    if (!path.IcmpN("/Root/", 6))
     {
-        Path = Path.TruncateHead(6);
+        path = path.TruncateHead(6);
 
         // find in file system
-        AString fileSystemPath = GEngine->GetRootPath() + Path;
+        AString fileSystemPath = GEngine->GetRootPath() + path;
         if (Core::IsFileExists(fileSystemPath))
             return true;
 
         // find in resource pack
         int resourcePack;
         AFileHandle fileHandle;
-        if (FindFile(Path, &resourcePack, &fileHandle))
+        if (FindFile(path, &resourcePack, &fileHandle))
             return true;
 
         return false;
     }
 
-    if (!Path.IcmpN("/Common/", 8))
+    if (!path.IcmpN("/Common/", 8))
     {
-        Path = Path.TruncateHead(1);
+        path = path.TruncateHead(1);
 
         // find in file system
-        if (Core::IsFileExists(Path))
+        if (Core::IsFileExists(path))
             return true;
 
-        Path = Path.TruncateHead(7);
+        path = path.TruncateHead(7);
 
         // find in resource pack
-        if (!CommonResources.LocateFile(Path).IsValid())
+        if (!m_CommonResources.LocateFile(path).IsValid())
             return false;
 
         return true;
     }
 
-    if (!Path.IcmpN("/FS/", 4))
+    if (!path.IcmpN("/FS/", 4))
     {
-        Path = Path.TruncateHead(4);
+        path = path.TruncateHead(4);
 
-        if (Core::IsFileExists(Path))
+        if (Core::IsFileExists(path))
             return true;
 
         return false;
     }
 
-    if (!Path.IcmpN("/Embedded/", 10))
+    if (!path.IcmpN("/Embedded/", 10))
     {
-        Path = Path.TruncateHead(10);
+        path = path.TruncateHead(10);
 
         AArchive const& archive = Runtime::GetEmbeddedResources();
-        if (!archive.LocateFile(Path).IsValid())
+        if (!archive.LocateFile(path).IsValid())
             return false;
 
         return true;
     }
 
-    LOG("Invalid path \"{}\"\n", Path);
+    LOG("Invalid path \"{}\"\n", path);
     return false;
 }
 
-AFile AResourceManager::OpenResource(AStringView Path)
+AFile AResourceManager::OpenResource(AStringView path)
 {
-    if (!Path.IcmpN("/Root/", 6))
+    if (!path.IcmpN("/Root/", 6))
     {
-        Path = Path.TruncateHead(6);
+        path = path.TruncateHead(6);
 
         // try to load from file system
-        AString fileSystemPath = GEngine->GetRootPath() + Path;
+        AString fileSystemPath = GEngine->GetRootPath() + path;
         if (Core::IsFileExists(fileSystemPath))
         {
             return AFile::OpenRead(fileSystemPath);
@@ -353,43 +392,43 @@ AFile AResourceManager::OpenResource(AStringView Path)
         // try to load from resource pack
         int resourcePack;
         AFileHandle fileHandle;
-        if (FindFile(Path, &resourcePack, &fileHandle))
+        if (FindFile(path, &resourcePack, &fileHandle))
         {
-            return AFile::OpenRead(fileHandle, ResourcePacks[resourcePack]);
+            return AFile::OpenRead(fileHandle, m_ResourcePacks[resourcePack]);
         }
 
-        LOG("File not found /Root/{}\n", Path);
+        LOG("File not found /Root/{}\n", path);
         return {};
     }
 
-    if (!Path.IcmpN("/Common/", 8))
+    if (!path.IcmpN("/Common/", 8))
     {
-        Path = Path.TruncateHead(1);
+        path = path.TruncateHead(1);
 
         // try to load from file system
-        if (Core::IsFileExists(Path))
+        if (Core::IsFileExists(path))
         {
-            return AFile::OpenRead(Path);
+            return AFile::OpenRead(path);
         }
 
         // try to load from resource pack
-        return AFile::OpenRead(Path.TruncateHead(7), CommonResources);
+        return AFile::OpenRead(path.TruncateHead(7), m_CommonResources);
     }
 
-    if (!Path.IcmpN("/FS/", 4))
+    if (!path.IcmpN("/FS/", 4))
     {
-        Path = Path.TruncateHead(4);
+        path = path.TruncateHead(4);
 
-        return AFile::OpenRead(Path);
+        return AFile::OpenRead(path);
     }
 
-    if (!Path.IcmpN("/Embedded/", 10))
+    if (!path.IcmpN("/Embedded/", 10))
     {
-        Path = Path.TruncateHead(10);
+        path = path.TruncateHead(10);
 
-        return AFile::OpenRead(Path, Runtime::GetEmbeddedResources());
+        return AFile::OpenRead(path, Runtime::GetEmbeddedResources());
     }
 
-    LOG("Invalid path \"{}\"\n", Path);
+    LOG("Invalid path \"{}\"\n", path);
     return {};
 }

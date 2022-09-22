@@ -41,23 +41,23 @@ void AResource::InitializeDefaultObject()
     InitializeFromFile(GetDefaultResourcePath());
 }
 
-void AResource::InitializeFromFile(AStringView Path)
+void AResource::InitializeFromFile(AStringView path)
 {
-    if (!LoadFromPath(Path))
+    if (!LoadFromPath(path))
     {
         InitializeDefaultObject();
     }
 }
 
-bool AResource::LoadFromPath(AStringView Path)
+bool AResource::LoadFromPath(AStringView path)
 {
-    if (!Path.IcmpN("/Default/", 9))
+    if (!path.IcmpN("/Default/", 9))
     {
-        LoadInternalResource(Path);
+        LoadInternalResource(path);
         return true;
     }
 
-    AFile f = GEngine->GetResourceManager()->OpenResource(Path);
+    AFile f = GEngine->GetResourceManager()->OpenResource(path);
     if (!f)
         return false;
 
@@ -83,11 +83,11 @@ void ABinaryResource::Purge()
     m_SizeInBytes = 0;
 }
 
-bool ABinaryResource::LoadResource(IBinaryStreamReadInterface& Stream)
+bool ABinaryResource::LoadResource(IBinaryStreamReadInterface& stream)
 {
     Purge();
 
-    m_SizeInBytes = Stream.SizeInBytes();
+    m_SizeInBytes = stream.SizeInBytes();
     if (!m_SizeInBytes)
     {
         LOG("ABinaryResource::LoadResource: empty file\n");
@@ -95,13 +95,13 @@ bool ABinaryResource::LoadResource(IBinaryStreamReadInterface& Stream)
     }
 
     m_pBinaryData = Platform::GetHeapAllocator<HEAP_MISC>().Alloc(m_SizeInBytes + 1);
-    Stream.Read(m_pBinaryData, m_SizeInBytes);
+    stream.Read(m_pBinaryData, m_SizeInBytes);
     ((uint8_t*)m_pBinaryData)[m_SizeInBytes] = 0;
 
     return true;
 }
 
-void ABinaryResource::LoadInternalResource(AStringView Path)
+void ABinaryResource::LoadInternalResource(AStringView path)
 {
     Purge();
 }

@@ -32,6 +32,14 @@ SOFTWARE.
 
 #include "BaseObject.h"
 
+enum RESOURCE_FLAGS : uint32_t
+{
+    RESOURCE_FLAG_DEFAULT = 0,
+    RESOURCE_FLAG_PERSISTENT = 1
+};
+
+HK_FLAG_ENUM_OPERATORS(RESOURCE_FLAGS)
+
 class AResource : public ABaseObject
 {
     HK_CLASS(AResource, ABaseObject)
@@ -48,15 +56,19 @@ public:
     }
 
     template <typename ResourceType>
-    static ResourceType* CreateFromFile(AStringView Path)
+    static ResourceType* CreateFromFile(AStringView path)
     {
         ResourceType* resource = CreateInstanceOf<ResourceType>();
-        resource->InitializeFromFile(Path);
+        resource->InitializeFromFile(path);
         return resource;
     }
 
     /** Get physical resource path */
     AString const& GetResourcePath() const { return m_ResourcePath; }
+
+    bool IsManualResource() const { return m_bManualResource; }
+
+    bool IsPersistent() const { return !!(m_Flags & RESOURCE_FLAG_PERSISTENT); }
 
 protected:
     AResource() {}
@@ -65,23 +77,29 @@ protected:
     void InitializeDefaultObject();
 
     /** Initialize object from file */
-    void InitializeFromFile(AStringView Path);
+    void InitializeFromFile(AStringView path);
 
     /** Load resource from file */
-    virtual bool LoadResource(IBinaryStreamReadInterface& _Stream) { return false; }
+    virtual bool LoadResource(IBinaryStreamReadInterface& stream) { return false; }
 
     /** Create internal resource */
-    virtual void LoadInternalResource(AStringView Path) {}
+    virtual void LoadInternalResource(AStringView path) {}
 
     virtual const char* GetDefaultResourcePath() const { return "/Default/UnknownResource"; }
 
 private:
-    bool LoadFromPath(AStringView Path);
+    bool LoadFromPath(AStringView path);
 
-    /** Set physical resource path */
-    void SetResourcePath(AStringView _ResourcePath) { m_ResourcePath = _ResourcePath; }
+    /** Set resource path */
+    void SetResourcePath(AStringView path) { m_ResourcePath = path; }
+
+    void SetManualResource(bool bManualResource) { m_bManualResource = bManualResource; }
+
+    void SetResourceFlags(RESOURCE_FLAGS Flags) { m_Flags = Flags; }
 
     AString m_ResourcePath;
+    bool m_bManualResource = false;
+    RESOURCE_FLAGS m_Flags = RESOURCE_FLAG_DEFAULT;
 };
 
 class ABinaryResource : public AResource
@@ -111,10 +129,10 @@ protected:
     void Purge();
 
     /** Load resource from file */
-    bool LoadResource(IBinaryStreamReadInterface& Stream) override;
+    bool LoadResource(IBinaryStreamReadInterface& stream) override;
 
     /** Create internal resource */
-    void LoadInternalResource(AStringView Path) override;
+    void LoadInternalResource(AStringView path) override;
 
 private:
     void*  m_pBinaryData = nullptr;
