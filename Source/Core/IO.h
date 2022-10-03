@@ -152,6 +152,9 @@ public:
     /** Read from specified memory buffer. */
     static AFile OpenRead(AStringView FileName, const void* pMemoryBuffer, size_t SizeInBytes);
 
+    /** Read from specified memory buffer. */
+    static AFile OpenRead(AStringView FileName, BlobRef Blob);
+
     /** Read file from archive by file name. */
     static AFile OpenRead(AStringView FileName, AArchive const& Archive);
 

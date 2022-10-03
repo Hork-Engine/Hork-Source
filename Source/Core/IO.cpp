@@ -502,6 +502,22 @@ AFile AFile::OpenRead(AStringView FileName, const void* pMemoryBuffer, size_t Si
     return f;
 }
 
+AFile AFile::OpenRead(AStringView FileName, BlobRef Blob)
+{
+    AFile f;
+
+    f.m_Name = FileName;
+    f.m_Type = FILE_TYPE_READ_MEMORY;
+    f.m_pHeapPtr = (byte*)Alloc(Blob.Size());
+    f.m_FileSize = Blob.Size();
+    f.m_ReservedSize = Blob.Size();
+    f.m_bMemoryBufferOwner = true;
+
+    Platform::Memcpy(f.m_pHeapPtr, Blob.GetData(), Blob.Size());
+
+    return f;
+}
+
 AFile AFile::OpenRead(AStringView FileName, AArchive const& Archive)
 {
     AFile f;
