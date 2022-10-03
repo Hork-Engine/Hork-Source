@@ -694,7 +694,6 @@ private:
     NVGcontext*      m_Context{};
     CanvasDrawData   m_DrawData;
     TRef<AFontStash> m_FontStash;
-    TRef<AFont>      m_Font;
     AViewportList    m_Viewports;
 
     // Flag indicating if geoemtry based anti-aliasing is used (may not be needed when using MSAA).

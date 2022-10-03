@@ -60,8 +60,6 @@ class AEngine : public IEventListener
     HK_FORBID_COPY(AEngine)
 
 public:
-    ACanvas Canvas;
-
     /** Global random number generator */
     AMersenneTwisterRand Rand;
 
@@ -200,6 +198,8 @@ private:
     AString                   RootPath;
     SEntryDecl const*         pModuleDecl;
     TRef<RenderCore::IDevice> RenderDevice;
+
+    TUniqueRef<ACanvas> Canvas;
 
     /** scale coordinates for Retina displays */
     Float2 RetinaScale;

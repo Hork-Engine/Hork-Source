@@ -395,12 +395,8 @@ void ACanvas::NewFrame(uint32_t width, uint32_t height)
     float devicePixelRatio = GEngine->GetRetinaScale().X;
     nvgBeginFrame(m_Context, devicePixelRatio);
 
-    // If current font was removed
-    if (m_Font && m_Font->GetRefCount() == 1)
-    {
-        // Set default font
-        FontFace(nullptr);
-    }
+    // Set default font
+    FontFace(nullptr);
 }
 
 void ACanvas::Push(CANVAS_SAVE_FLAG ResetFlag)
@@ -1196,17 +1192,11 @@ void ACanvas::FontFace(AFont* font)
     if (font)
     {
         nvgFontFaceId(m_Context, font->GetId());
-
-        // Keep reference
-        m_Font = font;
     }
     else
     {
         // Set default font
-
         nvgFontFaceId(m_Context, GetDefaultFont()->GetId());
-
-        m_Font.Reset();
     }
 }
 
