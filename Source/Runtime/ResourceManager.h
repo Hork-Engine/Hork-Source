@@ -33,11 +33,28 @@ SOFTWARE.
 #include "Resource.h"
 #include "Engine.h"
 
+class AResourceFactory : public ARefCounted
+{
+public:
+    virtual bool IsResourceExists(AStringView Path)
+    {
+        return false;
+    }
+
+    virtual AFile OpenResource(AStringView Path)
+    {
+        return {};
+    }
+};
+
 class AResourceManager
 {
 public:
     AResourceManager();
     virtual ~AResourceManager();
+
+    /** Add custom resource factory */
+    void AddResourceFactory(AResourceFactory* Factory);
 
     void AddResourcePack(AStringView fileName);
 
@@ -108,6 +125,7 @@ public:
     AFile OpenResource(AStringView path);
 
 private:
+    TVector<TRef<AResourceFactory>> m_ResourceFactories;
     TNameHash<AResource*> m_ResourceCache;
     TVector<AArchive>     m_ResourcePacks;
     AArchive              m_CommonResources;

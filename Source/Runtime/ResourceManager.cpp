@@ -61,6 +61,11 @@ AResourceManager::~AResourceManager()
     }
 }
 
+void AResourceManager::AddResourceFactory(AResourceFactory* Factory)
+{
+    m_ResourceFactories.Add(TRef<AResourceFactory>(Factory));
+}
+
 void AResourceManager::AddResourcePack(AStringView fileName)
 {
     m_ResourcePacks.EmplaceBack<AArchive>(AArchive::Open(fileName, true));
@@ -320,6 +325,12 @@ bool AResourceManager::IsResourceExists(AStringView path)
     {
         path = path.TruncateHead(6);
 
+        for (auto& factory : m_ResourceFactories)
+        {
+            if (factory->IsResourceExists(path))
+                return true;
+        }
+
         // find in file system
         AString fileSystemPath = GEngine->GetRootPath() + path;
         if (Core::IsFileExists(fileSystemPath))
@@ -381,6 +392,13 @@ AFile AResourceManager::OpenResource(AStringView path)
     if (!path.IcmpN("/Root/", 6))
     {
         path = path.TruncateHead(6);
+
+        for (auto& factory : m_ResourceFactories)
+        {
+            AFile file = factory->OpenResource(path);
+            if (file)
+                return file;
+        }
 
         // try to load from file system
         AString fileSystemPath = GEngine->GetRootPath() + path;
