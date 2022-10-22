@@ -66,6 +66,8 @@ public:
     {
         ReleaseCapturedResources();
         CapturedResources.Clear();
+        for (auto& resource : ExternalResources)
+            resource->pDeviceObject->RemoveRef();
         ExternalResources.Clear();
         Resources.Clear();
         RenderTasks.Clear();
@@ -82,6 +84,7 @@ public:
     template <typename T>
     T* AddExternalResource(const char* Name, typename T::ResourceType* Resource)
     {
+        Resource->AddRef();
         ExternalResources.EmplaceBack(std::make_unique<T>(GenerateResourceId(), Name, Resource));
         return static_cast<T*>(ExternalResources.Last().get());
     }
