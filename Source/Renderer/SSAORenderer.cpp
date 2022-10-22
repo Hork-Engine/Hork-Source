@@ -221,6 +221,8 @@ void ASSAORenderer::AddDeinterleaveDepthPass(AFrameGraph& FrameGraph, FGTextureP
     //    SSAODeinterleaveDepthView_R[i] = FrameGraph.AddTextureView(textureViewName[i], SSAODeinterleaveDepthView[i]);
     //}
 
+    Float2 invFullResolution = {1.0f / AOWidth, 1.0f / AOHeight};
+
     ARenderPass& deinterleavePass = FrameGraph.AddTask<ARenderPass>("Deinterleave Depth Pass");
     deinterleavePass.SetRenderArea(AOQuarterWidth, AOQuarterHeight);
     deinterleavePass.AddResource(LinearDepth, FG_RESOURCE_ACCESS_READ);
@@ -247,8 +249,7 @@ void ASSAORenderer::AddDeinterleaveDepthPass(AFrameGraph& FrameGraph, FGTextureP
                                     SDrawCall* drawCall           = MapDrawCallConstants<SDrawCall>();
                                     drawCall->UVOffset.X          = 0.5f;
                                     drawCall->UVOffset.Y          = 0.5f;
-                                    drawCall->InvFullResolution.X = 1.0f / AOWidth;
-                                    drawCall->InvFullResolution.Y = 1.0f / AOHeight;
+                                    drawCall->InvFullResolution = invFullResolution;
 
                                     rtbl->BindTexture(0, LinearDepth->Actual());
 
@@ -281,8 +282,7 @@ void ASSAORenderer::AddDeinterleaveDepthPass(AFrameGraph& FrameGraph, FGTextureP
                                      SDrawCall* drawCall           = MapDrawCallConstants<SDrawCall>();
                                      drawCall->UVOffset.X          = float(8 % 4) + 0.5f;
                                      drawCall->UVOffset.Y          = float(8 / 4) + 0.5f;
-                                     drawCall->InvFullResolution.X = 1.0f / AOWidth;
-                                     drawCall->InvFullResolution.Y = 1.0f / AOHeight;
+                                     drawCall->InvFullResolution   = invFullResolution;
 
                                      rtbl->BindTexture(0, LinearDepth->Actual());
 
@@ -296,6 +296,10 @@ void ASSAORenderer::AddDeinterleaveDepthPass(AFrameGraph& FrameGraph, FGTextureP
 
 void ASSAORenderer::AddCacheAwareAOPass(AFrameGraph& FrameGraph, FGTextureProxy* DeinterleaveDepthArray, FGTextureProxy* NormalTexture, FGTextureProxy** ppSSAOTextureArray)
 {
+    Float2 invFullResolution = {1.0f / AOWidth, 1.0f / AOHeight};
+    Float2 invQuarterResolution = {1.0f / AOQuarterWidth, 1.0f / AOQuarterHeight};
+    float  aoHeight             = (float)AOHeight;
+
     ARenderPass& cacheAwareAO = FrameGraph.AddTask<ARenderPass>("Cache Aware AO Pass");
     cacheAwareAO.SetRenderArea(AOQuarterWidth, AOQuarterHeight);
     cacheAwareAO.AddResource(DeinterleaveDepthArray, FG_RESOURCE_ACCESS_READ);
@@ -327,11 +331,11 @@ void ASSAORenderer::AddCacheAwareAOPass(AFrameGraph& FrameGraph, FGTextureProxy*
 
                                 if (GRenderView->bPerspective)
                                 {
-                                    projScale = (float)AOHeight / std::tan(GRenderView->ViewFovY * 0.5f) * 0.5f;
+                                    projScale = aoHeight / std::tan(GRenderView->ViewFovY * 0.5f) * 0.5f;
                                 }
                                 else
                                 {
-                                    projScale = (float)AOHeight * GRenderView->ProjectionMatrix[1][1] * 0.5f;
+                                    projScale = aoHeight * GRenderView->ProjectionMatrix[1][1] * 0.5f;
                                 }
 
                                 drawCall->Bias                   = r_HBAOBias.GetFloat();
@@ -339,10 +343,8 @@ void ASSAORenderer::AddCacheAwareAOPass(AFrameGraph& FrameGraph, FGTextureProxy*
                                 drawCall->RadiusToScreen         = r_HBAORadius.GetFloat() * 0.5f * projScale;
                                 drawCall->PowExponent            = r_HBAOPowExponent.GetFloat();
                                 drawCall->Multiplier             = 1.0f / (1.0f - r_HBAOBias.GetFloat());
-                                drawCall->InvFullResolution.X    = 1.0f / AOWidth;
-                                drawCall->InvFullResolution.Y    = 1.0f / AOHeight;
-                                drawCall->InvQuarterResolution.X = 1.0f / AOQuarterWidth;
-                                drawCall->InvQuarterResolution.Y = 1.0f / AOQuarterHeight;
+                                drawCall->InvFullResolution      = invFullResolution;
+                                drawCall->InvQuarterResolution   = invQuarterResolution;
 
                                 rtbl->BindTexture(0, DeinterleaveDepthArray->Actual());
                                 rtbl->BindTexture(1, NormalTexture->Actual());
@@ -520,9 +522,10 @@ void ASSAORenderer::AddAOBlurPass(AFrameGraph& FrameGraph, FGTextureProxy* SSAOT
 
 void ASSAORenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* LinearDepth, FGTextureProxy* NormalTexture, FGTextureProxy** ppSSAOTexture)
 {
-    ResizeAO(GFrameData->RenderTargetMaxWidth, GFrameData->RenderTargetMaxHeight);
+    // TODO: Don't resize on every frame! This can happen if there are multiple viewports on the screen.
+    ResizeAO(GRenderView->Width, GRenderView->Height);
 
-    if (r_HBAODeinterleaved && GRenderView->Width == GFrameData->RenderTargetMaxWidth && GRenderView->Height == GFrameData->RenderTargetMaxHeight)
+    if (r_HBAODeinterleaved /*&& GRenderView->Width == GFrameData->RenderTargetMaxWidth && GRenderView->Height == GFrameData->RenderTargetMaxHeight*/)
     {
         FGTextureProxy *DeinterleaveDepthArray, *SSAOTextureArray;
 

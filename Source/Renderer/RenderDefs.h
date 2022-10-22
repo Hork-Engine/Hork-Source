@@ -1137,15 +1137,6 @@ struct SRenderFrame
     /** Game tick */
     int FrameNumber;
 
-    /** Render target max resolution */
-    uint32_t RenderTargetMaxWidth;
-    /** Render target max resolution */
-    uint32_t RenderTargetMaxHeight;
-    /** Render target max resolution at prev frame */
-    uint32_t RenderTargetMaxWidthP;
-    /** Render target max resolution at prev frame */
-    uint32_t RenderTargetMaxHeightP;
-
     /** Canvas resolution */
     int CanvasWidth;
     /** Canvas resolution */

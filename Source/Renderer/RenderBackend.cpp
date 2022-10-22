@@ -564,10 +564,11 @@ void ARenderBackend::SetViewConstants(int ViewportIndex)
     pViewCBuf->GlobalIrradianceMap = GRenderView->GlobalIrradianceMap;
     pViewCBuf->GlobalReflectionMap = GRenderView->GlobalReflectionMap;
 
-    pViewCBuf->DynamicResolutionRatioX  = (float)GRenderView->Width / GFrameData->RenderTargetMaxWidth;
-    pViewCBuf->DynamicResolutionRatioY  = (float)GRenderView->Height / GFrameData->RenderTargetMaxHeight;
-    pViewCBuf->DynamicResolutionRatioPX = (float)GRenderView->WidthP / GFrameData->RenderTargetMaxWidthP;
-    pViewCBuf->DynamicResolutionRatioPY = (float)GRenderView->HeightP / GFrameData->RenderTargetMaxHeightP;
+    // TODO
+    pViewCBuf->DynamicResolutionRatioX  = 1; //(float)GRenderView->Width / GFrameData->RenderTargetMaxWidth;
+    pViewCBuf->DynamicResolutionRatioY  = 1; //(float)GRenderView->Height / GFrameData->RenderTargetMaxHeight;
+    pViewCBuf->DynamicResolutionRatioPX = 1; //(float)GRenderView->WidthP / GFrameData->RenderTargetMaxWidthP;
+    pViewCBuf->DynamicResolutionRatioPY = 1; //(float)GRenderView->HeightP / GFrameData->RenderTargetMaxHeightP;
 
     pViewCBuf->FeedbackBufferResolutionRatio = GRenderView->VTFeedback->GetResolutionRatio();
 

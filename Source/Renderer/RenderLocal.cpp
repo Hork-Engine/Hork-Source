@@ -93,7 +93,8 @@ IPipeline* GTerrainWireframePipeline;
 
 STextureResolution2D GetFrameResoultion()
 {
-    return STextureResolution2D(GFrameData->RenderTargetMaxWidth, GFrameData->RenderTargetMaxHeight);
+    return STextureResolution2D(GRenderView->Width, GRenderView->Height);
+    //return STextureResolution2D(GFrameData->RenderTargetMaxWidth, GFrameData->RenderTargetMaxHeight);
 }
 
 void DrawSAQ(IImmediateContext* immediateCtx, IPipeline* Pipeline, unsigned int InstanceCount)

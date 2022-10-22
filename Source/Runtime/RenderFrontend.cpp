@@ -38,7 +38,6 @@ SOFTWARE.
 #include "EnvironmentProbe.h"
 #include "TerrainComponent.h"
 #include "PlayerController.h"
-#include "WDesktop.h"
 #include "Engine.h"
 #include "EnvironmentMap.h"
 
@@ -104,17 +103,11 @@ void ARenderFrontend::Render(AFrameLoop* InFrameLoop, ACanvas* InCanvas)
     Stat.PolyCount          = 0;
     Stat.ShadowMapPolyCount = 0;
 
-    MaxViewportWidth  = 1;
-    MaxViewportHeight = 1;
     Viewports.Clear();
 
     for (auto& viewport : InCanvas->GetViewports())
     {
         HK_ASSERT(viewport.Width > 0 && viewport.Height > 0);
-
-        // Calc max viewport size
-        MaxViewportWidth  = Math::Max(MaxViewportWidth, viewport.Width);
-        MaxViewportHeight = Math::Max(MaxViewportHeight, viewport.Height);
 
         Viewports.Add(&viewport);
     }
@@ -127,11 +120,6 @@ void ARenderFrontend::Render(AFrameLoop* InFrameLoop, ACanvas* InCanvas)
         FrameData.CanvasVertexData = streamedMemory->AllocateVertex(FrameData.CanvasDrawData->VertexCount * sizeof(CanvasVertex), FrameData.CanvasDrawData->Vertices);
     else
         FrameData.CanvasVertexData = 0;
-
-    FrameData.RenderTargetMaxWidthP  = FrameData.RenderTargetMaxWidth;
-    FrameData.RenderTargetMaxHeightP = FrameData.RenderTargetMaxHeight;
-    FrameData.RenderTargetMaxWidth   = MaxViewportWidth;
-    FrameData.RenderTargetMaxHeight  = MaxViewportHeight;
 
     FrameData.CanvasWidth  = InCanvas->GetWidth();
     FrameData.CanvasHeight = InCanvas->GetHeight();
@@ -285,18 +273,18 @@ void ARenderFrontend::RenderView(int _Index)
 
     view->CurrentExposure = RP->GetCurrentExposure()->GetGPUResource();
 
-    // TODO: light and depth texture must have size of render view, not render target max w/h
+    // NOTE: light and depth texture must have size of render view, not render target max w/h
     // TODO: Do not initialize light&depth textures if screen space reflections disabled
     auto& lightTexture = RP->LightTexture;
-    if (!lightTexture || (lightTexture->GetWidth() != FrameData.RenderTargetMaxWidth || lightTexture->GetHeight() != FrameData.RenderTargetMaxHeight))
+    if (!lightTexture || (lightTexture->GetWidth() != view->Width || lightTexture->GetHeight() != view->Height))
     {
-        auto size = std::max(FrameData.RenderTargetMaxWidth, FrameData.RenderTargetMaxHeight);
+        auto size    = std::max(view->Width, view->Height);
         int  numMips = 1;
         while ((size >>= 1) > 0)
             numMips++;
 
         RenderCore::STextureDesc textureDesc;
-        textureDesc.SetResolution(RenderCore::STextureResolution2D(FrameData.RenderTargetMaxWidth, FrameData.RenderTargetMaxHeight));
+        textureDesc.SetResolution(RenderCore::STextureResolution2D(view->Width, view->Height));
         textureDesc.SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT);
         textureDesc.SetMipLevels(numMips);
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE/* | RenderCore::BIND_RENDER_TARGET*/);
@@ -306,10 +294,10 @@ void ARenderFrontend::RenderView(int _Index)
     }
 
     auto& depthTexture = RP->DepthTexture;
-    if (!depthTexture || (depthTexture->GetWidth() != FrameData.RenderTargetMaxWidth || depthTexture->GetHeight() != FrameData.RenderTargetMaxHeight))
+    if (!depthTexture || (depthTexture->GetWidth() != view->Width || depthTexture->GetHeight() != view->Height))
     {
         RenderCore::STextureDesc textureDesc;
-        textureDesc.SetResolution(RenderCore::STextureResolution2D(FrameData.RenderTargetMaxWidth, FrameData.RenderTargetMaxHeight));
+        textureDesc.SetResolution(RenderCore::STextureResolution2D(view->Width, view->Height));
         textureDesc.SetFormat(TEXTURE_FORMAT_R32_FLOAT);
         textureDesc.SetMipLevels(1);
         textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE /* | RenderCore::BIND_RENDER_TARGET*/);
