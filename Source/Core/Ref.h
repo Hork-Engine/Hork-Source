@@ -488,29 +488,37 @@ public:
     }
 };
 
-template <typename T>
-HK_FORCEINLINE bool operator==(TRef<T> const& _Ref, TRef<T> const& _Ref2) { return _Ref.GetObject() == _Ref2.GetObject(); }
 
-template <typename T>
-HK_FORCEINLINE bool operator!=(TRef<T> const& _Ref, TRef<T> const& _Ref2) { return _Ref.GetObject() != _Ref2.GetObject(); }
+template <typename T, typename U>
+HK_FORCEINLINE bool operator==(TRef<T> const& lhs, TRef<U> const& rhs) { return lhs.GetObject() == rhs.GetObject(); }
 
-template <typename T>
-HK_FORCEINLINE bool operator==(TRef<T> const& _Ref, TWeakRef<T> const& _Ref2) { return _Ref.GetObject() == _Ref2.GetObject(); }
+template <typename T, typename U>
+HK_FORCEINLINE bool operator!=(TRef<T> const& lhs, TRef<U> const& rhs) { return lhs.GetObject() != rhs.GetObject(); }
 
-template <typename T>
-HK_FORCEINLINE bool operator!=(TRef<T> const& _Ref, TWeakRef<T> const& _Ref2) { return _Ref.GetObject() != _Ref2.GetObject(); }
+template <typename T, typename U>
+HK_FORCEINLINE bool operator==(TRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.GetObject() == rhs.GetObject(); }
 
-template <typename T>
-HK_FORCEINLINE bool operator==(TWeakRef<T> const& _Ref, TRef<T> const& _Ref2) { return _Ref.GetObject() == _Ref2.GetObject(); }
+template <typename T, typename U>
+HK_FORCEINLINE bool operator!=(TRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.GetObject() != rhs.GetObject(); }
 
-template <typename T>
-HK_FORCEINLINE bool operator!=(TWeakRef<T> const& _Ref, TRef<T> const& _Ref2) { return _Ref.GetObject() != _Ref2.GetObject(); }
+template <typename T, typename U>
+HK_FORCEINLINE bool operator==(TWeakRef<T> const& lhs, TRef<U> const& rhs) { return lhs.GetObject() == rhs.GetObject(); }
 
-template <typename T>
-HK_FORCEINLINE bool operator==(TWeakRef<T> const& _Ref, TWeakRef<T> const& _Ref2) { return _Ref.GetObject() == _Ref2.GetObject(); }
+template <typename T, typename U>
+HK_FORCEINLINE bool operator!=(TWeakRef<T> const& lhs, TRef<U> const& rhs) { return lhs.GetObject() != rhs.GetObject(); }
 
-template <typename T>
-HK_FORCEINLINE bool operator!=(TWeakRef<T> const& _Ref, TWeakRef<T> const& _Ref2) { return _Ref.GetObject() != _Ref2.GetObject(); }
+template <typename T, typename U>
+HK_FORCEINLINE bool operator==(TWeakRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.GetObject() == rhs.GetObject(); }
+
+template <typename T, typename U>
+HK_FORCEINLINE bool operator!=(TWeakRef<T> const& lhs, TWeakRef<U> const& rhs) { return lhs.GetObject() != rhs.GetObject(); }
+
+template <typename T, typename U>
+HK_FORCEINLINE bool operator==(T const* lhs, TWeakRef<U> const& rhs) { return lhs == rhs.GetObject(); }
+
+template <typename T, typename U>
+HK_FORCEINLINE bool operator!=(T const* lhs, TWeakRef<U> const& rhs) { return lhs != rhs.GetObject(); }
+
 
 template <typename T, typename... Args>
 inline TRef<T> MakeRef(Args&&... args)
