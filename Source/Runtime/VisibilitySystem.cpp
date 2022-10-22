@@ -656,6 +656,8 @@ void AVisibilityLevel::AddPrimitiveToLevelAreas(TPodVector<AVisibilityLevel*> co
     if (Levels.IsEmpty())
         return;
 
+    LastLink = &Primitive->Links;
+
     if (Primitive->bIsOutdoor)
     {
         // add to outdoor
@@ -665,7 +667,7 @@ void AVisibilityLevel::AddPrimitiveToLevelAreas(TPodVector<AVisibilityLevel*> co
 
     // TODO: Check overlap with portal polygons between indoor and outdoor areas
 
-    LastLink = &Primitive->Links;
+    //LastLink = &Primitive->Links;
 
     for (AVisibilityLevel* level : Levels)
     {
