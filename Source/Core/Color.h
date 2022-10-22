@@ -222,23 +222,29 @@ struct Color4
 
     static constexpr Color4 Black()
     {
-        return Color4(0.0f, 0.0f, 0.0f, 1.0f);
+        return Color4(0.0f, 0.0f, 0.0f);
     }
 
     static constexpr Color4 Red()
     {
-        return Color4(1.0f, 0.0f, 0.0f, 1.0f);
+        return Color4(1.0f, 0.0f, 0.0f);
     }
 
     static constexpr Color4 Green()
     {
-        return Color4(0.0f, 1.0f, 0.0f, 1.0f);
+        return Color4(0.0f, 1.0f, 0.0f);
     }
 
     static constexpr Color4 Blue()
     {
-        return Color4(0.0f, 0.0f, 1.0f, 1.0f);
+        return Color4(0.0f, 0.0f, 1.0f);
     }
+
+    static constexpr Color4 Orange()
+    {
+        return Color4(1.0f, 0.456f, 0.1f);
+    }
+
 
     static constexpr int NumComponents() { return 4; }
 };
