@@ -1709,6 +1709,13 @@ HK_INLINE bool BvPointInPoly2D(Float2 const* _Points, int _NumPoints, Float2 con
     return BvPointInPoly2D(_Points, _NumPoints, _Point.X, _Point.Y);
 }
 
+HK_INLINE bool BvPointInRect(Float2 const& mins, Float2 const& maxs, float x, float y)
+{
+    if (x < mins.X || y < mins.Y || x > maxs.X || y > maxs.Y)
+        return false;
+    return true;
+}
+
 /**
 Check is point inside convex hull:
 InPoint - testing point (assumed point is on hull plane)
