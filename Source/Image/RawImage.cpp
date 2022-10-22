@@ -808,7 +808,7 @@ static bool IsTga(IBinaryStreamReadInterface& Stream)
     // From stb_image
    
     // discard Offset
-    Stream.SeekCur(8);
+    Stream.SeekCur(1);
    
     uint8_t colorType = Stream.ReadUInt8();
    
