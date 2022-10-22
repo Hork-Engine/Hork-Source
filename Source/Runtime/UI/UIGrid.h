@@ -28,71 +28,51 @@ SOFTWARE.
 
 */
 
-#include "HUD.h"
-#include "Canvas.h"
-#include <Platform/Utf8.h>
+#pragma once
 
-HK_CLASS_META(AHUD)
+#include "UIWidget.h"
 
-AHUD::AHUD()
+struct UIGridSplitter
 {
-}
-
-void AHUD::Draw(ACanvas* _Canvas, int _X, int _Y, int _W, int _H)
-{
-    Canvas    = _Canvas;
-    ViewportX = _X;
-    ViewportY = _Y;
-    ViewportW = _W;
-    ViewportH = _H;
-
-    DrawHUD();
-}
-
-void AHUD::DrawHUD()
-{
-}
-
-void AHUD::DrawText(AFont* _Font, int x, int y, Color4 const& color, const char* _Text)
-{
-    const int CharacterWidth  = 8;
-    const int CharacterHeight = 16;
-
-    const char* s = _Text;
-    int         byteLen;
-    WideChar   ch;
-    int         cx = x;
-
-    FontStyle fontStyle;
-    fontStyle.FontSize = CharacterHeight;
-
-    Canvas->FontFace(_Font);
-
-    while (*s)
+    enum TYPE
     {
-        byteLen = Core::WideCharDecodeUTF8(s, ch);
-        if (!byteLen)
-        {
-            break;
-        }
+        UNDEFINED,
+        COLUMN,
+        ROW
+    };
 
-        s += byteLen;
+    TYPE     Type{UNDEFINED};
+    uint32_t Index{};
+    Float2   Mins;
+    Float2   Maxs;
 
-        if (ch == '\n' || ch == '\r')
-        {
-            y += CharacterHeight + 4;
-            cx = x;
-            continue;
-        }
-
-        if (ch == ' ')
-        {
-            cx += CharacterWidth;
-            continue;
-        }
-
-        Canvas->DrawWChar(fontStyle, ch, cx, y, color);
-
-        cx += CharacterWidth;
+    operator bool() const
+    {
+        return Type != UNDEFINED;
     }
-}
+};
+
+class UIGrid : public UIWidget
+{
+    UI_CLASS(UIGrid, UIWidget)
+
+public:
+    bool bResizableCells = true;
+
+    UIGrid(uint32_t NumColumns, uint32_t NumRows);
+
+    UIGridSplitter TraceSplitter(float x, float y) const;
+
+protected:
+    void OnMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp) override;
+
+    void OnMouseMoveEvent(struct SMouseMoveEvent const& event, double timeStamp) override;
+
+    void Draw(ACanvas& cv) override;
+
+private:
+    TRef<UIGridLayout> m_Layout;
+    UIGridSplitter     m_Splitter;
+    Float2             m_DragStart;
+    float              m_StartWidth;
+};

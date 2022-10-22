@@ -28,71 +28,37 @@ SOFTWARE.
 
 */
 
-#include "HUD.h"
-#include "Canvas.h"
-#include <Platform/Utf8.h>
+#pragma once
 
-HK_CLASS_META(AHUD)
+#include "UIWidget.h"
 
-AHUD::AHUD()
+class UIScroll : public UIWidget
 {
-}
+    UI_CLASS(UIScroll, UIWidget)
 
-void AHUD::Draw(ACanvas* _Canvas, int _X, int _Y, int _W, int _H)
-{
-    Canvas    = _Canvas;
-    ViewportX = _X;
-    ViewportY = _Y;
-    ViewportW = _W;
-    ViewportH = _H;
-
-    DrawHUD();
-}
-
-void AHUD::DrawHUD()
-{
-}
-
-void AHUD::DrawText(AFont* _Font, int x, int y, Color4 const& color, const char* _Text)
-{
-    const int CharacterWidth  = 8;
-    const int CharacterHeight = 16;
-
-    const char* s = _Text;
-    int         byteLen;
-    WideChar   ch;
-    int         cx = x;
-
-    FontStyle fontStyle;
-    fontStyle.FontSize = CharacterHeight;
-
-    Canvas->FontFace(_Font);
-
-    while (*s)
+public:
+    UIScroll(UIWidget* contentWidget) :
+        m_ContentWidget(contentWidget ? contentWidget : CreateInstanceOf<UIWidget>())
     {
-        byteLen = Core::WideCharDecodeUTF8(s, ch);
-        if (!byteLen)
-        {
-            break;
-        }
+        Layout = CreateInstanceOf<ScrollLayout>(this);
 
-        s += byteLen;
-
-        if (ch == '\n' || ch == '\r')
-        {
-            y += CharacterHeight + 4;
-            cx = x;
-            continue;
-        }
-
-        if (ch == ' ')
-        {
-            cx += CharacterWidth;
-            continue;
-        }
-
-        Canvas->DrawWChar(fontStyle, ch, cx, y, color);
-
-        cx += CharacterWidth;
+        AddWidget(m_ContentWidget);
     }
-}
+
+    UIWidget* GetContentWidget()
+    {
+        return m_ContentWidget;
+    }
+
+private:
+    struct ScrollLayout : UIBaseLayout
+    {
+        UIScroll* Self;
+
+        ScrollLayout(UIScroll* self) :
+            Self(self)
+        {}
+    };
+
+    TRef<UIWidget> m_ContentWidget;
+};

@@ -33,7 +33,6 @@ SOFTWARE.
 #include "Controller.h"
 #include "HUD.h"
 #include "AudioSystem.h"
-#include "WViewport.h"
 #include "Terrain.h"
 #include <Renderer/VT/VirtualTextureFeedback.h> // TODO: Remove this!
 
@@ -199,8 +198,8 @@ class APlayerController : public AController
     HK_ACTOR(APlayerController, AController)
 
 public:
-    /** Player viewport. Don't change directly, use WViewport::SetPlayerController to attach controller to viewport. */
-    TWeakRef<WViewport> Viewport;
+    /** Player viewport. */
+    void SetViewport(int x, int y, int w, int h);
 
     /** Override listener location. If listener is not specified, pawn camera will be used. */
     void SetAudioListener(ASceneComponent* _AudioListener);
@@ -258,8 +257,6 @@ public:
     /** Primary audio listener */
     static APlayerController* GetCurrentAudioListener();
 
-    virtual void OnViewportUpdate();
-
     virtual void UpdatePawnCamera();
 
 protected:
@@ -282,6 +279,8 @@ private:
     float                      ViewportAspectRatio{};
     int                        ViewportWidth{};
     int                        ViewportHeight{};
+    int                        ViewportX{};
+    int                        ViewportY{};
 
     static APlayerController* CurrentAudioListener;
 };

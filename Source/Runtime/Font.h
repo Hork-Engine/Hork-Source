@@ -83,17 +83,61 @@ struct TextBounds
     }
 };
 
-struct TextLineBounds
-{
-    float MinY;
-    float MaxY;
-};
+//struct TextLineBounds
+//{
+//    float MinY;
+//    float MaxY;
+//};
 
 struct TextMetrics
 {
     float Ascender;
     float Descender;
     float LineHeight;
+};
+
+struct TextRow
+{
+    /** Pointer to the input text where the row starts. */
+    const char* Start;
+
+    /** Pointer to the input text where the row ends(one past the last character). */
+    const char* End;
+
+    /** Pointer to the beginning of the next row. */
+    const char* Next;
+
+    /** Logical width of the row. */
+    float Width;
+
+    /** Actual bounds of the row.Logical with and bounds can differ because of kerning and some parts over extending. */
+    float MinX, MaxX;
+
+    AStringView GetStringView() const { return AStringView(Start, End); }
+};
+
+struct FontStyle
+{
+    float FontSize{14};
+    float FontBlur{0};
+
+    /** Letter spacing. */
+    float LetterSpacing{0};
+
+    /** Proportional line height. The line height is specified as multiple of font size. */
+    float LineHeight{1};
+};
+
+struct GlyphPosition
+{
+    /** Position of the glyph in the input string. */
+    const char* Str;
+
+    /** The x - coordinate of the logical glyph position. */
+    float X;
+
+    /** The bounds of the glyph shape. */
+    float MinX, MaxX;
 };
 
 class AFont : public AResource
@@ -109,11 +153,31 @@ public:
         return m_FontId;
     }
 
-    float CalcTextBounds(float texSize, float blur, int align, float spacing, float x, float y, AStringView text, TextBounds& bounds);
-    void CalcLineBounds(float textSize, int align, float y, TextLineBounds& bounds);
-    void CalcVertMetrics(float textSize, TextMetrics& metrics);
+    /** Measures the specified text string (see TextBounds structure).
+    Returns horizontal advance of the text. */
+    float GetTextBounds(FontStyle const& fontStyle, AStringView text, TextBounds& bounds);
 
-    float GetCharAdvance(WideChar ch, float textSize, float blur, float devicePixelRatio = 1) const;
+    /** Returns horizontal advance of the text. */
+    float GetTextAdvance(FontStyle const& fontStyle, AStringView text);
+
+    /** Measures the size of specified multi-text string */
+    Float2 GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AStringView text) const;
+
+    //void CalcLineBounds(float fontSize, int align, float y, TextLineBounds& bounds);
+
+    /** Returns the vertical metrics based on the current text style. */
+    void GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metrics);
+
+    float GetCharAdvance(FontStyle const& fontStyle, WideChar ch) const;
+    
+    /** Calculates the glyph x positions of the specified text.
+    Measured values are returned in local coordinate space. */
+    int GetTextGlyphPositions(FontStyle const& fontStyle, AStringView text, GlyphPosition* positions, int maxPositions);
+
+    /** Breaks the specified text into lines.
+    White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
+    Words longer than the max width are slit at nearest character (i.e. no hyphenation). */
+    int TextBreakLines(FontStyle const& fontStyle, AStringView text, float breakRowWidth, TextRow* rows, int maxRows) const;
 
     bool AddFallbackFont(AFont* fallbackFont);
     void ResetFallbackFonts();
@@ -133,3 +197,5 @@ private:
     HeapBlob             m_Blob;
     TVector<TRef<AFont>> m_Fallbacks;
 };
+
+void GetTextMetrics(TextMetrics& metrics);

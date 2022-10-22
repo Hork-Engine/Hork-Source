@@ -28,34 +28,4 @@ SOFTWARE.
 
 */
 
-#pragma once
-
-#include "CommandContext.h"
-
-class AGameModule : public ABaseObject
-{
-    HK_CLASS(AGameModule, ABaseObject)
-
-public:
-    /** Quit when user press ESCAPE */
-    bool bQuitOnEscape = true;
-
-    /** Toggle fullscreen on ALT+ENTER */
-    bool bToggleFullscreenAltEnter = true;
-
-    ACommandContext CommandContext;
-
-    AGameModule();
-
-    virtual void OnGameClose();
-
-    /** Add global console command */
-    void AddCommand(AGlobalStringView _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment = ""s);
-
-    /** Remove global console command */
-    void RemoveCommand(AStringView _Name);
-
-private:
-    void Quit(ACommandProcessor const& _Proc);
-    void RebuildMaterials(ACommandProcessor const& _Proc);
-};
+#include "UIScroll.h"

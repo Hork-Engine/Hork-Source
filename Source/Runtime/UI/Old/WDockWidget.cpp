@@ -28,71 +28,19 @@ SOFTWARE.
 
 */
 
-#include "HUD.h"
-#include "Canvas.h"
-#include <Platform/Utf8.h>
+#include "WDockWidget.h"
+#include "WDockContainer.h"
 
-HK_CLASS_META(AHUD)
+HK_CLASS_META(WDockWidget)
 
-AHUD::AHUD()
+WDockWidget::WDockWidget() :
+    WDockWidget("Default")
 {
 }
 
-void AHUD::Draw(ACanvas* _Canvas, int _X, int _Y, int _W, int _H)
+
+WDockWidget::WDockWidget(AStringView containerName) :
+    m_ContainerName(containerName)
 {
-    Canvas    = _Canvas;
-    ViewportX = _X;
-    ViewportY = _Y;
-    ViewportW = _W;
-    ViewportH = _H;
-
-    DrawHUD();
-}
-
-void AHUD::DrawHUD()
-{
-}
-
-void AHUD::DrawText(AFont* _Font, int x, int y, Color4 const& color, const char* _Text)
-{
-    const int CharacterWidth  = 8;
-    const int CharacterHeight = 16;
-
-    const char* s = _Text;
-    int         byteLen;
-    WideChar   ch;
-    int         cx = x;
-
-    FontStyle fontStyle;
-    fontStyle.FontSize = CharacterHeight;
-
-    Canvas->FontFace(_Font);
-
-    while (*s)
-    {
-        byteLen = Core::WideCharDecodeUTF8(s, ch);
-        if (!byteLen)
-        {
-            break;
-        }
-
-        s += byteLen;
-
-        if (ch == '\n' || ch == '\r')
-        {
-            y += CharacterHeight + 4;
-            cx = x;
-            continue;
-        }
-
-        if (ch == ' ')
-        {
-            cx += CharacterWidth;
-            continue;
-        }
-
-        Canvas->DrawWChar(fontStyle, ch, cx, y, color);
-
-        cx += CharacterWidth;
-    }
+    SetMargin(20, 20, 20, 20);
 }

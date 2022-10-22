@@ -30,32 +30,31 @@ SOFTWARE.
 
 #pragma once
 
-#include "CommandContext.h"
+#include "UIWidget.h"
 
-class AGameModule : public ABaseObject
+class UIImage : public UIWidget
 {
-    HK_CLASS(AGameModule, ABaseObject)
+    UI_CLASS(UIImage, UIWidget)
 
 public:
-    /** Quit when user press ESCAPE */
-    bool bQuitOnEscape = true;
+    TRef<ATexture>   Texture;
+    Color4           TintColor;
+    RoundingDesc     Rounding;
+    CANVAS_COMPOSITE Composite = CANVAS_COMPOSITE_SOURCE_OVER;
+    bool             bStretchedX{};
+    bool             bStretchedY{};
+    bool             bTiledX{};
+    bool             bTiledY{};
+    bool             bFlipY{};
+    bool             bAlphaPremultiplied{};
+    bool             bNearestFilter{};
+    Float2           Scale = Float2(1, 1);
+    Float2           Offset;
 
-    /** Toggle fullscreen on ALT+ENTER */
-    bool bToggleFullscreenAltEnter = true;
+    UIImage()
+    {}
 
-    ACommandContext CommandContext;
+    void AdjustSize(Float2 const& size) override;
 
-    AGameModule();
-
-    virtual void OnGameClose();
-
-    /** Add global console command */
-    void AddCommand(AGlobalStringView _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment = ""s);
-
-    /** Remove global console command */
-    void RemoveCommand(AStringView _Name);
-
-private:
-    void Quit(ACommandProcessor const& _Proc);
-    void RebuildMaterials(ACommandProcessor const& _Proc);
+    void Draw(ACanvas& canvas) override;
 };

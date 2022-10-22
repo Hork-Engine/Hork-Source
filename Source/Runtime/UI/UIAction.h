@@ -28,71 +28,66 @@ SOFTWARE.
 
 */
 
-#include "HUD.h"
-#include "Canvas.h"
-#include <Platform/Utf8.h>
+#pragma once
 
-HK_CLASS_META(AHUD)
+#include "UIBrush.h"
 
-AHUD::AHUD()
+class UIAction : public UIObject
 {
-}
+    UI_CLASS(UIAction, UIObject)
 
-void AHUD::Draw(ACanvas* _Canvas, int _X, int _Y, int _W, int _H)
-{
-    Canvas    = _Canvas;
-    ViewportX = _X;
-    ViewportY = _Y;
-    ViewportW = _W;
-    ViewportH = _H;
+public:
+    // If Stick is enabled, the button stays pressed after being clicked until the user click.
+    bool bStick{};
 
-    DrawHUD();
-}
+    bool bDisabled{};
 
-void AHUD::DrawHUD()
-{
-}
+    TEvent<UIAction*> E_OnActivate;
+    TEvent<UIAction*> E_OnDeactivate;
 
-void AHUD::DrawText(AFont* _Font, int x, int y, Color4 const& color, const char* _Text)
-{
-    const int CharacterWidth  = 8;
-    const int CharacterHeight = 16;
-
-    const char* s = _Text;
-    int         byteLen;
-    WideChar   ch;
-    int         cx = x;
-
-    FontStyle fontStyle;
-    fontStyle.FontSize = CharacterHeight;
-
-    Canvas->FontFace(_Font);
-
-    while (*s)
+    void Activate()
     {
-        byteLen = Core::WideCharDecodeUTF8(s, ch);
-        if (!byteLen)
-        {
-            break;
-        }
+        if (bDisabled)
+            return;
 
-        s += byteLen;
+        E_OnActivate.Dispatch(this);
 
-        if (ch == '\n' || ch == '\r')
-        {
-            y += CharacterHeight + 4;
-            cx = x;
-            continue;
-        }
-
-        if (ch == ' ')
-        {
-            cx += CharacterWidth;
-            continue;
-        }
-
-        Canvas->DrawWChar(fontStyle, ch, cx, y, color);
-
-        cx += CharacterWidth;
+        if (bStick)
+            m_bActive = true;
     }
-}
+
+    void Deactivate()
+    {
+        if (bDisabled)
+            return;
+
+        m_bActive = false;
+        E_OnDeactivate.Dispatch(this);
+    }
+
+    bool IsActive() const
+    {
+        return m_bActive;
+    }
+
+    bool IsInactive() const
+    {
+        return !m_bActive;
+    }
+
+    void Triggered()
+    {
+        if (bStick)
+        {
+            if (IsActive())
+                Deactivate();
+            else
+                Activate();
+        }
+        else
+            Activate();
+    }
+
+private:
+    bool m_bActive{};
+};

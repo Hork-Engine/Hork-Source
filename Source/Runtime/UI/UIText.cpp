@@ -28,71 +28,39 @@ SOFTWARE.
 
 */
 
-#include "HUD.h"
-#include "Canvas.h"
-#include <Platform/Utf8.h>
+#include "UIText.h"
 
-HK_CLASS_META(AHUD)
-
-AHUD::AHUD()
+Float2 UIText::GetTextBoxSize(float breakRowWidth) const
 {
+    FontStyle style;
+    style.FontSize      = FontSize;
+    style.FontBlur      = FontBlur;
+    style.LetterSpacing = LetterSpacing;
+    style.LineHeight    = LineHeight;
+
+    if (Font)
+        return Font->GetTextBoxSize(style, breakRowWidth, Text);
+    else
+        return ACanvas::GetDefaultFont()->GetTextBoxSize(style, breakRowWidth, Text);
 }
 
-void AHUD::Draw(ACanvas* _Canvas, int _X, int _Y, int _W, int _H)
+void UIText::Draw(ACanvas& canvas, Float2 const& boxMins, Float2 const& boxMaxs)
 {
-    Canvas    = _Canvas;
-    ViewportX = _X;
-    ViewportY = _Y;
-    ViewportW = _W;
-    ViewportH = _H;
-
-    DrawHUD();
-}
-
-void AHUD::DrawHUD()
-{
-}
-
-void AHUD::DrawText(AFont* _Font, int x, int y, Color4 const& color, const char* _Text)
-{
-    const int CharacterWidth  = 8;
-    const int CharacterHeight = 16;
-
-    const char* s = _Text;
-    int         byteLen;
-    WideChar   ch;
-    int         cx = x;
-
     FontStyle fontStyle;
-    fontStyle.FontSize = CharacterHeight;
+    fontStyle.FontSize      = FontSize;
+    fontStyle.LetterSpacing = LetterSpacing;
+    fontStyle.LineHeight    = LineHeight;
 
-    Canvas->FontFace(_Font);
+    canvas.FontFace(Font);
 
-    while (*s)
+    if (bDropShadow)
     {
-        byteLen = Core::WideCharDecodeUTF8(s, ch);
-        if (!byteLen)
-        {
-            break;
-        }
-
-        s += byteLen;
-
-        if (ch == '\n' || ch == '\r')
-        {
-            y += CharacterHeight + 4;
-            cx = x;
-            continue;
-        }
-
-        if (ch == ' ')
-        {
-            cx += CharacterWidth;
-            continue;
-        }
-
-        Canvas->DrawWChar(fontStyle, ch, cx, y, color);
-
-        cx += CharacterWidth;
+        fontStyle.FontBlur = ShadowBlur;
+        canvas.FillColor(Color4(0, 0, 0, Color.A));
+        canvas.TextBox(fontStyle, boxMins + ShadowOffset, boxMaxs + ShadowOffset, HAlignment, VAlignment, bWrap, Text);
     }
+
+    fontStyle.FontBlur = FontBlur;
+    canvas.FillColor(Color);
+    canvas.TextBox(fontStyle, boxMins, boxMaxs, HAlignment, VAlignment, bWrap, Text);
 }

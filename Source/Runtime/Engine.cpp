@@ -57,7 +57,6 @@ SOFTWARE.
 
 static AConsoleVar com_ShowStat("com_ShowStat"s, "0"s);
 static AConsoleVar com_ShowFPS("com_ShowFPS"s, "0"s);
-static AConsoleVar com_SimulateCursorBallistics("com_SimulateCursorBallistics"s, "1"s);
 
 AConsoleVar rt_VidWidth("rt_VidWidth"s, "0"s);
 AConsoleVar rt_VidHeight("rt_VidHeight"s, "0"s);
@@ -77,7 +76,7 @@ AEngine::AEngine() :
     Rand(Core::RandomSeed())
 {
     GEngine     = this;
-    RetinaScale = Float2(1.0f);
+    m_RetinaScale = Float2(1.0f);
 }
 
 static void PhysModulePrintFunction(const char* _Message)
@@ -136,7 +135,7 @@ void AEngine::LoadConfigFile()
     AFile f = AFile::OpenRead(configFile);
     if (f)
     {
-        CommandProcessor.Add(f.AsString());
+        m_CommandProcessor.Add(f.AsString());
 
         class CommandContext : public ICommandContext
         {
@@ -163,7 +162,7 @@ void AEngine::LoadConfigFile()
 
         CommandContext context;
 
-        CommandProcessor.Execute(context);
+        m_CommandProcessor.Execute(context);
     }
 }
 
@@ -171,12 +170,12 @@ void AEngine::InitializeDirectories()
 {
     SProcessInfo const& processInfo = Platform::GetProcessInfo();
 
-    WorkingDir = PathUtils::GetFilePath(processInfo.Executable);
+    m_WorkingDir = PathUtils::GetFilePath(processInfo.Executable);
 
 #if defined HK_OS_WIN32
-    SetCurrentDirectoryA(WorkingDir.CStr());
+    SetCurrentDirectoryA(m_WorkingDir.CStr());
 #elif defined HK_OS_LINUX
-    int r = chdir(WorkingDir.CStr());
+    int r = chdir(m_WorkingDir.CStr());
     if (r != 0)
     {
         LOG("Cannot set working directory\n");
@@ -185,17 +184,17 @@ void AEngine::InitializeDirectories()
 #    error "InitializeDirectories not implemented under current platform"
 #endif
 
-    RootPath = pModuleDecl->RootPath;
-    if (RootPath.IsEmpty())
+    m_RootPath = m_pModuleDecl->RootPath;
+    if (m_RootPath.IsEmpty())
     {
-        RootPath = "Data/";
+        m_RootPath = "Data/";
     }
     else
     {
-        PathUtils::FixSeparatorInplace(RootPath);
-        if (RootPath[RootPath.Length() - 1] != '/')
+        PathUtils::FixSeparatorInplace(m_RootPath);
+        if (m_RootPath[m_RootPath.Length() - 1] != '/')
         {
-            RootPath += '/';
+            m_RootPath += '/';
         }
     }
 
@@ -204,9 +203,9 @@ void AEngine::InitializeDirectories()
     LOG("Executable: {}\n", GetExecutableName());
 }
 
-void AEngine::Run(SEntryDecl const& _EntryDecl)
+void AEngine::Run(SEntryDecl const& entryDecl)
 {
-    pModuleDecl = &_EntryDecl;
+    m_pModuleDecl = &entryDecl;
 
     InitializeDirectories();
 
@@ -240,7 +239,7 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
         Platform::GetHeapAllocator<HEAP_RHI>().Free(_Bytes);
     };
 
-    CreateLogicalDevice("OpenGL 4.5", &allocator, &RenderDevice);
+    CreateLogicalDevice("OpenGL 4.5", &allocator, &m_RenderDevice);
 
     if (rt_VidWidth.GetInteger() <= 0 || rt_VidHeight.GetInteger() <= 0)
     {
@@ -269,17 +268,15 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
     desiredMode.bFullscreen = rt_VidFullscreen;
     desiredMode.bCentrized  = true;
     Platform::Strcpy(desiredMode.Backend, sizeof(desiredMode.Backend), "OpenGL 4.5");
-    Platform::Strcpy(desiredMode.Title, sizeof(desiredMode.Title), _EntryDecl.GameTitle);
+    Platform::Strcpy(desiredMode.Title, sizeof(desiredMode.Title), entryDecl.GameTitle);
 
-    RenderDevice->GetOrCreateMainWindow(desiredMode, &Window);
-    RenderDevice->CreateSwapChain(Window, &pSwapChain);
+    m_RenderDevice->GetOrCreateMainWindow(desiredMode, &m_Window);
+    m_RenderDevice->CreateSwapChain(m_Window, &m_pSwapChain);
 
     // Swap buffers to prevent flickering
-    pSwapChain->Present(rt_SwapInterval.GetInteger());
+    m_pSwapChain->Present(rt_SwapInterval.GetInteger());
 
-    VertexMemoryGPU = MakeRef<AVertexMemoryGPU>(RenderDevice);
-
-    Console.ReadStoryLines();
+    m_VertexMemoryGPU = MakeRef<AVertexMemoryGPU>(m_RenderDevice);
 
     // Init physics module
     //b3SetCustomPrintfFunc(PhysModulePrintFunction);
@@ -293,64 +290,68 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
     // Init recast navigation module
     dtAllocSetCustom(NavModuleAlloc, NavModuleFree);
 
-    ResourceManager = MakeUnique<AResourceManager>();
+    m_ResourceManager = MakeUnique<AResourceManager>();
 
-    Renderer = CreateInstanceOf<ARenderFrontend>();
+    m_Renderer = CreateInstanceOf<ARenderFrontend>();
 
-    RenderBackend = MakeRef<ARenderBackend>(RenderDevice);
+    m_RenderBackend = MakeRef<ARenderBackend>(m_RenderDevice);
 
-    FrameLoop = MakeRef<AFrameLoop>(RenderDevice);
+    m_FrameLoop = MakeRef<AFrameLoop>(m_RenderDevice);
 
     // Process initial events
-    FrameLoop->PollEvents(this);
+    m_FrameLoop->PollEvents(this);
 
-    Canvas = MakeUnique<ACanvas>();
+    m_Canvas = MakeUnique<ACanvas>();
 
-    GameModule = CreateGameModule(_EntryDecl.ModuleClass);
-    GameModule->AddRef();
+    m_UIManager = MakeUnique<UIManager>(m_Window);
 
-    LOG("Created game module: {}\n", GameModule->FinalClassName());
+    m_GameModule = CreateGameModule(entryDecl.ModuleClass);
+    m_GameModule->AddRef();
 
-    bAllowInputEvents = true;
+    LOG("Created game module: {}\n", m_GameModule->FinalClassName());
+
+    m_bAllowInputEvents = true;
 
     do
     {
         // Set new frame, process game events
-        FrameLoop->NewFrame({pSwapChain}, rt_SwapInterval.GetInteger());
+        m_FrameLoop->NewFrame({m_pSwapChain}, rt_SwapInterval.GetInteger());
 
-        if (bPostChangeVideoMode)
+        if (m_bPostChangeVideoMode)
         {
-            bPostChangeVideoMode = false;
+            m_bPostChangeVideoMode = false;
 
-            Window->SetVideoMode(DesiredMode);
+            m_Window->SetVideoMode(m_DesiredMode);
 
             // Swap buffers to prevent flickering
-            pSwapChain->Present(rt_SwapInterval.GetInteger());
+            m_pSwapChain->Present(rt_SwapInterval.GetInteger());
         }
 
         // Take current frame duration
-        FrameDurationInSeconds = FrameLoop->SysFrameDuration() * 0.000001;
+        m_FrameDurationInSeconds = m_FrameLoop->SysFrameDuration() * 0.000001;
 
         // Don't allow very slow frames
-        if (FrameDurationInSeconds > 0.5f)
+        if (m_FrameDurationInSeconds > 0.5f)
         {
-            FrameDurationInSeconds = 0.5f;
+            m_FrameDurationInSeconds = 0.5f;
         }
 
         // Garbage collect from previuous frames
         AGarbageCollector::DeallocateObjects();
 
         // Execute console commands
-        CommandProcessor.Execute(GameModule->CommandContext);
+        m_CommandProcessor.Execute(m_GameModule->CommandContext);
 
         // Tick worlds
-        AWorld::UpdateWorlds(FrameDurationInSeconds);
+        AWorld::UpdateWorlds(m_FrameDurationInSeconds);
 
         // Update audio system
-        AudioSystem.Update(APlayerController::GetCurrentAudioListener(), FrameDurationInSeconds);
+        m_AudioSystem.Update(APlayerController::GetCurrentAudioListener(), m_FrameDurationInSeconds);
+
+        m_UIManager->Update(m_FrameDurationInSeconds);
 
         // Poll runtime events
-        FrameLoop->PollEvents(this);
+        m_FrameLoop->PollEvents(this);
 
         // Update input
         UpdateInput();
@@ -359,71 +360,50 @@ void AEngine::Run(SEntryDecl const& _EntryDecl)
         DrawCanvas();
 
         // Build frame data for rendering
-        Renderer->Render(FrameLoop, Canvas.GetObject());
+        m_Renderer->Render(m_FrameLoop, m_Canvas.GetObject());
 
         // Generate GPU commands
-        RenderBackend->RenderFrame(FrameLoop->GetStreamedMemoryGPU(), pSwapChain->GetBackBuffer(), Renderer->GetFrameData());
+        m_RenderBackend->RenderFrame(m_FrameLoop->GetStreamedMemoryGPU(), m_pSwapChain->GetBackBuffer(), m_Renderer->GetFrameData());
 
         SaveMemoryStats();
 
     } while (!IsPendingTerminate());
 
-    bAllowInputEvents = false;
+    m_bAllowInputEvents = false;
 
-    GameModule->RemoveRef();
-    GameModule = nullptr;
+    m_GameModule->RemoveRef();
+    m_GameModule = nullptr;
 
-    Desktop.Reset();
+    m_UIManager.Reset();
 
     AWorld::DestroyWorlds();
     AWorld::KillWorlds();
 
     ASoundEmitter::ClearOneShotSounds();
 
-    Canvas.Reset();
+    m_Canvas.Reset();
 
-    RenderBackend.Reset();
+    m_RenderBackend.Reset();
 
-    Renderer.Reset();
+    m_Renderer.Reset();
 
-    ResourceManager.Reset();
+    m_ResourceManager.Reset();
 
     AGarbageCollector::DeallocateObjects();
 
     AVisibilitySystem::PrimitivePool.Free();
     AVisibilitySystem::PrimitiveLinkPool.Free();
-
-    Console.WriteStoryLines();
 }
 
 void AEngine::DrawCanvas()
 {
-    SVideoMode const& videoMode = Window->GetVideoMode();
+    SVideoMode const& videoMode = m_Window->GetVideoMode();
 
-    Canvas->NewFrame(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
+    m_Canvas->NewFrame(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
 
     if (IsWindowVisible())
     {
-        if (Desktop)
-        {
-            // Draw desktop
-            Desktop->GenerateWindowHoverEvents();
-            Desktop->GenerateDrawEvents(*Canvas);
-            if (Desktop->IsCursorVisible() && !Platform::IsCursorEnabled())
-            {
-                Desktop->DrawCursor(*Canvas);
-            }
-
-            // Draw halfscreen console
-            Console.SetFullscreen(false);
-            Console.Draw(Canvas.GetObject(), FrameDurationInSeconds);
-        }
-        else
-        {
-            // Draw fullscreen console
-            Console.SetFullscreen(true);
-            Console.Draw(Canvas.GetObject(), FrameDurationInSeconds);
-        }
+        m_UIManager->Draw(*m_Canvas);
 
         ShowStats();
     }
@@ -491,62 +471,64 @@ void AEngine::ShowStats()
 
     AFormatter fmt;
 
-    Canvas->ResetScissor();
+    m_Canvas->ResetScissor();
 
     if (com_ShowStat)
     {
-        SRenderFrame* frameData = Renderer->GetFrameData();
+        SRenderFrame* frameData = m_Renderer->GetFrameData();
 
-        SRenderFrontendStat const& stat = Renderer->GetStat();
+        SRenderFrontendStat const& stat = m_Renderer->GetStat();
 
-        AStreamedMemoryGPU* streamedMemory = FrameLoop->GetStreamedMemoryGPU();
+        AStreamedMemoryGPU* streamedMemory = m_FrameLoop->GetStreamedMemoryGPU();
 
         const float y_step = 40;
         const int   numLines = 13;
 
         Float2 pos(8, 8);
+
+        FontStyle fontStyle;
+        fontStyle.FontSize = 24;
         
-        Canvas->FontFace(font);
-        Canvas->FontSize(24);
+        m_Canvas->FontFace(font);
 
         pos.Y = 100;
         for (int n = 0; n < HEAP_MAX; n++)
         {
             SMemoryStat& memstat = GMemoryStat[n];
 
-            Canvas->DrawTextUTF8(pos, Color4::White(), fmt("{}\t\tHeap memory usage: {} KB / peak {} MB Allocs {}", HeapName[n], memstat.MemoryAllocated / 1024.0f, memstat.MemoryPeakAlloc / 1024.0f / 1024.0f, memstat.MemoryAllocs), true);
+            m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("{}\t\tHeap memory usage: {} KB / peak {} MB Allocs {}", HeapName[n], memstat.MemoryAllocated / 1024.0f, memstat.MemoryPeakAlloc / 1024.0f / 1024.0f, memstat.MemoryAllocs), true);
             pos.Y += y_step;
         }
 
-        pos.Y = Canvas->GetHeight() - numLines * y_step;
+        pos.Y = m_Canvas->GetHeight() - numLines * y_step;
 
-        Canvas->DrawTextUTF8(pos, Color4::White(), fmt("SDL Allocs (HEAP_MISC) {}", SDL_GetNumAllocations()), true);
-        pos.Y += y_step;
-
-        Canvas->DrawTextUTF8(pos, Color4::White(), fmt("Heap memory usage: {} KB / peak {} MB Allocs {}", GMemoryStatGlobal.MemoryAllocated / 1024.0f, GMemoryStatGlobal.MemoryPeakAlloc / 1024.0f / 1024.0f, GMemoryStatGlobal.MemoryAllocs), true);
+        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("SDL Allocs (HEAP_MISC) {}", SDL_GetNumAllocations()), true);
         pos.Y += y_step;
 
-        Canvas->DrawTextUTF8(pos, Color4::White(), fmt("Frame allocs {} Frame frees {}", GMemoryStatGlobal.FrameAllocs, GMemoryStatGlobal.FrameFrees), true);
+        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Heap memory usage: {} KB / peak {} MB Allocs {}", GMemoryStatGlobal.MemoryAllocated / 1024.0f, GMemoryStatGlobal.MemoryPeakAlloc / 1024.0f / 1024.0f, GMemoryStatGlobal.MemoryAllocs), true);
         pos.Y += y_step;
-        Canvas->DrawTextUTF8(pos, Color4::White(), fmt("Frame memory usage: {} KB / {} MB (Peak {} KB)", FrameLoop->GetFrameMemoryUsedPrev() / 1024.0f, FrameLoop->GetFrameMemorySize() >> 20, FrameLoop->GetMaxFrameMemoryUsage() / 1024.0f), true);
+
+        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Frame allocs {} Frame frees {}", GMemoryStatGlobal.FrameAllocs, GMemoryStatGlobal.FrameFrees), true);
         pos.Y += y_step;
-        Canvas->DrawTextUTF8(pos, Color4::White(), fmt("Frame memory usage (GPU): {} KB / {} MB (Peak {} KB)", streamedMemory->GetUsedMemoryPrev() / 1024.0f, streamedMemory->GetAllocatedMemory() >> 20, streamedMemory->GetMaxMemoryUsage() / 1024.0f), true);
+        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Frame memory usage: {} KB / {} MB (Peak {} KB)", m_FrameLoop->GetFrameMemoryUsedPrev() / 1024.0f, m_FrameLoop->GetFrameMemorySize() >> 20, m_FrameLoop->GetMaxFrameMemoryUsage() / 1024.0f), true);
         pos.Y += y_step;
-        Canvas->DrawTextUTF8(pos, Color4::White(), fmt("Vertex cache memory usage (GPU): {} KB / {} MB", VertexMemoryGPU->GetUsedMemory() / 1024.0f, VertexMemoryGPU->GetAllocatedMemory() >> 20), true);
+        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Frame memory usage (GPU): {} KB / {} MB (Peak {} KB)", streamedMemory->GetUsedMemoryPrev() / 1024.0f, streamedMemory->GetAllocatedMemory() >> 20, streamedMemory->GetMaxMemoryUsage() / 1024.0f), true);
         pos.Y += y_step;
-        Canvas->DrawTextUTF8(pos, Color4::White(), fmt("Visible instances: {}", frameData->Instances.Size() + frameData->TranslucentInstances.Size()), true);
+        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Vertex cache memory usage (GPU): {} KB / {} MB", m_VertexMemoryGPU->GetUsedMemory() / 1024.0f, m_VertexMemoryGPU->GetAllocatedMemory() >> 20), true);
         pos.Y += y_step;
-        Canvas->DrawTextUTF8(pos, Color4::White(), fmt("Visible shadow instances: {}", frameData->ShadowInstances.Size()), true);
+        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Visible instances: {}", frameData->Instances.Size() + frameData->TranslucentInstances.Size()), true);
         pos.Y += y_step;
-        Canvas->DrawTextUTF8(pos, Color4::White(), fmt("Visible dir lights: {}", frameData->DirectionalLights.Size()), true);
+        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Visible shadow instances: {}", frameData->ShadowInstances.Size()), true);
         pos.Y += y_step;
-        Canvas->DrawTextUTF8(pos, Color4::White(), fmt("Polycount: {}", stat.PolyCount), true);
+        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Visible dir lights: {}", frameData->DirectionalLights.Size()), true);
         pos.Y += y_step;
-        Canvas->DrawTextUTF8(pos, Color4::White(), fmt("ShadowMapPolyCount: {}", stat.ShadowMapPolyCount), true);
+        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Polycount: {}", stat.PolyCount), true);
         pos.Y += y_step;
-        Canvas->DrawTextUTF8(pos, Color4::White(), fmt("Frontend time: {} msec", stat.FrontendTime), true);
+        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("ShadowMapPolyCount: {}", stat.ShadowMapPolyCount), true);
         pos.Y += y_step;
-        Canvas->DrawTextUTF8(pos, Color4::White(), fmt("Audio channels: {} active, {} virtual", AudioSystem.GetMixer()->GetNumActiveChannels(), AudioSystem.GetMixer()->GetNumVirtualChannels()), true);
+        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Frontend time: {} msec", stat.FrontendTime), true);
+        pos.Y += y_step;
+        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Audio channels: {} active, {} virtual", m_AudioSystem.GetMixer()->GetNumActiveChannels(), m_AudioSystem.GetMixer()->GetNumVirtualChannels()), true);
     }
 
     if (com_ShowFPS)
@@ -557,323 +539,171 @@ void AEngine::ShowStats()
         };
         static float fpsavg[FPS_BUF];
         static int   n            = 0;
-        fpsavg[n & (FPS_BUF - 1)] = FrameDurationInSeconds;
+        fpsavg[n & (FPS_BUF - 1)] = m_FrameDurationInSeconds;
         n++;
         float fps = 0;
         for (int i = 0; i < FPS_BUF; i++)
             fps += fpsavg[i];
         fps *= (1.0f / FPS_BUF);
         fps = 1.0f / (fps > 0.0f ? fps : 1.0f);
-        Canvas->FontFace(font);
-        Canvas->FontSize(24);
-        Canvas->DrawTextUTF8(Float2(10, 30), Color4::White(), fmt("Frame time {:.1f} ms (FPS: {}, AVG {})", FrameDurationInSeconds * 1000.0f, int(1.0f / FrameDurationInSeconds), int(fps + 0.5f)), true);
+        FontStyle fontStyle;
+        fontStyle.FontSize = 24;
+        m_Canvas->FontFace(font);
+        m_Canvas->DrawTextUTF8(fontStyle, Float2(10, 30), Color4::White(), fmt("Frame time {:.1f} ms (FPS: {}, AVG {})", m_FrameDurationInSeconds * 1000.0f, int(1.0f / m_FrameDurationInSeconds), int(fps + 0.5f)), true);
     }
 }
 
-void AEngine::DeveloperKeys(SKeyEvent const& _Event)
+void AEngine::DeveloperKeys(SKeyEvent const& event)
 {
 }
 
-void AEngine::OnKeyEvent(SKeyEvent const& _Event, double _TimeStamp)
+void AEngine::OnKeyEvent(SKeyEvent const& event, double timeStamp)
 {
-    if (!bAllowInputEvents)
+    if (!m_bAllowInputEvents)
     {
         return;
     }
 
-    if (GameModule->bQuitOnEscape && _Event.Action == IA_PRESS && _Event.Key == KEY_ESCAPE)
+    if (m_GameModule->bQuitOnEscape && event.Action == IA_PRESS && event.Key == KEY_ESCAPE)
     {
-        GameModule->OnGameClose();
+        m_GameModule->OnGameClose();
     }
 
     // Check Alt+Enter to toggle fullscreen/windowed mode
-    if (GameModule->bToggleFullscreenAltEnter)
+    if (m_GameModule->bToggleFullscreenAltEnter)
     {
-        if (_Event.Action == IA_PRESS && _Event.Key == KEY_ENTER && (HAS_MODIFIER(_Event.ModMask, KEY_MOD_ALT)))
+        if (event.Action == IA_PRESS && event.Key == KEY_ENTER && (HAS_MODIFIER(event.ModMask, KEY_MOD_ALT)))
         {
-            SVideoMode videoMode  = Window->GetVideoMode();
+            SVideoMode videoMode  = m_Window->GetVideoMode();
             videoMode.bFullscreen = !videoMode.bFullscreen;
             PostChangeVideoMode(videoMode);
         }
     }
 
-    DeveloperKeys(_Event);
+    DeveloperKeys(event);
 
-    if (Console.IsActive() || GameModule->bAllowConsole)
-    {
-        Console.KeyEvent(_Event, GameModule->CommandContext, CommandProcessor);
-
-        if (!Console.IsActive() && _Event.Key == KEY_GRAVE_ACCENT)
-        {
-            // Console just closed
-            return;
-        }
-    }
-
-    if (Console.IsActive() && _Event.Action != IA_RELEASE)
-    {
-        return;
-    }
-
-    if (Desktop)
-    {
-        Desktop->GenerateKeyEvents(_Event, _TimeStamp);
-    }
+    m_UIManager->GenerateKeyEvents(event, timeStamp, m_GameModule->CommandContext, m_CommandProcessor);
 }
 
-void AEngine::OnMouseButtonEvent(SMouseButtonEvent const& _Event, double _TimeStamp)
+void AEngine::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
 {
-    if (!bAllowInputEvents)
+    if (!m_bAllowInputEvents)
     {
         return;
     }
 
-    if (Console.IsActive() && _Event.Action != IA_RELEASE)
-    {
-        return;
-    }
-
-    if (Desktop)
-    {
-        Desktop->GenerateMouseButtonEvents(_Event, _TimeStamp);
-    }
+    m_UIManager->GenerateMouseButtonEvents(event, timeStamp);
 }
 
-void AEngine::OnMouseWheelEvent(SMouseWheelEvent const& _Event, double _TimeStamp)
+void AEngine::OnMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp)
 {
-    if (!bAllowInputEvents)
+    if (!m_bAllowInputEvents)
     {
         return;
     }
 
-    Console.MouseWheelEvent(_Event);
-    if (Console.IsActive())
-    {
-        return;
-    }
-
-    if (Desktop)
-    {
-        Desktop->GenerateMouseWheelEvents(_Event, _TimeStamp);
-    }
+    m_UIManager->GenerateMouseWheelEvents(event, timeStamp);
 }
 
-void AEngine::OnMouseMoveEvent(SMouseMoveEvent const& _Event, double _TimeStamp)
+void AEngine::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
 {
-    if (!bAllowInputEvents)
+    if (!m_bAllowInputEvents)
     {
         return;
     }
 
-    if (Desktop)
-    {
-        SVideoMode const& videoMode = Window->GetVideoMode();
-
-        if (Platform::IsCursorEnabled())
-        {
-            Float2 cursorPosition;
-            int    x, y;
-
-            Platform::GetCursorPosition(x, y);
-
-            cursorPosition.X = Math::Clamp(x, 0, videoMode.FramebufferWidth - 1);
-            cursorPosition.Y = Math::Clamp(y, 0, videoMode.FramebufferHeight - 1);
-
-            Desktop->SetCursorPosition(cursorPosition);
-        }
-        else
-        {
-            Float2 cursorPosition = Desktop->GetCursorPosition();
-
-            // Simulate ballistics
-            if (com_SimulateCursorBallistics)
-            {
-                cursorPosition.X += _Event.X / videoMode.RefreshRate * videoMode.DPI_X;
-                cursorPosition.Y -= _Event.Y / videoMode.RefreshRate * videoMode.DPI_Y;
-            }
-            else
-            {
-                cursorPosition.X += _Event.X;
-                cursorPosition.Y -= _Event.Y;
-            }
-            cursorPosition = Math::Clamp(cursorPosition, Float2(0.0f), Float2(videoMode.FramebufferWidth - 1, videoMode.FramebufferHeight - 1));
-
-            Desktop->SetCursorPosition(cursorPosition);
-        }
-
-        if (!Console.IsActive())
-        {
-            Desktop->GenerateMouseMoveEvents(_Event, _TimeStamp);
-        }
-    }
+    m_UIManager->GenerateMouseMoveEvents(event, timeStamp);
 }
 
-void AEngine::OnJoystickButtonEvent(SJoystickButtonEvent const& _Event, double _TimeStamp)
+void AEngine::OnJoystickButtonEvent(SJoystickButtonEvent const& event, double timeStamp)
 {
-    if (!bAllowInputEvents)
+    if (!m_bAllowInputEvents)
     {
         return;
     }
 
-    if (Console.IsActive() && _Event.Action != IA_RELEASE)
-    {
-        return;
-    }
-
-    if (Desktop)
-    {
-        Desktop->GenerateJoystickButtonEvents(_Event, _TimeStamp);
-    }
+    m_UIManager->GenerateJoystickButtonEvents(event, timeStamp);
 }
 
-void AEngine::OnJoystickAxisEvent(SJoystickAxisEvent const& _Event, double _TimeStamp)
+void AEngine::OnJoystickAxisEvent(SJoystickAxisEvent const& event, double timeStamp)
 {
-    if (!bAllowInputEvents)
+    if (!m_bAllowInputEvents)
     {
         return;
     }
 
-    if (Desktop)
-    {
-        Desktop->GenerateJoystickAxisEvents(_Event, _TimeStamp);
-    }
+    m_UIManager->GenerateJoystickAxisEvents(event, timeStamp);
 }
 
-void AEngine::OnCharEvent(SCharEvent const& _Event, double _TimeStamp)
+void AEngine::OnCharEvent(SCharEvent const& event, double timeStamp)
 {
-    if (!bAllowInputEvents)
+    if (!m_bAllowInputEvents)
     {
         return;
     }
 
-    Console.CharEvent(_Event);
-    if (Console.IsActive())
-    {
-        return;
-    }
-
-    if (Desktop)
-    {
-        Desktop->GenerateCharEvents(_Event, _TimeStamp);
-    }
+    m_UIManager->GenerateCharEvents(event, timeStamp);
 }
 
-void AEngine::OnWindowVisible(bool _Visible)
+void AEngine::OnWindowVisible(bool bVisible)
 {
-    bIsWindowVisible = _Visible;
+    m_bIsWindowVisible = bVisible;
 }
 
 void AEngine::OnCloseEvent()
 {
-    GameModule->OnGameClose();
+    m_GameModule->OnGameClose();
 }
 
 void AEngine::OnResize()
 {
-    SVideoMode const& videoMode = Window->GetVideoMode();
+    SVideoMode const& videoMode = m_Window->GetVideoMode();
 
-    RetinaScale = Float2((float)videoMode.FramebufferWidth / videoMode.Width,
-                         (float)videoMode.FramebufferHeight / videoMode.Height);
-
-    if (Desktop)
-    {
-        // Force update transform
-        Desktop->MarkTransformDirty();
-
-        // Set size
-        Desktop->SetSize(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
-    }
+    m_RetinaScale = Float2((float)videoMode.FramebufferWidth / videoMode.Width,
+                           (float)videoMode.FramebufferHeight / videoMode.Height);
 }
 
 void AEngine::UpdateInput()
 {
-    SVideoMode const& videoMode = Window->GetVideoMode();
-
-    switch (GameModule->CursorMode)
-    {
-        case CURSOR_MODE_AUTO:
-            if (!videoMode.bFullscreen && Console.IsActive())
-            {
-                Platform::SetCursorEnabled(true);
-            }
-            else
-            {
-                Platform::SetCursorEnabled(false);
-            }
-            break;
-        case CURSOR_MODE_FORCE_ENABLED:
-            Platform::SetCursorEnabled(true);
-            break;
-        case CURSOR_MODE_FORCE_DISABLED:
-            Platform::SetCursorEnabled(false);
-            break;
-        default:
-            HK_ASSERT(0);
-    }
-
     for (AInputComponent* component = AInputComponent::GetInputComponents(); component; component = component->GetNext())
     {
-        component->UpdateAxes(FrameDurationInSeconds);
+        component->UpdateAxes(m_FrameDurationInSeconds);
     }
 }
 
 void AEngine::MapWindowCoordinate(float& InOutX, float& InOutY) const
 {
-    SVideoMode const& videoMode = Window->GetVideoMode();
+    SVideoMode const& videoMode = m_Window->GetVideoMode();
     InOutX += videoMode.X;
     InOutY += videoMode.Y;
 }
 
 void AEngine::UnmapWindowCoordinate(float& InOutX, float& InOutY) const
 {
-    SVideoMode const& videoMode = Window->GetVideoMode();
+    SVideoMode const& videoMode = m_Window->GetVideoMode();
     InOutX -= videoMode.X;
     InOutY -= videoMode.Y;
 }
 
-void AEngine::SetDesktop(WDesktop* _Desktop)
-{
-    if (IsSame(Desktop, _Desktop))
-    {
-        return;
-    }
-
-    //if ( Desktop ) {
-    //    Desktop->SetFocusWidget( nullptr );
-    //}
-
-    Desktop = _Desktop;
-
-    if (Desktop)
-    {
-        // Force update transform
-        Desktop->MarkTransformDirty();
-
-        // Set size
-        SVideoMode const& videoMode = Window->GetVideoMode();
-        Desktop->SetSize(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
-    }
-}
-
 void AEngine::PostChangeVideoMode(SVideoMode const& _DesiredMode)
 {
-    DesiredMode          = _DesiredMode;
-    bPostChangeVideoMode = true;
+    m_DesiredMode          = _DesiredMode;
+    m_bPostChangeVideoMode = true;
 }
 
 void AEngine::PostTerminateEvent()
 {
-    bPostTerminateEvent = true;
+    m_bPostTerminateEvent = true;
 }
 
 bool AEngine::IsPendingTerminate()
 {
-    return bPostTerminateEvent;
+    return m_bPostTerminateEvent;
 }
 
 void AEngine::ReadScreenPixels(uint16_t _X, uint16_t _Y, uint16_t _Width, uint16_t _Height, size_t _SizeInBytes, void* _SysMem)
 {
-    RenderCore::ITexture* pBackBuffer = pSwapChain->GetBackBuffer();
+    RenderCore::ITexture* pBackBuffer = m_pSwapChain->GetBackBuffer();
 
     RenderCore::STextureRect rect;
     rect.Offset.X    = _X;
@@ -887,12 +717,12 @@ void AEngine::ReadScreenPixels(uint16_t _X, uint16_t _Y, uint16_t _Width, uint16
 
 AString const& AEngine::GetWorkingDir()
 {
-    return WorkingDir;
+    return m_WorkingDir;
 }
 
 AString const& AEngine::GetRootPath()
 {
-    return RootPath;
+    return m_RootPath;
 }
 
 const char* AEngine::GetExecutableName()
@@ -903,7 +733,7 @@ const char* AEngine::GetExecutableName()
 
 RenderCore::IDevice* AEngine::GetRenderDevice()
 {
-    return RenderDevice;
+    return m_RenderDevice;
 }
 
 

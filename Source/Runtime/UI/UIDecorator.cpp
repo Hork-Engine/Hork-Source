@@ -28,71 +28,35 @@ SOFTWARE.
 
 */
 
-#include "HUD.h"
-#include "Canvas.h"
-#include <Platform/Utf8.h>
+#include "UIDecorator.h"
+#include "UIWidget.h"
 
-HK_CLASS_META(AHUD)
-
-AHUD::AHUD()
+void UIBrushDecorator::DrawInactive(ACanvas& canvas, UIWidgetGeometry const& geometry)
 {
+    if (InactiveBrush)
+        DrawBrush(canvas, geometry, InactiveBrush);
 }
 
-void AHUD::Draw(ACanvas* _Canvas, int _X, int _Y, int _W, int _H)
+void UIBrushDecorator::DrawActive(ACanvas& canvas, UIWidgetGeometry const& geometry)
 {
-    Canvas    = _Canvas;
-    ViewportX = _X;
-    ViewportY = _Y;
-    ViewportW = _W;
-    ViewportH = _H;
-
-    DrawHUD();
+    if (ActiveBrush)
+        DrawBrush(canvas, geometry, ActiveBrush);
 }
 
-void AHUD::DrawHUD()
+void UIBrushDecorator::DrawHovered(ACanvas& canvas, UIWidgetGeometry const& geometry)
 {
+    if (HoverBrush)
+        DrawBrush(canvas, geometry, HoverBrush);
 }
 
-void AHUD::DrawText(AFont* _Font, int x, int y, Color4 const& color, const char* _Text)
+void UIBrushDecorator::DrawSelected(ACanvas& canvas, UIWidgetGeometry const& geometry)
 {
-    const int CharacterWidth  = 8;
-    const int CharacterHeight = 16;
+    if (SelectedBrush)
+        DrawBrush(canvas, geometry, SelectedBrush);
+}
 
-    const char* s = _Text;
-    int         byteLen;
-    WideChar   ch;
-    int         cx = x;
-
-    FontStyle fontStyle;
-    fontStyle.FontSize = CharacterHeight;
-
-    Canvas->FontFace(_Font);
-
-    while (*s)
-    {
-        byteLen = Core::WideCharDecodeUTF8(s, ch);
-        if (!byteLen)
-        {
-            break;
-        }
-
-        s += byteLen;
-
-        if (ch == '\n' || ch == '\r')
-        {
-            y += CharacterHeight + 4;
-            cx = x;
-            continue;
-        }
-
-        if (ch == ' ')
-        {
-            cx += CharacterWidth;
-            continue;
-        }
-
-        Canvas->DrawWChar(fontStyle, ch, cx, y, color);
-
-        cx += CharacterWidth;
-    }
+void UIBrushDecorator::DrawDisabled(ACanvas& canvas, UIWidgetGeometry const& geometry)
+{
+    if (DisabledBrush)
+        DrawBrush(canvas, geometry, DisabledBrush);
 }

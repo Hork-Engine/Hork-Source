@@ -71,10 +71,12 @@ struct CanvasPaint
     The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint(). */
     CanvasPaint& BoxGradient(float x, float y, float w, float h, float r, float f, Color4 const& icol, Color4 const& ocol);
 
-    /** Creates and returns an image patter. Parameters (ox,oy) specify the left-top location of the image pattern,
-    (ex,ey) the size of one image, angle rotation around the top-left corner, texture is handle to the image to render.
+    /** Creates and returns an image patter. Parameters (x,y) specify the left-top location of the image pattern,
+    (w,h) the size of one image, angle rotation around the top-left corner, texture is handle to the image to render.
     The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint(). */
-    CanvasPaint& ImagePattern(float cx, float cy, float w, float h, float angle, ATexture* texture, Color4 const& tintColor, CANVAS_IMAGE_FLAGS imageFlags = CANVAS_IMAGE_DEFAULT);
+    CanvasPaint& ImagePattern(float x, float y, float w, float h, float angle, ATexture* texture, Color4 const& tintColor, CANVAS_IMAGE_FLAGS imageFlags = CANVAS_IMAGE_DEFAULT);
+
+    CanvasPaint& Solid(Color4 const& color);
 };
 
 struct CanvasTransform
@@ -132,49 +134,16 @@ struct CanvasTransform
     Float2 TransformPoint(Float2 const& p) const;
 };
 
-struct GlyphPosition
-{
-    /** Position of the glyph in the input string. */
-    const char* Str;
-
-    /** The x - coordinate of the logical glyph position. */
-    float X;
-
-    /** The bounds of the glyph shape. */
-    float MinX, MaxX;
-};
-
-struct TextRow
-{
-    /** Pointer to the input text where the row starts. */
-    const char* Start;
-
-    /** Pointer to the input text where the row ends(one past the last character). */
-    const char* End;
-
-    /** Pointer to the beginning of the next row. */
-    const char* Next;
-
-    /** Logical width of the row. */
-    float Width;
-
-    /** Actual bounds of the row.Logical with and bounds can differ because of kerning and some parts over extending. */
-    float MinX, MaxX;
-
-    AStringView GetStringView() const { return AStringView(Start, End); }
-};
-
-
 struct NVGcontext;
 struct NVGpaint;
 struct NVGscissor;
 struct NVGvertex;
 struct NVGpath;
 
-enum CANVAS_SAVE_FLAG
+enum CANVAS_PUSH_FLAG
 {
-    CANVAS_SAVE_KEEP,
-    CANVAS_SAVE_RESET
+    CANVAS_PUSH_FLAG_KEEP,
+    CANVAS_PUSH_FLAG_RESET
 };
 
 struct SViewport
@@ -249,6 +218,8 @@ struct DrawViewportDesc
     float                 Y                = 0;
     float                 W                = 0;
     float                 H                = 0;
+    uint32_t              TextureResolutionX = 0;
+    uint32_t              TextureResolutionY = 0;
     RoundingDesc          Rounding;
     float                 Angle            = 0;
     Color4                TintColor        = Color4::White();
@@ -289,6 +260,20 @@ enum CANVAS_TEXT_ALIGN : uint8_t
     CANVAS_TEXT_ALIGN_MIDDLE   = 1 << 4, // Align text vertically to middle.
     CANVAS_TEXT_ALIGN_BOTTOM   = 1 << 5, // Align text vertically to bottom.
     CANVAS_TEXT_ALIGN_BASELINE = 1 << 6, // Default, align text vertically to baseline.
+};
+
+ enum HALIGNMENT
+{
+    HALIGNMENT_LEFT,
+    HALIGNMENT_CENTER,
+    HALIGNMENT_RIGHT
+};
+
+enum VALIGNMENT
+{
+    VALIGNMENT_TOP,
+    VALIGNMENT_CENTER,
+    VALIGNMENT_BOTTOM
 };
 
 HK_FLAG_ENUM_OPERATORS(CANVAS_TEXT_ALIGN)
@@ -337,7 +322,7 @@ public:
 
     /** Pushes and saves the current render state into a state stack.
     A matching Pop() must be used to restore the state. */
-    void Push(CANVAS_SAVE_FLAG ResetFlag = CANVAS_SAVE_KEEP);
+    void Push(CANVAS_PUSH_FLAG ResetFlag = CANVAS_PUSH_FLAG_KEEP);
 
     /** Pops and restores current render state. */
     void Pop();
@@ -392,7 +377,7 @@ public:
     // Current render style can be saved and restored using Push() and Pop().
 
     /** Sets whether to draw antialias for Stroke() and Fill(). It's enabled by default. */
-    void ShapeAntiAlias(bool bEnabled);
+    bool ShapeAntiAlias(bool bEnabled);
 
     /** Sets current stroke style to a solid color. */
     void StrokeColor(Color4 const& color);
@@ -583,53 +568,21 @@ public:
     /** Sets the font face based on specified name of current text style. */
     void FontFace(AStringView font);
 
-    /** Sets the font size of current text style. */
-    void FontSize(float size);
-
-    /** Sets the blur of current text style. */
-    void FontBlur(float blur);
-
-    /** Sets the letter spacing of current text style. */
-    void TextLetterSpacing(float spacing);
-
-    /** Sets the proportional line height of current text style. The line height is specified as multiple of font size. */
-    void TextLineHeight(float lineHeight);
+    #if 0
 
     /** Sets the text align of current text style, see CANVAS_TEXT_ALIGN for options. */
     void TextAlign(CANVAS_TEXT_ALIGN align);
 
-    /** Draws text string at specified location. If end is specified only the sub-string up to the end is drawn. */
-    float Text(float x, float y, AStringView string);
+    #endif
 
-    /** Draws multi-line text string at specified location wrapped at the specified width. If end is specified only the sub-string up to the end is drawn.
+    /** Draws text string at specified location. */
+    float Text(FontStyle const& style, float x, float y, HALIGNMENT HAlignment, AStringView string);
+
+    /** Draws multi-line text string at specified box.
     White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
     Words longer than the max width are slit at nearest character (i.e. no hyphenation). */
-    void TextBox(float x, float y, float breakRowWidth, AStringView string);
-
-    /** Measures the specified text string (see TextBounds structure).
-    Returns horizontal advance of the text (i.e.where the next character should drawn).
-    Measured values are returned in local coordinate space. */
-    float GetTextBounds(float x, float y, AStringView string, TextBounds& bounds);
-
-    /** Returns horizontal advance of the text (i.e.where the next character should drawn). */
-    float GetTextAdvance(float x, float y, AStringView string);
-
-    /** Measures the specified multi-text string. The bounds value are [xmin,ymin, xmax,ymax]
-    Measured values are returned in local coordinate space. */
-    void GetTextBoxBounds(float x, float y, float breakRowWidth, AStringView string, TextBounds& bounds);
-
-    /** Calculates the glyph x positions of the specified text. If end is specified only the sub-string will be used.
-    Measured values are returned in local coordinate space. */
-    int GetTextGlyphPositions(float x, float y, AStringView string, GlyphPosition* positions, int maxPositions);
-
-    /** Returns the vertical metrics based on the current text style.
-    Measured values are returned in local coordinate space. */
-    void GetTextMetrics(TextMetrics& metrics);
-
-    /** Breaks the specified text into lines. If end is specified only the sub-string will be used.
-    White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
-    Words longer than the max width are slit at nearest character (i.e. no hyphenation). */
-    int TextBreakLines(AStringView string, float breakRowWidth, TextRow* rows, int maxRows);
+    void TextBox(FontStyle const& style, float x, float y, float breakRowWidth, HALIGNMENT HAlignment, AStringView string); // DEPRECATED Remove
+    void TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, HALIGNMENT HAlignment, VALIGNMENT VAlignment, bool bWrap, AStringView text);
 
     //
     // Utilites
@@ -639,7 +592,6 @@ public:
 
     void DrawRect(Float2 const& mins, Float2 const& maxs, Color4 const& color, float thickness = 1.0f, RoundingDesc const& rounding = {});
     void DrawRectFilled(Float2 const& mins, Float2 const& maxs, Color4 const& color, RoundingDesc const& rounding = {});
-    void DrawRectFilledGradient(Float2 const& mins, Float2 const& maxs, Color4 const& c0, Color4 const& c1, RoundingDesc const& rounding = {});
 
     void DrawTriangle(Float2 const& p0, Float2 const& p1, Float2 const& p2, Color4 const& color, float thickness = 1.0f);
     void DrawTriangleFilled(Float2 const& p0, Float2 const& p1, Float2 const& p2, Color4 const& color);
@@ -651,15 +603,15 @@ public:
     void DrawPolyFilled(Float2 const* points, int numPoints, Color4 const& color);
     void DrawBezierCurve(Float2 const& pos0, Float2 const& cp0, Float2 const& cp1, Float2 const& pos1, Color4 const& color, float thickness = 1.0f);
 
-    void DrawTextUTF8(Float2 const& pos, Color4 const& color, AStringView Text, bool bShadow = false);
-    void DrawTextWrapUTF8(Float2 const& pos, Color4 const& color, AStringView Text, float wrapWidth, bool bShadow = false);
-    void DrawChar(char ch, float x, float y, Color4 const& color);
-    void DrawCharUTF8(const char* ch, float x, float y, Color4 const& color);
+    void DrawTextUTF8(FontStyle const& style, Float2 const& pos, Color4 const& color, AStringView Text, bool bShadow = false);
+    void DrawTextWrapUTF8(FontStyle const& style, Float2 const& pos, Color4 const& color, AStringView Text, float wrapWidth, bool bShadow = false);
+    void DrawChar(FontStyle const& style, char ch, float x, float y, Color4 const& color);
+    void DrawCharUTF8(FontStyle const& style, const char* ch, float x, float y, Color4 const& color);
 
     // TODO: Remove
-    HK_DEPRECATED void DrawTextWChar(Float2 const& pos, Color4 const& color, AWideStringView text, bool bShadow = false);
-    HK_DEPRECATED void DrawTextWrapWChar(Float2 const& pos, Color4 const& color, AWideStringView text, float wrapWidth, bool bShadow = false);
-    HK_DEPRECATED void DrawWChar(WideChar ch, float x, float y, Color4 const& color);
+    HK_DEPRECATED void DrawTextWChar(FontStyle const& style, Float2 const& pos, Color4 const& color, AWideStringView text, bool bShadow = false);
+    HK_DEPRECATED void DrawTextWrapWChar(FontStyle const& style, Float2 const& pos, Color4 const& color, AWideStringView text, float wrapWidth, bool bShadow = false);
+    HK_DEPRECATED void DrawWChar(FontStyle const& style, WideChar ch, float x, float y, Color4 const& color);
 
     // Texture
     void DrawTexture(DrawTextureDesc const& desc);

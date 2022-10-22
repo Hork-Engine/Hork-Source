@@ -30,32 +30,50 @@ SOFTWARE.
 
 #pragma once
 
-#include "CommandContext.h"
+#include "UIWidget.h"
 
-class AGameModule : public ABaseObject
+class UIDockNode;
+class UIDockContainer;
+
+enum UI_DOCK_WIDGET_AREA
 {
-    HK_CLASS(AGameModule, ABaseObject)
+    UI_DOCK_WIDGET_AREA_LEFT   = 1,
+    UI_DOCK_WIDGET_AREA_RIGHT  = 2,
+    UI_DOCK_WIDGET_AREA_TOP    = 4,
+    UI_DOCK_WIDGET_AREA_BOTTOM = 8,
+    UI_DOCK_WIDGET_AREA_ALL    = UI_DOCK_WIDGET_AREA_LEFT | UI_DOCK_WIDGET_AREA_RIGHT | UI_DOCK_WIDGET_AREA_TOP | UI_DOCK_WIDGET_AREA_BOTTOM
+};
+
+HK_FLAG_ENUM_OPERATORS(UI_DOCK_WIDGET_AREA)
+
+class UIDockWidget : public UIWidget
+{
+    UI_CLASS(UIDockWidget, UIWidget)
 
 public:
-    /** Quit when user press ESCAPE */
-    bool bQuitOnEscape = true;
+    UI_DOCK_WIDGET_AREA DockAreas  = UI_DOCK_WIDGET_AREA_ALL; // TODO
+    bool                bAllowTabs = true;                    // TODO
 
-    /** Toggle fullscreen on ALT+ENTER */
-    bool bToggleFullscreenAltEnter = true;
+    UIDockWidget(UIDockContainer* container);
 
-    ACommandContext CommandContext;
+    UIDockContainer* GetContainer() { return m_Container; }
 
-    AGameModule();
+protected:
+    void PostDraw(ACanvas& canvas) override;
 
-    virtual void OnGameClose();
-
-    /** Add global console command */
-    void AddCommand(AGlobalStringView _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment = ""s);
-
-    /** Remove global console command */
-    void RemoveCommand(AStringView _Name);
+    bool OnChildrenMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp);
 
 private:
-    void Quit(ACommandProcessor const& _Proc);
-    void RebuildMaterials(ACommandProcessor const& _Proc);
+    TWeakRef<UIDockNode> m_Leaf;
+    uint64_t             m_ContainerId{};
+    Float2               m_DockPosition;
+
+public:
+    Float2 m_DockSize;
+
+private:
+    TWeakRef<UIDockContainer> m_Container;
+
+    friend class UIDockContainer;
+    friend class UIDockNode;
 };

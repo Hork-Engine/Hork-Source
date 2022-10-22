@@ -30,32 +30,28 @@ SOFTWARE.
 
 #pragma once
 
-#include "CommandContext.h"
+#include "UIWidget.h"
 
-class AGameModule : public ABaseObject
+class UIText : public UIObject
 {
-    HK_CLASS(AGameModule, ABaseObject)
+    UI_CLASS(UIText, UIObject)
 
 public:
-    /** Quit when user press ESCAPE */
-    bool bQuitOnEscape = true;
+    AString           Text;
+    TRef<AFont>       Font;
+    float             FontSize = 14;
+    float             FontBlur = 0;
+    float             LetterSpacing = 0;
+    float             LineHeight = 1; // The line height is specified as multiple of font size.
+    HALIGNMENT        HAlignment = HALIGNMENT_LEFT;
+    VALIGNMENT        VAlignment = VALIGNMENT_TOP;
+    Color4            Color;
+    Float2            ShadowOffset = Float2(2,2);
+    float             ShadowBlur   = 2;
+    bool              bWrap        = false;
+    bool              bDropShadow  = true;   
 
-    /** Toggle fullscreen on ALT+ENTER */
-    bool bToggleFullscreenAltEnter = true;
+    Float2 GetTextBoxSize(float breakRowWidth) const;
 
-    ACommandContext CommandContext;
-
-    AGameModule();
-
-    virtual void OnGameClose();
-
-    /** Add global console command */
-    void AddCommand(AGlobalStringView _Name, TCallback<void(ACommandProcessor const&)> const& _Callback, AGlobalStringView _Comment = ""s);
-
-    /** Remove global console command */
-    void RemoveCommand(AStringView _Name);
-
-private:
-    void Quit(ACommandProcessor const& _Proc);
-    void RebuildMaterials(ACommandProcessor const& _Proc);
+    void Draw(ACanvas& canvas, Float2 const& boxMins, Float2 const& boxMaxs);
 };

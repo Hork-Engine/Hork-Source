@@ -127,13 +127,17 @@ CanvasPaint& CanvasPaint::BoxGradient(float x, float y, float w, float h, float 
     return *this;
 }
 
-CanvasPaint& CanvasPaint::ImagePattern(float cx, float cy, float w, float h, float angle, ATexture* texture, Color4 const& tintColor, CANVAS_IMAGE_FLAGS imageFlags)
+CanvasPaint& CanvasPaint::ImagePattern(float x, float y, float w, float h, float angle, ATexture* texture, Color4 const& tintColor, CANVAS_IMAGE_FLAGS imageFlags)
 {
     Platform::ZeroMem(this, sizeof(*this));
 
-    nvgTransformRotate(Xform, angle);
-    Xform[4] = cx;
-    Xform[5] = cy;
+    if (angle != 0.0f)
+        nvgTransformRotate(Xform, angle);
+    else
+        nvgTransformIdentity(Xform);
+
+    Xform[4] = x;
+    Xform[5] = y;
 
     Extent[0] = w;
     Extent[1] = h;
@@ -142,6 +146,16 @@ CanvasPaint& CanvasPaint::ImagePattern(float cx, float cy, float w, float h, flo
     ImageFlags = imageFlags;
 
     InnerColor = OuterColor = tintColor;
+
+    return *this;
+}
+
+CanvasPaint& CanvasPaint::Solid(Color4 const& color)
+{
+    Platform::ZeroMem(this, sizeof(*this));
+
+    nvgTransformIdentity(Xform);
+    InnerColor = OuterColor = color;
 
     return *this;
 }
@@ -399,7 +413,7 @@ void ACanvas::NewFrame(uint32_t width, uint32_t height)
     FontFace(nullptr);
 }
 
-void ACanvas::Push(CANVAS_SAVE_FLAG ResetFlag)
+void ACanvas::Push(CANVAS_PUSH_FLAG ResetFlag)
 {
     nvgSave(m_Context, ResetFlag);
 }
@@ -457,19 +471,6 @@ void ACanvas::DrawRectFilled(Float2 const& mins, Float2 const& maxs, Color4 cons
     Fill();
 }
 
-void ACanvas::DrawRectFilledGradient(Float2 const& mins, Float2 const& maxs, Color4 const& c0, Color4 const& c1, RoundingDesc const& rounding)
-{
-    BeginPath();
-    RoundedRectVarying(mins.X, mins.Y, maxs.X - mins.X, maxs.Y - mins.Y,
-                       rounding.RoundingTL,
-                       rounding.RoundingTR,
-                       rounding.RoundingBR,
-                       rounding.RoundingBL);
-
-    FillPaint(CanvasPaint().LinearGradient(0.0f, 0.0f, maxs.X - mins.X, 0.0f, c0, c1));
-    Fill();
-}
-
 void ACanvas::DrawTriangle(Float2 const& p0, Float2 const& p1, Float2 const& p2, Color4 const& color, float thickness)
 {
     if (thickness <= 0)
@@ -515,76 +516,76 @@ void ACanvas::DrawCircleFilled(Float2 const& center, float radius, Color4 const&
     Fill();
 }
 
-void ACanvas::DrawTextUTF8(Float2 const& pos, Color4 const& color, AStringView text, bool bShadow)
+void ACanvas::DrawTextUTF8(FontStyle const& style, Float2 const& pos, Color4 const& color, AStringView text, bool bShadow)
 {
     if (bShadow)
     {
-        FontBlur(1);
+        FontStyle shadowStyle = style;
+        shadowStyle.FontBlur  = 1;
         FillColor(Color4(0, 0, 0, color.A));
-        Text(pos.X + 2, pos.Y + 2, text);
+        Text(shadowStyle, pos.X + 2, pos.Y + 2, HALIGNMENT_LEFT, text);
     }
 
-    FontBlur(0);
     FillColor(color);
-    Text(pos.X, pos.Y, text);
+    Text(style, pos.X, pos.Y, HALIGNMENT_LEFT, text);
 }
 
-void ACanvas::DrawTextWrapUTF8(Float2 const& pos, Color4 const& color, AStringView text, float wrapWidth, bool bShadow)
+void ACanvas::DrawTextWrapUTF8(FontStyle const& style, Float2 const& pos, Color4 const& color, AStringView text, float wrapWidth, bool bShadow)
 {
     if (bShadow)
     {
-        FontBlur(1);
+        FontStyle shadowStyle = style;
+        shadowStyle.FontBlur  = 1;
         FillColor(Color4(0, 0, 0, color.A));
-        TextBox(pos.X + 2, pos.Y + 2, wrapWidth, text);
+        TextBox(shadowStyle, pos.X + 2, pos.Y + 2, wrapWidth, HALIGNMENT_LEFT, text);
     }
 
-    FontBlur(0);
     FillColor(color);
-    TextBox(pos.X, pos.Y, wrapWidth, text);
+    TextBox(style, pos.X, pos.Y, wrapWidth, HALIGNMENT_LEFT, text);
 }
 
-void ACanvas::DrawTextWChar(Float2 const& pos, Color4 const& color, AWideStringView text, bool bShadow)
+void ACanvas::DrawTextWChar(FontStyle const& style, Float2 const& pos, Color4 const& color, AWideStringView text, bool bShadow)
 {
     TVector<char> str(text.Size() * 4 + 1); // In worst case WideChar transforms to 4 bytes,
                                             // one additional byte is reserved for trailing '\0'
 
     Core::WideStrEncodeUTF8(str.ToPtr(), str.Size(), text.Begin(), text.End());
 
-    DrawTextUTF8(pos, color, AStringView(str.ToPtr(), str.Size()), bShadow);
+    DrawTextUTF8(style, pos, color, AStringView(str.ToPtr(), str.Size()), bShadow);
 }
 
-void ACanvas::DrawTextWrapWChar(Float2 const& pos, Color4 const& color, AWideStringView text, float wrapWidth, bool bShadow)
+void ACanvas::DrawTextWrapWChar(FontStyle const& style, Float2 const& pos, Color4 const& color, AWideStringView text, float wrapWidth, bool bShadow)
 {
     TVector<char> str(text.Size() * 4 + 1); // In worst case WideChar transforms to 4 bytes,
                                             // one additional byte is reserved for trailing '\0'
 
     Core::WideStrEncodeUTF8(str.ToPtr(), str.Size(), text.Begin(), text.End());
 
-    DrawTextWrapUTF8(pos, color, AStringView(str.ToPtr(), str.Size()), wrapWidth, bShadow);
+    DrawTextWrapUTF8(style, pos, color, AStringView(str.ToPtr(), str.Size()), wrapWidth, bShadow);
 }
 
-void ACanvas::DrawChar(char ch, float x, float y, Color4 const& color)
+void ACanvas::DrawChar(FontStyle const& style, char ch, float x, float y, Color4 const& color)
 {
     FillColor(color);
-    Text(x, y, AStringView(&ch, 1));
+    Text(style, x, y, HALIGNMENT_LEFT, AStringView(&ch, 1));
 }
 
-void ACanvas::DrawWChar(WideChar ch, float x, float y, Color4 const& color)
+void ACanvas::DrawWChar(FontStyle const& style, WideChar ch, float x, float y, Color4 const& color)
 {
     char buf[4];
     int n = Core::WideCharEncodeUTF8(buf, sizeof(buf), ch);
 
     FillColor(color);
-    Text(x, y, AStringView(buf, n));
+    Text(style, x, y, HALIGNMENT_LEFT, AStringView(buf, n));
 }
 
-void ACanvas::DrawCharUTF8(const char* ch, float x, float y, Color4 const& color)
+void ACanvas::DrawCharUTF8(FontStyle const& style, const char* ch, float x, float y, Color4 const& color)
 {
     if (!ch)
         return;
 
     FillColor(color);
-    Text(x, y, AStringView(ch, Core::UTF8CharSizeInBytes(ch)));
+    Text(style, x, y, HALIGNMENT_LEFT, AStringView(ch, Core::UTF8CharSizeInBytes(ch)));
 }
 
 void ACanvas::DrawTexture(DrawTextureDesc const& desc)
@@ -647,6 +648,9 @@ void ACanvas::DrawViewport(DrawViewportDesc const& desc)
     if (desc.W < 1.0f || desc.H < 1.0f)
         return;
 
+    if (desc.TextureResolutionX < 1 || desc.TextureResolutionY < 1)
+        return;
+
     if (desc.Composite == CANVAS_COMPOSITE_SOURCE_OVER && desc.TintColor.IsTransparent())
         return;
 
@@ -659,13 +663,17 @@ void ACanvas::DrawViewport(DrawViewportDesc const& desc)
     CANVAS_COMPOSITE currentComposite = CompositeOperation(desc.Composite);
 
     CanvasPaint paint;
-    nvgTransformRotate(paint.Xform, desc.Angle);
+
+    if (desc.Angle != 0.0f)
+        nvgTransformRotate(paint.Xform, desc.Angle);
+    else
+        nvgTransformIdentity(paint.Xform);
     paint.Xform[4] = desc.X;
     paint.Xform[5] = desc.Y;
     paint.Extent[0] = desc.W;
     paint.Extent[1] = desc.H;
     paint.pTexture = (RenderCore::ITexture*)(size_t)(m_Viewports.Size() + 1);
-    paint.ImageFlags = _CANVAS_IMAGE_VIEWPORT_INDEX | CANVAS_IMAGE_FLIPY;
+    paint.ImageFlags = _CANVAS_IMAGE_VIEWPORT_INDEX | CANVAS_IMAGE_FLIPY | CANVAS_IMAGE_NEAREST;
     paint.InnerColor = desc.TintColor;
     paint.OuterColor = desc.TintColor;
 
@@ -676,16 +684,17 @@ void ACanvas::DrawViewport(DrawViewportDesc const& desc)
                        desc.Rounding.RoundingBR,
                        desc.Rounding.RoundingBL);
     FillPaint(paint);
+    //FillColor(Color4::Orange());
     Fill();
 
     CompositeOperation(currentComposite);
 
     SViewport& viewport = m_Viewports.Add();
-    viewport.X = desc.X;
-    viewport.Y = desc.Y;
-    viewport.Width = desc.W;
-    viewport.Height = desc.H;
-    viewport.Camera = desc.pCamera;
+    viewport.X               = desc.X;
+    viewport.Y               = desc.Y;
+    viewport.Width           = desc.TextureResolutionX;
+    viewport.Height          = desc.TextureResolutionY;
+    viewport.Camera          = desc.pCamera;
     viewport.RenderingParams = desc.pRenderingParams;
 }
 
@@ -957,9 +966,9 @@ CANVAS_COMPOSITE ACanvas::CompositeOperation(CANVAS_COMPOSITE op)
     return CANVAS_COMPOSITE(nvgGlobalCompositeOperation(m_Context, op));
 }
 
-void ACanvas::ShapeAntiAlias(bool bEnabled)
+bool ACanvas::ShapeAntiAlias(bool bEnabled)
 {
-    nvgShapeAntiAlias(m_Context, bEnabled);
+    return !!nvgShapeAntiAlias(m_Context, bEnabled);
 }
 
 void ACanvas::StrokeColor(Color4 const& color)
@@ -1156,25 +1165,8 @@ void ACanvas::Stroke()
     nvgStroke(m_Context);
 }
 
-void ACanvas::FontSize(float size)
-{
-    nvgFontSize(m_Context, size);
-}
 
-void ACanvas::FontBlur(float blur)
-{
-    nvgFontBlur(m_Context, blur);
-}
-
-void ACanvas::TextLetterSpacing(float spacing)
-{
-    nvgTextLetterSpacing(m_Context, spacing);
-}
-
-void ACanvas::TextLineHeight(float lineHeight)
-{
-    nvgTextLineHeight(m_Context, lineHeight);
-}
+#if 0
 
 void ACanvas::TextAlign(CANVAS_TEXT_ALIGN align)
 {
@@ -1186,17 +1178,19 @@ void ACanvas::TextAlign(CANVAS_TEXT_ALIGN align)
 
     nvgTextAlign(m_Context, align);
 }
+#endif
 
 void ACanvas::FontFace(AFont* font)
 {
     if (font)
     {
-        nvgFontFaceId(m_Context, font->GetId());
+        nvgFontFaceId(m_Context, font->GetId(), font);
     }
     else
     {
         // Set default font
-        nvgFontFaceId(m_Context, GetDefaultFont()->GetId());
+        font = GetDefaultFont();
+        nvgFontFaceId(m_Context, font->GetId(), font);
     }
 }
 
@@ -1205,44 +1199,194 @@ void ACanvas::FontFace(AStringView font)
     FontFace(FindResource<AFont>(font));
 }
 
-float ACanvas::Text(float x, float y, AStringView string)
+float ACanvas::Text(FontStyle const& fontStyle, float x, float y, HALIGNMENT HAlignment, AStringView string)
 {
+    nvgFontSize(m_Context, fontStyle.FontSize);
+    nvgFontBlur(m_Context, fontStyle.FontBlur);
+    nvgTextLetterSpacing(m_Context, fontStyle.LetterSpacing);
+    nvgTextLineHeight(m_Context, fontStyle.LineHeight);
+
+    int align = CANVAS_TEXT_ALIGN_TOP;
+    switch (HAlignment)
+    {
+        case HALIGNMENT_LEFT:
+            align |= CANVAS_TEXT_ALIGN_LEFT;
+            break;
+        case HALIGNMENT_CENTER:
+            align |= CANVAS_TEXT_ALIGN_CENTER;
+            break;
+        case HALIGNMENT_RIGHT:
+            align |= CANVAS_TEXT_ALIGN_RIGHT;
+            break;
+    }
+
+    nvgTextAlign(m_Context, align);
+
     return nvgText(m_Context, x, y, string.Begin(), string.End());
 }
 
-void ACanvas::TextBox(float x, float y, float breakRowWidth, AStringView string)
+void ACanvas::TextBox(FontStyle const& fontStyle, float x, float y, float breakRowWidth, HALIGNMENT HAlignment, AStringView text)
 {
-    nvgTextBox(m_Context, x, y, breakRowWidth, string.Begin(), string.End());
+    AFont* font = (AFont*)nvgGetFontFace(m_Context);
+    if (!font)
+        return;
+
+    static TextRow rows[128];
+    int        nrows    = 0;
+
+    TextMetrics metrics;
+    font->GetTextMetrics(fontStyle, metrics);
+    float lineh = metrics.LineHeight * fontStyle.LineHeight;
+
+    while ((nrows = font->TextBreakLines(fontStyle, text, breakRowWidth, rows, 2)) > 0)
+    {
+        for (int i = 0; i < nrows; i++)
+        {
+            TextRow* row = &rows[i];
+
+            float cx = x;
+
+            switch (HAlignment)
+            {
+                case HALIGNMENT_LEFT:
+                    break;
+                case HALIGNMENT_CENTER:
+                    cx += breakRowWidth * 0.5f - row->Width * 0.5f;
+                    break;
+                case HALIGNMENT_RIGHT:
+                    cx += breakRowWidth - row->Width;
+                    break;
+            }
+
+            Text(fontStyle, cx, y, HALIGNMENT_LEFT, row->GetStringView());
+
+            y += lineh;
+        }
+        text = AStringView(rows[nrows - 1].Next, text.End());
+    }
 }
 
-float ACanvas::GetTextBounds(float x, float y, AStringView string, TextBounds& bounds)
+void ACanvas::TextBox(FontStyle const& fontStyle, Float2 const& mins, Float2 const& maxs, HALIGNMENT HAlignment, VALIGNMENT VAlignment, bool bWrap, AStringView text)
 {
-    return nvgTextBounds(m_Context, x, y, string.Begin(), string.End(), &bounds.MinX);
-}
+    float x         = mins.X;
+    float y         = mins.Y;
+    float boxWidth  = maxs.X - mins.X;
+    float boxHeight = maxs.Y - mins.Y;
 
-float ACanvas::GetTextAdvance(float x, float y, AStringView string)
-{
-    return nvgTextBounds(m_Context, x, y, string.Begin(), string.End(), nullptr);
-}
+    AFont* font = (AFont*)nvgGetFontFace(m_Context);
+    if (!font)
+        return;
 
-void ACanvas::GetTextBoxBounds(float x, float y, float breakRowWidth, AStringView string, TextBounds& bounds)
-{
-    nvgTextBoxBounds(m_Context, x, y, breakRowWidth, string.Begin(), string.End(), &bounds.MinX);
-}
+    // Push state to restore text alignment
+    //Push();
 
-int ACanvas::GetTextGlyphPositions(float x, float y, AStringView string, GlyphPosition* positions, int maxPositions)
-{
-    return nvgTextGlyphPositions(m_Context, x, y, string.Begin(), string.End(), reinterpret_cast<NVGglyphPosition*>(positions), maxPositions);
-}
+    //TextAlign(CANVAS_TEXT_ALIGN_LEFT | CANVAS_TEXT_ALIGN_TOP);
 
-void ACanvas::GetTextMetrics(TextMetrics& metrics)
-{
-    nvgTextMetrics(m_Context, &metrics.Ascender, &metrics.Descender, &metrics.LineHeight);
-}
+    TextMetrics metrics;
+    font->GetTextMetrics(fontStyle, metrics);
 
-int ACanvas::TextBreakLines(AStringView string, float breakRowWidth, TextRow* rows, int maxRows)
-{
-    return nvgTextBreakLines(m_Context, string.Begin(), string.End(), breakRowWidth, reinterpret_cast<NVGtextRow*>(rows), maxRows);
+    float lineHeight = metrics.LineHeight * fontStyle.LineHeight;
+
+    float yOffset = 0;
+
+    if (bWrap)
+    {
+        static TextRow rows[128];
+        int            nrows;
+
+        if (VAlignment == VALIGNMENT_CENTER || VAlignment == VALIGNMENT_BOTTOM)
+        {
+            AStringView str = text;
+
+            while ((nrows = font->TextBreakLines(fontStyle, str, boxWidth, rows, HK_ARRAY_SIZE(rows))) > 0)
+            {
+                yOffset += nrows * lineHeight;
+
+                str = AStringView(rows[nrows - 1].Next, str.End());
+            }
+
+            yOffset = boxHeight - yOffset;
+
+            if (VAlignment == VALIGNMENT_CENTER)
+            {
+                yOffset *= 0.5f;
+            }
+        }
+
+        AStringView str = text;
+
+        y += yOffset;
+
+        while ((nrows = font->TextBreakLines(fontStyle, str, boxWidth, rows, HK_ARRAY_SIZE(rows))) > 0)
+        {
+            for (int i = 0; i < nrows; i++)
+            {
+                TextRow* row = &rows[i];
+
+                float cx = x;
+
+                switch (HAlignment)
+                {
+                    case HALIGNMENT_LEFT:
+                        break;
+                    case HALIGNMENT_CENTER:
+                        cx += boxWidth * 0.5f - row->Width * 0.5f;
+                        break;
+                    case HALIGNMENT_RIGHT:
+                        cx += boxWidth - row->Width;
+                        break;
+                }
+
+                if (y >= maxs.Y)
+                    goto fin;
+
+                if (y + lineHeight >= mins.Y)
+                {
+                    Text(fontStyle, cx, y, HALIGNMENT_LEFT, row->GetStringView());
+                }
+
+                y += lineHeight;
+            }
+
+            str = AStringView(rows[nrows - 1].Next, str.End());
+        }
+    fin:;
+    }
+    else
+    {
+        if (VAlignment == VALIGNMENT_CENTER || VAlignment == VALIGNMENT_BOTTOM)
+        {
+            yOffset = lineHeight;
+            yOffset = boxHeight - yOffset;
+
+            if (VAlignment == VALIGNMENT_CENTER)
+            {
+                yOffset *= 0.5f;
+            }
+
+            y += yOffset;
+        }
+
+        switch (HAlignment)
+        {
+            case HALIGNMENT_LEFT:
+                break;
+            case HALIGNMENT_CENTER:
+                //x += boxWidth * 0.5f - row->Width * 0.5f;
+
+                x += boxWidth * 0.5f;
+                break;
+            case HALIGNMENT_RIGHT:
+                //x += boxWidth - row->Width;
+
+                x += boxWidth;
+                break;
+        }
+
+        Text(fontStyle, x, y, HAlignment, text);
+    }
+
+    //Pop();
 }
 
 // Cursor map from Dear ImGui:

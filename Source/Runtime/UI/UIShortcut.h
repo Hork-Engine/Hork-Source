@@ -28,71 +28,38 @@ SOFTWARE.
 
 */
 
-#include "HUD.h"
-#include "Canvas.h"
-#include <Platform/Utf8.h>
+#pragma once
 
-HK_CLASS_META(AHUD)
+#include "UIObject.h"
 
-AHUD::AHUD()
+struct UIShortcutInfo
 {
-}
+    int               Key;
+    int               ModMask;
+    TCallback<void()> Binding;
+};
 
-void AHUD::Draw(ACanvas* _Canvas, int _X, int _Y, int _W, int _H)
+class UIShortcutContainer : public UIObject
 {
-    Canvas    = _Canvas;
-    ViewportX = _X;
-    ViewportY = _Y;
-    ViewportW = _W;
-    ViewportH = _H;
+    UI_CLASS(UIShortcutContainer, UIObject)
 
-    DrawHUD();
-}
-
-void AHUD::DrawHUD()
-{
-}
-
-void AHUD::DrawText(AFont* _Font, int x, int y, Color4 const& color, const char* _Text)
-{
-    const int CharacterWidth  = 8;
-    const int CharacterHeight = 16;
-
-    const char* s = _Text;
-    int         byteLen;
-    WideChar   ch;
-    int         cx = x;
-
-    FontStyle fontStyle;
-    fontStyle.FontSize = CharacterHeight;
-
-    Canvas->FontFace(_Font);
-
-    while (*s)
+public:
+    void Clear()
     {
-        byteLen = Core::WideCharDecodeUTF8(s, ch);
-        if (!byteLen)
-        {
-            break;
-        }
-
-        s += byteLen;
-
-        if (ch == '\n' || ch == '\r')
-        {
-            y += CharacterHeight + 4;
-            cx = x;
-            continue;
-        }
-
-        if (ch == ' ')
-        {
-            cx += CharacterWidth;
-            continue;
-        }
-
-        Canvas->DrawWChar(fontStyle, ch, cx, y, color);
-
-        cx += CharacterWidth;
+        m_Shortcuts.Clear();
     }
-}
+
+    void AddShortcut(int Key, int ModMask, TCallback<void()> Binding)
+    {
+        UIShortcutInfo& shortcut = m_Shortcuts.Add();
+
+        shortcut.Key     = Key;
+        shortcut.ModMask = ModMask;
+        shortcut.Binding = Binding;
+    }
+
+    TVector<UIShortcutInfo> const& GetShortcuts() const { return m_Shortcuts; }
+
+private:
+    TVector<UIShortcutInfo> m_Shortcuts;
+};

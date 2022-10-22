@@ -33,8 +33,6 @@ SOFTWARE.
 #include "CameraComponent.h"
 #include "World.h"
 #include "TerrainView.h"
-#include "WViewport.h"
-#include "WDesktop.h"
 #include "Engine.h"
 
 HK_CLASS_META(APlayerController)
@@ -182,51 +180,46 @@ float APlayerController::GetViewportAspectRatio() const
     return ViewportAspectRatio;
 }
 
+void APlayerController::SetViewport(int x, int y, int w, int h)
+{
+    ViewportX = x;
+    ViewportY = y;
+
+    if (ViewportWidth != w || ViewportHeight != h)
+    {
+        ViewportWidth = w;
+        ViewportHeight = h;
+
+        if (w > 0 && h > 0)
+            ViewportAspectRatio = (float)w / h;
+        else
+            ViewportAspectRatio = 1;
+
+        UpdatePawnCamera();
+    }
+}
+
 Float2 APlayerController::GetLocalCursorPosition() const
 {
-    return Viewport ? Viewport->GetLocalCursorPosition() : Float2::Zero();
+    Float2 pos = GUIManager->CursorPosition;
+    pos.X -= ViewportX;
+    pos.Y -= ViewportY;
+    return pos;
 }
 
 Float2 APlayerController::GetNormalizedCursorPosition() const
 {
-    if (Viewport)
+    if (ViewportWidth > 0 && ViewportHeight > 0)
     {
-        Float2 size = Viewport->GetAvailableSize();
-        if (size.X > 0 && size.Y > 0)
-        {
-            Float2 pos = GetLocalCursorPosition();
-            pos.X /= size.X;
-            pos.Y /= size.Y;
-            pos.X = Math::Saturate(pos.X);
-            pos.Y = Math::Saturate(pos.Y);
-            return pos;
-        }
+        Float2 pos = GetLocalCursorPosition();
+        pos.X /= ViewportWidth;
+        pos.Y /= ViewportHeight;
+        pos.X = Math::Saturate(pos.X);
+        pos.Y = Math::Saturate(pos.Y);
+        return pos;
     }
+
     return Float2::Zero();
-}
-
-void APlayerController::OnViewportUpdate()
-{
-    if (Viewport)
-    {
-        Float2 size = Viewport->GetAvailableSize();
-        if (size.X > 0 && size.Y > 0)
-        {
-            ViewportAspectRatio = size.X / size.Y;
-        }
-
-        ViewportWidth  = size.X;
-        ViewportHeight = size.Y;
-    }
-    else
-    {
-        // Set default
-        ViewportAspectRatio = 1.0f;
-        ViewportWidth       = 512;
-        ViewportHeight      = 512;
-    }
-
-    UpdatePawnCamera();
 }
 
 void APlayerController::UpdatePawnCamera()
@@ -246,9 +239,6 @@ void APlayerController::UpdatePawnCamera()
 
     camera->SetAspectRatio(ViewportAspectRatio * vidMode.AspectScale);
 }
-
-
-
 
 ARenderingParameters::ARenderingParameters()
 {

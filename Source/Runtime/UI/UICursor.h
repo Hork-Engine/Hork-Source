@@ -28,71 +28,29 @@ SOFTWARE.
 
 */
 
-#include "HUD.h"
-#include "Canvas.h"
-#include <Platform/Utf8.h>
+#pragma once
 
-HK_CLASS_META(AHUD)
+#include "UIObject.h"
 
-AHUD::AHUD()
+#include <Runtime/Canvas.h>
+
+class UICursor : public UIObject
 {
-}
+    UI_CLASS(UICursor, UIObject)
 
-void AHUD::Draw(ACanvas* _Canvas, int _X, int _Y, int _W, int _H)
+public:
+    virtual void Draw(ACanvas& canvas, Float2 const& position) = 0;
+};
+
+class UIDefaultCursor : public UICursor
 {
-    Canvas    = _Canvas;
-    ViewportX = _X;
-    ViewportY = _Y;
-    ViewportW = _W;
-    ViewportH = _H;
+    UI_CLASS(UICursor, UICursor)
 
-    DrawHUD();
-}
+public:
+    DRAW_CURSOR DrawCursor = DRAW_CURSOR_ARROW;
+    Color4      FillColor  = Color4::White();
+    Color4      BorderColor = Color4::Black();
+    bool        bDropShadow = true;
 
-void AHUD::DrawHUD()
-{
-}
-
-void AHUD::DrawText(AFont* _Font, int x, int y, Color4 const& color, const char* _Text)
-{
-    const int CharacterWidth  = 8;
-    const int CharacterHeight = 16;
-
-    const char* s = _Text;
-    int         byteLen;
-    WideChar   ch;
-    int         cx = x;
-
-    FontStyle fontStyle;
-    fontStyle.FontSize = CharacterHeight;
-
-    Canvas->FontFace(_Font);
-
-    while (*s)
-    {
-        byteLen = Core::WideCharDecodeUTF8(s, ch);
-        if (!byteLen)
-        {
-            break;
-        }
-
-        s += byteLen;
-
-        if (ch == '\n' || ch == '\r')
-        {
-            y += CharacterHeight + 4;
-            cx = x;
-            continue;
-        }
-
-        if (ch == ' ')
-        {
-            cx += CharacterWidth;
-            continue;
-        }
-
-        Canvas->DrawWChar(fontStyle, ch, cx, y, color);
-
-        cx += CharacterWidth;
-    }
-}
+    void Draw(ACanvas& canvas, Float2 const& position) override;
+};
