@@ -503,33 +503,33 @@ void ACanvasRenderer::RenderVG(IImmediateContext* immediateCtx, CanvasDrawData c
                 }
             }
 
-            m_BlendState = drawCommand->Composite;
+            m_BlendState   = drawCommand->Composite;
             m_DepthStencil = DEPTH_STENCIL_DEFAULT;
             m_RasterState  = RASTER_STATE_CULL;
 
             switch (drawCommand->Type)
             {
                 case CANVAS_DRAW_COMMAND_FILL:
-                    DrawFill(drawCommand);
+                    DrawFill(drawCommand, pTexture);
                     break;
                 case CANVAS_DRAW_COMMAND_CONVEXFILL:
                     DrawConvexFill(drawCommand, pTexture);
                     break;
                 case CANVAS_DRAW_COMMAND_STROKE:
-                    DrawStroke(drawCommand);
+                    DrawStroke(drawCommand, pTexture);
                     break;
                 case CANVAS_DRAW_COMMAND_STENCIL_STROKE:
-                    DrawStroke(drawCommand, true);
+                    DrawStroke(drawCommand, pTexture, true);
                     break;
                 case CANVAS_DRAW_COMMAND_TRIANGLES:
-                    DrawTriangles(drawCommand);
+                    DrawTriangles(drawCommand, pTexture);
                     break;
             }
         }
     }
 }
 
-void ACanvasRenderer::DrawFill(CanvasDrawCmd const* drawCommand)
+void ACanvasRenderer::DrawFill(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture)
 {
     CanvasPath const* paths = &m_pDrawData->Paths[drawCommand->FirstPath];
     int               i, npaths = drawCommand->PathCount;
@@ -560,7 +560,7 @@ void ACanvasRenderer::DrawFill(CanvasDrawCmd const* drawCommand)
     // Draw anti-aliased pixels
     m_RasterState = RASTER_STATE_CULL;
 
-    SetUniforms(drawCommand->UniformOffset + sizeof(CanvasUniforms), drawCommand->pTexture);
+    SetUniforms(drawCommand->UniformOffset + sizeof(CanvasUniforms), pTexture);
 
     if (m_bEdgeAntialias)
     {
@@ -642,7 +642,7 @@ void ACanvasRenderer::DrawConvexFill(CanvasDrawCmd const* drawCommand, ITexture*
     }
 }
 
-void ACanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, bool bStencilStroke)
+void ACanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture, bool bStencilStroke)
 {
     CanvasPath const* paths  = &m_pDrawData->Paths[drawCommand->FirstPath];
     int               npaths = drawCommand->PathCount, i;
@@ -652,7 +652,7 @@ void ACanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, bool bStencil
         // Fill the stroke base without overlap
         m_DepthStencil = DEPTH_STENCIL_STROKE_FILL;
 
-        SetUniforms(drawCommand->UniformOffset + sizeof(CanvasUniforms), drawCommand->pTexture);
+        SetUniforms(drawCommand->UniformOffset + sizeof(CanvasUniforms), pTexture);
         BindPipeline(TOPOLOGY_TRIANGLE_STRIP);
         for (i = 0; i < npaths; i++)
         {
@@ -669,7 +669,7 @@ void ACanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, bool bStencil
         // Draw anti-aliased pixels.
         m_DepthStencil = DEPTH_STENCIL_DRAW_AA;
 
-        SetUniforms(drawCommand->UniformOffset, drawCommand->pTexture);
+        SetUniforms(drawCommand->UniformOffset, pTexture);
         BindPipeline(TOPOLOGY_TRIANGLE_STRIP);
         for (i = 0; i < npaths; i++)
         {
@@ -699,7 +699,7 @@ void ACanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, bool bStencil
     }
     else
     {
-        SetUniforms(drawCommand->UniformOffset, drawCommand->pTexture);
+        SetUniforms(drawCommand->UniformOffset, pTexture);
 
         m_DepthStencil = DEPTH_STENCIL_DEFAULT;
 
@@ -720,9 +720,9 @@ void ACanvasRenderer::DrawStroke(CanvasDrawCmd const* drawCommand, bool bStencil
     }
 }
 
-void ACanvasRenderer::DrawTriangles(CanvasDrawCmd const* drawCommand)
+void ACanvasRenderer::DrawTriangles(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture)
 {
-    SetUniforms(drawCommand->UniformOffset, drawCommand->pTexture);
+    SetUniforms(drawCommand->UniformOffset, pTexture);
     BindPipeline(TOPOLOGY_TRIANGLE_LIST);
 
     SDrawCmd cmd;

@@ -44,10 +44,10 @@ public:
 
 private:
     void RenderVG(RenderCore::IImmediateContext* immediateCtx, CanvasDrawData const* pDrawData, TSmallVector<RenderCore::FGTextureProxy*, 32>& pRenderViewTexture);
-    void DrawFill(CanvasDrawCmd const* drawCommand);
+    void DrawFill(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture);
     void DrawConvexFill(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture);
-    void DrawStroke(CanvasDrawCmd const* drawCommand, bool bStencilStroke = false);
-    void DrawTriangles(CanvasDrawCmd const* drawCommand);
+    void DrawStroke(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture, bool bStencilStroke = false);
+    void DrawTriangles(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture);
     void SetUniforms(int uniformOffset, RenderCore::ITexture* pTexture);
     void SetBuffers();
     void BuildFanIndices(int numIndices, bool bRebind = true);
