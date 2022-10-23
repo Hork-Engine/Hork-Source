@@ -52,6 +52,11 @@ class UIHitPolygon : public UIHitShape
 public:
     TVector<Float2> Vertices;
 
+    UIHitPolygon() = default;
+    UIHitPolygon(TVector<Float2> vertices) :
+        Vertices(std::move(vertices))
+    {}
+
     // x, y in normalized space 0..1
     bool IsOverlap(struct UIWidgetGeometry const& geometry, float x, float y) const override;
 };

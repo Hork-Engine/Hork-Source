@@ -39,27 +39,26 @@ AConsoleVar ui_showLayout("ui_showLayout"s, "0"s);
 
 extern int UIVisibilityFrame;
 
-UIWidget::UIWidget()
+UIWidget::UIWidget() :
+    bAutoWidth{false},
+    bAutoHeight{false},
+    bTransparent{false},
+    bDisabled{false},
+    bExclusive{false},
+    bNoInput{false},
+    bStayBackground{false},
+    bStayForeground{false},
+    bPopup{false},
+    bShortcutsAllowed{true},
+    bAllowDrag{false}
 {
-    MouseCursor = GUIManager->ArrowCursor();
+    Cursor = GUIManager->ArrowCursor();
 }
 
 UIWidget::~UIWidget()
 {
     for (UIWidget* widget : Children)
         widget->RemoveRef();
-}
-
-UIWidget& UIWidget::SetHitShape(UIHitShape* hitShape)
-{
-    HitShape = hitShape;
-    return *this;
-}
-
-UIWidget& UIWidget::SetShareInputs(UIShareInputs* shareInputs)
-{
-    ShareInputs = shareInputs;
-    return *this;
 }
 
 UIWidget* UIWidget::GetMaster()
@@ -193,8 +192,6 @@ void UIWidget::OnWindowHovered(bool bHovered)
 
 void UIWidget::Draw(ACanvas& canvas)
 {
-    if (DebugColor.A > 0.0f)
-        canvas.DrawRectFilled(Geometry.Mins, Geometry.Maxs, DebugColor);
 }
 
 void UIWidget::PostDraw(ACanvas& canvas)
@@ -204,13 +201,13 @@ void UIWidget::PostDraw(ACanvas& canvas)
 void UIWidget::DrawBackground(ACanvas& canvas)
 {
     if (Background)
-        DrawBrush(canvas, Geometry, Background);
+        DrawBrush(canvas, Background);
 }
 
 void UIWidget::DrawForeground(ACanvas& canvas)
 {
     if (Foreground)
-        DrawBrush(canvas, Geometry, Foreground);
+        DrawBrush(canvas, Foreground);
 }
 
 void UIWidget::Draw(ACanvas& canvas, Float2 const& clipMins, Float2 const& clipMaxs, float alpha)
@@ -290,9 +287,9 @@ UIWidget& UIWidget::BringOnTop(bool bRecursiveForParents)
 
     auto& widgets = Parent ? Parent->Children : Desktop->m_Widgets;
 
-    if (!bBackground)
+    if (!bStayBackground)
     {
-        if (bForeground || bExclusive || bPopup)
+        if (bStayForeground || bExclusive || bPopup)
         {
             if (bPopup)
             {
@@ -324,7 +321,7 @@ UIWidget& UIWidget::BringOnTop(bool bRecursiveForParents)
             int i;
 
             // skip foreground widgets
-            for (i = (int)widgets.Size() - 1; i >= 0 && (widgets[i]->bForeground || widgets[i]->bExclusive || widgets[i]->bPopup); i--) {}
+            for (i = (int)widgets.Size() - 1; i >= 0 && (widgets[i]->bStayForeground || widgets[i]->bExclusive || widgets[i]->bPopup); i--) {}
 
             // bring before foreground widgets
             if (i >= 0 && widgets[i] != this)
@@ -373,6 +370,13 @@ UIWidget& UIWidget::AddWidget(UIWidget* widget)
 
     LayoutSlots.Add(widget);
 
+    return *this;
+}
+
+UIWidget& UIWidget::AddWidgets(std::initializer_list<UIWidget*> list)
+{
+    for (auto it : list)
+        AddWidget(it);
     return *this;
 }
 
@@ -532,7 +536,7 @@ void UIWidget::ForwardHoverEvent(bool bHovered)
 Float2 UIWidget::MeasureLayout(bool bAllowAutoWidth, bool bAllowAutoHeight, Float2 const& size)
 {
     if (!Layout)
-        Layout = CreateInstanceOf<UIBoxLayout>();
+        Layout = UINew(UIBoxLayout);
 
     AdjustSize(size);
 
@@ -542,7 +546,7 @@ Float2 UIWidget::MeasureLayout(bool bAllowAutoWidth, bool bAllowAutoHeight, Floa
 void UIWidget::ArrangeChildren(bool bAllowAutoWidth, bool bAllowAutoHeight)
 {
     if (!Layout)
-        Layout = CreateInstanceOf<UIBoxLayout>();
+        Layout = UINew(UIBoxLayout);
 
     bool autoW = bAutoWidth && bAllowAutoWidth;
     bool autoH = bAutoHeight && bAllowAutoHeight;
@@ -571,18 +575,37 @@ void UIWidget::ArrangeChildren(bool bAllowAutoWidth, bool bAllowAutoHeight)
     Layout->ArrangeChildren(this, bAllowAutoWidth, bAllowAutoHeight);
 }
 
+void UIWidget::DrawBrush(ACanvas& canvas, UIBrush* brush)
+{
+    ::DrawBrush(canvas, Geometry.Mins, Geometry.Maxs, {}, brush);
+}
+
+UIShareInputs::UIShareInputs(std::initializer_list<UIWidget*> list)
+{
+    for (UIWidget* widget : list)
+        Add(widget);
+}
+
 void UIShareInputs::Clear()
 {
     m_Widgets.Clear();
 }
 
-void UIShareInputs::Add(UIWidget* widget)
+UIShareInputs& UIShareInputs::Add(UIWidget* widget)
 {
     for (auto& w : m_Widgets)
     {
         if (w && w->Id == widget->Id)
-            return; // already in list
+            return *this; // already in list
     }
 
     m_Widgets.Add() = widget;
+    return *this;
+}
+
+UIShareInputs& UIShareInputs::Add(std::initializer_list<UIWidget*> list)
+{
+    for (UIWidget* widget : list)
+        Add(widget);
+    return *this;
 }

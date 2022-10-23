@@ -43,8 +43,8 @@ UIDockContainer::UIDockContainer() :
 UIDockContainer::UIDockContainer(AStringView containerName) :
     m_ContainerName(containerName)
 {
-    m_Root = CreateInstanceOf<UIDockNode>();
-    Layout = CreateInstanceOf<DockLayout>(this);
+    m_Root = UINew(UIDockNode);
+    Layout = UINew(DockLayout, this);
 
     //Padding = UIPadding(10.0f);
     Padding = UIPadding(0);
@@ -211,8 +211,8 @@ UIDockNode* UIDockContainer::AttachWidget(UIDockWidget* dockWidget, UIDockNode* 
 
     UIDockNode* node = leaf;
 
-    node->m_Child[0] = CreateInstanceOf<UIDockNode>();
-    node->m_Child[1] = CreateInstanceOf<UIDockNode>();
+    node->m_Child[0] = UINew(UIDockNode);
+    node->m_Child[1] = UINew(UIDockNode);
 
     node->m_Child[0]->m_NodeType = UIDockNode::NODE_LEAF;
     node->m_Child[1]->m_NodeType = UIDockNode::NODE_LEAF;

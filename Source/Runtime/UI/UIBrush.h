@@ -32,6 +32,7 @@ SOFTWARE.
 
 #include "UIObject.h"
 #include <Runtime/Canvas.h>
+#include <Containers/ArrayView.h>
 
 class UIBrush : public UIObject
 {
@@ -59,6 +60,30 @@ public:
     UIBrush(TYPE type = UNDEFINED) :
         Type(type)
     {}
+
+    UIBrush& WithComposite(CANVAS_COMPOSITE composite)
+    {
+        Composite = composite;
+        return *this;
+    }
+
+    UIBrush& WithRounding(RoundingDesc const& rounding)
+    {
+        Rounding = rounding;
+        return *this;
+    }
+
+    UIBrush& WithStrokeWidth(float strokeWidth)
+    {
+        StrokeWidth = strokeWidth;
+        return *this;
+    }
+
+    UIBrush& WithFilled(bool filled)
+    {
+        bFilled = filled;
+        return *this;
+    }
 };
 
 class UIBoxGradient : public UIBrush
@@ -76,6 +101,42 @@ public:
     UIBoxGradient() :
         UIBrush(BOX_GRADIENT)
     {}
+
+    UIBoxGradient& WithBoxOffsetTopLeft(Float2 const& boxOffsetTopLeft)
+    {
+        BoxOffsetTopLeft = boxOffsetTopLeft;
+        return *this;
+    }
+
+    UIBoxGradient& WithBoxOffsetBottomRight(Float2 const& boxOffsetBottomRight)
+    {
+        BoxOffsetBottomRight = boxOffsetBottomRight;
+        return *this;
+    }
+
+    UIBoxGradient& WithCornerRadius(float cornerRadius)
+    {
+        CornerRadius = cornerRadius;
+        return *this;
+    }
+
+    UIBoxGradient& WithFeather(float feather)
+    {
+        Feather = feather;
+        return *this;
+    }
+
+    UIBoxGradient& WithInnerColor(Color4 const& innerColor)
+    {
+        InnerColor = innerColor;
+        return *this;
+    }
+
+    UIBoxGradient& WithOuterColor(Color4 const& outerColor)
+    {
+        OuterColor = outerColor;
+        return *this;
+    }
 };
 
 class UILinearGradient : public UIBrush
@@ -91,6 +152,30 @@ public:
     UILinearGradient() :
         UIBrush(LINEAR_GRADIENT)
     {}
+
+    UILinearGradient& WithStartPoint(Float2 const& startPoint)
+    {
+        StartPoint = startPoint;
+        return *this;
+    }
+
+    UILinearGradient& WithEndPoint(Float2 const& endPoint)
+    {
+        EndPoint = endPoint;
+        return *this;
+    }
+
+    UILinearGradient& WithInnerColor(Color4 const& innerColor)
+    {
+        InnerColor = innerColor;
+        return *this;
+    }
+
+    UILinearGradient& WithOuterColor(Color4 const& outerColor)
+    {
+        OuterColor = outerColor;
+        return *this;
+    }
 };
 
 class UIRadialGradient : public UIBrush
@@ -107,6 +192,36 @@ public:
     UIRadialGradient() :
         UIBrush(RADIAL_GRADIENT)
     {}
+
+    UIRadialGradient& WithCenterOffset(Float2 const& centerOffset)
+    {
+        CenterOffset = centerOffset;
+        return *this;
+    }
+
+    UIRadialGradient& WithInnerRadius(float innerRadius)
+    {
+        InnerRadius = innerRadius;
+        return *this;
+    }
+
+    UIRadialGradient& WithOuterRadius(float outerRadius)
+    {
+        OuterRadius = outerRadius;
+        return *this;
+    }
+
+    UIRadialGradient& WithInnerColor(Color4 const& innerColor)
+    {
+        InnerColor = innerColor;
+        return *this;
+    }
+
+    UIRadialGradient& WithOuterColor(Color4 const& outerColor)
+    {
+        OuterColor = outerColor;
+        return *this;
+    }
 };
 
 class UISolidBrush : public UIBrush
@@ -143,10 +258,59 @@ public:
     UIImageBrush() :
         UIBrush(IMAGE)
     {}
+
     UIImageBrush(ATexture* texture) :
         UIBrush(IMAGE),
         Texture(texture)
     {}
+
+    UIImageBrush& WithTexture(ATexture* texture)
+    {
+        Texture = texture;
+        return *this;
+    }
+
+    UIImageBrush& WithTintColor(Color4 const& tintColor)
+    {
+        TintColor = tintColor;
+        return *this;
+    }
+
+    UIImageBrush& WithOffset(Float2 const& offset)
+    {
+        Offset = offset;
+        return *this;
+    }
+
+    UIImageBrush& WithScale(Float2 const& scale)
+    {
+        Scale = scale;
+        return *this;
+    }
+
+    UIImageBrush& WithPremultipliedAlpha(bool premultipliedAlpha)
+    {
+        bPremultipliedAlpha = premultipliedAlpha;
+        return *this;
+    }
+
+    UIImageBrush& WithNearestFilter(bool nearestFilter)
+    {
+        bNearestFilter = nearestFilter;
+        return *this;
+    }
+
+    UIImageBrush& WithFlipY(bool flipY)
+    {
+        bFlipY = flipY;
+        return *this;
+    }
+
+    UIImageBrush& WithStretch(bool stretch)
+    {
+        bStretch = stretch;
+        return *this;
+    }
 };
 
 class UICustomBrush : public UIBrush
@@ -158,7 +322,7 @@ public:
         UIBrush(CUSTOM)
     {}
 
-    virtual void Draw(ACanvas& canvas, Float2 const& mins, Float2 const& maxs) {}
+    virtual void Draw(ACanvas& canvas, Float2 const& mins, Float2 const& maxs, TArrayView<Float2> vertices) {}
 };
 
-void DrawBrush(ACanvas& canvas, struct UIWidgetGeometry const& geometry, UIBrush* brush);
+void DrawBrush(ACanvas& canvas, Float2 const& mins, Float2 const& maxs, TArrayView<Float2> vertices, UIBrush* brush);

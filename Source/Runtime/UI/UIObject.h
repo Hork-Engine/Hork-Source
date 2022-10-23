@@ -41,7 +41,6 @@ class UIObject : public ABaseObject
     UI_CLASS(UIObject, ABaseObject)
 
 public:
-    UIObject()
-    {}
+    UIObject() = default;
 };
 

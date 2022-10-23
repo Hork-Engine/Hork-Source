@@ -45,6 +45,13 @@ public:
         Padding = UIPadding(2);
     }
 
+    UILabel& WithText(UIText* text)
+    {
+        Text = text;
+        return *this;
+    }
+
+protected:
     void AdjustSize(Float2 const& size) override;
 
     void Draw(ACanvas& canvas) override;

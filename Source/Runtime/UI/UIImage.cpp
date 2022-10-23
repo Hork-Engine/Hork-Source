@@ -87,7 +87,7 @@ void UIImage::Draw(ACanvas& canvas)
     if (bFlipY)
         imageFlags |= CANVAS_IMAGE_FLIPY;
 
-    if (bAlphaPremultiplied)
+    if (bPremultipliedAlpha)
         imageFlags |= CANVAS_IMAGE_PREMULTIPLIED;
 
     if (bNearestFilter)

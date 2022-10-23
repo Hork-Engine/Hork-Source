@@ -38,9 +38,9 @@ class UIScroll : public UIWidget
 
 public:
     UIScroll(UIWidget* contentWidget) :
-        m_ContentWidget(contentWidget ? contentWidget : CreateInstanceOf<UIWidget>())
+        m_ContentWidget(contentWidget ? contentWidget : UINew(UIWidget))
     {
-        Layout = CreateInstanceOf<ScrollLayout>(this);
+        Layout = UINew(ScrollLayout, this);
 
         AddWidget(m_ContentWidget);
     }

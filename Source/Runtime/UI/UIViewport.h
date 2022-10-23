@@ -39,12 +39,16 @@ class UIViewport : public UIWidget
     UI_CLASS(UIViewport, UIWidget)
 
 public:
+    RoundingDesc     Rounding;
+    Color4           TintColor;
+    CANVAS_COMPOSITE Composite = CANVAS_COMPOSITE_COPY;
+
     UIViewport(APlayerController* playerController = nullptr);
 
     UIViewport& SetPlayerController(APlayerController* playerController);
-    UIViewport& SetRounding(RoundingDesc const& rounding);
-    UIViewport& SetTint(Color4 const& tintColor);
-    UIViewport& SetComposite(CANVAS_COMPOSITE composite);
+    UIViewport& WithRounding(RoundingDesc const& rounding);
+    UIViewport& WithTint(Color4 const& tintColor);
+    UIViewport& WithComposite(CANVAS_COMPOSITE composite);
 
     void Draw(ACanvas& canvas) override;
 
@@ -69,9 +73,6 @@ private:
 
 private:
     TRef<APlayerController> m_PlayerController;
-    RoundingDesc            m_Rounding;
-    Color4                  m_TintColor;
-    CANVAS_COMPOSITE        m_Composite = CANVAS_COMPOSITE_COPY;
     int                     m_ViewWidth{};
     int                     m_ViewHeight{};
 };

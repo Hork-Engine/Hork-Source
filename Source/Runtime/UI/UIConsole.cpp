@@ -477,7 +477,7 @@ void UIConsole::Draw(ACanvas& cv, UIBrush* background)
     geometry.Maxs = geometry.Mins + Float2(cv.GetWidth(), cv.GetHeight());
 
     if (background)
-        DrawBrush(cv, geometry, background);
+        DrawBrush(cv, geometry.Mins, geometry.Maxs, {}, background);
     else
         cv.DrawRectFilled(geometry.Mins, geometry.Maxs, Color4::Black());
 

@@ -34,10 +34,10 @@ SOFTWARE.
 #include <Geometry/BV/BvIntersect.h>
 
 UIWindow::UIWindow(UIWidget* caption, UIWidget* central) :
-    m_Caption(caption ? caption : CreateInstanceOf<UIWidget>()),
-    m_Central(central ? central : CreateInstanceOf<UIWidget>())
+    m_Caption(caption ? caption : UINew(UIWidget)),
+    m_Central(central ? central : UINew(UIWidget))
 {
-    Layout = CreateInstanceOf<WindowLayout>(this);
+    Layout = UINew(WindowLayout, this);
 
     Padding = UIPadding(1);
 
@@ -206,39 +206,27 @@ UIWindow* UIMakeWindow(AStringView captionText, UIWidget* centralWidget)
 {
     // TODO: Different caption for Active/Not active window
 
-    auto captionBg        = CreateInstanceOf<UILinearGradient>();
-    captionBg->Rounding   = RoundingDesc(8, 8, 0, 0);
-    captionBg->StartPoint = Float2(0, -5);
-    captionBg->EndPoint   = Float2(0, -5 + 15);
-    captionBg->InnerColor = Color4(0.25f, 0.25f, 0.25f);
-    captionBg->OuterColor = Color4(0.16f, 0.16f, 0.16f);
-    captionBg->bFilled    = true;
+    auto label = UINew(UILabel)
+                     .WithText(UINew(UIText, captionText)
+                                   .WithFontSize(16)
+                                   .WithWrap(true)
+                                   .WithHAlignment(HALIGNMENT_CENTER)
+                                   .WithVAlignment(VALIGNMENT_CENTER))
+                     .WithBackground(UINew(UILinearGradient)
+                                         .WithStartPoint({0, -5})
+                                         .WithEndPoint({0, 10})
+                                         .WithInnerColor({0.25f, 0.25f, 0.25f})
+                                         .WithOuterColor({0.16f, 0.16f, 0.16f})
+                                         .WithFilled(true)
+                                         .WithRounding({8, 8, 0, 0}))
+                     .WithNoInput(true);
 
-    auto windowBg      = CreateInstanceOf<UISolidBrush>(Color4(0.15f, 0.15f, 0.15f));
-    windowBg->Rounding = RoundingDesc(8, 8, 0, 0);
-    windowBg->bFilled  = true;
-
-    auto windowFg      = CreateInstanceOf<UISolidBrush>(Color4(0.1f, 0.1f, 0.1f));
-    windowFg->Rounding = RoundingDesc(8, 8, 0, 0);
-    windowFg->bFilled  = false;
-
-    auto text        = CreateInstanceOf<UIText>();
-    text->Text       = captionText;
-    text->HAlignment = HALIGNMENT_CENTER;
-    text->VAlignment = VALIGNMENT_CENTER;
-    text->FontSize   = 16;
-    text->bWrap      = true;
-
-    auto label       = CreateInstanceOf<UILabel>();
-    label->Text      = text;
-    label->Background = captionBg;
-    label->bNoInput   = true;
-
-    auto window        = CreateInstanceOf<UIWindow>(label, centralWidget);
-    window->Background = windowBg;
-    window->Foreground = windowFg;
-
-    window->Padding = 0;
-
-    return window;
+    return UINew(UIWindow, label, centralWidget)
+        .WithBackground(UINew(UISolidBrush, Color4(0.15f, 0.15f, 0.15f))
+                            .WithFilled(true)
+                            .WithRounding({8, 8, 0, 0}))
+        .WithForeground(UINew(UISolidBrush, Color4(0.1f, 0.1f, 0.1f))
+                            .WithFilled(false)
+                            .WithRounding({8, 8, 0, 0}))
+        .WithPadding(UIPadding(0));
 }

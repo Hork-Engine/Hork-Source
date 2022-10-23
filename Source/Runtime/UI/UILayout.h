@@ -46,6 +46,10 @@ struct UIPadding
     constexpr UIPadding(float padding) :
         Left(padding), Top(padding), Right(padding), Bottom(padding)
     {}
+
+    constexpr UIPadding(float left, float top, float right, float bottom) :
+        Left(left), Top(top), Right(right), Bottom(bottom)
+    {}
 };
 
 struct UIWidgetGeometry
@@ -76,9 +80,9 @@ class UIBaseLayout : public UIObject
     UI_CLASS(UIBaseLayout, UIObject)
 
 public:
-    UIBaseLayout()
-    {}
+    UIBaseLayout() = default;
 
+protected:
     virtual Float2 MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHeight, Float2 const& size)
     {
         return Float2(0.0f);
@@ -87,6 +91,8 @@ public:
     virtual void ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight)
     {
     }
+
+    friend class UIWidget;
 };
 
 class UIBoxLayout : public UIBaseLayout
@@ -119,6 +125,7 @@ public:
         HAlignment(halign), VAlignment(valign)
     {}
 
+protected:
     Float2 MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHeight, Float2 const& size) override;
 
     void ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight) override;
@@ -152,9 +159,51 @@ public:
 
     bool bAutoAdjustRowSize{};
 
-    UIGridLayout()
-    {}
+    UIGridLayout() = default;
 
+    UIGridLayout& AddColumn(float width)
+    {
+        ColumnWidth.Add(width);
+        return *this;
+    }
+
+    UIGridLayout& AddRow(float width)
+    {
+        RowWidth.Add(width);
+        return *this;
+    }
+
+    UIGridLayout& WithVSpacing(float vspacing)
+    {
+        VSpacing = vspacing;
+        return *this;
+    }
+
+    UIGridLayout& WithHSpacing(float hspacing)
+    {
+        HSpacing = hspacing;
+        return *this;
+    }
+
+    UIGridLayout& WithNormalizedColumnWidth(bool normalizedColumnWidth)
+    {
+        bNormalizedColumnWidth = normalizedColumnWidth;
+        return *this;
+    }
+
+    UIGridLayout& WithNormalizedRowWidth(bool normalizedRowWidth)
+    {
+        bNormalizedRowWidth = normalizedRowWidth;
+        return *this;
+    }
+
+    UIGridLayout& WithAutoAdjustRowSize(bool autoAdjustRowSize)
+    {
+        bAutoAdjustRowSize = autoAdjustRowSize;
+        return *this;
+    }
+
+protected:
     Float2 MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHeight, Float2 const& size) override;
 
     void ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight) override;
@@ -178,9 +227,27 @@ public:
 
     bool bWrap{};
 
-    UIHorizontalLayout()
-    {}
+    UIHorizontalLayout() = default;
 
+    UIHorizontalLayout& WithVSpacing(float vspacing)
+    {
+        VSpacing = vspacing;
+        return *this;
+    }
+
+    UIHorizontalLayout& WithHSpacing(float hspacing)
+    {
+        HSpacing = hspacing;
+        return *this;
+    }
+
+    UIHorizontalLayout& WithWrap(bool wrap)
+    {
+        bWrap = wrap;
+        return *this;
+    }
+
+protected:
     Float2 MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHeight, Float2 const& size) override;
 
     void ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight) override;
@@ -193,9 +260,13 @@ struct UIImageLayout : public UIBaseLayout
 public:
     Float2 ImageSize = Float2(1920, 1080);
 
-    UIImageLayout()
+    UIImageLayout() = default;
+
+    UIImageLayout(Float2 const& imageSize) :
+        ImageSize(imageSize)
     {}
 
+protected:
     Float2 MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHeight, Float2 const& size) override;
 
     void ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight) override;

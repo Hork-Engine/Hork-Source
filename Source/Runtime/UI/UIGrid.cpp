@@ -36,7 +36,7 @@ SOFTWARE.
 
 UIGrid::UIGrid(uint32_t NumColumns, uint32_t NumRows)
 {
-    auto gridLayout = CreateInstanceOf<UIGridLayout>();
+    auto gridLayout = UINew(UIGridLayout);
 
     gridLayout->ColumnWidth.Resize(NumColumns);
     gridLayout->RowWidth.Resize(NumRows);

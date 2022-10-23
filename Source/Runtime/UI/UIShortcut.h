@@ -49,13 +49,15 @@ public:
         m_Shortcuts.Clear();
     }
 
-    void AddShortcut(int Key, int ModMask, TCallback<void()> Binding)
+    UIShortcutContainer& AddShortcut(int Key, int ModMask, TCallback<void()> Binding)
     {
         UIShortcutInfo& shortcut = m_Shortcuts.Add();
 
         shortcut.Key     = Key;
         shortcut.ModMask = ModMask;
         shortcut.Binding = Binding;
+
+        return *this;
     }
 
     TVector<UIShortcutInfo> const& GetShortcuts() const { return m_Shortcuts; }

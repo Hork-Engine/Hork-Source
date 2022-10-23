@@ -52,5 +52,29 @@ public:
     Color4      BorderColor = Color4::Black();
     bool        bDropShadow = true;
 
+    UIDefaultCursor& WithDrawCursor(DRAW_CURSOR drawCursor)
+    {
+        DrawCursor = drawCursor;
+        return *this;
+    }
+
+    UIDefaultCursor& WithFillColor(Color4 const& fillColor)
+    {
+        FillColor = fillColor;
+        return *this;
+    }
+
+    UIDefaultCursor& WithBorderColor(Color4 const& borderColor)
+    {
+        BorderColor = borderColor;
+        return *this;
+    }
+
+    UIDefaultCursor& WithDropShadow(bool dropShadow)
+    {
+        bDropShadow = dropShadow;
+        return *this;
+    }
+
     void Draw(ACanvas& canvas, Float2 const& position) override;
 };

@@ -43,7 +43,7 @@ UIDockWidget::UIDockWidget(UIDockContainer* container) :
 
     bAllowDrag = true;
 
-    Layout = CreateInstanceOf<UIBoxLayout>(UIBoxLayout::HALIGNMENT_STRETCH, UIBoxLayout::VALIGNMENT_STRETCH);
+    Layout = UINew(UIBoxLayout, UIBoxLayout::HALIGNMENT_STRETCH, UIBoxLayout::VALIGNMENT_STRETCH);
 }
 
 bool UIDockWidget::OnChildrenMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)

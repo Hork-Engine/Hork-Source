@@ -35,10 +35,7 @@ SOFTWARE.
 
 UIButton* UICreateCheckBox(UIAction* action)
 {
-    auto button = CreateInstanceOf<UIButton>();
-    button->BindAction(action);
-
-    auto decorator = CreateInstanceOf<UIBrushDecorator>();
+    auto decorator = UINew(UIBrushDecorator);
 
     //decorator->InactiveBrush = ...;
     //decorator->ActiveBrush   = ...;
@@ -46,8 +43,9 @@ UIButton* UICreateCheckBox(UIAction* action)
     //decorator->SelectedBrush = ...;
     //decorator->DisabledBrush = ...;
 
-    button->SetDecorator(decorator);
-    return button;
+    return UINew(UIButton)
+        .WithAction(action)
+        .WithDecorator(decorator);
 }
 
 void UIButton::AdjustSize(Float2 const& size)

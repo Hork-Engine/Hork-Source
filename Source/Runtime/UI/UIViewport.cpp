@@ -39,21 +39,21 @@ UIViewport::UIViewport(APlayerController* playerController) :
     m_PlayerController(playerController)
 {}
 
-UIViewport& UIViewport::SetRounding(RoundingDesc const& rounding)
+UIViewport& UIViewport::WithRounding(RoundingDesc const& rounding)
 {
-    m_Rounding = rounding;
+    Rounding = rounding;
     return *this;
 }
 
-UIViewport& UIViewport::SetTint(Color4 const& tintColor)
+UIViewport& UIViewport::WithTint(Color4 const& tintColor)
 {
-    m_TintColor = tintColor;
+    TintColor = tintColor;
     return *this;
 }
 
-UIViewport& UIViewport::SetComposite(CANVAS_COMPOSITE composite)
+UIViewport& UIViewport::WithComposite(CANVAS_COMPOSITE composite)
 {
-    m_Composite = composite;
+    Composite = composite;
     return *this;
 }
 
@@ -187,10 +187,10 @@ void UIViewport::Draw(ACanvas& canvas)
             desc.H                = size.Y;
             desc.TextureResolutionX = m_ViewWidth;
             desc.TextureResolutionY = m_ViewHeight;
-            desc.Rounding         = m_Rounding;
+            desc.Rounding         = Rounding;
             desc.Angle            = 0;
-            desc.TintColor        = m_TintColor;
-            desc.Composite        = m_Composite;
+            desc.TintColor        = TintColor;
+            desc.Composite        = Composite;
 
             canvas.DrawViewport(desc);
         }

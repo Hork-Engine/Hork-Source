@@ -45,19 +45,22 @@ class UIButton : public UIWidget
     bool              m_bTryPress{};
 
 public:
-    void BindAction(UIAction* action)
+    UIButton& WithAction(UIAction* action)
     {
         m_Action = action;
+        return *this;
     }
 
-    void SetDecorator(UIDecorator* decorator)
+    UIButton& WithDecorator(UIDecorator* decorator)
     {
         m_Decorator = decorator;
+        return *this;
     }
 
-    void SetText(UIText* text)
+    UIButton& WithText(UIText* text)
     {
         m_Text = text;
+        return *this;
     }
 
     bool IsDisabled() const override

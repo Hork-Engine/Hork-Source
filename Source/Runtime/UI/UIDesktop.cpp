@@ -260,7 +260,7 @@ void UIDesktop::Draw(ACanvas& cv)
     cv.Scissor(m_Geometry.Mins, m_Geometry.Maxs);
 
     if (Background)
-        DrawBrush(cv, m_Geometry, Background);
+        DrawBrush(cv, m_Geometry.Mins, m_Geometry.Maxs, {}, Background);
 
     if (m_FullscreenWidget)
     {

@@ -41,19 +41,105 @@ public:
     Color4           TintColor;
     RoundingDesc     Rounding;
     CANVAS_COMPOSITE Composite = CANVAS_COMPOSITE_SOURCE_OVER;
-    bool             bStretchedX{};
-    bool             bStretchedY{};
-    bool             bTiledX{};
-    bool             bTiledY{};
-    bool             bFlipY{};
-    bool             bAlphaPremultiplied{};
-    bool             bNearestFilter{};
-    Float2           Scale = Float2(1, 1);
     Float2           Offset;
+    Float2           Scale = Float2(1, 1);
+    bool             bPremultipliedAlpha : 1;
+    bool             bNearestFilter : 1;
+    bool             bStretchedX : 1;
+    bool             bStretchedY : 1;
+    bool             bTiledX : 1;
+    bool             bTiledY : 1;
+    bool             bFlipY : 1;
 
-    UIImage()
+    UIImage() :
+        bPremultipliedAlpha{},
+        bNearestFilter{},
+        bStretchedX{},
+        bStretchedY{},
+        bTiledX{},
+        bTiledY{},
+        bFlipY{}
     {}
 
+    UIImage& WithTexture(ATexture* texture)
+    {
+        Texture = texture;
+        return *this;
+    }
+
+    UIImage& WithTintColor(Color4 const& tintColor)
+    {
+        TintColor = tintColor;
+        return *this;
+    }
+
+    UIImage& WithRounding(RoundingDesc const& rounding)
+    {
+        Rounding = rounding;
+        return *this;
+    }
+
+    UIImage& WithComposite(CANVAS_COMPOSITE composite)
+    {
+        Composite = composite;
+        return *this;
+    }
+
+    UIImage& WithOffset(Float2 const& offset)
+    {
+        Offset = offset;
+        return *this;
+    }
+
+    UIImage& WithScale(Float2 const& scale)
+    {
+        Scale = scale;
+        return *this;
+    }
+
+    UIImage& WithPremultipliedAlpha(bool premultipliedAlpha)
+    {
+        bPremultipliedAlpha = premultipliedAlpha;
+        return *this;
+    }
+
+    UIImage& WithNearestFilter(bool nearestFilter)
+    {
+        bNearestFilter = nearestFilter;
+        return *this;
+    }
+
+    UIImage& WithStretchedX(bool stretchedX)
+    {
+        bStretchedX = stretchedX;
+        return *this;
+    }
+
+    UIImage& WithStretchedY(bool stretchedY)
+    {
+        bStretchedY = stretchedY;
+        return *this;
+    }
+
+    UIImage& WithTiledX(bool tiledX)
+    {
+        bTiledX = tiledX;
+        return *this;
+    }
+
+    UIImage& WithTiledY(bool tiledY)
+    {
+        bTiledY = tiledY;
+        return *this;
+    }
+
+    UIImage& WithFlipY(bool flipY)
+    {
+        bFlipY = flipY;
+        return *this;
+    }
+
+protected:
     void AdjustSize(Float2 const& size) override;
 
     void Draw(ACanvas& canvas) override;

@@ -50,10 +50,12 @@ class UIShareInputs : public UIObject
 
 public:
     UIShareInputs() = default;
+    UIShareInputs(std::initializer_list<UIWidget*> list);
 
     void Clear();
 
-    void Add(UIWidget* widget);
+    UIShareInputs& Add(UIWidget* widget);
+    UIShareInputs& Add(std::initializer_list<UIWidget*> list);
 
     TVector<TWeakRef<UIWidget>> const& GetWidgets() const { return m_Widgets; }
 
@@ -61,8 +63,8 @@ private:
     TVector<TWeakRef<UIWidget>> m_Widgets;
 };
 
-#define UINew(Type, ...)            (*CreateInstanceOf<Type>(__VA_ARGS__))
-#define UINewAssign(Val, Type, ...) (*(Val = CreateInstanceOf<Type>(__VA_ARGS__)))
+#define UINew(Type, ...)            (Type*)&(*CreateInstanceOf<Type>(__VA_ARGS__))
+#define UINewAssign(Val, Type, ...) (Type*)&(*(Val = CreateInstanceOf<Type>(__VA_ARGS__)))
 
 struct UIGridOffset
 {
@@ -76,57 +78,232 @@ class UIWidget : public UIObject
 
 public:
     UI_WIDGET_VISIBILITY Visibility = UI_WIDGET_VISIBILITY_VISIBLE;
-    Float2            Position;
-    Float2            Size;
+    Float2               Position;
+    Float2               Size;
     //Float2 MinSize; // TODO
     //Float2 MaxSize; // TODO
-    UIPadding Padding = UIPadding(4.0f);
+    UIPadding          Padding = UIPadding(4.0f);
     float              Opacity = 1;
-    bool               bAutoWidth{false};
-    bool               bAutoHeight{false};
-    bool               bTransparent{false};
-    bool               bDisabled{false};
-    bool               bExclusive{false};
-    bool               bNoInput{false};
-    bool               bBackground{false};
-    bool               bForeground{false};
-    bool               bPopup{false};
-    bool               bShortcutsAllowed{true};
-    bool               bAllowDrag{false};
     TRef<UIBaseLayout> Layout;
     TRef<UIBrush>      Background;
     TRef<UIBrush>      Foreground;
     UIGridOffset       GridOffset;
-
+    bool               bAutoWidth : 1;
+    bool               bAutoHeight : 1;
+    bool               bTransparent : 1;
+    bool               bDisabled : 1;
+    bool               bExclusive : 1;
+    bool               bNoInput : 1;
+    bool               bStayBackground : 1;
+    bool               bStayForeground : 1;
+    bool               bPopup : 1; // TODO
+    bool               bShortcutsAllowed : 1;
+    bool               bAllowDrag : 1;
     // The hit shape is used to test that the widget overlaps the cursor.
-    TRef<UIHitShape>   HitShape;
-    TRef<UICursor>     MouseCursor;
+    TRef<UIHitShape>    HitShape;
+    TRef<UICursor>      Cursor;
     TRef<UIShareInputs> ShareInputs;
     //TRef<UIWidget>     Tooltip; // TODO
     //flota              TooltipTime = 0.1f; // TODO
 
     // Internal
-
     TWeakRef<UIWidget> Parent;
     TVector<UIWidget*> Children;
     TVector<UIWidget*> LayoutSlots;
     UIDesktop*         Desktop{};
-
-    Color4 DebugColor = Color4(0,0,0,0);
-
-    Float2 AdjustedSize;
-    Float2 MeasuredSize;
-
-    UIWidgetGeometry Geometry;
-
-    int VisFrame = 0;
+    Float2             AdjustedSize;
+    Float2             MeasuredSize;
+    UIWidgetGeometry   Geometry;
+    int                VisFrame = 0;
 
     UIWidget();
     ~UIWidget();
 
-    UIWidget& SetHitShape(UIHitShape* hitShape);
+    UIWidget& WithVisibility(UI_WIDGET_VISIBILITY visibility)
+    {
+        Visibility = visibility;
+        return *this;
+    }
 
-    UIWidget& SetShareInputs(UIShareInputs* shareInputs);
+    UIWidget& WithPosition(Float2 const& position)
+    {
+        Position = position;
+        return *this;
+    }
+
+    UIWidget& WithSize(Float2 const& size)
+    {
+        Size = size;
+        return *this;
+    }
+
+    // TODO
+    //UIWidget& WithMinSize(Float2 const& minSize)
+    //{
+    //    MinSize = minSize;
+    //    return *this;
+    //}
+
+    // TODO
+    //UIWidget& WithMaxSize(Float2 const& maxSize)
+    //{
+    //    MaxSize = maxSize;
+    //    return *this;
+    //}
+
+    UIWidget& WithPadding(UIPadding const& padding)
+    {
+        Padding = padding;
+        return *this;
+    }
+
+    UIWidget& WithOpacity(float opacity)
+    {
+        Opacity = opacity;
+        return *this;
+    }
+
+    UIWidget& WithAutoWidth(bool autoWidth)
+    {
+        bAutoWidth = autoWidth;
+        return *this;
+    }
+
+    UIWidget& WithAutoheight(bool autoHeight)
+    {
+        bAutoHeight = autoHeight;
+        return *this;
+    }
+
+    UIWidget& WithTransparent(bool transparent)
+    {
+        bTransparent = transparent;
+        return *this;
+    }
+
+    UIWidget& WithDisabled(bool disabled)
+    {
+        bDisabled = disabled;
+        return *this;
+    }
+
+    UIWidget& WithExclusive(bool exclusive)
+    {
+        bExclusive = exclusive;
+        return *this;
+    }
+
+    UIWidget& WithNoInput(bool noInput)
+    {
+        bNoInput = noInput;
+        return *this;
+    }
+
+    UIWidget& WithStayBackground(bool stayBackground)
+    {
+        bStayBackground = stayBackground;
+        return *this;
+    }
+
+    UIWidget& WithStayForeground(bool stayForeground)
+    {
+        bStayForeground = stayForeground;
+        return *this;
+    }
+
+    UIWidget& WithStayPopup(bool popup)
+    {
+        bPopup = popup;
+        return *this;
+    }
+
+    UIWidget& WithShortcutsAllowed(bool shortcutsAllowed)
+    {
+        bShortcutsAllowed = shortcutsAllowed;
+        return *this;
+    }
+
+    UIWidget& WithAllowDrag(bool allowDrag)
+    {
+        bAllowDrag = allowDrag;
+        return *this;
+    }
+    
+    UIWidget& WithLayout(UIBaseLayout* layout)
+    {
+        Layout = layout;
+        return *this;
+    }
+
+    UIWidget& WithBackground(UIBrush* background)
+    {
+        Background = background;
+        return *this;
+    }
+
+    UIWidget& WithForeground(UIBrush* foreground)
+    {
+        Foreground = foreground;
+        return *this;
+    }
+
+    UIWidget& WithGridOffset(UIGridOffset const& gridOffset)
+    {
+        GridOffset = gridOffset;
+        return *this;
+    }
+
+    UIWidget& WithHitShape(UIHitShape* hitShape)
+    {
+        HitShape = hitShape;
+        return *this;
+    }
+
+    UIWidget& WithCursor(UICursor* cursor)
+    {
+        Cursor = cursor;
+        return *this;
+    }
+
+    UIWidget& WithShareInputs(UIShareInputs* shareInputs)
+    {
+        ShareInputs = shareInputs;
+        return *this;
+    }
+
+    // TODO
+    //UIWidget& WithTooltip(UIWidget* tooltip)
+    //{
+    //    Tooltip = tooltip;
+    //    return *this;
+    //}
+
+    // TODO
+    //UIWidget& WithTooltipTime(float tooltipTime)
+    //{
+    //    TooltipTime = tooltipTime;
+    //    return *this;
+    //}
+
+    UIWidget& SetVisible()
+    {
+        Visibility = UI_WIDGET_VISIBILITY_VISIBLE;
+        return *this;
+    }
+
+    UIWidget& SetInvisible()
+    {
+        Visibility = UI_WIDGET_VISIBILITY_INVISIBLE;
+        return *this;
+    }
+
+    UIWidget& SetCollapsed()
+    {
+        Visibility = UI_WIDGET_VISIBILITY_COLLAPSED;
+        return *this;
+    }
+
+    UIWidget& BringOnTop(bool bRecursiveForParents = true);
 
      /** Get widget visibility type */
     UI_WIDGET_VISIBILITY GetVisibility() const { return Visibility; }
@@ -141,6 +318,9 @@ public:
     bool IsCollapsed() const { return Visibility == UI_WIDGET_VISIBILITY_COLLAPSED; }
 
     UIWidget& AddWidget(UIWidget* widget);
+
+    UIWidget& AddWidgets(std::initializer_list<UIWidget*> list);
+
     void Detach();
 
     UIWidget* GetMaster();
@@ -152,8 +332,6 @@ public:
     bool HitTest(float x, float y) const;
 
     UIDesktop* GetDesktop();
-
-    UIWidget& BringOnTop(bool bRecursiveForParents = true);
 
     void Draw(ACanvas& canvas, Float2 const& clipMins, Float2 const& clipMaxs, float alpha);
 
@@ -229,6 +407,8 @@ protected:
     virtual void Draw(ACanvas& _Canvas);
 
     virtual void PostDraw(ACanvas& _Canvas);
+
+    void DrawBrush(ACanvas& canvas, UIBrush* brush);
 
 private:
     bool OverrideMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp);

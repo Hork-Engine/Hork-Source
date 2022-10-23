@@ -61,6 +61,12 @@ public:
 
     UIGrid(uint32_t NumColumns, uint32_t NumRows);
 
+    UIGrid& WithResizableCells(bool resizableCells)
+    {
+        bResizableCells = resizableCells;
+        return *this;
+    }
+
     UIGridSplitter TraceSplitter(float x, float y) const;
 
 protected:

@@ -49,7 +49,93 @@ public:
     Float2            ShadowOffset = Float2(2,2);
     float             ShadowBlur   = 2;
     bool              bWrap        = false;
-    bool              bDropShadow  = true;   
+    bool              bDropShadow  = true;
+
+    UIText() = default;
+
+    UIText(AStringView text, AFont* font = nullptr, float fontSize = 14) :
+        Text(text),
+        Font(font),
+        FontSize(fontSize)
+    {}
+
+    UIText& WithText(AStringView text)
+    {
+        Text = text;
+        return *this;
+    }
+
+    UIText& WithFont(AFont* font)
+    {
+        Font = font;
+        return *this;
+    }
+
+    UIText& WithFontSize(float fontSize)
+    {
+        FontSize = fontSize;
+        return *this;
+    }
+
+    UIText& WithFontBlur(float fontBlur)
+    {
+        FontBlur = fontBlur;
+        return *this;
+    }
+
+    UIText& WithLetterSpacing(float letterSpacing)
+    {
+        LetterSpacing = letterSpacing;
+        return *this;
+    }
+
+    UIText& WithLineHeight(float lineHeight)
+    {
+        LineHeight = lineHeight;
+        return *this;
+    }
+
+    UIText& WithHAlignment(HALIGNMENT alignment)
+    {
+        HAlignment = alignment;
+        return *this;
+    }
+
+    UIText& WithVAlignment(VALIGNMENT alignment)
+    {
+        VAlignment = alignment;
+        return *this;
+    }
+
+    UIText& WithColor(Color4 const& color)
+    {
+        Color = color;
+        return *this;
+    }
+
+    UIText& WithShadowOffset(Float2 const& shadowOffset)
+    {
+        ShadowOffset = shadowOffset;
+        return *this;
+    }
+
+    UIText& WithShadowBlur(float shadowBlur)
+    {
+        ShadowBlur = shadowBlur;
+        return *this;
+    }
+
+    UIText& WithWrap(bool wrap)
+    {
+        bWrap = wrap;
+        return *this;
+    }
+
+    UIText& WithDropShadow(bool dropShadow)
+    {
+        bDropShadow = dropShadow;
+        return *this;
+    }
 
     Float2 GetTextBoxSize(float breakRowWidth) const;
 

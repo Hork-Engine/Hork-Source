@@ -56,6 +56,36 @@ public:
     TRef<UIBrush> HoverBrush;
     TRef<UIBrush> SelectedBrush;
     TRef<UIBrush> DisabledBrush;
+
+    UIBrushDecorator& WithInactiveBrush(UIBrush* inactiveBrush)
+    {
+        InactiveBrush = inactiveBrush;
+        return *this;
+    }
+
+    UIBrushDecorator& WithActiveBrush(UIBrush* activeBrush)
+    {
+        ActiveBrush = activeBrush;
+        return *this;
+    }
+
+    UIBrushDecorator& WithHoverBrush(UIBrush* hoverBrush)
+    {
+        HoverBrush = hoverBrush;
+        return *this;
+    }
+
+    UIBrushDecorator& WithSelectedBrush(UIBrush* selectedBrush)
+    {
+        SelectedBrush = selectedBrush;
+        return *this;
+    }
+
+    UIBrushDecorator& WithDisabledBrush(UIBrush* disabledBrush)
+    {
+        DisabledBrush = disabledBrush;
+        return *this;
+    }
     
     void DrawInactive(ACanvas& canvas, UIWidgetGeometry const& geometry) override;
     void DrawActive(ACanvas& canvas, UIWidgetGeometry const& geometry) override;

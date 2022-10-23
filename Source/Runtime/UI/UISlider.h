@@ -46,7 +46,38 @@ class UISlider : public UIWidget
     UI_CLASS(UISlider, UIWidget)
 
 public:
-    TEvent<float> E_OnUpdateValue;
+    TRef<UIBrush> SliderBrush;
+    Color4        LineColor = Color4::White();
+
+    TEvent<float> E_OnUpdateValue;    
+
+    UISlider() = default;
+    ~UISlider() = default;
+
+    UISlider& WithVerticalOrientation(bool verticalOrientation)
+    {
+        m_bVerticalOrientation = verticalOrientation;
+        return *this;
+    }
+
+    UISlider& WithSliderBrush(UIBrush* sliderBrush)
+    {
+        SliderBrush = sliderBrush;
+        return *this;
+    }
+
+    // TODO: Replace line color by brush
+    UISlider& WithLineColor(Color4 const& lineColor)
+    {
+        LineColor = lineColor;
+        return *this;
+    }
+
+    UISlider& WithSliderWidth(float width)
+    {
+        m_SliderWidth = Math::Max(m_SliderWidth, 1.0f);
+        return *this;
+    }
 
     template <typename T, typename... TArgs>
     UISlider& SetOnUpdateValue(T* _Object, void (T::*_Method)(TArgs...))
@@ -55,29 +86,21 @@ public:
         return *this;
     }
 
-    UISlider& SetValue(float _Value);
-    UISlider& SetMaxValue(float _MaxValue);
-    UISlider& SetMinValue(float _MinValue);
-    UISlider& SetStep(float _Step);
-    UISlider& SetSliderWidth(float _Width);
-    UISlider& SetVerticalOrientation(bool _VerticalOrientation);
-    UISlider& SetBackgroundColor(Color4 const& _Color);
-    UISlider& SetSliderColor(Color4 const& _Color);
-    UISlider& SetLineColor(Color4 const& _Color);
+    UISlider& SetValue(float value);
+    UISlider& SetMaxValue(float maxValue);
+    UISlider& SetMinValue(float minValue);
+    UISlider& SetStep(float step);
 
-    float GetValue() const { return Value; }
-    float GetMinValue() const { return MinValue; }
-    float GetMaxValue() const { return MaxValue; }
-
-    UISlider();
-    ~UISlider();
+    float GetValue() const { return m_Value; }
+    float GetMinValue() const { return m_MinValue; }
+    float GetMaxValue() const { return m_MaxValue; }
 
 protected:
     // You can override OnDrawEvent and use GetSliderGeometry to
     // draw your own style slider.
     UISliderGeometry const& GetSliderGeometry() const;
 
-    bool IsVertical() const { return bVerticalOrientation; }
+    bool IsVertical() const { return m_bVerticalOrientation; }
 
     void OnMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp) override;
 
@@ -97,17 +120,13 @@ private:
         A_MOVE
     };
 
-    Color4 BackgroundColor;
-    Color4 SliderColor;
-    Color4 LineColor;
-
-    int             Action;
-    float           DragCursor;
+    int              m_Action{A_NONE};
+    float            m_DragCursor{};
     UISliderGeometry m_SliderGeometry;
-    float           MinValue;
-    float           MaxValue;
-    float           Step;
-    float           Value;
-    float           SliderWidth;
-    bool            bVerticalOrientation;
+    float            m_MinValue{0};
+    float            m_MaxValue{1};
+    float            m_Step{};
+    float            m_Value{};
+    float            m_SliderWidth{12};
+    bool             m_bVerticalOrientation{};
 };

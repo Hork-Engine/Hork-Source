@@ -51,7 +51,7 @@ UIManager::~UIManager()
 UICursor* UIManager::ArrowCursor() const
 {
     if (!m_ArrowCursor)
-        m_ArrowCursor = CreateInstanceOf<UIDefaultCursor>();
+        m_ArrowCursor = UINew(UIDefaultCursor);
 
     return m_ArrowCursor;
 }
@@ -135,7 +135,7 @@ void UIManager::Update(float timeStep)
             if (widget)
             {
                 widget->ForwardHoverEvent(true);
-                m_Cursor = widget->MouseCursor;
+                m_Cursor = widget->Cursor;
             }
             else
             {
