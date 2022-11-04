@@ -362,7 +362,7 @@ public:
 #endif
     }
 
-    void Writelob(BlobRef Blob)
+    void WriteBlob(BlobRef Blob)
     {
         Write(Blob.GetData(), Blob.Size());
     }
