@@ -258,8 +258,6 @@ void AMeshComponent::SetMesh(AIndexedMesh* _Mesh)
 
     Mesh = _Mesh;
 
-    Mesh->Listeners.Add(this);
-
     for (SSocket& socket : Sockets)
     {
         socket.SocketDef->RemoveRef();
@@ -270,6 +268,8 @@ void AMeshComponent::SetMesh(AIndexedMesh* _Mesh)
         static TStaticResourceFinder<AIndexedMesh> MeshResource("/Default/Meshes/Box"s);
         Mesh = MeshResource.GetObject();
     }
+
+    Mesh->Listeners.Add(this);
 
     // Update bounding box
     Bounds = Mesh->GetBoundingBox();
