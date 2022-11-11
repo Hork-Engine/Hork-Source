@@ -256,36 +256,44 @@ AString ADocumentSerializer::SerializeMember(ADocMember const* Member)
     s += Member->GetName();
     s += " ";
 
-    bool bSingleValue = true;
-
-    for (ADocValue const* value = Member->GetArrayValues(); value;)
+    ADocValue const* value = Member->GetArrayValues();
+    if (value)
     {
-        ADocValue const* next = value->GetNext();
+        bool bSingleValue = true;
 
-        if (bSingleValue && next != nullptr)
+        while (value)
         {
-            bSingleValue = false;
-            s += /*"\n" + InserSpaces() + */ "[\n";
-            DocumentStack++;
+            ADocValue const* next = value->GetNext();
+
+            if (bSingleValue && next != nullptr)
+            {
+                bSingleValue = false;
+                s += /*"\n" + InserSpaces() + */ "[\n";
+                DocumentStack++;
+            }
+
+            if (!bSingleValue)
+            {
+                s += InsertSpaces();
+            }
+            s += SerializeValue(value);
+            if (!bSingleValue)
+            {
+                s += "\n";
+            }
+
+            value = next;
         }
 
         if (!bSingleValue)
         {
-            s += InsertSpaces();
+            DocumentStack--;
+            s += InsertSpaces() + "]";
         }
-        s += SerializeValue(value);
-        if (!bSingleValue)
-        {
-            s += "\n";
-        }
-
-        value = next;
     }
-
-    if (!bSingleValue)
+    else
     {
-        DocumentStack--;
-        s += InsertSpaces() + "]";
+        s += "[]\n";
     }
 
     return s;
@@ -336,21 +344,29 @@ AString ADocumentSerializer::SerializeMemberCompact(ADocMember const* Member)
 
     s += Member->GetName();
 
-    bool singleValue = true;
-    for (ADocValue const* value = Member->GetArrayValues(); value;)
+    ADocValue const* value = Member->GetArrayValues();
+    if (value)
     {
-        ADocValue const* next = value->GetNext();
-        if (singleValue && next != nullptr)
+        bool singleValue = true;
+        while (value)
         {
-            singleValue = false;
-            s += "[";
+            ADocValue const* next = value->GetNext();
+            if (singleValue && next != nullptr)
+            {
+                singleValue = false;
+                s += "[";
+            }
+            s += SerializeValueCompact(value);
+            value = next;
         }
-        s += SerializeValueCompact(value);
-        value = next;
+        if (!singleValue)
+        {
+            s += "]";
+        }
     }
-    if (!singleValue)
+    else
     {
-        s += "]";
+        s += "[]";
     }
     return s;
 }
@@ -680,7 +696,7 @@ void ADocument::ParseArray(ADocValue** ppArrayHead, ADocValue** ppArrayTail)
                 m_Tokenizer.NextToken();
                 if (*ppArrayHead == nullptr)
                 {
-                    LOG("empty array\n");
+                    // empty array
                 }
                 break;
             }
