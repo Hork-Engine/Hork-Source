@@ -184,6 +184,17 @@ struct BvAxisAlignedBox
         Maxs.Z = position.Z + radius;
     }
 
+    HK_FORCEINLINE void Inflate(float delta)
+    {
+        Mins -= delta;
+        Maxs += delta;
+    }
+
+    HK_FORCEINLINE void Deflate(float delta)
+    {
+        Inflate(-delta);
+    }
+
     constexpr HK_FORCEINLINE Float3 Center() const
     {
         return (Maxs + Mins) * 0.5f;
@@ -260,7 +271,10 @@ struct BvAxisAlignedBox
         return minSize;
     }
 
-    void GetVertices(Float3 _Vertices[8]) const;
+    void GetVertices(Float3 vertices[8]) const;
+
+    /** faceNum 0..5 corresponds to +X, -X, +Y, -Y, +Z, -Z */
+    void GetFaceVertices(int faceNum, Float3 vertices[4]) const;
 
     constexpr bool IsEmpty() const
     {

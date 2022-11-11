@@ -30,14 +30,63 @@ SOFTWARE.
 
 #include <Geometry/BV/BvAxisAlignedBox.h>
 
-void BvAxisAlignedBox::GetVertices(Float3 _Vertices[8]) const
+void BvAxisAlignedBox::GetVertices(Float3 vertices[8]) const
 {
-    _Vertices[0] = Float3(Mins.X, Maxs.Y, Mins.Z);
-    _Vertices[1] = Float3(Maxs.X, Maxs.Y, Mins.Z);
-    _Vertices[2] = Maxs;
-    _Vertices[3] = Float3(Mins.X, Maxs.Y, Maxs.Z);
-    _Vertices[4] = Mins;
-    _Vertices[5] = Float3(Maxs.X, Mins.Y, Mins.Z);
-    _Vertices[6] = Float3(Maxs.X, Mins.Y, Maxs.Z);
-    _Vertices[7] = Float3(Mins.X, Mins.Y, Maxs.Z);
+    vertices[0]  = Float3(Mins.X, Maxs.Y, Mins.Z);
+    vertices[1]  = Float3(Maxs.X, Maxs.Y, Mins.Z);
+    vertices[2]  = Maxs;
+    vertices[3]  = Float3(Mins.X, Maxs.Y, Maxs.Z);
+    vertices[4]  = Mins;
+    vertices[5]  = Float3(Maxs.X, Mins.Y, Mins.Z);
+    vertices[6]  = Float3(Maxs.X, Mins.Y, Maxs.Z);
+    vertices[7]  = Float3(Mins.X, Mins.Y, Maxs.Z);
+}
+
+void BvAxisAlignedBox::GetFaceVertices(int faceNum, Float3 vertices[4]) const
+{
+    switch (faceNum)
+    {
+        case 0:
+            // +X
+            vertices[0] = Float3(Maxs.X, Maxs.Y, Mins.Z);
+            vertices[1] = Float3(Maxs.X, Maxs.Y, Maxs.Z);
+            vertices[2] = Float3(Maxs.X, Mins.Y, Maxs.Z);
+            vertices[3] = Float3(Maxs.X, Mins.Y, Mins.Z);
+            break;
+        case 1:
+            // -X
+            vertices[0] = Float3(Mins.X, Maxs.Y, Maxs.Z);
+            vertices[1] = Float3(Mins.X, Maxs.Y, Mins.Z);
+            vertices[2] = Float3(Mins.X, Mins.Y, Mins.Z);
+            vertices[3] = Float3(Mins.X, Mins.Y, Maxs.Z);
+            break;
+        case 2:
+            // +Y
+            vertices[0] = Float3(Mins.X, Maxs.Y, Maxs.Z);
+            vertices[1] = Float3(Maxs.X, Maxs.Y, Maxs.Z);
+            vertices[2] = Float3(Maxs.X, Maxs.Y, Mins.Z);
+            vertices[3] = Float3(Mins.X, Maxs.Y, Mins.Z);
+            break;
+        case 3:
+            // -Y
+            vertices[0] = Float3(Maxs.X, Mins.Y, Maxs.Z);
+            vertices[1] = Float3(Mins.X, Mins.Y, Maxs.Z);
+            vertices[2] = Float3(Mins.X, Mins.Y, Mins.Z);
+            vertices[3] = Float3(Maxs.X, Mins.Y, Mins.Z);
+            break;
+        case 4:
+            // +Z
+            vertices[0] = Float3(Mins.X, Mins.Y, Maxs.Z);
+            vertices[1] = Float3(Maxs.X, Mins.Y, Maxs.Z);
+            vertices[2] = Float3(Maxs.X, Maxs.Y, Maxs.Z);
+            vertices[3] = Float3(Mins.X, Maxs.Y, Maxs.Z);
+            break;
+        case 5:
+            // -Z
+            vertices[0] = Float3(Maxs.X, Mins.Y, Mins.Z);
+            vertices[1] = Float3(Mins.X, Mins.Y, Mins.Z);
+            vertices[2] = Float3(Mins.X, Maxs.Y, Mins.Z);
+            vertices[3] = Float3(Maxs.X, Maxs.Y, Mins.Z);
+            break;
+    }
 }
