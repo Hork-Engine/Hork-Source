@@ -31,6 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include <Core/String.h>
+#include <Core/Parse.h>
 #include <Geometry/VectorMath.h>
 #include <Geometry/Quat.h>
 
@@ -563,55 +564,51 @@ HK_INLINE AStringView GetToken(AStringView& Token, AStringView String, bool bCro
     const char* p   = String.Begin();
     const char* end = String.End();
 
-    Token = AStringView(String.Begin(), String.Begin());
+    Token = "";
 
     // skip space
-    while (*p <= 32 && *p >= 0)
+    for (;;)
     {
         if (p == end)
         {
             return AStringView(p, (StringSizeType)(end - p));
         }
 
-        if (*p++ == '\n')
+        if (*p == '\n' && !bCrossLine)
         {
-            if (!bCrossLine)
-            {
-                LOG("Unexpected new line\n");
-                return AStringView(p, (StringSizeType)(end - p));
-            }
+            LOG("Unexpected new line\n");
+            return AStringView(p, (StringSizeType)(end - p));
         }
-    }
 
-    const char* token_begin = String.Begin();
-    const char* token_p = String.Begin();
-    while (!(*p <= 32 && *p >= 0))
-    {
-        if (p == end)
+        if (*p > 32)
             break;
 
+        p++;
+    }
+
+    const char* token = p;
+    while (p < end)
+    {
         if (*p == '\n')
         {
-            ++p;
             if (!bCrossLine)
-            {
                 LOG("Unexpected new line\n");
-                break;
-            }
-            continue;
+            break;
         }
 
-        if ((*p == '(' || *p == ')') && !Token.IsEmpty())
+        if (*p <= 32)
             break;
 
-        ++token_p;
+        if (*p == '(' || *p == ')')
+        {
+            ++p;
+            break;
+        }
+
         ++p;
-
-        if (!Token.IsEmpty() && (Token[0] == '(' || Token[0] == ')'))
-            break;
     }
 
-    Token = AStringView(token_begin, token_p);
+    Token = AStringView(token, p);
 
     return AStringView(p, (StringSizeType)(end - p), String.IsNullTerminated());
 }

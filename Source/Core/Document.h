@@ -189,7 +189,7 @@ public:
 
     double GetDouble(AStringView Name, double Default = 0) const;
 
-    AStringView GetString(AStringView Name) const;
+    AStringView GetString(AStringView Name, AStringView Default = "") const;
 
     void Clear();
 

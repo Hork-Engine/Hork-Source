@@ -381,14 +381,16 @@ public:
         Super::pop_back();
     }
 
-    HK_FORCEINLINE void RemoveDuplicates()
+    template <typename Predicate>
+    HK_FORCEINLINE void RemoveDuplicates(Predicate predicate)
     {
-        DoRemoveDuplicates<false>();
+        DoRemoveDuplicates<false, Predicate>(predicate);
     }
 
-    HK_FORCEINLINE void RemoveDuplicatesUnsorted()
+    template <typename Predicate>
+    HK_FORCEINLINE void RemoveDuplicatesUnsorted(Predicate predicate)
     {
-        DoRemoveDuplicates<true>();
+        DoRemoveDuplicates<true, Predicate>(predicate);
     }
 
     /** An optimized removing of array element without memory moves. Just swaps last element with removed element. */
@@ -557,8 +559,8 @@ public:
     }
 
 private:
-    template <bool bUnsorted>
-    void DoRemoveDuplicates()
+    template <bool bUnsorted, typename Predicate>
+    void DoRemoveDuplicates(Predicate predicate)
     {
         SizeType arraySize = Super::size();
         Pointer  arrayData = Super::data();
@@ -566,7 +568,7 @@ private:
         {
             for (SizeType j = arraySize - 1; j > i; j--)
             {
-                if (arrayData[j] == arrayData[i])
+                if (predicate(arrayData[j], arrayData[i]))
                 {
                     // duplicate found
 
@@ -761,14 +763,16 @@ public:
         Super::pop_back();
     }
 
-    HK_FORCEINLINE void RemoveDuplicates()
+    template <typename Predicate>
+    HK_FORCEINLINE void RemoveDuplicates(Predicate predicate)
     {
-        DoRemoveDuplicates<false>();
+        DoRemoveDuplicates<false, Predicate>(predicate);
     }
 
-    HK_FORCEINLINE void RemoveDuplicatesUnsorted()
+    template <typename Predicate>
+    HK_FORCEINLINE void RemoveDuplicatesUnsorted(Predicate predicate)
     {
-        DoRemoveDuplicates<true>();
+        DoRemoveDuplicates<true, Predicate>(predicate);
     }
 
     /** An optimized removing of array element without memory moves. Just swaps last element with removed element. */
@@ -1059,8 +1063,8 @@ public:
     }
 
 private:
-    template <bool bUnsorted>
-    void DoRemoveDuplicates()
+    template <bool bUnsorted, typename Predicate>
+    void DoRemoveDuplicates(Predicate predicate)
     {
         SizeType arraySize = Super::size();
         Pointer  arrayData = Super::data();
@@ -1068,7 +1072,7 @@ private:
         {
             for (SizeType j = arraySize - 1; j > i; j--)
             {
-                if (arrayData[j] == arrayData[i])
+                if (predicate(arrayData[j], arrayData[i]))
                 {
                     // duplicate found
 
