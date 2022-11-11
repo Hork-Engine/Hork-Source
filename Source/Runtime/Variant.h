@@ -564,6 +564,8 @@ HK_INLINE AStringView GetToken(AStringView& Token, AStringView String, bool bCro
     const char* p   = String.Begin();
     const char* end = String.End();
 
+    Token = "";
+
     // skip space
     for (;;)
     {
@@ -585,11 +587,8 @@ HK_INLINE AStringView GetToken(AStringView& Token, AStringView String, bool bCro
     }
 
     const char* token = p;
-    for (;;)
+    while (p < end)
     {
-        if (p == end)
-            break;
-
         if (*p == '\n')
         {
             if (!bCrossLine)
