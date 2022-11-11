@@ -1128,12 +1128,6 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
                 continue;
             }
 
-            ADocMember const* mScale = mAxis->FindMember("Scale");
-            if (!mScale)
-            {
-                continue;
-            }
-
             ADocMember const* mController = mAxis->FindMember("Controller");
             if (!mController)
             {
@@ -1143,14 +1137,13 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
             auto name       = mName->GetStringView();
             auto device     = mDevice->GetStringView();
             auto key        = mKey->GetStringView();
-            auto scale      = mScale->GetStringView();
             auto controller = mController->GetStringView();
 
             uint16_t deviceId     = AInputHelper::LookupDevice(device);
             uint16_t deviceKey    = AInputHelper::LookupDeviceKey(deviceId, key);
             int      controllerId = AInputHelper::LookupController(controller);
 
-            float fScale = Core::ParseFloat(scale);
+            float fScale = mAxis->GetFloat("Scale", 1.0f);
 
             MapAxis(name, {deviceId, deviceKey}, fScale, controllerId);
         }
@@ -1190,12 +1183,7 @@ void AInputMappings::InitializeFromDocument(ADocument const& Document)
                 continue;
             }
 
-            int32_t           modMask  = 0;
-            ADocMember const* mModMask = mAction->FindMember("ModMask");
-            if (mModMask)
-            {
-                modMask = Core::ParseInt32(mModMask->GetStringView());
-            }
+            int32_t modMask = mAction->GetInt32("ModMask", 0);
 
             auto name       = mName->GetStringView();
             auto device     = mDevice->GetStringView();

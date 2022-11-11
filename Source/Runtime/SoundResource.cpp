@@ -147,16 +147,9 @@ bool ASoundResource::LoadResource(IBinaryStreamReadInterface& Stream)
 
         SSoundCreateInfo createInfo;
 
-        ADocMember* member;
-
-        member                = doc.FindMember("bStreamed");
-        createInfo.StreamType = member ? (Core::ParseBool(member->GetStringView()) ? SOUND_STREAM_MEMORY : SOUND_STREAM_DISABLED) : SOUND_STREAM_DISABLED;
-
-        member                = doc.FindMember("bForce8Bit");
-        createInfo.bForce8Bit = member ? Core::ParseBool(member->GetStringView()) : false;
-
-        member                = doc.FindMember("bForceMono");
-        createInfo.bForceMono = member ? Core::ParseBool(member->GetStringView()) : false;
+        createInfo.StreamType = doc.GetBool("bStreamed") ? SOUND_STREAM_MEMORY : SOUND_STREAM_DISABLED;
+        createInfo.bForce8Bit = doc.GetBool("bForce8Bit");
+        createInfo.bForceMono = doc.GetBool("bForceMono");
 
         return InitializeFromMemory(soundFile, BlobRef(soundBinary->GetBinaryData(), soundBinary->GetSizeInBytes()), createInfo);
     }

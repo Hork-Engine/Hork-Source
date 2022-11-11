@@ -83,16 +83,12 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
             SComponentDef componentDef;
             componentDef.ClassMeta = classMeta;
 
-            auto* mComponentName = mComponent->FindMember("name");
-            componentDef.Name    = mComponentName ? mComponentName->GetStringView() : "Unnamed";
-
-            auto* mComponentId = mComponent->FindMember("id");
-            componentDef.Id    = mComponentId ? Core::ParseUInt64(mComponentId->GetStringView()) : 0;
+            componentDef.Name = mComponent->GetString("name", "Unnamed");
+            componentDef.Id   = mComponent->GetUInt64("id");
 
             if (classMeta->IsSubclassOf<ASceneComponent>())
             {
-                auto* mComponentAttach = mComponent->FindMember("attach");
-                componentDef.Attach    = mComponentAttach ? Core::ParseUInt64(mComponentAttach->GetStringView()) : 0;
+                componentDef.Attach = mComponent->GetUInt64("attach");
             }
             else
             {
@@ -129,30 +125,26 @@ void AActorDefinition::InitializeFromDocument(ADocument const& Document)
         }
     }
 
-    auto* mRoot = Document.FindMember("root");
-    if (mRoot)
+    uint64_t rootId = Document.GetUInt64("root");
+    if (rootId)
     {
-        uint64_t rootId = Core::ParseUInt64(mRoot->GetStringView());
-        if (rootId)
+        auto it = componentIdMap.Find(rootId);
+        if (it != componentIdMap.End())
         {
-            auto it = componentIdMap.Find(rootId);
-            if (it != componentIdMap.End())
+            int            index        = it->second;
+            SComponentDef& componentDef = m_Components[index];
+            if (componentDef.ClassMeta->IsSubclassOf<ASceneComponent>())
             {
-                int            index        = it->second;
-                SComponentDef& componentDef = m_Components[index];
-                if (componentDef.ClassMeta->IsSubclassOf<ASceneComponent>())
-                {
-                    m_RootIndex = index;
-                }
-                else
-                {
-                    LOG("WARNING: Root component must be derived from ASceneComponent\n");
-                }
+                m_RootIndex = index;
             }
             else
             {
-                LOG("WARNING: Specified root with unexisted id\n");
+                LOG("WARNING: Root component must be derived from ASceneComponent\n");
             }
+        }
+        else
+        {
+            LOG("WARNING: Specified root with unexisted id\n");
         }
     }
 

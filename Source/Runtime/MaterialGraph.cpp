@@ -4029,8 +4029,7 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
     ADocument document;
     document.DeserializeFromString(deserializeInfo);
 
-    ADocMember* mVersion = document.FindMember("version");
-    if (!mVersion || Core::ParseInt32(mVersion->GetStringView()) != 1)
+    if (document.GetInt32("version") != 1)
     {
         LOG("MGMaterialGraph::LoadFromFile: unknown version\n");
         return nullptr;
