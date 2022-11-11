@@ -502,11 +502,11 @@ double ADocValue::GetDouble(AStringView Name, double Default) const
     return Core::ParseDouble(member->GetStringView());
 }
 
-AStringView ADocValue::GetString(AStringView Name) const
+AStringView ADocValue::GetString(AStringView Name, AStringView Default) const
 {
     ADocMember const* member = FindMember(Name);
     if (!member)
-        return "";
+        return Default;
     return member->GetStringView();
 }
 
