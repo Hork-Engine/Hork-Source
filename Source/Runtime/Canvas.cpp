@@ -1268,125 +1268,81 @@ void ACanvas::TextBox(FontStyle const& fontStyle, float x, float y, float breakR
 
 void ACanvas::TextBox(FontStyle const& fontStyle, Float2 const& mins, Float2 const& maxs, HALIGNMENT HAlignment, VALIGNMENT VAlignment, bool bWrap, AStringView text)
 {
-    float x         = mins.X;
-    float y         = mins.Y;
-    float boxWidth  = maxs.X - mins.X;
-    float boxHeight = maxs.Y - mins.Y;
-
     AFont* font = (AFont*)nvgGetFontFace(m_Context);
     if (!font)
         return;
 
-    // Push state to restore text alignment
-    //Push();
-
-    //TextAlign(CANVAS_TEXT_ALIGN_LEFT | CANVAS_TEXT_ALIGN_TOP);
-
     TextMetrics metrics;
     font->GetTextMetrics(fontStyle, metrics);
 
-    float lineHeight = metrics.LineHeight * fontStyle.LineHeight;
+    float lineHeight    = metrics.LineHeight * fontStyle.LineHeight;
+    float x             = mins.X;
+    float y             = mins.Y;
+    float boxWidth      = maxs.X - mins.X;
+    float boxHeight     = maxs.Y - mins.Y;
+    float breakRowWidth = bWrap ? boxWidth : Math::MaxValue<float>();
 
     float yOffset = 0;
 
-    if (bWrap)
+    static TextRow rows[128];
+    int            nrows;
+
+    if (VAlignment == VALIGNMENT_CENTER || VAlignment == VALIGNMENT_BOTTOM)
     {
-        static TextRow rows[128];
-        int            nrows;
-
-        if (VAlignment == VALIGNMENT_CENTER || VAlignment == VALIGNMENT_BOTTOM)
-        {
-            AStringView str = text;
-
-            while ((nrows = font->TextBreakLines(fontStyle, str, boxWidth, rows, HK_ARRAY_SIZE(rows))) > 0)
-            {
-                yOffset += nrows * lineHeight;
-
-                str = AStringView(rows[nrows - 1].Next, str.End());
-            }
-
-            yOffset = boxHeight - yOffset;
-
-            if (VAlignment == VALIGNMENT_CENTER)
-            {
-                yOffset *= 0.5f;
-            }
-        }
-
         AStringView str = text;
 
-        y += yOffset;
-
-        while ((nrows = font->TextBreakLines(fontStyle, str, boxWidth, rows, HK_ARRAY_SIZE(rows))) > 0)
+        while ((nrows = font->TextBreakLines(fontStyle, str, breakRowWidth, rows, HK_ARRAY_SIZE(rows))) > 0)
         {
-            for (int i = 0; i < nrows; i++)
-            {
-                TextRow* row = &rows[i];
-
-                float cx = x;
-
-                switch (HAlignment)
-                {
-                    case HALIGNMENT_LEFT:
-                        break;
-                    case HALIGNMENT_CENTER:
-                        cx += boxWidth * 0.5f - row->Width * 0.5f;
-                        break;
-                    case HALIGNMENT_RIGHT:
-                        cx += boxWidth - row->Width;
-                        break;
-                }
-
-                if (y >= maxs.Y)
-                    goto fin;
-
-                if (y + lineHeight >= mins.Y)
-                {
-                    Text(fontStyle, cx, y, HALIGNMENT_LEFT, row->GetStringView());
-                }
-
-                y += lineHeight;
-            }
+            yOffset += nrows * lineHeight;
 
             str = AStringView(rows[nrows - 1].Next, str.End());
         }
-    fin:;
-    }
-    else
-    {
-        if (VAlignment == VALIGNMENT_CENTER || VAlignment == VALIGNMENT_BOTTOM)
-        {
-            yOffset = lineHeight;
-            yOffset = boxHeight - yOffset;
 
-            if (VAlignment == VALIGNMENT_CENTER)
+        yOffset = boxHeight - yOffset;
+
+        if (VAlignment == VALIGNMENT_CENTER)
+        {
+            yOffset *= 0.5f;
+        }
+    }
+
+    AStringView str = text;
+
+    y += yOffset;
+
+    while ((nrows = font->TextBreakLines(fontStyle, str, breakRowWidth, rows, HK_ARRAY_SIZE(rows))) > 0)
+    {
+        for (int i = 0; i < nrows; i++)
+        {
+            TextRow* row = &rows[i];
+
+            float cx = x;
+
+            switch (HAlignment)
             {
-                yOffset *= 0.5f;
+                case HALIGNMENT_LEFT:
+                    break;
+                case HALIGNMENT_CENTER:
+                    cx += boxWidth * 0.5f - row->Width * 0.5f;
+                    break;
+                case HALIGNMENT_RIGHT:
+                    cx += boxWidth - row->Width;
+                    break;
             }
 
-            y += yOffset;
+            if (y >= maxs.Y)
+                return;
+
+            if (y + lineHeight >= mins.Y)
+            {
+                Text(fontStyle, cx, y, HALIGNMENT_LEFT, row->GetStringView());
+            }
+
+            y += lineHeight;
         }
 
-        switch (HAlignment)
-        {
-            case HALIGNMENT_LEFT:
-                break;
-            case HALIGNMENT_CENTER:
-                //x += boxWidth * 0.5f - row->Width * 0.5f;
-
-                x += boxWidth * 0.5f;
-                break;
-            case HALIGNMENT_RIGHT:
-                //x += boxWidth - row->Width;
-
-                x += boxWidth;
-                break;
-        }
-
-        Text(fontStyle, x, y, HAlignment, text);
+        str = AStringView(rows[nrows - 1].Next, str.End());
     }
-
-    //Pop();
 }
 
 // Cursor map from Dear ImGui:

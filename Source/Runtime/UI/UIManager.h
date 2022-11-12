@@ -58,6 +58,11 @@ public:
     UIManager(RenderCore::IGenericWindow* mainWindow);
     virtual ~UIManager();
 
+    RenderCore::IGenericWindow* GetGenericWindow()
+    {
+        return m_MainWindow;
+    }
+
     UICursor* ArrowCursor() const;
 
     void AddDesktop(UIDesktop* desktop);

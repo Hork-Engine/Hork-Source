@@ -70,6 +70,24 @@ struct UIGridOffset
 {
     uint32_t RowIndex{};
     uint32_t ColumnIndex{};
+
+    UIGridOffset() = default;
+    UIGridOffset(uint32_t rowIndex, uint32_t columnIndex) :
+        RowIndex(rowIndex),
+        ColumnIndex(columnIndex)
+    {}
+
+    UIGridOffset& WithRowIndex(uint32_t rowIndex)
+    {
+        RowIndex = rowIndex;
+        return *this;
+    }
+
+    UIGridOffset& WithColumnIndex(uint32_t columnIndex)
+    {
+        ColumnIndex = columnIndex;
+        return *this;
+    }
 };
 
 class UIWidget : public UIObject
@@ -169,7 +187,7 @@ public:
         return *this;
     }
 
-    UIWidget& WithAutoheight(bool autoHeight)
+    UIWidget& WithAutoHeight(bool autoHeight)
     {
         bAutoHeight = autoHeight;
         return *this;
@@ -316,6 +334,12 @@ public:
 
     /** Is widget collapsed */
     bool IsCollapsed() const { return Visibility == UI_WIDGET_VISIBILITY_COLLAPSED; }
+
+    /** Helper. Add a child widget */
+    UIWidget& operator[](UIWidget* widget)
+    {
+        return AddWidget(widget);
+    }
 
     UIWidget& AddWidget(UIWidget* widget);
 

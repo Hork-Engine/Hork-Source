@@ -67,6 +67,48 @@ public:
         return *this;
     }
 
+    UIGrid& AddColumn(float width)
+    {
+        m_Layout->ColumnWidth.Add(width);
+        return *this;
+    }
+
+    UIGrid& AddRow(float width)
+    {
+        m_Layout->RowWidth.Add(width);
+        return *this;
+    }
+
+    UIGrid& WithVSpacing(float vspacing)
+    {
+        m_Layout->VSpacing = vspacing;
+        return *this;
+    }
+
+    UIGrid& WithHSpacing(float hspacing)
+    {
+        m_Layout->HSpacing = hspacing;
+        return *this;
+    }
+
+    UIGrid& WithNormalizedColumnWidth(bool normalizedColumnWidth)
+    {
+        m_Layout->bNormalizedColumnWidth = normalizedColumnWidth;
+        return *this;
+    }
+
+    UIGrid& WithNormalizedRowWidth(bool normalizedRowWidth)
+    {
+        m_Layout->bNormalizedRowWidth = normalizedRowWidth;
+        return *this;
+    }
+
+    UIGrid& WithAutoAdjustRowSize(bool autoAdjustRowSize)
+    {
+        m_Layout->bAutoAdjustRowSize = autoAdjustRowSize;
+        return *this;
+    }
+
     UIGridSplitter TraceSplitter(float x, float y) const;
 
 protected:
