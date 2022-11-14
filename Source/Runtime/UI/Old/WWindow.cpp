@@ -379,10 +379,10 @@ void WWindow::OnDrawEvent(ACanvas& _Canvas)
             Float2 textSize = font->GetTextBoxSize(fontStyle, width, CaptionText);
             Float2 offset   = GetTextPositionWithAlignment(textSize);
             _Canvas.IntersectScissor(mins, mins + captionSize);
-            if (bWordWrap)
-                _Canvas.DrawTextWrapUTF8(fontStyle, mins + offset, TextColor, CaptionText, width, true);
-            else
-                _Canvas.DrawTextUTF8(fontStyle, mins + offset, TextColor, CaptionText, true);
+            //if (bWordWrap)
+            //    _Canvas.DrawTextWrapUTF8(fontStyle, mins + offset, TextColor, CaptionText, width, true);
+            //else
+            //    _Canvas.DrawTextUTF8(fontStyle, mins + offset, TextColor, CaptionText, true);
         }
     }
 

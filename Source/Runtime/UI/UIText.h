@@ -43,8 +43,7 @@ public:
     float             FontBlur = 0;
     float             LetterSpacing = 0;
     float             LineHeight = 1; // The line height is specified as multiple of font size.
-    HALIGNMENT        HAlignment = HALIGNMENT_LEFT;
-    VALIGNMENT        VAlignment = VALIGNMENT_TOP;
+    TEXT_ALIGNMENT_FLAGS AlignmentFlags = TEXT_ALIGNMENT_LEFT | TEXT_ALIGNMENT_TOP;
     Color4            Color;
     Float2            ShadowOffset = Float2(2,2);
     float             ShadowBlur   = 2;
@@ -95,15 +94,9 @@ public:
         return *this;
     }
 
-    UIText& WithHAlignment(HALIGNMENT alignment)
+    UIText& WithAlignment(TEXT_ALIGNMENT_FLAGS alignment)
     {
-        HAlignment = alignment;
-        return *this;
-    }
-
-    UIText& WithVAlignment(VALIGNMENT alignment)
-    {
-        VAlignment = alignment;
+        AlignmentFlags = alignment;
         return *this;
     }
 

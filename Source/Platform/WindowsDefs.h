@@ -44,4 +44,5 @@ SOFTWARE.
 #undef LoadImage
 #undef GetTextMetrics
 #undef ERROR
+#undef DrawText
 #endif

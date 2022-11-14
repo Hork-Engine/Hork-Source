@@ -516,76 +516,18 @@ void ACanvas::DrawCircleFilled(Float2 const& center, float radius, Color4 const&
     Fill();
 }
 
-void ACanvas::DrawTextUTF8(FontStyle const& style, Float2 const& pos, Color4 const& color, AStringView text, bool bShadow)
+void ACanvas::DrawText(FontStyle const& style, Float2 const& pos, Color4 const& color, AStringView text, bool bShadow)
 {
     if (bShadow)
     {
         FontStyle shadowStyle = style;
         shadowStyle.FontBlur  = 1;
         FillColor(Color4(0, 0, 0, color.A));
-        Text(shadowStyle, pos.X + 2, pos.Y + 2, HALIGNMENT_LEFT, text);
+        Text(shadowStyle, pos.X + 2, pos.Y + 2, TEXT_ALIGNMENT_LEFT, text);
     }
 
     FillColor(color);
-    Text(style, pos.X, pos.Y, HALIGNMENT_LEFT, text);
-}
-
-void ACanvas::DrawTextWrapUTF8(FontStyle const& style, Float2 const& pos, Color4 const& color, AStringView text, float wrapWidth, bool bShadow)
-{
-    if (bShadow)
-    {
-        FontStyle shadowStyle = style;
-        shadowStyle.FontBlur  = 1;
-        FillColor(Color4(0, 0, 0, color.A));
-        TextBox(shadowStyle, pos.X + 2, pos.Y + 2, wrapWidth, HALIGNMENT_LEFT, text);
-    }
-
-    FillColor(color);
-    TextBox(style, pos.X, pos.Y, wrapWidth, HALIGNMENT_LEFT, text);
-}
-
-void ACanvas::DrawTextWChar(FontStyle const& style, Float2 const& pos, Color4 const& color, AWideStringView text, bool bShadow)
-{
-    TVector<char> str(text.Size() * 4 + 1); // In worst case WideChar transforms to 4 bytes,
-                                            // one additional byte is reserved for trailing '\0'
-
-    Core::WideStrEncodeUTF8(str.ToPtr(), str.Size(), text.Begin(), text.End());
-
-    DrawTextUTF8(style, pos, color, AStringView(str.ToPtr(), str.Size()), bShadow);
-}
-
-void ACanvas::DrawTextWrapWChar(FontStyle const& style, Float2 const& pos, Color4 const& color, AWideStringView text, float wrapWidth, bool bShadow)
-{
-    TVector<char> str(text.Size() * 4 + 1); // In worst case WideChar transforms to 4 bytes,
-                                            // one additional byte is reserved for trailing '\0'
-
-    Core::WideStrEncodeUTF8(str.ToPtr(), str.Size(), text.Begin(), text.End());
-
-    DrawTextWrapUTF8(style, pos, color, AStringView(str.ToPtr(), str.Size()), wrapWidth, bShadow);
-}
-
-void ACanvas::DrawChar(FontStyle const& style, char ch, float x, float y, Color4 const& color)
-{
-    FillColor(color);
-    Text(style, x, y, HALIGNMENT_LEFT, AStringView(&ch, 1));
-}
-
-void ACanvas::DrawWChar(FontStyle const& style, WideChar ch, float x, float y, Color4 const& color)
-{
-    char buf[4];
-    int n = Core::WideCharEncodeUTF8(buf, sizeof(buf), ch);
-
-    FillColor(color);
-    Text(style, x, y, HALIGNMENT_LEFT, AStringView(buf, n));
-}
-
-void ACanvas::DrawCharUTF8(FontStyle const& style, const char* ch, float x, float y, Color4 const& color)
-{
-    if (!ch)
-        return;
-
-    FillColor(color);
-    Text(style, x, y, HALIGNMENT_LEFT, AStringView(ch, Core::UTF8CharSizeInBytes(ch)));
+    Text(style, pos.X, pos.Y, TEXT_ALIGNMENT_LEFT, text);
 }
 
 void ACanvas::DrawTexture(DrawTextureDesc const& desc)
@@ -1165,21 +1107,6 @@ void ACanvas::Stroke()
     nvgStroke(m_Context);
 }
 
-
-#if 0
-
-void ACanvas::TextAlign(CANVAS_TEXT_ALIGN align)
-{
-    if ((align & 7) == 0)
-        align |= CANVAS_TEXT_ALIGN_LEFT; // Default, align text horizontally to left.
-
-    if ((align & 0x78) == 0)
-        align |= CANVAS_TEXT_ALIGN_BASELINE; // Default, align text vertically to baseline.
-
-    nvgTextAlign(m_Context, align);
-}
-#endif
-
 void ACanvas::FontFace(AFont* font)
 {
     if (font)
@@ -1199,83 +1126,75 @@ void ACanvas::FontFace(AStringView font)
     FontFace(FindResource<AFont>(font));
 }
 
-float ACanvas::Text(FontStyle const& fontStyle, float x, float y, HALIGNMENT HAlignment, AStringView string)
+float ACanvas::Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAGS flags, AStringView string)
 {
-    nvgFontSize(m_Context, fontStyle.FontSize);
-    nvgFontBlur(m_Context, fontStyle.FontBlur);
-    nvgTextLetterSpacing(m_Context, fontStyle.LetterSpacing);
-    nvgTextLineHeight(m_Context, fontStyle.LineHeight);
+    enum CANVAS_TEXT_ALIGN : uint8_t
+    {
+        // Horizontal align
+        CANVAS_TEXT_ALIGN_LEFT     = 1 << 0, // Default, align text horizontally to left.
+        CANVAS_TEXT_ALIGN_CENTER   = 1 << 1, // Align text horizontally to center.
+        CANVAS_TEXT_ALIGN_RIGHT    = 1 << 2, // Align text horizontally to right.
+        // Vertical align
+        CANVAS_TEXT_ALIGN_TOP      = 1 << 3, // Align text vertically to top.
+        CANVAS_TEXT_ALIGN_MIDDLE   = 1 << 4, // Align text vertically to middle.
+        CANVAS_TEXT_ALIGN_BOTTOM   = 1 << 5, // Align text vertically to bottom.
+        CANVAS_TEXT_ALIGN_BASELINE = 1 << 6, // Default, align text vertically to baseline.
+    };
 
     int align = CANVAS_TEXT_ALIGN_TOP;
-    switch (HAlignment)
-    {
-        case HALIGNMENT_LEFT:
-            align |= CANVAS_TEXT_ALIGN_LEFT;
-            break;
-        case HALIGNMENT_CENTER:
-            align |= CANVAS_TEXT_ALIGN_CENTER;
-            break;
-        case HALIGNMENT_RIGHT:
-            align |= CANVAS_TEXT_ALIGN_RIGHT;
-            break;
-    }
+    if (flags & TEXT_ALIGNMENT_LEFT)
+        align |= CANVAS_TEXT_ALIGN_LEFT;
+    else if (flags & TEXT_ALIGNMENT_HCENTER)
+        align |= CANVAS_TEXT_ALIGN_CENTER;
+    else if (flags & TEXT_ALIGNMENT_RIGHT)
+        align |= CANVAS_TEXT_ALIGN_RIGHT;
+    else
+        align |= CANVAS_TEXT_ALIGN_LEFT;
 
-    nvgTextAlign(m_Context, align);
-
-    return nvgText(m_Context, x, y, string.Begin(), string.End());
+    return nvgText(m_Context,
+                   style.FontSize,
+                   style.LetterSpacing,
+                   style.FontBlur,
+                   align,
+                   x,
+                   y,
+                   string.Begin(), string.End());
 }
 
-void ACanvas::TextBox(FontStyle const& fontStyle, float x, float y, float breakRowWidth, HALIGNMENT HAlignment, AStringView text)
+void ACanvas::TextWideChar(FontStyle const& style, float x, float y, WideChar ch)
 {
-    AFont* font = (AFont*)nvgGetFontFace(m_Context);
-    if (!font)
+    enum CANVAS_TEXT_ALIGN : uint8_t
+    {
+        CANVAS_TEXT_ALIGN_LEFT   = 1 << 0, // Default, align text horizontally to left.
+        CANVAS_TEXT_ALIGN_TOP      = 1 << 3, // Align text vertically to top.
+    };
+
+    char buf[4];
+    int  n = Core::WideCharEncodeUTF8(buf, sizeof(buf), ch);
+
+    nvgText(m_Context,
+            style.FontSize,
+            style.LetterSpacing,
+            style.FontBlur,
+            CANVAS_TEXT_ALIGN_TOP | CANVAS_TEXT_ALIGN_LEFT,
+            x,
+            y,
+            buf, &buf[n]);
+}
+
+void ACanvas::TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, AStringView text)
+{
+    if (text.IsEmpty())
         return;
 
-    static TextRow rows[128];
-    int        nrows    = 0;
-
-    TextMetrics metrics;
-    font->GetTextMetrics(fontStyle, metrics);
-    float lineh = metrics.LineHeight * fontStyle.LineHeight;
-
-    while ((nrows = font->TextBreakLines(fontStyle, text, breakRowWidth, rows, 2)) > 0)
-    {
-        for (int i = 0; i < nrows; i++)
-        {
-            TextRow* row = &rows[i];
-
-            float cx = x;
-
-            switch (HAlignment)
-            {
-                case HALIGNMENT_LEFT:
-                    break;
-                case HALIGNMENT_CENTER:
-                    cx += breakRowWidth * 0.5f - row->Width * 0.5f;
-                    break;
-                case HALIGNMENT_RIGHT:
-                    cx += breakRowWidth - row->Width;
-                    break;
-            }
-
-            Text(fontStyle, cx, y, HALIGNMENT_LEFT, row->GetStringView());
-
-            y += lineh;
-        }
-        text = AStringView(rows[nrows - 1].Next, text.End());
-    }
-}
-
-void ACanvas::TextBox(FontStyle const& fontStyle, Float2 const& mins, Float2 const& maxs, HALIGNMENT HAlignment, VALIGNMENT VAlignment, bool bWrap, AStringView text)
-{
     AFont* font = (AFont*)nvgGetFontFace(m_Context);
     if (!font)
         return;
 
     TextMetrics metrics;
-    font->GetTextMetrics(fontStyle, metrics);
+    font->GetTextMetrics(style, metrics);
 
-    float lineHeight    = metrics.LineHeight * fontStyle.LineHeight;
+    float lineHeight    = metrics.LineHeight * style.LineHeight;
     float x             = mins.X;
     float y             = mins.Y;
     float boxWidth      = maxs.X - mins.X;
@@ -1287,20 +1206,13 @@ void ACanvas::TextBox(FontStyle const& fontStyle, Float2 const& mins, Float2 con
     static TextRow rows[128];
     int            nrows;
 
-    if (VAlignment == VALIGNMENT_CENTER || VAlignment == VALIGNMENT_BOTTOM)
+    if ((flags & TEXT_ALIGNMENT_VCENTER) || (flags & TEXT_ALIGNMENT_BOTTOM))
     {
-        AStringView str = text;
+        nrows = font->TextLineCount(style, text, breakRowWidth);
 
-        while ((nrows = font->TextBreakLines(fontStyle, str, breakRowWidth, rows, HK_ARRAY_SIZE(rows))) > 0)
-        {
-            yOffset += nrows * lineHeight;
+        yOffset = boxHeight - nrows * lineHeight;
 
-            str = AStringView(rows[nrows - 1].Next, str.End());
-        }
-
-        yOffset = boxHeight - yOffset;
-
-        if (VAlignment == VALIGNMENT_CENTER)
+        if (flags & TEXT_ALIGNMENT_VCENTER)
         {
             yOffset *= 0.5f;
         }
@@ -1310,7 +1222,9 @@ void ACanvas::TextBox(FontStyle const& fontStyle, Float2 const& mins, Float2 con
 
     y += yOffset;
 
-    while ((nrows = font->TextBreakLines(fontStyle, str, breakRowWidth, rows, HK_ARRAY_SIZE(rows))) > 0)
+    bool bKeepSpaces = (flags & TEXT_ALIGNMENT_KEEP_SPACES);
+
+    while ((nrows = font->TextBreakLines(style, str, breakRowWidth, rows, HK_ARRAY_SIZE(rows), bKeepSpaces)) > 0)
     {
         for (int i = 0; i < nrows; i++)
         {
@@ -1318,16 +1232,13 @@ void ACanvas::TextBox(FontStyle const& fontStyle, Float2 const& mins, Float2 con
 
             float cx = x;
 
-            switch (HAlignment)
+            if (flags & TEXT_ALIGNMENT_HCENTER)
             {
-                case HALIGNMENT_LEFT:
-                    break;
-                case HALIGNMENT_CENTER:
-                    cx += boxWidth * 0.5f - row->Width * 0.5f;
-                    break;
-                case HALIGNMENT_RIGHT:
-                    cx += boxWidth - row->Width;
-                    break;
+                cx += boxWidth * 0.5f - row->Width * 0.5f;
+            }
+            else if (flags & TEXT_ALIGNMENT_RIGHT)
+            {
+                cx += boxWidth - row->Width;
             }
 
             if (y >= maxs.Y)
@@ -1335,7 +1246,7 @@ void ACanvas::TextBox(FontStyle const& fontStyle, Float2 const& mins, Float2 con
 
             if (y + lineHeight >= mins.Y)
             {
-                Text(fontStyle, cx, y, HALIGNMENT_LEFT, row->GetStringView());
+                Text(style, cx, y, TEXT_ALIGNMENT_LEFT, row->GetStringView());
             }
 
             y += lineHeight;

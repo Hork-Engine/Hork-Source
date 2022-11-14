@@ -220,7 +220,7 @@ void UISlider::Draw(ACanvas& cv)
     if (geometry.SliderMaxs.X > geometry.SliderMins.X && geometry.SliderMaxs.Y > geometry.SliderMins.Y)
     {
         if (!SliderBrush)
-            SliderBrush = UINew(UISolidBrush, Color4(0.5f, 0.5f, 0.5f, 1.0f)).WithRounding({4,4,4,4});
+            SliderBrush = GUIManager->DefaultSliderBrush();
 
         ::DrawBrush(cv, geometry.SliderMins, geometry.SliderMaxs, {}, SliderBrush);
     }

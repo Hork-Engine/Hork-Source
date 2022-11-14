@@ -496,39 +496,39 @@ void AEngine::ShowStats()
         {
             SMemoryStat& memstat = GMemoryStat[n];
 
-            m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("{}\t\tHeap memory usage: {} KB / peak {} MB Allocs {}", HeapName[n], memstat.MemoryAllocated / 1024.0f, memstat.MemoryPeakAlloc / 1024.0f / 1024.0f, memstat.MemoryAllocs), true);
+            m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("{}\t\tHeap memory usage: {} KB / peak {} MB Allocs {}", HeapName[n], memstat.MemoryAllocated / 1024.0f, memstat.MemoryPeakAlloc / 1024.0f / 1024.0f, memstat.MemoryAllocs), true);
             pos.Y += y_step;
         }
 
         pos.Y = m_Canvas->GetHeight() - numLines * y_step;
 
-        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("SDL Allocs (HEAP_MISC) {}", SDL_GetNumAllocations()), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("SDL Allocs (HEAP_MISC) {}", SDL_GetNumAllocations()), true);
         pos.Y += y_step;
 
-        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Heap memory usage: {} KB / peak {} MB Allocs {}", GMemoryStatGlobal.MemoryAllocated / 1024.0f, GMemoryStatGlobal.MemoryPeakAlloc / 1024.0f / 1024.0f, GMemoryStatGlobal.MemoryAllocs), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("Heap memory usage: {} KB / peak {} MB Allocs {}", GMemoryStatGlobal.MemoryAllocated / 1024.0f, GMemoryStatGlobal.MemoryPeakAlloc / 1024.0f / 1024.0f, GMemoryStatGlobal.MemoryAllocs), true);
         pos.Y += y_step;
 
-        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Frame allocs {} Frame frees {}", GMemoryStatGlobal.FrameAllocs, GMemoryStatGlobal.FrameFrees), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("Frame allocs {} Frame frees {}", GMemoryStatGlobal.FrameAllocs, GMemoryStatGlobal.FrameFrees), true);
         pos.Y += y_step;
-        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Frame memory usage: {} KB / {} MB (Peak {} KB)", m_FrameLoop->GetFrameMemoryUsedPrev() / 1024.0f, m_FrameLoop->GetFrameMemorySize() >> 20, m_FrameLoop->GetMaxFrameMemoryUsage() / 1024.0f), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("Frame memory usage: {} KB / {} MB (Peak {} KB)", m_FrameLoop->GetFrameMemoryUsedPrev() / 1024.0f, m_FrameLoop->GetFrameMemorySize() >> 20, m_FrameLoop->GetMaxFrameMemoryUsage() / 1024.0f), true);
         pos.Y += y_step;
-        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Frame memory usage (GPU): {} KB / {} MB (Peak {} KB)", streamedMemory->GetUsedMemoryPrev() / 1024.0f, streamedMemory->GetAllocatedMemory() >> 20, streamedMemory->GetMaxMemoryUsage() / 1024.0f), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("Frame memory usage (GPU): {} KB / {} MB (Peak {} KB)", streamedMemory->GetUsedMemoryPrev() / 1024.0f, streamedMemory->GetAllocatedMemory() >> 20, streamedMemory->GetMaxMemoryUsage() / 1024.0f), true);
         pos.Y += y_step;
-        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Vertex cache memory usage (GPU): {} KB / {} MB", m_VertexMemoryGPU->GetUsedMemory() / 1024.0f, m_VertexMemoryGPU->GetAllocatedMemory() >> 20), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("Vertex cache memory usage (GPU): {} KB / {} MB", m_VertexMemoryGPU->GetUsedMemory() / 1024.0f, m_VertexMemoryGPU->GetAllocatedMemory() >> 20), true);
         pos.Y += y_step;
-        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Visible instances: {}", frameData->Instances.Size() + frameData->TranslucentInstances.Size()), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("Visible instances: {}", frameData->Instances.Size() + frameData->TranslucentInstances.Size()), true);
         pos.Y += y_step;
-        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Visible shadow instances: {}", frameData->ShadowInstances.Size()), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("Visible shadow instances: {}", frameData->ShadowInstances.Size()), true);
         pos.Y += y_step;
-        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Visible dir lights: {}", frameData->DirectionalLights.Size()), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("Visible dir lights: {}", frameData->DirectionalLights.Size()), true);
         pos.Y += y_step;
-        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Polycount: {}", stat.PolyCount), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("Polycount: {}", stat.PolyCount), true);
         pos.Y += y_step;
-        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("ShadowMapPolyCount: {}", stat.ShadowMapPolyCount), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("ShadowMapPolyCount: {}", stat.ShadowMapPolyCount), true);
         pos.Y += y_step;
-        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Frontend time: {} msec", stat.FrontendTime), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("Frontend time: {} msec", stat.FrontendTime), true);
         pos.Y += y_step;
-        m_Canvas->DrawTextUTF8(fontStyle, pos, Color4::White(), fmt("Audio channels: {} active, {} virtual", m_AudioSystem.GetMixer()->GetNumActiveChannels(), m_AudioSystem.GetMixer()->GetNumVirtualChannels()), true);
+        m_Canvas->DrawText(fontStyle, pos, Color4::White(), fmt("Audio channels: {} active, {} virtual", m_AudioSystem.GetMixer()->GetNumActiveChannels(), m_AudioSystem.GetMixer()->GetNumVirtualChannels()), true);
     }
 
     if (com_ShowFPS)
@@ -549,7 +549,7 @@ void AEngine::ShowStats()
         FontStyle fontStyle;
         fontStyle.FontSize = 24;
         m_Canvas->FontFace(font);
-        m_Canvas->DrawTextUTF8(fontStyle, Float2(10, 30), Color4::White(), fmt("Frame time {:.1f} ms (FPS: {}, AVG {})", m_FrameDurationInSeconds * 1000.0f, int(1.0f / m_FrameDurationInSeconds), int(fps + 0.5f)), true);
+        m_Canvas->DrawText(fontStyle, Float2(10, 30), Color4::White(), fmt("Frame time {:.1f} ms (FPS: {}, AVG {})", m_FrameDurationInSeconds * 1000.0f, int(1.0f / m_FrameDurationInSeconds), int(fps + 0.5f)), true);
     }
 }
 

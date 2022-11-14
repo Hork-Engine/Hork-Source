@@ -401,6 +401,10 @@ public:
         AdjustedSize.Y = Math::Max(0.0f, size.Y - Padding.Top - Padding.Bottom);
     }
 
+    void ScrollSelfDelta(float delta);
+
+    class UIScroll* FindScrollWidget();
+
 protected:
     virtual void OnKeyEvent(struct SKeyEvent const& event, double timeStamp);
 

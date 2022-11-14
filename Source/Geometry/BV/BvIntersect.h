@@ -1716,6 +1716,13 @@ HK_INLINE bool BvPointInRect(Float2 const& mins, Float2 const& maxs, float x, fl
     return true;
 }
 
+HK_INLINE bool BvPointInRect(Float2 const& mins, Float2 const& maxs, Float2 const& p)
+{
+    if (p.X < mins.X || p.Y < mins.Y || p.X > maxs.X || p.Y > maxs.Y)
+        return false;
+    return true;
+}
+
 /**
 Check is point inside convex hull:
 InPoint - testing point (assumed point is on hull plane)

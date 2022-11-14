@@ -64,11 +64,18 @@ public:
     }
 
     UICursor* ArrowCursor() const;
+    UICursor* TextInputCursor() const;
+
+    UIBrush* DefaultSliderBrush() const;
+    UIBrush* DefaultScrollbarBrush() const;
 
     void AddDesktop(UIDesktop* desktop);
     void RemoveDesktop(UIDesktop* desktop);
     void SetActiveDesktop(UIDesktop* desktop);
     UIDesktop* GetActiveDesktop() { return m_ActiveDesktop; }
+
+    void SetInsertMode(bool bInsertMode);
+    bool IsInsertMode() const;
 
     void Update(float timeStep);
 
@@ -97,6 +104,10 @@ private:
     TRef<UIDesktop>                  m_ActiveDesktop;
     TRef<UICursor>                   m_Cursor;
     mutable TRef<UICursor>           m_ArrowCursor;
+    mutable TRef<UICursor>           m_TextInputCursor;
+    mutable TRef<UIBrush>            m_SliderBrush;
+    mutable TRef<UIBrush>            m_ScrollbarBrush;
+    bool                             m_bInsertMode{};
 };
 
 extern UIManager* GUIManager;

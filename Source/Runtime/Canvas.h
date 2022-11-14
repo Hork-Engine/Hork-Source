@@ -249,34 +249,18 @@ enum CANVAS_PATH_WINDING : uint8_t
     CANVAS_PATH_WINDING_HOLE  = CANVAS_PATH_WINDING_CW,
 };
 
-enum CANVAS_TEXT_ALIGN : uint8_t
+enum TEXT_ALIGNMENT_FLAGS
 {
-    // Horizontal align
-    CANVAS_TEXT_ALIGN_LEFT     = 1 << 0, // Default, align text horizontally to left.
-    CANVAS_TEXT_ALIGN_CENTER   = 1 << 1, // Align text horizontally to center.
-    CANVAS_TEXT_ALIGN_RIGHT    = 1 << 2, // Align text horizontally to right.
-    // Vertical align
-    CANVAS_TEXT_ALIGN_TOP      = 1 << 3, // Align text vertically to top.
-    CANVAS_TEXT_ALIGN_MIDDLE   = 1 << 4, // Align text vertically to middle.
-    CANVAS_TEXT_ALIGN_BOTTOM   = 1 << 5, // Align text vertically to bottom.
-    CANVAS_TEXT_ALIGN_BASELINE = 1 << 6, // Default, align text vertically to baseline.
+    TEXT_ALIGNMENT_LEFT        = HK_BIT(0),
+    TEXT_ALIGNMENT_HCENTER     = HK_BIT(1),
+    TEXT_ALIGNMENT_RIGHT       = HK_BIT(2),
+    TEXT_ALIGNMENT_TOP         = HK_BIT(3),
+    TEXT_ALIGNMENT_VCENTER     = HK_BIT(4),
+    TEXT_ALIGNMENT_BOTTOM      = HK_BIT(5),
+    TEXT_ALIGNMENT_KEEP_SPACES = HK_BIT(6)
 };
 
- enum HALIGNMENT
-{
-    HALIGNMENT_LEFT,
-    HALIGNMENT_CENTER,
-    HALIGNMENT_RIGHT
-};
-
-enum VALIGNMENT
-{
-    VALIGNMENT_TOP,
-    VALIGNMENT_CENTER,
-    VALIGNMENT_BOTTOM
-};
-
-HK_FLAG_ENUM_OPERATORS(CANVAS_TEXT_ALIGN)
+HK_FLAG_ENUM_OPERATORS(TEXT_ALIGNMENT_FLAGS)
 
 enum DRAW_CURSOR
 {
@@ -532,35 +516,6 @@ public:
     //
     // Text
     //
-    // Canvas allows you to and use the font to render text.
-    //
-    // The appearance of the text can be defined by setting the current text style
-    // and by specifying the fill color. Common text and font settings such as
-    // font size, letter spacing and text align are supported. Font blur allows you
-    // to create simple text effects such as drop shadows.
-    //
-    // At render time the font face can be set based on the font handles or name.
-    //
-    // Font measure functions return values in local space, the calculations are
-    // carried in the same resolution as the final rendering. This is done because
-    // the text glyph positions are snapped to the nearest pixels sharp rendering.
-    //
-    // The local space means that values are not rotated or scale as per the current
-    // transformation. For example if you set font size to 12, which would mean that
-    // line height is 16, then regardless of the current scaling and rotation, the
-    // returned line height is always 16. Some measures may vary because of the scaling
-    // since aforementioned pixel snapping.
-    //
-    // While this may sound a little odd, the setup allows you to always render the
-    // same way regardless of scaling. I.e. following works regardless of scaling:
-    //
-    //		const char* txt = "Text me up.";
-    //		TextBounds(x,y, txt, NULL, bounds);
-    //		BeginPath();
-    //		RoundedRect(bounds[0],bounds[1], bounds[2]-bounds[0], bounds[3]-bounds[1]);
-    //		Fill();
-    //
-    // Note: currently only solid color fill is supported for text.
 
     /** Sets the font face based on specified id of current text style. */
     void FontFace(AFont* font);
@@ -568,21 +523,14 @@ public:
     /** Sets the font face based on specified name of current text style. */
     void FontFace(AStringView font);
 
-    #if 0
-
-    /** Sets the text align of current text style, see CANVAS_TEXT_ALIGN for options. */
-    void TextAlign(CANVAS_TEXT_ALIGN align);
-
-    #endif
-
     /** Draws text string at specified location. */
-    float Text(FontStyle const& style, float x, float y, HALIGNMENT HAlignment, AStringView string);
+    float Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAGS flags, AStringView string);
 
-    /** Draws multi-line text string at specified box.
-    White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
-    Words longer than the max width are slit at nearest character (i.e. no hyphenation). */
-    void TextBox(FontStyle const& style, float x, float y, float breakRowWidth, HALIGNMENT HAlignment, AStringView string); // DEPRECATED Remove
-    void TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, HALIGNMENT HAlignment, VALIGNMENT VAlignment, bool bWrap, AStringView text);
+    /** Draws text char at specified location. */
+    void TextWideChar(FontStyle const& style, float x, float y, WideChar ch);
+
+    /** Draws multi-line text string at specified box.*/
+    void TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, AStringView text);
 
     //
     // Utilites
@@ -603,15 +551,7 @@ public:
     void DrawPolyFilled(Float2 const* points, int numPoints, Color4 const& color);
     void DrawBezierCurve(Float2 const& pos0, Float2 const& cp0, Float2 const& cp1, Float2 const& pos1, Color4 const& color, float thickness = 1.0f);
 
-    void DrawTextUTF8(FontStyle const& style, Float2 const& pos, Color4 const& color, AStringView Text, bool bShadow = false);
-    void DrawTextWrapUTF8(FontStyle const& style, Float2 const& pos, Color4 const& color, AStringView Text, float wrapWidth, bool bShadow = false);
-    void DrawChar(FontStyle const& style, char ch, float x, float y, Color4 const& color);
-    void DrawCharUTF8(FontStyle const& style, const char* ch, float x, float y, Color4 const& color);
-
-    // TODO: Remove
-    HK_DEPRECATED void DrawTextWChar(FontStyle const& style, Float2 const& pos, Color4 const& color, AWideStringView text, bool bShadow = false);
-    HK_DEPRECATED void DrawTextWrapWChar(FontStyle const& style, Float2 const& pos, Color4 const& color, AWideStringView text, float wrapWidth, bool bShadow = false);
-    HK_DEPRECATED void DrawWChar(FontStyle const& style, WideChar ch, float x, float y, Color4 const& color);
+    void DrawText(FontStyle const& style, Float2 const& pos, Color4 const& color, AStringView Text, bool bShadow = false);
 
     // Texture
     void DrawTexture(DrawTextureDesc const& desc);

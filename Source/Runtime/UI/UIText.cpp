@@ -57,10 +57,10 @@ void UIText::Draw(ACanvas& canvas, Float2 const& boxMins, Float2 const& boxMaxs)
     {
         fontStyle.FontBlur = ShadowBlur;
         canvas.FillColor(Color4(0, 0, 0, Color.A));
-        canvas.TextBox(fontStyle, boxMins + ShadowOffset, boxMaxs + ShadowOffset, HAlignment, VAlignment, bWrap, Text);
+        canvas.TextBox(fontStyle, boxMins + ShadowOffset, boxMaxs + ShadowOffset, AlignmentFlags, bWrap, Text);
     }
 
     fontStyle.FontBlur = FontBlur;
     canvas.FillColor(Color);
-    canvas.TextBox(fontStyle, boxMins, boxMaxs, HAlignment, VAlignment, bWrap, Text);
+    canvas.TextBox(fontStyle, boxMins, boxMaxs, AlignmentFlags, bWrap, Text);
 }

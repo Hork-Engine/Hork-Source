@@ -317,7 +317,7 @@ void WTextButton::OnDrawEvent(ACanvas& _Canvas)
         }
     }
 
-    _Canvas.DrawTextUTF8(fontStyle, pos, TextColor, Text);
+    //_Canvas.DrawTextUTF8(fontStyle, pos, TextColor, Text);
 }
 
 

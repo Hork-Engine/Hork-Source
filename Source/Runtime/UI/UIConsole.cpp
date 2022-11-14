@@ -31,6 +31,7 @@ SOFTWARE.
 
 #include "UIConsole.h"
 #include "UIWidget.h"
+#include "UIManager.h"
 
 #include <Runtime/FrameLoop.h>
 
@@ -316,6 +317,12 @@ void UIConsole::OnKeyEvent(SKeyEvent const& event, ACommandContext& commandCtx, 
                 CompleteString(commandCtx, result);
                 break;
             }
+            case KEY_INSERT:
+                if (event.ModMask == 0)
+                {
+                    GUIManager->SetInsertMode(!GUIManager->IsInsertMode());
+                }
+                break;
             default:
                 break;
         }
@@ -336,9 +343,12 @@ void UIConsole::OnCharEvent(SCharEvent const& event)
 
     if (m_CmdLineLength < MAX_CMD_LINE_CHARS)
     {
-        if (m_CmdLinePos != m_CmdLineLength)
+        if (!GUIManager->IsInsertMode())
         {
-            Platform::Memmove(&m_CmdLine[m_CmdLinePos + 1], &m_CmdLine[m_CmdLinePos], sizeof(m_CmdLine[0]) * (m_CmdLineLength - m_CmdLinePos));
+            if (m_CmdLinePos != m_CmdLineLength)
+            {
+                Platform::Memmove(&m_CmdLine[m_CmdLinePos + 1], &m_CmdLine[m_CmdLinePos], sizeof(m_CmdLine[0]) * (m_CmdLineLength - m_CmdLinePos));
+            }
         }
         m_CmdLine[m_CmdLinePos] = event.UnicodeCharacter;
         m_CmdLineLength++;
@@ -365,8 +375,6 @@ void UIConsole::OnMouseWheelEvent(SMouseWheelEvent const& event)
 
 void UIConsole::DrawCmdLine(ACanvas& cv, int x, int y, int maxLineChars)
 {
-    Color4 const& charColor = Color4::White();
-
     FontStyle fontStyle;
     fontStyle.FontSize = AConsoleBuffer::CharacterWidth;
 
@@ -399,7 +407,7 @@ void UIConsole::DrawCmdLine(ACanvas& cv, int x, int y, int maxLineChars)
             continue;
         }
 
-        cv.DrawWChar(fontStyle, ch, cx, y, charColor);
+        cv.TextWideChar(fontStyle, cx, y, ch);
 
         cx += AConsoleBuffer::CharacterWidth;
     }
@@ -408,7 +416,14 @@ void UIConsole::DrawCmdLine(ACanvas& cv, int x, int y, int maxLineChars)
     {
         cx = x + (m_CmdLinePos - offset) * AConsoleBuffer::CharacterWidth;
 
-        cv.DrawWChar(fontStyle, '_', cx, y, charColor);
+        if (GUIManager->IsInsertMode())
+        {
+            cv.DrawRectFilled(Float2(cx, y), Float2(cx + AConsoleBuffer::CharacterWidth * 0.7f, y + AConsoleBuffer::CharacterWidth), Color4::White());
+        }
+        else
+        {
+            cv.TextWideChar(fontStyle, cx, y, '_');
+        }
     }
 }
 
@@ -467,10 +482,6 @@ void UIConsole::Draw(ACanvas& cv, UIBrush* background)
     const float halfVidHeight  = cv.GetHeight() * m_ConHeight;
     const int   numVisLines    = Math::Ceil((halfVidHeight - cmdLineH) / verticalStride);
 
-    const Color4 c1(0, 0, 0, 1.0f);
-    const Color4 c2(0, 0, 0, 0.0f);
-    const Color4 charColor(1, 1, 1, 1);
-
     UIWidgetGeometry geometry;
 
     geometry.Mins = Float2(0, cv.GetHeight() * (m_ConHeight - 1.0f));
@@ -485,6 +496,8 @@ void UIConsole::Draw(ACanvas& cv, UIBrush* background)
 
     int x = AConsoleBuffer::Padding;
     int y = halfVidHeight - verticalStride;
+
+    cv.FillColor(Color4::White());
 
     AConsoleBuffer::SLock lock = m_pConBuffer->Lock();
 
@@ -505,7 +518,7 @@ void UIConsole::Draw(ACanvas& cv, UIBrush* background)
 
         for (int j = 0; j < lock.MaxLineChars && *line; j++)
         {
-            cv.DrawWChar(fontStyle, *line++, x, y, charColor);
+            cv.TextWideChar(fontStyle, x, y, *line++);
 
             x += AConsoleBuffer::CharacterWidth;
         }

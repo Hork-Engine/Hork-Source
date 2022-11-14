@@ -119,6 +119,8 @@ struct TextRow
 struct FontStyle
 {
     float FontSize{14};
+
+    // Font blur allows you to create simple text effects such as drop shadows.
     float FontBlur{0};
 
     /** Letter spacing. */
@@ -166,7 +168,7 @@ public:
     //void CalcLineBounds(float fontSize, int align, float y, TextLineBounds& bounds);
 
     /** Returns the vertical metrics based on the current text style. */
-    void GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metrics);
+    void GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metrics) const;
 
     float GetCharAdvance(FontStyle const& fontStyle, WideChar ch) const;
     
@@ -177,7 +179,9 @@ public:
     /** Breaks the specified text into lines.
     White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
     Words longer than the max width are slit at nearest character (i.e. no hyphenation). */
-    int TextBreakLines(FontStyle const& fontStyle, AStringView text, float breakRowWidth, TextRow* rows, int maxRows) const;
+    int TextBreakLines(FontStyle const& fontStyle, AStringView text, float breakRowWidth, TextRow* rows, int maxRows, bool bKeepSpaces = false) const;
+
+    int TextLineCount(FontStyle const& fontStyle, AStringView text, float breakRowWidth) const;
 
     bool AddFallbackFont(AFont* fallbackFont);
     void ResetFallbackFonts();
@@ -197,5 +201,3 @@ private:
     HeapBlob             m_Blob;
     TVector<TRef<AFont>> m_Fallbacks;
 };
-
-void GetTextMetrics(TextMetrics& metrics);

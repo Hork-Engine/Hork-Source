@@ -56,6 +56,14 @@ UICursor* UIManager::ArrowCursor() const
     return m_ArrowCursor;
 }
 
+UICursor* UIManager::TextInputCursor() const
+{
+    if (!m_TextInputCursor)
+        m_TextInputCursor = UINew(UIDefaultCursor).WithDrawCursor(DRAW_CURSOR_TEXT_INPUT);
+
+    return m_TextInputCursor;
+}
+
 void UIManager::AddDesktop(UIDesktop* desktop)
 {
     if (m_Desktops.IndexOf(TRef<UIDesktop>(desktop)) != Core::NPOS)
@@ -87,6 +95,16 @@ void UIManager::RemoveDesktop(UIDesktop* desktop)
 void UIManager::SetActiveDesktop(UIDesktop* desktop)
 {
     m_ActiveDesktop = desktop;
+}
+
+void UIManager::SetInsertMode(bool bInsertMode)
+{
+    m_bInsertMode = bInsertMode;
+}
+
+bool UIManager::IsInsertMode() const
+{
+    return m_bInsertMode;
 }
 
 void UIManager::Update(float timeStep)
@@ -158,7 +176,7 @@ void UIManager::GenerateKeyEvents(SKeyEvent const& event, double timeStamp, ACom
         }
     }
 
-    if (m_Console.IsActive() && event.Action != IA_RELEASE)
+    if (m_Console.IsActive() && (event.Action != IA_RELEASE || event.Key == KEY_GRAVE_ACCENT))
     {
         return;
     }
@@ -247,6 +265,9 @@ void UIManager::GenerateJoystickAxisEvents(SJoystickAxisEvent const& event, doub
 
 void UIManager::GenerateCharEvents(SCharEvent const& event, double timeStamp)
 {
+    if (event.UnicodeCharacter == '`')
+        return;
+
     m_Console.OnCharEvent(event);
     if (m_Console.IsActive())
     {
@@ -281,4 +302,27 @@ void UIManager::DrawCursor(ACanvas& cv)
         cv.ResetScissor();
         m_Cursor->Draw(cv, CursorPosition);
     }
+}
+
+UIBrush* UIManager::DefaultSliderBrush() const
+{
+    if (!m_SliderBrush)
+        m_SliderBrush = UINew(UISolidBrush, Color4(0.5f, 0.5f, 0.5f, 1.0f)).WithRounding({4, 4, 4, 4});
+
+    return m_SliderBrush;
+}
+
+UIBrush* UIManager::DefaultScrollbarBrush() const
+{
+    if (!m_ScrollbarBrush)
+        m_ScrollbarBrush = UINew(UIBoxGradient)
+                               .WithBoxOffsetTopLeft({1, 1})
+                               .WithBoxOffsetBottomRight({0, 0})
+                               .WithCornerRadius(3)
+                               .WithFeather(4)
+                               .WithInnerColor(Color4(0.2f, 0.2f, 0.2f))
+                               .WithOuterColor(Color4(0.4f, 0.4f, 0.4f))
+                               .WithRounding({3,3,3,3});
+
+    return m_ScrollbarBrush;
 }

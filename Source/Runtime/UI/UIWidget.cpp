@@ -28,12 +28,13 @@ SOFTWARE.
 
 */
 
-#include "UIWidget.h"
-#include "UIManager.h"
-
-#include <Geometry/BV/BvIntersect.h>
-
 #include <Core/ConsoleVar.h>
+#include <Geometry/BV/BvIntersect.h>
+#include <Runtime/FrameLoop.h>
+
+#include "UIWidget.h"
+#include "UIScroll.h"
+#include "UIManager.h"
 
 AConsoleVar ui_showLayout("ui_showLayout"s, "0"s);
 
@@ -127,9 +128,17 @@ void UIWidget::OnDblClickEvent(int buttonKey, Float2 const& clickPos, uint64_t c
 {
 }
 
+void UIWidget::ScrollSelfDelta(float delta)
+{
+    UIScroll* scroll = FindScrollWidget();
+    if (scroll)
+    {
+        scroll->ScrollDelta(Float2(0.0f, delta));
+    }
+}
+
 void UIWidget::OnMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp)
 {
-    #if 0
     if (event.WheelY < 0)
     {
         ScrollSelfDelta(-20);
@@ -138,7 +147,6 @@ void UIWidget::OnMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp
     {
         ScrollSelfDelta(20);
     }
-    #endif
 }
 
 void UIWidget::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
@@ -572,7 +580,7 @@ void UIWidget::ArrangeChildren(bool bAllowAutoWidth, bool bAllowAutoHeight)
         return;
     }
 
-    Layout->ArrangeChildren(this, bAllowAutoWidth, bAllowAutoHeight);
+    Layout->ArrangeChildren(this, autoW, autoH);
 }
 
 void UIWidget::DrawBrush(ACanvas& canvas, UIBrush* brush)
@@ -608,4 +616,17 @@ UIShareInputs& UIShareInputs::Add(std::initializer_list<UIWidget*> list)
     for (UIWidget* widget : list)
         Add(widget);
     return *this;
+}
+
+UIScroll* UIWidget::FindScrollWidget()
+{
+    for (UIWidget* p = Parent; p; p = p->Parent)
+    {
+        UIScroll* scroll = dynamic_cast<UIScroll*>(p);
+        if (scroll && scroll->CanScroll())
+        {
+            return scroll;
+        }
+    }
+    return nullptr;
 }

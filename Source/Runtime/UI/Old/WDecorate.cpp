@@ -124,7 +124,7 @@ AFont* WTextDecorate::GetFont() const
 void WTextDecorate::OnDrawEvent(ACanvas& _Canvas)
 {
     Float2       ownerSize = GetOwner()->GetCurrentSize();
-    float        width     = ownerSize.X;
+    //float        width     = ownerSize.X;
     AFont* font      = GetFont();
 
     _Canvas.FontFace(font);
@@ -207,13 +207,13 @@ void WTextDecorate::OnDrawEvent(ACanvas& _Canvas)
 
     pos += GetOwner()->GetDesktopPosition();
 
-    if (bWordWrap)
-        _Canvas.DrawTextWrapUTF8(fontStyle, pos, Color, Text, width, bShadow);
-    else
-    {
-        // Called DrawTextWrapUTF8 to allow new line character ('\n')
-        _Canvas.DrawTextWrapUTF8(fontStyle, pos, Color, Text, Math::MaxValue<float>(), bShadow);
-    }
+    //if (bWordWrap)
+    //    _Canvas.DrawTextWrapUTF8(fontStyle, pos, Color, Text, width, bShadow);
+    //else
+    //{
+    //    // Called DrawTextWrapUTF8 to allow new line character ('\n')
+    //    //_Canvas.DrawTextWrapUTF8(fontStyle, pos, Color, Text, Math::MaxValue<float>(), bShadow);
+    //}
 }
 
 

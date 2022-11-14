@@ -291,7 +291,7 @@ enum NVGcodepointType
     NVG_CJK_CHAR,
 };
 
-int AFont::TextBreakLines(FontStyle const& fontStyle, AStringView text, float breakRowWidth, TextRow* rows, int maxRows) const
+int AFont::TextBreakLines(FontStyle const& fontStyle, AStringView text, float breakRowWidth, TextRow* rows, int maxRows, bool bKeepSpaces) const
 {
     FONScontext* fs       = m_FontStash->GetImpl();
     AFontStash*  stash = m_FontStash;
@@ -400,7 +400,7 @@ int AFont::TextBreakLines(FontStyle const& fontStyle, AStringView text, float br
             if (rowStart == NULL)
             {
                 // Skip white space until the beginning of the line
-                if (type == NVG_CHAR || type == NVG_CJK_CHAR)
+                if (type == NVG_CHAR || type == NVG_CJK_CHAR || (bKeepSpaces && type == NVG_SPACE))
                 {
                     // The current char is the row so far
                     rowStartX  = iter.x;
@@ -423,7 +423,7 @@ int AFont::TextBreakLines(FontStyle const& fontStyle, AStringView text, float br
                 float nextWidth = iter.nextx - rowStartX;
 
                 // track last non-white space character
-                if (type == NVG_CHAR || type == NVG_CJK_CHAR)
+                if (type == NVG_CHAR || type == NVG_CJK_CHAR || (bKeepSpaces && type == NVG_SPACE))
                 {
                     rowEnd   = iter.next;
                     rowWidth = iter.nextx - rowStartX;
@@ -517,6 +517,192 @@ int AFont::TextBreakLines(FontStyle const& fontStyle, AStringView text, float br
     return nrows;
 }
 
+int AFont::TextLineCount(FontStyle const& fontStyle, AStringView text, float breakRowWidth) const
+{
+    FONScontext* fs    = m_FontStash->GetImpl();
+    AFontStash*  stash = m_FontStash;
+
+    float scale    = GEngine->GetRetinaScale().X;
+
+    FONStextIter iter, prevIter;
+    FONSquad     q;
+    int          nrows      = 0;
+    float        rowStartX  = 0;
+    float        rowWidth   = 0;
+    float        rowMaxX    = 0;
+    const char*  rowStart   = NULL;
+    const char*  rowEnd     = NULL;
+    const char*  wordStart  = NULL;
+    float        wordStartX = 0;
+    float        wordMinX   = 0;
+    const char*  breakEnd   = NULL;
+    float        breakWidth = 0;
+    float        breakMaxX  = 0;
+    int          type = NVG_SPACE, ptype = NVG_SPACE;
+    unsigned int pcodepoint = 0;
+
+    if (text.IsEmpty()) return 0;
+
+    fonsSetSize(fs, fontStyle.FontSize * scale);
+    fonsSetSpacing(fs, fontStyle.LetterSpacing * scale);
+    fonsSetBlur(fs, fontStyle.FontBlur * scale);
+    fonsSetAlign(fs, FONS_ALIGN_LEFT | FONS_ALIGN_TOP);
+    fonsSetFont(fs, m_FontId);
+
+    breakRowWidth *= scale;
+
+    fonsTextIterInit(fs, &iter, 0, 0, text.Begin(), text.End(), FONS_GLYPH_BITMAP_OPTIONAL);
+    prevIter = iter;
+    while (fonsTextIterNext(fs, &iter, &q))
+    {
+        if (iter.prevGlyphIndex < 0 && stash->ReallocTexture())
+        { // can not retrieve glyph?
+            iter = prevIter;
+            fonsTextIterNext(fs, &iter, &q); // try again
+        }
+        prevIter = iter;
+        switch (iter.codepoint)
+        {
+            case 9:      // \t
+            case 11:     // \v
+            case 12:     // \f
+            case 32:     // space
+            case 0x00a0: // NBSP
+                type = NVG_SPACE;
+                break;
+            case 10: // \n
+                type = pcodepoint == 13 ? NVG_SPACE : NVG_NEWLINE;
+                break;
+            case 13: // \r
+                type = pcodepoint == 10 ? NVG_SPACE : NVG_NEWLINE;
+                break;
+            case 0x0085: // NEL
+                type = NVG_NEWLINE;
+                break;
+            default:
+                if ((iter.codepoint >= 0x4E00 && iter.codepoint <= 0x9FFF) ||
+                    (iter.codepoint >= 0x3000 && iter.codepoint <= 0x30FF) ||
+                    (iter.codepoint >= 0xFF00 && iter.codepoint <= 0xFFEF) ||
+                    (iter.codepoint >= 0x1100 && iter.codepoint <= 0x11FF) ||
+                    (iter.codepoint >= 0x3130 && iter.codepoint <= 0x318F) ||
+                    (iter.codepoint >= 0xAC00 && iter.codepoint <= 0xD7AF))
+                    type = NVG_CJK_CHAR;
+                else
+                    type = NVG_CHAR;
+                break;
+        }
+
+        if (type == NVG_NEWLINE)
+        {
+            // Always handle new lines.
+            nrows++;
+            // Set null break point
+            breakEnd   = rowStart;
+            breakWidth = 0.0;
+            breakMaxX  = 0.0;
+            // Indicate to skip the white space at the beginning of the row.
+            rowStart = NULL;
+            rowEnd   = NULL;
+            rowWidth = 0;
+            rowMaxX = 0;
+        }
+        else
+        {
+            if (rowStart == NULL)
+            {
+                // Skip white space until the beginning of the line
+                if (type == NVG_CHAR || type == NVG_CJK_CHAR)
+                {
+                    // The current char is the row so far
+                    rowStartX  = iter.x;
+                    rowStart   = iter.str;
+                    rowEnd     = iter.next;
+                    rowWidth   = iter.nextx - rowStartX; // q.x1 - rowStartX;
+                    rowMaxX    = q.x1 - rowStartX;
+                    wordStart  = iter.str;
+                    wordStartX = iter.x;
+                    wordMinX   = q.x0 - rowStartX;
+                    // Set null break point
+                    breakEnd   = rowStart;
+                    breakWidth = 0.0;
+                    breakMaxX  = 0.0;
+                }
+            }
+            else
+            {
+                float nextWidth = iter.nextx - rowStartX;
+
+                // track last non-white space character
+                if (type == NVG_CHAR || type == NVG_CJK_CHAR)
+                {
+                    rowEnd   = iter.next;
+                    rowWidth = iter.nextx - rowStartX;
+                    rowMaxX  = q.x1 - rowStartX;
+                }
+                // track last end of a word
+                if (((ptype == NVG_CHAR || ptype == NVG_CJK_CHAR) && type == NVG_SPACE) || type == NVG_CJK_CHAR)
+                {
+                    breakEnd   = iter.str;
+                    breakWidth = rowWidth;
+                    breakMaxX  = rowMaxX;
+                }
+                // track last beginning of a word
+                if ((ptype == NVG_SPACE && (type == NVG_CHAR || type == NVG_CJK_CHAR)) || type == NVG_CJK_CHAR)
+                {
+                    wordStart  = iter.str;
+                    wordStartX = iter.x;
+                    wordMinX   = q.x0 - rowStartX;
+                }
+
+                // Break to new line when a character is beyond break width.
+                if ((type == NVG_CHAR || type == NVG_CJK_CHAR) && nextWidth > breakRowWidth)
+                {
+                    nrows++;
+
+                    // The run length is too long, need to break to new line.
+                    if (breakEnd == rowStart)
+                    {
+                        // The current word is longer than the row length, just break it from here.
+                        rowStartX  = iter.x;
+                        rowStart   = iter.str;
+                        rowEnd     = iter.next;
+                        rowWidth   = iter.nextx - rowStartX;
+                        rowMaxX    = q.x1 - rowStartX;
+                        wordStart  = iter.str;
+                        wordStartX = iter.x;
+                        wordMinX   = q.x0 - rowStartX;
+                    }
+                    else
+                    {
+                        // Break the line from the end of the last word, and start new line from the beginning of the new.
+                        rowStartX = wordStartX;
+                        rowStart  = wordStart;
+                        rowEnd    = iter.next;
+                        rowWidth  = iter.nextx - rowStartX;
+                        rowMaxX   = q.x1 - rowStartX;
+                        // No change to the word start
+                    }
+                    // Set null break point
+                    breakEnd   = rowStart;
+                    breakWidth = 0.0;
+                    breakMaxX  = 0.0;
+                }
+            }
+        }
+
+        pcodepoint = iter.codepoint;
+        ptype      = type;
+    }
+
+    // Break the line from the end of the last word, and start new line from the beginning of the new.
+    if (rowStart != NULL)
+    {
+        nrows++;
+    }
+
+    return nrows;
+}
+
 //void AFont::CalcLineBounds(float fontSize, int align, float y, TextLineBounds& bounds)
 //{
 //    FONScontext* fs = m_FontStash->GetImpl();
@@ -531,7 +717,7 @@ int AFont::TextBreakLines(FontStyle const& fontStyle, AStringView text, float br
 //    fonsLineBounds(fs, y, &bounds.MinY, &bounds.MaxY);
 //}
 
-void AFont::GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metrics)
+void AFont::GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metrics) const
 {
     FONScontext* fs = m_FontStash->GetImpl();
 

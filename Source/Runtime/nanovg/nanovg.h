@@ -505,57 +505,23 @@ void nvgStroke(NVGcontext* ctx);
 //
 // Note: currently only solid color fill is supported for text.
 
-// Sets the font size of current text style.
-void nvgFontSize(NVGcontext* ctx, float size);
-
-// Sets the blur of current text style.
-void nvgFontBlur(NVGcontext* ctx, float blur);
-
-// Sets the letter spacing of current text style.
-void nvgTextLetterSpacing(NVGcontext* ctx, float spacing);
-
-// Sets the proportional line height of current text style. The line height is specified as multiple of font size.
-void nvgTextLineHeight(NVGcontext* ctx, float lineHeight);
-
-// Sets the text align of current text style, see NVGalign for options.
-void nvgTextAlign(NVGcontext* ctx, int align);
-
 // Sets the font face based on specified id of current text style.
 void nvgFontFaceId(NVGcontext* ctx, int font, void* userPtr);
 
 void* nvgGetFontFace(NVGcontext* ctx);
 
 // Draws text string at specified location. If end is specified only the sub-string up to the end is drawn.
-float nvgText(NVGcontext* ctx, float x, float y, const char* string, const char* end);
+float nvgText(NVGcontext* ctx,
+              float       fontSize,
+              float       letterSpacing,
+              float       fontBlur,
+              int         textAlign,
+              float       x,
+              float       y,
+              const char* string,
+              const char* end);
 
-// Draws multi-line text string at specified location wrapped at the specified width. If end is specified only the sub-string up to the end is drawn.
-// White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
-// Words longer than the max width are slit at nearest character (i.e. no hyphenation).
-//void nvgTextBox(NVGcontext* ctx, float x, float y, float breakRowWidth, const char* string, const char* end);
-
-// Measures the specified text string. Parameter bounds should be a pointer to float[4],
-// if the bounding box of the text should be returned. The bounds value are [xmin,ymin, xmax,ymax]
-// Returns the horizontal advance of the measured text (i.e. where the next character should drawn).
-// Measured values are returned in local coordinate space.
-//float nvgTextBounds(NVGcontext* ctx, float x, float y, const char* string, const char* end, float* bounds);
-
-//float nvgCharAdvance(NVGcontext* ctx, unsigned int codepoint);
-
-// Measures the specified multi-text string. Parameter bounds should be a pointer to float[4],
-// if the bounding box of the text should be returned. The bounds value are [xmin,ymin, xmax,ymax]
-// Measured values are returned in local coordinate space.
-//void nvgTextBoxBounds(NVGcontext* ctx, float x, float y, float breakRowWidth, const char* string, const char* end, float* bounds);
-
-// Returns the vertical metrics based on the current text style.
-// Measured values are returned in local coordinate space.
-//void nvgTextMetrics(NVGcontext* ctx, float* ascender, float* descender, float* lineh);
-
-// Breaks the specified text into lines. If end is specified only the sub-string will be used.
-// White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
-// Words longer than the max width are slit at nearest character (i.e. no hyphenation).
-//int nvgTextBreakLines(NVGcontext* ctx, const char* string, const char* end, float breakRowWidth, NVGtextRow* rows, int maxRows);
-
-//
+    //
 // Internal Render API
 //
 enum NVGtexture {

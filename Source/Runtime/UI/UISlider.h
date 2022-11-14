@@ -66,7 +66,7 @@ public:
         return *this;
     }
 
-    // TODO: Replace line color by brush
+    // TODO: Replace line color by brush/pen
     UISlider& WithLineColor(Color4 const& lineColor)
     {
         LineColor = lineColor;
