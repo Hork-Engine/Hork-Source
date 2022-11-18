@@ -159,6 +159,22 @@ HK_FORCEINLINE AGlobalStringView operator"" s(const char* s, size_t sz)
 #endif
 
 template <typename CharT>
+CharT const* NullStr();
+
+template <>
+HK_INLINE char const* NullStr<char>()
+{
+    return "";
+}
+
+template <>
+HK_INLINE WideChar const* NullStr<WideChar>()
+{
+    static constexpr WideChar s[1] = {0};
+    return s;
+}
+
+template <typename CharT>
 class TStringView
 {
 public:
@@ -180,7 +196,7 @@ public:
     {}
 
     HK_FORCEINLINE TStringView(const CharT* pRawString) :
-        m_pData(pRawString ? pRawString : ""), m_Size((pRawString ? StringLength(pRawString) : 0) | NullTerminatedBit)
+        m_pData(pRawString ? pRawString : NullStr<CharT>()), m_Size((pRawString ? StringLength(pRawString) : 0) | NullTerminatedBit)
     {}
 
     HK_FORCEINLINE TStringView(const CharT* pRawStringBegin, const CharT* pRawStringEnd, bool bNullTerminated = false) :
@@ -496,10 +512,16 @@ public:
     const CharT* CStr() const;
 
     /** Gives a raw pointer to the beginning of the string. */
-    const CharT* Begin() const;
+    const CharT* CBegin() const;
+
+    /** Gives a raw pointer to the beginning of the string. */
+    CharT* Begin() const;
 
     /** Gives a raw pointer to the end of the string. */
-    const CharT* End() const;
+    const CharT* CEnd() const;
+
+    /** Gives a raw pointer to the end of the string. */
+    CharT* End() const;
 
     /** Gives a raw pointer to the beginning of the string. */
     CharT* ToPtr() const;
@@ -992,13 +1014,25 @@ HK_FORCEINLINE const CharT* TString<CharT, Allocator>::CStr() const
 }
 
 template <typename CharT, typename Allocator>
-HK_FORCEINLINE const CharT* TString<CharT, Allocator>::Begin() const
+HK_FORCEINLINE const CharT* TString<CharT, Allocator>::CBegin() const
 {
     return m_pData;
 }
 
 template <typename CharT, typename Allocator>
-HK_FORCEINLINE const CharT* TString<CharT, Allocator>::End() const
+HK_FORCEINLINE CharT* TString<CharT, Allocator>::Begin() const
+{
+    return m_pData;
+}
+
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE const CharT* TString<CharT, Allocator>::CEnd() const
+{
+    return m_pData + m_Size;
+}
+
+template <typename CharT, typename Allocator>
+HK_FORCEINLINE CharT* TString<CharT, Allocator>::End() const
 {
     return m_pData + m_Size;
 }
