@@ -53,7 +53,7 @@ UIDesktop::~UIDesktop()
 
 void UIDesktop::AddWidget(UIWidget* widget)
 {
-    if (widget->Desktop)
+    if (widget->m_Desktop)
         return;
 
     // Check if already exists
@@ -61,7 +61,12 @@ void UIDesktop::AddWidget(UIWidget* widget)
     {
         m_Widgets.Add(widget);
         widget->AddRef();
-        widget->Desktop = this;
+        widget->m_Desktop = this;
+
+        if (widget->ShouldSetFocusOnAddToDesktop())
+        {
+            SetFocusWidget(widget);
+        }
     }
 }
 
@@ -72,7 +77,7 @@ void UIDesktop::RemoveWidget(UIWidget* widget)
     {
         m_Widgets.Remove(index);
 
-        widget->Desktop = nullptr;
+        widget->m_Desktop = nullptr;
         widget->RemoveRef();
     }
 }
@@ -141,8 +146,8 @@ void UIDesktop::UpdateGeometry(float w, float h)
     {
         m_FullscreenWidget->MeasureLayout(false, false, desktopSize);
 
-        m_FullscreenWidget->Geometry.Mins = m_Geometry.PaddedMins;
-        m_FullscreenWidget->Geometry.Maxs = m_Geometry.PaddedMaxs;
+        m_FullscreenWidget->m_Geometry.Mins = m_Geometry.PaddedMins;
+        m_FullscreenWidget->m_Geometry.Maxs = m_Geometry.PaddedMaxs;
 
         m_FullscreenWidget->ArrangeChildren(false, false);
     }
@@ -172,16 +177,16 @@ void UIDesktop::UpdateGeometry(float w, float h)
             UIWindow* window = dynamic_cast<UIWindow*>(widget);
             if (window && window->WindowState == UIWindow::WS_MAXIMIZED)
             {
-                widget->Geometry.Mins = m_Geometry.PaddedMins;
-                widget->Geometry.Maxs = m_Geometry.PaddedMaxs;
+                widget->m_Geometry.Mins = m_Geometry.PaddedMins;
+                widget->m_Geometry.Maxs = m_Geometry.PaddedMaxs;
             }
             else
             {
-                widget->Geometry.Mins = m_Geometry.PaddedMins + widget->Position;
-                widget->Geometry.Maxs = widget->Geometry.Mins + widget->MeasuredSize;
+                widget->m_Geometry.Mins = m_Geometry.PaddedMins + widget->Position;
+                widget->m_Geometry.Maxs = widget->m_Geometry.Mins + widget->m_MeasuredSize;
             }
 
-            if ((widget->Geometry.Mins.X >= m_Geometry.PaddedMaxs.X) || (widget->Geometry.Mins.Y >= m_Geometry.PaddedMaxs.Y))
+            if ((widget->m_Geometry.Mins.X >= m_Geometry.PaddedMaxs.X) || (widget->m_Geometry.Mins.Y >= m_Geometry.PaddedMaxs.Y))
                 continue;
 
             widget->ArrangeChildren(true, true);
@@ -190,7 +195,7 @@ void UIDesktop::UpdateGeometry(float w, float h)
 
     if (m_PendingDrag)
     {
-        StartDragWidget(m_PendingDrag);
+        StartDragging(m_PendingDrag);
         m_PendingDrag.Reset();
     }
 }
@@ -235,32 +240,14 @@ void UIDesktop::SetFocusWidget(UIWidget* widget)
     }
 }
 
-void UIDesktop::ExecuteEvents()
-{
-    //for (int i = 0; i < m_Events.Size(); ++i)
-    //{
-    //    Event const& ev = m_Events[i];
-    //    switch (ev.Type)
-    //    {
-    //        //case SET_TOP_WIDGET:
-    //        //    EventSetTopWidget(ev.pWidget);
-    //        //    break;
-    //        case SET_FOCUS_WIDGET:
-    //            EventSetFocusWidget(ev.pWidget);
-    //            break;
-    //    }
-    //}
-    //m_Events.Clear();
-}
-
 void UIDesktop::Draw(ACanvas& cv)
 {
     cv.Push(CANVAS_PUSH_FLAG_RESET);
 
     cv.Scissor(m_Geometry.Mins, m_Geometry.Maxs);
 
-    if (Background)
-        DrawBrush(cv, m_Geometry.Mins, m_Geometry.Maxs, {}, Background);
+    if (m_Wallpaper)
+        DrawBrush(cv, m_Geometry.Mins, m_Geometry.Maxs, {}, m_Wallpaper);
 
     if (m_FullscreenWidget)
     {
@@ -274,22 +261,6 @@ void UIDesktop::Draw(ACanvas& cv)
         }
     }
 
-    #if 0
-    for (auto it = Tooltips.begin(); it != Tooltips.end();)
-    {
-        auto& tooltip = (*it);
-        if (tooltip.IsExpired())
-        {
-            it = Tooltips.Erase(it);
-        }
-        else
-        {
-            tooltip->Draw_r(_Canvas, mins, maxs);
-            it++;
-        }
-    }
-    #endif
-
     cv.Pop();
 }
 
@@ -301,7 +272,7 @@ UIWidget* UIDesktop::GetExclusive()
     {
         if (exclusive->bExclusive && exclusive->IsVisible())
             break;
-        exclusive = exclusive->Parent;
+        exclusive = exclusive->GetParent();
     }
 
     return exclusive;
@@ -428,18 +399,14 @@ void UIDesktop::GenerateMouseButtonEvents(struct SMouseButtonEvent const& event,
 
     if (event.Action == IA_PRESS)
     {
-        //if (m_Popup)
-        //{
-        //    Float2 mins, maxs;
-
-        //    Root->GetDesktopRect(mins, maxs, true);
-
-        //    widget = GetWidgetUnderCursor_r(m_Popup->Self, mins, maxs, GUIManager->CursorPosition);
-        //    if (widget == nullptr)
-        //    {
-        //        ClosePopupMenu();
-        //    }
-        //}
+        if (m_Popup)
+        {
+            widget = m_Popup->Trace(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+            if (!widget)
+            {
+                ClosePopupWidget();
+            }
+        }
         if (!widget)
         {
             widget = GetExclusive();
@@ -455,7 +422,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct SMouseButtonEvent const& event,
             }
         }
         while (widget && widget->bNoInput)
-            widget = widget->Parent;
+            widget = widget->GetParent();
 
         if (widget && widget->IsVisible())
         {
@@ -469,7 +436,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct SMouseButtonEvent const& event,
             {
                 if (!widget->IsDisabled())
                 {
-                    if (event.Button == 0 && !widget->Parent)
+                    if (event.Button == 0 && !widget->GetParent())
                     {
                         UIWindow* window = dynamic_cast<UIWindow*>(widget);
 
@@ -506,14 +473,14 @@ void UIDesktop::GenerateMouseButtonEvents(struct SMouseButtonEvent const& event,
             {
                 if (widget->bAllowDrag)
                 {
-                    StartDragWidget(widget);
+                    StartDragging(widget);
                     return;
                 }
 
                 UIWindow* window = dynamic_cast<UIWindow*>(widget);
                 if (window && window->CaptionHitTest(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y))
                 {
-                    StartDragWidget(widget);
+                    StartDragging(widget);
                     return;
                 }
             }
@@ -541,17 +508,12 @@ void UIDesktop::GenerateMouseWheelEvents(SMouseWheelEvent const& event, double t
         // Ignore when dragging
         return;
     }
-    #if 0
+
     if (m_Popup)
     {
-        Float2 mins, maxs;
-
-        Root->GetDesktopRect(mins, maxs, true);
-
-        widget = GetWidgetUnderCursor_r(m_Popup->Self, mins, maxs, CursorPosition);
+        widget = m_Popup->Trace(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
     }
     else
-    #endif
     {
         widget = GetExclusive();
         if (widget)
@@ -565,7 +527,7 @@ void UIDesktop::GenerateMouseWheelEvents(SMouseWheelEvent const& event, double t
     }
     while (widget && widget->bNoInput)
     {
-        widget = widget->Parent;
+        widget = widget->GetParent();
     }
     if (widget && widget->IsVisible())
     {
@@ -590,15 +552,11 @@ void UIDesktop::GenerateMouseMoveEvents(SMouseMoveEvent const& event, double tim
 
     if (!m_MouseFocusWidget)
     {
-        //if (m_Popup)
-        //{
-        //    Float2 mins, maxs;
-
-        //    Root->GetDesktopRect(mins, maxs, true);
-
-        //    widget = GetWidgetUnderCursor_r(m_Popup->Self, mins, maxs, CursorPosition);
-        //}
-        //else
+        if (m_Popup)
+        {
+            widget = m_Popup->Trace(GUIManager->CursorPosition.X, GUIManager->CursorPosition.Y);
+        }
+        else
         {
             widget = GetExclusive();
             if (widget)
@@ -612,7 +570,7 @@ void UIDesktop::GenerateMouseMoveEvents(SMouseMoveEvent const& event, double tim
         }
         while (widget && widget->bNoInput)
         {
-            widget = widget->Parent;
+            widget = widget->GetParent();
         }
     }
     else
@@ -713,27 +671,24 @@ bool UIDesktop::HandleDraggingWidget()
     Float2 mins = m_Geometry.PaddedMins;
     Float2 maxs = m_Geometry.PaddedMaxs;
 
-    UIWidget* parent = m_DraggingWidget->Parent;
+    UIWidget* parent = m_DraggingWidget->GetParent();
     if (parent)
     {
-        mins = parent->Geometry.PaddedMins;
-        maxs = parent->Geometry.PaddedMaxs;
+        mins = parent->m_Geometry.PaddedMins;
+        maxs = parent->m_Geometry.PaddedMaxs;
     }
 
-    // get parent layout area
-    //m_DraggingWidget->GetLayoutRect(mins, maxs);
-
     UIWindow* window = dynamic_cast<UIWindow*>(m_DraggingWidget.GetObject());
-    if (window && window->bResizable && !window->Parent)
+    if (window && window->bResizable && !window->GetParent())
     {
         if (window->IsMaximized())
         {
             window->SetNormal();
 
-            const Float2 parentSize      = maxs - mins;
+            const Float2 parentSize = maxs - mins;
             const Float2 cursor     = Math::Clamp(GUIManager->CursorPosition - mins, Float2(0.0f), parentSize);
 
-            const float widgetWidth = window->Size.X;          //window->GetCurrentSize().X; // FIXME
+            const float widgetWidth = window->Size.X;
             const float widgetHalfWidth = widgetWidth * 0.5f;
 
             Float2 newWidgetPos;
@@ -784,13 +739,8 @@ void UIDesktop::CancelDragging()
 {
     if (m_DraggingWidget)
     {
-        Float2 mins = m_DraggingWidget->Parent ? m_DraggingWidget->Parent->Geometry.PaddedMins : m_Geometry.PaddedMins;
+        Float2 mins = m_DraggingWidget->GetParent() ? m_DraggingWidget->GetParent()->m_Geometry.PaddedMins : m_Geometry.PaddedMins;
         
-        //Float2 maxs;
-
-        // get parent layout area
-        //m_DraggingWidget->GetLayoutRect(mins, maxs);
-
         Float2 newWidgetPos = m_DraggingWidgetPos;
 
         newWidgetPos -= mins;
@@ -804,11 +754,11 @@ void UIDesktop::CancelDragging()
     }
 }
 
-void UIDesktop::StartDragWidget(UIWidget* widget)
+void UIDesktop::StartDragging(UIWidget* widget)
 {
     m_DraggingWidget    = widget;
     m_DraggingCursor    = GUIManager->CursorPosition;
-    m_DraggingWidgetPos = widget->Geometry.Mins;
+    m_DraggingWidgetPos = widget->m_Geometry.Mins;
 
     UIDockWidget* dockWidget = dynamic_cast<UIDockWidget*>(widget);
     if (dockWidget)
@@ -848,3 +798,33 @@ void UIDesktop::StartDragWidget(UIWidget* widget)
 //    }
 //    m_DragWidget.Reset();
 //}
+
+void UIDesktop::OpenPopupWidget(UIWidget* widget, Float2 const& position)
+{
+    ClosePopupWidget();
+
+    if (widget)
+    {
+        m_Popup             = widget;
+        m_Popup->Visibility = UI_WIDGET_VISIBILITY_VISIBLE;
+        m_Popup->Position   = position;
+
+        //m_Popup->MaxSize = {Root->GetWidth(), Math::Max(1.0f, (Root->GetHeight() - Position.Y))};
+
+        AddWidget(m_Popup);
+
+        SetFocusWidget(m_Popup);
+        m_Popup->BringOnTop();
+    }
+}
+
+void UIDesktop::ClosePopupWidget()
+{
+    if (m_Popup)
+    {
+        RemoveWidget(m_Popup);
+
+        m_Popup->Visibility = UI_WIDGET_VISIBILITY_INVISIBLE;
+        m_Popup.Reset();
+    }
+}

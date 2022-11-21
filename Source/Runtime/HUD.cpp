@@ -29,7 +29,7 @@ SOFTWARE.
 */
 
 #include "HUD.h"
-#include "Canvas.h"
+#include "Canvas/Canvas.h"
 #include <Platform/Utf8.h>
 
 HK_CLASS_META(AHUD)
@@ -38,17 +38,16 @@ AHUD::AHUD()
 {
 }
 
-void AHUD::Draw(ACanvas* _Canvas, int _X, int _Y, int _W, int _H)
+void AHUD::Draw(ACanvas& _Canvas, int _X, int _Y, int _W, int _H)
 {
-    Canvas    = _Canvas;
     ViewportX = _X;
     ViewportY = _Y;
     ViewportW = _W;
     ViewportH = _H;
 
-    DrawHUD();
+    DrawHUD(_Canvas);
 }
 
-void AHUD::DrawHUD()
+void AHUD::DrawHUD(ACanvas& _Canvas)
 {
 }

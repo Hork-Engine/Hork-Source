@@ -37,7 +37,7 @@ void UILabel::AdjustSize(Float2 const& size)
     if (!Text)
         return;    
 
-    bool autoW = bAutoWidth && !Text->bWrap;
+    bool autoW = bAutoWidth && !Text->IsWordWrapEnabled();
     bool autoH = bAutoHeight;
 
     if (!autoW && !autoH)
@@ -52,13 +52,13 @@ void UILabel::AdjustSize(Float2 const& size)
     Float2 boxSize = Text->GetTextBoxSize(breakRowWidth);
 
     if (autoW)
-        AdjustedSize.X = boxSize.X;
+        m_AdjustedSize.X = boxSize.X;
     if (autoH)
-        AdjustedSize.Y = boxSize.Y;
+        m_AdjustedSize.Y = boxSize.Y;
 }
 
 void UILabel::Draw(ACanvas& canvas)
 {
     if (Text)
-        Text->Draw(canvas, Geometry.PaddedMins, Geometry.PaddedMaxs);
+        Text->Draw(canvas, m_Geometry.PaddedMins, m_Geometry.PaddedMaxs);
 }

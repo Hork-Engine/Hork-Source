@@ -30,37 +30,48 @@ SOFTWARE.
 
 #include "UIText.h"
 
+void UIText::ApplyTextChanges()
+{
+    m_BreakRowWidth = -1;
+}
+
 Float2 UIText::GetTextBoxSize(float breakRowWidth) const
 {
-    FontStyle style;
-    style.FontSize      = FontSize;
-    style.FontBlur      = FontBlur;
-    style.LetterSpacing = LetterSpacing;
-    style.LineHeight    = LineHeight;
+    if (m_BreakRowWidth != breakRowWidth)
+    {
+        FontStyle style;
+        style.FontSize      = m_FontSize;
+        style.FontBlur      = m_FontBlur;
+        style.LetterSpacing = m_LetterSpacing;
+        style.LineHeight    = m_LineHeight;
 
-    if (Font)
-        return Font->GetTextBoxSize(style, breakRowWidth, Text);
-    else
-        return ACanvas::GetDefaultFont()->GetTextBoxSize(style, breakRowWidth, Text);
+        if (m_Font)
+            m_CachedSize = m_Font->GetTextBoxSize(style, breakRowWidth, Text);
+        else
+            m_CachedSize = ACanvas::GetDefaultFont()->GetTextBoxSize(style, breakRowWidth, Text);
+
+        m_BreakRowWidth = breakRowWidth;
+    }
+    return m_CachedSize;
 }
 
 void UIText::Draw(ACanvas& canvas, Float2 const& boxMins, Float2 const& boxMaxs)
 {
     FontStyle fontStyle;
-    fontStyle.FontSize      = FontSize;
-    fontStyle.LetterSpacing = LetterSpacing;
-    fontStyle.LineHeight    = LineHeight;
+    fontStyle.FontSize      = m_FontSize;
+    fontStyle.LetterSpacing = m_LetterSpacing;
+    fontStyle.LineHeight    = m_LineHeight;
 
-    canvas.FontFace(Font);
+    canvas.FontFace(m_Font);
 
-    if (bDropShadow)
+    if (m_bDropShadow)
     {
-        fontStyle.FontBlur = ShadowBlur;
-        canvas.FillColor(Color4(0, 0, 0, Color.A));
-        canvas.TextBox(fontStyle, boxMins + ShadowOffset, boxMaxs + ShadowOffset, AlignmentFlags, bWrap, Text);
+        fontStyle.FontBlur = m_ShadowBlur;
+        canvas.FillColor(Color4(0, 0, 0, m_Color.A));
+        canvas.TextBox(fontStyle, boxMins + m_ShadowOffset, boxMaxs + m_ShadowOffset, m_AlignmentFlags, m_bWordWrap, Text);
     }
 
-    fontStyle.FontBlur = FontBlur;
-    canvas.FillColor(Color);
-    canvas.TextBox(fontStyle, boxMins, boxMaxs, AlignmentFlags, bWrap, Text);
+    fontStyle.FontBlur = m_FontBlur;
+    canvas.FillColor(m_Color);
+    canvas.TextBox(fontStyle, boxMins, boxMaxs, m_AlignmentFlags, m_bWordWrap, Text);
 }

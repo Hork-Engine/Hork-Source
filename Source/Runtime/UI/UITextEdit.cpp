@@ -37,8 +37,6 @@ SOFTWARE.
 
 #include <Platform/Platform.h>
 
-static Float2 CalcTextRect(AFont const* font, FontStyle const& fontStyle, WideChar const* textBegin, WideChar const* textEnd, const WideChar** remaining, Float2* _OutOffset, bool _StopOnNewLine);
-
 #undef STB_TEXTEDIT_STRING
 #undef STB_TEXTEDIT_CHARTYPE
 #define STB_TEXTEDIT_STRING           UITextEdit
@@ -66,75 +64,184 @@ static Float2 CalcTextRect(AFont const* font, FontStyle const& fontStyle, WideCh
 #undef INCLUDE_STB_TEXTEDIT_H
 #include "../stb/stb_textedit.h"
 
-static WideChar STB_TEXTEDIT_NEWLINE = '\n';
+static constexpr WideChar STB_TEXTEDIT_NEWLINE = '\n';
 
-#define STB_TEXTEDIT_STRINGLEN(_Obj) _Obj->GetTextLength()
+#define STB_TEXTEDIT_STRINGLEN(obj) obj->GetText().Size()
 
-#define STB_TEXTEDIT_GETCHAR(_Obj, i) _Obj->GetText()[i]
+WideChar STB_TEXTEDIT_GETCHAR(UITextEdit* obj, int pos)
+{
+    #if 1
+    int rowNum = obj->FindRow(pos);
+    TextRowW const& row    = obj->GetRows()[rowNum];
 
-static int STB_TEXTEDIT_KEYTOTEXT(int key)
+    if (pos == row.End - obj->GetText().CBegin())
+        return STB_TEXTEDIT_NEWLINE;
+    #endif
+
+    return obj->GetText()[pos];
+}
+
+static inline int STB_TEXTEDIT_KEYTOTEXT(int key)
 {
     return key >= 0x10000 ? 0 : key;
 }
 
-static void STB_TEXTEDIT_LAYOUTROW(StbTexteditRow* _Row, UITextEdit* _Obj, int _LineStartIndex)
+static void STB_TEXTEDIT_LAYOUTROW(StbTexteditRow* row, UITextEdit* obj, int lineStartIndex)
 {
-    FontStyle fontStyle;
-    fontStyle.FontSize = _Obj->GetFontSize();
+    int rowNum = obj->FindRow(lineStartIndex);
 
-    WideChar const* text           = _Obj->GetText();
-    WideChar const* text_remaining = NULL;
-    const Float2    size           = CalcTextRect(_Obj->GetFont(), fontStyle, text + _LineStartIndex, text + _Obj->GetTextLength(), &text_remaining, NULL, true);
-    _Row->x0                       = 0.0f;
-    _Row->x1                       = size.X;
-    _Row->baseline_y_delta         = size.Y;
-    _Row->ymin                     = 0.0f;
-    _Row->ymax                     = size.Y;
-    _Row->num_chars                = (int)(text_remaining - (text + _LineStartIndex));
+    TextRowW const& r = obj->GetRows()[rowNum];
+
+    FontStyle fontStyle;
+    fontStyle.FontSize = obj->GetFontSize();
+
+    TextMetrics metrics;
+    obj->GetFont()->GetTextMetrics(fontStyle, metrics);
+
+    row->x0               = 0.0f;
+    row->x1               = r.MaxX; // - r.MinX;
+    row->baseline_y_delta = metrics.LineHeight;
+    row->ymin             = 0.0f;
+    row->ymax             = metrics.LineHeight;
+    row->num_chars        = (int)(r.End - r.Start/* + 1*/);
 }
 
-static float STB_TEXTEDIT_GETWIDTH(UITextEdit* _Obj, int _LineStartIndex, int _CharIndex)
+static float STB_TEXTEDIT_GETWIDTH(UITextEdit* obj, int lineStartIndex, int charIndex)
 {
-    WideChar c = _Obj->GetText()[_LineStartIndex + _CharIndex];
+    int n = lineStartIndex + charIndex;
+    if (n >= obj->GetText().Size())
+        return 0;
+
+    WideChar c = obj->GetText()[n];
     if (c == '\n')
         return STB_TEXTEDIT_GETWIDTH_NEWLINE;
 
     FontStyle fontStyle;
-    fontStyle.FontSize = _Obj->GetFontSize();
+    fontStyle.FontSize = obj->GetFontSize();
 
-    return _Obj->GetFont()->GetCharAdvance(fontStyle, c); // *( FontSize / GetFont()->FontSize );
+    return obj->GetFont()->GetCharAdvance(fontStyle, c);
 }
 
-class UITextEditProxy
+typedef struct
 {
-public:
-    UITextEditProxy(UITextEdit* _Self) :
-        Self(_Self) {}
+    float x, y;               // position of n'th character
+    float height;             // height of line
+    int   first_char, length; // first char of row, and length
+    int   prev_first;         // first char of previous row
+} StbFindState;
 
-    bool InsertCharsProxy(int offset, WideChar const* text, int textLength)
+// find the x/y location of a character, and remember info about the previous row in
+// case we get a move-up event (for page up, we'll have to rescan)
+static void stb_textedit_find_charpos(StbFindState* find, UITextEdit* str, int n, int single_line)
+{
+    WideChar const* text = str->GetText().CBegin();
+    int length = str->GetText().Size();
+
+    AFont* font = str->GetFont();
+
+    FontStyle fontStyle;
+    fontStyle.FontSize = str->GetFontSize();
+
+    TextMetrics metrics;
+    font->GetTextMetrics(fontStyle, metrics);
+
+    if (n == length && single_line)
     {
-        return Self->InsertCharsProxy(offset, text, textLength);
+        find->x          = 0;
+        find->y          = 0;
+        find->first_char = 0;
+        find->length     = length;
+        find->height     = metrics.LineHeight;
+        return;
     }
 
-    void DeleteCharsProxy(int first, int count)
+    HK_ASSERT(n <= length);
+
+    int rowNum = str->FindRow(n);    
+
+    find->y = rowNum * metrics.LineHeight;
+
+    find->first_char = (int)(str->GetRows()[rowNum].Start - text);
+    find->length     = (int)(str->GetRows()[rowNum].End - str->GetRows()[rowNum].Start) + 1;
+    find->height     = metrics.LineHeight;
+
+    if (rowNum > 0)
+        find->prev_first = (int)(str->GetRows()[rowNum - 1].Start - text);
+    else
+        find->prev_first = 0;
+
+    find->x = 0;
+    for (int charNum = find->first_char; charNum < n; ++charNum)
     {
-        return Self->DeleteCharsProxy(first, count);
+        WideChar c = text[charNum];
+
+        HK_ASSERT(c != '\n');
+
+        find->x += font->GetCharAdvance(fontStyle, c);
+    }
+}
+
+static int stb_text_locate_coord(UITextEdit* str, float x, float y)
+{
+    return str->LocateCoord(x, y);
+}
+
+int UITextEdit::LocateCoord(float x, float y)
+{
+    if (m_Text.IsEmpty())
+        return 0;
+
+    AFont* font = GetFont();
+
+    TextMetrics metrics;
+    font->GetTextMetrics(m_FontStyle, metrics);
+
+    x -= m_Geometry.Mins.X;
+    y -= m_Geometry.Mins.Y;
+
+    int rowNum = y / metrics.LineHeight;
+    if (rowNum < 0)
+        return 0;
+
+    if (rowNum >= m_Rows.Size())
+        return (int)m_Text.Size() - 1;
+    
+    TextRowW* row = &m_Rows[rowNum];
+
+    if (x <= row->MinX)
+        return (int)(row->Start - m_Text.ToPtr());
+
+    if (x >= row->MaxX)
+        return (int)(row->End - m_Text.ToPtr());
+
+    int numChars = row->End - row->Start;
+    float prev_x       = row->MinX;
+    for (int k = 0; k < numChars; ++k)
+    {
+        float w = font->GetCharAdvance(m_FontStyle, row->Start[k]);
+        if (x < prev_x + w)
+        {
+            if (x < prev_x + w / 2)
+                return (int)(row->Start - m_Text.ToPtr() + k);
+            else
+                return (int)(row->Start - m_Text.ToPtr() + k + 1);
+        }
+        prev_x += w;
     }
 
-private:
-    UITextEdit* Self;
-};
+    return (int)(row->End - m_Text.ToPtr());
+}
 
-#define STB_TEXTEDIT_DELETECHARS(_Obj, first, count) UITextEditProxy(_Obj).DeleteCharsProxy(first, count)
+#define STB_TEXTEDIT_DELETECHARS(obj, first, count) (obj)->DeleteChars(first, count)
 
-#define STB_TEXTEDIT_INSERTCHARS(_Obj, offset, text, textLength) UITextEditProxy(_Obj).InsertCharsProxy(offset, text, textLength)
+#define STB_TEXTEDIT_INSERTCHARS(obj, offset, text, textLength) (obj)->InsertChars(offset, AWideStringView(text, textLength))
 
 HK_FORCEINLINE bool IsSeparator(WideChar c)
 {
     return c == ',' || c == '.' || c == ';' || c == ':' || c == '(' || c == ')' || c == '{' || c == '}' || c == '[' || c == ']' || c == '{' || c == '}' || c == '<' || c == '>' || c == '|' || c == '!' || c == '@' || c == '#' || c == '$' || c == '%' || c == '^' || c == '&' || c == '*' || c == '/' || c == '\\' || c == '+' || c == '=' || c == '-' || c == '~' || c == '`' || c == '\'' || c == '"' || c == '?' || c == '\n';
 }
 
-static bool IsWordBoundary(WideChar* s)
+static bool IsWordBoundary(WideChar const* s)
 {
     if (Core::WideCharIsBlank(s[-1]) && !Core::WideCharIsBlank(s[0]))
     {
@@ -157,11 +264,11 @@ static bool IsWordBoundary(WideChar* s)
     return false;
 }
 
-static int NextWord(UITextEdit* _Obj, int i)
+static int NextWord(UITextEdit* obj, int i)
 {
     i++;
-    int       len = _Obj->GetTextLength();
-    WideChar* s   = _Obj->GetText() + i;
+    int             len = obj->GetText().Size();
+    WideChar const* s   = obj->GetText().CBegin() + i;
     while (i < len && !IsWordBoundary(s))
     {
         i++;
@@ -170,10 +277,10 @@ static int NextWord(UITextEdit* _Obj, int i)
     return i > len ? len : i;
 }
 
-static int PrevWord(UITextEdit* _Obj, int i)
+static int PrevWord(UITextEdit* obj, int i)
 {
     i--;
-    WideChar* s = _Obj->GetText() + i;
+    WideChar const* s = obj->GetText().CBegin() + i;
     while (i > 0 && !IsWordBoundary(s))
     {
         i--;
@@ -190,7 +297,7 @@ static int PrevWord(UITextEdit* _Obj, int i)
 
 static const bool bOSX = false;
 
-enum FCharacterFilter
+enum
 {
     CHARS_DECIMAL     = HK_BIT(0), // 0123456789.+-*/
     CHARS_HEXADECIMAL = HK_BIT(1), // 0123456789ABCDEFabcdef
@@ -199,92 +306,49 @@ enum FCharacterFilter
     CHARS_SCIENTIFIC  = HK_BIT(4), // 0123456789.+-*/eE (Scientific notation input)
 };
 
-static Float2 CalcTextRect(AFont const* font, FontStyle const& fontStyle, WideChar const* textBegin, WideChar const* textEnd, const WideChar** remaining, Float2* _OutOffset, bool _StopOnNewLine)
+int UITextEdit::FindRow(int cursor)
 {
-    TextMetrics metrics;
-    font->GetTextMetrics(fontStyle, metrics);
-
-    const float lineHeight = metrics.LineHeight;
-    Float2      rectSize(0);
-    float       lineWidth = 0.0f;
-
-    WideChar const* s = textBegin;
-    while (s < textEnd)
+    // OPTIMIZ: Binary search
+    int       n = 0;
+    WideChar* s = m_Text.ToPtr();
+    for (TextRowW& row : m_Rows)
     {
-        WideChar c = *s++;
-        if (c == '\n')
-        {
-            rectSize.X = Math::Max(rectSize.X, lineWidth);
-            rectSize.Y += lineHeight;
-            lineWidth = 0.0f;
-            if (_StopOnNewLine)
-            {
-                break;
-            }
-            continue;
-        }
-        if (c == '\r')
-        {
-            continue;
-        }
-        lineWidth += font->GetCharAdvance(fontStyle, c);
+        size_t offset = row.End - s;
+        if (cursor <= offset)
+            return n;
+        ++n;
     }
-
-    if (rectSize.X < lineWidth)
-    {
-        rectSize.X = lineWidth;
-    }
-
-    if (_OutOffset)
-    {
-        *_OutOffset = Float2(lineWidth, rectSize.Y + lineHeight);
-    }
-
-    if (lineWidth > 0 || rectSize.Y == 0.0f)
-    {
-        rectSize.Y += lineHeight;
-    }
-
-    if (remaining)
-    {
-        *remaining = s;
-    }
-
-    return rectSize;
+    return (int)m_Rows.Size() - 1;
 }
 
 // Returns top-left cursor position
-static Float2 CalcCursorOffset(AFont const* font, FontStyle const& fontStyle, WideChar* text, int cursor, const WideChar** remaining)
+Float2 UITextEdit::CalcCursorOffset(int cursor)
 {
-    TextMetrics metrics;
-    font->GetTextMetrics(fontStyle, metrics);
+    Float2 offset(0);
 
-    const float lineHeight = metrics.LineHeight;
-    Float2      offset(0);
-    float       lineWidth = 0.0f;
+    int rowNum = FindRow(cursor);
+    if (rowNum >= 0)
+    {
+        TextRowW const* row = &m_Rows[rowNum];
 
-    WideChar const* s   = text;
-    WideChar const* end = text + cursor;
-    while (s < end)
-    {
-        WideChar c = *s++;
-        if (c == '\n')
+        AFont* font = GetFont();
+
+        float lineWidth = 0.0f;
+
+        WideChar const* s   = row->Start;
+        WideChar const* end = m_Text.ToPtr() + cursor;
+        while (s < end)
         {
-            offset.Y += lineHeight;
-            lineWidth = 0.0f;
-            continue;
+            lineWidth += font->GetCharAdvance(m_FontStyle, *s++);
         }
-        if (c == '\r')
-        {
-            continue;
-        }
-        lineWidth += font->GetCharAdvance(fontStyle, c);
+
+        TextMetrics metrics;
+        font->GetTextMetrics(m_FontStyle, metrics);
+
+        offset.X = lineWidth;
+        offset.Y = rowNum * metrics.LineHeight;
     }
-    offset.X = lineWidth;
-    if (remaining)
-    {
-        *remaining = s;
-    }
+
     return offset;
 }
 
@@ -292,8 +356,8 @@ UITextEdit::UITextEdit()
 {
     m_bSingleLine = false;
 
-    m_Stb = (STB_TexteditState*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(STB_TexteditState));
-    stb_textedit_initialize_state(m_Stb, m_bSingleLine);
+    m_State = (STB_TexteditState*)Platform::GetHeapAllocator<HEAP_MISC>().Alloc(sizeof(STB_TexteditState));
+    stb_textedit_initialize_state(m_State, m_bSingleLine);
 
     m_FontStyle.FontSize = 14;
 
@@ -306,7 +370,6 @@ UITextEdit::UITextEdit()
     m_bCustomCharFilter    = false;
     m_bStartDragging       = false;
     m_bShouldKeepSelection = false;
-    m_CurTextLength        = 0;
     m_MaxChars             = 0;
     m_CharacterFilter      = 0;
     m_InsertSpacesOnTab    = 4;
@@ -319,18 +382,22 @@ UITextEdit::UITextEdit()
 
 UITextEdit::~UITextEdit()
 {
-    Platform::GetHeapAllocator<HEAP_MISC>().Free(m_Stb);
+    Platform::GetHeapAllocator<HEAP_MISC>().Free(m_State);
 }
 
 UITextEdit& UITextEdit::WithFont(AFont* font)
 {
     m_Font = font;
+
+    UpdateRows();
     return *this;
 }
 
 UITextEdit& UITextEdit::WithFontSize(float size)
 {
     m_FontStyle.FontSize = size;
+
+    UpdateRows();
     return *this;
 }
 
@@ -420,7 +487,7 @@ UITextEdit& UITextEdit::WithInsertSpacesOnTab(int numSpaces)
 UITextEdit& UITextEdit::WithSingleLine(bool bEnabled)
 {
     m_bSingleLine = bEnabled;
-    stb_textedit_initialize_state(m_Stb, m_bSingleLine);
+    stb_textedit_initialize_state(m_State, m_bSingleLine);
     return *this;
 }
 
@@ -482,120 +549,92 @@ float UITextEdit::GetFontSize() const
     return m_FontStyle.FontSize;
 }
 
-int UITextEdit::GetTextLength() const
-{
-    return m_CurTextLength;
-}
-
 int UITextEdit::GetCursorPosition() const
 {
-    return m_Stb->cursor;
+    return m_State->cursor;
 }
 
 int UITextEdit::GetSelectionStart() const
 {
-    return Math::Min(m_Stb->select_start, m_Stb->select_end);
+    return Math::Min(m_State->select_start, m_State->select_end);
 }
 
 int UITextEdit::GetSelectionEnd() const
 {
-    return Math::Max(m_Stb->select_start, m_Stb->select_end);
+    return Math::Max(m_State->select_start, m_State->select_end);
 }
 
-bool UITextEdit::InsertCharsProxy(int offset, WideChar const* _text, int textLength)
+bool UITextEdit::InsertChars(int offset, AWideStringView text)
 {
-    if (offset > m_CurTextLength)
+    if (offset < 0 || offset > m_Text.Size())
     {
         return false;
     }
 
     bool bResizable = m_MaxChars > 0;
-    if (bResizable && m_CurTextLength + textLength > m_MaxChars)
+    if (bResizable && m_Text.Size() + text.Size() > m_MaxChars)
     {
-        textLength = m_MaxChars - m_CurTextLength;
+        int textLength = m_MaxChars - m_Text.Size();
         if (textLength <= 0)
         {
             return false;
         }
+
+        text = text.GetSubstring(0, textLength);
     }
 
-    if (m_CurTextLength + textLength + 1 > m_TextData.Size())
-    {
-        m_TextData.Resize(m_CurTextLength + textLength + 1);
-    }
+    m_Text.InsertAt(offset, text);
 
-    WideChar* text = m_TextData.ToPtr();
-    if (offset != m_CurTextLength)
-    {
-        Platform::Memmove(text + offset + textLength, text + offset, (size_t)(m_CurTextLength - offset) * sizeof(WideChar));
-    }
-    Platform::Memcpy(text + offset, _text, (size_t)textLength * sizeof(WideChar));
+    UpdateRows();
 
-    m_CurTextLength += textLength;
-    m_TextData[m_CurTextLength] = '\0';
-
-    UpdateWidgetSize();
-
-    E_OnTyping.Dispatch(m_TextData.ToPtr());
+    E_OnTyping.Dispatch(m_Text);
 
     return true;
 }
 
-void UITextEdit::DeleteCharsProxy(int first, int count)
+void UITextEdit::DeleteChars(int first, int count)
 {
-    if (count < 0 || first < 0)
+    if (count <= 0 || first < 0)
     {
         return;
     }
 
-    if (first >= m_CurTextLength)
-    {
-        return;
-    }
+    m_Text.Cut(first, count);
 
-    if (first + count > m_CurTextLength)
-    {
-        count = m_CurTextLength - first - 1;
-    }
+    UpdateRows();
 
-    m_CurTextLength -= count;
-
-    Platform::Memmove(&m_TextData[first], &m_TextData[first + count], (m_CurTextLength - first) * sizeof(WideChar));
-    m_TextData[m_CurTextLength] = '\0';
-
-    UpdateWidgetSize();
-
-    E_OnTyping.Dispatch(m_TextData.ToPtr());
+    E_OnTyping.Dispatch(m_Text);
 }
 
 void UITextEdit::PressKey(int key)
 {
     if (key)
     {
-        stb_textedit_key(this, m_Stb, key);
+        stb_textedit_key(this, m_State, key);
     }
 }
 
 void UITextEdit::ClearSelection()
 {
-    m_Stb->select_start = m_Stb->select_end = m_Stb->cursor;
+    m_State->select_start = m_State->select_end = m_State->cursor;
 }
 
 void UITextEdit::SelectAll()
 {
-    m_Stb->select_start = 0;
-    m_Stb->cursor = m_Stb->select_end = m_CurTextLength;
-    m_Stb->has_preferred_x            = 0;
+    m_State->select_start    = 0;
+    m_State->select_end      = m_Text.Size();
+    m_State->cursor          = m_State->select_end;
+    m_State->has_preferred_x = 0;
 }
 
 bool UITextEdit::HasSelection() const
 {
-    return m_Stb->select_start != m_Stb->select_end;
+    return m_State->select_start != m_State->select_end;
 }
 
 UIScroll* UITextEdit::GetScroll()
 {
-    return dynamic_cast<UIScroll*>(Parent.GetObject());
+    return dynamic_cast<UIScroll*>(m_Parent.GetObject());
 }
 
 void UITextEdit::ScrollHome()
@@ -639,12 +678,10 @@ void UITextEdit::ScrollPageUp(bool bMoveCursor)
         TextMetrics metrics;
         GetFont()->GetTextMetrics(m_FontStyle, metrics);
 
-        const float lineHeight = metrics.LineHeight;
+        float pageSize = scroll->GetViewSize().Y;
+        pageSize       = Math::Snap(pageSize, metrics.LineHeight);
 
-        float PageSize = scroll->GetViewSize().Y;
-        PageSize       = Math::Snap(PageSize, lineHeight);
-
-        int numLines = (int)(PageSize / lineHeight);
+        int numLines = (int)(pageSize / metrics.LineHeight);
 
         if (bMoveCursor)
         {
@@ -671,12 +708,10 @@ void UITextEdit::ScrollPageDown(bool bMoveCursor)
         TextMetrics metrics;
         GetFont()->GetTextMetrics(m_FontStyle, metrics);
 
-        const float lineHeight = metrics.LineHeight;
+        float pageSize = scroll->GetViewSize().Y;
+        pageSize       = Math::Snap(pageSize, metrics.LineHeight);
 
-        float PageSize = scroll->GetViewSize().Y;
-        PageSize       = Math::Snap(PageSize, lineHeight);
-
-        int numLines = (int)(PageSize / lineHeight);
+        int numLines = (int)(pageSize / metrics.LineHeight);
 
         if (bMoveCursor)
         {
@@ -715,10 +750,8 @@ void UITextEdit::ScrollLines(int numLines)
         TextMetrics metrics;
         GetFont()->GetTextMetrics(m_FontStyle, metrics);
 
-        const float lineHeight = metrics.LineHeight;
-
-        scrollPosition.Y = Math::Snap(scrollPosition.Y, lineHeight);
-        scrollPosition.Y -= numLines * lineHeight;
+        scrollPosition.Y = Math::Snap(scrollPosition.Y, metrics.LineHeight);
+        scrollPosition.Y -= numLines * metrics.LineHeight;
 
         Float2 delta = scroll->GetScrollPosition() - scrollPosition;
         scroll->ScrollDelta(delta);
@@ -738,50 +771,6 @@ void UITextEdit::ScrollLineStart()
     }
 }
 
-bool UITextEdit::FindLineStartEnd(int cursor, WideChar** _LineStart, WideChar** _LineEnd)
-{
-    if (cursor < 0 || cursor >= m_CurTextLength)
-    {
-        return false;
-    }
-
-    WideChar* text      = m_TextData.ToPtr();
-    WideChar* textEnd   = m_TextData.ToPtr() + m_CurTextLength;
-    WideChar* lineStart = text + m_Stb->cursor;
-    WideChar* lineEnd   = text + m_Stb->cursor + 1;
-
-    if (*lineStart != '\n')
-    {
-        while (lineEnd < textEnd)
-        {
-            if (*lineEnd == '\n')
-            {
-                break;
-            }
-            lineEnd++;
-        }
-    }
-    else
-    {
-        lineEnd = lineStart;
-        lineStart--;
-    }
-    while (lineStart >= text)
-    {
-        if (*lineStart == '\n')
-        {
-            break;
-        }
-        lineStart--;
-    }
-    lineStart++;
-
-    *_LineStart = lineStart;
-    *_LineEnd   = lineEnd;
-
-    return true;
-}
-
 void UITextEdit::ScrollLineEnd()
 {
     UIScroll* scroll = GetScroll();
@@ -790,23 +779,16 @@ void UITextEdit::ScrollLineEnd()
         return;
     }
 
-    AFont const* font = GetFont();
-    WideChar*   lineStart;
-    WideChar*   lineEnd;
+    int rowNum = FindRow(m_State->cursor);
+    if (rowNum < 0)
+        return;
 
-    if (FindLineStartEnd(m_Stb->cursor, &lineStart, &lineEnd))
-    {
-        float lineWidth = 0;
-        for (WideChar* s = lineStart; s < lineEnd; s++)
-        {
-            lineWidth += font->GetCharAdvance(m_FontStyle, *s);
-        }
+    float lineWidth = m_Rows[rowNum].MaxX;// - m_Rows[rowNum].MinX;
 
-        float  PageWidth      = scroll->GetViewSize().X;
-        Float2 scrollPosition = scroll->GetScrollPosition();
-        scrollPosition.X      = -lineWidth + PageWidth * 0.5f;
-        scroll->SetScrollPosition(scrollPosition);
-    }
+    float  pageWidth      = scroll->GetViewSize().X;
+    Float2 scrollPosition = scroll->GetScrollPosition();
+    scrollPosition.X      = -lineWidth + pageWidth;
+    scroll->SetScrollPosition(scrollPosition);
 }
 
 void UITextEdit::ScrollHorizontal(float delta)
@@ -828,17 +810,17 @@ void UITextEdit::ScrollToCursor()
 
     AFont const* font = GetFont();
 
-    Float2 scrollMins = scroll->Geometry.PaddedMins;
-    Float2 scrollMaxs = scroll->Geometry.PaddedMaxs;
+    Float2 scrollMins = scroll->m_Geometry.PaddedMins;
+    Float2 scrollMaxs = scroll->m_Geometry.PaddedMaxs;
     Float2 pageSize   = scrollMaxs - scrollMins;
 
     TextMetrics metrics;
     font->GetTextMetrics(m_FontStyle, metrics);
 
-    Float2 cursorOffset = CalcCursorOffset(font, m_FontStyle, m_TextData.ToPtr(), m_Stb->cursor, nullptr);
+    Float2 cursorOffset = CalcCursorOffset(m_State->cursor);
 
     // Cursor global position
-    Float2 cursor = Geometry.Mins + cursorOffset;
+    Float2 cursor = m_Geometry.Mins + cursorOffset;
 
     Float2 scrollPosition = scroll->GetScrollPosition();
 
@@ -884,7 +866,7 @@ bool UITextEdit::Cut()
     {
         SelectAll();
     }
-    stb_textedit_cut(this, m_Stb);
+    stb_textedit_cut(this, m_State);
 
     return true;
 }
@@ -906,9 +888,9 @@ bool UITextEdit::Copy()
     }
 
     const int       startOfs = bHasSelection ? GetSelectionStart() : 0;
-    const int       endOfs   = bHasSelection ? GetSelectionEnd() : m_CurTextLength;
-    WideChar* const start    = m_TextData.ToPtr() + startOfs;
-    WideChar* const end      = m_TextData.ToPtr() + endOfs;
+    const int       endOfs   = bHasSelection ? GetSelectionEnd() : m_Text.Size();
+    WideChar* const start    = m_Text.ToPtr() + startOfs;
+    WideChar* const end      = m_Text.ToPtr() + endOfs;
 
     Platform::SetClipboard(Core::GetString(AWideStringView(start, end)).CStr());
 
@@ -927,8 +909,8 @@ bool UITextEdit::Paste()
 
     int len = Core::UTF8StrLength(s);
 
-    TPodVector<WideChar> wideStr;
-    wideStr.Resize(len);
+    AWideString wideStr;
+    wideStr.Resize(len, STRING_RESIZE_NO_FILL_SPACES);
 
     WideChar ch;
     int      i, byteLen;
@@ -949,30 +931,32 @@ bool UITextEdit::Paste()
     }
     if (i > 0)
     {
-        stb_textedit_paste(this, m_Stb, wideStr.ToPtr(), i);
+        stb_textedit_paste(this, m_State, wideStr.ToPtr(), i);
     }
 
     return true;
 }
 
-UITextEdit& UITextEdit::WithText(const char* text)
+UITextEdit& UITextEdit::WithText(AStringView text)
 {
-    int len = Core::UTF8StrLength(text);
+    int len = Core::UTF8StrLength(text.Begin(), text.End());
 
-    TPodVector<WideChar> wideStr;
-    wideStr.Resize(len + 1);
+    const char* textcur = text.Begin();
+
+    AWideString wideStr;
+    wideStr.Resize(len, STRING_RESIZE_NO_FILL_SPACES);
 
     WideChar ch;
     int      i, byteLen;
     i = 0;
     while (len-- > 0)
     {
-        byteLen = Core::WideCharDecodeUTF8(text, ch);
+        byteLen = Core::WideCharDecodeUTF8(textcur, ch);
         if (!byteLen)
         {
             break;
         }
-        text += byteLen;
+        textcur += byteLen;
         if (!FilterCharacter(ch))
         {
             continue;
@@ -980,23 +964,27 @@ UITextEdit& UITextEdit::WithText(const char* text)
         wideStr[i++] = ch;
     }
 
-    wideStr[i] = 0;
-
-    return WithText(wideStr.ToPtr());
+    return WithText(wideStr);
 }
 
-UITextEdit& UITextEdit::WithText(const WideChar* text)
+UITextEdit& UITextEdit::WithText(AWideStringView text)
 {
-    int len = Core::WideStrLength(text);
-
     SelectAll();
 
-    stb_textedit_paste(this, m_Stb, text, len);
+    stb_textedit_paste(this, m_State, text.ToPtr(), text.Size());
 
     return *this;
 }
 
-void UITextEdit::OnKeyEvent(struct SKeyEvent const& event, double timeStamp)
+UITextEdit& UITextEdit::WithWordWrap(bool bWordWrap)
+{
+    m_bWithWordWrap = bWordWrap;
+
+    UpdateRows();
+    return *this;
+}
+
+void UITextEdit::OnKeyEvent(SKeyEvent const& event, double timeStamp)
 {
     if (event.Action != IA_RELEASE)
     {
@@ -1133,10 +1121,7 @@ void UITextEdit::OnKeyEvent(struct SKeyEvent const& event, double timeStamp)
 
                     PressKey(key);
                     ScrollToCursor();
-
-                    //ScrollLineEnd();
                 }
-
                 break;
 
             case KEY_PAGE_UP:
@@ -1179,7 +1164,7 @@ void UITextEdit::OnKeyEvent(struct SKeyEvent const& event, double timeStamp)
 
                 if (m_bSingleLine || (m_bCtrlEnterForNewLine && !bCtrl) || (!m_bCtrlEnterForNewLine && bCtrl))
                 {
-                    E_OnEnterPress.Dispatch(m_TextData.ToPtr());
+                    E_OnEnterPress.Dispatch(m_Text);
                 }
                 else if (!m_bReadOnly)
                 {
@@ -1302,7 +1287,7 @@ void UITextEdit::OnKeyEvent(struct SKeyEvent const& event, double timeStamp)
     }
 }
 
-void UITextEdit::OnMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp)
+void UITextEdit::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
 {
     if (event.Button != MOUSE_BUTTON_1 && event.Button != MOUSE_BUTTON_2)
     {
@@ -1313,30 +1298,28 @@ void UITextEdit::OnMouseButtonEvent(struct SMouseButtonEvent const& event, doubl
     {
         Float2 CursorPos = GUIManager->CursorPosition;
 
-        CursorPos -= Geometry.Mins;
-
         if (!HasSelection())
         {
-            m_TempCursor = m_Stb->cursor;
+            m_TempCursor = m_State->cursor;
         }
 
         if (event.Button == MOUSE_BUTTON_1 && (event.ModMask & MOD_MASK_SHIFT))
         {
-            stb_textedit_click(this, m_Stb, CursorPos.X, CursorPos.Y);
+            stb_textedit_click(this, m_State, CursorPos.X, CursorPos.Y);
 
-            m_Stb->select_start = m_TempCursor > m_CurTextLength ? m_Stb->cursor : m_TempCursor;
-            m_Stb->select_end   = m_Stb->cursor;
+            m_State->select_start = m_TempCursor > m_Text.Size() ? m_State->cursor : m_TempCursor;
+            m_State->select_end   = m_State->cursor;
 
-            if (m_Stb->select_start > m_Stb->select_end)
+            if (m_State->select_start > m_State->select_end)
             {
-                std::swap(m_Stb->select_start, m_Stb->select_end);
+                std::swap(m_State->select_start, m_State->select_end);
             }
         }
         else
         {
-            stb_textedit_click(this, m_Stb, CursorPos.X, CursorPos.Y);
+            stb_textedit_click(this, m_State, CursorPos.X, CursorPos.Y);
 
-            m_TempCursor = m_Stb->cursor;
+            m_TempCursor = m_State->cursor;
         }
     }
 
@@ -1355,7 +1338,7 @@ void UITextEdit::OnDblClickEvent(int buttonKey, Float2 const& clickPos, uint64_t
 
         while (e-- > s)
         {
-            if (!Core::WideCharIsBlank(m_TextData[e]))
+            if (!Core::WideCharIsBlank(m_Text[e]))
             {
                 break;
             }
@@ -1364,7 +1347,7 @@ void UITextEdit::OnDblClickEvent(int buttonKey, Float2 const& clickPos, uint64_t
     }
 }
 
-void UITextEdit::OnMouseWheelEvent(struct SMouseWheelEvent const& event, double timeStamp)
+void UITextEdit::OnMouseWheelEvent(SMouseWheelEvent const& event, double timeStamp)
 {
     if (m_bSingleLine)
     {
@@ -1382,21 +1365,19 @@ void UITextEdit::OnMouseWheelEvent(struct SMouseWheelEvent const& event, double 
     }
 }
 
-void UITextEdit::OnMouseMoveEvent(struct SMouseMoveEvent const& event, double timeStamp)
+void UITextEdit::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp)
 {
     if (m_bStartDragging)
     {
         Float2 CursorPos = GUIManager->CursorPosition;
 
-        CursorPos -= Geometry.Mins;
-
-        stb_textedit_drag(this, m_Stb, CursorPos.X, CursorPos.Y);
+        stb_textedit_drag(this, m_State, CursorPos.X, CursorPos.Y);
 
         ScrollToCursor();
     }
 }
 
-void UITextEdit::OnCharEvent(struct SCharEvent const& event, double timeStamp)
+void UITextEdit::OnCharEvent(SCharEvent const& event, double timeStamp)
 {
     if (m_bReadOnly)
     {
@@ -1420,7 +1401,7 @@ void UITextEdit::OnCharEvent(struct SCharEvent const& event, double timeStamp)
         return;
     }
 
-    stb_textedit_key(this, m_Stb, (int)ch);
+    PressKey((int)ch);
 
     ScrollToCursor();
 }
@@ -1438,67 +1419,103 @@ void UITextEdit::AdjustSize(Float2 const& size)
     Super::AdjustSize(size);
 
     if (bAutoWidth)
-        AdjustedSize.X = Math::Max(Size.X, m_CurSize.X);
+        m_AdjustedSize.X = Math::Max(Size.X, m_CurSize.X);
     if (bAutoHeight)
-        AdjustedSize.Y = Math::Max(Size.Y, m_CurSize.Y);
+        m_AdjustedSize.Y = Math::Max(Size.Y, m_CurSize.Y);
 }
 
 void UITextEdit::Draw(ACanvas& cv)
 {
-    m_Stb->insert_mode = GUIManager->IsInsertMode();
+    m_State->insert_mode = GUIManager->IsInsertMode();
 
     AFont* font = GetFont();
-
-    Float2 pos  = Geometry.Mins;
 
     cv.FontFace(m_Font);
 
     TextMetrics metrics;
     font->GetTextMetrics(m_FontStyle, metrics);
 
+    float lineHeight = metrics.LineHeight;
+
     if (HasSelection())
     {
         int start = GetSelectionStart();
         int end   = GetSelectionEnd();
 
-        WideChar const* seltext;
-        Float2          selstart = CalcCursorOffset(font, m_FontStyle, m_TextData.ToPtr(), start, &seltext);
+        Float2 clipMins, clipMaxs;
+        cv.GetIntersectedScissor(m_Geometry.Mins, m_Geometry.Maxs, clipMins, clipMaxs);
 
-        const float     lineHeight = metrics.LineHeight;
+        float y0 = clipMins.Y - m_Geometry.Mins.Y;
+        float y1 = clipMaxs.Y - m_Geometry.Mins.Y;
+
+        int firstRow = y0 / lineHeight;
+        int lastRow  = y1 / lineHeight + 1;
+
+        firstRow = Math::Clamp(firstRow, 0, (int)m_Rows.Size() - 1);
+        lastRow  = Math::Clamp(lastRow, 0, (int)m_Rows.Size());
+
+        float y = m_Geometry.Mins.Y;
+        y += firstRow * lineHeight;
+
+        Float2 selstart = CalcCursorOffset(start);
+
+        selstart += m_Geometry.Mins;
+
+        if (selstart.Y < y)
+        {
+            selstart.Y = y;
+            selstart.X = m_Geometry.Mins.X;
+
+            start = m_Rows[firstRow].Start - m_Text.ToPtr();
+        }
+        else
+        {
+            firstRow = FindRow(start);
+        }
+
+        TextRowW* row = &m_Rows[firstRow];
 
         float           lineWidth  = 0.0f;
-        WideChar const* s          = seltext;
-        WideChar const* s_end      = m_TextData.ToPtr() + end;
+        WideChar const* s         = m_Text.ToPtr() + start;
+        WideChar const* s_end      = m_Text.ToPtr() + end;
         while (s < s_end)
         {
-            WideChar c = *s++;
-            if (c == '\n')
+            if (s >= row->End)
             {
                 lineWidth = Math::Max(lineWidth, font->GetCharAdvance(m_FontStyle, ' ') * 0.4f);
-                cv.DrawRectFilled(pos + selstart, pos + selstart + Float2(lineWidth, lineHeight), m_SelectionColor);
-                selstart.X = 0;
+                cv.DrawRectFilled(selstart, selstart + Float2(lineWidth, lineHeight), m_SelectionColor);
+                selstart.X = m_Geometry.Mins.X;
                 selstart.Y += lineHeight;
                 lineWidth = 0.0f;
+                if (selstart.Y > clipMaxs.Y)
+                    break;
+                row++;
+                s = row->Start;
                 continue;
             }
+            WideChar c = *s++;
             if (c == '\r')
             {
                 continue;
             }
             lineWidth += font->GetCharAdvance(m_FontStyle, c);
         }
-        cv.DrawRectFilled(pos + selstart, pos + selstart + Float2(lineWidth, lineHeight), m_SelectionColor);
+
+        if (lineWidth > 0)
+            cv.DrawRectFilled(selstart, selstart + Float2(lineWidth, lineHeight), m_SelectionColor);
     }
 
-    if (GetDesktop()->m_FocusWidget == this)
+    if (HasFocus())
     {
-        if ((Platform::SysMicroseconds() >> 18) & 1)
-        {
-            Float2 cursor = pos + CalcCursorOffset(font, m_FontStyle, m_TextData.ToPtr(), m_Stb->cursor, nullptr);
+        bool tick = (Platform::SysMicroseconds() >> 19) & 1;
 
-            if (m_Stb->insert_mode)
+        if (tick || m_PrevCursorPos != m_State->cursor)
+        {
+            Float2 cursor = m_Geometry.Mins + CalcCursorOffset(m_State->cursor);
+
+            if (m_State->insert_mode)
             {
-                float w = m_Stb->cursor < m_CurTextLength ? font->GetCharAdvance(m_FontStyle, m_TextData[m_Stb->cursor]) : font->GetCharAdvance(m_FontStyle, ' ');
+                float w = m_State->cursor < m_Text.Size() ? font->GetCharAdvance(m_FontStyle, m_Text[m_State->cursor]) : font->GetCharAdvance(m_FontStyle, ' ');
 
                 cv.DrawRectFilled(cursor, Float2(cursor.X + w, cursor.Y + m_FontStyle.FontSize), m_TextColor);
             }
@@ -1507,63 +1524,94 @@ void UITextEdit::Draw(ACanvas& cv)
                 cv.DrawLine(cursor, Float2(cursor.X, cursor.Y + m_FontStyle.FontSize), m_TextColor);
             }
         }
+
+        if (tick)
+            m_PrevCursorPos = m_State->cursor;
     }
-
-    if (m_CurTextLength > 0)
+    
+    if (!m_Text.IsEmpty())
     {
-        //cv.DrawTextWrapWChar(m_FontStyle, pos, m_TextColor, AWideStringView(m_TextData.ToPtr(), m_CurTextLength), Math::MaxValue<float>());
-
-        TVector<char> str(m_TextData.Size() * 4 + 1); // In worst case WideChar transforms to 4 bytes,
-                                                      // one additional byte is reserved for trailing '\0'
-
-        Core::WideStrEncodeUTF8(str.ToPtr(), str.Size(), m_TextData.Begin(), m_TextData.Begin() + m_CurTextLength);
-
         cv.FillColor(m_TextColor);
-        cv.TextBox(m_FontStyle, Geometry.Mins, Geometry.Maxs, TEXT_ALIGNMENT_LEFT | TEXT_ALIGNMENT_TOP | TEXT_ALIGNMENT_KEEP_SPACES, false, str.ToPtr());
+
+        float x = m_Geometry.Mins.X;
+        float y = m_Geometry.Mins.Y;
+
+        Float2 clipMins, clipMaxs;
+        cv.GetIntersectedScissor(m_Geometry.Mins, m_Geometry.Maxs, clipMins, clipMaxs);
+
+        float y0 = clipMins.Y - m_Geometry.Mins.Y;
+        float y1 = clipMaxs.Y - m_Geometry.Mins.Y;
+
+        int firstRow = y0 / lineHeight;
+        int lastRow  = y1 / lineHeight + 1;
+
+        firstRow = Math::Clamp(firstRow, 0, (int)m_Rows.Size() - 1);
+        lastRow  = Math::Clamp(lastRow, 0, (int)m_Rows.Size());
+
+        y += firstRow * lineHeight;
+
+        for (TextRowW *row = m_Rows.Begin() + firstRow, *end = m_Rows.Begin() + lastRow; row < end; row++)
+        {
+            cv.Text(m_FontStyle, x, y, TEXT_ALIGNMENT_LEFT, row->GetStringView());
+            y += lineHeight;
+        }
     }
 }
 
-void UITextEdit::UpdateWidgetSize()
+// OPTIMIZ: Recalc only modified rows
+void UITextEdit::UpdateRows()
 {
-#if 1
     AFont* font = GetFont();
 
+    const bool bKeepSpaces = true;
+
+    static TextRowW rows[128];
+    int             nrows;
+    float           w = 0;
+
+    const float breakRowWidth = m_bWithWordWrap ? Size.X : Math::MaxValue<float>();
+
+    AWideStringView str = m_Text;
+
+    m_Rows.Clear();
+
+    while ((nrows = font->TextBreakLines(m_FontStyle, str, breakRowWidth, rows, HK_ARRAY_SIZE(rows), bKeepSpaces)) > 0)
+    {
+        for (int i = 0; i < nrows; i++)
+        {
+            TextRowW* row = &rows[i];
+
+            row->MinX = 0;
+
+            w = Math::Max(w, row->MaxX);
+
+            m_Rows.Add(*row);
+        }
+        str = AWideStringView(rows[nrows - 1].Next, str.End());
+    }
+
+    if (m_Text.IsEmpty() || (!m_bSingleLine && m_Text[m_Text.Size() - 1] == '\n'))
+    {
+        TextRowW& row = m_Rows.Add();
+        row.Start     = m_Text.End();
+        row.End       = m_Text.End();
+        row.Next      = m_Text.End();
+        row.Width     = 0;
+        row.MinX      = 0;
+        row.MaxX      = 0;
+    }
+
+    // Recalc widget bounds
     TextMetrics metrics;
     font->GetTextMetrics(m_FontStyle, metrics);
 
-    Float2 size(0.0f, metrics.Ascender);
-    float  lineWidth = 0.0f;
-
-    WideChar const* s     = m_TextData.ToPtr();
-    WideChar const* s_end = m_TextData.ToPtr() + m_CurTextLength;
-    while (s < s_end)
-    {
-        WideChar c = *s++;
-        if (c == '\n')
-        {
-            size.X = Math::Max(size.X, lineWidth);
-            size.Y += metrics.LineHeight;
-            lineWidth = 0.0f;
-            continue;
-        }
-        if (c == '\r')
-        {
-            continue;
-        }
-        lineWidth += font->GetCharAdvance(m_FontStyle, c);
-    }
-    size.X = Math::Max(size.X, lineWidth);
-
     const int granularity = 100;
-    const int mod         = (int)size.X % granularity;
+    const int mod         = (int)w % granularity;
 
-    size.X = mod ? size.X + granularity - mod : size.X;
+    w = mod ? w + granularity - mod : w;
 
-#else
-    Float2 size = CalcTextRect(GetFont(), m_FontSize, m_TextData.ToPtr(), m_TextData.ToPtr() + m_CurTextLength, nullptr, nullptr, false);
-#endif
-
-    m_CurSize = size;
+    m_CurSize.X = w;
+    m_CurSize.Y = Math::Max<int>(1, m_Rows.Size()) * metrics.LineHeight;
 }
 
 bool UITextEdit::FilterCharacter(WideChar& ch)

@@ -216,7 +216,6 @@ private:
     TVector<float> RowOffset;
 };
 
-// TODO: VerticalLayout
 class UIHorizontalLayout : public UIBaseLayout
 {
     UI_CLASS(UIHorizontalLayout, UIBaseLayout)
@@ -226,6 +225,7 @@ public:
     float HSpacing{};
 
     bool bWrap{};
+    bool bVStretch{};
 
     UIHorizontalLayout() = default;
 
@@ -244,6 +244,55 @@ public:
     UIHorizontalLayout& WithWrap(bool wrap)
     {
         bWrap = wrap;
+        return *this;
+    }
+
+    UIHorizontalLayout& WithVStretch(bool stretch)
+    {
+        bVStretch = stretch;
+        return *this;
+    }
+
+protected:
+    Float2 MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHeight, Float2 const& size) override;
+
+    void ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight) override;
+};
+
+class UIVerticalLayout : public UIBaseLayout
+{
+    UI_CLASS(UIVerticalLayout, UIBaseLayout)
+
+public:
+    float VSpacing{};
+    float HSpacing{};
+
+    bool bWrap{};
+    bool bHStretch{};
+
+    UIVerticalLayout() = default;
+
+    UIVerticalLayout& WithVSpacing(float vspacing)
+    {
+        VSpacing = vspacing;
+        return *this;
+    }
+
+    UIVerticalLayout& WithHSpacing(float hspacing)
+    {
+        HSpacing = hspacing;
+        return *this;
+    }
+
+    UIVerticalLayout& WithWrap(bool wrap)
+    {
+        bWrap = wrap;
+        return *this;
+    }
+
+    UIVerticalLayout& WithHStretch(bool stretch)
+    {
+        bHStretch = stretch;
         return *this;
     }
 

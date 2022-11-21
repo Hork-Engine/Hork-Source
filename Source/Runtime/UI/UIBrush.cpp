@@ -35,14 +35,14 @@ static void DrawBoxGradient(CanvasPaint& paint, Float2 const& mins, Float2 const
 {
     Float2 boxMins = mins + brush->BoxOffsetTopLeft;
     Float2 boxMaxs = maxs + brush->BoxOffsetBottomRight;
-    paint.BoxGradient(boxMins.X, boxMins.Y, boxMaxs.X - boxMins.X, boxMaxs.Y - boxMins.Y, brush->CornerRadius, brush->Feather, brush->InnerColor, brush->OuterColor);
+    paint.BoxGradient(boxMins, boxMaxs.X - boxMins.X, boxMaxs.Y - boxMins.Y, brush->CornerRadius, brush->Feather, brush->InnerColor, brush->OuterColor);
 }
 
 static void DrawLinearGradient(CanvasPaint& paint, Float2 const& mins, Float2 const& maxs, UILinearGradient* brush)
 {
     Float2 sp = mins + brush->StartPoint;
     Float2 ep = mins + brush->EndPoint;
-    paint.LinearGradient(sp.X, sp.Y, ep.X, ep.Y, brush->InnerColor, brush->OuterColor);
+    paint.LinearGradient(sp, ep, brush->InnerColor, brush->OuterColor);
 }
 
 static void DrawRadialGradient(CanvasPaint& paint, Float2 const& mins, Float2 const& maxs, UIRadialGradient* brush)
@@ -50,7 +50,7 @@ static void DrawRadialGradient(CanvasPaint& paint, Float2 const& mins, Float2 co
     Float2 center = (mins + maxs) * 0.5f + brush->CenterOffset;
     Float2 size   = maxs - mins;
     float  radius = Math::Max(size.X, size.Y);
-    paint.RadialGradient(center.X, center.Y, radius * brush->InnerRadius, radius * brush->OuterRadius, brush->InnerColor, brush->OuterColor);
+    paint.RadialGradient(center, radius * brush->InnerRadius, radius * brush->OuterRadius, brush->InnerColor, brush->OuterColor);
 }
 
 static void DrawSolid(CanvasPaint& paint, Float2 const& mins, Float2 const& maxs, UISolidBrush* brush)
@@ -75,11 +75,11 @@ static void DrawImage(CanvasPaint& paint, Float2 const& mins, Float2 const& maxs
 
         if (brush->bStretch)
         {
-            paint.ImagePattern(mins.X, mins.Y, maxs.X - mins.X, maxs.Y - mins.Y, 0.0f, brush->Texture, brush->TintColor, imageFlags);
+            paint.ImagePattern(mins, maxs.X - mins.X, maxs.Y - mins.Y, 0.0f, brush->Texture, brush->TintColor, imageFlags);
         }
         else
         {
-            paint.ImagePattern(mins.X + brush->Offset.X, mins.Y + brush->Offset.Y, brush->Texture->GetDimensionX() * brush->Scale.X, brush->Texture->GetDimensionY() * brush->Scale.Y, 0.0f, brush->Texture, brush->TintColor, imageFlags);
+            paint.ImagePattern({mins.X + brush->Offset.X, mins.Y + brush->Offset.Y}, brush->Texture->GetDimensionX() * brush->Scale.X, brush->Texture->GetDimensionY() * brush->Scale.Y, 0.0f, brush->Texture, brush->TintColor, imageFlags);
         }
     }
     else

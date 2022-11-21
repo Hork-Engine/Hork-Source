@@ -52,16 +52,16 @@ UIDockContainer::UIDockContainer(AStringView containerName) :
 
 UIDockNode* UIDockContainer::TraceLeaf(float x, float y)
 {
-    x -= Geometry.PaddedMins.X;
-    y -= Geometry.PaddedMins.Y;
+    x -= m_Geometry.PaddedMins.X;
+    y -= m_Geometry.PaddedMins.Y;
 
     return m_Root->TraceLeaf(x, y);
 }
 
 WDockPlacement UIDockContainer::GetPlacement(float x, float y)
 {
-    x -= Geometry.PaddedMins.X;
-    y -= Geometry.PaddedMins.Y;
+    x -= m_Geometry.PaddedMins.X;
+    y -= m_Geometry.PaddedMins.Y;
 
     UIDockNode* leaf = m_Root->TraceLeaf(x, y);
     if (!leaf)
@@ -161,7 +161,7 @@ WDockPlacement UIDockContainer::GetPlacement(float x, float y)
     for (Float2& v : placement.PolygonVerts)
     {
         v *= {w, h};
-        v += Geometry.PaddedMins + leaf->m_Mins;
+        v += m_Geometry.PaddedMins + leaf->m_Mins;
     }
 
     return placement;
@@ -481,7 +481,7 @@ void UIDockContainer::PostDraw(ACanvas& canvas)
     else
     {
         Float2 cursorPos = GUIManager->CursorPosition;
-        cursorPos -= Geometry.PaddedMins;
+        cursorPos -= m_Geometry.PaddedMins;
 
         UIDockNode* node = m_Root->TraceSeparator(cursorPos.X, cursorPos.Y);
         if (node)
@@ -491,8 +491,8 @@ void UIDockContainer::PostDraw(ACanvas& canvas)
 
             node->GetSplitterBounds(bmins, bmaxs, splitterWidth);
 
-            bmins += Geometry.PaddedMins;
-            bmaxs += Geometry.PaddedMins;
+            bmins += m_Geometry.PaddedMins;
+            bmaxs += m_Geometry.PaddedMins;
 
             canvas.DrawRectFilled(bmins, bmaxs, Color4::Orange());
         }
@@ -509,7 +509,7 @@ bool UIDockContainer::OnChildrenMouseButtonEvent(SMouseButtonEvent const& event,
     {
         m_DragPos = GUIManager->CursorPosition;
 
-        m_DragSplitter = m_Root->TraceSeparator(m_DragPos.X - Geometry.PaddedMins.X, m_DragPos.Y - Geometry.PaddedMins.Y);
+        m_DragSplitter = m_Root->TraceSeparator(m_DragPos.X - m_Geometry.PaddedMins.X, m_DragPos.Y - m_Geometry.PaddedMins.Y);
         if (m_DragSplitter)
         {
             if (m_DragSplitter->m_NodeType == UIDockNode::NODE_SPLIT_VERTICAL)
@@ -721,10 +721,10 @@ Float2 UIDockContainer::DockLayout::MeasureLayout(UIWidget* self, bool, bool, Fl
 
     Self->m_Root->UpdateRecursive(Float2(0.0f), paddedSize);
 
-    self->MeasuredSize.X = size.X;
-    self->MeasuredSize.Y = size.Y;
+    self->m_MeasuredSize.X = size.X;
+    self->m_MeasuredSize.Y = size.Y;
 
-    return self->MeasuredSize;
+    return self->m_MeasuredSize;
 }
 
 void UIDockContainer::DockLayout::ArrangeChildren(UIWidget*, bool, bool)
@@ -738,11 +738,11 @@ void UIDockContainer::DockLayout::ArrangeChildren(UIDockNode* node)
     {
         if (!node->m_LeafWidgets.IsEmpty())
         {
-            UIWidgetGeometry const& geometry = Self->Geometry;
+            UIWidgetGeometry const& geometry   = Self->m_Geometry;
             UIDockWidget* dockWidget = node->m_LeafWidgets[node->m_WidgetNum];
 
-            dockWidget->Geometry.Mins = geometry.PaddedMins + dockWidget->m_DockPosition;
-            dockWidget->Geometry.Maxs = dockWidget->Geometry.Mins + dockWidget->m_DockSize;
+            dockWidget->m_Geometry.Mins = geometry.PaddedMins + dockWidget->m_DockPosition;
+            dockWidget->m_Geometry.Maxs = dockWidget->m_Geometry.Mins + dockWidget->m_DockSize;
 
             //if ((dockWidget->Geometry.Mins.X < geometry.PaddedMaxs.X) && (dockWidget->Geometry.Mins.Y < geometry.PaddedMaxs.Y))
             {

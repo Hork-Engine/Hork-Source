@@ -39,16 +39,16 @@ void UIImage::AdjustSize(Float2 const& size)
 
     if (bAutoWidth && !bStretchedX && !bTiledX)
     {
-        AdjustedSize.X = Texture->GetDimensionX() * Scale.X - Padding.Left - Padding.Right;
-        if (AdjustedSize.X < 0)
-            AdjustedSize.X = 0;
+        m_AdjustedSize.X = Texture->GetDimensionX() * Scale.X - Padding.Left - Padding.Right;
+        if (m_AdjustedSize.X < 0)
+            m_AdjustedSize.X = 0;
     }
 
     if (bAutoHeight && !bStretchedY && !bTiledY)
     {
-        AdjustedSize.Y = Texture->GetDimensionY() * Scale.Y - Padding.Top - Padding.Bottom;
-        if (AdjustedSize.Y < 0)
-            AdjustedSize.Y = 0;
+        m_AdjustedSize.Y = Texture->GetDimensionY() * Scale.Y - Padding.Top - Padding.Bottom;
+        if (m_AdjustedSize.Y < 0)
+            m_AdjustedSize.Y = 0;
     }
 }
 
@@ -57,11 +57,11 @@ void UIImage::Draw(ACanvas& canvas)
     if (!Texture)
         return;
 
-    Float2 pos = Geometry.Mins;
+    Float2 pos = m_Geometry.Mins;
     Float2 size;
 
     if (bStretchedX)
-        size.X = (Geometry.Maxs.X - Geometry.Mins.X) * Scale.X;
+        size.X = (m_Geometry.Maxs.X - m_Geometry.Mins.X) * Scale.X;
     else
     {
         size.X = Texture->GetDimensionX() * Scale.X;
@@ -69,7 +69,7 @@ void UIImage::Draw(ACanvas& canvas)
     }
 
     if (bStretchedY)
-        size.Y = (Geometry.Maxs.Y - Geometry.Mins.Y) * Scale.Y;
+        size.Y = (m_Geometry.Maxs.Y - m_Geometry.Mins.Y) * Scale.Y;
     else
     {
         size.Y = Texture->GetDimensionY() * Scale.Y;
@@ -94,12 +94,12 @@ void UIImage::Draw(ACanvas& canvas)
         imageFlags |= CANVAS_IMAGE_NEAREST;
 
     CanvasPaint paint;
-    paint.ImagePattern(pos.X, pos.Y, size.X, size.Y, 0.0f, Texture, TintColor, imageFlags);
+    paint.ImagePattern(pos, size.X, size.Y, 0.0f, Texture, TintColor, imageFlags);
 
     auto prevComposite = canvas.CompositeOperation(Composite);
 
     canvas.BeginPath();
-    canvas.RoundedRectVarying(Geometry.Mins.X, Geometry.Mins.Y, Geometry.Maxs.X - Geometry.Mins.X, Geometry.Maxs.Y - Geometry.Mins.Y,
+    canvas.RoundedRectVarying(m_Geometry.Mins.X, m_Geometry.Mins.Y, m_Geometry.Maxs.X - m_Geometry.Mins.X, m_Geometry.Maxs.Y - m_Geometry.Mins.Y,
                               Rounding.RoundingTL,
                               Rounding.RoundingTR,
                               Rounding.RoundingBR,

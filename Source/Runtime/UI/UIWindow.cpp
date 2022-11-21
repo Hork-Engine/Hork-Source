@@ -68,15 +68,15 @@ Float2 UIWindow::WindowLayout::MeasureLayout(UIWidget* self, bool, bool, Float2 
         w->MeasureLayout(false, false, {paddedSize.X, height[i]});
     }
 
-    self->MeasuredSize.X = size.X;
-    self->MeasuredSize.Y = size.Y;
+    self->m_MeasuredSize.X = size.X;
+    self->m_MeasuredSize.Y = size.Y;
 
-    return self->MeasuredSize;
+    return self->m_MeasuredSize;
 }
 
 void UIWindow::WindowLayout::ArrangeChildren(UIWidget* self, bool, bool)
 {
-    UIWidgetGeometry& geometry = self->Geometry;
+    UIWidgetGeometry& geometry = self->m_Geometry;
 
     float x = geometry.PaddedMins.X;
     float y = geometry.PaddedMins.Y;
@@ -90,17 +90,17 @@ void UIWindow::WindowLayout::ArrangeChildren(UIWidget* self, bool, bool)
         if (w->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
             continue;
 
-        w->Geometry.Mins.X = x;
-        w->Geometry.Mins.Y = y;
+        w->m_Geometry.Mins.X = x;
+        w->m_Geometry.Mins.Y = y;
 
-        w->Geometry.Maxs = w->Geometry.Mins + w->MeasuredSize;
+        w->m_Geometry.Maxs = w->m_Geometry.Mins + w->m_MeasuredSize;
 
-        if ((w->Geometry.Mins.X >= geometry.PaddedMaxs.X) || (w->Geometry.Mins.Y >= geometry.PaddedMaxs.Y))
+        if ((w->m_Geometry.Mins.X >= geometry.PaddedMaxs.X) || (w->m_Geometry.Mins.Y >= geometry.PaddedMaxs.Y))
             continue;
 
         w->ArrangeChildren(false, false);
 
-        y = w->Geometry.Maxs.Y;
+        y = w->m_Geometry.Maxs.Y;
     }
 }
 
@@ -111,23 +111,23 @@ UIWindow::WINDOW_AREA UIWindow::HitTestWindowArea(float x, float y) const
     Float2       boxMins;
     Float2       boxMaxs;
 
-    boxMins = Geometry.Mins;
+    boxMins = m_Geometry.Mins;
     boxMaxs = boxMins + resizeBoxSize;
     if (BvPointInRect(boxMins, boxMaxs, x, y))
         return WA_TOP_LEFT;
 
-    boxMins = Float2(Geometry.Maxs.X - resizeBoxSize.X, Geometry.Mins.Y);
+    boxMins = Float2(m_Geometry.Maxs.X - resizeBoxSize.X, m_Geometry.Mins.Y);
     boxMaxs = boxMins + resizeBoxSize;
     if (BvPointInRect(boxMins, boxMaxs, x, y))
         return WA_TOP_RIGHT;
 
-    boxMins = Float2(Geometry.Mins.X, Geometry.Maxs.Y - resizeBoxSize.Y);
-    boxMaxs = Float2(Geometry.Mins.X + resizeBoxSize.X, Geometry.Maxs.Y);
+    boxMins = Float2(m_Geometry.Mins.X, m_Geometry.Maxs.Y - resizeBoxSize.Y);
+    boxMaxs = Float2(m_Geometry.Mins.X + resizeBoxSize.X, m_Geometry.Maxs.Y);
     if (BvPointInRect(boxMins, boxMaxs, x, y))
         return WA_BOTTOM_LEFT;
 
-    boxMins = Geometry.Maxs - resizeBoxSize;
-    boxMaxs = Geometry.Maxs;
+    boxMins = m_Geometry.Maxs - resizeBoxSize;
+    boxMaxs = m_Geometry.Maxs;
     if (BvPointInRect(boxMins, boxMaxs, x, y))
         return WA_BOTTOM_RIGHT;
 
@@ -137,10 +137,10 @@ UIWindow::WINDOW_AREA UIWindow::HitTestWindowArea(float x, float y) const
     if (y < borderHitWidth)
         return WA_TOP;
 
-    if (x > Geometry.Maxs.X - borderHitWidth)
+    if (x > m_Geometry.Maxs.X - borderHitWidth)
         return WA_RIGHT;
 
-    if (y > Geometry.Maxs.Y - borderHitWidth)
+    if (y > m_Geometry.Maxs.Y - borderHitWidth)
         return WA_BOTTOM;
 
     if (CaptionHitTest(x, y))
@@ -149,7 +149,7 @@ UIWindow::WINDOW_AREA UIWindow::HitTestWindowArea(float x, float y) const
     if (!HitTest(x, y))
         return WA_NONE;
 
-    if (BvPointInRect(Geometry.PaddedMins, Geometry.PaddedMaxs, x, y))
+    if (BvPointInRect(m_Geometry.PaddedMins, m_Geometry.PaddedMaxs, x, y))
         return WA_CLIENT;
 
     return WA_BACK;
@@ -157,16 +157,16 @@ UIWindow::WINDOW_AREA UIWindow::HitTestWindowArea(float x, float y) const
 
 bool UIWindow::CaptionHitTest(float x, float y) const
 {
-    if (!BvPointInRect(Geometry.Mins, Geometry.Maxs, x, y))
+    if (!BvPointInRect(m_Geometry.Mins, m_Geometry.Maxs, x, y))
         return false;
 
     if (CaptionHitShape)
     {
-        return CaptionHitShape->IsOverlap(Geometry, x, y);
+        return CaptionHitShape->IsOverlap(m_Geometry, x, y);
     }
 
     if (m_Caption)
-        return BvPointInRect(m_Caption->Geometry.Mins, m_Caption->Geometry.Maxs, x, y);
+        return BvPointInRect(m_Caption->m_Geometry.Mins, m_Caption->m_Geometry.Maxs, x, y);
     
     return false;
 }
@@ -180,17 +180,17 @@ void UIWindow::Draw(ACanvas& canvas)
 
         canvas.Push(CANVAS_PUSH_FLAG_RESET);
 
-        if (Parent)
-            canvas.Scissor(Parent->Geometry.PaddedMins, Parent->Geometry.PaddedMaxs);
+        if (m_Parent)
+            canvas.Scissor(m_Parent->m_Geometry.PaddedMins, m_Parent->m_Geometry.PaddedMaxs);
 
         RoundingDesc rounding(8,8,8,8);
 
         // Drop shadow
-        float x = Geometry.Mins.X;
-        float y = Geometry.Mins.Y;
-        float w = Geometry.Maxs.X - Geometry.Mins.X;
-        float h = Geometry.Maxs.Y - Geometry.Mins.Y;
-        shadowPaint.BoxGradient(x, y + 2, w, h, cornerRadius * 2, 10, MakeColorU8(0, 0, 0, 255), MakeColorU8(0, 0, 0, 0));
+        float x = m_Geometry.Mins.X;
+        float y = m_Geometry.Mins.Y;
+        float w = m_Geometry.Maxs.X - m_Geometry.Mins.X;
+        float h = m_Geometry.Maxs.Y - m_Geometry.Mins.Y;
+        shadowPaint.BoxGradient({x, y + 2}, w, h, cornerRadius * 2, 10, MakeColorU8(0, 0, 0, 255), MakeColorU8(0, 0, 0, 0));
         canvas.BeginPath();
         canvas.Rect(x - 10, y - 10, w + 20, h + 30);
         canvas.RoundedRectVarying(x, y, w, h, rounding.RoundingTL, rounding.RoundingTR, rounding.RoundingBR, rounding.RoundingBL);
@@ -209,7 +209,7 @@ UIWindow* UIMakeWindow(AStringView captionText, UIWidget* centralWidget)
     auto label = UINew(UILabel)
                      .WithText(UINew(UIText, captionText)
                                    .WithFontSize(16)
-                                   .WithWrap(true)
+                                   .WithWordWrap(true)
                                    .WithAlignment(TEXT_ALIGNMENT_HCENTER | TEXT_ALIGNMENT_VCENTER))
                      .WithBackground(UINew(UILinearGradient)
                                          .WithStartPoint({0, -5})

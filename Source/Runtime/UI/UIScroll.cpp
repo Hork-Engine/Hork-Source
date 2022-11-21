@@ -49,7 +49,7 @@ UIScroll::UIScroll(UIWidget* contentWidget) :
         Float2 MeasureLayout(UIWidget*, bool, bool, Float2 const& size) override
         {
             Self->DoMeasureLayout(size);
-            return Self->MeasuredSize;
+            return Self->m_MeasuredSize;
         }
 
         void ArrangeChildren(UIWidget*, bool, bool) override
@@ -85,8 +85,8 @@ void UIScroll::DoMeasureLayout(Float2 const& size)
         m_ContentWidget->MeasureLayout(true, true, {paddedSize.X, paddedSize.Y});
     }
 
-    m_ContentSize = m_ContentWidget->MeasuredSize;
-    MeasuredSize  = size;
+    m_ContentSize  = m_ContentWidget->m_MeasuredSize;
+    m_MeasuredSize = size;
 
     if (!m_bAutoHScroll)
         Padding.Right = scrollBarSizeWithPad;
@@ -238,6 +238,14 @@ void UIScroll::DoMeasureLayout(Float2 const& size)
     vsliderPos *= vscale;
     vsliderWidth *= vscale;
 
+    const int MIN_SLIDER_WIDTH = 10;
+
+    if (hsliderWidth < MIN_SLIDER_WIDTH)
+        hsliderWidth = MIN_SLIDER_WIDTH;
+
+    if (vsliderWidth < MIN_SLIDER_WIDTH)
+        vsliderWidth = MIN_SLIDER_WIDTH;
+
     m_HorizontalSliderMins.X = horizontalBarMins.X + hsliderPos;
     m_HorizontalSliderMins.Y = horizontalBarMins.Y;
 
@@ -255,31 +263,31 @@ void UIScroll::DoArrangeChildren()
 {
     if (m_ContentWidget->Visibility == UI_WIDGET_VISIBILITY_VISIBLE)
     {
-        m_ContentWidget->Geometry.Mins.X = Geometry.PaddedMins.X + m_ContentWidget->Position.X;
-        m_ContentWidget->Geometry.Mins.Y = Geometry.PaddedMins.Y + m_ContentWidget->Position.Y;
+        m_ContentWidget->m_Geometry.Mins.X = m_Geometry.PaddedMins.X + m_ContentWidget->Position.X;
+        m_ContentWidget->m_Geometry.Mins.Y = m_Geometry.PaddedMins.Y + m_ContentWidget->Position.Y;
 
-        m_ContentWidget->Geometry.Maxs = m_ContentWidget->Geometry.Mins + m_ContentWidget->MeasuredSize;
+        m_ContentWidget->m_Geometry.Maxs = m_ContentWidget->m_Geometry.Mins + m_ContentWidget->m_MeasuredSize;
 
-        if ((m_ContentWidget->Geometry.Mins.X < Geometry.PaddedMaxs.X) && (m_ContentWidget->Geometry.Mins.Y < Geometry.PaddedMaxs.Y))
+        if ((m_ContentWidget->m_Geometry.Mins.X < m_Geometry.PaddedMaxs.X) && (m_ContentWidget->m_Geometry.Mins.Y < m_Geometry.PaddedMaxs.Y))
         {
             m_ContentWidget->ArrangeChildren(true, true);
         }
     }
 
-    m_VerticalScrollbarMins += Geometry.Mins;
-    m_VerticalScrollbarMaxs += Geometry.Mins;
-    m_HorizontalScrollbarMins += Geometry.Mins;
-    m_HorizontalScrollbarMaxs += Geometry.Mins;
-    m_HorizontalSliderMins += Geometry.Mins;
-    m_HorizontalSliderMaxs += Geometry.Mins;
-    m_VerticalSliderMins += Geometry.Mins;
-    m_VerticalSliderMaxs += Geometry.Mins;
+    m_VerticalScrollbarMins += m_Geometry.Mins;
+    m_VerticalScrollbarMaxs += m_Geometry.Mins;
+    m_HorizontalScrollbarMins += m_Geometry.Mins;
+    m_HorizontalScrollbarMaxs += m_Geometry.Mins;
+    m_HorizontalSliderMins += m_Geometry.Mins;
+    m_HorizontalSliderMaxs += m_Geometry.Mins;
+    m_VerticalSliderMins += m_Geometry.Mins;
+    m_VerticalSliderMaxs += m_Geometry.Mins;
     if (m_bWithButtons)
     {
         for (int i = 0; i < 4; i++)
         {
-            m_ButtonMins[i] += Geometry.Mins;
-            m_ButtonMaxs[i] += Geometry.Mins;
+            m_ButtonMins[i] += m_Geometry.Mins;
+            m_ButtonMaxs[i] += m_Geometry.Mins;
         }
     }   
 }

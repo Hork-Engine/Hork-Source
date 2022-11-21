@@ -55,7 +55,7 @@ void UIButton::AdjustSize(Float2 const& size)
     if (!m_Text)
         return;
 
-    bool autoW = bAutoWidth && !m_Text->bWrap;
+    bool autoW = bAutoWidth && !m_Text->IsWordWrapEnabled();
     bool autoH = bAutoHeight;
 
     if (!autoW && !autoH)
@@ -70,9 +70,9 @@ void UIButton::AdjustSize(Float2 const& size)
     Float2 boxSize = m_Text->GetTextBoxSize(breakRowWidth);
 
     if (autoW)
-        AdjustedSize.X = boxSize.X;// + Padding.Left + Padding.Right;
+        m_AdjustedSize.X = boxSize.X;
     if (autoH)
-        AdjustedSize.Y = boxSize.Y;// + Padding.Top + Padding.Bottom;
+        m_AdjustedSize.Y = boxSize.Y;
 }
 
 void UIButton::Draw(ACanvas& canvas)
@@ -84,22 +84,22 @@ void UIButton::Draw(ACanvas& canvas)
         switch (drawType)
         {
             case DRAW_INACTIVE:
-                m_Decorator->DrawInactive(canvas, Geometry);
+                m_Decorator->DrawInactive(canvas, m_Geometry);
                 break;
             case DRAW_ACTIVE:
-                m_Decorator->DrawActive(canvas, Geometry);
+                m_Decorator->DrawActive(canvas, m_Geometry);
                 break;
             case DRAW_HOVERED:
-                m_Decorator->DrawHovered(canvas, Geometry);
+                m_Decorator->DrawHovered(canvas, m_Geometry);
                 break;
             case DRAW_DISABLED:
-                m_Decorator->DrawDisabled(canvas, Geometry);
+                m_Decorator->DrawDisabled(canvas, m_Geometry);
                 break;
         }
     }
 
     if (m_Text)
-        m_Text->Draw(canvas, Geometry.PaddedMins, Geometry.PaddedMaxs);
+        m_Text->Draw(canvas, m_Geometry.PaddedMins, m_Geometry.PaddedMaxs);
 }
 
 void UIButton::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)

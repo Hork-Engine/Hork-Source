@@ -32,113 +32,13 @@ SOFTWARE.
 
 #include <Containers/Vector.h>
 #include <Renderer/RenderDefs.h>
-#include "Font.h"
+#include <Runtime/Font.h>
+
+#include "Paint.h"
+#include "Transform2D.h"
 
 class ACameraComponent;
 class ARenderingParameters;
-
-/**
-Paints
-
-Supported four types of paints: linear gradient, box gradient, radial gradient and image pattern.
-These can be used as paints for strokes and fills.
-*/
-struct CanvasPaint
-{
-    float              Xform[6];
-    float              Extent[2];
-    float              Radius{};
-    float              Feather{};
-    Color4             InnerColor;
-    Color4             OuterColor;
-    RenderCore::ITexture* pTexture{};
-    CANVAS_IMAGE_FLAGS ImageFlags = CANVAS_IMAGE_DEFAULT;
-
-    /** Creates and returns a linear gradient. Parameters (sx,sy)-(ex,ey) specify the start and end coordinates
-    of the linear gradient, icol specifies the start color and ocol the end color.
-    The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint(). */
-    CanvasPaint& LinearGradient(float sx, float sy, float ex, float ey, Color4 const& icol, Color4 const& ocol);
-
-    /** Creates and returns a radial gradient. Parameters (cx,cy) specify the center, inr and outr specify
-    the inner and outer radius of the gradient, icol specifies the start color and ocol the end color.
-    The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint(). */
-    CanvasPaint& RadialGradient(float cx, float cy, float inr, float outr, Color4 const& icol, Color4 const& ocol);
-
-    /** Creates and returns a box gradient. Box gradient is a feathered rounded rectangle, it is useful for rendering
-    drop shadows or highlights for boxes. Parameters (x,y) define the top-left corner of the rectangle,
-    (w,h) define the size of the rectangle, r defines the corner radius, and f feather. Feather defines how blurry
-    the border of the rectangle is. Parameter icol specifies the inner color and ocol the outer color of the gradient.
-    The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint(). */
-    CanvasPaint& BoxGradient(float x, float y, float w, float h, float r, float f, Color4 const& icol, Color4 const& ocol);
-
-    /** Creates and returns an image patter. Parameters (x,y) specify the left-top location of the image pattern,
-    (w,h) the size of one image, angle rotation around the top-left corner, texture is handle to the image to render.
-    The gradient is transformed by the current transform when it is passed to FillPaint() or StrokePaint(). */
-    CanvasPaint& ImagePattern(float x, float y, float w, float h, float angle, ATexture* texture, Color4 const& tintColor, CANVAS_IMAGE_FLAGS imageFlags = CANVAS_IMAGE_DEFAULT);
-
-    CanvasPaint& Solid(Color4 const& color);
-};
-
-struct CanvasTransform
-{
-    float Matrix[6];
-
-    CanvasTransform()
-    {
-        SetIdentity();
-    }
-
-    /**
-    The parameters are interpreted as matrix as follows:
-       [a c e]
-       [b d f]
-       [0 0 1]
-    */
-    CanvasTransform(float a, float b, float c, float d, float e, float f)
-    {
-        Matrix[0] = a;
-        Matrix[1] = b;
-        Matrix[2] = c;
-        Matrix[3] = d;
-        Matrix[4] = e;
-        Matrix[5] = f;
-    }
-
-    CanvasTransform& SetIdentity();
-
-    /** Sets the transform to translation matrix matrix. */
-    CanvasTransform& Translate(float tx, float ty);
-
-    /** Sets the transform to scale matrix. */
-    CanvasTransform& Scale(float sx, float sy);
-
-    /** Sets the transform to rotate matrix. Angle is specified in radians. */
-    CanvasTransform& Rotate(float a);
-
-    /** Sets the transform to skew-x matrix. Angle is specified in radians. */
-    CanvasTransform& SkewX(float a);
-
-    /** Sets the transform to skew-y matrix. Angle is specified in radians. */
-    CanvasTransform& SkewY(float a);
-
-    /** Sets the transform to the result of multiplication of two transforms, of A = A*B. */
-    CanvasTransform& operator*=(CanvasTransform const& rhs);
-
-    /** Sets the transform to the result of multiplication of two transforms, of A = B*A. */
-    CanvasTransform& Premultiply(CanvasTransform const& rhs);
-
-    /** Returns inversed transform. */
-    CanvasTransform Inversed() const;
-
-    /** Transform a point */
-    Float2 TransformPoint(Float2 const& p) const;
-};
-
-struct NVGcontext;
-struct NVGpaint;
-struct NVGscissor;
-struct NVGvertex;
-struct NVGpath;
 
 enum CANVAS_PUSH_FLAG
 {
@@ -274,6 +174,48 @@ enum DRAW_CURSOR
     DRAW_CURSOR_RESIZE_HAND
 };
 
+struct VGPoint
+{
+    float         x, y;
+    float         dx, dy;
+    float         len;
+    float         dmx, dmy;
+    unsigned char flags;
+};
+
+struct VGPath
+{
+    int           First;
+    int           Count;
+    bool          bClosed;
+    int           NumBevel;
+    CanvasVertex* Fill;
+    int           NumFill;
+    CanvasVertex* Stroke;
+    int           NumStroke;
+    int           Winding;
+    bool          bConvex;
+};
+
+struct VGPathCache
+{
+    TVector<VGPoint>      Points;
+    TVector<VGPath>       Paths;
+    TVector<CanvasVertex> Verts;
+    float                 Bounds[4];
+    float                 DistTol;
+
+    VGPathCache();
+
+    void Clear();
+
+    VGPath* AddPath();
+
+    void AddPoint(float x, float y, int flags);
+
+    CanvasVertex* AllocVerts(int nverts);
+};
+
 class ACanvas
 {
     HK_FORBID_COPY(ACanvas)
@@ -293,7 +235,7 @@ public:
     /** Clears drawing data. */
     void ClearDrawData();
 
-    CanvasDrawData const* GetDrawData() const { return &m_DrawData; }
+    CanvasDrawData const* GetDrawData() const;
 
     AViewportList const& GetViewports() { return m_Viewports; }
 
@@ -335,6 +277,10 @@ public:
     transform space. The resulting shape is always rectangle.
     */
     void IntersectScissor(Float2 const& mins, Float2 const& maxs);
+
+    void GetIntersectedScissor(float x, float y, float w, float h, float* px, float* py, float* pw, float* ph);
+
+    void GetIntersectedScissor(Float2 const& mins, Float2 const& maxs, Float2& resultMins, Float2& resultMaxs);
 
     /** Reset and disables scissoring. */
     void ResetScissor();
@@ -414,14 +360,8 @@ public:
     /** Resets current transform to a identity matrix. */
     void ResetTransform();
 
-    /**
-    Premultiplies current coordinate system by specified matrix.
-    The parameters are interpreted as matrix as follows:
-       [a c e]
-       [b d f]
-       [0 0 1]
-    */
-    void Transform(CanvasTransform const& transform);
+    /** Premultiplies current coordinate system by specified matrix. */
+    void Transform(Transform2D const& transform);
 
     /** Translates current coordinate system. */
     void Translate(float x, float y);
@@ -438,11 +378,8 @@ public:
     /** Scales the current coordinate system. */
     void Scale(float x, float y);
 
-    /** Stores the top part (a-f) of the current transformation matrix in to the specified buffer.
-       [a c e]
-       [b d f]
-       [0 0 1] */
-    CanvasTransform CurrentTransform();
+    /** Current coordinate system (transformation) */
+    Transform2D const& CurrentTransform();
 
     //
     // Paths
@@ -525,12 +462,11 @@ public:
 
     /** Draws text string at specified location. */
     float Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAGS flags, AStringView string);
-
-    /** Draws text char at specified location. */
-    void TextWideChar(FontStyle const& style, float x, float y, WideChar ch);
+    float Text(FontStyle const& style, float x, float y, TEXT_ALIGNMENT_FLAGS flags, AWideStringView string);
 
     /** Draws multi-line text string at specified box.*/
     void TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, AStringView text);
+    void TextBox(FontStyle const& style, Float2 const& mins, Float2 const& maxs, TEXT_ALIGNMENT_FLAGS flags, bool bWrap, AWideStringView text);
 
     //
     // Utilites
@@ -565,11 +501,54 @@ public:
     void DrawCursor(DRAW_CURSOR cursor, Float2 const& position, Color4 const& fillColor = Color4::White(), Color4 const& borderColor = Color4::Black(), bool bShadow = true);
 
 private:
-    void RenderFill(NVGpaint* paint, CANVAS_COMPOSITE composite, NVGscissor* scissor, float fringe, const float* bounds, const NVGpath* paths, int npaths);
+    struct VGScissor
+    {
+        Transform2D Xform;
+        float       Extent[2];
+    };
 
-    void RenderStroke(NVGpaint* paint, CANVAS_COMPOSITE composite, NVGscissor* scissor, float fringe, float strokeWidth, const NVGpath* paths, int npaths);
+    struct VGState
+    {
+        CANVAS_COMPOSITE CompositeOperation;
+        bool             bShapeAntiAlias;
+        CanvasPaint      Fill;
+        CanvasPaint      Stroke;
+        float            StrokeWidth;
+        float            MiterLimit;
+        CANVAS_LINE_JOIN LineJoin;
+        CANVAS_LINE_CAP  LineCap;
+        float            Alpha;
+        Transform2D      Xform;
+        VGScissor        Scissor;
+        AFont*           Font;
+    };
 
-    void RenderTriangles(NVGpaint* paint, CANVAS_COMPOSITE composite, NVGscissor* scissor, const NVGvertex* verts, int nverts, float fringe);
+    void FlattenPaths();
+    void TesselateBezier(float x1,
+                         float y1,
+                         float x2,
+                         float y2,
+                         float x3,
+                         float y3,
+                         float x4,
+                         float y4,
+                         int   level,
+                         int   type);
+    void CalculateJoins(float w, CANVAS_LINE_JOIN lineJoin, float miterLimit);
+    int  ExpandStroke(float w, float fringe, CANVAS_LINE_CAP lineCap, CANVAS_LINE_JOIN lineJoin, float miterLimit);
+    int  ExpandFill(float w, CANVAS_LINE_JOIN lineJoin, float miterLimit);
+
+    void ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor const& scissor, float width, float fringe, float strokeThr);
+
+    void RenderFill(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGScissor const& scissor, float fringe, const float* bounds);
+
+    void RenderStroke(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGScissor const& scissor, float fringe, float strokeWidth);
+
+    void RenderTriangles(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGScissor const& scissor, const CanvasVertex* verts, int nverts, float fringe);
+
+    void RenderText(CanvasVertex* verts, int nverts);
+
+    void AppendCommands(float const* vals, int nvals);
 
     CanvasDrawCmd* AllocDrawCommand();
 
@@ -579,21 +558,35 @@ private:
 
     int AllocUniforms(int n);
 
+    VGState* GetState();
+
     CanvasUniforms* GetUniformPtr(int i);
 
-    uint32_t         m_Width{};
-    uint32_t         m_Height{};
-    NVGcontext*      m_Context{};
-    CanvasDrawData   m_DrawData;
-    TRef<AFontStash> m_FontStash;
-    AViewportList    m_Viewports;
+    uint32_t                 m_Width{};
+    uint32_t                 m_Height{};
+    TVector<VGState>         m_States;
+    int                      m_NumStates{};
+    CanvasDrawData           m_DrawData;
+    mutable TRef<AFontStash> m_FontStash;
+    AViewportList            m_Viewports;
+    TVector<float>           m_Commands;
+    Float2                   m_CommandPos;
+    VGPathCache              m_PathCache;
+    float                    m_TessTol{};
+    float                    m_DistTol{};
+    float                    m_FringeWidth{};
+    float                    m_DevicePxRatio{};
+    int                      m_DrawCallCount{};
+    int                      m_FillTriCount{};
+    int                      m_StrokeTriCount{};
+    int                      m_TextTriCount{};
+    TRef<ATexture>           m_Cursors;
+    mutable bool             m_bUpdateFontTexture{};
 
     // Flag indicating if geoemtry based anti-aliasing is used (may not be needed when using MSAA).
-    bool             m_bEdgeAntialias;
+    bool m_bEdgeAntialias{};
 
     // Flag indicating if strokes should be drawn using stencil buffer. The rendering will be a little
     // slower, but path overlaps (i.e. self-intersecting or sharp turns) will be drawn just once.
-    bool             m_bStencilStrokes;
-
-    TRef<ATexture>   m_Cursors;
+    bool m_bStencilStrokes{};
 };

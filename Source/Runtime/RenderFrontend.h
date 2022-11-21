@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include <Renderer/RenderDefs.h>
 #include "DebugRenderer.h"
-#include "Canvas.h"
+#include "Canvas/Canvas.h"
 #include "IndexedMesh.h"
 #include "World.h"
 #include "Terrain.h"

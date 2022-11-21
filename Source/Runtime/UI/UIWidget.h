@@ -121,21 +121,21 @@ public:
     TRef<UIHitShape>    HitShape;
     TRef<UICursor>      Cursor;
     TRef<UIShareInputs> ShareInputs;
-    //TRef<UIWidget>     Tooltip; // TODO
-    //flota              TooltipTime = 0.1f; // TODO
+    TRef<UIWidget>     Tooltip;
+    float              TooltipTime = 0.1f;
 
-    // Internal
-    TWeakRef<UIWidget> Parent;
-    TVector<UIWidget*> Children;
-    TVector<UIWidget*> LayoutSlots;
-    UIDesktop*         Desktop{};
-    Float2             AdjustedSize;
-    Float2             MeasuredSize;
-    UIWidgetGeometry   Geometry;
-    int                VisFrame = 0;
+    TEvent<bool> E_OnHovered;
 
+public:
     UIWidget();
     ~UIWidget();
+
+    template <typename T, typename... TArgs>
+    UIWidget& WithOnHovered(T* object, void (T::*method)(TArgs...))
+    {
+        E_OnHovered.Add(object, method);
+        return *this;
+    }
 
     UIWidget& WithVisibility(UI_WIDGET_VISIBILITY visibility)
     {
@@ -289,19 +289,19 @@ public:
         return *this;
     }
 
-    // TODO
-    //UIWidget& WithTooltip(UIWidget* tooltip)
-    //{
-    //    Tooltip = tooltip;
-    //    return *this;
-    //}
+    UIWidget& WithTooltip(UIWidget* tooltip)
+    {
+        Tooltip = tooltip;
+        return *this;
+    }
 
-    // TODO
-    //UIWidget& WithTooltipTime(float tooltipTime)
-    //{
-    //    TooltipTime = tooltipTime;
-    //    return *this;
-    //}
+    UIWidget& WithTooltipTime(float tooltipTime)
+    {
+        TooltipTime = tooltipTime;
+        return *this;
+    }
+
+    UIWidget& SetFocus();
 
     UIWidget& SetVisible()
     {
@@ -335,6 +335,10 @@ public:
     /** Is widget collapsed */
     bool IsCollapsed() const { return Visibility == UI_WIDGET_VISIBILITY_COLLAPSED; }
 
+    bool HasFocus() const;
+
+    virtual bool IsDisabled() const;
+
     /** Helper. Add a child widget */
     UIWidget& operator[](UIWidget* widget)
     {
@@ -349,25 +353,21 @@ public:
 
     UIWidget* GetMaster();
 
-    void UpdateVisibility();
+    UIWidget* GetParent();
+
+    UIDesktop* GetDesktop() const;
 
     UIWidget* Trace(float x, float y);
 
     bool HitTest(float x, float y) const;
 
-    UIDesktop* GetDesktop();
+    TVector<UIWidget*> const& GetChildren() const { return m_Children; }
+
+    void ScrollSelfDelta(float delta);
+
+    bool ShouldSetFocusOnAddToDesktop() const { return m_bSetFocusOnAddToDesktop; }
 
     void Draw(ACanvas& canvas, Float2 const& clipMins, Float2 const& clipMaxs, float alpha);
-
-    void DrawBackground(ACanvas& canvas);
-    void DrawForeground(ACanvas& canvas);
-
-    virtual bool IsDisabled() const
-    {
-        if (bDisabled)
-            return true;
-        return Parent ? Parent->IsDisabled() : false;
-    }
 
     void ForwardKeyEvent(struct SKeyEvent const& event, double timeStamp);
 
@@ -394,16 +394,6 @@ public:
     Float2 MeasureLayout(bool bAllowAutoWidth, bool bAllowAutoHeight, Float2 const& size);
 
     void ArrangeChildren(bool bAllowAutoWidth, bool bAllowAutoHeight);
-
-    virtual void AdjustSize(Float2 const& size)
-    {
-        AdjustedSize.X = Math::Max(0.0f, size.X - Padding.Left - Padding.Right);
-        AdjustedSize.Y = Math::Max(0.0f, size.Y - Padding.Top - Padding.Bottom);
-    }
-
-    void ScrollSelfDelta(float delta);
-
-    class UIScroll* FindScrollWidget();
 
 protected:
     virtual void OnKeyEvent(struct SKeyEvent const& event, double timeStamp);
@@ -436,8 +426,32 @@ protected:
 
     virtual void PostDraw(ACanvas& _Canvas);
 
+    virtual void AdjustSize(Float2 const& size);
+
     void DrawBrush(ACanvas& canvas, UIBrush* brush);
 
 private:
+    void DrawBackground(ACanvas& canvas);
+    void DrawForeground(ACanvas& canvas);
+
     bool OverrideMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp);
+
+    void UpdateVisibility();
+
+    class UIScroll* FindScrollWidget();
+
+protected:
+    TWeakRef<UIWidget> m_Parent;
+
+public:
+    TVector<UIWidget*> m_Children;
+    TVector<UIWidget*> m_LayoutSlots;
+    UIDesktop*         m_Desktop{};
+    Float2             m_AdjustedSize;
+    Float2             m_MeasuredSize;
+    UIWidgetGeometry   m_Geometry;
+
+private:
+    int  m_VisFrame = 0;
+    bool m_bSetFocusOnAddToDesktop{};
 };

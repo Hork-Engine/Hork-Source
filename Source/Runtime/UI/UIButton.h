@@ -67,7 +67,7 @@ public:
     {
         if (m_Action ? m_Action->bDisabled : bDisabled)
             return true;
-        return Parent ? Parent->IsDisabled() : false;
+        return m_Parent ? m_Parent->IsDisabled() : false;
     }
 
 protected:

@@ -37,25 +37,15 @@ class UIText : public UIObject
     UI_CLASS(UIText, UIObject)
 
 public:
-    AString           Text;
-    TRef<AFont>       Font;
-    float             FontSize = 14;
-    float             FontBlur = 0;
-    float             LetterSpacing = 0;
-    float             LineHeight = 1; // The line height is specified as multiple of font size.
-    TEXT_ALIGNMENT_FLAGS AlignmentFlags = TEXT_ALIGNMENT_LEFT | TEXT_ALIGNMENT_TOP;
-    Color4            Color;
-    Float2            ShadowOffset = Float2(2,2);
-    float             ShadowBlur   = 2;
-    bool              bWrap        = false;
-    bool              bDropShadow  = true;
+    // NOTE If you change the text in place, you must call ApplyTextChanges() after making the change.
+    AString Text;
 
     UIText() = default;
 
     UIText(AStringView text, AFont* font = nullptr, float fontSize = 14) :
         Text(text),
-        Font(font),
-        FontSize(fontSize)
+        m_Font(font),
+        m_FontSize(fontSize)
     {}
 
     UIText& WithText(AStringView text)
@@ -66,71 +56,98 @@ public:
 
     UIText& WithFont(AFont* font)
     {
-        Font = font;
+        m_Font = font;
+        ApplyTextChanges();
         return *this;
     }
 
     UIText& WithFontSize(float fontSize)
     {
-        FontSize = fontSize;
+        m_FontSize = fontSize;
+        ApplyTextChanges();
         return *this;
     }
 
     UIText& WithFontBlur(float fontBlur)
     {
-        FontBlur = fontBlur;
+        m_FontBlur = fontBlur;
+        ApplyTextChanges();
         return *this;
     }
 
     UIText& WithLetterSpacing(float letterSpacing)
     {
-        LetterSpacing = letterSpacing;
+        m_LetterSpacing = letterSpacing;
+        ApplyTextChanges();
         return *this;
     }
 
     UIText& WithLineHeight(float lineHeight)
     {
-        LineHeight = lineHeight;
+        m_LineHeight = lineHeight;
+        ApplyTextChanges();
         return *this;
     }
 
     UIText& WithAlignment(TEXT_ALIGNMENT_FLAGS alignment)
     {
-        AlignmentFlags = alignment;
+        m_AlignmentFlags = alignment;
         return *this;
     }
 
     UIText& WithColor(Color4 const& color)
     {
-        Color = color;
+        m_Color = color;
         return *this;
     }
 
     UIText& WithShadowOffset(Float2 const& shadowOffset)
     {
-        ShadowOffset = shadowOffset;
+        m_ShadowOffset = shadowOffset;
         return *this;
     }
 
     UIText& WithShadowBlur(float shadowBlur)
     {
-        ShadowBlur = shadowBlur;
+        m_ShadowBlur = shadowBlur;
         return *this;
     }
 
-    UIText& WithWrap(bool wrap)
+    UIText& WithWordWrap(bool wrap)
     {
-        bWrap = wrap;
+        m_bWordWrap = wrap;
         return *this;
     }
 
     UIText& WithDropShadow(bool dropShadow)
     {
-        bDropShadow = dropShadow;
+        m_bDropShadow = dropShadow;
         return *this;
     }
+
+    bool IsWordWrapEnabled() const
+    {
+        return m_bWordWrap;
+    }
+
+    void ApplyTextChanges();
 
     Float2 GetTextBoxSize(float breakRowWidth) const;
 
     void Draw(ACanvas& canvas, Float2 const& boxMins, Float2 const& boxMaxs);
+
+private:
+    TRef<AFont>          m_Font;
+    float                m_FontSize     = 14;
+    float                m_FontBlur     = 0;
+    float                m_LetterSpacing = 0;
+    float                m_LineHeight    = 1; // The line height is specified as multiple of font size.
+    TEXT_ALIGNMENT_FLAGS m_AlignmentFlags = TEXT_ALIGNMENT_LEFT | TEXT_ALIGNMENT_TOP;
+    Color4               m_Color;
+    Float2               m_ShadowOffset = Float2(2, 2);
+    float                m_ShadowBlur   = 2;
+    bool                 m_bWordWrap    = false;
+    bool                 m_bDropShadow  = true;
+    mutable Float2       m_CachedSize;
+    mutable float        m_BreakRowWidth{-1};
 };

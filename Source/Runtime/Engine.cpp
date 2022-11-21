@@ -37,7 +37,7 @@ SOFTWARE.
 #include "Actor.h"
 #include "PlayerController.h"
 #include "InputComponent.h"
-#include "Canvas.h"
+#include "Canvas/Canvas.h"
 #include "World.h"
 
 #include <Platform/Logger.h>
@@ -547,7 +547,7 @@ void AEngine::ShowStats()
         fps *= (1.0f / FPS_BUF);
         fps = 1.0f / (fps > 0.0f ? fps : 1.0f);
         FontStyle fontStyle;
-        fontStyle.FontSize = 24;
+        fontStyle.FontSize = 14;
         m_Canvas->FontFace(font);
         m_Canvas->DrawText(fontStyle, Float2(10, 30), Color4::White(), fmt("Frame time {:.1f} ms (FPS: {}, AVG {})", m_FrameDurationInSeconds * 1000.0f, int(1.0f / m_FrameDurationInSeconds), int(fps + 0.5f)), true);
     }

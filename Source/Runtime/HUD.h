@@ -43,7 +43,7 @@ class AHUD : public AActor
     friend class APlayerController;
 
 public:
-    void Draw(ACanvas* _Canvas, int _X, int _Y, int _W, int _H);
+    void Draw(ACanvas& _Canvas, int _X, int _Y, int _W, int _H);
 
     int GetViewportX() const { return ViewportX; }
     int GetViewportY() const { return ViewportY; }
@@ -55,10 +55,9 @@ public:
 protected:
     AHUD();
 
-    virtual void DrawHUD();
+    virtual void DrawHUD(ACanvas& _Canvas);
 
     // Read only
-    ACanvas* Canvas    = nullptr;
     int      ViewportX = 0;
     int      ViewportY = 0;
     int      ViewportW = 0;

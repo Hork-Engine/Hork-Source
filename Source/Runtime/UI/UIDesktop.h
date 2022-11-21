@@ -37,31 +37,40 @@ class UIDesktop : public UIObject
 {
     UI_CLASS(UIDesktop, UIObject)
 
-public:
-    TRef<UIBrush> Background;
+    friend class UIManager;
+    friend class UIWidget;
 
+public:
     UIDesktop();
     virtual ~UIDesktop();
 
-    void SetDragWidget(UIWidget* widget);
+    void SetWallpaper(UIBrush* brush)
+    {
+        m_Wallpaper = brush;
+    }
 
     void SetShortcuts(UIShortcutContainer* shortcutContainer);
 
+    void SetDragWidget(UIWidget* widget);
+
+    void SetFocusWidget(UIWidget* widget);
+
     void SetFullscreenWidget(UIWidget* widget);
+
+    void OpenPopupWidget(UIWidget* widget, Float2 const& position);
+
+    void ClosePopupWidget();
 
     void AddWidget(UIWidget* widget);
 
     void RemoveWidget(UIWidget* widget);
 
+    UIWidget* GetFocusWidget() const { return m_FocusWidget; }
+
     UIWidget* Trace(float x, float y);
 
+private:
     void UpdateGeometry(float w, float h);
-
-//    void SetTopWidget(UIWidget* widget);
-
-    void SetFocusWidget(UIWidget* widget);
-
-    void ExecuteEvents();
 
     void Draw(ACanvas& cv);
 
@@ -79,35 +88,27 @@ public:
 
     void GenerateCharEvents(struct SCharEvent const& event, double timeStamp);
 
+    void StartDragging(UIWidget* widget);
+
     void CancelDragging();
-
-
-//private:
 
     UIWidget* GetExclusive();
 
     bool HandleDraggingWidget();
 
-//private:
-    void StartDragWidget(UIWidget* widget);
-
-    UIWidgetGeometry      m_Geometry;
-    TVector<UIWidget*>    m_Widgets;
-
-    TRef<UIWidget>      m_MouseFocusWidget;
-    TWeakRef<UIWidget>    m_FocusWidget;
-
+    UIWidgetGeometry          m_Geometry;
+    TVector<UIWidget*>        m_Widgets;
+    TWeakRef<UIWidget>        m_FocusWidget;
+    TRef<UIWidget>            m_MouseFocusWidget;
+    TRef<UIWidget>            m_Popup;
+    TRef<UIWidget>            m_PendingDrag;
+    TRef<UIWidget>            m_FullscreenWidget;
+    TRef<UIWidget>            m_DraggingWidget;
+    TRef<UIWidget>            m_MouseClickWidget;
     TRef<UIShortcutContainer> m_ShortcutContainer;
-
-    TRef<UIWidget> m_PendingDrag;
-
-
-        //TRef<WMenuPopup>           m_Popup;
-    TRef<UIWidget>                 m_FullscreenWidget;
-    TRef<UIWidget>              m_DraggingWidget;
-    TRef<UIWidget>              m_MouseClickWidget;
-    uint64_t                       m_MouseClickTime{};
-    Float2                         m_MouseClickPos{};
-    Float2                         m_DraggingCursor{};
-    Float2                         m_DraggingWidgetPos{};
+    TRef<UIBrush>             m_Wallpaper;
+    uint64_t                  m_MouseClickTime{};
+    Float2                    m_MouseClickPos{};
+    Float2                    m_DraggingCursor{};
+    Float2                    m_DraggingWidgetPos{};
 };

@@ -31,7 +31,7 @@ SOFTWARE.
 #pragma once
 
 #include "UIObject.h"
-#include <Runtime/Canvas.h>
+#include <Runtime/Canvas/Canvas.h>
 #include <Containers/ArrayView.h>
 
 class UIBrush : public UIObject

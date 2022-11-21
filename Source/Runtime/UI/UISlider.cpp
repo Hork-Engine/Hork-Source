@@ -87,8 +87,8 @@ UISlider& UISlider::SetStep(float step)
 
 void UISlider::UpdateSliderGeometry()
 {
-    Float2 const& mins = Geometry.Mins;
-    Float2 const& maxs = Geometry.Maxs;
+    Float2 const& mins = m_Geometry.Mins;
+    Float2 const& maxs = m_Geometry.Maxs;
 
     Platform::ZeroMem(&m_SliderGeometry, sizeof(m_SliderGeometry));
 

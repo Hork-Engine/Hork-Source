@@ -39,18 +39,17 @@ class UITextEdit : public UIWidget
 {
     UI_CLASS(UITextEdit, UIWidget)
 
-    friend class UITextEditProxy;
-
 public:
-    TEvent<WideChar const*> E_OnEnterPress;
+    TEvent<AWideStringView> E_OnEnterPress;
     TEvent<>                E_OnEscapePress;
-    TEvent<WideChar const*> E_OnTyping;
+    TEvent<AWideStringView> E_OnTyping;
 
     UITextEdit();
     ~UITextEdit();
 
-    UITextEdit& WithText(const char* text);
-    UITextEdit& WithText(const WideChar* text);
+    UITextEdit& WithText(AStringView text);
+    UITextEdit& WithText(AWideStringView text);
+    UITextEdit& WithWordWrap(bool bWordWrap);
     UITextEdit& WithFont(AFont* font);
     UITextEdit& WithFontSize(float size);
     UITextEdit& WithMaxChars(int maxChars);
@@ -126,11 +125,7 @@ public:
 
     void ScrollToCursor();
 
-    WideChar* GetText() { return m_TextData.ToPtr(); }
-
-    WideChar const* GetText() const { return m_TextData.ToPtr(); }
-
-    int GetTextLength() const;
+    AWideString const& GetText() const { return m_Text; }
 
     int GetCursorPosition() const;
 
@@ -141,6 +136,16 @@ public:
     AFont* GetFont() const;
 
     float GetFontSize() const;
+
+    bool InsertChars(int offset, AWideStringView text);
+
+    void DeleteChars(int first, int count);
+
+    int  FindRow(int cursor);
+    TextRowW const* GetRows() { return m_Rows.ToPtr(); }
+    size_t          NumRows() const { return m_Rows.Size(); }
+
+    int LocateCoord(float x, float y);
 
     // FUTURE:
     // UITextEdit& WithSyntaxHighlighter(ISyntaxHighlighter * syntaxHighlighterInterface);
@@ -171,33 +176,33 @@ protected:
     void AdjustSize(Float2 const& size) override;
 
 private:
-    void     PressKey(int key);
-    bool     FilterCharacter(WideChar& ch);
-    void     UpdateWidgetSize();
-    bool     InsertCharsProxy(int offset, WideChar const* text, int textLength);
-    void     DeleteCharsProxy(int first, int count);
-    bool     FindLineStartEnd(int cursor, WideChar** lineStart, WideChar** lineEnd);
+    void            PressKey(int key);
+    bool            FilterCharacter(WideChar& ch);
     class UIScroll* GetScroll();
+    void            UpdateRows();
+    Float2          CalcCursorOffset(int cursor);
 
-    TRef<AFont>          m_Font;
-    TPodVector<WideChar> m_TextData;
-    FontStyle            m_FontStyle;
-    Color4               m_TextColor;
-    Color4               m_SelectionColor;
-    int                  m_CurTextLength;
-    int                  m_MaxChars;
-    int                  m_CharacterFilter;
-    int                  m_InsertSpacesOnTab;
-    STB_TexteditState*   m_Stb;
-    int                  m_TempCursor;
-    Float2               m_CurSize;
-    bool                 m_bSingleLine : 1;
-    bool                 m_bReadOnly : 1;
-    bool                 m_bPassword : 1;
-    bool                 m_bCtrlEnterForNewLine : 1;
-    bool                 m_bAllowTabInput : 1;
-    bool                 m_bAllowUndo : 1;
-    bool                 m_bCustomCharFilter : 1;
-    bool                 m_bStartDragging : 1;
-    bool                 m_bShouldKeepSelection : 1;
+    TRef<AFont>        m_Font;
+    AWideString        m_Text;
+    TVector<TextRowW>  m_Rows;
+    FontStyle          m_FontStyle;
+    Color4             m_TextColor;
+    Color4             m_SelectionColor;
+    int                m_MaxChars;
+    int                m_CharacterFilter;
+    int                m_InsertSpacesOnTab;
+    STB_TexteditState* m_State;
+    int                m_TempCursor;
+    int                m_PrevCursorPos = -1;
+    Float2             m_CurSize;
+    bool               m_bSingleLine : 1;
+    bool               m_bReadOnly : 1;
+    bool               m_bPassword : 1;
+    bool               m_bCtrlEnterForNewLine : 1;
+    bool               m_bAllowTabInput : 1;
+    bool               m_bAllowUndo : 1;
+    bool               m_bCustomCharFilter : 1;
+    bool               m_bStartDragging : 1;
+    bool               m_bShouldKeepSelection : 1;
+    bool               m_bWithWordWrap : 1;
 };

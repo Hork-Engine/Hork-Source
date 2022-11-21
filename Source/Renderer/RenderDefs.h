@@ -534,23 +534,23 @@ HK_FLAG_ENUM_OPERATORS(CANVAS_IMAGE_FLAGS)
 
 struct alignas(16) CanvasUniforms
 {
-    Color4 innerCol;
-    Color4 outerCol;
+    Color4 InnerColor;
+    Color4 OuterColor;
 
-    float scissorMat[12]; // matrices are actually 3 vec4s
-    float paintMat[12];
+    Float3x4 ScissorMat;
+    Float3x4 PaintMat;
 
-    float scissorExt[2];
-    float scissorScale[2];
+    float ScissorExt[2];
+    float ScissorScale[2];
 
-    float extent[2];
-    float radius;
-    float feather;
+    float Extent[2];
+    float Radius;
+    float Feather;
 
-    float strokeMult;
-    float strokeThr;
-    int texType;
-    int type;
+    float StrokeMult;
+    float StrokeThr;
+    int TexType;
+    int Type;
 };
 
 enum CANVAS_DRAW_COMMAND : uint8_t

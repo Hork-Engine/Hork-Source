@@ -160,19 +160,19 @@ void UIViewport::Draw(ACanvas& canvas)
 {
     if (m_PlayerController)
     {
-        int x = Geometry.Mins.X;
-        int y = Geometry.Mins.Y;
+        int x = m_Geometry.Mins.X;
+        int y = m_Geometry.Mins.Y;
 
         if (!GUILockViewportScaling)
         {
-            m_ViewWidth = Math::Max(0.0f, Geometry.Maxs.X - x);
-            m_ViewHeight = Math::Max(0.0f, Geometry.Maxs.Y - y);
+            m_ViewWidth  = Math::Max(0.0f, m_Geometry.Maxs.X - x);
+            m_ViewHeight = Math::Max(0.0f, m_Geometry.Maxs.Y - y);
         }
 
         m_PlayerController->SetViewport(x, y, m_ViewWidth, m_ViewHeight);
 
-        Float2 const& pos  = Geometry.Mins;
-        Float2 const& size = Geometry.Maxs - Geometry.Mins;
+        Float2 const& pos  = m_Geometry.Mins;
+        Float2 const& size = m_Geometry.Maxs - m_Geometry.Mins;
 
         AActor* pawn = m_PlayerController->GetPawn();
         if (pawn)
@@ -200,7 +200,7 @@ void UIViewport::Draw(ACanvas& canvas)
         {
             //canvas.Push();
             //canvas.IntersectScissor(Geometry.Mins, Geometry.Maxs);
-            hud->Draw(&canvas, pos.X, pos.Y, size.X, size.Y);
+            hud->Draw(canvas, pos.X, pos.Y, size.X, size.Y);
             //canvas.Pop();
         }
     }

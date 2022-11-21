@@ -63,10 +63,10 @@ UIGridSplitter UIGrid::TraceSplitter(float x, float y) const
     float verticalSpacing   = m_Layout->VSpacing * (numRows - 1);
     float horizontalSpacing = m_Layout->HSpacing * (numColumns - 1);
 
-    float sx = m_Layout->bNormalizedColumnWidth && !bAutoWidth ? Math::Max(0.0f, Geometry.PaddedMaxs.X - Geometry.PaddedMins.X - horizontalSpacing) : 1;
-    float sy = m_Layout->bNormalizedRowWidth && !bAutoHeight ? Math::Max(0.0f, Geometry.PaddedMaxs.Y - Geometry.PaddedMins.Y - verticalSpacing) : 1;
+    float sx = m_Layout->bNormalizedColumnWidth && !bAutoWidth ? Math::Max(0.0f, m_Geometry.PaddedMaxs.X - m_Geometry.PaddedMins.X - horizontalSpacing) : 1;
+    float sy = m_Layout->bNormalizedRowWidth && !bAutoHeight ? Math::Max(0.0f, m_Geometry.PaddedMaxs.Y - m_Geometry.PaddedMins.Y - verticalSpacing) : 1;
 
-    float offset = Geometry.PaddedMins.X;
+    float offset = m_Geometry.PaddedMins.X;
     for (uint32_t col = 0; col < numColumns; ++col)
     {
         if (col > 0)
@@ -77,8 +77,8 @@ UIGridSplitter UIGrid::TraceSplitter(float x, float y) const
             mins.X = offset - w - m_Layout->HSpacing * 0.5f;
             maxs.X = offset + w - m_Layout->HSpacing * 0.5f;
 
-            mins.Y = Geometry.PaddedMins.Y;
-            maxs.Y = Geometry.PaddedMaxs.Y;
+            mins.Y = m_Geometry.PaddedMins.Y;
+            maxs.Y = m_Geometry.PaddedMaxs.Y;
 
             if (BvPointInRect(mins, maxs, x, y))
             {
@@ -93,7 +93,7 @@ UIGridSplitter UIGrid::TraceSplitter(float x, float y) const
         offset += m_Layout->ColumnWidth[col] * sx + m_Layout->HSpacing;
     }
 
-    offset = Geometry.PaddedMins.Y;
+    offset = m_Geometry.PaddedMins.Y;
     for (uint32_t row = 0; row < numRows; ++row)
     {
         if (row > 0)
@@ -104,8 +104,8 @@ UIGridSplitter UIGrid::TraceSplitter(float x, float y) const
             mins.Y = offset - w - m_Layout->VSpacing * 0.5f;
             maxs.Y = offset + w - m_Layout->VSpacing * 0.5f;
 
-            mins.X = Geometry.PaddedMins.X;
-            maxs.X = Geometry.PaddedMaxs.X;
+            mins.X = m_Geometry.PaddedMins.X;
+            maxs.X = m_Geometry.PaddedMaxs.X;
 
             if (BvPointInRect(mins, maxs, x, y))
             {
@@ -159,8 +159,8 @@ void UIGrid::Draw(ACanvas& cv)
         float verticalSpacing   = m_Layout->VSpacing * (numRows - 1);
         float horizontalSpacing = m_Layout->HSpacing * (numColumns - 1);
 
-        float  sx        = m_Layout->bNormalizedColumnWidth && !bAutoWidth ? Math::Max(0.0f, Geometry.PaddedMaxs.X - Geometry.PaddedMins.X - horizontalSpacing) : 1;
-        float  sy        = m_Layout->bNormalizedRowWidth && !bAutoHeight ? Math::Max(0.0f, Geometry.PaddedMaxs.Y - Geometry.PaddedMins.Y - verticalSpacing) : 1;
+        float sx = m_Layout->bNormalizedColumnWidth && !bAutoWidth ? Math::Max(0.0f, m_Geometry.PaddedMaxs.X - m_Geometry.PaddedMins.X - horizontalSpacing) : 1;
+        float sy = m_Layout->bNormalizedRowWidth && !bAutoHeight ? Math::Max(0.0f, m_Geometry.PaddedMaxs.Y - m_Geometry.PaddedMins.Y - verticalSpacing) : 1;
 
         HK_UNUSED(sx);
 

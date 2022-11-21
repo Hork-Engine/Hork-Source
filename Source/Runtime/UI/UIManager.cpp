@@ -138,7 +138,9 @@ void UIManager::Update(float timeStep)
 
     if (m_ActiveDesktop)
     {
-        m_ActiveDesktop->UpdateGeometry(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
+        Float2 desktopSize(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
+
+        m_ActiveDesktop->UpdateGeometry(desktopSize.X, desktopSize.Y);
 
         auto widget = m_ActiveDesktop->Trace(CursorPosition.X, CursorPosition.Y);
         if (HoveredWidget && (widget == nullptr || HoveredWidget != widget))
@@ -154,10 +156,41 @@ void UIManager::Update(float timeStep)
             {
                 widget->ForwardHoverEvent(true);
                 m_Cursor = widget->Cursor;
+
+                m_TooltipWidget = widget->Tooltip;
+                m_TooltipTime = widget->TooltipTime;
+                m_TooltipPosition = CursorPosition;
             }
             else
             {
                 m_Cursor = ArrowCursor();
+                m_TooltipWidget.Reset();
+            }
+        }
+
+        if (m_TooltipWidget)
+        {
+            m_TooltipTime -= timeStep;
+            if (m_TooltipTime < 0)
+            {
+                // Update geometry for Tooltip widget
+
+                Float2 size = m_TooltipWidget->MeasureLayout(true, true, m_TooltipWidget->Size);
+
+                for (int i = 0; i < 2; i++)
+                {
+                    if (m_TooltipPosition[i] + size[i] > desktopSize[i])
+                    {
+                        m_TooltipPosition[i] = desktopSize[i] - size[i];
+                        if (m_TooltipPosition[i] < 0)
+                            m_TooltipPosition[i] = 0;
+                    }
+                }
+
+                m_TooltipWidget->m_Geometry.Mins = m_TooltipPosition;
+                m_TooltipWidget->m_Geometry.Maxs = m_TooltipPosition + size;
+
+                m_TooltipWidget->ArrangeChildren(true, true);
             }
         }
     }
@@ -284,6 +317,16 @@ void UIManager::Draw(ACanvas& cv)
         m_ActiveDesktop->Draw(cv);
 
 
+    if (m_TooltipWidget && m_TooltipTime < 0)
+    {
+        SVideoMode const& videoMode = m_MainWindow->GetVideoMode();
+
+        Float2 clipMins(0.0f);
+        Float2 clipMaxs(videoMode.FramebufferWidth, videoMode.FramebufferHeight);
+
+        m_TooltipWidget->Draw(cv, clipMins, clipMaxs, 1.0f);
+    }
+
     if (!Platform::IsCursorEnabled())
     {
         DrawCursor(cv);
@@ -325,4 +368,25 @@ UIBrush* UIManager::DefaultScrollbarBrush() const
                                .WithRounding({3,3,3,3});
 
     return m_ScrollbarBrush;
+}
+
+void UIManager::OpenPopupWidget(UIWidget* widget)
+{
+    OpenPopupWidget(widget, CursorPosition);
+}
+
+void UIManager::OpenPopupWidget(UIWidget* widget, Float2 const& position)
+{
+    if (!m_ActiveDesktop)
+        return;
+
+    m_ActiveDesktop->OpenPopupWidget(widget, position);
+}
+
+void UIManager::ClosePopupWidget()
+{
+    if (!m_ActiveDesktop)
+        return;
+
+    m_ActiveDesktop->ClosePopupWidget();
 }

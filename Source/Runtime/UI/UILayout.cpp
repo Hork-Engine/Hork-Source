@@ -36,9 +36,9 @@ Float2 UIBoxLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHei
     Float2 paddedSize(Math::Max(0.0f, size.X - self->Padding.Left - self->Padding.Right),
                       Math::Max(0.0f, size.Y - self->Padding.Top - self->Padding.Bottom));
 
-    Float2 layoutSize = self->AdjustedSize;
+    Float2 layoutSize = self->m_AdjustedSize;
 
-    for (UIWidget* child : self->LayoutSlots)
+    for (UIWidget* child : self->m_LayoutSlots)
     {
         if (child->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
             continue;
@@ -56,23 +56,23 @@ Float2 UIBoxLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHei
     }
 
     if (bAutoWidth)
-        self->MeasuredSize.X = layoutSize.X + self->Padding.Left + self->Padding.Right;
+        self->m_MeasuredSize.X = layoutSize.X + self->Padding.Left + self->Padding.Right;
     else
-        self->MeasuredSize.X = size.X;
+        self->m_MeasuredSize.X = size.X;
 
     if (bAutoHeight)
-        self->MeasuredSize.Y = layoutSize.Y + self->Padding.Top + self->Padding.Bottom;
+        self->m_MeasuredSize.Y = layoutSize.Y + self->Padding.Top + self->Padding.Bottom;
     else
-        self->MeasuredSize.Y = size.Y;
+        self->m_MeasuredSize.Y = size.Y;
 
-    return self->MeasuredSize;
+    return self->m_MeasuredSize;
 }
 
 void UIBoxLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight)
 {
-    UIWidgetGeometry& geometry = self->Geometry;
+    UIWidgetGeometry& geometry = self->m_Geometry;
 
-    for (UIWidget* child : self->LayoutSlots)
+    for (UIWidget* child : self->m_LayoutSlots)
     {
         if (child->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
             continue;
@@ -80,7 +80,7 @@ void UIBoxLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHei
         ArrangeHorizontal(geometry, child);
         ArrangeVertical(geometry, child);
 
-        if ((!bAutoWidth && child->Geometry.Mins.X >= geometry.PaddedMaxs.X) || (!bAutoHeight && child->Geometry.Mins.Y >= geometry.PaddedMaxs.Y))
+        if ((!bAutoWidth && child->m_Geometry.Mins.X >= geometry.PaddedMaxs.X) || (!bAutoHeight && child->m_Geometry.Mins.Y >= geometry.PaddedMaxs.Y))
             continue;
 
         child->ArrangeChildren(HAlignment != HALIGNMENT_STRETCH, VAlignment != VALIGNMENT_STRETCH);
@@ -126,20 +126,20 @@ float UIBoxLayout::ArrangeHorizontal(UIWidgetGeometry const& layoutGeometry, UIW
     switch (HAlignment)
     {
         case HALIGNMENT_NONE:
-            widget->Geometry.Mins.X = layoutGeometry.PaddedMins.X + widget->Position.X;
+            widget->m_Geometry.Mins.X = layoutGeometry.PaddedMins.X + widget->Position.X;
             break;
         case HALIGNMENT_LEFT:
-            widget->Geometry.Mins.X = layoutGeometry.PaddedMins.X;
+            widget->m_Geometry.Mins.X = layoutGeometry.PaddedMins.X;
             break;
         case HALIGNMENT_RIGHT:
-            widget->Geometry.Mins.X = layoutGeometry.PaddedMaxs.X - widget->MeasuredSize.X;
+            widget->m_Geometry.Mins.X = layoutGeometry.PaddedMaxs.X - widget->m_MeasuredSize.X;
             break;
         case HALIGNMENT_CENTER:
-            widget->Geometry.Mins.X = layoutGeometry.PaddedMins.X;
-            widget->Geometry.Mins.X += (layoutGeometry.PaddedMaxs.X - layoutGeometry.PaddedMins.X - widget->MeasuredSize.X) * 0.5f;
+            widget->m_Geometry.Mins.X = layoutGeometry.PaddedMins.X;
+            widget->m_Geometry.Mins.X += (layoutGeometry.PaddedMaxs.X - layoutGeometry.PaddedMins.X - widget->m_MeasuredSize.X) * 0.5f;
             break;
         case HALIGNMENT_STRETCH:
-            widget->Geometry.Mins.X = layoutGeometry.PaddedMins.X;
+            widget->m_Geometry.Mins.X = layoutGeometry.PaddedMins.X;
             break;
         default:
             HK_ASSERT(0);
@@ -147,11 +147,11 @@ float UIBoxLayout::ArrangeHorizontal(UIWidgetGeometry const& layoutGeometry, UIW
 
     if (HAlignment == HALIGNMENT_STRETCH)
     {
-        widget->Geometry.Maxs.X = layoutGeometry.PaddedMaxs.X;
+        widget->m_Geometry.Maxs.X = layoutGeometry.PaddedMaxs.X;
     }
     else
     {
-        widget->Geometry.Maxs.X = widget->Geometry.Mins.X + widget->MeasuredSize.X;
+        widget->m_Geometry.Maxs.X = widget->m_Geometry.Mins.X + widget->m_MeasuredSize.X;
     }
 
     return 0.0f;
@@ -162,20 +162,20 @@ float UIBoxLayout::ArrangeVertical(UIWidgetGeometry const& layoutGeometry, UIWid
     switch (VAlignment)
     {
         case VALIGNMENT_NONE:
-            widget->Geometry.Mins.Y = layoutGeometry.PaddedMins.Y + widget->Position.Y;
+            widget->m_Geometry.Mins.Y = layoutGeometry.PaddedMins.Y + widget->Position.Y;
             break;
         case VALIGNMENT_TOP:
-            widget->Geometry.Mins.Y = layoutGeometry.PaddedMins.Y;
+            widget->m_Geometry.Mins.Y = layoutGeometry.PaddedMins.Y;
             break;
         case VALIGNMENT_BOTTOM:
-            widget->Geometry.Mins.Y = layoutGeometry.PaddedMaxs.Y - widget->MeasuredSize.Y;
+            widget->m_Geometry.Mins.Y = layoutGeometry.PaddedMaxs.Y - widget->m_MeasuredSize.Y;
             break;
         case VALIGNMENT_CENTER:
-            widget->Geometry.Mins.Y = layoutGeometry.PaddedMins.Y;
-            widget->Geometry.Mins.Y += (layoutGeometry.PaddedMaxs.Y - layoutGeometry.PaddedMins.Y - widget->MeasuredSize.Y) * 0.5f;
+            widget->m_Geometry.Mins.Y = layoutGeometry.PaddedMins.Y;
+            widget->m_Geometry.Mins.Y += (layoutGeometry.PaddedMaxs.Y - layoutGeometry.PaddedMins.Y - widget->m_MeasuredSize.Y) * 0.5f;
             break;
         case VALIGNMENT_STRETCH:
-            widget->Geometry.Mins.Y = layoutGeometry.PaddedMins.Y;
+            widget->m_Geometry.Mins.Y = layoutGeometry.PaddedMins.Y;
             break;
         default:
             HK_ASSERT(0);
@@ -183,11 +183,11 @@ float UIBoxLayout::ArrangeVertical(UIWidgetGeometry const& layoutGeometry, UIWid
 
     if (VAlignment == VALIGNMENT_STRETCH)
     {
-        widget->Geometry.Maxs.Y = layoutGeometry.PaddedMaxs.Y;
+        widget->m_Geometry.Maxs.Y = layoutGeometry.PaddedMaxs.Y;
     }
     else
     {
-        widget->Geometry.Maxs.Y = widget->Geometry.Mins.Y + widget->MeasuredSize.Y;
+        widget->m_Geometry.Maxs.Y = widget->m_Geometry.Mins.Y + widget->m_MeasuredSize.Y;
     }
 
     return 0.0f;
@@ -198,7 +198,7 @@ Float2 UIGridLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHe
     Float2 paddedSize(Math::Max(0.0f, size.X - self->Padding.Left - self->Padding.Right),
                       Math::Max(0.0f, size.Y - self->Padding.Top - self->Padding.Bottom));
 
-    Float2 layoutSize = self->AdjustedSize;
+    Float2 layoutSize = self->m_AdjustedSize;
 
     uint32_t numColumns = ColumnWidth.Size();
     uint32_t numRows    = RowWidth.Size();
@@ -228,7 +228,7 @@ Float2 UIGridLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHe
         layoutSize.X = Math::Max(layoutSize.X, width);
         layoutSize.Y = Math::Max(layoutSize.Y, height);
 
-        for (UIWidget* child : self->LayoutSlots)
+        for (UIWidget* child : self->m_LayoutSlots)
         {
             if (child->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
                 continue;
@@ -248,21 +248,21 @@ Float2 UIGridLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHe
     }
 
     if (bAutoWidth)
-        self->MeasuredSize.X = layoutSize.X + self->Padding.Left + self->Padding.Right;
+        self->m_MeasuredSize.X = layoutSize.X + self->Padding.Left + self->Padding.Right;
     else
-        self->MeasuredSize.X = size.X;
+        self->m_MeasuredSize.X = size.X;
 
     if (bAutoHeight)
-        self->MeasuredSize.Y = layoutSize.Y + self->Padding.Top + self->Padding.Bottom;
+        self->m_MeasuredSize.Y = layoutSize.Y + self->Padding.Top + self->Padding.Bottom;
     else
-        self->MeasuredSize.Y = size.Y;
+        self->m_MeasuredSize.Y = size.Y;
 
-    return self->MeasuredSize;
+    return self->m_MeasuredSize;
 }
 
 void UIGridLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight)
 {
-    UIWidgetGeometry& geometry = self->Geometry;
+    UIWidgetGeometry& geometry = self->m_Geometry;
 
     uint32_t numColumns = ColumnWidth.Size();
     uint32_t numRows    = RowWidth.Size();
@@ -290,7 +290,7 @@ void UIGridLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHe
         offset += RowWidth[row] * sy + VSpacing;
     }
 
-    for (UIWidget* child : self->LayoutSlots)
+    for (UIWidget* child : self->m_LayoutSlots)
     {
         if (child->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
             continue;
@@ -299,9 +299,9 @@ void UIGridLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHe
             child->GridOffset.RowIndex >= numRows)
             continue;
 
-        child->Geometry.Mins.X = ColumnOffset[child->GridOffset.ColumnIndex];
-        child->Geometry.Mins.Y = RowOffset[child->GridOffset.RowIndex];
-        child->Geometry.Maxs   = child->Geometry.Mins + child->MeasuredSize;
+        child->m_Geometry.Mins.X = ColumnOffset[child->GridOffset.ColumnIndex];
+        child->m_Geometry.Mins.Y = RowOffset[child->GridOffset.RowIndex];
+        child->m_Geometry.Maxs   = child->m_Geometry.Mins + child->m_MeasuredSize;
 
         child->ArrangeChildren(false, false);
     }
@@ -312,23 +312,42 @@ Float2 UIHorizontalLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool b
     Float2 paddedSize(Math::Max(0.0f, size.X - self->Padding.Left - self->Padding.Right),
                       Math::Max(0.0f, size.Y - self->Padding.Top - self->Padding.Bottom));
 
-    Float2 layoutSize = self->AdjustedSize;
+    Float2 layoutSize = self->m_AdjustedSize;
 
     float x          = 0;
     float y          = 0;
     float lineHeight = 0;
 
     bool canWrap = bWrap && !bAutoWidth;
+    bool stretch = !bWrap && bVStretch;
 
-    for (UIWidget* child : self->LayoutSlots)
+    // Pre pass: calculate max width
+    float maxHeight = self->m_AdjustedSize.Y;
+    if (stretch)
+    {
+        for (UIWidget* child : self->m_LayoutSlots)
+        {
+            if (child->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
+                continue;
+
+            float w = child->Size.X;
+            float h = child->Size.Y;
+
+            Float2 requiredSize = child->MeasureLayout(!canWrap, true, {w, h});
+
+            maxHeight = Math::Max(maxHeight, requiredSize.Y);
+        }
+    }
+
+    for (UIWidget* child : self->m_LayoutSlots)
     {
         if (child->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
             continue;
 
         float w = child->Size.X;
-        float h = child->Size.Y;
+        float h = stretch ? maxHeight : child->Size.Y;
 
-        Float2 requiredSize = child->MeasureLayout(!canWrap, true, {w, h});
+        Float2 requiredSize = child->MeasureLayout(!canWrap, !stretch, {w, h});
 
         if (canWrap && x + requiredSize.X >= paddedSize.X && x > 0)
         {
@@ -339,11 +358,14 @@ Float2 UIHorizontalLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool b
         }
         else
         {
-            x += requiredSize.X + HSpacing;
+            requiredSize.X += x;
+
+            x = requiredSize.X + HSpacing;
+
             lineHeight = Math::Max(lineHeight, requiredSize.Y);
         }
 
-        requiredSize.X += x;
+        //requiredSize.X += x;
         requiredSize.Y += y;
 
         layoutSize.X = Math::Max(layoutSize.X, requiredSize.X);
@@ -351,21 +373,21 @@ Float2 UIHorizontalLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool b
     }
 
     if (bAutoWidth)
-        self->MeasuredSize.X = layoutSize.X + self->Padding.Left + self->Padding.Right;
+        self->m_MeasuredSize.X = layoutSize.X + self->Padding.Left + self->Padding.Right;
     else
-        self->MeasuredSize.X = size.X;
+        self->m_MeasuredSize.X = size.X;
 
     if (bAutoHeight)
-        self->MeasuredSize.Y = layoutSize.Y + self->Padding.Top + self->Padding.Bottom;
+        self->m_MeasuredSize.Y = layoutSize.Y + self->Padding.Top + self->Padding.Bottom;
     else
-        self->MeasuredSize.Y = size.Y;
+        self->m_MeasuredSize.Y = size.Y;
 
-    return self->MeasuredSize;
+    return self->m_MeasuredSize;
 }
 
 void UIHorizontalLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight)
 {
-    UIWidgetGeometry& geometry = self->Geometry;
+    UIWidgetGeometry& geometry = self->m_Geometry;
 
     float x          = geometry.PaddedMins.X;
     float y          = geometry.PaddedMins.Y;
@@ -373,12 +395,12 @@ void UIHorizontalLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool b
 
     bool canWrap = bWrap && !bAutoWidth;
 
-    for (UIWidget* child : self->LayoutSlots)
+    for (UIWidget* child : self->m_LayoutSlots)
     {
         if (child->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
             continue;
 
-        if (canWrap && x + child->MeasuredSize.X >= geometry.PaddedMaxs.X && x > geometry.PaddedMins.X)
+        if (canWrap && x + child->m_MeasuredSize.X >= geometry.PaddedMaxs.X && x > geometry.PaddedMins.X)
         {
             x = geometry.PaddedMins.X;
             y += lineHeight + VSpacing;
@@ -388,16 +410,132 @@ void UIHorizontalLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool b
         if ((!bAutoWidth && x >= geometry.PaddedMaxs.X) || (!bAutoHeight && y >= geometry.PaddedMaxs.Y))
             break; //continue;
 
-        child->Geometry.Mins.X = x;
-        child->Geometry.Mins.Y = y;
-        child->Geometry.Maxs   = child->Geometry.Mins + child->MeasuredSize;
+        child->m_Geometry.Mins.X = x;
+        child->m_Geometry.Mins.Y = y;
+        child->m_Geometry.Maxs   = child->m_Geometry.Mins + child->m_MeasuredSize;
 
         child->ArrangeChildren(!canWrap, true);
 
-        Float2 size = child->Geometry.Maxs - child->Geometry.Mins;
+        Float2 size = child->m_Geometry.Maxs - child->m_Geometry.Mins;
 
         x += size.X + HSpacing;
         lineHeight = Math::Max(lineHeight, size.Y);
+    }
+}
+
+Float2 UIVerticalLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHeight, Float2 const& size)
+{
+    Float2 paddedSize(Math::Max(0.0f, size.X - self->Padding.Left - self->Padding.Right),
+                      Math::Max(0.0f, size.Y - self->Padding.Top - self->Padding.Bottom));
+
+    Float2 layoutSize = self->m_AdjustedSize;
+
+    float x         = 0;
+    float y         = 0;
+    float lineWidth = 0;
+
+    bool canWrap = bWrap && !bAutoHeight;
+    bool stretch = !bWrap && bHStretch;
+
+    // Pre pass: calculate max width
+    float maxWidth = self->m_AdjustedSize.X;
+    if (stretch)
+    {
+        for (UIWidget* child : self->m_LayoutSlots)
+        {
+            if (child->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
+                continue;
+
+            float w = child->Size.X;
+            float h = child->Size.Y;
+
+            Float2 requiredSize = child->MeasureLayout(true, !canWrap, {w, h});
+
+            maxWidth = Math::Max(maxWidth, requiredSize.X);
+        }
+    }
+
+    for (UIWidget* child : self->m_LayoutSlots)
+    {
+        if (child->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
+            continue;
+
+        float w = stretch ? maxWidth : child->Size.X;
+        float h = child->Size.Y;
+
+        Float2 requiredSize = child->MeasureLayout(!stretch, !canWrap, {w, h});
+
+        if (canWrap && y + requiredSize.Y >= paddedSize.Y && y > 0)
+        {
+            y = 0;
+            x += lineWidth + HSpacing;
+
+            lineWidth = requiredSize.X;
+        }
+        else
+        {
+            requiredSize.Y += y;
+
+            y = requiredSize.Y + VSpacing;
+
+            lineWidth = Math::Max(lineWidth, requiredSize.X);
+        }
+
+        requiredSize.X += x;
+        //requiredSize.Y += y;
+
+        layoutSize.X = Math::Max(layoutSize.X, requiredSize.X);
+        layoutSize.Y = Math::Max(layoutSize.Y, requiredSize.Y);
+    }
+
+    if (bAutoWidth)
+        self->m_MeasuredSize.X = layoutSize.X + self->Padding.Left + self->Padding.Right;
+    else
+        self->m_MeasuredSize.X = size.X;
+
+    if (bAutoHeight)
+        self->m_MeasuredSize.Y = layoutSize.Y + self->Padding.Top + self->Padding.Bottom;
+    else
+        self->m_MeasuredSize.Y = size.Y;
+
+    return self->m_MeasuredSize;
+}
+
+void UIVerticalLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight)
+{
+    UIWidgetGeometry& geometry = self->m_Geometry;
+
+    float x          = geometry.PaddedMins.X;
+    float y          = geometry.PaddedMins.Y;
+    float lineWidth  = 0;
+
+    bool canWrap = bWrap && !bAutoHeight;
+
+    for (UIWidget* child : self->m_LayoutSlots)
+    {
+        if (child->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
+            continue;
+
+        if (canWrap && y + child->m_MeasuredSize.Y >= geometry.PaddedMaxs.Y && y > geometry.PaddedMins.Y)
+        {
+            y = geometry.PaddedMins.Y;
+            x += lineWidth + HSpacing;
+            lineWidth = 0;
+        }
+
+        if ((!bAutoWidth && x >= geometry.PaddedMaxs.X) || (!bAutoHeight && y >= geometry.PaddedMaxs.Y))
+            break; //continue;
+
+        child->m_Geometry.Mins.X = x;
+        child->m_Geometry.Mins.Y = y;
+        child->m_Geometry.Maxs   = child->m_Geometry.Mins + child->m_MeasuredSize;
+
+        child->ArrangeChildren(true, !canWrap);
+
+        Float2 size = child->m_Geometry.Maxs - child->m_Geometry.Mins;
+
+        y += size.Y + VSpacing;
+        lineWidth = Math::Max(lineWidth, size.X);
     }
 }
 
@@ -405,7 +543,7 @@ Float2 UIImageLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoH
 {
     if (ImageSize.X <= 0 || ImageSize.Y <= 0)
     {
-        self->MeasuredSize = Float2(0.0f);
+        self->m_MeasuredSize = Float2(0.0f);
         return Float2(0.0f);
     }
 
@@ -414,7 +552,7 @@ Float2 UIImageLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoH
 
     Float2 scale = paddedSize / ImageSize;
 
-    for (UIWidget* child : self->LayoutSlots)
+    for (UIWidget* child : self->m_LayoutSlots)
     {
         if (child->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
             continue;
@@ -431,22 +569,22 @@ Float2 UIImageLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoH
         child->MeasureLayout(false, false, {w, h});
     }
 
-    self->MeasuredSize.X = size.X;
-    self->MeasuredSize.Y = size.Y;
+    self->m_MeasuredSize.X = size.X;
+    self->m_MeasuredSize.Y = size.Y;
 
-    return self->MeasuredSize;
+    return self->m_MeasuredSize;
 }
 
 void UIImageLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight)
 {
-    UIWidgetGeometry& geometry = self->Geometry;
+    UIWidgetGeometry& geometry = self->m_Geometry;
 
     if (ImageSize.X <= 0 || ImageSize.Y <= 0)
         return;
 
     Float2 scale = (geometry.PaddedMaxs - geometry.PaddedMins) / ImageSize;
 
-    for (UIWidget* child : self->LayoutSlots)
+    for (UIWidget* child : self->m_LayoutSlots)
     {
         if (child->Visibility == UI_WIDGET_VISIBILITY_COLLAPSED)
             continue;
@@ -454,11 +592,11 @@ void UIImageLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoH
         if (child->Position.X >= ImageSize.X || child->Position.Y >= ImageSize.Y)
             continue;
 
-         if (child->Position.X + child->Size.X < 0.0f || child->Position.Y + child->Size.Y < 0.0f)
+        if (child->Position.X + child->Size.X < 0.0f || child->Position.Y + child->Size.Y < 0.0f)
             continue;
 
-        child->Geometry.Mins = geometry.PaddedMins + child->Position * scale;
-        child->Geometry.Maxs = child->Geometry.Mins + child->Size * scale;
+        child->m_Geometry.Mins = geometry.PaddedMins + child->Position * scale;
+        child->m_Geometry.Maxs = child->m_Geometry.Mins + child->Size * scale;
 
         child->ArrangeChildren(false, false);
     }

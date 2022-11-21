@@ -341,18 +341,26 @@ void UIConsole::OnCharEvent(SCharEvent const& event)
         return;
     }
 
-    if (m_CmdLineLength < MAX_CMD_LINE_CHARS)
+    if (!GUIManager->IsInsertMode() || m_CmdLinePos == m_CmdLineLength)
     {
-        if (!GUIManager->IsInsertMode())
+        if (m_CmdLineLength < MAX_CMD_LINE_CHARS)
         {
             if (m_CmdLinePos != m_CmdLineLength)
             {
                 Platform::Memmove(&m_CmdLine[m_CmdLinePos + 1], &m_CmdLine[m_CmdLinePos], sizeof(m_CmdLine[0]) * (m_CmdLineLength - m_CmdLinePos));
             }
+            m_CmdLine[m_CmdLinePos] = event.UnicodeCharacter;
+            m_CmdLinePos++;
+            m_CmdLineLength++;
         }
-        m_CmdLine[m_CmdLinePos] = event.UnicodeCharacter;
-        m_CmdLineLength++;
-        m_CmdLinePos++;
+    }
+    else
+    {
+        if (m_CmdLinePos < MAX_CMD_LINE_CHARS)
+        {
+            m_CmdLine[m_CmdLinePos] = event.UnicodeCharacter;
+            m_CmdLinePos++;
+        }
     }
 }
 
@@ -378,51 +386,31 @@ void UIConsole::DrawCmdLine(ACanvas& cv, int x, int y, int maxLineChars)
     FontStyle fontStyle;
     fontStyle.FontSize = AConsoleBuffer::CharacterWidth;
 
-    int cx = x;
-
     int offset = m_CmdLinePos + 1 - maxLineChars;
     if (offset < 0)
-    {
         offset = 0;
-    }
+
     int numDrawChars = m_CmdLineLength;
     if (numDrawChars > maxLineChars)
-    {
         numDrawChars = maxLineChars;
-    }
-    for (int j = 0; j < numDrawChars; j++)
-    {
-        int n = j + offset;
 
-        if (n >= m_CmdLineLength)
-        {
-            break;
-        }
-
-        WideChar ch = m_CmdLine[n];
-
-        if (ch <= ' ')
-        {
-            cx += AConsoleBuffer::CharacterWidth;
-            continue;
-        }
-
-        cv.TextWideChar(fontStyle, cx, y, ch);
-
-        cx += AConsoleBuffer::CharacterWidth;
-    }
+    cv.Text(fontStyle, x, y, TEXT_ALIGNMENT_LEFT, AWideStringView(&m_CmdLine[offset], &m_CmdLine[Math::Min(m_CmdLineLength, offset + numDrawChars)]));
 
     if ((Platform::SysMicroseconds() >> 18) & 1)
     {
-        cx = x + (m_CmdLinePos - offset) * AConsoleBuffer::CharacterWidth;
+        AFont* font = cv.GetDefaultFont();
+        for (int i = 0; i < m_CmdLinePos - offset; i++)
+            x += font->GetCharAdvance(fontStyle, m_CmdLine[i]);
 
         if (GUIManager->IsInsertMode())
         {
-            cv.DrawRectFilled(Float2(cx, y), Float2(cx + AConsoleBuffer::CharacterWidth * 0.7f, y + AConsoleBuffer::CharacterWidth), Color4::White());
+            cv.DrawRectFilled(Float2(x, y), Float2(x + AConsoleBuffer::CharacterWidth * 0.7f, y + AConsoleBuffer::CharacterWidth), Color4::White());
         }
         else
         {
-            cv.TextWideChar(fontStyle, cx, y, '_');
+            WideChar buf[2] = {'_', 0};
+
+            cv.Text(fontStyle, x, y, TEXT_ALIGNMENT_LEFT | TEXT_ALIGNMENT_TOP, AWideStringView(buf, &buf[1]));
         }
     }
 }
@@ -515,14 +503,12 @@ void UIConsole::Draw(ACanvas& cv, UIBrush* background)
 
         const int  offset = ((lock.MaxLines + lock.PrintLine - n - 1) % lock.MaxLines) * lock.MaxLineChars;
         WideChar* line   = &lock.pImage[offset];
+        int len = StringLength(line);
 
-        for (int j = 0; j < lock.MaxLineChars && *line; j++)
-        {
-            cv.TextWideChar(fontStyle, x, y, *line++);
+        len = Math::Min(len, lock.MaxLineChars);
 
-            x += AConsoleBuffer::CharacterWidth;
-        }
-        x = AConsoleBuffer::Padding;
+        cv.Text(fontStyle, x, y, TEXT_ALIGNMENT_LEFT, AWideStringView(line, len));
+
         y -= verticalStride;
     }
 

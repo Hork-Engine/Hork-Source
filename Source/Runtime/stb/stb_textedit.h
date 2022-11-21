@@ -385,7 +385,7 @@ typedef struct
 //
 //      Mouse input handling
 //
-
+#if 0
 // traverse the layout to locate the nearest character to a display position
 static int stb_text_locate_coord(STB_TEXTEDIT_STRING *str, float x, float y)
 {
@@ -445,7 +445,7 @@ static int stb_text_locate_coord(STB_TEXTEDIT_STRING *str, float x, float y)
    else
       return i+r.num_chars;
 }
-
+#endif
 // API click: on mouse down, move the cursor to the clicked location, and reset the selection
 static void stb_textedit_click(STB_TEXTEDIT_STRING *str, STB_TexteditState *state, float x, float y)
 {
@@ -497,71 +497,71 @@ static void stb_text_makeundo_delete(STB_TEXTEDIT_STRING *str, STB_TexteditState
 static void stb_text_makeundo_insert(STB_TexteditState *state, int where, int length);
 static void stb_text_makeundo_replace(STB_TEXTEDIT_STRING *str, STB_TexteditState *state, int where, int old_length, int new_length);
 
-typedef struct
-{
-   float x,y;    // position of n'th character
-   float height; // height of line
-   int first_char, length; // first char of row, and length
-   int prev_first;  // first char of previous row
-} StbFindState;
-
-// find the x/y location of a character, and remember info about the previous row in
-// case we get a move-up event (for page up, we'll have to rescan)
-static void stb_textedit_find_charpos(StbFindState *find, STB_TEXTEDIT_STRING *str, int n, int single_line)
-{
-   StbTexteditRow r;
-   int prev_start = 0;
-   int z = STB_TEXTEDIT_STRINGLEN(str);
-   int i=0, first;
-
-   if (n == z) {
-      // if it's at the end, then find the last line -- simpler than trying to
-      // explicitly handle this case in the regular code
-      if (single_line) {
-         STB_TEXTEDIT_LAYOUTROW(&r, str, 0);
-         find->y = 0;
-         find->first_char = 0;
-         find->length = z;
-         find->height = r.ymax - r.ymin;
-         find->x = r.x1;
-      } else {
-         find->y = 0;
-         find->x = 0;
-         find->height = 1;
-         while (i < z) {
-            STB_TEXTEDIT_LAYOUTROW(&r, str, i);
-            prev_start = i;
-            i += r.num_chars;
-         }
-         find->first_char = i;
-         find->length = 0;
-         find->prev_first = prev_start;
-      }
-      return;
-   }
-
-   // search rows to find the one that straddles character n
-   find->y = 0;
-
-   for(;;) {
-      STB_TEXTEDIT_LAYOUTROW(&r, str, i);
-      if (n < i + r.num_chars)
-         break;
-      prev_start = i;
-      i += r.num_chars;
-      find->y += r.baseline_y_delta;
-   }
-
-   find->first_char = first = i;
-   find->length = r.num_chars;
-   find->height = r.ymax - r.ymin;
-   find->prev_first = prev_start;
-
-   // now scan to find xpos
-   find->x = r.x0;
-   for (i=0; first+i < n; ++i)
-      find->x += STB_TEXTEDIT_GETWIDTH(str, first, i);
-}
+//typedef struct
+//{
+//   float x,y;    // position of n'th character
+//   float height; // height of line
+//   int first_char, length; // first char of row, and length
+//   int prev_first;  // first char of previous row
+//} StbFindState;
+//
+//// find the x/y location of a character, and remember info about the previous row in
+//// case we get a move-up event (for page up, we'll have to rescan)
+//static void stb_textedit_find_charpos(StbFindState *find, STB_TEXTEDIT_STRING *str, int n, int single_line)
+//{
+//   StbTexteditRow r;
+//   int prev_start = 0;
+//   int z = STB_TEXTEDIT_STRINGLEN(str);
+//   int i=0, first;
+//
+//   if (n == z) {
+//      // if it's at the end, then find the last line -- simpler than trying to
+//      // explicitly handle this case in the regular code
+//      if (single_line) {
+//         STB_TEXTEDIT_LAYOUTROW(&r, str, 0);
+//         find->y = 0;
+//         find->first_char = 0;
+//         find->length = z;
+//         find->height = r.ymax - r.ymin;
+//         find->x = r.x1;
+//      } else {
+//         find->y = 0;
+//         find->x = 0;
+//         find->height = 1;
+//         while (i < z) {
+//            STB_TEXTEDIT_LAYOUTROW(&r, str, i);
+//            prev_start = i;
+//            i += r.num_chars;
+//         }
+//         find->first_char = i;
+//         find->length = 0;
+//         find->prev_first = prev_start;
+//      }
+//      return;
+//   }
+//
+//   // search rows to find the one that straddles character n
+//   find->y = 0;
+//
+//   for(;;) {
+//      STB_TEXTEDIT_LAYOUTROW(&r, str, i);
+//      if (n < i + r.num_chars)
+//         break;
+//      prev_start = i;
+//      i += r.num_chars;
+//      find->y += r.baseline_y_delta;
+//   }
+//
+//   find->first_char = first = i;
+//   find->length = r.num_chars;
+//   find->height = r.ymax - r.ymin;
+//   find->prev_first = prev_start;
+//
+//   // now scan to find xpos
+//   find->x = r.x0;
+//   for (i=0; first+i < n; ++i)
+//      find->x += STB_TEXTEDIT_GETWIDTH(str, first, i);
+//}
 
 #define STB_TEXT_HAS_SELECTION(s)   ((s)->select_start != (s)->select_end)
 

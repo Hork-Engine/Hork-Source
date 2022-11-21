@@ -48,6 +48,8 @@ set(SDL_DIRECTX OFF CACHE BOOL "" FORCE)
 set(SDL2_DISABLE_SDL2MAIN   ON CACHE BOOL "" FORCE)
 set(SDL2_DISABLE_INSTALL    ON CACHE BOOL "" FORCE)
 set(SDL2_DISABLE_UNINSTALL  ON CACHE BOOL "" FORCE)
+set(SDL_LIBC  ON CACHE BOOL "" FORCE)
+
 include_directories(ThirdParty/SDL2/include)
 add_subdirectory_with_folder("ThirdParty/SDL" ThirdParty/SDL2)
 
@@ -240,15 +242,13 @@ source_group( "RenderCore\\FrameGraph" FILES ${RenderCoreFrameGraph} )
 # Runtime module
 file( GLOB Runtime Runtime/*.h Runtime/*.cpp )
 file( GLOB RuntimeSTB Runtime/stb/*.h Runtime/stb/*.c )
-file( GLOB RuntimeNanoVG Runtime/nanovg/*.h Runtime/nanovg/*.c )
 file( GLOB RuntimeUI Runtime/UI/*.h Runtime/UI/*.cpp )
-file( GLOB RuntimeUIOld Runtime/UI/Old/*.h Runtime/UI/Old/*.cpp )
+file( GLOB RuntimeCanvas Runtime/Canvas/*.h Runtime/Canvas/*.cpp )
 
 source_group( "Runtime" FILES ${Runtime} )
 source_group( "Runtime\\stb" FILES ${RuntimeSTB} )
-source_group( "Runtime\\nanovg" FILES ${RuntimeNanoVG} )
 source_group( "Runtime\\UI" FILES ${RuntimeUI} )
-source_group( "Runtime\\UI\\Old" FILES ${RuntimeUIOld} )
+source_group( "Runtime\\Canvas" FILES ${RuntimeCanvas} )
 
 #---------------------------------------------------------------------
 # Audio module
@@ -312,9 +312,8 @@ ${RenderCoreFrameGraph}
 
 ${Runtime}
 ${RuntimeSTB}
-${RuntimeNanoVG}
 ${RuntimeUI}
-${RuntimeUIOld}
+${RuntimeCanvas}
 
 ${Audio}
 

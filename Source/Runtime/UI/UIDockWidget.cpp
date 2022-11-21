@@ -53,7 +53,7 @@ bool UIDockWidget::OnChildrenMouseButtonEvent(SMouseButtonEvent const& event, do
         UIDesktop* desktop = GetDesktop();
         if (desktop)
         {
-            Float2 mins = Float2(Geometry.Maxs.X - 10, Geometry.Mins.Y);
+            Float2 mins = Float2(m_Geometry.Maxs.X - 10, m_Geometry.Mins.Y);
             Float2 maxs = mins + 10.0f;
 
             Float2 p = GUIManager->CursorPosition;
@@ -69,7 +69,7 @@ bool UIDockWidget::OnChildrenMouseButtonEvent(SMouseButtonEvent const& event, do
 
 void UIDockWidget::PostDraw(ACanvas& canvas)
 {
-    Float2 mins = Float2(Geometry.Maxs.X - 10, Geometry.Mins.Y);
+    Float2 mins = Float2(m_Geometry.Maxs.X - 10, m_Geometry.Mins.Y);
     Float2 maxs = mins + 10.0f;
 
     canvas.DrawTriangleFilled(mins,

@@ -32,7 +32,7 @@ SOFTWARE.
 
 #include "UIObject.h"
 
-#include <Runtime/Canvas.h>
+#include <Runtime/Canvas/Canvas.h>
 
 class UICursor : public UIObject
 {

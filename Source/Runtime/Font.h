@@ -65,30 +65,6 @@ private:
     int                        m_FontImageIdx{};
 };
 
-struct TextBounds
-{
-    float MinX;
-    float MinY;
-    float MaxX;
-    float MaxY;
-
-    float Width() const
-    {
-        return MaxX - MinX;
-    }
-
-    float Height() const
-    {
-        return MaxY - MinY;
-    }
-};
-
-//struct TextLineBounds
-//{
-//    float MinY;
-//    float MaxY;
-//};
-
 struct TextMetrics
 {
     float Ascender;
@@ -110,10 +86,30 @@ struct TextRow
     /** Logical width of the row. */
     float Width;
 
-    /** Actual bounds of the row.Logical with and bounds can differ because of kerning and some parts over extending. */
+    /** Actual bounds of the row. Logical with and bounds can differ because of kerning and some parts over extending. */
     float MinX, MaxX;
 
     AStringView GetStringView() const { return AStringView(Start, End); }
+};
+
+struct TextRowW
+{
+    /** Pointer to the input text where the row starts. */
+    const WideChar* Start;
+
+    /** Pointer to the input text where the row ends(one past the last character). */
+    const WideChar* End;
+
+    /** Pointer to the beginning of the next row. */
+    const WideChar* Next;
+
+    /** Logical width of the row. */
+    float Width;
+
+    /** Actual bounds of the row. Logical width and bounds can differ because of kerning and some parts over extending. */
+    float MinX, MaxX;
+
+    AWideStringView GetStringView() const { return AWideStringView(Start, End); }
 };
 
 struct FontStyle
@@ -130,18 +126,6 @@ struct FontStyle
     float LineHeight{1};
 };
 
-struct GlyphPosition
-{
-    /** Position of the glyph in the input string. */
-    const char* Str;
-
-    /** The x - coordinate of the logical glyph position. */
-    float X;
-
-    /** The bounds of the glyph shape. */
-    float MinX, MaxX;
-};
-
 class AFont : public AResource
 {
     HK_CLASS(AFont, AResource)
@@ -155,33 +139,23 @@ public:
         return m_FontId;
     }
 
-    /** Measures the specified text string (see TextBounds structure).
-    Returns horizontal advance of the text. */
-    float GetTextBounds(FontStyle const& fontStyle, AStringView text, TextBounds& bounds);
-
-    /** Returns horizontal advance of the text. */
-    float GetTextAdvance(FontStyle const& fontStyle, AStringView text);
-
-    /** Measures the size of specified multi-text string */
-    Float2 GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AStringView text) const;
-
-    //void CalcLineBounds(float fontSize, int align, float y, TextLineBounds& bounds);
-
     /** Returns the vertical metrics based on the current text style. */
     void GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metrics) const;
 
     float GetCharAdvance(FontStyle const& fontStyle, WideChar ch) const;
-    
-    /** Calculates the glyph x positions of the specified text.
-    Measured values are returned in local coordinate space. */
-    int GetTextGlyphPositions(FontStyle const& fontStyle, AStringView text, GlyphPosition* positions, int maxPositions);
+
+    /** Measures the size of specified multi-text string */
+    Float2 GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AStringView text, bool bKeepSpaces = false) const;
+    Float2 GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AWideStringView text, bool bKeepSpaces = false) const;
 
     /** Breaks the specified text into lines.
     White space is stripped at the beginning of the rows, the text is split at word boundaries or when new-line characters are encountered.
     Words longer than the max width are slit at nearest character (i.e. no hyphenation). */
     int TextBreakLines(FontStyle const& fontStyle, AStringView text, float breakRowWidth, TextRow* rows, int maxRows, bool bKeepSpaces = false) const;
+    int TextBreakLines(FontStyle const& fontStyle, AWideStringView text, float breakRowWidth, TextRowW* rows, int maxRows, bool bKeepSpaces = false) const;
 
-    int TextLineCount(FontStyle const& fontStyle, AStringView text, float breakRowWidth) const;
+    int TextLineCount(FontStyle const& fontStyle, AStringView text, float breakRowWidth, bool bKeepSpaces = false) const;
+    int TextLineCount(FontStyle const& fontStyle, AWideStringView text, float breakRowWidth, bool bKeepSpaces = false) const;
 
     bool AddFallbackFont(AFont* fallbackFont);
     void ResetFallbackFonts();
@@ -196,7 +170,7 @@ protected:
     const char* GetDefaultResourcePath() const override { return "/Default/Fonts/Default"; }
 
 private:
-    int                  m_FontId{};
+    int                  m_FontId = -1;
     mutable TRef<AFontStash> m_FontStash;
     HeapBlob             m_Blob;
     TVector<TRef<AFont>> m_Fallbacks;

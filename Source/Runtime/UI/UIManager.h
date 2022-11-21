@@ -74,6 +74,10 @@ public:
     void SetActiveDesktop(UIDesktop* desktop);
     UIDesktop* GetActiveDesktop() { return m_ActiveDesktop; }
 
+    void OpenPopupWidget(UIWidget* widget);
+    void OpenPopupWidget(UIWidget* widget, Float2 const& position);
+    void ClosePopupWidget();
+
     void SetInsertMode(bool bInsertMode);
     bool IsInsertMode() const;
 
@@ -108,6 +112,9 @@ private:
     mutable TRef<UIBrush>            m_SliderBrush;
     mutable TRef<UIBrush>            m_ScrollbarBrush;
     bool                             m_bInsertMode{};
+    TWeakRef<UIWidget>               m_TooltipWidget;
+    float                            m_TooltipTime{};
+    Float2                           m_TooltipPosition;
 };
 
 extern UIManager* GUIManager;

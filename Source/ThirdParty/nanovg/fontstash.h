@@ -1,3 +1,5 @@
+// NOTE. This is a modified version. The original version of nanovg is at https://github.com/memononen/nanovg.
+
 //
 // Copyright (c) 2009-2013 Mikko Mononen memon@inside.org
 //
@@ -117,6 +119,9 @@ extern "C"
         const char*      str;
         const char*      next;
         const char*      end;
+        const uint16_t*  wstr;
+        const uint16_t*  wnext;
+        const uint16_t*  wend;
         unsigned int     utf8state;
         int              bitmapOption;
     };
@@ -183,6 +188,13 @@ extern "C"
 
     // Measure text
     float fonsTextBounds(FONScontext* s, float x, float y, const char* string, const char* end, float* bounds);
+    float fonsTextBoundsW(FONScontext*    stash,
+                          float           x,
+                          float           y,
+                          const uint16_t* str,
+                          const uint16_t* end,
+                          float*          bounds);
+
     void  fonsLineBounds(FONScontext* s, float y, float* miny, float* maxy);
     void  fonsVertMetrics(FONScontext* s, float* ascender, float* descender, float* lineh);
     //float fonsCharAdvance(FONScontext* stash, const char* str, const char* end);
@@ -191,6 +203,9 @@ extern "C"
     // Text iterator
     int fonsTextIterInit(FONScontext* stash, FONStextIter* iter, float x, float y, const char* str, const char* end, int bitmapOption);
     int fonsTextIterNext(FONScontext* stash, FONStextIter* iter, struct FONSquad* quad);
+
+	int fonsTextIterInitW(FONScontext* stash, FONStextIter* iter, float x, float y, const uint16_t* str, const uint16_t* end, int bitmapOption);
+    int fonsTextIterNextW(FONScontext* stash, FONStextIter* iter, FONSquad* quad);
 
     // Pull texture changes
     const unsigned char* fonsGetTextureData(FONScontext* stash, int* width, int* height);
@@ -327,7 +342,7 @@ static void* fons__tmpalloc(size_t size, void* up);
 static void fons__tmpfree(void* ptr, void* up);
 #define STBTT_malloc(x,u)    fons__tmpalloc(x,u)
 #define STBTT_free(x,u)      fons__tmpfree(x,u)
-#include "../stb/stb_truetype.h"
+#include "stb/stb_truetype.h"
 
 struct FONSttFontImpl {
 	stbtt_fontinfo font;
@@ -1297,6 +1312,64 @@ int fonsTextIterInit(FONScontext* stash, FONStextIter* iter,
 	return 1;
 }
 
+static size_t StringLengthW(const uint16_t* pRawString)
+{
+    const uint16_t* p = pRawString;
+    while (*p)
+        ++p;
+    return (size_t)(p - pRawString);
+}
+
+int fonsTextIterInitW(FONScontext* stash, FONStextIter* iter, float x, float y, const uint16_t* str, const uint16_t* end, int bitmapOption)
+{
+    FONSstate* state = &stash->state;
+    float      width;
+
+    memset(iter, 0, sizeof(*iter));
+
+    if (stash == NULL) return 0;
+    if (state->font < 0 || state->font >= stash->nfonts) return 0;
+    iter->font = stash->fonts[state->font];
+    if (iter->font->data == NULL) return 0;
+
+    iter->isize = (short)(state->size * 10.0f);
+    iter->iblur = (short)state->blur;
+    iter->scale = fons__tt_getPixelHeightScale(&iter->font->font, (float)iter->isize / 10.0f);
+
+    // Align horizontally
+    if (state->align & FONS_ALIGN_LEFT)
+    {
+        // empty
+    }
+    else if (state->align & FONS_ALIGN_RIGHT)
+    {
+        width = fonsTextBoundsW(stash, x, y, str, end, NULL);
+        x -= width;
+    }
+    else if (state->align & FONS_ALIGN_CENTER)
+    {
+        width = fonsTextBoundsW(stash, x, y, str, end, NULL);
+        x -= width * 0.5f;
+    }
+    // Align vertically.
+    y += fons__getVertAlign(stash, iter->font, state->align, iter->isize);
+
+    if (end == NULL)
+        end = str + StringLengthW(str);
+
+    iter->x = iter->nextx = x;
+    iter->y = iter->nexty = y;
+    iter->spacing         = state->spacing;
+    iter->wstr            = str;
+    iter->wnext           = str;
+    iter->wend            = end;
+    iter->codepoint       = 0;
+    iter->prevGlyphIndex  = -1;
+    iter->bitmapOption    = bitmapOption;
+
+    return 1;
+}
+
 int fonsTextIterNext(FONScontext* stash, FONStextIter* iter, FONSquad* quad)
 {
 	FONSglyph* glyph = NULL;
@@ -1323,6 +1396,30 @@ int fonsTextIterNext(FONScontext* stash, FONStextIter* iter, FONSquad* quad)
 	iter->next = str;
 
 	return 1;
+}
+
+int fonsTextIterNextW(FONScontext* stash, FONStextIter* iter, FONSquad* quad)
+{
+    FONSglyph*  glyph = NULL;
+    const uint16_t* str   = iter->wnext;
+    iter->wstr         = iter->wnext;
+
+    if (str == iter->wend)
+        return 0;
+
+    iter->codepoint = *str++;
+    // Get glyph and quad
+    iter->x = iter->nextx;
+    iter->y = iter->nexty;
+    glyph   = fons__getGlyph(stash, iter->font, iter->codepoint, iter->isize, iter->iblur, iter->bitmapOption);
+    // If the iterator was initialized with FONS_GLYPH_BITMAP_OPTIONAL, then the UV coordinates of the quad will be invalid.
+    if (glyph != NULL)
+        fons__getQuad(stash, iter->font, iter->prevGlyphIndex, glyph, iter->scale, iter->spacing, &iter->nextx, &iter->nexty, quad);
+    iter->prevGlyphIndex = glyph != NULL ? glyph->index : -1;
+
+    iter->wnext = str;
+
+    return 1;
 }
 
 float fonsTextBounds(FONScontext* stash,
@@ -1400,6 +1497,95 @@ float fonsTextBounds(FONScontext* stash,
 	}
 
 	return advance;
+}
+
+float fonsTextBoundsW(FONScontext* stash,
+                     float        x,
+                     float        y,
+                     const uint16_t*  str,
+                     const uint16_t* end,
+                     float*       bounds)
+{
+    FONSstate*   state = &stash->state;
+    unsigned int codepoint;
+    FONSquad     q;
+    FONSglyph*   glyph          = NULL;
+    int          prevGlyphIndex = -1;
+    short        isize          = (short)(state->size * 10.0f);
+    short        iblur          = (short)state->blur;
+    float        scale;
+    FONSfont*    font;
+    float        startx, advance;
+    float        minx, miny, maxx, maxy;
+
+    if (stash == NULL) return 0;
+    if (state->font < 0 || state->font >= stash->nfonts) return 0;
+    font = stash->fonts[state->font];
+    if (font->data == NULL) return 0;
+
+    scale = fons__tt_getPixelHeightScale(&font->font, (float)isize / 10.0f);
+
+    // Align vertically.
+    y += fons__getVertAlign(stash, font, state->align, isize);
+
+    minx = maxx = x;
+    miny = maxy = y;
+    startx      = x;
+
+    if (end == NULL)
+        end = str + StringLengthW(str);
+
+    for (; str != end; ++str)
+    {
+        codepoint = *str;
+
+        glyph = fons__getGlyph(stash, font, codepoint, isize, iblur, FONS_GLYPH_BITMAP_OPTIONAL);
+        if (glyph != NULL)
+        {
+            fons__getQuad(stash, font, prevGlyphIndex, glyph, scale, state->spacing, &x, &y, &q);
+            if (q.x0 < minx) minx = q.x0;
+            if (q.x1 > maxx) maxx = q.x1;
+            if (stash->params.flags & FONS_ZERO_TOPLEFT)
+            {
+                if (q.y0 < miny) miny = q.y0;
+                if (q.y1 > maxy) maxy = q.y1;
+            }
+            else
+            {
+                if (q.y1 < miny) miny = q.y1;
+                if (q.y0 > maxy) maxy = q.y0;
+            }
+        }
+        prevGlyphIndex = glyph != NULL ? glyph->index : -1;
+    }
+
+    advance = x - startx;
+
+    // Align horizontally
+    if (state->align & FONS_ALIGN_LEFT)
+    {
+        // empty
+    }
+    else if (state->align & FONS_ALIGN_RIGHT)
+    {
+        minx -= advance;
+        maxx -= advance;
+    }
+    else if (state->align & FONS_ALIGN_CENTER)
+    {
+        minx -= advance * 0.5f;
+        maxx -= advance * 0.5f;
+    }
+
+    if (bounds)
+    {
+        bounds[0] = minx;
+        bounds[1] = miny;
+        bounds[2] = maxx;
+        bounds[3] = maxy;
+    }
+
+    return advance;
 }
 
 float fonsCharAdvanceCP(FONScontext* stash, unsigned int codepoint)

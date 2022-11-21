@@ -32,7 +32,8 @@ SOFTWARE.
 #include "EmbeddedResources.h"
 #include "Engine.h"
 
-#include "nanovg/fontstash.h"
+#define FONTSTASH_IMPLEMENTATION
+#include <ThirdParty/nanovg/fontstash.h>
 
 HK_CLASS_META(AFont)
 
@@ -41,7 +42,7 @@ AFontStash::AFontStash()
     using namespace RenderCore;
 
     FONSparams fontParams = {};
-    
+
     fontParams.width  = INITIAL_FONTIMAGE_SIZE;
     fontParams.height = INITIAL_FONTIMAGE_SIZE;
     fontParams.flags  = FONS_ZERO_TOPLEFT;
@@ -136,12 +137,12 @@ void AFontStash::UpdateTexture()
 
         if (fontImage)
         {
-            int                  iw, ih;
-            const uint8_t*       data = fonsGetTextureData(m_pImpl, &iw, &ih);
-            int                  x    = dirty[0];
-            int                  y    = dirty[1];
-            int                  w    = dirty[2] - dirty[0];
-            int                  h    = dirty[3] - dirty[1];
+            int            iw, ih;
+            const uint8_t* data = fonsGetTextureData(m_pImpl, &iw, &ih);
+            int            x    = dirty[0];
+            int            y    = dirty[1];
+            int            w    = dirty[2] - dirty[0];
+            int            h    = dirty[3] - dirty[1];
 
             STextureDesc const& desc = fontImage->GetDesc();
 
@@ -168,7 +169,7 @@ void AFontStash::Cleanup()
     if (m_FontImageIdx != 0)
     {
         TRef<ITexture> fontImage = m_FontImages[m_FontImageIdx];
-        int i, j;
+        int            i, j;
         // delete images that smaller than current one
         if (!fontImage)
             return;
@@ -187,9 +188,9 @@ void AFontStash::Cleanup()
             }
         }
         // make current font image to first
-        m_FontImages[j++]    = m_FontImages[0];
+        m_FontImages[j++] = m_FontImages[0];
         m_FontImages[0]   = fontImage;
-        m_FontImageIdx       = 0;
+        m_FontImageIdx    = 0;
         // clear all images after j
         for (i = j; i < MAX_FONT_IMAGES; i++)
             m_FontImages[i].Reset();
@@ -206,64 +207,27 @@ AFont::~AFont()
     fonsRemoveFont(m_FontStash->GetImpl(), m_FontId);
 }
 
-float AFont::GetTextBounds(FontStyle const& fontStyle, AStringView text, TextBounds& bounds)
+Float2 AFont::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AStringView text, bool bKeepSpaces) const
 {
-    FONScontext* fs = m_FontStash->GetImpl();
+    if (m_FontId == FONS_INVALID)
+        return {};
 
-    float scale = GEngine->GetRetinaScale().X;
-    float invscale = 1.0f / scale;
+    FONScontext* fs   = m_FontStash->GetImpl();
+    FONSfont*    font = fs->fonts[m_FontId];
 
-    fonsSetSize(fs, fontStyle.FontSize * scale);
-    fonsSetSpacing(fs, fontStyle.LetterSpacing * scale);
-    fonsSetBlur(fs, fontStyle.FontBlur * scale);
-    fonsSetAlign(fs, FONS_ALIGN_LEFT | FONS_ALIGN_TOP);
-    fonsSetFont(fs, m_FontId);
-
-    float width = fonsTextBounds(fs, 0, 0, text.Begin(), text.End(), &bounds.MinX);
-
-    fonsLineBounds(fs, 0, &bounds.MinY, &bounds.MaxY);
-
-    bounds.MinX *= invscale;
-    bounds.MinY *= invscale;
-    bounds.MaxX *= invscale;
-    bounds.MaxY *= invscale;
-
-    return width * invscale;
-}
-
-Float2 AFont::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AStringView text) const
-{
-    FONScontext* fs = m_FontStash->GetImpl();
-
-    static TextRow rows[128];
-    float          scale    = GEngine->GetRetinaScale().X;
-    float          invscale = 1.0f / scale;
-    int            nrows;
-
-    float lineh = 0, rminy = 0, rmaxy = 0;
-
-    fonsSetSize(fs, fontStyle.FontSize * scale);
-    fonsSetSpacing(fs, fontStyle.LetterSpacing* scale);
-    fonsSetBlur(fs, fontStyle.FontBlur * scale);
-    fonsSetAlign(fs, FONS_ALIGN_LEFT | FONS_ALIGN_TOP);
-    fonsSetFont(fs, m_FontId);
-
-    fonsVertMetrics(fs, nullptr, nullptr, &lineh);
-    lineh *= invscale;
-    lineh *= fontStyle.LineHeight;    
-    
-    fonsLineBounds(fs, 0, &rminy, &rmaxy);
-
-    rminy *= invscale;
-    rmaxy *= invscale;
+    float scale    = GEngine->GetRetinaScale().X;
+    //float invscale = 1.0f / scale;
+    float fontSize = fontStyle.FontSize * scale;
+    short isize    = (short)(fontSize * 10.0f);
+    float lineh    = font->lineh * isize / 10.0f/* * invscale*/ * fontStyle.LineHeight;
 
     float minx = 0;
     float maxx = 0;
-    float miny = 0;
-    float maxy = 0;
-    float y    = 0;
 
-    while ((nrows = TextBreakLines(fontStyle, text, breakRowWidth, rows, HK_ARRAY_SIZE(rows))) > 0)
+    static TextRow rows[128];
+    int            nrows;
+    int            totalrows = 0;
+    while ((nrows = TextBreakLines(fontStyle, text, breakRowWidth, rows, HK_ARRAY_SIZE(rows), bKeepSpaces)) > 0)
     {
         for (int i = 0; i < nrows; i++)
         {
@@ -271,16 +235,52 @@ Float2 AFont::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AS
 
             minx = Math::Min(minx, row->MinX);
             maxx = Math::Max(maxx, row->MaxX);
-
-            miny = Math::Min(miny, y + rminy);
-            maxy = Math::Max(maxy, y + rmaxy);
-
-            y += lineh;
         }
+
+        totalrows += nrows;
+
         text = AStringView(rows[nrows - 1].Next, text.End());
     }
 
-    return Float2(maxx - minx, maxy - miny);
+    return Float2(maxx - minx, totalrows * lineh);
+}
+
+Float2 AFont::GetTextBoxSize(FontStyle const& fontStyle, float breakRowWidth, AWideStringView text, bool bKeepSpaces) const
+{
+    if (m_FontId == FONS_INVALID)
+        return {};
+
+    FONScontext* fs   = m_FontStash->GetImpl();
+    FONSfont*    font = fs->fonts[m_FontId];
+
+    float scale    = GEngine->GetRetinaScale().X;
+    //float invscale = 1.0f / scale;
+    float fontSize = fontStyle.FontSize * scale;
+    short isize    = (short)(fontSize * 10.0f);
+    float lineh    = font->lineh * isize / 10.0f/* * invscale*/ * fontStyle.LineHeight;
+
+    float minx = 0;
+    float maxx = 0;
+
+    static TextRowW rows[128];
+    int             nrows;
+    int             totalrows = 0;
+    while ((nrows = TextBreakLines(fontStyle, text, breakRowWidth, rows, HK_ARRAY_SIZE(rows), bKeepSpaces)) > 0)
+    {
+        for (int i = 0; i < nrows; i++)
+        {
+            TextRowW* row = &rows[i];
+
+            minx = Math::Min(minx, row->MinX);
+            maxx = Math::Max(maxx, row->MaxX);
+        }
+
+        totalrows += nrows;
+
+        text = AWideStringView(rows[nrows - 1].Next, text.End());
+    }
+
+    return Float2(maxx - minx, totalrows * lineh);
 }
 
 enum NVGcodepointType
@@ -293,11 +293,14 @@ enum NVGcodepointType
 
 int AFont::TextBreakLines(FontStyle const& fontStyle, AStringView text, float breakRowWidth, TextRow* rows, int maxRows, bool bKeepSpaces) const
 {
-    FONScontext* fs       = m_FontStash->GetImpl();
+    if (m_FontId == FONS_INVALID)
+        return 0;
+
+    FONScontext* fs    = m_FontStash->GetImpl();
     AFontStash*  stash = m_FontStash;
 
-    float        scale    = GEngine->GetRetinaScale().X;
-    float        invscale = 1.0f / scale;
+    float scale    = GEngine->GetRetinaScale().X;
+    float invscale = 1.0f / scale;
 
     //float        scale    = nvg__getFontScale(state) * ctx->devicePxRatio;
     //float        invscale = 1.0f / scale;
@@ -320,9 +323,11 @@ int AFont::TextBreakLines(FontStyle const& fontStyle, AStringView text, float br
     int          type = NVG_SPACE, ptype = NVG_SPACE;
     unsigned int pcodepoint = 0;
 
-    if (maxRows == 0) return 0;
+    if (maxRows <= 0)
+        return 0;
 
-    if (text.IsEmpty()) return 0;
+    if (text.IsEmpty())
+        return 0;
 
     fonsSetSize(fs, fontStyle.FontSize * scale);
     fonsSetSpacing(fs, fontStyle.LetterSpacing * scale);
@@ -517,12 +522,18 @@ int AFont::TextBreakLines(FontStyle const& fontStyle, AStringView text, float br
     return nrows;
 }
 
-int AFont::TextLineCount(FontStyle const& fontStyle, AStringView text, float breakRowWidth) const
+int AFont::TextLineCount(FontStyle const& fontStyle, AStringView text, float breakRowWidth, bool bKeepSpaces) const
 {
+    if (m_FontId == FONS_INVALID)
+        return 0;
+
+    if (text.IsEmpty())
+        return 0;
+
     FONScontext* fs    = m_FontStash->GetImpl();
     AFontStash*  stash = m_FontStash;
 
-    float scale    = GEngine->GetRetinaScale().X;
+    float scale = GEngine->GetRetinaScale().X;
 
     FONStextIter iter, prevIter;
     FONSquad     q;
@@ -541,7 +552,58 @@ int AFont::TextLineCount(FontStyle const& fontStyle, AStringView text, float bre
     int          type = NVG_SPACE, ptype = NVG_SPACE;
     unsigned int pcodepoint = 0;
 
-    if (text.IsEmpty()) return 0;
+    if (breakRowWidth == Math::MaxValue<float>())
+    {
+        // Fast path
+
+        bool word = false;
+
+        for (const char *s = text.Begin(), *e = text.End(); s < e; s++)
+        {
+            switch (*s)
+            {
+                case 9:  // \t
+                case 11: // \v
+                case 12: // \f
+                case 32: // space
+                    type = NVG_SPACE;
+                    break;
+                case 10: // \n
+                    type = pcodepoint == 13 ? NVG_SPACE : NVG_NEWLINE;
+                    break;
+                case 13: // \r
+                    type = pcodepoint == 10 ? NVG_SPACE : NVG_NEWLINE;
+                    break;
+                case 0x0085: // NEL
+                    type = NVG_NEWLINE;
+                    break;
+                default:
+                    type = NVG_CHAR;
+                    break;
+            }
+
+            if (type == NVG_NEWLINE)
+            {
+                nrows++;
+                word = false;
+            }
+            else
+            {
+                if (type == NVG_CHAR || (bKeepSpaces && type == NVG_SPACE))
+                {
+                    word = true;
+                }
+            }
+            pcodepoint = *s;
+            ptype      = type;
+        }
+
+        // Break the line from the end of the last word, and start new line from the beginning of the new.
+        if (word)
+            nrows++;
+
+        return nrows;
+    }
 
     fonsSetSize(fs, fontStyle.FontSize * scale);
     fonsSetSpacing(fs, fontStyle.LetterSpacing * scale);
@@ -604,14 +666,14 @@ int AFont::TextLineCount(FontStyle const& fontStyle, AStringView text, float bre
             rowStart = NULL;
             rowEnd   = NULL;
             rowWidth = 0;
-            rowMaxX = 0;
+            rowMaxX  = 0;
         }
         else
         {
             if (rowStart == NULL)
             {
                 // Skip white space until the beginning of the line
-                if (type == NVG_CHAR || type == NVG_CJK_CHAR)
+                if (type == NVG_CHAR || type == NVG_CJK_CHAR || (bKeepSpaces && type == NVG_SPACE))
                 {
                     // The current char is the row so far
                     rowStartX  = iter.x;
@@ -703,62 +765,40 @@ int AFont::TextLineCount(FontStyle const& fontStyle, AStringView text, float bre
     return nrows;
 }
 
-//void AFont::CalcLineBounds(float fontSize, int align, float y, TextLineBounds& bounds)
-//{
-//    FONScontext* fs = m_FontStash->GetImpl();
-//
-//    float scale = GEngine->GetRetinaScale().X;
-//
-//    fonsSetSize(fs, fontSize * scale);
-//    //fonsSetSpacing(fs,spacing * scale); don't care
-//    //fonsSetBlur(fs, blur * scale); don't care
-//    fonsSetAlign(fs, align);
-//    fonsSetFont(fs, m_FontId);
-//    fonsLineBounds(fs, y, &bounds.MinY, &bounds.MaxY);
-//}
-
-void AFont::GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metrics) const
+int AFont::TextBreakLines(FontStyle const& fontStyle, AWideStringView text, float breakRowWidth, TextRowW* rows, int maxRows, bool bKeepSpaces) const
 {
-    FONScontext* fs = m_FontStash->GetImpl();
+    if (m_FontId == FONS_INVALID)
+        return 0;
 
-    float scale = GEngine->GetRetinaScale().X;
+    FONScontext* fs    = m_FontStash->GetImpl();
+    AFontStash*  stash = m_FontStash;
 
-    fonsSetSize(fs, fontStyle.FontSize * scale);
-    //fonsSetSpacing(fs, letterSpacing * scale);
-    //fonsSetBlur(fs, fontBlur * scale);
-    //fonsSetAlign(fs, textAlign);
-    fonsSetFont(fs, m_FontId);
+    float scale    = GEngine->GetRetinaScale().X;
+    float invscale = 1.0f / scale;
 
-    fonsVertMetrics(fs, &metrics.Ascender, &metrics.Descender, &metrics.LineHeight);
-}
+    //float        scale    = nvg__getFontScale(state) * ctx->devicePxRatio;
+    //float        invscale = 1.0f / scale;
 
-float AFont::GetCharAdvance(FontStyle const& fontStyle, WideChar ch) const
-{
-    FONScontext* fs = m_FontStash->GetImpl();
+    FONStextIter    iter, prevIter;
+    FONSquad        q;
+    int             nrows      = 0;
+    float           rowStartX  = 0;
+    float           rowWidth   = 0;
+    float           rowMinX    = 0;
+    float           rowMaxX    = 0;
+    const WideChar* rowStart   = NULL;
+    const WideChar* rowEnd     = NULL;
+    const WideChar* wordStart  = NULL;
+    float           wordStartX = 0;
+    float           wordMinX   = 0;
+    const WideChar* breakEnd   = NULL;
+    float           breakWidth = 0;
+    float           breakMaxX  = 0;
+    int             type = NVG_SPACE, ptype = NVG_SPACE;
+    unsigned int    pcodepoint = 0;
 
-    float scale = GEngine->GetRetinaScale().X;
-
-    fonsSetSize(fs, fontStyle.FontSize * scale);
-    fonsSetBlur(fs, fontStyle.FontBlur * scale);
-    fonsSetFont(fs, m_FontId);
-
-    return fonsCharAdvanceCP(fs, ch) / scale;
-}
-
-float AFont::GetTextAdvance(FontStyle const& fontStyle, AStringView text)
-{
-    TextBounds dummy;
-    return GetTextBounds(fontStyle, text, dummy);
-}
-
-int AFont::GetTextGlyphPositions(FontStyle const& fontStyle, AStringView text, GlyphPosition* positions, int maxPositions)
-{
-    FONScontext* fs       = m_FontStash->GetImpl();
-    float        scale    = GEngine->GetRetinaScale().X;
-    float        invscale = 1.0f / scale;
-    FONStextIter iter, prevIter;
-    FONSquad     q;
-    int          npos = 0;
+    if (maxRows <= 0)
+        return 0;
 
     if (text.IsEmpty())
         return 0;
@@ -769,26 +809,475 @@ int AFont::GetTextGlyphPositions(FontStyle const& fontStyle, AStringView text, G
     fonsSetAlign(fs, FONS_ALIGN_LEFT | FONS_ALIGN_TOP);
     fonsSetFont(fs, m_FontId);
 
-    fonsTextIterInit(fs, &iter, 0, 0, text.Begin(), text.End(), FONS_GLYPH_BITMAP_OPTIONAL);
+    breakRowWidth *= scale;
+
+    fonsTextIterInitW(fs, &iter, 0, 0, text.Begin(), text.End(), FONS_GLYPH_BITMAP_OPTIONAL);
     prevIter = iter;
-    while (fonsTextIterNext(fs, &iter, &q))
+    while (fonsTextIterNextW(fs, &iter, &q))
     {
-        if (iter.prevGlyphIndex < 0 && m_FontStash->ReallocTexture())
+        if (iter.prevGlyphIndex < 0 && stash->ReallocTexture())
         { // can not retrieve glyph?
             iter = prevIter;
-            fonsTextIterNext(fs, &iter, &q); // try again
+            fonsTextIterNextW(fs, &iter, &q); // try again
         }
-        prevIter             = iter;
-        positions[npos].Str  = iter.str;
-        positions[npos].X    = iter.x * invscale;
-        positions[npos].MinX = Math::Min(iter.x, q.x0) * invscale;
-        positions[npos].MaxX = Math::Max(iter.nextx, q.x1) * invscale;
-        npos++;
-        if (npos >= maxPositions)
-            break;
+        prevIter = iter;
+        switch (iter.codepoint)
+        {
+            case 9:      // \t
+            case 11:     // \v
+            case 12:     // \f
+            case 32:     // space
+            case 0x00a0: // NBSP
+                type = NVG_SPACE;
+                break;
+            case 10: // \n
+                type = pcodepoint == 13 ? NVG_SPACE : NVG_NEWLINE;
+                break;
+            case 13: // \r
+                type = pcodepoint == 10 ? NVG_SPACE : NVG_NEWLINE;
+                break;
+            case 0x0085: // NEL
+                type = NVG_NEWLINE;
+                break;
+            default:
+                if ((iter.codepoint >= 0x4E00 && iter.codepoint <= 0x9FFF) ||
+                    (iter.codepoint >= 0x3000 && iter.codepoint <= 0x30FF) ||
+                    (iter.codepoint >= 0xFF00 && iter.codepoint <= 0xFFEF) ||
+                    (iter.codepoint >= 0x1100 && iter.codepoint <= 0x11FF) ||
+                    (iter.codepoint >= 0x3130 && iter.codepoint <= 0x318F) ||
+                    (iter.codepoint >= 0xAC00 && iter.codepoint <= 0xD7AF))
+                    type = NVG_CJK_CHAR;
+                else
+                    type = NVG_CHAR;
+                break;
+        }
+
+        if (type == NVG_NEWLINE)
+        {
+            // Always handle new lines.
+            rows[nrows].Start = rowStart != NULL ? rowStart : iter.wstr;
+            rows[nrows].End   = rowEnd != NULL ? rowEnd : iter.wstr;
+            rows[nrows].Width = rowWidth * invscale;
+            rows[nrows].MinX  = rowMinX * invscale;
+            rows[nrows].MaxX  = rowMaxX * invscale;
+            rows[nrows].Next  = iter.wnext;
+            nrows++;
+            if (nrows >= maxRows)
+                return nrows;
+            // Set null break point
+            breakEnd   = rowStart;
+            breakWidth = 0.0;
+            breakMaxX  = 0.0;
+            // Indicate to skip the white space at the beginning of the row.
+            rowStart = NULL;
+            rowEnd   = NULL;
+            rowWidth = 0;
+            rowMinX = rowMaxX = 0;
+        }
+        else
+        {
+            if (rowStart == NULL)
+            {
+                // Skip white space until the beginning of the line
+                if (type == NVG_CHAR || type == NVG_CJK_CHAR || (bKeepSpaces && type == NVG_SPACE))
+                {
+                    // The current char is the row so far
+                    rowStartX  = iter.x;
+                    rowStart   = iter.wstr;
+                    rowEnd     = iter.wnext;
+                    rowWidth   = iter.nextx - rowStartX; // q.x1 - rowStartX;
+                    rowMinX    = q.x0 - rowStartX;
+                    rowMaxX    = q.x1 - rowStartX;
+                    wordStart  = iter.wstr;
+                    wordStartX = iter.x;
+                    wordMinX   = q.x0 - rowStartX;
+                    // Set null break point
+                    breakEnd   = rowStart;
+                    breakWidth = 0.0;
+                    breakMaxX  = 0.0;
+                }
+            }
+            else
+            {
+                float nextWidth = iter.nextx - rowStartX;
+
+                // track last non-white space character
+                if (type == NVG_CHAR || type == NVG_CJK_CHAR || (bKeepSpaces && type == NVG_SPACE))
+                {
+                    rowEnd   = iter.wnext;
+                    rowWidth = iter.nextx - rowStartX;
+                    rowMaxX  = q.x1 - rowStartX;
+                }
+                // track last end of a word
+                if (((ptype == NVG_CHAR || ptype == NVG_CJK_CHAR) && type == NVG_SPACE) || type == NVG_CJK_CHAR)
+                {
+                    breakEnd   = iter.wstr;
+                    breakWidth = rowWidth;
+                    breakMaxX  = rowMaxX;
+                }
+                // track last beginning of a word
+                if ((ptype == NVG_SPACE && (type == NVG_CHAR || type == NVG_CJK_CHAR)) || type == NVG_CJK_CHAR)
+                {
+                    wordStart  = iter.wstr;
+                    wordStartX = iter.x;
+                    wordMinX   = q.x0 - rowStartX;
+                }
+
+                // Break to new line when a character is beyond break width.
+                if ((type == NVG_CHAR || type == NVG_CJK_CHAR) && nextWidth > breakRowWidth)
+                {
+                    // The run length is too long, need to break to new line.
+                    if (breakEnd == rowStart)
+                    {
+                        // The current word is longer than the row length, just break it from here.
+                        rows[nrows].Start = rowStart;
+                        rows[nrows].End   = iter.wstr;
+                        rows[nrows].Width = rowWidth * invscale;
+                        rows[nrows].MinX  = rowMinX * invscale;
+                        rows[nrows].MaxX  = rowMaxX * invscale;
+                        rows[nrows].Next  = iter.wstr;
+                        nrows++;
+                        if (nrows >= maxRows)
+                            return nrows;
+                        rowStartX  = iter.x;
+                        rowStart   = iter.wstr;
+                        rowEnd     = iter.wnext;
+                        rowWidth   = iter.nextx - rowStartX;
+                        rowMinX    = q.x0 - rowStartX;
+                        rowMaxX    = q.x1 - rowStartX;
+                        wordStart  = iter.wstr;
+                        wordStartX = iter.x;
+                        wordMinX   = q.x0 - rowStartX;
+                    }
+                    else
+                    {
+                        // Break the line from the end of the last word, and start new line from the beginning of the new.
+                        rows[nrows].Start = rowStart;
+                        rows[nrows].End   = breakEnd;
+                        rows[nrows].Width = breakWidth * invscale;
+                        rows[nrows].MinX  = rowMinX * invscale;
+                        rows[nrows].MaxX  = breakMaxX * invscale;
+                        rows[nrows].Next  = wordStart;
+                        nrows++;
+                        if (nrows >= maxRows)
+                            return nrows;
+                        rowStartX = wordStartX;
+                        rowStart  = wordStart;
+                        rowEnd    = iter.wnext;
+                        rowWidth  = iter.nextx - rowStartX;
+                        rowMinX   = wordMinX;
+                        rowMaxX   = q.x1 - rowStartX;
+                        // No change to the word start
+                    }
+                    // Set null break point
+                    breakEnd   = rowStart;
+                    breakWidth = 0.0;
+                    breakMaxX  = 0.0;
+                }
+            }
+        }
+
+        pcodepoint = iter.codepoint;
+        ptype      = type;
     }
 
-    return npos;
+    // Break the line from the end of the last word, and start new line from the beginning of the new.
+    if (rowStart != NULL)
+    {
+        rows[nrows].Start = rowStart;
+        rows[nrows].End   = rowEnd;
+        rows[nrows].Width = rowWidth * invscale;
+        rows[nrows].MinX  = rowMinX * invscale;
+        rows[nrows].MaxX  = rowMaxX * invscale;
+        rows[nrows].Next  = text.End();
+        nrows++;
+    }
+
+    return nrows;
+}
+
+int AFont::TextLineCount(FontStyle const& fontStyle, AWideStringView text, float breakRowWidth, bool bKeepSpaces) const
+{
+    if (m_FontId == FONS_INVALID)
+        return 0;
+
+    if (text.IsEmpty())
+        return 0;
+
+    FONScontext* fs    = m_FontStash->GetImpl();
+    AFontStash*  stash = m_FontStash;
+
+    float scale = GEngine->GetRetinaScale().X;
+
+    FONStextIter    iter, prevIter;
+    FONSquad        q;
+    int             nrows      = 0;
+    float           rowStartX  = 0;
+    float           rowWidth   = 0;
+    float           rowMaxX    = 0;
+    const WideChar* rowStart   = NULL;
+    const WideChar* rowEnd     = NULL;
+    const WideChar* wordStart  = NULL;
+    float           wordStartX = 0;
+    float           wordMinX   = 0;
+    const WideChar* breakEnd   = NULL;
+    float           breakWidth = 0;
+    float           breakMaxX  = 0;
+    int             type = NVG_SPACE, ptype = NVG_SPACE;
+    unsigned int    pcodepoint = 0;
+
+    if (breakRowWidth == Math::MaxValue<float>())
+    {
+        // Fast path
+
+        bool word = false;
+
+        for (const WideChar *s = text.Begin(), *e = text.End(); s < e; s++)
+        {
+            switch (*s)
+            {
+                case 9:  // \t
+                case 11: // \v
+                case 12: // \f
+                case 32: // space
+                    type = NVG_SPACE;
+                    break;
+                case 10: // \n
+                    type = pcodepoint == 13 ? NVG_SPACE : NVG_NEWLINE;
+                    break;
+                case 13: // \r
+                    type = pcodepoint == 10 ? NVG_SPACE : NVG_NEWLINE;
+                    break;
+                case 0x0085: // NEL
+                    type = NVG_NEWLINE;
+                    break;
+                default:
+                    type = NVG_CHAR;
+                    break;
+            }
+
+            if (type == NVG_NEWLINE)
+            {
+                nrows++;
+                word = false;
+            }
+            else
+            {
+                if (type == NVG_CHAR || (bKeepSpaces && type == NVG_SPACE))
+                {
+                    word = true;
+                }
+            }
+            pcodepoint = *s;
+            ptype      = type;
+        }
+
+        // Break the line from the end of the last word, and start new line from the beginning of the new.
+        if (word)
+            nrows++;
+
+        return nrows;
+    }
+
+    fonsSetSize(fs, fontStyle.FontSize * scale);
+    fonsSetSpacing(fs, fontStyle.LetterSpacing * scale);
+    fonsSetBlur(fs, fontStyle.FontBlur * scale);
+    fonsSetAlign(fs, FONS_ALIGN_LEFT | FONS_ALIGN_TOP);
+    fonsSetFont(fs, m_FontId);
+
+    breakRowWidth *= scale;
+
+    fonsTextIterInitW(fs, &iter, 0, 0, text.Begin(), text.End(), FONS_GLYPH_BITMAP_OPTIONAL);
+    prevIter = iter;
+    while (fonsTextIterNextW(fs, &iter, &q))
+    {
+        if (iter.prevGlyphIndex < 0 && stash->ReallocTexture())
+        { // can not retrieve glyph?
+            iter = prevIter;
+            fonsTextIterNextW(fs, &iter, &q); // try again
+        }
+        prevIter = iter;
+        switch (iter.codepoint)
+        {
+            case 9:      // \t
+            case 11:     // \v
+            case 12:     // \f
+            case 32:     // space
+            case 0x00a0: // NBSP
+                type = NVG_SPACE;
+                break;
+            case 10: // \n
+                type = pcodepoint == 13 ? NVG_SPACE : NVG_NEWLINE;
+                break;
+            case 13: // \r
+                type = pcodepoint == 10 ? NVG_SPACE : NVG_NEWLINE;
+                break;
+            case 0x0085: // NEL
+                type = NVG_NEWLINE;
+                break;
+            default:
+                if ((iter.codepoint >= 0x4E00 && iter.codepoint <= 0x9FFF) ||
+                    (iter.codepoint >= 0x3000 && iter.codepoint <= 0x30FF) ||
+                    (iter.codepoint >= 0xFF00 && iter.codepoint <= 0xFFEF) ||
+                    (iter.codepoint >= 0x1100 && iter.codepoint <= 0x11FF) ||
+                    (iter.codepoint >= 0x3130 && iter.codepoint <= 0x318F) ||
+                    (iter.codepoint >= 0xAC00 && iter.codepoint <= 0xD7AF))
+                    type = NVG_CJK_CHAR;
+                else
+                    type = NVG_CHAR;
+                break;
+        }
+
+        if (type == NVG_NEWLINE)
+        {
+            // Always handle new lines.
+            nrows++;
+            // Set null break point
+            breakEnd   = rowStart;
+            breakWidth = 0.0;
+            breakMaxX  = 0.0;
+            // Indicate to skip the white space at the beginning of the row.
+            rowStart = NULL;
+            rowEnd   = NULL;
+            rowWidth = 0;
+            rowMaxX  = 0;
+        }
+        else
+        {
+            if (rowStart == NULL)
+            {
+                // Skip white space until the beginning of the line
+                if (type == NVG_CHAR || type == NVG_CJK_CHAR || (bKeepSpaces && type == NVG_SPACE))
+                {
+                    // The current char is the row so far
+                    rowStartX  = iter.x;
+                    rowStart   = iter.wstr;
+                    rowEnd     = iter.wnext;
+                    rowWidth   = iter.nextx - rowStartX; // q.x1 - rowStartX;
+                    rowMaxX    = q.x1 - rowStartX;
+                    wordStart  = iter.wstr;
+                    wordStartX = iter.x;
+                    wordMinX   = q.x0 - rowStartX;
+                    // Set null break point
+                    breakEnd   = rowStart;
+                    breakWidth = 0.0;
+                    breakMaxX  = 0.0;
+                }
+            }
+            else
+            {
+                float nextWidth = iter.nextx - rowStartX;
+
+                // track last non-white space character
+                if (type == NVG_CHAR || type == NVG_CJK_CHAR)
+                {
+                    rowEnd   = iter.wnext;
+                    rowWidth = iter.nextx - rowStartX;
+                    rowMaxX  = q.x1 - rowStartX;
+                }
+                // track last end of a word
+                if (((ptype == NVG_CHAR || ptype == NVG_CJK_CHAR) && type == NVG_SPACE) || type == NVG_CJK_CHAR)
+                {
+                    breakEnd   = iter.wstr;
+                    breakWidth = rowWidth;
+                    breakMaxX  = rowMaxX;
+                }
+                // track last beginning of a word
+                if ((ptype == NVG_SPACE && (type == NVG_CHAR || type == NVG_CJK_CHAR)) || type == NVG_CJK_CHAR)
+                {
+                    wordStart  = iter.wstr;
+                    wordStartX = iter.x;
+                    wordMinX   = q.x0 - rowStartX;
+                }
+
+                // Break to new line when a character is beyond break width.
+                if ((type == NVG_CHAR || type == NVG_CJK_CHAR) && nextWidth > breakRowWidth)
+                {
+                    nrows++;
+
+                    // The run length is too long, need to break to new line.
+                    if (breakEnd == rowStart)
+                    {
+                        // The current word is longer than the row length, just break it from here.
+                        rowStartX  = iter.x;
+                        rowStart   = iter.wstr;
+                        rowEnd     = iter.wnext;
+                        rowWidth   = iter.nextx - rowStartX;
+                        rowMaxX    = q.x1 - rowStartX;
+                        wordStart  = iter.wstr;
+                        wordStartX = iter.x;
+                        wordMinX   = q.x0 - rowStartX;
+                    }
+                    else
+                    {
+                        // Break the line from the end of the last word, and start new line from the beginning of the new.
+                        rowStartX = wordStartX;
+                        rowStart  = wordStart;
+                        rowEnd    = iter.wnext;
+                        rowWidth  = iter.nextx - rowStartX;
+                        rowMaxX   = q.x1 - rowStartX;
+                        // No change to the word start
+                    }
+                    // Set null break point
+                    breakEnd   = rowStart;
+                    breakWidth = 0.0;
+                    breakMaxX  = 0.0;
+                }
+            }
+        }
+
+        pcodepoint = iter.codepoint;
+        ptype      = type;
+    }
+
+    // Break the line from the end of the last word, and start new line from the beginning of the new.
+    if (rowStart != NULL)
+    {
+        nrows++;
+    }
+
+    return nrows;
+}
+
+void AFont::GetTextMetrics(FontStyle const& fontStyle, TextMetrics& metrics) const
+{
+    if (m_FontId == FONS_INVALID)
+    {
+        metrics.Ascender   = 0;
+        metrics.Descender  = 0;
+        metrics.LineHeight = 0;
+        return;
+    }
+
+    FONScontext* fs = m_FontStash->GetImpl();
+
+    float scale    = GEngine->GetRetinaScale().X;
+    float fontSize = fontStyle.FontSize * scale;
+
+    FONSfont* font  = fs->fonts[m_FontId];
+    short     isize = (short)(fontSize * 10.0f);
+
+    metrics.Ascender   = font->ascender * isize / 10.0f;
+    metrics.Descender  = font->descender * isize / 10.0f;
+    metrics.LineHeight = font->lineh * isize / 10.0f;
+
+    metrics.LineHeight *= fontStyle.LineHeight;
+}
+
+float AFont::GetCharAdvance(FontStyle const& fontStyle, WideChar ch) const
+{
+    if (m_FontId == FONS_INVALID)
+        return 0.0f;
+
+    FONScontext* fs = m_FontStash->GetImpl();
+
+    float scale = GEngine->GetRetinaScale().X;
+
+    fonsSetSize(fs, fontStyle.FontSize * scale);
+    fonsSetBlur(fs, fontStyle.FontBlur * scale);
+    fonsSetFont(fs, m_FontId);
+
+    return fonsCharAdvanceCP(fs, ch) / scale;
 }
 
 void AFont::LoadInternalResource(AStringView Path)
@@ -853,7 +1342,13 @@ bool AFont::AddFallbackFont(AFont* fallbackFont)
     if (fallbackFont == this)
         return false;
 
-    if (fonsAddFallbackFont(m_FontStash->GetImpl(), GetId(), fallbackFont->GetId()))
+    if (m_FontId == FONS_INVALID)
+        return false;
+
+    if (fallbackFont->m_FontId == FONS_INVALID)
+        return false;
+
+    if (fonsAddFallbackFont(m_FontStash->GetImpl(), m_FontId, fallbackFont->m_FontId))
     {
         // Keep reference to fallback
         m_Fallbacks.Add(TRef<AFont>(fallbackFont));
@@ -864,6 +1359,9 @@ bool AFont::AddFallbackFont(AFont* fallbackFont)
 
 void AFont::ResetFallbackFonts()
 {
-    fonsResetFallbackFont(m_FontStash->GetImpl(), GetId());
+    if (m_FontId == FONS_INVALID)
+        return;
+
+    fonsResetFallbackFont(m_FontStash->GetImpl(), m_FontId);
     m_Fallbacks.Clear();
 }

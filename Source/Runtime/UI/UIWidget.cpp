@@ -58,32 +58,37 @@ UIWidget::UIWidget() :
 
 UIWidget::~UIWidget()
 {
-    for (UIWidget* widget : Children)
+    for (UIWidget* widget : m_Children)
         widget->RemoveRef();
 }
 
 UIWidget* UIWidget::GetMaster()
 {
     UIWidget* widget = this;
-    while (widget->Parent)
-        widget = widget->Parent;
+    while (widget->m_Parent)
+        widget = widget->m_Parent;
     return widget;
+}
+
+UIWidget* UIWidget::GetParent()
+{
+    return m_Parent;
 }
 
 void UIWidget::UpdateVisibility()
 {
-    VisFrame = UIVisibilityFrame;
+    m_VisFrame = UIVisibilityFrame;
 }
 
 UIWidget* UIWidget::Trace(float x, float y)
 {
     if (HitTest(x, y))
     {
-        if (BvPointInRect(Geometry.PaddedMins, Geometry.PaddedMaxs, x, y))
+        if (BvPointInRect(m_Geometry.PaddedMins, m_Geometry.PaddedMaxs, x, y))
         {
-            for (int i = (int)Children.Size() - 1; i >= 0; --i)
+            for (int i = (int)m_Children.Size() - 1; i >= 0; --i)
             {
-                UIWidget* widget = Children[i]->Trace(x, y);
+                UIWidget* widget = m_Children[i]->Trace(x, y);
                 if (widget)
                 {
                     return widget;
@@ -100,18 +105,18 @@ UIWidget* UIWidget::Trace(float x, float y)
 
 bool UIWidget::HitTest(float x, float y) const
 {
-    if (VisFrame != UIVisibilityFrame)
+    if (m_VisFrame != UIVisibilityFrame)
         return {};
 
     HK_ASSERT(Visibility == UI_WIDGET_VISIBILITY_VISIBLE);
-    HK_ASSERT(Geometry.Mins.X < Geometry.Maxs.X && Geometry.Mins.Y < Geometry.Maxs.Y);
+    HK_ASSERT(m_Geometry.Mins.X < m_Geometry.Maxs.X && m_Geometry.Mins.Y < m_Geometry.Maxs.Y);
 
-    if (!BvPointInRect(Geometry.Mins, Geometry.Maxs, x, y))
+    if (!BvPointInRect(m_Geometry.Mins, m_Geometry.Maxs, x, y))
         return false;
 
     if (HitShape)
     {
-        return HitShape->IsOverlap(Geometry, x, y);
+        return HitShape->IsOverlap(m_Geometry, x, y);
     }
     return true;
 }
@@ -179,23 +184,7 @@ void UIWidget::OnFocusReceive()
 
 void UIWidget::OnWindowHovered(bool bHovered)
 {
-    #if 0
-    if (_Hovered)
-    {
-        Desktop->SetCursor(DRAW_CURSOR_ARROW);
-    }
-
-    E_OnHovered.Dispatch(_Hovered);
-
-    if (_Hovered)
-    {
-        ShowTooltip();
-    }
-    else
-    {
-        HideTooltip();
-    }
-    #endif
+    E_OnHovered.Dispatch(bHovered);
 }
 
 void UIWidget::Draw(ACanvas& canvas)
@@ -220,19 +209,19 @@ void UIWidget::DrawForeground(ACanvas& canvas)
 
 void UIWidget::Draw(ACanvas& canvas, Float2 const& clipMins, Float2 const& clipMaxs, float alpha)
 {
-    if (VisFrame != UIVisibilityFrame)
+    if (m_VisFrame != UIVisibilityFrame)
         return;
 
     HK_ASSERT(Visibility == UI_WIDGET_VISIBILITY_VISIBLE);
-    HK_ASSERT(Geometry.Mins.X < Geometry.Maxs.X && Geometry.Mins.Y < Geometry.Maxs.Y);
+    HK_ASSERT(m_Geometry.Mins.X < m_Geometry.Maxs.X && m_Geometry.Mins.Y < m_Geometry.Maxs.Y);
 
     Float2 cmins, cmaxs;
 
-    cmins.X = Math::Max(Geometry.Mins.X, clipMins.X);
-    cmins.Y = Math::Max(Geometry.Mins.Y, clipMins.Y);
+    cmins.X = Math::Max(m_Geometry.Mins.X, clipMins.X);
+    cmins.Y = Math::Max(m_Geometry.Mins.Y, clipMins.Y);
 
-    cmaxs.X = Math::Min(Geometry.Maxs.X, clipMaxs.X);
-    cmaxs.Y = Math::Min(Geometry.Maxs.Y, clipMaxs.Y);
+    cmaxs.X = Math::Min(m_Geometry.Maxs.X, clipMaxs.X);
+    cmaxs.Y = Math::Min(m_Geometry.Maxs.Y, clipMaxs.Y);
 
     if (cmins.X >= cmaxs.X || cmins.Y >= cmaxs.Y)
         return;
@@ -248,21 +237,21 @@ void UIWidget::Draw(ACanvas& canvas, Float2 const& clipMins, Float2 const& clipM
 
     if (ui_showLayout)
     {
-        canvas.DrawRect(Geometry.PaddedMins-0.5f, Geometry.PaddedMaxs+0.5f, Color4::Green(), 0.5f);
+        canvas.DrawRect(m_Geometry.PaddedMins - 0.5f, m_Geometry.PaddedMaxs + 0.5f, Color4::Green(), 0.5f);
     }
 
     Float2 paddedMins, paddedMaxs;
 
-    paddedMins.X = Math::Max(Geometry.PaddedMins.X, clipMins.X);
-    paddedMins.Y = Math::Max(Geometry.PaddedMins.Y, clipMins.Y);
+    paddedMins.X = Math::Max(m_Geometry.PaddedMins.X, clipMins.X);
+    paddedMins.Y = Math::Max(m_Geometry.PaddedMins.Y, clipMins.Y);
 
-    paddedMaxs.X = Math::Min(Geometry.PaddedMaxs.X, clipMaxs.X);
-    paddedMaxs.Y = Math::Min(Geometry.PaddedMaxs.Y, clipMaxs.Y);
+    paddedMaxs.X = Math::Min(m_Geometry.PaddedMaxs.X, clipMaxs.X);
+    paddedMaxs.Y = Math::Min(m_Geometry.PaddedMaxs.Y, clipMaxs.Y);
 
     if (paddedMins.X >= paddedMaxs.X || paddedMins.Y >= paddedMaxs.Y)
         return;
 
-    for (UIWidget* child : Children)
+    for (UIWidget* child : m_Children)
     {
         child->Draw(canvas, paddedMins, paddedMaxs, alpha);
     }
@@ -274,26 +263,26 @@ void UIWidget::Draw(ACanvas& canvas, Float2 const& clipMins, Float2 const& clipM
     PostDraw(canvas);
 }
 
-UIDesktop* UIWidget::GetDesktop()
+UIDesktop* UIWidget::GetDesktop() const
 {
-    UIWidget* w = this;
+    UIWidget* w = const_cast<UIWidget*>(this);
 
     while (1)
     {
-        if (!w->Parent)
-            return w->Desktop;
+        if (!w->m_Parent)
+            return w->m_Desktop;
 
-        w = w->Parent;
+        w = w->m_Parent;
     }
     return nullptr;
 }
 
 UIWidget& UIWidget::BringOnTop(bool bRecursiveForParents)
 {
-    if (!Parent && !Desktop)
+    if (!m_Parent && !m_Desktop)
         return *this;
 
-    auto& widgets = Parent ? Parent->Children : Desktop->m_Widgets;
+    auto& widgets = m_Parent ? m_Parent->m_Children : m_Desktop->m_Widgets;
 
     if (!bStayBackground)
     {
@@ -341,9 +330,9 @@ UIWidget& UIWidget::BringOnTop(bool bRecursiveForParents)
         }
     }
 
-    if (bRecursiveForParents && Parent)
+    if (bRecursiveForParents && m_Parent)
     {
-        Parent->BringOnTop(bRecursiveForParents);
+        m_Parent->BringOnTop(bRecursiveForParents);
     }
 
     return *this;
@@ -353,30 +342,28 @@ UIWidget& UIWidget::AddWidget(UIWidget* widget)
 {
     HK_ASSERT(widget);
 
-    if (widget->Parent == this)
+    if (widget->m_Parent == this)
     {
         return *this;
     }
 
-    if (widget->Parent)
+    if (widget->m_Parent)
     {
-        UIWidget* oldParent = widget->Parent;
+        UIWidget* oldParent = widget->m_Parent;
 
-        oldParent->Children.Remove(oldParent->Children.IndexOf(widget));
-        oldParent->LayoutSlots.Remove(oldParent->LayoutSlots.IndexOf(widget));
+        oldParent->m_Children.Remove(oldParent->m_Children.IndexOf(widget));
+        oldParent->m_LayoutSlots.Remove(oldParent->m_LayoutSlots.IndexOf(widget));
     }
     else
         widget->AddRef();
 
-    widget->Parent = this;
+    widget->m_Parent = this;
 
-    //widget->UpdateDesktop_r(_Parent->Desktop);
-
-    Children.InsertAt(0, widget);
+    m_Children.InsertAt(0, widget);
 
     widget->BringOnTop(false);
 
-    LayoutSlots.Add(widget);
+    m_LayoutSlots.Add(widget);
 
     return *this;
 }
@@ -390,7 +377,7 @@ UIWidget& UIWidget::AddWidgets(std::initializer_list<UIWidget*> list)
 
 void UIWidget::Detach()
 {
-    if (!Parent)
+    if (!m_Parent)
         return;
 
     //if (Desktop)
@@ -399,10 +386,10 @@ void UIWidget::Detach()
     //    UpdateDesktop_r(nullptr);
     //}
 
-    Parent->Children.Remove(Parent->Children.IndexOf(this));
-    Parent->LayoutSlots.Remove(Parent->LayoutSlots.IndexOf(this));
+    m_Parent->m_Children.Remove(m_Parent->m_Children.IndexOf(this));
+    m_Parent->m_LayoutSlots.Remove(m_Parent->m_LayoutSlots.IndexOf(this));
 
-    Parent = nullptr;
+    m_Parent = nullptr;
 
     RemoveRef();
 }
@@ -426,7 +413,7 @@ bool UIWidget::OnChildrenMouseButtonEvent(SMouseButtonEvent const& event, double
 
 bool UIWidget::OverrideMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
 {
-    UIWidget* parent = Parent;
+    UIWidget* parent = m_Parent;
     if (!parent)
         return false;
 
@@ -560,22 +547,22 @@ void UIWidget::ArrangeChildren(bool bAllowAutoWidth, bool bAllowAutoHeight)
     bool autoH = bAutoHeight && bAllowAutoHeight;
 
     if (autoW)
-        Geometry.Maxs.X = Geometry.Mins.X + MeasuredSize.X;
+        m_Geometry.Maxs.X = m_Geometry.Mins.X + m_MeasuredSize.X;
 
     if (autoH)
-        Geometry.Maxs.Y = Geometry.Mins.Y + MeasuredSize.Y;
+        m_Geometry.Maxs.Y = m_Geometry.Mins.Y + m_MeasuredSize.Y;
 
-    Geometry.UpdatePadding(Padding);
+    m_Geometry.UpdatePadding(Padding);
 
     if (Visibility != UI_WIDGET_VISIBILITY_VISIBLE)
         return;
 
-    if (Geometry.Mins.X >= Geometry.Maxs.X || Geometry.Mins.Y >= Geometry.Maxs.Y)
+    if (m_Geometry.Mins.X >= m_Geometry.Maxs.X || m_Geometry.Mins.Y >= m_Geometry.Maxs.Y)
         return;
 
     UpdateVisibility();
 
-    if (Geometry.IsTiny())
+    if (m_Geometry.IsTiny())
     {
         return;
     }
@@ -583,9 +570,15 @@ void UIWidget::ArrangeChildren(bool bAllowAutoWidth, bool bAllowAutoHeight)
     Layout->ArrangeChildren(this, autoW, autoH);
 }
 
+void UIWidget::AdjustSize(Float2 const& size)
+{
+    m_AdjustedSize.X = Math::Max(0.0f, size.X - Padding.Left - Padding.Right);
+    m_AdjustedSize.Y = Math::Max(0.0f, size.Y - Padding.Top - Padding.Bottom);
+}
+
 void UIWidget::DrawBrush(ACanvas& canvas, UIBrush* brush)
 {
-    ::DrawBrush(canvas, Geometry.Mins, Geometry.Maxs, {}, brush);
+    ::DrawBrush(canvas, m_Geometry.Mins, m_Geometry.Maxs, {}, brush);
 }
 
 UIShareInputs::UIShareInputs(std::initializer_list<UIWidget*> list)
@@ -620,7 +613,7 @@ UIShareInputs& UIShareInputs::Add(std::initializer_list<UIWidget*> list)
 
 UIScroll* UIWidget::FindScrollWidget()
 {
-    for (UIWidget* p = Parent; p; p = p->Parent)
+    for (UIWidget* p = m_Parent; p; p = p->m_Parent)
     {
         UIScroll* scroll = dynamic_cast<UIScroll*>(p);
         if (scroll && scroll->CanScroll())
@@ -629,4 +622,33 @@ UIScroll* UIWidget::FindScrollWidget()
         }
     }
     return nullptr;
+}
+
+bool UIWidget::HasFocus() const
+{
+    UIDesktop* desktop = GetDesktop();
+    return desktop && desktop->m_FocusWidget == this;
+}
+
+UIWidget& UIWidget::SetFocus()
+{
+    UIDesktop* desktop = GetDesktop();
+    if (!desktop)
+    {
+        m_bSetFocusOnAddToDesktop = true;
+        return *this;
+    }
+
+    m_bSetFocusOnAddToDesktop = false;
+
+    desktop->SetFocusWidget(this);
+
+    return *this;
+}
+
+bool UIWidget::IsDisabled() const
+{
+    if (bDisabled)
+        return true;
+    return m_Parent ? m_Parent->IsDisabled() : false;
 }
