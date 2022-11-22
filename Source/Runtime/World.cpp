@@ -176,6 +176,13 @@ void AWorld::DestroyActor(AActor* Actor)
     {
         DestroyComponent(component);
     }
+
+    ALevel* level = Actor->Level;
+
+    level->Actors[Actor->IndexInLevelArrayOfActors]                            = level->Actors[level->Actors.Size() - 1];
+    level->Actors[Actor->IndexInLevelArrayOfActors]->IndexInLevelArrayOfActors = Actor->IndexInLevelArrayOfActors;
+    level->Actors.RemoveLast();
+    Actor->IndexInLevelArrayOfActors = -1;
 }
 
 void AWorld::DestroyComponent(AActorComponent* Component)
@@ -746,11 +753,11 @@ void AWorld::KillActors(bool bClearSpawnQueue)
             if (!actor->bSpawning)
             {
                 // Remove actor from level
-                ALevel* level                                                              = actor->Level;
-                level->Actors[actor->IndexInLevelArrayOfActors]                            = level->Actors[level->Actors.Size() - 1];
-                level->Actors[actor->IndexInLevelArrayOfActors]->IndexInLevelArrayOfActors = actor->IndexInLevelArrayOfActors;
-                level->Actors.RemoveLast();
-                actor->IndexInLevelArrayOfActors = -1;
+                //ALevel* level                                                              = actor->Level;
+                //level->Actors[actor->IndexInLevelArrayOfActors]                            = level->Actors[level->Actors.Size() - 1];
+                //level->Actors[actor->IndexInLevelArrayOfActors]->IndexInLevelArrayOfActors = actor->IndexInLevelArrayOfActors;
+                //level->Actors.RemoveLast();
+                //actor->IndexInLevelArrayOfActors = -1;
 
                 // Remove actor from world
                 Actors[actor->IndexInWorldArrayOfActors]                            = Actors[Actors.Size() - 1];

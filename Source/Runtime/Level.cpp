@@ -64,10 +64,8 @@ void ALevel::OnRemoveLevelFromWorld()
 
 void ALevel::DestroyActors()
 {
-    for (AActor* actor : Actors)
-    {
-        actor->Destroy();
-    }
+    while (!Actors.IsEmpty())
+        Actors.Last()->Destroy();
 }
 
 Float3 ALevel::SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord) const
