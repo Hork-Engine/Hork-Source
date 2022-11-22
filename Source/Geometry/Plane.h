@@ -56,8 +56,8 @@ struct TPlane
         Normal(normal), D(-dist) {}
 
     /** Construct from normal and point on plane */
-    constexpr explicit TPlane(TVector3<T> const& normal, TVector3<T> const& _PointOnPlane) :
-        Normal(normal), D(-Math::Dot(_PointOnPlane, normal)) {}
+    constexpr explicit TPlane(TVector3<T> const& normal, TVector3<T> const& point) :
+        Normal(normal), D(-Math::Dot(point, normal)) {}
 
     /** Construct from three points on plane */
     constexpr explicit TPlane(TVector3<T> const& p0, TVector3<T> const& p1, TVector3<T> const& p2) :
