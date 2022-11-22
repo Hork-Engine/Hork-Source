@@ -55,17 +55,7 @@ Float2 UIBoxLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHei
         layoutSize.Y = Math::Max(layoutSize.Y, requiredSize.Y);
     }
 
-    if (bAutoWidth)
-        self->m_MeasuredSize.X = layoutSize.X + self->Padding.Left + self->Padding.Right;
-    else
-        self->m_MeasuredSize.X = size.X;
-
-    if (bAutoHeight)
-        self->m_MeasuredSize.Y = layoutSize.Y + self->Padding.Top + self->Padding.Bottom;
-    else
-        self->m_MeasuredSize.Y = size.Y;
-
-    return self->m_MeasuredSize;
+    return layoutSize;
 }
 
 void UIBoxLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight)
@@ -247,17 +237,7 @@ Float2 UIGridLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHe
         }
     }
 
-    if (bAutoWidth)
-        self->m_MeasuredSize.X = layoutSize.X + self->Padding.Left + self->Padding.Right;
-    else
-        self->m_MeasuredSize.X = size.X;
-
-    if (bAutoHeight)
-        self->m_MeasuredSize.Y = layoutSize.Y + self->Padding.Top + self->Padding.Bottom;
-    else
-        self->m_MeasuredSize.Y = size.Y;
-
-    return self->m_MeasuredSize;
+    return layoutSize;
 }
 
 void UIGridLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight)
@@ -372,17 +352,7 @@ Float2 UIHorizontalLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool b
         layoutSize.Y = Math::Max(layoutSize.Y, requiredSize.Y);
     }
 
-    if (bAutoWidth)
-        self->m_MeasuredSize.X = layoutSize.X + self->Padding.Left + self->Padding.Right;
-    else
-        self->m_MeasuredSize.X = size.X;
-
-    if (bAutoHeight)
-        self->m_MeasuredSize.Y = layoutSize.Y + self->Padding.Top + self->Padding.Bottom;
-    else
-        self->m_MeasuredSize.Y = size.Y;
-
-    return self->m_MeasuredSize;
+    return layoutSize;
 }
 
 void UIHorizontalLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight)
@@ -488,17 +458,7 @@ Float2 UIVerticalLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAu
         layoutSize.Y = Math::Max(layoutSize.Y, requiredSize.Y);
     }
 
-    if (bAutoWidth)
-        self->m_MeasuredSize.X = layoutSize.X + self->Padding.Left + self->Padding.Right;
-    else
-        self->m_MeasuredSize.X = size.X;
-
-    if (bAutoHeight)
-        self->m_MeasuredSize.Y = layoutSize.Y + self->Padding.Top + self->Padding.Bottom;
-    else
-        self->m_MeasuredSize.Y = size.Y;
-
-    return self->m_MeasuredSize;
+    return layoutSize;
 }
 
 void UIVerticalLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight)
@@ -543,7 +503,7 @@ Float2 UIImageLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoH
 {
     if (ImageSize.X <= 0 || ImageSize.Y <= 0)
     {
-        self->m_MeasuredSize = Float2(0.0f);
+        //self->m_MeasuredSize = Float2(0.0f);
         return Float2(0.0f);
     }
 
@@ -569,10 +529,7 @@ Float2 UIImageLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoH
         child->MeasureLayout(false, false, {w, h});
     }
 
-    self->m_MeasuredSize.X = size.X;
-    self->m_MeasuredSize.Y = size.Y;
-
-    return self->m_MeasuredSize;
+    return paddedSize;
 }
 
 void UIImageLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight)
@@ -600,4 +557,40 @@ void UIImageLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoH
 
         child->ArrangeChildren(false, false);
     }
+}
+
+Float2 UIStackLayout::MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHeight, Float2 const& size)
+{
+    Float2 paddedSize(Math::Max(0.0f, size.X - self->Padding.Left - self->Padding.Right),
+                      Math::Max(0.0f, size.Y - self->Padding.Top - self->Padding.Bottom));
+
+    if (self->Layer < 0 || self->Layer >= self->m_LayoutSlots.Size())
+        return paddedSize;
+
+    UIWidget* widget = self->m_LayoutSlots[self->Layer];
+
+    if (widget->Visibility != UI_WIDGET_VISIBILITY_VISIBLE)
+        return paddedSize;
+
+    widget->MeasureLayout(false, false, {paddedSize.X, paddedSize.Y});
+
+    return paddedSize;
+}
+
+void UIStackLayout::ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight)
+{
+    if (self->Layer < 0 || self->Layer >= self->m_LayoutSlots.Size())
+        return;
+
+    UIWidget* widget = self->m_LayoutSlots[self->Layer];
+
+    if (widget->Visibility != UI_WIDGET_VISIBILITY_VISIBLE)
+        return;
+
+    UIWidgetGeometry const& geometry = self->m_Geometry;
+
+    widget->m_Geometry.Mins = geometry.PaddedMins;
+    widget->m_Geometry.Maxs = geometry.PaddedMaxs;
+
+    widget->ArrangeChildren(false, false);
 }

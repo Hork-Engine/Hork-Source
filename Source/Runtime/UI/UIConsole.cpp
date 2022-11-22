@@ -52,6 +52,30 @@ bool UIConsole::IsActive() const
     return m_bDown || m_bFullscreen;
 }
 
+void UIConsole::Up()
+{
+    if (m_bFullscreen)
+        return;
+
+    m_bDown = false;
+
+    m_CmdLineLength = m_CmdLinePos = 0;
+    m_CurStoryLine                 = m_NumStoryLines;
+}
+
+void UIConsole::Down()
+{
+    m_bDown = true;
+}
+
+void UIConsole::Toggle()
+{
+    if (m_bDown)
+        Up();
+    else
+        Down();
+}
+
 void UIConsole::SetFullscreen(bool bFullscreen)
 {
     m_bFullscreen = bFullscreen;
@@ -140,21 +164,7 @@ void UIConsole::CompleteString(ACommandContext& commandCtx, AStringView _Str)
 
 void UIConsole::OnKeyEvent(SKeyEvent const& event, ACommandContext& commandCtx, ACommandProcessor& commandProcessor)
 {
-    if (event.Action == IA_PRESS)
-    {
-        if (!m_bFullscreen && event.Key == KEY_GRAVE_ACCENT)
-        {
-            m_bDown = !m_bDown;
-
-            if (!m_bDown)
-            {
-                m_CmdLineLength = m_CmdLinePos = 0;
-                m_CurStoryLine                 = m_NumStoryLines;
-            }
-        }
-    }
-
-    if (IsActive() && (event.Action == IA_PRESS || event.Action == IA_REPEAT))
+    if (event.Action == IA_PRESS || event.Action == IA_REPEAT)
     {
         int scrollDelta = 1;
         if (event.ModMask & MOD_MASK_CONTROL)
@@ -331,11 +341,6 @@ void UIConsole::OnKeyEvent(SKeyEvent const& event, ACommandContext& commandCtx, 
 
 void UIConsole::OnCharEvent(SCharEvent const& event)
 {
-    if (!IsActive())
-    {
-        return;
-    }
-
     if (event.UnicodeCharacter == '`')
     {
         return;
@@ -366,11 +371,6 @@ void UIConsole::OnCharEvent(SCharEvent const& event)
 
 void UIConsole::OnMouseWheelEvent(SMouseWheelEvent const& event)
 {
-    if (!IsActive())
-    {
-        return;
-    }
-
     if (event.WheelY < 0.0)
     {
         m_pConBuffer->ScrollDelta(-1);

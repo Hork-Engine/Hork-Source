@@ -32,6 +32,7 @@ SOFTWARE.
 #include "UIManager.h"
 #include <Runtime/FrameLoop.h>
 #include <Runtime/InputDefs.h>
+#include <Geometry/BV/BvIntersect.h>
 
 UISlider& UISlider::SetValue(float value)
 {
@@ -150,11 +151,6 @@ void UISlider::MoveSlider(float Vec)
     SetValue(Vec * (m_MaxValue - m_MinValue) / SliderBarSize + m_MinValue);
 }
 
-HK_FORCEINLINE bool InRect(Float2 const& _Mins, Float2 const& _Maxs, Float2 const& _Position)
-{
-    return _Position.X >= _Mins.X && _Position.X < _Maxs.X && _Position.Y >= _Mins.Y && _Position.Y < _Maxs.Y;
-}
-
 void UISlider::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeStamp)
 {
     m_Action = A_NONE;
@@ -168,7 +164,7 @@ void UISlider::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeSta
 
     UISliderGeometry const& geometry = m_SliderGeometry;
 
-    if (InRect(geometry.SliderMins, geometry.SliderMaxs, CursorPos))
+    if (BvPointInRect(geometry.SliderMins, geometry.SliderMaxs, CursorPos))
     {
         m_Action = A_MOVE;
 
@@ -180,7 +176,7 @@ void UISlider::OnMouseButtonEvent(SMouseButtonEvent const& event, double timeSta
         return;
     }
 
-    if (InRect(geometry.BgMins, geometry.BgMaxs, CursorPos))
+    if (BvPointInRect(geometry.BgMins, geometry.BgMaxs, CursorPos))
     {
 
         float CursorLocalOffset = m_bVerticalOrientation ? CursorPos.Y - geometry.BgMins.Y : CursorPos.X - geometry.BgMins.X;

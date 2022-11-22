@@ -68,10 +68,7 @@ Float2 UIWindow::WindowLayout::MeasureLayout(UIWidget* self, bool, bool, Float2 
         w->MeasureLayout(false, false, {paddedSize.X, height[i]});
     }
 
-    self->m_MeasuredSize.X = size.X;
-    self->m_MeasuredSize.Y = size.Y;
-
-    return self->m_MeasuredSize;
+    return paddedSize;
 }
 
 void UIWindow::WindowLayout::ArrangeChildren(UIWidget* self, bool, bool)

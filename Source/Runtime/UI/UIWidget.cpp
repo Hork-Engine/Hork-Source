@@ -535,7 +535,22 @@ Float2 UIWidget::MeasureLayout(bool bAllowAutoWidth, bool bAllowAutoHeight, Floa
 
     AdjustSize(size);
 
-    return Layout->MeasureLayout(this, bAutoWidth && bAllowAutoWidth, bAutoHeight && bAllowAutoHeight, size);
+    bool autoW = bAutoWidth && bAllowAutoWidth;
+    bool autoH = bAutoHeight && bAllowAutoHeight;
+
+    Float2 layoutSize = Layout->MeasureLayout(this, autoW, autoH, size);
+
+    if (autoW)
+        m_MeasuredSize.X = layoutSize.X + Padding.Left + Padding.Right;
+    else
+        m_MeasuredSize.X = size.X;
+
+    if (autoH)
+        m_MeasuredSize.Y = layoutSize.Y + Padding.Top + Padding.Bottom;
+    else
+        m_MeasuredSize.Y = size.Y;
+
+    return m_MeasuredSize;
 }
 
 void UIWidget::ArrangeChildren(bool bAllowAutoWidth, bool bAllowAutoHeight)
@@ -651,4 +666,37 @@ bool UIWidget::IsDisabled() const
     if (bDisabled)
         return true;
     return m_Parent ? m_Parent->IsDisabled() : false;
+}
+
+void UIWidget::SetLayer(AStringView name)
+{
+    SetLayer(GetLayerNum(name));
+}
+
+void UIWidget::SetLayer(int layerNum)
+{
+    Layer = layerNum;
+}
+
+int UIWidget::GetLayerNum(AStringView name) const
+{
+    int n = 0;
+    for (auto w : m_LayoutSlots)
+    {
+        if (w->GetObjectName() == name)
+            return n;
+        ++n;
+    }
+    return -1;
+}
+
+UIWidget* UIWidget::FindChildren(AStringView name)
+{
+    for (auto w : m_Children)
+    {
+        if (w->GetObjectName() == name)
+            return w;
+    }
+
+    return nullptr;
 }

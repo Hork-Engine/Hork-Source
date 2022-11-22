@@ -198,18 +198,36 @@ void UIManager::Update(float timeStep)
 
 void UIManager::GenerateKeyEvents(SKeyEvent const& event, double timeStamp, ACommandContext& commandCtx, ACommandProcessor& commandProcessor)
 {
-    if (m_Console.IsActive() || bAllowConsole)
+    if (bAllowConsole)
     {
-        m_Console.OnKeyEvent(event, commandCtx, commandProcessor);
-
-        if (!m_Console.IsActive() && event.Key == KEY_GRAVE_ACCENT)
+        if (event.Action == IA_PRESS)
         {
-            // Console just closed
-            return;
+            if (event.Key == KEY_GRAVE_ACCENT)
+            {
+                m_Console.Toggle();
+                return;
+            }
+            if (event.Key == KEY_ESCAPE)
+            {
+                if (m_Console.IsActive())
+                {
+                    m_Console.Up();
+                    return;
+                }
+            }
+        }
+
+        if (m_Console.IsActive())
+        {
+            m_Console.OnKeyEvent(event, commandCtx, commandProcessor);
         }
     }
+    else
+    {
+        m_Console.Up();
+    }
 
-    if (m_Console.IsActive() && (event.Action != IA_RELEASE || event.Key == KEY_GRAVE_ACCENT))
+    if (m_Console.IsActive() && event.Action != IA_RELEASE)
     {
         return;
     }
@@ -231,9 +249,9 @@ void UIManager::GenerateMouseButtonEvents(SMouseButtonEvent const& event, double
 
 void UIManager::GenerateMouseWheelEvents(SMouseWheelEvent const& event, double timeStamp)
 {
-    m_Console.OnMouseWheelEvent(event);
     if (m_Console.IsActive())
     {
+        m_Console.OnMouseWheelEvent(event);
         return;
     }
 
@@ -301,9 +319,9 @@ void UIManager::GenerateCharEvents(SCharEvent const& event, double timeStamp)
     if (event.UnicodeCharacter == '`')
         return;
 
-    m_Console.OnCharEvent(event);
     if (m_Console.IsActive())
     {
+        m_Console.OnCharEvent(event);
         return;
     }
 
@@ -368,6 +386,16 @@ UIBrush* UIManager::DefaultScrollbarBrush() const
                                .WithRounding({3,3,3,3});
 
     return m_ScrollbarBrush;
+}
+
+void UIManager::UpConsole()
+{
+    m_Console.Up();
+}
+
+void UIManager::DownConsole()
+{
+    m_Console.Down();
 }
 
 void UIManager::OpenPopupWidget(UIWidget* widget)

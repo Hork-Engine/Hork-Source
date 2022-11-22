@@ -121,8 +121,9 @@ public:
     TRef<UIHitShape>    HitShape;
     TRef<UICursor>      Cursor;
     TRef<UIShareInputs> ShareInputs;
-    TRef<UIWidget>     Tooltip;
-    float              TooltipTime = 0.1f;
+    TRef<UIWidget>      Tooltip;
+    float               TooltipTime = 0.1f;
+    int                 Layer       = 0; // layer is used by StackLayout
 
     TEvent<bool> E_OnHovered;
 
@@ -301,6 +302,12 @@ public:
         return *this;
     }
 
+    void SetLayer(AStringView name);
+
+    void SetLayer(int layerNum);
+
+    int GetLayerNum(AStringView name) const;
+
     UIWidget& SetFocus();
 
     UIWidget& SetVisible()
@@ -351,11 +358,13 @@ public:
 
     void Detach();
 
-    UIWidget* GetMaster();
-
     UIWidget* GetParent();
 
+    UIWidget* GetMaster();
+
     UIDesktop* GetDesktop() const;
+
+    UIWidget* FindChildren(AStringView name);
 
     UIWidget* Trace(float x, float y);
 

@@ -74,6 +74,9 @@ public:
     void SetActiveDesktop(UIDesktop* desktop);
     UIDesktop* GetActiveDesktop() { return m_ActiveDesktop; }
 
+    void UpConsole();
+    void DownConsole();
+
     void OpenPopupWidget(UIWidget* widget);
     void OpenPopupWidget(UIWidget* widget, Float2 const& position);
     void ClosePopupWidget();

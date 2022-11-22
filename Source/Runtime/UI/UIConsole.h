@@ -48,6 +48,10 @@ public:
     /** Is console active */
     bool IsActive() const;
 
+    void Up();
+    void Down();
+    void Toggle();
+
     /** Set console to fullscreen mode */
     void SetFullscreen(bool bFullscreen);
 

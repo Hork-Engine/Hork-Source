@@ -348,13 +348,13 @@ void AEngine::Run(SEntryDecl const& entryDecl)
         // Update audio system
         m_AudioSystem.Update(APlayerController::GetCurrentAudioListener(), m_FrameDurationInSeconds);
 
-        m_UIManager->Update(m_FrameDurationInSeconds);
-
         // Poll runtime events
         m_FrameLoop->PollEvents(this);
 
         // Update input
         UpdateInput();
+
+        m_UIManager->Update(m_FrameDurationInSeconds);
 
         // Draw widgets, HUD, etc
         DrawCanvas();

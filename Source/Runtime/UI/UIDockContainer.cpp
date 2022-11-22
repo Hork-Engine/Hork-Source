@@ -721,10 +721,7 @@ Float2 UIDockContainer::DockLayout::MeasureLayout(UIWidget* self, bool, bool, Fl
 
     Self->m_Root->UpdateRecursive(Float2(0.0f), paddedSize);
 
-    self->m_MeasuredSize.X = size.X;
-    self->m_MeasuredSize.Y = size.Y;
-
-    return self->m_MeasuredSize;
+    return paddedSize;
 }
 
 void UIDockContainer::DockLayout::ArrangeChildren(UIWidget*, bool, bool)

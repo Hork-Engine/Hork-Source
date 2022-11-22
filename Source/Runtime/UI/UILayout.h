@@ -302,7 +302,7 @@ protected:
     void ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight) override;
 };
 
-struct UIImageLayout : public UIBaseLayout
+class UIImageLayout : public UIBaseLayout
 {
     UI_CLASS(UIImageLayout, UIBaseLayout)
 
@@ -314,6 +314,19 @@ public:
     UIImageLayout(Float2 const& imageSize) :
         ImageSize(imageSize)
     {}
+
+protected:
+    Float2 MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHeight, Float2 const& size) override;
+
+    void ArrangeChildren(UIWidget* self, bool bAutoWidth, bool bAutoHeight) override;
+};
+
+class UIStackLayout : public UIBaseLayout
+{
+    UI_CLASS(UIStackLayout, UIBaseLayout)
+
+public:
+    UIStackLayout() = default;
 
 protected:
     Float2 MeasureLayout(UIWidget* self, bool bAutoWidth, bool bAutoHeight, Float2 const& size) override;

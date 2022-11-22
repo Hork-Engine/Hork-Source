@@ -59,18 +59,43 @@ public:
         WS_MAXIMIZED
     };
 
-    float CaptionHeight = 24;
-
+    float            CaptionHeight = 24;
     TRef<UIHitShape> CaptionHitShape;
-
-    WINDOW_STATE WindowState = WS_NORMAL;
-    bool         bResizable{true};
-    bool         bDropShadow{true};
+    WINDOW_STATE     WindowState = WS_NORMAL;
+    bool             bResizable{true};
+    bool             bDropShadow{true};
 
     UIWindow(UIWidget* caption, UIWidget* central);
 
-    UIWidget* GetCaptionWidget() { return m_Caption; }
-    UIWidget* GetCentralWidget() { return m_Central; }
+    UIWindow& WithCaptionHeight(float captionHeight)
+    {
+        CaptionHeight = captionHeight;
+        return *this;
+    }
+
+    UIWindow& WithCaptionHitShape(UIHitShape* hitShape)
+    {
+        CaptionHitShape = hitShape;
+        return *this;
+    }
+
+    UIWindow& WithWindowState(WINDOW_STATE windowState)
+    {
+        WindowState = windowState;
+        return *this;
+    }
+
+    UIWindow& WithResizable(bool resizable)
+    {
+        bResizable = resizable;
+        return *this;
+    }
+
+    UIWindow& WithDropShadow(bool dropShadow)
+    {
+        bDropShadow = dropShadow;
+        return *this;
+    }
 
     void SetNormal()
     {
@@ -86,6 +111,9 @@ public:
     {
         return WindowState == WS_MAXIMIZED;
     }
+
+    UIWidget* GetCaptionWidget() { return m_Caption; }
+    UIWidget* GetCentralWidget() { return m_Central; }
 
     WINDOW_AREA HitTestWindowArea(float x, float y) const;
 
