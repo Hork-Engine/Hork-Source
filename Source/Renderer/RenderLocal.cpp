@@ -99,15 +99,6 @@ STextureResolution2D GetFrameResoultion()
 
 void DrawSAQ(IImmediateContext* immediateCtx, IPipeline* Pipeline, unsigned int InstanceCount)
 {
-    const SDrawCmd drawCmd = {4, InstanceCount, 0, 0};
-    immediateCtx->BindPipeline(Pipeline);
-    immediateCtx->BindVertexBuffer(0, GSaq, 0);
-    immediateCtx->BindIndexBuffer(NULL, INDEX_TYPE_UINT16, 0);
-    immediateCtx->Draw(&drawCmd);
-}
-
-void DrawSAQ_Triangle(IImmediateContext* immediateCtx, IPipeline* Pipeline, unsigned int InstanceCount)
-{
     const SDrawCmd drawCmd = {3, InstanceCount, 0, 0};
     immediateCtx->BindPipeline(Pipeline);
     immediateCtx->BindVertexBuffer(0, nullptr, 0);

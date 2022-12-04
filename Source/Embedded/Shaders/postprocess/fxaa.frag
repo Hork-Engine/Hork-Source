@@ -36,6 +36,7 @@ SOFTWARE.
         
 #include "postprocess/FXAA_3_11.h"
 #include "base/viewuniforms.glsl"
+//#include "base/srgb.glsl"
 
 layout( location = 0 ) out vec4 FS_FragColor;
 
@@ -166,4 +167,6 @@ void main() {
             // {xyzw} = float4(1.0, -1.0, 0.25, -0.25)
             FxaaFloat4( 1.0, -1.0, 0.25, -0.25 )
     );
+	
+	//FS_FragColor = LinearToSRGB_Alpha(FS_FragColor);
 }

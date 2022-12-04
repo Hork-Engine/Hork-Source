@@ -256,8 +256,6 @@ RenderCore::STextureResolution2D GetFrameResoultion();
 
 void DrawSAQ(RenderCore::IImmediateContext* immediateCtx, RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
-void DrawSAQ_Triangle(RenderCore::IImmediateContext* immediateCtx, RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
-
 void DrawSphere(RenderCore::IImmediateContext* immediateCtx, RenderCore::IPipeline* Pipeline, unsigned int InstanceCount = 1);
 
 void BindVertexAndIndexBuffers(RenderCore::IImmediateContext* immediateCtx, SRenderInstance const* Instance);

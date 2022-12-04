@@ -39,5 +39,7 @@ layout( location = 0 ) out vec4 VS_Color;
 
 void main() {
     gl_Position = ViewProjection * vec4( InPosition, 1.0 );
-    VS_Color = InColor;
+	
+	// SRGB to linear space
+    VS_Color = pow(InColor, vec4(2.2,2.2,2.2,1));
 }

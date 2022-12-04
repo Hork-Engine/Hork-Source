@@ -62,6 +62,4 @@ public:
                                                AStringView                                GeometryShader,
                                                RenderCore::SPipelineResourceLayout const* pResourceLayout = nullptr,
                                                RenderCore::BLENDING_PRESET                BlendingPreset  = RenderCore::BLENDING_NO_BLEND);
-
-    static void CreateFullscreenTrianglePipeline(TRef<RenderCore::IPipeline>* ppPipeline, AStringView VertexShader, AStringView FragmentShader, RenderCore::SPipelineResourceLayout const* pResourceLayout = {}, RenderCore::BLENDING_PRESET BlendingPreset = RenderCore::BLENDING_NO_BLEND);
 };

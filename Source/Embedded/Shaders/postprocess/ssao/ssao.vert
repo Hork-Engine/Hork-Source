@@ -46,7 +46,10 @@ void main() {
         0, 1.0);
     gl_Position = pos;
     VS_TexCoord = pos.xy * 0.5 + 0.5;*/
-  
-    gl_Position = vec4( InPosition, 0.0, 1.0 );
-    VS_TexCoord = InPosition * 0.5 + 0.5;
+	
+	
+	VS_TexCoord = vec2((gl_VertexID << 1) & 2, gl_VertexID & 2);
+	gl_Position = vec4(VS_TexCoord * vec2(2,-2) + vec2(-1, 1), 0, 1);
+	
+	VS_TexCoord.y = 1.0 - VS_TexCoord.y;
 }

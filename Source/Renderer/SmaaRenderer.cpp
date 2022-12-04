@@ -56,13 +56,13 @@ ASmaaRenderer::ASmaaRenderer()
     resourceLayout.Samplers = samplerCI;
 
     resourceLayout.NumSamplers = 1;
-    AShaderFactory::CreateFullscreenTrianglePipeline(&EdgeDetectionPipeline, "postprocess/smaa/edge.vert", "postprocess/smaa/edge.frag", &resourceLayout);
+    AShaderFactory::CreateFullscreenQuadPipeline(&EdgeDetectionPipeline, "postprocess/smaa/edge.vert", "postprocess/smaa/edge.frag", &resourceLayout);
 
     resourceLayout.NumSamplers = 3;
-    AShaderFactory::CreateFullscreenTrianglePipeline(&BlendingWeightCalculationPipeline, "postprocess/smaa/weights.vert", "postprocess/smaa/weights.frag", &resourceLayout);
+    AShaderFactory::CreateFullscreenQuadPipeline(&BlendingWeightCalculationPipeline, "postprocess/smaa/weights.vert", "postprocess/smaa/weights.frag", &resourceLayout);
 
     resourceLayout.NumSamplers = 2;
-    AShaderFactory::CreateFullscreenTrianglePipeline(&NeighborhoodBlendingPipeline, "postprocess/smaa/blend.vert", "postprocess/smaa/blend.frag", &resourceLayout);
+    AShaderFactory::CreateFullscreenQuadPipeline(&NeighborhoodBlendingPipeline, "postprocess/smaa/blend.vert", "postprocess/smaa/blend.frag", &resourceLayout);
 
     CreateTextures();
 }
@@ -126,7 +126,7 @@ void ASmaaRenderer::EdgeDetectionPass(AFrameGraph& FrameGraph, FGTextureProxy* S
                           {
                               rtbl->BindTexture(0, SourceTexture->Actual());
 
-                              DrawSAQ_Triangle(RenderPassContext.pImmediateContext, EdgeDetectionPipeline);
+                              DrawSAQ(RenderPassContext.pImmediateContext, EdgeDetectionPipeline);
                           });
 
     *ppEdgeTexture = renderPass.GetColorAttachments()[0].pResource;
@@ -153,7 +153,7 @@ void ASmaaRenderer::BlendingWeightCalculationPass(AFrameGraph& FrameGraph, FGTex
                               rtbl->BindTexture(1, AreaTex);
                               rtbl->BindTexture(2, SearchTex);
 
-                              DrawSAQ_Triangle(RenderPassContext.pImmediateContext, BlendingWeightCalculationPipeline);
+                              DrawSAQ(RenderPassContext.pImmediateContext, BlendingWeightCalculationPipeline);
                           });
 
     *ppBlendTexture = renderPass.GetColorAttachments()[0].pResource;
@@ -180,7 +180,7 @@ void ASmaaRenderer::NeighborhoodBlendingPass(AFrameGraph& FrameGraph, FGTextureP
                               rtbl->BindTexture(0, SourceTexture->Actual());
                               rtbl->BindTexture(1, BlendTexture->Actual());
 
-                              DrawSAQ_Triangle(RenderPassContext.pImmediateContext, NeighborhoodBlendingPipeline);
+                              DrawSAQ(RenderPassContext.pImmediateContext, NeighborhoodBlendingPipeline);
                           });
 
     *ppResultTexture = renderPass.GetColorAttachments()[0].pResource;

@@ -206,62 +206,6 @@ void AShaderFactory::CreateFullscreenQuadPipeline(TRef<IPipeline>* ppPipeline, A
     dssd.bDepthEnable            = false;
     dssd.bDepthWrite             = false;
 
-    static const SVertexAttribInfo vertexAttribs[] = {
-        {"InPosition",
-         0, // location
-         0, // buffer input slot
-         VAT_FLOAT2,
-         VAM_FLOAT,
-         0, // InstanceDataStepRate
-         0}};
-
-    CreateVertexShader(VertexShader, vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
-    CreateFragmentShader(FragmentShader, pipelineCI.pFS);
-
-    SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology                    = PRIMITIVE_TRIANGLE_STRIP;
-
-    SVertexBindingInfo vertexBinding[1] = {};
-
-    vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(Float2);
-    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
-
-    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE(vertexBinding);
-    pipelineCI.pVertexBindings   = vertexBinding;
-
-    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(vertexAttribs);
-    pipelineCI.pVertexAttribs   = vertexAttribs;
-
-    if (pResourceLayout)
-    {
-        pipelineCI.ResourceLayout = *pResourceLayout;
-    }
-
-    GDevice->CreatePipeline(pipelineCI, ppPipeline);
-}
-
-void AShaderFactory::CreateFullscreenTrianglePipeline(TRef<IPipeline>* ppPipeline, AStringView VertexShader, AStringView FragmentShader, SPipelineResourceLayout const* pResourceLayout, BLENDING_PRESET BlendingPreset)
-{
-    using namespace RenderCore;
-
-    SPipelineDesc pipelineCI;
-
-    SRasterizerStateInfo& rsd = pipelineCI.RS;
-    rsd.CullMode              = POLYGON_CULL_FRONT;
-    rsd.bScissorEnable        = false;
-
-    SBlendingStateInfo& bsd = pipelineCI.BS;
-
-    if (BlendingPreset != BLENDING_NO_BLEND)
-    {
-        bsd.RenderTargetSlots[0].SetBlendingPreset(BlendingPreset);
-    }
-
-    SDepthStencilStateInfo& dssd = pipelineCI.DSS;
-    dssd.bDepthEnable            = false;
-    dssd.bDepthWrite             = false;
-
     CreateVertexShader(VertexShader, nullptr, 0, pipelineCI.pVS);
     CreateFragmentShader(FragmentShader, pipelineCI.pFS);
 
@@ -297,33 +241,12 @@ void AShaderFactory::CreateFullscreenQuadPipelineGS(TRef<IPipeline>* ppPipeline,
     dssd.bDepthEnable            = false;
     dssd.bDepthWrite             = false;
 
-    static const SVertexAttribInfo vertexAttribs[] = {
-        {"InPosition",
-         0, // location
-         0, // buffer input slot
-         VAT_FLOAT2,
-         VAM_FLOAT,
-         0, // InstanceDataStepRate
-         0}};
-
-    CreateVertexShader(VertexShader, vertexAttribs, HK_ARRAY_SIZE(vertexAttribs), pipelineCI.pVS);
+    CreateVertexShader(VertexShader, nullptr, 0, pipelineCI.pVS);
     CreateGeometryShader(GeometryShader, pipelineCI.pGS);
     CreateFragmentShader(FragmentShader, pipelineCI.pFS);
 
     SPipelineInputAssemblyInfo& inputAssembly = pipelineCI.IA;
-    inputAssembly.Topology                    = PRIMITIVE_TRIANGLE_STRIP;
-
-    SVertexBindingInfo vertexBinding[1] = {};
-
-    vertexBinding[0].InputSlot = 0;
-    vertexBinding[0].Stride    = sizeof(Float2);
-    vertexBinding[0].InputRate = INPUT_RATE_PER_VERTEX;
-
-    pipelineCI.NumVertexBindings = HK_ARRAY_SIZE(vertexBinding);
-    pipelineCI.pVertexBindings   = vertexBinding;
-
-    pipelineCI.NumVertexAttribs = HK_ARRAY_SIZE(vertexAttribs);
-    pipelineCI.pVertexAttribs   = vertexAttribs;
+    inputAssembly.Topology                    = PRIMITIVE_TRIANGLES;
 
     if (pResourceLayout)
     {
