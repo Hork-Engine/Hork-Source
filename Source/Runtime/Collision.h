@@ -35,13 +35,13 @@ SOFTWARE.
 #include "CollisionEvents.h"
 #include "CollisionModel.h"
 
-class AHitProxy : public ABaseObject
+class AHitProxy : public GCObject
 {
-    HK_CLASS(AHitProxy, ABaseObject)
-
     friend class APhysicsSystem;
 
 public:
+    const uint64_t Id;
+
     // Component events
     AContactDelegate E_OnBeginContact;
     AContactDelegate E_OnEndContact;

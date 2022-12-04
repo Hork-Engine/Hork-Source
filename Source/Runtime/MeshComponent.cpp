@@ -249,7 +249,7 @@ void AMeshComponent::SetAllowRaycast(bool _AllowRaycast)
 
 void AMeshComponent::SetMesh(AIndexedMesh* _Mesh)
 {
-    if (IsSame(Mesh, _Mesh))
+    if (Mesh == _Mesh)
     {
         return;
     }

@@ -101,10 +101,8 @@ struct TActorSpawnInfo : SActorSpawnInfo
 };
 
 /** AWorld. Defines a game map or editor/tool scene */
-class AWorld : public ABaseObject
+class AWorld : public GCObject
 {
-    HK_CLASS(AWorld, ABaseObject)
-
 public:
     /** Delegate to notify when any actor spawned */
     using AOnActorSpawned = TEvent<AActor*>;
@@ -385,9 +383,6 @@ public:
 
     void DrawDebug(ADebugRenderer* InRenderer);
 
-    AWorld();
-    ~AWorld();
-
     /** Same as Actor->Destroy() */
     static void DestroyActor(AActor* Actor);
 
@@ -417,6 +412,9 @@ private:
         ALevel*           Level{};
         bool              bInEditor{};
     };
+
+    AWorld();
+    ~AWorld();
 
     AActor* _SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& SpawnTransform = {});
 

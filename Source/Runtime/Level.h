@@ -160,10 +160,8 @@ ALevel
 Subpart of a world. Contains actors, level visibility, baked data like lightmaps, surfaces, collision, audio, etc.
 
 */
-class ALevel : public ABaseObject
+class ALevel : public GCObject
 {
-    HK_CLASS(ALevel, ABaseObject)
-
     friend class AWorld;
     friend class AActor;
 
@@ -171,15 +169,17 @@ public:
     TRef<AVisibilityLevel> Visibility;
     TRef<ALevelLighting>   Lighting;
     TRef<ALevelAudio>      Audio;
+
+    ALevel() = default;
     
     /** Level is persistent if created by owner world */
-    bool IsPersistentLevel() const { return bIsPersistent; }
+    bool IsPersistentLevel() const { return m_bIsPersistent; }
 
     /** Get level world */
-    AWorld* GetOwnerWorld() const { return OwnerWorld; }
+    AWorld* GetOwnerWorld() const { return m_OwnerWorld; }
 
     /** Get actors in level */
-    TPodVector<AActor*> const& GetActors() const { return Actors; }
+    TVector<AActor*> const& GetActors() const { return m_Actors; }
 
     /** Destroy all actors in the level */
     void DestroyActors();
@@ -195,13 +195,10 @@ public:
     AVertexLight* GetVertexLight(uint32_t VertexLightChannel);
 
     /** Get all vertex light channels inside the level */
-    TVector<AVertexLight*> const& GetVertexLightChannels() const { return VertexLightChannels; }
+    TVector<AVertexLight*> const& GetVertexLightChannels() const { return m_VertexLightChannels; }
 
     /** Sample lightmap by texture coordinate */
     Float3 SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord) const;
-
-    ALevel();
-    ~ALevel();
 
 protected:
     /** Draw debug. Called by owner world. */
@@ -215,13 +212,13 @@ private:
     void OnRemoveLevelFromWorld();
 
     /** Parent world */
-    AWorld* OwnerWorld = nullptr;
+    AWorld* m_OwnerWorld = nullptr;
 
-    bool bIsPersistent = false;
+    bool m_bIsPersistent = false;
 
     /** Array of actors */
-    TPodVector<AActor*> Actors;
+    TVector<AActor*> m_Actors;
 
-    TVector<AVertexLight*> VertexLightChannels;
-    TVector<uint32_t> FreeVertexLightChannels;
+    TVector<AVertexLight*> m_VertexLightChannels;
+    TVector<uint32_t> m_FreeVertexLightChannels;
 };

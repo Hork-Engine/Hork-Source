@@ -172,6 +172,7 @@ protected:
 
 private:
     uint32_t           m_ID{};
+    AString            m_Name;
     TVector<MGInput*>  m_Inputs;
     TVector<MGOutput*> m_Outputs;
     int                m_Serial{};

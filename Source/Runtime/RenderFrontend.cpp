@@ -56,8 +56,6 @@ AConsoleVar r_VertexLight("r_VertexLight"s, "0"s);
 
 AConsoleVar com_DrawFrustumClusters("com_DrawFrustumClusters"s, "0"s, CVAR_CHEAT);
 
-HK_CLASS_META(ARenderFrontend)
-
 static constexpr int TerrainTileSize = 256; //32;//256;
 
 ARenderFrontend::ARenderFrontend()
@@ -1518,13 +1516,13 @@ void ARenderFrontend::AddDirectionalShadowmapInstances(AWorld* InWorld)
 
 HK_FORCEINLINE bool CanMergeSurfaces(SSurfaceDef const* InFirst, SSurfaceDef const* InSecond)
 {
-    return (InFirst->Model->Id == InSecond->Model->Id && InFirst->LightmapBlock == InSecond->LightmapBlock && InFirst->MaterialIndex == InSecond->MaterialIndex
+    return (InFirst->Model == InSecond->Model && InFirst->LightmapBlock == InSecond->LightmapBlock && InFirst->MaterialIndex == InSecond->MaterialIndex
             /*&& InFirst->RenderingOrder == InSecond->RenderingOrder*/);
 }
 
 HK_FORCEINLINE bool CanMergeSurfacesShadowmap(SSurfaceDef const* InFirst, SSurfaceDef const* InSecond)
 {
-    return (InFirst->Model->Id == InSecond->Model->Id && InFirst->MaterialIndex == InSecond->MaterialIndex
+    return (InFirst->Model == InSecond->Model && InFirst->MaterialIndex == InSecond->MaterialIndex
             /*&& InFirst->RenderingOrder == InSecond->RenderingOrder*/);
 }
 

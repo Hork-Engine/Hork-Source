@@ -683,7 +683,7 @@ int UIWidget::GetLayerNum(AStringView name) const
     int n = 0;
     for (auto w : m_LayoutSlots)
     {
-        if (w->GetObjectName() == name)
+        if (w->m_Name == name)
             return n;
         ++n;
     }
@@ -694,7 +694,7 @@ UIWidget* UIWidget::FindChildren(AStringView name)
 {
     for (auto w : m_Children)
     {
-        if (w->GetObjectName() == name)
+        if (w->m_Name == name)
             return w;
     }
 

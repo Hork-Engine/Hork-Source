@@ -190,7 +190,6 @@ AResource* AResourceManager::GetOrCreateResource(AClassMeta const& classMeta, AS
     resource->AddRef();
     resource->SetResourcePath(path);
     resource->SetResourceFlags(flags);
-    resource->SetObjectName(path);
     resource->InitializeFromFile(path);
 
     m_ResourceCache[path] = resource;

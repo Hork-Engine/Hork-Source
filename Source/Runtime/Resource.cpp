@@ -66,10 +66,6 @@ bool AResource::LoadFromPath(AStringView path)
 
 HK_CLASS_META(ABinaryResource)
 
-ABinaryResource::ABinaryResource()
-{
-}
-
 ABinaryResource::~ABinaryResource()
 {
     Purge();

@@ -202,7 +202,7 @@ void UIDesktop::UpdateGeometry(float w, float h)
 
 void UIDesktop::SetFocusWidget(UIWidget* widget)
 {
-    if (IsSame(widget, m_FocusWidget))
+    if (widget == m_FocusWidget.GetObject())
     {
         return;
     }
@@ -432,7 +432,7 @@ void UIDesktop::GenerateMouseButtonEvents(struct SMouseButtonEvent const& event,
 
             uint64_t newMouseTimeMsec = timeStamp * 1000.0;
             uint64_t clickTime        = newMouseTimeMsec - m_MouseClickTime;
-            if (IsSame(m_MouseClickWidget, widget) && clickTime < DOUBLECLICKTIME_MSEC && GUIManager->CursorPosition.X > m_MouseClickPos.X - DOUBLECLICKHALFSIZE && GUIManager->CursorPosition.X < m_MouseClickPos.X + DOUBLECLICKHALFSIZE && GUIManager->CursorPosition.Y > m_MouseClickPos.Y - DOUBLECLICKHALFSIZE && GUIManager->CursorPosition.Y < m_MouseClickPos.Y + DOUBLECLICKHALFSIZE)
+            if (m_MouseClickWidget == widget && clickTime < DOUBLECLICKTIME_MSEC && GUIManager->CursorPosition.X > m_MouseClickPos.X - DOUBLECLICKHALFSIZE && GUIManager->CursorPosition.X < m_MouseClickPos.X + DOUBLECLICKHALFSIZE && GUIManager->CursorPosition.Y > m_MouseClickPos.Y - DOUBLECLICKHALFSIZE && GUIManager->CursorPosition.Y < m_MouseClickPos.Y + DOUBLECLICKHALFSIZE)
             {
                 if (!widget->IsDisabled())
                 {

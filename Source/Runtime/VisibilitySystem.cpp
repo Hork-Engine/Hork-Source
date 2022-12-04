@@ -3627,5 +3627,3 @@ bool AVisibilitySystem::RaycastClosestBounds(SBoxHitResult& Result, Float3 const
 {
     return AVisibilityLevel::RaycastClosestBounds(Levels, Result, RayStart, RayEnd, Filter);
 }
-
-HK_CLASS_META(ABrushModel)

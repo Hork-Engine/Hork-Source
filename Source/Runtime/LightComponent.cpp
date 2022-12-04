@@ -56,7 +56,7 @@ void ALightComponent::SetAnimation(const char* _Pattern, float _Speed, float _Qu
 
 void ALightComponent::SetAnimation(AAnimationPattern* _Animation)
 {
-    if (IsSame(Animation, _Animation))
+    if (Animation == _Animation)
     {
         return;
     }

@@ -302,6 +302,16 @@ public:
         return *this;
     }
 
+    void SetName(AStringView name)
+    {
+        m_Name = name;
+    }
+
+    AString const& GetName() const
+    {
+        return m_Name;
+    }
+
     void SetLayer(AStringView name);
 
     void SetLayer(int layerNum);
@@ -459,6 +469,7 @@ public:
     Float2             m_AdjustedSize;
     Float2             m_MeasuredSize;
     UIWidgetGeometry   m_Geometry;
+    AString            m_Name;
 
 private:
     int  m_VisFrame = 0;

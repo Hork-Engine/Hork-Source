@@ -668,10 +668,9 @@ HK_END_CLASS_META()
 HK_BEGIN_CLASS_META(MGSingleton)
 HK_END_CLASS_META()
 
-MGNode::MGNode(AStringView Name)
-{
-    SetObjectName(Name);
-}
+MGNode::MGNode(AStringView Name) :
+    m_Name(Name)
+{}
 
 void MGNode::ParseProperties(ADocValue const* document)
 {
@@ -716,7 +715,7 @@ MGNode& MGNode::BindInput(AStringView InputSlot, MGNode& Node)
 {
     if (Node.m_Outputs.IsEmpty())
     {
-        LOG("MGNode::BindInput: Node '{}' has no output slots\n", Node.GetObjectName());
+        LOG("MGNode::BindInput: Node '{}' has no output slots\n", Node.m_Name);
         return *this;
     }
     return BindInput(InputSlot, Node.m_Outputs[0]);

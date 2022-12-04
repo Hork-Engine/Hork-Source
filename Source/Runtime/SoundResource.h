@@ -35,7 +35,7 @@ SOFTWARE.
 #include <Audio/AudioBuffer.h>
 #include <Audio/AudioDecoder.h>
 
-enum ESoundStreamType
+enum SOUND_STREAM_TYPE
 {
     /** Short sound effects. Most used. */
     SOUND_STREAM_DISABLED,
@@ -52,7 +52,7 @@ enum ESoundStreamType
 
 struct SSoundCreateInfo
 {
-    ESoundStreamType StreamType = SOUND_STREAM_DISABLED;
+    SOUND_STREAM_TYPE StreamType = SOUND_STREAM_DISABLED;
     bool             bForce8Bit = false;
     bool             bForceMono = false;
 };
@@ -106,7 +106,7 @@ public:
     /** Audio duration in seconds */
     float GetDurationInSecounds() const;
 
-    ESoundStreamType GetStreamType() const;
+    SOUND_STREAM_TYPE GetStreamType() const;
 
     /** File name */
     AString const& GetFileName() const { return FileName; }
@@ -134,7 +134,7 @@ protected:
 private:
     TRef<SAudioBuffer>  pBuffer;
     TRef<SFileInMemory> pFileInMemory;
-    ESoundStreamType    CurStreamType = SOUND_STREAM_DISABLED;
+    SOUND_STREAM_TYPE    CurStreamType = SOUND_STREAM_DISABLED;
     SAudioFileInfo      AudioFileInfo;
     float               DurationInSeconds = 0.0f;
     int                 Revision;

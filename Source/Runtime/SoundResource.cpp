@@ -93,7 +93,7 @@ float ASoundResource::GetDurationInSecounds() const
     return DurationInSeconds;
 }
 
-ESoundStreamType ASoundResource::GetStreamType() const
+SOUND_STREAM_TYPE ASoundResource::GetStreamType() const
 {
     return CurStreamType;
 }

@@ -95,7 +95,7 @@ void ASkinnedComponent::OnMeshChanged()
 
     ASkeleton* newSkeleton = GetMesh()->GetSkeleton();
 
-    if (IsSame(Skeleton, newSkeleton))
+    if (Skeleton == newSkeleton)
     {
         return;
     }

@@ -40,8 +40,6 @@ SOFTWARE.
 
 #include <angelscript.h>
 
-HK_CLASS_META(AWorld)
-
 AWorld*          AWorld::PendingKillWorlds = nullptr;
 TVector<AWorld*> AWorld::Worlds;
 TVector<AWorld*> AWorld::TickingWorlds;
@@ -50,8 +48,8 @@ AWorld::AWorld()
 {
     PersistentLevel = NewObj<ALevel>();
     PersistentLevel->AddRef();
-    PersistentLevel->OwnerWorld    = this;
-    PersistentLevel->bIsPersistent = true;
+    PersistentLevel->m_OwnerWorld    = this;
+    PersistentLevel->m_bIsPersistent = true;
     PersistentLevel->OnAddLevelToWorld();
 
     SVisibilitySystemCreateInfo ci{};
@@ -74,7 +72,7 @@ AWorld::~AWorld()
 
         VisibilitySystem.UnregisterLevel(level->Visibility);
 
-        level->OwnerWorld = nullptr;
+        level->m_OwnerWorld = nullptr;
         level->RemoveRef();
     }
 
@@ -179,9 +177,9 @@ void AWorld::DestroyActor(AActor* Actor)
 
     ALevel* level = Actor->Level;
 
-    level->Actors[Actor->IndexInLevelArrayOfActors]                            = level->Actors[level->Actors.Size() - 1];
-    level->Actors[Actor->IndexInLevelArrayOfActors]->IndexInLevelArrayOfActors = Actor->IndexInLevelArrayOfActors;
-    level->Actors.RemoveLast();
+    level->m_Actors[Actor->IndexInLevelArrayOfActors]                            = level->m_Actors[level->m_Actors.Size() - 1];
+    level->m_Actors[Actor->IndexInLevelArrayOfActors]->IndexInLevelArrayOfActors = Actor->IndexInLevelArrayOfActors;
+    level->m_Actors.RemoveLast();
     Actor->IndexInLevelArrayOfActors = -1;
 }
 
@@ -350,7 +348,7 @@ AActor* AWorld::_SpawnActor2(SActorSpawnPrivate& SpawnInfo, STransform const& Sp
 
     // Set properties for the actor
     if (pActorDef)
-        SetProperties(pActorDef->GetActorPropertyHash());
+        actor->SetProperties(pActorDef->GetActorPropertyHash());
 
     // Create script
     AString const& scriptModule = pActorDef ? pActorDef->GetScriptModule() : SpawnInfo.ScriptModule;
@@ -691,8 +689,8 @@ void AWorld::SpawnActors()
             Actors.Add(actor);
             actor->IndexInWorldArrayOfActors = Actors.Size() - 1;
             // Add actor to level
-            actor->Level->Actors.Add(actor);
-            actor->IndexInLevelArrayOfActors = actor->Level->Actors.Size() - 1;
+            actor->Level->m_Actors.Add(actor);
+            actor->IndexInLevelArrayOfActors = actor->Level->m_Actors.Size() - 1;
             InitializeAndPlay(actor);
 
             BroadcastActorSpawned(actor);
@@ -1042,18 +1040,18 @@ void AWorld::AddLevel(ALevel* _Level)
         return;
     }
 
-    if (_Level->OwnerWorld == this)
+    if (_Level->m_OwnerWorld == this)
     {
         // Already in world
         return;
     }
 
-    if (_Level->OwnerWorld)
+    if (_Level->m_OwnerWorld)
     {
-        _Level->OwnerWorld->RemoveLevel(_Level);
+        _Level->m_OwnerWorld->RemoveLevel(_Level);
     }
 
-    _Level->OwnerWorld = this;
+    _Level->m_OwnerWorld = this;
     _Level->AddRef();
     _Level->OnAddLevelToWorld();
     ArrayOfLevels.Add(_Level);
@@ -1074,7 +1072,7 @@ void AWorld::RemoveLevel(ALevel* _Level)
         return;
     }
 
-    if (_Level->OwnerWorld != this)
+    if (_Level->m_OwnerWorld != this)
     {
         LOG("AWorld::AddLevel: level is not in world\n");
         return;
@@ -1086,7 +1084,7 @@ void AWorld::RemoveLevel(ALevel* _Level)
 
     VisibilitySystem.UnregisterLevel(_Level->Visibility);
 
-    _Level->OwnerWorld = nullptr;
+    _Level->m_OwnerWorld = nullptr;
     _Level->RemoveRef();
 }
 
@@ -1139,8 +1137,7 @@ void AWorld::DrawDebug(ADebugRenderer* InRenderer)
 
 AWorld* AWorld::CreateWorld()
 {
-    AWorld* world = NewObj<AWorld>();
-
+    AWorld* world = new AWorld;
     world->AddRef();
 
     // Add world to the game

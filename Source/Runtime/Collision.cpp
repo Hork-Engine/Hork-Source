@@ -32,11 +32,11 @@ SOFTWARE.
 #include "World.h"
 #include "BulletCompatibility.h"
 
-HK_CLASS_META(AHitProxy)
+static uint64_t GUniqueIdGenerator = 0;
 
-AHitProxy::AHitProxy()
-{
-}
+AHitProxy::AHitProxy() :
+    Id(++GUniqueIdGenerator)
+{}
 
 AHitProxy::~AHitProxy()
 {

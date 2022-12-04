@@ -43,16 +43,6 @@ SOFTWARE.
 #include <Core/IntrusiveLinkedListMacro.h>
 #include <Core/ConsoleVar.h>
 
-HK_CLASS_META(ALevel)
-
-ALevel::ALevel()
-{
-}
-
-ALevel::~ALevel()
-{
-}
-
 void ALevel::OnAddLevelToWorld()
 {
 }
@@ -64,8 +54,8 @@ void ALevel::OnRemoveLevelFromWorld()
 
 void ALevel::DestroyActors()
 {
-    while (!Actors.IsEmpty())
-        Actors.Last()->Destroy();
+    while (!m_Actors.IsEmpty())
+        m_Actors.Last()->Destroy();
 }
 
 Float3 ALevel::SampleLight(int InLightmapBlock, Float2 const& InLighmapTexcoord) const
@@ -121,47 +111,47 @@ void ALevel::DrawDebug(ADebugRenderer* InRenderer)
 uint32_t ALevel::AddVertexLightChannel(AIndexedMesh* InSourceMesh)
 {
     uint32_t handle;
-    if (!FreeVertexLightChannels.IsEmpty())
+    if (!m_FreeVertexLightChannels.IsEmpty())
     {
-        handle = FreeVertexLightChannels.Last();
-        FreeVertexLightChannels.RemoveLast();
+        handle = m_FreeVertexLightChannels.Last();
+        m_FreeVertexLightChannels.RemoveLast();
     }
     else
     {
-        handle = VertexLightChannels.Size();
-        VertexLightChannels.Add();
+        handle = m_VertexLightChannels.Size();
+        m_VertexLightChannels.Add();
     }
 
-    VertexLightChannels[handle] = new AVertexLight(InSourceMesh);
+    m_VertexLightChannels[handle] = new AVertexLight(InSourceMesh);
 
     return handle;
 }
 
 void ALevel::RemoveVertexLightChannel(uint32_t VertexLightChannel)
 {
-    if (VertexLightChannel >= VertexLightChannels.Size() || VertexLightChannels[VertexLightChannel] == nullptr)
+    if (VertexLightChannel >= m_VertexLightChannels.Size() || m_VertexLightChannels[VertexLightChannel] == nullptr)
         return;
 
-    VertexLightChannels[VertexLightChannel]->RemoveRef();
-    VertexLightChannels[VertexLightChannel] = nullptr;
+    m_VertexLightChannels[VertexLightChannel]->RemoveRef();
+    m_VertexLightChannels[VertexLightChannel] = nullptr;
 
-    FreeVertexLightChannels.Add(VertexLightChannel);
+    m_FreeVertexLightChannels.Add(VertexLightChannel);
 }
 
 void ALevel::RemoveVertexLightChannels()
 {
-    for (AVertexLight* vertexLight : VertexLightChannels)
+    for (AVertexLight* vertexLight : m_VertexLightChannels)
     {
         vertexLight->RemoveRef();
     }
-    VertexLightChannels.Free();
-    FreeVertexLightChannels.Free();
+    m_VertexLightChannels.Free();
+    m_FreeVertexLightChannels.Free();
 }
 
 AVertexLight* ALevel::GetVertexLight(uint32_t VertexLightChannel)
 {
-    if (VertexLightChannel < VertexLightChannels.Size())
-        return VertexLightChannels[VertexLightChannel];
+    if (VertexLightChannel < m_VertexLightChannels.Size())
+        return m_VertexLightChannels[VertexLightChannel];
     return nullptr;
 }
 

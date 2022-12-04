@@ -608,10 +608,8 @@ struct SLightPortalDef
     int NumIndices;
 };
 
-class ABrushModel : public ABaseObject
+class ABrushModel : public GCObject
 {
-    HK_CLASS(ABrushModel, ABaseObject)
-
 public:
     /** Baked surface definitions */
     TVector<SSurfaceDef> Surfaces;
@@ -633,9 +631,6 @@ public:
 
     /** Lighting data will be used from that level. */
     TWeakRef<ALevel> ParentLevel;
-
-    ABrushModel() {}
-    ~ABrushModel() {}
 };
 
 

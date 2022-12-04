@@ -71,7 +71,7 @@ public:
     bool IsPersistent() const { return !!(m_Flags & RESOURCE_FLAG_PERSISTENT); }
 
 protected:
-    AResource() {}
+    AResource() = default;
 
     /** Initialize default object representation */
     void InitializeDefaultObject();
@@ -107,7 +107,7 @@ class ABinaryResource : public AResource
     HK_CLASS(ABinaryResource, AResource)
 
 public:
-    ABinaryResource();
+    ABinaryResource() = default;
     ~ABinaryResource();
 
     void* GetBinaryData()

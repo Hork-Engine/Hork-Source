@@ -36,11 +36,12 @@ SOFTWARE.
     using ThisClass = Class; \
     using Super = SuperClass;
 
-class UIObject : public ABaseObject
+class UIObject : public GCObject
 {
-    UI_CLASS(UIObject, ABaseObject)
+    UI_CLASS(UIObject, GCObject)
 
 public:
-    UIObject() = default;
-};
+    const uint64_t Id;
 
+    UIObject();
+};

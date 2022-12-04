@@ -27,3 +27,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 */
+
+#include "UIObject.h"
+
+static uint64_t GUniqueIdGenerator = 0;
+
+UIObject::UIObject() :
+    Id(++GUniqueIdGenerator)
+{}

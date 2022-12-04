@@ -105,7 +105,7 @@ void ASceneComponent::AttachTo(ASceneComponent* _Parent, AStringView _Socket, bo
 
 void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransform)
 {
-    if (IsSame(AttachParent, _Parent))
+    if (AttachParent == _Parent)
     {
         // Already attached
         return;
@@ -125,8 +125,9 @@ void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransfo
     }
 
 #if 0
-    if ( !IsSame( _Parent->GetParentActor(), GetParentActor() ) ) {
-        LOG( "ASceneComponent::Attach: Parent and child are in different actors\n" );
+    if (_Parent->GetParentActor() != GetParentActor())
+    {
+        LOG("ASceneComponent::Attach: Parent and child are in different actors\n");
         return;
     }
 #endif
@@ -213,7 +214,7 @@ bool ASceneComponent::IsChild(ASceneComponent* _Child, bool _Recursive) const
 {
     for (ASceneComponent* child : Childs)
     {
-        if (IsSame(child, _Child) || (_Recursive && child->IsChild(_Child, true)))
+        if (child == _Child || (_Recursive && child->IsChild(_Child, true)))
         {
             return true;
         }

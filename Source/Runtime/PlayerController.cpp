@@ -73,7 +73,7 @@ void APlayerController::OnPawnChanged()
 
     if (m_HUD)
     {
-        m_HUD->OwnerPawn = m_Pawn;
+        m_HUD->m_OwnerPawn = m_Pawn;
     }
 
     UpdatePawnCamera();
@@ -86,28 +86,28 @@ void APlayerController::SetAudioListener(ASceneComponent* _AudioListener)
 
 void APlayerController::SetHUD(AHUD* _HUD)
 {
-    if (IsSame(m_HUD, _HUD))
+    if (m_HUD == _HUD)
     {
         return;
     }
 
-    if (_HUD && _HUD->OwnerPlayer)
+    if (_HUD && _HUD->m_OwnerPlayer)
     {
-        _HUD->OwnerPlayer->SetHUD(nullptr);
+        _HUD->m_OwnerPlayer->SetHUD(nullptr);
     }
 
     if (m_HUD)
     {
-        m_HUD->OwnerPlayer = nullptr;
-        m_HUD->OwnerPawn   = nullptr;
+        m_HUD->m_OwnerPlayer = nullptr;
+        m_HUD->m_OwnerPawn   = nullptr;
     }
 
     m_HUD = _HUD;
 
     if (m_HUD)
     {
-        m_HUD->OwnerPlayer = this;
-        m_HUD->OwnerPawn   = m_Pawn;
+        m_HUD->m_OwnerPlayer = this;
+        m_HUD->m_OwnerPawn   = m_Pawn;
     }
 }
 

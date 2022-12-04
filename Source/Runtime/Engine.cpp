@@ -292,7 +292,7 @@ void AEngine::Run(SEntryDecl const& entryDecl)
 
     m_ResourceManager = MakeUnique<AResourceManager>();
 
-    m_Renderer = NewObj<ARenderFrontend>();
+    m_Renderer = MakeRef<ARenderFrontend>();
 
     m_RenderBackend = MakeRef<ARenderBackend>(m_RenderDevice);
 

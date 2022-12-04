@@ -68,10 +68,8 @@ struct SRenderFrontendDef
     class AStreamedMemoryGPU *StreamedMemory;
 };
 
-class ARenderFrontend : public ABaseObject
+class ARenderFrontend : public ARefCounted
 {
-    HK_CLASS(ARenderFrontend, ABaseObject)
-
 public:
     ARenderFrontend();
     ~ARenderFrontend();

@@ -176,6 +176,12 @@ public:
 
     class asILockableSharedBool* ScriptGetWeakRefFlag();
 
+    /** Set object debug/editor or ingame name */
+    void SetObjectName(AStringView Name) { m_Name = Name; }
+
+    /** Get object debug/editor or ingame name */
+    AString const& GetObjectName() const { return m_Name; }
+
 protected:
     // Actor events
     AContactDelegate E_OnBeginContact;
@@ -256,6 +262,7 @@ private:
     AController*                 Controller{};
     class asIScriptObject*       ScriptModule{};
     class asILockableSharedBool* pWeakRefFlag{};
+    AString                      m_Name;
 
     int ComponentLocalIdGen{};
 

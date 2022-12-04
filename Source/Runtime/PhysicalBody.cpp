@@ -431,7 +431,7 @@ void APhysicalBody::CreateBoneCollisions()
 
 void APhysicalBody::SetCollisionModel(ACollisionModel* _CollisionModel)
 {
-    if (IsSame(CollisionModel, _CollisionModel))
+    if (CollisionModel == _CollisionModel)
     {
         return;
     }

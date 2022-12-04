@@ -510,7 +510,7 @@ bool AIndexedMesh::SendVertexDataToGPU(int VerticesCount, int StartVertexLocatio
 
     if (StartVertexLocation + VerticesCount > m_Vertices.Size())
     {
-        LOG("AIndexedMesh::SendVertexDataToGPU: Referencing outside of buffer ({})\n", GetObjectName());
+        LOG("AIndexedMesh::SendVertexDataToGPU: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
@@ -530,7 +530,7 @@ bool AIndexedMesh::WriteVertexData(SMeshVertex const* Vertices, int VerticesCoun
 
     if (StartVertexLocation + VerticesCount > m_Vertices.Size())
     {
-        LOG("AIndexedMesh::WriteVertexData: Referencing outside of buffer ({})\n", GetObjectName());
+        LOG("AIndexedMesh::WriteVertexData: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
@@ -559,7 +559,7 @@ bool AIndexedMesh::SendJointWeightsToGPU(int VerticesCount, int StartVertexLocat
 
     if (StartVertexLocation + VerticesCount > m_Weights.Size())
     {
-        LOG("AIndexedMesh::SendJointWeightsToGPU: Referencing outside of buffer ({})\n", GetObjectName());
+        LOG("AIndexedMesh::SendJointWeightsToGPU: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
@@ -585,7 +585,7 @@ bool AIndexedMesh::WriteJointWeights(SMeshVertexSkin const* Vertices, int Vertic
 
     if (StartVertexLocation + VerticesCount > m_Weights.Size())
     {
-        LOG("AIndexedMesh::WriteJointWeights: Referencing outside of buffer ({})\n", GetObjectName());
+        LOG("AIndexedMesh::WriteJointWeights: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
@@ -603,7 +603,7 @@ bool AIndexedMesh::SendLightmapUVsToGPU(int VerticesCount, int StartVertexLocati
 
     if (StartVertexLocation + VerticesCount > m_Vertices.Size())
     {
-        LOG("AIndexedMesh::SendLightmapUVsToGPU: Referencing outside of buffer ({})\n", GetObjectName());
+        LOG("AIndexedMesh::SendLightmapUVsToGPU: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
@@ -625,7 +625,7 @@ bool AIndexedMesh::WriteLightmapUVsData(SMeshVertexUV const* UVs, int VerticesCo
 
     if (StartVertexLocation + VerticesCount > m_Vertices.Size())
     {
-        LOG("AIndexedMesh::WriteLightmapUVsData: Referencing outside of buffer ({})\n", GetObjectName());
+        LOG("AIndexedMesh::WriteLightmapUVsData: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
@@ -645,7 +645,7 @@ bool AIndexedMesh::SendIndexDataToGPU(int _IndexCount, int _StartIndexLocation)
 
     if (_StartIndexLocation + _IndexCount > m_Indices.Size())
     {
-        LOG("AIndexedMesh::SendIndexDataToGPU: Referencing outside of buffer ({})\n", GetObjectName());
+        LOG("AIndexedMesh::SendIndexDataToGPU: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 
@@ -665,7 +665,7 @@ bool AIndexedMesh::WriteIndexData(unsigned int const* Indices, int _IndexCount, 
 
     if (_StartIndexLocation + _IndexCount > m_Indices.Size())
     {
-        LOG("AIndexedMesh::WriteIndexData: Referencing outside of buffer ({})\n", GetObjectName());
+        LOG("AIndexedMesh::WriteIndexData: Referencing outside of buffer ({})\n", GetResourcePath());
         return false;
     }
 

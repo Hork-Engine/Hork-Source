@@ -43,27 +43,26 @@ class AHUD : public AActor
     friend class APlayerController;
 
 public:
-    void Draw(ACanvas& _Canvas, int _X, int _Y, int _W, int _H);
+    void Draw(ACanvas& canvas, int x, int y, int width, int height);
 
-    int GetViewportX() const { return ViewportX; }
-    int GetViewportY() const { return ViewportY; }
-    int GetViewportW() const { return ViewportW; }
-    int GetViewportH() const { return ViewportH; }
+    int GetViewportX() const { return m_ViewportX; }
+    int GetViewportY() const { return m_ViewportY; }
+    int GetViewportW() const { return m_ViewportW; }
+    int GetViewportH() const { return m_ViewportH; }
 
-    AActor* GetOwnerPawn() const { return OwnerPawn; }
+    AActor* GetOwnerPawn() const { return m_OwnerPawn; }
 
 protected:
     AHUD();
 
-    virtual void DrawHUD(ACanvas& _Canvas);
-
-    // Read only
-    int      ViewportX = 0;
-    int      ViewportY = 0;
-    int      ViewportW = 0;
-    int      ViewportH = 0;
+    virtual void DrawHUD(ACanvas& canvas) {}
 
 private:
-    APlayerController* OwnerPlayer = nullptr;
-    AActor*            OwnerPawn   = nullptr;
+    int m_ViewportX = 0;
+    int m_ViewportY = 0;
+    int m_ViewportW = 0;
+    int m_ViewportH = 0;
+
+    APlayerController* m_OwnerPlayer = nullptr;
+    AActor*            m_OwnerPawn   = nullptr;
 };

@@ -43,7 +43,7 @@ void AController::Initialize(SActorInitializer& Initializer)
 
 void AController::SetPawn(AActor* pNewPawn)
 {
-    if (IsSame(m_Pawn, pNewPawn))
+    if (m_Pawn == pNewPawn)
     {
         return;
     }

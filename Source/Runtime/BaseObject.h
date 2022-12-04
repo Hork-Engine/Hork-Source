@@ -78,12 +78,6 @@ public:
 
     void GetProperties(TPodVector<AProperty const*>& Properties, bool bRecursive = true) const;
 
-    /** Set object debug/editor or ingame name */
-    void SetObjectName(AStringView Name) { m_Name = Name; }
-
-    /** Get object debug/editor or ingame name */
-    AString const& GetObjectName() const { return m_Name; }
-
     /** Get total existing objects */
     static uint64_t GetTotalObjects() { return m_TotalObjects; }
 
@@ -107,9 +101,6 @@ public:
 private:
     void SetProperties_r(AClassMeta const* Meta, TStringHashMap<AString> const& Properties);
 
-    /** Custom object name */
-    AString m_Name;
-
     /** Object global list */
     ABaseObject* m_NextObject{};
     ABaseObject* m_PrevObject{};
@@ -126,10 +117,6 @@ private:
 Utilites
 
 */
-HK_FORCEINLINE bool IsSame(ABaseObject const* lhs, ABaseObject const* rhs)
-{
-    return ((!lhs && !rhs) || (lhs && rhs && lhs->Id == rhs->Id));
-}
 
 template <typename T>
 T* Upcast(ABaseObject* pObject)
@@ -168,13 +155,13 @@ struct TCallback<TReturn(TArgs...)>
 
     template <typename T>
     TCallback(T* _Object, TReturn (T::*_Method)(TArgs...)) :
-        m_Object(_Object), m_Method((void(ABaseObject::*)(TArgs...))_Method)
+        m_Object(_Object), m_Method((void(GCObject::*)(TArgs...))_Method)
     {
     }
 
     template <typename T>
     TCallback(TRef<T>& _Object, TReturn (T::*_Method)(TArgs...)) :
-        m_Object(_Object), m_Method((void(ABaseObject::*)(TArgs...))_Method)
+        m_Object(_Object), m_Method((void(GCObject::*)(TArgs...))_Method)
     {
     }
 
@@ -182,7 +169,7 @@ struct TCallback<TReturn(TArgs...)>
     void Set(T* _Object, TReturn (T::*_Method)(TArgs...))
     {
         m_Object = _Object;
-        m_Method = (void(ABaseObject::*)(TArgs...))_Method;
+        m_Method = (void(GCObject::*)(TArgs...))_Method;
     }
 
     void Clear()
@@ -203,7 +190,7 @@ struct TCallback<TReturn(TArgs...)>
 
     TReturn operator()(TArgs... _Args) const
     {
-        ABaseObject* pObject = m_Object;
+        GCObject* pObject = m_Object;
         if (pObject)
         {
             return (pObject->*m_Method)(std::forward<TArgs>(_Args)...);
@@ -211,11 +198,11 @@ struct TCallback<TReturn(TArgs...)>
         return TReturn();
     }
 
-    ABaseObject* GetObject() { return m_Object.GetObject(); }
+    GCObject* GetObject() { return m_Object.GetObject(); }
 
 protected:
-    TWeakRef<ABaseObject> m_Object;
-    TReturn (ABaseObject::*m_Method)(TArgs...);
+    TWeakRef<GCObject> m_Object;
+    TReturn (GCObject::*m_Method)(TArgs...);
 };
 
 

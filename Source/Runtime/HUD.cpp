@@ -38,16 +38,12 @@ AHUD::AHUD()
 {
 }
 
-void AHUD::Draw(ACanvas& _Canvas, int _X, int _Y, int _W, int _H)
+void AHUD::Draw(ACanvas& canvas, int x, int y, int width, int height)
 {
-    ViewportX = _X;
-    ViewportY = _Y;
-    ViewportW = _W;
-    ViewportH = _H;
+    m_ViewportX = x;
+    m_ViewportY = y;
+    m_ViewportW = width;
+    m_ViewportH = height;
 
-    DrawHUD(_Canvas);
-}
-
-void AHUD::DrawHUD(ACanvas& _Canvas)
-{
+    DrawHUD(canvas);
 }

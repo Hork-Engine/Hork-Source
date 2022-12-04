@@ -91,6 +91,12 @@ public:
     /** Register component to initialize it at runtime */
     void RegisterComponent();
 
+    /** Set object debug/editor or ingame name */
+    void SetObjectName(AStringView Name) { m_Name = Name; }
+
+    /** Get object debug/editor or ingame name */
+    AString const& GetObjectName() const { return m_Name; }
+
 protected:
     bool bCanEverTick = false;
 
@@ -114,6 +120,8 @@ private:
     AActor* OwnerActor = nullptr;
 
     AActorComponent* NextPendingKillComponent = nullptr;
+
+    AString m_Name;
 
     int LocalId{};
     int ComponentIndex = -1;
