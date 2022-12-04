@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "CanvasRenderer.h"
 #include "RenderLocal.h"
+#include <Runtime/Texture.h>
 
 using namespace RenderCore;
 
@@ -415,7 +416,7 @@ ACanvasRenderer::~ACanvasRenderer()
 {
 }
 
-void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TSmallVector<FGTextureProxy*, 32>& pRenderViewTexture, ITexture* pBackBuffer)
+void ACanvasRenderer::Render(AFrameGraph& FrameGraph, ITexture* pBackBuffer)
 {
     if (GFrameData->CanvasDrawData->NumDrawCommands == 0)
     {
@@ -424,18 +425,13 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TSmallVector<FGTextureProx
 
     ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Draw HUD");
 
-    for ( int i = 0 ; i < GFrameData->NumViews ; i++ )
-    {
-        pass.AddResource(pRenderViewTexture[i], FG_RESOURCE_ACCESS_READ);
-    }
-
     FGTextureProxy* SwapChainColorBuffer = FrameGraph.AddExternalResource<FGTextureProxy>("SwapChainColorAttachment", pBackBuffer);
 
     pass.SetColorAttachment(STextureAttachment(SwapChainColorBuffer)
                                 .SetLoadOp(ATTACHMENT_LOAD_OP_LOAD));
     pass.SetRenderArea(GFrameData->CanvasWidth, GFrameData->CanvasHeight);
     pass.AddSubpass({0},
-                    [this, &pRenderViewTexture](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                    [this](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
                     {
                         struct SCanvasConstants
                         {
@@ -464,11 +460,11 @@ void ACanvasRenderer::Render(AFrameGraph& FrameGraph, TSmallVector<FGTextureProx
 
                         immediateCtx->BindResourceTable(rtbl);
                         rtbl->BindBuffer(0, GStreamBuffer, canvasBinding.Offset, canvasBinding.Size);
-                        RenderVG(immediateCtx, GFrameData->CanvasDrawData, pRenderViewTexture);
+                        RenderVG(immediateCtx, GFrameData->CanvasDrawData);
                     });
 }
 
-void ACanvasRenderer::RenderVG(IImmediateContext* immediateCtx, CanvasDrawData const* pDrawData, TSmallVector<FGTextureProxy*, 32>& pRenderViewTexture)
+void ACanvasRenderer::RenderVG(IImmediateContext* immediateCtx, CanvasDrawData const* pDrawData)
 {
     m_pDrawData = pDrawData;
     m_ImmediateCtx = immediateCtx;
@@ -485,22 +481,14 @@ void ACanvasRenderer::RenderVG(IImmediateContext* immediateCtx, CanvasDrawData c
         {
             ITexture* pTexture = nullptr;
 
-            if (drawCommand->pTexture)
+            if (drawCommand->pTextureView)
             {
                 m_SamplerState = (drawCommand->TextureFlags & CANVAS_IMAGE_REPEATX ? 1 : 0) + (drawCommand->TextureFlags & CANVAS_IMAGE_REPEATY ? 2 : 0);
 
                 if (drawCommand->TextureFlags & CANVAS_IMAGE_NEAREST)
                     m_SamplerState += 4;
 
-                if (drawCommand->pTexture && (drawCommand->TextureFlags & _CANVAS_IMAGE_VIEWPORT_INDEX))
-                {
-                    size_t index = (size_t)drawCommand->pTexture - 1;
-                    pTexture     = pRenderViewTexture[index]->Actual();
-                }
-                else
-                {
-                    pTexture = drawCommand->pTexture;
-                }
+                pTexture = drawCommand->pTextureView->GetResource();
             }
 
             m_BlendState   = drawCommand->Composite;

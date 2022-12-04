@@ -103,14 +103,7 @@ void ARenderFrontend::Render(AFrameLoop* InFrameLoop, ACanvas* InCanvas)
     Stat.PolyCount          = 0;
     Stat.ShadowMapPolyCount = 0;
 
-    Viewports.Clear();
-
-    for (auto& viewport : InCanvas->GetViewports())
-    {
-        HK_ASSERT(viewport.Width > 0 && viewport.Height > 0);
-
-        Viewports.Add(&viewport);
-    }
+    TVector<WorldRenderView*> const& renderViews = InFrameLoop->GetRenderViews();
 
     AStreamedMemoryGPU* streamedMemory = FrameLoop->GetStreamedMemoryGPU();
 
@@ -141,7 +134,7 @@ void ARenderFrontend::Render(AFrameLoop* InFrameLoop, ACanvas* InCanvas)
     DebugDraw.Reset();
 
     // Allocate views
-    FrameData.NumViews    = Viewports.Size();
+    FrameData.NumViews    = renderViews.Size();
     FrameData.RenderViews = (SRenderView*)FrameLoop->AllocFrameMem(sizeof(SRenderView) * FrameData.NumViews);
 
     for (int i = 0; i < FrameData.NumViews; i++)
@@ -175,14 +168,15 @@ void ARenderFrontend::Render(AFrameLoop* InFrameLoop, ACanvas* InCanvas)
 
 void ARenderFrontend::RenderView(int _Index)
 {
-    SViewport*            viewport       = const_cast<SViewport*>(Viewports[_Index]);
-    ARenderingParameters* RP             = viewport->RenderingParams;
-    ACameraComponent*     camera         = viewport->Camera;
+    WorldRenderView*      worldRenderView = FrameLoop->GetRenderViews()[_Index];
+    ACameraComponent*     camera          = worldRenderView->m_pCamera;
     AWorld*               world          = camera->GetWorld();
     SRenderView*          view           = &FrameData.RenderViews[_Index];
     AStreamedMemoryGPU*   streamedMemory = FrameLoop->GetStreamedMemoryGPU();
+    ATextureView*         renderTextureView = worldRenderView->GetTextureView();
 
-    HK_ASSERT(RP); // TODO: Don't allow <null> rendering parameters
+    uint32_t width = renderTextureView->GetWidth();
+    uint32_t height = renderTextureView->GetHeight();
 
     view->GameRunningTimeSeconds = world->GetRunningTimeMicro() * 0.000001;
     view->GameplayTimeSeconds    = world->GetGameplayTimeMicro() * 0.000001;
@@ -190,12 +184,12 @@ void ARenderFrontend::RenderView(int _Index)
     view->ViewIndex              = _Index;
     //view->Width = Align( (size_t)(viewport->Width * r_ResolutionScaleX.GetFloat()), 2 );
     //view->Height = Align( (size_t)(viewport->Height * r_ResolutionScaleY.GetFloat()), 2 );
-    view->WidthP  = RP->ScaledWidth;
-    view->HeightP = RP->ScaledHeight;
-    view->Width = RP->ScaledWidth = viewport->Width * r_ResolutionScaleX.GetFloat();
-    view->Height = RP->ScaledHeight = viewport->Height * r_ResolutionScaleY.GetFloat();
-    view->WidthR                    = viewport->Width;
-    view->HeightR                   = viewport->Height;
+    view->WidthP  = worldRenderView->m_ScaledWidth;
+    view->HeightP = worldRenderView->m_ScaledHeight;
+    view->Width = worldRenderView->m_ScaledWidth = width * r_ResolutionScaleX.GetFloat();
+    view->Height = worldRenderView->m_ScaledHeight = height * r_ResolutionScaleY.GetFloat();
+    view->WidthR                                   = width;
+    view->HeightR                                  = height;
 
     if (camera)
     {
@@ -207,11 +201,11 @@ void ARenderFrontend::RenderView(int _Index)
         view->ViewMatrix       = camera->GetViewMatrix();
         view->ProjectionMatrix = camera->GetProjectionMatrix();
 
-        view->ViewMatrixP       = RP->ViewMatrix;
-        view->ProjectionMatrixP = RP->ProjectionMatrix;
+        view->ViewMatrixP       = worldRenderView->m_ViewMatrix;
+        view->ProjectionMatrixP = worldRenderView->m_ProjectionMatrix;
 
-        RP->ViewMatrix       = view->ViewMatrix;
-        RP->ProjectionMatrix = view->ProjectionMatrix;
+        worldRenderView->m_ViewMatrix     = view->ViewMatrix;
+        worldRenderView->m_ProjectionMatrix = view->ProjectionMatrix;
 
         view->ViewZNear     = camera->GetZNear();
         view->ViewZFar      = camera->GetZFar();
@@ -235,34 +229,36 @@ void ARenderFrontend::RenderView(int _Index)
     view->ViewProjectionP       = view->ProjectionMatrixP * view->ViewMatrixP;
     view->ViewSpaceToWorldSpace = view->ViewMatrix.Inversed(); // TODO: Check with ViewInverseFast
     view->ClipSpaceToWorldSpace = view->ViewSpaceToWorldSpace * view->InverseProjectionMatrix;
-    view->BackgroundColor       = Float3(RP->BackgroundColor.R, RP->BackgroundColor.G, RP->BackgroundColor.B);
-    view->bClearBackground      = RP->bClearBackground;
-    view->bWireframe            = RP->bWireframe;
-    if (RP->bVignetteEnabled)
+    view->BackgroundColor       = Float3(worldRenderView->BackgroundColor.R, worldRenderView->BackgroundColor.G, worldRenderView->BackgroundColor.B);
+    view->bClearBackground      = worldRenderView->bClearBackground;
+    view->bWireframe            = worldRenderView->bWireframe;
+    if (worldRenderView->Vignette)
     {
-        view->VignetteColorIntensity = RP->VignetteColorIntensity;
-        view->VignetteOuterRadiusSqr = RP->VignetteOuterRadiusSqr;
-        view->VignetteInnerRadiusSqr = RP->VignetteInnerRadiusSqr;
+        view->VignetteColorIntensity = worldRenderView->Vignette->ColorIntensity;
+        view->VignetteOuterRadiusSqr = worldRenderView->Vignette->OuterRadiusSqr;
+        view->VignetteInnerRadiusSqr = worldRenderView->Vignette->InnerRadiusSqr;
     }
     else
     {
         view->VignetteColorIntensity.W = 0;
     }
 
-    if (RP->IsColorGradingEnabled())
+    if (worldRenderView->ColorGrading)
     {
-        view->ColorGradingLUT             = RP->GetColorGradingLUT() ? RP->GetColorGradingLUT()->GetGPUResource() : NULL;
-        view->CurrentColorGradingLUT      = RP->GetCurrentColorGradingLUT()->GetGPUResource();
-        view->ColorGradingAdaptationSpeed = RP->GetColorGradingAdaptationSpeed();
+        ColorGradingParameters* params = worldRenderView->ColorGrading;
+
+        view->ColorGradingLUT             = params->GetLUT() ? params->GetLUT()->GetGPUResource() : nullptr;
+        view->CurrentColorGradingLUT      = worldRenderView->GetCurrentColorGradingLUT()->GetGPUResource();
+        view->ColorGradingAdaptationSpeed = params->GetAdaptationSpeed();
 
         // Procedural color grading
-        view->ColorGradingGrain                   = RP->GetColorGradingGrain();
-        view->ColorGradingGamma                   = RP->GetColorGradingGamma();
-        view->ColorGradingLift                    = RP->GetColorGradingLift();
-        view->ColorGradingPresaturation           = RP->GetColorGradingPresaturation();
-        view->ColorGradingTemperatureScale        = RP->GetColorGradingTemperatureScale();
-        view->ColorGradingTemperatureStrength     = RP->GetColorGradingTemperatureStrength();
-        view->ColorGradingBrightnessNormalization = RP->GetColorGradingBrightnessNormalization();
+        view->ColorGradingGrain                   = params->GetGrain();
+        view->ColorGradingGamma                   = params->GetGamma();
+        view->ColorGradingLift                    = params->GetLift();
+        view->ColorGradingPresaturation           = params->GetPresaturation();
+        view->ColorGradingTemperatureScale        = params->GetTemperatureScale();
+        view->ColorGradingTemperatureStrength     = params->GetTemperatureStrength();
+        view->ColorGradingBrightnessNormalization = params->GetBrightnessNormalization();
     }
     else
     {
@@ -271,45 +267,14 @@ void ARenderFrontend::RenderView(int _Index)
         view->ColorGradingAdaptationSpeed = 0;
     }
 
-    view->CurrentExposure = RP->GetCurrentExposure()->GetGPUResource();
+    view->CurrentExposure = worldRenderView->GetCurrentExposure()->GetGPUResource();
 
-    // NOTE: light and depth texture must have size of render view, not render target max w/h
     // TODO: Do not initialize light&depth textures if screen space reflections disabled
-    auto& lightTexture = RP->LightTexture;
-    if (!lightTexture || (lightTexture->GetWidth() != view->Width || lightTexture->GetHeight() != view->Height))
-    {
-        auto size    = std::max(view->Width, view->Height);
-        int  numMips = 1;
-        while ((size >>= 1) > 0)
-            numMips++;
+    view->LightTexture = worldRenderView->AcquireLightTexture();
+    view->DepthTexture = worldRenderView->AcquireDepthTexture();
+    view->RenderTarget = worldRenderView->AcquireRenderTarget();
 
-        RenderCore::STextureDesc textureDesc;
-        textureDesc.SetResolution(RenderCore::STextureResolution2D(view->Width, view->Height));
-        textureDesc.SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT);
-        textureDesc.SetMipLevels(numMips);
-        textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE/* | RenderCore::BIND_RENDER_TARGET*/);
-
-        lightTexture.Reset();
-        GEngine->GetRenderDevice()->CreateTexture(textureDesc, &lightTexture);
-    }
-
-    auto& depthTexture = RP->DepthTexture;
-    if (!depthTexture || (depthTexture->GetWidth() != view->Width || depthTexture->GetHeight() != view->Height))
-    {
-        RenderCore::STextureDesc textureDesc;
-        textureDesc.SetResolution(RenderCore::STextureResolution2D(view->Width, view->Height));
-        textureDesc.SetFormat(TEXTURE_FORMAT_R32_FLOAT);
-        textureDesc.SetMipLevels(1);
-        textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE /* | RenderCore::BIND_RENDER_TARGET*/);
-
-        depthTexture.Reset();
-        GEngine->GetRenderDevice()->CreateTexture(textureDesc, &depthTexture);
-    }
-
-    view->LightTexture = lightTexture;
-    view->DepthTexture = depthTexture;
-
-    view->VTFeedback = &RP->VTFeedback;
+    view->VTFeedback = &worldRenderView->m_VTFeedback;
 
     view->PhotometricProfiles = PhotometricProfiles;
 
@@ -353,12 +318,12 @@ void ARenderFrontend::RenderView(int _Index)
     RenderDef.FrameNumber        = FrameNumber;
     RenderDef.View               = view;
     RenderDef.Frustum            = &camera->GetFrustum();
-    RenderDef.VisibilityMask     = RP ? RP->VisibilityMask : VISIBILITY_GROUP_ALL;
+    RenderDef.VisibilityMask     = worldRenderView ? worldRenderView->VisibilityMask : VISIBILITY_GROUP_ALL;
     RenderDef.PolyCount          = 0;
     RenderDef.ShadowMapPolyCount = 0;
     RenderDef.StreamedMemory     = FrameLoop->GetStreamedMemoryGPU();
 
-    ViewRP = RP;
+    m_WorldRenderView = worldRenderView;
 
     QueryVisiblePrimitives(world);
 
@@ -380,7 +345,7 @@ void ARenderFrontend::RenderView(int _Index)
     }
 
     // Generate debug draw commands
-    if (RP && RP->bDrawDebug)
+    if (worldRenderView->bDrawDebug)
     {
         DebugDraw.BeginRenderView(view, VisPass);
         world->DrawDebug(&DebugDraw);
@@ -398,10 +363,9 @@ void ARenderFrontend::RenderView(int _Index)
     Stat.PolyCount += RenderDef.PolyCount;
     Stat.ShadowMapPolyCount += RenderDef.ShadowMapPolyCount;
 
-    if (RP && RP->bDrawDebug)
+    if (worldRenderView->bDrawDebug)
     {
-
-        for (auto it : RP->TerrainViews)
+        for (auto it : worldRenderView->m_TerrainViews)
         {
             it.second->DrawDebug(&DebugDraw, TerrainMesh);
         }
@@ -772,11 +736,11 @@ void ARenderFrontend::AddTerrain(ATerrainComponent* InComponent)
 
     ATerrainView* terrainView;
 
-    auto it = ViewRP->TerrainViews.find(terrainResource->Id);
-    if (it == ViewRP->TerrainViews.end())
+    auto it = m_WorldRenderView->m_TerrainViews.find(terrainResource->Id);
+    if (it == m_WorldRenderView->m_TerrainViews.end())
     {
         terrainView                               = new ATerrainView(TerrainTileSize);
-        ViewRP->TerrainViews[terrainResource->Id] = terrainView;
+        m_WorldRenderView->m_TerrainViews[terrainResource->Id] = terrainView;
     }
     else
     {

@@ -63,7 +63,7 @@ CanvasPaint& CanvasPaint::LinearGradient(Float2 const& startPoint, Float2 const&
     InnerColor = innerColor;
     OuterColor = outerColor;
 
-    pTexture = nullptr;
+    pTextureView = nullptr;
     ImageFlags = CANVAS_IMAGE_DEFAULT;
 
     return *this;
@@ -80,7 +80,7 @@ CanvasPaint& CanvasPaint::RadialGradient(Float2 const& center, float innerRadius
     InnerColor = innerColor;
     OuterColor = outerColor;
 
-    pTexture = nullptr;
+    pTextureView = nullptr;
     ImageFlags = CANVAS_IMAGE_DEFAULT;
 
     return *this;
@@ -100,13 +100,13 @@ CanvasPaint& CanvasPaint::BoxGradient(Float2 const& boxTopLeft, float w, float h
     InnerColor = innerColor;
     OuterColor = outerColor;
 
-    pTexture = nullptr;
+    pTextureView = nullptr;
     ImageFlags = CANVAS_IMAGE_DEFAULT;
 
     return *this;
 }
 
-CanvasPaint& CanvasPaint::ImagePattern(Float2 const& posTopLeft, float w, float h, float angleInRadians, ATexture* texture, Color4 const& tintColor, CANVAS_IMAGE_FLAGS imageFlags)
+CanvasPaint& CanvasPaint::ImagePattern(Float2 const& posTopLeft, float w, float h, float angleInRadians, ATextureView* textureView, Color4 const& tintColor, CANVAS_IMAGE_FLAGS imageFlags)
 {
     if (angleInRadians != 0.0f)
     {
@@ -120,7 +120,7 @@ CanvasPaint& CanvasPaint::ImagePattern(Float2 const& posTopLeft, float w, float 
     Extent[0] = w;
     Extent[1] = h;
 
-    pTexture = texture->GetGPUResource();
+    pTextureView = textureView;
     ImageFlags = imageFlags;
 
     InnerColor = OuterColor = tintColor;
@@ -140,7 +140,7 @@ CanvasPaint& CanvasPaint::Solid(Color4 const& color)
 
     InnerColor = OuterColor = color;
 
-    pTexture = nullptr;
+    pTextureView = nullptr;
     ImageFlags = CANVAS_IMAGE_DEFAULT;
 
     return *this;

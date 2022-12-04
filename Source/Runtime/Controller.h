@@ -47,8 +47,8 @@ class AController : public AActor
 public:
     AController();
 
-    void    SetPawn(AActor* _Pawn);
-    AActor* GetPawn() const { return Pawn; }
+    void    SetPawn(AActor* pNewPawn);
+    AActor* GetPawn() const { return m_Pawn; }
 
 protected:
     void Initialize(SActorInitializer& Initializer) override;
@@ -57,5 +57,5 @@ protected:
     virtual void OnPawnChanged() {}
 
 protected:
-    TRef<AActor> Pawn;
+    TRef<AActor> m_Pawn;
 };

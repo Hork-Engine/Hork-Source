@@ -37,6 +37,8 @@ SOFTWARE.
 
 HK_CLASS_META(AFont)
 
+void AFontStash::TextureViewImpl::ThisClassMeta::RegisterProperties() {}
+
 AFontStash::AFontStash()
 {
     using namespace RenderCore;
@@ -195,6 +197,19 @@ void AFontStash::Cleanup()
         for (i = j; i < MAX_FONT_IMAGES; i++)
             m_FontImages[i].Reset();
     }
+}
+
+ATextureView* AFontStash::GetTextureView()
+{
+    if (m_TextureViews[m_FontImageIdx].IsExpired())
+    {
+        m_TextureViews[m_FontImageIdx] = CreateInstanceOf<TextureViewImpl>(this);
+        m_TextureViews[m_FontImageIdx]->SetResource(m_FontImages[m_FontImageIdx]);
+    }
+
+    AGarbageCollector::KeepPointerAlive(m_TextureViews[m_FontImageIdx]);
+
+    return m_TextureViews[m_FontImageIdx];
 }
 
 AFont::AFont()

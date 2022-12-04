@@ -38,7 +38,6 @@ SOFTWARE.
 
 struct SWeakRefCounter;
 
-
 /**
 
 ABaseObject
@@ -161,16 +160,24 @@ class AGarbageCollector final
     friend class ABaseObject;
 
 public:
+    static void Shutdown();
+
     /** Deallocates all collected objects */
     static void DeallocateObjects();
 
+    static void KeepPointerAlive(ABaseObject* pObject);
+
 private:
     /** Add object to remove it at next DeallocateObjects() call */
-    static void AddObject(ABaseObject* _Object);
-    static void RemoveObject(ABaseObject* _Object);
+    static void AddObject(ABaseObject* pObject);
+    static void RemoveObject(ABaseObject* pObject);
+
+    static void ClearPointers();
 
     static ABaseObject* m_GarbageObjects;
     static ABaseObject* m_GarbageObjectsTail;
+
+    static TVector<ABaseObject*> m_KeepAlivePtrs;
 };
 
 /**
@@ -274,7 +281,7 @@ struct TEvent
         {
             return;
         }
-        for (int i = Callbacks.Size() - 1; i >= 0; i--)
+        for (int i = (int)Callbacks.Size() - 1; i >= 0; i--)
         {
             Callback& callback = Callbacks[i];
 

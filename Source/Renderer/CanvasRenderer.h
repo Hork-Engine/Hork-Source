@@ -40,10 +40,10 @@ public:
     ACanvasRenderer();
     ~ACanvasRenderer();
 
-    void Render(RenderCore::AFrameGraph& FrameGraph, TSmallVector<RenderCore::FGTextureProxy*, 32>& pRenderViewTexture, RenderCore::ITexture* pBackBuffer);
+    void Render(RenderCore::AFrameGraph& FrameGraph, RenderCore::ITexture* pBackBuffer);
 
 private:
-    void RenderVG(RenderCore::IImmediateContext* immediateCtx, CanvasDrawData const* pDrawData, TSmallVector<RenderCore::FGTextureProxy*, 32>& pRenderViewTexture);
+    void RenderVG(RenderCore::IImmediateContext* immediateCtx, CanvasDrawData const* pDrawData);
     void DrawFill(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture);
     void DrawConvexFill(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture);
     void DrawStroke(CanvasDrawCmd const* drawCommand, RenderCore::ITexture* pTexture, bool bStencilStroke = false);

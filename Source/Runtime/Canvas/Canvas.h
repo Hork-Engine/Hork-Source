@@ -38,25 +38,12 @@ SOFTWARE.
 #include "Transform2D.h"
 
 class ACameraComponent;
-class ARenderingParameters;
 
 enum CANVAS_PUSH_FLAG
 {
     CANVAS_PUSH_FLAG_KEEP,
     CANVAS_PUSH_FLAG_RESET
 };
-
-struct SViewport
-{
-    ACameraComponent*     Camera;
-    ARenderingParameters* RenderingParams;
-    int                   X;
-    int                   Y;
-    uint32_t              Width;
-    uint32_t              Height;
-};
-
-using AViewportList = TSmallVector<SViewport, 2>;
 
 struct RoundingDesc
 {
@@ -84,22 +71,22 @@ struct RoundingDesc
 
 struct DrawTextureDesc
 {
-    ATexture*     pTexture = 0;
-    float         X        = 0;
-    float         Y        = 0;
-    float         W        = 0;
-    float         H        = 0;
-    RoundingDesc  Rounding;
-    float         Angle     = 0;
-    Color4        TintColor = Color4(1.0f);
-    Float2        UVOffset{0, 0};
-    Float2        UVScale{1, 1};
+    ATextureView*    pTextureView{};
+    float            X{};
+    float            Y{};
+    float            W{};
+    float            H{};
+    RoundingDesc     Rounding;
+    float            Angle{};
+    Color4           TintColor = Color4(1.0f);
+    Float2           UVOffset{0, 0};
+    Float2           UVScale{1, 1};
     CANVAS_COMPOSITE Composite = CANVAS_COMPOSITE_SOURCE_OVER;
-    bool          bTiledX : 1;
-    bool          bTiledY : 1;
-    bool          bFlipY : 1;
-    bool          bAlphaPremultiplied : 1;
-    bool          bNearestFilter : 1;
+    bool             bTiledX : 1;
+    bool             bTiledY : 1;
+    bool             bFlipY : 1;
+    bool             bAlphaPremultiplied : 1;
+    bool             bNearestFilter : 1;
 
     DrawTextureDesc() :
         bTiledX(false),
@@ -108,22 +95,6 @@ struct DrawTextureDesc
         bAlphaPremultiplied(false),
         bNearestFilter(false)
     {}
-};
-
-struct DrawViewportDesc
-{
-    ACameraComponent*     pCamera          = 0;
-    ARenderingParameters* pRenderingParams = 0;
-    float                 X                = 0;
-    float                 Y                = 0;
-    float                 W                = 0;
-    float                 H                = 0;
-    uint32_t              TextureResolutionX = 0;
-    uint32_t              TextureResolutionY = 0;
-    RoundingDesc          Rounding;
-    float                 Angle            = 0;
-    Color4                TintColor        = Color4::White();
-    CANVAS_COMPOSITE      Composite        = CANVAS_COMPOSITE_SOURCE_OVER;
 };
 
 enum CANVAS_LINE_CAP : uint8_t
@@ -236,8 +207,6 @@ public:
     void ClearDrawData();
 
     CanvasDrawData const* GetDrawData() const;
-
-    AViewportList const& GetViewports() { return m_Viewports; }
 
     //
     // State Handling
@@ -495,9 +464,6 @@ public:
     // Material (TODO)
     //void DrawMaterial(DrawMaterialDesc const& desc);
 
-    // Viewport
-    void DrawViewport(DrawViewportDesc const& desc);
-
     void DrawCursor(DRAW_CURSOR cursor, Float2 const& position, Color4 const& fillColor = Color4::White(), Color4 const& borderColor = Color4::Black(), bool bShadow = true);
 
 private:
@@ -568,7 +534,6 @@ private:
     int                      m_NumStates{};
     CanvasDrawData           m_DrawData;
     mutable TRef<AFontStash> m_FontStash;
-    AViewportList            m_Viewports;
     TVector<float>           m_Commands;
     Float2                   m_CommandPos;
     VGPathCache              m_PathCache;

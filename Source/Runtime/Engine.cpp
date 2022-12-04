@@ -314,6 +314,9 @@ void AEngine::Run(SEntryDecl const& entryDecl)
 
     do
     {
+        // Garbage collect from previuous frames
+        AGarbageCollector::DeallocateObjects();
+
         // Set new frame, process game events
         m_FrameLoop->NewFrame({m_pSwapChain}, rt_SwapInterval.GetInteger());
 
@@ -335,9 +338,6 @@ void AEngine::Run(SEntryDecl const& entryDecl)
         {
             m_FrameDurationInSeconds = 0.5f;
         }
-
-        // Garbage collect from previuous frames
-        AGarbageCollector::DeallocateObjects();
 
         // Execute console commands
         m_CommandProcessor.Execute(m_GameModule->CommandContext);
@@ -389,7 +389,9 @@ void AEngine::Run(SEntryDecl const& entryDecl)
 
     m_ResourceManager.Reset();
 
-    AGarbageCollector::DeallocateObjects();
+    m_FrameLoop.Reset();
+
+    AGarbageCollector::Shutdown();
 
     AVisibilitySystem::PrimitivePool.Free();
     AVisibilitySystem::PrimitiveLinkPool.Free();

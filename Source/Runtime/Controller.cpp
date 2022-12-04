@@ -43,7 +43,7 @@ void AController::Initialize(SActorInitializer& Initializer)
 
 void AController::SetPawn(AActor* pNewPawn)
 {
-    if (IsSame(Pawn, pNewPawn))
+    if (IsSame(m_Pawn, pNewPawn))
     {
         return;
     }
@@ -54,18 +54,18 @@ void AController::SetPawn(AActor* pNewPawn)
         return;
     }
 
-    if (Pawn)
+    if (m_Pawn)
     {
-        Pawn->Controller = nullptr;
-        if (!Pawn->IsPendingKill())
-            Pawn->OnInputLost();
+        m_Pawn->Controller = nullptr;
+        if (!m_Pawn->IsPendingKill())
+            m_Pawn->OnInputLost();
     }
 
-    Pawn = pNewPawn;
+    m_Pawn = pNewPawn;
 
-    if (Pawn)
+    if (m_Pawn)
     {
-        Pawn->Controller = this;
+        m_Pawn->Controller = this;
     }
 
     OnPawnChanged();

@@ -29,9 +29,11 @@ SOFTWARE.
 */
 
 #include "UIViewport.h"
+#include "UIManager.h"
 #include <Runtime/InputComponent.h>
 #include <Runtime/PlayerController.h>
 #include <Runtime/FrameLoop.h>
+#include <Runtime/Engine.h>
 
 bool GUILockViewportScaling = false;
 
@@ -104,6 +106,13 @@ void UIViewport::OnMouseMoveEvent(SMouseMoveEvent const& event, double timeStamp
     AInputComponent* inputComponent = m_PlayerController->GetInputComponent();
 
     inputComponent->SetMouseAxisState(event.X, event.Y);
+
+    UpdateViewSize();
+
+    Float2 const& pos  = m_Geometry.Mins;
+    Float2 const& size = m_Geometry.Maxs - m_Geometry.Mins;
+
+    inputComponent->SetCursorPosition((GUIManager->CursorPosition - pos) / size * Float2(m_ViewWidth, m_ViewHeight));
 }
 
 void UIViewport::OnJoystickButtonEvent(SJoystickButtonEvent const& event, double timeStamp)
@@ -156,52 +165,56 @@ void UIViewport::OnFocusReceive()
 {
 }
 
-void UIViewport::Draw(ACanvas& canvas)
+void UIViewport::UpdateViewSize() // TODO: PostGeometryUpdate?
 {
-    if (m_PlayerController)
+    if (!GUILockViewportScaling)
     {
         int x = m_Geometry.Mins.X;
         int y = m_Geometry.Mins.Y;
 
-        if (!GUILockViewportScaling)
-        {
-            m_ViewWidth  = Math::Max(0.0f, m_Geometry.Maxs.X - x);
-            m_ViewHeight = Math::Max(0.0f, m_Geometry.Maxs.Y - y);
-        }
+        m_ViewWidth  = Math::Max(0.0f, m_Geometry.Maxs.X - x);
+        m_ViewHeight = Math::Max(0.0f, m_Geometry.Maxs.Y - y);
+    }
+}
 
-        m_PlayerController->SetViewport(x, y, m_ViewWidth, m_ViewHeight);
+void UIViewport::Draw(ACanvas& canvas)
+{
+    if (m_PlayerController)
+    {
+        UpdateViewSize();
+
+        m_PlayerController->SetViewport(m_ViewWidth, m_ViewHeight);
 
         Float2 const& pos  = m_Geometry.Mins;
         Float2 const& size = m_Geometry.Maxs - m_Geometry.Mins;
 
         AActor* pawn = m_PlayerController->GetPawn();
-        if (pawn)
+        if (pawn && size.X >= 1 && size.Y >= 1)
         {
-            DrawViewportDesc desc;
+            WorldRenderView* pView = m_PlayerController->GetRenderView();
 
-            desc.pCamera          = pawn->GetPawnCamera();
-            desc.pRenderingParams = m_PlayerController->GetRenderingParameters();
-            desc.X                = pos.X;
-            desc.Y                = pos.Y;
-            desc.W                = size.X;
-            desc.H                = size.Y;
-            desc.TextureResolutionX = m_ViewWidth;
-            desc.TextureResolutionY = m_ViewHeight;
-            desc.Rounding         = Rounding;
-            desc.Angle            = 0;
-            desc.TintColor        = TintColor;
-            desc.Composite        = Composite;
+            pView->SetCamera(pawn->GetPawnCamera());
+            pView->SetCullingCamera(pawn->GetPawnCamera());
 
-            canvas.DrawViewport(desc);
+            GEngine->GetFrameLoop()->RegisterView(pView);
+
+            DrawTextureDesc desc;
+            desc.pTextureView = pView->GetTextureView();
+            desc.X            = pos.X;
+            desc.Y            = pos.Y;
+            desc.W            = size.X;
+            desc.H            = size.Y;
+            desc.Rounding     = Rounding;
+            desc.Angle        = 0;
+            desc.TintColor    = TintColor;
+            desc.Composite    = Composite;
+            desc.bFlipY       = true;
+
+            canvas.DrawTexture(desc);
         }
 
         AHUD* hud = m_PlayerController->GetHUD();
         if (hud)
-        {
-            //canvas.Push();
-            //canvas.IntersectScissor(Geometry.Mins, Geometry.Maxs);
             hud->Draw(canvas, pos.X, pos.Y, size.X, size.Y);
-            //canvas.Pop();
-        }
     }
 }

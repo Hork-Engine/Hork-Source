@@ -72,6 +72,8 @@ private:
     void OnFocusReceive() override;
 
 private:
+    void UpdateViewSize();
+
     TRef<APlayerController> m_PlayerController;
     int                     m_ViewWidth{};
     int                     m_ViewHeight{};

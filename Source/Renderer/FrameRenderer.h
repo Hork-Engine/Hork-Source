@@ -51,12 +51,7 @@ class AFrameRenderer : public ARefCounted
 public:
     AFrameRenderer();
 
-    //struct SFrameGraphCaptured
-    //{
-    //    RenderCore::FGTextureProxy* FinalTexture;
-    //};
-
-    void Render(RenderCore::AFrameGraph& FrameGraph, bool bVirtualTexturing, class AVirtualTextureCache* PhysCacheVT, RenderCore::FGTextureProxy** ppFinalTexture);
+    void Render(RenderCore::AFrameGraph& FrameGraph, bool bVirtualTexturing, class AVirtualTextureCache* PhysCacheVT);
 
     AOmnidirectionalShadowMapPool const& GetOmniShadowMapPool() const { return OmniShadowMapPool; }
 
@@ -73,6 +68,7 @@ private:
 
     void AddOutlinePass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy** ppOutlineTexture);
     void AddOutlineOverlayPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* RenderTarget, RenderCore::FGTextureProxy* OutlineMaskTexture);
+    void AddCopyPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* Source, RenderCore::FGTextureProxy* Dest);
 
     AShadowMapRenderer    ShadowMapRenderer;
     ALightRenderer        LightRenderer;
@@ -94,4 +90,5 @@ private:
     TRef<RenderCore::IPipeline> MotionBlurPipeline;
     TRef<RenderCore::IPipeline> OutlineBlurPipe;
     TRef<RenderCore::IPipeline> OutlineApplyPipe;
+    TRef<RenderCore::IPipeline> CopyPipeline;
 };

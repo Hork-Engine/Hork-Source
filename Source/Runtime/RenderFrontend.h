@@ -39,6 +39,7 @@ SOFTWARE.
 #include "TerrainMesh.h"
 #include "LightVoxelizer.h"
 #include "EnvironmentMap.h"
+#include "WorldRenderView.h"
 
 class AAnalyticLightComponent;
 class AEnvironmentProbe;
@@ -112,8 +113,6 @@ private:
 
     SRenderFrontendStat Stat;
 
-    TPodVector<SViewport const*> Viewports;
-
     TPodVector<SPrimitiveDef*>           VisPrimitives;
     TPodVector<SSurfaceDef*>             VisSurfaces;
     TPodVector<AAnalyticLightComponent*> VisLights;
@@ -142,7 +141,7 @@ private:
     SSurfaceStream SurfaceStream;
 
     SRenderFrontendDef    RenderDef;
-    ARenderingParameters* ViewRP;
+    WorldRenderView* m_WorldRenderView;
 
     TRef<RenderCore::ITexture> PhotometricProfiles;
     TRef<AEnvironmentMap> DummyEnvironmentMap;

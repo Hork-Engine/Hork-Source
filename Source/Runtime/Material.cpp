@@ -938,21 +938,31 @@ bool AMaterialInstance::LoadTextVersion(IBinaryStreamReadInterface& Stream)
     return true;
 }
 
-void AMaterialInstance::SetTexture(AStringView Name, ATexture* pTexture)
+void AMaterialInstance::SetTexture(AStringView Name, ATextureView* pView)
 {
     uint32_t slot = GetTextureSlotByName(Name);
     if (slot < NumTextureSlots())
-        m_Textures[slot] = pTexture;
+        m_Textures[slot] = pView;
     else
         LOG("AMaterialInstance::SetTexture: Unknown texture slot {}\n", Name);
 }
 
-void AMaterialInstance::SetTexture(uint32_t Slot, ATexture* pTexture)
+void AMaterialInstance::SetTexture(AStringView Name, ATexture* pTexture)
+{
+    SetTexture(Name, pTexture->GetView());
+}
+
+void AMaterialInstance::SetTexture(uint32_t Slot, ATextureView* pView)
 {
     if (Slot < NumTextureSlots())
-        m_Textures[Slot] = pTexture;
+        m_Textures[Slot] = pView;
     else
         LOG("AMaterialInstance::SetTexture: Invalid texture slot {}\n", Slot);
+}
+
+void AMaterialInstance::SetTexture(uint32_t Slot, ATexture* pTexture)
+{
+    SetTexture(Slot, pTexture->GetView());
 }
 
 void AMaterialInstance::UnsetTextures()
@@ -1016,7 +1026,7 @@ AMaterial* AMaterialInstance::GetMaterial() const
     return m_pMaterial;
 }
 
-ATexture* AMaterialInstance::GetTexture(uint32_t Slot)
+ATextureView* AMaterialInstance::GetTexture(uint32_t Slot)
 {
     if (Slot < NumTextureSlots())
         return m_Textures[Slot];
@@ -1068,7 +1078,7 @@ SMaterialFrameData* AMaterialInstance::PreRenderUpdate(AFrameLoop* FrameLoop, in
     {
         if (m_Textures[i])
         {
-            textures[i]              = m_Textures[i]->GetGPUResource();
+            textures[i]              = m_Textures[i]->GetResource();
             m_FrameData->NumTextures = i + 1;
         }
         else

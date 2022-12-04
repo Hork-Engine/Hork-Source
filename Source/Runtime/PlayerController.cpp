@@ -32,16 +32,12 @@ SOFTWARE.
 #include "InputComponent.h"
 #include "CameraComponent.h"
 #include "World.h"
-#include "TerrainView.h"
+#include "WorldRenderView.h"
 #include "Engine.h"
 
 HK_CLASS_META(APlayerController)
-HK_CLASS_META(ARenderingParameters)
 
 APlayerController* APlayerController::CurrentAudioListener = nullptr;
-
-APlayerController::APlayerController()
-{}
 
 APlayerController::~APlayerController()
 {
@@ -55,7 +51,7 @@ void APlayerController::Initialize(SActorInitializer& Initializer)
 {
     Super::Initialize(Initializer);
 
-    InputComponent = CreateComponent<AInputComponent>("PlayerControllerInput");
+    m_InputComponent = CreateComponent<AInputComponent>("PlayerControllerInput");
 
     if (!CurrentAudioListener)
     {
@@ -65,19 +61,19 @@ void APlayerController::Initialize(SActorInitializer& Initializer)
 
 void APlayerController::OnPawnChanged()
 {
-    InputComponent->UnbindAll();
+    m_InputComponent->UnbindAll();
 
-    InputComponent->BindAction("Pause", IA_PRESS, this, &APlayerController::TogglePause, true);
+    m_InputComponent->BindAction("Pause", IA_PRESS, this, &APlayerController::TogglePause, true);
 
-    if (Pawn)
+    if (m_Pawn)
     {
-        Pawn->SetupInputComponent(InputComponent);
-        Pawn->SetupRuntimeCommands();
+        m_Pawn->SetupInputComponent(m_InputComponent);
+        m_Pawn->SetupRuntimeCommands();
     }
 
-    if (HUD)
+    if (m_HUD)
     {
-        HUD->OwnerPawn = Pawn;
+        m_HUD->OwnerPawn = m_Pawn;
     }
 
     UpdatePawnCamera();
@@ -85,12 +81,12 @@ void APlayerController::OnPawnChanged()
 
 void APlayerController::SetAudioListener(ASceneComponent* _AudioListener)
 {
-    AudioListener = _AudioListener;
+    m_AudioListener = _AudioListener;
 }
 
 void APlayerController::SetHUD(AHUD* _HUD)
 {
-    if (IsSame(HUD, _HUD))
+    if (IsSame(m_HUD, _HUD))
     {
         return;
     }
@@ -100,49 +96,49 @@ void APlayerController::SetHUD(AHUD* _HUD)
         _HUD->OwnerPlayer->SetHUD(nullptr);
     }
 
-    if (HUD)
+    if (m_HUD)
     {
-        HUD->OwnerPlayer = nullptr;
-        HUD->OwnerPawn   = nullptr;
+        m_HUD->OwnerPlayer = nullptr;
+        m_HUD->OwnerPawn   = nullptr;
     }
 
-    HUD = _HUD;
+    m_HUD = _HUD;
 
-    if (HUD)
+    if (m_HUD)
     {
-        HUD->OwnerPlayer = this;
-        HUD->OwnerPawn   = Pawn;
+        m_HUD->OwnerPlayer = this;
+        m_HUD->OwnerPawn   = m_Pawn;
     }
 }
 
-void APlayerController::SetRenderingParameters(ARenderingParameters* _RP)
+void APlayerController::SetRenderView(WorldRenderView* renderView)
 {
-    RenderingParameters = _RP;
+    m_RenderView = renderView;
 }
 
 void APlayerController::SetAudioParameters(AAudioParameters* _AudioParameters)
 {
-    AudioParameters = _AudioParameters;
+    m_AudioParameters = _AudioParameters;
 }
 
 void APlayerController::SetInputMappings(AInputMappings* _InputMappings)
 {
-    InputComponent->SetInputMappings(_InputMappings);
+    m_InputComponent->SetInputMappings(_InputMappings);
 }
 
 AInputMappings* APlayerController::GetInputMappings()
 {
-    return InputComponent->GetInputMappings();
+    return m_InputComponent->GetInputMappings();
 }
 
 void APlayerController::SetPlayerIndex(int _ControllerId)
 {
-    InputComponent->ControllerId = _ControllerId;
+    m_InputComponent->ControllerId = _ControllerId;
 }
 
 int APlayerController::GetPlayerIndex() const
 {
-    return InputComponent->ControllerId;
+    return m_InputComponent->ControllerId;
 }
 
 void APlayerController::TogglePause()
@@ -152,14 +148,14 @@ void APlayerController::TogglePause()
 
 ASceneComponent* APlayerController::GetAudioListener()
 {
-    if (AudioListener)
+    if (m_AudioListener)
     {
-        return AudioListener;
+        return m_AudioListener;
     }
 
-    if (Pawn)
+    if (m_Pawn)
     {
-        return Pawn->GetPawnCamera();
+        return m_Pawn->GetPawnCamera();
     }
 
     return nullptr;
@@ -177,59 +173,38 @@ APlayerController* APlayerController::GetCurrentAudioListener()
 
 float APlayerController::GetViewportAspectRatio() const
 {
-    return ViewportAspectRatio;
+    return m_ViewportAspectRatio;
 }
 
-void APlayerController::SetViewport(int x, int y, int w, int h)
+void APlayerController::SetViewport(int w, int h)
 {
-    ViewportX = x;
-    ViewportY = y;
-
-    if (ViewportWidth != w || ViewportHeight != h)
+    if (m_RenderView)
     {
-        ViewportWidth = w;
-        ViewportHeight = h;
+        m_RenderView->SetViewport(w, h);
+    }
+
+    if (m_ViewportWidth != w || m_ViewportHeight != h)
+    {
+        m_ViewportWidth  = w;
+        m_ViewportHeight = h;
 
         if (w > 0 && h > 0)
-            ViewportAspectRatio = (float)w / h;
+            m_ViewportAspectRatio = (float)w / h;
         else
-            ViewportAspectRatio = 1;
+            m_ViewportAspectRatio = 1;
 
         UpdatePawnCamera();
     }
 }
 
-Float2 APlayerController::GetLocalCursorPosition() const
-{
-    Float2 pos = GUIManager->CursorPosition;
-    pos.X -= ViewportX;
-    pos.Y -= ViewportY;
-    return pos;
-}
-
-Float2 APlayerController::GetNormalizedCursorPosition() const
-{
-    if (ViewportWidth > 0 && ViewportHeight > 0)
-    {
-        Float2 pos = GetLocalCursorPosition();
-        pos.X /= ViewportWidth;
-        pos.Y /= ViewportHeight;
-        pos.X = Math::Saturate(pos.X);
-        pos.Y = Math::Saturate(pos.Y);
-        return pos;
-    }
-
-    return Float2::Zero();
-}
-
 void APlayerController::UpdatePawnCamera()
 {
-    if (!Pawn)
+    if (!m_Pawn)
     {
         return;
     }
 
-    ACameraComponent* camera = Pawn->GetPawnCamera();
+    ACameraComponent* camera = m_Pawn->GetPawnCamera();
     if (!camera)
     {
         return;
@@ -237,123 +212,5 @@ void APlayerController::UpdatePawnCamera()
 
     SVideoMode const& vidMode = GEngine->GetVideoMode();
 
-    camera->SetAspectRatio(ViewportAspectRatio * vidMode.AspectScale);
-}
-
-ARenderingParameters::ARenderingParameters()
-{
-    static Half data[16][16][16][4];
-    static bool dataInit = false;
-    if (!dataInit)
-    {
-        for (int z = 0; z < 16; z++)
-        {
-            for (int y = 0; y < 16; y++)
-            {
-                for (int x = 0; x < 16; x++)
-                {
-                    data[z][y][x][0] = (float)z / 15.0f * 255.0f;
-                    data[z][y][x][1] = (float)y / 15.0f * 255.0f;
-                    data[z][y][x][2] = (float)x / 15.0f * 255.0f;
-                    data[z][y][x][3] = 255;
-                }
-            }
-        }
-        dataInit = true;
-    }
-    
-    CurrentColorGradingLUT = ATexture::Create3D(TEXTURE_FORMAT_RGBA16_FLOAT, 1, 16, 16, 16); // FIXME: bgra
-    CurrentColorGradingLUT->WriteTextureData3D(0, 0, 0, 16, 16, 16, 0, data);
-
-    const float initialExposure[2] = {30.0f / 255.0f, 30.0f / 255.0f};
-
-    CurrentExposure = ATexture::Create2D(TEXTURE_FORMAT_RG32_FLOAT, 1, 1, 1);
-    CurrentExposure->WriteTextureData2D(0, 0, 1, 1, 0, initialExposure);
-
-    SetColorGradingDefaults();
-}
-
-ARenderingParameters::~ARenderingParameters()
-{
-    for (auto it : TerrainViews)
-    {
-        it.second->RemoveRef();
-    }
-}
-
-void ARenderingParameters::SetColorGradingEnabled(bool _ColorGradingEnabled)
-{
-    bColorGradingEnabled = _ColorGradingEnabled;
-}
-
-void ARenderingParameters::SetColorGradingLUT(ATexture* Texture)
-{
-    ColorGradingLUT = Texture;
-}
-
-void ARenderingParameters::SetColorGradingGrain(Float3 const& _ColorGradingGrain)
-{
-    ColorGradingGrain = _ColorGradingGrain;
-}
-
-void ARenderingParameters::SetColorGradingGamma(Float3 const& _ColorGradingGamma)
-{
-    ColorGradingGamma = _ColorGradingGamma;
-}
-
-void ARenderingParameters::SetColorGradingLift(Float3 const& _ColorGradingLift)
-{
-    ColorGradingLift = _ColorGradingLift;
-}
-
-void ARenderingParameters::SetColorGradingPresaturation(Float3 const& _ColorGradingPresaturation)
-{
-    ColorGradingPresaturation = _ColorGradingPresaturation;
-}
-
-void ARenderingParameters::SetColorGradingTemperature(float _ColorGradingTemperature)
-{
-    ColorGradingTemperature = _ColorGradingTemperature;
-
-    Color4 color;
-    color.SetTemperature(ColorGradingTemperature);
-
-    ColorGradingTemperatureScale.X = color.R;
-    ColorGradingTemperatureScale.Y = color.G;
-    ColorGradingTemperatureScale.Z = color.B;
-}
-
-void ARenderingParameters::SetColorGradingTemperatureStrength(Float3 const& _ColorGradingTemperatureStrength)
-{
-    ColorGradingTemperatureStrength = _ColorGradingTemperatureStrength;
-}
-
-void ARenderingParameters::SetColorGradingBrightnessNormalization(float _ColorGradingBrightnessNormalization)
-{
-    ColorGradingBrightnessNormalization = _ColorGradingBrightnessNormalization;
-}
-
-void ARenderingParameters::SetColorGradingAdaptationSpeed(float _ColorGradingAdaptationSpeed)
-{
-    ColorGradingAdaptationSpeed = _ColorGradingAdaptationSpeed;
-}
-
-void ARenderingParameters::SetColorGradingDefaults()
-{
-    bColorGradingEnabled                = false;
-    ColorGradingLUT                     = NULL;
-    ColorGradingGrain                   = Float3(0.5f);
-    ColorGradingGamma                   = Float3(0.5f);
-    ColorGradingLift                    = Float3(0.5f);
-    ColorGradingPresaturation           = Float3(1.0f);
-    ColorGradingTemperatureStrength     = Float3(0.0f);
-    ColorGradingBrightnessNormalization = 0.0f;
-    ColorGradingAdaptationSpeed         = 2;
-    ColorGradingTemperature             = 6500.0f;
-
-    Color4 color;
-    color.SetTemperature(ColorGradingTemperature);
-    ColorGradingTemperatureScale.X = color.R;
-    ColorGradingTemperatureScale.Y = color.G;
-    ColorGradingTemperatureScale.Z = color.B;
+    camera->SetAspectRatio(m_ViewportAspectRatio * vidMode.AspectScale);
 }

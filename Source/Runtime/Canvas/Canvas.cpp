@@ -590,7 +590,6 @@ void ACanvas::NewFrame(uint32_t width, uint32_t height)
 
     m_Width  = width;
     m_Height = height;
-    m_Viewports.Clear();
 
     ClearDrawData();
 
@@ -808,7 +807,7 @@ void ACanvas::DrawTexture(DrawTextureDesc const& desc)
                        desc.W * desc.UVScale.X,
                        desc.H * desc.UVScale.Y,
                        desc.Angle,
-                       desc.pTexture,
+                       desc.pTextureView,
                        desc.TintColor,
                        imageFlags);
     BeginPath();
@@ -821,66 +820,6 @@ void ACanvas::DrawTexture(DrawTextureDesc const& desc)
     Fill();
 
     CompositeOperation(currentComposite);
-}
-
-void ACanvas::DrawViewport(DrawViewportDesc const& desc)
-{
-    if (!desc.pCamera)
-        return;
-
-    if (!desc.pRenderingParams)
-        return;
-
-    if (desc.W < 1.0f || desc.H < 1.0f)
-        return;
-
-    if (desc.TextureResolutionX < 1 || desc.TextureResolutionY < 1)
-        return;
-
-    if (desc.Composite == CANVAS_COMPOSITE_SOURCE_OVER && desc.TintColor.IsTransparent())
-        return;
-
-    float clipX, clipY, clipW, clipH;
-    GetIntersectedScissor(desc.X, desc.Y, desc.W, desc.H, &clipX, &clipY, &clipW, &clipH);
-
-    if (clipW < 1.0f || clipH < 1.0f)
-        return;
-
-    CANVAS_COMPOSITE currentComposite = CompositeOperation(desc.Composite);
-
-    CanvasPaint paint;
-
-    if (desc.Angle != 0.0f)
-        paint.Xform = Transform2D::Rotation(desc.Angle);
-    else
-        paint.Xform.SetIdentity();
-    paint.Xform[2][0] = desc.X;
-    paint.Xform[2][1] = desc.Y;
-    paint.Extent[0]   = desc.W;
-    paint.Extent[1]   = desc.H;
-    paint.pTexture    = (RenderCore::ITexture*)(size_t)(m_Viewports.Size() + 1);
-    paint.ImageFlags  = _CANVAS_IMAGE_VIEWPORT_INDEX | CANVAS_IMAGE_FLIPY | CANVAS_IMAGE_NEAREST;
-    paint.InnerColor  = desc.TintColor;
-    paint.OuterColor  = desc.TintColor;
-
-    BeginPath();
-    RoundedRectVarying(desc.X, desc.Y, desc.W, desc.H,
-                       desc.Rounding.RoundingTL,
-                       desc.Rounding.RoundingTR,
-                       desc.Rounding.RoundingBR,
-                       desc.Rounding.RoundingBL);
-    FillPaint(paint);
-    Fill();
-
-    CompositeOperation(currentComposite);
-
-    SViewport& viewport      = m_Viewports.Add();
-    viewport.X               = desc.X;
-    viewport.Y               = desc.Y;
-    viewport.Width           = desc.TextureResolutionX;
-    viewport.Height          = desc.TextureResolutionY;
-    viewport.Camera          = desc.pCamera;
-    viewport.RenderingParams = desc.pRenderingParams;
 }
 
 void ACanvas::DrawPolyline(Float2 const* points, int numPoints, Color4 const& color, bool bClosed, float thickness)
@@ -967,7 +906,7 @@ void ACanvas::ConvertPaint(CanvasUniforms* frag, CanvasPaint* paint, VGScissor c
     frag->StrokeMult = (width * 0.5f + fringe * 0.5f) / fringe;
     frag->StrokeThr  = strokeThr;
 
-    if (paint->pTexture)
+    if (paint->pTextureView)
     {
         frag->Type    = CANVAS_SHADER_FILLIMG;
         frag->TexType = (paint->ImageFlags & CANVAS_IMAGE_PREMULTIPLIED) ? 0 : 1;
@@ -1005,7 +944,7 @@ void ACanvas::RenderFill(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGSciss
     drawCommand->VertexCount  = 4;
     drawCommand->FirstPath    = AllocPaths(npaths);
     drawCommand->PathCount    = npaths;
-    drawCommand->pTexture     = paint->pTexture;
+    drawCommand->pTextureView = paint->pTextureView;
     drawCommand->TextureFlags = paint->ImageFlags;
 
     if (npaths == 1 && m_PathCache.Paths[0].bConvex)
@@ -1080,7 +1019,7 @@ void ACanvas::RenderStroke(CanvasPaint* paint, CANVAS_COMPOSITE composite, VGSci
     drawCommand->Composite    = composite;
     drawCommand->FirstPath    = AllocPaths(npaths);
     drawCommand->PathCount    = npaths;
-    drawCommand->pTexture     = paint->pTexture;
+    drawCommand->pTextureView = paint->pTextureView;
     drawCommand->TextureFlags = paint->ImageFlags;
 
     // Allocate vertices for all the paths.
@@ -1126,7 +1065,7 @@ void ACanvas::RenderTriangles(CanvasPaint* paint, CANVAS_COMPOSITE composite, VG
 
     drawCommand->Type         = CANVAS_DRAW_COMMAND_TRIANGLES;
     drawCommand->Composite    = composite;
-    drawCommand->pTexture     = paint->pTexture;
+    drawCommand->pTextureView = paint->pTextureView;
     drawCommand->TextureFlags = paint->ImageFlags;
 
     // Allocate vertices for all the paths.
@@ -2403,11 +2342,11 @@ void ACanvas::DrawCursor(DRAW_CURSOR cursor, Float2 const& position, Color4 cons
         m_Cursors = CreateCursorMap();
 
     DrawTextureDesc desc;
-    desc.pTexture  = m_Cursors;
-    desc.W         = size.X;
-    desc.H         = size.Y;
-    desc.UVScale.X = 1.0f / desc.W * m_Cursors->GetDimensionX();
-    desc.UVScale.Y = 1.0f / desc.H * m_Cursors->GetDimensionY();
+    desc.pTextureView = m_Cursors->GetView();
+    desc.W            = size.X;
+    desc.H            = size.Y;
+    desc.UVScale.X    = 1.0f / desc.W * m_Cursors->GetDimensionX();
+    desc.UVScale.Y    = 1.0f / desc.H * m_Cursors->GetDimensionY();
 
     desc.Y = p.Y;
 
@@ -2442,7 +2381,7 @@ void ACanvas::RenderText(CanvasVertex* verts, int nverts)
 
     CanvasPaint paint = state->Fill;
 
-    paint.pTexture = m_FontStash->GetTexture();
+    paint.pTextureView = m_FontStash->GetTextureView();
 
     // Apply global alpha
     paint.InnerColor.A *= state->Alpha;

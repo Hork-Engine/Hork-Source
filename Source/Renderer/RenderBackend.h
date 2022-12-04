@@ -62,12 +62,11 @@ public:
     int MaxOmnidirectionalShadowMapsPerView() const;
 
 private:
-    void RenderView(int ViewportIndex, SRenderView* pRenderView, RenderCore::FGTextureProxy** ppViewTexture);
+    void RenderView(int ViewportIndex, SRenderView* pRenderView);
     void SetViewConstants(int ViewportIndex);
     void UploadShaderResources(int ViewportIndex);
 
     TRef<RenderCore::AFrameGraph>       FrameGraph;
-    //AFrameRenderer::SFrameGraphCaptured CapturedResources;
 
     TRef<ACanvasRenderer> CanvasRenderer;
     TRef<AFrameRenderer>  FrameRenderer;

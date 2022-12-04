@@ -93,54 +93,104 @@ APostprocessRenderer::APostprocessRenderer()
     AShaderFactory::CreateFullscreenQuadPipeline( &PostprocessPipeline, "postprocess/final.vert", "postprocess/final.frag", &resourceLayout );
 }
 
-void APostprocessRenderer::AddPass( AFrameGraph & FrameGraph,
-                                    FGTextureProxy * ColorTexture,
-                                    FGTextureProxy * Exposure,
-                                    FGTextureProxy * ColorGrading,
-                                    ABloomRenderer::STextures & BloomTex,
-                                    FGTextureProxy ** ppPostprocessTexture )
+void APostprocessRenderer::AddPass(AFrameGraph&               FrameGraph,
+                                   FGTextureProxy*            ColorTexture,
+                                   FGTextureProxy*            Exposure,
+                                   FGTextureProxy*            ColorGrading,
+                                   ABloomRenderer::STextures& BloomTex,
+                                   TEXTURE_FORMAT             OutputFormat,
+                                   FGTextureProxy**           ppPostprocessTexture)
 {
-    ARenderPass & renderPass = FrameGraph.AddTask< ARenderPass >( "Postprocess Pass" );
+    ARenderPass& renderPass = FrameGraph.AddTask<ARenderPass>("Postprocess Pass");
 
     renderPass.SetRenderArea(GRenderViewArea);
 
-    renderPass.AddResource( ColorTexture, FG_RESOURCE_ACCESS_READ );
+    renderPass.AddResource(ColorTexture, FG_RESOURCE_ACCESS_READ);
 
-    renderPass.AddResource( Exposure, FG_RESOURCE_ACCESS_READ );
+    renderPass.AddResource(Exposure, FG_RESOURCE_ACCESS_READ);
 
-    if ( ColorGrading ) {
-        renderPass.AddResource( ColorGrading, FG_RESOURCE_ACCESS_READ );
+    if (ColorGrading)
+    {
+        renderPass.AddResource(ColorGrading, FG_RESOURCE_ACCESS_READ);
     }
 
-    renderPass.AddResource( BloomTex.BloomTexture0, FG_RESOURCE_ACCESS_READ );
-    renderPass.AddResource( BloomTex.BloomTexture1, FG_RESOURCE_ACCESS_READ );
-    renderPass.AddResource( BloomTex.BloomTexture2, FG_RESOURCE_ACCESS_READ );
-    renderPass.AddResource( BloomTex.BloomTexture3, FG_RESOURCE_ACCESS_READ );
+    renderPass.AddResource(BloomTex.BloomTexture0, FG_RESOURCE_ACCESS_READ);
+    renderPass.AddResource(BloomTex.BloomTexture1, FG_RESOURCE_ACCESS_READ);
+    renderPass.AddResource(BloomTex.BloomTexture2, FG_RESOURCE_ACCESS_READ);
+    renderPass.AddResource(BloomTex.BloomTexture3, FG_RESOURCE_ACCESS_READ);
 
     renderPass.SetColorAttachment(
         STextureAttachment("Postprocess texture",
                            STextureDesc()
-                               .SetFormat(TEXTURE_FORMAT_RGBA16_FLOAT)
+                               .SetFormat(OutputFormat)
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
 
-    renderPass.AddSubpass( { 0 }, // color attachment refs
+    renderPass.AddSubpass({0}, // color attachment refs
                           [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
 
-    {
-        rtbl->BindTexture( 0, ColorTexture->Actual() );
-        if ( ColorGrading ) {
-            rtbl->BindTexture( 1, ColorGrading->Actual() );
-        }
-        rtbl->BindTexture( 2, BloomTex.BloomTexture0->Actual() );
-        rtbl->BindTexture( 3, BloomTex.BloomTexture1->Actual() );
-        rtbl->BindTexture( 4, BloomTex.BloomTexture2->Actual() );
-        rtbl->BindTexture( 5, BloomTex.BloomTexture3->Actual() );
-        rtbl->BindTexture( 6, Exposure->Actual() );
+                          {
+                              rtbl->BindTexture(0, ColorTexture->Actual());
+                              if (ColorGrading)
+                              {
+                                  rtbl->BindTexture(1, ColorGrading->Actual());
+                              }
+                              rtbl->BindTexture(2, BloomTex.BloomTexture0->Actual());
+                              rtbl->BindTexture(3, BloomTex.BloomTexture1->Actual());
+                              rtbl->BindTexture(4, BloomTex.BloomTexture2->Actual());
+                              rtbl->BindTexture(5, BloomTex.BloomTexture3->Actual());
+                              rtbl->BindTexture(6, Exposure->Actual());
 
-        DrawSAQ(RenderPassContext.pImmediateContext, PostprocessPipeline);
-
-    } );
+                              DrawSAQ(RenderPassContext.pImmediateContext, PostprocessPipeline);
+                          });
 
     *ppPostprocessTexture = renderPass.GetColorAttachments()[0].pResource;
+}
+
+void APostprocessRenderer::AddPass(AFrameGraph&               FrameGraph,
+                                   FGTextureProxy*            ColorTexture,
+                                   FGTextureProxy*            Exposure,
+                                   FGTextureProxy*            ColorGrading,
+                                   ABloomRenderer::STextures& BloomTex,
+                                   FGTextureProxy*            Dest)
+{
+    ARenderPass& renderPass = FrameGraph.AddTask<ARenderPass>("Postprocess Pass");
+
+    renderPass.SetRenderArea(GRenderViewArea);
+
+    renderPass.AddResource(ColorTexture, FG_RESOURCE_ACCESS_READ);
+
+    renderPass.AddResource(Exposure, FG_RESOURCE_ACCESS_READ);
+
+    if (ColorGrading)
+    {
+        renderPass.AddResource(ColorGrading, FG_RESOURCE_ACCESS_READ);
+    }
+
+    renderPass.AddResource(BloomTex.BloomTexture0, FG_RESOURCE_ACCESS_READ);
+    renderPass.AddResource(BloomTex.BloomTexture1, FG_RESOURCE_ACCESS_READ);
+    renderPass.AddResource(BloomTex.BloomTexture2, FG_RESOURCE_ACCESS_READ);
+    renderPass.AddResource(BloomTex.BloomTexture3, FG_RESOURCE_ACCESS_READ);
+
+    renderPass.SetColorAttachment(
+        STextureAttachment(Dest)
+            .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
+
+    renderPass.AddSubpass({0}, // color attachment refs
+                          [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+
+                          {
+                              rtbl->BindTexture(0, ColorTexture->Actual());
+                              if (ColorGrading)
+                              {
+                                  rtbl->BindTexture(1, ColorGrading->Actual());
+                              }
+                              rtbl->BindTexture(2, BloomTex.BloomTexture0->Actual());
+                              rtbl->BindTexture(3, BloomTex.BloomTexture1->Actual());
+                              rtbl->BindTexture(4, BloomTex.BloomTexture2->Actual());
+                              rtbl->BindTexture(5, BloomTex.BloomTexture3->Actual());
+                              rtbl->BindTexture(6, Exposure->Actual());
+
+                              DrawSAQ(RenderPassContext.pImmediateContext, PostprocessPipeline);
+                          });
 }

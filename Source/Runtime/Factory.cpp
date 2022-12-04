@@ -34,7 +34,7 @@ SOFTWARE.
 #include <Platform/Logger.h>
 #include <Core/HashFunc.h>
 
-HK_CLASS_META(ADummy)
+//HK_CLASS_META(ADummy)
 
 AObjectFactory* AObjectFactory::FactoryList = nullptr;
 

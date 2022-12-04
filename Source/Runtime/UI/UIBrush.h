@@ -246,7 +246,7 @@ class UIImageBrush : public UIBrush
     UI_CLASS(UIImageBrush, UIBrush)
 
 public:
-    TRef<ATexture> Texture;
+    TRef<ATextureView> TextureView;
     Color4         TintColor;
     Float2         Offset;
     Float2         Scale               = Float2(1,1);
@@ -261,12 +261,23 @@ public:
 
     UIImageBrush(ATexture* texture) :
         UIBrush(IMAGE),
-        Texture(texture)
+        TextureView(texture ? texture->GetView() : nullptr)
+    {}
+
+    UIImageBrush(ATextureView* texture) :
+        UIBrush(IMAGE),
+        TextureView(texture)
     {}
 
     UIImageBrush& WithTexture(ATexture* texture)
     {
-        Texture = texture;
+        TextureView = texture ? texture->GetView() : nullptr;
+        return *this;
+    }
+
+    UIImageBrush& WithTexture(ATextureView* textureView)
+    {
+        TextureView = textureView;
         return *this;
     }
 

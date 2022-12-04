@@ -160,6 +160,7 @@ void ABaseObject::GetProperties(TPodVector<AProperty const*>& Properties, bool b
 
 ABaseObject* AGarbageCollector::m_GarbageObjects     = nullptr;
 ABaseObject* AGarbageCollector::m_GarbageObjectsTail = nullptr;
+TVector<ABaseObject*> AGarbageCollector::m_KeepAlivePtrs;
 
 void AGarbageCollector::AddObject(ABaseObject* _Object)
 {
@@ -169,6 +170,13 @@ void AGarbageCollector::AddObject(ABaseObject* _Object)
 void AGarbageCollector::RemoveObject(ABaseObject* _Object)
 {
     INTRUSIVE_REMOVE(_Object, m_NextGarbageObject, m_PrevGarbageObject, m_GarbageObjects, m_GarbageObjectsTail)
+}
+
+void AGarbageCollector::Shutdown()
+{
+    ClearPointers();
+    DeallocateObjects();
+    m_KeepAlivePtrs.Free();
 }
 
 void AGarbageCollector::DeallocateObjects()
@@ -186,4 +194,21 @@ void AGarbageCollector::DeallocateObjects()
     }
 
     m_GarbageObjectsTail = nullptr;
+
+    ClearPointers();
+}
+
+void AGarbageCollector::KeepPointerAlive(ABaseObject* pObject)
+{
+    m_KeepAlivePtrs.Add(pObject);
+    pObject->AddRef();
+}
+
+void AGarbageCollector::ClearPointers()
+{
+    for (ABaseObject* ptr : m_KeepAlivePtrs)
+    {
+        ptr->RemoveRef();
+    }
+    m_KeepAlivePtrs.Clear();
 }

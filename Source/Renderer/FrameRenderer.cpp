@@ -96,8 +96,13 @@ AFrameRenderer::AFrameRenderer()
     resourceLayout.NumSamplers = HK_ARRAY_SIZE(outlineApplySamplers);
     resourceLayout.Samplers    = outlineApplySamplers;
 
-    //CreateFullscreenQuadPipeline( &OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_COLOR_ADD );
     AShaderFactory::CreateFullscreenQuadPipeline(&OutlineApplyPipe, "postprocess/outlineapply.vert", "postprocess/outlineapply.frag", &resourceLayout, RenderCore::BLENDING_ALPHA);
+
+    resourceLayout = SPipelineResourceLayout{};
+    resourceLayout.NumSamplers = 1;
+    resourceLayout.Samplers    = &nearestSampler;
+    AShaderFactory::CreateFullscreenQuadPipeline(&CopyPipeline, "postprocess/copy.vert", "postprocess/copy.frag", &resourceLayout);
+    
 }
 
 void AFrameRenderer::AddLinearizeDepthPass(AFrameGraph& FrameGraph, FGTextureProxy* DepthTexture, FGTextureProxy** ppLinearDepth)
@@ -351,7 +356,30 @@ void AFrameRenderer::AddOutlineOverlayPass(AFrameGraph& FrameGraph, FGTexturePro
                          });
 }
 
-void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVirtualTextureCache* PhysCacheVT, FGTextureProxy** ppFinalTexture)
+void AFrameRenderer::AddCopyPass(AFrameGraph& FrameGraph, FGTextureProxy* Source, FGTextureProxy* Dest)
+{
+    ARenderPass& pass = FrameGraph.AddTask<ARenderPass>("Copy Pass");
+
+    pass.SetRenderArea(GRenderViewArea);
+
+    pass.AddResource(Source, FG_RESOURCE_ACCESS_READ);
+
+    pass.SetColorAttachment(
+        STextureAttachment(Dest)
+            .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
+
+    pass.AddSubpass({0}, // color attachment refs
+                        [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
+                        {
+                            using namespace RenderCore;
+
+                            rtbl->BindTexture(0, Source->Actual());
+
+                            DrawSAQ(RenderPassContext.pImmediateContext, CopyPipeline);
+                        });
+}
+
+void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVirtualTextureCache* PhysCacheVT)
 {
     AScopedTimer TimeCheck("Framegraph build&fill");
 
@@ -436,26 +464,40 @@ void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVi
     FGTextureProxy* ColorGrading;
     ColorGradingRenderer.AddPass(FrameGraph, &ColorGrading);
 
-    FGTextureProxy* PostprocessTexture;
-    PostprocessRenderer.AddPass(FrameGraph, LightTexture, Exposure, ColorGrading, BloomTex, &PostprocessTexture);
-
-    FGTextureProxy* OutlineTexture;
-    AddOutlinePass(FrameGraph, &OutlineTexture);
-
-    if (OutlineTexture)
-    {
-        AddOutlineOverlayPass(FrameGraph, PostprocessTexture, OutlineTexture);
-    }
+    bool bFxaaPassRequired = r_FXAA && !r_SMAA;
 
     FGTextureProxy* FinalTexture;
 
-    if (r_FXAA && !r_SMAA)
+    if (bFxaaPassRequired)
     {
-        FxaaRenderer.AddPass(FrameGraph, PostprocessTexture, &FinalTexture);
+        PostprocessRenderer.AddPass(FrameGraph, LightTexture, Exposure, ColorGrading, BloomTex, TEXTURE_FORMAT_RGBA16_FLOAT, &FinalTexture);
     }
     else
     {
-        FinalTexture = PostprocessTexture;
+        FinalTexture = FrameGraph.AddExternalResource<FGTextureProxy>("RenderTarget", GRenderView->RenderTarget);
+        PostprocessRenderer.AddPass(FrameGraph, LightTexture, Exposure, ColorGrading, BloomTex, FinalTexture);
+    }
+
+    // Apply outline
+    FGTextureProxy* OutlineTexture;
+    AddOutlinePass(FrameGraph, &OutlineTexture);
+    if (OutlineTexture)
+    {
+        AddOutlineOverlayPass(FrameGraph, FinalTexture, OutlineTexture);
+    }
+
+    if (bFxaaPassRequired)
+    {
+        FGTextureProxy* FxaaTexture;
+        FxaaRenderer.AddPass(FrameGraph, FinalTexture, &FxaaTexture);
+
+        FinalTexture = FrameGraph.AddExternalResource<FGTextureProxy>("RenderTarget", GRenderView->RenderTarget);
+        AddCopyPass(FrameGraph, FxaaTexture, FinalTexture);
+    }
+
+    if (FinalTexture->GetResourceDesc().Format != TEXTURE_FORMAT_SRGBA8_UNORM)
+    {
+        LOG("Warning: The final texture format should be TEXTURE_FORMAT_SRGBA8_UNORM\n");
     }
 
     if (GRenderView->bWireframe)
@@ -485,6 +527,4 @@ void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVi
             PhysCacheVT->Draw(FrameGraph, FinalTexture, r_ShowCacheVT.GetInteger());
         }
     }
-
-    *ppFinalTexture = FinalTexture;
 }

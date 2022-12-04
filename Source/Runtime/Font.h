@@ -46,10 +46,7 @@ public:
     bool ReallocTexture();
     void UpdateTexture();
 
-    RenderCore::ITexture* GetTexture()
-    {
-        return m_FontImages[m_FontImageIdx];
-    }
+    ATextureView* GetTextureView();
 
     void Cleanup();
 
@@ -63,6 +60,29 @@ private:
     struct FONScontext*        m_pImpl{};
     TRef<RenderCore::ITexture> m_FontImages[MAX_FONT_IMAGES];
     int                        m_FontImageIdx{};
+
+    class TextureViewImpl : public ATextureView
+    {
+        HK_CLASS(TextureViewImpl, ATextureView)
+
+    public:
+        TextureViewImpl() = default; // NOTE: It's really not needed, but the current reflection system requires this constructor.
+
+        TextureViewImpl(AFontStash* pFontStash) :
+            m_FontStash(pFontStash)
+        {}
+
+        void SetResource(RenderCore::ITexture* pResource)
+        {
+            m_Resource = pResource;
+            m_Width    = pResource->GetDesc().Resolution.Width;
+            m_Height   = pResource->GetDesc().Resolution.Height;
+        }
+
+        TRef<AFontStash> m_FontStash;
+    };
+
+    TWeakRef<TextureViewImpl> m_TextureViews[MAX_FONT_IMAGES];
 };
 
 struct TextMetrics

@@ -37,12 +37,20 @@ class APostprocessRenderer
 public:
     APostprocessRenderer();
 
-    void AddPass(RenderCore::AFrameGraph&         FrameGraph,
+    void AddPass(RenderCore::AFrameGraph&     FrameGraph,
                  RenderCore::FGTextureProxy*  ColorTexture,
                  RenderCore::FGTextureProxy*  Exposure,
                  RenderCore::FGTextureProxy*  ColorGrading,
-                 ABloomRenderer::STextures&       BloomTex,
+                 ABloomRenderer::STextures&   BloomTex,
+                 TEXTURE_FORMAT               OutputFormat,
                  RenderCore::FGTextureProxy** ppPostprocessTexture);
+
+    void AddPass(RenderCore::AFrameGraph&     FrameGraph,
+                 RenderCore::FGTextureProxy*  ColorTexture,
+                 RenderCore::FGTextureProxy*  Exposure,
+                 RenderCore::FGTextureProxy*  ColorGrading,
+                 ABloomRenderer::STextures&   BloomTex,
+                 RenderCore::FGTextureProxy*  Dest);
 
 private:
     TRef<RenderCore::IPipeline> PostprocessPipeline;

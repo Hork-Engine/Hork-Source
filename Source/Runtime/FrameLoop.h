@@ -127,6 +127,8 @@ public:
     virtual void OnResize() = 0;
 };
 
+class WorldRenderView;
+
 class AFrameLoop : public ARefCounted
 {
 public:
@@ -169,9 +171,14 @@ public:
     /** Poll runtime events */
     void PollEvents(IEventListener* Listener);
 
+    void RegisterView(WorldRenderView* pView);
+
+    TVector<WorldRenderView*> const& GetRenderViews() { return m_Views; }
+
     AStreamedMemoryGPU* GetStreamedMemoryGPU() { return StreamedMemoryGPU; }
 
 private:
+    void ClearViews();
     void ClearJoystickAxes(IEventListener* Listener, int _JoystickNum, double _TimeStamp);
     void UnpressKeysAndButtons(IEventListener* Listener);
     void UnpressJoystickButtons(IEventListener* Listener, int _JoystickNum, double _TimeStamp);
@@ -194,4 +201,6 @@ private:
     TArray<TArray<unsigned char, MAX_JOYSTICK_BUTTONS>, MAX_JOYSTICKS_COUNT> JoystickButtonState;
     TArray<TArray<short, MAX_JOYSTICK_AXES>, MAX_JOYSTICKS_COUNT>            JoystickAxisState;
     TArray<bool, MAX_JOYSTICKS_COUNT>                                        JoystickAdded;
+
+    TVector<WorldRenderView*> m_Views;
 };

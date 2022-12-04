@@ -511,7 +511,7 @@ public:
         }
 
     private:
-        void RegisterProperties();
+       // void RegisterProperties();
     };
 
     ADummy() {}

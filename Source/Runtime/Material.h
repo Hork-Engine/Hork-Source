@@ -148,9 +148,11 @@ public:
     AMaterialInstance();
     AMaterialInstance(AMaterial* pMaterial);
 
-    void SetTexture(AStringView Name, ATexture* pTexture);
+    void SetTexture(AStringView Name, ATexture* pView);
+    void SetTexture(AStringView Name, ATextureView* pTexture);
 
-    void SetTexture(uint32_t Slot, ATexture* pTexture);
+    void SetTexture(uint32_t Slot, ATexture* pView);
+    void SetTexture(uint32_t Slot, ATextureView* pTexture);
 
     void UnsetTextures();
 
@@ -171,8 +173,8 @@ public:
     /** Get material. Never return null. */
     AMaterial* GetMaterial() const;
 
-    ATexture* GetTexture(uint32_t Slot);
-    float     GetConstant(uint32_t Offset);
+    ATextureView* GetTexture(uint32_t Slot);
+    float         GetConstant(uint32_t Offset);
     Float4 const& GetVector(uint32_t Offset);
 
     // Experimental:
@@ -194,7 +196,7 @@ protected:
 
 private:
     TRef<AMaterial>               m_pMaterial;
-    TRef<ATexture>                m_Textures[MAX_MATERIAL_TEXTURES];
+    TRef<ATextureView>            m_Textures[MAX_MATERIAL_TEXTURES];
     TRef<AVirtualTextureResource> m_VirtualTexture;
     union
     {

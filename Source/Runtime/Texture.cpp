@@ -49,17 +49,8 @@ static const char* TextureTypeName[] =
 
 HK_CLASS_META(ATexture)
 
-ATexture::ATexture()
-{
-}
-
-ATexture::~ATexture()
-{
-}
-
-void ATexture::Purge()
-{
-}
+void ATextureView::ThisClassMeta::RegisterProperties() {}
+void ATexture::TextureViewImpl::ThisClassMeta::RegisterProperties() {}
 
 bool ATexture::InitializeFromImage(ImageStorage const& Image)
 {
@@ -380,8 +371,6 @@ static void SetTextureSwizzle(TEXTURE_FORMAT const& Format, RenderCore::STexture
 
 void ATexture::Initialize1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
 {
-    Purge();
-
     m_Type       = TEXTURE_1D;
     m_Format     = Format;
     m_Width      = Width;
@@ -398,12 +387,13 @@ void ATexture::Initialize1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
     GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+
+    if (m_View)
+        m_View->SetResource(m_TextureGPU);
 }
 
 void ATexture::Initialize1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
 {
-    Purge();
-
     m_Type       = TEXTURE_1D_ARRAY;
     m_Format     = Format;
     m_Width      = Width;
@@ -420,12 +410,13 @@ void ATexture::Initialize1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
     GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+
+    if (m_View)
+        m_View->SetResource(m_TextureGPU);
 }
 
 void ATexture::Initialize2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height)
 {
-    Purge();
-
     m_Type       = TEXTURE_2D;
     m_Format     = Format;
     m_Width      = Width;
@@ -442,12 +433,13 @@ void ATexture::Initialize2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
     GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+
+    if (m_View)
+        m_View->SetResource(m_TextureGPU);
 }
 
 void ATexture::Initialize2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t ArraySize)
 {
-    Purge();
-
     m_Type       = TEXTURE_2D_ARRAY;
     m_Format     = Format;
     m_Width      = Width;
@@ -464,12 +456,13 @@ void ATexture::Initialize2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
     GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+
+    if (m_View)
+        m_View->SetResource(m_TextureGPU);
 }
 
 void ATexture::Initialize3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t Depth)
 {
-    Purge();
-
     m_Type       = TEXTURE_3D;
     m_Format     = Format;
     m_Width      = Width;
@@ -486,6 +479,9 @@ void ATexture::Initialize3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
     GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+
+    if (m_View)
+        m_View->SetResource(m_TextureGPU);
 }
 
 void ATexture::InitializeColorGradingLUT(IBinaryStreamReadInterface& Stream)
@@ -593,8 +589,6 @@ void ATexture::InitializeColorGradingLUT(SColorGradingPreset const& Preset)
 
 void ATexture::InitializeCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
 {
-    Purge();
-
     m_Type       = TEXTURE_CUBE;
     m_Format     = Format;
     m_Width      = Width;
@@ -611,12 +605,13 @@ void ATexture::InitializeCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, u
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
     GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+
+    if (m_View)
+        m_View->SetResource(m_TextureGPU);
 }
 
 void ATexture::InitializeCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
 {
-    Purge();
-
     m_Type       = TEXTURE_CUBE_ARRAY;
     m_Format     = Format;
     m_Width      = Width;
@@ -633,6 +628,9 @@ void ATexture::InitializeCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMipLeve
     SetTextureSwizzle(Format, textureDesc.Swizzle);
 
     GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_TextureGPU);
+
+    if (m_View)
+        m_View->SetResource(m_TextureGPU);
 }
 
 uint32_t ATexture::GetArraySize() const

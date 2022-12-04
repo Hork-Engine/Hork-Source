@@ -29,6 +29,8 @@ SOFTWARE.
 */
 
 #include "FrameLoop.h"
+#include "WorldRenderView.h"
+
 #include <Platform/Platform.h>
 #include <Platform/ConsoleBuffer.h>
 #include <RenderCore/GPUSync.h>
@@ -57,8 +59,7 @@ AFrameLoop::AFrameLoop(RenderCore::IDevice* RenderDevice) :
 }
 
 AFrameLoop::~AFrameLoop()
-{
-}
+{}
 
 void* AFrameLoop::AllocFrameMem(size_t _SizeInBytes)
 {
@@ -138,6 +139,18 @@ void AFrameLoop::NewFrame(TPodVector<RenderCore::ISwapChain*> const& SwapChains,
 
     // Free frame memory for new frame
     FrameMemory.ResetAndMerge();
+
+    ClearViews();
+}
+
+void AFrameLoop::ClearViews()
+{
+    m_Views.Clear();
+}
+
+void AFrameLoop::RegisterView(WorldRenderView* pView)
+{
+    m_Views.Add(pView);
 }
 
 #define FROM_SDL_TIMESTAMP(event) ((event).timestamp * 0.001)

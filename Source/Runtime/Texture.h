@@ -46,6 +46,33 @@ struct SColorGradingPreset
     float  ColorTemperatureBrightnessNormalization;
 };
 
+class ATextureView : public ABaseObject
+{
+    HK_CLASS(ATextureView, ABaseObject)
+
+public:
+    ATextureView() = default;
+
+    RenderCore::ITexture* GetResource()
+    {
+        return m_Resource;
+    }
+
+    uint32_t GetWidth() const
+    {
+        return m_Width;
+    }
+
+    uint32_t GetHeight() const
+    {
+        return m_Height;
+    }
+
+protected:
+    RenderCore::ITexture* m_Resource{};
+    uint32_t              m_Width{};
+    uint32_t              m_Height{};
+};
 
 /**
 
@@ -57,8 +84,8 @@ class ATexture : public AResource
     HK_CLASS(ATexture, AResource)
 
 public:
-    ATexture();
-    ~ATexture();
+    ATexture() = default;
+    ~ATexture() = default;
 
     static ATexture* Create1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
     {
@@ -130,6 +157,16 @@ public:
         return texture;
     }
 
+    ATextureView* GetView()
+    {
+        if (m_View.IsExpired())
+        {
+            m_View = CreateInstanceOf<TextureViewImpl>(this);
+            m_View->SetResource(m_TextureGPU);
+        }
+        return m_View;
+    }
+
     /** Fill texture data for any texture type. */
     bool WriteArbitraryData(uint32_t LocationX, uint32_t LocationY, uint32_t LocationZ, uint32_t Width, uint32_t Height, uint32_t Depth, uint32_t MipLevel, const void* pData);
 
@@ -173,8 +210,6 @@ public:
     RenderCore::ITexture* GetGPUResource() { return m_TextureGPU; }
 
     void SetDebugName(AStringView DebugName);
-
-    void Purge();
 
 protected:
     /** Create empty 1D texture */
@@ -222,4 +257,27 @@ protected:
     uint32_t                   m_Height     = 0;
     uint32_t                   m_Depth      = 0;
     uint32_t                   m_NumMipmaps = 0;
+
+    class TextureViewImpl : public ATextureView
+    {
+        HK_CLASS(TextureViewImpl, ATextureView)
+
+    public:
+        TextureViewImpl() = default; // NOTE: It's really not needed, but the current reflection system requires this constructor.
+
+        TextureViewImpl(ATexture* pTexture) :
+            m_Texture(pTexture)
+        {
+            m_Width  = pTexture->GetDimensionX();
+            m_Height = pTexture->GetDimensionY();
+        }
+
+        void SetResource(RenderCore::ITexture* pResource)
+        {
+            m_Resource = pResource;
+        }
+
+        TRef<ATexture> m_Texture;
+    };
+    TWeakRef<TextureViewImpl> m_View;
 };

@@ -449,16 +449,14 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
     GRenderViewContext.Clear();
     GRenderViewContext.Resize(GFrameData->NumViews);
 
-    TSmallVector<FGTextureProxy*, 32> pRenderViewTexture(GFrameData->NumViews);
     for (int i = 0; i < GFrameData->NumViews; i++)
     {
         SRenderView* pRenderView = &GFrameData->RenderViews[i];
 
-        RenderView(i, pRenderView, &pRenderViewTexture[i]);
-        HK_ASSERT(pRenderViewTexture[i] != nullptr);
+        RenderView(i, pRenderView);
     }
 
-    CanvasRenderer->Render(*FrameGraph, pRenderViewTexture, pBackBuffer);
+    CanvasRenderer->Render(*FrameGraph, pBackBuffer);
 
     FrameGraph->Build();
     //FrameGraph->ExportGraphviz("frame.graphviz");
@@ -680,12 +678,10 @@ void ARenderBackend::UploadShaderResources(int ViewportIndex)
 #endif
 }
 
-void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView, FGTextureProxy** ppViewTexture)
+void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView)
 {
     HK_ASSERT(pRenderView->Width > 0);
     HK_ASSERT(pRenderView->Height > 0);
-
-    *ppViewTexture = nullptr;
 
     GRenderView            = pRenderView;
     GRenderViewArea.X      = 0;
@@ -722,7 +718,7 @@ void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView, FGT
         pRenderView->VTFeedback->Begin(pRenderView->Width, pRenderView->Height);
     }
 
-    FrameRenderer->Render(*FrameGraph, bVirtualTexturing, PhysCacheVT, ppViewTexture);
+    FrameRenderer->Render(*FrameGraph, bVirtualTexturing, PhysCacheVT);
 
     // !!!!!!!!!!! FIXME: move outside of framegraph filling
     if (bVirtualTexturing)

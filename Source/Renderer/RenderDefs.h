@@ -520,14 +520,21 @@ enum CANVAS_SHADER_TYPE
 enum CANVAS_IMAGE_FLAGS : uint32_t
 {
     CANVAS_IMAGE_DEFAULT = 0,
-    CANVAS_IMAGE_REPEATX = 1 << 1,       // Repeat image in X direction.
-    CANVAS_IMAGE_REPEATY = 1 << 2,       // Repeat image in Y direction.
-    CANVAS_IMAGE_FLIPY = 1 << 3,         // Flips (inverses) image in Y direction when rendered.
-    CANVAS_IMAGE_PREMULTIPLIED = 1 << 4, // Image data has premultiplied alpha.
-    CANVAS_IMAGE_NEAREST = 1 << 5,       // Image interpolation is Nearest instead Linear
 
-    // Internal
-    _CANVAS_IMAGE_VIEWPORT_INDEX = HK_BIT(31)
+    /** Repeat image in X direction. */
+    CANVAS_IMAGE_REPEATX = 1 << 1,
+
+    /** Repeat image in Y direction. */
+    CANVAS_IMAGE_REPEATY = 1 << 2,
+
+    /** Flips(inverses) image in Y direction when rendered. */
+    CANVAS_IMAGE_FLIPY = 1 << 3,
+
+    /** Image data has premultiplied alpha. */
+    CANVAS_IMAGE_PREMULTIPLIED = 1 << 4,
+
+    /** Image interpolation is Nearest, default is Linear. */
+    CANVAS_IMAGE_NEAREST = 1 << 5,
 };
 
 HK_FLAG_ENUM_OPERATORS(CANVAS_IMAGE_FLAGS)
@@ -636,9 +643,11 @@ enum CANVAS_COMPOSITE : uint8_t
     CANVAS_COMPOSITE_LAST = CANVAS_COMPOSITE_XOR
 };
 
+class ATextureView;
+
 struct CanvasDrawCmd
 {
-    RenderCore::ITexture* pTexture;
+    ATextureView* pTextureView;
     CANVAS_DRAW_COMMAND   Type;
     CANVAS_COMPOSITE      Composite;
     CANVAS_IMAGE_FLAGS    TextureFlags;
@@ -1061,6 +1070,9 @@ struct SRenderView
     /** Texture with depth data */
     RenderCore::ITexture* DepthTexture;
 
+    /** Final texture data */
+    RenderCore::ITexture* RenderTarget;
+
     /** Virtual texture feedback data (experimental) */
     class AVirtualTextureFeedback* VTFeedback;
 
@@ -1150,21 +1162,21 @@ struct SRenderFrame
     int NumViews;
 
     /** Opaque instances */
-    TPodVector<SRenderInstance*> Instances;
+    TVector<SRenderInstance*> Instances;
     /** Translucent instances */
-    TPodVector<SRenderInstance*> TranslucentInstances;
+    TVector<SRenderInstance*> TranslucentInstances;
     /** Outline instances */
-    TPodVector<SRenderInstance*> OutlineInstances;
+    TVector<SRenderInstance*> OutlineInstances;
     /** Shadowmap instances */
-    TPodVector<SShadowRenderInstance*> ShadowInstances;
+    TVector<SShadowRenderInstance*> ShadowInstances;
     /** Light portal instances */
-    TPodVector<SLightPortalRenderInstance*> LightPortals;
+    TVector<SLightPortalRenderInstance*> LightPortals;
     /** Directional light instances */
-    TPodVector<SDirectionalLightInstance*> DirectionalLights;
+    TVector<SDirectionalLightInstance*> DirectionalLights;
     /** Shadow maps */
-    TPodVector<SLightShadowmap> LightShadowmaps;
+    TVector<SLightShadowmap> LightShadowmaps;
     /** Terrain instances */
-    TPodVector<STerrainRenderInstance*> TerrainInstances;
+    TVector<STerrainRenderInstance*> TerrainInstances;
 
     /** Canvas draw commands */
     CanvasDrawData const* CanvasDrawData;

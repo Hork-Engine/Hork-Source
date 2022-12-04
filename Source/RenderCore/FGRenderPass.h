@@ -256,7 +256,7 @@ public:
 };
 
 // fixed_function is used to prevent memory allocations during frame rendering.
-using ARecordFunction = eastl::fixed_function<104, void(ARenderPassContext&, ACommandBuffer&)>;
+using ARecordFunction = eastl::fixed_function<97, void(ARenderPassContext&, ACommandBuffer&)>;
 
 class ASubpassInfo
 {

@@ -34,19 +34,19 @@ void UIImage::AdjustSize(Float2 const& size)
 {
     Super::AdjustSize(size);
 
-    if (!Texture)
+    if (!TextureView)
         return;
 
     if (bAutoWidth && !bStretchedX && !bTiledX)
     {
-        m_AdjustedSize.X = Texture->GetDimensionX() * Scale.X - Padding.Left - Padding.Right;
+        m_AdjustedSize.X = TextureView->GetWidth() * Scale.X - Padding.Left - Padding.Right;
         if (m_AdjustedSize.X < 0)
             m_AdjustedSize.X = 0;
     }
 
     if (bAutoHeight && !bStretchedY && !bTiledY)
     {
-        m_AdjustedSize.Y = Texture->GetDimensionY() * Scale.Y - Padding.Top - Padding.Bottom;
+        m_AdjustedSize.Y = TextureView->GetHeight() * Scale.Y - Padding.Top - Padding.Bottom;
         if (m_AdjustedSize.Y < 0)
             m_AdjustedSize.Y = 0;
     }
@@ -54,7 +54,7 @@ void UIImage::AdjustSize(Float2 const& size)
 
 void UIImage::Draw(ACanvas& canvas)
 {
-    if (!Texture)
+    if (!TextureView)
         return;
 
     Float2 pos = m_Geometry.Mins;
@@ -64,7 +64,7 @@ void UIImage::Draw(ACanvas& canvas)
         size.X = (m_Geometry.Maxs.X - m_Geometry.Mins.X) * Scale.X;
     else
     {
-        size.X = Texture->GetDimensionX() * Scale.X;
+        size.X = TextureView->GetWidth() * Scale.X;
         pos.X += Offset.X;
     }
 
@@ -72,7 +72,7 @@ void UIImage::Draw(ACanvas& canvas)
         size.Y = (m_Geometry.Maxs.Y - m_Geometry.Mins.Y) * Scale.Y;
     else
     {
-        size.Y = Texture->GetDimensionY() * Scale.Y;
+        size.Y = TextureView->GetHeight() * Scale.Y;
         pos.Y += Offset.Y;
     }
 
@@ -94,7 +94,7 @@ void UIImage::Draw(ACanvas& canvas)
         imageFlags |= CANVAS_IMAGE_NEAREST;
 
     CanvasPaint paint;
-    paint.ImagePattern(pos, size.X, size.Y, 0.0f, Texture, TintColor, imageFlags);
+    paint.ImagePattern(pos, size.X, size.Y, 0.0f, TextureView, TintColor, imageFlags);
 
     auto prevComposite = canvas.CompositeOperation(Composite);
 

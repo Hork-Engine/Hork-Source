@@ -244,6 +244,10 @@ public:
 
     float GetMouseAxisState(int Axis);
 
+    void SetCursorPosition(Float2 const& cursorPosition) { m_CursorPosition = cursorPosition; }
+
+    Float2 const& GetCursorPosition() const { return m_CursorPosition; }
+
     void NotifyUnicodeCharacter(WideChar UnicodeCharacter, int ModMask, double TimeStamp);
 
     AInputComponent* GetNext() { return Next; }
@@ -338,8 +342,10 @@ protected:
     TArray<Float2, 2> MouseAxisState;
     int               MouseIndex = 0;
 
+    Float2 m_CursorPosition;
+
     TCallback<void(WideChar, int, double)> CharacterCallback;
-    bool                                    bCharacterCallbackExecuteEvenWhenPaused = false;
+    bool                                   bCharacterCallbackExecuteEvenWhenPaused = false;
 
     // Global list of input components
     AInputComponent*        Next = nullptr;
