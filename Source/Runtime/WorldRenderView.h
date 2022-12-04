@@ -192,11 +192,7 @@ public:
 private:
     class TextureViewImpl : public ATextureView
     {
-        HK_CLASS(TextureViewImpl, ATextureView)
-
     public:
-        TextureViewImpl() = default; // NOTE: It's really not needed, but the current reflection system requires this constructor.
-
         TextureViewImpl(WorldRenderView* pWorldRenderView) :
             m_WorldRenderView(pWorldRenderView)
         {}

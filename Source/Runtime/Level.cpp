@@ -132,7 +132,7 @@ uint32_t ALevel::AddVertexLightChannel(AIndexedMesh* InSourceMesh)
         VertexLightChannels.Add();
     }
 
-    VertexLightChannels[handle] = CreateInstanceOf<AVertexLight>(InSourceMesh);
+    VertexLightChannels[handle] = new AVertexLight(InSourceMesh);
 
     return handle;
 }

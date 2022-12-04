@@ -48,7 +48,7 @@ TVector<AWorld*> AWorld::TickingWorlds;
 
 AWorld::AWorld()
 {
-    PersistentLevel = CreateInstanceOf<ALevel>();
+    PersistentLevel = NewObj<ALevel>();
     PersistentLevel->AddRef();
     PersistentLevel->OwnerWorld    = this;
     PersistentLevel->bIsPersistent = true;
@@ -1139,7 +1139,7 @@ void AWorld::DrawDebug(ADebugRenderer* InRenderer)
 
 AWorld* AWorld::CreateWorld()
 {
-    AWorld* world = CreateInstanceOf<AWorld>();
+    AWorld* world = NewObj<AWorld>();
 
     world->AddRef();
 

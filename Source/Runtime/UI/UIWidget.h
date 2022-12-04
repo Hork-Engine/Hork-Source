@@ -63,8 +63,8 @@ private:
     TVector<TWeakRef<UIWidget>> m_Widgets;
 };
 
-#define UINew(Type, ...)            (Type*)&(*CreateInstanceOf<Type>(__VA_ARGS__))
-#define UINewAssign(Val, Type, ...) (Type*)&(*(Val = CreateInstanceOf<Type>(__VA_ARGS__)))
+#define UINew(Type, ...)            (Type*)&(*NewObj<Type>(__VA_ARGS__))
+#define UINewAssign(Val, Type, ...) (Type*)&(*(Val = NewObj<Type>(__VA_ARGS__)))
 
 struct UIGridOffset
 {

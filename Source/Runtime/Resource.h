@@ -50,7 +50,7 @@ public:
     template <typename ResourceType>
     static ResourceType* CreateDefault()
     {
-        ResourceType* resource = CreateInstanceOf<ResourceType>();
+        ResourceType* resource = NewObj<ResourceType>();
         resource->InitializeDefaultObject();
         return resource;
     }
@@ -58,7 +58,7 @@ public:
     template <typename ResourceType>
     static ResourceType* CreateFromFile(AStringView path)
     {
-        ResourceType* resource = CreateInstanceOf<ResourceType>();
+        ResourceType* resource = NewObj<ResourceType>();
         resource->InitializeFromFile(path);
         return resource;
     }

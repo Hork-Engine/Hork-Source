@@ -186,7 +186,7 @@ static void EvaluateRaycastResult(SPrimitiveDef*       Self,
 
 ATerrainComponent::ATerrainComponent()
 {
-    HitProxy = CreateInstanceOf<AHitProxy>();
+    HitProxy = NewObj<AHitProxy>();
 
     Primitive                         = AVisibilitySystem::AllocatePrimitive();
     Primitive->Owner                  = this;

@@ -52,7 +52,7 @@ public:
 
     static ASkeletalAnimation* Create(int _FrameCount, float _FrameDelta, STransform const* _Transforms, int _TransformsCount, SAnimationChannel const* _AnimatedJoints, int _NumAnimatedJoints, BvAxisAlignedBox const* _Bounds)
     {
-        ASkeletalAnimation* anim = CreateInstanceOf<ASkeletalAnimation>();
+        ASkeletalAnimation* anim = NewObj<ASkeletalAnimation>();
         anim->Initialize(_FrameCount, _FrameDelta, _Transforms, _TransformsCount, _AnimatedJoints, _NumAnimatedJoints, _Bounds);
         return anim;
     }

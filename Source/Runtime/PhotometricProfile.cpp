@@ -49,7 +49,7 @@ APhotometricProfile::~APhotometricProfile()
 
 APhotometricProfile* APhotometricProfile::Create(void const* pData, float Intensity)
 {
-    APhotometricProfile* profile = CreateInstanceOf<APhotometricProfile>();
+    APhotometricProfile* profile = NewObj<APhotometricProfile>();
     profile->m_Intensity         = Intensity;
     Platform::Memcpy(profile->m_Data, pData, sizeof(profile->m_Data));
     return profile;

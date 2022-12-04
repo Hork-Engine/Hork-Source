@@ -29,12 +29,7 @@ SOFTWARE.
 */
 
 #include "Factory.h"
-
-#include <Platform/Memory/Memory.h>
-#include <Platform/Logger.h>
-#include <Core/HashFunc.h>
-
-//HK_CLASS_META(ADummy)
+#include "BaseObject.h"
 
 AObjectFactory* AObjectFactory::FactoryList = nullptr;
 
@@ -122,7 +117,7 @@ void AClassMeta::GetProperties(APropertyList& Properties, bool bRecursive) const
     }
 }
 
-void AClassMeta::CloneProperties_r(AClassMeta const* Meta, ADummy const* Template, ADummy* Destination)
+void AClassMeta::CloneProperties_r(AClassMeta const* Meta, ABaseObject const* Template, ABaseObject* Destination)
 {
     if (Meta)
     {
@@ -135,7 +130,7 @@ void AClassMeta::CloneProperties_r(AClassMeta const* Meta, ADummy const* Templat
     }
 }
 
-void AClassMeta::CloneProperties(ADummy const* Template, ADummy* Destination)
+void AClassMeta::CloneProperties(ABaseObject const* Template, ABaseObject* Destination)
 {
     if (&Template->FinalClassMeta() != &Destination->FinalClassMeta())
     {

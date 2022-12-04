@@ -32,27 +32,36 @@ SOFTWARE.
 
 #include <Platform/Memory/Memory.h>
 
-struct SWeakRefCounter
+struct WeakRefCounter
 {
     void* Object;
     int   RefCount;
+
+    void* operator new(size_t SizeInBytes)
+    {
+        return Allocators::HeapMemoryAllocator<HEAP_MISC>().allocate(SizeInBytes);
+    }
+    void operator delete(void* Ptr)
+    {
+        Allocators::HeapMemoryAllocator<HEAP_MISC>().deallocate(Ptr);
+    }
 };
 
 class ARefCounted
 {
 private:
-    int RefCount{1};
+    int m_RefCount{1};
 
-    SWeakRefCounter* WeakRefCounter = nullptr;
+    WeakRefCounter* m_WeakRefCounter{};
 
 public:
     ARefCounted() = default;
 
     virtual ~ARefCounted()
     {
-        if (WeakRefCounter)
+        if (m_WeakRefCounter)
         {
-            WeakRefCounter->Object = nullptr;
+            m_WeakRefCounter->Object = nullptr;
         }
     }
 
@@ -65,37 +74,37 @@ public:
     /** Add reference */
     inline void AddRef()
     {
-        ++RefCount;
+        ++m_RefCount;
     }
 
     /** Remove reference */
     inline void RemoveRef()
     {
-        if (--RefCount == 0)
+        if (--m_RefCount == 0)
         {
             delete this;
             return;
         }
 
-        HK_ASSERT(RefCount > 0);
+        HK_ASSERT(m_RefCount > 0);
     }
 
     /** Reference count */
     int GetRefCount() const
     {
-        return RefCount;
+        return m_RefCount;
     }
 
     /** Set weakref counter. Used by TWeakRef */
-    void SetWeakRefCounter(SWeakRefCounter* _RefCounter)
+    void SetWeakRefCounter(WeakRefCounter* _RefCounter)
     {
-        WeakRefCounter = _RefCounter;
+        m_WeakRefCounter = _RefCounter;
     }
 
     /** Get weakref counter. Used by TWeakRef */
-    SWeakRefCounter* GetWeakRefCounter()
+    WeakRefCounter* GetWeakRefCounter()
     {
-        return WeakRefCounter;
+        return m_WeakRefCounter;
     }
 };
 
@@ -113,7 +122,7 @@ struct SInterlockedRef
 
 private:
     /** Reference counter */
-    AAtomicInt RefCount{1};
+    AAtomicInt m_RefCount{1};
 
 public:
     SInterlockedRef() = default;
@@ -123,13 +132,13 @@ public:
     /** Add reference. */
     HK_FORCEINLINE void AddRef()
     {
-        RefCount.Increment();
+        m_RefCount.Increment();
     }
 
     /** Remove reference. */
     HK_FORCEINLINE void RemoveRef()
     {
-        if (RefCount.Decrement() == 0)
+        if (m_RefCount.Decrement() == 0)
         {
             delete this;
         }
@@ -138,7 +147,7 @@ public:
     /** Reference count */
     HK_FORCEINLINE int GetRefCount() const
     {
-        return RefCount.Load();
+        return m_RefCount.Load();
     }
 };
 
@@ -156,149 +165,207 @@ class TRef final
 public:
     using ReferencedType = T;
 
-    TRef() :
-        Object(nullptr)
-    {
-    }
+    TRef() = default;
 
-    TRef(TRef<T> const& _Rhs) :
-        Object(_Rhs.Object)
+    TRef(TRef<T> const& rhs) :
+        m_Object(rhs.m_Object)
     {
-        if (Object)
+        if (m_Object)
         {
-            Object->AddRef();
+            m_Object->AddRef();
         }
     }
 
-    explicit TRef(T* _Object) :
-        Object(_Object)
+    explicit TRef(T* pObject) :
+        m_Object(pObject)
     {
-        if (Object)
+        if (m_Object)
         {
-            Object->AddRef();
+            m_Object->AddRef();
         }
     }
 
-    TRef(TRef&& _Rhs) :
-        Object(_Rhs.Object)
+    TRef(TRef&& rhs) :
+        m_Object(rhs.m_Object)
     {
-        _Rhs.Object = nullptr;
+        rhs.m_Object = nullptr;
     }
 
     ~TRef()
     {
-        if (Object)
+        if (m_Object)
         {
-            Object->RemoveRef();
+            m_Object->RemoveRef();
         }
     }
 
     T* GetObject()
     {
-        return Object;
+        return m_Object;
     }
 
     T const* GetObject() const
     {
-        return Object;
+        return m_Object;
     }
 
     //    operator bool() const
     //    {
-    //        return Object != nullptr;
+    //        return m_Object != nullptr;
     //    }
 
     operator T*() const
     {
-        return Object;
+        return m_Object;
     }
 
     T& operator*() const
     {
-        HK_ASSERT_(Object, "TRef");
-        return *Object;
+        HK_ASSERT_(m_Object, "TRef");
+        return *m_Object;
     }
 
     T* operator->()
     {
-        HK_ASSERT_(Object, "TRef");
-        return Object;
+        HK_ASSERT_(m_Object, "TRef");
+        return m_Object;
     }
 
     T const* operator->() const
     {
-        HK_ASSERT_(Object, "TRef");
-        return Object;
+        HK_ASSERT_(m_Object, "TRef");
+        return m_Object;
     }
 
     void Reset()
     {
-        if (Object)
+        if (m_Object)
         {
-            Object->RemoveRef();
-            Object = nullptr;
+            m_Object->RemoveRef();
+            m_Object = nullptr;
         }
     }
 
-    TRef<T>& operator=(TRef<T> const& _Rhs)
+    TRef<T>& operator=(TRef<T> const& rhs)
     {
-        this->operator=(_Rhs.Object);
+        this->operator=(rhs.m_Object);
         return *this;
     }
 
-    TRef<T>& operator=(T* _Object)
+    TRef<T>& operator=(T* pObject)
     {
-        if (Object == _Object)
+        if (m_Object == pObject)
         {
             return *this;
         }
-        if (Object)
+        if (m_Object)
         {
-            Object->RemoveRef();
+            m_Object->RemoveRef();
         }
-        Object = _Object;
-        if (Object)
+        m_Object = pObject;
+        if (m_Object)
         {
-            Object->AddRef();
+            m_Object->AddRef();
         }
         return *this;
     }
 
-    TRef<T>& operator=(TRef&& _Rhs)
+    TRef<T>& operator=(TRef&& rhs)
     {
-        if (Object == _Rhs.Object)
+        if (m_Object == rhs.m_Object)
         {
             return *this;
         }
-        if (Object)
+        if (m_Object)
         {
-            Object->RemoveRef();
+            m_Object->RemoveRef();
         }
-        Object      = _Rhs.Object;
-        _Rhs.Object = nullptr;
+        m_Object     = rhs.m_Object;
+        rhs.m_Object = nullptr;
         return *this;
     }
 
-    void Attach(T* _Rhs)
+    void Attach(T* rhs)
     {
-        if (Object == _Rhs)
+        if (m_Object == rhs)
             return;
-        if (Object)
-            Object->RemoveRef();
-        Object = _Rhs;
+        if (m_Object)
+            m_Object->RemoveRef();
+        m_Object = rhs;
     }
 
     T* Detach()
     {
-        T* ptr = Object;
-        Object = nullptr;
+        T* ptr = m_Object;
+        m_Object = nullptr;
         return ptr;
     }
 
 private:
-    T* Object;
+    T* m_Object{};
 };
 
+
+class WeakReference
+{
+protected:
+    WeakReference() = default;
+
+    template <typename T>
+    void ResetWeakRef(T* pObject)
+    {
+        T* Cur = m_WeakRefCounter ? (T*)m_WeakRefCounter->Object : nullptr;
+
+        if (Cur == pObject)
+        {
+            return;
+        }
+
+        RemoveWeakRef<T>();
+
+        if (!pObject)
+        {
+            return;
+        }
+
+        m_WeakRefCounter = pObject->GetWeakRefCounter();
+        if (!m_WeakRefCounter)
+        {
+            m_WeakRefCounter           = AllocateWeakRefCounter();
+            m_WeakRefCounter->Object   = pObject;
+            m_WeakRefCounter->RefCount = 1;
+            pObject->SetWeakRefCounter(m_WeakRefCounter);
+        }
+        else
+        {
+            m_WeakRefCounter->RefCount++;
+        }
+    }
+
+    template <typename T>
+    void RemoveWeakRef()
+    {
+        if (m_WeakRefCounter)
+        {
+            if (--m_WeakRefCounter->RefCount == 0)
+            {
+                if (m_WeakRefCounter->Object)
+                {
+                    ((T*)m_WeakRefCounter->Object)->SetWeakRefCounter(nullptr);
+                }
+                DeallocateWeakRefCounter(m_WeakRefCounter);
+            }
+            m_WeakRefCounter = nullptr;
+        }
+    }
+
+    WeakRefCounter* m_WeakRefCounter{};
+
+private:
+    WeakRefCounter* AllocateWeakRefCounter();
+
+    void DeallocateWeakRefCounter(WeakRefCounter* pRefCounter);
+};
 
 /**
 
@@ -307,96 +374,31 @@ TWeakRef
 Weak pointer
 
 */
-
-class AWeakReference
-{
-protected:
-    AWeakReference() :
-        WeakRefCounter(nullptr)
-    {
-    }
-
-    template <typename T>
-    void ResetWeakRef(T* _Object)
-    {
-        T* Cur = WeakRefCounter ? (T*)WeakRefCounter->Object : nullptr;
-
-        if (Cur == _Object)
-        {
-            return;
-        }
-
-        RemoveWeakRef<T>();
-
-        if (!_Object)
-        {
-            return;
-        }
-
-        WeakRefCounter = _Object->GetWeakRefCounter();
-        if (!WeakRefCounter)
-        {
-            WeakRefCounter           = AllocateWeakRefCounter();
-            WeakRefCounter->Object   = _Object;
-            WeakRefCounter->RefCount = 1;
-            _Object->SetWeakRefCounter(WeakRefCounter);
-        }
-        else
-        {
-            WeakRefCounter->RefCount++;
-        }
-    }
-
-    template <typename T>
-    void RemoveWeakRef()
-    {
-        if (WeakRefCounter)
-        {
-            if (--WeakRefCounter->RefCount == 0)
-            {
-                if (WeakRefCounter->Object)
-                {
-                    ((T*)WeakRefCounter->Object)->SetWeakRefCounter(nullptr);
-                }
-                DeallocateWeakRefCounter(WeakRefCounter);
-            }
-            WeakRefCounter = nullptr;
-        }
-    }
-
-    SWeakRefCounter* WeakRefCounter;
-
-private:
-    SWeakRefCounter* AllocateWeakRefCounter();
-
-    void DeallocateWeakRefCounter(SWeakRefCounter* _Counter);
-};
-
 template <typename T>
-class TWeakRef final : public AWeakReference
+class TWeakRef final : public WeakReference
 {
 public:
-    TWeakRef() {}
+    TWeakRef() = default;
 
-    TWeakRef(TWeakRef<T> const& _Rhs)
+    TWeakRef(TWeakRef<T> const& rhs)
     {
-        ResetWeakRef(_Rhs.IsExpired() ? nullptr : const_cast<T*>(_Rhs.GetObject()));
+        ResetWeakRef(rhs.IsExpired() ? nullptr : const_cast<T*>(rhs.GetObject()));
     }
 
-    TWeakRef(TRef<T> const& _Rhs)
+    TWeakRef(TRef<T> const& rhs)
     {
-        ResetWeakRef(const_cast<T*>(_Rhs.GetObject()));
+        ResetWeakRef(const_cast<T*>(rhs.GetObject()));
     }
 
-    explicit TWeakRef(T* _Object)
+    explicit TWeakRef(T* pObject)
     {
-        ResetWeakRef(_Object);
+        ResetWeakRef(pObject);
     }
 
-    TWeakRef(TWeakRef<T>&& _Rhs)
+    TWeakRef(TWeakRef<T>&& rhs)
     {
-        WeakRefCounter      = _Rhs.WeakRefCounter;
-        _Rhs.WeakRefCounter = nullptr;
+        m_WeakRefCounter      = rhs.m_WeakRefCounter;
+        rhs.m_WeakRefCounter = nullptr;
     }
 
     ~TWeakRef()
@@ -411,12 +413,12 @@ public:
 
     T* GetObject()
     {
-        return WeakRefCounter ? static_cast<T*>(WeakRefCounter->Object) : nullptr;
+        return m_WeakRefCounter ? static_cast<T*>(m_WeakRefCounter->Object) : nullptr;
     }
 
     T const* GetObject() const
     {
-        return WeakRefCounter ? static_cast<T*>(WeakRefCounter->Object) : nullptr;
+        return m_WeakRefCounter ? static_cast<T*>(m_WeakRefCounter->Object) : nullptr;
     }
 
     //    operator bool() const
@@ -449,7 +451,7 @@ public:
 
     bool IsExpired() const
     {
-        return !WeakRefCounter || static_cast<T*>(WeakRefCounter->Object) == nullptr;
+        return !m_WeakRefCounter || static_cast<T*>(m_WeakRefCounter->Object) == nullptr;
     }
 
     void Reset()
@@ -457,32 +459,32 @@ public:
         RemoveWeakRef<T>();
     }
 
-    void operator=(T* _Object)
+    void operator=(T* pObject)
     {
-        ResetWeakRef(_Object);
+        ResetWeakRef(pObject);
     }
 
-    void operator=(TRef<T> const& _Rhs)
+    void operator=(TRef<T> const& rhs)
     {
-        ResetWeakRef(const_cast<T*>(_Rhs.GetObject()));
+        ResetWeakRef(const_cast<T*>(rhs.GetObject()));
     }
 
-    void operator=(TWeakRef<T> const& _Rhs)
+    void operator=(TWeakRef<T> const& rhs)
     {
-        ResetWeakRef(_Rhs.IsExpired() ? nullptr : const_cast<T*>(_Rhs.GetObject()));
+        ResetWeakRef(rhs.IsExpired() ? nullptr : const_cast<T*>(rhs.GetObject()));
     }
 
-    TWeakRef<T>& operator=(TWeakRef<T>&& _Rhs)
+    TWeakRef<T>& operator=(TWeakRef<T>&& rhs)
     {
-        if (*this == _Rhs)
+        if (*this == rhs)
         {
             return *this;
         }
 
         Reset();
 
-        WeakRefCounter      = _Rhs.WeakRefCounter;
-        _Rhs.WeakRefCounter = nullptr;
+        m_WeakRefCounter      = rhs.m_WeakRefCounter;
+        rhs.m_WeakRefCounter = nullptr;
 
         return *this;
     }
@@ -554,8 +556,8 @@ public:
     TUniqueRef& operator=(TUniqueRef<T> const&) = delete;
 
     template <typename T2>
-    TUniqueRef(TUniqueRef<T2>&& _Rhs) :
-        Object(_Rhs.Detach())
+    TUniqueRef(TUniqueRef<T2>&& rhs) :
+        Object(rhs.Detach())
     {}
 
     ~TUniqueRef()
@@ -564,9 +566,9 @@ public:
     }
 
     template <typename T2>
-    TUniqueRef& operator=(TUniqueRef<T2>&& _Rhs)
+    TUniqueRef& operator=(TUniqueRef<T2>&& rhs)
     {
-        Reset(_Rhs.Detach());
+        Reset(rhs.Detach());
         return *this;
     }
 
@@ -583,15 +585,15 @@ public:
     }
 
     template <typename U>
-    bool operator==(TUniqueRef<U> const& _Rhs)
+    bool operator==(TUniqueRef<U> const& rhs)
     {
-        return Object == _Rhs.Object;
+        return Object == rhs.Object;
     }
 
     template <typename U>
-    bool operator!=(TUniqueRef<U> const& _Rhs)
+    bool operator!=(TUniqueRef<U> const& rhs)
     {
-        return Object != _Rhs.Object;
+        return Object != rhs.Object;
     }
 
     operator bool() const

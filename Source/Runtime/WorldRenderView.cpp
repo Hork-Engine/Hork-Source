@@ -35,8 +35,6 @@ SOFTWARE.
 HK_CLASS_META(WorldRenderView)
 HK_CLASS_META(ColorGradingParameters)
 
-void WorldRenderView::TextureViewImpl::ThisClassMeta::RegisterProperties() {}
-
 ColorGradingParameters::ColorGradingParameters()
 {
     SetDefaults();
@@ -178,7 +176,7 @@ ATextureView* WorldRenderView::GetTextureView()
 {
     if (m_WorldViewTex.IsExpired())
     {
-        m_WorldViewTex = CreateInstanceOf<TextureViewImpl>(this);
+        m_WorldViewTex = NewObj<TextureViewImpl>(this);
         m_WorldViewTex->SetViewport(m_Width, m_Height);
 
         if (m_RenderTarget)
@@ -187,7 +185,7 @@ ATextureView* WorldRenderView::GetTextureView()
         }
     }
 
-    AGarbageCollector::KeepPointerAlive(m_WorldViewTex);
+    GarbageCollector::KeepPointerAlive(m_WorldViewTex);
 
     return m_WorldViewTex;
 }

@@ -31,8 +31,6 @@ SOFTWARE.
 #include "BaseObject.h"
 #include <Core/IntrusiveLinkedListMacro.h>
 
-HK_CLASS_META(ABaseObject)
-
 uint64_t ABaseObject::m_TotalObjects = 0;
 
 ABaseObject* ABaseObject::m_Objects   = nullptr;
@@ -44,41 +42,13 @@ ABaseObject::ABaseObject() :
     Id(++GUniqueIdGenerator)
 {
     INTRUSIVE_ADD(this, m_NextObject, m_PrevObject, m_Objects, m_ObjectsTail);
-    m_TotalObjects++;
-    AGarbageCollector::AddObject(this);
+    m_TotalObjects++;    
 }
 
 ABaseObject::~ABaseObject()
 {
     INTRUSIVE_REMOVE(this, m_NextObject, m_PrevObject, m_Objects, m_ObjectsTail);
-
-    m_TotalObjects--;
-
-    if (m_WeakRefCounter)
-    {
-        m_WeakRefCounter->Object = nullptr;
-    }
-}
-
-void ABaseObject::AddRef()
-{
-    HK_ASSERT_(m_RefCount != -666, "Calling AddRef() in destructor");
-    ++m_RefCount;
-    if (m_RefCount == 1)
-    {
-        AGarbageCollector::RemoveObject(this);
-    }
-}
-
-void ABaseObject::RemoveRef()
-{
-    HK_ASSERT_(m_RefCount != -666, "Calling RemoveRef() in destructor");
-    if (--m_RefCount == 0)
-    {
-        AGarbageCollector::AddObject(this);
-        return;
-    }
-    HK_ASSERT(m_RefCount > 0);
+    m_TotalObjects--;    
 }
 
 ABaseObject* ABaseObject::FindObject(uint64_t _Id)
@@ -156,59 +126,4 @@ AProperty const* ABaseObject::FindProperty(AStringView PropertyName, bool bRecur
 void ABaseObject::GetProperties(TPodVector<AProperty const*>& Properties, bool bRecursive) const
 {
     FinalClassMeta().GetProperties(Properties, bRecursive);
-}
-
-ABaseObject* AGarbageCollector::m_GarbageObjects     = nullptr;
-ABaseObject* AGarbageCollector::m_GarbageObjectsTail = nullptr;
-TVector<ABaseObject*> AGarbageCollector::m_KeepAlivePtrs;
-
-void AGarbageCollector::AddObject(ABaseObject* _Object)
-{
-    INTRUSIVE_ADD(_Object, m_NextGarbageObject, m_PrevGarbageObject, m_GarbageObjects, m_GarbageObjectsTail)
-}
-
-void AGarbageCollector::RemoveObject(ABaseObject* _Object)
-{
-    INTRUSIVE_REMOVE(_Object, m_NextGarbageObject, m_PrevGarbageObject, m_GarbageObjects, m_GarbageObjectsTail)
-}
-
-void AGarbageCollector::Shutdown()
-{
-    ClearPointers();
-    DeallocateObjects();
-    m_KeepAlivePtrs.Free();
-}
-
-void AGarbageCollector::DeallocateObjects()
-{
-    while (m_GarbageObjects)
-    {
-        ABaseObject* object = m_GarbageObjects;
-
-        // Mark RefCount to prevent using of AddRef/RemoveRef in the object destructor
-        object->m_RefCount = -666;
-
-        RemoveObject(object);
-
-        delete object;
-    }
-
-    m_GarbageObjectsTail = nullptr;
-
-    ClearPointers();
-}
-
-void AGarbageCollector::KeepPointerAlive(ABaseObject* pObject)
-{
-    m_KeepAlivePtrs.Add(pObject);
-    pObject->AddRef();
-}
-
-void AGarbageCollector::ClearPointers()
-{
-    for (ABaseObject* ptr : m_KeepAlivePtrs)
-    {
-        ptr->RemoveRef();
-    }
-    m_KeepAlivePtrs.Clear();
 }

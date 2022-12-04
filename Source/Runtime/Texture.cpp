@@ -49,9 +49,6 @@ static const char* TextureTypeName[] =
 
 HK_CLASS_META(ATexture)
 
-void ATextureView::ThisClassMeta::RegisterProperties() {}
-void ATexture::TextureViewImpl::ThisClassMeta::RegisterProperties() {}
-
 bool ATexture::InitializeFromImage(ImageStorage const& Image)
 {
     if (!Image)

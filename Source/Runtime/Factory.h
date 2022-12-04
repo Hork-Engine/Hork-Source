@@ -30,16 +30,13 @@ SOFTWARE.
 
 #pragma once
 
-#include <Platform/Memory/Memory.h>
-#include <Core/HashFunc.h>
-#include <Core/Ref.h>
 #include <Containers/Hash.h>
-#include <Containers/Vector.h>
 #include "Variant.h"
+#include "GarbageCollector.h"
 
 class AClassMeta;
 class AProperty;
-class ADummy;
+class ABaseObject;
 
 class AObjectFactory final
 {
@@ -53,8 +50,8 @@ public:
 
     const char* GetTag() const { return Tag; }
 
-    ADummy* CreateInstance(AStringView ClassName) const;
-    ADummy* CreateInstance(uint64_t ClassId) const;
+    ABaseObject* CreateInstance(AStringView ClassName) const;
+    ABaseObject* CreateInstance(uint64_t ClassId) const;
 
     AClassMeta const* GetClassList() const;
 
@@ -115,9 +112,9 @@ public:
         return IsSubclassOf(Superclass::ClassMeta());
     }
 
-    virtual ADummy* CreateInstance() const = 0;
+    virtual ABaseObject* CreateInstance() const = 0;
 
-    static void CloneProperties(ADummy const* Template, ADummy* Destination);
+    static void CloneProperties(ABaseObject const* Template, ABaseObject* Destination);
 
     static AObjectFactory& DummyFactory()
     {
@@ -144,7 +141,7 @@ protected:
     }
 
 private:
-    static void CloneProperties_r(AClassMeta const* Meta, ADummy const* Template, ADummy* Destination);
+    static void CloneProperties_r(AClassMeta const* Meta, ABaseObject const* Template, ABaseObject* Destination);
 
     const char*           ClassName;
     AClassMeta*           pNext;
@@ -154,13 +151,13 @@ private:
     AProperty const*      PropertyListTail;
 };
 
-HK_FORCEINLINE ADummy* AObjectFactory::CreateInstance(AStringView ClassName) const
+HK_FORCEINLINE ABaseObject* AObjectFactory::CreateInstance(AStringView ClassName) const
 {
     AClassMeta const* classMeta = LookupClass(ClassName);
     return classMeta ? classMeta->CreateInstance() : nullptr;
 }
 
-HK_FORCEINLINE ADummy* AObjectFactory::CreateInstance(uint64_t ClassId) const
+HK_FORCEINLINE ABaseObject* AObjectFactory::CreateInstance(uint64_t ClassId) const
 {
     AClassMeta const* classMeta = LookupClass(ClassId);
     return classMeta ? classMeta->CreateInstance() : nullptr;
@@ -219,9 +216,9 @@ class AProperty
     HK_FORBID_COPY(AProperty)
 
 public:
-    using SetterFun = void (*)(ADummy*, AVariant const&);
-    using GetterFun = AVariant (*)(ADummy const*);
-    using CopyFun   = void (*)(ADummy*, ADummy const*);
+    using SetterFun = void (*)(ABaseObject*, AVariant const&);
+    using GetterFun = AVariant (*)(ABaseObject const*);
+    using CopyFun   = void (*)(ABaseObject*, ABaseObject const*);
 
     AProperty(AClassMeta const& ClassMeta, VARIANT_TYPE Type, SEnumDef const* EnumDef, const char* Name, SetterFun Setter, GetterFun Getter, CopyFun Copy, SPropertyRange const& Range, HK_PROPERTY_FLAGS Flags) :
         Type(Type),
@@ -247,22 +244,22 @@ public:
         classMeta.PropertyListTail = this;
     }
 
-    void SetValue(ADummy* pObject, AVariant const& Value) const
+    void SetValue(ABaseObject* pObject, AVariant const& Value) const
     {
         Setter(pObject, Value);
     }
 
-    void SetValue(ADummy* pObject, AStringView Value) const
+    void SetValue(ABaseObject* pObject, AStringView Value) const
     {
         SetValue(pObject, AVariant(GetType(), GetEnum(), Value));
     }
 
-    AVariant GetValue(ADummy const* pObject) const
+    AVariant GetValue(ABaseObject const* pObject) const
     {
         return Getter(pObject);
     }
 
-    void CopyValue(ADummy* Dst, ADummy const* Src) const
+    void CopyValue(ABaseObject* Dst, ABaseObject const* Src) const
     {
         return Copy(Dst, Src);
     }
@@ -368,11 +365,11 @@ public:                                              \
     HK_FACTORY_CLASS(AClassMeta::DummyFactory(), Class, SuperClass)
 
 #define HK_FACTORY_CLASS(Factory, Class, SuperClass) \
-    HK_FACTORY_CLASS_A(Factory, Class, SuperClass, ADummy::Allocator)
+    HK_FACTORY_CLASS_A(Factory, Class, SuperClass, ABaseObject::Allocator)
 
 #define HK_FACTORY_CLASS_A(Factory, Class, SuperClass, _Allocator)                      \
     HK_FORBID_COPY(Class)                                                               \
-    friend class ADummy;                                                                \
+    friend class ABaseObject;                                                                \
                                                                                         \
 public:                                                                                 \
     typedef SuperClass Super;                                                           \
@@ -385,7 +382,7 @@ public:                                                                         
         {                                                                               \
             RegisterProperties();                                                       \
         }                                                                               \
-        ADummy* CreateInstance() const override                                         \
+        ABaseObject* CreateInstance() const override                                         \
         {                                                                               \
             return new ThisClass;                                                       \
         }                                                                               \
@@ -419,17 +416,17 @@ private:
             VariantTraits::GetVariantType<PropertyType>(),                                             \
             VariantTraits::GetVariantEnum<PropertyType>(),                                             \
             #Property,                                                                                 \
-            [](ADummy* pObject, AVariant const& Value) {                                               \
+            [](ABaseObject* pObject, AVariant const& Value) {                                          \
                 auto* pValue = Value.Get<PropertyType>();                                              \
                 if (pValue)                                                                            \
                 {                                                                                      \
                     static_cast<ThisClass*>(pObject)->Property = *pValue;                              \
                 }                                                                                      \
             },                                                                                         \
-            [](ADummy const* pObject) -> AVariant {                                                    \
+            [](ABaseObject const* pObject) -> AVariant {                                               \
                 return static_cast<ThisClass const*>(pObject)->Property;                               \
             },                                                                                         \
-            [](ADummy* Dst, ADummy const* Src) {                                                       \
+            [](ABaseObject* Dst, ABaseObject const* Src) {                                             \
                 static_cast<ThisClass*>(Dst)->Property = static_cast<ThisClass const*>(Src)->Property; \
             },                                                                                         \
             Range,                                                                                     \
@@ -456,17 +453,17 @@ struct RemoveCVRef
             VariantTraits::GetVariantType<PropertyType>(),                                                          \
             VariantTraits::GetVariantEnum<PropertyType>(),                                                          \
             #Property,                                                                                              \
-            [](ADummy* pObject, AVariant const& Value) {                                                            \
+            [](ABaseObject* pObject, AVariant const& Value) {                                                       \
                 auto* pValue = Value.Get<PropertyType>();                                                           \
                 if (pValue)                                                                                         \
                 {                                                                                                   \
                     static_cast<ThisClass*>(pObject)->Setter(*pValue);                                              \
                 }                                                                                                   \
             },                                                                                                      \
-            [](ADummy const* pObject) -> AVariant {                                                                 \
+            [](ABaseObject const* pObject) -> AVariant {                                                            \
                 return static_cast<ThisClass const*>(pObject)->Getter();                                            \
             },                                                                                                      \
-            [](ADummy* Dst, ADummy const* Src) {                                                                    \
+            [](ABaseObject* Dst, ABaseObject const* Src) {                                                          \
                 static_cast<ThisClass*>(Dst)->Setter(static_cast<ThisClass const*>(Src)->Getter());                 \
             },                                                                                                      \
             Range,                                                                                                  \
@@ -475,67 +472,3 @@ struct RemoveCVRef
 
 /** Provides access to a property via a setter/getter. */
 #define HK_PROPERTY(Property, Setter, Getter, Flags) HK_PROPERTY_RANGE(Property, Setter, Getter, Flags, RangeUnbound())
-
-
-template <typename T, typename... TArgs>
-T* CreateInstanceOf(TArgs&&... Args)
-{
-    return new T(std::forward<TArgs>(Args)...);
-}
-
-/**
-
-ADummy
-
-Base factory object class.
-
-*/
-class ADummy
-{
-    HK_FORBID_COPY(ADummy)
-
-public:
-    typedef ADummy         ThisClass;
-    typedef Allocators::HeapMemoryAllocator<HEAP_WORLD_OBJECTS> Allocator;
-    class ThisClassMeta : public AClassMeta
-    {
-    public:
-        ThisClassMeta() :
-            AClassMeta(AClassMeta::DummyFactory(), "ADummy", nullptr)
-        {
-        }
-
-        ADummy* CreateInstance() const override
-        {
-            return CreateInstanceOf<ThisClass>();
-        }
-
-    private:
-       // void RegisterProperties();
-    };
-
-    ADummy() {}
-    virtual ~ADummy() {}
-
-    _HK_GENERATED_CLASS_BODY()
-};
-
-template <typename T>
-T* Upcast(ADummy* Object)
-{
-    if (Object && Object->FinalClassMeta().IsSubclassOf<T>())
-    {
-        return static_cast<T*>(Object);
-    }
-    return nullptr;
-}
-
-template <typename T>
-T const* Upcast(ADummy const* Object)
-{
-    if (Object && Object->FinalClassMeta().IsSubclassOf<T>())
-    {
-        return static_cast<T const*>(Object);
-    }
-    return nullptr;
-}

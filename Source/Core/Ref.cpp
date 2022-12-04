@@ -30,12 +30,12 @@ SOFTWARE.
 
 #include <Core/Ref.h>
 
-SWeakRefCounter* AWeakReference::AllocateWeakRefCounter()
+WeakRefCounter* WeakReference::AllocateWeakRefCounter()
 {
-    return new SWeakRefCounter;
+    return new WeakRefCounter;
 }
 
-void AWeakReference::DeallocateWeakRefCounter(SWeakRefCounter* _RefCounter)
+void WeakReference::DeallocateWeakRefCounter(WeakRefCounter* pRefCounter)
 {
-    delete _RefCounter;
+    delete pRefCounter;
 }

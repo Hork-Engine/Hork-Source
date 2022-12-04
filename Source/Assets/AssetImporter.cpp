@@ -1113,7 +1113,7 @@ void AssetImporter::ReadMaterial(cgltf_material* Material)
             texView = nullptr;
         }
 
-        MGMaterialGraph * graph = CreateInstanceOf< MGMaterialGraph >();
+        MGMaterialGraph * graph = NewObj< MGMaterialGraph >();
 
         if ( texView ) {
             MGInTexCoord * inTexCoordBlock = graph->AddNode< MGInTexCoord >();
@@ -2211,12 +2211,12 @@ void AssetImporter::WriteSingleModel()
     //    subparts[i].IndexCount = m_Meshes[i].IndexCount;
     //}
 
-    //ACollisionTriangleSoupData * tris = CreateInstanceOf< ACollisionTriangleSoupData >();
+    //ACollisionTriangleSoupData * tris = NewObj< ACollisionTriangleSoupData >();
 
     //tris->Initialize( (float *)&m_Vertices.ToPtr()->Position, sizeof( m_Vertices[0] ), m_Vertices.Size(),
     //    m_Indices.ToPtr(), m_Indices.Size(), subparts.ToPtr(), subparts.Size(), BoundingBox );
 
-    //ACollisionTriangleSoupBVHData * bvh = CreateInstanceOf< ACollisionTriangleSoupBVHData >();
+    //ACollisionTriangleSoupBVHData * bvh = NewObj< ACollisionTriangleSoupBVHData >();
     //bvh->TrisData = tris;
     //bvh->BuildBVH();
     //bvh->Write( f );

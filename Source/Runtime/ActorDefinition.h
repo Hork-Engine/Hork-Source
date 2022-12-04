@@ -66,7 +66,7 @@ public:
 
     static AActorDefinition* CreateFromDocument(ADocument const& Document)
     {
-        AActorDefinition* def = CreateInstanceOf<AActorDefinition>();
+        AActorDefinition* def = NewObj<AActorDefinition>();
         def->InitializeFromDocument(Document);
         return def;
     }

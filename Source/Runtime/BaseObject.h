@@ -33,32 +33,40 @@ SOFTWARE.
 #include "Factory.h"
 
 #include <Core/Document.h>
-#include <Core/Ref.h>
-#include <Containers/Vector.h>
 
-struct SWeakRefCounter;
 
 /**
 
 ABaseObject
 
 Base object class.
-Cares of reference counting, garbage collecting and little basic functionality.
 
 */
-class ABaseObject : public ADummy
+class ABaseObject : public GCObject
 {
-    HK_CLASS(ABaseObject, ADummy)
-
-    friend class AGarbageCollector;
-    friend class AWeakReference;
-
 public:
+    typedef ABaseObject                                         ThisClass;
+    typedef Allocators::HeapMemoryAllocator<HEAP_WORLD_OBJECTS> Allocator;
+    class ThisClassMeta : public AClassMeta
+    {
+    public:
+        ThisClassMeta() :
+            AClassMeta(AClassMeta::DummyFactory(), "ABaseObject", nullptr)
+        {}
+
+        ABaseObject* CreateInstance() const override
+        {
+            return NewObj<ThisClass>();
+        }
+    };
+
+    _HK_GENERATED_CLASS_BODY()
+
     /** Object unique identifier */
     const uint64_t Id;
 
     ABaseObject();
-    virtual ~ABaseObject();
+    ~ABaseObject();
 
     void SetProperties(TStringHashMap<AString> const& Properties);
 
@@ -70,25 +78,11 @@ public:
 
     void GetProperties(TPodVector<AProperty const*>& Properties, bool bRecursive = true) const;
 
-    /** Add reference */
-    void AddRef();
-
-    /** Remove reference */
-    void RemoveRef();
-
-    int GetRefCount() const { return m_RefCount; }
-
     /** Set object debug/editor or ingame name */
     void SetObjectName(AStringView Name) { m_Name = Name; }
 
     /** Get object debug/editor or ingame name */
     AString const& GetObjectName() const { return m_Name; }
-
-    /** Set weakref counter. Used by TWeakRef */
-    void SetWeakRefCounter(SWeakRefCounter* _RefCounter) { m_WeakRefCounter = _RefCounter; }
-
-    /** Get weakref counter. Used by TWeakRef */
-    SWeakRefCounter* GetWeakRefCounter() { return m_WeakRefCounter; }
 
     /** Get total existing objects */
     static uint64_t GetTotalObjects() { return m_TotalObjects; }
@@ -116,18 +110,9 @@ private:
     /** Custom object name */
     AString m_Name;
 
-    /** Current refs count for this object */
-    int m_RefCount{};
-
-    SWeakRefCounter* m_WeakRefCounter{};
-
     /** Object global list */
     ABaseObject* m_NextObject{};
     ABaseObject* m_PrevObject{};
-
-    /** Used by garbage collector to add this object to garbage list */
-    ABaseObject* m_NextGarbageObject{};
-    ABaseObject* m_PrevGarbageObject{};
 
     /** Total existing objects */
     static uint64_t m_TotalObjects;
@@ -141,44 +126,30 @@ private:
 Utilites
 
 */
-HK_FORCEINLINE bool IsSame(ABaseObject const* _First, ABaseObject const* _Second)
+HK_FORCEINLINE bool IsSame(ABaseObject const* lhs, ABaseObject const* rhs)
 {
-    return ((!_First && !_Second) || (_First && _Second && _First->Id == _Second->Id));
+    return ((!lhs && !rhs) || (lhs && rhs && lhs->Id == rhs->Id));
 }
 
-/**
-
-AGarbageCollector
-
-Cares of garbage collecting and removing
-
-*/
-class AGarbageCollector final
+template <typename T>
+T* Upcast(ABaseObject* pObject)
 {
-    HK_FORBID_COPY(AGarbageCollector)
+    if (pObject && pObject->FinalClassMeta().IsSubclassOf<T>())
+    {
+        return static_cast<T*>(pObject);
+    }
+    return nullptr;
+}
 
-    friend class ABaseObject;
-
-public:
-    static void Shutdown();
-
-    /** Deallocates all collected objects */
-    static void DeallocateObjects();
-
-    static void KeepPointerAlive(ABaseObject* pObject);
-
-private:
-    /** Add object to remove it at next DeallocateObjects() call */
-    static void AddObject(ABaseObject* pObject);
-    static void RemoveObject(ABaseObject* pObject);
-
-    static void ClearPointers();
-
-    static ABaseObject* m_GarbageObjects;
-    static ABaseObject* m_GarbageObjectsTail;
-
-    static TVector<ABaseObject*> m_KeepAlivePtrs;
-};
+template <typename T>
+T const* Upcast(ABaseObject const* pObject)
+{
+    if (pObject && pObject->FinalClassMeta().IsSubclassOf<T>())
+    {
+        return static_cast<T const*>(pObject);
+    }
+    return nullptr;
+}
 
 /**
 
@@ -193,58 +164,58 @@ struct TCallback;
 template <typename TReturn, typename... TArgs>
 struct TCallback<TReturn(TArgs...)>
 {
-    TCallback() {}
+    TCallback() = default;
 
     template <typename T>
     TCallback(T* _Object, TReturn (T::*_Method)(TArgs...)) :
-        Object(_Object), Method((void (ABaseObject::*)(TArgs...))_Method)
+        m_Object(_Object), m_Method((void(ABaseObject::*)(TArgs...))_Method)
     {
     }
 
     template <typename T>
     TCallback(TRef<T>& _Object, TReturn (T::*_Method)(TArgs...)) :
-        Object(_Object), Method((void (ABaseObject::*)(TArgs...))_Method)
+        m_Object(_Object), m_Method((void(ABaseObject::*)(TArgs...))_Method)
     {
     }
 
     template <typename T>
     void Set(T* _Object, TReturn (T::*_Method)(TArgs...))
     {
-        Object = _Object;
-        Method = (void (ABaseObject::*)(TArgs...))_Method;
+        m_Object = _Object;
+        m_Method = (void(ABaseObject::*)(TArgs...))_Method;
     }
 
     void Clear()
     {
-        Object.Reset();
+        m_Object.Reset();
     }
 
     bool IsValid() const
     {
-        return !Object.IsExpired();
+        return !m_Object.IsExpired();
     }
 
     void operator=(TCallback<TReturn(TArgs...)> const& _Callback)
     {
-        Object = _Callback.Object;
-        Method = _Callback.Method;
+        m_Object = _Callback.m_Object;
+        m_Method = _Callback.m_Method;
     }
 
     TReturn operator()(TArgs... _Args) const
     {
-        ABaseObject* pObject = Object;
+        ABaseObject* pObject = m_Object;
         if (pObject)
         {
-            return (pObject->*Method)(std::forward<TArgs>(_Args)...);
+            return (pObject->*m_Method)(std::forward<TArgs>(_Args)...);
         }
         return TReturn();
     }
 
-    ABaseObject* GetObject() { return Object.GetObject(); }
+    ABaseObject* GetObject() { return m_Object.GetObject(); }
 
 protected:
-    TWeakRef<ABaseObject> Object;
-    TReturn (ABaseObject::*Method)(TArgs...);
+    TWeakRef<ABaseObject> m_Object;
+    TReturn (ABaseObject::*m_Method)(TArgs...);
 };
 
 
@@ -260,7 +231,7 @@ struct TEvent
 
     using Callback = TCallback<void(TArgs...)>;
 
-    TEvent() {}
+    TEvent() = default;
 
     ~TEvent()
     {
@@ -271,7 +242,7 @@ struct TEvent
     void Add(T* _Object, void (T::*_Method)(TArgs...))
     {
         // Add callback
-        Callbacks.EmplaceBack(_Object, _Method);
+        m_Callbacks.EmplaceBack(_Object, _Method);
     }
 
     template <typename T>
@@ -281,9 +252,9 @@ struct TEvent
         {
             return;
         }
-        for (int i = (int)Callbacks.Size() - 1; i >= 0; i--)
+        for (int i = (int)m_Callbacks.Size() - 1; i >= 0; i--)
         {
-            Callback& callback = Callbacks[i];
+            Callback& callback = m_Callbacks[i];
 
             if (callback.GetObject() == _Object)
             {
@@ -294,12 +265,12 @@ struct TEvent
 
     void RemoveAll()
     {
-        Callbacks.Clear();
+        m_Callbacks.Clear();
     }
 
     bool HasCallbacks() const
     {
-        return !Callbacks.IsEmpty();
+        return !m_Callbacks.IsEmpty();
     }
 
     operator bool() const
@@ -309,17 +280,17 @@ struct TEvent
 
     void Dispatch(TArgs... _Args)
     {
-        for (int i = 0; i < Callbacks.Size();)
+        for (int i = 0; i < m_Callbacks.Size();)
         {
-            if (Callbacks[i].IsValid())
+            if (m_Callbacks[i].IsValid())
             {
                 // Invoke
-                Callbacks[i++](std::forward<TArgs>(_Args)...);
+                m_Callbacks[i++](std::forward<TArgs>(_Args)...);
             }
             else
             {
                 // Cleanup
-                Callbacks.Erase(Callbacks.begin() + i);
+                m_Callbacks.Erase(m_Callbacks.begin() + i);
             }
         }
     }
@@ -327,25 +298,25 @@ struct TEvent
     template <typename TConditionalCallback>
     void DispatchConditional(TConditionalCallback const& _Condition, TArgs... _Args)
     {
-        for (int i = 0; i < Callbacks.Size();)
+        for (int i = 0; i < m_Callbacks.Size();)
         {
-            if (Callbacks[i].IsValid())
+            if (m_Callbacks[i].IsValid())
             {
                 // Invoke
                 if (_Condition())
                 {
-                    Callbacks[i](std::forward<TArgs>(_Args)...);
+                    m_Callbacks[i](std::forward<TArgs>(_Args)...);
                 }
                 i++;
             }
             else
             {
                 // Cleanup
-                Callbacks.Erase(Callbacks.begin() + i);
+                m_Callbacks.Erase(m_Callbacks.begin() + i);
             }
         }
     }
 
 private:
-    TVector<Callback> Callbacks;
+    TVector<Callback> m_Callbacks;
 };

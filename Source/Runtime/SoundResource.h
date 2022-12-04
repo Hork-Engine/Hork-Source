@@ -68,7 +68,7 @@ public:
     /** Initialize from memory */
     static ASoundResource* CreateFromMemory(AStringView Path, BlobRef Memory, SSoundCreateInfo const& CreateInfo = {})
     {
-        ASoundResource* sound = CreateInstanceOf<ASoundResource>();
+        ASoundResource* sound = NewObj<ASoundResource>();
         sound->InitializeFromMemory(Path, Memory, CreateInfo);
         return sound;
     }

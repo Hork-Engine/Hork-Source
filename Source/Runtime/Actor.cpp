@@ -275,7 +275,7 @@ ATimer* AActor::AddTimer(TCallback<void()> const& Callback)
         return {};
     }
 
-    ATimer* timer = CreateInstanceOf<ATimer>();
+    ATimer* timer = NewObj<ATimer>();
     timer->AddRef();
     timer->Callback = Callback;
 

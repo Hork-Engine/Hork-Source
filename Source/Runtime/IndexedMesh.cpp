@@ -63,7 +63,7 @@ AIndexedMesh::~AIndexedMesh()
 
 AIndexedMesh* AIndexedMesh::Create(int NumVertices, int NumIndices, int NumSubparts, bool bSkinnedMesh)
 {
-    AIndexedMesh* mesh = CreateInstanceOf<AIndexedMesh>();
+    AIndexedMesh* mesh = NewObj<AIndexedMesh>();
     mesh->Initialize(NumVertices, NumIndices, NumSubparts, bSkinnedMesh);
     return mesh;
 }
@@ -95,7 +95,7 @@ void AIndexedMesh::Initialize(int NumVertices, int NumIndices, int NumSubparts, 
     m_Subparts.ResizeInvalidate(NumSubparts);
     for (int i = 0; i < NumSubparts; i++)
     {
-        m_Subparts[i]              = CreateInstanceOf<AIndexedMeshSubpart>();
+        m_Subparts[i]              = new AIndexedMeshSubpart;
         m_Subparts[i]->m_OwnerMesh = this;
     }
 
@@ -255,7 +255,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     m_Subparts.ResizeInvalidate(subpartsCount);
     for (int i = 0; i < m_Subparts.Size(); i++)
     {
-        m_Subparts[i] = CreateInstanceOf<AIndexedMeshSubpart>();
+        m_Subparts[i] = new AIndexedMeshSubpart;
         m_Subparts[i]->Read(meshData);
     }
 
@@ -288,7 +288,7 @@ bool AIndexedMesh::LoadResource(IBinaryStreamReadInterface& Stream)
     m_Sockets.ResizeInvalidate(socketsCount);
     for (int i = 0; i < m_Sockets.Size(); i++)
     {
-        ASocketDef* socket = CreateInstanceOf<ASocketDef>();
+        ASocketDef* socket = new ASocketDef;
         socket->Read(meshData);
         m_Sockets[i] = socket;
     }
@@ -876,7 +876,7 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
 
         SCollisionBoxDef box;
 
-        collisionModel = CreateInstanceOf<ACollisionModel>(&box);
+        collisionModel = NewObj<ACollisionModel>(&box);
     }
     else if (!_Path.Icmp("/Default/Meshes/Sphere"))
     {
@@ -884,7 +884,7 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
 
         SCollisionSphereDef sphere;
 
-        collisionModel = CreateInstanceOf<ACollisionModel>(&sphere);
+        collisionModel = NewObj<ACollisionModel>(&sphere);
     }
     else if (!_Path.Icmp("/Default/Meshes/Cylinder"))
     {
@@ -894,7 +894,7 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
         cylinder.Radius = 0.5f;
         cylinder.Height = 0.5f;
 
-        collisionModel = CreateInstanceOf<ACollisionModel>(&cylinder);
+        collisionModel = NewObj<ACollisionModel>(&cylinder);
     }
     else if (!_Path.Icmp("/Default/Meshes/Cone"))
     {
@@ -903,7 +903,7 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
         SCollisionConeDef cone;
         cone.Radius = 0.5f;
 
-        collisionModel = CreateInstanceOf<ACollisionModel>(&cone);
+        collisionModel = NewObj<ACollisionModel>(&cone);
     }
     else if (!_Path.Icmp("/Default/Meshes/Capsule"))
     {
@@ -912,7 +912,7 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
         SCollisionCapsuleDef capsule;
         capsule.Radius = 0.5f;
 
-        collisionModel = CreateInstanceOf<ACollisionModel>(&capsule);
+        collisionModel = NewObj<ACollisionModel>(&capsule);
     }
     else if (!_Path.Icmp("/Default/Meshes/PlaneXZ"))
     {
@@ -924,7 +924,7 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
         box.HalfExtents.Z = 128;
         box.Position.Y -= box.HalfExtents.Y;
 
-        collisionModel = CreateInstanceOf<ACollisionModel>(&box);
+        collisionModel = NewObj<ACollisionModel>(&box);
     }
     else if (!_Path.Icmp("/Default/Meshes/PlaneXY"))
     {
@@ -936,7 +936,7 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
         box.HalfExtents.Z = 0.1f;
         box.Position.Z -= box.HalfExtents.Z;
 
-        collisionModel = CreateInstanceOf<ACollisionModel>(&box);
+        collisionModel = NewObj<ACollisionModel>(&box);
     }
     else if (!_Path.Icmp("/Default/Meshes/Skybox"))
     {
@@ -977,7 +977,7 @@ void AIndexedMesh::GenerateRigidbodyCollisions()
     bvh.pIndexedMeshSubparts = m_Subparts.ToPtr();
     bvh.SubpartCount         = m_Subparts.Size();
 
-    SetCollisionModel(CreateInstanceOf<ACollisionModel>(&bvh));
+    SetCollisionModel(NewObj<ACollisionModel>(&bvh));
 }
 
 void AIndexedMesh::GenerateSoftbodyFacesFromMeshIndices()

@@ -1038,7 +1038,7 @@ public:
                 }
             }
         }
-        MGNode* node = CreateInstanceOf<T>(std::forward<TArgs>(Args)...);
+        MGNode* node = NewObj<T>(std::forward<TArgs>(Args)...);
         m_Nodes.Add(node);
         node->AddRef();
         node->m_ID = ++m_NodeIdGen;

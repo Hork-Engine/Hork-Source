@@ -4004,7 +4004,7 @@ MGTextureSlot* MGMaterialGraph::GetTexture(uint32_t Slot)
 
     if (!m_TextureSlots[Slot])
     {
-        m_TextureSlots[Slot] = CreateInstanceOf<MGTextureSlot>();
+        m_TextureSlots[Slot] = NewObj<MGTextureSlot>();
         m_TextureSlots[Slot]->AddRef();
         m_TextureSlots[Slot]->m_ID        = ++m_NodeIdGen;
         m_TextureSlots[Slot]->m_SlotIndex = Slot;
@@ -4035,7 +4035,7 @@ MGMaterialGraph* MGMaterialGraph::LoadFromFile(IBinaryStreamReadInterface& Strea
         return nullptr;
     }
 
-    MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+    MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
    
     auto mTextureSlots = document.FindMember("textures");

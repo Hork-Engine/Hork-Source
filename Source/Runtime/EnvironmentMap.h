@@ -46,7 +46,7 @@ public:
 
     static AEnvironmentMap* CreateFromImage(ImageStorage const& Image)
     {
-        AEnvironmentMap* envmap = CreateInstanceOf<AEnvironmentMap>();
+        AEnvironmentMap* envmap = NewObj<AEnvironmentMap>();
         envmap->InitializeFromImage(Image);
         return envmap;
     }

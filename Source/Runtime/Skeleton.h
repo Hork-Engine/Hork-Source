@@ -53,7 +53,7 @@ public:
 
     static ASkeleton* Create(SJoint* Joints, int JointsCount, BvAxisAlignedBox const& BindposeBounds)
     {
-        ASkeleton* skeleton = CreateInstanceOf<ASkeleton>();
+        ASkeleton* skeleton = NewObj<ASkeleton>();
         skeleton->Initialize(Joints, JointsCount, BindposeBounds);
         return skeleton;
     }

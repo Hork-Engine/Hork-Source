@@ -63,11 +63,7 @@ private:
 
     class TextureViewImpl : public ATextureView
     {
-        HK_CLASS(TextureViewImpl, ATextureView)
-
     public:
-        TextureViewImpl() = default; // NOTE: It's really not needed, but the current reflection system requires this constructor.
-
         TextureViewImpl(AFontStash* pFontStash) :
             m_FontStash(pFontStash)
         {}

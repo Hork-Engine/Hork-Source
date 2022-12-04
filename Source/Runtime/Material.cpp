@@ -64,7 +64,7 @@ AMaterial::~AMaterial()
 
 AMaterialInstance* AMaterial::Instantiate()
 {
-    return CreateInstanceOf<AMaterialInstance>(this);
+    return NewObj<AMaterialInstance>(this);
 }
 
 uint32_t AMaterial::GetTextureSlotByName(AStringView Name) const
@@ -128,7 +128,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 {
     if (!Path.Icmp("/Default/Materials/Unlit"))
     {
-        MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
         MGTextureSlot* diffuseTexture = graph->GetTexture(0);
         diffuseTexture->Filter = TEXTURE_FILTER_MIPMAP_TRILINEAR;
@@ -147,7 +147,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Materials/UnlitMask"))
     {
-        MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
         auto& inTexCoord = graph->Add2<MGInTexCoord>();
 
@@ -172,7 +172,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Materials/UnlitOpacity"))
     {
-        MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
         auto& inTexCoord = graph->Add2<MGInTexCoord>();
 
@@ -200,7 +200,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Materials/BaseLight"))
     {
-        MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
         auto& inTexCoord = graph->Add2<MGInTexCoord>();
 
@@ -222,7 +222,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Materials/DefaultPBR"))
     {
-        MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
         auto& inTexCoord = graph->Add2<MGInTexCoord>();
 
@@ -269,7 +269,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Materials/PBRMetallicRoughness"))
     {
-        MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
         auto& inTexCoord = graph->Add2<MGInTexCoord>();
 
@@ -325,7 +325,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Materials/PBRMetallicRoughnessMask"))
     {
-        MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
         auto& inTexCoord = graph->Add2<MGInTexCoord>();
 
@@ -384,7 +384,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Materials/PBRMetallicRoughnessOpacity"))
     {
-        MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
         auto& inTexCoord = graph->Add2<MGInTexCoord>();
 
@@ -445,7 +445,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Materials/PBRMetallicRoughnessFactor"))
     {
-        MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
         auto& inTexCoord = graph->Add2<MGInTexCoord>();
 
@@ -533,7 +533,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Materials/PBRMetallicRoughnessFactorMask"))
     {
-        MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
         auto& inTexCoord = graph->Add2<MGInTexCoord>();
 
@@ -624,7 +624,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Materials/PBRMetallicRoughnessFactorOpacity"))
     {
-        MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
         auto& inTexCoord = graph->Add2<MGInTexCoord>();
 
@@ -717,7 +717,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Materials/PBRMetallicRoughnessNoTex"))
     {
-        MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
         auto& baseColorFactor       = graph->Add2<MGUniformAddress>();
         baseColorFactor.UniformType = MG_UNIFORM_TYPE_FLOAT4;
@@ -749,7 +749,7 @@ void AMaterial::LoadInternalResource(AStringView Path)
 
     if (!Path.Icmp("/Default/Materials/Skybox"))
     {
-        MGMaterialGraph* graph = CreateInstanceOf<MGMaterialGraph>();
+        MGMaterialGraph* graph = NewObj<MGMaterialGraph>();
 
         auto& inPosition = graph->Add2<MGInPosition>();
 

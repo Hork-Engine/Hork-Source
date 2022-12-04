@@ -292,7 +292,7 @@ void AEngine::Run(SEntryDecl const& entryDecl)
 
     m_ResourceManager = MakeUnique<AResourceManager>();
 
-    m_Renderer = CreateInstanceOf<ARenderFrontend>();
+    m_Renderer = NewObj<ARenderFrontend>();
 
     m_RenderBackend = MakeRef<ARenderBackend>(m_RenderDevice);
 
@@ -315,7 +315,7 @@ void AEngine::Run(SEntryDecl const& entryDecl)
     do
     {
         // Garbage collect from previuous frames
-        AGarbageCollector::DeallocateObjects();
+        GarbageCollector::DeallocateObjects();
 
         // Set new frame, process game events
         m_FrameLoop->NewFrame({m_pSwapChain}, rt_SwapInterval.GetInteger());
@@ -391,7 +391,7 @@ void AEngine::Run(SEntryDecl const& entryDecl)
 
     m_FrameLoop.Reset();
 
-    AGarbageCollector::Shutdown();
+    GarbageCollector::Shutdown();
 
     AVisibilitySystem::PrimitivePool.Free();
     AVisibilitySystem::PrimitiveLinkPool.Free();

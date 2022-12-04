@@ -46,13 +46,9 @@ struct SColorGradingPreset
     float  ColorTemperatureBrightnessNormalization;
 };
 
-class ATextureView : public ABaseObject
+class ATextureView : public GCObject
 {
-    HK_CLASS(ATextureView, ABaseObject)
-
 public:
-    ATextureView() = default;
-
     RenderCore::ITexture* GetResource()
     {
         return m_Resource;
@@ -89,70 +85,70 @@ public:
 
     static ATexture* Create1D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
     {
-        ATexture* texture = CreateInstanceOf<ATexture>();
+        ATexture* texture = NewObj<ATexture>();
         texture->Initialize1D(Format, NumMipLevels, Width);
         return texture;
     }
 
     static ATexture* Create1DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
     {
-        ATexture* texture = CreateInstanceOf<ATexture>();
+        ATexture* texture = NewObj<ATexture>();
         texture->Initialize1DArray(Format, NumMipLevels, Width, ArraySize);
         return texture;
     }
 
     static ATexture* Create2D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height)
     {
-        ATexture* texture = CreateInstanceOf<ATexture>();
+        ATexture* texture = NewObj<ATexture>();
         texture->Initialize2D(Format, NumMipLevels, Width, Height);
         return texture;
     }
 
     static ATexture* Create2DArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t ArraySize)
     {
-        ATexture* texture = CreateInstanceOf<ATexture>();
+        ATexture* texture = NewObj<ATexture>();
         texture->Initialize2DArray(Format, NumMipLevels, Width, Height, ArraySize);
         return texture;
     }
 
     static ATexture* Create3D(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t Height, uint32_t Depth)
     {
-        ATexture* texture = CreateInstanceOf<ATexture>();
+        ATexture* texture = NewObj<ATexture>();
         texture->Initialize3D(Format, NumMipLevels, Width, Height, Depth);
         return texture;
     }
 
     static ATexture* CreateCubemap(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width)
     {
-        ATexture* texture = CreateInstanceOf<ATexture>();
+        ATexture* texture = NewObj<ATexture>();
         texture->InitializeCubemap(Format, NumMipLevels, Width);
         return texture;
     }
 
     static ATexture* CreateCubemapArray(TEXTURE_FORMAT Format, uint32_t NumMipLevels, uint32_t Width, uint32_t ArraySize)
     {
-        ATexture* texture = CreateInstanceOf<ATexture>();
+        ATexture* texture = NewObj<ATexture>();
         texture->InitializeCubemapArray(Format, NumMipLevels, Width, ArraySize);
         return texture;
     }
 
     static ATexture* CreateFromImage(ImageStorage const& Image)
     {
-        ATexture* texture = CreateInstanceOf<ATexture>();
+        ATexture* texture = NewObj<ATexture>();
         texture->InitializeFromImage(Image);
         return texture;
     }
 
     static ATexture* CreateColorGradingLUT(IBinaryStreamReadInterface& Stream)
     {
-        ATexture* texture = CreateInstanceOf<ATexture>();
+        ATexture* texture = NewObj<ATexture>();
         texture->InitializeColorGradingLUT(Stream);
         return texture;
     }
 
     static ATexture* CreateColorGradingLUT(SColorGradingPreset const& Preset)
     {
-        ATexture* texture = CreateInstanceOf<ATexture>();
+        ATexture* texture = NewObj<ATexture>();
         texture->InitializeColorGradingLUT(Preset);
         return texture;
     }
@@ -161,7 +157,7 @@ public:
     {
         if (m_View.IsExpired())
         {
-            m_View = CreateInstanceOf<TextureViewImpl>(this);
+            m_View = NewObj<TextureViewImpl>(this);
             m_View->SetResource(m_TextureGPU);
         }
         return m_View;
@@ -260,11 +256,7 @@ protected:
 
     class TextureViewImpl : public ATextureView
     {
-        HK_CLASS(TextureViewImpl, ATextureView)
-
     public:
-        TextureViewImpl() = default; // NOTE: It's really not needed, but the current reflection system requires this constructor.
-
         TextureViewImpl(ATexture* pTexture) :
             m_Texture(pTexture)
         {
