@@ -44,10 +44,10 @@ AAudioSystem::AAudioSystem()
 {
     LOG("Initializing audio system...\n");
 
-    pPlaybackDevice = MakeRef<AAudioDevice>(44100);
+    m_pPlaybackDevice = MakeRef<AAudioDevice>(44100);
 
-    pMixer = MakeUnique<AAudioMixer>(pPlaybackDevice);
-    pMixer->StartAsync();
+    m_pMixer = MakeUnique<AAudioMixer>(m_pPlaybackDevice);
+    m_pMixer->StartAsync();
 }
 
 AAudioSystem::~AAudioSystem()
@@ -62,35 +62,35 @@ void AAudioSystem::Update(APlayerController* _Controller, float _TimeStep)
 
     if (audioListener)
     {
-        Listener.Position = audioListener->GetWorldPosition();
-        Listener.RightVec = audioListener->GetWorldRightVector();
+        m_Listener.Position = audioListener->GetWorldPosition();
+        m_Listener.RightVec = audioListener->GetWorldRightVector();
 
-        Listener.TransformInv.Compose(Listener.Position, audioListener->GetWorldRotation().ToMatrix3x3());
+        m_Listener.TransformInv.Compose(m_Listener.Position, audioListener->GetWorldRotation().ToMatrix3x3());
         // We can optimize Inverse like for viewmatrix
-        Listener.TransformInv.InverseSelf();
+        m_Listener.TransformInv.InverseSelf();
 
-        Listener.Id = audioListener->GetOwnerActor()->Id;
+        m_Listener.Id = audioListener->GetOwnerActor()->Id;
     }
     else
     {
-        Listener.Position.Clear();
-        Listener.RightVec = Float3(1, 0, 0);
+        m_Listener.Position.Clear();
+        m_Listener.RightVec = Float3(1, 0, 0);
 
-        Listener.TransformInv.SetIdentity();
+        m_Listener.TransformInv.SetIdentity();
 
-        Listener.Id = 0;
+        m_Listener.Id = 0;
     }
 
     if (audioParameters)
     {
-        Listener.VolumeScale = Math::Saturate(audioParameters->Volume * Snd_MasterVolume.GetFloat());
-        Listener.Mask        = audioParameters->ListenerMask;
+        m_Listener.VolumeScale = Math::Saturate(audioParameters->Volume * Snd_MasterVolume.GetFloat());
+        m_Listener.Mask        = audioParameters->ListenerMask;
     }
     else
     {
         // set defaults
-        Listener.VolumeScale = Math::Saturate(Snd_MasterVolume.GetFloat());
-        Listener.Mask        = ~0u;
+        m_Listener.VolumeScale = Math::Saturate(Snd_MasterVolume.GetFloat());
+        m_Listener.Mask        = ~0u;
     }
 
     static double time = 0;
@@ -103,8 +103,8 @@ void AAudioSystem::Update(APlayerController* _Controller, float _TimeStep)
         ASoundEmitter::UpdateSounds();
     }
 
-    if (!pMixer->IsAsync())
+    if (!m_pMixer->IsAsync())
     {
-        pMixer->Update();
+        m_pMixer->Update();
     }
 }

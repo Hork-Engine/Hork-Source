@@ -43,7 +43,7 @@ AConsoleVar com_DrawSockets("com_DrawSockets"s, "0"s, CVAR_CHEAT);
 HK_CLASS_META(ASceneComponent)
 
 ASceneComponent::ASceneComponent() :
-    bAbsolutePosition(false), bAbsoluteRotation(false), bAbsoluteScale(false)
+    m_bAbsolutePosition(false), m_bAbsoluteRotation(false), m_bAbsoluteScale(false)
 {
 }
 
@@ -68,7 +68,7 @@ void ASceneComponent::DeinitializeComponent()
     else
     {
         // Detach only other actors
-        for (ASceneComponent** childIt = Childs.Begin(); childIt != Childs.End();)
+        for (ASceneComponent** childIt = m_Children.Begin(); childIt != m_Children.End();)
         {
             ASceneComponent* child = *childIt;
             if (child->GetOwnerActor() != owner)
@@ -92,12 +92,12 @@ void ASceneComponent::AttachTo(ASceneComponent* _Parent, AStringView _Socket, bo
 {
     _AttachTo(_Parent, _KeepWorldTransform);
 
-    if (!_Socket.IsEmpty() && AttachParent)
+    if (!_Socket.IsEmpty() && m_AttachParent)
     {
-        int socketIndex = AttachParent->FindSocket(_Socket);
-        if (SocketIndex != socketIndex)
+        int socketIndex = m_AttachParent->FindSocket(_Socket);
+        if (m_SocketIndex != socketIndex)
         {
-            SocketIndex = socketIndex;
+            m_SocketIndex = socketIndex;
             MarkTransformDirty();
         }
     }
@@ -105,7 +105,7 @@ void ASceneComponent::AttachTo(ASceneComponent* _Parent, AStringView _Socket, bo
 
 void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransform)
 {
-    if (AttachParent == _Parent)
+    if (m_AttachParent == _Parent)
     {
         // Already attached
         return;
@@ -143,17 +143,17 @@ void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransfo
     Quat   worldRotation = GetWorldRotation();
     Float3 worldScale    = GetWorldScale();
 
-    if (AttachParent)
+    if (m_AttachParent)
     {
-        auto it = std::find(AttachParent->Childs.Begin(), AttachParent->Childs.End(), this);
-        if (it != AttachParent->Childs.End())
+        auto it = std::find(m_AttachParent->m_Children.Begin(), m_AttachParent->m_Children.End(), this);
+        if (it != m_AttachParent->m_Children.End())
         {
-            AttachParent->Childs.Erase(it);
+            m_AttachParent->m_Children.Erase(it);
         }
     }
 
-    _Parent->Childs.Add(this);
-    AttachParent = _Parent;
+    _Parent->m_Children.Add(this);
+    m_AttachParent = _Parent;
 
     if (_KeepWorldTransform)
     {
@@ -167,7 +167,7 @@ void ASceneComponent::_AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransfo
 
 void ASceneComponent::Detach(bool _KeepWorldTransform)
 {
-    if (!AttachParent)
+    if (!m_AttachParent)
     {
         return;
     }
@@ -176,13 +176,13 @@ void ASceneComponent::Detach(bool _KeepWorldTransform)
     Quat   worldRotation = GetWorldRotation();
     Float3 worldScale    = GetWorldScale();
 
-    auto it = std::find(AttachParent->Childs.Begin(), AttachParent->Childs.End(), this);
-    if (it != AttachParent->Childs.End())
+    auto it = std::find(m_AttachParent->m_Children.Begin(), m_AttachParent->m_Children.End(), this);
+    if (it != m_AttachParent->m_Children.End())
     {
-        AttachParent->Childs.Erase(it);
+        m_AttachParent->m_Children.Erase(it);
     }
-    AttachParent = nullptr;
-    SocketIndex  = -1;
+    m_AttachParent = nullptr;
+    m_SocketIndex  = -1;
 
     if (!IsPendingKill())
     {
@@ -199,9 +199,9 @@ void ASceneComponent::Detach(bool _KeepWorldTransform)
 
 void ASceneComponent::DetachChilds(bool _bRecursive, bool _KeepWorldTransform)
 {
-    while (!Childs.IsEmpty())
+    while (!m_Children.IsEmpty())
     {
-        ASceneComponent* child = Childs.Last();
+        ASceneComponent* child = m_Children.Last();
         child->Detach(_KeepWorldTransform);
         if (_bRecursive)
         {
@@ -212,7 +212,7 @@ void ASceneComponent::DetachChilds(bool _bRecursive, bool _KeepWorldTransform)
 
 bool ASceneComponent::IsChild(ASceneComponent* _Child, bool _Recursive) const
 {
-    for (ASceneComponent* child : Childs)
+    for (ASceneComponent* child : m_Children)
     {
         if (child == _Child || (_Recursive && child->IsChild(_Child, true)))
         {
@@ -230,7 +230,7 @@ bool ASceneComponent::IsRoot() const
 
 ASceneComponent* ASceneComponent::FindChild(AStringView _UniqueName, bool _Recursive)
 {
-    for (ASceneComponent* child : Childs)
+    for (ASceneComponent* child : m_Children)
     {
         if (!child->GetObjectName().Icmp(_UniqueName))
         {
@@ -240,7 +240,7 @@ ASceneComponent* ASceneComponent::FindChild(AStringView _UniqueName, bool _Recur
 
     if (_Recursive)
     {
-        for (ASceneComponent* child : Childs)
+        for (ASceneComponent* child : m_Children)
         {
             ASceneComponent* rec = child->FindChild(_UniqueName, true);
             if (rec)
@@ -254,9 +254,9 @@ ASceneComponent* ASceneComponent::FindChild(AStringView _UniqueName, bool _Recur
 
 int ASceneComponent::FindSocket(AStringView _Name) const
 {
-    for (int socketIndex = 0; socketIndex < Sockets.Size(); socketIndex++)
+    for (int socketIndex = 0; socketIndex < m_Sockets.Size(); socketIndex++)
     {
-        if (!Sockets[socketIndex].SocketDef->Name.Icmp(_Name))
+        if (!m_Sockets[socketIndex].SocketDef->Name.Icmp(_Name))
         {
             return socketIndex;
         }
@@ -274,12 +274,12 @@ void ASceneComponent::MarkTransformDirty()
     while (1)
     {
 
-        if (node->bTransformDirty)
+        if (node->m_bTransformDirty)
         {
             return;
         }
 
-        node->bTransformDirty = true;
+        node->m_bTransformDirty = true;
 
 #ifdef FUTURE
         // TODO: здесь можно инициировать событие "On Mark Dirty"
@@ -301,15 +301,15 @@ void ASceneComponent::MarkTransformDirty()
 #endif
         node->OnTransformDirty();
 
-        numChilds = node->Childs.Size();
+        numChilds = node->m_Children.Size();
         if (numChilds > 0)
         {
 
-            nextNode = node->Childs[0];
+            nextNode = node->m_Children[0];
 
             for (int i = 1; i < numChilds; i++)
             {
-                node->Childs[i]->MarkTransformDirty();
+                node->m_Children[i]->MarkTransformDirty();
             }
 
             node = nextNode;
@@ -323,9 +323,9 @@ void ASceneComponent::MarkTransformDirty()
 
 void ASceneComponent::SetAbsolutePosition(bool _AbsolutePosition)
 {
-    if (bAbsolutePosition != _AbsolutePosition)
+    if (m_bAbsolutePosition != _AbsolutePosition)
     {
-        bAbsolutePosition = _AbsolutePosition;
+        m_bAbsolutePosition = _AbsolutePosition;
 
         MarkTransformDirty();
     }
@@ -333,9 +333,9 @@ void ASceneComponent::SetAbsolutePosition(bool _AbsolutePosition)
 
 void ASceneComponent::SetAbsoluteRotation(bool _AbsoluteRotation)
 {
-    if (bAbsoluteRotation != _AbsoluteRotation)
+    if (m_bAbsoluteRotation != _AbsoluteRotation)
     {
-        bAbsoluteRotation = _AbsoluteRotation;
+        m_bAbsoluteRotation = _AbsoluteRotation;
 
         MarkTransformDirty();
     }
@@ -343,9 +343,9 @@ void ASceneComponent::SetAbsoluteRotation(bool _AbsoluteRotation)
 
 void ASceneComponent::SetAbsoluteScale(bool _AbsoluteScale)
 {
-    if (bAbsoluteScale != _AbsoluteScale)
+    if (m_bAbsoluteScale != _AbsoluteScale)
     {
-        bAbsoluteScale = _AbsoluteScale;
+        m_bAbsoluteScale = _AbsoluteScale;
 
         MarkTransformDirty();
     }
@@ -353,77 +353,77 @@ void ASceneComponent::SetAbsoluteScale(bool _AbsoluteScale)
 
 void ASceneComponent::SetPosition(Float3 const& _Position)
 {
-    Position = _Position;
+    m_Position = _Position;
 
     MarkTransformDirty();
 }
 
 void ASceneComponent::SetPosition(float _X, float _Y, float _Z)
 {
-    Position.X = _X;
-    Position.Y = _Y;
-    Position.Z = _Z;
+    m_Position.X = _X;
+    m_Position.Y = _Y;
+    m_Position.Z = _Z;
 
     MarkTransformDirty();
 }
 
 void ASceneComponent::SetRotation(Quat const& _Rotation)
 {
-    Rotation = _Rotation;
+    m_Rotation = _Rotation;
 
     MarkTransformDirty();
 }
 
 void ASceneComponent::SetAngles(Angl const& _Angles)
 {
-    Rotation = _Angles.ToQuat();
+    m_Rotation = _Angles.ToQuat();
 
     MarkTransformDirty();
 }
 
 void ASceneComponent::SetAngles(float _Pitch, float _Yaw, float _Roll)
 {
-    Rotation = Angl(_Pitch, _Yaw, _Roll).ToQuat();
+    m_Rotation = Angl(_Pitch, _Yaw, _Roll).ToQuat();
 
     MarkTransformDirty();
 }
 
 void ASceneComponent::SetScale(Float3 const& _Scale)
 {
-    Scale = _Scale;
+    m_Scale = _Scale;
 
     MarkTransformDirty();
 }
 
 void ASceneComponent::SetScale(float _X, float _Y, float _Z)
 {
-    Scale.X = _X;
-    Scale.Y = _Y;
-    Scale.Z = _Z;
+    m_Scale.X = _X;
+    m_Scale.Y = _Y;
+    m_Scale.Z = _Z;
 
     MarkTransformDirty();
 }
 
 void ASceneComponent::SetScale(float _ScaleXYZ)
 {
-    Scale.X = Scale.Y = Scale.Z = _ScaleXYZ;
+    m_Scale.X = m_Scale.Y = m_Scale.Z = _ScaleXYZ;
 
     MarkTransformDirty();
 }
 
 void ASceneComponent::SetTransform(Float3 const& _Position, Quat const& _Rotation)
 {
-    Position = _Position;
-    Rotation = _Rotation;
+    m_Position = _Position;
+    m_Rotation = _Rotation;
 
     MarkTransformDirty();
 }
 
 void ASceneComponent::SetTransform(Float3 const& _Position, Quat const& _Rotation, Float3 const& _Scale)
 {
-    Position = _Position;
-    Rotation = _Rotation;
-    Scale    = _Scale;
+    m_Position = _Position;
+    m_Rotation = _Rotation;
+    m_Scale    = _Scale;
 
     MarkTransformDirty();
 }
@@ -435,18 +435,18 @@ void ASceneComponent::SetTransform(STransform const& _Transform)
 
 void ASceneComponent::SetTransform(ASceneComponent const* _Transform)
 {
-    Position = _Transform->Position;
-    Rotation = _Transform->Rotation;
-    Scale    = _Transform->Scale;
+    m_Position = _Transform->m_Position;
+    m_Rotation = _Transform->m_Rotation;
+    m_Scale    = _Transform->m_Scale;
 
     MarkTransformDirty();
 }
 
 void ASceneComponent::SetWorldPosition(Float3 const& _Position)
 {
-    if (AttachParent && !bAbsolutePosition)
+    if (m_AttachParent && !m_bAbsolutePosition)
     {
-        Float3x4 ParentTransformInverse = AttachParent->ComputeWorldTransformInverse();
+        Float3x4 ParentTransformInverse = m_AttachParent->ComputeWorldTransformInverse();
 
         SetPosition(ParentTransformInverse * _Position); // TODO: check
     }
@@ -463,12 +463,12 @@ void ASceneComponent::SetWorldPosition(float _X, float _Y, float _Z)
 
 void ASceneComponent::SetWorldRotation(Quat const& _Rotation)
 {
-    SetRotation(AttachParent && !bAbsoluteRotation ? AttachParent->ComputeWorldRotationInverse() * _Rotation : _Rotation);
+    SetRotation(m_AttachParent && !m_bAbsoluteRotation ? m_AttachParent->ComputeWorldRotationInverse() * _Rotation : _Rotation);
 }
 
 void ASceneComponent::SetWorldScale(Float3 const& _Scale)
 {
-    SetScale(AttachParent && !bAbsoluteScale ? _Scale / AttachParent->GetWorldScale() : _Scale);
+    SetScale(m_AttachParent && !m_bAbsoluteScale ? _Scale / m_AttachParent->GetWorldScale() : _Scale);
 }
 
 void ASceneComponent::SetWorldScale(float _X, float _Y, float _Z)
@@ -478,15 +478,15 @@ void ASceneComponent::SetWorldScale(float _X, float _Y, float _Z)
 
 void ASceneComponent::SetWorldTransform(Float3 const& _Position, Quat const& _Rotation)
 {
-    if (AttachParent)
+    if (m_AttachParent)
     {
-        Position = bAbsolutePosition ? _Position : AttachParent->ComputeWorldTransformInverse() * _Position; // TODO: check
-        Rotation = bAbsoluteRotation ? _Rotation : AttachParent->ComputeWorldRotationInverse() * _Rotation;
+        m_Position = m_bAbsolutePosition ? _Position : m_AttachParent->ComputeWorldTransformInverse() * _Position; // TODO: check
+        m_Rotation = m_bAbsoluteRotation ? _Rotation : m_AttachParent->ComputeWorldRotationInverse() * _Rotation;
     }
     else
     {
-        Position = _Position;
-        Rotation = _Rotation;
+        m_Position = _Position;
+        m_Rotation = _Rotation;
     }
 
     MarkTransformDirty();
@@ -494,17 +494,17 @@ void ASceneComponent::SetWorldTransform(Float3 const& _Position, Quat const& _Ro
 
 void ASceneComponent::SetWorldTransform(Float3 const& _Position, Quat const& _Rotation, Float3 const& _Scale)
 {
-    if (AttachParent)
+    if (m_AttachParent)
     {
-        Position = bAbsolutePosition ? _Position : AttachParent->ComputeWorldTransformInverse() * _Position; // TODO: check
-        Rotation = bAbsoluteRotation ? _Rotation : AttachParent->ComputeWorldRotationInverse() * _Rotation;
-        Scale    = bAbsoluteScale ? _Scale : _Scale / AttachParent->GetWorldScale();
+        m_Position = m_bAbsolutePosition ? _Position : m_AttachParent->ComputeWorldTransformInverse() * _Position; // TODO: check
+        m_Rotation = m_bAbsoluteRotation ? _Rotation : m_AttachParent->ComputeWorldRotationInverse() * _Rotation;
+        m_Scale    = m_bAbsoluteScale ? _Scale : _Scale / m_AttachParent->GetWorldScale();
     }
     else
     {
-        Position = _Position;
-        Rotation = _Rotation;
-        Scale    = _Scale;
+        m_Position = _Position;
+        m_Rotation = _Rotation;
+        m_Scale    = _Scale;
     }
 
     MarkTransformDirty();
@@ -517,18 +517,18 @@ void ASceneComponent::SetWorldTransform(STransform const& _Transform)
 
 Float3 const& ASceneComponent::GetPosition() const
 {
-    return Position;
+    return m_Position;
 }
 
 Quat const& ASceneComponent::GetRotation() const
 {
-    return Rotation;
+    return m_Rotation;
 }
 
 Angl ASceneComponent::GetAngles() const
 {
     Angl Angles;
-    Rotation.ToAngles(Angles.Pitch, Angles.Yaw, Angles.Roll);
+    m_Rotation.ToAngles(Angles.Pitch, Angles.Yaw, Angles.Roll);
     Angles.Pitch = Math::Degrees(Angles.Pitch);
     Angles.Yaw   = Math::Degrees(Angles.Yaw);
     Angles.Roll  = Math::Degrees(Angles.Roll);
@@ -537,60 +537,60 @@ Angl ASceneComponent::GetAngles() const
 
 float ASceneComponent::GetPitch() const
 {
-    return Math::Degrees(Rotation.Pitch());
+    return Math::Degrees(m_Rotation.Pitch());
 }
 
 float ASceneComponent::GetYaw() const
 {
-    return Math::Degrees(Rotation.Yaw());
+    return Math::Degrees(m_Rotation.Yaw());
 }
 
 float ASceneComponent::GetRoll() const
 {
-    return Math::Degrees(Rotation.Roll());
+    return Math::Degrees(m_Rotation.Roll());
 }
 
 Float3 ASceneComponent::GetRightVector() const
 {
-    return Rotation.XAxis();
+    return m_Rotation.XAxis();
 }
 
 Float3 ASceneComponent::GetLeftVector() const
 {
-    return -Rotation.XAxis();
+    return -m_Rotation.XAxis();
 }
 
 Float3 ASceneComponent::GetUpVector() const
 {
-    return Rotation.YAxis();
+    return m_Rotation.YAxis();
 }
 
 Float3 ASceneComponent::GetDownVector() const
 {
-    return -Rotation.YAxis();
+    return -m_Rotation.YAxis();
 }
 
 Float3 ASceneComponent::GetBackVector() const
 {
-    return Rotation.ZAxis();
+    return m_Rotation.ZAxis();
 }
 
 Float3 ASceneComponent::GetForwardVector() const
 {
-    return -Rotation.ZAxis();
+    return -m_Rotation.ZAxis();
 }
 
 void ASceneComponent::GetVectors(Float3* _Right, Float3* _Up, Float3* _Back) const
 {
-    float qxx(Rotation.X * Rotation.X);
-    float qyy(Rotation.Y * Rotation.Y);
-    float qzz(Rotation.Z * Rotation.Z);
-    float qxz(Rotation.X * Rotation.Z);
-    float qxy(Rotation.X * Rotation.Y);
-    float qyz(Rotation.Y * Rotation.Z);
-    float qwx(Rotation.W * Rotation.X);
-    float qwy(Rotation.W * Rotation.Y);
-    float qwz(Rotation.W * Rotation.Z);
+    float qxx(m_Rotation.X * m_Rotation.X);
+    float qyy(m_Rotation.Y * m_Rotation.Y);
+    float qzz(m_Rotation.Z * m_Rotation.Z);
+    float qxz(m_Rotation.X * m_Rotation.Z);
+    float qxy(m_Rotation.X * m_Rotation.Y);
+    float qyz(m_Rotation.Y * m_Rotation.Z);
+    float qwx(m_Rotation.W * m_Rotation.X);
+    float qwy(m_Rotation.W * m_Rotation.Y);
+    float qwz(m_Rotation.W * m_Rotation.Z);
 
     if (_Right)
     {
@@ -682,55 +682,55 @@ void ASceneComponent::GetWorldVectors(Float3* _Right, Float3* _Up, Float3* _Back
 
 Float3 const& ASceneComponent::GetScale() const
 {
-    return Scale;
+    return m_Scale;
 }
 
 Float3 ASceneComponent::GetWorldPosition() const
 {
-    if (bTransformDirty)
+    if (m_bTransformDirty)
     {
         ComputeWorldTransform();
     }
 
-    return WorldTransformMatrix.DecomposeTranslation();
+    return m_WorldTransformMatrix.DecomposeTranslation();
 }
 
 Quat const& ASceneComponent::GetWorldRotation() const
 {
-    if (bTransformDirty)
+    if (m_bTransformDirty)
     {
         ComputeWorldTransform();
     }
 
-    return WorldRotation;
+    return m_WorldRotation;
 }
 
 Float3 ASceneComponent::GetWorldScale() const
 {
-    if (bTransformDirty)
+    if (m_bTransformDirty)
     {
         ComputeWorldTransform();
     }
 
-    return WorldTransformMatrix.DecomposeScale();
+    return m_WorldTransformMatrix.DecomposeScale();
 }
 
 Float3x4 const& ASceneComponent::GetWorldTransformMatrix() const
 {
-    if (bTransformDirty)
+    if (m_bTransformDirty)
     {
         ComputeWorldTransform();
     }
 
-    return WorldTransformMatrix;
+    return m_WorldTransformMatrix;
 }
 
 void ASceneComponent::ComputeLocalTransformMatrix(Float3x4& _LocalTransformMatrix) const
 {
-    _LocalTransformMatrix.Compose(Position, Rotation.ToMatrix3x3(), Scale);
+    _LocalTransformMatrix.Compose(m_Position, m_Rotation.ToMatrix3x3(), m_Scale);
 }
 
-Float3x4 SSocket::EvaluateTransform() const
+Float3x4 SceneSocket::EvaluateTransform() const
 {
     Float3x4 transform;
 
@@ -757,77 +757,77 @@ Float3x4 SSocket::EvaluateTransform() const
 
 Float3x4 ASceneComponent::GetSocketTransform(int _SocketIndex) const
 {
-    if (SocketIndex < 0 || SocketIndex >= AttachParent->Sockets.Size())
+    if (m_SocketIndex < 0 || m_SocketIndex >= m_AttachParent->m_Sockets.Size())
     {
         return Float3x4::Identity();
     }
 
-    return Sockets[_SocketIndex].EvaluateTransform();
+    return m_Sockets[_SocketIndex].EvaluateTransform();
 }
 
 void ASceneComponent::ComputeWorldTransform() const
 {
     // TODO: optimize
 
-    if (AttachParent)
+    if (m_AttachParent)
     {
-        if (SocketIndex >= 0 && SocketIndex < AttachParent->Sockets.Size())
+        if (m_SocketIndex >= 0 && m_SocketIndex < m_AttachParent->m_Sockets.Size())
         {
 
-            Float3x4 const& SocketTransform = AttachParent->Sockets[SocketIndex].EvaluateTransform();
+            Float3x4 const& SocketTransform = m_AttachParent->m_Sockets[m_SocketIndex].EvaluateTransform();
 
             Quat SocketRotation;
             SocketRotation.FromMatrix(SocketTransform.DecomposeRotation());
 
-            WorldRotation = bAbsoluteRotation ? Rotation : AttachParent->GetWorldRotation() * SocketRotation * Rotation;
+            m_WorldRotation = m_bAbsoluteRotation ? m_Rotation : m_AttachParent->GetWorldRotation() * SocketRotation * m_Rotation;
 
 #if 0
             // Transform with shrinking
 
             Float3x4 LocalTransformMatrix;
             ComputeLocalTransformMatrix( LocalTransformMatrix );
-            WorldTransformMatrix = AttachParent->GetWorldTransformMatrix() * SocketTransform * LocalTransformMatrix;
+            m_WorldTransformMatrix = m_AttachParent->GetWorldTransformMatrix() * SocketTransform * LocalTransformMatrix;
 #else
             // Take relative to parent position and rotation. Position is scaled by parent.
-            WorldTransformMatrix.Compose(bAbsolutePosition ? Position : AttachParent->GetWorldTransformMatrix() * SocketTransform * Position,
-                                         WorldRotation.ToMatrix3x3(),
-                                         bAbsoluteScale ? Scale : Scale * AttachParent->GetWorldScale() * SocketTransform.DecomposeScale());
+            m_WorldTransformMatrix.Compose(m_bAbsolutePosition ? m_Position : m_AttachParent->GetWorldTransformMatrix() * SocketTransform * m_Position,
+                                           m_WorldRotation.ToMatrix3x3(),
+                                           m_bAbsoluteScale ? m_Scale : m_Scale * m_AttachParent->GetWorldScale() * SocketTransform.DecomposeScale());
 #endif
         }
         else
         {
 
-            WorldRotation = bAbsoluteRotation ? Rotation : AttachParent->GetWorldRotation() * Rotation;
+            m_WorldRotation = m_bAbsoluteRotation ? m_Rotation : m_AttachParent->GetWorldRotation() * m_Rotation;
 
 #if 0
             // Transform with shrinking
 
             Float3x4 LocalTransformMatrix;
             ComputeLocalTransformMatrix( LocalTransformMatrix );
-            WorldTransformMatrix = AttachParent->GetWorldTransformMatrix() * LocalTransformMatrix;
+            m_WorldTransformMatrix = m_AttachParent->GetWorldTransformMatrix() * LocalTransformMatrix;
 #else
 #    if 0
             // Take only relative to parent position and rotation. Position is not scaled by parent.
             Float3x4 positionAndRotation;
-            positionAndRotation.Compose( AttachParent->GetWorldPosition(), AttachParent->GetWorldRotation().ToMatrix3x3() );
+            positionAndRotation.Compose( m_AttachParent->GetWorldPosition(), m_AttachParent->GetWorldRotation().ToMatrix3x3() );
 
-            WorldTransformMatrix.Compose( positionAndRotation * Position, WorldRotation.ToMatrix3x3(), Scale );
+            m_WorldTransformMatrix.Compose( positionAndRotation * m_Position, m_WorldRotation.ToMatrix3x3(), m_Scale );
 #    else
             // Take relative to parent position and rotation. Position is scaled by parent.
-            WorldTransformMatrix.Compose(bAbsolutePosition ? Position : AttachParent->GetWorldTransformMatrix() * Position,
-                                         WorldRotation.ToMatrix3x3(),
-                                         bAbsoluteScale ? Scale : Scale * AttachParent->GetWorldScale());
+            m_WorldTransformMatrix.Compose(m_bAbsolutePosition ? m_Position : m_AttachParent->GetWorldTransformMatrix() * m_Position,
+                                           m_WorldRotation.ToMatrix3x3(),
+                                           m_bAbsoluteScale ? m_Scale : m_Scale * m_AttachParent->GetWorldScale());
 #    endif
 #endif
         }
     }
     else
     {
-        ComputeLocalTransformMatrix(WorldTransformMatrix);
-        WorldRotation = Rotation;
+        ComputeLocalTransformMatrix(m_WorldTransformMatrix);
+        m_WorldRotation = m_Rotation;
     }
 
-    bTransformDirty = false;
+    m_bTransformDirty = false;
 }
 
 Float3x4 ASceneComponent::ComputeWorldTransformInverse() const
@@ -868,8 +868,8 @@ void ASceneComponent::TurnAroundAxis(float _DeltaAngleRad, Float3 const& _Normal
 
     Math::SinCos(_DeltaAngleRad * 0.5f, s, c);
 
-    Rotation = Quat(c, s * _NormalizedAxis.X, s * _NormalizedAxis.Y, s * _NormalizedAxis.Z) * Rotation;
-    Rotation.NormalizeSelf();
+    m_Rotation = Quat(c, s * _NormalizedAxis.X, s * _NormalizedAxis.Y, s * _NormalizedAxis.Z) * m_Rotation;
+    m_Rotation.NormalizeSelf();
 
     MarkTransformDirty();
 }
@@ -911,7 +911,7 @@ void ASceneComponent::StepForward(float _Units)
 
 void ASceneComponent::Step(Float3 const& _Vector)
 {
-    Position += _Vector;
+    m_Position += _Vector;
 
     MarkTransformDirty();
 }
@@ -927,7 +927,7 @@ void ASceneComponent::DrawDebug(ADebugRenderer* InRenderer)
         Float3   worldScale;
         Quat     worldRotation;
         Quat     r;
-        for (SSocket& socket : Sockets)
+        for (SceneSocket& socket : m_Sockets)
         {
             transform = socket.EvaluateTransform();
 

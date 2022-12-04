@@ -85,16 +85,16 @@ void AActor::AddComponent(AActorComponent* Component, AStringView InName)
 
     Component->AddRef();
     Component->SetObjectName(InName);
-    Component->ComponentIndex = Components.Size();
-    Component->OwnerActor     = this;
-    Component->LocalId        = ++ComponentLocalIdGen;
+    Component->m_ComponentIndex = m_Components.Size();
+    Component->m_OwnerActor     = this;
+    Component->m_LocalId        = ++m_ComponentLocalIdGen;
 
-    Components.Add(Component);
+    m_Components.Add(Component);
 }
 
 AActorComponent* AActor::GetComponent(uint64_t _ClassId)
 {
-    for (AActorComponent* component : Components)
+    for (AActorComponent* component : m_Components)
     {
         if (component->FinalClassId() == _ClassId)
         {
@@ -106,7 +106,7 @@ AActorComponent* AActor::GetComponent(uint64_t _ClassId)
 
 AActorComponent* AActor::GetComponent(const char* _ClassName)
 {
-    for (AActorComponent* component : Components)
+    for (AActorComponent* component : m_Components)
     {
         if (!Platform::Strcmp(component->FinalClassName(), _ClassName))
         {
@@ -119,7 +119,7 @@ AActorComponent* AActor::GetComponent(const char* _ClassName)
 AActorComponent* AActor::GetComponent(AClassMeta const* _ClassMeta)
 {
     HK_ASSERT(_ClassMeta->Factory() == &AActorComponent::Factory());
-    for (AActorComponent* component : Components)
+    for (AActorComponent* component : m_Components)
     {
         if (&component->FinalClassMeta() == _ClassMeta)
         {
@@ -129,22 +129,22 @@ AActorComponent* AActor::GetComponent(AClassMeta const* _ClassMeta)
     return nullptr;
 }
 
-#define CALL_SCRIPT(Function)                                              \
-    {                                                                      \
-        if (ScriptModule)                                                  \
-        {                                                                  \
-            AActorScript* pScript = AActorScript::GetScript(ScriptModule); \
-            pScript->Function(ScriptModule);                               \
-        }                                                                  \
+#define CALL_SCRIPT(Function)                                                \
+    {                                                                        \
+        if (m_ScriptModule)                                                  \
+        {                                                                    \
+            AActorScript* pScript = AActorScript::GetScript(m_ScriptModule); \
+            pScript->Function(m_ScriptModule);                               \
+        }                                                                    \
     }
 
-#define CALL_SCRIPT_ARG(Function, ...)                                     \
-    {                                                                      \
-        if (ScriptModule)                                                  \
-        {                                                                  \
-            AActorScript* pScript = AActorScript::GetScript(ScriptModule); \
-            pScript->Function(ScriptModule, __VA_ARGS__);                  \
-        }                                                                  \
+#define CALL_SCRIPT_ARG(Function, ...)                                       \
+    {                                                                        \
+        if (m_ScriptModule)                                                  \
+        {                                                                    \
+            AActorScript* pScript = AActorScript::GetScript(m_ScriptModule); \
+            pScript->Function(m_ScriptModule, __VA_ARGS__);                  \
+        }                                                                    \
     }
 
 void AActor::CallBeginPlay()
@@ -184,17 +184,17 @@ void AActor::CallLateUpdate(float TimeStep)
 
 void AActor::CallDrawDebug(ADebugRenderer* Renderer)
 {
-    for (AActorComponent* component : Components)
+    for (AActorComponent* component : m_Components)
     {
         component->DrawDebug(Renderer);
     }
 
     if (com_DrawRootComponentAxis)
     {
-        if (RootComponent)
+        if (m_RootComponent)
         {
             Renderer->SetDepthTest(false);
-            Renderer->DrawAxis(RootComponent->GetWorldTransformMatrix(), false);
+            Renderer->DrawAxis(m_RootComponent->GetWorldTransformMatrix(), false);
         }
     }
 
@@ -212,35 +212,35 @@ void AActor::ApplyDamage(SActorDamage const& Damage)
 
 asILockableSharedBool* AActor::ScriptGetWeakRefFlag()
 {
-    if (!pWeakRefFlag)
-        pWeakRefFlag = asCreateLockableSharedBool();
+    if (!m_pWeakRefFlag)
+        m_pWeakRefFlag = asCreateLockableSharedBool();
 
-    return pWeakRefFlag;
+    return m_pWeakRefFlag;
 }
 
 bool AActor::SetPublicProperty(AStringView PublicName, AStringView Value)
 {
-    if (!pActorDef)
+    if (!m_pActorDef)
         return false;
 
     auto FindComponent = [this](AClassMeta const* ClassMeta, int ComponentIndex) -> AActorComponent*
     {
         for (AActorComponent* component : GetComponents())
         {
-            if (component->FinalClassId() == ClassMeta->ClassId && component->LocalId == ComponentIndex)
+            if (component->FinalClassId() == ClassMeta->ClassId && component->m_LocalId == ComponentIndex)
                 return component;
         }
         return {};
     };
 
-    for (AActorDefinition::SPublicProperty const& prop : pActorDef->GetPublicProperties())
+    for (AActorDefinition::SPublicProperty const& prop : m_pActorDef->GetPublicProperties())
     {
         if (PublicName == prop.PublicName)
         {
             if (prop.ComponentIndex != -1)
             {
                 // NOTE: component->LocalId should match ComponentIndex
-                AActorComponent* component = FindComponent(pActorDef->GetComponents()[prop.ComponentIndex].ClassMeta, prop.ComponentIndex);
+                AActorComponent* component = FindComponent(m_pActorDef->GetComponents()[prop.ComponentIndex].ClassMeta, prop.ComponentIndex);
                 if (component)
                 {
                     return component->SetProperty(prop.PropertyName, Value);
@@ -253,13 +253,13 @@ bool AActor::SetPublicProperty(AStringView PublicName, AStringView Value)
         }
     }
 
-    if (ScriptModule)
+    if (m_ScriptModule)
     {
-        for (AActorDefinition::SScriptPublicProperty const& prop : pActorDef->GetScriptPublicProperties())
+        for (AActorDefinition::SScriptPublicProperty const& prop : m_pActorDef->GetScriptPublicProperties())
         {
             if (prop.PublicName == PublicName)
             {
-                return AActorScript::SetProperty(ScriptModule, prop.PropertyName, Value);
+                return AActorScript::SetProperty(m_ScriptModule, prop.PropertyName, Value);
             }
         }
     }
@@ -269,7 +269,7 @@ bool AActor::SetPublicProperty(AStringView PublicName, AStringView Value)
 
 ATimer* AActor::AddTimer(TCallback<void()> const& Callback)
 {
-    if (bPendingKill)
+    if (m_bPendingKill)
     {
         LOG("AActor::AddTimer: Attempting to add a timer to a destroyed actor\n");
         return {};
@@ -280,12 +280,12 @@ ATimer* AActor::AddTimer(TCallback<void()> const& Callback)
     timer->Callback = Callback;
 
     // If an actor is queued to spawn, the timer will be registered after spawning
-    if (!bSpawning)
+    if (!m_bSpawning)
     {
-        World->RegisterTimer(timer);
+        m_World->RegisterTimer(timer);
     }
 
-    INTRUSIVE_ADD(timer, NextInActor, PrevInActor, TimerList, TimerListTail);
+    INTRUSIVE_ADD(timer, NextInActor, PrevInActor, m_TimerList, m_TimerListTail);
 
     return timer;
 }
@@ -298,31 +298,31 @@ void AActor::RemoveTimer(ATimer* Timer)
         return;
     }
 
-    if (!INTRUSIVE_EXISTS(Timer, NextInActor, PrevInActor, TimerList, TimerListTail))
+    if (!INTRUSIVE_EXISTS(Timer, NextInActor, PrevInActor, m_TimerList, m_TimerListTail))
     {
         LOG("Timer is not exists\n");
         return;
     }
 
-    if (World)
+    if (m_World)
     {
-        World->UnregisterTimer(Timer);
+        m_World->UnregisterTimer(Timer);
     }
 
-    INTRUSIVE_REMOVE(Timer, NextInActor, PrevInActor, TimerList, TimerListTail);
+    INTRUSIVE_REMOVE(Timer, NextInActor, PrevInActor, m_TimerList, m_TimerListTail);
     Timer->RemoveRef();
 }
 
 void AActor::RemoveAllTimers()
 {
-    for (ATimer* timer = TimerList; timer; timer = timer->NextInActor)
+    for (ATimer* timer = m_TimerList; timer; timer = timer->NextInActor)
     {
-        if (World)
+        if (m_World)
         {
-            World->UnregisterTimer(timer);
+            m_World->UnregisterTimer(timer);
         }
         timer->RemoveRef();
     }
-    TimerList     = {};
-    TimerListTail = {};
+    m_TimerList     = {};
+    m_TimerListTail = {};
 }

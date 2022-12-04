@@ -45,9 +45,9 @@ HK_CLASS_META(ASoundResource)
 
 ASoundResource::ASoundResource()
 {
-    Revision = ++RevisionGen;
+    m_Revision = ++RevisionGen;
 
-    Platform::ZeroMem(&AudioFileInfo, sizeof(AudioFileInfo));
+    Platform::ZeroMem(&m_AudioFileInfo, sizeof(m_AudioFileInfo));
 }
 
 ASoundResource::~ASoundResource()
@@ -65,37 +65,37 @@ int ASoundResource::GetFrequency() const
 
 int ASoundResource::GetSampleBits() const
 {
-    return AudioFileInfo.SampleBits;
+    return m_AudioFileInfo.SampleBits;
 }
 
 int ASoundResource::GetSampleWidth() const
 {
-    return AudioFileInfo.SampleBits >> 3;
+    return m_AudioFileInfo.SampleBits >> 3;
 }
 
 int ASoundResource::GetSampleStride() const
 {
-    return (AudioFileInfo.SampleBits >> 3) << (AudioFileInfo.Channels - 1);
+    return (m_AudioFileInfo.SampleBits >> 3) << (m_AudioFileInfo.Channels - 1);
 }
 
 int ASoundResource::GetChannels() const
 {
-    return AudioFileInfo.Channels;
+    return m_AudioFileInfo.Channels;
 }
 
 int ASoundResource::GetFrameCount() const
 {
-    return AudioFileInfo.FrameCount;
+    return m_AudioFileInfo.FrameCount;
 }
 
 float ASoundResource::GetDurationInSecounds() const
 {
-    return DurationInSeconds;
+    return m_DurationInSeconds;
 }
 
 SOUND_STREAM_TYPE ASoundResource::GetStreamType() const
 {
-    return CurStreamType;
+    return m_CurStreamType;
 }
 
 void ASoundResource::LoadInternalResource(AStringView _Path)
@@ -220,14 +220,14 @@ bool ASoundResource::InitializeFromMemory(AStringView _Path, BlobRef Memory, SSo
 
     Purge();
 
-    HK_ASSERT(!pBuffer);
+    HK_ASSERT(!m_pBuffer);
 
-    FileName = _Path;
+    m_FileName = _Path;
 
-    CurStreamType = _CreateInfo.StreamType;
-    if (CurStreamType == SOUND_STREAM_FILE)
+    m_CurStreamType = _CreateInfo.StreamType;
+    if (m_CurStreamType == SOUND_STREAM_FILE)
     {
-        CurStreamType = SOUND_STREAM_MEMORY;
+        m_CurStreamType = SOUND_STREAM_MEMORY;
 
         LOG("Using MemoryStreamed instead of FileStreamed as the file data is already in memory\n");
     }
@@ -235,24 +235,24 @@ bool ASoundResource::InitializeFromMemory(AStringView _Path, BlobRef Memory, SSo
     bool mono             = _CreateInfo.bForceMono || device->GetChannels() == 1;
     int  deviceSampleRate = device->GetSampleRate();
 
-    switch (CurStreamType)
+    switch (m_CurStreamType)
     {
         case SOUND_STREAM_DISABLED: {
-            if (!CreateAudioBuffer(AFile::OpenRead(_Path, Memory.GetData(), Memory.Size()).ReadInterface(), &AudioFileInfo, deviceSampleRate, mono, _CreateInfo.bForce8Bit, &pBuffer))
+            if (!CreateAudioBuffer(AFile::OpenRead(_Path, Memory.GetData(), Memory.Size()).ReadInterface(), &m_AudioFileInfo, deviceSampleRate, mono, _CreateInfo.bForce8Bit, &m_pBuffer))
             {
                 return false;
             }
             break;
         }
         case SOUND_STREAM_MEMORY: {
-            if (!LoadAudioFile(AFile::OpenRead(_Path, Memory.GetData(), Memory.Size()).ReadInterface(), &AudioFileInfo, deviceSampleRate, mono, _CreateInfo.bForce8Bit, nullptr))
+            if (!LoadAudioFile(AFile::OpenRead(_Path, Memory.GetData(), Memory.Size()).ReadInterface(), &m_AudioFileInfo, deviceSampleRate, mono, _CreateInfo.bForce8Bit, nullptr))
             {
                 return false;
             }
             void* pHeapPtr = Platform::GetHeapAllocator<HEAP_AUDIO_DATA>().Alloc(Memory.Size());
             Platform::Memcpy(pHeapPtr, Memory.GetData(), Memory.Size());
 
-            pFileInMemory = MakeRef<SFileInMemory>(pHeapPtr, Memory.Size());
+            m_pFileInMemory = MakeRef<SFileInMemory>(pHeapPtr, Memory.Size());
             break;
         }
         default:
@@ -260,7 +260,7 @@ bool ASoundResource::InitializeFromMemory(AStringView _Path, BlobRef Memory, SSo
             return false;
     }
 
-    DurationInSeconds = (float)GetFrameCount() / GetFrequency();
+    m_DurationInSeconds = (float)GetFrameCount() / GetFrequency();
 
     return true;
 }
@@ -303,21 +303,21 @@ bool ASoundResource::CreateAudioStreamInstance( TRef< IAudioStream > * ppInterfa
 
 bool ASoundResource::CreateStreamInstance(TRef<SAudioStream>* ppInterface)
 {
-    if (CurStreamType != SOUND_STREAM_MEMORY || !pFileInMemory)
+    if (m_CurStreamType != SOUND_STREAM_MEMORY || !m_pFileInMemory)
     {
         return false;
     }
 
-    *ppInterface = MakeRef<SAudioStream>(pFileInMemory, GetFrameCount(), GetFrequency(), GetSampleBits(), GetChannels());
+    *ppInterface = MakeRef<SAudioStream>(m_pFileInMemory, GetFrameCount(), GetFrequency(), GetSampleBits(), GetChannels());
     return true;
 }
 
 void ASoundResource::Purge()
 {
-    pBuffer.Reset();
-    pFileInMemory.Reset();
-    DurationInSeconds = 0;
+    m_pBuffer.Reset();
+    m_pFileInMemory.Reset();
+    m_DurationInSeconds = 0;
 
     // Mark resource was changed
-    Revision = ++RevisionGen;
+    m_Revision = ++RevisionGen;
 }

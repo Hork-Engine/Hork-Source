@@ -37,13 +37,13 @@ SOFTWARE.
 
 HK_CLASS_META(APlayerController)
 
-APlayerController* APlayerController::CurrentAudioListener = nullptr;
+APlayerController* APlayerController::m_CurrentAudioListener = nullptr;
 
 APlayerController::~APlayerController()
 {
-    if (CurrentAudioListener == this)
+    if (m_CurrentAudioListener == this)
     {
-        CurrentAudioListener = nullptr;
+        m_CurrentAudioListener = nullptr;
     }
 }
 
@@ -53,9 +53,9 @@ void APlayerController::Initialize(SActorInitializer& Initializer)
 
     m_InputComponent = CreateComponent<AInputComponent>("PlayerControllerInput");
 
-    if (!CurrentAudioListener)
+    if (!m_CurrentAudioListener)
     {
-        CurrentAudioListener = this;
+        m_CurrentAudioListener = this;
     }
 }
 
@@ -163,12 +163,12 @@ ASceneComponent* APlayerController::GetAudioListener()
 
 void APlayerController::SetCurrentAudioListener()
 {
-    CurrentAudioListener = this;
+    m_CurrentAudioListener = this;
 }
 
 APlayerController* APlayerController::GetCurrentAudioListener()
 {
-    return CurrentAudioListener;
+    return m_CurrentAudioListener;
 }
 
 float APlayerController::GetViewportAspectRatio() const

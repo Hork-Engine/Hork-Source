@@ -133,7 +133,7 @@ public:
     static void DestroyWorlds();
 
     /** Get array of worlds */
-    static TVector<AWorld*> const& GetWorlds() { return Worlds; }
+    static TVector<AWorld*> const& GetWorlds() { return m_Worlds; }
 
     /** Tick the worlds */
     static void UpdateWorlds(float TimeStep);
@@ -181,7 +181,7 @@ public:
     AActor* SpawnActor2(AActor const* Template, STransform const& SpawnTransform = {}, AActor* Instigator = {}, ALevel* Level = {}, bool bInEditor = {});
 
     /** Get all actors in the world */
-    TVector<AActor*> const& GetActors() const { return Actors; }
+    TVector<AActor*> const& GetActors() const { return m_Actors; }
 
     /** Destroy this world */
     void Destroy();
@@ -196,10 +196,10 @@ public:
     void RemoveLevel(ALevel* _Level);
 
     /** Get world's persistent level */
-    ALevel* GetPersistentLevel() { return PersistentLevel; }
+    ALevel* GetPersistentLevel() { return m_PersistentLevel; }
 
     /** Get all levels in the world */
-    TVector<ALevel*> const& GetArrayOfLevels() const { return ArrayOfLevels; }
+    TVector<ALevel*> const& GetArrayOfLevels() const { return m_ArrayOfLevels; }
 
     /** Pause the game. Freezes world and actor ticking since the next game tick. */
     void SetPaused(bool _Paused);
@@ -208,10 +208,10 @@ public:
     bool IsPaused() const;
 
     /** Game virtual time based on variable frame step */
-    int64_t GetRunningTimeMicro() const { return GameRunningTimeMicro; }
+    int64_t GetRunningTimeMicro() const { return m_GameRunningTimeMicro; }
 
     /** Gameplay virtual time based on fixed frame step, running when unpaused */
-    int64_t GetGameplayTimeMicro() const { return GameplayTimeMicro; }
+    int64_t GetGameplayTimeMicro() const { return m_GameplayTimeMicro; }
 
     /** Reset gameplay timer to zero. This is delayed operation. */
     void ResetGameplayTimer();
@@ -235,19 +235,19 @@ public:
     bool IsDuringPhysicsUpdate() const { return PhysicsSystem.bDuringPhysicsUpdate; }
 
     /** Is world destroyed, but not removed yet. */
-    bool IsPendingKill() const { return bPendingKill; }
+    bool IsPendingKill() const { return m_bPendingKill; }
 
     /** Scale audio volume in the entire world */
     void SetAudioVolume(float Volume)
     {
-        AudioVolume = Math::Saturate(Volume);
+        m_AudioVolume = Math::Saturate(Volume);
     }
 
     /** Scale audio volume in the entire world */
-    float GetAudioVolume() const { return AudioVolume; }
+    float GetAudioVolume() const { return m_AudioVolume; }
 
     void SetGlobalEnvironmentMap(AEnvironmentMap* EnvironmentMap);
-    AEnvironmentMap* GetGlobalEnvironmentMap() const { return GlobalEnvironmentMap; }
+    AEnvironmentMap* GetGlobalEnvironmentMap() const { return m_GlobalEnvironmentMap; }
 
     /** Per-triangle raycast */
     bool Raycast(SWorldRaycastResult& Result, Float3 const& RayStart, Float3 const& RayEnd, SWorldRaycastFilter const* Filter = nullptr) const;
@@ -379,7 +379,7 @@ public:
     // Internal
     //
 
-    AScriptEngine* GetScriptEngine() { return ScriptEngine.get(); }
+    AScriptEngine* GetScriptEngine() { return m_ScriptEngine.get(); }
 
     void DrawDebug(ADebugRenderer* InRenderer);
 
@@ -397,9 +397,9 @@ protected:
     void Tick(float TimeStep);
 
 private:
-    AActor*          PendingSpawnActors{};
-    AActor*          PendingKillActors{};
-    AActorComponent* PendingKillComponents{};
+    AActor*          m_PendingSpawnActors{};
+    AActor*          m_PendingKillActors{};
+    AActorComponent* m_PendingKillComponents{};
 
 private:
     struct SActorSpawnPrivate
@@ -440,51 +440,51 @@ private:
 
     void KillActors(bool bClearSpawnQueue = false);
 
-    TVector<AActor*>          Actors;
-    TVector<AActor*>          TickingActors;
-    TVector<AActor*>          PrePhysicsTickActors;
-    TVector<AActor*>          PostPhysicsTickActors;
-    TVector<AActor*>          LateUpdateActors;
-    TVector<AActorComponent*> TickingComponents;
+    TVector<AActor*>          m_Actors;
+    TVector<AActor*>          m_TickingActors;
+    TVector<AActor*>          m_PrePhysicsTickActors;
+    TVector<AActor*>          m_PostPhysicsTickActors;
+    TVector<AActor*>          m_LateUpdateActors;
+    TVector<AActorComponent*> m_TickingComponents;
 
-    bool bPauseRequest       = false;
-    bool bUnpauseRequest     = false;
-    bool bPaused             = false;
-    bool bResetGameplayTimer = false;
+    bool m_bPauseRequest       = false;
+    bool m_bUnpauseRequest     = false;
+    bool m_bPaused             = false;
+    bool m_bResetGameplayTimer = false;
 
     // Game virtual time based on variable frame step
-    int64_t GameRunningTimeMicro          = 0;
-    int64_t GameRunningTimeMicroAfterTick = 0;
+    int64_t m_GameRunningTimeMicro        = 0;
+    int64_t m_GameRunningTimeMicroAfterTick = 0;
 
     // Gameplay virtual time based on fixed frame step, running when unpaused
-    int64_t GameplayTimeMicro          = 0;
-    int64_t GameplayTimeMicroAfterTick = 0;
+    int64_t m_GameplayTimeMicro        = 0;
+    int64_t m_GameplayTimeMicroAfterTick = 0;
 
-    ATimer* TimerList         = nullptr;
-    ATimer* TimerListTail     = nullptr;
-    ATimer* pNextTickingTimer = nullptr;
+    ATimer* m_TimerList       = nullptr;
+    ATimer* m_TimerListTail   = nullptr;
+    ATimer* m_pNextTickingTimer = nullptr;
 
-    bool bPendingKill = false;
-    bool bTicking     = false;
+    bool m_bPendingKill = false;
+    bool m_bTicking     = false;
 
-    AWorld*        NextPendingKillWorld = nullptr;
-    static AWorld* PendingKillWorlds;
+    AWorld*        m_NextPendingKillWorld = nullptr;
+    static AWorld* m_PendingKillWorlds;
 
     // All existing worlds
-    static TVector<AWorld*> Worlds;
+    static TVector<AWorld*> m_Worlds;
     // The worlds that are ticking
-    static TVector<AWorld*> TickingWorlds;
+    static TVector<AWorld*> m_TickingWorlds;
 
-    TRef<ALevel>     PersistentLevel;
-    TVector<ALevel*> ArrayOfLevels;
+    TRef<ALevel>     m_PersistentLevel;
+    TVector<ALevel*> m_ArrayOfLevels;
 
     /** Scale audio volume in the entire world */
-    float AudioVolume = 1.0f;
+    float m_AudioVolume = 1.0f;
 
-    TRef<AEnvironmentMap> GlobalEnvironmentMap;
+    TRef<AEnvironmentMap> m_GlobalEnvironmentMap;
 
     // Script
-    std::unique_ptr<AScriptEngine> ScriptEngine;
+    std::unique_ptr<AScriptEngine> m_ScriptEngine;
 };
 
 #include "Actor.h"
@@ -686,9 +686,9 @@ struct TComponentIterator
     }
 
 private:
-    AArrayOfActorComponents const& Components;
-    T*                             Component;
-    int                            i;
+    ActorComponents const& Components;
+    T*                     Component;
+    int                    i;
 };
 
 /*
@@ -738,6 +738,6 @@ struct TComponentIterator2
     }
 
 private:
-    AArrayOfActorComponents const& Components;
-    int                            i;
+    ActorComponents const& Components;
+    int                    i;
 };

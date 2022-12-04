@@ -36,49 +36,49 @@ HK_CLASS_META(AActorComponent)
 
 AActorComponent::AActorComponent()
 {
-    bInitialized  = false;
-    bPendingKill  = false;
-    bHideInEditor = false;
-    bTicking      = false;
+    m_bInitialized = false;
+    m_bPendingKill = false;
+    m_bHideInEditor = false;
+    m_bTicking      = false;
 }
 
 AWorld* AActorComponent::GetWorld() const
 {
-    HK_ASSERT(OwnerActor);
-    return OwnerActor ? OwnerActor->GetWorld() : nullptr;
+    HK_ASSERT(m_OwnerActor);
+    return m_OwnerActor ? m_OwnerActor->GetWorld() : nullptr;
 }
 
 ALevel* AActorComponent::GetLevel() const
 {
-    HK_ASSERT(OwnerActor);
-    return OwnerActor ? OwnerActor->GetLevel() : nullptr;
+    HK_ASSERT(m_OwnerActor);
+    return m_OwnerActor ? m_OwnerActor->GetLevel() : nullptr;
 }
 
 bool AActorComponent::IsInEditor() const
 {
-    HK_ASSERT(OwnerActor);
-    return OwnerActor ? OwnerActor->IsInEditor() : false;
+    HK_ASSERT(m_OwnerActor);
+    return m_OwnerActor ? m_OwnerActor->IsInEditor() : false;
 }
 
 void AActorComponent::RegisterComponent()
 {
-    if (bPendingKill)
+    if (m_bPendingKill)
     {
         return;
     }
 
-    if (bInitialized)
+    if (m_bInitialized)
     {
         return;
     }
 
-    if (OwnerActor->IsSpawning())
+    if (m_OwnerActor->IsSpawning())
     {
         return;
     }
 
     InitializeComponent();
-    bInitialized = true;
+    m_bInitialized = true;
 
     // FIXME: Call BeginPlay() from here?
     BeginPlay();

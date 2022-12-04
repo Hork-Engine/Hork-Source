@@ -41,7 +41,7 @@ class ASceneComponent;
 class AInputComponent;
 class AController;
 
-using AArrayOfActorComponents = TSmallVector<AActorComponent*, 8>;
+using ActorComponents = TSmallVector<AActorComponent*, 8>;
 
 #define HK_ACTOR(_Class, _SuperClass) \
     HK_FACTORY_CLASS(AActor::Factory(), _Class, _SuperClass)
@@ -98,24 +98,24 @@ public:
     AActor();
 
     /** Get actor's world */
-    AWorld* GetWorld() const { return World; }
+    AWorld* GetWorld() const { return m_World; }
 
     /** Get actor's level */
-    ALevel* GetLevel() const { return Level; }
+    ALevel* GetLevel() const { return m_Level; }
 
     /** The root component is used to place an actor in the world.
     It is also used to set the actor's location during spawning. */
-    ASceneComponent* GetRootComponent() const { return RootComponent; }
+    ASceneComponent* GetRootComponent() const { return m_RootComponent; }
 
-    void ResetRootComponent() { RootComponent = nullptr; }
+    void ResetRootComponent() { m_RootComponent = nullptr; }
 
     /** The pawn camera is used to setup rendering. */
-    ACameraComponent* GetPawnCamera() { return PawnCamera; }
+    ACameraComponent* GetPawnCamera() { return m_PawnCamera; }
 
     /** Actor's instigator */
-    AActor* GetInstigator() { return Instigator; }
+    AActor* GetInstigator() { return m_Instigator; }
 
-    AController* GetController() { return Controller; }
+    AController* GetController() { return m_Controller; }
 
     /** Create component by it's class id */
     AActorComponent* CreateComponent(uint64_t _ClassId, AStringView Name);
@@ -150,13 +150,13 @@ public:
     }
 
     /** Get all actor components */
-    AArrayOfActorComponents const& GetComponents() const { return Components; }
+    ActorComponents const& GetComponents() const { return m_Components; }
 
     /** Destroy self */
     void Destroy();
 
     /** Is actor marked as pending kill */
-    bool IsPendingKill() const { return bPendingKill; }
+    bool IsPendingKill() const { return m_bPendingKill; }
 
     /** Apply damage to the actor */
     void ApplyDamage(SActorDamage const& Damage);
@@ -167,9 +167,9 @@ public:
     /** Is used to register console commands. Experimental. */
     virtual void SetupRuntimeCommands() {}
 
-    bool IsSpawning() const { return bSpawning; }
+    bool IsSpawning() const { return m_bSpawning; }
 
-    bool IsInEditor() const { return bInEditor; }
+    bool IsInEditor() const { return m_bInEditor; }
 
     /** Set property value by it's public name. See actor definition. */
     bool SetPublicProperty(AStringView PublicName, AStringView Value);
@@ -193,10 +193,10 @@ protected:
 
     /** The root component is used to place an actor in the world.
     It is also used to set the actor's location during spawning. */
-    ASceneComponent* RootComponent{};
+    ASceneComponent* m_RootComponent{};
 
     /** The pawn camera is used to setup rendering. */
-    TWeakRef<ACameraComponent> PawnCamera;
+    TWeakRef<ACameraComponent> m_PawnCamera;
 
     /** Called after constructor. Note that the actor is not yet in the world.
     The actor appears in the world only after spawn and just before calling BeginPlay().
@@ -254,38 +254,38 @@ private:
     void CallDrawDebug(ADebugRenderer* InRenderer);
 
 private:
-    AWorld*                      World{};
-    TWeakRef<ALevel>             Level;
-    AArrayOfActorComponents      Components;
-    TRef<AActorDefinition>       pActorDef;
-    AActor*                      Instigator{};
-    AController*                 Controller{};
-    class asIScriptObject*       ScriptModule{};
-    class asILockableSharedBool* pWeakRefFlag{};
+    AWorld*                      m_World{};
+    TWeakRef<ALevel>             m_Level;
+    ActorComponents              m_Components;
+    TRef<AActorDefinition>       m_pActorDef;
+    AActor*                      m_Instigator{};
+    AController*                 m_Controller{};
+    class asIScriptObject*       m_ScriptModule{};
+    class asILockableSharedBool* m_pWeakRefFlag{};
     AString                      m_Name;
 
-    int ComponentLocalIdGen{};
+    int m_ComponentLocalIdGen{};
 
     /** Index in world array of actors */
-    int IndexInWorldArrayOfActors{-1};
+    int m_IndexInWorldArrayOfActors{-1};
 
     /** Index in level array of actors */
-    int IndexInLevelArrayOfActors{-1};
+    int m_IndexInLevelArrayOfActors{-1};
 
-    AActor* NextSpawnActor{};
-    AActor* NextPendingKillActor{};
+    AActor* m_NextSpawnActor{};
+    AActor* m_NextPendingKillActor{};
 
-    ATimer* TimerList{};
-    ATimer* TimerListTail{};
+    ATimer* m_TimerList{};
+    ATimer* m_TimerListTail{};
 
-    float LifeTime{0.0f};
+    float m_LifeTime{0.0f};
 
-    bool bCanEverTick{};
-    bool bTickEvenWhenPaused{};
-    bool bTickPrePhysics{};
-    bool bTickPostPhysics{};
-    bool bLateUpdate{};
-    bool bSpawning{true};
-    bool bPendingKill{};
-    bool bInEditor{};
+    bool m_bCanEverTick{};
+    bool m_bTickEvenWhenPaused{};
+    bool m_bTickPrePhysics{};
+    bool m_bTickPostPhysics{};
+    bool m_bLateUpdate{};
+    bool m_bSpawning{true};
+    bool m_bPendingKill{};
+    bool m_bInEditor{};
 };

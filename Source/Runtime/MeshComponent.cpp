@@ -258,7 +258,7 @@ void AMeshComponent::SetMesh(AIndexedMesh* _Mesh)
 
     Mesh = _Mesh;
 
-    for (SSocket& socket : Sockets)
+    for (SceneSocket& socket : m_Sockets)
     {
         socket.SocketDef->RemoveRef();
     }
@@ -276,12 +276,12 @@ void AMeshComponent::SetMesh(AIndexedMesh* _Mesh)
 
     // Update sockets
     TVector<ASocketDef*> const& socketDef = Mesh->GetSockets();
-    Sockets.ResizeInvalidate(socketDef.Size());
+    m_Sockets.ResizeInvalidate(socketDef.Size());
     for (int i = 0; i < socketDef.Size(); i++)
     {
         socketDef[i]->AddRef();
-        Sockets[i].SocketDef   = socketDef[i];
-        Sockets[i].SkinnedMesh = IsSkinnedMesh() ? static_cast<ASkinnedComponent*>(this) : nullptr;
+        m_Sockets[i].SocketDef   = socketDef[i];
+        m_Sockets[i].SkinnedMesh = IsSkinnedMesh() ? static_cast<ASkinnedComponent*>(this) : nullptr;
     }
 
     NotifyMeshChanged();

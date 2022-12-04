@@ -55,8 +55,8 @@ public:
     void              UnprepareContext(asIScriptContext* pContext);
 
 private:
-    asIScriptEngine* pEngine;
-    TPodVector<asIScriptContext*> Contexts;
+    asIScriptEngine*              m_pEngine;
+    TPodVector<asIScriptContext*> m_Contexts;
 };
 
 class AActorScript
@@ -103,7 +103,7 @@ public:
 
     asIScriptObject* CreateScriptInstance(AString const& ModuleName, AActor* pActor);
 
-    AScriptContextPool& GetContextPool() { return ContextPool; }
+    AScriptContextPool& GetContextPool() { return m_ContextPool; }
 
     bool bHasCompileErrors;
 
@@ -112,8 +112,8 @@ protected:
 
     AActorScript* GetActorScript(AString const& ModuleName);
 
-    asIScriptEngine* pEngine;
+    asIScriptEngine* m_pEngine;
 
-    AScriptContextPool                     ContextPool;
-    TVector<std::unique_ptr<AActorScript>> Scripts;
+    AScriptContextPool                     m_ContextPool;
+    TVector<std::unique_ptr<AActorScript>> m_Scripts;
 };

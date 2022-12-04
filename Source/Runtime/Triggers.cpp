@@ -35,7 +35,7 @@ HK_CLASS_META(ATriggerBox)
 ATriggerBox::ATriggerBox()
 {
     TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
-    RootComponent = TriggerBody;
+    m_RootComponent = TriggerBody;
 
     TriggerBody->SetDispatchOverlapEvents(true);
     TriggerBody->SetTrigger(true);
@@ -54,7 +54,7 @@ HK_CLASS_META(ATriggerSphere)
 ATriggerSphere::ATriggerSphere()
 {
     TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
-    RootComponent = TriggerBody;
+    m_RootComponent = TriggerBody;
 
     TriggerBody->SetDispatchOverlapEvents(true);
     TriggerBody->SetTrigger(true);
@@ -73,7 +73,7 @@ HK_CLASS_META(ATriggerCylinder)
 ATriggerCylinder::ATriggerCylinder()
 {
     TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
-    RootComponent = TriggerBody;
+    m_RootComponent = TriggerBody;
 
     TriggerBody->SetDispatchOverlapEvents(true);
     TriggerBody->SetTrigger(true);
@@ -92,7 +92,7 @@ HK_CLASS_META(ATriggerCone)
 ATriggerCone::ATriggerCone()
 {
     TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
-    RootComponent = TriggerBody;
+    m_RootComponent = TriggerBody;
 
     TriggerBody->SetDispatchOverlapEvents(true);
     TriggerBody->SetTrigger(true);
@@ -111,7 +111,7 @@ HK_CLASS_META(ATriggerCapsule)
 ATriggerCapsule::ATriggerCapsule()
 {
     TriggerBody   = CreateComponent<APhysicalBody>("TriggerBody");
-    RootComponent = TriggerBody;
+    m_RootComponent = TriggerBody;
 
     TriggerBody->SetDispatchOverlapEvents(true);
     TriggerBody->SetTrigger(true);

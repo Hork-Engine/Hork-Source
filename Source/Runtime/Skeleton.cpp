@@ -40,7 +40,7 @@ HK_CLASS_META(ASkeleton)
 
 ASkeleton::ASkeleton()
 {
-    BindposeBounds.Clear();
+    m_BindposeBounds.Clear();
 }
 
 ASkeleton::~ASkeleton()
@@ -50,7 +50,7 @@ ASkeleton::~ASkeleton()
 
 void ASkeleton::Purge()
 {
-    Joints.Clear();
+    m_Joints.Clear();
 }
 
 void ASkeleton::Initialize(SJoint* _Joints, int _JointsCount, BvAxisAlignedBox const& _BindposeBounds)
@@ -64,13 +64,13 @@ void ASkeleton::Initialize(SJoint* _Joints, int _JointsCount, BvAxisAlignedBox c
     }
 
     // Copy joints
-    Joints.ResizeInvalidate(_JointsCount);
+    m_Joints.ResizeInvalidate(_JointsCount);
     if (_JointsCount > 0)
     {
-        Platform::Memcpy(Joints.ToPtr(), _Joints, sizeof(*_Joints) * _JointsCount);
+        Platform::Memcpy(m_Joints.ToPtr(), _Joints, sizeof(*_Joints) * _JointsCount);
     }
 
-    BindposeBounds = _BindposeBounds;
+    m_BindposeBounds = _BindposeBounds;
 }
 
 void ASkeleton::LoadInternalResource(AStringView _Path)
@@ -110,17 +110,17 @@ bool ASkeleton::LoadResource(IBinaryStreamReadInterface& Stream)
 
     AString guid = Stream.ReadString();
 
-    Stream.ReadArray(Joints);
-    Stream.ReadObject(BindposeBounds);
+    Stream.ReadArray(m_Joints);
+    Stream.ReadObject(m_BindposeBounds);
 
     return true;
 }
 
 int ASkeleton::FindJoint(const char* _Name) const
 {
-    for (int j = 0; j < Joints.Size(); j++)
+    for (int j = 0; j < m_Joints.Size(); j++)
     {
-        if (!Platform::Stricmp(Joints[j].Name, _Name))
+        if (!Platform::Stricmp(m_Joints[j].Name, _Name))
         {
             return j;
         }

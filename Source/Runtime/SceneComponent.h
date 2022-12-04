@@ -36,12 +36,12 @@ SOFTWARE.
 
 class ASceneComponent;
 
-using AArrayOfChildComponents = TSmallVector<ASceneComponent*, 8>;
+using ChildComponents = TSmallVector<ASceneComponent*, 8>;
 
 class ASocketDef;
 class ASkinnedComponent;
 
-struct SSocket
+struct SceneSocket
 {
     /** Socket resource object */
     ASocketDef* SocketDef;
@@ -82,10 +82,10 @@ public:
     ASceneComponent* FindChild(AStringView _UniqueName, bool _Recursive);
 
     /** Get reference to array of child components */
-    AArrayOfChildComponents const& GetChilds() const { return Childs; }
+    ChildComponents const& GetChildren() const { return m_Children; }
 
     /** Get parent component */
-    ASceneComponent* GetParent() const { return AttachParent; }
+    ASceneComponent* GetParent() const { return m_AttachParent; }
 
     /** Get socket index by name */
     int FindSocket(AStringView _Name) const;
@@ -94,25 +94,25 @@ public:
     Float3x4 GetSocketTransform(int _SocketIndex) const;
 
     /** Get attached socket */
-    int GetAttachedSocket() const { return SocketIndex; }
+    int GetAttachedSocket() const { return m_SocketIndex; }
 
     /** Is component attached to socket */
-    bool IsAttachedToSocket() const { return SocketIndex >= 0; }
+    bool IsAttachedToSocket() const { return m_SocketIndex >= 0; }
 
     /** Set ignore parent position */
     void SetAbsolutePosition(bool _AbsolutePosition);
 
-    bool IsAbsolutePosition() const { return bAbsolutePosition; }
+    bool IsAbsolutePosition() const { return m_bAbsolutePosition; }
 
     /** Set ignore parent rotation */
     void SetAbsoluteRotation(bool _AbsoluteRotation);
 
-    bool IsAbsoluteRotation() const { return bAbsoluteRotation; }
+    bool IsAbsoluteRotation() const { return m_bAbsoluteRotation; }
 
     /** Set ignore parent scale */
     void SetAbsoluteScale(bool _AbsoluteScale);
 
-    bool IsAbsoluteScale() const { return bAbsoluteScale; }
+    bool IsAbsoluteScale() const { return m_bAbsoluteScale; }
 
     /** Set local position */
     void SetPosition(Float3 const& _Position);
@@ -253,24 +253,24 @@ protected:
 
     virtual void OnTransformDirty() {}
 
-    using AArrayOfSockets = TVector<SSocket>;
-    AArrayOfSockets Sockets;
+    using ArrayOfSockets = TVector<SceneSocket>;
+    ArrayOfSockets m_Sockets;
 
 private:
     void _AttachTo(ASceneComponent* _Parent, bool _KeepWorldTransform);
 
     void ComputeWorldTransform() const;
 
-    Float3                  Position{0, 0, 0};
-    Quat                    Rotation{1, 0, 0, 0};
-    Float3                  Scale{1, 1, 1};
-    mutable Float3x4        WorldTransformMatrix; // Transposed world transform matrix
-    mutable Quat            WorldRotation{1, 0, 0, 0};
-    mutable bool            bTransformDirty{true};
-    AArrayOfChildComponents Childs;
-    ASceneComponent*        AttachParent{nullptr};
-    int                     SocketIndex{0};
-    bool                    bAbsolutePosition : 1;
-    bool                    bAbsoluteRotation : 1;
-    bool                    bAbsoluteScale : 1;
+    Float3           m_Position{0, 0, 0};
+    Quat             m_Rotation{1, 0, 0, 0};
+    Float3           m_Scale{1, 1, 1};
+    mutable Float3x4 m_WorldTransformMatrix; // Transposed world transform matrix
+    mutable Quat     m_WorldRotation{1, 0, 0, 0};
+    mutable bool     m_bTransformDirty{true};
+    ChildComponents  m_Children;
+    ASceneComponent* m_AttachParent{nullptr};
+    int              m_SocketIndex{0};
+    bool             m_bAbsolutePosition : 1;
+    bool             m_bAbsoluteRotation : 1;
+    bool             m_bAbsoluteScale : 1;
 };

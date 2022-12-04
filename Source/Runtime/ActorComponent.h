@@ -63,7 +63,7 @@ public:
     }
 
     /** Component owner */
-    AActor* GetOwnerActor() const { return OwnerActor; }
+    AActor* GetOwnerActor() const { return m_OwnerActor; }
 
     /** Component parent level */
     ALevel* GetLevel() const;
@@ -75,18 +75,18 @@ public:
     void Destroy();
 
     /** Is component initialized */
-    bool IsInitialized() const { return bInitialized; }
+    bool IsInitialized() const { return m_bInitialized; }
 
     /** Is component marked as pending kill */
-    bool IsPendingKill() const { return bPendingKill; }
+    bool IsPendingKill() const { return m_bPendingKill; }
 
     /** Spawned for editing */
     bool IsInEditor() const;
 
     /** Attributes of this component will not be visible in editor */
-    void SetHideInEditor(bool _HideInEditor) { bHideInEditor = _HideInEditor; }
+    void SetHideInEditor(bool _HideInEditor) { m_bHideInEditor = _HideInEditor; }
 
-    bool HiddenInEditor() const { return bHideInEditor; }
+    bool HiddenInEditor() const { return m_bHideInEditor; }
 
     /** Register component to initialize it at runtime */
     void RegisterComponent();
@@ -117,17 +117,17 @@ protected:
     virtual void DrawDebug(ADebugRenderer* InRenderer) {}
 
 private:
-    AActor* OwnerActor = nullptr;
+    AActor* m_OwnerActor = nullptr;
 
     AActorComponent* NextPendingKillComponent = nullptr;
 
     AString m_Name;
 
-    int LocalId{};
-    int ComponentIndex = -1;
+    int m_LocalId{};
+    int m_ComponentIndex = -1;
 
-    bool bInitialized : 1;
-    bool bPendingKill : 1;
-    bool bHideInEditor : 1;
-    bool bTicking : 1;
+    bool m_bInitialized : 1;
+    bool m_bPendingKill : 1;
+    bool m_bHideInEditor : 1;
+    bool m_bTicking : 1;
 };

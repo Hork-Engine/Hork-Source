@@ -2399,75 +2399,75 @@ void RegisterMath(asIScriptEngine* pEngine)
 
 
 AScriptEngine::AScriptEngine(AWorld* pWorld) :
-    pEngine(asCreateScriptEngine()),
-    ContextPool(pEngine)
+    m_pEngine(asCreateScriptEngine()),
+    m_ContextPool(m_pEngine)
 {
     bHasCompileErrors = false;
     int r;
 
 
-    r = pEngine->SetMessageCallback(asMETHOD(AScriptEngine, MessageCallback), this, asCALL_THISCALL);
+    r = m_pEngine->SetMessageCallback(asMETHOD(AScriptEngine, MessageCallback), this, asCALL_THISCALL);
     assert(r >= 0);
 
     // Register the string type
-    RegisterStdString(pEngine);
+    RegisterStdString(m_pEngine);
 
     // Register the generic handle type, called 'ref' in the script
-    RegisterScriptHandle(pEngine);
+    RegisterScriptHandle(m_pEngine);
 
     // Register the weak ref template type
-    RegisterScriptWeakRef(pEngine);
+    RegisterScriptWeakRef(m_pEngine);
 
-    RegisterMath(pEngine);
+    RegisterMath(m_pEngine);
 
     // Register the game object. The scripts cannot create these directly, so there is no factory function.
-    r = pEngine->RegisterObjectType("AActor", 0, asOBJ_REF);
+    r = m_pEngine->RegisterObjectType("AActor", 0, asOBJ_REF);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("AActor", asBEHAVE_ADDREF, "void f()", asMETHOD(AActor, AddRef), asCALL_THISCALL);
+    r = m_pEngine->RegisterObjectBehaviour("AActor", asBEHAVE_ADDREF, "void f()", asMETHOD(AActor, AddRef), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("AActor", asBEHAVE_RELEASE, "void f()", asMETHOD(AActor, RemoveRef), asCALL_THISCALL);
+    r = m_pEngine->RegisterObjectBehaviour("AActor", asBEHAVE_RELEASE, "void f()", asMETHOD(AActor, RemoveRef), asCALL_THISCALL);
     assert(r >= 0);
-    r = pEngine->RegisterObjectBehaviour("AActor", asBEHAVE_GET_WEAKREF_FLAG, "int &f()", asMETHOD(AActor, ScriptGetWeakRefFlag), asCALL_THISCALL);
-    assert(r >= 0);
-
-    r = pEngine->RegisterObjectType("SActorDamage", sizeof(SActorDamage), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<Float3>());
+    r = m_pEngine->RegisterObjectBehaviour("AActor", asBEHAVE_GET_WEAKREF_FLAG, "int &f()", asMETHOD(AActor, ScriptGetWeakRefFlag), asCALL_THISCALL);
     assert(r >= 0);
 
-    //r = pEngine->RegisterObjectProperty("AActor", "bool bTickEvenWhenPaused", offsetof(AActor, bTickEvenWhenPaused));
+    r = m_pEngine->RegisterObjectType("SActorDamage", sizeof(SActorDamage), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<Float3>());
+    assert(r >= 0);
+
+    //r = m_pEngine->RegisterObjectProperty("AActor", "bool bTickEvenWhenPaused", offsetof(AActor, bTickEvenWhenPaused));
     //assert(r >= 0);
 
-    r = pEngine->RegisterObjectMethod("AActor", "void Destroy()", asMETHOD(AActor, Destroy), asCALL_THISCALL);
+    r = m_pEngine->RegisterObjectMethod("AActor", "void Destroy()", asMETHOD(AActor, Destroy), asCALL_THISCALL);
     assert(r >= 0);
 
-    r = pEngine->RegisterObjectMethod("AActor", "bool get_bPendingKill() const property", asMETHOD(AActor, IsPendingKill), asCALL_THISCALL);
+    r = m_pEngine->RegisterObjectMethod("AActor", "bool get_bPendingKill() const property", asMETHOD(AActor, IsPendingKill), asCALL_THISCALL);
     assert(r >= 0);
 
-    r = pEngine->RegisterObjectMethod("AActor", "void ApplyDamage(const SActorDamage& in)", asMETHOD(AActor, ApplyDamage), asCALL_THISCALL);
+    r = m_pEngine->RegisterObjectMethod("AActor", "void ApplyDamage(const SActorDamage& in)", asMETHOD(AActor, ApplyDamage), asCALL_THISCALL);
     assert(r >= 0);
 
 
-    r = pEngine->RegisterObjectProperty("SActorDamage", "float Amount", offsetof(SActorDamage, Amount));
+    r = m_pEngine->RegisterObjectProperty("SActorDamage", "float Amount", offsetof(SActorDamage, Amount));
     assert(r >= 0);
-    r = pEngine->RegisterObjectProperty("SActorDamage", "Float3 Position", offsetof(SActorDamage, Position));
+    r = m_pEngine->RegisterObjectProperty("SActorDamage", "Float3 Position", offsetof(SActorDamage, Position));
     assert(r >= 0);
-    r = pEngine->RegisterObjectProperty("SActorDamage", "float Radius", offsetof(SActorDamage, Radius));
+    r = m_pEngine->RegisterObjectProperty("SActorDamage", "float Radius", offsetof(SActorDamage, Radius));
     assert(r >= 0);
-    //r = pEngine->RegisterObjectProperty("SActorDamage", "AActor@+ DamageCauser", offsetof(SActorDamage, DamageCauser));
+    //r = m_pEngine->RegisterObjectProperty("SActorDamage", "AActor@+ DamageCauser", offsetof(SActorDamage, DamageCauser));
     //assert(r >= 0);
 
 
 
 
-    r = pEngine->RegisterInterface("IActorScript");
+    r = m_pEngine->RegisterInterface("IActorScript");
     assert(r >= 0);
 
-    r = pEngine->RegisterGlobalFunction("void PrintMessage(const string &in msg)", asFUNCTION(PrintMessage), asCALL_CDECL);
+    r = m_pEngine->RegisterGlobalFunction("void PrintMessage(const string &in msg)", asFUNCTION(PrintMessage), asCALL_CDECL);
     assert(r >= 0);
 
-    r = pEngine->RegisterObjectType("AWorld", 0, asOBJ_REF | asOBJ_NOHANDLE);
+    r = m_pEngine->RegisterObjectType("AWorld", 0, asOBJ_REF | asOBJ_NOHANDLE);
     assert(r >= 0);
 
-    r = pEngine->RegisterGlobalProperty("AWorld world", pWorld);
+    r = m_pEngine->RegisterGlobalProperty("AWorld world", pWorld);
     assert(r >= 0);
 
     HK_UNUSED(r);
@@ -2475,10 +2475,10 @@ AScriptEngine::AScriptEngine(AWorld* pWorld) :
 
 AScriptEngine::~AScriptEngine()
 {
-    Scripts.Clear();
+    m_Scripts.Clear();
 
-    if (pEngine)
-        pEngine->ShutDownAndRelease();
+    if (m_pEngine)
+        m_pEngine->ShutDownAndRelease();
 }
 
 void AScriptEngine::MessageCallback(asSMessageInfo const& msg)
@@ -2517,13 +2517,13 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
 {
     int r;
 
-    for (auto& pScript : Scripts) // TODO: hash
+    for (auto& pScript : m_Scripts) // TODO: hash
     {
         if (pScript->Module == ModuleName)
             return pScript.get();
     }
 
-    asIScriptModule* mod = pEngine->GetModule(ModuleName.CStr(), asGM_ONLY_IF_EXISTS);
+    asIScriptModule* mod = m_pEngine->GetModule(ModuleName.CStr(), asGM_ONLY_IF_EXISTS);
     if (mod)
     {
         // We've already attempted loading the script before, but there is no actor class
@@ -2532,7 +2532,7 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
 
     // Compile the script into the module
     CScriptBuilder builder;
-    r = builder.StartNewModule(pEngine, ModuleName.CStr());
+    r = builder.StartNewModule(m_pEngine, ModuleName.CStr());
     if (r < 0)
         return nullptr;
 
@@ -2554,7 +2554,7 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
     pScript->Module = ModuleName;
 
     // Find the class that implements the IActorScript interface
-    mod               = pEngine->GetModule(ModuleName.CStr(), asGM_ONLY_IF_EXISTS);
+    mod               = m_pEngine->GetModule(ModuleName.CStr(), asGM_ONLY_IF_EXISTS);
     asITypeInfo* type = 0;
     int          tc   = mod->GetObjectTypeCount();
     for (int n = 0; n < tc; n++)
@@ -2604,9 +2604,9 @@ AActorScript* AScriptEngine::GetActorScript(AString const& ModuleName)
 
     type->SetUserData(pScript.get());
 
-    Scripts.Add(std::move(pScript));
+    m_Scripts.Add(std::move(pScript));
 
-    return Scripts.Last().get();
+    return m_Scripts.Last().get();
 }
 
 asIScriptObject* AScriptEngine::CreateScriptInstance(AString const& ModuleName, AActor* pActor)
@@ -2629,26 +2629,26 @@ asIScriptObject* AScriptEngine::CreateScriptInstance(AString const& ModuleName, 
 }
 
 AScriptContextPool::AScriptContextPool(asIScriptEngine* pEngine) :
-    pEngine(pEngine)
+    m_pEngine(pEngine)
 {
 }
 
 AScriptContextPool::~AScriptContextPool()
 {
-    for (asIScriptContext* pContext : Contexts)
+    for (asIScriptContext* pContext : m_Contexts)
         pContext->Release();
 }
 
 asIScriptContext* AScriptContextPool::PrepareContext(asIScriptFunction* pFunction)
 {
     asIScriptContext* pContext;
-    if (!Contexts.IsEmpty())
+    if (!m_Contexts.IsEmpty())
     {
-        pContext = Contexts.Last();
-        Contexts.RemoveLast();
+        pContext = m_Contexts.Last();
+        m_Contexts.RemoveLast();
     }
     else
-        pContext = pEngine->CreateContext();
+        pContext = m_pEngine->CreateContext();
 
     int r = pContext->Prepare(pFunction);
     HK_ASSERT(r >= 0);
@@ -2671,7 +2671,7 @@ asIScriptContext* AScriptContextPool::PrepareContext(asIScriptObject* pScriptObj
 void AScriptContextPool::UnprepareContext(asIScriptContext* pContext)
 {
     pContext->Unprepare();
-    Contexts.Add(pContext);
+    m_Contexts.Add(pContext);
 }
 
 AActorScript* AActorScript::GetScript(asIScriptObject* pObject)

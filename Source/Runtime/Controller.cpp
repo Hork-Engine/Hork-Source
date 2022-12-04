@@ -56,7 +56,7 @@ void AController::SetPawn(AActor* pNewPawn)
 
     if (m_Pawn)
     {
-        m_Pawn->Controller = nullptr;
+        m_Pawn->m_Controller = nullptr;
         if (!m_Pawn->IsPendingKill())
             m_Pawn->OnInputLost();
     }
@@ -65,7 +65,7 @@ void AController::SetPawn(AActor* pNewPawn)
 
     if (m_Pawn)
     {
-        m_Pawn->Controller = this;
+        m_Pawn->m_Controller = this;
     }
 
     OnPawnChanged();

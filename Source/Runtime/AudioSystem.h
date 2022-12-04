@@ -65,29 +65,29 @@ public:
 
     AAudioDevice* GetPlaybackDevice() const
     {
-        return pPlaybackDevice;
+        return m_pPlaybackDevice;
     }
 
     AAudioMixer* GetMixer() const
     {
-        return pMixer.GetObject();
+        return m_pMixer.GetObject();
     }
 
     TPoolAllocator<ASoundOneShot, 128>& GetOneShotPool()
     {
-        return OneShotPool;
+        return m_OneShotPool;
     }
 
     SAudioListener const& GetListener() const
     {
-        return Listener;
+        return m_Listener;
     }
 
     void Update(APlayerController* _Controller, float _TimeStep);
 
 private:
-    TRef<AAudioDevice>                 pPlaybackDevice;
-    TUniqueRef<AAudioMixer>            pMixer;
-    TPoolAllocator<ASoundOneShot, 128> OneShotPool;
-    SAudioListener                     Listener;
+    TRef<AAudioDevice>                 m_pPlaybackDevice;
+    TUniqueRef<AAudioMixer>            m_pMixer;
+    TPoolAllocator<ASoundOneShot, 128> m_OneShotPool;
+    SAudioListener                     m_Listener;
 };

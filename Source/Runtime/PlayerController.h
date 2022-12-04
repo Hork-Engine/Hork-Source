@@ -143,5 +143,5 @@ private:
     int                        m_ViewportWidth{};
     int                        m_ViewportHeight{};
 
-    static APlayerController* CurrentAudioListener;
+    static APlayerController* m_CurrentAudioListener;
 };

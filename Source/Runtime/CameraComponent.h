@@ -72,31 +72,31 @@ public:
     /** Zoom for orthogonal projection */
     void SetOrthoZoom(float _Zoom);
 
-    ECameraProjection GetProjection() const { return Projection; }
+    ECameraProjection GetProjection() const { return m_Projection; }
 
     bool IsPerspective() const
     {
-        return Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO || Projection == CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO || Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_FOV_Y;
+        return m_Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_ASPECT_RATIO || m_Projection == CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO || m_Projection == CAMERA_PROJ_PERSPECTIVE_FOV_X_FOV_Y;
     }
 
-    bool IsOrthographic() const { return Projection == CAMERA_PROJ_ORTHO_RECT || Projection == CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO; }
+    bool IsOrthographic() const { return m_Projection == CAMERA_PROJ_ORTHO_RECT || m_Projection == CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO; }
 
-    float GetZNear() const { return ZNear; }
+    float GetZNear() const { return m_ZNear; }
 
-    float GetZFar() const { return ZFar; }
+    float GetZFar() const { return m_ZFar; }
 
-    float GetAspectRatio() const { return AspectRatio; }
+    float GetAspectRatio() const { return m_AspectRatio; }
 
-    float GetFovX() const { return FovX; }
+    float GetFovX() const { return m_FovX; }
 
-    float GetFovY() const { return FovY; }
+    float GetFovY() const { return m_FovY; }
 
     /** Computes real camera field of view in radians for perspective projection */
     void GetEffectiveFov(float& _FovX, float& _FovY) const;
 
-    Float2 const& GetOrthoMins() const { return OrthoMins; }
+    Float2 const& GetOrthoMins() const { return m_OrthoMins; }
 
-    Float2 const& GetOrthoMaxs() const { return OrthoMaxs; }
+    Float2 const& GetOrthoMaxs() const { return m_OrthoMaxs; }
 
     Float4x4 const& GetProjectionMatrix() const;
 
@@ -126,20 +126,20 @@ protected:
     void DrawDebug(ADebugRenderer* InRenderer) override;
 
 private:
-    float             FovX{90.0f};
-    float             FovY{90.0f};
-    float             ZNear{0.04f};
-    float             ZFar{99999.0f};
-    float             AspectRatio{1.0f};
-    Float2            OrthoMins{-1, -1};
-    Float2            OrthoMaxs{1, 1};
-    float             OrthoZoom{30};
-    mutable Float4x4  ViewMatrix;
-    mutable Float3x3  BillboardMatrix;
-    mutable Float4x4  ProjectionMatrix;
-    mutable BvFrustum Frustum;
-    ECameraProjection Projection{CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO};
-    mutable bool      bViewMatrixDirty{true};
-    mutable bool      bProjectionDirty{true};
-    mutable bool      bFrustumDirty{true};
+    float             m_FovX{90.0f};
+    float             m_FovY{90.0f};
+    float             m_ZNear{0.04f};
+    float             m_ZFar{99999.0f};
+    float             m_AspectRatio{1.0f};
+    Float2            m_OrthoMins{-1, -1};
+    Float2            m_OrthoMaxs{1, 1};
+    float             m_OrthoZoom{30};
+    mutable Float4x4  m_ViewMatrix;
+    mutable Float3x3  m_BillboardMatrix;
+    mutable Float4x4  m_ProjectionMatrix;
+    mutable BvFrustum m_Frustum;
+    ECameraProjection m_Projection{CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO};
+    mutable bool      m_bViewMatrixDirty{true};
+    mutable bool      m_bProjectionDirty{true};
+    mutable bool      m_bFrustumDirty{true};
 };

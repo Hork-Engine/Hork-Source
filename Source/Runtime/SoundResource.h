@@ -109,16 +109,16 @@ public:
     SOUND_STREAM_TYPE GetStreamType() const;
 
     /** File name */
-    AString const& GetFileName() const { return FileName; }
+    AString const& GetFileName() const { return m_FileName; }
 
     /** Audio buffer. Null for streamed audio */
-    SAudioBuffer* GetAudioBuffer() { return pBuffer.GetObject(); }
+    SAudioBuffer* GetAudioBuffer() { return m_pBuffer.GetObject(); }
 
     /** File data for streaming */
-    SFileInMemory* GetFileInMemory() { return pFileInMemory.GetObject(); }
+    SFileInMemory* GetFileInMemory() { return m_pFileInMemory.GetObject(); }
 
     /** Internal. Used by audio system to determine that audio data changed. */
-    int GetRevision() const { return Revision; }
+    int GetRevision() const { return m_Revision; }
 
 protected:
     bool InitializeFromMemory(AStringView Path, BlobRef Memory, SSoundCreateInfo const& pCreateInfo = {});
@@ -132,11 +132,11 @@ protected:
     const char* GetDefaultResourcePath() const override { return "/Default/Sound/Default"; }
 
 private:
-    TRef<SAudioBuffer>  pBuffer;
-    TRef<SFileInMemory> pFileInMemory;
-    SOUND_STREAM_TYPE    CurStreamType = SOUND_STREAM_DISABLED;
-    SAudioFileInfo      AudioFileInfo;
-    float               DurationInSeconds = 0.0f;
-    int                 Revision;
-    AString             FileName;
+    TRef<SAudioBuffer>  m_pBuffer;
+    TRef<SFileInMemory> m_pFileInMemory;
+    SOUND_STREAM_TYPE   m_CurStreamType = SOUND_STREAM_DISABLED;
+    SAudioFileInfo      m_AudioFileInfo;
+    float               m_DurationInSeconds = 0.0f;
+    int                 m_Revision;
+    AString             m_FileName;
 };

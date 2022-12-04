@@ -504,7 +504,7 @@ public:
     bool MoveAlongSurface(Float3 const& _Position, Float3 const& _Destination, Float3 const& _Extents, int _MaxVisitedSize, Float3& _ResultPos) const;
 
     /** Last visited polys from MoveAlongSurface */
-    TPodVector<SNavPolyRef> const& GetLastVisitedPolys() const { return LastVisitedPolys; }
+    TPodVector<SNavPolyRef> const& GetLastVisitedPolys() const { return m_LastVisitedPolys; }
 
     /** Finds a path from the start polygon to the end polygon. */
     bool FindPath(SNavPointRef const& _StartRef, SNavPointRef const& _EndRef, ANavQueryFilter const& _Filter, SNavPolyRef* _Path, int* _PathCount, const int _MaxPath) const;
@@ -549,10 +549,10 @@ public:
     void GetTileWorldBounds(int _X, int _Z, BvAxisAlignedBox& _BoundingBox) const;
 
     /** Navmesh bounding box */
-    BvAxisAlignedBox const& GetWorldBounds() const { return BoundingBox; }
+    BvAxisAlignedBox const& GetWorldBounds() const { return m_BoundingBox; }
 
-    int GetTileCountX() const { return NumTilesX; }
-    int GetTileCountZ() const { return NumTilesZ; }
+    int GetTileCountX() const { return m_NumTilesX; }
+    int GetTileCountZ() const { return m_NumTilesZ; }
 
     void GatherNavigationGeometry(SNavigationGeometry& Geometry);
 
@@ -562,24 +562,24 @@ private:
 
     SAINavigationConfig Initial;
 
-    int              NumTilesX{};
-    int              NumTilesZ{};
-    float            TileWidth{1.0f};
-    BvAxisAlignedBox BoundingBox;
+    int              m_NumTilesX{};
+    int              m_NumTilesZ{};
+    float            m_TileWidth{1.0f};
+    BvAxisAlignedBox m_BoundingBox;
 
     // Detour data
-    class dtNavMesh*      NavMesh{};
-    class dtNavMeshQuery* NavQuery{};
-    //class dtCrowd * Crowd{};
-    class dtTileCache* TileCache{};
+    class dtNavMesh*      m_NavMesh{};
+    class dtNavMeshQuery* m_NavQuery{};
+    //class dtCrowd * m_Crowd{};
+    class dtTileCache* m_TileCache{};
 
     // For tile cache
-    TUniqueRef<struct ADetourLinearAllocator> LinearAllocator;
-    TUniqueRef<struct ADetourMeshProcess>     MeshProcess;
+    TUniqueRef<struct ADetourLinearAllocator> m_LinearAllocator;
+    TUniqueRef<struct ADetourMeshProcess>     m_MeshProcess;
 
     // NavMesh areas
-    //TPodVector< SAINavigationArea > Areas;
+    //TPodVector< SAINavigationArea > m_Areas;
 
     // Temp array to reduce memory allocations during MoveAlongSurface
-    mutable TPodVector<SNavPolyRef> LastVisitedPolys;
+    mutable TPodVector<SNavPolyRef> m_LastVisitedPolys;
 };
