@@ -734,7 +734,7 @@ AIndexedMesh* AIndexedMesh::CreateSphere(float Radius, float TexCoordScale, int 
     return mesh;
 }
 
-AIndexedMesh* AIndexedMesh::CreatePlaneXZ(float Width, float Height, float TexCoordScale)
+AIndexedMesh* AIndexedMesh::CreatePlaneXZ(float Width, float Height, Float2 const& TexCoordScale)
 {
     TVertexBufferCPU<SMeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
@@ -750,7 +750,7 @@ AIndexedMesh* AIndexedMesh::CreatePlaneXZ(float Width, float Height, float TexCo
     return mesh;
 }
 
-AIndexedMesh* AIndexedMesh::CreatePlaneXY(float Width, float Height, float TexCoordScale)
+AIndexedMesh* AIndexedMesh::CreatePlaneXY(float Width, float Height, Float2 const& TexCoordScale)
 {
     TVertexBufferCPU<SMeshVertex> vertices;
     TIndexBufferCPU<unsigned int> indices;
@@ -916,7 +916,7 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
     }
     else if (!_Path.Icmp("/Default/Meshes/PlaneXZ"))
     {
-        ::CreatePlaneMeshXZ(vertices, indices, bounds, 256, 256, 256);
+        ::CreatePlaneMeshXZ(vertices, indices, bounds, 256, 256, Float2(256));
 
         SCollisionBoxDef box;
         box.HalfExtents.X = 128;
@@ -928,7 +928,7 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
     }
     else if (!_Path.Icmp("/Default/Meshes/PlaneXY"))
     {
-        ::CreatePlaneMeshXY(vertices, indices, bounds, 256, 256, 256);
+        ::CreatePlaneMeshXY(vertices, indices, bounds, 256, 256, Float2(256));
 
         SCollisionBoxDef box;
         box.HalfExtents.X = 128;
@@ -940,7 +940,7 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
     }
     else if (!_Path.Icmp("/Default/Meshes/QuadXZ"))
     {
-        ::CreatePlaneMeshXZ(vertices, indices, bounds, 1, 1, 1);
+        ::CreatePlaneMeshXZ(vertices, indices, bounds, 1, 1, Float2(1));
 
         SCollisionBoxDef box;
         box.HalfExtents.X = 0.5f;
@@ -952,7 +952,7 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
     }
     else if (!_Path.Icmp("/Default/Meshes/QuadXY"))
     {
-        ::CreatePlaneMeshXY(vertices, indices, bounds, 1, 1, 1);
+        ::CreatePlaneMeshXY(vertices, indices, bounds, 1, 1, Float2(1));
 
         SCollisionBoxDef box;
         box.HalfExtents.X = 0.5f;
@@ -1912,7 +1912,7 @@ void CreateSphereMesh(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<u
     Geometry::CalcTangentSpace(Vertices.ToPtr(), Vertices.Size(), Indices.ToPtr(), Indices.Size());
 }
 
-void CreatePlaneMeshXZ(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, float TexCoordScale)
+void CreatePlaneMeshXZ(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale)
 {
     Vertices.ResizeInvalidate(4);
     Indices.ResizeInvalidate(6);
@@ -1922,9 +1922,9 @@ void CreatePlaneMeshXZ(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
 
     const SMeshVertex Verts[4] = {
         MakeMeshVertex(Float3(-halfWidth, 0, -halfHeight), Float2(0, 0), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0)),
-        MakeMeshVertex(Float3(-halfWidth, 0, halfHeight), Float2(0, TexCoordScale), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0)),
-        MakeMeshVertex(Float3(halfWidth, 0, halfHeight), Float2(TexCoordScale, TexCoordScale), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0)),
-        MakeMeshVertex(Float3(halfWidth, 0, -halfHeight), Float2(TexCoordScale, 0), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0))};
+        MakeMeshVertex(Float3(-halfWidth, 0, halfHeight), Float2(0, TexCoordScale.Y), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0)),
+        MakeMeshVertex(Float3(halfWidth, 0, halfHeight), Float2(TexCoordScale.X, TexCoordScale.Y), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0)),
+        MakeMeshVertex(Float3(halfWidth, 0, -halfHeight), Float2(TexCoordScale.X, 0), Float3(0, 0, 1), 1.0f, Float3(0, 1, 0))};
 
     Platform::Memcpy(Vertices.ToPtr(), &Verts, 4 * sizeof(SMeshVertex));
 
@@ -1941,7 +1941,7 @@ void CreatePlaneMeshXZ(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
     Bounds.Maxs.Z  = halfHeight;
 }
 
-void CreatePlaneMeshXY(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, float TexCoordScale)
+void CreatePlaneMeshXY(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<unsigned int>& Indices, BvAxisAlignedBox& Bounds, float Width, float Height, Float2 const& TexCoordScale)
 {
     Vertices.ResizeInvalidate(4);
     Indices.ResizeInvalidate(6);
@@ -1950,9 +1950,9 @@ void CreatePlaneMeshXY(TVertexBufferCPU<SMeshVertex>& Vertices, TIndexBufferCPU<
     const float halfHeight = Height * 0.5f;
 
     const SMeshVertex Verts[4] = {
-        MakeMeshVertex(Float3(-halfWidth, -halfHeight, 0), Float2(0, TexCoordScale), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1)),
-        MakeMeshVertex(Float3(halfWidth, -halfHeight, 0), Float2(TexCoordScale, TexCoordScale), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1)),
-        MakeMeshVertex(Float3(halfWidth, halfHeight, 0), Float2(TexCoordScale, 0), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1)),
+        MakeMeshVertex(Float3(-halfWidth, -halfHeight, 0), Float2(0, TexCoordScale.Y), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1)),
+        MakeMeshVertex(Float3(halfWidth, -halfHeight, 0), Float2(TexCoordScale.X, TexCoordScale.Y), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1)),
+        MakeMeshVertex(Float3(halfWidth, halfHeight, 0), Float2(TexCoordScale.X, 0), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1)),
         MakeMeshVertex(Float3(-halfWidth, halfHeight, 0), Float2(0, 0), Float3(0, 0, 0), 1.0f, Float3(0, 0, 1))};
 
     Platform::Memcpy(Vertices.ToPtr(), &Verts, 4 * sizeof(SMeshVertex));
