@@ -42,7 +42,7 @@ static bool BindMaterialDepthPass(IImmediateContext* immediateCtx, SRenderInstan
     int bSkinned = instance->SkeletonSize > 0;
 
     IPipeline* pPipeline;
-    if (r_MotionBlur && instance->GetGeometryPriority() == RENDERING_GEOMETRY_PRIORITY_DYNAMIC)
+    if (GRenderView->bAllowMotionBlur && instance->GetGeometryPriority() == RENDERING_GEOMETRY_PRIORITY_DYNAMIC)
     {
         pPipeline = pMaterial->DepthVelocityPass[bSkinned];
     }
@@ -88,7 +88,8 @@ void AddDepthPass( AFrameGraph & FrameGraph, FGTextureProxy ** ppDepthTexture, F
                                .SetResolution(GetFrameResoultion()))
             .SetLoadOp(ATTACHMENT_LOAD_OP_CLEAR));
 
-    if ( r_MotionBlur ) {
+    if (GRenderView->bAllowMotionBlur)
+    {
         Float2 velocity( 1, 1 );
 
         depthPass.SetColorAttachment(

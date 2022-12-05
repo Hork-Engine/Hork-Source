@@ -118,8 +118,8 @@ public:
     */
 
     Float4 ColorIntensity = Float4(0, 0, 0, 0.4f); // rgb, intensity
-    float  OuterRadiusSqr = 0.7f * 0.7f;
-    float  InnerRadiusSqr = 0.6f * 0.6f;
+    float  OuterRadiusSqr = Math::Square(0.7f);
+    float  InnerRadiusSqr = Math::Square(0.6f);
 };
 
 class WorldRenderView : public ABaseObject
@@ -131,6 +131,9 @@ public:
     bool                         bClearBackground = false;
     bool                         bWireframe       = false;
     bool                         bDrawDebug       = false;
+    bool                         bAllowHBAO       = true;
+    bool                         bAllowMotionBlur = true;
+    ANTIALIASING_TYPE            AntialiasingType = ANTIALIASING_SMAA;
     VISIBILITY_GROUP             VisibilityMask   = VISIBILITY_GROUP_ALL;
     TRef<ColorGradingParameters> ColorGrading;
     TRef<VignetteParameters>     Vignette;
@@ -144,6 +147,8 @@ public:
     void SetViewport(uint32_t width, uint32_t height);
 
     void SetCamera(ACameraComponent* camera);
+
+    // NOTE: The culling camera has not yet been implemented. It is reserved for the future.
     void SetCullingCamera(ACameraComponent* camera);
 
     ATexture* GetCurrentExposure() { return m_CurrentExposure; }
@@ -214,6 +219,8 @@ private:
     RenderCore::ITexture* AcquireRenderTarget();
     RenderCore::ITexture* AcquireLightTexture();
     RenderCore::ITexture* AcquireDepthTexture();
+    RenderCore::ITexture* AcquireHBAOMaps();
+    void                  ReleaseHBAOMaps();
 
     TWeakRef<ACameraComponent>              m_pCamera;
     TWeakRef<ACameraComponent>              m_pCullingCamera;
@@ -223,6 +230,7 @@ private:
     TRef<RenderCore::ITexture>              m_LightTexture;
     TRef<RenderCore::ITexture>              m_DepthTexture;
     TRef<RenderCore::ITexture>              m_RenderTarget;
+    TRef<RenderCore::ITexture>              m_HBAOMaps;
     THashMap<uint64_t, class ATerrainView*> m_TerrainViews;     // TODO: Needs to be cleaned from time to time
     Float4x4                                m_ProjectionMatrix; // last rendered projection
     Float4x4                                m_ViewMatrix;       // last rendered view
@@ -231,6 +239,7 @@ private:
     AVirtualTextureFeedback                 m_VTFeedback;
     TRef<ATexture>                          m_CurrentColorGradingLUT;
     TRef<ATexture>                          m_CurrentExposure;
+    int                                     m_FrameNum{};
 
     friend class ARenderFrontend;
 };

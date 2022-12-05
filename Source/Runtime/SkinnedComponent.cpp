@@ -542,6 +542,8 @@ void ASkinnedComponent::GetSkeletonHandle(size_t& _SkeletonOffset, size_t& _Skel
 
 void ASkinnedComponent::OnPreRenderUpdate(SRenderFrontendDef const* _Def)
 {
+    Super::OnPreRenderUpdate(_Def);
+
     MergeJointAnimations();
 
     ASkin const&              skin   = GetMesh()->GetSkin();

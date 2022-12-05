@@ -53,6 +53,10 @@ AConsoleVar r_ResolutionScaleX("r_ResolutionScaleX"s, "1"s);
 AConsoleVar r_ResolutionScaleY("r_ResolutionScaleY"s, "1"s);
 AConsoleVar r_RenderLightPortals("r_RenderLightPortals"s, "1"s);
 AConsoleVar r_VertexLight("r_VertexLight"s, "0"s);
+AConsoleVar r_MotionBlur("r_MotionBlur"s, "1"s);
+
+extern AConsoleVar r_HBAO;
+extern AConsoleVar r_HBAODeinterleaved;
 
 AConsoleVar com_DrawFrustumClusters("com_DrawFrustumClusters"s, "0"s, CVAR_CHEAT);
 
@@ -272,6 +276,20 @@ void ARenderFrontend::RenderView(int _Index)
     view->DepthTexture = worldRenderView->AcquireDepthTexture();
     view->RenderTarget = worldRenderView->AcquireRenderTarget();
 
+    if (r_HBAO && r_HBAODeinterleaved)
+    {
+        view->HBAOMaps = worldRenderView->AcquireHBAOMaps();
+    }
+    else
+    {
+        worldRenderView->ReleaseHBAOMaps();
+        view->HBAOMaps = nullptr;
+    }
+
+    view->bAllowHBAO = worldRenderView->bAllowHBAO;
+    view->bAllowMotionBlur = worldRenderView->bAllowMotionBlur && r_MotionBlur;
+    view->AntialiasingType = worldRenderView->AntialiasingType;
+
     view->VTFeedback = &worldRenderView->m_VTFeedback;
 
     view->PhotometricProfiles = PhotometricProfiles;
@@ -292,6 +310,8 @@ void ARenderFrontend::RenderView(int _Index)
     view->NumDirectionalLights  = 0;
     view->FirstDebugDrawCommand = 0;
     view->DebugDrawCommandCount = 0;
+
+    view->FrameNumber = worldRenderView->m_FrameNum;
 
     size_t size = MAX_TOTAL_SHADOW_CASCADES_PER_VIEW * sizeof(Float4x4);
 
@@ -322,6 +342,9 @@ void ARenderFrontend::RenderView(int _Index)
     RenderDef.StreamedMemory     = FrameLoop->GetStreamedMemoryGPU();
 
     m_WorldRenderView = worldRenderView;
+
+    // Update local frame number
+    worldRenderView->m_FrameNum++;
 
     QueryVisiblePrimitives(world);
 
@@ -363,7 +386,7 @@ void ARenderFrontend::RenderView(int _Index)
 
     if (worldRenderView->bDrawDebug)
     {
-        for (auto it : worldRenderView->m_TerrainViews)
+        for (auto& it : worldRenderView->m_TerrainViews)
         {
             it.second->DrawDebug(&DebugDraw, TerrainMesh);
         }
@@ -817,15 +840,14 @@ void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
 
     InComponent->PreRenderUpdate(&RenderDef);
 
-    Float3x4 const& componentWorldTransform = InComponent->GetWorldTransformMatrix();
+    Float3x4 const& componentWorldTransform  = InComponent->GetRenderTransformMatrix(RenderDef.FrameNumber);
+    Float3x4 const& componentWorldTransformP = InComponent->GetRenderTransformMatrix(RenderDef.FrameNumber + 1);
 
     // TODO: optimize: parallel, sse, check if transformable
     Float4x4 instanceMatrix  = RenderDef.View->ViewProjection * componentWorldTransform;
-    Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * InComponent->RenderTransformMatrix;
+    Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * componentWorldTransformP;
 
     Float3x3 worldRotation = InComponent->GetWorldRotation().ToMatrix3x3();
-
-    InComponent->RenderTransformMatrix = componentWorldTransform;
 
     ALevel* level = InComponent->GetLevel();
     ALevelLighting* lighting = level->Lighting;
@@ -845,9 +867,11 @@ void ARenderFrontend::AddStaticMesh(AMeshComponent* InComponent)
         AMaterialInstance* materialInstance = InComponent->GetMaterialInstance(subpartIndex);
         HK_ASSERT(materialInstance);
 
-        AMaterial* material = materialInstance->GetMaterial();
-
         SMaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+        if (!materialInstanceFrameData)
+            continue;
+
+        AMaterial* material = materialInstance->GetMaterial();
 
         // Add render instance
         SRenderInstance* instance = (SRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SRenderInstance));
@@ -940,29 +964,29 @@ void ARenderFrontend::AddSkinnedMesh(ASkinnedComponent* InComponent)
 
     InComponent->GetSkeletonHandle(skeletonOffset, skeletonOffsetMB, skeletonSize);
 
-    Float3x4 const& componentWorldTransform = InComponent->GetWorldTransformMatrix();
+    Float3x4 const& componentWorldTransform  = InComponent->GetRenderTransformMatrix(RenderDef.FrameNumber);
+    Float3x4 const& componentWorldTransformP = InComponent->GetRenderTransformMatrix(RenderDef.FrameNumber + 1);
 
     // TODO: optimize: parallel, sse, check if transformable
     Float4x4 instanceMatrix  = RenderDef.View->ViewProjection * componentWorldTransform;
-    Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * InComponent->RenderTransformMatrix;
+    Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * componentWorldTransformP;
 
     Float3x3 worldRotation = InComponent->GetWorldRotation().ToMatrix3x3();
-
-    InComponent->RenderTransformMatrix = componentWorldTransform;
 
     AIndexedMeshSubpartArray const& subparts = mesh->GetSubparts();
 
     for (int subpartIndex = 0; subpartIndex < subparts.Size(); subpartIndex++)
     {
-
         AIndexedMeshSubpart* subpart = subparts[subpartIndex];
 
         AMaterialInstance* materialInstance = InComponent->GetMaterialInstance(subpartIndex);
         HK_ASSERT(materialInstance);
 
-        AMaterial* material = materialInstance->GetMaterial();
-
         SMaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+        if (!materialInstanceFrameData)
+            continue;
+
+        AMaterial* material = materialInstance->GetMaterial();
 
         // Add render instance
         SRenderInstance* instance = (SRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SRenderInstance));
@@ -1040,20 +1064,21 @@ void ARenderFrontend::AddProceduralMesh(AProceduralMeshComponent* InComponent)
         return;
     }
 
-    Float3x4 const& componentWorldTransform = InComponent->GetWorldTransformMatrix();
+    Float3x4 const& componentWorldTransform  = InComponent->GetRenderTransformMatrix(RenderDef.FrameNumber);
+    Float3x4 const& componentWorldTransformP = InComponent->GetRenderTransformMatrix(RenderDef.FrameNumber + 1);
 
     // TODO: optimize: parallel, sse, check if transformable
     Float4x4 instanceMatrix  = RenderDef.View->ViewProjection * componentWorldTransform;
-    Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * InComponent->RenderTransformMatrix;
-
-    InComponent->RenderTransformMatrix = componentWorldTransform;
+    Float4x4 instanceMatrixP = RenderDef.View->ViewProjectionP * componentWorldTransformP;
 
     AMaterialInstance* materialInstance = InComponent->GetMaterialInstance();
     HK_ASSERT(materialInstance);
 
-    AMaterial* material = materialInstance->GetMaterial();
-
     SMaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+    if (!materialInstanceFrameData)
+        return;
+
+    AMaterial* material = materialInstance->GetMaterial();
 
     // Add render instance
     SRenderInstance* instance = (SRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SRenderInstance));
@@ -1140,6 +1165,8 @@ void ARenderFrontend::AddShadowmap_StaticMesh(SLightShadowmap* ShadowMap, AMeshC
         }
 
         SMaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+        if (!materialInstanceFrameData)
+            continue;
 
         // Add render instance
         SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));
@@ -1216,6 +1243,8 @@ void ARenderFrontend::AddShadowmap_SkinnedMesh(SLightShadowmap* ShadowMap, ASkin
         }
 
         SMaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+        if (!materialInstanceFrameData)
+            continue;
 
         // Add render instance
         SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));
@@ -1285,6 +1314,8 @@ void ARenderFrontend::AddShadowmap_ProceduralMesh(SLightShadowmap* ShadowMap, AP
     }
 
     SMaterialFrameData* materialInstanceFrameData = materialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+    if (!materialInstanceFrameData)
+        return;
 
     // Add render instance
     SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));
@@ -1737,6 +1768,9 @@ void ARenderFrontend::AddSurface(ALevel* Level, AMaterialInstance* MaterialInsta
     AMaterial*          material                  = MaterialInstance->GetMaterial();
     SMaterialFrameData* materialInstanceFrameData = MaterialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
 
+    if (!materialInstanceFrameData)
+        return;
+
     // Add render instance
     SRenderInstance* instance = (SRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SRenderInstance));
 
@@ -1807,6 +1841,9 @@ void ARenderFrontend::AddShadowmapSurface(SLightShadowmap* ShadowMap, AMaterialI
 {
     AMaterial*          material                  = MaterialInstance->GetMaterial();
     SMaterialFrameData* materialInstanceFrameData = MaterialInstance->PreRenderUpdate(FrameLoop, FrameNumber);
+
+    if (!materialInstanceFrameData)
+        return;
 
     // Add render instance
     SShadowRenderInstance* instance = (SShadowRenderInstance*)FrameLoop->AllocFrameMem(sizeof(SShadowRenderInstance));

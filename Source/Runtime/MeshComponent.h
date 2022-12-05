@@ -67,9 +67,6 @@ public:
 
     bool bOverrideMeshMaterials = true;
 
-    /** Transform matrix used during last rendering */
-    Float3x4 RenderTransformMatrix;
-
     /** Allow raycasting */
     void SetAllowRaycast(bool _AllowRaycast) override;
 
@@ -99,6 +96,11 @@ public:
 
     BvAxisAlignedBox GetSubpartWorldBounds(int _SubpartIndex) const;
 
+    Float3x4 const& GetRenderTransformMatrix(int frameNum) const
+    {
+        return m_RenderTransformMatrix[frameNum & 1];
+    }
+
 protected:
     AMeshComponent();
     ~AMeshComponent();
@@ -112,6 +114,8 @@ protected:
 
     virtual void OnMeshChanged() {}
 
+    void OnPreRenderUpdate(SRenderFrontendDef const* _Def) override;
+
 private:
     void NotifyMeshChanged();
     void OnMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag) override;
@@ -120,6 +124,10 @@ private:
 
     TRef<AIndexedMesh>          Mesh;
     TVector<AMaterialInstance*> Materials;
+
+    /** Transform matrix used during last rendering */
+    Float3x4 m_RenderTransformMatrix[2];
+    int      m_RenderTransformMatrixFrame{0};
 };
 
 class AProceduralMeshComponent : public ADrawable
@@ -127,9 +135,6 @@ class AProceduralMeshComponent : public ADrawable
     HK_COMPONENT(AProceduralMeshComponent, ADrawable)
 
 public:
-    /** Transform matrix used during last rendering */
-    Float3x4 RenderTransformMatrix;
-
     /** Allow raycasting */
     void SetAllowRaycast(bool _AllowRaycast) override;
 
@@ -150,14 +155,25 @@ public:
 
     AMaterialInstance* GetMaterialInstance() const;
 
+    Float3x4 const& GetRenderTransformMatrix(int frameNum) const
+    {
+        return m_RenderTransformMatrix[frameNum & 1];
+    }
+
 protected:
     AProceduralMeshComponent();
 
     void InitializeComponent() override;
     void DeinitializeComponent() override;
 
+    void OnPreRenderUpdate(SRenderFrontendDef const* _Def) override;
+
     void DrawDebug(ADebugRenderer* InRenderer) override;
 
     TRef<AProceduralMesh>   ProceduralMesh;
     TRef<AMaterialInstance> MaterialInstance;
+
+    /** Transform matrix used during last rendering */
+    Float3x4 m_RenderTransformMatrix[2];
+    int      m_RenderTransformMatrixFrame{0};
 };

@@ -160,71 +160,20 @@ ASSAORenderer::ASSAORenderer()
     RandomMap->Write(0, sizeof(hbaoRandom_Half), 1, hbaoRandom_Half);
 }
 
-void ASSAORenderer::ResizeAO(int Width, int Height)
-{
-    if (AOWidth != Width || AOHeight != Height)
-    {
-        AOWidth  = Width;
-        AOHeight = Height;
-
-        AOQuarterWidth  = ((AOWidth + 3) / 4);
-        AOQuarterHeight = ((AOHeight + 3) / 4);
-
-        GDevice->CreateTexture(
-            STextureDesc()
-                .SetFormat(TEXTURE_FORMAT_R32_FLOAT)
-                .SetResolution(STextureResolution2DArray(AOQuarterWidth, AOQuarterHeight, HBAO_RANDOM_ELEMENTS))
-                .SetBindFlags(BIND_SHADER_RESOURCE),
-            &SSAODeinterleaveDepthArray);
-
-        //for (int i = 0; i < HBAO_RANDOM_ELEMENTS; i++)
-        //{
-        //    STextureViewDesc desc;
-        //    desc.Type          = RenderCore::TEXTURE_2D;
-        //    desc.Format        = TEXTURE_FORMAT_R32_FLOAT;
-        //    desc.FirstMipLevel = 0;
-        //    desc.NumMipLevels  = 1;
-        //    desc.FirstSlice    = i;
-        //    desc.NumSlices     = 1;
-        //    SSAODeinterleaveDepthView[i] = SSAODeinterleaveDepthArray->GetTextureView(desc);
-        //}
-    }
-}
-
 void ASSAORenderer::AddDeinterleaveDepthPass(AFrameGraph& FrameGraph, FGTextureProxy* LinearDepth, FGTextureProxy** ppDeinterleaveDepthArray)
 {
-//    static const char * textureViewName[] =
-//    {
-//            "Deinterleave Depth View 0",
-//            "Deinterleave Depth View 1",
-//            "Deinterleave Depth View 2",
-//            "Deinterleave Depth View 3",
-//            "Deinterleave Depth View 4",
-//            "Deinterleave Depth View 5",
-//            "Deinterleave Depth View 6",
-//            "Deinterleave Depth View 7",
-//            "Deinterleave Depth View 8",
-//            "Deinterleave Depth View 9",
-//            "Deinterleave Depth View 10",
-//            "Deinterleave Depth View 11",
-//            "Deinterleave Depth View 12",
-//            "Deinterleave Depth View 13",
-//            "Deinterleave Depth View 14",
-//            "Deinterleave Depth View 15"
-//    };
+    ITexture* deinterleavedDepthMaps = GRenderView->HBAOMaps;
+    HK_ASSERT(deinterleavedDepthMaps);
 
-    FGTextureProxy* SSAODeinterleaveDepthArray_R = FrameGraph.AddExternalResource<FGTextureProxy>("SSAODeinterleaveDepthArray", SSAODeinterleaveDepthArray);
+    uint32_t quarterWidth  = deinterleavedDepthMaps->GetDesc().Resolution.Width;
+    uint32_t quarterHeight = deinterleavedDepthMaps->GetDesc().Resolution.Height;
 
-    //FGTextureProxy* SSAODeinterleaveDepthView_R[16];
-    //for (int i = 0; i < 16; i++)
-    //{
-    //    SSAODeinterleaveDepthView_R[i] = FrameGraph.AddTextureView(textureViewName[i], SSAODeinterleaveDepthView[i]);
-    //}
+    Float2 invFullResolution = {1.0f / GRenderView->Width, 1.0f / GRenderView->Height};
 
-    Float2 invFullResolution = {1.0f / AOWidth, 1.0f / AOHeight};
+    FGTextureProxy* SSAODeinterleaveDepthArray_R = FrameGraph.AddExternalResource<FGTextureProxy>("SSAODeinterleaveDepthArray", deinterleavedDepthMaps);
 
     ARenderPass& deinterleavePass = FrameGraph.AddTask<ARenderPass>("Deinterleave Depth Pass");
-    deinterleavePass.SetRenderArea(AOQuarterWidth, AOQuarterHeight);
+    deinterleavePass.SetRenderArea(quarterWidth, quarterHeight);
     deinterleavePass.AddResource(LinearDepth, FG_RESOURCE_ACCESS_READ);
     deinterleavePass.SetColorAttachments(
         {
@@ -257,7 +206,7 @@ void ASSAORenderer::AddDeinterleaveDepthPass(AFrameGraph& FrameGraph, FGTextureP
                                 });
 
     ARenderPass& deinterleavePass2 = FrameGraph.AddTask<ARenderPass>("Deinterleave Depth Pass 2");
-    deinterleavePass2.SetRenderArea(AOQuarterWidth, AOQuarterHeight);
+    deinterleavePass2.SetRenderArea(quarterWidth, quarterHeight);
     deinterleavePass2.AddResource(LinearDepth, FG_RESOURCE_ACCESS_READ);
     deinterleavePass2.SetColorAttachments(
         {
@@ -289,26 +238,32 @@ void ASSAORenderer::AddDeinterleaveDepthPass(AFrameGraph& FrameGraph, FGTextureP
                                      DrawSAQ(RenderPassContext.pImmediateContext, DeinterleavePipe);
                                  });
 
-    FGTextureProxy* DeinterleaveDepthArray_R = FrameGraph.AddExternalResource<FGTextureProxy>("Deinterleave Depth Array", SSAODeinterleaveDepthArray);
+    FGTextureProxy* DeinterleaveDepthArray_R = FrameGraph.AddExternalResource<FGTextureProxy>("Deinterleave Depth Array", deinterleavedDepthMaps);
 
     *ppDeinterleaveDepthArray = DeinterleaveDepthArray_R;
 }
 
 void ASSAORenderer::AddCacheAwareAOPass(AFrameGraph& FrameGraph, FGTextureProxy* DeinterleaveDepthArray, FGTextureProxy* NormalTexture, FGTextureProxy** ppSSAOTextureArray)
 {
-    Float2 invFullResolution = {1.0f / AOWidth, 1.0f / AOHeight};
-    Float2 invQuarterResolution = {1.0f / AOQuarterWidth, 1.0f / AOQuarterHeight};
-    float  aoHeight             = (float)AOHeight;
+    ITexture* deinterleavedDepthMaps = GRenderView->HBAOMaps;
+    HK_ASSERT(deinterleavedDepthMaps);
+
+    uint32_t quarterWidth  = deinterleavedDepthMaps->GetDesc().Resolution.Width;
+    uint32_t quarterHeight = deinterleavedDepthMaps->GetDesc().Resolution.Height;
+
+    Float2 invFullResolution    = {1.0f / GRenderView->Width, 1.0f / GRenderView->Height};
+    Float2 invQuarterResolution = {1.0f / quarterWidth, 1.0f / quarterHeight};
+    float  aoHeight             = (float)GRenderView->Height;
 
     ARenderPass& cacheAwareAO = FrameGraph.AddTask<ARenderPass>("Cache Aware AO Pass");
-    cacheAwareAO.SetRenderArea(AOQuarterWidth, AOQuarterHeight);
+    cacheAwareAO.SetRenderArea(quarterWidth, quarterHeight);
     cacheAwareAO.AddResource(DeinterleaveDepthArray, FG_RESOURCE_ACCESS_READ);
     cacheAwareAO.AddResource(NormalTexture, FG_RESOURCE_ACCESS_READ);
     cacheAwareAO.SetColorAttachment(
         STextureAttachment("SSAO Texture Array",
                            STextureDesc()
                                .SetFormat(TEXTURE_FORMAT_R8_UNORM)
-                               .SetResolution(STextureResolution2DArray(AOQuarterWidth, AOQuarterHeight, HBAO_RANDOM_ELEMENTS)))
+                               .SetResolution(STextureResolution2DArray(quarterWidth, quarterHeight, HBAO_RANDOM_ELEMENTS)))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
     cacheAwareAO.AddSubpass({0}, // color attachment refs
                             [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
@@ -365,13 +320,13 @@ void ASSAORenderer::AddCacheAwareAOPass(AFrameGraph& FrameGraph, FGTextureProxy*
 void ASSAORenderer::AddReinterleavePass(AFrameGraph& FrameGraph, FGTextureProxy* SSAOTextureArray, FGTextureProxy** ppSSAOTexture)
 {
     ARenderPass& reinterleavePass = FrameGraph.AddTask<ARenderPass>("Reinterleave Pass");
-    reinterleavePass.SetRenderArea(AOWidth, AOHeight);
+    reinterleavePass.SetRenderArea(GRenderView->Width, GRenderView->Height);
     reinterleavePass.AddResource(SSAOTextureArray, FG_RESOURCE_ACCESS_READ);
     reinterleavePass.SetColorAttachment(
         STextureAttachment("SSAO Texture",
                            STextureDesc()
                                .SetFormat(TEXTURE_FORMAT_R8_UNORM)
-                               .SetResolution(STextureResolution2D(AOWidth, AOHeight))
+                               .SetResolution(STextureResolution2D(GRenderView->Width, GRenderView->Height))
                                .SetBindFlags(BIND_SHADER_RESOURCE))                               
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
     reinterleavePass.AddSubpass({0}, // color attachment refs
@@ -398,7 +353,7 @@ void ASSAORenderer::AddSimpleAOPass(AFrameGraph& FrameGraph, FGTextureProxy* Lin
         STextureAttachment("SSAO Texture (Interleaved)",
                            STextureDesc()
                                .SetFormat(TEXTURE_FORMAT_R8_UNORM)
-                               .SetResolution(STextureResolution2D(AOWidth, AOHeight)))
+                               .SetResolution(STextureResolution2D(GRenderView->Width, GRenderView->Height)))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
     pass.AddSubpass({0}, // color attachment refs
                     [=](ARenderPassContext& RenderPassContext, ACommandBuffer& CommandBuffer)
@@ -433,8 +388,8 @@ void ASSAORenderer::AddSimpleAOPass(AFrameGraph& FrameGraph, FGTextureProxy* Lin
                         drawCall->RadiusToScreen         = r_HBAORadius.GetFloat() * 0.5f * projScale;
                         drawCall->PowExponent            = r_HBAOPowExponent.GetFloat();
                         drawCall->Multiplier             = 1.0f / (1.0f - r_HBAOBias.GetFloat());
-                        drawCall->InvFullResolution.X    = 1.0f / GRenderView->Width;  //AOWidth;
-                        drawCall->InvFullResolution.Y    = 1.0f / GRenderView->Height; //AOHeight;
+                        drawCall->InvFullResolution.X    = 1.0f / GRenderView->Width;
+                        drawCall->InvFullResolution.Y    = 1.0f / GRenderView->Height;
                         drawCall->InvQuarterResolution.X = 0;                          // don't care
                         drawCall->InvQuarterResolution.Y = 0;                          // don't care
 
@@ -463,7 +418,7 @@ void ASSAORenderer::AddAOBlurPass(AFrameGraph& FrameGraph, FGTextureProxy* SSAOT
         STextureAttachment("Temp SSAO Texture (Blur X)",
                            STextureDesc()
                                .SetFormat(TEXTURE_FORMAT_R8_UNORM)
-                               .SetResolution(STextureResolution2D(AOWidth, AOHeight)))
+                               .SetResolution(STextureResolution2D(GRenderView->Width, GRenderView->Height)))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
     aoBlurXPass.AddResource(SSAOTexture, FG_RESOURCE_ACCESS_READ);
     aoBlurXPass.AddResource(LinearDepth, FG_RESOURCE_ACCESS_READ);
@@ -494,7 +449,7 @@ void ASSAORenderer::AddAOBlurPass(AFrameGraph& FrameGraph, FGTextureProxy* SSAOT
         STextureAttachment("Blured SSAO Texture",
                            STextureDesc()
                                .SetFormat(TEXTURE_FORMAT_R8_UNORM)
-                               .SetResolution(STextureResolution2D(AOWidth, AOHeight)))
+                               .SetResolution(STextureResolution2D(GRenderView->Width, GRenderView->Height)))
             .SetLoadOp(ATTACHMENT_LOAD_OP_DONT_CARE));
     aoBlurYPass.AddResource(TempSSAOTextureBlurX, FG_RESOURCE_ACCESS_READ);
     aoBlurYPass.AddResource(LinearDepth, FG_RESOURCE_ACCESS_READ);
@@ -522,10 +477,7 @@ void ASSAORenderer::AddAOBlurPass(AFrameGraph& FrameGraph, FGTextureProxy* SSAOT
 
 void ASSAORenderer::AddPasses(AFrameGraph& FrameGraph, FGTextureProxy* LinearDepth, FGTextureProxy* NormalTexture, FGTextureProxy** ppSSAOTexture)
 {
-    // TODO: Don't resize on every frame! This can happen if there are multiple viewports on the screen.
-    ResizeAO(GRenderView->Width, GRenderView->Height);
-
-    if (r_HBAODeinterleaved /*&& GRenderView->Width == GFrameData->RenderTargetMaxWidth && GRenderView->Height == GFrameData->RenderTargetMaxHeight*/)
+    if (r_HBAODeinterleaved && GRenderView->HBAOMaps)
     {
         FGTextureProxy *DeinterleaveDepthArray, *SSAOTextureArray;
 

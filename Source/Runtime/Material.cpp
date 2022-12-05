@@ -1072,19 +1072,22 @@ SMaterialFrameData* AMaterialInstance::PreRenderUpdate(AFrameLoop* FrameLoop, in
     m_FrameData->Material = m_pMaterial->GetGPUResource();
 
     RenderCore::ITexture** textures = m_FrameData->Textures;
-    m_FrameData->NumTextures        = 0;
+    m_FrameData->NumTextures        = NumTextureSlots();
 
-    for (int i = 0; i < MAX_MATERIAL_TEXTURES; i++)
+    HK_ASSERT(NumTextureSlots() <= MAX_MATERIAL_TEXTURES);
+
+    for (int i = 0, count = NumTextureSlots(); i < count; ++i)
     {
-        if (m_Textures[i])
+        RenderCore::ITexture* texture = m_Textures[i] ? m_Textures[i]->GetResource() : nullptr;
+
+        if (!texture)
         {
-            textures[i]              = m_Textures[i]->GetResource();
-            m_FrameData->NumTextures = i + 1;
+            m_FrameData = nullptr;
+            LOG("Texture not set\n");
+            return nullptr;
         }
-        else
-        {
-            textures[i] = 0;
-        }
+
+        textures[i] = texture;
     }
 
     m_FrameData->NumUniformVectors = m_pMaterial->NumUniformVectors();

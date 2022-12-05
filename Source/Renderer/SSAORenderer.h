@@ -50,8 +50,6 @@ private:
 
     void AddAOBlurPass(RenderCore::AFrameGraph& FrameGraph, RenderCore::FGTextureProxy* SSAOTexture, RenderCore::FGTextureProxy* LinearDepth, RenderCore::FGTextureProxy** ppBluredSSAO);
 
-    void ResizeAO(int Width, int Height);
-
     enum
     {
         HBAO_RANDOM_SIZE = 4
@@ -60,14 +58,6 @@ private:
     {
         HBAO_RANDOM_ELEMENTS = HBAO_RANDOM_SIZE * HBAO_RANDOM_SIZE
     };
-
-    int AOWidth         = 0;
-    int AOHeight        = 0;
-    int AOQuarterWidth  = 0;
-    int AOQuarterHeight = 0;
-
-    TRef<RenderCore::ITexture> SSAODeinterleaveDepthArray;
-    //RenderCore::ITextureView* SSAODeinterleaveDepthView[HBAO_RANDOM_ELEMENTS];
 
     TRef<RenderCore::IPipeline> Pipe;
     TRef<RenderCore::IPipeline> Pipe_ORTHO;

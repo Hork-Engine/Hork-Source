@@ -41,7 +41,6 @@ SOFTWARE.
 
 struct SViewConstantBuffer
 {
-    Float4x4 OrthoProjection;
     Float4x4 ViewProjection;
     Float4x4 ProjectionMatrix;
     Float4x4 InverseProjectionMatrix;
@@ -176,7 +175,6 @@ struct STerrainInstanceConstantBuffer
 //
 
 extern AConsoleVar r_RenderSnapshot;
-extern AConsoleVar r_MotionBlur;
 extern AConsoleVar r_SSLR;
 extern AConsoleVar r_HBAO;
 

@@ -34,9 +34,6 @@ SOFTWARE.
 // Keep paddings, don't use vec3, keep in sync with cpp struct
 layout( binding = 0, std140 ) uniform UniformBuffer0
 {
-    // Ortho projection for canvas rendering
-    mat4 OrthoProjection;
-    
     // View projection matrix: ViewProjection = ProjectionMatrix * ViewMatrix
     mat4 ViewProjection;
 

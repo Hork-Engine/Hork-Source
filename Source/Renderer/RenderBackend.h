@@ -66,7 +66,7 @@ private:
     void SetViewConstants(int ViewportIndex);
     void UploadShaderResources(int ViewportIndex);
 
-    TRef<RenderCore::AFrameGraph>       FrameGraph;
+    TRef<RenderCore::AFrameGraph>       m_FrameGraph;
 
     TRef<ACanvasRenderer> CanvasRenderer;
     TRef<AFrameRenderer>  FrameRenderer;

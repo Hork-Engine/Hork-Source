@@ -63,13 +63,10 @@ AConsoleVar r_BloomParam3("r_BloomParam3"s, "0.01"s);
 AConsoleVar r_ToneExposure("r_ToneExposure"s, "0.4"s);
 AConsoleVar r_Brightness("r_Brightness"s, "1"s);
 AConsoleVar r_TessellationLevel("r_TessellationLevel"s, "0.05"s);
-AConsoleVar r_MotionBlur("r_MotionBlur"s, "1"s);
 AConsoleVar r_SSLR("r_SSLR"s, "1"s, 0, "Required to rebuld materials to apply"s);
 AConsoleVar r_SSLRMaxDist("r_SSLRMaxDist"s, "10"s);
 AConsoleVar r_SSLRSampleOffset("r_SSLRSampleOffset"s, "0.1"s);
 AConsoleVar r_HBAO("r_HBAO"s, "1"s, 0, "Required to rebuld materials to apply"s);
-AConsoleVar r_FXAA("r_FXAA"s, "1"s);
-AConsoleVar r_SMAA("r_SMAA"s, "1"s);
 AConsoleVar r_ShowGPUTime("r_ShowGPUTime"s, "0"s);
 
 void TestVT();
@@ -94,7 +91,7 @@ ARenderBackend::ARenderBackend(RenderCore::IDevice* pDevice)
     rcmd = GDevice->GetImmediateContext();
     rtbl = rcmd->GetRootResourceTable();
 
-    FrameGraph = MakeRef<AFrameGraph>(GDevice);
+    m_FrameGraph = MakeRef<AFrameGraph>(GDevice);
 
     FrameRenderer  = MakeRef<AFrameRenderer>();
     CanvasRenderer = MakeRef<ACanvasRenderer>();
@@ -454,20 +451,24 @@ void ARenderBackend::RenderFrame(AStreamedMemoryGPU* StreamedMemory, ITexture* p
         SRenderView* pRenderView = &GFrameData->RenderViews[i];
 
         RenderView(i, pRenderView);
+
+        m_FrameGraph->Build();
+        rcmd->ExecuteFrameGraph(m_FrameGraph);
+        m_FrameGraph->Clear();
     }
 
-    CanvasRenderer->Render(*FrameGraph, pBackBuffer);
+    CanvasRenderer->Render(*m_FrameGraph, pBackBuffer);
 
-    FrameGraph->Build();
+    m_FrameGraph->Build();
     //FrameGraph->ExportGraphviz("frame.graphviz");
-    rcmd->ExecuteFrameGraph(FrameGraph);
+    rcmd->ExecuteFrameGraph(m_FrameGraph);
 
     if (r_FrameGraphDebug)
     {
-        FrameGraph->Debug();
+        m_FrameGraph->Debug();
     }
 
-    FrameGraph->Clear();
+    m_FrameGraph->Clear();
 
     FeedbackAnalyzerVT->End();
 
@@ -506,7 +507,6 @@ void ARenderBackend::SetViewConstants(int ViewportIndex)
 
     SViewConstantBuffer* pViewCBuf = (SViewConstantBuffer*)GStreamedMemory->Map(offset);
 
-    pViewCBuf->OrthoProjection         = GFrameData->CanvasOrthoProjection;
     pViewCBuf->ViewProjection          = GRenderView->ViewProjection;
     pViewCBuf->ProjectionMatrix        = GRenderView->ProjectionMatrix;
     pViewCBuf->InverseProjectionMatrix = GRenderView->InverseProjectionMatrix;
@@ -595,7 +595,7 @@ void ARenderBackend::SetViewConstants(int ViewportIndex)
     pViewCBuf->BloomEnabled                = r_Bloom;                   // TODO: Get from GRenderView
     pViewCBuf->ToneMappingExposure         = r_ToneExposure.GetFloat(); // TODO: Get from GRenderView
     pViewCBuf->ColorGrading                = GRenderView->CurrentColorGradingLUT ? 1.0f : 0.0f;
-    pViewCBuf->FXAA                        = r_FXAA && !r_SMAA;
+    pViewCBuf->FXAA                        = GRenderView->AntialiasingType == ANTIALIASING_FXAA;
     pViewCBuf->VignetteColorIntensity      = GRenderView->VignetteColorIntensity;
     pViewCBuf->VignetteOuterRadiusSqr      = GRenderView->VignetteOuterRadiusSqr;
     pViewCBuf->VignetteInnerRadiusSqr      = GRenderView->VignetteInnerRadiusSqr;
@@ -690,11 +690,11 @@ void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView)
     GRenderViewArea.Height = pRenderView->Height;
 
     //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ACustomTask& task = FrameGraph->AddTask<ACustomTask>("Setup render view");
-    FGBufferViewProxy*bufferView = FrameGraph->AddExternalResource<FGBufferViewProxy>("hack hack", GClusterItemTBO);
+    ACustomTask&       task       = m_FrameGraph->AddTask<ACustomTask>("Setup render view");
+    FGBufferViewProxy* bufferView = m_FrameGraph->AddExternalResource<FGBufferViewProxy>("hack hack", GClusterItemTBO);
     task.AddResource(bufferView, FG_RESOURCE_ACCESS_WRITE);
     task.SetFunction([=](ACustomTaskContext const& Task)
-                      {
+                     {
                          IImmediateContext* immediateCtx = Task.pImmediateContext;
                          GRenderView = pRenderView;
                          GRenderViewArea.X      = 0;
@@ -705,9 +705,7 @@ void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView)
                          UploadShaderResources(ViewportIndex);
 
                          immediateCtx->BindResourceTable(rtbl);
-
-    });
-
+        });
     
 
     bool bVirtualTexturing = FeedbackAnalyzerVT->HasBindings();
@@ -718,7 +716,7 @@ void ARenderBackend::RenderView(int ViewportIndex, SRenderView* pRenderView)
         pRenderView->VTFeedback->Begin(pRenderView->Width, pRenderView->Height);
     }
 
-    FrameRenderer->Render(*FrameGraph, bVirtualTexturing, PhysCacheVT);
+    FrameRenderer->Render(*m_FrameGraph, bVirtualTexturing, PhysCacheVT);
 
     // !!!!!!!!!!! FIXME: move outside of framegraph filling
     if (bVirtualTexturing)

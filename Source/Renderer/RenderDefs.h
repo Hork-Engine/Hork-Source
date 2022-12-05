@@ -971,6 +971,14 @@ struct STerrainRenderInstance
 };
 
 
+enum ANTIALIASING_TYPE
+{
+    ANTIALIASING_DISABLED,
+    ANTIALIASING_SMAA,
+    ANTIALIASING_FXAA
+};
+
+
 /**
 
 Rendering data for one view
@@ -981,6 +989,9 @@ struct SRenderView
 {
     /** Current view index */
     int ViewIndex;
+
+    /** Local frame number */
+    int FrameNumber;
 
     /** Viewport size (scaled by dynamic resolution) */
     uint32_t Width;
@@ -1031,7 +1042,9 @@ struct SRenderView
     bool     bClearBackground;
     bool     bWireframe;
     bool     bPerspective;
-    bool     bPadding1;
+    bool     bAllowHBAO;
+    bool     bAllowMotionBlur;
+    ANTIALIASING_TYPE AntialiasingType;
 
     /** Farthest distance to geometry in view */
     float MaxVisibleDistance;
@@ -1072,6 +1085,9 @@ struct SRenderView
 
     /** Final texture data */
     RenderCore::ITexture* RenderTarget;
+
+    /** Deinterleaved depth buffers for HBAO rendering */
+    RenderCore::ITexture* HBAOMaps;
 
     /** Virtual texture feedback data (experimental) */
     class AVirtualTextureFeedback* VTFeedback;

@@ -226,10 +226,14 @@ RenderCore::ITexture* WorldRenderView::AcquireLightTexture()
         textureDesc.SetResolution(RenderCore::STextureResolution2D(m_Width, m_Height));
         textureDesc.SetFormat(TEXTURE_FORMAT_R11G11B10_FLOAT);
         textureDesc.SetMipLevels(numMips);
-        textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE /* | RenderCore::BIND_RENDER_TARGET*/);
+        textureDesc.SetBindFlags(RenderCore::BIND_SHADER_RESOURCE | RenderCore::BIND_RENDER_TARGET);
 
         m_LightTexture.Reset();
         GEngine->GetRenderDevice()->CreateTexture(textureDesc, &m_LightTexture);
+
+        RenderCore::SClearValue clearVal;
+        memset(&clearVal.Float4, 0, sizeof(clearVal.Float4));
+        GEngine->GetRenderDevice()->GetImmediateContext()->ClearTexture(m_LightTexture, 0, RenderCore::FORMAT_FLOAT4, &clearVal);
     }
 
     return m_LightTexture;
@@ -250,4 +254,36 @@ RenderCore::ITexture* WorldRenderView::AcquireDepthTexture()
     }
 
     return m_DepthTexture;
+}
+
+RenderCore::ITexture* WorldRenderView::AcquireHBAOMaps()
+{
+    if (bAllowHBAO)
+    {
+        uint32_t  width         = ((m_Width + 3) / 4);
+        uint32_t  height        = ((m_Height + 3) / 4);
+        const int hbaoMapsCount = 16;
+
+        if (!m_HBAOMaps || (m_HBAOMaps->GetWidth() != width || m_HBAOMaps->GetHeight() != height))
+        {
+            m_HBAOMaps.Reset();
+            GEngine->GetRenderDevice()->CreateTexture(
+                RenderCore::STextureDesc()
+                    .SetFormat(TEXTURE_FORMAT_R32_FLOAT)
+                    .SetResolution(RenderCore::STextureResolution2DArray(width, height, hbaoMapsCount))
+                    .SetBindFlags(RenderCore::BIND_SHADER_RESOURCE | RenderCore::BIND_RENDER_TARGET),
+                &m_HBAOMaps);
+        }
+    }
+    else
+    {
+        m_HBAOMaps.Reset();
+    }
+
+    return m_HBAOMaps;
+}
+
+void WorldRenderView::ReleaseHBAOMaps()
+{
+    m_HBAOMaps.Reset();
 }

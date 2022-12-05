@@ -34,9 +34,6 @@ SOFTWARE.
 
 #include <Core/ScopedTimer.h>
 
-extern AConsoleVar r_FXAA;
-extern AConsoleVar r_SMAA;
-
 AConsoleVar r_ShowNormals("r_ShowNormals"s, "0"s, CVAR_CHEAT);
 AConsoleVar r_ShowFeedbackVT("r_ShowFeedbackVT"s, "0"s);
 AConsoleVar r_ShowCacheVT("r_ShowCacheVT"s, "-1"s);
@@ -431,7 +428,7 @@ void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVi
     AddReconstrutNormalsPass(FrameGraph, LinearDepth, &NormalTexture);
 
     FGTextureProxy* SSAOTexture;
-    if (r_HBAO)
+    if (r_HBAO && GRenderView->bAllowHBAO)
     {
         SSAORenderer.AddPasses(FrameGraph, LinearDepth, NormalTexture, &SSAOTexture);
     }
@@ -443,14 +440,14 @@ void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVi
     FGTextureProxy* LightTexture;
     LightRenderer.AddPass(FrameGraph, DepthTexture, SSAOTexture, ShadowMapDepth[0], ShadowMapDepth[1], ShadowMapDepth[2], ShadowMapDepth[3], OmnidirectionalShadowMapArray, LinearDepth, &LightTexture);
 
-    if (r_SMAA)
+    if (GRenderView->AntialiasingType == ANTIALIASING_SMAA)
     {
         FGTextureProxy* AntialiasedTexture;
         SmaaRenderer.AddPass(FrameGraph, LightTexture, &AntialiasedTexture);
         LightTexture = AntialiasedTexture;
     }
 
-    if (r_MotionBlur)
+    if (GRenderView->bAllowMotionBlur && GRenderView->FrameNumber > 0)
     {
         AddMotionBlurPass(FrameGraph, LightTexture, VelocityTexture, LinearDepth, &LightTexture);
     }
@@ -464,7 +461,7 @@ void AFrameRenderer::Render(AFrameGraph& FrameGraph, bool bVirtualTexturing, AVi
     FGTextureProxy* ColorGrading;
     ColorGradingRenderer.AddPass(FrameGraph, &ColorGrading);
 
-    bool bFxaaPassRequired = r_FXAA && !r_SMAA;
+    bool bFxaaPassRequired = GRenderView->AntialiasingType == ANTIALIASING_FXAA;
 
     FGTextureProxy* FinalTexture;
 

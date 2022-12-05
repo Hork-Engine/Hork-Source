@@ -210,8 +210,6 @@ AMeshComponent::AMeshComponent()
     Mesh   = MeshResource.GetObject();
     Bounds = Mesh->GetBoundingBox();
 
-    RenderTransformMatrix.SetIdentity();
-
     SetUseMeshCollision(true);
 }
 
@@ -416,6 +414,31 @@ void AMeshComponent::OnMeshResourceUpdate(INDEXED_MESH_UPDATE_FLAG UpdateFlag)
     // Reset mesh
     SetMesh(nullptr);
     SetMesh(curMesh);
+}
+
+void AMeshComponent::OnPreRenderUpdate(SRenderFrontendDef const* _Def)
+{
+    Super::OnPreRenderUpdate(_Def);
+
+    if (m_RenderTransformMatrixFrame == _Def->FrameNumber)
+        return;
+
+    if (m_RenderTransformMatrixFrame == 0 || m_RenderTransformMatrixFrame + 1 != _Def->FrameNumber)
+    {
+        int i = _Def->FrameNumber;
+
+        Float3x4 const& transform = GetWorldTransformMatrix();
+
+        m_RenderTransformMatrix[i & 1]       = transform;
+        m_RenderTransformMatrix[(i + 1) & 1] = transform;
+
+        m_RenderTransformMatrixFrame = i;
+        return;
+    }
+
+    m_RenderTransformMatrixFrame = _Def->FrameNumber;
+
+    m_RenderTransformMatrix[m_RenderTransformMatrixFrame & 1] = GetWorldTransformMatrix();
 }
 
 void AMeshComponent::DrawDebug(ADebugRenderer* InRenderer)
@@ -672,8 +695,6 @@ AProceduralMeshComponent::AProceduralMeshComponent()
 
     bAllowRaycast = true;
 
-    RenderTransformMatrix.SetIdentity();
-
     //LightmapOffset.Z = LightmapOffset.W = 1;
 
     //static TStaticResourceFinder< AIndexedMesh > MeshResource("/Default/Meshes/Box"s);
@@ -730,4 +751,29 @@ AMaterialInstance* AProceduralMeshComponent::GetMaterialInstance() const
         pInstance = DefaultInstance.GetObject();
     }
     return pInstance;
+}
+
+void AProceduralMeshComponent::OnPreRenderUpdate(SRenderFrontendDef const* _Def)
+{
+    Super::OnPreRenderUpdate(_Def);
+
+    if (m_RenderTransformMatrixFrame == _Def->FrameNumber)
+        return;
+
+    if (m_RenderTransformMatrixFrame == 0 || m_RenderTransformMatrixFrame + 1 != _Def->FrameNumber)
+    {
+        int i = _Def->FrameNumber;
+
+        Float3x4 const& transform = GetWorldTransformMatrix();
+
+        m_RenderTransformMatrix[i & 1]     = transform;
+        m_RenderTransformMatrix[(i + 1) & 1] = transform;
+
+        m_RenderTransformMatrixFrame = i;
+        return;
+    }
+
+    m_RenderTransformMatrixFrame = _Def->FrameNumber;
+
+    m_RenderTransformMatrix[m_RenderTransformMatrixFrame & 1] = GetWorldTransformMatrix();
 }
