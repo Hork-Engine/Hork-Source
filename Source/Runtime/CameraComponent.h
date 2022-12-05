@@ -34,7 +34,7 @@ SOFTWARE.
 
 #include <Geometry/BV/BvFrustum.h>
 
-enum ECameraProjection : uint8_t
+enum CAMERA_PROJECTION_TYPE : uint8_t
 {
     CAMERA_PROJ_ORTHO_RECT,
     CAMERA_PROJ_ORTHO_ZOOM_ASPECT_RATIO,
@@ -49,7 +49,7 @@ class ACameraComponent : public ASceneComponent
 
 public:
     /** Set view projection */
-    void SetProjection(ECameraProjection _Projection);
+    void SetProjection(CAMERA_PROJECTION_TYPE _Projection);
 
     /** Near clip distance */
     void SetZNear(float _ZNear);
@@ -72,7 +72,7 @@ public:
     /** Zoom for orthogonal projection */
     void SetOrthoZoom(float _Zoom);
 
-    ECameraProjection GetProjection() const { return m_Projection; }
+    CAMERA_PROJECTION_TYPE GetProjection() const { return m_Projection; }
 
     bool IsPerspective() const
     {
@@ -138,7 +138,7 @@ private:
     mutable Float3x3  m_BillboardMatrix;
     mutable Float4x4  m_ProjectionMatrix;
     mutable BvFrustum m_Frustum;
-    ECameraProjection m_Projection{CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO};
+    CAMERA_PROJECTION_TYPE m_Projection{CAMERA_PROJ_PERSPECTIVE_FOV_Y_ASPECT_RATIO};
     mutable bool      m_bViewMatrixDirty{true};
     mutable bool      m_bProjectionDirty{true};
     mutable bool      m_bFrustumDirty{true};

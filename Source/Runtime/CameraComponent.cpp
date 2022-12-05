@@ -63,7 +63,7 @@ void ACameraComponent::OnCreateAvatar()
     meshComponent->SetHideInEditor(true);
 }
 
-void ACameraComponent::SetProjection(ECameraProjection _Projection)
+void ACameraComponent::SetProjection(CAMERA_PROJECTION_TYPE _Projection)
 {
     if (m_Projection != _Projection)
     {
