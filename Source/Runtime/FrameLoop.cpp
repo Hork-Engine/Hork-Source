@@ -30,6 +30,7 @@ SOFTWARE.
 
 #include "FrameLoop.h"
 #include "WorldRenderView.h"
+#include "Font.h"
 
 #include <Platform/Platform.h>
 #include <Platform/ConsoleBuffer.h>
@@ -56,6 +57,8 @@ AFrameLoop::AFrameLoop(RenderCore::IDevice* RenderDevice) :
     Platform::ZeroMem(JoystickButtonState.ToPtr(), sizeof(JoystickButtonState));
     Platform::ZeroMem(JoystickAxisState.ToPtr(), sizeof(JoystickAxisState));
     Platform::ZeroMem(JoystickAdded.ToPtr(), sizeof(JoystickAdded));
+
+    m_FontStash = GetSharedInstance<AFontStash>();
 }
 
 AFrameLoop::~AFrameLoop()
@@ -141,6 +144,8 @@ void AFrameLoop::NewFrame(TPodVector<RenderCore::ISwapChain*> const& SwapChains,
     FrameMemory.ResetAndMerge();
 
     ClearViews();
+
+    m_FontStash->Cleanup();
 }
 
 void AFrameLoop::ClearViews()

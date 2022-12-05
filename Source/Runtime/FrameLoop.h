@@ -36,6 +36,8 @@ SOFTWARE.
 
 #include "InputDefs.h"
 
+class AFontStash;
+
 //struct SJoystick
 //{
 //    int NumAxes;
@@ -203,4 +205,5 @@ private:
     TArray<bool, MAX_JOYSTICKS_COUNT>                                        JoystickAdded;
 
     TVector<WorldRenderView*> m_Views;
+    TRef<AFontStash>          m_FontStash;
 };
