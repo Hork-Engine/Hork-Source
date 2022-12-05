@@ -1044,7 +1044,7 @@ HK_FORCEINLINE void MinMax(double _A, double _B, double _C, double& _Min, double
 }
 
 template <typename T>
-HK_FORCEINLINE T Square(T const& a)
+HK_FORCEINLINE constexpr T Square(T const& a)
 {
     return a * a;
 }
