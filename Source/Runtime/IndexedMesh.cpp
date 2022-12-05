@@ -938,6 +938,30 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
 
         collisionModel = NewObj<ACollisionModel>(&box);
     }
+    else if (!_Path.Icmp("/Default/Meshes/QuadXZ"))
+    {
+        ::CreatePlaneMeshXZ(vertices, indices, bounds, 1, 1, 1);
+
+        SCollisionBoxDef box;
+        box.HalfExtents.X = 0.5f;
+        box.HalfExtents.Y = 0.1f;
+        box.HalfExtents.Z = 0.5f;
+        box.Position.Y -= box.HalfExtents.Y;
+
+        collisionModel = NewObj<ACollisionModel>(&box);
+    }
+    else if (!_Path.Icmp("/Default/Meshes/QuadXY"))
+    {
+        ::CreatePlaneMeshXY(vertices, indices, bounds, 1, 1, 1);
+
+        SCollisionBoxDef box;
+        box.HalfExtents.X = 0.5f;
+        box.HalfExtents.Y = 0.5f;
+        box.HalfExtents.Z = 0.1f;
+        box.Position.Z -= box.HalfExtents.Z;
+
+        collisionModel = NewObj<ACollisionModel>(&box);
+    }
     else if (!_Path.Icmp("/Default/Meshes/Skybox"))
     {
         ::CreateSkyboxMesh(vertices, indices, bounds, Float3(1), 1);
@@ -955,6 +979,7 @@ void AIndexedMesh::LoadInternalResource(AStringView _Path)
         LOG("Unknown internal mesh {}\n", _Path);
 
         LoadInternalResource("/Default/Meshes/Box");
+        return;
     }
 
     Initialize(vertices.Size(), indices.Size(), 1);
@@ -1046,7 +1071,6 @@ void AIndexedMesh::GenerateSoftbodyLinksFromFaces()
                 link.Indices[1]     = indices[k];
             }
         }
-#undef IDX
     }
 }
 
