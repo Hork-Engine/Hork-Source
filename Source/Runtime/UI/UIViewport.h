@@ -52,7 +52,7 @@ public:
 
     void Draw(ACanvas& canvas) override;
 
-private:
+protected:
     void OnKeyEvent(struct SKeyEvent const& event, double timeStamp) override;
 
     void OnMouseButtonEvent(struct SMouseButtonEvent const& event, double timeStamp) override;
